@@ -3,8 +3,15 @@ package pex
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/cometbft/cometbft/p2p"
+)
+
+var (
+	ErrEmptyAddressBook = errors.New("address book is empty and couldn't resolve any seed nodes")
+	// ErrUnsolicitedList is thrown when a peer provides a list of addresses that have not been asked for.
+	ErrUnsolicitedList = errors.New("unsolicited pexAddrsMessage")
 )
 
 type ErrAddrBookNonRoutable struct {
@@ -15,12 +22,12 @@ func (err ErrAddrBookNonRoutable) Error() string {
 	return fmt.Sprintf("Cannot add non-routable address %v", err.Addr)
 }
 
-type errAddrBookOldAddressNewBucket struct {
+type ErrAddrBookOldAddressNewBucket struct {
 	Addr     *p2p.NetAddress
 	BucketID int
 }
 
-func (err errAddrBookOldAddressNewBucket) Error() string {
+func (err ErrAddrBookOldAddressNewBucket) Error() string {
 	return fmt.Sprintf("failed consistency check!"+
 		" Cannot add pre-existing address %v into new bucket %v",
 		err.Addr, err.BucketID)
@@ -42,7 +49,7 @@ func (err ErrAddrBookPrivate) Error() string {
 	return fmt.Sprintf("Cannot add private peer with address %v", err.Addr)
 }
 
-func (err ErrAddrBookPrivate) PrivateAddr() bool {
+func (ErrAddrBookPrivate) PrivateAddr() bool {
 	return true
 }
 
@@ -54,7 +61,7 @@ func (err ErrAddrBookPrivateSrc) Error() string {
 	return fmt.Sprintf("Cannot add peer coming from private peer with address %v", err.Src)
 }
 
-func (err ErrAddrBookPrivateSrc) PrivateAddr() bool {
+func (ErrAddrBookPrivateSrc) PrivateAddr() bool {
 	return true
 }
 
@@ -85,5 +92,55 @@ func (err ErrAddressBanned) Error() string {
 	return fmt.Sprintf("Address: %v is currently banned", err.Addr)
 }
 
-// ErrUnsolicitedList is thrown when a peer provides a list of addresses that have not been asked for.
-var ErrUnsolicitedList = errors.New("unsolicited pexAddrsMessage")
+// ErrReceivedPEXRequestTooSoon is thrown when a peer sends a PEX request too soon after the last one.
+type ErrReceivedPEXRequestTooSoon struct {
+	Peer         p2p.ID
+	LastReceived time.Time
+	Now          time.Time
+	MinInterval  time.Duration
+}
+
+func (err ErrReceivedPEXRequestTooSoon) Error() string {
+	return fmt.Sprintf("received PEX request from peer %v too soon (last received %v, now %v, min interval %v), Disconnecting peer",
+		err.Peer, err.LastReceived, err.Now, err.MinInterval)
+}
+
+type ErrMaxAttemptsToDial struct {
+	Max int
+}
+
+func (e ErrMaxAttemptsToDial) Error() string {
+	return fmt.Sprintf("reached max attempts %d to dial", e.Max)
+}
+
+type ErrTooEarlyToDial struct {
+	BackoffDuration time.Duration
+	LastDialed      time.Time
+}
+
+func (e ErrTooEarlyToDial) Error() string {
+	return fmt.Sprintf(
+		"too early to dial (backoff duration: %d, last dialed: %v, time since: %v)",
+		e.BackoffDuration, e.LastDialed, time.Since(e.LastDialed))
+}
+
+type ErrFailedToDial struct {
+	TotalAttempts int
+	Err           error
+}
+
+func (e ErrFailedToDial) Error() string {
+	return fmt.Sprintf("failed to dial after %d attempts: %v", e.TotalAttempts, e.Err)
+}
+
+func (e ErrFailedToDial) Unwrap() error { return e.Err }
+
+type ErrSeedNodeConfig struct {
+	Err error
+}
+
+func (e ErrSeedNodeConfig) Error() string {
+	return fmt.Sprintf("failed to parse seed node config: %v", e.Err)
+}
+
+func (e ErrSeedNodeConfig) Unwrap() error { return e.Err }

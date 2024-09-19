@@ -7,24 +7,22 @@ import (
 	"strings"
 
 	"github.com/cometbft/cometbft/abci/types"
-	pbcrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
-	cryptoencoding "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 )
 
 // RandVal creates one random validator, with a key derived
 // from the input value.
 func RandVal() types.ValidatorUpdate {
-	pubkey := cmtrand.Bytes(32)
+	pubkey := ed25519.GenPrivKey().PubKey()
 	power := cmtrand.Uint16() + 1
-	v := types.UpdateValidator(pubkey, int64(power), "")
-	return v
+	return types.ValidatorUpdate{Power: int64(power), PubKeyType: pubkey.Type(), PubKeyBytes: pubkey.Bytes()}
 }
 
 // RandVals returns a list of cnt validators for initializing
 // the application. Note that the keys are deterministically
 // derived from the index in the array, while the power is
-// random (Change this if not desired).
+// random (change this if not desired).
 func RandVals(cnt int) []types.ValidatorUpdate {
 	res := make([]types.ValidatorUpdate, cnt)
 	for i := 0; i < cnt; i++ {
@@ -43,11 +41,12 @@ func InitKVStore(ctx context.Context, app *Application) error {
 	return err
 }
 
-// Create a new transaction.
+// NewTx creates a new transaction.
 func NewTx(key, value string) []byte {
 	return []byte(strings.Join([]string{key, value}, "="))
 }
 
+// NewRandomTx creates a new random transaction.
 func NewRandomTx(size int) []byte {
 	if size < 4 {
 		panic("random tx size must be greater than 3")
@@ -55,6 +54,7 @@ func NewRandomTx(size int) []byte {
 	return NewTx(cmtrand.Str(2), cmtrand.Str(size-3))
 }
 
+// NewRandomTxs creates n transactions.
 func NewRandomTxs(n int) [][]byte {
 	txs := make([][]byte, n)
 	for i := 0; i < n; i++ {
@@ -63,18 +63,14 @@ func NewRandomTxs(n int) [][]byte {
 	return txs
 }
 
+// NewTxFromID creates a new transaction using the given ID.
 func NewTxFromID(i int) []byte {
 	return []byte(fmt.Sprintf("%d=%d", i, i))
 }
 
-// Create a transaction to add/remove/update a validator
+// MakeValSetChangeTx creates a transaction to add/remove/update a validator.
 // To remove, set power to 0.
-func MakeValSetChangeTx(pubkey pbcrypto.PublicKey, power int64) []byte {
-	pk, err := cryptoencoding.PubKeyFromProto(pubkey)
-	if err != nil {
-		panic(err)
-	}
-	pubStr := base64.StdEncoding.EncodeToString(pk.Bytes())
-	pubTypeStr := pk.Type()
-	return []byte(fmt.Sprintf("%s%s!%s!%d", ValidatorPrefix, pubTypeStr, pubStr, power))
+func MakeValSetChangeTx(v types.ValidatorUpdate) []byte {
+	pubStr := base64.StdEncoding.EncodeToString(v.PubKeyBytes)
+	return []byte(fmt.Sprintf("%s%s!%s!%d", ValidatorPrefix, v.PubKeyType, pubStr, v.Power))
 }

@@ -72,25 +72,33 @@ func TestUnmarshallResponses(t *testing.T) {
 }
 
 func TestRPCError(t *testing.T) {
-	// Define the expected errors as variables for clarity and reusability
-	expectedErrorWithData := "RPC error 12 - Badness: One worse than a code 11"
-	expectedErrorWithoutData := "RPC error 12 - Badness"
-
-	// Use the New() method from the assert package for creating an assert object
-	assertion := assert.New(t)
-
-	// Test case with Data field
-	rpcErrorWithData := &RPCError{
-		Code:    12,
-		Message: "Badness",
-		Data:    "One worse than a code 11",
+	testCases := []struct {
+		name     string
+		err      *RPCError
+		expected string
+	}{
+		{
+			name: "With data",
+			err: &RPCError{
+				Code:    12,
+				Message: "Badness",
+				Data:    "One worse than a code 11",
+			},
+			expected: "RPC error 12 - Badness: One worse than a code 11",
+		},
+		{
+			name: "Without data",
+			err: &RPCError{
+				Code:    12,
+				Message: "Badness",
+			},
+			expected: "RPC error 12 - Badness",
+		},
 	}
-	assertion.Equal(expectedErrorWithData, rpcErrorWithData.Error())
 
-	// Test case without Data field
-	rpcErrorWithoutData := &RPCError{
-		Code:    12,
-		Message: "Badness",
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, tc.err.Error())
+		})
 	}
-	assertion.Equal(expectedErrorWithoutData, rpcErrorWithoutData.Error())
 }

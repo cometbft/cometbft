@@ -465,13 +465,13 @@ func (s *Set) getNTSlot(sym symbols.Symbol, leftExtent, rightExtent int) (bsrs [
 	return s.ntSlotEntries[ntSlot{nt, leftExtent, rightExtent}]
 }
 
-func (s *Set) fail(b BSR, format string, a ...interface{}) {
+func (s *Set) fail(b BSR, format string, a ...any) {
 	msg := fmt.Sprintf(format, a...)
 	line, col := s.getLineColumn(b.LeftExtent())
 	panic(fmt.Sprintf("Error in BSR: %s at line %d col %d\n", msg, line, col))
 }
 
-func failf(format string, args ...interface{}) {
+func failf(format string, args ...any) {
 	panic(fmt.Sprintf("Error in BSR: %s\n", fmt.Sprintf(format, args...)))
 }
 

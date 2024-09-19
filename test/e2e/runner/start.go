@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"sort"
 	"time"
 
@@ -13,7 +13,7 @@ import (
 
 func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 	if len(testnet.Nodes) == 0 {
-		return fmt.Errorf("no nodes in testnet")
+		return errors.New("no nodes in testnet")
 	}
 
 	// Nodes are already sorted by name. Sort them by name then startAt,
@@ -37,7 +37,7 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 	})
 
 	if nodeQueue[0].StartAt > 0 {
-		return fmt.Errorf("no initial nodes in testnet")
+		return errors.New("no initial nodes in testnet")
 	}
 
 	// Start initial nodes (StartAt: 0)

@@ -21,7 +21,8 @@ parts of [CometBFT]:
 
 The canonical Protobuf definitions live in the `proto` folder of the relevant
 release branch of CometBFT. These definitions are published to the [Buf
-registry][buf] for integrators' convenience.
+registry][buf] for integrators' convenience. For detailed instructions on how to publish
+the files to the Buf registry, please refer to the [RELEASES.md](../RELEASES.md) document.
 
 The Protobuf files are organized under two domains: `cometbft` and `tendermint`.
 The `cometbft.*` packages use version suffixes to let application developers
@@ -43,7 +44,7 @@ packages. The correspondence between package suffixes and releases is as follows
 | `libs/bits`     | `v1`      | `v1`      | `v1`      | `v1` |
 | `mempool`       | `v1`      | `v1`      | `v1`      | `v1` |
 | `p2p`           | `v1`      | `v1`      | `v1`      | `v1` |
-| `privval`       | `v1beta1` | `v1beta1` | `v1`      | `v1` |
+| `privval`       | `v1beta1` | `v1beta1` | `v1beta2` | `v1` |
 | `rpc/grpc`[^1]  | `v1beta1` | `v1beta2` | `v1beta3` |      |
 | `state`         | `v1beta1` | `v1beta2` | `v1beta3` | `v1` |
 | `statesync`     | `v1`      | `v1`      | `v1`      | `v1` |

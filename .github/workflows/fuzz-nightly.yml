@@ -9,15 +9,20 @@ on:
     paths:
       - "test/fuzz/**/*.go"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   fuzz-nightly-test:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
+
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
-
-      - uses: actions/checkout@v4
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Install go-fuzz
         working-directory: test/fuzz
@@ -76,7 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack on failure
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@v1.27.0
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

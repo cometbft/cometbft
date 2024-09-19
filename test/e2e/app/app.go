@@ -14,7 +14,10 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	gogo "github.com/cosmos/gogoproto/types"
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -22,8 +25,8 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/internal/protoio"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/protoio"
 	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )
@@ -35,8 +38,10 @@ const (
 	prefixReservedKey   string = "reservedTxKey_"
 	suffixChainID       string = "ChainID"
 	suffixVoteExtHeight string = "VoteExtensionsHeight"
+	suffixPbtsHeight    string = "PbtsHeight"
 	suffixInitialHeight string = "InitialHeight"
 	suffixFlippingVal   string = "FlippingVal"
+	txTTL               uint64 = 15 // height difference at which transactions should be invalid
 )
 
 // Application is an ABCI application for use by end-to-end tests. It is a
@@ -50,6 +55,8 @@ type Application struct {
 	cfg             *Config
 	restoreSnapshot *abci.Snapshot
 	restoreChunks   [][]byte
+	// It's OK not to persist this, as it is not part of the state machine
+	seenTxs sync.Map // cmttypes.TxKey -> uint64
 }
 
 // Config allows for the setting of high level parameters for running the e2e Application
@@ -117,6 +124,17 @@ type Config struct {
 	// Flag for enabling and disabling logging of ABCI requests.
 	ABCIRequestsLoggingEnabled bool `toml:"abci_requests_logging_enabled"`
 
+	// PbtsEnableHeight configures the first height during which
+	// the chain will start using Proposer-Based Timestamps (PBTS)
+	// to create and validate new blocks.
+	PbtsEnableHeight int64 `toml:"pbts_enable_height"`
+
+	// PbtsUpdateHeight configures the height at which consensus
+	// param PbtsEnableHeight will be set.
+	// -1 denotes it is set at genesis.
+	// 0 denotes it is set at InitChain.
+	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
+
 	ConstantValConsensusChanges bool `toml:"constant_val_consensus_changes"`
 }
 
@@ -166,19 +184,31 @@ func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResp
 	}, nil
 }
 
-func (app *Application) updateVoteExtensionEnableHeight(currentHeight int64) *cmtproto.ConsensusParams {
-	var params *cmtproto.ConsensusParams
+func (app *Application) updateFeatureEnableHeights(currentHeight int64) *cmtproto.ConsensusParams {
+	params := &cmtproto.ConsensusParams{
+		Feature: &cmtproto.FeatureParams{},
+	}
+	retNil := true
 	if app.cfg.VoteExtensionsUpdateHeight == currentHeight {
 		app.logger.Info("enabling vote extensions on the fly",
 			"current_height", currentHeight,
 			"enable_height", app.cfg.VoteExtensionsEnableHeight)
-		params = &cmtproto.ConsensusParams{
-			Abci: &cmtproto.ABCIParams{
-				VoteExtensionsEnableHeight: app.cfg.VoteExtensionsEnableHeight,
-			},
-		}
+		params.Feature.VoteExtensionsEnableHeight = &gogo.Int64Value{Value: app.cfg.VoteExtensionsEnableHeight}
+		retNil = false
 		app.logger.Info("updating VoteExtensionsHeight in app_state", "height", app.cfg.VoteExtensionsEnableHeight)
 		app.state.Set(prefixReservedKey+suffixVoteExtHeight, strconv.FormatInt(app.cfg.VoteExtensionsEnableHeight, 10))
+	}
+	if app.cfg.PbtsUpdateHeight == currentHeight {
+		app.logger.Info("enabling PBTS on the fly",
+			"current_height", currentHeight,
+			"enable_height", app.cfg.PbtsEnableHeight)
+		params.Feature.PbtsEnableHeight = &gogo.Int64Value{Value: app.cfg.PbtsEnableHeight}
+		retNil = false
+		app.logger.Info("updating PBTS Height in app_state", "height", app.cfg.PbtsEnableHeight)
+		app.state.Set(prefixReservedKey+suffixPbtsHeight, strconv.FormatInt(app.cfg.PbtsEnableHeight, 10))
+	}
+	if retNil {
+		return nil
 	}
 	return params
 }
@@ -216,14 +246,15 @@ func (app *Application) oscillateValUpdates(updates abci.ValidatorUpdates, heigh
 	power := height % 2
 	app.logger.Info("oscillating validator power", "addr", addr, "power", power)
 
-	pubKeyProto, err := app.loadPubKey(addr)
+	pubKey, err := app.loadPubKey(addr)
 	if err != nil {
 		return nil, err
 	}
 
 	u := abci.ValidatorUpdate{
-		PubKey: *pubKeyProto,
-		Power:  power,
+		PubKeyType:  pubKey.Type(),
+		PubKeyBytes: pubKey.Bytes(),
+		Power:       power,
 	}
 	return abci.ValidatorUpdates{u}, nil
 }
@@ -245,21 +276,23 @@ func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest)
 	}
 	app.logger.Info("setting ChainID in app_state", "chainId", req.ChainId)
 	app.state.Set(prefixReservedKey+suffixChainID, req.ChainId)
-	app.logger.Info("setting VoteExtensionsHeight in app_state", "height", req.ConsensusParams.Abci.VoteExtensionsEnableHeight)
-	app.state.Set(prefixReservedKey+suffixVoteExtHeight, strconv.FormatInt(req.ConsensusParams.Abci.VoteExtensionsEnableHeight, 10))
+	app.logger.Info("setting VoteExtensionsHeight in app_state", "height", req.ConsensusParams.Feature.VoteExtensionsEnableHeight.GetValue())
+	app.state.Set(prefixReservedKey+suffixVoteExtHeight, strconv.FormatInt(req.ConsensusParams.Feature.VoteExtensionsEnableHeight.GetValue(), 10))
+	app.logger.Info("setting PBTS Height in app_state", "height", req.ConsensusParams.Feature.PbtsEnableHeight.GetValue())
+	app.state.Set(prefixReservedKey+suffixPbtsHeight, strconv.FormatInt(req.ConsensusParams.Feature.PbtsEnableHeight.GetValue(), 10))
 	app.logger.Info("setting initial height in app_state", "initial_height", req.InitialHeight)
 	app.state.Set(prefixReservedKey+suffixInitialHeight, strconv.FormatInt(req.InitialHeight, 10))
 	// Get validators from genesis
 	if req.Validators != nil {
 		for _, val := range req.Validators {
-			val := val
-			if err := app.storeValidator(&val); err != nil {
+			validator := val
+			if err := app.storeValidator(&validator); err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	params := app.updateVoteExtensionEnableHeight(0)
+	params := app.updateFeatureEnableHeights(0)
 	if params, err = app.oscillateParams(params, 0); err != nil {
 		return nil, err
 	}
@@ -291,6 +324,24 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		}, nil
 	}
 
+	txKey := cmttypes.Tx(req.Tx).Key()
+	stHeight, _ := app.state.Info()
+	if txHeight, ok := app.seenTxs.Load(txKey); ok {
+		if stHeight < txHeight.(uint64) {
+			panic(fmt.Sprintf("txHeight is less than current height; txHeight %v, height %v", txHeight, stHeight))
+		}
+		if stHeight > txHeight.(uint64)+txTTL {
+			app.logger.Debug("Application CheckTx", "msg", "transaction expired", "tx_hash", cmttypes.Tx.Hash(req.Tx), "seen_height", txHeight, "current_height", stHeight)
+			app.seenTxs.Delete(txKey)
+			return &abci.CheckTxResponse{
+				Code: kvstore.CodeTypeExpired,
+				Log:  fmt.Sprintf("transaction expired; seen height %v, current height %v", txHeight, stHeight),
+			}, nil
+		}
+	} else {
+		app.seenTxs.Store(txKey, stHeight)
+	}
+
 	if app.cfg.CheckTxDelay != 0 {
 		time.Sleep(app.cfg.CheckTxDelay)
 	}
@@ -318,6 +369,8 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 		}
 		app.state.Set(key, value)
 
+		app.seenTxs.Delete(cmttypes.Tx(tx).Key())
+
 		txs[i] = &abci.ExecTxResult{Code: kvstore.CodeTypeOK}
 	}
 
@@ -339,7 +392,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 		return nil, err
 	}
 
-	params := app.updateVoteExtensionEnableHeight(req.Height)
+	params := app.updateFeatureEnableHeights(req.Height)
 	if params, err = app.oscillateParams(params, req.Height); err != nil {
 		return nil, err
 	}
@@ -368,6 +421,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 				},
 			},
 		},
+		NextBlockDelay: 1 * time.Second,
 	}, nil
 }
 
@@ -525,7 +579,7 @@ func (app *Application) PrepareProposal(
 
 	txs := make([][]byte, 0, len(req.Txs)+1)
 	var totalBytes int64
-	extTxPrefix := fmt.Sprintf("%s=", voteExtensionKey)
+	extTxPrefix := voteExtensionKey + "="
 	sum, err := app.verifyAndSum(areExtensionsEnabled, req.Height, &req.LocalLastCommit, "prepare_proposal")
 	if err != nil {
 		panic(fmt.Errorf("failed to sum and verify in PrepareProposal; err %w", err))
@@ -748,7 +802,7 @@ func (app *Application) checkHeightAndExtensions(isPrepareProcessProposal bool, 
 
 func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate) error {
 	// Store validator data to verify extensions
-	pubKey, err := cryptoenc.PubKeyFromProto(valUpdate.PubKey)
+	pubKey, err := cryptoenc.PubKeyFromTypeAndBytes(valUpdate.PubKeyType, valUpdate.PubKeyBytes)
 	if err != nil {
 		return err
 	}
@@ -759,11 +813,15 @@ func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate) error {
 		}
 	}
 	if valUpdate.Power > 0 {
-		pubKeyBytes, err := valUpdate.PubKey.Marshal()
-		if err != nil {
-			return err
-		}
 		app.logger.Info("setting validator in app_state", "addr", addr)
+		pk, err := cryptoenc.PubKeyToProto(pubKey)
+		if err != nil {
+			return fmt.Errorf("failed to convert pubkey to proto: %w", err)
+		}
+		pubKeyBytes, err := pk.Marshal()
+		if err != nil {
+			return fmt.Errorf("failed to marshal pubkey: %w", err)
+		}
 		app.state.Set(prefixReservedKey+addr, hex.EncodeToString(pubKeyBytes))
 	}
 	return nil
@@ -782,7 +840,7 @@ func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, 
 		if err != nil {
 			return nil, fmt.Errorf("invalid base64 pubkey value %q: %w", keyString, err)
 		}
-		valUpdate := abci.UpdateValidator(keyBytes, int64(power), app.cfg.KeyType)
+		valUpdate := abci.ValidatorUpdate{Power: int64(power), PubKeyType: app.cfg.KeyType, PubKeyBytes: keyBytes}
 		valUpdates = append(valUpdates, valUpdate)
 		if err := app.storeValidator(&valUpdate); err != nil {
 			return nil, err
@@ -804,7 +862,7 @@ func (app *Application) logABCIRequest(req *abci.Request) error {
 	return nil
 }
 
-func (app *Application) loadPubKey(addr string) (*cryptoproto.PublicKey, error) {
+func (app *Application) loadPubKey(addr string) (crypto.PubKey, error) {
 	pubKeyHex := app.state.Get(prefixReservedKey + addr)
 	if len(pubKeyHex) == 0 {
 		return nil, fmt.Errorf("unknown validator with address %q", addr)
@@ -818,11 +876,16 @@ func (app *Application) loadPubKey(addr string) (*cryptoproto.PublicKey, error) 
 	if err != nil {
 		return nil, fmt.Errorf("unable to unmarshal public key for validator address %s, err %w", addr, err)
 	}
-	return &pubKeyProto, nil
+	pubKey, err := cryptoenc.PubKeyFromProto(pubKeyProto)
+	if err != nil {
+		return nil, fmt.Errorf("could not obtain a public key from its proto for validator address %s, err %w", addr, err)
+	}
+
+	return pubKey, nil
 }
 
 // parseTx parses a tx in 'key=value' format into a key and value.
-func parseTx(tx []byte) (string, string, error) {
+func parseTx(tx []byte) (key, value string, err error) {
 	parts := bytes.Split(tx, []byte("="))
 	if len(parts) != 2 {
 		return "", "", fmt.Errorf("invalid tx format: %q", string(tx))
@@ -895,13 +958,9 @@ func (app *Application) verifyAndSum(
 
 		// ... and verify
 		valAddr := crypto.Address(vote.Validator.Address).String()
-		pubKeyProto, err := app.loadPubKey(valAddr)
+		pubKey, err := app.loadPubKey(valAddr)
 		if err != nil {
 			return 0, err
-		}
-		pubKey, err := cryptoenc.PubKeyFromProto(*pubKeyProto)
-		if err != nil {
-			return 0, fmt.Errorf("could not obtain a public key from its proto for validator address %s, err %w", valAddr, err)
 		}
 		if !pubKey.VerifySignature(extSignBytes, vote.ExtensionSignature) {
 			return 0, errors.New("received vote with invalid signature")
@@ -933,11 +992,11 @@ func (app *Application) verifyAndSum(
 func (app *Application) verifyExtensionTx(height int64, payload string) error {
 	parts := strings.Split(payload, "|")
 	if len(parts) != 2 {
-		return fmt.Errorf("invalid payload format")
+		return errors.New("invalid payload format")
 	}
 	expSumStr := parts[0]
 	if len(expSumStr) == 0 {
-		return fmt.Errorf("sum cannot be empty in vote extension payload")
+		return errors.New("sum cannot be empty in vote extension payload")
 	}
 
 	expSum, err := strconv.Atoi(expSumStr)
@@ -947,17 +1006,17 @@ func (app *Application) verifyExtensionTx(height int64, payload string) error {
 
 	extCommitHex := parts[1]
 	if len(extCommitHex) == 0 {
-		return fmt.Errorf("extended commit data cannot be empty in vote extension payload")
+		return errors.New("extended commit data cannot be empty in vote extension payload")
 	}
 
 	extCommitBytes, err := hex.DecodeString(extCommitHex)
 	if err != nil {
-		return fmt.Errorf("could not hex-decode vote extension payload")
+		return errors.New("could not hex-decode vote extension payload")
 	}
 
 	var extCommit abci.ExtendedCommitInfo
 	if extCommit.Unmarshal(extCommitBytes) != nil {
-		return fmt.Errorf("unable to unmarshal extended commit")
+		return errors.New("unable to unmarshal extended commit")
 	}
 
 	sum, err := app.verifyAndSum(true, height, &extCommit, "process_proposal")

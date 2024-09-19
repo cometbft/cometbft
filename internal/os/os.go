@@ -12,7 +12,7 @@ import (
 )
 
 type logger interface {
-	Info(msg string, keyvals ...interface{})
+	Info(msg string, keyvals ...any)
 }
 
 // TrapSignal catches the SIGTERM/SIGINT and executes cb function. After that it exits
@@ -41,7 +41,7 @@ func Kill() error {
 }
 
 func Exit(s string) {
-	fmt.Printf(s + "\n")
+	fmt.Println(s)
 	os.Exit(1)
 }
 

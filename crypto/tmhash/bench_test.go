@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-var sink any = nil
+var sink any
 
 var manySlices = []struct {
 	name string

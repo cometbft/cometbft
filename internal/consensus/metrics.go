@@ -4,10 +4,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-kit/kit/metrics"
-
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
+	"github.com/cometbft/cometbft/libs/metrics"
 	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 const (
@@ -80,7 +80,7 @@ type Metrics struct {
 	// was relevant to the block the node is trying to gather or not.
 	BlockGossipPartsReceived metrics.Counter `metrics_labels:"matches_current"`
 
-	// QuroumPrevoteMessageDelay is the interval in seconds between the proposal
+	// QuorumPrevoteDelay is the interval in seconds between the proposal
 	// timestamp and the timestamp of the earliest prevote that achieved a quorum
 	// during the prevote step.
 	//
@@ -109,7 +109,7 @@ type Metrics struct {
 	// either 'accepted' or 'rejected'.
 	ProposalReceiveCount metrics.Counter `metrics_labels:"status"`
 
-	// ProposalCreationCount is the total number of proposals created by this node
+	// ProposalCreateCount is the total number of proposals created by this node
 	// since process start.
 	// The metric is annotated by the status of the proposal from the application,
 	// either 'accepted' or 'rejected'.
@@ -124,6 +124,21 @@ type Metrics struct {
 	// correspond to earlier heights and rounds than this node is currently
 	// in.
 	LateVotes metrics.Counter `metrics_labels:"vote_type"`
+
+	// ProposalTimestampDifference is the difference between the local time
+	// of the validator at the time it receives a proposal message, and the
+	// timestamp of the received proposal message.
+	//
+	// The value of this metric is not expected to be negative, as it would
+	// mean that the proposal's timestamp is in the future. This indicates
+	// that the proposer's and this node's clocks are desynchronized.
+	//
+	// A positive value of this metric reflects the message delay from the
+	// proposer to this node, for the delivery of a Proposal message. This
+	// metric thus should drive the definition of values for the consensus
+	// parameter SynchronyParams.MessageDelay, used by the PBTS algorithm.
+	// metrics:Difference in seconds between the local time when a proposal message is received and the timestamp in the proposal message.
+	ProposalTimestampDifference metrics.Histogram `metrics_bucketsizes:"-1.5, -1.0, -0.5, -0.2, 0, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 4.0, 8.0" metrics_labels:"is_timely"`
 }
 
 func (m *Metrics) MarkProposalProcessed(accepted bool) {
@@ -144,34 +159,32 @@ func (m *Metrics) MarkVoteExtensionReceived(accepted bool) {
 
 func (m *Metrics) MarkVoteReceived(vt types.SignedMsgType, power, totalPower int64) {
 	p := float64(power) / float64(totalPower)
-	n := strings.ToLower(strings.TrimPrefix(vt.String(), "SIGNED_MSG_TYPE_"))
+	n := types.SignedMsgTypeToShortString(vt)
 	m.RoundVotingPowerPercent.With("vote_type", n).Add(p)
 }
 
 func (m *Metrics) MarkRound(r int32, st time.Time) {
 	m.Rounds.Set(float64(r))
-	roundTime := time.Since(st).Seconds()
+	roundTime := cmttime.Since(st).Seconds()
 	m.RoundDurationSeconds.Observe(roundTime)
 
-	pvt := types.PrevoteType
-	pvn := strings.ToLower(strings.TrimPrefix(pvt.String(), "SIGNED_MSG_TYPE_"))
+	pvn := types.SignedMsgTypeToShortString(types.PrevoteType)
 	m.RoundVotingPowerPercent.With("vote_type", pvn).Set(0)
 
-	pct := types.PrecommitType
-	pcn := strings.ToLower(strings.TrimPrefix(pct.String(), "SIGNED_MSG_TYPE_"))
+	pcn := types.SignedMsgTypeToShortString(types.PrecommitType)
 	m.RoundVotingPowerPercent.With("vote_type", pcn).Set(0)
 }
 
 func (m *Metrics) MarkLateVote(vt types.SignedMsgType) {
-	n := strings.ToLower(strings.TrimPrefix(vt.String(), "SIGNED_MSG_TYPE_"))
+	n := types.SignedMsgTypeToShortString(vt)
 	m.LateVotes.With("vote_type", n).Add(1)
 }
 
 func (m *Metrics) MarkStep(s cstypes.RoundStepType) {
 	if !m.stepStart.IsZero() {
-		stepTime := time.Since(m.stepStart).Seconds()
+		stepTime := cmttime.Since(m.stepStart).Seconds()
 		stepName := strings.TrimPrefix(s.String(), "RoundStep")
 		m.StepDurationSeconds.With("step", stepName).Observe(stepTime)
 	}
-	m.stepStart = time.Now()
+	m.stepStart = cmttime.Now()
 }

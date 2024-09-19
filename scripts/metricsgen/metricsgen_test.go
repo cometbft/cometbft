@@ -13,7 +13,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	metricsgen "github.com/cometbft/cometbft/scripts/metricsgen"
+	metricsgen "github.com/cometbft/cometbft/scripts/metricsgen" //nolint:revive // this only works with metricsgen in front
 )
 
 const testDataDir = "./testdata"
@@ -37,6 +37,7 @@ func TestSimpleTemplate(t *testing.T) {
 	}
 }
 
+// TestFromData tests that the metricsgen tool can parse a directory of metrics and generate a file.
 func TestFromData(t *testing.T) {
 	infos, err := os.ReadDir(testDataDir)
 	if err != nil {
@@ -238,7 +239,7 @@ func TestParseMetricsStruct(t *testing.T) {
 			pkgLine := fmt.Sprintf("package %s\n", pkgName)
 			importClause := `
 			import(
-				"github.com/go-kit/kit/metrics"
+				"github.com/cometbft/cometbft/libs/metrics"
 			)
 			`
 
@@ -265,7 +266,7 @@ func TestParseAliasedMetric(t *testing.T) {
 			package mypkg
 
 			import(
-				mymetrics "github.com/go-kit/kit/metrics"
+				mymetrics "github.com/cometbft/cometbft/libs/metrics"
 			)
 			type Metrics struct {
 				m mymetrics.Gauge

@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 
 	cfg "github.com/cometbft/cometbft/config"
@@ -79,5 +78,5 @@ func dumpProfile(dir, addr, profile string, debug int) error {
 		return fmt.Errorf("failed to read %s profile response body: %w", profile, err)
 	}
 
-	return os.WriteFile(path.Join(dir, fmt.Sprintf("%s.out", profile)), body, os.ModePerm)
+	return os.WriteFile(filepath.Join(dir, profile+".out"), body, 0o600)
 }

@@ -22,6 +22,10 @@ func mustWrapMsg(pb proto.Message) pvproto.Message {
 		msg.Sum = &pvproto.Message_PubKeyResponse{PubKeyResponse: pb}
 	case *pvproto.SignVoteRequest:
 		msg.Sum = &pvproto.Message_SignVoteRequest{SignVoteRequest: pb}
+	case *pvproto.SignBytesRequest:
+		msg.Sum = &pvproto.Message_SignBytesRequest{SignBytesRequest: pb}
+	case *pvproto.SignBytesResponse:
+		msg.Sum = &pvproto.Message_SignBytesResponse{SignBytesResponse: pb}
 	case *pvproto.SignedVoteResponse:
 		msg.Sum = &pvproto.Message_SignedVoteResponse{SignedVoteResponse: pb}
 	case *pvproto.SignedProposalResponse:

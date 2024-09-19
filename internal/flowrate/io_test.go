@@ -81,15 +81,14 @@ func TestReader(t *testing.T) {
 
 	// Active, Bytes, Samples, InstRate, CurRate, AvgRate, PeakRate, BytesRem, Start, Duration, Idle, TimeRem, Progress
 	want := []Status{
-		{start, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, true},
-		{start, 10, 1, 100, 100, 100, 100, 0, _100ms, 0, 0, 0, true},
-		{start, 20, 2, 100, 100, 100, 100, 0, _200ms, _100ms, 0, 0, true},
-		{start, 20, 3, 0, 90, 67, 100, 0, _300ms, _200ms, 0, 0, true},
-		{start, 20, 3, 0, 0, 67, 100, 0, _300ms, 0, 0, 0, false},
-		{start, 20, 3, 0, 0, 67, 100, 0, _300ms, 0, 0, 0, false},
+		{start, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, true, 0},
+		{start, 10, 1, 100, 100, 100, 100, 0, _100ms, 0, 0, 0, true, 0},
+		{start, 20, 2, 100, 100, 100, 100, 0, _200ms, _100ms, 0, 0, true, 0},
+		{start, 20, 3, 0, 90, 67, 100, 0, _300ms, _200ms, 0, 0, true, 0},
+		{start, 20, 3, 0, 0, 67, 100, 0, _300ms, 0, 0, 0, false, 0},
+		{start, 20, 3, 0, 0, 67, 100, 0, _300ms, 0, 0, 0, false, 0},
 	}
 	for i, s := range status {
-		s := s
 		if !statusesAreEqual(&s, &want[i]) {
 			t.Errorf("r.Status(%v)\nexpected: %v\ngot     : %v", i, want[i], s)
 		}
@@ -121,7 +120,7 @@ func TestWriter(t *testing.T) {
 
 	// Subtest to verify that the Writer implements the Limiter interface
 	t.Run("implements limiter interface", func(t *testing.T) {
-		_, ok := interface{}(w).(Limiter)
+		_, ok := any(w).(Limiter)
 		if !ok {
 			t.Fatalf("Expected Writer to implement Limiter interface")
 		}
@@ -168,8 +167,8 @@ func TestWriter(t *testing.T) {
 
 		// Define expected statuses
 		want := []Status{
-			{start, remainingSize, 4, limit, limit, limit, limit, writeSize, _400ms, 0, _100ms, 80000, true},
-			{start, bufferSize, 5, limit, limit, limit, limit, 0, _500ms, _100ms, 0, 100000, true},
+			{start, remainingSize, 4, limit, limit, limit, limit, writeSize, _400ms, 0, _100ms, 80000, true, 0},
+			{start, bufferSize, 5, limit, limit, limit, limit, 0, _500ms, _100ms, 0, 100000, true, 0},
 		}
 
 		// Compare actual and expected statuses
@@ -194,7 +193,7 @@ func TestWriter(t *testing.T) {
 // `time.Sleep` has ended).
 func statusesAreEqual(s1 *Status, s2 *Status) bool {
 	if s1.Active == s2.Active &&
-		s1.Start == s2.Start &&
+		s1.Start.Equal(s2.Start) &&
 		durationsAreEqual(s1.Duration, s2.Duration) &&
 		durationsAreEqual(s1.Idle, s2.Idle) &&
 		s1.Bytes == s2.Bytes &&
@@ -205,7 +204,8 @@ func statusesAreEqual(s1 *Status, s2 *Status) bool {
 		ratesAreEqual(s1.PeakRate, s2.PeakRate) &&
 		s1.BytesRem == s2.BytesRem &&
 		durationsAreEqual(s1.TimeRem, s2.TimeRem) &&
-		s1.Progress == s2.Progress {
+		s1.Progress == s2.Progress &&
+		durationsAreEqual(s1.SleepTime, s2.SleepTime) {
 		return true
 	}
 	return false

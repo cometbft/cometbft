@@ -1,6 +1,8 @@
 package types
 
-import "context"
+import (
+	"context"
+)
 
 //go:generate ../../scripts/mockery_generate.sh Application
 
@@ -8,33 +10,37 @@ import "context"
 // to be driven by a blockchain-based replication engine via the ABCI.
 type Application interface {
 	// Info/Query Connection
+
 	Info(ctx context.Context, req *InfoRequest) (*InfoResponse, error)    // Return application info
 	Query(ctx context.Context, req *QueryRequest) (*QueryResponse, error) // Query for state
 
 	// Mempool Connection
+
 	CheckTx(ctx context.Context, req *CheckTxRequest) (*CheckTxResponse, error) // Validate a tx for the mempool
 
 	// Consensus Connection
+
 	InitChain(ctx context.Context, req *InitChainRequest) (*InitChainResponse, error) // Initialize blockchain w validators/other info from CometBFT
 	PrepareProposal(ctx context.Context, req *PrepareProposalRequest) (*PrepareProposalResponse, error)
 	ProcessProposal(ctx context.Context, req *ProcessProposalRequest) (*ProcessProposalResponse, error)
-	// Deliver the decided block with its txs to the Application
+	// FinalizeBlock delivers the decided block with its txs to the Application
 	FinalizeBlock(ctx context.Context, req *FinalizeBlockRequest) (*FinalizeBlockResponse, error)
-	// Create application specific vote extension
+	// ExtendVote extends the vote with application specific data
 	ExtendVote(ctx context.Context, req *ExtendVoteRequest) (*ExtendVoteResponse, error)
-	// Verify application's vote extension data
+	// VerifyVoteExtension verifies the application's vote extension data for correctness.
 	VerifyVoteExtension(ctx context.Context, req *VerifyVoteExtensionRequest) (*VerifyVoteExtensionResponse, error)
 	// Commit the state and return the application Merkle root hash
 	Commit(ctx context.Context, req *CommitRequest) (*CommitResponse, error)
 
 	// State Sync Connection
+
 	ListSnapshots(ctx context.Context, req *ListSnapshotsRequest) (*ListSnapshotsResponse, error)                // List available snapshots
 	OfferSnapshot(ctx context.Context, req *OfferSnapshotRequest) (*OfferSnapshotResponse, error)                // Offer a snapshot to the application
 	LoadSnapshotChunk(ctx context.Context, req *LoadSnapshotChunkRequest) (*LoadSnapshotChunkResponse, error)    // Load a snapshot chunk
 	ApplySnapshotChunk(ctx context.Context, req *ApplySnapshotChunkRequest) (*ApplySnapshotChunkResponse, error) // Apply a snapshot chunk
 }
 
-//-------------------------------------------------------
+// -------------------------------------------------------
 // BaseApplication is a base form of Application
 
 var _ Application = (*BaseApplication)(nil)

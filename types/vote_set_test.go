@@ -421,7 +421,8 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 	}
 
 	// MakeCommit should fail.
-	veHeightParam := ABCIParams{VoteExtensionsEnableHeight: height}
+	veHeightParam := DefaultFeatureParams()
+	veHeightParam.VoteExtensionsEnableHeight = height
 	assert.Panics(t, func() { voteSet.MakeExtendedCommit(veHeightParam) }, "Doesn't have +2/3 majority")
 
 	// 7th voted for some other block.
@@ -533,7 +534,7 @@ func TestVoteSet_VoteExtensionsEnabled(t *testing.T) {
 				BlockID:          BlockID{blockHash, blockPartSetHeader},
 			}
 			v := vote.ToProto()
-			err = val0.SignVote(voteSet.ChainID(), v)
+			err = val0.SignVote(voteSet.ChainID(), v, true)
 			require.NoError(t, err)
 			vote.Signature = v.Signature
 

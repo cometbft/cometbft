@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/mitchellh/mapstructure"
+	"github.com/spf13/viper"
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -40,7 +42,7 @@ const (
 
 // Setup sets up the testnet configuration.
 func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
-	logger.Info("setup", "msg", log.NewLazySprintf("Generating testnet files in %q", testnet.Dir))
+	logger.Info("setup", "msg", log.NewLazySprintf("Generating testnet files in %#q", testnet.Dir))
 
 	if err := os.MkdirAll(testnet.Dir, os.ModePerm); err != nil {
 		return err
@@ -138,8 +140,15 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	genesis.ConsensusParams.Version.App = 1
 	genesis.ConsensusParams.Evidence.MaxAgeNumBlocks = e2e.EvidenceAgeHeight
 	genesis.ConsensusParams.Evidence.MaxAgeDuration = e2e.EvidenceAgeTime
+	genesis.ConsensusParams.Validator.PubKeyTypes = []string{testnet.KeyType}
+	if testnet.BlockMaxBytes != 0 {
+		genesis.ConsensusParams.Block.MaxBytes = testnet.BlockMaxBytes
+	}
 	if testnet.VoteExtensionsUpdateHeight == -1 {
-		genesis.ConsensusParams.ABCI.VoteExtensionsEnableHeight = testnet.VoteExtensionsEnableHeight
+		genesis.ConsensusParams.Feature.VoteExtensionsEnableHeight = testnet.VoteExtensionsEnableHeight
+	}
+	if testnet.PbtsUpdateHeight == -1 {
+		genesis.ConsensusParams.Feature.PbtsEnableHeight = testnet.PbtsEnableHeight
 	}
 	for validator, power := range testnet.Validators {
 		genesis.Validators = append(genesis.Validators, types.GenesisValidator{
@@ -161,6 +170,32 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 		}
 		genesis.AppState = appState
 	}
+
+	// Customized genesis fields provided in the manifest
+	if len(testnet.Genesis) > 0 {
+		v := viper.New()
+		v.SetConfigType("json")
+
+		for _, field := range testnet.Genesis {
+			key, value, err := e2e.ParseKeyValueField("genesis", field)
+			if err != nil {
+				return genesis, err
+			}
+			logger.Debug("Applying 'genesis' field", key, value)
+			v.Set(key, value)
+		}
+
+		// We use viper because it leaves untouched keys that are not set.
+		// The GenesisDoc does not use the original `mapstructure` tag.
+		err := v.Unmarshal(&genesis, func(d *mapstructure.DecoderConfig) {
+			d.TagName = "json"
+			d.ErrorUnused = true
+		})
+		if err != nil {
+			return genesis, fmt.Errorf("failed parsing 'genesis' field: %v", err)
+		}
+	}
+
 	return genesis, genesis.ValidateAndComplete()
 }
 
@@ -206,8 +241,11 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	case e2e.ProtocolGRPC:
 		cfg.ProxyApp = AppAddressTCP
 		cfg.ABCI = "grpc"
-	case e2e.ProtocolBuiltin, e2e.ProtocolBuiltinConnSync:
-		cfg.ProxyApp = ""
+	case e2e.ProtocolBuiltin:
+		cfg.ProxyApp = "e2e"
+		cfg.ABCI = ""
+	case e2e.ProtocolBuiltinConnSync:
+		cfg.ProxyApp = "e2e_connsync"
 		cfg.ABCI = ""
 	default:
 		return nil, fmt.Errorf("unexpected ABCI protocol setting %q", node.ABCIProtocol)
@@ -275,8 +313,55 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		cfg.P2P.PexReactor = false
 	}
 
+	if node.Testnet.LogLevel != "" {
+		cfg.LogLevel = node.Testnet.LogLevel
+	}
+
+	if node.Testnet.LogFormat != "" {
+		cfg.LogFormat = node.Testnet.LogFormat
+	}
+
 	if node.Prometheus {
 		cfg.Instrumentation.Prometheus = true
+	}
+
+	if node.ExperimentalKeyLayout != "" {
+		cfg.Storage.ExperimentalKeyLayout = node.ExperimentalKeyLayout
+	}
+
+	if node.Compact {
+		cfg.Storage.Compact = node.Compact
+	}
+
+	if node.DiscardABCIResponses {
+		cfg.Storage.DiscardABCIResponses = node.DiscardABCIResponses
+	}
+
+	if node.Indexer != "" {
+		cfg.TxIndex.Indexer = node.Indexer
+	}
+
+	if node.CompactionInterval != 0 && node.Compact {
+		cfg.Storage.CompactionInterval = node.CompactionInterval
+	}
+
+	// We currently need viper in order to parse config files.
+	if len(node.Config) > 0 {
+		v := viper.New()
+		for _, field := range node.Config {
+			key, value, err := e2e.ParseKeyValueField("config", field)
+			if err != nil {
+				return nil, err
+			}
+			logger.Debug("Applying 'config' field", "node", node.Name, key, value)
+			v.Set(key, value)
+		}
+		err := v.Unmarshal(cfg, func(d *mapstructure.DecoderConfig) {
+			d.ErrorUnused = true
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed parsing 'config' field of node %v: %v", node.Name, err)
+		}
 	}
 
 	return cfg, nil
@@ -284,7 +369,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 
 // MakeAppConfig generates an ABCI application config for a node.
 func MakeAppConfig(node *e2e.Node) ([]byte, error) {
-	cfg := map[string]interface{}{
+	cfg := map[string]any{
 		"chain_id":                       node.Testnet.Name,
 		"dir":                            "data/app",
 		"listen":                         AppAddressUNIX,
@@ -303,6 +388,8 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		"vote_extensions_enable_height":  node.Testnet.VoteExtensionsEnableHeight,
 		"vote_extensions_update_height":  node.Testnet.VoteExtensionsUpdateHeight,
 		"abci_requests_logging_enabled":  node.Testnet.ABCITestsEnabled,
+		"pbts_enable_height":             node.Testnet.PbtsEnableHeight,
+		"pbts_update_height":             node.Testnet.PbtsUpdateHeight,
 		"constant_val_consensus_changes": node.Testnet.ConstantValConsensusChanges,
 	}
 	switch node.ABCIProtocol {

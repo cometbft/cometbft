@@ -15,6 +15,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 )
@@ -78,9 +79,10 @@ func TestValidatorSetBasic(t *testing.T) {
 	assert.Equal(t, proposerPriority, val.ProposerPriority)
 }
 
-func TestValidatorSetValidateBasic(t *testing.T) {
+func TestValidatorSet_ValidateBasic(t *testing.T) {
 	val, _ := RandValidator(false, 1)
 	badVal := &Validator{}
+	val2, _ := RandValidator(false, 1)
 
 	testCases := []struct {
 		vals ValidatorSet
@@ -121,6 +123,14 @@ func TestValidatorSetValidateBasic(t *testing.T) {
 			err: false,
 			msg: "",
 		},
+		{
+			vals: ValidatorSet{
+				Validators: []*Validator{val},
+				Proposer:   val2,
+			},
+			err: true,
+			msg: ErrProposerNotInVals.Error(),
+		},
 	}
 
 	for _, tc := range testCases {
@@ -148,6 +158,30 @@ func TestCopy(t *testing.T) {
 	if !bytes.Equal(vsetHash, vsetCopyHash) {
 		t.Fatalf("ValidatorSet copy had wrong hash. Orig: %X, Copy: %X", vsetHash, vsetCopyHash)
 	}
+}
+
+func TestValidatorSet_ProposerPriorityHash(t *testing.T) {
+	vset := NewValidatorSet(nil)
+	assert.Equal(t, []byte(nil), vset.ProposerPriorityHash())
+
+	vset = randValidatorSet(3)
+	assert.NotNil(t, vset.ProposerPriorityHash())
+
+	// Marshaling and unmarshalling do not affect ProposerPriorityHash
+	bz, err := vset.ToProto()
+	assert.NoError(t, err)
+	vsetProto, err := ValidatorSetFromProto(bz)
+	assert.NoError(t, err)
+	assert.Equal(t, vset.ProposerPriorityHash(), vsetProto.ProposerPriorityHash())
+
+	// Copy does not affect ProposerPriorityHash
+	vsetCopy := vset.Copy()
+	assert.Equal(t, vset.ProposerPriorityHash(), vsetCopy.ProposerPriorityHash())
+
+	// Incrementing priorities changes ProposerPriorityHash() but not Hash()
+	vset.IncrementProposerPriority(1)
+	assert.Equal(t, vset.Hash(), vsetCopy.Hash())
+	assert.NotEqual(t, vset.ProposerPriorityHash(), vsetCopy.ProposerPriorityHash())
 }
 
 // Test that IncrementProposerPriority requires positive times.
@@ -182,7 +216,7 @@ func BenchmarkValidatorSetCopy(b *testing.B) {
 	}
 }
 
-//-------------------------------------------------------------------
+// -------------------------------------------------------------------
 
 func TestProposerSelection1(t *testing.T) {
 	vset := NewValidatorSet([]*Validator{
@@ -261,39 +295,39 @@ func TestProposerSelection2(t *testing.T) {
 	valList = []*Validator{val0, val1, val2}
 	propCount := make([]int, 3)
 	vals = NewValidatorSet(valList)
-	N := 1
-	for i := 0; i < 120*N; i++ {
+	n := 1
+	for i := 0; i < 120*n; i++ {
 		prop := vals.GetProposer()
 		ii := prop.Address[19]
 		propCount[ii]++
 		vals.IncrementProposerPriority(1)
 	}
 
-	if propCount[0] != 40*N {
+	if propCount[0] != 40*n {
 		t.Fatalf(
 			"Expected prop count for validator with 4/12 of voting power to be %d/%d. Got %d/%d",
-			40*N,
-			120*N,
+			40*n,
+			120*n,
 			propCount[0],
-			120*N,
+			120*n,
 		)
 	}
-	if propCount[1] != 50*N {
+	if propCount[1] != 50*n {
 		t.Fatalf(
 			"Expected prop count for validator with 5/12 of voting power to be %d/%d. Got %d/%d",
-			50*N,
-			120*N,
+			50*n,
+			120*n,
 			propCount[1],
-			120*N,
+			120*n,
 		)
 	}
-	if propCount[2] != 30*N {
+	if propCount[2] != 30*n {
 		t.Fatalf(
 			"Expected prop count for validator with 3/12 of voting power to be %d/%d. Got %d/%d",
-			30*N,
-			120*N,
+			30*n,
+			120*n,
 			propCount[2],
-			120*N,
+			120*n,
 		)
 	}
 }
@@ -330,7 +364,7 @@ func TestProposerSelection3(t *testing.T) {
 		got := vset.GetProposer().Address
 		expected := proposerOrder[j%4].Address
 		if !bytes.Equal(got, expected) {
-			t.Fatalf(fmt.Sprintf("vset.Proposer (%X) does not match expected proposer (%X) for (%d, %d)", got, expected, i, j))
+			t.Fatalf("vset.Proposer (%X) does not match expected proposer (%X) for (%d, %d)", got, expected, i, j)
 		}
 
 		// serialize, deserialize, check proposer
@@ -341,13 +375,11 @@ func TestProposerSelection3(t *testing.T) {
 		if i != 0 {
 			if !bytes.Equal(got, computed.Address) {
 				t.Fatalf(
-					fmt.Sprintf(
-						"vset.Proposer (%X) does not match computed proposer (%X) for (%d, %d)",
-						got,
-						computed.Address,
-						i,
-						j,
-					),
+					"vset.Proposer (%X) does not match computed proposer (%X) for (%d, %d)",
+					got,
+					computed.Address,
+					i,
+					j,
 				)
 			}
 		}
@@ -407,7 +439,7 @@ func (vals *ValidatorSet) toBytes() []byte {
 	return bz
 }
 
-func (vals *ValidatorSet) fromBytes(b []byte) *ValidatorSet {
+func (*ValidatorSet) fromBytes(b []byte) *ValidatorSet {
 	pbvs := new(cmtproto.ValidatorSet)
 	err := pbvs.Unmarshal(b)
 	if err != nil {
@@ -423,7 +455,7 @@ func (vals *ValidatorSet) fromBytes(b []byte) *ValidatorSet {
 	return vs
 }
 
-//-------------------------------------------------------------------
+// -------------------------------------------------------------------
 
 func TestValidatorSetTotalVotingPowerPanicsOnOverflow(t *testing.T) {
 	// NewValidatorSet calls IncrementProposerPriority which calls TotalVotingPower()
@@ -699,7 +731,7 @@ func TestSafeSubClip(t *testing.T) {
 	assert.EqualValues(t, math.MaxInt64, safeSubClip(math.MaxInt64, -10))
 }
 
-//-------------------------------------------------------------------
+// -------------------------------------------------------------------
 
 func TestEmptySet(t *testing.T) {
 	var valList []*Validator
@@ -1427,7 +1459,6 @@ func TestValSetUpdateOverflowRelated(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			valSet := createNewValidatorSet(tt.startVals)
 			verifyValidatorSet(t, valSet)
@@ -1532,7 +1563,7 @@ func (valz validatorsByPriority) Swap(i, j int) {
 	valz[i], valz[j] = valz[j], valz[i]
 }
 
-//-------------------------------------
+// -------------------------------------
 
 type testValsByVotingPower []testVal
 
@@ -1613,4 +1644,132 @@ func TestVerifyCommitSingleWithInvalidSignatures(t *testing.T) {
 
 	err := verifyCommitSingle(cid, vs, commit, votingPowerNeeded, ignore, count, true, true)
 	require.Error(t, err)
+}
+
+func TestValidatorSet_AllKeysHaveSameType(t *testing.T) {
+	testCases := []struct {
+		vals     *ValidatorSet
+		sameType bool
+	}{
+		{
+			vals:     NewValidatorSet([]*Validator{}),
+			sameType: true,
+		},
+		{
+			vals:     randValidatorSet(1),
+			sameType: true,
+		},
+		{
+			vals:     randValidatorSet(2),
+			sameType: true,
+		},
+		{
+			vals:     NewValidatorSet([]*Validator{randValidator(100), NewValidator(secp256k1.GenPrivKey().PubKey(), 200)}),
+			sameType: false,
+		},
+	}
+
+	for i, tc := range testCases {
+		if tc.sameType {
+			assert.True(t, tc.vals.AllKeysHaveSameType(), "test %d", i)
+		} else {
+			assert.False(t, tc.vals.AllKeysHaveSameType(), "test %d", i)
+		}
+	}
+}
+
+func TestValidatorSet_BlockingChain(t *testing.T) {
+	testCases := []struct {
+		tcName       string
+		vals         []testVal
+		blockingVals []string
+	}{
+		{
+			"1 validator",
+			[]testVal{{"v1", 1}},
+			[]string{"v1"},
+		},
+		{
+			"2 validators",
+			[]testVal{{"v1", 1}, {"v2", 1}},
+			[]string{"v1", "v2"},
+		},
+		{
+			"3 validators",
+			[]testVal{{"v1", 1}, {"v2", 1}, {"v3", 1}},
+			[]string{"v1", "v2", "v3"},
+		},
+		{
+			"4 validators",
+			[]testVal{{"v1", 1}, {"v2", 1}, {"v3", 1}, {"v4", 1}},
+			nil,
+		},
+		{
+			"many validators",
+			[]testVal{
+				{"v01", 1},
+				{"v02", 1},
+				{"v03", 1},
+				{"v04", 1},
+				{"v05", 1},
+				{"v06", 1},
+				{"v07", 1},
+				{"v08", 1},
+				{"v09", 1},
+				{"v10", 1},
+				{"v11", 1},
+				{"v12", 1},
+				{"v13", 1},
+				{"v14", 1},
+				{"v15", 1},
+			},
+			nil,
+		},
+		{
+			"2 validators, only 1 blocking",
+			[]testVal{{"v1", 1}, {"v2", 3}},
+			[]string{"v2"},
+		},
+		{
+			"2 validators, only 1 blocking, high power, borderline 1 - v1 blocking",
+			[]testVal{{"v1", 3333}, {"v2", 6666}},
+			[]string{"v1", "v2"},
+		},
+		{
+			"2 validators, only 1 blocking, high power, borderline 2  - v1 non-blocking",
+			[]testVal{{"v1", 3332}, {"v2", 6666}},
+			[]string{"v2"},
+		},
+		{
+			"2 validators, only 1 blocking, high power, borderline 3  - v1 non-blocking",
+			[]testVal{{"v1", 3332}, {"v2", 6665}},
+			[]string{"v2"},
+		},
+		{
+			"2 validators, only 1 blocking, high power, borderline 3  - v1 blocking",
+			[]testVal{{"v1", 3332}, {"v2", 6664}},
+			[]string{"v1", "v2"},
+		},
+		{
+			"2 validators, only 1 blocking, high power, borderline 4  - v1 blocking",
+			[]testVal{{"v1", 3332}, {"v2", 6663}},
+			[]string{"v1", "v2"},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.tcName, func(t *testing.T) {
+			valSet := createNewValidatorSet(tt.vals)
+			valsMap := make(map[string]struct{}, len(tt.blockingVals))
+			for _, addr := range tt.blockingVals {
+				_, ok := valsMap[addr]
+				require.False(t, ok)
+				valsMap[addr] = struct{}{}
+			}
+			for _, val := range tt.vals {
+				_, blocking := valsMap[val.name]
+				require.Equal(t, blocking, valSet.ValidatorBlocksTheChain([]byte(val.name)), "validator %s", val.name)
+			}
+		})
+	}
 }

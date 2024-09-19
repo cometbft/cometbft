@@ -7,7 +7,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	clist "github.com/cometbft/cometbft/internal/clist"
+	"github.com/cometbft/cometbft/internal/clist"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
@@ -51,7 +51,7 @@ func (evR *Reactor) SetLogger(l log.Logger) {
 
 // GetChannels implements Reactor.
 // It returns the list of channels for this reactor.
-func (evR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
+func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
 	return []*p2p.ChannelDescriptor{
 		{
 			ID:                  EvidenceChannel,
@@ -64,7 +64,9 @@ func (evR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 
 // AddPeer implements Reactor.
 func (evR *Reactor) AddPeer(peer p2p.Peer) {
-	go evR.broadcastEvidenceRoutine(peer)
+	if peer.HasChannel(EvidenceChannel) {
+		go evR.broadcastEvidenceRoutine(peer)
+	}
 }
 
 // Receive implements Reactor.
@@ -213,7 +215,7 @@ type PeerState interface {
 	GetHeight() int64
 }
 
-// encodemsg takes a array of evidence
+// evidenceListToProto takes an array of evidence
 // returns the byte encoding of the List Message.
 func evidenceListToProto(evis []types.Evidence) (*cmtproto.EvidenceList, error) {
 	evi := make([]cmtproto.Evidence, len(evis))

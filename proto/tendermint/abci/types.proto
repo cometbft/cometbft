@@ -34,7 +34,7 @@ service ABCI {
   rpc FinalizeBlock(RequestFinalizeBlock) returns (ResponseFinalizeBlock);
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Request types
 
 message Request {
@@ -191,7 +191,7 @@ message RequestFinalizeBlock {
   bytes proposer_address = 8;
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Response types
 
 message Response {
@@ -363,7 +363,7 @@ message ResponseFinalizeBlock {
   bytes app_hash = 5;
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Misc.
 
 message CommitInfo {
@@ -425,7 +425,7 @@ message TxResult {
   ExecTxResult result = 4 [(gogoproto.nullable) = false];
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Blockchain Types
 
 message Validator {
@@ -480,7 +480,7 @@ message Misbehavior {
   int64 total_voting_power = 5;
 }
 
-//----------------------------------------
+// ----------------------------------------
 // State Sync Types
 
 message Snapshot {

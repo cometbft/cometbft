@@ -12,6 +12,19 @@ This iteration of the QA was run on CometBFT `v0.37.0-alpha3`, the first `v0.37.
 
 The changes with respect to the baseline, `TM v0.37.x` as of Oct 12, 2022 (Commit: 1cf9d8e276afe8595cba960b51cd056514965fd1), include the rebranding of our fork of Tendermint Core to CometBFT and several improvements, described in the CometBFT [CHANGELOG](https://github.com/cometbft/cometbft/blob/v0.37.0-alpha.3/CHANGELOG.md).
 
+## Table of Contents
+- [Testbed](#testbed)
+  - [Saturation point](#saturation-point)
+- [Examining latencies](#examining-latencies)
+- [Prometheus Metrics on the Chosen Experiment](#prometheus-metrics-on-the-chosen-experiment)
+  - [Mempool Size](#mempool-size)
+  - [Peers](#peers)
+  - [Consensus Rounds per Height](#consensus-rounds-per-height)
+  - [Blocks Produced per Minute, Transactions Processed per Minute](#blocks-produced-per-minute-transactions-processed-per-minute)
+  - [Memory Resident Set Size](#memory-resident-set-size)
+    - [CPU utilization](#cpu-utilization)
+- [Test Results](#test-results)
+
 ## Testbed
 
 As in other iterations of our QA process, we have used a 200-node network as testbed, plus nodes to introduce load and collect metrics.

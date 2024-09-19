@@ -3,9 +3,11 @@ package server
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -17,7 +19,9 @@ import (
 	"golang.org/x/net/netutil"
 
 	"github.com/cometbft/cometbft/libs/log"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	grpcerr "github.com/cometbft/cometbft/rpc/grpc/errors"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 // Config is a RPC server configuration.
@@ -33,16 +37,19 @@ type Config struct {
 	MaxBodyBytes int64
 	// mirrors http.Server#MaxHeaderBytes
 	MaxHeaderBytes int
+	// maximum number of requests in a batch request
+	MaxRequestBatchSize int
 }
 
 // DefaultConfig returns a default configuration.
 func DefaultConfig() *Config {
 	return &Config{
-		MaxOpenConnections: 0, // unlimited
-		ReadTimeout:        10 * time.Second,
-		WriteTimeout:       10 * time.Second,
-		MaxBodyBytes:       int64(1000000), // 1MB
-		MaxHeaderBytes:     1 << 20,        // same as the net/http default
+		MaxOpenConnections:  0, // unlimited
+		ReadTimeout:         10 * time.Second,
+		WriteTimeout:        10 * time.Second,
+		MaxBodyBytes:        int64(1000000), // 1MB
+		MaxHeaderBytes:      1 << 20,        // same as the net/http default
+		MaxRequestBatchSize: 10,             // default to max 10 requests per batch
 	}
 }
 
@@ -54,7 +61,7 @@ func DefaultConfig() *Config {
 func Serve(listener net.Listener, handler http.Handler, logger log.Logger, config *Config) error {
 	logger.Info("serve", "msg", log.NewLazySprintf("Starting RPC HTTP server on %s", listener.Addr()))
 	s := &http.Server{
-		Handler:           RecoverAndLogHandler(maxBytesHandler{h: handler, n: config.MaxBodyBytes}, logger),
+		Handler:           PreChecksHandler(RecoverAndLogHandler(defaultHandler{h: handler}, logger), config),
 		ReadTimeout:       config.ReadTimeout,
 		ReadHeaderTimeout: config.ReadTimeout,
 		WriteTimeout:      config.WriteTimeout,
@@ -65,7 +72,7 @@ func Serve(listener net.Listener, handler http.Handler, logger log.Logger, confi
 	return err
 }
 
-// Serve creates a http.Server and calls ServeTLS with the given listener,
+// ServeTLS creates a http.Server and calls ServeTLS with the given listener,
 // certFile and keyFile. It wraps handler with RecoverAndLogHandler and a
 // handler, which limits the max body size to config.MaxBodyBytes.
 //
@@ -80,7 +87,7 @@ func ServeTLS(
 	logger.Info("serve tls", "msg", log.NewLazySprintf("Starting RPC HTTPS server on %s (cert: %q, key: %q)",
 		listener.Addr(), certFile, keyFile))
 	s := &http.Server{
-		Handler:           RecoverAndLogHandler(maxBytesHandler{h: handler, n: config.MaxBodyBytes}, logger),
+		Handler:           PreChecksHandler(RecoverAndLogHandler(defaultHandler{h: handler}, logger), config),
 		ReadTimeout:       config.ReadTimeout,
 		ReadHeaderTimeout: config.ReadTimeout,
 		WriteTimeout:      config.WriteTimeout,
@@ -107,7 +114,7 @@ func WriteRPCResponseHTTPError(
 
 	jsonBytes, err := json.Marshal(res)
 	if err != nil {
-		return fmt.Errorf("json marshal: %w", err)
+		return ErrMarshalResponse{Source: err}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -122,7 +129,7 @@ func WriteRPCResponseHTTP(w http.ResponseWriter, res ...types.RPCResponse) error
 }
 
 // WriteCacheableRPCResponseHTTP marshals res as JSON (with indent) and writes
-// it to w. Adds cache-control to the response header and sets the expiry to
+// it to w. Adds Cache-Control to the response header and sets the expiry to
 // one day.
 func WriteCacheableRPCResponseHTTP(w http.ResponseWriter, res ...types.RPCResponse) error {
 	return writeRPCResponseHTTP(w, []httpHeader{{"Cache-Control", "public, max-age=86400"}}, res...)
@@ -134,7 +141,7 @@ type httpHeader struct {
 }
 
 func writeRPCResponseHTTP(w http.ResponseWriter, headers []httpHeader, res ...types.RPCResponse) error {
-	var v interface{}
+	var v any
 	if len(res) == 1 {
 		v = res[0]
 	} else {
@@ -143,7 +150,7 @@ func writeRPCResponseHTTP(w http.ResponseWriter, headers []httpHeader, res ...ty
 
 	jsonBytes, err := json.Marshal(v)
 	if err != nil {
-		return fmt.Errorf("json marshal: %w", err)
+		return ErrMarshalResponse{Source: err}
 	}
 	w.Header().Set("Content-Type", "application/json")
 	for _, header := range headers {
@@ -154,7 +161,7 @@ func writeRPCResponseHTTP(w http.ResponseWriter, headers []httpHeader, res ...ty
 	return err
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // RecoverAndLogHandler wraps an HTTP handler, adding error logging.
 // If the inner function panics, the outer function recovers, logs, sends an
@@ -163,7 +170,7 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Wrap the ResponseWriter to remember the status
 		rww := &responseWriterWrapper{-1, w}
-		begin := time.Now()
+		begin := cmttime.Now()
 
 		rww.Header().Set("X-Server-Time", strconv.FormatInt(begin.Unix(), 10))
 
@@ -214,7 +221,7 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 			}
 
 			// Finally, log.
-			durationMS := time.Since(begin).Nanoseconds() / 1000000
+			durationMS := cmttime.Since(begin).Nanoseconds() / 1000000
 			if rww.Status == -1 {
 				rww.Status = 200
 			}
@@ -247,13 +254,11 @@ func (w *responseWriterWrapper) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return w.ResponseWriter.(http.Hijacker).Hijack()
 }
 
-type maxBytesHandler struct {
+type defaultHandler struct {
 	h http.Handler
-	n int64
 }
 
-func (h maxBytesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, h.n)
+func (h defaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.h.ServeHTTP(w, r)
 }
 
@@ -262,19 +267,63 @@ func (h maxBytesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func Listen(addr string, maxOpenConnections int) (listener net.Listener, err error) {
 	parts := strings.SplitN(addr, "://", 2)
 	if len(parts) != 2 {
-		return nil, fmt.Errorf(
-			"invalid listening address %s (use fully formed addresses, including the tcp:// or unix:// prefix)",
-			addr,
-		)
+		return nil, grpcerr.ErrInvalidRemoteAddress{Addr: addr}
 	}
 	proto, addr := parts[0], parts[1]
 	listener, err = net.Listen(proto, addr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to listen on %v: %v", addr, err)
+		return nil, ErrListening{Addr: addr, Source: err}
 	}
 	if maxOpenConnections > 0 {
 		listener = netutil.LimitListener(listener, maxOpenConnections)
 	}
 
 	return listener, nil
+}
+
+// Middleware
+
+// PreChecksHandler is a middleware function that checks the size of batch requests and returns an error
+// if it exceeds the maximum configured size. It also checks if the request body is not greater than the
+// configured maximum request body bytes limit.
+func PreChecksHandler(next http.Handler, config *Config) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// ensure that the current request body bytes is not greater than the configured maximum request body bytes
+		r.Body = http.MaxBytesReader(w, r.Body, config.MaxBodyBytes)
+
+		// if maxBatchSize is 0 then don't constraint the limit of requests per batch
+		// It cannot be negative because the config.toml validation requires it to be
+		// greater than or equal to 0
+		if config.MaxRequestBatchSize > 0 {
+			var requests []types.RPCRequest
+			var responses []types.RPCResponse
+			var err error
+
+			data, err := io.ReadAll(r.Body)
+			if err != nil {
+				res := types.RPCInvalidRequestError(nil, fmt.Errorf("error reading request body: %w", err))
+				_ = WriteRPCResponseHTTPError(w, http.StatusBadRequest, res)
+				return
+			}
+
+			err = json.Unmarshal(data, &requests)
+			// if no err it means multiple requests, check if the number of request exceeds
+			// the maximum batch size configured
+			if err == nil {
+				// if the number of requests in batch exceed the maximum configured then return an error
+				if len(requests) > config.MaxRequestBatchSize {
+					res := types.RPCInvalidRequestError(nil, fmt.Errorf("batch request exceeds maximum (%d) allowed number of requests", config.MaxRequestBatchSize))
+					responses = append(responses, res)
+					_ = WriteRPCResponseHTTP(w, responses...)
+					return
+				}
+			}
+
+			// ensure the request body can be read again by other handlers
+			r.Body = io.NopCloser(bytes.NewBuffer(data))
+		}
+
+		// next handler
+		next.ServeHTTP(w, r)
+	})
 }

@@ -9,15 +9,17 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/cometbft/cometbft/internal/cmap"
-	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
 	cmtconn "github.com/cometbft/cometbft/p2p/conn"
 	"github.com/cometbft/cometbft/types"
 )
 
 //go:generate ../scripts/mockery_generate.sh Peer
 
-const metricsTickerDuration = 10 * time.Second
+// Same as the default Prometheus scrape interval in order to not lose
+// granularity.
+const metricsTickerDuration = 1 * time.Second
 
 // Peer is an interface representing a peer connected on a reactor.
 type Peer interface {
@@ -37,23 +39,24 @@ type Peer interface {
 	Status() cmtconn.ConnectionStatus
 	SocketAddr() *NetAddress // actual address of the socket
 
-	Send(e Envelope) bool
-	TrySend(e Envelope) bool
+	HasChannel(chID byte) bool // Does the peer implement this channel?
+	Send(e Envelope) bool      // Send a message to the peer, blocking version
+	TrySend(e Envelope) bool   // Send a message to the peer, non-blocking version
 
-	Set(key string, value interface{})
-	Get(key string) interface{}
+	Set(key string, value any)
+	Get(key string) any
 
 	SetRemovalFailed()
 	GetRemovalFailed() bool
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 // peerConn contains the raw connection and its config.
 type peerConn struct {
 	outbound   bool
 	persistent bool
-	conn       net.Conn // source connection
+	conn       net.Conn // Source connection
 
 	socketAddr *NetAddress
 
@@ -113,16 +116,15 @@ type peer struct {
 
 	// peer's node info and the channel it knows about
 	// channels = nodeInfo.Channels
-	// cached to avoid copying nodeInfo in hasChannel
+	// cached to avoid copying nodeInfo in HasChannel
 	nodeInfo NodeInfo
 	channels []byte
 
 	// User data
 	Data *cmap.CMap
 
-	metrics       *Metrics
-	metricsTicker *time.Ticker
-	mlc           *metricsLabelCache
+	metrics        *Metrics
+	pendingMetrics *peerPendingMetricsCache
 
 	// When removal of a peer fails, we set this flag
 	removalAttemptFailed bool
@@ -137,18 +139,16 @@ func newPeer(
 	reactorsByCh map[byte]Reactor,
 	msgTypeByChID map[byte]proto.Message,
 	chDescs []*cmtconn.ChannelDescriptor,
-	onPeerError func(Peer, interface{}),
-	mlc *metricsLabelCache,
+	onPeerError func(Peer, any),
 	options ...PeerOption,
 ) *peer {
 	p := &peer{
-		peerConn:      pc,
-		nodeInfo:      nodeInfo,
-		channels:      nodeInfo.(DefaultNodeInfo).Channels,
-		Data:          cmap.NewCMap(),
-		metricsTicker: time.NewTicker(metricsTickerDuration),
-		metrics:       NopMetrics(),
-		mlc:           mlc,
+		peerConn:       pc,
+		nodeInfo:       nodeInfo,
+		channels:       nodeInfo.(DefaultNodeInfo).Channels,
+		Data:           cmap.NewCMap(),
+		metrics:        NopMetrics(),
+		pendingMetrics: newPeerPendingMetricsCache(),
 	}
 
 	p.mconn = createMConnection(
@@ -177,7 +177,7 @@ func (p *peer) String() string {
 	return fmt.Sprintf("Peer{%v %v in}", p.mconn, p.ID())
 }
 
-//---------------------------------------------------
+// ---------------------------------------------------
 // Implements service.Service
 
 // SetLogger implements BaseService.
@@ -202,23 +202,20 @@ func (p *peer) OnStart() error {
 
 // FlushStop mimics OnStop but additionally ensures that all successful
 // .Send() calls will get flushed before closing the connection.
+//
 // NOTE: it is not safe to call this method more than once.
 func (p *peer) FlushStop() {
-	p.metricsTicker.Stop()
-	p.BaseService.OnStop()
 	p.mconn.FlushStop() // stop everything and close the conn
 }
 
 // OnStop implements BaseService.
 func (p *peer) OnStop() {
-	p.metricsTicker.Stop()
-	p.BaseService.OnStop()
 	if err := p.mconn.Stop(); err != nil { // stop everything and close the conn
 		p.Logger.Debug("Error while stopping peer", "err", err)
 	}
 }
 
-//---------------------------------------------------
+// ---------------------------------------------------
 // Implements Peer
 
 // ID returns the peer's ID - the hex encoded hash of its pubkey.
@@ -256,12 +253,16 @@ func (p *peer) Status() cmtconn.ConnectionStatus {
 
 // Send msg bytes to the channel identified by chID byte. Returns false if the
 // send queue is full after timeout, specified by MConnection.
+//
+// thread safe.
 func (p *peer) Send(e Envelope) bool {
 	return p.send(e.ChannelID, e.Message, p.mconn.Send)
 }
 
 // TrySend msg bytes to the channel identified by chID byte. Immediately returns
 // false if the send queue is full.
+//
+// thread safe.
 func (p *peer) TrySend(e Envelope) bool {
 	return p.send(e.ChannelID, e.Message, p.mconn.TrySend)
 }
@@ -269,10 +270,10 @@ func (p *peer) TrySend(e Envelope) bool {
 func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bool) bool {
 	if !p.IsRunning() {
 		return false
-	} else if !p.hasChannel(chID) {
+	} else if !p.HasChannel(chID) {
 		return false
 	}
-	metricLabelValue := p.mlc.ValueToMetricLabel(msg)
+	msgType := getMsgType(msg)
 	if w, ok := msg.(types.Wrapper); ok {
 		msg = w.Wrap()
 	}
@@ -283,43 +284,32 @@ func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bo
 	}
 	res := sendFunc(chID, msgBytes)
 	if res {
-		labels := []string{
-			"peer_id", string(p.ID()),
-			"chID", fmt.Sprintf("%#x", chID),
-		}
-		p.metrics.PeerSendBytesTotal.With(labels...).Add(float64(len(msgBytes)))
-		p.metrics.MessageSendBytesTotal.With("message_type", metricLabelValue).Add(float64(len(msgBytes)))
+		p.pendingMetrics.AddPendingSendBytes(msgType, len(msgBytes))
 	}
 	return res
 }
 
 // Get the data for a given key.
-func (p *peer) Get(key string) interface{} {
+//
+// thread safe.
+func (p *peer) Get(key string) any {
 	return p.Data.Get(key)
 }
 
 // Set sets the data for the given key.
-func (p *peer) Set(key string, data interface{}) {
+//
+// thread safe.
+func (p *peer) Set(key string, data any) {
 	p.Data.Set(key, data)
 }
 
-// hasChannel returns true if the peer reported
-// knowing about the given chID.
-func (p *peer) hasChannel(chID byte) bool {
+// HasChannel returns whether the peer reported implementing this channel.
+func (p *peer) HasChannel(chID byte) bool {
 	for _, ch := range p.channels {
 		if ch == chID {
 			return true
 		}
 	}
-	// NOTE: probably will want to remove this
-	// but could be helpful while the feature is new
-	p.Logger.Debug(
-		"Unknown channel for peer",
-		"channel",
-		chID,
-		"channels",
-		p.channels,
-	)
 	return false
 }
 
@@ -336,7 +326,7 @@ func (p *peer) GetRemovalFailed() bool {
 	return p.removalAttemptFailed
 }
 
-//---------------------------------------------------
+// ---------------------------------------------------
 // methods only used for testing
 // TODO: can we remove these?
 
@@ -358,7 +348,7 @@ func (p *peer) CanSend(chID byte) bool {
 	return p.mconn.CanSend(chID)
 }
 
-//---------------------------------------------------
+// ---------------------------------------------------
 
 func PeerMetrics(metrics *Metrics) PeerOption {
 	return func(p *peer) {
@@ -367,23 +357,51 @@ func PeerMetrics(metrics *Metrics) PeerOption {
 }
 
 func (p *peer) metricsReporter() {
+	metricsTicker := time.NewTicker(metricsTickerDuration)
+	defer metricsTicker.Stop()
+
 	for {
 		select {
-		case <-p.metricsTicker.C:
+		case <-metricsTicker.C:
 			status := p.mconn.Status()
 			var sendQueueSize float64
 			for _, chStatus := range status.Channels {
 				sendQueueSize += float64(chStatus.SendQueueSize)
 			}
 
+			p.metrics.RecvRateLimiterDelay.With("peer_id", string(p.ID())).
+				Add(status.RecvMonitor.SleepTime.Seconds())
+			p.metrics.SendRateLimiterDelay.With("peer_id", string(p.ID())).
+				Add(status.SendMonitor.SleepTime.Seconds())
+
 			p.metrics.PeerPendingSendBytes.With("peer_id", string(p.ID())).Set(sendQueueSize)
+			// Report per peer, per message total bytes, since the last interval
+			func() {
+				p.pendingMetrics.mtx.Lock()
+				defer p.pendingMetrics.mtx.Unlock()
+				for _, entry := range p.pendingMetrics.perMessageCache {
+					if entry.pendingSendBytes > 0 {
+						p.metrics.MessageSendBytesTotal.
+							With("message_type", entry.label).
+							Add(float64(entry.pendingSendBytes))
+						entry.pendingSendBytes = 0
+					}
+					if entry.pendingRecvBytes > 0 {
+						p.metrics.MessageReceiveBytesTotal.
+							With("message_type", entry.label).
+							Add(float64(entry.pendingRecvBytes))
+						entry.pendingRecvBytes = 0
+					}
+				}
+			}()
+
 		case <-p.Quit():
 			return
 		}
 	}
 }
 
-//------------------------------------------------------------------
+// ------------------------------------------------------------------
 // helper funcs
 
 func createMConnection(
@@ -392,7 +410,7 @@ func createMConnection(
 	reactorsByCh map[byte]Reactor,
 	msgTypeByChID map[byte]proto.Message,
 	chDescs []*cmtconn.ChannelDescriptor,
-	onPeerError func(Peer, interface{}),
+	onPeerError func(Peer, any),
 	config cmtconn.MConnConfig,
 ) *cmtconn.MConnection {
 	onReceive := func(chID byte, msgBytes []byte) {
@@ -408,18 +426,13 @@ func createMConnection(
 		if err != nil {
 			panic(fmt.Sprintf("unmarshaling message: %v into type: %s", err, reflect.TypeOf(mt)))
 		}
-		labels := []string{
-			"peer_id", string(p.ID()),
-			"chID", fmt.Sprintf("%#x", chID),
-		}
 		if w, ok := msg.(types.Unwrapper); ok {
 			msg, err = w.Unwrap()
 			if err != nil {
 				panic(fmt.Sprintf("unwrapping message: %v", err))
 			}
 		}
-		p.metrics.PeerReceiveBytesTotal.With(labels...).Add(float64(len(msgBytes)))
-		p.metrics.MessageReceiveBytesTotal.With("message_type", p.mlc.ValueToMetricLabel(msg)).Add(float64(len(msgBytes)))
+		p.pendingMetrics.AddPendingRecvBytes(getMsgType(msg), len(msgBytes))
 		reactor.Receive(Envelope{
 			ChannelID: chID,
 			Src:       p,
@@ -427,7 +440,7 @@ func createMConnection(
 		})
 	}
 
-	onError := func(r interface{}) {
+	onError := func(r any) {
 		onPeerError(p, r)
 	}
 

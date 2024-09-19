@@ -68,8 +68,8 @@ ifeq (linux/riscv64,$(findstring linux/riscv64,$(TARGETPLATFORM)))
 	GOARCH=riscv64
 endif
 
-#? all: Run target check, build, test and install
-all: check build test install
+#? all: Run target build, test and install
+all: build test install
 .PHONY: all
 
 include tests.mk
@@ -85,7 +85,7 @@ build:
 
 #? install: Install CometBFT to GOBIN
 install:
-	CGO_ENABLED=$(CGO_ENABLED) go install $(BUILD_FLAGS) -tags $(BUILD_TAGS) ./cmd/cometbft
+	CGO_ENABLED=$(CGO_ENABLED) go install $(BUILD_FLAGS) -tags '$(BUILD_TAGS)' ./cmd/cometbft
 .PHONY: install
 
 ###############################################################################
@@ -120,8 +120,8 @@ mockery:
 
 #? check-proto-deps: Check protobuf deps
 check-proto-deps:
-ifeq (,$(shell which protoc-gen-gogofaster))
-	@go install github.com/cosmos/gogoproto/protoc-gen-gogofaster@latest
+ifeq (,$(shell which protoc-gen-gocosmos))
+	@go install github.com/cosmos/gogoproto/protoc-gen-gocosmos@latest
 endif
 .PHONY: check-proto-deps
 
@@ -202,6 +202,7 @@ go.sum: go.mod
 	@echo "--> Ensure dependencies have not been modified"
 	@go mod verify
 	@go mod tidy
+.PHONY: go.sum
 
 #? draw_deps: Generate deps graph
 draw_deps:
@@ -301,21 +302,21 @@ build-docker-localnode:
 #? localnet-start: Run a 4-node testnet locally
 localnet-start: localnet-stop build-docker-localnode
 	@if ! [ -f build/node0/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/cometbft:Z cometbft/localnode testnet --config /etc/cometbft/config-template.toml --o . --starting-ip-address 192.167.10.2; fi
-	docker-compose up -d
+	docker compose up -d
 .PHONY: localnet-start
 
 #? localnet-stop: Stop testnet
 localnet-stop:
-	docker-compose down
+	docker compose down
 .PHONY: localnet-stop
 
 #? monitoring-start: Start Prometheus and Grafana servers for localnet monitoring
 monitoring-start:
-	cd test/monitoring && docker-compose up -d
+	cd test/monitoring && docker compose up -d
 
 #? monitoring-stop: Stop the Prometheus and Grafana servers
 monitoring-stop:
-	cd test/monitoring && docker-compose down
+	cd test/monitoring && docker compose down
 
 #? build-contract-tests-hooks: Build hooks for dredd, to skip or add information on some steps
 build-contract-tests-hooks:
@@ -335,27 +336,8 @@ contract-tests:
 	dredd
 .PHONY: contract-tests
 
-# Implements test splitting and running. This is pulled directly from
-# the github action workflows for better local reproducibility.
-
-GO_TEST_FILES != find $(CURDIR) -name "*_test.go"
-
-# default to four splits by default
-NUM_SPLIT ?= 4
-
 $(BUILDDIR):
 	mkdir -p $@
-
-# The format statement filters out all packages that don't have tests.
-# Note we need to check for both in-package tests (.TestGoFiles) and
-# out-of-package tests (.XTestGoFiles).
-$(BUILDDIR)/packages.txt:$(GO_TEST_FILES) $(BUILDDIR)
-	go list -f "{{ if (or .TestGoFiles .XTestGoFiles) }}{{ .ImportPath }}{{ end }}" ./... | sort > $@
-
-split-test-packages:$(BUILDDIR)/packages.txt
-	split -d -n l/$(NUM_SPLIT) $< $<.
-test-group-%:split-test-packages
-	cat $(BUILDDIR)/packages.txt.$* | xargs go test -mod=readonly -timeout=15m -race -coverprofile=$(BUILDDIR)/$*.profile.out
 
 #? help: Get more info on make commands.
 help: Makefile

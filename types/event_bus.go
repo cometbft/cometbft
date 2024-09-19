@@ -6,9 +6,9 @@ import (
 	"strconv"
 
 	"github.com/cometbft/cometbft/abci/types"
-	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
-	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	"github.com/cometbft/cometbft/libs/service"
 )
 
 const defaultCapacity = 0
@@ -110,21 +110,19 @@ func (b *EventBus) Publish(eventType string, eventData TMEventData) error {
 // map of stringified events where each key is composed of the event
 // type and each of the event's attributes keys in the form of
 // "{event.Type}.{attribute.Key}" and the value is each attribute's value.
-func (b *EventBus) validateAndStringifyEvents(events []types.Event, logger log.Logger) map[string][]string {
+func (*EventBus) validateAndStringifyEvents(events []types.Event) map[string][]string {
 	result := make(map[string][]string)
 	for _, event := range events {
 		if len(event.Type) == 0 {
-			logger.Debug("Got an event with an empty type (skipping)", "event", event)
 			continue
 		}
-
+		prefix := event.Type + "."
 		for _, attr := range event.Attributes {
 			if len(attr.Key) == 0 {
-				logger.Debug("Got an event attribute with an empty key(skipping)", "event", event)
 				continue
 			}
 
-			compositeTag := fmt.Sprintf("%s.%s", event.Type, attr.Key)
+			compositeTag := prefix + attr.Key
 			result[compositeTag] = append(result[compositeTag], attr.Value)
 		}
 	}
@@ -135,8 +133,7 @@ func (b *EventBus) validateAndStringifyEvents(events []types.Event, logger log.L
 func (b *EventBus) PublishEventNewBlock(data EventDataNewBlock) error {
 	// no explicit deadline for publishing events
 	ctx := context.Background()
-
-	events := b.validateAndStringifyEvents(data.ResultFinalizeBlock.Events, b.Logger.With("height", data.Block.Height))
+	events := b.validateAndStringifyEvents(data.ResultFinalizeBlock.Events)
 
 	// add predefined new block event
 	events[EventTypeKey] = append(events[EventTypeKey], EventNewBlock)
@@ -148,7 +145,7 @@ func (b *EventBus) PublishEventNewBlockEvents(data EventDataNewBlockEvents) erro
 	// no explicit deadline for publishing events
 	ctx := context.Background()
 
-	events := b.validateAndStringifyEvents(data.Events, b.Logger.With("height", data.Height))
+	events := b.validateAndStringifyEvents(data.Events)
 
 	// add predefined new block event
 	events[EventTypeKey] = append(events[EventTypeKey], EventNewBlockEvents)
@@ -172,6 +169,15 @@ func (b *EventBus) PublishEventValidBlock(data EventDataRoundState) error {
 	return b.Publish(EventValidBlock, data)
 }
 
+func (b *EventBus) PublishEventPendingTx(data EventDataPendingTx) error {
+	// no explicit deadline for publishing events
+	ctx := context.Background()
+	return b.pubsub.PublishWithEvents(ctx, data, map[string][]string{
+		EventTypeKey: {EventPendingTx},
+		TxHashKey:    {fmt.Sprintf("%X", Tx(data.Tx).Hash())},
+	})
+}
+
 // PublishEventTx publishes tx event with events from Result. Note it will add
 // predefined keys (EventTypeKey, TxHashKey). Existing events with the same keys
 // will be overwritten.
@@ -179,7 +185,7 @@ func (b *EventBus) PublishEventTx(data EventDataTx) error {
 	// no explicit deadline for publishing events
 	ctx := context.Background()
 
-	events := b.validateAndStringifyEvents(data.Result.Events, b.Logger.With("tx", data.Tx))
+	events := b.validateAndStringifyEvents(data.Result.Events)
 
 	// add predefined compositeKeys
 	events[EventTypeKey] = append(events[EventTypeKey], EventTx)
@@ -232,7 +238,7 @@ func (NopEventBus) Subscribe(
 	context.Context,
 	string,
 	cmtpubsub.Query,
-	chan<- interface{},
+	chan<- any,
 ) error {
 	return nil
 }
@@ -262,6 +268,10 @@ func (NopEventBus) PublishEventNewEvidence(EventDataNewEvidence) error {
 }
 
 func (NopEventBus) PublishEventVote(EventDataVote) error {
+	return nil
+}
+
+func (NopEventBus) PublishEventPendingTx(EventDataPendingTx) error {
 	return nil
 }
 

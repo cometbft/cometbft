@@ -9,19 +9,15 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 	gogotypes "github.com/cosmos/gogoproto/types"
+	"github.com/google/orderedcode"
 
 	dbm "github.com/cometbft/cometbft-db"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	clist "github.com/cometbft/cometbft/internal/clist"
-	sm "github.com/cometbft/cometbft/internal/state"
+	"github.com/cometbft/cometbft/internal/clist"
 	"github.com/cometbft/cometbft/libs/log"
+	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
-)
-
-const (
-	baseKeyCommitted = byte(0x00)
-	baseKeyPending   = byte(0x01)
 )
 
 // Pool maintains a pool of valid evidence to be broadcasted and committed.
@@ -47,11 +43,63 @@ type Pool struct {
 
 	pruningHeight int64
 	pruningTime   time.Time
+
+	dbKeyLayout KeyLayout
+}
+
+func isEmpty(evidenceDB dbm.DB) bool {
+	iter, err := evidenceDB.Iterator(nil, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	defer iter.Close()
+	for ; iter.Valid(); iter.Next() {
+		return false
+	}
+	return true
+}
+
+func setDBLayout(pool *Pool, dbKeyLayoutVersion string) {
+	if !isEmpty(pool.evidenceStore) {
+		var version []byte
+		var err error
+		if version, err = pool.evidenceStore.Get([]byte("version")); err != nil {
+			// WARN: This is because currently cometBFT DB does not return an error if the key does not exist
+			// If this behavior changes we need to account for that.
+			panic(err)
+		}
+		if len(version) != 0 {
+			dbKeyLayoutVersion = string(version)
+		}
+	}
+
+	switch dbKeyLayoutVersion {
+	case "v1", "":
+		pool.dbKeyLayout = &v1LegacyLayout{}
+		dbKeyLayoutVersion = "v1"
+	case "v2":
+		pool.dbKeyLayout = &v2Layout{}
+	default:
+		panic("unknown key layout version")
+	}
+	if err := pool.evidenceStore.SetSync([]byte("version"), []byte(dbKeyLayoutVersion)); err != nil {
+		panic(err)
+	}
+}
+
+type PoolOptions func(*Pool)
+
+// WithDBKeyLayout sets the db key layout.
+func WithDBKeyLayout(dbKeyLayoutV string) PoolOptions {
+	return func(pool *Pool) {
+		setDBLayout(pool, dbKeyLayoutV)
+	}
 }
 
 // NewPool creates an evidence pool. If using an existing evidence store,
 // it will add all pending evidence to the concurrent list.
-func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore) (*Pool, error) {
+func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore, options ...PoolOptions) (*Pool, error) {
 	state, err := stateDB.Load()
 	if err != nil {
 		return nil, sm.ErrCannotLoadState{Err: err}
@@ -67,10 +115,18 @@ func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore) (*Pool,
 		consensusBuffer: make([]duplicateVoteSet, 0),
 	}
 
+	for _, option := range options {
+		option(pool)
+	}
+
+	if pool.dbKeyLayout == nil {
+		setDBLayout(pool, "v1")
+	}
+
 	// if pending evidence already in db, in event of prior failure, then check for expiration,
 	// update the size and load it back to the evidenceList
 	pool.pruningHeight, pool.pruningTime = pool.removeExpiredPendingEvidence()
-	evList, _, err := pool.listEvidence(baseKeyPending, -1)
+	evList, _, err := pool.listEvidence(pool.dbKeyLayout.PrefixToBytesPending(), -1)
 	if err != nil {
 		return nil, err
 	}
@@ -87,9 +143,10 @@ func (evpool *Pool) PendingEvidence(maxBytes int64) ([]types.Evidence, int64) {
 	if evpool.Size() == 0 {
 		return []types.Evidence{}, 0
 	}
-	evidence, size, err := evpool.listEvidence(baseKeyPending, maxBytes)
+	evidence, size, err := evpool.listEvidence(evpool.dbKeyLayout.PrefixToBytesPending(), maxBytes)
 	if err != nil {
 		evpool.logger.Error("Unable to retrieve pending evidence", "err", err)
+		return []types.Evidence{}, 0
 	}
 	return evidence, size
 }
@@ -272,7 +329,7 @@ func (evpool *Pool) isExpired(height int64, time time.Time) bool {
 
 // IsCommitted returns true if we have already seen this exact evidence and it is already marked as committed.
 func (evpool *Pool) isCommitted(evidence types.Evidence) bool {
-	key := keyCommitted(evidence)
+	key := evpool.dbKeyLayout.CalcKeyCommitted(evidence)
 	ok, err := evpool.evidenceStore.Has(key)
 	if err != nil {
 		evpool.logger.Error("Unable to find committed evidence", "err", err)
@@ -282,7 +339,7 @@ func (evpool *Pool) isCommitted(evidence types.Evidence) bool {
 
 // IsPending checks whether the evidence is already pending. DB errors are passed to the logger.
 func (evpool *Pool) isPending(evidence types.Evidence) bool {
-	key := keyPending(evidence)
+	key := evpool.dbKeyLayout.CalcKeyPending(evidence)
 	ok, err := evpool.evidenceStore.Has(key)
 	if err != nil {
 		evpool.logger.Error("Unable to find pending evidence", "err", err)
@@ -301,7 +358,7 @@ func (evpool *Pool) addPendingEvidence(ev types.Evidence) error {
 		return fmt.Errorf("unable to marshal evidence: %w", err)
 	}
 
-	key := keyPending(ev)
+	key := evpool.dbKeyLayout.CalcKeyPending(ev)
 
 	err = evpool.evidenceStore.Set(key, evBytes)
 	if err != nil {
@@ -312,7 +369,7 @@ func (evpool *Pool) addPendingEvidence(ev types.Evidence) error {
 }
 
 func (evpool *Pool) removePendingEvidence(evidence types.Evidence) {
-	key := keyPending(evidence)
+	key := evpool.dbKeyLayout.CalcKeyPending(evidence)
 	if err := evpool.evidenceStore.Delete(key); err != nil {
 		evpool.logger.Error("Unable to delete pending evidence", "err", err)
 	} else {
@@ -333,7 +390,7 @@ func (evpool *Pool) markEvidenceAsCommitted(evidence types.EvidenceList) {
 
 		// Add evidence to the committed list. As the evidence is stored in the block store
 		// we only need to record the height that it was saved at.
-		key := keyCommitted(ev)
+		key := evpool.dbKeyLayout.CalcKeyCommitted(ev)
 
 		h := gogotypes.Int64Value{Value: ev.Height()}
 		evBytes, err := proto.Marshal(&h)
@@ -355,7 +412,7 @@ func (evpool *Pool) markEvidenceAsCommitted(evidence types.EvidenceList) {
 
 // listEvidence retrieves lists evidence from oldest to newest within maxBytes.
 // If maxBytes is -1, there's no cap on the size of returned evidence.
-func (evpool *Pool) listEvidence(prefixKey byte, maxBytes int64) ([]types.Evidence, int64, error) {
+func (evpool *Pool) listEvidence(prefixKey []byte, maxBytes int64) ([]types.Evidence, int64, error) {
 	var (
 		evSize    int64
 		totalSize int64
@@ -363,7 +420,7 @@ func (evpool *Pool) listEvidence(prefixKey byte, maxBytes int64) ([]types.Eviden
 		evList    cmtproto.EvidenceList // used for calculating the bytes size
 	)
 
-	iter, err := dbm.IteratePrefix(evpool.evidenceStore, []byte{prefixKey})
+	iter, err := dbm.IteratePrefix(evpool.evidenceStore, prefixKey)
 	if err != nil {
 		return nil, totalSize, fmt.Errorf("database error: %v", err)
 	}
@@ -399,7 +456,7 @@ func (evpool *Pool) listEvidence(prefixKey byte, maxBytes int64) ([]types.Eviden
 }
 
 func (evpool *Pool) removeExpiredPendingEvidence() (int64, time.Time) {
-	iter, err := dbm.IteratePrefix(evpool.evidenceStore, []byte{baseKeyPending})
+	iter, err := dbm.IteratePrefix(evpool.evidenceStore, evpool.dbKeyLayout.PrefixToBytesPending())
 	if err != nil {
 		evpool.logger.Error("Unable to iterate over pending evidence", "err", err)
 		return evpool.State().LastBlockHeight, evpool.State().LastBlockTime
@@ -552,19 +609,103 @@ func evMapKey(ev types.Evidence) string {
 	return string(ev.Hash())
 }
 
+// -------------- DB Key layout representation ---------------
+
+type KeyLayout interface {
+	CalcKeyCommitted(evidence types.Evidence) []byte
+
+	CalcKeyPending(evidence types.Evidence) []byte
+
+	PrefixToBytesPending() []byte
+
+	PrefixToBytesCommitted() []byte
+}
+
+type v1LegacyLayout struct{}
+
+// PrefixToBytesCommitted implements EvidenceKeyLayout.
+func (v1LegacyLayout) PrefixToBytesCommitted() []byte {
+	return []byte{baseKeyCommitted}
+}
+
+// PrefixToBytesPending implements EvidenceKeyLayout.
+func (v1LegacyLayout) PrefixToBytesPending() []byte {
+	return []byte{baseKeyPending}
+}
+
+// CalcKeyCommitted implements EvidenceKeyLayout.
+func (v1LegacyLayout) CalcKeyCommitted(evidence types.Evidence) []byte {
+	return append([]byte{baseKeyCommitted}, keySuffix(evidence)...)
+}
+
+// CalcKeyPending implements EvidenceKeyLayout.
+func (v1LegacyLayout) CalcKeyPending(evidence types.Evidence) []byte {
+	return append([]byte{baseKeyPending}, keySuffix(evidence)...)
+}
+
+var _ KeyLayout = (*v1LegacyLayout)(nil)
+
+type v2Layout struct{}
+
+// PrefixToBytesCommitted implements EvidenceKeyLayout.
+func (v2Layout) PrefixToBytesCommitted() []byte {
+	key, err := orderedcode.Append(nil, prefixCommitted)
+	if err != nil {
+		panic(err)
+	}
+	return key
+}
+
+// PrefixToBytesPending implements EvidenceKeyLayout.
+func (v2Layout) PrefixToBytesPending() []byte {
+	key, err := orderedcode.Append(nil, prefixPending)
+	if err != nil {
+		panic(err)
+	}
+	return key
+}
+
+// CalcKeyCommitted implements EvidenceKeyLayout.
+func (v2Layout) CalcKeyCommitted(evidence types.Evidence) []byte {
+	key, err := orderedcode.Append(nil, prefixCommitted, evidence.Height(), string(evidence.Hash()))
+	if err != nil {
+		panic(err)
+	}
+	return key
+}
+
+// CalcKeyPending implements EvidenceKeyLayout.
+func (v2Layout) CalcKeyPending(evidence types.Evidence) []byte {
+	key, err := orderedcode.Append(nil, prefixPending, evidence.Height(), string(evidence.Hash()))
+	if err != nil {
+		panic(err)
+	}
+	return key
+}
+
+var _ KeyLayout = (*v2Layout)(nil)
+
+// -------- Util ---------
 // big endian padded hex.
 func bE(h int64) string {
 	return fmt.Sprintf("%0.16X", h)
 }
 
-func keyCommitted(evidence types.Evidence) []byte {
-	return append([]byte{baseKeyCommitted}, keySuffix(evidence)...)
-}
-
-func keyPending(evidence types.Evidence) []byte {
-	return append([]byte{baseKeyPending}, keySuffix(evidence)...)
-}
-
 func keySuffix(evidence types.Evidence) []byte {
 	return []byte(fmt.Sprintf("%s/%X", bE(evidence.Height()), evidence.Hash()))
 }
+
+// ---------------------
+
+// ---- v2 layout ----.
+const (
+	// prefixes must be unique across all db's.
+	prefixCommitted = int64(9)
+	prefixPending   = int64(10)
+)
+
+// ---- v1 layout ----.
+const (
+	baseKeyCommitted = byte(0x00)
+	baseKeyPending   = byte(0x01)
+)

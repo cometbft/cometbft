@@ -9,6 +9,11 @@ make
 
 This creates and runs a testnet named `ci` under `networks/ci/`.
 
+To generate the testnet files in a different directory, run:
+```sh
+./build/runner -f networks/ci.toml -d networks/foo/bar/
+```
+
 ### Fast compiling
 
 If you need to run experiments on a testnet, you will probably want to compile the code multiple
@@ -102,6 +107,19 @@ The generator generates this type of perturbation both on full nodes and on ligh
 Perturbations of type `upgrade` are a noop if the node's version matches the
 one in `upgrade_version`.
 
+If you need to generate manifests with a specific `log_level` that will configure the log level parameter in the
+CometBFT's config file for each node, you can specify the level using the flags `-l` or `--log-level`.
+
+```
+./build/generator -g 2 -d networks/nightly/ -l "*:debug,p2p:info"
+```
+
+This will add the specified log level on each generated manifest (TOML file):
+
+```toml
+log_level = "debug"
+```
+
 ## Test Stages
 
 The test runner has the following stages, which can also be executed explicitly by running `./build/runner -f <manifest> <stage>`:
@@ -124,7 +142,7 @@ The test runner has the following stages, which can also be executed explicitly 
 
 Auxiliary commands:
 
-* `logs`: outputs all node logs.
+* `logs`: outputs all node logs (specify `--split` to output individual logs).
 
 * `tail`: tails (follows) node logs until canceled.
 
@@ -141,6 +159,8 @@ To run tests manually, set the `E2E_MANIFEST` environment variable to the path o
 E2E_MANIFEST=networks/ci.toml go test -v ./tests/...
 ```
 
+If the testnet files are located in a custom directory, you need to set it in the `E2E_TESTNET_DIR` environment variable.
+
 Optionally, `E2E_NODE` specifies the name of a single testnet node to test.
 
 These environment variables can also be specified in `tests/e2e_test.go` to run tests from an editor or IDE:
@@ -150,6 +170,7 @@ func init() {
 	// This can be used to manually specify a testnet manifest and/or node to
 	// run tests against. The testnet must have been started by the runner first.
 	os.Setenv("E2E_MANIFEST", "networks/ci.toml")
+	os.Setenv("E2E_TESTNET_DIR", "networks/foo")
 	os.Setenv("E2E_NODE", "validator01")
 }
 ```

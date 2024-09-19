@@ -24,7 +24,7 @@ func init() {
 }
 
 func Fuzz(data []byte) int {
-	_, err := mempool.CheckTx(data)
+	_, err := mempool.CheckTx(data, "")
 	if err != nil {
 		return 0
 	}

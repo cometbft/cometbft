@@ -12,6 +12,8 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -43,7 +45,7 @@ func randomDuplicateVoteEvidence(t *testing.T) *DuplicateVoteEvidence {
 
 func TestDuplicateVoteEvidence(t *testing.T) {
 	const height = int64(13)
-	ev, err := NewMockDuplicateVoteEvidence(height, time.Now(), "mock-chain-id")
+	ev, err := NewMockDuplicateVoteEvidence(height, cmttime.Now(), "mock-chain-id")
 	require.NoError(t, err)
 	assert.Equal(t, ev.Hash(), tmhash.Sum(ev.Bytes()))
 	assert.NotNil(t, ev.String())
@@ -61,7 +63,7 @@ func TestDuplicateVoteEvidenceValidation(t *testing.T) {
 		malleateEvidence func(*DuplicateVoteEvidence)
 		expectErr        bool
 	}{
-		{"Good DuplicateVoteEvidence", func(ev *DuplicateVoteEvidence) {}, false},
+		{"Good DuplicateVoteEvidence", func(_ *DuplicateVoteEvidence) {}, false},
 		{"Nil vote A", func(ev *DuplicateVoteEvidence) { ev.VoteA = nil }, true},
 		{"Nil vote B", func(ev *DuplicateVoteEvidence) { ev.VoteB = nil }, true},
 		{"Nil votes", func(ev *DuplicateVoteEvidence) {
@@ -78,7 +80,6 @@ func TestDuplicateVoteEvidenceValidation(t *testing.T) {
 		}, true},
 	}
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
 			vote1 := MakeVoteNoError(t, val, chainID, math.MaxInt32, math.MaxInt64, math.MaxInt32, 0x02, blockID, defaultVoteTime)
 			vote2 := MakeVoteNoError(t, val, chainID, math.MaxInt32, math.MaxInt64, math.MaxInt32, 0x02, blockID2, defaultVoteTime)
@@ -161,7 +162,7 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 	header.Height = height
 	header.ValidatorsHash = valSet.Hash()
 	blockID := makeBlockID(header.Hash(), math.MaxInt32, tmhash.Sum([]byte("partshash")))
-	extCommit, err := MakeExtCommit(blockID, height, 1, voteSet, privVals, time.Now(), false)
+	extCommit, err := MakeExtCommit(blockID, height, 1, voteSet, privVals, cmttime.Now(), false)
 	require.NoError(t, err)
 	commit := extCommit.ToCommit()
 
@@ -185,7 +186,7 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 		malleateEvidence func(*LightClientAttackEvidence)
 		expectErr        bool
 	}{
-		{"Good LightClientAttackEvidence", func(ev *LightClientAttackEvidence) {}, false},
+		{"Good LightClientAttackEvidence", func(_ *LightClientAttackEvidence) {}, false},
 		{"Negative height", func(ev *LightClientAttackEvidence) { ev.CommonHeight = -10 }, true},
 		{"Height is greater than divergent block", func(ev *LightClientAttackEvidence) {
 			ev.CommonHeight = height + 1
@@ -203,7 +204,6 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 		}, true},
 	}
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
 			lcae := &LightClientAttackEvidence{
 				ConflictingBlock: &LightBlock{
@@ -229,7 +229,7 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 }
 
 func TestMockEvidenceValidateBasic(t *testing.T) {
-	goodEvidence, err := NewMockDuplicateVoteEvidence(int64(1), time.Now(), "mock-chain-id")
+	goodEvidence, err := NewMockDuplicateVoteEvidence(int64(1), cmttime.Now(), "mock-chain-id")
 	require.NoError(t, err)
 	require.NoError(t, goodEvidence.ValidateBasic())
 }
@@ -239,7 +239,7 @@ func makeHeaderRandom() *Header {
 		Version:            cmtversion.Consensus{Block: version.BlockProtocol, App: 1},
 		ChainID:            cmtrand.Str(12),
 		Height:             int64(cmtrand.Uint16()) + 1,
-		Time:               time.Now(),
+		Time:               cmttime.Now(),
 		LastBlockID:        makeBlockIDRandom(),
 		LastCommitHash:     crypto.CRandBytes(tmhash.Size),
 		DataHash:           crypto.CRandBytes(tmhash.Size),
@@ -291,7 +291,6 @@ func TestEvidenceProto(t *testing.T) {
 		{"DuplicateVoteEvidence success", &DuplicateVoteEvidence{VoteA: v2, VoteB: v}, false, false},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.testName, func(t *testing.T) {
 			pb, err := EvidenceToProto(tt.evidence)
 			if tt.toProtoErr {
@@ -308,4 +307,24 @@ func TestEvidenceProto(t *testing.T) {
 			require.Equal(t, tt.evidence, evi, tt.testName)
 		})
 	}
+}
+
+// Test that the new JSON tags are picked up correctly, see issue #3528.
+func TestDuplicateVoteEvidenceJSON(t *testing.T) {
+	var evidence DuplicateVoteEvidence
+	js, err := cmtjson.Marshal(evidence)
+	require.NoError(t, err)
+
+	wantJSON := `{"type":"tendermint/DuplicateVoteEvidence","value":{"vote_a":null,"vote_b":null,"total_voting_power":"0","validator_power":"0","timestamp":"0001-01-01T00:00:00Z"}}`
+	assert.Equal(t, wantJSON, string(js))
+}
+
+// Test that the new JSON tags are picked up correctly, see issue #3528.
+func TestLightClientAttackEvidenceJSON(t *testing.T) {
+	var evidence LightClientAttackEvidence
+	js, err := cmtjson.Marshal(evidence)
+	require.NoError(t, err)
+
+	wantJSON := `{"type":"tendermint/LightClientAttackEvidence","value":{"conflicting_block":null,"common_height":"0","byzantine_validators":null,"total_voting_power":"0","timestamp":"0001-01-01T00:00:00Z"}}`
+	assert.Equal(t, wantJSON, string(js))
 }

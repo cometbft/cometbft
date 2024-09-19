@@ -93,7 +93,7 @@ func (n *PackedNode) String() string {
 	return "PN: " + n.Label()
 }
 
-//---- Dot ----
+// ---- Dot ----
 
 type dotBuilder struct {
 	nodes map[string]bool // index = node.Label()

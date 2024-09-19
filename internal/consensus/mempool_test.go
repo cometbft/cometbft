@@ -13,9 +13,9 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
-	sm "github.com/cometbft/cometbft/internal/state"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -80,14 +80,14 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 	newBlockCh := subscribe(cs.eventBus, types.EventQueryNewBlock)
 	newRoundCh := subscribe(cs.eventBus, types.EventQueryNewRound)
 	timeoutCh := subscribe(cs.eventBus, types.EventQueryTimeoutPropose)
-	cs.setProposal = func(proposal *types.Proposal) error {
+	cs.setProposal = func(proposal *types.Proposal, recvTime time.Time) error {
 		if cs.Height == 2 && cs.Round == 0 {
 			// dont set the proposal in round 0 so we timeout and
 			// go to next round
 			cs.Logger.Info("Ignoring set proposal at height 2, round 0")
 			return nil
 		}
-		return cs.defaultSetProposal(proposal)
+		return cs.defaultSetProposal(proposal, recvTime)
 	}
 	startTestRound(cs, height, round)
 
@@ -111,7 +111,7 @@ func deliverTxsRange(t *testing.T, cs *State, end int) {
 	start := 0
 	// Deliver some txs.
 	for i := start; i < end; i++ {
-		reqRes, err := assertMempool(cs.txNotifier).CheckTx(kvstore.NewTx(strconv.Itoa(i), "true"))
+		reqRes, err := assertMempool(cs.txNotifier).CheckTx(kvstore.NewTx(strconv.Itoa(i), "true"), "")
 		require.NoError(t, err)
 		require.False(t, reqRes.Response.GetCheckTx().IsErr())
 	}
@@ -168,7 +168,7 @@ func TestMempoolRmBadTx(t *testing.T) {
 		// CheckTx should not err, but the app should return a bad abci code
 		// and the tx should get removed from the pool
 		invalidTx := []byte("invalidTx")
-		reqRes, err := assertMempool(cs.txNotifier).CheckTx(invalidTx)
+		reqRes, err := assertMempool(cs.txNotifier).CheckTx(invalidTx, "")
 		if err != nil {
 			t.Errorf("error after CheckTx: %v", err)
 			return

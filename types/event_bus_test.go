@@ -11,9 +11,46 @@ import (
 	"github.com/stretchr/testify/require"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
-	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
+
+func TestEventBusPublishEventPendingTx(t *testing.T) {
+	eventBus := NewEventBus()
+	err := eventBus.Start()
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		if err := eventBus.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	tx := Tx("foo")
+	// PublishEventPendingTx adds 1 composite key, so the query below should work
+	query := fmt.Sprintf("tm.event='PendingTx' AND tx.hash='%X'", tx.Hash())
+	txsSub, err := eventBus.Subscribe(context.Background(), "test", cmtquery.MustCompile(query))
+	require.NoError(t, err)
+
+	done := make(chan struct{})
+	go func() {
+		msg := <-txsSub.Out()
+		edt := msg.Data().(EventDataPendingTx)
+		assert.EqualValues(t, tx, edt.Tx)
+		close(done)
+	}()
+
+	err = eventBus.PublishEventPendingTx(EventDataPendingTx{
+		Tx: tx,
+	})
+	require.NoError(t, err)
+
+	select {
+	case <-done:
+	case <-time.After(1 * time.Second):
+		t.Fatal("did not receive a pending transaction after 1 sec.")
+	}
+}
 
 func TestEventBusPublishEventTx(t *testing.T) {
 	eventBus := NewEventBus()
@@ -312,7 +349,7 @@ func TestEventBusPublishEventNewEvidence(t *testing.T) {
 		}
 	})
 
-	ev, err := NewMockDuplicateVoteEvidence(1, time.Now(), "test-chain-id")
+	ev, err := NewMockDuplicateVoteEvidence(1, cmttime.Now(), "test-chain-id")
 	require.NoError(t, err)
 
 	query := "tm.event='NewEvidence'"
@@ -429,7 +466,6 @@ func BenchmarkEventBus(b *testing.B) {
 	}
 
 	for _, bm := range benchmarks {
-		bm := bm
 		b.Run(bm.name, func(b *testing.B) {
 			benchmarkEventBus(b, bm.numClients, bm.randQueries, bm.randEvents)
 		})
@@ -439,7 +475,7 @@ func BenchmarkEventBus(b *testing.B) {
 func benchmarkEventBus(b *testing.B, numClients int, randQueries bool, randEvents bool) {
 	b.Helper()
 	// for random* functions
-	rnd := rand.New(rand.NewSource(time.Now().Unix()))
+	rnd := rand.New(rand.NewSource(cmttime.Now().Unix()))
 
 	eventBus := NewEventBusWithBufferCapacity(0) // set buffer capacity to 0 so we are not testing cache
 	err := eventBus.Start()

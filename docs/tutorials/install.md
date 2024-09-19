@@ -1,8 +1,22 @@
 ---
-order: 3
+order: 1
 ---
 
 # Install CometBFT
+
+## From Go Package
+
+Install the latest version of CometBFT's Go package:
+
+```sh
+go install github.com/cometbft/cometbft/cmd/cometbft@latest
+```
+
+Install a specific version of CometBFT's Go package:
+
+```sh
+go install github.com/cometbft/cometbft/cmd/cometbft@v0.38
+```
 
 ## From Binary
 
@@ -65,47 +79,3 @@ To upgrade, run
 git pull origin main
 make install
 ```
-
-## Compile with CLevelDB support
-
-Install [LevelDB](https://github.com/google/leveldb) (minimum version is 1.7).
-
-Install LevelDB with snappy (optionally). Below are commands for Ubuntu:
-
-```sh
-sudo apt-get update
-sudo apt install build-essential
-
-sudo apt-get install libsnappy-dev
-
-wget https://github.com/google/leveldb/archive/v1.23.tar.gz && \
-  tar -zxvf v1.23.tar.gz && \
-  cd leveldb-1.23/ && \
-  make && \
-  sudo cp -r out-static/lib* out-shared/lib* /usr/local/lib/ && \
-  cd include/ && \
-  sudo cp -r leveldb /usr/local/include/ && \
-  sudo ldconfig && \
-  rm -f v1.23.tar.gz
-```
-
-Set a database backend to `cleveldb`:
-
-```toml
-# config/config.toml
-db_backend = "cleveldb"
-```
-
-To install CometBFT, run:
-
-```sh
-CGO_LDFLAGS="-lsnappy" make install COMETBFT_BUILD_OPTIONS=cleveldb
-```
-
-or run:
-
-```sh
-CGO_LDFLAGS="-lsnappy" make build COMETBFT_BUILD_OPTIONS=cleveldb
-```
-
-which puts the binary in `./build`.

@@ -1,12 +1,10 @@
 package proxy
 
 import (
-	"fmt"
-
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	cmtos "github.com/cometbft/cometbft/internal/os"
-	"github.com/cometbft/cometbft/internal/service"
 	cmtlog "github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
 )
 
 const (
@@ -163,7 +161,7 @@ func (app *multiAppConn) OnStop() {
 func (app *multiAppConn) killTMOnClientError() {
 	killFn := func(conn string, err error, logger cmtlog.Logger) {
 		logger.Error(
-			fmt.Sprintf("%s connection terminated. Did the application crash? Please restart CometBFT", conn),
+			conn+" connection terminated. Did the application crash? Please restart CometBFT",
 			"err", err)
 		killErr := cmtos.Kill()
 		if killErr != nil {

@@ -10,7 +10,7 @@ import (
 	"math"
 	"time"
 
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 // Monitor monitors and limits the transfer rate of a data stream.
@@ -32,6 +32,8 @@ type Monitor struct {
 
 	tBytes int64         // Number of bytes expected in the current transfer
 	tLast  time.Duration // Time of the most recent transfer of at least 1 byte
+
+	sleepTime time.Duration // Amount of time spend on time.Sleep() calls
 }
 
 // New creates a new flow control monitor. Instantaneous transfer rate is
@@ -47,6 +49,7 @@ type Monitor struct {
 // The default values for sampleRate and windowSize (if <= 0) are 100ms and 1s,
 // respectively.
 func New(sampleRate, windowSize time.Duration) *Monitor {
+	ensureClockRunning()
 	if sampleRate = clockRound(sampleRate); sampleRate <= 0 {
 		sampleRate = 5 * clockRate
 	}
@@ -121,6 +124,8 @@ type Status struct {
 	TimeRem  time.Duration // Estimated time to completion
 	Progress Percent       // Overall transfer progress
 	Active   bool          // Flag indicating an active transfer
+
+	SleepTime time.Duration // Amount of time spend on time.Sleep() calls
 }
 
 // Status returns current transfer status information. The returned value
@@ -141,6 +146,10 @@ func (m *Monitor) Status() Status {
 	}
 	if s.BytesRem < 0 {
 		s.BytesRem = 0
+	}
+	if m.sleepTime > 0 {
+		s.SleepTime = m.sleepTime
+		m.sleepTime = 0
 	}
 	if s.Duration > 0 {
 		rAvg := float64(s.Bytes) / s.Duration.Seconds()
@@ -188,8 +197,16 @@ func (m *Monitor) Limit(want int, rate int64, block bool) (n int) {
 
 	// If block == true, wait until m.sBytes < limit
 	if now := m.update(0); block {
+		var startTime time.Time
 		for m.sBytes >= limit && m.active {
+			if startTime.IsZero() {
+				startTime = time.Now()
+			}
 			now = m.waitNextSample(now)
+		}
+		// Compute the actual time spent in waitNextSample() calls
+		if !startTime.IsZero() {
+			m.sleepTime += time.Since(startTime)
 		}
 	}
 
@@ -221,7 +238,7 @@ func (m *Monitor) SetTransferSize(bytes int64) {
 // sample is done.
 func (m *Monitor) update(n int) (now time.Duration) {
 	if !m.active {
-		return
+		return now
 	}
 	if now = clock(); n > 0 {
 		m.tLast = now
@@ -243,7 +260,7 @@ func (m *Monitor) update(n int) (now time.Duration) {
 		}
 		m.reset(now)
 	}
-	return
+	return now
 }
 
 // reset clears the current sample state in preparation for the next sample.

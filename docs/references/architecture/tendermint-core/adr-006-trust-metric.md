@@ -36,7 +36,7 @@ where _R_[*i*] denotes the raw trust value at time interval _i_ (where _i_ == 0 
 
 `H[i] =` ![formula1](img/formula1.png "Weighted Sum Formula")
 
-The weights can be chosen either optimistically or pessimistically. An optimistic weight creates larger weights for newer history data values, while the the pessimistic weight creates larger weights for time intervals with lower scores. The default weights used during the calculation of the history value are optimistic and calculated as _Wk_ = 0.8^_k_, for time interval _k_. With the history value available, we can now finish calculating the integral value:
+The weights can be chosen either optimistically or pessimistically. An optimistic weight creates larger weights for newer history data values, while the pessimistic weight creates larger weights for time intervals with lower scores. The default weights used during the calculation of the history value are optimistic and calculated as _Wk_ = 0.8^_k_, for time interval _k_. With the history value available, we can now finish calculating the integral value:
 
 ```math
 (2) Integral Value = b * H[i]
@@ -110,7 +110,7 @@ func (tm *TrustMetric) TrustScore() int {}
 // NewMetric returns a trust metric with the default configuration
 func NewMetric() *TrustMetric {}
 
-//------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 // For example
 
 tm := NewMetric()
@@ -148,7 +148,7 @@ func DefaultConfig() TrustMetricConfig {}
 // NewMetricWithConfig returns a trust metric with a custom configuration
 func NewMetricWithConfig(tmc TrustMetricConfig) *TrustMetric {}
 
-//------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 // For example
 
 config := TrustMetricConfig{
@@ -196,7 +196,7 @@ func (tms *TrustMetricStore) GetPeerTrustMetric(key string) *TrustMetric {}
 // PeerDisconnected pauses the trust metric associated with the peer identified by the key
 func (tms *TrustMetricStore) PeerDisconnected(key string) {}
 
-//------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 // For example
 
 db := dbm.NewDB("trusthistory", "goleveldb", dirPathStr)

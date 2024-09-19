@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
-	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 )
 
 // Reserved event types (alphabetically sorted).
@@ -20,6 +20,7 @@ const (
 	EventNewBlockHeader      = "NewBlockHeader"
 	EventNewBlockEvents      = "NewBlockEvents"
 	EventNewEvidence         = "NewEvidence"
+	EventPendingTx           = "PendingTx"
 	EventTx                  = "Tx"
 	EventValidatorSetUpdates = "ValidatorSetUpdates"
 
@@ -42,7 +43,7 @@ const (
 // ENCODING / DECODING
 
 // TMEventData implements events.EventData.
-type TMEventData interface {
+type TMEventData interface { //nolint:revive // this empty interface angers the linter
 	// empty interface
 }
 
@@ -82,6 +83,11 @@ type EventDataNewBlockEvents struct {
 type EventDataNewEvidence struct {
 	Height   int64    `json:"height"`
 	Evidence Evidence `json:"evidence"`
+}
+
+// All txs fire EventDataPendingTx.
+type EventDataPendingTx struct {
+	Tx []byte `json:"tx"`
 }
 
 // All txs fire EventDataTx.
@@ -178,6 +184,7 @@ type BlockEventPublisher interface {
 	PublishEventNewBlockHeader(header EventDataNewBlockHeader) error
 	PublishEventNewBlockEvents(events EventDataNewBlockEvents) error
 	PublishEventNewEvidence(evidence EventDataNewEvidence) error
+	PublishEventPendingTx(tx EventDataPendingTx) error
 	PublishEventTx(tx EventDataTx) error
 	PublishEventValidatorSetUpdates(updates EventDataValidatorSetUpdates) error
 }

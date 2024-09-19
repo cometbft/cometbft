@@ -1,4 +1,4 @@
-COMETBFT_BUILD_OPTIONS += badgerdb,boltdb,cleveldb,rocksdb,pebbledb
+COMETBFT_BUILD_OPTIONS += badgerdb,rocksdb,pebbledb,clock_skew,bls12381
 IMAGE_TAG=cometbft/e2e-node:local-version
 
 include ../../common.mk
@@ -38,7 +38,7 @@ generator:
 	go build -o build/generator ./generator
 
 runner:
-	go build -o build/runner ./runner
+	go build -tags bls12381 -o build/runner ./runner
 
 lint:
 	@echo "--> Running linter for E2E"

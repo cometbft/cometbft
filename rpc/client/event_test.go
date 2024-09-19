@@ -2,7 +2,6 @@ package client_test
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -28,7 +27,6 @@ func MakeTxKV() ([]byte, []byte, []byte) {
 
 func TestHeaderEvents(t *testing.T) {
 	for i, c := range GetClients() {
-		i, c := i, c
 		t.Run(reflect.TypeOf(c).String(), func(t *testing.T) {
 			// start for this test it if it wasn't already running
 			if !c.IsRunning() {
@@ -56,7 +54,6 @@ func TestHeaderEvents(t *testing.T) {
 // subscribe to new blocks and make sure height increments by 1.
 func TestBlockEvents(t *testing.T) {
 	for _, c := range GetClients() {
-		c := c
 		t.Run(reflect.TypeOf(c).String(), func(t *testing.T) {
 			// start for this test it if it wasn't already running
 			if !c.IsRunning() {
@@ -104,7 +101,7 @@ func TestTxEventsSentWithBroadcastTxSync(t *testing.T)  { testTxEventsSent(t, "s
 func testTxEventsSent(t *testing.T, broadcastMethod string) {
 	t.Helper()
 	for _, c := range GetClients() {
-		c := c
+		c := c //nolint:copyloopvar
 		t.Run(reflect.TypeOf(c).String(), func(t *testing.T) {
 			// start for this test it if it wasn't already running
 			if !c.IsRunning() {
@@ -134,7 +131,7 @@ func testTxEventsSent(t *testing.T, broadcastMethod string) {
 				case "sync":
 					txres, err = c.BroadcastTxSync(ctx, tx)
 				default:
-					panic(fmt.Sprintf("Unknown broadcastMethod %s", broadcastMethod))
+					panic("Unknown broadcastMethod " + broadcastMethod)
 				}
 				if assert.NoError(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 					require.Equal(t, abci.CodeTypeOK, txres.Code)

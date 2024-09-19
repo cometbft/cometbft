@@ -7,25 +7,21 @@ order: 4
 ## Database
 
 By default, CometBFT uses the `syndtr/goleveldb` package for its in-process
-key-value database. If you want maximal performance, it may be best to install
-the real C-implementation of LevelDB and compile CometBFT to use that using
-`make build COMETBFT_BUILD_OPTIONS=cleveldb`. See the [install
-instructions](../introduction/install.md) for details.
+key-value database.
 
 CometBFT keeps multiple distinct databases in the `$CMTHOME/data`:
 
 - `blockstore.db`: Keeps the entire blockchain - stores blocks,
-  block commits, and block meta data, each indexed by height. Used to sync new
+  block commits, and block metadata, each indexed by height. Used to sync new
   peers.
 - `evidence.db`: Stores all verified evidence of misbehavior.
-- `state.db`: Stores the current blockchain state (ie. height, validators,
+- `state.db`: Stores the current blockchain state (i.e. height, validators,
   consensus params). Only grows if consensus params or validators change. Also
   used to temporarily store intermediate results during block processing.
-- `tx_index.db`: Indexes txs (and their results) by tx hash and by DeliverTx result events.
+- `tx_index.db`: Indexes transactions and by tx hash and height. The tx results are indexed if they are added to the `FinalizeBlock` response in the application.
 
-By default, CometBFT will only index txs by their hash and height, not by their DeliverTx
-result events. See [indexing transactions](../../guides/app-dev/indexing-transactions.md) for
-details.
+> By default, CometBFT will only index transactions by their hash and height, if you want the result events to be indexed, see [indexing transactions](../../guides/app-dev/indexing-transactions.md#adding-events) 
+for details.
 
 Applications can expose block pruning strategies to the node operator.
 Please read the documentation of your application to find out more details.
@@ -35,13 +31,24 @@ Applications can use [state sync](state-sync.md) to help nodes bootstrap quickly
 ## Logging
 
 Default logging level (`log_level = "main:info,state:info,statesync:info,*:error"`) should suffice for
-normal operation mode. Read [this
-post](https://blog.cosmos.network/one-of-the-exciting-new-features-in-0-10-0-release-is-smart-log-level-flag-e2506b4ab756)
-for details on how to configure `log_level` config variable. Some of the
-modules can be found [here](how-to-read-logs.md#list-of-modules). If
-you're trying to debug CometBFT or asked to provide logs with debug
-logging level, you can do so by running CometBFT with
-`--log_level="*:debug"`.
+normal operation mode. It will log info messages from the `main`, `state` and
+`statesync` modules and error messages from all other modules.
+
+The format of the logging level is:
+
+```
+<module1>:<level>,<module2>:<level>,...,<moduleN>:<level>
+```
+
+Where `<moduleN>` is the module that generated the log message, `<level>` is
+one of the log levels: `info`, `error`, `debug` or `none`. Some of
+the modules can be found [here](how-to-read-logs.md#list-of-modules). Others
+could be observed by running CometBFT. `none` log level could be used
+to suppress messages from a particular module or all modules (`log_level =
+"state:info,*:none"` will only log info messages from the `state` module).
+
+If you're trying to debug CometBFT or asked to provide logs with debug logging
+level, you can do so by running CometBFT with `--log_level="*:debug"`.
 
 ## Write Ahead Logs (WAL)
 
@@ -62,12 +69,12 @@ If your `consensus.wal` is corrupted, see [below](#wal-corruption).
 
 ### Mempool WAL
 
-The `mempool.wal` logs all incoming txs before running CheckTx, but is
+The `mempool.wal` logs all incoming transactions before running CheckTx, but is
 otherwise not used in any programmatic way. It's just a kind of manual
 safe guard. Note the mempool provides no durability guarantees - a tx sent to one or many nodes
 may never make it into the blockchain if those nodes crash before being able to
-propose it. Clients must monitor their txs by subscribing over websockets,
-polling for them, or using `/broadcast_tx_commit`. In the worst case, txs can be
+propose it. Clients must monitor their transactions by subscribing over websockets,
+polling for them, or using `/broadcast_tx_commit`. In the worst case, transactions can be
 resent from the mempool WAL manually.
 
 For the above reasons, the `mempool.wal` is disabled by default. To enable, set
@@ -290,7 +297,7 @@ Both our `ed25519` and `secp256k1` implementations require constant time
 private keys on both `ed25519` and `secp256k1`. This doesn't exist in hardware
 on 32 bit x86 platforms ([source](https://bearssl.org/ctmul.html)), and it
 depends on the compiler to enforce that it is constant time. It's unclear at
-this point whenever the Golang compiler does this correctly for all
+this point whether the Golang compiler does this correctly for all
 implementations.
 
 **We do not support nor recommend running a validator on 32 bit architectures OR
@@ -347,15 +354,6 @@ Setting this to false will stop the mempool from relaying transactions
 to other peers until they are included in a block. It means only the
 peer you send the tx to will see it until it is included in a block.
 
-- `consensus.skip_timeout_commit`
-
-We want `skip_timeout_commit=false` when there is economics on the line
-because proposers should wait to hear for more votes. But if you don't
-care about that and want the fastest consensus, you can skip it. It will
-be kept false by default for public deployments (e.g. [Cosmos
-Hub](https://hub.cosmos.network/)) while for enterprise
-applications, setting it to true is not a problem.
-
 - `consensus.peer_gossip_sleep_duration`
 
 You can try to reduce the time your node sleeps before checking if
@@ -363,8 +361,22 @@ there's something to send its peers.
 
 - `consensus.timeout_commit`
 
-You can also try lowering `timeout_commit` (time we sleep before
-proposing the next block).
+We want `timeout_commit` to be greater than zero when there is economics on the line
+because proposers should wait to hear for more votes. But if you don't
+care about that and want the fastest consensus, you can skip it. It will
+be kept `1s` by default for public deployments (e.g. [Cosmos
+Hub](https://hub.cosmos.network/)) while for enterprise
+applications, setting it to `0` is not a problem.
+
+You can try lowering it though.
+
+**Notice** that the `timeout_commit` configuration flag was deprecated in v1.0.
+It is now up to the application to return a `next_block_delay` value upon
+[`FinalizeBlock`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_methods.md#finalizeblock)
+to define how long CometBFT should wait from when it has
+committed a block until it actually starts the next height.
+Notice that this delay includes the time it takes for CometBFT and the
+application to process the committed block.
 
 - `p2p.addr_book_strict`
 

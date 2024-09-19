@@ -1,7 +1,7 @@
 package blockservice
 
 import (
-	context "context"
+	"context"
 	"fmt"
 
 	"google.golang.org/grpc/codes"
@@ -9,10 +9,10 @@ import (
 
 	blocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1"
 	ptypes "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
 	"github.com/cometbft/cometbft/internal/rpctrace"
-	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -58,12 +58,12 @@ func (s *blockServiceServer) getBlock(height int64, logger log.Logger) (*ptypes.
 
 	block, blockMeta := s.store.LoadBlock(height)
 	if block == nil {
-		return nil, nil, status.Errorf(codes.NotFound, fmt.Sprintf("Block not found for height %d", height))
+		return nil, nil, status.Errorf(codes.NotFound, "Block not found for height %d", height)
 	}
 	bp, err := block.ToProto()
 	if err != nil {
 		logger.Error("Error attempting to convert block to its Protobuf representation", "err", err, "traceID", traceID)
-		return nil, nil, status.Errorf(codes.Internal, fmt.Sprintf("Failed to load block from store (see logs for trace ID: %s)", traceID))
+		return nil, nil, status.Errorf(codes.Internal, "Failed to load block from store (see logs for trace ID: %s)", traceID)
 	}
 
 	if blockMeta == nil {

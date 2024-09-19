@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/bytes"
@@ -52,12 +52,12 @@ type ResultCommit struct {
 
 // ABCI results from a block.
 type ResultBlockResults struct {
-	Height                int64                     `json:"height"`
-	TxResults             []*abci.ExecTxResult      `json:"txs_results"`
-	FinalizeBlockEvents   []abci.Event              `json:"finalize_block_events"`
-	ValidatorUpdates      []abci.ValidatorUpdate    `json:"validator_updates"`
-	ConsensusParamUpdates *cmtproto.ConsensusParams `json:"consensus_param_updates"`
-	AppHash               []byte                    `json:"app_hash"`
+	Height                int64                       `json:"height"`
+	TxResults             []*abcitypes.ExecTxResult   `json:"txs_results"`
+	FinalizeBlockEvents   []abcitypes.Event           `json:"finalize_block_events"`
+	ValidatorUpdates      []abcitypes.ValidatorUpdate `json:"validator_updates"`
+	ConsensusParamUpdates *cmtproto.ConsensusParams   `json:"consensus_param_updates"`
+	AppHash               []byte                      `json:"app_hash"`
 }
 
 // NewResultCommit is a helper to initialize the ResultCommit with
@@ -183,25 +183,25 @@ type ResultBroadcastTx struct {
 
 // CheckTx and ExecTx results.
 type ResultBroadcastTxCommit struct {
-	CheckTx  abci.CheckTxResponse `json:"check_tx"`
-	TxResult abci.ExecTxResult    `json:"tx_result"`
-	Hash     bytes.HexBytes       `json:"hash"`
-	Height   int64                `json:"height"`
+	CheckTx  abcitypes.CheckTxResponse `json:"check_tx"`
+	TxResult abcitypes.ExecTxResult    `json:"tx_result"`
+	Hash     bytes.HexBytes            `json:"hash"`
+	Height   int64                     `json:"height"`
 }
 
 // ResultCheckTx wraps abci.CheckTxResponse.
 type ResultCheckTx struct {
-	abci.CheckTxResponse
+	abcitypes.CheckTxResponse
 }
 
 // Result of querying for a tx.
 type ResultTx struct {
-	Hash     bytes.HexBytes    `json:"hash"`
-	Height   int64             `json:"height"`
-	Index    uint32            `json:"index"`
-	TxResult abci.ExecTxResult `json:"tx_result"`
-	Tx       types.Tx          `json:"tx"`
-	Proof    types.TxProof     `json:"proof,omitempty"`
+	Hash     bytes.HexBytes         `json:"hash"`
+	Height   int64                  `json:"height"`
+	Index    uint32                 `json:"index"`
+	TxResult abcitypes.ExecTxResult `json:"tx_result"`
+	Tx       types.Tx               `json:"tx"`
+	Proof    types.TxProof          `json:"proof,omitempty"`
 }
 
 // Result of searching for txs.
@@ -216,6 +216,11 @@ type ResultBlockSearch struct {
 	TotalCount int            `json:"total_count"`
 }
 
+// Single mempool tx.
+type ResultUnconfirmedTx struct {
+	Tx types.Tx `json:"tx"`
+}
+
 // List of mempool txs.
 type ResultUnconfirmedTxs struct {
 	Count      int        `json:"n_txs"`
@@ -226,12 +231,12 @@ type ResultUnconfirmedTxs struct {
 
 // Info abci msg.
 type ResultABCIInfo struct {
-	Response abci.InfoResponse `json:"response"`
+	Response abcitypes.InfoResponse `json:"response"`
 }
 
 // Query abci msg.
 type ResultABCIQuery struct {
-	Response abci.QueryResponse `json:"response"`
+	Response abcitypes.QueryResponse `json:"response"`
 }
 
 // Result of broadcasting evidence.

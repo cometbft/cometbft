@@ -9,15 +9,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	db "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	cfg "github.com/cometbft/cometbft/config"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	sm "github.com/cometbft/cometbft/internal/state"
-	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -39,32 +41,27 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int, config *cfg.C
 	// NOTE: we don't do handshake so need to set state.Version.Consensus.App directly.
 	privValidatorKeyFile := config.PrivValidatorKeyFile()
 	privValidatorStateFile := config.PrivValidatorStateFile()
-	privValidator := privval.LoadOrGenFilePV(privValidatorKeyFile, privValidatorStateFile)
+	privValidator, err := privval.LoadOrGenFilePV(privValidatorKeyFile, privValidatorStateFile, nil)
+	require.NoError(t, err)
 	genDoc, err := types.GenesisDocFromFile(config.GenesisFile())
-	if err != nil {
-		return fmt.Errorf("failed to read genesis file: %w", err)
-	}
+	require.NoError(t, err)
 	blockStoreDB := db.NewMemDB()
 	stateDB := blockStoreDB
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
 	state, err := sm.MakeGenesisState(genDoc)
-	if err != nil {
-		return fmt.Errorf("failed to make genesis state: %w", err)
-	}
+	require.NoError(t, err, "failed to make genesis state")
 	state.Version.Consensus.App = kvstore.AppVersion
-	if err = stateStore.Save(state); err != nil {
-		t.Error(err)
-	}
+	err = stateStore.Save(state)
+	require.NoError(t, err)
 
 	blockStore := store.NewBlockStore(blockStoreDB)
 
 	proxyApp := proxy.NewAppConns(proxy.NewLocalClientCreator(app), proxy.NopMetrics())
 	proxyApp.SetLogger(logger.With("module", "proxy"))
-	if err := proxyApp.Start(); err != nil {
-		return fmt.Errorf("failed to start proxy app connections: %w", err)
-	}
+	err = proxyApp.Start()
+	require.NoError(t, err, "failed to start proxy app connections")
 	t.Cleanup(func() {
 		if err := proxyApp.Stop(); err != nil {
 			t.Error(err)
@@ -73,9 +70,8 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int, config *cfg.C
 
 	eventBus := types.NewEventBus()
 	eventBus.SetLogger(logger.With("module", "events"))
-	if err := eventBus.Start(); err != nil {
-		return fmt.Errorf("failed to start event bus: %w", err)
-	}
+	err = eventBus.Start()
+	require.NoError(t, err, "failed to start event bus")
 	t.Cleanup(func() {
 		if err := eventBus.Stop(); err != nil {
 			t.Error(err)
@@ -96,26 +92,22 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int, config *cfg.C
 	numBlocksWritten := make(chan struct{})
 	wal := newByteBufferWAL(logger, NewWALEncoder(wr), int64(numBlocks), numBlocksWritten)
 	// see wal.go#103
-	if err := wal.Write(EndHeightMessage{0}); err != nil {
-		t.Error(err)
-	}
+	err = wal.Write(EndHeightMessage{0})
+	require.NoError(t, err)
 
 	consensusState.wal = wal
 
-	if err := consensusState.Start(); err != nil {
-		return fmt.Errorf("failed to start consensus state: %w", err)
-	}
+	err = consensusState.Start()
+	require.NoError(t, err, "failed to start consensus state")
 
 	select {
 	case <-numBlocksWritten:
-		if err := consensusState.Stop(); err != nil {
-			t.Error(err)
-		}
+		err := consensusState.Stop()
+		require.NoError(t, err)
 		return nil
 	case <-time.After(1 * time.Minute):
-		if err := consensusState.Stop(); err != nil {
-			t.Error(err)
-		}
+		err := consensusState.Stop()
+		require.NoError(t, err)
 		return fmt.Errorf("waited too long for CometBFT to produce %d blocks (grep logs for `wal_generator`)", numBlocks)
 	}
 }
@@ -141,7 +133,7 @@ func randPort() int {
 	return base + cmtrand.Intn(spread)
 }
 
-func makeAddrs() (string, string) {
+func makeAddrs() (address, port string) {
 	start := randPort()
 	return fmt.Sprintf("tcp://127.0.0.1:%d", start),
 		fmt.Sprintf("tcp://127.0.0.1:%d", start+1)
@@ -203,15 +195,15 @@ func (w *byteBufferWAL) WriteSync(m WALMessage) error {
 	return w.Write(m)
 }
 
-func (w *byteBufferWAL) FlushAndSync() error { return nil }
+func (*byteBufferWAL) FlushAndSync() error { return nil }
 
-func (w *byteBufferWAL) SearchForEndHeight(
+func (*byteBufferWAL) SearchForEndHeight(
 	int64,
 	*WALSearchOptions,
 ) (rd io.ReadCloser, found bool, err error) {
 	return nil, false, nil
 }
 
-func (w *byteBufferWAL) Start() error { return nil }
-func (w *byteBufferWAL) Stop() error  { return nil }
-func (w *byteBufferWAL) Wait()        {}
+func (*byteBufferWAL) Start() error { return nil }
+func (*byteBufferWAL) Stop() error  { return nil }
+func (*byteBufferWAL) Wait()        {}

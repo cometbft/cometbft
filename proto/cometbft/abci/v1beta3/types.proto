@@ -53,7 +53,7 @@ service ABCI {
   rpc FinalizeBlock(RequestFinalizeBlock) returns (ResponseFinalizeBlock);
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Request types
 
 // Request represents a request to the ABCI application.
@@ -162,7 +162,7 @@ message RequestFinalizeBlock {
   bytes proposer_address = 8;
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Response types
 
 // Response represents a response from the ABCI application.
@@ -265,7 +265,7 @@ message ResponseFinalizeBlock {
   bytes app_hash = 5;
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Blockchain Types
 
 // VoteInfo contains the information about the vote.
@@ -290,7 +290,7 @@ message ExtendedVoteInfo {
   reserved 2;  // signed_last_block
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Misc.
 
 // CommitInfo contains votes for the particular round.

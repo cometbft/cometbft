@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	types "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/service"
+	"github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/service"
 )
 
 type unsyncLocalClient struct {
@@ -55,23 +55,25 @@ func (app *unsyncLocalClient) CheckTxAsync(ctx context.Context, req *types.Check
 }
 
 func (app *unsyncLocalClient) callback(req *types.Request, res *types.Response) *ReqRes {
-	app.Callback(req, res)
+	if app.Callback != nil {
+		app.Callback(req, res)
+	}
 	rr := newLocalReqRes(req, res)
 	rr.callbackInvoked = true
 	return rr
 }
 
-//-------------------------------------------------------
+// -------------------------------------------------------
 
-func (app *unsyncLocalClient) Error() error {
+func (*unsyncLocalClient) Error() error {
 	return nil
 }
 
-func (app *unsyncLocalClient) Flush(context.Context) error {
+func (*unsyncLocalClient) Flush(context.Context) error {
 	return nil
 }
 
-func (app *unsyncLocalClient) Echo(_ context.Context, msg string) (*types.EchoResponse, error) {
+func (*unsyncLocalClient) Echo(_ context.Context, msg string) (*types.EchoResponse, error) {
 	return &types.EchoResponse{Message: msg}, nil
 }
 

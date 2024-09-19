@@ -2,11 +2,10 @@
 
 This guide provides instructions for upgrading to specific versions of CometBFT.
 
-## v1.0.0-alpha.1
+## Unreleased
 
-CometBFT v1.0 is mostly functionally equivalent to CometBFT v0.38, but includes
-some substantial breaking API changes that will hopefully allow future changes
-to be rolled out quicker.
+CometBFT `v1.0` includes some substantial breaking API changes that will hopefully
+allow future changes to be rolled out quicker.
 
 ### Versioning
 
@@ -27,7 +26,37 @@ versioning:
 
 ### Building CometBFT
 
-The minimum Go version has been bumped to [v1.21][go121].
+The minimum Go version has been bumped to [v1.23][go123].
+
+### Proposer-Based Timestamps
+
+CometBFT `v1.0` contains a new algorithm for generating and verifying block timestamps
+called Proposer-Based Timestamps (PBTS).
+The existing algorithm, called BFT-Time is kept for backwards compatibility.
+Upgrading to `v1.0` does not automatically switch the chain from BFT-Time
+to PBTS; rather a ConsensusParam called `PbtsEnableHeight` can be set to a future
+height to transition from BFT-Time to PBTS.
+This flexible mechanism allows chains disentagle the upgrade to `v1.0` from the transition
+in the algorithm used for block times.
+For further information, please check the [PBTS specification][pbts-spec].
+
+### ABCI Mutex
+
+CometBFT's existing ABCI local client is prevented from making
+concurrent calls to ABCI implementations by virtue of a mutex taken
+by the client's implementation.
+In this release, two additional local ABCI clients have been added.
+The first, supports one different mutex per ABCI connection
+(consensus connection, mempool connection, etc.), allowing concurrency
+in the application in different ABCI connections, but still serializing
+ABCI calls within the same connection.
+The second, totally removes mutexes from the ABCI client.
+When using either of the new ABCI clients, the application is now
+responsible to coordinate concurrent ABCI calls in order to prevent
+race conditions or the possibility of non determinism.
+If you are not sure how to ensure those guarantees in your application,
+you are strongly advised to keep on using the existing ABCI client
+containing one global mutex.
 
 ### Consensus
 
@@ -62,17 +91,10 @@ into the `internal` directory:
 - `libs/net`
 - `libs/os`
 - `libs/progressbar`
-- `libs/protoio`
-- `libs/pubsub`
 - `libs/rand`
-- `libs/service`
 - `libs/strings`
-- `libs/sync`
 - `libs/tempfile`
 - `libs/timer`
-- `state`
-- `statesync`
-- `store`
 
 If you rely on any of these packages and would like us to make them public
 again, please [log an issue on
@@ -113,23 +135,29 @@ The `Mempool` interface was modified on `CheckTx`. Note that this interface is
 meant for internal use only, so you should be aware of these changes only if you
 happen to call these methods directly.
 
-`CheckTx`'s signature changed from `CheckTx(tx types.Tx, cb
-func(*abci.ResponseCheckTx), txInfo TxInfo) error` to `CheckTx(tx types.Tx)
-(abcicli.ReqRes, error)`.
-- The method used to take a callback function `cb` to be applied to the
-  ABCI `CheckTx` response. Now `CheckTx` returns the ABCI response of
-  type `abcicli.ReqRes`, on which the callback must be applied manually.
-  For example:
+`CheckTx`'s signature changed from
+`CheckTx(tx types.Tx, cb func(*abci.ResponseCheckTx), txInfo TxInfo) error` to
+`CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, error)`.
+The method used to take a callback function `cb` to be applied to the
+ABCI `CheckTx` response and a `TxInfo` structure containing a sender.
+Now the sender ID is passed directly and `CheckTx` returns the ABCI response
+of type `*abcicli.ReqRes`, on which one can apply any callback manually.
+For example:
+```golang
+reqRes, err := CheckTx(tx, sender)
+// check `err` here
+cb(reqRes.Response.GetCheckTx())
+```
 
-  ```golang
-  reqRes, err := CheckTx(tx)
-  cb(reqRes.Response.GetCheckTx())
-  ```
-
-- The second parameter was `txInfo`, which essentially contained
-  information about the sender of the transaction. Now that information
-  is stored in the mempool reactor instead of the data structure, so it
-  is no longer needed in this method.
+The `*abcicli.ReqRes` structure that `CheckTx` returns has a callback to
+process the response already set (namely, the function `handleCheckTxResponse`).
+The callback will be invoked internally when the response is ready. We need only 
+to wait for it; for example:
+```golang
+reqRes, err := CheckTx(tx, sender)
+// check `err` here
+reqRes.Wait()
+```
 
 ### Protobufs and Generated Go Code
 
@@ -170,6 +198,12 @@ definitions:
    Go module. This code is still generated using the Cosmos SDK's [gogoproto
    fork](https://github.com/cosmos/gogoproto) at present.
 
+4. Several ABCI-related types were renamed in order to align with [Buf
+   guidelines](https://buf.build/docs/best-practices/style-guide/). `Request*`
+   and `Response*` were renamed to `*Request` and `*Response` (e.g.
+   `RequestQuery` was renamed to `QueryRequest`). See the changelog for more
+   details.
+
 ### RPC
 
 - The RPC API is now versioned, with the existing RPC being available under both
@@ -188,6 +222,10 @@ definitions:
   // at http://localhost:26657/v1/websocket
   rpcClient, err := client.New("http://localhost:26657/v1")
   ```
+
+### Config Changes
+
+- `consensus.skip_timeout_commit` has been removed in favor of `consensus.timeout_commit=0s`.
 
 ## v0.38.0
 
@@ -360,4 +398,5 @@ please see the [Tendermint Core upgrading instructions][tmupgrade].
 [discussions]: https://github.com/cometbft/cometbft/discussions
 [tmupgrade]: https://github.com/tendermint/tendermint/blob/35581cf54ec436b8c37fabb43fdaa3f48339a170/UPGRADING.md
 [go120]: https://go.dev/blog/go1.20
-[go121]: https://go.dev/blog/go1.21
+[go123]: https://go.dev/blog/go1.23
+[pbts-spec]: ./spec/consensus/proposer-based-timestamp/README.md

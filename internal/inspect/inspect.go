@@ -10,14 +10,14 @@ import (
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/inspect/rpc"
-	"github.com/cometbft/cometbft/internal/state"
-	"github.com/cometbft/cometbft/internal/state/indexer"
-	"github.com/cometbft/cometbft/internal/state/indexer/block"
-	"github.com/cometbft/cometbft/internal/state/txindex"
-	"github.com/cometbft/cometbft/internal/store"
 	cmtstrings "github.com/cometbft/cometbft/internal/strings"
 	"github.com/cometbft/cometbft/libs/log"
 	rpccore "github.com/cometbft/cometbft/rpc/core"
+	"github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/indexer"
+	"github.com/cometbft/cometbft/state/indexer/block"
+	"github.com/cometbft/cometbft/state/txindex"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -73,7 +73,7 @@ func NewFromConfig(cfg *config.Config) (*Inspector, error) {
 	if err != nil {
 		return nil, err
 	}
-	bs := store.NewBlockStore(bsDB)
+	bs := store.NewBlockStore(bsDB, store.WithDBKeyLayout(cfg.Storage.ExperimentalKeyLayout))
 	sDB, err := config.DefaultDBProvider(&config.DBContext{ID: "state", Config: cfg})
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func NewFromConfig(cfg *config.Config) (*Inspector, error) {
 	if err != nil {
 		return nil, err
 	}
-	txidx, blkidx, err := block.IndexerFromConfig(cfg, config.DefaultDBProvider, genDoc.ChainID)
+	txidx, blkidx, _, err := block.IndexerFromConfig(cfg, config.DefaultDBProvider, genDoc.ChainID)
 	if err != nil {
 		return nil, err
 	}

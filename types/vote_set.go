@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/cometbft/cometbft/internal/bits"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 const (
@@ -421,7 +421,7 @@ func (voteSet *VoteSet) GetByAddress(address []byte) *Vote {
 	}
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
-	valIndex, val := voteSet.valSet.GetByAddress(address)
+	valIndex, val := voteSet.valSet.GetByAddressMut(address)
 	if val == nil {
 		panic("GetByAddress(address) returned nil")
 	}
@@ -482,7 +482,7 @@ func (voteSet *VoteSet) TwoThirdsMajority() (blockID BlockID, ok bool) {
 	return BlockID{}, false
 }
 
-//--------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 // Strings and JSON
 
 const nilVoteSetString = "nil-VoteSet"
@@ -619,13 +619,13 @@ func (voteSet *VoteSet) LogString() string {
 }
 
 // sumTotalFrac returns the power voted, the total, and the fraction.
-func (voteSet *VoteSet) sumTotalFrac() (int64, int64, float64) {
-	voted, total := voteSet.sum, voteSet.valSet.TotalVotingPower()
-	fracVoted := float64(voted) / float64(total)
+func (voteSet *VoteSet) sumTotalFrac() (voted, total int64, fracVoted float64) {
+	voted, total = voteSet.sum, voteSet.valSet.TotalVotingPower()
+	fracVoted = float64(voted) / float64(total)
 	return voted, total, fracVoted
 }
 
-//--------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 // Commit
 
 // MakeExtendedCommit constructs a Commit from the VoteSet. It only includes
@@ -633,7 +633,7 @@ func (voteSet *VoteSet) sumTotalFrac() (int64, int64, float64) {
 //
 // Panics if the vote type is not PrecommitType or if there's no +2/3 votes for
 // a single block.
-func (voteSet *VoteSet) MakeExtendedCommit(ap ABCIParams) *ExtendedCommit {
+func (voteSet *VoteSet) MakeExtendedCommit(fp FeatureParams) *ExtendedCommit {
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
 
@@ -664,14 +664,14 @@ func (voteSet *VoteSet) MakeExtendedCommit(ap ABCIParams) *ExtendedCommit {
 		BlockID:            *voteSet.maj23,
 		ExtendedSignatures: sigs,
 	}
-	if err := ec.EnsureExtensions(ap.VoteExtensionsEnabled(ec.Height)); err != nil {
+	if err := ec.EnsureExtensions(fp.VoteExtensionsEnabled(ec.Height)); err != nil {
 		panic(fmt.Errorf("problem with vote extension data when making extended commit of height %d; %w",
 			ec.Height, err))
 	}
 	return ec
 }
 
-//--------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 /*
 Votes for a particular block
@@ -711,7 +711,7 @@ func (vs *blockVotes) getByIndex(index int32) *Vote {
 	return vs.votes[index]
 }
 
-//--------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 // Common interface between *consensus.VoteSet and types.Commit.
 type VoteSetReader interface {

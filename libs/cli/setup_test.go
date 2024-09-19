@@ -40,7 +40,7 @@ func TestSetupEnv(t *testing.T) {
 		var foo string
 		demo := &cobra.Command{
 			Use: "demo",
-			RunE: func(cmd *cobra.Command, args []string) error {
+			RunE: func(_ *cobra.Command, _ []string) error {
 				foo = viper.GetString("foobar")
 				return nil
 			},
@@ -98,7 +98,7 @@ func TestSetupConfig(t *testing.T) {
 		var foo, two string
 		boo := &cobra.Command{
 			Use: "reader",
-			RunE: func(cmd *cobra.Command, args []string) error {
+			RunE: func(_ *cobra.Command, _ []string) error {
 				foo = viper.GetString("boo")
 				two = viper.GetString("two-words")
 				return nil
@@ -177,7 +177,7 @@ func TestSetupUnmarshal(t *testing.T) {
 		cfg := base
 		marsh := &cobra.Command{
 			Use: "marsh",
-			RunE: func(cmd *cobra.Command, args []string) error {
+			RunE: func(_ *cobra.Command, _ []string) error {
 				return viper.Unmarshal(&cfg)
 			},
 		}
@@ -214,7 +214,7 @@ func TestSetupTrace(t *testing.T) {
 		// test command that store value of foobar in local variable
 		trace := &cobra.Command{
 			Use: "trace",
-			RunE: func(cmd *cobra.Command, args []string) error {
+			RunE: func(_ *cobra.Command, _ []string) error {
 				return fmt.Errorf("trace flag = %t", viper.GetBool(TraceFlag))
 			},
 		}
@@ -228,7 +228,7 @@ func TestSetupTrace(t *testing.T) {
 		require.Equal(t, "", stdout, i)
 		require.NotEqual(t, "", stderr, i)
 		msg := strings.Split(stderr, "\n")
-		desired := fmt.Sprintf("ERROR: %s", tc.expected)
+		desired := "ERROR: " + tc.expected
 		assert.Equal(t, desired, msg[0], i)
 		t.Log(msg)
 		if tc.long && assert.Greater(t, len(msg), 2, i) {

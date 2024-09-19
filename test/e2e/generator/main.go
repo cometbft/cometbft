@@ -31,11 +31,11 @@ type CLI struct {
 func NewCLI() *CLI {
 	cli := &CLI{}
 	cli.root = &cobra.Command{
-		Use:           "generator -d dir [-g int] [-m version_weight_csv] [-p]",
+		Use:           "generator -d dir [-g int] [-m version_weight_csv] [-p] [-l log_level]",
 		Short:         "End-to-end testnet generator",
 		SilenceUsage:  true,
 		SilenceErrors: true, // we'll output them ourselves in Run()
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			dir, err := cmd.Flags().GetString("dir")
 			if err != nil {
 				return err
@@ -52,7 +52,11 @@ func NewCLI() *CLI {
 			if err != nil {
 				return err
 			}
-			return cli.generate(dir, groups, multiVersion, prometheus)
+			logLevel, err := cmd.Flags().GetString("log-level")
+			if err != nil {
+				return err
+			}
+			return cli.generate(dir, groups, multiVersion, prometheus, logLevel)
 		},
 	}
 
@@ -62,12 +66,13 @@ func NewCLI() *CLI {
 		"or empty to only use this branch's version")
 	cli.root.PersistentFlags().IntP("groups", "g", 0, "Number of groups")
 	cli.root.PersistentFlags().BoolP("prometheus", "p", false, "Enable generation of Prometheus metrics on all manifests")
+	cli.root.PersistentFlags().StringP("log-level", "l", "", "Log level to use in the CometBFT config file, e.g. 'debug'")
 
 	return cli
 }
 
 // generate generates manifests in a directory.
-func (cli *CLI) generate(dir string, groups int, multiVersion string, prometheus bool) error {
+func (*CLI) generate(dir string, groups int, multiVersion string, prometheus bool, logLevel string) error {
 	err := os.MkdirAll(dir, 0o755)
 	if err != nil {
 		return err
@@ -77,6 +82,7 @@ func (cli *CLI) generate(dir string, groups int, multiVersion string, prometheus
 		randSource:   rand.New(rand.NewSource(randomSeed)), //nolint:gosec
 		multiVersion: multiVersion,
 		prometheus:   prometheus,
+		logLevel:     logLevel,
 	}
 	manifests, err := Generate(cfg)
 	if err != nil {

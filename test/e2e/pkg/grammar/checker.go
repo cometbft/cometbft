@@ -1,15 +1,16 @@
 package grammar
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
-	lexer "github.com/cometbft/cometbft/test/e2e/pkg/grammar/grammar-auto/lexer"
-	parser "github.com/cometbft/cometbft/test/e2e/pkg/grammar/grammar-auto/parser"
-	symbols "github.com/cometbft/cometbft/test/e2e/pkg/grammar/grammar-auto/parser/symbols"
+	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/grammar-auto/lexer"
+	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/grammar-auto/parser"
+	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/grammar-auto/parser/symbols"
 )
 
 const Commit = "commit"
@@ -58,7 +59,7 @@ func NewGrammarChecker(cfg *Config) *Checker {
 
 // isSupportedByGrammar returns true for all requests supported by the current grammar ("/pkg/grammar/clean-start/abci_grammar_clean_start.md" and "/pkg/grammar/recovery/abci_grammar_recovery.md").
 // This method needs to be modified if we add another ABCI call.
-func (g *Checker) isSupportedByGrammar(req *abci.Request) bool {
+func (*Checker) isSupportedByGrammar(req *abci.Request) bool {
 	switch req.Value.(type) {
 	case *abci.Request_InitChain, *abci.Request_FinalizeBlock, *abci.Request_Commit,
 		*abci.Request_OfferSnapshot, *abci.Request_ApplySnapshotChunk, *abci.Request_PrepareProposal,
@@ -90,7 +91,7 @@ func (g *Checker) filterLastHeight(reqs []*abci.Request) ([]*abci.Request, int) 
 	pos := len(reqs) - 1
 	cnt := 0
 	// Find the last commit.
-	for pos > 0 && g.getRequestTerminal(reqs[pos]) != Commit {
+	for pos >= 0 && g.getRequestTerminal(reqs[pos]) != Commit {
 		pos--
 		cnt++
 	}
@@ -98,7 +99,7 @@ func (g *Checker) filterLastHeight(reqs []*abci.Request) ([]*abci.Request, int) 
 }
 
 // getRequestTerminal returns a value of a corresponding terminal in the ABCI grammar for a specific request.
-func (g *Checker) getRequestTerminal(req *abci.Request) string {
+func (*Checker) getRequestTerminal(req *abci.Request) string {
 	// req.String() produces an output like this "init_chain:<time:<seconds:-62135596800 > >"
 	// we take just the part before the ":" (init_chain, in previous example) for each request
 	parts := strings.Split(req.String(), ":")
@@ -126,8 +127,9 @@ func (g *Checker) getExecutionString(reqs []*abci.Request) string {
 // Verify verifies whether a list of request satisfy ABCI grammar.
 func (g *Checker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, error) {
 	if len(reqs) == 0 {
-		return false, fmt.Errorf("execution with no ABCI calls")
+		return false, errors.New("execution with no ABCI calls")
 	}
+	fullExecution := g.getExecutionString(reqs)
 	r := g.filterRequests(reqs)
 	// Check if the execution is incomplete.
 	if len(r) == 0 {
@@ -138,11 +140,11 @@ func (g *Checker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, error) 
 	if errors == nil {
 		return true, nil
 	}
-	return false, fmt.Errorf("%v\nFull execution:\n%v", g.combineErrors(errors, g.cfg.NumberOfErrorsToShow), g.addHeightNumbersToTheExecution(execution))
+	return false, fmt.Errorf("%v\nFull execution:\n%v", g.combineErrors(errors, g.cfg.NumberOfErrorsToShow), g.addHeightNumbersToTheExecution(fullExecution))
 }
 
 // verifyCleanStart verifies if a specific execution is a valid execution.
-func (g *Checker) verify(execution string, isCleanStart bool) []*Error {
+func (*Checker) verify(execution string, isCleanStart bool) []*Error {
 	errors := make([]*Error, 0)
 	lexer := lexer.New([]rune(execution))
 	bsrForest, errs := parser.Parse(lexer)
@@ -183,7 +185,7 @@ func (g *Checker) verify(execution string, isCleanStart bool) []*Error {
 }
 
 // addHeightNumbersToTheExecution adds height numbers to the execution. This is used just when printing the execution so we can find the height with error more easily.
-func (g *Checker) addHeightNumbersToTheExecution(execution string) string {
+func (*Checker) addHeightNumbersToTheExecution(execution string) string {
 	heights := strings.Split(execution, "\n")
 	s := ""
 	for i, l := range heights {
@@ -196,7 +198,7 @@ func (g *Checker) addHeightNumbersToTheExecution(execution string) string {
 }
 
 // combineErrors combines at most n errors in one.
-func (g *Checker) combineErrors(errors []*Error, n int) error {
+func (*Checker) combineErrors(errors []*Error, n int) error {
 	s := ""
 	for i, e := range errors {
 		if i == n {

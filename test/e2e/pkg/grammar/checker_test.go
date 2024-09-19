@@ -34,9 +34,7 @@ type ABCIExecution struct {
 var consExecPart = []ABCIExecution{
 	// consensus-height = finalizeBlock commit
 	{[]*abci.Request{finalizeBlock, commit}, true},
-	{[]*abci.Request{}, false},
 	{[]*abci.Request{commit}, false},
-	{[]*abci.Request{finalizeBlock}, false},
 	// consensus-height = *consensus-round finalizeBlock commit
 	// consensus-height = *consensus-round finalizeBlock commit
 	// consensus-round = proposer
@@ -119,8 +117,8 @@ func TestVerifyCleanStart(t *testing.T) {
 		// state-sync = success-sync
 		{[]*abci.Request{offerSnapshot, applyChunk}, true},
 		{[]*abci.Request{offerSnapshot, applyChunk, applyChunk}, true},
-		{[]*abci.Request{applyChunk, finalizeBlock, commit}, false},
-		{[]*abci.Request{offerSnapshot, finalizeBlock, commit}, false},
+		{[]*abci.Request{applyChunk}, false},
+		{[]*abci.Request{offerSnapshot}, false},
 		// state-sync = *state-sync-attempt success-sync
 		{[]*abci.Request{offerSnapshot, applyChunk, offerSnapshot, applyChunk}, true},
 		{[]*abci.Request{offerSnapshot, applyChunk, applyChunk, applyChunk, offerSnapshot, applyChunk}, true},
@@ -174,13 +172,17 @@ func TestVerifyRecovery(t *testing.T) {
 }
 
 func TestFilterLastHeight(t *testing.T) {
-	reqs := []*abci.Request{initChain, finalizeBlock, commit}
+	reqs := []*abci.Request{initChain, finalizeBlock}
 	checker := NewGrammarChecker(DefaultConfig())
-	rr, n := checker.filterLastHeight(reqs)
-	require.Equal(t, len(reqs), len(rr))
+	r, n := checker.filterLastHeight(reqs)
+	require.Equal(t, len(r), 0)
+	require.Equal(t, n, 2)
+	reqs = append(reqs, commit)
+	r, n = checker.filterLastHeight(reqs)
+	require.Equal(t, len(r), len(reqs))
 	require.Zero(t, n)
-	reqs = append(reqs, finalizeBlock)
-	rrr, n := checker.filterLastHeight(reqs)
-	require.Equal(t, len(rr), len(rrr))
-	require.Equal(t, 1, n)
+	reqs = append(reqs, []*abci.Request{prepareProposal, processProposal}...)
+	r, n = checker.filterLastHeight(reqs)
+	require.Equal(t, len(r), 3)
+	require.Equal(t, n, 2)
 }

@@ -4,7 +4,7 @@ order: 2
 # Creating a proposal
 
 A block consists of a header, transactions, votes (the commit),
-and a list of evidence of malfeasance (eg. signing conflicting votes).
+and a list of evidence of misbehavior (e.g. duplicate vote).
 
 Outstanding evidence items get priority over outstanding transactions in the mempool.
 All in all, the block MUST NOT exceed  `ConsensusParams.Block.MaxBytes`,

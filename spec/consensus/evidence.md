@@ -38,8 +38,8 @@ evidence and begin gossiping this evidence to other nodes. [Verification](#dupli
 
 ```go
 type DuplicateVoteEvidence struct {
-    VoteA Vote
-    VoteB Vote
+    VoteA *Vote
+    VoteB *Vote
 
     // and abci specific fields
 }
@@ -62,7 +62,7 @@ then the light client sends the "forged" light block to the node.
 
 ```go
 type LightClientAttackEvidence struct {
-    ConflictingBlock LightBlock
+    ConflictingBlock *LightBlock
     CommonHeight int64
 
       // and abci specific fields
@@ -143,26 +143,33 @@ will usually cache verifications so that this process is much quicker.
 ## Sending Evidence to the Application
 
 After evidence is committed, the block is then processed by the block executor
-which delivers the evidence to the application via `EndBlock`. Evidence is
-stripped of the actual proof, split up per faulty validator and only the
-validator, height, time and evidence type is sent.
+which delivers the list of misbehavior (`[]abci.Misbehavior`) to the application via the `FinalizeBlock`.
 
 ```proto
-enum EvidenceType {
-  UNKNOWN             = 0;
-  DUPLICATE_VOTE      = 1;
-  LIGHT_CLIENT_ATTACK = 2;
+// The type of misbehavior committed by a validator.
+enum MisbehaviorType {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // Unknown
+  MISBEHAVIOR_TYPE_UNKNOWN = 0;
+  // Duplicate vote
+  MISBEHAVIOR_TYPE_DUPLICATE_VOTE = 1;
+  // Light client attack
+  MISBEHAVIOR_TYPE_LIGHT_CLIENT_ATTACK = 2;
 }
 
-message Evidence {
-  EvidenceType type = 1;
+// Misbehavior is a type of misbehavior committed by a validator.
+message Misbehavior {
+  MisbehaviorType type = 1;
   // The offending validator
   Validator validator = 2 [(gogoproto.nullable) = false];
   // The height when the offense occurred
   int64 height = 3;
   // The corresponding time where the offense occurred
   google.protobuf.Timestamp time = 4 [
-    (gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+    (gogoproto.nullable) = false,
+    (gogoproto.stdtime)  = true
+  ];
   // Total voting power of the validator set in case the ABCI application does
   // not store historical validators.
   // https://github.com/tendermint/tendermint/issues/4581
@@ -170,9 +177,10 @@ message Evidence {
 }
 ```
 
-`DuplicateVoteEvidence` and `LightClientAttackEvidence` are self-contained in
-the sense that the evidence can be used to derive the `abci.Evidence` that is
-sent to the application. Because of this, extra fields are necessary:
+`DuplicateVoteEvidence` and `LightClientAttackEvidence` are can be used to derive the list of `abci.Misbehavior` for
+each byzantine validator that is sent to the application in the `FinalizeBlockRequest`.
+
+Because of this, extra fields are necessary:
 
 ```go
 type DuplicateVoteEvidence struct {

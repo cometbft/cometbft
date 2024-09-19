@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/google/uuid"
 
@@ -43,13 +43,13 @@ func main() {
 	})
 }
 
-func (f *ClientFactory) ValidateConfig(cfg loadtest.Config) error {
+func (*ClientFactory) ValidateConfig(cfg loadtest.Config) error {
 	psb, err := payload.MaxUnpaddedSize()
 	if err != nil {
 		return err
 	}
 	if psb > cfg.Size {
-		return fmt.Errorf("payload size exceeds configured size")
+		return errors.New("payload size exceeds configured size")
 	}
 	return nil
 }

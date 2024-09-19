@@ -15,7 +15,7 @@ option go_package = "github.com/cometbft/cometbft/api/cometbft/abci/v1beta1";
 // NOTE: When using custom types, mind the warnings.
 // https://github.com/cosmos/gogoproto/blob/master/custom_types.md#warnings-and-issues
 
-//----------------------------------------
+// ----------------------------------------
 // Request types
 
 // Request represents a request to the ABCI application.
@@ -140,7 +140,7 @@ message RequestApplySnapshotChunk {
   string sender = 3;
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Response types
 
 // Response represents a response from the ABCI application.
@@ -338,7 +338,7 @@ message ResponseApplySnapshotChunk {
   }
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Misc.
 
 // ConsensusParams contains all consensus-relevant parameters
@@ -392,7 +392,7 @@ message TxResult {
   ResponseDeliverTx result = 4 [(gogoproto.nullable) = false];
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Blockchain Types
 
 // Validator in the validator set.
@@ -442,7 +442,7 @@ message Evidence {
   int64 total_voting_power = 5;
 }
 
-//----------------------------------------
+// ----------------------------------------
 // State Sync Types
 
 // Snapshot of the ABCI application state.
@@ -454,7 +454,7 @@ message Snapshot {
   bytes  metadata = 5;  // Arbitrary application metadata
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Service Definition
 
 // ABCIApplication is a service for an ABCI application.

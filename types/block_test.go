@@ -35,10 +35,10 @@ func TestBlockAddEvidence(t *testing.T) {
 	h := int64(3)
 
 	voteSet, _, vals := randVoteSet(h-1, 1, PrecommitType, 10, 1, false)
-	extCommit, err := MakeExtCommit(lastID, h-1, 1, voteSet, vals, time.Now(), false)
+	extCommit, err := MakeExtCommit(lastID, h-1, 1, voteSet, vals, cmttime.Now(), false)
 	require.NoError(t, err)
 
-	ev, err := NewMockDuplicateVoteEvidenceWithValidator(h, time.Now(), vals[0], "block-test-chain")
+	ev, err := NewMockDuplicateVoteEvidenceWithValidator(h, cmttime.Now(), vals[0], "block-test-chain")
 	require.NoError(t, err)
 	evList := []Evidence{ev}
 
@@ -56,11 +56,11 @@ func TestBlockValidateBasic(t *testing.T) {
 	h := int64(3)
 
 	voteSet, valSet, vals := randVoteSet(h-1, 1, PrecommitType, 10, 1, false)
-	extCommit, err := MakeExtCommit(lastID, h-1, 1, voteSet, vals, time.Now(), false)
+	extCommit, err := MakeExtCommit(lastID, h-1, 1, voteSet, vals, cmttime.Now(), false)
 	require.NoError(t, err)
 	commit := extCommit.ToCommit()
 
-	ev, err := NewMockDuplicateVoteEvidenceWithValidator(h, time.Now(), vals[0], "block-test-chain")
+	ev, err := NewMockDuplicateVoteEvidenceWithValidator(h, cmttime.Now(), vals[0], "block-test-chain")
 	require.NoError(t, err)
 	evList := []Evidence{ev}
 
@@ -69,7 +69,7 @@ func TestBlockValidateBasic(t *testing.T) {
 		malleateBlock func(*Block)
 		expErr        bool
 	}{
-		{"Make Block", func(blk *Block) {}, false},
+		{"Make Block", func(_ *Block) {}, false},
 		{"Make Block w/ proposer Addr", func(blk *Block) { blk.ProposerAddress = valSet.GetProposer().Address }, false},
 		{"Negative Height", func(blk *Block) { blk.Height = -1 }, true},
 		{"Remove 1/2 the commits", func(blk *Block) {
@@ -92,8 +92,6 @@ func TestBlockValidateBasic(t *testing.T) {
 		}, true},
 	}
 	for i, tc := range testCases {
-		tc := tc
-		i := i
 		t.Run(tc.testName, func(t *testing.T) {
 			block := MakeBlock(h, txs, commit, evList)
 			block.ProposerAddress = valSet.GetProposer().Address
@@ -129,10 +127,10 @@ func TestBlockMakePartSetWithEvidence(t *testing.T) {
 	h := int64(3)
 
 	voteSet, _, vals := randVoteSet(h-1, 1, PrecommitType, 10, 1, false)
-	extCommit, err := MakeExtCommit(lastID, h-1, 1, voteSet, vals, time.Now(), false)
+	extCommit, err := MakeExtCommit(lastID, h-1, 1, voteSet, vals, cmttime.Now(), false)
 	require.NoError(t, err)
 
-	ev, err := NewMockDuplicateVoteEvidenceWithValidator(h, time.Now(), vals[0], "block-test-chain")
+	ev, err := NewMockDuplicateVoteEvidenceWithValidator(h, cmttime.Now(), vals[0], "block-test-chain")
 	require.NoError(t, err)
 	evList := []Evidence{ev}
 
@@ -149,10 +147,10 @@ func TestBlockHashesTo(t *testing.T) {
 	lastID := makeBlockIDRandom()
 	h := int64(3)
 	voteSet, valSet, vals := randVoteSet(h-1, 1, PrecommitType, 10, 1, false)
-	extCommit, err := MakeExtCommit(lastID, h-1, 1, voteSet, vals, time.Now(), false)
+	extCommit, err := MakeExtCommit(lastID, h-1, 1, voteSet, vals, cmttime.Now(), false)
 	require.NoError(t, err)
 
-	ev, err := NewMockDuplicateVoteEvidenceWithValidator(h, time.Now(), vals[0], "block-test-chain")
+	ev, err := NewMockDuplicateVoteEvidenceWithValidator(h, cmttime.Now(), vals[0], "block-test-chain")
 	require.NoError(t, err)
 	evList := []Evidence{ev}
 
@@ -230,7 +228,7 @@ func TestCommit(t *testing.T) {
 	lastID := makeBlockIDRandom()
 	h := int64(3)
 	voteSet, _, vals := randVoteSet(h-1, 1, PrecommitType, 10, 1, true)
-	extCommit, err := MakeExtCommit(lastID, h-1, 1, voteSet, vals, time.Now(), true)
+	extCommit, err := MakeExtCommit(lastID, h-1, 1, voteSet, vals, cmttime.Now(), true)
 	require.NoError(t, err)
 
 	assert.Equal(t, h-1, extCommit.Height)
@@ -253,15 +251,14 @@ func TestCommitValidateBasic(t *testing.T) {
 		malleateCommit func(*Commit)
 		expectErr      bool
 	}{
-		{"Random Commit", func(com *Commit) {}, false},
+		{"Random Commit", func(_ *Commit) {}, false},
 		{"Incorrect signature", func(com *Commit) { com.Signatures[0].Signature = []byte{0} }, false},
 		{"Incorrect height", func(com *Commit) { com.Height = int64(-100) }, true},
 		{"Incorrect round", func(com *Commit) { com.Round = -100 }, true},
 	}
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
-			com := randCommit(time.Now())
+			com := randCommit(cmttime.Now())
 			tc.malleateCommit(com)
 			assert.Equal(t, tc.expectErr, com.ValidateBasic() != nil, "Validate Basic had an unexpected result")
 		})
@@ -353,7 +350,6 @@ func TestHeaderHash(t *testing.T) {
 		}, nil},
 	}
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
 			assert.Equal(t, tc.expectHash, tc.header.Hash())
 
@@ -463,14 +459,12 @@ func TestBlockMaxDataBytes(t *testing.T) {
 		0: {-10, 1, 0, true, 0},
 		1: {10, 1, 0, true, 0},
 		2: {841, 1, 0, true, 0},
-		3: {842, 1, 0, false, 0},
-		4: {843, 1, 0, false, 1},
-		5: {954, 2, 0, false, 1},
-		6: {1053, 2, 100, false, 0},
+		3: {875, 1, 0, false, 0},
+		4: {876, 1, 0, false, 1},
+		5: {1019, 2, 0, false, 0},
 	}
 
 	for i, tc := range testCases {
-		tc := tc
 		if tc.panics {
 			assert.Panics(t, func() {
 				MaxDataBytes(tc.maxBytes, tc.evidenceBytes, tc.valsCount)
@@ -494,12 +488,11 @@ func TestBlockMaxDataBytesNoEvidence(t *testing.T) {
 		0: {-10, 1, true, 0},
 		1: {10, 1, true, 0},
 		2: {841, 1, true, 0},
-		3: {842, 1, false, 0},
-		4: {843, 1, false, 1},
+		3: {875, 1, false, 0},
+		4: {876, 1, false, 1},
 	}
 
 	for i, tc := range testCases {
-		tc := tc
 		if tc.panics {
 			assert.Panics(t, func() {
 				MaxDataBytesNoEvidence(tc.maxBytes, tc.valsCount)
@@ -551,10 +544,10 @@ func TestVoteSetToExtendedCommit(t *testing.T) {
 					Round:            1,
 					Type:             PrecommitType,
 					BlockID:          blockID,
-					Timestamp:        time.Now(),
+					Timestamp:        cmttime.Now(),
 				}
 				v := vote.ToProto()
-				err = vals[i].SignVote(voteSet.ChainID(), v)
+				err = vals[i].SignVote(voteSet.ChainID(), v, true)
 				require.NoError(t, err)
 				vote.Signature = v.Signature
 				if testCase.includeExtension {
@@ -564,11 +557,11 @@ func TestVoteSetToExtendedCommit(t *testing.T) {
 				require.NoError(t, err)
 				require.True(t, added)
 			}
-			var veHeight int64
+			p := DefaultFeatureParams()
 			if testCase.includeExtension {
-				veHeight = 1
+				p.VoteExtensionsEnableHeight = 1
 			}
-			ec := voteSet.MakeExtendedCommit(ABCIParams{VoteExtensionsEnableHeight: veHeight})
+			ec := voteSet.MakeExtendedCommit(p)
 
 			for i := int32(0); int(i) < len(vals); i++ {
 				vote1 := voteSet.GetByIndex(i)
@@ -616,7 +609,7 @@ func TestExtendedCommitToVoteSet(t *testing.T) {
 			h := int64(3)
 
 			voteSet, valSet, vals := randVoteSet(h-1, 1, PrecommitType, 10, 1, true)
-			extCommit, err := MakeExtCommit(lastID, h-1, 1, voteSet, vals, time.Now(), true)
+			extCommit, err := MakeExtCommit(lastID, h-1, 1, voteSet, vals, cmttime.Now(), true)
 			require.NoError(t, err)
 
 			if !testCase.includeExtension {
@@ -700,7 +693,8 @@ func TestCommitToVoteSetWithVotesForNilBlock(t *testing.T) {
 			}
 		}
 
-		veHeightParam := ABCIParams{VoteExtensionsEnableHeight: 0}
+		veHeightParam := DefaultFeatureParams()
+		veHeightParam.VoteExtensionsEnableHeight = 0
 		if tc.valid {
 			extCommit := voteSet.MakeExtendedCommit(veHeightParam) // panics without > 2/3 valid votes
 			assert.NotNil(t, extCommit)
@@ -741,7 +735,6 @@ func TestBlockIDValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
 			blockID := BlockID{
 				Hash:          tc.blockIDHash,
@@ -754,7 +747,7 @@ func TestBlockIDValidateBasic(t *testing.T) {
 
 func TestBlockProtoBuf(t *testing.T) {
 	h := cmtrand.Int63()
-	c1 := randCommit(time.Now())
+	c1 := randCommit(cmttime.Now())
 	b1 := MakeBlock(h, []Tx{Tx([]byte{1})}, &Commit{Signatures: []CommitSig{}}, []Evidence{})
 	b1.ProposerAddress = cmtrand.Bytes(crypto.AddressSize)
 
@@ -826,7 +819,7 @@ func TestDataProtoBuf(t *testing.T) {
 // TestEvidenceDataProtoBuf ensures parity in converting to and from proto.
 func TestEvidenceDataProtoBuf(t *testing.T) {
 	const chainID = "mychain"
-	ev, err := NewMockDuplicateVoteEvidence(math.MaxInt64, time.Now(), chainID)
+	ev, err := NewMockDuplicateVoteEvidence(math.MaxInt64, cmttime.Now(), chainID)
 	require.NoError(t, err)
 	data := &EvidenceData{Evidence: EvidenceList{ev}}
 	_ = data.ByteSize()
@@ -862,7 +855,7 @@ func TestEvidenceDataProtoBuf(t *testing.T) {
 
 func makeRandHeader() Header {
 	chainID := "test"
-	t := time.Now()
+	t := cmttime.Now()
 	height := cmtrand.Int63()
 	randBytes := cmtrand.Bytes(tmhash.Size)
 	randAddress := cmtrand.Bytes(crypto.AddressSize)
@@ -900,7 +893,6 @@ func TestHeaderProto(t *testing.T) {
 	}
 
 	for _, tt := range tc {
-		tt := tt
 		t.Run(tt.msg, func(t *testing.T) {
 			pb := tt.h1.ToProto()
 			h, err := HeaderFromProto(pb)
@@ -939,7 +931,7 @@ func TestBlockIDProtoBuf(t *testing.T) {
 }
 
 func TestSignedHeaderProtoBuf(t *testing.T) {
-	commit := randCommit(time.Now())
+	commit := randCommit(cmttime.Now())
 	h := makeRandHeader()
 
 	sh := SignedHeader{Header: &h, Commit: commit}

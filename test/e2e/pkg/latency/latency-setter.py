@@ -65,11 +65,19 @@ def set_latency(ips_path, latencies_path, iface):
 
     # print(f"# Setting rules for interface {iface} in zone {myzone} with IP {myip}")
 
-    # TODO: explain the following commands
+    # Delete any existing qdisc on the root of the specified interface
     os.system(f"tc qdisc del dev {iface} root 2> /dev/null")
+
+    # Add a new root qdisc of type HTB with a default class of 10
     os.system(f"tc qdisc add dev {iface} root handle 1: htb default 10")
+
+    # Add a root class with identifier 1:1 and a rate limit of 1 gigabit per second
     os.system(f"tc class add dev {iface} parent 1: classid 1:1 htb rate 1gbit 2> /dev/null")
+
+    # Add a default class under the root class with identifier 1:10 and a rate limit of 1 gigabit per second
     os.system(f"tc class add dev {iface} parent 1:1 classid 1:10 htb rate 1gbit 2> /dev/null")
+
+    # Add an SFQ qdisc to the default class with handle 10: to manage traffic with fairness
     os.system(f"tc qdisc add dev {iface} parent 1:10 handle 10: sfq perturb 10")
 
     handle = 11 # why this initial number?
@@ -80,8 +88,10 @@ def set_latency(ips_path, latencies_path, iface):
         
         delta = .05 * lat
         
-        # TODO: explain the following commands
+        # Add a class with the calculated handle, under the root class, with the specified rate
         os.system(f"tc class add dev {iface} parent 1:1 classid 1:{handle} htb rate 1gbit 2> /dev/null")
+        
+        # Add a netem qdisc to simulate the specified delay with normal distribution
         os.system(f"tc qdisc add dev {iface} parent 1:{handle} handle {handle}: netem delay {lat:.2f}ms {delta:.2f}ms distribution normal")
 
         for item in ip_zones:

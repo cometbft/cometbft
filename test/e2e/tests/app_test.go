@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/types"
 )
@@ -56,7 +57,7 @@ func TestApp_Hash(t *testing.T) {
 			require.NoError(t, err)
 			require.NotZero(t, status.SyncInfo.LatestBlockHeight)
 			return status.SyncInfo.LatestBlockHeight >= requestedHeight
-		}, 5*time.Second, 500*time.Millisecond)
+		}, 30*time.Second, 500*time.Millisecond)
 
 		block, err := client.Block(ctx, &requestedHeight)
 		require.NoError(t, err)
@@ -86,16 +87,19 @@ func TestApp_Tx(t *testing.T) {
 		value := hex.EncodeToString(bz)
 		tx := types.Tx(fmt.Sprintf("%v=%v", key, value))
 
-		_, err = client.BroadcastTxSync(ctx, tx)
+		res, err := client.BroadcastTxSync(ctx, tx)
 		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.Zero(t, res.Code)
 
 		hash := tx.Hash()
-		waitTime := 30 * time.Second
+		require.Equal(t, res.Hash, cmtbytes.HexBytes(hash))
+		waitTime := 1 * time.Minute
 		require.Eventuallyf(t, func() bool {
 			txResp, err := client.Tx(ctx, hash, false)
 			return err == nil && bytes.Equal(txResp.Tx, tx)
 		}, waitTime, time.Second,
-			"submitted tx wasn't committed after %v", waitTime,
+			"submitted tx (%X) wasn't committed after %v", hash, waitTime,
 		)
 
 		// NOTE: we don't test abci query of the light client

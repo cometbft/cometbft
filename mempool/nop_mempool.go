@@ -5,7 +5,7 @@ import (
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/service"
+	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
 )
@@ -22,7 +22,7 @@ var errNotAllowed = errors.New("not allowed with `nop` mempool")
 var _ Mempool = &NopMempool{}
 
 // CheckTx always returns an error.
-func (*NopMempool) CheckTx(types.Tx) (*abcicli.ReqRes, error) {
+func (*NopMempool) CheckTx(types.Tx, p2p.ID) (*abcicli.ReqRes, error) {
 	return nil, errNotAllowed
 }
 
@@ -35,11 +35,16 @@ func (*NopMempool) ReapMaxBytesMaxGas(int64, int64) types.Txs { return nil }
 // ReapMaxTxs always returns nil.
 func (*NopMempool) ReapMaxTxs(int) types.Txs { return nil }
 
+// GetTxByHash always returns nil.
+func (*NopMempool) GetTxByHash([]byte) types.Tx { return nil }
+
 // Lock does nothing.
 func (*NopMempool) Lock() {}
 
 // Unlock does nothing.
 func (*NopMempool) Unlock() {}
+
+func (*NopMempool) PreUpdate() {}
 
 // Update does nothing.
 func (*NopMempool) Update(
@@ -58,6 +63,9 @@ func (*NopMempool) FlushAppConn() error { return nil }
 // Flush does nothing.
 func (*NopMempool) Flush() {}
 
+// Contains always returns false.
+func (*NopMempool) Contains(types.TxKey) bool { return false }
+
 // TxsAvailable always returns nil.
 func (*NopMempool) TxsAvailable() <-chan struct{} {
 	return nil
@@ -65,9 +73,6 @@ func (*NopMempool) TxsAvailable() <-chan struct{} {
 
 // EnableTxsAvailable does nothing.
 func (*NopMempool) EnableTxsAvailable() {}
-
-// SetTxRemovedCallback does nothing.
-func (*NopMempool) SetTxRemovedCallback(func(txKey types.TxKey)) {}
 
 // Size always returns 0.
 func (*NopMempool) Size() int { return 0 }
@@ -102,10 +107,15 @@ func (*NopMempoolReactor) AddPeer(p2p.Peer) {}
 func (*NopMempoolReactor) InitPeer(p2p.Peer) p2p.Peer { return nil }
 
 // RemovePeer does nothing.
-func (*NopMempoolReactor) RemovePeer(p2p.Peer, interface{}) {}
+func (*NopMempoolReactor) RemovePeer(p2p.Peer, any) {}
 
 // Receive does nothing.
 func (*NopMempoolReactor) Receive(p2p.Envelope) {}
+
+// TryAddTx does nothing.
+func (*NopMempoolReactor) TryAddTx(_ types.Tx, _ p2p.Peer) (*abcicli.ReqRes, error) {
+	return nil, nil
+}
 
 // SetSwitch does nothing.
 func (*NopMempoolReactor) SetSwitch(*p2p.Switch) {}

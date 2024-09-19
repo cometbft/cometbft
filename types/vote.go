@@ -9,8 +9,8 @@ import (
 	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/internal/protoio"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/libs/protoio"
 )
 
 const (
@@ -47,6 +47,16 @@ func NewConflictingVoteError(vote1, vote2 *Vote) *ErrVoteConflictingVotes {
 		VoteA: vote1,
 		VoteB: vote2,
 	}
+}
+
+// The vote extension is only valid for non-nil precommits.
+type ErrVoteExtensionInvalid struct {
+	ExtSignature []byte
+	Reason       string
+}
+
+func (err *ErrVoteExtensionInvalid) Error() string {
+	return fmt.Sprintf("invalid vote extension: %s; extension signature: %X", err.Reason, err.ExtSignature)
 }
 
 // Address is hex bytes.
@@ -401,6 +411,9 @@ func VotesToProto(votes []*Vote) []*cmtproto.Vote {
 	return res
 }
 
+// SignAndCheckVote signs the vote with the given privVal and checks the vote.
+// It returns an error if the vote is invalid and a boolean indicating if the
+// error is recoverable or not.
 func SignAndCheckVote(
 	vote *Vote,
 	privVal PrivValidator,
@@ -408,34 +421,48 @@ func SignAndCheckVote(
 	extensionsEnabled bool,
 ) (bool, error) {
 	v := vote.ToProto()
-	if err := privVal.SignVote(chainID, v); err != nil {
-		// Failing to sign a vote has always been a recoverable error, this function keeps it that way
-		return true, err // true = recoverable
+	if err := privVal.SignVote(chainID, v, extensionsEnabled); err != nil {
+		// Failing to sign a vote has always been a recoverable error, this
+		// function keeps it that way.
+		return true, err
 	}
 	vote.Signature = v.Signature
 
 	isPrecommit := vote.Type == PrecommitType
 	if !isPrecommit && extensionsEnabled {
 		// Non-recoverable because the caller passed parameters that don't make sense
-		return false, fmt.Errorf("only Precommit votes may have extensions enabled; vote type: %d", vote.Type)
+		return false, &ErrVoteExtensionInvalid{
+			Reason:       "inconsistent values of `isPrecommit` and `extensionsEnabled`",
+			ExtSignature: v.ExtensionSignature,
+		}
 	}
 
 	isNil := vote.BlockID.IsNil()
 	extSignature := (len(v.ExtensionSignature) > 0)
-	if extSignature == (!isPrecommit || isNil) {
+
+	// Error if prevote contains an extension signature
+	if extSignature && (!isPrecommit || isNil) {
 		// Non-recoverable because the vote is malformed
-		return false, fmt.Errorf(
-			"extensions must be present IFF vote is a non-nil Precommit; present %t, vote type %d, is nil %t",
-			extSignature,
-			vote.Type,
-			isNil,
-		)
+		return false, &ErrVoteExtensionInvalid{
+			Reason:       "vote extension signature must not be present in prevotes or nil-precommits",
+			ExtSignature: v.ExtensionSignature,
+		}
 	}
 
 	vote.ExtensionSignature = nil
 	if extensionsEnabled {
+		// Error if missing extension signature for non-nil Precommit
+		if !extSignature && isPrecommit && !isNil {
+			// Non-recoverable because the vote is malformed
+			return false, &ErrVoteExtensionInvalid{
+				Reason:       "vote extension signature must be present if extensions are enabled",
+				ExtSignature: v.ExtensionSignature,
+			}
+		}
+
 		vote.ExtensionSignature = v.ExtensionSignature
 	}
+
 	vote.Timestamp = v.Timestamp
 
 	return true, nil

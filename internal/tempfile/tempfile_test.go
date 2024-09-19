@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	testing "testing"
+	"testing"
 
 	"github.com/stretchr/testify/require"
 

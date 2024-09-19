@@ -6,7 +6,7 @@ import (
 
 	"github.com/cometbft/cometbft/config"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 // FuzzedConnection wraps any net.Conn and depending on the mode either delays

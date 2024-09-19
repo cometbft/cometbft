@@ -18,10 +18,10 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/internal/service"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"
 )
 
@@ -94,7 +94,7 @@ type addrBook struct {
 	ourAddrs   map[string]struct{}
 	privateIDs map[p2p.ID]struct{}
 	addrLookup map[p2p.ID]*knownAddress // new & old
-	badPeers   map[p2p.ID]*knownAddress // blacklisted peers
+	badPeers   map[p2p.ID]*knownAddress // banned peers
 	bucketsOld []map[string]*knownAddress
 	bucketsNew []map[string]*knownAddress
 	nOld       int
@@ -177,7 +177,7 @@ func (a *addrBook) FilePath() string {
 	return a.filePath
 }
 
-//-------------------------------------------------------
+// -------------------------------------------------------
 
 // AddOurAddress one of our addresses.
 func (a *addrBook) AddOurAddress(addr *p2p.NetAddress) {
@@ -463,7 +463,7 @@ func (a *addrBook) GetSelectionWithBias(biasTowardsNewAddrs int) []*p2p.NetAddre
 	return selection
 }
 
-//------------------------------------------------
+// ------------------------------------------------
 
 // Size returns the number of addresses in the book.
 func (a *addrBook) Size() int {
@@ -477,7 +477,7 @@ func (a *addrBook) size() int {
 	return a.nNew + a.nOld
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 // Save persists the address book to disk.
 func (a *addrBook) Save() {
@@ -500,7 +500,7 @@ func (a *addrBook) saveRoutine() {
 	}
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 func (a *addrBook) getBucket(bucketType byte, bucketIdx int) map[string]*knownAddress {
 	switch bucketType {
@@ -518,7 +518,7 @@ func (a *addrBook) getBucket(bucketType byte, bucketIdx int) map[string]*knownAd
 func (a *addrBook) addToNewBucket(ka *knownAddress, bucketIdx int) error {
 	// Consistency check to ensure we don't add an already known address
 	if ka.isOld() {
-		return errAddrBookOldAddressNewBucket{ka.Addr, bucketIdx}
+		return ErrAddrBookOldAddressNewBucket{ka.Addr, bucketIdx}
 	}
 
 	addrStr := ka.Addr.String()
@@ -615,7 +615,7 @@ func (a *addrBook) removeFromAllBuckets(ka *knownAddress) {
 	delete(a.addrLookup, ka.ID())
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 func (a *addrBook) pickOldest(bucketType byte, bucketIdx int) *knownAddress {
 	bucket := a.getBucket(bucketType, bucketIdx)
@@ -694,7 +694,7 @@ func (a *addrBook) randomPickAddresses(bucketType byte, num int) []*p2p.NetAddre
 	case bucketTypeOld:
 		buckets = a.bucketsOld
 	default:
-		panic("unexpected bucketType")
+		panic("unexpected bucket type")
 	}
 	total := 0
 	for _, bucket := range buckets {
@@ -803,12 +803,12 @@ func (a *addrBook) addBadPeer(addr *p2p.NetAddress, banTime time.Duration) bool 
 		// add to bad peer list
 		ka.ban(banTime)
 		a.badPeers[addr.ID] = ka
-		a.Logger.Info("Add address to blacklist", "addr", addr)
+		a.Logger.Info("Add address to denylist", "addr", addr)
 	}
 	return true
 }
 
-//---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 // calculate bucket placements
 
 // hash(key + sourcegroup + int64(hash(key + group + sourcegroup)) % bucket_per_group) % num_new_buckets.

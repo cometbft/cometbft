@@ -3,7 +3,7 @@ package mempool
 import (
 	"container/list"
 
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/types"
 )
 

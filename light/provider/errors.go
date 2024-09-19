@@ -25,5 +25,17 @@ type ErrBadLightBlock struct {
 }
 
 func (e ErrBadLightBlock) Error() string {
-	return fmt.Sprintf("client provided bad signed header: %s", e.Reason.Error())
+	return "client provided bad signed header: " + e.Reason.Error()
+}
+
+func (e ErrBadLightBlock) Unwrap() error {
+	return e.Reason
+}
+
+type ErrNegativeHeight struct {
+	Height int64
+}
+
+func (e ErrNegativeHeight) Error() string {
+	return fmt.Sprintf("expected height >= 0, got height %d", e.Height)
 }

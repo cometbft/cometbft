@@ -7,11 +7,12 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/clist"
 	mempl "github.com/cometbft/cometbft/mempool"
+	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 )
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 type emptyMempool struct{}
 
@@ -19,17 +20,15 @@ var _ mempl.Mempool = emptyMempool{}
 
 func (emptyMempool) Lock()            {}
 func (emptyMempool) Unlock()          {}
+func (emptyMempool) PreUpdate()       {}
 func (emptyMempool) Size() int        { return 0 }
 func (emptyMempool) SizeBytes() int64 { return 0 }
-func (emptyMempool) CheckTx(types.Tx) (*abcicli.ReqRes, error) {
+func (emptyMempool) CheckTx(types.Tx, p2p.ID) (*abcicli.ReqRes, error) {
 	return nil, nil
 }
-
-func (txmp emptyMempool) RemoveTxByKey(types.TxKey) error {
-	return nil
-}
-
+func (emptyMempool) RemoveTxByKey(types.TxKey) error           { return nil }
 func (emptyMempool) ReapMaxBytesMaxGas(int64, int64) types.Txs { return types.Txs{} }
+func (emptyMempool) GetTxByHash([]byte) types.Tx               { return types.Tx{} }
 func (emptyMempool) ReapMaxTxs(int) types.Txs                  { return types.Txs{} }
 func (emptyMempool) Update(
 	int64,
@@ -40,22 +39,17 @@ func (emptyMempool) Update(
 ) error {
 	return nil
 }
-func (emptyMempool) Flush()                                 {}
-func (emptyMempool) FlushAppConn() error                    { return nil }
-func (emptyMempool) TxsAvailable() <-chan struct{}          { return make(chan struct{}) }
-func (emptyMempool) EnableTxsAvailable()                    {}
-func (emptyMempool) SetTxRemovedCallback(func(types.TxKey)) {}
-func (emptyMempool) TxsBytes() int64                        { return 0 }
-func (emptyMempool) InMempool(types.TxKey) bool             { return false }
+func (emptyMempool) Flush()                        {}
+func (emptyMempool) FlushAppConn() error           { return nil }
+func (emptyMempool) Contains(types.TxKey) bool     { return false }
+func (emptyMempool) TxsAvailable() <-chan struct{} { return make(chan struct{}) }
+func (emptyMempool) EnableTxsAvailable()           {}
+func (emptyMempool) TxsBytes() int64               { return 0 }
+func (emptyMempool) TxsFront() *clist.CElement     { return nil }
+func (emptyMempool) TxsWaitChan() <-chan struct{}  { return nil }
 
-func (emptyMempool) TxsFront() *clist.CElement    { return nil }
-func (emptyMempool) TxsWaitChan() <-chan struct{} { return nil }
-
-func (emptyMempool) InitWAL() error { return nil }
-func (emptyMempool) CloseWAL()      {}
-
-//-----------------------------------------------------------------------------
-// mockProxyApp uses ABCIResponses to give the right results.
+// -----------------------------------------------------------------------------
+// newMockProxyApp uses ABCIResponses to give the right results.
 //
 // Useful because we don't want to call Commit() twice for the same block on
 // the real app.

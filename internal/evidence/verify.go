@@ -86,8 +86,7 @@ func (evpool *Pool) verify(evidence types.Evidence) error {
 			}
 		}
 
-		err = VerifyLightClientAttack(ev, commonHeader, trustedHeader, commonVals, state.LastBlockTime,
-			state.ConsensusParams.Evidence.MaxAgeDuration)
+		err = VerifyLightClientAttack(ev, commonHeader, trustedHeader, commonVals)
 		if err != nil {
 			return err
 		}
@@ -112,8 +111,6 @@ func VerifyLightClientAttack(
 	e *types.LightClientAttackEvidence,
 	commonHeader, trustedHeader *types.SignedHeader,
 	commonVals *types.ValidatorSet,
-	now time.Time,
-	trustPeriod time.Duration,
 ) error {
 	// TODO: Should the current time and trust period be used in this method?
 	// If not, why were the parameters present?

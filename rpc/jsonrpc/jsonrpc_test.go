@@ -19,18 +19,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/cometbft/cometbft/internal/net"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"
-	client "github.com/cometbft/cometbft/rpc/jsonrpc/client"
-	server "github.com/cometbft/cometbft/rpc/jsonrpc/server"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/client"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/server"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 // Client and Server should work over tcp or unix sockets.
 const (
-	tcpAddr = "tcp://127.0.0.1:47768"
-
 	unixSocket = "/tmp/rpc_test.sock"
 	unixAddr   = "unix://" + unixSocket
 
@@ -39,7 +38,12 @@ const (
 	testVal = "acbd"
 )
 
-var ctx = context.Background()
+var (
+	ctx     = context.Background()
+	baseIP  = "tcp://127.0.0.1"
+	port, _ = net.GetFreePort()
+	tcpAddr = baseIP + ":" + strconv.Itoa(port)
+)
 
 type ResultEcho struct {
 	Value string `json:"value"`
@@ -105,7 +109,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-var colorFn = func(keyvals ...interface{}) term.FgBgColor {
+var colorFn = func(keyvals ...any) term.FgBgColor {
 	for i := 0; i < len(keyvals)-1; i += 2 {
 		if keyvals[i] == "socket" {
 			if keyvals[i+1] == "tcp" {
@@ -171,7 +175,7 @@ func setup() {
 }
 
 func echoViaHTTP(cl client.Caller, val string) (string, error) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"arg": val,
 	}
 	result := new(ResultEcho)
@@ -182,7 +186,7 @@ func echoViaHTTP(cl client.Caller, val string) (string, error) {
 }
 
 func echoIntViaHTTP(cl client.Caller, val int) (int, error) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"arg": val,
 	}
 	result := new(ResultEchoInt)
@@ -193,7 +197,7 @@ func echoIntViaHTTP(cl client.Caller, val int) (int, error) {
 }
 
 func echoBytesViaHTTP(cl client.Caller, bytes []byte) ([]byte, error) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"arg": bytes,
 	}
 	result := new(ResultEchoBytes)
@@ -204,7 +208,7 @@ func echoBytesViaHTTP(cl client.Caller, bytes []byte) ([]byte, error) {
 }
 
 func echoDataBytesViaHTTP(cl client.Caller, bytes cmtbytes.HexBytes) (cmtbytes.HexBytes, error) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"arg": bytes,
 	}
 	result := new(ResultEchoDataBytes)
@@ -215,7 +219,7 @@ func echoDataBytesViaHTTP(cl client.Caller, bytes cmtbytes.HexBytes) (cmtbytes.H
 }
 
 func echoWithDefaultViaHTTP(cl client.Caller, v *int) (int, error) {
-	params := map[string]interface{}{}
+	params := map[string]any{}
 	if v != nil {
 		params["arg"] = *v
 	}
@@ -259,7 +263,7 @@ func testWithHTTPClient(t *testing.T, cl client.HTTPClient) {
 }
 
 func echoViaWS(cl *client.WSClient, val string) (string, error) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"arg": val,
 	}
 	err := cl.Call(context.Background(), "echo", params)
@@ -280,7 +284,7 @@ func echoViaWS(cl *client.WSClient, val string) (string, error) {
 }
 
 func echoBytesViaWS(cl *client.WSClient, bytes []byte) ([]byte, error) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"arg": bytes,
 	}
 	err := cl.Call(context.Background(), "echo_bytes", params)
@@ -313,7 +317,7 @@ func testWithWSClient(t *testing.T, cl *client.WSClient) {
 	assert.Equal(t, got2, val2)
 }
 
-//-------------
+// -------------
 
 func TestServersAndClientsBasic(t *testing.T) {
 	serverAddrs := [...]string{tcpAddr, unixAddr}
@@ -398,7 +402,7 @@ func TestWSNewWSRPCFunc(t *testing.T) {
 	})
 
 	val := testVal
-	params := map[string]interface{}{
+	params := map[string]any{
 		"arg": val,
 	}
 	err = cl.Call(context.Background(), "echo_ws", params)
@@ -428,7 +432,7 @@ func TestWSNewWSRPCFuncV1(t *testing.T) {
 	})
 
 	val := testVal
-	params := map[string]interface{}{
+	params := map[string]any{
 		"arg": val,
 	}
 	err = cl.Call(context.Background(), "echo_ws", params)
@@ -458,7 +462,7 @@ func TestWSHandlesArrayParams(t *testing.T) {
 	})
 
 	val := testVal
-	params := []interface{}{val}
+	params := []any{val}
 	err = cl.CallWithArrayParams(context.Background(), "echo_ws", params)
 	require.NoError(t, err)
 
@@ -486,7 +490,7 @@ func TestWSHandlesArrayParamsV1(t *testing.T) {
 	})
 
 	val := testVal
-	params := []interface{}{val}
+	params := []any{val}
 	err = cl.CallWithArrayParams(context.Background(), "echo_ws", params)
 	require.NoError(t, err)
 
@@ -539,14 +543,14 @@ func TestJSONRPCCaching(t *testing.T) {
 	require.NoError(t, err)
 
 	// Not supplying the arg should result in not caching
-	params := make(map[string]interface{})
+	params := make(map[string]any)
 	req, err := types.MapToRequest(types.JSONRPCIntID(1000), "echo_default", params)
 	require.NoError(t, err)
 
 	res1, err := rawJSONRPCRequest(t, cl, httpAddr, req)
 	defer func() { _ = res1.Body.Close() }()
 	require.NoError(t, err)
-	assert.Equal(t, "", res1.Header.Get("Cache-control"))
+	assert.Equal(t, "", res1.Header.Get("Cache-Control"))
 
 	// Supplying the arg should result in caching
 	params["arg"] = cmtrand.Intn(10000)
@@ -556,10 +560,10 @@ func TestJSONRPCCaching(t *testing.T) {
 	res2, err := rawJSONRPCRequest(t, cl, httpAddr, req)
 	defer func() { _ = res2.Body.Close() }()
 	require.NoError(t, err)
-	assert.Equal(t, "public, max-age=86400", res2.Header.Get("Cache-control"))
+	assert.Equal(t, "public, max-age=86400", res2.Header.Get("Cache-Control"))
 }
 
-func rawJSONRPCRequest(t *testing.T, cl *http.Client, url string, req interface{}) (*http.Response, error) {
+func rawJSONRPCRequest(t *testing.T, cl *http.Client, url string, req any) (*http.Response, error) {
 	t.Helper()
 	reqBytes, err := json.Marshal(req)
 	require.NoError(t, err)
@@ -568,7 +572,7 @@ func rawJSONRPCRequest(t *testing.T, cl *http.Client, url string, req interface{
 	httpReq, err := http.NewRequest(http.MethodPost, url, reqBuf)
 	require.NoError(t, err)
 
-	httpReq.Header.Set("Content-type", "application/json")
+	httpReq.Header.Set("Content-Type", "application/json")
 
 	return cl.Do(httpReq)
 }
@@ -584,14 +588,14 @@ func TestURICaching(t *testing.T) {
 	res1, err := rawURIRequest(t, cl, httpAddr+"/echo_default", args)
 	defer func() { _ = res1.Body.Close() }()
 	require.NoError(t, err)
-	assert.Equal(t, "", res1.Header.Get("Cache-control"))
+	assert.Equal(t, "", res1.Header.Get("Cache-Control"))
 
 	// Supplying the arg should result in caching
 	args.Set("arg", strconv.Itoa(cmtrand.Intn(10000)))
 	res2, err := rawURIRequest(t, cl, httpAddr+"/echo_default", args)
 	defer func() { _ = res2.Body.Close() }()
 	require.NoError(t, err)
-	assert.Equal(t, "public, max-age=86400", res2.Header.Get("Cache-control"))
+	assert.Equal(t, "public, max-age=86400", res2.Header.Get("Cache-Control"))
 }
 
 func rawURIRequest(t *testing.T, cl *http.Client, url string, args url.Values) (*http.Response, error) {

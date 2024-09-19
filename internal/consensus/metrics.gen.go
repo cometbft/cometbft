@@ -3,8 +3,8 @@
 package consensus
 
 import (
-	"github.com/go-kit/kit/metrics/discard"
-	prometheus "github.com/go-kit/kit/metrics/prometheus"
+	"github.com/cometbft/cometbft/libs/metrics/discard"
+	prometheus "github.com/cometbft/cometbft/libs/metrics/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
@@ -184,7 +184,7 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "proposal_create_count",
-			Help:      "ProposalCreationCount is the total number of proposals created by this node since process start. The metric is annotated by the status of the proposal from the application, either 'accepted' or 'rejected'.",
+			Help:      "ProposalCreateCount is the total number of proposals created by this node since process start. The metric is annotated by the status of the proposal from the application, either 'accepted' or 'rejected'.",
 		}, labels).With(labelsAndValues...),
 		RoundVotingPowerPercent: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
@@ -198,40 +198,49 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "late_votes",
 			Help:      "LateVotes stores the number of votes that were received by this node that correspond to earlier heights and rounds than this node is currently in.",
 		}, append(labels, "vote_type")).With(labelsAndValues...),
+		ProposalTimestampDifference: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "proposal_timestamp_difference",
+			Help:      "Difference in seconds between the local time when a proposal message is received and the timestamp in the proposal message.",
+
+			Buckets: []float64{-1.5, -1.0, -0.5, -0.2, 0, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 4.0, 8.0},
+		}, append(labels, "is_timely")).With(labelsAndValues...),
 	}
 }
 
 func NopMetrics() *Metrics {
 	return &Metrics{
-		Height:                    discard.NewGauge(),
-		ValidatorLastSignedHeight: discard.NewGauge(),
-		Rounds:                    discard.NewGauge(),
-		RoundDurationSeconds:      discard.NewHistogram(),
-		Validators:                discard.NewGauge(),
-		ValidatorsPower:           discard.NewGauge(),
-		ValidatorPower:            discard.NewGauge(),
-		ValidatorMissedBlocks:     discard.NewGauge(),
-		MissingValidators:         discard.NewGauge(),
-		MissingValidatorsPower:    discard.NewGauge(),
-		ByzantineValidators:       discard.NewGauge(),
-		ByzantineValidatorsPower:  discard.NewGauge(),
-		BlockIntervalSeconds:      discard.NewHistogram(),
-		NumTxs:                    discard.NewGauge(),
-		BlockSizeBytes:            discard.NewGauge(),
-		ChainSizeBytes:            discard.NewCounter(),
-		TotalTxs:                  discard.NewGauge(),
-		CommittedHeight:           discard.NewGauge(),
-		BlockParts:                discard.NewCounter(),
-		DuplicateBlockPart:        discard.NewCounter(),
-		DuplicateVote:             discard.NewCounter(),
-		StepDurationSeconds:       discard.NewHistogram(),
-		BlockGossipPartsReceived:  discard.NewCounter(),
-		QuorumPrevoteDelay:        discard.NewGauge(),
-		FullPrevoteDelay:          discard.NewGauge(),
-		VoteExtensionReceiveCount: discard.NewCounter(),
-		ProposalReceiveCount:      discard.NewCounter(),
-		ProposalCreateCount:       discard.NewCounter(),
-		RoundVotingPowerPercent:   discard.NewGauge(),
-		LateVotes:                 discard.NewCounter(),
+		Height:                      discard.NewGauge(),
+		ValidatorLastSignedHeight:   discard.NewGauge(),
+		Rounds:                      discard.NewGauge(),
+		RoundDurationSeconds:        discard.NewHistogram(),
+		Validators:                  discard.NewGauge(),
+		ValidatorsPower:             discard.NewGauge(),
+		ValidatorPower:              discard.NewGauge(),
+		ValidatorMissedBlocks:       discard.NewGauge(),
+		MissingValidators:           discard.NewGauge(),
+		MissingValidatorsPower:      discard.NewGauge(),
+		ByzantineValidators:         discard.NewGauge(),
+		ByzantineValidatorsPower:    discard.NewGauge(),
+		BlockIntervalSeconds:        discard.NewHistogram(),
+		NumTxs:                      discard.NewGauge(),
+		BlockSizeBytes:              discard.NewGauge(),
+		ChainSizeBytes:              discard.NewCounter(),
+		TotalTxs:                    discard.NewGauge(),
+		CommittedHeight:             discard.NewGauge(),
+		BlockParts:                  discard.NewCounter(),
+		DuplicateBlockPart:          discard.NewCounter(),
+		DuplicateVote:               discard.NewCounter(),
+		StepDurationSeconds:         discard.NewHistogram(),
+		BlockGossipPartsReceived:    discard.NewCounter(),
+		QuorumPrevoteDelay:          discard.NewGauge(),
+		FullPrevoteDelay:            discard.NewGauge(),
+		VoteExtensionReceiveCount:   discard.NewCounter(),
+		ProposalReceiveCount:        discard.NewCounter(),
+		ProposalCreateCount:         discard.NewCounter(),
+		RoundVotingPowerPercent:     discard.NewGauge(),
+		LateVotes:                   discard.NewCounter(),
+		ProposalTimestampDifference: discard.NewHistogram(),
 	}
 }

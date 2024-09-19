@@ -4,13 +4,18 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/internal/keytypes"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 )
+
+// ErrUnsupportedPubKeyType is returned when a public key type is not supported.
+var ErrUnsupportedPubKeyType = errors.New("unsupported pubkey type, must be one of: " + keytypes.SupportedKeyTypesStr())
 
 // Volatile state for each Validator
 // NOTE: The ProposerPriority is not included in Validator.Hash();
@@ -49,6 +54,10 @@ func (v *Validator) ValidateBasic() error {
 	addr := v.PubKey.Address()
 	if !bytes.Equal(v.Address, addr) {
 		return fmt.Errorf("validator address is incorrectly derived from pubkey. Exp: %v, got %v", addr, v.Address)
+	}
+
+	if !keytypes.IsSupported(v.PubKey.Type()) {
+		return ErrUnsupportedPubKeyType
 	}
 
 	return nil
@@ -103,12 +112,16 @@ func (v *Validator) String() string {
 
 // ValidatorListString returns a prettified validator list for logging purposes.
 func ValidatorListString(vals []*Validator) string {
-	chunks := make([]string, len(vals))
+	var sb strings.Builder
 	for i, val := range vals {
-		chunks[i] = fmt.Sprintf("%s:%d", val.Address, val.VotingPower)
+		if i > 0 {
+			sb.WriteString(",")
+		}
+		sb.WriteString(val.Address.String())
+		sb.WriteString(":")
+		sb.WriteString(strconv.FormatInt(val.VotingPower, 10))
 	}
-
-	return strings.Join(chunks, ",")
+	return sb.String()
 }
 
 // Bytes computes the unique encoding of a validator with a given voting power.
@@ -139,14 +152,14 @@ func (v *Validator) ToProto() (*cmtproto.Validator, error) {
 		return nil, errors.New("nil validator")
 	}
 
-	pk, err := ce.PubKeyToProto(v.PubKey)
-	if err != nil {
-		return nil, err
+	if v.PubKey == nil {
+		return nil, errors.New("nil pubkey")
 	}
 
 	vp := cmtproto.Validator{
 		Address:          v.Address,
-		PubKey:           pk,
+		PubKeyType:       v.PubKey.Type(),
+		PubKeyBytes:      v.PubKey.Bytes(),
 		VotingPower:      v.VotingPower,
 		ProposerPriority: v.ProposerPriority,
 	}
@@ -161,9 +174,12 @@ func ValidatorFromProto(vp *cmtproto.Validator) (*Validator, error) {
 		return nil, errors.New("nil validator")
 	}
 
-	pk, err := ce.PubKeyFromProto(vp.PubKey)
+	pk, err := ce.PubKeyFromTypeAndBytes(vp.PubKeyType, vp.PubKeyBytes)
 	if err != nil {
-		return nil, err
+		pk, err = ce.PubKeyFromProto(*vp.PubKey)
+		if err != nil {
+			return nil, err
+		}
 	}
 	v := new(Validator)
 	v.Address = vp.GetAddress()
@@ -174,7 +190,7 @@ func ValidatorFromProto(vp *cmtproto.Validator) (*Validator, error) {
 	return v, nil
 }
 
-//----------------------------------------
+// ----------------------------------------
 // RandValidator
 
 // RandValidator returns a randomized validator, useful for testing.

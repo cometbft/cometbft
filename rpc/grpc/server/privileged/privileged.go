@@ -7,9 +7,9 @@ import (
 	"google.golang.org/grpc"
 
 	pbpruningsvc "github.com/cometbft/cometbft/api/cometbft/services/pruning/v1"
-	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/pruningservice"
+	sm "github.com/cometbft/cometbft/state"
 )
 
 // Option is any function that allows for configuration of the gRPC server
@@ -31,7 +31,7 @@ func newServerBuilder(listener net.Listener) *serverBuilder {
 	}
 }
 
-// WithVersionService enables the version service on the CometBFT server.
+// WithPruningService enables the pruning service on the CometBFT server.
 func WithPruningService(pruner *sm.Pruner, logger log.Logger) Option {
 	return func(b *serverBuilder) {
 		b.pruningService = pruningservice.New(pruner, logger)

@@ -1,6 +1,6 @@
 constant_val_consensus_changes = true
 
+[node.validator00]
 [node.validator01]
 [node.validator02]
 [node.validator03]
-[node.validator04]

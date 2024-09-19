@@ -431,7 +431,7 @@ func TestBanBadPeers(t *testing.T) {
 	assert.True(t, book.IsBanned(addr))
 
 	err := book.AddAddress(addr, addr)
-	// book should not add address from the blacklist
+	// book should not add address from the denylist
 	require.Error(t, err)
 
 	time.Sleep(1 * time.Second)
@@ -454,8 +454,8 @@ func TestAddrBookEmpty(t *testing.T) {
 	book.AddOurAddress(randIPv4Address(t))
 	require.True(t, book.Empty())
 	// Check that book with private addrs is empty
-	_, privateIds := testCreatePrivateAddrs(t, 5)
-	book.AddPrivateIDs(privateIds)
+	_, privateIDs := testCreatePrivateAddrs(t, 5)
+	book.AddPrivateIDs(privateIDs)
 	require.True(t, book.Empty())
 
 	// Check that book with address is not empty
@@ -574,8 +574,8 @@ func testAddrBookAddressSelection(t *testing.T, bookSize int) {
 
 func TestMultipleAddrBookAddressSelection(t *testing.T) {
 	// test books with smaller size, < N
-	const N = 32
-	for bookSize := 1; bookSize < N; bookSize++ {
+	const n = 32
+	for bookSize := 1; bookSize < n; bookSize++ {
 		testAddrBookAddressSelection(t, bookSize)
 	}
 
@@ -601,7 +601,7 @@ func TestAddrBookAddDoesNotOverwriteOldIP(t *testing.T) {
 	peerID := "678503e6c8f50db7279c7da3cb9b072aac4bc0d5"
 	peerRealIP := "1.1.1.1:26656"
 	peerOverrideAttemptIP := "2.2.2.2:26656"
-	SrcAddr := "b0dd378c3fbc4c156cd6d302a799f0d2e4227201@159.89.121.174:26656"
+	srcAddr := "b0dd378c3fbc4c156cd6d302a799f0d2e4227201@159.89.121.174:26656"
 
 	// There is a chance that AddAddress will ignore the new peer its given.
 	// So we repeat trying to override the peer several times,
@@ -614,7 +614,7 @@ func TestAddrBookAddDoesNotOverwriteOldIP(t *testing.T) {
 	peerOverrideAttemptAddr, err := p2p.NewNetAddressString(peerID + "@" + peerOverrideAttemptIP)
 	require.NoError(t, err)
 
-	src, err := p2p.NewNetAddressString(SrcAddr)
+	src, err := p2p.NewNetAddressString(srcAddr)
 	require.NoError(t, err)
 
 	book := NewAddrBook(fname, true)
@@ -762,7 +762,7 @@ func createAddrBookWithMOldAndNNewAddrs(t *testing.T, nOld, nNew int) (book *add
 		require.NoError(t, err)
 	}
 
-	return
+	return book, fname
 }
 
 func countOldAndNewAddrsInSelection(addrs []*p2p.NetAddress, book *addrBook) (nOld, nNew int) {
@@ -773,7 +773,7 @@ func countOldAndNewAddrsInSelection(addrs []*p2p.NetAddress, book *addrBook) (nO
 			nNew++
 		}
 	}
-	return
+	return nOld, nNew
 }
 
 // Analyze the layout of the selection specified by 'addrs'
@@ -806,5 +806,5 @@ func analyseSelectionLayout(book *addrBook, addrs []*p2p.NetAddress) (seqLens, s
 	seqLens = append(seqLens, currentSeqLen)
 	seqTypes = append(seqTypes, prevType)
 
-	return
+	return seqLens, seqTypes
 }

@@ -47,3 +47,10 @@ services:
       GF_AUTH_ANONYMOUS_ORG_ROLE: Editor
       GF_AUTH_BASIC_ENABLED: false
       GF_NEWS_NEWS_FEED_ENABLED: false
+      GF_RENDERING_RENDERER_TOKEN: "-"
+      GF_RENDERING_SERVER_URL: http://grafana-image-renderer:8081/render
+      GF_RENDERING_CALLBACK_URL: http://grafana:3000/
+      GF_LOG_FILTERS: rendering:debug
+  grafana-image-renderer:
+    image: grafana/grafana-image-renderer
+    container_name: grafana-image-renderer

@@ -15,7 +15,7 @@ import (
 	"github.com/cometbft/cometbft/abci/server"
 	"github.com/cometbft/cometbft/abci/types"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/internal/service"
+	"github.com/cometbft/cometbft/libs/service"
 )
 
 func TestCalls(t *testing.T) {
@@ -163,7 +163,7 @@ func (slowApp) CheckTx(context.Context, *types.CheckTxRequest) (*types.CheckTxRe
 	return &types.CheckTxResponse{}, nil
 }
 
-// TestCallbackInvokedWhenSetLaet ensures that the callback is invoked when
+// TestCallbackInvokedWhenSetLate ensures that the callback is invoked when
 // set after the client completes the call into the app. Currently this
 // test relies on the callback being allowed to be invoked twice if set multiple
 // times, once when set early and once when set late.
@@ -183,16 +183,18 @@ func TestCallbackInvokedWhenSetLate(t *testing.T) {
 	require.NoError(t, err)
 
 	done := make(chan struct{})
-	cb := func(_ *types.Response) {
+	cb := func(_ *types.Response) error {
 		close(done)
+		return nil
 	}
 	reqRes.SetCallback(cb)
 	app.wg.Done()
 	<-done
 
 	var called bool
-	cb = func(_ *types.Response) {
+	cb = func(_ *types.Response) error {
 		called = true
+		return nil
 	}
 	reqRes.SetCallback(cb)
 	require.True(t, called)
@@ -226,8 +228,9 @@ func TestCallbackInvokedWhenSetEarly(t *testing.T) {
 	require.NoError(t, err)
 
 	done := make(chan struct{})
-	cb := func(_ *types.Response) {
+	cb := func(_ *types.Response) error {
 		close(done)
+		return nil
 	}
 	reqRes.SetCallback(cb)
 	app.wg.Done()

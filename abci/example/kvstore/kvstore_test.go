@@ -1,6 +1,7 @@
 package kvstore
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"sort"
@@ -162,8 +163,8 @@ func TestValUpdates(t *testing.T) {
 	// add some validators
 	v1, v2 = vals[nInit], vals[nInit+1]
 	diff := []types.ValidatorUpdate{v1, v2}
-	tx1 := MakeValSetChangeTx(v1.PubKey, v1.Power)
-	tx2 := MakeValSetChangeTx(v2.PubKey, v2.Power)
+	tx1 := MakeValSetChangeTx(v1)
+	tx2 := MakeValSetChangeTx(v2)
 
 	makeApplyBlock(ctx, t, kvstore, 1, diff, tx1, tx2)
 
@@ -176,9 +177,9 @@ func TestValUpdates(t *testing.T) {
 	v2.Power = 0
 	v3.Power = 0
 	diff = []types.ValidatorUpdate{v1, v2, v3}
-	tx1 = MakeValSetChangeTx(v1.PubKey, v1.Power)
-	tx2 = MakeValSetChangeTx(v2.PubKey, v2.Power)
-	tx3 := MakeValSetChangeTx(v3.PubKey, v3.Power)
+	tx1 = MakeValSetChangeTx(v1)
+	tx2 = MakeValSetChangeTx(v2)
+	tx3 := MakeValSetChangeTx(v3)
 
 	makeApplyBlock(ctx, t, kvstore, 2, diff, tx1, tx2, tx3)
 
@@ -194,7 +195,7 @@ func TestValUpdates(t *testing.T) {
 		v1.Power = 5
 	}
 	diff = []types.ValidatorUpdate{v1}
-	tx1 = MakeValSetChangeTx(v1.PubKey, v1.Power)
+	tx1 = MakeValSetChangeTx(v1)
 
 	makeApplyBlock(ctx, t, kvstore, 3, diff, tx1)
 
@@ -209,6 +210,7 @@ func TestCheckTx(t *testing.T) {
 	kvstore := NewInMemoryApplication()
 
 	val := RandVal()
+	val.Power = 10
 
 	testCases := []struct {
 		expCode uint32
@@ -222,7 +224,7 @@ func TestCheckTx(t *testing.T) {
 		{CodeTypeOK, []byte("a=b")},
 		{CodeTypeInvalidTxFormat, []byte("val=hello")},
 		{CodeTypeInvalidTxFormat, []byte("val=hi!5")},
-		{CodeTypeOK, MakeValSetChangeTx(val.PubKey, 10)},
+		{CodeTypeOK, MakeValSetChangeTx(val)},
 	}
 
 	for idx, tc := range testCases {
@@ -287,9 +289,11 @@ func valsEqual(t *testing.T, vals1, vals2 []types.ValidatorUpdate) {
 	sort.Sort(types.ValidatorUpdates(vals2))
 	for i, v1 := range vals1 {
 		v2 := vals2[i]
-		if !v1.PubKey.Equal(v2.PubKey) ||
+		if v1.PubKeyType != v2.PubKeyType ||
+			!bytes.Equal(v1.PubKeyBytes, v2.PubKeyBytes) ||
 			v1.Power != v2.Power {
-			t.Fatalf("vals dont match at index %d. got %X/%d , expected %X/%d", i, v2.PubKey, v2.Power, v1.PubKey, v1.Power)
+			t.Fatalf("vals dont match at index %d. got %s/%X/%d , expected %s/%X/%d", i,
+				v2.PubKeyType, v2.PubKeyBytes, v2.Power, v1.PubKeyType, v1.PubKeyBytes, v1.Power)
 		}
 	}
 }

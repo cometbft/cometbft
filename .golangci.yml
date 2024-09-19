@@ -8,13 +8,13 @@ linters:
     - containedctx
     - contextcheck
     - cyclop
-    - deadcode
     - dupword
-    - errname
     - errorlint
+    - errname
+    - err113
     - exhaustive
-    - exhaustivestruct
     - exhaustruct
+    - execinquery
     - forbidigo
     - forcetypeassert
     - funlen
@@ -23,33 +23,20 @@ linters:
     - gocognit
     - gocyclo
     - godox
-    - goerr113
-    - golint
     - gomnd
-    - gomoddirectives
-    - ifshort
     - interfacebloat
-    - interfacer
+    - intrange
     - ireturn
     - lll
     - maintidx
-    - maligned
+    - mnd
     - nestif
     - nilnil
     - nlreturn
     - nonamedreturns
-    - nosnakecase
-    - perfsprint
     - predeclared
-    - revive
-    - scopelint
-    - structcheck
     - tagliatelle
     - testifylint
-    - typecheck
-    # Prefer unparam over revive's unused param. It is more thorough in its checking.
-    - unparam
-    - varcheck
     - varnamelen
     - wrapcheck
     - wsl
@@ -97,21 +84,25 @@ linters-settings:
           - "!$test"
         allow:
           - $gostd
+          - github.com/BurntSushi/toml
+          - github.com/Masterminds/semver/v3
+          - github.com/btcsuite/btcd/btcec/v2
           - github.com/cometbft
           - github.com/cosmos
-          - github.com/btcsuite/btcd/btcec/v2
-          - github.com/BurntSushi/toml
+          - github.com/creachadair/atomicfile
+          - github.com/creachadair/tomledit
+          - github.com/dgraph-io/badger/v4
           - github.com/go-git/go-git/v5
           - github.com/go-kit
           - github.com/go-logfmt/logfmt
-          - github.com/gofrs/uuid
           - github.com/google
           - github.com/gorilla/websocket
+          - github.com/hashicorp/golang-lru/v2
           - github.com/lib/pq
           - github.com/libp2p/go-buffer-pool
-          - github.com/Masterminds/semver/v3
           - github.com/minio/highwayhash
           - github.com/oasisprotocol/curve25519-voi
+          - github.com/pelletier/go-toml/v2
           - github.com/pkg/errors
           - github.com/prometheus
           - github.com/rcrowley/go-metrics
@@ -120,23 +111,75 @@ linters-settings:
           - github.com/spf13
           - github.com/stretchr/testify/require
           - github.com/syndtr/goleveldb
+          - github.com/mitchellh/mapstructure
       test:
         files:
           - "$test"
         allow:
           - $gostd
-          - github.com/cosmos
-          - github.com/cometbft
           - github.com/adlio/schema
           - github.com/btcsuite/btcd
+          - github.com/cometbft
+          - github.com/cosmos
+          - github.com/dgraph-io/badger/v4
           - github.com/fortytw2/leaktest
-          - github.com/go-kit
+          - github.com/go-kit/log
           - github.com/google/uuid
           - github.com/gorilla/websocket
           - github.com/lib/pq
           - github.com/oasisprotocol/curve25519-voi/primitives/merlin
           - github.com/ory/dockertest
           - github.com/pkg/errors
+          - github.com/prometheus/client_golang/prometheus
           - github.com/prometheus/client_golang/prometheus/promhttp
           - github.com/spf13
           - github.com/stretchr/testify
+
+  revive:
+    enable-all-rules: true
+    rules:
+      - name: comment-spacings # temporarily disabled
+        disabled: true
+      - name: max-public-structs
+        disabled: true
+      - name: cognitive-complexity
+        disabled: true
+      - name: argument-limit
+        disabled: true
+      - name: cyclomatic
+        disabled: true
+      - name: deep-exit
+        disabled: true
+      - name: file-header
+        disabled: true
+      - name: function-length
+        disabled: true
+      - name: function-result-limit
+        disabled: true
+      - name: line-length-limit
+        disabled: true
+      - name: flag-parameter
+        disabled: true
+      - name: add-constant
+        disabled: true
+      - name: empty-lines
+        disabled: true
+      - name: import-shadowing
+        disabled: true
+      - name: modifies-value-receiver
+        disabled: true
+      - name: confusing-naming
+        disabled: true
+      - name: defer
+        disabled: true
+      - name: unchecked-type-assertion
+        disabled: true
+      - name: unhandled-error
+        disabled: true
+        arguments:
+          - "fmt.Printf"
+          - "fmt.Print"
+          - "fmt.Println"
+  gosec:
+    excludes:
+      - G115

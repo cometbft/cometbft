@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -31,12 +32,12 @@ func parseFlags() (headPath string, chopSize int64, limitSize int64, version boo
 	}
 	chopSize = parseBytesize(chopSizeStr)
 	limitSize = parseBytesize(limitSizeStr)
-	return
+	return headPath, chopSize, limitSize, version
 }
 
 type fmtLogger struct{}
 
-func (fmtLogger) Info(msg string, keyvals ...interface{}) {
+func (fmtLogger) Info(msg string, keyvals ...any) {
 	strs := make([]string, len(keyvals))
 	for i, kv := range keyvals {
 		strs[i] = fmt.Sprintf("%v", kv)
@@ -78,7 +79,7 @@ func main() {
 				fmt.Fprintf(os.Stderr, "logjack stopped with error %v\n", headPath)
 				os.Exit(1)
 			}
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				os.Exit(0)
 			}
 			fmt.Println("logjack errored")

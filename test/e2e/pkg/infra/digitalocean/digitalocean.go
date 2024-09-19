@@ -27,6 +27,12 @@ func (p *Provider) Setup() error {
 		return err
 	}
 
+	for _, n := range p.Testnet.Nodes {
+		if n.ClockSkew != 0 {
+			return fmt.Errorf("node %q contains clock skew configuration (not supported on DO)", n.Name)
+		}
+	}
+
 	return nil
 }
 
@@ -112,7 +118,7 @@ func (p Provider) Reconnect(ctx context.Context, _ string, ip string) error {
 	return execAnsible(ctx, p.Testnet.Dir, playbookFile, []string{ip})
 }
 
-func (p Provider) CheckUpgraded(_ context.Context, node *e2e.Node) (string, bool, error) {
+func (Provider) CheckUpgraded(_ context.Context, node *e2e.Node) (string, bool, error) {
 	// Upgrade not supported yet by DO provider
 	return node.Name, false, nil
 }
@@ -192,7 +198,7 @@ func ansiblePerturbConnectionBytes(disconnect bool) string {
 }
 
 // ExecCompose runs a Docker Compose command for a testnet.
-func execAnsible(ctx context.Context, dir, playbook string, nodeIPs []string, args ...string) error {
+func execAnsible(ctx context.Context, dir, playbook string, nodeIPs []string, args ...string) error { //nolint:unparam
 	playbook = filepath.Join(dir, playbook)
 	return exec.CommandVerbose(ctx, append(
 		[]string{"ansible-playbook", playbook, "-f", "50", "-u", "root", "--inventory", strings.Join(nodeIPs, ",") + ","},

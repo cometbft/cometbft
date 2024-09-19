@@ -20,11 +20,13 @@ import (
 	_ "embed"
 
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
 	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -65,51 +67,31 @@ const (
 	PerturbationRestart    Perturbation = "restart"
 	PerturbationUpgrade    Perturbation = "upgrade"
 
-	EvidenceAgeHeight int64         = 7
-	EvidenceAgeTime   time.Duration = 500 * time.Millisecond
+	EvidenceAgeHeight int64         = 14
+	EvidenceAgeTime   time.Duration = 1500 * time.Millisecond
 )
 
 // Testnet represents a single testnet.
+// It includes all fields from the associated Manifest instance.
 type Testnet struct {
-	Name                                                 string
-	File                                                 string
-	Dir                                                  string
-	IP                                                   *net.IPNet
-	InitialHeight                                        int64
-	InitialState                                         map[string]string
-	Validators                                           map[*Node]int64
-	ValidatorUpdates                                     map[int64]map[*Node]int64
-	Nodes                                                []*Node
-	DisablePexReactor                                    bool
-	KeyType                                              string
-	Evidence                                             int
-	LoadTxSizeBytes                                      int
-	LoadTxBatchSize                                      int
-	LoadTxConnections                                    int
-	LoadMaxTxs                                           int
-	ABCIProtocol                                         string
-	PrepareProposalDelay                                 time.Duration
-	ProcessProposalDelay                                 time.Duration
-	CheckTxDelay                                         time.Duration
-	VoteExtensionDelay                                   time.Duration
-	FinalizeBlockDelay                                   time.Duration
-	UpgradeVersion                                       string
-	Prometheus                                           bool
-	VoteExtensionsEnableHeight                           int64
-	VoteExtensionsUpdateHeight                           int64
-	VoteExtensionSize                                    uint
-	PeerGossipIntraloopSleepDuration                     time.Duration
-	ExperimentalMaxGossipConnectionsToPersistentPeers    uint
-	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint
-	ABCITestsEnabled                                     bool
-	DefaultZone                                          string
-	ConstantValConsensusChanges                          bool
+	Manifest
+
+	Name string
+	File string
+	Dir  string
+
+	IP               *net.IPNet
+	Validators       map[*Node]int64
+	ValidatorUpdates map[int64]map[*Node]int64
+	Nodes            []*Node
 }
 
 // Node represents a CometBFT node in a testnet.
+// It includes all fields from the associated ManifestNode instance.
 type Node struct {
+	ManifestNode
+
 	Name                    string
-	Version                 string
 	Testnet                 *Testnet
 	Mode                    Mode
 	PrivvalKey              crypto.PrivKey
@@ -119,41 +101,37 @@ type Node struct {
 	RPCProxyPort            uint32
 	GRPCProxyPort           uint32
 	GRPCPrivilegedProxyPort uint32
-	StartAt                 int64
-	BlockSyncVersion        string
-	StateSync               bool
-	Database                string
 	ABCIProtocol            Protocol
 	PrivvalProtocol         Protocol
 	PersistInterval         uint64
-	SnapshotInterval        uint64
-	RetainBlocks            uint64
-	EnableCompanionPruning  bool
 	Seeds                   []*Node
 	PersistentPeers         []*Node
 	Perturbations           []Perturbation
-	SendNoLoad              bool
 	Prometheus              bool
 	PrometheusProxyPort     uint32
 	Zone                    ZoneID
 }
 
-// LoadTestnet loads a testnet from a manifest file, using the filename to
-// determine the testnet name and directory (from the basename of the file).
+// LoadTestnet loads a testnet from a manifest file. The testnet files are
+// generated in the given directory, which is also use to determine the testnet
+// name (the directory's basename).
 // The testnet generation must be deterministic, since it is generated
 // separately by the runner and the test cases. For this reason, testnets use a
 // random seed to generate e.g. keys.
-func LoadTestnet(file string, ifd InfrastructureData) (*Testnet, error) {
+func LoadTestnet(file string, ifd InfrastructureData, dir string) (*Testnet, error) {
 	manifest, err := LoadManifest(file)
 	if err != nil {
 		return nil, err
 	}
-	return NewTestnetFromManifest(manifest, file, ifd)
+	return NewTestnetFromManifest(manifest, file, ifd, dir)
 }
 
 // NewTestnetFromManifest creates and validates a testnet from a manifest.
-func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureData) (*Testnet, error) {
-	dir := strings.TrimSuffix(file, filepath.Ext(file))
+func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureData, dir string) (*Testnet, error) {
+	if dir == "" {
+		// Set default testnet directory.
+		dir = strings.TrimSuffix(file, filepath.Ext(file))
+	}
 
 	keyGen := newKeyGenerator(randomSeed)
 	prometheusProxyPortGen := newPortGenerator(prometheusProxyPortFirst)
@@ -163,44 +141,22 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	testnet := &Testnet{
-		Name:                             filepath.Base(dir),
-		File:                             file,
-		Dir:                              dir,
-		IP:                               ipNet,
-		InitialHeight:                    1,
-		InitialState:                     manifest.InitialState,
-		Validators:                       map[*Node]int64{},
-		ValidatorUpdates:                 map[int64]map[*Node]int64{},
-		Nodes:                            []*Node{},
-		DisablePexReactor:                manifest.DisablePexReactor,
-		Evidence:                         manifest.Evidence,
-		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
-		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
-		LoadTxConnections:                manifest.LoadTxConnections,
-		LoadMaxTxs:                       manifest.LoadMaxTxs,
-		ABCIProtocol:                     manifest.ABCIProtocol,
-		PrepareProposalDelay:             manifest.PrepareProposalDelay,
-		ProcessProposalDelay:             manifest.ProcessProposalDelay,
-		CheckTxDelay:                     manifest.CheckTxDelay,
-		VoteExtensionDelay:               manifest.VoteExtensionDelay,
-		FinalizeBlockDelay:               manifest.FinalizeBlockDelay,
-		UpgradeVersion:                   manifest.UpgradeVersion,
-		Prometheus:                       manifest.Prometheus,
-		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
-		VoteExtensionsUpdateHeight:       manifest.VoteExtensionsUpdateHeight,
-		VoteExtensionSize:                manifest.VoteExtensionSize,
-		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
-		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
-		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
-		ABCITestsEnabled:            manifest.ABCITestsEnabled,
-		DefaultZone:                 manifest.DefaultZone,
-		ConstantValConsensusChanges: manifest.ConstantValConsensusChanges,
+		Manifest: manifest,
+
+		Name: filepath.Base(dir),
+		File: file,
+		Dir:  dir,
+
+		IP:               ipNet,
+		Validators:       map[*Node]int64{},
+		ValidatorUpdates: map[int64]map[*Node]int64{},
+		Nodes:            []*Node{},
 	}
-	if len(manifest.KeyType) != 0 {
-		testnet.KeyType = manifest.KeyType
+	if testnet.InitialHeight == 0 {
+		testnet.InitialHeight = 1
 	}
-	if manifest.InitialHeight > 0 {
-		testnet.InitialHeight = manifest.InitialHeight
+	if testnet.KeyType == "" {
+		testnet.KeyType = ed25519.KeyType
 	}
 	if testnet.ABCIProtocol == "" {
 		testnet.ABCIProtocol = string(ProtocolBuiltin)
@@ -219,7 +175,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	for _, name := range sortNodeNames(manifest) {
-		nodeManifest := manifest.Nodes[name]
+		nodeManifest := manifest.NodesMap[name]
 		ind, ok := ifd.Instances[name]
 		if !ok {
 			return nil, fmt.Errorf("information for node '%s' missing from infrastructure data", name)
@@ -228,37 +184,29 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		if len(extIP) == 0 {
 			extIP = ind.IPAddress
 		}
-		v := nodeManifest.Version
-		if v == "" {
-			v = localVersion
-		}
 
 		node := &Node{
-			Name:                    name,
-			Version:                 v,
-			Testnet:                 testnet,
-			PrivvalKey:              keyGen.Generate(manifest.KeyType),
-			NodeKey:                 keyGen.Generate("ed25519"),
+			ManifestNode: *nodeManifest,
+			Name:         name,
+			Testnet:      testnet,
+
+			PrivvalKey:              keyGen.Generate(testnet.KeyType),
+			NodeKey:                 keyGen.Generate(ed25519.KeyType),
 			InternalIP:              ind.IPAddress,
 			ExternalIP:              extIP,
 			RPCProxyPort:            ind.RPCPort,
 			GRPCProxyPort:           ind.GRPCPort,
 			GRPCPrivilegedProxyPort: ind.PrivilegedGRPCPort,
 			Mode:                    ModeValidator,
-			Database:                "goleveldb",
 			ABCIProtocol:            Protocol(testnet.ABCIProtocol),
 			PrivvalProtocol:         ProtocolFile,
-			StartAt:                 nodeManifest.StartAt,
-			BlockSyncVersion:        nodeManifest.BlockSyncVersion,
-			StateSync:               nodeManifest.StateSync,
 			PersistInterval:         1,
-			SnapshotInterval:        nodeManifest.SnapshotInterval,
-			RetainBlocks:            nodeManifest.RetainBlocks,
-			EnableCompanionPruning:  nodeManifest.EnableCompanionPruning,
 			Perturbations:           []Perturbation{},
-			SendNoLoad:              nodeManifest.SendNoLoad,
 			Prometheus:              testnet.Prometheus,
-			Zone:                    ZoneID(nodeManifest.Zone),
+			Zone:                    ZoneID(nodeManifest.ZoneStr),
+		}
+		if node.Version == "" {
+			node.Version = localVersion
 		}
 		if node.StartAt == testnet.InitialHeight {
 			node.StartAt = 0 // normalize to 0 for initial nodes, since code expects this
@@ -266,20 +214,20 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		if node.BlockSyncVersion == "" {
 			node.BlockSyncVersion = "v0"
 		}
-		if nodeManifest.Mode != "" {
-			node.Mode = Mode(nodeManifest.Mode)
+		if nodeManifest.ModeStr != "" {
+			node.Mode = Mode(nodeManifest.ModeStr)
 		}
 		if node.Mode == ModeLight {
 			node.ABCIProtocol = ProtocolBuiltin
 		}
-		if nodeManifest.Database != "" {
-			node.Database = nodeManifest.Database
+		if node.Database == "" {
+			node.Database = "goleveldb"
 		}
-		if nodeManifest.PrivvalProtocol != "" {
-			node.PrivvalProtocol = Protocol(nodeManifest.PrivvalProtocol)
+		if nodeManifest.PrivvalProtocolStr != "" {
+			node.PrivvalProtocol = Protocol(nodeManifest.PrivvalProtocolStr)
 		}
-		if nodeManifest.PersistInterval != nil {
-			node.PersistInterval = *nodeManifest.PersistInterval
+		if nodeManifest.PersistIntervalPtr != nil {
+			node.PersistInterval = *nodeManifest.PersistIntervalPtr
 		}
 		if node.Prometheus {
 			node.PrometheusProxyPort = prometheusProxyPortGen.Next()
@@ -287,10 +235,15 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		for _, p := range nodeManifest.Perturb {
 			node.Perturbations = append(node.Perturbations, Perturbation(p))
 		}
-		if nodeManifest.Zone != "" {
-			node.Zone = ZoneID(nodeManifest.Zone)
+		if nodeManifest.ZoneStr != "" {
+			node.Zone = ZoneID(nodeManifest.ZoneStr)
 		} else if testnet.DefaultZone != "" {
 			node.Zone = ZoneID(testnet.DefaultZone)
+		}
+		// Configs are applied in order, so a local Config in Node
+		// should override a global config in Testnet.
+		if len(manifest.Config) > 0 {
+			node.Config = append(testnet.Config, node.Config...)
 		}
 
 		testnet.Nodes = append(testnet.Nodes, node)
@@ -298,18 +251,18 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 
 	// We do a second pass to set up seeds and persistent peers, which allows graph cycles.
 	for _, node := range testnet.Nodes {
-		nodeManifest, ok := manifest.Nodes[node.Name]
+		nodeManifest, ok := manifest.NodesMap[node.Name]
 		if !ok {
 			return nil, fmt.Errorf("failed to look up manifest for node %q", node.Name)
 		}
-		for _, seedName := range nodeManifest.Seeds {
+		for _, seedName := range nodeManifest.SeedsList {
 			seed := testnet.LookupNode(seedName)
 			if seed == nil {
 				return nil, fmt.Errorf("unknown seed %q for node %q", seedName, node.Name)
 			}
 			node.Seeds = append(node.Seeds, seed)
 		}
-		for _, peerName := range nodeManifest.PersistentPeers {
+		for _, peerName := range nodeManifest.PersistentPeersList {
 			peer := testnet.LookupNode(peerName)
 			if peer == nil {
 				return nil, fmt.Errorf("unknown persistent peer %q for node %q", peerName, node.Name)
@@ -330,8 +283,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	// Set up genesis validators. If not specified explicitly, use all validator nodes.
-	if manifest.Validators != nil {
-		for validatorName, power := range *manifest.Validators {
+	if manifest.ValidatorsMap != nil {
+		for validatorName, power := range *manifest.ValidatorsMap {
 			validator := testnet.LookupNode(validatorName)
 			if validator == nil {
 				return nil, fmt.Errorf("unknown validator %q", validatorName)
@@ -347,7 +300,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	// Set up validator updates.
-	for heightStr, validators := range manifest.ValidatorUpdates {
+	for heightStr, validators := range manifest.ValidatorUpdatesMap {
 		height, err := strconv.Atoi(heightStr)
 		if err != nil {
 			return nil, fmt.Errorf("invalid validator update height %q: %w", height, err)
@@ -380,6 +333,9 @@ func (t Testnet) Validate() error {
 	if err := t.validateZones(t.Nodes); err != nil {
 		return err
 	}
+	if t.BlockMaxBytes > types.MaxBlockSizeBytes {
+		return fmt.Errorf("value of BlockMaxBytes cannot be higher than %d", types.MaxBlockSizeBytes)
+	}
 	if t.VoteExtensionsUpdateHeight < -1 {
 		return fmt.Errorf("value of VoteExtensionsUpdateHeight must be positive, 0 (InitChain), "+
 			"or -1 (Genesis); update height %d", t.VoteExtensionsUpdateHeight)
@@ -411,15 +367,52 @@ func (t Testnet) Validate() error {
 			)
 		}
 	}
+	if t.PbtsEnableHeight < 0 {
+		return fmt.Errorf("value of PbtsEnableHeight must be positive, or 0 (disable); "+
+			"enable height %d", t.PbtsEnableHeight)
+	}
+	if t.PbtsUpdateHeight > 0 && t.PbtsUpdateHeight < t.InitialHeight {
+		return fmt.Errorf("a value of PbtsUpdateHeight greater than 0 "+
+			"must not be less than InitialHeight; "+
+			"update height %d, initial height %d",
+			t.PbtsUpdateHeight, t.InitialHeight,
+		)
+	}
+	if t.PbtsEnableHeight > 0 {
+		if t.PbtsEnableHeight < t.InitialHeight {
+			return fmt.Errorf("a value of PbtsEnableHeight greater than 0 "+
+				"must not be less than InitialHeight; "+
+				"enable height %d, initial height %d",
+				t.PbtsEnableHeight, t.InitialHeight,
+			)
+		}
+		if t.PbtsEnableHeight <= t.PbtsUpdateHeight {
+			return fmt.Errorf("a value of PbtsEnableHeight greater than 0 "+
+				"must be greater than PbtsUpdateHeight; "+
+				"update height %d, enable height %d",
+				t.PbtsUpdateHeight, t.PbtsEnableHeight,
+			)
+		}
+	}
 	for _, node := range t.Nodes {
 		if err := node.Validate(t); err != nil {
 			return fmt.Errorf("invalid node %q: %w", node.Name, err)
 		}
 	}
+	for _, field := range t.Genesis {
+		if _, _, err := ParseKeyValueField("genesis", field); err != nil {
+			return err
+		}
+	}
+	for _, field := range t.Config {
+		if _, _, err := ParseKeyValueField("config", field); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-func (t Testnet) validateZones(nodes []*Node) error {
+func (Testnet) validateZones(nodes []*Node) error {
 	zoneMatrix, err := loadZoneLatenciesMatrix()
 	if err != nil {
 		return err
@@ -488,7 +481,7 @@ func (n Node) Validate(testnet Testnet) error {
 		return fmt.Errorf("invalid block sync setting %q", n.BlockSyncVersion)
 	}
 	switch n.Database {
-	case "goleveldb", "cleveldb", "boltdb", "rocksdb", "badgerdb", "pebbledb":
+	case "goleveldb", "rocksdb", "badgerdb", "pebbledb":
 	default:
 		return fmt.Errorf("invalid database setting %q", n.Database)
 	}
@@ -499,6 +492,9 @@ func (n Node) Validate(testnet Testnet) error {
 	}
 	if n.Mode == ModeLight && n.ABCIProtocol != ProtocolBuiltin && n.ABCIProtocol != ProtocolBuiltinConnSync {
 		return errors.New("light client must use builtin protocol")
+	}
+	if n.Mode != ModeFull && n.Mode != ModeValidator && n.ClockSkew != 0 {
+		return errors.New("clock skew configuration only supported on full nodes")
 	}
 	switch n.PrivvalProtocol {
 	case ProtocolFile, ProtocolUNIX, ProtocolTCP:
@@ -532,7 +528,7 @@ func (n Node) Validate(testnet Testnet) error {
 		switch perturbation {
 		case PerturbationUpgrade:
 			if upgradeFound {
-				return fmt.Errorf("'upgrade' perturbation can appear at most once per node")
+				return errors.New("'upgrade' perturbation can appear at most once per node")
 			}
 			upgradeFound = true
 		case PerturbationDisconnect, PerturbationKill, PerturbationPause, PerturbationRestart:
@@ -540,7 +536,11 @@ func (n Node) Validate(testnet Testnet) error {
 			return fmt.Errorf("invalid perturbation %q", perturbation)
 		}
 	}
-
+	for _, entry := range n.Config {
+		if _, _, err := ParseKeyValueField("config", entry); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -650,6 +650,13 @@ func (n Node) Client() (*rpchttp.HTTP, error) {
 	return rpchttp.New(fmt.Sprintf("http://%s:%v/v1", n.ExternalIP, n.RPCProxyPort))
 }
 
+// ClientInternalIP returns an RPC client using the node's internal IP.
+// This is useful for running the loader from inside a private DO network.
+func (n Node) ClientInternalIP() (*rpchttp.HTTP, error) {
+	//nolint:nosprintfhostport
+	return rpchttp.New(fmt.Sprintf("http://%s:%v/v1", n.InternalIP, n.RPCProxyPort))
+}
+
 // GRPCClient creates a gRPC client for the node.
 func (n Node) GRPCClient(ctx context.Context) (grpcclient.Client, error) {
 	return grpcclient.New(
@@ -697,9 +704,15 @@ func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
 		panic(err) // this shouldn't happen
 	}
 	switch keyType {
-	case "secp256k1":
+	case secp256k1.KeyType:
 		return secp256k1.GenPrivKeySecp256k1(seed)
-	case "", "ed25519":
+	case bls12381.KeyType:
+		pk, err := bls12381.GenPrivKeyFromSecret(seed)
+		if err != nil {
+			panic(fmt.Sprintf("unrecoverable error when generating key; key type %s, err %v", bls12381.KeyType, err))
+		}
+		return pk
+	case ed25519.KeyType:
 		return ed25519.GenPrivKeyFromSecret(seed)
 	default:
 		panic("KeyType not supported") // should not make it this far
@@ -805,4 +818,13 @@ func parseCsv(csvString string) ([][]string, error) {
 	}
 
 	return records, nil
+}
+
+func ParseKeyValueField(name string, field string) (key string, value string, err error) {
+	tokens := strings.Split(field, "=")
+	if len(tokens) != 2 {
+		return key, value, fmt.Errorf("invalid '%s' field: \"%s\", "+
+			"expected \"key = value\"", name, field)
+	}
+	return strings.TrimSpace(tokens[0]), strings.TrimSpace(tokens[1]), nil
 }

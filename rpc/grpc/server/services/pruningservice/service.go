@@ -1,8 +1,7 @@
 package pruningservice
 
 import (
-	context "context"
-	"fmt"
+	"context"
 	"math"
 
 	"google.golang.org/grpc/codes"
@@ -10,8 +9,8 @@ import (
 
 	pbsvc "github.com/cometbft/cometbft/api/cometbft/services/pruning/v1"
 	"github.com/cometbft/cometbft/internal/rpctrace"
-	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/libs/log"
+	sm "github.com/cometbft/cometbft/state"
 )
 
 type pruningServiceServer struct {
@@ -31,7 +30,7 @@ func (s *pruningServiceServer) SetBlockIndexerRetainHeight(_ context.Context, re
 	height := request.Height
 	// Because we can't agree on a single type to represent tx indexer height.
 	if height > uint64(math.MaxInt64) {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Invalid height %d", height))
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid height %d", height)
 	}
 	logger := s.logger.With("endpoint", "SetBlockIndexerRetainHeight")
 	traceID, err := rpctrace.New()
@@ -65,7 +64,7 @@ func (s *pruningServiceServer) SetTxIndexerRetainHeight(_ context.Context, reque
 	height := request.Height
 	// Because we can't agree on a single type to represent tx indexer height.
 	if height > uint64(math.MaxInt64) {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Invalid height %d", height))
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid height %d", height)
 	}
 	logger := s.logger.With("endpoint", "SetTxIndexerRetainHeight")
 	traceID, err := rpctrace.New()
@@ -100,7 +99,7 @@ func (s *pruningServiceServer) SetBlockRetainHeight(_ context.Context, req *pbsv
 	height := req.Height
 	// Because we can't agree on a single type to represent block height.
 	if height > uint64(math.MaxInt64) {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Invalid height %d", height))
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid height %d", height)
 	}
 	logger := s.logger.With("endpoint", "SetBlockRetainHeight")
 	traceID, err := rpctrace.New()
@@ -144,7 +143,7 @@ func (s *pruningServiceServer) SetBlockResultsRetainHeight(_ context.Context, re
 	height := req.Height
 	// Because we can't agree on a single type to represent block height.
 	if height > uint64(math.MaxInt64) {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Invalid height %d", height))
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid height %d", height)
 	}
 	logger := s.logger.With("endpoint", "SetBlockResultsRetainHeight")
 	traceID, err := rpctrace.New()

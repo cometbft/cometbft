@@ -48,31 +48,55 @@ func TestGenesisBad(t *testing.T) {
 				`},"power":"10","name":""}` +
 				`]}`,
 		),
+		// unsupported validator pubkey type
+		[]byte(
+			`{
+				"chain_id": "test-chain-QDKdJr",
+				"validators": [{
+					"pub_key":{"type":"tendermint/PubKeyEd25519","value":"AT/+aaL1eB0477Mud9JMm8Sh8BIvOYlPGC9KkIUmFaE="},
+					"power":"10",
+					"name":""
+				}],
+				"consensus_params": {
+					"validator": {"pub_key_types":["secp256k1"]},
+					"block": {"max_bytes": "100"},
+					"evidence": {"max_age_num_blocks": "100", "max_age_duration": "10"}
+				}
+			}`,
+		),
 	}
 
-	for _, testCase := range testCases {
+	for i, testCase := range testCases {
 		_, err := GenesisDocFromJSON(testCase)
-		require.Error(t, err, "expected error for empty genDoc json")
+		formatStr := "test case %i: expected error for invalid genesis doc"
+		require.Error(t, err, formatStr, i)
 	}
 }
 
-func TestGenesisGood(t *testing.T) {
+func TestBasicGenesisDoc(t *testing.T) {
 	// test a good one by raw json
 	genDocBytes := []byte(
 		`{
 			"genesis_time": "0001-01-01T00:00:00Z",
 			"chain_id": "test-chain-QDKdJr",
 			"initial_height": "1000",
-			"consensus_params": null,
 			"validators": [{
 				"pub_key":{"type":"tendermint/PubKeyEd25519","value":"AT/+aaL1eB0477Mud9JMm8Sh8BIvOYlPGC9KkIUmFaE="},
 				"power":"10",
 				"name":""
 			}],
 			"app_hash":"",
-			"app_state":{"account_owner": "Bob"}
+			"app_state":{"account_owner": "Bob"},
+			"consensus_params": {
+				"synchrony":  {"precision": "1", "message_delay": "10"},
+				"validator": {"pub_key_types":["ed25519"]},
+				"block": {"max_bytes": "100"},
+				"evidence": {"max_age_num_blocks": "100", "max_age_duration": "10"},
+				"feature": {"vote_extension_enable_height": "0", "pbts_enable_height": "0"}
+			}
 		}`,
 	)
+
 	_, err := GenesisDocFromJSON(genDocBytes)
 	require.NoError(t, err, "expected no error for good genDoc json")
 

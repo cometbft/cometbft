@@ -42,5 +42,5 @@ type ErrUnknownBlocksyncVersion struct {
 }
 
 func (e ErrUnknownBlocksyncVersion) Error() string {
-	return fmt.Sprintf("unknown blocksync version %s", e.Version)
+	return "unknown blocksync version " + e.Version
 }

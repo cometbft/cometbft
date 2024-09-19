@@ -107,7 +107,7 @@ then the time `b.time` in the block `b` that is signed by `c` satisfies
 - `beginConsensus(k) - PRECISION <= b.time < endConsensus(k) + PRECISION + MSGDELAY`.
 
 
-> [PBTS-CONSENSUS-TIME-VALID.0] is based on an analysis where the proposer is faulty (and does does not count towards `beginConsensus(k)` and `endConsensus(k)`), and we estimate the times at which correct validators receive and `accept` the `propose` message. If the proposer is correct we obtain
+> [PBTS-CONSENSUS-TIME-VALID.0] is based on an analysis where the proposer is faulty (and does not count towards `beginConsensus(k)` and `endConsensus(k)`), and we estimate the times at which correct validators receive and `accept` the `propose` message. If the proposer is correct we obtain
 
 #### **[PBTS-CONSENSUS-LIVE-VALID-CORR-PROP.0]**
 
@@ -190,7 +190,7 @@ Back to [main document][main_v1].
 
 [algorithm_v1]: ./pbts-algorithm_001_draft.md
 
-[sysmodel]: ../pbts-sysmodel_002_draft.md
+[sysmodel]: ../pbts-sysmodel.md
 
 [arXiv]: https://arxiv.org/abs/1807.04938
 

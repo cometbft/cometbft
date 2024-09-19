@@ -2,7 +2,6 @@ package client_test
 
 import (
 	"errors"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -39,7 +38,8 @@ func TestWaitForHeight(t *testing.T) {
 	// we will not wait for more than 10 blocks
 	err = client.WaitForHeight(r, 40, nil)
 	require.Error(err)
-	require.True(strings.Contains(err.Error(), "aborting"))
+	require.ErrorAs(err, &client.ErrWaitThreshold{})
+
 	// we called status once more to check
 	require.Len(r.Calls, 2)
 

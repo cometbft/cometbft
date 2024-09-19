@@ -6,7 +6,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"net"
 
 	ggrpc "google.golang.org/grpc"
@@ -95,6 +94,17 @@ func WithBlockServiceEnabled(enabled bool) Option {
 	}
 }
 
+// WithBlockResultsServiceEnabled allows control of whether or not to create a
+// client for interacting with the block results service of a CometBFT node.
+//
+// If disabled and the client attempts to access the block results service API, the
+// client will panic.
+func WithBlockResultsServiceEnabled(enabled bool) Option {
+	return func(b *clientBuilder) {
+		b.blockResultsServiceEnabled = enabled
+	}
+}
+
 // WithGRPCDialOption allows passing lower-level gRPC dial options through to
 // the gRPC dialer when creating the client.
 func WithGRPCDialOption(opt ggrpc.DialOption) Option {
@@ -112,15 +122,16 @@ func WithGRPCDialOption(opt ggrpc.DialOption) Option {
 // To connect to a gRPC server with TLS, use the WithGRPCDialOption option with
 // the appropriate gRPC credentials configuration. See
 // https://pkg.go.dev/google.golang.org/grpc#WithTransportCredentials
-func New(ctx context.Context, addr string, opts ...Option) (Client, error) {
+func New(_ context.Context, addr string, opts ...Option) (Client, error) {
 	builder := newClientBuilder()
 	for _, opt := range opts {
 		opt(builder)
 	}
-	conn, err := ggrpc.DialContext(ctx, addr, builder.grpcOpts...)
+	conn, err := ggrpc.NewClient(addr, builder.grpcOpts...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to dial %s: %w", addr, err)
+		return nil, ErrDial{addr, err}
 	}
+
 	versionServiceClient := newDisabledVersionServiceClient()
 	if builder.versionServiceEnabled {
 		versionServiceClient = newVersionServiceClient(conn)

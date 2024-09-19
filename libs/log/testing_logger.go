@@ -21,7 +21,7 @@ func TestingLogger() Logger {
 	return TestingLoggerWithOutput(os.Stdout)
 }
 
-// TestingLoggerWOutput returns a TMLogger which writes to (w io.Writer) if testing being run
+// TestingLoggerWithOutput returns a TMLogger which writes to (w io.Writer) if testing being run
 // with the verbose (-v) flag, NopLogger otherwise.
 //
 // Note that the call to TestingLoggerWithOutput(w io.Writer) must be made
@@ -43,7 +43,7 @@ func TestingLoggerWithOutput(w io.Writer) Logger {
 
 // TestingLoggerWithColorFn allow you to provide your own color function. See
 // TestingLogger for documentation.
-func TestingLoggerWithColorFn(colorFn func(keyvals ...interface{}) term.FgBgColor) Logger {
+func TestingLoggerWithColorFn(colorFn func(keyvals ...any) term.FgBgColor) Logger {
 	if _testingLogger != nil {
 		return _testingLogger
 	}

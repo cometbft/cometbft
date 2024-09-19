@@ -3,6 +3,7 @@ package consensus
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"hash/crc32"
 	"io"
@@ -11,9 +12,9 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/merkle"
-	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -28,10 +29,10 @@ var crc32c = crc32.MakeTable(crc32.Castagnoli)
 // The former is handled by the WAL, the latter by the proxyApp Handshake on
 // restart, which ultimately hands off the work to the WAL.
 
-//-----------------------------------------
+// -----------------------------------------
 // 1. Recover from failure during consensus
 // (by replaying messages from the WAL)
-//-----------------------------------------
+// -----------------------------------------
 
 // Unmarshal and apply a single message to the consensus state as if it were
 // received in receiveRoutine.  Lines that start with "#" are ignored.
@@ -56,9 +57,9 @@ func (cs *State) readReplayMessage(msg *TimedWALMessage, newStepSub types.Subscr
 					return fmt.Errorf("roundState mismatch. Got %v; Expected %v", m2, m)
 				}
 			case <-newStepSub.Canceled():
-				return fmt.Errorf("failed to read off newStepSub.Out(). newStepSub was canceled")
+				return errors.New("failed to read off newStepSub.Out(). newStepSub was canceled")
 			case <-ticker:
-				return fmt.Errorf("failed to read off newStepSub.Out()")
+				return errors.New("failed to read off newStepSub.Out()")
 			}
 		}
 	case msgInfo:
@@ -70,7 +71,7 @@ func (cs *State) readReplayMessage(msg *TimedWALMessage, newStepSub types.Subscr
 		case *ProposalMessage:
 			p := msg.Proposal
 			cs.Logger.Info("Replay: Proposal", "height", p.Height, "round", p.Round, "header",
-				p.BlockID.PartSetHeader, "pol", p.POLRound, "peer", peerID)
+				p.BlockID.PartSetHeader, "pol", p.POLRound, "peer", peerID, "receive_time", m.ReceiveTime)
 		case *BlockPartMessage:
 			cs.Logger.Info("Replay: BlockPart", "height", msg.Height, "round", msg.Round, "peer", peerID)
 		case *VoteMessage:
@@ -126,7 +127,7 @@ func (cs *State) catchupReplay(csHeight int64) error {
 		endHeight = 0
 	}
 	gr, found, err = cs.wal.SearchForEndHeight(endHeight, &WALSearchOptions{IgnoreDataCorruptionErrors: true})
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		cs.Logger.Error("Replay: wal.group.Search returned EOF", "#ENDHEIGHT", endHeight)
 	} else if err != nil {
 		return err
@@ -145,7 +146,7 @@ LOOP:
 	for {
 		msg, err = dec.Decode()
 		switch {
-		case err == io.EOF:
+		case errors.Is(err, io.EOF):
 			break LOOP
 		case IsDataCorruptionError(err):
 			cs.Logger.Error("data has been corrupted in last height of consensus WAL", "err", err, "height", csHeight)
@@ -165,7 +166,7 @@ LOOP:
 	return nil
 }
 
-//--------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 // Parses marker lines of the form:
 // #ENDHEIGHT: 12345
@@ -191,11 +192,11 @@ func makeHeightSearchFunc(height int64) auto.SearchFunc {
 	}
 }*/
 
-//---------------------------------------------------
+// ---------------------------------------------------
 // 2. Recover from failure while applying the block.
 // (by handshaking with the app to figure out where
 // we were last, and using the WAL to recover there.)
-//---------------------------------------------------
+// ---------------------------------------------------
 
 type Handshaker struct {
 	stateStore   sm.Store
@@ -303,6 +304,10 @@ func (h *Handshaker) ReplayBlocks(
 	if appBlockHeight == 0 {
 		validators := make([]*types.Validator, len(h.genDoc.Validators))
 		for i, val := range h.genDoc.Validators {
+			// Ensure that the public key type is supported.
+			if _, ok := types.ABCIPubKeyTypesToNames[val.PubKey.Type()]; !ok {
+				return nil, fmt.Errorf("unsupported public key type %s (validator name: %s)", val.PubKey.Type(), val.Name)
+			}
 			validators[i] = types.NewValidator(val.PubKey, val.Power)
 		}
 		validatorSet := types.NewValidatorSet(validators)
@@ -340,7 +345,7 @@ func (h *Handshaker) ReplayBlocks(
 				state.NextValidators = types.NewValidatorSet(vals).CopyIncrementProposerPriority(1)
 			} else if len(h.genDoc.Validators) == 0 {
 				// If validator set is not set in genesis and still empty after InitChain, exit.
-				return nil, fmt.Errorf("validator set is nil in genesis and still empty after InitChain")
+				return nil, errors.New("validator set is nil in genesis and still empty after InitChain")
 			}
 
 			if res.ConsensusParams != nil {
@@ -412,7 +417,10 @@ func (h *Handshaker) ReplayBlocks(
 			// but we'd have to allow the WAL to replay a block that wrote it's #ENDHEIGHT
 			h.logger.Info("Replay last block using real app")
 			state, err = h.replayBlock(state, storeBlockHeight, proxyApp.Consensus())
-			return state.AppHash, err
+			if err != nil {
+				return nil, err
+			}
+			return state.AppHash, nil
 
 		case appBlockHeight == storeBlockHeight:
 			// We ran Commit, but didn't save the state, so replayBlock with mock app.
@@ -430,7 +438,10 @@ func (h *Handshaker) ReplayBlocks(
 			mockApp := newMockProxyApp(finalizeBlockResponse)
 			h.logger.Info("Replay last block using mock app")
 			state, err = h.replayBlock(state, storeBlockHeight, mockApp)
-			return state.AppHash, err
+			if err != nil {
+				return nil, err
+			}
+			return state.AppHash, nil
 		}
 	}
 
@@ -480,7 +491,7 @@ func (h *Handshaker) replayBlocks(
 			assertAppHashEqualsOneFromBlock(appHash, block)
 		}
 
-		appHash, err = sm.ExecCommitBlock(proxyApp.Consensus(), block, h.logger, h.stateStore, h.genDoc.InitialHeight)
+		appHash, err = sm.ExecCommitBlock(proxyApp.Consensus(), block, h.logger, h.stateStore, h.genDoc.InitialHeight, storeBlockHeight)
 		if err != nil {
 			return nil, err
 		}
@@ -511,7 +522,7 @@ func (h *Handshaker) replayBlock(state sm.State, height int64, proxyApp proxy.Ap
 	blockExec.SetEventBus(h.eventBus)
 
 	var err error
-	state, err = blockExec.ApplyBlock(state, meta.BlockID, block)
+	state, err = blockExec.ApplyBlock(state, meta.BlockID, block, block.Height)
 	if err != nil {
 		return sm.State{}, err
 	}

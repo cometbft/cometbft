@@ -12,7 +12,7 @@ import (
 
 	"github.com/cometbft/cometbft/abci/types"
 	cmtnet "github.com/cometbft/cometbft/internal/net"
-	"github.com/cometbft/cometbft/internal/service"
+	"github.com/cometbft/cometbft/libs/service"
 )
 
 var _ Client = (*grpcClient)(nil)
@@ -30,7 +30,7 @@ type grpcClient struct {
 	mtx   sync.Mutex
 	addr  string
 	err   error
-	resCb func(*types.Request, *types.Response) // listens to all callbacks
+	resCb Callback // listens to all callbacks
 }
 
 func NewGRPCClient(addr string, mustConnect bool) Client {
@@ -87,7 +87,7 @@ func (cli *grpcClient) OnStart() error {
 
 RETRY_LOOP:
 	for {
-		conn, err := grpc.Dial(cli.addr,
+		conn, err := grpc.NewClient(cli.addr,
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithContextDialer(dialerFunc),
 		)
@@ -151,15 +151,15 @@ func (cli *grpcClient) Error() error {
 	return cli.err
 }
 
-// Set listener for all responses
-// NOTE: callback may get internally generated flush responses.
+// SetResponseCallback sets a listener for all responses.
+// NOTE: The callback may receive internally generated flush responses.
 func (cli *grpcClient) SetResponseCallback(resCb Callback) {
 	cli.mtx.Lock()
 	cli.resCb = resCb
 	cli.mtx.Unlock()
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 func (cli *grpcClient) CheckTxAsync(ctx context.Context, req *types.CheckTxRequest) (*ReqRes, error) {
 	res, err := cli.client.CheckTx(ctx, req, grpc.WaitForReady(true))
@@ -179,7 +179,7 @@ func (cli *grpcClient) finishAsyncCall(req *types.Request, res *types.Response) 
 	return reqres
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 func (cli *grpcClient) Flush(ctx context.Context) error {
 	_, err := cli.client.Flush(ctx, types.ToFlushRequest().GetFlush(), grpc.WaitForReady(true))

@@ -723,11 +723,11 @@ func (_m *Client) String() string {
 
 // Subscribe provides a mock function with given fields: ctx, subscriber, query, outCapacity
 func (_m *Client) Subscribe(ctx context.Context, subscriber string, query string, outCapacity ...int) (<-chan coretypes.ResultEvent, error) {
-	_va := make([]interface{}, len(outCapacity))
+	_va := make([]any, len(outCapacity))
 	for _i := range outCapacity {
 		_va[_i] = outCapacity[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, subscriber, query)
 	_ca = append(_ca, _va...)
 	ret := _m.Called(_ca...)
@@ -790,6 +790,29 @@ func (_m *Client) TxSearch(ctx context.Context, query string, prove bool, page *
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, string, bool, *int, *int, string) error); ok {
 		r1 = rf(ctx, query, prove, page, perPage, orderBy)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// UnconfirmedTx provides a mock function with given fields: ctx, hash
+func (_m *Client) UnconfirmedTx(ctx context.Context, hash []byte) (*coretypes.ResultUnconfirmedTx, error) {
+	ret := _m.Called(ctx, hash)
+
+	var r0 *coretypes.ResultUnconfirmedTx
+	if rf, ok := ret.Get(0).(func(context.Context, []byte) *coretypes.ResultUnconfirmedTx); ok {
+		r0 = rf(ctx, hash)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*coretypes.ResultUnconfirmedTx)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, []byte) error); ok {
+		r1 = rf(ctx, hash)
 	} else {
 		r1 = ret.Error(1)
 	}

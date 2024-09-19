@@ -50,3 +50,5 @@ jobs:
       - name: Upload coverage to Coveralls
         if: steps.filter.outputs.code == 'true'
         uses: coverallsapp/github-action@v2
+        with:
+          file: coverage.txt

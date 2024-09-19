@@ -7,13 +7,13 @@ type LanesInfo struct {
 
 // BuildLanesInfo builds the information required to initialize
 // lanes given the data queried from the app.
-func BuildLanesInfo(laneMap map[string]uint32, defLane LaneID) (*LanesInfo, error) {
+func BuildLanesInfo(laneMap map[string]uint32, defLane string) (*LanesInfo, error) {
 	info := LanesInfo{}
 	info.lanes = make(map[LaneID]LanePriority, len(laneMap))
 	for l, p := range laneMap {
 		info.lanes[LaneID(l)] = LanePriority(p)
 	}
-	info.defaultLane = defLane
+	info.defaultLane = LaneID(defLane)
 
 	if err := validate(info); err != nil {
 		return nil, err

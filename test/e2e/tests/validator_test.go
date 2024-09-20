@@ -146,8 +146,7 @@ func TestValidator_Sign(t *testing.T) {
 // validator set updates.
 type validatorSchedule struct {
 	Set     *types.ValidatorSet
-	height  int64                      // TODO remove
-	updates map[int64]map[string]int64 // TODO remove
+	height  int64
 	testnet *e2e.Testnet
 }
 
@@ -159,7 +158,6 @@ func newValidatorSchedule(testnet *e2e.Testnet) *validatorSchedule {
 	return &validatorSchedule{
 		height:  testnet.InitialHeight,
 		Set:     types.NewValidatorSet(makeVals(testnet, valMap)),
-		updates: testnet.ValidatorUpdates,
 		testnet: testnet,
 	}
 }
@@ -170,7 +168,7 @@ func (s *validatorSchedule) Increment(heights int64) {
 		if s.height > 2 {
 			// validator set updates are offset by 2, since they only take effect
 			// two blocks after they're returned.
-			if update, ok := s.updates[s.height-2]; ok {
+			if update, ok := s.testnet.ValidatorUpdates[s.height-2]; ok {
 				if err := s.Set.UpdateWithChangeSet(makeVals(s.testnet, update)); err != nil {
 					panic(err)
 				}

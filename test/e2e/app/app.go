@@ -56,7 +56,8 @@ type Application struct {
 	restoreSnapshot *abci.Snapshot
 	restoreChunks   [][]byte
 	// It's OK not to persist this, as it is not part of the state machine
-	seenTxs sync.Map // cmttypes.TxKey -> uint64
+	seenTxs     sync.Map // cmttypes.TxKey -> uint64
+	allKeyTypes []string // Cached slice of all supported key types in CometBFT
 }
 
 // Config allows for the setting of high level parameters for running the e2e Application
@@ -139,7 +140,7 @@ type Config struct {
 	// `ConsensusParams` updates at every height.
 	// This is useful to create a more dynamic testnet.
 	// * An existing validator will be chosen, and its power will alternate 0 and 1
-	// * `ConsensusParams` will be modifying its `PubKeyTypes` with keyTypes not set at genesis
+	// * `ConsensusParams` will be flipping on and off key types not set at genesis
 	ConstantFlip bool `toml:"constant_flip"`
 }
 
@@ -165,11 +166,17 @@ func NewApplication(cfg *Config) (*Application, error) {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	logger.Info("Application started!")
 
+	allKeyTypes := make([]string, 0, len(cmttypes.ABCIPubKeyTypesToNames))
+	for keyType := range cmttypes.ABCIPubKeyTypesToNames {
+		allKeyTypes = append(allKeyTypes, keyType)
+	}
+
 	return &Application{
-		logger:    logger,
-		state:     state,
-		snapshots: snapshots,
-		cfg:       cfg,
+		logger:      logger,
+		state:       state,
+		snapshots:   snapshots,
+		cfg:         cfg,
+		allKeyTypes: allKeyTypes,
 	}, nil
 }
 
@@ -223,12 +230,12 @@ func (app *Application) flipParams(params *cmtproto.ConsensusParams, height int6
 		return params, nil
 	}
 	if height < 0 {
-		return nil, fmt.Errorf("cannot oscillate ConsensusParams on height < 0 (%d)", height)
+		return nil, fmt.Errorf("cannot flip ConsensusParams on height < 0 (%d)", height)
 	}
 
-	keyTypes := []string{cmttypes.ABCIPubKeyTypeEd25519} // Default genesis value, not touched by e2e logic
+	keyTypes := app.allKeyTypes
 	if height%2 == 0 {
-		keyTypes = append(keyTypes, cmttypes.ABCIPubKeyTypeSecp256k1)
+		keyTypes = []string{app.cfg.KeyType}
 	}
 	if params == nil {
 		params = &cmtproto.ConsensusParams{}
@@ -236,7 +243,7 @@ func (app *Application) flipParams(params *cmtproto.ConsensusParams, height int6
 	params.Validator = &cmtproto.ValidatorParams{
 		PubKeyTypes: keyTypes,
 	}
-	app.logger.Info("oscillating key types", "PubKeyTypes", keyTypes)
+	app.logger.Info("flipping key types", "PubKeyTypes", keyTypes)
 	return params, nil
 }
 

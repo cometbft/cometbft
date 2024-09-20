@@ -156,7 +156,7 @@ type Manifest struct {
 	// `ConsensusParams` updates at every height.
 	// This is useful to create a more dynamic testnet.
 	// * An existing validator will be chosen, and its power will alternate 0 and 1
-	// * `ConsensusParams` will be modifying its `PubKeyTypes` with keyTypes not set at genesis
+	// * `ConsensusParams` will be flipping on and off key types not set at genesis
 	ConstantFlip bool `toml:"constant_flip"`
 }
 

@@ -969,13 +969,13 @@ func permuteValidatorSlice(vals []*Validator, start int, res [][]*Validator) [][
 
 func TestValSetTestOrderingPower(t *testing.T) {
 	sortedVals := []*Validator{
-		{Address: []byte("validator1"), VotingPower: 20},
-		{Address: []byte("validator2"), VotingPower: 20},
-		{Address: []byte("validator3"), VotingPower: 15},
-		{Address: []byte("validator4"), VotingPower: 12},
-		{Address: []byte("validator5"), VotingPower: 10},
-		{Address: []byte("validator6"), VotingPower: 5},
-		{Address: []byte("validator7"), VotingPower: 5},
+		{Address: []byte("validator10"), VotingPower: 20},
+		{Address: []byte("validator02"), VotingPower: 20},
+		{Address: []byte("validator13"), VotingPower: 15},
+		{Address: []byte("validator44"), VotingPower: 12},
+		{Address: []byte("validator32"), VotingPower: 10},
+		{Address: []byte("validator66"), VotingPower: 5},
+		{Address: []byte("validator17"), VotingPower: 5},
 	}
 	allPerms := permuteValidatorSlice(sortedVals, 0, nil)
 	for _, vals := range allPerms {

@@ -241,8 +241,8 @@ func (app *Application) oscillateValUpdates(updates abci.ValidatorUpdates, heigh
 	}
 
 	addr := app.state.Get(prefixReservedKey + suffixFlippingVal)
-	if addr == "" {
-		return nil, errors.New("the flipping validator's address cannot be empty")
+	if addr == "" { // Happens if no validators provided in Genesis
+		return updates, nil
 	}
 	power := height % 2
 	app.logger.Info("oscillating validator power", "addr", addr, "power", power)
@@ -285,9 +285,9 @@ func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest)
 	app.state.Set(prefixReservedKey+suffixInitialHeight, strconv.FormatInt(req.InitialHeight, 10))
 	// Get validators from genesis
 	if req.Validators != nil {
-		for _, val := range req.Validators {
+		for i, val := range req.Validators {
 			validator := val
-			if err := app.storeValidator(&validator); err != nil {
+			if err := app.storeValidator(&validator, i == len(req.Validators)-1); err != nil {
 				return nil, err
 			}
 		}
@@ -801,19 +801,21 @@ func (app *Application) checkHeightAndExtensions(isPrepareProcessProposal bool, 
 	return appHeight, voteExtHeight != 0 && currentHeight >= voteExtHeight
 }
 
-func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate) error {
+func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate, isFlipping bool) error {
 	// Store validator data to verify extensions
 	pubKey, err := cryptoenc.PubKeyFromTypeAndBytes(valUpdate.PubKeyType, valUpdate.PubKeyBytes)
 	if err != nil {
 		return err
 	}
 	addr := pubKey.Address().String()
-	if app.cfg.ConstantValConsensusChanges {
-		if app.state.Get(prefixReservedKey+suffixFlippingVal) == "" {
-			app.state.Set(prefixReservedKey+suffixFlippingVal, addr)
+	if isFlipping && app.cfg.ConstantValConsensusChanges {
+		if existingAddr := app.state.Get(prefixReservedKey + suffixFlippingVal); len(existingAddr) != 0 {
+			return fmt.Errorf("found a flipping val %q when trying to store %q", existingAddr, addr)
 		}
+		app.state.Set(prefixReservedKey+suffixFlippingVal, addr)
 	}
 	if valUpdate.Power > 0 {
+		addr := pubKey.Address().String()
 		app.logger.Info("setting validator in app_state", "addr", addr)
 		pk, err := cryptoenc.PubKeyToProto(pubKey)
 		if err != nil {
@@ -843,7 +845,7 @@ func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, 
 		}
 		valUpdate := abci.ValidatorUpdate{Power: int64(power), PubKeyType: app.cfg.KeyType, PubKeyBytes: keyBytes}
 		valUpdates = append(valUpdates, valUpdate)
-		if err := app.storeValidator(&valUpdate); err != nil {
+		if err := app.storeValidator(&valUpdate, false); err != nil {
 			return nil, err
 		}
 	}

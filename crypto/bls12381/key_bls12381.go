@@ -4,7 +4,6 @@ package bls12381
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 
@@ -98,15 +97,8 @@ func (PrivKey) Type() string {
 	return KeyType
 }
 
-// Sign signs the given byte array. If msg is larger than
-// MaxMsgLen, SHA256 sum will be signed instead of the raw bytes.
+// Sign signs the given byte array.
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
-	if len(msg) > MaxMsgLen {
-		hash := sha256.Sum256(msg)
-		signature := new(blstSignature).Sign(privKey.sk, hash[:], dstMinSig)
-		return signature.Compress(), nil
-	}
-
 	signature := new(blstSignature).Sign(privKey.sk, msg, dstMinSig)
 	return signature.Compress(), nil
 }
@@ -180,11 +172,6 @@ func (pubKey PubKey) VerifySignature(msg, sig []byte) bool {
 	// could be infinite.
 	if !signature.SigValidate(false) {
 		return false
-	}
-
-	if len(msg) > MaxMsgLen {
-		hash := sha256.Sum256(msg)
-		return signature.Verify(false, pubKey.pk, false, hash[:], dstMinSig)
 	}
 
 	return signature.Verify(false, pubKey.pk, false, msg, dstMinSig)

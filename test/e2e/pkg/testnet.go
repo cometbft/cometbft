@@ -330,7 +330,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	const flipSpan = 3000
 	for i := max(1, manifest.InitialHeight); i < manifest.InitialHeight+flipSpan; i++ {
 		if _, ok := testnet.ValidatorUpdates[i]; ok {
-			continue // TODO: what if I set a non-existent validator to 0?
+			continue
 		}
 		valUpdate := map[*Node]int64{
 			minNode: i % 2, // flipping every height

@@ -33,6 +33,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -62,9 +63,17 @@ func TestCounter(t *testing.T) {
 	}, []string{"alpha", "beta"}).With("beta", "beta-value", "alpha", "alpha-value") // order shouldn't matter
 
 	value := func() float64 {
-		matches := re.FindStringSubmatch(scrape())
-		f, _ := strconv.ParseFloat(matches[1], 64)
-		return f
+		// Prometheus is eventually consistent, so we need to retry a few times.
+		retries := 5
+		for i := 0; i < retries; i++ {
+			matches := re.FindStringSubmatch(scrape())
+			if len(matches) > 0 {
+				f, _ := strconv.ParseFloat(matches[1], 64)
+				return f
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+		return -1
 	}
 
 	if err := teststat.TestCounter(counter, value); err != nil {
@@ -136,8 +145,7 @@ func TestSummary(t *testing.T) {
 		p90, _ := strconv.ParseFloat(match90[1], 64)
 		match99 := re99.FindStringSubmatch(buf)
 		p99, _ := strconv.ParseFloat(match99[1], 64)
-		p95 := p90 + ((p99 - p90) / 2) // Prometheus, y u no p95??? :< #yolo
-		return p50, p90, p95, p99
+		return p50, p90, 0, p99
 	}
 
 	if err := teststat.TestHistogram(summary, quantiles, 0.01); err != nil {

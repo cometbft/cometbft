@@ -430,10 +430,10 @@ func (t Testnet) Validate() error {
 			)
 		}
 	}
-	if len(t.LoadLaneWeights) != len(t.laneIDs) {
+	if len(t.LoadLaneWeights) != len(t.Lanes) {
 		return fmt.Errorf("number of lane weights (%d) must be equal to "+
 			"the number of lanes defined by the app (%d)",
-			len(t.LoadLaneWeights), len(t.laneIDs),
+			len(t.LoadLaneWeights), len(t.Lanes),
 		)
 	}
 	for lane := range t.Lanes {
@@ -658,9 +658,9 @@ func weightedRandomIndex(cumWeights []uint, sumWeights uint) int {
 	return -1 // unreachable
 }
 
-// NextLane returns the next element in the list of lane ids, according to a
+// WeightedRandomLane returns an element in the list of lane ids, according to a
 // predefined weight for each lane in the list.
-func (t *Testnet) NextLane() string {
+func (t *Testnet) WeightedRandomLane() string {
 	return t.laneIDs[weightedRandomIndex(t.laneCumulativeWeights, t.sumWeights)]
 }
 

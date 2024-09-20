@@ -12,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"text/template"
@@ -90,9 +89,9 @@ type Testnet struct {
 
 	// For generating transaction load on lanes proportionally to their
 	// priorities.
-	laneIDs     []string
-	laneWeights []uint
-	sumWeights  uint
+	laneIDs               []string
+	laneCumulativeWeights []uint
+	sumWeights            uint
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -192,20 +191,24 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			testnet.LoadLaneWeights[id] = 1
 		}
 	}
+	if len(testnet.Lanes) < 1 {
+		return nil, errors.New("number of lanes must be greater or equal to one")
+	}
 
 	// Pre-compute lane data needed for generating transaction load.
 	testnet.laneIDs = make([]string, 0, len(testnet.Lanes))
-	for id := range testnet.Lanes {
-		testnet.laneIDs = append(testnet.laneIDs, id)
+	laneWeights := make([]uint, 0, len(testnet.Lanes))
+	for lane := range testnet.Lanes {
+		testnet.laneIDs = append(testnet.laneIDs, lane)
+		weight := testnet.LoadLaneWeights[lane]
+		laneWeights = append(laneWeights, weight)
+		testnet.sumWeights += weight
 	}
-	testnet.laneWeights = make([]uint, 0, len(testnet.LoadLaneWeights))
-	for _, w := range testnet.LoadLaneWeights {
-		testnet.laneWeights = append(testnet.laneWeights, w)
-		testnet.sumWeights += w
+	testnet.laneCumulativeWeights = make([]uint, len(testnet.Lanes))
+	testnet.laneCumulativeWeights[0] = laneWeights[0]
+	for i := 1; i < len(testnet.laneCumulativeWeights); i++ {
+		testnet.laneCumulativeWeights[i] = testnet.laneCumulativeWeights[i-1] + laneWeights[i]
 	}
-	sort.Slice(testnet.laneWeights, func(i, j int) bool {
-		return testnet.laneWeights[i] < testnet.laneWeights[j]
-	})
 
 	for _, name := range sortNodeNames(manifest) {
 		nodeManifest := manifest.NodesMap[name]
@@ -427,15 +430,15 @@ func (t Testnet) Validate() error {
 			)
 		}
 	}
-	if len(t.Manifest.LoadLaneWeights) != len(t.laneIDs) {
+	if len(t.LoadLaneWeights) != len(t.laneIDs) {
 		return fmt.Errorf("number of lane weights (%d) must be equal to "+
 			"the number of lanes defined by the app (%d)",
 			len(t.LoadLaneWeights), len(t.laneIDs),
 		)
 	}
-	for _, w := range t.Manifest.LoadLaneWeights {
-		if w <= 0 {
-			return fmt.Errorf("weight must be greater than 0: %v", w)
+	for lane := range t.Lanes {
+		if _, ok := t.LoadLaneWeights[lane]; !ok {
+			return fmt.Errorf("lane %s not in weights map", lane)
 		}
 	}
 	if t.sumWeights <= 0 {
@@ -639,17 +642,16 @@ func (t Testnet) HasPerturbations() bool {
 	return false
 }
 
-// weightedRandomIndex, given a list of weights and the sum of all weights, it
-// picks one of them randomly and proportionally to its weight, and returns its
-// index in the list.
-func weightedRandomIndex(weights []uint, sumWeights uint) int {
+// weightedRandomIndex, given a list of cumulative weights and the sum of all
+// weights, it picks one of them randomly and proportionally to its weight, and
+// returns its index in the list.
+func weightedRandomIndex(cumWeights []uint, sumWeights uint) int {
+	// Generate a random number in the range [0, sumWeights).
 	r := cmtrand.Int31n(int32(sumWeights))
 
-	// Return i when the random number falls in the i'th bucket.
-	cursor := uint(0)
-	for i, w := range weights {
-		cursor += w
-		if int32(cursor) > r {
+	// Return i when the random number falls in the i'th interval.
+	for i, cumWeight := range cumWeights {
+		if r < int32(cumWeight) {
 			return i
 		}
 	}
@@ -659,7 +661,7 @@ func weightedRandomIndex(weights []uint, sumWeights uint) int {
 // NextLane returns the next element in the list of lane ids, according to a
 // predefined weight for each lane in the list.
 func (t *Testnet) NextLane() string {
-	return t.laneIDs[weightedRandomIndex(t.laneWeights, t.sumWeights)]
+	return t.laneIDs[weightedRandomIndex(t.laneCumulativeWeights, t.sumWeights)]
 }
 
 //go:embed templates/prometheus-yaml.tmpl

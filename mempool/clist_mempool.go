@@ -364,7 +364,8 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 		// Check again that mempool isn't full, to reduce the chance of exceeding the limits.
 		if err := mem.isFull(len(tx)); err != nil {
 			mem.forceRemoveFromCache(tx) // mempool might have space later
-			mem.logger.Error(err.Error())
+			// use debug level to avoid spamming logs when traffic is high
+			mem.logger.Debug(err.Error())
 			mem.metrics.RejectedTxs.Add(1)
 			return err
 		}

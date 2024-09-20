@@ -100,7 +100,7 @@ the timestamps of blocks proposed by their peers to be valid either.
 The functionality of the PBTS algorithm is governed by two consensus
 parameters: the synchronous parameters `Precision` and `MessageDelay`.
 An additional consensus parameter `PbtsEnableHeight` is used to enable PBTS
-when instantiating a new network or when upgrading an existing a network that
+when instantiating a new network or when upgrading an existing network that
 uses BFT Time.
 
 Consensus parameters are configured through the genesis file, for new chains, or by the ABCI application, for new and existing chains, and are the same
@@ -180,7 +180,7 @@ When configuring a network to adopt the PBTS algorithm, the following steps must
      this distribution (e.g., the 99th or 99.9th percentiles).
 1. Make sure that the block times **currently** produced by the network do not
    differ too much from real time.
-   This is specially relevant when block times produced by BFT time are in the
+   This is especially relevant when block times produced by BFT time are in the
    future, with respect to real time.
 
 ### Adaptive MessageDelay

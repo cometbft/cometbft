@@ -1,7 +1,7 @@
 package state
 
 import (
-	"github.com/go-kit/kit/metrics"
+	"github.com/cometbft/cometbft/libs/metrics"
 )
 
 const (
@@ -14,9 +14,6 @@ const (
 
 // Metrics contains metrics exposed by this package.
 type Metrics struct {
-	// Time spent processing FinalizeBlock
-	BlockProcessingTime metrics.Histogram `metrics_bucketsizes:"1, 10, 10" metrics_buckettype:"lin"`
-
 	// ConsensusParamUpdates is the total number of times the application has
 	// updated the consensus params since process start.
 	// metrics:Number of consensus parameter updates returned by the application since process start.
@@ -66,4 +63,7 @@ type Metrics struct {
 	// The duration of accesses to the state store labeled by which method
 	// was called on the store.
 	StoreAccessDurationSeconds metrics.Histogram `metrics_bucketsizes:"0.0002, 10, 5" metrics_buckettype:"exp" metrics_labels:"method"`
+
+	// The duration of event firing related to a new block
+	FireBlockEventsDelaySeconds metrics.Gauge
 }

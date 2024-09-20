@@ -3,10 +3,13 @@
 package bls12381_test
 
 import (
+	"encoding/hex"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	blst "github.com/supranational/blst/bindings/go"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/bls12381"
@@ -186,4 +189,48 @@ func TestPubKey_MarshalJSON(t *testing.T) {
 	pubKey2 := new(bls12381.PubKey)
 	err = pubKey2.UnmarshalJSON(jsonBytes)
 	require.NoError(t, err)
+}
+
+func TestPubKey_NewPublicKeyFromInvalidBytes(t *testing.T) {
+	unmarshal := func(s string) ([]byte, error) {
+		type blstPublicKey = blst.P1Affine
+
+		bz, err := hex.DecodeString(s)
+		if err != nil {
+			return nil, err
+		}
+		pk := new(blstPublicKey).Uncompress(bz)
+		if pk == nil {
+			return nil, bls12381.ErrDeserialization
+		}
+		pkc := pk.Serialize()
+		if pkc == nil {
+			return nil, errors.New("could not serialize pubkey")
+		}
+		return pkc, nil
+	}
+
+	testCases := []struct {
+		desc        string
+		pkStr       string
+		expectedErr error
+	}{
+		{"NotInG1", "8123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", bls12381.ErrInfinitePubKey},
+		{"InfFalseB", "800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", bls12381.ErrDeserialization},
+		{"InfTrueB", "c01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", bls12381.ErrDeserialization},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			bz, err := unmarshal(tc.pkStr)
+			if err != nil {
+				t.Log(tc.desc, "unmarshal error", err)
+				require.Equal(t, tc.expectedErr, err)
+			}
+
+			_, err = bls12381.NewPublicKeyFromBytes(bz)
+			require.Equal(t, tc.expectedErr, err)
+			t.Log(tc.desc, "NewPrivateKeyFromBytes error", err)
+		})
+	}
 }

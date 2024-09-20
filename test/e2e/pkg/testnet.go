@@ -28,6 +28,7 @@ import (
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
 	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
 	"github.com/cometbft/cometbft/test/e2e/app"
+	"github.com/cometbft/cometbft/test/loadtime/payload"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -87,7 +88,7 @@ type Testnet struct {
 	ValidatorUpdates map[int64]map[*Node]int64
 	Nodes            []*Node
 
-	lanePriorities []uint32
+	lanePriorities []payload.Lane
 	sumWeights     uint
 }
 
@@ -145,7 +146,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		return nil, fmt.Errorf("invalid IP network address %q: %w", ifd.Network, err)
 	}
 	// Pre-load hard-coded lane values from app.
-	_, lanePriorities := app.LaneDefinitions(manifest.Lanes)
+	_, priorities := app.LaneDefinitions(manifest.Lanes)
 	testnet := &Testnet{
 		Manifest: manifest,
 
@@ -158,7 +159,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		ValidatorUpdates: map[int64]map[*Node]int64{},
 		Nodes:            []*Node{},
 
-		lanePriorities: lanePriorities,
+		lanePriorities: priorities,
 	}
 	if testnet.InitialHeight == 0 {
 		testnet.InitialHeight = 1
@@ -641,8 +642,8 @@ func weightedRandomIndex(weights []uint, sumWeights uint) int {
 
 // NextLane returns the next element in the list of lanes, according to a
 // predefined weight for each lane in the list.
-func (t *Testnet) NextLane() uint32 {
-	return t.lanePriorities[weightedRandomIndex(t.Manifest.LoadLaneWeights, t.sumWeights)]
+func (t *Testnet) NextLane() *payload.Lane {
+	return &t.lanePriorities[weightedRandomIndex(t.Manifest.LoadLaneWeights, t.sumWeights)]
 }
 
 //go:embed templates/prometheus-yaml.tmpl

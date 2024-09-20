@@ -14,7 +14,7 @@ type mempoolTx struct {
 	height    int64    // height that this tx had been validated in
 	gasWanted int64    // amount of gas this tx states it will require
 	tx        types.Tx // validated by the application
-	lane      types.Lane
+	lane      LaneID
 	seq       int64
 	timestamp time.Time // time when entry was created
 

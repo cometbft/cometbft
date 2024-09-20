@@ -436,7 +436,7 @@ func fetchAppInfo(t *testing.T, app abci.Application) (*abci.InfoResponse, *memp
 	t.Helper()
 	resp, err := app.Info(context.Background(), proxy.InfoRequest)
 	require.NoError(t, err)
-	lanesInfo, err := mempl.BuildLanesInfo(resp.LanePriorities, types.Lane(resp.DefaultLanePriority))
+	lanesInfo, err := mempl.BuildLanesInfo(resp.LanePriorities, resp.DefaultLane)
 	require.NoError(t, err)
 	return resp, lanesInfo
 }
@@ -454,10 +454,10 @@ func newStateWithConfig(
 	state sm.State,
 	pv types.PrivValidator,
 	app abci.Application,
-	lanesInfo *mempl.LanesInfo,
+	laneInfo *mempl.LanesInfo,
 ) *State {
 	blockDB := dbm.NewMemDB()
-	return newStateWithConfigAndBlockStore(thisConfig, state, pv, app, blockDB, lanesInfo)
+	return newStateWithConfigAndBlockStore(thisConfig, state, pv, app, blockDB, laneInfo)
 }
 
 func newStateWithConfigAndBlockStore(
@@ -466,7 +466,7 @@ func newStateWithConfigAndBlockStore(
 	pv types.PrivValidator,
 	app abci.Application,
 	blockDB dbm.DB,
-	lanesInfo *mempl.LanesInfo,
+	laneInfo *mempl.LanesInfo,
 ) *State {
 	// Get BlockStore
 	blockStore := store.NewBlockStore(blockDB)
@@ -482,7 +482,7 @@ func newStateWithConfigAndBlockStore(
 	// Make Mempool
 	mempool := mempl.NewCListMempool(config.Mempool,
 		proxyAppConnMem,
-		lanesInfo,
+		laneInfo,
 		state.LastBlockHeight,
 		mempl.WithMetrics(memplMetrics),
 		mempl.WithPreCheck(sm.TxPreCheck(state)),

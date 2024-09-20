@@ -136,7 +136,8 @@ func TestIteratorRace(t *testing.T) {
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
 	mockClient.On("Error").Return(nil).Times(100)
-	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: []uint32{1, 2, 3}, DefaultLanePriority: 1}, nil)
+
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: map[string]uint32{"1": 1, "2": 2, "3": 3}, DefaultLane: "1"}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()
@@ -196,7 +197,7 @@ func TestIteratorRace(t *testing.T) {
 			tx := kvstore.NewTxFromID(i)
 
 			currLane := (i % numLanes) + 1
-			reqRes := newReqResWithLanes(tx, abci.CodeTypeOK, abci.CHECK_TX_TYPE_CHECK, uint32(currLane))
+			reqRes := newReqResWithLanes(tx, abci.CodeTypeOK, abci.CHECK_TX_TYPE_CHECK, strconv.Itoa(currLane))
 			require.NotNil(t, reqRes)
 
 			mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil).Once()
@@ -297,64 +298,119 @@ func TestBlockingIteratorsConsumeAllTxs(t *testing.T) {
 	}
 }
 
-// TODO automate the lane numbers so we can change the number of lanes
-// and increase the number of transactions.
+// Confirms that the transactions are returned in the same order.
+// Note that for the cases with equal priorities the actual order
+// will depend on the way we iterate over the map of lanes.
+// With only two lanes of the same priority the order was predictable
+// and matches the given order. In case these tests start to fail
+// first thing to confirm is the order of lanes in mp.SortedLanes.
 func TestIteratorExactOrder(t *testing.T) {
-	mockClient := new(abciclimocks.Client)
-	mockClient.On("Start").Return(nil)
-	mockClient.On("SetLogger", mock.Anything)
-	mockClient.On("Error").Return(nil).Times(100)
-	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: []uint32{1, 2, 3}, DefaultLanePriority: 1}, nil)
+	tests := map[string]struct {
+		lanePriorities         map[string]uint32
+		expectedTxIDs          []int
+		expectedTxIDsAlternate []int
+	}{
+		"unique_priority_lanes": {
+			lanePriorities: map[string]uint32{"1": 1, "2": 2, "3": 3},
+			expectedTxIDs:  []int{2, 1, 3, 5, 4, 8, 11, 7, 6, 10, 9},
+		},
+		"same_priority_lanes": {
+			lanePriorities:         map[string]uint32{"1": 1, "2": 2, "3": 2},
+			expectedTxIDs:          []int{1, 2, 3, 4, 5, 7, 8, 6, 10, 11, 9},
+			expectedTxIDsAlternate: []int{2, 1, 3, 5, 4, 8, 7, 6, 11, 10, 9},
+		},
+		"one_lane": {
+			lanePriorities: map[string]uint32{"1": 1},
+			expectedTxIDs:  []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+		},
+	}
 
-	mp, cleanup := newMempoolWithAppMock(mockClient)
-	defer cleanup()
+	for n, l := range tests {
+		mockClient := new(abciclimocks.Client)
+		mockClient.On("Start").Return(nil)
+		mockClient.On("SetLogger", mock.Anything)
+		mockClient.On("Error").Return(nil).Times(100)
+		mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: l.lanePriorities, DefaultLane: "1"}, nil)
+		mp, cleanup := newMempoolWithAppMock(mockClient)
+		defer cleanup()
 
-	// Disable rechecking to make sure the recheck logic is not interfering.
-	mp.config.Recheck = false
+		// Disable rechecking to make sure the recheck logic is not interfering.
+		mp.config.Recheck = false
 
-	const numLanes = 3
-	const numTxs = 11
-	// Transactions are ordered into lanes by their IDs. This is the order in
-	// which they should appear following WRR
-	expectedTxIDs := []int{2, 1, 3, 5, 4, 8, 11, 7, 6, 10, 9}
+		numLanes := len(l.lanePriorities)
+		const numTxs = 11
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		waitForNumTxsInMempool(numTxs, mp)
-		t.Log("Mempool full, starting to pick up transactions", mp.Size())
-
-		iter := NewBlockingIterator(context.Background(), mp, t.Name())
-		for i := 0; i < numTxs; i++ {
-			entry := <-iter.WaitNextCh()
-			if entry == nil {
-				continue
+		// Transactions are ordered into lanes by their IDs. This is the order in
+		// which they should appear following WRR
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			waitForNumTxsInMempool(numTxs, mp)
+			t.Log("Mempool full, starting to pick up transactions", mp.Size())
+			alternate := false
+			iter := NewBlockingIterator(context.Background(), mp, t.Name())
+			for i := 0; i < numTxs; i++ {
+				entry := <-iter.WaitNextCh()
+				if entry == nil {
+					continue
+				}
+				// When lanes have same priorities their order in the map of lanes
+				// is arbitrary so we needv to check
+				if n == "same_priority_lanes" {
+					if mp.sortedLanes[1].id != "3" {
+						alternate = true
+					}
+				}
+				if alternate {
+					require.EqualValues(t, entry.Tx(), kvstore.NewTxFromID(l.expectedTxIDsAlternate[i]), n)
+				} else {
+					require.EqualValues(t, entry.Tx(), kvstore.NewTxFromID(l.expectedTxIDs[i]), n)
+				}
 			}
-			require.EqualValues(t, entry.Tx(), kvstore.NewTxFromID(expectedTxIDs[i]))
+		}()
+
+		// This was introduced because without a separate function
+		// we have to sleep to wait for all txs to get into the mempool.
+		// This way we loop in the function above until it is fool
+		// without arbitrary timeouts.
+		go func() {
+			for i := 1; i <= numTxs; i++ {
+				tx := kvstore.NewTxFromID(i)
+
+				currLane := (i % numLanes) + 1
+				reqRes := newReqResWithLanes(tx, abci.CodeTypeOK, abci.CHECK_TX_TYPE_CHECK, strconv.Itoa(currLane))
+				require.NotNil(t, reqRes)
+
+				mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil).Once()
+				_, err := mp.CheckTx(tx, "")
+				require.NoError(t, err, err)
+				reqRes.InvokeCallback()
+			}
+		}()
+
+		wg.Wait()
+
+		// Confirm also that the non blocking iterator works with lanes of same priorities
+		iterNonBlocking := NewNonBlockingIterator(mp)
+		reapedTx := mp.ReapMaxTxs(numTxs)
+		alternate := false
+		for i := 0; i < numTxs; i++ {
+			tx := iterNonBlocking.Next().Tx()
+			if n == "same_priority_lanes" {
+				if mp.sortedLanes[1].id != "3" {
+					alternate = true
+				}
+			}
+			if !alternate {
+				require.Equal(t, []byte(tx), kvstore.NewTxFromID(l.expectedTxIDs[i]), n)
+				require.Equal(t, []byte(reapedTx[i]), kvstore.NewTxFromID(l.expectedTxIDs[i]), n)
+			} else {
+				require.Equal(t, []byte(tx), kvstore.NewTxFromID(l.expectedTxIDsAlternate[i]), n)
+				require.Equal(t, []byte(reapedTx[i]), kvstore.NewTxFromID(l.expectedTxIDsAlternate[i]), n)
+			}
 		}
-	}()
-
-	// This was introduced because without a separate function
-	// we have to sleep to wait for all txs to get into the mempool.
-	// This way we loop in the function above until it is fool
-	// without arbitrary timeouts.
-	go func() {
-		for i := 1; i <= numTxs; i++ {
-			tx := kvstore.NewTxFromID(i)
-
-			currLane := (i % numLanes) + 1
-			reqRes := newReqResWithLanes(tx, abci.CodeTypeOK, abci.CHECK_TX_TYPE_CHECK, uint32(currLane))
-			require.NotNil(t, reqRes)
-
-			mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil).Once()
-			_, err := mp.CheckTx(tx, "")
-			require.NoError(t, err, err)
-			reqRes.InvokeCallback()
-		}
-	}()
-
-	wg.Wait()
+	}
 }
 
 // This only tests that all transactions were submitted.

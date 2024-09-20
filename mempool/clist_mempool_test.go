@@ -63,7 +63,7 @@ func newMempoolWithAppAndConfigMock(
 		panic(err)
 	}
 
-	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, types.Lane(appInfoRes.DefaultLanePriority))
+	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, appInfoRes.DefaultLane)
 	if err != nil {
 		panic(err)
 	}
@@ -96,7 +96,7 @@ func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CL
 	if err != nil {
 		panic(err)
 	}
-	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, types.Lane(appInfoRes.DefaultLanePriority))
+	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, appInfoRes.DefaultLane)
 	if err != nil {
 		panic(err)
 	}
@@ -302,14 +302,14 @@ func TestMempoolAddTxLane(t *testing.T) {
 	}
 }
 
-func kvstoreAssignLane(key int) types.Lane {
-	lane := 3
+func kvstoreAssignLane(key int) LaneID {
+	lane := defaultLane // 3
 	if key%11 == 0 {
-		lane = 7
+		lane = "foo" // 7
 	} else if key%3 == 0 {
-		lane = 1
+		lane = "bar" // 1
 	}
-	return types.Lane(lane)
+	return LaneID(lane)
 }
 
 func TestMempoolUpdate(t *testing.T) {
@@ -354,20 +354,20 @@ func TestMempoolUpdate(t *testing.T) {
 }
 
 func TestMempoolBuildLanesInfo(t *testing.T) {
-	_, err := BuildLanesInfo([]uint32{}, types.Lane(0))
+	emptyMap := make(map[string]uint32)
+	_, err := BuildLanesInfo(emptyMap, "")
 	require.NoError(t, err)
 
-	_, err = BuildLanesInfo([]uint32{}, types.Lane(1))
+	_, err = BuildLanesInfo(emptyMap, "1")
+
 	require.ErrorAs(t, err, &ErrEmptyLanesDefaultLaneSet{})
 
-	_, err = BuildLanesInfo([]uint32{1}, types.Lane(0))
+	_, err = BuildLanesInfo(map[string]uint32{"1": 1}, "")
+
 	require.ErrorAs(t, err, &ErrBadDefaultLaneNonEmptyLaneList{})
 
-	_, err = BuildLanesInfo([]uint32{1, 3, 4}, types.Lane(5))
+	_, err = BuildLanesInfo(map[string]uint32{"1": 1, "2": 2, "3": 3, "4": 4}, "5")
 	require.ErrorAs(t, err, &ErrDefaultLaneNotInList{})
-
-	_, err = BuildLanesInfo([]uint32{1, 3, 4, 4}, types.Lane(4))
-	require.ErrorAs(t, err, &ErrRepeatedLanes{})
 }
 
 // Test dropping CheckTx requests when rechecking transactions. It mocks an asynchronous connection
@@ -792,7 +792,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	// tx0 should appear only once in mp.lanes
 	found := 0
 	for _, lane := range mp.sortedLanes {
-		for e := mp.lanes[lane].Front(); e != nil; e = e.Next() {
+		for e := mp.lanes[lane.id].Front(); e != nil; e = e.Next() {
 			if types.Tx.Key(e.Value.(*mempoolTx).Tx()) == types.Tx.Key(tx0) {
 				found++
 			}
@@ -1127,9 +1127,9 @@ func newReqRes(tx types.Tx, code uint32, requestType abci.CheckTxType) *abciclie
 	return reqRes
 }
 
-func newReqResWithLanes(tx types.Tx, code uint32, requestType abci.CheckTxType, lane uint32) *abciclient.ReqRes {
+func newReqResWithLanes(tx types.Tx, code uint32, requestType abci.CheckTxType, lane string) *abciclient.ReqRes {
 	reqRes := abciclient.NewReqRes(abci.ToCheckTxRequest(&abci.CheckTxRequest{Tx: tx, Type: requestType}))
-	reqRes.Response = abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: code, Lane: lane})
+	reqRes.Response = abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: code, LaneId: lane})
 	return reqRes
 }
 

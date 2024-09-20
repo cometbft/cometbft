@@ -261,8 +261,8 @@ message InfoResponse {
   int64 last_block_height   = 4;
   bytes last_block_app_hash = 5;
 
-  repeated uint32 lane_priorities = 6;
-  uint32 default_lane_priority = 7;
+  map<string, uint32> lane_priorities = 6;
+  string default_lane = 7;
 }
 
 // InitChainResponse contains the ABCI application's hash and updates to the
@@ -307,7 +307,7 @@ message CheckTxResponse {
   reserved 9 to 11;
   reserved "sender", "priority", "mempool_error";
 
-  uint32 lane = 12;
+  string lane_id = 12;
 }
 
 // CommitResponse indicates how much blocks should CometBFT retain.

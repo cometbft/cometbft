@@ -12,6 +12,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -60,8 +61,7 @@ type Application struct {
 	// It's OK not to persist this, as it is not part of the state machine
 	seenTxs sync.Map // cmttypes.TxKey -> uint64
 
-	lanes          map[string]uint32
-	lanePriorities []uint32
+	lanePriorities map[string]uint32
 }
 
 // Config allows for the setting of high level parameters for running the e2e Application
@@ -161,7 +161,7 @@ func DefaultConfig(dir string) *Config {
 }
 
 // LaneDefinitions returns the (constant) list of lanes and their priorities.
-func LaneDefinitions(lanes map[string]uint32) (map[string]uint32, []uint32) {
+func LaneDefinitions(lanes map[string]uint32) (map[string]uint32, []payload.Lane) {
 	// Map from lane name to its priority. Priority 0 is reserved. The higher
 	// the value, the higher the priority.
 	if len(lanes) == 0 {
@@ -173,10 +173,13 @@ func LaneDefinitions(lanes map[string]uint32) (map[string]uint32, []uint32) {
 	}
 
 	// List of lane priorities
-	priorities := make([]uint32, 0, len(lanes))
-	for _, p := range lanes {
-		priorities = append(priorities, p)
+	priorities := make([]payload.Lane, 0, len(lanes))
+	for id, p := range lanes {
+		priorities = append(priorities, payload.Lane{Id: id, Priority: p})
 	}
+	sort.Slice(priorities, func(i, j int) bool {
+		return priorities[i].GetPriority() > priorities[j].GetPriority()
+	})
 
 	return lanes, priorities
 }
@@ -202,14 +205,13 @@ func NewApplication(cfg *Config) (*Application, error) {
 		}, nil
 	}
 
-	lanes, lanePriorities := LaneDefinitions(cfg.Lanes)
+	lanes, _ := LaneDefinitions(cfg.Lanes)
 	return &Application{
 		logger:         logger,
 		state:          state,
 		snapshots:      snapshots,
 		cfg:            cfg,
-		lanes:          lanes,
-		lanePriorities: lanePriorities,
+		lanePriorities: lanes,
 	}, nil
 }
 
@@ -229,13 +231,18 @@ func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResp
 			LastBlockAppHash: hash,
 		}, nil
 	}
+
+	defaultAppLane := ""
+	if len(app.lanePriorities) > 0 {
+		defaultAppLane = "default"
+	}
 	return &abci.InfoResponse{
-		Version:             version.ABCIVersion,
-		AppVersion:          appVersion,
-		LastBlockHeight:     int64(height),
-		LastBlockAppHash:    hash,
-		LanePriorities:      app.lanePriorities,
-		DefaultLanePriority: app.lanes[defaultLane],
+		Version:          version.ABCIVersion,
+		AppVersion:       appVersion,
+		LastBlockHeight:  int64(height),
+		LastBlockAppHash: hash,
+		LanePriorities:   app.lanePriorities,
+		DefaultLane:      defaultAppLane,
 	}, nil
 }
 
@@ -356,11 +363,11 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1}, nil
 	}
 	lane := extractLane(value)
-	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, Lane: lane}, nil
+	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, LaneId: lane}, nil
 }
 
-// extractLane returns the lane field if value is a Payload, otherwise returns 0.
-func extractLane(value string) uint32 {
+// extractLane returns the lane ID as string if value is a Payload, otherwise returns empty string.
+func extractLane(value string) string {
 	valueBytes, err := hex.DecodeString(value)
 	if err != nil {
 		panic("could not hex-decode tx value for extracting lane")
@@ -368,9 +375,9 @@ func extractLane(value string) uint32 {
 	p := &payload.Payload{}
 	err = proto.Unmarshal(valueBytes, p)
 	if err != nil {
-		return 0
+		return ""
 	}
-	return p.GetLane()
+	return p.GetLane().GetId()
 }
 
 // FinalizeBlock implements ABCI.

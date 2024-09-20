@@ -1,65 +1,52 @@
 package mempool
 
-import (
-	"slices"
-
-	"github.com/cometbft/cometbft/types"
-)
-
 type LanesInfo struct {
-	lanes       []types.Lane
-	defaultLane types.Lane
+	lanes       map[LaneID]LanePriority
+	defaultLane LaneID
 }
 
 // BuildLanesInfo builds the information required to initialize
 // lanes given the data queried from the app.
-func BuildLanesInfo(laneList []uint32, defLane types.Lane) (*LanesInfo, error) {
-	lanes := make([]types.Lane, len(laneList))
-	for i, l := range laneList {
-		lanes[i] = types.Lane(l)
+func BuildLanesInfo(laneMap map[string]uint32, defLane string) (*LanesInfo, error) {
+	info := LanesInfo{}
+	info.lanes = make(map[LaneID]LanePriority, len(laneMap))
+	for l, p := range laneMap {
+		info.lanes[LaneID(l)] = LanePriority(p)
 	}
-	info := LanesInfo{lanes: lanes, defaultLane: defLane}
-	if err := info.validate(); err != nil {
+	info.defaultLane = LaneID(defLane)
+
+	if err := validate(info); err != nil {
 		return nil, err
 	}
 
 	return &info, nil
 }
 
-func (info *LanesInfo) validate() error {
+func validate(info LanesInfo) error {
 	// If no lanes are provided the default priority is 0
-	if len(info.lanes) == 0 && info.defaultLane == 0 {
+	if len(info.lanes) == 0 && info.defaultLane == "" {
 		return nil
 	}
 
 	// Default lane is set but empty lane list
-	if len(info.lanes) == 0 && info.defaultLane != 0 {
+	if len(info.lanes) == 0 && info.defaultLane != "" {
 		return ErrEmptyLanesDefaultLaneSet{
-			Info: *info,
+			Info: info,
 		}
 	}
 
 	// Lane 0 is reserved for when there are no lanes or for invalid txs; it should not be used for the default lane.
-	if info.defaultLane == 0 && len(info.lanes) != 0 {
+	if info.defaultLane == "" && len(info.lanes) != 0 {
 		return ErrBadDefaultLaneNonEmptyLaneList{
-			Info: *info,
+			Info: info,
 		}
 	}
 
-	// The default lane is not contained in the list of lanes
-	if !slices.Contains(info.lanes, info.defaultLane) {
+	if _, ok := info.lanes[info.defaultLane]; !ok {
 		return ErrDefaultLaneNotInList{
-			Info: *info,
+			Info: info,
 		}
 	}
-	lanesSet := make(map[types.Lane]struct{})
-	for _, lane := range info.lanes {
-		lanesSet[lane] = struct{}{}
-	}
-	if len(info.lanes) != len(lanesSet) {
-		return ErrRepeatedLanes{
-			Info: *info,
-		}
-	}
+
 	return nil
 }

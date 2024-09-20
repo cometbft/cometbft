@@ -3,8 +3,6 @@ package mempool
 import (
 	"errors"
 	"fmt"
-
-	"github.com/cometbft/cometbft/types"
 )
 
 // ErrTxNotFound is returned to the client if tx is not found in mempool.
@@ -66,7 +64,7 @@ func (e ErrMempoolIsFull) Error() string {
 // ErrLaneIsFull is returned when a lane has reached its full capacity (either
 // in number of txs or bytes).
 type ErrLaneIsFull struct {
-	Lane     types.Lane
+	Lane     LaneID
 	NumTxs   int
 	MaxTxs   int
 	Bytes    int64
@@ -75,7 +73,7 @@ type ErrLaneIsFull struct {
 
 func (e ErrLaneIsFull) Error() string {
 	return fmt.Sprintf(
-		"lane %d is full: number of txs %d (max: %d), total bytes %d (max: %d)",
+		"lane %s is full: number of txs %d (max: %d), total bytes %d (max: %d)",
 		e.Lane,
 		e.NumTxs,
 		e.MaxTxs,
@@ -148,12 +146,4 @@ type ErrDefaultLaneNotInList struct {
 
 func (e ErrDefaultLaneNotInList) Error() string {
 	return fmt.Sprintf("invalid lane info: list of lanes does not contain default lane; info %v", e.Info)
-}
-
-type ErrRepeatedLanes struct {
-	Info LanesInfo
-}
-
-func (e ErrRepeatedLanes) Error() string {
-	return fmt.Sprintf("list of lanes cannot have repeated values; info %v", e.Info)
 }

@@ -131,7 +131,7 @@ func (rs *Reports) addError() {
 func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 	type payloadData struct {
 		id                      uuid.UUID
-		lane                    uint32
+		lane                    *payload.Lane
 		l                       time.Duration
 		bt                      time.Time
 		hash                    []byte
@@ -216,7 +216,7 @@ func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 			reports.addError()
 			continue
 		}
-		reports.addDataPoint(pd.id, pd.lane, pd.l, pd.bt, pd.hash, pd.connections, pd.rate, pd.size)
+		reports.addDataPoint(pd.id, pd.lane.GetPriority(), pd.l, pd.bt, pd.hash, pd.connections, pd.rate, pd.size)
 	}
 	reports.calculateAll()
 	return reports, nil

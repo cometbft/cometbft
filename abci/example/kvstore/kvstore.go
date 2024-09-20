@@ -138,19 +138,18 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 		}
 	}
 
-	var defaultLanePriority uint32
-	if len(app.lanes) > 0 {
-		defaultLanePriority = app.lanes[defaultLane]
+	defLane := ""
+	if len(app.lanes) != 0 {
+		defLane = defaultLane
 	}
-
 	return &types.InfoResponse{
-		Data:                fmt.Sprintf("{\"size\":%v}", app.state.Size),
-		Version:             version.ABCIVersion,
-		AppVersion:          AppVersion,
-		LastBlockHeight:     app.state.Height,
-		LastBlockAppHash:    app.state.Hash(),
-		LanePriorities:      app.lanePriorities,
-		DefaultLanePriority: defaultLanePriority,
+		Data:             fmt.Sprintf("{\"size\":%v}", app.state.Size),
+		Version:          version.ABCIVersion,
+		AppVersion:       AppVersion,
+		LastBlockHeight:  app.state.Height,
+		LastBlockAppHash: app.state.Hash(),
+		LanePriorities:   app.lanes,
+		DefaultLane:      defLane,
 	}, nil
 }
 
@@ -185,23 +184,22 @@ func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*
 		return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil
 	}
 
-	lane := app.assignLane(req.Tx)
-	return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, Lane: lane}, nil
+	if len(app.lanes) == 0 {
+		return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1}, nil
+	}
+	lane := assignLane(req.Tx)
+	return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, LaneId: lane}, nil
 }
 
 // assignLane deterministically computes a lane for the given tx.
-func (app *Application) assignLane(tx []byte) uint32 {
-	if len(app.lanes) == 0 {
-		return 0
-	}
-
+func assignLane(tx []byte) string {
+	lane := defaultLane
 	if isValidatorTx(tx) {
-		return app.lanes["val"] // priority 9
+		return "val" // priority 9
 	}
-
 	key, _, err := parseTx(tx)
 	if err != nil {
-		return app.lanes[defaultLane]
+		return lane
 	}
 
 	// If the transaction key is an integer (for example, a transaction of the
@@ -209,16 +207,16 @@ func (app *Application) assignLane(tx []byte) uint32 {
 	// to the default lane.
 	keyInt, err := strconv.Atoi(key)
 	if err != nil {
-		return app.lanes[defaultLane]
+		return lane
 	}
 
 	switch {
 	case keyInt%11 == 0:
-		return app.lanes["foo"] // priority 7
+		return "foo" // priority 7
 	case keyInt%3 == 0:
-		return app.lanes["bar"] // priority 1
+		return "bar" // priority 1
 	default:
-		return app.lanes[defaultLane] // priority 3
+		return lane // priority 3
 	}
 }
 

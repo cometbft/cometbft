@@ -152,10 +152,16 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 		for _, txBytes := range protoTxs {
 			tx := types.Tx(txBytes)
 			_, err := memR.mempool.CheckTx(tx, e.Src.ID())
-			if errors.Is(err, ErrTxInCache) {
-				memR.Logger.Debug("Tx already exists in cache", "tx", tx.Hash())
-			} else if err != nil {
-				memR.Logger.Info("Could not check tx", "tx", tx.Hash(), "err", err)
+			if err != nil {
+				switch {
+				case errors.Is(err, ErrTxInCache):
+					memR.Logger.Debug("Tx already exists in cache", "tx", tx.Hash())
+				case errors.As(err, &ErrMempoolIsFull{}):
+					// using debug level to avoid flooding when traffic is high
+					memR.Logger.Debug(err.Error())
+				default:
+					memR.Logger.Info("Could not check tx", "tx", tx.Hash(), "err", err)
+				}
 			}
 		}
 	default:

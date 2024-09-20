@@ -151,7 +151,7 @@ cb(reqRes.Response.GetCheckTx())
 
 The `*abcicli.ReqRes` structure that `CheckTx` returns has a callback to
 process the response already set (namely, the function `handleCheckTxResponse`).
-The callback will be invoked internally when the response is ready. We need only 
+The callback will be invoked internally when the response is ready. We need only
 to wait for it; for example:
 ```golang
 reqRes, err := CheckTx(tx, sender)
@@ -226,6 +226,14 @@ definitions:
 ### Config Changes
 
 - `consensus.skip_timeout_commit` has been removed in favor of `consensus.timeout_commit=0s`.
+
+### Database
+
+- The default database has been changed from `goleveldb` to
+  [`pebble`](https://github.com/cockroachdb/pebble). If you are using
+  `goleveldb` and wish to continue using it, you need to build CometBFT with
+  the `goleveldb` build tag (`BUILD_TAGS=goleveldb make build` or
+  `BUILD_TAGS=goleveldb make install`).
 
 ## v0.38.0
 

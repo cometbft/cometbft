@@ -170,6 +170,50 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 	// broadcasting happens from go routines per peer
 }
 
+<<<<<<< HEAD
+=======
+// TryAddTx attempts to add an incoming transaction to the mempool.
+// When the sender is nil, it means the transaction comes from an RPC endpoint.
+func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, error) {
+	senderID := noSender
+	if sender != nil {
+		senderID = sender.ID()
+	}
+
+	reqRes, err := memR.mempool.CheckTx(tx, senderID)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrTxInCache):
+			memR.Logger.Debug("Tx already exists in cache", "tx", log.NewLazySprintf("%X", tx.Hash()), "sender", senderID)
+		case errors.As(err, &ErrMempoolIsFull{}):
+			// using debug level to avoid flooding when traffic is high
+			memR.Logger.Debug(err.Error())
+		default:
+			memR.Logger.Info("Could not check tx", "tx", log.NewLazySprintf("%X", tx.Hash()), "sender", senderID, "err", err)
+		}
+		return nil, err
+	}
+
+	return reqRes, nil
+}
+
+func (memR *Reactor) EnableInOutTxs() {
+	memR.Logger.Info("Enabling inbound and outbound transactions")
+	if !memR.waitSync.CompareAndSwap(true, false) {
+		return
+	}
+
+	// Releases all the blocked broadcastTxRoutine instances.
+	if memR.config.Broadcast {
+		close(memR.waitSyncCh)
+	}
+}
+
+func (memR *Reactor) WaitSync() bool {
+	return memR.waitSync.Load()
+}
+
+>>>>>>> 1323b1cdd (fix(mempool): change "mempool is full" log level to debug (#4123))
 // PeerState describes the state of a peer.
 type PeerState interface {
 	GetHeight() int64

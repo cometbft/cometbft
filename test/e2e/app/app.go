@@ -41,7 +41,6 @@ const (
 	suffixVoteExtHeight string = "VoteExtensionsHeight"
 	suffixPbtsHeight    string = "PbtsHeight"
 	suffixInitialHeight string = "InitialHeight"
-	suffixFlippingVal   string = "FlippingVal"
 	txTTL               uint64 = 15 // height difference at which transactions should be invalid
 )
 
@@ -236,34 +235,6 @@ func (app *Application) flipParams(params *cmtproto.ConsensusParams, height int6
 	return params, nil
 }
 
-func (app *Application) flipValidator(updates abci.ValidatorUpdates, height int64) (abci.ValidatorUpdates, error) {
-	if !app.cfg.ConstantValConsensusChanges || len(updates) > 0 {
-		return updates, nil
-	}
-	if height < 1 {
-		return nil, fmt.Errorf("cannot oscillate validators on height < 1 (%d)", height)
-	}
-
-	addr := app.state.Get(prefixReservedKey + suffixFlippingVal)
-	if addr == "" { // Happens if no validators provided in Genesis
-		return updates, nil
-	}
-	power := height % 2
-	app.logger.Info("oscillating validator power", "addr", addr, "power", power)
-
-	pubKey, err := app.loadPubKey(addr)
-	if err != nil {
-		return nil, err
-	}
-
-	u := abci.ValidatorUpdate{
-		PubKeyType:  pubKey.Type(),
-		PubKeyBytes: pubKey.Bytes(),
-		Power:       power,
-	}
-	return abci.ValidatorUpdates{u}, nil
-}
-
 // Info implements ABCI.
 func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest) (*abci.InitChainResponse, error) {
 	r := &abci.Request{Value: &abci.Request_InitChain{InitChain: &abci.InitChainRequest{}}}
@@ -289,9 +260,9 @@ func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest)
 	app.state.Set(prefixReservedKey+suffixInitialHeight, strconv.FormatInt(req.InitialHeight, 10))
 	// Get validators from genesis
 	if req.Validators != nil {
-		for i, val := range req.Validators {
+		for _, val := range req.Validators {
 			validator := val
-			if err := app.storeValidator(&validator, i == len(req.Validators)-1); err != nil {
+			if err := app.storeValidator(&validator); err != nil {
 				return nil, err
 			}
 		}
@@ -391,9 +362,6 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 
 	valUpdates, err := app.validatorUpdates(uint64(req.Height))
 	if err != nil {
-		return nil, err
-	}
-	if valUpdates, err = app.flipValidator(valUpdates, req.Height); err != nil {
 		return nil, err
 	}
 
@@ -805,19 +773,11 @@ func (app *Application) checkHeightAndExtensions(isPrepareProcessProposal bool, 
 	return appHeight, voteExtHeight != 0 && currentHeight >= voteExtHeight
 }
 
-func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate, isFlipping bool) error {
+func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate) error {
 	// Store validator data to verify extensions
 	pubKey, err := cryptoenc.PubKeyFromTypeAndBytes(valUpdate.PubKeyType, valUpdate.PubKeyBytes)
 	if err != nil {
 		return err
-	}
-	addr := pubKey.Address().String()
-	if isFlipping && app.cfg.ConstantValConsensusChanges {
-		if existingAddr := app.state.Get(prefixReservedKey + suffixFlippingVal); len(existingAddr) != 0 {
-			return fmt.Errorf("found a flipping val %q when trying to store %q", existingAddr, addr)
-		}
-		app.logger.Info("Setting flipping validator", "addr", addr)
-		app.state.Set(prefixReservedKey+suffixFlippingVal, addr)
 	}
 	if valUpdate.Power > 0 {
 		addr := pubKey.Address().String()
@@ -850,7 +810,7 @@ func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, 
 		}
 		valUpdate := abci.ValidatorUpdate{Power: int64(power), PubKeyType: app.cfg.KeyType, PubKeyBytes: keyBytes}
 		valUpdates = append(valUpdates, valUpdate)
-		if err := app.storeValidator(&valUpdate, false); err != nil {
+		if err := app.storeValidator(&valUpdate); err != nil {
 			return nil, err
 		}
 	}

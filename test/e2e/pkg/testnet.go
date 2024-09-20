@@ -81,7 +81,7 @@ type Testnet struct {
 	Dir  string
 
 	IP               *net.IPNet
-	Validators       map[*Node]int64
+	Validators       map[*Node]int64 // TODO: map of pointers? C'mon!!!
 	ValidatorUpdates map[int64]map[*Node]int64
 	Nodes            []*Node
 }
@@ -299,8 +299,19 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		}
 	}
 
+	// Pick "lowest" validator by name
+	var minNode *Node
+	for n := range testnet.Validators {
+		if minNode == nil || n.Name < minNode.Name {
+			minNode = n
+		}
+	}
+	if minNode == nil {
+		return nil, errors.New("`testnet.Validators` is empty")
+	}
+
 	// Set up validator updates.
-	for heightStr, validators := range manifest.ValidatorUpdatesMap {
+	for heightStr, validators := range manifest.ValidatorUpdatesMap { // TODO Non det
 		height, err := strconv.Atoi(heightStr)
 		if err != nil {
 			return nil, fmt.Errorf("invalid validator update height %q: %w", height, err)
@@ -314,6 +325,17 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			valUpdate[node] = power
 		}
 		testnet.ValidatorUpdates[int64(height)] = valUpdate
+	}
+
+	const flipSpan = 3000
+	for i := max(1, manifest.InitialHeight); i < manifest.InitialHeight+flipSpan; i++ {
+		if _, ok := testnet.ValidatorUpdates[i]; ok {
+			continue // TODO: what if I set a non-existent validator to 0?
+		}
+		valUpdate := map[*Node]int64{
+			minNode: i % 2, // flipping every height
+		}
+		testnet.ValidatorUpdates[i] = valUpdate
 	}
 
 	return testnet, testnet.Validate()

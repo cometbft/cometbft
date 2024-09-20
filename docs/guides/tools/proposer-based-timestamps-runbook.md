@@ -127,7 +127,7 @@ are properly connected to NTP using the steps for [Debugging a Single Node](#deb
 
 If the value is relatively similar for all proposers you should next compare this
 value to the `SynchronyParams` values for the network. Continue to the
-[Checking Sychrony](#checking-synchronyparams) steps.
+[Checking Synchrony](#checking-synchronyparams) steps.
 
 #### From the `/metrics` url
 
@@ -142,7 +142,7 @@ to NTP using the steps for [Debugging a Single Node](#debugging-a-single-node).
 
 If the values are relatively similar for all proposers,
 you'll need to compare this value to the `SynchronyParams` for the network. Continue
-to the [Checking Sychrony](#checking-synchronyparams) steps.
+to the [Checking Synchrony](#checking-synchronyparams) steps.
 
 ## Checking Clock Sync
 

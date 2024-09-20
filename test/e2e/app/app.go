@@ -36,6 +36,7 @@ const (
 	voteExtensionKey    string = "extensionSum"
 	voteExtensionMaxVal int64  = 128
 	prefixReservedKey   string = "reservedTxKey_"
+	prefixValidator     string = "Validator_"
 	suffixChainID       string = "ChainID"
 	suffixVoteExtHeight string = "VoteExtensionsHeight"
 	suffixPbtsHeight    string = "PbtsHeight"
@@ -822,7 +823,7 @@ func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate) error {
 		if err != nil {
 			return fmt.Errorf("failed to marshal pubkey: %w", err)
 		}
-		app.state.Set(prefixReservedKey+addr, hex.EncodeToString(pubKeyBytes))
+		app.state.Set(prefixReservedKey+prefixValidator+addr, hex.EncodeToString(pubKeyBytes))
 	}
 	return nil
 }
@@ -863,7 +864,7 @@ func (app *Application) logABCIRequest(req *abci.Request) error {
 }
 
 func (app *Application) loadPubKey(addr string) (crypto.PubKey, error) {
-	pubKeyHex := app.state.Get(prefixReservedKey + addr)
+	pubKeyHex := app.state.Get(prefixReservedKey + prefixValidator + addr)
 	if len(pubKeyHex) == 0 {
 		return nil, fmt.Errorf("unknown validator with address %q", addr)
 	}

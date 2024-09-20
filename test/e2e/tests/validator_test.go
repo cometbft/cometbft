@@ -145,21 +145,28 @@ func TestValidator_Sign(t *testing.T) {
 // validatorSchedule is a validator set iterator, which takes into account
 // validator set updates.
 type validatorSchedule struct {
-	Set     *types.ValidatorSet
-	height  int64
-	updates map[int64]map[*e2e.Node]int64
+	Set         *types.ValidatorSet
+	height      int64
+	updates     map[int64]map[*e2e.Node]int64
+	flippingVal *types.Validator
 }
 
 func newValidatorSchedule(testnet e2e.Testnet) *validatorSchedule {
 	valMap := testnet.Validators // genesis validators
-	// TODO need to retrieve the flipping validator here
+	valSet := types.NewValidatorSet(makeVals(valMap))
+	var flippingVal *types.Validator
+	lenVals := len(valSet.Validators)
+	if testnet.ConstantValConsensusChanges && lenVals > 0 {
+		flippingVal = valSet.Validators[lenVals-1]
+	}
 	if v, ok := testnet.ValidatorUpdates[0]; ok { // InitChain validators
-		valMap = v
+		valSet = types.NewValidatorSet(makeVals(v))
 	}
 	return &validatorSchedule{
-		height:  testnet.InitialHeight,
-		Set:     types.NewValidatorSet(makeVals(valMap)),
-		updates: testnet.ValidatorUpdates,
+		height:      testnet.InitialHeight,
+		Set:         valSet,
+		updates:     testnet.ValidatorUpdates,
+		flippingVal: flippingVal,
 	}
 }
 
@@ -169,11 +176,21 @@ func (s *validatorSchedule) Increment(heights int64) {
 		if s.height > 2 {
 			// validator set updates are offset by 2, since they only take effect
 			// two blocks after they're returned.
-			if update, ok := s.updates[s.height-2]; ok {
+			height := s.height - 2
+			if update, ok := s.updates[height]; ok {
 				vals := makeVals(update)
 				// TODO need to add oscillation here to fix tests
 				if err := s.Set.UpdateWithChangeSet(vals); err != nil {
 					panic(err)
+				}
+			} else {
+				if s.flippingVal != nil {
+					flipValUpdate := *s.flippingVal // deep copy
+					flipValUpdate.VotingPower = height % 2
+					vals := []*types.Validator{&flipValUpdate}
+					if err := s.Set.UpdateWithChangeSet(vals); err != nil {
+						panic(err)
+					}
 				}
 			}
 		}

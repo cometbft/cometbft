@@ -214,10 +214,14 @@ func (app *Application) updateFeatureEnableHeights(currentHeight int64) *cmtprot
 	return params
 }
 
-func (app *Application) oscillateParams(params *cmtproto.ConsensusParams, height int64) (*cmtproto.ConsensusParams, error) {
+func (app *Application) flipParams(params *cmtproto.ConsensusParams, height int64) (*cmtproto.ConsensusParams, error) {
 	if !app.cfg.ConstantValConsensusChanges {
 		return params, nil
 	}
+	if height < 0 {
+		return nil, fmt.Errorf("cannot oscillate ConsensusParams on height < 0 (%d)", height)
+	}
+
 	keyTypes := []string{cmttypes.ABCIPubKeyTypeEd25519} // Default genesis value, not touched by e2e logic
 	if height%2 == 0 {
 		keyTypes = append(keyTypes, cmttypes.ABCIPubKeyTypeSecp256k1)
@@ -232,7 +236,7 @@ func (app *Application) oscillateParams(params *cmtproto.ConsensusParams, height
 	return params, nil
 }
 
-func (app *Application) oscillateValUpdates(updates abci.ValidatorUpdates, height int64) (abci.ValidatorUpdates, error) {
+func (app *Application) flipValidator(updates abci.ValidatorUpdates, height int64) (abci.ValidatorUpdates, error) {
 	if !app.cfg.ConstantValConsensusChanges || len(updates) > 0 {
 		return updates, nil
 	}
@@ -294,7 +298,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest)
 	}
 
 	params := app.updateFeatureEnableHeights(0)
-	if params, err = app.oscillateParams(params, 0); err != nil {
+	if params, err = app.flipParams(params, 0); err != nil {
 		return nil, err
 	}
 
@@ -389,12 +393,12 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 	if err != nil {
 		return nil, err
 	}
-	if valUpdates, err = app.oscillateValUpdates(valUpdates, req.Height); err != nil {
+	if valUpdates, err = app.flipValidator(valUpdates, req.Height); err != nil {
 		return nil, err
 	}
 
 	params := app.updateFeatureEnableHeights(req.Height)
-	if params, err = app.oscillateParams(params, req.Height); err != nil {
+	if params, err = app.flipParams(params, req.Height); err != nil {
 		return nil, err
 	}
 
@@ -812,6 +816,7 @@ func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate, isFlippi
 		if existingAddr := app.state.Get(prefixReservedKey + suffixFlippingVal); len(existingAddr) != 0 {
 			return fmt.Errorf("found a flipping val %q when trying to store %q", existingAddr, addr)
 		}
+		app.logger.Info("Setting flipping validator", "addr", addr)
 		app.state.Set(prefixReservedKey+suffixFlippingVal, addr)
 	}
 	if valUpdate.Power > 0 {
@@ -838,7 +843,7 @@ func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, 
 	}
 
 	valUpdates := abci.ValidatorUpdates{}
-	for keyString, power := range updates {
+	for keyString, power := range updates { // TODO non deterministic
 		keyBytes, err := base64.StdEncoding.DecodeString(keyString)
 		if err != nil {
 			return nil, fmt.Errorf("invalid base64 pubkey value %q: %w", keyString, err)

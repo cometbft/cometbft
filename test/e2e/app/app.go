@@ -225,7 +225,7 @@ func (app *Application) updateFeatureEnableHeights(currentHeight int64) *cmtprot
 	return params
 }
 
-func (app *Application) flipParams(params *cmtproto.ConsensusParams, height int64) (*cmtproto.ConsensusParams, error) {
+func (app *Application) flipConsensusParams(params *cmtproto.ConsensusParams, height int64) (*cmtproto.ConsensusParams, error) {
 	if !app.cfg.ConstantFlip {
 		return params, nil
 	}
@@ -281,7 +281,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest)
 	}
 
 	params := app.updateFeatureEnableHeights(0)
-	if params, err = app.flipParams(params, 0); err != nil {
+	if params, err = app.flipConsensusParams(params, 0); err != nil {
 		return nil, err
 	}
 
@@ -378,7 +378,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 	}
 
 	params := app.updateFeatureEnableHeights(req.Height)
-	if params, err = app.flipParams(params, req.Height); err != nil {
+	if params, err = app.flipConsensusParams(params, req.Height); err != nil {
 		return nil, err
 	}
 

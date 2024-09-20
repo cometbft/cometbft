@@ -83,4 +83,4 @@ split-test-packages:$(BUILDDIR)/packages.txt
 # Used by the GitHub CI, in order to run tests in parallel
 test-group-%:split-test-packages
 	cat $(BUILDDIR)/packages.txt.$*
-	cat $(BUILDDIR)/packages.txt.$* | xargs go test -mod=readonly -timeout=400s -race -coverprofile=$(BUILDDIR)/$*.profile.out
+	cat $(BUILDDIR)/packages.txt.$* | xargs go test -tags bls12381 -mod=readonly -timeout=400s -race -coverprofile=$(BUILDDIR)/$*.profile.out

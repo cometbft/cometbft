@@ -36,6 +36,7 @@ import (
 
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/cometbft/cometbft/libs/metrics/teststat"
 )
@@ -43,13 +44,6 @@ import (
 func TestCounter(t *testing.T) {
 	s := httptest.NewServer(promhttp.HandlerFor(stdprometheus.DefaultGatherer, promhttp.HandlerOpts{}))
 	defer s.Close()
-
-	scrape := func() string {
-		resp, _ := http.Get(s.URL)
-		buf, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		return string(buf)
-	}
 
 	namespace, subsystem, name := "ns", "ss", "foo"
 	re := regexp.MustCompile(namespace + `_` + subsystem + `_` + name + `{alpha="alpha-value",beta="beta-value"} ([0-9\.]+)`)
@@ -62,7 +56,8 @@ func TestCounter(t *testing.T) {
 	}, []string{"alpha", "beta"}).With("beta", "beta-value", "alpha", "alpha-value") // order shouldn't matter
 
 	value := func() float64 {
-		matches := re.FindStringSubmatch(scrape())
+		matches := re.FindStringSubmatch(fetchPrometheusData(t, s))
+		assert.Greater(t, len(matches), 0)
 		f, _ := strconv.ParseFloat(matches[1], 64)
 		return f
 	}
@@ -76,13 +71,6 @@ func TestGauge(t *testing.T) {
 	s := httptest.NewServer(promhttp.HandlerFor(stdprometheus.DefaultGatherer, promhttp.HandlerOpts{}))
 	defer s.Close()
 
-	scrape := func() string {
-		resp, _ := http.Get(s.URL)
-		buf, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		return string(buf)
-	}
-
 	namespace, subsystem, name := "aaa", "bbb", "ccc"
 	re := regexp.MustCompile(namespace + `_` + subsystem + `_` + name + `{foo="bar"} ([0-9\.]+)`)
 
@@ -94,7 +82,7 @@ func TestGauge(t *testing.T) {
 	}, []string{"foo"}).With("foo", "bar")
 
 	value := func() []float64 {
-		matches := re.FindStringSubmatch(scrape())
+		matches := re.FindStringSubmatch(fetchPrometheusData(t, s))
 		f, _ := strconv.ParseFloat(matches[1], 64)
 		return []float64{f}
 	}
@@ -107,13 +95,6 @@ func TestGauge(t *testing.T) {
 func TestSummary(t *testing.T) {
 	s := httptest.NewServer(promhttp.HandlerFor(stdprometheus.DefaultGatherer, promhttp.HandlerOpts{}))
 	defer s.Close()
-
-	scrape := func() string {
-		resp, _ := http.Get(s.URL)
-		buf, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		return string(buf)
-	}
 
 	namespace, subsystem, name := "test", "prometheus", "summary"
 	re50 := regexp.MustCompile(namespace + `_` + subsystem + `_` + name + `{a="a",b="b",quantile="0.5"} ([0-9\.]+)`)
@@ -129,7 +110,7 @@ func TestSummary(t *testing.T) {
 	}, []string{"a", "b"}).With("b", "b").With("a", "a")
 
 	quantiles := func() (float64, float64, float64, float64) {
-		buf := scrape()
+		buf := fetchPrometheusData(t, s)
 		match50 := re50.FindStringSubmatch(buf)
 		p50, _ := strconv.ParseFloat(match50[1], 64)
 		match90 := re90.FindStringSubmatch(buf)
@@ -153,13 +134,6 @@ func TestHistogram(t *testing.T) {
 
 	s := httptest.NewServer(promhttp.HandlerFor(stdprometheus.DefaultGatherer, promhttp.HandlerOpts{}))
 	defer s.Close()
-
-	scrape := func() string {
-		resp, _ := http.Get(s.URL)
-		buf, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		return string(buf)
-	}
 
 	namespace, subsystem, name := "test", "prometheus", "histogram"
 	re := regexp.MustCompile(namespace + `_` + subsystem + `_` + name + `_bucket{x="1",le="([0-9]+|\+Inf)"} ([0-9\.]+)`)
@@ -191,7 +165,7 @@ func TestHistogram(t *testing.T) {
 	teststat.PopulateNormalHistogram(histogram, rand.Int())
 
 	// Then, we use ExpectedObservationsLessThan to validate.
-	for _, line := range strings.Split(scrape(), "\n") {
+	for _, line := range strings.Split(fetchPrometheusData(t, s), "\n") {
 		match := re.FindStringSubmatch(line)
 		if match == nil {
 			continue
@@ -239,4 +213,15 @@ func TestInconsistentLabelCardinality(t *testing.T) {
 	}, []string{"a", "b"}).With(
 		"a", "1", "b", "2", "c", "KABOOM!",
 	).Add(123)
+}
+
+func fetchPrometheusData(t *testing.T, s *httptest.Server) string {
+	t.Helper()
+	resp, err := http.Get(s.URL)
+	assert.NoError(t, err)
+	buf, err := io.ReadAll(resp.Body)
+	assert.NoError(t, err)
+	err = resp.Body.Close()
+	assert.NoError(t, err)
+	return string(buf)
 }

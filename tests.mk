@@ -63,11 +63,6 @@ test_race:
 .PHONY: test_race
 
 test_deadlock:
-<<<<<<< HEAD
-	@echo "--> Running go test --deadlock"
-	@go test -p 1 -v  $(PACKAGES) -tags deadlock
-.PHONY: test_race
-=======
 	@echo "--> Running go test with deadlock support"
 	@go test -p 1 $(PACKAGES) -tags deadlock,bls12381
 .PHONY: test_deadlock
@@ -93,4 +88,3 @@ split-test-packages:$(BUILDDIR)/packages.txt
 test-group-%:split-test-packages
 	cat $(BUILDDIR)/packages.txt.$*
 	cat $(BUILDDIR)/packages.txt.$* | xargs go test -tags bls12381 -mod=readonly -timeout=400s -race -coverprofile=$(BUILDDIR)/$*.profile.out
->>>>>>> a36d85fc7 (fix(bls12381): NewPublicKeyFromBytes: add missing infinity check (#4104))

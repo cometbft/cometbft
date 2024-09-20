@@ -37,13 +37,14 @@ import (
 
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/libs/metrics/teststat"
 )
 
 func TestCounter(t *testing.T) {
-	s := httptest.NewServer(promhttp.HandlerFor(stdprometheus.DefaultGatherer, promhttp.HandlerOpts{}))
+	s := spinUpPrometheusServer()
+	require.NotNil(t, s)
 	defer s.Close()
 
 	namespace, subsystem, name := "ns", "ss", "foo"
@@ -76,7 +77,8 @@ func TestCounter(t *testing.T) {
 }
 
 func TestGauge(t *testing.T) {
-	s := httptest.NewServer(promhttp.HandlerFor(stdprometheus.DefaultGatherer, promhttp.HandlerOpts{}))
+	s := spinUpPrometheusServer()
+	require.NotNil(t, s)
 	defer s.Close()
 
 	namespace, subsystem, name := "aaa", "bbb", "ccc"
@@ -91,7 +93,7 @@ func TestGauge(t *testing.T) {
 
 	value := func() []float64 {
 		matches := re.FindStringSubmatch(fetchPrometheusData(t, s))
-		assert.Greater(t, len(matches), 0)
+		require.Greater(t, len(matches), 0)
 		f, _ := strconv.ParseFloat(matches[1], 64)
 		return []float64{f}
 	}
@@ -102,7 +104,8 @@ func TestGauge(t *testing.T) {
 }
 
 func TestSummary(t *testing.T) {
-	s := httptest.NewServer(promhttp.HandlerFor(stdprometheus.DefaultGatherer, promhttp.HandlerOpts{}))
+	s := spinUpPrometheusServer()
+	require.NotNil(t, s)
 	defer s.Close()
 
 	namespace, subsystem, name := "test", "prometheus", "summary"
@@ -140,7 +143,8 @@ func TestHistogram(t *testing.T) {
 	// limit. That is, the count monotonically increases over the buckets. This
 	// requires a different strategy to test.
 
-	s := httptest.NewServer(promhttp.HandlerFor(stdprometheus.DefaultGatherer, promhttp.HandlerOpts{}))
+	s := spinUpPrometheusServer()
+	require.NotNil(t, s)
 	defer s.Close()
 
 	namespace, subsystem, name := "test", "prometheus", "histogram"
@@ -223,13 +227,21 @@ func TestInconsistentLabelCardinality(t *testing.T) {
 	).Add(123)
 }
 
+func spinUpPrometheusServer() *httptest.Server {
+	s := httptest.NewServer(promhttp.HandlerFor(stdprometheus.DefaultGatherer, promhttp.HandlerOpts{}))
+
+	// minimal delay to allow the prometheus server come up with results and avoid errors during test
+	time.Sleep(100 * time.Millisecond)
+	return s
+}
+
 func fetchPrometheusData(t *testing.T, s *httptest.Server) string {
 	t.Helper()
 	resp, err := http.Get(s.URL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	buf, err := io.ReadAll(resp.Body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = resp.Body.Close()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	return string(buf)
 }

@@ -151,7 +151,7 @@ func TestBlock_Time(t *testing.T) {
 	testnet := loadTestnet(t)
 
 	lastBlock := blocks[0]
-	valSchedule := newValidatorSchedule(testnet)
+	valSchedule := newValidatorSchedule(&testnet)
 	for _, block := range blocks[1:] {
 		require.Less(t, lastBlock.Time, block.Time)
 		lastBlock = block

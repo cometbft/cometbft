@@ -39,7 +39,7 @@ func TestValidator_Sets(t *testing.T) {
 			first += int64(node.RetainBlocks)
 		}
 
-		valSchedule := newValidatorSchedule(*node.Testnet)
+		valSchedule := newValidatorSchedule(node.Testnet)
 		valSchedule.Increment(first - node.Testnet.InitialHeight)
 
 		for h := first; h <= last; h++ {
@@ -71,7 +71,7 @@ func TestValidator_Propose(t *testing.T) {
 			return
 		}
 		address := node.PrivvalKey.PubKey().Address()
-		valSchedule := newValidatorSchedule(*node.Testnet)
+		valSchedule := newValidatorSchedule(node.Testnet)
 
 		expectCount := 0
 		proposeCount := 0
@@ -111,7 +111,7 @@ func TestValidator_Sign(t *testing.T) {
 			return
 		}
 		address := node.PrivvalKey.PubKey().Address()
-		valSchedule := newValidatorSchedule(*node.Testnet)
+		valSchedule := newValidatorSchedule(node.Testnet)
 
 		expectCount := 0
 		signCount := 0
@@ -146,19 +146,21 @@ func TestValidator_Sign(t *testing.T) {
 // validator set updates.
 type validatorSchedule struct {
 	Set     *types.ValidatorSet
-	height  int64
-	updates map[int64]map[*e2e.Node]int64
+	height  int64                      // TODO remove
+	updates map[int64]map[string]int64 // TODO remove
+	testnet *e2e.Testnet
 }
 
-func newValidatorSchedule(testnet e2e.Testnet) *validatorSchedule {
+func newValidatorSchedule(testnet *e2e.Testnet) *validatorSchedule {
 	valMap := testnet.Validators                  // genesis validators
 	if v, ok := testnet.ValidatorUpdates[0]; ok { // InitChain validators
 		valMap = v
 	}
 	return &validatorSchedule{
 		height:  testnet.InitialHeight,
-		Set:     types.NewValidatorSet(makeVals(valMap)),
+		Set:     types.NewValidatorSet(makeVals(testnet, valMap)),
 		updates: testnet.ValidatorUpdates,
+		testnet: testnet,
 	}
 }
 
@@ -169,7 +171,7 @@ func (s *validatorSchedule) Increment(heights int64) {
 			// validator set updates are offset by 2, since they only take effect
 			// two blocks after they're returned.
 			if update, ok := s.updates[s.height-2]; ok {
-				if err := s.Set.UpdateWithChangeSet(makeVals(update)); err != nil {
+				if err := s.Set.UpdateWithChangeSet(makeVals(s.testnet, update)); err != nil {
 					panic(err)
 				}
 			}
@@ -178,10 +180,11 @@ func (s *validatorSchedule) Increment(heights int64) {
 	}
 }
 
-func makeVals(valMap map[*e2e.Node]int64) []*types.Validator {
+func makeVals(testnet *e2e.Testnet, valMap map[string]int64) []*types.Validator {
 	vals := make([]*types.Validator, 0, len(valMap))
-	for node, power := range valMap {
-		vals = append(vals, types.NewValidator(node.PrivvalKey.PubKey(), power))
+	for valName, power := range valMap {
+		validator := testnet.LookupNode(valName)
+		vals = append(vals, types.NewValidator(validator.PrivvalKey.PubKey(), power))
 	}
 	return vals
 }

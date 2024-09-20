@@ -81,8 +81,8 @@ type Testnet struct {
 	Dir  string
 
 	IP               *net.IPNet
-	Validators       map[*Node]int64
-	ValidatorUpdates map[int64]map[*Node]int64
+	Validators       map[string]int64
+	ValidatorUpdates map[int64]map[string]int64
 	Nodes            []*Node
 }
 
@@ -148,8 +148,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		Dir:  dir,
 
 		IP:               ipNet,
-		Validators:       map[*Node]int64{},
-		ValidatorUpdates: map[int64]map[*Node]int64{},
+		Validators:       map[string]int64{},
+		ValidatorUpdates: map[int64]map[string]int64{},
 		Nodes:            []*Node{},
 	}
 	if testnet.InitialHeight == 0 {
@@ -289,12 +289,12 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			if validator == nil {
 				return nil, fmt.Errorf("unknown validator %q", validatorName)
 			}
-			testnet.Validators[validator] = power
+			testnet.Validators[validator.Name] = power
 		}
 	} else {
 		for _, node := range testnet.Nodes {
 			if node.Mode == ModeValidator {
-				testnet.Validators[node] = 100
+				testnet.Validators[node.Name] = 100
 			}
 		}
 	}
@@ -305,13 +305,13 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		if err != nil {
 			return nil, fmt.Errorf("invalid validator update height %q: %w", height, err)
 		}
-		valUpdate := map[*Node]int64{}
+		valUpdate := map[string]int64{}
 		for name, power := range validators {
 			node := testnet.LookupNode(name)
 			if node == nil {
 				return nil, fmt.Errorf("unknown validator %q for update at height %v", name, height)
 			}
-			valUpdate[node] = power
+			valUpdate[node.Name] = power
 		}
 		testnet.ValidatorUpdates[int64(height)] = valUpdate
 	}

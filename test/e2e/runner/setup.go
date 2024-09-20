@@ -150,9 +150,10 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	if testnet.PbtsUpdateHeight == -1 {
 		genesis.ConsensusParams.Feature.PbtsEnableHeight = testnet.PbtsEnableHeight
 	}
-	for validator, power := range testnet.Validators {
+	for valName, power := range testnet.Validators {
+		validator := testnet.LookupNode(valName)
 		genesis.Validators = append(genesis.Validators, types.GenesisValidator{
-			Name:    validator.Name,
+			Name:    valName,
 			Address: validator.PrivvalKey.PubKey().Address(),
 			PubKey:  validator.PrivvalKey.PubKey(),
 			Power:   power,
@@ -425,8 +426,9 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		validatorUpdates := map[string]map[string]int64{}
 		for height, validators := range node.Testnet.ValidatorUpdates {
 			updateVals := map[string]int64{}
-			for node, power := range validators {
-				updateVals[base64.StdEncoding.EncodeToString(node.PrivvalKey.PubKey().Bytes())] = power
+			for valName, power := range validators {
+				validator := node.Testnet.LookupNode(valName)
+				updateVals[base64.StdEncoding.EncodeToString(validator.PrivvalKey.PubKey().Bytes())] = power
 			}
 			validatorUpdates[strconv.FormatInt(height, 10)] = updateVals
 		}

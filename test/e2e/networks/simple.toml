@@ -1,4 +1,4 @@
-constant_val_consensus_changes = true
+constant_flip = true
 
 [node.validator00]
 [node.validator01]

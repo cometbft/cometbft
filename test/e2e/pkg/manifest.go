@@ -152,8 +152,12 @@ type Manifest struct {
 	// Example: "p2p.send_rate = 512000".
 	Config []string `toml:"config"`
 
-	// TODO document
-	ConstantValConsensusChanges bool `toml:"constant_val_consensus_changes"`
+	// If true, the application will return validator updates and
+	// `ConsensusParams` updates at every height.
+	// This is useful to create a more dynamic testnet.
+	// * An existing validator will be chosen, and its power will alternate 0 and 1
+	// * `ConsensusParams` will be modifying its `PubKeyTypes` with keyTypes not set at genesis
+	ConstantFlip bool `toml:"constant_flip"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

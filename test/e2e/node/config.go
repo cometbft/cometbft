@@ -51,30 +51,30 @@ type Config struct {
 	PbtsEnableHeight int64 `toml:"pbts_enable_height"`
 	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
 
-	ConstantValConsensusChanges bool `toml:"constant_val_consensus_changes"`
+	ConstantFlip bool `toml:"constant_flip"`
 }
 
 // App extracts out the application specific configuration parameters.
 func (cfg *Config) App() *app.Config {
 	return &app.Config{
-		Dir:                         cfg.Dir,
-		SnapshotInterval:            cfg.SnapshotInterval,
-		RetainBlocks:                cfg.RetainBlocks,
-		KeyType:                     cfg.KeyType,
-		ValidatorUpdates:            cfg.ValidatorUpdates,
-		PersistInterval:             cfg.PersistInterval,
-		PrepareProposalDelay:        cfg.PrepareProposalDelay,
-		ProcessProposalDelay:        cfg.ProcessProposalDelay,
-		CheckTxDelay:                cfg.CheckTxDelay,
-		FinalizeBlockDelay:          cfg.FinalizeBlockDelay,
-		VoteExtensionDelay:          cfg.VoteExtensionDelay,
-		VoteExtensionSize:           cfg.VoteExtensionSize,
-		VoteExtensionsEnableHeight:  cfg.VoteExtensionsEnableHeight,
-		VoteExtensionsUpdateHeight:  cfg.VoteExtensionsUpdateHeight,
-		ABCIRequestsLoggingEnabled:  cfg.ABCIRequestsLoggingEnabled,
-		PbtsEnableHeight:            cfg.PbtsEnableHeight,
-		PbtsUpdateHeight:            cfg.PbtsUpdateHeight,
-		ConstantValConsensusChanges: cfg.ConstantValConsensusChanges,
+		Dir:                        cfg.Dir,
+		SnapshotInterval:           cfg.SnapshotInterval,
+		RetainBlocks:               cfg.RetainBlocks,
+		KeyType:                    cfg.KeyType,
+		ValidatorUpdates:           cfg.ValidatorUpdates,
+		PersistInterval:            cfg.PersistInterval,
+		PrepareProposalDelay:       cfg.PrepareProposalDelay,
+		ProcessProposalDelay:       cfg.ProcessProposalDelay,
+		CheckTxDelay:               cfg.CheckTxDelay,
+		FinalizeBlockDelay:         cfg.FinalizeBlockDelay,
+		VoteExtensionDelay:         cfg.VoteExtensionDelay,
+		VoteExtensionSize:          cfg.VoteExtensionSize,
+		VoteExtensionsEnableHeight: cfg.VoteExtensionsEnableHeight,
+		VoteExtensionsUpdateHeight: cfg.VoteExtensionsUpdateHeight,
+		ABCIRequestsLoggingEnabled: cfg.ABCIRequestsLoggingEnabled,
+		PbtsEnableHeight:           cfg.PbtsEnableHeight,
+		PbtsUpdateHeight:           cfg.PbtsUpdateHeight,
+		ConstantFlip:               cfg.ConstantFlip,
 	}
 }
 

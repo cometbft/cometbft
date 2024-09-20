@@ -135,7 +135,12 @@ type Config struct {
 	// 0 denotes it is set at InitChain.
 	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
 
-	ConstantValConsensusChanges bool `toml:"constant_val_consensus_changes"`
+	// If true, the application will return validator updates and
+	// `ConsensusParams` updates at every height.
+	// This is useful to create a more dynamic testnet.
+	// * An existing validator will be chosen, and its power will alternate 0 and 1
+	// * `ConsensusParams` will be modifying its `PubKeyTypes` with keyTypes not set at genesis
+	ConstantFlip bool `toml:"constant_flip"`
 }
 
 func DefaultConfig(dir string) *Config {
@@ -214,7 +219,7 @@ func (app *Application) updateFeatureEnableHeights(currentHeight int64) *cmtprot
 }
 
 func (app *Application) flipParams(params *cmtproto.ConsensusParams, height int64) (*cmtproto.ConsensusParams, error) {
-	if !app.cfg.ConstantValConsensusChanges {
+	if !app.cfg.ConstantFlip {
 		return params, nil
 	}
 	if height < 0 {

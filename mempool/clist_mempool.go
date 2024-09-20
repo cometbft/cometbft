@@ -337,65 +337,7 @@ func (mem *CListMempool) reqResCb(
 				types.Tx(tx).Hash()))
 		}
 
-<<<<<<< HEAD
 		mem.resCbFirstTime(tx, txInfo, res)
-=======
-		var postCheckErr error
-		if mem.postCheck != nil {
-			postCheckErr = mem.postCheck(tx, res)
-		}
-
-		// If tx is invalid, remove it from the cache.
-		if res.Code != abci.CodeTypeOK || postCheckErr != nil {
-			mem.tryRemoveFromCache(tx)
-			mem.logger.Debug(
-				"Rejected invalid transaction",
-				"tx", log.NewLazySprintf("%X", tx.Hash()),
-				"res", res,
-				"err", postCheckErr,
-			)
-			mem.metrics.FailedTxs.Add(1)
-
-			if postCheckErr != nil {
-				return postCheckErr
-			}
-			return ErrInvalidTx
-		}
-
-		// Check again that mempool isn't full, to reduce the chance of exceeding the limits.
-		if err := mem.isFull(len(tx)); err != nil {
-			mem.forceRemoveFromCache(tx) // mempool might have space later
-			// use debug level to avoid spamming logs when traffic is high
-			mem.logger.Debug(err.Error())
-			mem.metrics.RejectedTxs.Add(1)
-			return err
-		}
-
-		// Check that tx is not already in the mempool. This can happen when the
-		// cache overflows. See https://github.com/cometbft/cometbft/pull/890.
-		txKey := tx.Key()
-		if mem.Contains(txKey) {
-			mem.metrics.RejectedTxs.Add(1)
-			if err := mem.addSender(txKey, sender); err != nil {
-				mem.logger.Error("Could not add sender to tx", "tx", tx.Hash(), "sender", sender, "err", err)
-			}
-			mem.logger.Debug("Reject tx", "tx", log.NewLazySprintf("%X", tx.Hash()), "height", mem.height.Load(), "err", ErrTxInMempool)
-			return ErrTxInMempool
-		}
-
-		// Add tx to mempool and notify that new txs are available.
-		memTx := mempoolTx{
-			height:    mem.height.Load(),
-			gasWanted: res.GasWanted,
-			tx:        tx,
-		}
-		mem.addTx(&memTx, sender)
-		mem.notifyTxsAvailable()
-
-		if mem.onNewTx != nil {
-			mem.onNewTx(tx)
-		}
->>>>>>> 1323b1cdd (fix(mempool): change "mempool is full" log level to debug (#4123))
 
 		// update metrics
 		mem.metrics.Size.Set(float64(mem.Size()))
@@ -473,7 +415,8 @@ func (mem *CListMempool) resCbFirstTime(
 			if err := mem.isFull(len(tx)); err != nil {
 				// remove from cache (mempool might have a space later)
 				mem.cache.Remove(tx)
-				mem.logger.Error(err.Error())
+				// use debug level to avoid spamming logs when traffic is high
+				mem.logger.Debug(err.Error())
 				mem.metrics.RejectedTxs.Add(1)
 				return
 			}

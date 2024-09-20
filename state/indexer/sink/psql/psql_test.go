@@ -75,6 +75,8 @@ func TestMain(m *testing.M) {
 		config.RestartPolicy = docker.RestartPolicy{
 			Name: "no",
 		}
+		config.PortBindings = make(map[docker.Port][]docker.PortBinding)
+		config.PortBindings[port] = []docker.PortBinding{{HostIP: "", HostPort: port}}
 	})
 	if err != nil {
 		log.Fatalf("Starting docker pool: %v", err)

@@ -176,7 +176,7 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 		switch {
 		case errors.Is(err, ErrTxInCache):
 			memR.Logger.Debug("Tx already exists in cache", "tx", log.NewLazySprintf("%X", tx.Hash()), "sender", senderID)
-		case errors.Is(err, ErrMempoolIsFull{}):
+		case errors.As(err, &ErrMempoolIsFull{}):
 			memR.Logger.Debug(err.Error())
 		default:
 			memR.Logger.Info("Could not check tx", "tx", log.NewLazySprintf("%X", tx.Hash()), "sender", senderID, "err", err)

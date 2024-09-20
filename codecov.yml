@@ -12,7 +12,11 @@ coverage:
 github_checks:
   annotations: false
 
-comment: false
+comment:
+  layout: "header, diff, changes, files, footer"
+  behavior: default
+  require_base: no
+  require_head: no
 
 ignore:
   - "docs"

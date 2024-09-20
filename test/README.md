@@ -19,13 +19,19 @@ and run the following tests in docker containers:
 
 ## End-to-end tests
 
-You can run e2e nightly tests locally by running
+You can run e2e nightly tests locally by running:
 
-```
-make -j2 docker generator runner && ./build/generator -g 5 -d networks/nightly/ -p && ./run-multiple.sh networks/nightly/*-group*-*.toml
+```sh
+cd test/e2e
+make && ./build/generator -g 5 -d networks/nightly/ -p && ./run-multiple.sh networks/nightly/*-group*-*.toml
 ```
 
-from the root directory of the repository.
+If you just want a simple 4-node network, you can run:
+
+```sh
+cd test/e2e
+make && ./build/runner -f networks/simple.toml
+```
 
 Please refer to the [README.MD](e2e/README.md) in the `e2e` folder for more information.
 

@@ -83,6 +83,7 @@ func TestGauge(t *testing.T) {
 
 	value := func() []float64 {
 		matches := re.FindStringSubmatch(fetchPrometheusData(t, s))
+		assert.Greater(t, len(matches), 0)
 		f, _ := strconv.ParseFloat(matches[1], 64)
 		return []float64{f}
 	}

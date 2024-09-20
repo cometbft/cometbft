@@ -17,6 +17,8 @@ comment:
   behavior: default
   require_base: no
   require_head: no
+  paths:
+    - "**/*.go"
 
 ignore:
   - "docs"

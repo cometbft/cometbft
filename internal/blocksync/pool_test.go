@@ -68,7 +68,9 @@ func (p testPeer) simulateInput(input inputData) {
 		}
 	}
 	err := input.pool.AddBlock(input.request.PeerID, block, extCommit, 123)
-	require.NoError(input.t, err)
+	if !p.malicious {
+		require.NoError(input.t, err)
+	}
 	// TODO: uncommenting this creates a race which is detected by:
 	// https://github.com/golang/go/blob/2bd767b1022dd3254bcec469f0ee164024726486/src/testing/testing.go#L854-L856
 	// see: https://github.com/tendermint/tendermint/issues/3390#issue-418379890

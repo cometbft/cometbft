@@ -114,18 +114,12 @@ db_backend = "pebbledb"
 
 | Value type          | string        | dependencies  | GitHub                                           |
 |:--------------------|:--------------|:--------------|:-------------------------------------------------|
-<<<<<<< HEAD
-| **Possible values** | `"goleveldb"` | pure Golang   | [goleveldb](https://github.com/syndtr/goleveldb) |
-|                     | `"cleveldb"`  | requires gcc  | [leveldb](https://github.com/google/leveldb)     |
-|                     | `"boltdb"`    | pure Golang   | [bbolt](https://github.com/etcd-io/bbolt)        |
-|                     | `"rocksdb"`   | requires gcc  | [grocksdb](https://github.com/linxGnu/grocksdb)  |
-|                     | `"badgerdb"`  | pure Golang   | [badger](https://github.com/dgraph-io/badger)    |
-=======
 | **Possible values** | `"badgerdb"`  | pure Golang   | [badger](https://github.com/dgraph-io/badger)    |
 |                     | `"goleveldb"` | pure Golang   | [goleveldb](https://github.com/syndtr/goleveldb) |
->>>>>>> 26f43ce6c (feat!: change default DB from goleveldb to pebbledb (#4122))
 |                     | `"pebbledb"`  | pure Golang   | [pebble](https://github.com/cockroachdb/pebble)  |
 |                     | `"rocksdb"`   | requires gcc  | [grocksdb](https://github.com/linxGnu/grocksdb)  |
+|                     | `"cleveldb"`  | requires gcc  | [leveldb](https://github.com/google/leveldb)     |
+|                     | `"boltdb"`    | pure Golang   | [bbolt](https://github.com/etcd-io/bbolt)        |
 
 During the build process, by default, only the `pebbledb` library is built into the binary.
 To add support for alternative databases, you need to add them in the build tags.

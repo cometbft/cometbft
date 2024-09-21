@@ -706,8 +706,6 @@ func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 	require.False(t, genHashMismatch)
 }
 
-<<<<<<< HEAD
-=======
 func TestLoadStateFromDBOrGenesisDocProviderWithConfig(t *testing.T) {
 	config := test.ResetTestRoot(t.Name())
 	config.DBBackend = string(dbm.PebbleDBBackend)
@@ -767,7 +765,6 @@ func TestLoadStateFromDBOrGenesisDocProviderWithConfig(t *testing.T) {
 	})
 }
 
->>>>>>> 26f43ce6c (feat!: change default DB from goleveldb to pebbledb (#4122))
 func state(nVals int, height int64) (sm.State, dbm.DB, []types.PrivValidator) {
 	privVals := make([]types.PrivValidator, nVals)
 	vals := make([]types.GenesisValidator, nVals)

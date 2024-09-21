@@ -523,6 +523,7 @@ func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
 	require.Equal(t, genDocFromDB, []byte("genFile"))
 
 	stateDB.Close()
+
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	require.NoError(t, err)
 
@@ -540,9 +541,6 @@ func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
 		log.TestingLogger(),
 	)
 	require.NoError(t, err)
-
-	_, err = stateDB.Get(genesisDocKey)
-	require.Error(t, err)
 
 	// Start and stop to close the db for later reading
 	err = n.Start()

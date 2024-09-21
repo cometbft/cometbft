@@ -510,7 +510,7 @@ func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_delete_genesis_from_db")
 	defer os.RemoveAll(config.RootDir)
 	// Use goleveldb so we can reuse the same db for the second NewNode()
-	config.DBBackend = string(dbm.GoLevelDBBackend)
+	config.DBBackend = string(dbm.PebbleDBBackend)
 	// Ensure the genesis doc hash is saved to db
 	stateDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "state", Config: config})
 	require.NoError(t, err)
@@ -523,6 +523,7 @@ func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
 	require.Equal(t, genDocFromDB, []byte("genFile"))
 
 	stateDB.Close()
+
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	require.NoError(t, err)
 
@@ -540,9 +541,6 @@ func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
 		log.TestingLogger(),
 	)
 	require.NoError(t, err)
-
-	_, err = stateDB.Get(genesisDocKey)
-	require.Error(t, err)
 
 	// Start and stop to close the db for later reading
 	err = n.Start()
@@ -567,7 +565,7 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 
 	// Use goleveldb so we can reuse the same db for the second NewNode()
-	config.DBBackend = string(dbm.GoLevelDBBackend)
+	config.DBBackend = string(dbm.PebbleDBBackend)
 
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	require.NoError(t, err)
@@ -637,7 +635,7 @@ func TestNodeGenesisHashFlagMatch(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_genesis_hash_flag_match")
 	defer os.RemoveAll(config.RootDir)
 
-	config.DBBackend = string(dbm.GoLevelDBBackend)
+	config.DBBackend = string(dbm.PebbleDBBackend)
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	require.NoError(t, err)
 	// Get correct hash of correct genesis file
@@ -670,7 +668,7 @@ func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 
 	// Use goleveldb so we can reuse the same db for the second NewNode()
-	config.DBBackend = string(dbm.GoLevelDBBackend)
+	config.DBBackend = string(dbm.PebbleDBBackend)
 
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	require.NoError(t, err)
@@ -708,6 +706,68 @@ func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 	require.False(t, genHashMismatch)
 }
 
+<<<<<<< HEAD
+=======
+func TestLoadStateFromDBOrGenesisDocProviderWithConfig(t *testing.T) {
+	config := test.ResetTestRoot(t.Name())
+	config.DBBackend = string(dbm.PebbleDBBackend)
+
+	_, stateDB, err := initDBs(config, cfg.DefaultDBProvider)
+	require.NoErrorf(t, err, "state DB setup: %s", err)
+
+	genDocProviderFunc := func(sha256Checksum []byte) GenesisDocProvider {
+		return func() (ChecksummedGenesisDoc, error) {
+			genDocJSON, err := os.ReadFile(config.GenesisFile())
+			if err != nil {
+				formatStr := "reading genesis file: %s"
+				return ChecksummedGenesisDoc{}, fmt.Errorf(formatStr, err)
+			}
+
+			genDoc, err := types.GenesisDocFromJSON(genDocJSON)
+			if err != nil {
+				formatStr := "parsing genesis file: %s"
+				return ChecksummedGenesisDoc{}, fmt.Errorf(formatStr, err)
+			}
+
+			checksummedGenesisDoc := ChecksummedGenesisDoc{
+				GenesisDoc:     genDoc,
+				Sha256Checksum: sha256Checksum,
+			}
+
+			return checksummedGenesisDoc, nil
+		}
+	}
+
+	t.Run("NilGenesisChecksum", func(t *testing.T) {
+		genDocProvider := genDocProviderFunc(nil)
+
+		_, _, err = LoadStateFromDBOrGenesisDocProviderWithConfig(
+			stateDB,
+			genDocProvider,
+			"",
+			nil,
+		)
+
+		wantErr := "invalid genesis doc SHA256 checksum: expected 64 characters, but have 0"
+		assert.EqualError(t, err, wantErr)
+	})
+
+	t.Run("ShorterGenesisChecksum", func(t *testing.T) {
+		genDocProvider := genDocProviderFunc([]byte("shorter"))
+
+		_, _, err = LoadStateFromDBOrGenesisDocProviderWithConfig(
+			stateDB,
+			genDocProvider,
+			"",
+			nil,
+		)
+
+		wantErr := "invalid genesis doc SHA256 checksum: expected 64 characters, but have 14"
+		assert.EqualError(t, err, wantErr)
+	})
+}
+
+>>>>>>> 26f43ce6c (feat!: change default DB from goleveldb to pebbledb (#4122))
 func state(nVals int, height int64) (sm.State, dbm.DB, []types.PrivValidator) {
 	privVals := make([]types.PrivValidator, nVals)
 	vals := make([]types.GenesisValidator, nVals)

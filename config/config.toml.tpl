@@ -21,11 +21,20 @@ proxy_app = "{{ .BaseConfig.ProxyApp }}"
 # A custom human readable name for this node
 moniker = "{{ .BaseConfig.Moniker }}"
 
+<<<<<<< HEAD
 # Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb
+=======
+# Database backend: badgerdb | goleveldb | pebbledb | rocksdb
+# * badgerdb (uses github.com/dgraph-io/badger)
+#   - stable
+#   - pure go
+#   - use badgerdb build tag (go build -tags badgerdb)
+>>>>>>> 26f43ce6c (feat!: change default DB from goleveldb to pebbledb (#4122))
 # * goleveldb (github.com/syndtr/goleveldb)
 #   - UNMAINTAINED
 #   - stable
 #   - pure go
+<<<<<<< HEAD
 # * cleveldb (uses levigo wrapper)
 #   - DEPRECATED
 #   - requires gcc
@@ -35,10 +44,16 @@ moniker = "{{ .BaseConfig.Moniker }}"
 #   - EXPERIMENTAL
 #   - stable
 #   - use boltdb build tag (go build -tags boltdb)
+=======
+#   - use goleveldb build tag (go build -tags goleveldb)
+# * pebbledb (uses github.com/cockroachdb/pebble)
+#   - stable
+#   - pure go
+>>>>>>> 26f43ce6c (feat!: change default DB from goleveldb to pebbledb (#4122))
 # * rocksdb (uses github.com/linxGnu/grocksdb)
-#   - EXPERIMENTAL
 #   - requires gcc
 #   - use rocksdb build tag (go build -tags rocksdb)
+<<<<<<< HEAD
 # * badgerdb (uses github.com/dgraph-io/badger)
 #   - EXPERIMENTAL
 #   - stable
@@ -48,6 +63,8 @@ moniker = "{{ .BaseConfig.Moniker }}"
 #   - stable
 #   - pure go
 #   - use pebbledb build tag (go build -tags pebbledb)
+=======
+>>>>>>> 26f43ce6c (feat!: change default DB from goleveldb to pebbledb (#4122))
 db_backend = "{{ .BaseConfig.DBBackend }}"
 
 # Database directory

@@ -51,6 +51,7 @@ ifeq (rocksdb,$(findstring rocksdb,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_TAGS += rocksdb
 endif
 
+<<<<<<< HEAD
 # handle boltdb
 ifeq (boltdb,$(findstring boltdb,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_TAGS += boltdb
@@ -61,8 +62,16 @@ ifeq (pebbledb,$(findstring pebbledb,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_TAGS += pebbledb
 endif
 
+=======
+>>>>>>> 26f43ce6c (feat!: change default DB from goleveldb to pebbledb (#4122))
 # handle bls12381
 ifeq (bls12381,$(findstring bls12381,$(COMETBFT_BUILD_OPTIONS)))
   CGO_ENABLED=1
   BUILD_TAGS += bls12381
 endif
+
+# handle goleveldb
+ifeq (goleveldb,$(findstring goleveldb,$(COMETBFT_BUILD_OPTIONS)))
+	BUILD_TAGS += goleveldb
+endif
+

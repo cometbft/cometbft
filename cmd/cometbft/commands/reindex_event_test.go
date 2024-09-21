@@ -112,11 +112,11 @@ func TestLoadBlockStore(t *testing.T) {
 	_, _, err := loadStateAndBlockStore(cfg)
 	require.Error(t, err)
 
-	_, err = dbm.NewDB("blockstore", dbm.GoLevelDBBackend, cfg.DBDir())
+	_, err = dbm.NewDB("blockstore", dbm.PebbleDBBackend, cfg.DBDir())
 	require.NoError(t, err)
 
 	// Get StateStore
-	_, err = dbm.NewDB("state", dbm.GoLevelDBBackend, cfg.DBDir())
+	_, err = dbm.NewDB("state", dbm.PebbleDBBackend, cfg.DBDir())
 	require.NoError(t, err)
 
 	bs, ss, err := loadStateAndBlockStore(cfg)

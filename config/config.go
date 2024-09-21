@@ -214,11 +214,20 @@ type BaseConfig struct {
 	// A custom human readable name for this node
 	Moniker string `mapstructure:"moniker"`
 
+<<<<<<< HEAD
 	// Database backend: goleveldb | cleveldb | boltdb | rocksdb | pebbledb
+=======
+	// Database backend: badgerdb | goleveldb | pebbledb | rocksdb
+	// * badgerdb (uses github.com/dgraph-io/badger)
+	//   - stable
+	//   - pure go
+	//   - use badgerdb build tag (go build -tags badgerdb)
+>>>>>>> 26f43ce6c (feat!: change default DB from goleveldb to pebbledb (#4122))
 	// * goleveldb (github.com/syndtr/goleveldb)
 	//   - UNMAINTAINED
 	//   - stable
 	//   - pure go
+<<<<<<< HEAD
 	// * cleveldb (uses levigo wrapper)
 	//   - DEPRECATED
 	//   - requires gcc
@@ -228,10 +237,16 @@ type BaseConfig struct {
 	//   - EXPERIMENTAL
 	//   - stable
 	//   - use boltdb build tag (go build -tags boltdb)
+=======
+	//   - use goleveldb build tag (go build -tags goleveldb)
+	// * pebbledb (uses github.com/cockroachdb/pebble)
+	//   - stable
+	//   - pure go
+>>>>>>> 26f43ce6c (feat!: change default DB from goleveldb to pebbledb (#4122))
 	// * rocksdb (uses github.com/linxGnu/grocksdb)
-	//   - EXPERIMENTAL
 	//   - requires gcc
 	//   - use rocksdb build tag (go build -tags rocksdb)
+<<<<<<< HEAD
 	// * badgerdb (uses github.com/dgraph-io/badger)
 	//   - EXPERIMENTAL
 	//   - stable
@@ -241,6 +256,8 @@ type BaseConfig struct {
 	//   - stable
 	//   - pure go
 	//   - use pebbledb build tag (go build -tags pebbledb)
+=======
+>>>>>>> 26f43ce6c (feat!: change default DB from goleveldb to pebbledb (#4122))
 	DBBackend string `mapstructure:"db_backend"`
 
 	// Database directory
@@ -290,7 +307,7 @@ func DefaultBaseConfig() BaseConfig {
 		LogLevel:           DefaultLogLevel,
 		LogFormat:          LogFormatPlain,
 		FilterPeers:        false,
-		DBBackend:          "goleveldb",
+		DBBackend:          "pebbledb",
 		DBPath:             DefaultDataDir,
 	}
 }

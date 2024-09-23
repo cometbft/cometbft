@@ -7,6 +7,8 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
+const ZonesFile = "zones.csv"
+
 // Provider defines an API for manipulating the infrastructure of a
 // specific set of testnet infrastructure.
 type Provider interface {
@@ -51,5 +53,5 @@ func (pd ProviderData) GetInfrastructureData() *e2e.InfrastructureData {
 
 // IPZonesFilePath returns the path to the file with the mapping from IP addresses to zones.
 func (pd ProviderData) IPZonesFilePath() string {
-	return filepath.Join(pd.Testnet.Dir, "zones.csv")
+	return filepath.Join(pd.Testnet.Dir, ZonesFile)
 }

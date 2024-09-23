@@ -11,10 +11,11 @@ import (
 	"time"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 )
 
-func Save(testnet *e2e.Testnet) error {
+func SaveExecution(testnet *e2e.Testnet) error {
 	logger.Info("saving execution", "msg", "saving e2e network execution information")
 	// Fetch and save the execution logs
 	now := time.Now()
@@ -116,10 +117,35 @@ func Save(testnet *e2e.Testnet) error {
 			return err
 		}
 
-		// Save manifest file
-		if err := copyFile(testnet.File, executionFolder); err != nil {
+		// Save the manifest file
+		manifestFile := filepath.Join(executionFolder, "manifest.toml")
+		if err := copyFile(testnet.File, manifestFile); err != nil {
 			logger.Error("error saving execution", "msg", "error copying manifest file", "file", testnet.File, "err", err.Error())
 			return err
+		}
+
+		// Save the prometheus file if exists
+		prometheusFileSrc := filepath.Join(testnet.Dir, e2e.PrometheusFile)
+		prometheusFileDest := filepath.Join(executionFolder, e2e.PrometheusFile)
+		if err := copyFile(prometheusFileSrc, prometheusFileDest); err != nil {
+			logger.Error("error saving execution", "msg", "error copying prometheus file", "file", testnet.File, "err", err.Error())
+			return err
+		}
+
+		// Save the zone file if exists
+		zoneFileSrc := filepath.Join(testnet.Dir, infra.ZonesFile)
+		zoneFileDest := filepath.Join(executionFolder, infra.ZonesFile)
+		if err := copyFile(zoneFileSrc, zoneFileDest); err != nil {
+			logger.Error("error saving execution", "msg", "error copying zones file", "file", testnet.File, "err", err.Error())
+			return err
+		}
+
+		// Copy the nodes files to the execution nodes folder
+		for _, node := range testnet.Nodes {
+			if err := copyDir(filepath.Join(testnet.Dir, node.Name), nodeFolder); err != nil {
+				logger.Error("error saving execution", "msg", "error copying node files", "err", err.Error())
+				return err
+			}
 		}
 	}
 
@@ -129,16 +155,19 @@ func Save(testnet *e2e.Testnet) error {
 }
 
 // copyFile copies a file from a source to a destination location.
-func copyFile(source string, dest string) error {
+func copyFile(source string, targetPath string) error {
+	// Check if the source file exists, if not skip it.
+	if _, err := os.Stat(source); os.IsNotExist(err) {
+		return nil
+	}
+
 	sourceFile, err := os.Open(source)
 	if err != nil {
 		return err
 	}
 	defer sourceFile.Close()
 
-	// Create the destination file
-	manifestFile := filepath.Join(dest, "manifest.toml")
-	destFile, err := os.Create(manifestFile)
+	destFile, err := os.Create(targetPath)
 	if err != nil {
 		return err
 	}
@@ -150,4 +179,24 @@ func copyFile(source string, dest string) error {
 		return err
 	}
 	return nil
+}
+
+// copyDir recursively copies a directory tree.
+func copyDir(srcDir, dstDir string) error {
+	return filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Compute the target path
+		targetPath := filepath.Join(dstDir, path[len(srcDir):])
+
+		if info.IsDir() {
+			// Create the directory
+			return os.MkdirAll(targetPath, info.Mode())
+		}
+
+		// Copy the file
+		return copyFile(path, targetPath)
+	})
 }

@@ -172,7 +172,7 @@ func NewCLI() *CLI {
 			if cli.execution {
 				// Only execute this when running a Docker provider
 				if cli.infp.GetInfrastructureData().Provider == docker.ProviderName {
-					if err := Save(cli.testnet); err != nil {
+					if err := SaveExecution(cli.testnet); err != nil {
 						logger.Error("error saving execution", "msg", "error saving execution files", "err", err.Error())
 						return err
 					}

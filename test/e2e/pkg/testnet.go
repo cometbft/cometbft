@@ -39,6 +39,8 @@ const (
 	defaultTxSizeBytes = 1024
 
 	localVersion = "cometbft/e2e-node:local-version"
+
+	PrometheusFile = "prometheus.yaml"
 )
 
 type (
@@ -613,7 +615,7 @@ func (t Testnet) WritePrometheusConfig() error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(filepath.Join(t.Dir, "prometheus.yaml"), bytes, 0o644) //nolint:gosec
+	err = os.WriteFile(filepath.Join(t.Dir, PrometheusFile), bytes, 0o644) //nolint:gosec
 	if err != nil {
 		return err
 	}

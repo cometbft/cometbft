@@ -174,6 +174,17 @@ func init() {
 	os.Setenv("E2E_NODE", "validator01")
 }
 ```
+### Saving the runner executions
+
+If you need to save the files used in a runner execution, specify the `--execution` or `-e` flag, which will save the
+node files, manifest, and any other asset used during the test. It will also save the docker log files for each node.
+Each execution is saved under a `network_executions` folder, and at each run, a subfolder with a time and date timestamp
+will be created as the name of the folder. This way, you can test changing parameters in the manifest and later check
+the logs to see how that affected the run behavior and tests.
+
+```
+./build/runner -f networks/simple --execution
+```
 
 ### Debugging Failures
 

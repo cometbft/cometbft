@@ -152,6 +152,9 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	}
 	for valName, power := range *testnet.Manifest.ValidatorsMap {
 		validator := testnet.LookupNode(valName)
+		if validator == nil {
+			return types.GenesisDoc{}, fmt.Errorf("unknown validator %q for genesis doc", valName)
+		}
 		genesis.Validators = append(genesis.Validators, types.GenesisValidator{
 			Name:    valName,
 			Address: validator.PrivvalKey.PubKey().Address(),
@@ -167,7 +170,7 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	if len(testnet.InitialState) > 0 {
 		appState, err := json.Marshal(testnet.InitialState)
 		if err != nil {
-			return genesis, err
+			return types.GenesisDoc{}, err
 		}
 		genesis.AppState = appState
 	}
@@ -180,7 +183,7 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 		for _, field := range testnet.Genesis {
 			key, value, err := e2e.ParseKeyValueField("genesis", field)
 			if err != nil {
-				return genesis, err
+				return types.GenesisDoc{}, err
 			}
 			logger.Debug("Applying 'genesis' field", key, value)
 			v.Set(key, value)
@@ -193,11 +196,14 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 			d.ErrorUnused = true
 		})
 		if err != nil {
-			return genesis, fmt.Errorf("failed parsing 'genesis' field: %v", err)
+			return types.GenesisDoc{}, fmt.Errorf("failed parsing 'genesis' field: %v", err)
 		}
 	}
 
-	return genesis, genesis.ValidateAndComplete()
+	if err := genesis.ValidateAndComplete(); err != nil {
+		return types.GenesisDoc{}, err
+	}
+	return genesis, nil
 }
 
 // MakeConfig generates a CometBFT config for a node.
@@ -428,6 +434,9 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 			updateVals := map[string]int64{}
 			for valName, power := range validators {
 				validator := node.Testnet.LookupNode(valName)
+				if validator == nil {
+					return nil, fmt.Errorf("unknown validator %q for validator updates in testnet, height %d", valName, height)
+				}
 				updateVals[base64.StdEncoding.EncodeToString(validator.PrivvalKey.PubKey().Bytes())] = power
 			}
 			validatorUpdates[strconv.FormatInt(height, 10)] = updateVals

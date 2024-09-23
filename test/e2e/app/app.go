@@ -159,11 +159,11 @@ func DefaultConfig(dir string) *Config {
 
 func DefaultLanes() map[string]uint32 {
 	return map[string]uint32{
-		"A": 100,
-		"B": 50,
-		"C": 10,
-		"D": 5,
-		"E": 1,
+		"100": 100,
+		"50":  50,
+		"10":  10,
+		"5":   5,
+		"1":   1,
 	}
 }
 

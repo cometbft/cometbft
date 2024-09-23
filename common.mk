@@ -40,13 +40,14 @@ ifeq (rocksdb,$(findstring rocksdb,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_TAGS += rocksdb
 endif
 
-# handle pebbledb
-ifeq (pebbledb,$(findstring pebbledb,$(COMETBFT_BUILD_OPTIONS)))
-  BUILD_TAGS += pebbledb
-endif
-
 # handle bls12381
 ifeq (bls12381,$(findstring bls12381,$(COMETBFT_BUILD_OPTIONS)))
   CGO_ENABLED=1
   BUILD_TAGS += bls12381
 endif
+
+# handle goleveldb
+ifeq (goleveldb,$(findstring goleveldb,$(COMETBFT_BUILD_OPTIONS)))
+	BUILD_TAGS += goleveldb
+endif
+

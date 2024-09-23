@@ -10,13 +10,17 @@ on:
     paths:
       - 'proto/**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: bufbuild/buf-setup-action@v1.37.0
+      - uses: bufbuild/buf-setup-action@v1.41.0
       - uses: bufbuild/buf-lint-action@v1
         with:
           input: 'proto'

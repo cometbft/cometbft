@@ -40,7 +40,7 @@ const (
 	suffixVoteExtHeight string = "VoteExtensionsHeight"
 	suffixPbtsHeight    string = "PbtsHeight"
 	suffixInitialHeight string = "InitialHeight"
-	txTTL               uint64 = 5 // height difference at which transactions should be invalid
+	txTTL               uint64 = 15 // height difference at which transactions should be invalid
 )
 
 // Application is an ABCI application for use by end-to-end tests. It is a
@@ -279,6 +279,7 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 			panic(fmt.Sprintf("txHeight is less than current height; txHeight %v, height %v", txHeight, stHeight))
 		}
 		if stHeight > txHeight.(uint64)+txTTL {
+			app.logger.Debug("Application CheckTx", "msg", "transaction expired", "tx_hash", cmttypes.Tx.Hash(req.Tx), "seen_height", txHeight, "current_height", stHeight)
 			app.seenTxs.Delete(txKey)
 			return &abci.CheckTxResponse{
 				Code: kvstore.CodeTypeExpired,

@@ -680,6 +680,9 @@ Must have `MaxBytes > 0`.
 
 Height at which Proposer-Based Timestamps (PBTS) will be enabled.
 
+A value of 0 means that PBTS is disabled. A value > 0 denotes the
+height at which PBTS will be (or has been) enabled.
+
 From the specified height, and for all subsequent heights, the PBTS
 algorithm will be used to produce and validate block timestamps. Prior to
 this height, or when this height is set to 0, the legacy BFT Time
@@ -695,7 +698,9 @@ Must have `PbtsEnableHeight > [Current height]`
 
 This parameter is either 0 or a positive height at which vote extensions
 become mandatory. If the value is zero (which is the default), vote
-extensions are not expected. Otherwise, at all heights greater than the
+extensions are disabled, and are therefore precommit messages received
+from other nodes are not expected to contain vote extensions.
+If the value is greater than zero, at all heights greater than the
 configured height `H` vote extensions must be present (even if empty).
 When the configured height `H` is reached, `PrepareProposal` will not
 include vote extensions yet, but `ExtendVote` and `VerifyVoteExtension` will
@@ -1047,7 +1052,7 @@ can be spoofed by adversaries.
 Apps may also want to consider state sync denial-of-service vectors, where adversaries provide
 invalid or harmful snapshots to prevent nodes from joining the network. The application can
 counteract this by asking CometBFT to ban peers. As a last resort, node operators can use
-P2P configuration options to whitelist a set of trusted peers that can provide valid snapshots.
+P2P configuration options to list an exclusive set of trusted peers that can provide valid snapshots.
 
 ##### Transition to Consensus
 
@@ -1079,7 +1084,7 @@ For a detailed description on the upgrade path, please refer to the correspondin
 
 There is a newly introduced [**consensus parameter**](./abci%2B%2B_app_requirements.md#abciparamsvoteextensionsenableheight): `VoteExtensionsEnableHeight`.
 This parameter represents the height at which vote extensions are
-required for consensus to proceed, with 0 being the default value (no vote extensions).
+required for consensus to proceed, with 0 being the default value (vote extensions disabled).
 A chain can enable vote extensions either:
 - at genesis by setting `VoteExtensionsEnableHeight` to be equal, e.g., to the `InitialHeight`
 - or via the application logic by changing the `ConsensusParam` to configure the

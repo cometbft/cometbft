@@ -1,6 +1,6 @@
 pull_request_rules:
-  - name: automatically merge backport (v0.34.x)
-    description: automatically merge backport if it passes tests and there are no conflicts (v0.34.x)
+  - name: merge PR (v0.34.x)
+    description: merge PR if it passes tests and there are no conflicts (v0.34.x)
     conditions:
       - '-label=manual-backport'
       - author=mergify[bot]
@@ -22,9 +22,9 @@ pull_request_rules:
       - check-success=test_apps
     actions:
       merge:
-        method: merge
-  - name: automatically merge backport (v0.38.x and v0.37.x)
-    description: automatically merge backport if it passes tests and there are no conflicts (v0.38.x and v0.37.x)
+        method: squash
+  - name: merge PR (v0.37.x and v0.38.x)
+    description: merge PR if it passes tests and there are no conflicts (v0.37.x and v0.38.x)
     conditions:
       - '-label=manual-backport'
       - author=mergify[bot]
@@ -45,9 +45,9 @@ pull_request_rules:
       - check-success=test_apps
     actions:
       merge:
-        method: merge
-  - name: automatically merge backport (v1.x)
-    description: automatically merge backport if it passes tests and there are no conflicts (v1.x)
+        method: squash
+  - name: merge PR (v1.x)
+    description: merge PR if it passes tests and there are no conflicts (v1.x)
     conditions:
       - '-label=manual-backport'
       - author=mergify[bot]
@@ -69,7 +69,24 @@ pull_request_rules:
       - check-success=check-proto
     actions:
       merge:
-        method: merge
+        method: squash
+
+  - name: automatic approval for Dependabot pull requests
+    conditions:
+      - author=dependabot[bot]
+    actions:
+      review:
+        type: APPROVE
+        message: Automatically approving dependabot
+
+  - name: automatically merge PR with automerge label and no manual-backport label
+    conditions:
+      - '-label=manual-backport'
+      - label=automerge
+    actions:
+      merge:
+        method: squash
+
   - name: Attach backport-to-v0.38.x-experimental label to PR
     description: >-
       Assign backport-to-v0.38.x-experimental label to any PR targeting v0.38.x
@@ -78,16 +95,20 @@ pull_request_rules:
       - base=v0.38.x
     actions:
       label:
-        toggle:
+        add:
           - backport-to-v0.38.x-experimental
+          - automerge
+
   - name: Make sure PR are up to date before merging
     description: >-
       This automatically updates PRs when they are out-of-date with the base
       branch to avoid semantic conflicts (next step is using a merge queue).
     conditions:
       - '-draft'
+      - "#approved-reviews-by >= 1"
     actions:
       update:
+
   - name: backport patches to v0.38.x-experimental branch
     conditions:
       - base=v0.38.x

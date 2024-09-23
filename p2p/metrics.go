@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/go-kit/kit/metrics"
+	"github.com/cometbft/cometbft/libs/metrics"
 )
 
 const (
@@ -32,6 +32,10 @@ type Metrics struct {
 	MessageReceiveBytesTotal metrics.Counter `metrics_labels:"message_type"`
 	// Number of bytes of each message type sent.
 	MessageSendBytesTotal metrics.Counter `metrics_labels:"message_type"`
+	// Time in seconds spent sleeping by the receive rate limiter
+	RecvRateLimiterDelay metrics.Counter `metrics_labels:"peer_id"`
+	// Time in seconds spent sleeping by the send rate limiter
+	SendRateLimiterDelay metrics.Counter `metrics_labels:"peer_id"`
 }
 
 type peerPendingMetricsCache struct {

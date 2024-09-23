@@ -2065,8 +2065,8 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal, recvTime time.Time
 
 	p := proposal.ToProto()
 	// Verify signature
-	pubKey := cs.Validators.GetProposer().PubKey
-	if !pubKey.VerifySignature(
+	proposer := cs.Validators.GetProposer()
+	if !proposer.PubKey.VerifySignature(
 		types.ProposalSignBytes(cs.state.ChainID, p), proposal.Signature,
 	) {
 		return ErrInvalidProposalSignature
@@ -2090,9 +2090,15 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal, recvTime time.Time
 	// TODO: We can check if Proposal is for a different block as this is a sign of misbehavior!
 	if cs.ProposalBlockParts == nil {
 		cs.ProposalBlockParts = types.NewPartSetFromHeader(proposal.BlockID.PartSetHeader)
+
+		// If we signed this Proposal, lock the PartSet until we load
+		// all the BlockParts that should come just after the Proposal.
+		if bytes.Equal(proposer.Address, cs.privValidatorPubKey.Address()) {
+			cs.ProposalBlockParts.Lock()
+		}
 	}
 
-	cs.Logger.Info("Received proposal", "proposal", proposal, "proposer", pubKey.Address())
+	cs.Logger.Info("Received proposal", "proposal", proposal, "proposer", proposer.Address)
 	return nil
 }
 
@@ -2193,6 +2199,7 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 		}
 
 		cs.ProposalBlock = block
+		cs.ProposalBlockParts.Unlock()
 
 		// NOTE: it's possible to receive complete proposal blocks for future rounds without having the proposal
 		cs.Logger.Info("Received complete proposal block", "height", cs.ProposalBlock.Height, "hash", cs.ProposalBlock.Hash())
@@ -2247,7 +2254,7 @@ func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 		// If the vote height is off, we'll just ignore it,
 		// But if it's a conflicting sig, add it to the cs.evpool.
 		// If it's otherwise invalid, punish peer.
-		//nolint: gocritic
+
 		if voteErr, ok := err.(*types.ErrVoteConflictingVotes); ok {
 			if cs.privValidatorPubKey == nil {
 				return false, ErrPubKeyIsNotSet
@@ -2273,19 +2280,14 @@ func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 			)
 
 			return added, err
-		} else if errors.Is(err, types.ErrVoteNonDeterministicSignature) {
-			cs.Logger.Info("Vote has non-deterministic signature", "err", err)
-		} else if errors.Is(err, types.ErrInvalidVoteExtension) {
-			cs.Logger.Info("Vote has invalid extension")
-		} else {
-			// Either
-			// 1) bad peer OR
-			// 2) not a bad peer? this can also err sometimes with "Unexpected step" OR
-			// 3) tmkms use with multiple validators connecting to a single tmkms instance
-			// 		(https://github.com/tendermint/tendermint/issues/3839).
-			cs.Logger.Info("Failed attempting to add vote", "err", err)
-			return added, ErrAddingVote
 		}
+
+		// Either
+		// 1) bad peer OR
+		// 2) not a bad peer? this can also err sometimes with "Unexpected step" OR
+		// 3) tmkms use with multiple validators connecting to a single tmkms instance
+		// 		(https://github.com/tendermint/tendermint/issues/3839).
+		return added, ErrAddingVote{Err: err}
 	}
 
 	return added, nil
@@ -2744,7 +2746,6 @@ func repairWalFile(src, dst string) error {
 		}
 	}
 
-	//nolint:nilerr
 	return nil
 }
 

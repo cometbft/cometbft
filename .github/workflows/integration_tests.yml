@@ -39,8 +39,3 @@ jobs:
         if: steps.filter.outputs.code == 'true'
         run: |
           make test_integrations
-
-      - name: Cleanup
-        if: steps.filter.outputs.code == 'true'
-        run: |
-          make test_integrations_cleanup

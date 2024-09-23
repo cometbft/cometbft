@@ -6,22 +6,18 @@
 BINDIR ?= $(GOPATH)/bin
 
 #?test_apps: Run the app tests
-test_apps:
+test_apps: install
 	@bash test/app/test.sh
 .PHONY: test_apps
 
 #?test_abci_cli: Test the cli against the examples in the tutorial at: ./docs/abci-cli.md
 # if test fails, update the docs ^
-test_abci_cli:
+test_abci_cli: install_abci
 	@bash abci/tests/test_cli/test.sh
 .PHONY: test_abci_cli
 
 #?test_integrations: Runs all integration tests
-test_integrations:
-	make install
-	make install_abci
-	make test_apps
-	make test_abci_cli
+test_integrations: test_apps test_abci_cli test_integrations_cleanup
 .PHONY: test_integrations
 
 #?test_integrations_cleanup: Cleans up the test data created by test_integrations

@@ -55,11 +55,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - id: filter
-<<<<<<< HEAD
-        uses: dorny/paths-filter@v2
-=======
         uses: dorny/paths-filter@v3
->>>>>>> main
         with:
           filters: |
             code:

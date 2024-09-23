@@ -1,2 +1,1 @@
 [node.validator]
-    version = "cometbft/e2e-node:v1.x"

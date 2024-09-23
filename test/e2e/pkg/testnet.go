@@ -74,14 +74,13 @@ const (
 // Testnet represents a single testnet.
 // It includes all fields from the associated Manifest instance.
 type Testnet struct {
-	Manifest
+	*Manifest
 
 	Name string
 	File string
 	Dir  string
 
 	IP               *net.IPNet
-	Validators       map[string]int64
 	ValidatorUpdates map[int64]map[string]int64
 	Nodes            []*Node
 }
@@ -141,14 +140,13 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	testnet := &Testnet{
-		Manifest: manifest,
+		Manifest: &manifest,
 
 		Name: filepath.Base(dir),
 		File: file,
 		Dir:  dir,
 
 		IP:               ipNet,
-		Validators:       map[string]int64{},
 		ValidatorUpdates: map[int64]map[string]int64{},
 		Nodes:            []*Node{},
 	}
@@ -283,20 +281,14 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	// Set up genesis validators. If not specified explicitly, use all validator nodes.
-	if manifest.ValidatorsMap != nil {
-		for validatorName, power := range *manifest.ValidatorsMap {
-			validator := testnet.LookupNode(validatorName)
-			if validator == nil {
-				return nil, fmt.Errorf("unknown validator %q", validatorName)
-			}
-			testnet.Validators[validator.Name] = power
-		}
-	} else {
+	if manifest.ValidatorsMap == nil {
+		validatorsMap := make(map[string]int64)
 		for _, node := range testnet.Nodes {
 			if node.Mode == ModeValidator {
-				testnet.Validators[node.Name] = 100
+				validatorsMap[node.Name] = 100
 			}
 		}
+		manifest.ValidatorsMap = &validatorsMap
 	}
 
 	// Set up validator updates.

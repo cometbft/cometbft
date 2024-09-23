@@ -150,7 +150,7 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	if testnet.PbtsUpdateHeight == -1 {
 		genesis.ConsensusParams.Feature.PbtsEnableHeight = testnet.PbtsEnableHeight
 	}
-	for valName, power := range testnet.Validators {
+	for valName, power := range *testnet.Manifest.ValidatorsMap {
 		validator := testnet.LookupNode(valName)
 		genesis.Validators = append(genesis.Validators, types.GenesisValidator{
 			Name:    valName,

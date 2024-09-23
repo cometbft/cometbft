@@ -151,7 +151,7 @@ type validatorSchedule struct {
 }
 
 func newValidatorSchedule(testnet *e2e.Testnet) *validatorSchedule {
-	valMap := testnet.Validators                  // genesis validators
+	valMap := *testnet.Manifest.ValidatorsMap     // genesis validators
 	if v, ok := testnet.ValidatorUpdates[0]; ok { // InitChain validators
 		valMap = v
 	}

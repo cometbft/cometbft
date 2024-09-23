@@ -21,33 +21,30 @@ proxy_app = "{{ .BaseConfig.ProxyApp }}"
 # A custom human readable name for this node
 moniker = "{{ .BaseConfig.Moniker }}"
 
-# Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb
+# Database backend: badgerdb | goleveldb | pebbledb | rocksdb | cleveldb | boltdb
+# * badgerdb (uses github.com/dgraph-io/badger)
+#   - stable
+#   - pure go
+#   - use badgerdb build tag (go build -tags badgerdb)
 # * goleveldb (github.com/syndtr/goleveldb)
 #   - UNMAINTAINED
 #   - stable
 #   - pure go
+#   - use goleveldb build tag (go build -tags goleveldb)
+# * pebbledb (uses github.com/cockroachdb/pebble)
+#   - stable
+#   - pure go
+# * rocksdb (uses github.com/linxGnu/grocksdb)
+#   - requires gcc
+#   - use rocksdb build tag (go build -tags rocksdb)
 # * cleveldb (uses levigo wrapper)
 #   - DEPRECATED
 #   - requires gcc
 #   - use cleveldb build tag (go build -tags cleveldb)
 # * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
 #   - DEPRECATED
-#   - EXPERIMENTAL
 #   - stable
 #   - use boltdb build tag (go build -tags boltdb)
-# * rocksdb (uses github.com/linxGnu/grocksdb)
-#   - EXPERIMENTAL
-#   - requires gcc
-#   - use rocksdb build tag (go build -tags rocksdb)
-# * badgerdb (uses github.com/dgraph-io/badger)
-#   - EXPERIMENTAL
-#   - stable
-#   - use badgerdb build tag (go build -tags badgerdb)
-# * pebbledb (uses github.com/cockroachdb/pebble)
-#   - EXPERIMENTAL
-#   - stable
-#   - pure go
-#   - use pebbledb build tag (go build -tags pebbledb)
 db_backend = "{{ .BaseConfig.DBBackend }}"
 
 # Database directory

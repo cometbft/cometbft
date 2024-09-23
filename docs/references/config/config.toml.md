@@ -109,26 +109,25 @@ Nodes on the peer-to-peer network are identified by `nodeID@host:port` as discus
 ### db_backend
 The chosen database backend for the node.
 ```toml
-db_backend = "goleveldb"
+db_backend = "pebbledb"
 ```
 
 | Value type          | string        | dependencies  | GitHub                                           |
 |:--------------------|:--------------|:--------------|:-------------------------------------------------|
-| **Possible values** | `"goleveldb"` | pure Golang   | [goleveldb](https://github.com/syndtr/goleveldb) |
+| **Possible values** | `"badgerdb"`  | pure Golang   | [badger](https://github.com/dgraph-io/badger)    |
+|                     | `"goleveldb"` | pure Golang   | [goleveldb](https://github.com/syndtr/goleveldb) |
+|                     | `"pebbledb"`  | pure Golang   | [pebble](https://github.com/cockroachdb/pebble)  |
+|                     | `"rocksdb"`   | requires gcc  | [grocksdb](https://github.com/linxGnu/grocksdb)  |
 |                     | `"cleveldb"`  | requires gcc  | [leveldb](https://github.com/google/leveldb)     |
 |                     | `"boltdb"`    | pure Golang   | [bbolt](https://github.com/etcd-io/bbolt)        |
-|                     | `"rocksdb"`   | requires gcc  | [grocksdb](https://github.com/linxGnu/grocksdb)  |
-|                     | `"badgerdb"`  | pure Golang   | [badger](https://github.com/dgraph-io/badger)    |
-|                     | `"pebbledb"`  | pure Golang   | [pebble](https://github.com/cockroachdb/pebble)  |
 
-During the build process, by default, only the `goleveldb` library is built into the binary.
+During the build process, by default, only the `pebbledb` library is built into the binary.
 To add support for alternative databases, you need to add them in the build tags.
 For example: `go build -tags cleveldb,rocksdb`.
 
 The RocksDB fork has API changes from the upstream RocksDB implementation. All other databases claim a stable API.
 
-The CometBFT team tests rely on the GoLevelDB implementation. All other implementations are considered experimental from
-a CometBFT perspective. The supported databases are part of the [cometbft-db](https://github.com/cometbft/cometbft-db) library
+The supported databases are part of the [cometbft-db](https://github.com/cometbft/cometbft-db) library
 that CometBFT uses as a common database interface to various databases.
 
 **NOTE**: `boltdb` and `cleveldb` are deprecated and will be removed in a future release.

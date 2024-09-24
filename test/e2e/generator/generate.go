@@ -137,7 +137,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 		ABCIProtocol:        nodeABCIProtocols.Choose(r).(string),
 		InitialHeight:       int64(opt["initialHeight"].(int)),
 		InitialState:        opt["initialState"].(map[string]string),
-		ValidatorsMap:       &map[string]int64{},
+		Validators:          &map[string]int64{},
 		ValidatorUpdatesMap: map[string]map[string]int64{},
 		KeyType:             keyType.Choose(r).(string),
 		Evidence:            evidence.Choose(r).(int),
@@ -221,7 +221,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 
 		weight := int64(30 + r.Intn(71))
 		if startAt == 0 {
-			(*manifest.ValidatorsMap)[name] = weight
+			(*manifest.Validators)[name] = weight
 		} else {
 			manifest.ValidatorUpdatesMap[strconv.FormatInt(startAt+5, 10)] = map[string]int64{name: weight}
 		}
@@ -235,7 +235,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 		startAt := manifest.NodesMap[name].StartAt
 		var weight int64
 		if startAt == 0 {
-			weight = (*manifest.ValidatorsMap)[name]
+			weight = (*manifest.Validators)[name]
 		} else {
 			weight = manifest.ValidatorUpdatesMap[strconv.FormatInt(startAt+5, 10)][name]
 		}
@@ -251,8 +251,8 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 	switch opt["validators"].(string) {
 	case "genesis":
 	case "initchain":
-		manifest.ValidatorUpdatesMap["0"] = *manifest.ValidatorsMap
-		manifest.ValidatorsMap = &map[string]int64{}
+		manifest.ValidatorUpdatesMap["0"] = *manifest.Validators
+		manifest.Validators = &map[string]int64{}
 	default:
 		return manifest, fmt.Errorf("invalid validators option %q", opt["validators"])
 	}

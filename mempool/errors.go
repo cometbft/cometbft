@@ -147,3 +147,11 @@ type ErrDefaultLaneNotInList struct {
 func (e ErrDefaultLaneNotInList) Error() string {
 	return fmt.Sprintf("invalid lane info: list of lanes does not contain default lane; info %v", e.Info)
 }
+
+type ErrLaneNotFound struct {
+	laneID LaneID
+}
+
+func (e ErrLaneNotFound) Error() string {
+	return fmt.Sprintf("lane %s not found", e.laneID)
+}

@@ -76,13 +76,15 @@ func startNewStateAndWaitForBlock(
 	state, _ := stateStore.LoadFromDBOrGenesisFile(consensusReplayConfig.GenesisFile())
 	privValidator, err := loadPrivValidator(consensusReplayConfig)
 	require.NoError(t, err)
+	app := kvstore.NewInMemoryApplication()
+	_, lanesInfo := fetchAppInfo(t, app)
 	cs := newStateWithConfigAndBlockStore(
 		consensusReplayConfig,
 		state,
 		privValidator,
-		kvstore.NewInMemoryApplication(),
+		app,
 		blockDB,
-		nil,
+		lanesInfo,
 	)
 	cs.SetLogger(logger)
 
@@ -184,13 +186,15 @@ LOOP:
 		require.NoError(t, err)
 		privValidator, err := loadPrivValidator(consensusReplayConfig)
 		require.NoError(t, err)
+		app := kvstore.NewInMemoryApplication()
+		_, lanesInfo := fetchAppInfo(t, app)
 		cs := newStateWithConfigAndBlockStore(
 			consensusReplayConfig,
 			state,
 			privValidator,
 			kvstore.NewInMemoryApplication(),
 			blockDB,
-			nil,
+			lanesInfo,
 		)
 		cs.SetLogger(logger)
 

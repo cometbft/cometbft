@@ -74,15 +74,14 @@ const (
 // Testnet represents a single testnet.
 // It includes all fields from the associated Manifest instance.
 type Testnet struct {
-	Manifest
+	*Manifest
 
 	Name string
 	File string
 	Dir  string
 
 	IP               *net.IPNet
-	Validators       map[*Node]int64 // TODO: map of pointers? C'mon!!!
-	ValidatorUpdates map[int64]map[*Node]int64
+	ValidatorUpdates map[int64]map[string]int64
 	Nodes            []*Node
 }
 
@@ -141,15 +140,14 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	testnet := &Testnet{
-		Manifest: manifest,
+		Manifest: &manifest,
 
 		Name: filepath.Base(dir),
 		File: file,
 		Dir:  dir,
 
 		IP:               ipNet,
-		Validators:       map[*Node]int64{},
-		ValidatorUpdates: map[int64]map[*Node]int64{},
+		ValidatorUpdates: map[int64]map[string]int64{},
 		Nodes:            []*Node{},
 	}
 	if testnet.InitialHeight == 0 {
@@ -283,30 +281,24 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	// Set up genesis validators. If not specified explicitly, use all validator nodes.
-	if manifest.ValidatorsMap != nil {
-		for validatorName, power := range *manifest.ValidatorsMap {
-			validator := testnet.LookupNode(validatorName)
-			if validator == nil {
-				return nil, fmt.Errorf("unknown validator %q", validatorName)
-			}
-			testnet.Validators[validator] = power
-		}
-	} else {
+	if testnet.Validators == nil {
+		validatorsMap := make(map[string]int64)
 		for _, node := range testnet.Nodes {
 			if node.Mode == ModeValidator {
-				testnet.Validators[node] = 100
+				validatorsMap[node.Name] = 100
 			}
 		}
+		testnet.Validators = &validatorsMap
 	}
 
 	// Pick "lowest" validator by name
-	var minNode *Node
-	for n := range testnet.Validators {
-		if minNode == nil || n.Name < minNode.Name {
+	var minNode string
+	for n := range *testnet.Validators {
+		if minNode == "" || n < minNode {
 			minNode = n
 		}
 	}
-	if minNode == nil {
+	if minNode == "" {
 		return nil, errors.New("`testnet.Validators` is empty")
 	}
 
@@ -319,13 +311,13 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		if err != nil {
 			return nil, fmt.Errorf("invalid validator update height %q: %w", height, err)
 		}
-		valUpdate := map[*Node]int64{}
+		valUpdate := map[string]int64{}
 		for name, power := range validators {
 			node := testnet.LookupNode(name)
 			if node == nil {
 				return nil, fmt.Errorf("unknown validator %q for update at height %v", name, height)
 			}
-			valUpdate[node] = power
+			valUpdate[node.Name] = power
 		}
 		testnet.ValidatorUpdates[int64(height)] = valUpdate
 	}
@@ -335,7 +327,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		if _, ok := testnet.ValidatorUpdates[i]; ok {
 			continue
 		}
-		valUpdate := map[*Node]int64{
+		valUpdate := map[string]int64{
 			minNode: i % 2, // flipping every height
 		}
 		testnet.ValidatorUpdates[i] = valUpdate

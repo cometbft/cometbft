@@ -37,20 +37,14 @@ import (
 
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/libs/metrics/teststat"
 )
 
 func TestCounter(t *testing.T) {
-	s := httptest.NewServer(promhttp.HandlerFor(stdprometheus.DefaultGatherer, promhttp.HandlerOpts{}))
+	s := newServer()
 	defer s.Close()
-
-	scrape := func() string {
-		resp, _ := http.Get(s.URL)
-		buf, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		return string(buf)
-	}
 
 	namespace, subsystem, name := "ns", "ss", "foo"
 	re := regexp.MustCompile(namespace + `_` + subsystem + `_` + name + `{alpha="alpha-value",beta="beta-value"} ([0-9\.]+)`)
@@ -62,18 +56,14 @@ func TestCounter(t *testing.T) {
 		Help:      "This is the help string.",
 	}, []string{"alpha", "beta"}).With("beta", "beta-value", "alpha", "alpha-value") // order shouldn't matter
 
+	// minimal delay to allow the prometheus server come up with results and avoid errors during test
+	time.Sleep(100 * time.Millisecond)
+
 	value := func() float64 {
-		// Prometheus is eventually consistent, so we need to retry a few times.
-		retries := 5
-		for i := 0; i < retries; i++ {
-			matches := re.FindStringSubmatch(scrape())
-			if len(matches) > 0 {
-				f, _ := strconv.ParseFloat(matches[1], 64)
-				return f
-			}
-			time.Sleep(100 * time.Millisecond)
-		}
-		return -1
+		matches := re.FindStringSubmatch(scrape(t, s))
+		require.Greater(t, len(matches), 0)
+		f, _ := strconv.ParseFloat(matches[1], 64)
+		return f
 	}
 
 	if err := teststat.TestCounter(counter, value); err != nil {
@@ -82,15 +72,8 @@ func TestCounter(t *testing.T) {
 }
 
 func TestGauge(t *testing.T) {
-	s := httptest.NewServer(promhttp.HandlerFor(stdprometheus.DefaultGatherer, promhttp.HandlerOpts{}))
+	s := newServer()
 	defer s.Close()
-
-	scrape := func() string {
-		resp, _ := http.Get(s.URL)
-		buf, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		return string(buf)
-	}
 
 	namespace, subsystem, name := "aaa", "bbb", "ccc"
 	re := regexp.MustCompile(namespace + `_` + subsystem + `_` + name + `{foo="bar"} ([0-9\.]+)`)
@@ -102,8 +85,12 @@ func TestGauge(t *testing.T) {
 		Help:      "This is a different help string.",
 	}, []string{"foo"}).With("foo", "bar")
 
+	// minimal delay to allow the prometheus server come up with results and avoid errors during test
+	time.Sleep(100 * time.Millisecond)
+
 	value := func() []float64 {
-		matches := re.FindStringSubmatch(scrape())
+		matches := re.FindStringSubmatch(scrape(t, s))
+		require.Greater(t, len(matches), 0)
 		f, _ := strconv.ParseFloat(matches[1], 64)
 		return []float64{f}
 	}
@@ -114,15 +101,8 @@ func TestGauge(t *testing.T) {
 }
 
 func TestSummary(t *testing.T) {
-	s := httptest.NewServer(promhttp.HandlerFor(stdprometheus.DefaultGatherer, promhttp.HandlerOpts{}))
+	s := newServer()
 	defer s.Close()
-
-	scrape := func() string {
-		resp, _ := http.Get(s.URL)
-		buf, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		return string(buf)
-	}
 
 	namespace, subsystem, name := "test", "prometheus", "summary"
 	re50 := regexp.MustCompile(namespace + `_` + subsystem + `_` + name + `{a="a",b="b",quantile="0.5"} ([0-9\.]+)`)
@@ -137,8 +117,11 @@ func TestSummary(t *testing.T) {
 		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 	}, []string{"a", "b"}).With("b", "b").With("a", "a")
 
+	// minimal delay to allow the prometheus server come up with results and avoid errors during test
+	time.Sleep(100 * time.Millisecond)
+
 	quantiles := func() (float64, float64, float64, float64) {
-		buf := scrape()
+		buf := scrape(t, s)
 		match50 := re50.FindStringSubmatch(buf)
 		p50, _ := strconv.ParseFloat(match50[1], 64)
 		match90 := re90.FindStringSubmatch(buf)
@@ -159,15 +142,8 @@ func TestHistogram(t *testing.T) {
 	// limit. That is, the count monotonically increases over the buckets. This
 	// requires a different strategy to test.
 
-	s := httptest.NewServer(promhttp.HandlerFor(stdprometheus.DefaultGatherer, promhttp.HandlerOpts{}))
+	s := newServer()
 	defer s.Close()
-
-	scrape := func() string {
-		resp, _ := http.Get(s.URL)
-		buf, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		return string(buf)
-	}
 
 	namespace, subsystem, name := "test", "prometheus", "histogram"
 	re := regexp.MustCompile(namespace + `_` + subsystem + `_` + name + `_bucket{x="1",le="([0-9]+|\+Inf)"} ([0-9\.]+)`)
@@ -193,13 +169,16 @@ func TestHistogram(t *testing.T) {
 		Buckets:   buckets,
 	}, []string{"x"}).With("x", "1")
 
+	// minimal delay to allow the prometheus server come up with results and avoid errors during test
+	time.Sleep(100 * time.Millisecond)
+
 	// Can't TestHistogram, because Prometheus Histograms don't dynamically
 	// compute quantiles. Instead, they fill up buckets. So, let's populate the
 	// histogram kind of manually.
 	teststat.PopulateNormalHistogram(histogram, rand.Int())
 
 	// Then, we use ExpectedObservationsLessThan to validate.
-	for _, line := range strings.Split(scrape(), "\n") {
+	for _, line := range strings.Split(scrape(t, s), "\n") {
 		match := re.FindStringSubmatch(line)
 		if match == nil {
 			continue
@@ -247,4 +226,20 @@ func TestInconsistentLabelCardinality(t *testing.T) {
 	}, []string{"a", "b"}).With(
 		"a", "1", "b", "2", "c", "KABOOM!",
 	).Add(123)
+}
+
+func newServer() *httptest.Server {
+	return httptest.NewServer(promhttp.HandlerFor(stdprometheus.DefaultGatherer, promhttp.HandlerOpts{}))
+}
+
+func scrape(t *testing.T, s *httptest.Server) string {
+	t.Helper()
+
+	resp, err := http.Get(s.URL)
+	require.NoError(t, err)
+	buf, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = resp.Body.Close()
+	require.NoError(t, err)
+	return string(buf)
 }

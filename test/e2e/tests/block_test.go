@@ -152,7 +152,7 @@ func TestBlock_Time(t *testing.T) {
 
 	// blocks are 1-indexed, i.e., blocks[0] = height 1, blocks[1] = height 2, etc.
 	lastBlock := blocks[0]
-	valSchedule := newValidatorSchedule(testnet)
+	valSchedule := newValidatorSchedule(t, &testnet)
 	for _, block := range blocks[1:] {
 		require.Less(t, lastBlock.Time, block.Time)
 		lastBlock = block

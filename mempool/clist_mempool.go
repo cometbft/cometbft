@@ -291,7 +291,7 @@ func (mem *CListMempool) LaneSizes(lane LaneID) (numTxs int, bytes int64) {
 
 	txs, ok := mem.lanes[lane]
 	if !ok {
-		panic(fmt.Errorf("lane %s not found while fetching lane size", lane))
+		panic(ErrLaneNotFound{laneID: lane})
 	}
 	return txs.Len(), bytes
 }
@@ -424,11 +424,11 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 			return ErrInvalidTx
 		}
 
-		// If the app returned a (non-zero) lane, use it; otherwise use the default lane.
+		// If the app returned a non-empty lane, use it; otherwise use the default lane.
 		lane := mem.defaultLane
 		if res.LaneId != "" {
 			if _, ok := mem.lanes[lane]; !ok {
-				panic(ErrLaneNotFound{LaneID: lane, TxHash: tx.Hash()})
+				panic(ErrLaneNotFound{laneID: lane})
 			}
 			lane = LaneID(res.LaneId)
 		}
@@ -475,7 +475,7 @@ func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane
 	// Get lane's clist.
 	txs, ok := mem.lanes[lane]
 	if !ok {
-		panic(ErrLaneNotFound{LaneID: lane, TxHash: tx.Hash()})
+		panic(ErrLaneNotFound{laneID: lane})
 	}
 
 	// Increase sequence number.

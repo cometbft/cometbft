@@ -149,10 +149,9 @@ func (e ErrDefaultLaneNotInList) Error() string {
 }
 
 type ErrLaneNotFound struct {
-	LaneID LaneID
-	TxHash []byte
+	laneID LaneID
 }
 
 func (e ErrLaneNotFound) Error() string {
-	return fmt.Sprintf("lane %s not found while adding tx %X", e.LaneID, e.TxHash)
+	return fmt.Sprintf("lane %s not found", e.laneID)
 }

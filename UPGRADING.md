@@ -26,7 +26,7 @@ versioning:
 
 ### Building CometBFT
 
-The minimum Go version has been bumped to [v1.22][go122].
+The minimum Go version has been bumped to [v1.23][go123].
 
 ### Proposer-Based Timestamps
 
@@ -223,6 +223,18 @@ definitions:
   rpcClient, err := client.New("http://localhost:26657/v1")
   ```
 
+### Config Changes
+
+- `consensus.skip_timeout_commit` has been removed in favor of `consensus.timeout_commit=0s`.
+
+### Database
+
+- The default database has been changed from `goleveldb` to
+  [`pebble`](https://github.com/cockroachdb/pebble). If you are using
+  `goleveldb` and wish to continue using it, you need to build CometBFT with
+  the `goleveldb` build tag (`BUILD_TAGS=goleveldb make build` or
+  `BUILD_TAGS=goleveldb make install`).
+
 ## v0.38.0
 
 This release introduces state machine-breaking changes, as well as substantial changes
@@ -394,5 +406,5 @@ please see the [Tendermint Core upgrading instructions][tmupgrade].
 [discussions]: https://github.com/cometbft/cometbft/discussions
 [tmupgrade]: https://github.com/tendermint/tendermint/blob/35581cf54ec436b8c37fabb43fdaa3f48339a170/UPGRADING.md
 [go120]: https://go.dev/blog/go1.20
-[go122]: https://go.dev/blog/go1.22
+[go123]: https://go.dev/blog/go1.23
 [pbts-spec]: ./spec/consensus/proposer-based-timestamp/README.md

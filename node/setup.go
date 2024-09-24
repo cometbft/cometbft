@@ -265,14 +265,6 @@ func logNodeStartupInfo(state sm.State, pubKey crypto.PubKey, logger, consensusL
 	}
 }
 
-func onlyValidatorIsUs(state sm.State, localAddr crypto.Address) bool {
-	if state.Validators.Size() > 1 {
-		return false
-	}
-	valAddr, _ := state.Validators.GetByIndex(0)
-	return bytes.Equal(localAddr, valAddr)
-}
-
 // createMempoolAndMempoolReactor creates a mempool and a mempool reactor based on the config.
 func createMempoolAndMempoolReactor(
 	config *cfg.Config,

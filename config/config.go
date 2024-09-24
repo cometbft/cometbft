@@ -229,25 +229,22 @@ type BaseConfig struct {
 	// A custom human readable name for this node
 	Moniker string `mapstructure:"moniker"`
 
-	// Database backend: goleveldb | rocksdb | badgerdb | pebbledb
+	// Database backend: badgerdb | goleveldb | pebbledb | rocksdb
+	// * badgerdb (uses github.com/dgraph-io/badger)
+	//   - stable
+	//   - pure go
+	//   - use badgerdb build tag (go build -tags badgerdb)
 	// * goleveldb (github.com/syndtr/goleveldb)
 	//   - UNMAINTAINED
 	//   - stable
 	//   - pure go
+	//   - use goleveldb build tag (go build -tags goleveldb)
+	// * pebbledb (uses github.com/cockroachdb/pebble)
+	//   - stable
+	//   - pure go
 	// * rocksdb (uses github.com/linxGnu/grocksdb)
-	//   - EXPERIMENTAL
 	//   - requires gcc
 	//   - use rocksdb build tag (go build -tags rocksdb)
-	// * badgerdb (uses github.com/dgraph-io/badger)
-	//   - EXPERIMENTAL
-	//   - stable
-	//   - pure go
-	//   - use badgerdb build tag (go build -tags badgerdb)
-	// * pebbledb (uses github.com/cockroachdb/pebble)
-	//   - EXPERIMENTAL
-	//   - stable
-	//   - pure go
-	//   - use pebbledb build tag (go build -tags pebbledb)
 	DBBackend string `mapstructure:"db_backend"`
 
 	// Database directory
@@ -297,7 +294,7 @@ func DefaultBaseConfig() BaseConfig {
 		LogLevel:           DefaultLogLevel,
 		LogFormat:          LogFormatPlain,
 		FilterPeers:        false,
-		DBBackend:          "goleveldb",
+		DBBackend:          "pebbledb",
 		DBPath:             DefaultDataDir,
 	}
 }
@@ -966,7 +963,7 @@ type MempoolConfig struct {
 	// transactions and a 5MB maximum mempool byte size, the mempool will
 	// only accept five transactions.
 	MaxTxsBytes int64 `mapstructure:"max_txs_bytes"`
-	// Size of the cache (used to filter transactions we saw earlier) in transactions
+	// Size of the cache (used to filter transactions we saw earlier) in transactions.
 	CacheSize int `mapstructure:"cache_size"`
 	// Do not remove invalid transactions from the cache (default: false)
 	// Set to true if it's not possible for any invalid transaction to become
@@ -1045,6 +1042,20 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 	if cfg.ExperimentalMaxGossipConnectionsToNonPersistentPeers < 0 {
 		return cmterrors.ErrNegativeField{Field: "experimental_max_gossip_connections_to_non_persistent_peers"}
 	}
+
+	// Flood mempool with zero capacity is not allowed.
+	if cfg.Type != MempoolTypeNop {
+		if cfg.Size == 0 {
+			return cmterrors.ErrNegativeOrZeroField{Field: "size"}
+		}
+		if cfg.MaxTxsBytes == 0 {
+			return cmterrors.ErrNegativeOrZeroField{Field: "max_txs_bytes"}
+		}
+		if cfg.MaxTxBytes == 0 {
+			return cmterrors.ErrNegativeOrZeroField{Field: "max_tx_bytes"}
+		}
+	}
+
 	return nil
 }
 

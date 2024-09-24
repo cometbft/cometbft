@@ -38,6 +38,7 @@ Check logs for full evidence and trace`)
 	ErrRemoveStoredBlocksRefused = errors.New("refused to remove the stored light blocks despite hashes mismatch")
 	ErrNoHeadersExist            = errors.New("no headers exist")
 	ErrNilHeader                 = errors.New("nil header")
+	ErrEmptyTrustedStore         = errors.New("trusted store is empty")
 )
 
 // ErrOldHeaderExpired means the old (trusted) header has expired according to
@@ -441,19 +442,35 @@ func (e ErrVerificationFailed) Error() string {
 	return fmt.Sprintf("verify from #%d to #%d failed: %v", e.From, e.To, e.Reason)
 }
 
-// ----------------------------- INTERNAL ERRORS ---------------------------------
-
 // ErrConflictingHeaders is thrown when two conflicting headers are discovered.
-type errConflictingHeaders struct {
+type ErrConflictingHeaders struct {
 	Block        *types.LightBlock
 	WitnessIndex int
 }
 
-func (e errConflictingHeaders) Error() string {
+func (e ErrConflictingHeaders) Error() string {
 	return fmt.Sprintf(
 		"header hash (%X) from witness (%d) does not match primary",
 		e.Block.Hash(), e.WitnessIndex)
 }
+
+// ErrProposerPrioritiesDiverge is thrown when two conflicting headers are
+// discovered, but the error is non-attributable comparing to ErrConflictingHeaders.
+// The difference is in validator set proposer priorities, which may change
+// with every round of consensus.
+type ErrProposerPrioritiesDiverge struct {
+	WitnessHash  []byte
+	WitnessIndex int
+	PrimaryHash  []byte
+}
+
+func (e ErrProposerPrioritiesDiverge) Error() string {
+	return fmt.Sprintf(
+		"validator set's proposer priority hashes do not match: witness[%d]=%X, primary=%X",
+		e.WitnessIndex, e.WitnessHash, e.PrimaryHash)
+}
+
+// ----------------------------- INTERNAL ERRORS ---------------------------------
 
 // errBadWitness is returned when the witness either does not respond or
 // responds with an invalid header.

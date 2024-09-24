@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/mitchellh/mapstructure"
+	"github.com/spf13/viper"
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -148,9 +150,13 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	if testnet.PbtsUpdateHeight == -1 {
 		genesis.ConsensusParams.Feature.PbtsEnableHeight = testnet.PbtsEnableHeight
 	}
-	for validator, power := range testnet.Validators {
+	for valName, power := range *testnet.Manifest.Validators {
+		validator := testnet.LookupNode(valName)
+		if validator == nil {
+			return types.GenesisDoc{}, fmt.Errorf("unknown validator %q for genesis doc", valName)
+		}
 		genesis.Validators = append(genesis.Validators, types.GenesisValidator{
-			Name:    validator.Name,
+			Name:    valName,
 			Address: validator.PrivvalKey.PubKey().Address(),
 			PubKey:  validator.PrivvalKey.PubKey(),
 			Power:   power,
@@ -164,11 +170,40 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	if len(testnet.InitialState) > 0 {
 		appState, err := json.Marshal(testnet.InitialState)
 		if err != nil {
-			return genesis, err
+			return types.GenesisDoc{}, err
 		}
 		genesis.AppState = appState
 	}
-	return genesis, genesis.ValidateAndComplete()
+
+	// Customized genesis fields provided in the manifest
+	if len(testnet.Genesis) > 0 {
+		v := viper.New()
+		v.SetConfigType("json")
+
+		for _, field := range testnet.Genesis {
+			key, value, err := e2e.ParseKeyValueField("genesis", field)
+			if err != nil {
+				return types.GenesisDoc{}, err
+			}
+			logger.Debug("Applying 'genesis' field", key, value)
+			v.Set(key, value)
+		}
+
+		// We use viper because it leaves untouched keys that are not set.
+		// The GenesisDoc does not use the original `mapstructure` tag.
+		err := v.Unmarshal(&genesis, func(d *mapstructure.DecoderConfig) {
+			d.TagName = "json"
+			d.ErrorUnused = true
+		})
+		if err != nil {
+			return types.GenesisDoc{}, fmt.Errorf("failed parsing 'genesis' field: %v", err)
+		}
+	}
+
+	if err := genesis.ValidateAndComplete(); err != nil {
+		return types.GenesisDoc{}, err
+	}
+	return genesis, nil
 }
 
 // MakeConfig generates a CometBFT config for a node.
@@ -316,6 +351,26 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	if node.CompactionInterval != 0 && node.Compact {
 		cfg.Storage.CompactionInterval = node.CompactionInterval
 	}
+
+	// We currently need viper in order to parse config files.
+	if len(node.Config) > 0 {
+		v := viper.New()
+		for _, field := range node.Config {
+			key, value, err := e2e.ParseKeyValueField("config", field)
+			if err != nil {
+				return nil, err
+			}
+			logger.Debug("Applying 'config' field", "node", node.Name, key, value)
+			v.Set(key, value)
+		}
+		err := v.Unmarshal(cfg, func(d *mapstructure.DecoderConfig) {
+			d.ErrorUnused = true
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed parsing 'config' field of node %v: %v", node.Name, err)
+		}
+	}
+
 	return cfg, nil
 }
 
@@ -377,8 +432,12 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		validatorUpdates := map[string]map[string]int64{}
 		for height, validators := range node.Testnet.ValidatorUpdates {
 			updateVals := map[string]int64{}
-			for node, power := range validators {
-				updateVals[base64.StdEncoding.EncodeToString(node.PrivvalKey.PubKey().Bytes())] = power
+			for valName, power := range validators {
+				validator := node.Testnet.LookupNode(valName)
+				if validator == nil {
+					return nil, fmt.Errorf("unknown validator %q for validator updates in testnet, height %d", valName, height)
+				}
+				updateVals[base64.StdEncoding.EncodeToString(validator.PrivvalKey.PubKey().Bytes())] = power
 			}
 			validatorUpdates[strconv.FormatInt(height, 10)] = updateVals
 		}

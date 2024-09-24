@@ -66,7 +66,7 @@ func BenchmarkBlockerIndexer_Prune(_ *testing.B) {
 		}
 	}()
 
-	store, err := db.NewDB("block", db.GoLevelDBBackend, config.DBDir())
+	store, err := db.NewDB("block", db.PebbleDBBackend, config.DBDir())
 	if err != nil {
 		panic(err)
 	}

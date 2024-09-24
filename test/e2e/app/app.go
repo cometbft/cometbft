@@ -12,6 +12,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -809,24 +810,43 @@ func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate) error {
 
 // validatorUpdates generates a validator set update.
 func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, error) {
+	// updates is map [string]uint8 of the form "validator_name" => voting_power
 	updates := app.cfg.ValidatorUpdates[strconv.FormatUint(height, 10)]
 	if len(updates) == 0 {
 		return nil, nil
 	}
 
-	valUpdates := abci.ValidatorUpdates{}
-	for keyString, power := range updates { // TODO non deterministic
-		keyBytes, err := base64.StdEncoding.DecodeString(keyString)
+	// Collect the validator names into a slice and sort it to ensure deterministic
+	// iteration when creating the ValidatorUpdates below, since map traversal is
+	// non-deterministic.
+	validatorsNames := make([]string, 0, len(updates))
+	for validatorName := range updates {
+		validatorsNames = append(validatorsNames, validatorName)
+	}
+	slices.Sort(validatorsNames)
+
+	validatorsUpdates := make(abci.ValidatorUpdates, len(updates))
+	for i, validatorName := range validatorsNames {
+		power := updates[validatorName]
+
+		keyBytes, err := base64.StdEncoding.DecodeString(validatorName)
 		if err != nil {
-			return nil, fmt.Errorf("invalid base64 pubkey value %q: %w", keyString, err)
+			formatStr := "invalid base64 pubkey value %q: %w"
+			return nil, fmt.Errorf(formatStr, validatorName, err)
 		}
-		valUpdate := abci.ValidatorUpdate{Power: int64(power), PubKeyType: app.cfg.KeyType, PubKeyBytes: keyBytes}
-		valUpdates = append(valUpdates, valUpdate)
-		if err := app.storeValidator(&valUpdate); err != nil {
+
+		validatorUpdate := abci.ValidatorUpdate{
+			Power:       int64(power),
+			PubKeyType:  app.cfg.KeyType,
+			PubKeyBytes: keyBytes,
+		}
+
+		validatorsUpdates[i] = validatorUpdate
+		if err := app.storeValidator(&validatorUpdate); err != nil {
 			return nil, err
 		}
 	}
-	return valUpdates, nil
+	return validatorsUpdates, nil
 }
 
 // logAbciRequest log the request using the app's logger.

@@ -277,7 +277,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// Do not send this transaction if we receive it from peer.
 		if entry.IsSender(peer.ID()) {
 			memR.Logger.Debug("Skipping transaction, peer is sender",
-				"tx", entry.Tx(), "peer", peer.ID())
+				"tx", log.NewLazySprintf("%X", entry.Tx().Hash()), "peer", peer.ID())
 			continue
 		}
 
@@ -289,7 +289,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			}
 
 			memR.Logger.Debug("Sending transaction to peer",
-				"tx", entry.Tx(), "peer", peer.ID())
+				"tx", log.NewLazySprintf("%X", entry.Tx().Hash()), "peer", peer.ID())
 
 			success := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
@@ -300,7 +300,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			}
 
 			memR.Logger.Debug("Failed sending transaction to peer",
-				"tx", entry.Tx(), "peer", peer.ID())
+				"tx", log.NewLazySprintf("%X", entry.Tx().Hash()), "peer", peer.ID())
 
 			select {
 			case <-time.After(PeerCatchupSleepIntervalMS * time.Millisecond):

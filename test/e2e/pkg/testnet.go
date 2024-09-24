@@ -176,7 +176,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		testnet.LoadTxSizeBytes = defaultTxSizeBytes
 	}
 
-	for _, name := range sortNodeNames(manifest) {
+	for _, name := range sortNodeNames(&manifest) {
 		nodeManifest := manifest.NodesMap[name]
 		ind, ok := ifd.Instances[name]
 		if !ok {

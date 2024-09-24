@@ -28,7 +28,7 @@ type DataPoint struct {
 	Duration  time.Duration
 	BlockTime time.Time
 	Hash      []byte
-	Lane      uint32
+	Lane      string
 }
 
 // Report contains the data calculated from reading the timestamped transactions
@@ -72,7 +72,7 @@ func (rs *Reports) ErrorCount() int {
 	return rs.errorCount
 }
 
-func (rs *Reports) addDataPoint(id uuid.UUID, lane uint32, l time.Duration, bt time.Time, hash []byte, conns, rate, size uint64) {
+func (rs *Reports) addDataPoint(id uuid.UUID, lane string, l time.Duration, bt time.Time, hash []byte, conns, rate, size uint64) {
 	r, ok := rs.s[id]
 	if !ok {
 		r = Report{
@@ -131,7 +131,7 @@ func (rs *Reports) addError() {
 func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 	type payloadData struct {
 		id                      uuid.UUID
-		lane                    *payload.Lane
+		lane                    string
 		l                       time.Duration
 		bt                      time.Time
 		hash                    []byte
@@ -216,7 +216,7 @@ func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 			reports.addError()
 			continue
 		}
-		reports.addDataPoint(pd.id, pd.lane.GetPriority(), pd.l, pd.bt, pd.hash, pd.connections, pd.rate, pd.size)
+		reports.addDataPoint(pd.id, pd.lane, pd.l, pd.bt, pd.hash, pd.connections, pd.rate, pd.size)
 	}
 	reports.calculateAll()
 	return reports, nil

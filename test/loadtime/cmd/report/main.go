@@ -107,7 +107,7 @@ func toCSVRecords(rs []report.Report) [][]string {
 				strconv.FormatInt(v.BlockTime.UnixNano(), 10),
 				strconv.FormatInt(int64(v.Duration), 10),
 				fmt.Sprintf("%X", v.Hash),
-				strconv.FormatInt(int64(v.Lane), 10),
+				v.Lane,
 				connStr,
 				rateStr,
 				sizeStr,

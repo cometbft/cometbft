@@ -90,9 +90,7 @@ type Manifest struct {
 
 	// Weight for each lane defined by the app. The transaction loader will
 	// assign lanes to generated transactions proportionally to their weights.
-	// Note that the lanes are sorted by priority in descending order, thus the
-	// first weight in the array will be the weight of the highest priority lane.
-	LoadLaneWeights []uint `toml:"load_lane_weights"`
+	LoadLaneWeights map[string]uint `toml:"load_lane_weights"`
 
 	// LogLevel specifies the log level to be set on all nodes.
 	LogLevel string `toml:"log_level"`
@@ -153,10 +151,8 @@ type Manifest struct {
 	// that supports lanes but do not opt for using them.
 	NoLanes bool `toml:"no_lanes"`
 
-	// Optional custom definition of lanes to be used by the application
-	// If not used the application has a default set of lanes:
-	// {"foo"= 9,"bar"=4,"default"= 1}
-	// Note that the default key has to be present in your list of custom lanes.
+	// Mapping from lane IDs to lane priorities. These lanes will be used by the
+	// application for setting up the mempool and for classifying transactions.
 	Lanes map[string]uint32 `toml:"lanes"`
 
 	// Genesis is a set of key-value config entries to write to the

@@ -28,7 +28,6 @@ import (
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
 	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
 	"github.com/cometbft/cometbft/test/e2e/app"
-	"github.com/cometbft/cometbft/test/loadtime/payload"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -88,8 +87,11 @@ type Testnet struct {
 	ValidatorUpdates map[int64]map[*Node]int64
 	Nodes            []*Node
 
-	lanePriorities []payload.Lane
-	sumWeights     uint
+	// For generating transaction load on lanes proportionally to their
+	// priorities.
+	laneIDs               []string
+	laneCumulativeWeights []uint
+	sumWeights            uint
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -145,8 +147,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	if err != nil {
 		return nil, fmt.Errorf("invalid IP network address %q: %w", ifd.Network, err)
 	}
-	// Pre-load hard-coded lane values from app.
-	_, priorities := app.LaneDefinitions(manifest.Lanes)
 	testnet := &Testnet{
 		Manifest: manifest,
 
@@ -158,8 +158,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		Validators:       map[*Node]int64{},
 		ValidatorUpdates: map[int64]map[*Node]int64{},
 		Nodes:            []*Node{},
-
-		lanePriorities: priorities,
 	}
 	if testnet.InitialHeight == 0 {
 		testnet.InitialHeight = 1
@@ -182,16 +180,34 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	if testnet.LoadTxSizeBytes == 0 {
 		testnet.LoadTxSizeBytes = defaultTxSizeBytes
 	}
-	if len(testnet.Manifest.LoadLaneWeights) == 0 {
+
+	if len(testnet.Lanes) == 0 {
+		testnet.Lanes = app.DefaultLanes()
+	}
+	if len(testnet.LoadLaneWeights) == 0 {
 		// Assign same weight to all lanes.
-		testnet.Manifest.LoadLaneWeights = make([]uint, len(testnet.lanePriorities))
-		for i := 0; i < len(testnet.lanePriorities); i++ {
-			testnet.Manifest.LoadLaneWeights[i] = 1
+		testnet.LoadLaneWeights = make(map[string]uint, len(testnet.Lanes))
+		for id := range testnet.Lanes {
+			testnet.LoadLaneWeights[id] = 1
 		}
 	}
-	// Pre-calculate the sum of all lane weights.
-	for _, w := range testnet.Manifest.LoadLaneWeights {
-		testnet.sumWeights += w
+	if len(testnet.Lanes) < 1 {
+		return nil, errors.New("number of lanes must be greater or equal to one")
+	}
+
+	// Pre-compute lane data needed for generating transaction load.
+	testnet.laneIDs = make([]string, 0, len(testnet.Lanes))
+	laneWeights := make([]uint, 0, len(testnet.Lanes))
+	for lane := range testnet.Lanes {
+		testnet.laneIDs = append(testnet.laneIDs, lane)
+		weight := testnet.LoadLaneWeights[lane]
+		laneWeights = append(laneWeights, weight)
+		testnet.sumWeights += weight
+	}
+	testnet.laneCumulativeWeights = make([]uint, len(testnet.Lanes))
+	testnet.laneCumulativeWeights[0] = laneWeights[0]
+	for i := 1; i < len(testnet.laneCumulativeWeights); i++ {
+		testnet.laneCumulativeWeights[i] = testnet.laneCumulativeWeights[i-1] + laneWeights[i]
 	}
 
 	for _, name := range sortNodeNames(manifest) {
@@ -414,16 +430,19 @@ func (t Testnet) Validate() error {
 			)
 		}
 	}
-	if len(t.Manifest.LoadLaneWeights) != len(t.lanePriorities) {
+	if len(t.LoadLaneWeights) != len(t.Lanes) {
 		return fmt.Errorf("number of lane weights (%d) must be equal to "+
 			"the number of lanes defined by the app (%d)",
-			len(t.LoadLaneWeights), len(t.lanePriorities),
+			len(t.LoadLaneWeights), len(t.Lanes),
 		)
 	}
-	for _, w := range t.Manifest.LoadLaneWeights {
-		if w <= 0 {
-			return fmt.Errorf("weight must be greater than 0: %v", w)
+	for lane := range t.Lanes {
+		if _, ok := t.LoadLaneWeights[lane]; !ok {
+			return fmt.Errorf("lane %s not in weights map", lane)
 		}
+	}
+	if t.sumWeights <= 0 {
+		return errors.New("the sum of all lane weights must be greater than 0")
 	}
 	for _, node := range t.Nodes {
 		if err := node.Validate(t); err != nil {
@@ -623,27 +642,26 @@ func (t Testnet) HasPerturbations() bool {
 	return false
 }
 
-// weightedRandomIndex, given a list of weights and the sum of all weights, it
-// picks one of them randomly and proportionally to its weight, and returns its
-// index in the list.
-func weightedRandomIndex(weights []uint, sumWeights uint) int {
+// weightedRandomIndex, given a list of cumulative weights and the sum of all
+// weights, it picks one of them randomly and proportionally to its weight, and
+// returns its index in the list.
+func weightedRandomIndex(cumWeights []uint, sumWeights uint) int {
+	// Generate a random number in the range [0, sumWeights).
 	r := cmtrand.Int31n(int32(sumWeights))
 
-	// Return i when the random number falls in the i'th bucket.
-	cursor := uint(0)
-	for i, w := range weights {
-		cursor += w
-		if int32(cursor) > r {
+	// Return i when the random number falls in the i'th interval.
+	for i, cumWeight := range cumWeights {
+		if r < int32(cumWeight) {
 			return i
 		}
 	}
 	return -1 // unreachable
 }
 
-// NextLane returns the next element in the list of lanes, according to a
+// WeightedRandomLane returns an element in the list of lane ids, according to a
 // predefined weight for each lane in the list.
-func (t *Testnet) NextLane() *payload.Lane {
-	return &t.lanePriorities[weightedRandomIndex(t.Manifest.LoadLaneWeights, t.sumWeights)]
+func (t *Testnet) WeightedRandomLane() string {
+	return t.laneIDs[weightedRandomIndex(t.laneCumulativeWeights, t.sumWeights)]
 }
 
 //go:embed templates/prometheus-yaml.tmpl

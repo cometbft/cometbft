@@ -51,9 +51,8 @@ type Config struct {
 	PbtsEnableHeight int64 `toml:"pbts_enable_height"`
 	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
 
-	NoLanes bool `toml:"no_lanes"`
-
-	Lanes map[string]uint32 `toml:"lanes"`
+	NoLanes bool              `toml:"no_lanes"`
+	Lanes   map[string]uint32 `toml:"lanes"`
 }
 
 // App extracts out the application specific configuration parameters.

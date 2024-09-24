@@ -12,7 +12,6 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -44,7 +43,6 @@ const (
 	suffixPbtsHeight    string = "PbtsHeight"
 	suffixInitialHeight string = "InitialHeight"
 	txTTL               uint64 = 5 // height difference at which transactions should be invalid
-	defaultLane         string = "default"
 )
 
 // Application is an ABCI application for use by end-to-end tests. It is a
@@ -145,10 +143,8 @@ type Config struct {
 	// on top of CometBFT with lane support.
 	NoLanes bool `toml:"no_lanes"`
 
-	// Optional custom definition of lanes to be used by the application
-	// If not used the application has a default set of lanes:
-	// {"foo"= 9,"bar"=4,"default"= 1}
-	// Note that the default key has to be present in your list of custom lanes.
+	// Mapping from lane IDs to lane priorities. These lanes will be used by the
+	// application for setting up the mempool and for classifying transactions.
 	Lanes map[string]uint32 `toml:"lanes"`
 }
 
@@ -157,31 +153,18 @@ func DefaultConfig(dir string) *Config {
 		PersistInterval:  1,
 		SnapshotInterval: 100,
 		Dir:              dir,
+		Lanes:            DefaultLanes(),
 	}
 }
 
-// LaneDefinitions returns the (constant) list of lanes and their priorities.
-func LaneDefinitions(lanes map[string]uint32) (map[string]uint32, []payload.Lane) {
-	// Map from lane name to its priority. Priority 0 is reserved. The higher
-	// the value, the higher the priority.
-	if len(lanes) == 0 {
-		lanes = map[string]uint32{
-			"foo":       9,
-			"bar":       4,
-			defaultLane: 1,
-		}
+func DefaultLanes() map[string]uint32 {
+	return map[string]uint32{
+		"100": 100,
+		"50":  50,
+		"10":  10,
+		"5":   5,
+		"1":   1,
 	}
-
-	// List of lane priorities
-	priorities := make([]payload.Lane, 0, len(lanes))
-	for id, p := range lanes {
-		priorities = append(priorities, payload.Lane{Id: id, Priority: p})
-	}
-	sort.Slice(priorities, func(i, j int) bool {
-		return priorities[i].GetPriority() > priorities[j].GetPriority()
-	})
-
-	return lanes, priorities
 }
 
 // NewApplication creates the application.
@@ -205,13 +188,12 @@ func NewApplication(cfg *Config) (*Application, error) {
 		}, nil
 	}
 
-	lanes, _ := LaneDefinitions(cfg.Lanes)
 	return &Application{
 		logger:         logger,
 		state:          state,
 		snapshots:      snapshots,
 		cfg:            cfg,
-		lanePriorities: lanes,
+		lanePriorities: cfg.Lanes,
 	}, nil
 }
 
@@ -232,17 +214,22 @@ func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResp
 		}, nil
 	}
 
-	defaultAppLane := ""
-	if len(app.lanePriorities) > 0 {
-		defaultAppLane = "default"
+	// We set as default lane the (random) first lane id found in the list of
+	// lanes. On CheckTx requests, the application will always return a valid
+	// lane, so the mempool will never need to use the default lane value.
+	var defaultLane string
+	for id := range app.lanePriorities {
+		defaultLane = id
+		break
 	}
+
 	return &abci.InfoResponse{
 		Version:          version.ABCIVersion,
 		AppVersion:       appVersion,
 		LastBlockHeight:  int64(height),
 		LastBlockAppHash: hash,
 		LanePriorities:   app.lanePriorities,
-		DefaultLane:      defaultAppLane,
+		DefaultLane:      defaultLane,
 	}, nil
 }
 
@@ -377,7 +364,7 @@ func extractLane(value string) string {
 	if err != nil {
 		return ""
 	}
-	return p.GetLane().GetId()
+	return p.GetLane()
 }
 
 // FinalizeBlock implements ABCI.

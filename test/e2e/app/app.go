@@ -810,7 +810,7 @@ func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate) error {
 
 // validatorUpdates generates a validator set update.
 func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, error) {
-	// updates is map [string]uint8 of the form "validator_name" => voting_power
+	// updates is map[string]uint8 of the form "validator_name" => voting_power
 	updates := app.cfg.ValidatorUpdates[strconv.FormatUint(height, 10)]
 	if len(updates) == 0 {
 		return nil, nil

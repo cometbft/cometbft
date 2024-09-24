@@ -73,23 +73,23 @@ func NewApplication(db dbm.DB, lanes map[string]uint32) *Application {
 }
 
 // newDB creates a DB engine for persisting the application state.
-func newDB(dbDir string) *dbm.GoLevelDB {
+func newDB(dbDir string) *dbm.PebbleDB {
 	name := "kvstore"
-	db, err := dbm.NewGoLevelDB(name, dbDir)
+	db, err := dbm.NewPebbleDB(name, dbDir)
 	if err != nil {
 		panic(fmt.Errorf("failed to create persistent app at %s: %w", dbDir, err))
 	}
 	return db
 }
 
-// NewPersistentApplication creates a new application using the goleveldb
+// NewPersistentApplication creates a new application using the pebbledb
 // database engine and default lanes.
 func NewPersistentApplication(dbDir string) *Application {
 	return NewApplication(newDB(dbDir), DefaultLanes())
 }
 
 // NewPersistentApplicationWithoutLanes creates a new application using the
-// goleveldb database engine and without lanes.
+// pebbledb database engine and without lanes.
 func NewPersistentApplicationWithoutLanes(dbDir string) *Application {
 	return NewApplication(newDB(dbDir), nil)
 }

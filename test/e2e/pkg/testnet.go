@@ -294,11 +294,11 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	// Pick "lowest" validator by name
 	var minNode string
 	for n := range *testnet.Validators {
-		if minNode == "" || n < minNode {
+		if len(minNode) == 0 || n < minNode {
 			minNode = n
 		}
 	}
-	if minNode == "" {
+	if len(minNode) == 0 {
 		return nil, errors.New("`testnet.Validators` is empty")
 	}
 

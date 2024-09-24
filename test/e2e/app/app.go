@@ -43,7 +43,7 @@ const (
 	suffixVoteExtHeight string = "VoteExtensionsHeight"
 	suffixPbtsHeight    string = "PbtsHeight"
 	suffixInitialHeight string = "InitialHeight"
-	txTTL               uint64 = 5 // height difference at which transactions should be invalid
+	txTTL               uint64 = 15 // height difference at which transactions should be invalid
 	defaultLane         string = "default"
 )
 

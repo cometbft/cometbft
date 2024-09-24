@@ -432,7 +432,8 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 
 		if err := mem.isLaneFull(len(tx), lane); err != nil {
 			mem.forceRemoveFromCache(tx) // lane might have space later
-			mem.logger.Error(err.Error())
+			// use debug level to avoid spamming logs when traffic is high
+			mem.logger.Debug(err.Error())
 			mem.metrics.RejectedTxs.Add(1)
 			return err
 		}

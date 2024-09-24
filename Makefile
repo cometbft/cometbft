@@ -260,7 +260,6 @@ pre-commit:
 
 DESTINATION = ./index.html.md
 
-
 ###############################################################################
 ###                           Documentation                                 ###
 ###############################################################################
@@ -287,36 +286,6 @@ build-docker:
 ###############################################################################
 ###                       Local testnet using docker                        ###
 ###############################################################################
-
-#? build-linux: Build linux binary on other platforms
-build-linux:
-	GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) $(MAKE) build
-.PHONY: build-linux
-
-#? build-docker-localnode: Build the "localnode" docker image
-build-docker-localnode:
-	@cd networks/local && make
-.PHONY: build-docker-localnode
-
-
-#? localnet-start: Run a 4-node testnet locally
-localnet-start: localnet-stop build-docker-localnode
-	@if ! [ -f build/node0/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/cometbft:Z cometbft/localnode testnet --config /etc/cometbft/config-template.toml --o . --starting-ip-address 192.167.10.2; fi
-	docker compose up -d
-.PHONY: localnet-start
-
-#? localnet-stop: Stop testnet
-localnet-stop:
-	docker compose down
-.PHONY: localnet-stop
-
-#? monitoring-start: Start Prometheus and Grafana servers for localnet monitoring
-monitoring-start:
-	cd test/monitoring && docker compose up -d
-
-#? monitoring-stop: Stop the Prometheus and Grafana servers
-monitoring-stop:
-	cd test/monitoring && docker compose down
 
 #? build-contract-tests-hooks: Build hooks for dredd, to skip or add information on some steps
 build-contract-tests-hooks:

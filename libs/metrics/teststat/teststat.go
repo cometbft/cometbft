@@ -115,8 +115,10 @@ func TestHistogram(histogram metrics.Histogram, quantiles func() (p50, p90, p95,
 	if want, have := want90, have90; !cmp(want, have, tolerance) {
 		errs = append(errs, fmt.Sprintf("p90: want %f, have %f", want, have))
 	}
-	if want, have := want95, have95; !cmp(want, have, tolerance) {
-		errs = append(errs, fmt.Sprintf("p95: want %f, have %f", want, have))
+	if have95 > 0 { // prometheus doesn't compute p95
+		if want, have := want95, have95; !cmp(want, have, tolerance) {
+			errs = append(errs, fmt.Sprintf("p95: want %f, have %f", want, have))
+		}
 	}
 	if want, have := want99, have99; !cmp(want, have, tolerance) {
 		errs = append(errs, fmt.Sprintf("p99: want %f, have %f", want, have))

@@ -311,7 +311,10 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	// Set up validator updates.
-	for heightStr, validators := range manifest.ValidatorUpdatesMap { // TODO Non det
+	// NOTE: This map traversal is non-deterministic, but that's acceptable because
+	// the loop only constructs another map.
+	// We don't rely on traversal order for any side effects.
+	for heightStr, validators := range manifest.ValidatorUpdatesMap {
 		height, err := strconv.Atoi(heightStr)
 		if err != nil {
 			return nil, fmt.Errorf("invalid validator update height %q: %w", height, err)

@@ -83,6 +83,10 @@ type Testnet struct {
 	IP               *net.IPNet
 	ValidatorUpdates map[int64]map[string]int64
 	Nodes            []*Node
+
+	// If not empty, ignore the manifest and send transaction load only to the
+	// node names in this list. It is set only from a command line flag.
+	LoadTargetNodes []string
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -384,6 +388,12 @@ func (t Testnet) Validate() error {
 				"update height %d, enable height %d",
 				t.PbtsUpdateHeight, t.PbtsEnableHeight,
 			)
+		}
+	}
+	nodeNames := sortNodeNames(t.Manifest)
+	for _, nodeName := range t.LoadTargetNodes {
+		if !slices.Contains(nodeNames, nodeName) {
+			return fmt.Errorf("%s is not the list of nodes", nodeName)
 		}
 	}
 	for _, node := range t.Nodes {

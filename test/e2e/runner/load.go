@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 
@@ -36,7 +37,11 @@ func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 	go loadGenerate(ctx, txCh, testnet, u[:])
 
 	for _, n := range testnet.Nodes {
-		if n.SendNoLoad {
+		if len(testnet.LoadTargetNodes) == 0 {
+			if n.SendNoLoad {
+				continue
+			}
+		} else if !slices.Contains(testnet.LoadTargetNodes, n.Name) {
 			continue
 		}
 

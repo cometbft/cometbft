@@ -265,6 +265,11 @@ func NewCLI() *CLI {
 			} else if loadTime > 0 {
 				cli.testnet.LoadMaxSeconds = loadTime
 			}
+			if loadTargetNodes, err := cmd.Flags().GetStringSlice("nodes"); err != nil {
+				return err
+			} else if len(loadTargetNodes) > 0 {
+				cli.testnet.LoadTargetNodes = loadTargetNodes
+			}
 			if err = cli.testnet.Validate(); err != nil {
 				return err
 			}
@@ -279,6 +284,8 @@ func NewCLI() *CLI {
 		"Number of connections to open at each target node simultaneously. Overwrites manifest option load_tx_connections.")
 	loadCmd.PersistentFlags().IntP("time", "t", -1,
 		"Maximum duration (in seconds) of the load test. Overwrites manifest option load_max_seconds.")
+	loadCmd.PersistentFlags().StringSliceP("nodes", "n", nil,
+		"Comma-separated list of node names to send load to. Manifest option send_no_load will be ignored.")
 	loadCmd.PersistentFlags().BoolP("internal-ip", "i", false,
 		"Use nodes' internal IP addresses when sending transaction load. For running from inside a DO private network.")
 	cli.root.AddCommand(loadCmd)

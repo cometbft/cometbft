@@ -171,6 +171,6 @@ func TestBlock_Time(t *testing.T) {
 			)
 		}
 
-		valSchedule.Increment(1)
+		valSchedule.IncreaseHeight(1)
 	}
 }

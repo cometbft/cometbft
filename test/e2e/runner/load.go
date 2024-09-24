@@ -45,6 +45,11 @@ func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 		}
 	}
 
+	maxTimer := time.NewTimer(time.Duration(testnet.LoadMaxSeconds) * time.Second)
+	if testnet.LoadMaxSeconds <= 0 {
+		<-maxTimer.C
+	}
+
 	// Monitor successful and failed transactions, and abort on stalls.
 	success, failed := 0, 0
 	errorCounter := make(map[string]int)
@@ -61,6 +66,9 @@ func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 			errorCounter[err.Error()]++
 		case <-time.After(timeout):
 			return fmt.Errorf("unable to submit transactions for %v", timeout)
+		case <-maxTimer.C:
+			logger.Info("load", "msg", log.NewLazySprintf("Transaction load finished after reaching %v seconds (%v tx/s)", testnet.LoadMaxSeconds, rate))
+			return nil
 		case <-ctx.Done():
 			if success == 0 {
 				return errors.New("failed to submit any transactions")
@@ -88,7 +96,7 @@ func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 
 		// Check if reached max number of allowed transactions to send.
 		if testnet.LoadMaxTxs > 0 && success >= testnet.LoadMaxTxs {
-			logger.Info("load", "msg", log.NewLazySprintf("Ending transaction load after reaching %v txs (%v tx/s)...", success, rate))
+			logger.Info("load", "msg", log.NewLazySprintf("Transaction load finished after reaching %v txs (%v tx/s)", success, rate))
 			return nil
 		}
 	}

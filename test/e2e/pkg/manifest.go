@@ -86,6 +86,7 @@ type Manifest struct {
 	LoadTxSizeBytes   int `toml:"load_tx_size_bytes"`
 	LoadTxBatchSize   int `toml:"load_tx_batch_size"`
 	LoadTxConnections int `toml:"load_tx_connections"`
+	LoadMaxSeconds    int `toml:"load_max_seconds"`
 	LoadMaxTxs        int `toml:"load_max_txs"`
 
 	// LogLevel specifies the log level to be set on all nodes.

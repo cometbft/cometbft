@@ -58,6 +58,8 @@ The following metrics are available:
 | p2p\_peer\_pending\_send\_bytes            | Gauge     | peer\_id           | Number of pending bytes to be sent to a given peer                                                                                     |
 | p2p\_num\_txs                              | Gauge     | peer\_id           | Number of transactions submitted by each peer\_id                                                                                      |
 | p2p\_pending\_send\_bytes                  | Gauge     | peer\_id           | Amount of data pending to be sent to peer                                                                                              |
+| mempool\_lane\_size                        | Counter   | lane               | Number of uncommitted transactions per lane                                                                                            |
+| mempool\_lane\_bytes                       | Counter   | lane               | Number of used bytes per lane                                                                                                          |
 | mempool\_size                              | Gauge     |                    | Number of uncommitted transactions                                                                                                     |
 | mempool\_tx\_size\_bytes                   | Histogram |                    | Transaction sizes in bytes                                                                                                             |
 | mempool\_evicted\_txs                      | Counter   |                    | Number of transactions that make it into the mempool and were later evicted for being invalid                                          |

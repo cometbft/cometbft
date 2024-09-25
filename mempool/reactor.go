@@ -216,7 +216,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		}
 	}()
 
-	iter := memR.mempool.NewIterator(ctx)
+	iter := NewBlockingIterator(ctx, memR.mempool, string(peer.ID()))
 	for {
 		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time
 		if !memR.IsRunning() || !peer.IsRunning() {
@@ -224,7 +224,6 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		}
 
 		entry := <-iter.WaitNextCh()
-
 		// If the entry we were looking at got garbage collected (removed), try again.
 		if entry == nil {
 			continue

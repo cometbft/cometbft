@@ -125,7 +125,11 @@ During the build process, by default, only the `pebbledb` library is built into 
 To add support for alternative databases, you need to add them in the build tags.
 For example: `go build -tags cleveldb,rocksdb`.
 
-The RocksDB fork has API changes from the upstream RocksDB implementation. All other databases claim a stable API.
+`goleveldb` is supported by default too, but it is no longer recommended for
+production use.
+
+The RocksDB fork has API changes from the upstream RocksDB implementation. All
+other databases claim a stable API.
 
 The supported databases are part of the [cometbft-db](https://github.com/cometbft/cometbft-db) library
 that CometBFT uses as a common database interface to various databases.

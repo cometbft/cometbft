@@ -238,6 +238,34 @@ func TestCheckTx(t *testing.T) {
 	}
 }
 
+func TestClientAssignLane(t *testing.T) {
+	val := RandVal()
+
+	testCases := []struct {
+		lane string
+		tx   []byte
+	}{
+		{"foo", NewTx("0", "0")},
+		{defaultLane, NewTx("1", "1")},
+		{defaultLane, NewTx("2", "2")},
+		{"bar", NewTx("3", "3")},
+		{defaultLane, NewTx("4", "4")},
+		{defaultLane, NewTx("5", "5")},
+		{"bar", NewTx("6", "6")},
+		{defaultLane, NewTx("7", "7")},
+		{defaultLane, NewTx("8", "8")},
+		{"bar", NewTx("9", "9")},
+		{defaultLane, NewTx("10", "10")},
+		{"foo", NewTx("11", "11")},
+		{"bar", NewTx("12", "12")},
+		{"val", MakeValSetChangeTx(val)},
+	}
+
+	for idx, tc := range testCases {
+		require.Equal(t, tc.lane, assignLane(tc.tx), idx)
+	}
+}
+
 func TestClientServer(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

@@ -281,14 +281,12 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	// Set up genesis validators. If not specified explicitly, use all validator nodes.
-	if testnet.Validators == nil || len(*testnet.Validators) == 0 {
-		validatorsMap := make(map[string]int64)
+	if len(testnet.Validators) == 0 {
 		for _, node := range testnet.Nodes {
 			if node.Mode == ModeValidator {
-				validatorsMap[node.Name] = 100
+				testnet.Validators[node.Name] = 100
 			}
 		}
-		testnet.Validators = &validatorsMap
 	}
 
 	// Set up validator updates.
@@ -314,7 +312,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	if testnet.ConstantFlip {
 		// Pick "lowest" validator by name
 		var minNode string
-		for n := range *testnet.Validators {
+		for n := range testnet.Validators {
 			if len(minNode) == 0 || n < minNode {
 				minNode = n
 			}

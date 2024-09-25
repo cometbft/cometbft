@@ -5,7 +5,7 @@ const (
 	// when not using git describe. It is formatted with semantic versioning.
 	CMTSemVer = "1.0.0-rc1"
 	// ABCISemVer is the semantic version of the ABCI protocol.
-	ABCISemVer  = "2.1.0"
+	ABCISemVer  = "2.2.0"
 	ABCIVersion = ABCISemVer
 	// P2PProtocol versions all p2p behavior and msgs.
 	// This includes proposer selection.

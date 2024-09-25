@@ -230,10 +230,7 @@ definitions:
 ### Database
 
 - The default database has been changed from `goleveldb` to
-  [`pebble`](https://github.com/cockroachdb/pebble). If you are using
-  `goleveldb` and wish to continue using it, you need to build CometBFT with
-  the `goleveldb` build tag (`BUILD_TAGS=goleveldb make build` or
-  `BUILD_TAGS=goleveldb make install`).
+  [`pebble`](https://github.com/cockroachdb/pebble).
 
 ## v0.38.0
 

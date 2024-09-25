@@ -238,7 +238,6 @@ type BaseConfig struct {
 	//   - UNMAINTAINED
 	//   - stable
 	//   - pure go
-	//   - use goleveldb build tag (go build -tags goleveldb)
 	// * pebbledb (uses github.com/cockroachdb/pebble)
 	//   - stable
 	//   - pure go

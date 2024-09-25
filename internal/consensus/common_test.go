@@ -430,11 +430,23 @@ func subscribeToVoterBuffered(cs *State, addr []byte) <-chan cmtpubsub.Message {
 }
 
 // -------------------------------------------------------------------------------
+// application
+
+func fetchAppInfo(t *testing.T, app abci.Application) (*abci.InfoResponse, *mempl.LanesInfo) {
+	t.Helper()
+	resp, err := app.Info(context.Background(), proxy.InfoRequest)
+	require.NoError(t, err)
+	lanesInfo, err := mempl.BuildLanesInfo(resp.LanePriorities, resp.DefaultLane)
+	require.NoError(t, err)
+	return resp, lanesInfo
+}
+
+// -------------------------------------------------------------------------------
 // consensus states
 
 func newState(state sm.State, pv types.PrivValidator, app abci.Application) *State {
 	config := test.ResetTestRoot("consensus_state_test")
-	return newStateWithConfig(config, state, pv, app)
+	return newStateWithConfig(config, state, pv, app, nil)
 }
 
 func newStateWithConfig(
@@ -442,9 +454,10 @@ func newStateWithConfig(
 	state sm.State,
 	pv types.PrivValidator,
 	app abci.Application,
+	laneInfo *mempl.LanesInfo,
 ) *State {
 	blockDB := dbm.NewMemDB()
-	return newStateWithConfigAndBlockStore(thisConfig, state, pv, app, blockDB)
+	return newStateWithConfigAndBlockStore(thisConfig, state, pv, app, blockDB, laneInfo)
 }
 
 func newStateWithConfigAndBlockStore(
@@ -453,6 +466,7 @@ func newStateWithConfigAndBlockStore(
 	pv types.PrivValidator,
 	app abci.Application,
 	blockDB dbm.DB,
+	laneInfo *mempl.LanesInfo,
 ) *State {
 	// Get BlockStore
 	blockStore := store.NewBlockStore(blockDB)
@@ -468,6 +482,7 @@ func newStateWithConfigAndBlockStore(
 	// Make Mempool
 	mempool := mempl.NewCListMempool(config.Mempool,
 		proxyAppConnMem,
+		laneInfo,
 		state.LastBlockHeight,
 		mempl.WithMetrics(memplMetrics),
 		mempl.WithPreCheck(sm.TxPreCheck(state)),
@@ -837,11 +852,12 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 		}
 		ensureDir(filepath.Dir(thisConfig.Consensus.WalFile())) // dir for wal
 		app := appFunc()
+		_, lanesInfo := fetchAppInfo(t, app)
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
 		_, err := app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
 		require.NoError(t, err)
 
-		css[i] = newStateWithConfigAndBlockStore(thisConfig, state, privVals[i], app, stateDB)
+		css[i] = newStateWithConfigAndBlockStore(thisConfig, state, privVals[i], app, stateDB, lanesInfo)
 		css[i].SetTimeoutTicker(tickerFunc())
 		css[i].SetLogger(logger.With("validator", i, "module", "consensus"))
 	}
@@ -895,6 +911,7 @@ func randConsensusNetWithPeers(
 		}
 
 		app := appFunc(path.Join(config.DBDir(), fmt.Sprintf("%s_%d", testName, i)))
+		_, lanesInfo := fetchAppInfo(t, app)
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
 		if _, ok := app.(*kvstore.Application); ok {
 			// simulate handshake, receive app version. If don't do this, replay test will fail
@@ -903,7 +920,7 @@ func randConsensusNetWithPeers(
 		_, err = app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
 		require.NoError(t, err)
 
-		css[i] = newStateWithConfig(thisConfig, state, privVal, app)
+		css[i] = newStateWithConfig(thisConfig, state, privVal, app, lanesInfo)
 		css[i].SetTimeoutTicker(tickerFunc())
 		css[i].SetLogger(logger.With("validator", i, "module", "consensus"))
 	}

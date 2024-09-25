@@ -227,6 +227,11 @@ definitions:
 
 - `consensus.skip_timeout_commit` has been removed in favor of `consensus.timeout_commit=0s`.
 
+### Database
+
+- The default database has been changed from `goleveldb` to
+  [`pebble`](https://github.com/cockroachdb/pebble).
+
 ## v0.38.0
 
 This release introduces state machine-breaking changes, as well as substantial changes

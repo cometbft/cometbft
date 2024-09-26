@@ -229,25 +229,21 @@ type BaseConfig struct {
 	// A custom human readable name for this node
 	Moniker string `mapstructure:"moniker"`
 
-	// Database backend: goleveldb | rocksdb | badgerdb | pebbledb
+	// Database backend: badgerdb | goleveldb | pebbledb | rocksdb
+	// * badgerdb (uses github.com/dgraph-io/badger)
+	//   - stable
+	//   - pure go
+	//   - use badgerdb build tag (go build -tags badgerdb)
 	// * goleveldb (github.com/syndtr/goleveldb)
 	//   - UNMAINTAINED
 	//   - stable
 	//   - pure go
+	// * pebbledb (uses github.com/cockroachdb/pebble)
+	//   - stable
+	//   - pure go
 	// * rocksdb (uses github.com/linxGnu/grocksdb)
-	//   - EXPERIMENTAL
 	//   - requires gcc
 	//   - use rocksdb build tag (go build -tags rocksdb)
-	// * badgerdb (uses github.com/dgraph-io/badger)
-	//   - EXPERIMENTAL
-	//   - stable
-	//   - pure go
-	//   - use badgerdb build tag (go build -tags badgerdb)
-	// * pebbledb (uses github.com/cockroachdb/pebble)
-	//   - EXPERIMENTAL
-	//   - stable
-	//   - pure go
-	//   - use pebbledb build tag (go build -tags pebbledb)
 	DBBackend string `mapstructure:"db_backend"`
 
 	// Database directory
@@ -297,7 +293,7 @@ func DefaultBaseConfig() BaseConfig {
 		LogLevel:           DefaultLogLevel,
 		LogFormat:          LogFormatPlain,
 		FilterPeers:        false,
-		DBBackend:          "goleveldb",
+		DBBackend:          "pebbledb",
 		DBPath:             DefaultDataDir,
 	}
 }

@@ -109,24 +109,27 @@ Nodes on the peer-to-peer network are identified by `nodeID@host:port` as discus
 ### db_backend
 The chosen database backend for the node.
 ```toml
-db_backend = "goleveldb"
+db_backend = "pebbledb"
 ```
 
 | Value type          | string        | dependencies  | GitHub                                           |
 |:--------------------|:--------------|:--------------|:-------------------------------------------------|
-| **Possible values** | `"goleveldb"` | pure Golang   | [goleveldb](https://github.com/syndtr/goleveldb) |
-|                     | `"rocksdb"`   | requires gcc  | [grocksdb](https://github.com/linxGnu/grocksdb)  |
-|                     | `"badgerdb"`  | pure Golang   | [badger](https://github.com/dgraph-io/badger)    |
+| **Possible values** | `"badgerdb"`  | pure Golang   | [badger](https://github.com/dgraph-io/badger)    |
+|                     | `"goleveldb"` | pure Golang   | [goleveldb](https://github.com/syndtr/goleveldb) |
 |                     | `"pebbledb"`  | pure Golang   | [pebble](https://github.com/cockroachdb/pebble)  |
+|                     | `"rocksdb"`   | requires gcc  | [grocksdb](https://github.com/linxGnu/grocksdb)  |
 
-During the build process, by default, only the `goleveldb` library is built into the binary.
+During the build process, by default, only the `pebbledb` library is built into the binary.
 To add support for alternative databases, you need to add them in the build tags.
 For example: `go build -tags rocksdb`.
 
-The RocksDB fork has API changes from the upstream RocksDB implementation. All other databases claim a stable API.
+`goleveldb` is supported by default too, but it is no longer recommended for
+production use.
 
-The CometBFT team tests rely on the GoLevelDB implementation. All other implementations are considered experimental from
-a CometBFT perspective. The supported databases are part of the [cometbft-db](https://github.com/cometbft/cometbft-db) library
+The RocksDB fork has API changes from the upstream RocksDB implementation. All
+other databases claim a stable API.
+
+The supported databases are part of the [cometbft-db](https://github.com/cometbft/cometbft-db) library
 that CometBFT uses as a common database interface to various databases.
 
 ### db_dir

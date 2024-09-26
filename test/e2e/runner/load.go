@@ -133,6 +133,7 @@ func createTxBatch(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testn
 					Size:        uint64(testnet.LoadTxSizeBytes),
 					Rate:        uint64(testnet.LoadTxBatchSize),
 					Connections: uint64(testnet.LoadTxConnections),
+					Lane:        testnet.WeightedRandomLane(),
 				})
 				if err != nil {
 					panic(fmt.Sprintf("Failed to generate tx: %v", err))

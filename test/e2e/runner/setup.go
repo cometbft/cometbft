@@ -150,9 +150,13 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	if testnet.PbtsUpdateHeight == -1 {
 		genesis.ConsensusParams.Feature.PbtsEnableHeight = testnet.PbtsEnableHeight
 	}
-	for validator, power := range testnet.Validators {
+	for valName, power := range *testnet.Manifest.Validators {
+		validator := testnet.LookupNode(valName)
+		if validator == nil {
+			return types.GenesisDoc{}, fmt.Errorf("unknown validator %q for genesis doc", valName)
+		}
 		genesis.Validators = append(genesis.Validators, types.GenesisValidator{
-			Name:    validator.Name,
+			Name:    valName,
 			Address: validator.PrivvalKey.PubKey().Address(),
 			PubKey:  validator.PrivvalKey.PubKey(),
 			Power:   power,
@@ -166,7 +170,7 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	if len(testnet.InitialState) > 0 {
 		appState, err := json.Marshal(testnet.InitialState)
 		if err != nil {
-			return genesis, err
+			return types.GenesisDoc{}, err
 		}
 		genesis.AppState = appState
 	}
@@ -179,7 +183,7 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 		for _, field := range testnet.Genesis {
 			key, value, err := e2e.ParseKeyValueField("genesis", field)
 			if err != nil {
-				return genesis, err
+				return types.GenesisDoc{}, err
 			}
 			logger.Debug("Applying 'genesis' field", key, value)
 			v.Set(key, value)
@@ -192,11 +196,14 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 			d.ErrorUnused = true
 		})
 		if err != nil {
-			return genesis, fmt.Errorf("failed parsing 'genesis' field: %v", err)
+			return types.GenesisDoc{}, fmt.Errorf("failed parsing 'genesis' field: %v", err)
 		}
 	}
 
-	return genesis, genesis.ValidateAndComplete()
+	if err := genesis.ValidateAndComplete(); err != nil {
+		return types.GenesisDoc{}, err
+	}
+	return genesis, nil
 }
 
 // MakeConfig generates a CometBFT config for a node.
@@ -390,6 +397,8 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		"abci_requests_logging_enabled": node.Testnet.ABCITestsEnabled,
 		"pbts_enable_height":            node.Testnet.PbtsEnableHeight,
 		"pbts_update_height":            node.Testnet.PbtsUpdateHeight,
+		"no_lanes":                      node.Testnet.Manifest.NoLanes,
+		"lanes":                         node.Testnet.Manifest.Lanes,
 	}
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:
@@ -425,8 +434,12 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		validatorUpdates := map[string]map[string]int64{}
 		for height, validators := range node.Testnet.ValidatorUpdates {
 			updateVals := map[string]int64{}
-			for node, power := range validators {
-				updateVals[base64.StdEncoding.EncodeToString(node.PrivvalKey.PubKey().Bytes())] = power
+			for valName, power := range validators {
+				validator := node.Testnet.LookupNode(valName)
+				if validator == nil {
+					return nil, fmt.Errorf("unknown validator %q for validator updates in testnet, height %d", valName, height)
+				}
+				updateVals[base64.StdEncoding.EncodeToString(validator.PrivvalKey.PubKey().Bytes())] = power
 			}
 			validatorUpdates[strconv.FormatInt(height, 10)] = updateVals
 		}

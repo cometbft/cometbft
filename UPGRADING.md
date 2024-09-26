@@ -32,12 +32,11 @@ The minimum Go version has been bumped to [v1.23][go123].
 
 Starting with the `v1.0` release, instead of providing detailed information
 about new features, changes, and other relevant details for upgrading to ComeBFT `v1.0` in this document,
-we have created a comprehensive upgrading guide from the previous major `v0.38` release to this new `v1.0` release.
-
+we have created a comprehensive upgrading guide from the previous `v0.38.x` release line to this new `v1.0` release.
 This guide can be utilized as a valuable resource when upgrading to the CometBFT `v1.0` release.
 
-The new upgrading guide includes detailed information about major new features in CometBFT `v1.0`, such as PBTS,
-Data Companion API, several enhancements, as well as configuration and genesis updates for a smoother
+The upgrading guide includes detailed information about major new features in CometBFT `v1.0`, such as PBTS,
+Data Companion API, several enhancements, configuration and genesis updates for a smoother
 transition to the new `v1.0` version.
 
 Please see more information on the [Upgrading from CometBFT v0.38 to v1.0](/docs/guides/migrations/v0.38-to-v1.0.md)

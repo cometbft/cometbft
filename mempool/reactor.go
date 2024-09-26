@@ -259,12 +259,31 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// NOTE: Transaction batching was disabled due to
 		// https://github.com/tendermint/tendermint/issues/5796
 
+		// We are paying the cost of computing the transaction hash in
+		// any case, even when logger level > debug. So it only once.
+		// See: https://github.com/cometbft/cometbft/issues/4167
+		txHash := entry.Tx().Hash()
+
 		// Do not send this transaction if we receive it from peer.
 		if entry.IsSender(peer.ID()) {
+			memR.Logger.Debug("Skipping transaction, peer is sender",
+				"tx", log.NewLazySprintf("%X", txHash), "peer", peer.ID())
 			continue
 		}
 
 		for {
+<<<<<<< HEAD
+=======
+			// The entry may have been removed from the mempool since it was
+			// chosen at the beginning of the loop. Skip it if that's the case.
+			if !memR.mempool.Contains(entry.Tx().Key()) {
+				break
+			}
+
+			memR.Logger.Debug("Sending transaction to peer",
+				"tx", log.NewLazySprintf("%X", txHash), "peer", peer.ID())
+
+>>>>>>> 9e25845d4 (test(mempool): enhanced `TestReactorNoBroadcastToSender` (#4127))
 			success := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
 				Message:   &protomem.Txs{Txs: [][]byte{entry.Tx()}},
@@ -272,6 +291,10 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			if success {
 				break
 			}
+
+			memR.Logger.Debug("Failed sending transaction to peer",
+				"tx", log.NewLazySprintf("%X", txHash), "peer", peer.ID())
+
 			select {
 			case <-time.After(PeerCatchupSleepIntervalMS * time.Millisecond):
 			case <-peer.Quit():

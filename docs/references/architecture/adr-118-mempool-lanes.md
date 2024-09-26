@@ -378,8 +378,10 @@ the same priority. On the mempool side, lane identifiers will mainly be used for
 (logging, metric labels).
 
 The lowest priority a lane may have is 1. Higher values correspond to higher priorities. The value 0
-is reserved for two cases: when the application does not classify the transaction (i.e. no priority
-returned) and for `CheckTx` responses of invalid transactions.
+is reserved for when the application does not have a lane to assign, so it leaves the `lane_id`
+field empty in the `CheckTx` response (see [below](#adding-transactions-to-the-mempool)). This
+happens either when the application does not classify transactions, or when the transaction is
+invalid.
 
 On receiving the information from the app, CometBFT will validate that:
 - `lane_priorities` has no duplicates (values in `lane_priorities` don't need to be sorted),
@@ -467,14 +469,19 @@ low-priority lane could end up occupying all the mempool space. Since we want to
 new configuration options unless absolutely necessary, we propose two simple approaches for
 partitioning the mempool space.
 
-1. Proportionally to lane priorities: This approach could lead to underutilization of the mempool if
+1. Proportionally to lane priorities: This approach could lead to under-utilization of the mempool if
    there are significant discrepancies between priority values, as it would allocate space unevenly.
 2. Evenly across all lanes: Assuming high-priority transactions are smaller in size than
    low-priority transactions, this approach would still allow for more high-priority transactions to
    fit in the mempool compared to lower-priority ones.
 
-For the MVP we have chosen the second approach. Note that the maximum lane capacities apply both to
-the number of transactions and the size in bytes. 
+Note that each lane's capacity will be limited both by the number of transactions and their total
+size in bytes.
+
+For the MVP, we've chosen the second approach. If users find that the lane capacity is insufficient,
+they still have the option of increasing the total mempool size, which will proportionally increase
+the capacity of all lanes. In future iterations, we may introduce more granular control over lane
+capacities if needed.
 
 Additionally, the `Recheck` and `Broadcast` flags will apply to all lanes or to none. Remember that,
 if `PrepareProposal`'s app logic can ever add a new transaction, it becomes _always_ mandatory to

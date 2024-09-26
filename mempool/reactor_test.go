@@ -128,7 +128,7 @@ func TestReactorConcurrency(t *testing.T) {
 func TestReactorNoBroadcastToSender(t *testing.T) {
 	config := cfg.TestConfig()
 	const n = 2
-	reactors, _ := makeAndConnectReactors(config, n, nil)
+	reactors, _ := makeAndConnectReactorsNoLanes(config, n, nil)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -533,13 +533,18 @@ func mempoolLogger(level string) *log.Logger {
 }
 
 // makeReactors creates n mempool reactors.
-func makeReactors(config *cfg.Config, n int, logger *log.Logger) []*Reactor {
+func makeReactors(config *cfg.Config, n int, logger *log.Logger, lanesEnabled bool) []*Reactor {
 	if logger == nil {
 		logger = mempoolLogger("info")
 	}
 	reactors := make([]*Reactor, n)
 	for i := 0; i < n; i++ {
-		app := kvstore.NewInMemoryApplication()
+		var app *kvstore.Application
+		if lanesEnabled {
+			app = kvstore.NewInMemoryApplication()
+		} else {
+			app = kvstore.NewInMemoryApplicationWithoutLanes()
+		}
 		cc := proxy.NewLocalClientCreator(app)
 		mempool, cleanup := newMempoolWithApp(cc)
 		defer cleanup()
@@ -562,15 +567,21 @@ func connectReactors(config *cfg.Config, reactors []*Reactor, connect func([]*p2
 	return p2p.StartAndConnectSwitches(switches, connect)
 }
 
+func makeAndConnectReactorsNoLanes(config *cfg.Config, n int, logger *log.Logger) ([]*Reactor, []*p2p.Switch) {
+	reactors := makeReactors(config, n, logger, false)
+	switches := connectReactors(config, reactors, p2p.Connect2Switches)
+	return reactors, switches
+}
+
 func makeAndConnectReactors(config *cfg.Config, n int, logger *log.Logger) ([]*Reactor, []*p2p.Switch) {
-	reactors := makeReactors(config, n, logger)
+	reactors := makeReactors(config, n, logger, true)
 	switches := connectReactors(config, reactors, p2p.Connect2Switches)
 	return reactors, switches
 }
 
 // connect N mempool reactors through N switches as a star centered in c.
 func makeAndConnectReactorsStar(config *cfg.Config, c, n int, logger *log.Logger) ([]*Reactor, []*p2p.Switch) {
-	reactors := makeReactors(config, n, logger)
+	reactors := makeReactors(config, n, logger, true)
 	switches := connectReactors(config, reactors, p2p.ConnectStarSwitches(c))
 	return reactors, switches
 }

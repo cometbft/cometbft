@@ -272,18 +272,9 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		}
 
 		for {
-<<<<<<< HEAD
-=======
-			// The entry may have been removed from the mempool since it was
-			// chosen at the beginning of the loop. Skip it if that's the case.
-			if !memR.mempool.Contains(entry.Tx().Key()) {
-				break
-			}
-
 			memR.Logger.Debug("Sending transaction to peer",
 				"tx", log.NewLazySprintf("%X", txHash), "peer", peer.ID())
 
->>>>>>> 9e25845d4 (test(mempool): enhanced `TestReactorNoBroadcastToSender` (#4127))
 			success := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
 				Message:   &protomem.Txs{Txs: [][]byte{entry.Tx()}},

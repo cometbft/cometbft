@@ -203,6 +203,16 @@ message ResponseQuery {
 message ResponseBeginBlock {
   repeated Event events = 1
       [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
+
+  // Defines responses for consensus messages in order.
+  repeated ConsensusMessageResponse consensus_messages_responses = 2;
+}
+
+message ConsensusMessageResponse {
+  oneof response {
+    string error = 1;                  // Error message if execution fails.
+    google.protobuf.Any ok = 2;        // Success response.
+  }
 }
 
 message ResponseCheckTx {

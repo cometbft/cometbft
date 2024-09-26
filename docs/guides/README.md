@@ -18,4 +18,4 @@ examples to help users acquire real-world experience while learning.
 
 - [Application Development](./app-dev/README.md)
 - [Tools](./tools/README.md)
-- [Migrations](./migrations/README.md)
+- [Upgrading Guides](upgrades/README.md)

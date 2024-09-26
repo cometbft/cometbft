@@ -282,6 +282,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 
 	// Set up genesis validators. If not specified explicitly, use all validator nodes.
 	if len(testnet.Validators) == 0 {
+		if testnet.Validators == nil { // Can this ever happen?
+			testnet.Validators = make(map[string]int64)
+		}
 		for _, node := range testnet.Nodes {
 			if node.Mode == ModeValidator {
 				testnet.Validators[node.Name] = 100

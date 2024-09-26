@@ -151,12 +151,6 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 
 	// The second peer sends some transactions to the first peer
 	secondNodeID := reactors[1].Switch.NodeInfo().ID()
-<<<<<<< HEAD
-	for _, tx := range txs {
-		_, err := reactors[0].mempool.CheckTx(tx, secondNodeID)
-		require.NoError(t, err)
-=======
-	secondNode := reactors[0].Switch.Peers().Get(secondNodeID)
 	for i, tx := range txs {
 		shouldBroadcast := cmtrand.Bool() || // random choice
 			// Force shouldBroadcast == true to ensure that
@@ -168,15 +162,14 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 
 		if !shouldBroadcast {
 			// From the second peer => should not be broadcast
-			_, err := reactors[0].TryAddTx(tx, secondNode)
+			_, err := reactors[0].mempool.CheckTx(tx, secondNodeID)
 			require.NoError(t, err)
 		} else {
 			// Emulate a tx received via RPC => should broadcast
-			_, err := reactors[0].TryAddTx(tx, nil)
+			_, err := reactors[0].mempool.CheckTx(tx, "")
 			require.NoError(t, err)
 			txsToBroadcast = append(txsToBroadcast, tx)
 		}
->>>>>>> 9e25845d4 (test(mempool): enhanced `TestReactorNoBroadcastToSender` (#4127))
 	}
 
 	t.Log("Added", len(txs), "transactions, only", len(txsToBroadcast),
@@ -510,7 +503,7 @@ func makeReactors(config *cfg.Config, n int, logger *log.Logger, lanesEnabled bo
 		if lanesEnabled {
 			app = kvstore.NewInMemoryApplication()
 		} else {
-			app = kvstore.NewInMemoryApplicationWithoutLanes()
+			app = kvstore.NewInMemoryApplication()
 		}
 		cc := proxy.NewLocalClientCreator(app)
 		mempool, cleanup := newMempoolWithApp(cc)

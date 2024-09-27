@@ -19,8 +19,4 @@ examples to help users acquire real-world experience while learning.
 
 - [Application Development](./app-dev/README.md)
 - [Tools](./tools/README.md)
-<<<<<<< HEAD
-- [Running Networks](./networks/README.md)
-=======
 - [Upgrading Guides](upgrades/README.md)
->>>>>>> 5a753df1d (docs: upgrade guide from `v0.38.x` to `v1.0` (#4184))

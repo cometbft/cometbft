@@ -387,7 +387,7 @@ invalid.
 
 On receiving the information from the app, CometBFT will validate that:
 - `default_lane` is a key in `lane_priorities`, and
-- `lane_priorities` is empty if and only if `default_lane` is 0.
+- `lane_priorities` is empty if and only if `default_lane` is empty.
 
 ### Initialization
 

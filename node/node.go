@@ -402,8 +402,13 @@ func NewNodeWithCliParams(ctx context.Context,
 	// Create the handshaker, which calls RequestInfo, sets the AppVersion on the state,
 	// and replays any blocks as necessary to sync CometBFT with the app.
 	consensusLogger := logger.With("module", "consensus")
+
+	appInfoResponse, err := proxyApp.Query().Info(ctx, proxy.InfoRequest)
+	if err != nil {
+		return nil, fmt.Errorf("error calling ABCI Info method: %v", err)
+	}
 	if !stateSync {
-		if err := doHandshake(ctx, stateStore, state, blockStore, genDoc, eventBus, proxyApp, consensusLogger); err != nil {
+		if err := doHandshake(ctx, stateStore, state, blockStore, genDoc, eventBus, appInfoResponse, proxyApp, consensusLogger); err != nil {
 			return nil, err
 		}
 
@@ -421,7 +426,7 @@ func NewNodeWithCliParams(ctx context.Context,
 	// Blocksync is always active, except if the local node blocks the chain
 	waitSync := !state.Validators.ValidatorBlocksTheChain(localAddr)
 
-	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, eventBus, waitSync, memplMetrics, logger)
+	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, eventBus, waitSync, memplMetrics, logger, appInfoResponse)
 
 	evidenceReactor, evidencePool, err := createEvidenceReactor(config, dbProvider, stateStore, blockStore, logger)
 	if err != nil {

@@ -61,6 +61,27 @@ func (e ErrMempoolIsFull) Error() string {
 	)
 }
 
+// ErrLaneIsFull is returned when a lane has reached its full capacity (either
+// in number of txs or bytes).
+type ErrLaneIsFull struct {
+	Lane     LaneID
+	NumTxs   int
+	MaxTxs   int
+	Bytes    int64
+	MaxBytes int64
+}
+
+func (e ErrLaneIsFull) Error() string {
+	return fmt.Sprintf(
+		"lane %s is full: number of txs %d (max: %d), total bytes %d (max: %d)",
+		e.Lane,
+		e.NumTxs,
+		e.MaxTxs,
+		e.Bytes,
+		e.MaxBytes,
+	)
+}
+
 // ErrPreCheck defines an error where a transaction fails a pre-check.
 type ErrPreCheck struct {
 	Err error
@@ -101,4 +122,36 @@ func (e ErrFlushAppConn) Error() string {
 
 func (e ErrFlushAppConn) Unwrap() error {
 	return e.Err
+}
+
+type ErrEmptyLanesDefaultLaneSet struct {
+	Info LanesInfo
+}
+
+func (e ErrEmptyLanesDefaultLaneSet) Error() string {
+	return fmt.Sprintf("invalid lane info: if list of lanes is empty, then defaultLane must be 0, but %v given; info %v", e.Info.defaultLane, e.Info)
+}
+
+type ErrBadDefaultLaneNonEmptyLaneList struct {
+	Info LanesInfo
+}
+
+func (e ErrBadDefaultLaneNonEmptyLaneList) Error() string {
+	return fmt.Sprintf("invalid lane info: default lane cannot be 0 if list of lanes is non empty; info: %v", e.Info)
+}
+
+type ErrDefaultLaneNotInList struct {
+	Info LanesInfo
+}
+
+func (e ErrDefaultLaneNotInList) Error() string {
+	return fmt.Sprintf("invalid lane info: list of lanes does not contain default lane; info %v", e.Info)
+}
+
+type ErrLaneNotFound struct {
+	laneID LaneID
+}
+
+func (e ErrLaneNotFound) Error() string {
+	return fmt.Sprintf("lane %s not found", e.laneID)
 }

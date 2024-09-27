@@ -12,6 +12,7 @@
 - 2024-07-02: Updates based on reviewer's comments (@hvanz, @sergio-mena)
 - 2024-07-09: Updates based on reviewer's comments (@hvanz)
 - 2024-09-13: Added pre-confirmations section (@sergio-mena)
+- 2024-09-27: Allow lanes to have same priority + lane capacities (@hvanz)
 
 ## Status
 
@@ -360,8 +361,9 @@ mempool. The following is a summary of the key design decisions:
 ### Lanes definition
 
 The list of lanes and their associated priorities will be hardcoded in the application logic. A lane
-is identified by a name of type `string` and assigned a priority of type `uint32`. The application
-also needs to define which of the lanes is the **default lane**. 
+is identified by a **name** of type `string` and assigned a **priority** of type `uint32`. The
+application also needs to define which of the lanes is the **default lane**, which is not
+necessarily the lane with the lowest priority.
 
 To obtain the lane information from the application, we need to extend the ABCI `Info` response to
 include the following fields. These fields need to be filled by the application only in case it
@@ -384,10 +386,8 @@ happens either when the application does not classify transactions, or when the 
 invalid.
 
 On receiving the information from the app, CometBFT will validate that:
-- `lane_priorities` has no duplicates (values in `lane_priorities` don't need to be sorted),
-- `default_lane_priority` is in `lane_priorities` (the default lane is not necessarily the lane with
-  the lowest priority), and
-- the list `lane_priorities` is empty if and only if `default_lane_priority` is 0.
+- `default_lane` is a key in `lane_priorities`, and
+- `lane_priorities` is empty if and only if `default_lane` is 0.
 
 ### Initialization
 

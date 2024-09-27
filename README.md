@@ -59,7 +59,7 @@ in order of preference:
 
 More on how releases are conducted can be found [here](./RELEASES.md).
 
-### Support Policy
+## Support Policy
 
 CometBFT aligns with other components of the [Interchain Stack](https://interchain.io/)
 and we offer long-term support (LTS) guarantees for certain releases. The

@@ -28,20 +28,18 @@ versioning:
 
 The minimum Go version has been bumped to [v1.23][go123].
 
-### Proposer-Based Timestamps
+### Upgrading Guide (`v0.38` -> `v1.0`)
 
-CometBFT `v1.0` contains a new algorithm for generating and verifying block timestamps
-called Proposer-Based Timestamps (PBTS).
-The existing algorithm, called BFT-Time is kept for backwards compatibility.
-Upgrading to `v1.0` does not automatically switch the chain from BFT-Time
-to PBTS; rather a ConsensusParam called `PbtsEnableHeight` can be set to a future
-height to transition from BFT-Time to PBTS.
-This flexible mechanism allows chains disentagle the upgrade to `v1.0` from the transition
-in the algorithm used for block times.
-For further information, please check the [PBTS specification][pbts-spec].
+Starting with the `v1.0` release, instead of providing detailed information
+about new features, changes, and other relevant details for upgrading to ComeBFT `v1.0` in this document,
+we have created a comprehensive upgrading guide from the previous `v0.38.x` release line to this new `v1.0` release.
+This guide can be utilized as a valuable resource when upgrading to the CometBFT `v1.0` release.
 
-### ABCI Mutex
+The upgrading guide includes detailed information about major new features in CometBFT `v1.0`, such as PBTS,
+Data Companion API, several enhancements, configuration and genesis updates for a smoother
+transition to the new `v1.0` version.
 
+<<<<<<< HEAD
 CometBFT's existing ABCI local client is prevented from making
 concurrent calls to ABCI implementations by virtue of a mutex taken
 by the client's implementation.
@@ -231,6 +229,10 @@ definitions:
 
 - The default database has been changed from `goleveldb` to
   [`pebble`](https://github.com/cockroachdb/pebble).
+=======
+Please see more information on the [Upgrading from CometBFT v0.38 to v1.0](/docs/guides/upgrades/v0.38-to-v1.0.md)
+guide.
+>>>>>>> 5a753df1d (docs: upgrade guide from `v0.38.x` to `v1.0` (#4184))
 
 ## v0.38.0
 

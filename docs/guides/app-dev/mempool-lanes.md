@@ -26,20 +26,20 @@ testing phases of the feature.
 
 - **One lane minimum**: Setting up one lane replicates the behavior of the mempool before lanes were
   introduced. The same behaviour is obtained when the application does not set up lanes: the mempool
-  will assign all transactions to the single, default lane.
+  will assign all transactions to the single, default lane. The late is transparent to users.
 - **Start small**: We recommend starting with fewer than 5 or 10 lanes and test them thoroughly on a
   testnet. You can gradually introduce more lanes as necessary once performance and behavior are
   validated.
-- **Constraints**: Lanes are identified by strings. In theroy, there is no limit to the number of
+- **Constraints**: Lanes are identified by strings. In theory, there is no limit to the number of
   lanes that can be defined. However, keep in mind that both memory and CPU usage will increase in
   proportion to the number of lanes.
 
 ## Lane priorities
 
 - **Priority values**: Lane priorities are values of type `uint32`. Valid priorities range from 1 to
-  `math.MaxUint32`. Priority 0 is reserved for cases where there are no lane to assign, such as
+  `math.MaxUint32`. Priority 0 is reserved for cases where there are no lanes to assign, such as
   invalid transactions or applications that do not utilize lanes. However, if the application
-  returns the lane 0 on `CheckTx`, the mempool will assign the default lane as specified in
+  returns an empty `LaneID` (`""`) on `CheckTx`, the mempool will assign the default lane as specified in
   `InfoResponse`.
 - **Fair scheduling**: Lanes implement a scheduling algorithm for picking transactions
   for dissemination to peers and for creating blocks. The algorithm is designed to be

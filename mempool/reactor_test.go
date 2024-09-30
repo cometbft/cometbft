@@ -16,6 +16,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	memproto "github.com/cometbft/cometbft/api/cometbft/mempool/v1"
 	cfg "github.com/cometbft/cometbft/config"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
@@ -127,7 +128,7 @@ func TestReactorConcurrency(t *testing.T) {
 func TestReactorNoBroadcastToSender(t *testing.T) {
 	config := cfg.TestConfig()
 	const n = 2
-	reactors, _ := makeAndConnectReactors(config, n, nil)
+	reactors, _ := makeAndConnectReactorsNoLanes(config, n, nil)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -144,16 +145,39 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 	// create random transactions
 	txs := NewRandomTxs(numTxs, 20)
 
-	// the second peer sends all the transactions to the first peer
+	// This subset should be broadcast
+	var txsToBroadcast types.Txs
+	const minToBroadcast = numTxs / 10
+
+	// The second peer sends some transactions to the first peer
 	secondNodeID := reactors[1].Switch.NodeInfo().ID()
 	secondNode := reactors[0].Switch.Peers().Get(secondNodeID)
-	for _, tx := range txs {
-		_, err := reactors[0].TryAddTx(tx, secondNode)
-		require.NoError(t, err)
+	for i, tx := range txs {
+		shouldBroadcast := cmtrand.Bool() || // random choice
+			// Force shouldBroadcast == true to ensure that
+			// len(txsToBroadcast) >= minToBroadcast
+			(len(txsToBroadcast) < minToBroadcast &&
+				len(txs)-i <= minToBroadcast)
+
+		t.Log(i, "adding", tx, "shouldBroadcast", shouldBroadcast)
+
+		if !shouldBroadcast {
+			// From the second peer => should not be broadcast
+			_, err := reactors[0].TryAddTx(tx, secondNode)
+			require.NoError(t, err)
+		} else {
+			// Emulate a tx received via RPC => should broadcast
+			_, err := reactors[0].TryAddTx(tx, nil)
+			require.NoError(t, err)
+			txsToBroadcast = append(txsToBroadcast, tx)
+		}
 	}
 
-	// the second peer should not receive any transaction
-	ensureNoTxs(t, reactors[1], 100*time.Millisecond)
+	t.Log("Added", len(txs), "transactions, only", len(txsToBroadcast),
+		"should be sent to the peer")
+
+	// The second peer should receive only txsToBroadcast transactions
+	waitForReactors(t, txsToBroadcast, reactors[1:], checkTxsInOrder)
 }
 
 // Test that a lagging peer does not receive txs.
@@ -509,13 +533,18 @@ func mempoolLogger(level string) *log.Logger {
 }
 
 // makeReactors creates n mempool reactors.
-func makeReactors(config *cfg.Config, n int, logger *log.Logger) []*Reactor {
+func makeReactors(config *cfg.Config, n int, logger *log.Logger, lanesEnabled bool) []*Reactor {
 	if logger == nil {
 		logger = mempoolLogger("info")
 	}
 	reactors := make([]*Reactor, n)
 	for i := 0; i < n; i++ {
-		app := kvstore.NewInMemoryApplication()
+		var app *kvstore.Application
+		if lanesEnabled {
+			app = kvstore.NewInMemoryApplication()
+		} else {
+			app = kvstore.NewInMemoryApplicationWithoutLanes()
+		}
 		cc := proxy.NewLocalClientCreator(app)
 		mempool, cleanup := newMempoolWithApp(cc)
 		defer cleanup()
@@ -538,15 +567,21 @@ func connectReactors(config *cfg.Config, reactors []*Reactor, connect func([]*p2
 	return p2p.StartAndConnectSwitches(switches, connect)
 }
 
+func makeAndConnectReactorsNoLanes(config *cfg.Config, n int, logger *log.Logger) ([]*Reactor, []*p2p.Switch) {
+	reactors := makeReactors(config, n, logger, false)
+	switches := connectReactors(config, reactors, p2p.Connect2Switches)
+	return reactors, switches
+}
+
 func makeAndConnectReactors(config *cfg.Config, n int, logger *log.Logger) ([]*Reactor, []*p2p.Switch) {
-	reactors := makeReactors(config, n, logger)
+	reactors := makeReactors(config, n, logger, true)
 	switches := connectReactors(config, reactors, p2p.Connect2Switches)
 	return reactors, switches
 }
 
 // connect N mempool reactors through N switches as a star centered in c.
 func makeAndConnectReactorsStar(config *cfg.Config, c, n int, logger *log.Logger) ([]*Reactor, []*p2p.Switch) {
-	reactors := makeReactors(config, n, logger)
+	reactors := makeReactors(config, n, logger, true)
 	switches := connectReactors(config, reactors, p2p.ConnectStarSwitches(c))
 	return reactors, switches
 }

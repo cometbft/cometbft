@@ -135,8 +135,24 @@ func (*Environment) validatePerPage(perPagePtr *int) int {
 	return perPage
 }
 
-// InitGenesisChunks configures the environment and should be called on service
-// startup.
+// InitGenesisChunks splits the genesis file into 16 MB chunks.
+//
+// NOTE: This function has an important side effect. If the size of the
+// genesis file exceeds the default chunk size (16 MB), it sets `env.GenDoc`
+// to `nil` to avoid storing a second copy of the genesis file in memory.
+//
+// Details: The `Environment` type stores a pointer to a `GenesisDoc` object
+// (`env.GenDoc`) and a slice containing the genesis file's chunks
+// (`env.genChunks`). This means we store two copies of the genesis file in
+// memory: one as the original `GenesisDoc` and another as the sum of the
+// chunks if it's larger than 16 MB. By setting `env.GenDoc` to `nil` for
+// large genesis files, we maintain only one copy in memory (the chunks)
+// instead of two.
+//
+// For genesis files smaller than 16 MB, we keep both the `GenesisDoc` and
+// the chunks in memory because the memory footprint is small (we are
+// working on an alternative solution to eliminate all in-memory copies of
+// the genesis file.)
 func (env *Environment) InitGenesisChunks() error {
 	if env.genChunks != nil {
 		return nil
@@ -158,7 +174,12 @@ func (env *Environment) InitGenesisChunks() error {
 			end = len(data)
 		}
 
-		env.genChunks = append(env.genChunks, base64.StdEncoding.EncodeToString(data[i:end]))
+		chunk := base64.StdEncoding.EncodeToString(data[i:end])
+		env.genChunks = append(env.genChunks, chunk)
+	}
+
+	if len(env.genChunks) > 1 {
+		env.GenDoc = nil
 	}
 
 	return nil

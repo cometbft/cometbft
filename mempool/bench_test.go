@@ -2,12 +2,10 @@ package mempool
 
 import (
 	"context"
-	"runtime"
 	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -185,55 +183,8 @@ func BenchmarkBlockingIterator(b *testing.B) {
 }
 
 // Benchmarks the time it takes multiple concurrent blocking iterators to access
-// all transactions in the mempool while transactions are being concurrently
-// added.
-
-func BenchmarkBlockingIteratorsWhileAddingTxs(b *testing.B) {
-	app := kvstore.NewInMemoryApplication()
-	cc := proxy.NewLocalClientCreator(app)
-	mp, cleanup := newMempoolWithApp(cc)
-	defer cleanup()
-
-	const numTxs = 1000
-	const numIterators = 10
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		b.StopTimer()
-		mp.Flush()
-		wg := sync.WaitGroup{}
-		wg.Add(numIterators)
-		b.StartTimer()
-
-		// Concurrent iterators.
-		for j := 0; j < numIterators; j++ {
-			go func() {
-				defer wg.Done()
-				b.StopTimer()
-				iter := NewBlockingIterator(context.TODO(), mp, strconv.Itoa(j))
-				b.StartTimer()
-
-				// Iterate until all txs in the mempool are accessed.
-				for c := 0; c < numTxs; c++ {
-					if entry := <-iter.WaitNextCh(); entry == nil {
-						continue
-					}
-				}
-			}()
-		}
-
-		txs := addTxs(b, mp, numTxs, numTxs)
-		require.Equal(b, numTxs, len(txs))
-		require.Equal(b, numTxs, mp.Size())
-
-		wg.Wait()
-	}
-}
-
-// Benchmarks the time it takes multiple concurrent blocking iterators to access
-// as many transactions as possible, while the mempool is not empty.
-// Concurrently transactions are being removed from the mempool.
-func BenchmarkBlockingIteratorsWhileRemovingTxs(b *testing.B) {
+// all transactions in the mempool.
+func BenchmarkConcurrentkBlockingIterators(b *testing.B) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
 	mp, cleanup := newMempoolWithApp(cc)
@@ -247,65 +198,28 @@ func BenchmarkBlockingIteratorsWhileRemovingTxs(b *testing.B) {
 		b.StopTimer()
 		// Flush mempool and add a bunch of txs.
 		mp.Flush()
-		txs := addTxs(b, mp, numTxs, numTxs)
+		txs := addTxs(b, mp, 0, numTxs)
 		require.Equal(b, numTxs, len(txs))
 		require.Equal(b, numTxs, mp.Size())
-
+		// Create concurrent iterators.
+		iters := make([]Iterator, numIterators)
+		for j := 0; j < numIterators; j++ {
+			iters[j] = NewBlockingIterator(context.TODO(), mp, strconv.Itoa(j))
+		}
 		wg := sync.WaitGroup{}
 		wg.Add(numIterators)
 		b.StartTimer()
 
-		// Concurrent iterators.
 		for j := 0; j < numIterators; j++ {
-			go func() {
+			go func(iter Iterator) {
 				defer wg.Done()
-				b.StopTimer()
-				ctx, cancel := context.WithCancel(context.Background())
-				iter := NewBlockingIterator(context.TODO(), mp, strconv.Itoa(j))
-				b.StartTimer()
-
-				// Goroutine that will stop the iterator when the mempool is empty.
-				go func() {
-					for mp.Size() > 0 {
-						time.Sleep(50 * time.Millisecond)
+				// Iterate until all txs in the mempool are accessed.
+				for c := 0; c < numTxs; c++ {
+					if entry := <-iter.WaitNextCh(); entry == nil {
+						continue
 					}
-					cancel()
-				}()
-
-				// Iterate while there are txs in the mempool; we don't want the iterator to wait forever.
-				for mp.Size() > 0 {
-					select {
-					case entry := <-iter.WaitNextCh():
-						if entry == nil {
-							continue
-						}
-					case <-ctx.Done():
-						return
-					}
-
-					// Yield to other iterators and to remove txs. Simulates sending the entry to a peer.
-					runtime.Gosched()
 				}
-			}()
-		}
-
-		// Reap some txs and remove them. Repeat until the mempool is empty.
-		for {
-			b.StopTimer()
-			txs := mp.ReapMaxTxs(10)
-			if len(txs) == 0 {
-				break
-			}
-			mp.Lock()
-			for _, tx := range txs {
-				err := mp.RemoveTxByKey(tx.Key())
-				require.NoError(b, err)
-			}
-			mp.Unlock()
-			b.StartTimer()
-
-			// Yield to allow iterators to advance. Simulates consensus making a block.
-			runtime.Gosched()
+			}(iters[j])
 		}
 
 		wg.Wait()

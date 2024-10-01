@@ -1,6 +1,6 @@
 version: v1
 plugins:
-  - name: gogofaster
+  - name: gocosmos
     out: ./proto/
     opt:
       - Mgoogle/protobuf/timestamp.proto=github.com/cosmos/gogoproto/types

@@ -2,9 +2,7 @@ syntax = "proto3";
 package dydxcometbft.clob;
 
 import "gogoproto/gogo.proto";
-import "cosmos_proto/cosmos.proto";
 import "dydxcometbft/clob/order.proto";
-import "dydxcometbft/clob/matches.proto";
 
 // this line is used by starport scaffolding # proto/tx/import
 

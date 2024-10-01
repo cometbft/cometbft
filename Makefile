@@ -120,8 +120,8 @@ mockery:
 
 #? check-proto-deps: Check protobuf deps
 check-proto-deps:
-ifeq (,$(shell which protoc-gen-gogofaster))
-	@go install github.com/cosmos/gogoproto/protoc-gen-gogofaster@latest
+ifeq (,$(shell which protoc-gen-gocosmos))
+	@go install github.com/cosmos/gogoproto/protoc-gen-gocosmos@latest
 endif
 .PHONY: check-proto-deps
 
@@ -145,7 +145,7 @@ proto-gen: check-proto-deps
 #? proto-lint: Lint protobuf files
 proto-lint: check-proto-deps
 	@echo "Linting Protobuf files"
-	@go run github.com/bufbuild/buf/cmd/buf lint
+	@go run github.com/bufbuild/buf/cmd/buf@latest lint
 .PHONY: proto-lint
 
 #? proto-format: Format protobuf files
@@ -327,12 +327,12 @@ build_c-amazonlinux:
 #? localnet-start: Run a 4-node testnet locally
 localnet-start: localnet-stop build-docker-localnode
 	@if ! [ -f build/node0/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/cometbft:Z cometbft/localnode testnet --config /etc/cometbft/config-template.toml --o . --starting-ip-address 192.167.10.2; fi
-	docker-compose up
+	docker compose up
 .PHONY: localnet-start
 
 #? localnet-stop: Stop testnet
 localnet-stop:
-	docker-compose down
+	docker compose down
 .PHONY: localnet-stop
 
 #? build-contract-tests-hooks: Build hooks for dredd, to skip or add information on some steps

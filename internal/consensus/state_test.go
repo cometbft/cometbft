@@ -2083,6 +2083,7 @@ func TestProcessProposalAccept(t *testing.T) {
 			}
 			m.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ProcessProposalResponse{Status: status}, nil)
 			m.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.PrepareProposalResponse{}, nil).Maybe()
+			m.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil).Maybe()
 			cs1, _ := randStateWithApp(4, m)
 			height, round := cs1.Height, cs1.Round
 
@@ -2222,6 +2223,7 @@ func TestVerifyVoteExtensionNotCalledOnAbsentPrecommit(t *testing.T) {
 	}, nil)
 	m.On("FinalizeBlock", mock.Anything, mock.Anything).Return(&abci.FinalizeBlockResponse{}, nil).Maybe()
 	m.On("Commit", mock.Anything, mock.Anything).Return(&abci.CommitResponse{}, nil).Maybe()
+	m.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil).Maybe()
 	cs1, vss := randStateWithApp(4, m)
 	height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
 	cs1.state.ConsensusParams.Feature.VoteExtensionsEnableHeight = cs1.Height

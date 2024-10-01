@@ -52,7 +52,7 @@ require (
 	github.com/golang/protobuf v1.5.4
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	golang.org/x/sync v0.8.0
-	gonum.org/v1/gonum v0.8.2
+	gonum.org/v1/gonum v0.15.1
 	google.golang.org/protobuf v1.34.2
 )
 
@@ -124,7 +124,7 @@ require (
 	go.etcd.io/bbolt v1.3.11 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
+	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/text v0.18.0 // indirect

@@ -48,7 +48,7 @@ require (
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cometbft/cometbft-db v0.9.5
 	github.com/cosmos/gogoproto v1.7.0
-	github.com/go-git/go-git/v5 v5.11.0
+	github.com/go-git/go-git/v5 v5.12.0
 	github.com/golang/protobuf v1.5.4
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	golang.org/x/sync v0.8.0
@@ -111,9 +111,9 @@ require (
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
-	github.com/sergi/go-diff v1.1.0 // indirect
+	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
-	github.com/skeema/knownhosts v1.2.1 // indirect
+	github.com/skeema/knownhosts v1.2.2 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect

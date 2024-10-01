@@ -1414,8 +1414,14 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 			cs.metrics.MarkProposalProcessed(isAppValid)
 
 			if !isAppValid {
-				logger.Error("prevote step: state machine rejected a proposed block; this should not happen:"+
-					"the proposer may be misbehaving; prevoting nil", "err", err)
+				logger.Error(
+					"prevote step: state machine rejected a proposed block; this should not happen:"+
+						"the proposer may be misbehaving; prevoting nil",
+					"err",
+					err,
+					"proposer",
+					cs.ProposalBlock.Header.ProposerAddress,
+				)
 				cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
 				return
 			}

@@ -15,7 +15,7 @@ testing phases of the feature.
   before A.
 - **Ordering across lanes**: Transactions in separate lanes are not guaranteed to maintain the order
   in which they are processed, disseminated to other nodes. Developers should be aware that
-  classification in lanes can result in transaction being committed to different blocks and executed
+  classification in lanes can result in transactions being committed to different blocks and executed
   in different order.
 - **Immutable lane assignment**: Once a transaction is assigned to a lane upon entering the mempool,
   its lane cannot be changed, even during rechecking.

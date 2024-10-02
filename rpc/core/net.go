@@ -105,7 +105,7 @@ func (env *Environment) UnsafeDialPeers(
 // Genesis returns genesis file.
 // More: https://docs.cometbft.com/main/rpc/#/Info/genesis
 func (env *Environment) Genesis(*rpctypes.Context) (*ctypes.ResultGenesis, error) {
-	if len(env.genChunks) > 1 {
+	if len(env.genChunks) > 0 {
 		return nil, ErrGenesisRespSize
 	}
 

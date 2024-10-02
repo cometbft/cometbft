@@ -8,6 +8,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestInitGenesisChunks(t *testing.T) {
+	t.Run("Error", func(t *testing.T) {
+		env := &Environment{
+			genChunks: nil,
+			GenDoc:    nil,
+		}
+		wantErrStr := "pointer to genesis is nil"
+
+		if err := env.InitGenesisChunks(); err == nil {
+			t.Error("expected error but got nil")
+		} else if err.Error() != wantErrStr {
+			t.Errorf("\nwantErr: %q\ngot: %q\n", wantErrStr, err.Error())
+		}
+	})
+
+}
+
 func TestPaginationPage(t *testing.T) {
 	cases := []struct {
 		totalCount int

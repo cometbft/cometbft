@@ -80,7 +80,7 @@ In this example, `assignLane` is a deterministic function that, given the conten
 returns a valid lane ID. The lane ID must be one of the keys in the `app.lanes` map, and it may be
 the default lane if no other lane is chosen to be assigned.
 
-## Best practice
+## Best practices
 
 ### Transaction classification and ordering
 

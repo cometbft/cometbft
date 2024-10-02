@@ -1,12 +1,88 @@
 # Mempool Lanes
 
-This guide provides a set of best practices and rules of thumb to help application developers set up
-and use the Lanes feature in the mempool, which allows to classify and prioritise transactions.
+The Lanes feature allows applications to classify and prioritise transactions for providing Quality
+of Service guarantees to the mempool ([ADR-118](adr)). 
 
-While this is not an exhaustive list, it captures key insights from the design, implementation, and
-testing phases of the feature.
+This guide provides instructions, along with a set of best practices and rules of thumb to help
+setting up and using Lanes within your application. 
 
-## Transaction classification and ordering
+## How to set up lanes in an application
+
+Application developers that want to make use of Lanes must pre-define a list of lane names and their
+priorities and then populate specific fields in `Info` and `CheckTx` responses. In contrast, if
+Lanes are not to be used by the application, no modifications to the code are necessary.
+
+We will explain with an example taken from our implementation of Lanes in the `kvstore` application
+(in `abci/example/kvstore/kvstore.go`).
+
+### Define lanes and their priorities
+
+First, the application should keep a list of lane IDs (of type `string`) and their priorities (of
+type `uint32`). In this example we store it as a map in the `Application` struct. And we define as a
+constant the lane ID used as default when assigning lanes to transactions.
+```golang
+const defaultLane = "C"
+
+type Application struct {
+  ...
+  lanePriorities map[string]uint32
+}
+
+func NewApplication(...) *Application {
+  ...
+  return &Application{
+    ...
+		lanes: map[string]uint32{
+      "A": 100,
+      "B": 50,
+      "C": 10,
+      "D": 1,
+    },
+	}
+}
+```
+
+### Handling Info requests
+
+When a CometBFT node starts, it performs a handshake with the application by sending an `Info`
+request. This process allows the node to retrieve essential data from the application to initialize
+and configure itself.
+
+Upon receiving an `Info` request, the application must reply with the mapping from lane IDs and
+their priorities in the `LanePriorities` field, and the default lane in the `DefaultLane` field. The
+default lane ID must be a key in the map `LanePriorities`.
+```golang
+func (app *Application) Info(ctx context.Context, req *types.InfoRequest) (*types.InfoResponse, error) {
+	...
+  return &types.InfoResponse{
+    ...
+		LanePriorities:   app.lanePriorities,
+		DefaultLane:      defaultLane,
+  }, nil
+}
+```
+
+### Handling CheckTx requests
+
+Upon receiving a `CheckTx` request for validating a transaction, the application must reply with the
+lane ID that it assigns to the transaction. The mempool will only use the lane ID if the transaction
+is valid and if the transaction is being validated for the first time (that is, when `req.Type`
+equals `types.CHECK_TX_TYPE_CHECK`, not when rechecking). Otherwise the mempool will ignore the
+`LaneId` field.
+```golang
+func (app *Application) CheckTx(ctx context.Context, req *types.CheckTxRequest) (*types.CheckTxResponse, error) {
+  ...
+  laneID := assignLane(req.Tx)
+  return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, LaneId: laneID}, nil
+}
+```
+In this example, `assignLane` is a deterministic function that, given the content of a transaction,
+returns a valid lane ID. The lane ID must be one of the keys in the `app.lanes` map, and it may be
+the default lane if no other lane is chosen to be assigned.
+
+## Best practice
+
+### Transaction classification and ordering
 
 - **Independent transactions**: Transactions can only be classified into different lanes if they are
   independent of each other. If there is a relationship or dependency between transactions (e.g
@@ -22,7 +98,7 @@ testing phases of the feature.
 - **Execution timing**: The time gap between the execution of two transactions is unpredictable,
   especially if they are in lanes with significantly different priority levels.
 
-## Number of lanes
+### Number of lanes
 
 - **One lane minimum**: Setting up one lane replicates the behavior of the mempool before lanes were
   introduced. The same behaviour is obtained when the application does not set up lanes: the mempool
@@ -34,7 +110,7 @@ testing phases of the feature.
   lanes that can be defined. However, keep in mind that both memory and CPU usage will increase in
   proportion to the number of lanes.
 
-## Lane priorities
+### Lane priorities
 
 - **Priority values**: Lane priorities are values of type `uint32`. Valid priorities range from 1 to
   `math.MaxUint32`. Priority 0 is reserved for cases where there are no lanes to assign, such as
@@ -50,7 +126,7 @@ testing phases of the feature.
   prevent one class of transaction monopolizing the entire mempool. When lanes share the same
   priority, the order in which they are processed is undefined.
 
-## Lane capacity
+### Lane capacity
 
 - **Capacity distribution**: The mempool's capacity is divided evenly among the lanes, with each
   lane's capacity being constrained by both the number of transactions and the total transaction
@@ -64,7 +140,7 @@ testing phases of the feature.
   of all lanes. In future iterations, we may introduce more granular control over lane capacities if
   needed.
 
-## Network setup
+### Network setup
 
 - **Limited resources**: Lanes are especially useful in networks with constrained resources, such as
   block size, mempool capacity, or network throughput. In such environments, lanes ensure
@@ -77,3 +153,5 @@ testing phases of the feature.
   inconsistent across nodes. While mixing nodes with and without lanes does not affect network
   correctness, consistent lane configuration is strongly recommended for improved performance and
   consistent behavior.
+
+[adr]: ../../../docs/references/architecture/adr-118-mempool-lanes.md

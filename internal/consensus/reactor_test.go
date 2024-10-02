@@ -162,9 +162,10 @@ func TestReactorWithEvidence(t *testing.T) {
 		proxyAppConnMem := proxy.NewAppConnMempool(abcicli.NewLocalClient(mtx, app), proxy.NopMetrics())
 
 		// Make Mempool
+		_, lanesInfo := fetchAppInfo(app)
 		mempool := mempl.NewCListMempool(config.Mempool,
 			proxyAppConnMem,
-			nil,
+			lanesInfo,
 			state.LastBlockHeight,
 			mempl.WithMetrics(memplMetrics),
 			mempl.WithPreCheck(sm.TxPreCheck(state)),

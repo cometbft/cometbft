@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"slices"
 	"testing"
 
 	cmtjson "github.com/cometbft/cometbft/libs/json"
@@ -24,6 +25,28 @@ func TestInitGenesisChunks(t *testing.T) {
 			t.Error("expected error but got nil")
 		} else if err.Error() != wantErrStr {
 			t.Errorf("\nwantErr: %q\ngot: %q\n", wantErrStr, err.Error())
+		}
+	})
+
+	// Calling InitGenesisChunks with an existing slice of chunks will return without
+	// doing anything.
+	t.Run("NoOp", func(t *testing.T) {
+		testChunks := []string{"chunk1", "chunk2"}
+		env := &Environment{
+			genChunks: testChunks,
+			GenDoc:    nil,
+		}
+
+		if err := env.InitGenesisChunks(); err != nil {
+			t.Errorf("unexpected error: %s", err)
+		} else {
+			if !slices.Equal(testChunks, env.genChunks) {
+				t.Fatalf("\nexpected chunks: %v\ngot: %v", testChunks, env.genChunks)
+			}
+			if env.GenDoc != nil {
+				formatStr := "pointer to GenesisDoc should be nil, but it's pointing to\n%#v"
+				t.Errorf(formatStr, *env.GenDoc)
+			}
 		}
 	})
 

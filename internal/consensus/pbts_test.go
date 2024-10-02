@@ -556,6 +556,7 @@ func TestPBTSEnableHeight(t *testing.T) {
 		Status: abci.VERIFY_VOTE_EXTENSION_STATUS_ACCEPT,
 	}, nil)
 	app.On("Commit", mock.Anything, mock.Anything).Return(&abci.CommitResponse{}, nil).Maybe()
+	app.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil).Maybe()
 
 	cs, vss := randStateWithAppImpl(numValidators, app, c)
 	height, round, chainID := cs.Height, cs.Round, cs.state.ChainID

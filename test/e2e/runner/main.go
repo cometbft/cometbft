@@ -27,10 +27,11 @@ func main() {
 
 // CLI is the Cobra-based command-line interface.
 type CLI struct {
-	root     *cobra.Command
-	testnet  *e2e.Testnet
-	preserve bool
-	infp     infra.Provider
+	root      *cobra.Command
+	testnet   *e2e.Testnet
+	preserve  bool
+	infp      infra.Provider
+	execution bool
 }
 
 // NewCLI sets up the CLI.
@@ -58,13 +59,13 @@ func NewCLI() *CLI {
 
 			var ifd e2e.InfrastructureData
 			switch inft {
-			case "docker":
+			case docker.ProviderName:
 				var err error
 				ifd, err = e2e.NewDockerInfrastructureData(m)
 				if err != nil {
 					return err
 				}
-			case "digital-ocean":
+			case digitalocean.ProviderName:
 				p, err := cmd.Flags().GetString("infrastructure-data")
 				if err != nil {
 					return err
@@ -92,14 +93,14 @@ func NewCLI() *CLI {
 
 			cli.testnet = testnet
 			switch inft {
-			case "docker":
+			case docker.ProviderName:
 				cli.infp = &docker.Provider{
 					ProviderData: infra.ProviderData{
 						Testnet:            testnet,
 						InfrastructureData: ifd,
 					},
 				}
-			case "digital-ocean":
+			case digitalocean.ProviderName:
 				cli.infp = &digitalocean.Provider{
 					ProviderData: infra.ProviderData{
 						Testnet:            testnet,
@@ -165,14 +166,33 @@ func NewCLI() *CLI {
 			if err := Wait(cmd.Context(), cli.testnet, 5); err != nil { // wait for network to settle before tests
 				return err
 			}
-			if err := Test(cli.testnet, cli.infp.GetInfrastructureData()); err != nil {
-				return err
+			testError := Test(cli.testnet, cli.infp.GetInfrastructureData())
+
+			// Before returning a test error save execution files if the 'execution' flag was specified
+			if cli.execution {
+				// Only execute this when running a Docker provider
+				if cli.infp.GetInfrastructureData().Provider == docker.ProviderName {
+					if err := SaveExecution(cli.testnet); err != nil {
+						logger.Error("error saving execution", "msg", "error saving execution files", "err", err.Error())
+						return err
+					}
+				}
 			}
+
+			// Clean up if preserve was not set
 			if !cli.preserve {
 				if err := Cleanup(cli.testnet); err != nil {
+					logger.Error("error cleaning up", "msg", "error removing docker container(s)", "err", err.Error())
 					return err
 				}
 			}
+
+			// Return the error from the test
+			if testError != nil {
+				logger.Error("tests failed", "msg", "error running tests", "err", testError.Error())
+				return testError
+			}
+
 			return nil
 		},
 	}
@@ -188,6 +208,9 @@ func NewCLI() *CLI {
 
 	cli.root.Flags().BoolVarP(&cli.preserve, "preserve", "p", false,
 		"Preserves the running of the test net after tests are completed")
+
+	cli.root.Flags().BoolVarP(&cli.execution, "execution", "e", false,
+		"Saves logs, configs and results after tests are completed. Only used if the 'infrastructure-type' is set to 'docker'")
 
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "setup",
@@ -300,7 +323,7 @@ func NewCLI() *CLI {
 			splitLogs, _ = cmd.Flags().GetBool("split")
 			if splitLogs {
 				for _, node := range cli.testnet.Nodes {
-					fmt.Println("Log for", node.Name)
+					logger.Info("log for ", node.Name)
 					err := docker.ExecComposeVerbose(context.Background(), cli.testnet.Dir, "logs", node.Name)
 					if err != nil {
 						return err

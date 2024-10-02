@@ -17,11 +17,19 @@ fi
 
 FAILED=()
 
+# Check if a save execution is passed to the script
+EXECUTION_FLAG=""
+
 for MANIFEST in "$@"; do
 	START=$SECONDS
 	echo "==> Running testnet: $MANIFEST"
 
-	if ! ./build/runner -f "$MANIFEST"; then
+	if [ -n "${SAVE_EXECUTION+set}" ]; then
+		EXECUTION_FLAG="--execution"
+		echo "==> Execution flag detected, saving files after run"
+	fi
+
+	if ! ./build/runner -f "$MANIFEST" "$EXECUTION_FLAG"; then
 		echo "==> Testnet $MANIFEST failed, dumping manifest..."
 		cat "$MANIFEST"
 

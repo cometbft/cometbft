@@ -13,6 +13,8 @@ import (
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 )
 
+const ProviderName = "digital-ocean"
+
 var _ infra.Provider = (*Provider)(nil)
 
 // Provider implements a DigitalOcean-backed infrastructure provider.

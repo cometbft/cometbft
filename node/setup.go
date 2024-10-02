@@ -65,6 +65,9 @@ type CliParams struct {
 // GenesisDocProvider returns a GenesisDoc together with its SHA256 checksum.
 // It allows the GenesisDoc to be pulled from sources other than the
 // filesystem, for instance from a distributed key-value store cluster.
+// It is the responsibility of the GenesisDocProvider to ensure that the SHA256
+// checksum correctly matches the GenesisDoc, that is:
+// sha256(GenesisDoc) == Sha256Checksum.
 type GenesisDocProvider func() (ChecksummedGenesisDoc, error)
 
 // DefaultGenesisDocProviderFunc returns a GenesisDocProvider that loads

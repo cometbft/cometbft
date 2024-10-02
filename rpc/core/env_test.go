@@ -7,10 +7,11 @@ import (
 	"slices"
 	"testing"
 
-	cmtjson "github.com/cometbft/cometbft/libs/json"
-	"github.com/cometbft/cometbft/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/cometbft/cometbft/types"
 )
 
 func TestInitGenesisChunks(t *testing.T) {

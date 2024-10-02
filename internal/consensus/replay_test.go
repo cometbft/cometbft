@@ -77,7 +77,7 @@ func startNewStateAndWaitForBlock(
 	privValidator, err := loadPrivValidator(consensusReplayConfig)
 	require.NoError(t, err)
 	app := kvstore.NewInMemoryApplication()
-	_, lanesInfo := fetchAppInfo(t, app)
+	_, lanesInfo := fetchAppInfo(app)
 	cs := newStateWithConfigAndBlockStore(
 		consensusReplayConfig,
 		state,
@@ -187,7 +187,7 @@ LOOP:
 		privValidator, err := loadPrivValidator(consensusReplayConfig)
 		require.NoError(t, err)
 		app := kvstore.NewInMemoryApplication()
-		_, lanesInfo := fetchAppInfo(t, app)
+		_, lanesInfo := fetchAppInfo(app)
 		cs := newStateWithConfigAndBlockStore(
 			consensusReplayConfig,
 			state,

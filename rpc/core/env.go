@@ -112,7 +112,7 @@ type Environment struct {
 // GenDoc field will be set to nil. `/genesis` RPC API will redirect users to use
 // the `/genesis_chunked` API.
 func (env *Environment) InitGenesisChunks() error {
-	if env.genChunks != nil || len(env.genChunks) > 0 {
+	if len(env.genChunks) > 0 {
 		// we already computed the chunks, return.
 		return nil
 	}

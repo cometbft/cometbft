@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"time"
 
@@ -135,15 +136,26 @@ func (*Environment) validatePerPage(perPagePtr *int) int {
 	return perPage
 }
 
-// InitGenesisChunks configures the environment and should be called on service
-// startup.
+// InitGenesisChunks checks whether it makes sense to create a cache of chunked
+// genesis data. It is called once on Node startup.
+// Rules of chunking:
+// - if the genesis file's size is <= 16MB, then no chunking. An `Environment`
+// object will store a pointer to the genesis in its GenDoc field. Its genChunks
+// field will be set to nil. `/genesis` RPC API will return the GenesisDoc itself.
+// - if the genesis file's size is > 16MB, then use chunking. An `Environment`
+// object will store a slice of base64-encoded chunks in its genChunks field. Its
+// GenDoc field will be set to nil. `/genesis` RPC API will redirect users to use
+// the `/genesis_chunked` API.
 func (env *Environment) InitGenesisChunks() error {
-	if env.genChunks != nil {
+	if env.genChunks != nil || len(env.genChunks) > 0 {
+		// we already computed the chunks, return.
 		return nil
 	}
 
 	if env.GenDoc == nil {
-		return nil
+		// chunks not computed yet, but no genesis available.
+		// This should not happen.
+		return errors.New("pointer to genesis is nil")
 	}
 
 	data, err := cmtjson.Marshal(env.GenDoc)
@@ -151,15 +163,34 @@ func (env *Environment) InitGenesisChunks() error {
 		return err
 	}
 
-	for i := 0; i < len(data); i += genesisChunkSize {
-		end := i + genesisChunkSize
+	// If genesis is less than 16MB, then no chunking.
+	// Keep a pointer to a GenesisDoc in env.GenDoc.
+	if len(data) <= genesisChunkSize {
+		env.genChunks = nil
+		return nil
+	}
 
+	var (
+		nChunks = (len(data) + genesisChunkSize - 1) / genesisChunkSize
+		chunks  = make([]string, nChunks)
+	)
+	for i := range nChunks {
+		var (
+			start = i * genesisChunkSize
+			end   = start + genesisChunkSize
+		)
 		if end > len(data) {
 			end = len(data)
 		}
 
-		env.genChunks = append(env.genChunks, base64.StdEncoding.EncodeToString(data[i:end]))
+		chunk := data[start:end]
+		chunks[i] = base64.StdEncoding.EncodeToString(chunk)
 	}
+
+	env.genChunks = chunks
+
+	// we store the chunks; don't store a ptr to the genesis anymore.
+	env.GenDoc = nil
 
 	return nil
 }

@@ -20,7 +20,8 @@ We will explain with an example taken from our implementation of Lanes in the `k
 First, the application should keep a list of lane IDs (of type `string`) and their priorities (of
 type `uint32`). In this example we store it as a map in the `Application` struct. And we define as a
 constant the lane ID used as default when assigning lanes to transactions.
-```golang
+
+```go
 const defaultLane = "C"
 
 type Application struct {
@@ -51,7 +52,8 @@ and configure itself.
 Upon receiving an `Info` request, the application must reply with the mapping from lane IDs and
 their priorities in the `LanePriorities` field, and the default lane in the `DefaultLane` field. The
 default lane ID must be a key in the map `LanePriorities`.
-```golang
+
+```go
 func (app *Application) Info(ctx context.Context, req *types.InfoRequest) (*types.InfoResponse, error) {
 	...
   return &types.InfoResponse{
@@ -69,13 +71,13 @@ lane ID that it assigns to the transaction. The mempool will only use the lane I
 is valid and if the transaction is being validated for the first time (that is, when `req.Type`
 equals `types.CHECK_TX_TYPE_CHECK`, not when rechecking). Otherwise the mempool will ignore the
 `LaneId` field.
-```golang
+
+```go
 func (app *Application) CheckTx(ctx context.Context, req *types.CheckTxRequest) (*types.CheckTxResponse, error) {
   ...
   laneID := assignLane(req.Tx)
   return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, LaneId: laneID}, nil
 }
-```
 In this example, `assignLane` is a deterministic function that, given the content of a transaction,
 returns a valid lane ID. The lane ID must be one of the keys in the `app.lanes` map, and it may be
 the default lane if no other lane is chosen to be assigned.

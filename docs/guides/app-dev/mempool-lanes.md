@@ -33,13 +33,13 @@ func NewApplication(...) *Application {
   ...
   return &Application{
     ...
-		lanes: map[string]uint32{
+    lanePriorities: map[string]uint32{
       "A": 100,
       "B": 50,
       "C": 10,
       "D": 1,
     },
-	}
+  }
 }
 ```
 
@@ -55,11 +55,11 @@ default lane ID must be a key in the map `LanePriorities`.
 
 ```go
 func (app *Application) Info(ctx context.Context, req *types.InfoRequest) (*types.InfoResponse, error) {
-	...
+  ...
   return &types.InfoResponse{
     ...
-		LanePriorities:   app.lanePriorities,
-		DefaultLane:      defaultLane,
+    LanePriorities:   app.lanePriorities,
+    DefaultLane:      defaultLane,
   }, nil
 }
 ```
@@ -67,10 +67,10 @@ func (app *Application) Info(ctx context.Context, req *types.InfoRequest) (*type
 ### Handling CheckTx requests
 
 Upon receiving a `CheckTx` request for validating a transaction, the application must reply with the
-lane ID that it assigns to the transaction. The mempool will only use the lane ID if the transaction
-is valid and if the transaction is being validated for the first time (that is, when `req.Type`
-equals `types.CHECK_TX_TYPE_CHECK`, not when rechecking). Otherwise the mempool will ignore the
-`LaneId` field.
+lane that it assigns to the transaction in the `LaneId` field. The mempool will only use the lane if
+(1) the transaction is valid and (2) the transaction is being validated for the first time, that is,
+when `req.Type` equals `types.CHECK_TX_TYPE_CHECK` (not when rechecking). Otherwise, the mempool
+will ignore the `LaneId` field.
 
 ```go
 func (app *Application) CheckTx(ctx context.Context, req *types.CheckTxRequest) (*types.CheckTxResponse, error) {
@@ -78,6 +78,7 @@ func (app *Application) CheckTx(ctx context.Context, req *types.CheckTxRequest) 
   laneID := assignLane(req.Tx)
   return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, LaneId: laneID}, nil
 }
+```
 In this example, `assignLane` is a deterministic function that, given the content of a transaction,
 returns a valid lane ID. The lane ID must be one of the keys in the `app.lanes` map, and it may be
 the default lane if no other lane is chosen to be assigned.

@@ -2,7 +2,6 @@ package mempool
 
 import (
 	"context"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -154,9 +153,9 @@ func BenchmarkUpdateRemoteClient(b *testing.B) {
 	}
 }
 
-// Benchmarks the time it takes a blocking iterator to access all transactions
-// in the mempool.
-func BenchmarkBlockingIterator(b *testing.B) {
+// Benchmarks the time it takes an iterator to access all transactions in the
+// mempool.
+func BenchmarkIterator(b *testing.B) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
 	mp, cleanup := newMempoolWithApp(cc)
@@ -170,7 +169,7 @@ func BenchmarkBlockingIterator(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		iter := NewBlockingIterator(context.TODO(), mp, b.Name())
+		iter := mp.NewIterator(context.TODO())
 		b.StartTimer()
 
 		// Iterate until all txs in the mempool are accessed.
@@ -182,9 +181,9 @@ func BenchmarkBlockingIterator(b *testing.B) {
 	}
 }
 
-// Benchmarks the time it takes multiple concurrent blocking iterators to access
-// all transactions in the mempool.
-func BenchmarkConcurrentkBlockingIterators(b *testing.B) {
+// Benchmarks the time it takes multiple concurrent iterators to access all
+// transactions in the mempool.
+func BenchmarkConcurrentkIterators(b *testing.B) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
 	mp, cleanup := newMempoolWithApp(cc)
@@ -204,7 +203,7 @@ func BenchmarkConcurrentkBlockingIterators(b *testing.B) {
 		// Create concurrent iterators.
 		iters := make([]Iterator, numIterators)
 		for j := 0; j < numIterators; j++ {
-			iters[j] = NewBlockingIterator(context.TODO(), mp, strconv.Itoa(j))
+			iters[j] = mp.NewIterator(context.TODO())
 		}
 		wg := sync.WaitGroup{}
 		wg.Add(numIterators)

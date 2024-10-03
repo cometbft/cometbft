@@ -93,7 +93,7 @@ the default lane if no other lane is chosen to be assigned.
   Failing to do so may result in an incorrect ordering, where B could be processed and executed
   before A.
 - **Ordering across lanes**: Transactions in separate lanes are not guaranteed to maintain the order
-  in which they are processed, disseminated to other nodes. Developers should be aware that
+  in which they are processed and disseminated to other nodes. Developers should be aware that
   classification in lanes can result in transactions being committed to different blocks and executed
   in different order.
 - **Immutable lane assignment**: Once a transaction is assigned to a lane upon entering the mempool,
@@ -123,7 +123,7 @@ the default lane if no other lane is chosen to be assigned.
 - **Fair scheduling**: Lanes implement a scheduling algorithm for picking transactions
   for dissemination to peers and for creating blocks. The algorithm is designed to be
   _starvation-free_, ensuring that even transactions from lower-priority lanes will eventually be
-  disseminated and included in blocks. It also _fair_, because it picks transactions across all
+  disseminated and included in blocks. It is also _fair_, because it picks transactions across all
   lanes by interleaving them when possible.
 - **Equal priorities**: Multiple lanes are allowed to have the same priority. This could help
   prevent one class of transaction monopolizing the entire mempool. When lanes share the same

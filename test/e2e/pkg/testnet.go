@@ -86,6 +86,10 @@ type Testnet struct {
 	ValidatorUpdates map[int64]map[string]int64
 	Nodes            []*Node
 
+	// If not empty, ignore the manifest and send transaction load only to the
+	// node names in this list. It is set only from a command line flag.
+	LoadTargetNodes []string
+
 	// For generating transaction load on lanes proportionally to their
 	// priorities.
 	laneIDs               []string
@@ -208,7 +212,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		testnet.laneCumulativeWeights[i] = testnet.laneCumulativeWeights[i-1] + laneWeights[i]
 	}
 
-	for _, name := range sortNodeNames(manifest) {
+	for _, name := range sortNodeNames(&manifest) {
 		nodeManifest := manifest.NodesMap[name]
 		ind, ok := ifd.Instances[name]
 		if !ok {
@@ -420,6 +424,12 @@ func (t Testnet) Validate() error {
 				"update height %d, enable height %d",
 				t.PbtsUpdateHeight, t.PbtsEnableHeight,
 			)
+		}
+	}
+	nodeNames := sortNodeNames(t.Manifest)
+	for _, nodeName := range t.LoadTargetNodes {
+		if !slices.Contains(nodeNames, nodeName) {
+			return fmt.Errorf("%s is not the list of nodes", nodeName)
 		}
 	}
 	if len(t.LoadLaneWeights) != len(t.Lanes) {
@@ -677,7 +687,7 @@ func (t Testnet) WritePrometheusConfig() error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(filepath.Join(t.Dir, "prometheus.yaml"), bytes, 0o644) //nolint:gosec
+	err = os.WriteFile(filepath.Join(t.Dir, "prometheus.yml"), bytes, 0o644) //nolint:gosec
 	if err != nil {
 		return err
 	}

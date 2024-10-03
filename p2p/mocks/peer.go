@@ -54,7 +54,11 @@ func (_m *Peer) Get(key string) interface{} {
 		r0 = rf(key)
 	} else {
 		if ret.Get(0) != nil {
+<<<<<<< HEAD
 			r0 = ret.Get(0).(interface{})
+=======
+			r0 = ret.Get(0).(any)
+>>>>>>> e7a4b7d69 (chore: Regenerate mock files (#4240))
 		}
 	}
 

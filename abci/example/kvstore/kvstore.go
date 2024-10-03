@@ -204,6 +204,10 @@ func assignLane(tx []byte) string {
 		return lane
 	}
 
+	// Since a key is usually a numerical value, we assign lanes by computing
+	// the key modulo some pre-selected divisors. As a result, some lanes will
+	// be assigned less frequently than others, and we will be able to compute
+	// in advance the lane assigned to a transaction (useful for testing).
 	switch {
 	case keyInt%11 == 0:
 		return "foo" // priority 7

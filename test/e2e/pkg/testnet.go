@@ -73,6 +73,7 @@ const (
 
 // Testnet represents a single testnet.
 type Testnet struct {
+<<<<<<< HEAD
 	Name                                                 string
 	File                                                 string
 	Dir                                                  string
@@ -110,6 +111,27 @@ type Testnet struct {
 	DefaultZone                                          string
 	PbtsEnableHeight                                     int64
 	PbtsUpdateHeight                                     int64
+=======
+	*Manifest
+
+	Name string
+	File string
+	Dir  string
+
+	IP               *net.IPNet
+	ValidatorUpdates map[int64]map[string]int64
+	Nodes            []*Node
+
+	// If not empty, ignore the manifest and send transaction load only to the
+	// node names in this list. It is set only from a command line flag.
+	LoadTargetNodes []string
+
+	// For generating transaction load on lanes proportionally to their
+	// priorities.
+	laneIDs               []string
+	laneCumulativeWeights []uint
+	sumWeights            uint
+>>>>>>> ba6160f45 (feat(e2e): Add `load_max_seconds` to manifest + optional flags to `load` command (#4175))
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -238,8 +260,42 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		testnet.LoadTxSizeBytes = defaultTxSizeBytes
 	}
 
+<<<<<<< HEAD
 	for _, name := range sortNodeNames(manifest) {
 		nodeManifest := manifest.Nodes[name]
+=======
+	if len(testnet.Lanes) == 0 {
+		testnet.Lanes = app.DefaultLanes()
+	}
+	if len(testnet.LoadLaneWeights) == 0 {
+		// Assign same weight to all lanes.
+		testnet.LoadLaneWeights = make(map[string]uint, len(testnet.Lanes))
+		for id := range testnet.Lanes {
+			testnet.LoadLaneWeights[id] = 1
+		}
+	}
+	if len(testnet.Lanes) < 1 {
+		return nil, errors.New("number of lanes must be greater or equal to one")
+	}
+
+	// Pre-compute lane data needed for generating transaction load.
+	testnet.laneIDs = make([]string, 0, len(testnet.Lanes))
+	laneWeights := make([]uint, 0, len(testnet.Lanes))
+	for lane := range testnet.Lanes {
+		testnet.laneIDs = append(testnet.laneIDs, lane)
+		weight := testnet.LoadLaneWeights[lane]
+		laneWeights = append(laneWeights, weight)
+		testnet.sumWeights += weight
+	}
+	testnet.laneCumulativeWeights = make([]uint, len(testnet.Lanes))
+	testnet.laneCumulativeWeights[0] = laneWeights[0]
+	for i := 1; i < len(testnet.laneCumulativeWeights); i++ {
+		testnet.laneCumulativeWeights[i] = testnet.laneCumulativeWeights[i-1] + laneWeights[i]
+	}
+
+	for _, name := range sortNodeNames(&manifest) {
+		nodeManifest := manifest.NodesMap[name]
+>>>>>>> ba6160f45 (feat(e2e): Add `load_max_seconds` to manifest + optional flags to `load` command (#4175))
 		ind, ok := ifd.Instances[name]
 		if !ok {
 			return nil, fmt.Errorf("information for node '%s' missing from infrastructure data", name)
@@ -467,6 +523,29 @@ func (t Testnet) Validate() error {
 			)
 		}
 	}
+<<<<<<< HEAD
+=======
+	nodeNames := sortNodeNames(t.Manifest)
+	for _, nodeName := range t.LoadTargetNodes {
+		if !slices.Contains(nodeNames, nodeName) {
+			return fmt.Errorf("%s is not the list of nodes", nodeName)
+		}
+	}
+	if len(t.LoadLaneWeights) != len(t.Lanes) {
+		return fmt.Errorf("number of lane weights (%d) must be equal to "+
+			"the number of lanes defined by the app (%d)",
+			len(t.LoadLaneWeights), len(t.Lanes),
+		)
+	}
+	for lane := range t.Lanes {
+		if _, ok := t.LoadLaneWeights[lane]; !ok {
+			return fmt.Errorf("lane %s not in weights map", lane)
+		}
+	}
+	if t.sumWeights <= 0 {
+		return errors.New("the sum of all lane weights must be greater than 0")
+	}
+>>>>>>> ba6160f45 (feat(e2e): Add `load_max_seconds` to manifest + optional flags to `load` command (#4175))
 	for _, node := range t.Nodes {
 		if err := node.Validate(t); err != nil {
 			return fmt.Errorf("invalid node %q: %w", node.Name, err)
@@ -672,7 +751,7 @@ func (t Testnet) WritePrometheusConfig() error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(filepath.Join(t.Dir, "prometheus.yaml"), bytes, 0o644) //nolint:gosec
+	err = os.WriteFile(filepath.Join(t.Dir, "prometheus.yml"), bytes, 0o644) //nolint:gosec
 	if err != nil {
 		return err
 	}

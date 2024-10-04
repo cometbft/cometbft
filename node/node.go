@@ -52,7 +52,8 @@ type Node struct {
 
 	// config
 	config        *cfg.Config
-	genesisDoc    *types.GenesisDoc   // initial validator set
+	genesisDoc    *types.GenesisDoc // initial validator set
+	genesisTime   time.Time
 	privValidator types.PrivValidator // local node's validator key
 
 	// network
@@ -583,7 +584,7 @@ func NewNodeWithCliParams(ctx context.Context,
 // OnStart starts the Node. It implements service.Service.
 func (n *Node) OnStart() error {
 	now := cmttime.Now()
-	genTime := n.genesisDoc.GenesisTime
+	genTime := n.genesisTime
 	if genTime.After(now) {
 		n.Logger.Info("Genesis time is in the future. Sleeping until then...", "genTime", genTime)
 		time.Sleep(genTime.Sub(now))

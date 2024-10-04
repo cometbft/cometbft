@@ -122,16 +122,16 @@ func TestNodeDelayedStart(t *testing.T) {
 
 	// create & start node
 	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{}, nil)
-	n.genesisDoc.GenesisTime = now.Add(2 * time.Second)
+	n.genesisTime = now.Add(2 * time.Second)
 	require.NoError(t, err)
-	n.genesisDoc.GenesisTime = now.Add(2 * time.Second)
+	n.genesisTime = now.Add(2 * time.Second)
 
 	err = n.Start()
 	require.NoError(t, err)
 	defer n.Stop() //nolint:errcheck // ignore for tests
 
 	startTime := cmttime.Now()
-	assert.True(t, true, startTime.After(n.genesisDoc.GenesisTime))
+	assert.True(t, true, startTime.After(n.genesisTime))
 }
 
 func TestNodeSetAppVersion(t *testing.T) {

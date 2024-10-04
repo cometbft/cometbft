@@ -36,7 +36,7 @@ func NewApplication(...) *Application {
     lanePriorities: map[string]uint32{
       "A": 100,
       "B": 50,
-      "C": 10,
+      defaultLane: 10,
       "D": 1,
     },
   }
@@ -46,10 +46,10 @@ func NewApplication(...) *Application {
 ### Handling Info requests
 
 When a CometBFT node starts, it performs a handshake with the application by sending an `Info`
-request. This process allows the node to retrieve essential data from the application to initialize
+request. This process allows CometBFT to retrieve essential data from the application to initialize
 and configure itself.
 
-Upon receiving an `Info` request, the application must reply with the mapping from lane IDs and
+Upon receiving an `Info` request, the application must reply with the lane IDs and
 their priorities in the `LanePriorities` field, and the default lane in the `DefaultLane` field. The
 default lane ID must be a key in the map `LanePriorities`.
 
@@ -64,11 +64,13 @@ func (app *Application) Info(ctx context.Context, req *types.InfoRequest) (*type
 }
 ```
 
+If the application does not populate these fields, CometBFT will use a single, default lane.
+
 ### Handling CheckTx requests
 
 Upon receiving a `CheckTx` request for validating a transaction, the application must reply with the
 lane that it assigns to the transaction in the `LaneId` field. The mempool will only use the lane if
-(1) the transaction is valid and (2) the transaction is being validated for the first time, that is,
+(1) the transaction is valid and (2) the transaction is being validated for the first time at the local node, that is,
 when `req.Type` equals `types.CHECK_TX_TYPE_CHECK` (not when rechecking). Otherwise, the mempool
 will ignore the `LaneId` field.
 
@@ -127,7 +129,7 @@ the default lane if no other lane is chosen to be assigned.
   lanes by interleaving them when possible.
 - **Equal priorities**: Multiple lanes are allowed to have the same priority. This could help
   prevent one class of transaction monopolizing the entire mempool. When lanes share the same
-  priority, the order in which they are processed is undefined.
+  priority, the order in which they are processed is undefined. However, transactions within the same lane are locally treated in FIFO order as usual.
 
 ### Lane capacity
 
@@ -140,7 +142,7 @@ the default lane if no other lane is chosen to be assigned.
   whenever possible.
 - **Adjusting capacities**: If you find that the capacity of a lane is insufficient, you still have
   the option of increasing the total mempool size, which will proportionally increase the capacity
-  of all lanes. In future iterations, we may introduce more granular control over lane capacities if
+  of all lanes. In future releases, we may introduce more granular control over lane capacities if
   needed.
 
 ### Network setup
@@ -151,7 +153,7 @@ the default lane if no other lane is chosen to be assigned.
   networks without these limitations, lanes will not significantly affect the behavior compared to
   nodes that do not implement lanes.
 - **Consistent setup**: To fully benefit from lanes, all nodes in the network should implement the
-  same lanes configuration. If some nodes do not support lanes, the benefits of lane prioritization
+  same lanes configuration and transaction classification logic. If some nodes do not support lanes, the benefits of lane prioritization
   will not be observed, because transaction ordering during dissemination and processing will be
   inconsistent across nodes. While mixing nodes with and without lanes does not affect network
   correctness, consistent lane configuration is strongly recommended for improved performance and

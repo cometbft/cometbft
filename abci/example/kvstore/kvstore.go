@@ -51,23 +51,17 @@ type Application struct {
 	// Should be false by default to avoid generating too much data.
 	genBlockEvents bool
 
-	lanes          map[string]uint32
-	lanePriorities []uint32
+	// Map from lane IDs to their priorities.
+	lanePriorities map[string]uint32
 }
 
 // NewApplication creates an instance of the kvstore from the provided database,
 // with the given lanes and priorities.
-func NewApplication(db dbm.DB, lanes map[string]uint32) *Application {
-	lanePriorities := make([]uint32, 0, len(lanes))
-	for _, p := range lanes {
-		lanePriorities = append(lanePriorities, p)
-	}
-
+func NewApplication(db dbm.DB, lanePriorities map[string]uint32) *Application {
 	return &Application{
 		logger:             log.NewNopLogger(),
 		state:              loadState(db),
 		valAddrToPubKeyMap: make(map[string]crypto.PubKey),
-		lanes:              lanes,
 		lanePriorities:     lanePriorities,
 	}
 }
@@ -138,8 +132,8 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 		}
 	}
 
-	defLane := ""
-	if len(app.lanes) != 0 {
+	var defLane string
+	if len(app.lanePriorities) != 0 {
 		defLane = defaultLane
 	}
 	return &types.InfoResponse{
@@ -148,7 +142,7 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 		AppVersion:       AppVersion,
 		LastBlockHeight:  app.state.Height,
 		LastBlockAppHash: app.state.Hash(),
-		LanePriorities:   app.lanes,
+		LanePriorities:   app.lanePriorities,
 		DefaultLane:      defLane,
 	}, nil
 }
@@ -184,11 +178,11 @@ func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*
 		return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil
 	}
 
-	if len(app.lanes) == 0 {
+	if len(app.lanePriorities) == 0 {
 		return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1}, nil
 	}
-	lane := assignLane(req.Tx)
-	return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, LaneId: lane}, nil
+	laneID := assignLane(req.Tx)
+	return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, LaneId: laneID}, nil
 }
 
 // assignLane deterministically computes a lane for the given tx.
@@ -210,6 +204,10 @@ func assignLane(tx []byte) string {
 		return lane
 	}
 
+	// Since a key is usually a numerical value, we assign lanes by computing
+	// the key modulo some pre-selected divisors. As a result, some lanes will
+	// be assigned less frequently than others, and we will be able to compute
+	// in advance the lane assigned to a transaction (useful for testing).
 	switch {
 	case keyInt%11 == 0:
 		return "foo" // priority 7

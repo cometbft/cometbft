@@ -53,7 +53,9 @@ func (_m *Peer) Get(key string) any {
 	if rf, ok := ret.Get(0).(func(string) any); ok {
 		r0 = rf(key)
 	} else {
-		r0 = ret.Get(0).(any)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(any)
+		}
 	}
 
 	return r0

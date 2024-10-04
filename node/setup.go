@@ -64,6 +64,9 @@ type CliParams struct {
 // GenesisDocProvider returns a GenesisDoc together with its SHA256 checksum.
 // It allows the GenesisDoc to be pulled from sources other than the
 // filesystem, for instance from a distributed key-value store cluster.
+// It is the responsibility of the GenesisDocProvider to ensure that the SHA256
+// checksum correctly matches the GenesisDoc, that is:
+// sha256(GenesisDoc) == Sha256Checksum.
 type GenesisDocProvider func() (ChecksummedGenesisDoc, error)
 
 // DefaultGenesisDocProviderFunc returns a GenesisDocProvider that loads
@@ -226,13 +229,14 @@ func doHandshake(
 	blockStore sm.BlockStore,
 	genDoc *types.GenesisDoc,
 	eventBus types.BlockEventPublisher,
+	appInfoResponse *abci.InfoResponse,
 	proxyApp proxy.AppConns,
 	consensusLogger log.Logger,
 ) error {
 	handshaker := cs.NewHandshaker(stateStore, state, blockStore, genDoc)
 	handshaker.SetLogger(consensusLogger)
 	handshaker.SetEventBus(eventBus)
-	if err := handshaker.Handshake(ctx, proxyApp); err != nil {
+	if err := handshaker.Handshake(ctx, appInfoResponse, proxyApp); err != nil {
 		return fmt.Errorf("error during handshake: %v", err)
 	}
 	return nil
@@ -274,10 +278,16 @@ func createMempoolAndMempoolReactor(
 	waitSync bool,
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
+	appInfoResponse *abci.InfoResponse,
 ) (mempl.Mempool, mempoolReactor) {
 	switch config.Mempool.Type {
 	// allow empty string for backward compatibility
 	case cfg.MempoolTypeFlood, "":
+		lanesInfo, err := mempl.BuildLanesInfo(appInfoResponse.LanePriorities, appInfoResponse.DefaultLane)
+		if err != nil {
+			panic(fmt.Sprintf("could not get lanes info from app: %s", err))
+		}
+
 		logger = logger.With("module", "mempool")
 		options := []mempl.CListMempoolOption{
 			mempl.WithMetrics(memplMetrics),
@@ -294,6 +304,7 @@ func createMempoolAndMempoolReactor(
 		mp := mempl.NewCListMempool(
 			config.Mempool,
 			proxyApp.Mempool(),
+			lanesInfo,
 			state.LastBlockHeight,
 			options...,
 		)

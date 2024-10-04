@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 
@@ -28,7 +29,9 @@ func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	logger.Info("load", "msg", log.NewLazySprintf("Starting transaction load (%v workers)...", workerPoolSize))
+	logger.Info("load", "msg", log.NewLazySprintf("Starting transaction load (%v workers)...", workerPoolSize),
+		"tx/s", testnet.LoadTxBatchSize, "tx-bytes", testnet.LoadTxSizeBytes, "conn", testnet.LoadTxConnections,
+		"max-seconds", testnet.LoadMaxSeconds, "target-nodes", testnet.LoadTargetNodes)
 	started := time.Now()
 	u := [16]byte(uuid.New()) // generate run ID on startup
 
@@ -36,13 +39,22 @@ func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 	go loadGenerate(ctx, txCh, testnet, u[:])
 
 	for _, n := range testnet.Nodes {
-		if n.SendNoLoad {
+		if len(testnet.LoadTargetNodes) == 0 {
+			if n.SendNoLoad {
+				continue
+			}
+		} else if !slices.Contains(testnet.LoadTargetNodes, n.Name) {
 			continue
 		}
 
 		for w := 0; w < testnet.LoadTxConnections; w++ {
 			go loadProcess(ctx, txCh, chSuccess, chFailed, n, useInternalIP)
 		}
+	}
+
+	maxTimer := time.NewTimer(time.Duration(testnet.LoadMaxSeconds) * time.Second)
+	if testnet.LoadMaxSeconds <= 0 {
+		<-maxTimer.C
 	}
 
 	// Monitor successful and failed transactions, and abort on stalls.
@@ -61,6 +73,9 @@ func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 			errorCounter[err.Error()]++
 		case <-time.After(timeout):
 			return fmt.Errorf("unable to submit transactions for %v", timeout)
+		case <-maxTimer.C:
+			logger.Info("load", "msg", log.NewLazySprintf("Transaction load finished after reaching %v seconds (%v tx/s)", testnet.LoadMaxSeconds, rate))
+			return nil
 		case <-ctx.Done():
 			if success == 0 {
 				return errors.New("failed to submit any transactions")
@@ -88,7 +103,7 @@ func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 
 		// Check if reached max number of allowed transactions to send.
 		if testnet.LoadMaxTxs > 0 && success >= testnet.LoadMaxTxs {
-			logger.Info("load", "msg", log.NewLazySprintf("Ending transaction load after reaching %v txs (%v tx/s)...", success, rate))
+			logger.Info("load", "msg", log.NewLazySprintf("Transaction load finished after reaching %v txs (%v tx/s)", success, rate))
 			return nil
 		}
 	}
@@ -133,6 +148,7 @@ func createTxBatch(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testn
 					Size:        uint64(testnet.LoadTxSizeBytes),
 					Rate:        uint64(testnet.LoadTxBatchSize),
 					Connections: uint64(testnet.LoadTxConnections),
+					Lane:        testnet.WeightedRandomLane(),
 				})
 				if err != nil {
 					panic(fmt.Sprintf("Failed to generate tx: %v", err))

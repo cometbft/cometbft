@@ -71,8 +71,10 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		proxyAppConnMem := proxy.NewAppConnMempool(abcicli.NewLocalClient(mtx, app), proxy.NopMetrics())
 
 		// Make Mempool
+		_, lanesInfo := fetchAppInfo(app)
 		mempool := mempl.NewCListMempool(config.Mempool,
 			proxyAppConnMem,
+			lanesInfo,
 			state.LastBlockHeight,
 			mempl.WithPreCheck(sm.TxPreCheck(state)),
 			mempl.WithPostCheck(sm.TxPostCheck(state)))

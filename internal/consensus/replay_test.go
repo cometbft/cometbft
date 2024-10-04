@@ -76,12 +76,15 @@ func startNewStateAndWaitForBlock(
 	state, _ := stateStore.LoadFromDBOrGenesisFile(consensusReplayConfig.GenesisFile())
 	privValidator, err := loadPrivValidator(consensusReplayConfig)
 	require.NoError(t, err)
+	app := kvstore.NewInMemoryApplication()
+	_, lanesInfo := fetchAppInfo(app)
 	cs := newStateWithConfigAndBlockStore(
 		consensusReplayConfig,
 		state,
 		privValidator,
-		kvstore.NewInMemoryApplication(),
+		app,
 		blockDB,
+		lanesInfo,
 	)
 	cs.SetLogger(logger)
 
@@ -183,12 +186,15 @@ LOOP:
 		require.NoError(t, err)
 		privValidator, err := loadPrivValidator(consensusReplayConfig)
 		require.NoError(t, err)
+		app := kvstore.NewInMemoryApplication()
+		_, lanesInfo := fetchAppInfo(app)
 		cs := newStateWithConfigAndBlockStore(
 			consensusReplayConfig,
 			state,
 			privValidator,
 			kvstore.NewInMemoryApplication(),
 			blockDB,
+			lanesInfo,
 		)
 		cs.SetLogger(logger)
 
@@ -691,8 +697,10 @@ func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uin
 		}
 	})
 
+	abciInfoResp, err := proxyApp.Query().Info(context.Background(), proxy.InfoRequest)
+	require.NoError(t, err)
 	// perform the replay protocol to sync Tendermint and the application
-	err = handshaker.Handshake(context.Background(), proxyApp)
+	err = handshaker.Handshake(context.Background(), abciInfoResp, proxyApp)
 	if expectError {
 		require.Error(t, err)
 		// finish the test early
@@ -928,7 +936,9 @@ func TestHandshakePanicsIfAppReturnsWrongAppHash(t *testing.T) {
 
 		assert.Panics(t, func() {
 			h := NewHandshaker(stateStore, state, store, genDoc)
-			if err = h.Handshake(context.Background(), proxyApp); err != nil {
+			abciInfoResp, err := proxyApp.Query().Info(context.Background(), proxy.InfoRequest)
+			require.NoError(t, err)
+			if err = h.Handshake(context.Background(), abciInfoResp, proxyApp); err != nil {
 				t.Log(err)
 			}
 		})
@@ -952,7 +962,9 @@ func TestHandshakePanicsIfAppReturnsWrongAppHash(t *testing.T) {
 
 		assert.Panics(t, func() {
 			h := NewHandshaker(stateStore, state, store, genDoc)
-			if err = h.Handshake(context.Background(), proxyApp); err != nil {
+			abciInfoResp, err := proxyApp.Query().Info(context.Background(), proxy.InfoRequest)
+			require.NoError(t, err)
+			if err = h.Handshake(context.Background(), abciInfoResp, proxyApp); err != nil {
 				t.Log(err)
 			}
 		})
@@ -1248,7 +1260,9 @@ func TestHandshakeUpdatesValidators(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	if err := handshaker.Handshake(context.Background(), proxyApp); err != nil {
+	abciInfoResp, err2 := proxyApp.Query().Info(context.Background(), proxy.InfoRequest)
+	require.NoError(t, err2)
+	if err := handshaker.Handshake(context.Background(), abciInfoResp, proxyApp); err != nil {
 		t.Fatalf("Error on abci handshake: %v", err)
 	}
 	var err error

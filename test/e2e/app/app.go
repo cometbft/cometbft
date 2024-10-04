@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cosmos/gogoproto/proto"
 	gogo "github.com/cosmos/gogoproto/types"
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
@@ -28,6 +29,7 @@ import (
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/protoio"
+	"github.com/cometbft/cometbft/test/loadtime/payload"
 	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )
@@ -59,6 +61,8 @@ type Application struct {
 	// It's OK not to persist this, as it is not part of the state machine
 	seenTxs     sync.Map // cmttypes.TxKey -> uint64
 	allKeyTypes []string // Cached slice of all supported key types in CometBFT
+
+	lanePriorities map[string]uint32
 }
 
 // Config allows for the setting of high level parameters for running the e2e Application
@@ -137,6 +141,15 @@ type Config struct {
 	// 0 denotes it is set at InitChain.
 	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
 
+	// If true, disables the use of lanes by the application.
+	// Used to simulate networks that do not want to use lanes, running
+	// on top of CometBFT with lane support.
+	NoLanes bool `toml:"no_lanes"`
+
+	// Mapping from lane IDs to lane priorities. These lanes will be used by the
+	// application for setting up the mempool and for classifying transactions.
+	Lanes map[string]uint32 `toml:"lanes"`
+
 	// If true, the application will return validator updates and
 	// `ConsensusParams` updates at every height.
 	// This is useful to create a more dynamic testnet.
@@ -150,6 +163,17 @@ func DefaultConfig(dir string) *Config {
 		PersistInterval:  1,
 		SnapshotInterval: 100,
 		Dir:              dir,
+		Lanes:            DefaultLanes(),
+	}
+}
+
+func DefaultLanes() map[string]uint32 {
+	return map[string]uint32{
+		"100": 100,
+		"50":  50,
+		"10":  10,
+		"5":   5,
+		"1":   1,
 	}
 }
 
@@ -163,21 +187,29 @@ func NewApplication(cfg *Config) (*Application, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
-	logger.Info("Application started!")
-
 	allKeyTypes := make([]string, 0, len(cmttypes.ABCIPubKeyTypesToNames))
 	for keyType := range cmttypes.ABCIPubKeyTypesToNames {
 		allKeyTypes = append(allKeyTypes, keyType)
 	}
+	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	logger.Info("Application started!")
+	if cfg.NoLanes {
+		return &Application{
+			logger:      logger,
+			state:       state,
+			snapshots:   snapshots,
+			cfg:         cfg,
+			allKeyTypes: allKeyTypes,
+		}, nil
+	}
 
 	return &Application{
-		logger:      logger,
-		state:       state,
-		snapshots:   snapshots,
-		cfg:         cfg,
-		allKeyTypes: allKeyTypes,
+		logger:         logger,
+		state:          state,
+		snapshots:      snapshots,
+		cfg:            cfg,
+		lanePriorities: cfg.Lanes,
+		allKeyTypes:    allKeyTypes,
 	}, nil
 }
 
@@ -189,11 +221,31 @@ func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResp
 	}
 
 	height, hash := app.state.Info()
+	if app.cfg.NoLanes {
+		return &abci.InfoResponse{
+			Version:          version.ABCIVersion,
+			AppVersion:       appVersion,
+			LastBlockHeight:  int64(height),
+			LastBlockAppHash: hash,
+		}, nil
+	}
+
+	// We set as default lane the (random) first lane id found in the list of
+	// lanes. On CheckTx requests, the application will always return a valid
+	// lane, so the mempool will never need to use the default lane value.
+	var defaultLane string
+	for id := range app.lanePriorities {
+		defaultLane = id
+		break
+	}
+
 	return &abci.InfoResponse{
 		Version:          version.ABCIVersion,
 		AppVersion:       appVersion,
 		LastBlockHeight:  int64(height),
 		LastBlockAppHash: hash,
+		LanePriorities:   app.lanePriorities,
+		DefaultLane:      defaultLane,
 	}, nil
 }
 
@@ -304,7 +356,7 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		return nil, err
 	}
 
-	key, _, err := parseTx(req.Tx)
+	key, value, err := parseTx(req.Tx)
 	if err != nil || key == prefixReservedKey {
 		//nolint:nilerr
 		return &abci.CheckTxResponse{
@@ -335,7 +387,25 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		time.Sleep(app.cfg.CheckTxDelay)
 	}
 
-	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1}, nil
+	if app.cfg.NoLanes {
+		return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1}, nil
+	}
+	lane := extractLane(value)
+	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, LaneId: lane}, nil
+}
+
+// extractLane returns the lane ID as string if value is a Payload, otherwise returns empty string.
+func extractLane(value string) string {
+	valueBytes, err := hex.DecodeString(value)
+	if err != nil {
+		panic("could not hex-decode tx value for extracting lane")
+	}
+	p := &payload.Payload{}
+	err = proto.Unmarshal(valueBytes, p)
+	if err != nil {
+		return ""
+	}
+	return p.GetLane()
 }
 
 // FinalizeBlock implements ABCI.

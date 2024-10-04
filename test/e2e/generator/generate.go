@@ -31,6 +31,7 @@ var (
 			map[string]string{"initial01": "a", "initial02": "b", "initial03": "c"},
 		},
 		"validators": {"genesis", "initchain"},
+		"no_lanes":   {true, false},
 	}
 	nodeVersions = weightedChoice{
 		"": 2,
@@ -321,6 +322,8 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 			r, startAt+(5*int64(i)), lightProviders,
 		)
 	}
+
+	manifest.NoLanes = opt["no_lanes"].(bool)
 
 	return manifest, nil
 }

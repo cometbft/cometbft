@@ -14,7 +14,6 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	mempl "github.com/cometbft/cometbft/mempool"
-	"github.com/cometbft/cometbft/proxy"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 )
@@ -30,10 +29,9 @@ func TestMempoolNoProgressUntilTxsAvailable(t *testing.T) {
 	config.Consensus.CreateEmptyBlocks = false
 	state, privVals := randGenesisState(1, nil)
 	app := kvstore.NewInMemoryApplication()
-	resp, err := app.Info(context.Background(), proxy.InfoRequest)
-	require.NoError(t, err)
+	resp, lanesInfo := fetchAppInfo(app)
 	state.AppHash = resp.LastBlockAppHash
-	cs := newStateWithConfig(config, state, privVals[0], app)
+	cs := newStateWithConfig(config, state, privVals[0], app, lanesInfo)
 	assertMempool(cs.txNotifier).EnableTxsAvailable()
 	height, round := cs.Height, cs.Round
 	newBlockCh := subscribe(cs.eventBus, types.EventQueryNewBlock)
@@ -54,10 +52,11 @@ func TestMempoolProgressAfterCreateEmptyBlocksInterval(t *testing.T) {
 	config.Consensus.CreateEmptyBlocksInterval = ensureTimeout
 	state, privVals := randGenesisState(1, nil)
 	app := kvstore.NewInMemoryApplication()
-	resp, err := app.Info(context.Background(), proxy.InfoRequest)
-	require.NoError(t, err)
+	resp, lanesInfo := fetchAppInfo(app)
+	require.NotNil(t, resp)
+	require.NotNil(t, lanesInfo)
 	state.AppHash = resp.LastBlockAppHash
-	cs := newStateWithConfig(config, state, privVals[0], app)
+	cs := newStateWithConfig(config, state, privVals[0], app, lanesInfo)
 
 	assertMempool(cs.txNotifier).EnableTxsAvailable()
 
@@ -74,7 +73,9 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 	config.Consensus.CreateEmptyBlocks = false
 	state, privVals := randGenesisState(1, nil)
-	cs := newStateWithConfig(config, state, privVals[0], kvstore.NewInMemoryApplication())
+	app := kvstore.NewInMemoryApplication()
+	_, lanesInfo := fetchAppInfo(app)
+	cs := newStateWithConfig(config, state, privVals[0], app, lanesInfo)
 	assertMempool(cs.txNotifier).EnableTxsAvailable()
 	height, round := cs.Height, cs.Round
 	newBlockCh := subscribe(cs.eventBus, types.EventQueryNewBlock)
@@ -121,7 +122,9 @@ func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 	state, privVals := randGenesisState(1, nil)
 	blockDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(blockDB, sm.StoreOptions{DiscardABCIResponses: false})
-	cs := newStateWithConfigAndBlockStore(config, state, privVals[0], kvstore.NewInMemoryApplication(), blockDB)
+	app := kvstore.NewInMemoryApplication()
+	_, lanesInfo := fetchAppInfo(app)
+	cs := newStateWithConfigAndBlockStore(config, state, privVals[0], app, blockDB, lanesInfo)
 	err := stateStore.Save(state)
 	require.NoError(t, err)
 	newBlockEventsCh := subscribe(cs.eventBus, types.EventQueryNewBlockEvents)
@@ -147,7 +150,8 @@ func TestMempoolRmBadTx(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	blockDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(blockDB, sm.StoreOptions{DiscardABCIResponses: false})
-	cs := newStateWithConfigAndBlockStore(config, state, privVals[0], app, blockDB)
+	_, lanesInfo := fetchAppInfo(app)
+	cs := newStateWithConfigAndBlockStore(config, state, privVals[0], app, blockDB, lanesInfo)
 	err := stateStore.Save(state)
 	require.NoError(t, err)
 

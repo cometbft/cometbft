@@ -2083,6 +2083,7 @@ func TestProcessProposalAccept(t *testing.T) {
 			}
 			m.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ProcessProposalResponse{Status: status}, nil)
 			m.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.PrepareProposalResponse{}, nil).Maybe()
+			m.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil).Maybe()
 			cs1, _ := randStateWithApp(4, m)
 			height, round := cs1.Height, cs1.Round
 
@@ -2137,6 +2138,7 @@ func TestExtendVoteCalledWhenEnabled(t *testing.T) {
 			}
 			m.On("Commit", mock.Anything, mock.Anything).Return(&abci.CommitResponse{}, nil).Maybe()
 			m.On("FinalizeBlock", mock.Anything, mock.Anything).Return(&abci.FinalizeBlockResponse{}, nil).Maybe()
+			m.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil).Maybe()
 			height := int64(1)
 			if !testCase.enabled {
 				height = 0
@@ -2221,6 +2223,7 @@ func TestVerifyVoteExtensionNotCalledOnAbsentPrecommit(t *testing.T) {
 	}, nil)
 	m.On("FinalizeBlock", mock.Anything, mock.Anything).Return(&abci.FinalizeBlockResponse{}, nil).Maybe()
 	m.On("Commit", mock.Anything, mock.Anything).Return(&abci.CommitResponse{}, nil).Maybe()
+	m.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil).Maybe()
 	cs1, vss := randStateWithApp(4, m)
 	height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
 	cs1.state.ConsensusParams.Feature.VoteExtensionsEnableHeight = cs1.Height
@@ -2306,6 +2309,7 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 	m.On("VerifyVoteExtension", mock.Anything, mock.Anything).Return(&abci.VerifyVoteExtensionResponse{Status: abci.VERIFY_VOTE_EXTENSION_STATUS_ACCEPT}, nil)
 	m.On("Commit", mock.Anything, mock.Anything).Return(&abci.CommitResponse{}, nil).Maybe()
 	m.On("FinalizeBlock", mock.Anything, mock.Anything).Return(&abci.FinalizeBlockResponse{}, nil)
+	m.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil).Maybe()
 
 	cs1, vss := randStateWithApp(4, m)
 	height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
@@ -2408,6 +2412,7 @@ func TestFinalizeBlockCalled(t *testing.T) {
 			r := &abci.FinalizeBlockResponse{AppHash: []byte("the_hash")}
 			m.On("FinalizeBlock", mock.Anything, mock.Anything).Return(r, nil).Maybe()
 			m.On("Commit", mock.Anything, mock.Anything).Return(&abci.CommitResponse{}, nil).Maybe()
+			m.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil).Maybe()
 
 			cs1, vss := randStateWithApp(4, m)
 			height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
@@ -2524,6 +2529,7 @@ func TestVoteExtensionEnableHeight(t *testing.T) {
 			}
 			m.On("FinalizeBlock", mock.Anything, mock.Anything).Return(&abci.FinalizeBlockResponse{}, nil).Maybe()
 			m.On("Commit", mock.Anything, mock.Anything).Return(&abci.CommitResponse{}, nil).Maybe()
+			m.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil).Maybe()
 			cs1, vss := randStateWithAppWithHeight(numValidators, m, testCase.enableHeight)
 			height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
 			cs1.state.ConsensusParams.Feature.VoteExtensionsEnableHeight = testCase.enableHeight

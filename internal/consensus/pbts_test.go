@@ -112,7 +112,7 @@ func newPBTSTestHarness(ctx context.Context, t *testing.T, tc pbtsTestConfigurat
 	consensusParams.Feature.PbtsEnableHeight = 1
 
 	state, privVals := randGenesisStateWithTime(validators, consensusParams, tc.genesisTime)
-	cs := newStateWithConfig(cfg, state, privVals[0], kvstore.NewInMemoryApplication())
+	cs := newStateWithConfig(cfg, state, privVals[0], kvstore.NewInMemoryApplication(), nil)
 	vss := make([]*validatorStub, validators)
 	for i := 0; i < validators; i++ {
 		vss[i] = newValidatorStub(privVals[i], int32(i))
@@ -556,6 +556,7 @@ func TestPBTSEnableHeight(t *testing.T) {
 		Status: abci.VERIFY_VOTE_EXTENSION_STATUS_ACCEPT,
 	}, nil)
 	app.On("Commit", mock.Anything, mock.Anything).Return(&abci.CommitResponse{}, nil).Maybe()
+	app.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil).Maybe()
 
 	cs, vss := randStateWithAppImpl(numValidators, app, c)
 	height, round, chainID := cs.Height, cs.Round, cs.state.ChainID

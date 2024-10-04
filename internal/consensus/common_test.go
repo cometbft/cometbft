@@ -432,12 +432,9 @@ func subscribeToVoterBuffered(cs *State, addr []byte) <-chan cmtpubsub.Message {
 // -------------------------------------------------------------------------------
 // application
 
-func fetchAppInfo(t *testing.T, app abci.Application) (*abci.InfoResponse, *mempl.LanesInfo) {
-	t.Helper()
-	resp, err := app.Info(context.Background(), proxy.InfoRequest)
-	require.NoError(t, err)
-	lanesInfo, err := mempl.BuildLanesInfo(resp.LanePriorities, resp.DefaultLane)
-	require.NoError(t, err)
+func fetchAppInfo(app abci.Application) (*abci.InfoResponse, *mempl.LanesInfo) {
+	resp, _ := app.Info(context.Background(), proxy.InfoRequest)
+	lanesInfo, _ := mempl.BuildLanesInfo(resp.LanePriorities, resp.DefaultLane)
 	return resp, lanesInfo
 }
 
@@ -446,7 +443,8 @@ func fetchAppInfo(t *testing.T, app abci.Application) (*abci.InfoResponse, *memp
 
 func newState(state sm.State, pv types.PrivValidator, app abci.Application) *State {
 	config := test.ResetTestRoot("consensus_state_test")
-	return newStateWithConfig(config, state, pv, app, nil)
+	_, lanesInfo := fetchAppInfo(app)
+	return newStateWithConfig(config, state, pv, app, lanesInfo)
 }
 
 func newStateWithConfig(
@@ -852,7 +850,7 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 		}
 		ensureDir(filepath.Dir(thisConfig.Consensus.WalFile())) // dir for wal
 		app := appFunc()
-		_, lanesInfo := fetchAppInfo(t, app)
+		_, lanesInfo := fetchAppInfo(app)
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
 		_, err := app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
 		require.NoError(t, err)
@@ -911,7 +909,7 @@ func randConsensusNetWithPeers(
 		}
 
 		app := appFunc(path.Join(config.DBDir(), fmt.Sprintf("%s_%d", testName, i)))
-		_, lanesInfo := fetchAppInfo(t, app)
+		_, lanesInfo := fetchAppInfo(app)
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
 		if _, ok := app.(*kvstore.Application); ok {
 			// simulate handshake, receive app version. If don't do this, replay test will fail

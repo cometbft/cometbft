@@ -29,7 +29,7 @@ func TestMempoolNoProgressUntilTxsAvailable(t *testing.T) {
 	config.Consensus.CreateEmptyBlocks = false
 	state, privVals := randGenesisState(1, nil)
 	app := kvstore.NewInMemoryApplication()
-	resp, lanesInfo := fetchAppInfo(t, app)
+	resp, lanesInfo := fetchAppInfo(app)
 	state.AppHash = resp.LastBlockAppHash
 	cs := newStateWithConfig(config, state, privVals[0], app, lanesInfo)
 	assertMempool(cs.txNotifier).EnableTxsAvailable()
@@ -52,7 +52,9 @@ func TestMempoolProgressAfterCreateEmptyBlocksInterval(t *testing.T) {
 	config.Consensus.CreateEmptyBlocksInterval = ensureTimeout
 	state, privVals := randGenesisState(1, nil)
 	app := kvstore.NewInMemoryApplication()
-	resp, lanesInfo := fetchAppInfo(t, app)
+	resp, lanesInfo := fetchAppInfo(app)
+	require.NotNil(t, resp)
+	require.NotNil(t, lanesInfo)
 	state.AppHash = resp.LastBlockAppHash
 	cs := newStateWithConfig(config, state, privVals[0], app, lanesInfo)
 
@@ -72,7 +74,7 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 	config.Consensus.CreateEmptyBlocks = false
 	state, privVals := randGenesisState(1, nil)
 	app := kvstore.NewInMemoryApplication()
-	_, lanesInfo := fetchAppInfo(t, app)
+	_, lanesInfo := fetchAppInfo(app)
 	cs := newStateWithConfig(config, state, privVals[0], app, lanesInfo)
 	assertMempool(cs.txNotifier).EnableTxsAvailable()
 	height, round := cs.Height, cs.Round
@@ -121,7 +123,7 @@ func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 	blockDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(blockDB, sm.StoreOptions{DiscardABCIResponses: false})
 	app := kvstore.NewInMemoryApplication()
-	_, lanesInfo := fetchAppInfo(t, app)
+	_, lanesInfo := fetchAppInfo(app)
 	cs := newStateWithConfigAndBlockStore(config, state, privVals[0], app, blockDB, lanesInfo)
 	err := stateStore.Save(state)
 	require.NoError(t, err)
@@ -148,7 +150,7 @@ func TestMempoolRmBadTx(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	blockDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(blockDB, sm.StoreOptions{DiscardABCIResponses: false})
-	_, lanesInfo := fetchAppInfo(t, app)
+	_, lanesInfo := fetchAppInfo(app)
 	cs := newStateWithConfigAndBlockStore(config, state, privVals[0], app, blockDB, lanesInfo)
 	err := stateStore.Save(state)
 	require.NoError(t, err)

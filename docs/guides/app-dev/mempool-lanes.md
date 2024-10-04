@@ -82,8 +82,8 @@ func (app *Application) CheckTx(ctx context.Context, req *types.CheckTxRequest) 
 }
 ```
 In this example, `assignLane` is a deterministic function that, given the content of a transaction,
-returns a valid lane ID. The lane ID must be one of the keys in the `app.lanes` map, and it may be
-the default lane if no other lane is chosen to be assigned.
+returns a valid lane ID. The lane ID must be one of the keys in the `app.lanePriorities` map, and it
+may be the default lane if no other lane is chosen to be assigned.
 
 ## Best practices
 

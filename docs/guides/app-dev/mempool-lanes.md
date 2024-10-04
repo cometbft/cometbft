@@ -70,9 +70,9 @@ If the application does not populate these fields, CometBFT will use a single, d
 
 Upon receiving a `CheckTx` request for validating a transaction, the application must reply with the
 lane that it assigns to the transaction in the `LaneId` field. The mempool will only use the lane if
-(1) the transaction is valid and (2) the transaction is being validated for the first time at the local node, that is,
-when `req.Type` equals `types.CHECK_TX_TYPE_CHECK` (not when rechecking). Otherwise, the mempool
-will ignore the `LaneId` field.
+(1) the transaction is valid and (2) the transaction is being validated for the first time at the
+local node, that is, when `req.Type` equals `types.CHECK_TX_TYPE_CHECK` (not when rechecking).
+Otherwise, the mempool will ignore the `LaneId` field.
 
 ```go
 func (app *Application) CheckTx(ctx context.Context, req *types.CheckTxRequest) (*types.CheckTxResponse, error) {
@@ -129,7 +129,8 @@ may be the default lane if no other lane is chosen to be assigned.
   lanes by interleaving them when possible.
 - **Equal priorities**: Multiple lanes are allowed to have the same priority. This could help
   prevent one class of transaction monopolizing the entire mempool. When lanes share the same
-  priority, the order in which they are processed is undefined. However, transactions within the same lane are locally treated in FIFO order as usual.
+  priority, the order in which they are processed is undefined. However, transactions within the
+  same lane are locally treated in FIFO order as usual.
 
 ### Lane capacity
 
@@ -153,10 +154,10 @@ may be the default lane if no other lane is chosen to be assigned.
   networks without these limitations, lanes will not significantly affect the behavior compared to
   nodes that do not implement lanes.
 - **Consistent setup**: To fully benefit from lanes, all nodes in the network should implement the
-  same lanes configuration and transaction classification logic. If some nodes do not support lanes, the benefits of lane prioritization
-  will not be observed, because transaction ordering during dissemination and processing will be
-  inconsistent across nodes. While mixing nodes with and without lanes does not affect network
-  correctness, consistent lane configuration is strongly recommended for improved performance and
-  consistent behavior.
+  same lanes configuration and transaction classification logic. If some nodes do not support lanes,
+  the benefits of lane prioritization will not be observed, because transaction ordering during
+  dissemination and processing will be inconsistent across nodes. While mixing nodes with and
+  without lanes does not affect network correctness, consistent lane configuration is strongly
+  recommended for improved performance and consistent behavior.
 
 [adr]: ../../../docs/references/architecture/adr-118-mempool-lanes.md

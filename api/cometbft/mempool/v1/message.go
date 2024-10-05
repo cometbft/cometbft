@@ -13,12 +13,28 @@ func (m *Txs) Wrap() proto.Message {
 	return mm
 }
 
+func (m *HaveTx) Wrap() proto.Message {
+	mm := &Message{}
+	mm.Sum = &Message_HaveTx{HaveTx: m}
+	return mm
+}
+
+func (m *Reset) Wrap() proto.Message {
+	mm := &Message{}
+	mm.Sum = &Message_Reset_{Reset_: m}
+	return mm
+}
+
 // Unwrap implements the p2p Wrapper interface and unwraps a wrapped mempool
 // message.
 func (m *Message) Unwrap() (proto.Message, error) {
 	switch msg := m.Sum.(type) {
 	case *Message_Txs:
 		return m.GetTxs(), nil
+	case *Message_HaveTx:
+		return m.GetHaveTx(), nil
+	case *Message_Reset_:
+		return m.GetReset_(), nil
 
 	default:
 		return nil, fmt.Errorf("unknown message: %T", msg)

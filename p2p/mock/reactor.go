@@ -3,7 +3,7 @@ package mock
 import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/p2p/conn"
+	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
 
 type Reactor struct {
@@ -19,7 +19,7 @@ func NewReactor() *Reactor {
 	return r
 }
 
-func (r *Reactor) GetChannels() []*conn.ChannelDescriptor { return r.Channels }
-func (*Reactor) AddPeer(_ p2p.Peer)                       {}
-func (*Reactor) RemovePeer(_ p2p.Peer, _ any)             {}
-func (*Reactor) Receive(_ p2p.Envelope)                   {}
+func (r *Reactor) StreamDescriptors() []p2p.StreamDescriptor { return r.Channels }
+func (*Reactor) AddPeer(_ p2p.Peer)                             {}
+func (*Reactor) RemovePeer(_ p2p.Peer, _ any)                   {}
+func (*Reactor) Receive(_ p2p.Envelope)                         {}

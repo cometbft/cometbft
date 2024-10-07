@@ -4,7 +4,7 @@ package mocks
 
 import (
 	log "github.com/cometbft/cometbft/libs/log"
-	conn "github.com/cometbft/cometbft/p2p/conn"
+	conn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 
 	mock "github.com/stretchr/testify/mock"
 

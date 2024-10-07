@@ -128,7 +128,7 @@ func CustomReactors(reactors map[string]p2p.Reactor) Option {
 			// cleaned up in the following version when NodeInfo is changed from
 			// and interface to a concrete type
 			if ni, ok := n.nodeInfo.(p2p.DefaultNodeInfo); ok {
-				for _, chDesc := range reactor.GetChannels() {
+				for _, chDesc := range reactor.StreamDescriptors() {
 					if !ni.HasChannel(chDesc.ID) {
 						ni.Channels = append(ni.Channels, chDesc.ID)
 						n.transport.AddChannel(chDesc.ID)

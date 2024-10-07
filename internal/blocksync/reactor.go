@@ -170,9 +170,9 @@ func (bcR *Reactor) OnStop() {
 	}
 }
 
-// GetChannels implements Reactor.
-func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
-	return []*p2p.ChannelDescriptor{
+// StreamDescriptors implements Reactor.
+func (*Reactor) StreamDescriptors() []*p2p.StreamDescriptor {
+	return []*p2p.StreamDescriptor{
 		{
 			ID:                  BlocksyncChannel,
 			Priority:            5,

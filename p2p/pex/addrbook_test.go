@@ -16,6 +16,8 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/key"
+	na "github.com/cometbft/cometbft/p2p/netaddress"
 )
 
 // FIXME These tests should not rely on .(*addrBook) assertions
@@ -178,8 +180,8 @@ func TestAddrBookHandlesDuplicates(t *testing.T) {
 }
 
 type netAddressPair struct {
-	addr *p2p.NetAddress
-	src  *p2p.NetAddress
+	addr *na.NetAddress
+	src  *na.NetAddress
 }
 
 func randNetAddressPairs(t *testing.T, n int) []netAddressPair {
@@ -191,7 +193,7 @@ func randNetAddressPairs(t *testing.T, n int) []netAddressPair {
 	return randAddrs
 }
 
-func randIPv4Address(t *testing.T) *p2p.NetAddress {
+func randIPv4Address(t *testing.T) *na.NetAddress {
 	t.Helper()
 	for {
 		ip := fmt.Sprintf("%v.%v.%v.%v",
@@ -201,9 +203,9 @@ func randIPv4Address(t *testing.T) *p2p.NetAddress {
 			cmtrand.Intn(255),
 		)
 		port := cmtrand.Intn(65535-1) + 1
-		id := p2p.ID(hex.EncodeToString(cmtrand.Bytes(p2p.IDByteLength)))
-		idAddr := p2p.IDAddressString(id, fmt.Sprintf("%v:%v", ip, port))
-		addr, err := p2p.NewNetAddressString(idAddr)
+		id := key.ID(hex.EncodeToString(cmtrand.Bytes(p2p.IDByteLength)))
+		idAddr := key.IDAddressString(id, fmt.Sprintf("%v:%v", ip, port))
+		addr, err := na.NewNetAddressString(idAddr)
 		require.NoError(t, err)
 		if addr.Routable() {
 			return addr

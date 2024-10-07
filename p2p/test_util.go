@@ -8,31 +8,24 @@ import (
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	cmtnet "github.com/cometbft/cometbft/internal/net"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/p2p/conn"
+	na "github.com/cometbft/cometbft/p2p/netaddress"
+	"github.com/cometbft/cometbft/p2p/transport/tcp"
+	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
+	"github.com/cometbft/cometbft/p2p/key"
+	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 )
-
-const testCh = 0x01
 
 // ------------------------------------------------
 
-type mockNodeInfo struct {
-	addr *NetAddress
-}
-
-func (ni mockNodeInfo) ID() ID                           { return ni.addr.ID }
-func (ni mockNodeInfo) NetAddress() (*NetAddress, error) { return ni.addr, nil }
-func (mockNodeInfo) Validate() error                     { return nil }
-func (mockNodeInfo) CompatibleWith(NodeInfo) error       { return nil }
 
 func AddPeerToSwitchPeerSet(sw *Switch, peer Peer) {
 	sw.peers.Add(peer) //nolint:errcheck // ignore error
 }
 
 func CreateRandomPeer(outbound bool) Peer {
-	addr, netAddr := CreateRoutableAddr()
+	addr, netAddr := na.CreateRoutableAddr()
 	p := &peer{
 		peerConn: peerConn{
 			outbound:   outbound,
@@ -46,25 +39,6 @@ func CreateRandomPeer(outbound bool) Peer {
 	return p
 }
 
-func CreateRoutableAddr() (addr string, netAddr *NetAddress) {
-	for {
-		var err error
-		addr = fmt.Sprintf("%X@%v.%v.%v.%v:26656",
-			cmtrand.Bytes(20),
-			cmtrand.Int()%256,
-			cmtrand.Int()%256,
-			cmtrand.Int()%256,
-			cmtrand.Int()%256)
-		netAddr, err = NewNetAddressString(addr)
-		if err != nil {
-			panic(err)
-		}
-		if netAddr.Routable() {
-			break
-		}
-	}
-	return addr, netAddr
-}
 
 // ------------------------------------------------------------------
 // Connects switches via arbitrary net.Conn. Used for testing.
@@ -231,18 +205,18 @@ func MakeSwitch(
 	initSwitch func(int, *Switch) *Switch,
 	opts ...SwitchOption,
 ) *Switch {
-	nodeKey := NodeKey{
+	nodeKey := ni.NodeKey{
 		PrivKey: ed25519.GenPrivKey(),
 	}
 	nodeInfo := testNodeInfo(nodeKey.ID(), fmt.Sprintf("node%d", i))
-	addr, err := NewNetAddressString(
-		IDAddressString(nodeKey.ID(), nodeInfo.(DefaultNodeInfo).ListenAddr),
+	addr, err := na.NewNetAddressString(
+		na.IDAddressString(nodeKey.ID(), nodeInfo.(ni.DefaultNodeInfo).ListenAddr),
 	)
 	if err != nil {
 		panic(err)
 	}
 
-	t := NewMultiplexTransport(nodeInfo, nodeKey, MConnConfig(cfg))
+	t := tcp.NewMultiplexTransport(nodeInfo, nodeKey, MConnConfig(cfg))
 
 	if err := t.Listen(*addr); err != nil {
 		panic(err)
@@ -253,7 +227,7 @@ func MakeSwitch(
 	sw.SetLogger(log.TestingLogger().With("switch", i))
 	sw.SetNodeKey(&nodeKey)
 
-	ni := nodeInfo.(DefaultNodeInfo)
+	ni := nodeInfo.(ni.DefaultNodeInfo)
 	for ch := range sw.reactorsByCh {
 		ni.Channels = append(ni.Channels, ch)
 	}
@@ -280,7 +254,7 @@ func testPeerConn(
 	cfg *config.P2PConfig,
 	outbound, persistent bool,
 	ourNodePrivKey crypto.PrivKey,
-	socketAddr *NetAddress,
+	socketAddr *na.NetAddress,
 ) (pc peerConn, err error) {
 	conn := rawConn
 
@@ -303,33 +277,6 @@ func testPeerConn(
 // ----------------------------------------------------------------
 // rand node info
 
-func testNodeInfo(id ID, name string) NodeInfo {
-	return testNodeInfoWithNetwork(id, name, "testing")
-}
-
-func testNodeInfoWithNetwork(id ID, name, network string) NodeInfo {
-	return DefaultNodeInfo{
-		ProtocolVersion: defaultProtocolVersion,
-		DefaultNodeID:   id,
-		ListenAddr:      fmt.Sprintf("127.0.0.1:%d", getFreePort()),
-		Network:         network,
-		Version:         "1.2.3-rc0-deadbeef",
-		Channels:        []byte{testCh},
-		Moniker:         name,
-		Other: DefaultNodeInfoOther{
-			TxIndex:    "on",
-			RPCAddress: fmt.Sprintf("127.0.0.1:%d", getFreePort()),
-		},
-	}
-}
-
-func getFreePort() int {
-	port, err := cmtnet.GetFreePort()
-	if err != nil {
-		panic(err)
-	}
-	return port
-}
 
 type AddrBookMock struct {
 	Addrs        map[string]struct{}
@@ -339,22 +286,24 @@ type AddrBookMock struct {
 
 var _ AddrBook = (*AddrBookMock)(nil)
 
-func (book *AddrBookMock) AddAddress(addr *NetAddress, _ *NetAddress) error {
+func (book *AddrBookMock) AddAddress(addr *na.NetAddress, _ *na.NetAddress) error {
 	book.Addrs[addr.String()] = struct{}{}
 	return nil
 }
-func (book *AddrBookMock) AddOurAddress(addr *NetAddress) { book.OurAddrs[addr.String()] = struct{}{} }
-func (book *AddrBookMock) OurAddress(addr *NetAddress) bool {
+func (book *AddrBookMock) AddOurAddress(addr *na.NetAddress) {
+	book.OurAddrs[addr.String()] = struct{}{}
+}
+func (book *AddrBookMock) OurAddress(addr *na.NetAddress) bool {
 	_, ok := book.OurAddrs[addr.String()]
 	return ok
 }
-func (*AddrBookMock) MarkGood(ID) {}
-func (book *AddrBookMock) HasAddress(addr *NetAddress) bool {
+func (*AddrBookMock) MarkGood(key.ID) {}
+func (book *AddrBookMock) HasAddress(addr *na.NetAddress) bool {
 	_, ok := book.Addrs[addr.String()]
 	return ok
 }
 
-func (book *AddrBookMock) RemoveAddress(addr *NetAddress) {
+func (book *AddrBookMock) RemoveAddress(addr *na.NetAddress) {
 	delete(book.Addrs, addr.String())
 }
 func (*AddrBookMock) Save() {}

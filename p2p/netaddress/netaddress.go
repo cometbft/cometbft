@@ -2,7 +2,7 @@
 // Originally Copyright (c) 2013-2014 Conformal Systems LLC.
 // https://github.com/conformal/btcd/blob/master/LICENSE
 
-package p2p
+package netaddress
 
 import (
 	"encoding/hex"
@@ -14,6 +14,8 @@ import (
 	"time"
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	"github.com/cometbft/cometbft/p2p/key"
 )
 
 // EmptyNetAddress defines the string representation of an empty NetAddress.
@@ -22,14 +24,14 @@ const EmptyNetAddress = "<nil-NetAddress>"
 // NetAddress defines information about a peer on the network
 // including its ID, IP address, and port.
 type NetAddress struct {
-	ID   ID     `json:"id"`
+	ID   key.ID `json:"id"`
 	IP   net.IP `json:"ip"`
 	Port uint16 `json:"port"`
 }
 
 // IDAddressString returns id@hostPort. It strips the leading
 // protocol from protocolHostPort if it exists.
-func IDAddressString(id ID, protocolHostPort string) string {
+func IDAddressString(id key.ID, protocolHostPort string) string {
 	hostPort := removeProtocolIfDefined(protocolHostPort)
 	return fmt.Sprintf("%s@%s", id, hostPort)
 }
@@ -39,7 +41,7 @@ func IDAddressString(id ID, protocolHostPort string) string {
 // using 0.0.0.0:0. When normal run, other net.Addr (except TCP) will
 // panic. Panics if ID is invalid.
 // TODO: socks proxies?
-func NewNetAddress(id ID, addr net.Addr) *NetAddress {
+func NewNetAddress(id key.ID, addr net.Addr) *NetAddress {
 	tcpAddr, ok := addr.(*net.TCPAddr)
 	if !ok {
 		if flag.Lookup("test.v") == nil { // normal run
@@ -74,11 +76,11 @@ func NewNetAddressString(addr string) (*NetAddress, error) {
 	}
 
 	// get ID
-	if err := validateID(ID(spl[0])); err != nil {
+	if err := validateID(key.ID(spl[0])); err != nil {
 		return nil, ErrNetAddressInvalid{addrWithoutProtocol, err}
 	}
-	var id ID
-	id, addrWithoutProtocol = ID(spl[0]), spl[1]
+	var id key.ID
+	id, addrWithoutProtocol = key.ID(spl[0]), spl[1]
 
 	// get host and port
 	host, portStr, err := net.SplitHostPort(addrWithoutProtocol)
@@ -147,7 +149,7 @@ func NetAddressFromProto(pb tmp2p.NetAddress) (*NetAddress, error) {
 		return nil, ErrNetAddressInvalid{Addr: pb.IP, Err: ErrInvalidPort{pb.Port}}
 	}
 	return &NetAddress{
-		ID:   ID(pb.ID),
+		ID:   key.ID(pb.ID),
 		IP:   ip,
 		Port: uint16(pb.Port),
 	}, nil
@@ -406,7 +408,7 @@ func removeProtocolIfDefined(addr string) string {
 	return addr
 }
 
-func validateID(id ID) error {
+func validateID(id key.ID) error {
 	if len(id) == 0 {
 		return ErrNoIP
 	}
@@ -414,8 +416,29 @@ func validateID(id ID) error {
 	if err != nil {
 		return err
 	}
-	if len(idBytes) != IDByteLength {
-		return ErrInvalidPeerIDLength{Got: len(idBytes), Expected: IDByteLength}
+	if len(idBytes) != key.IDByteLength {
+		return ErrInvalidPeerIDLength{Got: len(idBytes), Expected: key.IDByteLength}
 	}
 	return nil
+}
+
+// Used for testing.
+func CreateRoutableAddr() (addr string, netAddr *NetAddress) {
+	for {
+		var err error
+		addr = fmt.Sprintf("%X@%v.%v.%v.%v:26656",
+			cmtrand.Bytes(20),
+			cmtrand.Int()%256,
+			cmtrand.Int()%256,
+			cmtrand.Int()%256,
+			cmtrand.Int()%256)
+		netAddr, err = NewNetAddressString(addr)
+		if err != nil {
+			panic(err)
+		}
+		if netAddr.Routable() {
+			break
+		}
+	}
+	return addr, netAddr
 }

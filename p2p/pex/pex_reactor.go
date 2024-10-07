@@ -12,7 +12,7 @@ import (
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/p2p/conn"
+	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
 
 type Peer = p2p.Peer
@@ -165,10 +165,10 @@ func (r *Reactor) Stop() error {
 	return nil
 }
 
-// GetChannels implements Reactor.
-func (*Reactor) GetChannels() []*conn.ChannelDescriptor {
-	return []*conn.ChannelDescriptor{
-		{
+// StreamDescriptors implements Reactor.
+func (*Reactor) StreamDescriptors() []p2p.StreamDescriptor {
+	return []p2p.StreamDescriptor{
+		&tcpconn.ChannelDescriptor{
 			ID:                  PexChannel,
 			Priority:            1,
 			SendQueueCapacity:   10,

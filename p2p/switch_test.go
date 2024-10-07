@@ -24,7 +24,8 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	"github.com/cometbft/cometbft/p2p/conn"
+	na "github.com/cometbft/cometbft/p2p/netaddress"
+	"github.com/cometbft/cometbft/p2p/transport/tcp"
 )
 
 var cfg *config.P2PConfig
@@ -40,29 +41,37 @@ type PeerMessage struct {
 	Counter  int
 }
 
+type testStreamDescriptor struct {
+	ID byte
+}
+
+func (sd testStreamDescriptor) StreamID() byte {
+	return sd.ID
+}
+
 type TestReactor struct {
 	BaseReactor
 
-	mtx          cmtsync.Mutex
-	channels     []*conn.ChannelDescriptor
-	logMessages  bool
-	msgsCounter  int
-	msgsReceived map[byte][]PeerMessage
+	mtx               cmtsync.Mutex
+	streamDescriptors []testStreamDescriptor
+	logMessages       bool
+	msgsCounter       int
+	msgsReceived      map[byte][]PeerMessage
 }
 
-func NewTestReactor(channels []*conn.ChannelDescriptor, logMessages bool) *TestReactor {
+func NewTestReactor(streamDescriptors []testStreamDescriptor, logMessages bool) *TestReactor {
 	tr := &TestReactor{
-		channels:     channels,
-		logMessages:  logMessages,
-		msgsReceived: make(map[byte][]PeerMessage),
+		streamDescriptors: streamDescriptors,
+		logMessages:       logMessages,
+		msgsReceived:      make(map[byte][]PeerMessage),
 	}
 	tr.BaseReactor = *NewBaseReactor("TestReactor", tr)
 	tr.SetLogger(log.TestingLogger())
 	return tr
 }
 
-func (tr *TestReactor) GetChannels() []*conn.ChannelDescriptor {
-	return tr.channels
+func (tr *TestReactor) StreamDescriptors() []StreamDescriptor {
+	return tr.streamDescriptors
 }
 
 func (*TestReactor) AddPeer(Peer) {}
@@ -102,13 +111,13 @@ func initSwitchFunc(_ int, sw *Switch) *Switch {
 	})
 
 	// Make two reactors of two channels each
-	sw.AddReactor("foo", NewTestReactor([]*conn.ChannelDescriptor{
-		{ID: byte(0x00), Priority: 10, MessageType: &p2pproto.Message{}},
-		{ID: byte(0x01), Priority: 10, MessageType: &p2pproto.Message{}},
+	sw.AddReactor("foo", NewTestReactor([]testStreamDescriptor{
+		{ID: byte(0x00)},
+		{ID: byte(0x01)},
 	}, true))
-	sw.AddReactor("bar", NewTestReactor([]*conn.ChannelDescriptor{
-		{ID: byte(0x02), Priority: 10, MessageType: &p2pproto.Message{}},
-		{ID: byte(0x03), Priority: 10, MessageType: &p2pproto.Message{}},
+	sw.AddReactor("bar", NewTestReactor([]testStreamDescriptor{
+		{ID: byte(0x02)},
+		{ID: byte(0x03)},
 	}, true))
 
 	return sw
@@ -214,7 +223,7 @@ func TestSwitchFiltersOutItself(t *testing.T) {
 	// addr should be rejected in addPeer based on the same ID
 	err := s1.DialPeerWithAddress(rp.Addr())
 	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
-		if err, ok := err.(ErrRejected); ok {
+		if err, ok := err.(tcp.ErrRejected); ok {
 			if !err.IsSelf() {
 				t.Errorf("expected self to be rejected")
 			}
@@ -269,7 +278,7 @@ func TestSwitchPeerFilter(t *testing.T) {
 	}
 
 	err = sw.addPeer(p)
-	if err, ok := err.(ErrRejected); ok {
+	if err, ok := err.(tcp.ErrRejected); ok {
 		if !err.IsFiltered() {
 			t.Errorf("expected peer to be filtered")
 		}
@@ -353,7 +362,7 @@ func TestSwitchPeerFilterDuplicate(t *testing.T) {
 	}
 
 	err = sw.addPeer(p)
-	if errRej, ok := err.(ErrRejected); ok {
+	if errRej, ok := err.(tcp.ErrRejected); ok {
 		if !errRej.IsDuplicate() {
 			t.Errorf("expected peer to be duplicate. got %v", errRej)
 		}
@@ -694,7 +703,7 @@ type errorTransport struct {
 	acceptErr error
 }
 
-func (errorTransport) NetAddress() NetAddress {
+func (errorTransport) NetAddress() na.NetAddress {
 	panic("not implemented")
 }
 
@@ -702,7 +711,7 @@ func (et errorTransport) Accept(peerConfig) (Peer, error) {
 	return nil, et.acceptErr
 }
 
-func (errorTransport) Dial(NetAddress, peerConfig) (Peer, error) {
+func (errorTransport) Dial(na.NetAddress, peerConfig) (Peer, error) {
 	panic("not implemented")
 }
 
@@ -719,7 +728,7 @@ func TestSwitchAcceptRoutineErrorCases(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	sw = NewSwitch(cfg, errorTransport{ErrRejected{conn: nil, err: errors.New("filtered"), isFiltered: true}})
+	sw = NewSwitch(cfg, errorTransport{tcp.ErrRejected{conn: nil, err: errors.New("filtered"), isFiltered: true}})
 	assert.NotPanics(t, func() {
 		err := sw.Start()
 		require.NoError(t, err)
@@ -728,7 +737,7 @@ func TestSwitchAcceptRoutineErrorCases(t *testing.T) {
 	})
 	// TODO(melekes) check we remove our address from addrBook
 
-	sw = NewSwitch(cfg, errorTransport{ErrTransportClosed{}})
+	sw = NewSwitch(cfg, errorTransport{tcp.ErrTransportClosed{}})
 	assert.NotPanics(t, func() {
 		err := sw.Start()
 		require.NoError(t, err)

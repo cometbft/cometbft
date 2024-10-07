@@ -18,8 +18,13 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtconn "github.com/cometbft/cometbft/p2p/conn"
+	"github.com/cometbft/cometbft/p2p/key"
+	na "github.com/cometbft/cometbft/p2p/netaddress"
+	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
+	cmtconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
+
+const testCh = 0x01
 
 func TestPeerBasic(t *testing.T) {
 	assert, require := assert.New(t), require.New(t)
@@ -76,12 +81,12 @@ func TestPeerSend(t *testing.T) {
 }
 
 func createOutboundPeerAndPerformHandshake(
-	addr *NetAddress,
+	addr *na.NetAddress,
 	config *config.P2PConfig,
 	mConfig cmtconn.MConnConfig,
 ) (*peer, error) {
-	chDescs := []*cmtconn.ChannelDescriptor{
-		{ID: testCh, Priority: 1},
+	chDescs := []testStreamDescriptor{
+		{ID: testCh},
 	}
 	reactorsByCh := map[byte]Reactor{testCh: NewTestReactor(chDescs, true)}
 	msgTypeByChID := map[byte]proto.Message{
@@ -104,7 +109,7 @@ func createOutboundPeerAndPerformHandshake(
 	return p, nil
 }
 
-func testDial(addr *NetAddress, cfg *config.P2PConfig) (net.Conn, error) {
+func testDial(addr *na.NetAddress, cfg *config.P2PConfig) (net.Conn, error) {
 	if cfg.TestDialFail {
 		return nil, errors.New("dial err (peerConfig.DialFail == true)")
 	}
@@ -117,7 +122,7 @@ func testDial(addr *NetAddress, cfg *config.P2PConfig) (net.Conn, error) {
 }
 
 func testOutboundPeerConn(
-	addr *NetAddress,
+	addr *na.NetAddress,
 	config *config.P2PConfig,
 	persistent bool,
 	ourNodePrivKey crypto.PrivKey,
@@ -150,18 +155,18 @@ func testOutboundPeerConn(
 type remotePeer struct {
 	PrivKey    crypto.PrivKey
 	Config     *config.P2PConfig
-	addr       *NetAddress
+	addr       *na.NetAddress
 	channels   bytes.HexBytes
 	listenAddr string
 	listener   net.Listener
 }
 
-func (rp *remotePeer) Addr() *NetAddress {
+func (rp *remotePeer) Addr() *na.NetAddress {
 	return rp.addr
 }
 
-func (rp *remotePeer) ID() ID {
-	return PubKeyToID(rp.PrivKey.PubKey())
+func (rp *remotePeer) ID() key.ID {
+	return key.PubKeyToID(rp.PrivKey.PubKey())
 }
 
 func (rp *remotePeer) Start() {
@@ -174,7 +179,7 @@ func (rp *remotePeer) Start() {
 		golog.Fatalf("net.Listen tcp :0: %+v", e)
 	}
 	rp.listener = l
-	rp.addr = NewNetAddress(PubKeyToID(rp.PrivKey.PubKey()), l.Addr())
+	rp.addr = na.NewNetAddress(PubKeyToID(rp.PrivKey.PubKey()), l.Addr())
 	if rp.channels == nil {
 		rp.channels = []byte{testCh}
 	}
@@ -185,7 +190,7 @@ func (rp *remotePeer) Stop() {
 	rp.listener.Close()
 }
 
-func (rp *remotePeer) Dial(addr *NetAddress) (net.Conn, error) {
+func (rp *remotePeer) Dial(addr *na.NetAddress) (net.Conn, error) {
 	conn, err := addr.DialTimeout(1 * time.Second)
 	if err != nil {
 		return nil, err
@@ -228,9 +233,9 @@ func (rp *remotePeer) accept() {
 	}
 }
 
-func (rp *remotePeer) nodeInfo() NodeInfo {
-	return DefaultNodeInfo{
-		ProtocolVersion: defaultProtocolVersion,
+func (rp *remotePeer) nodeInfo() ni.NodeInfo {
+	return ni.DefaultNodeInfo{
+		ProtocolVersion: ni.NewProtocolVersion(0, 0, 0),
 		DefaultNodeID:   rp.Addr().ID,
 		ListenAddr:      rp.listener.Addr().String(),
 		Network:         "testing",

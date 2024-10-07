@@ -14,6 +14,7 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
+	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -70,9 +71,9 @@ func (memR *Reactor) OnStart() error {
 	return nil
 }
 
-// GetChannels implements Reactor by returning the list of channels for this
+// StreamDescriptors implements Reactor by returning the list of channels for this
 // reactor.
-func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
+func (memR *Reactor) StreamDescriptors() []p2p.StreamDescriptor {
 	largestTx := make([]byte, memR.config.MaxTxBytes)
 	batchMsg := protomem.Message{
 		Sum: &protomem.Message_Txs{
@@ -80,8 +81,8 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 		},
 	}
 
-	return []*p2p.ChannelDescriptor{
-		{
+	return []p2p.StreamDescriptor{
+		&tcpconn.ChannelDescriptor{
 			ID:                  MempoolChannel,
 			Priority:            5,
 			RecvMessageCapacity: batchMsg.Size(),

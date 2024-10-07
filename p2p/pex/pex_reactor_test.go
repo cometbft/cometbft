@@ -33,7 +33,7 @@ func TestPEXReactorBasic(t *testing.T) {
 	defer teardownReactor(book)
 
 	assert.NotNil(t, r)
-	assert.NotEmpty(t, r.GetChannels())
+	assert.NotEmpty(t, r.StreamDescriptors())
 }
 
 func TestPEXReactorAddRemovePeer(t *testing.T) {

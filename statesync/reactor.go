@@ -13,6 +13,7 @@ import (
 	"github.com/cometbft/cometbft/config"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"
+	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	"github.com/cometbft/cometbft/proxy"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
@@ -62,17 +63,17 @@ func NewReactor(
 	return r
 }
 
-// GetChannels implements p2p.Reactor.
-func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
-	return []*p2p.ChannelDescriptor{
-		{
+// StreamDescriptors implements p2p.Reactor.
+func (*Reactor) StreamDescriptors() []p2p.StreamDescriptor {
+	return []p2p.StreamDescriptor{
+		&tcpconn.ChannelDescriptor{
 			ID:                  SnapshotChannel,
 			Priority:            5,
 			SendQueueCapacity:   10,
 			RecvMessageCapacity: snapshotMsgSize,
 			MessageType:         &ssproto.Message{},
 		},
-		{
+		&tcpconn.ChannelDescriptor{
 			ID:                  ChunkChannel,
 			Priority:            3,
 			SendQueueCapacity:   10,

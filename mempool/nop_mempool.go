@@ -97,8 +97,8 @@ var _ p2p.Reactor = &NopMempoolReactor{}
 // WaitSync always returns false.
 func (*NopMempoolReactor) WaitSync() bool { return false }
 
-// GetChannels always returns nil.
-func (*NopMempoolReactor) GetChannels() []*p2p.ChannelDescriptor { return nil }
+// StreamDescriptors always returns nil.
+func (*NopMempoolReactor) StreamDescriptors() []p2p.StreamDescriptor { return nil }
 
 // AddPeer does nothing.
 func (*NopMempoolReactor) AddPeer(p2p.Peer) {}

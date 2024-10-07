@@ -27,6 +27,7 @@ import (
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
+	tcp "github.com/cometbft/cometbft/p2p/transport/tcp"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
 	sm "github.com/cometbft/cometbft/state"
@@ -410,18 +411,18 @@ func createTransport(
 	nodeKey *p2p.NodeKey,
 	proxyApp proxy.AppConns,
 ) (
-	*p2p.MultiplexTransport,
+	*tcp.MultiplexTransport,
 	[]p2p.PeerFilterFunc,
 ) {
 	var (
 		mConnConfig = p2p.MConnConfig(config.P2P)
-		transport   = p2p.NewMultiplexTransport(nodeInfo, *nodeKey, mConnConfig)
-		connFilters = []p2p.ConnFilterFunc{}
+		transport   = tcp.NewMultiplexTransport(nodeInfo, *nodeKey, mConnConfig)
+		connFilters = []tcp.ConnFilterFunc{}
 		peerFilters = []p2p.PeerFilterFunc{}
 	)
 
 	if !config.P2P.AllowDuplicateIP {
-		connFilters = append(connFilters, p2p.ConnDuplicateIPFilter())
+		connFilters = append(connFilters, tcp.ConnDuplicateIPFilter())
 	}
 
 	// Filter peers by addr or pubkey with an ABCI query.
@@ -430,7 +431,7 @@ func createTransport(
 		connFilters = append(
 			connFilters,
 			// ABCI query for address filtering.
-			func(_ p2p.ConnSet, c net.Conn, _ []net.IP) error {
+			func(_ tcp.ConnSet, c net.Conn, _ []net.IP) error {
 				res, err := proxyApp.Query().Query(context.TODO(), &abci.QueryRequest{
 					Path: "/p2p/filter/addr/" + c.RemoteAddr().String(),
 				})
@@ -464,11 +465,11 @@ func createTransport(
 		)
 	}
 
-	p2p.MultiplexTransportConnFilters(connFilters...)(transport)
+	tcp.MultiplexTransportConnFilters(connFilters...)(transport)
 
 	// Limit the number of incoming connections.
 	max := config.P2P.MaxNumInboundPeers + len(splitAndTrimEmpty(config.P2P.UnconditionalPeerIDs, ",", " "))
-	p2p.MultiplexTransportMaxIncomingConnections(max)(transport)
+	tcp.MultiplexTransportMaxIncomingConnections(max)(transport)
 
 	return transport, peerFilters
 }

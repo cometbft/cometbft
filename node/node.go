@@ -758,7 +758,8 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 		Config: *n.config.RPC,
 	}
 	if err := rpcCoreEnv.InitGenesisChunks(); err != nil {
-		return nil, err
+		errMsg := "could not create the genesis file chunks and cache them: %s"
+		return nil, fmt.Errorf(errMsg, err)
 	}
 	return &rpcCoreEnv, nil
 }

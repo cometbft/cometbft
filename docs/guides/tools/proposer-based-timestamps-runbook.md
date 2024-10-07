@@ -228,13 +228,13 @@ The json output will contain a field named `synchrony`, with the following struc
 
 ```json
 {
-  "precision": "500000000",
-  "message_delay": "3000000000"
+  "precision": "505000000",
+  "message_delay": "12000000000"
 }
 ```
 
 The `precision` and `message_delay` values returned are listed in nanoseconds:
-In the examples above, the precision is 500ms and the message delay is 3s.
+In the examples above, the precision is 505ms and the message delay is 12s.
 Remember, `consensus_quorum_prevote_delay` is listed in seconds.
 If the `consensus_quorum_prevote_delay` value approaches the sum of `precision` and `message_delay`,
 then the value selected for these parameters is too small. Your application will

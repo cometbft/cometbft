@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -728,41 +729,71 @@ func (n *Node) OnStop() {
 	}
 }
 
-// ConfigureRPC makes sure RPC has all the objects it needs to operate.
+var (
+	// The following globals are only relevant to the `ConfigurerRPC` method below.
+	// The '_' prefix is to signal to other parts of the code that these are global
+	// unexported variables.
+
+	// _once is a special object that executes a function only once. We use it to
+	// ensure that `ConfigureRPC` initializes an `Environment` object only once.
+	_once sync.Once
+
+	// _rpcEnv is the `Environment` object serving RPC APIs. We treat is as a
+	// singleton and create it exactly once. See the docs of `ConfigureRPC` below
+	// for more details.
+	_rpcEnv *rpccore.Environment
+)
+
+// ConfigureRPC initializes and returns an `Environment` object with all the data
+// it needs to serve the RPC APIs. The function ensures that the `Environment` is
+// created only once to prevent other parts of the code from creating duplicate
+// `Environment` instances by calling this function directly. This is important
+// because `Environment` stores a copy of the genesis in memory; therefore,
+// multiple independent `Environment` instances would each load the genesis into
+// memory.
 func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
-	pubKey, err := n.privValidator.GetPubKey()
-	if pubKey == nil || err != nil {
-		return nil, ErrGetPubKey{Err: err}
-	}
-	rpcCoreEnv := rpccore.Environment{
-		ProxyAppQuery:   n.proxyApp.Query(),
-		ProxyAppMempool: n.proxyApp.Mempool(),
+	var errToReturn error
 
-		StateStore:     n.stateStore,
-		BlockStore:     n.blockStore,
-		EvidencePool:   n.evidencePool,
-		ConsensusState: n.consensusState,
-		P2PPeers:       n.sw,
-		P2PTransport:   n,
-		PubKey:         pubKey,
+	_once.Do(func() {
+		pubKey, err := n.privValidator.GetPubKey()
+		if pubKey == nil || err != nil {
+			errToReturn = ErrGetPubKey{Err: err}
+			return
+		}
 
-		GenDoc:           n.genesisDoc,
-		TxIndexer:        n.txIndexer,
-		BlockIndexer:     n.blockIndexer,
-		ConsensusReactor: n.consensusReactor,
-		MempoolReactor:   n.mempoolReactor,
-		EventBus:         n.eventBus,
-		Mempool:          n.mempool,
+		_rpcEnv = &rpccore.Environment{
+			ProxyAppQuery:   n.proxyApp.Query(),
+			ProxyAppMempool: n.proxyApp.Mempool(),
 
-		Logger: n.Logger.With("module", "rpc"),
+			StateStore:     n.stateStore,
+			BlockStore:     n.blockStore,
+			EvidencePool:   n.evidencePool,
+			ConsensusState: n.consensusState,
+			P2PPeers:       n.sw,
+			P2PTransport:   n,
+			PubKey:         pubKey,
 
-		Config: *n.config.RPC,
-	}
-	if err := rpcCoreEnv.InitGenesisChunks(); err != nil {
-		errMsg := "could not create the genesis file chunks and cache them: %s"
-		return nil, fmt.Errorf(errMsg, err)
-	}
-	return &rpcCoreEnv, nil
+			GenDoc:           n.genesisDoc,
+			TxIndexer:        n.txIndexer,
+			BlockIndexer:     n.blockIndexer,
+			ConsensusReactor: n.consensusReactor,
+			MempoolReactor:   n.mempoolReactor,
+			EventBus:         n.eventBus,
+			Mempool:          n.mempool,
+
+			Logger: n.Logger.With("module", "rpc"),
+
+			Config: *n.config.RPC,
+		}
+
+		if err := _rpcEnv.InitGenesisChunks(); err != nil {
+			errMsg := "could not create the genesis file chunks and cache them: %s"
+			errToReturn = fmt.Errorf(errMsg, err)
+			return
+		}
+	})
+
+	return _rpcEnv, errToReturn
 }
 
 func (n *Node) startRPC() ([]net.Listener, error) {

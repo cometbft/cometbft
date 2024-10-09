@@ -652,6 +652,8 @@ func (n *Node) OnStart() error {
 		return ErrStartPruning{Err: err}
 	}
 
+	n.genesisDoc = nil
+
 	return nil
 }
 

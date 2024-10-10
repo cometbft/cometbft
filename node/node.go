@@ -52,8 +52,13 @@ type Node struct {
 	service.BaseService
 
 	// config
-	config        *cfg.Config
-	genesisDoc    *types.GenesisDoc // initial validator set
+	config *cfg.Config
+
+	// genesisDoc stores the initial validator set.
+	// NOTE: this pointer will be set to nil once startup is done. In future work
+	// we plan to remove this field altogether so that the genesis isn't stored in
+	// memory at runtime.
+	genesisDoc    *types.GenesisDoc
 	genesisTime   time.Time
 	privValidator types.PrivValidator // local node's validator key
 

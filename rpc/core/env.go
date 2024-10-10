@@ -68,8 +68,14 @@ type mempoolReactor interface {
 	TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, error)
 }
 
-// Environment contains objects and interfaces used by the RPC. It is expected
-// to be setup once during startup.
+// Environment contains the objects and interfaces used to serve the RPC APIs.
+// A Node creates an object of this type at startup.
+// An Environment should not be created directly, and it is recommended that
+// only one instance of Environment be created at runtime.
+// For this reason, callers should create one using the ConfigureRPC() method of
+// the Node type, because the Environment object it returns is a singleton.
+// Note: The Environment type was exported in the initial RPC API design; therefore,
+// unexporting it now could potentially break users.
 type Environment struct {
 	// external, thread safe interfaces
 	ProxyAppQuery   proxy.AppConnQuery
@@ -102,7 +108,7 @@ type Environment struct {
 }
 
 // InitGenesisChunks checks whether it makes sense to create a cache of chunked
-// genesis data. It is called once on Node startup.
+// genesis data. It is called on Node startup and should be called only once.
 // Rules of chunking:
 // - if the genesis file's size is <= 16MB, then no chunking. An `Environment`
 // object will store a pointer to the genesis in its GenDoc field. Its genChunks

@@ -740,7 +740,7 @@ var (
 	// ensure that `ConfigureRPC` initializes an `Environment` object only once.
 	_once sync.Once
 
-	// _rpcEnv is the `Environment` object serving RPC APIs. We treat is as a
+	// _rpcEnv is the `Environment` object serving RPC APIs. We treat it as a
 	// singleton and create it exactly once. See the docs of `ConfigureRPC` below
 	// for more details.
 	_rpcEnv *rpccore.Environment

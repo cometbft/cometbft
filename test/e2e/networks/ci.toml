@@ -69,7 +69,7 @@ key_type = "secp256k1"
 [node.validator04]
 persistent_peers = ["validator01"]
 database = "rocksdb"
-perturb = ["pause"]
+perturb = ["pause", "rollback","rollback","rollback","kill","kill","kill","rollback","rollback","rollback","kill","kill","kill"]
 
 [node.validator05]
 start_at = 1005 # Becomes part of the validator set at 1010

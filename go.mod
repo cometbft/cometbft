@@ -51,7 +51,7 @@ require (
 	golang.org/x/text v0.19.0
 	gonum.org/v1/gonum v0.15.1
 	google.golang.org/grpc v1.67.0
-	google.golang.org/protobuf v1.34.2
+	google.golang.org/protobuf v1.35.1
 )
 
 require github.com/go-git/go-git/v5 v5.12.0

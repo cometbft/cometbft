@@ -68,6 +68,15 @@ type Metrics struct {
 	// (experimental feature).
 	ActiveOutboundConnections metrics.Gauge
 
+	// Number of HaveTx messages received (cumulative).
+	HaveTxMsgsReceived metrics.Counter `metrics_labels:"from"`
+
+	// Number of Reset messages sent (cumulative).
+	ResetMsgsSent metrics.Counter
+
+	// Number of disabled routes.
+	DisabledRoutes metrics.Gauge
+
 	// Cumulative time spent rechecking transactions
 	RecheckDurationSeconds metrics.Gauge
 }

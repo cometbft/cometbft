@@ -90,6 +90,24 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "active_outbound_connections",
 			Help:      "Number of connections being actively used for gossiping transactions (experimental feature).",
 		}, labels).With(labelsAndValues...),
+		HaveTxMsgsReceived: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "have_tx_msgs_received",
+			Help:      "Number of HaveTx messages received (cumulative).",
+		}, append(labels, "from")).With(labelsAndValues...),
+		ResetMsgsSent: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "reset_msgs_sent",
+			Help:      "Number of Reset messages sent (cumulative).",
+		}, labels).With(labelsAndValues...),
+		DisabledRoutes: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "disabled_routes",
+			Help:      "Number of disabled routes.",
+		}, labels).With(labelsAndValues...),
 		RecheckDurationSeconds: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -113,6 +131,9 @@ func NopMetrics() *Metrics {
 		RecheckTimes:              discard.NewCounter(),
 		AlreadyReceivedTxs:        discard.NewCounter(),
 		ActiveOutboundConnections: discard.NewGauge(),
+		HaveTxMsgsReceived:        discard.NewCounter(),
+		ResetMsgsSent:             discard.NewCounter(),
+		DisabledRoutes:            discard.NewGauge(),
 		RecheckDurationSeconds:    discard.NewGauge(),
 	}
 }

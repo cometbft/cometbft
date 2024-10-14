@@ -164,8 +164,11 @@ func (memR *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 			if !ok {
 				memR.Logger.Error("Failed to send Reset message", "peer", p.ID())
 			}
+			memR.mempool.metrics.ResetMsgsSent.Add(1)
 		}
 	})
+
+	memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
 }
 
 // Receive implements Reactor.
@@ -200,10 +203,14 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 			sourceID := sources[0]
 			memR.router.disableRoute(sourceID, senderID)
 			memR.Logger.Debug("Disable route", "source", sourceID, "target", senderID)
+			memR.mempool.metrics.HaveTxMsgsReceived.With("from", string(senderID)).Add(1)
+			memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
 
 		case *protomem.Reset:
 			memR.Logger.Debug("Received Reset", "from", senderID)
 			memR.router.resetRoutes(senderID)
+			memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
+
 		default:
 			memR.Logger.Error("Unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 			memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message of type: %T", e.Message))
@@ -485,6 +492,19 @@ func (r *gossipRouter) resetRoutes(peerID p2p.ID) {
 	for _, targets := range r.disabledRoutes {
 		delete(targets, peerID)
 	}
+}
+
+// numRoutes returns the number of disabled routes in this node. Used for
+// metrics.
+func (r *gossipRouter) numRoutes() int {
+	r.mtx.RLock()
+	defer r.mtx.RUnlock()
+
+	count := 0
+	for _, targets := range r.disabledRoutes {
+		count += len(targets)
+	}
+	return count
 }
 
 // doIfTimerExpired checks whether the timer has not started or if it expired. We don't want to send

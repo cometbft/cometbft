@@ -3,10 +3,13 @@ package node
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
+	"reflect"
 	"syscall"
 	"testing"
 	"time"
@@ -773,6 +776,89 @@ func TestLoadStateFromDBOrGenesisDocProviderWithConfig(t *testing.T) {
 
 		wantErr := "invalid genesis doc SHA256 checksum: expected 64 characters, but have 14"
 		assert.EqualError(t, err, wantErr)
+	})
+}
+
+func TestGenesisDoc(t *testing.T) {
+	var (
+		config = test.ResetTestRoot(t.Name())
+		n      = &Node{config: config}
+	)
+
+	// In the following tests we always overwrite the genesis file with a dummy.
+	// We can do so because the method under test's sole responsibility is
+	// retrieving and returning the GenesisDoc from disk. Therefore, we test only
+	// whether the retrieval process goes as expected; we don't check if the
+	// GenesisDoc is valid.
+
+	t.Run("NoError", func(t *testing.T) {
+		// A trivial, incomplete genesis to test correct behavior.
+		gDocStr := `{
+"genesis_time": "2018-10-10T08:20:13.695936996Z",
+"chain_id": "test-chain",
+"initial_height": "1",
+"app_hash": ""
+}`
+
+		err := os.WriteFile(config.GenesisFile(), []byte(gDocStr), 0o644)
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+
+		wantgDoc := &types.GenesisDoc{
+			GenesisTime:   time.Date(2018, 10, 10, 8, 20, 13, 695936996, time.UTC),
+			ChainID:       "test-chain",
+			InitialHeight: 1,
+			AppHash:       []byte{},
+		}
+
+		gDoc, err := n.GenesisDoc()
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+		if !reflect.DeepEqual(gDoc, wantgDoc) {
+			t.Errorf("\nwant: %#v\ngot: %#v\n", wantgDoc, gDoc)
+		}
+	})
+
+	t.Run("ErrGenesisFilePath", func(t *testing.T) {
+		n.config.Genesis = "foo.json"
+		_, err := n.GenesisDoc()
+		if err == nil {
+			t.Fatal("expected error but got none")
+		}
+		if !errors.Is(err, os.ErrNotExist) {
+			t.Errorf("expected os.ErrNotExist, got %s", err)
+		}
+	})
+
+	t.Run("ErrGenesisUnmarshal", func(t *testing.T) {
+		// A trivial, incomplete genesis where initial_height is set to an invalid
+		// value.
+		// We don't need anything more complex to test this error.
+		gDocStr := `{
+"genesis_time": "2018-10-10T08:20:13.695936996Z",
+"chain_id": "test-chain",
+"initial_height": "hello world",
+"app_hash": ""
+}`
+
+		// note: Recall that in the previous test we set the path n.config.Genesis to
+		// foo.json. Therefore, config.GenesisFile() returns the path to foo.json.
+		err := os.WriteFile(config.GenesisFile(), []byte(gDocStr), 0o644)
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+
+		_, err = n.GenesisDoc()
+		if err == nil {
+			t.Fatal("expected error but got none")
+		}
+
+		var errUnmarshal *json.SyntaxError
+		if !errors.As(err, &errUnmarshal) {
+			t.Errorf("expected json.SyntaxError, got %s", err)
+		}
 	})
 }
 

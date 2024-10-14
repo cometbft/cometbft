@@ -23,6 +23,7 @@ import (
 	bc "github.com/cometbft/cometbft/internal/blocksync"
 	cs "github.com/cometbft/cometbft/internal/consensus"
 	"github.com/cometbft/cometbft/internal/evidence"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	"github.com/cometbft/cometbft/libs/service"
@@ -1025,9 +1026,31 @@ func (n *Node) PrivValidator() types.PrivValidator {
 	return n.privValidator
 }
 
-// GenesisDoc returns the Node's GenesisDoc.
-func (n *Node) GenesisDoc() *types.GenesisDoc {
-	return n.genesisDoc
+// GenesisDoc returns a GenesisDoc object after reading the genesis file from disk.
+// The function does not check for the genesis's validity since it was already
+// checked at startup, and we work under the assumption that correct nodes (i.e.,
+// non-Byzantine) are not compromised. Therefore, their file system can be
+// trusted while the node is running.
+// Note that the genesis file can be large (hundreds of MBs, even GBs); therefore,
+// we recommend that the caller does not keep the GenesisDoc returned by this
+// function in memory longer than necessary.
+func (n *Node) GenesisDoc() (*types.GenesisDoc, error) {
+	gDocPath := n.config.GenesisFile()
+
+	gDocJSON, err := os.ReadFile(gDocPath)
+	if err != nil {
+		return nil, fmt.Errorf("unavailable genesis file at %s: %w", gDocPath, err)
+	}
+
+	var gDoc types.GenesisDoc
+
+	err = cmtjson.Unmarshal(gDocJSON, &gDoc)
+	if err != nil {
+		formatStr := "invalid JSON format for genesis file at %s: %w"
+		return nil, fmt.Errorf(formatStr, gDocPath, err)
+	}
+
+	return &gDoc, nil
 }
 
 // ProxyApp returns the Node's AppConns, representing its connections to the ABCI application.

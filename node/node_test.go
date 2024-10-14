@@ -475,7 +475,7 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 	cr := p2pmock.NewReactor()
 	cr.Channels = []*conn.ChannelDescriptor{
 		{
-			ID:                  byte(0x31),
+			ID:                  byte(0xff),
 			Priority:            5,
 			SendQueueCapacity:   100,
 			RecvMessageCapacity: 100,
@@ -513,6 +513,7 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 
 	channels := n.NodeInfo().(p2p.DefaultNodeInfo).Channels
 	assert.Contains(t, channels, mempl.MempoolChannel)
+	assert.Contains(t, channels, mempl.MempoolControlChannel)
 	assert.Contains(t, channels, cr.Channels[0].ID)
 }
 

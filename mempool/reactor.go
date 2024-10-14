@@ -80,11 +80,22 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 		},
 	}
 
+	key := types.Tx(largestTx).Key()
+	haveTxMsg := protomem.Message{
+		Sum: &protomem.Message_HaveTx{HaveTx: &protomem.HaveTx{TxKey: key[:]}},
+	}
+
 	return []*p2p.ChannelDescriptor{
 		{
 			ID:                  MempoolChannel,
 			Priority:            5,
 			RecvMessageCapacity: batchMsg.Size(),
+			MessageType:         &protomem.Message{},
+		},
+		{
+			ID:                  MempoolControlChannel,
+			Priority:            10,
+			RecvMessageCapacity: haveTxMsg.Size(),
 			MessageType:         &protomem.Message{},
 		},
 	}
@@ -136,28 +147,53 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 // Receive implements Reactor.
 // It adds any received transactions to the mempool.
 func (memR *Reactor) Receive(e p2p.Envelope) {
-	memR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
-	switch msg := e.Message.(type) {
-	case *protomem.Txs:
-		if memR.WaitSync() {
-			memR.Logger.Debug("Ignored message received while syncing", "msg", msg)
-			return
+	if memR.WaitSync() {
+		memR.Logger.Debug("Ignore message received while syncing", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
+		return
+	}
+
+	senderID := e.Src.ID()
+
+	switch e.ChannelID {
+	case MempoolControlChannel:
+		switch msg := e.Message.(type) {
+		case *protomem.HaveTx:
+			txKey := types.TxKey(msg.GetTxKey())
+			if len(txKey) == 0 {
+				memR.Logger.Error("Received empty HaveTx message from peer", "src", e.Src.ID())
+				return
+			}
+			memR.Logger.Debug("Received HaveTx", "from", senderID, "txKey", txKey)
+		case *protomem.Reset:
+			memR.Logger.Debug("Received Reset", "from", senderID)
+		default:
+			memR.Logger.Error("Unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
+			memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message of type: %T", e.Message))
 		}
 
-		protoTxs := msg.GetTxs()
-		if len(protoTxs) == 0 {
-			memR.Logger.Error("Received empty Txs message from peer", "src", e.Src)
-			return
-		}
+	case MempoolChannel:
+		switch msg := e.Message.(type) {
+		case *protomem.Txs:
+			protoTxs := msg.GetTxs()
+			if len(protoTxs) == 0 {
+				memR.Logger.Error("Received empty Txs message from peer", "src", e.Src.ID())
+				return
+			}
 
-		for _, txBytes := range protoTxs {
-			_, _ = memR.TryAddTx(types.Tx(txBytes), e.Src)
+			memR.Logger.Debug("Received Txs", "from", senderID, "msg", e.Message)
+			for _, txBytes := range protoTxs {
+				_, _ = memR.TryAddTx(types.Tx(txBytes), e.Src)
+			}
+
+		default:
+			memR.Logger.Error("Unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
+			memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message of type: %T", e.Message))
+			return
 		}
 
 	default:
-		memR.Logger.Error("Unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
-		memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message of type: %T", e.Message))
-		return
+		memR.Logger.Error("Unknown channel", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
+		memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message on channel: %T", e.Message))
 	}
 
 	// broadcasting happens from go routines per peer

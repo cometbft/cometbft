@@ -137,7 +137,7 @@ func (prt *ProofRuntime) VerifyAbsence(proof *cmtcrypto.ProofOps, root []byte, k
 	return prt.Verify(proof, root, keypath, nil)
 }
 
-// Verify verifies a proof by decoding it into ProofOperators
+// Verify verifies a proof by decoding it into ProofOperators.
 func (prt *ProofRuntime) Verify(proof *cmtcrypto.ProofOps, root []byte, keypath string, args [][]byte) (err error) {
 	poz, err := prt.DecodeProof(proof)
 	if err != nil {

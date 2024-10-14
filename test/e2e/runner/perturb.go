@@ -113,6 +113,22 @@ func PerturbNode(ctx context.Context, node *e2e.Node, perturbation e2e.Perturbat
 			timeout *= 5
 		}
 
+	case e2e.PerturbationRollback:
+		logger.Info("perturb node", "msg", log.NewLazySprintf("Rolling back node %v...", node.Name))
+		if err := docker.ExecCompose(context.Background(), testnet.Dir, "kill", "-s", "SIGKILL", name); err != nil {
+			return nil, err
+		}
+		// This starts a new tmp container, but the side effects of rollback stay in the volume
+		if err := docker.ExecCompose(context.Background(), testnet.Dir, "run", "--rm", "--entrypoint", "/usr/bin/cometbft", name, "rollback"); err != nil {
+			return nil, err
+		}
+		if err := docker.ExecCompose(context.Background(), testnet.Dir, "start", name); err != nil {
+			return nil, err
+		}
+		if node.PersistInterval == 0 {
+			timeout *= 5
+		}
+
 	default:
 		return nil, fmt.Errorf("unexpected perturbation %q", perturbation)
 	}

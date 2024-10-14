@@ -1,8 +1,8 @@
 #! /bin/bash
 
-export GO111MODULE=on
-
-set -u
+set -o errexit   # abort on nonzero exitstatus
+set -o nounset   # abort on unbound variable
+set -o pipefail  # don't hide errors within pipes
 
 #####################
 # counter over socket
@@ -19,7 +19,7 @@ function getCode() {
 		echo -1
 	fi
 
-	if [[ $(echo $R | jq 'has("code")') == "true" ]]; then
+	if [[ $(echo "$R" | jq 'has("code")') == "true" ]]; then
 		# this won't actually work if there's an error ...
 		echo "$R" | jq ".code"
 	else
@@ -94,7 +94,7 @@ fi
 echo "... sending tx. expect error"
 
 # second time should get rejected by the mempool (return error and non-zero code)
-sendTx $TX true
+sendTx "$TX" true
 
 
 echo "... sending tx. expect no error"

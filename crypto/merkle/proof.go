@@ -171,6 +171,7 @@ func (sp *Proof) ValidateBasic() error {
 	return nil
 }
 
+// ToProto converts the Proof structure into its corresponding protobuf representation.
 func (sp *Proof) ToProto() *cmtcrypto.Proof {
 	if sp == nil {
 		return nil
@@ -185,6 +186,7 @@ func (sp *Proof) ToProto() *cmtcrypto.Proof {
 	return pb
 }
 
+// ProofFromProto converts a protobuf cmtcrypto.Proof object back into the Proof structure.
 func ProofFromProto(pb *cmtcrypto.Proof) (*Proof, error) {
 	if pb == nil {
 		return nil, ErrInvalidProof{Err: errors.New("nil proof")}
@@ -274,6 +276,7 @@ func trailsFromByteSlices(items [][]byte) (trails []*ProofNode, root *ProofNode)
 	return trailsFromByteSlicesInternal(tmhash.New(), items)
 }
 
+// trailsFromByteSlicesInternal computes the Merkle tree trails and root for a given set of byte slices.
 func trailsFromByteSlicesInternal(hash hash.Hash, items [][]byte) (trails []*ProofNode, root *ProofNode) {
 	// Recursive impl.
 	switch len(items) {

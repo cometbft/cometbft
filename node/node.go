@@ -1025,6 +1025,11 @@ func (n *Node) PrivValidator() types.PrivValidator {
 	return n.privValidator
 }
 
+// GenesisDoc returns the Node's GenesisDoc.
+func (n *Node) GenesisDoc() *types.GenesisDoc {
+	return n.genesisDoc
+}
+
 // ProxyApp returns the Node's AppConns, representing its connections to the ABCI application.
 func (n *Node) ProxyApp() proxy.AppConns {
 	return n.proxyApp

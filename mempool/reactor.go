@@ -155,17 +155,14 @@ func (memR *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 	// Remove all routes with peer as source or target.
 	memR.router.resetRoutes(peer.ID())
 
-	// // Broadcast Reset to all peers except sender.
-	// memR.Switch.Peers().ForEach(func(p p2p.Peer) {
-	// 	if p.ID() != peer.ID() {
-	// 		ok := p.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.Reset{}})
-	// 		if !ok {
-	// 			memR.Logger.Error("Failed to send Reset message", "peer", p.ID())
-	// 		}
-	// 		memR.mempool.metrics.ResetMsgsSent.Add(1)
-	// 	}
-	// })
+	// Broadcast Reset to all peers except sender.
+	memR.Switch.Peers().ForEach(func(p p2p.Peer) {
+		if p.ID() != peer.ID() {
+			memR.SendReset(p)
+		}
+	})
 
+	// Update metrics.
 	memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
 }
 
@@ -274,13 +271,13 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 			return nil, err
 
 		default:
-			memR.Logger.Info("Could not check tx", "tx", log.NewLazySprintf("%X", tx.Hash()), "sender", senderID, "err", err)
+			memR.Logger.Debug("Could not check tx", "tx", log.NewLazySprintf("%X", tx.Hash()), "sender", senderID, "err", err)
 			return nil, err
 		}
 	}
 
-	// adjust redundancy
-	memR.router.incFirstTimeTx()
+	// Adjust redundancy.
+	memR.router.incFirstTimeTxs()
 	redundancy, sendReset := memR.router.adjustRedundancy(memR.Logger)
 	if sendReset {
 		// Send Reset to a random peer.
@@ -288,7 +285,7 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 		memR.SendReset(p)
 	}
 
-	// update metrics
+	// Update metrics.
 	if redundancy >= 0 {
 		memR.mempool.metrics.Redundancy.Set(redundancy)
 	}
@@ -297,10 +294,12 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 }
 
 func (memR *Reactor) SendReset(p p2p.Peer) {
-	if !p.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.Reset{}}) {
-		memR.Logger.Error("Failed to send Reset", "peer", p.ID())
+	ok := p.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.Reset{}})
+	if !ok {
+		memR.Logger.Error("Failed to send Reset message", "peer", p.ID())
+	} else {
+		memR.mempool.metrics.ResetMsgsSent.Add(1)
 	}
-	memR.mempool.metrics.ResetMsgsSent.Add(1)
 }
 
 func (memR *Reactor) EnableInOutTxs() {
@@ -436,12 +435,12 @@ type p2pIDSet = map[p2p.ID]struct{}
 type gossipRouter struct {
 	config *cfg.MempoolConfig
 
+	mtx cmtsync.RWMutex
 	// A set of `source -> target` routes that are disabled for disseminating transactions. Source
 	// and target are node IDs.
 	disabledRoutes map[p2p.ID]p2pIDSet
-	first          int64 // number of transactions received for the first time
-	duplicate      int64 // number of duplicate transactions
-	mtx            cmtsync.RWMutex
+	firstTimeTxs   int64 // number of transactions received for the first time
+	duplicates     int64 // number of duplicate transactions
 
 	blockHaveTx atomic.Bool
 }
@@ -451,6 +450,56 @@ func newGossipRouter(config *cfg.MempoolConfig) *gossipRouter {
 		config:         config,
 		disabledRoutes: make(map[p2p.ID]p2pIDSet),
 	}
+}
+
+func (r *gossipRouter) setBlockHaveTx() {
+	r.blockHaveTx.Store(true)
+}
+
+func (r *gossipRouter) isHaveTxBlocked() bool {
+	return r.blockHaveTx.Load()
+}
+
+func (r *gossipRouter) incDuplicateTxs() {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	r.duplicates++
+}
+
+func (r *gossipRouter) incFirstTimeTxs() {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	r.firstTimeTxs++
+}
+
+func (r *gossipRouter) adjustRedundancy(logger log.Logger) (float64, bool) {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	if r.firstTimeTxs >= r.config.TxsPerAdjustment {
+		sendReset := false
+		redundancy := float64(r.duplicates) / float64(r.firstTimeTxs)
+		targetRedundancySlackAbs := float64(r.config.TargetRedundancy) * float64(r.config.TargetRedundancySlack) / 100.
+		if redundancy < r.config.TargetRedundancy-targetRedundancySlackAbs {
+			logger.Info("TX redundancy BELOW limit, increasing it",
+				"redundancy", redundancy,
+				"limit", r.config.TargetRedundancy+targetRedundancySlackAbs,
+			)
+			sendReset = true
+		} else if redundancy > r.config.TargetRedundancy+targetRedundancySlackAbs {
+			logger.Info("TX redundancy ABOVE limit, decreasing it",
+				"redundancy", redundancy,
+				"limit", r.config.TargetRedundancy-targetRedundancySlackAbs,
+			)
+			r.blockHaveTx.Store(false)
+		}
+		r.firstTimeTxs = 0
+		r.duplicates = 0
+		return redundancy, sendReset
+	}
+	return -1, false
 }
 
 // disableRoute marks the route `source -> target` as disabled.
@@ -510,10 +559,10 @@ func (r *gossipRouter) resetRoutes(peerID p2p.ID) {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
-	// remove peer as source
+	// Remove peer as source.
 	delete(r.disabledRoutes, peerID)
 
-	// remove peer as target
+	// Remove peer as target.
 	for _, targets := range r.disabledRoutes {
 		delete(targets, peerID)
 	}
@@ -530,54 +579,4 @@ func (r *gossipRouter) numRoutes() int {
 		count += len(targets)
 	}
 	return count
-}
-
-func (r *gossipRouter) setBlockHaveTx() {
-	r.blockHaveTx.Store(true)
-}
-
-func (r *gossipRouter) isHaveTxBlocked() bool {
-	return r.blockHaveTx.Load()
-}
-
-func (r *gossipRouter) incDuplicateTxs() {
-	r.mtx.Lock()
-	defer r.mtx.Unlock()
-
-	r.duplicate++
-}
-
-func (r *gossipRouter) incFirstTimeTx() {
-	r.mtx.Lock()
-	defer r.mtx.Unlock()
-
-	r.first++
-}
-
-func (r *gossipRouter) adjustRedundancy(logger log.Logger) (float64, bool) {
-	r.mtx.Lock()
-	defer r.mtx.Unlock()
-
-	if r.first >= r.config.TxsPerAdjustment {
-		sendReset := false
-		redundancy := float64(r.duplicate) / float64(r.first)
-		targetRedundancySlackAbs := float64(r.config.TargetRedundancy) * float64(r.config.TargetRedundancySlack) / 100.
-		if redundancy < r.config.TargetRedundancy-targetRedundancySlackAbs {
-			logger.Info("TX redundancy BELOW limit, increasing it",
-				"redundancy", redundancy,
-				"limit", r.config.TargetRedundancy+targetRedundancySlackAbs,
-			)
-			sendReset = true
-		} else if r.config.TargetRedundancy+targetRedundancySlackAbs <= redundancy {
-			logger.Info("TX redundancy ABOVE limit, decreasing it",
-				"redundancy", redundancy,
-				"limit", r.config.TargetRedundancy-targetRedundancySlackAbs,
-			)
-			r.blockHaveTx.Store(false)
-		}
-		r.first = 0
-		r.duplicate = 0
-		return redundancy, sendReset
-	}
-	return -1, false
 }

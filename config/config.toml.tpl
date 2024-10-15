@@ -383,6 +383,7 @@ experimental_max_gossip_connections_to_non_persistent_peers = {{ .Mempool.Experi
 # Use this feature with caution and consider the impact on transaction processing performance.
 experimental_publish_event_pending_tx = {{ .Mempool.ExperimentalPublishEventPendingTx }}
 
+enable_dog_protocol = {{ .Mempool.EnableDOGProtocol }}
 target_redundancy = {{ .Mempool.TargetRedundancy }}
 target_redundancy_slack = {{ .Mempool.TargetRedundancySlack }}
 txs_per_adjustment = {{ .Mempool.TxsPerAdjustment }}

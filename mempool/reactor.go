@@ -71,7 +71,9 @@ func (memR *Reactor) OnStart() error {
 	if !memR.config.Broadcast {
 		memR.Logger.Info("Tx broadcasting is disabled")
 	}
-	memR.router = newGossipRouter(memR.config)
+	if memR.config.EnableDOGProtocol {
+		memR.router = newGossipRouter(memR.config)
+	}
 	return nil
 }
 
@@ -152,18 +154,20 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 func (memR *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 	memR.Logger.Debug("Remove peer: send Reset to other peers", "peer", peer.ID())
 
-	// Remove all routes with peer as source or target.
-	memR.router.resetRoutes(peer.ID())
+	if memR.router != nil {
+		// Remove all routes with peer as source or target.
+		memR.router.resetRoutes(peer.ID())
 
-	// Broadcast Reset to all peers except sender.
-	memR.Switch.Peers().ForEach(func(p p2p.Peer) {
-		if p.ID() != peer.ID() {
-			memR.SendReset(p)
-		}
-	})
+		// Broadcast Reset to all peers except sender.
+		memR.Switch.Peers().ForEach(func(p p2p.Peer) {
+			if p.ID() != peer.ID() {
+				memR.SendReset(p)
+			}
+		})
 
-	// Update metrics.
-	memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
+		// Update metrics.
+		memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
+	}
 }
 
 // Receive implements Reactor.
@@ -186,25 +190,30 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 				return
 			}
 			memR.Logger.Debug("Received HaveTx", "from", senderID, "txKey", txKey)
-			sources, err := memR.mempool.GetSenders(txKey)
-			if err != nil || len(sources) == 0 || sources[0] == noSender {
-				// Probably tx and sender got removed from the mempool.
-				memR.Logger.Error("Received HaveTx but failed to get sender", "tx", txKey.Hash(), "err", err)
-				return
-			}
 
-			// Do not gossip to the peer that send us HaveTx any transaction coming from the source of txKey.
-			// TODO: Pick a random source?
-			sourceID := sources[0]
-			memR.router.disableRoute(sourceID, senderID)
-			memR.Logger.Debug("Disable route", "source", sourceID, "target", senderID)
-			memR.mempool.metrics.HaveTxMsgsReceived.With("from", string(senderID)).Add(1)
-			memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
+			if memR.router != nil {
+				sources, err := memR.mempool.GetSenders(txKey)
+				if err != nil || len(sources) == 0 || sources[0] == noSender {
+					// Probably tx and sender got removed from the mempool.
+					memR.Logger.Error("Received HaveTx but failed to get sender", "tx", txKey.Hash(), "err", err)
+					return
+				}
+
+				// Do not gossip to the peer that send us HaveTx any transaction coming from the source of txKey.
+				// TODO: Pick a random source?
+				sourceID := sources[0]
+				memR.router.disableRoute(sourceID, senderID)
+				memR.Logger.Debug("Disable route", "source", sourceID, "target", senderID)
+				memR.mempool.metrics.HaveTxMsgsReceived.With("from", string(senderID)).Add(1)
+				memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
+			}
 
 		case *protomem.Reset:
 			memR.Logger.Debug("Received Reset", "from", senderID)
-			memR.router.resetRoutes(senderID)
-			memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
+			if memR.router != nil {
+				memR.router.resetRoutes(senderID)
+				memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
+			}
 
 		default:
 			memR.Logger.Error("Unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
@@ -253,14 +262,16 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 		switch {
 		case errors.Is(err, ErrTxInCache):
 			memR.Logger.Debug("Tx already exists in cache", "tx", log.NewLazySprintf("%X", txKey.Hash()), "sender", senderID)
-			memR.router.incDuplicateTxs()
-			if !memR.router.isHaveTxBlocked() {
-				ok := sender.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.HaveTx{TxKey: txKey[:]}})
-				if !ok {
-					memR.Logger.Error("Failed to send HaveTx message", "peer", senderID, "txKey", txKey)
-				} else {
-					memR.Logger.Debug("Sent HaveTx message", "tx", log.NewLazySprintf("%X", txKey.Hash()), "peer", senderID)
-					memR.router.setBlockHaveTx()
+			if memR.router != nil {
+				memR.router.incDuplicateTxs()
+				if !memR.router.isHaveTxBlocked() {
+					ok := sender.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.HaveTx{TxKey: txKey[:]}})
+					if !ok {
+						memR.Logger.Error("Failed to send HaveTx message", "peer", senderID, "txKey", txKey)
+					} else {
+						memR.Logger.Debug("Sent HaveTx message", "tx", log.NewLazySprintf("%X", txKey.Hash()), "peer", senderID)
+						memR.router.setBlockHaveTx()
+					}
 				}
 			}
 			return nil, err
@@ -276,18 +287,20 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 		}
 	}
 
-	// Adjust redundancy.
-	memR.router.incFirstTimeTxs()
-	redundancy, sendReset := memR.router.adjustRedundancy(memR.Logger)
-	if sendReset {
-		// Send Reset to a random peer.
-		p := memR.Switch.Peers().Random()
-		memR.SendReset(p)
-	}
+	if memR.router != nil {
+		// Adjust redundancy.
+		memR.router.incFirstTimeTxs()
+		redundancy, sendReset := memR.router.adjustRedundancy(memR.Logger)
+		if sendReset {
+			// Send Reset to a random peer.
+			p := memR.Switch.Peers().Random()
+			memR.SendReset(p)
+		}
 
-	// Update metrics.
-	if redundancy >= 0 {
-		memR.mempool.metrics.Redundancy.Set(redundancy)
+		// Update metrics.
+		if redundancy >= 0 {
+			memR.mempool.metrics.Redundancy.Set(redundancy)
+		}
 	}
 
 	return reqRes, nil
@@ -362,7 +375,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		senders := entry.Senders()
 
 		// Check whether any route to this peer is enabled.
-		if !memR.router.areRoutesEnabled(senders, peer.ID()) {
+		if memR.router != nil && !memR.router.areRoutesEnabled(senders, peer.ID()) {
 			memR.Logger.Debug("Disabled route: do not send transaction to peer",
 				"tx", log.NewLazySprintf("%X", txKey.Hash()), "peer", peer.ID(), "senders", senders)
 			continue

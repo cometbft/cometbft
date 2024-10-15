@@ -990,6 +990,7 @@ type MempoolConfig struct {
 
 	// For DOG gossip protocol.
 	// TargetRedundancySlack is expressed as % of TargetRedundancy.
+	EnableDOGProtocol     bool    `mapstructure:"enable_dog_protocol"`
 	TargetRedundancy      float64 `mapstructure:"target_redundancy"`
 	TargetRedundancySlack float64 `mapstructure:"target_redundancy_slack"`
 	TxsPerAdjustment      int64   `mapstructure:"txs_per_adjustment"`
@@ -1010,6 +1011,7 @@ func DefaultMempoolConfig() *MempoolConfig {
 		CacheSize:   10000,
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: 0,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    0,
+		EnableDOGProtocol:     true,
 		TargetRedundancy:      1,
 		TargetRedundancySlack: 10,
 		TxsPerAdjustment:      500,

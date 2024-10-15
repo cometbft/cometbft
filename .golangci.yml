@@ -86,7 +86,6 @@ linters-settings:
           - $gostd
           - github.com/BurntSushi/toml
           - github.com/Masterminds/semver/v3
-          - github.com/btcsuite/btcd/btcec/v2
           - github.com/cometbft
           - github.com/cosmos
           - github.com/creachadair/atomicfile
@@ -112,6 +111,7 @@ linters-settings:
           - github.com/stretchr/testify/require
           - github.com/syndtr/goleveldb
           - github.com/mitchellh/mapstructure
+          - github.com/decred/dcrd/dcrec/secp256k1/v4
       test:
         files:
           - "$test"
@@ -134,6 +134,7 @@ linters-settings:
           - github.com/prometheus/client_golang/prometheus/promhttp
           - github.com/spf13
           - github.com/stretchr/testify
+          - github.com/decred/dcrd/dcrec/secp256k1/v4
 
   revive:
     enable-all-rules: true

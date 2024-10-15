@@ -946,6 +946,49 @@ func TestValSetUpdatesDuplicateEntries(t *testing.T) {
 	}
 }
 
+func permuteValidatorSlice(vals []*Validator, start int, res [][]*Validator) [][]*Validator {
+	if start == len(vals)-1 {
+		// Make a copy of the current permutation and add it to the result
+		perm := make([]*Validator, len(vals))
+		copy(perm, vals)
+		return append(res, perm)
+	}
+
+	for i := start; i < len(vals); i++ {
+		// Swap the current element with the start
+		vals[start], vals[i] = vals[i], vals[start]
+
+		// Recurse for the next element
+		res = permuteValidatorSlice(vals, start+1, res)
+
+		// Backtrack (swap back)
+		vals[start], vals[i] = vals[i], vals[start]
+	}
+	return res
+}
+
+func TestValSetTestOrderingPower(t *testing.T) {
+	sortedVals := []*Validator{
+		{Address: []byte("validator10"), VotingPower: 20},
+		{Address: []byte("validator12"), VotingPower: 20},
+		{Address: []byte("validator13"), VotingPower: 15},
+		{Address: []byte("validator44"), VotingPower: 12},
+		{Address: []byte("validator32"), VotingPower: 10},
+		{Address: []byte("validator16"), VotingPower: 5},
+		{Address: []byte("validator17"), VotingPower: 5},
+	}
+	allPerms := permuteValidatorSlice(sortedVals, 0, nil)
+	for _, vals := range allPerms {
+		t.Log("testing valset", "valset", vals)
+		valset := NewValidatorSet(vals)
+		for i, val := range valset.Validators {
+			sortedVal := sortedVals[i]
+			require.Equal(t, val.Address, sortedVal.Address)
+			require.Equal(t, val.VotingPower, sortedVal.VotingPower)
+		}
+	}
+}
+
 func TestValSetUpdatesOverflows(t *testing.T) {
 	maxVP := MaxTotalVotingPower
 	testCases := []valSetErrTestCase{

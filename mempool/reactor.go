@@ -290,11 +290,13 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 	if memR.router != nil {
 		// Adjust redundancy.
 		memR.router.incFirstTimeTxs()
-		redundancy, sendReset := memR.router.adjustRedundancy(memR.Logger)
+		redundancy, sendReset := memR.router.adjustRedundancy()
 		if sendReset {
-			// Send Reset to a random peer.
-			p := memR.Switch.Peers().Random()
-			memR.SendReset(p)
+			memR.Logger.Info("TX redundancy BELOW lower limit: increase it (send Reset)", "redundancy", redundancy)
+			randomPeer := memR.Switch.Peers().Random()
+			memR.SendReset(randomPeer)
+		} else if redundancy >= 0 {
+			memR.Logger.Info("TX redundancy ABOVE upper limit: decrease it (block HaveTx)", "redundancy", redundancy)
 		}
 
 		// Update metrics.
@@ -372,9 +374,9 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		}
 
 		txKey := entry.Tx().Key()
-		senders := entry.Senders()
 
 		// Check whether any route to this peer is enabled.
+		senders := entry.Senders()
 		if memR.router != nil && !memR.router.areRoutesEnabled(senders, peer.ID()) {
 			memR.Logger.Debug("Disabled route: do not send transaction to peer",
 				"tx", log.NewLazySprintf("%X", txKey.Hash()), "peer", peer.ID(), "senders", senders)
@@ -455,13 +457,21 @@ type gossipRouter struct {
 	firstTimeTxs   int64 // number of transactions received for the first time
 	duplicates     int64 // number of duplicate transactions
 
+	// Pre-computed upper and lower bounds of accepted redundancy.
+	lowerRedundancyLimit float64
+	upperRedundancyLimit float64
+
+	// If true, do not send HaveTx messages.
 	blockHaveTx atomic.Bool
 }
 
 func newGossipRouter(config *cfg.MempoolConfig) *gossipRouter {
+	targetRedundancySlackAbs := float64(config.TargetRedundancy) * float64(config.TargetRedundancySlack) / 100.
 	return &gossipRouter{
-		config:         config,
-		disabledRoutes: make(map[p2p.ID]p2pIDSet),
+		config:               config,
+		disabledRoutes:       make(map[p2p.ID]p2pIDSet),
+		lowerRedundancyLimit: config.TargetRedundancy - targetRedundancySlackAbs,
+		upperRedundancyLimit: config.TargetRedundancy - targetRedundancySlackAbs,
 	}
 }
 
@@ -487,32 +497,30 @@ func (r *gossipRouter) incFirstTimeTxs() {
 	r.firstTimeTxs++
 }
 
-func (r *gossipRouter) adjustRedundancy(logger log.Logger) (float64, bool) {
+func (r *gossipRouter) adjustRedundancy() (float64, bool) {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
-	if r.firstTimeTxs >= r.config.TxsPerAdjustment {
-		sendReset := false
-		redundancy := float64(r.duplicates) / float64(r.firstTimeTxs)
-		targetRedundancySlackAbs := float64(r.config.TargetRedundancy) * float64(r.config.TargetRedundancySlack) / 100.
-		if redundancy < r.config.TargetRedundancy-targetRedundancySlackAbs {
-			logger.Info("TX redundancy BELOW limit, increasing it",
-				"redundancy", redundancy,
-				"limit", r.config.TargetRedundancy+targetRedundancySlackAbs,
-			)
-			sendReset = true
-		} else if redundancy > r.config.TargetRedundancy+targetRedundancySlackAbs {
-			logger.Info("TX redundancy ABOVE limit, decreasing it",
-				"redundancy", redundancy,
-				"limit", r.config.TargetRedundancy-targetRedundancySlackAbs,
-			)
-			r.blockHaveTx.Store(false)
-		}
-		r.firstTimeTxs = 0
-		r.duplicates = 0
-		return redundancy, sendReset
+	// Is it time for an adjustment?
+	if r.firstTimeTxs < r.config.TxsPerAdjustment {
+		return -1, false
 	}
-	return -1, false
+
+	// Adjust redundancy level by asking peers either (1) to send more txs (with
+	// Reset messages) or (2) to send less txs (unblocking HaveTx messages).
+	sendReset := false
+	redundancy := float64(r.duplicates) / float64(r.firstTimeTxs)
+	if redundancy < r.lowerRedundancyLimit {
+		sendReset = true
+	} else if redundancy > r.upperRedundancyLimit {
+		r.blockHaveTx.Store(false)
+	}
+
+	// Reset counters.
+	r.firstTimeTxs = 0
+	r.duplicates = 0
+
+	return redundancy, sendReset
 }
 
 // disableRoute marks the route `source -> target` as disabled.

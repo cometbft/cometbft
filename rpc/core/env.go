@@ -154,7 +154,11 @@ func (env *Environment) InitGenesisChunks() error {
 			end = len(data)
 		}
 
-		chunk := data[start:end]
+		// we make a copy here so that the original data isn't retained in memory.
+		// The GC will collect the data slice after exiting the function.
+		// Without the copy, it would keep it in memory.
+		chunk := make([]byte, end-start)
+		copy(chunk, data[start:end])
 		chunks[i] = base64.StdEncoding.EncodeToString(chunk)
 	}
 

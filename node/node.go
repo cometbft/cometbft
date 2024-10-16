@@ -552,6 +552,7 @@ func NewNodeWithCliParams(ctx context.Context,
 	node := &Node{
 		config:        config,
 		genesisDoc:    genDoc,
+		genesisTime:   genDoc.GenesisTime,
 		privValidator: privValidator,
 
 		transport: transport,

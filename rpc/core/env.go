@@ -107,6 +107,8 @@ type Environment struct {
 
 	// cache of chunked genesis data.
 	genChunks []string
+
+	GenesisFilePath string // the genesis file's full path on disk
 }
 
 // InitGenesisChunks checks whether it makes sense to create a cache of chunked

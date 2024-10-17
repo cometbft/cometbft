@@ -684,6 +684,8 @@ func (sw *Switch) acceptRoutine() {
 				sw.addrBook.AddOurAddress(&addr)
 			}
 
+			_ = sw.transport.Cleanup(conn)
+
 			sw.Logger.Info(
 				"Inbound Peer rejected",
 				"err", errRejected,
@@ -776,6 +778,8 @@ func (sw *Switch) addOutboundPeerWithConfig(
 			sw.addrBook.RemoveAddress(addr)
 			sw.addrBook.AddOurAddress(addr)
 		}
+
+		_ = sw.transport.Cleanup(conn)
 
 		return err
 	}

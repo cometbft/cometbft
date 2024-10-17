@@ -294,6 +294,7 @@ func TestSwitchPeerFilter(t *testing.T) {
 			reactorsByCh:  sw.reactorsByCh,
 			msgTypeByChID: sw.msgTypeByChID,
 			metrics:       sw.metrics,
+			outbound:      true,
 		},
 		rp.Addr(),
 		MConnConfig(sw.config))
@@ -351,6 +352,7 @@ func TestSwitchPeerFilterTimeout(t *testing.T) {
 			reactorsByCh:  sw.reactorsByCh,
 			msgTypeByChID: sw.msgTypeByChID,
 			metrics:       sw.metrics,
+			outbound:      true,
 		},
 		rp.Addr(),
 		MConnConfig(sw.config))
@@ -390,6 +392,7 @@ func TestSwitchPeerFilterDuplicate(t *testing.T) {
 			reactorsByCh:  sw.reactorsByCh,
 			msgTypeByChID: sw.msgTypeByChID,
 			metrics:       sw.metrics,
+			outbound:      true,
 		},
 		rp.Addr(),
 		MConnConfig(sw.config))
@@ -447,6 +450,7 @@ func TestSwitchStopsNonPersistentPeerOnError(t *testing.T) {
 			reactorsByCh:  sw.reactorsByCh,
 			msgTypeByChID: sw.msgTypeByChID,
 			metrics:       sw.metrics,
+			outbound:      true,
 		},
 		rp.Addr(),
 		MConnConfig(sw.config))

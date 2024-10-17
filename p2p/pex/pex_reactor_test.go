@@ -91,7 +91,7 @@ func TestPEXReactorRunning(t *testing.T) {
 			r := NewReactor(books[i], &ReactorConfig{})
 			r.SetLogger(logger.With("pex", i))
 			r.SetEnsurePeersPeriod(250 * time.Millisecond)
-			sw.AddReactor("pex", r)
+			sw.AddReactor("PEX", r)
 
 			return sw
 		})
@@ -608,7 +608,7 @@ func testCreatePeerWithConfig(dir string, id int, config *ReactorConfig) *p2p.Sw
 		cfg,
 		id,
 		func(_ int, sw *p2p.Switch) *p2p.Switch {
-			logger := log.TestingLogger().With("id", id)
+			logger := log.TestingLogger().With("pex", id)
 
 			book := NewAddrBook(filepath.Join(dir, fmt.Sprintf("addrbook%d.json", id)), false)
 			book.SetLogger(logger)
@@ -618,7 +618,7 @@ func testCreatePeerWithConfig(dir string, id int, config *ReactorConfig) *p2p.Sw
 			r.SetLogger(logger)
 
 			sw.SetLogger(logger)
-			sw.AddReactor("pex", r)
+			sw.AddReactor("PEX", r)
 
 			return sw
 		},
@@ -637,7 +637,7 @@ func testCreateSeed(dir string, id int, knownAddrs, srcAddrs []*na.NetAddress) *
 		cfg,
 		id,
 		func(_ int, sw *p2p.Switch) *p2p.Switch {
-			logger := log.TestingLogger().With("id", id)
+			logger := log.TestingLogger().With("seed", id)
 
 			book := NewAddrBook(filepath.Join(dir, "addrbookSeed.json"), false)
 			book.SetLogger(logger)
@@ -651,7 +651,7 @@ func testCreateSeed(dir string, id int, knownAddrs, srcAddrs []*na.NetAddress) *
 			r.SetLogger(logger)
 
 			sw.SetLogger(logger)
-			sw.AddReactor("pex", r)
+			sw.AddReactor("PEX", r)
 
 			return sw
 		},

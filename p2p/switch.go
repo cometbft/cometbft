@@ -703,6 +703,7 @@ func (sw *Switch) acceptRoutine() {
 				reactorsByCh:  sw.reactorsByCh,
 				msgTypeByChID: sw.msgTypeByChID,
 				metrics:       sw.metrics,
+				outbound:      false,
 			},
 			addr,
 			MConnConfig(sw.config))
@@ -789,6 +790,7 @@ func (sw *Switch) addOutboundPeerWithConfig(
 			reactorsByCh:  sw.reactorsByCh,
 			msgTypeByChID: sw.msgTypeByChID,
 			metrics:       sw.metrics,
+			outbound:      true,
 		},
 		addr,
 		MConnConfig(sw.config))

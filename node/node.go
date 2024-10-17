@@ -793,6 +793,8 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 			Logger: n.Logger.With("module", "rpc"),
 
 			Config: *n.config.RPC,
+
+			GenesisFilePath: n.config.GenesisFile(),
 		}
 
 		n.Logger.Info("Creating genesis file chunks if genesis file is too big...")

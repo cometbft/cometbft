@@ -9,6 +9,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtnet "github.com/cometbft/cometbft/internal/net"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/p2p/internal/fuzz"
 	na "github.com/cometbft/cometbft/p2p/netaddress"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
@@ -259,7 +260,7 @@ func testPeerConn(
 	// Fuzz connection
 	if cfg.TestFuzz {
 		// so we have time to do peer handshakes and get set up
-		conn = FuzzConnAfterFromConfig(conn, 10*time.Second, cfg.TestFuzzConfig)
+		conn = fuzz.ConnAfterFromConfig(conn, 10*time.Second, cfg.TestFuzzConfig)
 	}
 
 	// Only the information we already have

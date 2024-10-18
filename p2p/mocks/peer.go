@@ -10,7 +10,7 @@ import (
 
 	net "net"
 
-	netaddress "github.com/cometbft/cometbft/p2p/netaddr"
+	netaddr "github.com/cometbft/cometbft/p2p/netaddr"
 
 	nodeinfo "github.com/cometbft/cometbft/p2p/nodeinfo"
 
@@ -350,19 +350,19 @@ func (_m *Peer) SetRemovalFailed() {
 }
 
 // SocketAddr provides a mock function with given fields:
-func (_m *Peer) SocketAddr() *netaddress.Addr {
+func (_m *Peer) SocketAddr() *netaddr.Addr {
 	ret := _m.Called()
 
 	if len(ret) == 0 {
 		panic("no return value specified for SocketAddr")
 	}
 
-	var r0 *netaddress.Addr
-	if rf, ok := ret.Get(0).(func() *netaddress.Addr); ok {
+	var r0 *netaddr.Addr
+	if rf, ok := ret.Get(0).(func() *netaddr.Addr); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*netaddress.Addr)
+			r0 = ret.Get(0).(*netaddr.Addr)
 		}
 	}
 

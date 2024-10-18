@@ -57,7 +57,7 @@ func main() {
 		panic(fmt.Errorf("failed to create Forum Application: %w", err))
 	}
 
-	nodeKey, err := nodekey.LoadNodeKey(config.NodeKeyFile())
+	nodeKey, err := nodekey.Load(config.NodeKeyFile())
 	if err != nil {
 		panic(fmt.Errorf("failed to load node key: %w", err))
 	}

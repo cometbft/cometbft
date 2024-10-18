@@ -158,7 +158,7 @@ func NewCometBFT(app abci.Application, opts *Options) *nm.Node {
 		panic(err)
 	}
 	papp := proxy.NewLocalClientCreator(app)
-	nodeKey, err := nodekey.LoadOrGenNodeKey(config.NodeKeyFile())
+	nodeKey, err := nodekey.LoadOrGen(config.NodeKeyFile())
 	if err != nil {
 		panic(err)
 	}

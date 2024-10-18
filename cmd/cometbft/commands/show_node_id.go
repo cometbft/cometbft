@@ -17,7 +17,7 @@ var ShowNodeIDCmd = &cobra.Command{
 }
 
 func showNodeID(*cobra.Command, []string) error {
-	nk, err := nodekey.LoadNodeKey(config.NodeKeyFile())
+	nk, err := nodekey.Load(config.NodeKeyFile())
 	if err != nil {
 		return err
 	}

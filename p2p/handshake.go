@@ -7,7 +7,7 @@ import (
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/libs/protoio"
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 )
@@ -15,7 +15,7 @@ import (
 // ErrRejected indicates that a Peer was rejected carrying additional
 // information as to the reason.
 type ErrRejected struct {
-	addr              na.NetAddress
+	addr              na.NetAddr
 	conn              net.Conn
 	err               error
 	id                nodekey.ID
@@ -27,8 +27,8 @@ type ErrRejected struct {
 	isSelf            bool
 }
 
-// Addr returns the NetAddress for the rejected Peer.
-func (e ErrRejected) Addr() na.NetAddress {
+// Addr returns the network address for the rejected Peer.
+func (e ErrRejected) Addr() na.NetAddr {
 	return e.addr
 }
 
@@ -136,7 +136,7 @@ func handshake(ourNodeInfo ni.NodeInfo, c net.Conn, handshakeTimeout time.Durati
 	// Reject self.
 	if ourNodeInfo.ID() == nodeInfo.ID() {
 		return nil, ErrRejected{
-			addr:   *na.NewNetAddress(nodeInfo.ID(), c.RemoteAddr()),
+			addr:   *na.New(nodeInfo.ID(), c.RemoteAddr()),
 			conn:   c,
 			id:     nodeInfo.ID(),
 			isSelf: true,

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 )
 
@@ -25,7 +25,7 @@ func (ErrFilterTimeout) Error() string {
 // ErrRejected indicates that a Peer was rejected carrying additional
 // information as to the reason.
 type ErrRejected struct {
-	addr          na.NetAddress
+	addr          na.NetAddr
 	conn          net.Conn
 	err           error
 	id            nodekey.ID
@@ -34,8 +34,8 @@ type ErrRejected struct {
 	isFiltered    bool
 }
 
-// Addr returns the NetAddress for the rejected Peer.
-func (e ErrRejected) Addr() na.NetAddress {
+// Addr returns the network address for the rejected Peer.
+func (e ErrRejected) Addr() na.NetAddr {
 	return e.addr
 }
 

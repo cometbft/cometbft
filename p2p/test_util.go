@@ -10,7 +10,7 @@ import (
 	cmtnet "github.com/cometbft/cometbft/internal/net"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p/internal/fuzz"
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
@@ -210,8 +210,8 @@ func MakeSwitch(
 		PrivKey: ed25519.GenPrivKey(),
 	}
 	nodeInfo := testNodeInfo(nk.ID(), fmt.Sprintf("node%d", i))
-	addr, err := na.NewNetAddressString(
-		na.IDAddressString(nk.ID(), nodeInfo.ListenAddr),
+	addr, err := na.NewFromString(
+		na.IDAddrString(nk.ID(), nodeInfo.ListenAddr),
 	)
 	if err != nil {
 		panic(err)
@@ -253,7 +253,7 @@ func testPeerConn(
 	cfg *config.P2PConfig,
 	outbound, persistent bool,
 	// _ourNodePrivKey crypto.PrivKey,
-	socketAddr *na.NetAddress,
+	socketAddr *na.NetAddr,
 ) (pc peerConn, err error) {
 	conn := rawConn
 
@@ -278,26 +278,26 @@ type AddrBookMock struct {
 
 var _ AddrBook = (*AddrBookMock)(nil)
 
-func (book *AddrBookMock) AddAddress(addr *na.NetAddress, _ *na.NetAddress) error {
+func (book *AddrBookMock) AddAddress(addr *na.NetAddr, _ *na.NetAddr) error {
 	book.Addrs[addr.String()] = struct{}{}
 	return nil
 }
 
-func (book *AddrBookMock) AddOurAddress(addr *na.NetAddress) {
+func (book *AddrBookMock) AddOurAddress(addr *na.NetAddr) {
 	book.OurAddrs[addr.String()] = struct{}{}
 }
 
-func (book *AddrBookMock) OurAddress(addr *na.NetAddress) bool {
+func (book *AddrBookMock) OurAddress(addr *na.NetAddr) bool {
 	_, ok := book.OurAddrs[addr.String()]
 	return ok
 }
 func (*AddrBookMock) MarkGood(nodekey.ID) {}
-func (book *AddrBookMock) HasAddress(addr *na.NetAddress) bool {
+func (book *AddrBookMock) HasAddress(addr *na.NetAddr) bool {
 	_, ok := book.Addrs[addr.String()]
 	return ok
 }
 
-func (book *AddrBookMock) RemoveAddress(addr *na.NetAddress) {
+func (book *AddrBookMock) RemoveAddress(addr *na.NetAddr) {
 	delete(book.Addrs, addr.String())
 }
 func (*AddrBookMock) Save() {}
@@ -308,11 +308,11 @@ func (book *AddrBookMock) AddPrivateIDs(addrs []string) {
 }
 
 type mockNodeInfo struct {
-	addr *na.NetAddress
+	addr *na.NetAddr
 }
 
 func (ni mockNodeInfo) ID() nodekey.ID                                      { return ni.addr.ID }
-func (ni mockNodeInfo) NetAddress() (*na.NetAddress, error)                 { return ni.addr, nil }
+func (ni mockNodeInfo) NetAddr() (*na.NetAddr, error)                       { return ni.addr, nil }
 func (mockNodeInfo) Validate() error                                        { return nil }
 func (mockNodeInfo) CompatibleWith(ni.NodeInfo) error                       { return nil }
 func (mockNodeInfo) Handshake(net.Conn, time.Duration) (ni.NodeInfo, error) { return nil, nil }

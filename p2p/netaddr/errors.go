@@ -1,4 +1,4 @@
-package netaddress
+package netaddr
 
 import (
 	"errors"
@@ -13,35 +13,35 @@ var (
 	ErrInvalidIP = errors.New("invalid IP address")
 )
 
-type ErrNetAddressNoID struct {
+type ErrNoID struct {
 	Addr string
 }
 
-func (e ErrNetAddressNoID) Error() string {
+func (e ErrNoID) Error() string {
 	return fmt.Sprintf("address (%s) does not contain ID", e.Addr)
 }
 
-type ErrNetAddressInvalid struct {
+type ErrInvalid struct {
 	Addr string
 	Err  error
 }
 
-func (e ErrNetAddressInvalid) Error() string {
+func (e ErrInvalid) Error() string {
 	return fmt.Sprintf("invalid address (%s): %v", e.Addr, e.Err)
 }
 
-func (e ErrNetAddressInvalid) Unwrap() error { return e.Err }
+func (e ErrInvalid) Unwrap() error { return e.Err }
 
-type ErrNetAddressLookup struct {
+type ErrLookup struct {
 	Addr string
 	Err  error
 }
 
-func (e ErrNetAddressLookup) Error() string {
+func (e ErrLookup) Error() string {
 	return fmt.Sprintf("error looking up host (%s): %v", e.Addr, e.Err)
 }
 
-func (e ErrNetAddressLookup) Unwrap() error { return e.Err }
+func (e ErrLookup) Unwrap() error { return e.Err }
 
 type ErrInvalidPort struct {
 	Port uint32

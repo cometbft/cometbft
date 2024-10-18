@@ -79,7 +79,7 @@ func TestPeerSend(t *testing.T) {
 }
 
 func createOutboundPeerAndPerformHandshake(
-	addr *na.Addr,
+	addr *na.NetAddr,
 	config *config.P2PConfig,
 	mConfig tcpconn.MConnConfig,
 ) (*peer, error) {
@@ -119,7 +119,7 @@ func createOutboundPeerAndPerformHandshake(
 	return p, nil
 }
 
-func testDial(addr *na.Addr, cfg *config.P2PConfig) (net.Conn, error) {
+func testDial(addr *na.NetAddr, cfg *config.P2PConfig) (net.Conn, error) {
 	if cfg.TestDialFail {
 		return nil, errors.New("dial err (peerConfig.DialFail == true)")
 	}
@@ -132,7 +132,7 @@ func testDial(addr *na.Addr, cfg *config.P2PConfig) (net.Conn, error) {
 }
 
 func testOutboundPeerConn(
-	addr *na.Addr,
+	addr *na.NetAddr,
 	config *config.P2PConfig,
 	persistent bool,
 	// ourNodePrivKey crypto.PrivKey,
@@ -165,13 +165,13 @@ func testOutboundPeerConn(
 type remotePeer struct {
 	PrivKey    crypto.PrivKey
 	Config     *config.P2PConfig
-	addr       *na.Addr
+	addr       *na.NetAddr
 	channels   bytes.HexBytes
 	listenAddr string
 	listener   net.Listener
 }
 
-func (rp *remotePeer) Addr() *na.Addr {
+func (rp *remotePeer) Addr() *na.NetAddr {
 	return rp.addr
 }
 
@@ -200,7 +200,7 @@ func (rp *remotePeer) Stop() {
 	rp.listener.Close()
 }
 
-func (rp *remotePeer) Dial(addr *na.Addr) (net.Conn, error) {
+func (rp *remotePeer) Dial(addr *na.NetAddr) (net.Conn, error) {
 	pc, err := testOutboundPeerConn(addr, rp.Config, false)
 	if err != nil {
 		return nil, err

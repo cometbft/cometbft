@@ -15,7 +15,7 @@ import (
 // ErrRejected indicates that a Peer was rejected carrying additional
 // information as to the reason.
 type ErrRejected struct {
-	addr              na.Addr
+	addr              na.NetAddr
 	conn              net.Conn
 	err               error
 	id                nodekey.ID
@@ -28,7 +28,7 @@ type ErrRejected struct {
 }
 
 // Addr returns the network address for the rejected Peer.
-func (e ErrRejected) Addr() na.Addr {
+func (e ErrRejected) Addr() na.NetAddr {
 	return e.addr
 }
 

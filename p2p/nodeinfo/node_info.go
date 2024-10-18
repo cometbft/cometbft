@@ -28,7 +28,7 @@ func MaxNodeInfoSize() int {
 // and determines if we're compatible.
 type NodeInfo interface {
 	ID() nodekey.ID
-	NetAddr() (*na.Addr, error)
+	NetAddr() (*na.NetAddr, error)
 	Validate() error
 	CompatibleWith(other NodeInfo) error
 }
@@ -62,7 +62,7 @@ type DefaultNodeInfo struct {
 	ProtocolVersion ProtocolVersion `json:"protocol_version"`
 
 	// Authenticate
-	// TODO: replace with na.Addr
+	// TODO: replace with na.NetAddr
 	DefaultNodeID nodekey.ID `json:"id"`          // authenticated identifier
 	ListenAddr    string     `json:"listen_addr"` // accepting incoming
 
@@ -210,7 +210,7 @@ OUTER_LOOP:
 // it includes the authenticated peer ID and the self-reported
 // ListenAddr. Note that the ListenAddr is not authenticated and
 // may not match that address actually dialed if its an outbound peer.
-func (info DefaultNodeInfo) NetAddr() (*na.Addr, error) {
+func (info DefaultNodeInfo) NetAddr() (*na.NetAddr, error) {
 	idAddr := na.IDAddrString(info.ID(), info.ListenAddr)
 	return na.NewFromString(idAddr)
 }

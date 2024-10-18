@@ -29,7 +29,7 @@ type IPResolver interface {
 // accept is the container to carry the upgraded connection from an
 // asynchronously running routine to the Accept method.
 type accept struct {
-	netAddr *na.Addr
+	netAddr *na.NetAddr
 	conn    net.Conn
 	err     error
 }
@@ -38,7 +38,7 @@ type accept struct {
 // behavior.
 type transportLifecycle interface {
 	Close() error
-	Listen(addr na.Addr) error
+	Listen(addr na.NetAddr) error
 }
 
 // ConnFilterFunc to be implemented by filter hooks after a new connection has
@@ -98,7 +98,7 @@ func MultiplexTransportMaxIncomingConnections(n int) MultiplexTransportOption {
 // MultiplexTransport accepts and dials tcp connections and upgrades them to
 // multiplexed peers.
 type MultiplexTransport struct {
-	netAddr                na.Addr
+	netAddr                na.NetAddr
 	listener               net.Listener
 	maxIncomingConnections int // see MaxIncomingConnections
 
@@ -145,12 +145,12 @@ func NewMultiplexTransport(
 }
 
 // NetAddr implements Transport.
-func (mt *MultiplexTransport) NetAddr() na.Addr {
+func (mt *MultiplexTransport) NetAddr() na.NetAddr {
 	return mt.netAddr
 }
 
 // Accept implements Transport.
-func (mt *MultiplexTransport) Accept() (net.Conn, *na.Addr, error) {
+func (mt *MultiplexTransport) Accept() (net.Conn, *na.NetAddr, error) {
 	select {
 	// This case should never have any side-effectful/blocking operations to
 	// ensure that quality peers are ready to be used.
@@ -169,7 +169,7 @@ func (mt *MultiplexTransport) Accept() (net.Conn, *na.Addr, error) {
 
 // Dial implements Transport.
 func (mt *MultiplexTransport) Dial(
-	addr na.Addr,
+	addr na.NetAddr,
 ) (net.Conn, error) {
 	c, err := addr.DialTimeout(mt.dialTimeout)
 	if err != nil {
@@ -206,7 +206,7 @@ func (mt *MultiplexTransport) Close() error {
 }
 
 // Listen implements transportLifecycle.
-func (mt *MultiplexTransport) Listen(addr na.Addr) error {
+func (mt *MultiplexTransport) Listen(addr na.NetAddr) error {
 	ln, err := net.Listen("tcp", addr.DialString())
 	if err != nil {
 		return err
@@ -267,7 +267,7 @@ func (mt *MultiplexTransport) acceptPeers() {
 
 			var (
 				secretConn *conn.SecretConnection
-				netAddr    *na.Addr
+				netAddr    *na.NetAddr
 			)
 
 			err := mt.filterConn(c)
@@ -343,7 +343,7 @@ func (mt *MultiplexTransport) filterConn(c net.Conn) (err error) {
 
 func (mt *MultiplexTransport) upgrade(
 	c net.Conn,
-	dialedAddr *na.Addr,
+	dialedAddr *na.NetAddr,
 ) (secretConn *conn.SecretConnection, err error) {
 	defer func() {
 		if err != nil {

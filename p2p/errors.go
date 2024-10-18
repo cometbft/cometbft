@@ -30,7 +30,7 @@ func (e ErrSwitchDuplicatePeerIP) Error() string {
 
 // ErrSwitchConnectToSelf to be raised when trying to connect to itself.
 type ErrSwitchConnectToSelf struct {
-	Addr *na.Addr
+	Addr *na.NetAddr
 }
 
 func (e ErrSwitchConnectToSelf) Error() string {
@@ -38,7 +38,7 @@ func (e ErrSwitchConnectToSelf) Error() string {
 }
 
 type ErrSwitchAuthenticationFailure struct {
-	Dialed *na.Addr
+	Dialed *na.NetAddr
 	Got    nodekey.ID
 }
 

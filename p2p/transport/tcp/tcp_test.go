@@ -222,7 +222,7 @@ func TestTransportMultiplex_AcceptMultiple(t *testing.T) {
 	}
 }
 
-func testDialer(dialAddr na.Addr, errc chan error) {
+func testDialer(dialAddr na.NetAddr, errc chan error) {
 	var (
 		pv     = ed25519.GenPrivKey()
 		dialer = newMultiplexTransport(

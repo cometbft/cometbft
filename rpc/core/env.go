@@ -114,6 +114,14 @@ type Environment struct {
 	genChunks []string
 
 	GenesisFilePath string // the genesis file's full path on disk
+
+	// genesisChunkPaths is a map of chunk ID to its full path on disk.
+	// If the genesis file is smaller than genesisChunkSize, then this map will be
+	// nil, because there will be no chunks on disk.
+	// This map is convenient for the `/genesis_chunked` API to quickly find a chunk
+	// by its ID, instead of having to reconstruct its path each time, which would
+	// involve multiple string operations.
+	genesisChunksPaths map[int]string
 }
 
 // InitGenesisChunks checks whether it makes sense to create a cache of chunked

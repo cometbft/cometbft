@@ -105,7 +105,7 @@ func DefaultNewNode(
 	cliParams CliParams,
 	keyGenF func() (crypto.PrivKey, error),
 ) (*Node, error) {
-	nodeKey, err := nodekey.LoadOrGenNodeKey(config.NodeKeyFile())
+	nodeKey, err := nodekey.LoadOrGen(config.NodeKeyFile())
 	if err != nil {
 		return nil, ErrorLoadOrGenNodeKey{Err: err, NodeKeyFile: config.NodeKeyFile()}
 	}

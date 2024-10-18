@@ -795,9 +795,10 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 			Config: *n.config.RPC,
 		}
 
+		n.Logger.Info("Creating genesis file chunks if genesis file is too big...")
+
 		if err := _rpcEnv.InitGenesisChunks(); err != nil {
-			errMsg := "could not create the genesis file chunks and cache them: %s"
-			errToReturn = fmt.Errorf(errMsg, err)
+			errToReturn = fmt.Errorf("setting up RPC API environment: %s", err)
 			return
 		}
 	})
@@ -808,7 +809,7 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 func (n *Node) startRPC() ([]net.Listener, error) {
 	env, err := n.ConfigureRPC()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("starting RPC server: %s", err)
 	}
 
 	listenAddrs := splitAndTrimEmpty(n.config.RPC.ListenAddress, ",", " ")

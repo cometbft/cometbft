@@ -72,8 +72,9 @@ type mempoolReactor interface {
 // A Node creates an object of this type at startup.
 // An Environment should not be created directly, and it is recommended that
 // only one instance of Environment be created at runtime.
-// For this reason, callers should create one using the ConfigureRPC() method of
-// the Node type, because the Environment object it returns is a singleton.
+// For this reason, callers should create an Environment object using
+// the ConfigureRPC() method of the Node type, because the Environment object it
+// returns is a singleton.
 // Note: The Environment type was exported in the initial RPC API design; therefore,
 // unexporting it now could potentially break users.
 type Environment struct {
@@ -110,13 +111,14 @@ type Environment struct {
 // InitGenesisChunks checks whether it makes sense to create a cache of chunked
 // genesis data. It is called on Node startup and should be called only once.
 // Rules of chunking:
-// - if the genesis file's size is <= 16MB, then no chunking. An `Environment`
-// object will store a pointer to the genesis in its GenDoc field. Its genChunks
-// field will be set to nil. `/genesis` RPC API will return the GenesisDoc itself.
-// - if the genesis file's size is > 16MB, then use chunking. An `Environment`
-// object will store a slice of base64-encoded chunks in its genChunks field. Its
-// GenDoc field will be set to nil. `/genesis` RPC API will redirect users to use
-// the `/genesis_chunked` API.
+//   - if the genesis file's size is <= genesisChunkSize, then no chunking.
+//     An `Environment` object will store a pointer to the genesis in its GenDoc
+//     field. Its genChunks field will be set to nil. `/genesis` RPC API will return
+//     the GenesisDoc itself.
+//   - if the genesis file's size is > genesisChunkSize, then use chunking. An
+//     `Environment` object will store a slice of base64-encoded chunks in its
+//     genChunks field. Its GenDoc field will be set to nil. `/genesis` RPC API will
+//     redirect users to use the `/genesis_chunked` API.
 func (env *Environment) InitGenesisChunks() error {
 	if len(env.genChunks) > 0 {
 		// we already computed the chunks, return.
@@ -126,7 +128,7 @@ func (env *Environment) InitGenesisChunks() error {
 	if env.GenDoc == nil {
 		// chunks not computed yet, but no genesis available.
 		// This should not happen.
-		return errors.New("pointer to genesis is nil")
+		return errors.New("could not create the genesis file chunks and cache them because the genesis doc is unavailable")
 	}
 
 	data, err := cmtjson.Marshal(env.GenDoc)

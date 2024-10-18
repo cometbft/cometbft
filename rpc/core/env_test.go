@@ -1,6 +1,8 @@
 package core
 
 import (
+	"bytes"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"reflect"
@@ -20,7 +22,7 @@ func TestInitGenesisChunks(t *testing.T) {
 			genChunks: nil,
 			GenDoc:    nil,
 		}
-		wantErrStr := "pointer to genesis is nil"
+		wantErrStr := "could not create the genesis file chunks and cache them because the genesis doc is unavailable"
 
 		if err := env.InitGenesisChunks(); err == nil {
 			t.Error("expected error but got nil")
@@ -51,8 +53,8 @@ func TestInitGenesisChunks(t *testing.T) {
 		}
 	})
 
-	// Tests with a genesis file <= 16MB, i.e., no chunking, pointer to GenesisDoc
-	// stored in GenDoc field.
+	// Tests with a genesis file <= genesisChunkSize, i.e., no chunking, pointer to
+	// GenesisDoc stored in GenDoc field.
 	// The test genesis file is the genesis that the ci.toml e2e test uses.
 	t.Run("NoChunking", func(t *testing.T) {
 		const fGenesisPath = "./testdata/genesis_ci.json"
@@ -80,9 +82,9 @@ func TestInitGenesisChunks(t *testing.T) {
 				t.Fatalf(formatStr, len(env.genChunks))
 			}
 
-			// Because the genesis file is <= 16MB, there should be no chunking.
-			// Therefore, the original GenesisDoc should be stored in GenDoc field
-			// unchanged.
+			// Because the genesis file is <= genesisChunkSize, there should be no
+			// chunking. Therefore, the original GenesisDoc should be stored in
+			// GenDoc field unchanged.
 			if !reflect.DeepEqual(env.GenDoc, genDoc) {
 				formatStr := "GenesisDoc in Environment.GenDoc should be the same as in test genesis file\nwant: %#v\ngot: %#v\n"
 				t.Errorf(formatStr, genDoc, env.GenDoc)
@@ -90,11 +92,12 @@ func TestInitGenesisChunks(t *testing.T) {
 		}
 	})
 
-	// Tests with a genesis file > 16MB, i.e., chunking, pointer to GenesisDoc is
-	// nil, chunks slice stored in genChunks field.
-	// The test genesis file is the osmosis chain genesis (~69MB).
+	// Tests with a genesis file > genesisChunkSize, i.e., chunking, pointer to
+	// GenesisDoc is nil, chunks slice stored in genChunks field.
+	// The test genesis file has an app_state of key-value string pairs
+	// automatically generated (~42MB).
 	t.Run("Chunking", func(t *testing.T) {
-		const fGenesisPath = "./testdata/genesis_osmosis.json"
+		const fGenesisPath = "./testdata/genesis_big.json"
 
 		genesisData, err := os.ReadFile(fGenesisPath)
 		if err != nil {
@@ -124,7 +127,7 @@ func TestInitGenesisChunks(t *testing.T) {
 			// size of the []byte slice containing the genesis serialized to JSON.
 			// To calculate the correct expected number of chunks in this test, we
 			// must also serialize the genesis to JSON and use the size of the
-			// resulting// []byte slice.
+			// resulting []byte slice.
 			// We cannot use the size of the []byte slice obtained from reading the
 			// file (`genesisData` above) because the size would differ due to JSON
 			// serialization removing whitespace and formatting, omitting default or
@@ -134,13 +137,31 @@ func TestInitGenesisChunks(t *testing.T) {
 				t.Fatalf("test genesis re-serialization: %s", err)
 			}
 
-			// Because the genesis file is > 16MB, we expect chunks.
-			// genesisChunkSize is a global const (=16MB) defined in env.go.
+			// Because the genesis file is > genesisChunkSize, we expect chunks.
+			// genesisChunkSize is a global const defined in env.go.
 			genesisSize := len(genesisJSON)
 			wantChunks := (genesisSize + genesisChunkSize - 1) / genesisChunkSize
 			if len(env.genChunks) != wantChunks {
 				formatStr := "expected number of chunks: %d, but got: %d"
 				t.Errorf(formatStr, wantChunks, len(env.genChunks))
+			}
+
+			// We now check if the original genesis doc and the genesis doc
+			// reassembled from the chunks match.
+			var genesisReassembled bytes.Buffer
+			for i, chunk := range env.genChunks {
+				chunkBytes, err := base64.StdEncoding.DecodeString(chunk)
+				if err != nil {
+					t.Fatalf("failed to decode chunk %d: %s", i, err)
+				}
+
+				if _, err := genesisReassembled.Write(chunkBytes); err != nil {
+					t.Fatalf("failed to write chunk %d to buffer: %s", i, err)
+				}
+			}
+
+			if !bytes.Equal(genesisReassembled.Bytes(), genesisJSON) {
+				t.Errorf("original and reassembled genesis do not match")
 			}
 		}
 	})

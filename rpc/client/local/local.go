@@ -50,7 +50,6 @@ func New(node *nm.Node) *Local {
 	if err != nil {
 		node.Logger.Error("Error configuring RPC", "err", err)
 	}
-
 	return &Local{
 		EventBus: node.EventBus(),
 		Logger:   log.NewNopLogger(),

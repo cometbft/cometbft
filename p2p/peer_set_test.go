@@ -33,7 +33,7 @@ func (*mockPeer) IsPersistent() bool       { return true }
 func (*mockPeer) Get(s string) any         { return s }
 func (*mockPeer) Set(string, any)          {}
 func (mp *mockPeer) RemoteIP() net.IP      { return mp.ip }
-func (*mockPeer) SocketAddr() *na.Addr     { return nil }
+func (*mockPeer) SocketAddr() *na.NetAddr  { return nil }
 func (mp *mockPeer) RemoteAddr() net.Addr  { return &net.TCPAddr{IP: mp.ip, Port: 8800} }
 func (*mockPeer) Conn() net.Conn           { return nil }
 func (*mockPeer) SetRemovalFailed()        {}

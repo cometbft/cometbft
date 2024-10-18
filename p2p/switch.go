@@ -55,13 +55,13 @@ func MConnConfig(cfg *config.P2PConfig) conn.MConnConfig {
 // An AddrBook represents an address book from the pex package, which is used
 // to store peer addresses.
 type AddrBook interface {
-	AddAddress(addr *na.Addr, src *na.Addr) error
+	AddAddress(addr *na.NetAddr, src *na.NetAddr) error
 	AddPrivateIDs(ids []string)
-	AddOurAddress(addr *na.Addr)
-	OurAddress(addr *na.Addr) bool
+	AddOurAddress(addr *na.NetAddr)
+	OurAddress(addr *na.NetAddr) bool
 	MarkGood(id nodekey.ID)
-	RemoveAddress(addr *na.Addr)
-	HasAddress(addr *na.Addr) bool
+	RemoveAddress(addr *na.NetAddr)
+	HasAddress(addr *na.NetAddr) bool
 	Save()
 }
 
@@ -90,7 +90,7 @@ type Switch struct {
 	nodeKey       *nodekey.NodeKey // our node privkey
 	addrBook      AddrBook
 	// peers addresses with whom we'll maintain constant connection
-	persistentPeersAddrs []*na.Addr
+	persistentPeersAddrs []*na.NetAddr
 	unconditionalPeerIDs map[nodekey.ID]struct{}
 
 	transport Transport
@@ -104,7 +104,7 @@ type Switch struct {
 }
 
 // NetAddr returns the address the switch is listening on.
-func (sw *Switch) NetAddr() *na.Addr {
+func (sw *Switch) NetAddr() *na.NetAddr {
 	addr := sw.transport.NetAddr()
 	return &addr
 }
@@ -130,7 +130,7 @@ func NewSwitch(
 		metrics:              NopMetrics(),
 		transport:            transport,
 		filterTimeout:        defaultFilterTimeout,
-		persistentPeersAddrs: make([]*na.Addr, 0),
+		persistentPeersAddrs: make([]*na.NetAddr, 0),
 		unconditionalPeerIDs: make(map[nodekey.ID]struct{}),
 	}
 
@@ -334,7 +334,7 @@ func (sw *Switch) StopPeerForError(peer Peer, reason any) {
 	sw.stopAndRemovePeer(peer, reason)
 
 	if peer.IsPersistent() {
-		var addr *na.Addr
+		var addr *na.NetAddr
 		if peer.IsOutbound() { // socket address for outbound peers
 			addr = peer.SocketAddr()
 		} else { // self-reported address for inbound peers
@@ -394,7 +394,7 @@ func (sw *Switch) stopAndRemovePeer(p Peer, reason any) {
 // TODO: be more explicit with error types so we only retry on certain failures
 //   - ie. if we're getting ErrDuplicatePeer we can stop
 //     because the addrbook got us the peer back already
-func (sw *Switch) reconnectToPeer(addr *na.Addr) {
+func (sw *Switch) reconnectToPeer(addr *na.NetAddr) {
 	if sw.reconnecting.Has(string(addr.ID)) {
 		return
 	}
@@ -470,7 +470,7 @@ func isPrivateAddr(err error) bool {
 
 // DialPeersAsync dials a list of peers asynchronously in random order.
 // Used to dial peers from config on startup or from unsafe-RPC (trusted sources).
-// It ignores ErrNetAddressLookup. However, if there are other errors, first
+// It ignores na.ErrLookup. However, if there are other errors, first
 // encounter is returned.
 // Nop if there are no peers.
 func (sw *Switch) DialPeersAsync(peers []string) error {
@@ -479,7 +479,7 @@ func (sw *Switch) DialPeersAsync(peers []string) error {
 	for _, err := range errs {
 		sw.Logger.Error("Error in peer's address", "err", err)
 	}
-	// return first non-ErrNetAddressLookup error
+	// return first non-ErrLookup error
 	for _, err := range errs {
 		if errors.As(err, &na.ErrLookup{}) {
 			continue
@@ -490,7 +490,7 @@ func (sw *Switch) DialPeersAsync(peers []string) error {
 	return nil
 }
 
-func (sw *Switch) dialPeersAsync(netAddrs []*na.Addr) {
+func (sw *Switch) dialPeersAsync(netAddrs []*na.NetAddr) {
 	ourAddr := sw.NetAddr()
 
 	// TODO: this code feels like it's in the wrong place.
@@ -547,7 +547,7 @@ func (sw *Switch) dialPeersAsync(netAddrs []*na.Addr) {
 // and authenticates successfully.
 // If we're currently dialing this address or it belongs to an existing peer,
 // ErrCurrentlyDialingOrExistingAddress is returned.
-func (sw *Switch) DialPeerWithAddress(addr *na.Addr) error {
+func (sw *Switch) DialPeerWithAddress(addr *na.NetAddr) error {
 	if sw.IsDialingOrExistingAddress(addr) {
 		return ErrCurrentlyDialingOrExistingAddress{addr.String()}
 	}
@@ -566,14 +566,14 @@ func (sw *Switch) randomSleep(interval time.Duration) {
 
 // IsDialingOrExistingAddress returns true if switch has a peer with the given
 // address or dialing it at the moment.
-func (sw *Switch) IsDialingOrExistingAddress(addr *na.Addr) bool {
+func (sw *Switch) IsDialingOrExistingAddress(addr *na.NetAddr) bool {
 	return sw.dialing.Has(string(addr.ID)) ||
 		sw.peers.Has(addr.ID) ||
 		(!sw.config.AllowDuplicateIP && sw.peers.HasIP(addr.IP))
 }
 
 // AddPersistentPeers allows you to set persistent peers. It ignores
-// ErrNetAddressLookup. However, if there are other errors, first encounter is
+// na.ErrLookup. However, if there are other errors, first encounter is
 // returned.
 func (sw *Switch) AddPersistentPeers(addrs []string) error {
 	sw.Logger.Info("Adding persistent peers", "addrs", addrs)
@@ -582,7 +582,7 @@ func (sw *Switch) AddPersistentPeers(addrs []string) error {
 	for _, err := range errs {
 		sw.Logger.Error("Error in peer's address", "err", err)
 	}
-	// return first non-ErrNetAddressLookup error
+	// return first non-ErrLookup error
 	for _, err := range errs {
 		if errors.As(err, &na.ErrLookup{}) {
 			continue
@@ -622,7 +622,7 @@ func (sw *Switch) AddPrivatePeerIDs(ids []string) error {
 	return nil
 }
 
-func (sw *Switch) IsPeerPersistent(na *na.Addr) bool {
+func (sw *Switch) IsPeerPersistent(na *na.NetAddr) bool {
 	for _, pa := range sw.persistentPeersAddrs {
 		if pa.Equals(na) {
 			return true
@@ -747,7 +747,7 @@ func (sw *Switch) acceptRoutine() {
 // If peer is started successfully, reconnectLoop will start when
 // StopPeerForError is called.
 func (sw *Switch) addOutboundPeerWithConfig(
-	addr *na.Addr,
+	addr *na.NetAddr,
 	cfg *config.P2PConfig,
 ) error {
 	sw.Logger.Debug("Dialing peer", "address", addr)

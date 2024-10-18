@@ -530,7 +530,7 @@ func NewNodeWithCliParams(ctx context.Context,
 	//
 	// We need to set Seeds and PersistentPeers on the switch,
 	// since it needs to be able to use these (and their DNS names)
-	// even if the PEX is off. We can include the DNS name in the netaddr.Addr,
+	// even if the PEX is off. We can include the DNS name in the na.NetAddr,
 	// but it would still be nice to have a clear list of the current "PersistentPeers"
 	// somewhere that we can return with net_info.
 	//

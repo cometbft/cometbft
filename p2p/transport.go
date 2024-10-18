@@ -21,7 +21,7 @@ type peerConfig struct {
 	// isPersistent allows you to set a function, which, given socket address
 	// (for outbound peers) OR self-reported address (for inbound peers), tells
 	// if the peer is persistent or not.
-	isPersistent  func(*na.Addr) bool
+	isPersistent  func(*na.NetAddr) bool
 	reactorsByCh  map[byte]Reactor
 	msgTypeByChID map[byte]proto.Message
 	metrics       *Metrics
@@ -32,13 +32,13 @@ type peerConfig struct {
 // peers specific to its domain.
 type Transport interface {
 	// NetAddr returns the network address of the local node.
-	NetAddr() na.Addr
+	NetAddr() na.NetAddr
 
 	// Accept waits for and returns the next connection to the local node.
-	Accept() (net.Conn, *na.Addr, error)
+	Accept() (net.Conn, *na.NetAddr, error)
 
 	// Dial dials the given address and returns a connection.
-	Dial(addr na.Addr) (net.Conn, error)
+	Dial(addr na.NetAddr) (net.Conn, error)
 
 	// Cleanup any resources associated with the given connection.
 	//

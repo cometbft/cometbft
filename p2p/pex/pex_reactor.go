@@ -23,7 +23,7 @@ const (
 	// PexChannel is a channel for PEX messages.
 	PexChannel = byte(0x00)
 
-	// over-estimate of max na.Addr size
+	// over-estimate of max na.NetAddr size
 	// hexID (40) + IP (16) + Port (2) + Name (100) ...
 	// NOTE: dont use massive DNS name ..
 	maxAddressSize = 256
@@ -57,7 +57,7 @@ const (
 // Reactor handles PEX (peer exchange) and ensures that an
 // adequate number of peers are connected to the switch.
 //
-// It uses `AddrBook` (address book) to store `na.Addr`es of the peers.
+// It uses `AddrBook` (address book) to store `na.NetAddr`es of the peers.
 //
 // ## Preventing abuse
 //
@@ -76,7 +76,7 @@ type Reactor struct {
 	requestsSent         *cmap.CMap // ID->struct{}: unanswered send requests
 	lastReceivedRequests *cmap.CMap // ID->time.Time: last time peer requested from us
 
-	seedAddrs []*na.Addr
+	seedAddrs []*na.NetAddr
 
 	attemptsToDial sync.Map // address (string) -> {number of attempts (int), last time dialed (time.Time)}
 
@@ -341,7 +341,7 @@ func (r *Reactor) RequestAddrs(p Peer) {
 // ReceiveAddrs adds the given addrs to the addrbook if there's an open
 // request for this peer and deletes the open request.
 // If there's no open request for the src peer, it returns an error.
-func (r *Reactor) ReceiveAddrs(addrs []*na.Addr, src Peer) error {
+func (r *Reactor) ReceiveAddrs(addrs []*na.NetAddr, src Peer) error {
 	id := string(src.ID())
 	if !r.requestsSent.Has(id) {
 		return ErrUnsolicitedList
@@ -379,7 +379,7 @@ func (r *Reactor) ReceiveAddrs(addrs []*na.Addr, src Peer) error {
 }
 
 // SendAddrs sends addrs to the peer.
-func (*Reactor) SendAddrs(p Peer, netAddrs []*na.Addr) {
+func (*Reactor) SendAddrs(p Peer, netAddrs []*na.NetAddr) {
 	e := p2p.Envelope{
 		ChannelID: PexChannel,
 		Message:   &tmp2p.PexAddrs{Addrs: na.AddrsToProtos(netAddrs)},
@@ -456,7 +456,7 @@ func (r *Reactor) ensurePeers() {
 	// NOTE: range here is [10, 90]. Too high ?
 	newBias := cmtmath.MinInt(out, 8)*10 + 10
 
-	toDial := make(map[nodekey.ID]*na.Addr)
+	toDial := make(map[nodekey.ID]*na.NetAddr)
 	// Try maxAttempts times to pick numToDial addresses to dial
 	maxAttempts := numToDial * 3
 
@@ -483,7 +483,7 @@ func (r *Reactor) ensurePeers() {
 
 	// Dial picked addresses
 	for _, addr := range toDial {
-		go func(addr *na.Addr) {
+		go func(addr *na.NetAddr) {
 			err := r.dialPeer(addr)
 			if err != nil {
 				switch err.(type) {
@@ -519,7 +519,7 @@ func (r *Reactor) ensurePeers() {
 	}
 }
 
-func (r *Reactor) dialAttemptsInfo(addr *na.Addr) (attempts int, lastDialed time.Time) {
+func (r *Reactor) dialAttemptsInfo(addr *na.NetAddr) (attempts int, lastDialed time.Time) {
 	_attempts, ok := r.attemptsToDial.Load(addr.DialString())
 	if !ok {
 		return 0, time.Time{}
@@ -528,7 +528,7 @@ func (r *Reactor) dialAttemptsInfo(addr *na.Addr) (attempts int, lastDialed time
 	return atd.number, atd.lastDialed
 }
 
-func (r *Reactor) dialPeer(addr *na.Addr) error {
+func (r *Reactor) dialPeer(addr *na.NetAddr) error {
 	attempts, lastDialed := r.dialAttemptsInfo(addr)
 	if !r.Switch.IsPeerPersistent(addr) && attempts > maxAttemptsToDial {
 		r.book.MarkBad(addr, defaultBanTime)
@@ -569,7 +569,7 @@ func (r *Reactor) dialPeer(addr *na.Addr) error {
 }
 
 // maxBackoffDurationForPeer caps the backoff duration for persistent peers.
-func (r *Reactor) maxBackoffDurationForPeer(addr *na.Addr, planned time.Duration) time.Duration {
+func (r *Reactor) maxBackoffDurationForPeer(addr *na.NetAddr, planned time.Duration) time.Duration {
 	if r.config.PersistentPeersMaxDialPeriod > 0 &&
 		planned > r.config.PersistentPeersMaxDialPeriod &&
 		r.Switch.IsPeerPersistent(addr) {
@@ -583,7 +583,7 @@ func (r *Reactor) maxBackoffDurationForPeer(addr *na.Addr, planned time.Duration
 // return err if user provided any badly formatted seed addresses.
 // Doesn't error if the seed node can't be reached.
 // numOnline returns -1 if no seed nodes were in the initial configuration.
-func (r *Reactor) checkSeeds() (numOnline int, netAddrs []*na.Addr, err error) {
+func (r *Reactor) checkSeeds() (numOnline int, netAddrs []*na.NetAddr, err error) {
 	lSeeds := len(r.config.Seeds)
 	if lSeeds == 0 {
 		return -1, nil, nil
@@ -624,7 +624,7 @@ func (r *Reactor) dialSeeds() {
 
 // AttemptsToDial returns the number of attempts to dial specific address. It
 // returns 0 if never attempted or successfully connected.
-func (r *Reactor) AttemptsToDial(addr *na.Addr) int {
+func (r *Reactor) AttemptsToDial(addr *na.NetAddr) int {
 	lAttempts, attempted := r.attemptsToDial.Load(addr.DialString())
 	if attempted {
 		return lAttempts.(_attemptsToDial).number
@@ -675,13 +675,13 @@ func (r *Reactor) nodeHasSomePeersOrDialingAny() bool {
 // crawlPeerInfo handles temporary data needed for the network crawling
 // performed during seed/crawler mode.
 type crawlPeerInfo struct {
-	Addr *na.Addr `json:"addr"`
+	Addr *na.NetAddr `json:"addr"`
 	// The last time we crawled the peer or attempted to do so.
 	LastCrawled time.Time `json:"last_crawled"`
 }
 
 // crawlPeers will crawl the network looking for new peer addresses.
-func (r *Reactor) crawlPeers(addrs []*na.Addr) {
+func (r *Reactor) crawlPeers(addrs []*na.NetAddr) {
 	now := time.Now()
 
 	for _, addr := range addrs {
@@ -743,7 +743,7 @@ func (r *Reactor) attemptDisconnects() {
 	}
 }
 
-func markAddrInBookBasedOnErr(addr *na.Addr, book AddrBook, err error) {
+func markAddrInBookBasedOnErr(addr *na.NetAddr, book AddrBook, err error) {
 	// TODO: detect more "bad peer" scenarios
 	switch err.(type) {
 	case p2p.ErrSwitchAuthenticationFailure:

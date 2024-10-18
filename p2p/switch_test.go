@@ -754,15 +754,15 @@ type errorTransport struct {
 
 var _ Transport = errorTransport{}
 
-func (errorTransport) NetAddr() na.Addr {
+func (errorTransport) NetAddr() na.NetAddr {
 	panic("not implemented")
 }
 
-func (et errorTransport) Accept() (net.Conn, *na.Addr, error) {
+func (et errorTransport) Accept() (net.Conn, *na.NetAddr, error) {
 	return nil, nil, et.acceptErr
 }
 
-func (errorTransport) Dial(na.Addr) (net.Conn, error) {
+func (errorTransport) Dial(na.NetAddr) (net.Conn, error) {
 	panic("not implemented")
 }
 

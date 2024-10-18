@@ -131,7 +131,7 @@ func CustomReactors(reactors map[string]p2p.Reactor) Option {
 			// NOTE: This is a bit messy now with the type casting but is
 			// cleaned up in the following version when NodeInfo is changed from
 			// and interface to a concrete type
-			if ni, ok := n.nodeInfo.(ni.DefaultNodeInfo); ok {
+			if ni, ok := n.nodeInfo.(ni.Default); ok {
 				for _, chDesc := range reactor.StreamDescriptors() {
 					if !ni.HasChannel(chDesc.StreamID()) {
 						ni.Channels = append(ni.Channels, chDesc.StreamID())
@@ -139,7 +139,7 @@ func CustomReactors(reactors map[string]p2p.Reactor) Option {
 				}
 				n.nodeInfo = ni
 			} else {
-				n.Logger.Error("Node info is not of type DefaultNodeInfo. Custom reactor channels can not be added.")
+				n.Logger.Error("Node info is not of type ni.Default. Custom reactor channels can not be added.")
 			}
 		}
 	}
@@ -1026,13 +1026,13 @@ func makeNodeInfo(
 	txIndexer txindex.TxIndexer,
 	genDoc *types.GenesisDoc,
 	state sm.State,
-) (ni.DefaultNodeInfo, error) {
+) (ni.Default, error) {
 	txIndexerStatus := "on"
 	if _, ok := txIndexer.(*null.TxIndex); ok {
 		txIndexerStatus = "off"
 	}
 
-	nodeInfo := ni.DefaultNodeInfo{
+	nodeInfo := ni.Default{
 		ProtocolVersion: ni.NewProtocolVersion(
 			version.P2PProtocol, // global
 			state.Version.Consensus.Block,
@@ -1049,7 +1049,7 @@ func makeNodeInfo(
 			statesync.SnapshotChannel, statesync.ChunkChannel,
 		},
 		Moniker: config.Moniker,
-		Other: ni.DefaultNodeInfoOther{
+		Other: ni.DefaultOther{
 			TxIndex:    txIndexerStatus,
 			RPCAddress: config.RPC.ListenAddress,
 		},

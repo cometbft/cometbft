@@ -350,19 +350,19 @@ func (_m *Peer) SetRemovalFailed() {
 }
 
 // SocketAddr provides a mock function with given fields:
-func (_m *Peer) SocketAddr() *netaddress.NetAddress {
+func (_m *Peer) SocketAddr() *netaddress.Addr {
 	ret := _m.Called()
 
 	if len(ret) == 0 {
 		panic("no return value specified for SocketAddr")
 	}
 
-	var r0 *netaddress.NetAddress
-	if rf, ok := ret.Get(0).(func() *netaddress.NetAddress); ok {
+	var r0 *netaddress.Addr
+	if rf, ok := ret.Get(0).(func() *netaddress.Addr); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*netaddress.NetAddress)
+			r0 = ret.Get(0).(*netaddress.Addr)
 		}
 	}
 

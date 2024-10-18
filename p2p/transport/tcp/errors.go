@@ -25,7 +25,7 @@ func (ErrFilterTimeout) Error() string {
 // ErrRejected indicates that a Peer was rejected carrying additional
 // information as to the reason.
 type ErrRejected struct {
-	addr          na.NetAddress
+	addr          na.Addr
 	conn          net.Conn
 	err           error
 	id            nodekey.ID
@@ -35,7 +35,7 @@ type ErrRejected struct {
 }
 
 // Addr returns the NetAddress for the rejected Peer.
-func (e ErrRejected) Addr() na.NetAddress {
+func (e ErrRejected) Addr() na.Addr {
 	return e.addr
 }
 

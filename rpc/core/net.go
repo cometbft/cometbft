@@ -142,7 +142,7 @@ func getIDs(peers []string) ([]string, error) {
 	for _, peer := range peers {
 		spl := strings.Split(peer, "@")
 		if len(spl) != 2 {
-			return nil, na.ErrNetAddressNoID{Addr: peer}
+			return nil, na.ErrNoID{Addr: peer}
 		}
 		ids = append(ids, spl[0])
 	}

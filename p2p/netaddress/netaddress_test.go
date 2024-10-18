@@ -13,7 +13,7 @@ func TestNetAddress_String(t *testing.T) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:8080")
 	require.NoError(t, err)
 
-	netAddr := NewNetAddress("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef", tcpAddr)
+	netAddr := New("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef", tcpAddr)
 
 	var wg sync.WaitGroup
 
@@ -36,14 +36,14 @@ func TestNewNetAddress(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Panics(t, func() {
-		NewNetAddress("", tcpAddr)
+		New("", tcpAddr)
 	})
 
-	addr := NewNetAddress("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef", tcpAddr)
+	addr := New("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef", tcpAddr)
 	assert.Equal(t, "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@127.0.0.1:8080", addr.String())
 
 	assert.NotPanics(t, func() {
-		NewNetAddress("", &net.UDPAddr{IP: net.ParseIP("127.0.0.1"), Port: 8000})
+		New("", &net.UDPAddr{IP: net.ParseIP("127.0.0.1"), Port: 8000})
 	}, "Calling NewNetAddress with UDPAddr should not panic in testing")
 }
 
@@ -111,20 +111,20 @@ func TestNewNetAddressString(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			addr, err := NewNetAddressString(tc.addr)
+			addr, err := NewFromString(tc.addr)
 			if tc.correct {
 				if assert.NoError(t, err, tc.addr) { //nolint:testifylint // require.Error doesn't work with the conditional here
 					assert.Equal(t, tc.expected, addr.String())
 				}
 			} else {
-				require.ErrorAs(t, err, &ErrNetAddressInvalid{Addr: addr.String(), Err: err})
+				require.ErrorAs(t, err, &ErrInvalid{Addr: addr.String(), Err: err})
 			}
 		})
 	}
 }
 
 func TestNewNetAddressStrings(t *testing.T) {
-	addrs, errs := NewNetAddressStrings([]string{
+	addrs, errs := NewFromStrings([]string{
 		"127.0.0.1:8080",
 		"deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@127.0.0.1:8080",
 		"deadbeefdeadbeefdeadbeefdeadbeefdeadbeed@127.0.0.2:8080",
@@ -134,7 +134,7 @@ func TestNewNetAddressStrings(t *testing.T) {
 }
 
 func TestNewNetAddressIPPort(t *testing.T) {
-	addr := NewNetAddressIPPort(net.ParseIP("127.0.0.1"), 8080)
+	addr := NewIPPort(net.ParseIP("127.0.0.1"), 8080)
 	assert.Equal(t, "127.0.0.1:8080", addr.String())
 }
 
@@ -151,7 +151,7 @@ func TestNetAddressProperties(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		addr, err := NewNetAddressString(tc.addr)
+		addr, err := NewFromString(tc.addr)
 		require.NoError(t, err)
 
 		err = addr.Valid()
@@ -181,10 +181,10 @@ func TestNetAddressReachabilityTo(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		addr, err := NewNetAddressString(tc.addr)
+		addr, err := NewFromString(tc.addr)
 		require.NoError(t, err)
 
-		other, err := NewNetAddressString(tc.other)
+		other, err := NewFromString(tc.other)
 		require.NoError(t, err)
 
 		assert.Equal(t, tc.reachability, addr.ReachabilityTo(other))

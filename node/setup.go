@@ -519,14 +519,14 @@ func createAddrBookAndSetOnSwitch(config *cfg.Config, sw *p2p.Switch,
 
 	// Add ourselves to addrbook to prevent dialing ourselves
 	if config.P2P.ExternalAddress != "" {
-		addr, err := na.NewNetAddressString(na.IDAddressString(nodeKey.ID(), config.P2P.ExternalAddress))
+		addr, err := na.NewFromString(na.IDAddrString(nodeKey.ID(), config.P2P.ExternalAddress))
 		if err != nil {
 			return nil, fmt.Errorf("p2p.external_address is incorrect: %w", err)
 		}
 		addrBook.AddOurAddress(addr)
 	}
 	if config.P2P.ListenAddress != "" {
-		addr, err := na.NewNetAddressString(na.IDAddressString(nodeKey.ID(), config.P2P.ListenAddress))
+		addr, err := na.NewFromString(na.IDAddrString(nodeKey.ID(), config.P2P.ListenAddress))
 		if err != nil {
 			return nil, fmt.Errorf("p2p.laddr is incorrect: %w", err)
 		}

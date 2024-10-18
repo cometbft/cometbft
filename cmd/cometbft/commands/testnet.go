@@ -256,7 +256,7 @@ func persistentPeersString(config *cfg.Config) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		persistentPeers[i] = na.IDAddressString(nk.ID(), fmt.Sprintf("%s:%d", hostnameOrIP(i), p2pPort))
+		persistentPeers[i] = na.IDAddrString(nk.ID(), fmt.Sprintf("%s:%d", hostnameOrIP(i), p2pPort))
 	}
 	return strings.Join(persistentPeers, ","), nil
 }

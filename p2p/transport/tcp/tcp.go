@@ -10,7 +10,7 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/p2p/internal/fuzz"
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
@@ -144,8 +144,8 @@ func NewMultiplexTransport(
 	}
 }
 
-// NetAddress implements Transport.
-func (mt *MultiplexTransport) NetAddress() na.Addr {
+// NetAddr implements Transport.
+func (mt *MultiplexTransport) NetAddr() na.Addr {
 	return mt.netAddr
 }
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 )
 
@@ -34,7 +34,7 @@ type ErrRejected struct {
 	isFiltered    bool
 }
 
-// Addr returns the NetAddress for the rejected Peer.
+// Addr returns the network address for the rejected Peer.
 func (e ErrRejected) Addr() na.Addr {
 	return e.addr
 }

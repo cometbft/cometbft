@@ -7,7 +7,7 @@ import (
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/libs/protoio"
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 )
@@ -27,7 +27,7 @@ type ErrRejected struct {
 	isSelf            bool
 }
 
-// Addr returns the NetAddress for the rejected Peer.
+// Addr returns the network address for the rejected Peer.
 func (e ErrRejected) Addr() na.Addr {
 	return e.addr
 }

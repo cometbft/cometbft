@@ -1,4 +1,4 @@
-package netaddress
+package netaddr
 
 import (
 	"net"
@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNetAddress_String(t *testing.T) {
+func Test_String(t *testing.T) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:8080")
 	require.NoError(t, err)
 
@@ -31,7 +31,7 @@ func TestNetAddress_String(t *testing.T) {
 	require.Equal(t, "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@127.0.0.1:8080", s)
 }
 
-func TestNewNetAddress(t *testing.T) {
+func TestNew(t *testing.T) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:8080")
 	require.NoError(t, err)
 
@@ -44,10 +44,10 @@ func TestNewNetAddress(t *testing.T) {
 
 	assert.NotPanics(t, func() {
 		New("", &net.UDPAddr{IP: net.ParseIP("127.0.0.1"), Port: 8000})
-	}, "Calling NewNetAddress with UDPAddr should not panic in testing")
+	}, "Calling New with UDPAddr should not panic in testing")
 }
 
-func TestNewNetAddressString(t *testing.T) {
+func TestNewFromString(t *testing.T) {
 	testCases := []struct {
 		name     string
 		addr     string
@@ -123,7 +123,7 @@ func TestNewNetAddressString(t *testing.T) {
 	}
 }
 
-func TestNewNetAddressStrings(t *testing.T) {
+func TestNewFromStrings(t *testing.T) {
 	addrs, errs := NewFromStrings([]string{
 		"127.0.0.1:8080",
 		"deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@127.0.0.1:8080",
@@ -133,12 +133,12 @@ func TestNewNetAddressStrings(t *testing.T) {
 	assert.Len(t, errs, 1)
 }
 
-func TestNewNetAddressIPPort(t *testing.T) {
+func TestNewIPPort(t *testing.T) {
 	addr := NewIPPort(net.ParseIP("127.0.0.1"), 8080)
 	assert.Equal(t, "127.0.0.1:8080", addr.String())
 }
 
-func TestNetAddressProperties(t *testing.T) {
+func TestProperties(t *testing.T) {
 	// TODO add more test cases
 	testCases := []struct {
 		addr     string
@@ -165,7 +165,7 @@ func TestNetAddressProperties(t *testing.T) {
 	}
 }
 
-func TestNetAddressReachabilityTo(t *testing.T) {
+func TestReachabilityTo(t *testing.T) {
 	// TODO add more test cases
 	testCases := []struct {
 		addr         string

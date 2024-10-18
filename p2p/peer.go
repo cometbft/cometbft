@@ -11,7 +11,7 @@ import (
 	"github.com/cometbft/cometbft/internal/cmap"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
@@ -471,7 +471,7 @@ func wrapPeer(c net.Conn, ni ni.NodeInfo, cfg peerConfig, socketAddr *na.Addr, m
 		if cfg.outbound {
 			persistent = cfg.isPersistent(socketAddr)
 		} else {
-			selfReportedAddr, err := ni.NetAddress()
+			selfReportedAddr, err := ni.NetAddr()
 			if err == nil {
 				persistent = cfg.isPersistent(selfReportedAddr)
 			}

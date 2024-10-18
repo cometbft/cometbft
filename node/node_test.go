@@ -153,7 +153,7 @@ func TestNodeSetAppVersion(t *testing.T) {
 	assert.Equal(t, state.Version.Consensus.App, appVersion)
 
 	// check version is set in node info
-	assert.Equal(t, n.nodeInfo.(ni.DefaultNodeInfo).ProtocolVersion.App, appVersion)
+	assert.Equal(t, n.nodeInfo.(ni.Default).ProtocolVersion.App, appVersion)
 }
 
 func TestPprofServer(t *testing.T) {
@@ -513,7 +513,7 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 	assert.True(t, customBlocksyncReactor.IsRunning())
 	assert.Equal(t, customBlocksyncReactor, n.Switch().Reactor("BLOCKSYNC"))
 
-	channels := n.NodeInfo().(ni.DefaultNodeInfo).Channels
+	channels := n.NodeInfo().(ni.Default).Channels
 	assert.Contains(t, channels, mempl.MempoolChannel)
 	assert.Contains(t, channels, cr.Channels[0].StreamID())
 }

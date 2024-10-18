@@ -12,7 +12,7 @@ import (
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
@@ -23,7 +23,7 @@ const (
 	// PexChannel is a channel for PEX messages.
 	PexChannel = byte(0x00)
 
-	// over-estimate of max NetAddress size
+	// over-estimate of max na.Addr size
 	// hexID (40) + IP (16) + Port (2) + Name (100) ...
 	// NOTE: dont use massive DNS name ..
 	maxAddressSize = 256
@@ -57,7 +57,7 @@ const (
 // Reactor handles PEX (peer exchange) and ensures that an
 // adequate number of peers are connected to the switch.
 //
-// It uses `AddrBook` (address book) to store `NetAddress`es of the peers.
+// It uses `AddrBook` (address book) to store `na.Addr`es of the peers.
 //
 // ## Preventing abuse
 //
@@ -192,9 +192,9 @@ func (r *Reactor) AddPeer(p Peer) {
 		}
 	} else {
 		// inbound peer is its own source
-		addr, err := p.NodeInfo().NetAddress()
+		addr, err := p.NodeInfo().NetAddr()
 		if err != nil {
-			r.Logger.Error("Failed to get peer NetAddress", "err", err, "peer", p)
+			r.Logger.Error("Failed to get peer NetAddr", "err", err, "peer", p)
 			return
 		}
 
@@ -348,7 +348,7 @@ func (r *Reactor) ReceiveAddrs(addrs []*na.Addr, src Peer) error {
 	}
 	r.requestsSent.Delete(id)
 
-	srcAddr, err := src.NodeInfo().NetAddress()
+	srcAddr, err := src.NodeInfo().NetAddr()
 	if err != nil {
 		return err
 	}

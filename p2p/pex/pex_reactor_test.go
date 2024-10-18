@@ -17,7 +17,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/mock"
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -98,7 +98,7 @@ func TestPEXReactorRunning(t *testing.T) {
 	}
 
 	addOtherNodeAddrToAddrBook := func(switchIndex, otherSwitchIndex int) {
-		addr := switches[otherSwitchIndex].NetAddress()
+		addr := switches[otherSwitchIndex].NetAddr()
 		err := books[switchIndex].AddAddress(addr, addr)
 		require.NoError(t, err)
 	}
@@ -238,7 +238,7 @@ func TestCheckSeeds(t *testing.T) {
 		Seeds: []string{
 			"ed3dfd27bfc4af18f67a49862f04cc100696e84d@bad.network.addr:26657",
 			"d824b13cb5d40fa1d8a614e089357c7eff31b670@anotherbad.network.addr:26657",
-			seed.NetAddress().String(),
+			seed.NetAddr().String(),
 		},
 	}
 	peerSwitch = testCreatePeerWithConfig(dir, 2, badPeerConfig)
@@ -282,7 +282,7 @@ func TestConnectionSpeedForPeerReceivedFromSeed(t *testing.T) {
 	for id = 0; id < cfg.MaxNumOutboundPeers+1; id++ {
 		peer := testCreateDefaultPeer(dir, id)
 		require.NoError(t, peer.Start())
-		addr := peer.NetAddress()
+		addr := peer.NetAddr()
 		defer peer.Stop() //nolint:errcheck // ignore for tests
 
 		knownAddrs = append(knownAddrs, addr)
@@ -336,7 +336,7 @@ func TestPEXReactorSeedMode(t *testing.T) {
 	defer peerSwitch.Stop() //nolint:errcheck // ignore for tests
 
 	// 1. Test crawlPeers dials the peer
-	pexR.crawlPeers([]*na.Addr{peerSwitch.NetAddress()})
+	pexR.crawlPeers([]*na.Addr{peerSwitch.NetAddr()})
 	assert.Equal(t, 1, sw.Peers().Size())
 	assert.True(t, sw.Peers().Has(peerSwitch.NodeInfo().ID()))
 
@@ -374,11 +374,11 @@ func TestPEXReactorDoesNotDisconnectFromPersistentPeerInSeedMode(t *testing.T) {
 	require.NoError(t, peerSwitch.Start())
 	defer peerSwitch.Stop() //nolint:errcheck // ignore for tests
 
-	err = sw.AddPersistentPeers([]string{peerSwitch.NetAddress().String()})
+	err = sw.AddPersistentPeers([]string{peerSwitch.NetAddr().String()})
 	require.NoError(t, err)
 
 	// 1. Test crawlPeers dials the peer
-	pexR.crawlPeers([]*na.Addr{peerSwitch.NetAddress()})
+	pexR.crawlPeers([]*na.Addr{peerSwitch.NetAddr()})
 	assert.Equal(t, 1, sw.Peers().Size())
 	assert.True(t, sw.Peers().Has(peerSwitch.NodeInfo().ID()))
 
@@ -466,7 +466,7 @@ func TestPEXReactorSeedModeFlushStop(t *testing.T) {
 	reactor := switches[0].Reactors()["pex"].(*Reactor)
 	peerID := switches[1].NodeInfo().ID()
 
-	err = switches[1].DialPeerWithAddress(switches[0].NetAddress())
+	err = switches[1].DialPeerWithAddress(switches[0].NetAddr())
 	require.NoError(t, err)
 
 	// sleep up to a second while waiting for the peer to send us a message.
@@ -663,7 +663,7 @@ func testCreateSeed(dir string, id int, knownAddrs, srcAddrs []*na.Addr) *p2p.Sw
 // Starting and stopping the peer is left to the caller.
 func testCreatePeerWithSeed(dir string, id int, seed *p2p.Switch) *p2p.Switch {
 	conf := &ReactorConfig{
-		Seeds: []string{seed.NetAddress().String()},
+		Seeds: []string{seed.NetAddr().String()},
 	}
 	return testCreatePeerWithConfig(dir, id, conf)
 }

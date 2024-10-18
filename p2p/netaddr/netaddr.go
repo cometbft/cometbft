@@ -2,7 +2,7 @@
 // Originally Copyright (c) 2013-2014 Conformal Systems LLC.
 // https://github.com/conformal/btcd/blob/master/LICENSE
 
-package netaddress
+package netaddr
 
 import (
 	"encoding/hex"
@@ -19,7 +19,7 @@ import (
 )
 
 // Empty defines the string representation of an empty NetAddress.
-const Empty = "<nil-NetAddress>"
+const Empty = "<nil-NetAddr>"
 
 // Addr defines information about a peer on the network
 // including its ID, IP address, and port.
@@ -36,7 +36,7 @@ func IDAddrString(id nodekey.ID, protocolHostPort string) string {
 	return fmt.Sprintf("%s@%s", id, hostPort)
 }
 
-// New returns a new NetAddress using the provided TCP
+// New returns a new Addr using the provided TCP
 // address. When testing, other net.Addr (except TCP) will result in
 // using 0.0.0.0:0. When normal run, other net.Addr (except TCP) will
 // panic. Panics if ID is invalid.
@@ -64,10 +64,10 @@ func New(id nodekey.ID, addr net.Addr) *Addr {
 	return na
 }
 
-// NewFromString returns a new NetAddress using the provided address in
+// NewFromString returns a new Addr using the provided address in
 // the form of "ID@IP:Port".
 // Also resolves the host if host is not an IP.
-// Errors are of type ErrNetAddressXxx where Xxx is in (NoID, Invalid, Lookup).
+// Errors are of type ErrXxx where Xxx is in (NoID, Invalid, Lookup).
 func NewFromString(addr string) (*Addr, error) {
 	addrWithoutProtocol := removeProtocolIfDefined(addr)
 	spl := strings.Split(addrWithoutProtocol, "@")
@@ -113,7 +113,7 @@ func NewFromString(addr string) (*Addr, error) {
 	return na, nil
 }
 
-// NewFromStrings returns an array of NetAddress'es build using
+// NewFromStrings returns an array of Addr'es build using
 // the provided strings.
 func NewFromStrings(addrs []string) ([]*Addr, []error) {
 	netAddrs := make([]*Addr, 0)
@@ -129,7 +129,7 @@ func NewFromStrings(addrs []string) ([]*Addr, []error) {
 	return netAddrs, errs
 }
 
-// NewIPPort returns a new NetAddress using the provided IP
+// NewIPPort returns a new Addr using the provided IP
 // and port number.
 func NewIPPort(ip net.IP, port uint16) *Addr {
 	return &Addr{
@@ -168,7 +168,7 @@ func AddrsFromProtos(pbs []tmp2p.NetAddress) ([]*Addr, error) {
 	return nas, nil
 }
 
-// AddrsToProtos converts a slice of NetAddresses into a Protobuf slice.
+// AddrsToProtos converts a slice of Addr into a Protobuf slice.
 func AddrsToProtos(nas []*Addr) []tmp2p.NetAddress {
 	pbs := make([]tmp2p.NetAddress, 0, len(nas))
 	for _, na := range nas {
@@ -179,7 +179,7 @@ func AddrsToProtos(nas []*Addr) []tmp2p.NetAddress {
 	return pbs
 }
 
-// ToProto converts a NetAddress to Protobuf.
+// ToProto converts an Addr to Protobuf.
 func (na *Addr) ToProto() tmp2p.NetAddress {
 	return tmp2p.NetAddress{
 		ID:   string(na.ID),
@@ -226,7 +226,7 @@ func (na *Addr) String() string {
 
 func (na *Addr) DialString() string {
 	if na == nil {
-		return "<nil-NetAddress>"
+		return Empty
 	}
 	return net.JoinHostPort(
 		na.IP.String(),

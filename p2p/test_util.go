@@ -10,7 +10,7 @@ import (
 	cmtnet "github.com/cometbft/cometbft/internal/net"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p/internal/fuzz"
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
@@ -312,7 +312,7 @@ type mockNodeInfo struct {
 }
 
 func (ni mockNodeInfo) ID() nodekey.ID                                      { return ni.addr.ID }
-func (ni mockNodeInfo) NetAddress() (*na.Addr, error)                       { return ni.addr, nil }
+func (ni mockNodeInfo) NetAddr() (*na.Addr, error)                          { return ni.addr, nil }
 func (mockNodeInfo) Validate() error                                        { return nil }
 func (mockNodeInfo) CompatibleWith(ni.NodeInfo) error                       { return nil }
 func (mockNodeInfo) Handshake(net.Conn, time.Duration) (ni.NodeInfo, error) { return nil, nil }

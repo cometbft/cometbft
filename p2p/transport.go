@@ -5,7 +5,7 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 )
 
 // peerConfig is used to bundle data we need to fully setup a Peer with an
@@ -31,8 +31,8 @@ type peerConfig struct {
 // the transport. Each transport is also responsible to filter establishing
 // peers specific to its domain.
 type Transport interface {
-	// NetAddress returns the NetAddress of the local node.
-	NetAddress() na.Addr
+	// NetAddr returns the network address of the local node.
+	NetAddr() na.Addr
 
 	// Accept waits for and returns the next connection to the local node.
 	Accept() (net.Conn, *na.Addr, error)

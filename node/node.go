@@ -28,7 +28,7 @@ import (
 	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/p2p/pex"
@@ -530,7 +530,7 @@ func NewNodeWithCliParams(ctx context.Context,
 	//
 	// We need to set Seeds and PersistentPeers on the switch,
 	// since it needs to be able to use these (and their DNS names)
-	// even if the PEX is off. We can include the DNS name in the NetAddress,
+	// even if the PEX is off. We can include the DNS name in the netaddr.Addr,
 	// but it would still be nice to have a clear list of the current "PersistentPeers"
 	// somewhere that we can return with net_info.
 	//

@@ -4,7 +4,7 @@ import (
 	"net"
 	"time"
 
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 )
 
 type mockTransport struct {
@@ -22,7 +22,7 @@ func (t *mockTransport) Listen(addr na.Addr) error {
 	return nil
 }
 
-func (t *mockTransport) NetAddress() na.Addr {
+func (t *mockTransport) NetAddr() na.Addr {
 	return t.addr
 }
 

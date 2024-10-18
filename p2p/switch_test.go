@@ -24,7 +24,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/transport/tcp"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
@@ -593,7 +593,7 @@ func TestSwitchReconnectsToInboundPersistentPeer(t *testing.T) {
 	err = sw.AddPersistentPeers([]string{rp.Addr().String()})
 	require.NoError(t, err)
 
-	conn, err := rp.Dial(sw.NetAddress())
+	conn, err := rp.Dial(sw.NetAddr())
 	require.NoError(t, err)
 	time.Sleep(50 * time.Millisecond)
 	require.NotNil(t, sw.Peers().Get(rp.ID()))
@@ -693,7 +693,7 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 		peer := &remotePeer{PrivKey: ed25519.GenPrivKey(), Config: cfg}
 		peers = append(peers, peer)
 		peer.Start()
-		c, err := peer.Dial(sw.NetAddress())
+		c, err := peer.Dial(sw.NetAddr())
 		require.NoError(t, err)
 		// spawn a reading routine to prevent connection from closing
 		go func(c net.Conn) {
@@ -712,7 +712,7 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 	// 2. check we close new connections if we already have MaxNumInboundPeers peers
 	peer := &remotePeer{PrivKey: ed25519.GenPrivKey(), Config: cfg}
 	peer.Start()
-	conn, err := peer.Dial(sw.NetAddress())
+	conn, err := peer.Dial(sw.NetAddr())
 	require.NoError(t, err)
 	// check conn is closed
 	one := make([]byte, 1)
@@ -724,7 +724,7 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 
 	// 3. check we connect to unconditional peers despite the limit.
 	for _, peer := range unconditionalPeers {
-		c, err := peer.Dial(sw.NetAddress())
+		c, err := peer.Dial(sw.NetAddr())
 		require.NoError(t, err)
 		// spawn a reading routine to prevent connection from closing
 		go func(c net.Conn) {
@@ -754,7 +754,7 @@ type errorTransport struct {
 
 var _ Transport = errorTransport{}
 
-func (errorTransport) NetAddress() na.Addr {
+func (errorTransport) NetAddr() na.Addr {
 	panic("not implemented")
 }
 
@@ -848,7 +848,7 @@ func TestSwitch_InitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 	rp := &remotePeer{PrivKey: ed25519.GenPrivKey(), Config: cfg}
 	rp.Start()
 	defer rp.Stop()
-	_, err = rp.Dial(sw.NetAddress())
+	_, err = rp.Dial(sw.NetAddr())
 	require.NoError(t, err)
 
 	// wait till the switch adds rp to the peer set, then stop the peer asynchronously
@@ -861,7 +861,7 @@ func TestSwitch_InitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 	}
 
 	// simulate peer reconnecting to us
-	_, err = rp.Dial(sw.NetAddress())
+	_, err = rp.Dial(sw.NetAddr())
 	require.NoError(t, err)
 	// wait till the switch adds rp to the peer set
 	time.Sleep(50 * time.Millisecond)

@@ -10,7 +10,7 @@ import (
 
 	net "net"
 
-	netaddress "github.com/cometbft/cometbft/p2p/netaddress"
+	netaddress "github.com/cometbft/cometbft/p2p/netaddr"
 
 	nodeinfo "github.com/cometbft/cometbft/p2p/nodeinfo"
 

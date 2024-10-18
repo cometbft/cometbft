@@ -12,7 +12,7 @@ import (
 	"github.com/cometbft/cometbft/internal/cmap"
 	"github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/service"
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/p2p/transport/tcp"
@@ -103,9 +103,9 @@ type Switch struct {
 	metrics *Metrics
 }
 
-// NetAddress returns the address the switch is listening on.
-func (sw *Switch) NetAddress() *na.Addr {
-	addr := sw.transport.NetAddress()
+// NetAddr returns the address the switch is listening on.
+func (sw *Switch) NetAddr() *na.Addr {
+	addr := sw.transport.NetAddr()
 	return &addr
 }
 
@@ -339,7 +339,7 @@ func (sw *Switch) StopPeerForError(peer Peer, reason any) {
 			addr = peer.SocketAddr()
 		} else { // self-reported address for inbound peers
 			var err error
-			addr, err = peer.NodeInfo().NetAddress()
+			addr, err = peer.NodeInfo().NetAddr()
 			if err != nil {
 				sw.Logger.Error("Wanted to reconnect to inbound peer, but self-reported address is wrong",
 					"peer", peer, "err", err)
@@ -491,7 +491,7 @@ func (sw *Switch) DialPeersAsync(peers []string) error {
 }
 
 func (sw *Switch) dialPeersAsync(netAddrs []*na.Addr) {
-	ourAddr := sw.NetAddress()
+	ourAddr := sw.NetAddr()
 
 	// TODO: this code feels like it's in the wrong place.
 	// The integration tests depend on the addrBook being saved

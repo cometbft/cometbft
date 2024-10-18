@@ -1,10 +1,12 @@
 package core
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"strings"
 
+	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/p2p"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
@@ -105,15 +107,37 @@ func (env *Environment) UnsafeDialPeers(
 // Genesis returns genesis file.
 // More: https://docs.cometbft.com/main/rpc/#/Info/genesis
 func (env *Environment) Genesis(*rpctypes.Context) (*ctypes.ResultGenesis, error) {
-	if len(env.genChunks) > 1 {
+	if len(env.genChunks) > 0 {
 		return nil, ErrGenesisRespSize
 	}
 
 	return &ctypes.ResultGenesis{Genesis: env.GenDoc}, nil
 }
 
-func (env *Environment) GenesisChunked(_ *rpctypes.Context, chunk uint) (*ctypes.ResultGenesisChunk, error) {
+func (env *Environment) GenesisChunked(
+	_ *rpctypes.Context,
+	chunk uint,
+) (*ctypes.ResultGenesisChunk, error) {
 	if env.genChunks == nil {
+		// See discussion in the following PR for why we still serve chunk 0 even
+		// if env.genChunks is nil:
+		// https://github.com/cometbft/cometbft/pull/4235#issuecomment-2389109521
+		if chunk == 0 {
+			genesisJSON, err := cmtjson.Marshal(env.GenDoc)
+			if err != nil {
+				return nil, fmt.Errorf("retrieving requested chunk (id=0): %s", err)
+			}
+
+			genesisBase64 := base64.StdEncoding.EncodeToString(genesisJSON)
+			resp := &ctypes.ResultGenesisChunk{
+				TotalChunks: 1,
+				ChunkNumber: 0,
+				Data:        genesisBase64,
+			}
+
+			return resp, nil
+		}
+
 		return nil, ErrServiceConfig{ErrChunkNotInitialized}
 	}
 

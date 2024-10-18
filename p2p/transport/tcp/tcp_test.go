@@ -42,7 +42,7 @@ func TestTransportMultiplex_ConnFilter(t *testing.T) {
 		},
 	)(mt)
 
-	addr, err := na.NewNetAddressString(na.IDAddressString(id, "127.0.0.1:0"))
+	addr, err := na.NewFromString(na.IDAddrString(id, "127.0.0.1:0"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +54,7 @@ func TestTransportMultiplex_ConnFilter(t *testing.T) {
 	errc := make(chan error)
 
 	go func() {
-		addr := na.NewNetAddress(id, mt.listener.Addr())
+		addr := na.New(id, mt.listener.Addr())
 
 		_, err := addr.Dial()
 		if err != nil {
@@ -95,7 +95,7 @@ func TestTransportMultiplex_ConnFilterTimeout(t *testing.T) {
 		},
 	)(mt)
 
-	addr, err := na.NewNetAddressString(na.IDAddressString(id, "127.0.0.1:0"))
+	addr, err := na.NewFromString(na.IDAddrString(id, "127.0.0.1:0"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +106,7 @@ func TestTransportMultiplex_ConnFilterTimeout(t *testing.T) {
 
 	errc := make(chan error)
 	go func() {
-		addr := na.NewNetAddress(id, mt.listener.Addr())
+		addr := na.New(id, mt.listener.Addr())
 
 		_, err := addr.Dial()
 		if err != nil {
@@ -138,7 +138,7 @@ func TestTransportMultiplex_MaxIncomingConnections(t *testing.T) {
 
 	MultiplexTransportMaxIncomingConnections(0)(mt)
 
-	addr, err := na.NewNetAddressString(na.IDAddressString(id, "127.0.0.1:0"))
+	addr, err := na.NewFromString(na.IDAddrString(id, "127.0.0.1:0"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +148,7 @@ func TestTransportMultiplex_MaxIncomingConnections(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	laddr := na.NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
+	laddr := na.New(mt.nodeKey.ID(), mt.listener.Addr())
 
 	// Connect more peers than max
 	for i := 0; i <= maxIncomingConns; i++ {
@@ -175,7 +175,7 @@ func TestTransportMultiplex_MaxIncomingConnections(t *testing.T) {
 
 func TestTransportMultiplex_AcceptMultiple(t *testing.T) {
 	mt := testSetupMultiplexTransport(t)
-	laddr := na.NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
+	laddr := na.New(mt.nodeKey.ID(), mt.listener.Addr())
 
 	var (
 		seed     = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -222,7 +222,7 @@ func TestTransportMultiplex_AcceptMultiple(t *testing.T) {
 	}
 }
 
-func testDialer(dialAddr na.NetAddress, errc chan error) {
+func testDialer(dialAddr na.Addr, errc chan error) {
 	var (
 		pv     = ed25519.GenPrivKey()
 		dialer = newMultiplexTransport(
@@ -255,7 +255,7 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 
 	// Simulate slow Peer.
 	go func() {
-		addr := na.NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
+		addr := na.New(mt.nodeKey.ID(), mt.listener.Addr())
 
 		c, err := addr.Dial()
 		if err != nil {
@@ -295,7 +295,7 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 				PrivKey: fastNodePV,
 			},
 		)
-		addr := na.NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
+		addr := na.New(mt.nodeKey.ID(), mt.listener.Addr())
 
 		_, err := dialer.Dial(*addr)
 		if err != nil {
@@ -331,7 +331,7 @@ func TestTransportMultiplexDialRejectWrongID(t *testing.T) {
 	)
 
 	wrongID := nodekey.PubKeyToID(ed25519.GenPrivKey().PubKey())
-	addr := na.NewNetAddress(wrongID, mt.listener.Addr())
+	addr := na.New(wrongID, mt.listener.Addr())
 
 	_, err := dialer.Dial(*addr)
 	if err != nil {
@@ -385,7 +385,7 @@ func testSetupMultiplexTransport(t *testing.T) *MultiplexTransport {
 		)
 	)
 
-	addr, err := na.NewNetAddressString(na.IDAddressString(id, "127.0.0.1:0"))
+	addr, err := na.NewFromString(na.IDAddrString(id, "127.0.0.1:0"))
 	if err != nil {
 		t.Fatal(err)
 	}

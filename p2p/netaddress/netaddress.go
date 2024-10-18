@@ -18,37 +18,37 @@ import (
 	"github.com/cometbft/cometbft/p2p/nodekey"
 )
 
-// EmptyNetAddress defines the string representation of an empty NetAddress.
-const EmptyNetAddress = "<nil-NetAddress>"
+// Empty defines the string representation of an empty NetAddress.
+const Empty = "<nil-NetAddress>"
 
-// NetAddress defines information about a peer on the network
+// Addr defines information about a peer on the network
 // including its ID, IP address, and port.
-type NetAddress struct {
+type Addr struct {
 	ID   nodekey.ID `json:"id"`
 	IP   net.IP     `json:"ip"`
 	Port uint16     `json:"port"`
 }
 
-// IDAddressString returns id@hostPort. It strips the leading
+// IDAddrString returns id@hostPort. It strips the leading
 // protocol from protocolHostPort if it exists.
-func IDAddressString(id nodekey.ID, protocolHostPort string) string {
+func IDAddrString(id nodekey.ID, protocolHostPort string) string {
 	hostPort := removeProtocolIfDefined(protocolHostPort)
 	return fmt.Sprintf("%s@%s", id, hostPort)
 }
 
-// NewNetAddress returns a new NetAddress using the provided TCP
+// New returns a new NetAddress using the provided TCP
 // address. When testing, other net.Addr (except TCP) will result in
 // using 0.0.0.0:0. When normal run, other net.Addr (except TCP) will
 // panic. Panics if ID is invalid.
 // TODO: socks proxies?
-func NewNetAddress(id nodekey.ID, addr net.Addr) *NetAddress {
+func New(id nodekey.ID, addr net.Addr) *Addr {
 	tcpAddr, ok := addr.(*net.TCPAddr)
 	if !ok {
 		if flag.Lookup("test.v") == nil { // normal run
 			panic(fmt.Sprintf("Only TCPAddrs are supported. Got: %v", addr))
 		}
 		// in testing
-		netAddr := NewNetAddressIPPort(net.IP("127.0.0.1"), 0)
+		netAddr := NewIPPort(net.IP("127.0.0.1"), 0)
 		netAddr.ID = id
 		return netAddr
 	}
@@ -59,25 +59,25 @@ func NewNetAddress(id nodekey.ID, addr net.Addr) *NetAddress {
 
 	ip := tcpAddr.IP
 	port := uint16(tcpAddr.Port)
-	na := NewNetAddressIPPort(ip, port)
+	na := NewIPPort(ip, port)
 	na.ID = id
 	return na
 }
 
-// NewNetAddressString returns a new NetAddress using the provided address in
+// NewFromString returns a new NetAddress using the provided address in
 // the form of "ID@IP:Port".
 // Also resolves the host if host is not an IP.
 // Errors are of type ErrNetAddressXxx where Xxx is in (NoID, Invalid, Lookup).
-func NewNetAddressString(addr string) (*NetAddress, error) {
+func NewFromString(addr string) (*Addr, error) {
 	addrWithoutProtocol := removeProtocolIfDefined(addr)
 	spl := strings.Split(addrWithoutProtocol, "@")
 	if len(spl) != 2 {
-		return nil, ErrNetAddressInvalid{Addr: addr, Err: ErrNetAddressNoID{addr}}
+		return nil, ErrInvalid{Addr: addr, Err: ErrNoID{addr}}
 	}
 
 	// get ID
 	if err := ValidateID(nodekey.ID(spl[0])); err != nil {
-		return nil, ErrNetAddressInvalid{addrWithoutProtocol, err}
+		return nil, ErrInvalid{addrWithoutProtocol, err}
 	}
 	var id nodekey.ID
 	id, addrWithoutProtocol = nodekey.ID(spl[0]), spl[1]
@@ -85,10 +85,10 @@ func NewNetAddressString(addr string) (*NetAddress, error) {
 	// get host and port
 	host, portStr, err := net.SplitHostPort(addrWithoutProtocol)
 	if err != nil {
-		return nil, ErrNetAddressInvalid{addrWithoutProtocol, err}
+		return nil, ErrInvalid{addrWithoutProtocol, err}
 	}
 	if len(host) == 0 {
-		return nil, ErrNetAddressInvalid{
+		return nil, ErrInvalid{
 			addrWithoutProtocol,
 			ErrEmptyHost,
 		}
@@ -98,28 +98,28 @@ func NewNetAddressString(addr string) (*NetAddress, error) {
 	if ip == nil {
 		ips, err := net.LookupIP(host)
 		if err != nil {
-			return nil, ErrNetAddressLookup{host, err}
+			return nil, ErrLookup{host, err}
 		}
 		ip = ips[0]
 	}
 
 	port, err := strconv.ParseUint(portStr, 10, 16)
 	if err != nil {
-		return nil, ErrNetAddressInvalid{portStr, err}
+		return nil, ErrInvalid{portStr, err}
 	}
 
-	na := NewNetAddressIPPort(ip, uint16(port))
+	na := NewIPPort(ip, uint16(port))
 	na.ID = id
 	return na, nil
 }
 
-// NewNetAddressStrings returns an array of NetAddress'es build using
+// NewFromStrings returns an array of NetAddress'es build using
 // the provided strings.
-func NewNetAddressStrings(addrs []string) ([]*NetAddress, []error) {
-	netAddrs := make([]*NetAddress, 0)
+func NewFromStrings(addrs []string) ([]*Addr, []error) {
+	netAddrs := make([]*Addr, 0)
 	errs := make([]error, 0)
 	for _, addr := range addrs {
-		netAddr, err := NewNetAddressString(addr)
+		netAddr, err := NewFromString(addr)
 		if err != nil {
 			errs = append(errs, err)
 		} else {
@@ -129,37 +129,37 @@ func NewNetAddressStrings(addrs []string) ([]*NetAddress, []error) {
 	return netAddrs, errs
 }
 
-// NewNetAddressIPPort returns a new NetAddress using the provided IP
+// NewIPPort returns a new NetAddress using the provided IP
 // and port number.
-func NewNetAddressIPPort(ip net.IP, port uint16) *NetAddress {
-	return &NetAddress{
+func NewIPPort(ip net.IP, port uint16) *Addr {
+	return &Addr{
 		IP:   ip,
 		Port: port,
 	}
 }
 
-// NetAddressFromProto converts a Protobuf NetAddress into a native struct.
-func NetAddressFromProto(pb tmp2p.NetAddress) (*NetAddress, error) { //nolint:revive
+// NewFromProto converts a Protobuf NetAddress into a native struct.
+func NewFromProto(pb tmp2p.NetAddress) (*Addr, error) {
 	ip := net.ParseIP(pb.IP)
 	if ip == nil {
-		return nil, ErrNetAddressInvalid{Addr: pb.IP, Err: ErrInvalidIP}
+		return nil, ErrInvalid{Addr: pb.IP, Err: ErrInvalidIP}
 	}
 
 	if pb.Port >= 1<<16 {
-		return nil, ErrNetAddressInvalid{Addr: pb.IP, Err: ErrInvalidPort{pb.Port}}
+		return nil, ErrInvalid{Addr: pb.IP, Err: ErrInvalidPort{pb.Port}}
 	}
-	return &NetAddress{
+	return &Addr{
 		ID:   nodekey.ID(pb.ID),
 		IP:   ip,
 		Port: uint16(pb.Port),
 	}, nil
 }
 
-// NetAddressesFromProto converts a slice of Protobuf NetAddresses into a native slice.
-func NetAddressesFromProto(pbs []tmp2p.NetAddress) ([]*NetAddress, error) {
-	nas := make([]*NetAddress, 0, len(pbs))
+// AddrsFromProtos converts a slice of Protobuf NetAddresses into a native slice.
+func AddrsFromProtos(pbs []tmp2p.NetAddress) ([]*Addr, error) {
+	nas := make([]*Addr, 0, len(pbs))
 	for _, pb := range pbs {
-		na, err := NetAddressFromProto(pb)
+		na, err := NewFromProto(pb)
 		if err != nil {
 			return nil, err
 		}
@@ -168,8 +168,8 @@ func NetAddressesFromProto(pbs []tmp2p.NetAddress) ([]*NetAddress, error) {
 	return nas, nil
 }
 
-// NetAddressesToProto converts a slice of NetAddresses into a Protobuf slice.
-func NetAddressesToProto(nas []*NetAddress) []tmp2p.NetAddress {
+// AddrsToProtos converts a slice of NetAddresses into a Protobuf slice.
+func AddrsToProtos(nas []*Addr) []tmp2p.NetAddress {
 	pbs := make([]tmp2p.NetAddress, 0, len(nas))
 	for _, na := range nas {
 		if na != nil {
@@ -180,7 +180,7 @@ func NetAddressesToProto(nas []*NetAddress) []tmp2p.NetAddress {
 }
 
 // ToProto converts a NetAddress to Protobuf.
-func (na *NetAddress) ToProto() tmp2p.NetAddress {
+func (na *Addr) ToProto() tmp2p.NetAddress {
 	return tmp2p.NetAddress{
 		ID:   string(na.ID),
 		IP:   na.IP.String(),
@@ -190,16 +190,16 @@ func (na *NetAddress) ToProto() tmp2p.NetAddress {
 
 // Equals reports whether na and other are the same addresses,
 // including their ID, IP, and Port.
-func (na *NetAddress) Equals(other any) bool {
-	if o, ok := other.(*NetAddress); ok {
+func (na *Addr) Equals(other any) bool {
+	if o, ok := other.(*Addr); ok {
 		return na.String() == o.String()
 	}
 	return false
 }
 
 // Same returns true is na has the same non-empty ID or DialString as other.
-func (na *NetAddress) Same(other any) bool {
-	if o, ok := other.(*NetAddress); ok {
+func (na *Addr) Same(other any) bool {
+	if o, ok := other.(*Addr); ok {
 		if na.DialString() == o.DialString() {
 			return true
 		}
@@ -211,20 +211,20 @@ func (na *NetAddress) Same(other any) bool {
 }
 
 // String representation: <ID>@<IP>:<PORT>.
-func (na *NetAddress) String() string {
+func (na *Addr) String() string {
 	if na == nil {
-		return EmptyNetAddress
+		return Empty
 	}
 
 	addrStr := na.DialString()
 	if na.ID != "" {
-		addrStr = IDAddressString(na.ID, addrStr)
+		addrStr = IDAddrString(na.ID, addrStr)
 	}
 
 	return addrStr
 }
 
-func (na *NetAddress) DialString() string {
+func (na *Addr) DialString() string {
 	if na == nil {
 		return "<nil-NetAddress>"
 	}
@@ -235,7 +235,7 @@ func (na *NetAddress) DialString() string {
 }
 
 // Dial calls net.Dial on the address.
-func (na *NetAddress) Dial() (net.Conn, error) {
+func (na *Addr) Dial() (net.Conn, error) {
 	conn, err := net.Dial("tcp", na.DialString())
 	if err != nil {
 		return nil, err
@@ -244,7 +244,7 @@ func (na *NetAddress) Dial() (net.Conn, error) {
 }
 
 // DialTimeout calls net.DialTimeout on the address.
-func (na *NetAddress) DialTimeout(timeout time.Duration) (net.Conn, error) {
+func (na *Addr) DialTimeout(timeout time.Duration) (net.Conn, error) {
 	conn, err := net.DialTimeout("tcp", na.DialString(), timeout)
 	if err != nil {
 		return nil, err
@@ -253,7 +253,7 @@ func (na *NetAddress) DialTimeout(timeout time.Duration) (net.Conn, error) {
 }
 
 // Routable returns true if the address is routable.
-func (na *NetAddress) Routable() bool {
+func (na *Addr) Routable() bool {
 	if err := na.Valid(); err != nil {
 		return false
 	}
@@ -264,7 +264,7 @@ func (na *NetAddress) Routable() bool {
 
 // For IPv4 these are either a 0 or all bits set address. For IPv6 a zero
 // address or one that matches the RFC3849 documentation address format.
-func (na *NetAddress) Valid() error {
+func (na *Addr) Valid() error {
 	if err := ValidateID(na.ID); err != nil {
 		return ErrInvalidPeerID{na.ID, err}
 	}
@@ -273,24 +273,24 @@ func (na *NetAddress) Valid() error {
 		return ErrNoIP
 	}
 	if na.IP.IsUnspecified() || na.RFC3849() || na.IP.Equal(net.IPv4bcast) {
-		return ErrNetAddressInvalid{na.IP.String(), ErrInvalidIP}
+		return ErrInvalid{na.IP.String(), ErrInvalidIP}
 	}
 	return nil
 }
 
 // HasID returns true if the address has an ID.
 // NOTE: It does not check whether the ID is valid or not.
-func (na *NetAddress) HasID() bool {
+func (na *Addr) HasID() bool {
 	return string(na.ID) != ""
 }
 
 // Local returns true if it is a local address.
-func (na *NetAddress) Local() bool {
+func (na *Addr) Local() bool {
 	return na.IP.IsLoopback() || zero4.Contains(na.IP)
 }
 
 // ReachabilityTo checks whenever o can be reached from na.
-func (na *NetAddress) ReachabilityTo(o *NetAddress) int {
+func (na *Addr) ReachabilityTo(o *Addr) int {
 	const (
 		unreachable = 0
 		Default     = iota
@@ -385,21 +385,21 @@ func ipNet(ip string, ones, bits int) net.IPNet {
 	return net.IPNet{IP: net.ParseIP(ip), Mask: net.CIDRMask(ones, bits)}
 }
 
-func (na *NetAddress) RFC1918() bool {
+func (na *Addr) RFC1918() bool {
 	return rfc1918_10.Contains(na.IP) ||
 		rfc1918_192.Contains(na.IP) ||
 		rfc1918_172.Contains(na.IP)
 }
-func (na *NetAddress) RFC3849() bool     { return rfc3849.Contains(na.IP) }
-func (na *NetAddress) RFC3927() bool     { return rfc3927.Contains(na.IP) }
-func (na *NetAddress) RFC3964() bool     { return rfc3964.Contains(na.IP) }
-func (na *NetAddress) RFC4193() bool     { return rfc4193.Contains(na.IP) }
-func (na *NetAddress) RFC4380() bool     { return rfc4380.Contains(na.IP) }
-func (na *NetAddress) RFC4843() bool     { return rfc4843.Contains(na.IP) }
-func (na *NetAddress) RFC4862() bool     { return rfc4862.Contains(na.IP) }
-func (na *NetAddress) RFC6052() bool     { return rfc6052.Contains(na.IP) }
-func (na *NetAddress) RFC6145() bool     { return rfc6145.Contains(na.IP) }
-func (na *NetAddress) OnionCatTor() bool { return onionCatNet.Contains(na.IP) }
+func (na *Addr) RFC3849() bool     { return rfc3849.Contains(na.IP) }
+func (na *Addr) RFC3927() bool     { return rfc3927.Contains(na.IP) }
+func (na *Addr) RFC3964() bool     { return rfc3964.Contains(na.IP) }
+func (na *Addr) RFC4193() bool     { return rfc4193.Contains(na.IP) }
+func (na *Addr) RFC4380() bool     { return rfc4380.Contains(na.IP) }
+func (na *Addr) RFC4843() bool     { return rfc4843.Contains(na.IP) }
+func (na *Addr) RFC4862() bool     { return rfc4862.Contains(na.IP) }
+func (na *Addr) RFC6052() bool     { return rfc6052.Contains(na.IP) }
+func (na *Addr) RFC6145() bool     { return rfc6145.Contains(na.IP) }
+func (na *Addr) OnionCatTor() bool { return onionCatNet.Contains(na.IP) }
 
 func removeProtocolIfDefined(addr string) string {
 	if strings.Contains(addr, "://") {
@@ -423,7 +423,7 @@ func ValidateID(id nodekey.ID) error {
 }
 
 // Used for testing.
-func CreateRoutableAddr() (addr string, netAddr *NetAddress) {
+func CreateRoutableAddr() (addr string, netAddr *Addr) {
 	for {
 		var err error
 		addr = fmt.Sprintf("%X@%v.%v.%v.%v:26656",
@@ -432,7 +432,7 @@ func CreateRoutableAddr() (addr string, netAddr *NetAddress) {
 			cmtrand.Int()%256,
 			cmtrand.Int()%256,
 			cmtrand.Int()%256)
-		netAddr, err = NewNetAddressString(addr)
+		netAddr, err = NewFromString(addr)
 		if err != nil {
 			panic(err)
 		}

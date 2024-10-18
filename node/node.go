@@ -613,7 +613,7 @@ func (n *Node) OnStart() error {
 	}
 
 	// Start the transport.
-	addr, err := na.NewNetAddressString(na.IDAddressString(n.nodeKey.ID(), n.config.P2P.ListenAddress))
+	addr, err := na.NewFromString(na.IDAddrString(n.nodeKey.ID(), n.config.P2P.ListenAddress))
 	if err != nil {
 		return err
 	}

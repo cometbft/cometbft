@@ -16,7 +16,7 @@ type Peer struct {
 	*service.BaseService
 	ip                   net.IP
 	id                   nodekey.ID
-	addr                 *na.NetAddress
+	addr                 *na.Addr
 	kv                   map[string]any
 	Outbound, Persistent bool
 	server, client       net.Conn
@@ -25,11 +25,11 @@ type Peer struct {
 // NewPeer creates and starts a new mock peer. If the ip
 // is nil, random routable address is used.
 func NewPeer(ip net.IP) *Peer {
-	var netAddr *na.NetAddress
+	var netAddr *na.Addr
 	if ip == nil {
 		_, netAddr = na.CreateRoutableAddr()
 	} else {
-		netAddr = na.NewNetAddressIPPort(ip, 26656)
+		netAddr = na.NewIPPort(ip, 26656)
 	}
 	nodeKey := nodekey.NodeKey{PrivKey: ed25519.GenPrivKey()}
 	netAddr.ID = nodeKey.ID()
@@ -77,9 +77,9 @@ func (mp *Peer) Get(key string) any {
 func (mp *Peer) Set(key string, value any) {
 	mp.kv[key] = value
 }
-func (mp *Peer) RemoteIP() net.IP           { return mp.ip }
-func (mp *Peer) SocketAddr() *na.NetAddress { return mp.addr }
-func (mp *Peer) RemoteAddr() net.Addr       { return &net.TCPAddr{IP: mp.ip, Port: 8800} }
-func (mp *Peer) Conn() net.Conn             { return mp.server }
-func (*Peer) SetRemovalFailed()             {}
-func (*Peer) GetRemovalFailed() bool        { return false }
+func (mp *Peer) RemoteIP() net.IP     { return mp.ip }
+func (mp *Peer) SocketAddr() *na.Addr { return mp.addr }
+func (mp *Peer) RemoteAddr() net.Addr { return &net.TCPAddr{IP: mp.ip, Port: 8800} }
+func (mp *Peer) Conn() net.Conn       { return mp.server }
+func (*Peer) SetRemovalFailed()       {}
+func (*Peer) GetRemovalFailed() bool  { return false }

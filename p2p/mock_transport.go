@@ -9,10 +9,10 @@ import (
 
 type mockTransport struct {
 	ln   net.Listener
-	addr na.NetAddress
+	addr na.Addr
 }
 
-func (t *mockTransport) Listen(addr na.NetAddress) error {
+func (t *mockTransport) Listen(addr na.Addr) error {
 	ln, err := net.Listen("tcp", addr.DialString())
 	if err != nil {
 		return err
@@ -22,16 +22,16 @@ func (t *mockTransport) Listen(addr na.NetAddress) error {
 	return nil
 }
 
-func (t *mockTransport) NetAddress() na.NetAddress {
+func (t *mockTransport) NetAddress() na.Addr {
 	return t.addr
 }
 
-func (t *mockTransport) Accept() (net.Conn, *na.NetAddress, error) {
+func (t *mockTransport) Accept() (net.Conn, *na.Addr, error) {
 	c, err := t.ln.Accept()
 	return c, nil, err
 }
 
-func (*mockTransport) Dial(addr na.NetAddress) (net.Conn, error) {
+func (*mockTransport) Dial(addr na.Addr) (net.Conn, error) {
 	return addr.DialTimeout(time.Second)
 }
 

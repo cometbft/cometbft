@@ -55,7 +55,7 @@ func initFilesWithConfig(config *cfg.Config) error {
 	if cmtos.FileExists(nodeKeyFile) {
 		logger.Info("Found node key", "path", nodeKeyFile)
 	} else {
-		if _, err := nodekey.LoadOrGenNodeKey(nodeKeyFile); err != nil {
+		if _, err := nodekey.LoadOrGen(nodeKeyFile); err != nil {
 			return err
 		}
 		logger.Info("Generated node key", "path", nodeKeyFile)

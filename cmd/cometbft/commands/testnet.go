@@ -252,7 +252,7 @@ func persistentPeersString(config *cfg.Config) (string, error) {
 	for i := 0; i < nValidators+nNonValidators; i++ {
 		nodeDir := filepath.Join(outputDir, fmt.Sprintf("%s%d", nodeDirPrefix, i))
 		config.SetRoot(nodeDir)
-		nk, err := nodekey.LoadNodeKey(config.NodeKeyFile())
+		nk, err := nodekey.Load(config.NodeKeyFile())
 		if err != nil {
 			return "", err
 		}

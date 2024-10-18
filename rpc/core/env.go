@@ -4,6 +4,9 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"time"
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
@@ -32,6 +35,8 @@ const (
 	// genesisChunkSize is the maximum size, in bytes, of each
 	// chunk in the genesis structure for the chunked API.
 	genesisChunkSize = 16 * 1024 * 1024 // 16
+
+	_chunksDirSuffix = "chunks"
 )
 
 // These interfaces are used by RPC and must be thread safe
@@ -245,4 +250,30 @@ func (env *Environment) latestUncommittedHeight() int64 {
 		return env.BlockStore.Height()
 	}
 	return env.BlockStore.Height() + 1
+}
+
+// deleteGenesisChunks deletes the directory storing the genesis file chunks on disk
+// if it exists. If the directory does not exist, the function is a no-op.
+// The chunks' directory is a sub-directory of the `config/` directory of the
+// running node.
+// We call the function:
+// - when creating the genesis file chunks, to make sure
+// - when a Node shuts down, to clean up the file system.
+func (env *Environment) deleteGenesisChunks() error {
+	gFileDir := filepath.Dir(env.GenesisFilePath)
+	chunksDir := filepath.Join(gFileDir, _chunksDirSuffix)
+
+	if _, err := os.Stat(chunksDir); errors.Is(err, fs.ErrNotExist) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("accessing path %q: %s", chunksDir, err)
+	}
+
+	// Directory exists, delete it
+	if err := os.RemoveAll(chunksDir); err != nil {
+		formatStr := "deleting pre-existing genesis chunks at %s: %s"
+		return fmt.Errorf(formatStr, chunksDir, err)
+	}
+
+	return nil
 }

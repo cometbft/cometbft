@@ -429,7 +429,7 @@ func (pool *BlockPool) isPeerBanned(peerID nodekey.ID) bool {
 }
 
 func (pool *BlockPool) banPeer(peerID nodekey.ID) {
-	pool.Logger.Debug("Banning peer", peerID)
+	pool.Logger.Debug("Banning peer", "id", peerID)
 	pool.bannedPeers[peerID] = cmttime.Now()
 }
 

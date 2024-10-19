@@ -4,37 +4,64 @@ import (
 	"net"
 	"time"
 
-	na "github.com/cometbft/cometbft/p2p/netaddr"
+	"github.com/cometbft/cometbft/p2p/abstract"
 )
 
-type mockTransport struct {
-	ln   net.Listener
-	addr na.NetAddr
+type mockStream struct {
+	net.Conn
 }
 
-func (t *mockTransport) Listen(addr na.NetAddr) error {
-	ln, err := net.Listen("tcp", addr.DialString())
-	if err != nil {
-		return err
+func (s mockStream) Read(b []byte) (n int, err error) {
+	return s.Conn.Read(b)
+}
+
+func (s mockStream) Write(b []byte) (n int, err error) {
+	return s.Conn.Write(b)
+}
+
+func (mockStream) Close() error {
+	return nil
+}
+func (s mockStream) SetDeadline(t time.Time) error      { return s.Conn.SetReadDeadline(t) }
+func (s mockStream) SetReadDeadline(t time.Time) error  { return s.Conn.SetReadDeadline(t) }
+func (s mockStream) SetWriteDeadline(t time.Time) error { return s.Conn.SetWriteDeadline(t) }
+
+type mockConnection struct {
+	net.Conn
+	connectedAt time.Time
+}
+
+func newMockConnection(c net.Conn) *mockConnection {
+	return &mockConnection{
+		Conn:        c,
+		connectedAt: time.Now(),
 	}
-	t.addr = addr
-	t.ln = ln
-	return nil
 }
 
-func (t *mockTransport) NetAddr() na.NetAddr {
-	return t.addr
+func (c mockConnection) OpenStream(byte, any) (abstract.Stream, error) {
+	return &mockStream{
+		Conn: c.Conn,
+	}, nil
 }
 
-func (t *mockTransport) Accept() (net.Conn, *na.NetAddr, error) {
-	c, err := t.ln.Accept()
-	return c, nil, err
+func (c mockConnection) LocalAddr() net.Addr {
+	return c.Conn.LocalAddr()
 }
 
-func (*mockTransport) Dial(addr na.NetAddr) (net.Conn, error) {
-	return addr.DialTimeout(time.Second)
+func (c mockConnection) RemoteAddr() net.Addr {
+	return c.Conn.RemoteAddr()
+}
+func (c mockConnection) Close(string) error         { return c.Conn.Close() }
+func (c mockConnection) FlushAndClose(string) error { return c.Conn.Close() }
+func (mockConnection) ErrorCh() <-chan error        { return nil }
+
+type mockStatus struct {
+	connectedFor time.Duration
 }
 
-func (*mockTransport) Cleanup(net.Conn) error {
-	return nil
+func (s mockStatus) ConnectedFor() time.Duration { return s.connectedFor }
+func (c mockConnection) ConnectionState() any {
+	return &mockStatus{
+		connectedFor: time.Since(c.connectedAt),
+	}
 }

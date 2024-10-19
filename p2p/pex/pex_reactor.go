@@ -12,6 +12,7 @@ import (
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/abstract"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
@@ -168,9 +169,9 @@ func (r *Reactor) Stop() error {
 }
 
 // StreamDescriptors implements Reactor.
-func (*Reactor) StreamDescriptors() []p2p.StreamDescriptor {
-	return []p2p.StreamDescriptor{
-		&tcpconn.ChannelDescriptor{
+func (*Reactor) StreamDescriptors() []abstract.StreamDescriptor {
+	return []abstract.StreamDescriptor{
+		tcpconn.ChannelDescriptor{
 			ID:                  PexChannel,
 			Priority:            1,
 			SendQueueCapacity:   10,
@@ -730,10 +731,16 @@ func (r *Reactor) cleanupCrawlPeerInfos() {
 	}
 }
 
+// Connection status interface for peers.
+type durationStatus interface {
+	ConnectedFor() time.Duration
+}
+
 // attemptDisconnects checks if we've been with each peer long enough to disconnect.
 func (r *Reactor) attemptDisconnects() {
 	for _, peer := range r.Switch.Peers().Copy() {
-		if peer.Status().Duration < r.config.SeedDisconnectWaitPeriod {
+		status := peer.Status().(durationStatus)
+		if status.ConnectedFor() < r.config.SeedDisconnectWaitPeriod {
 			continue
 		}
 		if peer.IsPersistent() {

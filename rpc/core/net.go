@@ -11,6 +11,7 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
+	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/cometbft/cometbft/types"
@@ -34,7 +35,7 @@ func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error
 		peers = append(peers, ctypes.Peer{
 			NodeInfo:         nodeInfo,
 			IsOutbound:       peer.IsOutbound(),
-			ConnectionStatus: peer.Status(),
+			ConnectionStatus: peer.Status().(tcpconn.ConnectionStatus),
 			RemoteIP:         peer.RemoteIP().String(),
 		})
 	})

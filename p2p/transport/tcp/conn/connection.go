@@ -9,6 +9,7 @@ import (
 	"net"
 	"reflect"
 	"runtime/debug"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -21,7 +22,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/libs/service"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/p2p/abstract"
 )
 
 const (
@@ -40,41 +41,30 @@ const (
 	defaultSendQueueCapacity = 1
 	defaultSendRate          = int64(512000) // 500KB/s
 	defaultRecvRate          = int64(512000) // 500KB/s
-	defaultSendTimeout       = 10 * time.Second
 	defaultPingInterval      = 60 * time.Second
 	defaultPongTimeout       = 45 * time.Second
+
+	// Capacity of the receive channel for each stream.
+	maxRecvChanCap = 1000
 )
 
-type (
-	receiveCbFunc func(chID byte, msgBytes []byte)
-	errorCbFunc   func(any)
-)
-
-/*
-Each peer has one `MConnection` (multiplex connection) instance.
-
-__multiplex__ *noun* a system or signal involving simultaneous transmission of
-several messages along a single channel of communication.
-
-Each `MConnection` handles message transmission on multiple abstract communication
-`Channel`s.  Each channel has a globally unique byte id.
-The byte id and the relative priorities of each `Channel` are configured upon
-initialization of the connection.
-
-There are two methods for sending messages:
-
-	func (m MConnection) Send(chID byte, msgBytes []byte) bool {}
-	func (m MConnection) TrySend(chID byte, msgBytes []byte}) bool {}
-
-`Send(chID, msgBytes)` is a blocking call that waits until `msg` is
-successfully queued for the channel with the given id byte `chID`, or until the
-request times out.  The message `msg` is serialized using Protobuf.
-
-`TrySend(chID, msgBytes)` is a nonblocking call that returns false if the
-channel's queue is full.
-
-Inbound message bytes are handled with an onReceive callback function.
-*/
+// MConnection is a multiplexed connection.
+//
+// __multiplex__ *noun* a system or signal involving simultaneous transmission
+// of several messages along a single channel of communication.
+//
+// Each connection handles message transmission on multiple abstract
+// communication streams. Each stream has a globally unique byte id. The byte
+// id and the relative priorities of each stream are configured upon
+// initialization of the connection.
+//
+// To open a stream, call OpenStream with the stream id. Remember that the
+// stream id must be globally unique.
+//
+// Connection errors are communicated through the ErrorCh channel.
+//
+// Connection can be closed either by calling Close. If you need to flush all
+// pending messages before closing the connection, call FlushAndClose.
 type MConnection struct {
 	service.BaseService
 
@@ -85,11 +75,7 @@ type MConnection struct {
 	recvMonitor   *flow.Monitor
 	send          chan struct{}
 	pong          chan struct{}
-	channels      []*Channel
-	channelsIdx   map[byte]*Channel
-	onReceive     receiveCbFunc
-	onError       errorCbFunc
-	errored       uint32
+	errorCh       chan error
 	config        MConnConfig
 
 	// Closing quitSendRoutine will cause the sendRoutine to eventually quit.
@@ -99,10 +85,6 @@ type MConnection struct {
 
 	// Closing quitRecvRouting will cause the recvRouting to eventually quit.
 	quitRecvRoutine chan struct{}
-
-	// used to ensure FlushStop and OnStop
-	// are safe to call concurrently.
-	stopMtx cmtsync.Mutex
 
 	flushTimer *timer.ThrottleTimer // flush writes as necessary but throttled.
 	pingTimer  *time.Ticker         // send pings periodically
@@ -116,7 +98,15 @@ type MConnection struct {
 	created time.Time // time of creation
 
 	_maxPacketMsgSize int
+
+	mtx sync.RWMutex
+	// streamID -> list of incoming messages
+	recvMsgsByStreamID map[byte]chan []byte
+	// streamID -> channel
+	channelsIdx map[byte]*Channel
 }
+
+var _ abstract.Connection = (*MConnection)(nil)
 
 // MConnConfig is a MConnection configuration.
 type MConnConfig struct {
@@ -153,57 +143,25 @@ func DefaultMConnConfig() MConnConfig {
 }
 
 // NewMConnection wraps net.Conn and creates multiplex connection.
-func NewMConnection(
-	conn net.Conn,
-	chDescs []*ChannelDescriptor,
-	onReceive receiveCbFunc,
-	onError errorCbFunc,
-) *MConnection {
-	return NewMConnectionWithConfig(
-		conn,
-		chDescs,
-		onReceive,
-		onError,
-		DefaultMConnConfig())
-}
-
-// NewMConnectionWithConfig wraps net.Conn and creates multiplex connection with a config.
-func NewMConnectionWithConfig(
-	conn net.Conn,
-	chDescs []*ChannelDescriptor,
-	onReceive receiveCbFunc,
-	onError errorCbFunc,
-	config MConnConfig,
-) *MConnection {
+func NewMConnection(conn net.Conn, config MConnConfig) *MConnection {
 	if config.PongTimeout >= config.PingInterval {
 		panic("pongTimeout must be less than pingInterval (otherwise, next ping will reset pong timer)")
 	}
 
 	mconn := &MConnection{
-		conn:          conn,
-		bufConnReader: bufio.NewReaderSize(conn, minReadBufferSize),
-		bufConnWriter: bufio.NewWriterSize(conn, minWriteBufferSize),
-		sendMonitor:   flow.New(0, 0),
-		recvMonitor:   flow.New(0, 0),
-		send:          make(chan struct{}, 1),
-		pong:          make(chan struct{}, 1),
-		onReceive:     onReceive,
-		onError:       onError,
-		config:        config,
-		created:       time.Now(),
+		conn:               conn,
+		bufConnReader:      bufio.NewReaderSize(conn, minReadBufferSize),
+		bufConnWriter:      bufio.NewWriterSize(conn, minWriteBufferSize),
+		sendMonitor:        flow.New(0, 0),
+		recvMonitor:        flow.New(0, 0),
+		send:               make(chan struct{}, 1),
+		pong:               make(chan struct{}, 1),
+		errorCh:            make(chan error, 1),
+		config:             config,
+		created:            time.Now(),
+		recvMsgsByStreamID: make(map[byte]chan []byte),
+		channelsIdx:        make(map[byte]*Channel),
 	}
-
-	// Create channels
-	channelsIdx := map[byte]*Channel{}
-	channels := []*Channel{}
-
-	for _, desc := range chDescs {
-		channel := newChannel(mconn, *desc)
-		channelsIdx[channel.desc.ID] = channel
-		channels = append(channels, channel)
-	}
-	mconn.channels = channels
-	mconn.channelsIdx = channelsIdx
 
 	mconn.BaseService = *service.NewBaseService(nil, "MConnection", mconn)
 
@@ -215,9 +173,6 @@ func NewMConnectionWithConfig(
 
 func (c *MConnection) SetLogger(l log.Logger) {
 	c.BaseService.SetLogger(l)
-	for _, ch := range c.channels {
-		ch.SetLogger(l)
-	}
 }
 
 // OnStart implements BaseService.
@@ -237,13 +192,13 @@ func (c *MConnection) OnStart() error {
 	return nil
 }
 
+func (c *MConnection) Conn() net.Conn {
+	return c.conn
+}
+
 // stopServices stops the BaseService and timers and closes the quitSendRoutine.
 // if the quitSendRoutine was already closed, it returns true, otherwise it returns false.
-// It uses the stopMtx to ensure only one of FlushStop and OnStop can do this at a time.
 func (c *MConnection) stopServices() (alreadyStopped bool) {
-	c.stopMtx.Lock()
-	defer c.stopMtx.Unlock()
-
 	select {
 	case <-c.quitSendRoutine:
 		// already quit
@@ -258,7 +213,6 @@ func (c *MConnection) stopServices() (alreadyStopped bool) {
 	default:
 	}
 
-	c.BaseService.OnStop()
 	c.flushTimer.Stop()
 	c.pingTimer.Stop()
 	c.chStatsTimer.Stop()
@@ -269,153 +223,175 @@ func (c *MConnection) stopServices() (alreadyStopped bool) {
 	return false
 }
 
-// FlushStop replicates the logic of OnStop.
-// It additionally ensures that all successful
-// .Send() calls will get flushed before closing
-// the connection.
-func (c *MConnection) FlushStop() {
-	if c.stopServices() {
-		return
+// ErrorCh returns a channel that will receive errors from the connection.
+func (c *MConnection) ErrorCh() <-chan error {
+	return c.errorCh
+}
+
+func (c *MConnection) LocalAddr() net.Addr {
+	return c.conn.LocalAddr()
+}
+
+func (c *MConnection) RemoteAddr() net.Addr {
+	return c.conn.RemoteAddr()
+}
+
+func (c *MConnection) OpenStream(streamID byte, desc any) (abstract.Stream, error) {
+	c.mtx.Lock()
+	if _, ok := c.channelsIdx[streamID]; ok {
+		c.mtx.Unlock()
+		return nil, fmt.Errorf("stream %X already exists", streamID)
 	}
 
-	// this block is unique to FlushStop
+	d := ChannelDescriptor{
+		ID:       streamID,
+		Priority: 1,
+	}
+	if desc, ok := desc.(ChannelDescriptor); ok {
+		d = desc
+	}
+	c.channelsIdx[streamID] = newChannel(c, d)
+	c.channelsIdx[streamID].SetLogger(c.Logger.With("streamID", streamID))
+
+	c.recvMsgsByStreamID[streamID] = make(chan []byte, maxRecvChanCap)
+	c.mtx.Unlock()
+
+	return &MConnectionStream{conn: c, streadID: streamID}, nil
+}
+
+// Close closes the connection. It flushes all pending writes before closing.
+func (c *MConnection) Close(reason string) error {
+	if err := c.Stop(); err != nil {
+		return err
+	}
+
+	if c.stopServices() {
+		return nil
+	}
+
+	// inform the error channel that we are shutting down.
+	select {
+	case c.errorCh <- errors.New(reason):
+	default:
+	}
+
+	return c.conn.Close()
+}
+
+func (c *MConnection) FlushAndClose(reason string) error {
+	if err := c.Stop(); err != nil {
+		return err
+	}
+
+	if c.stopServices() {
+		return nil
+	}
+
+	// inform the error channel that we are shutting down.
+	select {
+	case c.errorCh <- errors.New(reason):
+	default:
+	}
+
+	// flush all pending writes
 	{
 		// wait until the sendRoutine exits
 		// so we dont race on calling sendSomePacketMsgs
 		<-c.doneSendRoutine
-
 		// Send and flush all pending msgs.
 		// Since sendRoutine has exited, we can call this
 		// safely
 		w := protoio.NewDelimitedWriter(c.bufConnWriter)
-		eof := c.sendSomePacketMsgs(w)
+		eof := c.sendBatchPacketMsgs(w, numBatchPacketMsgs)
 		for !eof {
-			eof = c.sendSomePacketMsgs(w)
+			eof = c.sendBatchPacketMsgs(w, numBatchPacketMsgs)
 		}
-		c.flush()
-
-		// Now we can close the connection
+		_ = c.flush()
 	}
 
-	c.conn.Close()
-
-	// We can't close pong safely here because
-	// recvRoutine may write to it after we've stopped.
-	// Though it doesn't need to get closed at all,
-	// we close it @ recvRoutine.
-
-	// c.Stop()
+	return c.conn.Close()
 }
 
-// OnStop implements BaseService.
-func (c *MConnection) OnStop() {
-	if c.stopServices() {
-		return
+func (c *MConnection) ConnectionState() any {
+	var status ConnectionStatus
+	status.Duration = time.Since(c.created)
+	status.SendMonitor = c.sendMonitor.Status()
+	status.RecvMonitor = c.recvMonitor.Status()
+	c.mtx.RLock()
+	status.Channels = make([]ChannelStatus, len(c.channelsIdx))
+	i := 0
+	for _, channel := range c.channelsIdx {
+		status.Channels[i] = ChannelStatus{
+			ID:                channel.desc.ID,
+			SendQueueCapacity: cap(channel.sendQueue),
+			SendQueueSize:     int(atomic.LoadInt32(&channel.sendQueueSize)),
+			Priority:          channel.desc.Priority,
+			RecentlySent:      atomic.LoadInt64(&channel.recentlySent),
+		}
+		i++
 	}
-
-	c.conn.Close()
-
-	// We can't close pong safely here because
-	// recvRoutine may write to it after we've stopped.
-	// Though it doesn't need to get closed at all,
-	// we close it @ recvRoutine.
+	c.mtx.RUnlock()
+	return status
 }
 
 func (c *MConnection) String() string {
 	return fmt.Sprintf("MConn{%v}", c.conn.RemoteAddr())
 }
 
-func (c *MConnection) flush() {
-	c.Logger.Debug("Flush", "conn", c)
-	err := c.bufConnWriter.Flush()
-	if err != nil {
-		c.Logger.Debug("MConnection flush failed", "err", err)
-	}
+func (c *MConnection) flush() error {
+	return c.bufConnWriter.Flush()
 }
 
 // Catch panics, usually caused by remote disconnects.
 func (c *MConnection) _recover() {
 	if r := recover(); r != nil {
 		c.Logger.Error("MConnection panicked", "err", r, "stack", string(debug.Stack()))
-		c.stopForError(fmt.Errorf("recovered from panic: %v", r))
+		c.Close(fmt.Sprintf("recovered from panic: %v", r))
 	}
 }
 
-func (c *MConnection) stopForError(r any) {
-	if err := c.Stop(); err != nil {
-		c.Logger.Error("Error stopping connection", "err", err)
-	}
-	if atomic.CompareAndSwapUint32(&c.errored, 0, 1) {
-		if c.onError != nil {
-			c.onError(r)
-		}
-	}
-}
-
-// Queues a message to be sent to channel.
-func (c *MConnection) Send(chID byte, msgBytes []byte) bool {
+// thread-safe.
+func (c *MConnection) sendBytes(chID byte, msgBytes []byte, timeout time.Duration) error {
 	if !c.IsRunning() {
-		return false
+		return ErrNotRunning
 	}
 
-	c.Logger.Debug("Send", "channel", chID, "conn", c, "msgBytes", log.NewLazySprintf("%X", msgBytes))
+	// c.Logger.Debug("Send",
+	// 	"streamID", chID,
+	// 	"msgBytes", log.NewLazySprintf("%X", msgBytes),
+	// 	"timeout", timeout)
 
-	// Send message to channel.
+	c.mtx.RLock()
 	channel, ok := c.channelsIdx[chID]
+	c.mtx.RUnlock()
 	if !ok {
-		c.Logger.Error(fmt.Sprintf("Cannot send bytes, unknown channel %X", chID))
-		return false
+		panic(fmt.Sprintf("Unknown channel %X. Forgot to register?", chID))
+	}
+	if err := channel.sendBytes(msgBytes, timeout); err != nil {
+		c.Logger.Error("Send failed", "err", err)
+		return err
 	}
 
-	success := channel.sendBytes(msgBytes)
-	if success {
-		// Wake up sendRoutine if necessary
-		select {
-		case c.send <- struct{}{}:
-		default:
-		}
-	} else {
-		c.Logger.Debug("Send failed", "channel", chID, "conn", c, "msgBytes", log.NewLazySprintf("%X", msgBytes))
+	// Wake up sendRoutine if necessary
+	select {
+	case c.send <- struct{}{}:
+	default:
 	}
-	return success
-}
-
-// Queues a message to be sent to channel.
-// Nonblocking, returns true if successful.
-func (c *MConnection) TrySend(chID byte, msgBytes []byte) bool {
-	if !c.IsRunning() {
-		return false
-	}
-
-	c.Logger.Debug("TrySend", "channel", chID, "conn", c, "msgBytes", log.NewLazySprintf("%X", msgBytes))
-
-	// Send message to channel.
-	channel, ok := c.channelsIdx[chID]
-	if !ok {
-		c.Logger.Error(fmt.Sprintf("Cannot send bytes, unknown channel %X", chID))
-		return false
-	}
-
-	ok = channel.trySendBytes(msgBytes)
-	if ok {
-		// Wake up sendRoutine if necessary
-		select {
-		case c.send <- struct{}{}:
-		default:
-		}
-	}
-
-	return ok
+	return nil
 }
 
 // CanSend returns true if you can send more data onto the chID, false
 // otherwise. Use only as a heuristic.
+//
+// thread-safe.
 func (c *MConnection) CanSend(chID byte) bool {
 	if !c.IsRunning() {
 		return false
 	}
 
+	c.mtx.RLock()
 	channel, ok := c.channelsIdx[chID]
+	c.mtx.RUnlock()
 	if !ok {
 		c.Logger.Error(fmt.Sprintf("Unknown channel %X", chID))
 		return false
@@ -438,11 +414,15 @@ FOR_LOOP:
 		case <-c.flushTimer.Ch:
 			// NOTE: flushTimer.Set() must be called every time
 			// something is written to .bufConnWriter.
-			c.flush()
+			if fErr := c.flush(); fErr != nil {
+				c.Logger.Error("Failed to flush", "err", fErr)
+			}
 		case <-c.chStatsTimer.C:
-			for _, channel := range c.channels {
+			c.mtx.RLock()
+			for _, channel := range c.channelsIdx {
 				channel.updateStats()
 			}
+			c.mtx.RUnlock()
 		case <-c.pingTimer.C:
 			c.Logger.Debug("Send Ping")
 			_n, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPing{}))
@@ -458,7 +438,9 @@ FOR_LOOP:
 				default:
 				}
 			})
-			c.flush()
+			if fErr := c.flush(); fErr != nil {
+				c.Logger.Error("Failed to flush", "err", fErr)
+			}
 		case timeout := <-c.pongTimeoutCh:
 			if timeout {
 				c.Logger.Debug("Pong timeout")
@@ -474,7 +456,9 @@ FOR_LOOP:
 				break SELECTION
 			}
 			c.sendMonitor.Update(_n)
-			c.flush()
+			if fErr := c.flush(); fErr != nil {
+				c.Logger.Error("Failed to flush", "err", fErr)
+			}
 		case <-c.quitSendRoutine:
 			break FOR_LOOP
 		case <-c.send:
@@ -493,8 +477,8 @@ FOR_LOOP:
 			break FOR_LOOP
 		}
 		if err != nil {
-			c.Logger.Error("Connection failed @ sendRoutine", "conn", c, "err", err)
-			c.stopForError(err)
+			c.Logger.Error("Connection failed @ sendRoutine", "err", err)
+			c.Close(err.Error())
 			break FOR_LOOP
 		}
 	}
@@ -526,7 +510,7 @@ func (c *MConnection) sendBatchPacketMsgs(w protoio.Writer, batchSize int) bool 
 		}
 	}()
 	for i := 0; i < batchSize; i++ {
-		channel := selectChannelToGossipOn(c.channels)
+		channel := c.selectChannelToGossipOn()
 		// nothing to send across any channel.
 		if channel == nil {
 			return true
@@ -544,12 +528,15 @@ func (c *MConnection) sendBatchPacketMsgs(w protoio.Writer, batchSize int) bool 
 // TODO: Make "batchChannelToGossipOn", so we can do our proto marshaling overheads in parallel,
 // and we can avoid re-checking for `isSendPending`.
 // We can easily mock the recentlySent differences for the batch choosing.
-func selectChannelToGossipOn(channels []*Channel) *Channel {
+func (c *MConnection) selectChannelToGossipOn() *Channel {
+	c.mtx.RLock()
+	defer c.mtx.RUnlock()
+
 	// Choose a channel to create a PacketMsg from.
 	// The chosen channel will be the one whose recentlySent/priority is the least.
 	var leastRatio float32 = math.MaxFloat32
 	var leastChannel *Channel
-	for _, channel := range channels {
+	for _, channel := range c.channelsIdx {
 		// If nothing to send, skip this channel
 		// TODO: Skip continually looking for isSendPending on channels we've already skipped in this batch-send.
 		if !channel.isSendPending() {
@@ -573,7 +560,7 @@ func (c *MConnection) sendPacketMsgOnChannel(w protoio.Writer, sendChannel *Chan
 	n, err := sendChannel.writePacketMsgTo(w)
 	if err != nil {
 		c.Logger.Error("Failed to write PacketMsg", "err", err)
-		c.stopForError(err)
+		c.Close(err.Error())
 		return n, true
 	}
 	// TODO: Change this to only add flush signals at the start and end of the batch.
@@ -581,10 +568,10 @@ func (c *MConnection) sendPacketMsgOnChannel(w protoio.Writer, sendChannel *Chan
 	return n, false
 }
 
-// recvRoutine reads PacketMsgs and reconstructs the message using the channels' "recving" buffer.
-// After a whole message has been assembled, it's pushed to onReceive().
-// Blocks depending on how the connection is throttled.
-// Otherwise, it never blocks.
+// recvRoutine reads PacketMsgs and reconstructs the message using the
+// channels' "recving" buffer. After a whole message has been assembled, it's
+// pushed to an internal queue, which is accessible via Read. Blocks depending
+// on how the connection is throttled. Otherwise, it never blocks.
 func (c *MConnection) recvRoutine() {
 	defer c._recover()
 
@@ -625,11 +612,11 @@ FOR_LOOP:
 
 			if c.IsRunning() {
 				if errors.Is(err, io.EOF) {
-					c.Logger.Info("Connection is closed @ recvRoutine (likely by the other side)", "conn", c)
+					c.Logger.Info("Connection is closed @ recvRoutine (likely by the other side)")
 				} else {
-					c.Logger.Debug("Connection failed @ recvRoutine (reading byte)", "conn", c, "err", err)
+					c.Logger.Debug("Connection failed @ recvRoutine (reading byte)", "err", err)
 				}
-				c.stopForError(err)
+				c.Close(err.Error())
 			}
 			break FOR_LOOP
 		}
@@ -654,37 +641,64 @@ FOR_LOOP:
 			}
 		case *tmp2p.Packet_PacketMsg:
 			channelID := byte(pkt.PacketMsg.ChannelID)
+			c.mtx.RLock()
 			channel, ok := c.channelsIdx[channelID]
+			c.mtx.RUnlock()
 			if pkt.PacketMsg.ChannelID < 0 || pkt.PacketMsg.ChannelID > math.MaxUint8 || !ok || channel == nil {
 				err := fmt.Errorf("unknown channel %X", pkt.PacketMsg.ChannelID)
-				c.Logger.Debug("Connection failed @ recvRoutine", "conn", c, "err", err)
-				c.stopForError(err)
+				c.Logger.Debug("Connection failed @ recvRoutine", "err", err)
+				c.Close(err.Error())
 				break FOR_LOOP
 			}
 
 			msgBytes, err := channel.recvPacketMsg(*pkt.PacketMsg)
 			if err != nil {
 				if c.IsRunning() {
-					c.Logger.Debug("Connection failed @ recvRoutine", "conn", c, "err", err)
-					c.stopForError(err)
+					c.Logger.Debug("Connection failed @ recvRoutine", "err", err)
+					c.Close(err.Error())
 				}
 				break FOR_LOOP
 			}
 			if msgBytes != nil {
-				c.Logger.Debug("Received bytes", "chID", channelID, "msgBytes", msgBytes)
-				// NOTE: This means the reactor.Receive runs in the same thread as the p2p recv routine
-				c.onReceive(channelID, msgBytes)
+				// c.Logger.Debug("Received", "streamID", channelID, "msgBytes", log.NewLazySprintf("%X", msgBytes))
+				if err := c.pushRecvMsg(channelID, msgBytes); err != nil {
+					c.Logger.Error("Failed to store msgBytes", "streamID", channelID,
+						"msgBytes", log.NewLazySprintf("%X", msgBytes), "err", err)
+				}
 			}
 		default:
 			err := fmt.Errorf("unknown message type %v", reflect.TypeOf(packet))
-			c.Logger.Error("Connection failed @ recvRoutine", "conn", c, "err", err)
-			c.stopForError(err)
+			c.Logger.Error("Connection failed @ recvRoutine", "err", err)
+			c.Close(err.Error())
 			break FOR_LOOP
 		}
 	}
 
 	// Cleanup
 	close(c.pong)
+}
+
+func (c *MConnection) pushRecvMsg(streamID byte, msgBytes []byte) error {
+	c.mtx.RLock()
+	ch, ok := c.recvMsgsByStreamID[streamID]
+	c.mtx.RUnlock()
+
+	// Init.
+	if !ok {
+		return fmt.Errorf("unknown stream %X", streamID)
+	}
+
+	// Make a copy to avoid a DATA RACE.
+	msgCopy := make([]byte, len(msgBytes))
+	copy(msgCopy, msgBytes)
+
+	// Push the message.
+	select {
+	case ch <- msgCopy:
+		return nil
+	default: // Drop the message if the buffer is full.
+		return fmt.Errorf("receive buffer is full for stream %X", streamID)
+	}
 }
 
 // not goroutine-safe.
@@ -706,39 +720,6 @@ func (c *MConnection) maxPacketMsgSize() int {
 		panic(err)
 	}
 	return len(bz)
-}
-
-type ConnectionStatus struct {
-	Duration    time.Duration
-	SendMonitor flow.Status
-	RecvMonitor flow.Status
-	Channels    []ChannelStatus
-}
-
-type ChannelStatus struct {
-	ID                byte
-	SendQueueCapacity int
-	SendQueueSize     int
-	Priority          int
-	RecentlySent      int64
-}
-
-func (c *MConnection) Status() ConnectionStatus {
-	var status ConnectionStatus
-	status.Duration = time.Since(c.created)
-	status.SendMonitor = c.sendMonitor.Status()
-	status.RecvMonitor = c.recvMonitor.Status()
-	status.Channels = make([]ChannelStatus, len(c.channels))
-	for i, channel := range c.channels {
-		status.Channels[i] = ChannelStatus{
-			ID:                channel.desc.ID,
-			SendQueueCapacity: cap(channel.sendQueue),
-			SendQueueSize:     int(atomic.LoadInt32(&channel.sendQueueSize)),
-			Priority:          channel.desc.Priority,
-			RecentlySent:      atomic.LoadInt64(&channel.recentlySent),
-		}
-	}
-	return status
 }
 
 // -----------------------------------------------------------------------------
@@ -786,27 +767,27 @@ func (ch *Channel) SetLogger(l log.Logger) {
 
 // Queues message to send to this channel.
 // Goroutine-safe
-// Times out (and returns false) after defaultSendTimeout.
-func (ch *Channel) sendBytes(bytes []byte) bool {
-	select {
-	case ch.sendQueue <- bytes:
-		atomic.AddInt32(&ch.sendQueueSize, 1)
-		return true
-	case <-time.After(defaultSendTimeout):
-		return false
+// It returns ErrTimeout if bytes were not queued after timeout.
+// If timeout is zero, it will wait forever.
+func (ch *Channel) sendBytes(bytes []byte, timeout time.Duration) error {
+	if timeout == 0 {
+		select {
+		case ch.sendQueue <- bytes:
+			atomic.AddInt32(&ch.sendQueueSize, 1)
+			return nil
+		case <-ch.conn.Quit():
+			return ErrNotRunning
+		}
 	}
-}
 
-// Queues message to send to this channel.
-// Nonblocking, returns true if successful.
-// Goroutine-safe.
-func (ch *Channel) trySendBytes(bytes []byte) bool {
 	select {
 	case ch.sendQueue <- bytes:
 		atomic.AddInt32(&ch.sendQueueSize, 1)
-		return true
-	default:
-		return false
+		return nil
+	case <-ch.conn.Quit():
+		return ErrNotRunning
+	case <-time.After(timeout):
+		return ErrTimeout
 	}
 }
 
@@ -870,7 +851,6 @@ func (ch *Channel) writePacketMsgTo(w protoio.Writer) (n int, err error) {
 // complete. NOTE message bytes may change on next call to recvPacketMsg.
 // Not goroutine-safe.
 func (ch *Channel) recvPacketMsg(packet tmp2p.PacketMsg) ([]byte, error) {
-	ch.Logger.Debug("Read PacketMsg", "conn", ch.conn, "packet", packet)
 	recvCap, recvReceived := ch.desc.RecvMessageCapacity, len(ch.recving)+len(packet.Data)
 	if recvCap < recvReceived {
 		return nil, ErrPacketTooBig{Max: recvCap, Received: recvReceived}

@@ -9,16 +9,32 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtnet "github.com/cometbft/cometbft/internal/net"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/p2p/internal/fuzz"
+	"github.com/cometbft/cometbft/p2p/abstract"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
-	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
+	"github.com/cometbft/cometbft/p2p/transport/tcp"
+	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
 
-const testCh = 0x01
-
 // ------------------------------------------------
+
+type nopStream struct{}
+
+func (nopStream) Read([]byte) (n int, err error) {
+	return 0, nil
+}
+
+func (nopStream) Write(b []byte) (n int, err error) {
+	return len(b), nil
+}
+
+func (nopStream) Close() error {
+	return nil
+}
+func (nopStream) SetDeadline(time.Time) error      { return nil }
+func (nopStream) SetReadDeadline(time.Time) error  { return nil }
+func (nopStream) SetWriteDeadline(time.Time) error { return nil }
 
 func AddPeerToSwitchPeerSet(sw *Switch, peer Peer) {
 	sw.peers.Add(peer) //nolint:errcheck // ignore error
@@ -32,9 +48,11 @@ func CreateRandomPeer(outbound bool) Peer {
 			socketAddr: netAddr,
 		},
 		nodeInfo: mockNodeInfo{netAddr},
-		mconn:    &conn.MConnection{},
 		metrics:  NopMetrics(),
+		streams:  make(map[byte]abstract.Stream),
 	}
+	// PEX
+	p.streams[0x00] = &nopStream{}
 	p.SetLogger(log.TestingLogger().With("peer", addr))
 	return p
 }
@@ -96,18 +114,30 @@ func Connect2Switches(switches []*Switch, i, j int) {
 	switchI := switches[i]
 	switchJ := switches[j]
 
-	c1, c2 := conn.NetPipe()
+	c1, c2 := net.Pipe()
 
 	doneCh := make(chan struct{})
 	go func() {
-		err := switchI.addPeerWithConnection(c1)
+		mconn := tcpconn.NewMConnection(c1, tcpconn.DefaultMConnConfig())
+		mconn.SetLogger(log.TestingLogger().With("mconn", i))
+		err := mconn.Start()
+		if err != nil {
+			panic(err)
+		}
+		err = switchI.addPeerWithConnection(mconn)
 		if err != nil {
 			panic(err)
 		}
 		doneCh <- struct{}{}
 	}()
 	go func() {
-		err := switchJ.addPeerWithConnection(c2)
+		mconn := tcpconn.NewMConnection(c2, tcpconn.DefaultMConnConfig())
+		mconn.SetLogger(log.TestingLogger().With("mconn", j))
+		err := mconn.Start()
+		if err != nil {
+			panic(err)
+		}
+		err = switchJ.addPeerWithConnection(mconn)
 		if err != nil {
 			panic(err)
 		}
@@ -129,18 +159,30 @@ func ConnectStarSwitches(c int) func([]*Switch, int, int) {
 		switchI := switches[i]
 		switchJ := switches[j]
 
-		c1, c2 := conn.NetPipe()
+		c1, c2 := net.Pipe()
 
 		doneCh := make(chan struct{})
 		go func() {
-			err := switchI.addPeerWithConnection(c1)
+			mconn := tcpconn.NewMConnection(c1, tcpconn.DefaultMConnConfig())
+			mconn.SetLogger(log.TestingLogger().With("mconn", i))
+			err := mconn.Start()
+			if err != nil {
+				panic(err)
+			}
+			err = switchI.addPeerWithConnection(mconn)
 			if err != nil {
 				panic(err)
 			}
 			doneCh <- struct{}{}
 		}()
 		go func() {
-			err := switchJ.addPeerWithConnection(c2)
+			mconn := tcpconn.NewMConnection(c2, tcpconn.DefaultMConnConfig())
+			mconn.SetLogger(log.TestingLogger().With("mconn", j))
+			err := mconn.Start()
+			if err != nil {
+				panic(err)
+			}
+			err = switchJ.addPeerWithConnection(mconn)
 			if err != nil {
 				panic(err)
 			}
@@ -151,37 +193,42 @@ func ConnectStarSwitches(c int) func([]*Switch, int, int) {
 	}
 }
 
-func (sw *Switch) addPeerWithConnection(conn net.Conn) error {
-	pc, err := testInboundPeerConn(conn, sw.config)
-	if err != nil {
-		if err := conn.Close(); err != nil {
-			sw.Logger.Error("Error closing connection", "err", err)
+func (sw *Switch) addPeerWithConnection(conn abstract.Connection) error {
+	closeConn := func(err error) {
+		if cErr := conn.Close(err.Error()); cErr != nil {
+			sw.Logger.Error("Error closing connection", "err", cErr)
 		}
+	}
+
+	stream, err := conn.OpenStream(HandshakeStreamID, nil)
+	if err != nil {
+		closeConn(err)
+		return err
+	}
+	defer stream.Close()
+
+	ni, err := handshake(sw.nodeInfo, stream, time.Second)
+	if err != nil {
+		closeConn(err)
 		return err
 	}
 
-	ni, err := handshake(sw.nodeInfo, conn, time.Second)
+	addr, _ := ni.NetAddr()
+	pc, err := testInboundPeerConn(conn, addr)
 	if err != nil {
-		if cErr := conn.Close(); cErr != nil {
-			sw.Logger.Error("Error closing connection", "err", cErr)
-		}
+		closeConn(err)
 		return err
 	}
 
 	p := newPeer(
 		pc,
-		MConnConfig(sw.config),
 		ni,
-		sw.reactorsByCh,
-		sw.msgTypeByChID,
-		sw.streamDescs,
+		sw.streamInfoByStreamID,
 		sw.StopPeerForError,
 	)
 
 	if err = sw.addPeer(p); err != nil {
-		if cErr := conn.Close(); cErr != nil {
-			sw.Logger.Error("Error closing connection", "err", cErr)
-		}
+		closeConn(err)
 		return err
 	}
 
@@ -217,7 +264,8 @@ func MakeSwitch(
 		panic(err)
 	}
 
-	t := &mockTransport{}
+	mConfig := tcpconn.DefaultMConnConfig()
+	t := tcp.NewMultiplexTransport(nk, mConfig)
 
 	if err := t.Listen(*addr); err != nil {
 		panic(err)
@@ -229,8 +277,8 @@ func MakeSwitch(
 	sw.SetNodeKey(&nk)
 
 	// reset channels
-	for ch := range sw.reactorsByCh {
-		if ch != testCh {
+	for ch := range sw.streamInfoByStreamID {
+		if ch != 0x01 {
 			nodeInfo.Channels = append(nodeInfo.Channels, ch)
 		}
 	}
@@ -241,29 +289,17 @@ func MakeSwitch(
 }
 
 func testInboundPeerConn(
-	conn net.Conn,
-	config *config.P2PConfig,
-	// ourNodePrivKey crypto.PrivKey,
+	conn abstract.Connection,
+	socketAddr *na.NetAddr,
 ) (peerConn, error) {
-	return testPeerConn(conn, config, false, false, nil)
+	return testPeerConn(conn, false, false, socketAddr)
 }
 
 func testPeerConn(
-	rawConn net.Conn,
-	cfg *config.P2PConfig,
+	conn abstract.Connection,
 	outbound, persistent bool,
-	// _ourNodePrivKey crypto.PrivKey,
 	socketAddr *na.NetAddr,
 ) (pc peerConn, err error) {
-	conn := rawConn
-
-	// Fuzz connection
-	if cfg.TestFuzz {
-		// so we have time to do peer handshakes and get set up
-		conn = fuzz.ConnAfterFromConfig(conn, 10*time.Second, cfg.TestFuzzConfig)
-	}
-
-	// Only the information we already have
 	return newPeerConn(outbound, persistent, conn, socketAddr), nil
 }
 
@@ -324,7 +360,7 @@ func testNodeInfo(id nodekey.ID, name string) ni.Default {
 		ListenAddr:      fmt.Sprintf("127.0.0.1:%d", getFreePort()),
 		Network:         "testing",
 		Version:         "1.2.3-rc0-deadbeef",
-		Channels:        []byte{testCh},
+		Channels:        []byte{0x01},
 		Moniker:         name,
 		Other: ni.DefaultOther{
 			TxIndex:    "on",

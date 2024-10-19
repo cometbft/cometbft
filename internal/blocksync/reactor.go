@@ -10,6 +10,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/abstract"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	sm "github.com/cometbft/cometbft/state"
@@ -174,9 +175,9 @@ func (bcR *Reactor) OnStop() {
 }
 
 // StreamDescriptors implements Reactor.
-func (*Reactor) StreamDescriptors() []p2p.StreamDescriptor {
-	return []p2p.StreamDescriptor{
-		&tcpconn.ChannelDescriptor{
+func (*Reactor) StreamDescriptors() []abstract.StreamDescriptor {
+	return []abstract.StreamDescriptor{
+		tcpconn.ChannelDescriptor{
 			ID:                  BlocksyncChannel,
 			Priority:            5,
 			SendQueueCapacity:   1000,

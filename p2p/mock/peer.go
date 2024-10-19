@@ -63,10 +63,10 @@ func (mp *Peer) NodeInfo() ni.NodeInfo {
 		ListenAddr:    mp.addr.DialString(),
 	}
 }
-func (*Peer) Status() conn.ConnectionStatus { return conn.ConnectionStatus{} }
-func (mp *Peer) ID() nodekey.ID             { return mp.id }
-func (mp *Peer) IsOutbound() bool           { return mp.Outbound }
-func (mp *Peer) IsPersistent() bool         { return mp.Persistent }
+func (*Peer) Status() any           { return conn.ConnectionStatus{} }
+func (mp *Peer) ID() nodekey.ID     { return mp.id }
+func (mp *Peer) IsOutbound() bool   { return mp.Outbound }
+func (mp *Peer) IsPersistent() bool { return mp.Persistent }
 func (mp *Peer) Get(key string) any {
 	if value, ok := mp.kv[key]; ok {
 		return value
@@ -80,6 +80,5 @@ func (mp *Peer) Set(key string, value any) {
 func (mp *Peer) RemoteIP() net.IP        { return mp.ip }
 func (mp *Peer) SocketAddr() *na.NetAddr { return mp.addr }
 func (mp *Peer) RemoteAddr() net.Addr    { return &net.TCPAddr{IP: mp.ip, Port: 8800} }
-func (mp *Peer) Conn() net.Conn          { return mp.server }
 func (*Peer) SetRemovalFailed()          {}
 func (*Peer) GetRemovalFailed() bool     { return false }

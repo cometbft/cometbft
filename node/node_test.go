@@ -32,6 +32,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/abstract"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
@@ -478,8 +479,8 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 
 	cr := p2pmock.NewReactor()
-	cr.Channels = []p2p.StreamDescriptor{
-		&conn.ChannelDescriptor{
+	cr.Channels = []abstract.StreamDescriptor{
+		conn.ChannelDescriptor{
 			ID:                  byte(0x31),
 			Priority:            5,
 			SendQueueCapacity:   100,

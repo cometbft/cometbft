@@ -339,3 +339,16 @@ func mkChunksDir(gFilePath string, dirName string) (string, error) {
 	}
 	return dirPath, nil
 }
+
+// writeChunk writes a chunk of the genesis file to disk, saving it to dir.
+// Each chunk file name's format will be: chunk_[chunkID].part, e.g., chunk_42.part.
+func writeChunk(chunk []byte, dir string, chunkID int) (string, error) {
+	chunkName := "chunk_" + strconv.Itoa(chunkID) + ".part"
+	chunkPath := filepath.Join(dir, chunkName)
+
+	if err := os.WriteFile(chunkPath, chunk, 0o600); err != nil {
+		return "", fmt.Errorf("writing chunk at %s: %s", chunkPath, err)
+	}
+
+	return chunkPath, nil
+}

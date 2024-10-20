@@ -129,32 +129,17 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 // generateTestnet generates a single testnet with the given options.
 func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, prometheus bool, logLevel string) (e2e.Manifest, error) {
 	manifest := e2e.Manifest{
-<<<<<<< HEAD
-		IPv6:             ipv6.Choose(r).(bool),
-		ABCIProtocol:     nodeABCIProtocols.Choose(r).(string),
-		InitialHeight:    int64(opt["initialHeight"].(int)),
-		InitialState:     opt["initialState"].(map[string]string),
-		Validators:       &map[string]int64{},
-		ValidatorUpdates: map[string]map[string]int64{},
-		Evidence:         evidence.Choose(r).(int),
-		Nodes:            map[string]*e2e.ManifestNode{},
-		UpgradeVersion:   upgradeVersion,
-		Prometheus:       prometheus,
-		LogLevel:         logLevel,
-=======
 		IPv6:                ipv6.Choose(r).(bool),
 		ABCIProtocol:        nodeABCIProtocols.Choose(r).(string),
 		InitialHeight:       int64(opt["initialHeight"].(int)),
 		InitialState:        opt["initialState"].(map[string]string),
 		ValidatorsMap:       &map[string]int64{},
 		ValidatorUpdatesMap: map[string]map[string]int64{},
-		KeyType:             keyType.Choose(r).(string),
 		Evidence:            evidence.Choose(r).(int),
 		NodesMap:            map[string]*e2e.ManifestNode{},
 		UpgradeVersion:      upgradeVersion,
 		Prometheus:          prometheus,
 		LogLevel:            logLevel,
->>>>>>> 40c4b404b (feat(e2e): simplify the relation between manifest and testnet (#3964))
 	}
 
 	switch abciDelays.Choose(r).(string) {

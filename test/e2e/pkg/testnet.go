@@ -141,50 +141,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	testnet := &Testnet{
-<<<<<<< HEAD
-		Name:                             filepath.Base(dir),
-		File:                             file,
-		Dir:                              dir,
-		IP:                               ipNet,
-		InitialHeight:                    1,
-		InitialState:                     manifest.InitialState,
-		Validators:                       map[*Node]int64{},
-		ValidatorUpdates:                 map[int64]map[*Node]int64{},
-		Nodes:                            []*Node{},
-		DisablePexReactor:                manifest.DisablePexReactor,
-		Evidence:                         manifest.Evidence,
-		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
-		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
-		LoadTxConnections:                manifest.LoadTxConnections,
-		LoadMaxTxs:                       manifest.LoadMaxTxs,
-		ABCIProtocol:                     manifest.ABCIProtocol,
-		PrepareProposalDelay:             manifest.PrepareProposalDelay,
-		ProcessProposalDelay:             manifest.ProcessProposalDelay,
-		CheckTxDelay:                     manifest.CheckTxDelay,
-		VoteExtensionDelay:               manifest.VoteExtensionDelay,
-		FinalizeBlockDelay:               manifest.FinalizeBlockDelay,
-		UpgradeVersion:                   manifest.UpgradeVersion,
-		LogLevel:                         manifest.LogLevel,
-		LogFormat:                        manifest.LogFormat,
-		Prometheus:                       manifest.Prometheus,
-		BlockMaxBytes:                    manifest.BlockMaxBytes,
-		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
-		VoteExtensionsUpdateHeight:       manifest.VoteExtensionsUpdateHeight,
-		VoteExtensionSize:                manifest.VoteExtensionSize,
-		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
-		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
-		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
-		ABCITestsEnabled: manifest.ABCITestsEnabled,
-		DefaultZone:      manifest.DefaultZone,
-		PbtsEnableHeight: manifest.PbtsEnableHeight,
-		PbtsUpdateHeight: manifest.PbtsUpdateHeight,
-	}
-	if len(manifest.KeyType) != 0 {
-		testnet.KeyType = manifest.KeyType
-	}
-	if manifest.InitialHeight > 0 {
-		testnet.InitialHeight = manifest.InitialHeight
-=======
 		Manifest: manifest,
 
 		Name: filepath.Base(dir),
@@ -198,7 +154,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 	if testnet.InitialHeight == 0 {
 		testnet.InitialHeight = 1
->>>>>>> 40c4b404b (feat(e2e): simplify the relation between manifest and testnet (#3964))
 	}
 	if testnet.ABCIProtocol == "" {
 		testnet.ABCIProtocol = string(ProtocolBuiltin)
@@ -228,20 +183,12 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		}
 
 		node := &Node{
-<<<<<<< HEAD
-			Name:                    name,
-			Version:                 v,
-			Testnet:                 testnet,
-			PrivvalKey:              keyGen.Generate(manifest.KeyType),
-			NodeKey:                 keyGen.Generate("ed25519"),
-=======
 			ManifestNode: *nodeManifest,
 			Name:         name,
 			Testnet:      testnet,
 
 			PrivvalKey:              keyGen.Generate(testnet.KeyType),
-			NodeKey:                 keyGen.Generate(ed25519.KeyType),
->>>>>>> 40c4b404b (feat(e2e): simplify the relation between manifest and testnet (#3964))
+			NodeKey:                 keyGen.Generate("ed25519"),
 			InternalIP:              ind.IPAddress,
 			ExternalIP:              extIP,
 			RPCProxyPort:            ind.RPCPort,

@@ -346,7 +346,8 @@ func TestDeleteGenesisChunks(t *testing.T) {
 		// reset permissions of parent folder to allow the deferred os.RemoveAll()
 		// to work, thus deleting test data.
 		if err := os.Chmod(parentDir, 0o755); err != nil {
-			t.Fatalf("changing test parent directory permissions to cleanup: %s", err)
+			formatStr := "changing test parent directory permissions to cleanup: %s"
+			t.Fatalf(formatStr, err)
 		}
 	})
 }
@@ -431,6 +432,59 @@ func TestMkChunksDir(t *testing.T) {
 
 		if err := os.RemoveAll(dirPath); err != nil {
 			t.Error(err)
+		}
+	})
+}
+
+func TestWriteChunk(t *testing.T) {
+	cDir, err := os.MkdirTemp("", _chunksDir)
+	if err != nil {
+		t.Fatalf("creating test chunks directory: %s", err)
+	}
+	defer os.RemoveAll(cDir)
+
+	var (
+		chunk    = []byte("test-chunk")
+		wantPath = filepath.Join(cDir, "chunk_42.part")
+	)
+
+	t.Run("ErrChunkNotWritten", func(t *testing.T) {
+		// To test if the function catches errors returned by os.WriteFile(), we
+		// create a directory with read-only permissions, so that os.WriteFile() will
+		// fail.
+
+		// set read-only permissions to trigger write error
+		if err := os.Chmod(cDir, 0o500); err != nil {
+			t.Fatalf("changing test chunks directory permissions: %s", err)
+		}
+
+		_, err := writeChunk(chunk, cDir, 42)
+		if err == nil {
+			t.Fatalf("expected error but got nil")
+		}
+
+		var (
+			formatStr = "writing chunk at %s: open %s: permission denied"
+			wantErr   = fmt.Sprintf(formatStr, wantPath, wantPath)
+		)
+		// reset permissions of chunks folder to allow the rest of the test code to
+		// work.
+		if err := os.Chmod(cDir, 0o755); err != nil {
+			formatStr := "changing test parent directory permissions to cleanup: %s"
+			t.Fatalf(formatStr, err)
+		}
+		if err.Error() != wantErr {
+			t.Errorf("\nwant error: %s\ngot: %s\n", wantErr, err.Error())
+		}
+	})
+
+	t.Run("ChunkWritten", func(t *testing.T) {
+		gotPath, err := writeChunk(chunk, cDir, 42)
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+		if wantPath != gotPath {
+			t.Errorf("\nwant path: %s\ngot path: %s\n", wantPath, gotPath)
 		}
 	})
 }

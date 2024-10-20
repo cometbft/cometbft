@@ -250,7 +250,7 @@ func TestDeleteGenesisChunks(t *testing.T) {
 		}
 	})
 
-	t.Run("NoErrDirDeleted", func(t *testing.T) {
+	t.Run("DirDeleted", func(t *testing.T) {
 		gFileDir, err := os.MkdirTemp("", "test_dir")
 		if err != nil {
 			t.Fatalf("creating temp directory for testing: %s", err)
@@ -259,7 +259,7 @@ func TestDeleteGenesisChunks(t *testing.T) {
 
 		var (
 			gFilePath = filepath.Join(gFileDir, "genesis.json")
-			chunksDir = filepath.Join(gFileDir, _chunksDirSuffix)
+			chunksDir = filepath.Join(gFileDir, _chunksDir)
 
 			env = &Environment{GenesisFilePath: gFilePath}
 		)
@@ -315,13 +315,13 @@ func TestDeleteGenesisChunks(t *testing.T) {
 
 		var (
 			gFilePath = filepath.Join(parentDir, "genesis.json")
-			chunksDir = filepath.Join(parentDir, _chunksDirSuffix)
+			chunksDir = filepath.Join(parentDir, _chunksDir)
 
 			env = &Environment{GenesisFilePath: gFilePath}
 		)
 
 		// the sub-directory that we want to delete.
-		if err := os.MkdirAll(chunksDir, 0o755); err != nil {
+		if err := os.Mkdir(chunksDir, 0o755); err != nil {
 			t.Fatalf("creating test chunks directory: %s", err)
 		}
 
@@ -347,6 +347,68 @@ func TestDeleteGenesisChunks(t *testing.T) {
 		// to work, thus deleting test data.
 		if err := os.Chmod(parentDir, 0o755); err != nil {
 			t.Fatalf("changing test parent directory permissions to cleanup: %s", err)
+		}
+	})
+}
+
+func TestFileSize(t *testing.T) {
+	t.Run("ErrFileNotExist", func(t *testing.T) {
+		fPath := "non-existent-file"
+		_, err := fileSize(fPath)
+		if err == nil {
+			t.Fatalf("expected an error, got nil")
+		}
+
+		wantErr := "the file is unavailable at non-existent-file"
+		if err.Error() != wantErr {
+			t.Fatalf("\nwant error: %s\ngot: %s\n", wantErr, err.Error())
+		}
+	})
+
+	t.Run("ErrAccessingPath", func(t *testing.T) {
+		// To test if the function catches errors returns by os.Stat() that
+		// aren't fs.ErrNotExist, we create a path that contains an invalid null
+		// byte, thus forcing os.Stat() to return an error.
+		fPath := "null/" + string('\x00') + "/file"
+
+		_, err := fileSize(fPath)
+		if err == nil {
+			t.Fatalf("expected an error, got nil")
+		}
+
+		wantErr := "accessing file at null/\x00/file: stat null/\x00/file: invalid argument"
+		if err.Error() != wantErr {
+			t.Errorf("\nwant error: %s\ngot: %s\n", wantErr, err.Error())
+		}
+	})
+
+	t.Run("FileSizeOk", func(t *testing.T) {
+		// we'll create a temporary file of 100 bytes to run this test.
+		const fTempSize = 100
+
+		fTemp, err := os.CreateTemp("", "small_test_file")
+		if err != nil {
+			t.Fatalf("creating temp file for testing: %s", err)
+		}
+		defer os.Remove(fTemp.Name())
+
+		data := make([]byte, fTempSize)
+		for i := 0; i < 100; i++ {
+			data[i] = 'a'
+		}
+
+		if _, err := fTemp.Write(data); err != nil {
+			t.Fatalf("writing to temp file for testing: %s", err)
+		}
+		fTemp.Close()
+
+		gotSize, err := fileSize(fTemp.Name())
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+
+		if gotSize != fTempSize {
+			t.Errorf("want size: %d, got: %d", fTempSize, gotSize)
 		}
 	})
 }

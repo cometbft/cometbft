@@ -352,3 +352,53 @@ func writeChunk(chunk []byte, dir string, chunkID int) (string, error) {
 
 	return chunkPath, nil
 }
+
+// writeChunks reads the genesis file in chunks of size chunkSize, and writes them
+// to disk.
+// gFilePath is the genesis file's full path on disk.
+// chunkSize is the size of a chunk, that is, writeChunks will read the genesis file
+// in chunks of size chunkSize.
+// It returns a map where the keys are the chunk IDs, and the values are the chunks'
+// path on disk. E.g.,:
+// map[0] = /users/user/.cometbft/config/genesis-chunks/chunk_0.part
+// map[1] = /users/user/.cometbft/config/genesis-chunks/chunk_1.part
+// and so on for all chunks.
+// The map will be useful for the `/genesis_chunked` RPC endpoint to quickly find
+// a chunk on disk given its ID.
+func writeChunks(gFilePath string, chunkSize int) (map[int]string, error) {
+	chunkIDToPath := make(map[int]string)
+
+	gFile, err := os.Open(gFilePath)
+	if err != nil {
+		formatStr := "chunking: opening genesis file at %s: %s"
+		return nil, fmt.Errorf(formatStr, gFilePath, err)
+	}
+	defer gFile.Close()
+
+	gChunksDir, err := mkChunksDir(gFilePath, _chunksDir)
+	if err != nil {
+		return nil, fmt.Errorf("chunking: %s", err)
+	}
+
+	buf := make([]byte, chunkSize)
+	for chunkID := 0; ; chunkID++ {
+		n, err := gFile.Read(buf)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
+			formatStr := "chunking (chunk %d): reading genesis file at %s: %s"
+			return nil, fmt.Errorf(formatStr, chunkID, gFilePath, err)
+		}
+
+		chunkPath, err := writeChunk(buf[:n], gChunksDir, chunkID)
+		if err != nil {
+			return nil, fmt.Errorf("chunking (chunk %d): %s", chunkID, err)
+		}
+
+		chunkIDToPath[chunkID] = chunkPath
+	}
+
+	return chunkIDToPath, nil
+}

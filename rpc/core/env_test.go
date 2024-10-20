@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -487,6 +488,53 @@ func TestWriteChunk(t *testing.T) {
 			t.Errorf("\nwant path: %s\ngot path: %s\n", wantPath, gotPath)
 		}
 	})
+}
+
+func TestWriteChunks(t *testing.T) {
+	const (
+		// we'll create a temporary file of 100 bytes to run this test.
+		fTempSize = 100
+
+		// we'll split the temp file into chunks of 25 bytes.
+		chunkSize = 25
+	)
+
+	fTemp, err := os.CreateTemp("", "dummy_genesis")
+	if err != nil {
+		t.Fatalf("creating temp file for testing: %s", err)
+	}
+	defer os.Remove(fTemp.Name())
+
+	data := make([]byte, fTempSize)
+	for i := 0; i < 100; i++ {
+		data[i] = 'a'
+	}
+
+	if _, err := fTemp.Write(data); err != nil {
+		t.Fatalf("writing to temp file for testing: %s", err)
+	}
+	fTemp.Close()
+
+	chunkIDToPath, err := writeChunks(fTemp.Name(), chunkSize)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+
+	var (
+		fTempDir      = filepath.Dir(fTemp.Name())
+		testChunksDir = filepath.Join(fTempDir, _chunksDir)
+	)
+	defer os.RemoveAll(testChunksDir)
+
+	wantMap := map[int]string{
+		0: testChunksDir + "/chunk_0.part",
+		1: testChunksDir + "/chunk_1.part",
+		2: testChunksDir + "/chunk_2.part",
+		3: testChunksDir + "/chunk_3.part",
+	}
+	if !maps.Equal(wantMap, chunkIDToPath) {
+		t.Errorf("\nwant map: %v\ngot: %v\n", wantMap, chunkIDToPath)
+	}
 }
 
 // genAppState is a helper function that generates a dummy "app_state" to be used in

@@ -1,18 +1,18 @@
 package core
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
-	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
@@ -36,7 +36,7 @@ const (
 	// chunk in the genesis structure for the chunked API.
 	genesisChunkSize = 16 * 1024 * 1024 // 16
 
-	_chunksDirSuffix = "chunks"
+	_chunksDir = "genesis-chunks"
 )
 
 // These interfaces are used by RPC and must be thread safe
@@ -114,13 +114,13 @@ type Environment struct {
 
 	GenesisFilePath string // the genesis file's full path on disk
 
-	// genesisChunkPaths is a map of chunk ID to its full path on disk.
+	// genesisChunk is a map of chunk ID to its full path on disk.
 	// If the genesis file is smaller than genesisChunkSize, then this map will be
 	// nil, because there will be no chunks on disk.
 	// This map is convenient for the `/genesis_chunked` API to quickly find a chunk
 	// by its ID, instead of having to reconstruct its path each time, which would
 	// involve multiple string operations.
-	genesisChunksPaths map[int]string
+	genesisChunks map[int]string
 }
 
 // InitGenesisChunks checks whether it makes sense to create a cache of chunked
@@ -135,54 +135,78 @@ type Environment struct {
 //     genChunks field. Its GenDoc field will be set to nil. `/genesis` RPC API will
 //     redirect users to use the `/genesis_chunked` API.
 func (env *Environment) InitGenesisChunks() error {
-	if len(env.genChunks) > 0 {
+	if len(env.genesisChunks) > 0 {
 		// we already computed the chunks, return.
 		return nil
 	}
 
-	if env.GenDoc == nil {
+	gFilePath := env.GenesisFilePath
+	if len(gFilePath) == 0 {
 		// chunks not computed yet, but no genesis available.
 		// This should not happen.
-		return errors.New("could not create the genesis file chunks and cache them because the genesis doc is unavailable")
+		return errors.New("the genesis file path on disk is missing")
 	}
 
-	data, err := cmtjson.Marshal(env.GenDoc)
+	gFileSize, err := fileSize(gFilePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("estimating genesis file size: %s", err)
 	}
 
-	// If genesis is less than 16MB, then no chunking.
-	// Keep a pointer to a GenesisDoc in env.GenDoc.
-	if len(data) <= genesisChunkSize {
-		env.genChunks = nil
+	if gFileSize <= genesisChunkSize {
+		// no chunking required
 		return nil
 	}
 
+	// chunking required
 	var (
-		nChunks = (len(data) + genesisChunkSize - 1) / genesisChunkSize
-		chunks  = make([]string, nChunks)
+		nChunks       = (gFileSize + genesisChunkSize - 1) / genesisChunkSize
+		chunkIDToPath = make(map[int]string, nChunks)
 	)
-	for i := range nChunks {
-		var (
-			start = i * genesisChunkSize
-			end   = start + genesisChunkSize
-		)
-		if end > len(data) {
-			end = len(data)
-		}
+	// we'll create the chunks while reading the file as a stream rather than loading
+	// it into memory.
+	gFile, err := os.Open(gFilePath)
+	if err != nil {
+		return fmt.Errorf("opening the genesis file at %s: %s", gFilePath, err)
+	}
+	defer gFile.Close()
 
-		// we make a copy here so that the original data isn't retained in memory.
-		// The GC will collect the data slice after exiting the function.
-		// Without the copy, it would keep it in memory.
-		chunk := make([]byte, end-start)
-		copy(chunk, data[start:end])
-		chunks[i] = base64.StdEncoding.EncodeToString(chunk)
+	var (
+		buf     = make([]byte, genesisChunkSize)
+		chunkID = 0
+
+		gFileDir   = filepath.Dir(gFilePath)
+		gChunksDir = filepath.Join(gFileDir, _chunksDir)
+	)
+
+	if err := os.Mkdir(gChunksDir, 0o755); err != nil {
+		formatStr := "creating genesis chunks directory at %s: %s"
+		return fmt.Errorf(formatStr, gChunksDir, err)
 	}
 
-	env.genChunks = chunks
+	for {
+		// Read the file in chunks of size genesisChunkSize
+		n, err := gFile.Read(buf)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return fmt.Errorf("reading genesis file at %s: %s", gFilePath, err)
+		}
 
-	// we store the chunks; don't store a ptr to the genesis anymore.
-	env.GenDoc = nil
+		var (
+			chunk     = buf[:n]
+			chunkName = "chunk_" + strconv.Itoa(chunkID) + ".part"
+			chunkPath = filepath.Join(gChunksDir, chunkName)
+		)
+		if err := os.WriteFile(chunkPath, chunk, 0o600); err != nil {
+			return fmt.Errorf("creating genesis chunk at %s: %s", chunkPath, err)
+		}
+
+		chunkIDToPath[chunkID] = chunkPath
+		chunkID++
+	}
+
+	env.genesisChunks = chunkIDToPath
 
 	return nil
 }
@@ -269,12 +293,13 @@ func (env *Environment) latestUncommittedHeight() int64 {
 // - when a Node shuts down, to clean up the file system.
 func (env *Environment) deleteGenesisChunks() error {
 	gFileDir := filepath.Dir(env.GenesisFilePath)
-	chunksDir := filepath.Join(gFileDir, _chunksDirSuffix)
+	chunksDir := filepath.Join(gFileDir, _chunksDir)
 
 	if _, err := os.Stat(chunksDir); errors.Is(err, fs.ErrNotExist) {
 		return nil
 	} else if err != nil {
-		return fmt.Errorf("accessing path %q: %s", chunksDir, err)
+		formatStr := "accessing genesis file chunks directory at %q: %s"
+		return fmt.Errorf(formatStr, chunksDir, err)
 	}
 
 	// Directory exists, delete it
@@ -284,4 +309,18 @@ func (env *Environment) deleteGenesisChunks() error {
 	}
 
 	return nil
+}
+
+// fileSize returns the size of the file at the given path.
+func fileSize(fPath string) (int64, error) {
+	// we use os.Stat here instead of os.ReadFile, because we don't want to load
+	// the entire file into memory just to compute its size from the resulting
+	// []byte slice.
+	fInfo, err := os.Stat(fPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return 0, fmt.Errorf("the file is unavailable at %s", fPath)
+	} else if err != nil {
+		return 0, fmt.Errorf("accessing file at %s: %s", fPath, err)
+	}
+	return fInfo.Size(), nil
 }

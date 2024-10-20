@@ -325,3 +325,18 @@ func fileSize(fPath string) (int64, error) {
 	}
 	return fInfo.Size(), nil
 }
+
+// mkChunksDir creates a new directory to store the genesis file's chunks.
+// gFilePath is the genesis file's full path on disk, and mkChunksDir creates a new
+// directory as a sub-directory of the genesis file's directory.
+// It returns the new directory's full path or an empty string if there is an
+// error.
+func mkChunksDir(gFilePath string, dirName string) (string, error) {
+	gFileDir := filepath.Dir(gFilePath)
+	dirPath := filepath.Join(gFileDir, dirName)
+
+	if err := os.Mkdir(dirPath, 0o755); err != nil {
+		return "", fmt.Errorf("creating directory at %s: %s", dirPath, err)
+	}
+	return dirPath, nil
+}

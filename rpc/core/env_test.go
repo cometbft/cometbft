@@ -413,6 +413,28 @@ func TestFileSize(t *testing.T) {
 	})
 }
 
+func TestMkChunksDir(t *testing.T) {
+	// TODO: test that makes MkDir fail to check error handling.
+
+	t.Run("DirCreated", func(t *testing.T) {
+		fTemp, err := os.CreateTemp("", "dummy_genesis")
+		if err != nil {
+			t.Fatalf("creating temp file for testing: %s", err)
+		}
+		fTemp.Close()
+		defer os.Remove(fTemp.Name())
+
+		dirPath, err := mkChunksDir(fTemp.Name(), _chunksDir)
+		if err != nil {
+			t.Errorf("unexpected error: %s", err)
+		}
+
+		if err := os.RemoveAll(dirPath); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 // genAppState is a helper function that generates a dummy "app_state" to be used in
 // tests. To test the splitting of a genesis into smaller chunks, we need to use a
 // big genesis file. Typically, the bulk of a genesis file comes from the app_state

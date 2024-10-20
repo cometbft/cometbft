@@ -145,7 +145,7 @@ func (env *Environment) InitGenesisChunks() error {
 	if len(gFilePath) == 0 {
 		// chunks not computed yet, but no genesis available.
 		// This should not happen.
-		return errors.New("the genesis file path on disk is missing")
+		return errors.New("missing genesis file path on disk")
 	}
 
 	gFileSize, err := fileSize(gFilePath)
@@ -159,52 +159,9 @@ func (env *Environment) InitGenesisChunks() error {
 	}
 
 	// chunking required
-	var (
-		nChunks       = (gFileSize + genesisChunkSize - 1) / genesisChunkSize
-		chunkIDToPath = make(map[int]string, nChunks)
-	)
-	// we'll create the chunks while reading the file as a stream rather than loading
-	// it into memory.
-	gFile, err := os.Open(gFilePath)
+	chunkIDToPath, err := writeChunks(gFilePath, genesisChunkSize)
 	if err != nil {
-		return fmt.Errorf("opening the genesis file at %s: %s", gFilePath, err)
-	}
-	defer gFile.Close()
-
-	var (
-		buf     = make([]byte, genesisChunkSize)
-		chunkID = 0
-
-		gFileDir   = filepath.Dir(gFilePath)
-		gChunksDir = filepath.Join(gFileDir, _chunksDir)
-	)
-
-	if err := os.Mkdir(gChunksDir, 0o755); err != nil {
-		formatStr := "creating genesis chunks directory at %s: %s"
-		return fmt.Errorf(formatStr, gChunksDir, err)
-	}
-
-	for {
-		// Read the file in chunks of size genesisChunkSize
-		n, err := gFile.Read(buf)
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			return fmt.Errorf("reading genesis file at %s: %s", gFilePath, err)
-		}
-
-		var (
-			chunk     = buf[:n]
-			chunkName = "chunk_" + strconv.Itoa(chunkID) + ".part"
-			chunkPath = filepath.Join(gChunksDir, chunkName)
-		)
-		if err := os.WriteFile(chunkPath, chunk, 0o600); err != nil {
-			return fmt.Errorf("creating genesis chunk at %s: %s", chunkPath, err)
-		}
-
-		chunkIDToPath[chunkID] = chunkPath
-		chunkID++
+		return fmt.Errorf("splitting large genesis file: %s", err)
 	}
 
 	env.genesisChunks = chunkIDToPath
@@ -299,7 +256,7 @@ func (env *Environment) deleteGenesisChunks() error {
 	if _, err := os.Stat(chunksDir); errors.Is(err, fs.ErrNotExist) {
 		return nil
 	} else if err != nil {
-		formatStr := "accessing genesis file chunks directory at %q: %s"
+		formatStr := "accessing genesis file chunks directory at %s: %s"
 		return fmt.Errorf(formatStr, chunksDir, err)
 	}
 
@@ -313,7 +270,7 @@ func (env *Environment) deleteGenesisChunks() error {
 }
 
 // fileSize returns the size of the file at the given path.
-func fileSize(fPath string) (int64, error) {
+func fileSize(fPath string) (int, error) {
 	// we use os.Stat here instead of os.ReadFile, because we don't want to load
 	// the entire file into memory just to compute its size from the resulting
 	// []byte slice.
@@ -323,7 +280,7 @@ func fileSize(fPath string) (int64, error) {
 	} else if err != nil {
 		return 0, fmt.Errorf("accessing file at %s: %s", fPath, err)
 	}
-	return fInfo.Size(), nil
+	return int(fInfo.Size()), nil
 }
 
 // mkChunksDir creates a new directory to store the genesis file's chunks.
@@ -336,7 +293,7 @@ func mkChunksDir(gFilePath string, dirName string) (string, error) {
 	dirPath := filepath.Join(gFileDir, dirName)
 
 	if err := os.Mkdir(dirPath, 0o755); err != nil {
-		return "", fmt.Errorf("creating directory at %s: %s", dirPath, err)
+		return "", fmt.Errorf("creating chunks directory at %s: %s", dirPath, err)
 	}
 	return dirPath, nil
 }

@@ -2,15 +2,14 @@ package core
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
-	"reflect"
 	"slices"
 	"strconv"
 	"testing"
@@ -23,16 +22,16 @@ import (
 )
 
 func TestInitGenesisChunks(t *testing.T) {
-	t.Run("Error", func(t *testing.T) {
-		env := &Environment{
-			genChunks: nil,
-			GenDoc:    nil,
-		}
-		wantErrStr := "could not create the genesis file chunks and cache them because the genesis doc is unavailable"
+	t.Run("ErrNoGenesisFilePath", func(t *testing.T) {
+		env := &Environment{}
 
-		if err := env.InitGenesisChunks(); err == nil {
+		err := env.InitGenesisChunks()
+		if err == nil {
 			t.Error("expected error but got nil")
-		} else if err.Error() != wantErrStr {
+		}
+
+		wantErrStr := "missing genesis file path on disk"
+		if err.Error() != wantErrStr {
 			t.Errorf("\nwantErr: %q\ngot: %q\n", wantErrStr, err.Error())
 		}
 	})
@@ -40,22 +39,21 @@ func TestInitGenesisChunks(t *testing.T) {
 	// Calling InitGenesisChunks with an existing slice of chunks will return without
 	// doing anything.
 	t.Run("NoOp", func(t *testing.T) {
-		testChunks := []string{"chunk1", "chunk2"}
-		env := &Environment{
-			genChunks: testChunks,
-			GenDoc:    nil,
+		testChunks := map[int]string{
+			0: "chunk1",
+			1: "chunk2",
+		}
+		env := &Environment{genesisChunks: testChunks}
+
+		err := env.InitGenesisChunks()
+		if err != nil {
+			t.Errorf("unexpected error: %s", err)
 		}
 
-		if err := env.InitGenesisChunks(); err != nil {
-			t.Errorf("unexpected error: %s", err)
-		} else {
-			if !slices.Equal(testChunks, env.genChunks) {
-				t.Fatalf("\nexpected chunks: %v\ngot: %v", testChunks, env.genChunks)
-			}
-			if env.GenDoc != nil {
-				formatStr := "pointer to GenesisDoc should be nil, but it's pointing to\n%#v"
-				t.Errorf(formatStr, *env.GenDoc)
-			}
+		// check that the function really was a no-op: the map of chunks should be
+		// unchanged.
+		if !maps.Equal(testChunks, env.genesisChunks) {
+			t.Fatalf("\nexpected chunks: %v\ngot: %v", testChunks, env.genesisChunks)
 		}
 	})
 
@@ -75,19 +73,14 @@ func TestInitGenesisChunks(t *testing.T) {
 
 		if err := env.InitGenesisChunks(); err != nil {
 			t.Errorf("unexpected error: %s", err)
-		} else {
-			if env.genChunks != nil {
-				formatStr := "chunks slice should be nil, but it has length %d"
-				t.Fatalf(formatStr, len(env.genChunks))
-			}
+		}
 
-			// Because the genesis file is <= genesisChunkSize, there should be no
-			// chunking. Therefore, the original GenesisDoc should be stored in
-			// GenDoc field unchanged.
-			if !reflect.DeepEqual(env.GenDoc, genDoc) {
-				formatStr := "GenesisDoc in Environment.GenDoc should be the same as in test genesis file\nwant: %#v\ngot: %#v\n"
-				t.Errorf(formatStr, genDoc, env.GenDoc)
-			}
+		// Because the genesis file is <= genesisChunkSize, there should be no
+		// chunking. Therefore, the map of chunk IDs to their paths on disk should
+		// be empty.
+		if len(env.genesisChunks) > 0 {
+			formatStr := "chunks map should be empty, but it's %v"
+			t.Fatalf(formatStr, env.genChunks)
 		}
 	})
 
@@ -96,74 +89,33 @@ func TestInitGenesisChunks(t *testing.T) {
 	// The test genesis has an app_state of key-value string pairs automatically
 	// generated (~42MB).
 	t.Run("Chunking", func(t *testing.T) {
-		genDoc := &types.GenesisDoc{}
-		if err := cmtjson.Unmarshal([]byte(_testGenesis), genDoc); err != nil {
-			t.Fatalf("test genesis serialization: %s", err)
-		}
+		const fGenesisPath = "./testdata/genesis_big.json"
 
-		appState, err := genAppState()
+		defer os.RemoveAll("./testdata/" + _chunksDir)
+
+		env := &Environment{GenesisFilePath: fGenesisPath}
+		err := env.InitGenesisChunks()
 		if err != nil {
-			t.Fatalf("generating dummy app_state for testing: %s", err)
-		}
-
-		genDoc.AppState = appState
-
-		env := &Environment{
-			genChunks: nil,
-			GenDoc:    genDoc,
-		}
-
-		if err := env.InitGenesisChunks(); err != nil {
 			t.Errorf("unexpected error: %s", err)
-		} else {
-			if env.GenDoc != nil {
-				formatStr := "pointer to GenesisDoc should be nil, but it's pointing to\n%#v"
-				t.Fatalf(formatStr, *env.GenDoc)
-			}
+		}
 
-			// Why do we re-marshal the genesis to JSON?
-			// Because InitGenesisChunks computes the number of chunks based on the
-			// size of the []byte slice containing the genesis serialized to JSON.
-			// To calculate the correct expected number of chunks in this test, we
-			// must also serialize the genesis to JSON and use the size of the
-			// resulting []byte slice.
-			// We cannot use the size of the []byte slice obtained from reading the
-			// file (`genesisData` above) because the size would differ due to JSON
-			// serialization removing whitespace and formatting, omitting default or
-			// zero values, and optimizing data (e.g., numbers).
-			genesisJSON, err := cmtjson.Marshal(genDoc)
-			if err != nil {
-				t.Fatalf("test genesis re-serialization: %s", err)
-			}
+		genesisSize, err := fileSize(fGenesisPath)
+		if err != nil {
+			t.Fatalf("estimating test genesis file size: %s", err)
+		}
 
-			// Because the genesis file is > genesisChunkSize, we expect chunks.
-			// genesisChunkSize is a global const defined in env.go.
-			var (
-				genesisSize = len(genesisJSON)
-				wantChunks  = (genesisSize + genesisChunkSize - 1) / genesisChunkSize
-			)
-			if len(env.genChunks) != wantChunks {
-				formatStr := "expected number of chunks: %d, but got: %d"
-				t.Errorf(formatStr, wantChunks, len(env.genChunks))
-			}
+		// Because the genesis file is > genesisChunkSize, we expect chunks.
+		// genesisChunkSize is a global const defined in env.go.
+		wantChunks := (genesisSize + genesisChunkSize - 1) / genesisChunkSize
+		if len(env.genesisChunks) != wantChunks {
+			formatStr := "expected number of chunks: %d, but got: %d"
+			t.Errorf(formatStr, wantChunks, len(env.genChunks))
+		}
 
-			// We now check if the original genesis doc and the genesis doc
-			// reassembled from the chunks match.
-			var genesisReassembled bytes.Buffer
-			for i, chunk := range env.genChunks {
-				chunkBytes, err := base64.StdEncoding.DecodeString(chunk)
-				if err != nil {
-					t.Fatalf("failed to decode chunk %d: %s", i, err)
-				}
-
-				if _, err := genesisReassembled.Write(chunkBytes); err != nil {
-					t.Fatalf("failed to write chunk %d to buffer: %s", i, err)
-				}
-			}
-
-			if !bytes.Equal(genesisReassembled.Bytes(), genesisJSON) {
-				t.Errorf("original and reassembled genesis do not match")
-			}
+		// We now check if the original genesis doc and the genesis doc
+		// reassembled from the chunks match.
+		if err := reassembleAndCompare(fGenesisPath, env.genesisChunks); err != nil {
+			t.Errorf("reassembling genesis file: %s", err)
 		}
 	})
 }
@@ -293,7 +245,7 @@ func TestDeleteGenesisChunks(t *testing.T) {
 			t.Fatalf("expected an error, got nil")
 		}
 
-		wantErr := "accessing path \"null/\\x00/chunks\": stat null/\x00/chunks: invalid argument"
+		wantErr := "accessing genesis file chunks directory at null/\x00/genesis-chunks: stat null/\x00/genesis-chunks: invalid argument"
 		if err.Error() != wantErr {
 			t.Errorf("\nwant error: %s\ngot: %s\n", wantErr, err.Error())
 		}
@@ -535,6 +487,52 @@ func TestWriteChunks(t *testing.T) {
 	if !maps.Equal(wantMap, chunkIDToPath) {
 		t.Errorf("\nwant map: %v\ngot: %v\n", wantMap, chunkIDToPath)
 	}
+
+	if err := reassembleAndCompare(fTemp.Name(), chunkIDToPath); err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+}
+
+// reassembleAndCompare is a utility function to reassemble the genesis file from
+// its chunks and compare it with the original genesis file.
+// The function reads the genesis file as a stream, so it is suitable for larger
+// files as well.
+func reassembleAndCompare(gFilePath string, chunks map[int]string) error {
+	gFile, err := os.Open(gFilePath)
+	if err != nil {
+		return fmt.Errorf("opening genesis file at %s: %s", gFilePath, err)
+	}
+	defer gFile.Close()
+
+	// have to collect the IDs and sort them because map traversal isn't guaranteed
+	// to be in order; but we need it to be in order to compare the right chunk
+	// with the right of the genesis file "piece".
+	cIDs := make([]int, 0, len(chunks))
+	for cID := range chunks {
+		cIDs = append(cIDs, cID)
+	}
+	slices.Sort(cIDs)
+
+	for cID := range cIDs {
+		cPath := chunks[cID]
+
+		chunk, err := os.ReadFile(cPath)
+		if err != nil {
+			return fmt.Errorf("reading chunk file %d: %s", cID, err)
+		}
+
+		gBuf := make([]byte, len(chunk))
+		gN, err := gFile.Read(gBuf)
+		if err != nil && !errors.Is(err, io.EOF) {
+			return fmt.Errorf("reading genesis file chunk %d: %s", cID, err)
+		}
+
+		if !bytes.Equal(gBuf[:gN], chunk) {
+			return fmt.Errorf("chunk %d does not match", cID)
+		}
+	}
+
+	return nil
 }
 
 // genAppState is a helper function that generates a dummy "app_state" to be used in

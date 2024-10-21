@@ -154,7 +154,7 @@ func (env *Environment) GenesisChunked(
 		return nil, ErrServiceConfig{ErrChunkNotInitialized}
 	}
 
-	if len(env.genChunks) == 0 {
+	if len(env.genesisChunks) == 0 {
 		return nil, ErrServiceConfig{ErrNoChunks}
 	}
 

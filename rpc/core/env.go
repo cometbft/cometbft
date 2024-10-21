@@ -123,17 +123,17 @@ type Environment struct {
 	genesisChunks map[int]string
 }
 
-// InitGenesisChunks checks whether it makes sense to create a cache of chunked
-// genesis data. It is called on Node startup and should be called only once.
+// InitGenesisChunks checks whether it makes sense to split the genesis file into
+// small chunks to be stored on disk.
+// It is called on Node startup and should be called only once.
 // Rules of chunking:
-//   - if the genesis file's size is <= genesisChunkSize, then no chunking.
-//     An `Environment` object will store a pointer to the genesis in its GenDoc
-//     field. Its genChunks field will be set to nil. `/genesis` RPC API will return
-//     the GenesisDoc itself.
-//   - if the genesis file's size is > genesisChunkSize, then use chunking. An
-//     `Environment` object will store a slice of base64-encoded chunks in its
-//     genChunks field. Its GenDoc field will be set to nil. `/genesis` RPC API will
-//     redirect users to use the `/genesis_chunked` API.
+//   - if the genesis file's size is <= genesisChunkSize, this function returns
+//     without doing anything. We will fetch the genesis from disk to serve calls to
+//     the `/genesis` RPC API endpoint.
+//   - if the genesis file's size is > genesisChunkSize, then use chunking. The
+//     function splits the genesis file into chunks of genesisChunkSize and stores
+//     each chunk on disk. We will fetch each genesis chunk from disk to serve calls
+//     to the `/genesis_chunked` RPC API endpoint.
 func (env *Environment) InitGenesisChunks() error {
 	if len(env.genesisChunks) > 0 {
 		// we already computed the chunks, return.
@@ -244,10 +244,11 @@ func (env *Environment) latestUncommittedHeight() int64 {
 // deleteGenesisChunks deletes the directory storing the genesis file chunks on disk
 // if it exists. If the directory does not exist, the function is a no-op.
 // The chunks' directory is a sub-directory of the `config/` directory of the
-// running node.
+// running node (i.e., where the genesis.json file is stored).
 // We call the function:
-// - when creating the genesis file chunks, to make sure
-// - when a Node shuts down, to clean up the file system.
+//   - before creating new genesis file chunks, to make sure we start with a clean
+//     directory.
+//   - when a Node shuts down, to clean up the file system.
 func (env *Environment) deleteGenesisChunks() error {
 	gFileDir := filepath.Dir(env.GenesisFilePath)
 	chunksDir := filepath.Join(gFileDir, _chunksDir)

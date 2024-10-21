@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 
 	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
@@ -11,6 +12,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/protoio"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 )
 
 const (
@@ -138,7 +140,6 @@ func (vote *Vote) ExtendedCommitSig() ExtendedCommitSig {
 		ExtensionSignature: vote.ExtensionSignature,
 	}
 }
-
 // VoteSignBytes returns the proto-encoding of the canonicalized Vote, for
 // signing. Panics if the marshaling fails.
 //
@@ -146,15 +147,77 @@ func (vote *Vote) ExtendedCommitSig() ExtendedCommitSig {
 // for backwards-compatibility with the Amino encoding, due to e.g. hardware
 // devices that rely on this encoding.
 //
-// See CanonicalizeVote.
+// See CanonicalizeVote
 func VoteSignBytes(chainID string, vote *cmtproto.Vote) []byte {
 	pb := CanonicalizeVote(chainID, vote)
-	bz, err := protoio.MarshalDelimited(&pb)
-	if err != nil {
-		panic(err)
+
+	padBytes := func(b []byte) []byte {
+		var padded [32]byte
+		if b == nil {
+			return padded[:]
+		}
+		return big.NewInt(0).SetBytes(b).FillBytes(padded[:])
 	}
 
-	return bz
+	mimc := mimc.NewMiMC()
+	var padded [32]byte
+	writeI64 := func(x int64) {
+		big.NewInt(int64(x)).FillBytes(padded[:])
+		_, err := mimc.Write(padded[:])
+		if err != nil {
+			panic(err)
+		}
+	}
+	writeU32 := func(x uint32) {
+		big.NewInt(0).SetUint64(uint64(x)).FillBytes(padded[:])
+		_, err := mimc.Write(padded[:])
+		if err != nil {
+			panic(err)
+		}
+	}
+	writeMiMCHash := func(b []byte) {
+		_, err := mimc.Write(b)
+		if err != nil {
+			panic(err)
+		}
+	}
+	writeHash := func(b []byte) {
+		if len(b) == 0 {
+			b = make([]byte, 32)
+		}
+		head, tail := b[0], b[1:]
+		writeMiMCHash(padBytes([]byte{head}))
+		writeMiMCHash(padBytes(tail))
+	}
+	writeBytes := func(b []byte) {
+		if len(b) > 31 {
+			panic("impossible: bytes must fit in F_r")
+		}
+		_, err := mimc.Write(padBytes(b))
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	writeI64(int64(pb.Type))
+	writeI64(pb.Height)
+	writeI64(pb.Round)
+	if pb.BlockID == nil {
+		writeMiMCHash([]byte{})
+		writeI64(0)
+		writeMiMCHash([]byte{})
+	} else {
+		writeMiMCHash(pb.BlockID.Hash)
+		writeU32(pb.BlockID.PartSetHeader.Total)
+		if pb.BlockID.PartSetHeader.Hash == nil {
+			writeMiMCHash([]byte{})
+		} else {
+			writeHash(pb.BlockID.PartSetHeader.Hash)
+		}
+	}
+	writeBytes([]byte(pb.ChainID))
+
+	return mimc.Sum(nil)
 }
 
 // VoteExtensionSignBytes returns the proto-encoding of the canonicalized vote

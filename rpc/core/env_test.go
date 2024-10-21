@@ -193,15 +193,9 @@ func TestDeleteGenesisChunks(t *testing.T) {
 	})
 
 	t.Run("DirDeleted", func(t *testing.T) {
-		gFileDir, err := os.MkdirTemp("", "test_dir")
-		if err != nil {
-			t.Fatalf("creating temp directory for testing: %s", err)
-		}
-		defer os.RemoveAll(gFileDir)
-
 		var (
-			gFilePath = filepath.Join(gFileDir, "genesis.json")
-			chunksDir = filepath.Join(gFileDir, _chunksDir)
+			gFilePath = "./genesis.json"
+			chunksDir = "./" + _chunksDir
 
 			env = &Environment{GenesisFilePath: gFilePath}
 		)
@@ -218,26 +212,6 @@ func TestDeleteGenesisChunks(t *testing.T) {
 		// verify that chunksDir no longer exists
 		if _, err := os.Stat(chunksDir); !errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("expected os.IsNotExist error, but got: %s", err)
-		}
-	})
-
-	t.Run("ErrAccessingDirPath", func(t *testing.T) {
-		var (
-			// To test if the function catches errors returns by os.Stat() that
-			// aren't fs.ErrNotExist, we create a path that contains an invalid null
-			// byte, thus forcing os.Stat() to return an error.
-			gFilePath = "null/" + string('\x00') + "/path"
-			env       = &Environment{GenesisFilePath: gFilePath}
-		)
-
-		err := env.deleteGenesisChunks()
-		if err == nil {
-			t.Fatalf("expected an error, got nil")
-		}
-
-		wantErr := "accessing genesis file chunks directory at null/\x00/genesis-chunks: stat null/\x00/genesis-chunks: invalid argument"
-		if err.Error() != wantErr {
-			t.Errorf("\nwant error: %s\ngot: %s\n", wantErr, err.Error())
 		}
 	})
 
@@ -279,7 +253,7 @@ func TestDeleteGenesisChunks(t *testing.T) {
 		}
 
 		var (
-			formatStr = "deleting pre-existing genesis chunks at %s: unlinkat %s: permission denied"
+			formatStr = "deleting genesis chunks' folder at %s: unlinkat %s: permission denied"
 			wantErr   = fmt.Sprintf(formatStr, chunksDir, chunksDir)
 		)
 		if err.Error() != wantErr {

@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	cmtjson "github.com/cometbft/cometbft/libs/json"
@@ -12,6 +13,7 @@ import (
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 // NetInfo returns network info.
@@ -109,11 +111,22 @@ func (env *Environment) UnsafeDialPeers(
 // Genesis returns genesis file.
 // More: https://docs.cometbft.com/main/rpc/#/Info/genesis
 func (env *Environment) Genesis(*rpctypes.Context) (*ctypes.ResultGenesis, error) {
-	if len(env.genChunks) > 0 {
+	if len(env.genesisChunks) > 0 {
 		return nil, ErrGenesisRespSize
 	}
 
-	return &ctypes.ResultGenesis{Genesis: env.GenDoc}, nil
+	fGenesis, err := os.ReadFile(env.GenesisFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving genesis file from disk: %s", err)
+	}
+
+	genDoc := types.GenesisDoc{}
+	if err = cmtjson.Unmarshal(fGenesis, &genDoc); err != nil {
+		formatStr := "genesis file JSON format is invalid: %s"
+		return nil, fmt.Errorf(formatStr, err)
+	}
+
+	return &ctypes.ResultGenesis{Genesis: &genDoc}, nil
 }
 
 func (env *Environment) GenesisChunked(

@@ -10,8 +10,10 @@ import (
 
 // TODO: make these have a large predefined capacity.
 var (
-	leafPrefix  = []byte{0}
-	innerPrefix = []byte{1}
+	leafPrefixValue  = 0
+	innerPrefixValue = 1
+	leafPrefix       = []byte{byte(leafPrefixValue)}
+	innerPrefix      = []byte{byte(innerPrefixValue)}
 )
 
 // returns tmhash(<empty>).
@@ -54,7 +56,7 @@ func emptyMimcHash() []byte {
 func leafMimcHash(leaf []byte) []byte {
 	hash := mimc.NewMiMC()
 	var prefix big.Int
-	prefix.SetBit(&prefix, 0, uint(leafPrefix[0]))
+	prefix.SetBit(&prefix, 0, uint(leafPrefixValue))
 	var paddedPrefix [32]byte
 	prefix.FillBytes(paddedPrefix[:])
 	_, err := hash.Write(paddedPrefix[:])
@@ -72,7 +74,7 @@ func leafMimcHash(leaf []byte) []byte {
 func innerMimcHash(left []byte, right []byte) []byte {
 	hash := mimc.NewMiMC()
 	var prefix big.Int
-	prefix.SetBit(&prefix, 0, uint(innerPrefix[0]))
+	prefix.SetBit(&prefix, 0, uint(innerPrefixValue))
 	var paddedPrefix [32]byte
 	prefix.FillBytes(paddedPrefix[:])
 	_, err := hash.Write(paddedPrefix[:])

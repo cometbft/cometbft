@@ -253,16 +253,8 @@ func (env *Environment) deleteGenesisChunks() error {
 	gFileDir := filepath.Dir(env.GenesisFilePath)
 	chunksDir := filepath.Join(gFileDir, _chunksDir)
 
-	if _, err := os.Stat(chunksDir); errors.Is(err, fs.ErrNotExist) {
-		return nil
-	} else if err != nil {
-		formatStr := "accessing genesis file chunks directory at %s: %s"
-		return fmt.Errorf(formatStr, chunksDir, err)
-	}
-
-	// Directory exists, delete it
 	if err := os.RemoveAll(chunksDir); err != nil {
-		formatStr := "deleting pre-existing genesis chunks at %s: %s"
+		formatStr := "deleting genesis chunks' folder at %s: %s"
 		return fmt.Errorf(formatStr, chunksDir, err)
 	}
 

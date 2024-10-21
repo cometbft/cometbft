@@ -8,7 +8,7 @@ import (
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	cmtstrings "github.com/cometbft/cometbft/internal/strings"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 )
 
@@ -28,7 +28,7 @@ func MaxNodeInfoSize() int {
 // and determines if we're compatible.
 type NodeInfo interface {
 	ID() nodekey.ID
-	NetAddress() (*na.NetAddress, error)
+	NetAddr() (*na.NetAddr, error)
 	Validate() error
 	CompatibleWith(other NodeInfo) error
 }
@@ -62,7 +62,7 @@ type DefaultNodeInfo struct {
 	ProtocolVersion ProtocolVersion `json:"protocol_version"`
 
 	// Authenticate
-	// TODO: replace with NetAddress
+	// TODO: replace with na.NetAddr
 	DefaultNodeID nodekey.ID `json:"id"`          // authenticated identifier
 	ListenAddr    string     `json:"listen_addr"` // accepting incoming
 
@@ -105,7 +105,7 @@ func (info DefaultNodeInfo) Validate() error {
 	// ID is already validated.
 
 	// Validate ListenAddr.
-	_, err := na.NewNetAddressString(na.IDAddressString(info.ID(), info.ListenAddr))
+	_, err := na.NewFromString(na.IDAddrString(info.ID(), info.ListenAddr))
 	if err != nil {
 		return err
 	}
@@ -206,13 +206,13 @@ OUTER_LOOP:
 	return nil
 }
 
-// NetAddress returns a NetAddress derived from the DefaultNodeInfo -
+// NetAddr returns a NetAddr derived from the DefaultNodeInfo -
 // it includes the authenticated peer ID and the self-reported
 // ListenAddr. Note that the ListenAddr is not authenticated and
 // may not match that address actually dialed if its an outbound peer.
-func (info DefaultNodeInfo) NetAddress() (*na.NetAddress, error) {
-	idAddr := na.IDAddressString(info.ID(), info.ListenAddr)
-	return na.NewNetAddressString(idAddr)
+func (info DefaultNodeInfo) NetAddr() (*na.NetAddr, error) {
+	idAddr := na.IDAddrString(info.ID(), info.ListenAddr)
+	return na.NewFromString(idAddr)
 }
 
 func (info DefaultNodeInfo) HasChannel(chID byte) bool {

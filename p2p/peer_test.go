@@ -18,7 +18,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
@@ -79,7 +79,7 @@ func TestPeerSend(t *testing.T) {
 }
 
 func createOutboundPeerAndPerformHandshake(
-	addr *na.NetAddress,
+	addr *na.NetAddr,
 	config *config.P2PConfig,
 	mConfig tcpconn.MConnConfig,
 ) (*peer, error) {
@@ -119,7 +119,7 @@ func createOutboundPeerAndPerformHandshake(
 	return p, nil
 }
 
-func testDial(addr *na.NetAddress, cfg *config.P2PConfig) (net.Conn, error) {
+func testDial(addr *na.NetAddr, cfg *config.P2PConfig) (net.Conn, error) {
 	if cfg.TestDialFail {
 		return nil, errors.New("dial err (peerConfig.DialFail == true)")
 	}
@@ -132,7 +132,7 @@ func testDial(addr *na.NetAddress, cfg *config.P2PConfig) (net.Conn, error) {
 }
 
 func testOutboundPeerConn(
-	addr *na.NetAddress,
+	addr *na.NetAddr,
 	config *config.P2PConfig,
 	persistent bool,
 	// ourNodePrivKey crypto.PrivKey,
@@ -165,13 +165,13 @@ func testOutboundPeerConn(
 type remotePeer struct {
 	PrivKey    crypto.PrivKey
 	Config     *config.P2PConfig
-	addr       *na.NetAddress
+	addr       *na.NetAddr
 	channels   bytes.HexBytes
 	listenAddr string
 	listener   net.Listener
 }
 
-func (rp *remotePeer) Addr() *na.NetAddress {
+func (rp *remotePeer) Addr() *na.NetAddr {
 	return rp.addr
 }
 
@@ -189,7 +189,7 @@ func (rp *remotePeer) Start() {
 		golog.Fatalf("net.Listen tcp :0: %+v", e)
 	}
 	rp.listener = l
-	rp.addr = na.NewNetAddress(nodekey.PubKeyToID(rp.PrivKey.PubKey()), l.Addr())
+	rp.addr = na.New(nodekey.PubKeyToID(rp.PrivKey.PubKey()), l.Addr())
 	if rp.channels == nil {
 		rp.channels = []byte{testCh}
 	}
@@ -200,7 +200,7 @@ func (rp *remotePeer) Stop() {
 	rp.listener.Close()
 }
 
-func (rp *remotePeer) Dial(addr *na.NetAddress) (net.Conn, error) {
+func (rp *remotePeer) Dial(addr *na.NetAddr) (net.Conn, error) {
 	pc, err := testOutboundPeerConn(addr, rp.Config, false)
 	if err != nil {
 		return nil, err

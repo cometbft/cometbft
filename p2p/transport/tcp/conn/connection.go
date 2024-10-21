@@ -37,14 +37,12 @@ const (
 	// TODO: remove values present in config.
 	defaultFlushThrottle = 10 * time.Millisecond
 
-	defaultSendQueueCapacity   = 1
-	defaultRecvBufferCapacity  = 4096
-	defaultRecvMessageCapacity = 22020096      // 21MB
-	defaultSendRate            = int64(512000) // 500KB/s
-	defaultRecvRate            = int64(512000) // 500KB/s
-	defaultSendTimeout         = 10 * time.Second
-	defaultPingInterval        = 60 * time.Second
-	defaultPongTimeout         = 45 * time.Second
+	defaultSendQueueCapacity = 1
+	defaultSendRate          = int64(512000) // 500KB/s
+	defaultRecvRate          = int64(512000) // 500KB/s
+	defaultSendTimeout       = 10 * time.Second
+	defaultPingInterval      = 60 * time.Second
+	defaultPongTimeout       = 45 * time.Second
 )
 
 type (
@@ -744,29 +742,6 @@ func (c *MConnection) Status() ConnectionStatus {
 }
 
 // -----------------------------------------------------------------------------
-
-type ChannelDescriptor struct {
-	ID                  byte
-	Priority            int
-	SendQueueCapacity   int
-	RecvBufferCapacity  int
-	RecvMessageCapacity int
-	MessageType         proto.Message
-}
-
-func (chDesc ChannelDescriptor) FillDefaults() (filled ChannelDescriptor) {
-	if chDesc.SendQueueCapacity == 0 {
-		chDesc.SendQueueCapacity = defaultSendQueueCapacity
-	}
-	if chDesc.RecvBufferCapacity == 0 {
-		chDesc.RecvBufferCapacity = defaultRecvBufferCapacity
-	}
-	if chDesc.RecvMessageCapacity == 0 {
-		chDesc.RecvMessageCapacity = defaultRecvMessageCapacity
-	}
-	filled = chDesc
-	return filled
-}
 
 // TODO: lowercase.
 // NOTE: not goroutine-safe.

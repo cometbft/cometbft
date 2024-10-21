@@ -131,19 +131,19 @@ func (env *Environment) Genesis(*rpctypes.Context) (*ctypes.ResultGenesis, error
 
 func (env *Environment) GenesisChunked(
 	_ *rpctypes.Context,
-	chunk uint,
+	chunkID uint,
 ) (*ctypes.ResultGenesisChunk, error) {
-	if env.genChunks == nil {
+	if env.genesisChunks == nil {
 		// See discussion in the following PR for why we still serve chunk 0 even
 		// if env.genChunks is nil:
 		// https://github.com/cometbft/cometbft/pull/4235#issuecomment-2389109521
-		if chunk == 0 {
-			genesisJSON, err := cmtjson.Marshal(env.GenDoc)
+		if chunkID == 0 {
+			fGenesis, err := os.ReadFile(env.GenesisFilePath)
 			if err != nil {
-				return nil, fmt.Errorf("retrieving requested chunk (id=0): %s", err)
+				return nil, fmt.Errorf("retrieving genesis file from disk: %s", err)
 			}
 
-			genesisBase64 := base64.StdEncoding.EncodeToString(genesisJSON)
+			genesisBase64 := base64.StdEncoding.EncodeToString(fGenesis)
 			resp := &ctypes.ResultGenesisChunk{
 				TotalChunks: 1,
 				ChunkNumber: 0,
@@ -160,16 +160,24 @@ func (env *Environment) GenesisChunked(
 		return nil, ErrServiceConfig{ErrNoChunks}
 	}
 
-	id := int(chunk)
+	id := int(chunkID)
 
-	if id > len(env.genChunks)-1 {
-		return nil, ErrInvalidChunkID{id, len(env.genChunks) - 1}
+	if id > len(env.genesisChunks)-1 {
+		return nil, ErrInvalidChunkID{id, len(env.genesisChunks) - 1}
 	}
 
+	chunkPath := env.genesisChunks[id]
+	chunk, err := os.ReadFile(chunkPath)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving chunk %d from disk: %s", id, err)
+	}
+
+	chunkBase64 := base64.StdEncoding.EncodeToString(chunk)
+
 	return &ctypes.ResultGenesisChunk{
-		TotalChunks: len(env.genChunks),
+		TotalChunks: len(env.genesisChunks),
 		ChunkNumber: id,
-		Data:        env.genChunks[id],
+		Data:        chunkBase64,
 	}, nil
 }
 

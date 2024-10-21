@@ -492,20 +492,23 @@ func (h *Header) Hash() cmtbytes.HexBytes {
 		return nil
 	}
 
-	var padded [32]byte
 	padI64 := func(x int64) []byte {
+		var padded [32]byte
 		return big.NewInt(x).FillBytes(padded[:])
 	}
 	padU64 := func(x uint64) []byte {
+		var padded [32]byte
 		return big.NewInt(0).SetUint64(x).FillBytes(padded[:])
 	}
 	padU32 := func(x uint32) []byte {
+		var padded [32]byte
 		return big.NewInt(0).SetUint64(uint64(x)).FillBytes(padded[:])
 	}
 	padBytes := func(b []byte) []byte {
 		if len(b) > 31 {
 			panic("impossible: bytes must fit in F_r")
 		}
+		var padded [32]byte
 		return big.NewInt(0).SetBytes(b).FillBytes(padded[:])
 	}
 	uncons := func(b []byte) []byte {

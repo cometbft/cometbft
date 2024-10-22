@@ -59,11 +59,6 @@ type Node struct {
 	// config
 	config *cfg.Config
 
-	// genesisDoc stores the initial validator set.
-	// NOTE: this pointer will be set to nil once startup is done. In future work
-	// we plan to remove this field altogether so that the genesis isn't stored in
-	// memory at runtime.
-	genesisDoc    *types.GenesisDoc
 	genesisTime   time.Time
 	privValidator types.PrivValidator // local node's validator key
 
@@ -554,7 +549,6 @@ func NewNodeWithCliParams(ctx context.Context,
 
 	node := &Node{
 		config:        config,
-		genesisDoc:    genDoc,
 		genesisTime:   genDoc.GenesisTime,
 		privValidator: privValidator,
 
@@ -661,8 +655,6 @@ func (n *Node) OnStart() error {
 	if err := n.pruner.Start(); err != nil {
 		return ErrStartPruning{Err: err}
 	}
-
-	n.genesisDoc = nil
 
 	return nil
 }
@@ -785,7 +777,6 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 			P2PTransport:   n,
 			PubKey:         pubKey,
 
-			GenDoc:           n.genesisDoc,
 			TxIndexer:        n.txIndexer,
 			BlockIndexer:     n.blockIndexer,
 			ConsensusReactor: n.consensusReactor,

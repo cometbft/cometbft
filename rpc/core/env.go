@@ -125,12 +125,12 @@ type Environment struct {
 // It is called on Node startup and should be called only once.
 // Rules of chunking:
 //   - if the genesis file's size is <= genesisChunkSize, this function returns
-//     without doing anything. We will fetch the genesis from disk to serve calls to
-//     the `/genesis` RPC API endpoint.
+//     without doing anything. The `/genesis` RPC API endpoint will fetch the genesis
+//     from disk to serve requests.
 //   - if the genesis file's size is > genesisChunkSize, then use chunking. The
 //     function splits the genesis file into chunks of genesisChunkSize and stores
-//     each chunk on disk. We will fetch each genesis chunk from disk to serve calls
-//     to the `/genesis_chunked` RPC API endpoint.
+//     each chunk on disk.  The `/genesis_chunked` RPC API endpoint will fetch the
+//     genesis file chunks from disk to serve requests.
 func (env *Environment) InitGenesisChunks() error {
 	if len(env.genesisChunks) > 0 {
 		// we already computed the chunks, return.

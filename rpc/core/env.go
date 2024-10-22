@@ -100,7 +100,6 @@ type Environment struct {
 
 	// objects
 	PubKey       crypto.PubKey
-	GenDoc       *types.GenesisDoc // cache the genesis structure
 	TxIndexer    txindex.TxIndexer
 	BlockIndexer indexer.BlockIndexer
 	EventBus     *types.EventBus // thread safe
@@ -109,9 +108,6 @@ type Environment struct {
 	Logger log.Logger
 
 	Config cfg.RPCConfig
-
-	// cache of chunked genesis data.
-	genChunks []string
 
 	GenesisFilePath string // the genesis file's full path on disk
 

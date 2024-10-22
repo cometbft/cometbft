@@ -80,7 +80,7 @@ func TestInitGenesisChunks(t *testing.T) {
 		// be empty.
 		if len(env.genesisChunks) > 0 {
 			formatStr := "chunks map should be empty, but it's %v"
-			t.Fatalf(formatStr, env.genChunks)
+			t.Fatalf(formatStr, env.genesisChunks)
 		}
 	})
 
@@ -109,7 +109,7 @@ func TestInitGenesisChunks(t *testing.T) {
 		wantChunks := (genesisSize + genesisChunkSize - 1) / genesisChunkSize
 		if len(env.genesisChunks) != wantChunks {
 			formatStr := "expected number of chunks: %d, but got: %d"
-			t.Errorf(formatStr, wantChunks, len(env.genChunks))
+			t.Errorf(formatStr, wantChunks, len(env.genesisChunks))
 		}
 
 		// We now check if the original genesis doc and the genesis doc

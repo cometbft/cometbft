@@ -31,7 +31,7 @@ const (
 
 	// genesisChunkSize is the maximum size, in bytes, of each
 	// chunk in the genesis structure for the chunked API.
-	genesisChunkSize = 16 * 1024 * 1024 // 16
+	genesisChunkSize = 2 * 1024 * 1024 // 2 MB
 )
 
 // These interfaces are used by RPC and must be thread safe

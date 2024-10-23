@@ -279,12 +279,13 @@ func verifyCommitBatch(
 		// Validate signature.
 		voteSignBytes := commit.VoteSignBytes(chainID, int32(idx))
 
-		cacheValAddress, sigIsInCache := []byte{}, false
+		cacheHit := false
 		if verifiedSignatureCache != nil {
-			cacheValAddress, sigIsInCache = verifiedSignatureCache[string(voteSignBytes)]
+			cacheValAddress, sigIsInCache := verifiedSignatureCache[string(voteSignBytes)]
+			cacheHit = sigIsInCache && bytes.Equal(cacheValAddress, commitSig.ValidatorAddress)
 		}
 
-		if !sigIsInCache || !bytes.Equal(cacheValAddress, commitSig.ValidatorAddress) {
+		if !cacheHit {
 			// add the key, sig and message to the verifier
 			if err := bv.Add(val.PubKey, voteSignBytes, commitSig.Signature); err != nil {
 				return err
@@ -409,13 +410,14 @@ func verifyCommitSingle(
 
 		voteSignBytes = commit.VoteSignBytes(chainID, int32(idx))
 
-		cacheKey, cacheValAddress, sigIsInCache := "", []byte{}, false
+		cacheKey, cacheHit := "", false
 		if verifiedSignatureCache != nil {
 			cacheKey = string(voteSignBytes)
-			cacheValAddress, sigIsInCache = verifiedSignatureCache[cacheKey]
+			cacheValAddress, sigIsInCache := verifiedSignatureCache[cacheKey]
+			cacheHit = sigIsInCache && bytes.Equal(cacheValAddress, commitSig.ValidatorAddress)
 		}
 
-		if !sigIsInCache || !bytes.Equal(cacheValAddress, commitSig.ValidatorAddress) {
+		if !cacheHit {
 			if !val.PubKey.VerifySignature(voteSignBytes, commitSig.Signature) {
 				return fmt.Errorf("wrong signature (#%d): %X", idx, commitSig.Signature)
 			}

@@ -46,12 +46,12 @@ func VerifyCommit(chainID string, vals *ValidatorSet, blockID BlockID,
 	// attempt to batch verify
 	if shouldBatchVerify(vals, commit) {
 		return verifyCommitBatch(chainID, vals, commit,
-			votingPowerNeeded, ignore, count, true, true)
+			votingPowerNeeded, ignore, count, true, true, make(map[string]struct{}))
 	}
 
 	// if verification failed or is not supported then fallback to single verification
 	return verifyCommitSingle(chainID, vals, commit, votingPowerNeeded,
-		ignore, count, true, true)
+		ignore, count, true, true, make(map[string]struct{}))
 }
 
 // LIGHT CLIENT VERIFICATION METHODS
@@ -66,8 +66,9 @@ func VerifyCommitLight(
 	blockID BlockID,
 	height int64,
 	commit *Commit,
+	verifiedSignatureCache map[string]struct{},
 ) error {
-	return verifyCommitLightInternal(chainID, vals, blockID, height, commit, false)
+	return verifyCommitLightInternal(chainID, vals, blockID, height, commit, false, verifiedSignatureCache)
 }
 
 // VerifyCommitLightAllSignatures verifies +2/3 of the set had signed the given commit.
@@ -80,7 +81,7 @@ func VerifyCommitLightAllSignatures(
 	height int64,
 	commit *Commit,
 ) error {
-	return verifyCommitLightInternal(chainID, vals, blockID, height, commit, true)
+	return verifyCommitLightInternal(chainID, vals, blockID, height, commit, true, make(map[string]struct{}))
 }
 
 func verifyCommitLightInternal(
@@ -90,6 +91,7 @@ func verifyCommitLightInternal(
 	height int64,
 	commit *Commit,
 	countAllSignatures bool,
+	verifiedSignatureCache map[string]struct{},
 ) error {
 	// run a basic validation of the arguments
 	if err := verifyBasicValsAndCommit(vals, commit, height, blockID); err != nil {
@@ -108,12 +110,12 @@ func verifyCommitLightInternal(
 	// attempt to batch verify
 	if shouldBatchVerify(vals, commit) {
 		return verifyCommitBatch(chainID, vals, commit,
-			votingPowerNeeded, ignore, count, countAllSignatures, true)
+			votingPowerNeeded, ignore, count, countAllSignatures, true, verifiedSignatureCache)
 	}
 
 	// if verification failed or is not supported then fallback to single verification
 	return verifyCommitSingle(chainID, vals, commit, votingPowerNeeded,
-		ignore, count, countAllSignatures, true)
+		ignore, count, countAllSignatures, true, verifiedSignatureCache)
 }
 
 // VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
@@ -131,8 +133,9 @@ func VerifyCommitLightTrusting(
 	vals *ValidatorSet,
 	commit *Commit,
 	trustLevel cmtmath.Fraction,
+	verifiedSignatureCache map[string]struct{},
 ) error {
-	return verifyCommitLightTrustingInternal(chainID, vals, commit, trustLevel, false)
+	return verifyCommitLightTrustingInternal(chainID, vals, commit, trustLevel, false, verifiedSignatureCache)
 }
 
 // VerifyCommitLightTrustingAllSignatures verifies that trustLevel of the validator
@@ -150,7 +153,7 @@ func VerifyCommitLightTrustingAllSignatures(
 	commit *Commit,
 	trustLevel cmtmath.Fraction,
 ) error {
-	return verifyCommitLightTrustingInternal(chainID, vals, commit, trustLevel, true)
+	return verifyCommitLightTrustingInternal(chainID, vals, commit, trustLevel, true, make(map[string]struct{}))
 }
 
 func verifyCommitLightTrustingInternal(
@@ -159,6 +162,7 @@ func verifyCommitLightTrustingInternal(
 	commit *Commit,
 	trustLevel cmtmath.Fraction,
 	countAllSignatures bool,
+	verifiedSignatureCache map[string]struct{},
 ) error {
 	// sanity checks
 	if vals == nil {
@@ -189,12 +193,12 @@ func verifyCommitLightTrustingInternal(
 	// up by address rather than index.
 	if shouldBatchVerify(vals, commit) {
 		return verifyCommitBatch(chainID, vals, commit,
-			votingPowerNeeded, ignore, count, countAllSignatures, false)
+			votingPowerNeeded, ignore, count, countAllSignatures, false, verifiedSignatureCache)
 	}
 
 	// attempt with single verification
 	return verifyCommitSingle(chainID, vals, commit, votingPowerNeeded,
-		ignore, count, countAllSignatures, false)
+		ignore, count, countAllSignatures, false, verifiedSignatureCache)
 }
 
 // ValidateHash returns an error if the hash is not empty, but its
@@ -226,6 +230,7 @@ func verifyCommitBatch(
 	countSig func(CommitSig) bool,
 	countAllSignatures bool,
 	lookUpByIndex bool,
+	verifiedSignatureCache map[string]struct{},
 ) error {
 	var (
 		val                *Validator
@@ -273,11 +278,16 @@ func verifyCommitBatch(
 		// Validate signature.
 		voteSignBytes := commit.VoteSignBytes(chainID, int32(idx))
 
-		// add the key, sig and message to the verifier
-		if err := bv.Add(val.PubKey, voteSignBytes, commitSig.Signature); err != nil {
-			return err
+		cacheKey := string(val.Address) + string(voteSignBytes)
+		_, ok := verifiedSignatureCache[cacheKey]
+
+		if !ok {
+			// add the key, sig and message to the verifier
+			if err := bv.Add(val.PubKey, voteSignBytes, commitSig.Signature); err != nil {
+				return err
+			}
+			batchSigIdxs = append(batchSigIdxs, idx)
 		}
-		batchSigIdxs = append(batchSigIdxs, idx)
 
 		// If this signature counts then add the voting power of the validator
 		// to the tally
@@ -302,17 +312,27 @@ func verifyCommitBatch(
 	ok, validSigs := bv.Verify()
 	if ok {
 		// success
+		for i := range validSigs {
+			idx := batchSigIdxs[i]
+			sig := commit.Signatures[idx]
+			cacheKey := string(sig.ValidatorAddress) + string(commit.VoteSignBytes(chainID, int32(idx)))
+			verifiedSignatureCache[cacheKey] = struct{}{}
+		}
+
 		return nil
 	}
 
 	// one or more of the signatures is invalid, find and return the first
 	// invalid signature.
 	for i, ok := range validSigs {
+		// go back from the batch index to the commit.Signatures index
+		idx := batchSigIdxs[i]
+		sig := commit.Signatures[idx]
 		if !ok {
-			// go back from the batch index to the commit.Signatures index
-			idx := batchSigIdxs[i]
-			sig := commit.Signatures[idx]
 			return fmt.Errorf("wrong signature (#%d): %X", idx, sig)
+		} else {
+			cacheKey := string(sig.ValidatorAddress) + string(commit.VoteSignBytes(chainID, int32(idx)))
+			verifiedSignatureCache[cacheKey] = struct{}{}
 		}
 	}
 
@@ -339,6 +359,7 @@ func verifyCommitSingle(
 	countSig func(CommitSig) bool,
 	countAllSignatures bool,
 	lookUpByIndex bool,
+	verifiedSignatureCache map[string]struct{},
 ) error {
 	var (
 		val                *Validator
@@ -384,8 +405,15 @@ func verifyCommitSingle(
 
 		voteSignBytes = commit.VoteSignBytes(chainID, int32(idx))
 
-		if !val.PubKey.VerifySignature(voteSignBytes, commitSig.Signature) {
-			return fmt.Errorf("wrong signature (#%d): %X", idx, commitSig.Signature)
+		cacheKey := string(val.Address) + string(voteSignBytes)
+		_, ok := verifiedSignatureCache[cacheKey]
+
+		if !ok {
+			if !val.PubKey.VerifySignature(voteSignBytes, commitSig.Signature) {
+				return fmt.Errorf("wrong signature (#%d): %X", idx, commitSig.Signature)
+			} else {
+				verifiedSignatureCache[cacheKey] = struct{}{}
+			}
 		}
 
 		// If this signature counts then add the voting power of the validator

@@ -52,7 +52,7 @@ func VerifyNonAdjacent(
 		return ErrInvalidHeader{err}
 	}
 
-	verifiedSignatureCache := make(map[string]struct{})
+	verifiedSignatureCache := make(map[string][]byte)
 	// Ensure that +`trustLevel` (default 1/3) or more of last trusted validators signed correctly.
 	err := trustedVals.VerifyCommitLightTrusting(trustedHeader.ChainID, untrustedHeader.Commit, trustLevel, verifiedSignatureCache)
 	if err != nil {
@@ -119,7 +119,7 @@ func VerifyAdjacent(
 
 	// Ensure that +2/3 of new validators signed correctly.
 	if err := untrustedVals.VerifyCommitLight(trustedHeader.ChainID, untrustedHeader.Commit.BlockID,
-		untrustedHeader.Height, untrustedHeader.Commit, make(map[string]struct{})); err != nil {
+		untrustedHeader.Height, untrustedHeader.Commit, nil); err != nil {
 		return ErrInvalidHeader{err}
 	}
 

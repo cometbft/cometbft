@@ -1642,7 +1642,7 @@ func TestVerifyCommitSingleWithInvalidSignatures(t *testing.T) {
 	// only count the signatures that are for the block
 	count := func(c CommitSig) bool { return c.BlockIDFlag == BlockIDFlagCommit }
 
-	err := verifyCommitSingle(cid, vs, commit, votingPowerNeeded, ignore, count, true, true, make(map[string]struct{}))
+	err := verifyCommitSingle(cid, vs, commit, votingPowerNeeded, ignore, count, true, true, nil)
 	require.Error(t, err)
 }
 

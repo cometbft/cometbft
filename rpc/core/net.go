@@ -8,7 +8,7 @@ import (
 
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/p2p"
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
@@ -166,7 +166,7 @@ func getIDs(peers []string) ([]string, error) {
 	for _, peer := range peers {
 		spl := strings.Split(peer, "@")
 		if len(spl) != 2 {
-			return nil, na.ErrNetAddressNoID{Addr: peer}
+			return nil, na.ErrNoID{Addr: peer}
 		}
 		ids = append(ids, spl[0])
 	}

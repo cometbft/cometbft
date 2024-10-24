@@ -11,7 +11,7 @@ import (
 	"github.com/cometbft/cometbft/internal/cmap"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
@@ -41,7 +41,7 @@ type Peer interface {
 
 	NodeInfo() ni.NodeInfo // peer's info
 	Status() tcpconn.ConnectionStatus
-	SocketAddr() *na.NetAddress // actual address of the socket
+	SocketAddr() *na.NetAddr // actual address of the socket
 
 	HasChannel(chID byte) bool // Does the peer implement this channel?
 	Send(e Envelope) bool      // Send a message to the peer, blocking version
@@ -62,7 +62,7 @@ type peerConn struct {
 	persistent bool
 	conn       net.Conn // Source connection
 
-	socketAddr *na.NetAddress
+	socketAddr *na.NetAddr
 
 	// cached RemoteIP()
 	ip net.IP
@@ -71,7 +71,7 @@ type peerConn struct {
 func newPeerConn(
 	outbound, persistent bool,
 	conn net.Conn,
-	socketAddr *na.NetAddress,
+	socketAddr *na.NetAddr,
 ) peerConn {
 	return peerConn{
 		outbound:   outbound,
@@ -248,7 +248,7 @@ func (p *peer) NodeInfo() ni.NodeInfo {
 // For outbound peers, it's the address dialed (after DNS resolution).
 // For inbound peers, it's the address returned by the underlying connection
 // (not what's reported in the peer's NodeInfo).
-func (p *peer) SocketAddr() *na.NetAddress {
+func (p *peer) SocketAddr() *na.NetAddr {
 	return p.peerConn.socketAddr
 }
 
@@ -465,13 +465,13 @@ func createMConnection(
 	)
 }
 
-func wrapPeer(c net.Conn, ni ni.NodeInfo, cfg peerConfig, socketAddr *na.NetAddress, mConfig tcpconn.MConnConfig) Peer {
+func wrapPeer(c net.Conn, ni ni.NodeInfo, cfg peerConfig, socketAddr *na.NetAddr, mConfig tcpconn.MConnConfig) Peer {
 	persistent := false
 	if cfg.isPersistent != nil {
 		if cfg.outbound {
 			persistent = cfg.isPersistent(socketAddr)
 		} else {
-			selfReportedAddr, err := ni.NetAddress()
+			selfReportedAddr, err := ni.NetAddr()
 			if err == nil {
 				persistent = cfg.isPersistent(selfReportedAddr)
 			}

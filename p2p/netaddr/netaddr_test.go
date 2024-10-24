@@ -1,4 +1,4 @@
-package netaddress
+package netaddr
 
 import (
 	"net"
@@ -9,11 +9,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNetAddress_String(t *testing.T) {
+func Test_String(t *testing.T) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:8080")
 	require.NoError(t, err)
 
-	netAddr := NewNetAddress("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef", tcpAddr)
+	netAddr := New("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef", tcpAddr)
 
 	var wg sync.WaitGroup
 
@@ -31,23 +31,23 @@ func TestNetAddress_String(t *testing.T) {
 	require.Equal(t, "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@127.0.0.1:8080", s)
 }
 
-func TestNewNetAddress(t *testing.T) {
+func TestNew(t *testing.T) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:8080")
 	require.NoError(t, err)
 
 	assert.Panics(t, func() {
-		NewNetAddress("", tcpAddr)
+		New("", tcpAddr)
 	})
 
-	addr := NewNetAddress("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef", tcpAddr)
+	addr := New("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef", tcpAddr)
 	assert.Equal(t, "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@127.0.0.1:8080", addr.String())
 
 	assert.NotPanics(t, func() {
-		NewNetAddress("", &net.UDPAddr{IP: net.ParseIP("127.0.0.1"), Port: 8000})
-	}, "Calling NewNetAddress with UDPAddr should not panic in testing")
+		New("", &net.UDPAddr{IP: net.ParseIP("127.0.0.1"), Port: 8000})
+	}, "Calling New with UDPAddr should not panic in testing")
 }
 
-func TestNewNetAddressString(t *testing.T) {
+func TestNewFromString(t *testing.T) {
 	testCases := []struct {
 		name     string
 		addr     string
@@ -111,20 +111,20 @@ func TestNewNetAddressString(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			addr, err := NewNetAddressString(tc.addr)
+			addr, err := NewFromString(tc.addr)
 			if tc.correct {
 				if assert.NoError(t, err, tc.addr) { //nolint:testifylint // require.Error doesn't work with the conditional here
 					assert.Equal(t, tc.expected, addr.String())
 				}
 			} else {
-				require.ErrorAs(t, err, &ErrNetAddressInvalid{Addr: addr.String(), Err: err})
+				require.ErrorAs(t, err, &ErrInvalid{Addr: addr.String(), Err: err})
 			}
 		})
 	}
 }
 
-func TestNewNetAddressStrings(t *testing.T) {
-	addrs, errs := NewNetAddressStrings([]string{
+func TestNewFromStrings(t *testing.T) {
+	addrs, errs := NewFromStrings([]string{
 		"127.0.0.1:8080",
 		"deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@127.0.0.1:8080",
 		"deadbeefdeadbeefdeadbeefdeadbeefdeadbeed@127.0.0.2:8080",
@@ -133,12 +133,12 @@ func TestNewNetAddressStrings(t *testing.T) {
 	assert.Len(t, errs, 1)
 }
 
-func TestNewNetAddressIPPort(t *testing.T) {
-	addr := NewNetAddressIPPort(net.ParseIP("127.0.0.1"), 8080)
+func TestNewFromIPPort(t *testing.T) {
+	addr := NewFromIPPort(net.ParseIP("127.0.0.1"), 8080)
 	assert.Equal(t, "127.0.0.1:8080", addr.String())
 }
 
-func TestNetAddressProperties(t *testing.T) {
+func TestProperties(t *testing.T) {
 	// TODO add more test cases
 	testCases := []struct {
 		addr     string
@@ -151,7 +151,7 @@ func TestNetAddressProperties(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		addr, err := NewNetAddressString(tc.addr)
+		addr, err := NewFromString(tc.addr)
 		require.NoError(t, err)
 
 		err = addr.Valid()
@@ -165,7 +165,7 @@ func TestNetAddressProperties(t *testing.T) {
 	}
 }
 
-func TestNetAddressReachabilityTo(t *testing.T) {
+func TestReachabilityTo(t *testing.T) {
 	// TODO add more test cases
 	testCases := []struct {
 		addr         string
@@ -181,10 +181,10 @@ func TestNetAddressReachabilityTo(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		addr, err := NewNetAddressString(tc.addr)
+		addr, err := NewFromString(tc.addr)
 		require.NoError(t, err)
 
-		other, err := NewNetAddressString(tc.other)
+		other, err := NewFromString(tc.other)
 		require.NoError(t, err)
 
 		assert.Equal(t, tc.reachability, addr.ReachabilityTo(other))

@@ -3,24 +3,24 @@ package pex
 import (
 	"time"
 
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 )
 
 // knownAddress tracks information about a known network address
 // that is used to determine how viable an address is.
 type knownAddress struct {
-	Addr        *na.NetAddress `json:"addr"`
-	Src         *na.NetAddress `json:"src"`
-	Buckets     []int          `json:"buckets"`
-	Attempts    int32          `json:"attempts"`
-	BucketType  byte           `json:"bucket_type"`
-	LastAttempt time.Time      `json:"last_attempt"`
-	LastSuccess time.Time      `json:"last_success"`
-	LastBanTime time.Time      `json:"last_ban_time"`
+	Addr        *na.NetAddr `json:"addr"`
+	Src         *na.NetAddr `json:"src"`
+	Buckets     []int       `json:"buckets"`
+	Attempts    int32       `json:"attempts"`
+	BucketType  byte        `json:"bucket_type"`
+	LastAttempt time.Time   `json:"last_attempt"`
+	LastSuccess time.Time   `json:"last_success"`
+	LastBanTime time.Time   `json:"last_ban_time"`
 }
 
-func newKnownAddress(addr *na.NetAddress, src *na.NetAddress) *knownAddress {
+func newKnownAddress(addr *na.NetAddr, src *na.NetAddr) *knownAddress {
 	return &knownAddress{
 		Addr:        addr,
 		Src:         src,

@@ -26,9 +26,10 @@ var innerHashTests = []*innerHashTest{
 func BenchmarkInnerHash(b *testing.B) {
 	b.ReportAllocs()
 
+	h := sha256.New()
 	for i := 0; i < b.N; i++ {
 		for _, tt := range innerHashTests {
-			got := innerHash([]byte(tt.left), []byte(tt.right))
+			got := innerHash(h, []byte(tt.left), []byte(tt.right))
 			if g, w := len(got), sha256.Size; g != w {
 				b.Fatalf("size discrepancy: got %d, want %d", g, w)
 			}

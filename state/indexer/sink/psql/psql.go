@@ -188,7 +188,7 @@ func (es *EventSink) IndexTxEvents(txrs []*abci.TxResult) error {
 		}
 
 		// Index the hash of the underlying transaction as a hex string.
-		txHash := fmt.Sprintf("%X", types.Tx(txr.Tx).Hash())
+		txHash := types.Tx(txr.Tx).Hash().String()
 
 		if err := runInTransaction(es.store, func(dbtx *sql.Tx) error {
 			// Find the block associated with this transaction. The block header

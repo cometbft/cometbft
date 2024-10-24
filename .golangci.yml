@@ -53,21 +53,25 @@ linters-settings:
           - "!$test"
         allow:
           - $gostd
+          - github.com/BurntSushi/toml
+          - github.com/ChainSafe/go-schnorrkel
+          - github.com/Masterminds/semver/v3
+          - github.com/btcsuite/btcd/btcec/v2
           - github.com/cometbft
           - github.com/cosmos
-          - github.com/btcsuite/btcd/btcec/v2
-          - github.com/BurntSushi/toml
+          - github.com/creachadair/taskgroup
+          - github.com/decred/dcrd/dcrec/secp256k1/v4
           - github.com/go-git/go-git/v5
           - github.com/go-kit
           - github.com/go-logfmt/logfmt
           - github.com/gofrs/uuid
           - github.com/google
           - github.com/gorilla/websocket
-          - github.com/informalsystems/tm-load-test/pkg/loadtest
+          - github.com/gtank/merlin
           - github.com/hashicorp/golang-lru/v2
+          - github.com/informalsystems/tm-load-test/pkg/loadtest
           - github.com/lib/pq
           - github.com/libp2p/go-buffer-pool
-          - github.com/Masterminds/semver/v3
           - github.com/minio/highwayhash
           - github.com/oasisprotocol/curve25519-voi
           - github.com/pkg/errors
@@ -78,23 +82,21 @@ linters-settings:
           - github.com/spf13
           - github.com/stretchr/testify/require
           - github.com/syndtr/goleveldb
-          - github.com/ChainSafe/go-schnorrkel
-          - github.com/creachadair/taskgroup
-          - github.com/gtank/merlin
-          - github.com/decred/dcrd/dcrec/secp256k1/v4
       test:
         files:
           - "$test"
         allow:
           - $gostd
-          - github.com/cosmos
-          - github.com/cometbft
           - github.com/adlio/schema
           - github.com/btcsuite/btcd
+          - github.com/cometbft
+          - github.com/cosmos
+          - github.com/decred/dcrd/dcrec/secp256k1/v4
           - github.com/fortytw2/leaktest
           - github.com/go-kit
           - github.com/google/uuid
           - github.com/gorilla/websocket
+          - github.com/gtank/merlin
           - github.com/lib/pq
           - github.com/oasisprotocol/curve25519-voi/primitives/merlin
           - github.com/ory/dockertest
@@ -102,7 +104,6 @@ linters-settings:
           - github.com/prometheus/client_golang/prometheus/promhttp
           - github.com/spf13
           - github.com/stretchr/testify
-          - github.com/decred/dcrd/dcrec/secp256k1/v4
 
   revive:
     enable-all-rules: true

@@ -3,10 +3,11 @@ package core
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
-	"os"
 	"reflect"
 	"slices"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -87,24 +88,24 @@ func TestInitGenesisChunks(t *testing.T) {
 
 	// Tests with a genesis file > genesisChunkSize, i.e., chunking, pointer to
 	// GenesisDoc is nil, chunks slice stored in genChunks field.
-	// The test genesis file has an app_state of key-value string pairs
-	// automatically generated (~42MB).
+	// The test genesis has an app_state of key-value string pairs automatically
+	// generated (~42MB).
 	t.Run("Chunking", func(t *testing.T) {
-		const fGenesisPath = "./testdata/genesis_big.json"
-
-		genesisData, err := os.ReadFile(fGenesisPath)
-		if err != nil {
-			t.Fatalf("reading test genesis file at %q: %s", fGenesisPath, err)
-		}
-
-		genesisDoc := &types.GenesisDoc{}
-		if err := cmtjson.Unmarshal(genesisData, genesisDoc); err != nil {
+		genDoc := &types.GenesisDoc{}
+		if err := cmtjson.Unmarshal([]byte(_testGenesis), genDoc); err != nil {
 			t.Fatalf("test genesis serialization: %s", err)
 		}
 
+		appState, err := genAppState()
+		if err != nil {
+			t.Fatalf("generating dummy app_state for testing: %s", err)
+		}
+
+		genDoc.AppState = appState
+
 		env := &Environment{
 			genChunks: nil,
-			GenDoc:    genesisDoc,
+			GenDoc:    genDoc,
 		}
 
 		if err := env.InitGenesisChunks(); err != nil {
@@ -125,15 +126,17 @@ func TestInitGenesisChunks(t *testing.T) {
 			// file (`genesisData` above) because the size would differ due to JSON
 			// serialization removing whitespace and formatting, omitting default or
 			// zero values, and optimizing data (e.g., numbers).
-			genesisJSON, err := cmtjson.Marshal(genesisDoc)
+			genesisJSON, err := cmtjson.Marshal(genDoc)
 			if err != nil {
 				t.Fatalf("test genesis re-serialization: %s", err)
 			}
 
 			// Because the genesis file is > genesisChunkSize, we expect chunks.
 			// genesisChunkSize is a global const defined in env.go.
-			genesisSize := len(genesisJSON)
-			wantChunks := (genesisSize + genesisChunkSize - 1) / genesisChunkSize
+			var (
+				genesisSize = len(genesisJSON)
+				wantChunks  = (genesisSize + genesisChunkSize - 1) / genesisChunkSize
+			)
 			if len(env.genChunks) != wantChunks {
 				formatStr := "expected number of chunks: %d, but got: %d"
 				t.Errorf(formatStr, wantChunks, len(env.genChunks))
@@ -232,4 +235,33 @@ func TestPaginationPerPage(t *testing.T) {
 	// nil case
 	p := env.validatePerPage(nil)
 	assert.Equal(t, defaultPerPage, p)
+}
+
+// genAppState is a helper function that generates a dummy "app_state" to be used in
+// tests. To test the splitting of a genesis into smaller chunks, we need to use a
+// big genesis file. Typically, the bulk of a genesis file comes from the app_state
+// field.
+// It returns the app_state encoded to JSON.
+func genAppState() ([]byte, error) {
+	const (
+		// how many KV pair do you want to put in app_state.
+		// Current value generates an app_state of ~40MB
+		size = 1024 * 1024 * 2
+
+		// characters use to fill in the KV pairs of app_state
+		alphabet     = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+		alphabetSize = len(alphabet)
+	)
+
+	appState := make(map[string]string, size)
+	for i := range size {
+		appState["initial"+strconv.Itoa(i)] = string(alphabet[i%alphabetSize])
+	}
+
+	appStateJSON, err := json.Marshal(appState)
+	if err != nil {
+		return nil, fmt.Errorf("serializing test app_state to JSON: %s", err)
+	}
+
+	return appStateJSON, nil
 }

@@ -119,6 +119,56 @@ func TestVoteSet_AddVote_Bad(t *testing.T) {
 	}
 }
 
+func Benchmark_2_3_Maj(b *testing.B) {
+	height, round := int64(1), int32(0)
+
+	voteProto := &Vote{
+		ValidatorAddress: nil, // NOTE: must fill in
+		ValidatorIndex:   -1,  // NOTE: must fill in
+		Height:           height,
+		Round:            round,
+		Type:             PrevoteType,
+		Timestamp:        cmttime.Now(),
+		BlockID:          BlockID{nil, PartSetHeader{}},
+	}
+	blockPartsTotal := uint32(123)
+	blockPartSetHeader := PartSetHeader{blockPartsTotal, crypto.CRandBytes(32)}
+	for i := 0; i < b.N; i++ {
+		voteSet, _, privValidators := randVoteSet(height, round, PrevoteType, 100, 1, false)
+		for i := int32(0); i < int32(100); i += 4 {
+			pubKey, _ := privValidators[i].GetPubKey()
+			adrr := pubKey.Address()
+			vote := withValidator(voteProto, adrr, i)
+			_, err := signAddVote(privValidators[i], withBlockHash(vote, nil), voteSet)
+			require.NoError(b, err)
+			_, _ = voteSet.TwoThirdsMajority()
+
+			pubKey, _ = privValidators[i+1].GetPubKey()
+			adrr = pubKey.Address()
+			vote = withValidator(voteProto, adrr, i+1)
+			_, err = signAddVote(privValidators[i+1], vote, voteSet)
+			require.NoError(b, err)
+			_, _ = voteSet.TwoThirdsMajority()
+
+			pubKey, _ = privValidators[i+2].GetPubKey()
+			adrr = pubKey.Address()
+			vote = withValidator(voteProto, adrr, i+2)
+			blockPartsHeader := PartSetHeader{blockPartsTotal, crypto.CRandBytes(32)}
+			_, err = signAddVote(privValidators[i+2], withBlockPartSetHeader(vote, blockPartsHeader), voteSet)
+			require.NoError(b, err)
+			_, _ = voteSet.TwoThirdsMajority()
+
+			pubKey, _ = privValidators[i+3].GetPubKey()
+			adrr = pubKey.Address()
+			vote = withValidator(voteProto, adrr, i+3)
+			blockPartsHeader = PartSetHeader{blockPartsTotal + 1, blockPartSetHeader.Hash}
+			_, err = signAddVote(privValidators[i+3], withBlockPartSetHeader(vote, blockPartsHeader), voteSet)
+			require.NoError(b, err)
+			_, _ = voteSet.TwoThirdsMajority()
+		}
+	}
+}
+
 func TestVoteSet_2_3Majority(t *testing.T) {
 	height, round := int64(1), int32(0)
 	voteSet, _, privValidators := randVoteSet(height, round, PrevoteType, 10, 1, false)

@@ -207,7 +207,7 @@ func (voteSet *VoteSet) addVote(vote *Vote) (added bool, err error) {
 	}
 
 	// If we already know of this vote, return false.
-	if existing, ok := voteSet.getVote(valIndex, blockKey); ok {
+	if existing, ok := voteSet.getVote(valIndex, blockKey, &vote.BlockID); ok {
 		if bytes.Equal(existing.Signature, vote.Signature) {
 			return false, nil // duplicate
 		}
@@ -232,7 +232,7 @@ func (voteSet *VoteSet) addVote(vote *Vote) (added bool, err error) {
 	}
 
 	// Add vote and get conflicting vote if any.
-	added, conflicting := voteSet.addVerifiedVote(vote, blockKey, val.VotingPower)
+	added, conflicting := voteSet.addVerifiedVote(vote, vote.BlockID, blockKey, val.VotingPower)
 	if conflicting != nil {
 		return added, NewConflictingVoteError(conflicting, vote)
 	}
@@ -243,8 +243,8 @@ func (voteSet *VoteSet) addVote(vote *Vote) (added bool, err error) {
 }
 
 // getVote returns (vote, true) if vote exists for valIndex and blockKey.
-func (voteSet *VoteSet) getVote(valIndex int32, blockKey string) (vote *Vote, ok bool) {
-	if existing := voteSet.votes[valIndex]; existing != nil && existing.BlockID.Key() == blockKey {
+func (voteSet *VoteSet) getVote(valIndex int32, blockKey string, blockID *BlockID) (vote *Vote, ok bool) {
+	if existing := voteSet.votes[valIndex]; existing != nil && blockID.Equals(existing.BlockID) {
 		return existing, true
 	}
 	if existing := voteSet.votesByBlock[blockKey].getByIndex(valIndex); existing != nil {
@@ -257,6 +257,7 @@ func (voteSet *VoteSet) getVote(valIndex int32, blockKey string) (vote *Vote, ok
 // If conflicting vote exists, returns it.
 func (voteSet *VoteSet) addVerifiedVote(
 	vote *Vote,
+	blockID BlockID,
 	blockKey string,
 	votingPower int64,
 ) (added bool, conflicting *Vote) {
@@ -269,7 +270,7 @@ func (voteSet *VoteSet) addVerifiedVote(
 		}
 		conflicting = existing
 		// Replace vote if blockKey matches voteSet.maj23.
-		if voteSet.maj23 != nil && voteSet.maj23.Key() == blockKey {
+		if voteSet.maj23 != nil && voteSet.maj23.Equals(blockID) {
 			voteSet.votes[valIndex] = vote
 			voteSet.votesBitArray.SetIndex(int(valIndex), true)
 		}
@@ -340,7 +341,6 @@ func (voteSet *VoteSet) SetPeerMaj23(peerID P2PID, blockID BlockID) error {
 	defer voteSet.mtx.Unlock()
 
 	blockKey := blockID.Key()
-
 	// Make sure peer hasn't already told us something.
 	if existing, ok := voteSet.peerMaj23s[peerID]; ok {
 		if existing.Equals(blockID) {

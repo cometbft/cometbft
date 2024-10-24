@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/btcsuite/btcd/btcutil/base58"
+	"github.com/decred/base58"
 	underlyingsecp256k1 "github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -5,7 +5,7 @@ go 1.22.7
 require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/adlio/schema v1.3.6
-	github.com/btcsuite/btcd/btcutil v1.1.6
+	github.com/decred/base58 v1.0.5
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1
 	github.com/fortytw2/leaktest v1.3.0
@@ -39,7 +39,6 @@ require github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.0
-	github.com/btcsuite/btcd/btcec/v2 v2.3.4
 	github.com/cometbft/cometbft-db v0.14.1
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/go-git/go-git/v5 v5.12.0

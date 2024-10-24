@@ -1,5 +1,30 @@
 # CHANGELOG
 
+## v0.38.13
+
+*October 24, 2024*
+
+This patch release addresses the issue where the `tx_search` JSON-RPC endpoint was not returning all results. It includes a fix in the state
+indexer to resolve this problem. We recommend upgrading to this patch release if you are affected by this issue.
+
+### BUG FIXES
+
+- `[state/indexer]` Fix the `tx_search` results not returning all results by changing the logic in the indexer to copy the key and values instead of reusing an iterator
+  ([\#4295](https://github.com/cometbft/cometbft/issues/4295)). Thanks @faddat for reporting the issue.
+
+### DEPENDENCIES
+
+- `[go/runtime]` Bump Go version to 1.22
+  ([\#4073](https://github.com/cometbft/cometbft/pull/4073))
+- Bump cometbft-db version to v0.12.0
+  ([\#4073](https://github.com/cometbft/cometbft/pull/4073))
+- Bump cometbft-db version to v0.14.1
+  ([\#4321](https://github.com/cometbft/cometbft/pull/4321))
+
+### FEATURES
+
+- `[crypto]` use decred secp256k1 directly ([#4294](https://github.com/cometbft/cometbft/pull/4294))
+
 ## v0.38.12
 
 *September 3, 2024*
@@ -158,6 +183,10 @@ This release contains a few bug fixes and performance improvements.
 - `[mempool]` Before updating the mempool, consider it as full if rechecking is still in progress.
   This will stop accepting transactions in the mempool if the node can't keep up with re-CheckTx.
   ([\#3314](https://github.com/cometbft/cometbft/pull/3314))
+- `[metrics]` Add `evicted_txs` metric to mempool
+  ([\#4019](https://github.com/cometbft/cometbft/pull/4019))
+- `[log]` Change "mempool is full" log to debug level
+  ([\#4123](https://github.com/cometbft/cometbft/pull/4123))
 
 ## v0.38.7
 
@@ -285,6 +314,8 @@ Please check the list below for further details.
   ([\#1825](https://github.com/cometbft/cometbft/pull/1825))
 - `[blocksync]` wait for `poolRoutine` to stop in `(*Reactor).OnStop`
   ([\#1879](https://github.com/cometbft/cometbft/pull/1879))
+- `[metrics]` Call unused `rejected_txs` metric in mempool
+  ([\#4019](https://github.com/cometbft/cometbft/pull/4019))
 
 ### IMPROVEMENTS
 
@@ -359,7 +390,7 @@ gossip.
   ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 - `[config]` Add mempool parameters `experimental_max_gossip_connections_to_persistent_peers` and
   `experimental_max_gossip_connections_to_non_persistent_peers` for limiting the number of peers to
-  which the node gossip transactions. 
+  which the node gossip transactions.
   ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
   ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 

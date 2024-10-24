@@ -5,11 +5,13 @@ go 1.23.1
 require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/adlio/schema v1.3.6
+	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cometbft/cometbft-db v1.0.1
 	github.com/cometbft/cometbft-load-test v0.3.0
 	github.com/cometbft/cometbft/api v1.0.0-rc.1
 	github.com/cosmos/gogoproto v1.7.0
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1
 	github.com/dgraph-io/badger/v4 v4.3.1
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/go-kit/log v0.2.1
@@ -40,8 +42,6 @@ require github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.0
-	github.com/btcsuite/btcd/btcec/v2 v2.3.4
-	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/goccmack/goutil v1.2.3
 	github.com/google/uuid v1.6.0
@@ -74,7 +74,6 @@ require (
 	github.com/containerd/continuity v0.3.0 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/dgraph-io/ristretto v1.0.0 // indirect
 	github.com/docker/cli v24.0.7+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect

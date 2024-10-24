@@ -319,7 +319,7 @@ func (p *peer) HasChannel(chID byte) bool {
 	return false
 }
 
-// Conn returns the underlying connection.
+// Conn returns the underlying peer source connection.
 func (p *peer) Conn() net.Conn {
 	return p.peerConn.conn
 }
@@ -410,7 +410,7 @@ func createMConnection(
 	p *peer,
 	reactorsByCh map[byte]Reactor,
 	msgTypeByChID map[byte]proto.Message,
-	streams []StreamDescriptor,
+	streamDescs []StreamDescriptor,
 	onPeerError func(Peer, any),
 	config tcpconn.MConnConfig,
 ) *tcpconn.MConnection {
@@ -446,19 +446,19 @@ func createMConnection(
 	}
 
 	// filter out non-tcpconn.ChannelDescriptor streams
-	chDescs := make([]*tcpconn.ChannelDescriptor, 0, len(streams))
-	for _, stream := range streams {
+	tcpDescs := make([]*tcpconn.ChannelDescriptor, 0, len(streamDescs))
+	for _, stream := range streamDescs {
 		var ok bool
 		d, ok := stream.(*tcpconn.ChannelDescriptor)
 		if !ok {
 			continue
 		}
-		chDescs = append(chDescs, d)
+		tcpDescs = append(tcpDescs, d)
 	}
 
 	return tcpconn.NewMConnectionWithConfig(
 		conn,
-		chDescs,
+		tcpDescs,
 		onReceive,
 		onError,
 		config,
@@ -491,7 +491,7 @@ func wrapPeer(c net.Conn, ni ni.NodeInfo, cfg peerConfig, socketAddr *na.NetAddr
 		ni,
 		cfg.reactorsByCh,
 		cfg.msgTypeByChID,
-		cfg.chDescs,
+		cfg.streamDescs,
 		cfg.onPeerError,
 		PeerMetrics(cfg.metrics),
 	)

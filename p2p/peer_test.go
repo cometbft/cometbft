@@ -102,19 +102,19 @@ func createOutboundPeerAndPerformHandshake(
 
 	// create peer
 	var (
-		chDescs = []StreamDescriptor{
+		streamDescs = []StreamDescriptor{
 			&tcpconn.ChannelDescriptor{
 				ID:           testCh,
 				Priority:     1,
 				MessageTypeI: &p2p.Message{},
 			},
 		}
-		reactorsByCh  = map[byte]Reactor{testCh: NewTestReactor(chDescs, true)}
+		reactorsByCh  = map[byte]Reactor{testCh: NewTestReactor(streamDescs, true)}
 		msgTypeByChID = map[byte]proto.Message{
 			testCh: &p2p.Message{},
 		}
 	)
-	p := newPeer(pc, mConfig, peerNodeInfo, reactorsByCh, msgTypeByChID, chDescs, func(_ Peer, _ any) {})
+	p := newPeer(pc, mConfig, peerNodeInfo, reactorsByCh, msgTypeByChID, streamDescs, func(_ Peer, _ any) {})
 	p.SetLogger(log.TestingLogger().With("peer", addr))
 	return p, nil
 }

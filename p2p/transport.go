@@ -15,7 +15,7 @@ import (
 // events.
 // TODO(xla): Refactor out with more static Reactor setup and PeerBehaviour.
 type peerConfig struct {
-	chDescs     []StreamDescriptor
+	streamDescs []StreamDescriptor
 	onPeerError func(Peer, any)
 	outbound    bool
 	// isPersistent allows you to set a function, which, given socket address

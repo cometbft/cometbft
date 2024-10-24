@@ -80,7 +80,7 @@ type Switch struct {
 
 	config        *config.P2PConfig
 	reactors      map[string]Reactor
-	chDescs       []StreamDescriptor
+	streamDescs   []StreamDescriptor
 	reactorsByCh  map[byte]Reactor
 	msgTypeByChID map[byte]proto.Message
 	peers         *PeerSet
@@ -121,7 +121,7 @@ func NewSwitch(
 	sw := &Switch{
 		config:               cfg,
 		reactors:             make(map[string]Reactor),
-		chDescs:              make([]StreamDescriptor, 0),
+		streamDescs:          make([]StreamDescriptor, 0),
 		reactorsByCh:         make(map[byte]Reactor),
 		msgTypeByChID:        make(map[byte]proto.Message),
 		peers:                NewPeerSet(),
@@ -173,7 +173,7 @@ func (sw *Switch) AddReactor(name string, reactor Reactor) Reactor {
 		if sw.reactorsByCh[id] != nil {
 			panic(fmt.Sprintf("Stream %X has multiple reactors %v & %v", id, sw.reactorsByCh[id], reactor))
 		}
-		sw.chDescs = append(sw.chDescs, streamDesc)
+		sw.streamDescs = append(sw.streamDescs, streamDesc)
 		sw.reactorsByCh[id] = reactor
 		sw.msgTypeByChID[id] = streamDesc.MessageType()
 	}
@@ -187,9 +187,9 @@ func (sw *Switch) AddReactor(name string, reactor Reactor) Reactor {
 func (sw *Switch) RemoveReactor(name string, reactor Reactor) {
 	for _, streamDesc := range reactor.StreamDescriptors() {
 		// remove channel description
-		for i := 0; i < len(sw.chDescs); i++ {
-			if streamDesc.StreamID() == sw.chDescs[i].StreamID() {
-				sw.chDescs = append(sw.chDescs[:i], sw.chDescs[i+1:]...)
+		for i := 0; i < len(sw.streamDescs); i++ {
+			if streamDesc.StreamID() == sw.streamDescs[i].StreamID() {
+				sw.streamDescs = append(sw.streamDescs[:i], sw.streamDescs[i+1:]...)
 				break
 			}
 		}
@@ -699,7 +699,7 @@ func (sw *Switch) acceptRoutine() {
 			conn,
 			nodeInfo,
 			peerConfig{
-				chDescs:       sw.chDescs,
+				streamDescs:   sw.streamDescs,
 				onPeerError:   sw.StopPeerForError,
 				isPersistent:  sw.IsPeerPersistent,
 				reactorsByCh:  sw.reactorsByCh,
@@ -788,7 +788,7 @@ func (sw *Switch) addOutboundPeerWithConfig(
 		conn,
 		nodeInfo,
 		peerConfig{
-			chDescs:       sw.chDescs,
+			streamDescs:   sw.streamDescs,
 			onPeerError:   sw.StopPeerForError,
 			isPersistent:  sw.IsPeerPersistent,
 			reactorsByCh:  sw.reactorsByCh,

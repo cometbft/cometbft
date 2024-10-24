@@ -288,7 +288,7 @@ func TestSwitchPeerFilter(t *testing.T) {
 	p := wrapPeer(conn,
 		rp.nodeInfo(),
 		peerConfig{
-			chDescs:       sw.chDescs,
+			streamDescs:   sw.streamDescs,
 			onPeerError:   sw.StopPeerForError,
 			isPersistent:  sw.IsPeerPersistent,
 			reactorsByCh:  sw.reactorsByCh,
@@ -346,7 +346,7 @@ func TestSwitchPeerFilterTimeout(t *testing.T) {
 	p := wrapPeer(conn,
 		rp.nodeInfo(),
 		peerConfig{
-			chDescs:       sw.chDescs,
+			streamDescs:   sw.streamDescs,
 			onPeerError:   sw.StopPeerForError,
 			isPersistent:  sw.IsPeerPersistent,
 			reactorsByCh:  sw.reactorsByCh,
@@ -386,7 +386,7 @@ func TestSwitchPeerFilterDuplicate(t *testing.T) {
 	p := wrapPeer(conn,
 		rp.nodeInfo(),
 		peerConfig{
-			chDescs:       sw.chDescs,
+			streamDescs:   sw.streamDescs,
 			onPeerError:   sw.StopPeerForError,
 			isPersistent:  sw.IsPeerPersistent,
 			reactorsByCh:  sw.reactorsByCh,
@@ -444,7 +444,7 @@ func TestSwitchStopsNonPersistentPeerOnError(t *testing.T) {
 	p := wrapPeer(conn,
 		rp.nodeInfo(),
 		peerConfig{
-			chDescs:       sw.chDescs,
+			streamDescs:   sw.streamDescs,
 			onPeerError:   sw.StopPeerForError,
 			isPersistent:  sw.IsPeerPersistent,
 			reactorsByCh:  sw.reactorsByCh,

@@ -1,0 +1,1 @@
+- `[crypto]` use decred secp256k1 directly ([#4329](https://github.com/cometbft/cometbft/pull/4329))

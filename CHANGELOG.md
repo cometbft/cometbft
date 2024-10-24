@@ -1,5 +1,29 @@
 # CHANGELOG
 
+## v0.37.12
+
+*October 24, 2024*
+
+This patch release addresses the issue where tx_search was not returning all results, which only arises when upgrading
+to CometBFT-DB version 0.13 or later. It includes a fix in the state indexer to resolve this problem. We recommend
+upgrading to this patch release if you are affected by this issue.
+
+### BUG FIXES
+
+- `[state/indexer]` Fix the tx_search results not returning all results by changing the logic in the indexer to copy the key and values instead of reusing an iterator. This issue only arises when upgrading to cometbft-db v0.13 or later.
+  ([\#4295](https://github.com/cometbft/cometbft/issues/4295)). Special thanks to @faddat for reporting the issue.
+
+### DEPENDENCIES
+
+- `[go/runtime]` Bump Go version to 1.22
+  ([\#4072](https://github.com/cometbft/cometbft/pull/4072))
+- Bump cometbft-db version to v0.14.1
+  ([\#4326](https://github.com/cometbft/cometbft/pull/4326))
+
+### FEATURES
+
+- `[crypto]` use decred secp256k1 directly ([#4329](https://github.com/cometbft/cometbft/pull/4329))
+
 ## v0.37.11
 
 *September 3, 2024*

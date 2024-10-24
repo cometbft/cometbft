@@ -1,15 +1,15 @@
 #! /bin/bash
-set -ex
+
+set -o errexit   # abort on nonzero exitstatus
+set -o nounset   # abort on unbound variable
+set -o pipefail  # don't hide errors within pipes
 
 #- kvstore over socket, curl
 
-# TODO: install everything
-
-export PATH="$GOBIN:$PATH"
-export CMTHOME=$HOME/.cometbft_app
+export CMTHOME=$HOME/.cometbft
 
 function kvstore_over_socket(){
-    rm -rf $CMTHOME
+    rm -rf "$CMTHOME"
     cometbft init
     echo "Starting kvstore_over_socket"
     abci-cli kvstore > /dev/null &
@@ -26,7 +26,7 @@ function kvstore_over_socket(){
 
 # start cometbft first
 function kvstore_over_socket_reorder(){
-    rm -rf $CMTHOME
+    rm -rf "$CMTHOME"
     cometbft init
     echo "Starting kvstore_over_socket_reorder (ie. start cometbft first)"
     cometbft node > cometbft.log &
@@ -42,17 +42,5 @@ function kvstore_over_socket_reorder(){
     kill -9 $pid_kvstore $pid_cometbft
 }
 
-case "$1" in 
-    "kvstore_over_socket")
-    kvstore_over_socket
-    ;;
-"kvstore_over_socket_reorder")
-    kvstore_over_socket_reorder
-    ;;
-*)
-    echo "Running all"
-    kvstore_over_socket
-    echo ""
-    kvstore_over_socket_reorder
-    echo ""
-esac
+kvstore_over_socket
+kvstore_over_socket_reorder

@@ -342,7 +342,12 @@ func lookForHash(conditions []syntax.Condition) (hash []byte, ok bool, err error
 
 func (*TxIndex) setTmpHashes(tmpHeights map[string][]byte, key, value []byte) {
 	eventSeq := extractEventSeqFromKey(key)
-	tmpHeights[string(value)+eventSeq] = value
+
+	// Copy the value because the iterator will be reused.
+	valueCopy := make([]byte, len(value))
+	copy(valueCopy, value)
+
+	tmpHeights[string(valueCopy)+eventSeq] = valueCopy
 }
 
 // match returns all matching txs by hash that meet a given condition and start

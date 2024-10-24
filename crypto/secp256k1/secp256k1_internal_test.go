@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	secp256k1 "github.com/btcsuite/btcd/btcec/v2"
+	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 )
 
 func Test_genPrivKey(t *testing.T) {

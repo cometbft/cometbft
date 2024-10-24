@@ -172,6 +172,7 @@ func (voteSet *VoteSet) addVote(vote *Vote) (added bool, err error) {
 	}
 	valIndex := vote.ValidatorIndex
 	valAddr := vote.ValidatorAddress
+	blockKey := vote.BlockID.Key()
 
 	// Ensure that validator index was set
 	if valIndex < 0 {
@@ -206,7 +207,7 @@ func (voteSet *VoteSet) addVote(vote *Vote) (added bool, err error) {
 	}
 
 	// If we already know of this vote, return false.
-	if existing, ok := voteSet.getVote(valIndex, vote.BlockID); ok {
+	if existing, ok := voteSet.getVote(valIndex, blockKey, &vote.BlockID); ok {
 		if bytes.Equal(existing.Signature, vote.Signature) {
 			return false, nil // duplicate
 		}
@@ -231,7 +232,7 @@ func (voteSet *VoteSet) addVote(vote *Vote) (added bool, err error) {
 	}
 
 	// Add vote and get conflicting vote if any.
-	added, conflicting := voteSet.addVerifiedVote(vote, vote.BlockID, val.VotingPower)
+	added, conflicting := voteSet.addVerifiedVote(vote, vote.BlockID, blockKey, val.VotingPower)
 	if conflicting != nil {
 		return added, NewConflictingVoteError(conflicting, vote)
 	}
@@ -242,11 +243,11 @@ func (voteSet *VoteSet) addVote(vote *Vote) (added bool, err error) {
 }
 
 // getVote returns (vote, true) if vote exists for valIndex and blockKey.
-func (voteSet *VoteSet) getVote(valIndex int32, blockID BlockID) (vote *Vote, ok bool) {
-	if existing := voteSet.votes[valIndex]; existing != nil && existing.BlockID.Equals(blockID) {
+func (voteSet *VoteSet) getVote(valIndex int32, blockKey string, blockID *BlockID) (vote *Vote, ok bool) {
+	if existing := voteSet.votes[valIndex]; existing != nil && blockID.Equals(existing.BlockID) {
 		return existing, true
 	}
-	if existing := voteSet.votesByBlock[string(append(blockID.Hash, blockID.PartSetHeader.Hash...))].getByIndex(valIndex); existing != nil {
+	if existing := voteSet.votesByBlock[blockKey].getByIndex(valIndex); existing != nil {
 		return existing, true
 	}
 	return nil, false
@@ -257,6 +258,7 @@ func (voteSet *VoteSet) getVote(valIndex int32, blockID BlockID) (vote *Vote, ok
 func (voteSet *VoteSet) addVerifiedVote(
 	vote *Vote,
 	blockID BlockID,
+	blockKey string,
 	votingPower int64,
 ) (added bool, conflicting *Vote) {
 	valIndex := vote.ValidatorIndex
@@ -280,7 +282,7 @@ func (voteSet *VoteSet) addVerifiedVote(
 		voteSet.sum += votingPower
 	}
 
-	votesByBlock, ok := voteSet.votesByBlock[string(append(blockID.Hash, blockID.PartSetHeader.Hash...))]
+	votesByBlock, ok := voteSet.votesByBlock[blockKey]
 	if ok {
 		if conflicting != nil && !votesByBlock.peerMaj23 {
 			// There's a conflict and no peer claims that this block is special.
@@ -297,7 +299,7 @@ func (voteSet *VoteSet) addVerifiedVote(
 		// ... and there's no conflicting vote.
 		// Start tracking this blockKey
 		votesByBlock = newBlockVotes(false, voteSet.valSet.Size())
-		voteSet.votesByBlock[string(append(blockID.Hash, blockID.PartSetHeader.Hash...))] = votesByBlock
+		voteSet.votesByBlock[blockKey] = votesByBlock
 		// We'll add the vote in a bit.
 	}
 
@@ -338,6 +340,7 @@ func (voteSet *VoteSet) SetPeerMaj23(peerID P2PID, blockID BlockID) error {
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
 
+	blockKey := blockID.Key()
 	// Make sure peer hasn't already told us something.
 	if existing, ok := voteSet.peerMaj23s[peerID]; ok {
 		if existing.Equals(blockID) {
@@ -349,7 +352,7 @@ func (voteSet *VoteSet) SetPeerMaj23(peerID P2PID, blockID BlockID) error {
 	voteSet.peerMaj23s[peerID] = blockID
 
 	// Create .votesByBlock entry if needed.
-	votesByBlock, ok := voteSet.votesByBlock[string(append(blockID.Hash, blockID.PartSetHeader.Hash...))]
+	votesByBlock, ok := voteSet.votesByBlock[blockKey]
 	if ok {
 		if votesByBlock.peerMaj23 {
 			return nil // Nothing to do
@@ -358,7 +361,7 @@ func (voteSet *VoteSet) SetPeerMaj23(peerID P2PID, blockID BlockID) error {
 		// No need to copy votes, already there.
 	} else {
 		votesByBlock = newBlockVotes(true, voteSet.valSet.Size())
-		voteSet.votesByBlock[string(append(blockID.Hash, blockID.PartSetHeader.Hash...))] = votesByBlock
+		voteSet.votesByBlock[blockKey] = votesByBlock
 		// No need to copy votes, no votes to copy over.
 	}
 	return nil
@@ -380,7 +383,7 @@ func (voteSet *VoteSet) BitArrayByBlockID(blockID BlockID) *bits.BitArray {
 	}
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
-	votesByBlock, ok := voteSet.votesByBlock[string(append(blockID.Hash, blockID.PartSetHeader.Hash...))]
+	votesByBlock, ok := voteSet.votesByBlock[blockID.Key()]
 	if ok {
 		return votesByBlock.bitArray.Copy()
 	}

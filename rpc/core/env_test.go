@@ -55,17 +55,10 @@ func TestInitGenesisChunks(t *testing.T) {
 
 	// Tests with a genesis file <= genesisChunkSize, i.e., no chunking, pointer to
 	// GenesisDoc stored in GenDoc field.
-	// The test genesis file is the genesis that the ci.toml e2e test uses.
+	// The test genesis is the genesis that the ci.toml e2e test uses.
 	t.Run("NoChunking", func(t *testing.T) {
-		const fGenesisPath = "./testdata/genesis_ci.json"
-
-		genesisData, err := os.ReadFile(fGenesisPath)
-		if err != nil {
-			t.Fatalf("reading test genesis file at %q: %s", fGenesisPath, err)
-		}
-
 		genDoc := &types.GenesisDoc{}
-		if err := cmtjson.Unmarshal(genesisData, genDoc); err != nil {
+		if err := cmtjson.Unmarshal([]byte(_testGenesis), genDoc); err != nil {
 			t.Fatalf("test genesis serialization: %s", err)
 		}
 

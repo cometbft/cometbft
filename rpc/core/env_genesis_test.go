@@ -1,3 +1,8 @@
+package core
+
+// _testGenesis is a GenesisDoc used in the `Environment.InitGenesisChunks` tests.
+// It is the genesis that the ci.toml e2e tests uses.
+const _testGenesis = `
 {
   "genesis_time": "2024-10-02T11:53:14.181969Z",
   "chain_id": "ci",
@@ -46,4 +51,4 @@
     "initial02": "b",
     "initial03": "c"
   }
-}
+}`

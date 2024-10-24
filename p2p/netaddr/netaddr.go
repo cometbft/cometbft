@@ -36,7 +36,7 @@ func IDAddrString(id nodekey.ID, protocolHostPort string) string {
 	return fmt.Sprintf("%s@%s", id, hostPort)
 }
 
-// New returns a new Addr using the provided TCP
+// New returns a new address using the provided TCP
 // address. When testing, other net.Addr (except TCP) will result in
 // using 0.0.0.0:0. When normal run, other net.Addr (except TCP) will
 // panic. Panics if ID is invalid.
@@ -48,7 +48,7 @@ func New(id nodekey.ID, addr net.Addr) *NetAddr {
 			panic(fmt.Sprintf("Only TCPAddrs are supported. Got: %v", addr))
 		}
 		// in testing
-		netAddr := NewIPPort(net.IP("127.0.0.1"), 0)
+		netAddr := NewFromIPPort(net.IP("127.0.0.1"), 0)
 		netAddr.ID = id
 		return netAddr
 	}
@@ -59,12 +59,12 @@ func New(id nodekey.ID, addr net.Addr) *NetAddr {
 
 	ip := tcpAddr.IP
 	port := uint16(tcpAddr.Port)
-	na := NewIPPort(ip, port)
+	na := NewFromIPPort(ip, port)
 	na.ID = id
 	return na
 }
 
-// NewFromString returns a new Addr using the provided address in
+// NewFromString returns a new address using the provided address in
 // the form of "ID@IP:Port".
 // Also resolves the host if host is not an IP.
 // Errors are of type ErrXxx where Xxx is in (NoID, Invalid, Lookup).
@@ -108,7 +108,7 @@ func NewFromString(addr string) (*NetAddr, error) {
 		return nil, ErrInvalid{portStr, err}
 	}
 
-	na := NewIPPort(ip, uint16(port))
+	na := NewFromIPPort(ip, uint16(port))
 	na.ID = id
 	return na, nil
 }
@@ -129,9 +129,9 @@ func NewFromStrings(addrs []string) ([]*NetAddr, []error) {
 	return netAddrs, errs
 }
 
-// NewIPPort returns a new Addr using the provided IP
+// NewFromIPPort returns a new Addr using the provided IP
 // and port number.
-func NewIPPort(ip net.IP, port uint16) *NetAddr {
+func NewFromIPPort(ip net.IP, port uint16) *NetAddr {
 	return &NetAddr{
 		IP:   ip,
 		Port: port,
@@ -168,7 +168,7 @@ func AddrsFromProtos(pbs []tmp2p.NetAddress) ([]*NetAddr, error) {
 	return nas, nil
 }
 
-// AddrsToProtos converts a slice of Addr into a Protobuf slice.
+// AddrsToProtos converts a slice of addresses into a Protobuf slice.
 func AddrsToProtos(nas []*NetAddr) []tmp2p.NetAddress {
 	pbs := make([]tmp2p.NetAddress, 0, len(nas))
 	for _, na := range nas {

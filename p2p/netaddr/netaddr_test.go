@@ -133,8 +133,8 @@ func TestNewFromStrings(t *testing.T) {
 	assert.Len(t, errs, 1)
 }
 
-func TestNewIPPort(t *testing.T) {
-	addr := NewIPPort(net.ParseIP("127.0.0.1"), 8080)
+func TestNewFromIPPort(t *testing.T) {
+	addr := NewFromIPPort(net.ParseIP("127.0.0.1"), 8080)
 	assert.Equal(t, "127.0.0.1:8080", addr.String())
 }
 

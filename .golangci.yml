@@ -53,11 +53,6 @@ linters-settings:
           - "!$test"
         allow:
           - $gostd
-<<<<<<< HEAD
-=======
-          - github.com/BurntSushi/toml
-          - github.com/Masterminds/semver/v3
->>>>>>> 9b8eafa8b (chore: use decred secp256k1 directly (#4294))
           - github.com/cometbft
           - github.com/cosmos
           - github.com/btcsuite/btcd/btcec/v2
@@ -83,14 +78,10 @@ linters-settings:
           - github.com/spf13
           - github.com/stretchr/testify/require
           - github.com/syndtr/goleveldb
-<<<<<<< HEAD
           - github.com/ChainSafe/go-schnorrkel
           - github.com/creachadair/taskgroup
           - github.com/gtank/merlin
-=======
-          - github.com/mitchellh/mapstructure
           - github.com/decred/dcrd/dcrec/secp256k1/v4
->>>>>>> 9b8eafa8b (chore: use decred secp256k1 directly (#4294))
       test:
         files:
           - "$test"
@@ -111,9 +102,6 @@ linters-settings:
           - github.com/prometheus/client_golang/prometheus/promhttp
           - github.com/spf13
           - github.com/stretchr/testify
-<<<<<<< HEAD
-          - github.com/gtank/merlin
-=======
           - github.com/decred/dcrd/dcrec/secp256k1/v4
 
   revive:
@@ -164,4 +152,3 @@ linters-settings:
   gosec:
     excludes:
       - G115
->>>>>>> 9b8eafa8b (chore: use decred secp256k1 directly (#4294))

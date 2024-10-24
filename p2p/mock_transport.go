@@ -7,6 +7,8 @@ import (
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 )
 
+var _ Transport = (*mockTransport)(nil)
+
 type mockTransport struct {
 	ln   net.Listener
 	addr na.NetAddr
@@ -26,15 +28,15 @@ func (t *mockTransport) NetAddr() na.NetAddr {
 	return t.addr
 }
 
-func (t *mockTransport) Accept() (net.Conn, *na.NetAddr, error) {
+func (t *mockTransport) Accept() (Connection, *na.NetAddr, error) {
 	c, err := t.ln.Accept()
 	return c, nil, err
 }
 
-func (*mockTransport) Dial(addr na.NetAddr) (net.Conn, error) {
+func (*mockTransport) Dial(addr na.NetAddr) (Connection, error) {
 	return addr.DialTimeout(time.Second)
 }
 
-func (*mockTransport) Cleanup(net.Conn) error {
+func (*mockTransport) Cleanup(Connection) error {
 	return nil
 }

@@ -1,47 +1,96 @@
 package p2p
 
 import (
-	"net"
-
-	"github.com/cosmos/gogoproto/proto"
+	"time"
 
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 )
 
-// peerConfig is used to bundle data we need to fully setup a Peer with an
-// MConn, provided by the caller of Accept and Dial (currently the Switch). This
-// a temporary measure until reactor setup is less dynamic and we introduce the
-// concept of PeerBehaviour to communicate about significant Peer lifecycle
-// events.
-// TODO(xla): Refactor out with more static Reactor setup and PeerBehaviour.
-type peerConfig struct {
-	streamDescs []StreamDescriptor
-	onPeerError func(Peer, any)
-	outbound    bool
-	// isPersistent allows you to set a function, which, given socket address
-	// (for outbound peers) OR self-reported address (for inbound peers), tells
-	// if the peer is persistent or not.
-	isPersistent  func(*na.NetAddr) bool
-	reactorsByCh  map[byte]Reactor
-	msgTypeByChID map[byte]proto.Message
-	metrics       *Metrics
-}
-
-// Transport emits and connects to Peers. The implementation of Peer is left to
-// the transport. Each transport is also responsible to filter establishing
-// peers specific to its domain.
+// Transport connects the local node to the rest of the network.
 type Transport interface {
 	// NetAddr returns the network address of the local node.
 	NetAddr() na.NetAddr
 
 	// Accept waits for and returns the next connection to the local node.
-	Accept() (net.Conn, *na.NetAddr, error)
+	Accept() (Connection, *na.NetAddr, error)
 
 	// Dial dials the given address and returns a connection.
-	Dial(addr na.NetAddr) (net.Conn, error)
+	Dial(addr na.NetAddr) (Connection, error)
 
 	// Cleanup any resources associated with the given connection.
 	//
 	// Must be run when the peer is dropped for any reason.
-	Cleanup(conn net.Conn) error
+	Cleanup(conn Connection) error
+}
+
+// Connection is a multiplexed connection that can send and receive data
+// on multiple streams.
+type Connection interface {
+	// OpenStream opens a new stream on the connection.
+	OpenStream(streamID byte) error
+
+	// Read reads data from the connection.
+	// Read can be made to time out and return an error after a fixed
+	// time limit; see SetDeadline and SetReadDeadline.
+	Read(streamID byte, b []byte) (n int, err error)
+
+	// Write writes data to the connection.
+	// Write can be made to time out and return an error after a fixed
+	// time limit; see SetDeadline and SetWriteDeadline.
+	Write(streamID byte, b []byte) (n int, err error)
+
+	// LocalAddr returns the local network address, if known.
+	LocalAddr() na.NetAddr
+
+	// RemoteAddr returns the remote network address, if known.
+	RemoteAddr() na.NetAddr
+
+	// SetDeadline sets the read and write deadlines associated
+	// with the connection. It is equivalent to calling both
+	// SetReadDeadline and SetWriteDeadline.
+	//
+	// A deadline is an absolute time after which I/O operations
+	// fail instead of blocking. The deadline applies to all future
+	// and pending I/O, not just the immediately following call to
+	// Read or Write. After a deadline has been exceeded, the
+	// connection can be refreshed by setting a deadline in the future.
+	//
+	// If the deadline is exceeded a call to Read or Write or to other
+	// I/O methods will return an error that wraps os.ErrDeadlineExceeded.
+	// This can be tested using errors.Is(err, os.ErrDeadlineExceeded).
+	// The error's Timeout method will return true, but note that there
+	// are other possible errors for which the Timeout method will
+	// return true even if the deadline has not been exceeded.
+	//
+	// An idle timeout can be implemented by repeatedly extending
+	// the deadline after successful Read or Write calls.
+	//
+	// A zero value for t means I/O operations will not time out.
+	SetDeadline(t time.Time) error
+
+	// SetReadDeadline sets the deadline for future Read calls
+	// and any currently-blocked Read call.
+	// A zero value for t means Read will not time out.
+	SetReadDeadline(t time.Time) error
+
+	// SetWriteDeadline sets the deadline for future Write calls
+	// and any currently-blocked Write call.
+	// Even if write times out, it may return n > 0, indicating that
+	// some of the data was successfully written.
+	// A zero value for t means Write will not time out.
+	SetWriteDeadline(t time.Time) error
+
+	// Close closes the connection.
+	// If the protocol supports it, a reason will be sent to the remote.
+	// Any blocked Read or Write operations will be unblocked and return errors.
+	Close(reason string) error
+
+	// FlushAndClose flushes all the pending bytes and close the connection.
+	// If the protocol supports it, a reason will be sent to the remote.
+	// Any blocked Read operations will be unblocked and return errors.
+	FlushAndClose(reason string) error
+
+	// ConnectionState returns basic details about the connection.
+	// Warning: This API should not be considered stable and might change soon.
+	ConnectionState() any
 }

@@ -57,13 +57,13 @@ func sortNodeNames(m *Manifest) []string {
 }
 
 func NewDockerInfrastructureData(m Manifest) (InfrastructureData, error) {
-	netAddress := dockerIPv4CIDR
+	netAddr := dockerIPv4CIDR
 	if m.IPv6 {
-		netAddress = dockerIPv6CIDR
+		netAddr = dockerIPv6CIDR
 	}
-	_, ipNet, err := net.ParseCIDR(netAddress)
+	_, ipNet, err := net.ParseCIDR(netAddr)
 	if err != nil {
-		return InfrastructureData{}, fmt.Errorf("invalid IP network address %q: %w", netAddress, err)
+		return InfrastructureData{}, fmt.Errorf("invalid IP network address %q: %w", netAddr, err)
 	}
 
 	portGen := newPortGenerator(proxyPortFirst)
@@ -71,7 +71,7 @@ func NewDockerInfrastructureData(m Manifest) (InfrastructureData, error) {
 	ifd := InfrastructureData{
 		Provider:  "docker",
 		Instances: make(map[string]InstanceData),
-		Network:   netAddress,
+		Network:   netAddr,
 	}
 	localHostIP := net.ParseIP("127.0.0.1")
 	for _, name := range sortNodeNames(&m) {

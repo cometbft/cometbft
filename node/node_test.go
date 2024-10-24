@@ -488,7 +488,7 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 	}
 	customBlocksyncReactor := p2pmock.NewReactor()
 
-	nodeKey, err := nodekey.LoadOrGenNodeKey(config.NodeKeyFile())
+	nodeKey, err := nodekey.LoadOrGen(config.NodeKeyFile())
 	require.NoError(t, err)
 
 	pv, err := privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile(), nil)
@@ -541,7 +541,7 @@ func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
 
 	stateDB.Close()
 
-	nodeKey, err := nodekey.LoadOrGenNodeKey(config.NodeKeyFile())
+	nodeKey, err := nodekey.LoadOrGen(config.NodeKeyFile())
 	require.NoError(t, err)
 
 	pv, err := privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile(), nil)
@@ -584,7 +584,7 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	// Use goleveldb so we can reuse the same db for the second NewNode()
 	config.DBBackend = string(dbm.PebbleDBBackend)
 
-	nodeKey, err := nodekey.LoadOrGenNodeKey(config.NodeKeyFile())
+	nodeKey, err := nodekey.LoadOrGen(config.NodeKeyFile())
 	require.NoError(t, err)
 
 	pv, err := privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile(), nil)
@@ -652,7 +652,7 @@ func TestNodeGenesisHashFlagMatch(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 
 	config.DBBackend = string(dbm.PebbleDBBackend)
-	nodeKey, err := nodekey.LoadOrGenNodeKey(config.NodeKeyFile())
+	nodeKey, err := nodekey.LoadOrGen(config.NodeKeyFile())
 	require.NoError(t, err)
 	// Get correct hash of correct genesis file
 	jsonBlob, err := os.ReadFile(config.GenesisFile())
@@ -686,7 +686,7 @@ func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 	// Use goleveldb so we can reuse the same db for the second NewNode()
 	config.DBBackend = string(dbm.PebbleDBBackend)
 
-	nodeKey, err := nodekey.LoadOrGenNodeKey(config.NodeKeyFile())
+	nodeKey, err := nodekey.LoadOrGen(config.NodeKeyFile())
 	require.NoError(t, err)
 
 	// Generate hash of wrong file

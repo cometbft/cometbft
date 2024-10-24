@@ -609,11 +609,16 @@ type TxInfo struct {
 
 func (*TxIndex) setTmpHashes(tmpHeights map[string]TxInfo, key, value []byte, height int64) {
 	eventSeq := extractEventSeqFromKey(key)
+
+	// Copy the value because the iterator will be reused.
+	valueCopy := make([]byte, len(value))
+	copy(valueCopy, value)
+
 	txInfo := TxInfo{
-		TxBytes: value,
+		TxBytes: valueCopy,
 		Height:  height,
 	}
-	tmpHeights[string(value)+eventSeq] = txInfo
+	tmpHeights[string(valueCopy)+eventSeq] = txInfo
 }
 
 // match returns all matching txs by hash that meet a given condition and start

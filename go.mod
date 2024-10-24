@@ -1,8 +1,6 @@
 module github.com/cometbft/cometbft
 
-go 1.22.2
-
-toolchain go1.22.7
+go 1.22.7
 
 require (
 	github.com/BurntSushi/toml v1.4.0
@@ -41,7 +39,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.3.0
 	github.com/btcsuite/btcd/btcec/v2 v2.3.4
 	github.com/btcsuite/btcd/btcutil v1.1.6
-	github.com/cometbft/cometbft-db v0.12.0
+	github.com/cometbft/cometbft-db v0.14.1
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/gofrs/uuid v4.4.0+incompatible

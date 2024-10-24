@@ -277,26 +277,40 @@ func TestVoteSet_2_3MajorityRedux(t *testing.T) {
 			"there should be no 2/3 majority: last vote added had different PartSetHeader Hash")
 	}
 
-	// 69th validator voted for different BlockHash
+	// 69th validator voted for different BlockParts Total
 	{
 		pubKey, err := privValidators[68].GetPubKey()
 		require.NoError(t, err)
 		addr := pubKey.Address()
 		vote := withValidator(voteProto, addr, 68)
-		_, err = signAddVote(privValidators[68], withBlockHash(vote, cmtrand.Bytes(32)), voteSet)
+		blockPartsHeader := PartSetHeader{blockPartsTotal + 1, blockPartSetHeader.Hash}
+		_, err = signAddVote(privValidators[68], withBlockPartSetHeader(vote, blockPartsHeader), voteSet)
+		require.NoError(t, err)
+		blockID, ok = voteSet.TwoThirdsMajority()
+		assert.False(t, ok || !blockID.IsNil(),
+			"there should be no 2/3 majority: last vote added had different PartSetHeader Total")
+	}
+
+	// 70th validator voted for different BlockHash
+	{
+		pubKey, err := privValidators[69].GetPubKey()
+		require.NoError(t, err)
+		addr := pubKey.Address()
+		vote := withValidator(voteProto, addr, 69)
+		_, err = signAddVote(privValidators[69], withBlockHash(vote, cmtrand.Bytes(32)), voteSet)
 		require.NoError(t, err)
 		blockID, ok = voteSet.TwoThirdsMajority()
 		assert.False(t, ok || !blockID.IsNil(),
 			"there should be no 2/3 majority: last vote added had different BlockHash")
 	}
 
-	// 70th validator voted for the right BlockHash & BlockPartSetHeader
+	// 71st validator voted for the right BlockHash & BlockPartSetHeader
 	{
-		pubKey, err := privValidators[69].GetPubKey()
+		pubKey, err := privValidators[70].GetPubKey()
 		require.NoError(t, err)
 		addr := pubKey.Address()
-		vote := withValidator(voteProto, addr, 69)
-		_, err = signAddVote(privValidators[69], vote, voteSet)
+		vote := withValidator(voteProto, addr, 70)
+		_, err = signAddVote(privValidators[70], vote, voteSet)
 		require.NoError(t, err)
 		blockID, ok = voteSet.TwoThirdsMajority()
 		assert.True(t, ok && blockID.Equals(BlockID{blockHash, blockPartSetHeader}),

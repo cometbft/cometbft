@@ -1,13 +1,55 @@
-package p2p
+package nodeinfo
 
 import (
+	"fmt"
+	"net"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	cmtnet "github.com/cometbft/cometbft/internal/net"
+	na "github.com/cometbft/cometbft/p2p/netaddress"
+	"github.com/cometbft/cometbft/p2p/nodekey"
 )
+
+const testCh = 0x01
+
+type mockNodeInfo struct {
+	addr *na.NetAddress
+}
+
+func (ni mockNodeInfo) ID() nodekey.ID                                   { return ni.addr.ID }
+func (ni mockNodeInfo) NetAddress() (*na.NetAddress, error)              { return ni.addr, nil }
+func (mockNodeInfo) Validate() error                                     { return nil }
+func (mockNodeInfo) CompatibleWith(NodeInfo) error                       { return nil }
+func (mockNodeInfo) Handshake(net.Conn, time.Duration) (NodeInfo, error) { return nil, nil }
+
+func testNodeInfo(id nodekey.ID) NodeInfo {
+	return DefaultNodeInfo{
+		ProtocolVersion: NewProtocolVersion(0, 0, 0),
+		DefaultNodeID:   id,
+		ListenAddr:      fmt.Sprintf("127.0.0.1:%d", getFreePort()),
+		Network:         "testing",
+		Version:         "1.2.3-rc0-deadbeef",
+		Channels:        []byte{testCh},
+		Moniker:         "testing",
+		Other: DefaultNodeInfoOther{
+			TxIndex:    "on",
+			RPCAddress: fmt.Sprintf("127.0.0.1:%d", getFreePort()),
+		},
+	}
+}
+
+func getFreePort() int {
+	port, err := cmtnet.GetFreePort()
+	if err != nil {
+		panic(err)
+	}
+	return port
+}
 
 func TestNodeInfoValidate(t *testing.T) {
 	// empty fails
@@ -66,16 +108,15 @@ func TestNodeInfoValidate(t *testing.T) {
 		{"Good RPCAddress", func(ni *DefaultNodeInfo) { ni.Other.RPCAddress = "0.0.0.0:26657" }, false},
 	}
 
-	nodeKey := NodeKey{PrivKey: ed25519.GenPrivKey()}
-	name := "testing"
+	nodeKey := nodekey.NodeKey{PrivKey: ed25519.GenPrivKey()}
 
 	// test case passes
-	ni = testNodeInfo(nodeKey.ID(), name).(DefaultNodeInfo)
+	ni = testNodeInfo(nodeKey.ID()).(DefaultNodeInfo)
 	ni.Channels = channels
 	require.NoError(t, ni.Validate())
 
 	for _, tc := range testCases {
-		ni := testNodeInfo(nodeKey.ID(), name).(DefaultNodeInfo)
+		ni := testNodeInfo(nodeKey.ID()).(DefaultNodeInfo)
 		ni.Channels = channels
 		tc.malleateNodeInfo(&ni)
 		err := ni.Validate()
@@ -88,15 +129,14 @@ func TestNodeInfoValidate(t *testing.T) {
 }
 
 func TestNodeInfoCompatible(t *testing.T) {
-	nodeKey1 := NodeKey{PrivKey: ed25519.GenPrivKey()}
-	nodeKey2 := NodeKey{PrivKey: ed25519.GenPrivKey()}
-	name := "testing"
+	nodeKey1 := nodekey.NodeKey{PrivKey: ed25519.GenPrivKey()}
+	nodeKey2 := nodekey.NodeKey{PrivKey: ed25519.GenPrivKey()}
 
 	var newTestChannel byte = 0x2
 
 	// test NodeInfo is compatible
-	ni1 := testNodeInfo(nodeKey1.ID(), name).(DefaultNodeInfo)
-	ni2 := testNodeInfo(nodeKey2.ID(), name).(DefaultNodeInfo)
+	ni1 := testNodeInfo(nodeKey1.ID()).(DefaultNodeInfo)
+	ni2 := testNodeInfo(nodeKey2.ID()).(DefaultNodeInfo)
 	require.NoError(t, ni1.CompatibleWith(ni2))
 
 	// add another channel; still compatible
@@ -105,7 +145,7 @@ func TestNodeInfoCompatible(t *testing.T) {
 	require.NoError(t, ni1.CompatibleWith(ni2))
 
 	// wrong NodeInfo type is not compatible
-	_, netAddr := CreateRoutableAddr()
+	_, netAddr := na.CreateRoutableAddr()
 	ni3 := mockNodeInfo{netAddr}
 	require.Error(t, ni1.CompatibleWith(ni3))
 
@@ -119,7 +159,7 @@ func TestNodeInfoCompatible(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		ni := testNodeInfo(nodeKey2.ID(), name).(DefaultNodeInfo)
+		ni := testNodeInfo(nodeKey2.ID()).(DefaultNodeInfo)
 		tc.malleateNodeInfo(&ni)
 		require.Error(t, ni1.CompatibleWith(ni))
 	}

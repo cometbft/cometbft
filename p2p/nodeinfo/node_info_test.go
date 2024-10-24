@@ -11,18 +11,18 @@ import (
 
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtnet "github.com/cometbft/cometbft/internal/net"
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 )
 
 const testCh = 0x01
 
 type mockNodeInfo struct {
-	addr *na.NetAddress
+	addr *na.NetAddr
 }
 
 func (ni mockNodeInfo) ID() nodekey.ID                                   { return ni.addr.ID }
-func (ni mockNodeInfo) NetAddress() (*na.NetAddress, error)              { return ni.addr, nil }
+func (ni mockNodeInfo) NetAddr() (*na.NetAddr, error)                    { return ni.addr, nil }
 func (mockNodeInfo) Validate() error                                     { return nil }
 func (mockNodeInfo) CompatibleWith(NodeInfo) error                       { return nil }
 func (mockNodeInfo) Handshake(net.Conn, time.Duration) (NodeInfo, error) { return nil, nil }
@@ -81,8 +81,8 @@ func TestNodeInfoValidate(t *testing.T) {
 		{"Duplicate Channel", func(ni *DefaultNodeInfo) { ni.Channels = dupChannels }, true},
 		{"Good Channels", func(ni *DefaultNodeInfo) { ni.Channels = ni.Channels[:5] }, false},
 
-		{"Invalid NetAddress", func(ni *DefaultNodeInfo) { ni.ListenAddr = "not-an-address" }, true},
-		{"Good NetAddress", func(ni *DefaultNodeInfo) { ni.ListenAddr = "0.0.0.0:26656" }, false},
+		{"Invalid NetAddr", func(ni *DefaultNodeInfo) { ni.ListenAddr = "not-an-address" }, true},
+		{"Good NetAddr", func(ni *DefaultNodeInfo) { ni.ListenAddr = "0.0.0.0:26656" }, false},
 
 		{"Non-ASCII Version", func(ni *DefaultNodeInfo) { ni.Version = nonASCII }, true},
 		{"Empty tab Version", func(ni *DefaultNodeInfo) { ni.Version = emptyTab }, true},

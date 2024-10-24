@@ -13,7 +13,7 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/bytes"
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/types"
@@ -256,7 +256,7 @@ func persistentPeersString(config *cfg.Config) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		persistentPeers[i] = na.IDAddressString(nk.ID(), fmt.Sprintf("%s:%d", hostnameOrIP(i), p2pPort))
+		persistentPeers[i] = na.IDAddrString(nk.ID(), fmt.Sprintf("%s:%d", hostnameOrIP(i), p2pPort))
 	}
 	return strings.Join(persistentPeers, ","), nil
 }

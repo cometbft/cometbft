@@ -53,6 +53,11 @@ linters-settings:
           - "!$test"
         allow:
           - $gostd
+<<<<<<< HEAD
+=======
+          - github.com/BurntSushi/toml
+          - github.com/Masterminds/semver/v3
+>>>>>>> 9b8eafa8b (chore: use decred secp256k1 directly (#4294))
           - github.com/cometbft
           - github.com/cosmos
           - github.com/btcsuite/btcd/btcec/v2
@@ -78,9 +83,14 @@ linters-settings:
           - github.com/spf13
           - github.com/stretchr/testify/require
           - github.com/syndtr/goleveldb
+<<<<<<< HEAD
           - github.com/ChainSafe/go-schnorrkel
           - github.com/creachadair/taskgroup
           - github.com/gtank/merlin
+=======
+          - github.com/mitchellh/mapstructure
+          - github.com/decred/dcrd/dcrec/secp256k1/v4
+>>>>>>> 9b8eafa8b (chore: use decred secp256k1 directly (#4294))
       test:
         files:
           - "$test"
@@ -101,4 +111,57 @@ linters-settings:
           - github.com/prometheus/client_golang/prometheus/promhttp
           - github.com/spf13
           - github.com/stretchr/testify
+<<<<<<< HEAD
           - github.com/gtank/merlin
+=======
+          - github.com/decred/dcrd/dcrec/secp256k1/v4
+
+  revive:
+    enable-all-rules: true
+    rules:
+      - name: comment-spacings # temporarily disabled
+        disabled: true
+      - name: max-public-structs
+        disabled: true
+      - name: cognitive-complexity
+        disabled: true
+      - name: argument-limit
+        disabled: true
+      - name: cyclomatic
+        disabled: true
+      - name: deep-exit
+        disabled: true
+      - name: file-header
+        disabled: true
+      - name: function-length
+        disabled: true
+      - name: function-result-limit
+        disabled: true
+      - name: line-length-limit
+        disabled: true
+      - name: flag-parameter
+        disabled: true
+      - name: add-constant
+        disabled: true
+      - name: empty-lines
+        disabled: true
+      - name: import-shadowing
+        disabled: true
+      - name: modifies-value-receiver
+        disabled: true
+      - name: confusing-naming
+        disabled: true
+      - name: defer
+        disabled: true
+      - name: unchecked-type-assertion
+        disabled: true
+      - name: unhandled-error
+        disabled: true
+        arguments:
+          - "fmt.Printf"
+          - "fmt.Print"
+          - "fmt.Println"
+  gosec:
+    excludes:
+      - G115
+>>>>>>> 9b8eafa8b (chore: use decred secp256k1 directly (#4294))

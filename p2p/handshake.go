@@ -166,12 +166,12 @@ func exchangeNodeInfo(ourNodeInfo ni.NodeInfo, c net.Conn, timeout time.Duration
 	)
 
 	go func(errc chan<- error, c net.Conn) {
-		ourNodeInfoProto := ourNodeInfo.(ni.DefaultNodeInfo).ToProto()
+		ourNodeInfoProto := ourNodeInfo.(ni.Default).ToProto()
 		_, err := protoio.NewDelimitedWriter(c).WriteMsg(ourNodeInfoProto)
 		errc <- err
 	}(errc, c)
 	go func(errc chan<- error, c net.Conn) {
-		protoReader := protoio.NewDelimitedReader(c, ni.MaxNodeInfoSize())
+		protoReader := protoio.NewDelimitedReader(c, ni.MaxSize())
 		_, err := protoReader.ReadMsg(&pbpeerNodeInfo)
 		errc <- err
 	}(errc, c)
@@ -183,7 +183,7 @@ func exchangeNodeInfo(ourNodeInfo ni.NodeInfo, c net.Conn, timeout time.Duration
 		}
 	}
 
-	peerNodeInfo, err = ni.DefaultNodeInfoFromToProto(&pbpeerNodeInfo)
+	peerNodeInfo, err = ni.DefaultFromToProto(&pbpeerNodeInfo)
 	if err != nil {
 		return nil, err
 	}

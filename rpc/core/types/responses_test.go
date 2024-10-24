@@ -15,17 +15,17 @@ func TestStatusIndexer(t *testing.T) {
 	status = &ResultStatus{}
 	assert.False(t, status.TxIndexEnabled())
 
-	status.NodeInfo = ni.DefaultNodeInfo{}
+	status.NodeInfo = ni.Default{}
 	assert.False(t, status.TxIndexEnabled())
 
 	cases := []struct {
 		expected bool
-		other    ni.DefaultNodeInfoOther
+		other    ni.DefaultOther
 	}{
-		{false, ni.DefaultNodeInfoOther{}},
-		{false, ni.DefaultNodeInfoOther{TxIndex: "aa"}},
-		{false, ni.DefaultNodeInfoOther{TxIndex: "off"}},
-		{true, ni.DefaultNodeInfoOther{TxIndex: "on"}},
+		{false, ni.DefaultOther{}},
+		{false, ni.DefaultOther{TxIndex: "aa"}},
+		{false, ni.DefaultOther{TxIndex: "off"}},
+		{true, ni.DefaultOther{TxIndex: "on"}},
 	}
 
 	for _, tc := range cases {

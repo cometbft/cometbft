@@ -20,11 +20,11 @@ func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error
 	peers := make([]ctypes.Peer, 0)
 	var err error
 	env.P2PPeers.Peers().ForEach(func(peer p2p.Peer) {
-		nodeInfo, ok := peer.NodeInfo().(ni.DefaultNodeInfo)
+		nodeInfo, ok := peer.NodeInfo().(ni.Default)
 		if !ok {
 			err = ErrInvalidNodeType{
 				PeerID:   string(peer.ID()),
-				Expected: fmt.Sprintf("%T", ni.DefaultNodeInfo{}),
+				Expected: fmt.Sprintf("%T", ni.Default{}),
 				Actual:   fmt.Sprintf("%T", peer.NodeInfo()),
 			}
 			return

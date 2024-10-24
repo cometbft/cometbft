@@ -12,8 +12,6 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
-
-	underlyingSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
 )
 
 type keyData struct {
@@ -76,11 +74,7 @@ func TestSecp256k1LoadPrivkeyAndSerializeIsIdentity(t *testing.T) {
 
 		// This function creates a private and public key in the underlying libraries format.
 		// The private key is basically calling new(big.Int).SetBytes(pk), which removes leading zero bytes
-<<<<<<< HEAD
-		priv, _ := underlyingSecp256k1.PrivKeyFromBytes(privKeyBytes[:])
-=======
 		priv := underlyingsecp256k1.PrivKeyFromBytes(privKeyBytes[:])
->>>>>>> 9b8eafa8b (chore: use decred secp256k1 directly (#4294))
 		// this takes the bytes returned by `(big int).Bytes()`, and if the length is less than 32 bytes,
 		// pads the bytes from the left with zero bytes. Therefore these two functions composed
 		// result in the identity function on privKeyBytes, hence the following equality check
@@ -92,7 +86,7 @@ func TestSecp256k1LoadPrivkeyAndSerializeIsIdentity(t *testing.T) {
 
 func TestGenPrivKeySecp256k1(t *testing.T) {
 	// curve oder N
-	N := underlyingSecp256k1.S256().N
+	N := underlyingsecp256k1.S256().N
 	tests := []struct {
 		name   string
 		secret []byte

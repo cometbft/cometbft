@@ -8,19 +8,7 @@ require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/ChainSafe/go-schnorrkel v1.1.0
 	github.com/adlio/schema v1.3.6
-<<<<<<< HEAD
-=======
-	github.com/btcsuite/btcd/btcutil v1.1.6
-	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
-	github.com/cometbft/cometbft-db v1.0.1
-	github.com/cometbft/cometbft-load-test v0.3.0
-	github.com/cometbft/cometbft/api v1.0.0-rc.1
-	github.com/cosmos/gogoproto v1.7.0
-	github.com/creachadair/atomicfile v0.3.5
-	github.com/creachadair/tomledit v0.0.26
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1
-	github.com/dgraph-io/badger/v4 v4.3.1
->>>>>>> 9b8eafa8b (chore: use decred secp256k1 directly (#4294))
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
@@ -57,7 +45,6 @@ require (
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.0
-	github.com/btcsuite/btcd/btcec/v2 v2.2.2
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cometbft/cometbft-db v0.9.5
 	github.com/cosmos/gogoproto v1.7.0
@@ -84,15 +71,9 @@ require (
 	github.com/cosmos/go-bip39 v0.0.0-20180819234021-555e2067c45d // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-<<<<<<< HEAD
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/dgraph-io/badger/v2 v2.2007.4 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
-=======
-	github.com/dgraph-io/ristretto v1.0.0 // indirect
-	github.com/docker/cli v24.0.7+incompatible // indirect
->>>>>>> 9b8eafa8b (chore: use decred secp256k1 directly (#4294))
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect

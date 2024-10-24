@@ -1,8 +1,12 @@
 module github.com/cometbft/cometbft
 
+<<<<<<< HEAD
 go 1.22
 
 toolchain go1.22.7
+=======
+go 1.22.7
+>>>>>>> 2fee473e9 (fix(state/indexer): copy value (#4321))
 
 require (
 	github.com/BurntSushi/toml v1.4.0
@@ -46,7 +50,11 @@ require (
 	github.com/Masterminds/semver/v3 v3.3.0
 	github.com/btcsuite/btcd/btcec/v2 v2.2.2
 	github.com/btcsuite/btcd/btcutil v1.1.6
+<<<<<<< HEAD
 	github.com/cometbft/cometbft-db v0.9.5
+=======
+	github.com/cometbft/cometbft-db v0.14.1
+>>>>>>> 2fee473e9 (fix(state/indexer): copy value (#4321))
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/golang/protobuf v1.5.4

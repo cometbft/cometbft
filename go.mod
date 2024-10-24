@@ -2,8 +2,6 @@ module github.com/cometbft/cometbft
 
 go 1.22.7
 
-toolchain go1.23.1
-
 require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/adlio/schema v1.3.6

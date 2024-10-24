@@ -317,8 +317,8 @@ func (mockNodeInfo) Validate() error                                        { re
 func (mockNodeInfo) CompatibleWith(ni.NodeInfo) error                       { return nil }
 func (mockNodeInfo) Handshake(net.Conn, time.Duration) (ni.NodeInfo, error) { return nil, nil }
 
-func testNodeInfo(id nodekey.ID, name string) ni.DefaultNodeInfo {
-	return ni.DefaultNodeInfo{
+func testNodeInfo(id nodekey.ID, name string) ni.Default {
+	return ni.Default{
 		ProtocolVersion: ni.NewProtocolVersion(0, 0, 0),
 		DefaultNodeID:   id,
 		ListenAddr:      fmt.Sprintf("127.0.0.1:%d", getFreePort()),
@@ -326,7 +326,7 @@ func testNodeInfo(id nodekey.ID, name string) ni.DefaultNodeInfo {
 		Version:         "1.2.3-rc0-deadbeef",
 		Channels:        []byte{testCh},
 		Moniker:         name,
-		Other: ni.DefaultNodeInfoOther{
+		Other: ni.DefaultOther{
 			TxIndex:    "on",
 			RPCAddress: fmt.Sprintf("127.0.0.1:%d", getFreePort()),
 		},

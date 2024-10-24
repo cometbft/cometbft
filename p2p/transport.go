@@ -5,7 +5,7 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	na "github.com/cometbft/cometbft/p2p/netaddress"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 )
 
 // peerConfig is used to bundle data we need to fully setup a Peer with an
@@ -21,7 +21,7 @@ type peerConfig struct {
 	// isPersistent allows you to set a function, which, given socket address
 	// (for outbound peers) OR self-reported address (for inbound peers), tells
 	// if the peer is persistent or not.
-	isPersistent  func(*na.NetAddress) bool
+	isPersistent  func(*na.NetAddr) bool
 	reactorsByCh  map[byte]Reactor
 	msgTypeByChID map[byte]proto.Message
 	metrics       *Metrics
@@ -31,14 +31,14 @@ type peerConfig struct {
 // the transport. Each transport is also responsible to filter establishing
 // peers specific to its domain.
 type Transport interface {
-	// NetAddress returns the NetAddress of the local node.
-	NetAddress() na.NetAddress
+	// NetAddr returns the network address of the local node.
+	NetAddr() na.NetAddr
 
 	// Accept waits for and returns the next connection to the local node.
-	Accept() (net.Conn, *na.NetAddress, error)
+	Accept() (net.Conn, *na.NetAddr, error)
 
 	// Dial dials the given address and returns a connection.
-	Dial(addr na.NetAddress) (net.Conn, error)
+	Dial(addr na.NetAddr) (net.Conn, error)
 
 	// Cleanup any resources associated with the given connection.
 	//

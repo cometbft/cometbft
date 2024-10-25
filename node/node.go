@@ -58,7 +58,6 @@ type Node struct {
 
 	// config
 	config *cfg.Config
-
 	genesisTime   time.Time
 	privValidator types.PrivValidator // local node's validator key
 
@@ -656,6 +655,8 @@ func (n *Node) OnStart() error {
 		return ErrStartPruning{Err: err}
 	}
 
+	n.genesisDoc = nil
+
 	return nil
 }
 
@@ -792,7 +793,6 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 		}
 
 		n.Logger.Info("Creating genesis file chunks if genesis file is too big...")
-
 		if err := _rpcEnv.InitGenesisChunks(); err != nil {
 			errToReturn = fmt.Errorf("setting up RPC API environment: %s", err)
 			return

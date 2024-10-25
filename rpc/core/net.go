@@ -144,6 +144,7 @@ func (env *Environment) GenesisChunked(
 			}
 
 			genesisBase64 := base64.StdEncoding.EncodeToString(fGenesis)
+
 			resp := &ctypes.ResultGenesisChunk{
 				TotalChunks: 1,
 				ChunkNumber: 0,

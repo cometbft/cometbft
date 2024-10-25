@@ -506,7 +506,7 @@ func (t *Testnet) validateZones(nodes []*Node) error {
 	// Check that the zone ids of all nodes are valid when the matrix file exists.
 	nodesWithoutZone := make([]string, 0, len(nodes))
 	for _, node := range nodes {
-		if !node.ZoneIsSet() {
+		if node.Zone == "" {
 			nodesWithoutZone = append(nodesWithoutZone, node.Name)
 			continue
 		}
@@ -755,11 +755,6 @@ func (n Node) GRPCPrivilegedClient(ctx context.Context) (grpcprivileged.Client, 
 // Stateless returns true if the node is either a seed node or a light node.
 func (n Node) Stateless() bool {
 	return n.Mode == ModeLight || n.Mode == ModeSeed
-}
-
-// ZoneIsSet returns if the node has a zone set for latency emulation.
-func (n Node) ZoneIsSet() bool {
-	return len(n.Zone) > 0
 }
 
 // keyGenerator generates pseudorandom Ed25519 keys based on a seed.

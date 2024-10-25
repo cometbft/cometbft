@@ -12,6 +12,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
+	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/proxy"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/indexer"
@@ -30,7 +31,7 @@ const (
 
 	// genesisChunkSize is the maximum size, in bytes, of each
 	// chunk in the genesis structure for the chunked API.
-	genesisChunkSize = 16 * 1024 * 1024 // 16
+	genesisChunkSize = 2 * 1024 * 1024 // 2 MB
 )
 
 // These interfaces are used by RPC and must be thread safe
@@ -46,7 +47,7 @@ type Consensus interface {
 type transport interface {
 	Listeners() []string
 	IsListening() bool
-	NodeInfo() p2p.NodeInfo
+	NodeInfo() ni.NodeInfo
 }
 
 type peers interface {

@@ -10,6 +10,8 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/nodekey"
+	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
@@ -44,7 +46,7 @@ type mempoolReactor interface {
 
 type peerError struct {
 	err    error
-	peerID p2p.ID
+	peerID nodekey.ID
 }
 
 func (e peerError) Error() string {
@@ -170,16 +172,16 @@ func (bcR *Reactor) OnStop() {
 	}
 }
 
-// GetChannels implements Reactor.
-func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
-	return []*p2p.ChannelDescriptor{
-		{
+// StreamDescriptors implements Reactor.
+func (*Reactor) StreamDescriptors() []p2p.StreamDescriptor {
+	return []p2p.StreamDescriptor{
+		&tcpconn.ChannelDescriptor{
 			ID:                  BlocksyncChannel,
 			Priority:            5,
 			SendQueueCapacity:   1000,
 			RecvBufferCapacity:  50 * 4096,
 			RecvMessageCapacity: MaxMsgSize,
-			MessageType:         &bcproto.Message{},
+			MessageTypeI:        &bcproto.Message{},
 		},
 	}
 }

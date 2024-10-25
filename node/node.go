@@ -57,7 +57,7 @@ type Node struct {
 	service.BaseService
 
 	// config
-	config *cfg.Config
+	config        *cfg.Config
 	genesisTime   time.Time
 	privValidator types.PrivValidator // local node's validator key
 
@@ -654,8 +654,6 @@ func (n *Node) OnStart() error {
 	if err := n.pruner.Start(); err != nil {
 		return ErrStartPruning{Err: err}
 	}
-
-	n.genesisDoc = nil
 
 	return nil
 }

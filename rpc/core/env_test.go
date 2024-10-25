@@ -61,18 +61,19 @@ func TestInitGenesisChunks(t *testing.T) {
 	// GenesisDoc stored in GenDoc field.
 	// The test genesis is the genesis that the ci.toml e2e test uses.
 	t.Run("NoChunking", func(t *testing.T) {
-    fGenesis, err := os.CreateTemp("", "genesis.json")
-	  if err != nil {
-      t.Fatalf("creating genesis file for testing: %s", err)
-	  }
-	  defer os.Remove(fTemp.Name())
+		fGenesis, err := os.CreateTemp("", "genesis.json")
+		if err != nil {
+			t.Fatalf("creating genesis file for testing: %s", err)
+		}
 
-    if _, err := fGenesis.Write([]byte(_testGenesis)); err != nil {
-      t.Fatalf("writing genesis file for testing: %s", err)
-	  }
-	  fGenesis.Close()
+		defer os.Remove(fGenesis.Name())
 
-    env := &Environment{GenesisFilePath: fGenesis.Name()}
+		if _, err := fGenesis.WriteString(_testGenesis); err != nil {
+			t.Fatalf("writing genesis file for testing: %s", err)
+		}
+		fGenesis.Close()
+
+		env := &Environment{GenesisFilePath: fGenesis.Name()}
 
 		if err := env.InitGenesisChunks(); err != nil {
 			t.Errorf("unexpected error: %s", err)
@@ -84,14 +85,14 @@ func TestInitGenesisChunks(t *testing.T) {
 		if len(env.genesisChunks) > 0 {
 			formatStr := "chunks map should be empty, but it's %v"
 			t.Fatalf(formatStr, env.genesisChunks)
-    }
-  })
+		}
+	})
 
 	// Tests with a genesis file > genesisChunkSize.
 	// The test genesis file has an app_state of key-value string pairs
 	// automatically generated (~42MB).
 	t.Run("Chunking", func(t *testing.T) {
-    genDoc := &types.GenesisDoc{}
+		genDoc := &types.GenesisDoc{}
 		if err := cmtjson.Unmarshal([]byte(_testGenesis), genDoc); err != nil {
 			t.Fatalf("test genesis de-serialization: %s", err)
 		}
@@ -103,29 +104,28 @@ func TestInitGenesisChunks(t *testing.T) {
 
 		genDoc.AppState = appState
 
-    genDocJSON, err := cmtjson.Marshal(genDoc)
-    if err != nil {
-      t.Fatalf("test genesis serialization: %s", err)
-    }
+		genDocJSON, err := cmtjson.Marshal(genDoc)
+		if err != nil {
+			t.Fatalf("test genesis serialization: %s", err)
+		}
 
-    fGenesis, err := os.CreateTemp("", "genesis.json")
-	  if err != nil {
-      t.Fatalf("creating genesis file for testing: %s", err)
-	  }
+		fGenesis, err := os.CreateTemp("", "genesis.json")
+		if err != nil {
+			t.Fatalf("creating genesis file for testing: %s", err)
+		}
 
-    if _, err := fGenesis.Write(genDocJSON); err != nil {
-      t.Fatalf("writing genesis file for testing: %s", err)
-	  }
-	  fGenesis.Close()
+		if _, err := fGenesis.Write(genDocJSON); err != nil {
+			t.Fatalf("writing genesis file for testing: %s", err)
+		}
+		fGenesis.Close()
 
-    var (
-      fGenesisPath := filepath.Join(filepath.Dir(fGenesis.Name()), _chunksDir)
-      env := &Environment{GenesisFilePath: fGenesisPath}
-    )
+		var (
+			fGenesisPath = filepath.Join(filepath.Dir(fGenesis.Name()), _chunksDir)
+			env          = &Environment{GenesisFilePath: fGenesisPath}
+		)
 		defer os.RemoveAll(fGenesisPath)
 
-		err := env.InitGenesisChunks()
-		if err != nil {
+		if err = env.InitGenesisChunks(); err != nil {
 			t.Errorf("unexpected error: %s", err)
 		}
 

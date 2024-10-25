@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"math/rand"
 	"os"
 	"strconv"
@@ -320,6 +321,55 @@ func NewCLI() *CLI {
 			return Test(cli.testnet, cli.infp.GetInfrastructureData())
 		},
 	})
+
+	monitorCmd := cobra.Command{
+		Use:     "monitor",
+		Aliases: []string{"mon"},
+		Short:   "Manage monitoring services such as Prometheus, Grafana, ElasticSearch, etc.",
+		Long: "Manage monitoring services such as Prometheus, Grafana, ElasticSearch, etc.\n" +
+			"First run 'setup' to generate a Prometheus config file.",
+	}
+	monitorStartCmd := cobra.Command{
+		Use:     "start",
+		Aliases: []string{"up"},
+		Short:   "Start monitoring services.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			_, err := os.Stat(PrometheusConfigFile)
+			if errors.Is(err, fs.ErrNotExist) {
+				return fmt.Errorf("file %s not found", PrometheusConfigFile)
+			}
+			if err := docker.ExecComposeVerbose(cmd.Context(), "monitoring", "up", "-d"); err != nil {
+				return err
+			}
+			logger.Info("Grafana: http://localhost:3000 ; Prometheus: http://localhost:9090")
+			return nil
+		},
+	}
+	monitorStopCmd := cobra.Command{
+		Use:     "stop",
+		Aliases: []string{"down"},
+		Short:   "Stop monitoring services.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			_, err := os.Stat(PrometheusConfigFile)
+			if errors.Is(err, fs.ErrNotExist) {
+				return nil
+			}
+			logger.Info("Shutting down monitoring services.")
+			if err := docker.ExecComposeVerbose(cmd.Context(), "monitoring", "down"); err != nil {
+				return err
+			}
+			// Remove prometheus config only when there is no testnet.
+			if _, err := os.Stat(cli.testnet.Dir); errors.Is(err, fs.ErrNotExist) {
+				if err := os.RemoveAll(PrometheusConfigFile); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	}
+	monitorCmd.AddCommand(&monitorStartCmd)
+	monitorCmd.AddCommand(&monitorStopCmd)
+	cli.root.AddCommand(&monitorCmd)
 
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "cleanup",

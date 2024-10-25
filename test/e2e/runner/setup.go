@@ -41,6 +41,8 @@ const (
 	PrivvalStateFile      = "data/priv_validator_state.json"
 	PrivvalDummyKeyFile   = "config/dummy_validator_key.json"
 	PrivvalDummyStateFile = "data/dummy_validator_state.json"
+
+	PrometheusConfigFile = "monitoring/prometheus.yml"
 )
 
 // Setup sets up the testnet configuration.
@@ -123,6 +125,12 @@ func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 	}
 
 	if testnet.Prometheus {
+		if err := WritePrometheusConfig(testnet, PrometheusConfigFile); err != nil {
+			return err
+		}
+		// Make a copy of the Prometheus config file in the testnet direactory.
+		// This should be temporary to keep it compatible with the qa-infra
+		// repository.
 		if err := WritePrometheusConfig(testnet, filepath.Join(testnet.Dir, "prometheus.yml")); err != nil {
 			return err
 		}

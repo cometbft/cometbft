@@ -1230,7 +1230,7 @@ func DefaultConsensusConfig() *ConsensusConfig {
 		TimeoutProposeDelta:              500 * time.Millisecond,
 		TimeoutVote:                      1000 * time.Millisecond,
 		TimeoutVoteDelta:                 500 * time.Millisecond,
-		TimeoutCommit:                    1000 * time.Millisecond,
+		TimeoutCommit:                    0 * time.Millisecond,
 		CreateEmptyBlocks:                true,
 		CreateEmptyBlocksInterval:        0 * time.Second,
 		PeerGossipSleepDuration:          100 * time.Millisecond,

@@ -35,9 +35,9 @@ const (
 
 	// genesisChunkSize is the maximum size, in bytes, of each
 	// chunk in the genesis structure for the chunked API.
-  genesisChunkSize = 2 * 1024 * 1024 // 2 MB
+	genesisChunkSize = 2 * 1024 * 1024 // 2 MB
 
-  _chunksDir = "genesis-chunks"
+	_chunksDir = "genesis-chunks"
 )
 
 // These interfaces are used by RPC and must be thread safe
@@ -161,70 +161,6 @@ func (env *Environment) InitGenesisChunks() error {
 	}
 
 	env.genesisChunks = chunkIDToPath
-
-	return nil
-}
-
-// InitGenesisChunks checks whether it makes sense to create a cache of chunked
-// genesis data. It is called on Node startup and should be called only once.
-// Rules of chunking:
-//   - if the genesis file's size is <= genesisChunkSize, then no chunking.
-//     An `Environment` object will store a pointer to the genesis in its GenDoc
-//     field. Its genChunks field will be set to nil. `/genesis` RPC API will return
-//     the GenesisDoc itself.
-//   - if the genesis file's size is > genesisChunkSize, then use chunking. An
-//     `Environment` object will store a slice of base64-encoded chunks in its
-//     genChunks field. Its GenDoc field will be set to nil. `/genesis` RPC API will
-//     redirect users to use the `/genesis_chunked` API.
-func (env *Environment) InitGenesisChunks() error {
-	if len(env.genChunks) > 0 {
-		// we already computed the chunks, return.
-		return nil
-	}
-
-	if env.GenDoc == nil {
-		// chunks not computed yet, but no genesis available.
-		// This should not happen.
-		return errors.New("could not create the genesis file chunks and cache them because the genesis doc is unavailable")
-	}
-
-	data, err := cmtjson.Marshal(env.GenDoc)
-	if err != nil {
-		return fmt.Errorf("encoding genesis doc to JSON: %w", err)
-	}
-
-	// If genesis is less than 16MB, then no chunking.
-	// Keep a pointer to a GenesisDoc in env.GenDoc.
-	if len(data) <= genesisChunkSize {
-		env.genChunks = nil
-		return nil
-	}
-
-	var (
-		nChunks = (len(data) + genesisChunkSize - 1) / genesisChunkSize
-		chunks  = make([]string, nChunks)
-	)
-	for i := range nChunks {
-		var (
-			start = i * genesisChunkSize
-			end   = start + genesisChunkSize
-		)
-		if end > len(data) {
-			end = len(data)
-		}
-
-		// we make a copy here so that the original data isn't retained in memory.
-		// The GC will collect the data slice after exiting the function.
-		// Without the copy, it would keep it in memory.
-		chunk := make([]byte, end-start)
-		copy(chunk, data[start:end])
-		chunks[i] = base64.StdEncoding.EncodeToString(chunk)
-	}
-
-	env.genChunks = chunks
-
-	// we store the chunks; don't store a ptr to the genesis anymore.
-	env.GenDoc = nil
 
 	return nil
 }

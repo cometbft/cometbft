@@ -53,10 +53,6 @@ func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 		return err
 	}
 
-	if err := infp.Setup(); err != nil {
-		return err
-	}
-
 	genesis, err := MakeGenesis(testnet)
 	if err != nil {
 		return err
@@ -134,6 +130,11 @@ func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 		if err := WritePrometheusConfig(testnet, filepath.Join(testnet.Dir, "prometheus.yml")); err != nil {
 			return err
 		}
+	}
+
+	//nolint: revive
+	if err := infp.Setup(); err != nil {
+		return err
 	}
 
 	return nil

@@ -792,7 +792,7 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 
 		n.Logger.Info("Creating genesis file chunks if genesis file is too big...")
 		if err := _rpcEnv.InitGenesisChunks(); err != nil {
-			errToReturn = fmt.Errorf("setting up RPC API environment: %s", err)
+			errToReturn = fmt.Errorf("configuring RPC API environment: %s", err)
 			return
 		}
 	})

@@ -119,10 +119,11 @@ func TestInitGenesisChunks(t *testing.T) {
 		fGenesis.Close()
 
 		var (
-			fGenesisPath = filepath.Join(filepath.Dir(fGenesis.Name()), _chunksDir)
-			env          = &Environment{GenesisFilePath: fGenesisPath}
+			fGenesisPath  = fGenesis.Name()
+			chunksDirPath = filepath.Join(filepath.Dir(fGenesisPath), _chunksDir)
+			env           = &Environment{GenesisFilePath: fGenesisPath}
 		)
-		defer os.RemoveAll(fGenesisPath)
+		defer os.RemoveAll(chunksDirPath)
 
 		if err = env.InitGenesisChunks(); err != nil {
 			t.Errorf("unexpected error: %s", err)
@@ -223,11 +224,11 @@ func TestPaginationPerPage(t *testing.T) {
 	assert.Equal(t, defaultPerPage, p)
 }
 
-func TestDeleteGenesisChunks(t *testing.T) {
+func TestCleanup(t *testing.T) {
 	t.Run("NoErrDirNotExist", func(t *testing.T) {
 		env := &Environment{GenesisFilePath: "/nonexistent/path/to/genesis.json"}
 
-		if err := env.deleteGenesisChunks(); err != nil {
+		if err := env.Cleanup(); err != nil {
 			t.Errorf("unexpected error: %s", err)
 		}
 	})
@@ -245,7 +246,7 @@ func TestDeleteGenesisChunks(t *testing.T) {
 			t.Fatalf("creating test chunks directory: %s", err)
 		}
 
-		if err := env.deleteGenesisChunks(); err != nil {
+		if err := env.Cleanup(); err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
 
@@ -287,7 +288,7 @@ func TestDeleteGenesisChunks(t *testing.T) {
 			t.Fatalf("changing test parent directory permissions: %s", err)
 		}
 
-		err = env.deleteGenesisChunks()
+		err = env.Cleanup()
 		if err == nil {
 			t.Fatalf("expected an error, got nil")
 		}
@@ -501,6 +502,9 @@ func TestWriteChunks(t *testing.T) {
 // its chunks and compare it with the original genesis file.
 // The function reads the genesis file as a stream, so it is suitable for larger
 // files as well.
+// gFilePath is the genesis file's full path on disk.
+// chunks is a map where the keys are the chunk IDs, and the values are the chunks'
+// path on disk.
 func reassembleAndCompare(gFilePath string, chunks map[int]string) error {
 	gFile, err := os.Open(gFilePath)
 	if err != nil {
@@ -520,6 +524,7 @@ func reassembleAndCompare(gFilePath string, chunks map[int]string) error {
 	for cID := range cIDs {
 		cPath := chunks[cID]
 
+		// chunks are small, so it's ok to load them in memory.
 		chunk, err := os.ReadFile(cPath)
 		if err != nil {
 			return fmt.Errorf("reading chunk file %d: %s", cID, err)

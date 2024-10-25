@@ -1,14 +1,6 @@
 # CHANGELOG
 
-<<<<<<< HEAD
-=======
 ## v0.38.13
-
-*October 24, 2024*
-
-This patch release addresses the issue where tx_search was not returning all results, which only arises when upgrading
-to CometBFT-DB version 0.13 or later. It includes a fix in the state indexer to resolve this problem. We recommend
-upgrading to this patch release if you are affected by this issue.
 
 ### BUG FIXES
 
@@ -17,17 +9,6 @@ upgrading to this patch release if you are affected by this issue.
 - `[state/indexer]` Fix the tx_search results not returning all results by changing the logic in the indexer to copy the key and values instead of reusing an iterator. This issue only arises when upgrading to cometbft-db v0.13 or later.
   ([\#4295](https://github.com/cometbft/cometbft/issues/4295)). Special thanks to @faddat for reporting the issue.
 
-### DEPENDENCIES
-
-- `[go/runtime]` Bump Go version to 1.22
-  ([\#4073](https://github.com/cometbft/cometbft/pull/4073))
-- Bump cometbft-db version to v0.14.1
-  ([\#4321](https://github.com/cometbft/cometbft/pull/4321))
-
-### FEATURES
-
-- `[crypto]` use decred secp256k1 directly ([#4294](https://github.com/cometbft/cometbft/pull/4294))
-
 ### IMPROVEMENTS
 
 - `[metrics]` Add `evicted_txs` metric to mempool
@@ -35,7 +16,6 @@ upgrading to this patch release if you are affected by this issue.
 - `[log]` Change "mempool is full" log to debug level
   ([\#4123](https://github.com/cometbft/cometbft/pull/4123)) Special thanks to @yihuang.
 
->>>>>>> 554486455 (release v0.38.13 (fixed changelog) (#4333))
 ## v0.38.12
 
 *September 3, 2024*
@@ -47,6 +27,10 @@ for all users.
 
 - `[light]` Cross-check proposer priorities in retrieved validator sets
   ([\#ASA-2024-009](https://github.com/cometbft/cometbft/security/advisories/GHSA-g5xx-c4hv-9ccc))
+- `[state/pruning]` When no blocks are pruned, do not attempt to prune statestore
+   ([\#1616](https://github.com/cometbft/cometbft/pull/1616))
+- added missing optional function for BlocksResultsService in gRPC client
+  ([\#3693](https://github.com/cometbft/cometbft/pull/3693))
 - `[privval]` Ignore duplicate privval listen when already connected ([\#3828](https://github.com/cometbft/cometbft/issues/3828)
 
 ### DEPENDENCIES
@@ -60,6 +44,12 @@ for all users.
 
 - `[types]` Check that proposer is one of the validators in `ValidateBasic`
   ([\#ASA-2024-009](https://github.com/cometbft/cometbft/security/advisories/GHSA-g5xx-c4hv-9ccc))
+- `[state/indexer]` Add transaction and block index pruning
+  ([\#1176](https://github.com/cometbft/cometbft/pull/1176))
+- `[state/indexer]` Fix txSearch performance issue
+  ([\#2855](https://github.com/cometbft/cometbft/pull/2855))
+- `[state/txindex]` search optimization
+  ([\#3458](https://github.com/cometbft/cometbft/pull/3458))
 - `[e2e]` Add `log_level` option to manifest file
   ([#3819](https://github.com/cometbft/cometbft/pull/3819)).
 - `[e2e]` Add `log_format` option to manifest file
@@ -395,7 +385,7 @@ gossip.
   ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 - `[config]` Add mempool parameters `experimental_max_gossip_connections_to_persistent_peers` and
   `experimental_max_gossip_connections_to_non_persistent_peers` for limiting the number of peers to
-  which the node gossip transactions. 
+  which the node gossip transactions.
   ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
   ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 
@@ -542,6 +532,12 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
 - `[node]` Make handshake cancelable ([cometbft/cometbft\#857](https://github.com/cometbft/cometbft/pull/857))
 - `[consensus]` New metrics (counters) to track duplicate votes and block parts.
   ([\#896](https://github.com/cometbft/cometbft/pull/896))
+- `[consensus]` Optimize vote and block part gossip with new message `HasProposalBlockPartMessage`,
+  which is similar to `HasVoteMessage`; and random sleep in the loop broadcasting those messages.
+  The sleep can be configured with new config `peer_gossip_intraloop_sleep_duration`, which is set to 0
+  by default as this is experimental.
+  Our scale tests show substantial bandwith improvement with a value of 50 ms.
+  ([\#904](https://github.com/cometbft/cometbft/pull/904))
 - `[mempool]` Application can now set `ConsensusParams.Block.MaxBytes` to -1
   to gain more control on the max size of transactions in a block.
   It also allows the application to have visibility on all transactions in the

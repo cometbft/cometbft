@@ -33,8 +33,8 @@ type hashable interface {
 // NewLazyHash defers Hash until the Stringer interface is invoked. This is
 // particularly useful for avoiding calling Sprintf when debugging is not
 // active.
-func NewLazyHash(block hashable) *lazyHash {
-	return &lazyHash{block}
+func NewLazyHash(inner hashable) *lazyHash {
+	return &lazyHash{inner}
 }
 
 func (l *lazyHash) String() string {

@@ -254,7 +254,7 @@ type ManifestNode struct {
 	SendNoLoad bool `toml:"send_no_load"`
 
 	// Geographical zone ID for simulating latencies.
-	ZoneStr string `toml:"zone"`
+	Zone string `toml:"zone"`
 
 	// ExperimentalKeyLayout sets the key representation in the DB
 	ExperimentalKeyLayout string `toml:"experimental_db_key_layout"`

@@ -237,7 +237,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			PersistInterval:         1,
 			Perturbations:           []Perturbation{},
 			Prometheus:              testnet.Prometheus,
-			Zone:                    nodeManifest.ZoneStr,
+			Zone:                    nodeManifest.Zone,
 		}
 		if node.Version == "" {
 			node.Version = localVersion
@@ -269,8 +269,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		for _, p := range nodeManifest.Perturb {
 			node.Perturbations = append(node.Perturbations, Perturbation(p))
 		}
-		if nodeManifest.ZoneStr != "" {
-			node.Zone = nodeManifest.ZoneStr
+		if nodeManifest.Zone != "" {
+			node.Zone = nodeManifest.Zone
 		} else if testnet.DefaultZone != "" {
 			node.Zone = testnet.DefaultZone
 		}

@@ -134,7 +134,7 @@ func (env *Environment) InitGenesisChunks() error {
 
 	data, err := cmtjson.Marshal(env.GenDoc)
 	if err != nil {
-		return err
+		return fmt.Errorf("encoding genesis doc to JSON: %w", err)
 	}
 
 	// If genesis is less than 16MB, then no chunking.

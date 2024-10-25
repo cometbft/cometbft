@@ -812,7 +812,7 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 func (n *Node) startRPC() ([]net.Listener, error) {
 	env, err := n.ConfigureRPC()
 	if err != nil {
-		return nil, fmt.Errorf("starting RPC server: %s", err)
+		return nil, fmt.Errorf("configuring RPC server: %s", err)
 	}
 
 	listenAddrs := splitAndTrimEmpty(n.config.RPC.ListenAddress, ",", " ")

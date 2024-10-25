@@ -22,21 +22,21 @@ func (l *LazySprintf) String() string {
 	return fmt.Sprintf(l.format, l.args...)
 }
 
-type LazyBlockHash struct {
-	block hashable
+type lazyHash struct {
+	inner hashable
 }
 
 type hashable interface {
 	Hash() cmtbytes.HexBytes
 }
 
-// NewLazyBlockHash defers block Hash until the Stringer interface is invoked.
-// This is particularly useful for avoiding calling Sprintf when debugging is not
+// NewLazyHash defers Hash until the Stringer interface is invoked. This is
+// particularly useful for avoiding calling Sprintf when debugging is not
 // active.
-func NewLazyBlockHash(block hashable) *LazyBlockHash {
-	return &LazyBlockHash{block}
+func NewLazyHash(block hashable) *lazyHash {
+	return &lazyHash{block}
 }
 
-func (l *LazyBlockHash) String() string {
-	return l.block.Hash().String()
+func (l *lazyHash) String() string {
+	return l.inner.Hash().String()
 }

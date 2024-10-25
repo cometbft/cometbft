@@ -238,7 +238,7 @@ func (env *Environment) latestUncommittedHeight() int64 {
 	return env.BlockStore.Height() + 1
 }
 
-// deleteGenesisChunks deletes the directory storing the genesis file chunks on disk
+// Cleanup deletes the directory storing the genesis file chunks on disk
 // if it exists. If the directory does not exist, the function is a no-op.
 // The chunks' directory is a sub-directory of the `config/` directory of the
 // running node (i.e., where the genesis.json file is stored).
@@ -246,7 +246,7 @@ func (env *Environment) latestUncommittedHeight() int64 {
 //   - before creating new genesis file chunks, to make sure we start with a clean
 //     directory.
 //   - when a Node shuts down, to clean up the file system.
-func (env *Environment) deleteGenesisChunks() error {
+func (env *Environment) Cleanup() error {
 	gFileDir := filepath.Dir(env.GenesisFilePath)
 	chunksDir := filepath.Join(gFileDir, _chunksDir)
 

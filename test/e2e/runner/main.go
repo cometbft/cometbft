@@ -204,7 +204,7 @@ func NewCLI() *CLI {
 		Short: "Starts the testnet, waiting for nodes to become available",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			_, err := os.Stat(cli.testnet.Dir)
-			if os.IsNotExist(err) {
+			if errors.Is(err, fs.ErrNotExist) {
 				err = Setup(cli.testnet, cli.infp)
 			}
 			if err != nil {

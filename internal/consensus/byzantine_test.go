@@ -231,10 +231,10 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 			proposal.Signature = p.Signature
 
 			// send proposal and block parts on internal msg queue
-			lazyProposer.sendInternalMessage(msgInfo{&ProposalMessage{proposal}, "", cmttime.Now()})
+			lazyProposer.sendInternalMessage(msgInfo{&ProposalMessage{proposal}, "", cmttime.Now(), true})
 			for i := 0; i < int(blockParts.Total()); i++ {
 				part := blockParts.GetPart(i)
-				lazyProposer.sendInternalMessage(msgInfo{&BlockPartMessage{lazyProposer.Height, lazyProposer.Round, part}, "", time.Time{}})
+				lazyProposer.sendInternalMessage(msgInfo{&BlockPartMessage{lazyProposer.Height, lazyProposer.Round, part}, "", time.Time{}, true})
 			}
 			lazyProposer.Logger.Info("Signed proposal", "height", height, "round", round, "proposal", proposal)
 			lazyProposer.Logger.Debug(fmt.Sprintf("Signed proposal block: %v", block))

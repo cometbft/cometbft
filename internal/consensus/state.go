@@ -40,6 +40,7 @@ type msgInfo struct {
 	Msg         Message    `json:"msg"`
 	PeerID      nodekey.ID `json:"peer_key"`
 	ReceiveTime time.Time  `json:"receive_time"`
+	WriteWal    bool       `json:"write_wal"`
 }
 
 // internally generated messages which may update the state.
@@ -482,9 +483,9 @@ func (cs *State) OpenWAL(walFile string) (WAL, error) {
 // AddVote inputs a vote.
 func (cs *State) AddVote(vote *types.Vote, peerID nodekey.ID) (added bool, err error) {
 	if peerID == "" {
-		cs.internalMsgQueue <- msgInfo{&VoteMessage{vote}, "", time.Time{}}
+		cs.internalMsgQueue <- msgInfo{&VoteMessage{vote}, "", time.Time{}, true}
 	} else {
-		cs.peerMsgQueue <- msgInfo{&VoteMessage{vote}, peerID, time.Time{}}
+		cs.peerMsgQueue <- msgInfo{&VoteMessage{vote}, peerID, time.Time{}, false}
 	}
 
 	// TODO: wait for event?!
@@ -494,9 +495,9 @@ func (cs *State) AddVote(vote *types.Vote, peerID nodekey.ID) (added bool, err e
 // SetProposal inputs a proposal.
 func (cs *State) SetProposal(proposal *types.Proposal, peerID nodekey.ID) error {
 	if peerID == "" {
-		cs.internalMsgQueue <- msgInfo{&ProposalMessage{proposal}, "", cmttime.Now()}
+		cs.internalMsgQueue <- msgInfo{&ProposalMessage{proposal}, "", cmttime.Now(), true}
 	} else {
-		cs.peerMsgQueue <- msgInfo{&ProposalMessage{proposal}, peerID, cmttime.Now()}
+		cs.peerMsgQueue <- msgInfo{&ProposalMessage{proposal}, peerID, cmttime.Now(), true}
 	}
 
 	// TODO: wait for event?!
@@ -506,9 +507,9 @@ func (cs *State) SetProposal(proposal *types.Proposal, peerID nodekey.ID) error 
 // AddProposalBlockPart inputs a part of the proposal block.
 func (cs *State) AddProposalBlockPart(height int64, round int32, part *types.Part, peerID nodekey.ID) error {
 	if peerID == "" {
-		cs.internalMsgQueue <- msgInfo{&BlockPartMessage{height, round, part}, "", time.Time{}}
+		cs.internalMsgQueue <- msgInfo{&BlockPartMessage{height, round, part}, "", time.Time{}, true}
 	} else {
-		cs.peerMsgQueue <- msgInfo{&BlockPartMessage{height, round, part}, peerID, time.Time{}}
+		cs.peerMsgQueue <- msgInfo{&BlockPartMessage{height, round, part}, peerID, time.Time{}, true}
 	}
 
 	// TODO: wait for event?!
@@ -1263,11 +1264,11 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 		proposal.Signature = p.Signature
 
 		// send proposal and block parts on internal msg queue
-		cs.sendInternalMessage(msgInfo{&ProposalMessage{proposal}, "", cmttime.Now()})
+		cs.sendInternalMessage(msgInfo{&ProposalMessage{proposal}, "", cmttime.Now(), true})
 
 		for i := 0; i < int(blockParts.Total()); i++ {
 			part := blockParts.GetPart(i)
-			cs.sendInternalMessage(msgInfo{&BlockPartMessage{cs.Height, cs.Round, part}, "", time.Time{}})
+			cs.sendInternalMessage(msgInfo{&BlockPartMessage{cs.Height, cs.Round, part}, "", time.Time{}, true})
 		}
 
 		cs.Logger.Debug("Signed proposal", "height", height, "round", round, "proposal", proposal)
@@ -2621,7 +2622,7 @@ func (cs *State) signAddVote(
 		panic(fmt.Errorf("vote extension absence/presence does not match extensions enabled %t!=%t, height %d, type %v",
 			hasExt, extEnabled, vote.Height, vote.Type))
 	}
-	cs.sendInternalMessage(msgInfo{&VoteMessage{vote}, "", time.Time{}})
+	cs.sendInternalMessage(msgInfo{&VoteMessage{vote}, "", time.Time{}, true})
 	cs.Logger.Debug("Signed and pushed vote", "height", cs.Height, "round", cs.Round, "vote", vote)
 }
 

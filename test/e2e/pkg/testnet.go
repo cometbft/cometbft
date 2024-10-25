@@ -44,7 +44,6 @@ type (
 	Mode         string
 	Protocol     string
 	Perturbation string
-	ZoneID       string
 )
 
 const (
@@ -117,7 +116,7 @@ type Node struct {
 	Perturbations           []Perturbation
 	Prometheus              bool
 	PrometheusProxyPort     uint32
-	Zone                    ZoneID
+	Zone                    string
 }
 
 // LoadTestnet loads a testnet from a manifest file. The testnet files are
@@ -238,7 +237,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			PersistInterval:         1,
 			Perturbations:           []Perturbation{},
 			Prometheus:              testnet.Prometheus,
-			Zone:                    ZoneID(nodeManifest.ZoneStr),
+			Zone:                    nodeManifest.ZoneStr,
 		}
 		if node.Version == "" {
 			node.Version = localVersion
@@ -271,9 +270,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			node.Perturbations = append(node.Perturbations, Perturbation(p))
 		}
 		if nodeManifest.ZoneStr != "" {
-			node.Zone = ZoneID(nodeManifest.ZoneStr)
+			node.Zone = nodeManifest.ZoneStr
 		} else if testnet.DefaultZone != "" {
-			node.Zone = ZoneID(testnet.DefaultZone)
+			node.Zone = testnet.DefaultZone
 		}
 		// Configs are applied in order, so a local Config in Node
 		// should override a global config in Testnet.
@@ -496,7 +495,7 @@ func (Testnet) validateZones(nodes []*Node) error {
 	}
 
 	// Get list of zone ids in matrix.
-	zones := make([]ZoneID, 0, len(zoneMatrix))
+	zones := make([]string, 0, len(zoneMatrix))
 	for zone := range zoneMatrix {
 		zones = append(zones, zone)
 	}
@@ -510,7 +509,7 @@ func (Testnet) validateZones(nodes []*Node) error {
 		}
 		if !slices.Contains(zones, node.Zone) {
 			return fmt.Errorf("invalid zone %s for node %s, not present in zone-latencies matrix",
-				string(node.Zone), node.Name)
+				node.Zone, node.Name)
 		}
 	}
 
@@ -850,15 +849,15 @@ func (g *ipGenerator) Next() net.IP {
 //go:embed latency/aws-latencies.csv
 var awsLatenciesMatrixCsvContent string
 
-func loadZoneLatenciesMatrix() (map[ZoneID][]uint32, error) {
+func loadZoneLatenciesMatrix() (map[string][]uint32, error) {
 	records, err := parseCsv(awsLatenciesMatrixCsvContent)
 	if err != nil {
 		return nil, err
 	}
 	records = records[1:] // Ignore first headers line
-	matrix := make(map[ZoneID][]uint32, len(records))
+	matrix := make(map[string][]uint32, len(records))
 	for _, r := range records {
-		zoneID := ZoneID(r[0])
+		zoneID := r[0]
 		matrix[zoneID] = make([]uint32, len(r)-1)
 		for i, l := range r[1:] {
 			lat, err := strconv.ParseUint(l, 10, 32)

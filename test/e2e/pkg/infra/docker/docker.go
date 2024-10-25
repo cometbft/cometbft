@@ -35,11 +35,6 @@ func (p *Provider) Setup() error {
 		return err
 	}
 
-	err = infra.GenerateIPZonesTable(p.Testnet.Nodes, p.IPZonesFilePath(), true)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -76,21 +71,6 @@ func (Provider) CheckUpgraded(ctx context.Context, node *e2e.Node) (string, bool
 		upgraded = true
 	}
 	return name, upgraded, nil
-}
-
-func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
-	containerDir := "/scripts/"
-
-	// Copy zone file used by the script that sets latency.
-	if err := Exec(ctx, "cp", p.IPZonesFilePath(), node.Name+":"+containerDir); err != nil {
-		return err
-	}
-
-	// Execute the latency setter script in the container.
-	return ExecVerbose(ctx, "exec", "--privileged", node.Name,
-		filepath.Join(containerDir, "latency-setter.py"), "set",
-		filepath.Join(containerDir, filepath.Base(p.IPZonesFilePath())),
-		filepath.Join(containerDir, "aws-latencies.csv"), "eth0")
 }
 
 func (Provider) NodeIP(node *e2e.Node) net.IP {

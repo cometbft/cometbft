@@ -313,8 +313,6 @@ func writeChunk(chunk []byte, dir string, chunkID int) (string, error) {
 // The map will be useful for the `/genesis_chunked` RPC endpoint to quickly find
 // a chunk on disk given its ID.
 func writeChunks(gFilePath string, chunkSize int) (map[int]string, error) {
-	chunkIDToPath := make(map[int]string)
-
 	gFile, err := os.Open(gFilePath)
 	if err != nil {
 		formatStr := "chunking: opening genesis file at %s: %s"
@@ -327,7 +325,10 @@ func writeChunks(gFilePath string, chunkSize int) (map[int]string, error) {
 		return nil, fmt.Errorf("chunking: %s", err)
 	}
 
-	buf := make([]byte, chunkSize)
+	var (
+		buf           = make([]byte, chunkSize)
+		chunkIDToPath = make(map[int]string)
+	)
 	for chunkID := 0; ; chunkID++ {
 		n, err := gFile.Read(buf)
 		if err != nil {

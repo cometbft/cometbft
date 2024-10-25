@@ -144,7 +144,12 @@ func TestInitGenesisChunks(t *testing.T) {
 
 		// We now check if the original genesis doc and the genesis doc
 		// reassembled from the chunks match.
-		if err := reassembleAndCompare(fGenesisPath, env.genesisChunks); err != nil {
+		err = reassembleAndCompare(
+			fGenesisPath,
+			env.genesisChunks,
+			genesisChunkSize,
+		)
+		if err != nil {
 			t.Errorf("reassembling genesis file: %s", err)
 		}
 	})
@@ -456,29 +461,29 @@ func TestWriteChunks(t *testing.T) {
 		chunkSize = 25
 	)
 
-	fTemp, err := os.CreateTemp("", "dummy_genesis")
+	fGenesis, err := os.CreateTemp("", "dummy_genesis")
 	if err != nil {
 		t.Fatalf("creating temp file for testing: %s", err)
 	}
-	defer os.Remove(fTemp.Name())
+	defer os.Remove(fGenesis.Name())
 
 	data := make([]byte, fTempSize)
 	for i := 0; i < 100; i++ {
 		data[i] = 'a'
 	}
 
-	if _, err := fTemp.Write(data); err != nil {
+	if _, err := fGenesis.Write(data); err != nil {
 		t.Fatalf("writing to temp file for testing: %s", err)
 	}
-	fTemp.Close()
+	fGenesis.Close()
 
-	chunkIDToPath, err := writeChunks(fTemp.Name(), chunkSize)
+	chunkIDToPath, err := writeChunks(fGenesis.Name(), chunkSize)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
 
 	var (
-		fTempDir      = filepath.Dir(fTemp.Name())
+		fTempDir      = filepath.Dir(fGenesis.Name())
 		testChunksDir = filepath.Join(fTempDir, _chunksDir)
 	)
 	defer os.RemoveAll(testChunksDir)
@@ -493,7 +498,8 @@ func TestWriteChunks(t *testing.T) {
 		t.Errorf("\nwant map: %v\ngot: %v\n", wantMap, chunkIDToPath)
 	}
 
-	if err := reassembleAndCompare(fTemp.Name(), chunkIDToPath); err != nil {
+	err = reassembleAndCompare(fGenesis.Name(), chunkIDToPath, chunkSize)
+	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
 }
@@ -505,7 +511,11 @@ func TestWriteChunks(t *testing.T) {
 // gFilePath is the genesis file's full path on disk.
 // chunks is a map where the keys are the chunk IDs, and the values are the chunks'
 // path on disk.
-func reassembleAndCompare(gFilePath string, chunks map[int]string) error {
+func reassembleAndCompare(
+	gFilePath string,
+	chunks map[int]string,
+	chunkSize int,
+) error {
 	gFile, err := os.Open(gFilePath)
 	if err != nil {
 		return fmt.Errorf("opening genesis file at %s: %s", gFilePath, err)
@@ -521,6 +531,7 @@ func reassembleAndCompare(gFilePath string, chunks map[int]string) error {
 	}
 	slices.Sort(cIDs)
 
+	gBuf := make([]byte, chunkSize)
 	for cID := range cIDs {
 		cPath := chunks[cID]
 
@@ -529,8 +540,6 @@ func reassembleAndCompare(gFilePath string, chunks map[int]string) error {
 		if err != nil {
 			return fmt.Errorf("reading chunk file %d: %s", cID, err)
 		}
-
-		gBuf := make([]byte, len(chunk))
 		gN, err := gFile.Read(gBuf)
 		if err != nil && !errors.Is(err, io.EOF) {
 			return fmt.Errorf("reading genesis file chunk %d: %s", cID, err)

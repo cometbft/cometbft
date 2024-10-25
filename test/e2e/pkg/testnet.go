@@ -489,15 +489,9 @@ func (t Testnet) Validate() error {
 }
 
 func (Testnet) validateZones(nodes []*Node) error {
-	zoneMatrix, err := loadZoneLatenciesMatrix()
+	allZones, _, err := LoadZoneLatenciesMatrix()
 	if err != nil {
 		return err
-	}
-
-	// Get list of zone ids in matrix.
-	zones := make([]string, 0, len(zoneMatrix))
-	for zone := range zoneMatrix {
-		zones = append(zones, zone)
 	}
 
 	// Check that the zone ids of all nodes are valid when the matrix file exists.
@@ -507,7 +501,7 @@ func (Testnet) validateZones(nodes []*Node) error {
 			nodesWithoutZone = append(nodesWithoutZone, node.Name)
 			continue
 		}
-		if !slices.Contains(zones, node.Zone) {
+		if !slices.Contains(allZones, node.Zone) {
 			return fmt.Errorf("invalid zone %s for node %s, not present in zone-latencies matrix",
 				node.Zone, node.Name)
 		}
@@ -846,15 +840,19 @@ func (g *ipGenerator) Next() net.IP {
 	return ip
 }
 
-//go:embed latency/aws-latencies.csv
+//go:embed files/aws-latencies.csv
 var awsLatenciesMatrixCsvContent string
 
-func loadZoneLatenciesMatrix() (map[string][]uint32, error) {
+// LoadZoneLatenciesMatrix parses the file containing the matrix of latencies
+// from each zone to another one. It returns the list of all zone IDs, and a map
+// from each zone ID to the latencies to each other zone.
+func LoadZoneLatenciesMatrix() ([]string, map[string][]uint32, error) {
 	records, err := parseCsv(awsLatenciesMatrixCsvContent)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	records = records[1:] // Ignore first headers line
+	zones := records[0][1:] // Discard first element in header (value "from/to")
+	records = records[1:]   // Discard header
 	matrix := make(map[string][]uint32, len(records))
 	for _, r := range records {
 		zoneID := r[0]
@@ -862,12 +860,12 @@ func loadZoneLatenciesMatrix() (map[string][]uint32, error) {
 		for i, l := range r[1:] {
 			lat, err := strconv.ParseUint(l, 10, 32)
 			if err != nil {
-				return nil, ErrInvalidZoneID{l, err}
+				return nil, nil, ErrInvalidZoneID{l, err}
 			}
 			matrix[zoneID][i] = uint32(lat)
 		}
 	}
-	return matrix, nil
+	return zones, matrix, nil
 }
 
 type ErrInvalidZoneID struct {

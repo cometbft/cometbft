@@ -30,7 +30,11 @@ import (
 	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
+	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
+	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/p2p/pex"
+	"github.com/cometbft/cometbft/p2p/transport/tcp"
 	"github.com/cometbft/cometbft/proxy"
 	rpccore "github.com/cometbft/cometbft/rpc/core"
 	grpcserver "github.com/cometbft/cometbft/rpc/grpc/server"
@@ -54,16 +58,15 @@ type Node struct {
 
 	// config
 	config *cfg.Config
-
 	genesisTime   time.Time
 	privValidator types.PrivValidator // local node's validator key
 
 	// network
-	transport   *p2p.MultiplexTransport
+	transport   *tcp.MultiplexTransport
 	sw          *p2p.Switch  // p2p connections
 	addrBook    pex.AddrBook // known peers
-	nodeInfo    p2p.NodeInfo
-	nodeKey     *p2p.NodeKey // our node privkey
+	nodeInfo    ni.NodeInfo
+	nodeKey     *nodekey.NodeKey // our node privkey
 	isListening bool
 
 	// services
@@ -130,16 +133,15 @@ func CustomReactors(reactors map[string]p2p.Reactor) Option {
 			// NOTE: This is a bit messy now with the type casting but is
 			// cleaned up in the following version when NodeInfo is changed from
 			// and interface to a concrete type
-			if ni, ok := n.nodeInfo.(p2p.DefaultNodeInfo); ok {
-				for _, chDesc := range reactor.GetChannels() {
-					if !ni.HasChannel(chDesc.ID) {
-						ni.Channels = append(ni.Channels, chDesc.ID)
-						n.transport.AddChannel(chDesc.ID)
+			if ni, ok := n.nodeInfo.(ni.Default); ok {
+				for _, chDesc := range reactor.StreamDescriptors() {
+					if !ni.HasChannel(chDesc.StreamID()) {
+						ni.Channels = append(ni.Channels, chDesc.StreamID())
 					}
 				}
 				n.nodeInfo = ni
 			} else {
-				n.Logger.Error("Node info is not of type DefaultNodeInfo. Custom reactor channels can not be added.")
+				n.Logger.Error("Node info is not of type ni.Default. Custom reactor channels can not be added.")
 			}
 		}
 	}
@@ -283,7 +285,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 func NewNode(ctx context.Context,
 	config *cfg.Config,
 	privValidator types.PrivValidator,
-	nodeKey *p2p.NodeKey,
+	nodeKey *nodekey.NodeKey,
 	clientCreator proxy.ClientCreator,
 	genesisDocProvider GenesisDocProvider,
 	dbProvider cfg.DBProvider,
@@ -311,7 +313,7 @@ func NewNode(ctx context.Context,
 func NewNodeWithCliParams(ctx context.Context,
 	config *cfg.Config,
 	privValidator types.PrivValidator,
-	nodeKey *p2p.NodeKey,
+	nodeKey *nodekey.NodeKey,
 	clientCreator proxy.ClientCreator,
 	genesisDocProvider GenesisDocProvider,
 	dbProvider cfg.DBProvider,
@@ -501,7 +503,7 @@ func NewNodeWithCliParams(ctx context.Context,
 		return nil, err
 	}
 
-	transport, peerFilters := createTransport(config, nodeInfo, nodeKey, proxyApp)
+	transport, peerFilters := createTransport(config, nodeKey, proxyApp)
 
 	p2pLogger := logger.With("module", "p2p")
 	sw := createSwitch(
@@ -530,7 +532,7 @@ func NewNodeWithCliParams(ctx context.Context,
 	//
 	// We need to set Seeds and PersistentPeers on the switch,
 	// since it needs to be able to use these (and their DNS names)
-	// even if the PEX is off. We can include the DNS name in the NetAddress,
+	// even if the PEX is off. We can include the DNS name in the na.NetAddr,
 	// but it would still be nice to have a clear list of the current "PersistentPeers"
 	// somewhere that we can return with net_info.
 	//
@@ -613,7 +615,7 @@ func (n *Node) OnStart() error {
 	}
 
 	// Start the transport.
-	addr, err := p2p.NewNetAddressString(p2p.IDAddressString(n.nodeKey.ID(), n.config.P2P.ListenAddress))
+	addr, err := na.NewFromString(na.IDAddrString(n.nodeKey.ID(), n.config.P2P.ListenAddress))
 	if err != nil {
 		return err
 	}
@@ -652,6 +654,8 @@ func (n *Node) OnStart() error {
 	if err := n.pruner.Start(); err != nil {
 		return ErrStartPruning{Err: err}
 	}
+
+	n.genesisDoc = nil
 
 	return nil
 }
@@ -789,7 +793,6 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 		}
 
 		n.Logger.Info("Creating genesis file chunks if genesis file is too big...")
-
 		if err := _rpcEnv.InitGenesisChunks(); err != nil {
 			errToReturn = fmt.Errorf("setting up RPC API environment: %s", err)
 			return
@@ -802,7 +805,7 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 func (n *Node) startRPC() ([]net.Listener, error) {
 	env, err := n.ConfigureRPC()
 	if err != nil {
-		return nil, fmt.Errorf("starting RPC server: %s", err)
+		return nil, fmt.Errorf("configuring RPC server: %s", err)
 	}
 
 	listenAddrs := splitAndTrimEmpty(n.config.RPC.ListenAddress, ",", " ")
@@ -1071,24 +1074,24 @@ func (n *Node) IsListening() bool {
 }
 
 // NodeInfo returns the Node's Info from the Switch.
-func (n *Node) NodeInfo() p2p.NodeInfo {
+func (n *Node) NodeInfo() ni.NodeInfo {
 	return n.nodeInfo
 }
 
 func makeNodeInfo(
 	config *cfg.Config,
-	nodeKey *p2p.NodeKey,
+	nodeKey *nodekey.NodeKey,
 	txIndexer txindex.TxIndexer,
 	genDoc *types.GenesisDoc,
 	state sm.State,
-) (p2p.DefaultNodeInfo, error) {
+) (ni.Default, error) {
 	txIndexerStatus := "on"
 	if _, ok := txIndexer.(*null.TxIndex); ok {
 		txIndexerStatus = "off"
 	}
 
-	nodeInfo := p2p.DefaultNodeInfo{
-		ProtocolVersion: p2p.NewProtocolVersion(
+	nodeInfo := ni.Default{
+		ProtocolVersion: ni.NewProtocolVersion(
 			version.P2PProtocol, // global
 			state.Version.Consensus.Block,
 			state.Version.Consensus.App,
@@ -1104,7 +1107,7 @@ func makeNodeInfo(
 			statesync.SnapshotChannel, statesync.ChunkChannel,
 		},
 		Moniker: config.Moniker,
-		Other: p2p.DefaultNodeInfoOther{
+		Other: ni.DefaultOther{
 			TxIndex:    txIndexerStatus,
 			RPCAddress: config.RPC.ListenAddress,
 		},

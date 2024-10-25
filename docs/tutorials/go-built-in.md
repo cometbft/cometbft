@@ -649,7 +649,7 @@ func main() {
         config.PrivValidatorStateFile(),
     )
 
-    nodeKey, err := p2p.LoadNodeKey(config.NodeKeyFile())
+    nodeKey, err := nodekey.LoadNodeKey(config.NodeKeyFile())
     if err != nil {
         log.Fatalf("failed to load node's key: %v", err)
     }
@@ -741,7 +741,7 @@ pv := privval.LoadFilePV(
 `nodeKey` is needed to identify the node in a p2p network.
 
 ```go
-nodeKey, err := p2p.LoadNodeKey(config.NodeKeyFile())
+nodeKey, err := nodekey.LoadNodeKey(config.NodeKeyFile())
 if err != nil {
     return nil, fmt.Errorf("failed to load node's key: %w", err)
 }

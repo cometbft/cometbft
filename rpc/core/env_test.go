@@ -14,6 +14,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/cometbft/cometbft/types"
 )
 
 func TestInitGenesisChunks(t *testing.T) {
@@ -55,9 +58,18 @@ func TestInitGenesisChunks(t *testing.T) {
 	// Tests with a genesis file <= genesisChunkSize, i.e., no chunking.
 	// The test genesis file is the genesis that the ci.toml e2e test uses.
 	t.Run("NoChunking", func(t *testing.T) {
-		const fGenesisPath = "./testdata/genesis_ci.json"
-
-		env := &Environment{GenesisFilePath: fGenesisPath}
+    fGenesis, err := os.CreateTemp("", "genesis.json")
+	  if err != nil {
+      t.Fatalf("creating genesis file for testing: %s", err)
+	  }
+	  defer os.Remove(fTemp.Name())
+    
+    if _, err := fGenesis.Write([]byte(_testGenesis)); err != nil {
+      t.Fatalf("writing genesis file for testing: %s", err)
+	  }
+	  fGenesis.Close()
+		
+    env := &Environment{GenesisFilePath: fGenesis.Name()}
 
 		err := env.InitGenesisChunks()
 		if err != nil {
@@ -70,19 +82,46 @@ func TestInitGenesisChunks(t *testing.T) {
 		if len(env.genesisChunks) > 0 {
 			formatStr := "chunks map should be empty, but it's %v"
 			t.Fatalf(formatStr, env.genesisChunks)
-		}
-	})
+    }
+  })
 
-	// Tests with a genesis file > genesisChunkSize, i.e., chunking, pointer to
-	// GenesisDoc is nil, chunks slice stored in genChunks field.
+	// Tests with a genesis file > genesisChunkSize.
 	// The test genesis file has an app_state of key-value string pairs
 	// automatically generated (~42MB).
 	t.Run("Chunking", func(t *testing.T) {
-		const fGenesisPath = "./testdata/genesis_big.json"
+    genDoc := &types.GenesisDoc{}
+		if err := cmtjson.Unmarshal([]byte(_testGenesis), genDoc); err != nil {
+			t.Fatalf("test genesis de-serialization: %s", err)
+		}
 
-		defer os.RemoveAll("./testdata/" + _chunksDir)
+		appState, err := genAppState()
+		if err != nil {
+			t.Fatalf("generating dummy app_state for testing: %s", err)
+		}
 
-		env := &Environment{GenesisFilePath: fGenesisPath}
+		genDoc.AppState = appState
+    
+    genDocJSON, err := cmtjson.Marshal(genDoc)
+    if err != nil {
+      t.Fatalf("test genesis serialization: %s", err)
+    }
+    
+    fGenesis, err := os.CreateTemp("", "genesis.json")
+	  if err != nil {
+      t.Fatalf("creating genesis file for testing: %s", err)
+	  }
+    
+    if _, err := fGenesis.Write(genDocJSON); err != nil {
+      t.Fatalf("writing genesis file for testing: %s", err)
+	  }
+	  fGenesis.Close()
+    
+    var (
+      fGenesisPath := filepath.Join(filepath.Dir(fGenesis.Name()), _chunksDir)
+      env := &Environment{GenesisFilePath: fGenesisPath}
+    )
+		defer os.RemoveAll(fGenesisPath)
+
 		err := env.InitGenesisChunks()
 		if err != nil {
 			t.Errorf("unexpected error: %s", err)
@@ -457,7 +496,7 @@ func TestWriteChunks(t *testing.T) {
 	}
 }
 
-// reassembleAndCompare is a utility function to reassemble the genesis file from
+// reassembleAndCompare is a helper function to reassemble the genesis file from
 // its chunks and compare it with the original genesis file.
 // The function reads the genesis file as a stream, so it is suitable for larger
 // files as well.
@@ -497,4 +536,33 @@ func reassembleAndCompare(gFilePath string, chunks map[int]string) error {
 	}
 
 	return nil
+}
+
+// genAppState is a helper function that generates a dummy "app_state" to be used in
+// tests. To test the splitting of a genesis into smaller chunks, we need to use a
+// big genesis file. Typically, the bulk of a genesis file comes from the app_state
+// field.
+// It returns the app_state encoded to JSON.
+func genAppState() ([]byte, error) {
+	const (
+		// how many KV pair do you want to put in app_state.
+		// Current value generates an app_state of ~40MB
+		size = 1024 * 1024 * 2
+
+		// characters use to fill in the KV pairs of app_state
+		alphabet     = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+		alphabetSize = len(alphabet)
+	)
+
+	appState := make(map[string]string, size)
+	for i := range size {
+		appState["initial"+strconv.Itoa(i)] = string(alphabet[i%alphabetSize])
+	}
+
+	appStateJSON, err := json.Marshal(appState)
+	if err != nil {
+		return nil, fmt.Errorf("serializing test app_state to JSON: %s", err)
+	}
+
+	return appStateJSON, nil
 }

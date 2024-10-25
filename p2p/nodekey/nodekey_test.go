@@ -1,4 +1,4 @@
-package p2p
+package nodekey
 
 import (
 	"bytes"
@@ -16,10 +16,10 @@ import (
 func TestLoadOrGenNodeKey(t *testing.T) {
 	filePath := filepath.Join(os.TempDir(), cmtrand.Str(12)+"_peer_id.json")
 
-	nodeKey, err := LoadOrGenNodeKey(filePath)
+	nodeKey, err := LoadOrGen(filePath)
 	require.NoError(t, err)
 
-	nodeKey2, err := LoadOrGenNodeKey(filePath)
+	nodeKey2, err := LoadOrGen(filePath)
 	require.NoError(t, err)
 
 	assert.Equal(t, nodeKey, nodeKey2)
@@ -28,13 +28,13 @@ func TestLoadOrGenNodeKey(t *testing.T) {
 func TestLoadNodeKey(t *testing.T) {
 	filePath := filepath.Join(os.TempDir(), cmtrand.Str(12)+"_peer_id.json")
 
-	_, err := LoadNodeKey(filePath)
+	_, err := Load(filePath)
 	assert.True(t, os.IsNotExist(err))
 
-	_, err = LoadOrGenNodeKey(filePath)
+	_, err = LoadOrGen(filePath)
 	require.NoError(t, err)
 
-	nodeKey, err := LoadNodeKey(filePath)
+	nodeKey, err := Load(filePath)
 	require.NoError(t, err)
 	assert.NotNil(t, nodeKey)
 }

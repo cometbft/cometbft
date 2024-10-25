@@ -9,6 +9,8 @@ import (
 
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/p2p"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
+	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/cometbft/cometbft/types"
@@ -20,11 +22,11 @@ func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error
 	peers := make([]ctypes.Peer, 0)
 	var err error
 	env.P2PPeers.Peers().ForEach(func(peer p2p.Peer) {
-		nodeInfo, ok := peer.NodeInfo().(p2p.DefaultNodeInfo)
+		nodeInfo, ok := peer.NodeInfo().(ni.Default)
 		if !ok {
 			err = ErrInvalidNodeType{
 				PeerID:   string(peer.ID()),
-				Expected: fmt.Sprintf("%T", p2p.DefaultNodeInfo{}),
+				Expected: fmt.Sprintf("%T", ni.Default{}),
 				Actual:   fmt.Sprintf("%T", peer.NodeInfo()),
 			}
 			return
@@ -142,6 +144,7 @@ func (env *Environment) GenesisChunked(
 			}
 
 			genesisBase64 := base64.StdEncoding.EncodeToString(fGenesis)
+
 			resp := &ctypes.ResultGenesisChunk{
 				TotalChunks: 1,
 				ChunkNumber: 0,
@@ -185,7 +188,7 @@ func getIDs(peers []string) ([]string, error) {
 	for _, peer := range peers {
 		spl := strings.Split(peer, "@")
 		if len(spl) != 2 {
-			return nil, p2p.ErrNetAddressNoID{Addr: peer}
+			return nil, na.ErrNoID{Addr: peer}
 		}
 		ids = append(ids, spl[0])
 	}

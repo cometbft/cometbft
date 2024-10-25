@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -372,9 +373,16 @@ func NewCLI() *CLI {
 	cli.root.AddCommand(&monitorCmd)
 
 	cli.root.AddCommand(&cobra.Command{
-		Use:   "cleanup",
-		Short: "Removes the testnet directory",
-		RunE: func(_ *cobra.Command, _ []string) error {
+		Use:     "cleanup",
+		Aliases: []string{"clean"},
+		Short:   "Removes the testnet directory",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			// Alert if monitoring services are still running.
+			outBytes, err := docker.ExecComposeOutput(cmd.Context(), "monitoring", "ps", "--services", "--filter", "status=running")
+			out := strings.TrimSpace(string(outBytes))
+			if err == nil && len(out) != 0 {
+				logger.Info("Monitoring services are still running:\n" + out)
+			}
 			return Cleanup(cli.testnet)
 		},
 	})

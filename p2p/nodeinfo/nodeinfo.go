@@ -1,4 +1,4 @@
-package p2p
+package nodeinfo
 
 import (
 	"bytes"
@@ -8,7 +8,8 @@ import (
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	cmtstrings "github.com/cometbft/cometbft/internal/strings"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	"github.com/cometbft/cometbft/version"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
+	"github.com/cometbft/cometbft/p2p/nodekey"
 )
 
 const (
@@ -16,8 +17,8 @@ const (
 	maxNumChannels  = 16    // plenty of room for upgrades, for now
 )
 
-// Max size of the NodeInfo struct.
-func MaxNodeInfoSize() int {
+// MaxSize returns the maximum size of the NodeInfo struct.
+func MaxSize() int {
 	return maxNodeInfoSize
 }
 
@@ -26,18 +27,8 @@ func MaxNodeInfoSize() int {
 // NodeInfo exposes basic info of a node
 // and determines if we're compatible.
 type NodeInfo interface {
-	ID() ID
-	nodeInfoAddress
-	nodeInfoTransport
-}
-
-type nodeInfoAddress interface {
-	NetAddress() (*NetAddress, error)
-}
-
-// nodeInfoTransport validates a nodeInfo and checks
-// our compatibility with it. It's for use in the handshake.
-type nodeInfoTransport interface {
+	ID() nodekey.ID
+	NetAddr() (*na.NetAddr, error)
 	Validate() error
 	CompatibleWith(other NodeInfo) error
 }
@@ -51,14 +42,6 @@ type ProtocolVersion struct {
 	App   uint64 `json:"app"`
 }
 
-// defaultProtocolVersion populates the Block and P2P versions using
-// the global values, but not the App.
-var defaultProtocolVersion = NewProtocolVersion(
-	version.P2PProtocol,
-	version.BlockProtocol,
-	0,
-)
-
 // NewProtocolVersion returns a fully populated ProtocolVersion.
 func NewProtocolVersion(p2p, block, app uint64) ProtocolVersion {
 	return ProtocolVersion{
@@ -70,18 +53,18 @@ func NewProtocolVersion(p2p, block, app uint64) ProtocolVersion {
 
 // -------------------------------------------------------------
 
-// Assert DefaultNodeInfo satisfies NodeInfo.
-var _ NodeInfo = DefaultNodeInfo{}
+// Assert Default satisfies NodeInfo.
+var _ NodeInfo = Default{}
 
-// DefaultNodeInfo is the basic node information exchanged
+// Default is the basic node information exchanged
 // between two peers during the CometBFT P2P handshake.
-type DefaultNodeInfo struct {
+type Default struct {
 	ProtocolVersion ProtocolVersion `json:"protocol_version"`
 
 	// Authenticate
-	// TODO: replace with NetAddress
-	DefaultNodeID ID     `json:"id"`          // authenticated identifier
-	ListenAddr    string `json:"listen_addr"` // accepting incoming
+	// TODO: replace with na.NetAddr
+	DefaultNodeID nodekey.ID `json:"id"`          // authenticated identifier
+	ListenAddr    string     `json:"listen_addr"` // accepting incoming
 
 	// Check compatibility.
 	// Channels are HexBytes so easier to read as JSON
@@ -90,22 +73,22 @@ type DefaultNodeInfo struct {
 	Channels cmtbytes.HexBytes `json:"channels"` // channels this node knows about
 
 	// ASCIIText fields
-	Moniker string               `json:"moniker"` // arbitrary moniker
-	Other   DefaultNodeInfoOther `json:"other"`   // other application specific data
+	Moniker string       `json:"moniker"` // arbitrary moniker
+	Other   DefaultOther `json:"other"`   // other application specific data
 }
 
-// DefaultNodeInfoOther is the misc. application specific data.
-type DefaultNodeInfoOther struct {
+// DefaultOther is the misc. application specific data.
+type DefaultOther struct {
 	TxIndex    string `json:"tx_index"`
 	RPCAddress string `json:"rpc_address"`
 }
 
 // ID returns the node's peer ID.
-func (info DefaultNodeInfo) ID() ID {
+func (info Default) ID() nodekey.ID {
 	return info.DefaultNodeID
 }
 
-// Validate checks the self-reported DefaultNodeInfo is safe.
+// Validate checks the self-reported Default is safe.
 // It returns an error if there
 // are too many Channels, if there are any duplicate Channels,
 // if the ListenAddr is malformed, or if the ListenAddr is a host name
@@ -118,11 +101,11 @@ func (info DefaultNodeInfo) ID() ID {
 // International clients could then use punycode (or we could use
 // url-encoding), and we just need to be careful with how we handle that in our
 // clients. (e.g. off by default).
-func (info DefaultNodeInfo) Validate() error {
+func (info Default) Validate() error {
 	// ID is already validated.
 
 	// Validate ListenAddr.
-	_, err := NewNetAddressString(IDAddressString(info.ID(), info.ListenAddr))
+	_, err := na.NewFromString(na.IDAddrString(info.ID(), info.ListenAddr))
 	if err != nil {
 		return err
 	}
@@ -171,15 +154,15 @@ func (info DefaultNodeInfo) Validate() error {
 	return nil
 }
 
-// CompatibleWith checks if two DefaultNodeInfo are compatible with each other.
+// CompatibleWith checks if two Default are compatible with each other.
 // CONTRACT: two nodes are compatible if the Block version and network match
 // and they have at least one channel in common.
-func (info DefaultNodeInfo) CompatibleWith(otherInfo NodeInfo) error {
-	other, ok := otherInfo.(DefaultNodeInfo)
+func (info Default) CompatibleWith(otherInfo NodeInfo) error {
+	other, ok := otherInfo.(Default)
 	if !ok {
 		return ErrInvalidNodeInfoType{
 			Type:     reflect.TypeOf(otherInfo).String(),
-			Expected: fmt.Sprintf("%T", DefaultNodeInfo{}),
+			Expected: fmt.Sprintf("%T", Default{}),
 		}
 	}
 
@@ -223,20 +206,20 @@ OUTER_LOOP:
 	return nil
 }
 
-// NetAddress returns a NetAddress derived from the DefaultNodeInfo -
+// NetAddr returns a NetAddr derived from the Default -
 // it includes the authenticated peer ID and the self-reported
 // ListenAddr. Note that the ListenAddr is not authenticated and
 // may not match that address actually dialed if its an outbound peer.
-func (info DefaultNodeInfo) NetAddress() (*NetAddress, error) {
-	idAddr := IDAddressString(info.ID(), info.ListenAddr)
-	return NewNetAddressString(idAddr)
+func (info Default) NetAddr() (*na.NetAddr, error) {
+	idAddr := na.IDAddrString(info.ID(), info.ListenAddr)
+	return na.NewFromString(idAddr)
 }
 
-func (info DefaultNodeInfo) HasChannel(chID byte) bool {
+func (info Default) HasChannel(chID byte) bool {
 	return bytes.Contains(info.Channels, []byte{chID})
 }
 
-func (info DefaultNodeInfo) ToProto() *tmp2p.DefaultNodeInfo {
+func (info Default) ToProto() *tmp2p.DefaultNodeInfo {
 	dni := new(tmp2p.DefaultNodeInfo)
 	dni.ProtocolVersion = tmp2p.ProtocolVersion{
 		P2P:   info.ProtocolVersion.P2P,
@@ -258,24 +241,24 @@ func (info DefaultNodeInfo) ToProto() *tmp2p.DefaultNodeInfo {
 	return dni
 }
 
-func DefaultNodeInfoFromToProto(pb *tmp2p.DefaultNodeInfo) (DefaultNodeInfo, error) {
+func DefaultFromToProto(pb *tmp2p.DefaultNodeInfo) (Default, error) {
 	if pb == nil {
-		return DefaultNodeInfo{}, ErrNoNodeInfo
+		return Default{}, ErrNoNodeInfo
 	}
 
-	dni := DefaultNodeInfo{
+	dni := Default{
 		ProtocolVersion: ProtocolVersion{
 			P2P:   pb.ProtocolVersion.P2P,
 			Block: pb.ProtocolVersion.Block,
 			App:   pb.ProtocolVersion.App,
 		},
-		DefaultNodeID: ID(pb.DefaultNodeID),
+		DefaultNodeID: nodekey.ID(pb.DefaultNodeID),
 		ListenAddr:    pb.ListenAddr,
 		Network:       pb.Network,
 		Version:       pb.Version,
 		Channels:      pb.Channels,
 		Moniker:       pb.Moniker,
-		Other: DefaultNodeInfoOther{
+		Other: DefaultOther{
 			TxIndex:    pb.Other.TxIndex,
 			RPCAddress: pb.Other.RPCAddress,
 		},

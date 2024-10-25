@@ -17,6 +17,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"
+	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
@@ -151,41 +152,41 @@ conR:
 	}
 }
 
-// GetChannels implements Reactor.
-func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
+// StreamDescriptors implements Reactor.
+func (*Reactor) StreamDescriptors() []p2p.StreamDescriptor {
 	// TODO optimize
-	return []*p2p.ChannelDescriptor{
-		{
+	return []p2p.StreamDescriptor{
+		&tcpconn.ChannelDescriptor{
 			ID:                  StateChannel,
 			Priority:            6,
 			SendQueueCapacity:   100,
 			RecvMessageCapacity: maxMsgSize,
-			MessageType:         &cmtcons.Message{},
+			MessageTypeI:        &cmtcons.Message{},
 		},
-		{
+		&tcpconn.ChannelDescriptor{
 			ID: DataChannel, // maybe split between gossiping current block and catchup stuff
 			// once we gossip the whole block there's nothing left to send until next height or round
 			Priority:            10,
 			SendQueueCapacity:   100,
 			RecvBufferCapacity:  50 * 4096,
 			RecvMessageCapacity: maxMsgSize,
-			MessageType:         &cmtcons.Message{},
+			MessageTypeI:        &cmtcons.Message{},
 		},
-		{
+		&tcpconn.ChannelDescriptor{
 			ID:                  VoteChannel,
 			Priority:            7,
 			SendQueueCapacity:   100,
 			RecvBufferCapacity:  100 * 100,
 			RecvMessageCapacity: maxMsgSize,
-			MessageType:         &cmtcons.Message{},
+			MessageTypeI:        &cmtcons.Message{},
 		},
-		{
+		&tcpconn.ChannelDescriptor{
 			ID:                  VoteSetBitsChannel,
 			Priority:            1,
 			SendQueueCapacity:   2,
 			RecvBufferCapacity:  1024,
 			RecvMessageCapacity: maxMsgSize,
-			MessageType:         &cmtcons.Message{},
+			MessageTypeI:        &cmtcons.Message{},
 		},
 	}
 }

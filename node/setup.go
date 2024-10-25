@@ -26,7 +26,11 @@ import (
 	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
+	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
+	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/p2p/pex"
+	"github.com/cometbft/cometbft/p2p/transport/tcp"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
 	sm "github.com/cometbft/cometbft/state"
@@ -101,7 +105,7 @@ func DefaultNewNode(
 	cliParams CliParams,
 	keyGenF func() (crypto.PrivKey, error),
 ) (*Node, error) {
-	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
+	nodeKey, err := nodekey.LoadOrGen(config.NodeKeyFile())
 	if err != nil {
 		return nil, ErrorLoadOrGenNodeKey{Err: err, NodeKeyFile: config.NodeKeyFile()}
 	}
@@ -406,22 +410,21 @@ func createConsensusReactor(config *cfg.Config,
 
 func createTransport(
 	config *cfg.Config,
-	nodeInfo p2p.NodeInfo,
-	nodeKey *p2p.NodeKey,
+	nodeKey *nodekey.NodeKey,
 	proxyApp proxy.AppConns,
 ) (
-	*p2p.MultiplexTransport,
+	*tcp.MultiplexTransport,
 	[]p2p.PeerFilterFunc,
 ) {
 	var (
 		mConnConfig = p2p.MConnConfig(config.P2P)
-		transport   = p2p.NewMultiplexTransport(nodeInfo, *nodeKey, mConnConfig)
-		connFilters = []p2p.ConnFilterFunc{}
+		transport   = tcp.NewMultiplexTransport(*nodeKey, mConnConfig)
+		connFilters = []tcp.ConnFilterFunc{}
 		peerFilters = []p2p.PeerFilterFunc{}
 	)
 
 	if !config.P2P.AllowDuplicateIP {
-		connFilters = append(connFilters, p2p.ConnDuplicateIPFilter())
+		connFilters = append(connFilters, tcp.ConnDuplicateIPFilter())
 	}
 
 	// Filter peers by addr or pubkey with an ABCI query.
@@ -430,7 +433,7 @@ func createTransport(
 		connFilters = append(
 			connFilters,
 			// ABCI query for address filtering.
-			func(_ p2p.ConnSet, c net.Conn, _ []net.IP) error {
+			func(_ tcp.ConnSet, c net.Conn, _ []net.IP) error {
 				res, err := proxyApp.Query().Query(context.TODO(), &abci.QueryRequest{
 					Path: "/p2p/filter/addr/" + c.RemoteAddr().String(),
 				})
@@ -464,11 +467,11 @@ func createTransport(
 		)
 	}
 
-	p2p.MultiplexTransportConnFilters(connFilters...)(transport)
+	tcp.MultiplexTransportConnFilters(connFilters...)(transport)
 
 	// Limit the number of incoming connections.
 	max := config.P2P.MaxNumInboundPeers + len(splitAndTrimEmpty(config.P2P.UnconditionalPeerIDs, ",", " "))
-	p2p.MultiplexTransportMaxIncomingConnections(max)(transport)
+	tcp.MultiplexTransportMaxIncomingConnections(max)(transport)
 
 	return transport, peerFilters
 }
@@ -482,8 +485,8 @@ func createSwitch(config *cfg.Config,
 	stateSyncReactor *statesync.Reactor,
 	consensusReactor *cs.Reactor,
 	evidenceReactor *evidence.Reactor,
-	nodeInfo p2p.NodeInfo,
-	nodeKey *p2p.NodeKey,
+	nodeInfo ni.NodeInfo,
+	nodeKey *nodekey.NodeKey,
 	p2pLogger log.Logger,
 ) *p2p.Switch {
 	sw := p2p.NewSwitch(
@@ -509,21 +512,21 @@ func createSwitch(config *cfg.Config,
 }
 
 func createAddrBookAndSetOnSwitch(config *cfg.Config, sw *p2p.Switch,
-	p2pLogger log.Logger, nodeKey *p2p.NodeKey,
+	p2pLogger log.Logger, nodeKey *nodekey.NodeKey,
 ) (pex.AddrBook, error) {
 	addrBook := pex.NewAddrBook(config.P2P.AddrBookFile(), config.P2P.AddrBookStrict)
 	addrBook.SetLogger(p2pLogger.With("book", config.P2P.AddrBookFile()))
 
 	// Add ourselves to addrbook to prevent dialing ourselves
 	if config.P2P.ExternalAddress != "" {
-		addr, err := p2p.NewNetAddressString(p2p.IDAddressString(nodeKey.ID(), config.P2P.ExternalAddress))
+		addr, err := na.NewFromString(na.IDAddrString(nodeKey.ID(), config.P2P.ExternalAddress))
 		if err != nil {
 			return nil, fmt.Errorf("p2p.external_address is incorrect: %w", err)
 		}
 		addrBook.AddOurAddress(addr)
 	}
 	if config.P2P.ListenAddress != "" {
-		addr, err := p2p.NewNetAddressString(p2p.IDAddressString(nodeKey.ID(), config.P2P.ListenAddress))
+		addr, err := na.NewFromString(na.IDAddrString(nodeKey.ID(), config.P2P.ListenAddress))
 		if err != nil {
 			return nil, fmt.Errorf("p2p.laddr is incorrect: %w", err)
 		}

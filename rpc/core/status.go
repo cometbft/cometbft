@@ -4,7 +4,7 @@ import (
 	"time"
 
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	"github.com/cometbft/cometbft/p2p"
+	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/cometbft/cometbft/types"
@@ -52,7 +52,7 @@ func (env *Environment) Status(*rpctypes.Context) (*ctypes.ResultStatus, error) 
 	}
 
 	result := &ctypes.ResultStatus{
-		NodeInfo: env.P2PTransport.NodeInfo().(p2p.DefaultNodeInfo),
+		NodeInfo: env.P2PTransport.NodeInfo().(ni.Default),
 		SyncInfo: ctypes.SyncInfo{
 			LatestBlockHash:     latestBlockHash,
 			LatestAppHash:       latestAppHash,

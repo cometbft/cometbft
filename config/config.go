@@ -1069,7 +1069,7 @@ type StateSyncConfig struct {
 	TrustPeriod         time.Duration `mapstructure:"trust_period"`
 	TrustHeight         int64         `mapstructure:"trust_height"`
 	TrustHash           string        `mapstructure:"trust_hash"`
-	DiscoveryTime       time.Duration `mapstructure:"discovery_time"`
+	MaxDiscoveryTime    time.Duration `mapstructure:"max_discovery_time"`
 	ChunkRequestTimeout time.Duration `mapstructure:"chunk_request_timeout"`
 	ChunkFetchers       int32         `mapstructure:"chunk_fetchers"`
 }
@@ -1087,7 +1087,7 @@ func (cfg *StateSyncConfig) TrustHashBytes() []byte {
 func DefaultStateSyncConfig() *StateSyncConfig {
 	return &StateSyncConfig{
 		TrustPeriod:         168 * time.Hour,
-		DiscoveryTime:       15 * time.Second,
+		MaxDiscoveryTime:    2 * time.Minute,
 		ChunkRequestTimeout: 10 * time.Second,
 		ChunkFetchers:       4,
 	}
@@ -1115,8 +1115,8 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 			}
 		}
 
-		if cfg.DiscoveryTime != 0 && cfg.DiscoveryTime < 5*time.Second {
-			return ErrInsufficientDiscoveryTime
+		if cfg.MaxDiscoveryTime < 0 {
+			return cmterrors.ErrNegativeField{Field: "max_discovery_time"}
 		}
 
 		if cfg.TrustPeriod <= 0 {

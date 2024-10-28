@@ -81,7 +81,7 @@ func (Provider) NodeIP(node *e2e.Node) net.IP {
 // file as bytes to be written out to disk.
 func dockerComposeBytes(testnet *e2e.Testnet) ([]byte, error) {
 	// Must use version 2 Docker Compose format, to support IPv6.
-	tmpl, err := template.New("docker-compose").Parse(`version: '2.4'
+	tmpl, err := template.New("docker-compose").Parse(`
 networks:
   {{ .Name }}:
     labels:
@@ -109,6 +109,8 @@ services:
     environment:
         - COMETBFT_CLOCK_SKEW={{ .ClockSkew }}
 {{- end }}
+    cap_add:
+      - NET_ADMIN
     init: true
     ports:
     - 26656
@@ -123,7 +125,6 @@ services:
     - 2346
     volumes:
     - ./{{ .Name }}:/cometbft
-    - ./{{ .Name }}:/tendermint
     networks:
       {{ $.Name }}:
         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .InternalIP }}
@@ -141,6 +142,8 @@ services:
     environment:
         - COMETBFT_CLOCK_SKEW={{ .ClockSkew }}
 {{- end }}
+    cap_add:
+      - NET_ADMIN
     init: true
     ports:
     - 26656
@@ -155,7 +158,6 @@ services:
     - 2346
     volumes:
     - ./{{ .Name }}:/cometbft
-    - ./{{ .Name }}:/tendermint
     networks:
       {{ $.Name }}:
         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .InternalIP }}

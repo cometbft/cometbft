@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
-	"github.com/cometbft/cometbft/libs/log"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/test/e2e/pkg/exec"
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
@@ -57,13 +57,13 @@ func cleanupDir(dir string) error {
 	}
 
 	_, err := os.Stat(dir)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return nil
 	} else if err != nil {
 		return err
 	}
 
-	logger.Info("cleanup dir", "msg", log.NewLazySprintf("Removing testnet directory %#q", dir))
+	logger.Info("Clean up testnet directory", "dir", dir)
 
 	// On Linux, some local files in the volume will be owned by root since CometBFT
 	// runs as root inside the container, so we need to clean them up from within a

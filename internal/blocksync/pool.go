@@ -441,16 +441,20 @@ func (pool *BlockPool) pickIncrAvailablePeer(height int64, excludePeerID nodekey
 
 	for _, peer := range pool.sortedPeers {
 		if peer.id == excludePeerID {
+			pool.Logger.Debug("skipping banned peer", peer.id)
 			continue
 		}
 		if peer.didTimeout {
 			pool.removePeer(peer.id)
+			pool.Logger.Debug("skipping timed out peer", peer.id)
 			continue
 		}
 		if peer.numPending >= maxPendingRequestsPerPeer {
+			pool.Logger.Debug("skipping peer with too many pending requests", peer.id)
 			continue
 		}
 		if height < peer.base || height > peer.height {
+			pool.Logger.Debug("skipping peer out of range", peer.id)
 			continue
 		}
 		peer.incrPending()

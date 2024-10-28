@@ -22,6 +22,7 @@ import (
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/p2p/nodekey"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/state/indexer/block"
@@ -181,7 +182,8 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 
 	incompletePartSet := types.NewPartSetFromHeader(types.PartSetHeader{Total: 2})
 	uncontiguousPartSet := types.NewPartSetFromHeader(types.PartSetHeader{Total: 0})
-	_, err = uncontiguousPartSet.AddPart(part2)
+	peerID := nodekey.ID(cmtrand.Bytes(20))
+	_, err = uncontiguousPartSet.AddPart(part2, peerID)
 	require.Error(t, err)
 
 	header1 := types.Header{

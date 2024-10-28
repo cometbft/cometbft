@@ -387,7 +387,8 @@ func TestCreateProposalBlock(t *testing.T) {
 
 	partSetFromHeader := types.NewPartSetFromHeader(partSet.Header())
 	for partSetFromHeader.Count() < partSetFromHeader.Total() {
-		added, err := partSetFromHeader.AddPart(partSet.GetPart(int(partSetFromHeader.Count())))
+		peerID := nodekey.ID(cmtrand.Bytes(20))
+		added, err := partSetFromHeader.AddPart(partSet.GetPart(int(partSetFromHeader.Count())), peerID)
 		require.NoError(t, err)
 		require.True(t, added)
 	}

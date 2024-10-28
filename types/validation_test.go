@@ -292,6 +292,135 @@ func TestValidatorSet_VerifyCommitLightTrusting(t *testing.T) {
 	}
 }
 
+func TestValidatorSet_VerifyCommitLightTrusting_UpdatesCache(t *testing.T) {
+	var (
+		blockID                       = makeBlockIDRandom()
+		voteSet, originalValset, vals = randVoteSet(1, 1, PrecommitType, 6, 1, false)
+		extCommit, err                = MakeExtCommit(blockID, 1, 1, voteSet, vals, cmttime.Now(), false)
+		newValSet, _                  = RandValidatorSet(2, 1)
+	)
+	require.NoError(t, err)
+	commit := extCommit.ToCommit()
+
+	valSet := NewValidatorSet(append(newValSet.Validators, originalValset.Validators...))
+	cache := make(map[string]SignatureCacheValue)
+	err = valSet.VerifyCommitLightTrusting("test_chain_id", commit, cmtmath.Fraction{Numerator: 1, Denominator: 3}, cache)
+	require.NoError(t, err)
+	require.Equal(t, 3, len(cache)) // 8 validators, getting to 1/3 takes 3 signatures
+
+	require.Contains(t, cache, string(commit.Signatures[0].Signature))
+	require.Contains(t, cache, string(commit.Signatures[1].Signature))
+	require.Contains(t, cache, string(commit.Signatures[2].Signature))
+
+	require.Equal(t, cache[string(commit.Signatures[0].Signature)].ValidatorAddress, commit.Signatures[0].ValidatorAddress.Bytes())
+	require.Equal(t, cache[string(commit.Signatures[1].Signature)].ValidatorAddress, commit.Signatures[1].ValidatorAddress.Bytes())
+	require.Equal(t, cache[string(commit.Signatures[2].Signature)].ValidatorAddress, commit.Signatures[2].ValidatorAddress.Bytes())
+
+	require.Equal(t, cache[string(commit.Signatures[0].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 0))
+	require.Equal(t, cache[string(commit.Signatures[1].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 1))
+	require.Equal(t, cache[string(commit.Signatures[2].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 2))
+}
+
+func TestValidatorSet_VerifyCommitLightTrusting_UsesCache(t *testing.T) {
+	var (
+		blockID                       = makeBlockIDRandom()
+		voteSet, originalValset, vals = randVoteSet(1, 1, PrecommitType, 6, 1, false)
+		extCommit, err                = MakeExtCommit(blockID, 1, 1, voteSet, vals, cmttime.Now(), false)
+		newValSet, _                  = RandValidatorSet(2, 1)
+	)
+	require.NoError(t, err)
+	commit := extCommit.ToCommit()
+
+	valSet := NewValidatorSet(append(newValSet.Validators, originalValset.Validators...))
+	cache := map[string]SignatureCacheValue{
+		string(commit.Signatures[0].Signature): {
+			ValidatorAddress: commit.Signatures[0].ValidatorAddress.Bytes(),
+			VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 0),
+		},
+		string(commit.Signatures[1].Signature): {
+			ValidatorAddress: commit.Signatures[1].ValidatorAddress.Bytes(),
+			VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 1),
+		},
+		string(commit.Signatures[2].Signature): {
+			ValidatorAddress: commit.Signatures[2].ValidatorAddress.Bytes(),
+			VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 2),
+		},
+	}
+	err = valSet.VerifyCommitLightTrusting("test_chain_id", commit, cmtmath.Fraction{Numerator: 1, Denominator: 3}, cache)
+	require.NoError(t, err)
+	require.Equal(t, 3, len(cache)) // no new signature checks, so no new cache entries
+}
+
+func TestValidatorSet_VerifyCommitLight_UpdatesCache(t *testing.T) {
+	var (
+		blockID                       = makeBlockIDRandom()
+		voteSet, originalValset, vals = randVoteSet(1, 1, PrecommitType, 6, 1, false)
+		extCommit, err                = MakeExtCommit(blockID, 1, 1, voteSet, vals, cmttime.Now(), false)
+	)
+	require.NoError(t, err)
+	commit := extCommit.ToCommit()
+
+	cache := make(map[string]SignatureCacheValue)
+	err = originalValset.VerifyCommitLight("test_chain_id", blockID, 1, commit, cache)
+	require.NoError(t, err)
+
+	require.Equal(t, 5, len(cache)) // 6 validators, getting to 2/3 takes 5 signatures
+
+	require.Contains(t, cache, string(commit.Signatures[0].Signature))
+	require.Contains(t, cache, string(commit.Signatures[1].Signature))
+	require.Contains(t, cache, string(commit.Signatures[2].Signature))
+	require.Contains(t, cache, string(commit.Signatures[3].Signature))
+	require.Contains(t, cache, string(commit.Signatures[4].Signature))
+
+	require.Equal(t, cache[string(commit.Signatures[0].Signature)].ValidatorAddress, commit.Signatures[0].ValidatorAddress.Bytes())
+	require.Equal(t, cache[string(commit.Signatures[1].Signature)].ValidatorAddress, commit.Signatures[1].ValidatorAddress.Bytes())
+	require.Equal(t, cache[string(commit.Signatures[2].Signature)].ValidatorAddress, commit.Signatures[2].ValidatorAddress.Bytes())
+	require.Equal(t, cache[string(commit.Signatures[3].Signature)].ValidatorAddress, commit.Signatures[3].ValidatorAddress.Bytes())
+	require.Equal(t, cache[string(commit.Signatures[4].Signature)].ValidatorAddress, commit.Signatures[4].ValidatorAddress.Bytes())
+
+	require.Equal(t, cache[string(commit.Signatures[0].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 0))
+	require.Equal(t, cache[string(commit.Signatures[1].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 1))
+	require.Equal(t, cache[string(commit.Signatures[2].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 2))
+	require.Equal(t, cache[string(commit.Signatures[3].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 3))
+	require.Equal(t, cache[string(commit.Signatures[4].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 4))
+}
+
+func TestValidatorSet_VerifyCommitLight_UsesCache(t *testing.T) {
+	var (
+		blockID                       = makeBlockIDRandom()
+		voteSet, originalValset, vals = randVoteSet(1, 1, PrecommitType, 6, 1, false)
+		extCommit, err                = MakeExtCommit(blockID, 1, 1, voteSet, vals, cmttime.Now(), false)
+	)
+	require.NoError(t, err)
+	commit := extCommit.ToCommit()
+
+	cache := map[string]SignatureCacheValue{
+		string(commit.Signatures[0].Signature): {
+			ValidatorAddress: commit.Signatures[0].ValidatorAddress.Bytes(),
+			VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 0),
+		},
+		string(commit.Signatures[1].Signature): {
+			ValidatorAddress: commit.Signatures[1].ValidatorAddress.Bytes(),
+			VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 1),
+		},
+		string(commit.Signatures[2].Signature): {
+			ValidatorAddress: commit.Signatures[2].ValidatorAddress.Bytes(),
+			VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 2),
+		},
+		string(commit.Signatures[3].Signature): {
+			ValidatorAddress: commit.Signatures[3].ValidatorAddress.Bytes(),
+			VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 3),
+		},
+		string(commit.Signatures[4].Signature): {
+			ValidatorAddress: commit.Signatures[4].ValidatorAddress.Bytes(),
+			VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 4),
+		},
+	}
+	err = originalValset.VerifyCommitLight("test_chain_id", blockID, 1, commit, cache)
+	require.NoError(t, err)
+	require.Equal(t, 5, len(cache)) // no new signature checks, so no new cache entries
+}
+
 func TestValidatorSet_VerifyCommitLightTrustingErrorsOnOverflow(t *testing.T) {
 	var (
 		blockID               = makeBlockIDRandom()

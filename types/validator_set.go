@@ -731,7 +731,7 @@ func (vals *ValidatorSet) VerifyCommit(chainID string, blockID BlockID,
 // VerifyCommitLight verifies +2/3 of the set had signed the given commit.
 // It does NOT count all signatures.
 func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
-	height int64, commit *Commit, verifiedSignatureCache map[string][]byte,
+	height int64, commit *Commit, verifiedSignatureCache map[string]SignatureCacheValue,
 ) error {
 	return VerifyCommitLight(chainID, vals, blockID, height, commit, verifiedSignatureCache)
 }
@@ -752,7 +752,7 @@ func (vals *ValidatorSet) VerifyCommitLightTrusting(
 	chainID string,
 	commit *Commit,
 	trustLevel cmtmath.Fraction,
-	verifiedSignatureCache map[string][]byte,
+	verifiedSignatureCache map[string]SignatureCacheValue,
 ) error {
 	return VerifyCommitLightTrusting(chainID, vals, commit, trustLevel, verifiedSignatureCache)
 }

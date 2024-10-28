@@ -19,6 +19,11 @@ func shouldBatchVerify(vals *ValidatorSet, commit *Commit) bool {
 		vals.AllKeysHaveSameType()
 }
 
+type SignatureCacheValue struct {
+	ValidatorAddress []byte
+	VoteSignBytes    []byte
+}
+
 // VerifyCommit verifies +2/3 of the set had signed the given commit.
 //
 // It checks all the signatures! While it's safe to exit as soon as we have
@@ -67,7 +72,7 @@ func VerifyCommitLight(
 	blockID BlockID,
 	height int64,
 	commit *Commit,
-	verifiedSignatureCache map[string][]byte,
+	verifiedSignatureCache map[string]SignatureCacheValue,
 ) error {
 	return verifyCommitLightInternal(chainID, vals, blockID, height, commit, false, verifiedSignatureCache)
 }
@@ -92,7 +97,7 @@ func verifyCommitLightInternal(
 	height int64,
 	commit *Commit,
 	countAllSignatures bool,
-	verifiedSignatureCache map[string][]byte,
+	verifiedSignatureCache map[string]SignatureCacheValue,
 ) error {
 	// run a basic validation of the arguments
 	if err := verifyBasicValsAndCommit(vals, commit, height, blockID); err != nil {
@@ -134,7 +139,7 @@ func VerifyCommitLightTrusting(
 	vals *ValidatorSet,
 	commit *Commit,
 	trustLevel cmtmath.Fraction,
-	verifiedSignatureCache map[string][]byte,
+	verifiedSignatureCache map[string]SignatureCacheValue,
 ) error {
 	return verifyCommitLightTrustingInternal(chainID, vals, commit, trustLevel, false, verifiedSignatureCache)
 }
@@ -163,7 +168,7 @@ func verifyCommitLightTrustingInternal(
 	commit *Commit,
 	trustLevel cmtmath.Fraction,
 	countAllSignatures bool,
-	verifiedSignatureCache map[string][]byte,
+	verifiedSignatureCache map[string]SignatureCacheValue,
 ) error {
 	// sanity checks
 	if vals == nil {
@@ -231,7 +236,7 @@ func verifyCommitBatch(
 	countSig func(CommitSig) bool,
 	countAllSignatures bool,
 	lookUpByIndex bool,
-	verifiedSignatureCache map[string][]byte,
+	verifiedSignatureCache map[string]SignatureCacheValue,
 ) error {
 	var (
 		val                *Validator
@@ -281,8 +286,8 @@ func verifyCommitBatch(
 
 		cacheHit := false
 		if verifiedSignatureCache != nil {
-			cacheValAddress, sigIsInCache := verifiedSignatureCache[string(voteSignBytes)]
-			cacheHit = sigIsInCache && bytes.Equal(cacheValAddress, commitSig.ValidatorAddress)
+			cacheVal, sigIsInCache := verifiedSignatureCache[string(commitSig.Signature)]
+			cacheHit = sigIsInCache && bytes.Equal(cacheVal.ValidatorAddress, commitSig.ValidatorAddress) && bytes.Equal(cacheVal.VoteSignBytes, voteSignBytes)
 		}
 
 		if !cacheHit {
@@ -312,6 +317,11 @@ func verifyCommitBatch(
 		return ErrNotEnoughVotingPowerSigned{Got: got, Needed: needed}
 	}
 
+	// if every signature was in the cache, we don't need to verify the batch
+	if len(batchSigIdxs) == 0 {
+		return nil
+	}
+
 	// attempt to verify the batch.
 	ok, validSigs := bv.Verify()
 	if ok {
@@ -320,7 +330,10 @@ func verifyCommitBatch(
 			for i := range validSigs {
 				idx := batchSigIdxs[i]
 				sig := commit.Signatures[idx]
-				verifiedSignatureCache[string(commit.VoteSignBytes(chainID, int32(idx)))] = sig.ValidatorAddress
+				verifiedSignatureCache[string(sig.Signature)] = SignatureCacheValue{
+					ValidatorAddress: sig.ValidatorAddress,
+					VoteSignBytes:    commit.VoteSignBytes(chainID, int32(idx)),
+				}
 			}
 		}
 
@@ -337,7 +350,10 @@ func verifyCommitBatch(
 			return fmt.Errorf("wrong signature (#%d): %X", idx, sig)
 		}
 		if verifiedSignatureCache != nil {
-			verifiedSignatureCache[string(commit.VoteSignBytes(chainID, int32(idx)))] = sig.ValidatorAddress
+			verifiedSignatureCache[string(sig.Signature)] = SignatureCacheValue{
+				ValidatorAddress: sig.ValidatorAddress,
+				VoteSignBytes:    commit.VoteSignBytes(chainID, int32(idx)),
+			}
 		}
 	}
 
@@ -364,7 +380,7 @@ func verifyCommitSingle(
 	countSig func(CommitSig) bool,
 	countAllSignatures bool,
 	lookUpByIndex bool,
-	verifiedSignatureCache map[string][]byte,
+	verifiedSignatureCache map[string]SignatureCacheValue,
 ) error {
 	var (
 		val                *Validator
@@ -412,9 +428,9 @@ func verifyCommitSingle(
 
 		cacheKey, cacheHit := "", false
 		if verifiedSignatureCache != nil {
-			cacheKey = string(voteSignBytes)
-			cacheValAddress, sigIsInCache := verifiedSignatureCache[cacheKey]
-			cacheHit = sigIsInCache && bytes.Equal(cacheValAddress, commitSig.ValidatorAddress)
+			cacheKey = string(commitSig.Signature)
+			cacheVal, sigIsInCache := verifiedSignatureCache[cacheKey]
+			cacheHit = sigIsInCache && bytes.Equal(cacheVal.ValidatorAddress, commitSig.ValidatorAddress) && bytes.Equal(cacheVal.VoteSignBytes, voteSignBytes)
 		}
 
 		if !cacheHit {
@@ -422,7 +438,10 @@ func verifyCommitSingle(
 				return fmt.Errorf("wrong signature (#%d): %X", idx, commitSig.Signature)
 			}
 			if verifiedSignatureCache != nil {
-				verifiedSignatureCache[cacheKey] = commitSig.ValidatorAddress
+				verifiedSignatureCache[cacheKey] = SignatureCacheValue{
+					ValidatorAddress: commitSig.ValidatorAddress,
+					VoteSignBytes:    voteSignBytes,
+				}
 			}
 		}
 

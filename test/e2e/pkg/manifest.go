@@ -31,6 +31,20 @@ type Manifest struct {
 	// setting validator_update.0 (see below).
 	Validators *map[string]int64 `toml:"validators"`
 
+	// Perturbations is the set of concurrent perturbations to make to the network.
+	//
+	// Each entry should contain validator names and the operation to perform on them.
+	// For example, the following will kill all validators at roughly the same time:
+	//
+	// [[perturbations]]
+	//   validator01 = "kill"
+	//	 validator02 = "kill
+	//	 validator03 = "kill
+	//	 validator04 = "kill
+	//
+	// Defaults for un-included nodes is to run no perturbations.
+	Perturbations []map[string]Perturbation `toml:"perturbations"`
+
 	// ValidatorUpdatesMap is a map of heights to validator names and their power,
 	// and will be returned by the ABCI application. For example, the following
 	// changes the power of validator01 and validator02 at height 1000:

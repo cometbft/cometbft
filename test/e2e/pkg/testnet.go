@@ -83,6 +83,7 @@ type Testnet struct {
 	Dir  string
 
 	IP               *net.IPNet
+	Perturbations    []map[*Node]Perturbation
 	ValidatorUpdates map[int64]map[string]int64
 	Nodes            []*Node
 
@@ -158,6 +159,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		Dir:  dir,
 
 		IP:               ipNet,
+		Perturbations:    []map[*Node]Perturbation{},
 		ValidatorUpdates: map[int64]map[string]int64{},
 		Nodes:            []*Node{},
 	}
@@ -329,6 +331,19 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			}
 		}
 		manifest.Validators = &validatorsMap
+	}
+
+	// Set up perturbations.
+	for _, perturbSet := range manifest.Perturbations {
+		valPerturb := map[*Node]Perturbation{}
+		for name, perturbation := range perturbSet {
+			node := testnet.LookupNode(name)
+			if node == nil {
+				return nil, fmt.Errorf("unknown validator %q for perturbation", name)
+			}
+			valPerturb[node] = perturbation
+		}
+		testnet.Perturbations = append(testnet.Perturbations, valPerturb)
 	}
 
 	// Set up validator updates.
@@ -641,7 +656,7 @@ func (t Testnet) HasPerturbations() bool {
 			return true
 		}
 	}
-	return false
+	return len(t.Perturbations) > 0
 }
 
 // weightedRandomIndex, given a list of cumulative weights and the sum of all

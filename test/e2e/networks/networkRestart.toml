@@ -1,0 +1,39 @@
+evidence = 10
+vote_extensions_enable_height = 11
+abci_protocol = "builtin"
+
+[validators]
+  validator01 = 50
+  validator02 = 50
+  validator03 = 50
+  validator04 = 50
+
+
+[[perturbations]]
+validator01 = "kill"
+validator02 = "kill"
+validator03 = "kill"
+validator04 = "kill"
+[[perturbations]]
+validator01 = "restart"
+validator02 = "restart"
+validator03 = "restart"
+validator04 = "restart"
+
+
+[node]
+  [node.validator01]
+    mode = "validator"
+    version = "cometbft/e2e-node:local-version"
+  [node.validator02]
+    mode = "validator"
+    version = "cometbft/e2e-node:local-version"
+    persistent_peers = ["validator01"]
+  [node.validator03]
+    mode = "validator"
+    version = "cometbft/e2e-node:local-version"
+    persistent_peers = ["validator01"]
+  [node.validator04]
+    mode = "validator"
+    version = "cometbft/e2e-node:local-version"
+    persistent_peers = ["validator01"]

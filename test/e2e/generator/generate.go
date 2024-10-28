@@ -139,6 +139,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 		InitialHeight:       int64(opt["initialHeight"].(int)),
 		InitialState:        opt["initialState"].(map[string]string),
 		Validators:          &map[string]int64{},
+		Perturbations:       []map[string]e2e.Perturbation{},
 		ValidatorUpdatesMap: map[string]map[string]int64{},
 		KeyType:             keyType.Choose(r).(string),
 		Evidence:            evidence.Choose(r).(int),

@@ -99,6 +99,55 @@ func ServeTLS(
 	return err
 }
 
+// ServeWithShutdown creates a http.Server and calls Serve with the given
+// listener. It wraps handler with RecoverAndLogHandler and a handler, which limits
+// the max body size to config.MaxBodyBytes.
+// The function optionally takes a list of shutdown tasks to execute on shutdown.
+//
+// NOTE: This function blocks - you may want to call it in a go-routine.
+func ServeWithShutdown(
+	listener net.Listener,
+	handler http.Handler,
+	logger log.Logger,
+	config *Config,
+	shutdownTasks ...func() error,
+) error {
+	err := Serve(listener, handler, logger, config)
+
+	for _, f := range shutdownTasks {
+		if err := f(); err != nil {
+			logger.Error("executing RPC HTTP server post-shutdown task", "err", err)
+		}
+	}
+
+	return err
+}
+
+// ServeTLSWithShutdown creates a http.Server and calls ServeTLS with the given
+// listener, certFile and keyFile. It wraps handler with RecoverAndLogHandler and a
+// handler, which limits the max body size to config.MaxBodyBytes.
+// The function optionally takes a list of shutdown tasks to execute on shutdown.
+//
+// NOTE: This function blocks - you may want to call it in a go-routine.
+func ServeTLSWithShutdown(
+	listener net.Listener,
+	handler http.Handler,
+	certFile, keyFile string,
+	logger log.Logger,
+	config *Config,
+	shutdownTasks ...func() error,
+) error {
+	err := ServeTLS(listener, handler, certFile, keyFile, logger, config)
+
+	for _, f := range shutdownTasks {
+		if err := f(); err != nil {
+			logger.Error("executing RPC HTTP server post-shutdown task", "err", err)
+		}
+	}
+
+	return err
+}
+
 // WriteRPCResponseHTTPError marshals res as JSON (with indent) and writes it
 // to w.
 //

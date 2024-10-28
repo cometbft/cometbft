@@ -298,10 +298,7 @@ func TestCleanup(t *testing.T) {
 			t.Fatalf("expected an error, got nil")
 		}
 
-		var (
-			formatStr = "deleting genesis file chunks' folder at %s: unlinkat %s: permission denied"
-			wantErr   = fmt.Sprintf(formatStr, chunksDir, chunksDir)
-		)
+		wantErr := "deleting genesis file chunks' folder: unlinkat " + chunksDir + ": permission denied"
 		if err.Error() != wantErr {
 			t.Errorf("\nwant error: %s\ngot: %s\n", wantErr, err.Error())
 		}
@@ -340,7 +337,7 @@ func TestFileSize(t *testing.T) {
 			t.Fatalf("expected an error, got nil")
 		}
 
-		wantErr := "accessing file at null/\x00/file: stat null/\x00/file: invalid argument"
+		wantErr := "accessing file: stat null/\x00/file: invalid argument"
 		if err.Error() != wantErr {
 			t.Errorf("\nwant error: %s\ngot: %s\n", wantErr, err.Error())
 		}
@@ -428,11 +425,10 @@ func TestMkChunksDir(t *testing.T) {
 		}
 
 		var (
-			fDir           = filepath.Dir(fNotExist)
-			newDirFullPath = filepath.Join(fDir, newDir)
+			fDir       = filepath.Dir(fNotExist)
+			newDirPath = filepath.Join(fDir, newDir)
 
-			formatStr = "creating chunks directory at %s: mkdir %s: no such file or directory"
-			wantErr   = fmt.Sprintf(formatStr, newDirFullPath, newDirFullPath)
+			wantErr = "creating chunks directory: mkdir " + newDirPath + ": no such file or directory"
 		)
 		if err.Error() != wantErr {
 			t.Errorf("\nwant error: %s\ngot: %s\n", wantErr, err.Error())
@@ -474,7 +470,7 @@ func TestWriteChunk(t *testing.T) {
 			t.Fatalf(formatStr, err)
 		}
 
-		wantErr := "writing chunk: open " + wantPath + ": permission denied"
+		wantErr := "writing chunk to disk: open " + wantPath + ": permission denied"
 		if err.Error() != wantErr {
 			t.Errorf("\nwant error: %s\ngot: %s\n", wantErr, err.Error())
 		}

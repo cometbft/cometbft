@@ -609,7 +609,7 @@ func (n *Node) OnStart() error {
 	if n.config.RPC.ListenAddress != "" {
 		listeners, err := n.startRPC()
 		if err != nil {
-			return err
+			return fmt.Errorf("starting RPC server: %s", err)
 		}
 		n.rpcListeners = listeners
 	}

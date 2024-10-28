@@ -864,25 +864,29 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 		}
 		if n.config.RPC.IsTLSEnabled() {
 			go func() {
-				if err := rpcserver.ServeTLS(
+				err := rpcserver.ServeTLSWithShutdown(
 					listener,
 					rootHandler,
 					n.config.RPC.CertFile(),
 					n.config.RPC.KeyFile(),
 					rpcLogger,
 					config,
-				); err != nil {
-					n.Logger.Error("Error serving server with TLS", "err", err)
+					env.Cleanup,
+				)
+				if err != nil {
+					n.Logger.Error("serving server with TLS", "err", err)
 				}
 			}()
 		} else {
 			go func() {
-				if err := rpcserver.Serve(
+				err := rpcserver.ServeWithShutdown(
 					listener,
 					rootHandler,
 					rpcLogger,
 					config,
-				); err != nil {
+					env.Cleanup,
+				)
+				if err != nil {
 					n.Logger.Error("Error serving server", "err", err)
 				}
 			}()

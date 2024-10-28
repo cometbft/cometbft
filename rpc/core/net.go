@@ -133,7 +133,7 @@ func (env *Environment) GenesisChunked(
 	_ *rpctypes.Context,
 	chunkID uint,
 ) (*ctypes.ResultGenesisChunk, error) {
-	if env.genesisChunks == nil {
+	if len(env.genesisChunks) == 0 {
 		// See discussion in the following PR for why we still serve chunk 0 even
 		// if env.genChunks is nil:
 		// https://github.com/cometbft/cometbft/pull/4235#issuecomment-2389109521
@@ -154,10 +154,6 @@ func (env *Environment) GenesisChunked(
 			return resp, nil
 		}
 
-		return nil, ErrServiceConfig{ErrChunkNotInitialized}
-	}
-
-	if len(env.genesisChunks) == 0 {
 		return nil, ErrServiceConfig{ErrNoChunks}
 	}
 

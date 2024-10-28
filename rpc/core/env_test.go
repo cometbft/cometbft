@@ -299,7 +299,7 @@ func TestCleanup(t *testing.T) {
 		}
 
 		var (
-			formatStr = "deleting genesis chunks' folder at %s: unlinkat %s: permission denied"
+			formatStr = "deleting genesis file chunks' folder at %s: unlinkat %s: permission denied"
 			wantErr   = fmt.Sprintf(formatStr, chunksDir, chunksDir)
 		)
 		if err.Error() != wantErr {

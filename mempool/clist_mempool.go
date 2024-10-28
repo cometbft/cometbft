@@ -399,7 +399,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender nodekey.ID) f
 
 		// Check that rechecking txs is not in process.
 		if !mem.recheck.done() {
-			panic(fmt.Sprintf("rechecking has not finished; cannot check new tx", log.NewLazyHash(tx)))
+			panic(fmt.Sprint("rechecking has not finished; cannot check new tx", log.NewLazyHash(tx)))
 		}
 
 		var postCheckErr error

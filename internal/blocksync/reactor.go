@@ -131,25 +131,26 @@ func (bcR *Reactor) SetLogger(l log.Logger) {
 // OnStart implements service.Service.
 func (bcR *Reactor) OnStart() error {
 	if bcR.blockSync {
-		err := bcR.pool.Start()
-		if err != nil {
-			return err
-		}
-		bcR.poolRoutineWg.Add(1)
-		go func() {
-			defer bcR.poolRoutineWg.Done()
-			bcR.poolRoutine(false)
-		}()
+		return bcR.startPool(false)
 	}
 	return nil
 }
 
-// SwitchToBlockSync is called by the state sync reactor when switching to block sync.
+// SwitchToBlockSync is called by the statesync reactor when switching to blocksync.
 func (bcR *Reactor) SwitchToBlockSync(state sm.State) error {
 	bcR.blockSync = true
-	bcR.initialState = state
 
-	bcR.pool.height = state.LastBlockHeight + 1
+	if !state.IsEmpty() { // if we have a state, start from there
+		bcR.initialState = state
+		bcR.pool.height = state.LastBlockHeight + 1
+		return bcR.startPool(true)
+	}
+
+	// if we don't have a state due to an error or a timeout, start from genesis.
+	return bcR.startPool(false)
+}
+
+func (bcR *Reactor) startPool(stateSynced bool) error {
 	err := bcR.pool.Start()
 	if err != nil {
 		return err
@@ -157,7 +158,7 @@ func (bcR *Reactor) SwitchToBlockSync(state sm.State) error {
 	bcR.poolRoutineWg.Add(1)
 	go func() {
 		defer bcR.poolRoutineWg.Done()
-		bcR.poolRoutine(true)
+		bcR.poolRoutine(stateSynced)
 	}()
 	return nil
 }

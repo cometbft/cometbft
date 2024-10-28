@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"time"
 
@@ -68,8 +69,15 @@ type mempoolReactor interface {
 	TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, error)
 }
 
-// Environment contains objects and interfaces used by the RPC. It is expected
-// to be setup once during startup.
+// Environment contains the objects and interfaces used to serve the RPC APIs.
+// A Node creates an object of this type at startup.
+// An Environment should not be created directly, and it is recommended that
+// only one instance of Environment be created at runtime.
+// For this reason, callers should create an Environment object using
+// the ConfigureRPC() method of the Node type, because the Environment object it
+// returns is a singleton.
+// Note: The Environment type was exported in the initial RPC API design; therefore,
+// unexporting it now could potentially break users.
 type Environment struct {
 	// external, thread safe interfaces
 	ProxyAppQuery   proxy.AppConnQuery
@@ -99,6 +107,70 @@ type Environment struct {
 
 	// cache of chunked genesis data.
 	genChunks []string
+}
+
+// InitGenesisChunks checks whether it makes sense to create a cache of chunked
+// genesis data. It is called on Node startup and should be called only once.
+// Rules of chunking:
+//   - if the genesis file's size is <= genesisChunkSize, then no chunking.
+//     An `Environment` object will store a pointer to the genesis in its GenDoc
+//     field. Its genChunks field will be set to nil. `/genesis` RPC API will return
+//     the GenesisDoc itself.
+//   - if the genesis file's size is > genesisChunkSize, then use chunking. An
+//     `Environment` object will store a slice of base64-encoded chunks in its
+//     genChunks field. Its GenDoc field will be set to nil. `/genesis` RPC API will
+//     redirect users to use the `/genesis_chunked` API.
+func (env *Environment) InitGenesisChunks() error {
+	if len(env.genChunks) > 0 {
+		// we already computed the chunks, return.
+		return nil
+	}
+
+	if env.GenDoc == nil {
+		// chunks not computed yet, but no genesis available.
+		// This should not happen.
+		return errors.New("could not create the genesis file chunks and cache them because the genesis doc is unavailable")
+	}
+
+	data, err := cmtjson.Marshal(env.GenDoc)
+	if err != nil {
+		return fmt.Errorf("encoding genesis doc to JSON: %w", err)
+	}
+
+	// If genesis is less than 16MB, then no chunking.
+	// Keep a pointer to a GenesisDoc in env.GenDoc.
+	if len(data) <= genesisChunkSize {
+		env.genChunks = nil
+		return nil
+	}
+
+	var (
+		nChunks = (len(data) + genesisChunkSize - 1) / genesisChunkSize
+		chunks  = make([]string, nChunks)
+	)
+	for i := range nChunks {
+		var (
+			start = i * genesisChunkSize
+			end   = start + genesisChunkSize
+		)
+		if end > len(data) {
+			end = len(data)
+		}
+
+		// we make a copy here so that the original data isn't retained in memory.
+		// The GC will collect the data slice after exiting the function.
+		// Without the copy, it would keep it in memory.
+		chunk := make([]byte, end-start)
+		copy(chunk, data[start:end])
+		chunks[i] = base64.StdEncoding.EncodeToString(chunk)
+	}
+
+	env.genChunks = chunks
+
+	// we store the chunks; don't store a ptr to the genesis anymore.
+	env.GenDoc = nil
+
+	return nil
 }
 
 func validatePage(pagePtr *int, perPage, totalCount int) (int, error) {
@@ -134,35 +206,6 @@ func (*Environment) validatePerPage(perPagePtr *int) int {
 		return maxPerPage
 	}
 	return perPage
-}
-
-// InitGenesisChunks configures the environment and should be called on service
-// startup.
-func (env *Environment) InitGenesisChunks() error {
-	if env.genChunks != nil {
-		return nil
-	}
-
-	if env.GenDoc == nil {
-		return nil
-	}
-
-	data, err := cmtjson.Marshal(env.GenDoc)
-	if err != nil {
-		return err
-	}
-
-	for i := 0; i < len(data); i += genesisChunkSize {
-		end := i + genesisChunkSize
-
-		if end > len(data) {
-			end = len(data)
-		}
-
-		env.genChunks = append(env.genChunks, base64.StdEncoding.EncodeToString(data[i:end]))
-	}
-
-	return nil
 }
 
 func validateSkipCount(page, perPage int) int {

@@ -102,4 +102,4 @@ The list of available RPC endpoints can be found by making a request to the RPC 
 For an `inspect` process running on `127.0.0.1:26657`, navigate your browser to
 `http://127.0.0.1:26657/` to retrieve the list of enabled RPC endpoints.
 
-Additional information on the CometBFT RPC endpoints can be found in the [rpc documentation](https://docs.cometbft.com/master/rpc).
+Additional information on the CometBFT RPC endpoints can be found in the [rpc documentation](https://docs.cometbft.com/v1.0/rpc/).

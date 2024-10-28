@@ -251,7 +251,7 @@ func (env *Environment) Cleanup() error {
 	chunksDir := filepath.Join(gFileDir, _chunksDir)
 
 	if err := os.RemoveAll(chunksDir); err != nil {
-		formatStr := "deleting genesis chunks' folder at %s: %s"
+		formatStr := "deleting genesis file chunks' folder at %s: %s"
 		return fmt.Errorf(formatStr, chunksDir, err)
 	}
 
@@ -278,21 +278,34 @@ func fileSize(fPath string) (int, error) {
 // It returns the new directory's full path or an empty string if there is an
 // error.
 func mkChunksDir(gFilePath string, dirName string) (string, error) {
-	gFileDir := filepath.Dir(gFilePath)
-	dirPath := filepath.Join(gFileDir, dirName)
+	var (
+		gFileDir = filepath.Dir(gFilePath)
+		dirPath  = filepath.Join(gFileDir, dirName)
+	)
+	if _, err := os.Stat(dirPath); err == nil {
+		// directory already exists; this might happen it the node crashed and
+		// could not do cleanup. Delete it to start from scratch.
+		if err := os.RemoveAll(dirPath); err != nil {
+			return "", fmt.Errorf("deleting existing chunks directory: %w", err)
+		}
+	} else if !os.IsNotExist(err) {
+		return "", fmt.Errorf("accessing directory at %s: %w", dirPath, err)
+	}
 
 	if err := os.Mkdir(dirPath, 0o755); err != nil {
 		return "", fmt.Errorf("creating chunks directory at %s: %s", dirPath, err)
 	}
+
 	return dirPath, nil
 }
 
 // writeChunk writes a chunk of the genesis file to disk, saving it to dir.
 // Each chunk file name's format will be: chunk_[chunkID].part, e.g., chunk_42.part.
 func writeChunk(chunk []byte, dir string, chunkID int) (string, error) {
-	chunkName := "chunk_" + strconv.Itoa(chunkID) + ".part"
-	chunkPath := filepath.Join(dir, chunkName)
-
+	var (
+		chunkName = "chunk_" + strconv.Itoa(chunkID) + ".part"
+		chunkPath = filepath.Join(dir, chunkName)
+	)
 	if err := os.WriteFile(chunkPath, chunk, 0o600); err != nil {
 		return "", fmt.Errorf("writing chunk at %s: %s", chunkPath, err)
 	}

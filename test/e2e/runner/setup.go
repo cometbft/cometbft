@@ -528,18 +528,19 @@ func tcCommands(node *e2e.Node, infp infra.Provider) ([]string, error) {
 
 	tcCmds := []string{
 		"#!/bin/sh",
+		"set -e",
 
 		// Delete any existing qdisc on the root of the eth0 interface.
-		"tc qdisc del dev eth0 root 2> /dev/null",
+		"tc qdisc del dev eth0 root 2> /dev/null || true",
 
 		// Add a new root qdisc of type HTB with a default class of 10.
 		"tc qdisc add dev eth0 root handle 1: htb default 10",
 
 		// Add a root class with identifier 1:1 and a rate limit of 1 gigabit per second.
-		"tc class add dev eth0 parent 1: classid 1:1 htb rate 1gbit 2> /dev/null",
+		"tc class add dev eth0 parent 1: classid 1:1 htb rate 1gbit",
 
 		// Add a default class under the root class with identifier 1:10 and a rate limit of 1 gigabit per second.
-		"tc class add dev eth0 parent 1:1 classid 1:10 htb rate 1gbit 2> /dev/null",
+		"tc class add dev eth0 parent 1:1 classid 1:10 htb rate 1gbit",
 
 		// Add an SFQ qdisc to the default class with handle 10: to manage traffic with fairness.
 		"tc qdisc add dev eth0 parent 1:10 handle 10: sfq perturb 10",
@@ -562,7 +563,7 @@ func tcCommands(node *e2e.Node, infp infra.Provider) ([]string, error) {
 		}
 
 		// Add a class with the calculated handle, under the root class, with the specified rate.
-		tcCmds = append(tcCmds, fmt.Sprintf("tc class add dev eth0 parent 1:1 classid 1:%d htb rate 1gbit 2> /dev/null", handle))
+		tcCmds = append(tcCmds, fmt.Sprintf("tc class add dev eth0 parent 1:1 classid 1:%d htb rate 1gbit", handle))
 
 		// Add a netem qdisc to simulate the specified delay with normal distribution.
 		tcCmds = append(tcCmds, fmt.Sprintf("tc qdisc add dev eth0 parent 1:%d handle %d: netem delay %dms %dms distribution normal", handle, handle, latency, delta))

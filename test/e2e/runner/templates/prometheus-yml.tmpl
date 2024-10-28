@@ -5,5 +5,5 @@ scrape_configs:
 {{- range .Nodes }}
   - job_name: '{{ .Name }}'
     static_configs:
-      - targets: ['localhost:{{ .PrometheusProxyPort }}']
+      - targets: ['localhost:{{ .PrometheusProxyPort }}','host.docker.internal:{{ .PrometheusProxyPort }}']
 {{end}}

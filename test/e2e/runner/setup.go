@@ -128,7 +128,7 @@ func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 		if err := WritePrometheusConfig(testnet, PrometheusConfigFile); err != nil {
 			return err
 		}
-		// Make a copy of the Prometheus config file in the testnet direactory.
+		// Make a copy of the Prometheus config file in the testnet directory.
 		// This should be temporary to keep it compatible with the qa-infra
 		// repository.
 		if err := WritePrometheusConfig(testnet, filepath.Join(testnet.Dir, "prometheus.yml")); err != nil {

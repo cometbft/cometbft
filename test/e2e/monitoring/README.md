@@ -2,7 +2,7 @@
 
 Prometheus and Grafana server for E2E testnets.
 
-# How to run
+## How to run
 
 First, `prometheus.yml` must exist in this directory. For example, generate one by running from
 `test/e2e`:
@@ -21,7 +21,7 @@ To stop all monitoring services:
 docker compose down
 ```
 
-# Details
+## Details
 
 This docker compose (`compose.yml`) creates a local Granafa and Prometheus server. It is useful for
 local debugging and monitoring.

@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack on failure
-        uses: rtCamp/action-slack-notify@65e6fc1ce697e2df8149d9ae9909acc5ec5599ce
+        uses: rtCamp/action-slack-notify@c33737706dea87cd7784c687dadc9adf1be59990
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
           SLACK_CHANNEL: cometbft-engineering
@@ -65,7 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack on success
-        uses: rtCamp/action-slack-notify@65e6fc1ce697e2df8149d9ae9909acc5ec5599ce
+        uses: rtCamp/action-slack-notify@c33737706dea87cd7784c687dadc9adf1be59990
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
           SLACK_CHANNEL: cometbft-engineering

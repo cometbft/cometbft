@@ -287,7 +287,7 @@ func verifyCommitBatch(
 		cacheHit := false
 		if verifiedSignatureCache != nil {
 			cacheVal, sigIsInCache := verifiedSignatureCache[string(commitSig.Signature)]
-			cacheHit = sigIsInCache && bytes.Equal(cacheVal.ValidatorAddress, commitSig.ValidatorAddress) && bytes.Equal(cacheVal.VoteSignBytes, voteSignBytes)
+			cacheHit = sigIsInCache && bytes.Equal(cacheVal.ValidatorAddress, val.PubKey.Address()) && bytes.Equal(cacheVal.VoteSignBytes, voteSignBytes)
 		}
 
 		if !cacheHit {
@@ -430,7 +430,7 @@ func verifyCommitSingle(
 		if verifiedSignatureCache != nil {
 			cacheKey = string(commitSig.Signature)
 			cacheVal, sigIsInCache := verifiedSignatureCache[cacheKey]
-			cacheHit = sigIsInCache && bytes.Equal(cacheVal.ValidatorAddress, commitSig.ValidatorAddress) && bytes.Equal(cacheVal.VoteSignBytes, voteSignBytes)
+			cacheHit = sigIsInCache && bytes.Equal(cacheVal.ValidatorAddress, val.PubKey.Address()) && bytes.Equal(cacheVal.VoteSignBytes, voteSignBytes)
 		}
 
 		if !cacheHit {
@@ -439,7 +439,7 @@ func verifyCommitSingle(
 			}
 			if verifiedSignatureCache != nil {
 				verifiedSignatureCache[cacheKey] = SignatureCacheValue{
-					ValidatorAddress: commitSig.ValidatorAddress,
+					ValidatorAddress: val.PubKey.Address(),
 					VoteSignBytes:    voteSignBytes,
 				}
 			}

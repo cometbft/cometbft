@@ -496,19 +496,20 @@ func TestWriteChunk(t *testing.T) {
 func TestWriteChunks(t *testing.T) {
 	const (
 		// we'll create a temporary file of 100 bytes to run this test.
-		fTempSize = 100
+		fGenesisSize = 100
 
-		// we'll split the temp file into chunks of 25 bytes.
-		chunkSize = 25
+		// we'll split the temp file into test chunks of 25 bytes.
+		tChunkSize = 25
 	)
 
+	// create temporary test genesis file
 	fGenesis, err := os.CreateTemp("", "dummy_genesis")
 	if err != nil {
 		t.Fatalf("creating temp file for testing: %s", err)
 	}
 	defer os.Remove(fGenesis.Name())
 
-	data := make([]byte, fTempSize)
+	data := make([]byte, fGenesisSize)
 	for i := 0; i < 100; i++ {
 		data[i] = 'a'
 	}
@@ -518,28 +519,33 @@ func TestWriteChunks(t *testing.T) {
 	}
 	fGenesis.Close()
 
-	chunkIDToPath, err := writeChunks(fGenesis.Name(), chunkSize)
+	// create a temporary directory to store the test chunks.
+	var (
+		fGenesisDir = filepath.Dir(fGenesis.Name())
+		tChunksDir  = filepath.Join(fGenesisDir, "test-chunks")
+	)
+
+	if err := os.Mkdir(tChunksDir, 0o755); err != nil {
+		t.Fatalf("creating test chunks directory: %s", err)
+	}
+	defer os.RemoveAll(tChunksDir)
+
+	chunkIDToPath, err := writeChunks(fGenesis.Name(), tChunksDir, tChunkSize)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
 
-	var (
-		fTempDir      = filepath.Dir(fGenesis.Name())
-		testChunksDir = filepath.Join(fTempDir, _chunksDir)
-	)
-	defer os.RemoveAll(testChunksDir)
-
 	wantMap := map[int]string{
-		0: testChunksDir + "/chunk_0.part",
-		1: testChunksDir + "/chunk_1.part",
-		2: testChunksDir + "/chunk_2.part",
-		3: testChunksDir + "/chunk_3.part",
+		0: tChunksDir + "/chunk_0.part",
+		1: tChunksDir + "/chunk_1.part",
+		2: tChunksDir + "/chunk_2.part",
+		3: tChunksDir + "/chunk_3.part",
 	}
 	if !maps.Equal(wantMap, chunkIDToPath) {
 		t.Errorf("\nwant map: %v\ngot: %v\n", wantMap, chunkIDToPath)
 	}
 
-	err = reassembleAndCompare(fGenesis.Name(), chunkIDToPath, chunkSize)
+	err = reassembleAndCompare(fGenesis.Name(), chunkIDToPath, tChunkSize)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}

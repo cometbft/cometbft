@@ -154,8 +154,13 @@ func (env *Environment) InitGenesisChunks() error {
 		return nil
 	}
 
+	gChunksDir, err := mkChunksDir(gFilePath, _chunksDir)
+	if err != nil {
+		return fmt.Errorf("preparing chunks directory: %s", err)
+	}
+
 	// chunking required
-	chunkIDToPath, err := writeChunks(gFilePath, genesisChunkSize)
+	chunkIDToPath, err := writeChunks(gFilePath, gChunksDir, genesisChunkSize)
 	if err != nil {
 		return fmt.Errorf("splitting large genesis file: %s", err)
 	}
@@ -307,7 +312,7 @@ func writeChunk(chunk []byte, dir string, chunkID int) (string, error) {
 		chunkPath = filepath.Join(dir, chunkName)
 	)
 	if err := os.WriteFile(chunkPath, chunk, 0o600); err != nil {
-		return "", fmt.Errorf("writing chunk at %s: %s", chunkPath, err)
+		return "", fmt.Errorf("writing chunk: %w", err)
 	}
 
 	return chunkPath, nil
@@ -316,6 +321,7 @@ func writeChunk(chunk []byte, dir string, chunkID int) (string, error) {
 // writeChunks reads the genesis file in chunks of size chunkSize, and writes them
 // to disk.
 // gFilePath is the genesis file's full path on disk.
+// gChunksDir is the directory where the chunks will be stored on disk.
 // chunkSize is the size of a chunk, that is, writeChunks will read the genesis file
 // in chunks of size chunkSize.
 // It returns a map where the keys are the chunk IDs, and the values are the chunks'
@@ -325,18 +331,16 @@ func writeChunk(chunk []byte, dir string, chunkID int) (string, error) {
 // and so on for all chunks.
 // The map will be useful for the `/genesis_chunked` RPC endpoint to quickly find
 // a chunk on disk given its ID.
-func writeChunks(gFilePath string, chunkSize int) (map[int]string, error) {
+func writeChunks(
+	gFilePath, gChunksDir string,
+	chunkSize int,
+) (map[int]string, error) {
 	gFile, err := os.Open(gFilePath)
 	if err != nil {
 		formatStr := "chunking: opening genesis file at %s: %s"
 		return nil, fmt.Errorf(formatStr, gFilePath, err)
 	}
 	defer gFile.Close()
-
-	gChunksDir, err := mkChunksDir(gFilePath, _chunksDir)
-	if err != nil {
-		return nil, fmt.Errorf("chunking: %s", err)
-	}
 
 	var (
 		buf           = make([]byte, chunkSize)

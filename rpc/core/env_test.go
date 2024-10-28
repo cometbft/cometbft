@@ -61,19 +61,19 @@ func TestInitGenesisChunks(t *testing.T) {
 	// GenesisDoc stored in GenDoc field.
 	// The test genesis is the genesis that the ci.toml e2e test uses.
 	t.Run("NoChunking", func(t *testing.T) {
-		fGenesis, err := os.CreateTemp("", "genesis.json")
+		gFile, err := os.CreateTemp("", "genesis.json")
 		if err != nil {
 			t.Fatalf("creating genesis file for testing: %s", err)
 		}
 
-		defer os.Remove(fGenesis.Name())
+		defer os.Remove(gFile.Name())
 
-		if _, err := fGenesis.WriteString(_testGenesis); err != nil {
+		if _, err := gFile.WriteString(_testGenesis); err != nil {
 			t.Fatalf("writing genesis file for testing: %s", err)
 		}
-		fGenesis.Close()
+		gFile.Close()
 
-		env := &Environment{GenesisFilePath: fGenesis.Name()}
+		env := &Environment{GenesisFilePath: gFile.Name()}
 
 		if err := env.InitGenesisChunks(); err != nil {
 			t.Errorf("unexpected error: %s", err)
@@ -109,20 +109,20 @@ func TestInitGenesisChunks(t *testing.T) {
 			t.Fatalf("test genesis serialization: %s", err)
 		}
 
-		fGenesis, err := os.CreateTemp("", "genesis.json")
+		gFile, err := os.CreateTemp("", "genesis.json")
 		if err != nil {
 			t.Fatalf("creating genesis file for testing: %s", err)
 		}
 
-		if _, err := fGenesis.Write(genDocJSON); err != nil {
+		if _, err := gFile.Write(genDocJSON); err != nil {
 			t.Fatalf("writing genesis file for testing: %s", err)
 		}
-		fGenesis.Close()
+		gFile.Close()
 
 		var (
-			fGenesisPath  = fGenesis.Name()
-			chunksDirPath = filepath.Join(filepath.Dir(fGenesisPath), _chunksDir)
-			env           = &Environment{GenesisFilePath: fGenesisPath}
+			gFilePath     = gFile.Name()
+			chunksDirPath = filepath.Join(filepath.Dir(gFilePath), _chunksDir)
+			env           = &Environment{GenesisFilePath: gFilePath}
 		)
 		defer os.RemoveAll(chunksDirPath)
 
@@ -130,14 +130,14 @@ func TestInitGenesisChunks(t *testing.T) {
 			t.Errorf("unexpected error: %s", err)
 		}
 
-		genesisSize, err := fileSize(fGenesisPath)
+		gSize, err := fileSize(gFilePath)
 		if err != nil {
 			t.Fatalf("estimating test genesis file size: %s", err)
 		}
 
 		// Because the genesis file is > genesisChunkSize, we expect chunks.
 		// genesisChunkSize is a global const defined in env.go.
-		wantChunks := (genesisSize + genesisChunkSize - 1) / genesisChunkSize
+		wantChunks := (gSize + genesisChunkSize - 1) / genesisChunkSize
 		if len(env.genesisChunks) != wantChunks {
 			formatStr := "expected number of chunks: %d, but got: %d"
 			t.Errorf(formatStr, wantChunks, len(env.genesisChunks))
@@ -146,7 +146,7 @@ func TestInitGenesisChunks(t *testing.T) {
 		// We now check if the original genesis doc and the genesis doc
 		// reassembled from the chunks match.
 		err = reassembleAndCompare(
-			fGenesisPath,
+			gFilePath,
 			env.genesisChunks,
 			genesisChunkSize,
 		)
@@ -345,54 +345,53 @@ func TestFileSize(t *testing.T) {
 
 	t.Run("FileSizeOk", func(t *testing.T) {
 		// we'll create a temporary file of 100 bytes to run this test.
-		const fTempSize = 100
+		const fSize = 100
 
-		fTemp, err := os.CreateTemp("", "small_test_file")
+		f, err := os.CreateTemp("", "small_test_file")
 		if err != nil {
 			t.Fatalf("creating temp file for testing: %s", err)
 		}
-		defer os.Remove(fTemp.Name())
+		defer os.Remove(f.Name())
 
-		data := make([]byte, fTempSize)
+		data := make([]byte, fSize)
 		for i := 0; i < 100; i++ {
 			data[i] = 'a'
 		}
 
-		if _, err := fTemp.Write(data); err != nil {
+		if _, err := f.Write(data); err != nil {
 			t.Fatalf("writing to temp file for testing: %s", err)
 		}
-		fTemp.Close()
+		f.Close()
 
-		gotSize, err := fileSize(fTemp.Name())
+		gotSize, err := fileSize(f.Name())
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
 
-		if gotSize != fTempSize {
-			t.Errorf("want size: %d, got: %d", fTempSize, gotSize)
+		if gotSize != fSize {
+			t.Errorf("want size: %d, got: %d", fSize, gotSize)
 		}
 	})
 }
 
 func TestMkChunksDir(t *testing.T) {
-	fGenesis, err := os.CreateTemp("", "dummy_genesis.json")
+	gFile, err := os.CreateTemp("", "dummy_genesis.json")
 	if err != nil {
 		t.Fatalf("creating temp file for testing: %s", err)
 	}
-	fGenesis.Close()
-	defer os.Remove(fGenesis.Name())
+	gFile.Close()
+	defer os.Remove(gFile.Name())
 
-	t.Run("DirExistsCreated", func(t *testing.T) {
+	t.Run("DirExistCreated", func(t *testing.T) {
 		var (
-			fGenesisDir = filepath.Dir(fGenesis.Name())
-			newDir      = filepath.Join(fGenesisDir, "some-dir")
+			gFileDir = filepath.Dir(gFile.Name())
+			newDir   = filepath.Join(gFileDir, "some-dir")
 		)
-
 		if err := os.Mkdir(newDir, 0o755); err != nil {
 			t.Fatalf("creating chunks directory for testing: %s", err)
 		}
 
-		dirPath, err := mkChunksDir(fGenesis.Name(), _chunksDir)
+		dirPath, err := mkChunksDir(gFile.Name(), _chunksDir)
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
@@ -404,7 +403,7 @@ func TestMkChunksDir(t *testing.T) {
 
 	t.Run("DirNotExistCreated", func(t *testing.T) {
 		newDir := "some-dir"
-		dirPath, err := mkChunksDir(fGenesis.Name(), newDir)
+		dirPath, err := mkChunksDir(gFile.Name(), newDir)
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
@@ -490,33 +489,33 @@ func TestWriteChunk(t *testing.T) {
 func TestWriteChunks(t *testing.T) {
 	const (
 		// we'll create a temporary file of 100 bytes to run this test.
-		fGenesisSize = 100
+		gFileSize = 100
 
 		// we'll split the temp file into test chunks of 25 bytes.
 		tChunkSize = 25
 	)
 
 	// create temporary test genesis file
-	fGenesis, err := os.CreateTemp("", "dummy_genesis")
+	gFile, err := os.CreateTemp("", "dummy_genesis")
 	if err != nil {
 		t.Fatalf("creating temp file for testing: %s", err)
 	}
-	defer os.Remove(fGenesis.Name())
+	defer os.Remove(gFile.Name())
 
-	data := make([]byte, fGenesisSize)
+	data := make([]byte, gFileSize)
 	for i := 0; i < 100; i++ {
 		data[i] = 'a'
 	}
 
-	if _, err := fGenesis.Write(data); err != nil {
+	if _, err := gFile.Write(data); err != nil {
 		t.Fatalf("writing to temp file for testing: %s", err)
 	}
-	fGenesis.Close()
+	gFile.Close()
 
 	// create a temporary directory to store the test chunks.
 	var (
-		fGenesisDir = filepath.Dir(fGenesis.Name())
-		tChunksDir  = filepath.Join(fGenesisDir, "test-chunks")
+		gFileDir   = filepath.Dir(gFile.Name())
+		tChunksDir = filepath.Join(gFileDir, "test-chunks")
 	)
 
 	if err := os.Mkdir(tChunksDir, 0o755); err != nil {
@@ -524,7 +523,7 @@ func TestWriteChunks(t *testing.T) {
 	}
 	defer os.RemoveAll(tChunksDir)
 
-	chunkIDToPath, err := writeChunks(fGenesis.Name(), tChunksDir, tChunkSize)
+	chunkIDToPath, err := writeChunks(gFile.Name(), tChunksDir, tChunkSize)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -539,7 +538,7 @@ func TestWriteChunks(t *testing.T) {
 		t.Errorf("\nwant map: %v\ngot: %v\n", wantMap, chunkIDToPath)
 	}
 
-	err = reassembleAndCompare(fGenesis.Name(), chunkIDToPath, tChunkSize)
+	err = reassembleAndCompare(gFile.Name(), chunkIDToPath, tChunkSize)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -566,28 +565,28 @@ func reassembleAndCompare(
 	// have to collect the IDs and sort them because map traversal isn't guaranteed
 	// to be in order; but we need it to be in order to compare the right chunk
 	// with the right of the genesis file "piece".
-	cIDs := make([]int, 0, len(chunks))
-	for cID := range chunks {
-		cIDs = append(cIDs, cID)
+	chunkIDs := make([]int, 0, len(chunks))
+	for chunkID := range chunks {
+		chunkIDs = append(chunkIDs, chunkID)
 	}
-	slices.Sort(cIDs)
+	slices.Sort(chunkIDs)
 
 	gBuf := make([]byte, chunkSize)
-	for cID := range cIDs {
-		cPath := chunks[cID]
+	for chunkID := range chunkIDs {
+		chunkPath := chunks[chunkID]
 
 		// chunks are small, so it's ok to load them in memory.
-		chunk, err := os.ReadFile(cPath)
+		chunk, err := os.ReadFile(chunkPath)
 		if err != nil {
-			return fmt.Errorf("reading chunk file %d: %s", cID, err)
+			return fmt.Errorf("reading chunk file %d: %s", chunkID, err)
 		}
 		gN, err := gFile.Read(gBuf)
 		if err != nil && !errors.Is(err, io.EOF) {
-			return fmt.Errorf("reading genesis file chunk %d: %s", cID, err)
+			return fmt.Errorf("reading genesis file chunk %d: %s", chunkID, err)
 		}
 
 		if !bytes.Equal(gBuf[:gN], chunk) {
-			return fmt.Errorf("chunk %d does not match", cID)
+			return fmt.Errorf("chunk %d does not match", chunkID)
 		}
 	}
 

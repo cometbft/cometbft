@@ -28,7 +28,10 @@ import (
 	"github.com/cometbft/cometbft/version"
 )
 
-const testAppVersion = 9
+const (
+	testAppVersion   = 9
+	maxDiscoveryTime = 1 * time.Millisecond // Not 0 because 0 means no timeout.
+)
 
 // Sets up a basic syncer that can be used to test OfferSnapshot requests.
 func setupOfferSyncer() (*syncer, *proxymocks.AppConnSnapshot) {
@@ -213,7 +216,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 		LastBlockAppHash: []byte("app_hash"),
 	}, nil)
 
-	newState, lastCommit, err := syncer.SyncAny(0, func() {})
+	newState, lastCommit, err := syncer.SyncAny(0, maxDiscoveryTime, func() {})
 	require.NoError(t, err)
 
 	time.Sleep(50 * time.Millisecond) // wait for peers to receive requests
@@ -235,7 +238,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 
 func TestSyncer_SyncAny_noSnapshots(t *testing.T) {
 	syncer, _ := setupOfferSyncer()
-	_, _, err := syncer.SyncAny(0, func() {})
+	_, _, err := syncer.SyncAny(0, maxDiscoveryTime, func() {})
 	assert.Equal(t, errNoSnapshots, err)
 }
 
@@ -249,7 +252,7 @@ func TestSyncer_SyncAny_abort(t *testing.T) {
 		Snapshot: toABCI(s), AppHash: []byte("app_hash"),
 	}).Once().Return(&abci.OfferSnapshotResponse{Result: abci.OFFER_SNAPSHOT_RESULT_ABORT}, nil)
 
-	_, _, err = syncer.SyncAny(0, func() {})
+	_, _, err = syncer.SyncAny(0, maxDiscoveryTime, func() {})
 	assert.Equal(t, errAbort, err)
 	connSnapshot.AssertExpectations(t)
 }
@@ -280,7 +283,7 @@ func TestSyncer_SyncAny_reject(t *testing.T) {
 		Snapshot: toABCI(s11), AppHash: []byte("app_hash"),
 	}).Once().Return(&abci.OfferSnapshotResponse{Result: abci.OFFER_SNAPSHOT_RESULT_REJECT}, nil)
 
-	_, _, err = syncer.SyncAny(0, func() {})
+	_, _, err = syncer.SyncAny(0, maxDiscoveryTime, func() {})
 	assert.Equal(t, errNoSnapshots, err)
 	connSnapshot.AssertExpectations(t)
 }
@@ -307,7 +310,7 @@ func TestSyncer_SyncAny_reject_format(t *testing.T) {
 		Snapshot: toABCI(s11), AppHash: []byte("app_hash"),
 	}).Once().Return(&abci.OfferSnapshotResponse{Result: abci.OFFER_SNAPSHOT_RESULT_ABORT}, nil)
 
-	_, _, err = syncer.SyncAny(0, func() {})
+	_, _, err = syncer.SyncAny(0, maxDiscoveryTime, func() {})
 	assert.Equal(t, errAbort, err)
 	connSnapshot.AssertExpectations(t)
 }
@@ -345,7 +348,7 @@ func TestSyncer_SyncAny_reject_sender(t *testing.T) {
 		Snapshot: toABCI(sa), AppHash: []byte("app_hash"),
 	}).Once().Return(&abci.OfferSnapshotResponse{Result: abci.OFFER_SNAPSHOT_RESULT_REJECT}, nil)
 
-	_, _, err = syncer.SyncAny(0, func() {})
+	_, _, err = syncer.SyncAny(0, maxDiscoveryTime, func() {})
 	assert.Equal(t, errNoSnapshots, err)
 	connSnapshot.AssertExpectations(t)
 }
@@ -361,7 +364,7 @@ func TestSyncer_SyncAny_abciError(t *testing.T) {
 		Snapshot: toABCI(s), AppHash: []byte("app_hash"),
 	}).Once().Return(nil, errBoom)
 
-	_, _, err = syncer.SyncAny(0, func() {})
+	_, _, err = syncer.SyncAny(0, maxDiscoveryTime, func() {})
 	require.ErrorIs(t, err, errBoom)
 	connSnapshot.AssertExpectations(t)
 }

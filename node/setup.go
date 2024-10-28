@@ -591,11 +591,17 @@ func startStateSync(
 	}
 
 	go func() {
-		state, commit, err := ssR.Sync(stateProvider, config.DiscoveryTime)
+		state, commit, err := ssR.Sync(stateProvider, config.MaxDiscoveryTime)
 		if err != nil {
 			ssR.Logger.Error("State sync failed", "err", err)
+			err = bcR.SwitchToBlockSync(state)
+			if err != nil {
+				ssR.Logger.Error("Failed to switch to block sync", "err", err)
+				return
+			}
 			return
 		}
+
 		err = stateStore.Bootstrap(state)
 		if err != nil {
 			ssR.Logger.Error("Failed to bootstrap node with new state", "err", err)
@@ -606,7 +612,6 @@ func startStateSync(
 			ssR.Logger.Error("Failed to store last seen commit", "err", err)
 			return
 		}
-
 		err = bcR.SwitchToBlockSync(state)
 		if err != nil {
 			ssR.Logger.Error("Failed to switch to block sync", "err", err)

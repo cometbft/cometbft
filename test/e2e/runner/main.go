@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"math/rand"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -202,7 +204,7 @@ func NewCLI() *CLI {
 		Short: "Starts the testnet, waiting for nodes to become available",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			_, err := os.Stat(cli.testnet.Dir)
-			if os.IsNotExist(err) {
+			if errors.Is(err, fs.ErrNotExist) {
 				err = Setup(cli.testnet, cli.infp)
 			}
 			if err != nil {
@@ -284,10 +286,66 @@ func NewCLI() *CLI {
 		},
 	})
 
+	monitorCmd := cobra.Command{
+		Use:     "monitor",
+		Aliases: []string{"mon"},
+		Short:   "Manage monitoring services such as Prometheus, Grafana, ElasticSearch, etc.",
+		Long: "Manage monitoring services such as Prometheus, Grafana, ElasticSearch, etc.\n" +
+			"First run 'setup' to generate a Prometheus config file.",
+	}
+	monitorStartCmd := cobra.Command{
+		Use:     "start",
+		Aliases: []string{"up"},
+		Short:   "Start monitoring services.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			_, err := os.Stat(PrometheusConfigFile)
+			if errors.Is(err, fs.ErrNotExist) {
+				return fmt.Errorf("file %s not found", PrometheusConfigFile)
+			}
+			if err := docker.ExecComposeVerbose(cmd.Context(), "monitoring", "up", "-d"); err != nil {
+				return err
+			}
+			logger.Info("Grafana: http://localhost:3000 ; Prometheus: http://localhost:9090")
+			return nil
+		},
+	}
+	monitorStopCmd := cobra.Command{
+		Use:     "stop",
+		Aliases: []string{"down"},
+		Short:   "Stop monitoring services.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			_, err := os.Stat(PrometheusConfigFile)
+			if errors.Is(err, fs.ErrNotExist) {
+				return nil
+			}
+			logger.Info("Shutting down monitoring services.")
+			if err := docker.ExecComposeVerbose(cmd.Context(), "monitoring", "down"); err != nil {
+				return err
+			}
+			// Remove prometheus config only when there is no testnet.
+			if _, err := os.Stat(cli.testnet.Dir); errors.Is(err, fs.ErrNotExist) {
+				if err := os.RemoveAll(PrometheusConfigFile); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	}
+	monitorCmd.AddCommand(&monitorStartCmd)
+	monitorCmd.AddCommand(&monitorStopCmd)
+	cli.root.AddCommand(&monitorCmd)
+
 	cli.root.AddCommand(&cobra.Command{
-		Use:   "cleanup",
-		Short: "Removes the testnet directory",
-		RunE: func(_ *cobra.Command, _ []string) error {
+		Use:     "cleanup",
+		Aliases: []string{"clean"},
+		Short:   "Removes the testnet directory",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			// Alert if monitoring services are still running.
+			outBytes, err := docker.ExecComposeOutput(cmd.Context(), "monitoring", "ps", "--services", "--filter", "status=running")
+			out := strings.TrimSpace(string(outBytes))
+			if err == nil && len(out) != 0 {
+				logger.Info("Monitoring services are still running:\n" + out)
+			}
 			return Cleanup(cli.testnet)
 		},
 	})

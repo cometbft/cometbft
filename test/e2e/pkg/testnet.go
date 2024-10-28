@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"bytes"
 	"context"
 	"encoding/csv"
 	"errors"
@@ -9,12 +8,10 @@ import (
 	"io"
 	"math/rand"
 	"net"
-	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
-	"text/template"
 	"time"
 
 	_ "embed"
@@ -589,6 +586,7 @@ func (t Testnet) HasPerturbations() bool {
 	return false
 }
 
+<<<<<<< HEAD
 //go:embed templates/prometheus-yaml.tmpl
 var prometheusYamlTemplate string
 
@@ -615,6 +613,28 @@ func (t Testnet) WritePrometheusConfig() error {
 		return err
 	}
 	return nil
+=======
+// weightedRandomIndex, given a list of cumulative weights and the sum of all
+// weights, it picks one of them randomly and proportionally to its weight, and
+// returns its index in the list.
+func weightedRandomIndex(cumWeights []uint, sumWeights uint) int {
+	// Generate a random number in the range [0, sumWeights).
+	r := cmtrand.Int31n(int32(sumWeights))
+
+	// Return i when the random number falls in the i'th interval.
+	for i, cumWeight := range cumWeights {
+		if r < int32(cumWeight) {
+			return i
+		}
+	}
+	return -1 // unreachable
+}
+
+// WeightedRandomLane returns an element in the list of lane ids, according to a
+// predefined weight for each lane in the list.
+func (t *Testnet) WeightedRandomLane() string {
+	return t.laneIDs[weightedRandomIndex(t.laneCumulativeWeights, t.sumWeights)]
+>>>>>>> add32b0b0 (feat(e2e): Add `monitor` command to manage Prometheus and Grafana servers (#4338))
 }
 
 // Address returns a P2P endpoint address for the node.

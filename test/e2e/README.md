@@ -1,5 +1,18 @@
 # End-to-End Tests
 
+- [End-to-End Tests](#end-to-end-tests)
+	- [Fast compilation](#fast-compilation)
+	- [Conceptual Overview](#conceptual-overview)
+	- [Testnet Manifests](#testnet-manifests)
+	- [Random Testnet Generation](#random-testnet-generation)
+	- [Test Stages](#test-stages)
+	- [Tests](#tests)
+		- [Running Manual Tests](#running-manual-tests)
+		- [Debugging Failures](#debugging-failures)
+	- [Enabling IPv6](#enabling-ipv6)
+	- [Benchmarking Testnets](#benchmarking-testnets)
+	- [Running Individual Nodes](#running-individual-nodes)
+
 Spins up and tests CometBFT networks in Docker Compose based on a testnet manifest. To run the CI testnet:
 
 ```sh
@@ -32,7 +45,9 @@ make fast
 
 ## Conceptual Overview
 
-End-to-end testnets are used to test Tendermint functionality as a user would use it, by spinning up a set of nodes with various configurations and making sure the nodes and network behave correctly. The background for the E2E test suite is outlined in [RFC-001](https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-066-e2e-testing.md).
+End-to-end testnets are used to test CometBFT functionality as a user would use it, by spinning up a
+set of nodes with various configurations and making sure the nodes and network behave correctly. The
+background for the E2E test suite is outlined in [RFC-001][rfc-001].
 
 The end-to-end tests can be thought of in this manner:
 
@@ -146,6 +161,8 @@ Auxiliary commands:
 
 * `tail`: tails (follows) node logs until canceled.
 
+* `monitor`: manages monitoring tools such as Prometheus and Grafana.
+
 ## Tests
 
 Test cases are written as normal Go tests in `tests/`. They use a `testNode()` helper which executes each test as a parallel subtest for each node in the network.
@@ -254,3 +271,21 @@ cometbft start
 ```
 
 Check `node/config.go` to see how the settings of the test application can be tweaked.
+
+## Managing monitoring tools
+
+The `monitor` command manages monitoring tools such as Prometheus and Grafana, with the following
+subcommands:
+- `monitor start` will spin up a local Docker container with a Prometheus and a Granafa server.
+Their web interfaces will be available at `http://localhost:9090` and `http://localhost:3000`
+respectively.
+- `monitor stop` will shut down the Docker container.
+
+Before starting any of these services, a Prometheus configuration file `prometheus.yml` must exist
+in the `monitoring` directory. This file can be automatically generated when running `setup` on a
+manifest that contains the line `prometheus = true`.
+
+These services run independently of the testnet, to be able to analyse the data even when the
+testnet is down.
+
+[rfc-001]: https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-066-e2e-testing.md

@@ -384,14 +384,15 @@ func TestMkChunksDir(t *testing.T) {
 
 	t.Run("DirExistCreated", func(t *testing.T) {
 		var (
-			gFileDir = filepath.Dir(gFile.Name())
-			newDir   = filepath.Join(gFileDir, "some-dir")
+			newDirName = "some-dir"
+			gFileDir   = filepath.Dir(gFile.Name())
+			newDirPath = filepath.Join(gFileDir, newDirName)
 		)
-		if err := os.Mkdir(newDir, 0o755); err != nil {
+		if err := os.Mkdir(newDirPath, 0o755); err != nil {
 			t.Fatalf("creating chunks directory for testing: %s", err)
 		}
 
-		dirPath, err := mkChunksDir(gFile.Name(), _chunksDir)
+		dirPath, err := mkChunksDir(gFile.Name(), newDirName)
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}

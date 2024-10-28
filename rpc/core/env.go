@@ -277,8 +277,10 @@ func fileSize(fPath string) (int, error) {
 }
 
 // mkChunksDir creates a new directory to store the genesis file's chunks.
-// gFilePath is the genesis file's full path on disk, and mkChunksDir creates a new
-// directory as a sub-directory of the genesis file's directory.
+// gFilePath is the genesis file's full path on disk.
+// dirName is the name of the directory to be created, not it's path on disk.
+// mkChunksDir will create a directory named 'dirName' as a sub-directory of the
+// genesis file's directory (gFileDir).
 // It returns the new directory's full path or an empty string if there is an
 // error.
 func mkChunksDir(gFilePath string, dirName string) (string, error) {

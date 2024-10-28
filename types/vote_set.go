@@ -232,7 +232,7 @@ func (voteSet *VoteSet) addVote(vote *Vote) (added bool, err error) {
 	}
 
 	// Add vote and get conflicting vote if any.
-	added, conflicting := voteSet.addVerifiedVote(vote, vote.BlockID, blockKey, val.VotingPower)
+	added, conflicting := voteSet.addVerifiedVote(vote, blockKey, val.VotingPower)
 	if conflicting != nil {
 		return added, NewConflictingVoteError(conflicting, vote)
 	}
@@ -257,7 +257,6 @@ func (voteSet *VoteSet) getVote(valIndex int32, blockKey string, blockID *BlockI
 // If conflicting vote exists, returns it.
 func (voteSet *VoteSet) addVerifiedVote(
 	vote *Vote,
-	blockID BlockID,
 	blockKey string,
 	votingPower int64,
 ) (added bool, conflicting *Vote) {
@@ -270,7 +269,7 @@ func (voteSet *VoteSet) addVerifiedVote(
 		}
 		conflicting = existing
 		// Replace vote if blockKey matches voteSet.maj23.
-		if voteSet.maj23 != nil && voteSet.maj23.Equals(blockID) {
+		if voteSet.maj23 != nil && voteSet.maj23.Equals(vote.BlockID) {
 			voteSet.votes[valIndex] = vote
 			voteSet.votesBitArray.SetIndex(int(valIndex), true)
 		}

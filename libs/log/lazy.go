@@ -22,7 +22,7 @@ func (l *LazySprintf) String() string {
 	return fmt.Sprintf(l.format, l.args...)
 }
 
-type lazyHash struct {
+type LazyHash struct {
 	inner hashable
 }
 
@@ -33,10 +33,10 @@ type hashable interface {
 // NewLazyHash defers Hash until the Stringer interface is invoked. This is
 // particularly useful for avoiding calling Sprintf when debugging is not
 // active.
-func NewLazyHash(inner hashable) *lazyHash {
-	return &lazyHash{inner}
+func NewLazyHash(inner hashable) *LazyHash {
+	return &LazyHash{inner}
 }
 
-func (l *lazyHash) String() string {
+func (l *LazyHash) String() string {
 	return l.inner.Hash().String()
 }

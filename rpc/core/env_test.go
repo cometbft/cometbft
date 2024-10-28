@@ -378,23 +378,64 @@ func TestFileSize(t *testing.T) {
 }
 
 func TestMkChunksDir(t *testing.T) {
-	// TODO: test that makes MkDir fail to check error handling.
+	fGenesis, err := os.CreateTemp("", "dummy_genesis.json")
+	if err != nil {
+		t.Fatalf("creating temp file for testing: %s", err)
+	}
+	fGenesis.Close()
+	defer os.Remove(fGenesis.Name())
 
-	t.Run("DirCreated", func(t *testing.T) {
-		fTemp, err := os.CreateTemp("", "dummy_genesis")
-		if err != nil {
-			t.Fatalf("creating temp file for testing: %s", err)
+	t.Run("DirExistsCreated", func(t *testing.T) {
+		var (
+			fGenesisDir = filepath.Dir(fGenesis.Name())
+			newDir      = filepath.Join(fGenesisDir, "some-dir")
+		)
+
+		if err := os.Mkdir(newDir, 0o755); err != nil {
+			t.Fatalf("creating chunks directory for testing: %s", err)
 		}
-		fTemp.Close()
-		defer os.Remove(fTemp.Name())
 
-		dirPath, err := mkChunksDir(fTemp.Name(), _chunksDir)
+		dirPath, err := mkChunksDir(fGenesis.Name(), _chunksDir)
 		if err != nil {
-			t.Errorf("unexpected error: %s", err)
+			t.Fatalf("unexpected error: %s", err)
 		}
 
 		if err := os.RemoveAll(dirPath); err != nil {
 			t.Error(err)
+		}
+	})
+
+	t.Run("DirNotExistCreated", func(t *testing.T) {
+		newDir := "some-dir"
+		dirPath, err := mkChunksDir(fGenesis.Name(), newDir)
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+
+		if err := os.RemoveAll(dirPath); err != nil {
+			t.Error(err)
+		}
+	})
+
+	t.Run("ErrMkDir", func(t *testing.T) {
+		var (
+			fNotExist = "/some/file/that/does/not/exist.json"
+			newDir    = "some-dir"
+		)
+		_, err := mkChunksDir(fNotExist, newDir)
+		if err == nil {
+			t.Fatalf("expected error but got nil")
+		}
+
+		var (
+			fDir           = filepath.Dir(fNotExist)
+			newDirFullPath = filepath.Join(fDir, newDir)
+
+			formatStr = "creating chunks directory at %s: mkdir %s: no such file or directory"
+			wantErr   = fmt.Sprintf(formatStr, newDirFullPath, newDirFullPath)
+		)
+		if err.Error() != wantErr {
+			t.Errorf("\nwant error: %s\ngot: %s\n", wantErr, err.Error())
 		}
 	})
 }

@@ -467,16 +467,14 @@ func TestWriteChunk(t *testing.T) {
 			t.Fatalf("expected error but got nil")
 		}
 
-		var (
-			formatStr = "writing chunk at %s: open %s: permission denied"
-			wantErr   = fmt.Sprintf(formatStr, wantPath, wantPath)
-		)
 		// reset permissions of chunks folder to allow the rest of the test code to
 		// work.
 		if err := os.Chmod(cDir, 0o755); err != nil {
 			formatStr := "changing test parent directory permissions to cleanup: %s"
 			t.Fatalf(formatStr, err)
 		}
+
+		wantErr := "writing chunk: open " + wantPath + ": permission denied"
 		if err.Error() != wantErr {
 			t.Errorf("\nwant error: %s\ngot: %s\n", wantErr, err.Error())
 		}

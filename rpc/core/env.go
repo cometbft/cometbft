@@ -126,7 +126,7 @@ type Environment struct {
 // Rules of chunking:
 //   - if the genesis file's size is <= genesisChunkSize, this function returns
 //     without doing anything. The `/genesis` RPC API endpoint will fetch the genesis
-//     from disk to serve requests.
+//     file from disk to serve requests.
 //   - if the genesis file's size is > genesisChunkSize, then use chunking. The
 //     function splits the genesis file into chunks of genesisChunkSize and stores
 //     each chunk on disk.  The `/genesis_chunked` RPC API endpoint will fetch the
@@ -327,8 +327,8 @@ func writeChunk(chunk []byte, dir string, chunkID int) (string, error) {
 // in chunks of size chunkSize.
 // It returns a map where the keys are the chunk IDs, and the values are the chunks'
 // path on disk. E.g.,:
-// map[0] = /users/user/.cometbft/config/genesis-chunks/chunk_0.part
-// map[1] = /users/user/.cometbft/config/genesis-chunks/chunk_1.part
+// map[0] = $HOME/.cometbft/config/genesis-chunks/chunk_0.part
+// map[1] = $HOME/.cometbft/config/genesis-chunks/chunk_1.part
 // and so on for all chunks.
 // The map will be useful for the `/genesis_chunked` RPC endpoint to quickly find
 // a chunk on disk given its ID.

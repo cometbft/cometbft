@@ -298,7 +298,7 @@ func mkChunksDir(gFilePath string, dirName string) (string, error) {
 		return "", fmt.Errorf("accessing directory: %w", err)
 	}
 
-	if err := os.Mkdir(dirPath, 0o755); err != nil {
+	if err := os.Mkdir(dirPath, 0o700); err != nil {
 		return "", fmt.Errorf("creating chunks directory: %s", err)
 	}
 

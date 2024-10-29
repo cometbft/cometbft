@@ -247,7 +247,7 @@ func TestCleanup(t *testing.T) {
 			env = &Environment{GenesisFilePath: gFilePath}
 		)
 		// the directory we want to delete.
-		if err := os.MkdirAll(chunksDir, 0o755); err != nil {
+		if err := os.MkdirAll(chunksDir, 0o700); err != nil {
 			t.Fatalf("creating test chunks directory: %s", err)
 		}
 
@@ -284,7 +284,7 @@ func TestCleanup(t *testing.T) {
 		)
 
 		// the sub-directory that we want to delete.
-		if err := os.Mkdir(chunksDir, 0o755); err != nil {
+		if err := os.Mkdir(chunksDir, 0o700); err != nil {
 			t.Fatalf("creating test chunks directory: %s", err)
 		}
 
@@ -305,7 +305,7 @@ func TestCleanup(t *testing.T) {
 
 		// reset permissions of parent folder to allow the deferred os.RemoveAll()
 		// to work, thus deleting test data.
-		if err := os.Chmod(parentDir, 0o755); err != nil {
+		if err := os.Chmod(parentDir, 0o700); err != nil {
 			formatStr := "changing test parent directory permissions to cleanup: %s"
 			t.Fatalf(formatStr, err)
 		}
@@ -388,7 +388,7 @@ func TestMkChunksDir(t *testing.T) {
 			gFileDir   = filepath.Dir(gFile.Name())
 			newDirPath = filepath.Join(gFileDir, newDirName)
 		)
-		if err := os.Mkdir(newDirPath, 0o755); err != nil {
+		if err := os.Mkdir(newDirPath, 0o700); err != nil {
 			t.Fatalf("creating chunks directory for testing: %s", err)
 		}
 
@@ -465,7 +465,7 @@ func TestWriteChunk(t *testing.T) {
 
 		// reset permissions of chunks folder to allow the rest of the test code to
 		// work.
-		if err := os.Chmod(cDir, 0o755); err != nil {
+		if err := os.Chmod(cDir, 0o700); err != nil {
 			formatStr := "changing test parent directory permissions to cleanup: %s"
 			t.Fatalf(formatStr, err)
 		}
@@ -519,7 +519,7 @@ func TestWriteChunks(t *testing.T) {
 		tChunksDir = filepath.Join(gFileDir, "test-chunks")
 	)
 
-	if err := os.Mkdir(tChunksDir, 0o755); err != nil {
+	if err := os.Mkdir(tChunksDir, 0o700); err != nil {
 		t.Fatalf("creating test chunks directory: %s", err)
 	}
 	defer os.RemoveAll(tChunksDir)

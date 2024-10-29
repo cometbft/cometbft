@@ -59,17 +59,13 @@ func DefaultConfig() *Config {
 //
 // NOTE: This function blocks - you may want to call it in a go-routine.
 func Serve(listener net.Listener, handler http.Handler, logger log.Logger, config *Config) error {
-	logger.Info("serve", "msg", log.NewLazySprintf("Starting RPC HTTP server on %s", listener.Addr()))
-	s := &http.Server{
-		Handler:           PreChecksHandler(RecoverAndLogHandler(defaultHandler{h: handler}, logger), config),
-		ReadTimeout:       config.ReadTimeout,
-		ReadHeaderTimeout: config.ReadTimeout,
-		WriteTimeout:      config.WriteTimeout,
-		MaxHeaderBytes:    config.MaxHeaderBytes,
-	}
-	err := s.Serve(listener)
-	logger.Info("RPC HTTP server stopped", "err", err)
-	return err
+	return ServeWithShutdown(
+		listener,
+		handler,
+		logger,
+		config,
+		nil,
+	)
 }
 
 // ServeTLS creates a http.Server and calls ServeTLS with the given listener,
@@ -84,19 +80,15 @@ func ServeTLS(
 	logger log.Logger,
 	config *Config,
 ) error {
-	logger.Info("serve tls", "msg", log.NewLazySprintf("Starting RPC HTTPS server on %s (cert: %q, key: %q)",
-		listener.Addr(), certFile, keyFile))
-	s := &http.Server{
-		Handler:           PreChecksHandler(RecoverAndLogHandler(defaultHandler{h: handler}, logger), config),
-		ReadTimeout:       config.ReadTimeout,
-		ReadHeaderTimeout: config.ReadTimeout,
-		WriteTimeout:      config.WriteTimeout,
-		MaxHeaderBytes:    config.MaxHeaderBytes,
-	}
-	err := s.ServeTLS(listener, certFile, keyFile)
-
-	logger.Error("RPC HTTPS server stopped", "err", err)
-	return err
+	return ServeTLSWithShutdown(
+		listener,
+		handler,
+		certFile,
+		keyFile,
+		logger,
+		config,
+		nil,
+	)
 }
 
 // ServeWithShutdown creates a http.Server and calls Serve with the given
@@ -112,7 +104,22 @@ func ServeWithShutdown(
 	config *Config,
 	shutdownTasks ...func() error,
 ) error {
-	err := Serve(listener, handler, logger, config)
+	logMsg := log.NewLazySprintf("Starting RPC HTTP server on %s", listener.Addr())
+	logger.Info("serve", "msg", logMsg)
+
+	var (
+		rlHandler = RecoverAndLogHandler(defaultHandler{h: handler}, logger)
+		s         = &http.Server{
+			Handler:           PreChecksHandler(rlHandler, config),
+			ReadTimeout:       config.ReadTimeout,
+			ReadHeaderTimeout: config.ReadTimeout,
+			WriteTimeout:      config.WriteTimeout,
+			MaxHeaderBytes:    config.MaxHeaderBytes,
+		}
+	)
+	err := s.Serve(listener)
+
+	logger.Info("RPC HTTP server stopped", "err", err)
 
 	for _, f := range shutdownTasks {
 		if err := f(); err != nil {
@@ -137,7 +144,30 @@ func ServeTLSWithShutdown(
 	config *Config,
 	shutdownTasks ...func() error,
 ) error {
-	err := ServeTLS(listener, handler, certFile, keyFile, logger, config)
+	var (
+		formatStr = "Starting RPC HTTPS server on %s (cert: %q, key: %q)"
+		logMsg    = log.NewLazySprintf(
+			formatStr,
+			listener.Addr(),
+			certFile,
+			keyFile,
+		)
+	)
+	logger.Info("serve tls", "msg", logMsg)
+
+	var (
+		rlHandler = RecoverAndLogHandler(defaultHandler{h: handler}, logger)
+		s         = &http.Server{
+			Handler:           PreChecksHandler(rlHandler, config),
+			ReadTimeout:       config.ReadTimeout,
+			ReadHeaderTimeout: config.ReadTimeout,
+			WriteTimeout:      config.WriteTimeout,
+			MaxHeaderBytes:    config.MaxHeaderBytes,
+		}
+	)
+	err := s.ServeTLS(listener, certFile, keyFile)
+
+	logger.Error("RPC HTTPS server stopped", "err", err)
 
 	for _, f := range shutdownTasks {
 		if err := f(); err != nil {

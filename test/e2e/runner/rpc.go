@@ -75,6 +75,7 @@ func waitForNode(node *e2e.Node, height int64, timeout time.Duration) (*rpctypes
 	var curHeight int64
 	lastChanged := time.Now()
 	for {
+<<<<<<< HEAD
 		status, err := client.Status(context.Background())
 		switch {
 		case err != nil:
@@ -86,6 +87,27 @@ func waitForNode(node *e2e.Node, height int64, timeout time.Duration) (*rpctypes
 			lastChanged = time.Now()
 		case time.Since(lastChanged) > timeout:
 			return nil, fmt.Errorf("timed out waiting for %v to reach height %v", node.Name, height)
+=======
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-timer.C:
+			status, err := client.Status(ctx)
+			sinceLastChanged := time.Since(lastChanged)
+			switch {
+			case sinceLastChanged > timeout:
+				return nil, fmt.Errorf("waiting for node %v timed out: exceeded %v wait timeout after waiting for %v",
+					node.Name, timeout, sinceLastChanged)
+			case err != nil:
+			case status.SyncInfo.LatestBlockHeight >= height && (height == 0 || !status.SyncInfo.CatchingUp):
+				return status, nil
+			case curHeight < status.SyncInfo.LatestBlockHeight:
+				curHeight = status.SyncInfo.LatestBlockHeight
+				lastChanged = time.Now()
+			}
+
+			timer.Reset(300 * time.Millisecond)
+>>>>>>> e03af86de (test(e2e): give the runner extra time to wait for a killed node (#4351))
 		}
 
 		time.Sleep(300 * time.Millisecond)

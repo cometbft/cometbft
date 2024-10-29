@@ -30,8 +30,8 @@ type hashable interface {
 	Hash() cmtbytes.HexBytes
 }
 
-// NewLazyHash defers Hash until the Stringer interface is invoked. This is
-// particularly useful for avoiding calling Sprintf when debugging is not
+// NewLazyHash defers calling `Hash()` until the Stringer interface is invoked.
+// This is particularly useful for avoiding calling Sprintf when debugging is not
 // active.
 func NewLazyHash(inner hashable) *LazyHash {
 	return &LazyHash{inner}

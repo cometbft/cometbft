@@ -287,6 +287,11 @@ build-docker:
 ###                       Local testnet using docker                        ###
 ###############################################################################
 
+#? build-linux: Build linux binary on other platforms
+build-linux:
+	GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) $(MAKE) build
+.PHONY: build-linux
+
 #? build-contract-tests-hooks: Build hooks for dredd, to skip or add information on some steps
 build-contract-tests-hooks:
 ifeq ($(OS),Windows_NT)

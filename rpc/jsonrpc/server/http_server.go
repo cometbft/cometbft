@@ -64,7 +64,6 @@ func Serve(listener net.Listener, handler http.Handler, logger log.Logger, confi
 		handler,
 		logger,
 		config,
-		nil,
 	)
 }
 
@@ -87,7 +86,6 @@ func ServeTLS(
 		keyFile,
 		logger,
 		config,
-		nil,
 	)
 }
 

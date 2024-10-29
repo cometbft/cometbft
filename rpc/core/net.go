@@ -140,7 +140,7 @@ func (env *Environment) GenesisChunked(
 		if chunkID == 0 {
 			fGenesis, err := os.ReadFile(env.GenesisFilePath)
 			if err != nil {
-				return nil, fmt.Errorf("retrieving genesis file from disk: %s", err)
+				return nil, fmt.Errorf("retrieving genesis file from disk: %w", err)
 			}
 
 			genesisBase64 := base64.StdEncoding.EncodeToString(fGenesis)
@@ -166,7 +166,7 @@ func (env *Environment) GenesisChunked(
 	chunkPath := env.genesisChunks[id]
 	chunk, err := os.ReadFile(chunkPath)
 	if err != nil {
-		return nil, fmt.Errorf("retrieving chunk %d from disk: %s", id, err)
+		return nil, fmt.Errorf("retrieving chunk %d from disk: %w", id, err)
 	}
 
 	chunkBase64 := base64.StdEncoding.EncodeToString(chunk)

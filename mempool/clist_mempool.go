@@ -380,7 +380,7 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender nodekey.ID) (*abcicli.ReqRe
 		Type: abci.CHECK_TX_TYPE_CHECK,
 	})
 	if err != nil {
-		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", log.NewLazyHash(tx), err))
+		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", tx.Hash(), err))
 	}
 	reqRes.SetCallback(mem.handleCheckTxResponse(tx, sender))
 
@@ -399,7 +399,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender nodekey.ID) f
 
 		// Check that rechecking txs is not in process.
 		if !mem.recheck.done() {
-			panic(fmt.Sprint("rechecking has not finished; cannot check new tx", log.NewLazyHash(tx)))
+			panic(fmt.Sprint("rechecking has not finished; cannot check new tx ", tx.Hash()))
 		}
 
 		var postCheckErr error
@@ -855,7 +855,7 @@ func (mem *CListMempool) recheckTxs() {
 			Type: abci.CHECK_TX_TYPE_RECHECK,
 		})
 		if err != nil {
-			panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", log.NewLazyHash(memTx.Tx()), err))
+			panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", memTx.Tx().Hash(), err))
 		}
 		resReq.SetCallback(mem.handleRecheckTxResponse(memTx.Tx()))
 	}

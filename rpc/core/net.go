@@ -111,7 +111,7 @@ func (env *Environment) UnsafeDialPeers(
 // Genesis returns genesis file.
 // More: https://docs.cometbft.com/main/rpc/#/Info/genesis
 func (env *Environment) Genesis(*rpctypes.Context) (*ctypes.ResultGenesis, error) {
-	if len(env.genesisChunks) > 0 {
+	if len(env.genesisChunksFiles) > 0 {
 		return nil, ErrGenesisRespSize
 	}
 
@@ -133,7 +133,7 @@ func (env *Environment) GenesisChunked(
 	_ *rpctypes.Context,
 	chunkID uint,
 ) (*ctypes.ResultGenesisChunk, error) {
-	if len(env.genesisChunks) == 0 {
+	if len(env.genesisChunksFiles) == 0 {
 		// See discussion in the following PR for why we still serve chunk 0 even
 		// if env.genChunks is nil:
 		// https://github.com/cometbft/cometbft/pull/4235#issuecomment-2389109521
@@ -159,11 +159,11 @@ func (env *Environment) GenesisChunked(
 
 	id := int(chunkID)
 
-	if id > len(env.genesisChunks)-1 {
-		return nil, ErrInvalidChunkID{id, len(env.genesisChunks) - 1}
+	if id > len(env.genesisChunksFiles)-1 {
+		return nil, ErrInvalidChunkID{id, len(env.genesisChunksFiles) - 1}
 	}
 
-	chunkPath := env.genesisChunks[id]
+	chunkPath := env.genesisChunksFiles[id]
 	chunk, err := os.ReadFile(chunkPath)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving chunk %d from disk: %w", id, err)
@@ -172,7 +172,7 @@ func (env *Environment) GenesisChunked(
 	chunkBase64 := base64.StdEncoding.EncodeToString(chunk)
 
 	return &ctypes.ResultGenesisChunk{
-		TotalChunks: len(env.genesisChunks),
+		TotalChunks: len(env.genesisChunksFiles),
 		ChunkNumber: id,
 		Data:        chunkBase64,
 	}, nil

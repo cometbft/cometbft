@@ -43,7 +43,7 @@ func TestInitGenesisChunks(t *testing.T) {
 			0: "chunk1",
 			1: "chunk2",
 		}
-		env := &Environment{genesisChunks: testChunks}
+		env := &Environment{genesisChunksFiles: testChunks}
 
 		err := env.InitGenesisChunks()
 		if err != nil {
@@ -52,8 +52,9 @@ func TestInitGenesisChunks(t *testing.T) {
 
 		// check that the function really was a no-op: the map of chunks should be
 		// unchanged.
-		if !maps.Equal(testChunks, env.genesisChunks) {
-			t.Fatalf("\nexpected chunks: %v\ngot: %v", testChunks, env.genesisChunks)
+		if !maps.Equal(testChunks, env.genesisChunksFiles) {
+			formatStr := "\nexpected chunks: %v\ngot: %v"
+			t.Fatalf(formatStr, testChunks, env.genesisChunksFiles)
 		}
 	})
 
@@ -82,9 +83,9 @@ func TestInitGenesisChunks(t *testing.T) {
 		// Because the genesis file is <= genesisChunkSize, there should be no
 		// chunking. Therefore, the map of chunk IDs to their paths on disk should
 		// be empty.
-		if len(env.genesisChunks) > 0 {
+		if len(env.genesisChunksFiles) > 0 {
 			formatStr := "chunks map should be empty, but it's %v"
-			t.Fatalf(formatStr, env.genesisChunks)
+			t.Fatalf(formatStr, env.genesisChunksFiles)
 		}
 	})
 
@@ -138,16 +139,16 @@ func TestInitGenesisChunks(t *testing.T) {
 		// Because the genesis file is > genesisChunkSize, we expect chunks.
 		// genesisChunkSize is a global const defined in env.go.
 		wantChunks := (gSize + genesisChunkSize - 1) / genesisChunkSize
-		if len(env.genesisChunks) != wantChunks {
+		if len(env.genesisChunksFiles) != wantChunks {
 			formatStr := "expected number of chunks: %d, but got: %d"
-			t.Errorf(formatStr, wantChunks, len(env.genesisChunks))
+			t.Errorf(formatStr, wantChunks, len(env.genesisChunksFiles))
 		}
 
 		// We now check if the original genesis doc and the genesis doc
 		// reassembled from the chunks match.
 		err = reassembleAndCompare(
 			gFilePath,
-			env.genesisChunks,
+			env.genesisChunksFiles,
 			genesisChunkSize,
 		)
 		if err != nil {

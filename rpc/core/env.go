@@ -117,7 +117,7 @@ type Environment struct {
 	// This map is convenient for the `/genesis_chunked` API to quickly find a chunk
 	// by its ID, instead of having to reconstruct its path each time, which would
 	// involve multiple string operations.
-	genesisChunks map[int]string
+	genesisChunksFiles map[int]string
 }
 
 // InitGenesisChunks checks whether it makes sense to split the genesis file into
@@ -132,7 +132,7 @@ type Environment struct {
 //     each chunk on disk.  The `/genesis_chunked` RPC API endpoint will fetch the
 //     genesis file chunks from disk to serve requests.
 func (env *Environment) InitGenesisChunks() error {
-	if len(env.genesisChunks) > 0 {
+	if len(env.genesisChunksFiles) > 0 {
 		// we already computed the chunks, return.
 		return nil
 	}
@@ -165,7 +165,7 @@ func (env *Environment) InitGenesisChunks() error {
 		return fmt.Errorf("chunking large genesis file: %w", err)
 	}
 
-	env.genesisChunks = chunkIDToPath
+	env.genesisChunksFiles = chunkIDToPath
 
 	return nil
 }

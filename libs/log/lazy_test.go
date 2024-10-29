@@ -13,12 +13,11 @@ func TestLazyHash_Txs(t *testing.T) {
 	txs := test.MakeNTxs(height, numTxs)
 
 	for i := 0; i < numTxs; i++ {
-		hash := txs[i].Hash()
 		lazyHash := log.NewLazyHash(txs[i])
-		if lazyHash.String() != hash.String() {
-			t.Fatalf("expected %s, got %s", hash.String(), lazyHash.String())
+		if lazyHash.String() != txs[i].Hash().String() {
+			t.Fatalf("expected %s, got %s", txs[i].Hash().String(), lazyHash.String())
 		}
-		if len(hash) <= 0 {
+		if len(lazyHash.String()) <= 0 {
 			t.Fatalf("expected non-empty hash, got empty hash")
 		}
 	}

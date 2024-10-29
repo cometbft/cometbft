@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/batch"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
@@ -19,9 +20,13 @@ func shouldBatchVerify(vals *ValidatorSet, commit *Commit) bool {
 		vals.AllKeysHaveSameType()
 }
 
+// The value type for the verified signature cache.
+//
+// Intended to be used to cache signature verification arguments, where the
+// cache type is map[string]SignatureCacheValue, and the key is the signature.
 type SignatureCacheValue struct {
-	ValidatorAddress []byte
-	VoteSignBytes    []byte
+	ValidatorPubKeyBytes []byte
+	VoteSignBytes        []byte
 }
 
 // VerifyCommit verifies +2/3 of the set had signed the given commit.
@@ -67,6 +72,23 @@ func VerifyCommit(chainID string, vals *ValidatorSet, blockID BlockID,
 // This method is primarily used by the light client and does NOT check all the
 // signatures.
 func VerifyCommitLight(
+	chainID string,
+	vals *ValidatorSet,
+	blockID BlockID,
+	height int64,
+	commit *Commit,
+) error {
+	return verifyCommitLightInternal(chainID, vals, blockID, height, commit, false, nil)
+}
+
+// VerifyCommitLightWithCache verifies +2/3 of the set had signed the given commit.
+//
+// This method is primarily used by the light client and does NOT check all the
+// signatures.
+// The cache provided will be used to skip signature verification for entries where the
+// key (signature), validator pubkey, and vote sign bytes all match.
+// Additionally, any verified signatures will be added to the cache.
+func VerifyCommitLightWithCache(
 	chainID string,
 	vals *ValidatorSet,
 	blockID BlockID,
@@ -139,6 +161,25 @@ func VerifyCommitLightTrusting(
 	vals *ValidatorSet,
 	commit *Commit,
 	trustLevel cmtmath.Fraction,
+) error {
+	return verifyCommitLightTrustingInternal(chainID, vals, commit, trustLevel, false, nil)
+}
+
+// VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
+// this commit. "Trusting" means that we trust the validator set to be correct.
+//
+// NOTE the given validators do not necessarily correspond to the validator set
+// for this commit, but there may be some intersection.
+//
+// This method is primarily used by the light client and does NOT check all the
+// signatures.
+//
+// CONTRACT: must run ValidateBasic() on commit before verifying.
+func VerifyCommitLightTrustingWithCache(
+	chainID string,
+	vals *ValidatorSet,
+	commit *Commit,
+	trustLevel cmtmath.Fraction,
 	verifiedSignatureCache map[string]SignatureCacheValue,
 ) error {
 	return verifyCommitLightTrustingInternal(chainID, vals, commit, trustLevel, false, verifiedSignatureCache)
@@ -153,6 +194,9 @@ func VerifyCommitLightTrusting(
 // This method DOES check all the signatures.
 //
 // CONTRACT: must run ValidateBasic() on commit before verifying.
+// The cache provided will be used to skip signature verification for entries where the
+// key (signature), validator pubkey, and vote sign bytes all match.
+// Additionally, any verified signatures will be added to the cache.
 func VerifyCommitLightTrustingAllSignatures(
 	chainID string,
 	vals *ValidatorSet,
@@ -243,6 +287,7 @@ func verifyCommitBatch(
 		valIdx             int32
 		seenVals           = make(map[int32]int, len(commit.Signatures))
 		batchSigIdxs       = make([]int, 0, len(commit.Signatures))
+		valPubKeys         = make([]crypto.PubKey, 0, len(commit.Signatures))
 		talliedVotingPower int64
 	)
 	// attempt to create a batch verifier
@@ -287,7 +332,7 @@ func verifyCommitBatch(
 		cacheHit := false
 		if verifiedSignatureCache != nil {
 			cacheVal, sigIsInCache := verifiedSignatureCache[string(commitSig.Signature)]
-			cacheHit = sigIsInCache && bytes.Equal(cacheVal.ValidatorAddress, val.PubKey.Address()) && bytes.Equal(cacheVal.VoteSignBytes, voteSignBytes)
+			cacheHit = sigIsInCache && bytes.Equal(cacheVal.ValidatorPubKeyBytes, val.PubKey.Bytes()) && bytes.Equal(cacheVal.VoteSignBytes, voteSignBytes)
 		}
 
 		if !cacheHit {
@@ -296,6 +341,7 @@ func verifyCommitBatch(
 				return err
 			}
 			batchSigIdxs = append(batchSigIdxs, idx)
+			valPubKeys = append(valPubKeys, val.PubKey)
 		}
 
 		// If this signature counts then add the voting power of the validator
@@ -331,8 +377,8 @@ func verifyCommitBatch(
 				idx := batchSigIdxs[i]
 				sig := commit.Signatures[idx]
 				verifiedSignatureCache[string(sig.Signature)] = SignatureCacheValue{
-					ValidatorAddress: sig.ValidatorAddress,
-					VoteSignBytes:    commit.VoteSignBytes(chainID, int32(idx)),
+					ValidatorPubKeyBytes: valPubKeys[i].Bytes(),
+					VoteSignBytes:        commit.VoteSignBytes(chainID, int32(idx)),
 				}
 			}
 		}
@@ -351,8 +397,8 @@ func verifyCommitBatch(
 		}
 		if verifiedSignatureCache != nil {
 			verifiedSignatureCache[string(sig.Signature)] = SignatureCacheValue{
-				ValidatorAddress: sig.ValidatorAddress,
-				VoteSignBytes:    commit.VoteSignBytes(chainID, int32(idx)),
+				ValidatorPubKeyBytes: valPubKeys[i].Bytes(),
+				VoteSignBytes:        commit.VoteSignBytes(chainID, int32(idx)),
 			}
 		}
 	}
@@ -430,7 +476,7 @@ func verifyCommitSingle(
 		if verifiedSignatureCache != nil {
 			cacheKey = string(commitSig.Signature)
 			cacheVal, sigIsInCache := verifiedSignatureCache[cacheKey]
-			cacheHit = sigIsInCache && bytes.Equal(cacheVal.ValidatorAddress, val.PubKey.Address()) && bytes.Equal(cacheVal.VoteSignBytes, voteSignBytes)
+			cacheHit = sigIsInCache && bytes.Equal(cacheVal.ValidatorPubKeyBytes, val.PubKey.Bytes()) && bytes.Equal(cacheVal.VoteSignBytes, voteSignBytes)
 		}
 
 		if !cacheHit {
@@ -439,8 +485,8 @@ func verifyCommitSingle(
 			}
 			if verifiedSignatureCache != nil {
 				verifiedSignatureCache[cacheKey] = SignatureCacheValue{
-					ValidatorAddress: val.PubKey.Address(),
-					VoteSignBytes:    voteSignBytes,
+					ValidatorPubKeyBytes: val.PubKey.Bytes(),
+					VoteSignBytes:        voteSignBytes,
 				}
 			}
 		}

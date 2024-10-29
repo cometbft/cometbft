@@ -114,7 +114,7 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 			if countAllSignatures {
 				err = valSet.VerifyCommitLightAllSignatures(chainID, blockID, height, commit)
 			} else {
-				err = valSet.VerifyCommitLight(chainID, blockID, height, commit, nil)
+				err = valSet.VerifyCommitLight(chainID, blockID, height, commit)
 			}
 			if tc.expErr {
 				if assert.Error(t, err, "VerifyCommitLight") { //nolint:testifylint // require.Error doesn't work with the conditional here
@@ -132,7 +132,7 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 			if countAllSignatures {
 				err = valSet.VerifyCommitLightTrustingAllSignatures(chainID, commit, trustLevel)
 			} else {
-				err = valSet.VerifyCommitLightTrusting(chainID, commit, trustLevel, nil)
+				err = valSet.VerifyCommitLightTrusting(chainID, commit, trustLevel)
 			}
 			if expErr {
 				if assert.Error(t, err, "VerifyCommitLightTrusting") { //nolint:testifylint // require.Error doesn't work with the conditional here
@@ -205,7 +205,7 @@ func TestValidatorSet_VerifyCommitLight_ReturnsAsSoonAsMajOfVotingPowerSignedIff
 	vote.ExtensionSignature = v.ExtensionSignature
 	commit.Signatures[3] = vote.CommitSig()
 
-	err = valSet.VerifyCommitLight(chainID, blockID, h, commit, nil)
+	err = valSet.VerifyCommitLight(chainID, blockID, h, commit)
 	require.NoError(t, err)
 	err = valSet.VerifyCommitLightAllSignatures(chainID, blockID, h, commit)
 	require.Error(t, err) // counting all signatures detects the malleated signature
@@ -240,7 +240,7 @@ func TestValidatorSet_VerifyCommitLightTrusting_ReturnsAsSoonAsTrustLevelSignedI
 	vote.ExtensionSignature = v.ExtensionSignature
 	commit.Signatures[2] = vote.CommitSig()
 
-	err = valSet.VerifyCommitLightTrusting(chainID, commit, cmtmath.Fraction{Numerator: 1, Denominator: 3}, nil)
+	err = valSet.VerifyCommitLightTrusting(chainID, commit, cmtmath.Fraction{Numerator: 1, Denominator: 3})
 	require.NoError(t, err)
 	err = valSet.VerifyCommitLightTrustingAllSignatures(
 		chainID,
@@ -283,7 +283,7 @@ func TestValidatorSet_VerifyCommitLightTrusting(t *testing.T) {
 
 	for _, tc := range testCases {
 		err = tc.valSet.VerifyCommitLightTrusting("test_chain_id", commit,
-			cmtmath.Fraction{Numerator: 1, Denominator: 3}, nil)
+			cmtmath.Fraction{Numerator: 1, Denominator: 3})
 		if tc.err {
 			require.Error(t, err)
 		} else {
@@ -292,7 +292,7 @@ func TestValidatorSet_VerifyCommitLightTrusting(t *testing.T) {
 	}
 }
 
-func TestValidatorSet_VerifyCommitLightTrusting_UpdatesCache(t *testing.T) {
+func TestValidatorSet_VerifyCommitLightTrustingWithCache_UpdatesCache(t *testing.T) {
 	var (
 		blockID                       = makeBlockIDRandom()
 		voteSet, originalValset, vals = randVoteSet(1, 1, PrecommitType, 6, 1, false)
@@ -302,9 +302,9 @@ func TestValidatorSet_VerifyCommitLightTrusting_UpdatesCache(t *testing.T) {
 	require.NoError(t, err)
 	commit := extCommit.ToCommit()
 
-	valSet := NewValidatorSet(append(newValSet.Validators, originalValset.Validators...))
+	valSet := NewValidatorSet(append(originalValset.Validators, newValSet.Validators...))
 	cache := make(map[string]SignatureCacheValue)
-	err = valSet.VerifyCommitLightTrusting("test_chain_id", commit, cmtmath.Fraction{Numerator: 1, Denominator: 3}, cache)
+	err = valSet.VerifyCommitLightTrustingWithCache("test_chain_id", commit, cmtmath.Fraction{Numerator: 1, Denominator: 3}, cache)
 	require.NoError(t, err)
 	require.Equal(t, 3, len(cache)) // 8 validators, getting to 1/3 takes 3 signatures
 
@@ -312,16 +312,16 @@ func TestValidatorSet_VerifyCommitLightTrusting_UpdatesCache(t *testing.T) {
 	require.Contains(t, cache, string(commit.Signatures[1].Signature))
 	require.Contains(t, cache, string(commit.Signatures[2].Signature))
 
-	require.Equal(t, cache[string(commit.Signatures[0].Signature)].ValidatorAddress, commit.Signatures[0].ValidatorAddress.Bytes())
-	require.Equal(t, cache[string(commit.Signatures[1].Signature)].ValidatorAddress, commit.Signatures[1].ValidatorAddress.Bytes())
-	require.Equal(t, cache[string(commit.Signatures[2].Signature)].ValidatorAddress, commit.Signatures[2].ValidatorAddress.Bytes())
+	require.Equal(t, cache[string(commit.Signatures[0].Signature)].ValidatorPubKeyBytes, valSet.Validators[0].PubKey.Bytes())
+	require.Equal(t, cache[string(commit.Signatures[1].Signature)].ValidatorPubKeyBytes, valSet.Validators[1].PubKey.Bytes())
+	require.Equal(t, cache[string(commit.Signatures[2].Signature)].ValidatorPubKeyBytes, valSet.Validators[2].PubKey.Bytes())
 
 	require.Equal(t, cache[string(commit.Signatures[0].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 0))
 	require.Equal(t, cache[string(commit.Signatures[1].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 1))
 	require.Equal(t, cache[string(commit.Signatures[2].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 2))
 }
 
-func TestValidatorSet_VerifyCommitLightTrusting_UsesCache(t *testing.T) {
+func TestValidatorSet_VerifyCommitLightTrustingWithCache_UsesCache(t *testing.T) {
 	var (
 		blockID                       = makeBlockIDRandom()
 		voteSet, originalValset, vals = randVoteSet(1, 1, PrecommitType, 6, 1, false)
@@ -334,24 +334,24 @@ func TestValidatorSet_VerifyCommitLightTrusting_UsesCache(t *testing.T) {
 	valSet := NewValidatorSet(append(newValSet.Validators, originalValset.Validators...))
 	cache := map[string]SignatureCacheValue{
 		string(commit.Signatures[0].Signature): {
-			ValidatorAddress: commit.Signatures[0].ValidatorAddress.Bytes(),
-			VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 0),
+			ValidatorPubKeyBytes: valSet.Validators[0].PubKey.Bytes(),
+			VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 0),
 		},
 		string(commit.Signatures[1].Signature): {
-			ValidatorAddress: commit.Signatures[1].ValidatorAddress.Bytes(),
-			VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 1),
+			ValidatorPubKeyBytes: valSet.Validators[1].PubKey.Bytes(),
+			VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 1),
 		},
 		string(commit.Signatures[2].Signature): {
-			ValidatorAddress: commit.Signatures[2].ValidatorAddress.Bytes(),
-			VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 2),
+			ValidatorPubKeyBytes: valSet.Validators[2].PubKey.Bytes(),
+			VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 2),
 		},
 	}
-	err = valSet.VerifyCommitLightTrusting("test_chain_id", commit, cmtmath.Fraction{Numerator: 1, Denominator: 3}, cache)
+	err = valSet.VerifyCommitLightTrustingWithCache("test_chain_id", commit, cmtmath.Fraction{Numerator: 1, Denominator: 3}, cache)
 	require.NoError(t, err)
 	require.Equal(t, 3, len(cache)) // no new signature checks, so no new cache entries
 }
 
-func TestValidatorSet_VerifyCommitLight_UpdatesCache(t *testing.T) {
+func TestValidatorSet_VerifyCommitLightWithCache_UpdatesCache(t *testing.T) {
 	var (
 		blockID                       = makeBlockIDRandom()
 		voteSet, originalValset, vals = randVoteSet(1, 1, PrecommitType, 6, 1, false)
@@ -361,7 +361,7 @@ func TestValidatorSet_VerifyCommitLight_UpdatesCache(t *testing.T) {
 	commit := extCommit.ToCommit()
 
 	cache := make(map[string]SignatureCacheValue)
-	err = originalValset.VerifyCommitLight("test_chain_id", blockID, 1, commit, cache)
+	err = originalValset.VerifyCommitLightWithCache("test_chain_id", blockID, 1, commit, cache)
 	require.NoError(t, err)
 
 	require.Equal(t, 5, len(cache)) // 6 validators, getting to 2/3 takes 5 signatures
@@ -372,11 +372,11 @@ func TestValidatorSet_VerifyCommitLight_UpdatesCache(t *testing.T) {
 	require.Contains(t, cache, string(commit.Signatures[3].Signature))
 	require.Contains(t, cache, string(commit.Signatures[4].Signature))
 
-	require.Equal(t, cache[string(commit.Signatures[0].Signature)].ValidatorAddress, commit.Signatures[0].ValidatorAddress.Bytes())
-	require.Equal(t, cache[string(commit.Signatures[1].Signature)].ValidatorAddress, commit.Signatures[1].ValidatorAddress.Bytes())
-	require.Equal(t, cache[string(commit.Signatures[2].Signature)].ValidatorAddress, commit.Signatures[2].ValidatorAddress.Bytes())
-	require.Equal(t, cache[string(commit.Signatures[3].Signature)].ValidatorAddress, commit.Signatures[3].ValidatorAddress.Bytes())
-	require.Equal(t, cache[string(commit.Signatures[4].Signature)].ValidatorAddress, commit.Signatures[4].ValidatorAddress.Bytes())
+	require.Equal(t, cache[string(commit.Signatures[0].Signature)].ValidatorPubKeyBytes, originalValset.Validators[0].PubKey.Bytes())
+	require.Equal(t, cache[string(commit.Signatures[1].Signature)].ValidatorPubKeyBytes, originalValset.Validators[1].PubKey.Bytes())
+	require.Equal(t, cache[string(commit.Signatures[2].Signature)].ValidatorPubKeyBytes, originalValset.Validators[2].PubKey.Bytes())
+	require.Equal(t, cache[string(commit.Signatures[3].Signature)].ValidatorPubKeyBytes, originalValset.Validators[3].PubKey.Bytes())
+	require.Equal(t, cache[string(commit.Signatures[4].Signature)].ValidatorPubKeyBytes, originalValset.Validators[4].PubKey.Bytes())
 
 	require.Equal(t, cache[string(commit.Signatures[0].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 0))
 	require.Equal(t, cache[string(commit.Signatures[1].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 1))
@@ -385,7 +385,7 @@ func TestValidatorSet_VerifyCommitLight_UpdatesCache(t *testing.T) {
 	require.Equal(t, cache[string(commit.Signatures[4].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 4))
 }
 
-func TestValidatorSet_VerifyCommitLight_UsesCache(t *testing.T) {
+func TestValidatorSet_VerifyCommitLightWithCache_UsesCache(t *testing.T) {
 	var (
 		blockID                       = makeBlockIDRandom()
 		voteSet, originalValset, vals = randVoteSet(1, 1, PrecommitType, 6, 1, false)
@@ -396,27 +396,27 @@ func TestValidatorSet_VerifyCommitLight_UsesCache(t *testing.T) {
 
 	cache := map[string]SignatureCacheValue{
 		string(commit.Signatures[0].Signature): {
-			ValidatorAddress: commit.Signatures[0].ValidatorAddress.Bytes(),
-			VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 0),
+			ValidatorPubKeyBytes: originalValset.Validators[0].PubKey.Bytes(),
+			VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 0),
 		},
 		string(commit.Signatures[1].Signature): {
-			ValidatorAddress: commit.Signatures[1].ValidatorAddress.Bytes(),
-			VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 1),
+			ValidatorPubKeyBytes: originalValset.Validators[1].PubKey.Bytes(),
+			VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 1),
 		},
 		string(commit.Signatures[2].Signature): {
-			ValidatorAddress: commit.Signatures[2].ValidatorAddress.Bytes(),
-			VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 2),
+			ValidatorPubKeyBytes: originalValset.Validators[2].PubKey.Bytes(),
+			VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 2),
 		},
 		string(commit.Signatures[3].Signature): {
-			ValidatorAddress: commit.Signatures[3].ValidatorAddress.Bytes(),
-			VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 3),
+			ValidatorPubKeyBytes: originalValset.Validators[3].PubKey.Bytes(),
+			VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 3),
 		},
 		string(commit.Signatures[4].Signature): {
-			ValidatorAddress: commit.Signatures[4].ValidatorAddress.Bytes(),
-			VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 4),
+			ValidatorPubKeyBytes: originalValset.Validators[4].PubKey.Bytes(),
+			VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 4),
 		},
 	}
-	err = originalValset.VerifyCommitLight("test_chain_id", blockID, 1, commit, cache)
+	err = originalValset.VerifyCommitLightWithCache("test_chain_id", blockID, 1, commit, cache)
 	require.NoError(t, err)
 	require.Equal(t, 5, len(cache)) // no new signature checks, so no new cache entries
 }
@@ -430,7 +430,7 @@ func TestValidatorSet_VerifyCommitLightTrustingErrorsOnOverflow(t *testing.T) {
 	require.NoError(t, err)
 
 	err = valSet.VerifyCommitLightTrusting("test_chain_id", extCommit.ToCommit(),
-		cmtmath.Fraction{Numerator: 25, Denominator: 55}, nil)
+		cmtmath.Fraction{Numerator: 25, Denominator: 55})
 	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		assert.Contains(t, err.Error(), "int64 overflow")
 	}

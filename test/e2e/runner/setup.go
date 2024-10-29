@@ -12,11 +12,14 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
+
+	_ "embed"
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -38,6 +41,8 @@ const (
 	PrivvalStateFile      = "data/priv_validator_state.json"
 	PrivvalDummyKeyFile   = "config/dummy_validator_key.json"
 	PrivvalDummyStateFile = "data/dummy_validator_state.json"
+
+	PrometheusConfigFile = "monitoring/prometheus.yml"
 )
 
 // Setup sets up the testnet configuration.
@@ -120,7 +125,13 @@ func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 	}
 
 	if testnet.Prometheus {
-		if err := testnet.WritePrometheusConfig(); err != nil {
+		if err := WritePrometheusConfig(testnet, PrometheusConfigFile); err != nil {
+			return err
+		}
+		// Make a copy of the Prometheus config file in the testnet directory.
+		// This should be temporary to keep it compatible with the qa-infra
+		// repository.
+		if err := WritePrometheusConfig(testnet, filepath.Join(testnet.Dir, "prometheus.yml")); err != nil {
 			return err
 		}
 	}
@@ -224,7 +235,6 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.P2P.AddrBookStrict = false
 
 	cfg.DBBackend = node.Database
-	cfg.StateSync.DiscoveryTime = 5 * time.Second
 	cfg.BlockSync.Version = node.BlockSyncVersion
 	cfg.Consensus.PeerGossipIntraloopSleepDuration = node.Testnet.PeerGossipIntraloopSleepDuration
 	cfg.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToNonPersistentPeers)
@@ -300,6 +310,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		if len(cfg.StateSync.RPCServers) < 2 {
 			return nil, errors.New("unable to find 2 suitable state sync RPC servers")
 		}
+		cfg.StateSync.MaxDiscoveryTime = 30 * time.Second
 	}
 
 	cfg.P2P.Seeds = ""
@@ -453,6 +464,26 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		return nil, fmt.Errorf("failed to generate app config: %w", err)
 	}
 	return buf.Bytes(), nil
+}
+
+//go:embed templates/prometheus-yml.tmpl
+var prometheusYamlTemplate string
+
+func WritePrometheusConfig(testnet *e2e.Testnet, path string) error {
+	tmpl, err := template.New("prometheus-yaml").Parse(prometheusYamlTemplate)
+	if err != nil {
+		return err
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, testnet)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(path, buf.Bytes(), 0o644) //nolint:gosec
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // UpdateConfigStateSync updates the state sync config for a node.

@@ -22,6 +22,10 @@ func (l *LazySprintf) String() string {
 	return fmt.Sprintf(l.format, l.args...)
 }
 
+// LazyHash is a wrapper around a hashable object that defers the Hash call
+// until the Stringer interface is invoked.
+// This is particularly useful for avoiding calling Sprintf when debugging is
+// not active.
 type LazyHash struct {
 	inner hashable
 }

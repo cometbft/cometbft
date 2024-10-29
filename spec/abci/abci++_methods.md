@@ -437,7 +437,7 @@ the consensus algorithm will use it as proposal and will not call `PreparePropos
     * `ProcessProposal` is also called at the proposer of a round.
       Normally the call to `ProcessProposal` occurs right after the call to `PrepareProposal` and
       `ProcessProposalRequest` matches the block produced based on `PrepareProposalResponse` (i.e.,
-      `PrepareProposalRequest.txs` equals `ProcessProposalRequest.txs`).
+      `ProcessProposalRequest.txs` equals `PrepareProposalResponse.txs`).
       However, no such guarantee is made since, in the presence of failures, `ProcessProposalRequest` may match
       `PrepareProposalResponse` from an earlier invocation or `ProcessProposal` may not be invoked at all.
     * The height and time values match the values from the header of the proposed block.

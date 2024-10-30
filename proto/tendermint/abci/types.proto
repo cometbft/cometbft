@@ -396,8 +396,9 @@ message Evidence {
 
 message RollappParams {
   string da = 1 ;
-  string version = 2;
+  uint32 drs_version = 2;
 }
+
 //----------------------------------------
 // State Sync Types
 

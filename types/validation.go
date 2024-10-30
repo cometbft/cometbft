@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/batch"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
@@ -165,7 +164,7 @@ func VerifyCommitLightTrusting(
 	return verifyCommitLightTrustingInternal(chainID, vals, commit, trustLevel, false, nil)
 }
 
-// VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
+// VerifyCommitLightTrustingWithCache verifies that trustLevel of the validator set signed
 // this commit. "Trusting" means that we trust the validator set to be correct.
 //
 // NOTE the given validators do not necessarily correspond to the validator set
@@ -175,6 +174,9 @@ func VerifyCommitLightTrusting(
 // signatures.
 //
 // CONTRACT: must run ValidateBasic() on commit before verifying.
+// The cache provided will be used to skip signature verification for entries where the
+// key (signature), validator pubkey, and vote sign bytes all match.
+// Additionally, any verified signatures will be added to the cache.
 func VerifyCommitLightTrustingWithCache(
 	chainID string,
 	vals *ValidatorSet,
@@ -194,9 +196,6 @@ func VerifyCommitLightTrustingWithCache(
 // This method DOES check all the signatures.
 //
 // CONTRACT: must run ValidateBasic() on commit before verifying.
-// The cache provided will be used to skip signature verification for entries where the
-// key (signature), validator pubkey, and vote sign bytes all match.
-// Additionally, any verified signatures will be added to the cache.
 func VerifyCommitLightTrustingAllSignatures(
 	chainID string,
 	vals *ValidatorSet,
@@ -287,7 +286,7 @@ func verifyCommitBatch(
 		valIdx             int32
 		seenVals           = make(map[int32]int, len(commit.Signatures))
 		batchSigIdxs       = make([]int, 0, len(commit.Signatures))
-		valPubKeys         = make([]crypto.PubKey, 0, len(commit.Signatures))
+		valPubKeyBytes     = make(map[int][]byte, len(commit.Signatures))
 		talliedVotingPower int64
 	)
 	// attempt to create a batch verifier
@@ -341,7 +340,7 @@ func verifyCommitBatch(
 				return err
 			}
 			batchSigIdxs = append(batchSigIdxs, idx)
-			valPubKeys = append(valPubKeys, val.PubKey)
+			valPubKeyBytes[idx] = val.PubKey.Bytes()
 		}
 
 		// If this signature counts then add the voting power of the validator
@@ -363,7 +362,7 @@ func verifyCommitBatch(
 		return ErrNotEnoughVotingPowerSigned{Got: got, Needed: needed}
 	}
 
-	// if every signature was in the cache, we don't need to verify the batch
+	// if every signature was in the cache, the batch verifier is empty and we shouldn't call verify
 	if len(batchSigIdxs) == 0 {
 		return nil
 	}
@@ -377,7 +376,7 @@ func verifyCommitBatch(
 				idx := batchSigIdxs[i]
 				sig := commit.Signatures[idx]
 				verifiedSignatureCache[string(sig.Signature)] = SignatureCacheValue{
-					ValidatorPubKeyBytes: valPubKeys[i].Bytes(),
+					ValidatorPubKeyBytes: valPubKeyBytes[idx],
 					VoteSignBytes:        commit.VoteSignBytes(chainID, int32(idx)),
 				}
 			}
@@ -397,7 +396,7 @@ func verifyCommitBatch(
 		}
 		if verifiedSignatureCache != nil {
 			verifiedSignatureCache[string(sig.Signature)] = SignatureCacheValue{
-				ValidatorPubKeyBytes: valPubKeys[i].Bytes(),
+				ValidatorPubKeyBytes: valPubKeyBytes[idx],
 				VoteSignBytes:        commit.VoteSignBytes(chainID, int32(idx)),
 			}
 		}

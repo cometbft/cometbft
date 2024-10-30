@@ -312,13 +312,13 @@ func TestValidatorSet_VerifyCommitLightTrustingWithCache_UpdatesCache(t *testing
 	require.Contains(t, cache, string(commit.Signatures[1].Signature))
 	require.Contains(t, cache, string(commit.Signatures[2].Signature))
 
-	require.Equal(t, cache[string(commit.Signatures[0].Signature)].ValidatorPubKeyBytes, valSet.Validators[0].PubKey.Bytes())
-	require.Equal(t, cache[string(commit.Signatures[1].Signature)].ValidatorPubKeyBytes, valSet.Validators[1].PubKey.Bytes())
-	require.Equal(t, cache[string(commit.Signatures[2].Signature)].ValidatorPubKeyBytes, valSet.Validators[2].PubKey.Bytes())
+	require.Equal(t, originalValset.Validators[0].PubKey.Bytes(), cache[string(commit.Signatures[0].Signature)].ValidatorPubKeyBytes)
+	require.Equal(t, originalValset.Validators[1].PubKey.Bytes(), cache[string(commit.Signatures[1].Signature)].ValidatorPubKeyBytes)
+	require.Equal(t, originalValset.Validators[2].PubKey.Bytes(), cache[string(commit.Signatures[2].Signature)].ValidatorPubKeyBytes)
 
-	require.Equal(t, cache[string(commit.Signatures[0].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 0))
-	require.Equal(t, cache[string(commit.Signatures[1].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 1))
-	require.Equal(t, cache[string(commit.Signatures[2].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 2))
+	require.Equal(t, commit.VoteSignBytes("test_chain_id", 0), cache[string(commit.Signatures[0].Signature)].VoteSignBytes)
+	require.Equal(t, commit.VoteSignBytes("test_chain_id", 1), cache[string(commit.Signatures[1].Signature)].VoteSignBytes)
+	require.Equal(t, commit.VoteSignBytes("test_chain_id", 2), cache[string(commit.Signatures[2].Signature)].VoteSignBytes)
 }
 
 func TestValidatorSet_VerifyCommitLightTrustingWithCache_UsesCache(t *testing.T) {
@@ -372,17 +372,17 @@ func TestValidatorSet_VerifyCommitLightWithCache_UpdatesCache(t *testing.T) {
 	require.Contains(t, cache, string(commit.Signatures[3].Signature))
 	require.Contains(t, cache, string(commit.Signatures[4].Signature))
 
-	require.Equal(t, cache[string(commit.Signatures[0].Signature)].ValidatorPubKeyBytes, originalValset.Validators[0].PubKey.Bytes())
-	require.Equal(t, cache[string(commit.Signatures[1].Signature)].ValidatorPubKeyBytes, originalValset.Validators[1].PubKey.Bytes())
-	require.Equal(t, cache[string(commit.Signatures[2].Signature)].ValidatorPubKeyBytes, originalValset.Validators[2].PubKey.Bytes())
-	require.Equal(t, cache[string(commit.Signatures[3].Signature)].ValidatorPubKeyBytes, originalValset.Validators[3].PubKey.Bytes())
-	require.Equal(t, cache[string(commit.Signatures[4].Signature)].ValidatorPubKeyBytes, originalValset.Validators[4].PubKey.Bytes())
+	require.Equal(t, originalValset.Validators[0].PubKey.Bytes(), cache[string(commit.Signatures[0].Signature)].ValidatorPubKeyBytes)
+	require.Equal(t, originalValset.Validators[1].PubKey.Bytes(), cache[string(commit.Signatures[1].Signature)].ValidatorPubKeyBytes)
+	require.Equal(t, originalValset.Validators[2].PubKey.Bytes(), cache[string(commit.Signatures[2].Signature)].ValidatorPubKeyBytes)
+	require.Equal(t, originalValset.Validators[3].PubKey.Bytes(), cache[string(commit.Signatures[3].Signature)].ValidatorPubKeyBytes)
+	require.Equal(t, originalValset.Validators[4].PubKey.Bytes(), cache[string(commit.Signatures[4].Signature)].ValidatorPubKeyBytes)
 
-	require.Equal(t, cache[string(commit.Signatures[0].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 0))
-	require.Equal(t, cache[string(commit.Signatures[1].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 1))
-	require.Equal(t, cache[string(commit.Signatures[2].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 2))
-	require.Equal(t, cache[string(commit.Signatures[3].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 3))
-	require.Equal(t, cache[string(commit.Signatures[4].Signature)].VoteSignBytes, commit.VoteSignBytes("test_chain_id", 4))
+	require.Equal(t, commit.VoteSignBytes("test_chain_id", 0), cache[string(commit.Signatures[0].Signature)].VoteSignBytes)
+	require.Equal(t, commit.VoteSignBytes("test_chain_id", 1), cache[string(commit.Signatures[1].Signature)].VoteSignBytes)
+	require.Equal(t, commit.VoteSignBytes("test_chain_id", 2), cache[string(commit.Signatures[2].Signature)].VoteSignBytes)
+	require.Equal(t, commit.VoteSignBytes("test_chain_id", 3), cache[string(commit.Signatures[3].Signature)].VoteSignBytes)
+	require.Equal(t, commit.VoteSignBytes("test_chain_id", 4), cache[string(commit.Signatures[4].Signature)].VoteSignBytes)
 }
 
 func TestValidatorSet_VerifyCommitLightWithCache_UsesCache(t *testing.T) {

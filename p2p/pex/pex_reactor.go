@@ -617,6 +617,13 @@ func (r *Reactor) checkSeeds() (numOnline int, netAddrs []*p2p.NetAddress, err e
 
 // randomly dial seeds until we connect to one or exhaust them
 func (r *Reactor) dialSeeds() {
+	_, seedAddrs, err := r.checkSeeds()
+	if err != nil {
+		r.Switch.Logger.Error("Error check seed", "err", err)
+	} else {
+		r.seedAddrs = seedAddrs
+	}
+
 	perm := cmtrand.Perm(len(r.seedAddrs))
 	// perm := r.Switch.rng.Perm(lSeeds)
 	for _, i := range perm {

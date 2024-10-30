@@ -26,7 +26,7 @@ type (
 )
 
 // Hash computes the TMHASH hash of the wire encoded transaction.
-func (tx Tx) Hash() []byte {
+func (tx Tx) Hash() cmtbytes.HexBytes {
 	return tmhash.Sum(tx)
 }
 

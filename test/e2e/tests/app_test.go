@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/types"
 )
@@ -93,7 +92,7 @@ func TestApp_Tx(t *testing.T) {
 		require.Zero(t, res.Code)
 
 		hash := tx.Hash()
-		require.Equal(t, res.Hash, cmtbytes.HexBytes(hash))
+		require.Equal(t, res.Hash, hash)
 		waitTime := 1 * time.Minute
 		require.Eventuallyf(t, func() bool {
 			txResp, err := client.Tx(ctx, hash, false)

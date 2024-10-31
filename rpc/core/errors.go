@@ -17,7 +17,7 @@ var (
 	ErrTimedOutWaitingForTx    = errors.New("timed out waiting for tx to be included in a block")
 	ErrGenesisRespSize         = errors.New("genesis response is too large, please use the genesis_chunked API instead")
 	ErrChunkNotInitialized     = errors.New("genesis chunks are not initialized")
-	ErrNoChunks                = errors.New("no chunks")
+	ErrNoChunks                = errors.New("genesis file is small, therefore there are no chunks to serve. Please use the /genesis API instead")
 )
 
 type ErrMaxSubscription struct {

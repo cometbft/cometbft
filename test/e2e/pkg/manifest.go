@@ -169,8 +169,8 @@ type Manifest struct {
 	// If true, the application will return validator updates and
 	// `ConsensusParams` updates at every height.
 	// This is useful to create a more dynamic testnet.
-	// * An existing validator will be chosen, and its power will alternate 0 and 1
-	// * `ConsensusParams` will be flipping on and off key types not set at genesis
+	// * An existing validator will be chosen, and its power will alternate between 0 and 1.
+	// * `ConsensusParams` will be flipping on and off key types not set at genesis.
 	ConstantFlip bool `toml:"constant_flip"`
 }
 

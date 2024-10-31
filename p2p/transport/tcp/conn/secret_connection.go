@@ -60,7 +60,7 @@ var (
 // https://github.com/cometbft/cometbft/blob/main/spec/p2p/legacy-docs/peer.md#authenticated-encryption-handshake.
 //
 // The original STS protocol, which inspired this implementation:
-// https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=b852bc961328ce74f7231a4b569eec1ab6c3cf50.
+// https://citeseerx.ist.psu.edu/document?rapid=rep1&type=pdf&doi=b852bc961328ce74f7231a4b569eec1ab6c3cf50. # codespell:ignore
 //
 // Consumers of the SecretConnection are responsible for authenticating
 // the remote peer's pubkey against known information, like a nodeID.
@@ -97,7 +97,7 @@ type SecretConnection struct {
 // MakeSecretConnection performs handshake and returns a new authenticated
 // SecretConnection.
 // Returns nil if there is an error in handshake.
-// Caller should call conn.Close()
+// Caller should call conn.Close().
 func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*SecretConnection, error) {
 	locPubKey := locPrivKey.PubKey()
 

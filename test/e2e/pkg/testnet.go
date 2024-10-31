@@ -65,6 +65,7 @@ const (
 	PerturbationPause      Perturbation = "pause"
 	PerturbationRestart    Perturbation = "restart"
 	PerturbationUpgrade    Perturbation = "upgrade"
+	PerturbationRollback   Perturbation = "rollback"
 
 	EvidenceAgeHeight int64         = 14
 	EvidenceAgeTime   time.Duration = 1500 * time.Millisecond
@@ -608,7 +609,7 @@ func (n Node) Validate(testnet Testnet) error {
 				return errors.New("'upgrade' perturbation can appear at most once per node")
 			}
 			upgradeFound = true
-		case PerturbationDisconnect, PerturbationKill, PerturbationPause, PerturbationRestart:
+		case PerturbationDisconnect, PerturbationKill, PerturbationPause, PerturbationRestart, PerturbationRollback:
 		default:
 			return fmt.Errorf("invalid perturbation %q", perturbation)
 		}

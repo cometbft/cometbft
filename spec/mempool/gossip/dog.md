@@ -30,6 +30,8 @@ Alternative names:
   maintain.
 - `config.TargetRedundancyDeltaPercent: float`: Value in the range `[0, 1)` that defines the bounds
 of acceptable redundancy levels; redundancy +- redundancy*delta TxsPerAdjustment: int
+- `config.TxsPerAdjustment: int`: How many (first-time) transactions should the node receive before
+  attempting to adjust redundancy.
 
 On startup, define the constants:
 - `delta := config.TargetRedundancy * config.TargetRedundancyDeltaPercent`
@@ -70,7 +72,8 @@ R1:
       if sender != nil:
         senders[tx.ID].add(sender.ID)
     firstTimeTxs++
-    adjustRedundancy()
+    if firstTimeTxs == config.TxsPerAdjustment:
+      adjustRedundancy()
   else:
 R2:
   if sender != nil and pool.contains(tx):

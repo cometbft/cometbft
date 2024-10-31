@@ -29,8 +29,8 @@ func (l *tmLogger) Info(msg string, keyvals ...any) {
 // Debug logs a message at level Debug.
 func (l *tmLogger) Debug(msg string, keyvals ...any) {
 	if LogDebug {
-  	l.srcLogger.Debug(msg, keyvals...)
-  }
+		l.srcLogger.Debug(msg, keyvals...)
+	}
 }
 
 // Error logs a message at level Error.

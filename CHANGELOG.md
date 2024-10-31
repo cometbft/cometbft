@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## v0.37.13
+
+*October 31, 2024*
+
+This release rollbacks cometbft-db version to v0.9.5 due to the breaking change
+introduced in v0.13.0. Users wishing to use the latest version of cometbft-db
+are advised to upgrade to CometBFT v0.38.
+
+### DEPENDENCIES
+
+- `[deps]` Rollback cometbft-db version to v0.9.5 due to the breaking change
+  that was introduced in v0.13.0
+  ([\#4369](https://github.com/cometbft/cometbft/pull/4369)).
+
 ## v0.37.12
 
 *October 24, 2024*

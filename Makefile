@@ -287,6 +287,11 @@ build-docker:
 ###                       Local testnet using docker                        ###
 ###############################################################################
 
+#? build-linux: Build linux binary on other platforms
+build-linux:
+	GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) $(MAKE) build
+.PHONY: build-linux
+
 #? build-contract-tests-hooks: Build hooks for dredd, to skip or add information on some steps
 build-contract-tests-hooks:
 ifeq ($(OS),Windows_NT)
@@ -313,3 +318,16 @@ help: Makefile
 	@echo " Choose a command run in comebft:"
 	@sed -n 's/^#?//p' $< | column -t -s ':' |  sort | sed -e 's/^/ /'
 .PHONY: help
+
+###############################################################################
+###                       			Benchmarking                                ###
+###############################################################################
+
+#? bench: Run benchmarks
+bench:
+	@echo "--> Running benchmarks (this might take a while)"
+	@go install go.bobheadxi.dev/gobenchdata@latest
+	@go test -bench . -benchmem ./... | gobenchdata --json benchmarks.json
+	@gobenchdata web generate .
+	@echo "--> Serving results at http://localhost:8080"
+	@gobenchdata web serve

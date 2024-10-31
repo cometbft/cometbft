@@ -64,6 +64,10 @@ func PerturbNode(ctx context.Context, node *e2e.Node, perturbation e2e.Perturbat
 		}
 		if node.PersistInterval == 0 {
 			timeout *= 5
+		} else {
+			// still need to give some extra time to the runner
+			// to wait for the node to restart when killing
+			timeout *= 2
 		}
 
 	case e2e.PerturbationPause:

@@ -15,7 +15,7 @@ import (
 
 var (
 	config = cfg.DefaultConfig()
-	logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	logger = log.NewTMLogger(os.Stdout)
 )
 
 func init() {
@@ -96,7 +96,7 @@ var RootCmd = &cobra.Command{
 		}
 
 		if config.LogFormat == cfg.LogFormatJSON {
-			logger = log.NewTMJSONLogger(log.NewSyncWriter(os.Stdout))
+			logger = log.NewTMJSONLogger(os.Stdout)
 		}
 
 		logger, err = cmtflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)

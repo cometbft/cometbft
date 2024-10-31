@@ -4,8 +4,6 @@ import (
 	"io"
 	"os"
 	"testing"
-
-	"github.com/go-kit/log/term"
 )
 
 // reuse the same logger across all tests.
@@ -33,23 +31,7 @@ func TestingLoggerWithOutput(w io.Writer) Logger {
 	}
 
 	if testing.Verbose() {
-		_testingLogger = NewTMLogger(NewSyncWriter(w))
-	} else {
-		_testingLogger = NewNopLogger()
-	}
-
-	return _testingLogger
-}
-
-// TestingLoggerWithColorFn allow you to provide your own color function. See
-// TestingLogger for documentation.
-func TestingLoggerWithColorFn(colorFn func(keyvals ...any) term.FgBgColor) Logger {
-	if _testingLogger != nil {
-		return _testingLogger
-	}
-
-	if testing.Verbose() {
-		_testingLogger = NewTMLoggerWithColorFn(NewSyncWriter(os.Stdout), colorFn)
+		_testingLogger = NewTMLogger(w)
 	} else {
 		_testingLogger = NewNopLogger()
 	}

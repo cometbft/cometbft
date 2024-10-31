@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/fortytw2/leaktest"
-	"github.com/go-kit/log/term"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -226,19 +225,6 @@ func TestReactorBroadcastEvidenceMemoryLeak(t *testing.T) {
 	_ = sendEvidence(t, pool, val, 2)
 }
 
-// evidenceLogger is a TestingLogger which uses a different
-// color for each validator ("validator" key must exist).
-func evidenceLogger() log.Logger {
-	return log.TestingLoggerWithColorFn(func(keyvals ...any) term.FgBgColor {
-		for i := 0; i < len(keyvals)-1; i += 2 {
-			if keyvals[i] == "validator" {
-				return term.FgBgColor{Fg: term.Color(uint8(keyvals[i+1].(int) + 1))}
-			}
-		}
-		return term.FgBgColor{}
-	})
-}
-
 // connect N evidence reactors through N switches.
 func makeAndConnectReactorsAndPools(config *cfg.Config, stateStores []sm.Store) ([]*evidence.Reactor,
 	[]*evidence.Pool,
@@ -247,7 +233,7 @@ func makeAndConnectReactorsAndPools(config *cfg.Config, stateStores []sm.Store) 
 
 	reactors := make([]*evidence.Reactor, n)
 	pools := make([]*evidence.Pool, n)
-	logger := evidenceLogger()
+	logger := log.TestingLogger()
 	evidenceTime := time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	for i := 0; i < n; i++ {

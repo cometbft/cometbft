@@ -33,7 +33,7 @@ func TestInfo(t *testing.T) {
 
 	// Remove the timestamp information to allow
 	// us to test against the expected message.
-	receivedmsg := strings.Split(msg, "] ")[1]
+	receivedmsg := strings.Split(msg, " ")[1]
 
 	const expectedmsg = `Client initialized with old header
 	(trusted is more recent) old=42 trustedHeight="forty two"
@@ -56,7 +56,7 @@ func TestDebug(t *testing.T) {
 
 	// Remove the timestamp information to allow
 	// us to test against the expected message.
-	receivedmsg := strings.Split(msg, "] ")[1]
+	receivedmsg := strings.Split(msg, " ")[1]
 
 	const expectedmsg = `Client initialized with old header
 	(trusted is more recent) old=42 trustedHeight="forty two"
@@ -79,7 +79,7 @@ func TestError(t *testing.T) {
 
 	// Remove the timestamp information to allow
 	// us to test against the expected message.
-	receivedmsg := strings.Split(msg, "] ")[1]
+	receivedmsg := strings.Split(msg, " ")[1]
 
 	const expectedmsg = `Client initialized with old header
 	(trusted is more recent) old=42 trustedHeight="forty two"

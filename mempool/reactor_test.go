@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/fortytw2/leaktest"
-	"github.com/go-kit/log/term"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -513,14 +512,7 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 // mempoolLogger is a TestingLogger which uses a different
 // color for each validator ("validator" key must exist).
 func mempoolLogger(level string) *log.Logger {
-	logger := log.TestingLoggerWithColorFn(func(keyvals ...any) term.FgBgColor {
-		for i := 0; i < len(keyvals)-1; i += 2 {
-			if keyvals[i] == "validator" {
-				return term.FgBgColor{Fg: term.Color(uint8(keyvals[i+1].(int) + 1))}
-			}
-		}
-		return term.FgBgColor{}
-	})
+	logger := log.TestingLogger()
 
 	// Customize log level
 	option, err := log.AllowLevel(level)

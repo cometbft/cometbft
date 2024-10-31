@@ -41,7 +41,7 @@ func TestValidator_Sets(t *testing.T) {
 		}
 
 		valSchedule := newValidatorSchedule(t, node.Testnet)
-		valSchedule.Increment(t, first-node.Testnet.InitialHeight)
+		valSchedule.IncreaseHeight(t, first-node.Testnet.InitialHeight)
 
 		for h := first; h <= last; h++ {
 			validators := []*types.Validator{}
@@ -56,7 +56,7 @@ func TestValidator_Sets(t *testing.T) {
 			}
 			require.Equal(t, valSchedule.Set.Validators, validators,
 				"incorrect validator set at height %v", h)
-			valSchedule.Increment(t, 1)
+			valSchedule.IncreaseHeight(t, 1)
 		}
 	})
 }
@@ -83,7 +83,7 @@ func TestValidator_Propose(t *testing.T) {
 					proposeCount++
 				}
 			}
-			valSchedule.Increment(t, 1)
+			valSchedule.IncreaseHeight(t, 1)
 		}
 
 		if expectCount == 0 {
@@ -132,7 +132,7 @@ func TestValidator_Sign(t *testing.T) {
 			} else {
 				require.False(t, signed, "unexpected signature for block %v", block.LastCommit.Height)
 			}
-			valSchedule.Increment(t, 1)
+			valSchedule.IncreaseHeight(t, 1)
 		}
 
 		require.False(t, signCount == 0 && expectCount > 0,
@@ -153,7 +153,7 @@ type validatorSchedule struct {
 
 func newValidatorSchedule(t *testing.T, testnet *e2e.Testnet) *validatorSchedule {
 	t.Helper()
-	valMap := *testnet.Manifest.Validators        // genesis validators
+	valMap := testnet.Validators                  // genesis validators
 	if v, ok := testnet.ValidatorUpdates[0]; ok { // InitChain validators
 		valMap = v
 	}
@@ -166,7 +166,7 @@ func newValidatorSchedule(t *testing.T, testnet *e2e.Testnet) *validatorSchedule
 	}
 }
 
-func (s *validatorSchedule) Increment(t *testing.T, heights int64) {
+func (s *validatorSchedule) IncreaseHeight(t *testing.T, heights int64) {
 	t.Helper()
 	for i := int64(0); i < heights; i++ {
 		s.height++

@@ -60,19 +60,31 @@ def handleTxMessage(tx, sender):
   if not(cache.contains(tx.ID)):
 R1: 
     cache.add(tx.ID)
-    pool.append(tx)
-    if sender != nil:
-      senders[tx.ID].add(sender.ID)
+    if valid(tx):
+      pool.append(tx)
+      if sender != nil:
+        senders[tx.ID].add(sender.ID)
   else:
 R2: 
-    if sender != nil:
+    if sender != nil and pool.contains(tx):
       senders[tx.ID].add(sender.ID)
 ```
-- When the message is sent from a user, and not from a peer, the message has no sender, then
-`sender` is `nil`.
-- The node received the transaction either for the first time (tag `R1`) or it was received before
-  (`R2`).
-- All actions in the tags should be executed atomically.
+- Transactions are created by users who send them to one of the nodes in the network. Nodes receive
+transactions either from users or from peers. Transaction messages sent from users have no sender
+(`sender` is `nil`). 
+- Nodes receive transactions either for the first time (tag `R1`) or transactions were received
+  before, thus they are cached (tag `R2`).
+- Transactions are validated externally by the `valid(tx)` function.
+- A transaction that is in `pool`, must also be in `cache` (assuming an infinite cache), but not
+  necessarily the inverse. The reason a transaction is in `cache` but not in `pool` is either
+  because: 
+  - the transaction was initially invalid and never got into `pool`, 
+  - the transaction became invalid after it got in `pool` and thus got evicted while revalidating
+    it, or
+  - the transaction was committed to a block and got removed from `pool`.
+- Senders are only needed for disseminating (valid) transactions in the mempool. That is why we
+  register senders only for transactions that are in actually in the mempool.
+- All actions in the scope of a tag should be executed atomically.
 
 ### Dissemination
 
@@ -87,8 +99,8 @@ D1:
       peer.send(Tx(tx))
 ```
 
-The process iterates over `pool` reading the next transaction to send to `peer`. It sends the
-transaction only if the node did not receive it from `peer` (tag `D1`).
+The process iterates over `pool` reading the next (valid) transaction to send to `peer`. It sends
+the transaction only if the node did not receive it from `peer` (tag `D1`).
 
 ## Properties
 

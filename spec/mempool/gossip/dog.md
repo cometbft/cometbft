@@ -65,19 +65,20 @@ def handleTxMessage(tx, sender):
   if not(cache.contains(tx.ID)):
 R1:
     cache.add(tx.ID)
-    pool.append(tx)
-    if sender != nil:
-      senders[tx.ID].add(sender.ID)
+    if valid(tx):
+      pool.append(tx)
+      if sender != nil:
+        senders[tx.ID].add(sender.ID)
     firstTimeTxs++
     adjustRedundancy()
   else:
 R2:
-  if sender != nil:
+  if sender != nil and pool.contains(tx):
     senders[tx.ID].add(sender.ID)
-    duplicateTxs++
-    if not(isHaveTxBlocked):
-      peer.send(HaveTx(tx.ID))
-      isHaveTxBlocked := true
+  duplicateTxs++
+  if not(isHaveTxBlocked):
+    peer.send(HaveTx(tx.ID))
+    isHaveTxBlocked := true
 ```
 
 Rule `R1` as the same as in [Flood][flood] except that at the end it increases the `firstTimeTxs` counter and
@@ -93,8 +94,8 @@ def adjustRedundancy():
   firstTimeTxs, duplicateTxs := 0, 0
 ```
 
-Rule `R2` increases the `duplicateTxs` counter and sends a `HaveTx` message if not RC is not
-blocking it.
+Rule `R2` increases the `duplicateTxs` counter and sends a `HaveTx` message if the RC mechanism is
+not blocking it.
 
 ```
 def handleHaveTxMessage(txID, sender):

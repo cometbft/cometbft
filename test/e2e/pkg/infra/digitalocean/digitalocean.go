@@ -3,6 +3,7 @@ package digitalocean
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -121,6 +122,10 @@ func (p Provider) Reconnect(ctx context.Context, _ string, ip string) error {
 func (Provider) CheckUpgraded(_ context.Context, node *e2e.Node) (string, bool, error) {
 	// Upgrade not supported yet by DO provider
 	return node.Name, false, nil
+}
+
+func (Provider) NodeIP(node *e2e.Node) net.IP {
+	return node.ExternalIP
 }
 
 func (p Provider) writePlaybook(yaml, playbook string) error {

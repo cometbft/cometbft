@@ -3,6 +3,7 @@ package docker
 import (
 	"bytes"
 	"context"
+	"net"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -90,6 +91,10 @@ func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
 		filepath.Join(containerDir, "latency-setter.py"), "set",
 		filepath.Join(containerDir, filepath.Base(p.IPZonesFilePath())),
 		filepath.Join(containerDir, "aws-latencies.csv"), "eth0")
+}
+
+func (Provider) NodeIP(node *e2e.Node) net.IP {
+	return node.InternalIP
 }
 
 // dockerComposeBytes generates a Docker Compose config file for a testnet and returns the

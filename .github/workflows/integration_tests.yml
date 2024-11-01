@@ -1,11 +1,10 @@
-name: Build
-# Tests runs different tests (test_abci_apps, test_abci_cli, test_apps)
-# This workflow runs on every push to main or release branch and  every pull requests
-# All jobs will pass without running if no *{.go, .mod, .sum} files have been modified
+name: Integration Tests
 on:
   pull_request:
   merge_group:
   push:
+    paths:
+      - "**.go"
     branches:
       - main
 
@@ -14,20 +13,13 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  build:
-    name: Build
+  integration_tests:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        goarch: ["arm", "amd64"]
-        goos: ["linux"]
-    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
       - id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v2
         with:
           filters: |
             code:
@@ -43,6 +35,7 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: install
+      - name: Run tests
         if: steps.filter.outputs.code == 'true'
-        run: GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} make build
+        run: |
+          make test_integrations

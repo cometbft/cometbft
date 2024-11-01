@@ -18,7 +18,18 @@ var _ Logger = (*tmLogger)(nil)
 // using slog as an underlying logger and our custom formatter. Note that
 // underlying logger could be swapped with something else.
 func NewTMLogger(w io.Writer) Logger {
-	return &tmLogger{slog.New(tint.NewHandler(w, &tint.Options{Level: slog.LevelDebug}))}
+	return &tmLogger{slog.New(tint.NewHandler(w, &tint.Options{
+		Level: slog.LevelDebug,
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			if err, ok := a.Value.Any().(error); ok {
+				aErr := tint.Err(err)
+				aErr.Key = a.Key
+				return aErr
+			}
+			return a
+		},
+	},
+	))}
 }
 
 // Info logs a message at level Info.

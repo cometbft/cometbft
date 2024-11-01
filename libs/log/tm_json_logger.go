@@ -15,7 +15,7 @@ func NewTMJSONLogger(w io.Writer) Logger {
 }
 
 // NewTMJSONLoggerNoTS is the same as NewTMJSONLogger, but without the
-// timestamp.
+// timestamp. Used for testing purposes.
 func NewTMJSONLoggerNoTS(w io.Writer) Logger {
 	logger := slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{
 		Level: slog.LevelDebug,

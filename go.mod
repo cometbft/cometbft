@@ -7,7 +7,7 @@ require (
 	github.com/adlio/schema v1.3.6
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/go-kit/kit v0.12.0
 	github.com/go-kit/log v0.2.1
@@ -20,9 +20,9 @@ require (
 	github.com/minio/highwayhash v1.0.3
 	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.20.4
+	github.com/prometheus/client_golang v1.20.5
 	github.com/prometheus/client_model v0.6.1
-	github.com/prometheus/common v0.59.1
+	github.com/prometheus/common v0.60.1
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/cors v1.11.1
 	github.com/sasha-s/go-deadlock v0.3.5
@@ -32,7 +32,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/crypto v0.27.0
 	golang.org/x/net v0.29.0
-	google.golang.org/grpc v1.67.0
+	google.golang.org/grpc v1.67.1
 )
 
 require github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7

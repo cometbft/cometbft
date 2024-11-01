@@ -276,8 +276,6 @@ func setupNode() (*config.Config, log.Logger, *nodekey.NodeKey, error) {
 		return nil, nil, nil, err
 	}
 
-	nodeLogger = nodeLogger.With("module", "main")
-
 	nodeKey, err := nodekey.LoadOrGen(cmtcfg.NodeKeyFile())
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to load or gen node key %s: %w", cmtcfg.NodeKeyFile(), err)

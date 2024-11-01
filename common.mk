@@ -45,3 +45,9 @@ ifeq (bls12381,$(findstring bls12381,$(COMETBFT_BUILD_OPTIONS)))
   CGO_ENABLED=1
   BUILD_TAGS += bls12381
 endif
+
+# handle nodebug
+ifeq (nodebug,$(findstring nodebug,$(COMETBFT_BUILD_OPTIONS)))
+  CGO_ENABLED=1
+  BUILD_TAGS += nodebug
+endif

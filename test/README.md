@@ -1,6 +1,7 @@
 # CometBFT Tests
 
 ## Unit tests
+
 The unit tests (ie. `go test`) can be run with `make test` from the root directory of the repository.
 
 ## Integration tests

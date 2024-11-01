@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"bytes"
 	"context"
 	"encoding/csv"
 	"errors"
@@ -9,12 +8,10 @@ import (
 	"io"
 	"math/rand"
 	"net"
-	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
-	"text/template"
 	"time"
 
 	_ "embed"
@@ -587,34 +584,6 @@ func (t Testnet) HasPerturbations() bool {
 		}
 	}
 	return false
-}
-
-//go:embed templates/prometheus-yaml.tmpl
-var prometheusYamlTemplate string
-
-func (t Testnet) prometheusConfigBytes() ([]byte, error) {
-	tmpl, err := template.New("prometheus-yaml").Parse(prometheusYamlTemplate)
-	if err != nil {
-		return nil, err
-	}
-	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, t)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func (t Testnet) WritePrometheusConfig() error {
-	bytes, err := t.prometheusConfigBytes()
-	if err != nil {
-		return err
-	}
-	err = os.WriteFile(filepath.Join(t.Dir, "prometheus.yaml"), bytes, 0o644) //nolint:gosec
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // Address returns a P2P endpoint address for the node.

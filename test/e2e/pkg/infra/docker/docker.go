@@ -12,6 +12,8 @@ import (
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 )
 
+const DockerComposeFile = "compose.yaml"
+
 var _ infra.Provider = (*Provider)(nil)
 
 // Provider implements a docker-compose backed infrastructure provider.
@@ -27,7 +29,7 @@ func (p *Provider) Setup() error {
 		return err
 	}
 	//nolint: gosec // G306: Expect WriteFile permissions to be 0600 or less
-	err = os.WriteFile(filepath.Join(p.Testnet.Dir, "docker-compose.yml"), compose, 0o644)
+	err = os.WriteFile(filepath.Join(p.Testnet.Dir, DockerComposeFile), compose, 0o644)
 	if err != nil {
 		return err
 	}
@@ -214,21 +216,21 @@ func zonesTableBytes(nodes []*e2e.Node) ([]byte, error) {
 // ExecCompose runs a Docker Compose command for a testnet.
 func ExecCompose(ctx context.Context, dir string, args ...string) error {
 	return exec.Command(ctx, append(
-		[]string{"docker", "compose", "-f", filepath.Join(dir, "docker-compose.yml")},
+		[]string{"docker", "compose", "-f", filepath.Join(dir, DockerComposeFile)},
 		args...)...)
 }
 
 // ExecCompose runs a Docker Compose command for a testnet and returns the command's output.
 func ExecComposeOutput(ctx context.Context, dir string, args ...string) ([]byte, error) {
 	return exec.CommandOutput(ctx, append(
-		[]string{"docker", "compose", "-f", filepath.Join(dir, "docker-compose.yml")},
+		[]string{"docker", "compose", "-f", filepath.Join(dir, DockerComposeFile)},
 		args...)...)
 }
 
 // ExecComposeVerbose runs a Docker Compose command for a testnet and displays its output.
 func ExecComposeVerbose(ctx context.Context, dir string, args ...string) error {
 	return exec.CommandVerbose(ctx, append(
-		[]string{"docker", "compose", "-f", filepath.Join(dir, "docker-compose.yml")},
+		[]string{"docker", "compose", "-f", filepath.Join(dir, DockerComposeFile)},
 		args...)...)
 }
 

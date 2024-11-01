@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/abci/types"
@@ -362,7 +363,13 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.FinalizeBloc
 
 	app.state.Height = req.Height
 
-	response := &types.FinalizeBlockResponse{TxResults: respTxs, ValidatorUpdates: app.valUpdates, AppHash: app.state.Hash()}
+	response := &types.FinalizeBlockResponse{
+		TxResults:        respTxs,
+		ValidatorUpdates: app.valUpdates,
+		AppHash:          app.state.Hash(),
+		NextBlockDelay:   1 * time.Second,
+	}
+
 	if !app.genBlockEvents {
 		return response, nil
 	}

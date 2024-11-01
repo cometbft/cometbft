@@ -37,7 +37,7 @@ require (
 )
 
 require (
-	github.com/creachadair/taskgroup v0.10.0
+	github.com/creachadair/taskgroup v0.13.0
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
 

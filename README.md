@@ -22,7 +22,7 @@
 CometBFT is a Byzantine Fault Tolerant (BFT) middleware that takes a
 state transition machine - written in any programming language - and securely
 replicates it on many machines. In modular blockchain terminology, 
-CometBFT can be tought of as a sequencer layer, and is indeed used in 
+CometBFT can be thought of as a sequencer layer and is indeed used in 
 modern decentralized (shared) sequencer implementations.
 
 CometBFT is the canonical implementation of the Tendermint consensus algorithm and is a

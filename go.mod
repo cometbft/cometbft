@@ -30,8 +30,13 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
+<<<<<<< HEAD
 	golang.org/x/crypto v0.27.0
 	golang.org/x/net v0.29.0
+=======
+	golang.org/x/crypto v0.28.0
+	golang.org/x/net v0.30.0
+>>>>>>> ab9cc83ec (build(deps): Bump golang.org/x/net from 0.29.0 to 0.30.0 (#4384))
 	google.golang.org/grpc v1.67.1
 )
 

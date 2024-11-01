@@ -320,9 +320,11 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 		}
 	}
 
-	// Events are fired after everything else.
-	// NOTE: if we crash between Commit and Save, events wont be fired during replay
-	fireEvents(blockExec.logger, blockExec.eventBus, block, blockID, abciResponse, validatorUpdates)
+	if _, ok := blockExec.eventBus.(types.NopEventBus); !ok {
+		// Events are fired after everything else.
+		// NOTE: if we crash between Commit and Save, events wont be fired during replay
+		go fireEvents(blockExec.logger, blockExec.eventBus, block, blockID, abciResponse, validatorUpdates)
+	}
 
 	return state, nil
 }

@@ -120,16 +120,18 @@ func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 			filepath.Join(nodeDir, PrivvalDummyStateFile),
 		)).Save()
 
-		// Generate a shell script file containing tc (traffic control) commands
-		// to emulate latency to other nodes.
-		tcCmds, err := tcCommands(node, infp)
-		if err != nil {
-			return err
-		}
-		latencyPath := filepath.Join(nodeDir, "emulate-latency.sh")
-		//nolint: gosec // G306: Expect WriteFile permissions to be 0600 or less
-		if err = os.WriteFile(latencyPath, []byte(strings.Join(tcCmds, "\n")), 0o755); err != nil {
-			return err
+		if testnet.LatencyEmulationEnabled {
+			// Generate a shell script file containing tc (traffic control) commands
+			// to emulate latency to other nodes.
+			tcCmds, err := tcCommands(node, infp)
+			if err != nil {
+				return err
+			}
+			latencyPath := filepath.Join(nodeDir, "emulate-latency.sh")
+			//nolint: gosec // G306: Expect WriteFile permissions to be 0600 or less
+			if err = os.WriteFile(latencyPath, []byte(strings.Join(tcCmds, "\n")), 0o755); err != nil {
+				return err
+			}
 		}
 	}
 

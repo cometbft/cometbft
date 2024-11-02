@@ -26,7 +26,7 @@ type Result struct {
 func main() {
 	var (
 		mux    = http.NewServeMux()
-		logger = log.NewTMLogger(os.Stdout)
+		logger = log.NewLogger(os.Stdout)
 	)
 
 	// Stop upon receiving SIGTERM or CTRL-C.

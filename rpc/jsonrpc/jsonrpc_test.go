@@ -110,7 +110,7 @@ func TestMain(m *testing.M) {
 
 // launch unix and tcp servers.
 func setup() {
-	logger := log.NewTMLogger(os.Stdout)
+	logger := log.NewLogger(os.Stdout)
 
 	cmd := exec.Command("rm", "-f", unixSocket)
 	err := cmd.Start()

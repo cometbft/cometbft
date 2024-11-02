@@ -21,7 +21,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-var logger = log.NewTMLogger(os.Stdout)
+var logger = log.NewLogger(os.Stdout)
 
 // Inspector manages an RPC service that exports methods to debug a failed node.
 // After a node shuts down due to a consensus failure, it will no longer start

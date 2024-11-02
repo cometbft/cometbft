@@ -162,7 +162,7 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 //
 // If the block store is not empty, the function returns an error.
 func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBProvider, genProvider GenesisDocProvider, height uint64, appHash []byte) (err error) {
-	logger := log.NewTMLogger(os.Stdout)
+	logger := log.NewLogger(os.Stdout)
 	if ctx == nil {
 		ctx = context.Background()
 	}

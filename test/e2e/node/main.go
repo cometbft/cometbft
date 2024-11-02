@@ -32,7 +32,7 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
-var logger = log.NewTMLogger(os.Stdout)
+var logger = log.NewLogger(os.Stdout)
 
 // main is the binary entrypoint.
 func main() {
@@ -268,7 +268,7 @@ func setupNode() (*config.Config, log.Logger, *nodekey.NodeKey, error) {
 	}
 
 	if cmtcfg.LogFormat == config.LogFormatJSON {
-		logger = log.NewTMJSONLogger(os.Stdout)
+		logger = log.NewJSONLogger(os.Stdout)
 	}
 
 	nodeLogger, err := cmtflags.ParseLogLevel(cmtcfg.LogLevel, logger, config.DefaultLogLevel)

@@ -14,10 +14,10 @@ type tmLogger struct {
 // Interface assertions.
 var _ Logger = (*tmLogger)(nil)
 
-// NewTMLogger returns a logger that encodes msg and keyvals to the Writer
+// NewLogger returns a logger that encodes msg and keyvals to the Writer
 // using slog as an underlying logger and our custom formatter. Note that
 // underlying logger could be swapped with something else.
-func NewTMLogger(w io.Writer) Logger {
+func NewLogger(w io.Writer) Logger {
 	return &tmLogger{slog.New(tint.NewHandler(w, &tint.Options{
 		Level: slog.LevelDebug,
 		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {

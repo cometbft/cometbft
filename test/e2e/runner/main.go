@@ -21,7 +21,7 @@ import (
 
 const randomSeed = 2308084734268
 
-var logger = log.NewTMLogger(os.Stdout)
+var logger = log.NewLogger(os.Stdout)
 
 func main() {
 	NewCLI().Run()

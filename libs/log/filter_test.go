@@ -57,7 +57,7 @@ func TestVariousLevels(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			var buf bytes.Buffer
-			logger := log.NewFilter(log.NewTMJSONLoggerNoTS(&buf), tc.allowed)
+			logger := log.NewFilter(log.NewJSONLoggerNoTS(&buf), tc.allowed)
 
 			logger.Debug("here", "this is", "debug log")
 			logger.Info("here", "this is", "info log")
@@ -73,7 +73,7 @@ func TestVariousLevels(t *testing.T) {
 func TestLevelContext(t *testing.T) {
 	var buf bytes.Buffer
 
-	logger := log.NewTMJSONLoggerNoTS(&buf)
+	logger := log.NewJSONLoggerNoTS(&buf)
 	logger = log.NewFilter(logger, log.AllowError())
 	logger = logger.With("context", "value")
 
@@ -95,7 +95,7 @@ func TestLevelContext(t *testing.T) {
 func TestVariousAllowWith(t *testing.T) {
 	var buf bytes.Buffer
 
-	logger := log.NewTMJSONLoggerNoTS(&buf)
+	logger := log.NewJSONLoggerNoTS(&buf)
 
 	logger1 := log.NewFilter(logger, log.AllowError(), log.AllowInfoWith("context", "value"))
 	logger1.With("context", "value").Info("foo", "bar", "baz")

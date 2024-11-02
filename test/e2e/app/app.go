@@ -191,7 +191,7 @@ func NewApplication(cfg *Config) (*Application, error) {
 	for keyType := range cmttypes.ABCIPubKeyTypesToNames {
 		allKeyTypes = append(allKeyTypes, keyType)
 	}
-	logger := log.NewTMLogger(os.Stdout)
+	logger := log.NewLogger(os.Stdout)
 	logger.Info("Application started!")
 	if cfg.NoLanes {
 		return &Application{

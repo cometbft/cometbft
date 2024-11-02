@@ -16,7 +16,7 @@ const (
 	randomSeed int64 = 4827085738
 )
 
-var logger = log.NewTMLogger(os.Stdout)
+var logger = log.NewLogger(os.Stdout)
 
 func main() {
 	NewCLI().Run()

@@ -101,7 +101,7 @@ func init() {
 
 func runProxy(_ *cobra.Command, args []string) error {
 	// Initialize logger.
-	logger := log.NewTMLogger(os.Stdout)
+	logger := log.NewLogger(os.Stdout)
 	var option log.Option
 	if verbose {
 		option, _ = log.AllowLevel("debug")

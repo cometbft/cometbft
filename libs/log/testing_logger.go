@@ -31,7 +31,7 @@ func TestingLoggerWithOutput(w io.Writer) Logger {
 	}
 
 	if testing.Verbose() {
-		_testingLogger = NewTMLogger(w)
+		_testingLogger = NewLogger(w)
 	} else {
 		_testingLogger = NewNopLogger()
 	}

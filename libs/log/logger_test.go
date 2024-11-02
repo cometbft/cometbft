@@ -89,11 +89,11 @@ func TestError(t *testing.T) {
 	}
 }
 
-func BenchmarkTMLoggerSimple(b *testing.B) {
+func BenchmarkLoggerSimple(b *testing.B) {
 	benchmarkRunner(b, log.NewLogger(io.Discard), baseInfoMessage)
 }
 
-func BenchmarkTMLoggerContextual(b *testing.B) {
+func BenchmarkLoggerContextual(b *testing.B) {
 	benchmarkRunner(b, log.NewLogger(io.Discard), withInfoMessage)
 }
 

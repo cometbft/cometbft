@@ -38,12 +38,28 @@ func NewFilter(next Logger, options ...Option) Logger {
 	return l
 }
 
+func (l *filter) Error(msg string, keyvals ...any) {
+	levelAllowed := l.allowed&levelError != 0
+	if !levelAllowed {
+		return
+	}
+	l.next.Error(msg, keyvals...)
+}
+
 func (l *filter) Info(msg string, keyvals ...any) {
 	levelAllowed := l.allowed&levelInfo != 0
 	if !levelAllowed {
 		return
 	}
 	l.next.Info(msg, keyvals...)
+}
+
+func (l *filter) Warn(msg string, keyvals ...any) {
+	levelAllowed := l.allowed&levelError != 0
+	if !levelAllowed {
+		return
+	}
+	l.next.Warn(msg, keyvals...)
 }
 
 func (l *filter) Debug(msg string, keyvals ...any) {
@@ -54,14 +70,6 @@ func (l *filter) Debug(msg string, keyvals ...any) {
 		}
 		l.next.Debug(msg, keyvals...)
 	}
-}
-
-func (l *filter) Error(msg string, keyvals ...any) {
-	levelAllowed := l.allowed&levelError != 0
-	if !levelAllowed {
-		return
-	}
-	l.next.Error(msg, keyvals...)
 }
 
 // With implements Logger by constructing a new filter with a keyvals appended
@@ -124,6 +132,10 @@ func (l *filter) With(keyvals ...any) Logger {
 		allowedKeyvals:   l.allowedKeyvals,
 		initiallyAllowed: l.initiallyAllowed,
 	}
+}
+
+func (l *filter) Impl() any {
+	return l.next.Impl()
 }
 
 // --------------------------------------------------------------------------------

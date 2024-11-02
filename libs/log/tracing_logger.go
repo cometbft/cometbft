@@ -28,8 +28,16 @@ type tracingLogger struct {
 	next Logger
 }
 
+func (l *tracingLogger) Error(msg string, keyvals ...any) {
+	l.next.Error(msg, formatErrors(keyvals)...)
+}
+
 func (l *tracingLogger) Info(msg string, keyvals ...any) {
 	l.next.Info(msg, formatErrors(keyvals)...)
+}
+
+func (l *tracingLogger) Warn(msg string, keyvals ...any) {
+	l.next.Warn(msg, formatErrors(keyvals)...)
 }
 
 func (l *tracingLogger) Debug(msg string, keyvals ...any) {
@@ -38,12 +46,12 @@ func (l *tracingLogger) Debug(msg string, keyvals ...any) {
 	}
 }
 
-func (l *tracingLogger) Error(msg string, keyvals ...any) {
-	l.next.Error(msg, formatErrors(keyvals)...)
-}
-
 func (l *tracingLogger) With(keyvals ...any) Logger {
 	return &tracingLogger{next: l.next.With(formatErrors(keyvals)...)}
+}
+
+func (l *tracingLogger) Impl() any {
+	return l.next.Impl()
 }
 
 func formatErrors(keyvals []any) []any {

@@ -1,5 +1,38 @@
 # CHANGELOG
 
+## v0.38.13
+
+*October 24, 2024*
+
+This patch release addresses the issue where tx_search was not returning all results, which only arises when upgrading
+to CometBFT-DB version 0.13 or later. It includes a fix in the state indexer to resolve this problem. We recommend
+upgrading to this patch release if you are affected by this issue.
+
+### BUG FIXES
+
+- `[metrics]` Call unused `rejected_txs` metric in mempool
+  ([\#4019](https://github.com/cometbft/cometbft/pull/4019))
+- `[state/indexer]` Fix the tx_search results not returning all results by changing the logic in the indexer to copy the key and values instead of reusing an iterator. This issue only arises when upgrading to cometbft-db v0.13 or later.
+  ([\#4295](https://github.com/cometbft/cometbft/issues/4295)). Special thanks to @faddat for reporting the issue.
+
+### DEPENDENCIES
+
+- `[go/runtime]` Bump Go version to 1.22
+  ([\#4073](https://github.com/cometbft/cometbft/pull/4073))
+- Bump cometbft-db version to v0.14.1
+  ([\#4321](https://github.com/cometbft/cometbft/pull/4321))
+
+### FEATURES
+
+- `[crypto]` use decred secp256k1 directly ([#4294](https://github.com/cometbft/cometbft/pull/4294))
+
+### IMPROVEMENTS
+
+- `[metrics]` Add `evicted_txs` metric to mempool
+  ([\#4019](https://github.com/cometbft/cometbft/pull/4019))
+- `[log]` Change "mempool is full" log to debug level
+  ([\#4123](https://github.com/cometbft/cometbft/pull/4123)) Special thanks to @yihuang.
+
 ## v0.38.12
 
 *September 3, 2024*

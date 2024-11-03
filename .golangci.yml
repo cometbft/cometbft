@@ -76,6 +76,7 @@ linters-settings:
           - github.com/spf13
           - github.com/stretchr/testify/require
           - github.com/syndtr/goleveldb
+          - github.com/decred/dcrd/dcrec/secp256k1/v4
       test:
         files:
           - "$test"
@@ -96,3 +97,53 @@ linters-settings:
           - github.com/prometheus/client_golang/prometheus/promhttp
           - github.com/spf13
           - github.com/stretchr/testify
+          - github.com/decred/dcrd/dcrec/secp256k1/v4
+
+  revive:
+    enable-all-rules: true
+    rules:
+      - name: comment-spacings # temporarily disabled
+        disabled: true
+      - name: max-public-structs
+        disabled: true
+      - name: cognitive-complexity
+        disabled: true
+      - name: argument-limit
+        disabled: true
+      - name: cyclomatic
+        disabled: true
+      - name: deep-exit
+        disabled: true
+      - name: file-header
+        disabled: true
+      - name: function-length
+        disabled: true
+      - name: function-result-limit
+        disabled: true
+      - name: line-length-limit
+        disabled: true
+      - name: flag-parameter
+        disabled: true
+      - name: add-constant
+        disabled: true
+      - name: empty-lines
+        disabled: true
+      - name: import-shadowing
+        disabled: true
+      - name: modifies-value-receiver
+        disabled: true
+      - name: confusing-naming
+        disabled: true
+      - name: defer
+        disabled: true
+      - name: unchecked-type-assertion
+        disabled: true
+      - name: unhandled-error
+        disabled: true
+        arguments:
+          - "fmt.Printf"
+          - "fmt.Print"
+          - "fmt.Println"
+  gosec:
+    excludes:
+      - G115

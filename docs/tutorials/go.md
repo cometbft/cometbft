@@ -615,7 +615,7 @@ func main() {
     }()
 
     app := NewKVStoreApplication(db)
-    logger := cmtlog.NewTMLogger(os.Stdout)
+    logger := cmtlog.NewLogger(os.Stdout)
 
     server := abciserver.NewSocketServer(socketAddr, app)
     server.SetLogger(logger)

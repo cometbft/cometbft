@@ -41,7 +41,7 @@ require github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.0
-	github.com/cometbft/cometbft-db v1.0.1
+	github.com/cometbft/cometbft-db v0.15.0
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/gofrs/uuid v4.4.0+incompatible

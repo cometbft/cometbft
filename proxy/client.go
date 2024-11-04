@@ -266,6 +266,7 @@ func (r *remoteClientCreator) newABCIClient() (abcicli.Client, error) {
 // replicate the same concurrency model as the remote client.
 func DefaultClientCreator(addr, transport, dbDir string) ClientCreator {
 	// Default is zero for kvstore and persistent_kvstore.
+	// Replaces deprecated `timeout_commit` parameter.
 	// Set to 1s to mimic the real world app.
 	delay := 1 * time.Second
 

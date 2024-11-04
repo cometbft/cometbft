@@ -121,7 +121,7 @@ func (app *Application) SetGenBlockEvents() {
 
 // SetNextBlockDelay sets the delay for the next finalized block. Default is 0
 // here because kvstore is mostly used for testing. In production, the default
-// is 1s.
+// is 1s, mimicing the default for the deprecated `timeout_commit` parameter.
 func (app *Application) SetNextBlockDelay(delay time.Duration) {
 	app.nextBlockDelay = delay
 }

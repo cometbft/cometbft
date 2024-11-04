@@ -32,7 +32,7 @@ const (
 	// then move into exponential backoff mode for ~1day
 	// ie. 3**10 = 16hrs.
 	reconnectBackOffAttempts    = 10
-	reconnectBackOffBaseSeconds = 3.4
+	reconnectBackOffBaseSeconds = 3
 
 	defaultFilterTimeout = 5 * time.Second
 )

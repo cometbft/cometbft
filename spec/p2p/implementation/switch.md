@@ -98,7 +98,7 @@ regular-interval approach.
 
 A second set of connection attempts is done with exponentially increasing
 intervals.
-The base interval `reconnectBackOffBaseSeconds` is hard-coded to 3.4 seconds,
+The base interval `reconnectBackOffBaseSeconds` is hard-coded to 3 seconds,
 which is also the increasing factor.
 The exponentially increasing dialing interval is adjusted as well by a random
 jitter up to `dialRandomizerIntervalMilliseconds`.

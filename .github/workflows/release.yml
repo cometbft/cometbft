@@ -3,7 +3,7 @@ name: "Release"
 on:
   push:
     tags:
-      - "v[0-9]+.[0-9]+.[0-9]+"  # Push events to matching v*, i.e. v1.0, v20.15.10
+      - "v[0-9]+.[0-9]+.[0-9]+" # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
   release:
@@ -16,7 +16,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: "1.23"
 
       # Similar check to ./release-version.yml, but enforces this when pushing
       # tags. The ./release-version.yml check can be bypassed and is mainly

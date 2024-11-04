@@ -7,6 +7,10 @@ messages, and data structures in Flood are also present in this specification.
 
 ...
 
+## Definitions
+
+- A transaction is received *for the first time* by a node, when the node does not have the
+  transaction in its cache. Otherwise the transaction is a *duplicate*.
 
 ## Messages
 
@@ -37,6 +41,8 @@ On startup, define the constants:
 - `delta := config.TargetRedundancy * config.TargetRedundancyDeltaPercent`
 - `redundancyLowerBound := config.TargetRedundancy - delta`
 - `redundancyUpperBound := config.TargetRedundancy + delta`
+
+When `config.TargetRedundancy = 0`, the Redundancy Control mechanism is partially disabled (see below).
 
 ## State
 
@@ -84,18 +90,23 @@ R2:
     isHaveTxBlocked := true
 ```
 
-Rule `R1` as the same as in [Flood][flood] except that at the end it increases the `firstTimeTxs` counter and
-calls `adjustRedundancy()`.
+Rule `R1` as the same as in [Flood][flood] except that at the end it increases the `firstTimeTxs`
+counter and calls `adjustRedundancy()` every `config.TxsPerAdjustment` transactions received for the
+first time.
 
 ```
 def adjustRedundancy():
   redundancy := duplicateTxs / firstTimeTxs
   if redundancy < r.redundancyLowerBound:
     peer.send(Reset)
-  if redundancy > redundancyUpperBound
+  if redundancy >= redundancyUpperBound:
     isHaveTxBlocked := false
   firstTimeTxs, duplicateTxs := 0, 0
 ```
+
+When `config.TargetRedundancy = 0`, the lower and upper bounds are also equal to 0. Then every
+`config.TxsPerAdjustment` received transactions `adjustRedundancy` will unblock `HaveTx` but it will
+not send `Reset` messages.
 
 Rule `R2` increases the `duplicateTxs` counter and sends a `HaveTx` message if the RC mechanism is
 not blocking it.

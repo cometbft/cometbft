@@ -6,7 +6,7 @@
 BINDIR ?= $(GOPATH)/bin
 
 #?test_apps: Run the app tests
-test_apps: install
+test_apps: install install_abci
 	@bash test/app/test.sh
 .PHONY: test_apps
 

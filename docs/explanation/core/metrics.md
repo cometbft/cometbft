@@ -11,8 +11,8 @@ This functionality is disabled by default.
 
 To enable the Prometheus metrics, set `instrumentation.prometheus=true` in your
 config file. Metrics will be served under `/metrics` on 26660 port by default.
-Listen address can be changed in the config file (see
-`instrumentation.prometheus\_listen\_addr`).
+Listen address can be changed in the [config file](./configuration.md) (see
+`instrumentation.prometheus_listen_addr`).
 
 ## List of available metrics
 

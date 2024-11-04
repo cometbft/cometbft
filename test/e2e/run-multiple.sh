@@ -20,7 +20,7 @@ FAILED=()
 for MANIFEST in "$@"; do
 	START=$SECONDS
 	echo "==> Running testnet: $MANIFEST"
-	echo "==> Manifestclear:"
+	echo "==> Manifest:"
 	cat "$MANIFEST"
 
 	if ! ./build/runner -f "$MANIFEST"; then

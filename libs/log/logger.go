@@ -125,15 +125,13 @@ type tabHandler struct {
 }
 
 func (th tabHandler) Handle(ctx context.Context, r slog.Record) error {
-	// Format message with tabs if it's less than 40 characters
 	formattedMsg := r.Message
 
 	maxMsgLen := 40
-	if len(r.Message) > maxMsgLen {
-		maxMsgLen = len(r.Message)
+	if len(r.Message) < maxMsgLen {
+		padding := strings.Repeat("\t", (maxMsgLen-len(r.Message))/8+2)
+		formattedMsg += padding
 	}
-	padding := strings.Repeat("\t", (maxMsgLen-len(r.Message))/8+3)
-	formattedMsg += padding
 
 	// Create a new Record with the formatted message
 	record := slog.NewRecord(r.Time, r.Level, formattedMsg, r.PC)

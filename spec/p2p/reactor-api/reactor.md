@@ -42,7 +42,7 @@ producing events associated to a different peer:
 
 ```abnf
 start           = registration on-start *peer-management on-stop
-registration    = get-channels set-switch
+registration    = stream-descriptors set-switch
 
 ; Refers to a single peer, a reactor must support multiple concurrent peers
 peer-management = init-peer start-peer stop-peer
@@ -51,15 +51,15 @@ connected-peer  = add-peer *receive
 stop-peer       = [peer-error] remove-peer
 
 ; Service interface
-on-start        = %s"OnStart()"
-on-stop         = %s"OnStop()"
+on-start           = %s"OnStart()"
+on-stop            = %s"OnStop()"
 ; Reactor interface
-get-channels    = %s"GetChannels()"
-set-switch      = %s"SetSwitch(*Switch)"
-init-peer       = %s"InitPeer(Peer)"
-add-peer        = %s"AddPeer(Peer)"
-remove-peer     = %s"RemovePeer(Peer, reason)"
-receive         = %s"Receive(Envelope)"
+stream-descriptors = %s"StreamDescriptors()"
+set-switch         = %s"SetSwitch(*Switch)"
+init-peer          = %s"InitPeer(Peer)"
+add-peer           = %s"AddPeer(Peer)"
+remove-peer        = %s"RemovePeer(Peer, reason)"
+receive            = %s"Receive(Envelope)"
 
 ; Errors, for reference
 start-error     = %s"log(Error starting peer)"
@@ -85,11 +85,11 @@ In other words, there is no support for registering a reactor on a running node:
 reactors must be registered as part of the setup of a node.
 
 ```abnf
-registration    = get-channels set-switch
+registration    = stream-descriptors set-switch
 ```
 
 The p2p layer retrieves from the reactor a list of channels the reactor is
-responsible for, using the `GetChannels()` method.
+responsible for, using the `StreamDescriptors()` method.
 The reactor implementation should thereafter expect the delivery of every
 message received by the p2p layer in the informed channels.
 

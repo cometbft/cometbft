@@ -1,6 +1,9 @@
 package mempool
 
 import (
+	"context"
+	"strconv"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -101,7 +104,8 @@ func BenchmarkUpdate(b *testing.B) {
 	for i := 1; i <= b.N; i++ {
 		b.StopTimer()
 		txs := addTxs(b, mp, i*numTxs, numTxs)
-		require.Equal(b, len(txs), mp.Size(), len(txs))
+		require.Equal(b, numTxs, len(txs))
+		require.Equal(b, numTxs, mp.Size())
 		b.StartTimer()
 
 		doUpdate(b, mp, int64(i), txs)
@@ -120,8 +124,9 @@ func BenchmarkUpdateAndRecheck(b *testing.B) {
 	for i := 1; i <= b.N; i++ {
 		b.StopTimer()
 		mp.Flush()
-		txs := addTxs(b, mp, i*numTxs, numTxs)
-		require.Equal(b, len(txs), mp.Size(), len(txs))
+		txs := addTxs(b, mp, 0, numTxs)
+		require.Equal(b, numTxs, len(txs))
+		require.Equal(b, numTxs, mp.Size())
 		b.StartTimer()
 
 		// Update a part of txs and recheck the rest.
@@ -146,5 +151,77 @@ func BenchmarkUpdateRemoteClient(b *testing.B) {
 
 		txs := mp.ReapMaxTxs(mp.Size())
 		doUpdate(b, mp, int64(i), txs)
+	}
+}
+
+// Benchmarks the time it takes a blocking iterator to access all transactions
+// in the mempool.
+func BenchmarkBlockingIterator(b *testing.B) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+	mp, cleanup := newMempoolWithApp(cc)
+	defer cleanup()
+
+	const numTxs = 1000
+	txs := addTxs(b, mp, 0, numTxs)
+	require.Equal(b, numTxs, len(txs))
+	require.Equal(b, numTxs, mp.Size())
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		iter := NewBlockingIterator(context.TODO(), mp, b.Name())
+		b.StartTimer()
+
+		// Iterate until all txs in the mempool are accessed.
+		for c := 0; c < numTxs; c++ {
+			if entry := <-iter.WaitNextCh(); entry == nil {
+				continue
+			}
+		}
+	}
+}
+
+// Benchmarks the time it takes multiple concurrent blocking iterators to access
+// all transactions in the mempool.
+func BenchmarkConcurrentkBlockingIterators(b *testing.B) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+	mp, cleanup := newMempoolWithApp(cc)
+	defer cleanup()
+
+	const numTxs = 1000
+	const numIterators = 10
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		// Flush mempool and add a bunch of txs.
+		mp.Flush()
+		txs := addTxs(b, mp, 0, numTxs)
+		require.Equal(b, numTxs, len(txs))
+		require.Equal(b, numTxs, mp.Size())
+		// Create concurrent iterators.
+		iters := make([]Iterator, numIterators)
+		for j := 0; j < numIterators; j++ {
+			iters[j] = NewBlockingIterator(context.TODO(), mp, strconv.Itoa(j))
+		}
+		wg := sync.WaitGroup{}
+		wg.Add(numIterators)
+		b.StartTimer()
+
+		for j := 0; j < numIterators; j++ {
+			go func(iter Iterator) {
+				defer wg.Done()
+				// Iterate until all txs in the mempool are accessed.
+				for c := 0; c < numTxs; c++ {
+					if entry := <-iter.WaitNextCh(); entry == nil {
+						continue
+					}
+				}
+			}(iters[j])
+		}
+
+		wg.Wait()
 	}
 }

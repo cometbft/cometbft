@@ -13,6 +13,7 @@ import (
 	"github.com/cometbft/cometbft/config"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"
+	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	"github.com/cometbft/cometbft/proxy"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
@@ -62,22 +63,22 @@ func NewReactor(
 	return r
 }
 
-// GetChannels implements p2p.Reactor.
-func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
-	return []*p2p.ChannelDescriptor{
-		{
+// StreamDescriptors implements p2p.Reactor.
+func (*Reactor) StreamDescriptors() []p2p.StreamDescriptor {
+	return []p2p.StreamDescriptor{
+		&tcpconn.ChannelDescriptor{
 			ID:                  SnapshotChannel,
 			Priority:            5,
 			SendQueueCapacity:   10,
 			RecvMessageCapacity: snapshotMsgSize,
-			MessageType:         &ssproto.Message{},
+			MessageTypeI:        &ssproto.Message{},
 		},
-		{
+		&tcpconn.ChannelDescriptor{
 			ID:                  ChunkChannel,
 			Priority:            3,
 			SendQueueCapacity:   10,
 			RecvMessageCapacity: chunkMsgSize,
-			MessageType:         &ssproto.Message{},
+			MessageTypeI:        &ssproto.Message{},
 		},
 	}
 }
@@ -263,7 +264,7 @@ func (r *Reactor) recentSnapshots(n uint32) ([]*snapshot, error) {
 
 // Sync runs a state sync, returning the new state and last commit at the snapshot height.
 // The caller must store the state and commit in the state database and block store.
-func (r *Reactor) Sync(stateProvider StateProvider, discoveryTime time.Duration) (sm.State, *types.Commit, error) {
+func (r *Reactor) Sync(stateProvider StateProvider, maxDiscoveryTime time.Duration) (sm.State, *types.Commit, error) {
 	r.mtx.Lock()
 	if r.syncer != nil {
 		r.mtx.Unlock()
@@ -285,7 +286,8 @@ func (r *Reactor) Sync(stateProvider StateProvider, discoveryTime time.Duration)
 
 	hook()
 
-	state, commit, err := r.syncer.SyncAny(discoveryTime, hook)
+	const discoveryTime = 5 * time.Second
+	state, commit, err := r.syncer.SyncAny(discoveryTime, maxDiscoveryTime, hook)
 
 	r.mtx.Lock()
 	r.syncer = nil

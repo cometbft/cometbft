@@ -229,25 +229,21 @@ type BaseConfig struct {
 	// A custom human readable name for this node
 	Moniker string `mapstructure:"moniker"`
 
-	// Database backend: goleveldb | rocksdb | badgerdb | pebbledb
+	// Database backend: badgerdb | goleveldb | pebbledb | rocksdb
+	// * badgerdb (uses github.com/dgraph-io/badger)
+	//   - stable
+	//   - pure go
+	//   - use badgerdb build tag (go build -tags badgerdb)
 	// * goleveldb (github.com/syndtr/goleveldb)
 	//   - UNMAINTAINED
 	//   - stable
 	//   - pure go
+	// * pebbledb (uses github.com/cockroachdb/pebble)
+	//   - stable
+	//   - pure go
 	// * rocksdb (uses github.com/linxGnu/grocksdb)
-	//   - EXPERIMENTAL
 	//   - requires gcc
 	//   - use rocksdb build tag (go build -tags rocksdb)
-	// * badgerdb (uses github.com/dgraph-io/badger)
-	//   - EXPERIMENTAL
-	//   - stable
-	//   - pure go
-	//   - use badgerdb build tag (go build -tags badgerdb)
-	// * pebbledb (uses github.com/cockroachdb/pebble)
-	//   - EXPERIMENTAL
-	//   - stable
-	//   - pure go
-	//   - use pebbledb build tag (go build -tags pebbledb)
 	DBBackend string `mapstructure:"db_backend"`
 
 	// Database directory
@@ -297,7 +293,7 @@ func DefaultBaseConfig() BaseConfig {
 		LogLevel:           DefaultLogLevel,
 		LogFormat:          LogFormatPlain,
 		FilterPeers:        false,
-		DBBackend:          "goleveldb",
+		DBBackend:          "pebbledb",
 		DBPath:             DefaultDataDir,
 	}
 }
@@ -1073,7 +1069,7 @@ type StateSyncConfig struct {
 	TrustPeriod         time.Duration `mapstructure:"trust_period"`
 	TrustHeight         int64         `mapstructure:"trust_height"`
 	TrustHash           string        `mapstructure:"trust_hash"`
-	DiscoveryTime       time.Duration `mapstructure:"discovery_time"`
+	MaxDiscoveryTime    time.Duration `mapstructure:"max_discovery_time"`
 	ChunkRequestTimeout time.Duration `mapstructure:"chunk_request_timeout"`
 	ChunkFetchers       int32         `mapstructure:"chunk_fetchers"`
 }
@@ -1091,7 +1087,7 @@ func (cfg *StateSyncConfig) TrustHashBytes() []byte {
 func DefaultStateSyncConfig() *StateSyncConfig {
 	return &StateSyncConfig{
 		TrustPeriod:         168 * time.Hour,
-		DiscoveryTime:       15 * time.Second,
+		MaxDiscoveryTime:    2 * time.Minute,
 		ChunkRequestTimeout: 10 * time.Second,
 		ChunkFetchers:       4,
 	}
@@ -1119,8 +1115,8 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 			}
 		}
 
-		if cfg.DiscoveryTime != 0 && cfg.DiscoveryTime < 5*time.Second {
-			return ErrInsufficientDiscoveryTime
+		if cfg.MaxDiscoveryTime < 0 {
+			return cmterrors.ErrNegativeField{Field: "max_discovery_time"}
 		}
 
 		if cfg.TrustPeriod <= 0 {
@@ -1234,7 +1230,7 @@ func DefaultConsensusConfig() *ConsensusConfig {
 		TimeoutProposeDelta:              500 * time.Millisecond,
 		TimeoutVote:                      1000 * time.Millisecond,
 		TimeoutVoteDelta:                 500 * time.Millisecond,
-		TimeoutCommit:                    1000 * time.Millisecond,
+		TimeoutCommit:                    0 * time.Millisecond,
 		CreateEmptyBlocks:                true,
 		CreateEmptyBlocksInterval:        0 * time.Second,
 		PeerGossipSleepDuration:          100 * time.Millisecond,

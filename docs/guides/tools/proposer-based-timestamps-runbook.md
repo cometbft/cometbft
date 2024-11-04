@@ -127,7 +127,7 @@ are properly connected to NTP using the steps for [Debugging a Single Node](#deb
 
 If the value is relatively similar for all proposers you should next compare this
 value to the `SynchronyParams` values for the network. Continue to the
-[Checking Sychrony](#checking-synchronyparams) steps.
+[Checking Synchrony](#checking-synchronyparams) steps.
 
 #### From the `/metrics` url
 
@@ -142,7 +142,7 @@ to NTP using the steps for [Debugging a Single Node](#debugging-a-single-node).
 
 If the values are relatively similar for all proposers,
 you'll need to compare this value to the `SynchronyParams` for the network. Continue
-to the [Checking Sychrony](#checking-synchronyparams) steps.
+to the [Checking Synchrony](#checking-synchronyparams) steps.
 
 ## Checking Clock Sync
 
@@ -228,13 +228,13 @@ The json output will contain a field named `synchrony`, with the following struc
 
 ```json
 {
-  "precision": "500000000",
-  "message_delay": "3000000000"
+  "precision": "505000000",
+  "message_delay": "12000000000"
 }
 ```
 
 The `precision` and `message_delay` values returned are listed in nanoseconds:
-In the examples above, the precision is 500ms and the message delay is 3s.
+In the examples above, the precision is 505ms and the message delay is 12s.
 Remember, `consensus_quorum_prevote_delay` is listed in seconds.
 If the `consensus_quorum_prevote_delay` value approaches the sum of `precision` and `message_delay`,
 then the value selected for these parameters is too small. Your application will

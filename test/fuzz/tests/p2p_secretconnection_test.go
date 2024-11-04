@@ -11,7 +11,7 @@ import (
 
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/internal/async"
-	sc "github.com/cometbft/cometbft/p2p/conn"
+	sc "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
 
 func FuzzP2PSecretConnection(f *testing.F) {

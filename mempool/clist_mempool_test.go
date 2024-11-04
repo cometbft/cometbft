@@ -1,7 +1,6 @@
 package mempool
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -50,12 +49,25 @@ func newMempoolWithAppAndConfigMock(
 ) (*CListMempool, cleanupFunc) {
 	appConnMem := client
 	appConnMem.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "mempool"))
-	err := appConnMem.Start()
+	if err := appConnMem.Start(); err != nil {
+		panic(err)
+	}
+
+	appConnQuery := client
+	appConnQuery.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "query"))
+	if err := appConnQuery.Start(); err != nil {
+		panic(err)
+	}
+	appInfoRes, err := appConnQuery.Info(context.TODO(), proxy.InfoRequest)
 	if err != nil {
 		panic(err)
 	}
 
-	mp := NewCListMempool(cfg.Mempool, appConnMem, 0)
+	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, appInfoRes.DefaultLane)
+	if err != nil {
+		panic(err)
+	}
+	mp := NewCListMempool(cfg.Mempool, appConnMem, lanesInfo, 0)
 	mp.SetLogger(log.TestingLogger())
 
 	return mp, func() { os.RemoveAll(cfg.RootDir) }
@@ -71,12 +83,24 @@ func newMempoolWithApp(cc proxy.ClientCreator) (*CListMempool, cleanupFunc) {
 func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CListMempool, cleanupFunc) {
 	appConnMem, _ := cc.NewABCIMempoolClient()
 	appConnMem.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "mempool"))
-	err := appConnMem.Start()
-	if err != nil {
+	if err := appConnMem.Start(); err != nil {
 		panic(err)
 	}
 
-	mp := NewCListMempool(cfg.Mempool, appConnMem, 0)
+	appConnQuery, _ := cc.NewABCIQueryClient()
+	appConnQuery.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "query"))
+	if err := appConnQuery.Start(); err != nil {
+		panic(err)
+	}
+	appInfoRes, err := appConnQuery.Info(context.TODO(), proxy.InfoRequest)
+	if err != nil {
+		panic(err)
+	}
+	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, appInfoRes.DefaultLane)
+	if err != nil {
+		panic(err)
+	}
+	mp := NewCListMempool(cfg.Mempool, appConnMem, lanesInfo, 0)
 	mp.SetLogger(*mempoolLogger("info"))
 
 	return mp, func() { os.RemoveAll(cfg.RootDir) }
@@ -136,19 +160,37 @@ func addRandomTxs(t *testing.T, mp Mempool, count int) []types.Tx {
 	t.Helper()
 	txs := NewRandomTxs(count, 20)
 	callCheckTx(t, mp, txs)
+	require.Equal(t, count, len(txs))
 	return txs
 }
 
+// addTxs adds to the mempool num transactions with sequential ids starting from
+// first.
 func addTxs(tb testing.TB, mp Mempool, first, num int) []types.Tx {
 	tb.Helper()
 	txs := make([]types.Tx, 0, num)
-	for i := first; i < num; i++ {
+	for i := first; i < first+num; i++ {
 		tx := kvstore.NewTxFromID(i)
 		_, err := mp.CheckTx(tx, "")
 		require.NoError(tb, err)
 		txs = append(txs, tx)
 	}
+	require.Equal(tb, num, len(txs))
 	return txs
+}
+
+func waitTimeout(wg *sync.WaitGroup, timeout time.Duration, doneFunc func(), timeoutFunc func()) {
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		doneFunc()
+	case <-time.After(timeout):
+		timeoutFunc()
+	}
 }
 
 func TestReapMaxBytesMaxGas(t *testing.T) {
@@ -159,8 +201,9 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 
 	// Ensure gas calculation behaves as expected
 	addRandomTxs(t, mp, 1)
-	iter := mp.NewIterator(context.Background())
+	iter := NewBlockingIterator(context.Background(), mp, t.Name())
 	tx0 := <-iter.WaitNextCh()
+	require.NotNil(t, tx0)
 	require.Equal(t, tx0.GasWanted(), int64(1), "transactions gas was set incorrectly")
 	// ensure each tx is 20 bytes long
 	require.Len(t, tx0.Tx(), 20, "Tx is longer than 20 bytes")
@@ -192,6 +235,7 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 	}
 	for tcIndex, tt := range tests {
 		addRandomTxs(t, mp, tt.numTxsToCreate)
+		require.Equal(t, tt.numTxsToCreate, mp.Size())
 		got := mp.ReapMaxBytesMaxGas(tt.maxBytes, tt.maxGas)
 		require.Len(t, got, tt.expectedNumTxs, "Got %d txs, expected %d, tc #%d",
 			len(got), tt.expectedNumTxs, tcIndex)
@@ -238,6 +282,36 @@ func TestMempoolFilters(t *testing.T) {
 	}
 }
 
+func TestMempoolAddTxLane(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+	cfg := test.ResetTestRoot("mempool_test")
+	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
+	defer cleanup()
+
+	for i := 0; i < 100; i++ {
+		tx := kvstore.NewTxFromID(i)
+		rr, err := mp.CheckTx(tx, noSender)
+		require.NoError(t, err)
+		rr.Wait()
+
+		// Check that the lane stored in the mempool entry is the same as the
+		// one assigned by the application.
+		entry := mp.txsMap[types.Tx(tx).Key()].Value.(*mempoolTx)
+		require.Equal(t, kvstoreAssignLane(i), entry.lane, "id %x", tx)
+	}
+}
+
+func kvstoreAssignLane(key int) LaneID {
+	lane := defaultLane // 3
+	if key%11 == 0 {
+		lane = "foo" // 7
+	} else if key%3 == 0 {
+		lane = "bar" // 1
+	}
+	return LaneID(lane)
+}
+
 func TestMempoolUpdate(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
@@ -279,6 +353,23 @@ func TestMempoolUpdate(t *testing.T) {
 	}
 }
 
+func TestMempoolBuildLanesInfo(t *testing.T) {
+	emptyMap := make(map[string]uint32)
+	_, err := BuildLanesInfo(emptyMap, "")
+	require.NoError(t, err)
+
+	_, err = BuildLanesInfo(emptyMap, "1")
+
+	require.ErrorAs(t, err, &ErrEmptyLanesDefaultLaneSet{})
+
+	_, err = BuildLanesInfo(map[string]uint32{"1": 1}, "")
+
+	require.ErrorAs(t, err, &ErrBadDefaultLaneNonEmptyLaneList{})
+
+	_, err = BuildLanesInfo(map[string]uint32{"1": 1, "2": 2, "3": 3, "4": 4}, "5")
+	require.ErrorAs(t, err, &ErrDefaultLaneNotInList{})
+}
+
 // Test dropping CheckTx requests when rechecking transactions. It mocks an asynchronous connection
 // to the app.
 func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
@@ -286,6 +377,7 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
 	mockClient.On("Error").Return(nil).Times(4)
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()
@@ -613,16 +705,17 @@ func TestMempoolTxsBytes(t *testing.T) {
 	mp.Flush()
 	assert.EqualValues(t, 0, mp.SizeBytes())
 
-	// 5. ErrMempoolIsFull is returned when/if MaxTxsBytes limit is reached.
-	tx3 := kvstore.NewRandomTx(100)
-	_, err = mp.CheckTx(tx3, "")
+	// 5. ErrLaneIsFull is returned when/if the limit on the lane bytes capacity is reached.
+	laneMaxBytes := int(cfg.Mempool.MaxTxsBytes) / len(mp.sortedLanes)
+	tx3 := kvstore.NewRandomTx(laneMaxBytes)
+	rr, err := mp.CheckTx(tx3, "")
 	require.NoError(t, err)
+	require.NoError(t, rr.Error())
 
 	tx4 := kvstore.NewRandomTx(10)
-	_, err = mp.CheckTx(tx4, "")
-	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
-		assert.IsType(t, ErrMempoolIsFull{}, err)
-	}
+	rr, err = mp.CheckTx(tx4, "")
+	require.NoError(t, err)
+	require.ErrorAs(t, rr.Error(), &ErrLaneIsFull{})
 
 	// 6. zero after tx is rechecked and removed due to not being valid anymore
 	app2 := kvstore.NewInMemoryApplication()
@@ -696,11 +789,13 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	err = mp.FlushAppConn()
 	require.NoError(t, err)
 
-	// tx0 should appear only once in mp.txs
+	// tx0 should appear only once in mp.lanes
 	found := 0
-	for e := mp.txs.Front(); e != nil; e = e.Next() {
-		if types.Tx.Key(e.Value.(*mempoolTx).tx) == types.Tx.Key(tx0) {
-			found++
+	for _, lane := range mp.sortedLanes {
+		for e := mp.lanes[lane.id].Front(); e != nil; e = e.Next() {
+			if types.Tx.Key(e.Value.(*mempoolTx).Tx()) == types.Tx.Key(tx0) {
+				found++
+			}
 		}
 	}
 	assert.Equal(t, 1, found)
@@ -808,6 +903,7 @@ func TestMempoolSyncCheckTxReturnError(t *testing.T) {
 	mockClient := new(abciclimocks.Client)
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()
@@ -832,6 +928,7 @@ func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
 	mockClient.On("Error").Return(nil)
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()
@@ -873,6 +970,7 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
 	mockClient.On("Error").Return(nil).Times(4)
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()
@@ -895,7 +993,6 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	// Check that recheck has not started.
 	require.True(t, mp.recheck.done())
 	require.Nil(t, mp.recheck.cursor)
-	require.Nil(t, mp.recheck.end)
 	require.False(t, mp.recheck.isRechecking.Load())
 	mockClient.AssertExpectations(t)
 
@@ -924,8 +1021,6 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	require.True(t, mp.recheck.done())
 	require.False(t, mp.recheck.isRechecking.Load())
 	require.Nil(t, mp.recheck.cursor)
-	require.NotNil(t, mp.recheck.end)
-	require.Equal(t, mp.recheck.end, mp.txs.Back())
 	require.Equal(t, len(txs)-1, mp.Size()) // one invalid tx was removed
 	require.Equal(t, int32(2), mp.recheck.numPendingTxs.Load())
 
@@ -996,44 +1091,6 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 	require.Zero(t, mp.Size())
 }
 
-func TestMempoolIterator(t *testing.T) {
-	app := kvstore.NewInMemoryApplication()
-	cc := proxy.NewLocalClientCreator(app)
-
-	cfg := test.ResetTestRoot("mempool_test")
-	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
-	defer cleanup()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	n := numTxs
-
-	// Spawn a goroutine that iterates on the list until counting n entries.
-	counter := 0
-	go func() {
-		defer wg.Done()
-
-		iter := mp.NewIterator(context.Background())
-		for counter < n {
-			entry := <-iter.WaitNextCh()
-			require.True(t, bytes.Equal(kvstore.NewTxFromID(counter), entry.Tx()))
-			counter++
-		}
-	}()
-
-	// Add n transactions with sequential ids.
-	for i := 0; i < n; i++ {
-		tx := kvstore.NewTxFromID(i)
-		rr, err := mp.CheckTx(tx, "")
-		require.NoError(t, err)
-		rr.Wait()
-	}
-
-	wg.Wait()
-	require.Equal(t, n, counter)
-}
-
 func newMempoolWithAsyncConnection(tb testing.TB) (*CListMempool, cleanupFunc) {
 	tb.Helper()
 	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
@@ -1067,6 +1124,12 @@ func newRemoteApp(tb testing.TB, addr string, app abci.Application) service.Serv
 func newReqRes(tx types.Tx, code uint32, requestType abci.CheckTxType) *abciclient.ReqRes {
 	reqRes := abciclient.NewReqRes(abci.ToCheckTxRequest(&abci.CheckTxRequest{Tx: tx, Type: requestType}))
 	reqRes.Response = abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: code})
+	return reqRes
+}
+
+func newReqResWithLanes(tx types.Tx, code uint32, requestType abci.CheckTxType, lane string) *abciclient.ReqRes {
+	reqRes := abciclient.NewReqRes(abci.ToCheckTxRequest(&abci.CheckTxRequest{Tx: tx, Type: requestType}))
+	reqRes.Response = abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: code, LaneId: lane})
 	return reqRes
 }
 

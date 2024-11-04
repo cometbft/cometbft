@@ -20,7 +20,7 @@ type Manifest struct {
 	// set in genesis. Defaults to nothing.
 	InitialState map[string]string `toml:"initial_state"`
 
-	// ValidatorsMap is the initial validator set in genesis, given as node names
+	// Validators is the initial validator set in genesis, given as node names
 	// and power:
 	//
 	// validators = { validator01 = 10; validator02 = 20; validator03 = 30 }
@@ -29,7 +29,7 @@ type Manifest struct {
 	// specifying an empty set will start with no validators in genesis, and
 	// the application must return the validator set in InitChain via the
 	// setting validator_update.0 (see below).
-	ValidatorsMap *map[string]int64 `toml:"validators"`
+	Validators map[string]int64 `toml:"validators"`
 
 	// ValidatorUpdatesMap is a map of heights to validator names and their power,
 	// and will be returned by the ABCI application. For example, the following
@@ -86,7 +86,12 @@ type Manifest struct {
 	LoadTxSizeBytes   int `toml:"load_tx_size_bytes"`
 	LoadTxBatchSize   int `toml:"load_tx_batch_size"`
 	LoadTxConnections int `toml:"load_tx_connections"`
+	LoadMaxSeconds    int `toml:"load_max_seconds"`
 	LoadMaxTxs        int `toml:"load_max_txs"`
+
+	// Weight for each lane defined by the app. The transaction loader will
+	// assign lanes to generated transactions proportionally to their weights.
+	LoadLaneWeights map[string]uint `toml:"load_lane_weights"`
 
 	// LogLevel specifies the log level to be set on all nodes.
 	LogLevel string `toml:"log_level"`
@@ -142,6 +147,15 @@ type Manifest struct {
 	// 0 denotes it is set at InitChain.
 	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
 
+	// Used to disable lanes for testing behavior of
+	// networks that upgrade to a version of CometBFT
+	// that supports lanes but do not opt for using them.
+	NoLanes bool `toml:"no_lanes"`
+
+	// Mapping from lane IDs to lane priorities. These lanes will be used by the
+	// application for setting up the mempool and for classifying transactions.
+	Lanes map[string]uint32 `toml:"lanes"`
+
 	// Genesis is a set of key-value config entries to write to the
 	// produced genesis file. The format is "key = value".
 	// Example: "consensus_params.evidence.max_bytes = 1024".
@@ -151,6 +165,13 @@ type Manifest struct {
 	// configuration files for all nodes. The format is "key = value".
 	// Example: "p2p.send_rate = 512000".
 	Config []string `toml:"config"`
+
+	// If true, the application will return validator updates and
+	// `ConsensusParams` updates at every height.
+	// This is useful to create a more dynamic testnet.
+	// * An existing validator will be chosen, and its power will alternate between 0 and 1.
+	// * `ConsensusParams` will be flipping on and off key types not set at genesis.
+	ConstantFlip bool `toml:"constant_flip"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

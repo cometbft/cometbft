@@ -4,11 +4,17 @@ package mocks
 
 import (
 	log "github.com/cometbft/cometbft/libs/log"
-	conn "github.com/cometbft/cometbft/p2p/conn"
+	conn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 
 	mock "github.com/stretchr/testify/mock"
 
 	net "net"
+
+	netaddr "github.com/cometbft/cometbft/p2p/netaddr"
+
+	nodeinfo "github.com/cometbft/cometbft/p2p/nodeinfo"
+
+	nodekey "github.com/cometbft/cometbft/p2p/nodekey"
 
 	p2p "github.com/cometbft/cometbft/p2p"
 )
@@ -18,19 +24,21 @@ type Peer struct {
 	mock.Mock
 }
 
-// CloseConn provides a mock function with given fields:
-func (_m *Peer) CloseConn() error {
+// Conn provides a mock function with given fields:
+func (_m *Peer) Conn() net.Conn {
 	ret := _m.Called()
 
 	if len(ret) == 0 {
-		panic("no return value specified for CloseConn")
+		panic("no return value specified for Conn")
 	}
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
+	var r0 net.Conn
+	if rf, ok := ret.Get(0).(func() net.Conn); ok {
 		r0 = rf()
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(net.Conn)
+		}
 	}
 
 	return r0
@@ -42,19 +50,19 @@ func (_m *Peer) FlushStop() {
 }
 
 // Get provides a mock function with given fields: key
-func (_m *Peer) Get(key string) interface{} {
+func (_m *Peer) Get(key string) any {
 	ret := _m.Called(key)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Get")
 	}
 
-	var r0 interface{}
-	if rf, ok := ret.Get(0).(func(string) interface{}); ok {
+	var r0 any
+	if rf, ok := ret.Get(0).(func(string) any); ok {
 		r0 = rf(key)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interface{})
+			r0 = ret.Get(0).(any)
 		}
 	}
 
@@ -98,18 +106,18 @@ func (_m *Peer) HasChannel(chID byte) bool {
 }
 
 // ID provides a mock function with given fields:
-func (_m *Peer) ID() p2p.ID {
+func (_m *Peer) ID() nodekey.ID {
 	ret := _m.Called()
 
 	if len(ret) == 0 {
 		panic("no return value specified for ID")
 	}
 
-	var r0 p2p.ID
-	if rf, ok := ret.Get(0).(func() p2p.ID); ok {
+	var r0 nodekey.ID
+	if rf, ok := ret.Get(0).(func() nodekey.ID); ok {
 		r0 = rf()
 	} else {
-		r0 = ret.Get(0).(p2p.ID)
+		r0 = ret.Get(0).(nodekey.ID)
 	}
 
 	return r0
@@ -170,19 +178,19 @@ func (_m *Peer) IsRunning() bool {
 }
 
 // NodeInfo provides a mock function with given fields:
-func (_m *Peer) NodeInfo() p2p.NodeInfo {
+func (_m *Peer) NodeInfo() nodeinfo.NodeInfo {
 	ret := _m.Called()
 
 	if len(ret) == 0 {
 		panic("no return value specified for NodeInfo")
 	}
 
-	var r0 p2p.NodeInfo
-	if rf, ok := ret.Get(0).(func() p2p.NodeInfo); ok {
+	var r0 nodeinfo.NodeInfo
+	if rf, ok := ret.Get(0).(func() nodeinfo.NodeInfo); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(p2p.NodeInfo)
+			r0 = ret.Get(0).(nodeinfo.NodeInfo)
 		}
 	}
 
@@ -327,7 +335,7 @@ func (_m *Peer) Send(e p2p.Envelope) bool {
 }
 
 // Set provides a mock function with given fields: key, value
-func (_m *Peer) Set(key string, value interface{}) {
+func (_m *Peer) Set(key string, value any) {
 	_m.Called(key, value)
 }
 
@@ -342,19 +350,19 @@ func (_m *Peer) SetRemovalFailed() {
 }
 
 // SocketAddr provides a mock function with given fields:
-func (_m *Peer) SocketAddr() *p2p.NetAddress {
+func (_m *Peer) SocketAddr() *netaddr.NetAddr {
 	ret := _m.Called()
 
 	if len(ret) == 0 {
 		panic("no return value specified for SocketAddr")
 	}
 
-	var r0 *p2p.NetAddress
-	if rf, ok := ret.Get(0).(func() *p2p.NetAddress); ok {
+	var r0 *netaddr.NetAddr
+	if rf, ok := ret.Get(0).(func() *netaddr.NetAddr); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*p2p.NetAddress)
+			r0 = ret.Get(0).(*netaddr.NetAddr)
 		}
 	}
 

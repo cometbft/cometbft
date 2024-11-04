@@ -11,7 +11,10 @@ import (
 	"github.com/cometbft/cometbft/internal/cmap"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
-	cmtconn "github.com/cometbft/cometbft/p2p/conn"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
+	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
+	"github.com/cometbft/cometbft/p2p/nodekey"
+	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -26,18 +29,19 @@ type Peer interface {
 	service.Service
 	FlushStop()
 
-	ID() ID               // peer's cryptographic ID
+	ID() nodekey.ID       // peer's cryptographic ID
 	RemoteIP() net.IP     // remote IP of the connection
 	RemoteAddr() net.Addr // remote address of the connection
 
 	IsOutbound() bool   // did we dial the peer
 	IsPersistent() bool // do we redial this peer when we disconnect
 
-	CloseConn() error // close original connection
+	// Conn returns the underlying connection.
+	Conn() net.Conn
 
-	NodeInfo() NodeInfo // peer's info
-	Status() cmtconn.ConnectionStatus
-	SocketAddr() *NetAddress // actual address of the socket
+	NodeInfo() ni.NodeInfo // peer's info
+	Status() tcpconn.ConnectionStatus
+	SocketAddr() *na.NetAddr // actual address of the socket
 
 	HasChannel(chID byte) bool // Does the peer implement this channel?
 	Send(e Envelope) bool      // Send a message to the peer, blocking version
@@ -58,7 +62,7 @@ type peerConn struct {
 	persistent bool
 	conn       net.Conn // Source connection
 
-	socketAddr *NetAddress
+	socketAddr *na.NetAddr
 
 	// cached RemoteIP()
 	ip net.IP
@@ -67,7 +71,7 @@ type peerConn struct {
 func newPeerConn(
 	outbound, persistent bool,
 	conn net.Conn,
-	socketAddr *NetAddress,
+	socketAddr *na.NetAddr,
 ) peerConn {
 	return peerConn{
 		outbound:   outbound,
@@ -77,10 +81,11 @@ func newPeerConn(
 	}
 }
 
-// ID only exists for SecretConnection.
-// NOTE: Will panic if conn is not *SecretConnection.
-func (pc peerConn) ID() ID {
-	return PubKeyToID(pc.conn.(*cmtconn.SecretConnection).RemotePubKey())
+// ID returns the peer's ID.
+//
+// Only used in tests.
+func (pc peerConn) ID() nodekey.ID {
+	return pc.socketAddr.ID
 }
 
 // Return the IP from the connection RemoteAddr.
@@ -112,12 +117,12 @@ type peer struct {
 
 	// raw peerConn and the multiplex connection
 	peerConn
-	mconn *cmtconn.MConnection
+	mconn *tcpconn.MConnection
 
 	// peer's node info and the channel it knows about
 	// channels = nodeInfo.Channels
 	// cached to avoid copying nodeInfo in HasChannel
-	nodeInfo NodeInfo
+	nodeInfo ni.NodeInfo
 	channels []byte
 
 	// User data
@@ -134,29 +139,30 @@ type PeerOption func(*peer)
 
 func newPeer(
 	pc peerConn,
-	mConfig cmtconn.MConnConfig,
-	nodeInfo NodeInfo,
+	mConfig tcpconn.MConnConfig,
+	nodeInfo ni.NodeInfo,
 	reactorsByCh map[byte]Reactor,
 	msgTypeByChID map[byte]proto.Message,
-	chDescs []*cmtconn.ChannelDescriptor,
+	streams []StreamDescriptor,
 	onPeerError func(Peer, any),
 	options ...PeerOption,
 ) *peer {
 	p := &peer{
 		peerConn:       pc,
 		nodeInfo:       nodeInfo,
-		channels:       nodeInfo.(DefaultNodeInfo).Channels,
+		channels:       nodeInfo.(ni.Default).Channels,
 		Data:           cmap.NewCMap(),
 		metrics:        NopMetrics(),
 		pendingMetrics: newPeerPendingMetricsCache(),
 	}
 
+	// TODO: rip this out from the peer
 	p.mconn = createMConnection(
 		pc.conn,
 		p,
 		reactorsByCh,
 		msgTypeByChID,
-		chDescs,
+		streams,
 		onPeerError,
 		mConfig,
 	)
@@ -219,7 +225,7 @@ func (p *peer) OnStop() {
 // Implements Peer
 
 // ID returns the peer's ID - the hex encoded hash of its pubkey.
-func (p *peer) ID() ID {
+func (p *peer) ID() nodekey.ID {
 	return p.nodeInfo.ID()
 }
 
@@ -234,7 +240,7 @@ func (p *peer) IsPersistent() bool {
 }
 
 // NodeInfo returns a copy of the peer's NodeInfo.
-func (p *peer) NodeInfo() NodeInfo {
+func (p *peer) NodeInfo() ni.NodeInfo {
 	return p.nodeInfo
 }
 
@@ -242,12 +248,12 @@ func (p *peer) NodeInfo() NodeInfo {
 // For outbound peers, it's the address dialed (after DNS resolution).
 // For inbound peers, it's the address returned by the underlying connection
 // (not what's reported in the peer's NodeInfo).
-func (p *peer) SocketAddr() *NetAddress {
+func (p *peer) SocketAddr() *na.NetAddr {
 	return p.peerConn.socketAddr
 }
 
 // Status returns the peer's ConnectionStatus.
-func (p *peer) Status() cmtconn.ConnectionStatus {
+func (p *peer) Status() tcpconn.ConnectionStatus {
 	return p.mconn.Status()
 }
 
@@ -313,9 +319,9 @@ func (p *peer) HasChannel(chID byte) bool {
 	return false
 }
 
-// CloseConn closes original connection. Used for cleaning up in cases where the peer had not been started at all.
-func (p *peer) CloseConn() error {
-	return p.peerConn.conn.Close()
+// Conn returns the underlying peer source connection.
+func (p *peer) Conn() net.Conn {
+	return p.peerConn.conn
 }
 
 func (p *peer) SetRemovalFailed() {
@@ -329,11 +335,6 @@ func (p *peer) GetRemovalFailed() bool {
 // ---------------------------------------------------
 // methods only used for testing
 // TODO: can we remove these?
-
-// CloseConn closes the underlying connection.
-func (pc *peerConn) CloseConn() {
-	pc.conn.Close()
-}
 
 // RemoteAddr returns peer's remote network address.
 func (p *peer) RemoteAddr() net.Addr {
@@ -409,10 +410,10 @@ func createMConnection(
 	p *peer,
 	reactorsByCh map[byte]Reactor,
 	msgTypeByChID map[byte]proto.Message,
-	chDescs []*cmtconn.ChannelDescriptor,
+	streamDescs []StreamDescriptor,
 	onPeerError func(Peer, any),
-	config cmtconn.MConnConfig,
-) *cmtconn.MConnection {
+	config tcpconn.MConnConfig,
+) *tcpconn.MConnection {
 	onReceive := func(chID byte, msgBytes []byte) {
 		reactor := reactorsByCh[chID]
 		if reactor == nil {
@@ -444,11 +445,56 @@ func createMConnection(
 		onPeerError(p, r)
 	}
 
-	return cmtconn.NewMConnectionWithConfig(
+	// filter out non-tcpconn.ChannelDescriptor streams
+	tcpDescs := make([]*tcpconn.ChannelDescriptor, 0, len(streamDescs))
+	for _, stream := range streamDescs {
+		var ok bool
+		d, ok := stream.(*tcpconn.ChannelDescriptor)
+		if !ok {
+			continue
+		}
+		tcpDescs = append(tcpDescs, d)
+	}
+
+	return tcpconn.NewMConnectionWithConfig(
 		conn,
-		chDescs,
+		tcpDescs,
 		onReceive,
 		onError,
 		config,
 	)
+}
+
+func wrapPeer(c net.Conn, ni ni.NodeInfo, cfg peerConfig, socketAddr *na.NetAddr, mConfig tcpconn.MConnConfig) Peer {
+	persistent := false
+	if cfg.isPersistent != nil {
+		if cfg.outbound {
+			persistent = cfg.isPersistent(socketAddr)
+		} else {
+			selfReportedAddr, err := ni.NetAddr()
+			if err == nil {
+				persistent = cfg.isPersistent(selfReportedAddr)
+			}
+		}
+	}
+
+	peerConn := newPeerConn(
+		cfg.outbound,
+		persistent,
+		c,
+		socketAddr,
+	)
+
+	p := newPeer(
+		peerConn,
+		mConfig,
+		ni,
+		cfg.reactorsByCh,
+		cfg.msgTypeByChID,
+		cfg.streamDescs,
+		cfg.onPeerError,
+		PeerMetrics(cfg.metrics),
+	)
+
+	return p
 }

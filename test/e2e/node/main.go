@@ -24,7 +24,7 @@ import (
 	lrpc "github.com/cometbft/cometbft/light/rpc"
 	dbs "github.com/cometbft/cometbft/light/store/db"
 	"github.com/cometbft/cometbft/node"
-	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
 	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
@@ -37,7 +37,7 @@ var logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 // main is the binary entrypoint.
 func main() {
 	if len(os.Args) != 2 {
-		fmt.Printf("Usage: %v <configfile>", os.Args[0])
+		fmt.Printf("Usage: %v <configfile>\n", os.Args[0])
 		return
 	}
 	configFile := ""
@@ -240,7 +240,7 @@ func startSigner(cfg *Config) error {
 	return nil
 }
 
-func setupNode() (*config.Config, log.Logger, *p2p.NodeKey, error) {
+func setupNode() (*config.Config, log.Logger, *nodekey.NodeKey, error) {
 	var cmtcfg *config.Config
 
 	home := os.Getenv("CMTHOME")
@@ -278,7 +278,7 @@ func setupNode() (*config.Config, log.Logger, *p2p.NodeKey, error) {
 
 	nodeLogger = nodeLogger.With("module", "main")
 
-	nodeKey, err := p2p.LoadOrGenNodeKey(cmtcfg.NodeKeyFile())
+	nodeKey, err := nodekey.LoadOrGen(cmtcfg.NodeKeyFile())
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to load or gen node key %s: %w", cmtcfg.NodeKeyFile(), err)
 	}

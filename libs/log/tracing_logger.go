@@ -33,7 +33,9 @@ func (l *tracingLogger) Info(msg string, keyvals ...any) {
 }
 
 func (l *tracingLogger) Debug(msg string, keyvals ...any) {
-	l.next.Debug(msg, formatErrors(keyvals)...)
+	if LogDebug {
+		l.next.Debug(msg, formatErrors(keyvals)...)
+	}
 }
 
 func (l *tracingLogger) Error(msg string, keyvals ...any) {

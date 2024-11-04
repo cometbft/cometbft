@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"strings"
 
 	"github.com/lmittmann/tint"
 )
@@ -126,9 +127,13 @@ type tabHandler struct {
 func (th tabHandler) Handle(ctx context.Context, r slog.Record) error {
 	// Format message with tabs if it's less than 40 characters
 	formattedMsg := r.Message
-	if len(r.Message) < 40 {
-		formattedMsg += "\t\t\t"
+
+	maxMsgLen := 40
+	if len(r.Message) > maxMsgLen {
+		maxMsgLen = len(r.Message)
 	}
+	padding := strings.Repeat("\t", (maxMsgLen-len(r.Message))/8+3)
+	formattedMsg += padding
 
 	// Create a new Record with the formatted message
 	record := slog.NewRecord(r.Time, r.Level, formattedMsg, r.PC)

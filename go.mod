@@ -52,7 +52,7 @@ require (
 	github.com/ory/dockertest v3.3.5+incompatible
 	golang.org/x/sync v0.8.0
 	gonum.org/v1/gonum v0.15.0
-	google.golang.org/protobuf v1.34.2
+	google.golang.org/protobuf v1.35.1
 )
 
 // TODO: Remove once these libs are updated.

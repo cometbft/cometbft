@@ -2,9 +2,9 @@ package log
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
-	"strings"
 
 	"github.com/lmittmann/tint"
 )
@@ -125,15 +125,10 @@ type tabHandler struct {
 }
 
 func (th tabHandler) Handle(ctx context.Context, r slog.Record) error {
-	formattedMsg := r.Message
+	// Format the message with some spaces between the message and the attributes.
+	formattedMsg := fmt.Sprintf("%-44s", r.Message)
 
-	maxMsgLen := 40
-	if len(r.Message) < maxMsgLen {
-		padding := strings.Repeat("\t", (maxMsgLen-len(r.Message))/8+2)
-		formattedMsg += padding
-	}
-
-	// Create a new Record with the formatted message
+	// Create a new Record with the formatted message.
 	record := slog.NewRecord(r.Time, r.Level, formattedMsg, r.PC)
 	r.Attrs(func(a slog.Attr) bool {
 		record.Add(a)

@@ -279,7 +279,6 @@ func verifyCommitBatch(
 		valIdx             int32
 		seenVals           = make(map[int32]int, len(commit.Signatures))
 		batchSigIdxs       = make([]int, 0, len(commit.Signatures))
-		valPubKeyBytes     = make(map[int][]byte, len(commit.Signatures))
 		talliedVotingPower int64
 	)
 	// attempt to create a batch verifier
@@ -327,7 +326,7 @@ func verifyCommitBatch(
 		cacheHit := false
 		if verifiedSignatureCache != nil {
 			cacheVal, sigIsInCache := verifiedSignatureCache.Get(string(commitSig.Signature))
-			cacheHit = sigIsInCache && bytes.Equal(cacheVal.ValidatorPubKeyBytes, val.PubKey.Bytes()) && bytes.Equal(cacheVal.VoteSignBytes, voteSignBytes)
+			cacheHit = sigIsInCache && bytes.Equal(cacheVal.ValidatorAddress, val.PubKey.Address()) && bytes.Equal(cacheVal.VoteSignBytes, voteSignBytes)
 		}
 
 		if !cacheHit {
@@ -336,7 +335,6 @@ func verifyCommitBatch(
 				return err
 			}
 			batchSigIdxs = append(batchSigIdxs, idx)
-			valPubKeyBytes[idx] = val.PubKey.Bytes()
 		}
 
 		// If this signature counts then add the voting power of the validator
@@ -372,8 +370,8 @@ func verifyCommitBatch(
 				idx := batchSigIdxs[i]
 				sig := commit.Signatures[idx]
 				verifiedSignatureCache.Add(string(sig.Signature), SignatureCacheValue{
-					ValidatorPubKeyBytes: valPubKeyBytes[idx],
-					VoteSignBytes:        commit.VoteSignBytes(chainID, int32(idx)),
+					ValidatorAddress: sig.ValidatorAddress,
+					VoteSignBytes:    commit.VoteSignBytes(chainID, int32(idx)),
 				})
 			}
 		}
@@ -392,8 +390,8 @@ func verifyCommitBatch(
 		}
 		if verifiedSignatureCache != nil {
 			verifiedSignatureCache.Add(string(sig.Signature), SignatureCacheValue{
-				ValidatorPubKeyBytes: valPubKeyBytes[idx],
-				VoteSignBytes:        commit.VoteSignBytes(chainID, int32(idx)),
+				ValidatorAddress: sig.ValidatorAddress,
+				VoteSignBytes:    commit.VoteSignBytes(chainID, int32(idx)),
 			})
 		}
 	}
@@ -471,7 +469,7 @@ func verifyCommitSingle(
 		if verifiedSignatureCache != nil {
 			cacheKey = string(commitSig.Signature)
 			cacheVal, sigIsInCache := verifiedSignatureCache.Get(cacheKey)
-			cacheHit = sigIsInCache && bytes.Equal(cacheVal.ValidatorPubKeyBytes, val.PubKey.Bytes()) && bytes.Equal(cacheVal.VoteSignBytes, voteSignBytes)
+			cacheHit = sigIsInCache && bytes.Equal(cacheVal.ValidatorAddress, val.PubKey.Address()) && bytes.Equal(cacheVal.VoteSignBytes, voteSignBytes)
 		}
 
 		if !cacheHit {
@@ -480,8 +478,8 @@ func verifyCommitSingle(
 			}
 			if verifiedSignatureCache != nil {
 				verifiedSignatureCache.Add(cacheKey, SignatureCacheValue{
-					ValidatorPubKeyBytes: val.PubKey.Bytes(),
-					VoteSignBytes:        voteSignBytes,
+					ValidatorAddress: val.PubKey.Address(),
+					VoteSignBytes:    voteSignBytes,
 				})
 			}
 		}

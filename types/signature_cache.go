@@ -2,8 +2,8 @@ package types
 
 // The value type for the verified signature cache.
 type SignatureCacheValue struct {
-	ValidatorPubKeyBytes []byte
-	VoteSignBytes        []byte
+	ValidatorAddress []byte
+	VoteSignBytes    []byte
 }
 
 type SignatureCache interface {

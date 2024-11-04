@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	cryptomocks "github.com/cometbft/cometbft/crypto/mocks"
-
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
@@ -312,17 +311,17 @@ func TestValidatorSet_VerifyCommitLightTrustingWithCache_UpdatesCache(t *testing
 
 	cacheVal, ok := cache.Get(string(commit.Signatures[0].Signature))
 	require.True(t, ok)
-	require.Equal(t, originalValset.Validators[0].PubKey.Bytes(), cacheVal.ValidatorPubKeyBytes)
+	require.Equal(t, originalValset.Validators[0].PubKey.Address().Bytes(), cacheVal.ValidatorAddress)
 	require.Equal(t, commit.VoteSignBytes("test_chain_id", 0), cacheVal.VoteSignBytes)
 
 	cacheVal, ok = cache.Get(string(commit.Signatures[1].Signature))
 	require.True(t, ok)
-	require.Equal(t, originalValset.Validators[1].PubKey.Bytes(), cacheVal.ValidatorPubKeyBytes)
+	require.Equal(t, originalValset.Validators[1].PubKey.Address().Bytes(), cacheVal.ValidatorAddress)
 	require.Equal(t, commit.VoteSignBytes("test_chain_id", 1), cacheVal.VoteSignBytes)
 
 	cacheVal, ok = cache.Get(string(commit.Signatures[2].Signature))
 	require.True(t, ok)
-	require.Equal(t, originalValset.Validators[2].PubKey.Bytes(), cacheVal.ValidatorPubKeyBytes)
+	require.Equal(t, originalValset.Validators[2].PubKey.Address().Bytes(), cacheVal.ValidatorAddress)
 	require.Equal(t, commit.VoteSignBytes("test_chain_id", 2), cacheVal.VoteSignBytes)
 }
 
@@ -340,16 +339,16 @@ func TestValidatorSet_VerifyCommitLightTrustingWithCache_UsesCache(t *testing.T)
 
 	cache := NewSignatureCache()
 	cache.Add(string(commit.Signatures[0].Signature), SignatureCacheValue{
-		ValidatorPubKeyBytes: valSet.Validators[0].PubKey.Bytes(),
-		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 0),
+		ValidatorAddress: valSet.Validators[0].PubKey.Address(),
+		VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 0),
 	})
 	cache.Add(string(commit.Signatures[1].Signature), SignatureCacheValue{
-		ValidatorPubKeyBytes: valSet.Validators[1].PubKey.Bytes(),
-		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 1),
+		ValidatorAddress: valSet.Validators[1].PubKey.Address(),
+		VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 1),
 	})
 	cache.Add(string(commit.Signatures[2].Signature), SignatureCacheValue{
-		ValidatorPubKeyBytes: valSet.Validators[2].PubKey.Bytes(),
-		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 2),
+		ValidatorAddress: valSet.Validators[2].PubKey.Address(),
+		VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 2),
 	})
 
 	err = valSet.VerifyCommitLightTrustingWithCache("test_chain_id", commit, cmtmath.Fraction{Numerator: 1, Denominator: 3}, cache)
@@ -374,27 +373,27 @@ func TestValidatorSet_VerifyCommitLightWithCache_UpdatesCache(t *testing.T) {
 
 	cacheVal, ok := cache.Get(string(commit.Signatures[0].Signature))
 	require.True(t, ok)
-	require.Equal(t, originalValset.Validators[0].PubKey.Bytes(), cacheVal.ValidatorPubKeyBytes)
+	require.Equal(t, originalValset.Validators[0].PubKey.Address().Bytes(), cacheVal.ValidatorAddress)
 	require.Equal(t, commit.VoteSignBytes("test_chain_id", 0), cacheVal.VoteSignBytes)
 
 	cacheVal, ok = cache.Get(string(commit.Signatures[1].Signature))
 	require.True(t, ok)
-	require.Equal(t, originalValset.Validators[1].PubKey.Bytes(), cacheVal.ValidatorPubKeyBytes)
+	require.Equal(t, originalValset.Validators[1].PubKey.Address().Bytes(), cacheVal.ValidatorAddress)
 	require.Equal(t, commit.VoteSignBytes("test_chain_id", 1), cacheVal.VoteSignBytes)
 
 	cacheVal, ok = cache.Get(string(commit.Signatures[2].Signature))
 	require.True(t, ok)
-	require.Equal(t, originalValset.Validators[2].PubKey.Bytes(), cacheVal.ValidatorPubKeyBytes)
+	require.Equal(t, originalValset.Validators[2].PubKey.Address().Bytes(), cacheVal.ValidatorAddress)
 	require.Equal(t, commit.VoteSignBytes("test_chain_id", 2), cacheVal.VoteSignBytes)
 
 	cacheVal, ok = cache.Get(string(commit.Signatures[3].Signature))
 	require.True(t, ok)
-	require.Equal(t, originalValset.Validators[3].PubKey.Bytes(), cacheVal.ValidatorPubKeyBytes)
+	require.Equal(t, originalValset.Validators[3].PubKey.Address().Bytes(), cacheVal.ValidatorAddress)
 	require.Equal(t, commit.VoteSignBytes("test_chain_id", 3), cacheVal.VoteSignBytes)
 
 	cacheVal, ok = cache.Get(string(commit.Signatures[4].Signature))
 	require.True(t, ok)
-	require.Equal(t, originalValset.Validators[4].PubKey.Bytes(), cacheVal.ValidatorPubKeyBytes)
+	require.Equal(t, originalValset.Validators[4].PubKey.Address().Bytes(), cacheVal.ValidatorAddress)
 	require.Equal(t, commit.VoteSignBytes("test_chain_id", 4), cacheVal.VoteSignBytes)
 }
 
@@ -409,24 +408,24 @@ func TestValidatorSet_VerifyCommitLightWithCache_UsesCache(t *testing.T) {
 
 	cache := NewSignatureCache()
 	cache.Add(string(commit.Signatures[0].Signature), SignatureCacheValue{
-		ValidatorPubKeyBytes: originalValset.Validators[0].PubKey.Bytes(),
-		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 0),
+		ValidatorAddress: originalValset.Validators[0].PubKey.Address(),
+		VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 0),
 	})
 	cache.Add(string(commit.Signatures[1].Signature), SignatureCacheValue{
-		ValidatorPubKeyBytes: originalValset.Validators[1].PubKey.Bytes(),
-		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 1),
+		ValidatorAddress: originalValset.Validators[1].PubKey.Address(),
+		VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 1),
 	})
 	cache.Add(string(commit.Signatures[2].Signature), SignatureCacheValue{
-		ValidatorPubKeyBytes: originalValset.Validators[2].PubKey.Bytes(),
-		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 2),
+		ValidatorAddress: originalValset.Validators[2].PubKey.Address(),
+		VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 2),
 	})
 	cache.Add(string(commit.Signatures[3].Signature), SignatureCacheValue{
-		ValidatorPubKeyBytes: originalValset.Validators[3].PubKey.Bytes(),
-		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 3),
+		ValidatorAddress: originalValset.Validators[3].PubKey.Address(),
+		VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 3),
 	})
 	cache.Add(string(commit.Signatures[4].Signature), SignatureCacheValue{
-		ValidatorPubKeyBytes: originalValset.Validators[4].PubKey.Bytes(),
-		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 4),
+		ValidatorAddress: originalValset.Validators[4].PubKey.Address(),
+		VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 4),
 	})
 
 	err = originalValset.VerifyCommitLightWithCache("test_chain_id", blockID, 1, commit, cache)
@@ -460,24 +459,24 @@ func TestValidation_verifyCommitBatch_UsesCache(t *testing.T) {
 
 	cache := NewSignatureCache()
 	cache.Add(string(commit.Signatures[0].Signature), SignatureCacheValue{
-		ValidatorPubKeyBytes: originalValset.Validators[0].PubKey.Bytes(),
-		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 0),
+		ValidatorAddress: originalValset.Validators[0].PubKey.Address(),
+		VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 0),
 	})
 	cache.Add(string(commit.Signatures[1].Signature), SignatureCacheValue{
-		ValidatorPubKeyBytes: originalValset.Validators[1].PubKey.Bytes(),
-		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 1),
+		ValidatorAddress: originalValset.Validators[1].PubKey.Address(),
+		VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 1),
 	})
 	cache.Add(string(commit.Signatures[2].Signature), SignatureCacheValue{
-		ValidatorPubKeyBytes: originalValset.Validators[2].PubKey.Bytes(),
-		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 2),
+		ValidatorAddress: originalValset.Validators[2].PubKey.Address(),
+		VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 2),
 	})
 	cache.Add(string(commit.Signatures[3].Signature), SignatureCacheValue{
-		ValidatorPubKeyBytes: originalValset.Validators[3].PubKey.Bytes(),
-		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 3),
+		ValidatorAddress: originalValset.Validators[3].PubKey.Address(),
+		VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 3),
 	})
 	cache.Add(string(commit.Signatures[4].Signature), SignatureCacheValue{
-		ValidatorPubKeyBytes: originalValset.Validators[4].PubKey.Bytes(),
-		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 4),
+		ValidatorAddress: originalValset.Validators[4].PubKey.Address(),
+		VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 4),
 	})
 
 	// ignore all commit signatures that are not for the block
@@ -493,6 +492,7 @@ func TestValidation_verifyCommitBatch_UsesCache(t *testing.T) {
 	bv.AssertNotCalled(t, "Add")
 	bv.AssertNotCalled(t, "Verify")
 }
+
 func TestValidation_verifyCommitSingle_UsesCache(t *testing.T) {
 	var (
 		blockID                       = makeBlockIDRandom()
@@ -504,24 +504,24 @@ func TestValidation_verifyCommitSingle_UsesCache(t *testing.T) {
 
 	cache := NewSignatureCache()
 	cache.Add(string(commit.Signatures[0].Signature), SignatureCacheValue{
-		ValidatorPubKeyBytes: originalValset.Validators[0].PubKey.Bytes(),
-		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 0),
+		ValidatorAddress: originalValset.Validators[0].PubKey.Address(),
+		VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 0),
 	})
 	cache.Add(string(commit.Signatures[1].Signature), SignatureCacheValue{
-		ValidatorPubKeyBytes: originalValset.Validators[1].PubKey.Bytes(),
-		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 1),
+		ValidatorAddress: originalValset.Validators[1].PubKey.Address(),
+		VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 1),
 	})
 	cache.Add(string(commit.Signatures[2].Signature), SignatureCacheValue{
-		ValidatorPubKeyBytes: originalValset.Validators[2].PubKey.Bytes(),
-		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 2),
+		ValidatorAddress: originalValset.Validators[2].PubKey.Address(),
+		VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 2),
 	})
 	cache.Add(string(commit.Signatures[3].Signature), SignatureCacheValue{
-		ValidatorPubKeyBytes: originalValset.Validators[3].PubKey.Bytes(),
-		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 3),
+		ValidatorAddress: originalValset.Validators[3].PubKey.Address(),
+		VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 3),
 	})
 	cache.Add(string(commit.Signatures[4].Signature), SignatureCacheValue{
-		ValidatorPubKeyBytes: originalValset.Validators[4].PubKey.Bytes(),
-		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 4),
+		ValidatorAddress: originalValset.Validators[4].PubKey.Address(),
+		VoteSignBytes:    commit.VoteSignBytes("test_chain_id", 4),
 	})
 
 	// ignore all commit signatures that are not for the block
@@ -538,11 +538,11 @@ func TestValidation_verifyCommitSingle_UsesCache(t *testing.T) {
 		cryptomocks.NewPubKey(t),
 	}
 
-	mockValPubkeys[0].On("Bytes").Return(originalValset.Validators[0].PubKey.Bytes())
-	mockValPubkeys[1].On("Bytes").Return(originalValset.Validators[1].PubKey.Bytes())
-	mockValPubkeys[2].On("Bytes").Return(originalValset.Validators[2].PubKey.Bytes())
-	mockValPubkeys[3].On("Bytes").Return(originalValset.Validators[3].PubKey.Bytes())
-	mockValPubkeys[4].On("Bytes").Return(originalValset.Validators[4].PubKey.Bytes())
+	mockValPubkeys[0].On("Address").Return(originalValset.Validators[0].PubKey.Address())
+	mockValPubkeys[1].On("Address").Return(originalValset.Validators[1].PubKey.Address())
+	mockValPubkeys[2].On("Address").Return(originalValset.Validators[2].PubKey.Address())
+	mockValPubkeys[3].On("Address").Return(originalValset.Validators[3].PubKey.Address())
+	mockValPubkeys[4].On("Address").Return(originalValset.Validators[4].PubKey.Address())
 
 	originalValset.Validators[0].PubKey = mockValPubkeys[0]
 	originalValset.Validators[1].PubKey = mockValPubkeys[1]
@@ -553,11 +553,11 @@ func TestValidation_verifyCommitSingle_UsesCache(t *testing.T) {
 	err = verifyCommitSingle("test_chain_id", originalValset, commit, 4, ignore, count, false, true, cache)
 	require.NoError(t, err)
 
-	mockValPubkeys[0].AssertCalled(t, "Bytes")
-	mockValPubkeys[1].AssertCalled(t, "Bytes")
-	mockValPubkeys[2].AssertCalled(t, "Bytes")
-	mockValPubkeys[3].AssertCalled(t, "Bytes")
-	mockValPubkeys[4].AssertCalled(t, "Bytes")
+	mockValPubkeys[0].AssertCalled(t, "Address")
+	mockValPubkeys[1].AssertCalled(t, "Address")
+	mockValPubkeys[2].AssertCalled(t, "Address")
+	mockValPubkeys[3].AssertCalled(t, "Address")
+	mockValPubkeys[4].AssertCalled(t, "Address")
 
 	mockValPubkeys[0].AssertNotCalled(t, "VerifySignature")
 	mockValPubkeys[1].AssertNotCalled(t, "VerifySignature")

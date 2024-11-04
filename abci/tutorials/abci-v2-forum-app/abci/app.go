@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/dgraph-io/badger/v4"
 
@@ -334,7 +335,7 @@ func (app *ForumApp) FinalizeBlock(_ context.Context, req *abci.FinalizeBlockReq
 	}
 	app.state.Height = req.Height
 
-	response := &abci.FinalizeBlockResponse{TxResults: respTxs, AppHash: app.state.Hash()}
+	response := &abci.FinalizeBlockResponse{TxResults: respTxs, AppHash: app.state.Hash(), NextBlockDelay: 1 * time.Second}
 	return response, nil
 }
 

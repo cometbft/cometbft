@@ -141,7 +141,7 @@ These are the alternatives known to date:
 
 ## Decision
 
-TBD
+Implement as described in the [detailed design](#detailed-design) section.
 
 ## Detailed Design
 

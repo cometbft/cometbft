@@ -7,6 +7,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -22,7 +23,7 @@ var errNotAllowed = errors.New("not allowed with `nop` mempool")
 var _ Mempool = &NopMempool{}
 
 // CheckTx always returns an error.
-func (*NopMempool) CheckTx(types.Tx, p2p.ID) (*abcicli.ReqRes, error) {
+func (*NopMempool) CheckTx(types.Tx, nodekey.ID) (*abcicli.ReqRes, error) {
 	return nil, errNotAllowed
 }
 
@@ -97,8 +98,8 @@ var _ p2p.Reactor = &NopMempoolReactor{}
 // WaitSync always returns false.
 func (*NopMempoolReactor) WaitSync() bool { return false }
 
-// GetChannels always returns nil.
-func (*NopMempoolReactor) GetChannels() []*p2p.ChannelDescriptor { return nil }
+// StreamDescriptors always returns nil.
+func (*NopMempoolReactor) StreamDescriptors() []p2p.StreamDescriptor { return nil }
 
 // AddPeer does nothing.
 func (*NopMempoolReactor) AddPeer(p2p.Peer) {}

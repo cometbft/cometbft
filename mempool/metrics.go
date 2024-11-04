@@ -1,7 +1,7 @@
 package mempool
 
 import (
-	"github.com/go-kit/kit/metrics"
+	"github.com/cometbft/cometbft/libs/metrics"
 )
 
 const (
@@ -16,10 +16,25 @@ const (
 // see MetricsProvider for descriptions.
 type Metrics struct {
 	// Number of uncommitted transactions in the mempool.
+	//
+	// Deprecated: this value can be obtained as the sum of LaneSize.
 	Size metrics.Gauge
 
 	// Total size of the mempool in bytes.
+	//
+	// Deprecated: this value can be obtained as the sum of LaneBytes.
 	SizeBytes metrics.Gauge
+
+	// Number of uncommitted transactions per lane.
+	LaneSize metrics.Gauge `metrics_labels:"lane"`
+
+	// Number of used bytes per lane.
+	LaneBytes metrics.Gauge `metrics_labels:"lane"`
+
+	// TxLifeSpan measures the time each transaction has in the mempool, since
+	// the time it enters until it is removed.
+	// metrics:Duration in ms of a transaction in the mempool.
+	TxLifeSpan metrics.Histogram `metrics_bucketsizes:"50,100,200,500,1000" metrics_labels:"lane"`
 
 	// Histogram of transaction sizes in bytes.
 	TxSizeBytes metrics.Histogram `metrics_bucketsizes:"1,3,7" metrics_buckettype:"exp"`

@@ -24,7 +24,6 @@ linters:
     - gocyclo
     - godox
     - gomnd
-    - gosec
     - interfacebloat
     - intrange
     - ireturn
@@ -87,7 +86,6 @@ linters-settings:
           - $gostd
           - github.com/BurntSushi/toml
           - github.com/Masterminds/semver/v3
-          - github.com/btcsuite/btcd/btcec/v2
           - github.com/cometbft
           - github.com/cosmos
           - github.com/creachadair/atomicfile
@@ -113,27 +111,30 @@ linters-settings:
           - github.com/stretchr/testify/require
           - github.com/syndtr/goleveldb
           - github.com/mitchellh/mapstructure
+          - github.com/decred/dcrd/dcrec/secp256k1/v4
       test:
         files:
           - "$test"
         allow:
           - $gostd
-          - github.com/cosmos
-          - github.com/cometbft
           - github.com/adlio/schema
           - github.com/btcsuite/btcd
+          - github.com/cometbft
+          - github.com/cosmos
           - github.com/dgraph-io/badger/v4
           - github.com/fortytw2/leaktest
-          - github.com/go-kit
+          - github.com/go-kit/log
           - github.com/google/uuid
           - github.com/gorilla/websocket
           - github.com/lib/pq
           - github.com/oasisprotocol/curve25519-voi/primitives/merlin
           - github.com/ory/dockertest
           - github.com/pkg/errors
+          - github.com/prometheus/client_golang/prometheus
           - github.com/prometheus/client_golang/prometheus/promhttp
           - github.com/spf13
           - github.com/stretchr/testify
+          - github.com/decred/dcrd/dcrec/secp256k1/v4
 
   revive:
     enable-all-rules: true
@@ -180,3 +181,6 @@ linters-settings:
           - "fmt.Printf"
           - "fmt.Print"
           - "fmt.Println"
+  gosec:
+    excludes:
+      - G115

@@ -109,24 +109,27 @@ Nodes on the peer-to-peer network are identified by `nodeID@host:port` as discus
 ### db_backend
 The chosen database backend for the node.
 ```toml
-db_backend = "goleveldb"
+db_backend = "pebbledb"
 ```
 
 | Value type          | string        | dependencies  | GitHub                                           |
 |:--------------------|:--------------|:--------------|:-------------------------------------------------|
-| **Possible values** | `"goleveldb"` | pure Golang   | [goleveldb](https://github.com/syndtr/goleveldb) |
-|                     | `"rocksdb"`   | requires gcc  | [grocksdb](https://github.com/linxGnu/grocksdb)  |
-|                     | `"badgerdb"`  | pure Golang   | [badger](https://github.com/dgraph-io/badger)    |
+| **Possible values** | `"badgerdb"`  | pure Golang   | [badger](https://github.com/dgraph-io/badger)    |
+|                     | `"goleveldb"` | pure Golang   | [goleveldb](https://github.com/syndtr/goleveldb) |
 |                     | `"pebbledb"`  | pure Golang   | [pebble](https://github.com/cockroachdb/pebble)  |
+|                     | `"rocksdb"`   | requires gcc  | [grocksdb](https://github.com/linxGnu/grocksdb)  |
 
-During the build process, by default, only the `goleveldb` library is built into the binary.
+During the build process, by default, only the `pebbledb` library is built into the binary.
 To add support for alternative databases, you need to add them in the build tags.
 For example: `go build -tags rocksdb`.
 
-The RocksDB fork has API changes from the upstream RocksDB implementation. All other databases claim a stable API.
+`goleveldb` is supported by default too, but it is no longer recommended for
+production use.
 
-The CometBFT team tests rely on the GoLevelDB implementation. All other implementations are considered experimental from
-a CometBFT perspective. The supported databases are part of the [cometbft-db](https://github.com/cometbft/cometbft-db) library
+The RocksDB fork has API changes from the upstream RocksDB implementation. All
+other databases claim a stable API.
+
+The supported databases are part of the [cometbft-db](https://github.com/cometbft/cometbft-db) library
 that CometBFT uses as a common database interface to various databases.
 
 ### db_dir
@@ -186,6 +189,24 @@ Set RPC server logs to `debug` and leave everything else at `info`:
 ```toml
 log_level = "rpc-server:debug"
 ```
+
+#### Stripping debug log messages at compile-time
+
+Logging debug messages can lead to significant memory allocations, especially when outputting variable values. In Go,
+even if `log_level` is not set to `debug`, these allocations can still occur because the program evaluates the debug
+statements regardless of the log level.
+
+To prevent unnecessary memory usage, you can strip out all debug-level code from the binary at compile time using
+build flags. This approach improves the performance of CometBFT by excluding debug messages entirely, even when log_level
+is set to debug. This technique is ideal for production environments that prioritize performance optimization over debug logging.
+
+In order to build a binary stripping all debug log messages (e.g. `log.Debug()`) from the binary, use the `nodebug` tag:
+```
+COMETBFT_BUILD_OPTIONS=nodebug make install
+```
+
+> Note: Compiling CometBFT with this method will completely disable all debug messages. If you require debug output,
+> avoid compiling the binary with the `nodebug` build tag.
 
 ### log_format
 Define the output format of the logs.
@@ -1506,17 +1527,15 @@ trust_period = "168h0m0s"
 For Cosmos SDK-based chains, `statesync.trust_period` should usually be about 2/3rd of the unbonding period
 (about 2 weeks) during which they can be financially punished (slashed) for misbehavior.
 
-### statesync.discovery_time
-Time to spend discovering snapshots before initiating a restore.
+### statesync.max_discovery_time
+Time to spend discovering snapshots before switching to blocksync. If set to 0, state sync will be trying indefinitely.
 ```toml
-discovery_time = "15s"
+max_discovery_time = "2m"
 ```
 
-If `discovery_time` is &gt; 0 and  &lt; 5 seconds, its value will be overridden to 5 seconds.
+If `max_discovery_time` is zero, the node will keep trying to discover snapshots indefinitely.
 
-If `discovery_time` is zero, the node will not wait for replies once it has broadcast the "snapshot request" message to its peers. If no snapshot data is received, state sync will fail without retrying.
-
-If `discovery_time` is &gt;= 5 seconds, the node will broadcast the "snapshot request" message to its peers and then wait for `discovery_time`. If no snapshot data has been received after that period, the node will retry: it will broadcast the "snapshot request" message again and wait for `discovery_time`, and so on.
+If `max_discovery_time` is greater than zero, the node will broadcast the "snapshot request" message to its peers and then wait for 5 sec. If no snapshot data has been received after that period, the node will retry: it will broadcast the "snapshot request" message again and wait for 5s, and so on until `max_discovery_time` is reached, after which the node will switch to blocksync.
 
 ### statesync.temp_dir
 Temporary directory for state sync snapshot chunks.

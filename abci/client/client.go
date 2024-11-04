@@ -78,7 +78,8 @@ type ReqRes struct {
 	// invoking the callback twice by accident, once when 'SetCallback' is
 	// called and once during the normal request.
 	callbackInvoked bool
-	cb              func(*types.Response) // A single callback that may be set.
+	cb              func(*types.Response) error // A single callback that may be set.
+	cbErr           error
 }
 
 func NewReqRes(req *types.Request) *ReqRes {
@@ -95,12 +96,12 @@ func NewReqRes(req *types.Request) *ReqRes {
 // SetCallback sets the callback. If reqRes is already done, it will call the cb
 // immediately. Note, reqRes.cb should not change if reqRes.done and only one
 // callback is supported.
-func (r *ReqRes) SetCallback(cb func(res *types.Response)) {
+func (r *ReqRes) SetCallback(cb func(res *types.Response) error) {
 	r.mtx.Lock()
 
 	if r.callbackInvoked {
 		r.mtx.Unlock()
-		cb(r.Response)
+		r.cbErr = cb(r.Response)
 		return
 	}
 
@@ -115,21 +116,14 @@ func (r *ReqRes) InvokeCallback() {
 	defer r.mtx.Unlock()
 
 	if r.cb != nil && r.Response != nil {
-		r.cb(r.Response)
+		r.cbErr = r.cb(r.Response)
 	}
 	r.callbackInvoked = true
 }
 
-// GetCallback returns the configured callback of the ReqRes object which may be
-// nil. Note, it is not safe to concurrently call this in cases where it is
-// marked done and SetCallback is called before calling GetCallback as that
-// will invoke the callback twice and create a potential race condition.
-//
-// ref: https://github.com/tendermint/tendermint/issues/5439
-func (r *ReqRes) GetCallback() func(*types.Response) {
-	r.mtx.Lock()
-	defer r.mtx.Unlock()
-	return r.cb
+// Error returns the error returned by the callback, if any.
+func (r *ReqRes) Error() error {
+	return r.cbErr
 }
 
 func waitGroup1() (wg *sync.WaitGroup) {

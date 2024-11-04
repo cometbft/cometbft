@@ -17,6 +17,7 @@ abci_protocol = "builtin"
 prometheus = true
 peer_gossip_intraloop_sleep_duration = "50ms"
 abci_tests_enabled = true
+constant_flip = true
 
 [validators]
 validator01 = 100
@@ -50,7 +51,7 @@ clock_skew = "20s"
 
 [node.validator02]
 seeds = ["seed01"]
-database = "pebbledb"
+database = "goleveldb"
 privval_protocol = "tcp"
 persist_interval = 0
 perturb = ["restart"]

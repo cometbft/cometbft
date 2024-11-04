@@ -10,3 +10,4 @@ parent:
 - [Getting Started](getting-started.md)
 - [Indexing transactions](indexing-transactions.md)
 - [Application Architecture Guide](app-architecture.md)
+- [Mempool Lanes](mempool-lanes.md)

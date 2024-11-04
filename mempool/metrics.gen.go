@@ -3,8 +3,8 @@
 package mempool
 
 import (
-	"github.com/go-kit/kit/metrics/discard"
-	prometheus "github.com/go-kit/kit/metrics/prometheus"
+	"github.com/cometbft/cometbft/libs/metrics/discard"
+	prometheus "github.com/cometbft/cometbft/libs/metrics/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
@@ -18,14 +18,34 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "size",
-			Help:      "Number of uncommitted transactions in the mempool.",
+			Help:      "Number of uncommitted transactions in the mempool.  Deprecated: this value can be obtained as the sum of LaneSize.",
 		}, labels).With(labelsAndValues...),
 		SizeBytes: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "size_bytes",
-			Help:      "Total size of the mempool in bytes.",
+			Help:      "Total size of the mempool in bytes.  Deprecated: this value can be obtained as the sum of LaneBytes.",
 		}, labels).With(labelsAndValues...),
+		LaneSize: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "lane_size",
+			Help:      "Number of uncommitted transactions per lane.",
+		}, append(labels, "lane")).With(labelsAndValues...),
+		LaneBytes: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "lane_bytes",
+			Help:      "Number of used bytes per lane.",
+		}, append(labels, "lane")).With(labelsAndValues...),
+		TxLifeSpan: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "tx_life_span",
+			Help:      "Duration in ms of a transaction in the mempool.",
+
+			Buckets: []float64{50, 100, 200, 500, 1000},
+		}, append(labels, "lane")).With(labelsAndValues...),
 		TxSizeBytes: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -83,6 +103,9 @@ func NopMetrics() *Metrics {
 	return &Metrics{
 		Size:                      discard.NewGauge(),
 		SizeBytes:                 discard.NewGauge(),
+		LaneSize:                  discard.NewGauge(),
+		LaneBytes:                 discard.NewGauge(),
+		TxLifeSpan:                discard.NewHistogram(),
 		TxSizeBytes:               discard.NewHistogram(),
 		FailedTxs:                 discard.NewCounter(),
 		RejectedTxs:               discard.NewCounter(),

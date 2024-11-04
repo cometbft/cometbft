@@ -16,6 +16,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	memproto "github.com/cometbft/cometbft/api/cometbft/mempool/v1"
 	cfg "github.com/cometbft/cometbft/config"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
@@ -59,7 +60,7 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 	}
 
 	txs := addRandomTxs(t, reactors[0].mempool, numTxs)
-	waitForReactors(t, txs, reactors, checkTxsInOrder)
+	waitForReactors(t, txs, reactors, checkTxsInMempool)
 }
 
 // regression test for https://github.com/tendermint/tendermint/issues/5408
@@ -127,7 +128,7 @@ func TestReactorConcurrency(t *testing.T) {
 func TestReactorNoBroadcastToSender(t *testing.T) {
 	config := cfg.TestConfig()
 	const n = 2
-	reactors, _ := makeAndConnectReactors(config, n, nil)
+	reactors, _ := makeAndConnectReactorsNoLanes(config, n, nil)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -144,16 +145,39 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 	// create random transactions
 	txs := NewRandomTxs(numTxs, 20)
 
-	// the second peer sends all the transactions to the first peer
+	// This subset should be broadcast
+	var txsToBroadcast types.Txs
+	const minToBroadcast = numTxs / 10
+
+	// The second peer sends some transactions to the first peer
 	secondNodeID := reactors[1].Switch.NodeInfo().ID()
 	secondNode := reactors[0].Switch.Peers().Get(secondNodeID)
-	for _, tx := range txs {
-		_, err := reactors[0].TryAddTx(tx, secondNode)
-		require.NoError(t, err)
+	for i, tx := range txs {
+		shouldBroadcast := cmtrand.Bool() || // random choice
+			// Force shouldBroadcast == true to ensure that
+			// len(txsToBroadcast) >= minToBroadcast
+			(len(txsToBroadcast) < minToBroadcast &&
+				len(txs)-i <= minToBroadcast)
+
+		t.Log(i, "adding", tx, "shouldBroadcast", shouldBroadcast)
+
+		if !shouldBroadcast {
+			// From the second peer => should not be broadcast
+			_, err := reactors[0].TryAddTx(tx, secondNode)
+			require.NoError(t, err)
+		} else {
+			// Emulate a tx received via RPC => should broadcast
+			_, err := reactors[0].TryAddTx(tx, nil)
+			require.NoError(t, err)
+			txsToBroadcast = append(txsToBroadcast, tx)
+		}
 	}
 
-	// the second peer should not receive any transaction
-	ensureNoTxs(t, reactors[1], 100*time.Millisecond)
+	t.Log("Added", len(txs), "transactions, only", len(txsToBroadcast),
+		"should be sent to the peer")
+
+	// The second peer should receive only txsToBroadcast transactions
+	waitForReactors(t, txsToBroadcast, reactors[1:], checkTxsInOrder)
 }
 
 // Test that a lagging peer does not receive txs.
@@ -175,16 +199,16 @@ func TestMempoolReactorSendLaggingPeer(t *testing.T) {
 	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{1})
 
 	// Add a bunch of txs to the first reactor. The second reactor should not receive any tx.
-	txs1 := addRandomTxs(t, reactors[0].mempool, numTxs)
+	txs1 := addTxs(t, reactors[0].mempool, 0, numTxs)
 	ensureNoTxs(t, reactors[1], 5*PeerCatchupSleepIntervalMS*time.Millisecond)
 
 	// Now we know that the second reactor has advanced to height 9, so it should receive all txs.
 	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{9})
-	waitForReactors(t, txs1, reactors, checkTxsInOrder)
+	waitForReactors(t, txs1, reactors, checkTxsInMempool)
 
 	// Add a bunch of txs to first reactor. The second reactor should receive them all.
-	txs2 := addRandomTxs(t, reactors[0].mempool, numTxs)
-	waitForReactors(t, append(txs1, txs2...), reactors, checkTxsInOrder)
+	txs2 := addTxs(t, reactors[0].mempool, numTxs, numTxs)
+	waitForReactors(t, append(txs1, txs2...), reactors, checkTxsInMempool)
 }
 
 // Test the scenario where a tx selected for being sent to a peer is removed
@@ -224,7 +248,7 @@ func TestMempoolReactorSendRemovedTx(t *testing.T) {
 	// Now we know that the second reactor is not lagging, so it should receive
 	// all txs except those that were removed.
 	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{9})
-	waitForReactors(t, txsLeft, reactors, checkTxsInOrder)
+	waitForReactors(t, txsLeft, reactors, checkTxsInMempool)
 }
 
 func TestMempoolReactorMaxTxBytes(t *testing.T) {
@@ -422,7 +446,7 @@ func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 
 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 	// receive any tx. (The second reactor only sends transactions to the first reactor.)
-	checkTxsInOrder(t, txs, reactors[1], 0)
+	checkTxsInMempool(t, txs, reactors[1], 0)
 	for _, r := range reactors[2:] {
 		require.Zero(t, r.mempool.Size())
 	}
@@ -433,8 +457,8 @@ func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 
 	// Now the third reactor should start receiving transactions from the first reactor and
 	// the fourth reactor from the second
-	checkTxsInOrder(t, txs, reactors[2], 0)
-	checkTxsInOrder(t, txs, reactors[3], 0)
+	checkTxsInMempool(t, txs, reactors[2], 0)
+	checkTxsInMempool(t, txs, reactors[3], 0)
 }
 
 // Test the experimental feature that limits the number of outgoing connections for gossiping
@@ -465,8 +489,8 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 
 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 	// receive any tx. (The second reactor only sends transactions to the first reactor.)
-	checkTxsInOrder(t, txs, reactors[0], 0)
-	checkTxsInOrder(t, txs, reactors[1], 0)
+	checkTxsInMempool(t, txs, reactors[0], 0)
+	checkTxsInMempool(t, txs, reactors[1], 0)
 
 	for _, r := range reactors[2:] {
 		require.Zero(t, r.mempool.Size())
@@ -478,9 +502,9 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 
 	// Now the third reactor should start receiving transactions from the first reactor; the fourth
 	// reactor's mempool should still be empty.
-	checkTxsInOrder(t, txs, reactors[0], 0)
-	checkTxsInOrder(t, txs, reactors[1], 0)
-	checkTxsInOrder(t, txs, reactors[2], 0)
+	checkTxsInMempool(t, txs, reactors[0], 0)
+	checkTxsInMempool(t, txs, reactors[1], 0)
+	checkTxsInMempool(t, txs, reactors[2], 0)
 	for _, r := range reactors[3:] {
 		require.Zero(t, r.mempool.Size())
 	}
@@ -509,13 +533,18 @@ func mempoolLogger(level string) *log.Logger {
 }
 
 // makeReactors creates n mempool reactors.
-func makeReactors(config *cfg.Config, n int, logger *log.Logger) []*Reactor {
+func makeReactors(config *cfg.Config, n int, logger *log.Logger, lanesEnabled bool) []*Reactor {
 	if logger == nil {
-		logger = mempoolLogger("debug")
+		logger = mempoolLogger("info")
 	}
 	reactors := make([]*Reactor, n)
 	for i := 0; i < n; i++ {
-		app := kvstore.NewInMemoryApplication()
+		var app *kvstore.Application
+		if lanesEnabled {
+			app = kvstore.NewInMemoryApplication()
+		} else {
+			app = kvstore.NewInMemoryApplicationWithoutLanes()
+		}
 		cc := proxy.NewLocalClientCreator(app)
 		mempool, cleanup := newMempoolWithApp(cc)
 		defer cleanup()
@@ -538,15 +567,21 @@ func connectReactors(config *cfg.Config, reactors []*Reactor, connect func([]*p2
 	return p2p.StartAndConnectSwitches(switches, connect)
 }
 
+func makeAndConnectReactorsNoLanes(config *cfg.Config, n int, logger *log.Logger) ([]*Reactor, []*p2p.Switch) {
+	reactors := makeReactors(config, n, logger, false)
+	switches := connectReactors(config, reactors, p2p.Connect2Switches)
+	return reactors, switches
+}
+
 func makeAndConnectReactors(config *cfg.Config, n int, logger *log.Logger) ([]*Reactor, []*p2p.Switch) {
-	reactors := makeReactors(config, n, logger)
+	reactors := makeReactors(config, n, logger, true)
 	switches := connectReactors(config, reactors, p2p.Connect2Switches)
 	return reactors, switches
 }
 
 // connect N mempool reactors through N switches as a star centered in c.
 func makeAndConnectReactorsStar(config *cfg.Config, c, n int, logger *log.Logger) ([]*Reactor, []*p2p.Switch) {
-	reactors := makeReactors(config, n, logger)
+	reactors := makeReactors(config, n, logger, true)
 	switches := connectReactors(config, reactors, p2p.ConnectStarSwitches(c))
 	return reactors, switches
 }
@@ -612,6 +647,7 @@ func checkTxsInOrder(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex
 
 	// Check that all transactions in the mempool are in the same order as txs.
 	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
+	require.Equal(t, len(txs), len(reapedTxs))
 	for i, tx := range txs {
 		assert.Equalf(t, tx, reapedTxs[i],
 			"txs at index %d on reactor %d don't match: %v vs %v", i, reactorIndex, tx, reapedTxs[i])

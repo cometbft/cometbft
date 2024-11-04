@@ -65,4 +65,9 @@ proto/spec/**/*.pb.go
 .venv
 go.work.sum
 cmd/cometbft/cometbft
-
+# gobenchdata
+assets
+benchmarks.json
+gobenchdata-web.yml
+index.html
+overrides.css

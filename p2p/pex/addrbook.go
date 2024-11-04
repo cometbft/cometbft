@@ -22,7 +22,8 @@ import (
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	"github.com/cometbft/cometbft/p2p"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
+	"github.com/cometbft/cometbft/p2p/nodekey"
 )
 
 const (
@@ -38,18 +39,18 @@ type AddrBook interface {
 	service.Service
 
 	// Add our own addresses so we don't later add ourselves
-	AddOurAddress(addr *p2p.NetAddress)
+	AddOurAddress(addr *na.NetAddr)
 	// Check if it is our address
-	OurAddress(addr *p2p.NetAddress) bool
+	OurAddress(addr *na.NetAddr) bool
 
 	AddPrivateIDs(ids []string)
 
 	// Add and remove an address
-	AddAddress(addr *p2p.NetAddress, src *p2p.NetAddress) error
-	RemoveAddress(addr *p2p.NetAddress)
+	AddAddress(addr *na.NetAddr, src *na.NetAddr) error
+	RemoveAddress(addr *na.NetAddr)
 
 	// Check if the address is in the book
-	HasAddress(addr *p2p.NetAddress) bool
+	HasAddress(addr *na.NetAddr) bool
 
 	// Do we need more peers?
 	NeedMoreAddrs() bool
@@ -58,22 +59,22 @@ type AddrBook interface {
 	Empty() bool
 
 	// Pick an address to dial
-	PickAddress(biasTowardsNewAddrs int) *p2p.NetAddress
+	PickAddress(biasTowardsNewAddrs int) *na.NetAddr
 
 	// Mark address
-	MarkGood(id p2p.ID)
-	MarkAttempt(addr *p2p.NetAddress)
-	MarkBad(addr *p2p.NetAddress, dur time.Duration) // Move peer to bad peers list
+	MarkGood(id nodekey.ID)
+	MarkAttempt(addr *na.NetAddr)
+	MarkBad(addr *na.NetAddr, dur time.Duration) // Move peer to bad peers list
 	// Add bad peers back to addrBook
 	ReinstateBadPeers()
 
-	IsGood(addr *p2p.NetAddress) bool
-	IsBanned(addr *p2p.NetAddress) bool
+	IsGood(addr *na.NetAddr) bool
+	IsBanned(addr *na.NetAddr) bool
 
 	// Send a selection of addresses to peers
-	GetSelection() []*p2p.NetAddress
+	GetSelection() []*na.NetAddr
 	// Send a selection of addresses with bias
-	GetSelectionWithBias(biasTowardsNewAddrs int) []*p2p.NetAddress
+	GetSelectionWithBias(biasTowardsNewAddrs int) []*na.NetAddr
 
 	Size() int
 
@@ -92,9 +93,9 @@ type addrBook struct {
 	mtx        cmtsync.Mutex
 	rand       *cmtrand.Rand
 	ourAddrs   map[string]struct{}
-	privateIDs map[p2p.ID]struct{}
-	addrLookup map[p2p.ID]*knownAddress // new & old
-	badPeers   map[p2p.ID]*knownAddress // blacklisted peers
+	privateIDs map[nodekey.ID]struct{}
+	addrLookup map[nodekey.ID]*knownAddress // new & old
+	badPeers   map[nodekey.ID]*knownAddress // banned peers
 	bucketsOld []map[string]*knownAddress
 	bucketsNew []map[string]*knownAddress
 	nOld       int
@@ -124,9 +125,9 @@ func NewAddrBook(filePath string, routabilityStrict bool) AddrBook {
 	am := &addrBook{
 		rand:              cmtrand.NewRand(),
 		ourAddrs:          make(map[string]struct{}),
-		privateIDs:        make(map[p2p.ID]struct{}),
-		addrLookup:        make(map[p2p.ID]*knownAddress),
-		badPeers:          make(map[p2p.ID]*knownAddress),
+		privateIDs:        make(map[nodekey.ID]struct{}),
+		addrLookup:        make(map[nodekey.ID]*knownAddress),
+		badPeers:          make(map[nodekey.ID]*knownAddress),
 		filePath:          filePath,
 		routabilityStrict: routabilityStrict,
 	}
@@ -180,7 +181,7 @@ func (a *addrBook) FilePath() string {
 // -------------------------------------------------------
 
 // AddOurAddress one of our addresses.
-func (a *addrBook) AddOurAddress(addr *p2p.NetAddress) {
+func (a *addrBook) AddOurAddress(addr *na.NetAddr) {
 	a.mtx.Lock()
 	defer a.mtx.Unlock()
 
@@ -189,7 +190,7 @@ func (a *addrBook) AddOurAddress(addr *p2p.NetAddress) {
 }
 
 // OurAddress returns true if it is our address.
-func (a *addrBook) OurAddress(addr *p2p.NetAddress) bool {
+func (a *addrBook) OurAddress(addr *na.NetAddr) bool {
 	a.mtx.Lock()
 	defer a.mtx.Unlock()
 
@@ -202,7 +203,7 @@ func (a *addrBook) AddPrivateIDs(ids []string) {
 	defer a.mtx.Unlock()
 
 	for _, id := range ids {
-		a.privateIDs[p2p.ID(id)] = struct{}{}
+		a.privateIDs[nodekey.ID(id)] = struct{}{}
 	}
 }
 
@@ -210,7 +211,7 @@ func (a *addrBook) AddPrivateIDs(ids []string) {
 // Add address to a "new" bucket. If it's already in one, only add it probabilistically.
 // Returns error if the addr is non-routable. Does not add self.
 // NOTE: addr must not be nil.
-func (a *addrBook) AddAddress(addr *p2p.NetAddress, src *p2p.NetAddress) error {
+func (a *addrBook) AddAddress(addr *na.NetAddr, src *na.NetAddr) error {
 	a.mtx.Lock()
 	defer a.mtx.Unlock()
 
@@ -218,7 +219,7 @@ func (a *addrBook) AddAddress(addr *p2p.NetAddress, src *p2p.NetAddress) error {
 }
 
 // RemoveAddress implements AddrBook - removes the address from the book.
-func (a *addrBook) RemoveAddress(addr *p2p.NetAddress) {
+func (a *addrBook) RemoveAddress(addr *na.NetAddr) {
 	a.mtx.Lock()
 	defer a.mtx.Unlock()
 
@@ -227,7 +228,7 @@ func (a *addrBook) RemoveAddress(addr *p2p.NetAddress) {
 
 // IsGood returns true if peer was ever marked as good and haven't
 // done anything wrong since then.
-func (a *addrBook) IsGood(addr *p2p.NetAddress) bool {
+func (a *addrBook) IsGood(addr *na.NetAddr) bool {
 	a.mtx.Lock()
 	defer a.mtx.Unlock()
 
@@ -235,7 +236,7 @@ func (a *addrBook) IsGood(addr *p2p.NetAddress) bool {
 }
 
 // IsBanned returns true if the peer is currently banned.
-func (a *addrBook) IsBanned(addr *p2p.NetAddress) bool {
+func (a *addrBook) IsBanned(addr *na.NetAddr) bool {
 	a.mtx.Lock()
 	_, ok := a.badPeers[addr.ID]
 	a.mtx.Unlock()
@@ -244,7 +245,7 @@ func (a *addrBook) IsBanned(addr *p2p.NetAddress) bool {
 }
 
 // HasAddress returns true if the address is in the book.
-func (a *addrBook) HasAddress(addr *p2p.NetAddress) bool {
+func (a *addrBook) HasAddress(addr *na.NetAddr) bool {
 	a.mtx.Lock()
 	defer a.mtx.Unlock()
 
@@ -269,7 +270,7 @@ func (a *addrBook) Empty() bool {
 // and determines how biased we are to pick an address from a new bucket.
 // PickAddress returns nil if the AddrBook is empty or if we try to pick
 // from an empty bucket.
-func (a *addrBook) PickAddress(biasTowardsNewAddrs int) *p2p.NetAddress {
+func (a *addrBook) PickAddress(biasTowardsNewAddrs int) *na.NetAddr {
 	a.mtx.Lock()
 	defer a.mtx.Unlock()
 
@@ -319,7 +320,7 @@ func (a *addrBook) PickAddress(biasTowardsNewAddrs int) *p2p.NetAddress {
 
 // MarkGood implements AddrBook - it marks the peer as good and
 // moves it into an "old" bucket.
-func (a *addrBook) MarkGood(id p2p.ID) {
+func (a *addrBook) MarkGood(id nodekey.ID) {
 	a.mtx.Lock()
 	defer a.mtx.Unlock()
 
@@ -334,7 +335,7 @@ func (a *addrBook) MarkGood(id p2p.ID) {
 }
 
 // MarkAttempt implements AddrBook - it marks that an attempt was made to connect to the address.
-func (a *addrBook) MarkAttempt(addr *p2p.NetAddress) {
+func (a *addrBook) MarkAttempt(addr *na.NetAddr) {
 	a.mtx.Lock()
 	defer a.mtx.Unlock()
 
@@ -347,7 +348,7 @@ func (a *addrBook) MarkAttempt(addr *p2p.NetAddress) {
 
 // MarkBad implements AddrBook. Kicks address out from book, places
 // the address in the badPeers pool.
-func (a *addrBook) MarkBad(addr *p2p.NetAddress, banTime time.Duration) {
+func (a *addrBook) MarkBad(addr *na.NetAddr, banTime time.Duration) {
 	a.mtx.Lock()
 	defer a.mtx.Unlock()
 
@@ -381,7 +382,7 @@ func (a *addrBook) ReinstateBadPeers() {
 // GetSelection implements AddrBook.
 // It randomly selects some addresses (old & new). Suitable for peer-exchange protocols.
 // Must never return a nil address.
-func (a *addrBook) GetSelection() []*p2p.NetAddress {
+func (a *addrBook) GetSelection() []*na.NetAddr {
 	a.mtx.Lock()
 	defer a.mtx.Unlock()
 
@@ -400,7 +401,7 @@ func (a *addrBook) GetSelection() []*p2p.NetAddress {
 
 	// XXX: instead of making a list of all addresses, shuffling, and slicing a random chunk,
 	// could we just select a random numAddresses of indexes?
-	allAddr := make([]*p2p.NetAddress, bookSize)
+	allAddr := make([]*na.NetAddr, bookSize)
 	i := 0
 	for _, ka := range a.addrLookup {
 		allAddr[i] = ka.Addr
@@ -431,7 +432,7 @@ func percentageOfNum(p, n int) int {
 // biasTowardsNewAddrs argument, which must be between [0, 100] (or else is truncated to
 // that range) and determines how biased we are to pick an address from a new
 // bucket.
-func (a *addrBook) GetSelectionWithBias(biasTowardsNewAddrs int) []*p2p.NetAddress {
+func (a *addrBook) GetSelectionWithBias(biasTowardsNewAddrs int) []*na.NetAddr {
 	a.mtx.Lock()
 	defer a.mtx.Unlock()
 
@@ -630,7 +631,7 @@ func (a *addrBook) pickOldest(bucketType byte, bucketIdx int) *knownAddress {
 
 // adds the address to a "new" bucket. if its already in one,
 // it only adds it probabilistically.
-func (a *addrBook) addAddress(addr, src *p2p.NetAddress) error {
+func (a *addrBook) addAddress(addr, src *na.NetAddr) error {
 	if addr == nil || src == nil {
 		return ErrAddrBookNilAddr{addr, src}
 	}
@@ -686,7 +687,7 @@ func (a *addrBook) addAddress(addr, src *p2p.NetAddress) error {
 	return a.addToNewBucket(ka, bucket)
 }
 
-func (a *addrBook) randomPickAddresses(bucketType byte, num int) []*p2p.NetAddress {
+func (a *addrBook) randomPickAddresses(bucketType byte, num int) []*na.NetAddr {
 	var buckets []map[string]*knownAddress
 	switch bucketType {
 	case bucketTypeNew:
@@ -706,7 +707,7 @@ func (a *addrBook) randomPickAddresses(bucketType byte, num int) []*p2p.NetAddre
 			addresses = append(addresses, ka)
 		}
 	}
-	selection := make([]*p2p.NetAddress, 0, num)
+	selection := make([]*na.NetAddr, 0, num)
 	chosenSet := make(map[string]bool, num)
 	rand.Shuffle(total, func(i, j int) {
 		addresses[i], addresses[j] = addresses[j], addresses[i]
@@ -782,7 +783,7 @@ func (a *addrBook) moveToOld(ka *knownAddress) {
 	}
 }
 
-func (a *addrBook) removeAddress(addr *p2p.NetAddress) {
+func (a *addrBook) removeAddress(addr *na.NetAddr) {
 	ka := a.addrLookup[addr.ID]
 	if ka == nil {
 		return
@@ -791,7 +792,7 @@ func (a *addrBook) removeAddress(addr *p2p.NetAddress) {
 	a.removeFromAllBuckets(ka)
 }
 
-func (a *addrBook) addBadPeer(addr *p2p.NetAddress, banTime time.Duration) bool {
+func (a *addrBook) addBadPeer(addr *na.NetAddr, banTime time.Duration) bool {
 	// check it exists in addrbook
 	ka := a.addrLookup[addr.ID]
 	// check address is not already there
@@ -803,7 +804,7 @@ func (a *addrBook) addBadPeer(addr *p2p.NetAddress, banTime time.Duration) bool 
 		// add to bad peer list
 		ka.ban(banTime)
 		a.badPeers[addr.ID] = ka
-		a.Logger.Info("Add address to blacklist", "addr", addr)
+		a.Logger.Info("Add address to denylist", "addr", addr)
 	}
 	return true
 }
@@ -812,7 +813,7 @@ func (a *addrBook) addBadPeer(addr *p2p.NetAddress, banTime time.Duration) bool 
 // calculate bucket placements
 
 // hash(key + sourcegroup + int64(hash(key + group + sourcegroup)) % bucket_per_group) % num_new_buckets.
-func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) int {
+func (a *addrBook) calcNewBucket(addr, src *na.NetAddr) int {
 	data1 := []byte{}
 	data1 = append(data1, []byte(a.key)...)
 	data1 = append(data1, []byte(a.groupKey(addr))...)
@@ -833,7 +834,7 @@ func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) int {
 }
 
 // hash(key + group + int64(hash(key + addr)) % buckets_per_group) % num_old_buckets.
-func (a *addrBook) calcOldBucket(addr *p2p.NetAddress) int {
+func (a *addrBook) calcOldBucket(addr *na.NetAddr) int {
 	data1 := []byte{}
 	data1 = append(data1, []byte(a.key)...)
 	data1 = append(data1, []byte(addr.String())...)
@@ -858,11 +859,11 @@ func (a *addrBook) calcOldBucket(addr *p2p.NetAddress) int {
 // This is the /16 for IPv4 (e.g. 1.2.0.0), the /32 (/36 for he.net) for IPv6, the string
 // "local" for a local address and the string "unroutable" for an unroutable
 // address.
-func (a *addrBook) groupKey(na *p2p.NetAddress) string {
+func (a *addrBook) groupKey(na *na.NetAddr) string {
 	return groupKeyFor(na, a.routabilityStrict)
 }
 
-func groupKeyFor(na *p2p.NetAddress, routabilityStrict bool) string {
+func groupKeyFor(na *na.NetAddr, routabilityStrict bool) string {
 	if routabilityStrict && na.Local() {
 		return "local"
 	}

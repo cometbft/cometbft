@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -39,8 +40,8 @@ func TestValidator_Sets(t *testing.T) {
 			first += int64(node.RetainBlocks)
 		}
 
-		valSchedule := newValidatorSchedule(*node.Testnet)
-		valSchedule.Increment(first - node.Testnet.InitialHeight)
+		valSchedule := newValidatorSchedule(t, node.Testnet)
+		valSchedule.IncreaseHeight(t, first-node.Testnet.InitialHeight)
 
 		for h := first; h <= last; h++ {
 			validators := []*types.Validator{}
@@ -55,7 +56,7 @@ func TestValidator_Sets(t *testing.T) {
 			}
 			require.Equal(t, valSchedule.Set.Validators, validators,
 				"incorrect validator set at height %v", h)
-			valSchedule.Increment(1)
+			valSchedule.IncreaseHeight(t, 1)
 		}
 	})
 }
@@ -71,7 +72,7 @@ func TestValidator_Propose(t *testing.T) {
 			return
 		}
 		address := node.PrivvalKey.PubKey().Address()
-		valSchedule := newValidatorSchedule(*node.Testnet)
+		valSchedule := newValidatorSchedule(t, node.Testnet)
 
 		expectCount := 0
 		proposeCount := 0
@@ -82,7 +83,7 @@ func TestValidator_Propose(t *testing.T) {
 					proposeCount++
 				}
 			}
-			valSchedule.Increment(1)
+			valSchedule.IncreaseHeight(t, 1)
 		}
 
 		if expectCount == 0 {
@@ -111,7 +112,7 @@ func TestValidator_Sign(t *testing.T) {
 			return
 		}
 		address := node.PrivvalKey.PubKey().Address()
-		valSchedule := newValidatorSchedule(*node.Testnet)
+		valSchedule := newValidatorSchedule(t, node.Testnet)
 
 		expectCount := 0
 		signCount := 0
@@ -131,7 +132,7 @@ func TestValidator_Sign(t *testing.T) {
 			} else {
 				require.False(t, signed, "unexpected signature for block %v", block.LastCommit.Height)
 			}
-			valSchedule.Increment(1)
+			valSchedule.IncreaseHeight(t, 1)
 		}
 
 		require.False(t, signCount == 0 && expectCount > 0,
@@ -147,29 +148,35 @@ func TestValidator_Sign(t *testing.T) {
 type validatorSchedule struct {
 	Set     *types.ValidatorSet
 	height  int64
-	updates map[int64]map[*e2e.Node]int64
+	testnet *e2e.Testnet
 }
 
-func newValidatorSchedule(testnet e2e.Testnet) *validatorSchedule {
+func newValidatorSchedule(t *testing.T, testnet *e2e.Testnet) *validatorSchedule {
+	t.Helper()
 	valMap := testnet.Validators                  // genesis validators
 	if v, ok := testnet.ValidatorUpdates[0]; ok { // InitChain validators
 		valMap = v
 	}
+	vals, err := makeVals(testnet, valMap)
+	require.NoError(t, err)
 	return &validatorSchedule{
 		height:  testnet.InitialHeight,
-		Set:     types.NewValidatorSet(makeVals(valMap)),
-		updates: testnet.ValidatorUpdates,
+		Set:     types.NewValidatorSet(vals),
+		testnet: testnet,
 	}
 }
 
-func (s *validatorSchedule) Increment(heights int64) {
+func (s *validatorSchedule) IncreaseHeight(t *testing.T, heights int64) {
+	t.Helper()
 	for i := int64(0); i < heights; i++ {
 		s.height++
 		if s.height > 2 {
 			// validator set updates are offset by 2, since they only take effect
 			// two blocks after they're returned.
-			if update, ok := s.updates[s.height-2]; ok {
-				if err := s.Set.UpdateWithChangeSet(makeVals(update)); err != nil {
+			if update, ok := s.testnet.ValidatorUpdates[s.height-2]; ok {
+				vals, err := makeVals(s.testnet, update)
+				require.NoError(t, err)
+				if err := s.Set.UpdateWithChangeSet(vals); err != nil {
 					panic(err)
 				}
 			}
@@ -178,10 +185,14 @@ func (s *validatorSchedule) Increment(heights int64) {
 	}
 }
 
-func makeVals(valMap map[*e2e.Node]int64) []*types.Validator {
+func makeVals(testnet *e2e.Testnet, valMap map[string]int64) ([]*types.Validator, error) {
 	vals := make([]*types.Validator, 0, len(valMap))
-	for node, power := range valMap {
-		vals = append(vals, types.NewValidator(node.PrivvalKey.PubKey(), power))
+	for valName, power := range valMap {
+		validator := testnet.LookupNode(valName)
+		if validator == nil {
+			return nil, fmt.Errorf("unknown validator %q for `validatorSchedule`", valName)
+		}
+		vals = append(vals, types.NewValidator(validator.PrivvalKey.PubKey(), power))
 	}
-	return vals
+	return vals, nil
 }

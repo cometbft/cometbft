@@ -59,17 +59,12 @@ func DefaultConfig() *Config {
 //
 // NOTE: This function blocks - you may want to call it in a go-routine.
 func Serve(listener net.Listener, handler http.Handler, logger log.Logger, config *Config) error {
-	logger.Info("serve", "msg", log.NewLazySprintf("Starting RPC HTTP server on %s", listener.Addr()))
-	s := &http.Server{
-		Handler:           PreChecksHandler(RecoverAndLogHandler(defaultHandler{h: handler}, logger), config),
-		ReadTimeout:       config.ReadTimeout,
-		ReadHeaderTimeout: config.ReadTimeout,
-		WriteTimeout:      config.WriteTimeout,
-		MaxHeaderBytes:    config.MaxHeaderBytes,
-	}
-	err := s.Serve(listener)
-	logger.Info("RPC HTTP server stopped", "err", err)
-	return err
+	return ServeWithShutdown(
+		listener,
+		handler,
+		logger,
+		config,
+	)
 }
 
 // ServeTLS creates a http.Server and calls ServeTLS with the given listener,
@@ -84,18 +79,100 @@ func ServeTLS(
 	logger log.Logger,
 	config *Config,
 ) error {
-	logger.Info("serve tls", "msg", log.NewLazySprintf("Starting RPC HTTPS server on %s (cert: %q, key: %q)",
-		listener.Addr(), certFile, keyFile))
-	s := &http.Server{
-		Handler:           PreChecksHandler(RecoverAndLogHandler(defaultHandler{h: handler}, logger), config),
-		ReadTimeout:       config.ReadTimeout,
-		ReadHeaderTimeout: config.ReadTimeout,
-		WriteTimeout:      config.WriteTimeout,
-		MaxHeaderBytes:    config.MaxHeaderBytes,
+	return ServeTLSWithShutdown(
+		listener,
+		handler,
+		certFile,
+		keyFile,
+		logger,
+		config,
+	)
+}
+
+// ServeWithShutdown creates a http.Server and calls Serve with the given
+// listener. It wraps handler with RecoverAndLogHandler and a handler, which limits
+// the max body size to config.MaxBodyBytes.
+// The function optionally takes a list of shutdown tasks to execute on shutdown.
+//
+// NOTE: This function blocks - you may want to call it in a go-routine.
+func ServeWithShutdown(
+	listener net.Listener,
+	handler http.Handler,
+	logger log.Logger,
+	config *Config,
+	shutdownTasks ...func() error,
+) error {
+	logMsg := log.NewLazySprintf("Starting RPC HTTP server on %s", listener.Addr())
+	logger.Info("serve", "msg", logMsg)
+
+	var (
+		rlHandler = RecoverAndLogHandler(defaultHandler{h: handler}, logger)
+		s         = &http.Server{
+			Handler:           PreChecksHandler(rlHandler, config),
+			ReadTimeout:       config.ReadTimeout,
+			ReadHeaderTimeout: config.ReadTimeout,
+			WriteTimeout:      config.WriteTimeout,
+			MaxHeaderBytes:    config.MaxHeaderBytes,
+		}
+	)
+	err := s.Serve(listener)
+
+	logger.Info("RPC HTTP server stopped", "err", err)
+
+	for _, f := range shutdownTasks {
+		if err := f(); err != nil {
+			logger.Error("executing RPC HTTP server post-shutdown task", "err", err)
+		}
 	}
+
+	return err
+}
+
+// ServeTLSWithShutdown creates a http.Server and calls ServeTLS with the given
+// listener, certFile and keyFile. It wraps handler with RecoverAndLogHandler and a
+// handler, which limits the max body size to config.MaxBodyBytes.
+// The function optionally takes a list of shutdown tasks to execute on shutdown.
+//
+// NOTE: This function blocks - you may want to call it in a go-routine.
+func ServeTLSWithShutdown(
+	listener net.Listener,
+	handler http.Handler,
+	certFile, keyFile string,
+	logger log.Logger,
+	config *Config,
+	shutdownTasks ...func() error,
+) error {
+	var (
+		formatStr = "Starting RPC HTTPS server on %s (cert: %q, key: %q)"
+		logMsg    = log.NewLazySprintf(
+			formatStr,
+			listener.Addr(),
+			certFile,
+			keyFile,
+		)
+	)
+	logger.Info("serve tls", "msg", logMsg)
+
+	var (
+		rlHandler = RecoverAndLogHandler(defaultHandler{h: handler}, logger)
+		s         = &http.Server{
+			Handler:           PreChecksHandler(rlHandler, config),
+			ReadTimeout:       config.ReadTimeout,
+			ReadHeaderTimeout: config.ReadTimeout,
+			WriteTimeout:      config.WriteTimeout,
+			MaxHeaderBytes:    config.MaxHeaderBytes,
+		}
+	)
 	err := s.ServeTLS(listener, certFile, keyFile)
 
 	logger.Error("RPC HTTPS server stopped", "err", err)
+
+	for _, f := range shutdownTasks {
+		if err := f(); err != nil {
+			logger.Error("executing RPC HTTP server post-shutdown task", "err", err)
+		}
+	}
+
 	return err
 }
 

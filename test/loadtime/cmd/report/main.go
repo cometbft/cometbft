@@ -94,7 +94,7 @@ func toCSVRecords(rs []report.Report) [][]string {
 	}
 	res := make([][]string, total+1)
 
-	res[0] = []string{"experiment_id", "block_time", "duration_ns", "tx_hash", "connections", "rate", "size"}
+	res[0] = []string{"experiment_id", "block_time", "duration_ns", "tx_hash", "lane", "connections", "rate", "size"}
 	offset := 1
 	for _, r := range rs {
 		idStr := r.ID.String()
@@ -102,7 +102,16 @@ func toCSVRecords(rs []report.Report) [][]string {
 		rateStr := strconv.FormatInt(int64(r.Rate), 10)
 		sizeStr := strconv.FormatInt(int64(r.Size), 10)
 		for i, v := range r.All {
-			res[offset+i] = []string{idStr, strconv.FormatInt(v.BlockTime.UnixNano(), 10), strconv.FormatInt(int64(v.Duration), 10), fmt.Sprintf("%X", v.Hash), connStr, rateStr, sizeStr}
+			res[offset+i] = []string{
+				idStr,
+				strconv.FormatInt(v.BlockTime.UnixNano(), 10),
+				strconv.FormatInt(int64(v.Duration), 10),
+				fmt.Sprintf("%X", v.Hash),
+				v.Lane,
+				connStr,
+				rateStr,
+				sizeStr,
+			}
 		}
 		offset += len(r.All)
 	}

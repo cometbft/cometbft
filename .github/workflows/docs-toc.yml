@@ -2,9 +2,15 @@
 name: Check documentation ToC
 on:
   pull_request:
+    paths:
+      - docs/architecture/**
+      - docs/rfc/**
   push:
     branches:
       - main
+    paths:
+      - docs/architecture/**
+      - docs/rfc/**
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,10 +21,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: technote-space/get-diff-action@v6
-        with:
-          PATTERNS: |
-            docs/architecture/**
-            docs/rfc/**
       - run: make check-docs-toc
-        if: env.GIT_DIFF

@@ -79,7 +79,7 @@ pull_request_rules:
         type: APPROVE
         message: Automatically approving dependabot
 
-  - name: automatically merge PR with automerge label
+  - name: automatically merge PR with automerge label and no manual-backport label
     conditions:
       - '-label=manual-backport'
       - label=automerge
@@ -95,8 +95,9 @@ pull_request_rules:
       - base=v0.38.x
     actions:
       label:
-        toggle:
+        add:
           - backport-to-v0.38.x-experimental
+          - automerge
 
   - name: Make sure PR are up to date before merging
     description: >-
@@ -104,6 +105,7 @@ pull_request_rules:
       branch to avoid semantic conflicts (next step is using a merge queue).
     conditions:
       - '-draft'
+      - "#approved-reviews-by >= 1"
     actions:
       update:
 

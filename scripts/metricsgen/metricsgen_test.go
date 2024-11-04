@@ -239,7 +239,7 @@ func TestParseMetricsStruct(t *testing.T) {
 			pkgLine := fmt.Sprintf("package %s\n", pkgName)
 			importClause := `
 			import(
-				"github.com/go-kit/kit/metrics"
+				"github.com/cometbft/cometbft/libs/metrics"
 			)
 			`
 
@@ -266,7 +266,7 @@ func TestParseAliasedMetric(t *testing.T) {
 			package mypkg
 
 			import(
-				mymetrics "github.com/go-kit/kit/metrics"
+				mymetrics "github.com/cometbft/cometbft/libs/metrics"
 			)
 			type Metrics struct {
 				m mymetrics.Gauge

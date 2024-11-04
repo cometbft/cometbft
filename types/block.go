@@ -561,7 +561,6 @@ func HeaderFromProto(ph *cmtproto.Header) (Header, error) {
 	h.ChainID = ph.ChainID
 	h.Height = ph.Height
 	h.Time = ph.Time
-	h.Height = ph.Height
 	h.LastBlockID = *bi
 	h.ValidatorsHash = ph.ValidatorsHash
 	h.NextValidatorsHash = ph.NextValidatorsHash

@@ -6,9 +6,9 @@ import (
 	"io"
 	"math/big"
 
-	secp256k1 "github.com/btcsuite/btcd/btcec/v2"
-	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
-	"golang.org/x/crypto/ripemd160" //nolint: staticcheck // necessary for Bitcoin address format
+	"github.com/decred/dcrd/dcrec/secp256k1/v4"
+	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
+	"golang.org/x/crypto/ripemd160" //nolint: gosec,staticcheck // necessary for Bitcoin address format
 
 	"github.com/cometbft/cometbft/crypto"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
@@ -43,9 +43,9 @@ func (privKey PrivKey) Bytes() []byte {
 //
 // See secp256k1.PrivKeyFromBytes.
 func (privKey PrivKey) PubKey() crypto.PubKey {
-	_, pubkeyObject := secp256k1.PrivKeyFromBytes(privKey)
+	secpPrivKey := secp256k1.PrivKeyFromBytes(privKey)
 
-	pk := pubkeyObject.SerializeCompressed()
+	pk := secpPrivKey.PubKey().SerializeCompressed()
 
 	return PubKey(pk)
 }
@@ -119,7 +119,7 @@ func GenPrivKeySecp256k1(secret []byte) PrivKey {
 // Sign creates an ECDSA signature on curve Secp256k1, using SHA256 on the msg.
 // The returned signature will be of the form R || S (in lower-S form).
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
-	priv, _ := secp256k1.PrivKeyFromBytes(privKey)
+	priv := secp256k1.PrivKeyFromBytes(privKey)
 
 	sum := sha256.Sum256(msg)
 	sig := ecdsa.SignCompact(priv, sum[:], false)
@@ -160,7 +160,7 @@ func (pubKey PubKey) Address() crypto.Address {
 		panic("ripemd160.Size != crypto.AddressSize")
 	}
 
-	hasherRIPEMD160 := ripemd160.New()
+	hasherRIPEMD160 := ripemd160.New() // #nosec G406 // necessary for Bitcoin address format
 	_, err = hasherRIPEMD160.Write(sha)
 	if err != nil {
 		panic(err)
@@ -197,7 +197,7 @@ func (pubKey PubKey) VerifySignature(msg []byte, sigStr []byte) bool {
 
 	// parse the signature:
 	signature := signatureFromBytes(sigStr)
-	// Reject malleable signatures. libsecp256k1 does this check but btcec doesn't.
+	// Reject malleable signatures. libsecp256k1 does this check but decred doesn't.
 	// see: https://github.com/ethereum/go-ethereum/blob/f9401ae011ddf7f8d2d95020b7446c17f8d98dc1/crypto/signature_nocgo.go#L90-L93
 	// Serialize() would negate S value if it is over half order.
 	// Hence, if the signature is different after Serialize() if should be rejected.

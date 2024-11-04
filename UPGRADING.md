@@ -26,206 +26,21 @@ versioning:
 
 ### Building CometBFT
 
-The minimum Go version has been bumped to [v1.22][go122].
+The minimum Go version has been bumped to [v1.23][go123].
 
-### Proposer-Based Timestamps
+### Upgrading Guide (`v0.38` -> `v1.0`)
 
-CometBFT `v1.0` contains a new algorithm for generating and verifying block timestamps
-called Proposer-Based Timestamps (PBTS).
-The existing algorithm, called BFT-Time is kept for backwards compatibility.
-Upgrading to `v1.0` does not automatically switch the chain from BFT-Time
-to PBTS; rather a ConsensusParam called `PbtsEnableHeight` can be set to a future
-height to transition from BFT-Time to PBTS.
-This flexible mechanism allows chains disentagle the upgrade to `v1.0` from the transition
-in the algorithm used for block times.
-For further information, please check the [PBTS specification][pbts-spec].
+Starting with the `v1.0` release, instead of providing detailed information
+about new features, changes, and other relevant details for upgrading to ComeBFT `v1.0` in this document,
+we have created a comprehensive upgrading guide from the previous `v0.38.x` release line to this new `v1.0` release.
+This guide can be utilized as a valuable resource when upgrading to the CometBFT `v1.0` release.
 
-### ABCI Mutex
+The upgrading guide includes detailed information about major new features in CometBFT `v1.0`, such as PBTS,
+Data Companion API, several enhancements, configuration and genesis updates for a smoother
+transition to the new `v1.0` version.
 
-CometBFT's existing ABCI local client is prevented from making
-concurrent calls to ABCI implementations by virtue of a mutex taken
-by the client's implementation.
-In this release, two additional local ABCI clients have been added.
-The first, supports one different mutex per ABCI connection
-(consensus connection, mempool connection, etc.), allowing concurrency
-in the application in different ABCI connections, but still serializing
-ABCI calls within the same connection.
-The second, totally removes mutexes from the ABCI client.
-When using either of the new ABCI clients, the application is now
-responsible to coordinate concurrent ABCI calls in order to prevent
-race conditions or the possibility of non determinism.
-If you are not sure how to ensure those guarantees in your application,
-you are strongly advised to keep on using the existing ABCI client
-containing one global mutex.
-
-### Consensus
-
-Removed the `consensus.State.ReplayFile` and `consensus.RunReplayFile` methods,
-as these were exclusively used by the `replay` and `replay-console` subcommands,
-which were also removed. (See
-[\#1170](https://github.com/cometbft/cometbft/pull/1170))
-
-### CLI Subcommands
-
-- The `replay` and `replay-console` subcommands were removed
-  ([\#1170](https://github.com/cometbft/cometbft/pull/1170)).
-
-### Go API
-
-As per [ADR 109](docs/references/architecture/adr-109-reduce-go-api-surface.md), the
-following packages that were publicly accessible in CometBFT v0.38 were moved
-into the `internal` directory:
-
-- `blocksync`
-- `consensus`
-- `evidence`
-- `inspect`
-- `libs/async`
-- `libs/autofile`
-- `libs/bits`
-- `libs/clist`
-- `libs/cmap`
-- `libs/events`
-- `libs/fail`
-- `libs/flowrate`
-- `libs/net`
-- `libs/os`
-- `libs/progressbar`
-- `libs/rand`
-- `libs/strings`
-- `libs/tempfile`
-- `libs/timer`
-
-If you rely on any of these packages and would like us to make them public
-again, please [log an issue on
-GitHub](https://github.com/cometbft/cometbft/issues/new/choose) describing your
-use case and we will evaluate the best approach to helping you address it.
-
-### Mempool
-
-#### `nop` mempool
-
-CometBFT v1.0.0 provides users with the option of a `nop` (no-op) mempool which,
-if selected via configuration, turns off all mempool-related functionality in
-Comet (e.g. ability to receive transactions, transaction gossip). Comet then
-expects applications to provide their transactions when it calls
-`PrepareProposal`, and that application developers will use some external means
-of disseminating their transactions.
-
-If you want to use it, change mempool's `type` to `nop` in your `config.toml`
-file:
-
-```toml
-[mempool]
-
-# The type of mempool for this node to use.
-#
-# Possible types:
-# - "flood" : concurrent linked list mempool with flooding gossip protocol
-# (default)
-# - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
-# for storing, disseminating and proposing txs). "create_empty_blocks=false"
-# is not supported.
-type = "nop"
-```
-
-#### Internal `CheckTx` Go API changes
-
-The `Mempool` interface was modified on `CheckTx`. Note that this interface is
-meant for internal use only, so you should be aware of these changes only if you
-happen to call these methods directly.
-
-`CheckTx`'s signature changed from
-`CheckTx(tx types.Tx, cb func(*abci.ResponseCheckTx), txInfo TxInfo) error` to
-`CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, error)`.
-The method used to take a callback function `cb` to be applied to the
-ABCI `CheckTx` response and a `TxInfo` structure containing a sender.
-Now the sender ID is passed directly and `CheckTx` returns the ABCI response
-of type `*abcicli.ReqRes`, on which one can apply any callback manually.
-For example:
-```golang
-reqRes, err := CheckTx(tx, sender)
-// check `err` here
-cb(reqRes.Response.GetCheckTx())
-```
-
-The `*abcicli.ReqRes` structure that `CheckTx` returns has a callback to
-process the response already set (namely, the function `handleCheckTxResponse`).
-The callback will be invoked internally when the response is ready. We need only 
-to wait for it; for example:
-```golang
-reqRes, err := CheckTx(tx, sender)
-// check `err` here
-reqRes.Wait()
-```
-
-### Protobufs and Generated Go Code
-
-Several major changes have been implemented relating to the Protobuf
-definitions:
-
-1. CometBFT now makes use of the `cometbft.*` Protobuf definitions in
-   [`proto/cometbft`](./proto/cometbft/). This is a breaking change for all
-   users who rely on serialization of the Protobuf type paths, such as
-   integrators who serialize CometBFT's Protobuf data types into `Any`-typed
-   fields. For example, the `tendermint.types.Block` type in CometBFT v0.38.x is
-   now accessible as `cometbft.types.v1.Block` (see the next point in the list
-   for details on versioning).
-
-   See the CometBFT Protobufs [README](/proto/README.md) file for more details.
-
-2. All CometBFT Protobuf packages include a version whose number will be
-   independent of the CometBFT version. As mentioned in (1), the
-   `tendermint.types.Block` type is now available under
-   `cometbft.types.v1.Block` - the `v1` in the type path indicates the version
-   of the `types` package used by this version of CometBFT.
-
-   The Protobuf definitions that are wire-level compatible (but not type
-   path-compatible) with CometBFT v0.34, v0.37 and v0.38, where breaking changes
-   were introduced, are available under `v1beta*`-versioned types. For example:
-
-   - The `tendermint.abci.Request` type from CometBFT v0.34 is now available as
-     `cometbft.abci.v1beta1.Request`.
-   - The `tendermint.abci.Request` type from CometBFT v0.37 is now available as
-     `cometbft.abci.v1beta2.Request`.
-   - The `tendermint.abci.Request` type from CometBFT v0.38 is now available as
-     `cometbft.abci.v1beta3.Request`.
-
-   See the CometBFT Protobufs [README](/proto/README.md) file for more details.
-
-3. All Go code generated from the `cometbft.*` types is now available under the
-   [`api`](./api/) directory. This directory is also an independently versioned
-   Go module. This code is still generated using the Cosmos SDK's [gogoproto
-   fork](https://github.com/cosmos/gogoproto) at present.
-
-4. Several ABCI-related types were renamed in order to align with [Buf
-   guidelines](https://buf.build/docs/best-practices/style-guide/). `Request*`
-   and `Response*` were renamed to `*Request` and `*Response` (e.g.
-   `RequestQuery` was renamed to `QueryRequest`). See the changelog for more
-   details.
-
-### RPC
-
-- The RPC API is now versioned, with the existing RPC being available under both
-  the `/` path (as in CometBFT v0.38) and a `/v1` path.
-
-  Although invoking methods without specifying the version is still supported
-  for now, support will be dropped in future releases and users are encouraged
-  to use the versioned approach. For example, instead of
-  `curl localhost:26657/block?height=5`, use `curl localhost:26657/v1/block?height=5`.
-
-- The `/websocket` endpoint path is no longer configurable in the client or
-  server. Creating an RPC client now takes the form:
-
-  ```golang
-  // The WebSocket endpoint in the following example is assumed to be available
-  // at http://localhost:26657/v1/websocket
-  rpcClient, err := client.New("http://localhost:26657/v1")
-  ```
-
-### Config Changes
-
-- `consensus.skip_timeout_commit` has been removed in favor of `consensus.timeout_commit=0s`.
+Please see more information on the [Upgrading from CometBFT v0.38 to v1.0](/docs/guides/upgrades/v0.38-to-v1.0.md)
+guide.
 
 ## v0.38.0
 
@@ -398,5 +213,5 @@ please see the [Tendermint Core upgrading instructions][tmupgrade].
 [discussions]: https://github.com/cometbft/cometbft/discussions
 [tmupgrade]: https://github.com/tendermint/tendermint/blob/35581cf54ec436b8c37fabb43fdaa3f48339a170/UPGRADING.md
 [go120]: https://go.dev/blog/go1.20
-[go122]: https://go.dev/blog/go1.22
+[go123]: https://go.dev/blog/go1.23
 [pbts-spec]: ./spec/consensus/proposer-based-timestamp/README.md

@@ -1052,7 +1052,7 @@ can be spoofed by adversaries.
 Apps may also want to consider state sync denial-of-service vectors, where adversaries provide
 invalid or harmful snapshots to prevent nodes from joining the network. The application can
 counteract this by asking CometBFT to ban peers. As a last resort, node operators can use
-P2P configuration options to whitelist a set of trusted peers that can provide valid snapshots.
+P2P configuration options to list an exclusive set of trusted peers that can provide valid snapshots.
 
 ##### Transition to Consensus
 

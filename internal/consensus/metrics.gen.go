@@ -3,8 +3,8 @@
 package consensus
 
 import (
-	"github.com/go-kit/kit/metrics/discard"
-	prometheus "github.com/go-kit/kit/metrics/prometheus"
+	"github.com/cometbft/cometbft/libs/metrics/discard"
+	prometheus "github.com/cometbft/cometbft/libs/metrics/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 

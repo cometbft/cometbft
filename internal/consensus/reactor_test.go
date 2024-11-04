@@ -162,8 +162,10 @@ func TestReactorWithEvidence(t *testing.T) {
 		proxyAppConnMem := proxy.NewAppConnMempool(abcicli.NewLocalClient(mtx, app), proxy.NopMetrics())
 
 		// Make Mempool
+		_, lanesInfo := fetchAppInfo(app)
 		mempool := mempl.NewCListMempool(config.Mempool,
 			proxyAppConnMem,
+			lanesInfo,
 			state.LastBlockHeight,
 			mempl.WithMetrics(memplMetrics),
 			mempl.WithPreCheck(sm.TxPreCheck(state)),
@@ -445,6 +447,7 @@ func TestReactorRecordsVotesAndBlockParts(t *testing.T) {
 func TestReactorVotingPowerChange(t *testing.T) {
 	nVals := 4
 	logger := log.TestingLogger()
+
 	css, cleanup := randConsensusNet(
 		t,
 		nVals,

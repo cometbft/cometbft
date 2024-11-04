@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
-	"github.com/go-kit/kit/metrics"
 	"github.com/google/orderedcode"
 
 	dbm "github.com/cometbft/cometbft-db"
@@ -17,6 +16,7 @@ import (
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
+	"github.com/cometbft/cometbft/libs/metrics"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -237,10 +237,18 @@ func NewStore(db dbm.DB, options StoreOptions) Store {
 		StoreOptions: options,
 	}
 
+	if options.DBKeyLayout == "" {
+		options.DBKeyLayout = "v1"
+	}
+
 	dbKeyLayoutVersion := setDBKeyLayout(&store, options.DBKeyLayout)
 
 	if options.Logger != nil {
-		options.Logger.Info("State store key layout version ", "version", "v"+dbKeyLayoutVersion)
+		options.Logger.Info(
+			"State store key layout version ",
+			"version",
+			"v"+dbKeyLayoutVersion,
+		)
 	}
 
 	return store

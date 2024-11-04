@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	p2pconn "github.com/cometbft/cometbft/p2p/conn"
+	p2pconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
 
 const (

@@ -26,74 +26,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            code:
+              - '**/*.go'
+              - 'Makefile'
+              - 'go.*'
+
       - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
+        if: steps.filter.outputs.code == 'true'
 
       - uses: actions/setup-go@v5
+        if: steps.filter.outputs.code == 'true'
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - uses: technote-space/get-diff-action@v6
-        with:
-          PATTERNS: |
-            **/*.go
-            "!test/"
-            go.mod
-            go.sum
-            Makefile
-
       - name: install
+        if: steps.filter.outputs.code == 'true'
         run: GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} make build
-        if: "env.GIT_DIFF != ''"
-
-  test_abci_cli:
-    runs-on: ubuntu-latest
-    needs: build
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-
-      - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - uses: technote-space/get-diff-action@v6
-        with:
-          PATTERNS: |
-            **/*.go
-            go.mod
-            go.sum
-      - name: install
-        run: make install_abci
-        if: "env.GIT_DIFF != ''"
-      - run: abci/tests/test_cli/test.sh
-        shell: bash
-        if: "env.GIT_DIFF != ''"
-
-  test_apps:
-    runs-on: ubuntu-latest
-    needs: build
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-
-      - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - uses: technote-space/get-diff-action@v6
-        with:
-          PATTERNS: |
-            **/*.go
-            go.mod
-            go.sum
-      - name: install
-        run: make install install_abci
-        if: "env.GIT_DIFF != ''"
-      - name: test_apps
-        run: test/app/test.sh
-        shell: bash
-        if: "env.GIT_DIFF != ''"

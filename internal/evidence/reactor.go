@@ -10,6 +10,7 @@ import (
 	"github.com/cometbft/cometbft/internal/clist"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
+	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -49,15 +50,15 @@ func (evR *Reactor) SetLogger(l log.Logger) {
 	evR.evpool.SetLogger(l)
 }
 
-// GetChannels implements Reactor.
+// StreamDescriptors implements Reactor.
 // It returns the list of channels for this reactor.
-func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
-	return []*p2p.ChannelDescriptor{
-		{
+func (*Reactor) StreamDescriptors() []p2p.StreamDescriptor {
+	return []p2p.StreamDescriptor{
+		&tcpconn.ChannelDescriptor{
 			ID:                  EvidenceChannel,
 			Priority:            6,
 			RecvMessageCapacity: maxMsgSize,
-			MessageType:         &cmtproto.EvidenceList{},
+			MessageTypeI:        &cmtproto.EvidenceList{},
 		},
 	}
 }

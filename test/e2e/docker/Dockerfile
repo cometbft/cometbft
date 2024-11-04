@@ -1,7 +1,7 @@
 # We need to build in a Linux environment to support C libraries, e.g. RocksDB.
 # We use Debian instead of Alpine, so that we can use binary database packages
 # instead of spending time compiling them.
-FROM cometbft/cometbft-db-testing:v0.14.1
+FROM cometbft/cometbft-db-testing:v1.0.1
 
 RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
 
@@ -12,7 +12,7 @@ COPY test/e2e/pkg/latency/aws-latencies.csv /scripts/
 COPY test/e2e/pkg/latency/latency-setter.py /scripts/
 
 # Set up build directory /src/cometbft
-ENV COMETBFT_BUILD_OPTIONS badgerdb,rocksdb,pebbledb,clock_skew,bls12381
+ENV COMETBFT_BUILD_OPTIONS badgerdb,rocksdb,clock_skew,bls12381
 WORKDIR /src/cometbft
 
 # Fetch dependencies separately (for layer caching)

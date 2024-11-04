@@ -9,8 +9,6 @@ const (
 	SignatureLength = 96
 	// KeyType is the string constant for the BLS12-381 algorithm.
 	KeyType = "bls12_381"
-	// MaxMsgLen defines the maximum length of the message bytes as passed to Sign.
-	MaxMsgLen = 32
 	// BLS12-381 private key name.
 	PrivKeyName = "cometbft/PrivKeyBls12_381"
 	// BLS12-381 public key name.

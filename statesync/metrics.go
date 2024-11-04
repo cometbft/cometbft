@@ -1,7 +1,7 @@
 package statesync
 
 import (
-	"github.com/go-kit/kit/metrics"
+	"github.com/cometbft/cometbft/libs/metrics"
 )
 
 const (

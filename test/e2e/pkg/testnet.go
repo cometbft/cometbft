@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"bytes"
 	"context"
 	"encoding/csv"
 	"errors"
@@ -9,12 +8,10 @@ import (
 	"io"
 	"math/rand"
 	"net"
-	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
-	"text/template"
 	"time"
 
 	_ "embed"
@@ -23,9 +20,11 @@ import (
 	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
 	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
+	"github.com/cometbft/cometbft/test/e2e/app"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -74,16 +73,25 @@ const (
 // Testnet represents a single testnet.
 // It includes all fields from the associated Manifest instance.
 type Testnet struct {
-	Manifest
+	*Manifest
 
 	Name string
 	File string
 	Dir  string
 
 	IP               *net.IPNet
-	Validators       map[*Node]int64
-	ValidatorUpdates map[int64]map[*Node]int64
+	ValidatorUpdates map[int64]map[string]int64
 	Nodes            []*Node
+
+	// If not empty, ignore the manifest and send transaction load only to the
+	// node names in this list. It is set only from a command line flag.
+	LoadTargetNodes []string
+
+	// For generating transaction load on lanes proportionally to their
+	// priorities.
+	laneIDs               []string
+	laneCumulativeWeights []uint
+	sumWeights            uint
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -139,17 +147,15 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	if err != nil {
 		return nil, fmt.Errorf("invalid IP network address %q: %w", ifd.Network, err)
 	}
-
 	testnet := &Testnet{
-		Manifest: manifest,
+		Manifest: &manifest,
 
 		Name: filepath.Base(dir),
 		File: file,
 		Dir:  dir,
 
 		IP:               ipNet,
-		Validators:       map[*Node]int64{},
-		ValidatorUpdates: map[int64]map[*Node]int64{},
+		ValidatorUpdates: map[int64]map[string]int64{},
 		Nodes:            []*Node{},
 	}
 	if testnet.InitialHeight == 0 {
@@ -174,7 +180,36 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		testnet.LoadTxSizeBytes = defaultTxSizeBytes
 	}
 
-	for _, name := range sortNodeNames(manifest) {
+	if len(testnet.Lanes) == 0 {
+		testnet.Lanes = app.DefaultLanes()
+	}
+	if len(testnet.LoadLaneWeights) == 0 {
+		// Assign same weight to all lanes.
+		testnet.LoadLaneWeights = make(map[string]uint, len(testnet.Lanes))
+		for id := range testnet.Lanes {
+			testnet.LoadLaneWeights[id] = 1
+		}
+	}
+	if len(testnet.Lanes) < 1 {
+		return nil, errors.New("number of lanes must be greater or equal to one")
+	}
+
+	// Pre-compute lane data needed for generating transaction load.
+	testnet.laneIDs = make([]string, 0, len(testnet.Lanes))
+	laneWeights := make([]uint, 0, len(testnet.Lanes))
+	for lane := range testnet.Lanes {
+		testnet.laneIDs = append(testnet.laneIDs, lane)
+		weight := testnet.LoadLaneWeights[lane]
+		laneWeights = append(laneWeights, weight)
+		testnet.sumWeights += weight
+	}
+	testnet.laneCumulativeWeights = make([]uint, len(testnet.Lanes))
+	testnet.laneCumulativeWeights[0] = laneWeights[0]
+	for i := 1; i < len(testnet.laneCumulativeWeights); i++ {
+		testnet.laneCumulativeWeights[i] = testnet.laneCumulativeWeights[i-1] + laneWeights[i]
+	}
+
+	for _, name := range sortNodeNames(&manifest) {
 		nodeManifest := manifest.NodesMap[name]
 		ind, ok := ifd.Instances[name]
 		if !ok {
@@ -283,37 +318,59 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	// Set up genesis validators. If not specified explicitly, use all validator nodes.
-	if manifest.ValidatorsMap != nil {
-		for validatorName, power := range *manifest.ValidatorsMap {
-			validator := testnet.LookupNode(validatorName)
-			if validator == nil {
-				return nil, fmt.Errorf("unknown validator %q", validatorName)
-			}
-			testnet.Validators[validator] = power
+	if len(testnet.Validators) == 0 {
+		if testnet.Validators == nil { // Can this ever happen?
+			testnet.Validators = make(map[string]int64)
 		}
-	} else {
 		for _, node := range testnet.Nodes {
 			if node.Mode == ModeValidator {
-				testnet.Validators[node] = 100
+				testnet.Validators[node.Name] = 100
 			}
 		}
 	}
 
 	// Set up validator updates.
+	// NOTE: This map traversal is non-deterministic, but that's acceptable because
+	// the loop only constructs another map.
+	// We don't rely on traversal order for any side effects.
 	for heightStr, validators := range manifest.ValidatorUpdatesMap {
 		height, err := strconv.Atoi(heightStr)
 		if err != nil {
 			return nil, fmt.Errorf("invalid validator update height %q: %w", height, err)
 		}
-		valUpdate := map[*Node]int64{}
+		valUpdate := map[string]int64{}
 		for name, power := range validators {
 			node := testnet.LookupNode(name)
 			if node == nil {
 				return nil, fmt.Errorf("unknown validator %q for update at height %v", name, height)
 			}
-			valUpdate[node] = power
+			valUpdate[node.Name] = power
 		}
 		testnet.ValidatorUpdates[int64(height)] = valUpdate
+	}
+
+	if testnet.ConstantFlip {
+		// Pick "lowest" validator by name
+		var minNode string
+		for n := range testnet.Validators {
+			if len(minNode) == 0 || n < minNode {
+				minNode = n
+			}
+		}
+		if len(minNode) == 0 {
+			return nil, errors.New("`testnet.Validators` is empty")
+		}
+
+		const flipSpan = 3000
+		for i := max(1, manifest.InitialHeight); i < manifest.InitialHeight+flipSpan; i++ {
+			if _, ok := testnet.ValidatorUpdates[i]; ok {
+				continue
+			}
+			valUpdate := map[string]int64{
+				minNode: i % 2, // flipping every height
+			}
+			testnet.ValidatorUpdates[i] = valUpdate
+		}
 	}
 
 	return testnet, testnet.Validate()
@@ -393,6 +450,26 @@ func (t Testnet) Validate() error {
 				t.PbtsUpdateHeight, t.PbtsEnableHeight,
 			)
 		}
+	}
+	nodeNames := sortNodeNames(t.Manifest)
+	for _, nodeName := range t.LoadTargetNodes {
+		if !slices.Contains(nodeNames, nodeName) {
+			return fmt.Errorf("%s is not the list of nodes", nodeName)
+		}
+	}
+	if len(t.LoadLaneWeights) != len(t.Lanes) {
+		return fmt.Errorf("number of lane weights (%d) must be equal to "+
+			"the number of lanes defined by the app (%d)",
+			len(t.LoadLaneWeights), len(t.Lanes),
+		)
+	}
+	for lane := range t.Lanes {
+		if _, ok := t.LoadLaneWeights[lane]; !ok {
+			return fmt.Errorf("lane %s not in weights map", lane)
+		}
+	}
+	if t.sumWeights <= 0 {
+		return errors.New("the sum of all lane weights must be greater than 0")
 	}
 	for _, node := range t.Nodes {
 		if err := node.Validate(t); err != nil {
@@ -592,32 +669,26 @@ func (t Testnet) HasPerturbations() bool {
 	return false
 }
 
-//go:embed templates/prometheus-yaml.tmpl
-var prometheusYamlTemplate string
+// weightedRandomIndex, given a list of cumulative weights and the sum of all
+// weights, it picks one of them randomly and proportionally to its weight, and
+// returns its index in the list.
+func weightedRandomIndex(cumWeights []uint, sumWeights uint) int {
+	// Generate a random number in the range [0, sumWeights).
+	r := cmtrand.Int31n(int32(sumWeights))
 
-func (t Testnet) prometheusConfigBytes() ([]byte, error) {
-	tmpl, err := template.New("prometheus-yaml").Parse(prometheusYamlTemplate)
-	if err != nil {
-		return nil, err
+	// Return i when the random number falls in the i'th interval.
+	for i, cumWeight := range cumWeights {
+		if r < int32(cumWeight) {
+			return i
+		}
 	}
-	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, t)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	return -1 // unreachable
 }
 
-func (t Testnet) WritePrometheusConfig() error {
-	bytes, err := t.prometheusConfigBytes()
-	if err != nil {
-		return err
-	}
-	err = os.WriteFile(filepath.Join(t.Dir, "prometheus.yaml"), bytes, 0o644) //nolint:gosec
-	if err != nil {
-		return err
-	}
-	return nil
+// WeightedRandomLane returns an element in the list of lane ids, according to a
+// predefined weight for each lane in the list.
+func (t *Testnet) WeightedRandomLane() string {
+	return t.laneIDs[weightedRandomIndex(t.laneCumulativeWeights, t.sumWeights)]
 }
 
 // Address returns a P2P endpoint address for the node.

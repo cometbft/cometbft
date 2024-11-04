@@ -11,9 +11,21 @@ var ErrTxNotFound = errors.New("transaction not found in mempool")
 // ErrTxInCache is returned to the client if we saw tx earlier.
 var ErrTxInCache = errors.New("tx already exists in cache")
 
+// ErrInvalidTx is returned when a transaction that is trying to be added to the
+// mempool is invalid.
+var ErrInvalidTx = errors.New("tx is invalid")
+
+// ErrTxInMempool is returned when a transaction that is trying to be added to
+// the mempool is already there.
+var ErrTxInMempool = errors.New("transaction already in mempool, not adding it again")
+
 // ErrTxAlreadyReceivedFromSender is returned if when processing a tx already
 // received from the same sender.
 var ErrTxAlreadyReceivedFromSender = errors.New("tx already received from the same sender")
+
+// ErrLateRecheckResponse is returned when a CheckTx response arrives after the
+// rechecking process has finished.
+var ErrLateRecheckResponse = errors.New("rechecking has finished; discard late recheck response")
 
 // ErrRecheckFull is returned when checking if the mempool is full and
 // rechecking is still in progress after a new block was committed.
@@ -37,7 +49,6 @@ type ErrMempoolIsFull struct {
 	MaxTxs      int
 	TxsBytes    int64
 	MaxTxsBytes int64
-	RecheckFull bool
 }
 
 func (e ErrMempoolIsFull) Error() string {
@@ -47,6 +58,27 @@ func (e ErrMempoolIsFull) Error() string {
 		e.MaxTxs,
 		e.TxsBytes,
 		e.MaxTxsBytes,
+	)
+}
+
+// ErrLaneIsFull is returned when a lane has reached its full capacity (either
+// in number of txs or bytes).
+type ErrLaneIsFull struct {
+	Lane     LaneID
+	NumTxs   int
+	MaxTxs   int
+	Bytes    int64
+	MaxBytes int64
+}
+
+func (e ErrLaneIsFull) Error() string {
+	return fmt.Sprintf(
+		"lane %s is full: number of txs %d (max: %d), total bytes %d (max: %d)",
+		e.Lane,
+		e.NumTxs,
+		e.MaxTxs,
+		e.Bytes,
+		e.MaxBytes,
 	)
 }
 
@@ -90,4 +122,36 @@ func (e ErrFlushAppConn) Error() string {
 
 func (e ErrFlushAppConn) Unwrap() error {
 	return e.Err
+}
+
+type ErrEmptyLanesDefaultLaneSet struct {
+	Info LanesInfo
+}
+
+func (e ErrEmptyLanesDefaultLaneSet) Error() string {
+	return fmt.Sprintf("invalid lane info: if list of lanes is empty, then defaultLane must be 0, but %v given; info %v", e.Info.defaultLane, e.Info)
+}
+
+type ErrBadDefaultLaneNonEmptyLaneList struct {
+	Info LanesInfo
+}
+
+func (e ErrBadDefaultLaneNonEmptyLaneList) Error() string {
+	return fmt.Sprintf("invalid lane info: default lane cannot be 0 if list of lanes is non empty; info: %v", e.Info)
+}
+
+type ErrDefaultLaneNotInList struct {
+	Info LanesInfo
+}
+
+func (e ErrDefaultLaneNotInList) Error() string {
+	return fmt.Sprintf("invalid lane info: list of lanes does not contain default lane; info %v", e.Info)
+}
+
+type ErrLaneNotFound struct {
+	laneID LaneID
+}
+
+func (e ErrLaneNotFound) Error() string {
+	return fmt.Sprintf("lane %s not found", e.laneID)
 }

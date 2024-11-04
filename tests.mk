@@ -5,43 +5,31 @@
 
 BINDIR ?= $(GOPATH)/bin
 
-## required to be run first by most tests
-build_docker_test_image:
-	docker build -t tester -f ./test/docker/Dockerfile .
-.PHONY: build_docker_test_image
-
-### coverage, app, persistence, and libs tests
-test_cover:
-	# run the go unit tests with coverage
-	bash test/test_cover.sh
-.PHONY: test_cover
-
-test_apps:
-	# run the app tests using bash
-	# requires `abci-cli` and `cometbft` binaries installed
-	bash test/app/test.sh
-.PHONY: test_apps
-
-test_abci_apps:
-	bash abci/tests/test_app/test.sh
-.PHONY: test_abci_apps
-
-test_abci_cli:
-	# test the cli against the examples in the tutorial at:
-	# ./docs/abci-cli.md
-	# if test fails, update the docs ^
-	@ bash abci/tests/test_cli/test.sh
-.PHONY: test_abci_cli
-
-test_integrations:
-	make build_docker_test_image
+#?install_test_prereqs
+install_test_prereqs:
 	make install
 	make install_abci
-	make test_cover
-	make test_apps
-	make test_abci_apps
-	make test_abci_cli
+.PHONY: install_test_prereqs
+
+#?test_apps: Run the app tests
+test_apps: install_test_prereqs
+	@bash test/app/test.sh
+.PHONY: test_apps
+
+#?test_abci_cli: Test the cli against the examples in the tutorial at: ./docs/abci-cli.md
+# if test fails, update the docs ^
+test_abci_cli:
+	@bash abci/tests/test_cli/test.sh
+.PHONY: test_abci_cli
+
+#?test_integrations: Runs all integration tests
+test_integrations: test_apps test_abci_cli test_integrations_cleanup
 .PHONY: test_integrations
+
+#?test_integrations_cleanup: Cleans up the test data created by test_integrations
+test_integrations_cleanup:
+	@bash test/app/clean.sh
+.PHONY: test_integrations_cleanup
 
 test_release:
 	@go test -tags release $(PACKAGES)
@@ -82,4 +70,5 @@ split-test-packages:$(BUILDDIR)/packages.txt
 
 # Used by the GitHub CI, in order to run tests in parallel
 test-group-%:split-test-packages
-	cat $(BUILDDIR)/packages.txt.$* | xargs go test -mod=readonly -timeout=400s -race -coverprofile=$(BUILDDIR)/$*.profile.out
+	cat $(BUILDDIR)/packages.txt.$*
+	cat $(BUILDDIR)/packages.txt.$* | xargs go test -tags bls12381 -mod=readonly -timeout=400s -race -coverprofile=$(BUILDDIR)/$*.profile.out

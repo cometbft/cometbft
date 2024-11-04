@@ -1688,10 +1688,10 @@ func TestVerifyCommitSingleWithInvalidSignatures(t *testing.T) {
 	err := verifyCommitSingle(cid, vs, commit, votingPowerNeeded, ignore, count, true, true, nil)
 	require.Error(t, err)
 
-	cache := make(map[string]SignatureCacheValue)
+	cache := NewSignatureCache()
 	err = verifyCommitSingle(cid, vs, commit, votingPowerNeeded, ignore, count, true, true, cache)
 	require.Error(t, err)
-	require.Equal(t, 0, len(cache))
+	require.Equal(t, 0, cache.Len())
 }
 
 func TestValidatorSet_AllKeysHaveSameType(t *testing.T) {

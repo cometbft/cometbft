@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	cryptomocks "github.com/cometbft/cometbft/crypto/mocks"
+
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
@@ -303,22 +305,25 @@ func TestValidatorSet_VerifyCommitLightTrustingWithCache_UpdatesCache(t *testing
 	commit := extCommit.ToCommit()
 
 	valSet := NewValidatorSet(append(originalValset.Validators, newValSet.Validators...))
-	cache := make(map[string]SignatureCacheValue)
+	cache := NewSignatureCache()
 	err = valSet.VerifyCommitLightTrustingWithCache("test_chain_id", commit, cmtmath.Fraction{Numerator: 1, Denominator: 3}, cache)
 	require.NoError(t, err)
-	require.Equal(t, 3, len(cache)) // 8 validators, getting to 1/3 takes 3 signatures
+	require.Equal(t, 3, cache.Len()) // 8 validators, getting to 1/3 takes 3 signatures
 
-	require.Contains(t, cache, string(commit.Signatures[0].Signature))
-	require.Contains(t, cache, string(commit.Signatures[1].Signature))
-	require.Contains(t, cache, string(commit.Signatures[2].Signature))
+	cacheVal, ok := cache.Get(string(commit.Signatures[0].Signature))
+	require.True(t, ok)
+	require.Equal(t, originalValset.Validators[0].PubKey.Bytes(), cacheVal.ValidatorPubKeyBytes)
+	require.Equal(t, commit.VoteSignBytes("test_chain_id", 0), cacheVal.VoteSignBytes)
 
-	require.Equal(t, originalValset.Validators[0].PubKey.Bytes(), cache[string(commit.Signatures[0].Signature)].ValidatorPubKeyBytes)
-	require.Equal(t, originalValset.Validators[1].PubKey.Bytes(), cache[string(commit.Signatures[1].Signature)].ValidatorPubKeyBytes)
-	require.Equal(t, originalValset.Validators[2].PubKey.Bytes(), cache[string(commit.Signatures[2].Signature)].ValidatorPubKeyBytes)
+	cacheVal, ok = cache.Get(string(commit.Signatures[1].Signature))
+	require.True(t, ok)
+	require.Equal(t, originalValset.Validators[1].PubKey.Bytes(), cacheVal.ValidatorPubKeyBytes)
+	require.Equal(t, commit.VoteSignBytes("test_chain_id", 1), cacheVal.VoteSignBytes)
 
-	require.Equal(t, commit.VoteSignBytes("test_chain_id", 0), cache[string(commit.Signatures[0].Signature)].VoteSignBytes)
-	require.Equal(t, commit.VoteSignBytes("test_chain_id", 1), cache[string(commit.Signatures[1].Signature)].VoteSignBytes)
-	require.Equal(t, commit.VoteSignBytes("test_chain_id", 2), cache[string(commit.Signatures[2].Signature)].VoteSignBytes)
+	cacheVal, ok = cache.Get(string(commit.Signatures[2].Signature))
+	require.True(t, ok)
+	require.Equal(t, originalValset.Validators[2].PubKey.Bytes(), cacheVal.ValidatorPubKeyBytes)
+	require.Equal(t, commit.VoteSignBytes("test_chain_id", 2), cacheVal.VoteSignBytes)
 }
 
 func TestValidatorSet_VerifyCommitLightTrustingWithCache_UsesCache(t *testing.T) {
@@ -332,23 +337,24 @@ func TestValidatorSet_VerifyCommitLightTrustingWithCache_UsesCache(t *testing.T)
 	commit := extCommit.ToCommit()
 
 	valSet := NewValidatorSet(append(newValSet.Validators, originalValset.Validators...))
-	cache := map[string]SignatureCacheValue{
-		string(commit.Signatures[0].Signature): {
-			ValidatorPubKeyBytes: valSet.Validators[0].PubKey.Bytes(),
-			VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 0),
-		},
-		string(commit.Signatures[1].Signature): {
-			ValidatorPubKeyBytes: valSet.Validators[1].PubKey.Bytes(),
-			VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 1),
-		},
-		string(commit.Signatures[2].Signature): {
-			ValidatorPubKeyBytes: valSet.Validators[2].PubKey.Bytes(),
-			VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 2),
-		},
-	}
+
+	cache := NewSignatureCache()
+	cache.Add(string(commit.Signatures[0].Signature), SignatureCacheValue{
+		ValidatorPubKeyBytes: valSet.Validators[0].PubKey.Bytes(),
+		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 0),
+	})
+	cache.Add(string(commit.Signatures[1].Signature), SignatureCacheValue{
+		ValidatorPubKeyBytes: valSet.Validators[1].PubKey.Bytes(),
+		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 1),
+	})
+	cache.Add(string(commit.Signatures[2].Signature), SignatureCacheValue{
+		ValidatorPubKeyBytes: valSet.Validators[2].PubKey.Bytes(),
+		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 2),
+	})
+
 	err = valSet.VerifyCommitLightTrustingWithCache("test_chain_id", commit, cmtmath.Fraction{Numerator: 1, Denominator: 3}, cache)
 	require.NoError(t, err)
-	require.Equal(t, 3, len(cache)) // no new signature checks, so no new cache entries
+	require.Equal(t, 3, cache.Len()) // no new signature checks, so no new cache entries
 }
 
 func TestValidatorSet_VerifyCommitLightWithCache_UpdatesCache(t *testing.T) {
@@ -360,29 +366,36 @@ func TestValidatorSet_VerifyCommitLightWithCache_UpdatesCache(t *testing.T) {
 	require.NoError(t, err)
 	commit := extCommit.ToCommit()
 
-	cache := make(map[string]SignatureCacheValue)
+	cache := NewSignatureCache()
 	err = originalValset.VerifyCommitLightWithCache("test_chain_id", blockID, 1, commit, cache)
 	require.NoError(t, err)
 
-	require.Equal(t, 5, len(cache)) // 6 validators, getting to 2/3 takes 5 signatures
+	require.Equal(t, 5, cache.Len()) // 6 validators, getting to 2/3 takes 5 signatures
 
-	require.Contains(t, cache, string(commit.Signatures[0].Signature))
-	require.Contains(t, cache, string(commit.Signatures[1].Signature))
-	require.Contains(t, cache, string(commit.Signatures[2].Signature))
-	require.Contains(t, cache, string(commit.Signatures[3].Signature))
-	require.Contains(t, cache, string(commit.Signatures[4].Signature))
+	cacheVal, ok := cache.Get(string(commit.Signatures[0].Signature))
+	require.True(t, ok)
+	require.Equal(t, originalValset.Validators[0].PubKey.Bytes(), cacheVal.ValidatorPubKeyBytes)
+	require.Equal(t, commit.VoteSignBytes("test_chain_id", 0), cacheVal.VoteSignBytes)
 
-	require.Equal(t, originalValset.Validators[0].PubKey.Bytes(), cache[string(commit.Signatures[0].Signature)].ValidatorPubKeyBytes)
-	require.Equal(t, originalValset.Validators[1].PubKey.Bytes(), cache[string(commit.Signatures[1].Signature)].ValidatorPubKeyBytes)
-	require.Equal(t, originalValset.Validators[2].PubKey.Bytes(), cache[string(commit.Signatures[2].Signature)].ValidatorPubKeyBytes)
-	require.Equal(t, originalValset.Validators[3].PubKey.Bytes(), cache[string(commit.Signatures[3].Signature)].ValidatorPubKeyBytes)
-	require.Equal(t, originalValset.Validators[4].PubKey.Bytes(), cache[string(commit.Signatures[4].Signature)].ValidatorPubKeyBytes)
+	cacheVal, ok = cache.Get(string(commit.Signatures[1].Signature))
+	require.True(t, ok)
+	require.Equal(t, originalValset.Validators[1].PubKey.Bytes(), cacheVal.ValidatorPubKeyBytes)
+	require.Equal(t, commit.VoteSignBytes("test_chain_id", 1), cacheVal.VoteSignBytes)
 
-	require.Equal(t, commit.VoteSignBytes("test_chain_id", 0), cache[string(commit.Signatures[0].Signature)].VoteSignBytes)
-	require.Equal(t, commit.VoteSignBytes("test_chain_id", 1), cache[string(commit.Signatures[1].Signature)].VoteSignBytes)
-	require.Equal(t, commit.VoteSignBytes("test_chain_id", 2), cache[string(commit.Signatures[2].Signature)].VoteSignBytes)
-	require.Equal(t, commit.VoteSignBytes("test_chain_id", 3), cache[string(commit.Signatures[3].Signature)].VoteSignBytes)
-	require.Equal(t, commit.VoteSignBytes("test_chain_id", 4), cache[string(commit.Signatures[4].Signature)].VoteSignBytes)
+	cacheVal, ok = cache.Get(string(commit.Signatures[2].Signature))
+	require.True(t, ok)
+	require.Equal(t, originalValset.Validators[2].PubKey.Bytes(), cacheVal.ValidatorPubKeyBytes)
+	require.Equal(t, commit.VoteSignBytes("test_chain_id", 2), cacheVal.VoteSignBytes)
+
+	cacheVal, ok = cache.Get(string(commit.Signatures[3].Signature))
+	require.True(t, ok)
+	require.Equal(t, originalValset.Validators[3].PubKey.Bytes(), cacheVal.ValidatorPubKeyBytes)
+	require.Equal(t, commit.VoteSignBytes("test_chain_id", 3), cacheVal.VoteSignBytes)
+
+	cacheVal, ok = cache.Get(string(commit.Signatures[4].Signature))
+	require.True(t, ok)
+	require.Equal(t, originalValset.Validators[4].PubKey.Bytes(), cacheVal.ValidatorPubKeyBytes)
+	require.Equal(t, commit.VoteSignBytes("test_chain_id", 4), cacheVal.VoteSignBytes)
 }
 
 func TestValidatorSet_VerifyCommitLightWithCache_UsesCache(t *testing.T) {
@@ -394,31 +407,31 @@ func TestValidatorSet_VerifyCommitLightWithCache_UsesCache(t *testing.T) {
 	require.NoError(t, err)
 	commit := extCommit.ToCommit()
 
-	cache := map[string]SignatureCacheValue{
-		string(commit.Signatures[0].Signature): {
-			ValidatorPubKeyBytes: originalValset.Validators[0].PubKey.Bytes(),
-			VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 0),
-		},
-		string(commit.Signatures[1].Signature): {
-			ValidatorPubKeyBytes: originalValset.Validators[1].PubKey.Bytes(),
-			VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 1),
-		},
-		string(commit.Signatures[2].Signature): {
-			ValidatorPubKeyBytes: originalValset.Validators[2].PubKey.Bytes(),
-			VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 2),
-		},
-		string(commit.Signatures[3].Signature): {
-			ValidatorPubKeyBytes: originalValset.Validators[3].PubKey.Bytes(),
-			VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 3),
-		},
-		string(commit.Signatures[4].Signature): {
-			ValidatorPubKeyBytes: originalValset.Validators[4].PubKey.Bytes(),
-			VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 4),
-		},
-	}
+	cache := NewSignatureCache()
+	cache.Add(string(commit.Signatures[0].Signature), SignatureCacheValue{
+		ValidatorPubKeyBytes: originalValset.Validators[0].PubKey.Bytes(),
+		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 0),
+	})
+	cache.Add(string(commit.Signatures[1].Signature), SignatureCacheValue{
+		ValidatorPubKeyBytes: originalValset.Validators[1].PubKey.Bytes(),
+		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 1),
+	})
+	cache.Add(string(commit.Signatures[2].Signature), SignatureCacheValue{
+		ValidatorPubKeyBytes: originalValset.Validators[2].PubKey.Bytes(),
+		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 2),
+	})
+	cache.Add(string(commit.Signatures[3].Signature), SignatureCacheValue{
+		ValidatorPubKeyBytes: originalValset.Validators[3].PubKey.Bytes(),
+		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 3),
+	})
+	cache.Add(string(commit.Signatures[4].Signature), SignatureCacheValue{
+		ValidatorPubKeyBytes: originalValset.Validators[4].PubKey.Bytes(),
+		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 4),
+	})
+
 	err = originalValset.VerifyCommitLightWithCache("test_chain_id", blockID, 1, commit, cache)
 	require.NoError(t, err)
-	require.Equal(t, 5, len(cache)) // no new signature checks, so no new cache entries
+	require.Equal(t, 5, cache.Len()) // no new signature checks, so no new cache entries
 }
 
 func TestValidatorSet_VerifyCommitLightTrustingErrorsOnOverflow(t *testing.T) {
@@ -434,4 +447,121 @@ func TestValidatorSet_VerifyCommitLightTrustingErrorsOnOverflow(t *testing.T) {
 	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		assert.Contains(t, err.Error(), "int64 overflow")
 	}
+}
+
+func TestValidation_verifyCommitBatch_UsesCache(t *testing.T) {
+	var (
+		blockID                       = makeBlockIDRandom()
+		voteSet, originalValset, vals = randVoteSet(1, 1, PrecommitType, 6, 1, false)
+		extCommit, err                = MakeExtCommit(blockID, 1, 1, voteSet, vals, cmttime.Now(), false)
+	)
+	require.NoError(t, err)
+	commit := extCommit.ToCommit()
+
+	cache := NewSignatureCache()
+	cache.Add(string(commit.Signatures[0].Signature), SignatureCacheValue{
+		ValidatorPubKeyBytes: originalValset.Validators[0].PubKey.Bytes(),
+		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 0),
+	})
+	cache.Add(string(commit.Signatures[1].Signature), SignatureCacheValue{
+		ValidatorPubKeyBytes: originalValset.Validators[1].PubKey.Bytes(),
+		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 1),
+	})
+	cache.Add(string(commit.Signatures[2].Signature), SignatureCacheValue{
+		ValidatorPubKeyBytes: originalValset.Validators[2].PubKey.Bytes(),
+		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 2),
+	})
+	cache.Add(string(commit.Signatures[3].Signature), SignatureCacheValue{
+		ValidatorPubKeyBytes: originalValset.Validators[3].PubKey.Bytes(),
+		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 3),
+	})
+	cache.Add(string(commit.Signatures[4].Signature), SignatureCacheValue{
+		ValidatorPubKeyBytes: originalValset.Validators[4].PubKey.Bytes(),
+		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 4),
+	})
+
+	// ignore all commit signatures that are not for the block
+	ignore := func(c CommitSig) bool { return c.BlockIDFlag != BlockIDFlagCommit }
+
+	// count all the remaining signatures
+	count := func(_ CommitSig) bool { return true }
+
+	bv := cryptomocks.NewBatchVerifier(t)
+
+	err = verifyCommitBatch("test_chain_id", originalValset, commit, 4, ignore, count, false, true, bv, cache)
+	require.NoError(t, err)
+	bv.AssertNotCalled(t, "Add")
+	bv.AssertNotCalled(t, "Verify")
+}
+func TestValidation_verifyCommitSingle_UsesCache(t *testing.T) {
+	var (
+		blockID                       = makeBlockIDRandom()
+		voteSet, originalValset, vals = randVoteSet(1, 1, PrecommitType, 6, 1, false)
+		extCommit, err                = MakeExtCommit(blockID, 1, 1, voteSet, vals, cmttime.Now(), false)
+	)
+	require.NoError(t, err)
+	commit := extCommit.ToCommit()
+
+	cache := NewSignatureCache()
+	cache.Add(string(commit.Signatures[0].Signature), SignatureCacheValue{
+		ValidatorPubKeyBytes: originalValset.Validators[0].PubKey.Bytes(),
+		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 0),
+	})
+	cache.Add(string(commit.Signatures[1].Signature), SignatureCacheValue{
+		ValidatorPubKeyBytes: originalValset.Validators[1].PubKey.Bytes(),
+		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 1),
+	})
+	cache.Add(string(commit.Signatures[2].Signature), SignatureCacheValue{
+		ValidatorPubKeyBytes: originalValset.Validators[2].PubKey.Bytes(),
+		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 2),
+	})
+	cache.Add(string(commit.Signatures[3].Signature), SignatureCacheValue{
+		ValidatorPubKeyBytes: originalValset.Validators[3].PubKey.Bytes(),
+		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 3),
+	})
+	cache.Add(string(commit.Signatures[4].Signature), SignatureCacheValue{
+		ValidatorPubKeyBytes: originalValset.Validators[4].PubKey.Bytes(),
+		VoteSignBytes:        commit.VoteSignBytes("test_chain_id", 4),
+	})
+
+	// ignore all commit signatures that are not for the block
+	ignore := func(c CommitSig) bool { return c.BlockIDFlag != BlockIDFlagCommit }
+
+	// count all the remaining signatures
+	count := func(_ CommitSig) bool { return true }
+
+	mockValPubkeys := []*cryptomocks.PubKey{
+		cryptomocks.NewPubKey(t),
+		cryptomocks.NewPubKey(t),
+		cryptomocks.NewPubKey(t),
+		cryptomocks.NewPubKey(t),
+		cryptomocks.NewPubKey(t),
+	}
+
+	mockValPubkeys[0].On("Bytes").Return(originalValset.Validators[0].PubKey.Bytes())
+	mockValPubkeys[1].On("Bytes").Return(originalValset.Validators[1].PubKey.Bytes())
+	mockValPubkeys[2].On("Bytes").Return(originalValset.Validators[2].PubKey.Bytes())
+	mockValPubkeys[3].On("Bytes").Return(originalValset.Validators[3].PubKey.Bytes())
+	mockValPubkeys[4].On("Bytes").Return(originalValset.Validators[4].PubKey.Bytes())
+
+	originalValset.Validators[0].PubKey = mockValPubkeys[0]
+	originalValset.Validators[1].PubKey = mockValPubkeys[1]
+	originalValset.Validators[2].PubKey = mockValPubkeys[2]
+	originalValset.Validators[3].PubKey = mockValPubkeys[3]
+	originalValset.Validators[4].PubKey = mockValPubkeys[4]
+
+	err = verifyCommitSingle("test_chain_id", originalValset, commit, 4, ignore, count, false, true, cache)
+	require.NoError(t, err)
+
+	mockValPubkeys[0].AssertCalled(t, "Bytes")
+	mockValPubkeys[1].AssertCalled(t, "Bytes")
+	mockValPubkeys[2].AssertCalled(t, "Bytes")
+	mockValPubkeys[3].AssertCalled(t, "Bytes")
+	mockValPubkeys[4].AssertCalled(t, "Bytes")
+
+	mockValPubkeys[0].AssertNotCalled(t, "VerifySignature")
+	mockValPubkeys[1].AssertNotCalled(t, "VerifySignature")
+	mockValPubkeys[2].AssertNotCalled(t, "VerifySignature")
+	mockValPubkeys[3].AssertNotCalled(t, "VerifySignature")
+	mockValPubkeys[4].AssertNotCalled(t, "VerifySignature")
 }

@@ -318,17 +318,21 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	// Set up genesis validators. If not specified explicitly, use all validator nodes.
-	if manifest.Validators == nil {
-		validatorsMap := make(map[string]int64)
+	if len(testnet.Validators) == 0 {
+		if testnet.Validators == nil { // Can this ever happen?
+			testnet.Validators = make(map[string]int64)
+		}
 		for _, node := range testnet.Nodes {
 			if node.Mode == ModeValidator {
-				validatorsMap[node.Name] = 100
+				testnet.Validators[node.Name] = 100
 			}
 		}
-		manifest.Validators = &validatorsMap
 	}
 
 	// Set up validator updates.
+	// NOTE: This map traversal is non-deterministic, but that's acceptable because
+	// the loop only constructs another map.
+	// We don't rely on traversal order for any side effects.
 	for heightStr, validators := range manifest.ValidatorUpdatesMap {
 		height, err := strconv.Atoi(heightStr)
 		if err != nil {
@@ -343,6 +347,30 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			valUpdate[node.Name] = power
 		}
 		testnet.ValidatorUpdates[int64(height)] = valUpdate
+	}
+
+	if testnet.ConstantFlip {
+		// Pick "lowest" validator by name
+		var minNode string
+		for n := range testnet.Validators {
+			if len(minNode) == 0 || n < minNode {
+				minNode = n
+			}
+		}
+		if len(minNode) == 0 {
+			return nil, errors.New("`testnet.Validators` is empty")
+		}
+
+		const flipSpan = 3000
+		for i := max(1, manifest.InitialHeight); i < manifest.InitialHeight+flipSpan; i++ {
+			if _, ok := testnet.ValidatorUpdates[i]; ok {
+				continue
+			}
+			valUpdate := map[string]int64{
+				minNode: i % 2, // flipping every height
+			}
+			testnet.ValidatorUpdates[i] = valUpdate
+		}
 	}
 
 	return testnet, testnet.Validate()

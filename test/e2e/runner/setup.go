@@ -161,7 +161,7 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	if testnet.PbtsUpdateHeight == -1 {
 		genesis.ConsensusParams.Feature.PbtsEnableHeight = testnet.PbtsEnableHeight
 	}
-	for valName, power := range *testnet.Manifest.Validators {
+	for valName, power := range testnet.Validators {
 		validator := testnet.LookupNode(valName)
 		if validator == nil {
 			return types.GenesisDoc{}, fmt.Errorf("unknown validator %q for genesis doc", valName)
@@ -410,6 +410,7 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		"pbts_update_height":            node.Testnet.PbtsUpdateHeight,
 		"no_lanes":                      node.Testnet.Manifest.NoLanes,
 		"lanes":                         node.Testnet.Manifest.Lanes,
+		"constant_flip":                 node.Testnet.ConstantFlip,
 	}
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:

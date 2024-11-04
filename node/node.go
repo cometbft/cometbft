@@ -57,13 +57,7 @@ type Node struct {
 	service.BaseService
 
 	// config
-	config *cfg.Config
-
-	// genesisDoc stores the initial validator set.
-	// NOTE: this pointer will be set to nil once startup is done. In future work
-	// we plan to remove this field altogether so that the genesis isn't stored in
-	// memory at runtime.
-	genesisDoc    *types.GenesisDoc
+	config        *cfg.Config
 	genesisTime   time.Time
 	privValidator types.PrivValidator // local node's validator key
 
@@ -168,7 +162,7 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 //
 // If the block store is not empty, the function returns an error.
 func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBProvider, genProvider GenesisDocProvider, height uint64, appHash []byte) (err error) {
-	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	logger := log.NewLogger(os.Stdout)
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -359,7 +353,7 @@ func NewNodeWithCliParams(ctx context.Context,
 	// Not checking whether the key is there in case the genesis file was larger than
 	// the max size of a value (in rocksDB for example), which would cause the check
 	// to fail and prevent the node from booting.
-	logger.Info("WARNING: deleting genesis file from database if present, the database stores a hash of the original genesis file now")
+	logger.Warn("deleting genesis file from database if present, the database stores a hash of the original genesis file now")
 
 	err = stateDB.Delete(genesisDocKey)
 	if err != nil {
@@ -554,7 +548,6 @@ func NewNodeWithCliParams(ctx context.Context,
 
 	node := &Node{
 		config:        config,
-		genesisDoc:    genDoc,
 		genesisTime:   genDoc.GenesisTime,
 		privValidator: privValidator,
 
@@ -616,7 +609,7 @@ func (n *Node) OnStart() error {
 	if n.config.RPC.ListenAddress != "" {
 		listeners, err := n.startRPC()
 		if err != nil {
-			return err
+			return fmt.Errorf("starting RPC server: %w", err)
 		}
 		n.rpcListeners = listeners
 	}
@@ -661,8 +654,6 @@ func (n *Node) OnStart() error {
 	if err := n.pruner.Start(); err != nil {
 		return ErrStartPruning{Err: err}
 	}
-
-	n.genesisDoc = nil
 
 	return nil
 }
@@ -785,7 +776,6 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 			P2PTransport:   n,
 			PubKey:         pubKey,
 
-			GenDoc:           n.genesisDoc,
 			TxIndexer:        n.txIndexer,
 			BlockIndexer:     n.blockIndexer,
 			ConsensusReactor: n.consensusReactor,
@@ -796,12 +786,13 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 			Logger: n.Logger.With("module", "rpc"),
 
 			Config: *n.config.RPC,
+
+			GenesisFilePath: n.config.GenesisFile(),
 		}
 
 		n.Logger.Info("Creating genesis file chunks if genesis file is too big...")
-
 		if err := _rpcEnv.InitGenesisChunks(); err != nil {
-			errToReturn = fmt.Errorf("setting up RPC API environment: %s", err)
+			errToReturn = fmt.Errorf("configuring RPC API environment: %w", err)
 			return
 		}
 	})
@@ -873,25 +864,29 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 		}
 		if n.config.RPC.IsTLSEnabled() {
 			go func() {
-				if err := rpcserver.ServeTLS(
+				err := rpcserver.ServeTLSWithShutdown(
 					listener,
 					rootHandler,
 					n.config.RPC.CertFile(),
 					n.config.RPC.KeyFile(),
 					rpcLogger,
 					config,
-				); err != nil {
-					n.Logger.Error("Error serving server with TLS", "err", err)
+					env.Cleanup,
+				)
+				if err != nil {
+					n.Logger.Error("serving server with TLS", "err", err)
 				}
 			}()
 		} else {
 			go func() {
-				if err := rpcserver.Serve(
+				err := rpcserver.ServeWithShutdown(
 					listener,
 					rootHandler,
 					rpcLogger,
 					config,
-				); err != nil {
+					env.Cleanup,
+				)
+				if err != nil {
 					n.Logger.Error("Error serving server", "err", err)
 				}
 			}()

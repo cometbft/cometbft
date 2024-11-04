@@ -53,6 +53,8 @@ type Config struct {
 
 	NoLanes bool              `toml:"no_lanes"`
 	Lanes   map[string]uint32 `toml:"lanes"`
+
+	ConstantFlip bool `toml:"constant_flip"`
 }
 
 // App extracts out the application specific configuration parameters.
@@ -77,6 +79,7 @@ func (cfg *Config) App() *app.Config {
 		PbtsUpdateHeight:           cfg.PbtsUpdateHeight,
 		NoLanes:                    cfg.NoLanes,
 		Lanes:                      cfg.Lanes,
+		ConstantFlip:               cfg.ConstantFlip,
 	}
 }
 

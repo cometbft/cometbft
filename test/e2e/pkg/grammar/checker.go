@@ -53,7 +53,7 @@ func (e *Error) String() string {
 func NewGrammarChecker(cfg *Config) *Checker {
 	return &Checker{
 		cfg:    cfg,
-		logger: log.NewTMLogger(log.NewSyncWriter(os.Stdout)),
+		logger: log.NewLogger(os.Stdout),
 	}
 }
 

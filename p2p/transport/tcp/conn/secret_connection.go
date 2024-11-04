@@ -56,13 +56,14 @@ var (
 
 // SecretConnection implements net.Conn.
 // It is an implementation of the STS protocol.
-// See https://github.com/cometbft/cometbft/blob/0.1/docs/sts-final.pdf for
-// details on the protocol.
+// For more details regarding this implementation of the STS protocol, please refer to:
+// https://github.com/cometbft/cometbft/blob/main/spec/p2p/legacy-docs/peer.md#authenticated-encryption-handshake.
+//
+// The original STS protocol, which inspired this implementation:
+// https://citeseerx.ist.psu.edu/document?rapid=rep1&type=pdf&doi=b852bc961328ce74f7231a4b569eec1ab6c3cf50. # codespell:ignore
 //
 // Consumers of the SecretConnection are responsible for authenticating
 // the remote peer's pubkey against known information, like a nodeID.
-// Otherwise they are vulnerable to MITM.
-// (TODO(ismail): see also https://github.com/tendermint/tendermint/issues/3010)
 type SecretConnection struct {
 	// immutable
 	recvAead cipher.AEAD
@@ -96,8 +97,7 @@ type SecretConnection struct {
 // MakeSecretConnection performs handshake and returns a new authenticated
 // SecretConnection.
 // Returns nil if there is an error in handshake.
-// Caller should call conn.Close()
-// See docs/sts-final.pdf for more information.
+// Caller should call conn.Close().
 func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*SecretConnection, error) {
 	locPubKey := locPrivKey.PubKey()
 
@@ -120,8 +120,8 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 	transcript.AppendMessage(labelEphemeralLowerPublicKey, loEphPub[:])
 	transcript.AppendMessage(labelEphemeralUpperPublicKey, hiEphPub[:])
 
-	// Check if the local ephemeral public key was the least, lexicographically
-	// sorted.
+	// Check if the local ephemeral public key was the least,
+	// lexicographically sorted.
 	locIsLeast := bytes.Equal(locEphPub[:], loEphPub[:])
 
 	// Compute common diffie hellman secret using X25519.
@@ -132,9 +132,8 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 
 	transcript.AppendMessage(labelDHSecret, dhSecret[:])
 
-	// Generate the secret used for receiving, sending, challenge via HKDF-SHA2
-	// on the transcript state (which itself also uses HKDF-SHA2 to derive a key
-	// from the dhSecret).
+	// Generate the secret used for receiving, sending, challenge via
+	// HKDF-SHA2 on the dhSecret.
 	recvSecret, sendSecret := deriveSecrets(dhSecret, locIsLeast)
 
 	const challengeSize = 32
@@ -306,9 +305,6 @@ func (sc *SecretConnection) SetWriteDeadline(t time.Time) error {
 
 func genEphKeys() (ephPub, ephPriv *[32]byte) {
 	var err error
-	// TODO: Probably not a problem but ask Tony: different from the rust implementation (uses x25519-dalek),
-	// we do not "clamp" the private key scalar:
-	// see: https://github.com/dalek-cryptography/x25519-dalek/blob/34676d336049df2bba763cc076a75e47ae1f170f/src/x25519.rs#L56-L74
 	ephPub, ephPriv, err = box.GenerateKey(crand.Reader)
 	if err != nil {
 		panic("failed to generate ephemeral key-pair")

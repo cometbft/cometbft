@@ -29,7 +29,7 @@ type Manifest struct {
 	// specifying an empty set will start with no validators in genesis, and
 	// the application must return the validator set in InitChain via the
 	// setting validator_update.0 (see below).
-	Validators *map[string]int64 `toml:"validators"`
+	Validators map[string]int64 `toml:"validators"`
 
 	// ValidatorUpdatesMap is a map of heights to validator names and their power,
 	// and will be returned by the ABCI application. For example, the following
@@ -165,6 +165,13 @@ type Manifest struct {
 	// configuration files for all nodes. The format is "key = value".
 	// Example: "p2p.send_rate = 512000".
 	Config []string `toml:"config"`
+
+	// If true, the application will return validator updates and
+	// `ConsensusParams` updates at every height.
+	// This is useful to create a more dynamic testnet.
+	// * An existing validator will be chosen, and its power will alternate between 0 and 1.
+	// * `ConsensusParams` will be flipping on and off key types not set at genesis.
+	ConstantFlip bool `toml:"constant_flip"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

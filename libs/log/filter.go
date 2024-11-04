@@ -8,6 +8,7 @@ const (
 	levelDebug level = 1 << iota
 	levelInfo
 	levelError
+	levelWarn
 )
 
 type filter struct {
@@ -46,20 +47,20 @@ func (l *filter) Error(msg string, keyvals ...any) {
 	l.next.Error(msg, keyvals...)
 }
 
+func (l *filter) Warn(msg string, keyvals ...any) {
+	levelAllowed := l.allowed&levelWarn != 0
+	if !levelAllowed {
+		return
+	}
+	l.next.Warn(msg, keyvals...)
+}
+
 func (l *filter) Info(msg string, keyvals ...any) {
 	levelAllowed := l.allowed&levelInfo != 0
 	if !levelAllowed {
 		return
 	}
 	l.next.Info(msg, keyvals...)
-}
-
-func (l *filter) Warn(msg string, keyvals ...any) {
-	levelAllowed := l.allowed&levelError != 0
-	if !levelAllowed {
-		return
-	}
-	l.next.Warn(msg, keyvals...)
 }
 
 func (l *filter) Debug(msg string, keyvals ...any) {
@@ -147,16 +148,18 @@ type Option func(*filter)
 // for such level.
 func AllowLevel(lvl string) (Option, error) {
 	switch lvl {
-	case "debug":
-		return AllowDebug(), nil
-	case "info":
-		return AllowInfo(), nil
 	case "error":
 		return AllowError(), nil
+	case "warn":
+		return AllowWarn(), nil
+	case "info":
+		return AllowInfo(), nil
+	case "debug":
+		return AllowDebug(), nil
 	case "none":
 		return AllowNone(), nil
 	default:
-		return nil, fmt.Errorf("expected either \"info\", \"debug\", \"error\" or \"none\" level, given %s", lvl)
+		return nil, fmt.Errorf("expected either \"error\", \"warn\", \"info\", \"debug\" or \"none\" level, given %s", lvl)
 	}
 }
 
@@ -165,19 +168,24 @@ func AllowAll() Option {
 	return AllowDebug()
 }
 
-// AllowDebug allows error, info and debug level log events to pass.
-func AllowDebug() Option {
-	return allowed(levelError | levelInfo | levelDebug)
-}
-
-// AllowInfo allows error and info level log events to pass.
-func AllowInfo() Option {
-	return allowed(levelError | levelInfo)
-}
-
 // AllowError allows only error level log events to pass.
 func AllowError() Option {
 	return allowed(levelError)
+}
+
+// AllowWarn allows error and warning level log events to pass.
+func AllowWarn() Option {
+	return allowed(levelError | levelWarn)
+}
+
+// AllowInfo allows error, info and warning level log events to pass.
+func AllowInfo() Option {
+	return allowed(levelError | levelWarn | levelInfo | levelWarn)
+}
+
+// AllowDebug allows all log events to pass.
+func AllowDebug() Option {
+	return allowed(levelError | levelWarn | levelInfo | levelDebug)
 }
 
 // AllowNone allows no leveled log events to pass.
@@ -189,19 +197,26 @@ func allowed(allowed level) Option {
 	return func(l *filter) { l.allowed = allowed }
 }
 
-// AllowDebugWith allows error, info and debug level log events to pass for a specific key value pair.
-func AllowDebugWith(key any, value any) Option {
-	return func(l *filter) { l.allowedKeyvals[keyval{key, value}] = levelError | levelInfo | levelDebug }
-}
-
-// AllowInfoWith allows error and info level log events to pass for a specific key value pair.
-func AllowInfoWith(key any, value any) Option {
-	return func(l *filter) { l.allowedKeyvals[keyval{key, value}] = levelError | levelInfo }
-}
-
-// AllowErrorWith allows only error level log events to pass for a specific key value pair.
+// AllowErrorWith allows ONLY error level log events to pass for a specific key value pair.
 func AllowErrorWith(key any, value any) Option {
 	return func(l *filter) { l.allowedKeyvals[keyval{key, value}] = levelError }
+}
+
+// AllowInfoWith allows error and warning level log events to pass for a specific key value pair.
+func AllowWarnWith(key any, value any) Option {
+	return func(l *filter) { l.allowedKeyvals[keyval{key, value}] = levelError | levelWarn }
+}
+
+// AllowInfoWith allows error, warning and info level log events to pass for a specific key value pair.
+func AllowInfoWith(key any, value any) Option {
+	return func(l *filter) { l.allowedKeyvals[keyval{key, value}] = levelError | levelWarn | levelInfo }
+}
+
+// AllowDebugWith allows all log events to pass for a specific key value pair.
+func AllowDebugWith(key any, value any) Option {
+	return func(l *filter) {
+		l.allowedKeyvals[keyval{key, value}] = levelError | levelWarn | levelInfo | levelDebug
+	}
 }
 
 // AllowNoneWith allows no leveled log events to pass for a specific key value pair.

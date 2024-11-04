@@ -11,10 +11,10 @@ import (
 type Logger interface {
 	// Error logs a message at level ERROR.
 	Error(msg string, keyvals ...any)
-	// Info logs a message at level INFO.
-	Info(msg string, keyvals ...any)
 	// Warn logs a message at level WARN.
 	Warn(msg string, keyvals ...any)
+	// Info logs a message at level INFO.
+	Info(msg string, keyvals ...any)
 	// Debug logs a message at level DEBUG.
 	Debug(msg string, keyvals ...any)
 
@@ -28,12 +28,12 @@ type Logger interface {
 	Impl() any
 }
 
-type tmLogger struct {
+type baseLogger struct {
 	srcLogger *slog.Logger
 }
 
 // Interface assertions.
-var _ Logger = (*tmLogger)(nil)
+var _ Logger = (*baseLogger)(nil)
 
 // NewLogger returns a logger that writes msg and keyvals to w using slog as an
 // underlying logger.
@@ -45,7 +45,7 @@ var _ Logger = (*tmLogger)(nil)
 //   - w must be safe for concurrent use by multiple goroutines if the returned
 //     Logger will be used concurrently.
 func NewLogger(w io.Writer) Logger {
-	return &tmLogger{slog.New(tint.NewHandler(w, &tint.Options{
+	return &baseLogger{slog.New(tint.NewHandler(w, &tint.Options{
 		Level: slog.LevelDebug,
 		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
 			if err, ok := a.Value.Any().(error); ok {
@@ -59,30 +59,30 @@ func NewLogger(w io.Writer) Logger {
 	))}
 }
 
-func (l *tmLogger) Error(msg string, keyvals ...any) {
+func (l *baseLogger) Error(msg string, keyvals ...any) {
 	l.srcLogger.Error(msg, keyvals...)
 }
 
-func (l *tmLogger) Info(msg string, keyvals ...any) {
-	l.srcLogger.Info(msg, keyvals...)
-}
-
-func (l *tmLogger) Warn(msg string, keyvals ...any) {
+func (l *baseLogger) Warn(msg string, keyvals ...any) {
 	l.srcLogger.Warn(msg, keyvals...)
 }
 
-func (l *tmLogger) Debug(msg string, keyvals ...any) {
+func (l *baseLogger) Info(msg string, keyvals ...any) {
+	l.srcLogger.Info(msg, keyvals...)
+}
+
+func (l *baseLogger) Debug(msg string, keyvals ...any) {
 	if LogDebug {
 		l.srcLogger.Debug(msg, keyvals...)
 	}
 }
 
-func (l *tmLogger) With(keyvals ...any) Logger {
-	return &tmLogger{l.srcLogger.With(keyvals...)}
+func (l *baseLogger) With(keyvals ...any) Logger {
+	return &baseLogger{l.srcLogger.With(keyvals...)}
 }
 
 // Impl returns the slog.Logger.
-func (l *tmLogger) Impl() any {
+func (l *baseLogger) Impl() any {
 	return l.srcLogger
 }
 
@@ -95,7 +95,7 @@ func (l *tmLogger) Impl() any {
 //     Logger will be used concurrently.
 func NewJSONLogger(w io.Writer) Logger {
 	logger := slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{Level: slog.LevelDebug}))
-	return &tmLogger{logger}
+	return &baseLogger{logger}
 }
 
 // NewJSONLoggerNoTS is the same as NewJSONLogger, but without the timestamp.
@@ -112,5 +112,5 @@ func NewJSONLoggerNoTS(w io.Writer) Logger {
 			return a
 		},
 	}))
-	return &tmLogger{logger}
+	return &baseLogger{logger}
 }

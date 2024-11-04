@@ -66,6 +66,29 @@ func TestDebug(t *testing.T) {
 	}
 }
 
+func TestWarn(t *testing.T) {
+	var bufErr bytes.Buffer
+
+	le := log.NewLogger(&bufErr)
+	le.Warn("Client initialized with old header (trusted is more recent)",
+		"old", 42,
+		"trustedHeight", "forty two",
+		"trustedHash", []byte("test me"))
+
+	msg := strings.TrimSpace(bufErr.String())
+
+	// Remove the timestamp information to allow
+	// us to test against the expected message.
+	receivedmsg := strings.Split(msg, " ")[1]
+
+	const expectedmsg = `Client initialized with old header
+	(trusted is more recent) old=42 trustedHeight="forty two"
+	trustedHash=74657374206D65`
+	if strings.EqualFold(receivedmsg, expectedmsg) {
+		t.Fatalf("received %s, expected %s", receivedmsg, expectedmsg)
+	}
+}
+
 func TestError(t *testing.T) {
 	var bufErr bytes.Buffer
 

@@ -32,12 +32,12 @@ func (l *tracingLogger) Error(msg string, keyvals ...any) {
 	l.next.Error(msg, formatErrors(keyvals)...)
 }
 
-func (l *tracingLogger) Info(msg string, keyvals ...any) {
-	l.next.Info(msg, formatErrors(keyvals)...)
-}
-
 func (l *tracingLogger) Warn(msg string, keyvals ...any) {
 	l.next.Warn(msg, formatErrors(keyvals)...)
+}
+
+func (l *tracingLogger) Info(msg string, keyvals ...any) {
+	l.next.Info(msg, formatErrors(keyvals)...)
 }
 
 func (l *tracingLogger) Debug(msg string, keyvals ...any) {

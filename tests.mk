@@ -5,20 +5,14 @@
 
 BINDIR ?= $(GOPATH)/bin
 
-#?install_test_prereqs
-install_test_prereqs:
-	make install
-	make install_abci
-.PHONY: install_test_prereqs
-
 #?test_apps: Run the app tests
-test_apps: install_test_prereqs
+test_apps: install install_abci
 	@bash test/app/test.sh
 .PHONY: test_apps
 
 #?test_abci_cli: Test the cli against the examples in the tutorial at: ./docs/abci-cli.md
 # if test fails, update the docs ^
-test_abci_cli:
+test_abci_cli: install_abci
 	@bash abci/tests/test_cli/test.sh
 .PHONY: test_abci_cli
 

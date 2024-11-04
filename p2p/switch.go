@@ -425,7 +425,7 @@ func (sw *Switch) reconnectToPeer(addr *na.NetAddr) {
 
 	sw.Logger.Error("Failed to reconnect to peer. Beginning exponential backoff",
 		"addr", addr, "elapsed", time.Since(start))
-	for i := 1; i < reconnectBackOffAttempts; i++ {
+	for i := 1; i <= reconnectBackOffAttempts; i++ {
 		if !sw.IsRunning() {
 			return
 		}

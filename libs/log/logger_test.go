@@ -12,7 +12,7 @@ import (
 func TestLoggerLogsItsErrors(t *testing.T) {
 	var buf bytes.Buffer
 
-	logger := log.NewTMLogger(&buf)
+	logger := log.NewLogger(&buf)
 	logger.Info("foo", "baz baz", "bar")
 	msg := strings.TrimSpace(buf.String())
 	if !strings.Contains(msg, "foo") {
@@ -23,7 +23,7 @@ func TestLoggerLogsItsErrors(t *testing.T) {
 func TestInfo(t *testing.T) {
 	var bufInfo bytes.Buffer
 
-	l := log.NewTMLogger(&bufInfo)
+	l := log.NewLogger(&bufInfo)
 	l.Info("Client initialized with old header (trusted is more recent)",
 		"old", 42,
 		"trustedHeight", "forty two",
@@ -33,7 +33,7 @@ func TestInfo(t *testing.T) {
 
 	// Remove the timestamp information to allow
 	// us to test against the expected message.
-	receivedmsg := strings.Split(msg, "] ")[1]
+	receivedmsg := strings.Split(msg, " ")[1]
 
 	const expectedmsg = `Client initialized with old header
 	(trusted is more recent) old=42 trustedHeight="forty two"
@@ -46,7 +46,7 @@ func TestInfo(t *testing.T) {
 func TestDebug(t *testing.T) {
 	var bufDebug bytes.Buffer
 
-	ld := log.NewTMLogger(&bufDebug)
+	ld := log.NewLogger(&bufDebug)
 	ld.Debug("Client initialized with old header (trusted is more recent)",
 		"old", 42,
 		"trustedHeight", "forty two",
@@ -56,7 +56,30 @@ func TestDebug(t *testing.T) {
 
 	// Remove the timestamp information to allow
 	// us to test against the expected message.
-	receivedmsg := strings.Split(msg, "] ")[1]
+	receivedmsg := strings.Split(msg, " ")[1]
+
+	const expectedmsg = `Client initialized with old header
+	(trusted is more recent) old=42 trustedHeight="forty two"
+	trustedHash=74657374206D65`
+	if strings.EqualFold(receivedmsg, expectedmsg) {
+		t.Fatalf("received %s, expected %s", receivedmsg, expectedmsg)
+	}
+}
+
+func TestWarn(t *testing.T) {
+	var bufErr bytes.Buffer
+
+	le := log.NewLogger(&bufErr)
+	le.Warn("Client initialized with old header (trusted is more recent)",
+		"old", 42,
+		"trustedHeight", "forty two",
+		"trustedHash", []byte("test me"))
+
+	msg := strings.TrimSpace(bufErr.String())
+
+	// Remove the timestamp information to allow
+	// us to test against the expected message.
+	receivedmsg := strings.Split(msg, " ")[1]
 
 	const expectedmsg = `Client initialized with old header
 	(trusted is more recent) old=42 trustedHeight="forty two"
@@ -69,7 +92,7 @@ func TestDebug(t *testing.T) {
 func TestError(t *testing.T) {
 	var bufErr bytes.Buffer
 
-	le := log.NewTMLogger(&bufErr)
+	le := log.NewLogger(&bufErr)
 	le.Error("Client initialized with old header (trusted is more recent)",
 		"old", 42,
 		"trustedHeight", "forty two",
@@ -79,7 +102,7 @@ func TestError(t *testing.T) {
 
 	// Remove the timestamp information to allow
 	// us to test against the expected message.
-	receivedmsg := strings.Split(msg, "] ")[1]
+	receivedmsg := strings.Split(msg, " ")[1]
 
 	const expectedmsg = `Client initialized with old header
 	(trusted is more recent) old=42 trustedHeight="forty two"
@@ -89,12 +112,12 @@ func TestError(t *testing.T) {
 	}
 }
 
-func BenchmarkTMLoggerSimple(b *testing.B) {
-	benchmarkRunner(b, log.NewTMLogger(io.Discard), baseInfoMessage)
+func BenchmarkLoggerSimple(b *testing.B) {
+	benchmarkRunner(b, log.NewLogger(io.Discard), baseInfoMessage)
 }
 
-func BenchmarkTMLoggerContextual(b *testing.B) {
-	benchmarkRunner(b, log.NewTMLogger(io.Discard), withInfoMessage)
+func BenchmarkLoggerContextual(b *testing.B) {
+	benchmarkRunner(b, log.NewLogger(io.Discard), withInfoMessage)
 }
 
 func benchmarkRunner(b *testing.B, logger log.Logger, f func(log.Logger)) {

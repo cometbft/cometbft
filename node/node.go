@@ -162,7 +162,7 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 //
 // If the block store is not empty, the function returns an error.
 func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBProvider, genProvider GenesisDocProvider, height uint64, appHash []byte) (err error) {
-	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	logger := log.NewLogger(os.Stdout)
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -353,7 +353,7 @@ func NewNodeWithCliParams(ctx context.Context,
 	// Not checking whether the key is there in case the genesis file was larger than
 	// the max size of a value (in rocksDB for example), which would cause the check
 	// to fail and prevent the node from booting.
-	logger.Info("WARNING: deleting genesis file from database if present, the database stores a hash of the original genesis file now")
+	logger.Warn("deleting genesis file from database if present, the database stores a hash of the original genesis file now")
 
 	err = stateDB.Delete(genesisDocKey)
 	if err != nil {

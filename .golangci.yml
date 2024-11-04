@@ -90,16 +90,17 @@ linters-settings:
           - github.com/cosmos
           - github.com/creachadair/atomicfile
           - github.com/creachadair/tomledit
+          - github.com/decred/dcrd/dcrec/secp256k1/v4
           - github.com/dgraph-io/badger/v4
           - github.com/go-git/go-git/v5
-          - github.com/go-kit
-          - github.com/go-logfmt/logfmt
           - github.com/google
           - github.com/gorilla/websocket
           - github.com/hashicorp/golang-lru/v2
           - github.com/lib/pq
           - github.com/libp2p/go-buffer-pool
+          - github.com/lmittmann/tint
           - github.com/minio/highwayhash
+          - github.com/mitchellh/mapstructure
           - github.com/oasisprotocol/curve25519-voi
           - github.com/pelletier/go-toml/v2
           - github.com/pkg/errors
@@ -110,8 +111,6 @@ linters-settings:
           - github.com/spf13
           - github.com/stretchr/testify/require
           - github.com/syndtr/goleveldb
-          - github.com/mitchellh/mapstructure
-          - github.com/decred/dcrd/dcrec/secp256k1/v4
       test:
         files:
           - "$test"
@@ -123,7 +122,6 @@ linters-settings:
           - github.com/cosmos
           - github.com/dgraph-io/badger/v4
           - github.com/fortytw2/leaktest
-          - github.com/go-kit/log
           - github.com/google/uuid
           - github.com/gorilla/websocket
           - github.com/lib/pq

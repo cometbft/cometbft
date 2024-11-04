@@ -60,7 +60,7 @@ var RootCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			logger = log.NewFilter(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), allowLevel)
+			logger = log.NewFilter(log.NewLogger(os.Stdout), allowLevel)
 		}
 		if client == nil {
 			var err error
@@ -696,7 +696,7 @@ func cmdProcessProposal(cmd *cobra.Command, args []string) error {
 }
 
 func cmdKVStore(*cobra.Command, []string) error {
-	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	logger := log.NewLogger(os.Stdout)
 
 	// Create the application - in memory or persisted to disk
 	var app types.Application

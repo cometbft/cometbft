@@ -1,14 +1,13 @@
 # Mempool Reactor
 
-## Channels
+> NOTE: This is legacy documentation with outdated information.
 
-See [this issue](https://github.com/tendermint/tendermint/issues/1503)
+## Channels
 
 Mempool maintains a cache of the last 10000 transactions to prevent
 replaying old transactions (plus transactions coming from other
-validators, who are continually exchanging transactions). Read [Replay
-Protection](https://github.com/tendermint/tendermint/blob/8cdaa7f515a9d366bbc9f0aff2a263a1a6392ead/docs/app-dev/app-development.md#replay-protection)
-for details.
+validators, who are continually exchanging transactions). Read Replay
+Protection for details.
 
 Sending incorrectly encoded data or data exceeding `maxMsgSize` will result
 in stopping the peer.

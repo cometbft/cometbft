@@ -94,7 +94,7 @@ remove the worst peer from that bucket to make room.
 
 When a peer is first added, it is unvetted.
 Marking a peer as vetted is outside the scope of the `p2p` package.
-For Tendermint, a Peer becomes vetted once it has contributed sufficiently
+For CometBFT, a Peer becomes vetted once it has contributed sufficiently
 at the consensus layer; ie. once it has sent us valid and not-yet-known
 votes and/or block parts for `NumBlocksForVetted` blocks.
 Other users of the p2p package can determine their own conditions for when a peer is marked vetted.
@@ -159,6 +159,6 @@ current, past, and rate-of-change data to inform peer quality.
 While a PID trust metric has been implemented, it remains for future work
 to use it in the PEX.
 
-See the [trustmetric](https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-006-trust-metric.md)
-and [trustmetric usage](https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-007-trust-metric-usage.md)
+See the [trustmetric](https://github.com/cometbft/cometbft/blob/master/docs/architecture/adr-006-trust-metric.md)
+and [trustmetric usage](https://github.com/cometbft/cometbft/blob/master/docs/architecture/adr-007-trust-metric-usage.md)
 architecture docs for more details.

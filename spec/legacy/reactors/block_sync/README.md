@@ -1,6 +1,8 @@
 # BlockSync Reactor
 
-The Blockchain Reactor's high level responsibility is to enable peers who are
+> NOTE: This is legacy documentation with outdated information.
+
+The BlockSync Reactor's high level responsibility is to enable peers who are
 far behind the current state of the consensus to quickly catch up by downloading
 many blocks in parallel, verifying their commits, and executing them against the
 ABCI application.
@@ -46,17 +48,17 @@ type bcStatusResponseMessage struct {
 
 ## Architecture and algorithm
 
-The Blockchain reactor is organised as a set of concurrent tasks:
+The BlockSync reactor is organised as a set of concurrent tasks:
 
-- Receive routine of Blockchain Reactor
+- Receive routine of BlockSync Reactor
 - Task for creating Requesters
 - Set of Requesters tasks and - Controller task.
 
-![Blockchain Reactor Architecture Diagram](img/bc-reactor.png)
+![BlockSync Reactor Architecture Diagram](img/bc-reactor.png)
 
 ### Data structures
 
-These are the core data structures necessarily to provide the Blockchain Reactor logic.
+These are the core data structures necessarily to provide the BlockSync Reactor logic.
 
 Requester data structure is used to track assignment of request for `block` at position `height` to a peer with id equals to `peerID`.
 
@@ -107,9 +109,9 @@ type BlockRequest {
 }
 ```
 
-### Receive routine of Blockchain Reactor
+### Receive routine of BlockSync Reactor
 
-It is executed upon message reception on the BlockchainChannel inside p2p receive routine. There is a separate p2p receive routine (and therefore receive routine of the Blockchain Reactor) executed for each peer. Note that try to send will not block (returns immediately) if outgoing buffer is full.
+It is executed upon message reception on the BlockchainChannel inside p2p receive routine. There is a separate p2p receive routine (and therefore receive routine of the BlockSync Reactor) executed for each peer. Note that try to send will not block (returns immediately) if outgoing buffer is full.
 
 ```go
 handleMsg(pool, m):

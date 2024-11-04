@@ -1,7 +1,7 @@
 # Tendermint Consensus Reactor
 
 Tendermint Consensus is a distributed protocol executed by validator processes to agree on
-the next block to be added to the Tendermint blockchain. The protocol proceeds in rounds, where
+the next block to be added to the CometBFT blockchain. The protocol proceeds in rounds, where
 each round is a try to reach agreement on the next block. A round starts by having a dedicated
 process (called proposer) suggesting to other processes what should be the next block with
 the `ProposalMessage`.
@@ -22,7 +22,7 @@ disseminated to validator processes using peer-to-peer gossiping protocol. It st
 proposer first splitting a block into a number of block parts, that are then gossiped between
 processes using `BlockPartMessage`.
 
-Validators in Tendermint communicate by peer-to-peer gossiping protocol. Each validator is connected
+Validators in CometBFT communicate by peer-to-peer gossiping protocol. Each validator is connected
 only to a subset of processes called peers. By the gossiping protocol, a validator send to its peers
 all needed information (`ProposalMessage`, `VoteMessage` and `BlockPartMessage`) so they can
 reach agreement on some block, and also obtain the content of the chosen block (block parts). As

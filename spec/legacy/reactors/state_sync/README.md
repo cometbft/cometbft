@@ -1,7 +1,9 @@
 # State Sync Reactor
 
+> NOTE: This is legacy documentation with outdated information.
+
 State sync allows new nodes to rapidly bootstrap and join the network by discovering, fetching,
-and restoring state machine snapshots. For more information, see the [state sync ABCI section](../../abci/apps.md#state-sync).
+and restoring state machine snapshots. For more information, see the [state sync ABCI section](../../../abci/apps.md#state-sync).
 
 The state sync reactor has two main responsibilities:
 
@@ -15,7 +17,7 @@ The state sync process for bootstrapping a new node is described in detail in th
 above. While technically part of the reactor (see `statesync/syncer.go` and related components),
 this document will only cover the P2P reactor component.
 
-For details on the ABCI methods and data types, see the [ABCI documentation](../../abci/abci.md).
+For details on the ABCI methods and data types, see the [ABCI documentation](../../../abci/abci.md).
 
 ## State Sync P2P Protocol
 

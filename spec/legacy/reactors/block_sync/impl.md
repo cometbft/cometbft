@@ -1,6 +1,6 @@
-# Blockchain Reactor v0 Module
+# BlockSync Reactor
 
-## Blockchain Reactor
+## Reactor
 
 - coordinates the pool for syncing
 - coordinates the store for persistence
@@ -38,6 +38,6 @@
         - we receive a block
             - gotBlockCh is strange
 
-## Go Routines in Blockchain Reactor
+## Go Routines in BlockSync Reactor
 
 ![Go Routines Diagram](img/bc-reactor-routines.png)

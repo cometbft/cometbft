@@ -1,5 +1,7 @@
 # Consensus Reactor
 
+> NOTE: This is legacy documentation with outdated information.
+
 Consensus Reactor defines a reactor for the consensus service. It contains the ConsensusState service that
 manages the state of the Tendermint consensus internal state machine.
 When Consensus Reactor is started, it starts Broadcast Routine which starts ConsensusState service.

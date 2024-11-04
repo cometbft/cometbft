@@ -1,6 +1,7 @@
 package log
 
 import (
+	"context"
 	"io"
 	"log/slog"
 
@@ -45,8 +46,9 @@ var _ Logger = (*baseLogger)(nil)
 //   - w must be safe for concurrent use by multiple goroutines if the returned
 //     Logger will be used concurrently.
 func NewLogger(w io.Writer) Logger {
-	return &baseLogger{slog.New(tint.NewHandler(w, &tint.Options{
-		Level: slog.LevelDebug,
+	logger := slog.New(tint.NewHandler(w, &tint.Options{
+		Level:      slog.LevelDebug,
+		TimeFormat: "2006-01-02T15:04:05.000",
 		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
 			if err, ok := a.Value.Any().(error); ok {
 				aErr := tint.Err(err)
@@ -56,7 +58,8 @@ func NewLogger(w io.Writer) Logger {
 			return a
 		},
 	},
-	))}
+	))
+	return &baseLogger{slog.New(&tabHandler{h: logger.Handler()})}
 }
 
 func (l *baseLogger) Error(msg string, keyvals ...any) {
@@ -113,4 +116,37 @@ func NewJSONLoggerNoTS(w io.Writer) Logger {
 		},
 	}))
 	return &baseLogger{logger}
+}
+
+// tabHandler is a slog.Handler that adds two tabs between the message and the attributes.
+type tabHandler struct {
+	h slog.Handler
+}
+
+func (th tabHandler) Handle(ctx context.Context, r slog.Record) error {
+	// Format message with tabs if it's less than 40 characters
+	formattedMsg := r.Message
+	if len(r.Message) < 40 {
+		formattedMsg += "\t\t\t"
+	}
+
+	// Create a new Record with the formatted message
+	record := slog.NewRecord(r.Time, r.Level, formattedMsg, r.PC)
+	r.Attrs(func(a slog.Attr) bool {
+		record.Add(a)
+		return true
+	})
+	return th.h.Handle(ctx, record)
+}
+
+func (th *tabHandler) Enabled(ctx context.Context, lvl slog.Level) bool {
+	return th.h.Enabled(ctx, lvl)
+}
+
+func (th *tabHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return &tabHandler{h: th.h.WithAttrs(attrs)}
+}
+
+func (th *tabHandler) WithGroup(name string) slog.Handler {
+	return &tabHandler{h: th.h.WithGroup(name)}
 }

@@ -23,11 +23,6 @@ type Logger interface {
 	// With returns a new contextual logger with keyvals prepended to those
 	// passed to calls to Info, Warn, Debug or Error.
 	With(keyvals ...any) Logger
-
-	// Impl returns the underlying logger implementation.
-	// It is used to access the full functionalities of the underlying logger.
-	// Advanced users can type cast the returned value to the actual logger.
-	Impl() any
 }
 
 type baseLogger struct {
@@ -83,11 +78,6 @@ func (l *baseLogger) Debug(msg string, keyvals ...any) {
 
 func (l *baseLogger) With(keyvals ...any) Logger {
 	return &baseLogger{l.srcLogger.With(keyvals...)}
-}
-
-// Impl returns the slog.Logger.
-func (l *baseLogger) Impl() any {
-	return l.srcLogger
 }
 
 // NewJSONLogger returns a Logger that writes msg and keyvals to w as using

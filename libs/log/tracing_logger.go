@@ -50,10 +50,6 @@ func (l *tracingLogger) With(keyvals ...any) Logger {
 	return &tracingLogger{next: l.next.With(formatErrors(keyvals)...)}
 }
 
-func (l *tracingLogger) Impl() any {
-	return l.next.Impl()
-}
-
 func formatErrors(keyvals []any) []any {
 	newKeyvals := make([]any, len(keyvals))
 	copy(newKeyvals, keyvals)

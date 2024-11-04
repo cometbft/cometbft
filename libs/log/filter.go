@@ -135,10 +135,6 @@ func (l *filter) With(keyvals ...any) Logger {
 	}
 }
 
-func (l *filter) Impl() any {
-	return l.next.Impl()
-}
-
 // --------------------------------------------------------------------------------
 
 // Option sets a parameter for the filter.

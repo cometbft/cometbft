@@ -66,6 +66,7 @@ message RequestInitChain {
   repeated ValidatorUpdate validators       = 4 [(gogoproto.nullable) = false];
   bytes                    app_state_bytes  = 5;
   int64                    initial_height   = 6;
+  string                   genesis_checksum = 7;
 }
 
 message RequestQuery {

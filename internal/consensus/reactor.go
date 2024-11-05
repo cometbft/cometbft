@@ -417,6 +417,7 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 		func(data cmtevents.EventData) {
 			rs := data.(cstypes.RoundState)
 
+			// update reactor's view of round state
 			conR.rsMtx.Lock()
 			conR.rs = rs
 			conR.rsMtx.Unlock()
@@ -430,6 +431,7 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 		func(data cmtevents.EventData) {
 			rs := data.(cstypes.RoundState)
 
+			// update reactor's view of round state
 			conR.rsMtx.Lock()
 			conR.rs = rs
 			conR.rsMtx.Unlock()
@@ -442,6 +444,14 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventVote,
 		func(data cmtevents.EventData) {
 			conR.broadcastHasVoteMessage(data.(*types.Vote))
+
+			// update reactor's view of round state
+			// NOTE this is safe to do without locking cs because the eventBus is
+			// synchronous. If it were not, we could pass rs in this event
+			// instead
+			conR.rsMtx.Lock()
+			defer conR.rsMtx.Unlock()
+			conR.rs = conR.conS.getRoundState()
 		}); err != nil {
 		conR.Logger.Error("Error adding listener for events (Vote)", "err", err)
 	}
@@ -449,6 +459,14 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventProposalBlockPart,
 		func(data cmtevents.EventData) {
 			conR.broadcastHasProposalBlockPartMessage(data.(*BlockPartMessage))
+
+			// update reactor's view of round state
+			// NOTE this is safe to do without locking cs because the eventBus is
+			// synchronous. If it were not, we could pass rs in this event
+			// instead
+			conR.rsMtx.Lock()
+			defer conR.rsMtx.Unlock()
+			conR.rs = conR.conS.getRoundState()
 		}); err != nil {
 		conR.Logger.Error("Error adding listener for events (ProposalBlockPart)", "err", err)
 	}

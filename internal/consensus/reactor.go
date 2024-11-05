@@ -49,7 +49,7 @@ type Reactor struct {
 
 	initialHeight atomic.Int64
 
-	rsMtx         cmtsync.RWMutex
+	rsMtx cmtsync.RWMutex
 	rs    cstypes.RoundState
 
 	Metrics *Metrics

@@ -46,7 +46,7 @@ type Reactor struct {
 	waitSync atomic.Bool
 	eventBus *types.EventBus
 
-	initialHeight int64
+	initialHeight atomic.Int64
 
 	rs    cstypes.RoundState
 	rsMtx sync.RWMutex
@@ -61,10 +61,11 @@ func NewReactor(consensusState *State, waitSync bool, options ...ReactorOption) 
 	conR := &Reactor{
 		conS:          consensusState,
 		waitSync:      atomic.Bool{},
-		initialHeight: consensusState.state.InitialHeight,
+		initialHeight: atomic.Int64{},
 		rs:            consensusState.RoundState,
 		Metrics:       NopMetrics(),
 	}
+	conR.initialHeight.Store(consensusState.state.InitialHeight)
 	conR.BaseReactor = *p2p.NewBaseReactor("Consensus", conR)
 	if waitSync {
 		conR.waitSync.Store(true)
@@ -269,7 +270,7 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 	case StateChannel:
 		switch msg := msg.(type) {
 		case *NewRoundStepMessage:
-			initialHeight := conR.initialHeight
+			initialHeight := conR.initialHeight.Load()
 			if err = msg.ValidateHeight(initialHeight); err != nil {
 				conR.Logger.Error("Peer sent us invalid msg", "peer", e.Src, "msg", msg, "err", err)
 				conR.Switch.StopPeerForError(e.Src, err)

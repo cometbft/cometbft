@@ -1,0 +1,1 @@
+- `[light]` Remove duplicated signature checks in `light.VerifyNonAdjacent` ([\#2365](https://github.com/cometbft/cometbft/issues/2365))

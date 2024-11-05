@@ -736,6 +736,19 @@ func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
 	return VerifyCommitLight(chainID, vals, blockID, height, commit)
 }
 
+// VerifyCommitLightWithCache verifies +2/3 of the set had signed the given commit.
+// It does NOT count all signatures.
+//
+// The cache provided will be used to skip signature verification for entries where the
+// key (signature), validator pubkey, and vote sign bytes all match.
+// Additionally, any verified signatures will be added to the cache.
+func (vals *ValidatorSet) VerifyCommitLightWithCache(chainID string, blockID BlockID,
+	height int64, commit *Commit,
+	verifiedSignatureCache SignatureCache,
+) error {
+	return VerifyCommitLightWithCache(chainID, vals, blockID, height, commit, verifiedSignatureCache)
+}
+
 // VerifyCommitLight verifies +2/3 of the set had signed the given commit.
 // It DOES count all signatures.
 func (vals *ValidatorSet) VerifyCommitLightAllSignatures(chainID string, blockID BlockID,
@@ -754,6 +767,23 @@ func (vals *ValidatorSet) VerifyCommitLightTrusting(
 	trustLevel cmtmath.Fraction,
 ) error {
 	return VerifyCommitLightTrusting(chainID, vals, commit, trustLevel)
+}
+
+// VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
+// this commit.
+// It does NOT count all signatures.
+// CONTRACT: must run ValidateBasic() on commit before verifying.
+//
+// The cache provided will be used to skip signature verification for entries where the
+// key (signature), validator pubkey, and vote sign bytes all match.
+// Additionally, any verified signatures will be added to the cache.
+func (vals *ValidatorSet) VerifyCommitLightTrustingWithCache(
+	chainID string,
+	commit *Commit,
+	trustLevel cmtmath.Fraction,
+	verifiedSignatureCache SignatureCache,
+) error {
+	return VerifyCommitLightTrustingWithCache(chainID, vals, commit, trustLevel, verifiedSignatureCache)
 }
 
 // VerifyCommitLightTrusting verifies that trustLevel of the validator set signed

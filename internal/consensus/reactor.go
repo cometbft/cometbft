@@ -15,6 +15,7 @@ import (
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	sm "github.com/cometbft/cometbft/state"
@@ -48,8 +49,8 @@ type Reactor struct {
 
 	initialHeight atomic.Int64
 
+	rsMtx         cmtsync.RWMutex
 	rs    cstypes.RoundState
-	rsMtx sync.RWMutex
 
 	Metrics *Metrics
 }
@@ -61,8 +62,8 @@ func NewReactor(consensusState *State, waitSync bool, options ...ReactorOption) 
 	conR := &Reactor{
 		conS:          consensusState,
 		waitSync:      atomic.Bool{},
-		initialHeight: atomic.Int64{},
 		rs:            consensusState.RoundState,
+		initialHeight: atomic.Int64{},
 		Metrics:       NopMetrics(),
 	}
 	conR.initialHeight.Store(consensusState.state.InitialHeight)

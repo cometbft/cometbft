@@ -249,7 +249,7 @@ func (cs *State) GetLastHeight() int64 {
 
 // GetRoundState returns a shallow copy of the internal consensus state.
 // This function is thread-safe.
-func (cs *State) GetRoundState() *cstypes.RoundState {
+func (cs *State) GetRoundState() cstypes.RoundState {
 	cs.mtx.RLock()
 	rs := cs.getRoundState()
 	cs.mtx.RUnlock()
@@ -258,9 +258,8 @@ func (cs *State) GetRoundState() *cstypes.RoundState {
 
 // getRoundState returns a shallow copy of the internal consensus state.
 // This function is not thread-safe. Use GetRoundState for the thread-safe version.
-func (cs *State) getRoundState() *cstypes.RoundState {
-	rs := cs.RoundState // copy
-	return &rs
+func (cs *State) getRoundState() cstypes.RoundState {
+	return cs.RoundState // copy
 }
 
 // GetRoundStateJSON returns a json of RoundState.
@@ -558,7 +557,7 @@ func (cs *State) updateRoundStep(round int32, step cstypes.RoundStepType) {
 }
 
 // enterNewRound(height, 0) at cs.StartTime.
-func (cs *State) scheduleRound0(rs *cstypes.RoundState) {
+func (cs *State) scheduleRound0(rs cstypes.RoundState) {
 	// cs.Logger.Info("scheduleRound0", "now", cmttime.Now(), "startTime", cs.StartTime)
 	sleepDuration := rs.StartTime.Sub(cmttime.Now())
 	cs.scheduleTimeout(sleepDuration, rs.Height, 0, cstypes.RoundStepNewHeight)
@@ -780,7 +779,7 @@ func (cs *State) newStep() {
 			cs.Logger.Error("Failed publishing new round step", "err", err)
 		}
 
-		cs.evsw.FireEvent(types.EventNewRoundStep, &cs.RoundState)
+		cs.evsw.FireEvent(types.EventNewRoundStep, cs.RoundState)
 	}
 }
 
@@ -1797,7 +1796,7 @@ func (cs *State) enterCommit(height int64, commitRound int32) {
 				logger.Error("Failed publishing valid block", "err", err)
 			}
 
-			cs.evsw.FireEvent(types.EventValidBlock, &cs.RoundState)
+			cs.evsw.FireEvent(types.EventValidBlock, cs.RoundState)
 		}
 	}
 }
@@ -1947,7 +1946,7 @@ func (cs *State) finalizeCommit(height int64) {
 
 	// cs.StartTime is already set.
 	// Schedule Round0 to start soon.
-	cs.scheduleRound0(&cs.RoundState)
+	cs.scheduleRound0(cs.RoundState)
 
 	// By here,
 	// * cs.Height has been increment to height+1
@@ -2445,7 +2444,7 @@ func (cs *State) addVote(vote *types.Vote, peerID nodekey.ID) (added bool, err e
 					cs.ProposalBlockParts = types.NewPartSetFromHeader(blockID.PartSetHeader)
 				}
 
-				cs.evsw.FireEvent(types.EventValidBlock, &cs.RoundState)
+				cs.evsw.FireEvent(types.EventValidBlock, cs.RoundState)
 				if err := cs.eventBus.PublishEventValidBlock(cs.RoundStateEvent()); err != nil {
 					return added, err
 				}

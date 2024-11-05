@@ -48,6 +48,9 @@ type Reactor struct {
 
 	initialHeight int64
 
+	rs    cstypes.RoundState
+	rsMtx sync.RWMutex
+
 	Metrics *Metrics
 }
 
@@ -59,6 +62,7 @@ func NewReactor(consensusState *State, waitSync bool, options ...ReactorOption) 
 		conS:          consensusState,
 		waitSync:      atomic.Bool{},
 		initialHeight: consensusState.state.InitialHeight,
+		rs:            consensusState.RoundState,
 		Metrics:       NopMetrics(),
 	}
 	conR.BaseReactor = *p2p.NewBaseReactor("Consensus", conR)
@@ -410,14 +414,26 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 	const subscriber = "consensus-reactor"
 	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventNewRoundStep,
 		func(data cmtevents.EventData) {
-			conR.broadcastNewRoundStepMessage(data.(*cstypes.RoundState))
+			rs := data.(cstypes.RoundState)
+
+			conR.rsMtx.Lock()
+			conR.rs = rs
+			conR.rsMtx.Unlock()
+
+			conR.broadcastNewRoundStepMessage(&rs)
 		}); err != nil {
 		conR.Logger.Error("Error adding listener for events (NewRoundStep)", "err", err)
 	}
 
 	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventValidBlock,
 		func(data cmtevents.EventData) {
-			conR.broadcastNewValidBlockMessage(data.(*cstypes.RoundState))
+			rs := data.(cstypes.RoundState)
+
+			conR.rsMtx.Lock()
+			conR.rs = rs
+			conR.rsMtx.Unlock()
+
+			conR.broadcastNewValidBlockMessage(&rs)
 		}); err != nil {
 		conR.Logger.Error("Error adding listener for events (ValidBlock)", "err", err)
 	}
@@ -536,14 +552,16 @@ func makeRoundStepMessage(rs *cstypes.RoundState) (nrsMsg *cmtcons.NewRoundStep)
 
 func (conR *Reactor) sendNewRoundStepMessage(peer p2p.Peer) {
 	rs := conR.getRoundState()
-	nrsMsg := makeRoundStepMessage(rs)
+	nrsMsg := makeRoundStepMessage(&rs)
 	peer.Send(p2p.Envelope{
 		ChannelID: StateChannel,
 		Message:   nrsMsg,
 	})
 }
-func (conR *Reactor) getRoundState() *cstypes.RoundState {
-	return conR.conS.GetRoundState()
+func (conR *Reactor) getRoundState() cstypes.RoundState {
+	conR.rsMtx.RLock()
+	defer conR.rsMtx.RUnlock()
+	return conR.rs
 }
 
 // -----------------------------------------------------------------------------
@@ -580,7 +598,7 @@ OUTER_LOOP:
 		// (Note these can match on hash so round doesn't matter)
 		// --------------------
 
-		if part, continueLoop := pickPartToSend(logger, conR.conS.blockStore, rs, ps, prs, rng); part != nil {
+		if part, continueLoop := pickPartToSend(logger, conR.conS.blockStore, &rs, ps, prs, rng); part != nil {
 			// part is not nil: we either succeed in sending it,
 			// or we were instructed not to sleep (busy-waiting)
 			if ps.SendPartSetHasPart(part, prs) || continueLoop {
@@ -600,7 +618,7 @@ OUTER_LOOP:
 		proposalToSend := rs.Proposal != nil && !prs.Proposal
 
 		if heightRoundMatch && proposalToSend {
-			ps.SendProposalSetHasProposal(logger, rs, prs)
+			ps.SendProposalSetHasProposal(logger, &rs, prs)
 			continue OUTER_LOOP
 		}
 
@@ -648,7 +666,7 @@ OUTER_LOOP:
 		// logger.Debug("gossipVotesRoutine", "rsHeight", rs.Height, "rsRound", rs.Round,
 		// "prsHeight", prs.Height, "prsRound", prs.Round, "prsStep", prs.Step)
 
-		if vote := pickVoteToSend(logger, conR.conS, rs, ps, prs, rng); vote != nil {
+		if vote := pickVoteToSend(logger, conR.conS, &rs, ps, prs, rng); vote != nil {
 			if ps.sendVoteSetHasVote(vote) {
 				continue OUTER_LOOP
 			}

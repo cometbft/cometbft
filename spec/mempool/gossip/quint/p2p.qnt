@@ -2,10 +2,6 @@
 module p2p {
     import spells.* from "./spells"
 
-    //--------------------------------------------------------------------------
-    // Base types
-    //--------------------------------------------------------------------------
-    
     // A node internally identifies other nodes with an ID (a string).
     type NodeID = str    
 
@@ -27,15 +23,17 @@ module p2p {
     // The protocol is modelled as a state transition system. A state is defined
     // by the values of the following variables.
 
-    // Each node has a list of incoming messages. Messages arrive in order and
-    // are appended to the list. Each message has a sender.
+    // Each node has a queue (a list) of incoming messages. Messages arrive in
+    // order and are appended to the queue. Each message has a sender (a node
+    // ID).
     //
     // In the implementation, transaction messages are transamitted via the
     // `Mempool` channel on the P2P layer. Control messages may be transmitted
     // through other channel. This variable models only one channel.
     var msgs: NodeID -> List[(NodeID, m)]
 
-    // The dynamic network topology. Each node has a set of peers.
+    // The dynamic network topology. Each node has a set of peers that is
+    // updated when nodes join or leave the network.
     var peers: NodeID -> Set[NodeID]
 
     // Auxiliary definitions
@@ -43,7 +41,7 @@ module p2p {
     def Peers(node) = peers.get(node)
 
     //--------------------------------------------------------------------------
-    // Boilerplate and auxiliary definitions
+    // Boilerplate
     //--------------------------------------------------------------------------
     // We assume that nodes have reliable P2P channels to all other nodes and
     // that messages are delivered in the order in which they were sent.
@@ -70,9 +68,12 @@ module p2p {
         NodeIDs.filter(n => _peers.get(n).nonEmpty())
 
     //--------------------------------------------------------------------------
+    // Actions
+    //--------------------------------------------------------------------------
+
     // A node joins the network by connecting to a given set of peers. All its
     // peers add the new node to their list of peers.
-    action joinNetwork(node: NodeID, newPeers: Set[NodeID]): bool = all {
+    action join(node: NodeID, newPeers: Set[NodeID]): bool = all {
         // The node must not be connected to the network.
         require(node.Peers().isEmpty()),
         peers' = peers
@@ -89,13 +90,12 @@ module p2p {
     //
     // TODO: the network must not become disconnected; we don't want to model
     // that.
-    action disconnectNetwork(node) = all {
-        val p = peers.currentNodes()
+    action disconnect(node) = all {
         peers' = peers
             // Clean node's state and remove all its peers.
             .put(node, Set())
             // Remove node from other peers' state.
-            .mapPutMany(p, n => peers.get(n).except(node)),
+            .mapPutMany(peers.currentNodes(), n => peers.get(n).except(node)),
         msgs' = msgs,
     }
 

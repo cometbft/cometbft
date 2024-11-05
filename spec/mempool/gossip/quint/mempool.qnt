@@ -36,13 +36,14 @@ module mempool {
     // The protocol is modelled as a state transition system. A state is defined
     // by the values of the following variables.
 
-    type NodeState = {         
+    type MempoolState = {         
         // Cache of already received transaction IDs.
         cache: Set[TxID],
 
-        // List of uncommitted/pending transactions ("the mempool"). For
-        // checking if the node already received a transaction and for picking
-        // transactions to send to peers.
+        // List of uncommitted/pending transactions ("the mempool"). For picking
+        // transactions to send to peers. 
+        //
+        // We do not model consensus removing mempool entries.
         pool: List[TX],
 
         // Index of the last broadcasted transaction in the pool.
@@ -70,10 +71,10 @@ module mempool {
     }
 
     // The state of all nodes.
-    var state: NodeID -> NodeState
+    var state: NodeID -> MempoolState
 
     // A node's empty state with a given set of peers.
-    val emptyNodeState = {
+    val emptyMempoolState = {
         pool: List(),
         cache: Set(),
         poolIndex: 0,
@@ -94,10 +95,9 @@ module mempool {
     action init = all {
         msgs' = NodeIDs.mapBy(_ => List()),
         peers' = NodeIDs.mapBy(n => InitialPeers.get(n)),
-        state' = NodeIDs.mapBy(n => emptyNodeState),
+        state' = NodeIDs.mapBy(n => emptyMempoolState),
     }
 
-    //--------------------------------------------------------------------------
     // Transactions are created by users who send them to one of the nodes in
     // the network. Nodes receive transactions either from users or from peers.
     // Transaction messages sent from users have no sender.
@@ -112,7 +112,6 @@ module mempool {
     action receiveTxFromUser(node, tx, _tryAddTx) =
         node._tryAddTx(msgs, None, tx)
 
-    //--------------------------------------------------------------------------
     // A node iterates on the pool sending transactions to its peers. It takes
     // the next transaction from the iterator and disseminates it to all its
     // peers at once. 

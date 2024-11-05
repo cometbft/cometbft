@@ -8,6 +8,7 @@ to the peer(s) from which it received the transaction.
 module flood {
     import spells.* from "./spells"
     import mempool.* from "./mempool"
+    export mempool.*
 
     //--------------------------------------------------------------------------
     // Messages
@@ -95,7 +96,7 @@ module flood {
                 // Pick a non-empty set of nodes in the network to be the node's
                 // peers.
                 nondet peerSet = oneOf(nodes.powerset().exclude(Set()))
-                node.joinNetwork(peerSet),
+                node.join(peerSet),
                 state' = state,
             },
             
@@ -104,7 +105,7 @@ module flood {
             nondet node = oneOf(nodes)
             all {
                 require(nodes != Set(node)),
-                node.disconnectNetwork(),
+                node.disconnect(),
                 state' = state,
             },
         }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -21,7 +22,10 @@ type Provider struct {
 	infra.ProviderData
 }
 
+<<<<<<< HEAD
 // Noop currently. Setup is performed externally to the e2e test tool.
+=======
+>>>>>>> 7d57a613b (refactor(e2e): Replace latency emulation Python script by generating a shell script in e2e's setup (#4408))
 func (p *Provider) Setup() error {
 	for _, n := range p.Testnet.Nodes {
 		if n.ClockSkew != 0 {
@@ -54,11 +58,14 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	return execAnsible(ctx, p.Testnet.Dir, playbookFile, nodeIPs)
 }
 
+<<<<<<< HEAD
 // Currently unsupported.
 func (Provider) SetLatency(_ context.Context, _ *e2e.Node) error {
 	return errors.New("SetLatency() currently unsupported for Digital Ocean")
 }
 
+=======
+>>>>>>> 7d57a613b (refactor(e2e): Replace latency emulation Python script by generating a shell script in e2e's setup (#4408))
 func (p Provider) StopTestnet(ctx context.Context) error {
 	nodeIPs := make([]string, len(p.Testnet.Nodes))
 	for i, n := range p.Testnet.Nodes {
@@ -96,6 +103,10 @@ func (Provider) CheckUpgraded(_ context.Context, node *e2e.Node) (string, bool, 
 	return node.Name, false, nil
 }
 
+func (Provider) NodeIP(node *e2e.Node) net.IP {
+	return node.ExternalIP
+}
+
 func (p Provider) writePlaybook(yaml, playbook string) error {
 	//nolint: gosec
 	// G306: Expect WriteFile permissions to be 0600 or less
@@ -116,7 +127,11 @@ const basePlaybook = `- name: e2e custom playbook
 `
 
 func ansibleAddTask(playbook, name, contents string) string {
+<<<<<<< HEAD
 	return playbook + "  - name: " + name + "\n" + contents
+=======
+	return playbook + "  - name: " + name + "\n" + contents + "\n"
+>>>>>>> 7d57a613b (refactor(e2e): Replace latency emulation Python script by generating a shell script in e2e's setup (#4408))
 }
 
 func ansibleAddSystemdTask(playbook string, starting bool) string {

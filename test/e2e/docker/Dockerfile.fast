@@ -1,4 +1,5 @@
-FROM gcr.io/distroless/static-debian11:debug
+FROM alpine:latest
+RUN apk add --no-cache iproute2
 
 COPY build/node /app
 COPY docker/entrypoint-fast /usr/bin/entrypoint-builtin
@@ -6,7 +7,7 @@ COPY docker/entrypoint-fast /usr/bin/entrypoint-builtin
 WORKDIR /cometbft
 VOLUME /cometbft
 ENV CMTHOME=/cometbft
-ENV GORACE "halt_on_error=1"
+ENV GORACE="halt_on_error=1"
 
 EXPOSE 26656 26657 26660 6060
 ENTRYPOINT ["/usr/bin/entrypoint-builtin"]

@@ -1685,8 +1685,13 @@ func TestVerifyCommitSingleWithInvalidSignatures(t *testing.T) {
 	// only count the signatures that are for the block
 	count := func(c CommitSig) bool { return c.BlockIDFlag == BlockIDFlagCommit }
 
-	err := verifyCommitSingle(cid, vs, commit, votingPowerNeeded, ignore, count, true, true)
+	err := verifyCommitSingle(cid, vs, commit, votingPowerNeeded, ignore, count, true, true, nil)
 	require.Error(t, err)
+
+	cache := NewSignatureCache()
+	err = verifyCommitSingle(cid, vs, commit, votingPowerNeeded, ignore, count, true, true, cache)
+	require.Error(t, err)
+	require.Equal(t, 0, cache.Len())
 }
 
 func TestValidatorSet_AllKeysHaveSameType(t *testing.T) {

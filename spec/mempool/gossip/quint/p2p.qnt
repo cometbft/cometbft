@@ -1,5 +1,5 @@
 // -*- mode: Bluespec; -*-
-module network {
+module p2p {
     import spells.* from "./spells"
 
     //--------------------------------------------------------------------------
@@ -29,6 +29,10 @@ module network {
 
     // Each node has a list of incoming messages. Messages arrive in order and
     // are appended to the list. Each message has a sender.
+    //
+    // In the implementation, transaction messages are transamitted via the
+    // `Mempool` channel on the P2P layer. Control messages may be transmitted
+    // through other channel. This variable models only one channel.
     var msgs: NodeID -> List[(NodeID, m)]
 
     // The dynamic network topology. Each node has a set of peers.
@@ -43,13 +47,10 @@ module network {
     //--------------------------------------------------------------------------
     // We assume that nodes have reliable P2P channels to all other nodes and
     // that messages are delivered in the order in which they were sent.
-    //
-    // In the implementation, messages are transamitted via the `Mempool`
-    // channel on the P2P layer.
 
-    // A node sends a message to the given set of peers.
-    pure def send(node, _msgs, peers, msg) =
-        _msgs.mapPutMany(peers, p => _msgs.get(p).append((node, msg)))
+    // A node sends a message to the given set of target nodes.
+    pure def send(node, _msgs, targetNodes, msg) =
+        _msgs.mapPutMany(targetNodes, p => _msgs.get(p).append((node, msg)))
 
     // A node receives one of the incoming messages from a peer and handles it
     // according to its type.

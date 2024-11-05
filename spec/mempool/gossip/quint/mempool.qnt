@@ -1,8 +1,8 @@
 // -*- mode: Bluespec; -*-
-module state {
+module mempool {
     import spells.* from "./spells"
-    import network.* from "./network"
-    export network.*
+    import p2p.* from "./p2p"
+    export p2p.*
 
     //--------------------------------------------------------------------------
     // Base types
@@ -86,4 +86,54 @@ module state {
     def PoolIndex(node) = state.get(node).poolIndex
     def Senders(node) = state.get(node).senders
 
+    //--------------------------------------------------------------------------
+    // Actions
+    //--------------------------------------------------------------------------
+
+    // Initial state. All data structures are initially empty.
+    action init = all {
+        msgs' = NodeIDs.mapBy(_ => List()),
+        peers' = NodeIDs.mapBy(n => InitialPeers.get(n)),
+        state' = NodeIDs.mapBy(n => emptyNodeState),
+    }
+
+    //--------------------------------------------------------------------------
+    // Transactions are created by users who send them to one of the nodes in
+    // the network. Nodes receive transactions either from users or from peers.
+    // Transaction messages sent from users have no sender.
+
+    // A node receives a given transaction from a user.
+    //
+    // Typically a user sends a (full) transaction to a node via an RPC
+    // endpoint. Users are allowed to submit the same tx more than once and to
+    // multiple nodes. This action is only enabled if the transaction is not in
+    // the pool. In the current mempool implementation we have the cache that
+    // prevents this scenario.
+    action receiveTxFromUser(node, tx, _tryAddTx) =
+        node._tryAddTx(msgs, None, tx)
+
+    //--------------------------------------------------------------------------
+    // A node iterates on the pool sending transactions to its peers. It takes
+    // the next transaction from the iterator and disseminates it to all its
+    // peers at once. 
+    //
+    // The pool index must not exceed the pool's length. This models when the
+    // iterator is at the end of the list and it's blocked waiting for a new
+    // entry to be appended to the list.
+    //
+    // In the current implementation, there is a separate goroutine for each
+    // peer, so not all txs are sent at the same time.
+    action disseminateNextTx(node, mkTargetNodes, mkTxMsg) = all {
+        // Check that the current index is within bounds. 
+        require(node.PoolIndex() < node.Pool().length()),
+        // Get from the pool the next transaction to disseminate.
+        val tx = node.Pool()[node.PoolIndex()]
+        all {
+            // Send tx to all peers except the senders of tx.
+            msgs' = node.send(msgs, mkTargetNodes(node, tx), mkTxMsg(tx)),
+            peers' = peers,
+            // Update pool index.
+            state' = state.mapPut(node, st => { poolIndex: st.poolIndex + 1, ...st }),
+        }
+    }
 }

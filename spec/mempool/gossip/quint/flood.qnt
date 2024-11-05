@@ -7,7 +7,7 @@ to the peer(s) from which it received the transaction.
 *******************************************************************************/
 module flood {
     import spells.* from "./spells"
-    import state.* from "./state"
+    import mempool.* from "./mempool"
 
     //--------------------------------------------------------------------------
     // Messages
@@ -18,33 +18,13 @@ module flood {
     type Message =
         | TxMsg(TX)
 
+    pure def mkTxMsg(tx) = TxMsg(tx)
+
     //--------------------------------------------------------------------------
     // Actions
     //--------------------------------------------------------------------------
 
-    // Initial state. All data structures are initially empty.
-    action init = all {
-        msgs' = NodeIDs.mapBy(_ => List()),
-        peers' = NodeIDs.mapBy(n => InitialPeers.get(n)),
-        state' = NodeIDs.mapBy(n => emptyNodeState),
-    }
-
-    //--------------------------------------------------------------------------
-    // Transactions are created by users who send them to one of the nodes in
-    // the network. Nodes receive transactions either from users or from peers.
-    // Transaction messages sent from users have no sender.
-
-    // A node receives a given transaction from a user.
-    //
-    // Typically a user sends a (full) transaction to a node via an RPC
-    // endpoint. Users are allowed to submit the same tx more than once and to
-    // multiple nodes. This action is only enabled if the transaction is not in
-    // the pool. In the current mempool implementation we have the cache that
-    // prevents this scenario.
-    action receiveTxFromUser(node, tx) = 
-        node.tryAddTx(msgs, None, tx)
-
-    // Handle valid messages for this protocol.
+    // Upon receiving a tx message, try add tx to the pool.
     action handleMessage(node, updatedMsgs, sender, msg) =
         match msg {
         | TxMsg(tx) => node.tryAddTx(updatedMsgs, Some(sender), tx)
@@ -89,31 +69,9 @@ module flood {
         | None => senders
         }
 
-    //--------------------------------------------------------------------------
-    // A node iterates on the pool sending transactions to its peers. It takes
-    // the next transaction from the iterator and disseminates it to all its
-    // peers at once. 
-    //
-    // The pool index must not exceed the pool's length. This models when the
-    // iterator is at the end of the list and it's blocked waiting for a new
-    // entry to be appended to the list.
-    //
-    // In the current implementation, there is a separate goroutine for each
-    // peer, so not all txs are sent at the same time.
-    action disseminateNextTx(node) = all {
-        // Check that the current index is within bounds. 
-        require(node.PoolIndex() < node.Pool().length()),
-        // Get from the pool the next transaction to disseminate.
-        val tx = node.Pool()[node.PoolIndex()]
-        all {
-            // Send tx to all peers except the senders of tx.
-            val txSenders = node.Senders().mapGetDefault(hash(tx), Set())
-            msgs' = node.send(msgs, node.Peers().exclude(txSenders), TxMsg(tx)),
-            peers' = peers,
-            // Update pool index.
-            state' = state.mapPut(node, st => { poolIndex: st.poolIndex + 1, ...st }),
-        }
-    }
+    def mkTargetNodes(node, tx) =
+        val txSenders = node.Senders().mapGetDefault(hash(tx), Set())
+        node.Peers().exclude(txSenders)
 
     //--------------------------------------------------------------------------
     // All possible state transitions.
@@ -121,11 +79,11 @@ module flood {
         val nodes = peers.currentNodes()
         any {
             nondet node = oneOf(nodes)
-            node.disseminateNextTx(),
+            node.disseminateNextTx(mkTargetNodes, mkTxMsg),
 
             nondet node = oneOf(nodes)
             nondet tx = oneOf(Txs)
-            node.receiveTxFromUser(tx),
+            node.receiveTxFromUser(tx, tryAddTx),
 
             nondet node = oneOf(nodes)
             node.receiveFromPeer(handleMessage),

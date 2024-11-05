@@ -15,7 +15,7 @@ import (
 
 var (
 	config = cfg.DefaultConfig()
-	logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	logger = log.NewLogger(os.Stdout)
 )
 
 func init() {
@@ -71,7 +71,7 @@ func ParseConfig(cmd *cobra.Command) (*cfg.Config, error) {
 	}
 	if warnings := conf.CheckDeprecated(); len(warnings) > 0 {
 		for _, warning := range warnings {
-			logger.Info("deprecated usage found in configuration file", "usage", warning)
+			logger.Warn("deprecated usage found in configuration file", "usage", warning)
 		}
 	}
 	return conf, nil
@@ -96,7 +96,7 @@ var RootCmd = &cobra.Command{
 		}
 
 		if config.LogFormat == cfg.LogFormatJSON {
-			logger = log.NewTMJSONLogger(log.NewSyncWriter(os.Stdout))
+			logger = log.NewJSONLogger(os.Stdout)
 		}
 
 		logger, err = cmtflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)
@@ -108,7 +108,6 @@ var RootCmd = &cobra.Command{
 			logger = log.NewTracingLogger(logger)
 		}
 
-		logger = logger.With("module", "main")
 		return nil
 	},
 }

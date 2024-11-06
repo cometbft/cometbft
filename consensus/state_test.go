@@ -1938,8 +1938,6 @@ func TestVoteExtensionEnableHeight(t *testing.T) {
 	}
 }
 
-<<<<<<< HEAD
-=======
 // TestStateDoesntCrashOnInvalidVote tests that the state does not crash when
 // receiving an invalid vote. In particular, one with the incorrect
 // ValidatorIndex.
@@ -1950,6 +1948,7 @@ func TestStateDoesntCrashOnInvalidVote(t *testing.T) {
 	peer := p2pmock.NewPeer(nil)
 
 	startTestRound(cs, height, round)
+
 
 	_, propBlock := decideProposal(context.Background(), t, cs, vss[0], height, round)
 	propBlockParts, err := propBlock.MakePartSet(types.BlockPartSizeBytes)
@@ -1972,7 +1971,6 @@ func TestStateDoesntCrashOnInvalidVote(t *testing.T) {
 	// assert.Equal(t, ErrInvalidVote{Reason: "ValidatorIndex 2 is out of bounds [0, 2)"}, err)
 }
 
->>>>>>> d8980f927 (test: fix TestStateDoesntCrashOnInvalidVote (#4439))
 // 4 vals, 3 Nil Precommits at P0
 // What we want:
 // P0 waits for timeoutPrecommit before starting next round

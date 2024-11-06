@@ -42,6 +42,12 @@ module spells {
         | None => __default
         }
 
+    pure def optionToSet(__opt: Option[a]): Set[a] =
+        match __opt {
+        | Some(o) => Set(o)
+        | None => Set()
+        }
+
     //--------------------------------------------------------------------------
     // Sets
     //--------------------------------------------------------------------------
@@ -78,15 +84,15 @@ module spells {
             val v = if (__m.keys().contains(__key2)) __m.get(__key2) else __default
             __f(v)))
 
-    /// Update a set of map entries.
+    /// Update multiple entries in a map.
     ///
     /// @param __map the map to update
     /// @param __keys the set of keys to be updated in __map
     /// @param __values a function that returns the value for a key in __keys
     /// @returns a new map equal to __map except that for each key k in __keys 
     ///   will map to __values(k)
-    pure def mapPutMany(__map: a -> b, __keys: Set[a], __values: a => b): (a -> b) = 
-        __map.keys().union(__keys).mapBy(k => if (k.in(__keys)) __values(k) else __map.get(k))
+    pure def mapPutMany(__map: a -> b, __keys: Set[a], __values: b => b): (a -> b) = 
+        __map.keys().union(__keys).mapBy(k => if (k.in(__keys)) __values(__map.get(k)) else __map.get(k))
 
     pure def mapRemoveMultiple(__map: a -> b, __keys: Set[a]): (a -> b) = 
         __map.keys().filter(k => not(k.in(__keys))).mapBy(k => __map.get(k))

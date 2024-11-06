@@ -48,7 +48,9 @@ module p2p {
 
     // A node sends a message to the given set of target nodes.
     pure def send(node, _msgs, targetNodes, msg) =
-        _msgs.mapPutMany(targetNodes, p => _msgs.get(p).append((node, msg)))
+        if (targetNodes.nonEmpty())
+            _msgs.mapPutMany(targetNodes, ms => ms.append((node, msg)))
+        else _msgs
 
     // A node receives one of the incoming messages from a peer and handles it
     // according to its type.
@@ -80,7 +82,7 @@ module p2p {
             // Assign to node the set of new peers.
             .put(node, newPeers)
             // Add node as a new peer to the nodes currently in the network.
-            .mapPutMany(peers.currentNodes(), n => peers.get(n).setAdd(node)),
+            .mapPutMany(peers.currentNodes(), ps => ps.setAdd(node)),
         msgs' = msgs,
     }
 
@@ -90,13 +92,13 @@ module p2p {
     //
     // TODO: the network must not become disconnected; we don't want to model
     // that.
-    action disconnect(node) = all {
+    action disconnect(node, updatedMsgs) = all {
         peers' = peers
             // Clean node's state and remove all its peers.
             .put(node, Set())
             // Remove node from other peers' state.
-            .mapPutMany(peers.currentNodes(), n => peers.get(n).except(node)),
-        msgs' = msgs,
+            .mapPutMany(peers.currentNodes(), ps => ps.except(node)),
+        msgs' = updatedMsgs,
     }
 
 }

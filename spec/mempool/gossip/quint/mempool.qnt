@@ -5,7 +5,7 @@ module mempool {
     export p2p.*
 
     //--------------------------------------------------------------------------
-    // Base types
+    // Types
     //--------------------------------------------------------------------------
 
     // A transaction is uniquely identified by a string, which represents its
@@ -24,7 +24,7 @@ module mempool {
     pure def hash(tx: TX): TxID = tx
     
     //--------------------------------------------------------------------------
-    // Model parameters
+    // Parameters
     //--------------------------------------------------------------------------
         
     // The set of all possible transactions.
@@ -81,6 +81,14 @@ module mempool {
         senders: Map(),
     }
 
+    // If there's a sender, add it to tx's set of senders.
+    pure def addSender(txSenders, tx, optionalSender) = 
+        // txSenders.mapPut(hash(tx), ss => ss.setAdd(optionalSender.optionToSet()))
+        match optionalSender {
+        | Some(sender) => txSenders.mapPut(hash(tx), ss => ss.setAdd(sender))
+        | None => txSenders
+        }
+
     // Auxiliary definitions
     def Cache(node) = state.get(node).cache
     def Pool(node) = state.get(node).pool
@@ -91,16 +99,16 @@ module mempool {
     // Actions
     //--------------------------------------------------------------------------
 
-    // Initial state. All data structures are initially empty.
+    // Initial state.
     action init = all {
         msgs' = NodeIDs.mapBy(_ => List()),
         peers' = NodeIDs.mapBy(n => InitialPeers.get(n)),
         state' = NodeIDs.mapBy(n => emptyMempoolState),
     }
 
-    // Transactions are created by users who send them to one of the nodes in
-    // the network. Nodes receive transactions either from users or from peers.
-    // Transaction messages sent from users have no sender.
+    // Users create transactions and send them to one of the nodes in the
+    // network. Nodes receive messages with transactions either from users or
+    // from peers. Transaction messages from users have no sender.
 
     // A node receives a given transaction from a user.
     //
@@ -135,4 +143,29 @@ module mempool {
             state' = state.mapPut(node, st => { poolIndex: st.poolIndex + 1, ...st }),
         }
     }
+
+    action joinSomeNode(nodes) = 
+        val disconnectedNodes = NodeIDs.exclude(nodes)
+        all {
+            require(disconnectedNodes.nonEmpty()),
+            nondet node = oneOf(disconnectedNodes)
+            // Pick a non-empty set of nodes in the network to be the node's
+            // peers.
+            nondet peerSet = oneOf(nodes.powerset().exclude(Set()))
+            node.join(peerSet),
+            state' = state,
+        }
+    
+    action disconnectSomeNode(nodes, onDisconntect) = all {
+        // Pick a node to disconnect only if it is not the only node in the
+        // network.
+        require(size(nodes) > 1),
+        nondet node = oneOf(nodes) 
+        all {
+            node.disconnect(msgs),
+            state' = state,
+            onDisconntect(node),
+        }
+    }
+
 }

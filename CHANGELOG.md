@@ -1,5 +1,33 @@
 # CHANGELOG
 
+## v0.38.14
+
+*November 6, 2024*
+
+This release fixes a security vulnerability in the vote extensions (VE)
+validation logic. For more details, please refer to
+[ASA-2024-011](https://github.com/cometbft/cometbft/security/advisories/GHSA-p7mv-53f2-4cwj).
+
+We recommend upgrading ASAP if you’re using vote extensions (VE).
+
+### BUG FIXES
+
+- `[consensus]` Do not panic if the validator index of a `Vote` message is out
+  of bounds, when vote extensions are enabled
+  ([\#ABC-0021](https://github.com/cometbft/cometbft/security/advisories/GHSA-p7mv-53f2-4cwj))
+
+### DEPENDENCIES
+
+- Bump cometbft-db version to v0.15.0
+  ([\#4297](https://github.com/cometbft/cometbft/pull/4297))
+- `[go/runtime]` Bump Go version to 1.23
+  ([\#4297](https://github.com/cometbft/cometbft/pull/4297))
+
+### IMPROVEMENTS
+
+- `[p2p]` fix exponential backoff logic to increase reconnect retries close to 24 hours
+ ([\#3519](https://github.com/cometbft/cometbft/issues/3519))
+
 ## v0.38.13
 
 ### BUG FIXES

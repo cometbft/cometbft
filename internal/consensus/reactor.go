@@ -578,6 +578,7 @@ func (conR *Reactor) sendNewRoundStepMessage(peer p2p.Peer) {
 		Message:   nrsMsg,
 	})
 }
+
 func (conR *Reactor) getRoundState() cstypes.RoundState {
 	conR.rsMtx.RLock()
 	defer conR.rsMtx.RUnlock()

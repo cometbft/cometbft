@@ -40,11 +40,111 @@ We start the design section with a general description of how the algorithm work
 
 CometBFT, at the moment, caches received transactions. For all transactions, CometBFT stores the IDs of all the peers that have sent it in a `senders` list. When a transaction enters the mempool,
 if it was already received it can be retrieved from the cache. When this happens a certain number of times, the receiving node notifies the sender to stop forwarding any transaction from the peer 
-that had originally sent the transaction.
+that had originally sent the transaction. The exact point when the notification is sent is defined below as a redundancy threshold. (TODO LiNK)
 
 Namely, let's assume that transaction `tx_1` was sent by node `B` to node `C` which forwarded it to `A`. `A` already has the transaction and notifies node `C` about this. Node `C` will look up the senders of transaction `tx_1` and in the future disable transaction forwarding from node `B` to node `A`.
 
 In reality, if node `C` ha received `tx_1` from multiple senders (`X`,`Y`, `B`), it will pick the first one that has sent it and disable that route. 
+
+When a connection to a peer is lost a node sends a `Reset` message to its peers. It
+signals to the peers that they should delete all routing information related to this node. This assures that, in case the network topology changes, or a peer becomes unavailable, the node is able to discover transactions via a previously disabled route. 
+
+### Redundancy control
+
+In an ideal setting, receiving a transaction more than once is not needed. But in a Byzantine setting, allowing for only one route for a transaction can introduce an attack vector. 
+
+Operators can thus configure a desired redundancy and the gossip protocol will adjust route disabling based on this setting. Redundancy is defined as the ratio between duplicate and unique transactions. Operators can also define how much they tolerate the redundancy to deviate from the desired level.
+
+By default, the redundancy is set to 1 and impacts the gossiping of transactions as follows:
+
+
+```
+  redundancy := duplicateTxs / firstTimeTxs
+  if redundancy < r.redundancyLowerBound:
+    peer.send(Reset)
+  if redundancy > redundancyUpperBound
+    enableRouteDisabling() 
+```
+
+Redundancy is adjusted whenever a new transaction is added into the mempool.
+(TODO - revisit whether this should also be done on duplicates.)
+
+
+### Impacted areas of code
+
+#### Mempool reactor
+
+
+The bulk of the changes is constrained to the mempool reactor. We introduce a
+`gossipRouter` and a `redundancyControl` struct to keep track of the redundancy
+of transactions in the system. 
+Each node is keeps track of the routes it disabled between its peers. 
+
+```
+type gossipRouter struct {
+	mtx cmtsync.RWMutex
+	// A set of `source -> target` routes that are disabled for disseminating transactions. Source
+	// and target are node IDs.
+	disabledRoutes map[nodekey.ID]p2pIDSet
+}
+``` 
+
+
+
+#### New p2p messages
+
+The protocol introduces two new p2p messages whose protobuf definition is given below:
+
+```
+type HaveTx struct {
+	TxKey []byte 
+}
+```
+
+```
+type Reset struct {
+
+}
+```
+
+#### Monitoring
+
+This ADR introduces a set of metrics which can be used to observe the parameters of the protocol. 
+
+- `HaveTxMsgsReceived`
+- `ResetMsgsSent`
+- `DisabledRoutes`
+- `Redundancy`
+
+The impact of the protocol on operations can also be observed by looking at the following metrics that already exist:
+
+-`AlreadyReceivedTx` - the number of redundant transactions. When DOG is enabled these values should drop. 
+
+-`BytesReceived` - This metric shows the number of bytes received per message type. Without DOG, the transactions dominate the number of bytes, while, when enabled, the block parts dominate.
+
+
+
+### Configuration parameters
+
+
+- `config.EnableDOGProtocol: bool`: Enabling or disabling the DOG protocol
+- `config.TargetRedundancy: float`: The redundancy level that the gossip protocol should aim to
+  maintain.
+- `config.TargetRedundancyDeltaPercent: float`: Value in the range `[0, 1)` that defines the bounds
+of acceptable redundancy levels; redundancy +- redundancy*delta TxsPerAdjustment: int
+- `config.TxsPerAdjustment: int`: How many (first-time) transactions should the node receive before
+  attempting to adjust redundancy.
+
+On startup, define the constants:
+- `delta := config.TargetRedundancy * config.TargetRedundancyDeltaPercent`
+- `redundancyLowerBound := config.TargetRedundancy - delta`
+- `redundancyUpperBound := config.TargetRedundancy + delta`
+
+## User recommendation
+
+- Entire network should use DOG
+
+
 > The protocol implicitly favors routes with low latency, by cutting routes to peers that send the duplicate transaction at a later time.
 
 - Is this true? We don't cut ties with the sender of the transaction, rather we are telling it to cut ties with some other node that has sent us the tx before that. 
@@ -53,9 +153,7 @@ So sender could still forward us transactions but not the ones received from thi
 - What if the sender is the only one sending the duplicate transactions (senders ): len(senders) == 1 and senders[0] is itself?  (probably ok)
 Should we be doing this? 
 
-Q: What if node C disables a route Y->A because Y is the sender[0]. 
 
-Q: 
 
 
 > This section does not need to be filled in at the start of the ADR, but must

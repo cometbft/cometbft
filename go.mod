@@ -140,6 +140,8 @@ require (
 )
 
 retract (
+	// bumped go version in minor release
+	v0.38.14
 	// a regression was introduced
 	v0.38.4
 	// a breaking change was introduced

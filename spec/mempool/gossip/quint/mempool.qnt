@@ -83,9 +83,9 @@ module mempool {
 
     // If there's a sender, add it to tx's set of senders.
     pure def addSender(txSenders, tx, optionalSender) = 
-        // txSenders.mapPut(hash(tx), ss => ss.setAdd(optionalSender.optionToSet()))
+        // txSenders.update(hash(tx), ss => ss.setAdd(optionalSender.optionToSet()))
         match optionalSender {
-        | Some(sender) => txSenders.mapPut(hash(tx), ss => ss.setAdd(sender))
+        | Some(sender) => txSenders.update(hash(tx), ss => ss.setAdd(sender))
         | None => txSenders
         }
 
@@ -140,7 +140,7 @@ module mempool {
             msgs' = node.send(msgs, mkTargetNodes(node, tx), mkTxMsg(tx)),
             peers' = peers,
             // Update pool index.
-            state' = state.mapPut(node, st => { poolIndex: st.poolIndex + 1, ...st }),
+            state' = state.update(node, st => { poolIndex: st.poolIndex + 1, ...st }),
         }
     }
 

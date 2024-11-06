@@ -53,7 +53,7 @@ module dog {
     // TODO: fix definition
     pure def addRoute(_disabledRoutes, node, txSenders, sender) =
         if (not(txSenders.listIsEmpty()))
-            _disabledRoutes.mapPut(node, rs => rs.setAdd((txSenders[0], sender))) // TODO: check
+            _disabledRoutes.update(node, rs => rs.setAdd((txSenders[0], sender))) // TODO: check
         else _disabledRoutes 
 
     // Remove any route that has peer as source or target. 
@@ -165,7 +165,7 @@ module dog {
                     node.send(updatedMsgs, targets, ResetMsg)
                 else updatedMsgs
             node.F::tryAddFirstTimeTx(updatedMsgs2, optionalSender, tx),
-            redundancyControl' = redundancyControl.mapPut(node, _ => rc2),
+            redundancyControl' = redundancyControl.update(node, _ => rc2),
             disabledRoutes' = disabledRoutes,
         }
 
@@ -202,7 +202,7 @@ module dog {
             else updatedMsgs
         all {
             node.F::tryAddDuplicateTx(updatedMsgs2, optionalSender, tx),
-            redundancyControl' = redundancyControl.mapPut(node, increaseDuplicateTxs),
+            redundancyControl' = redundancyControl.update(node, increaseDuplicateTxs),
             disabledRoutes' = disabledRoutes,
         }
 
@@ -226,7 +226,7 @@ module dog {
     // nodes will dynamically adapt to the new traffic, closing routes when
     // needed.
     action handleResetMessage(node, updatedMsgs, sender) = all {
-        disabledRoutes' = disabledRoutes.mapPut(node, drs => drs.removeRoute(sender)),
+        disabledRoutes' = disabledRoutes.update(node, drs => drs.removeRoute(sender)),
         msgs' = updatedMsgs,
         peers' = peers,
         state' = state,
@@ -284,7 +284,7 @@ module dog {
                     val updatedMsgs = msgs
                     node.disconnect(updatedMsgs),
                     state' = state,
-                    disabledRoutes' = disabledRoutes.mapPutMany(nodes, drs => drs.removeRoute(node)),
+                    disabledRoutes' = disabledRoutes.updateMultiple(nodes, drs => drs.removeRoute(node)),
                     redundancyControl' = redundancyControl,
                 }
             }

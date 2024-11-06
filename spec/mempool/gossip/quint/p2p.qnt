@@ -49,7 +49,7 @@ module p2p {
     // A node sends a message to the given set of target nodes.
     pure def send(node, _msgs, targetNodes, msg) =
         if (targetNodes.nonEmpty())
-            _msgs.mapPutMany(targetNodes, ms => ms.append((node, msg)))
+            _msgs.updateMultiple(targetNodes, ms => ms.append((node, msg)))
         else _msgs
 
     // A node receives one of the incoming messages from a peer and handles it
@@ -61,7 +61,7 @@ module p2p {
         val msg = someMsg._2
         // We model receiving of a message as taking the head of the list of
         // incoming messages.
-        val updatedMsgs = msgs.mapPut(node, ms => tail(ms))
+        val updatedMsgs = msgs.update(node, tail)
         handleMessage(node, updatedMsgs, sender, msg)
     }
 
@@ -82,7 +82,7 @@ module p2p {
             // Assign to node the set of new peers.
             .put(node, newPeers)
             // Add node as a new peer to the nodes currently in the network.
-            .mapPutMany(peers.currentNodes(), ps => ps.setAdd(node)),
+            .updateMultiple(peers.currentNodes(), ps => ps.setAdd(node)),
         msgs' = msgs,
     }
 
@@ -97,7 +97,7 @@ module p2p {
             // Clean node's state and remove all its peers.
             .put(node, Set())
             // Remove node from other peers' state.
-            .mapPutMany(peers.currentNodes(), ps => ps.except(node)),
+            .updateMultiple(peers.currentNodes(), ps => ps.except(node)),
         msgs' = updatedMsgs,
     }
 

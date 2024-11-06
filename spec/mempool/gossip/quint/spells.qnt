@@ -76,23 +76,20 @@ module spells {
     ///   when applied to __key's old value
     /// @returns a new map equal to __map except that __key maps
     ///   to __f applied to __key's old value
-    pure def mapPut(__map: a -> b, __key: a, __f: b => b): (a -> b) = 
+    pure def update(__map: a -> b, __key: a, __f: b => b): (a -> b) = 
         __map.put(__key, __f(__map.get(__key)))
-
-    pure def mapPut2(__map: a -> b -> c, __key1: a, __key2: b, __default: c, __f: c => c): (a -> b -> c) = 
-        __map.mapPut(__key1, __m => __m.put(__key2, 
-            val v = if (__m.keys().contains(__key2)) __m.get(__key2) else __default
-            __f(v)))
 
     /// Update multiple entries in a map.
     ///
     /// @param __map the map to update
     /// @param __keys the set of keys to be updated in __map
-    /// @param __values a function that returns the value for a key in __keys
+    /// @param __values a function from __map values to new values
     /// @returns a new map equal to __map except that for each key k in __keys 
     ///   will map to __values(k)
-    pure def mapPutMany(__map: a -> b, __keys: Set[a], __values: b => b): (a -> b) = 
-        __map.keys().union(__keys).mapBy(k => if (k.in(__keys)) __values(__map.get(k)) else __map.get(k))
+    pure def updateMultiple(__map: a -> b, __keys: Set[a], __values: b => b): (a -> b) = 
+        __map.keys().union(__keys).mapBy(k => 
+            if (k.in(__keys)) __values(__map.get(k)) else __map.get(k)
+        )
 
     pure def mapRemoveMultiple(__map: a -> b, __keys: Set[a]): (a -> b) = 
         __map.keys().filter(k => not(k.in(__keys))).mapBy(k => __map.get(k))

@@ -50,7 +50,7 @@ module flood {
     // Upon receiving tx for the first time, add tx to cache, add tx to pool and
     // update tx's senders if tx is valid, and update messages.
     action tryAddFirstTimeTx(node, updatedMsgs, optionalSender, tx) = all {
-        state' = state.mapPut(node, st => {
+        state' = state.update(node, st => {
             cache: st.cache.setAdd(hash(tx)),
             pool: if (valid(tx)) st.pool.append(tx) else st.pool,
             senders: if (valid(tx)) st.senders.addSender(tx, optionalSender) else st.senders,
@@ -62,7 +62,7 @@ module flood {
     // Upon receiving an already seen transaction, update tx's senders if tx is
     // in pool (and thus it's valid), and update messages.
     action tryAddDuplicateTx(node, updatedMsgs, optionalSender, tx) =  all {
-        state' = state.mapPut(node, st => { 
+        state' = state.update(node, st => { 
             senders: if (st.pool.includes(tx)) st.senders.addSender(tx, optionalSender) else st.senders, 
             ...st }),
         msgs' = updatedMsgs,

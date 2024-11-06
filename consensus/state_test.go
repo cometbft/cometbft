@@ -1949,7 +1949,6 @@ func TestStateDoesntCrashOnInvalidVote(t *testing.T) {
 
 	startTestRound(cs, height, round)
 
-
 	_, propBlock := decideProposal(context.Background(), t, cs, vss[0], height, round)
 	propBlockParts, err := propBlock.MakePartSet(types.BlockPartSizeBytes)
 	assert.NoError(t, err)

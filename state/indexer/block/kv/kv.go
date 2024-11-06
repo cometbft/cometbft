@@ -384,20 +384,17 @@ FOR_LOOP:
 	return filteredHeights, nil
 }
 
-func (*BlockerIndexer) setTmpHeights(tmpHeights map[string][]byte, it dbm.Iterator) {
-	// If we return attributes that occur within the same events, then store the event sequence in the
-	// result map as well
+func (idx *BlockerIndexer) setTmpHeights(tmpHeights map[string][]byte, it dbm.Iterator) {
+	// If we return attributes that occur within the same events, then store the
+	// event sequence in the result map as well.
 	eventSeq, _ := parseEventSeqFromEventKey(it.Key())
 
-	// value comes from cometbft-db Iterator interface Value() API.
-	// Therefore, we must make a copy before storing references to it.
-	var (
-		value   = it.Value()
-		valueCp = make([]byte, len(value))
-	)
-	copy(valueCp, value)
+	// Copy the value because the iterator will be reused.
+	value := make([]byte, len(it.Value()))
+	copy(value, it.Value())
 
-	tmpHeights[string(valueCp)+strconv.FormatInt(eventSeq, 10)] = valueCp
+	tmpHeights[string(value)+strconv.FormatInt(eventSeq, 10)] = value
+
 }
 
 // match returns all matching heights that meet a given query condition and start

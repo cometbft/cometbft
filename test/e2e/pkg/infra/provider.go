@@ -2,10 +2,7 @@ package infra
 
 import (
 	"context"
-<<<<<<< HEAD
-=======
 	"net"
->>>>>>> 7d57a613b (refactor(e2e): Replace latency emulation Python script by generating a shell script in e2e's setup (#4408))
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )

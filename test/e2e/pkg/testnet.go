@@ -80,22 +80,9 @@ type Testnet struct {
 	Validators       map[*Node]int64
 	ValidatorUpdates map[int64]map[*Node]int64
 	Nodes            []*Node
-<<<<<<< HEAD
-=======
-
-	// If not empty, ignore the manifest and send transaction load only to the
-	// node names in this list. It is set only from a command line flag.
-	LoadTargetNodes []string
 
 	// Latency Emulation is enabled when all the nodes have a zone assigned.
 	LatencyEmulationEnabled bool
-
-	// For generating transaction load on lanes proportionally to their
-	// priorities.
-	laneIDs               []string
-	laneCumulativeWeights []uint
-	sumWeights            uint
->>>>>>> 7d57a613b (refactor(e2e): Replace latency emulation Python script by generating a shell script in e2e's setup (#4408))
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -183,42 +170,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		testnet.LoadTxSizeBytes = defaultTxSizeBytes
 	}
 
-<<<<<<< HEAD
-	for _, name := range sortNodeNames(manifest) {
-=======
-	if len(testnet.Lanes) == 0 {
-		testnet.Lanes = app.DefaultLanes()
-	}
-	if len(testnet.LoadLaneWeights) == 0 {
-		// Assign same weight to all lanes.
-		testnet.LoadLaneWeights = make(map[string]uint, len(testnet.Lanes))
-		for id := range testnet.Lanes {
-			testnet.LoadLaneWeights[id] = 1
-		}
-	}
-	if len(testnet.Lanes) < 1 {
-		return nil, errors.New("number of lanes must be greater or equal to one")
-	}
-
-	// Pre-compute lane data needed for generating transaction load.
-	testnet.laneIDs = make([]string, 0, len(testnet.Lanes))
-	laneWeights := make([]uint, 0, len(testnet.Lanes))
-	for lane := range testnet.Lanes {
-		testnet.laneIDs = append(testnet.laneIDs, lane)
-		weight := testnet.LoadLaneWeights[lane]
-		laneWeights = append(laneWeights, weight)
-		testnet.sumWeights += weight
-	}
-	testnet.laneCumulativeWeights = make([]uint, len(testnet.Lanes))
-	testnet.laneCumulativeWeights[0] = laneWeights[0]
-	for i := 1; i < len(testnet.laneCumulativeWeights); i++ {
-		testnet.laneCumulativeWeights[i] = testnet.laneCumulativeWeights[i-1] + laneWeights[i]
-	}
-
 	testnet.LatencyEmulationEnabled = true
 
-	for _, name := range sortNodeNames(&manifest) {
->>>>>>> 7d57a613b (refactor(e2e): Replace latency emulation Python script by generating a shell script in e2e's setup (#4408))
+	for _, name := range sortNodeNames(manifest) {
 		nodeManifest := manifest.NodesMap[name]
 		ind, ok := ifd.Instances[name]
 		if !ok {

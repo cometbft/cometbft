@@ -35,20 +35,6 @@ func (p *Provider) Setup() error {
 		return err
 	}
 
-<<<<<<< HEAD
-	// Generate file with table mapping IP addresses to geographical zone for latencies.
-	zonesTable, err := zonesTableBytes(p.Testnet.Nodes)
-	if err != nil {
-		return err
-	}
-	//nolint: gosec // G306: Expect WriteFile permissions to be 0600 or less
-	err = os.WriteFile(filepath.Join(p.Testnet.Dir, "zones.csv"), zonesTable, 0o644)
-	if err != nil {
-		return err
-	}
-
-=======
->>>>>>> 7d57a613b (refactor(e2e): Replace latency emulation Python script by generating a shell script in e2e's setup (#4408))
 	return nil
 }
 
@@ -87,25 +73,8 @@ func (Provider) CheckUpgraded(ctx context.Context, node *e2e.Node) (string, bool
 	return name, upgraded, nil
 }
 
-<<<<<<< HEAD
-func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
-	containerDir := "/scripts/"
-
-	// Copy zone file used by the script that sets latency.
-	zonesFile := filepath.Join(p.Testnet.Dir, "zones.csv")
-	if err := Exec(ctx, "cp", zonesFile, node.Name+":"+containerDir); err != nil {
-		return err
-	}
-
-	// Execute the latency setter script in the container.
-	return ExecVerbose(ctx, "exec", "--privileged", node.Name,
-		filepath.Join(containerDir, "latency-setter.py"), "set",
-		filepath.Join(containerDir, "zones.csv"),
-		filepath.Join(containerDir, "aws-latencies.csv"), "eth0")
-=======
 func (Provider) NodeIP(node *e2e.Node) net.IP {
 	return node.InternalIP
->>>>>>> 7d57a613b (refactor(e2e): Replace latency emulation Python script by generating a shell script in e2e's setup (#4408))
 }
 
 // dockerComposeBytes generates a Docker Compose config file for a testnet and returns the
@@ -200,24 +169,6 @@ services:
 	}
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, testnet)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func zonesTableBytes(nodes []*e2e.Node) ([]byte, error) {
-	tmpl, err := template.New("zones").Parse(`Node,IP,Zone
-{{- range . }}
-{{- if .Zone }}
-{{ .Name }},{{ .InternalIP }},{{ .Zone }}
-{{- end }}
-{{- end }}`)
-	if err != nil {
-		return nil, err
-	}
-	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, nodes)
 	if err != nil {
 		return nil, err
 	}

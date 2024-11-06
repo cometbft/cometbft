@@ -6,11 +6,13 @@
 Dynamic Optimal Graph (DOG) gossip protocol.
 
 The DOG protocol is built on top of the Flood protocol. All types, messages, and
-data structures in Flood are also present in this specification.
+data structures in Flood are present in this specification.
 
-Briefly, if node A receives from B a transaction that it already has, this means
-that there must exist a cycle in the network topology, so A tells B to stop
-sending transactions. The DOG protocol adds two new messages to Flood: 
+Briefly, what the protocol does is the following. If node A receives from B a
+transaction that it already has, this means that there must exist a cycle in the
+network topology, so A tells B to stop sending transactions. Conversely, if A
+does not receive enough transactions, it will ask its peers to send more. For
+that, the protocol adds two new messages to Flood: 
 - HaveTxMsg(TxID) for cutting cycles, and 
 - ResetMsg for dynamic re-routing when a node disconnects.
 *******************************************************************************/
@@ -36,17 +38,19 @@ module dog {
     //--------------------------------------------------------------------------
     // Routing
     //--------------------------------------------------------------------------
+    // The protocol uses a routing mechanism on the nodes to filter TxMsg
+    // messages sent to their peers.
 
-    // A route is a tuple `(source, target)`. We also write it as `A -> B`.
+    // A route is a tuple `(source, target)`. We also write it as `source ->
+    // target`.
     type Route = (NodeID, NodeID)
 
-    // The set of disabled routes on each node.
+    // The set of disabled routes on each node. By default all routes are
+    // enabled, so the set is empty. A node A will send TxMsg(tx) to a peer B if
+    // the route `sender(tx) -> B` is enabled, that is, the route is not in this
+    // set.
     var disabledRoutes: NodeID -> Set[Route]
 
-    // Auxiliary definitions
-    def DisabledRoutes(node) = disabledRoutes.get(node)
-    
-    //--------------------------------------------------------------------------
     // Disable a routes (sender(tx) -> sender), where sender(tx) is the first
     // element of txSenders.
     //
@@ -60,63 +64,104 @@ module dog {
     pure def removeRoute(routes: Set[Route], peer: NodeID): Set[Route] = 
         routes.filter(route => not(peer.isSourceOrTargetIn(route)))
 
-    // Is the node a source or target in the given route.
+    // Returns whether the node is a source or target in the given route.
     pure def isSourceOrTargetIn(node, route) =
         node == route._1 or node == route._2
+
+    // Auxiliary definitions
+    def DisabledRoutes(node) = disabledRoutes.get(node)
 
     //--------------------------------------------------------------------------
     // Redundancy Control (RC) mechanism
     //--------------------------------------------------------------------------
-
+    // The protocol has a mechanism to auto-adjust the level of transaction
+    // redundancy in each node.
+    //
     // Definition: A transaction is received *for the first time* by a node,
-    // when the node does not have the transaction in its cache. Otherwise the
-    // transaction is a *duplicate*.
+    // when the node does not have the transaction in its cache. When a node
+    // receives a transaction more than once, it is called a *duplicate*
+    // transaction.
 
     type RedundancyControlState = {
-        // Counter for transactions received for the first time by a node.
+        // Counter of transactions received for the first time by a node.
         firstTimeTxs: int,
-        // Counter for duplicate transactions received by a node. 
+        // Counter of duplicate transactions received by a node. 
         duplicateTxs: int,
-        // Whether the node can reply with a HaveTx message upon receiving a
-        // duplicate transaction.
+        // Whether the node is allowed to reply with a HaveTx message upon
+        // receiving a duplicate transaction.
         isHaveTxBlocked: bool,
     }
 
-    // Each node keeps a state of the RC mechanism.
+    // Each node keeps a state of RC variables.
     var redundancyControl: NodeID -> RedundancyControlState
+
+    // The redundancy level is defined as the proportion of duplicate
+    // transactions over the number of transactions received for the first time.
+    // For example, a redundancy of 1 means that for each transaction that the
+    // node has received for the first time, the node received one transaction
+    // that is duplicate (not necessarily of the same transaction).
+    pure def redundancyLevel(rc) = rc.duplicateTxs / rc.firstTimeTxs
+
+    // adjustRedundancy returns an updated RC state and whether to reply with a
+    // Reset message.
+    //
+    // Periodically, the node checks its redundancy level. If the level is
+    // within acceptable bounds (see below), it does nothing. Otherwise it will
+    // either send Reset messages to peers to receive more transactions and thus
+    // increase its redundancy level, or it will abstain from sending HaveTx to
+    // peers, thus...
+    //
+    // On every adjustment, the counters are reset.
+    //
+    // When `TargetRedundancy` is 0, the lower and upper bounds are also
+    // equal to 0. Then every `TxsPerAdjustment` received transactions
+    // `adjustRedundancy` will unblock `HaveTx` but it will not send `Reset`
+    // messages.
+    pure def adjustRedundancy(rc) = 
+        if (rc.redundancyLevel() < redundancyLowerBound)
+            (rc.resetCounters(), true)
+        else if (rc.redundancyLevel() >= redundancyUpperBound)
+            (rc.resetCounters().blockHaveTx(), false)
+        else 
+            (rc.resetCounters(), false)
 
     // Auxiliary definitions
     def RC(node) = redundancyControl.get(node)
-    pure def increaseFirstTimeTxs(rc) = { firstTimeTxs: rc.firstTimeTxs+1, ...rc }
-    pure def increaseDuplicateTxs(rc) = { duplicateTxs: rc.duplicateTxs+1, ...rc }
+    pure def increaseFirstTimeTxs(rc) = { firstTimeTxs: rc.firstTimeTxs + 1, ...rc }
+    pure def increaseDuplicateTxs(rc) = { duplicateTxs: rc.duplicateTxs + 1, ...rc }
+    pure def resetCounters(rc) = { firstTimeTxs: 0, duplicateTxs: 0, ...rc }
     pure def blockHaveTx(rc) = { isHaveTxBlocked: false, ...rc }
     
     //--------------------------------------------------------------------------
     // Parameters/Configuration
     //--------------------------------------------------------------------------
 
-    // The redundancy level that the gossip protocol should aim to maintain.
+    // The redundancy level that the protocol aims to maintain, within the
+    // boundaries defined by TargetRedundancyDeltaPercent.
     //
-    // When TargetRedundancyCfg is 0, the Redundancy Control mechanism is partially
+    // When TargetRedundancy is 0, the Redundancy Control mechanism is partially
     // disabled (see `adjustRedundancy` below).
     //
     // It should be a real type, but reals are not currently supported by Quint.
-    const TargetRedundancyCfg: int
+    const TargetRedundancy: int
 
     // Value in the range `[0, 100)` that defines the bounds of acceptable
     // redundancy levels; redundancy +- redundancy * delta
     //
     // It should be a real type, but reals are not currently supported by Quint.
-    const TargetRedundancyDeltaPercentCfg: int
+    //
+    // This value was initially modelled as a model parameter (a `const`), but
+    // we decided to keep it fixed.
+    val TargetRedundancyDeltaPercent: int = 5
 
-    //  How many (first-time) transactions should the node receive before
-    //  attempting to adjust redundancy.
-    const TxsPerAdjustmentCfg: int
+    // The number of first-time transactions received by a node before it
+    // adjusts its redundancy level.
+    const TxsPerAdjustment: int
 
     // Constants
-    val _delta = TargetRedundancyCfg * TargetRedundancyDeltaPercentCfg / 100
-    val redundancyLowerBound = TargetRedundancyCfg - _delta
-    val redundancyUpperBound = TargetRedundancyCfg + _delta
+    val _delta = TargetRedundancy * TargetRedundancyDeltaPercent / 100
+    val redundancyLowerBound = TargetRedundancy - _delta
+    val redundancyUpperBound = TargetRedundancy + _delta
 
     //--------------------------------------------------------------------------
     // Actions
@@ -148,12 +193,12 @@ module dog {
     // Upon receiving tx for the first time, add tx to cache, add tx to pool and
     // update tx's senders if tx is valid, and update messages (the same as in
     // Flood). Additionally, increase `rc.firstTimeTxs`, and every
-    // `TxsPerAdjustmentCfg` transactions received for the first time, call
+    // `TxsPerAdjustment` transactions received for the first time, call
     // `adjustRedundancy()`.
     action tryAddFirstTimeTx(node, updatedMsgs, optionalSender, tx) = 
         val rc1 = node.RC().increaseFirstTimeTxs()
         val adjustResult = 
-            if (rc1.firstTimeTxs == TxsPerAdjustmentCfg) 
+            if (rc1.firstTimeTxs == TxsPerAdjustment) 
                 rc1.adjustRedundancy() 
             else (rc1, false)
         val rc2 = adjustResult._1
@@ -168,21 +213,6 @@ module dog {
             redundancyControl' = redundancyControl.update(node, _ => rc2),
             disabledRoutes' = disabledRoutes,
         }
-
-    // Return an updated RC state and whether to reply with a Reset message.
-    //
-    // When `TargetRedundancyCfg = 0`, the lower and upper bounds are also equal to
-    // 0. Then every `TxsPerAdjustmentCfg` received transactions `adjustRedundancy`
-    // will unblock `HaveTx` but it will not send `Reset` messages.
-    pure def adjustRedundancy(rc: RedundancyControlState): (RedundancyControlState, bool) = 
-        val updatedRC = { firstTimeTxs: 0, duplicateTxs: 0, ...rc }
-        val redundancy = rc.duplicateTxs / rc.firstTimeTxs
-        if (redundancy < redundancyLowerBound)
-            (updatedRC, true)
-        else if (redundancy >= redundancyUpperBound)
-            (updatedRC.blockHaveTx(), false)
-        else 
-            (updatedRC, false)
 
     // Upon receiving an already seen transaction, update tx's senders if tx is
     // in pool (and thus it's valid), and update messages (the same as in

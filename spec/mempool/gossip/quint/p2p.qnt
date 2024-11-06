@@ -65,9 +65,9 @@ module p2p {
         handleMessage(node, updatedMsgs, sender, msg)
     }
 
-    // Nodes connected to the network in the current state.
-    pure def currentNodes(_peers: NodeID -> Set[NodeID]): Set[NodeID] = 
-        NodeIDs.filter(n => _peers.get(n).nonEmpty())
+    // A node is in the network if it has peers.
+    val nodesInNetwork = NodeIDs.filter(node => node.Peers().nonEmpty())
+    val nodesNotInNetwork = NodeIDs.exclude(nodesInNetwork)
 
     //--------------------------------------------------------------------------
     // Actions
@@ -82,7 +82,7 @@ module p2p {
             // Assign to node the set of new peers.
             .put(node, newPeers)
             // Add node as a new peer to the nodes currently in the network.
-            .updateMultiple(peers.currentNodes(), ps => ps.setAdd(node)),
+            .updateMultiple(nodesInNetwork, ps => ps.setAdd(node)),
         msgs' = msgs,
     }
 
@@ -97,7 +97,7 @@ module p2p {
             // Clean node's state and remove all its peers.
             .put(node, Set())
             // Remove node from other peers' state.
-            .updateMultiple(peers.currentNodes(), ps => ps.except(node)),
+            .updateMultiple(nodesInNetwork, ps => ps.except(node)),
         msgs' = updatedMsgs,
     }
 

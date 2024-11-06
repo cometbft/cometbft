@@ -14,8 +14,8 @@ module mempool {
 
     // Transactions are validated by an external entity. The validation function
     // must be deterministic. In the implementation, it is the application via a
-    // CheckTx ABCI call that validates transctions. In this simplified spec, we
-    // model all transactions as valid.
+    // CheckTx ABCI call that validates transactions. In this simplified
+    // specification, we model all transactions as valid.
     pure def valid(tx) = true
 
     // A transaction identifier, computed as the hash of the transaction
@@ -83,11 +83,7 @@ module mempool {
 
     // If there's a sender, add it to tx's set of senders.
     pure def addSender(txSenders, tx, optionalSender) = 
-        // txSenders.update(hash(tx), ss => ss.setAdd(optionalSender.optionToSet()))
-        match optionalSender {
-        | Some(sender) => txSenders.update(hash(tx), ss => ss.setAdd(sender))
-        | None => txSenders
-        }
+        txSenders.update(hash(tx), ss => ss.union(optionalSender.optionToSet()))
 
     // Auxiliary definitions
     def Cache(node) = state.get(node).cache
@@ -144,28 +140,24 @@ module mempool {
         }
     }
 
-    action joinSomeNode(nodes) = 
-        val disconnectedNodes = NodeIDs.exclude(nodes)
-        all {
-            require(disconnectedNodes.nonEmpty()),
-            nondet node = oneOf(disconnectedNodes)
-            // Pick a non-empty set of nodes in the network to be the node's
-            // peers.
-            nondet peerSet = oneOf(nodes.powerset().exclude(Set()))
-            node.join(peerSet),
-            state' = state,
-        }
+    action joinSomeNode = all {
+        // Pick a node that is not connected to the network.
+        require(NodeIDs.exclude(nodesInNetwork).nonEmpty()),
+        nondet node = oneOf(NodeIDs.exclude(nodesInNetwork))
+        // Pick a non-empty set of nodes in the network to be the node's
+        // peers.
+        nondet peerSet = oneOf(nodesInNetwork.powerset().exclude(Set()))
+        node.join(peerSet),
+        state' = state,
+    }
     
-    action disconnectSomeNode(nodes, onDisconntect) = all {
+    action disconnectSomeNode(nodes) = all {
         // Pick a node to disconnect only if it is not the only node in the
         // network.
         require(size(nodes) > 1),
         nondet node = oneOf(nodes) 
-        all {
-            node.disconnect(msgs),
-            state' = state,
-            onDisconntect(node),
-        }
+        node.disconnect(msgs),
+        state' = state,
     }
 
 }

@@ -77,22 +77,24 @@ module flood {
 
     //--------------------------------------------------------------------------
     // All possible state transitions.
-    action nextState = 
-        val nodes = peers.currentNodes()
-        any {
-            nondet node = oneOf(nodes)
-            node.disseminateNextTx(mkTargetNodes, TxMsg),
+    action nextState = any {
+        // Transaction dissemination.
+        nondet node = oneOf(nodesInNetwork)
+        node.disseminateNextTx(mkTargetNodes, TxMsg),
 
-            nondet node = oneOf(nodes)
-            nondet tx = oneOf(Txs)
-            node.receiveTxFromUser(tx, tryAddTx),
+        // Handling received transactions from users.
+        nondet node = oneOf(nodesInNetwork)
+        nondet tx = oneOf(Txs)
+        node.receiveTxFromUser(tx, tryAddTx),
 
-            nondet node = oneOf(nodes)
-            node.receiveFromPeer(handleMessage),
+        // Handling received messages from peers.
+        nondet node = oneOf(nodesInNetwork)
+        node.receiveFromPeer(handleMessage),
 
-            joinSomeNode(nodes),
-            disconnectSomeNode(nodes, (_) => true),
-        }
+        // Nodes joining or leaving the network.
+        joinSomeNode,
+        disconnectSomeNode(nodesInNetwork),
+    }
 
     //--------------------------------------------------------------------------
     // Properties

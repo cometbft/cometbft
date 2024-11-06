@@ -233,13 +233,9 @@ module dog {
         redundancyControl' = redundancyControl,
     }
 
-    // TODO: a malicious node sends the same tx to one or more of its peers,
-    // maybe in coordination with another malicious node.
-    // action gossipDuplicate(node) = ...
-
     //--------------------------------------------------------------------------
-    // Send tx to all peers except if the route `sender(tx) -> peer` is
-    // disabled.
+    // For dissemination. Send tx to all peers except if the route `sender(tx)
+    // -> peer` is disabled.
     //
     // Broadcast tx to all the peers of node, except if peer is sender(tx) or if
     // the route sender(tx) -> peer is disabled, where sender(tx) is any of the
@@ -251,44 +247,62 @@ module dog {
         node.Peers().exclude(txSenders).exclude(disabledTargets)
 
     //--------------------------------------------------------------------------
+    // When a node disconnects from the network, its peers signal their peers
+    // that their situation has changed and their routing tables should be reset
+    // so that data can be re-routed if needed.
+    action onDisconnect(node) = all {
+        // All node's peers detect that node has disconnect and send a Reset
+        // message to all their peers.
+        val updatedMsgs = node.Peers().fold(msgs, 
+            (_msgs, peer) => peer.send(_msgs, peer.Peers(), ResetMsg)
+        )
+        node.disconnect(updatedMsgs),
+        // The node's peers remove node from their routing tables.
+        disabledRoutes' = disabledRoutes.updateMultiple(node.Peers(), drs => drs.removeRoute(node)),
+        state' = state,
+        redundancyControl' = redundancyControl,
+    }
+
+    //--------------------------------------------------------------------------
+    // TODO: a malicious node sends the same tx to one or more of its peers,
+    // maybe in coordination with another malicious node.
+    // action gossipDuplicate(node) = ...
+
+    //--------------------------------------------------------------------------
     // All possible state transitions.
-    action nextState = 
-        val nodes = peers.currentNodes()
-        any {
-            nondet node = oneOf(nodes)
-            all {
-                node.disseminateNextTx(mkTargetNodes, TxMsg),
-                disabledRoutes' = disabledRoutes,
-                redundancyControl' = redundancyControl,
-            },
+    action nextState = any {
+        // Transaction dissemination.
+        nondet node = oneOf(nodesInNetwork)
+        all {
+            node.disseminateNextTx(mkTargetNodes, TxMsg),
+            disabledRoutes' = disabledRoutes,
+            redundancyControl' = redundancyControl,
+        },
 
-            nondet node = oneOf(nodes)
-            nondet tx = oneOf(Txs)
-            node.receiveTxFromUser(tx, tryAddTx),
+        // Handling received transactions from users.
+        nondet node = oneOf(nodesInNetwork)
+        nondet tx = oneOf(Txs)
+        node.receiveTxFromUser(tx, tryAddTx),
 
-            nondet node = oneOf(nodes)
-            node.receiveFromPeer(handleMessage),
+        // Handling received messages from peers.
+        nondet node = oneOf(nodesInNetwork)
+        node.receiveFromPeer(handleMessage),
 
-            all {
-                joinSomeNode(nodes),
-                disabledRoutes' = disabledRoutes,
-                redundancyControl' = redundancyControl,
-            },
+        // Nodes joining the network.
+        all {
+            joinSomeNode,
+            disabledRoutes' = disabledRoutes,
+            redundancyControl' = redundancyControl,
+        },
 
-            // Pick a node to disconnect only if it is not the only node in the
-            // network.
-            all {
-                require(size(nodes) > 1),
-                nondet node = oneOf(nodes) 
-                all {
-                    val updatedMsgs = msgs
-                    node.disconnect(updatedMsgs),
-                    state' = state,
-                    disabledRoutes' = disabledRoutes.updateMultiple(nodes, drs => drs.removeRoute(node)),
-                    redundancyControl' = redundancyControl,
-                }
-            }
-
+        // Nodes leaving the network.
+        all {
+            // Pick a node to disconnect only if it is not the only node in
+            // the network.
+            require(size(nodesInNetwork) > 1),
+            nondet node = oneOf(nodesInNetwork) 
+            onDisconnect(node)
         }
+    }
 
 }

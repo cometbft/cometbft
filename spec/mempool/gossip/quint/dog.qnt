@@ -67,25 +67,24 @@ module dog {
     import mempool as M from "./mempool"
 
     //--------------------------------------------------------------------------
-    // DOG Messages
+    // Messages
     //--------------------------------------------------------------------------
 
     type Message =
         | TxMsg(TX)
-        | HaveTxMsg(TX) // "I already have this tx; don't send me more txs from the same source."
-        | ResetMsg      // "My situation has changed; reset my routing data on your side."
-
-    // Auxiliary definitions
-    pure def mkTxMsg(tx) = TxMsg(tx)
-    pure def isTxMsg(msg) = match msg { T(_) => true | _ => false }
-    pure def isHaveTxMsg(msg) = match msg { HaveTx(_) => true | _ => false }
-    pure def isResetMsg(msg) = match msg { Reset => true | _ => false }
+        // HaveTxMsg messages carry a transaction hash, which is typically much
+        // smaller than full transactions.
+        // "I already have this tx; don't send me more txs from the same
+        // source."
+        | HaveTxMsg(TX)
+        // "My situation has changed; reset my routing data on your side."
+        | ResetMsg
 
     //--------------------------------------------------------------------------
-    // State: routing
+    // Routing
     //--------------------------------------------------------------------------
 
-    // A route is a pair (source -> target).
+    // A route is a tuple `(source, target)`. We also write it as `A -> B`.
     type Route = (NodeID, NodeID)
 
     // The set of disabled routes on each node.
@@ -187,12 +186,14 @@ module dog {
 
     // Remove from routes any route that has sender as source or target. 
     pure def remove(routes, node, sender) = 
-        routes.mapPut(node, rs => rs.filter(route => not(sender.isSourceOrTarget(route))))
+        routes.mapPut(node, rs => rs.filter(route => not(sender.isSourceOrTargetIn(route))))
 
-    pure def isSourceOrTarget(node, route) =
+    // Is the node a source or target in the given route.
+    pure def isSourceOrTargetIn(node, route) =
         node == route._1 or node == route._2
 
-    // TODO: a malicious node sends the same tx to one or more of its peers, maybe in coordination with another malicious node.
+    // TODO: a malicious node sends the same tx to one or more of its peers,
+    // maybe in coordination with another malicious node.
     // action gossipDuplicate(node) = ...
 
     //--------------------------------------------------------------------------
@@ -215,7 +216,7 @@ module dog {
         any {
             nondet node = oneOf(nodes)
             all {
-                node.disseminateNextTx(mkTargetNodes, mkTxMsg),
+                node.disseminateNextTx(mkTargetNodes, TxMsg),
                 disabledRoutes' = disabledRoutes,
             },
 

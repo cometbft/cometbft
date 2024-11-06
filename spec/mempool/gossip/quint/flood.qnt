@@ -19,8 +19,6 @@ module flood {
     type Message =
         | TxMsg(TX)
 
-    pure def mkTxMsg(tx) = TxMsg(tx)
-
     //--------------------------------------------------------------------------
     // Actions
     //--------------------------------------------------------------------------
@@ -80,7 +78,7 @@ module flood {
         val nodes = peers.currentNodes()
         any {
             nondet node = oneOf(nodes)
-            node.disseminateNextTx(mkTargetNodes, mkTxMsg),
+            node.disseminateNextTx(mkTargetNodes, TxMsg),
 
             nondet node = oneOf(nodes)
             nondet tx = oneOf(Txs)

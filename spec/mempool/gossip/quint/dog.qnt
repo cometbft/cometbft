@@ -26,13 +26,19 @@ module dog {
     //--------------------------------------------------------------------------
 
     type Message =
+        // A message carrying a full transaction as payload (same as in Flood).
         | TxMsg(TX)
-        // HaveTxMsg messages carry a transaction hash, which is typically much
-        // smaller than full transactions.
-        // "I already have this tx; don't send me more txs from the same
-        // source."
-        | HaveTxMsg(TX)
-        // "My situation has changed; reset my routing data on your side."
+        // HaveTxMsg messages carry a transaction hash, typically much smaller
+        // than full transactions. A node sends this message to signal that it
+        // has the transaction, so that the receiver must cut some route that is
+        // forming a cycle in the network topology. The goal for the sender is
+        // to receive less transactions.
+        | HaveTxMsg(TxID)
+        // A node sends a Reset message to signal that it is not receiving
+        // enough transactions, so that the receiver must re-enable some route
+        // to the sender if possible. This message is usually sent when a peer
+        // is disconnected or sending less transactions than before, so that the
+        // sender receives more transactions.
         | ResetMsg
 
     //--------------------------------------------------------------------------
@@ -51,12 +57,13 @@ module dog {
     // set.
     var disabledRoutes: NodeID -> Set[Route]
 
-    // Disable a routes (sender(tx) -> sender), where sender(tx) is the first
-    // element of txSenders.
+    // Disable the route `sender(tx) -> sender` by adding it to the list, where
+    // sender(tx) is the first peer from which node received tx.
     //
-    // TODO: fix definition
+    // TODO: fix definition: why only disable route from first sender?
+    //      does DOG need all the senders, or just the first one?
     pure def addRoute(_disabledRoutes, node, txSenders, sender) =
-        if (not(txSenders.listIsEmpty()))
+        if (length(txSenders) > 0)
             _disabledRoutes.update(node, rs => rs.setAdd((txSenders[0], sender))) // TODO: check
         else _disabledRoutes 
 
@@ -127,6 +134,7 @@ module dog {
 
     // Auxiliary definitions
     def RC(node) = redundancyControl.get(node)
+    val initialRCState = { firstTimeTxs: 0, duplicateTxs: 0, isHaveTxBlocked: false }
     pure def increaseFirstTimeTxs(rc) = { firstTimeTxs: rc.firstTimeTxs + 1, ...rc }
     pure def increaseDuplicateTxs(rc) = { duplicateTxs: rc.duplicateTxs + 1, ...rc }
     pure def resetCounters(rc) = { firstTimeTxs: 0, duplicateTxs: 0, ...rc }
@@ -171,15 +179,13 @@ module dog {
     action D_init = all {
         F::init,
         disabledRoutes' = NodeIDs.mapBy(_ => Set()),
-        redundancyControl' = NodeIDs.mapBy(_ => { 
-            firstTimeTxs: 0, duplicateTxs: 0, isHaveTxBlocked: false 
-        })
+        redundancyControl' = NodeIDs.mapBy(_ => initialRCState)
     }
 
     action handleMessage(node, updatedMsgs, sender, msg) =
         match msg {
         | TxMsg(tx) => node.tryAddTx(updatedMsgs, Some(sender), tx)
-        | HaveTxMsg(tx) => node.handleHaveTxMessage(updatedMsgs, sender, tx)
+        | HaveTxMsg(txID) => node.handleHaveTxMessage(updatedMsgs, sender, txID)
         | ResetMsg => node.handleResetMessage(updatedMsgs, sender)
         }
 
@@ -204,46 +210,41 @@ module dog {
         val rc2 = adjustResult._1
         val sendReset = adjustResult._2
         all {
-            val updatedMsgs2 = 
+            val updatedMsgs1 = 
                 val targets = optionalSender.optionToSet() // may be empty
                 if (sendReset) 
                     node.send(updatedMsgs, targets, ResetMsg)
                 else updatedMsgs
-            node.F::tryAddFirstTimeTx(updatedMsgs2, optionalSender, tx),
-            redundancyControl' = redundancyControl.update(node, _ => rc2),
+            node.F::tryAddFirstTimeTx(updatedMsgs1, optionalSender, tx),
+            redundancyControl' = redundancyControl.put(node, rc2),
             disabledRoutes' = disabledRoutes,
         }
 
-    // Upon receiving an already seen transaction, update tx's senders if tx is
-    // in pool (and thus it's valid), and update messages (the same as in
-    // Flood). Additionally, increase `duplicateTxs` and reply a `HaveTx`
-    // message if the RC mechanism is not blocking it (and there's a sender).
+    // Upon receiving an already seen transaction, the node updates tx's senders
+    // if tx is in pool (and thus it's valid), and updates the list of incoming
+    // messages (the same as in Flood). Additionally, it increases
+    // `duplicateTxs` and reply a `HaveTx` message if the RC mechanism is not
+    // blocking it and there's a sender.
     action tryAddDuplicateTx(node, updatedMsgs, optionalSender, tx) =
-        // Reply HaveTx if tx comes from a peer.
-        //
-        // TODO: send HaveTxMsg message only if there's no incoming message
-        //       from sender(tx) and sender(tx) has the route to this node
-        //       disabled. This is to simulate the timeout that disables
-        //       sending HaveTxMsg.
-        val updatedMsgs2 = 
+        // Reply HaveTxMsg if tx comes from a peer.
+        val updatedMsgs1 = 
             val targets = optionalSender.optionToSet() // may be empty
             if (not(node.RC().isHaveTxBlocked))
-                node.send(updatedMsgs, targets, HaveTxMsg(tx))
+                node.send(updatedMsgs, targets, HaveTxMsg(hash(tx)))
             else updatedMsgs
         all {
-            node.F::tryAddDuplicateTx(updatedMsgs2, optionalSender, tx),
+            node.F::tryAddDuplicateTx(updatedMsgs1, optionalSender, tx),
             redundancyControl' = redundancyControl.update(node, increaseDuplicateTxs),
             disabledRoutes' = disabledRoutes,
         }
 
-    // Upon receiving HaveTxMsg(tx), disable the route (sender(tx) -> sender).
-    // This will decrease the traffic to the sender.
+    // Upon receiving HaveTxMsg(txID), disable the route (sender(txID) ->
+    // sender). This will decrease the traffic to the sender.
     //
     // With this rule, we don't want to cut all routes from sender to node, only
-    // those that come from the tx's original sender. That is why we need to
-    // take the source into account in rule `R3`.
-    action handleHaveTxMessage(node, updatedMsgs, sender, tx) = all {
-        val txSenders = node.Senders().mapGetDefault(hash(tx), Set()) // in most cases, there exists one and only one sender for tx (??)
+    // those that come from tx's original sender.
+    action handleHaveTxMessage(node, updatedMsgs, sender, txID) = all {
+        val txSenders = node.Senders().mapGetDefault(txID, Set()) // in most cases, a tx has zero or one sender
         disabledRoutes' = disabledRoutes.addRoute(node, txSenders.setToList(), sender), // TODO: check setToList
         msgs' = updatedMsgs,
         peers' = peers,
@@ -264,23 +265,20 @@ module dog {
     }
 
     //--------------------------------------------------------------------------
-    // For dissemination. Send tx to all peers except if the route `sender(tx)
-    // -> peer` is disabled.
-    //
-    // Broadcast tx to all the peers of node, except if peer is sender(tx) or if
-    // the route sender(tx) -> peer is disabled, where sender(tx) is any of the
-    // peers that have sent tx to node.
+    // Return the set of peers to which the node will send tx when disseminating
+    // the transaction. In this case, it's all of the node's peers except if
+    // peer is `sender(tx)` (as in Flood) or if the route `sender(tx) -> peer`
+    // is disabled.
     def mkTargetNodes(node, tx) =
         val txSenders = node.Senders().mapGetDefault(hash(tx), Set())
         val disabledTargets = node.DisabledRoutes().filter(r => txSenders.contains(r._1)).map(r => r._2)
-        // TODO: remove exclude(txSenders)?
         node.Peers().exclude(txSenders).exclude(disabledTargets)
 
     //--------------------------------------------------------------------------
-    // When a node disconnects from the network, its peers signal their peers
-    // that their situation has changed and their routing tables should be reset
-    // so that data can be re-routed if needed.
-    action onDisconnect(node) = all {
+    // When a node disconnects from the network, its peers signal their own
+    // peers that their situation has changed, that their routing tables should
+    // be reset. In this way, data via those nodes can be re-routed if needed.
+    action D_disconnect(node) = all {
         // All node's peers detect that node has disconnect and send a Reset
         // message to all their peers.
         val updatedMsgs = node.Peers().fold(msgs, 
@@ -320,7 +318,8 @@ module dog {
 
         // Nodes joining the network.
         all {
-            joinSomeNode,
+            pickNodeAndJoin,
+            state' = state,
             disabledRoutes' = disabledRoutes,
             redundancyControl' = redundancyControl,
         },
@@ -331,7 +330,7 @@ module dog {
             // the network.
             require(size(nodesInNetwork) > 1),
             nondet node = oneOf(nodesInNetwork) 
-            onDisconnect(node)
+            D_disconnect(node),
         }
     }
 

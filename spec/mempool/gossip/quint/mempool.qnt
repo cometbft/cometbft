@@ -13,9 +13,13 @@ module mempool {
     type TX = str
 
     // Transactions are validated by an external entity. The validation function
-    // must be deterministic. In the implementation, it is the application via a
-    // CheckTx ABCI call that validates transactions. In this simplified
-    // specification, we model all transactions as valid.
+    // must be deterministic. In the actual implementation, the mempool makes a
+    // CheckTx ABCI call to the application, which validates the transaction. 
+    //
+    // In this simplified specification we model all transactions as valid. To
+    // model invalid transactions, `valid` should be declared as a model
+    // parameter (a `const`) and instantiated with a deterministic function of
+    // type `(TX) => bool`.
     pure def valid(tx) = true
 
     // A transaction identifier, computed as the hash of the transaction
@@ -43,17 +47,18 @@ module mempool {
         // List of uncommitted/pending transactions ("the mempool"). For picking
         // transactions to send to peers. 
         //
-        // We do not model consensus removing mempool entries.
+        // New entries are only appended. We do not model when entries are
+        // removed (by the consensus module).
         pool: List[TX],
 
-        // Index of the last broadcasted transaction in the pool.
+        // Index to the next transaction in pool to disseminate.
         //
-        // In this specification, we model transaction dissemination using one
-        // iterator. One process iterates on the pool and multicasts a mempool
-        // entry to all peers, one per step and atomically.
+        // We model transaction dissemination using one iterator. One process
+        // iterates on the pool and multicasts a mempool entry to all connected
+        // peers, one entry per step and atomically.
         //
-        // In the real implementation there is one dissemination process per
-        // peer, each with its own iterator (and thus a separate pool index per
+        // In the implementation there is one dissemination process per peer,
+        // each with its own iterator (and thus a separate pool index per
         // iterator) with a `next()` method to retrieve the next entry in the
         // list. If it reaches the end of the list, it blocks until a new entry
         // is added. All iterators read concurrently from the pool.
@@ -111,7 +116,7 @@ module mempool {
     // Typically a user sends a (full) transaction to a node via an RPC
     // endpoint. Users are allowed to submit the same tx more than once and to
     // multiple nodes. This action is only enabled if the transaction is not in
-    // the pool. In the current mempool implementation we have the cache that
+    // the pool. In the actual mempool implementation we have the cache that
     // prevents this scenario.
     action receiveTxFromUser(node, tx, _tryAddTx) =
         node._tryAddTx(msgs, None, tx)
@@ -120,44 +125,38 @@ module mempool {
     // the next transaction from the iterator and disseminates it to all its
     // peers at once. 
     //
+    // Arguments:
+    // - _mkTargetNodes(node, tx) returns the set of peers to which node will
+    //   send tx.
+    // - _mkTxMsg(tx) is a wrapper function that returns the correct message
+    //   type.
+    //
     // The pool index must not exceed the pool's length. This models when the
     // iterator is at the end of the list and it's blocked waiting for a new
     // entry to be appended to the list.
     //
-    // In the current implementation, there is a separate goroutine for each
+    // In the actual implementation, there is a separate goroutine for each
     // peer, so not all txs are sent at the same time.
-    action disseminateNextTx(node, mkTargetNodes, mkTxMsg) = all {
+    action disseminateNextTx(node, _mkTargetNodes, _mkTxMsg) = all {
         // Check that the current index is within bounds. 
         require(node.PoolIndex() < node.Pool().length()),
         // Get from the pool the next transaction to disseminate.
         val tx = node.Pool()[node.PoolIndex()]
         all {
-            // Send tx to all peers except the senders of tx.
-            msgs' = node.send(msgs, mkTargetNodes(node, tx), mkTxMsg(tx)),
-            peers' = peers,
-            // Update pool index.
+            // Wrap tx in a message and send it to the target nodes.
+            msgs' = node.send(msgs, _mkTargetNodes(node, tx), _mkTxMsg(tx)),
+            // Increase pool index.
             state' = state.update(node, st => { poolIndex: st.poolIndex + 1, ...st }),
+            peers' = peers,
         }
     }
 
-    action joinSomeNode = all {
-        // Pick a node that is not connected to the network.
-        require(NodeIDs.exclude(nodesInNetwork).nonEmpty()),
-        nondet node = oneOf(NodeIDs.exclude(nodesInNetwork))
-        // Pick a non-empty set of nodes in the network to be the node's
-        // peers.
-        nondet peerSet = oneOf(nodesInNetwork.powerset().exclude(Set()))
-        node.join(peerSet),
-        state' = state,
-    }
-    
-    action disconnectSomeNode(nodes) = all {
-        // Pick a node to disconnect only if it is not the only node in the
-        // network.
-        require(size(nodes) > 1),
-        nondet node = oneOf(nodes) 
-        node.disconnect(msgs),
-        state' = state,
-    }
+    //--------------------------------------------------------------------------
+    // Properties
+    //--------------------------------------------------------------------------
 
+    // The pool does not have repeated entries.
+    val uniqueTxsInPool = 
+        NodeIDs.forall(node => size(node.Pool().listToSet()) == length(node.Pool()))
+    
 }

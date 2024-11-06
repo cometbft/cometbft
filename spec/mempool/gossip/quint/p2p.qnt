@@ -6,7 +6,7 @@ module p2p {
     type NodeID = str    
 
     //--------------------------------------------------------------------------
-    // Model parameters
+    // Parameters
     //--------------------------------------------------------------------------
     
     // The set of all nodes that participate in the network, even those that are
@@ -20,8 +20,8 @@ module p2p {
     //--------------------------------------------------------------------------
     // State
     //--------------------------------------------------------------------------
-    // The protocol is modelled as a state transition system. A state is defined
-    // by the values of the following variables.
+    // The protocols are modelled as a state transition systems. States are
+    // defined by the values of the variables.
 
     // Each node has a queue (a list) of incoming messages. Messages arrive in
     // order and are appended to the queue. Each message has a sender (a node
@@ -55,7 +55,7 @@ module p2p {
     // A node receives one of the incoming messages from a peer and handles it
     // according to its type.
     action receiveFromPeer(node, handleMessage) = all {
-        require(node.Msgs().listNonEmpty()),
+        require(length(node.Msgs()) > 0),
         val someMsg = node.Msgs().head()
         val sender = someMsg._1
         val msg = someMsg._2
@@ -73,17 +73,27 @@ module p2p {
     // Actions
     //--------------------------------------------------------------------------
 
-    // A node joins the network by connecting to a given set of peers. All its
+    // A node joins the network by connecting to a given set of peers. All those
     // peers add the new node to their list of peers.
-    action join(node: NodeID, newPeers: Set[NodeID]): bool = all {
+    action join(node, peerSet) = all {
         // The node must not be connected to the network.
         require(node.Peers().isEmpty()),
         peers' = peers
             // Assign to node the set of new peers.
-            .put(node, newPeers)
-            // Add node as a new peer to the nodes currently in the network.
-            .updateMultiple(nodesInNetwork, ps => ps.setAdd(node)),
+            .put(node, peerSet)
+            // Add node as a new peer to the set of connecting peers.
+            .updateMultiple(peerSet, ps => ps.setAdd(node)),
         msgs' = msgs,
+    }
+
+    action pickNodeAndJoin = all {
+        // Pick a node that is not connected to the network.
+        require(NodeIDs.exclude(nodesInNetwork).nonEmpty()),
+        nondet node = oneOf(NodeIDs.exclude(nodesInNetwork))
+        // Pick a non-empty set of nodes in the network to be the node's
+        // peers.
+        nondet peerSet = oneOf(nodesInNetwork.powerset().exclude(Set()))
+        node.join(peerSet),
     }
 
     // A node gets disconnected from the network. All its peers are immediately
@@ -100,5 +110,25 @@ module p2p {
             .updateMultiple(nodesInNetwork, ps => ps.except(node)),
         msgs' = updatedMsgs,
     }
+
+    action pickNodeAndDisconnect = all {
+        // Pick a node to disconnect only if it is not the only node in the
+        // network.
+        require(size(nodesInNetwork) > 1),
+        nondet node = oneOf(nodesInNetwork) 
+        node.disconnect(msgs),
+    }
+
+    //--------------------------------------------------------------------------
+    // Properties
+    //--------------------------------------------------------------------------
+
+    // Peer relationships are bidirectional or symmetrical: if node A has B as
+    // peer, then B has A as peer.
+    val peerBidirectional =
+        NodeIDs.forall(node => node.Peers().forall(peer => node.in(peer.Peers())))
+
+
+    // TODO: Network is not disconnected.
 
 }

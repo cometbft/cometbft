@@ -1,7 +1,7 @@
 // -*- mode: Bluespec; -*-
 
 /*******************************************************************************
-Flood is a simple *push* gossip protocol: every time a node receives a
+Flood is a simple _push_ gossip protocol: every time a node receives a
 transaction, it forwards (or pushes) the transaction to all of its peers, except
 to the peer(s) from which it received the transaction.
 *******************************************************************************/
@@ -15,7 +15,7 @@ module flood {
     //--------------------------------------------------------------------------
 
     // In this protocol, nodes communicates only one type of message, `TxMsg`,
-    // that includes a full transaction.
+    // carrying a full transaction as payload.
     type Message =
         | TxMsg(TX)
 
@@ -32,7 +32,7 @@ module flood {
     // Upon receiving a transaction, try to add it to the mempool. The sender is
     // optional, meaning that if there's no sender, the transaction comes from a
     // user. If tx comes from a peer, the node needs to update the list of
-    // incoming messages.
+    // incoming messages to remove the message from sender.
     //
     // A transaction that is in `pool`, must also be in `cache` (assuming an
     // infinite cache), but not necessarily the inverse. The reason a
@@ -41,6 +41,10 @@ module flood {
     // - the transaction became invalid after it got in `pool` and thus got
     //   evicted while revalidating it, or
     // - the transaction was committed to a block and got removed from `pool`.
+    //
+    // All these scenarios are not modeled here. Then `cache` and `pool` will
+    // always have the same content and one of the two is redundant in this
+    // spec.
     action tryAddTx(node, updatedMsgs, optionalSender, tx) = 
         if (not(node.Cache().contains(hash(tx))))
             node.tryAddFirstTimeTx(updatedMsgs, optionalSender, tx)
@@ -60,7 +64,7 @@ module flood {
     }
 
     // Upon receiving an already seen transaction, update tx's senders if tx is
-    // in pool (and thus it's valid), and update messages.
+    // in pool, and update messages.
     action tryAddDuplicateTx(node, updatedMsgs, optionalSender, tx) =  all {
         state' = state.update(node, st => { 
             senders: if (st.pool.includes(tx)) st.senders.addSender(tx, optionalSender) else st.senders, 
@@ -69,8 +73,10 @@ module flood {
         peers' = peers,
     }
 
-    // Return the target nodes for disseminating tx from node. In this case,
-    // Flood will send tx to all peers except the tx's senders.
+    //--------------------------------------------------------------------------
+    // Return the set of peers to which the node will send tx when disseminating
+    // the transaction. In this case, Flood will send tx to all peers except the
+    // tx's senders.
     def mkTargetNodes(node, tx) =
         val txSenders = node.Senders().mapGetDefault(hash(tx), Set())
         node.Peers().exclude(txSenders)
@@ -91,9 +97,17 @@ module flood {
         nondet node = oneOf(nodesInNetwork)
         node.receiveFromPeer(handleMessage),
 
-        // Nodes joining or leaving the network.
-        joinSomeNode,
-        disconnectSomeNode(nodesInNetwork),
+        // Nodes joining the network.
+        all {
+            pickNodeAndJoin,
+            state' = state,
+        },
+
+        // Nodes leaving the network.
+        all {
+            pickNodeAndDisconnect,
+            state' = state,
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -106,11 +120,11 @@ module flood {
 
     // The pools of all nodes contain a given tx.
     def txInAllPools(tx) =
-        NodeIDs.forall(n => state.get(n).pool.includes(tx))
+        NodeIDs.forall(n => n.Pool().includes(tx))
 
     // All available transactions are in the pool of all nodes.
     val allTxsGossipped =
-        NodeIDs.forall(node => node.Pool().listToSet().size() == Txs.size())
+        NodeIDs.forall(node => size(node.Pool().listToSet()) == size(Txs))
 
     // Gossip: The first time a node receives some transaction from a user, the
     // transaction eventually reaches all nodes (nodes may receive the

@@ -2,13 +2,15 @@
 
 ## v0.38.15
 
-This release supersedes `v0.38.14` which mistakenly updated the Go version to 
+*November 6, 2024*
+
+This release supersedes `v0.38.14` which mistakenly updated the Go version to
 `1.23`, introducing an unintended breaking change. It set the Go version back
 to `1.22.7`.
 
 The release includes the bug fixes, performance improvements, and importantly,
 the fix for the security vulnerability in the vote extensions (VE) validation
-logic that were part of `v0.38.14`. For more details, please refer to [ASA-2024-011](https://github.com/cometbft/cometbft/security/advisories/GHSA-p7mv-53f2-4cwj). 
+logic that were part of `v0.38.14`. For more details, please refer to [ASA-2024-011](https://github.com/cometbft/cometbft/security/advisories/GHSA-p7mv-53f2-4cwj).
 
 ## v0.38.14
 
@@ -842,4 +844,3 @@ Friendly reminder, we have a [bug bounty program](https://hackerone.com/cosmos).
 ## Previous changes
 
 For changes released before the creation of CometBFT, please refer to the Tendermint Core [CHANGELOG.md](https://github.com/tendermint/tendermint/blob/a9feb1c023e172b542c972605311af83b777855b/CHANGELOG.md).
-

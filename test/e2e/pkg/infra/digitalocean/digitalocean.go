@@ -21,6 +21,7 @@ type Provider struct {
 	infra.ProviderData
 }
 
+// Noop currently. Setup is performed externally to the e2e test tool.
 func (p *Provider) Setup() error {
 	for _, n := range p.Testnet.Nodes {
 		if n.ClockSkew != 0 {

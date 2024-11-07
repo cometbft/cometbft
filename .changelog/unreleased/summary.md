@@ -1,4 +1,4 @@
-*July 1, 2024*
+* November 12, 2024*
 
 This is a major release of CometBFT that includes several substantial changes
 that aim to reduce bandwidth consumption, enable modularity, improve
@@ -38,11 +38,16 @@ team, including:
     algorithm used by CometBFT for computing block times.
     When activated on a chain, it replaces the pre-existing BFT-time algorithm.
     See [spec](./spec/consensus/proposer-based-timestamp) doc for PBTS.
+8. Added support for [BLS12-381 curve](https://github.com/cometbft/cometbft/pull/2765) that can
+   be enabled via a build tag.
 
 None of these changes are state machine-breaking for CometBFT-based networks,
 but could be breaking for some users who depend on the Protobuf definitions type
-URLs. See the [upgrading guidelines](./UPGRADING.md) and specific changes below
-for more details.
+URLs.
+
+See the [upgrading guidelines](./UPGRADING.md) and the specific changes below for more details. In this release,
+we are also introducing a migration guide, please refer to the
+[Upgrading from CometBFT v0.38.x to v1.0](./docs/guides/upgrades/v0.38-to-v1.0.md) document
 
 **NB: This version is still a release candidate, which means that
 API-breaking changes, although very unlikely, might still be introduced

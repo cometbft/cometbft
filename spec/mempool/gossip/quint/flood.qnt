@@ -74,12 +74,13 @@ module flood {
     }
 
     //--------------------------------------------------------------------------
-    // Return the set of peers to which the node will send tx when disseminating
-    // the transaction. In this case, Flood will send tx to all peers except the
-    // tx's senders.
+    // mkTargetNodes is used by the transaction dissemination process to define
+    // the set of peers to which the node will send tx.
+    //
+    // For Flood, we want to send tx to all peers except tx's senders.
     def mkTargetNodes(node, tx) =
-        val txSenders = node.Senders().mapGetDefault(hash(tx), Set())
-        node.Peers().exclude(txSenders)
+        val txSenders = node.Senders().mapGetDefault(hash(tx), List())
+        node.Peers().exclude(txSenders.listToSet())
 
     //--------------------------------------------------------------------------
     // All possible state transitions.

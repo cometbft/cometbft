@@ -65,14 +65,17 @@ module mempool {
         poolIndex: int,
 
         // Each transaction in the pool has a set of peers from which the node
-        // received the transaction. Note that a transaction may be in the cache
-        // but not in the pool. In that case, the transaction won't have
-        // senders.
+        // received the transaction. 
         //
-        // Senders are only needed for disseminating (valid) transactions that
-        // are in the mempool. That is why we remove the senders when the
-        // transaction is removed from the mempool (not modelled here).
-        senders: TxID -> Set[NodeID]
+        // We define as a list instead of a set because the DOG protocol needs
+        // to know who was the first sender of a transaction.
+        //
+        // Note that a transaction may be in the cache but not in the pool. In
+        // that case, the transaction won't have senders. Senders are only
+        // needed for disseminating (valid) transactions that are in the
+        // mempool. That is why we remove the senders when the transaction is
+        // removed from the mempool (not modelled here).
+        senders: TxID -> List[NodeID]
     }
 
     // The state of all nodes.
@@ -88,7 +91,10 @@ module mempool {
 
     // If there's a sender, add it to tx's set of senders.
     pure def addSender(txSenders, tx, optionalSender) = 
-        txSenders.update(hash(tx), ss => ss.union(optionalSender.optionToSet()))
+        match optionalSender {
+        | Some(sender) => txSenders.update(hash(tx), ss => ss.append(sender))
+        | None => txSenders
+        }
 
     // Auxiliary definitions
     def Cache(node) = state.get(node).cache

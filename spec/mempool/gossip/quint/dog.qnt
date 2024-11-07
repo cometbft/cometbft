@@ -241,11 +241,21 @@ module dog {
     // Upon receiving HaveTxMsg(txID), disable the route (sender(txID) ->
     // sender). This will decrease the traffic to the sender.
     //
-    // With this rule, we don't want to cut all routes from sender to node, only
-    // those that come from tx's original sender.
+    // We don't want to cut all routes from sender to node, only the route that
+    // has as source tx's original sender.
     action handleHaveTxMessage(node, updatedMsgs, sender, txID) = all {
-        val txSenders = node.Senders().mapGetDefault(txID, Set()) // in most cases, a tx has zero or one sender
-        disabledRoutes' = disabledRoutes.addRoute(node, txSenders.setToList(), sender), // TODO: check setToList
+        disabledRoutes' = 
+            val txSenders = node.Senders().mapGetDefault(txID, List())
+            if (length(txSenders) > 0)
+                // Since we need to disable only one route, we need to choose
+                // one of tx's senders. We choose the first sender in the list,
+                // which is the first peer that sent the transaction to `node`.
+                // The other senders in the list also sent tx but at a later
+                // time, meaning that routes coming from those senders are
+                // probably disabled, and most of the traffic comes from the
+                // first one.
+                disabledRoutes.addRoute(node, txSenders[0], sender)
+            else disabledRoutes,
         msgs' = updatedMsgs,
         peers' = peers,
         state' = state,
@@ -266,13 +276,17 @@ module dog {
 
     //--------------------------------------------------------------------------
     // Return the set of peers to which the node will send tx when disseminating
-    // the transaction. In this case, it's all of the node's peers except if
-    // peer is `sender(tx)` (as in Flood) or if the route `sender(tx) -> peer`
-    // is disabled.
+    // transactions. As in Flood, DOG will filter out tx's senders.
+    // Additionally, DOG will not send tx to peer if the route `sender(tx) ->
+    // peer` is disabled.
     def mkTargetNodes(node, tx) =
-        val txSenders = node.Senders().mapGetDefault(hash(tx), Set())
-        val disabledTargets = node.DisabledRoutes().filter(r => txSenders.contains(r._1)).map(r => r._2)
-        node.Peers().exclude(txSenders).exclude(disabledTargets)
+        val txSenders = node.Senders().mapGetDefault(hash(tx), List())
+        val disabledTargets = node.DisabledRoutes()
+            // Keep only routes whose source is one of tx's senders.
+            .filter(r => r._1.in(txSenders.listToSet()))
+            // Keep routes' targets.
+            .map(r => r._2)
+        node.Peers().exclude(txSenders.listToSet()).exclude(disabledTargets)
 
     //--------------------------------------------------------------------------
     // When a node disconnects from the network, its peers signal their own

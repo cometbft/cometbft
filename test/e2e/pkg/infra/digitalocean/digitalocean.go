@@ -2,8 +2,8 @@ package digitalocean
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -54,11 +54,6 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	return execAnsible(ctx, p.Testnet.Dir, playbookFile, nodeIPs)
 }
 
-// Currently unsupported.
-func (Provider) SetLatency(_ context.Context, _ *e2e.Node) error {
-	return errors.New("SetLatency() currently unsupported for Digital Ocean")
-}
-
 func (p Provider) StopTestnet(ctx context.Context) error {
 	nodeIPs := make([]string, len(p.Testnet.Nodes))
 	for i, n := range p.Testnet.Nodes {
@@ -94,6 +89,10 @@ func (p Provider) Reconnect(ctx context.Context, _ string, ip string) error {
 func (Provider) CheckUpgraded(_ context.Context, node *e2e.Node) (string, bool, error) {
 	// Upgrade not supported yet by DO provider
 	return node.Name, false, nil
+}
+
+func (Provider) NodeIP(node *e2e.Node) net.IP {
+	return node.ExternalIP
 }
 
 func (p Provider) writePlaybook(yaml, playbook string) error {

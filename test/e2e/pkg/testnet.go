@@ -42,7 +42,6 @@ type (
 	Mode         string
 	Protocol     string
 	Perturbation string
-	ZoneID       string
 )
 
 const (
@@ -81,6 +80,9 @@ type Testnet struct {
 	Validators       map[*Node]int64
 	ValidatorUpdates map[int64]map[*Node]int64
 	Nodes            []*Node
+
+	// Latency Emulation is enabled when all the nodes have a zone assigned.
+	LatencyEmulationEnabled bool
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -106,7 +108,7 @@ type Node struct {
 	Perturbations           []Perturbation
 	Prometheus              bool
 	PrometheusProxyPort     uint32
-	Zone                    ZoneID
+	Zone                    string
 }
 
 // LoadTestnet loads a testnet from a manifest file. The testnet files are
@@ -168,6 +170,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		testnet.LoadTxSizeBytes = defaultTxSizeBytes
 	}
 
+	testnet.LatencyEmulationEnabled = true
+
 	for _, name := range sortNodeNames(manifest) {
 		nodeManifest := manifest.NodesMap[name]
 		ind, ok := ifd.Instances[name]
@@ -197,7 +201,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			PersistInterval:         1,
 			Perturbations:           []Perturbation{},
 			Prometheus:              testnet.Prometheus,
-			Zone:                    ZoneID(nodeManifest.ZoneStr),
+			Zone:                    nodeManifest.Zone,
 		}
 		if node.Version == "" {
 			node.Version = localVersion
@@ -229,11 +233,15 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		for _, p := range nodeManifest.Perturb {
 			node.Perturbations = append(node.Perturbations, Perturbation(p))
 		}
-		if nodeManifest.ZoneStr != "" {
-			node.Zone = ZoneID(nodeManifest.ZoneStr)
+		if nodeManifest.Zone != "" {
+			node.Zone = nodeManifest.Zone
 		} else if testnet.DefaultZone != "" {
-			node.Zone = ZoneID(testnet.DefaultZone)
+			node.Zone = testnet.DefaultZone
 		}
+		if node.Zone == "" {
+			testnet.LatencyEmulationEnabled = false
+		}
+
 		// Configs are applied in order, so a local Config in Node
 		// should override a global config in Testnet.
 		if len(manifest.Config) > 0 {
@@ -406,34 +414,32 @@ func (t Testnet) Validate() error {
 	return nil
 }
 
-func (Testnet) validateZones(nodes []*Node) error {
-	zoneMatrix, err := loadZoneLatenciesMatrix()
+func (t *Testnet) validateZones(nodes []*Node) error {
+	allZones, _, err := LoadZoneLatenciesMatrix()
 	if err != nil {
 		return err
-	}
-
-	// Get list of zone ids in matrix.
-	zones := make([]ZoneID, 0, len(zoneMatrix))
-	for zone := range zoneMatrix {
-		zones = append(zones, zone)
 	}
 
 	// Check that the zone ids of all nodes are valid when the matrix file exists.
 	nodesWithoutZone := make([]string, 0, len(nodes))
 	for _, node := range nodes {
-		if !node.ZoneIsSet() {
+		if node.Zone == "" {
 			nodesWithoutZone = append(nodesWithoutZone, node.Name)
 			continue
 		}
-		if !slices.Contains(zones, node.Zone) {
+		if !slices.Contains(allZones, node.Zone) {
 			return fmt.Errorf("invalid zone %s for node %s, not present in zone-latencies matrix",
-				string(node.Zone), node.Name)
+				node.Zone, node.Name)
 		}
 	}
 
 	// Either all nodes have a zone or none have.
 	if len(nodesWithoutZone) > 0 && len(nodesWithoutZone) != len(nodes) {
 		return fmt.Errorf("the following nodes do not have a zone assigned (while other nodes have): %v", strings.Join(nodesWithoutZone, ", "))
+	}
+
+	if len(nodesWithoutZone) > 0 && t.LatencyEmulationEnabled {
+		return fmt.Errorf("latency emulation is enabled but the following nodes do not have a zone assigned: %v", strings.Join(nodesWithoutZone, ", "))
 	}
 
 	return nil
@@ -646,11 +652,6 @@ func (n Node) Stateless() bool {
 	return n.Mode == ModeLight || n.Mode == ModeSeed
 }
 
-// ZoneIsSet returns if the node has a zone set for latency emulation.
-func (n Node) ZoneIsSet() bool {
-	return len(n.Zone) > 0
-}
-
 // keyGenerator generates pseudorandom Ed25519 keys based on a seed.
 type keyGenerator struct {
 	random *rand.Rand
@@ -742,28 +743,32 @@ func (g *ipGenerator) Next() net.IP {
 	return ip
 }
 
-//go:embed latency/aws-latencies.csv
+//go:embed files/aws-latencies.csv
 var awsLatenciesMatrixCsvContent string
 
-func loadZoneLatenciesMatrix() (map[ZoneID][]uint32, error) {
+// LoadZoneLatenciesMatrix parses the file containing the matrix of latencies
+// from each zone to another one. It returns the list of all zone IDs, and a map
+// from each zone ID to the latencies to each other zone.
+func LoadZoneLatenciesMatrix() ([]string, map[string][]uint32, error) {
 	records, err := parseCsv(awsLatenciesMatrixCsvContent)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	records = records[1:] // Ignore first headers line
-	matrix := make(map[ZoneID][]uint32, len(records))
+	zones := records[0][1:] // Discard first element in header (value "from/to")
+	records = records[1:]   // Discard header
+	matrix := make(map[string][]uint32, len(records))
 	for _, r := range records {
-		zoneID := ZoneID(r[0])
+		zoneID := r[0]
 		matrix[zoneID] = make([]uint32, len(r)-1)
 		for i, l := range r[1:] {
 			lat, err := strconv.ParseUint(l, 10, 32)
 			if err != nil {
-				return nil, ErrInvalidZoneID{l, err}
+				return nil, nil, ErrInvalidZoneID{l, err}
 			}
 			matrix[zoneID][i] = uint32(lat)
 		}
 	}
-	return matrix, nil
+	return zones, matrix, nil
 }
 
 type ErrInvalidZoneID struct {

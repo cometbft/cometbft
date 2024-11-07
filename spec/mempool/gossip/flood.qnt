@@ -73,11 +73,11 @@ module flood {
     }
 
     //--------------------------------------------------------------------------
-    // mkTargetNodes define the set of peers to whom `node` will send `tx`. It
-    // is passed as an argument to the transaction dissemination function.
+    // `mkTargetNodes` is passed as an argument to the generic transaction
+    // dissemination function. It defines the set of peers to whom `node` will
+    // send `tx`.
     //
-    // This protocol sends `tx` to all peers except those who previously sent
-    // it.
+    // Flood sends `tx` to all peers except those who previously sent it.
     def mkTargetNodes(node, tx) =
         val txSenders = node.Senders().mapGetDefault(hash(tx), List())
         node.Peers().exclude(txSenders.listToSet())

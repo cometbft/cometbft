@@ -5,15 +5,17 @@
 /*******************************************************************************
 Dynamic Optimal Graph (DOG) gossip protocol.
 
-The DOG protocol is built on top of the Flood protocol. All types, messages, and
-data structures in Flood are present in this specification.
+The DOG protocol is built on top of the Flood protocol. Types, messages, and
+data structures in Flood are used in this specification. In priciple, it is
+possible to enable or disable DOG in nodes running Flood, and nodes running the
+two protocols can co-exist in the network, though not at the best performance.
 
 Briefly, what the protocol does is the following. If node A receives from B a
 transaction that it already has, this means that there must exist a cycle in the
 network topology, so A tells B to stop sending transactions. Conversely, if A
 does not receive enough transactions, it will ask its peers to send more. For
 that, the protocol adds two new messages to Flood: 
-- HaveTxMsg(TxID) for cutting cycles, and 
+- HaveTxMsg(TxID) for cutting cycles in the network, and 
 - ResetMsg for dynamic re-routing when a node disconnects.
 *******************************************************************************/
 module dog {
@@ -26,20 +28,24 @@ module dog {
     //--------------------------------------------------------------------------
 
     type Message =
-        // A message carrying a full transaction as payload (same as in Flood).
+        // `TxMsg` messages carry a full transaction (same as in Flood).
         | TxMsg(TX)
-        // HaveTxMsg messages carry a transaction hash, typically much smaller
+        // `HaveTxMsg` messages carry a transaction hash, typically much smaller
         // than full transactions. A node sends this message to signal that it
         // has the transaction, so that the receiver must cut some route that is
         // forming a cycle in the network topology. The goal for the sender is
         // to receive less transactions.
         | HaveTxMsg(TxID)
-        // A node sends a Reset message to signal that it is not receiving
-        // enough transactions, so that the receiver must re-enable some route
-        // to the sender if possible. This message is usually sent when a peer
-        // is disconnected or sending less transactions than before, so that the
+        // `ResetMsg` is sent by a node to signal that is not receiving enough
+        // transactions, so that the receiver must re-enable some route to the
+        // sender if possible. This message is usually sent when a peer is
+        // disconnected or sending less transactions than before, so that the
         // sender receives more transactions.
         | ResetMsg
+
+    // In the real implementation, `TxMsg` is sent via a P2P mempool data
+    // channel, and `HaveTxMsg` and `ResetMsg` via the P2P mempool control
+    // channel.
 
     //--------------------------------------------------------------------------
     // Routing
@@ -78,9 +84,9 @@ module dog {
     // The Redundancy Controller is a closed-loop mechanism to auto-adjust the
     // level of redundant transactions that a node receives. A node configures a
     // target redundancy level that it aims to maintain and how often it should
-    // make adjustments. The closed-loop controller periodically computes the
-    // redundancy level and tries to adjust it to keep it within pre-defined
-    // accepted bounds (as defined below).
+    // make adjustments. The controller periodically computes the redundancy
+    // level and tries to adjust it in order to keep it within certain
+    // pre-defined accepted bounds (as defined below).
 
     // A Redundancy Controller needs the following data structures.
     type RedundancyControlState = {
@@ -97,12 +103,11 @@ module dog {
     var rc: NodeID -> RedundancyControlState
 
     // The redundancy level is defined as the proportion of duplicate
-    // transactions over the number of transactions received for the first time.
-    // For example, a redundancy of 1 means that for each transaction that the
-    // node has received for the first time, the node has received one
-    // transaction that is a duplicate (not necessarily of the same first-time
-    // transaction).
-    pure def redundancyLevel(_rc) = _rc.duplicateTxs / _rc.firstTimeTxs
+    // transactions over first-time transactions. For example, a redundancy of 1
+    // means that for each transaction that the node has received for the first
+    // time, the node has received one transaction that is a duplicate (not
+    // necessarily a duplicate of the first-time transaction).
+    pure def redundancy(_rc) = _rc.duplicateTxs / _rc.firstTimeTxs
 
     // adjustRedundancy returns an updated RC state and whether to reply with a
     // Reset message.
@@ -113,18 +118,18 @@ module dog {
     // received. If the level is too high, it will try to decrease it by
     // allowing sending HaveTx messages, so that the number of transactions
     // received decline. Otherwise it does nothing.
-
-    // On every adjustment, the counters are reset, so that redundancy values
-    // are measured within the adjustment period.
+    //
+    // On every adjustment, the counters are reset. This means that redundancy
+    // is computed for the period elapsed since the last adjustment.
     //
     // When the target redundancy is 0, the lower and upper bounds are also
     // equal to 0. Then every `TxsPerAdjustment` received transactions
     // `adjustRedundancy` will unblock `HaveTx` but it will not send `Reset`
     // messages.
     pure def adjustRedundancy(_rc) = 
-        if (_rc.redundancyLevel() < redundancyLowerBound)
+        if (_rc.redundancy() < redundancyLowerBound)
             (_rc.resetCounters(), true)
-        else if (_rc.redundancyLevel() >= redundancyUpperBound)
+        else if (_rc.redundancy() >= redundancyUpperBound)
             (_rc.resetCounters().blockHaveTx(), false)
         else 
             (_rc.resetCounters(), false)
@@ -141,13 +146,15 @@ module dog {
     // Parameters/Configuration
     //--------------------------------------------------------------------------
 
-    // The redundancy level that the protocol aims to maintain, within the
-    // boundaries defined by TargetRedundancyDeltaPercent.
+    // `TargetRedundancy` is a threshold level that the protocol aims to
+    // maintain, within the boundaries defined by
+    // `TargetRedundancyDeltaPercent`.
     //
-    // When TargetRedundancy is 0, the Redundancy Control mechanism is partially
-    // disabled (see `adjustRedundancy` below). This makes the protocol not
-    // resistant to Byzantine behaviour, so in practice it is not recommended to
-    // set it to 0.
+    // When `TargetRedundancy` is 0, the Redundancy Control mechanism is
+    // partially disabled: `adjustRedundancy` will be able only to block HaveTx
+    // messages but not to send Reset messages. This makes the protocol not
+    // resistant to malicious behaviour. Therefore, in practice, it is not
+    // recommended to set it to 0 in Byzantine networks.
     //
     // It should be a real type, but reals are not currently supported by Quint.
     const TargetRedundancy: int
@@ -165,6 +172,10 @@ module dog {
     // wait for the node to receive before it calls `adjustRedundancy`.
     const TxsPerAdjustment: int
 
+    // Whether is it time to make an adjustment to the redundancy level.
+    pure def adjustNow(rc) = 
+        rc.firstTimeTxs == TxsPerAdjustment / rc.redundancy()
+
     // Constants
     val _delta = TargetRedundancy * TargetRedundancyDeltaPercent / 100
     val redundancyLowerBound = TargetRedundancy - _delta
@@ -181,6 +192,7 @@ module dog {
         rc' = NodeIDs.mapBy(_ => initialRCState)
     }
 
+    // How to handle messages from peers.
     action handleMessage(node, _msgs, sender, msg) =
         match msg {
         | TxMsg(tx) => node.tryAddTx(_msgs, Some(sender), tx)
@@ -202,61 +214,55 @@ module dog {
     // `rc.firstTimeTxs`, and every `TxsPerAdjustment` transactions received for
     // the first time, call `adjustRedundancy()`.
     action tryAddFirstTimeTx(node, _msgs, optionalSender, tx) = 
-        val rc1 = node.RC().increaseFirstTimeTxs()
-        val adjustResult = 
-            if (rc1.firstTimeTxs == TxsPerAdjustment) 
-                rc1.adjustRedundancy() 
-            else (rc1, false)
-        val rc2 = adjustResult._1
-        val sendReset = adjustResult._2
+        val _rc1 = node.RC().increaseFirstTimeTxs()
+        val _result = if (_rc1.adjustNow()) _rc1.adjustRedundancy() else (_rc1, false)
+        val _rc2 = _result._1
+        val sendReset = _result._2
         all {
-            val _msgs1 = 
+            val updatedMsgs = 
                 val targets = optionalSender.optionToSet() // may be empty
-                if (sendReset) 
-                    node.send(_msgs, targets, ResetMsg)
-                else _msgs
-            node.F::tryAddFirstTimeTx(_msgs1, optionalSender, tx),
-            rc' = rc.put(node, rc2),
+                if (sendReset) node.send(_msgs, targets, ResetMsg) else _msgs
+            node.F::tryAddFirstTimeTx(updatedMsgs, optionalSender, tx),
+            rc' = rc.put(node, _rc2),
             dr' = dr,
         }
 
-    // Process a received duplicate transaction tx: update tx's senders if tx is
-    // in pool (and thus it's valid), and update the list of incoming messages
-    // (the same as in Flood). Additionally, increase `duplicateTxs` and reply a
-    // `HaveTx` message if the RC mechanism is not blocking it and there's a
-    // sender.
+    // Process a received duplicate transaction `tx`: increase `duplicateTxs`
+    // and reply a `HaveTx` message if the RC mechanism is not blocking it (and
+    // there's a sender). As in Flood, update the list of senders if `tx` is in
+    // `pool` (and thus it's valid), and update the list of incoming messages. 
     action processDuplicateTx(node, _msgs, optionalSender, tx) =
         // Reply HaveTxMsg if tx comes from a peer.
-        val _msgs1 = 
+        val updatedMsgs = 
             val targets = optionalSender.optionToSet() // may be empty
             if (not(node.RC().isHaveTxBlocked))
                 node.send(_msgs, targets, HaveTxMsg(hash(tx)))
             else _msgs
         all {
-            node.F::processDuplicateTx(_msgs1, optionalSender, tx),
+            node.F::processDuplicateTx(updatedMsgs, optionalSender, tx),
             rc' = rc.update(node, increaseDuplicateTxs),
             dr' = dr,
         }
 
-    // Upon receiving HaveTxMsg(txID), disable the route (sender(txID) ->
-    // sender). This will decrease the traffic to the sender.
+    // Upon receiving `HaveTxMsg(txID)`, disable the route `sender(txID) ->
+    // sender`. This will decrease the traffic to the sender.
     //
     // We don't want to cut all routes from sender to node, only the route that
     // has as source tx's original sender.
-    action handleHaveTxMessage(node, updatedMsgs, sender, txID) = all {
+    action handleHaveTxMessage(node, _msgs, sender, txID) = all {
         dr' = 
             val txSenders = node.Senders().mapGetDefault(txID, List())
             if (length(txSenders) > 0)
-                // Since we need to disable only one route, we need to choose
+                // Since we want to disable only one route, we need to choose
                 // one of tx's senders. We choose the first sender in the list,
                 // which is the first peer that sent the transaction to `node`.
-                // The other senders in the list also sent tx but at a later
-                // time, meaning that routes coming from those senders are
-                // probably disabled, and most of the traffic comes from the
-                // first one.
+                // The other senders in the list also sent the transaction but
+                // at a later time, meaning that routes coming from those
+                // senders are probably disabled, and most of the traffic comes
+                // from the first one.
                 dr.disableRoute(node, txSenders[0], sender)
             else dr,
-        msgs' = updatedMsgs,
+        msgs' = _msgs,
         peers' = peers,
         state' = state,
         rc' = rc,
@@ -266,29 +272,14 @@ module dog {
     // target. This will allow traffic to flow again to the sender, and other
     // nodes will dynamically adapt to the new traffic, closing routes when
     // needed.
-    action handleResetMessage(node, updatedMsgs, sender) = all {
+    action handleResetMessage(node, _msgs, sender) = all {
         dr' = dr.update(node, drs => drs.enableRoute(sender)),
-        msgs' = updatedMsgs,
+        msgs' = _msgs,
         peers' = peers,
         state' = state,
         rc' = rc,
     }
 
-    //--------------------------------------------------------------------------
-    // Return the set of peers to which the node will send tx when disseminating
-    // transactions. As in Flood, DOG will filter out tx's senders.
-    // Additionally, DOG will not send tx to peer if the route `sender(tx) ->
-    // peer` is disabled.
-    def mkTargetNodes(node, tx) =
-        val txSenders = node.Senders().mapGetDefault(hash(tx), List())
-        val disabledTargets = node.DisabledRoutes()
-            // Keep only routes whose source is one of tx's senders.
-            .filter(r => r._1.in(txSenders.listToSet()))
-            // Keep routes' targets.
-            .map(r => r._2)
-        node.Peers().exclude(txSenders.listToSet()).exclude(disabledTargets)
-
-    //--------------------------------------------------------------------------
     // When a node disconnects from the network, its peers signal their own
     // peers that their situation has changed, that their routing tables should
     // be reset. In this way, data via those nodes can be re-routed if needed.
@@ -307,9 +298,17 @@ module dog {
     }
 
     //--------------------------------------------------------------------------
-    // TODO: a malicious node sends the same tx to one or more of its peers,
-    // maybe in coordination with another malicious node.
-    // action gossipDuplicate(node) = ...
+    // Transaction dissemination: As in Flood, DOG will filter out the
+    // transaction's senders. Additionally, DOG will not send `tx` to a peer if
+    // the route `sender(tx) -> peer` is disabled.
+    def mkTargetNodes(node, tx) =
+        val txSenders = node.Senders().mapGetDefault(hash(tx), List())
+        val disabledTargets = node.DisabledRoutes()
+            // Keep only routes whose source is one of tx's senders.
+            .filter(r => r._1.in(txSenders.listToSet()))
+            // Keep routes' targets.
+            .map(r => r._2)
+        node.Peers().exclude(txSenders.listToSet()).exclude(disabledTargets)
 
     //--------------------------------------------------------------------------
     // All possible state transitions in the protocol.

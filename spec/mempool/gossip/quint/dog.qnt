@@ -48,47 +48,46 @@ module dog {
     // messages sent to their peers.
 
     // A route is a tuple `(source, target)`. We also write it as `source ->
-    // target`.
+    // target`. Routes are defined within a node, and source and target are
+    // peers connected to that node.
     type Route = (NodeID, NodeID)
 
-    // The set of disabled routes on each node. By default all routes are
-    // enabled, so the set is empty. A node A will send TxMsg(tx) to a peer B if
-    // the route `sender(tx) -> B` is enabled, that is, the route is not in this
-    // set.
+    // The set of disabled routes per node. By default, a node has all of its
+    // routes enabled, so its set of disabled routes is empty. A node A will
+    // send `TxMsg(tx)` to peer B if the route `sender(tx) -> B` is enabled,
+    // that is, the route is not in this set.
     var disabledRoutes: NodeID -> Set[Route]
 
-    // Disable the route `sender(tx) -> sender` by adding it to the list, where
-    // sender(tx) is the first peer from which node received tx.
-    //
-    // TODO: fix definition: why only disable route from first sender?
-    //      does DOG need all the senders, or just the first one?
-    pure def addRoute(_disabledRoutes, node, txSenders, sender) =
-        if (length(txSenders) > 0)
-            _disabledRoutes.update(node, rs => rs.setAdd((txSenders[0], sender))) // TODO: check
-        else _disabledRoutes 
+    // Disable the route `source -> target` by adding it to a set of disabled
+    // routes.
+    pure def addRoute(_disabledRoutes, node, source, target) =
+        _disabledRoutes.update(node, routes => routes.setAdd((source, target)))
 
     // Remove any route that has peer as source or target. 
-    pure def removeRoute(routes: Set[Route], peer: NodeID): Set[Route] = 
-        routes.filter(route => not(peer.isSourceOrTargetIn(route)))
-
-    // Returns whether the node is a source or target in the given route.
-    pure def isSourceOrTargetIn(node, route) =
-        node == route._1 or node == route._2
+    pure def removeRoute(_disabledRoutes, peer) = 
+        _disabledRoutes.filter(route => not(peer.isSourceOrTargetIn(route)))
 
     // Auxiliary definitions
     def DisabledRoutes(node) = disabledRoutes.get(node)
+    pure def isSourceOrTargetIn(node, route) = node == route._1 or node == route._2
 
     //--------------------------------------------------------------------------
-    // Redundancy Control (RC) mechanism
+    // Redundancy Controller (RC)
     //--------------------------------------------------------------------------
-    // The protocol has a mechanism to auto-adjust the level of transaction
-    // redundancy in each node.
+    // The Redundancy Controller is a closed-loop mechanism to auto-adjust the
+    // level of redundant transactions tha each node receives. A node configures
+    // a target redundancy level that it aims to maintain (within certain
+    // boundaries). The closed-loop controller periodically measures the
+    // redundancy level and either send messages to its peers or abstain from
+    // sending messages to try to decrease or increase the number of
+    // transactions received.
     //
     // Definition: A transaction is received *for the first time* by a node,
     // when the node does not have the transaction in its cache. When a node
     // receives a transaction more than once, it is called a *duplicate*
     // transaction.
 
+    // A Redundancy Controller needs the following data structures.
     type RedundancyControlState = {
         // Counter of transactions received for the first time by a node.
         firstTimeTxs: int,
@@ -99,46 +98,48 @@ module dog {
         isHaveTxBlocked: bool,
     }
 
-    // Each node keeps a state of RC variables.
-    var redundancyControl: NodeID -> RedundancyControlState
+    // Each node keeps an RC state to control its redundancy level.
+    var rc: NodeID -> RedundancyControlState
 
     // The redundancy level is defined as the proportion of duplicate
     // transactions over the number of transactions received for the first time.
     // For example, a redundancy of 1 means that for each transaction that the
     // node has received for the first time, the node received one transaction
     // that is duplicate (not necessarily of the same transaction).
-    pure def redundancyLevel(rc) = rc.duplicateTxs / rc.firstTimeTxs
+    pure def redundancyLevel(_rc) = _rc.duplicateTxs / _rc.firstTimeTxs
 
     // adjustRedundancy returns an updated RC state and whether to reply with a
     // Reset message.
     //
-    // Periodically, the node checks its redundancy level. If the level is
-    // within acceptable bounds (see below), it does nothing. Otherwise it will
-    // either send Reset messages to peers to receive more transactions and thus
-    // increase its redundancy level, or it will abstain from sending HaveTx to
-    // peers, thus...
+    // Periodically, the node measures the redundancy level. If it is within
+    // acceptable bounds (as defined below), it does nothing. Otherwise it will
+    // either send Reset messages to peers in order to receive more transactions
+    // and thus increase its redundancy level, or it will allow sending HaveTx
+    // messages to peers so that they disable routes, thus decreasing the
+    // traffic to the node.
     //
-    // On every adjustment, the counters are reset.
+    // On every adjustment, the counters are reset, so that redundancy values
+    // are measured within the adjustment period.
     //
-    // When `TargetRedundancy` is 0, the lower and upper bounds are also
+    // When the target redundancy is 0, the lower and upper bounds are also
     // equal to 0. Then every `TxsPerAdjustment` received transactions
     // `adjustRedundancy` will unblock `HaveTx` but it will not send `Reset`
     // messages.
-    pure def adjustRedundancy(rc) = 
-        if (rc.redundancyLevel() < redundancyLowerBound)
-            (rc.resetCounters(), true)
-        else if (rc.redundancyLevel() >= redundancyUpperBound)
-            (rc.resetCounters().blockHaveTx(), false)
+    pure def adjustRedundancy(_rc) = 
+        if (_rc.redundancyLevel() < redundancyLowerBound)
+            (_rc.resetCounters(), true)
+        else if (_rc.redundancyLevel() >= redundancyUpperBound)
+            (_rc.resetCounters().blockHaveTx(), false)
         else 
-            (rc.resetCounters(), false)
+            (_rc.resetCounters(), false)
 
     // Auxiliary definitions
-    def RC(node) = redundancyControl.get(node)
+    def RC(node) = rc.get(node)
     val initialRCState = { firstTimeTxs: 0, duplicateTxs: 0, isHaveTxBlocked: false }
-    pure def increaseFirstTimeTxs(rc) = { firstTimeTxs: rc.firstTimeTxs + 1, ...rc }
-    pure def increaseDuplicateTxs(rc) = { duplicateTxs: rc.duplicateTxs + 1, ...rc }
-    pure def resetCounters(rc) = { firstTimeTxs: 0, duplicateTxs: 0, ...rc }
-    pure def blockHaveTx(rc) = { isHaveTxBlocked: false, ...rc }
+    pure def increaseFirstTimeTxs(_rc) = { firstTimeTxs: _rc.firstTimeTxs + 1, ..._rc }
+    pure def increaseDuplicateTxs(_rc) = { duplicateTxs: _rc.duplicateTxs + 1, ..._rc }
+    pure def resetCounters(_rc) = { firstTimeTxs: 0, duplicateTxs: 0, ..._rc }
+    pure def blockHaveTx(_rc) = { isHaveTxBlocked: false, ..._rc }
     
     //--------------------------------------------------------------------------
     // Parameters/Configuration
@@ -179,7 +180,7 @@ module dog {
     action D_init = all {
         F::init,
         disabledRoutes' = NodeIDs.mapBy(_ => Set()),
-        redundancyControl' = NodeIDs.mapBy(_ => initialRCState)
+        rc' = NodeIDs.mapBy(_ => initialRCState)
     }
 
     action handleMessage(node, updatedMsgs, sender, msg) =
@@ -216,7 +217,7 @@ module dog {
                     node.send(updatedMsgs, targets, ResetMsg)
                 else updatedMsgs
             node.F::tryAddFirstTimeTx(updatedMsgs1, optionalSender, tx),
-            redundancyControl' = redundancyControl.put(node, rc2),
+            rc' = rc.put(node, rc2),
             disabledRoutes' = disabledRoutes,
         }
 
@@ -234,7 +235,7 @@ module dog {
             else updatedMsgs
         all {
             node.F::tryAddDuplicateTx(updatedMsgs1, optionalSender, tx),
-            redundancyControl' = redundancyControl.update(node, increaseDuplicateTxs),
+            rc' = rc.update(node, increaseDuplicateTxs),
             disabledRoutes' = disabledRoutes,
         }
 
@@ -259,7 +260,7 @@ module dog {
         msgs' = updatedMsgs,
         peers' = peers,
         state' = state,
-        redundancyControl' = redundancyControl,
+        rc' = rc,
     }
 
     // Upon receiving ResetMsg, remove any route that has sender as source or
@@ -271,7 +272,7 @@ module dog {
         msgs' = updatedMsgs,
         peers' = peers,
         state' = state,
-        redundancyControl' = redundancyControl,
+        rc' = rc,
     }
 
     //--------------------------------------------------------------------------
@@ -302,7 +303,7 @@ module dog {
         // The node's peers remove node from their routing tables.
         disabledRoutes' = disabledRoutes.updateMultiple(node.Peers(), drs => drs.removeRoute(node)),
         state' = state,
-        redundancyControl' = redundancyControl,
+        rc' = rc,
     }
 
     //--------------------------------------------------------------------------
@@ -318,7 +319,7 @@ module dog {
         all {
             node.disseminateNextTx(mkTargetNodes, TxMsg),
             disabledRoutes' = disabledRoutes,
-            redundancyControl' = redundancyControl,
+            rc' = rc,
         },
 
         // Handling received transactions from users.
@@ -335,7 +336,7 @@ module dog {
             pickNodeAndJoin,
             state' = state,
             disabledRoutes' = disabledRoutes,
-            redundancyControl' = redundancyControl,
+            rc' = rc,
         },
 
         // Nodes leaving the network.

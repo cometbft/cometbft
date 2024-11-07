@@ -52,7 +52,7 @@ module spells {
     // Sets
     //--------------------------------------------------------------------------
 
-    pure def setAdd(__set: Set[a], __elem: a): Set[a] =
+    pure def join(__set: Set[a], __elem: a): Set[a] =
         __set.union(Set(__elem))
 
     pure def isEmpty(__set: Set[a]): bool =
@@ -114,7 +114,7 @@ module spells {
         __list != List()
 
     pure def listToSet(__list: List[a]): Set[a] =
-        __list.foldl(Set(), (__s, __x) => __s.setAdd(__x))
+        __list.foldl(Set(), (__s, __x) => __s.join(__x))
 
     pure def setToList(__set: Set[a]): List[a] =
         __set.fold(List(), (__l, __x) => __l.append(__x))

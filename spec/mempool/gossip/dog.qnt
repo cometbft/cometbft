@@ -61,7 +61,7 @@ module dog {
     // Disable the route `source -> target` by adding it to a set of disabled
     // routes.
     pure def disableRoute(_dr, node, source, target) =
-        _dr.update(node, routes => routes.setAdd((source, target)))
+        _dr.update(node, routes => routes.join((source, target)))
 
     // Enable all routes to peer or from peer by removing any disabled route
     // that has peer as source or target. 
@@ -76,17 +76,11 @@ module dog {
     // Redundancy Controller (RC)
     //--------------------------------------------------------------------------
     // The Redundancy Controller is a closed-loop mechanism to auto-adjust the
-    // level of redundant transactions tha each node receives. A node configures
-    // a target redundancy level that it aims to maintain (within certain
-    // boundaries). The closed-loop controller periodically measures the
-    // redundancy level and either send messages to its peers or abstain from
-    // sending messages to try to decrease or increase the number of
-    // transactions received.
-    //
-    // Definition: A transaction is received *for the first time* by a node,
-    // when the node does not have the transaction in its cache. When a node
-    // receives a transaction more than once, it is called a *duplicate*
-    // transaction.
+    // level of redundant transactions that a node receives. A node configures a
+    // target redundancy level that it aims to maintain and how often it should
+    // make adjustments. The closed-loop controller periodically computes the
+    // redundancy level and tries to adjust it to keep it within pre-defined
+    // accepted bounds (as defined below).
 
     // A Redundancy Controller needs the following data structures.
     type RedundancyControlState = {
@@ -105,20 +99,21 @@ module dog {
     // The redundancy level is defined as the proportion of duplicate
     // transactions over the number of transactions received for the first time.
     // For example, a redundancy of 1 means that for each transaction that the
-    // node has received for the first time, the node received one transaction
-    // that is duplicate (not necessarily of the same transaction).
+    // node has received for the first time, the node has received one
+    // transaction that is a duplicate (not necessarily of the same first-time
+    // transaction).
     pure def redundancyLevel(_rc) = _rc.duplicateTxs / _rc.firstTimeTxs
 
     // adjustRedundancy returns an updated RC state and whether to reply with a
     // Reset message.
     //
-    // Periodically, the node measures the redundancy level. If it is within
-    // acceptable bounds (as defined below), it does nothing. Otherwise it will
-    // either send Reset messages to peers in order to receive more transactions
-    // and thus increase its redundancy level, or it will allow sending HaveTx
-    // messages to peers so that they disable routes, thus decreasing the
-    // traffic to the node.
-    //
+    // Periodically, the RC of the node computes the redundancy level. If the
+    // level is too low, it will try to increase it by sending to one of its
+    // peers a Reset message, thus increasing the number of transactions
+    // received. If the level is too high, it will try to decrease it by
+    // allowing sending HaveTx messages, so that the number of transactions
+    // received decline. Otherwise it does nothing.
+
     // On every adjustment, the counters are reset, so that redundancy values
     // are measured within the adjustment period.
     //
@@ -150,13 +145,15 @@ module dog {
     // boundaries defined by TargetRedundancyDeltaPercent.
     //
     // When TargetRedundancy is 0, the Redundancy Control mechanism is partially
-    // disabled (see `adjustRedundancy` below).
+    // disabled (see `adjustRedundancy` below). This makes the protocol not
+    // resistant to Byzantine behaviour, so in practice it is not recommended to
+    // set it to 0.
     //
     // It should be a real type, but reals are not currently supported by Quint.
     const TargetRedundancy: int
 
-    // Value in the range `[0, 100)` that defines the bounds of acceptable
-    // redundancy levels; redundancy +- redundancy * delta
+    // Value in the range `[0, 100)` as a percentage of the target redundancy
+    // that defines the lower and upper bounds of acceptable redundancy levels.
     //
     // It should be a real type, but reals are not currently supported by Quint.
     //
@@ -164,8 +161,8 @@ module dog {
     // we decided to keep it fixed.
     val TargetRedundancyDeltaPercent: int = 5
 
-    // The number of first-time transactions received by a node before it
-    // adjusts its redundancy level.
+    // The number of first-time transactions that the Redundancy Controller must
+    // wait for the node to receive before it calls `adjustRedundancy`.
     const TxsPerAdjustment: int
 
     // Constants
@@ -295,16 +292,16 @@ module dog {
     // When a node disconnects from the network, its peers signal their own
     // peers that their situation has changed, that their routing tables should
     // be reset. In this way, data via those nodes can be re-routed if needed.
-    action disconnectAndUpdateRoutes(disconnectedNode) = all {
+    action disconnectAndUpdateRoutes(nodeToDisconnect) = all {
         // All node's peers detect that node has disconnect and send a Reset
         // message to all their peers.
-        val updatedMsgs = disconnectedNode.Peers().fold(msgs, 
+        val updatedMsgs = nodeToDisconnect.Peers().fold(msgs, 
             (_msgs, peer) => peer.send(_msgs, peer.Peers(), ResetMsg)
         )
-        disconnectedNode.disconnect(updatedMsgs),
+        nodeToDisconnect.disconnectNetwork(updatedMsgs),
         // The node's peers enable all routes to node in their routing tables.
-        dr' = dr.updateMultiple(disconnectedNode.Peers(), 
-            drs => drs.enableRoute(disconnectedNode)),
+        dr' = dr.updateMultiple(nodeToDisconnect.Peers(), 
+            drs => drs.enableRoute(nodeToDisconnect)),
         state' = state,
         rc' = rc,
     }
@@ -315,9 +312,9 @@ module dog {
     // action gossipDuplicate(node) = ...
 
     //--------------------------------------------------------------------------
-    // All possible state transitions.
+    // All possible state transitions in the protocol.
     action nextState = any {
-        // Transaction dissemination.
+        // Transaction dissemination: node sends transaction to subset of peers.
         nondet node = oneOf(nodesInNetwork)
         all {
             node.disseminateNextTx(mkTargetNodes, TxMsg),
@@ -325,12 +322,12 @@ module dog {
             rc' = rc,
         },
 
-        // Handling received transactions from users.
+        // User-initiated transactions: node receives a transaction from a user.
         nondet node = oneOf(nodesInNetwork)
         nondet tx = oneOf(Txs)
         node.receiveTxFromUser(tx, tryAddTx),
 
-        // Handling received messages from peers.
+        // Peer message handling: node processes messages received from peers.
         nondet node = oneOf(nodesInNetwork)
         node.receiveFromPeer(handleMessage),
 
@@ -344,11 +341,10 @@ module dog {
 
         // Nodes leaving the network.
         all {
-            // Pick a node to disconnect only if it is not the only node in
-            // the network.
+            // Pick a node that is not the only node in the network.
             require(size(nodesInNetwork) > 1),
-            nondet disconnectedNode = oneOf(nodesInNetwork) 
-            disconnectAndUpdateRoutes(disconnectedNode),
+            nondet nodeToDisconnect = oneOf(nodesInNetwork) 
+            disconnectAndUpdateRoutes(nodeToDisconnect),
         }
     }
 

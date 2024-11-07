@@ -8,12 +8,12 @@ module p2p {
     import spells.* from "./spells"
 
     // A node internally identifies other nodes with an ID (a string).
-    type NodeID = str    
+    type NodeID = str
 
     //--------------------------------------------------------------------------
     // Parameters
     //--------------------------------------------------------------------------
-    
+
     // The set of all possible node IDs, even those that are not initially
     // connected to the network.
     const NodeIDs: Set[NodeID]
@@ -83,14 +83,14 @@ module p2p {
 
     // A node joins the network by connecting to a given set of peers. All those
     // peers add the new node to their list of peers.
-    action join(node, peerSet) = all {
+    action joinNetwork(node, peerSet) = all {
         // The node must not be connected to the network.
         require(node.Peers().isEmpty()),
         peers' = peers
             // Assign to node the set of new peers.
             .put(node, peerSet)
             // Add node as a new peer to the set of connecting peers.
-            .updateMultiple(peerSet, ps => ps.setAdd(node)),
+            .updateMultiple(peerSet, ps => ps.join(node)),
         msgs' = msgs,
     }
 
@@ -101,7 +101,7 @@ module p2p {
         // Pick a non-empty set of nodes in the network to be the node's
         // peers.
         nondet peerSet = oneOf(nodesInNetwork.powerset().exclude(Set()))
-        node.join(peerSet),
+        node.joinNetwork(peerSet),
     }
 
     // A node gets disconnected from the network. All its peers are immediately
@@ -110,21 +110,20 @@ module p2p {
     //
     // TODO: the network must not become disconnected; we don't want to model
     // that.
-    action disconnect(disconnectedNode, updatedMsgs) = all {
+    action disconnectNetwork(nodeToDisconnect, updatedMsgs) = all {
         peers' = peers
             // Clean node's state and remove all its peers.
-            .put(disconnectedNode, Set())
+            .put(nodeToDisconnect, Set())
             // Remove node from other peers' state.
-            .updateMultiple(nodesInNetwork, ps => ps.except(disconnectedNode)),
+            .updateMultiple(nodesInNetwork, ps => ps.exclude(Set(nodeToDisconnect))),
         msgs' = updatedMsgs,
     }
 
     action pickNodeAndDisconnect = all {
-        // Pick a node to disconnect only if it is not the only node in the
-        // network.
+        // Pick a node that is not the only node in the network.
         require(size(nodesInNetwork) > 1),
-        nondet disconnectedNode = oneOf(nodesInNetwork) 
-        disconnect(disconnectedNode, msgs),
+        nondet nodeToDisconnect = oneOf(nodesInNetwork) 
+        disconnectNetwork(nodeToDisconnect, msgs),
     }
 
     //--------------------------------------------------------------------------

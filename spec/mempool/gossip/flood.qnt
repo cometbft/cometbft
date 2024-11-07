@@ -2,7 +2,7 @@
 
 /*******************************************************************************
 Flood is a basic _push_ gossip protocol: every time a node receives a
-transaction, it forwards (or pushes) the transaction to all of its peers, except
+transaction, it forwards (or "pushes") the transaction to all its peers, except
 to the peer(s) from which it received the transaction.
 *******************************************************************************/
 module flood {
@@ -23,30 +23,32 @@ module flood {
     //--------------------------------------------------------------------------
 
     // Upon receiving a transaction message from a peer, the node attempts to
-    // add the transaction to the mempool.
+    // add the transaction to its mempool.
     action handleMessage(node, _msgs, sender, msg) =
         match msg {
         | TxMsg(tx) => node.tryAddTx(_msgs, Some(sender), tx)
         }
 
-    // A node attempts to add a transaction to the mempool. It will proceed
-    // differently if it has seen before the transaction or not. 
+    // A node attempts to add a transaction to its mempool, processing it
+    // differently based on whether the transaction has been seen before (i.e.
+    // it exists in the cache). We call a *first-time* transaction to one that
+    // the node does not have in its cache. A *duplicate* transaction is one
+    // that the node has received multiple times.
     //
-    // The sender is optional, meaning that if there's no sender, the
-    // transaction comes from a user. If tx comes from a peer, the node needs to
-    // update the list of incoming messages to remove the message from sender.
+    // The sender is optional. When there's no sender, it means that the
+    // transaction comes directly from a user.
     action tryAddTx(node, _msgs, optionalSender, tx) = 
         if (not(hash(tx).in(node.Cache())))
             node.tryAddFirstTimeTx(_msgs, optionalSender, tx)
         else
             node.processDuplicateTx(_msgs, optionalSender, tx)
 
-    // Attempt to add a first-time transaction tx to the mempool: add tx to
-    // cache, add tx to pool and update tx's senders if tx is valid, and update
-    // messages.
+    // Attempt to add a first-time transaction to the mempool (not in cache):
+    // add the transction to the cache, add it to the pool and update its
+    // senders if it's valid, and update the incoming messages if applicable.
     action tryAddFirstTimeTx(node, _msgs, optionalSender, tx) = all {
         state' = state.update(node, st => {
-            cache: st.cache.setAdd(hash(tx)),
+            cache: st.cache.join(hash(tx)),
             pool: if (valid(tx)) st.pool.append(tx) else st.pool,
             senders: 
                 if (valid(tx)) 
@@ -57,9 +59,9 @@ module flood {
         peers' = peers,
     }
 
-    // Process a duplicate transaction tx: update tx's senders if tx is in pool,
-    // and update messages.
-    action processDuplicateTx(node, _msgs, optionalSender, tx) =  all {
+    // Process a duplicate transaction (in cache): update the senders list if
+    // the transaction is in pool, and update messages.
+    action processDuplicateTx(node, _msgs, optionalSender, tx) = all {
         state' = state.update(node, st => { 
             senders: 
                 if (st.pool.includes(tx)) 
@@ -71,27 +73,28 @@ module flood {
     }
 
     //--------------------------------------------------------------------------
-    // mkTargetNodes is used by the transaction dissemination process to define
-    // the set of peers to which `node` will send `tx`.
+    // mkTargetNodes define the set of peers to whom `node` will send `tx`. It
+    // is passed as an argument to the transaction dissemination function.
     //
-    // For Flood, we want to send tx to all peers except tx's senders.
+    // This protocol sends `tx` to all peers except those who previously sent
+    // it.
     def mkTargetNodes(node, tx) =
         val txSenders = node.Senders().mapGetDefault(hash(tx), List())
         node.Peers().exclude(txSenders.listToSet())
 
     //--------------------------------------------------------------------------
-    // All possible state transitions.
+    // All possible state transitions in the protocol.
     action nextState = any {
-        // Transaction dissemination.
+        // Transaction dissemination: node sends transaction to subset of peers.
         nondet node = oneOf(nodesInNetwork)
         node.disseminateNextTx(mkTargetNodes, TxMsg),
 
-        // Handling received transactions from users.
+        // User-initiated transactions: node receives a transaction from a user.
         nondet node = oneOf(nodesInNetwork)
         nondet tx = oneOf(Txs)
         node.receiveTxFromUser(tx, tryAddTx),
 
-        // Handling received messages from peers.
+        // Peer message handling: node processes messages received from peers.
         nondet node = oneOf(nodesInNetwork)
         node.receiveFromPeer(handleMessage),
 
@@ -114,7 +117,7 @@ module flood {
 
     // All messages have been delivered.
     val allMsgsDelivered = 
-        NodeIDs.forall(node => node.Msgs().listIsEmpty())
+        NodeIDs.forall(node => length(node.Msgs()) == 0)
 
     // The pools of all nodes contain a given tx.
     def txInAllPools(tx) =

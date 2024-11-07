@@ -1,4 +1,9 @@
 // -*- mode: Bluespec; -*-
+/*******************************************************************************
+This module specifies the P2P layer as needed for the gossip protocols. It
+includes the definitions of nodes, peers, network topology, sending messages,
+nodes joining and leaving the network.
+*******************************************************************************/
 module p2p {
     import spells.* from "./spells"
 
@@ -9,8 +14,8 @@ module p2p {
     // Parameters
     //--------------------------------------------------------------------------
     
-    // The set of all nodes that participate in the network, even those that are
-    // not initially connected.
+    // The set of all possible node IDs, even those that are not initially
+    // connected to the network.
     const NodeIDs: Set[NodeID]
 
     // Initial network topology. The topology is defined by the set of peers
@@ -30,7 +35,10 @@ module p2p {
     // In the implementation, transaction messages are transamitted via the
     // `Mempool` channel on the P2P layer. Control messages may be transmitted
     // through other channel. This variable models only one channel.
-    var msgs: NodeID -> List[(NodeID, m)]
+    //
+    // The message type is a variable that can be instantiated for different
+    // protocols.
+    var msgs: NodeID -> List[(NodeID, msg)]
 
     // The dynamic network topology. Each node has a set of peers that is
     // updated when nodes join or leave the network.
@@ -126,8 +134,7 @@ module p2p {
     // Peer relationships are bidirectional or symmetrical: if node A has B as
     // peer, then B has A as peer.
     val peerBidirectional =
-        NodeIDs.forall(node => node.Peers().forall(peer => node.in(peer.Peers())))
-
+        NodeIDs.forall(nodeA => nodeA.Peers().forall(nodeB => nodeA.in(nodeB.Peers())))
 
     // TODO: Network is not disconnected.
 

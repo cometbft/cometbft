@@ -1,7 +1,7 @@
 // -*- mode: Bluespec; -*-
 
 /*******************************************************************************
-Flood is a simple _push_ gossip protocol: every time a node receives a
+Flood is a basic _push_ gossip protocol: every time a node receives a
 transaction, it forwards (or pushes) the transaction to all of its peers, except
 to the peer(s) from which it received the transaction.
 *******************************************************************************/
@@ -29,45 +29,42 @@ module flood {
         | TxMsg(tx) => node.tryAddTx(updatedMsgs, Some(sender), tx)
         }
 
-    // Upon receiving a transaction, try to add it to the mempool. The sender is
-    // optional, meaning that if there's no sender, the transaction comes from a
-    // user. If tx comes from a peer, the node needs to update the list of
-    // incoming messages to remove the message from sender.
+    // A node attempts to add a transaction to the mempool. It will proceed
+    // differently if it has seen before the transaction or not. 
     //
-    // A transaction that is in `pool`, must also be in `cache` (assuming an
-    // infinite cache), but not necessarily the inverse. The reason a
-    // transaction is in `cache` but not in `pool` is either because: 
-    // - the transaction was initially invalid and never got into `pool`, 
-    // - the transaction became invalid after it got in `pool` and thus got
-    //   evicted while revalidating it, or
-    // - the transaction was committed to a block and got removed from `pool`.
-    //
-    // All these scenarios are not modeled here. Then `cache` and `pool` will
-    // always have the same content and one of the two is redundant in this
-    // spec.
+    // The sender is optional, meaning that if there's no sender, the
+    // transaction comes from a user. If tx comes from a peer, the node needs to
+    // update the list of incoming messages to remove the message from sender.
     action tryAddTx(node, updatedMsgs, optionalSender, tx) = 
         if (not(node.Cache().contains(hash(tx))))
             node.tryAddFirstTimeTx(updatedMsgs, optionalSender, tx)
         else
-            node.tryAddDuplicateTx(updatedMsgs, optionalSender, tx)
+            node.processDuplicateTx(updatedMsgs, optionalSender, tx)
 
-    // Upon receiving tx for the first time, add tx to cache, add tx to pool and
-    // update tx's senders if tx is valid, and update messages.
+    // Attempt to add a received first-time transaction tx to the mempool: add
+    // tx to cache, add tx to pool and update tx's senders if tx is valid, and
+    // update messages.
     action tryAddFirstTimeTx(node, updatedMsgs, optionalSender, tx) = all {
         state' = state.update(node, st => {
             cache: st.cache.setAdd(hash(tx)),
             pool: if (valid(tx)) st.pool.append(tx) else st.pool,
-            senders: if (valid(tx)) st.senders.addSender(tx, optionalSender) else st.senders,
+            senders: 
+                if (valid(tx)) 
+                    st.senders.addSender(tx, optionalSender) 
+                else st.senders,
             ...st }),
         msgs' = updatedMsgs,
         peers' = peers,
     }
 
-    // Upon receiving an already seen transaction, update tx's senders if tx is
+    // Process a received duplicate transaction tx: update tx's senders if tx is
     // in pool, and update messages.
-    action tryAddDuplicateTx(node, updatedMsgs, optionalSender, tx) =  all {
+    action processDuplicateTx(node, updatedMsgs, optionalSender, tx) =  all {
         state' = state.update(node, st => { 
-            senders: if (st.pool.includes(tx)) st.senders.addSender(tx, optionalSender) else st.senders, 
+            senders: 
+                if (st.pool.includes(tx)) 
+                    st.senders.addSender(tx, optionalSender) 
+                else st.senders, 
             ...st }),
         msgs' = updatedMsgs,
         peers' = peers,

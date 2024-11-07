@@ -196,13 +196,13 @@ module dog {
         if (not(node.Cache().contains(hash(tx))))
             node.tryAddFirstTimeTx(updatedMsgs, optionalSender, tx)
         else
-            node.tryAddDuplicateTx(updatedMsgs, optionalSender, tx)
+            node.processDuplicateTx(updatedMsgs, optionalSender, tx)
 
-    // Upon receiving tx for the first time, add tx to cache, add tx to pool and
-    // update tx's senders if tx is valid, and update messages (the same as in
-    // Flood). Additionally, increase `rc.firstTimeTxs`, and every
-    // `TxsPerAdjustment` transactions received for the first time, call
-    // `adjustRedundancy()`.
+    // Attempt to add a received first-time transaction tx to the mempool: add
+    // tx to cache, add tx to pool and update tx's senders if tx is valid, and
+    // update messages (the same as in Flood). Additionally, increase
+    // `rc.firstTimeTxs`, and every `TxsPerAdjustment` transactions received for
+    // the first time, call `adjustRedundancy()`.
     action tryAddFirstTimeTx(node, updatedMsgs, optionalSender, tx) = 
         val rc1 = node.RC().increaseFirstTimeTxs()
         val adjustResult = 
@@ -222,12 +222,12 @@ module dog {
             dr' = dr,
         }
 
-    // Upon receiving an already seen transaction, the node updates tx's senders
-    // if tx is in pool (and thus it's valid), and updates the list of incoming
-    // messages (the same as in Flood). Additionally, it increases
-    // `duplicateTxs` and reply a `HaveTx` message if the RC mechanism is not
-    // blocking it and there's a sender.
-    action tryAddDuplicateTx(node, updatedMsgs, optionalSender, tx) =
+    // Process a received duplicate transaction tx: update tx's senders if tx is
+    // in pool (and thus it's valid), and update the list of incoming messages
+    // (the same as in Flood). Additionally, increase `duplicateTxs` and reply a
+    // `HaveTx` message if the RC mechanism is not blocking it and there's a
+    // sender.
+    action processDuplicateTx(node, updatedMsgs, optionalSender, tx) =
         // Reply HaveTxMsg if tx comes from a peer.
         val updatedMsgs1 = 
             val targets = optionalSender.optionToSet() // may be empty
@@ -235,7 +235,7 @@ module dog {
                 node.send(updatedMsgs, targets, HaveTxMsg(hash(tx)))
             else updatedMsgs
         all {
-            node.F::tryAddDuplicateTx(updatedMsgs1, optionalSender, tx),
+            node.F::processDuplicateTx(updatedMsgs1, optionalSender, tx),
             rc' = rc.update(node, increaseDuplicateTxs),
             dr' = dr,
         }

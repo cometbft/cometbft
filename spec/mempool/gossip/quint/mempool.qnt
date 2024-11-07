@@ -1,4 +1,8 @@
 // -*- mode: Bluespec; -*-
+/*******************************************************************************
+The mempool module defines essential types, data structures, and actions to keep
+and disseminate a list of pending transactions ("the mempool").
+*******************************************************************************/
 module mempool {
     import spells.* from "./spells"
     import p2p.* from "./p2p"
@@ -41,14 +45,30 @@ module mempool {
     // by the values of the following variables.
 
     type MempoolState = {         
-        // Cache of already received transaction IDs.
+        // Cache of already received transaction IDs. We assume the cache never
+        // overflows.
         cache: Set[TxID],
 
-        // List of uncommitted/pending transactions ("the mempool"). For picking
-        // transactions to send to peers. 
+        // List of uncommitted/pending transactions ("the mempool"). Used for
+        // picking transactions to disseminate to peers.
         //
-        // New entries are only appended. We do not model when entries are
-        // removed (by the consensus module).
+        // We make the following assumptions about the pool:
+        // - It does not have a maximum capacity.
+        // - New entries are only appended. We do not model when entries are
+        //   removed.
+        //
+        // A transaction that is in `pool`, must also be in `cache` (assuming an
+        // infinite cache), but not necessarily the inverse. The reason a
+        // transaction is in `cache` but not in `pool` is either because: 
+        // - the transaction was initially invalid and never got into `pool`, 
+        // - the transaction became invalid after it got in `pool` and thus got
+        //   evicted when it was revalidated, or
+        // - the transaction was committed to a block and got removed from
+        //   `pool`.
+        //
+        // All these scenarios are not modeled here. Then `cache` and `pool`
+        // will always have the same content and one of the two is actually
+        // redundant in this spec.
         pool: List[TX],
 
         // Index to the next transaction in pool to disseminate.
@@ -114,10 +134,14 @@ module mempool {
     }
 
     // Users create transactions and send them to one of the nodes in the
-    // network. Nodes receive messages with transactions either from users or
-    // from peers. Transaction messages from users have no sender.
+    // network. Nodes receive transactions either from users or in messages from
+    // peers. Transaction from users have no sender.
 
-    // A node receives a given transaction from a user.
+    // A node receives transaction tx from a user.
+    //
+    // Arguments:
+    // - _tryAddTx(msgs, optionalSender, tx) attempts to add tx to pool, given
+    //   the node ID of the sender in case tx comes from another node.
     //
     // Typically a user sends a (full) transaction to a node via an RPC
     // endpoint. Users are allowed to submit the same tx more than once and to
@@ -134,8 +158,8 @@ module mempool {
     // Arguments:
     // - _mkTargetNodes(node, tx) returns the set of peers to which node will
     //   send tx.
-    // - _mkTxMsg(tx) is a wrapper function that returns the correct message
-    //   type.
+    // - _mkTxMsg(tx) is a wrapper function that returns the specific message
+    //   type used by the gossip protocol.
     //
     // The pool index must not exceed the pool's length. This models when the
     // iterator is at the end of the list and it's blocked waiting for a new

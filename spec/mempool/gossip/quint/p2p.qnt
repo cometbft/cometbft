@@ -102,12 +102,12 @@ module p2p {
     //
     // TODO: the network must not become disconnected; we don't want to model
     // that.
-    action disconnect(node, updatedMsgs) = all {
+    action disconnect(disconnectedNode, updatedMsgs) = all {
         peers' = peers
             // Clean node's state and remove all its peers.
-            .put(node, Set())
+            .put(disconnectedNode, Set())
             // Remove node from other peers' state.
-            .updateMultiple(nodesInNetwork, ps => ps.except(node)),
+            .updateMultiple(nodesInNetwork, ps => ps.except(disconnectedNode)),
         msgs' = updatedMsgs,
     }
 
@@ -115,8 +115,8 @@ module p2p {
         // Pick a node to disconnect only if it is not the only node in the
         // network.
         require(size(nodesInNetwork) > 1),
-        nondet node = oneOf(nodesInNetwork) 
-        node.disconnect(msgs),
+        nondet disconnectedNode = oneOf(nodesInNetwork) 
+        disconnect(disconnectedNode, msgs),
     }
 
     //--------------------------------------------------------------------------

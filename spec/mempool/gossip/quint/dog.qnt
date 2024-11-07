@@ -294,15 +294,15 @@ module dog {
     // When a node disconnects from the network, its peers signal their own
     // peers that their situation has changed, that their routing tables should
     // be reset. In this way, data via those nodes can be re-routed if needed.
-    action D_disconnect(node) = all {
+    action disconnectAndUpdateRoutes(disconnectedNode) = all {
         // All node's peers detect that node has disconnect and send a Reset
         // message to all their peers.
-        val updatedMsgs = node.Peers().fold(msgs, 
+        val updatedMsgs = disconnectedNode.Peers().fold(msgs, 
             (_msgs, peer) => peer.send(_msgs, peer.Peers(), ResetMsg)
         )
-        node.disconnect(updatedMsgs),
+        disconnectedNode.disconnect(updatedMsgs),
         // The node's peers enable all routes to node in their routing tables.
-        dr' = dr.updateMultiple(node.Peers(), drs => drs.enableRoute(node)),
+        dr' = dr.updateMultiple(disconnectedNode.Peers(), drs => drs.enableRoute(disconnectedNode)),
         state' = state,
         rc' = rc,
     }
@@ -345,8 +345,8 @@ module dog {
             // Pick a node to disconnect only if it is not the only node in
             // the network.
             require(size(nodesInNetwork) > 1),
-            nondet node = oneOf(nodesInNetwork) 
-            D_disconnect(node),
+            nondet disconnectedNode = oneOf(nodesInNetwork) 
+            disconnectAndUpdateRoutes(disconnectedNode),
         }
     }
 

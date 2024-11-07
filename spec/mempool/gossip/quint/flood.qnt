@@ -75,7 +75,7 @@ module flood {
 
     //--------------------------------------------------------------------------
     // mkTargetNodes is used by the transaction dissemination process to define
-    // the set of peers to which the node will send tx.
+    // the set of peers to which `node` will send `tx`.
     //
     // For Flood, we want to send tx to all peers except tx's senders.
     def mkTargetNodes(node, tx) =

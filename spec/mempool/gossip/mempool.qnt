@@ -71,11 +71,12 @@ module mempool {
         // redundant in this spec.
         pool: List[TX],
 
-        // Index to the next transaction in pool to disseminate.
+        // Index to the next transaction in pool to disseminate. A pool iterator
+        // traverses the entries in pool one at a time.
         //
-        // We model transaction dissemination using one iterator. One process
-        // iterates on the pool and multicasts a mempool entry to all connected
-        // peers, one entry per step and atomically.
+        // We model transaction dissemination using one dissemination process
+        // (`disseminateNextTx`) that iterates on the pool and multicasts an
+        // entry to all connected peers, one entry per step and atomically.
         //
         // In the implementation there is one dissemination process per peer,
         // each with its own iterator (and thus a separate pool index per
@@ -151,9 +152,9 @@ module mempool {
     action receiveTxFromUser(node, tx, _tryAddTx) =
         node._tryAddTx(msgs, None, tx)
 
-    // A node iterates on the pool sending transactions to its peers. It takes
-    // the next transaction from the iterator and disseminates it to all its
-    // peers at once. 
+    // A node traverses pool sending transactions to its peers. It takes the
+    // next transaction from the iterator and disseminates it to all its peers
+    // at once. 
     //
     // Arguments:
     // - _mkTargetNodes(node, tx) returns the set of peers to which node will

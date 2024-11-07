@@ -184,26 +184,27 @@ module dog {
         rc' = NodeIDs.mapBy(_ => initialRCState)
     }
 
-    action handleMessage(node, updatedMsgs, sender, msg) =
+    action handleMessage(node, _msgs, sender, msg) =
         match msg {
-        | TxMsg(tx) => node.tryAddTx(updatedMsgs, Some(sender), tx)
-        | HaveTxMsg(txID) => node.handleHaveTxMessage(updatedMsgs, sender, txID)
-        | ResetMsg => node.handleResetMessage(updatedMsgs, sender)
+        | TxMsg(tx) => node.tryAddTx(_msgs, Some(sender), tx)
+        | HaveTxMsg(txID) => node.handleHaveTxMessage(_msgs, sender, txID)
+        | ResetMsg => node.handleResetMessage(_msgs, sender)
         }
 
-    // The same as in Flood. The difference is in the tryAddTx* functions.
-    action tryAddTx(node, updatedMsgs, optionalSender, tx) = 
-        if (not(node.Cache().contains(hash(tx))))
-            node.tryAddFirstTimeTx(updatedMsgs, optionalSender, tx)
+    // The same as in Flood. The difference is in the two functions that process
+    // the transaction.
+    action tryAddTx(node, _msgs, optionalSender, tx) = 
+        if (not(hash(tx).in(node.Cache())))
+            node.tryAddFirstTimeTx(_msgs, optionalSender, tx)
         else
-            node.processDuplicateTx(updatedMsgs, optionalSender, tx)
+            node.processDuplicateTx(_msgs, optionalSender, tx)
 
     // Attempt to add a received first-time transaction tx to the mempool: add
     // tx to cache, add tx to pool and update tx's senders if tx is valid, and
     // update messages (the same as in Flood). Additionally, increase
     // `rc.firstTimeTxs`, and every `TxsPerAdjustment` transactions received for
     // the first time, call `adjustRedundancy()`.
-    action tryAddFirstTimeTx(node, updatedMsgs, optionalSender, tx) = 
+    action tryAddFirstTimeTx(node, _msgs, optionalSender, tx) = 
         val rc1 = node.RC().increaseFirstTimeTxs()
         val adjustResult = 
             if (rc1.firstTimeTxs == TxsPerAdjustment) 
@@ -212,12 +213,12 @@ module dog {
         val rc2 = adjustResult._1
         val sendReset = adjustResult._2
         all {
-            val updatedMsgs1 = 
+            val _msgs1 = 
                 val targets = optionalSender.optionToSet() // may be empty
                 if (sendReset) 
-                    node.send(updatedMsgs, targets, ResetMsg)
-                else updatedMsgs
-            node.F::tryAddFirstTimeTx(updatedMsgs1, optionalSender, tx),
+                    node.send(_msgs, targets, ResetMsg)
+                else _msgs
+            node.F::tryAddFirstTimeTx(_msgs1, optionalSender, tx),
             rc' = rc.put(node, rc2),
             dr' = dr,
         }
@@ -227,15 +228,15 @@ module dog {
     // (the same as in Flood). Additionally, increase `duplicateTxs` and reply a
     // `HaveTx` message if the RC mechanism is not blocking it and there's a
     // sender.
-    action processDuplicateTx(node, updatedMsgs, optionalSender, tx) =
+    action processDuplicateTx(node, _msgs, optionalSender, tx) =
         // Reply HaveTxMsg if tx comes from a peer.
-        val updatedMsgs1 = 
+        val _msgs1 = 
             val targets = optionalSender.optionToSet() // may be empty
             if (not(node.RC().isHaveTxBlocked))
-                node.send(updatedMsgs, targets, HaveTxMsg(hash(tx)))
-            else updatedMsgs
+                node.send(_msgs, targets, HaveTxMsg(hash(tx)))
+            else _msgs
         all {
-            node.F::processDuplicateTx(updatedMsgs1, optionalSender, tx),
+            node.F::processDuplicateTx(_msgs1, optionalSender, tx),
             rc' = rc.update(node, increaseDuplicateTxs),
             dr' = dr,
         }
@@ -302,7 +303,8 @@ module dog {
         )
         disconnectedNode.disconnect(updatedMsgs),
         // The node's peers enable all routes to node in their routing tables.
-        dr' = dr.updateMultiple(disconnectedNode.Peers(), drs => drs.enableRoute(disconnectedNode)),
+        dr' = dr.updateMultiple(disconnectedNode.Peers(), 
+            drs => drs.enableRoute(disconnectedNode)),
         state' = state,
         rc' = rc,
     }

@@ -53,10 +53,6 @@ func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 		return err
 	}
 
-	if err := infp.Setup(); err != nil {
-		return err
-	}
-
 	genesis, err := MakeGenesis(testnet)
 	if err != nil {
 		return err
@@ -122,6 +118,20 @@ func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 			filepath.Join(nodeDir, PrivvalDummyKeyFile),
 			filepath.Join(nodeDir, PrivvalDummyStateFile),
 		)).Save()
+
+		if testnet.LatencyEmulationEnabled {
+			// Generate a shell script file containing tc (traffic control) commands
+			// to emulate latency to other nodes.
+			tcCmds, err := tcCommands(node, infp)
+			if err != nil {
+				return err
+			}
+			latencyPath := filepath.Join(nodeDir, "emulate-latency.sh")
+			//nolint: gosec // G306: Expect WriteFile permissions to be 0600 or less
+			if err = os.WriteFile(latencyPath, []byte(strings.Join(tcCmds, "\n")), 0o755); err != nil {
+				return err
+			}
+		}
 	}
 
 	if testnet.Prometheus {
@@ -134,6 +144,11 @@ func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 		if err := WritePrometheusConfig(testnet, filepath.Join(testnet.Dir, "prometheus.yml")); err != nil {
 			return err
 		}
+	}
+
+	//nolint: revive
+	if err := infp.Setup(); err != nil {
+		return err
 	}
 
 	return nil

@@ -56,19 +56,20 @@ module dog {
     // routes enabled, so its set of disabled routes is empty. A node A will
     // send `TxMsg(tx)` to peer B if the route `sender(tx) -> B` is enabled,
     // that is, the route is not in this set.
-    var disabledRoutes: NodeID -> Set[Route]
+    var dr: NodeID -> Set[Route]
 
     // Disable the route `source -> target` by adding it to a set of disabled
     // routes.
-    pure def addRoute(_disabledRoutes, node, source, target) =
-        _disabledRoutes.update(node, routes => routes.setAdd((source, target)))
+    pure def disableRoute(_dr, node, source, target) =
+        _dr.update(node, routes => routes.setAdd((source, target)))
 
-    // Remove any route that has peer as source or target. 
-    pure def removeRoute(_disabledRoutes, peer) = 
-        _disabledRoutes.filter(route => not(peer.isSourceOrTargetIn(route)))
+    // Enable all routes to peer or from peer by removing any disabled route
+    // that has peer as source or target. 
+    pure def enableRoute(_dr, peer) = 
+        _dr.filter(route => not(peer.isSourceOrTargetIn(route)))
 
     // Auxiliary definitions
-    def DisabledRoutes(node) = disabledRoutes.get(node)
+    def DisabledRoutes(node) = dr.get(node)
     pure def isSourceOrTargetIn(node, route) = node == route._1 or node == route._2
 
     //--------------------------------------------------------------------------
@@ -179,7 +180,7 @@ module dog {
     // Initial state.
     action D_init = all {
         F::init,
-        disabledRoutes' = NodeIDs.mapBy(_ => Set()),
+        dr' = NodeIDs.mapBy(_ => Set()),
         rc' = NodeIDs.mapBy(_ => initialRCState)
     }
 
@@ -218,7 +219,7 @@ module dog {
                 else updatedMsgs
             node.F::tryAddFirstTimeTx(updatedMsgs1, optionalSender, tx),
             rc' = rc.put(node, rc2),
-            disabledRoutes' = disabledRoutes,
+            dr' = dr,
         }
 
     // Upon receiving an already seen transaction, the node updates tx's senders
@@ -236,7 +237,7 @@ module dog {
         all {
             node.F::tryAddDuplicateTx(updatedMsgs1, optionalSender, tx),
             rc' = rc.update(node, increaseDuplicateTxs),
-            disabledRoutes' = disabledRoutes,
+            dr' = dr,
         }
 
     // Upon receiving HaveTxMsg(txID), disable the route (sender(txID) ->
@@ -245,7 +246,7 @@ module dog {
     // We don't want to cut all routes from sender to node, only the route that
     // has as source tx's original sender.
     action handleHaveTxMessage(node, updatedMsgs, sender, txID) = all {
-        disabledRoutes' = 
+        dr' = 
             val txSenders = node.Senders().mapGetDefault(txID, List())
             if (length(txSenders) > 0)
                 // Since we need to disable only one route, we need to choose
@@ -255,8 +256,8 @@ module dog {
                 // time, meaning that routes coming from those senders are
                 // probably disabled, and most of the traffic comes from the
                 // first one.
-                disabledRoutes.addRoute(node, txSenders[0], sender)
-            else disabledRoutes,
+                dr.disableRoute(node, txSenders[0], sender)
+            else dr,
         msgs' = updatedMsgs,
         peers' = peers,
         state' = state,
@@ -268,7 +269,7 @@ module dog {
     // nodes will dynamically adapt to the new traffic, closing routes when
     // needed.
     action handleResetMessage(node, updatedMsgs, sender) = all {
-        disabledRoutes' = disabledRoutes.update(node, drs => drs.removeRoute(sender)),
+        dr' = dr.update(node, drs => drs.enableRoute(sender)),
         msgs' = updatedMsgs,
         peers' = peers,
         state' = state,
@@ -300,8 +301,8 @@ module dog {
             (_msgs, peer) => peer.send(_msgs, peer.Peers(), ResetMsg)
         )
         node.disconnect(updatedMsgs),
-        // The node's peers remove node from their routing tables.
-        disabledRoutes' = disabledRoutes.updateMultiple(node.Peers(), drs => drs.removeRoute(node)),
+        // The node's peers enable all routes to node in their routing tables.
+        dr' = dr.updateMultiple(node.Peers(), drs => drs.enableRoute(node)),
         state' = state,
         rc' = rc,
     }
@@ -318,7 +319,7 @@ module dog {
         nondet node = oneOf(nodesInNetwork)
         all {
             node.disseminateNextTx(mkTargetNodes, TxMsg),
-            disabledRoutes' = disabledRoutes,
+            dr' = dr,
             rc' = rc,
         },
 
@@ -335,7 +336,7 @@ module dog {
         all {
             pickNodeAndJoin,
             state' = state,
-            disabledRoutes' = disabledRoutes,
+            dr' = dr,
             rc' = rc,
         },
 

@@ -7,7 +7,7 @@ nodes joining and leaving the network.
 module p2p {
     import spells.* from "./spells"
 
-    // A node internally identifies other nodes with an ID (a string).
+    // A node identifier.
     type NodeID = str
 
     //--------------------------------------------------------------------------
@@ -18,26 +18,25 @@ module p2p {
     // connected to the network.
     const NodeIDs: Set[NodeID]
 
-    // Initial network topology. The topology is defined by the set of peers
-    // each node has (the values of the mapping).
+    // Initial network topology. A topology is defined by the set of peers each
+    // node has.
     const InitialPeers: NodeID -> Set[NodeID]
 
     //--------------------------------------------------------------------------
     // State
     //--------------------------------------------------------------------------
-    // The protocols are modelled as a state transition systems. States are
-    // defined by the values of the variables.
-
-    // Each node has a queue (a list) of incoming messages. Messages arrive in
-    // order and are appended to the queue. Each message has a sender (a node
-    // ID).
+    // To model network communication, each node has a queue (a list) of
+    // incoming messages. Node A sends a message to a node B by appending the
+    // message to B's queue. We use queues to model that messages arrive in
+    // order. Messages have a sender (a node ID).
     //
-    // In the implementation, transaction messages are transamitted via the
-    // `Mempool` channel on the P2P layer. Control messages may be transmitted
-    // through other channel. This variable models only one channel.
+    // In the actual implementation, transaction messages are transamitted on
+    // the `Mempool` data channel of the P2P layer. Control messages are usually
+    // transmitted on other channels with different priorities. Here we model a
+    // single, reliable channel.
     //
-    // The message type is a variable that can be instantiated for different
-    // protocols.
+    // The type variable `msg` can be instantiated on the message types of
+    // different protocols.
     var msgs: NodeID -> List[(NodeID, msg)]
 
     // The dynamic network topology. Each node has a set of peers that is
@@ -49,16 +48,20 @@ module p2p {
     def Peers(node) = peers.get(node)
 
     //--------------------------------------------------------------------------
-    // Boilerplate
-    //--------------------------------------------------------------------------
-    // We assume that nodes have reliable P2P channels to all other nodes and
-    // that messages are delivered in the order in which they were sent.
+    // A node is in the network if it has peers.
+    val nodesInNetwork = NodeIDs.filter(node => node.Peers().nonEmpty())
+    val nodesNotInNetwork = NodeIDs.exclude(nodesInNetwork)
 
-    // A node sends a message to the given set of target nodes.
+    // A node sends a message to the given set of target nodes. It updates the
+    // list of incoming messages `_msgs`.
     pure def send(node, _msgs, targetNodes, msg) =
         if (targetNodes.nonEmpty())
             _msgs.updateMultiple(targetNodes, ms => ms.append((node, msg)))
         else _msgs
+
+    //--------------------------------------------------------------------------
+    // Actions
+    //--------------------------------------------------------------------------
 
     // A node receives one of the incoming messages from a peer and handles it
     // according to its type.
@@ -72,14 +75,6 @@ module p2p {
         val updatedMsgs = msgs.update(node, tail)
         handleMessage(node, updatedMsgs, sender, msg)
     }
-
-    // A node is in the network if it has peers.
-    val nodesInNetwork = NodeIDs.filter(node => node.Peers().nonEmpty())
-    val nodesNotInNetwork = NodeIDs.exclude(nodesInNetwork)
-
-    //--------------------------------------------------------------------------
-    // Actions
-    //--------------------------------------------------------------------------
 
     // A node joins the network by connecting to a given set of peers. All those
     // peers add the new node to their list of peers.

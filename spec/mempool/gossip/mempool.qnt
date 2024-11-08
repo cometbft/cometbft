@@ -1,7 +1,8 @@
 // -*- mode: Bluespec; -*-
 /*******************************************************************************
-The mempool module defines essential types, data structures, and actions to keep
-and disseminate a list of pending transactions ("the mempool").
+The mempool module defines essential types, data structures, and actions needed
+to keep and disseminate a list of pending transactions ("the mempool"). It does
+not include a gossip protocol.
 *******************************************************************************/
 module mempool {
     import spells.* from "./spells"

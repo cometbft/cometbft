@@ -5,18 +5,19 @@
 /*******************************************************************************
 Dynamic Optimal Graph (DOG) gossip protocol.
 
-The DOG protocol is built on top of the Flood protocol. Types, messages, and
-data structures in Flood are used in this specification. In priciple, it is
-possible to enable or disable DOG in nodes running Flood, and nodes running the
-two protocols can co-exist in the network, though not at the best performance.
+The DOG protocol optimizes network efficiency by dynamically managing how
+transactions are routed to peers:
+- If node A receives a transaction from node B that it already has in its cache,
+  it implies that there is a cycle in the network topology. Node A will message
+  B to stop sending transactions in order to cut that cycle.
+- Conversely, if a node does not receive enough transactions, it can request
+  additional transactions from its peers.
 
-Briefly, what the protocol does is the following. If node A receives from B a
-transaction that it already has, this means that there must exist a cycle in the
-network topology, so A tells B to stop sending transactions. Conversely, if A
-does not receive enough transactions, it will ask its peers to send more. For
-that, the protocol adds two new messages to Flood: 
-- HaveTxMsg(TxID) for cutting cycles in the network, and 
-- ResetMsg for dynamic re-routing when a node disconnects.
+The DOG protocol is built on top of the Flood protocol. This spec uses many of
+the same types, messages, and data structures as Flood. In priciple, it is
+possible to enable or disable DOG in nodes running Flood. Nodes running DOG and
+Flood can co-exist in the network, though performance is optimal only if all
+nodes use DOG.
 *******************************************************************************/
 module dog {
     import spells.* from "./spells"
@@ -30,28 +31,25 @@ module dog {
     type Message =
         // `TxMsg` messages carry a full transaction (same as in Flood).
         | TxMsg(TX)
-        // `HaveTxMsg` messages carry a transaction hash, typically much smaller
-        // than full transactions. A node sends this message to signal that it
-        // has the transaction, so that the receiver must cut some route that is
-        // forming a cycle in the network topology. The goal for the sender is
-        // to receive less transactions.
+        // A node sends `HaveTxMsg` messages to signal that it already received
+        // the transaction. The receiver will cut a route related to tx that is
+        // forming a cycle in the network topology.
         | HaveTxMsg(TxID)
-        // `ResetMsg` is sent by a node to signal that is not receiving enough
-        // transactions, so that the receiver must re-enable some route to the
-        // sender if possible. This message is usually sent when a peer is
-        // disconnected or sending less transactions than before, so that the
-        // sender receives more transactions.
+        // A node sends `ResetMsg` messages to signal that it is not receiving
+        // enough transactions. The receiver should re-enable some route to the
+        // node if possible.
         | ResetMsg
 
-    // In the real implementation, `TxMsg` is sent via a P2P mempool data
-    // channel, and `HaveTxMsg` and `ResetMsg` via the P2P mempool control
-    // channel.
+    // The size of `HaveTxMsg` and `ResetMsg` is negligible compared to `TxMsg`.
+    //
+    // In the real implementation, `TxMsg` is sent on a P2P mempool data
+    // channel, while `HaveTxMsg` and `ResetMsg` are sent on a control channel.
 
     //--------------------------------------------------------------------------
     // Routing
     //--------------------------------------------------------------------------
-    // The protocol uses a routing mechanism on the nodes to filter TxMsg
-    // messages sent to their peers.
+    // The protocol has a routing mechanism on the nodes to filter `TxMsg`
+    // messages sent to peers.
 
     // A route is a tuple `(source, target)`. We also write it as `source ->
     // target`. Routes are defined within a node, and source and target are
@@ -85,8 +83,8 @@ module dog {
     // level of redundant transactions that a node receives. A node configures a
     // target redundancy level that it aims to maintain and how often it should
     // make adjustments. The controller periodically computes the redundancy
-    // level and tries to adjust it in order to keep it within certain
-    // pre-defined accepted bounds (as defined below).
+    // level and tries to keep it within certain pre-defined accepted bounds (as
+    // defined below).
 
     // A Redundancy Controller needs the following data structures.
     type RedundancyControlState = {

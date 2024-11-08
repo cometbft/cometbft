@@ -146,9 +146,9 @@ module dog {
     // Parameters/Configuration
     //--------------------------------------------------------------------------
 
-    // `TargetRedundancy` is a threshold level that the protocol aims to
-    // maintain, within the boundaries defined by
-    // `TargetRedundancyDeltaPercent`.
+    // `TargetRedundancy` is the desired level. A certain level that the
+    // Redundancy Controller aims to maintain, within certain boundaries defined
+    // by `TargetRedundancyDeltaPercent`.
     //
     // When `TargetRedundancy` is 0, the Redundancy Control mechanism is
     // partially disabled: `adjustRedundancy` will be able only to block HaveTx
@@ -159,22 +159,36 @@ module dog {
     // It should be a real type, but reals are not currently supported by Quint.
     const TargetRedundancy: int
 
-    // Value in the range `[0, 100)` as a percentage of the target redundancy
-    // that defines the lower and upper bounds of acceptable redundancy levels.
-    //
-    // It should be a real type, but reals are not currently supported by Quint.
-    //
-    // This value was initially modelled as a model parameter (a `const`), but
-    // we decided to keep it fixed.
+    // `TargetRedundancyDeltaPercent` defines the tolerance of acceptable
+    // redundancy below and above `TargetRedundancy`, as a percentage in the
+    // range `[0, 100)`.
     val TargetRedundancyDeltaPercent: int = 5
-
-    // The number of first-time transactions that the Redundancy Controller must
-    // wait for the node to receive before it calls `adjustRedundancy`.
+    
+    // `TxsPerAdjustment` is the number of first-time transactions that the
+    // controller must wait before it calls `adjustRedundancy`.
     const TxsPerAdjustment: int
 
-    // Whether is it time to make an adjustment to the redundancy level.
-    pure def adjustNow(rc) = 
-        rc.firstTimeTxs == TxsPerAdjustment / rc.redundancy()
+    // `adjustNow` determines if it is time to adjust redundancy. It returns
+    // true when the controller counts more than a certain number of first-time
+    // transactions. 
+    //
+    // We don't want to trigger redundancy adjustments on intervals of a fixed
+    // number of transactions. If the network is receiving a low transaction
+    // load, nodes may need to wait too much to adjust. While if the load is
+    // high, adjustments will happen very frequently. Also, when a node joins a
+    // network, redundancy is high, and we want it to make adjustments more
+    // often to reach the target redundancy.
+    //
+    // We make the threshold that triggers adjustments proportionally inverse to
+    // the redundancy level. When redundancy is high, the node needs to decrease
+    // it it fast, so adjustments must happen more frequently. When redundancy
+    // is low, there is no need to increase it fast. We add a minimum and
+    // maximum threshold value to keep the value within a safe range.
+    pure def adjustNow(rc) =
+        val threshold = TxsPerAdjustment / rc.redundancy()
+        rc.firstTimeTxs >= max(MinTxsPerAdjustment, min(MaxTxsPerAdjustment, threshold))
+    val MinTxsPerAdjustment = 10
+    val MaxTxsPerAdjustment = 1000
 
     // Constants
     val _delta = TargetRedundancy * TargetRedundancyDeltaPercent / 100

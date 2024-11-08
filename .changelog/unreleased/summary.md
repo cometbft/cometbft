@@ -47,7 +47,7 @@ URLs.
 
 See the [upgrading guidelines](./UPGRADING.md) and the specific changes below for more details. In this release,
 we are also introducing a migration guide, please refer to the
-[Upgrading from CometBFT v0.38.x to v1.0](./docs/guides/upgrades/v0.38-to-v1.0.md) document
+[Upgrading from CometBFT v0.38.x to v1.0](./docs/guides/upgrades/v0.38-to-v1.0.md) document.
 
 **NB: This version is still a release candidate, which means that
 API-breaking changes, although very unlikely, might still be introduced

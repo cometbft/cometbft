@@ -1,4 +1,4 @@
-* November 12, 2024*
+*November 12, 2024*
 
 This is a major release of CometBFT that includes several substantial changes
 that aim to reduce bandwidth consumption, enable modularity, improve

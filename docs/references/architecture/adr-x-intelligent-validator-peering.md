@@ -1,0 +1,78 @@
+
+# ADR X: Intelligent Validator Peering
+
+## Changelog
+
+- 11/8: Initial draft
+
+## Status
+
+## Context
+
+The existing CometBFT p2p network is agnostic to the distinction between full nodes and validators. Peers are added via config files and PEX, but validators are equally likely to connect to full nodes as they are to validators via PEX. Thus, validators can be peered suboptimally, requiring messages go through extra hops through full nodes in order for the network to proceed through consensus.
+
+This document proposes a way for validators to peer intelligently with each other, increasing the tendency for validators to be directly peered and thus for consensus messages to travel through the network of validators more quickly. We propose adding a reactor for validator p2p, similar to pex, but specifically for the purpose of getting validators peered with each other.
+
+Note that in this document we will refer to validators as any of the core nodes operated by validator entities in the network. They can be sentry nodes or any non-signing nodes, but should be on the hot-path for consensus messages (i.e. they must participate in the network in order for some consensus messages to be propagated).
+
+## Alternative Approaches
+
+- One alternative for the reactor implementation is complete validator peering, where all validators are peered with all other validators. This is not chosen because it can become prohibitively expensive to a large number of peers, when the number of validators is large.
+
+
+## Decision
+
+## Detailed Design
+
+The CometBFT config should add some new fields which should be populated by validators:
+1. `val_peer_count_low`, `val_peer_count_high`, `val_peer_count_target`. These are the lower bound, upper bound, and target number of validator peers to maintain, respectively.
+2. `isValidator` - whether the node should join the valp2p network.
+
+First, we modify the handshake that nodes perform when connecting to each other. Currently, that handshake exchanges `NodeInfo`. We will augment `NodeInfo` to include an `isValidator` field, which is just the `isValidator` value from the config. This will be kept for each peer of the node in the peer's `NodeInfo`.
+
+We will add a new reactor for validator peering, which we will refer to here as valp2p. All nodes in the network should run this new reactor.
+
+The valp2p reactor overrides the `AddPeer` and `Receive` reactor methods.
+
+`AddPeer`: this is called by the switch on every reactor when a peer is added. For valp2p, this should:
+1. Check if the peer is validator, if it is not, return.
+2. If the peer is validator, record its net address in memory. Then, broadcast its net address to all peers.
+
+`Receive`: this processes the messages received by this reactor.
+3. Parse and validate the message. The message should contain a valid net address.
+4. If the current node is a full node, broadcast the message to all peers.
+5. If the current node is a validator, record the net address in memory, then broadcast the message to all peers.
+
+Additionally, when this reactor starts, it should start a goroutine that periodically:
+1. Checks the number of validator peers we are currently connected to.
+2. If the number < `val_peer_count_low`, start dialing random validator addresses that we know about until we reach `val_peer_count_target`.
+3.  If the number > `val_peer_count_high`, drop some random validators until we reach `val_peer_count_target`.
+
+[ The exact logic of this goroutine may need to be tweaked, it may interfere with persistent peers, maxnuminboundpeers, and maxnumoutboundpeers. ]
+
+The `AddPeer` behavior is roughly: when I get connected to a new validator, tell my neighbors about this new validator so they can potentially connect as well, if they are a validator.
+
+The `Receive` behavior is roughly: when I hear about a new validator, keep it in my validator address book so I can potentially connect to it later, and let my neighbors know about it so they can do the same.
+
+[ May need to add some `broadcastHasValidatorAddress` type of thing to tell other nodes not to send me a specific validator address, similar to consensus `broadcastHasVote` ]
+
+This should probabilistically achieve a connected subnetwork of validators with a small diameter, although additional thought needs to be put into how to set the val peer bounds and target based on the number of validators in the network.
+
+
+## Consequences
+
+> This section describes the consequences, after applying the decision. All
+> consequences should be summarized here, not just the "positive" ones.
+
+### Positive
+- The validator subnetwork diameter will be smaller, allowing messages to propagate between validators with less latency
+
+### Negative
+- There is additional network bandwidth used by the new reactor
+
+### Neutral
+
+## References
+
+- [issue: Create a separate p2p network for validator consensus](https://github.com/skip-mev/cometbft/issues/5)
+- [libp2p gossipsub v1.0 spec](https://github.com/libp2p/specs/blob/master/pubsub/gossipsub/gossipsub-v1.0.md)

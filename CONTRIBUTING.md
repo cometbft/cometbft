@@ -54,6 +54,12 @@ release?
    automatically generated code changes should occur within separate commits, so
    they are easily distinguishable from manual code changes.
 
+3. Make sure that your pull request addresses a particular issue and that its description starts with "Closes #XXX" (where "XXX" is the issue number). 
+
+If the work in a PR is not aligned with the team's current priorities, please
+be advised that it may take some time before it is merged - especially if it has
+not been previously discussed with the team.
+
 ## Workflow
 
 The following diagram summarizes the general workflow used by the core team to

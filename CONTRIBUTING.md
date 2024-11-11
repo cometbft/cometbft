@@ -54,7 +54,8 @@ release?
    automatically generated code changes should occur within separate commits, so
    they are easily distinguishable from manual code changes.
 
-3. Make sure that your pull request addresses a particular issue and that its description starts with "Closes #XXX" (where "XXX" is the issue number). 
+3. Make sure that your pull request addresses a particular issue and that its description starts with 
+the issue number: If it fully closes the issue, please start with "Closes #XXX" (where "XXX" is the issue number), otherwise "Partially closes #XXX", "Addresses #XXX" should be used. 
 
 If the work in a PR is not aligned with the team's current priorities, please
 be advised that it may take some time before it is merged - especially if it has

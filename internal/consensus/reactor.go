@@ -47,10 +47,9 @@ type Reactor struct {
 	waitSync atomic.Bool
 	eventBus *types.EventBus
 
-	initialHeight atomic.Int64
-
-	rsMtx cmtsync.RWMutex
-	rs    cstypes.RoundState
+	rsMtx         cmtsync.RWMutex
+	rs            cstypes.RoundState
+	initialHeight int64 // under rsMtx
 
 	Metrics *Metrics
 }

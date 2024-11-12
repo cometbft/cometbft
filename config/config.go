@@ -252,10 +252,10 @@ type BaseConfig struct {
 	// Output level for logging
 	LogLevel string `mapstructure:"log_level"`
 
-	// Output format: 'plain' (colored text) or 'json'
+	// Output format: 'plain' or 'json'
 	LogFormat string `mapstructure:"log_format"`
 
-	// Colored log output
+	// Colored log output. Considered only when `log_format = plain`.
 	LogColors bool `mapstructure:"log_colors"`
 
 	// Path to the JSON file containing the initial validator set and other meta data

@@ -274,6 +274,7 @@ log_format = "plain"
 ### log_colors
 
 Define whether the log output should be colored.
+Only relevant when [`log_format`](#log_format) is `plain`.
 
 ```toml
 log_colors = true
@@ -284,7 +285,7 @@ log_colors = true
 | **Possible values** | `true`  |
 |                     | `false` |
 
-The default is `true`.
+The default is `true` when [`log_format`](#log_format) is `plain`.
 
 ### genesis_file
 Path to the JSON file containing the initial conditions for a CometBFT blockchain and the initial state of the application (more details [here](./genesis.json.md)).

@@ -48,7 +48,7 @@ type Reactor struct {
 	eventBus *types.EventBus
 
 	rsMtx         cmtsync.RWMutex
-	rs            cstypes.RoundState
+	rs            cstypes.RoundState // copy of consensus state
 	initialHeight atomic.Int64
 
 	Metrics *Metrics

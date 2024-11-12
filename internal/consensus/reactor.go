@@ -49,7 +49,7 @@ type Reactor struct {
 
 	rsMtx         cmtsync.RWMutex
 	rs            cstypes.RoundState
-	initialHeight int64 // under rsMtx
+	initialHeight atomic.Int64 // under rsMtx
 
 	Metrics *Metrics
 }
@@ -61,7 +61,7 @@ func NewReactor(consensusState *State, waitSync bool, options ...ReactorOption) 
 	conR := &Reactor{
 		conS:          consensusState,
 		waitSync:      atomic.Bool{},
-		rs:            consensusState.RoundState,
+		rs:            consensusState.GetRoundState(),
 		initialHeight: atomic.Int64{},
 		Metrics:       NopMetrics(),
 	}

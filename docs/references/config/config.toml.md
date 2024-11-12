@@ -209,7 +209,9 @@ COMETBFT_BUILD_OPTIONS=nodebug make install
 > avoid compiling the binary with the `nodebug` build tag.
 
 ### log_format
+
 Define the output format of the logs.
+
 ```toml
 log_format = "plain"
 ```
@@ -219,9 +221,10 @@ log_format = "plain"
 | **Possible values** | `"plain"` |
 |                     | `"json"`  |
 
-`plain` provides ANSI color-coded plain-text logs.
+`plain` provides ANSI plain-text logs, by default color-coded (can be changed using [`log_colors`](#log_colors)).
 
 `json` provides JSON objects (one per line, not prettified) using the following (incomplete) schema:
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",

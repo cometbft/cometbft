@@ -269,6 +269,8 @@ func setupNode() (*config.Config, log.Logger, *nodekey.NodeKey, error) {
 
 	if cmtcfg.LogFormat == config.LogFormatJSON {
 		logger = log.NewJSONLogger(os.Stdout)
+	} else if !cmtcfg.LogColors {
+		logger = log.NewLoggerWithColor(os.Stdout, false)
 	}
 
 	nodeLogger, err := cmtflags.ParseLogLevel(cmtcfg.LogLevel, logger, config.DefaultLogLevel)

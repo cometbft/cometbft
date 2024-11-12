@@ -209,7 +209,9 @@ COMETBFT_BUILD_OPTIONS=nodebug make install
 > avoid compiling the binary with the `nodebug` build tag.
 
 ### log_format
+
 Define the output format of the logs.
+
 ```toml
 log_format = "plain"
 ```
@@ -219,9 +221,10 @@ log_format = "plain"
 | **Possible values** | `"plain"` |
 |                     | `"json"`  |
 
-`plain` provides ANSI color-coded plain-text logs.
+`plain` provides ANSI plain-text logs, by default color-coded (can be changed using [`log_colors`](#log_colors)).
 
 `json` provides JSON objects (one per line, not prettified) using the following (incomplete) schema:
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -270,6 +273,22 @@ log_format = "plain"
 > Note: The list of properties is not exhaustive. When implementing log parsing, check your logs and update the schema.
 
 <!--- Todo: Probably we should create separate schemas for the different log levels or modules. --->
+
+### log_colors
+
+Define whether the log output should be colored.
+Only relevant when [`log_format`](#log_format) is `plain`.
+
+```toml
+log_colors = true
+```
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Possible values** | `true`  |
+|                     | `false` |
+
+The default is `true` when [`log_format`](#log_format) is `plain`.
 
 ### genesis_file
 Path to the JSON file containing the initial conditions for a CometBFT blockchain and the initial state of the application (more details [here](./genesis.json.md)).

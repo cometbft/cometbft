@@ -255,6 +255,9 @@ type BaseConfig struct {
 	// Output format: 'plain' (colored text) or 'json'
 	LogFormat string `mapstructure:"log_format"`
 
+	// Colored log output
+	LogColors bool `mapstructure:"log_colors"`
+
 	// Path to the JSON file containing the initial validator set and other meta data
 	Genesis string `mapstructure:"genesis_file"`
 
@@ -292,6 +295,7 @@ func DefaultBaseConfig() BaseConfig {
 		ABCI:               "socket",
 		LogLevel:           DefaultLogLevel,
 		LogFormat:          LogFormatPlain,
+		LogColors:          true,
 		FilterPeers:        false,
 		DBBackend:          "pebbledb",
 		DBPath:             DefaultDataDir,

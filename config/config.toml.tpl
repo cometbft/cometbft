@@ -47,6 +47,9 @@ log_level = "{{ .BaseConfig.LogLevel }}"
 # Output format: 'plain' (colored text) or 'json'
 log_format = "{{ .BaseConfig.LogFormat }}"
 
+# Colored log output
+log_colors = {{ .BaseConfig.LogColors }}
+
 ##### additional base config options #####
 
 # Path to the JSON file containing the initial validator set and other meta data

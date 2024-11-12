@@ -357,7 +357,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		testnet.ValidatorUpdates[int64(height)] = valUpdate
 	}
 
-	if testnet.ConstantFlip {
+	if testnet.ConstantFlip && len(testnet.Validators) > 1 {
 		// Pick "lowest" validator by name
 		var minNode string
 		for n := range testnet.Validators {

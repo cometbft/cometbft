@@ -97,6 +97,8 @@ var RootCmd = &cobra.Command{
 
 		if config.LogFormat == cfg.LogFormatJSON {
 			logger = log.NewJSONLogger(os.Stdout)
+		} else if !config.LogColors {
+			logger = log.NewLoggerWithColor(os.Stdout, false)
 		}
 
 		logger, err = cmtflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)

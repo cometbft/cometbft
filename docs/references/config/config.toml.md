@@ -271,6 +271,21 @@ log_format = "plain"
 
 <!--- Todo: Probably we should create separate schemas for the different log levels or modules. --->
 
+### log_colors
+
+Define whether the log output should be colored.
+
+```toml
+log_colors = true
+```
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Possible values** | `true`  |
+|                     | `false` |
+
+The default is `true`.
+
 ### genesis_file
 Path to the JSON file containing the initial conditions for a CometBFT blockchain and the initial state of the application (more details [here](./genesis.json.md)).
 ```toml

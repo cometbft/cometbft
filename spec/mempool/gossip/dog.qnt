@@ -144,9 +144,9 @@ module dog {
     // Parameters/Configuration
     //--------------------------------------------------------------------------
 
-    // `TargetRedundancy` is the desired level. A certain level that the
-    // Redundancy Controller aims to maintain, within certain boundaries defined
-    // by `TargetRedundancyDeltaPercent`.
+    // `TargetRedundancy` is the desired redundancy level of a node. A certain
+    // level that the Redundancy Controller aims to maintain, within the
+    // boundaries defined by `TargetRedundancyDeltaPercent`.
     //
     // When `TargetRedundancy` is 0, the Redundancy Control mechanism is
     // partially disabled: `adjustRedundancy` will be able only to block HaveTx
@@ -197,14 +197,15 @@ module dog {
     // Actions
     //--------------------------------------------------------------------------
 
-    // Initial state.
+    // DOG's initial state is based on Flood's initial state.
     action D_init = all {
         F::init,
         dr' = NodeIDs.mapBy(_ => Set()),
         rc' = NodeIDs.mapBy(_ => initialRCState)
     }
 
-    // How to handle messages from peers.
+    // `handleMessage` defines how to handle each type of messages received from
+    // peers.
     action handleMessage(node, _msgs, sender, msg) =
         match msg {
         | TxMsg(tx) => node.tryAddTx(_msgs, Some(sender), tx)
@@ -212,19 +213,21 @@ module dog {
         | ResetMsg => node.handleResetMessage(_msgs, sender)
         }
 
-    // The same as in Flood. The difference is in the two functions that process
-    // the transaction.
+    // `tryAddTx` defines how a node add a transaction to its mempool, the same
+    // as in Flood. The difference is in the two functions that process the
+    // transaction.
     action tryAddTx(node, _msgs, optionalSender, tx) = 
         if (not(hash(tx).in(node.Cache())))
             node.tryAddFirstTimeTx(_msgs, optionalSender, tx)
         else
             node.processDuplicateTx(_msgs, optionalSender, tx)
 
-    // Attempt to add a received first-time transaction tx to the mempool: add
-    // tx to cache, add tx to pool and update tx's senders if tx is valid, and
-    // update messages (the same as in Flood). Additionally, increase
-    // `rc.firstTimeTxs`, and every `TxsPerAdjustment` transactions received for
-    // the first time, call `adjustRedundancy()`.
+    // `tryAddFirstTimeTx` attempts to add a received first-time transaction tx
+    // to the mempool: (1) it adds tx to cache, (2) if tx is valid, adds tx to
+    // pool and (3) updates tx's senders. All these actions are taken from
+    // Flood. Additionally, (4) it increases `rc.firstTimeTxs`, and (5) on every
+    // `TxsPerAdjustment` transactions received for the first time, call
+    // `adjustRedundancy()`.
     action tryAddFirstTimeTx(node, _msgs, optionalSender, tx) = 
         val _rc1 = node.RC().increaseFirstTimeTxs()
         val _result = if (_rc1.adjustNow()) _rc1.adjustRedundancy() else (_rc1, false)
@@ -239,10 +242,11 @@ module dog {
             dr' = dr,
         }
 
-    // Process a received duplicate transaction `tx`: increase `duplicateTxs`
-    // and reply a `HaveTx` message if the RC mechanism is not blocking it (and
-    // there's a sender). As in Flood, update the list of senders if `tx` is in
-    // `pool` (and thus it's valid), and update the list of incoming messages. 
+    // `processDuplicateTx` processes a received duplicate transaction `tx`: it
+    // increases `duplicateTxs` and replies a `HaveTx` message if the RC
+    // mechanism is not blocking it (and there's a sender). As in Flood, update
+    // the list of senders if `tx` is in `pool` (and thus it's valid), and
+    // update the list of incoming messages. 
     action processDuplicateTx(node, _msgs, optionalSender, tx) =
         // Reply HaveTxMsg if tx comes from a peer.
         val updatedMsgs = 

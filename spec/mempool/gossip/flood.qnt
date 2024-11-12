@@ -29,23 +29,25 @@ module flood {
         | TxMsg(tx) => node.tryAddTx(_msgs, Some(sender), tx)
         }
 
-    // A node attempts to add a transaction to its mempool, processing it
-    // differently based on whether the transaction has been seen before (i.e.
-    // it exists in the cache). We call a *first-time* transaction to one that
-    // the node does not have in its cache. A *duplicate* transaction is one
-    // that the node has received multiple times.
+    // A node attempting to add a transaction to its mempool processes the
+    // transaction according to whether it has been seen it before, that is, if
+    // it exists in the mempool cache. We call a *first-time* transaction to one
+    // that the node does not have in its cache. A *duplicate* transaction is
+    // one that the node has received multiple times, and thus it's in its
+    // cache.
     //
-    // The sender is optional. When there's no sender, it means that the
-    // transaction comes directly from a user.
+    // The sender is optional. When there's a sender, it means that the
+    // transaction comes from a peer; otherwise it comes directly from a user.
     action tryAddTx(node, _msgs, optionalSender, tx) = 
         if (not(hash(tx).in(node.Cache())))
             node.tryAddFirstTimeTx(_msgs, optionalSender, tx)
         else
             node.processDuplicateTx(_msgs, optionalSender, tx)
 
-    // Attempt to add a first-time transaction to the mempool (not in cache):
-    // add the transction to the cache, add it to the pool and update its
-    // senders if it's valid, and update the incoming messages if applicable.
+    // `tryAddFirstTimeTx` attempts to add a first-time transaction to the
+    // mempool (not in cache): (1) it adds the transaction to the cache, (2) if
+    // the transaction is valid, it adds the transaction to the pool and (3)
+    // updates its senders.
     action tryAddFirstTimeTx(node, _msgs, optionalSender, tx) = all {
         state' = state.update(node, st => {
             cache: st.cache.join(hash(tx)),
@@ -59,8 +61,8 @@ module flood {
         peers' = peers,
     }
 
-    // Process a duplicate transaction (in cache): update the senders list if
-    // the transaction is in pool, and update messages.
+    // `processDuplicateTx` processes a duplicate transaction (in cache) by
+    // updating the list of senders, only if the transaction is in pool.
     action processDuplicateTx(node, _msgs, optionalSender, tx) = all {
         state' = state.update(node, st => { 
             senders: 
@@ -73,11 +75,12 @@ module flood {
     }
 
     //--------------------------------------------------------------------------
-    // `mkTargetNodes` is passed as an argument to the generic transaction
-    // dissemination function. It defines the set of peers to whom `node` will
-    // send `tx`.
+    // `mkTargetNodes` defines the set of peers to whom `node` will send `tx`.
+    // It is passed as an argument to the generic transaction dissemination
+    // action.
     //
-    // Flood sends `tx` to all peers except those who previously sent it.
+    // In Flood, a node sends a transaction to all its peers except those who
+    // previously sent it.
     def mkTargetNodes(node, tx) =
         val txSenders = node.Senders().mapGetDefault(hash(tx), List())
         node.Peers().exclude(txSenders.listToSet())

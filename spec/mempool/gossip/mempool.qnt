@@ -1,8 +1,9 @@
 // -*- mode: Bluespec; -*-
 /*******************************************************************************
-The mempool module defines essential types, data structures, and actions needed
-to keep and disseminate a list of pending transactions ("the mempool"). It does
-not include a gossip protocol.
+The mempool module defines essential types and data structures needed to keep a
+list of pending transactions ("the mempool"), as well as generic actions to
+disseminate transactions in the mempool. Those actions are then instantiated
+with specific behaviour defined by the gossip protocols.
 *******************************************************************************/
 module mempool {
     import spells.* from "./spells"
@@ -42,18 +43,17 @@ module mempool {
     //--------------------------------------------------------------------------
     // State
     //--------------------------------------------------------------------------
-    // The protocol is modelled as a state transition system. A state is defined
-    // by the values of the following variables.
 
+    // Mempool's data structures.
     type MempoolState = {         
-        // Cache of already received transaction IDs. We assume the cache never
-        // overflows.
+        // Cache of already received transaction IDs. In this spec we assume the
+        // cache never overflows.
         cache: Set[TxID],
 
-        // List of uncommitted/pending transactions ("the mempool"). Used for
+        // List of uncommitted or pending transactions ("the mempool"). Used for
         // picking transactions to disseminate to peers.
         //
-        // We make the following assumptions about the pool:
+        // We make the following assumptions about the mempool:
         // - It does not have a maximum capacity.
         // - New entries are only appended. We do not model when entries are
         //   removed.
@@ -76,8 +76,9 @@ module mempool {
         // traverses the entries in pool one at a time.
         //
         // We model transaction dissemination using one dissemination process
-        // (`disseminateNextTx`) that iterates on the pool and multicasts an
-        // entry to all connected peers, one entry per step and atomically.
+        // (`disseminateNextTx`) that iterates on the list of transactions
+        // reading one mempool entry per step, and atomically multicasts one
+        // transaction message to all connected peers.
         //
         // In the implementation there is one dissemination process per peer,
         // each with its own iterator (and thus a separate pool index per
@@ -86,21 +87,19 @@ module mempool {
         // is added. All iterators read concurrently from the pool.
         poolIndex: int,
 
-        // Each transaction in the pool has a set of peers from which the node
+        // Each entry in the mempool has a set of peers from which the node
         // received the transaction. 
         //
-        // We define as a list instead of a set because the DOG protocol needs
-        // to know who was the first sender of a transaction.
+        // We define it as a list instead of a set because the DOG protocol
+        // needs to know who is the first sender of a transaction.
         //
-        // Note that a transaction may be in the cache but not in the pool. In
-        // that case, the transaction won't have senders. Senders are only
-        // needed for disseminating (valid) transactions that are in the
-        // mempool. That is why we remove the senders when the transaction is
-        // removed from the mempool (not modelled here).
+        // Note that when a transaction is in the cache but not in the pool, it
+        // won't have any sender. Senders are only needed for disseminating
+        // (valid) transactions that are in the mempool.
         senders: TxID -> List[NodeID]
     }
 
-    // The state of all nodes.
+    // Each node has a mempool state.
     var state: NodeID -> MempoolState
 
     // A node's empty state with a given set of peers.
@@ -111,11 +110,12 @@ module mempool {
         senders: Map(),
     }
 
-    // If there's a sender, add it to tx's set of senders.
-    pure def addSender(txSenders, tx, optionalSender) = 
+    // `addSender` adds a sender to `tx`'s list of senders (`_txSenders`), if
+    // `optionalSender` has a value.
+    pure def addSender(_txSenders, tx, optionalSender) = 
         match optionalSender {
-        | Some(sender) => txSenders.update(hash(tx), ss => ss.append(sender))
-        | None => txSenders
+        | Some(sender) => _txSenders.update(hash(tx), ss => ss.append(sender))
+        | None => _txSenders
         }
 
     // Auxiliary definitions
@@ -136,36 +136,42 @@ module mempool {
     }
 
     // Users create transactions and send them to one of the nodes in the
-    // network. Nodes receive transactions either from users or in messages from
-    // peers. Transaction from users have no sender.
+    // network. Nodes receive transactions either directly from users or in
+    // messages from peers. Transaction from users have no sender.
 
-    // A node receives transaction tx from a user.
+    // `receiveTxFromUser` is a generic action that models a node receiving
+    // transaction `tx` from a user. The function `_tryAddTx` can be
+    // instantiated by the gossip protocol to define how to add transactions to
+    // the mempool:
+    // - `_tryAddTx(msgs, optionalSender, tx)` attempts to add `tx` to the
+    //   mempool, given the node ID of the sender in case `tx` comes from
+    //   another node.
     //
-    // Arguments:
-    // - _tryAddTx(msgs, optionalSender, tx) attempts to add tx to pool, given
-    //   the node ID of the sender in case tx comes from another node.
+    // Typically, users send (full) transactions to the node via an RPC
+    // endpoint. Users are allowed to submit the same transaction more than once
+    // and to multiple nodes.
     //
-    // Typically a user sends a (full) transaction to a node via an RPC
-    // endpoint. Users are allowed to submit the same tx more than once and to
-    // multiple nodes. This action is only enabled if the transaction is not in
-    // the pool. In the actual mempool implementation we have the cache that
-    // prevents this scenario.
+    // This action is enabled only if the transaction is not in the pool. In the
+    // actual mempool implementation we have the cache that prevents this
+    // scenario.
     action receiveTxFromUser(node, tx, _tryAddTx) =
         node._tryAddTx(msgs, None, tx)
 
-    // A node traverses pool sending transactions to its peers. It takes the
-    // next transaction from the iterator and disseminates it to all its peers
-    // at once. 
+    // `disseminateNextTx` is a generic action that models a node traversing the
+    // pool while sending transactions to its peers. It takes the next
+    // transaction from the iterator and atomically sends it to a set of target
+    // peers.
     //
-    // Arguments:
-    // - _mkTargetNodes(node, tx) returns the set of peers to which node will
-    //   send tx.
-    // - _mkTxMsg(tx) is a wrapper function that returns the specific message
+    // The following arguments are functions that define the to who it will send
+    // transactions:
+    // - `_mkTargetNodes(node, tx)` returns the set of peers to which `node`
+    //   will send `tx`.
+    // - `_mkTxMsg(tx)` is a wrapper function that returns the specific message
     //   type used by the gossip protocol.
     //
-    // The pool index must not exceed the pool's length. This models when the
-    // iterator is at the end of the list and it's blocked waiting for a new
-    // entry to be appended to the list.
+    // The pool index must not exceed the pool's length. This pre-condition
+    // models when the iterator is at the end of the list and it's blocked
+    // waiting for a new entry to be appended to the list.
     //
     // In the actual implementation, there is a separate goroutine for each
     // peer, so not all txs are sent at the same time.

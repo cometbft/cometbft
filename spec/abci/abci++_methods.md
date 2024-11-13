@@ -705,8 +705,8 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Usage**:
     * Validator identified by address
-    * Used as part of VoteInfo within `CommitInfo` (used in `ProcessProposal` and `FinalizeBlock`),
-      and `ExtendedCommitInfo` (used in `PrepareProposal`).
+    * Used as part of `VoteInfo` within `CommitInfo` (used in `ProcessProposal`
+      and `FinalizeBlock`), and `ExtendedCommitInfo` (used in `PrepareProposal`).
     * Does not include PubKey to avoid sending potentially large quantum pubkeys
     over the ABCI
 
@@ -803,10 +803,10 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Fields**:
 
-    | Name              | Type                    | Description                                                   | Field Number |
-    |-------------------|-------------------------|---------------------------------------------------------------|--------------|
-    | validator         | [Validator](#validator) | The validator that sent the vote.                             | 1            |
-    | signed_last_block | bool                    | Indicates whether or not the validator signed the last block. | 2            |
+    | Name          | Type                                                  | Description                                                                              | Field Number |
+    |---------------|-------------------------------------------------------|------------------------------------------------------------------------------------------|--------------|
+    | validator     | [Validator](#validator)                               | The validator that sent the vote.                                                        | 1            |
+    | block_id_flag | [BlockIDFlag](../core/data_structures.md#blockidflag) | Indicates whether the validator voted the last block, nil, or its vote was not received. | 3            |
 
 * **Usage**:
     * Indicates whether a validator signed the last block, allowing for rewards based on validator availability.
@@ -816,16 +816,18 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Fields**:
 
-    | Name              | Type                    | Description                                                                  | Field Number |
-    |-------------------|-------------------------|------------------------------------------------------------------------------|--------------|
-    | validator         | [Validator](#validator) | The validator that sent the vote.                                            | 1            |
-    | signed_last_block | bool                    | Indicates whether or not the validator signed the last block.                | 2            |
-    | vote_extension    | bytes                   | Non-deterministic extension provided by the sending validator's Application. | 3            |
+    | Name                | Type                                                  | Description                                                                                 | Field Number |
+    |---------------------|-------------------------------------------------------|---------------------------------------------------------------------------------------------|--------------|
+    | validator           | [Validator](#validator)                               | The validator that sent the vote.                                                           | 1            |
+    | vote_extension      | bytes                                                 | Non-deterministic extension provided by the sending validator's Application.                | 3            |
+    | extension_signature | bytes                                                 | Signature of the vote extension produced by the sending validator and verified by CometBFT. | 4            |
+    | block_id_flag       | [BlockIDFlag](../core/data_structures.md#blockidflag) | Indicates whether the validator voted the last block, nil, or its vote was not received.    | 5            |
 
 * **Usage**:
     * Indicates whether a validator signed the last block, allowing for rewards based on validator availability.
     * This information is extracted from CometBFT's data structures in the local process.
-    * `vote_extension` contains the sending validator's vote extension, which is signed by CometBFT. It can be empty
+    * `vote_extension` contains the sending validator's vote extension, whose signature was verified by CometBFT. It can be empty.
+    * `extension_signature` is the signature of the vote extension, which was verified verified by CometBFT. This way, we expose the signature to the application for further processing or verification.
 
 ### CommitInfo
 

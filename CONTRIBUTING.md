@@ -54,6 +54,15 @@ release?
    automatically generated code changes should occur within separate commits, so
    they are easily distinguishable from manual code changes.
 
+3. Make sure that your pull request addresses a particular issue and that its 
+description starts with the issue number: If it fully closes the issue, 
+please start with "Closes #XXX" (where "XXX" is the issue number), otherwise 
+"Partially closes #XXX", "Addresses #XXX" should be used. 
+
+If the work in a PR is not aligned with the team's current priorities, please
+be advised that it may take some time before it is merged - especially if it has
+not been previously discussed with the team.
+
 ## Workflow
 
 The following diagram summarizes the general workflow used by the core team to
@@ -207,6 +216,9 @@ When updating dependencies, please only update the particular dependencies you
 need. Instead of running `go get -u=patch`, which will update anything, specify
 exactly the dependency you want to update.
 
+Do not bump the major Go version in a patch release (namely, `v0.34.x`, `v0.37.x`,
+`v0.38.x` branches) unless there's a pressing reason to do so (e.g., known security vulnerabilities).
+
 ## Logging
 
 Operators, consensus engine and application developers all need information from
@@ -227,12 +239,12 @@ Nth message, or a summary message every minute or hour).
 
 ### Log levels
 
-Different log levels should target different groups of users. At present, only
-**Debug**, **Info** and **Error** levels are supported.
+Different log levels should target different groups of users. CometBFT supports
+**Debug**, **Info**, **Warn** and **Error** levels.
 
 - **Debug**: Should primarily target consensus engine developers (i.e. core team
   members and developers working on CometBFT forks).
-- **Info** and **Error**: Should primarily target operators and application
+- **Info**, **Warn** and **Error**: Should primarily target operators and application
   developers.
 
 ### Sensitive information

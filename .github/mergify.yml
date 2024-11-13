@@ -87,18 +87,6 @@ pull_request_rules:
       merge:
         method: squash
 
-  - name: Attach backport-to-v0.38.x-experimental label to PR
-    description: >-
-      Assign backport-to-v0.38.x-experimental label to any PR targeting v0.38.x
-      branch
-    conditions:
-      - base=v0.38.x
-    actions:
-      label:
-        add:
-          - backport-to-v0.38.x-experimental
-          - automerge
-
   - name: Make sure PR are up to date before merging
     description: >-
       This automatically updates PRs when they are out-of-date with the base
@@ -109,16 +97,6 @@ pull_request_rules:
     actions:
       update:
 
-  - name: backport patches to v0.38.x-experimental branch
-    conditions:
-      - base=v0.38.x
-      - label=backport-to-v0.38.x-experimental
-    actions:
-      backport:
-        branches:
-          - v0.38.x-experimental
-        assignees:
-          - "{{ author }}"
   - name: backport patches to v1.x branch
     conditions:
       - base=main

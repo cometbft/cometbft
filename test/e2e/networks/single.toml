@@ -1,1 +1,5 @@
-[node.validator]
+vote_extensions_update_height = -1
+vote_extensions_enable_height = 1
+
+[node.validator1]
+[node.validator2]

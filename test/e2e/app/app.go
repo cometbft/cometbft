@@ -28,7 +28,6 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/test/loadtime/payload"
 	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
@@ -1018,16 +1017,18 @@ func (app *Application) verifyAndSum(
 		if len(chainID) == 0 {
 			panic("chainID not set in database")
 		}
-		cve := cmtproto.CanonicalVoteExtension{
-			Extension: vote.VoteExtension,
-			Height:    currentHeight - 1, // the vote extension was signed in the previous height
-			Round:     int64(extCommit.Round),
-			ChainId:   chainID,
-		}
-		extSignBytes, err := protoio.MarshalDelimited(&cve)
-		if err != nil {
-			return 0, fmt.Errorf("error when marshaling signed bytes: %w", err)
-		}
+		// cve := cmtproto.CanonicalVoteExtension{
+		// 	Extension: vote.VoteExtension,
+		// 	Height:    currentHeight - 1, // the vote extension was signed in the previous height
+		// 	Round:     int64(extCommit.Round),
+		// 	ChainId:   chainID,
+		// }
+		// extSignBytes, err := protoio.MarshalDelimited(&cve)
+		// if err != nil {
+		// 	return 0, fmt.Errorf("error when marshaling signed bytes: %w", err)
+		// }
+
+		extSignBytes := vote.VoteExtension
 
 		// ... and verify
 		valAddr := crypto.Address(vote.Validator.Address).String()

@@ -1,6 +1,7 @@
 package store
 
 import (
+	"encoding/hex"
 	"strconv"
 
 	"github.com/google/orderedcode"
@@ -29,7 +30,10 @@ func (*v1LegacyLayout) CalcBlockCommitKey(height int64) []byte {
 
 // CalcBlockHashKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcBlockHashKey(hash []byte) []byte {
-	return append([]byte{'B', 'H', ':'}, hash...)
+	hexHash := make([]byte, hex.EncodedLen(len(hash)))
+	hex.Encode(hexHash, hash)
+
+	return append([]byte{'B', 'H', ':'}, hexHash...)
 }
 
 // CalcBlockMetaKey implements BlockKeyLayout.

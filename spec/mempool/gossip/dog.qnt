@@ -1,35 +1,39 @@
 // -*- mode: Bluespec; -*-
 
-// 👉 This is WORK IN PROGRESS; not everything here is correct 👈 
-
 /*******************************************************************************
 Dynamic Optimal Graph (DOG) gossip protocol.
 
 The DOG protocol optimizes network efficiency by dynamically managing how
-transactions are routed to peers:
-- If node A receives a transaction from node B that it already has in its cache,
-  it implies that there is a cycle in the network topology. Node A will message
-  B to stop sending transactions in order to cut that cycle.
-- Conversely, if a node does not receive enough transactions, it can request
-  additional transactions from its peers.
+transactions are routed to peers: if node A receives a transaction from node B
+that it already has in its cache, it implies that there is a cycle in the
+network topology. Node A will message B to stop sending transactions, and B will
+close one of the "routes" that sends transactions to A, thus cutting the cycle.
+
+Additionally, for keeping nodes resilient to Byzantine attacks, the protocol has
+a Redundancy Controller that maintains a minimum, pre-defined level of
+transaction redundancy. If a node is not receiving enough duplicate
+transactions, it will message its peers to request additional ones.
 
 The DOG protocol is built on top of the Flood protocol. This spec uses many of
 the same types, messages, and data structures as Flood. In priciple, it is
 possible to enable or disable DOG in nodes running Flood. Nodes running DOG and
-Flood can co-exist in the network, though performance is optimal only if all
-nodes use DOG.
+Flood can co-exist in the network, though performance will be optimal only if
+all nodes enable DOG.
 *******************************************************************************/
 module dog {
     import spells.* from "./spells"
     import mempool.* from "./mempool"
-    import flood as F from "./flood"
+    import flood as Flood from "./flood"
 
     //--------------------------------------------------------------------------
     // Messages
     //--------------------------------------------------------------------------
 
+    // In addition to the data message `TxMsg`, DOG has two control messages.
+    // The size of the control messages is negligible compared to `TxMsg`, which
+    // carries a full transaction.
     type Message =
-        // `TxMsg` messages carry a full transaction (same as in Flood).
+        // Transaction message (same as in Flood).
         | TxMsg(TX)
         // A node sends `HaveTxMsg` messages to signal that it already received
         // the transaction. The receiver will cut a route related to tx that is
@@ -39,11 +43,6 @@ module dog {
         // enough transactions. The receiver should re-enable some route to the
         // node if possible.
         | ResetMsg
-
-    // The size of `HaveTxMsg` and `ResetMsg` is negligible compared to `TxMsg`.
-    //
-    // In the real implementation, `TxMsg` is sent on a P2P mempool data
-    // channel, while `HaveTxMsg` and `ResetMsg` are sent on a control channel.
 
     //--------------------------------------------------------------------------
     // Routing
@@ -79,51 +78,43 @@ module dog {
     //--------------------------------------------------------------------------
     // Redundancy Controller (RC)
     //--------------------------------------------------------------------------
-    // The Redundancy Controller is a closed-loop mechanism to auto-adjust the
-    // level of redundant transactions that a node receives. A node configures a
-    // target redundancy level that it aims to maintain and how often it should
-    // make adjustments. The controller periodically computes the redundancy
-    // level and tries to keep it within certain pre-defined accepted bounds (as
-    // defined below).
+    // The Redundancy Controller is a closed-loop mechanism that auto-adjust the
+    // level of redundant transactions that a node receives. As part of its
+    // initial configuration, a node sets (1) the target redundancy that it aims
+    // to maintain and (2) how often it should make adjustments. The controller
+    // periodically computes the redundancy level and tries to keep it within
+    // certain pre-defined accepted bounds (as defined below).
 
-    // A Redundancy Controller needs the following data structures.
-    type RedundancyControlState = {
+    // The Redundancy Controller has the following data structures.
+    type RedundancyController = {
         // Counter of transactions received for the first time by a node.
         firstTimeTxs: int,
         // Counter of duplicate transactions received by a node. 
         duplicateTxs: int,
-        // Whether the node is allowed to reply with a HaveTx message upon
+        // Whether the node is allowed to reply with a `HaveTx` message upon
         // receiving a duplicate transaction.
         isHaveTxBlocked: bool,
     }
 
-    // Each node keeps an RC state to control its redundancy level.
-    var rc: NodeID -> RedundancyControlState
+    // Each node keeps an RC to adjust its redundancy level.
+    var rc: NodeID -> RedundancyController
 
-    // The redundancy level is defined as the proportion of duplicate
+    // The _redundancy level_ is defined as the proportion of duplicate
     // transactions over first-time transactions. For example, a redundancy of 1
     // means that for each transaction that the node has received for the first
     // time, the node has received one transaction that is a duplicate (not
-    // necessarily a duplicate of the first-time transaction).
+    // necessarily a duplicate of the first-time transactions received).
     pure def redundancy(_rc) = _rc.duplicateTxs / _rc.firstTimeTxs
 
-    // adjustRedundancy returns an updated RC state and whether to reply with a
-    // Reset message.
+    // `adjustRedundancy` returns an updated RC state and whether to reply with
+    // a `Reset` message.
     //
-    // Periodically, the RC of the node computes the redundancy level. If the
-    // level is too low, it will try to increase it by sending to one of its
-    // peers a Reset message, thus increasing the number of transactions
-    // received. If the level is too high, it will try to decrease it by
-    // allowing sending HaveTx messages, so that the number of transactions
-    // received decline. Otherwise it does nothing.
-    //
-    // On every adjustment, the counters are reset. This means that redundancy
-    // is computed for the period elapsed since the last adjustment.
-    //
-    // When the target redundancy is 0, the lower and upper bounds are also
-    // equal to 0. Then every `TxsPerAdjustment` received transactions
-    // `adjustRedundancy` will unblock `HaveTx` but it will not send `Reset`
-    // messages.
+    // Periodically, the controller computes the redundancy level. If the level
+    // is too low, it will try to increase it by sending to one of its peers a
+    // `Reset` message, thus increasing the number of transactions received. If
+    // the level is too high, it will try to decrease it by allowing sending
+    // `HaveTx` messages, so that the number of transactions received decline.
+    // Otherwise it does nothing.
     pure def adjustRedundancy(_rc) = 
         if (_rc.redundancy() < redundancyLowerBound)
             (_rc.resetCounters(), true)
@@ -131,6 +122,13 @@ module dog {
             (_rc.resetCounters().blockHaveTx(), false)
         else 
             (_rc.resetCounters(), false)
+    // On every adjustment, the counters are reset. This means that redundancy
+    // is computed for the period elapsed since the last adjustment.
+    //
+    // Note that when the target redundancy is 0, the lower and upper bounds are
+    // also equal to 0. Then every `TxsPerAdjustment` received transactions
+    // `adjustRedundancy` will unblock `HaveTx` but it will not send `Reset`
+    // messages.
 
     // Auxiliary definitions
     def RC(node) = rc.get(node)
@@ -138,74 +136,77 @@ module dog {
     pure def increaseFirstTimeTxs(_rc) = { firstTimeTxs: _rc.firstTimeTxs + 1, ..._rc }
     pure def increaseDuplicateTxs(_rc) = { duplicateTxs: _rc.duplicateTxs + 1, ..._rc }
     pure def resetCounters(_rc) = { firstTimeTxs: 0, duplicateTxs: 0, ..._rc }
-    pure def blockHaveTx(_rc) = { isHaveTxBlocked: false, ..._rc }
+    pure def blockHaveTx(_rc) = { isHaveTxBlocked: true, ..._rc }
     
     //--------------------------------------------------------------------------
     // Parameters/Configuration
     //--------------------------------------------------------------------------
 
     // `TargetRedundancy` is the desired redundancy level of a node. A certain
-    // level that the Redundancy Controller aims to maintain, within the
-    // boundaries defined by `TargetRedundancyDeltaPercent`.
-    //
+    // level that the Redundancy Controller aims to maintain (within the
+    // boundaries defined by below).
+    const TargetRedundancy: int
     // When `TargetRedundancy` is 0, the Redundancy Control mechanism is
     // partially disabled: `adjustRedundancy` will be able only to block HaveTx
-    // messages but not to send Reset messages. This makes the protocol not
+    // messages but not to send `Reset` messages. This makes the protocol not
     // resistant to malicious behaviour. Therefore, in practice, it is not
     // recommended to set it to 0 in Byzantine networks.
     //
-    // It should be a real type, but reals are not currently supported by Quint.
-    const TargetRedundancy: int
-
-    // `TargetRedundancyDeltaPercent` defines the tolerance of acceptable
-    // redundancy below and above `TargetRedundancy`, as a percentage in the
-    // range `[0, 100)`.
-    val TargetRedundancyDeltaPercent: int = 5
+    // This value should be a real type, but reals are not currently supported
+    // by Quint.
     
-    // `TxsPerAdjustment` is the number of first-time transactions that the
-    // controller must wait before it calls `adjustRedundancy`.
+    // `TxsPerAdjustment` is the number of first-time transactions that the node
+    // must wait to receive before it calls `adjustRedundancy`.
     const TxsPerAdjustment: int
 
     // `adjustNow` determines if it is time to adjust redundancy. It returns
     // true when the controller counts more than a certain number of first-time
     // transactions. 
+    pure def adjustNow(rc) =
+        // The threshold that triggers adjustments is proportionally inverse to
+        // the redundancy level. When redundancy is high, the node needs to
+        // decrease it fast, so adjustments happen more frequently. When
+        // redundancy is low, adjustments will happen less often.
+        val threshold = TxsPerAdjustment / rc.redundancy()
+        rc.firstTimeTxs >= max(MinTxsPerAdjustment, min(MaxTxsPerAdjustment, threshold))
+    // where:
+    val MinTxsPerAdjustment = 10
+    val MaxTxsPerAdjustment = 1000
+    // ... are the minimum and maximum allowed values of threshold, which we use
+    // to keep it within a safe range.
     //
     // We don't want to trigger redundancy adjustments on intervals of a fixed
     // number of transactions. If the network is receiving a low transaction
     // load, nodes may need to wait too much to adjust. While if the load is
-    // high, adjustments will happen very frequently. Also, when a node joins a
-    // network, redundancy is high, and we want it to make adjustments more
-    // often to reach the target redundancy.
-    //
-    // We make the threshold that triggers adjustments proportionally inverse to
-    // the redundancy level. When redundancy is high, the node needs to decrease
-    // it it fast, so adjustments must happen more frequently. When redundancy
-    // is low, there is no need to increase it fast. We add a minimum and
-    // maximum threshold value to keep the value within a safe range.
-    pure def adjustNow(rc) =
-        val threshold = TxsPerAdjustment / rc.redundancy()
-        rc.firstTimeTxs >= max(MinTxsPerAdjustment, min(MaxTxsPerAdjustment, threshold))
-    val MinTxsPerAdjustment = 10
-    val MaxTxsPerAdjustment = 1000
+    // high, adjustments will happen very frequently. When a node joins a
+    // network, redundancy will be high and, ideally, we want the controller to
+    // make adjustments more often to reach the target redundancy faster. This
+    // requirement is not strictly needed because we are interested in
+    // decreasing the transaction bandwidth in the long run, and not necessarily
+    // as soon as when a node joins the network.
 
-    // Constants
+    // The following constants define the accepted bounds of redundancy level.
     val _delta = TargetRedundancy * TargetRedundancyDeltaPercent / 100
     val redundancyLowerBound = TargetRedundancy - _delta
     val redundancyUpperBound = TargetRedundancy + _delta
+    // where:
+    val TargetRedundancyDeltaPercent: int = 5
+    // ... defines the tolerance of acceptable redundancy below and above
+    // `TargetRedundancy`, as a percentage in the range `[0, 100)`.
 
     //--------------------------------------------------------------------------
     // Actions
     //--------------------------------------------------------------------------
 
     // DOG's initial state is based on Flood's initial state.
-    action D_init = all {
-        F::init,
+    action DOG_init = all {
+        Flood::init,
         dr' = NodeIDs.mapBy(_ => Set()),
         rc' = NodeIDs.mapBy(_ => initialRCState)
     }
 
-    // `handleMessage` defines how to handle each type of messages received from
-    // peers.
+    // `handleMessage` defines how to handle each type of message received from
+    // a peer (the sender).
     action handleMessage(node, _msgs, sender, msg) =
         match msg {
         | TxMsg(tx) => node.tryAddTx(_msgs, Some(sender), tx)
@@ -237,7 +238,7 @@ module dog {
             val updatedMsgs = 
                 val targets = optionalSender.optionToSet() // may be empty
                 if (sendReset) node.send(_msgs, targets, ResetMsg) else _msgs
-            node.F::tryAddFirstTimeTx(updatedMsgs, optionalSender, tx),
+            node.Flood::tryAddFirstTimeTx(updatedMsgs, optionalSender, tx),
             rc' = rc.put(node, _rc2),
             dr' = dr,
         }
@@ -248,14 +249,14 @@ module dog {
     // the list of senders if `tx` is in `pool` (and thus it's valid), and
     // update the list of incoming messages. 
     action processDuplicateTx(node, _msgs, optionalSender, tx) =
-        // Reply HaveTxMsg if tx comes from a peer.
+        // Reply `HaveTxMsg` if `tx` comes from a peer.
         val updatedMsgs = 
             val targets = optionalSender.optionToSet() // may be empty
             if (not(node.RC().isHaveTxBlocked))
                 node.send(_msgs, targets, HaveTxMsg(hash(tx)))
             else _msgs
         all {
-            node.F::processDuplicateTx(updatedMsgs, optionalSender, tx),
+            node.Flood::processDuplicateTx(updatedMsgs, optionalSender, tx),
             rc' = rc.update(node, increaseDuplicateTxs),
             dr' = dr,
         }
@@ -284,7 +285,7 @@ module dog {
         rc' = rc,
     }
 
-    // Upon receiving ResetMsg, remove any route that has sender as source or
+    // Upon receiving `ResetMsg`, remove any route that has sender as source or
     // target. This will allow traffic to flow again to the sender, and other
     // nodes will dynamically adapt to the new traffic, closing routes when
     // needed.

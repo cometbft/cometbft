@@ -25,28 +25,46 @@ Note that in this document we will refer to validators as any of the core nodes 
 ## Detailed Design
 
 The CometBFT config should add some new fields which should be populated by validators:
-1. `val_peer_count_low`, `val_peer_count_high`, `val_peer_count_target`. These are the lower bound, upper bound, and target number of validator peers to maintain, respectively.
-2. `isValidator` - whether the node should join the valp2p network.
 
-First, we modify the handshake that nodes perform when connecting to each other. Currently, that handshake exchanges `NodeInfo`. We will augment `NodeInfo` to include an `isValidator` field, which is just the `isValidator` value from the config. This will be kept for each peer of the node in the peer's `NodeInfo`.
+1.  `val_peer_count_low`, `val_peer_count_high`, `val_peer_count_target`. These are the lower bound, upper bound, and target number of validator peers to maintain, respectively.
+
+2.  `should_join_valp2p` - whether the node should join the valp2p network.
+
+First, we modify the handshake that nodes perform when connecting to each other. Currently, that handshake exchanges `NodeInfo`. We will augment `NodeInfo` to include an `isValidator` field, which will be kept for each peer of the node in the peer's `NodeInfo`. In order to determine the `isValidator` field, nodes should
+perform a Diffie-Hellman key exchange on connection, and use this along with state to determine if the peer is a validator. [ There may be some edge cases where
+nodes gain or lose their validator status after this handshake has been performed. ]
 
 We will add a new reactor for validator peering, which we will refer to here as valp2p. All nodes in the network should run this new reactor.
+
+This reactor handles the following message types:
+-  `Valp2pRequest` - a message requesting the list of validator addresses.
+-  `Valp2pResponse` - a message containing a list of validator addresses.
+-  `Valp2pAddr` - a message containing a validator address.
 
 The valp2p reactor overrides the `AddPeer` and `Receive` reactor methods.
 
 `AddPeer`: this is called by the switch on every reactor when a peer is added. For valp2p, this should:
 1. Check if the peer is validator, if it is not, return.
-2. If the peer is validator, record its net address in memory. Then, broadcast its net address to all peers.
+2. If the peer is validator, record its net address in memory. Then, broadcast its net address to all peers with a `Valp2pAddr` message.
 
 `Receive`: this processes the messages received by this reactor.
-3. Parse and validate the message. The message should contain a valid net address.
-4. If the current node is a full node, broadcast the message to all peers.
-5. If the current node is a validator, record the net address in memory, then broadcast the message to all peers.
+For `Valp2pAddr`:
+1. Parse and validate the message. The message should contain a valid net address.
+2. Record the net address in memory, then broadcast the message to all peers.
 
-Additionally, when this reactor starts, it should start a goroutine that periodically:
+For `Valp2pRequest`:
+1. Send the source peer a `ValP2pResponse` containing all of the validator addresses recorded in memory.
+
+For `Valp2pResponse`:
+1. Record the addresses in memory.
+
+[ We should not in general blindly trust the addresses sent to us by other validators. When dialing a peer from this address book, we should only keep the connection if the peer succeeds in proving itself as a validator. We may need to update the switch with a new `DialValidator` function or something similar. ]
+
+Additionally, when this reactor starts on a validator node, it should start a goroutine that periodically:
+
 1. Checks the number of validator peers we are currently connected to.
-2. If the number < `val_peer_count_low`, start dialing random validator addresses that we know about until we reach `val_peer_count_target`.
-3.  If the number > `val_peer_count_high`, drop some random validators until we reach `val_peer_count_target`.
+2. If the number < `val_peer_count_low`, start dialing random validator addresses that we know about until we reach `val_peer_count_target`. If we do not have enough addresses, send `Valp2pRequests` to random peers until we have a sufficiently large validator address book.
+3. If the number > `val_peer_count_high`, drop some random validators until we reach `val_peer_count_target`.
 
 [ The exact logic of this goroutine may need to be tweaked, it may interfere with persistent peers, maxnuminboundpeers, and maxnumoutboundpeers. ]
 
@@ -57,7 +75,6 @@ The `Receive` behavior is roughly: when I hear about a new validator, keep it in
 [ May need to add some `broadcastHasValidatorAddress` type of thing to tell other nodes not to send me a specific validator address, similar to consensus `broadcastHasVote` ]
 
 This should probabilistically achieve a connected subnetwork of validators with a small diameter, although additional thought needs to be put into how to set the val peer bounds and target based on the number of validators in the network.
-
 
 ## Consequences
 

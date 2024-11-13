@@ -30,11 +30,11 @@ module flood {
         }
 
     // A node attempting to add a transaction to its mempool processes the
-    // transaction according to whether it has been seen it before, that is, if
-    // it exists in the mempool cache. We call a *first-time* transaction to one
-    // that the node does not have in its cache. A *duplicate* transaction is
-    // one that the node has received multiple times, and thus it's in its
-    // cache.
+    // transaction according to whether it has seen it before, that is, if the
+    // transaction exists in the mempool cache. We call a *first-time*
+    // transaction to one that the node does not have in its cache. A
+    // *duplicate* transaction is one that the node has received multiple times,
+    // and thus it's cached.
     //
     // The sender is optional. When there's a sender, it means that the
     // transaction comes from a peer; otherwise it comes directly from a user.
@@ -44,10 +44,9 @@ module flood {
         else
             node.processDuplicateTx(_msgs, optionalSender, tx)
 
-    // `tryAddFirstTimeTx` attempts to add a first-time transaction to the
-    // mempool (not in cache): (1) it adds the transaction to the cache, (2) if
-    // the transaction is valid, it adds the transaction to the pool and (3)
-    // updates its senders.
+    // `tryAddFirstTimeTx` attempts to add a first-time transaction `tx` to a
+    // `node`'s mempool: (1) it caches `tx`, (2) if `tx` is valid, it adds `tx`
+    // to the pool and (3) updates its senders.
     action tryAddFirstTimeTx(node, _msgs, optionalSender, tx) = all {
         state' = state.update(node, st => {
             cache: st.cache.join(hash(tx)),
@@ -61,8 +60,8 @@ module flood {
         peers' = peers,
     }
 
-    // `processDuplicateTx` processes a duplicate transaction (in cache) by
-    // updating the list of senders, only if the transaction is in pool.
+    // `processDuplicateTx` processes a duplicate transaction `tx` by updating
+    // the list of senders, only if `tx` is already in pool.
     action processDuplicateTx(node, _msgs, optionalSender, tx) = all {
         state' = state.update(node, st => { 
             senders: 
@@ -82,8 +81,7 @@ module flood {
     // In Flood, a node sends a transaction to all its peers except those who
     // previously sent it.
     def mkTargetNodes(node, tx) =
-        val txSenders = node.Senders().mapGetDefault(hash(tx), List())
-        node.Peers().exclude(txSenders.listToSet())
+        node.Peers().exclude(node.sendersOf(tx))
 
     //--------------------------------------------------------------------------
     // All possible state transitions in the protocol.
@@ -118,19 +116,28 @@ module flood {
     // Properties
     //--------------------------------------------------------------------------
 
-    // All messages have been delivered.
-    val allMsgsDelivered = 
-        NodeIDs.forall(node => length(node.Msgs()) == 0)
-
-    // The pools of all nodes contain a given tx.
+    // A given transaction is in the pool of all nodes.
     def txInAllPools(tx) =
         NodeIDs.forall(n => n.Pool().includes(tx))
 
-    // All available transactions are in the pool of all nodes.
-    val allTxsGossipped =
-        NodeIDs.forall(node => size(node.Pool().listToSet()) == size(Txs))
+    // Invariant: if a transaction is in the pool of any node, then eventually
+    // the transaction will reach the pool of all nodes (maybe more than once,
+    // and assuming transactions are not removed from mempools).
+    temporal txInPoolGetsDisseminated = 
+        Txs.forall(tx => 
+            NodeIDs.exists(node =>
+                node.Pool().includes(tx) implies eventually(txInAllPools(tx))))
 
-    // Gossip: The first time a node receives some transaction from a user, the
-    // transaction eventually reaches all nodes (nodes may receive the
-    // transaction more than once).
+    // Invariant: if node A sent a transaction tx to node B (A is in the list of
+    // tx's senders), then B does not send tx to A (the message won't be in A's
+    // incoming messages).
+    val noSendToSender =
+        NodeIDs.forall(nodeA => 
+            NodeIDs.forall(nodeB => 
+                Txs.forall(tx =>
+                    nodeB.sendersOf(tx).contains(nodeA) 
+                    implies
+                    not(nodeA.Msgs().includes((nodeB, TxMsg(tx))))
+        )))
+
 }

@@ -2,8 +2,8 @@
 /*******************************************************************************
 The mempool module defines essential types and data structures needed to keep a
 list of pending transactions ("the mempool"), as well as generic actions to
-disseminate transactions in the mempool. Those actions are then instantiated
-with specific behaviour defined by the gossip protocols.
+disseminate transactions. Those generic actions are then instantiated with
+specific functions that define the behaviour of the gossip protocols.
 *******************************************************************************/
 module mempool {
     import spells.* from "./spells"
@@ -124,6 +124,10 @@ module mempool {
     def PoolIndex(node) = state.get(node).poolIndex
     def Senders(node) = state.get(node).senders
 
+    // The set of senders of transaction `tx`.
+    def sendersOf(node, tx) = 
+        node.Senders().mapGetDefault(hash(tx), List()).listToSet()
+
     //--------------------------------------------------------------------------
     // Actions
     //--------------------------------------------------------------------------
@@ -193,7 +197,7 @@ module mempool {
     // Properties
     //--------------------------------------------------------------------------
 
-    // The pool does not have repeated entries.
+    // Invariant: pools do not have repeated entries.
     val uniqueTxsInPool = 
         NodeIDs.forall(node => size(node.Pool().listToSet()) == length(node.Pool()))
     

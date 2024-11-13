@@ -123,9 +123,9 @@ module flood {
     def txInAllPools(tx) =
         NodeIDs.forall(n => n.Pool().includes(tx))
 
-    // Invariant: if a transaction is in the pool of any node, then eventually
-    // the transaction will reach the pool of all nodes (maybe more than once,
-    // and assuming transactions are not removed from mempools).
+    // If a transaction is in the pool of any node, then eventually the
+    // transaction will reach the pool of all nodes (maybe more than once, and
+    // assuming transactions are not removed from mempools).
     temporal txInPoolGetsDisseminated = 
         Txs.forall(tx => 
             NodeIDs.exists(node =>

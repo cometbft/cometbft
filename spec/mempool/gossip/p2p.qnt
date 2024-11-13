@@ -28,7 +28,8 @@ module p2p {
     // To model network communication, each node has a queue (a list) of
     // incoming messages. Node A sends a message to a node B by appending the
     // message to B's queue. We use queues to model that messages arrive in
-    // order. Messages have a sender (a node ID).
+    // order, as we assume this is guaranteed by the transport layer. Messages
+    // have a sender (a node ID).
     //
     // In the actual implementation, transaction messages are transamitted on
     // the `Mempool` data channel of the P2P layer. Control messages are usually
@@ -131,8 +132,7 @@ module p2p {
         NodeIDs.forall(nodeA => 
             nodeA.Peers().forall(nodeB => nodeA.in(nodeB.Peers())))
 
-    // Invariant: eventually all messages are delivered (there are no incoming
-    // messages).
+    // Eventually all messages are delivered (there are no incoming messages).
     temporal allMsgsDelivered = 
         eventually(NodeIDs.forall(node => length(node.Msgs()) == 0))
 

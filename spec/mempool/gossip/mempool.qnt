@@ -102,19 +102,12 @@ module mempool {
     // Each node has a mempool state.
     var state: NodeID -> MempoolState
 
-    // A node's empty state with a given set of peers.
-    val emptyMempoolState = {
-        pool: List(),
-        cache: Set(),
-        poolIndex: 0,
-        senders: Map(),
-    }
-
     // `addSender` adds a sender to `tx`'s list of senders (`_txSenders`), if
-    // `optionalSender` has a value.
+    // `optionalSender` has a value that's not already in the list.
     pure def addSender(_txSenders, tx, optionalSender) = 
         match optionalSender {
-        | Some(sender) => _txSenders.update(hash(tx), ss => ss.append(sender))
+        | Some(sender) => _txSenders.update(hash(tx), ss => 
+            if (ss.includes(sender)) ss else ss.append(sender))
         | None => _txSenders
         }
 
@@ -136,7 +129,14 @@ module mempool {
     action init = all {
         msgs' = NodeIDs.mapBy(_ => List()),
         peers' = NodeIDs.mapBy(n => InitialPeers.get(n)),
-        state' = NodeIDs.mapBy(n => emptyMempoolState),
+        state' = NodeIDs.mapBy(n => initialMempoolState),
+    }
+    // where:
+    val initialMempoolState = {
+        pool: List(),
+        cache: Set(),
+        poolIndex: 0,
+        senders: Map(),
     }
 
     // Users create transactions and send them to one of the nodes in the

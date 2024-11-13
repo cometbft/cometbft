@@ -67,11 +67,11 @@ module p2p {
     // according to its type.
     action receiveFromPeer(node, handleMessage) = all {
         require(length(node.Msgs()) > 0),
+        // We model receiving of a message as taking the head of the list of
+        // incoming messages and leaving the tail.
         val someMsg = node.Msgs().head()
         val sender = someMsg._1
         val msg = someMsg._2
-        // We model receiving of a message as taking the head of the list of
-        // incoming messages.
         val updatedMsgs = msgs.update(node, tail)
         handleMessage(node, updatedMsgs, sender, msg)
     }

@@ -22,8 +22,11 @@ module flood {
     // Actions
     //--------------------------------------------------------------------------
 
-    // Upon receiving a transaction message from a peer, the node attempts to
-    // add the transaction to its mempool.
+    // Upon receiving a message with transaction `tx` from a peer (i.e., the
+    // `sender`), the `node` attempts to add `tx` to its mempool. 
+    //
+    // The argument `_msgs` is passed just to update the queues of incoming
+    // messages, if applicable (Flood does not reply with any message).
     action handleMessage(node, _msgs, sender, msg) =
         match msg {
         | TxMsg(tx) => node.tryAddTx(_msgs, Some(sender), tx)

@@ -25,11 +25,12 @@ module flood {
     // Upon receiving a message with transaction `tx` from a peer (i.e., the
     // `sender`), the `node` attempts to add `tx` to its mempool. 
     //
-    // The argument `_msgs` is passed just to update the queues of incoming
-    // messages, if applicable (Flood does not reply with any message).
-    action handleMessage(node, _msgs, sender, msg) =
+    // The argument `_incomingMsgs` is passed just to update the queues of
+    // incoming messages, when applicable (Flood does not reply with any message
+    // but DOG does).
+    action handleMessage(node, _incomingMsgs, sender, msg) =
         match msg {
-        | TxMsg(tx) => node.tryAddTx(_msgs, Some(sender), tx)
+        | TxMsg(tx) => node.tryAddTx(_incomingMsgs, Some(sender), tx)
         }
 
     // A node attempting to add a transaction to its mempool processes the
@@ -41,16 +42,16 @@ module flood {
     //
     // The sender is optional. When there's a sender, it means that the
     // transaction comes from a peer; otherwise it comes directly from a user.
-    action tryAddTx(node, _msgs, optionalSender, tx) = 
+    action tryAddTx(node, _incomingMsgs, optionalSender, tx) = 
         if (not(hash(tx).in(node.Cache())))
-            node.tryAddFirstTimeTx(_msgs, optionalSender, tx)
+            node.tryAddFirstTimeTx(_incomingMsgs, optionalSender, tx)
         else
-            node.processDuplicateTx(_msgs, optionalSender, tx)
+            node.processDuplicateTx(_incomingMsgs, optionalSender, tx)
 
     // `tryAddFirstTimeTx` attempts to add a first-time transaction `tx` to a
     // `node`'s mempool: (1) it caches `tx`, (2) if `tx` is valid, it adds `tx`
     // to the pool and (3) updates its senders.
-    action tryAddFirstTimeTx(node, _msgs, optionalSender, tx) = all {
+    action tryAddFirstTimeTx(node, _incomingMsgs, optionalSender, tx) = all {
         state' = state.update(node, st => {
             cache: st.cache.join(hash(tx)),
             pool: if (valid(tx)) st.pool.append(tx) else st.pool,
@@ -59,20 +60,20 @@ module flood {
                     st.senders.addSender(tx, optionalSender) 
                 else st.senders,
             ...st }),
-        msgs' = _msgs,
+        incomingMsgs' = _incomingMsgs,
         peers' = peers,
     }
 
     // `processDuplicateTx` processes a duplicate transaction `tx` by updating
     // the list of senders, only if `tx` is already in pool.
-    action processDuplicateTx(node, _msgs, optionalSender, tx) = all {
+    action processDuplicateTx(node, _incomingMsgs, optionalSender, tx) = all {
         state' = state.update(node, st => { 
             senders: 
                 if (st.pool.includes(tx)) 
                     st.senders.addSender(tx, optionalSender) 
                 else st.senders, 
             ...st }),
-        msgs' = _msgs,
+        incomingMsgs' = _incomingMsgs,
         peers' = peers,
     }
 
@@ -88,7 +89,7 @@ module flood {
 
     //--------------------------------------------------------------------------
     // All possible state transitions in the protocol.
-    action nextState = any {
+    action step = any {
         // Transaction dissemination: node sends transaction to subset of peers.
         nondet node = oneOf(nodesInNetwork)
         node.disseminateNextTx(mkTargetNodes, TxMsg),
@@ -140,7 +141,7 @@ module flood {
                 Txs.forall(tx =>
                     nodeB.sendersOf(tx).contains(nodeA) 
                     implies
-                    not(nodeA.Msgs().includes((nodeB, TxMsg(tx))))
+                    not(nodeA.IncomingMsgs().includes((nodeB, TxMsg(tx))))
         )))
 
 }

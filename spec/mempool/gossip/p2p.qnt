@@ -38,14 +38,14 @@ module p2p {
     //
     // The type variable `msg` can be instantiated on the message types of
     // different protocols.
-    var msgs: NodeID -> List[(NodeID, msg)]
+    var incomingMsgs: NodeID -> List[(NodeID, msg)]
 
     // The dynamic network topology. Each node has a set of peers that is
     // updated when nodes join or leave the network.
     var peers: NodeID -> Set[NodeID]
 
     // Auxiliary definitions
-    def Msgs(node) = msgs.get(node)
+    def IncomingMsgs(node) = incomingMsgs.get(node)
     def Peers(node) = peers.get(node)
 
     //--------------------------------------------------------------------------
@@ -54,11 +54,11 @@ module p2p {
     val nodesNotInNetwork = NodeIDs.exclude(nodesInNetwork)
 
     // A node sends a message to the given set of target nodes. It updates the
-    // list of incoming messages `_msgs`.
-    pure def send(node, _msgs, targetNodes, msg) =
+    // list of incoming messages `_incomingMsgs`.
+    pure def send(node, _incomingMsgs, targetNodes, msg) =
         if (targetNodes.nonEmpty())
-            _msgs.updateMultiple(targetNodes, ms => ms.append((node, msg)))
-        else _msgs
+            _incomingMsgs.updateMultiple(targetNodes, ms => ms.append((node, msg)))
+        else _incomingMsgs
 
     //--------------------------------------------------------------------------
     // Actions
@@ -67,14 +67,14 @@ module p2p {
     // A node receives one of the incoming messages from a peer and handles it
     // according to its type.
     action receiveFromPeer(node, handleMessage) = all {
-        require(length(node.Msgs()) > 0),
+        require(length(node.IncomingMsgs()) > 0),
         // We model receiving of a message as taking the head of the list of
         // incoming messages and leaving the tail.
-        val someMsg = node.Msgs().head()
+        val someMsg = node.IncomingMsgs().head()
         val sender = someMsg._1
         val msg = someMsg._2
-        val updatedMsgs = msgs.update(node, tail)
-        handleMessage(node, updatedMsgs, sender, msg)
+        val _incomingMsgs = incomingMsgs.update(node, tail)
+        handleMessage(node, _incomingMsgs, sender, msg)
     }
 
     // A node joins the network by connecting to a given set of peers. All those
@@ -87,7 +87,7 @@ module p2p {
             .put(node, peerSet)
             // Add node as a new peer to the set of connecting peers.
             .updateMultiple(peerSet, ps => ps.join(node)),
-        msgs' = msgs,
+        incomingMsgs' = incomingMsgs,
     }
 
     action pickNodeAndJoin = all {
@@ -106,20 +106,20 @@ module p2p {
     //
     // TODO: the network must not become disconnected; we don't want to model
     // that.
-    action disconnectNetwork(nodeToDisconnect, updatedMsgs) = all {
+    action disconnectNetwork(nodeToDisconnect, _incomingMsgs) = all {
         peers' = peers
             // Clean node's state and remove all its peers.
             .put(nodeToDisconnect, Set())
             // Remove node from other peers' state.
             .updateMultiple(nodesInNetwork, ps => ps.exclude(Set(nodeToDisconnect))),
-        msgs' = updatedMsgs,
+        incomingMsgs' = _incomingMsgs,
     }
 
     action pickNodeAndDisconnect = all {
         // Pick a node that is not the only node in the network.
         require(size(nodesInNetwork) > 1),
         nondet nodeToDisconnect = oneOf(nodesInNetwork) 
-        disconnectNetwork(nodeToDisconnect, msgs),
+        disconnectNetwork(nodeToDisconnect, incomingMsgs),
     }
 
     //--------------------------------------------------------------------------
@@ -134,7 +134,7 @@ module p2p {
 
     // Eventually all messages are delivered (there are no incoming messages).
     temporal allMsgsDelivered = 
-        eventually(NodeIDs.forall(node => length(node.Msgs()) == 0))
+        eventually(NodeIDs.forall(node => length(node.IncomingMsgs()) == 0))
 
     // TODO: Invariant: all nodes in the network are always connected.
 

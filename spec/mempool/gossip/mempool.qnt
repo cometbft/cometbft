@@ -127,7 +127,7 @@ module mempool {
 
     // Initial state.
     action init = all {
-        msgs' = NodeIDs.mapBy(_ => List()),
+        incomingMsgs' = NodeIDs.mapBy(_ => List()),
         peers' = NodeIDs.mapBy(n => InitialPeers.get(n)),
         state' = NodeIDs.mapBy(n => initialMempoolState),
     }
@@ -147,8 +147,8 @@ module mempool {
     // transaction `tx` from a user. The function `_tryAddTx` can be
     // instantiated by the gossip protocol to define how to add transactions to
     // the mempool:
-    // - `_tryAddTx(msgs, optionalSender, tx)` attempts to add `tx` to the
-    //   mempool, given the node ID of the sender in case `tx` comes from
+    // - `_tryAddTx(incomingMsgs, optionalSender, tx)` attempts to add `tx` to
+    //   the mempool, given the node ID of the sender in case `tx` comes from
     //   another node.
     //
     // Typically, users send (full) transactions to the node via an RPC
@@ -159,7 +159,7 @@ module mempool {
     // actual mempool implementation we have the cache that prevents this
     // scenario.
     action receiveTxFromUser(node, tx, _tryAddTx) =
-        node._tryAddTx(msgs, None, tx)
+        node._tryAddTx(incomingMsgs, None, tx)
 
     // `disseminateNextTx` is a generic action that models a node traversing the
     // pool while sending transactions to its peers. It takes the next
@@ -186,7 +186,7 @@ module mempool {
         val tx = node.Pool()[node.PoolIndex()]
         all {
             // Wrap tx in a message and send it to the target nodes.
-            msgs' = node.send(msgs, _mkTargetNodes(node, tx), _mkTxMsg(tx)),
+            incomingMsgs' = node.send(incomingMsgs, _mkTargetNodes(node, tx), _mkTxMsg(tx)),
             // Increase pool index.
             state' = state.update(node, st => { poolIndex: st.poolIndex + 1, ...st }),
             peers' = peers,

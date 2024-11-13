@@ -90,7 +90,7 @@ module flood {
         nondet node = oneOf(nodesInNetwork)
         node.disseminateNextTx(mkTargetNodes, TxMsg),
 
-        // User-initiated transactions: node receives a transaction from a user.
+        // User-submitted transactions: node receives a transaction from a user.
         nondet node = oneOf(nodesInNetwork)
         nondet tx = oneOf(Txs)
         node.receiveTxFromUser(tx, tryAddTx),

@@ -11,7 +11,7 @@ transactions in the network.
     + Latency: nodes forward transactions to their peers as soon as they receive them, resulting in
       the minimum possible latency of decentralised P2P networks.
     + Byzantine Fault Tolerance (BFT): flooding the network with messages ensures malicious actors
-      cannot easily prevent transaction dissemination, making it resilient to network disruptions
+      cannot easily prevent transaction dissemination (i.e., censoring), making it resilient to network disruptions
       and attacks.
   - Cons:
     - Bandwidth: the broadcast nature of Flood results in significant redundancy in message

@@ -47,7 +47,7 @@ module mempool {
     // Mempool's data structures.
     type MempoolState = {         
         // Cache of already received transaction IDs. In this spec we assume the
-        // cache never overflows.
+        // cache never overflows, i.e., it can grow indefinitely.
         cache: Set[TxID],
 
         // List of uncommitted or pending transactions ("the mempool"). Used for

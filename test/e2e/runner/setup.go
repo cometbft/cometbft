@@ -350,6 +350,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		cfg.LogLevel = node.Testnet.LogLevel
 	}
 
+	cfg.LogColors = false
 	if node.Testnet.LogFormat != "" {
 		cfg.LogFormat = node.Testnet.LogFormat
 	}

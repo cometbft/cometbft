@@ -843,8 +843,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
     * Indicates whether a validator signed the last block, allowing for rewards based on validator availability.
     * This information is extracted from CometBFT's data structures in the local process.
     * `vote_extension` contains the sending validator's vote extension, whose signature was verified by CometBFT. It can be empty.
-    * `extension_signature` is the signature of the vote extension, which was verified verified by CometBFT. This way, when this is passed to the application, it can
-    verify the signatures that signed the vote. 
+    * `extension_signature` is the signature of the vote extension, which was verified verified by CometBFT. This way, we expose the signature to the application for further processing or verification.
 
 ### CommitInfo
 

@@ -30,10 +30,16 @@ func (*v1LegacyLayout) CalcBlockCommitKey(height int64) []byte {
 
 // CalcBlockHashKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcBlockHashKey(hash []byte) []byte {
-	hexHash := make([]byte, hex.EncodedLen(len(hash)))
-	hex.Encode(hexHash, hash)
+	var (
+		prefix    = []byte{'B', 'H', ':'}
+		lenPrefix = len(prefix)
+		key       = make([]byte, lenPrefix+hex.EncodedLen(len(hash)))
+	)
+	copy(key, prefix)
 
-	return append([]byte{'B', 'H', ':'}, hexHash...)
+	hex.Encode(key[lenPrefix:], hash)
+
+	return key
 }
 
 // CalcBlockMetaKey implements BlockKeyLayout.

@@ -23,6 +23,14 @@ var (
 	ErrProposalTooManyParts       = errors.New("proposal block has too many parts")
 )
 
+type ErrInvalidVote struct {
+	Reason string
+}
+
+func (e ErrInvalidVote) Error() string {
+	return "invalid vote: " + e.Reason
+}
+
 // ErrAddingVote is returned when adding a vote fails.
 type ErrAddingVote struct {
 	Err error

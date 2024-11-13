@@ -12,6 +12,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -38,6 +39,7 @@ const (
 	voteExtensionKey    string = "extensionSum"
 	voteExtensionMaxVal int64  = 128
 	prefixReservedKey   string = "reservedTxKey_"
+	prefixValidator     string = "Validator_"
 	suffixChainID       string = "ChainID"
 	suffixVoteExtHeight string = "VoteExtensionsHeight"
 	suffixPbtsHeight    string = "PbtsHeight"
@@ -57,7 +59,8 @@ type Application struct {
 	restoreSnapshot *abci.Snapshot
 	restoreChunks   [][]byte
 	// It's OK not to persist this, as it is not part of the state machine
-	seenTxs sync.Map // cmttypes.TxKey -> uint64
+	seenTxs     sync.Map // cmttypes.TxKey -> uint64
+	allKeyTypes []string // Cached slice of all supported key types in CometBFT
 
 	lanePriorities map[string]uint32
 }
@@ -146,6 +149,13 @@ type Config struct {
 	// Mapping from lane IDs to lane priorities. These lanes will be used by the
 	// application for setting up the mempool and for classifying transactions.
 	Lanes map[string]uint32 `toml:"lanes"`
+
+	// If true, the application will return validator updates and
+	// `ConsensusParams` updates at every height.
+	// This is useful to create a more dynamic testnet.
+	// * An existing validator will be chosen, and its power will alternate 0 and 1
+	// * `ConsensusParams` will be flipping on and off key types not set at genesis
+	ConstantFlip bool `toml:"constant_flip"`
 }
 
 func DefaultConfig(dir string) *Config {
@@ -177,14 +187,19 @@ func NewApplication(cfg *Config) (*Application, error) {
 	if err != nil {
 		return nil, err
 	}
-	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	allKeyTypes := make([]string, 0, len(cmttypes.ABCIPubKeyTypesToNames))
+	for keyType := range cmttypes.ABCIPubKeyTypesToNames {
+		allKeyTypes = append(allKeyTypes, keyType)
+	}
+	logger := log.NewLogger(os.Stdout)
 	logger.Info("Application started!")
 	if cfg.NoLanes {
 		return &Application{
-			logger:    logger,
-			state:     state,
-			snapshots: snapshots,
-			cfg:       cfg,
+			logger:      logger,
+			state:       state,
+			snapshots:   snapshots,
+			cfg:         cfg,
+			allKeyTypes: allKeyTypes,
 		}, nil
 	}
 
@@ -194,6 +209,7 @@ func NewApplication(cfg *Config) (*Application, error) {
 		snapshots:      snapshots,
 		cfg:            cfg,
 		lanePriorities: cfg.Lanes,
+		allKeyTypes:    allKeyTypes,
 	}, nil
 }
 
@@ -262,6 +278,28 @@ func (app *Application) updateFeatureEnableHeights(currentHeight int64) *cmtprot
 	return params
 }
 
+func (app *Application) flipConsensusParams(params *cmtproto.ConsensusParams, height int64) (*cmtproto.ConsensusParams, error) {
+	if !app.cfg.ConstantFlip {
+		return params, nil
+	}
+	if height < 0 {
+		return nil, fmt.Errorf("cannot flip ConsensusParams on height < 0 (%d)", height)
+	}
+
+	keyTypes := app.allKeyTypes
+	if height%2 == 0 {
+		keyTypes = []string{app.cfg.KeyType}
+	}
+	if params == nil {
+		params = &cmtproto.ConsensusParams{}
+	}
+	params.Validator = &cmtproto.ValidatorParams{
+		PubKeyTypes: keyTypes,
+	}
+	app.logger.Info("flipping key types", "PubKeyTypes", keyTypes)
+	return params, nil
+}
+
 // Info implements ABCI.
 func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest) (*abci.InitChainResponse, error) {
 	r := &abci.Request{Value: &abci.Request_InitChain{InitChain: &abci.InitChainRequest{}}}
@@ -296,6 +334,9 @@ func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest)
 	}
 
 	params := app.updateFeatureEnableHeights(0)
+	if params, err = app.flipConsensusParams(params, 0); err != nil {
+		return nil, err
+	}
 
 	resp := &abci.InitChainResponse{
 		ConsensusParams: params,
@@ -404,10 +445,13 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 
 	valUpdates, err := app.validatorUpdates(uint64(req.Height))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	params := app.updateFeatureEnableHeights(req.Height)
+	if params, err = app.flipConsensusParams(params, req.Height); err != nil {
+		return nil, err
+	}
 
 	if app.cfg.FinalizeBlockDelay != 0 {
 		time.Sleep(app.cfg.FinalizeBlockDelay)
@@ -428,7 +472,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 					},
 					{
 						Key:   "height",
-						Value: strconv.Itoa(int(req.Height)),
+						Value: strconv.FormatInt(req.Height, 10),
 					},
 				},
 			},
@@ -818,8 +862,8 @@ func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate) error {
 	if err != nil {
 		return err
 	}
-	addr := pubKey.Address().String()
 	if valUpdate.Power > 0 {
+		addr := pubKey.Address().String()
 		app.logger.Info("setting validator in app_state", "addr", addr)
 		pk, err := cryptoenc.PubKeyToProto(pubKey)
 		if err != nil {
@@ -829,31 +873,50 @@ func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate) error {
 		if err != nil {
 			return fmt.Errorf("failed to marshal pubkey: %w", err)
 		}
-		app.state.Set(prefixReservedKey+addr, hex.EncodeToString(pubKeyBytes))
+		app.state.Set(prefixReservedKey+prefixValidator+addr, hex.EncodeToString(pubKeyBytes))
 	}
 	return nil
 }
 
 // validatorUpdates generates a validator set update.
 func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, error) {
+	// updates is map[string]uint8 of the form "validator_name" => voting_power
 	updates := app.cfg.ValidatorUpdates[strconv.FormatUint(height, 10)]
 	if len(updates) == 0 {
 		return nil, nil
 	}
 
-	valUpdates := abci.ValidatorUpdates{}
-	for keyString, power := range updates {
-		keyBytes, err := base64.StdEncoding.DecodeString(keyString)
+	// Collect the validator names into a slice and sort it to ensure deterministic
+	// iteration when creating the ValidatorUpdates below, since map traversal is
+	// non-deterministic.
+	validatorsNames := make([]string, 0, len(updates))
+	for validatorName := range updates {
+		validatorsNames = append(validatorsNames, validatorName)
+	}
+	slices.Sort(validatorsNames)
+
+	validatorsUpdates := make(abci.ValidatorUpdates, len(updates))
+	for i, validatorName := range validatorsNames {
+		power := updates[validatorName]
+
+		keyBytes, err := base64.StdEncoding.DecodeString(validatorName)
 		if err != nil {
-			return nil, fmt.Errorf("invalid base64 pubkey value %q: %w", keyString, err)
+			formatStr := "invalid base64 pubkey value %q: %w"
+			return nil, fmt.Errorf(formatStr, validatorName, err)
 		}
-		valUpdate := abci.ValidatorUpdate{Power: int64(power), PubKeyType: app.cfg.KeyType, PubKeyBytes: keyBytes}
-		valUpdates = append(valUpdates, valUpdate)
-		if err := app.storeValidator(&valUpdate); err != nil {
+
+		validatorUpdate := abci.ValidatorUpdate{
+			Power:       int64(power),
+			PubKeyType:  app.cfg.KeyType,
+			PubKeyBytes: keyBytes,
+		}
+
+		validatorsUpdates[i] = validatorUpdate
+		if err := app.storeValidator(&validatorUpdate); err != nil {
 			return nil, err
 		}
 	}
-	return valUpdates, nil
+	return validatorsUpdates, nil
 }
 
 // logAbciRequest log the request using the app's logger.
@@ -867,6 +930,28 @@ func (app *Application) logABCIRequest(req *abci.Request) error {
 	}
 	app.logger.Info(s)
 	return nil
+}
+
+func (app *Application) loadPubKey(addr string) (crypto.PubKey, error) {
+	pubKeyHex := app.state.Get(prefixReservedKey + prefixValidator + addr)
+	if len(pubKeyHex) == 0 {
+		return nil, fmt.Errorf("unknown validator with address %q", addr)
+	}
+	pubKeyBytes, err := hex.DecodeString(pubKeyHex)
+	if err != nil {
+		return nil, fmt.Errorf("could not hex-decode public key for validator address %s, err %w", addr, err)
+	}
+	var pubKeyProto cryptoproto.PublicKey
+	err = pubKeyProto.Unmarshal(pubKeyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("unable to unmarshal public key for validator address %s, err %w", addr, err)
+	}
+	pubKey, err := cryptoenc.PubKeyFromProto(pubKeyProto)
+	if err != nil {
+		return nil, fmt.Errorf("could not obtain a public key from its proto for validator address %s, err %w", addr, err)
+	}
+
+	return pubKey, nil
 }
 
 // parseTx parses a tx in 'key=value' format into a key and value.
@@ -943,22 +1028,9 @@ func (app *Application) verifyAndSum(
 
 		// ... and verify
 		valAddr := crypto.Address(vote.Validator.Address).String()
-		pubKeyHex := app.state.Get(prefixReservedKey + valAddr)
-		if len(pubKeyHex) == 0 {
-			return 0, fmt.Errorf("received vote from unknown validator with address %q", valAddr)
-		}
-		pubKeyBytes, err := hex.DecodeString(pubKeyHex)
+		pubKey, err := app.loadPubKey(valAddr)
 		if err != nil {
-			return 0, fmt.Errorf("could not hex-decode public key for validator address %s, err %w", valAddr, err)
-		}
-		var pubKeyProto cryptoproto.PublicKey
-		err = pubKeyProto.Unmarshal(pubKeyBytes)
-		if err != nil {
-			return 0, fmt.Errorf("unable to unmarshal public key for validator address %s, err %w", valAddr, err)
-		}
-		pubKey, err := cryptoenc.PubKeyFromProto(pubKeyProto)
-		if err != nil {
-			return 0, fmt.Errorf("could not obtain a public key from its proto for validator address %s, err %w", valAddr, err)
+			return 0, err
 		}
 		if !pubKey.VerifySignature(extSignBytes, vote.ExtensionSignature) {
 			return 0, errors.New("received vote with invalid signature")

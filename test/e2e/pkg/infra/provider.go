@@ -2,7 +2,7 @@ package infra
 
 import (
 	"context"
-	"path/filepath"
+	"net"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
@@ -19,9 +19,6 @@ type Provider interface {
 	// If no nodes are passed, start the whole network
 	StartNodes(ctx context.Context, nodes ...*e2e.Node) error
 
-	// Set emulated latencies from a node to other nodes.
-	SetLatency(ctx context.Context, node *e2e.Node) error
-
 	// Stops the whole network
 	StopTestnet(ctx context.Context) error
 
@@ -37,6 +34,11 @@ type Provider interface {
 
 	// Checks whether the node has been upgraded in this run
 	CheckUpgraded(ctx context.Context, node *e2e.Node) (string, bool, error)
+
+	// NodeIP returns the IP address of the node that is used to communicate
+	// with other nodes in the network (the internal IP address in case of the
+	// docker infra type and the external IP address otherwise).
+	NodeIP(node *e2e.Node) net.IP
 }
 
 type ProviderData struct {
@@ -47,9 +49,4 @@ type ProviderData struct {
 // GetInfrastructureData returns the provider's infrastructure data.
 func (pd ProviderData) GetInfrastructureData() *e2e.InfrastructureData {
 	return &pd.InfrastructureData
-}
-
-// IPZonesFilePath returns the path to the file with the mapping from IP addresses to zones.
-func (pd ProviderData) IPZonesFilePath() string {
-	return filepath.Join(pd.Testnet.Dir, "zones.csv")
 }

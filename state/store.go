@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -46,17 +47,17 @@ type v1LegacyLayout struct{}
 
 // CalcABCIResponsesKey implements StateKeyLayout.
 func (v1LegacyLayout) CalcABCIResponsesKey(height int64) []byte {
-	return []byte(fmt.Sprintf("abciResponsesKey:%v", height))
+	return []byte("abciResponsesKey:" + strconv.FormatInt(height, 10))
 }
 
 // store.StoreOptions.DBKeyLayout.calcConsensusParamsKey implements StateKeyLayout.
 func (v1LegacyLayout) CalcConsensusParamsKey(height int64) []byte {
-	return []byte(fmt.Sprintf("consensusParamsKey:%v", height))
+	return []byte("consensusParamsKey:" + strconv.FormatInt(height, 10))
 }
 
 // store.StoreOptions.DBKeyLayout.CalcValidatorsKey implements StateKeyLayout.
 func (v1LegacyLayout) CalcValidatorsKey(height int64) []byte {
-	return []byte(fmt.Sprintf("validatorsKey:%v", height))
+	return []byte("validatorsKey:" + strconv.FormatInt(height, 10))
 }
 
 var _ KeyLayout = (*v1LegacyLayout)(nil)
@@ -237,10 +238,18 @@ func NewStore(db dbm.DB, options StoreOptions) Store {
 		StoreOptions: options,
 	}
 
+	if options.DBKeyLayout == "" {
+		options.DBKeyLayout = "v1"
+	}
+
 	dbKeyLayoutVersion := setDBKeyLayout(&store, options.DBKeyLayout)
 
 	if options.Logger != nil {
-		options.Logger.Info("State store key layout version ", "version", "v"+dbKeyLayoutVersion)
+		options.Logger.Info(
+			"State store key layout version ",
+			"version",
+			"v"+dbKeyLayoutVersion,
+		)
 	}
 
 	return store

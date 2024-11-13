@@ -44,7 +44,7 @@ func main() {
 		log.Fatalf("failed to read config: %v", err)
 	}
 
-	logger := cmtlog.NewTMLogger(cmtlog.NewSyncWriter(os.Stdout))
+	logger := cmtlog.NewLogger(os.Stdout)
 	logger, err := cmtflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)
 	if err != nil {
 		panic(fmt.Errorf("failed to parse log level: %w", err))

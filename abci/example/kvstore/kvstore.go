@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/abci/types"
@@ -53,6 +54,8 @@ type Application struct {
 
 	// Map from lane IDs to their priorities.
 	lanePriorities map[string]uint32
+
+	nextBlockDelay time.Duration
 }
 
 // NewApplication creates an instance of the kvstore from the provided database,
@@ -63,6 +66,7 @@ func NewApplication(db dbm.DB, lanePriorities map[string]uint32) *Application {
 		state:              loadState(db),
 		valAddrToPubKeyMap: make(map[string]crypto.PubKey),
 		lanePriorities:     lanePriorities,
+		nextBlockDelay:     0, // zero by default because kvstore is mostly used for testing
 	}
 }
 
@@ -113,6 +117,13 @@ func DefaultLanes() map[string]uint32 {
 
 func (app *Application) SetGenBlockEvents() {
 	app.genBlockEvents = true
+}
+
+// SetNextBlockDelay sets the delay for the next finalized block. Default is 0
+// here because kvstore is mostly used for testing. In production, the default
+// is 1s, mimicking the default for the deprecated `timeout_commit` parameter.
+func (app *Application) SetNextBlockDelay(delay time.Duration) {
+	app.nextBlockDelay = delay
 }
 
 // Info returns information about the state of the application. This is generally used every time a Tendermint instance
@@ -362,7 +373,13 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.FinalizeBloc
 
 	app.state.Height = req.Height
 
-	response := &types.FinalizeBlockResponse{TxResults: respTxs, ValidatorUpdates: app.valUpdates, AppHash: app.state.Hash()}
+	response := &types.FinalizeBlockResponse{
+		TxResults:        respTxs,
+		ValidatorUpdates: app.valUpdates,
+		AppHash:          app.state.Hash(),
+		NextBlockDelay:   app.nextBlockDelay,
+	}
+
 	if !app.genBlockEvents {
 		return response, nil
 	}

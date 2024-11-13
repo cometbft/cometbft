@@ -34,13 +34,23 @@ type Reactor struct {
 	// connections for different groups of peers.
 	activePersistentPeersSemaphore    *semaphore.Weighted
 	activeNonPersistentPeersSemaphore *semaphore.Weighted
+
+	privVal *types.PrivValidator
+}
+
+type TxWithSignatures struct {
+	Tx          []byte   `json:"tx"`
+	Signatures  [][]byte `json:"signatures"`
+	SignerCount int      `json:"signer_count"`
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
-func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool, waitSync bool) *Reactor {
+//TODO : check where the reactor is created, we will need the privValidator to sign transactions there.
+func NewReactor(config *cfg.MempoolConfig, privVal *types.PrivValidator, mempool *CListMempool, waitSync bool) *Reactor {
 	memR := &Reactor{
 		config:   config,
 		mempool:  mempool,
+		privVal : privVal,
 		waitSync: atomic.Bool{},
 	}
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
@@ -296,10 +306,38 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			memR.Logger.Debug("Sending transaction to peer",
 				"tx", log.NewLazySprintf("%X", txHash), "peer", peer.ID())
 
+			//  Sign the transaction using the node's private key
+			tx := entry.Tx()
+			signature, err := (*memR.privVal).SignBytes(tx)
+			if err != nil {
+				memR.Logger.Error("Failed to sign transaction", "error", err)
+				break
+			}
+
+			// Create the TxWithSignatures message
+			txWithSigs := &protomem.TxWithSignatures{
+				Tx:          tx,
+				Signatures:  [][]byte{signature},
+				// TODO : au lieu de array map id_signataire : signature . parcequ'on doit vérifier la validité de la signature à la reception.
+				// TODO : dans le constructeur au départ map avec seulement la signature du signataire sinon on append aux signatures actuelles.
+				// TODO
+			}
+
+			// Wrap TxWithSignatures in the Message type
+			message := &protomem.Message{
+				Sum: &protomem.Message_TxWithSignatures{
+					TxWithSignatures: txWithSigs,
+				},
+			}
+
+			memR.Logger.Debug("Sending transaction with signatures to peer",
+				"tx", log.NewLazySprintf("%X", txHash), "peer", peer.ID())
+
 			success := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
-				Message:   &protomem.Txs{Txs: [][]byte{entry.Tx()}},
+				Message:   message,
 			})
+
 			if success {
 				break
 			}

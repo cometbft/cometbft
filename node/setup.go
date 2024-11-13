@@ -283,6 +283,7 @@ func createMempoolAndMempoolReactor(
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
 	appInfoResponse *abci.InfoResponse,
+	privValidor *types.PrivValidator,
 ) (mempl.Mempool, mempoolReactor) {
 	switch config.Mempool.Type {
 	// allow empty string for backward compatibility
@@ -315,6 +316,7 @@ func createMempoolAndMempoolReactor(
 		mp.SetLogger(logger)
 		reactor := mempl.NewReactor(
 			config.Mempool,
+			privValidor,
 			mp,
 			waitSync,
 		)

@@ -431,7 +431,7 @@ func NewNodeWithCliParams(ctx context.Context,
 	// Blocksync is always active, except if the local node blocks the chain
 	waitSync := !state.Validators.ValidatorBlocksTheChain(localAddr)
 
-	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, eventBus, waitSync, memplMetrics, logger, appInfoResponse)
+	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, eventBus, waitSync, memplMetrics, logger, appInfoResponse, &privValidator)
 
 	evidenceReactor, evidencePool, err := createEvidenceReactor(config, dbProvider, stateStore, blockStore, logger)
 	if err != nil {

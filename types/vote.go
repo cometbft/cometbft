@@ -164,11 +164,14 @@ func VoteSignBytes(chainID string, vote *cmtproto.Vote) []byte {
 // Similar to VoteSignBytes, the encoded Protobuf message is varint
 // length-prefixed for backwards-compatibility with the Amino encoding.
 func VoteExtensionSignBytes(chainID string, vote *cmtproto.Vote) []byte {
-	pb := CanonicalizeVoteExtension(chainID, vote)
-	bz, err := protoio.MarshalDelimited(&pb)
-	if err != nil {
-		panic(err)
-	}
+
+	// pb := CanonicalizeVoteExtension(chainID, vote)
+	// bz, err := protoio.MarshalDelimited(&pb)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	bz := vote.Extension
 
 	return bz
 }

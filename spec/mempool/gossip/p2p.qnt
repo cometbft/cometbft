@@ -53,12 +53,10 @@ module p2p {
     val nodesInNetwork = NodeIDs.filter(node => node.Peers().nonEmpty())
     val nodesNotInNetwork = NodeIDs.exclude(nodesInNetwork)
 
-    // A node sends a message to the given set of target nodes. It updates the
+    // `multiSend` sends message `msg` to a set of `targetNodes`. It updates the
     // list of incoming messages `_incomingMsgs`.
-    pure def send(node, _incomingMsgs, targetNodes, msg) =
-        if (targetNodes.nonEmpty())
-            _incomingMsgs.updateMultiple(targetNodes, ms => ms.append((node, msg)))
-        else _incomingMsgs
+    pure def multiSend(node, _incomingMsgs, targetNodes, msg) =
+        _incomingMsgs.updateMultiple(targetNodes, ms => ms.append((node, msg)))
 
     //--------------------------------------------------------------------------
     // Actions

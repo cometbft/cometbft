@@ -186,7 +186,8 @@ module mempool {
         val tx = node.Pool()[node.PoolIndex()]
         all {
             // Wrap tx in a message and send it to the target nodes.
-            incomingMsgs' = node.send(incomingMsgs, _mkTargetNodes(node, tx), _mkTxMsg(tx)),
+            incomingMsgs' = 
+                node.multiSend(incomingMsgs, _mkTargetNodes(node, tx), _mkTxMsg(tx)),
             // Increase pool index.
             state' = state.update(node, st => { poolIndex: st.poolIndex + 1, ...st }),
             peers' = peers,

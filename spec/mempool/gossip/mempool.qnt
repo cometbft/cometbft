@@ -21,12 +21,12 @@ module mempool {
     // Transactions are validated by an external entity. The validation function
     // must be deterministic. In the actual implementation, the mempool makes a
     // CheckTx ABCI call to the application, which validates the transaction. 
+    pure def valid(tx) = true
     //
     // In this simplified specification we model all transactions as valid. To
     // model invalid transactions, `valid` should be declared as a model
     // parameter (a `const`) and instantiated with a deterministic function of
     // type `(TX) => bool`.
-    pure def valid(tx) = true
 
     // A transaction identifier, computed as the hash of the transaction
     // (typically a short array of bytes).
@@ -52,6 +52,7 @@ module mempool {
 
         // List of uncommitted or pending transactions ("the mempool"). Used for
         // picking transactions to disseminate to peers.
+        pool: List[TX],
         //
         // We make the following assumptions about the mempool:
         // - It does not have a maximum capacity.
@@ -70,10 +71,10 @@ module mempool {
         // All these scenarios are not modeled here. Then `cache` and `pool`
         // will always have the same content and one of the two is actually
         // redundant in this spec.
-        pool: List[TX],
 
         // Index to the next transaction in pool to disseminate. A pool iterator
         // traverses the entries in pool one at a time.
+        poolIndex: int,
         //
         // We model transaction dissemination using one dissemination process
         // (`disseminateNextTx`) that iterates on the list of transactions
@@ -85,10 +86,10 @@ module mempool {
         // iterator) with a `next()` method to retrieve the next entry in the
         // list. If it reaches the end of the list, it blocks until a new entry
         // is added. All iterators read concurrently from the pool.
-        poolIndex: int,
 
         // Each entry in the mempool has a set of peers from which the node
         // received the transaction. 
+        senders: TxID -> List[NodeID]
         //
         // We define it as a list instead of a set because the DOG protocol
         // needs to know who is the first sender of a transaction.
@@ -96,7 +97,6 @@ module mempool {
         // Note that when a transaction is in the cache but not in the pool, it
         // won't have any sender. Senders are only needed for disseminating
         // (valid) transactions that are in the mempool.
-        senders: TxID -> List[NodeID]
     }
 
     // Each node has a mempool state.
@@ -150,6 +150,8 @@ module mempool {
     // - `_tryAddTx(incomingMsgs, optionalSender, tx)` attempts to add `tx` to
     //   the mempool, given the node ID of the sender in case `tx` comes from
     //   another node.
+    action receiveTxFromUser(node, tx, _tryAddTx) =
+        node._tryAddTx(incomingMsgs, None, tx)
     //
     // Typically, users send (full) transactions to the node via an RPC
     // endpoint. Users are allowed to submit the same transaction more than once
@@ -158,27 +160,18 @@ module mempool {
     // This action is enabled only if the transaction is not in the pool. In the
     // actual mempool implementation we have the cache that prevents this
     // scenario.
-    action receiveTxFromUser(node, tx, _tryAddTx) =
-        node._tryAddTx(incomingMsgs, None, tx)
 
     // `disseminateNextTx` is a generic action that models a node traversing the
     // pool while sending transactions to its peers. It takes the next
     // transaction from the iterator and atomically sends it to a set of target
     // peers.
     //
-    // The following arguments are functions that define the to who it will send
+    // The following arguments are functions that define to who `node` will send
     // transactions:
     // - `_mkTargetNodes(node, tx)` returns the set of peers to which `node`
     //   will send `tx`.
     // - `_mkTxMsg(tx)` is a wrapper function that returns the specific message
     //   type used by the gossip protocol.
-    //
-    // The pool index must not exceed the pool's length. This pre-condition
-    // models when the iterator is at the end of the list and it's blocked
-    // waiting for a new entry to be appended to the list.
-    //
-    // In the actual implementation, there is a separate goroutine for each
-    // peer, so not all txs are sent at the same time.
     action disseminateNextTx(node, _mkTargetNodes, _mkTxMsg) = all {
         // Check that the current index is within bounds. 
         require(node.PoolIndex() < node.Pool().length()),
@@ -193,6 +186,13 @@ module mempool {
             peers' = peers,
         }
     }
+    //
+    // The pool index must not exceed the pool's length. This pre-condition
+    // models when the iterator is at the end of the list and it's blocked
+    // waiting for a new entry to be appended to the list.
+    //
+    // In the actual implementation, there is a separate goroutine for each
+    // peer, so not all txs are sent at the same time.
 
     //--------------------------------------------------------------------------
     // Properties

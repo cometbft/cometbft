@@ -31,14 +31,14 @@ module p2p {
     // order, as we assume this is guaranteed by the transport layer. Messages
     // have a sender (a node ID).
     //
+    // The type variable `msg` can be instantiated on the message types of
+    // different protocols.
+    var incomingMsgs: NodeID -> List[(NodeID, msg)]
+    //
     // In the actual implementation, transaction messages are transamitted on
     // the `Mempool` data channel of the P2P layer. Control messages are usually
     // transmitted on other channels with different priorities. Here we model a
     // single, reliable channel.
-    //
-    // The type variable `msg` can be instantiated on the message types of
-    // different protocols.
-    var incomingMsgs: NodeID -> List[(NodeID, msg)]
 
     // The dynamic network topology. Each node has a set of peers that is
     // updated when nodes join or leave the network.

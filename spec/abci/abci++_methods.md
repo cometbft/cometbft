@@ -56,7 +56,7 @@ title: Methods
     * CometBFT expects `last_block_app_hash` and `last_block_height` to
       be updated and persisted during `Commit`.
     * The application does not have to define `lane_priorities`. In that case, CometBFT will assign all transactions to one lane. 
-    * `lane_priorties` is empty if and only if `default_lane` is empty.
+    * `lane_priorities` is empty if and only if `default_lane` is empty.
     * `default_lane` has to be one of the identifiers defined in `lane_priorities`.
     * The lowest priority a lane can have is `1`. The value `0` is reserved for when applications do not assign lanes (empty `lane_id` in `ResponseCheckTx`).
   

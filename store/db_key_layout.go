@@ -1,7 +1,7 @@
 package store
 
 import (
-	"fmt"
+	"strconv"
 
 	"github.com/google/orderedcode"
 )
@@ -24,32 +24,37 @@ type v1LegacyLayout struct{}
 
 // CalcBlockCommitKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcBlockCommitKey(height int64) []byte {
-	return []byte(fmt.Sprintf("C:%v", height))
+	return []byte("C:" + strconv.FormatInt(height, 10))
 }
 
 // CalcBlockHashKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcBlockHashKey(hash []byte) []byte {
-	return []byte(fmt.Sprintf("BH:%x", hash))
+	return append([]byte{'B', 'H', ':'}, hash...)
 }
 
 // CalcBlockMetaKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcBlockMetaKey(height int64) []byte {
-	return []byte(fmt.Sprintf("H:%v", height))
+	return []byte("H:" + strconv.FormatInt(height, 10))
 }
 
 // CalcBlockPartKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcBlockPartKey(height int64, partIndex int) []byte {
-	return []byte(fmt.Sprintf("P:%v:%v", height, partIndex))
+	var (
+		keyPrefix = "P:"
+		keySuffix = strconv.FormatInt(height, 10) + ":" + strconv.Itoa(partIndex)
+		keyStr    = keyPrefix + keySuffix
+	)
+	return []byte(keyStr)
 }
 
 // CalcExtCommitKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcExtCommitKey(height int64) []byte {
-	return []byte(fmt.Sprintf("EC:%v", height))
+	return []byte("EC:" + strconv.FormatInt(height, 10))
 }
 
 // CalcSeenCommitKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcSeenCommitKey(height int64) []byte {
-	return []byte(fmt.Sprintf("SC:%v", height))
+	return []byte("SC:" + strconv.FormatInt(height, 10))
 }
 
 var _ BlockKeyLayout = (*v1LegacyLayout)(nil)

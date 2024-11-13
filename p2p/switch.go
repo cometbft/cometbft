@@ -387,7 +387,8 @@ func (sw *Switch) stopAndRemovePeer(p Peer, reason any) {
 }
 
 // reconnectToPeer tries to reconnect to the addr, first repeatedly
-// with a fixed interval, then with exponential backoff.
+// with a fixed interval (approximately 2 minutes), then with
+// exponential backoff (approximately close to 24 hours).
 // If no success after all that, it stops trying, and leaves it
 // to the PEX/Addrbook to find the peer with the addr again
 // NOTE: this will keep trying even if the handshake or auth fails.
@@ -403,6 +404,7 @@ func (sw *Switch) reconnectToPeer(addr *na.NetAddr) {
 
 	start := time.Now()
 	sw.Logger.Info("Reconnecting to peer", "addr", addr)
+
 	for i := 0; i < reconnectAttempts; i++ {
 		if !sw.IsRunning() {
 			return
@@ -423,7 +425,7 @@ func (sw *Switch) reconnectToPeer(addr *na.NetAddr) {
 
 	sw.Logger.Error("Failed to reconnect to peer. Beginning exponential backoff",
 		"addr", addr, "elapsed", time.Since(start))
-	for i := 0; i < reconnectBackOffAttempts; i++ {
+	for i := 1; i <= reconnectBackOffAttempts; i++ {
 		if !sw.IsRunning() {
 			return
 		}

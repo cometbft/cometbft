@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-kit/log/term"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -504,7 +503,7 @@ func newStateWithConfigAndBlockStore(
 
 	blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyAppConnCon, mempool, evpool, blockStore)
 	cs := NewState(thisConfig.Consensus, state, blockExec, blockStore, mempool, evpool)
-	cs.SetLogger(log.TestingLogger().With("module", "consensus"))
+	cs.SetLogger(consensusLogger())
 	cs.SetPrivValidator(pv)
 
 	eventBus := types.NewEventBus()
@@ -816,17 +815,8 @@ func ensureNewEventOnChannel(ch <-chan cmtpubsub.Message) {
 // -------------------------------------------------------------------------------
 // consensus nets
 
-// consensusLogger is a TestingLogger which uses a different
-// color for each validator ("validator" key must exist).
 func consensusLogger() log.Logger {
-	return log.TestingLoggerWithColorFn(func(keyvals ...any) term.FgBgColor {
-		for i := 0; i < len(keyvals)-1; i += 2 {
-			if keyvals[i] == "validator" {
-				return term.FgBgColor{Fg: term.Color(uint8(keyvals[i+1].(int) + 1))}
-			}
-		}
-		return term.FgBgColor{}
-	}).With("module", "consensus")
+	return log.TestingLogger().With("module", "consensus")
 }
 
 func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc func() TimeoutTicker,
@@ -857,7 +847,7 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 
 		css[i] = newStateWithConfigAndBlockStore(thisConfig, state, privVals[i], app, stateDB, lanesInfo)
 		css[i].SetTimeoutTicker(tickerFunc())
-		css[i].SetLogger(logger.With("validator", i, "module", "consensus"))
+		css[i].SetLogger(logger.With("validator", i))
 	}
 	return css, func() {
 		for _, dir := range configRootDirs {
@@ -920,7 +910,7 @@ func randConsensusNetWithPeers(
 
 		css[i] = newStateWithConfig(thisConfig, state, privVal, app, lanesInfo)
 		css[i].SetTimeoutTicker(tickerFunc())
-		css[i].SetLogger(logger.With("validator", i, "module", "consensus"))
+		css[i].SetLogger(logger.With("validator", i))
 	}
 	return css, genDoc, peer0Config, func() {
 		for _, dir := range configRootDirs {

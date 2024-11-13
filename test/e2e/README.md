@@ -32,8 +32,7 @@ To generate the testnet files in a different directory, run:
 If you need to run experiments on a testnet, you will probably want to compile the code multiple
 times and `make` could be slow. This is because `make` builds an image by first copying all the
 source code into it and then compiling the binary from inside. This is needed if, for example, you
-want to create a binary that uses a different database (as in `networks/ci.toml`), or to emulate
-latencies by running the Python script.
+want to create a binary that uses a different database (as in `networks/ci.toml`).
 
 If you just need to (re-)compile and run the binary without any extra building options, you can use
 `make fast`, which will first compile the code and then make a slim Docker image with the binary.

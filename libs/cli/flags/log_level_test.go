@@ -15,7 +15,7 @@ const (
 
 func TestParseLogLevel(t *testing.T) {
 	var buf bytes.Buffer
-	jsonLogger := log.NewTMJSONLoggerNoTS(&buf)
+	jsonLogger := log.NewJSONLoggerNoTS(&buf)
 
 	correctLogLevels := []struct {
 		lvl              string
@@ -24,25 +24,25 @@ func TestParseLogLevel(t *testing.T) {
 		{"mempool:error", []string{
 			``, // if no default is given, assume info
 			``,
-			`{"_msg":"Mesmero","level":"error","module":"mempool"}`,
-			`{"_msg":"Mind","level":"info","module":"state"}`, // if no default is given, assume info
+			`{"level":"ERROR","msg":"Mesmero","module":"mempool"}`,
+			`{"level":"INFO","msg":"Mind","module":"state"}`, // if no default is given, assume info
 			``,
 		}},
 
 		{"mempool:error,*:debug", []string{
-			`{"_msg":"Kingpin","level":"debug","module":"wire"}`,
+			`{"level":"DEBUG","msg":"Kingpin","module":"mempool","module":"wire"}`,
 			``,
-			`{"_msg":"Mesmero","level":"error","module":"mempool"}`,
-			`{"_msg":"Mind","level":"info","module":"state"}`,
-			`{"_msg":"Gideon","level":"debug"}`,
+			`{"level":"ERROR","msg":"Mesmero","module":"mempool"}`,
+			`{"level":"INFO","msg":"Mind","module":"state"}`,
+			`{"level":"DEBUG","msg":"Gideon"}`,
 		}},
 
 		{"*:debug,wire:none", []string{
 			``,
-			`{"_msg":"Kitty Pryde","level":"info","module":"mempool"}`,
-			`{"_msg":"Mesmero","level":"error","module":"mempool"}`,
-			`{"_msg":"Mind","level":"info","module":"state"}`,
-			`{"_msg":"Gideon","level":"debug"}`,
+			`{"level":"INFO","msg":"Kitty Pryde","module":"mempool"}`,
+			`{"level":"ERROR","msg":"Mesmero","module":"mempool"}`,
+			`{"level":"INFO","msg":"Mind","module":"state"}`,
+			`{"level":"DEBUG","msg":"Gideon"}`,
 		}},
 	}
 

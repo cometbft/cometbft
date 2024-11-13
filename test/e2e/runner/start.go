@@ -64,12 +64,6 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v",
 				node.Name, node.ExternalIP, node.RPCProxyPort))
 		}
-		if node.ZoneIsSet() {
-			logger.Info("setting latency", "zone", node.Zone)
-			if err := p.SetLatency(ctx, node); err != nil {
-				return err
-			}
-		}
 	}
 
 	networkHeight := testnet.InitialHeight
@@ -131,12 +125,6 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 		} else {
 			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v at height %v",
 				node.Name, node.ExternalIP, node.RPCProxyPort, status.SyncInfo.LatestBlockHeight))
-		}
-		if node.ZoneIsSet() {
-			logger.Info("setting latency", "zone", node.Zone)
-			if err := p.SetLatency(ctx, node); err != nil {
-				return err
-			}
 		}
 	}
 

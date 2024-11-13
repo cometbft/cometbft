@@ -66,12 +66,17 @@ func BenchmarkLoadValidators(b *testing.B) {
 
 	config := test.ResetTestRoot("state_")
 	defer os.RemoveAll(config.RootDir)
+
 	dbType := dbm.BackendType(config.DBBackend)
+
 	stateDB, err := dbm.NewDB("state", dbType, config.DBDir())
 	require.NoError(b, err)
+
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
+		DBKeyLayout:          "v2",
 	})
+
 	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
 	if err != nil {
 		b.Fatal(err)
@@ -79,12 +84,19 @@ func BenchmarkLoadValidators(b *testing.B) {
 
 	state.Validators = genValSet(valSetSize)
 	state.NextValidators = state.Validators.CopyIncrementProposerPriority(1)
+
 	err = stateStore.Save(state)
 	require.NoError(b, err)
 
 	for i := 10; i < 10000000000; i *= 10 { // 10, 100, 1000, ...
-		if err := sm.SaveValidatorsInfo(stateDB,
-			int64(i), state.LastHeightValidatorsChanged, state.NextValidators, "v2"); err != nil {
+		err := sm.SaveValidatorsInfo(
+			stateDB,
+			int64(i),
+			state.LastHeightValidatorsChanged,
+			state.NextValidators,
+			"v2",
+		)
+		if err != nil {
 			b.Fatal(err)
 		}
 

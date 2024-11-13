@@ -50,6 +50,24 @@ to suppress messages from a particular module or all modules (`log_level =
 If you're trying to debug CometBFT or asked to provide logs with debug logging
 level, you can do so by running CometBFT with `--log_level="*:debug"`.
 
+#### Stripping debug log messages at compile-time
+
+Logging debug messages can lead to significant memory allocations, especially when outputting variable values. In Go,
+even if `log_level` is not set to `debug`, these allocations can still occur because the program evaluates the debug
+statements regardless of the log level.
+
+To prevent unnecessary memory usage, you can strip out all debug-level code from the binary at compile time using
+build flags. This approach improves the performance of CometBFT by excluding debug messages entirely, even when log_level
+is set to debug. This technique is ideal for production environments that prioritize performance optimization over debug logging.
+
+In order to build a binary stripping all debug log messages (e.g. `log.Debug()`) from the binary, use the `nodebug` tag:
+```
+COMETBFT_BUILD_OPTIONS=nodebug make install
+```
+
+> Note: Compiling CometBFT with this method will completely disable all debug messages. If you require debug output,
+> avoid compiling the binary with the `nodebug` build tag.
+
 ## Write Ahead Logs (WAL)
 
 CometBFT uses write ahead logs for the consensus (`cs.wal`) and the mempool

@@ -3,6 +3,7 @@ package docker
 import (
 	"bytes"
 	"context"
+	"net"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -30,11 +31,6 @@ func (p *Provider) Setup() error {
 	}
 	//nolint: gosec // G306: Expect WriteFile permissions to be 0600 or less
 	err = os.WriteFile(filepath.Join(p.Testnet.Dir, DockerComposeFile), compose, 0o644)
-	if err != nil {
-		return err
-	}
-
-	err = infra.GenerateIPZonesTable(p.Testnet.Nodes, p.IPZonesFilePath(), true)
 	if err != nil {
 		return err
 	}
@@ -77,26 +73,15 @@ func (Provider) CheckUpgraded(ctx context.Context, node *e2e.Node) (string, bool
 	return name, upgraded, nil
 }
 
-func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
-	containerDir := "/scripts/"
-
-	// Copy zone file used by the script that sets latency.
-	if err := Exec(ctx, "cp", p.IPZonesFilePath(), node.Name+":"+containerDir); err != nil {
-		return err
-	}
-
-	// Execute the latency setter script in the container.
-	return ExecVerbose(ctx, "exec", "--privileged", node.Name,
-		filepath.Join(containerDir, "latency-setter.py"), "set",
-		filepath.Join(containerDir, filepath.Base(p.IPZonesFilePath())),
-		filepath.Join(containerDir, "aws-latencies.csv"), "eth0")
+func (Provider) NodeIP(node *e2e.Node) net.IP {
+	return node.InternalIP
 }
 
 // dockerComposeBytes generates a Docker Compose config file for a testnet and returns the
 // file as bytes to be written out to disk.
 func dockerComposeBytes(testnet *e2e.Testnet) ([]byte, error) {
 	// Must use version 2 Docker Compose format, to support IPv6.
-	tmpl, err := template.New("docker-compose").Parse(`version: '2.4'
+	tmpl, err := template.New("docker-compose").Parse(`
 networks:
   {{ .Name }}:
     labels:
@@ -124,6 +109,8 @@ services:
     environment:
         - COMETBFT_CLOCK_SKEW={{ .ClockSkew }}
 {{- end }}
+    cap_add:
+      - NET_ADMIN
     init: true
     ports:
     - 26656
@@ -138,7 +125,6 @@ services:
     - 2346
     volumes:
     - ./{{ .Name }}:/cometbft
-    - ./{{ .Name }}:/tendermint
     networks:
       {{ $.Name }}:
         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .InternalIP }}
@@ -156,6 +142,8 @@ services:
     environment:
         - COMETBFT_CLOCK_SKEW={{ .ClockSkew }}
 {{- end }}
+    cap_add:
+      - NET_ADMIN
     init: true
     ports:
     - 26656
@@ -170,7 +158,6 @@ services:
     - 2346
     volumes:
     - ./{{ .Name }}:/cometbft
-    - ./{{ .Name }}:/tendermint
     networks:
       {{ $.Name }}:
         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .InternalIP }}

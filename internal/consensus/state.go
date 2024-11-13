@@ -1784,7 +1784,7 @@ func (cs *State) enterCommit(height int64, commitRound int32) {
 		if !cs.ProposalBlockParts.HasHeader(blockID.PartSetHeader) {
 			logger.Info(
 				"Commit is for a block we do not know about; set ProposalBlock=nil",
-				"proposal", log.NewLazyBlockHash(cs.ProposalBlock),
+				"proposal", log.NewLazyHash(cs.ProposalBlock),
 				"commit", blockID.Hash,
 			)
 
@@ -1821,7 +1821,7 @@ func (cs *State) tryFinalizeCommit(height int64) {
 		// TODO: ^^ wait, why does it matter that we're a validator?
 		logger.Debug(
 			"Failed attempt to finalize commit; we do not have the commit block",
-			"proposal_block", log.NewLazyBlockHash(cs.ProposalBlock),
+			"proposal_block", log.NewLazyHash(cs.ProposalBlock),
 			"commit_block", blockID.Hash,
 		)
 		return
@@ -1863,7 +1863,7 @@ func (cs *State) finalizeCommit(height int64) {
 
 	logger.Info(
 		"Finalizing commit of block",
-		"hash", log.NewLazyBlockHash(block),
+		"hash", log.NewLazyHash(block),
 		"root", block.AppHash,
 		"num_txs", len(block.Txs),
 	)
@@ -2220,7 +2220,7 @@ func (cs *State) handleCompleteProposal(blockHeight int64) {
 			cs.Logger.Debug(
 				"Updating valid block to new proposal block",
 				"valid_round", cs.Round,
-				"valid_block_hash", log.NewLazyBlockHash(cs.ProposalBlock),
+				"valid_block_hash", log.NewLazyHash(cs.ProposalBlock),
 			)
 
 			cs.ValidRound = cs.Round
@@ -2371,6 +2371,14 @@ func (cs *State) addVote(vote *types.Vote, peerID nodekey.ID) (added bool, err e
 			// Here, we verify the signature of the vote extension included in the vote
 			// message.
 			_, val := cs.state.Validators.GetByIndex(vote.ValidatorIndex)
+			if val == nil { // TODO: we should disconnect from this malicious peer
+				valsCount := cs.state.Validators.Size()
+				cs.Logger.Info("Peer sent us vote with invalid ValidatorIndex",
+					"peer", peerID,
+					"validator_index", vote.ValidatorIndex,
+					"len_validators", valsCount)
+				return added, ErrInvalidVote{Reason: fmt.Sprintf("ValidatorIndex %d is out of bounds [0, %d)", vote.ValidatorIndex, valsCount)}
+			}
 			if err := vote.VerifyExtension(cs.state.ChainID, val.PubKey); err != nil {
 				return false, err
 			}
@@ -2433,7 +2441,7 @@ func (cs *State) addVote(vote *types.Vote, peerID nodekey.ID) (added bool, err e
 				} else {
 					cs.Logger.Debug(
 						"Valid block we do not know about; set ProposalBlock=nil",
-						"proposal", log.NewLazyBlockHash(cs.ProposalBlock),
+						"proposal", log.NewLazyHash(cs.ProposalBlock),
 						"block_id", blockID.Hash,
 					)
 

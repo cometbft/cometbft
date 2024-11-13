@@ -44,8 +44,11 @@ db_dir = "{{ js .BaseConfig.DBPath }}"
 # Output level for logging, including package level options
 log_level = "{{ .BaseConfig.LogLevel }}"
 
-# Output format: 'plain' (colored text) or 'json'
+# Output format: 'plain' or 'json'
 log_format = "{{ .BaseConfig.LogFormat }}"
+
+# Colored log output when 'log_format' is 'plain'. Default is 'true'.
+log_colors = {{ .BaseConfig.LogColors }}
 
 ##### additional base config options #####
 

@@ -125,11 +125,17 @@ module p2p {
     // Properties
     //--------------------------------------------------------------------------
 
-    // Peer relationships are bidirectional or symmetrical: if node A has B as
-    // peer, then B has A as peer.
-    val peerBidirectional =
-        NodeIDs.forall(nodeA => nodeA.Peers().forall(nodeB => nodeA.in(nodeB.Peers())))
+    // Invariant: peer relationships are bidirectional or symmetrical: if node A
+    // has B as peer, then B has A as peer.
+    val bidirectionalNetwork =
+        NodeIDs.forall(nodeA => 
+            nodeA.Peers().forall(nodeB => nodeA.in(nodeB.Peers())))
 
-    // TODO: Network is not disconnected.
+    // Invariant: eventually all messages are delivered (there are no incoming
+    // messages).
+    temporal allMsgsDelivered = 
+        eventually(NodeIDs.forall(node => length(node.Msgs()) == 0))
+
+    // TODO: Invariant: all nodes in the network are always connected.
 
 }

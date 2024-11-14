@@ -25,13 +25,11 @@ type v1LegacyLayout struct{}
 
 // CalcBlockCommitKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcBlockCommitKey(height int64) []byte {
-	var (
-		keyPrefixLen = 2 // len("C:")
+	// The longest int64 has 19 digits, therefore its string representation is
+	// 20 bytes long (19 digits + 1 byte for the sign).
+	// 2 is the length of "C:"
+	key := make([]byte, 2, 2+20)
 
-		// the longest int64 has 19 digits, therefore its string representation is
-		// 20 bytes long (19 digits + 1 byte for the sign).
-		key = make([]byte, keyPrefixLen, keyPrefixLen+20)
-	)
 	key[0], key[1] = 'C', ':'
 	key = strconv.AppendInt(key, height, 10)
 
@@ -51,13 +49,11 @@ func (*v1LegacyLayout) CalcBlockHashKey(hash []byte) []byte {
 
 // CalcBlockMetaKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcBlockMetaKey(height int64) []byte {
-	var (
-		keyPrefixLen = 2 // len("H:")
+	// the longest int64 has 19 digits, therefore its string representation is
+	// 20 bytes long (19 digits + 1 byte for the sign).
+	// 2 is the length of "H:"
+	key := make([]byte, 2, 2+20)
 
-		// the longest int64 has 19 digits, therefore its string representation is
-		// 20 bytes long (19 digits + 1 byte for the sign).
-		key = make([]byte, keyPrefixLen, keyPrefixLen+20)
-	)
 	key[0], key[1] = 'H', ':'
 	key = strconv.AppendInt(key, height, 10)
 
@@ -84,13 +80,11 @@ func (*v1LegacyLayout) CalcBlockPartKey(height int64, partIndex int) []byte {
 
 // CalcExtCommitKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcExtCommitKey(height int64) []byte {
-	var (
-		keyPrefixLen = 3 // len("EC:")
+	// the longest int64 has 19 digits, therefore its string representation is
+	// 20 bytes long (19 digits + 1 byte for the sign).
+	// 3 is the length of "EC:"
+	key := make([]byte, 3, 3+20)
 
-		// the longest int64 has 19 digits, therefore its string representation is
-		// 20 bytes long (19 digits + 1 byte for the sign).
-		key = make([]byte, keyPrefixLen, keyPrefixLen+20)
-	)
 	key[0], key[1], key[2] = 'E', 'C', ':'
 	key = strconv.AppendInt(key, height, 10)
 
@@ -99,13 +93,11 @@ func (*v1LegacyLayout) CalcExtCommitKey(height int64) []byte {
 
 // CalcSeenCommitKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcSeenCommitKey(height int64) []byte {
-	var (
-		keyPrefixLen = 3 // len("SC:")
+	// the longest int64 has 19 digits, therefore its string representation is
+	// 20 bytes long (19 digits + 1 byte for the sign).
+	// 3 is the length of "SC:"
+	key := make([]byte, 3, 3+20)
 
-		// the longest int64 has 19 digits, therefore its string representation is
-		// 20 bytes long (19 digits + 1 byte for the sign).
-		key = make([]byte, keyPrefixLen, keyPrefixLen+20)
-	)
 	key[0], key[1], key[2] = 'S', 'C', ':'
 	key = strconv.AppendInt(key, height, 10)
 

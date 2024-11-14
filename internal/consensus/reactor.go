@@ -473,7 +473,7 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 	}
 }
 
-// Safely update the reactor's view of round state
+// Safely update the reactor's view of round state.
 func (conR *Reactor) updateRoundState(rs *cstypes.RoundState) {
 	conR.rsMtx.Lock()
 	conR.rs = *rs // copy

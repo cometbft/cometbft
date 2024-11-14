@@ -6,6 +6,19 @@ transaction.
 
 This protocol is built on top of a [mempool module](mempool.md) and a [p2p layer](p2p.md).
 
+**Table of contents**
+  - [Messages](#messages)
+  - [State](#state)
+  - [Initial state](#initial-state)
+  - [State transitions (actions)](#state-transitions-actions)
+    - [Handling incoming messages](#handling-incoming-messages)
+    - [Adding transactions to the mempool](#adding-transactions-to-the-mempool)
+      - [Adding first-time transactions](#adding-first-time-transactions)
+      - [Handling duplicate transactions](#handling-duplicate-transactions)
+    - [Transaction dissemination](#transaction-dissemination)
+  - [Properties](#properties)
+
+
 > This document is written using the literature programming paradigm. Code snippets are written in
 > [Quint][quint] and can get "tangled" into a Quint file.
 
@@ -28,18 +41,45 @@ Flood's initial state is the underlying mempool's initial state (`init`).
 
 ## State transitions (actions)
 
-### Handling incoming messages
+These are the state transitions of the system. Note that generic actions are imported from the
+[mempool](mempool.md) and [p2p](p2p.md) specs. The missing implementation details (`tryAddTx`,
+`handleMessage`, `mkTargetNodes`) are described in the rest of the section.
 
-Upon receiving a message with transaction `tx` from a peer (i.e., the `sender`), the `node` attempts
-to add `tx` to its mempool. 
-```bluespec "actions" +=
-action handleMessage(node, _incomingMsgs, sender, msg) =
-    match msg {
-    | TxMsg(tx) => node.tryAddTx(_incomingMsgs, Some(sender), tx)
+1. User-submitted transactions: when a node receives a transaction from a user, it tries to add it
+   to the mempool.
+    ```bluespec "steps" +=
+    nondet node = oneOf(nodesInNetwork)
+    nondet tx = oneOf(Txs)
+    node.receiveTxFromUser(tx, tryAddTx),
+    ```
+
+2. Peer message handling: a node processes messages received from a peer.
+    ```bluespec "steps" +=
+    nondet node = oneOf(nodesInNetwork)
+    node.receiveFromPeer(handleMessage),
+    ```
+
+3. Transaction dissemination: a node sends a transaction in its mempool to a subset of target nodes.
+    ```bluespec "steps" +=
+    nondet node = oneOf(nodesInNetwork)
+    node.disseminateNextTx(mkTargetNodes, TxMsg),
+    ```
+
+4. A node joins the network.
+    ```bluespec "steps" +=
+    all {
+        pickNodeAndJoin,
+        state' = state,
+    },
+    ```
+
+5. A node disconnects from the network.
+    ```bluespec "steps" +=
+    all {
+        pickNodeAndDisconnect,
+        state' = state,
     }
-```
-> The argument `_incomingMsgs` is passed just to update the queues of incoming messages, when
-applicable (Flood does not reply with any message but DOG does).
+    ```
 
 ### Adding transactions to the mempool
 
@@ -97,6 +137,19 @@ action processDuplicateTx(node, _incomingMsgs, optionalSender, tx) = all {
 }
 ```
 
+### Handling incoming messages
+
+Upon receiving a message with transaction `tx` from a peer (i.e., the `sender`), the `node` attempts
+to add `tx` to its mempool. 
+```bluespec "actions" +=
+action handleMessage(node, _incomingMsgs, sender, msg) =
+    match msg {
+    | TxMsg(tx) => node.tryAddTx(_incomingMsgs, Some(sender), tx)
+    }
+```
+> The argument `_incomingMsgs` is passed just to update the queues of incoming messages, when
+applicable (Flood does not reply with any message but DOG does).
+
 ### Transaction dissemination 
 
 In Flood, a node sends a transaction to all its peers except those who previously sent it.
@@ -106,45 +159,6 @@ to the generic transaction dissemination action.
 ```bluespec "actions" +=
 def mkTargetNodes(node, tx) =
     node.Peers().exclude(node.sendersOf(tx))
-```
-
-### All state transitions
-
-Summing up, these are all the possible state transitions of the protocol.
-
-#### Transaction dissemination: node sends transaction to subset of peers
-```bluespec "steps" +=
-nondet node = oneOf(nodesInNetwork)
-node.disseminateNextTx(mkTargetNodes, TxMsg),
-```
-
-#### User-submitted transactions: node receives a transaction from a user
-```bluespec "steps" +=
-nondet node = oneOf(nodesInNetwork)
-nondet tx = oneOf(Txs)
-node.receiveTxFromUser(tx, tryAddTx),
-```
-
-#### Peer message handling: node processes messages received from peers
-```bluespec "steps" +=
-nondet node = oneOf(nodesInNetwork)
-node.receiveFromPeer(handleMessage),
-```
-
-#### Nodes joining the network
-```bluespec "steps" +=
-all {
-    pickNodeAndJoin,
-    state' = state,
-},
-```
-
-#### Nodes leaving the network
-```bluespec "steps" +=
-all {
-    pickNodeAndDisconnect,
-    state' = state,
-}
 ```
 
 ## Properties

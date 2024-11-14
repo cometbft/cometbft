@@ -284,9 +284,10 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		case *HasProposalBlockPartMessage:
 			ps.ApplyHasProposalBlockPartMessage(msg)
 		case *VoteSetMaj23Message:
-			conR.rsMtx.Lock()
+			// Get the updated round state as our view may be stale
+			conR.conS.mtx.Lock()
 			rs := conR.conS.getRoundState()
-			conR.rsMtx.Unlock()
+			conR.conS.mtx.Unlock()
 			height, votes := rs.Height, rs.Votes
 			if height != msg.Height {
 				return
@@ -370,9 +371,10 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		}
 		switch msg := msg.(type) {
 		case *VoteSetBitsMessage:
-			conR.rsMtx.Lock()
+			// Get the updated round state as our view may be stale
+			conR.conS.mtx.Lock()
 			rs := conR.conS.getRoundState()
-			conR.rsMtx.Unlock()
+			conR.conS.mtx.Unlock()
 
 			height, votes := rs.Height, rs.Votes
 
@@ -423,9 +425,7 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 			rs := data.(cstypes.RoundState)
 
 			// update reactor's view of round state
-			conR.rsMtx.Lock()
-			conR.rs = rs
-			conR.rsMtx.Unlock()
+			conR.updateRoundState(&rs)
 
 			conR.broadcastNewRoundStepMessage(&rs)
 		}); err != nil {
@@ -437,9 +437,7 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 			rs := data.(cstypes.RoundState)
 
 			// update reactor's view of round state
-			conR.rsMtx.Lock()
-			conR.rs = rs
-			conR.rsMtx.Unlock()
+			conR.updateRoundState(&rs)
 
 			conR.broadcastNewValidBlockMessage(&rs)
 		}); err != nil {
@@ -454,9 +452,8 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 			// NOTE this is safe to do without locking cs because the eventBus is
 			// synchronous. If it were not, we could pass rs in this event
 			// instead
-			conR.rsMtx.Lock()
-			defer conR.rsMtx.Unlock()
-			conR.rs = conR.conS.getRoundState()
+			rs := conR.conS.getRoundState()
+			conR.updateRoundState(&rs)
 		}); err != nil {
 		conR.Logger.Error("Error adding listener for events (Vote)", "err", err)
 	}
@@ -469,12 +466,18 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 			// NOTE this is safe to do without locking cs because the eventBus is
 			// synchronous. If it were not, we could pass rs in this event
 			// instead
-			conR.rsMtx.Lock()
-			defer conR.rsMtx.Unlock()
-			conR.rs = conR.conS.getRoundState()
+			rs := conR.conS.getRoundState()
+			conR.updateRoundState(&rs)
 		}); err != nil {
 		conR.Logger.Error("Error adding listener for events (ProposalBlockPart)", "err", err)
 	}
+}
+
+// Safely update the reactor's view of round state
+func (conR *Reactor) updateRoundState(rs *cstypes.RoundState) {
+	conR.rsMtx.Lock()
+	conR.rs = *rs // copy
+	conR.rsMtx.Unlock()
 }
 
 func (conR *Reactor) unsubscribeFromBroadcastEvents() {

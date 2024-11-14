@@ -16,10 +16,6 @@ module flood {
     //--------------------------------------------------------------------------
     // Actions
     //--------------------------------------------------------------------------
-    action handleMessage(node, _incomingMsgs, sender, msg) =
-        match msg {
-        | TxMsg(tx) => node.tryAddTx(_incomingMsgs, Some(sender), tx)
-        }
     action tryAddTx(node, _incomingMsgs, optionalSender, tx) = 
         if (not(hash(tx).in(node.Cache())))
             node.tryAddFirstTimeTx(_incomingMsgs, optionalSender, tx)
@@ -47,17 +43,21 @@ module flood {
         incomingMsgs' = _incomingMsgs,
         peers' = peers,
     }
+    action handleMessage(node, _incomingMsgs, sender, msg) =
+        match msg {
+        | TxMsg(tx) => node.tryAddTx(_incomingMsgs, Some(sender), tx)
+        }
     def mkTargetNodes(node, tx) =
         node.Peers().exclude(node.sendersOf(tx))
 
     action step = any {
         nondet node = oneOf(nodesInNetwork)
-        node.disseminateNextTx(mkTargetNodes, TxMsg),
-        nondet node = oneOf(nodesInNetwork)
         nondet tx = oneOf(Txs)
         node.receiveTxFromUser(tx, tryAddTx),
         nondet node = oneOf(nodesInNetwork)
         node.receiveFromPeer(handleMessage),
+        nondet node = oneOf(nodesInNetwork)
+        node.disseminateNextTx(mkTargetNodes, TxMsg),
         all {
             pickNodeAndJoin,
             state' = state,

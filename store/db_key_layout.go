@@ -25,10 +25,11 @@ type v1LegacyLayout struct{}
 
 // CalcBlockCommitKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcBlockCommitKey(height int64) []byte {
+	const prefixLen = len("C:")
+
 	// The longest int64 has 19 digits, therefore its string representation is
 	// 20 bytes long (19 digits + 1 byte for the sign).
-	// 2 is the length of "C:"
-	key := make([]byte, 2, 2+20)
+	key := make([]byte, prefixLen, prefixLen+20)
 
 	key[0], key[1] = 'C', ':'
 	key = strconv.AppendInt(key, height, 10)
@@ -38,21 +39,24 @@ func (*v1LegacyLayout) CalcBlockCommitKey(height int64) []byte {
 
 // CalcBlockHashKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcBlockHashKey(hash []byte) []byte {
-	// 3 is the length of "BH:"
-	key := make([]byte, 3+hex.EncodedLen(len(hash)))
+	const prefixLen = len("BH:")
+
+	key := make([]byte, prefixLen+hex.EncodedLen(len(hash)))
 
 	key[0], key[1], key[2] = 'B', 'H', ':'
-	hex.Encode(key[3:], hash)
+	hex.Encode(key[prefixLen:], hash)
 
 	return key
 }
 
 // CalcBlockMetaKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcBlockMetaKey(height int64) []byte {
+	const prefixLen = len("H:")
+
 	// the longest int64 has 19 digits, therefore its string representation is
 	// 20 bytes long (19 digits + 1 byte for the sign).
 	// 2 is the length of "H:"
-	key := make([]byte, 2, 2+20)
+	key := make([]byte, prefixLen, prefixLen+20)
 
 	key[0], key[1] = 'H', ':'
 	key = strconv.AppendInt(key, height, 10)
@@ -62,13 +66,15 @@ func (*v1LegacyLayout) CalcBlockMetaKey(height int64) []byte {
 
 // CalcBlockPartKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcBlockPartKey(height int64, partIndex int) []byte {
+	const prefixLen = len("P:")
+
 	// Preallocate the slice to speed up append operations and avoid extra
 	// allocations.
 	// The longest int64 has 19 digits, therefore its string representation is
 	// 20 bytes long (19 digits + 1 byte for the sign). Here we have 2 ints,
 	// therefore 20+20 bytes.
-	// The total size is is: 2 (len("P:")) + 20 + 1 (len(":")) + 20
-	key := make([]byte, 2, 2+20+1+20)
+	// The total size is is: 2 (prefixLen) + 20 + 1 (len(":")) + 20
+	key := make([]byte, prefixLen, prefixLen+20+1+20)
 
 	key[0], key[1] = 'P', ':'
 	key = strconv.AppendInt(key, height, 10)
@@ -80,10 +86,11 @@ func (*v1LegacyLayout) CalcBlockPartKey(height int64, partIndex int) []byte {
 
 // CalcExtCommitKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcExtCommitKey(height int64) []byte {
+	const prefixLen = len("EC:")
+
 	// the longest int64 has 19 digits, therefore its string representation is
 	// 20 bytes long (19 digits + 1 byte for the sign).
-	// 3 is the length of "EC:"
-	key := make([]byte, 3, 3+20)
+	key := make([]byte, prefixLen, prefixLen+20)
 
 	key[0], key[1], key[2] = 'E', 'C', ':'
 	key = strconv.AppendInt(key, height, 10)
@@ -93,10 +100,12 @@ func (*v1LegacyLayout) CalcExtCommitKey(height int64) []byte {
 
 // CalcSeenCommitKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcSeenCommitKey(height int64) []byte {
+	const prefixLen = len("SC:")
+
 	// the longest int64 has 19 digits, therefore its string representation is
 	// 20 bytes long (19 digits + 1 byte for the sign).
 	// 3 is the length of "SC:"
-	key := make([]byte, 3, 3+20)
+	key := make([]byte, prefixLen, prefixLen+20)
 
 	key[0], key[1], key[2] = 'S', 'C', ':'
 	key = strconv.AppendInt(key, height, 10)

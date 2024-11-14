@@ -26,13 +26,13 @@ Note that in this document we will refer to validators as any of the core nodes 
 
 The CometBFT config should add some new fields which should be populated by validators:
 
-1.  `val_peer_count_low`, `val_peer_count_high`, `val_peer_count_target`. These are the lower bound, upper bound, and target number of validator peers to maintain, respectively.
+1.  `val_peer_count_low`, `val_peer_count_high`, `val_peer_count_target`. These are the lower bound, upper bound, and target number of validator peers to maintain, respectively. Note that these have some interaction with `p2p.max_num_inbound_peers` and `p2p.max_num_outbound_peers`, which are already in the config. In order to avoid confusion, we will assume that `p2p.max_num_inbound_peers` and `p2p.max_num_outbound_peers` are the maximum number of peers that the node will ever try to maintain, and that the validator peer count bounds are a subset of that. Node operators may need to adjust these parameters to allow for the val peer count bounds to work within the max peer bounds.
 
 2.  `should_join_valp2p` - whether the node should join the valp2p network.
 
 First, we modify the handshake that nodes perform when connecting to each other. Currently, that handshake exchanges `NodeInfo`. We will augment `NodeInfo` to include an `isValidator` field, which will be kept for each peer of the node in the peer's `NodeInfo`. In order to determine the `isValidator` field, nodes should
-perform a Diffie-Hellman key exchange on connection, and use this along with state to determine if the peer is a validator. [ There may be some edge cases where
-nodes gain or lose their validator status after this handshake has been performed. ]
+perform a Diffie-Hellman key exchange on connection, and use this along with state to determine if the peer is a validator.
+Note that sentry setups will be broken by this change, as sentry nodes will not be able to participate in the valp2p network.
 
 We will add a new reactor for validator peering, which we will refer to here as valp2p. All nodes in the network should run this new reactor.
 
@@ -58,15 +58,15 @@ For `Valp2pRequest`:
 For `Valp2pResponse`:
 1. Record the addresses in memory.
 
-[ We should not in general blindly trust the addresses sent to us by other validators. When dialing a peer from this address book, we should only keep the connection if the peer succeeds in proving itself as a validator. We may need to update the switch with a new `DialValidator` function or something similar. ]
+This reactor should also create a `DialValidatorWithAddress` function that uses the switch to dial a peer with a given address, and only keeps the peer if it successfully proves itself as a validator.
 
 Additionally, when this reactor starts on a validator node, it should start a goroutine that periodically:
 
 1. Checks the number of validator peers we are currently connected to.
-2. If the number < `val_peer_count_low`, start dialing random validator addresses that we know about until we reach `val_peer_count_target`. If we do not have enough addresses, send `Valp2pRequests` to random peers until we have a sufficiently large validator address book.
+2. If the number < `val_peer_count_low`, start dialing random validators from our memory address book with `DialValidatorWithAddress` until we reach `val_peer_count_target`. If we do not have enough addresses, send `Valp2pRequests` to random peers until we have a sufficiently large validator address book.
 3. If the number > `val_peer_count_high`, drop some random validators until we reach `val_peer_count_target`.
 
-[ The exact logic of this goroutine may need to be tweaked, it may interfere with persistent peers, maxnuminboundpeers, and maxnumoutboundpeers. ]
+It should also start another goroutine that periodically checks state to update the `isValidator` field of peer node infos.
 
 The `AddPeer` behavior is roughly: when I get connected to a new validator, tell my neighbors about this new validator so they can potentially connect as well, if they are a validator.
 

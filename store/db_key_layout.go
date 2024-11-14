@@ -2,6 +2,7 @@ package store
 
 import (
 	"encoding/hex"
+	"slices"
 	"strconv"
 
 	"github.com/google/orderedcode"
@@ -25,7 +26,17 @@ type v1LegacyLayout struct{}
 
 // CalcBlockCommitKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcBlockCommitKey(height int64) []byte {
-	return []byte("C:" + strconv.FormatInt(height, 10))
+	var (
+		keyPrefixLen = 2 // len("C:")
+
+		// the longest int64 has 19 digits, therefore its string representation is
+		// 20 bytes long (19 digits + 1 byte for the sign).
+		key = make([]byte, keyPrefixLen, keyPrefixLen+20)
+	)
+	key[0], key[1] = 'C', ':'
+	key = strconv.AppendInt(key, height, 10)
+
+	return key
 }
 
 // CalcBlockHashKey implements BlockKeyLayout.
@@ -35,6 +46,7 @@ func (*v1LegacyLayout) CalcBlockHashKey(hash []byte) []byte {
 		lenPrefix = len(prefix)
 		key       = make([]byte, lenPrefix+hex.EncodedLen(len(hash)))
 	)
+
 	copy(key, prefix)
 
 	hex.Encode(key[lenPrefix:], hash)

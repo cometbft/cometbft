@@ -50,12 +50,20 @@ func (v *v1LegacyLayout) CalcBlockMetaKey(height int64) []byte {
 // CalcBlockPartKey implements BlockKeyLayout.
 // It builds a key in the format "P:height:partIndex".
 func (*v1LegacyLayout) CalcBlockPartKey(height int64, partIndex int) []byte {
-	var (
-		keyPrefix = "P:"
-		keySuffix = strconv.FormatInt(height, 10) + ":" + strconv.Itoa(partIndex)
-		keyStr    = keyPrefix + keySuffix
-	)
-	return []byte(keyStr)
+	// Preallocate the slice to speed up append operations and avoid extra
+	// allocations.
+	// The longest int64 has 19 digits, therefore its string representation is
+	// 20 bytes long (19 digits + 1 byte for the sign). Here we have 2 ints,
+	// therefore 20+20 bytes.
+	// The total size is is: 2 (len("P:")) + 20 + 1 (len(":")) + 20
+	key := make([]byte, 2, 2+20+1+20)
+
+	key[0], key[1] = 'P', ':'
+	key = strconv.AppendInt(key, height, 10)
+	key = append(key, ':')
+	key = strconv.AppendInt(key, int64(partIndex), 10)
+
+	return key
 }
 
 // CalcExtCommitKey implements BlockKeyLayout.

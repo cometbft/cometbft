@@ -51,7 +51,17 @@ func (*v1LegacyLayout) CalcBlockHashKey(hash []byte) []byte {
 
 // CalcBlockMetaKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcBlockMetaKey(height int64) []byte {
-	return []byte("H:" + strconv.FormatInt(height, 10))
+	var (
+		keyPrefixLen = 2 // len("H:")
+
+		// the longest int64 has 19 digits, therefore its string representation is
+		// 20 bytes long (19 digits + 1 byte for the sign).
+		key = make([]byte, keyPrefixLen, keyPrefixLen+20)
+	)
+	key[0], key[1] = 'H', ':'
+	key = strconv.AppendInt(key, height, 10)
+
+	return key
 }
 
 // CalcBlockPartKey implements BlockKeyLayout.

@@ -14,6 +14,32 @@ types, messages, and data structures as Flood. In principle, it is possible to e
 in nodes running Flood. Nodes running DOG and Flood can co-exist in the network, though performance
 will be optimal only if all nodes enable DOG.
 
+**Table of contents**
+  - [Messages](#messages)
+  - [Routing](#routing)
+    - [Functions on routes](#functions-on-routes)
+    - [Auxiliary definitions](#auxiliary-definitions)
+  - [Redundancy Control](#redundancy-control)
+    - [Redundancy level](#redundancy-level)
+    - [Auxiliary definitions](#auxiliary-definitions-1)
+  - [Parameters](#parameters)
+    - [Target redundancy](#target-redundancy)
+      - [Target bounds](#target-bounds)
+    - [Number of transactions per adjustment](#number-of-transactions-per-adjustment)
+  - [Initial state](#initial-state)
+  - [State transitions (actions)](#state-transitions-actions)
+    - [Adding transactions to the mempool](#adding-transactions-to-the-mempool)
+      - [Adding first-time transactions](#adding-first-time-transactions)
+      - [Handling duplicate transactions](#handling-duplicate-transactions)
+    - [Handling incoming messages](#handling-incoming-messages)
+      - [Handling HaveTx messages](#handling-havetx-messages)
+      - [Handling Reset messages](#handling-reset-messages)
+    - [Transaction dissemination](#transaction-dissemination)
+    - [Nodes disconnect from the network](#nodes-disconnect-from-the-network)
+
+> This document is written using the literature programming paradigm. Code snippets are written in
+> [Quint][quint] and can get "tangled" into a Quint file.
+
 ## Messages
 
 In addition to the `TxMsg` data message, DOG has two control messages. The size of the control

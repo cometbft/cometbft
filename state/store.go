@@ -43,7 +43,16 @@ type KeyLayout interface {
 	CalcABCIResponsesKey(height int64) []byte
 }
 
+// v1LegacyLayout is a legacy implementation of BlockKeyLayout, kept for backwards
+// compatibility. Newer code should use [v2Layout].
 type v1LegacyLayout struct{}
+
+// In the following [v1LegacyLayout] methods, we preallocate the key's slice to speed
+// up append operations and avoid extra allocations.
+// The size of the slice is the length of the prefix plus the length the string
+// representation of a 64-bit integer. Namely, the longest 64-bit int has 19 digits,
+// therefore its string representation is 20 bytes long (19 digits + 1 byte for the
+// sign).
 
 // CalcABCIResponsesKey implements StateKeyLayout.
 // It returns a database key of the form "abciResponsesKey:<height>" to store/

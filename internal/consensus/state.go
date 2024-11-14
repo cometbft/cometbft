@@ -402,7 +402,8 @@ func (cs *State) OnStart() error {
 
 	// schedule the first round!
 	// use GetRoundState so we don't race the receiveRoutine for access
-	cs.scheduleRound0(cs.GetRoundState())
+	rs := cs.GetRoundState()
+	cs.scheduleRound0(&rs)
 
 	return nil
 }
@@ -557,7 +558,7 @@ func (cs *State) updateRoundStep(round int32, step cstypes.RoundStepType) {
 }
 
 // enterNewRound(height, 0) at cs.StartTime.
-func (cs *State) scheduleRound0(rs cstypes.RoundState) {
+func (cs *State) scheduleRound0(rs *cstypes.RoundState) {
 	// cs.Logger.Info("scheduleRound0", "now", cmttime.Now(), "startTime", cs.StartTime)
 	sleepDuration := rs.StartTime.Sub(cmttime.Now())
 	cs.scheduleTimeout(sleepDuration, rs.Height, 0, cstypes.RoundStepNewHeight)
@@ -1946,7 +1947,7 @@ func (cs *State) finalizeCommit(height int64) {
 
 	// cs.StartTime is already set.
 	// Schedule Round0 to start soon.
-	cs.scheduleRound0(cs.RoundState)
+	cs.scheduleRound0(&cs.RoundState)
 
 	// By here,
 	// * cs.Height has been increment to height+1

@@ -284,7 +284,9 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		case *HasProposalBlockPartMessage:
 			ps.ApplyHasProposalBlockPartMessage(msg)
 		case *VoteSetMaj23Message:
-			rs := conR.getRoundState()
+			conR.rsMtx.Lock()
+			rs := conR.conS.getRoundState()
+			conR.rsMtx.Unlock()
 			height, votes := rs.Height, rs.Votes
 			if height != msg.Height {
 				return
@@ -368,7 +370,10 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		}
 		switch msg := msg.(type) {
 		case *VoteSetBitsMessage:
-			rs := conR.getRoundState()
+			conR.rsMtx.Lock()
+			rs := conR.conS.getRoundState()
+			conR.rsMtx.Unlock()
+
 			height, votes := rs.Height, rs.Votes
 
 			if height == msg.Height {

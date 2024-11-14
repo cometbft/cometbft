@@ -163,15 +163,12 @@ transactions either directly from users or in messages from peers. Transaction f
 sender.
 
 `receiveTxFromUser` is a generic action that models a node receiving transaction `tx` from a user.
-The function `_tryAddTx` can be instantiated by the gossip protocol to define how to add
-transactions to the mempool:
-- `_tryAddTx(incomingMsgs, optionalSender, tx)` attempts to add `tx` to the mempool, given the node
-  ID of the sender in case `tx` comes from another node.
-
 ```bluespec "actions" +=
 action receiveTxFromUser(node, tx, _tryAddTx) =
     node._tryAddTx(incomingMsgs, None, tx)
 ```
+The function `_tryAddTx(incomingMsgs, optionalSender, tx)` defines how transactions are added to the
+mempool.
 
 Typically, users send (full) transactions to the node via an RPC endpoint. Users are allowed to
 submit the same transaction more than once and to multiple nodes.

@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -45,8 +46,21 @@ type KeyLayout interface {
 type v1LegacyLayout struct{}
 
 // CalcABCIResponsesKey implements StateKeyLayout.
+// It returns a database key of the form "abciResponsesKey:<height>" to store/
+// retrieve the response of FinalizeBlock (i.e., the results of executing a block)
+// for the block at the given height to/from
+// the database.
 func (v1LegacyLayout) CalcABCIResponsesKey(height int64) []byte {
-	return []byte(fmt.Sprintf("abciResponsesKey:%v", height))
+	const (
+		prefix    = "abciResponsesKey:"
+		prefixLen = len(prefix)
+	)
+	key := make([]byte, 0, prefixLen+20)
+
+	key = append(key, prefix...)
+	key = strconv.AppendInt(key, height, 10)
+
+	return key
 }
 
 // store.StoreOptions.DBKeyLayout.calcConsensusParamsKey implements StateKeyLayout.

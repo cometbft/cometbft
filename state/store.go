@@ -73,7 +73,7 @@ func (v1LegacyLayout) CalcABCIResponsesKey(height int64) []byte {
 }
 
 // CalcConsensusParamsKey implements StateKeyLayout.
-// It returs a database key of the form "consensusParamsKey:<height>" to store/
+// It returns a database key of the form "consensusParamsKey:<height>" to store/
 // retrieve the consensus parameters at the given height to/from the database.
 func (v1LegacyLayout) CalcConsensusParamsKey(height int64) []byte {
 	const (

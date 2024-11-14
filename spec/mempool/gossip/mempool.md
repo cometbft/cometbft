@@ -108,7 +108,7 @@ sender of a transaction.
 Note that when a transaction is in the cache but not in the pool, it won't have any sender. Senders
 are only needed for disseminating (valid) transactions that are in the mempool.
 
-### Auxiliary definitions
+### Functions on the mempool
 
 `addSender` adds a sender to `tx`'s list of senders (`_txSenders`), if `optionalSender` has a value
 that's not already in the list.
@@ -127,7 +127,8 @@ def sendersOf(node, tx) =
     node.Senders().mapGetDefault(hash(tx), List()).listToSet()
 ```
 
-More definitions.
+### Auxiliary definitions
+
 ```bluespec "auxstate" +=
 def Cache(node) = state.get(node).cache
 def Pool(node) = state.get(node).pool

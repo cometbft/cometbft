@@ -2,7 +2,6 @@ package store
 
 import (
 	"encoding/hex"
-	"slices"
 	"strconv"
 
 	"github.com/google/orderedcode"
@@ -41,15 +40,11 @@ func (*v1LegacyLayout) CalcBlockCommitKey(height int64) []byte {
 
 // CalcBlockHashKey implements BlockKeyLayout.
 func (*v1LegacyLayout) CalcBlockHashKey(hash []byte) []byte {
-	var (
-		prefix    = []byte{'B', 'H', ':'}
-		lenPrefix = len(prefix)
-		key       = make([]byte, lenPrefix+hex.EncodedLen(len(hash)))
-	)
+	// 3 is the length of "BH:"
+	key := make([]byte, 3+hex.EncodedLen(len(hash)))
 
-	copy(key, prefix)
-
-	hex.Encode(key[lenPrefix:], hash)
+	key[0], key[1], key[2] = 'B', 'H', ':'
+	hex.Encode(key[3:], hash)
 
 	return key
 }

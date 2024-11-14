@@ -1,0 +1,94 @@
+// -*- mode: Bluespec; -*-
+
+// File generated from markdown using lmt. DO NOT EDIT.
+
+module p2p {
+    import spells.* from "./spells"
+
+    //--------------------------------------------------------------------------
+    // Types
+    //--------------------------------------------------------------------------
+    type NodeID = str
+    
+    //--------------------------------------------------------------------------
+    // Parameters
+    //--------------------------------------------------------------------------
+    const NodeIDs: Set[NodeID]
+    const InitialPeers: NodeID -> Set[NodeID]
+
+    //--------------------------------------------------------------------------
+    // State
+    //--------------------------------------------------------------------------
+    var incomingMsgs: NodeID -> List[(NodeID, msg)]
+    var peers: NodeID -> Set[NodeID]
+    pure def multiSend(node, _incomingMsgs, targetNodes, msg) =
+        _incomingMsgs.updateMultiple(targetNodes, ms => ms.append((node, msg)))
+    
+    // Auxiliary definitions
+    val nodesInNetwork = NodeIDs.filter(node => node.Peers().nonEmpty())
+    val nodesNotInNetwork = NodeIDs.exclude(nodesInNetwork)
+    def IncomingMsgs(node) = incomingMsgs.get(node)
+    def Peers(node) = peers.get(node)
+
+    //--------------------------------------------------------------------------
+    // Actions
+    //--------------------------------------------------------------------------
+    action P2P_init = all {
+        incomingMsgs' = NodeIDs.mapBy(_ => List()),
+        peers' = NodeIDs.mapBy(n => InitialPeers.get(n)),
+    }
+    action receiveFromPeer(node, handleMessage) = all {
+        require(length(node.IncomingMsgs()) > 0),
+        // We model receiving of a message as taking the head of the list of
+        // incoming messages and leaving the tail.
+        val someMsg = node.IncomingMsgs().head()
+        val sender = someMsg._1
+        val msg = someMsg._2
+        val _incomingMsgs = incomingMsgs.update(node, tail)
+        handleMessage(node, _incomingMsgs, sender, msg)
+    }
+    action joinNetwork(node, peerSet) = all {
+        // The node must not be connected to the network.
+        require(node.Peers().isEmpty()),
+        peers' = peers
+            // Assign to node the set of new peers.
+            .put(node, peerSet)
+            // Add node as a new peer to the set of connecting peers.
+            .updateMultiple(peerSet, ps => ps.join(node)),
+        incomingMsgs' = incomingMsgs,
+    }
+    action pickNodeAndJoin = all {
+        // Pick a node that is not connected to the network.
+        require(NodeIDs.exclude(nodesInNetwork).nonEmpty()),
+        nondet node = oneOf(NodeIDs.exclude(nodesInNetwork))
+        // Pick a non-empty set of nodes in the network to be the node's peers.
+        nondet peerSet = oneOf(nodesInNetwork.powerset().exclude(Set()))
+        node.joinNetwork(peerSet),
+    }
+    // TODO: the network must not become disconnected; we don't want to model that.
+    action disconnectNetwork(nodeToDisconnect, _incomingMsgs) = all {
+        peers' = peers
+            // Clean node's state and remove all its peers.
+            .put(nodeToDisconnect, Set())
+            // Remove node from other peers' state.
+            .updateMultiple(nodesInNetwork, ps => ps.exclude(Set(nodeToDisconnect))),
+        incomingMsgs' = _incomingMsgs,
+    }
+    action pickNodeAndDisconnect = all {
+        // Pick a node that is not the only node in the network.
+        require(size(nodesInNetwork) > 1),
+        nondet nodeToDisconnect = oneOf(nodesInNetwork) 
+        disconnectNetwork(nodeToDisconnect, incomingMsgs),
+    }
+    
+    //--------------------------------------------------------------------------
+    // Properties
+    //--------------------------------------------------------------------------
+    val bidirectionalNetwork =
+        NodeIDs.forall(nodeA => 
+            nodeA.Peers().forall(nodeB => nodeA.in(nodeB.Peers())))
+    temporal allMsgsDelivered = 
+        eventually(NodeIDs.forall(node => length(node.IncomingMsgs()) == 0))
+    // TODO: Invariant: all nodes in the network are always connected.
+
+}

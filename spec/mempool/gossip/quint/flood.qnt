@@ -14,8 +14,28 @@ module flood {
         | TxMsg(TX)
 
     //--------------------------------------------------------------------------
+    // State
+    //--------------------------------------------------------------------------
+    var senders: NodeID -> TxID -> List[NodeID]
+    
+    // Auxiliary definitions
+    def Senders(node) = senders.get(node)
+    def sendersOf(node, tx) = 
+        node.Senders().mapGetDefault(hash(tx), List()).listToSet()
+    pure def addSender(_txSenders, tx, optionalSender) = 
+        match optionalSender {
+        | Some(sender) => _txSenders.update(hash(tx), ss => 
+            if (ss.includes(sender)) ss else ss.append(sender))
+        | None => _txSenders
+        }
+
+    //--------------------------------------------------------------------------
     // Actions
     //--------------------------------------------------------------------------
+    action init = all {
+        MP_init,
+        senders' = NodeIDs.mapBy(n => Map()),
+    }
     action tryAddTx(node, _incomingMsgs, optionalSender, tx) = 
         if (not(hash(tx).in(node.Cache())))
             node.tryAddFirstTimeTx(_incomingMsgs, optionalSender, tx)
@@ -25,21 +45,16 @@ module flood {
         state' = state.update(node, st => {
             cache: st.cache.join(hash(tx)),
             pool: if (valid(tx)) st.pool.append(tx) else st.pool,
-            senders: 
-                if (valid(tx)) 
-                    st.senders.addSender(tx, optionalSender) 
-                else st.senders,
             ...st }),
+        senders' = senders.update(node, ss =>
+            if (valid(tx)) ss.addSender(tx, optionalSender) else ss),
         incomingMsgs' = _incomingMsgs,
         peers' = peers,
     }
     action processDuplicateTx(node, _incomingMsgs, optionalSender, tx) = all {
-        state' = state.update(node, st => { 
-            senders: 
-                if (st.pool.includes(tx)) 
-                    st.senders.addSender(tx, optionalSender) 
-                else st.senders, 
-            ...st }),
+        senders' = senders.update(node, ss =>
+            if (node.Pool().includes(tx)) ss.addSender(tx, optionalSender) else ss),
+        state' = state,
         incomingMsgs' = _incomingMsgs,
         peers' = peers,
     }
@@ -57,14 +72,19 @@ module flood {
         nondet node = oneOf(nodesInNetwork)
         node.receiveFromPeer(handleMessage),
         nondet node = oneOf(nodesInNetwork)
-        node.disseminateNextTx(mkTargetNodes, TxMsg),
+        all {
+            node.disseminateNextTx(mkTargetNodes, TxMsg),
+            senders' = senders,
+        },
         all {
             pickNodeAndJoin,
             state' = state,
+            senders' = senders,
         },
         all {
             pickNodeAndDisconnect,
             state' = state,
+            senders' = senders,
         }
     }
 

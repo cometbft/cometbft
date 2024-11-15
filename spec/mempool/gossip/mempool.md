@@ -96,50 +96,21 @@ thus a separate pool index per iterator) with a `next()` method to retrieve the 
 list. If it reaches the end of the list, it blocks until a new entry is added. All iterators read
 concurrently from the pool.
 
-#### List of senders per transaction
+<details>
+  <summary>Auxiliary definitions</summary>
 
-Each entry in the mempool has a set of peers from which the node received the transaction. 
-```bluespec "mempoolstate" +=
-senders: TxID -> List[NodeID]
-```
-We define it as a list instead of a set because the DOG protocol needs to know who is the first
-sender of a transaction.
-
-Note that when a transaction is in the cache but not in the pool, it won't have any sender. Senders
-are only needed for disseminating (valid) transactions that are in the mempool.
-
-### Auxiliary definitions
-
-`addSender` adds a sender to `tx`'s list of senders (`_txSenders`), if `optionalSender` has a value
-that's not already in the list.
-```bluespec "auxstate" +=
-pure def addSender(_txSenders, tx, optionalSender) = 
-    match optionalSender {
-    | Some(sender) => _txSenders.update(hash(tx), ss => 
-        if (ss.includes(sender)) ss else ss.append(sender))
-    | None => _txSenders
-    }
-```
-
-The set of senders of transaction `tx`.
-```bluespec "auxstate" +=
-def sendersOf(node, tx) = 
-    node.Senders().mapGetDefault(hash(tx), List()).listToSet()
-```
-
-More definitions.
 ```bluespec "auxstate" +=
 def Cache(node) = state.get(node).cache
 def Pool(node) = state.get(node).pool
 def PoolIndex(node) = state.get(node).poolIndex
-def Senders(node) = state.get(node).senders
 ```
+</details>
 
 ## Initial state
 
 The initial state of a mempool:
 ```bluespec "actions" +=
-action init = all {
+action MP_init = all {
     P2P_init,
     state' = NodeIDs.mapBy(n => initialMempoolState),
 }
@@ -150,7 +121,6 @@ val initialMempoolState = {
     pool: List(),
     cache: Set(),
     poolIndex: 0,
-    senders: Map(),
 }
 ```
 

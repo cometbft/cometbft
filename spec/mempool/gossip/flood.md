@@ -32,12 +32,55 @@ type Message =
 
 ## State
 
-Flood's state is just the underlying [mempool](mempool.md) state (variable `state`). It does not
-need extra data structures.
+Flood's state consists of the underlying [mempool](mempool.md) state (variable `state`) and
+[P2P](p2p.md) state (variables `incomingMsgs` and `peers`).
+
+Additionally, each entry in the mempool has a list of peer IDs from which the node received the
+transaction. 
+```bluespec "state" +=
+var senders: NodeID -> TxID -> List[NodeID]
+```
+We define it as a list instead of a set because the DOG protocol needs to know who is the first
+sender of a transaction.
+
+Note that a transaction won't have a sender when it is in the cache but not in the mempool. Senders
+are only needed for disseminating (valid) transactions that are in the mempool.
+
+<details>
+  <summary>Auxiliary definitions</summary>
+
+```bluespec "auxstate" +=
+def Senders(node) = senders.get(node)
+```
+
+The set of senders of transaction `tx`:
+```bluespec "auxstate" +=
+def sendersOf(node, tx) = 
+    node.Senders().mapGetDefault(hash(tx), List()).listToSet()
+```
+
+Function `addSender` adds a sender to `tx`'s list of senders (`_txSenders`), if `optionalSender` has
+a value that's not already in the list.
+```bluespec "auxstate" +=
+pure def addSender(_txSenders, tx, optionalSender) = 
+    match optionalSender {
+    | Some(sender) => _txSenders.update(hash(tx), ss => 
+        if (ss.includes(sender)) ss else ss.append(sender))
+    | None => _txSenders
+    }
+```
+</details>
 
 ## Initial state
 
-Flood's initial state is the underlying mempool's initial state (`init`).
+Flood's initial state is the underlying mempool's initial state (`MP_init`) and an empty mapping of
+transactions to senders.
+```bluespec "actions" +=
+action init = all {
+    MP_init,
+    senders' = NodeIDs.mapBy(n => Map()),
+}
+```
 
 ## State transitions (actions)
 
@@ -62,7 +105,10 @@ These are the state transitions of the system. Note that generic actions are imp
 3. Transaction dissemination: a node sends a transaction in its mempool to a subset of target nodes.
     ```bluespec "steps" +=
     nondet node = oneOf(nodesInNetwork)
-    node.disseminateNextTx(mkTargetNodes, TxMsg),
+    all {
+        node.disseminateNextTx(mkTargetNodes, TxMsg),
+        senders' = senders,
+    },
     ```
 
 4. A node joins the network.
@@ -70,6 +116,7 @@ These are the state transitions of the system. Note that generic actions are imp
     all {
         pickNodeAndJoin,
         state' = state,
+        senders' = senders,
     },
     ```
 
@@ -78,6 +125,7 @@ These are the state transitions of the system. Note that generic actions are imp
     all {
         pickNodeAndDisconnect,
         state' = state,
+        senders' = senders,
     }
     ```
 
@@ -110,11 +158,9 @@ action tryAddFirstTimeTx(node, _incomingMsgs, optionalSender, tx) = all {
     state' = state.update(node, st => {
         cache: st.cache.join(hash(tx)),
         pool: if (valid(tx)) st.pool.append(tx) else st.pool,
-        senders: 
-            if (valid(tx)) 
-                st.senders.addSender(tx, optionalSender) 
-            else st.senders,
         ...st }),
+    senders' = senders.update(node, ss =>
+        if (valid(tx)) ss.addSender(tx, optionalSender) else ss),
     incomingMsgs' = _incomingMsgs,
     peers' = peers,
 }
@@ -126,12 +172,9 @@ action tryAddFirstTimeTx(node, _incomingMsgs, optionalSender, tx) = all {
 `tx` is already in `pool`.
 ```bluespec "actions" +=
 action processDuplicateTx(node, _incomingMsgs, optionalSender, tx) = all {
-    state' = state.update(node, st => { 
-        senders: 
-            if (st.pool.includes(tx)) 
-                st.senders.addSender(tx, optionalSender) 
-            else st.senders, 
-        ...st }),
+    senders' = senders.update(node, ss =>
+        if (node.Pool().includes(tx)) ss.addSender(tx, optionalSender) else ss),
+    state' = state,
     incomingMsgs' = _incomingMsgs,
     peers' = peers,
 }
@@ -207,6 +250,14 @@ module flood {
     // Messages
     //--------------------------------------------------------------------------
     <<<messages>>>
+
+    //--------------------------------------------------------------------------
+    // State
+    //--------------------------------------------------------------------------
+    <<<state>>>
+    
+    // Auxiliary definitions
+    <<<auxstate>>>
 
     //--------------------------------------------------------------------------
     // Actions

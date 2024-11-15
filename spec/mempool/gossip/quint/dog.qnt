@@ -1,11 +1,13 @@
 // -*- mode: Bluespec; -*-
 
-// File generated from markdown using lmt. DO NOT EDIT.
+// File generated from markdown using https://github.com/driusan/lmt. DO NOT EDIT.
 
 module dog {
     import spells.* from "./spells"
     import mempool.* from "./mempool"
     import flood as Flood from "./flood"
+    import flood.senders from "./flood"
+    import flood.Senders from "./flood"
 
     //--------------------------------------------------------------------------
     // Messages
@@ -115,25 +117,20 @@ module dog {
         dr' = 
             val txSenders = node.Senders().mapGetDefault(txID, List())
             if (length(txSenders) > 0)
-                // Since we want to disable only one route, we need to choose
-                // one of tx's senders. We choose the first sender in the list,
-                // which is the first peer that sent the transaction to `node`.
-                // The other senders in the list also sent the transaction but
-                // at a later time, meaning that routes coming from those
-                // senders are probably disabled, and most of the traffic comes
-                // from the first one.
                 dr.disableRoute(node, txSenders[0], sender)
             else dr,
         incomingMsgs' = _incomingMsgs,
         peers' = peers,
-        state' = state,
+        mempool' = mempool,
+        senders' = senders,
         rc' = rc,
     }
     action handleResetMessage(node, _incomingMsgs, sender) = all {
         dr' = dr.update(node, drs => drs.enableRoute(sender)),
         incomingMsgs' = _incomingMsgs,
         peers' = peers,
-        state' = state,
+        mempool' = mempool,
+        senders' = senders,
         rc' = rc,
     }
     def mkTargetNodes(node, tx) =
@@ -154,25 +151,28 @@ module dog {
         // The node's peers enable all routes to node in their routing tables.
         dr' = dr.updateMultiple(nodeToDisconnect.Peers(), 
             drs => drs.enableRoute(nodeToDisconnect)),
-        state' = state,
+        mempool' = mempool,
+        senders' = senders,
         rc' = rc,
     }
 
     action step = any {
         nondet node = oneOf(nodesInNetwork)
-        nondet tx = oneOf(Txs)
+        nondet tx = oneOf(AllTxs)
         node.receiveTxFromUser(tx, tryAddTx),
         nondet node = oneOf(nodesInNetwork)
         node.receiveFromPeer(handleMessage),
         nondet node = oneOf(nodesInNetwork)
         all {
             node.disseminateNextTx(mkTargetNodes, TxMsg),
+            senders' = senders,
             dr' = dr,
             rc' = rc,
         },
         all {
             pickNodeAndJoin,
-            state' = state,
+            mempool' = mempool,
+            senders' = senders,
             dr' = dr,
             rc' = rc,
         },

@@ -33,7 +33,7 @@ will be optimal only if all nodes enable DOG.
       - [Handling HaveTx messages](#handling-havetx-messages)
       - [Handling Reset messages](#handling-reset-messages)
     - [Transaction dissemination](#transaction-dissemination)
-    - [Nodes disconnect from the network](#nodes-disconnect-from-the-network)
+    - [Nodes disconnecting from the network](#nodes-disconnecting-from-the-network)
 
 > This document was written using the literature programming paradigm. Code snippets are written in
 > [Quint][quint] and can get "tangled" into a Quint file.
@@ -269,7 +269,7 @@ missing details of each step.
 1. User-initiated transactions: node receives a transaction from a user
     ```bluespec "steps" +=
     nondet node = oneOf(nodesInNetwork)
-    nondet tx = oneOf(Txs)
+    nondet tx = oneOf(AllTxs)
     node.receiveTxFromUser(tx, tryAddTx),
     ```
 
@@ -284,6 +284,7 @@ missing details of each step.
     nondet node = oneOf(nodesInNetwork)
     all {
         node.disseminateNextTx(mkTargetNodes, TxMsg),
+        senders' = senders,
         dr' = dr,
         rc' = rc,
     },
@@ -293,7 +294,8 @@ missing details of each step.
     ```bluespec "steps" +=
     all {
         pickNodeAndJoin,
-        state' = state,
+        mempool' = mempool,
+        senders' = senders,
         dr' = dr,
         rc' = rc,
     },
@@ -385,30 +387,28 @@ action handleMessage(node, _incomingMsgs, sender, msg) =
 
 #### Handling HaveTx messages
 
-Upon receiving `HaveTxMsg(txID)`, disable the route `sender(txID) -> sender`. This will decrease the
-traffic to the sender.
+Upon receiving `HaveTxMsg(txID)`, disable the route `sender(txID) -> sender`, if `node` has at least
+a sender for `txID`. This will decrease the traffic to `sender`.
 ```bluespec "actions" +=
 action handleHaveTxMessage(node, _incomingMsgs, sender, txID) = all {
     dr' = 
         val txSenders = node.Senders().mapGetDefault(txID, List())
         if (length(txSenders) > 0)
-            // Since we want to disable only one route, we need to choose
-            // one of tx's senders. We choose the first sender in the list,
-            // which is the first peer that sent the transaction to `node`.
-            // The other senders in the list also sent the transaction but
-            // at a later time, meaning that routes coming from those
-            // senders are probably disabled, and most of the traffic comes
-            // from the first one.
             dr.disableRoute(node, txSenders[0], sender)
         else dr,
     incomingMsgs' = _incomingMsgs,
     peers' = peers,
-    state' = state,
+    mempool' = mempool,
+    senders' = senders,
     rc' = rc,
 }
 ```
-We don't want to cut all routes from `sender` to `node`, only the route that has as source the
-transaction's original sender.
+
+We don't want to cut all routes from `sender` to `node`, only the route that has as source one the
+peer IDs in `txSenders`, which may be many. We need to choose one, so we pick the first in the list,
+which is the first peer that sent `tx` to `node`. Other peers in the list also sent `tx` but at a
+later time, meaning that routes coming from those nodes are probably disabled, and most of the
+traffic comes from the first one.
 
 #### Handling Reset messages
 
@@ -418,7 +418,8 @@ action handleResetMessage(node, _incomingMsgs, sender) = all {
     dr' = dr.update(node, drs => drs.enableRoute(sender)),
     incomingMsgs' = _incomingMsgs,
     peers' = peers,
-    state' = state,
+    mempool' = mempool,
+    senders' = senders,
     rc' = rc,
 }
 ```
@@ -444,7 +445,7 @@ def mkTargetNodes(node, tx) =
 
 When a node disconnects from the network, its peers signal their own peers that their situation has
 changed, so that their routing tables are reset. In this way, data via those nodes can be re-routed
-if needed.
+through other nodes if needed.
 ```bluespec "actions" +=
 action disconnectAndUpdateRoutes(nodeToDisconnect) = all {
     // All node's peers detect that node has disconnect and send a Reset
@@ -456,7 +457,8 @@ action disconnectAndUpdateRoutes(nodeToDisconnect) = all {
     // The node's peers enable all routes to node in their routing tables.
     dr' = dr.updateMultiple(nodeToDisconnect.Peers(), 
         drs => drs.enableRoute(nodeToDisconnect)),
-    state' = state,
+    mempool' = mempool,
+    senders' = senders,
     rc' = rc,
 }
 ```
@@ -471,6 +473,8 @@ module dog {
     import spells.* from "./spells"
     import mempool.* from "./mempool"
     import flood as Flood from "./flood"
+    import flood.senders from "./flood"
+    import flood.Senders from "./flood"
 
     //--------------------------------------------------------------------------
     // Messages

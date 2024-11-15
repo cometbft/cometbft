@@ -74,7 +74,7 @@ var (
 	pbtsHeightOffset           = uniformChoice{int64(0), int64(10), int64(100)}
 	keyType                    = uniformChoice{ed25519.KeyType, secp256k1.KeyType, bls12381.KeyType}
 	// TODO: reinstate this once the oscillation logic is fixed.
-	// constantFlip               = uniformChoice{true, false}
+	// constantFlip               = uniformChoice{true, false}.
 )
 
 type generateConfig struct {

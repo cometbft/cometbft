@@ -8,6 +8,7 @@ module dog {
     import flood as Flood from "./flood"
     import flood.senders from "./flood"
     import flood.Senders from "./flood"
+    import flood.sendersOf from "./flood"
 
     //--------------------------------------------------------------------------
     // Messages
@@ -115,7 +116,7 @@ module dog {
         }
     action handleHaveTxMessage(node, _incomingMsgs, sender, txID) = all {
         dr' = 
-            val txSenders = node.Senders().mapGetDefault(txID, List())
+            val txSenders = node.sendersOf(txID)
             if (length(txSenders) > 0)
                 dr.disableRoute(node, txSenders[0], sender)
             else dr,
@@ -134,19 +135,17 @@ module dog {
         rc' = rc,
     }
     def mkTargetNodes(node, tx) =
-        val txSenders = node.Senders().mapGetDefault(hash(tx), List())
+        val txSenders = node.sendersOf(hash(tx)).listToSet()
         val disabledTargets = node.DisabledRoutes()
             // Keep only routes whose source is one of tx's senders.
-            .filter(r => r._1.in(txSenders.listToSet()))
+            .filter(r => r._1.in(txSenders))
             // Keep routes' targets.
             .map(r => r._2)
-        node.Peers().exclude(txSenders.listToSet()).exclude(disabledTargets)
+        node.Peers().exclude(txSenders).exclude(disabledTargets)
     action disconnectAndUpdateRoutes(nodeToDisconnect) = all {
-        // All node's peers detect that node has disconnect and send a Reset
-        // message to all their peers.
+        // All node's peers send a Reset message to all their peers.
         val updatedIncomingMsgs = nodeToDisconnect.Peers().fold(incomingMsgs, 
-            (_incomingMsgs, peer) => peer.multiSend(_incomingMsgs, peer.Peers(), ResetMsg)
-        )
+            (inMsgs, peer) => peer.multiSend(inMsgs, peer.Peers(), ResetMsg))
         nodeToDisconnect.disconnectNetwork(updatedIncomingMsgs),
         // The node's peers enable all routes to node in their routing tables.
         dr' = dr.updateMultiple(nodeToDisconnect.Peers(), 

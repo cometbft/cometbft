@@ -327,10 +327,10 @@ action tryAddTx(node, _incomingMsgs, optionalSender, tx) =
 
 `tryAddFirstTimeTx` attempts to add a received first-time transaction tx to the mempool: 
 1. it adds `tx` to `cache`, 
-2. if `tx` is valid, it adds `tx` to `pool`, and
-3. if `tx` is valid, it updates `tx`'s senders. 
+2. if `tx` is valid, it appends `tx` to the mempool (`txs`), and
+3. updates `tx`'s senders. 
 
-All these actions are taken from Flood. Additionally,
+These actions are taken from Flood. Additionally,
 
 4. it increases `rc.firstTimeTxs`, and 
 5. on every `TxsPerAdjustment` transactions received for the first time, call `adjustRedundancy()`.
@@ -356,8 +356,8 @@ action tryAddFirstTimeTx(node, _incomingMsgs, optionalSender, tx) =
 1. it increases `duplicateTxs` and 
 2. replies a `HaveTx` message if the RC mechanism is not blocking it (and there's a sender). 
 
-As in Flood, it updates the list of senders if `tx` is in `pool` (and thus it's valid), and update
-the list of incoming messages. 
+As in Flood, it updates the list of senders if `tx` is in the mempool (`txs`, and thus it's valid),
+and update the list of incoming messages. 
 ```bluespec "actions" +=
 action processDuplicateTx(node, _incomingMsgs, optionalSender, tx) =
     // Reply `HaveTxMsg` if `tx` comes from a peer.
@@ -392,7 +392,7 @@ a sender for `txID`. This will decrease the traffic to `sender`.
 ```bluespec "actions" +=
 action handleHaveTxMessage(node, _incomingMsgs, sender, txID) = all {
     dr' = 
-        val txSenders = node.Senders().mapGetDefault(txID, List())
+        val txSenders = node.sendersOf(txID)
         if (length(txSenders) > 0)
             dr.disableRoute(node, txSenders[0], sender)
         else dr,
@@ -432,27 +432,25 @@ As in Flood, DOG will filter out the transaction's senders. Additionally, DOG wi
 a peer if the route `sender(tx) -> peer` is disabled.
 ```bluespec "actions" +=
 def mkTargetNodes(node, tx) =
-    val txSenders = node.Senders().mapGetDefault(hash(tx), List())
+    val txSenders = node.sendersOf(hash(tx)).listToSet()
     val disabledTargets = node.DisabledRoutes()
         // Keep only routes whose source is one of tx's senders.
-        .filter(r => r._1.in(txSenders.listToSet()))
+        .filter(r => r._1.in(txSenders))
         // Keep routes' targets.
         .map(r => r._2)
-    node.Peers().exclude(txSenders.listToSet()).exclude(disabledTargets)
+    node.Peers().exclude(txSenders).exclude(disabledTargets)
 ```
 
 ### Nodes disconnecting from the network
 
 When a node disconnects from the network, its peers signal their own peers that their situation has
-changed, so that their routing tables are reset. In this way, data via those nodes can be re-routed
-through other nodes if needed.
+changed, so that their routing tables are reset. In this way, if needed, data via those nodes can be
+re-routed through other nodes.
 ```bluespec "actions" +=
 action disconnectAndUpdateRoutes(nodeToDisconnect) = all {
-    // All node's peers detect that node has disconnect and send a Reset
-    // message to all their peers.
+    // All node's peers send a Reset message to all their peers.
     val updatedIncomingMsgs = nodeToDisconnect.Peers().fold(incomingMsgs, 
-        (_incomingMsgs, peer) => peer.multiSend(_incomingMsgs, peer.Peers(), ResetMsg)
-    )
+        (inMsgs, peer) => peer.multiSend(inMsgs, peer.Peers(), ResetMsg))
     nodeToDisconnect.disconnectNetwork(updatedIncomingMsgs),
     // The node's peers enable all routes to node in their routing tables.
     dr' = dr.updateMultiple(nodeToDisconnect.Peers(), 
@@ -475,6 +473,7 @@ module dog {
     import flood as Flood from "./flood"
     import flood.senders from "./flood"
     import flood.Senders from "./flood"
+    import flood.sendersOf from "./flood"
 
     //--------------------------------------------------------------------------
     // Messages

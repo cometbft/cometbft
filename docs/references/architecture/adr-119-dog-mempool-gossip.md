@@ -75,7 +75,11 @@ Redundancy is adjusted whenever a new transaction is added into the mempool.
 #### Mempool reactor
 
 
-The bulk of the changes is constrained to the mempool reactor. We introduce a
+The bulk of the changes is constrained to the mempool reactor. 
+We introduce a new communication channel, called `Mempool Control Channel`. The channel
+is used to transmit the messages needed for the implementation of the protocol. 
+
+Additionally, the mempool reactor is extended with a 
 `gossipRouter` and a `redundancyControl` struct to keep track of the redundancy
 of transactions in the system. 
 Each node is keeps track of the routes it disabled between its peers. 
@@ -88,6 +92,25 @@ type gossipRouter struct {
 	disabledRoutes map[nodekey.ID]p2pIDSet
 }
 ``` 
+
+
+```
+type redundancyControl struct {
+	txsPerAdjustment int64
+
+	// Pre-computed upper and lower bounds of accepted redundancy.
+	lowerBound float64
+	upperBound float64
+
+	mtx          cmtsync.RWMutex
+	firstTimeTxs int64 // number of transactions received for the first time
+	duplicates   int64 // number of duplicate transactions
+
+	// If true, do not send HaveTx messages.
+	blockHaveTx atomic.Bool
+}
+
+```
 
 
 
@@ -122,6 +145,17 @@ The impact of the protocol on operations can also be observed by looking at the 
 
 -`BytesReceived` - This metric shows the number of bytes received per message type. Without DOG, the transactions dominate the number of bytes, while, when enabled, the block parts dominate.
 
+Newly introduced metrics are: 
+
+
+- `HaveTxMsgsReceived` -  Number of HaveTx messages received (cumulative). 
+
+- `ResetMsgsSent` - Number of Reset messages sent (cumulative).
+
+- `DisabledRoutes` - Number of disabled routes.
+
+- `Redundancy` -  The current level of redundancy computed as the ratio between duplicate and unique transactions. 
+
 
 
 ### Configuration parameters
@@ -134,6 +168,7 @@ The impact of the protocol on operations can also be observed by looking at the 
 of acceptable redundancy levels; redundancy +- redundancy*delta TxsPerAdjustment: int
 - `config.TxsPerAdjustment: int`: How many (first-time) transactions should the node receive before
   attempting to adjust redundancy.
+  <!--  TODO : Should this be evaluated also on duplicate transactions. -->
 
 On startup, define the constants:
 - `delta := config.TargetRedundancy * config.TargetRedundancyDeltaPercent`
@@ -150,9 +185,7 @@ On startup, define the constants:
 - Is this true? We don't cut ties with the sender of the transaction, rather we are telling it to cut ties with some other node that has sent us the tx before that. 
 So sender could still forward us transactions but not the ones received from this particular node. 
 
-- What if the sender is the only one sending the duplicate transactions (senders ): len(senders) == 1 and senders[0] is itself?  (probably ok)
-Should we be doing this? 
-
+> If the frequency of `HaveTx` messages is too high, nodes will have too many routes cut. 
 
 
 

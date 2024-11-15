@@ -42,9 +42,9 @@ module flood {
         else
             node.processDuplicateTx(_incomingMsgs, optionalSender, tx)
     action tryAddFirstTimeTx(node, _incomingMsgs, optionalSender, tx) = all {
-        state' = state.update(node, st => {
+        mempool' = mempool.update(node, st => {
             cache: st.cache.join(hash(tx)),
-            pool: if (valid(tx)) st.pool.append(tx) else st.pool,
+            txs: if (valid(tx)) st.txs.append(tx) else st.txs,
             ...st }),
         senders' = senders.update(node, ss =>
             if (valid(tx)) ss.addSender(tx, optionalSender) else ss),
@@ -53,8 +53,8 @@ module flood {
     }
     action processDuplicateTx(node, _incomingMsgs, optionalSender, tx) = all {
         senders' = senders.update(node, ss =>
-            if (node.Pool().includes(tx)) ss.addSender(tx, optionalSender) else ss),
-        state' = state,
+            if (node.Txs().includes(tx)) ss.addSender(tx, optionalSender) else ss),
+        mempool' = mempool,
         incomingMsgs' = _incomingMsgs,
         peers' = peers,
     }
@@ -67,7 +67,7 @@ module flood {
 
     action step = any {
         nondet node = oneOf(nodesInNetwork)
-        nondet tx = oneOf(Txs)
+        nondet tx = oneOf(AllTxs)
         node.receiveTxFromUser(tx, tryAddTx),
         nondet node = oneOf(nodesInNetwork)
         node.receiveFromPeer(handleMessage),
@@ -78,12 +78,12 @@ module flood {
         },
         all {
             pickNodeAndJoin,
-            state' = state,
+            mempool' = mempool,
             senders' = senders,
         },
         all {
             pickNodeAndDisconnect,
-            state' = state,
+            mempool' = mempool,
             senders' = senders,
         }
     }
@@ -91,16 +91,16 @@ module flood {
     //--------------------------------------------------------------------------
     // Properties
     //--------------------------------------------------------------------------
-    def txInAllPools(tx) =
-        NodeIDs.forall(n => n.Pool().includes(tx))
+    def txInAllMempools(tx) =
+        NodeIDs.forall(n => n.Txs().includes(tx))
     temporal txInPoolGetsDisseminated = 
-        Txs.forall(tx => 
+        AllTxs.forall(tx => 
             NodeIDs.exists(node =>
-                node.Pool().includes(tx) implies eventually(txInAllPools(tx))))
+                node.Txs().includes(tx) implies eventually(txInAllMempools(tx))))
     val dontSendBackToSender =
         NodeIDs.forall(nodeA => 
             NodeIDs.forall(nodeB => 
-                Txs.forall(tx =>
+                AllTxs.forall(tx =>
                     nodeB.sendersOf(tx).contains(nodeA) 
                     implies
                     not(nodeA.IncomingMsgs().includes((nodeB, TxMsg(tx))))

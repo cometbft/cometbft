@@ -13,8 +13,6 @@ The existing CometBFT p2p network is agnostic to the distinction between full no
 
 This document proposes a way for validators to peer intelligently with each other, increasing the tendency for validators to be directly peered and thus for consensus messages to travel through the network of validators more quickly. We propose adding a reactor for validator p2p, similar to pex, but specifically for the purpose of getting validators peered with each other.
 
-Note that in this document we will refer to validators as any of the core nodes operated by validator entities in the network. They can be sentry nodes or any non-signing nodes, but should be on the hot-path for consensus messages (i.e. they must participate in the network in order for some consensus messages to be propagated).
-
 ## Alternative Approaches
 
 - One alternative for the reactor implementation is complete validator peering, where all validators are peered with all other validators. This is not chosen because it can become prohibitively expensive to a large number of peers, when the number of validators is large.
@@ -26,7 +24,7 @@ Note that in this document we will refer to validators as any of the core nodes 
 
 The CometBFT config should add some new fields which should be populated by validators:
 
-1.  `val_peer_count_low`, `val_peer_count_high`, `val_peer_count_target`. These are the lower bound, upper bound, and target number of validator peers to maintain, respectively. Note that these have some interaction with `p2p.max_num_inbound_peers` and `p2p.max_num_outbound_peers`, which are already in the config. In order to avoid confusion, we will assume that `p2p.max_num_inbound_peers` and `p2p.max_num_outbound_peers` are the maximum number of peers that the node will ever try to maintain, and that the validator peer count bounds are a subset of that. Node operators may need to adjust these parameters to allow for the val peer count bounds to work within the max peer bounds.
+1.  `val_peer_count_low`, `val_peer_count_high`, `val_peer_count_target`. These are the lower bound, upper bound, and target number of validator peers to maintain, respectively. Note that these have some interaction with `p2p.max_num_inbound_peers` and `p2p.max_num_outbound_peers`, which are already in the config. `p2p.max_num_inbound_peers` and `p2p.max_num_outbound_peers` are used by the switch (rejects inbound peers when above max) and the pex reactor (uses max outbound to determine how many to dial). These new parameters will operate within those bounds, so node operators may need to adjust these parameters to allow for the val peer count bounds to work within the max peer bounds.
 
 2.  `should_join_valp2p` - whether the node should join the valp2p network.
 

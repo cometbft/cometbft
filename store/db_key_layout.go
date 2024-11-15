@@ -36,11 +36,13 @@ type v1LegacyLayout struct{}
 // It returns a database key of the form "C:<height>" to store/retrieve the commit
 // of the block at the given height to/from the database.
 func (*v1LegacyLayout) CalcBlockCommitKey(height int64) []byte {
-	const prefixLen = len("C:")
+	const (
+		prefix    = "C:"
+		prefixLen = len(prefix)
+	)
+	key := make([]byte, 0, prefixLen+20)
 
-	key := make([]byte, prefixLen, prefixLen+20)
-
-	key[0], key[1] = 'C', ':'
+	key = append(key, prefix...)
 	key = strconv.AppendInt(key, height, 10)
 
 	return key
@@ -64,11 +66,13 @@ func (*v1LegacyLayout) CalcBlockHashKey(hash []byte) []byte {
 // It returns a database key of the form "H:<height>" to store/retrieve the metadata
 // of the block at the given height to/from the database.
 func (*v1LegacyLayout) CalcBlockMetaKey(height int64) []byte {
-	const prefixLen = len("H:")
+	const (
+		prefix    = "H:"
+		prefixLen = len(prefix)
+	)
+	key := make([]byte, 0, prefixLen+20)
 
-	key := make([]byte, prefixLen, prefixLen+20)
-
-	key[0], key[1] = 'H', ':'
+	key = append(key, prefix...)
 	key = strconv.AppendInt(key, height, 10)
 
 	return key
@@ -78,13 +82,26 @@ func (*v1LegacyLayout) CalcBlockMetaKey(height int64) []byte {
 // It returns a database key of the form "P:<height>:<partIndex>" to store/retrieve a
 // block part to/from the database.
 func (*v1LegacyLayout) CalcBlockPartKey(height int64, partIndex int) []byte {
-	const prefixLen = len("P:")
+	const (
+		prefix    = "P:"
+		prefixLen = len(prefix)
+	)
 
-	// Here we have 2 ints, therefore 20+20 bytes.
-	// The total size is : 2 (prefixLen) + 20 + 1 (len(":")) + 20
-	key := make([]byte, prefixLen, prefixLen+20+1+20)
+	// Here we have 2 ints, therefore 20+1 bytes.
+	// 1 byte is for the partIndex should be sufficient. We have observed that most
+	// chains have only a few parts per block. If things change, we can increment
+	// this number. The theoretical max is 4 and comes from the following
+	// calculation:
+	// - the max configurable block size is 100MB (see types/params.go)
+	// - a block part is 65KB (see types/params.go)
+	// - the max number of parts that a block can be split into is therefore
+	//   (max block size / block part size) + 1 = (100MB/65KB) + 1 = 1601
+	// - the string representation of 1601 consists of 4 digits, therefore 4 bytes.
+	//
+	// The total size is : prefixLen + 20 + 1 (len(":")) + 1.
+	key := make([]byte, 0, prefixLen+20+1+1)
 
-	key[0], key[1] = 'P', ':'
+	key = append(key, prefix...)
 	key = strconv.AppendInt(key, height, 10)
 	key = append(key, ':')
 	key = strconv.AppendInt(key, int64(partIndex), 10)
@@ -96,11 +113,13 @@ func (*v1LegacyLayout) CalcBlockPartKey(height int64, partIndex int) []byte {
 // It returns a database key of the form "EC:<height>" to store/retrieve the
 // ExtendedCommit for the given height to/from the database.
 func (*v1LegacyLayout) CalcExtCommitKey(height int64) []byte {
-	const prefixLen = len("EC:")
+	const (
+		prefix    = "EC:"
+		prefixLen = len(prefix)
+	)
+	key := make([]byte, 0, prefixLen+20)
 
-	key := make([]byte, prefixLen, prefixLen+20)
-
-	key[0], key[1], key[2] = 'E', 'C', ':'
+	key = append(key, prefix...)
 	key = strconv.AppendInt(key, height, 10)
 
 	return key
@@ -110,11 +129,13 @@ func (*v1LegacyLayout) CalcExtCommitKey(height int64) []byte {
 // It returns a database key of the form "SC:<height>" to store/retrieve a locally
 // seen commit for the given height to/from the database.
 func (*v1LegacyLayout) CalcSeenCommitKey(height int64) []byte {
-	const prefixLen = len("SC:")
+	const (
+		prefix    = "SC:"
+		prefixLen = len(prefix)
+	)
+	key := make([]byte, 0, prefixLen+20)
 
-	key := make([]byte, prefixLen, prefixLen+20)
-
-	key[0], key[1], key[2] = 'S', 'C', ':'
+	key = append(key, prefix...)
 	key = strconv.AppendInt(key, height, 10)
 
 	return key

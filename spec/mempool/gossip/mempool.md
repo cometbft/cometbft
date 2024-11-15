@@ -41,68 +41,69 @@ pure def hash(tx: TX): TxID = tx
         
 The set of all possible transactions.
 ```bluespec "params" +=
-const Txs: Set[TX]
+const AllTxs: Set[TX]
 ```
 
 ## State
 
 Each node has a mempool state.
 ```bluespec "state" +=
-var state: NodeID -> MempoolState
+var mempool: NodeID -> MempoolState
 ```
 
 We define `MempoolState` as a data structure with the following fields.
 
 #### Cache of already received transaction IDs
 
-In this spec we assume the cache never overflows, i.e., it can grow indefinitely.
+We assume the cache never overflows, i.e., it can grow indefinitely.
 ```bluespec "mempoolstate" +=
 cache: Set[TxID],
 ```
 
 #### List of uncommitted or pending transactions ("the mempool")
 
-We use it for storing transactions and for picking transactions to disseminate to peers.
+This list is used for storaging transactions and for picking transactions to disseminate to peers.
 ```bluespec "mempoolstate" +=
-pool: List[TX],
+txs: List[TX],
 ```
 
 We make the following assumptions about the mempool:
 - It does not have a maximum capacity.
 - New entries are only appended. We do not model when entries are removed.
 
-A transaction that is in `pool`, must also be in `cache` (assuming an infinite cache), but not
-necessarily the inverse. The reason a transaction is in `cache` but not in `pool` is either because: 
-- the transaction was initially invalid and never got into `pool`, 
-- the transaction became invalid after it got in `pool` and thus got evicted when it was
-  revalidated, or
-- the transaction was committed to a block and got removed from `pool`.
+A transaction that is in the `txs` list, must also be in `cache` (assuming an infinite cache), but
+not necessarily the inverse. The reason a transaction is in `cache` but not in `txs` is either
+because: 
+- the transaction was initially invalid and never got into `txs`, 
+- the transaction became invalid after it got in `txs` and thus got evicted when it was revalidated,
+  or
+- the transaction was committed to a block and got removed from `txs`.
 
-All these scenarios are not modeled here. Then `cache` and `pool` will always have the same content
+All these scenarios are not modeled here. Then `cache` and `txs` will always have the same content
 and one of the two is actually redundant in this spec.
 
-#### Index to the next transaction in pool to disseminate
+#### Index to the next transaction to disseminate
 
-A pool iterator traverses the entries in pool one at a time.
+A mempool iterator traverses the entries in `txs` one at a time.
 ```bluespec "mempoolstate" +=
-poolIndex: int,
+txsIndex: int,
 ```
 We model transaction dissemination using one dissemination process (`disseminateNextTx`) that
-iterates on the list of transactions reading one mempool entry per step, and atomically multicasts
-one transaction message to all connected peers.
+iterates on the list of transactions reading one entry per step, and atomically multicasts one
+transaction message to all connected peers.
 
 In the implementation there is one dissemination process per peer, each with its own iterator (and
-thus a separate pool index per iterator) with a `next()` method to retrieve the next entry in the
+thus a separate index per iterator) with a `next()` method to retrieve the next entry in the `txs`
 list. If it reaches the end of the list, it blocks until a new entry is added. All iterators read
-concurrently from the pool.
+concurrently from `txs`.
 
 <details>
   <summary>Auxiliary definitions</summary>
 
 ```bluespec "auxstate" +=
-def Cache(node) = state.get(node).cache
-def Pool(node) = state.get(node).pool
-def PoolIndex(node) = state.get(node).poolIndex
+def Cache(node) = mempool.get(node).cache
+def Txs(node) = mempool.get(node).txs
+def TxsIndex(node) = mempool.get(node).txsIndex
 ```
 </details>
 
@@ -112,15 +113,15 @@ The initial state of a mempool:
 ```bluespec "actions" +=
 action MP_init = all {
     P2P_init,
-    state' = NodeIDs.mapBy(n => initialMempoolState),
+    mempool' = NodeIDs.mapBy(n => initialMempoolState),
 }
 ```
 where:
 ```bluespec "actions" +=
 val initialMempoolState = {
-    pool: List(),
     cache: Set(),
-    poolIndex: 0,
+    txs: List(),
+    txsIndex: 0,
 }
 ```
 
@@ -143,13 +144,13 @@ added to the mempool.
 Typically, users send (full) transactions to the node via an RPC endpoint. Users are allowed to
 submit the same transaction more than once and to multiple nodes.
 
-This action is enabled only if the transaction is not in the pool. In the actual mempool
+This action is enabled only if the transaction is not in the mempool. In the actual mempool
 implementation we have the cache that prevents this scenario.
 
 ### Transaction dissemination
 
-Action `disseminateNextTx` models a `node` traversing the `pool` while sending transactions to its
-peers. It takes the transaction pointed by `poolIndex` and atomically sends it to a set of target
+Action `disseminateNextTx` models a `node` traversing the `txs` list while sending transactions to
+its peers. It takes the transaction pointed by `txsIndex` and atomically sends it to a set of target
 peers.
 
 The following function parameters define to who `node` will send transactions:
@@ -160,32 +161,32 @@ The following function parameters define to who `node` will send transactions:
 ```bluespec "actions" +=
 action disseminateNextTx(node, _mkTargetNodes, _mkTxMsg) = all {
     // Check that the current index is within bounds. 
-    require(node.PoolIndex() < node.Pool().length()),
-    // Get from the pool the next transaction to disseminate.
-    val tx = node.Pool()[node.PoolIndex()]
+    require(node.TxsIndex() < node.Txs().length()),
+    // Get from the mempool the next transaction to disseminate.
+    val tx = node.Txs()[node.TxsIndex()]
     all {
-        // Wrap tx in a message and send it to the target nodes.
+        // Wrap transaction in a message and send it to the target nodes.
         incomingMsgs' = 
             node.multiSend(incomingMsgs, _mkTargetNodes(node, tx), _mkTxMsg(tx)),
-        // Increase pool index.
-        state' = state.update(node, st => { poolIndex: st.poolIndex + 1, ...st }),
+        // Increase index.
+        mempool' = mempool.update(node, st => { txsIndex: st.txsIndex + 1, ...st }),
         peers' = peers,
     }
 }
 ```
 
-The pool index must not exceed the pool's length. This pre-condition models when the iterator is at
-the end of the list and it's blocked waiting for a new entry to be appended to the list.
+The index must not exceed the `txs`'s length. This pre-condition models when the iterator is at the
+end of the list and it's blocked waiting for a new entry to be appended to the list.
 
 In the actual implementation, there is a separate goroutine for each peer, so not all transactions
 are sent at the same time.
 
 ## Properties
 
-_**Invariant**_ Pools do not have repeated entries.
+_**Invariant**_ Transaction lists do not have repeated entries.
 ```bluespec "properties" +=
-val uniqueTxsInPool = 
-    NodeIDs.forall(node => size(node.Pool().listToSet()) == length(node.Pool()))
+val uniqueTxsInMempool = 
+    NodeIDs.forall(node => size(node.Txs().listToSet()) == length(node.Txs()))
 ```
 
 <!--

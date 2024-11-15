@@ -18,49 +18,49 @@ module mempool {
     //--------------------------------------------------------------------------
     // Parameters
     //--------------------------------------------------------------------------
-    const Txs: Set[TX]
+    const AllTxs: Set[TX]
 
     //--------------------------------------------------------------------------
     // State
     //--------------------------------------------------------------------------
-    var state: NodeID -> MempoolState
+    var mempool: NodeID -> MempoolState
     
     type MempoolState = {
         cache: Set[TxID],
-        pool: List[TX],
-        poolIndex: int,
+        txs: List[TX],
+        txsIndex: int,
     }
     
     // Auxiliary definitions
-    def Cache(node) = state.get(node).cache
-    def Pool(node) = state.get(node).pool
-    def PoolIndex(node) = state.get(node).poolIndex
+    def Cache(node) = mempool.get(node).cache
+    def Txs(node) = mempool.get(node).txs
+    def TxsIndex(node) = mempool.get(node).txsIndex
 
     //--------------------------------------------------------------------------
     // Actions
     //--------------------------------------------------------------------------
     action MP_init = all {
         P2P_init,
-        state' = NodeIDs.mapBy(n => initialMempoolState),
+        mempool' = NodeIDs.mapBy(n => initialMempoolState),
     }
     val initialMempoolState = {
-        pool: List(),
         cache: Set(),
-        poolIndex: 0,
+        txs: List(),
+        txsIndex: 0,
     }
     action receiveTxFromUser(node, tx, _tryAddTx) =
         node._tryAddTx(incomingMsgs, None, tx)
     action disseminateNextTx(node, _mkTargetNodes, _mkTxMsg) = all {
         // Check that the current index is within bounds. 
-        require(node.PoolIndex() < node.Pool().length()),
-        // Get from the pool the next transaction to disseminate.
-        val tx = node.Pool()[node.PoolIndex()]
+        require(node.TxsIndex() < node.Txs().length()),
+        // Get from the mempool the next transaction to disseminate.
+        val tx = node.Txs()[node.TxsIndex()]
         all {
-            // Wrap tx in a message and send it to the target nodes.
+            // Wrap transaction in a message and send it to the target nodes.
             incomingMsgs' = 
                 node.multiSend(incomingMsgs, _mkTargetNodes(node, tx), _mkTxMsg(tx)),
-            // Increase pool index.
-            state' = state.update(node, st => { poolIndex: st.poolIndex + 1, ...st }),
+            // Increase index.
+            mempool' = mempool.update(node, st => { txsIndex: st.txsIndex + 1, ...st }),
             peers' = peers,
         }
     }
@@ -68,7 +68,7 @@ module mempool {
     //--------------------------------------------------------------------------
     // Properties
     //--------------------------------------------------------------------------
-    val uniqueTxsInPool = 
-        NodeIDs.forall(node => size(node.Pool().listToSet()) == length(node.Pool()))
+    val uniqueTxsInMempool = 
+        NodeIDs.forall(node => size(node.Txs().listToSet()) == length(node.Txs()))
 
 }

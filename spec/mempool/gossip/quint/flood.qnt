@@ -1,6 +1,6 @@
 // -*- mode: Bluespec; -*-
 
-// File generated from markdown using lmt. DO NOT EDIT.
+// File generated from markdown using https://github.com/driusan/lmt. DO NOT EDIT.
 
 module flood {
     import spells.* from "./spells"
@@ -97,7 +97,7 @@ module flood {
         Txs.forall(tx => 
             NodeIDs.exists(node =>
                 node.Pool().includes(tx) implies eventually(txInAllPools(tx))))
-    val noSendToSender =
+    val dontSendBackToSender =
         NodeIDs.forall(nodeA => 
             NodeIDs.forall(nodeB => 
                 Txs.forall(tx =>

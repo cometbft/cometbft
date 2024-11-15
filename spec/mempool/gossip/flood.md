@@ -11,15 +11,14 @@ This protocol is built on top of a [mempool module](mempool.md) and a [p2p layer
   - [State](#state)
   - [Initial state](#initial-state)
   - [State transitions (actions)](#state-transitions-actions)
-    - [Handling incoming messages](#handling-incoming-messages)
     - [Adding transactions to the mempool](#adding-transactions-to-the-mempool)
       - [Adding first-time transactions](#adding-first-time-transactions)
       - [Handling duplicate transactions](#handling-duplicate-transactions)
+    - [Handling incoming messages](#handling-incoming-messages)
     - [Transaction dissemination](#transaction-dissemination)
   - [Properties](#properties)
 
-
-> This document is written using the literature programming paradigm. Code snippets are written in
+> This document was written using the literature programming paradigm. Code snippets are written in
 > [Quint][quint] and can get "tangled" into a Quint file.
 
 ## Messages
@@ -206,7 +205,7 @@ def mkTargetNodes(node, tx) =
 
 ## Properties
 
-`txInAllPools` defines if a given transaction is in the pool of all nodes.
+Function `txInAllPools` defines if a given transaction is in the pool of all nodes.
 ```bluespec "properties" +=
 def txInAllPools(tx) =
     NodeIDs.forall(n => n.Pool().includes(tx))
@@ -225,7 +224,7 @@ temporal txInPoolGetsDisseminated =
 _**Invariant**_ If node A sent a transaction tx to node B (A is in the list of tx's senders), then B
 does not send tx to A (the message won't be in A's incoming messages).
 ```bluespec "properties" +=
-val noSendToSender =
+val dontSendBackToSender =
     NodeIDs.forall(nodeA => 
         NodeIDs.forall(nodeB => 
             Txs.forall(tx =>
@@ -239,7 +238,7 @@ val noSendToSender =
 ```bluespec quint/flood.qnt +=
 // -*- mode: Bluespec; -*-
 
-// File generated from markdown using lmt. DO NOT EDIT.
+// File generated from markdown using https://github.com/driusan/lmt. DO NOT EDIT.
 
 module flood {
     import spells.* from "./spells"

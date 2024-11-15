@@ -132,13 +132,13 @@ Users create transactions and send them to one of the nodes in the network. Node
 transactions either directly from users or in messages from peers. Transaction from users have no
 sender.
 
-`receiveTxFromUser` is a generic action that models a node receiving transaction `tx` from a user.
+Action `receiveTxFromUser` models a `node` receiving transaction `tx` from a user.
 ```bluespec "actions" +=
 action receiveTxFromUser(node, tx, _tryAddTx) =
     node._tryAddTx(incomingMsgs, None, tx)
 ```
-The function `_tryAddTx(incomingMsgs, optionalSender, tx)` defines how transactions are added to the
-mempool.
+The function parameter `_tryAddTx(incomingMsgs, optionalSender, tx)` defines how transactions are
+added to the mempool.
 
 Typically, users send (full) transactions to the node via an RPC endpoint. Users are allowed to
 submit the same transaction more than once and to multiple nodes.
@@ -148,11 +148,11 @@ implementation we have the cache that prevents this scenario.
 
 ### Transaction dissemination
 
-`disseminateNextTx` is a generic action that models a node traversing the pool while sending
-transactions to its peers. It takes the next transaction from the iterator and atomically sends it
-to a set of target peers.
+Action `disseminateNextTx` models a `node` traversing the `pool` while sending transactions to its
+peers. It takes the transaction pointed by `poolIndex` and atomically sends it to a set of target
+peers.
 
-The following arguments are functions that define to who `node` will send transactions:
+The following function parameters define to who `node` will send transactions:
 - `_mkTargetNodes(node, tx)` returns the set of peers to which `node`
   will send `tx`.
 - `_mkTxMsg(tx)` is a wrapper function that returns the specific message
@@ -177,8 +177,8 @@ action disseminateNextTx(node, _mkTargetNodes, _mkTxMsg) = all {
 The pool index must not exceed the pool's length. This pre-condition models when the iterator is at
 the end of the list and it's blocked waiting for a new entry to be appended to the list.
 
-In the actual implementation, there is a separate goroutine for each peer, so not all txs are sent
-at the same time.
+In the actual implementation, there is a separate goroutine for each peer, so not all transactions
+are sent at the same time.
 
 ## Properties
 
@@ -192,7 +192,7 @@ val uniqueTxsInPool =
 ```bluespec quint/mempool.qnt +=
 // -*- mode: Bluespec; -*-
 
-// File generated from markdown using lmt. DO NOT EDIT.
+// File generated from markdown using https://github.com/driusan/lmt. DO NOT EDIT.
 
 module mempool {
     import spells.* from "./spells"

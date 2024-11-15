@@ -18,10 +18,8 @@ will be optimal only if all nodes enable DOG.
   - [Messages](#messages)
   - [Routing](#routing)
     - [Functions on routes](#functions-on-routes)
-    - [Auxiliary definitions](#auxiliary-definitions)
   - [Redundancy Control](#redundancy-control)
     - [Redundancy level](#redundancy-level)
-    - [Auxiliary definitions](#auxiliary-definitions-1)
   - [Parameters](#parameters)
     - [Target redundancy](#target-redundancy)
       - [Target bounds](#target-bounds)
@@ -37,7 +35,7 @@ will be optimal only if all nodes enable DOG.
     - [Transaction dissemination](#transaction-dissemination)
     - [Nodes disconnect from the network](#nodes-disconnect-from-the-network)
 
-> This document is written using the literature programming paradigm. Code snippets are written in
+> This document was written using the literature programming paradigm. Code snippets are written in
 > [Quint][quint] and can get "tangled" into a Quint file.
 
 ## Messages
@@ -98,12 +96,14 @@ pure def enableRoute(_dr, peer) =
     _dr.filter(route => not(peer.isSourceOrTargetIn(route)))
 ```
 
-### Auxiliary definitions
+<details>
+  <summary>Auxiliary definitions</summary>
 
 ```bluespec "routing" +=
 def DisabledRoutes(node) = dr.get(node)
 pure def isSourceOrTargetIn(node, route) = node == route._1 or node == route._2
 ```
+</details>
 
 ## Redundancy Control
 
@@ -167,7 +167,8 @@ Note that when the target redundancy is 0, the lower and upper bounds are also e
 every `TxsPerAdjustment` received transactions `adjustRedundancy` will unblock `HaveTx` but it will
 not send `Reset` messages.
 
-### Auxiliary definitions
+<details>
+  <summary>Auxiliary definitions</summary>
 
 ```bluespec "rc" +=
 def RC(node) = rc.get(node)
@@ -177,6 +178,7 @@ pure def increaseDuplicateTxs(_rc) = { duplicateTxs: _rc.duplicateTxs + 1, ..._r
 pure def resetCounters(_rc) = { firstTimeTxs: 0, duplicateTxs: 0, ..._rc }
 pure def blockHaveTx(_rc) = { isHaveTxBlocked: true, ..._rc }
 ```
+</details>
 
 ## Parameters
 
@@ -438,7 +440,7 @@ def mkTargetNodes(node, tx) =
     node.Peers().exclude(txSenders.listToSet()).exclude(disabledTargets)
 ```
 
-### Nodes disconnect from the network
+### Nodes disconnecting from the network
 
 When a node disconnects from the network, its peers signal their own peers that their situation has
 changed, so that their routing tables are reset. In this way, data via those nodes can be re-routed
@@ -463,7 +465,7 @@ action disconnectAndUpdateRoutes(nodeToDisconnect) = all {
 ```bluespec quint/dog.qnt +=
 // -*- mode: Bluespec; -*-
 
-// File generated from markdown using lmt. DO NOT EDIT.
+// File generated from markdown using https://github.com/driusan/lmt. DO NOT EDIT.
 
 module dog {
     import spells.* from "./spells"

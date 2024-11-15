@@ -1,6 +1,6 @@
 // -*- mode: Bluespec; -*-
 
-// File generated from markdown using lmt. DO NOT EDIT.
+// File generated from markdown using https://github.com/driusan/lmt. DO NOT EDIT.
 
 module p2p {
     import spells.* from "./spells"
@@ -25,10 +25,10 @@ module p2p {
         _incomingMsgs.updateMultiple(targetNodes, ms => ms.append((node, msg)))
     
     // Auxiliary definitions
-    val nodesInNetwork = NodeIDs.filter(node => node.Peers().nonEmpty())
-    val nodesNotInNetwork = NodeIDs.exclude(nodesInNetwork)
     def IncomingMsgs(node) = incomingMsgs.get(node)
     def Peers(node) = peers.get(node)
+    val nodesInNetwork = NodeIDs.filter(node => node.Peers().nonEmpty())
+    val nodesNotInNetwork = NodeIDs.exclude(nodesInNetwork)
 
     //--------------------------------------------------------------------------
     // Actions

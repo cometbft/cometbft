@@ -96,51 +96,21 @@ thus a separate pool index per iterator) with a `next()` method to retrieve the 
 list. If it reaches the end of the list, it blocks until a new entry is added. All iterators read
 concurrently from the pool.
 
-#### List of senders per transaction
-
-Each entry in the mempool has a set of peers from which the node received the transaction. 
-```bluespec "mempoolstate" +=
-senders: TxID -> List[NodeID]
-```
-We define it as a list instead of a set because the DOG protocol needs to know who is the first
-sender of a transaction.
-
-Note that when a transaction is in the cache but not in the pool, it won't have any sender. Senders
-are only needed for disseminating (valid) transactions that are in the mempool.
-
-### Functions on the mempool
-
-`addSender` adds a sender to `tx`'s list of senders (`_txSenders`), if `optionalSender` has a value
-that's not already in the list.
-```bluespec "auxstate" +=
-pure def addSender(_txSenders, tx, optionalSender) = 
-    match optionalSender {
-    | Some(sender) => _txSenders.update(hash(tx), ss => 
-        if (ss.includes(sender)) ss else ss.append(sender))
-    | None => _txSenders
-    }
-```
-
-The set of senders of transaction `tx`.
-```bluespec "auxstate" +=
-def sendersOf(node, tx) = 
-    node.Senders().mapGetDefault(hash(tx), List()).listToSet()
-```
-
-### Auxiliary definitions
+<details>
+  <summary>Auxiliary definitions</summary>
 
 ```bluespec "auxstate" +=
 def Cache(node) = state.get(node).cache
 def Pool(node) = state.get(node).pool
 def PoolIndex(node) = state.get(node).poolIndex
-def Senders(node) = state.get(node).senders
 ```
+</details>
 
 ## Initial state
 
 The initial state of a mempool:
 ```bluespec "actions" +=
-action init = all {
+action MP_init = all {
     P2P_init,
     state' = NodeIDs.mapBy(n => initialMempoolState),
 }
@@ -151,7 +121,6 @@ val initialMempoolState = {
     pool: List(),
     cache: Set(),
     poolIndex: 0,
-    senders: Map(),
 }
 ```
 
@@ -163,13 +132,13 @@ Users create transactions and send them to one of the nodes in the network. Node
 transactions either directly from users or in messages from peers. Transaction from users have no
 sender.
 
-`receiveTxFromUser` is a generic action that models a node receiving transaction `tx` from a user.
+Action `receiveTxFromUser` models a `node` receiving transaction `tx` from a user.
 ```bluespec "actions" +=
 action receiveTxFromUser(node, tx, _tryAddTx) =
     node._tryAddTx(incomingMsgs, None, tx)
 ```
-The function `_tryAddTx(incomingMsgs, optionalSender, tx)` defines how transactions are added to the
-mempool.
+The function parameter `_tryAddTx(incomingMsgs, optionalSender, tx)` defines how transactions are
+added to the mempool.
 
 Typically, users send (full) transactions to the node via an RPC endpoint. Users are allowed to
 submit the same transaction more than once and to multiple nodes.
@@ -179,11 +148,11 @@ implementation we have the cache that prevents this scenario.
 
 ### Transaction dissemination
 
-`disseminateNextTx` is a generic action that models a node traversing the pool while sending
-transactions to its peers. It takes the next transaction from the iterator and atomically sends it
-to a set of target peers.
+Action `disseminateNextTx` models a `node` traversing the `pool` while sending transactions to its
+peers. It takes the transaction pointed by `poolIndex` and atomically sends it to a set of target
+peers.
 
-The following arguments are functions that define to who `node` will send transactions:
+The following function parameters define to who `node` will send transactions:
 - `_mkTargetNodes(node, tx)` returns the set of peers to which `node`
   will send `tx`.
 - `_mkTxMsg(tx)` is a wrapper function that returns the specific message
@@ -208,8 +177,8 @@ action disseminateNextTx(node, _mkTargetNodes, _mkTxMsg) = all {
 The pool index must not exceed the pool's length. This pre-condition models when the iterator is at
 the end of the list and it's blocked waiting for a new entry to be appended to the list.
 
-In the actual implementation, there is a separate goroutine for each peer, so not all txs are sent
-at the same time.
+In the actual implementation, there is a separate goroutine for each peer, so not all transactions
+are sent at the same time.
 
 ## Properties
 
@@ -223,7 +192,7 @@ val uniqueTxsInPool =
 ```bluespec quint/mempool.qnt +=
 // -*- mode: Bluespec; -*-
 
-// File generated from markdown using lmt. DO NOT EDIT.
+// File generated from markdown using https://github.com/driusan/lmt. DO NOT EDIT.
 
 module mempool {
     import spells.* from "./spells"

@@ -46,26 +46,28 @@ the network.
 var peers: NodeID -> Set[NodeID]
 ```
 
-`multiSend` sends message `msg` to a set of `targetNodes`. It updates a list of incoming messages
-`_incomingMsgs`.
+<details>
+  <summary>Auxiliary definitions</summary>
+
+```bluespec "auxstate" +=
+def IncomingMsgs(node) = incomingMsgs.get(node)
+def Peers(node) = peers.get(node)
+```
+
+Function `multiSend` sends message `msg` to a set of `targetNodes`. It updates a list of incoming
+messages `_incomingMsgs`. `targetNodes` can be empty, in which case `_incomingMsgs` will stay the
+same.
 ```bluespec "state" +=
 pure def multiSend(node, _incomingMsgs, targetNodes, msg) =
     _incomingMsgs.updateMultiple(targetNodes, ms => ms.append((node, msg)))
 ```
 
-### Auxiliary definitions
-
-A node is in the network if it has peers.
+A node is in the network if it has peers:
 ```bluespec "auxstate" +=
 val nodesInNetwork = NodeIDs.filter(node => node.Peers().nonEmpty())
 val nodesNotInNetwork = NodeIDs.exclude(nodesInNetwork)
 ```
-
-More definitions.
-```bluespec "auxstate" +=
-def IncomingMsgs(node) = incomingMsgs.get(node)
-def Peers(node) = peers.get(node)
-```
+</details>
 
 ## Initial state
 
@@ -168,7 +170,7 @@ temporal allMsgsDelivered =
 ```bluespec quint/p2p.qnt +=
 // -*- mode: Bluespec; -*-
 
-// File generated from markdown using lmt. DO NOT EDIT.
+// File generated from markdown using https://github.com/driusan/lmt. DO NOT EDIT.
 
 module p2p {
     import spells.* from "./spells"

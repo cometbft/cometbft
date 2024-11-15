@@ -1,6 +1,6 @@
 // -*- mode: Bluespec; -*-
 
-// File generated from markdown using lmt. DO NOT EDIT.
+// File generated from markdown using https://github.com/driusan/lmt. DO NOT EDIT.
 
 module mempool {
     import spells.* from "./spells"
@@ -29,27 +29,17 @@ module mempool {
         cache: Set[TxID],
         pool: List[TX],
         poolIndex: int,
-        senders: TxID -> List[NodeID]
     }
     
     // Auxiliary definitions
-    pure def addSender(_txSenders, tx, optionalSender) = 
-        match optionalSender {
-        | Some(sender) => _txSenders.update(hash(tx), ss => 
-            if (ss.includes(sender)) ss else ss.append(sender))
-        | None => _txSenders
-        }
-    def sendersOf(node, tx) = 
-        node.Senders().mapGetDefault(hash(tx), List()).listToSet()
     def Cache(node) = state.get(node).cache
     def Pool(node) = state.get(node).pool
     def PoolIndex(node) = state.get(node).poolIndex
-    def Senders(node) = state.get(node).senders
 
     //--------------------------------------------------------------------------
     // Actions
     //--------------------------------------------------------------------------
-    action init = all {
+    action MP_init = all {
         P2P_init,
         state' = NodeIDs.mapBy(n => initialMempoolState),
     }
@@ -57,7 +47,6 @@ module mempool {
         pool: List(),
         cache: Set(),
         poolIndex: 0,
-        senders: Map(),
     }
     action receiveTxFromUser(node, tx, _tryAddTx) =
         node._tryAddTx(incomingMsgs, None, tx)

@@ -1,6 +1,6 @@
 // -*- mode: Bluespec; -*-
 
-// File generated from markdown using lmt. DO NOT EDIT.
+// File generated from markdown using https://github.com/driusan/lmt. DO NOT EDIT.
 
 module flood {
     import spells.* from "./spells"
@@ -14,12 +14,28 @@ module flood {
         | TxMsg(TX)
 
     //--------------------------------------------------------------------------
+    // State
+    //--------------------------------------------------------------------------
+    var senders: NodeID -> TxID -> List[NodeID]
+    
+    // Auxiliary definitions
+    def Senders(node) = senders.get(node)
+    def sendersOf(node, tx) = 
+        node.Senders().mapGetDefault(hash(tx), List()).listToSet()
+    pure def addSender(_txSenders, tx, optionalSender) = 
+        match optionalSender {
+        | Some(sender) => _txSenders.update(hash(tx), ss => 
+            if (ss.includes(sender)) ss else ss.append(sender))
+        | None => _txSenders
+        }
+
+    //--------------------------------------------------------------------------
     // Actions
     //--------------------------------------------------------------------------
-    action handleMessage(node, _incomingMsgs, sender, msg) =
-        match msg {
-        | TxMsg(tx) => node.tryAddTx(_incomingMsgs, Some(sender), tx)
-        }
+    action init = all {
+        MP_init,
+        senders' = NodeIDs.mapBy(n => Map()),
+    }
     action tryAddTx(node, _incomingMsgs, optionalSender, tx) = 
         if (not(hash(tx).in(node.Cache())))
             node.tryAddFirstTimeTx(_incomingMsgs, optionalSender, tx)
@@ -29,42 +45,46 @@ module flood {
         state' = state.update(node, st => {
             cache: st.cache.join(hash(tx)),
             pool: if (valid(tx)) st.pool.append(tx) else st.pool,
-            senders: 
-                if (valid(tx)) 
-                    st.senders.addSender(tx, optionalSender) 
-                else st.senders,
             ...st }),
+        senders' = senders.update(node, ss =>
+            if (valid(tx)) ss.addSender(tx, optionalSender) else ss),
         incomingMsgs' = _incomingMsgs,
         peers' = peers,
     }
     action processDuplicateTx(node, _incomingMsgs, optionalSender, tx) = all {
-        state' = state.update(node, st => { 
-            senders: 
-                if (st.pool.includes(tx)) 
-                    st.senders.addSender(tx, optionalSender) 
-                else st.senders, 
-            ...st }),
+        senders' = senders.update(node, ss =>
+            if (node.Pool().includes(tx)) ss.addSender(tx, optionalSender) else ss),
+        state' = state,
         incomingMsgs' = _incomingMsgs,
         peers' = peers,
     }
+    action handleMessage(node, _incomingMsgs, sender, msg) =
+        match msg {
+        | TxMsg(tx) => node.tryAddTx(_incomingMsgs, Some(sender), tx)
+        }
     def mkTargetNodes(node, tx) =
         node.Peers().exclude(node.sendersOf(tx))
 
     action step = any {
         nondet node = oneOf(nodesInNetwork)
-        node.disseminateNextTx(mkTargetNodes, TxMsg),
-        nondet node = oneOf(nodesInNetwork)
         nondet tx = oneOf(Txs)
         node.receiveTxFromUser(tx, tryAddTx),
         nondet node = oneOf(nodesInNetwork)
         node.receiveFromPeer(handleMessage),
+        nondet node = oneOf(nodesInNetwork)
+        all {
+            node.disseminateNextTx(mkTargetNodes, TxMsg),
+            senders' = senders,
+        },
         all {
             pickNodeAndJoin,
             state' = state,
+            senders' = senders,
         },
         all {
             pickNodeAndDisconnect,
             state' = state,
+            senders' = senders,
         }
     }
 
@@ -77,7 +97,7 @@ module flood {
         Txs.forall(tx => 
             NodeIDs.exists(node =>
                 node.Pool().includes(tx) implies eventually(txInAllPools(tx))))
-    val noSendToSender =
+    val dontSendBackToSender =
         NodeIDs.forall(nodeA => 
             NodeIDs.forall(nodeB => 
                 Txs.forall(tx =>

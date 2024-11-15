@@ -6,7 +6,19 @@ transaction.
 
 This protocol is built on top of a [mempool module](mempool.md) and a [p2p layer](p2p.md).
 
-> This document is written using the literature programming paradigm. Code snippets are written in
+**Table of contents**
+  - [Messages](#messages)
+  - [State](#state)
+  - [Initial state](#initial-state)
+  - [State transitions (actions)](#state-transitions-actions)
+    - [Adding transactions to the mempool](#adding-transactions-to-the-mempool)
+      - [Adding first-time transactions](#adding-first-time-transactions)
+      - [Handling duplicate transactions](#handling-duplicate-transactions)
+    - [Handling incoming messages](#handling-incoming-messages)
+    - [Transaction dissemination](#transaction-dissemination)
+  - [Properties](#properties)
+
+> This document was written using the literature programming paradigm. Code snippets are written in
 > [Quint][quint] and can get "tangled" into a Quint file.
 
 ## Messages
@@ -19,27 +31,102 @@ type Message =
 
 ## State
 
-Flood's state is just the underlying [mempool](mempool.md) state (variable `state`). It does not
-need extra data structures.
+Flood's state consists of the underlying [mempool](mempool.md) state (variable `state`) and
+[P2P](p2p.md) state (variables `incomingMsgs` and `peers`).
+
+Additionally, each entry in the mempool has a list of peer IDs from which the node received the
+transaction. 
+```bluespec "state" +=
+var senders: NodeID -> TxID -> List[NodeID]
+```
+We define it as a list instead of a set because the DOG protocol needs to know who is the first
+sender of a transaction.
+
+Note that a transaction won't have a sender when it is in the cache but not in the mempool. Senders
+are only needed for disseminating (valid) transactions that are in the mempool.
+
+<details>
+  <summary>Auxiliary definitions</summary>
+
+```bluespec "auxstate" +=
+def Senders(node) = senders.get(node)
+```
+
+The set of senders of transaction `tx`:
+```bluespec "auxstate" +=
+def sendersOf(node, tx) = 
+    node.Senders().mapGetDefault(hash(tx), List()).listToSet()
+```
+
+Function `addSender` adds a sender to `tx`'s list of senders (`_txSenders`), if `optionalSender` has
+a value that's not already in the list.
+```bluespec "auxstate" +=
+pure def addSender(_txSenders, tx, optionalSender) = 
+    match optionalSender {
+    | Some(sender) => _txSenders.update(hash(tx), ss => 
+        if (ss.includes(sender)) ss else ss.append(sender))
+    | None => _txSenders
+    }
+```
+</details>
 
 ## Initial state
 
-Flood's initial state is the underlying mempool's initial state (`init`).
+Flood's initial state is the underlying mempool's initial state (`MP_init`) and an empty mapping of
+transactions to senders.
+```bluespec "actions" +=
+action init = all {
+    MP_init,
+    senders' = NodeIDs.mapBy(n => Map()),
+}
+```
 
 ## State transitions (actions)
 
-### Handling incoming messages
+These are the state transitions of the system. Note that generic actions are imported from the
+[mempool](mempool.md) and [p2p](p2p.md) specs. The missing implementation details (`tryAddTx`,
+`handleMessage`, `mkTargetNodes`) are described in the rest of the section.
 
-Upon receiving a message with transaction `tx` from a peer (i.e., the `sender`), the `node` attempts
-to add `tx` to its mempool. 
-```bluespec "actions" +=
-action handleMessage(node, _incomingMsgs, sender, msg) =
-    match msg {
-    | TxMsg(tx) => node.tryAddTx(_incomingMsgs, Some(sender), tx)
+1. User-submitted transactions: when a node receives a transaction from a user, it tries to add it
+   to the mempool.
+    ```bluespec "steps" +=
+    nondet node = oneOf(nodesInNetwork)
+    nondet tx = oneOf(Txs)
+    node.receiveTxFromUser(tx, tryAddTx),
+    ```
+
+2. Peer message handling: a node processes messages received from a peer.
+    ```bluespec "steps" +=
+    nondet node = oneOf(nodesInNetwork)
+    node.receiveFromPeer(handleMessage),
+    ```
+
+3. Transaction dissemination: a node sends a transaction in its mempool to a subset of target nodes.
+    ```bluespec "steps" +=
+    nondet node = oneOf(nodesInNetwork)
+    all {
+        node.disseminateNextTx(mkTargetNodes, TxMsg),
+        senders' = senders,
+    },
+    ```
+
+4. A node joins the network.
+    ```bluespec "steps" +=
+    all {
+        pickNodeAndJoin,
+        state' = state,
+        senders' = senders,
+    },
+    ```
+
+5. A node disconnects from the network.
+    ```bluespec "steps" +=
+    all {
+        pickNodeAndDisconnect,
+        state' = state,
+        senders' = senders,
     }
-```
-> The argument `_incomingMsgs` is passed just to update the queues of incoming messages, when
-applicable (Flood does not reply with any message but DOG does).
+    ```
 
 ### Adding transactions to the mempool
 
@@ -70,11 +157,9 @@ action tryAddFirstTimeTx(node, _incomingMsgs, optionalSender, tx) = all {
     state' = state.update(node, st => {
         cache: st.cache.join(hash(tx)),
         pool: if (valid(tx)) st.pool.append(tx) else st.pool,
-        senders: 
-            if (valid(tx)) 
-                st.senders.addSender(tx, optionalSender) 
-            else st.senders,
         ...st }),
+    senders' = senders.update(node, ss =>
+        if (valid(tx)) ss.addSender(tx, optionalSender) else ss),
     incomingMsgs' = _incomingMsgs,
     peers' = peers,
 }
@@ -86,16 +171,26 @@ action tryAddFirstTimeTx(node, _incomingMsgs, optionalSender, tx) = all {
 `tx` is already in `pool`.
 ```bluespec "actions" +=
 action processDuplicateTx(node, _incomingMsgs, optionalSender, tx) = all {
-    state' = state.update(node, st => { 
-        senders: 
-            if (st.pool.includes(tx)) 
-                st.senders.addSender(tx, optionalSender) 
-            else st.senders, 
-        ...st }),
+    senders' = senders.update(node, ss =>
+        if (node.Pool().includes(tx)) ss.addSender(tx, optionalSender) else ss),
+    state' = state,
     incomingMsgs' = _incomingMsgs,
     peers' = peers,
 }
 ```
+
+### Handling incoming messages
+
+Upon receiving a message with transaction `tx` from a peer (i.e., the `sender`), the `node` attempts
+to add `tx` to its mempool. 
+```bluespec "actions" +=
+action handleMessage(node, _incomingMsgs, sender, msg) =
+    match msg {
+    | TxMsg(tx) => node.tryAddTx(_incomingMsgs, Some(sender), tx)
+    }
+```
+> The argument `_incomingMsgs` is passed just to update the queues of incoming messages, when
+applicable (Flood does not reply with any message but DOG does).
 
 ### Transaction dissemination 
 
@@ -108,48 +203,9 @@ def mkTargetNodes(node, tx) =
     node.Peers().exclude(node.sendersOf(tx))
 ```
 
-### All state transitions
-
-Summing up, these are all the possible state transitions of the protocol.
-
-#### Transaction dissemination: node sends transaction to subset of peers
-```bluespec "steps" +=
-nondet node = oneOf(nodesInNetwork)
-node.disseminateNextTx(mkTargetNodes, TxMsg),
-```
-
-#### User-submitted transactions: node receives a transaction from a user
-```bluespec "steps" +=
-nondet node = oneOf(nodesInNetwork)
-nondet tx = oneOf(Txs)
-node.receiveTxFromUser(tx, tryAddTx),
-```
-
-#### Peer message handling: node processes messages received from peers
-```bluespec "steps" +=
-nondet node = oneOf(nodesInNetwork)
-node.receiveFromPeer(handleMessage),
-```
-
-#### Nodes joining the network
-```bluespec "steps" +=
-all {
-    pickNodeAndJoin,
-    state' = state,
-},
-```
-
-#### Nodes leaving the network
-```bluespec "steps" +=
-all {
-    pickNodeAndDisconnect,
-    state' = state,
-}
-```
-
 ## Properties
 
-`txInAllPools` defines if a given transaction is in the pool of all nodes.
+Function `txInAllPools` defines if a given transaction is in the pool of all nodes.
 ```bluespec "properties" +=
 def txInAllPools(tx) =
     NodeIDs.forall(n => n.Pool().includes(tx))
@@ -168,7 +224,7 @@ temporal txInPoolGetsDisseminated =
 _**Invariant**_ If node A sent a transaction tx to node B (A is in the list of tx's senders), then B
 does not send tx to A (the message won't be in A's incoming messages).
 ```bluespec "properties" +=
-val noSendToSender =
+val dontSendBackToSender =
     NodeIDs.forall(nodeA => 
         NodeIDs.forall(nodeB => 
             Txs.forall(tx =>
@@ -182,7 +238,7 @@ val noSendToSender =
 ```bluespec quint/flood.qnt +=
 // -*- mode: Bluespec; -*-
 
-// File generated from markdown using lmt. DO NOT EDIT.
+// File generated from markdown using https://github.com/driusan/lmt. DO NOT EDIT.
 
 module flood {
     import spells.* from "./spells"
@@ -193,6 +249,14 @@ module flood {
     // Messages
     //--------------------------------------------------------------------------
     <<<messages>>>
+
+    //--------------------------------------------------------------------------
+    // State
+    //--------------------------------------------------------------------------
+    <<<state>>>
+    
+    // Auxiliary definitions
+    <<<auxstate>>>
 
     //--------------------------------------------------------------------------
     // Actions

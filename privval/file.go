@@ -347,10 +347,14 @@ func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote, signExtension bo
 		// re-sign the vote extensions of precommits. For prevotes and nil
 		// precommits, the extension signature will always be empty.
 		// Even if the signed over data is empty, we still add the signature
-		var extSig []byte
+		var extSig, nonRpExtSig []byte
 		if vote.Type == types.PrecommitType && !types.ProtoBlockIDIsNil(&vote.BlockID) {
-			extSignBytes := types.VoteExtensionSignBytes(chainID, vote)
+			extSignBytes, nonRpExtSignBytes := types.VoteExtensionSignBytes(chainID, vote)
 			extSig, err = pv.Key.PrivKey.Sign(extSignBytes)
+			if err != nil {
+				return err
+			}
+			nonRpExtSig, err = pv.Key.PrivKey.Sign(nonRpExtSignBytes)
 			if err != nil {
 				return err
 			}
@@ -359,6 +363,7 @@ func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote, signExtension bo
 		}
 
 		vote.ExtensionSignature = extSig
+		vote.NonRpExtensionSignature = nonRpExtSig
 	}
 
 	// We might crash before writing to the wal,

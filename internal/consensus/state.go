@@ -2553,11 +2553,12 @@ func (cs *State) signVote(
 		// if the signedMessage type is for a non-nil precommit, add
 		// VoteExtension
 		if extEnabled {
-			ext, err := cs.blockExec.ExtendVote(context.TODO(), vote, block, cs.state)
+			ext, nonRpExt, err := cs.blockExec.ExtendVote(context.TODO(), vote, block, cs.state)
 			if err != nil {
 				return nil, err
 			}
 			vote.Extension = ext
+			vote.NonRpExtension = nonRpExt
 		}
 	}
 

@@ -173,7 +173,9 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 	}
 
 	manifest.VoteExtensionSize = voteExtensionSize.Choose(r).(uint)
-	manifest.ConstantFlip = constantFlip.Choose(r).(bool)
+	// TODO: reinstate this once the testnet production logic is fixed.
+	// manifest.ConstantFlip = constantFlip.Choose(r).(bool)
+	manifest.ConstantFlip = false
 
 	manifest.PbtsUpdateHeight = pbtsUpdateHeight.Choose(r).(int64)
 	if manifest.PbtsUpdateHeight == 1 {

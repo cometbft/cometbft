@@ -47,7 +47,7 @@ func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 		i = end
 
 		for w := 0; w < testnet.LoadTxConnections; w++ {
-			go loadProcessMultiple(ctx, txCh, chSuccess, chFailed, nodesToSendLoatTo, useInternalIP, testnet.LoadTargetNodes)
+			go loadProcess(ctx, txCh, chSuccess, chFailed, nodesToSendLoatTo, useInternalIP, testnet.LoadTargetNodes)
 		}
 	}
 
@@ -175,7 +175,7 @@ FOR_LOOP:
 
 // loadProcess processes transactions by sending transactions received on the txCh
 // to the client.
-func loadProcessMultiple(ctx context.Context, txCh <-chan types.Tx, chSuccess chan<- struct{}, chFailed chan<- error, nodes []*e2e.Node, useInternalIP bool, loadTargetNodes []string) {
+func loadProcess(ctx context.Context, txCh <-chan types.Tx, chSuccess chan<- struct{}, chFailed chan<- error, nodes []*e2e.Node, useInternalIP bool, loadTargetNodes []string) {
 	clients := make([]*rpchttp.HTTP, len(nodes))
 	var err error
 	s := struct{}{}

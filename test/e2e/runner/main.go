@@ -279,6 +279,9 @@ func NewCLI() *CLI {
 			if duplicateTxsToN, err := cmd.Flags().GetInt("duplicate-num-nodes"); err != nil {
 				return err
 			} else if duplicateTxsToN > 0 {
+				if duplicateTxsToN > len(cli.testnet.Nodes) {
+					return errors.New("value must be less or equal to the number of nodes in the manifest")
+				}
 				cli.testnet.LoadDuplicateTxs = duplicateTxsToN
 			}
 

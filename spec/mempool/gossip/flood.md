@@ -52,10 +52,10 @@ are only needed for disseminating (valid) transactions that are in the mempool.
 def Senders(node) = senders.get(node)
 ```
 
-The set of senders of transaction `txID`:
+The set of senders of transaction `tx`:
 ```bluespec "auxstate" +=
-def sendersOf(node, txID) = 
-    node.Senders().mapGetDefault(txID, List())
+def sendersOf(node, tx) = 
+    node.Senders().mapGetDefault(hash(tx), List()).listToSet()
 ```
 
 Function `addSender` adds a sender to `tx`'s list of senders (`_txSenders`), if `optionalSender` has
@@ -200,7 +200,7 @@ In Flood, a node sends a transaction to all its peers except those who previousl
 to the generic transaction dissemination action.
 ```bluespec "actions" +=
 def mkTargetNodes(node, tx) =
-    node.Peers().exclude(node.sendersOf(hash(tx)).listToSet())
+    node.Peers().exclude(node.sendersOf(tx))
 ```
 
 ## Properties
@@ -229,7 +229,7 @@ val dontSendBackToSender =
     NodeIDs.forall(nodeA => 
         NodeIDs.forall(nodeB => 
             AllTxs.forall(tx =>
-                nodeB.sendersOf(hash(tx)).includes(nodeA) 
+                nodeB.sendersOf(tx).contains(nodeA) 
                 implies
                 not(nodeA.IncomingMsgs().includes((nodeB, TxMsg(tx))))
     )))

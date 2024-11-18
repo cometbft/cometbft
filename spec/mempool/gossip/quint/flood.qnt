@@ -20,8 +20,8 @@ module flood {
     
     // Auxiliary definitions
     def Senders(node) = senders.get(node)
-    def sendersOf(node, tx) = 
-        node.Senders().mapGetDefault(hash(tx), List()).listToSet()
+    def sendersOf(node, txID) = 
+        node.Senders().mapGetDefault(txID, List())
     pure def addSender(_txSenders, tx, optionalSender) = 
         match optionalSender {
         | Some(sender) => _txSenders.update(hash(tx), ss => 
@@ -63,7 +63,7 @@ module flood {
         | TxMsg(tx) => node.tryAddTx(_incomingMsgs, Some(sender), tx)
         }
     def mkTargetNodes(node, tx) =
-        node.Peers().exclude(node.sendersOf(tx))
+        node.Peers().exclude(node.sendersOf(hash(tx)).listToSet())
 
     action step = any {
         nondet node = oneOf(nodesInNetwork)
@@ -101,7 +101,7 @@ module flood {
         NodeIDs.forall(nodeA => 
             NodeIDs.forall(nodeB => 
                 AllTxs.forall(tx =>
-                    nodeB.sendersOf(tx).contains(nodeA) 
+                    nodeB.sendersOf(hash(tx)).includes(nodeA) 
                     implies
                     not(nodeA.IncomingMsgs().includes((nodeB, TxMsg(tx))))
         )))

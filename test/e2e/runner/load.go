@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"slices"
 	"sync"
 	"time"
@@ -38,17 +39,15 @@ func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 	txCh := make(chan types.Tx)
 	go loadGenerate(ctx, txCh, testnet, u[:])
 
-	for _, n := range testnet.Nodes {
-		if len(testnet.LoadTargetNodes) == 0 {
-			if n.SendNoLoad {
-				continue
-			}
-		} else if !slices.Contains(testnet.LoadTargetNodes, n.Name) {
-			continue
-		}
+	numNodesToSendDuplicates := int(math.Max(float64(testnet.LoadDuplicateTxs), 1))
+
+	for i := 0; i < len(testnet.Nodes); {
+		end := int(math.Min(float64(i+numNodesToSendDuplicates), float64(len(testnet.Nodes))))
+		nodesToSendLoatTo := testnet.Nodes[i:end]
+		i = end
 
 		for w := 0; w < testnet.LoadTxConnections; w++ {
-			go loadProcess(ctx, txCh, chSuccess, chFailed, n, useInternalIP)
+			go loadProcessMultiple(ctx, txCh, chSuccess, chFailed, nodesToSendLoatTo, useInternalIP, testnet.LoadTargetNodes)
 		}
 	}
 
@@ -176,26 +175,35 @@ FOR_LOOP:
 
 // loadProcess processes transactions by sending transactions received on the txCh
 // to the client.
-func loadProcess(ctx context.Context, txCh <-chan types.Tx, chSuccess chan<- struct{}, chFailed chan<- error, n *e2e.Node, useInternalIP bool) {
-	var client *rpchttp.HTTP
+func loadProcessMultiple(ctx context.Context, txCh <-chan types.Tx, chSuccess chan<- struct{}, chFailed chan<- error, nodes []*e2e.Node, useInternalIP bool, loadTargetNodes []string) {
+	clients := make([]*rpchttp.HTTP, len(nodes))
 	var err error
 	s := struct{}{}
 	for tx := range txCh {
-		if client == nil {
-			if useInternalIP {
-				client, err = n.ClientInternalIP()
-			} else {
-				client, err = n.Client()
-			}
-			if err != nil {
-				logger.Info("non-fatal error creating node client", "error", err)
+		for i, n := range nodes {
+			if len(loadTargetNodes) == 0 {
+				if n.SendNoLoad {
+					continue
+				}
+			} else if !slices.Contains(loadTargetNodes, n.Name) {
 				continue
 			}
+			if clients[i] == nil {
+				if useInternalIP {
+					clients[i], err = n.ClientInternalIP()
+				} else {
+					clients[i], err = n.Client()
+				}
+				if err != nil {
+					logger.Info("non-fatal error creating node client", "error", err)
+					continue
+				}
+			}
+			if _, err = clients[i].BroadcastTxSync(ctx, tx); err != nil {
+				chFailed <- err
+				continue
+			}
+			chSuccess <- s
 		}
-		if _, err = client.BroadcastTxSync(ctx, tx); err != nil {
-			chFailed <- err
-			continue
-		}
-		chSuccess <- s
 	}
 }

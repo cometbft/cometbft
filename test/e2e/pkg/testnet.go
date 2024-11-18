@@ -371,6 +371,14 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 
 		const flipSpan = 3000
 		for i := max(1, manifest.InitialHeight); i < manifest.InitialHeight+flipSpan; i++ {
+			// FIXME: we do not flip the validator when there is
+			// **any** scheduled validator update for that height.
+			// We may have a validator update that affects a
+			// **different** validator here and the height can be
+			// odd. We add our validator back in odd heights, so we
+			// are skipping this in this case. Therefore, in the
+			// next even height we are removing a validator that is
+			// not present in the validator set.
 			if _, ok := testnet.ValidatorUpdates[i]; ok {
 				continue
 			}

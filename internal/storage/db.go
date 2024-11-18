@@ -25,7 +25,7 @@ type DB interface {
 	// It is safe to modify the contents of key after Has returns.
 	Has(key []byte) (bool, error)
 
-	// Set sets the value for the given key, ovewriting it if it already exists.
+	// Set sets the value for the given key, overwriting it if it already exists.
 	// It is safe to modify the contents of the arguments after Set returns.
 	//
 	// Set does not synchronize the data to disk immediately. Instead, the write may
@@ -33,7 +33,7 @@ type DB interface {
 	// compaction. Use [SetSync] to flush the write to disk immediately.
 	Set(key []byte, value []byte) error
 
-	// SetSync sets the value for the given key, ovewriting it if it already exists.
+	// SetSync sets the value for the given key, overwriting it if it already exists.
 	// It is safe to modify the contents of the arguments after Set returns.
 	//
 	// SetSync flushes the data to disk immediately and the write operation is
@@ -182,6 +182,6 @@ type Iterator interface {
 	// Error returns the last error encountered by the iterator, if any.
 	Error() error
 
-	// Close closes the iterator, relasing any allocated resources.
+	// Close closes the iterator, releasing any allocated resources.
 	Close() error
 }

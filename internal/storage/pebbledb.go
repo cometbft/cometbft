@@ -84,7 +84,7 @@ func (pDB *PebbleDB) Has(key []byte) (bool, error) {
 	return bytesPeb != nil, nil
 }
 
-// Set sets the value for the given key, ovewriting it if it already exists.
+// Set sets the value for the given key, overwriting it if it already exists.
 // It is safe to modify the contents of the arguments after Set returns.
 //
 // Set does not synchronize the write to disk immediately. Instead, it may be
@@ -109,7 +109,7 @@ func (pDB *PebbleDB) Set(key []byte, value []byte) error {
 	return nil
 }
 
-// SetSync sets the value for the given key, ovewriting it if it already exists.
+// SetSync sets the value for the given key, overwriting it if it already exists.
 // It is safe to modify the contents of the arguments after Set returns.
 //
 // SetSync flushes the write to disk immediately and the write operation is completed
@@ -197,15 +197,6 @@ func (pDB *PebbleDB) Compact(start, end []byte) error {
 		return fmt.Errorf("creating compaction iterator: %w", err)
 	}
 
-	// TODO: what is the purpose of this goroutine? why not just call it at the end
-	// of the function?
-	// defer func() {
-	// 	err2 := iter.Close()
-	// 	if err2 != nil {
-	// 		err = err2
-	// 	}
-	// }()
-
 	// iter.First() moves the iterator to the first key/value pair and returns true
 	// if it is pointing to a valid entry.
 	if start == nil && iter.First() {
@@ -219,10 +210,18 @@ func (pDB *PebbleDB) Compact(start, end []byte) error {
 	}
 
 	if err := pDB.db.Compact(start, end, true /* parallelize */); err != nil {
-		return fmt.Errorf("compacting range [%s, %s]: %w", start, end, err)
+		compactErr := fmt.Errorf("compacting range [%s, %s]: %w", start, end, err)
+
+		if err := iter.Close(); err != nil {
+			itCloseErr := fmt.Errorf("closing compaction iterator: %w", err)
+
+			formatStr := "multiple errors during compaction:\n%w\n%w"
+			return fmt.Errorf(formatStr, compactErr, itCloseErr)
+		}
+
+		return compactErr
 	}
 
-	// TODO: what's wrong with this? why did they use a goroutine above?
 	if err := iter.Close(); err != nil {
 		formatStr := "closing iterator after successful compaction: %w"
 		return fmt.Errorf(formatStr, err)
@@ -597,7 +596,7 @@ func (itr *pebbleDBIterator) Error() error {
 	return itr.source.Error()
 }
 
-// Close closes the iterator, relasing any allocated resources.
+// Close closes the iterator, releasing any allocated resources.
 //
 // It implements the [Iterator] interface for type pebbleDBIterator.
 func (itr *pebbleDBIterator) Close() error {

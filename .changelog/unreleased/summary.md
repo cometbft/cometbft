@@ -1,4 +1,4 @@
-*November 12, 2024*
+*November 20, 2024*
 
 This is a major release of CometBFT that includes several substantial changes
 that aim to reduce bandwidth consumption, enable modularity, improve
@@ -38,9 +38,6 @@ team, including:
    previously such changes required a new breaking release (which currently
    takes 6 to 12 months to reach production use for many users). See [ADR
    109](./docs/architecture/adr-109-reduce-go-api-surface.md) for more details.
-
-8. Added support for [BLS12-381 curve](https://github.com/cometbft/cometbft/pull/2765) that can
-   be enabled via a build tag.
 
 None of these changes are state machine-breaking for CometBFT-based networks,
 but could be breaking for some users who depend on the Protobuf definitions type

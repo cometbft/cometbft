@@ -40,25 +40,27 @@ func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 	nodesSingleLoad := make([]*e2e.Node, 0, len(testnet.Nodes))
 	nodesToSendLoadTo := make([]*e2e.Node, 0, testnet.LoadDuplicateTxs)
 
-	if testnet.LoadDuplicateTxs > 0 {
-		for _, n := range testnet.Nodes {
-			if len(testnet.LoadTargetNodes) == 0 {
-				if n.SendNoLoad {
-					continue
-				}
-			} else if !slices.Contains(testnet.LoadTargetNodes, n.Name) {
+	for _, n := range testnet.Nodes {
+		if len(testnet.LoadTargetNodes) == 0 {
+			if n.SendNoLoad {
 				continue
 			}
-			if len(nodesToSendLoadTo) < testnet.LoadDuplicateTxs {
-				nodesToSendLoadTo = append(nodesToSendLoadTo, n)
-			} else {
-				nodesSingleLoad = append(nodesSingleLoad, n)
-			}
+		} else if !slices.Contains(testnet.LoadTargetNodes, n.Name) {
+			continue
+		}
+		if len(nodesToSendLoadTo) < testnet.LoadDuplicateTxs && n.Mode != e2e.ModeSeed {
+			nodesToSendLoadTo = append(nodesToSendLoadTo, n)
+		} else {
+			nodesSingleLoad = append(nodesSingleLoad, n)
 		}
 	}
 
-	for w := 0; w < testnet.LoadTxConnections; w++ {
-		go loadProcessMultiple(ctx, txCh, chSuccess, chFailed, nodesToSendLoadTo, useInternalIP)
+	fmt.Println("NODES :: ", len(nodesSingleLoad), " :: DUPLICATE:: ", len(nodesToSendLoadTo))
+
+	if len(nodesSingleLoad) > 0 {
+		for w := 0; w < testnet.LoadTxConnections; w++ {
+			go loadProcessMultiple(ctx, txCh, chSuccess, chFailed, nodesToSendLoadTo, useInternalIP)
+		}
 	}
 
 	for _, n := range nodesSingleLoad {

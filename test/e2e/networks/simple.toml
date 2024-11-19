@@ -3,3 +3,7 @@ prometheus = true
 [node.validator01]
 [node.validator02]
 [node.validator03]
+[node.validator04]
+[node.validator05]
+[node.validator06]
+[node.validator07]

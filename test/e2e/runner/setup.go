@@ -350,6 +350,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		cfg.LogLevel = node.Testnet.LogLevel
 	}
 
+	cfg.LogColors = false
 	if node.Testnet.LogFormat != "" {
 		cfg.LogFormat = node.Testnet.LogFormat
 	}
@@ -457,6 +458,8 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		}
 	}
 
+	// TODO: check if the produced validator updates is indeed valid.
+	// This goes to the application configuration file.
 	if len(node.Testnet.ValidatorUpdates) > 0 {
 		validatorUpdates := map[string]map[string]int64{}
 		for height, validators := range node.Testnet.ValidatorUpdates {
@@ -468,6 +471,10 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 				}
 				updateVals[base64.StdEncoding.EncodeToString(validator.PrivvalKey.PubKey().Bytes())] = power
 			}
+			// TODO: the validator updates are written to the toml
+			// file in lexicographical order. This means that
+			// update 1000 comes after update 1, and much before
+			// update 2. Consider producing `0001` instead of `1`.
 			validatorUpdates[strconv.FormatInt(height, 10)] = updateVals
 		}
 		cfg["validator_update"] = validatorUpdates

@@ -42,6 +42,13 @@ var _ Logger = (*baseLogger)(nil)
 //   - w must be safe for concurrent use by multiple goroutines if the returned
 //     Logger will be used concurrently.
 func NewLogger(w io.Writer) Logger {
+	return NewLoggerWithColor(w, true)
+}
+
+// NewLoggerWithColor returns a logger that writes msg and keyvals to w using
+// slog as an underlying logger, with an option to define whether the logs
+// should be colored.
+func NewLoggerWithColor(w io.Writer, color bool) Logger {
 	logger := slog.New(tint.NewHandler(w, &tint.Options{
 		Level:      slog.LevelDebug,
 		TimeFormat: "2006-01-02T15:04:05.000",
@@ -53,6 +60,7 @@ func NewLogger(w io.Writer) Logger {
 			}
 			return a
 		},
+		NoColor: !color,
 	},
 	))
 	return &baseLogger{slog.New(&tabHandler{h: logger.Handler()})}

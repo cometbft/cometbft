@@ -90,20 +90,12 @@ func (pDB *PebbleDB) Has(key []byte) (bool, error) {
 // Set does not synchronize the write to disk immediately. Instead, it may be
 // cached in memory and synced to disk later during a background flush or
 // compaction. Use [SetSync] to flush the write to disk immediately.
-// Set is faster than [SetSync] because it does not incur the latency of disk I/O.
 //
 // It implements the [DB] interface for type PebbleDB.
-func (pDB *PebbleDB) Set(key []byte, value []byte) error {
-	if len(key) == 0 {
-		return errKeyEmpty
-	}
-	if value == nil {
-		return errValueNil
-	}
-
+func (pDB *PebbleDB) Set(key, value []byte) error {
 	writeOpts := pebble.NoSync
-	if err := pDB.db.Set(key, value, writeOpts); err != nil {
-		return fmt.Errorf("writing value %s\nfor key %s: %w", value, key, err)
+	if err := pDB.setWithOpts(key, value, writeOpts); err != nil {
+		return fmt.Errorf("writing to the database: %w", err)
 	}
 
 	return nil
@@ -114,10 +106,23 @@ func (pDB *PebbleDB) Set(key []byte, value []byte) error {
 //
 // SetSync flushes the write to disk immediately and the write operation is completed
 // only after the data has been successfully written to persistent storage.
-// Because it incurs the latency of disk I/O, it is slower than [Set].
 //
 // It implements the [DB] interface for type PebbleDB.
-func (pDB *PebbleDB) SetSync(key []byte, value []byte) error {
+func (pDB *PebbleDB) SetSync(key, value []byte) error {
+	writeOpts := pebble.Sync
+	if err := pDB.setWithOpts(key, value, writeOpts); err != nil {
+		return fmt.Errorf("synchronized write to the database: %w", err)
+	}
+
+	return nil
+}
+
+// setWithOpts sets the value for the given key, overwriting it if it already exists.
+// It is safe to modify the contents of the arguments after setWithOpts returns.
+func (pDB *PebbleDB) setWithOpts(
+	key, value []byte,
+	writeOpts *pebble.WriteOptions,
+) error {
 	if len(key) == 0 {
 		return errKeyEmpty
 	}
@@ -125,10 +130,9 @@ func (pDB *PebbleDB) SetSync(key []byte, value []byte) error {
 		return errValueNil
 	}
 
-	writeOpts := pebble.Sync
 	err := pDB.db.Set(key, value, writeOpts)
 	if err != nil {
-		return fmt.Errorf("writing value %s\nfor key %s: %w", value, key, err)
+		return fmt.Errorf("setting value %s\nfor key %s: %w", value, key, err)
 	}
 
 	return nil

@@ -308,13 +308,17 @@ func TestPrint(t *testing.T) {
 		t.Fatalf("Error creating pipe to capture os.Stdout contents: %s", err)
 	}
 
-	// redirect os.Stdout to print to the writer we just created
+	// store os.Stdout and redirect it to print to the writer we just created
+	stdOut := os.Stdout
 	os.Stdout = w
 
 	if err := pDB.Print(); err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
 	w.Close()
+
+	// restore os.Stdout
+	os.Stdout = stdOut
 
 	var buf bytes.Buffer
 	if _, err := io.Copy(&buf, r); err != nil {

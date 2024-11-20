@@ -134,6 +134,7 @@ linters-settings:
           - github.com/spf13
           - github.com/stretchr/testify
           - github.com/decred/dcrd/dcrec/secp256k1/v4
+          - github.com/cockroachdb/pebble
 
   revive:
     enable-all-rules: true

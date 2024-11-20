@@ -11,14 +11,11 @@ import (
 )
 
 func TestGet(t *testing.T) {
-	pDB, err := newInMemDB()
+	pDB, dbCloser, err := newInMemDB()
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	t.Cleanup(func() {
-		pDB.db.Close()
-	})
+	t.Cleanup(dbCloser)
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
 		if _, err := pDB.Get(nil); !errors.Is(err, errKeyEmpty) {
@@ -57,14 +54,11 @@ func TestGet(t *testing.T) {
 }
 
 func TestHas(t *testing.T) {
-	pDB, err := newInMemDB()
+	pDB, dbcloser, err := newInMemDB()
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	t.Cleanup(func() {
-		pDB.db.Close()
-	})
+	t.Cleanup(dbcloser)
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
 		if _, err := pDB.Has(nil); !errors.Is(err, errKeyEmpty) {
@@ -108,14 +102,11 @@ func TestHas(t *testing.T) {
 // hood they only differ in that they call setWithOpts with pebble.NoSync and
 // pebble.Sync respectively.
 func TestSet(t *testing.T) {
-	pDB, err := newInMemDB()
+	pDB, dbCloser, err := newInMemDB()
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	t.Cleanup(func() {
-		pDB.db.Close()
-	})
+	t.Cleanup(dbCloser)
 
 	var (
 		sync   = pebble.Sync
@@ -156,14 +147,11 @@ func TestSet(t *testing.T) {
 // under the hood they only differ in that they call deleteWithOpts with
 // pebble.NoSync and pebble.Sync respectively.
 func TestDelete(t *testing.T) {
-	pDB, err := newInMemDB()
+	pDB, dbCloser, err := newInMemDB()
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	t.Cleanup(func() {
-		pDB.db.Close()
-	})
+	t.Cleanup(dbCloser)
 
 	var (
 		sync   = pebble.Sync
@@ -228,13 +216,9 @@ func TestCompact(t *testing.T) {
 		createTestDB = func(t *testing.T) (*PebbleDB, func()) {
 			t.Helper()
 
-			pDB, err := newInMemDB()
+			pDB, dbCloser, err := newInMemDB()
 			if err != nil {
 				t.Fatal(err)
-			}
-
-			closer := func() {
-				pDB.db.Close()
 			}
 
 			for i, key := range keys {
@@ -242,7 +226,7 @@ func TestCompact(t *testing.T) {
 					t.Fatalf("writing key %s: %s", key, err)
 				}
 			}
-			return pDB, closer
+			return pDB, dbCloser
 		}
 	)
 
@@ -250,8 +234,8 @@ func TestCompact(t *testing.T) {
 	// each compaction operation works on a DB that has never been compacted
 	// before.
 	t.Run("NilStartNoErr", func(t *testing.T) {
-		pDB, closer := createTestDB(t)
-		defer closer()
+		pDB, dbCloser := createTestDB(t)
+		t.Cleanup(dbCloser)
 
 		// if start is nil, compaction starts from the first key in the DB.
 		end := keys[2]
@@ -261,8 +245,8 @@ func TestCompact(t *testing.T) {
 	})
 
 	t.Run("NilEndNoErr", func(t *testing.T) {
-		pDB, closer := createTestDB(t)
-		defer closer()
+		pDB, dbCloser := createTestDB(t)
+		t.Cleanup(dbCloser)
 
 		// if end is nil, compaction ends at the last key in the DB.
 		start := keys[0]
@@ -272,8 +256,8 @@ func TestCompact(t *testing.T) {
 	})
 
 	t.Run("StartEndNilNoErr", func(t *testing.T) {
-		pDB, closer := createTestDB(t)
-		defer closer()
+		pDB, dbCloser := createTestDB(t)
+		t.Cleanup(dbCloser)
 
 		// if start and end are nil, compaction starts from the first key and ends
 		// at the last key in the DB.
@@ -283,8 +267,8 @@ func TestCompact(t *testing.T) {
 	})
 
 	t.Run("StartEndNoErr", func(t *testing.T) {
-		pDB, closer := createTestDB(t)
-		defer closer()
+		pDB, dbCloser := createTestDB(t)
+		t.Cleanup(dbCloser)
 
 		var (
 			start = keys[2]
@@ -298,16 +282,20 @@ func TestCompact(t *testing.T) {
 
 // newInMemDB is a utility function that creates an in-memory instance of pebble for
 // testing.
-func newInMemDB() (*PebbleDB, error) {
+func newInMemDB() (*PebbleDB, func(), error) {
 	opts := &pebble.Options{FS: vfs.NewMem()}
 	memDB, err := pebble.Open("", opts)
 	if err != nil {
-		return nil, fmt.Errorf("creating test DB: %w", err)
+		return nil, nil, fmt.Errorf("creating test DB: %w", err)
 	}
 
-	pDB := &PebbleDB{db: memDB}
-
-	return pDB, nil
+	var (
+		closer = func() {
+			memDB.Close()
+		}
+		pDB = &PebbleDB{db: memDB}
+	)
+	return pDB, closer, nil
 }
 
 // setelper is a utility function supporting TestSet.

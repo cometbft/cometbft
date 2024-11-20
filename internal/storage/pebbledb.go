@@ -19,7 +19,6 @@ var _ DB = (*PebbleDB)(nil)
 // NewPebbleDB returns a new PebbleDB instance using the default options.
 func NewPebbleDB(name, dir string) (*PebbleDB, error) {
 	opts := &pebble.Options{}
-	opts.EnsureDefaults()
 
 	return NewPebbleDBWithOpts(name, dir, opts)
 }
@@ -195,6 +194,7 @@ func (pDB *PebbleDB) deleteWithOpts(
 }
 
 // Compact compacts the specified range of keys in the database.
+//
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) Compact(start, end []byte) error {
 	// Currently nil,nil is an invalid range in Pebble.

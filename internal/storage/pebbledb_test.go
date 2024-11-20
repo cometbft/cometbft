@@ -3,6 +3,7 @@ package storage
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/cockroachdb/pebble"
@@ -129,7 +130,7 @@ func TestSet(t *testing.T) {
 	)
 	t.Run("EmptyKeyErr", func(t *testing.T) {
 		if err := pDB.setWithOpts(nil, nil, noSync); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("non-sync write: expected %s, got: %s", errKeyEmpty, err)
+			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
 		}
 	})
 
@@ -137,43 +138,133 @@ func TestSet(t *testing.T) {
 		key := []byte{'a'}
 		// called by SetSync
 		if err := pDB.setWithOpts(key, nil, sync); !errors.Is(err, errValueNil) {
-			t.Errorf("sync write: expected %s, got: %s", errValueNil, err)
+			t.Errorf("expected %s, got: %s", errValueNil, err)
 		}
 	})
 
 	t.Run("NoErr", func(t *testing.T) {
 		// called by Set
-		var (
-			key = []byte{'a'}
-			val = []byte{0x01}
-		)
-		if err := pDB.setWithOpts(key, val, noSync); err != nil {
-			t.Fatalf("non-sync write: unexpected error: %s", err)
+		if err := setHelper(pDB, noSync); err != nil {
+			t.Fatal(err)
 		}
-
-		storedVal, closer, err := pDB.db.Get(key)
-		if err != nil {
-			t.Fatalf("reading from test DB: %s", err)
-		}
-		if !bytes.Equal(storedVal, val) {
-			t.Fatalf("expected value: %s, got: %s", val, storedVal)
-		}
-		closer.Close()
 
 		// called by SetSync
 		// By changing the value, we also tests overwriting.
-		val = []byte{0x02}
-		if err := pDB.setWithOpts(key, val, sync); err != nil {
-			t.Fatalf("sync write: unexpected error: %s", err)
+		if err := setHelper(pDB, sync); err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
+// setelper is a utility function supporting TestSet.
+func setHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error {
+	var (
+		key = []byte{'a'}
+		val = []byte{0x01}
+	)
+	if err := pDB.setWithOpts(key, val, writeOpts); err != nil {
+		return fmt.Errorf("unexpected error: %s", err)
+	}
+
+	storedVal, closer, err := pDB.db.Get(key)
+	if err != nil {
+		return fmt.Errorf("reading from test DB: %s", err)
+	}
+	if !bytes.Equal(storedVal, val) {
+		return fmt.Errorf("expected value: %s, got: %s", val, storedVal)
+	}
+
+	// better to check if it's nil before calling Close().
+	// If the call to Get unexpectedly fails, closer will be nil, therefore calling
+	// Close() on it will panic. If the call to Get succeeds as we expect, we are
+	// good citizens and call Close().
+	if closer != nil {
+		closer.Close()
+	}
+
+	return nil
+}
+
+// Rather than having two almost identical Test* functions testing *PebbleDB.Delete
+// and *PebbleDB.DeleteSync, we have one test function that calls
+// *PebbleDB.deleteWithOpts once with pebble.NoSync and once with pebble.Sync.
+// This should be sufficient to test the Delete and DeleteSync methods, because
+// under the hood they only differ in that they call deleteWithOpts with
+// pebble.NoSync and pebble.Sync respectively.
+func TestDelete(t *testing.T) {
+	dbDirPath := t.TempDir()
+
+	pDB, err := NewPebbleDB(_testDB, dbDirPath)
+	if err != nil {
+		t.Fatalf("creating test DB: %s", err)
+	}
+
+	t.Cleanup(func() {
+		pDB.db.Close()
+	})
+
+	var (
+		sync   = pebble.Sync
+		noSync = pebble.NoSync
+	)
+	t.Run("EmptyKeyErr", func(t *testing.T) {
+		if err := pDB.deleteWithOpts(nil, noSync); !errors.Is(err, errKeyEmpty) {
+			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		}
+	})
+
+	t.Run("KeyNotExistNoErr", func(t *testing.T) {
+		key := []byte{'a'}
+		if err := pDB.deleteWithOpts(key, sync); err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+	})
+
+	t.Run("KeyExistNoErr", func(t *testing.T) {
+		// called by Delete
+		if err := deleteHelper(pDB, noSync); err != nil {
+			t.Fatal(err)
 		}
 
-		storedVal, closer, err = pDB.db.Get(key)
-		if err != nil {
-			t.Fatalf("reading from test DB: %s", err)
+		// called by DeleteSync
+		if err := deleteHelper(pDB, sync); err != nil {
+			t.Fatal(err)
 		}
-		if !bytes.Equal(storedVal, val) {
-			t.Fatalf("expected value: %s, got: %s", val, storedVal)
-		}
-		closer.Close()
 	})
+}
+
+// deleteHelper is a utility function supporting TestDelete.
+func deleteHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error {
+	var (
+		key = []byte{'a'}
+		val = []byte{0x01}
+	)
+	if err := pDB.db.Set(key, val, nil); err != nil {
+		return fmt.Errorf("writing to test DB: %s", err)
+	}
+
+	if err := pDB.deleteWithOpts(key, writeOpts); err != nil {
+		return fmt.Errorf("unsynced delete: unexpected error: %s", err)
+	}
+
+	// check key is deleted
+	val, closer, err := pDB.db.Get(key)
+	if err == nil {
+		return errors.New("expected error but got nil")
+	} else if !errors.Is(err, pebble.ErrNotFound) {
+		return fmt.Errorf("unexpected error: %s", err)
+	}
+	if val != nil {
+		return fmt.Errorf("expected nil value, got: %s", val)
+	}
+
+	// better to check if it's nil before calling Close().
+	// If the call to Get unexpectedly succeeds, we are good citizens and call
+	// Close(). If the call to Get fails as we expect, closer will be nil,
+	// therefore calling Close() on it will panic.
+	if closer != nil {
+		closer.Close()
+	}
+
+	return nil
 }

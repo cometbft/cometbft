@@ -150,8 +150,8 @@ func (pDB *PebbleDB) setWithOpts(
 //
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) Delete(key []byte) error {
-	wopts := pebble.NoSync
-	if err := pDB.deleteWithOpts(key, wopts); err != nil {
+	writeOpts := pebble.NoSync
+	if err := pDB.deleteWithOpts(key, writeOpts); err != nil {
 		return fmt.Errorf("unsynced delete: %w", err)
 	}
 
@@ -168,8 +168,8 @@ func (pDB *PebbleDB) Delete(key []byte) error {
 //
 // It implements the [DB] interface for type PebbleDB.
 func (pDB PebbleDB) DeleteSync(key []byte) error {
-	wopts := pebble.Sync
-	if err := pDB.deleteWithOpts(key, wopts); err != nil {
+	writeOpts := pebble.Sync
+	if err := pDB.deleteWithOpts(key, writeOpts); err != nil {
 		return fmt.Errorf("synced delete: %w", err)
 	}
 

@@ -13,11 +13,21 @@ module dog {
     //--------------------------------------------------------------------------
     // Messages
     //--------------------------------------------------------------------------
-
     type Message =
         | TxMsg(TX)
         | HaveTxMsg(TxID)
         | ResetMsg
+
+    //--------------------------------------------------------------------------
+    // Parameters
+    //--------------------------------------------------------------------------
+    const TargetRedundancy: int
+    val _delta = TargetRedundancy * TargetRedundancyDeltaPercent / 100
+    val lowerBound = TargetRedundancy - _delta
+    val upperBound = TargetRedundancy + _delta
+    val TargetRedundancyDeltaPercent: int = 5
+    const adjustInterval: int
+    pure def adjustNow(rc) = true
 
     //--------------------------------------------------------------------------
     // Routing
@@ -40,35 +50,23 @@ module dog {
         isHaveTxBlocked: bool,
     }
     var rc: NodeID -> RedundancyController
-    pure def redundancy(_rc) = _rc.duplicateTxs / _rc.firstTimeTxs
-    pure def adjustRedundancy(_rc) = 
-        if (_rc.redundancy() < redundancyLowerBound)
-            (_rc.resetCounters(), true)
-        else if (_rc.redundancy() >= redundancyUpperBound)
-            (_rc.resetCounters().blockHaveTx(), false)
-        else 
-            (_rc.resetCounters(), false)
     def RC(node) = rc.get(node)
     val initialRCState = { firstTimeTxs: 0, duplicateTxs: 0, isHaveTxBlocked: false }
     pure def increaseFirstTimeTxs(_rc) = { firstTimeTxs: _rc.firstTimeTxs + 1, ..._rc }
     pure def increaseDuplicateTxs(_rc) = { duplicateTxs: _rc.duplicateTxs + 1, ..._rc }
     pure def resetCounters(_rc) = { firstTimeTxs: 0, duplicateTxs: 0, ..._rc }
     pure def blockHaveTx(_rc) = { isHaveTxBlocked: true, ..._rc }
-
-    //--------------------------------------------------------------------------
-    // Parameters
-    //--------------------------------------------------------------------------
-    const TargetRedundancy: int
-    val _delta = TargetRedundancy * TargetRedundancyDeltaPercent / 100
-    val redundancyLowerBound = TargetRedundancy - _delta
-    val redundancyUpperBound = TargetRedundancy + _delta
-    val TargetRedundancyDeltaPercent: int = 5
-    const TxsPerAdjustment: int
-    pure def adjustNow(rc) =
-        val threshold = TxsPerAdjustment / rc.redundancy()
-        rc.firstTimeTxs >= max(MinTxsPerAdjustment, min(MaxTxsPerAdjustment, threshold))
-    val MinTxsPerAdjustment = 10
-    val MaxTxsPerAdjustment = 1000
+    pure def redundancy(_rc) = _rc.duplicateTxs / _rc.firstTimeTxs
+    pure def adjustRedundancy(node, _incomingMsgs, _rc, randomPeerToSendReset) =
+        val red = _rc.redundancy()
+        if (_rc.firstTimeTxs + _rc.duplicateTxs == 0)
+            (_rc, _incomingMsgs)
+        else if (red < lowerBound)
+            (_rc.resetCounters(), node.multiSend(_incomingMsgs, Set(randomPeerToSendReset), ResetMsg))
+        else if (red >= upperBound)
+            (_rc.resetCounters().blockHaveTx(), _incomingMsgs)
+        else 
+            (_rc.resetCounters(), _incomingMsgs)
 
     //--------------------------------------------------------------------------
     // Actions
@@ -78,36 +76,46 @@ module dog {
         dr' = NodeIDs.mapBy(_ => Set()),
         rc' = NodeIDs.mapBy(_ => initialRCState)
     }
+
+    action redundancyControlLoop(node) = all {
+        require(node.RC().adjustNow()),
+        nondet randomPeerToSendReset = oneOf(node.Peers())
+        val res = node.adjustRedundancy(incomingMsgs, node.RC(), randomPeerToSendReset)
+        all {
+            incomingMsgs' = res._2,
+            peers' = peers,
+            mempool' = mempool,
+            senders' = senders,
+            rc' = rc.put(node, res._1),
+            dr' = dr,
+        }
+    }
     action tryAddTx(node, _incomingMsgs, optionalSender, tx) = 
         if (not(hash(tx).in(node.Cache())))
             node.tryAddFirstTimeTx(_incomingMsgs, optionalSender, tx)
         else
             node.processDuplicateTx(_incomingMsgs, optionalSender, tx)
     action tryAddFirstTimeTx(node, _incomingMsgs, optionalSender, tx) = 
-        val _rc1 = node.RC().increaseFirstTimeTxs()
-        val _result = if (_rc1.adjustNow()) _rc1.adjustRedundancy() else (_rc1, false)
-        val _rc2 = _result._1
-        val sendReset = _result._2
         all {
-            val updatedIncomingMsgs = 
-                val targets = optionalSender.optionToSet() // may be empty
-                if (sendReset) node.multiSend(_incomingMsgs, targets, ResetMsg) else _incomingMsgs
-            node.Flood::tryAddFirstTimeTx(updatedIncomingMsgs, optionalSender, tx),
-            rc' = rc.put(node, _rc2),
+            node.Flood::tryAddFirstTimeTx(_incomingMsgs, optionalSender, tx),
+            rc' = rc.update(node, increaseFirstTimeTxs),
             dr' = dr,
         }
     action processDuplicateTx(node, _incomingMsgs, optionalSender, tx) =
-        // Reply `HaveTxMsg` if `tx` comes from a peer.
-        val updatedIncomingMsgs = 
-            val targets = optionalSender.optionToSet() // may be empty
-            if (not(node.RC().isHaveTxBlocked))
-                node.multiSend(_incomingMsgs, targets, HaveTxMsg(hash(tx)))
-            else _incomingMsgs
+        val _rc = node.RC().increaseDuplicateTxs()
+        val updatedVars = node.replyHaveTx(_incomingMsgs, _rc, optionalSender, tx)
+        val _incomingMsgs1 = updatedVars._1
+        val _rc1 = updatedVars._2
         all {
-            node.Flood::processDuplicateTx(updatedIncomingMsgs, optionalSender, tx),
-            rc' = rc.update(node, increaseDuplicateTxs),
+            node.Flood::processDuplicateTx(_incomingMsgs1, optionalSender, tx),
+            rc' = rc.put(node, _rc1),
             dr' = dr,
         }
+    pure def replyHaveTx(node, _incomingMsgs, _rc, optionalSender, tx) =
+        if (optionalSender.isSome() and not(_rc.isHaveTxBlocked))
+            val targets = optionalSender.optionToSet()
+            (node.multiSend(_incomingMsgs, targets, HaveTxMsg(hash(tx))), _rc.blockHaveTx())
+        else (_incomingMsgs, _rc)
     action handleMessage(node, _incomingMsgs, sender, msg) =
         match msg {
         | TxMsg(tx) => node.tryAddTx(_incomingMsgs, Some(sender), tx)
@@ -156,11 +164,14 @@ module dog {
     }
 
     action step = any {
+        // User-initiated transactions
         nondet node = oneOf(nodesInNetwork)
         nondet tx = oneOf(AllTxs)
         node.receiveTxFromUser(tx, tryAddTx),
+        // Peer message handling
         nondet node = oneOf(nodesInNetwork)
         node.receiveFromPeer(handleMessage),
+        // Transaction dissemination
         nondet node = oneOf(nodesInNetwork)
         all {
             node.disseminateNextTx(mkTargetNodes, TxMsg),
@@ -168,6 +179,7 @@ module dog {
             dr' = dr,
             rc' = rc,
         },
+        // Node joins network
         all {
             pickNodeAndJoin,
             mempool' = mempool,
@@ -175,12 +187,16 @@ module dog {
             dr' = dr,
             rc' = rc,
         },
+        // Node disconnects from network
         all {
             // Pick a node that is not the only node in the network.
             require(size(nodesInNetwork) > 1),
             nondet nodeToDisconnect = oneOf(nodesInNetwork) 
             disconnectAndUpdateRoutes(nodeToDisconnect),
-        }
+        },
+        // Redundancy Controller process loop
+        nondet node = oneOf(nodesInNetwork)
+        node.redundancyControlLoop(),
     }
 
 }

@@ -618,8 +618,12 @@ func TestExtendedCommitToVoteSet(t *testing.T) {
 					v := voteSet.GetByIndex(int32(i))
 					v.Extension = nil
 					v.ExtensionSignature = nil
+					v.NonRpExtension = nil
+					v.NonRpExtensionSignature = nil
 					extCommit.ExtendedSignatures[i].Extension = nil
 					extCommit.ExtendedSignatures[i].ExtensionSignature = nil
+					extCommit.ExtendedSignatures[i].NonRpExtension = nil
+					extCommit.ExtendedSignatures[i].NonRpExtensionSignature = nil
 				}
 			}
 

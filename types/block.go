@@ -726,9 +726,11 @@ func (cs *CommitSig) FromProto(csp cmtproto.CommitSig) error {
 // ExtendedCommitSig contains a commit signature along with its corresponding
 // vote extension and vote extension signature.
 type ExtendedCommitSig struct {
-	CommitSig                 // Commit signature
-	Extension          []byte // Vote extension
-	ExtensionSignature []byte // Vote extension signature
+	CommitSig                      // Commit signature
+	Extension               []byte // Vote extension
+	ExtensionSignature      []byte // Vote extension signature
+	NonRpExtension          []byte // Non-replay-protected vote extension
+	NonRpExtensionSignature []byte // Non-replay-protected vote extension signature
 }
 
 // NewExtendedCommitSigAbsent returns new ExtendedCommitSig with
@@ -741,12 +743,16 @@ func NewExtendedCommitSigAbsent() ExtendedCommitSig {
 //
 // 1. commit sig
 // 2. first 6 bytes of vote extension
-// 3. first 6 bytes of vote extension signature.
+// 3. first 6 bytes of vote extension signature
+// 4. first 6 bytes of non-replay-protected vote extension
+// 5. first 6 bytes of non-replay-protected vote extension signature
 func (ecs ExtendedCommitSig) String() string {
-	return fmt.Sprintf("ExtendedCommitSig{%s with %X %X}",
+	return fmt.Sprintf("ExtendedCommitSig{%s with %X %X %X %X}",
 		ecs.CommitSig,
 		cmtbytes.Fingerprint(ecs.Extension),
 		cmtbytes.Fingerprint(ecs.ExtensionSignature),
+		cmtbytes.Fingerprint(ecs.NonRpExtension),
+		cmtbytes.Fingerprint(ecs.NonRpExtensionSignature),
 	)
 }
 
@@ -757,17 +763,23 @@ func (ecs ExtendedCommitSig) ValidateBasic() error {
 	}
 
 	if ecs.BlockIDFlag == BlockIDFlagCommit {
-		if len(ecs.Extension) > MaxVoteExtensionSize {
+		if len(ecs.Extension)+len(ecs.NonRpExtension) > MaxVoteExtensionSize {
 			return fmt.Errorf("vote extension is too big (max: %d)", MaxVoteExtensionSize)
 		}
 		if len(ecs.ExtensionSignature) > MaxSignatureSize {
 			return fmt.Errorf("vote extension signature is too big (max: %d)", MaxSignatureSize)
+		}
+		if len(ecs.NonRpExtensionSignature) > MaxSignatureSize {
+			return fmt.Errorf("non-replay-protected vote extension signature is too big (max: %d)", MaxSignatureSize)
 		}
 		return nil
 	}
 
 	if len(ecs.ExtensionSignature) == 0 && len(ecs.Extension) != 0 {
 		return errors.New("vote extension signature absent on vote with extension")
+	}
+	if len(ecs.NonRpExtensionSignature) == 0 && len(ecs.NonRpExtension) != 0 {
+		return errors.New("vote extension signature absent on vote with non-replay-protected extension")
 	}
 	return nil
 }
@@ -795,13 +807,13 @@ func (ecs ExtendedCommitSig) EnsureExtension(extEnabled bool) error {
 			)
 		}
 	} else {
-		if len(ecs.Extension) != 0 {
+		if len(ecs.Extension) != 0 || len(ecs.NonRpExtension) != 0 {
 			return fmt.Errorf("vote extension present but extensions disabled; validator addr %s, timestamp %v",
 				ecs.ValidatorAddress.String(),
 				ecs.Timestamp,
 			)
 		}
-		if len(ecs.ExtensionSignature) != 0 {
+		if len(ecs.ExtensionSignature) != 0 || len(ecs.NonRpExtensionSignature) != 0 {
 			return fmt.Errorf("vote extension signature present but extensions disabled; validator addr %s, timestamp %v",
 				ecs.ValidatorAddress.String(),
 				ecs.Timestamp,
@@ -818,12 +830,14 @@ func (ecs *ExtendedCommitSig) ToProto() *cmtproto.ExtendedCommitSig {
 	}
 
 	return &cmtproto.ExtendedCommitSig{
-		BlockIdFlag:        cmtproto.BlockIDFlag(ecs.BlockIDFlag),
-		ValidatorAddress:   ecs.ValidatorAddress,
-		Timestamp:          ecs.Timestamp,
-		Signature:          ecs.Signature,
-		Extension:          ecs.Extension,
-		ExtensionSignature: ecs.ExtensionSignature,
+		BlockIdFlag:           cmtproto.BlockIDFlag(ecs.BlockIDFlag),
+		ValidatorAddress:      ecs.ValidatorAddress,
+		Timestamp:             ecs.Timestamp,
+		Signature:             ecs.Signature,
+		Extension:             ecs.Extension,
+		ExtensionSignature:    ecs.ExtensionSignature,
+		NrpExtension:          ecs.NonRpExtension,
+		NrpExtensionSignature: ecs.NonRpExtensionSignature,
 	}
 }
 
@@ -837,6 +851,8 @@ func (ecs *ExtendedCommitSig) FromProto(ecsp cmtproto.ExtendedCommitSig) error {
 	ecs.Signature = ecsp.Signature
 	ecs.Extension = ecsp.Extension
 	ecs.ExtensionSignature = ecsp.ExtensionSignature
+	ecs.NonRpExtension = ecsp.NrpExtension
+	ecs.NonRpExtensionSignature = ecsp.NrpExtensionSignature
 
 	return ecs.ValidateBasic()
 }
@@ -1180,16 +1196,18 @@ func (ec *ExtendedCommit) ToCommit() *Commit {
 func (ec *ExtendedCommit) GetExtendedVote(valIndex int32) *Vote {
 	ecs := ec.ExtendedSignatures[valIndex]
 	return &Vote{
-		Type:               PrecommitType,
-		Height:             ec.Height,
-		Round:              ec.Round,
-		BlockID:            ecs.BlockID(ec.BlockID),
-		Timestamp:          ecs.Timestamp,
-		ValidatorAddress:   ecs.ValidatorAddress,
-		ValidatorIndex:     valIndex,
-		Signature:          ecs.Signature,
-		Extension:          ecs.Extension,
-		ExtensionSignature: ecs.ExtensionSignature,
+		Type:                    PrecommitType,
+		Height:                  ec.Height,
+		Round:                   ec.Round,
+		BlockID:                 ecs.BlockID(ec.BlockID),
+		Timestamp:               ecs.Timestamp,
+		ValidatorAddress:        ecs.ValidatorAddress,
+		ValidatorIndex:          valIndex,
+		Signature:               ecs.Signature,
+		Extension:               ecs.Extension,
+		ExtensionSignature:      ecs.ExtensionSignature,
+		NonRpExtension:          ecs.NonRpExtension,
+		NonRpExtensionSignature: ecs.NonRpExtensionSignature,
 	}
 }
 

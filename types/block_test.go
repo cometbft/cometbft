@@ -552,6 +552,7 @@ func TestVoteSetToExtendedCommit(t *testing.T) {
 				vote.Signature = v.Signature
 				if testCase.includeExtension {
 					vote.ExtensionSignature = v.ExtensionSignature
+					vote.NonRpExtensionSignature = v.NonRpExtensionSignature
 				}
 				added, err := voteSet.AddVote(vote)
 				require.NoError(t, err)

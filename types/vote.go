@@ -90,16 +90,18 @@ func VoteFromProto(pv *cmtproto.Vote) (*Vote, error) {
 	}
 
 	return &Vote{
-		Type:               pv.Type,
-		Height:             pv.Height,
-		Round:              pv.Round,
-		BlockID:            *blockID,
-		Timestamp:          pv.Timestamp,
-		ValidatorAddress:   pv.ValidatorAddress,
-		ValidatorIndex:     pv.ValidatorIndex,
-		Signature:          pv.Signature,
-		Extension:          pv.Extension,
-		ExtensionSignature: pv.ExtensionSignature,
+		Type:                    pv.Type,
+		Height:                  pv.Height,
+		Round:                   pv.Round,
+		BlockID:                 *blockID,
+		Timestamp:               pv.Timestamp,
+		ValidatorAddress:        pv.ValidatorAddress,
+		ValidatorIndex:          pv.ValidatorIndex,
+		Signature:               pv.Signature,
+		Extension:               pv.Extension,
+		ExtensionSignature:      pv.ExtensionSignature,
+		NonRpExtension:          pv.NonRpExtension,
+		NonRpExtensionSignature: pv.NonRpExtensionSignature,
 	}, nil
 }
 
@@ -161,7 +163,8 @@ func VoteSignBytes(chainID string, vote *cmtproto.Vote) []byte {
 }
 
 // VoteExtensionSignBytes returns the proto-encoding of the canonicalized vote
-// extension for signing. Panics if the marshaling fails.
+// extension and the non-replay protected extension for signing.
+// Panics if the marshaling fails.
 //
 // Similar to VoteSignBytes, the encoded Protobuf message is varint
 // length-prefixed for backwards-compatibility with the Amino encoding.
@@ -172,7 +175,7 @@ func VoteExtensionSignBytes(chainID string, vote *cmtproto.Vote) ([]byte, []byte
 		panic(err)
 	}
 
-	bz2 := vote.NonRpExtensionSignature
+	bz2 := vote.NonRpExtension
 
 	return bz, bz2
 }
@@ -258,11 +261,16 @@ func (vote *Vote) VerifyVoteAndExtension(chainID string, pubKey crypto.PubKey) e
 		}
 
 		extSignBytes, nonRpExtSignBytes := VoteExtensionSignBytes(chainID, v)
-		if !pubKey.VerifySignature(extSignBytes, vote.ExtensionSignature) {
-			return ErrVoteInvalidSignature
+		if len(vote.ExtensionSignature) > 0 {
+			if !pubKey.VerifySignature(extSignBytes, vote.ExtensionSignature) {
+				return ErrVoteInvalidSignature
+			}
 		}
-		if !pubKey.VerifySignature(nonRpExtSignBytes, vote.NonRpExtensionSignature) {
-			return ErrVoteInvalidSignature
+
+		if len(vote.NonRpExtensionSignature) > 0 {
+			if !pubKey.VerifySignature(nonRpExtSignBytes, vote.NonRpExtensionSignature) {
+				return ErrVoteInvalidSignature
+			}
 		}
 	}
 	return nil
@@ -387,23 +395,23 @@ func (vote *Vote) EnsureExtension() error {
 // ToProto converts the handwritten type to proto generated type
 // return type, nil if everything converts safely, otherwise nil, error.
 func (vote *Vote) ToProto() *cmtproto.Vote {
-	// TODO: add the new fields
-	// TODO: find "FromProto" and change it too
 	if vote == nil {
 		return nil
 	}
 
 	return &cmtproto.Vote{
-		Type:               vote.Type,
-		Height:             vote.Height,
-		Round:              vote.Round,
-		BlockID:            vote.BlockID.ToProto(),
-		Timestamp:          vote.Timestamp,
-		ValidatorAddress:   vote.ValidatorAddress,
-		ValidatorIndex:     vote.ValidatorIndex,
-		Signature:          vote.Signature,
-		Extension:          vote.Extension,
-		ExtensionSignature: vote.ExtensionSignature,
+		Type:                    vote.Type,
+		Height:                  vote.Height,
+		Round:                   vote.Round,
+		BlockID:                 vote.BlockID.ToProto(),
+		Timestamp:               vote.Timestamp,
+		ValidatorAddress:        vote.ValidatorAddress,
+		ValidatorIndex:          vote.ValidatorIndex,
+		Signature:               vote.Signature,
+		Extension:               vote.Extension,
+		ExtensionSignature:      vote.ExtensionSignature,
+		NonRpExtension:          vote.NonRpExtension,
+		NonRpExtensionSignature: vote.NonRpExtensionSignature,
 	}
 }
 

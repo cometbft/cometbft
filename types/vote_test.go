@@ -261,6 +261,7 @@ func TestVoteExtension(t *testing.T) {
 			vote.Signature = v.Signature
 			if tc.includeSignature {
 				vote.ExtensionSignature = v.ExtensionSignature
+				vote.NonRpExtensionSignature = v.NonRpExtensionSignature
 			}
 			err = vote.VerifyExtension("test_chain_id", pk)
 			if tc.expectError {

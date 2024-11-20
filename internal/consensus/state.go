@@ -2389,7 +2389,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 				return false, err
 			}
 		}
-	} else if len(vote.Extension) > 0 || len(vote.ExtensionSignature) > 0 {
+	} else if len(vote.Extension) > 0 || len(vote.ExtensionSignature) > 0 || len(vote.NonRpExtension) > 0 || len(vote.NonRpExtensionSignature) > 0 {
 		// Vote extensions are not enabled on the network.
 		// Reject the vote, as it is malformed
 		//

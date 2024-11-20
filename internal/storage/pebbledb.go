@@ -95,7 +95,7 @@ func (pDB *PebbleDB) Has(key []byte) (bool, error) {
 func (pDB *PebbleDB) Set(key, value []byte) error {
 	writeOpts := pebble.NoSync
 	if err := pDB.setWithOpts(key, value, writeOpts); err != nil {
-		return fmt.Errorf("writing to the database: %w", err)
+		return fmt.Errorf("unsynced write: %w", err)
 	}
 
 	return nil
@@ -111,7 +111,7 @@ func (pDB *PebbleDB) Set(key, value []byte) error {
 func (pDB *PebbleDB) SetSync(key, value []byte) error {
 	writeOpts := pebble.Sync
 	if err := pDB.setWithOpts(key, value, writeOpts); err != nil {
-		return fmt.Errorf("synchronized write to the database: %w", err)
+		return fmt.Errorf("synced write: %w", err)
 	}
 
 	return nil
@@ -150,13 +150,9 @@ func (pDB *PebbleDB) setWithOpts(
 //
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) Delete(key []byte) error {
-	if len(key) == 0 {
-		return errKeyEmpty
-	}
-
 	wopts := pebble.NoSync
-	if err := pDB.db.Delete(key, wopts); err != nil {
-		return fmt.Errorf("deleting key %s: %w", key, err)
+	if err := pDB.deleteWithOpts(key, wopts); err != nil {
+		return fmt.Errorf("unsynced delete: %w", err)
 	}
 
 	return nil
@@ -172,12 +168,26 @@ func (pDB *PebbleDB) Delete(key []byte) error {
 //
 // It implements the [DB] interface for type PebbleDB.
 func (pDB PebbleDB) DeleteSync(key []byte) error {
+	wopts := pebble.Sync
+	if err := pDB.deleteWithOpts(key, wopts); err != nil {
+		return fmt.Errorf("synced delete: %w", err)
+	}
+
+	return nil
+}
+
+// deleteWithOpts deletes the value for the given key. Deletes will succeed even if
+// the key does not exist in the database.
+// It is safe to modify the contents of the arguments after deleteWithOpts returns.
+func (pDB *PebbleDB) deleteWithOpts(
+	key []byte,
+	writeOpts *pebble.WriteOptions,
+) error {
 	if len(key) == 0 {
 		return errKeyEmpty
 	}
 
-	wopts := pebble.Sync
-	if err := pDB.db.Delete(key, wopts); err != nil {
+	if err := pDB.db.Delete(key, writeOpts); err != nil {
 		return fmt.Errorf("deleting key %s: %w", key, err)
 	}
 

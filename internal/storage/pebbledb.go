@@ -259,6 +259,7 @@ func (pDB *PebbleDB) Close() error {
 }
 
 // Print prints all the key/value pairs in the database for debugging purposes.
+//
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) Print() error {
 	itr, err := pDB.Iterator(nil, nil)
@@ -277,12 +278,15 @@ func (pDB *PebbleDB) Print() error {
 }
 
 // Stats implements the [DB] interface.
+//
+// It implements the [DB] interface for type PebbleDB.
 func (*PebbleDB) Stats() map[string]string {
 	return nil
 }
 
 // NewBatch creates a batch for atomic database updates.
 // The caller is responsible for calling Batch.Close() once done.
+//
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) NewBatch() Batch {
 	return newPebbleDBBatch(pDB)

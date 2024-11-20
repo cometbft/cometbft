@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/cockroachdb/pebble"
@@ -278,6 +281,55 @@ func TestCompact(t *testing.T) {
 			t.Errorf("unexpected error: %s", err)
 		}
 	})
+}
+
+func TestPrint(t *testing.T) {
+	pDB, dbCloser, err := newInMemDB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(dbCloser)
+
+	kvPairs := map[string]string{
+		"a": "1",
+		"b": "2",
+		"c": "3",
+	}
+	for k, v := range kvPairs {
+		if err := pDB.Set([]byte(k), []byte(v)); err != nil {
+			t.Fatalf("writing key %s: %s", k, err)
+		}
+	}
+
+	// Print() writes to os.Stdout, so we need to do some awkward shenanigans to
+	// capture the output and check it's correct.
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("Error creating pipe to capture os.Stdout contents: %s", err)
+	}
+
+	// redirect os.Stdout to print to the writer we just created
+	os.Stdout = w
+
+	if err := pDB.Print(); err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	w.Close()
+
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, r); err != nil {
+		t.Fatalf("reading os.Stdout contents: %s", err)
+	}
+	r.Close()
+
+	outputStr := buf.String()
+	for k, v := range kvPairs {
+		wantStr := fmt.Sprintf("[%X]:\t[%X]\n", k, v)
+		if !strings.Contains(outputStr, wantStr) {
+			formatStr := "this line was not printed: %q\nfull print: %q"
+			t.Errorf(formatStr, wantStr, outputStr)
+		}
+	}
 }
 
 // newInMemDB is a utility function that creates an in-memory instance of pebble for

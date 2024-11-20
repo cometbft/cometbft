@@ -55,9 +55,7 @@ func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 		}
 	}
 
-	fmt.Println("NODES :: ", len(nodesSingleLoad), " :: DUPLICATE:: ", len(nodesToSendLoadTo))
-
-	if len(nodesSingleLoad) > 0 {
+	if len(nodesToSendLoadTo) > 0 {
 		for w := 0; w < testnet.LoadTxConnections; w++ {
 			go loadProcessMultiple(ctx, txCh, chSuccess, chFailed, nodesToSendLoadTo, useInternalIP)
 		}
@@ -193,30 +191,37 @@ FOR_LOOP:
 // loadProcess processes transactions by sending transactions received on the txCh
 // to the client.
 func loadProcessMultiple(ctx context.Context, txCh <-chan types.Tx, chSuccess chan<- struct{}, chFailed chan<- error, nodes []*e2e.Node, useInternalIP bool) {
-	clients := make([]*rpchttp.HTTP, len(nodes))
+	clients := make(map[string]*rpchttp.HTTP, len(nodes))
 	var err error
 	s := struct{}{}
-	for tx := range txCh {
-		for i, n := range nodes {
-			if clients[i] == nil {
-				if useInternalIP {
-					clients[i], err = n.ClientInternalIP()
-				} else {
-					clients[i], err = n.Client()
-				}
-				if err != nil {
-					logger.Info("non-fatal error creating node client", "error", err)
-					continue
-				}
+
+	for _, n := range nodes {
+		if clients[n.Name] == nil {
+			if useInternalIP {
+				clients[n.Name], err = n.ClientInternalIP()
+			} else {
+				clients[n.Name], err = n.Client()
 			}
-			go func(id int) {
-				if _, err := clients[id].BroadcastTxSync(ctx, tx); err != nil {
-					chFailed <- err
-					return
-				}
-				chSuccess <- s
-			}(i)
+			if err != nil {
+				logger.Info("non-fatal error creating node client", "error", err)
+				return
+			}
 		}
+	}
+	for tx := range txCh {
+		var wg sync.WaitGroup
+		wg.Add(len(nodes))
+		for _, n := range nodes {
+			go func(client *rpchttp.HTTP) {
+				defer wg.Done()
+				if _, err := client.BroadcastTxSync(ctx, tx); err != nil {
+					chFailed <- err
+				} else {
+					chSuccess <- s
+				}
+			}(clients[n.Name])
+		}
+		wg.Wait()
 	}
 }
 

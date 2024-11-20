@@ -7,16 +7,13 @@ import (
 	"testing"
 
 	"github.com/cockroachdb/pebble"
+	"github.com/cockroachdb/pebble/vfs"
 )
 
-const _testDB = "test_db"
-
 func TestGet(t *testing.T) {
-	dbDirPath := t.TempDir()
-
-	pDB, err := NewPebbleDB(_testDB, dbDirPath)
+	pDB, err := newInMemDB()
 	if err != nil {
-		t.Fatalf("creating test DB: %s", err)
+		t.Fatal(err)
 	}
 
 	t.Cleanup(func() {
@@ -60,11 +57,9 @@ func TestGet(t *testing.T) {
 }
 
 func TestHas(t *testing.T) {
-	dbDirPath := t.TempDir()
-
-	pDB, err := NewPebbleDB(_testDB, dbDirPath)
+	pDB, err := newInMemDB()
 	if err != nil {
-		t.Fatalf("creating test DB: %s", err)
+		t.Fatal(err)
 	}
 
 	t.Cleanup(func() {
@@ -113,11 +108,9 @@ func TestHas(t *testing.T) {
 // hood they only differ in that they call setWithOpts with pebble.NoSync and
 // pebble.Sync respectively.
 func TestSet(t *testing.T) {
-	dbDirPath := t.TempDir()
-
-	pDB, err := NewPebbleDB(_testDB, dbDirPath)
+	pDB, err := newInMemDB()
 	if err != nil {
-		t.Fatalf("creating test DB: %s", err)
+		t.Fatal(err)
 	}
 
 	t.Cleanup(func() {
@@ -156,35 +149,6 @@ func TestSet(t *testing.T) {
 	})
 }
 
-// setelper is a utility function supporting TestSet.
-func setHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error {
-	var (
-		key = []byte{'a'}
-		val = []byte{0x01}
-	)
-	if err := pDB.setWithOpts(key, val, writeOpts); err != nil {
-		return fmt.Errorf("unexpected error: %s", err)
-	}
-
-	storedVal, closer, err := pDB.db.Get(key)
-	if err != nil {
-		return fmt.Errorf("reading from test DB: %s", err)
-	}
-	if !bytes.Equal(storedVal, val) {
-		return fmt.Errorf("expected value: %s, got: %s", val, storedVal)
-	}
-
-	// better to check if it's nil before calling Close().
-	// If the call to Get unexpectedly fails, closer will be nil, therefore calling
-	// Close() on it will panic. If the call to Get succeeds as we expect, we are
-	// good citizens and call Close().
-	if closer != nil {
-		closer.Close()
-	}
-
-	return nil
-}
-
 // Rather than having two almost identical Test* functions testing *PebbleDB.Delete
 // and *PebbleDB.DeleteSync, we have one test function that calls
 // *PebbleDB.deleteWithOpts once with pebble.NoSync and once with pebble.Sync.
@@ -192,11 +156,9 @@ func setHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error {
 // under the hood they only differ in that they call deleteWithOpts with
 // pebble.NoSync and pebble.Sync respectively.
 func TestDelete(t *testing.T) {
-	dbDirPath := t.TempDir()
-
-	pDB, err := NewPebbleDB(_testDB, dbDirPath)
+	pDB, err := newInMemDB()
 	if err != nil {
-		t.Fatalf("creating test DB: %s", err)
+		t.Fatal(err)
 	}
 
 	t.Cleanup(func() {
@@ -231,6 +193,53 @@ func TestDelete(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+}
+
+func TestCompact(t *testing.T) {
+	t.Skip("Not implemented")
+}
+
+// newInMemDB is a utility function that creates an in-memory instance of pebble for
+// testing.
+func newInMemDB() (*PebbleDB, error) {
+	opts := &pebble.Options{FS: vfs.NewMem()}
+	memDB, err := pebble.Open("", opts)
+	if err != nil {
+		return nil, fmt.Errorf("creating test DB: %w", err)
+	}
+
+	pDB := &PebbleDB{db: memDB}
+
+	return pDB, nil
+}
+
+// setelper is a utility function supporting TestSet.
+func setHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error {
+	var (
+		key = []byte{'a'}
+		val = []byte{0x01}
+	)
+	if err := pDB.setWithOpts(key, val, writeOpts); err != nil {
+		return fmt.Errorf("unexpected error: %s", err)
+	}
+
+	storedVal, closer, err := pDB.db.Get(key)
+	if err != nil {
+		return fmt.Errorf("reading from test DB: %s", err)
+	}
+	if !bytes.Equal(storedVal, val) {
+		return fmt.Errorf("expected value: %s, got: %s", val, storedVal)
+	}
+
+	// better to check if it's nil before calling Close().
+	// If the call to Get unexpectedly fails, closer will be nil, therefore calling
+	// Close() on it will panic. If the call to Get succeeds as we expect, we are
+	// good citizens and call Close().
+	if closer != nil {
+		closer.Close()
+	}
+
+	return nil
 }
 
 // deleteHelper is a utility function supporting TestDelete.

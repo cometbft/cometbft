@@ -590,10 +590,12 @@ func BuildExtendedCommitInfo(ec *types.ExtendedCommit, valSet *types.ValidatorSe
 		}
 
 		votes[i] = abci.ExtendedVoteInfo{
-			Validator:          types.TM2PB.Validator(val),
-			BlockIdFlag:        cmtproto.BlockIDFlag(ecs.BlockIDFlag),
-			VoteExtension:      ecs.Extension,
-			ExtensionSignature: ecs.ExtensionSignature,
+			Validator:               types.TM2PB.Validator(val),
+			BlockIdFlag:             cmtproto.BlockIDFlag(ecs.BlockIDFlag),
+			VoteExtension:           ecs.Extension,
+			ExtensionSignature:      ecs.ExtensionSignature,
+			NonRpVoteExtension:      ecs.NonRpExtension,
+			NonRpExtensionSignature: ecs.NonRpExtensionSignature,
 		}
 	}
 

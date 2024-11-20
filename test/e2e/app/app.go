@@ -28,6 +28,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/test/loadtime/payload"
 	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
@@ -768,7 +769,8 @@ func (app *Application) ExtendVote(_ context.Context, req *abci.ExtendVoteReques
 
 	app.logger.Info("generated vote extension", "height", appHeight, "vote_extension", hex.EncodeToString(ext[:4]), "len", extLen)
 	return &abci.ExtendVoteResponse{
-		VoteExtension: ext[:extLen],
+		VoteExtension:  ext[:extLen],
+		NonRpExtension: []byte("some non-rp extension"),
 	}, nil
 }
 
@@ -1017,18 +1019,17 @@ func (app *Application) verifyAndSum(
 		if len(chainID) == 0 {
 			panic("chainID not set in database")
 		}
-		// cve := cmtproto.CanonicalVoteExtension{
-		// 	Extension: vote.VoteExtension,
-		// 	Height:    currentHeight - 1, // the vote extension was signed in the previous height
-		// 	Round:     int64(extCommit.Round),
-		// 	ChainId:   chainID,
-		// }
-		// extSignBytes, err := protoio.MarshalDelimited(&cve)
-		// if err != nil {
-		// 	return 0, fmt.Errorf("error when marshaling signed bytes: %w", err)
-		// }
+		cve := cmtproto.CanonicalVoteExtension{
+			Extension: vote.VoteExtension,
+			Height:    currentHeight - 1, // the vote extension was signed in the previous height
+			Round:     int64(extCommit.Round),
+			ChainId:   chainID,
+		}
 
-		extSignBytes := vote.VoteExtension
+		extSignBytes, err := protoio.MarshalDelimited(&cve)
+		if err != nil {
+			return 0, fmt.Errorf("error when marshaling signed bytes: %w", err)
+		}
 
 		// ... and verify
 		valAddr := crypto.Address(vote.Validator.Address).String()
@@ -1038,6 +1039,9 @@ func (app *Application) verifyAndSum(
 		}
 		if !pubKey.VerifySignature(extSignBytes, vote.ExtensionSignature) {
 			return 0, errors.New("received vote with invalid signature")
+		}
+		if !pubKey.VerifySignature(vote.NonRpVoteExtension, vote.NonRpExtensionSignature) {
+			return 0, errors.New("received vote with invalid signature of nrp vote extension")
 		}
 
 		extValue, err := parseVoteExtension(app.cfg, vote.VoteExtension)

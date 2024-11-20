@@ -358,6 +358,8 @@ on the `/block_results` RPC endpoint.
 
 - Bump api to v1.0.0-rc.1 for v1.0.0 Release Candidate 1
   ([\#3191](https://github.com/cometbft/cometbft/pull/3191))
+- Bump api to v1.0.0-rc2 for v1.0.0 Release Candidate 2
+  ([\#4455](https://github.com/cometbft/cometbft/pull/4455))
 - Bump cometbft-db to v0.9.0, providing support for RocksDB v8
   ([\#1725](https://github.com/cometbft/cometbft/pull/1725))
 - `[crypto/secp256k1]` Adjust to breaking interface changes in

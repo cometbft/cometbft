@@ -28,6 +28,7 @@ func exampleVote() *types.Vote {
 		ValidatorAddress: crypto.AddressHash([]byte("validator_address")),
 		ValidatorIndex:   56789,
 		Extension:        []byte("extension"),
+		// NonRpExtension:   []byte("nrp-extension"), // TODO bernd: adapt related test and enable this
 	}
 }
 

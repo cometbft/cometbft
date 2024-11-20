@@ -422,6 +422,7 @@ func TestConsMsgsVectors(t *testing.T) {
 	}
 	vpb := v.ToProto()
 	v.Extension = []byte("extension")
+	// TODO bernd: extend test to cover v.NonRpExtension
 	vextPb := v.ToProto()
 
 	testCases := []struct {

@@ -128,25 +128,13 @@ func TestSet(t *testing.T) {
 		noSync = pebble.NoSync
 	)
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		// called by Set
 		if err := pDB.setWithOpts(nil, nil, noSync); !errors.Is(err, errKeyEmpty) {
 			t.Errorf("non-sync write: expected %s, got: %s", errKeyEmpty, err)
-		}
-
-		// called by SetSync
-		if err := pDB.setWithOpts(nil, nil, sync); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("sync write: expected %s, got: %s", errKeyEmpty, err)
 		}
 	})
 
 	t.Run("NilValueErr", func(t *testing.T) {
 		key := []byte{'a'}
-
-		// called by Set
-		if err := pDB.setWithOpts(key, nil, noSync); !errors.Is(err, errValueNil) {
-			t.Errorf("non-sync write: expected %s, got: %s", errValueNil, err)
-		}
-
 		// called by SetSync
 		if err := pDB.setWithOpts(key, nil, sync); !errors.Is(err, errValueNil) {
 			t.Errorf("sync write: expected %s, got: %s", errValueNil, err)

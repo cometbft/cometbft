@@ -39,7 +39,9 @@ type Reactor struct {
 }
 
 type TxWithSignatures struct {
-	Tx          []byte   `json:"tx"`
+	if err != nil {
+		memR.
+	}	Tx          types.Tx   `json:"tx"`
 	Signatures  [][]byte `json:"signatures"`
 	SignerCount int      `json:"signer_count"`
 }
@@ -304,24 +306,28 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			}
 
 			memR.Logger.Debug("Sending transaction to peer",
-				"tx", log.NewLazySprintf("%X", txHash), "peer", peer.ID())
+			"tx", log.NewLazySprintf("%X", txHash), "peer", peer.ID())
 
-			//  Sign the transaction using the node's private key
 			tx := entry.Tx()
-			signature, err := (*memR.privVal).SignBytes(tx)
+
+
+
+			_, err = entry.ValidateSignatures()
+			if err != nil {
+				// TODO : properly handle errors
+				memR.Logger.Error("Signature does not match", "error", err)
+				break
+			}
+
+			signature, err := (*memR.privVal).SignBytes(tx.Hash())
 			if err != nil {
 				memR.Logger.Error("Failed to sign transaction", "error", err)
 				break
 			}
 
-			// Create the TxWithSignatures message
-			txWithSigs := &protomem.TxWithSignatures{
-				Tx:          tx,
-				Signatures:  [][]byte{signature},
-				// TODO : au lieu de array map id_signataire : signature . parcequ'on doit vérifier la validité de la signature à la reception.
-				// TODO : dans le constructeur au départ map avec seulement la signature du signataire sinon on append aux signatures actuelles.
-				// TODO
-			}
+
+
+			//TODO revert this
 
 			// Wrap TxWithSignatures in the Message type
 			message := &protomem.Message{

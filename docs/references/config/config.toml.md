@@ -5,6 +5,7 @@ parent:
   description: CometBFT general configuration
   order: 3
 ---
+
 <!---
 The current CometBFT documentation template is not perfect for reference manuals.
 These style suggestions make it more readable.
@@ -13,7 +14,7 @@ These style suggestions make it more readable.
 .PageContent table {margin: 0;}           /* tables are left-aligned */
 </style>
 
-<!--- Entry template: Use this as a template to add more parameter descriptions.
+<!--- EntryTx template: Use this as a template to add more parameter descriptions.
 ### tablename.property_key <- full path to property in the file
 This is the two-sentence summary of the parameter. It does all kinds of stuff.
 ```toml
@@ -31,6 +32,7 @@ Description about the possible values too.
 --->
 
 # config.toml
+
 The `config.toml` file is a standard [TOML](https://toml.io/en/v1.0.0) file that configures the basic functionality
 of CometBFT, including the configuration of the reactors.
 
@@ -41,16 +43,19 @@ All relative paths in the configuration are relative to `$CMTHOME`.
 (See [the HOME folder](./README.md#the-home-folder) for more details.)
 
 ## Base configuration
+
 The root table defines generic node settings. It is implemented in a struct called `BaseConfig`, hence the name.
 
 ### version
+
 The version of the CometBFT binary that created or last modified the config file.
+
 ```toml
 version = "1.0.0"
 ```
 
 | Value type          | string                  |
-|:--------------------|:------------------------|
+| :------------------ | :---------------------- |
 | **Possible values** | semantic version string |
 |                     | `""`                    |
 
@@ -62,14 +67,16 @@ In the future, the code might make restrictions on what version of the file is c
 binary. There is no such check in place right now. Configuration and binary versions are interchangeable.
 
 ### proxy_app
+
 The TCP or UNIX socket of the ABCI application or the name of an example ABCI application compiled in with the CometBFT
 library.
+
 ```toml
 proxy_app = "tcp://127.0.0.1:26658"
 ```
 
 | Value type          | string                                                  |
-|:--------------------|:--------------------------------------------------------|
+| :------------------ | :------------------------------------------------------ |
 | **Possible values** | TCP Stream socket (e.g. `"tcp://127.0.0.1:26658"`)      |
 |                     | Unix domain socket (e.g. `"unix:///var/run/abci.sock"`) |
 |                     | `"kvstore"`                                             |
@@ -89,14 +96,16 @@ and the configuration entry is unused.
 For development and testing, the [built-in ABCI application](../../guides/app-dev/abci-cli.md) can be used without additional processes running.
 
 ### moniker
+
 A custom human-readable name for this node.
+
 ```toml
 moniker = "my.host.name"
 ```
 
-| Value type          | string                                                   |
-|:--------------------|:---------------------------------------------------------|
-| **Possible values** | any human-readable string                                |
+| Value type          | string                    |
+| :------------------ | :------------------------ |
+| **Possible values** | any human-readable string |
 
 The main use of this entry is to keep track of the different nodes in a local environment. For example, the `/status` RPC
 endpoint will return the node moniker in the `.result.moniker` key.
@@ -107,17 +116,19 @@ Nodes on the peer-to-peer network are identified by `nodeID@host:port` as discus
 [node_key.json](node_key.json.md) section.
 
 ### db_backend
+
 The chosen database backend for the node.
+
 ```toml
 db_backend = "pebbledb"
 ```
 
-| Value type          | string        | dependencies  | GitHub                                           |
-|:--------------------|:--------------|:--------------|:-------------------------------------------------|
-| **Possible values** | `"badgerdb"`  | pure Golang   | [badger](https://github.com/dgraph-io/badger)    |
-|                     | `"goleveldb"` | pure Golang   | [goleveldb](https://github.com/syndtr/goleveldb) |
-|                     | `"pebbledb"`  | pure Golang   | [pebble](https://github.com/cockroachdb/pebble)  |
-|                     | `"rocksdb"`   | requires gcc  | [grocksdb](https://github.com/linxGnu/grocksdb)  |
+| Value type          | string        | dependencies | GitHub                                           |
+| :------------------ | :------------ | :----------- | :----------------------------------------------- |
+| **Possible values** | `"badgerdb"`  | pure Golang  | [badger](https://github.com/dgraph-io/badger)    |
+|                     | `"goleveldb"` | pure Golang  | [goleveldb](https://github.com/syndtr/goleveldb) |
+|                     | `"pebbledb"`  | pure Golang  | [pebble](https://github.com/cockroachdb/pebble)  |
+|                     | `"rocksdb"`   | requires gcc | [grocksdb](https://github.com/linxGnu/grocksdb)  |
 
 During the build process, by default, only the `pebbledb` library is built into the binary.
 To add support for alternative databases, you need to add them in the build tags.
@@ -133,13 +144,15 @@ The supported databases are part of the [cometbft-db](https://github.com/cometbf
 that CometBFT uses as a common database interface to various databases.
 
 ### db_dir
+
 The directory path where the database is stored.
+
 ```toml
 db_dir = "data"
 ```
 
-| Value type          | string                                           |
-|:--------------------|:-------------------------------------------------|
+| Value type          | string                                          |
+| :------------------ | :---------------------------------------------- |
 | **Possible values** | relative directory path, appended to `$CMTHOME` |
 |                     | absolute directory path                         |
 
@@ -147,14 +160,16 @@ The default relative path translates to `$CMTHOME/data`. In case `$CMTHOME` is u
 `$HOME/.cometbft/data`.
 
 ### log_level
+
 A comma-separated list of `module:level` pairs that describe the log level of each module. Alternatively, a single word
 can be set which will apply that log level to all modules.
+
 ```toml
 log_level = "info"
 ```
 
 | Value type     | string          |                                        |
-|:---------------|:----------------|----------------------------------------|
+| :------------- | :-------------- | -------------------------------------- |
 | **Modules**    | `"main"`        | CometBFT main application logs         |
 |                | `"consensus"`   | consensus reactor logs                 |
 |                | `"p2p"`         | p2p reactor logs                       |
@@ -182,10 +197,13 @@ module name to set a default log level. The default is `*:info`.
 Examples:
 
 Set the consensus reactor to `debug` log level and the `p2p` reactor to `none`. Everything else should be set to `error`:
+
 ```toml
 log_level = "consensus:debug,p2p:none,*:error"
 ```
+
 Set RPC server logs to `debug` and leave everything else at `info`:
+
 ```toml
 log_level = "rpc-server:debug"
 ```
@@ -201,6 +219,7 @@ build flags. This approach improves the performance of CometBFT by excluding deb
 is set to debug. This technique is ideal for production environments that prioritize performance optimization over debug logging.
 
 In order to build a binary stripping all debug log messages (e.g. `log.Debug()`) from the binary, use the `nodebug` tag:
+
 ```
 COMETBFT_BUILD_OPTIONS=nodebug make install
 ```
@@ -217,7 +236,7 @@ log_format = "plain"
 ```
 
 | Value type          | string    |
-|:--------------------|:----------|
+| :------------------ | :-------- |
 | **Possible values** | `"plain"` |
 |                     | `"json"`  |
 
@@ -267,9 +286,10 @@ log_format = "plain"
       "type": "string"
     }
   },
-  "required": [ "level", "ts", "_msg", "module" ]
+  "required": ["level", "ts", "_msg", "module"]
 }
 ```
+
 > Note: The list of properties is not exhaustive. When implementing log parsing, check your logs and update the schema.
 
 <!--- Todo: Probably we should create separate schemas for the different log levels or modules. --->
@@ -284,20 +304,22 @@ log_colors = true
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `true`  |
 |                     | `false` |
 
 The default is `true` when [`log_format`](#log_format) is `plain`.
 
 ### genesis_file
+
 Path to the JSON file containing the initial conditions for a CometBFT blockchain and the initial state of the application (more details [here](./genesis.json.md)).
+
 ```toml
 genesis_file = "config/genesis.json"
 ```
 
 | Value type          | string                                          |
-|:--------------------|:------------------------------------------------|
+| :------------------ | :---------------------------------------------- |
 | **Possible values** | relative directory path, appended to `$CMTHOME` |
 |                     | absolute directory path                         |
 
@@ -305,28 +327,31 @@ The default relative path translates to `$CMTHOME/config/genesis.json`. In case 
 `$HOME/.cometbft/config/genesis.json`.
 
 ### priv_validator_key_file
+
 Path to the JSON file containing the private key to use as a validator in the consensus protocol (more details [here](./priv_validator_key.json.md)).
+
 ```toml
 priv_validator_key_file = "config/priv_validator_key.json"
 ```
 
 | Value type          | string                                          |
-|:--------------------|:------------------------------------------------|
+| :------------------ | :---------------------------------------------- |
 | **Possible values** | relative directory path, appended to `$CMTHOME` |
 |                     | absolute directory path                         |
 
 The default relative path translates to `$CMTHOME/config/priv_validator_key.json`. In case `$CMTHOME` is unset, it
 defaults to `$HOME/.cometbft/config/priv_validator_key.json`.
 
-
 ### priv_validator_state_file
+
 Path to the JSON file containing the last sign state of a validator (more details [here](./priv_validator_state.json.md)).
+
 ```toml
 priv_validator_state_file = "data/priv_validator_state.json"
 ```
 
 | Value type          | string                                          |
-|:--------------------|:------------------------------------------------|
+| :------------------ | :---------------------------------------------- |
 | **Possible values** | relative directory path, appended to `$CMTHOME` |
 |                     | absolute directory path                         |
 
@@ -334,13 +359,15 @@ The default relative path translates to `$CMTHOME/data/priv_validator_state.json
 defaults to `$HOME/.cometbft/data/priv_validator_state.json`.
 
 ### priv_validator_laddr
+
 TCP or UNIX socket listen address for CometBFT that allows external consensus signing processes to connect.
+
 ```toml
 priv_validator_laddr = ""
 ```
 
 | Value type          | string                                                     |
-|:--------------------|:-----------------------------------------------------------|
+| :------------------ | :--------------------------------------------------------- |
 | **Possible values** | TCP Stream socket (e.g. `"tcp://127.0.0.1:26665"`)         |
 |                     | Unix domain socket (e.g. `"unix:///var/run/privval.sock"`) |
 
@@ -354,13 +381,15 @@ More information on a supported signing service can be found in the [TMKMS](http
 documentation.
 
 ### node_key_file
+
 Path to the JSON file containing the private key to use for node authentication in the p2p protocol (more details [here](./node_key.json.md)).
+
 ```toml
 node_key_file = "config/node_key.json"
 ```
 
 | Value type          | string                                          |
-|:--------------------|:------------------------------------------------|
+| :------------------ | :---------------------------------------------- |
 | **Possible values** | relative directory path, appended to `$CMTHOME` |
 |                     | absolute directory path                         |
 
@@ -368,13 +397,15 @@ The default relative path translates to `$CMTHOME/config/node_key.json`. In case
 `$HOME/.cometbft/config/node_key.json`.
 
 ### abci
+
 The mechanism used to connect to the ABCI application.
-````toml
+
+```toml
 abci = "socket"
-````
+```
 
 | Value type          | string     |
-|:--------------------|:-----------|
+| :------------------ | :--------- |
 | **Possible values** | `"socket"` |
 |                     | `"grpc"`   |
 |                     | `""    `   |
@@ -382,13 +413,15 @@ abci = "socket"
 This mechanism is used when connecting to the ABCI application over the [proxy_app](#proxy_app) socket.
 
 ### filter_peers
+
 When connecting to a new peer, filter the connection through an ABCI query to decide, if the connection should be kept.
+
 ```toml
 filter_peers = false
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `false` |
 |                     | `true`  |
 
@@ -398,23 +431,27 @@ the connection to be kept of or dropped.
 This feature will likely be deprecated.
 
 ## RPC Server
+
 These configuration options change the behaviour of the built-in RPC server.
 
 The RPC server is exposed without any kind of security control or authentication. Do NOT expose this server
 on the public Internet without appropriate precautions. Make sure it is secured, load-balanced, etc.
 
 ### rpc.laddr
+
 TCP or UNIX socket address for the RPC server to listen on.
+
 ```toml
 laddr = "tcp://127.0.0.1:26657"
 ```
 
-| Value type          | string                                            |
-|:--------------------|:--------------------------------------------------|
+| Value type          | string                                                 |
+| :------------------ | :----------------------------------------------------- |
 | **Possible values** | TCP Stream socket (e.g. `"tcp://127.0.0.1:26657"`)     |
 |                     | Unix domain socket (e.g. `"unix:///var/run/rpc.sock"`) |
 
 The RPC server endpoints have OpenAPI specification definitions through [Swagger UI](../../rpc).
+
 <!---
 NOTE: The OpenAPI reference (../../rpc) is injected into the documentation during
 the CometBFT docs build process. See https://github.com/cometbft/cometbft-docs/
@@ -424,13 +461,15 @@ for details.
 Please refer to the [RPC documentation](https://docs.cometbft.com/v1.0/rpc/) for more information.
 
 ### rpc.cors_allowed_origins
+
 A list of origins a cross-domain request can be executed from.
+
 ```toml
 cors_allowed_origins = []
 ```
 
 | Value type          | array of string                            |                      |
-|:--------------------|:-------------------------------------------|----------------------|
+| :------------------ | :----------------------------------------- | -------------------- |
 | **Possible values** | `[]`                                       | disable CORS support |
 |                     | `["*"]`                                    | allow any origin     |
 |                     | array of strings containing domain origins |                      |
@@ -441,18 +480,21 @@ they can contain exactly one wildcard to extend to multiple subdomains, for exam
 Example:
 
 Allow only some subdomains for CORS requests:
+
 ```toml
 cors_allowed_origins = ["https://www.cometbft.com", "https://*.apis.cometbft.com"]
 ```
 
 ### rpc.cors_allowed_methods
+
 A list of methods the client is allowed to use with cross-domain requests.
+
 ```toml
 cors_allowed_methods = ["HEAD", "GET", "POST", ]
 ```
 
 | Value type                              | array of string |
-|:----------------------------------------|:----------------|
+| :-------------------------------------- | :-------------- |
 | **Possible string values in the array** | `"HEAD"`        |
 |                                         | `"GET"`         |
 |                                         | `"POST"`        |
@@ -461,13 +503,15 @@ You can read more about the methods in the
 [Mozilla CORS documentation](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS).
 
 ### rpc.cors_allowed_headers
+
 A list of headers the client is allowed to use with cross-domain requests.
+
 ```toml
 cors_allowed_headers = ["Origin", "Accept", "Content-Type", "X-Requested-With", "X-Server-Time", ]
 ```
 
 | Value type                              | array of string      |
-|:----------------------------------------|:---------------------|
+| :-------------------------------------- | :------------------- |
 | **Possible string values in the array** | `"Accept"`           |
 |                                         | `"Accept-Language"`  |
 |                                         | `"Content-Language"` |
@@ -482,18 +526,20 @@ to use this parameter.
 <!--- Possibly, we should clarify the allowed values better. --->
 
 ### rpc.unsafe
+
 Activate unsafe RPC endpoints.
+
 ```toml
 unsafe = false
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `false` |
 |                     | `true`  |
 
 | Unsafe RPC endpoints    | Description                                                                           |
-|:------------------------|---------------------------------------------------------------------------------------|
+| :---------------------- | ------------------------------------------------------------------------------------- |
 | `/dial_seeds`           | dials the given seeds (comma-separated id@IP:port)                                    |
 | `/dial_peers`           | dials the given peers (comma-separated id@IP:port), optionally making them persistent |
 | `/unsafe_flush_mempool` | removes all transactions from the mempool                                             |
@@ -501,24 +547,28 @@ unsafe = false
 Keep this `false` on production systems.
 
 ### rpc.max_open_connections
+
 Maximum number of simultaneous open connections. This includes WebSocket connections.
+
 ```toml
 max_open_connections = 900
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt; 0  |
 
 If you want to accept a larger number of connections than the default 900, make sure that you increase the maximum
 number of open connections in the operating system. Usually, the `ulimit` command can help with that.
 
 This value can be estimated by the following calculation:
+
 ```
 $(ulimit -Sn) - {p2p.max_num_inbound_peers} - {p2p.max_num_outbound_peers} - {number of WAL, DB and other open files}
 ```
 
 Estimating the number of WAL, DB and other files at `50`, and using the default soft limit of Debian Linux (`1024`):
+
 ```
 1024 - 40 - 10 - 50 = 924 (~900)
 ```
@@ -527,50 +577,58 @@ Note, that macOS has a default soft limit of `256`. Make sure you calculate this
 runs on.
 
 ### rpc.max_subscription_clients
+
 Maximum number of unique clientIDs that can subscribe to events at the `/subscribe` RPC endpoint.
+
 ```toml
 max_subscription_clients = 100
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt;= 0 |
 
 ### rpc.max_subscriptions_per_client
+
 Maximum number of unique queries a given client can subscribe to at the `/subscribe` RPC endpoint.
+
 ```toml
 max_subscriptions_per_client = 5
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt;= 0 |
 
 ### rpc.experimental_subscription_buffer_size
+
 > EXPERIMENTAL parameter!
 
 Experimental parameter to specify the maximum number of events a node will buffer, per subscription, before returning
 an error and closing the subscription.
+
 ```toml
 experimental_subscription_buffer_size = 200
 ```
 
 | Value type          | integer   |
-|:--------------------|:----------|
+| :------------------ | :-------- |
 | **Possible values** | &gt;= 100 |
 
 Higher values will accommodate higher event throughput rates (and will use more memory).
 
 ### rpc.experimental_websocket_write_buffer_size
+
 > EXPERIMENTAL parameter!
 
 Experimental parameter to specify the maximum number of events that can be buffered per WebSocket client.
+
 ```toml
 experimental_websocket_write_buffer_size = 200
 ```
 
 | Value type          | integer                                         |
-|:--------------------|:------------------------------------------------|
+| :------------------ | :---------------------------------------------- |
 | **Possible values** | &gt;= rpc.experimental_subscription_buffer_size |
 
 If clients cannot read from the WebSocket endpoint fast enough, they will be disconnected, so increasing this parameter
@@ -580,16 +638,18 @@ If set lower than `rpc.experimental_subscription_buffer_size`, connections could
 should ideally be somewhat higher to accommodate non-subscription-related RPC responses.
 
 ### rpc.experimental_close_on_slow_client
+
 > EXPERIMENTAL parameter!
 
 Close the WebSocket client in case it cannot read events fast enough. Allows greater predictability in subscription
 behaviour.
+
 ```toml
 experimental_close_on_slow_client = false
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `false` |
 |                     | `true`  |
 
@@ -599,28 +659,32 @@ Enabling this setting creates a predictable outcome by closing the WebSocket con
 fast enough.
 
 ### rpc.timeout_broadcast_tx_commit
+
 Timeout waiting for a transaction to be committed when using the `/broadcast_tx_commit` RPC endpoint.
+
 ```toml
 timeout_broadcast_tx_commit = "10s"
 ```
 
 | Value type          | string (duration)          |
-|:--------------------|:---------------------------|
+| :------------------ | :------------------------- |
 | **Possible values** | &gt; `"0s"`; &lt;= `"10s"` |
 
 Using a value larger than `"10s"` will result in increasing the global HTTP write timeout, which applies to all connections
 and endpoints. There is an old developer discussion about this [here](https://github.com/tendermint/tendermint/issues/3435).
 
-> Note: It is generally recommended *not* to use the `broadcast_tx_commit` method in production, and instead prefer `/broadcast_tx_sync`.
+> Note: It is generally recommended _not_ to use the `broadcast_tx_commit` method in production, and instead prefer `/broadcast_tx_sync`.
 
 ### rpc.max_request_batch_size
+
 Maximum number of requests that can be sent in a JSON-RPC batch request.
+
 ```toml
 max_request_batch_size = 10
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt;= 0 |
 
 If the number of requests sent in a JSON-RPC batch exceed the maximum batch size configured, an error will be returned.
@@ -632,36 +696,42 @@ If you don't want to enforce a maximum number of requests for a batch request se
 Reference: https://www.jsonrpc.org/specification#batch
 
 ### rpc.max_body_bytes
+
 Maximum size of request body, in bytes.
+
 ```toml
 max_body_bytes = 1000000
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt;= 0 |
 
 ### rpc.max_header_bytes
+
 Maximum size of request header, in bytes.
+
 ```toml
 max_header_bytes = 1048576
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt;= 0 |
 
 ### rpc.tls_cert_file
+
 TLS certificates file path for HTTPS server use.
+
 ```toml
 tls_cert_file = ""
 ```
 
 | Value type          | string                                                 |
-|:--------------------|:-------------------------------------------------------|
+| :------------------ | :----------------------------------------------------- |
 | **Possible values** | relative directory path, appended to `$CMTHOME/config` |
 |                     | absolute directory path                                |
-|                     |  `""`                                                  |
+|                     | `""`                                                   |
 
 The default relative path translates to `$CMTHOME/config`. In case `$CMTHOME` is unset, it defaults to
 `$HOME/.cometbft/config`.
@@ -674,13 +744,15 @@ The [rpc.tls_key_file](#rpctls_key_file) property also has to be set with the ma
 If this property is not set, the HTTP protocol will be used by the default server
 
 ### rpc.tls_key_file
+
 TLS private key file path for HTTPS server use.
+
 ```toml
 tls_key_file = ""
 ```
 
 | Value type          | string                                                 |
-|:--------------------|:-------------------------------------------------------|
+| :------------------ | :----------------------------------------------------- |
 | **Possible values** | relative directory path, appended to `$CMTHOME/config` |
 |                     | absolute directory path                                |
 |                     | `""`                                                   |
@@ -693,13 +765,15 @@ The [rpc.tls_cert_file](#rpctls_cert_file) property also has to be set with the 
 If this property is not set, the HTTP protocol will be used by the default server
 
 ### rpc.pprof_laddr
+
 Profiling data listen address and port. Without protocol prefix.
+
 ```toml
 pprof_laddr = ""
 ```
 
 | Value type          | string                       |
-|:--------------------|:-----------------------------|
+| :------------------ | :--------------------------- |
 | **Possible values** | IP:port (`"127.0.0.1:6060"`) |
 |                     | :port (`":6060"`)            |
 |                     | `""`                         |
@@ -709,6 +783,7 @@ HTTP is always assumed as the protocol.
 See the Golang [profiling](https://golang.org/pkg/net/http/pprof) documentation for more information.
 
 ## gRPC Server
+
 These configuration options change the behaviour of the built-in gRPC server.
 
 Each gRPC service can be turned on/off, and in some cases configured, individually.
@@ -718,13 +793,15 @@ The gRPC server is exposed without any kind of security control or authenticatio
 on the public Internet without appropriate precautions. Make sure it is secured, authenticated, load-balanced, etc.
 
 ### grpc.laddr
+
 TCP or UNIX socket address for the gRPC server to listen on.
+
 ```toml
 laddr = ""
 ```
 
 | Value type          | string                                                  |
-|:--------------------|:--------------------------------------------------------|
+| :------------------ | :------------------------------------------------------ |
 | **Possible values** | TCP Stream socket (e.g. `"tcp://127.0.0.1:26661"`)      |
 |                     | Unix domain socket (e.g. `"unix:///var/run/abci.sock"`) |
 |                     | `""`                                                    |
@@ -732,53 +809,61 @@ laddr = ""
 If not specified, the gRPC server will be disabled.
 
 ### grpc.version_service.enabled
+
 The gRPC version service provides version information about the node and the protocols it uses.
+
 ```toml
 enabled = true
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `true`  |
 |                     | `false` |
 
 If [`grpc.laddr`](#grpcladdr) is empty, this setting is ignored and the service is not enabled.
 
 ### grpc.block_service.enabled
+
 The gRPC block service returns block information.
+
 ```toml
 enabled = true
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `true`  |
 |                     | `false` |
 
 If [`grpc.laddr`](#grpcladdr) is empty, this setting is ignored and the service is not enabled.
 
 ### grpc.block_results_service.enabled
+
 The gRPC block results service returns block results for a given height. If no height is given, it will return the block
 results from the latest height.
+
 ```toml
 enabled = true
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `true`  |
 |                     | `false` |
 
 If [`grpc.laddr`](#grpcladdr) is empty, this setting is ignored and the service is not enabled.
 
 ### grpc.privileged.laddr
+
 Configuration for privileged gRPC endpoints, which should **never** be exposed to the public internet.
+
 ```toml
 laddr = ""
 ```
 
 | Value type          | string                                                  |
-|:--------------------|:--------------------------------------------------------|
+| :------------------ | :------------------------------------------------------ |
 | **Possible values** | TCP Stream socket (e.g. `"tcp://127.0.0.1:26662"`)      |
 |                     | Unix domain socket (e.g. `"unix:///var/run/abci.sock"`) |
 |                     | `""`                                                    |
@@ -786,13 +871,15 @@ laddr = ""
 If not specified, the gRPC privileged endpoints will be disabled.
 
 ### grpc.privileged.pruning_service
+
 Configuration specifically for the gRPC pruning service, which is considered a privileged service.
+
 ```toml
 enabled = false
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `false` |
 |                     | `true`  |
 
@@ -808,13 +895,14 @@ These configuration options change the behaviour of the peer-to-peer protocol.
 ### p2p.laddr
 
 TCP socket address for the P2P service to listen on and accept connections.
+
 ```toml
 laddr = "tcp://0.0.0.0:26656"
 ```
 
-| Value type          | string                                            |
-|:--------------------|:--------------------------------------------------|
-| **Possible values** | TCP Stream socket (e.g. `"tcp://0.0.0.0:26657"`)     |
+| Value type          | string                                           |
+| :------------------ | :----------------------------------------------- |
+| **Possible values** | TCP Stream socket (e.g. `"tcp://0.0.0.0:26657"`) |
 
 ### p2p.external_address
 
@@ -834,13 +922,14 @@ external_address = ""
 ```
 
 | Value type          | string                      |
-|:--------------------|:----------------------------|
+| :------------------ | :-------------------------- |
 | **Possible values** | IP:port (`"1.2.3.4:26656"`) |
 |                     | `""`                        |
 
 The port has to point to the node's P2P port.
 
 Example with a node on a NATed non-routable network:
+
 - Node has local or private IP address `10.10.10.10` and uses port `10000` for
   P2P communication: set this address as the [listen address](#p2pladdr) (`p2p.laddr`).
 - The network gateway has the public IP `1.2.3.4` and we want to use publicly
@@ -859,7 +948,7 @@ seeds = ""
 ```
 
 | Value type                        | string (comma-separated list)           |
-|:----------------------------------|:----------------------------------------|
+| :-------------------------------- | :-------------------------------------- |
 | **Possible values within commas** | nodeID@IP:port (`"abcd@1.2.3.4:26656"`) |
 |                                   | `""`                                    |
 
@@ -869,6 +958,7 @@ If a node already has enough peer addresses in its address book, it may never
 need to dial the configured seed nodes.
 
 Example:
+
 ```toml
 seeds = "abcd@1.2.3.4:26656,deadbeef@5.6.7.8:10000"
 ```
@@ -882,7 +972,7 @@ persistent_peers = ""
 ```
 
 | Value type                        | string (comma-separated list)           |
-|:----------------------------------|:----------------------------------------|
+| :-------------------------------- | :-------------------------------------- |
 | **Possible values within commas** | nodeID@IP:port (`"abcd@1.2.3.4:26656"`) |
 |                                   | `""`                                    |
 
@@ -909,6 +999,7 @@ This means that when persistent peers are configured the node may not need to
 rely on potential peers provided by [seed nodes](#p2pseeds).
 
 Example:
+
 ```toml
 persistent_peers = "fedcba@11.22.33.44:26656,beefdead@55.66.77.88:20000"
 ```
@@ -922,7 +1013,7 @@ persistent_peers_max_dial_period = "0s"
 ```
 
 | Value type          | string (duration) |
-|:--------------------|:------------------|
+| :------------------ | :---------------- |
 | **Possible values** | &gt;= `"0s"`      |
 
 When set to `"0s"`, an exponential backoff is applied when re-dialing the
@@ -939,7 +1030,7 @@ addr_book_file = "config/addrbook.json"
 ```
 
 | Value type          | string                                          |
-|:--------------------|:------------------------------------------------|
+| :------------------ | :---------------------------------------------- |
 | **Possible values** | relative directory path, appended to `$CMTHOME` |
 |                     | absolute directory path                         |
 
@@ -961,7 +1052,7 @@ addr_book_strict = true
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `true`  |
 |                     | `false` |
 
@@ -977,7 +1068,7 @@ max_num_inbound_peers = 40
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt;= 0 |
 
 The [`p2p.max_num_inbound_peers`](#p2pmax_num_inbound_peers) and
@@ -1006,7 +1097,7 @@ max_num_outbound_peers = 10
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt;= 0 |
 
 The [`p2p.max_num_inbound_peers`](#p2pmax_num_inbound_peers) and
@@ -1041,7 +1132,7 @@ unconditional_peer_ids = ""
 ```
 
 | Value type          | string (comma-separated)         |
-|:--------------------|:---------------------------------|
+| :------------------ | :------------------------------- |
 | **Possible values** | comma-separated list of node IDs |
 |                     | `""`                             |
 
@@ -1061,7 +1152,7 @@ flush_throttle_timeout = "10ms"
 ```
 
 | Value type          | string (duration) |
-|:--------------------|:------------------|
+| :------------------ | :---------------- |
 | **Possible values** | &gt;= `"0ms"`     |
 
 The flush operation writes any buffered data to the connection. The flush is throttled, so if multiple triggers come in within the
@@ -1080,7 +1171,7 @@ max_packet_msg_payload_size = 1024
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt; 0  |
 
 Messages exchanged via P2P connections are split into packets.
@@ -1097,7 +1188,7 @@ send_rate = 5120000
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt; 0  |
 
 The value represents the amount of packet bytes that can be sent per second
@@ -1112,7 +1203,7 @@ recv_rate = 5120000
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt; 0  |
 
 The value represents the amount of packet bytes that can be received per second
@@ -1127,7 +1218,7 @@ pex = true
 Enable peer exchange (PEX) reactor.
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `true`  |
 |                     | `false` |
 
@@ -1151,7 +1242,7 @@ seed_mode = false
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `false` |
 |                     | `true`  |
 
@@ -1174,7 +1265,7 @@ private_peer_ids = ""
 ```
 
 | Value type                        | string (comma-separated list)     |
-|:----------------------------------|:----------------------------------|
+| :-------------------------------- | :-------------------------------- |
 | **Possible values within commas** | nodeID (`"abcdef0123456789abcd"`) |
 |                                   | `""`                              |
 
@@ -1196,7 +1287,7 @@ allow_duplicate_ip = false
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `false` |
 |                     | `true`  |
 
@@ -1212,7 +1303,7 @@ handshake_timeout = "20s"
 ```
 
 | Value type          | string (duration) |
-|:--------------------|:------------------|
+| :------------------ | :---------------- |
 | **Possible values** | &gt;= `"0s"`      |
 
 This high-level timeout value is applied when the TCP connection has been
@@ -1230,7 +1321,7 @@ dial_timeout = "3s"
 ```
 
 | Value type          | string (duration) |
-|:--------------------|:------------------|
+| :------------------ | :---------------- |
 | **Possible values** | &gt;= `"0s"`      |
 
 This parameter is the timeout value for dialing on TCP networks. If a hostname is used instead of an IP address and the
@@ -1240,6 +1331,7 @@ appropriate fraction of the time to connect.
 Setting the value to `"0s"` disables the timeout.
 
 ## Mempool
+
 Mempool allows gathering and broadcasting uncommitted transactions among nodes.
 
 The **mempool** is storage for uncommitted transactions; the **mempool cache** is internal storage within the
@@ -1247,13 +1339,15 @@ mempool for seen transactions. The mempool cache provides a list of transactions
 incoming duplicate transactions and prevent duplicate full transaction validations.
 
 ### mempool.type
+
 The type of mempool this node will use.
+
 ```toml
 type = "flood"
 ```
 
 | Value type          | string    |
-|:--------------------|:----------|
+| :------------------ | :-------- |
 | **Possible values** | `"flood"` |
 |                     | `"nop"`   |
 
@@ -1265,13 +1359,15 @@ proposing transactions. Note, that it requires empty blocks to be created:
 [`consensus.create_empty_blocks = true`](#consensuscreate_empty_blocks) has to be set.
 
 ### mempool.recheck
+
 Validity check of transactions already in the mempool when a block is finalized.
+
 ```toml
 recheck = true
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `true`  |
 |                     | `false` |
 
@@ -1283,15 +1379,17 @@ you probably want to set this configuration to `true` to avoid possible leaks in
 (transactions staying in the mempool until the node is next restarted).
 
 ### mempool.recheck_timeout
+
 Time to wait for the application to return CheckTx responses after all recheck requests have been
 sent. Responses that arrive after the timeout expires are discarded.
+
 ```toml
 recheck_timeout = "1000ms"
 ```
 
 | Value type          | string (duration) |
-|:--------------------|:------------------|
-| **Possible values** | &gt;= `"1000ms"`   |
+| :------------------ | :---------------- |
+| **Possible values** | &gt;= `"1000ms"`  |
 
 This setting only applies to non-local ABCI clients and when `recheck` is enabled.
 
@@ -1302,13 +1400,15 @@ transaction. We consider that the ABCI application runs in the same location as 
 making requests and receiving responses.
 
 ### mempool.broadcast
+
 Broadcast the mempool content (uncommitted transactions) to other nodes.
+
 ```toml
 broadcast = true
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `true`  |
 |                     | `false` |
 
@@ -1319,13 +1419,15 @@ Validators behind sentry nodes typically set this to `false`,
 as their sentry nodes take care of disseminating transactions to the rest of the network.
 
 ### mempool.wal_dir
+
 Mempool write-ahead log folder path.
+
 ```toml
 wal_dir = ""
 ```
 
 | Value type          | string                                          |
-|:--------------------|:------------------------------------------------|
+| :------------------ | :---------------------------------------------- |
 | **Possible values** | relative directory path, appended to `$CMTHOME` |
 |                     | absolute directory path                         |
 |                     | `""`                                            |
@@ -1337,13 +1439,15 @@ This value is unused by CometBFT. It was not hooked up to the mempool reactor.
 The mempool implementation does not persist any transaction data to disk (unlike evidence).
 
 ### mempool.size
+
 Maximum number of transactions in the mempool.
+
 ```toml
 size = 5000
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt;= 0 |
 
 If the mempool is full, incoming transactions are dropped.
@@ -1351,13 +1455,15 @@ If the mempool is full, incoming transactions are dropped.
 The value `0` is undefined.
 
 ### mempool.max_tx_bytes
+
 Maximum size in bytes of a single transaction accepted into the mempool.
+
 ```toml
 max_tx_bytes = 1048576
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt;= 0 |
 
 Transactions bigger than the maximum configured size are rejected by mempool,
@@ -1365,13 +1471,15 @@ this applies to both transactions submitted by clients via RPC endpoints, and
 transactions receveing from peers on the mempool protocol.
 
 ### mempool.max_txs_bytes
+
 The maximum size in bytes of all transactions stored in the mempool.
+
 ```toml
 max_txs_bytes = 67108864
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt;= 0 |
 
 This is the raw, total size in bytes of all transactions in the mempool. For example, given 1MB
@@ -1389,13 +1497,15 @@ The default value is 64 Mibibyte (2^26 bytes).
 This is roughly equivalent to 16 blocks of 4 MiB.
 
 ### mempool.cache_size
+
 Mempool internal cache size for already seen transactions.
+
 ```toml
 cache_size = 10000
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt;= 0 |
 
 The mempool cache is an internal store for transactions that the local node has already seen. Storing these transactions help in filtering incoming duplicate
@@ -1403,14 +1513,16 @@ transactions: we can compare incoming transactions to already seen transactions 
 through the process of validating the incoming transaction.
 
 ### mempool.keep-invalid-txs-in-cache
+
 Invalid transactions might become valid in the future, hence they are not added to the mempool cache by default.
 Turning this setting on will add an incoming transaction to the cache even if it is deemed invalid by the application (via `CheckTx`).
+
 ```toml
 keep-invalid-txs-in-cache = false
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `false` |
 |                     | `true`  |
 
@@ -1423,15 +1535,17 @@ quicker than validating each transaction one-by-one. It will also filter out tra
 valid at a later date.
 
 ### mempool.experimental_max_gossip_connections_to_persistent_peers
+
 > EXPERIMENTAL parameter!
 
 Limit the number of persistent peer nodes that get mempool transaction broadcasts.
+
 ```toml
 experimental_max_gossip_connections_to_persistent_peers = 0
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt;= 0 |
 
 When set to `0`, the mempool is broadcasting to all the nodes listed in the
@@ -1446,16 +1560,18 @@ See
 to limit mempool broadcasts that are not in the list of [`p2p.persistent_peers`](#p2ppersistent_peers).
 
 ### mempool.experimental_max_gossip_connections_to_non_persistent_peers
+
 > EXPERIMENTAL parameter!
 
 Limit the number of peer nodes that get mempool transaction broadcasts. This parameter does not limit nodes that are
 in the [`p2p.persistent_peers`](#p2ppersistent_peers) list.
+
 ```toml
 experimental_max_gossip_connections_to_non_persistent_peers = 0
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt;= 0 |
 
 When set to `0`, the mempool is broadcasting to all the nodes. If the number is above `0`, the number of nodes that get
@@ -1472,6 +1588,7 @@ For non-persistent peers, if enabled, a value of 10 is recommended based on expe
 default P2P configuration.
 
 ## State synchronization
+
 State sync rapidly bootstraps a new node by discovering, fetching, and restoring a state machine snapshot from peers
 instead of fetching and replaying historical blocks. It requires some peers in the network to take and serve state
 machine snapshots. State sync is not attempted if the starting node has any local state (i.e., it is recovering).
@@ -1479,52 +1596,60 @@ machine snapshots. State sync is not attempted if the starting node has any loca
 The node will have a truncated block history, starting from the height of the snapshot.
 
 ### statesync.enable
+
 Enable state synchronization.
+
 ```toml
 enable = false
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `false` |
 |                     | `true`  |
 
 Enable state synchronization on first start.
 
 ### statesync.rpc_servers
+
 Comma-separated list of RPC servers for light client verification of the synced state machine,
 and retrieval of state data for node bootstrapping.
+
 ```toml
 rpc_servers = ""
 ```
 
 | Value type                        | string (comma-separated list)      |
-|:----------------------------------|:-----------------------------------|
+| :-------------------------------- | :--------------------------------- |
 | **Possible values within commas** | nodeID@IP:port (`"1.2.3.4:26657"`) |
 |                                   | `""`                               |
 
 At least two RPC servers have to be defined for state synchronization to work.
 
 ### statesync.trust_height
+
 The height of the trusted header hash.
+
 ```toml
 trust_height = 0
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt;= 0 |
 
 `0` is only allowed when state synchronization is disabled.
 
 ### statesync.trust_hash
+
 Header hash obtained from a trusted source.
+
 ```toml
 trust_hash = ""
 ```
 
 | Value type          | string             |
-|:--------------------|:-------------------|
+| :------------------ | :----------------- |
 | **Possible values** | hex-encoded number |
 |                     | ""                 |
 
@@ -1534,20 +1659,24 @@ This is the header hash value obtained from the trusted source at height
 [statesync.trust_height](#statesynctrust_height).
 
 ### statesync.trust_period
+
 The period during which validators can be trusted.
+
 ```toml
 trust_period = "168h0m0s"
 ```
 
 | Value type          | string (duration) |
-|:--------------------|:------------------|
+| :------------------ | :---------------- |
 | **Possible values** | &gt;= `"0s"`      |
 
 For Cosmos SDK-based chains, `statesync.trust_period` should usually be about 2/3rd of the unbonding period
 (about 2 weeks) during which they can be financially punished (slashed) for misbehavior.
 
 ### statesync.max_discovery_time
+
 Time to spend discovering snapshots before switching to blocksync. If set to 0, state sync will be trying indefinitely.
+
 ```toml
 max_discovery_time = "2m"
 ```
@@ -1557,14 +1686,16 @@ If `max_discovery_time` is zero, the node will keep trying to discover snapshots
 If `max_discovery_time` is greater than zero, the node will broadcast the "snapshot request" message to its peers and then wait for 5 sec. If no snapshot data has been received after that period, the node will retry: it will broadcast the "snapshot request" message again and wait for 5s, and so on until `max_discovery_time` is reached, after which the node will switch to blocksync.
 
 ### statesync.temp_dir
+
 Temporary directory for state sync snapshot chunks.
+
 ```toml
 temp_dir = ""
 ```
 
-| Value type          | string                  |
-|:--------------------|:------------------------|
-| **Possible values** | undefined               |
+| Value type          | string    |
+| :------------------ | :-------- |
+| **Possible values** | undefined |
 
 This value is unused by CometBFT. It was not hooked up to the state sync reactor.
 
@@ -1572,38 +1703,44 @@ The codebase will always revert to `/tmp/<random_name>` for state snapshot chunk
 your drive that holds `/tmp`.
 
 ### statesync.chunk_request_timeout
+
 The timeout duration before re-requesting a chunk, possibly from a different peer.
+
 ```toml
 chunk_request_timeout = "10s"
 ```
 
 | Value type          | string (duration) |
-|:--------------------|:------------------|
+| :------------------ | :---------------- |
 | **Possible values** | &gt;= `"5s"`      |
 
 If a smaller duration is set when state syncing is enabled, an error message is raised.
 
 ### statesync.chunk_fetchers
+
 The number of concurrent chunk fetchers to run.
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt;= 0 |
 
 `0` is only allowed when state synchronization is disabled.
 
 ## Block synchronization
+
 Block synchronization configuration is limited to defining a version of block synchronization to use.
 
 ### blocksync.version
+
 Block Sync version to use.
+
 ```toml
 version = "v0"
 ```
 
-| Value type          | string  |
-|:--------------------|:--------|
-| **Possible values** | `"v0"`  |
+| Value type          | string |
+| :------------------ | :----- |
+| **Possible values** | `"v0"` |
 
 All other versions are deprecated. Further versions may be added in future releases.
 
@@ -1620,7 +1757,7 @@ wal_file = "data/cs.wal/wal"
 ```
 
 | Value type          | string                                          |
-|:--------------------|:------------------------------------------------|
+| :------------------ | :---------------------------------------------- |
 | **Possible values** | relative directory path, appended to `$CMTHOME` |
 |                     | absolute directory path                         |
 
@@ -1649,7 +1786,7 @@ timeout_propose = "3s"
 ```
 
 | Value type          | string (duration) |
-|:--------------------|:------------------|
+| :------------------ | :---------------- |
 | **Possible values** | &gt;= `"0s"`      |
 
 The proposal block of a round of consensus is broadcast by the proposer of that round.
@@ -1675,7 +1812,7 @@ timeout_propose_delta = "500ms"
 ```
 
 | Value type          | string (duration) |
-|:--------------------|:------------------|
+| :------------------ | :---------------- |
 | **Possible values** | &gt;= `"0ms"`     |
 
 Consensus timeouts are adaptive.
@@ -1693,7 +1830,7 @@ timeout_vote = "1s"
 ```
 
 | Value type          | string (duration) |
-|:--------------------|:------------------|
+| :------------------ | :---------------- |
 | **Possible values** | &gt;= `"0s"`      |
 
 #### Prevotess
@@ -1734,7 +1871,7 @@ timeout_vote_delta = "500ms"
 ```
 
 | Value type          | string (duration) |
-|:--------------------|:------------------|
+| :------------------ | :---------------- |
 | **Possible values** | &gt;= `"0ms"`     |
 
 Consensus timeouts are adaptive.
@@ -1752,7 +1889,7 @@ timeout_commit = "1s"
 ```
 
 | Value type          | string (duration) |
-|:--------------------|:------------------|
+| :------------------ | :---------------- |
 | **Possible values** | &gt;= `"0s"`      |
 
 The `timeout_commit` represents the minimum interval between the commit of a
@@ -1786,7 +1923,7 @@ double_sign_check_height = 0
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt;= 0 |
 
 When non-zero, the validator will panic upon restart if the validator's current
@@ -1804,13 +1941,12 @@ create_empty_blocks = true
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `true`  |
 |                     | `false` |
 
 When set to `true`, empty blocks are produced and proposed to indicate that the
 chain is still operative.
-
 
 When set to `false`, blocks are not produced or proposed while there are no
 transactions in the validator's mempool.
@@ -1848,7 +1984,7 @@ create_empty_blocks_interval = "0s"
 ```
 
 | Value type          | string (duration) |
-|:--------------------|:------------------|
+| :------------------ | :---------------- |
 | **Possible values** | &gt;= `"0s"`      |
 
 If there are no transactions in the validator's mempool, the validator
@@ -1873,7 +2009,7 @@ peer_gossip_sleep_duration = "100ms"
 ```
 
 | Value type          | string (duration) |
-|:--------------------|:------------------|
+| :------------------ | :---------------- |
 | **Possible values** | &gt;= `"0ms"`     |
 
 The consensus reactor gossips consensus messages, by sending or forwarding them
@@ -1894,8 +2030,8 @@ peer_gossip_intraloop_sleep_duration = "0s"
 ```
 
 | Value type          | string (duration) |
-|:--------------------|:------------------|
-| **Possible values** | &gt;= `"0s"`     |
+| :------------------ | :---------------- |
+| **Possible values** | &gt;= `"0s"`      |
 
 The consensus reactor gossips consensus messages, by sending or forwarding them
 to peers.
@@ -1916,7 +2052,7 @@ peer_query_maj23_sleep_duration = "2s"
 ```
 
 | Value type          | string (duration) |
-|:--------------------|:------------------|
+| :------------------ | :---------------- |
 | **Possible values** | &gt;= `"0s"`      |
 
 The consensus reactor gossips consensus messages, by sending or forwarding them
@@ -1931,6 +2067,7 @@ The value of `peer_query_maj23_sleep_duration` is the interval between sending
 those queries to a peer.
 
 ## Storage
+
 In production environments, configuring storage parameters accurately is essential as it can greatly impact the amount
 of disk space utilized.
 
@@ -1942,13 +2079,15 @@ Note that for some databases (GolevelDB), the data often does not get physically
 not triggering compaction. In these cases it is necessary to enable forced compaction and set the compaction interval accordingly.
 
 ### storage.discard_abci_responses
+
 Discard ABCI responses from the state store, which can save a considerable amount of disk space.
+
 ```toml
 discard_abci_responses = false
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `false` |
 |                     | `true`  |
 
@@ -1971,7 +2110,7 @@ experimental_db_key_layout = 'v1'
 ```
 
 | Value type          | string |
-|:--------------------|:-------|
+| :------------------ | :----- |
 | **Possible values** | `v1`   |
 |                     | `v2`   |
 
@@ -1991,7 +2130,7 @@ compact = false
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `false` |
 |                     | `true`  |
 
@@ -2007,7 +2146,7 @@ to try compaction every block. But it should also not be a very large multiple o
 bigger overheads.
 
 | Value type          | string (# blocks) |
-|:--------------------|:------------------|
+| :------------------ | :---------------- |
 | **Possible values** | &gt;= `"0"`       |
 
 ```toml
@@ -2015,16 +2154,19 @@ compaction_interval = '1000'
 ```
 
 ### storage.pruning.interval
+
 The time period between automated background pruning operations.
+
 ```toml
 interval = "10s"
 ```
 
 | Value type          | string (duration) |
-|:--------------------|:------------------|
+| :------------------ | :---------------- |
 | **Possible values** | &gt;= `"0s"`      |
 
 ### storage.pruning.data_companion.enabled
+
 Tell the automatic pruning function to respect values set by the data companion.
 
 ```toml
@@ -2032,7 +2174,7 @@ enabled = false
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `false` |
 |                     | `true`  |
 
@@ -2042,42 +2184,48 @@ Only enabling this at a later stage will potentially mean that blocks below the 
 time will not be available to the data companion.
 
 ### storage.pruning.data_companion.initial_block_retain_height
+
 The initial value for the data companion block retain height if the data companion has not yet explicitly set one.
 If the data companion has already set a block retain height, this is ignored.
+
 ```toml
 double_sign_check_height = 0
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt;= 0 |
 
 ### storage.pruning.data_companion.initial_block_results_retain_height
+
 The initial value for the data companion block results retain height if the data companion has not yet explicitly set
 one. If the data companion has already set a block results retain height, this is ignored.
+
 ```toml
 initial_block_results_retain_height = 0
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt;= 0 |
 
-
 ## Transaction indexer
+
 Transaction indexer settings.
 
 The application will set which txs to index.
 In some cases, a node operator will be able to decide which txs to index based on the configuration set in the application.
 
 ### tx_index.indexer
+
 What indexer to use for transactions.
+
 ```toml
 indexer = "kv"
 ```
 
 | Value type          | string   |
-|:--------------------|:---------|
+| :------------------ | :------- |
 | **Possible values** | `"kv"`   |
 |                     | `"null"` |
 |                     | `"psql"` |
@@ -2093,39 +2241,45 @@ The server connection string is defined in [`tx_index.psql-conn`](#tx_indexpsql-
 The transaction height and transaction hash is always indexed, except with the `"null"` indexer.
 
 ### tx_index.psql-conn
+
 The PostgreSQL connection configuration.
+
 ```toml
 psql-conn = ""
 ```
 
 | Value type          | string                                                       |
-|:--------------------|:-------------------------------------------------------------|
+| :------------------ | :----------------------------------------------------------- |
 | **Possible values** | `"postgresql://<user>:<password>@<host>:<port>/<db>?<opts>"` |
 |                     | `""`                                                         |
 
-### tx_index.table_*
+### tx*index.table*\*
+
 Table names used by the PostgreSQL-backed indexer.
 
-This setting is optional and only applies when `indexer`  is set to `psql`.
+This setting is optional and only applies when `indexer` is set to `psql`.
 
-| Field         | default value               |
-|:--------------------|:---------------------|
-| `"table_blocks"` | `"blocks"`     |
-| `"table_tx_results"` | `"tx_results"` |
-| `"table_events"`    | `"events"`     |
+| Field                | default value        |
+| :------------------- | :------------------- |
+| `"table_blocks"`     | `"blocks"`           |
+| `"table_tx_results"` | `"tx_results"`       |
+| `"table_events"`     | `"events"`           |
 | `"table_attributes"` | `"table_attributes"` |
 
 ## Prometheus Instrumentation
+
 An extensive amount of Prometheus metrics are built into CometBFT.
 
 ### instrumentation.prometheus
+
 Enable or disable presenting the Prometheus metrics at an endpoint.
+
 ```toml
 prometheus = false
 ```
 
 | Value type          | boolean |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | `false` |
 |                     | `true`  |
 
@@ -2133,13 +2287,15 @@ When enabled, metrics are served under the `/metrics` endpoint on the
 [instrumentation.prometheus_listen_addr](#instrumentationprometheus_listen_addr) address.
 
 ### instrumentation.prometheus_listen_addr
+
 Address to listen for Prometheus collector(s) connections.
+
 ```toml
 prometheus_listen_addr = ":26660"
 ```
 
 | Value type          | string                                |
-|:--------------------|:--------------------------------------|
+| :------------------ | :------------------------------------ |
 | **Possible values** | Network address (`"127.0.0.1:26657"`) |
 
 If the IP address is omitted (see e.g. the default value) then the listening socket is bound to INADDR_ANY (`0.0.0.0`).
@@ -2147,25 +2303,29 @@ If the IP address is omitted (see e.g. the default value) then the listening soc
 The metrics endpoint only supports HTTP.
 
 ### instrumentation.max_open_connections
+
 Maximum number of simultaneous connections.
+
 ```toml
 max_open_connections = 3
 ```
 
 | Value type          | integer |
-|:--------------------|:--------|
+| :------------------ | :------ |
 | **Possible values** | &gt;= 0 |
 
 `0` allows unlimited connections.
 
 ### instrumentation.namespace
+
 Instrumentation namespace
+
 ```toml
 namespace = "cometbft"
 ```
 
 | Value type          | string                    |
-|:--------------------|:--------------------------|
+| :------------------ | :------------------------ |
 | **Possible values** | Prometheus namespace name |
 
 ## Consensus timeouts explained

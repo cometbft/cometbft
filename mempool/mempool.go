@@ -6,6 +6,7 @@ import (
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/types"
 )
@@ -166,6 +167,16 @@ type Entry interface {
 
 	// IsSender returns whether we received the transaction from the given peer ID.
 	IsSender(peerID nodekey.ID) bool
+
+	// Add a signature to the list of signatures.
+	AddSignature(pubKey crypto.PubKey, signature []byte) error
+
+
+	// Validates All Signatures check if each signature is matching with the pubKey
+	 ValidateSignatures()
+
+	// Count the number of signature to check if we reach the number required to stop broadcasting
+	SignatureCount()
 }
 
 // An iterator is used to iterate through the mempool entries.

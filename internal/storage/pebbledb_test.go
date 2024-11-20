@@ -196,7 +196,104 @@ func TestDelete(t *testing.T) {
 }
 
 func TestCompact(t *testing.T) {
-	t.Skip("Not implemented")
+	var (
+		// make sure keys and vals are the same length.
+		keys = [][]byte{
+			{'a'},
+			{'b'},
+			{'c'},
+			{'d'},
+			{'e'},
+			{'f'},
+			{'g'},
+			{'h'},
+			{'i'},
+			{'j'},
+		}
+		vals = [][]byte{
+			{0x01},
+			{0x02},
+			{0x03},
+			{0x04},
+			{0x05},
+			{0x06},
+			{0x07},
+			{0x08},
+			{0x09},
+			{0x0a},
+		}
+
+		sync = pebble.Sync
+
+		createTestDB = func(t *testing.T) (*PebbleDB, func()) {
+			t.Helper()
+
+			pDB, err := newInMemDB()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			closer := func() {
+				pDB.db.Close()
+			}
+
+			for i, key := range keys {
+				if err := pDB.db.Set(key, vals[i], sync); err != nil {
+					t.Fatalf("writing key %s: %s", key, err)
+				}
+			}
+			return pDB, closer
+		}
+	)
+
+	// The following tests will create their own DBs to test compaction, so that
+	// each compaction operation works on a DB that has never been compacted
+	// before.
+	t.Run("NilStartNoErr", func(t *testing.T) {
+		pDB, closer := createTestDB(t)
+		defer closer()
+
+		// if start is nil, compaction starts from the first key in the DB.
+		end := keys[2]
+		if err := pDB.Compact(nil, end); err != nil {
+			t.Errorf("unexpected error: %s", err)
+		}
+	})
+
+	t.Run("NilEndNoErr", func(t *testing.T) {
+		pDB, closer := createTestDB(t)
+		defer closer()
+
+		// if end is nil, compaction ends at the last key in the DB.
+		start := keys[0]
+		if err := pDB.Compact(start, nil); err != nil {
+			t.Errorf("unexpected error: %s", err)
+		}
+	})
+
+	t.Run("StartEndNilNoErr", func(t *testing.T) {
+		pDB, closer := createTestDB(t)
+		defer closer()
+
+		// if start and end are nil, compaction starts from the first key and ends
+		// at the last key in the DB.
+		if err := pDB.Compact(nil, nil); err != nil {
+			t.Errorf("unexpected error: %s", err)
+		}
+	})
+
+	t.Run("StartEndNoErr", func(t *testing.T) {
+		pDB, closer := createTestDB(t)
+		defer closer()
+
+		var (
+			start = keys[2]
+			end   = keys[8]
+		)
+		if err := pDB.Compact(start, end); err != nil {
+			t.Errorf("unexpected error: %s", err)
+		}
+	})
 }
 
 // newInMemDB is a utility function that creates an in-memory instance of pebble for

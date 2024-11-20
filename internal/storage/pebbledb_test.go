@@ -32,7 +32,7 @@ func TestGet(t *testing.T) {
 			t.Fatalf("unexpected error: %s", err)
 		}
 		if val != nil {
-			t.Errorf("expected nil value, got: %v", val)
+			t.Errorf("expected nil value, got: %s", val)
 		}
 	})
 
@@ -350,7 +350,7 @@ func newInMemDB() (*PebbleDB, func(), error) {
 	return pDB, closer, nil
 }
 
-// setelper is a utility function supporting TestSet.
+// setHelper is a utility function supporting TestSet.
 func setHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error {
 	var (
 		key = []byte{'a'}

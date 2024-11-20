@@ -27,30 +27,17 @@ team, including:
 6. Versioning of both the Protobuf definitions _and_ RPC. By versioning our
    APIs, we aim to provide a level of commitment to API stability while
    simultaneously affording ourselves the ability to roll out substantial
-<<<<<<< HEAD
-   changes in non-breaking releases of CometBFT. See [ADR 103](./docs/architecture/adr-103-proto-versioning.md) and [ADR 107](./docs/architecture/adr-107-betaize-proto-versions.md).
-6. Moving many Go packages that are currently publicly accessible into the
-=======
    changes in non-breaking releases of CometBFT. See [ADR
    103](./docs/architecture/adr-103-proto-versioning.md) and [ADR
    107](./docs/architecture/adr-107-betaize-proto-versions.md).
 7. Moving many Go packages that are currently publicly accessible into the
->>>>>>> 0cb58b55c (chore: updates in preparation for v1.0.0-rc2 (#4454))
    `internal` directory such that the team can roll out substantial changes in
    future without needing to worry about causing breakages in users' codebases.
    The massive surface area of previous versions has in the past significantly
    hampered the team's ability to roll out impactful new changes to users, as
    previously such changes required a new breaking release (which currently
-<<<<<<< HEAD
-   takes 6 to 12 months to reach production use for many users). See [ADR 109](./docs/architecture/adr-109-reduce-go-api-surface.md) for more details.
-7. Proposer-Based Timestamps (PBTS) support. PBTS is a Byzantine fault-tolerant
-    algorithm used by CometBFT for computing block times.
-    When activated on a chain, it replaces the pre-existing BFT-time algorithm.
-    See [spec](./spec/consensus/proposer-based-timestamp) doc for PBTS.
-=======
    takes 6 to 12 months to reach production use for many users). See [ADR
    109](./docs/architecture/adr-109-reduce-go-api-surface.md) for more details.
->>>>>>> 0cb58b55c (chore: updates in preparation for v1.0.0-rc2 (#4454))
 
 None of these changes are state machine-breaking for CometBFT-based networks,
 but could be breaking for some users who depend on the Protobuf definitions type

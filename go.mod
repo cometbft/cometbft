@@ -12,7 +12,7 @@ require (
 	github.com/cometbft/cometbft/api v1.0.0-rc2
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
-	github.com/dgraph-io/badger/v4 v4.3.1
+	github.com/dgraph-io/badger/v4 v4.4.0
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/go-kit/log v0.2.1
 	github.com/go-logfmt/logfmt v0.6.0
@@ -74,7 +74,7 @@ require (
 	github.com/containerd/continuity v0.3.0 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/dgraph-io/ristretto v1.0.0 // indirect
+	github.com/dgraph-io/ristretto/v2 v2.0.0 // indirect
 	github.com/docker/cli v24.0.7+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
@@ -98,7 +98,7 @@ require (
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
-	github.com/klauspost/compress v1.17.10 // indirect
+	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/linxGnu/grocksdb v1.9.3 // indirect

@@ -22,12 +22,11 @@ module dog {
     // Parameters
     //--------------------------------------------------------------------------
     const TargetRedundancy: int
+    const TargetRedundancyDeltaPercent: int
     val _delta = TargetRedundancy * TargetRedundancyDeltaPercent / 100
     val lowerBound = TargetRedundancy - _delta
     val upperBound = TargetRedundancy + _delta
-    val TargetRedundancyDeltaPercent: int = 5
     const adjustInterval: int
-    pure def adjustNow(rc) = true
 
     //--------------------------------------------------------------------------
     // Routing
@@ -57,16 +56,15 @@ module dog {
     pure def resetCounters(_rc) = { firstTimeTxs: 0, duplicateTxs: 0, ..._rc }
     pure def blockHaveTx(_rc) = { isHaveTxBlocked: true, ..._rc }
     pure def redundancy(_rc) = _rc.duplicateTxs / _rc.firstTimeTxs
-    pure def adjustRedundancy(node, _incomingMsgs, _rc, randomPeerToSendReset) =
-        val red = _rc.redundancy()
+    pure def adjustRedundancy(node, _rc) =
         if (_rc.firstTimeTxs + _rc.duplicateTxs == 0)
-            (_rc, _incomingMsgs)
-        else if (red < lowerBound)
-            (_rc.resetCounters(), node.multiSend(_incomingMsgs, Set(randomPeerToSendReset), ResetMsg))
-        else if (red >= upperBound)
-            (_rc.resetCounters().blockHaveTx(), _incomingMsgs)
+            (_rc, false)
+        else if (_rc.redundancy() < lowerBound)
+            (_rc, true)
+        else if (_rc.redundancy() >= upperBound)
+            (_rc.blockHaveTx(), false)
         else 
-            (_rc.resetCounters(), _incomingMsgs)
+            (_rc, false)
 
     //--------------------------------------------------------------------------
     // Actions
@@ -77,16 +75,20 @@ module dog {
         rc' = NodeIDs.mapBy(_ => initialRCState)
     }
 
-    action redundancyControlLoop(node) = all {
-        require(node.RC().adjustNow()),
-        nondet randomPeerToSendReset = oneOf(node.Peers())
-        val res = node.adjustRedundancy(incomingMsgs, node.RC(), randomPeerToSendReset)
+    action controlLoopIteration(node) = all {
+        val res = node.adjustRedundancy(node.RC())
+        val updatedNodeRC = res._1
+        val sendReset = res._2
+        nondet randomPeer = oneOf(node.Peers())
         all {
-            incomingMsgs' = res._2,
+            incomingMsgs' = 
+                if (sendReset) 
+                    node.multiSend(incomingMsgs, Set(randomPeer), ResetMsg)
+                else incomingMsgs,
+            rc' = rc.put(node, updatedNodeRC.resetCounters()),
             peers' = peers,
             mempool' = mempool,
             senders' = senders,
-            rc' = rc.put(node, res._1),
             dr' = dr,
         }
     }
@@ -144,6 +146,7 @@ module dog {
     }
     def mkTargetNodes(node, tx) =
         val txSenders = node.sendersOf(hash(tx)).listToSet()
+        // FIX
         val disabledTargets = node.DisabledRoutes()
             // Keep only routes whose source is one of tx's senders.
             .filter(r => r._1.in(txSenders))
@@ -196,7 +199,7 @@ module dog {
         },
         // Redundancy Controller process loop
         nondet node = oneOf(nodesInNetwork)
-        node.redundancyControlLoop(),
+        node.controlLoopIteration(),
     }
 
 }

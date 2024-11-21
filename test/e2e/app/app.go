@@ -789,16 +789,24 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.VerifyV
 		panic(fmt.Errorf("received call to VerifyVoteExtension at height %d, when vote extensions are disabled", appHeight))
 	}
 	// We don't allow vote extensions to be optional
-	if len(req.VoteExtension) == 0 {
+	if len(req.VoteExtension) == 0 || len(req.NonRpVoteExtension) == 0 {
 		app.logger.Error("received empty vote extension")
 		return &abci.VerifyVoteExtensionResponse{
 			Status: abci.VERIFY_VOTE_EXTENSION_STATUS_REJECT,
 		}, nil
 	}
 
-	num, err := parseVoteExtension(app.cfg, req.VoteExtension)
+	num_ve, err := parseVoteExtension(app.cfg, req.VoteExtension)
 	if err != nil {
 		app.logger.Error("failed to parse vote extension", "vote_extension", hex.EncodeToString(req.VoteExtension[:4]), "err", err)
+		return &abci.VerifyVoteExtensionResponse{
+			Status: abci.VERIFY_VOTE_EXTENSION_STATUS_REJECT,
+		}, nil
+	}
+
+	num_nrp, err := parseVoteExtension(app.cfg, req.NonRpVoteExtension)
+	if err != nil {
+		app.logger.Error("failed to parse non rp vote extension", "nrp_vote_extension", hex.EncodeToString(req.NonRpVoteExtension[:4]), "err", err)
 		return &abci.VerifyVoteExtensionResponse{
 			Status: abci.VERIFY_VOTE_EXTENSION_STATUS_REJECT,
 		}, nil
@@ -808,7 +816,9 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.VerifyV
 		time.Sleep(app.cfg.VoteExtensionDelay)
 	}
 
-	app.logger.Info("verified vote extension value", "height", req.Height, "vote_extension", hex.EncodeToString(req.VoteExtension[:4]), "num", num)
+	app.logger.Info("verified vote extension value", "height", req.Height,
+		"vote_extension", hex.EncodeToString(req.VoteExtension[:4]), "num_ve", num_ve,
+		"nrp_vote_extension", hex.EncodeToString(req.NonRpVoteExtension[:4]), "num_nrp_ve", num_nrp)
 	return &abci.VerifyVoteExtensionResponse{
 		Status: abci.VERIFY_VOTE_EXTENSION_STATUS_ACCEPT,
 	}, nil

@@ -2196,10 +2196,11 @@ func TestExtendVoteCalledWhenEnabled(t *testing.T) {
 				addr := pv.Address()
 				if testCase.enabled {
 					m.AssertCalled(t, "VerifyVoteExtension", context.TODO(), &abci.VerifyVoteExtensionRequest{
-						Hash:             blockID.Hash,
-						ValidatorAddress: addr,
-						Height:           height,
-						VoteExtension:    []byte("extension"),
+						Hash:               blockID.Hash,
+						ValidatorAddress:   addr,
+						Height:             height,
+						VoteExtension:      []byte("extension"),
+						NonRpVoteExtension: []byte("nrp extension"),
 					})
 				} else {
 					m.AssertNotCalled(t, "VerifyVoteExtension", mock.Anything, mock.Anything)
@@ -2271,10 +2272,11 @@ func TestVerifyVoteExtensionNotCalledOnAbsentPrecommit(t *testing.T) {
 	addr = pv.Address()
 
 	m.AssertNotCalled(t, "VerifyVoteExtension", context.TODO(), &abci.VerifyVoteExtensionRequest{
-		Hash:             blockID.Hash,
-		ValidatorAddress: addr,
-		Height:           height,
-		VoteExtension:    []byte("extension"),
+		Hash:               blockID.Hash,
+		ValidatorAddress:   addr,
+		Height:             height,
+		VoteExtension:      []byte("extension"),
+		NonRpVoteExtension: []byte("nrp extension"),
 	})
 }
 

@@ -17,7 +17,7 @@ transactions in the network.
     - Bandwidth: the broadcast nature of Flood results in significant redundancy in message
       propagation, leading to exponential increases in bandwidth usage.
 
-- [Dynamic Optimal Graph (DOG)](dog.qnt). Building on Flood, DOG introduces improvements that
+- [Dynamic Optimal Graph (DOG)](dog.md). Building on Flood, DOG introduces improvements that
   significantly reduces redundant messages, enhancing bandwidth efficiency while maintaining similar
   latency and resilience properties.
   - Pros:
@@ -43,7 +43,7 @@ To (re-)generate the Quint files:
 2. run `make`.
 
 The Flood gossip protocol is self-described in its own [flood](flood.md) spec. Similarly, DOG is
-also self-described in the [dog](dog.qnt) spec, except that imports some definitions from Flood.
+also self-described in the [dog](dog.md) spec, except that imports some definitions from Flood.
 Both are built on top of two other specs, which are not strictly needed to understand the protocol:
 - [mempool](mempool.md) with definitions of common data structures from the mempool, and 
 - [p2p](p2p.md) with networking definitions, assumptions, and boilerplate.

@@ -399,6 +399,52 @@ func TestBatchSet(t *testing.T) {
 	})
 }
 
+func TestBatchDelete(t *testing.T) {
+	pBatch, dbCloser, err := newBatch()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(dbCloser)
+
+	t.Run("EmptyKeyErr", func(t *testing.T) {
+		if err := pBatch.Delete(nil); !errors.Is(err, errKeyEmpty) {
+			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		}
+	})
+
+	t.Run("BatchNilErr", func(t *testing.T) {
+		var (
+			pBatch = &pebbleDBBatch{
+				batch: nil,
+			}
+			key = []byte{'a'}
+		)
+		if err := pBatch.Delete(key); !errors.Is(err, errBatchClosed) {
+			t.Errorf("expected %s, got: %s", errBatchClosed, err)
+		}
+	})
+
+	t.Run("NoErr", func(t *testing.T) {
+		var (
+			key   = []byte{'a'}
+			value = []byte{'b'}
+		)
+		if err := pBatch.batch.Set(key, value, nil); err != nil {
+			formatStr := "adding set (k,v)=(%s,%v) operation to batch: %s"
+			t.Fatalf(formatStr, key, value, err)
+		}
+
+		if err := pBatch.Delete(key); err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+
+		_, _, err := pBatch.db.db.Get(key)
+		if !errors.Is(err, pebble.ErrNotFound) {
+			t.Errorf("want error: %s\nbut got: %s", pebble.ErrNotFound, err)
+		}
+	})
+}
+
 // Rather than having two almost identical TestBatch* functions testing
 // *pebbleDBBatch.Write and *PebbleDBBatch.WriteSync, we have one test function that
 // calls *PebbleDBBatch.commitWithOpts once with pebble.NoSync and once with

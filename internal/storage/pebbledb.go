@@ -412,6 +412,8 @@ func (b *pebbleDBBatch) Delete(key []byte) error {
 		return errBatchClosed
 	}
 
+	// the nil parameter is for the write options. pebble's own library sets it
+	// to _ in the function definition, thus ignoring it.
 	if err := b.batch.Delete(key, nil); err != nil {
 		formatStr := "adding delete update (k)=(%s) to batch: %w"
 		return fmt.Errorf(formatStr, key, err)

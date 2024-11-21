@@ -364,8 +364,9 @@ type pebbleDBBatch struct {
 // newPebbleDBBatch returns a new batch to be used for atomic database updates.
 func newPebbleDBBatch(pDB *PebbleDB) *pebbleDBBatch {
 	return &pebbleDBBatch{
-		// For regular batch operations pebbleDBBatchdb is going to be set to pDB
-		// and it is not needed to initialize the DB here.
+		// Because newPebbleDBBatch can only be called by the exported method
+		// PebbleDB.NewBatch, pDB is going to be non-nil; Therefore we don't need to
+		// initialize the DB here.
 		// This is set to enable general DB operations like compaction
 		// (e.g., a call do pebbleDBBatch.db.Compact() would throw a nil pointer
 		// exception)
@@ -422,19 +423,9 @@ func (b *pebbleDBBatch) Delete(key []byte) error {
 //
 // It implements the [Batch] interface for type pebbleDBBatch.
 func (b *pebbleDBBatch) Write() error {
-	if b.batch == nil {
-		return errBatchClosed
-	}
-
 	writeOpts := pebble.NoSync
-	if err := b.batch.Commit(writeOpts); err != nil {
-		return fmt.Errorf("writing batch to DB: %w", err)
-	}
-
-	// Make sure batch cannot be used afterwards.
-	// Callers should still call Close() on it.
-	if err := b.Close(); err != nil {
-		return fmt.Errorf("batch post-write routine: %w", err)
+	if err := b.commitWithOpts(writeOpts); err != nil {
+		return fmt.Errorf("unsynced batch write: %w", err)
 	}
 
 	return nil
@@ -445,11 +436,20 @@ func (b *pebbleDBBatch) Write() error {
 //
 // It implements the [Batch] interface for type pebbleDBBatch.
 func (b *pebbleDBBatch) WriteSync() error {
+	writeOpts := pebble.Sync
+	if err := b.commitWithOpts(writeOpts); err != nil {
+		return fmt.Errorf("synced batch write: %w", err)
+	}
+
+	return nil
+}
+
+// commitWithOpts applies the batch to the database.
+func (b *pebbleDBBatch) commitWithOpts(writeOpts *pebble.WriteOptions) error {
 	if b.batch == nil {
 		return errBatchClosed
 	}
 
-	writeOpts := pebble.Sync
 	if err := b.batch.Commit(writeOpts); err != nil {
 		return fmt.Errorf("writing batch to DB: %w", err)
 	}

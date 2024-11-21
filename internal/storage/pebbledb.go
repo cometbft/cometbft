@@ -19,7 +19,6 @@ var _ DB = (*PebbleDB)(nil)
 // NewPebbleDB returns a new PebbleDB instance using the default options.
 func NewPebbleDB(name, dir string) (*PebbleDB, error) {
 	opts := &pebble.Options{}
-	opts.EnsureDefaults()
 
 	return NewPebbleDBWithOpts(name, dir, opts)
 }
@@ -90,20 +89,12 @@ func (pDB *PebbleDB) Has(key []byte) (bool, error) {
 // Set does not synchronize the write to disk immediately. Instead, it may be
 // cached in memory and synced to disk later during a background flush or
 // compaction. Use [SetSync] to flush the write to disk immediately.
-// Set is faster than [SetSync] because it does not incur the latency of disk I/O.
 //
 // It implements the [DB] interface for type PebbleDB.
-func (pDB *PebbleDB) Set(key []byte, value []byte) error {
-	if len(key) == 0 {
-		return errKeyEmpty
-	}
-	if value == nil {
-		return errValueNil
-	}
-
+func (pDB *PebbleDB) Set(key, value []byte) error {
 	writeOpts := pebble.NoSync
-	if err := pDB.db.Set(key, value, writeOpts); err != nil {
-		return fmt.Errorf("writing value %s\nfor key %s: %w", value, key, err)
+	if err := pDB.setWithOpts(key, value, writeOpts); err != nil {
+		return fmt.Errorf("unsynced write: %w", err)
 	}
 
 	return nil
@@ -114,10 +105,23 @@ func (pDB *PebbleDB) Set(key []byte, value []byte) error {
 //
 // SetSync flushes the write to disk immediately and the write operation is completed
 // only after the data has been successfully written to persistent storage.
-// Because it incurs the latency of disk I/O, it is slower than [Set].
 //
 // It implements the [DB] interface for type PebbleDB.
-func (pDB *PebbleDB) SetSync(key []byte, value []byte) error {
+func (pDB *PebbleDB) SetSync(key, value []byte) error {
+	writeOpts := pebble.Sync
+	if err := pDB.setWithOpts(key, value, writeOpts); err != nil {
+		return fmt.Errorf("synced write: %w", err)
+	}
+
+	return nil
+}
+
+// setWithOpts sets the value for the given key, overwriting it if it already exists.
+// It is safe to modify the contents of the arguments after setWithOpts returns.
+func (pDB *PebbleDB) setWithOpts(
+	key, value []byte,
+	writeOpts *pebble.WriteOptions,
+) error {
 	if len(key) == 0 {
 		return errKeyEmpty
 	}
@@ -125,10 +129,9 @@ func (pDB *PebbleDB) SetSync(key []byte, value []byte) error {
 		return errValueNil
 	}
 
-	writeOpts := pebble.Sync
 	err := pDB.db.Set(key, value, writeOpts)
 	if err != nil {
-		return fmt.Errorf("writing value %s\nfor key %s: %w", value, key, err)
+		return fmt.Errorf("setting value %s\nfor key %s: %w", value, key, err)
 	}
 
 	return nil
@@ -146,13 +149,9 @@ func (pDB *PebbleDB) SetSync(key []byte, value []byte) error {
 //
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) Delete(key []byte) error {
-	if len(key) == 0 {
-		return errKeyEmpty
-	}
-
-	wopts := pebble.NoSync
-	if err := pDB.db.Delete(key, wopts); err != nil {
-		return fmt.Errorf("deleting key %s: %w", key, err)
+	writeOpts := pebble.NoSync
+	if err := pDB.deleteWithOpts(key, writeOpts); err != nil {
+		return fmt.Errorf("unsynced delete: %w", err)
 	}
 
 	return nil
@@ -168,12 +167,26 @@ func (pDB *PebbleDB) Delete(key []byte) error {
 //
 // It implements the [DB] interface for type PebbleDB.
 func (pDB PebbleDB) DeleteSync(key []byte) error {
+	writeOpts := pebble.Sync
+	if err := pDB.deleteWithOpts(key, writeOpts); err != nil {
+		return fmt.Errorf("synced delete: %w", err)
+	}
+
+	return nil
+}
+
+// deleteWithOpts deletes the value for the given key. Deletes will succeed even if
+// the key does not exist in the database.
+// It is safe to modify the contents of the arguments after deleteWithOpts returns.
+func (pDB *PebbleDB) deleteWithOpts(
+	key []byte,
+	writeOpts *pebble.WriteOptions,
+) error {
 	if len(key) == 0 {
 		return errKeyEmpty
 	}
 
-	wopts := pebble.Sync
-	if err := pDB.db.Delete(key, wopts); err != nil {
+	if err := pDB.db.Delete(key, writeOpts); err != nil {
 		return fmt.Errorf("deleting key %s: %w", key, err)
 	}
 
@@ -181,6 +194,7 @@ func (pDB PebbleDB) DeleteSync(key []byte) error {
 }
 
 // Compact compacts the specified range of keys in the database.
+//
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) Compact(start, end []byte) error {
 	// Currently nil,nil is an invalid range in Pebble.
@@ -245,6 +259,7 @@ func (pDB *PebbleDB) Close() error {
 }
 
 // Print prints all the key/value pairs in the database for debugging purposes.
+//
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) Print() error {
 	itr, err := pDB.Iterator(nil, nil)
@@ -263,12 +278,15 @@ func (pDB *PebbleDB) Print() error {
 }
 
 // Stats implements the [DB] interface.
+//
+// It implements the [DB] interface for type PebbleDB.
 func (*PebbleDB) Stats() map[string]string {
 	return nil
 }
 
 // NewBatch creates a batch for atomic database updates.
 // The caller is responsible for calling Batch.Close() once done.
+//
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) NewBatch() Batch {
 	return newPebbleDBBatch(pDB)

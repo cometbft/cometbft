@@ -342,6 +342,66 @@ func TestPrint(t *testing.T) {
 	}
 }
 
+func TestBatchSet(t *testing.T) {
+	pBatch, dbCloser, err := newBatch()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(dbCloser)
+
+	t.Run("EmptyKeyErr", func(t *testing.T) {
+		if err := pBatch.Set(nil, nil); !errors.Is(err, errKeyEmpty) {
+			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		}
+	})
+
+	t.Run("ValueNilErr", func(t *testing.T) {
+		key := []byte{'a'}
+		if err := pBatch.Set(key, nil); !errors.Is(err, errValueNil) {
+			t.Errorf("expected %s, got: %s", errValueNil, err)
+		}
+	})
+
+	t.Run("BatchNilErr", func(t *testing.T) {
+		pBatchBak := pBatch.batch
+		pBatch.batch = nil
+
+		var (
+			key   = []byte{'a'}
+			value = []byte{'b'}
+		)
+		if err := pBatch.Set(key, value); !errors.Is(err, errBatchClosed) {
+			t.Errorf("expected %s, got: %s", errBatchClosed, err)
+		}
+
+		// restore batch so that other tests can use it
+		pBatch.batch = pBatchBak
+	})
+
+	t.Run("NoErr", func(t *testing.T) {
+		var (
+			keys = [][]byte{{'a'}, {'b'}, {'c'}}
+			vals = [][]byte{{0x01}, {0x02}, {0x03}}
+		)
+		for i, key := range keys {
+			val := vals[i]
+
+			if err := pBatch.Set(key, val); err != nil {
+				formatStr := "adding set (k,v)=(%s,%v) operation to batch: %s"
+				t.Fatalf(formatStr, key, val, err)
+			}
+		}
+
+		var (
+			emptyBatch = pBatch.batch.Empty()
+			nUpdates   = pBatch.batch.Count()
+		)
+		if emptyBatch || (nUpdates != uint32(len(keys))) {
+			t.Fatalf("expected %d batch updates, got %d", len(keys), nUpdates)
+		}
+	})
+}
+
 // newInMemDB is a utility function that creates an in-memory instance of pebble for
 // testing.
 func newInMemDB() (*PebbleDB, func(), error) {
@@ -358,6 +418,28 @@ func newInMemDB() (*PebbleDB, func(), error) {
 		pDB = &PebbleDB{db: memDB}
 	)
 	return pDB, closer, nil
+}
+
+// newBatch is a utility function that creates a new batch for testing.
+// The underlying database is an in-memory instance of pebble.
+func newBatch() (*pebbleDBBatch, func(), error) {
+	pDB, dbCloser, err := newInMemDB()
+	if err != nil {
+		return nil, nil, fmt.Errorf("creating test batch: %w", err)
+	}
+
+	var (
+		pBatch = &pebbleDBBatch{
+			db:    pDB,
+			batch: pDB.db.NewBatch(),
+		}
+		closer = func() {
+			pBatch.batch.Close()
+			dbCloser()
+		}
+	)
+
+	return pBatch, closer, nil
 }
 
 // setHelper is a utility function supporting TestSet.

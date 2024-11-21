@@ -137,7 +137,6 @@ func TestSet(t *testing.T) {
 		}
 
 		// called by SetSync
-		// By changing the value, we also tests overwriting.
 		if err := setHelper(pDB, sync); err != nil {
 			t.Fatal(err)
 		}
@@ -363,19 +362,17 @@ func TestBatchSet(t *testing.T) {
 	})
 
 	t.Run("BatchNilErr", func(t *testing.T) {
-		pBatchBak := pBatch.batch
-		pBatch.batch = nil
-
 		var (
+			pBatch = &pebbleDBBatch{
+				batch: nil,
+			}
+
 			key   = []byte{'a'}
 			value = []byte{'b'}
 		)
 		if err := pBatch.Set(key, value); !errors.Is(err, errBatchClosed) {
 			t.Errorf("expected %s, got: %s", errBatchClosed, err)
 		}
-
-		// restore batch so that other tests can use it
-		pBatch.batch = pBatchBak
 	})
 
 	t.Run("NoErr", func(t *testing.T) {
@@ -397,7 +394,56 @@ func TestBatchSet(t *testing.T) {
 			nUpdates   = pBatch.batch.Count()
 		)
 		if emptyBatch || (nUpdates != uint32(len(keys))) {
-			t.Fatalf("expected %d batch updates, got %d", len(keys), nUpdates)
+			t.Errorf("expected %d batch updates, got %d", len(keys), nUpdates)
+		}
+	})
+}
+
+// Rather than having two almost identical TestBatch* functions testing
+// *pebbleDBBatch.Write and *PebbleDBBatch.WriteSync, we have one test function that
+// calls *PebbleDBBatch.commitWithOpts once with pebble.NoSync and once with
+// pebble.Sync.
+// This should be sufficient to test the Write and WriteSync methods, because under
+// the hood they only differ in that they call commitWithOpts with pebble.NoSync and
+// pebble.Sync respectively.
+func TestBatchWrite(t *testing.T) {
+	var (
+		sync   = pebble.Sync
+		noSync = pebble.NoSync
+	)
+
+	t.Run("BatchNilErr", func(t *testing.T) {
+		pBatch := &pebbleDBBatch{
+			batch: nil,
+		}
+		if err := pBatch.commitWithOpts(sync); !errors.Is(err, errBatchClosed) {
+			t.Errorf("expected %s, got: %s", errBatchClosed, err)
+		}
+	})
+
+	// Because Write and WriteSync close the batch after committing it, we need to
+	// create a new batch for each test.
+	t.Run("UnsyncedWriteNoErr", func(t *testing.T) {
+		pBatch, dbCloser, err := newBatch()
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(dbCloser)
+
+		if err := batchWriteHelper(pBatch, noSync); err != nil {
+			t.Error(err)
+		}
+	})
+
+	t.Run("SyncedWriteNoErr", func(t *testing.T) {
+		pBatch, dbCloser, err := newBatch()
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(dbCloser)
+
+		if err := batchWriteHelper(pBatch, sync); err != nil {
+			t.Error(err)
 		}
 	})
 }
@@ -434,7 +480,11 @@ func newBatch() (*pebbleDBBatch, func(), error) {
 			batch: pDB.db.NewBatch(),
 		}
 		closer = func() {
-			pBatch.batch.Close()
+			// the Batch write methods close the batch and set it to nil, so we need
+			// this check to prevent a panic.
+			if pBatch.batch != nil {
+				pBatch.batch.Close()
+			}
 			dbCloser()
 		}
 	)
@@ -443,6 +493,7 @@ func newBatch() (*pebbleDBBatch, func(), error) {
 }
 
 // setHelper is a utility function supporting TestSet.
+// It writes a key-value pair to the database, then reads it back.
 func setHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error {
 	var (
 		key = []byte{'a'}
@@ -457,21 +508,16 @@ func setHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error {
 		return fmt.Errorf("reading from test DB: %s", err)
 	}
 	if !bytes.Equal(storedVal, val) {
-		return fmt.Errorf("expected value: %s, got: %s", val, storedVal)
+		return fmt.Errorf("expected value: %v, got: %v", val, storedVal)
 	}
-
-	// better to check if it's nil before calling Close().
-	// If the call to Get unexpectedly fails, closer will be nil, therefore calling
-	// Close() on it will panic. If the call to Get succeeds as we expect, we are
-	// good citizens and call Close().
-	if closer != nil {
-		closer.Close()
-	}
+	closer.Close()
 
 	return nil
 }
 
 // deleteHelper is a utility function supporting TestDelete.
+// It writes a key-value pair to the database, deletes it, then checks that the key
+// is deleted.
 func deleteHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error {
 	var (
 		key = []byte{'a'}
@@ -486,21 +532,61 @@ func deleteHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error {
 	}
 
 	// check key is deleted
-	val, closer, err := pDB.db.Get(key)
-	if err == nil {
-		return errors.New("expected error but got nil")
-	} else if !errors.Is(err, pebble.ErrNotFound) {
-		return fmt.Errorf("unexpected error: %s", err)
-	}
-	if val != nil {
-		return fmt.Errorf("expected nil value, got: %s", val)
+	_, _, err := pDB.db.Get(key)
+	if !errors.Is(err, pebble.ErrNotFound) {
+		return fmt.Errorf("want error: %s\nbut got: %s", pebble.ErrNotFound, err)
 	}
 
-	// better to check if it's nil before calling Close().
-	// If the call to Get unexpectedly succeeds, we are good citizens and call
-	// Close(). If the call to Get fails as we expect, closer will be nil,
-	// therefore calling Close() on it will panic.
-	if closer != nil {
+	return nil
+}
+
+// batchWriteHelper is a utility function supporting TestBatchWrite.
+// It creates a batch with three sets and one delete operation, commits it, then
+// reads the data back.
+func batchWriteHelper(pBatch *pebbleDBBatch, writeOpts *pebble.WriteOptions) error {
+	var (
+		keys = [][]byte{{'a'}, {'b'}, {'c'}}
+		vals = [][]byte{{0x01}, {0x02}, {0x03}}
+	)
+	for i, key := range keys {
+		val := vals[i]
+
+		// the nil parameter is for the write options, but pebble's own library sets
+		// it to _ in the function definition, thus ignoring it.
+		if err := pBatch.batch.Set(key, val, nil); err != nil {
+			formatStr := "adding set (k,v)=(%s,%v) operation to batch: %s"
+			return fmt.Errorf(formatStr, key, val, err)
+		}
+	}
+
+	// add a Delete for good measure.
+	if err := pBatch.batch.Delete(keys[0], nil); err != nil {
+		formatStr := "adding delete (k)=(%s) operation to batch: %s"
+		return fmt.Errorf(formatStr, keys[0], err)
+	}
+
+	if err := pBatch.commitWithOpts(writeOpts); err != nil {
+		return fmt.Errorf("unexpected error: %s", err)
+	}
+
+	// check keys[0] is deleted
+	_, _, err := pBatch.db.db.Get(keys[0])
+	if !errors.Is(err, pebble.ErrNotFound) {
+		return fmt.Errorf("want error: %s\nbut got: %s", pebble.ErrNotFound, err)
+	}
+
+	// we deleted keys[0], so we don't look for it
+	for i, key := range keys[1:] {
+		storedVal, closer, err := pBatch.db.db.Get(key)
+		if err != nil {
+			return fmt.Errorf("querying key %s: %s", key, err)
+		}
+
+		val := vals[i+1] // skip vals[0], i.e., the deleted value
+		if !bytes.Equal(val, storedVal) {
+			return fmt.Errorf("key %s: want val %v, but got %v", key, val, storedVal)
+		}
+
 		closer.Close()
 	}
 

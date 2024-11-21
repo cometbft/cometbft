@@ -390,6 +390,8 @@ func (b *pebbleDBBatch) Set(key, value []byte) error {
 		return errBatchClosed
 	}
 
+	// the nil parameter is for the write options, but pebble's own library sets it
+	// to _ in the function definition, thus ignoring it.
 	if err := b.batch.Set(key, value, nil); err != nil {
 		formatStr := "adding set update (k,v)=(%s,%s) to batch: %w"
 		return fmt.Errorf(formatStr, key, value, err)

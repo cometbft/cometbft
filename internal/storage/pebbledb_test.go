@@ -2,6 +2,7 @@ package storage
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -328,7 +329,12 @@ func TestPrint(t *testing.T) {
 
 	outputStr := buf.String()
 	for k, v := range kvPairs {
-		wantStr := fmt.Sprintf("[%X]:\t[%X]\n", k, v)
+		var (
+			kStr = strings.ToUpper(hex.EncodeToString([]byte(k)))
+			vStr = strings.ToUpper(hex.EncodeToString([]byte(v)))
+
+			wantStr = "[" + kStr + "]:\t[" + vStr + "]\n"
+		)
 		if !strings.Contains(outputStr, wantStr) {
 			formatStr := "this line was not printed: %q\nfull print: %q"
 			t.Errorf(formatStr, wantStr, outputStr)

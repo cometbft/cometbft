@@ -1,6 +1,8 @@
 package db
 
 import (
+	"bytes"
+	"fmt"
 	"sync"
 	"testing"
 
@@ -17,6 +19,46 @@ import (
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
 )
+
+func TestV1LBKey(t *testing.T) {
+	const prefix = "v1"
+
+	sprintf := func(h int64) []byte {
+		return []byte(fmt.Sprintf("lb/%s/%020d", prefix, h))
+	}
+
+	cases := []struct {
+		height  int64
+		wantKey []byte
+	}{
+		{1, sprintf(1)},
+		{12, sprintf(12)},
+		{123, sprintf(123)},
+		{1234, sprintf(1234)},
+		{12345, sprintf(12345)},
+		{123456, sprintf(123456)},
+		{1234567, sprintf(1234567)},
+		{12345678, sprintf(12345678)},
+		{123456789, sprintf(123456789)},
+		{1234567890, sprintf(1234567890)},
+		{12345678901, sprintf(12345678901)},
+		{123456789012, sprintf(123456789012)},
+		{1234567890123, sprintf(1234567890123)},
+		{12345678901234, sprintf(12345678901234)},
+		{123456789012345, sprintf(123456789012345)},
+		{1234567890123456, sprintf(1234567890123456)},
+		{12345678901234567, sprintf(12345678901234567)},
+		{123456789012345678, sprintf(123456789012345678)},
+		{1234567890123456789, sprintf(1234567890123456789)},
+	}
+
+	for i, tc := range cases {
+		gotKey := v1LegacyLayout{}.LBKey(tc.height, prefix)
+		if !bytes.Equal(gotKey, tc.wantKey) {
+			t.Errorf("test case %d: want %s, got %s", i, tc.wantKey, gotKey)
+		}
+	}
+}
 
 func TestDBKeyLayoutVersioning(t *testing.T) {
 	prefix := "TestDBKeyLayoutVersioning"

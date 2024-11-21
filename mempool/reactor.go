@@ -38,13 +38,6 @@ type Reactor struct {
 	privVal *types.PrivValidator
 }
 
-type TxWithSignatures struct {
-	if err != nil {
-		memR.
-	}	Tx          types.Tx   `json:"tx"`
-	Signatures  [][]byte `json:"signatures"`
-	SignerCount int      `json:"signer_count"`
-}
 
 // NewReactor returns a new Reactor with the given config and mempool.
 //TODO : check where the reactor is created, we will need the privValidator to sign transactions there.
@@ -299,6 +292,13 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		}
 
 		for {
+			memR.Logger.Debug("Sending transaction to peer",
+			"tx", log.NewLazySprintf("%X", txHash), "peer", peer.ID())
+
+			if err := memR.signAndValidate(entry.(*mempoolTx)); err != nil {
+				memR.Logger.Error("Failed to sign and validate transaction", "error", err)
+				continue
+			}
 			// The entry may have been removed from the mempool since it was
 			// chosen at the beginning of the loop. Skip it if that's the case.
 			if !memR.mempool.Contains(entry.Tx().Key()) {
@@ -306,42 +306,11 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			}
 
 			memR.Logger.Debug("Sending transaction to peer",
-			"tx", log.NewLazySprintf("%X", txHash), "peer", peer.ID())
-
-			tx := entry.Tx()
-
-
-
-			_, err = entry.ValidateSignatures()
-			if err != nil {
-				// TODO : properly handle errors
-				memR.Logger.Error("Signature does not match", "error", err)
-				break
-			}
-
-			signature, err := (*memR.privVal).SignBytes(tx.Hash())
-			if err != nil {
-				memR.Logger.Error("Failed to sign transaction", "error", err)
-				break
-			}
-
-
-
-			//TODO revert this
-
-			// Wrap TxWithSignatures in the Message type
-			message := &protomem.Message{
-				Sum: &protomem.Message_TxWithSignatures{
-					TxWithSignatures: txWithSigs,
-				},
-			}
-
-			memR.Logger.Debug("Sending transaction with signatures to peer",
 				"tx", log.NewLazySprintf("%X", txHash), "peer", peer.ID())
 
 			success := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
-				Message:   message,
+				Message:   &protomem.Txs{Txs: [][]byte{entry.Tx()}},
 			})
 
 			if success {
@@ -360,4 +329,29 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			}
 		}
 	}
+}
+
+func (memR *Reactor) signAndValidate(entry *mempoolTx) error {
+	tx := entry.Tx()
+
+	// Validate existing signatures
+	if err := entry.ValidateSignatures(); err != nil {
+		return fmt.Errorf("signature validation failed: %w", err)
+	}
+
+	// Sign transaction
+	signature, err := (*memR.privVal).SignBytes(tx.Hash())
+	if err != nil {
+		return fmt.Errorf("signing failed: %w", err)
+	}
+
+	// Get public key
+	pubKey, err := (*memR.privVal).GetPubKey()
+	if err != nil {
+		return fmt.Errorf("public key retrieval failed: %w", err)
+	}
+
+	// Add signature to the entry
+	entry.AddSignature(pubKey, signature)
+	return nil
 }

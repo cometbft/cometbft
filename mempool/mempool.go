@@ -173,10 +173,10 @@ type Entry interface {
 
 
 	// Validates All Signatures check if each signature is matching with the pubKey
-	 ValidateSignatures()
+	ValidateSignatures() error
 
 	// Count the number of signature to check if we reach the number required to stop broadcasting
-	SignatureCount()
+	SignatureCount() int
 }
 
 // An iterator is used to iterate through the mempool entries.

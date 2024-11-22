@@ -511,12 +511,6 @@ func newPebbleDBIterator(
 	start, end []byte,
 	isReverse bool,
 ) *pebbleDBIterator {
-	if isReverse && end == nil {
-		source.Last()
-	} else if !isReverse && start == nil {
-		source.First()
-	}
-
 	return &pebbleDBIterator{
 		source:    source,
 		start:     start,

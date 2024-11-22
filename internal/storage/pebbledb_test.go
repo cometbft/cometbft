@@ -503,6 +503,33 @@ func TestBatchWrite(t *testing.T) {
 	})
 }
 
+func TestBatchClose(t *testing.T) {
+	t.Run("BatchNilNoErr", func(t *testing.T) {
+		pBatch := &pebbleDBBatch{
+			batch: nil,
+		}
+		if err := pBatch.Close(); err != nil {
+			t.Errorf("unexpected error: %s", err)
+		}
+	})
+
+	t.Run("NoErr", func(t *testing.T) {
+		pBatch, dbCloser, err := newBatch()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if err := pBatch.Close(); err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+		if pBatch.batch != nil {
+			t.Error("expected batch to be nil")
+		}
+
+		t.Cleanup(dbCloser)
+	})
+}
+
 // newInMemDB is a utility function that creates an in-memory instance of pebble for
 // testing.
 // It returns a closer function that must be called to close the database when done

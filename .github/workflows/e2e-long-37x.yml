@@ -40,21 +40,15 @@ jobs:
       - name: Notify Slack on failure
         uses: slackapi/slack-github-action@v2.0.0
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
           BRANCH: ${{ github.ref_name }}
           RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           COMMITS_URL: "${{ github.server_url }}/${{ github.repository }}/commits/${{ github.ref_name }}"
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           payload: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":skull: Weekly long-run E2E tests for `${{ env.BRANCH }}` failed. See the <${{ env.RUN_URL }}|run details> and the <${{ env.COMMITS_URL }}|latest commits> possibly related to the failure."
-                  }
-                }
-              ]
-            }
+            blocks:
+            - type: "section"
+              text:
+                type: "mrkdwn"
+                text: ":skull: Weekly long-run E2E tests for `${{ env.BRANCH }}` failed. See the <${{ env.RUN_URL }}|run details> and the <${{ env.COMMITS_URL }}|latest commits> possibly related to the failure."

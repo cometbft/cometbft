@@ -19,7 +19,7 @@ type Envelope struct {
 	ChannelID byte
 }
 
-// MarshalledEnvelope contains a proto message, its marshalled message, with sender routing info.
+// MarshalledEnvelope contains a proto message, its marshaled message, with sender routing info.
 type MarshalledEnvelope struct {
 	Envelope
 	MarshalledMessage []byte

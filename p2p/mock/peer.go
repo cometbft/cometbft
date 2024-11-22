@@ -54,9 +54,9 @@ func (mp *Peer) OnStop() {
 	mp.server.Close()
 	mp.client.Close()
 }
-func (*Peer) HasChannel(_ byte) bool      { return true }
-func (*Peer) TrySend(_ p2p.Envelope) bool { return true }
-func (*Peer) Send(_ p2p.Envelope) bool    { return true }
+func (*Peer) HasChannel(_ byte) bool                             { return true }
+func (*Peer) TrySend(_ p2p.Envelope) bool                        { return true }
+func (*Peer) Send(_ p2p.Envelope) bool                           { return true }
 func (mp *Peer) TrySendMarshalled(e p2p.MarshalledEnvelope) bool { return true }
 func (mp *Peer) NodeInfo() ni.NodeInfo {
 	return ni.Default{

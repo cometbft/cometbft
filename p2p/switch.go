@@ -17,6 +17,7 @@ import (
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/p2p/transport/tcp"
 	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -289,7 +290,7 @@ func (sw *Switch) TryBroadcast(e Envelope) {
 	sw.Logger.Debug("TryBroadcast", "channel", e.ChannelID)
 
 	marshalMsg := e.Message
-	if wrapper, ok := e.Message.(Wrapper); ok {
+	if wrapper, ok := e.Message.(types.Wrapper); ok {
 		marshalMsg = wrapper.Wrap()
 	}
 	marshalledMsg, err := proto.Marshal(marshalMsg)

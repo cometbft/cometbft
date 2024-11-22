@@ -38,21 +38,3 @@ type StreamDescriptor interface {
 	// MessageType returns the type of the message sent/received on this stream.
 	MessageType() proto.Message
 }
-
-// Unwrapper is a Protobuf message that can contain a variety of inner messages
-// (e.g. via oneof fields). If a Channel's message type implements Unwrapper, the
-// p2p layer will automatically unwrap inbound messages so that reactors do not have to do this themselves.
-type Unwrapper interface {
-	proto.Message
-
-	// Unwrap will unwrap the inner message contained in this message.
-	Unwrap() (proto.Message, error)
-}
-
-// Wrapper is a companion type to Unwrapper. It is a Protobuf message that can contain a variety of inner messages. The p2p layer will automatically wrap outbound messages so that the reactors do not have to do it themselves.
-type Wrapper interface {
-	proto.Message
-
-	// Wrap will take the underlying message and wrap it in its wrapper type.
-	Wrap() proto.Message
-}

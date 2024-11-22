@@ -497,7 +497,7 @@ func (b *pebbleDBBatch) Close() error {
 // It implements the [Iterator] interface.
 type pebbleDBIterator struct {
 	source     *pebble.Iterator
-	start, end []byte
+	start, end []byte // end is exclusive.
 	isReverse  bool
 	isInvalid  bool
 }
@@ -561,8 +561,19 @@ func (itr *pebbleDBIterator) Valid() bool {
 		end   = itr.end
 		key   = itr.source.Key()
 
+		// If 'start' is nil, the iterator's lower bound is the first key in the
+		// database, and therefore no key can be before it. Therefore, the
+		// 'start != nil' check is a shortcut to avoid a useless call to
+		// bytes.Compare(non_nil_key, nil), which would return 1 anyway because any
+		// non-empty slice is considered greater than nil.
 		itrBeforeStart = start != nil && bytes.Compare(key, start) < 0
-		itrAfterEnd    = end != nil && bytes.Compare(key, end) >= 0
+
+		// We check if 'end != nil' because if 'end' is nil, the iterator's upper
+		// bound is the last key in the database, and therefore no key can be after
+		// it. Additionally, bytes.Compare(non_nil_key, nil) returns 1 because any
+		// non-empty slice is considered greater than nil. Therefore, without
+		// checking 'end != nil', we would incorrectly set `itrAfterEnd` to true.
+		itrAfterEnd = end != nil && bytes.Compare(key, end) >= 0
 	)
 	if (itr.isReverse && itrBeforeStart) || (!itr.isReverse && itrAfterEnd) {
 		itr.isInvalid = true

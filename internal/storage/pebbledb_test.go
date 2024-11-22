@@ -375,6 +375,13 @@ func TestBatchSet(t *testing.T) {
 		}
 	})
 
+	// Our implementation's batch isn't indexed, so we can't call Get() on it to
+	// retrieve keys that we added to it. Therefore, we can't check if the call to
+	// Set() added the key to the batch. To do that, we would have to commit the
+	// batch and then query the database for the key. However, committing a batch is
+	// what Write() and WriteSync() do—not what Set() does; we test this behavior
+	// in TestBatchWrite. Therefore, here we only check that after a call to Set()
+	// the batch isn't empty and contains exactly the number of updates that we set.
 	t.Run("NoErr", func(t *testing.T) {
 		var (
 			keys = [][]byte{{'a'}, {'b'}, {'c'}}
@@ -424,23 +431,25 @@ func TestBatchDelete(t *testing.T) {
 		}
 	})
 
+	// Our implementation's batch isn't indexed, so we can't call Get() on it to
+	// retrieve keys that we added to it. Therefore, we can't check if the call to
+	// Delete() added the key to the batch. To do that, we would have to commit the
+	// batch and then query the database for the key. However, committing a batch is
+	// what Write() and WriteSync() do—not what Delete() does; we test this behavior
+	// in TestBatchWrite. Therefore, here we only check that after a call to Delete()
+	// the batch isn't empty and contains exactly one update.
 	t.Run("NoErr", func(t *testing.T) {
-		var (
-			key   = []byte{'a'}
-			value = []byte{'b'}
-		)
-		if err := pBatch.batch.Set(key, value, nil); err != nil {
-			formatStr := "adding set (k,v)=(%s,%v) operation to batch: %s"
-			t.Fatalf(formatStr, key, value, err)
-		}
-
+		key := []byte{'a'}
 		if err := pBatch.Delete(key); err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
 
-		_, _, err := pBatch.db.db.Get(key)
-		if !errors.Is(err, pebble.ErrNotFound) {
-			t.Errorf("want error: %s\nbut got: %s", pebble.ErrNotFound, err)
+		var (
+			emptyBatch = pBatch.batch.Empty()
+			nUpdates   = pBatch.batch.Count()
+		)
+		if emptyBatch || (nUpdates != 1) {
+			t.Errorf("expected %d batch updates, got %d", 1, nUpdates)
 		}
 	})
 }
@@ -496,6 +505,8 @@ func TestBatchWrite(t *testing.T) {
 
 // newInMemDB is a utility function that creates an in-memory instance of pebble for
 // testing.
+// It returns a closer function that must be called to close the database when done
+// with it.
 func newInMemDB() (*PebbleDB, func(), error) {
 	opts := &pebble.Options{FS: vfs.NewMem()}
 	memDB, err := pebble.Open("", opts)
@@ -514,6 +525,8 @@ func newInMemDB() (*PebbleDB, func(), error) {
 
 // newBatch is a utility function that creates a new batch for testing.
 // The underlying database is an in-memory instance of pebble.
+// newBatch returns a closer function that must be called to close the batch and the
+// database when done with them.
 func newBatch() (*pebbleDBBatch, func(), error) {
 	pDB, dbCloser, err := newInMemDB()
 	if err != nil {

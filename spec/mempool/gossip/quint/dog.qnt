@@ -145,14 +145,13 @@ module dog {
         rc' = rc,
     }
     def mkTargetNodes(node, tx) =
-        val txSenders = node.sendersOf(hash(tx)).listToSet()
-        // FIX
+        val txSenders = node.sendersOf(hash(tx))
         val disabledTargets = node.DisabledRoutes()
-            // Keep only routes whose source is one of tx's senders.
-            .filter(r => r._1.in(txSenders))
-            // Keep routes' targets.
+            // Keep routes whose source is tx's first sender, if any.
+            .filter(r => if (length(txSenders) > 0) r._1 == txSenders[0] else false)
+            // Map routes to targets.
             .map(r => r._2)
-        node.Peers().exclude(txSenders).exclude(disabledTargets)
+        node.Peers().exclude(txSenders.listToSet()).exclude(disabledTargets)
     action disconnectAndUpdateRoutes(nodeToDisconnect) = all {
         // All node's peers send a Reset message to all their peers.
         val updatedIncomingMsgs = nodeToDisconnect.Peers().fold(incomingMsgs, 

@@ -78,9 +78,10 @@ Each node maintains a set of disabled routes (`dr`) to manage active connections
 ```bluespec "routing" +=
 var dr: NodeID -> Set[Route]
 ```
-By default, all routes are enabled, that is, the set of disabled routes is empty. A node `A` will
-send a transaction `tx` to peer `B` only if the route `sender(tx) -> B` is not in the set of
-disabled routes.
+By default, all routes are enabled, that is, the set of disabled routes is empty. A node `B` will
+send a transaction `tx` to peer `C` only if the route `A -> C` is not in `B`'s set of disabled
+routes, where `A` is the first node in `tx`'s list of senders (see the section on [Transaction
+dissemination](#transaction-dissemination)).
 
 We define the following functions on routes:
 
@@ -433,8 +434,9 @@ action handleMessage(node, _incomingMsgs, sender, msg) =
 
 * **Handling `HaveTx` messages**
 
-    Upon receiving `HaveTxMsg(txID)`, disable the route `sender(txID) -> sender`, if `node` has at least
-    a sender for `txID`. This will decrease the traffic to `sender`.
+    Upon receiving `HaveTxMsg(txID)` from `sender`, `node` disables the route `txSender -> sender`,
+    where `txSender` is the first node in `txID`'s list of senders, if `txID` actually comes from a
+    peer. This action will decrease the traffic to `sender`.
     ```bluespec "actions" +=
     action handleHaveTxMessage(node, _incomingMsgs, sender, txID) = all {
         dr' = 
@@ -449,12 +451,12 @@ action handleMessage(node, _incomingMsgs, sender, msg) =
         rc' = rc,
     }
     ```
-
-    We don't want to cut all routes from `sender` to `node`, only the route that has as source one the
-    peer IDs in `txSenders`, which may be many. We need to choose one, so we pick the first in the list,
-    which is the first peer that sent `tx` to `node`. Other peers in the list also sent `tx` but at a
-    later time, meaning that routes coming from those nodes are probably disabled, and most of the
-    traffic comes from the first one.
+    The list of `tx`’s senders contains the node IDs from which `node` received the transaction,
+    ordered by the arrival time of the corresponding messages. To avoid disabling the routes from
+    all those senders at once, the protocol picks the first sender in the list, which is the first
+    peer from which `node` received `tx`. Subsequent entries in the list are nodes whose transaction
+    messages arrived later as duplicates. As such, most routes from those peers to `node` will
+    eventually be disabled, with most traffic coming primarily from the first peer.
 
 * **Handling Reset messages**
 
@@ -474,19 +476,23 @@ action handleMessage(node, _incomingMsgs, sender, msg) =
 
 ### Transaction dissemination
 
-As in Flood, DOG will filter out the transaction's senders. Additionally, DOG will not send `tx` to
-a peer if the route `sender(tx) -> peer` is disabled.
+As in Flood, DOG will filter out the transaction's senders. Additionally, `node` will not send `tx`
+to peer `B` if the route `A -> B` is disabled, where `A` is the first node in the list of `tx`'s
+senders.
 ```bluespec "actions" +=
 def mkTargetNodes(node, tx) =
-    val txSenders = node.sendersOf(hash(tx)).listToSet()
-    // FIX
+    val txSenders = node.sendersOf(hash(tx))
     val disabledTargets = node.DisabledRoutes()
-        // Filter routes whose source is not one of tx's senders.
-        .filter(r => r._1.in(txSenders))
-        // Keep routes' targets.
+        // Keep routes whose source is tx's first sender, if any.
+        .filter(r => if (length(txSenders) > 0) r._1 == txSenders[0] else false)
+        // Map routes to targets.
         .map(r => r._2)
-    node.Peers().exclude(txSenders).exclude(disabledTargets)
+    node.Peers().exclude(txSenders.listToSet()).exclude(disabledTargets)
 ```
+The protocol selects the first sender in the list based on the same reasoning applied when handling
+received `HaveTx` messages. This sender is likely responsible for the majority of traffic related to
+the transaction, as it was the first to forward it to the node. Subsequent senders in the list only
+sent the transaction later as duplicates, and their routes are more likely already disabled.
 
 ### Nodes disconnecting from the network
 

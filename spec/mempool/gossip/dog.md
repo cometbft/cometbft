@@ -242,13 +242,13 @@ The protocol has the following parameters that each node must configure during i
     ```bluespec "params" +=
     const TargetRedundancy: int
     ```
-    A target of 0 partially disables the Redundancy Control mechanism: the controller can block
-    `HaveTx` messages but cannot send `Reset` messages. Zero redundancy minimizes bandwidth usage,
-    achieving the lowest possible message overhead. In non-Byzantines networks, this is the best
-    possible scenario. However, in Byzantine scenarios it could potentially render nodes isolated
-    from transaction data. Therefore, in Byzantine networks the target should be set to a value
-    greater than 0. Experimental results suggest a value between 0.5 and 1, which is a safe number
-    that does not allow excessive duplicate transactions.
+    A target equal to 0 partially disables the Redundancy Control mechanism: the controller can
+    block `HaveTx` messages but cannot send `Reset` messages. Zero redundancy minimizes bandwidth
+    usage, achieving the lowest possible message overhead. In non-Byzantines networks, this is the
+    best possible scenario. However, in Byzantine networks it could potentially render nodes
+    isolated from transaction data. Therefore, the target should be set to a value greater than 0.
+    Experimental results suggest a value between 0.5 and 1, which is a safe number that does not
+    result in excessive duplicate transactions.
 
     > Note: `TargetRedundancy` should ideally be a real number, but reals are not currently
     > supported by Quint.
@@ -287,8 +287,10 @@ The protocol has the following parameters that each node must configure during i
     interval should be set to at least 1000ms to ensure stability and avoid over-adjustment.
 
     Optimal values depend on empirical measurements of network latency. However, in practice, values
-    above 1000ms are recommended to accommodate message processing and delivery times in diverse network
-    environments.
+    above 1000ms are recommended to allow message processing and delivery times in diverse network
+    environments. For instance, a node with 50 peers will have a maximum of `50 * (50 - 1) = 2450`
+    routes. Hypothetically, removing one route on every adjustment, at one adjustment per second, it
+    would take 40.8 minutes to remove all routes from the node.
 
 ## Initial state
 

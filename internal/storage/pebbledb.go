@@ -303,22 +303,12 @@ func (pDB *PebbleDB) NewBatch() Batch {
 //
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) Iterator(start, end []byte) (Iterator, error) {
-	if (start != nil && len(start) == 0) || (end != nil && len(end) == 0) {
-		return nil, errKeyEmpty
-	}
-
-	o := pebble.IterOptions{
-		LowerBound: start,
-		UpperBound: end,
-	}
-	itr, err := pDB.db.NewIter(&o)
+	it, err := newPebbleDBIterator(pDB, start, end, false /* reverse */)
 	if err != nil {
-		return nil, fmt.Errorf("creating new iterator: %w", err)
+		return nil, fmt.Errorf("creating new forward iterator: %w", err)
 	}
 
-	itr.First()
-
-	return newPebbleDBIterator(itr, start, end, false /* isReverse */), nil
+	return it, nil
 }
 
 // ReverseIterator returns an iterator over a domain of keys, in descending
@@ -332,21 +322,12 @@ func (pDB *PebbleDB) Iterator(start, end []byte) (Iterator, error) {
 //
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) ReverseIterator(start, end []byte) (Iterator, error) {
-	if (start != nil && len(start) == 0) || (end != nil && len(end) == 0) {
-		return nil, errKeyEmpty
-	}
-	o := pebble.IterOptions{
-		LowerBound: start,
-		UpperBound: end,
-	}
-	itr, err := pDB.db.NewIter(&o)
+	it, err := newPebbleDBIterator(pDB, start, end, true /* reverse */)
 	if err != nil {
-		return nil, fmt.Errorf("creating new iterator: %w", err)
+		return nil, fmt.Errorf("creating new reverse iterator: %w", err)
 	}
 
-	itr.Last()
-
-	return newPebbleDBIterator(itr, start, end, true /* reverse */), nil
+	return it, nil
 }
 
 var _ Batch = (*pebbleDBBatch)(nil)
@@ -505,19 +486,41 @@ type pebbleDBIterator struct {
 var _ Iterator = (*pebbleDBIterator)(nil)
 
 // newPebbleDBIterator returns a new pebbleDBIterator to iterate over a range of
-// database key/value pairs.
+// database key/value pairs of the given instance of PebbleDB.
 func newPebbleDBIterator(
-	source *pebble.Iterator,
+	pDB *PebbleDB,
 	start, end []byte,
 	isReverse bool,
-) *pebbleDBIterator {
-	return &pebbleDBIterator{
-		source:    source,
+) (*pebbleDBIterator, error) {
+	if (start != nil && len(start) == 0) || (end != nil && len(end) == 0) {
+		return nil, errKeyEmpty
+	}
+
+	o := pebble.IterOptions{
+		LowerBound: start,
+		UpperBound: end,
+	}
+	it, err := pDB.db.NewIter(&o)
+	if err != nil {
+		formatStr := "creating iterator with bounds [%X, %X]: %w"
+		return nil, fmt.Errorf(formatStr, start, end, err)
+	}
+
+	if isReverse {
+		it.Last()
+	} else {
+		it.First()
+	}
+
+	pbIt := &pebbleDBIterator{
+		source:    it,
 		start:     start,
 		end:       end,
 		isReverse: isReverse,
 		isInvalid: false,
 	}
+
+	return pbIt, nil
 }
 
 // Domain returns the start (inclusive) and end (exclusive) limits of the iterator.

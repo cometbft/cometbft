@@ -2372,6 +2372,7 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 	for i := range vss {
 		vote := &rpp.LocalLastCommit.Votes[i]
 		require.Equal(t, vote.VoteExtension, voteExtensions[i])
+		require.Equal(t, vote.NonRpVoteExtension, nonRpVoteExtensions[i])
 
 		require.NotZero(t, len(vote.ExtensionSignature))
 		cve := cmtproto.CanonicalVoteExtension{

@@ -331,7 +331,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 	}
 }
 
-func (memR *Reactor) signAndValidate(entry *mempoolTx) error {
+func (memR *Reactor) signAndValidate(entry Entry) error {
 	tx := entry.Tx()
 
 	// Validate existing signatures

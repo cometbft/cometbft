@@ -530,6 +530,13 @@ func makeReactors(config *cfg.Config, n int, logger *log.Logger, lanesEnabled bo
 		logger = mempoolLogger("info")
 	}
 	reactors := make([]*Reactor, n)
+
+	// Mock PrivValidator.
+	privValidators := make([]types.PrivValidator, n)
+	for i := 0; i < n; i++ {
+		privValidators[i] = types.NewMockPV()
+	}
+
 	for i := 0; i < n; i++ {
 		var app *kvstore.Application
 		if lanesEnabled {
@@ -541,7 +548,8 @@ func makeReactors(config *cfg.Config, n int, logger *log.Logger, lanesEnabled bo
 		mempool, cleanup := newMempoolWithApp(cc)
 		defer cleanup()
 
-		reactors[i] = NewReactor(config.Mempool, mempool, false) // so we dont start the consensus states
+		// Add privValidators.
+		reactors[i] = NewReactor(config.Mempool, &privValidators[i], mempool, false) // so we dont start the consensus states
 		reactors[i].SetLogger((*logger).With("validator", i))
 	}
 	return reactors

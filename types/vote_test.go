@@ -25,6 +25,8 @@ func examplePrecommit() *Vote {
 	vote := exampleVote(byte(PrecommitType))
 	vote.Extension = []byte("extension")
 	vote.ExtensionSignature = []byte("signature")
+	vote.NonRpExtension = []byte("non_replay_protected_extension")
+	vote.NonRpExtensionSignature = []byte("non_replay_protected_extension_signature")
 	return vote
 }
 
@@ -314,7 +316,7 @@ func TestVoteVerify(t *testing.T) {
 
 func TestVoteString(t *testing.T) {
 	str := examplePrecommit().String()
-	expected := `Vote{56789:6AF1F4111082 12345/02/SIGNED_MSG_TYPE_PRECOMMIT(Precommit) 8B01023386C3 000000000000 657874656E73 000000000000 @ 2017-12-25T03:00:01.234Z}` //nolint:lll //ignore line length for tests
+	expected := `Vote{56789:6AF1F4111082 12345/02/SIGNED_MSG_TYPE_PRECOMMIT(Precommit) 8B01023386C3 000000000000 657874656E73 6E6F6E5F7265 @ 2017-12-25T03:00:01.234Z}` //nolint:lll //ignore line length for tests
 	if str != expected {
 		t.Errorf("got unexpected string for Vote. Expected:\n%v\nGot:\n%v", expected, str)
 	}
@@ -345,8 +347,14 @@ func TestValidVotes(t *testing.T) {
 		malleateVote func(*Vote)
 	}{
 		{"good prevote", examplePrevote(), func(_ *Vote) {}},
-		{"good precommit without vote extension", examplePrecommit(), func(v *Vote) { v.Extension = nil }},
-		{"good precommit with vote extension", examplePrecommit(), func(v *Vote) { v.Extension = []byte("extension") }},
+		{"good precommit without vote extension", examplePrecommit(), func(v *Vote) {
+			v.Extension = nil
+			v.NonRpExtension = nil
+		}},
+		{"good precommit with vote extension", examplePrecommit(), func(v *Vote) {
+			v.Extension = []byte("extension")
+			v.NonRpExtension = []byte("non_replay_protected_extension")
+		}},
 	}
 	for _, tc := range testCases {
 		signVote(t, privVal, tc.vote)

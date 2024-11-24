@@ -99,6 +99,8 @@ func invalidDoPrevoteFunc(t *testing.T, cs *State, sw *p2p.Switch, pv types.Priv
 		}
 		precommit.Signature = p.Signature
 		precommit.ExtensionSignature = p.ExtensionSignature
+		precommit.NonRpExtension = p.NonRpExtension
+		precommit.NonRpExtensionSignature = p.NonRpExtensionSignature
 		cs.privValidator = nil // disable priv val so we don't do normal votes
 
 		peers := sw.Peers().Copy()

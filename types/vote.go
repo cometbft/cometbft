@@ -363,6 +363,9 @@ func (vote *Vote) ValidateBasic() error {
 		if len(vote.ExtensionSignature) > MaxSignatureSize {
 			return fmt.Errorf("vote extension signature is too big (max: %d)", MaxSignatureSize)
 		}
+		if len(vote.NonRpExtensionSignature) > MaxSignatureSize {
+			return fmt.Errorf("non replay protected vote extension signature is too big (max: %d)", MaxSignatureSize)
+		}
 
 		// NOTE: extended votes should have a signature regardless of
 		// whether there is any data in the extension or not however
@@ -371,6 +374,16 @@ func (vote *Vote) ValidateBasic() error {
 		if len(vote.ExtensionSignature) == 0 && len(vote.Extension) != 0 {
 			return ErrVoteNoSignature
 		}
+		if len(vote.NonRpExtensionSignature) == 0 && len(vote.NonRpExtension) != 0 {
+			return fmt.Errorf("vote extension signature absent on vote with extension")
+		}
+
+		// Vote extensions and non replay protected vote extensions must go together
+		// one is present iff the other is present
+		if (len(vote.NonRpExtensionSignature) == 0) != (len(vote.ExtensionSignature) == 0) {
+			return fmt.Errorf("vote extension and non replay protected vote extension must go together")
+		}
+
 	}
 
 	return nil

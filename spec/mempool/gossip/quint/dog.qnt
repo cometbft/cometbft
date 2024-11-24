@@ -56,7 +56,7 @@ module dog {
     pure def resetCounters(_rc) = { firstTimeTxs: 0, duplicateTxs: 0, ..._rc }
     pure def blockHaveTx(_rc) = { isHaveTxBlocked: true, ..._rc }
     pure def redundancy(_rc) = _rc.duplicateTxs / _rc.firstTimeTxs
-    pure def adjustRedundancy(node, _rc) =
+    pure def controllerActions(_rc) =
         if (_rc.firstTimeTxs + _rc.duplicateTxs == 0)
             (_rc, false)
         else if (_rc.redundancy() < lowerBound)
@@ -75,23 +75,18 @@ module dog {
         rc' = NodeIDs.mapBy(_ => initialRCState)
     }
 
-    action controlLoopIteration(node) = all {
-        val res = node.adjustRedundancy(node.RC())
+    action adjustRedundancy(node) =
+        nondet randomPeer = oneOf(node.Peers())
+        val res = node.RC().controllerActions()
         val updatedNodeRC = res._1
         val sendReset = res._2
-        nondet randomPeer = oneOf(node.Peers())
         all {
             incomingMsgs' = 
                 if (sendReset) 
-                    node.multiSend(incomingMsgs, Set(randomPeer), ResetMsg)
+                    node.send(incomingMsgs, randomPeer, ResetMsg)
                 else incomingMsgs,
             rc' = rc.put(node, updatedNodeRC.resetCounters()),
-            peers' = peers,
-            mempool' = mempool,
-            senders' = senders,
-            dr' = dr,
         }
-    }
     action tryAddTx(node, _incomingMsgs, optionalSender, tx) = 
         if (not(hash(tx).in(node.Cache())))
             node.tryAddFirstTimeTx(_incomingMsgs, optionalSender, tx)
@@ -125,11 +120,8 @@ module dog {
         | ResetMsg => node.handleResetMessage(_incomingMsgs, sender)
         }
     action handleHaveTxMessage(node, _incomingMsgs, sender, txID) = all {
-        dr' = 
-            val txSenders = node.sendersOf(txID)
-            if (length(txSenders) > 0)
-                dr.disableRoute(node, txSenders[0], sender)
-            else dr,
+        val txSenders = node.sendersOf(txID)
+        dr' = if (length(txSenders) > 0) dr.disableRoute(node, txSenders[0], sender) else dr,
         incomingMsgs' = _incomingMsgs,
         peers' = peers,
         mempool' = mempool,
@@ -152,17 +144,10 @@ module dog {
             // Map routes to targets.
             .map(r => r._2)
         node.Peers().exclude(txSenders.listToSet()).exclude(disabledTargets)
-    action disconnectAndUpdateRoutes(nodeToDisconnect) = all {
-        // All node's peers send a Reset message to all their peers.
-        val updatedIncomingMsgs = nodeToDisconnect.Peers().fold(incomingMsgs, 
-            (inMsgs, peer) => peer.multiSend(inMsgs, peer.Peers(), ResetMsg))
-        nodeToDisconnect.disconnectNetwork(updatedIncomingMsgs),
-        // The node's peers enable all routes to node in their routing tables.
-        dr' = dr.updateMultiple(nodeToDisconnect.Peers(), 
-            drs => drs.enableRoute(nodeToDisconnect)),
-        mempool' = mempool,
-        senders' = senders,
-        rc' = rc,
+    action updateDisconnectedPeer(node, peer) = all {
+        peers' = peers.update(node, ps => ps.exclude(Set(peer))),
+        dr' = dr.update(node, drs => drs.enableRoute(peer)),
+        node.adjustRedundancy(),
     }
 
     action step = any {
@@ -191,14 +176,33 @@ module dog {
         },
         // Node disconnects from network
         all {
-            // Pick a node that is not the only node in the network.
             require(size(nodesInNetwork) > 1),
-            nondet nodeToDisconnect = oneOf(nodesInNetwork) 
-            disconnectAndUpdateRoutes(nodeToDisconnect),
+            nondet node = oneOf(nodesInNetwork) 
+            peers' = peers.disconnect(node),
+            incomingMsgs' = incomingMsgs,
+            mempool' = mempool,
+            senders' = senders,
+            dr' = dr,
+            rc' = rc,
+        },
+        // Node detects a peer is disconnected
+        nondet node = oneOf(nodesInNetwork)
+        all {
+            require(node.disconnectedPeers().nonEmpty()),
+            nondet peer = oneOf(node.disconnectedPeers()) 
+            node.updateDisconnectedPeer(peer),
+            mempool' = mempool,
+            senders' = senders,
         },
         // Redundancy Controller process loop
-        nondet node = oneOf(nodesInNetwork)
-        node.controlLoopIteration(),
+        all {
+            nondet node = oneOf(nodesInNetwork)
+            node.adjustRedundancy(),
+            peers' = peers,
+            mempool' = mempool,
+            senders' = senders,
+            dr' = dr,
+        },
     }
 
 }

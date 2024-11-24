@@ -121,11 +121,17 @@ These are the state transitions of the system. Note that generic actions are imp
 
 5. A node disconnects from the network.
     ```bluespec "steps" +=
+    nondet node = oneOf(nodesInNetwork) 
     all {
-        pickNodeAndDisconnect,
+        require(size(nodesInNetwork) > 1),
+        // Disconnect node and remove node from other peers' connections.
+        peers' = peers
+            .disconnect(node)
+            .updateMultiple(nodesInNetwork, ps => ps.exclude(Set(node))),
+        incomingMsgs' = incomingMsgs,
         mempool' = mempool,
         senders' = senders,
-    }
+    },
     ```
 
 ### Adding transactions to the mempool

@@ -81,11 +81,17 @@ module flood {
             mempool' = mempool,
             senders' = senders,
         },
+        nondet node = oneOf(nodesInNetwork) 
         all {
-            pickNodeAndDisconnect,
+            require(size(nodesInNetwork) > 1),
+            // Disconnect node and remove node from other peers' connections.
+            peers' = peers
+                .disconnect(node)
+                .updateMultiple(nodesInNetwork, ps => ps.exclude(Set(node))),
+            incomingMsgs' = incomingMsgs,
             mempool' = mempool,
             senders' = senders,
-        }
+        },
     }
 
     //--------------------------------------------------------------------------

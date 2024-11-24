@@ -22,6 +22,8 @@ type mempoolTx struct {
 	// signatures of peers who've sent us this tx (as a map for quick lookups).
 	// signatures: PubKey -> signature
 	signatures sync.Map
+	// Number of valid signatures
+	signatureCount int32 // atomic counter for signatures
 	// ids of peers who've sent us this tx (as a map for quick lookups).
 	// senders: PeerID -> struct{}
 	senders sync.Map
@@ -50,8 +52,13 @@ func (memTx *mempoolTx) AddSignature(pubKey crypto.PubKey, signature []byte) err
 		return fmt.Errorf("invalid signature for transaction")
 	}
 
-	// Store the signature in the map
-	memTx.signatures.Store(pubKey, signature)
+	// Attempt to store the signature
+	_, loaded := memTx.signatures.LoadOrStore(pubKey, signature)
+	if !loaded {
+		// Increment the counter only if it's a new signature
+		atomic.AddInt32(&memTx.signatureCount, 1)
+	}
+
 	return nil
 }
 
@@ -85,12 +92,7 @@ func (memTx *mempoolTx) ValidateSignatures() error {
 
 // Count the number of signature to check if we reach the number required to stop broadcasting
 func (memTx *mempoolTx) SignatureCount() int {
-	count := 0
-	memTx.signatures.Range(func(_, _ interface{}) bool {
-		count++
-		return true
-	})
-	return count
+	return int(atomic.LoadInt32(&memTx.signatureCount))
 }
 
 // Add the peer ID to the list of senders. Return true iff it exists already in the list.

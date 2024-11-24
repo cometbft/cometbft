@@ -549,7 +549,8 @@ func makeReactors(config *cfg.Config, n int, logger *log.Logger, lanesEnabled bo
 		defer cleanup()
 
 		// Add privValidators.
-		reactors[i] = NewReactor(config.Mempool, &privValidators[i], mempool, false) // so we dont start the consensus states
+		// Threshold to 66%
+		reactors[i] = NewReactor(config.Mempool, &privValidators[i], mempool, false, 66) // so we dont start the consensus states
 		reactors[i].SetLogger((*logger).With("validator", i))
 	}
 	return reactors

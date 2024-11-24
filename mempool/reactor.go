@@ -36,17 +36,23 @@ type Reactor struct {
 	activeNonPersistentPeersSemaphore *semaphore.Weighted
 
 	privVal *types.PrivValidator
+
+	txBroadcastThreshold int32
+	thresholdPercent int32
 }
 
 
 // NewReactor returns a new Reactor with the given config and mempool.
 //TODO : check where the reactor is created, we will need the privValidator to sign transactions there.
-func NewReactor(config *cfg.MempoolConfig, privVal *types.PrivValidator, mempool *CListMempool, waitSync bool) *Reactor {
+func NewReactor(config *cfg.MempoolConfig, privVal *types.PrivValidator, mempool *CListMempool, waitSync bool, thresholdPercent int32) *Reactor {
+
 	memR := &Reactor{
 		config:   config,
 		mempool:  mempool,
 		privVal : privVal,
 		waitSync: atomic.Bool{},
+		txBroadcastThreshold: thresholdPercent,
+		thresholdPercent: thresholdPercent,
 	}
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
 	if waitSync {
@@ -57,6 +63,15 @@ func NewReactor(config *cfg.MempoolConfig, privVal *types.PrivValidator, mempool
 	memR.activeNonPersistentPeersSemaphore = semaphore.NewWeighted(int64(memR.config.ExperimentalMaxGossipConnectionsToNonPersistentPeers))
 
 	return memR
+}
+
+func (memR *Reactor) calculateTxBroadcastThreshold() {
+    peerCount := memR.Switch.Peers().Size() // Dynamically get the number of peers
+    memR.txBroadcastThreshold = (memR.thresholdPercent * int32(peerCount)) / 100
+    memR.Logger.Debug("Calculated txBroadcastThreshold",
+        "thresholdPercent", memR.thresholdPercent,
+        "peerCount", peerCount,
+        "txBroadcastThreshold", memR.txBroadcastThreshold)
 }
 
 // SetLogger sets the Logger on the reactor and the underlying mempool.
@@ -169,7 +184,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 	// broadcasting happens from go routines per peer
 }
 
-// TryAddTx attempts to add an incoming transaction to the mempool.
+// TryTx attempts to add an incoming transaction to the mempool.
 // When the sender is nil, it means the transaction comes from an RPC endpoint.
 func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, error) {
 	senderID := noSender
@@ -218,6 +233,8 @@ type PeerState interface {
 // Send new mempool txs to peer.
 func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 	// If the node is catching up, don't start this routine immediately.
+	memR.calculateTxBroadcastThreshold()
+
 	if memR.WaitSync() {
 		select {
 		case <-memR.waitSyncCh:
@@ -275,6 +292,14 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 				return
 			}
 		}
+
+		if entry.SignatureCount() >= int(memR.txBroadcastThreshold) {
+            memR.Logger.Debug("Transaction reached threshold, stopping broadcast",
+                "tx", log.NewLazySprintf("%X", entry.Tx().Hash()), "threshold", memR.txBroadcastThreshold)
+            continue
+        }
+		// TODOPB : is this enough ?
+		// TODOPB : will the network sync or should we add a mechanism to push to consensus
 
 		// NOTE: Transaction batching was disabled due to
 		// https://github.com/tendermint/tendermint/issues/5796

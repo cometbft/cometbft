@@ -102,7 +102,7 @@ func (vs *validatorStub) signVote(
 	chainID string,
 	blockID types.BlockID,
 	voteExtension []byte,
-	nrpVoteExtension []byte,
+	nonRpVoteExtension []byte,
 	extEnabled bool,
 	timestamp time.Time,
 ) (*types.Vote, error) {
@@ -119,7 +119,7 @@ func (vs *validatorStub) signVote(
 		ValidatorAddress: pubKey.Address(),
 		ValidatorIndex:   vs.Index,
 		Extension:        voteExtension,
-		NonRpExtension:   nrpVoteExtension,
+		NonRpExtension:   nonRpVoteExtension,
 	}
 	v := vote.ToProto()
 	if err = vs.PrivValidator.SignVote(chainID, v, true); err != nil {
@@ -151,7 +151,7 @@ func (vs *validatorStub) signVote(
 func signVoteWithTimestamp(vs *validatorStub, voteType types.SignedMsgType, chainID string,
 	blockID types.BlockID, extEnabled bool, timestamp time.Time,
 ) *types.Vote {
-	var ext, nrpExt []byte
+	var ext, nonRpExt []byte
 	// Only non-nil precommits are allowed to carry vote extensions.
 	if extEnabled {
 		if voteType != types.PrecommitType {
@@ -159,10 +159,10 @@ func signVoteWithTimestamp(vs *validatorStub, voteType types.SignedMsgType, chai
 		}
 		if len(blockID.Hash) != 0 || !blockID.PartSetHeader.IsZero() {
 			ext = []byte("extension")
-			nrpExt = []byte("nrp extension")
+			nonRpExt = []byte("non_replay_protected_extension")
 		}
 	}
-	v, err := vs.signVote(voteType, chainID, blockID, ext, nrpExt, extEnabled, timestamp)
+	v, err := vs.signVote(voteType, chainID, blockID, ext, nonRpExt, extEnabled, timestamp)
 	if err != nil {
 		panic(fmt.Errorf("failed to sign vote: %v", err))
 	}

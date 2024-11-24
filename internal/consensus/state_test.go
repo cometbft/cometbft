@@ -2200,7 +2200,7 @@ func TestExtendVoteCalledWhenEnabled(t *testing.T) {
 						ValidatorAddress:   addr,
 						Height:             height,
 						VoteExtension:      []byte("extension"),
-						NonRpVoteExtension: []byte("nrp extension"),
+						NonRpVoteExtension: []byte("non_replay_protected_extension"),
 					})
 				} else {
 					m.AssertNotCalled(t, "VerifyVoteExtension", mock.Anything, mock.Anything)
@@ -2276,7 +2276,7 @@ func TestVerifyVoteExtensionNotCalledOnAbsentPrecommit(t *testing.T) {
 		ValidatorAddress:   addr,
 		Height:             height,
 		VoteExtension:      []byte("extension"),
-		NonRpVoteExtension: []byte("nrp extension"),
+		NonRpVoteExtension: []byte("non_replay_protected_extension"),
 	})
 }
 
@@ -2294,7 +2294,7 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 		[]byte("extension 2"),
 		[]byte("extension 3"),
 	}
-	nrpVoteExtensions := [][]byte{
+	nonRpVoteExtensions := [][]byte{
 		[]byte("nrp-extension 0"),
 		[]byte("nrp-extension 1"),
 		[]byte("nrp-extension 2"),
@@ -2303,7 +2303,8 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 
 	m := abcimocks.NewApplication(t)
 	m.On("ExtendVote", mock.Anything, mock.Anything).Return(&abci.ExtendVoteResponse{
-		VoteExtension: voteExtensions[0],
+		VoteExtension:  voteExtensions[0],
+		NonRpExtension: nonRpVoteExtensions[0],
 	}, nil)
 	m.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ProcessProposalResponse{Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil)
 
@@ -2343,7 +2344,7 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 	// create a precommit for each validator with the associated vote extension.
 	for i, vs := range vss[1:] {
 		signAddPrecommitWithExtension(t, cs1, chainID, blockID,
-			voteExtensions[i+1], nrpVoteExtensions[i+1], vs)
+			voteExtensions[i+1], nonRpVoteExtensions[i+1], vs)
 	}
 
 	ensurePrevote(voteCh, height, round)
@@ -3262,11 +3263,11 @@ func signAddPrecommitWithExtension(
 	chainID string,
 	blockID types.BlockID,
 	extension []byte,
-	nrpExtension []byte,
+	nonRpExtension []byte,
 	stub *validatorStub,
 ) {
 	t.Helper()
-	v, err := stub.signVote(types.PrecommitType, chainID, blockID, extension, nrpExtension, true, stub.clock.Now())
+	v, err := stub.signVote(types.PrecommitType, chainID, blockID, extension, nonRpExtension, true, stub.clock.Now())
 	require.NoError(t, err, "failed to sign vote")
 	addVotes(cs, v)
 }

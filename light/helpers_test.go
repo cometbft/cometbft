@@ -130,7 +130,6 @@ func makeVote(header *types.Header, valset *types.ValidatorSet,
 	if err != nil {
 		panic(err)
 	}
-
 	vote.ExtensionSignature = extSig
 	vote.NonRpExtensionSignature = nonRpExtSig
 	return vote

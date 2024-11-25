@@ -492,8 +492,12 @@ func newPebbleDBIterator(
 	start, end []byte,
 	isReverse bool,
 ) (*pebbleDBIterator, error) {
-	if (start != nil && len(start) == 0) || (end != nil && len(end) == 0) {
-		return nil, errKeyEmpty
+	if start != nil && len(start) == 0 {
+		return nil, fmt.Errorf("iterator's lower bound: %s", errKeyEmpty)
+	}
+
+	if end != nil && len(end) == 0 {
+		return nil, fmt.Errorf("iterator's upper bound: %s", errKeyEmpty)
 	}
 
 	o := pebble.IterOptions{

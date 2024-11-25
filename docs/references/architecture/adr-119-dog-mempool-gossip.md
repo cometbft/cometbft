@@ -76,7 +76,7 @@ Operators can thus configure a desired redundancy and the gossip protocol will a
 By default, the redundancy is set to `1` and impacts the gossiping of transactions as follows:
 
 
-```
+```go
   redundancy := duplicateTxs / firstTimeTxs
   if redundancy < r.redundancyLowerBound:
     peer.send(Reset)
@@ -100,12 +100,12 @@ The bulk of the changes is constrained to the mempool reactor.
 #### Breaking changes and new additions
 
 - The `Mempool` interface is expanded with a method : 
-```
+```go
 // GetSenders returns the list of node IDs from which we receive the given transaction.
 GetSenders(txKey types.TxKey) ([]nodekey.ID, error)
 ``` 
 - The `Entry` interface in the mempool package is expanded with a method:
-```
+```go
 // Senders returns the list of registered peers that sent us the transaction.
 	Senders() []nodekey.ID
 ```
@@ -118,7 +118,7 @@ Additionally, the mempool reactor is extended with a
 of transactions in the system. 
 Each node keeps track of the routes it disabled between its peers. 
 
-```
+```go
 type gossipRouter struct {
 	mtx cmtsync.RWMutex
 	// A set of `source -> target` routes that are disabled for disseminating transactions. Source
@@ -128,7 +128,7 @@ type gossipRouter struct {
 ``` 
 
 
-```
+```go
 type redundancyControl struct {
 	txsPerAdjustment int64
 
@@ -149,17 +149,48 @@ type redundancyControl struct {
 
 #### Added logic to existing functions
 
-Handling of new messages in Receive function, in the new channel.
-Extend TryAddTx to count first-time and duplicate txs; reply with a HaveTx message if tx is in cache.
-Filter disabled routes in broadcastTxRoutine (only if DOG is enabled, otherwise keep filtering senders as in the current code).
-New logic on RemovePeer.
+The overall behaviour of existing functions remains the same when DOG is disabled. 
+
+Enabling DOG causes the following changes in behaviour:
+
+`Receive`
+
+The function now handles messages from two channels. The `MempoolControlChannel`
+transmits `HaveTx` and `Reset` messages that keep track of routes between peers. 
+
+`TryAddTx` 
+
+When DOG is enabled we count the number of unique and duplicate transactions, and send
+`HaveTx` messages if the redundancy is too high. 
+
+Once a `HaveTx` message is sent,
+sending further messages is blocked. It is unblocked by the redundancy control mechanism 
+once it is triggered again. This will be discussed below, but overall the frequency
+of `HaveTx` messages should be aligned with the time it takes to send a message and 
+adjust routing between peers. 
+
+`broadcastTxRoutine`
+
+Before sending a transaction, we filter the peers to send to based on the `disabeldRoutes`. Again,
+only if DOG is enabled. 
+
+`RemovePeer`
+
+When a peer is removed, we remove any existing entries related to this peer from the `DisabledRoutes` 
+map and explicitly trigger redundancy re-adjustment. The later is not strictly needed, but 
+can lead to quicker propagation of this information through the network.
+
+Note that we had concidered a scenario where, upon removing a peer, a node sends `Reset` messages to all its peers. 
+This lead to routes beeing disabled too many times, and the process of stabilizing redundancy would be re-triggered
+too frequently. The adapted logic relies in the redundancy controller to decide whether a `Reset` 
+message should be sent. 
 
 
 #### New p2p messages
 
 The protocol introduces two new p2p messages whose protobuf definition is given below:
 
-```
+```proto
 type HaveTx struct {
 	TxKey []byte 
 }
@@ -173,25 +204,18 @@ type Reset struct {
 
 #### Monitoring
 
-This ADR introduces a set of metrics which can be used to observe the parameters of the protocol. 
-
-- `HaveTxMsgsReceived`
-- `ResetMsgsSent`
-- `DisabledRoutes`
-- `Redundancy`
-
 The impact of the protocol on operations can also be observed by looking at the following metrics that already exist:
 
--`AlreadyReceivedTx` - the number of redundant transactions. When DOG is enabled these values should drop. 
+- `AlreadyReceivedTx` - the number of redundant transactions. When DOG is enabled these values should drop. 
 
--`BytesReceived` - This metric shows the number of bytes received per message type. Without DOG, the transactions dominate the number of bytes, while, when enabled, the block parts dominate.
+- `BytesReceived` - This metric shows the number of bytes received per message type. Without DOG, the transactions dominate the number of bytes, while, when enabled, the block parts dominate.
 
-Newly introduced metrics are: 
+This ADR introduces a set of metrics which can be used to observe the parameters of the protocol: 
 
 
-- `HaveTxMsgsReceived` -  Number of HaveTx messages received (cumulative). 
+<!-- - `HaveTxMsgsReceived` -  Number of HaveTx messages received (cumulative). 
 
-- `ResetMsgsSent` - Number of Reset messages sent (cumulative).
+- `ResetMsgsSent` - Number of Reset messages sent (cumulative). -->
 
 - `DisabledRoutes` - Number of disabled routes.
 
@@ -202,23 +226,37 @@ Newly introduced metrics are:
 ### Configuration parameters
 
 
-- `config.EnableDOGProtocol: bool`: Enabling or disabling the DOG protocol
+- `config.EnableDOGProtocol: bool`: Enabling or disabling the DOG protocol. `true` by default.
+<!-- TODO verify this. But not a single benchmark
+showed a reason to not enable it. --->
 - `config.TargetRedundancy: float`: The redundancy level that the gossip protocol should aim to
-  maintain.
-- `config.TargetRedundancyDeltaPercent: float`: Value in the range `[0, 1)` that defines the bounds
-of acceptable redundancy levels; redundancy +- redundancy*delta TxsPerAdjustment: int
-- `config.TxsPerAdjustment: int`: How many (first-time) transactions should the node receive before
-  attempting to adjust redundancy.
-  <!--  TODO : Should this be evaluated also on duplicate transactions. -->
+  maintain. It is `1` by default. It cannot be `0` as this would open the node
+  to byzantine attacks.
+   <!-- TODO should we remove this too? If yes, remove the above sentence 
+  regarding operator configuration -->
 
-On startup, define the constants:
-- `delta := config.TargetRedundancy * config.TargetRedundancyDeltaPercent`
-- `redundancyLowerBound := config.TargetRedundancy - delta`
-- `redundancyUpperBound := config.TargetRedundancy + delta`
+In the first version of the protocol, we were inclined to expose more fine tuning
+parameters to operators. But after extensive experimentation we have settled on values for 
+each of them. 
+
+
+- `TargetRedundancyDeltaPercent: float`: Value in the range `[0, 1)` that defines the bounds
+of acceptable redundancy levels; redundancy +- redundancy*delta TxsPerAdjustment: int. It's value 
+is `0.2`  or `20%` of the set redundancy. <!-- We should remove target reduncany, oeoprators can set weird values there -->
+- `config.AdjustmentInterval: time.Duration`: Indicates how often the redundancy controler readjusts 
+the redundancy and has a chance to trigger sending of `HaveTx` or `Reset` messages. It's value is `1s`. 
+
+#### Deriving the values of the redundancy controller
+
+Part of the work on the protocol was extensive testing of its performance and impact of the network.
+Issue [\#4320] covers the experiments performed on DOG. All the findings can be found in [TODO](link)
+
+ We have also tested scenarios where we send the same load to 100 of the 200 nodes and DOG was able 
+ to reduce the number of duplicates in the system, even under a high load. 
 
 ## User recommendation
 
-- Entire network should use DOG
+- Entire network should use DOG. Otherwise the impact will be minimal. 
 
 
 > The protocol implicitly favors routes with low latency, by cutting routes to peers that send the duplicate transaction at a later time.
@@ -226,45 +264,12 @@ On startup, define the constants:
 - Is this true? We don't cut ties with the sender of the transaction, rather we are telling it to cut ties with some other node that has sent us the tx before that. 
 So sender could still forward us transactions but not the ones received from this particular node. 
 
-> If the frequency of `HaveTx` messages is too high, nodes will have too many routes cut. 
-
-
-
-> This section does not need to be filled in at the start of the ADR, but must
-> be completed prior to the merging of the implementation.
->
-> Here are some common questions that get answered as part of the detailed design:
->
-> - What are the user requirements?
->
-> - What systems will be affected?
->
-> - What new data structures are needed, what data structures will be changed?
->
-> - What new APIs will be needed, what APIs will be changed?
->
-> - What are the efficiency considerations (time/space)?
->
-> - What are the expected access patterns (load/throughput)?
->
-> - Are there any logging, monitoring or observability needs?
->
-> - Are there any security considerations?
->
-> - Are there any privacy considerations?
->
-> - How will the changes be tested?
->
-> - If the change is large, how will the changes be broken up for ease of review?
->
-> - Will these changes require a breaking (major) release?
->
-> - Does this change require coordination with the SDK or other?
+- If the frequency of `HaveTx` messages is too high, nodes will have too many routes cut.
+- Except for enabling DOG on all nodes, users do not have to change any other aspects of their application. 
 
 ## Consequences
 
-> This section describes the consequences, after applying the decision. All
-> consequences should be summarized here, not just the "positive" ones.
+Gossiping using DOG leads to a significant reductio in network traffic caused by transactions. 
 
 ### Positive
 
@@ -276,7 +281,6 @@ So sender could still forward us transactions but not the ones received from thi
 
 ## References
 
-> Are there any relevant PR comments, issues that led up to this, or articles
-> referenced for why we made the given design choice? If so link them here!
 
+[\#4320]: https://github.com/cometbft/cometbft/issues/4320
 - {reference link}

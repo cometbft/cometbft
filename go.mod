@@ -4,7 +4,7 @@ go 1.23.1
 
 require (
 	github.com/BurntSushi/toml v1.4.0
-	github.com/Masterminds/semver/v3 v3.3.0
+	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/adlio/schema v1.3.6
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect

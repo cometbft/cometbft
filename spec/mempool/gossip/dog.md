@@ -144,6 +144,7 @@ val initialRCState = { firstTimeTxs: 0, duplicateTxs: 0, isHaveTxBlocked: false 
 pure def increaseFirstTimeTxs(_rc) = { firstTimeTxs: _rc.firstTimeTxs + 1, ..._rc }
 pure def increaseDuplicateTxs(_rc) = { duplicateTxs: _rc.duplicateTxs + 1, ..._rc }
 pure def resetCounters(_rc) = { firstTimeTxs: 0, duplicateTxs: 0, ..._rc }
+pure def unblockHaveTx(_rc) = { isHaveTxBlocked: false, ..._rc }
 pure def blockHaveTx(_rc) = { isHaveTxBlocked: true, ..._rc }
 ```
 </details>
@@ -178,7 +179,7 @@ pure def controllerActions(_rc) =
     else if (_rc.redundancy() < lowerBound)
         (_rc, true)
     else if (_rc.redundancy() >= upperBound)
-        (_rc.blockHaveTx(), false)
+        (_rc.unblockHaveTx(), false)
     else 
         (_rc, false)
 ```

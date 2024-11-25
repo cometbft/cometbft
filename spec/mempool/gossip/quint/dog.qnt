@@ -56,7 +56,8 @@ module dog {
     pure def resetCounters(_rc) = { firstTimeTxs: 0, duplicateTxs: 0, ..._rc }
     pure def unblockHaveTx(_rc) = { isHaveTxBlocked: false, ..._rc }
     pure def blockHaveTx(_rc) = { isHaveTxBlocked: true, ..._rc }
-    pure def redundancy(_rc) = _rc.duplicateTxs / _rc.firstTimeTxs
+    pure def redundancy(_rc) =
+        if (_rc.firstTimeTxs == 0) upperBound else _rc.duplicateTxs / _rc.firstTimeTxs
     pure def controllerActions(_rc) =
         if (_rc.firstTimeTxs + _rc.duplicateTxs == 0)
             (_rc, false)

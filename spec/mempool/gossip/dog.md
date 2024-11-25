@@ -151,11 +151,17 @@ pure def blockHaveTx(_rc) = { isHaveTxBlocked: true, ..._rc }
 
 ### Computing redundancy
 
-The _redundancy level_ is defined as the proportion of duplicate transactions relative to first-time
+The _redundancy level_ is calculated as the ratio of duplicate transactions to first-time
 transactions.
 ```bluespec "rc" +=
-pure def redundancy(_rc) = _rc.duplicateTxs / _rc.firstTimeTxs
+pure def redundancy(_rc) =
+    if (_rc.firstTimeTxs == 0) upperBound else _rc.duplicateTxs / _rc.firstTimeTxs
 ```
+If the number of first-time transactions (`firstTimeTxs`) is 0, the redundancy level is set to a
+predefined maximum value (the constant `upperBound` defined below) to prompt the controller to
+reduce redundancy. Conversely, the redundancy level is set to 0 if there are no duplicate
+transactions (`duplicateTxs`), signaling the controller to increase redundancy. 
+
 For example, a redundancy of 0.5 means that, for every two first-time transactions, the node
 receives one duplicate transaction (not necessarily a duplicate of any of those two first-time
 transactions).

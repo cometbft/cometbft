@@ -493,11 +493,11 @@ func newPebbleDBIterator(
 	isReverse bool,
 ) (*pebbleDBIterator, error) {
 	if start != nil && len(start) == 0 {
-		return nil, fmt.Errorf("iterator's lower bound: %s", errKeyEmpty)
+		return nil, fmt.Errorf("iterator's lower bound: %w", errKeyEmpty)
 	}
 
 	if end != nil && len(end) == 0 {
-		return nil, fmt.Errorf("iterator's upper bound: %s", errKeyEmpty)
+		return nil, fmt.Errorf("iterator's upper bound: %w", errKeyEmpty)
 	}
 
 	o := pebble.IterOptions{
@@ -506,7 +506,7 @@ func newPebbleDBIterator(
 	}
 	it, err := pDB.db.NewIter(&o)
 	if err != nil {
-		formatStr := "creating iterator with bounds [%X, %X]: %w"
+		formatStr := "iterator with bounds [%X, %X]: %w"
 		return nil, fmt.Errorf(formatStr, start, end, err)
 	}
 

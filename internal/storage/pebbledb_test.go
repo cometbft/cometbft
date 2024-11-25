@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -15,7 +16,7 @@ import (
 )
 
 func TestGet(t *testing.T) {
-	pDB, dbCloser, err := newInMemDB()
+	pDB, dbCloser, err := newTestEmptyDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +59,7 @@ func TestGet(t *testing.T) {
 }
 
 func TestHas(t *testing.T) {
-	pDB, dbcloser, err := newInMemDB()
+	pDB, dbcloser, err := newTestEmptyDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +107,7 @@ func TestHas(t *testing.T) {
 // hood they only differ in that they call setWithOpts with pebble.NoSync and
 // pebble.Sync respectively.
 func TestSet(t *testing.T) {
-	pDB, dbCloser, err := newInMemDB()
+	pDB, dbCloser, err := newTestEmptyDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,7 +151,7 @@ func TestSet(t *testing.T) {
 // under the hood they only differ in that they call deleteWithOpts with
 // pebble.NoSync and pebble.Sync respectively.
 func TestDelete(t *testing.T) {
-	pDB, dbCloser, err := newInMemDB()
+	pDB, dbCloser, err := newTestEmptyDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -219,7 +220,7 @@ func TestCompact(t *testing.T) {
 		createTestDB = func(t *testing.T) (*PebbleDB, func()) {
 			t.Helper()
 
-			pDB, dbCloser, err := newInMemDB()
+			pDB, dbCloser, err := newTestEmptyDB()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -284,7 +285,7 @@ func TestCompact(t *testing.T) {
 }
 
 func TestPrint(t *testing.T) {
-	pDB, dbCloser, err := newInMemDB()
+	pDB, dbCloser, err := newTestEmptyDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -530,11 +531,193 @@ func TestBatchClose(t *testing.T) {
 	})
 }
 
-// newInMemDB is a utility function that creates an in-memory instance of pebble for
-// testing.
+func TestNewPebbleDBIterator(t *testing.T) {
+	emptyKey := []byte{}
+
+	t.Run("EmptyStartErr", func(t *testing.T) {
+		_, err := newPebbleDBIterator(nil, emptyKey, nil, false)
+		if !errors.Is(err, errKeyEmpty) {
+			t.Errorf("exptected error: %s\n got: %s", errKeyEmpty, err)
+		}
+	})
+
+	t.Run("EmptyEndErr", func(t *testing.T) {
+		_, err := newPebbleDBIterator(nil, nil, emptyKey, false)
+		if !errors.Is(err, errKeyEmpty) {
+			t.Errorf("exptected error: %s\n got: %s", errKeyEmpty, err)
+		}
+	})
+
+	pDB, dbCloser, err := newTestDB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(dbCloser)
+
+	t.Run("ForwardIteratorNoErr", func(t *testing.T) {
+		var (
+			// a nil start and end will default to the first and last keys in the db
+			start, end []byte
+			isReverse  bool
+		)
+		it, err := newPebbleDBIterator(pDB, start, end, isReverse)
+		if err != nil {
+			t.Fatalf("creating test iterator: %s", err)
+		}
+		t.Cleanup(func() { it.source.Close() })
+
+		if !bytes.Equal(it.start, start) {
+			formatStr := "expected iterator lower bound to be %v, got: %v"
+			t.Fatalf(formatStr, start, it.start)
+		}
+		if !bytes.Equal(it.end, end) {
+			formatStr := "expected iterator upper bound to be %v, got: %v"
+			t.Fatalf(formatStr, end, it.end)
+		}
+
+		// The first key in the test db is 'a'. See [newTestDB].
+		wantStart := []byte{'a'}
+		if !bytes.Equal(it.source.Key(), wantStart) {
+			formatStr := "expected iterator current key to be %s, got: %s"
+			t.Fatalf(formatStr, wantStart, it.Key())
+		}
+	})
+
+	t.Run("ReverseIteratorNoErr", func(t *testing.T) {
+		var (
+			// a nil start and end will default to the first and last keys in the db
+			start, end []byte
+			isReverse  = true
+		)
+		it, err := newPebbleDBIterator(pDB, start, end, isReverse)
+		if err != nil {
+			t.Fatalf("creating test iterator: %s", err)
+		}
+		t.Cleanup(func() { it.source.Close() })
+
+		if !bytes.Equal(it.start, start) {
+			formatStr := "expected iterator lower bound to be %v, got: %v"
+			t.Fatalf(formatStr, start, it.start)
+		}
+		if !bytes.Equal(it.end, end) {
+			formatStr := "expected iterator upper bound to be %v, got: %v"
+			t.Fatalf(formatStr, end, it.end)
+		}
+
+		// The last key in the test db is 'd'. See [newTestDB].
+		wantEnd := []byte{'d'}
+		if !bytes.Equal(it.source.Key(), wantEnd) {
+			formatStr := "expected iterator current key to be %s, got: %s"
+			t.Fatalf(formatStr, wantEnd, it.Key())
+		}
+	})
+}
+
+func TestIteratorIterating(t *testing.T) {
+	pDB, dbCloser, err := newTestDB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(dbCloser)
+
+	var (
+		a, b, c, d = []byte{'a'}, []byte{'b'}, []byte{'c'}, []byte{'d'}
+
+		testCases = []struct {
+			start, end []byte
+			reverse    bool
+
+			// expected keys visited by the iterator in order.
+			wantVisit [][]byte
+		}{
+			{start: nil, end: nil, reverse: false, wantVisit: [][]byte{a, b, c, d}},
+			{start: nil, end: nil, reverse: true, wantVisit: [][]byte{d, c, b, a}},
+
+			// Because 'end is exclusive, and because 'a' is the first key in the DB,
+			// setting it as the iterator's upper bound will create an iterator over
+			// an empty key range.
+			{start: nil, end: a, reverse: false, wantVisit: [][]byte{}},
+			{start: nil, end: a, reverse: true, wantVisit: [][]byte{}},
+			{start: nil, end: b, reverse: false, wantVisit: [][]byte{a}},
+			{start: nil, end: b, reverse: true, wantVisit: [][]byte{a}},
+			{start: nil, end: c, reverse: false, wantVisit: [][]byte{a, b}},
+
+			// Because 'end' is exclusive, setting 'c' as the iterator's upper bound
+			// of a reverse iterator will create an iterator whose starting key
+			// ('c') will be skipped.
+			{start: nil, end: c, reverse: true, wantVisit: [][]byte{b, a}},
+			{start: nil, end: d, reverse: false, wantVisit: [][]byte{a, b, c}},
+			{start: nil, end: d, reverse: true, wantVisit: [][]byte{c, b, a}},
+
+			{start: a, end: nil, reverse: false, wantVisit: [][]byte{a, b, c, d}},
+
+			// 'start' is inclusive, so setting 'a' as the iterator's lower bound of
+			// a reverse iterator will include 'a', even if 'a' is the last
+			// effectively becomes the last key in the key range.
+			{start: a, end: nil, reverse: true, wantVisit: [][]byte{d, c, b, a}},
+			{start: a, end: b, reverse: false, wantVisit: [][]byte{a}},
+			{start: a, end: b, reverse: true, wantVisit: [][]byte{a}},
+			{start: a, end: c, reverse: false, wantVisit: [][]byte{a, b}},
+			{start: a, end: c, reverse: true, wantVisit: [][]byte{b, a}},
+			{start: a, end: d, reverse: false, wantVisit: [][]byte{a, b, c}},
+			{start: a, end: d, reverse: true, wantVisit: [][]byte{c, b, a}},
+
+			{start: b, end: nil, reverse: false, wantVisit: [][]byte{b, c, d}},
+			{start: b, end: nil, reverse: true, wantVisit: [][]byte{d, c, b}},
+			{start: b, end: c, reverse: false, wantVisit: [][]byte{b}},
+			{start: b, end: c, reverse: true, wantVisit: [][]byte{b}},
+			{start: b, end: d, reverse: false, wantVisit: [][]byte{b, c}},
+			{start: b, end: d, reverse: true, wantVisit: [][]byte{c, b}},
+
+			{start: c, end: nil, reverse: false, wantVisit: [][]byte{c, d}},
+			{start: c, end: nil, reverse: true, wantVisit: [][]byte{d, c}},
+			{start: c, end: d, reverse: false, wantVisit: [][]byte{c}},
+			{start: c, end: d, reverse: true, wantVisit: [][]byte{c}},
+
+			{start: d, end: nil, reverse: false, wantVisit: [][]byte{d}},
+			{start: d, end: nil, reverse: true, wantVisit: [][]byte{d}},
+		}
+
+		equalFunc = func(a, b []byte) bool {
+			return slices.Equal(a, b)
+		}
+	)
+
+	for i, tc := range testCases {
+		it, err := newPebbleDBIterator(pDB, tc.start, tc.end, tc.reverse)
+		if err != nil {
+			t.Fatalf("test %d: creating test iterator: %s", i, err)
+		}
+
+		visited := make([][]byte, 0, len(tc.wantVisit))
+		for it.Valid() {
+			currKey := make([]byte, len(it.Key()))
+			copy(currKey, it.Key())
+			visited = append(visited, currKey)
+
+			it.Next()
+		}
+
+		if err := it.Error(); err != nil {
+			t.Fatalf("test %d: unexpected error: %s", i, err)
+		}
+
+		equalOrder := slices.EqualFunc(visited, tc.wantVisit, equalFunc)
+		if !equalOrder {
+			formatStr := "test %d:\nwant visit order: %s\ngot: %s"
+			t.Fatalf(formatStr, i, tc.wantVisit, visited)
+		}
+
+		if err := it.source.Close(); err != nil {
+			t.Fatalf("test %d: closing iterator: %s", i, err)
+		}
+	}
+}
+
+// newTestEmptyDB creates an in-memory instance of pebble for testing.
 // It returns a closer function that must be called to close the database when done
 // with it.
-func newInMemDB() (*PebbleDB, func(), error) {
+func newTestEmptyDB() (*PebbleDB, func(), error) {
 	opts := &pebble.Options{FS: vfs.NewMem()}
 	memDB, err := pebble.Open("", opts)
 	if err != nil {
@@ -542,20 +725,43 @@ func newInMemDB() (*PebbleDB, func(), error) {
 	}
 
 	var (
-		closer = func() {
-			memDB.Close()
-		}
-		pDB = &PebbleDB{db: memDB}
+		closer = func() { memDB.Close() }
+		pDB    = &PebbleDB{db: memDB}
 	)
 	return pDB, closer, nil
 }
 
-// newBatch is a utility function that creates a new batch for testing.
-// The underlying database is an in-memory instance of pebble.
+// newTestDB creates an in-memory instance of pebble for testing pre-populated with
+// a few dummy kv pairs.
+// It returns a closer function that must be called to close the database when done
+// with it.
+func newTestDB() (*PebbleDB, func(), error) {
+	pDB, dbCloser, err := newTestEmptyDB()
+	if err != nil {
+		return nil, nil, fmt.Errorf("creating test iterator: %w", err)
+	}
+
+	var (
+		keys = [][]byte{{'a'}, {'b'}, {'c'}, {'d'}}
+		vals = [][]byte{{0x01}, {0x02}, {0x03}, {0x04}}
+	)
+	for i, key := range keys {
+		val := vals[i]
+		if err := pDB.db.Set(key, val, nil); err != nil {
+			formatStr := "creating test iterator: setting (k,v)=(%v,%v): %s"
+			return nil, nil, fmt.Errorf(formatStr, key, val, err)
+		}
+	}
+
+	return pDB, dbCloser, nil
+}
+
+// newBatch creates a new batch you can use to apply operations to a database that
+// the function creates. The underlying database is an in-memory instance of pebble.
 // newBatch returns a closer function that must be called to close the batch and the
 // database when done with them.
 func newBatch() (*pebbleDBBatch, func(), error) {
-	pDB, dbCloser, err := newInMemDB()
+	pDB, dbCloser, err := newTestEmptyDB()
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating test batch: %w", err)
 	}

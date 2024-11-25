@@ -401,7 +401,7 @@ describes the missing details of each step.
     > This action should ideally have a pre-condition that enables the state transition only on
     > specified time intervals, as defined by the `adjustInterval` parameter. However, Quint does
     > not natively support specifying time constraints without relying on workarounds such as using
-    > counter as clocks. As a result, this action is modelled as always being enabled. In a
+    > counters as clocks. As a result, this action is modelled as always being enabled. In a
     > real-world implementation, redundancy adjustments would be naturally triggered by a timer set
     > to the duration specified by `adjustInterval`.
     

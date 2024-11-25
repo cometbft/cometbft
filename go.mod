@@ -41,7 +41,7 @@ require (
 require github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 
 require (
-	github.com/Masterminds/semver/v3 v3.3.0
+	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/goccmack/goutil v1.2.3
 	github.com/google/uuid v1.6.0

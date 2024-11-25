@@ -8,7 +8,7 @@ import (
 // MCConnectionStream is just a wrapper around the original net.Conn.
 type MConnectionStream struct {
 	conn        *MConnection
-	streadID    byte
+	streamID    byte
 	unreadBytes []byte
 
 	mtx           sync.RWMutex
@@ -33,7 +33,7 @@ func (s *MConnectionStream) Read(b []byte) (n int, err error) {
 	}
 
 	s.conn.mtx.RLock()
-	ch, ok := s.conn.recvMsgsByStreamID[s.streadID]
+	ch, ok := s.conn.recvMsgsByStreamID[s.streamID]
 	s.conn.mtx.RUnlock()
 
 	// If there are messages to read, read them.
@@ -75,7 +75,7 @@ func (s *MConnectionStream) Read(b []byte) (n int, err error) {
 // len(b), but it doesn't guarantee that the Write actually succeeds.
 // thread-safe.
 func (s *MConnectionStream) Write(b []byte) (n int, err error) {
-	if err := s.conn.sendBytes(s.streadID, b, s.writeTimeout()); err != nil {
+	if err := s.conn.sendBytes(s.streamID, b, s.writeTimeout()); err != nil {
 		return 0, err
 	}
 	return len(b), nil
@@ -85,8 +85,8 @@ func (s *MConnectionStream) Write(b []byte) (n int, err error) {
 // thread-safe.
 func (s *MConnectionStream) Close() error {
 	s.conn.mtx.Lock()
-	delete(s.conn.recvMsgsByStreamID, s.streadID)
-	delete(s.conn.channelsIdx, s.streadID)
+	delete(s.conn.recvMsgsByStreamID, s.streamID)
+	delete(s.conn.channelsIdx, s.streamID)
 	s.conn.mtx.Unlock()
 	return nil
 }

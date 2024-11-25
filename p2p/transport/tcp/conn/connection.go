@@ -104,6 +104,10 @@ type MConnection struct {
 	recvMsgsByStreamID map[byte]chan []byte
 	// streamID -> channel
 	channelsIdx map[byte]*Channel
+	// Because OpenStream is only called after peer is started, some messages
+	// might come before that. Store 100 messages with unknown stream ID and
+	// replay them.
+	recvMsgsUnknownStreamID chan tmp2p.PacketMsg
 }
 
 var _ abstract.Connection = (*MConnection)(nil)
@@ -149,18 +153,19 @@ func NewMConnection(conn net.Conn, config MConnConfig) *MConnection {
 	}
 
 	mconn := &MConnection{
-		conn:               conn,
-		bufConnReader:      bufio.NewReaderSize(conn, minReadBufferSize),
-		bufConnWriter:      bufio.NewWriterSize(conn, minWriteBufferSize),
-		sendMonitor:        flow.New(0, 0),
-		recvMonitor:        flow.New(0, 0),
-		send:               make(chan struct{}, 1),
-		pong:               make(chan struct{}, 1),
-		errorCh:            make(chan error, 1),
-		config:             config,
-		created:            time.Now(),
-		recvMsgsByStreamID: make(map[byte]chan []byte),
-		channelsIdx:        make(map[byte]*Channel),
+		conn:                    conn,
+		bufConnReader:           bufio.NewReaderSize(conn, minReadBufferSize),
+		bufConnWriter:           bufio.NewWriterSize(conn, minWriteBufferSize),
+		sendMonitor:             flow.New(0, 0),
+		recvMonitor:             flow.New(0, 0),
+		send:                    make(chan struct{}, 1),
+		pong:                    make(chan struct{}, 1),
+		errorCh:                 make(chan error, 1),
+		config:                  config,
+		created:                 time.Now(),
+		recvMsgsByStreamID:      make(map[byte]chan []byte),
+		channelsIdx:             make(map[byte]*Channel),
+		recvMsgsUnknownStreamID: make(chan tmp2p.PacketMsg, 100),
 	}
 
 	mconn.BaseService = *service.NewBaseService(nil, "MConnection", mconn)
@@ -237,6 +242,8 @@ func (c *MConnection) RemoteAddr() net.Addr {
 }
 
 func (c *MConnection) OpenStream(streamID byte, desc any) (abstract.Stream, error) {
+	c.Logger.Debug("Opening stream", "streamID", streamID, "desc", desc)
+
 	c.mtx.Lock()
 	if _, ok := c.channelsIdx[streamID]; ok {
 		c.mtx.Unlock()
@@ -256,7 +263,7 @@ func (c *MConnection) OpenStream(streamID byte, desc any) (abstract.Stream, erro
 	c.recvMsgsByStreamID[streamID] = make(chan []byte, maxRecvChanCap)
 	c.mtx.Unlock()
 
-	return &MConnectionStream{conn: c, streadID: streamID}, nil
+	return &MConnectionStream{conn: c, streamID: streamID}, nil
 }
 
 // Close closes the connection. It flushes all pending writes before closing.
@@ -621,6 +628,40 @@ FOR_LOOP:
 			break FOR_LOOP
 		}
 
+		select {
+		case pkt := <-c.recvMsgsUnknownStreamID:
+			channelID := byte(pkt.ChannelID)
+			c.mtx.RLock()
+			channel, ok := c.channelsIdx[channelID]
+			c.mtx.RUnlock()
+
+			if !ok || channel == nil {
+				c.Logger.Debug("Unknown stream @ recvRoutine", "streamID", channelID)
+				select {
+				case c.recvMsgsUnknownStreamID <- pkt:
+				default:
+				}
+				break
+			}
+
+			msgBytes, err := channel.recvPacketMsg(pkt)
+			if err != nil {
+				if c.IsRunning() {
+					c.Logger.Debug("Connection failed @ recvRoutine", "err", err)
+					c.Close(err.Error())
+				}
+				break FOR_LOOP
+			}
+			if msgBytes != nil {
+				// c.Logger.Debug("Received", "streamID", channelID, "msgBytes", log.NewLazySprintf("%X", msgBytes))
+				if err := c.pushRecvMsg(channelID, msgBytes); err != nil {
+					c.Logger.Error("Failed to store msgBytes", "streamID", channelID,
+						"msgBytes", log.NewLazySprintf("%X", msgBytes), "err", err)
+				}
+			}
+		default:
+		}
+
 		// Read more depending on packet type.
 		switch pkt := packet.Sum.(type) {
 		case *tmp2p.Packet_PacketPing:
@@ -640,15 +681,24 @@ FOR_LOOP:
 				// never block
 			}
 		case *tmp2p.Packet_PacketMsg:
-			channelID := byte(pkt.PacketMsg.ChannelID)
-			c.mtx.RLock()
-			channel, ok := c.channelsIdx[channelID]
-			c.mtx.RUnlock()
-			if pkt.PacketMsg.ChannelID < 0 || pkt.PacketMsg.ChannelID > math.MaxUint8 || !ok || channel == nil {
+			if pkt.PacketMsg.ChannelID < 0 || pkt.PacketMsg.ChannelID > math.MaxUint8 {
 				err := fmt.Errorf("unknown channel %X", pkt.PacketMsg.ChannelID)
 				c.Logger.Debug("Connection failed @ recvRoutine", "err", err)
 				c.Close(err.Error())
 				break FOR_LOOP
+			}
+
+			channelID := byte(pkt.PacketMsg.ChannelID)
+			c.mtx.RLock()
+			channel, ok := c.channelsIdx[channelID]
+			c.mtx.RUnlock()
+			if !ok || channel == nil {
+				c.Logger.Debug("Unknown stream @ recvRoutine", "streamID", pkt.PacketMsg.ChannelID)
+				select {
+				case c.recvMsgsUnknownStreamID <- *pkt.PacketMsg:
+				default:
+				}
+				continue FOR_LOOP
 			}
 
 			msgBytes, err := channel.recvPacketMsg(*pkt.PacketMsg)
@@ -666,6 +716,7 @@ FOR_LOOP:
 						"msgBytes", log.NewLazySprintf("%X", msgBytes), "err", err)
 				}
 			}
+
 		default:
 			err := fmt.Errorf("unknown message type %v", reflect.TypeOf(packet))
 			c.Logger.Error("Connection failed @ recvRoutine", "err", err)

@@ -60,19 +60,13 @@ jobs:
       - name: Notify Slack upon release
         uses: slackapi/slack-github-action@v2.0.0
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
           RELEASE_URL: "${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           payload: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":rocket: New CometBFT release: <${{ env.RELEASE_URL }}|${{ github.ref_name }}>"
-                  }
-                }
-              ]
-            }
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: ":rocket: New CometBFT release: <${{ env.RELEASE_URL }}|${{ github.ref_name }}>"

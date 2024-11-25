@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -42,21 +43,65 @@ type KeyLayout interface {
 	CalcABCIResponsesKey(height int64) []byte
 }
 
+// v1LegacyLayout is a legacy implementation of BlockKeyLayout, kept for backwards
+// compatibility. Newer code should use [v2Layout].
 type v1LegacyLayout struct{}
 
+// In the following [v1LegacyLayout] methods, we preallocate the key's slice to speed
+// up append operations and avoid extra allocations.
+// The size of the slice is the length of the prefix plus the length the string
+// representation of a 64-bit integer. Namely, the longest 64-bit int has 19 digits,
+// therefore its string representation is 20 bytes long (19 digits + 1 byte for the
+// sign).
+
 // CalcABCIResponsesKey implements StateKeyLayout.
+// It returns a database key of the form "abciResponsesKey:<height>" to store/
+// retrieve the response of FinalizeBlock (i.e., the results of executing a block)
+// for the block at the given height to/from
+// the database.
 func (v1LegacyLayout) CalcABCIResponsesKey(height int64) []byte {
-	return []byte(fmt.Sprintf("abciResponsesKey:%v", height))
+	const (
+		prefix    = "abciResponsesKey:"
+		prefixLen = len(prefix)
+	)
+	key := make([]byte, 0, prefixLen+20)
+
+	key = append(key, prefix...)
+	key = strconv.AppendInt(key, height, 10)
+
+	return key
 }
 
-// store.StoreOptions.DBKeyLayout.calcConsensusParamsKey implements StateKeyLayout.
+// CalcConsensusParamsKey implements StateKeyLayout.
+// It returns a database key of the form "consensusParamsKey:<height>" to store/
+// retrieve the consensus parameters at the given height to/from the database.
 func (v1LegacyLayout) CalcConsensusParamsKey(height int64) []byte {
-	return []byte(fmt.Sprintf("consensusParamsKey:%v", height))
+	const (
+		prefix    = "consensusParamsKey:"
+		prefixLen = len(prefix)
+	)
+	key := make([]byte, 0, prefixLen+20)
+
+	key = append(key, prefix...)
+	key = strconv.AppendInt(key, height, 10)
+
+	return key
 }
 
-// store.StoreOptions.DBKeyLayout.CalcValidatorsKey implements StateKeyLayout.
+// CalcValidatorsKey implements StateKeyLayout.
+// It returns a database key of the form "validatorsKey:<height>" to store/retrieve
+// the validators set at the given height to/from the database.
 func (v1LegacyLayout) CalcValidatorsKey(height int64) []byte {
-	return []byte(fmt.Sprintf("validatorsKey:%v", height))
+	const (
+		prefix    = "validatorsKey:"
+		prefixLen = len(prefix)
+	)
+	key := make([]byte, 0, prefixLen+20)
+
+	key = append(key, prefix...)
+	key = strconv.AppendInt(key, height, 10)
+
+	return key
 }
 
 var _ KeyLayout = (*v1LegacyLayout)(nil)

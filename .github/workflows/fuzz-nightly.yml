@@ -81,23 +81,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack on failure
-        uses: slackapi/slack-github-action@v1.27.0
+        uses: slackapi/slack-github-action@v2.0.0
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
           BRANCH: ${{ github.ref_name }}
           CRASHERS: ${{ needs.fuzz-nightly-test.outputs.crashers-count }}
           RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           payload: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":skull: Nightly fuzz tests for `${{ env.BRANCH }}` failed with ${{ env.CRASHERS }} crasher(s). See the <${{ env.RUN_URL }}|run details>."
-                  }
-                }
-              ]
-            }
+            blocks:
+            - type: "section"
+              text:
+                type: "mrkdwn"
+                text: ":skull: Nightly fuzz tests for `${{ env.BRANCH }}` failed with ${{ env.CRASHERS }} crasher(s). See the <${{ env.RUN_URL }}|run details>."

@@ -229,6 +229,8 @@ So sender could still forward us transactions but not the ones received from thi
 
 ### Negative
 
+- The new protocol is not compatible with the existing experimental feature that limits disseminating transactions up to a specified number of peers. If both are enabled simultaneously, the mempool will work but not as expected. This needs to be clear in the documentation.
+
 ### Neutral
 
 ## References

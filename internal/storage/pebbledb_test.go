@@ -537,14 +537,14 @@ func TestNewPebbleDBIterator(t *testing.T) {
 	t.Run("EmptyStartErr", func(t *testing.T) {
 		_, err := newPebbleDBIterator(nil, emptyKey, nil, false)
 		if !errors.Is(err, errKeyEmpty) {
-			t.Errorf("exptected error: %s\n got: %s", errKeyEmpty, err)
+			t.Errorf("expected error: %s\n got: %s", errKeyEmpty, err)
 		}
 	})
 
 	t.Run("EmptyEndErr", func(t *testing.T) {
 		_, err := newPebbleDBIterator(nil, nil, emptyKey, false)
 		if !errors.Is(err, errKeyEmpty) {
-			t.Errorf("exptected error: %s\n got: %s", errKeyEmpty, err)
+			t.Errorf("expected error: %s\n got: %s", errKeyEmpty, err)
 		}
 	})
 

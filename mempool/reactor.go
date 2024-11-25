@@ -67,11 +67,14 @@ func NewReactor(config *cfg.MempoolConfig, privVal *types.PrivValidator, mempool
 
 func (memR *Reactor) calculateTxBroadcastThreshold() {
     peerCount := memR.Switch.Peers().Size() // Dynamically get the number of peers
-    memR.txBroadcastThreshold = (memR.thresholdPercent * int32(peerCount)) / 100
+    newThreshold := (memR.thresholdPercent * int32(peerCount)) / 100
+
+    atomic.StoreInt32(&memR.txBroadcastThreshold, newThreshold) // Atomic store
+
     memR.Logger.Debug("Calculated txBroadcastThreshold",
         "thresholdPercent", memR.thresholdPercent,
         "peerCount", peerCount,
-        "txBroadcastThreshold", memR.txBroadcastThreshold)
+        "txBroadcastThreshold", newThreshold)
 }
 
 // SetLogger sets the Logger on the reactor and the underlying mempool.
@@ -233,8 +236,6 @@ type PeerState interface {
 // Send new mempool txs to peer.
 func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 	// If the node is catching up, don't start this routine immediately.
-	memR.calculateTxBroadcastThreshold()
-
 	if memR.WaitSync() {
 		select {
 		case <-memR.waitSyncCh:
@@ -243,6 +244,8 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			return
 		}
 	}
+
+	memR.calculateTxBroadcastThreshold()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
@@ -293,13 +296,14 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			}
 		}
 
-		if entry.SignatureCount() >= int(memR.txBroadcastThreshold) {
-            memR.Logger.Debug("Transaction reached threshold, stopping broadcast",
-                "tx", log.NewLazySprintf("%X", entry.Tx().Hash()), "threshold", memR.txBroadcastThreshold)
-            continue
-        }
 		// TODOPB : is this enough ?
 		// TODOPB : will the network sync or should we add a mechanism to push to consensus
+		// if entry.SignatureCount() >= int(memR.txBroadcastThreshold) {
+        //     memR.Logger.Debug("Transaction reached threshold, stopping broadcast",
+        //         "tx", log.NewLazySprintf("%X", entry.Tx().Hash()), "threshold", memR.txBroadcastThreshold)
+        //     continue
+        // }
+
 
 		// NOTE: Transaction batching was disabled due to
 		// https://github.com/tendermint/tendermint/issues/5796

@@ -24,21 +24,36 @@ while maintaining the resilience to attacks.
 
 ## Alternative Approaches
 
-> This section contains information around alternative options that are considered
-> before making a decision. It should contain a explanation on why the alternative
-> approach(es) were not chosen.
+The existing alternative approaches for transaction gossiping are:
+- FLOOD - the current transaction gossiping protocol in CometBFT
+- CAT Mempool - the transaction gossiping proposed by Celestia
+- Limiting number of peers to send a transaction to - Experimental protocol in CometBFT
+- Etherium's transaction gossiping protocol.
+
+
+### FLOOD - the current transaction gossiping protocol in CometBFT
+
+Currently, CometBFT gossips each transaction to all the connected peers, except the sender
+of the transaction. Thus, for every transaction, CometBFT keeps a list of senders to make sure
+it is not sent again to a node that has sent it. 
+This does not prevent a node to send the transaction to a node that has sent it to the 
+sender, thus creating a lot of duplicates. 
+
+This is the exact problem DOG was designed to tackle.
+
+
 
 ## Decision
 
 The CometBFT team has decided to implement the protocol on top of the existing mempool
-(`flood` ) dissemination protocol but make it optional. The protocol can be activated/deactivate
+(`flood` ) dissemination protocol, but make it optional. The protocol can be activated/deactivated
 via a new config flag `enable_dog_protocol`. More details on this in the sections below. 
 
 ## Detailed Design
 
 We start the design section with a general description of how the algorithm works. 
 
-CometBFT, at the moment, caches received transactions. For all transactions, CometBFT stores the IDs of all the peers that have sent it in a `senders` list. When a transaction enters the mempool,
+CometBFT caches received transactions and stores the IDs of all the peers that have sent it in a `senders` list. When a transaction enters the mempool,
 if it was already received it can be retrieved from the cache. When this happens a certain number of times, the receiving node notifies the sender to stop forwarding any transaction from the peer 
 that had originally sent the transaction. The exact point when the notification is sent is defined below as a redundancy threshold. (TODO LiNK)
 
@@ -46,16 +61,19 @@ Namely, let's assume that transaction `tx_1` was sent by node `B` to node `C` wh
 
 In reality, if node `C` ha received `tx_1` from multiple senders (`X`,`Y`, `B`), it will pick the first one that has sent it and disable that route. 
 
-When a connection to a peer is lost a node sends a `Reset` message to its peers. It
-signals to the peers that they should delete all routing information related to this node. This assures that, in case the network topology changes, or a peer becomes unavailable, the node is able to discover transactions via a previously disabled route. 
+Node `C` keeps a map of `disabledRoutes` per peer and uses it to determine whether a transaction should be forwarded. 
+
+Entries for a particular peer are reset if a peer sends a `Reset` message or if a peer disconnects. 
 
 ### Redundancy control
 
 In an ideal setting, receiving a transaction more than once is not needed. But in a Byzantine setting, allowing for only one route for a transaction can introduce an attack vector. 
 
-Operators can thus configure a desired redundancy and the gossip protocol will adjust route disabling based on this setting. Redundancy is defined as the ratio between duplicate and unique transactions. Operators can also define how much they tolerate the redundancy to deviate from the desired level.
+Operators can thus configure a desired redundancy and the gossip protocol will adjust route disabling based on this setting. Redundancy is defined as the ratio between duplicate and unique transactions. 
 
-By default, the redundancy is set to 1 and impacts the gossiping of transactions as follows:
+<!-- Operators can also define how much they tolerate the redundancy to deviate from the desired level. -->
+
+By default, the redundancy is set to `1` and impacts the gossiping of transactions as follows:
 
 
 ```
@@ -66,23 +84,39 @@ By default, the redundancy is set to 1 and impacts the gossiping of transactions
     enableRouteDisabling() 
 ```
 
-Redundancy is adjusted whenever a new transaction is added into the mempool.
-(TODO - revisit whether this should also be done on duplicates.)
+The number of unique and duplicate transactions is upadated as transactions come in and,
+periodically (every `1s`), DOG recomputes the redundnacy of the system. 
 
+
+#### Redundancy adjustment triggering
+
+As explained, redundancy is adjusted periodicially. It is also explicitly triggered when a peer is disconnected. <!-- TODO justify why-->
 
 ### Impacted areas of code
 
-#### Mempool reactor
-
-
 The bulk of the changes is constrained to the mempool reactor. 
-We introduce a new communication channel, called `Mempool Control Channel`. The channel
-is used to transmit the messages needed for the implementation of the protocol. 
+
+
+#### Breaking changes and new additions
+
+- The `Mempool` interface is expanded with a method : 
+```
+// GetSenders returns the list of node IDs from which we receive the given transaction.
+GetSenders(txKey types.TxKey) ([]nodekey.ID, error)
+``` 
+- The `Entry` interface in the mempool package is expanded with a method:
+```
+// Senders returns the list of registered peers that sent us the transaction.
+	Senders() []nodekey.ID
+```
+- We introduce a new communication channel, called `Mempool Control Channel`. The channel
+is used to transmit the messages needed for the implementation of the protocol. The channel ID
+is `31` and it has a priority of `10` .
 
 Additionally, the mempool reactor is extended with a 
 `gossipRouter` and a `redundancyControl` struct to keep track of the redundancy
 of transactions in the system. 
-Each node is keeps track of the routes it disabled between its peers. 
+Each node keeps track of the routes it disabled between its peers. 
 
 ```
 type gossipRouter struct {
@@ -112,6 +146,13 @@ type redundancyControl struct {
 
 ```
 
+
+#### Added logic to existing functions
+
+Handling of new messages in Receive function, in the new channel.
+Extend TryAddTx to count first-time and duplicate txs; reply with a HaveTx message if tx is in cache.
+Filter disabled routes in broadcastTxRoutine (only if DOG is enabled, otherwise keep filtering senders as in the current code).
+New logic on RemovePeer.
 
 
 #### New p2p messages

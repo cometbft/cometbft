@@ -2,7 +2,8 @@
 
 ## Changelog
 
-- 2024-04-12: Initial notes (@hvanz and @jmalicevic)
+- 2024-11-04: Initial notes (@hvanz and @jmalicevic)
+- 2024-11-25: Applied comments from @hvanz and added information on decided metrics (@jmalicevic)
 
 ## Status
 Accepted: [#3297][tracking-issue].

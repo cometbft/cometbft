@@ -295,7 +295,7 @@ func (sw *Switch) TryBroadcast(e Envelope) {
 	}
 	marshalledMsg, err := proto.Marshal(marshalMsg)
 	if err != nil {
-		return
+		panic(fmt.Sprintf("failed to marshal proto msg", "err", err))
 	}
 	marshalledEnvelope := MarshalledEnvelope{
 		Envelope:          e,

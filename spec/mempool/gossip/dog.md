@@ -540,6 +540,9 @@ action updateDisconnectedPeer(node, peer) = all {
     node.adjustRedundancy(),
 }
 ```
+Calling `adjustRedundancy` is not strictly needed here because the protocol will make an adjustment
+on the next iteration of the Redundancy Controller. This is just an improvement to trigger it
+sooner.
 
 <!--
 ```bluespec quint/dog.qnt +=

@@ -10,6 +10,7 @@ import "tendermint/types/validator.proto";
 import "tendermint/types/params.proto";
 import "tendermint/version/types.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
 
 // LegacyABCIResponses retains the responses
 // of the legacy ABCI calls during block processing.
@@ -93,4 +94,11 @@ message State {
 
   // the latest AppHash we've received from calling abci.Commit()
   bytes app_hash = 13;
+
+  // delay between the time when this block is committed and the next height is started.
+  // previously `timeout_commit` in config.toml
+  google.protobuf.Duration next_block_delay = 15 [
+    (gogoproto.nullable) = false, 
+    (gogoproto.stdduration) = true
+  ];
 }

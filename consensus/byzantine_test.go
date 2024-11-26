@@ -57,6 +57,8 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		})
 		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
 		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
+		// Set timeout to 0 so `skipTimeoutCommit = true` during test.
+		thisConfig.Consensus.TimeoutCommit = 0
 		defer os.RemoveAll(thisConfig.RootDir)
 		ensureDir(path.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
 		app := appFunc()

@@ -142,6 +142,8 @@ func TestReactorWithEvidence(t *testing.T) {
 		})
 		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
 		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
+		// Set timeout to 0 so `skipTimeoutCommit = true` during test.
+		thisConfig.Consensus.TimeoutCommit = 0
 		defer os.RemoveAll(thisConfig.RootDir)
 		ensureDir(path.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
 		app := appFunc()
@@ -448,6 +450,7 @@ func TestReactorVotingPowerChange(t *testing.T) {
 		"consensus_voting_power_changes_test",
 		newMockTickerFunc(true),
 		newPersistentKVStore)
+
 	defer cleanup()
 	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, nVals)
 	defer stopConsensusNet(logger, reactors, eventBuses)

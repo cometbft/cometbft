@@ -303,22 +303,12 @@ func (pDB *PebbleDB) NewBatch() Batch {
 //
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) Iterator(start, end []byte) (Iterator, error) {
-	if (start != nil && len(start) == 0) || (end != nil && len(end) == 0) {
-		return nil, errKeyEmpty
-	}
-
-	o := pebble.IterOptions{
-		LowerBound: start,
-		UpperBound: end,
-	}
-	itr, err := pDB.db.NewIter(&o)
+	it, err := newPebbleDBIterator(pDB, start, end, false /* reverse */)
 	if err != nil {
-		return nil, fmt.Errorf("creating new iterator: %w", err)
+		return nil, fmt.Errorf("creating new forward iterator: %w", err)
 	}
 
-	itr.First()
-
-	return newPebbleDBIterator(itr, start, end, false /* isReverse */), nil
+	return it, nil
 }
 
 // ReverseIterator returns an iterator over a domain of keys, in descending
@@ -332,21 +322,12 @@ func (pDB *PebbleDB) Iterator(start, end []byte) (Iterator, error) {
 //
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) ReverseIterator(start, end []byte) (Iterator, error) {
-	if (start != nil && len(start) == 0) || (end != nil && len(end) == 0) {
-		return nil, errKeyEmpty
-	}
-	o := pebble.IterOptions{
-		LowerBound: start,
-		UpperBound: end,
-	}
-	itr, err := pDB.db.NewIter(&o)
+	it, err := newPebbleDBIterator(pDB, start, end, true /* reverse */)
 	if err != nil {
-		return nil, fmt.Errorf("creating new iterator: %w", err)
+		return nil, fmt.Errorf("creating new reverse iterator: %w", err)
 	}
 
-	itr.Last()
-
-	return newPebbleDBIterator(itr, start, end, true /* reverse */), nil
+	return it, nil
 }
 
 var _ Batch = (*pebbleDBBatch)(nil)
@@ -497,7 +478,7 @@ func (b *pebbleDBBatch) Close() error {
 // It implements the [Iterator] interface.
 type pebbleDBIterator struct {
 	source     *pebble.Iterator
-	start, end []byte
+	start, end []byte // end is exclusive.
 	isReverse  bool
 	isInvalid  bool
 }
@@ -505,25 +486,45 @@ type pebbleDBIterator struct {
 var _ Iterator = (*pebbleDBIterator)(nil)
 
 // newPebbleDBIterator returns a new pebbleDBIterator to iterate over a range of
-// database key/value pairs.
+// database key/value pairs of the given instance of PebbleDB.
 func newPebbleDBIterator(
-	source *pebble.Iterator,
+	pDB *PebbleDB,
 	start, end []byte,
 	isReverse bool,
-) *pebbleDBIterator {
-	if isReverse && end == nil {
-		source.Last()
-	} else if !isReverse && start == nil {
-		source.First()
+) (*pebbleDBIterator, error) {
+	if start != nil && len(start) == 0 {
+		return nil, fmt.Errorf("iterator's lower bound: %w", errKeyEmpty)
 	}
 
-	return &pebbleDBIterator{
-		source:    source,
+	if end != nil && len(end) == 0 {
+		return nil, fmt.Errorf("iterator's upper bound: %w", errKeyEmpty)
+	}
+
+	o := pebble.IterOptions{
+		LowerBound: start,
+		UpperBound: end,
+	}
+	it, err := pDB.db.NewIter(&o)
+	if err != nil {
+		formatStr := "iterator with bounds [%X, %X]: %w"
+		return nil, fmt.Errorf(formatStr, start, end, err)
+	}
+
+	if isReverse {
+		it.Last()
+	} else {
+		it.First()
+	}
+
+	pbIt := &pebbleDBIterator{
+		source:    it,
 		start:     start,
 		end:       end,
 		isReverse: isReverse,
 		isInvalid: false,
 	}
+
+	return pbIt, nil
 }
 
 // Domain returns the start (inclusive) and end (exclusive) limits of the iterator.
@@ -561,8 +562,19 @@ func (itr *pebbleDBIterator) Valid() bool {
 		end   = itr.end
 		key   = itr.source.Key()
 
+		// If 'start' is nil, the iterator's lower bound is the first key in the
+		// database, and therefore no key can be before it. Therefore, the
+		// 'start != nil' check is a shortcut to avoid a useless call to
+		// bytes.Compare(non_nil_key, nil), which would return 1 anyway because any
+		// non-empty slice is considered greater than nil.
 		itrBeforeStart = start != nil && bytes.Compare(key, start) < 0
-		itrAfterEnd    = end != nil && bytes.Compare(key, end) >= 0
+
+		// We check if 'end != nil' because if 'end' is nil, the iterator's upper
+		// bound is the last key in the database, and therefore no key can be after
+		// it. Additionally, bytes.Compare(non_nil_key, nil) returns 1 because any
+		// non-empty slice is considered greater than nil. Therefore, without
+		// checking 'end != nil', we would incorrectly set `itrAfterEnd` to true.
+		itrAfterEnd = end != nil && bytes.Compare(key, end) >= 0
 	)
 	if (itr.isReverse && itrBeforeStart) || (!itr.isReverse && itrAfterEnd) {
 		itr.isInvalid = true

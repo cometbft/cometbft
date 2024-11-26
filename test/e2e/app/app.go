@@ -156,6 +156,9 @@ type Config struct {
 	// * An existing validator will be chosen, and its power will alternate 0 and 1
 	// * `ConsensusParams` will be flipping on and off key types not set at genesis
 	ConstantFlip bool `toml:"constant_flip"`
+
+	// Colored log output.
+	LogColors bool `toml:"log_colors"`
 }
 
 func DefaultConfig(dir string) *Config {
@@ -191,7 +194,7 @@ func NewApplication(cfg *Config) (*Application, error) {
 	for keyType := range cmttypes.ABCIPubKeyTypesToNames {
 		allKeyTypes = append(allKeyTypes, keyType)
 	}
-	logger := log.NewLoggerWithColor(os.Stdout, false)
+	logger := log.NewLoggerWithColor(os.Stdout, cfg.LogColors)
 	logger.Info("Application started!")
 	if cfg.NoLanes {
 		return &Application{

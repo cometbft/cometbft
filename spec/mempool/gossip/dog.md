@@ -552,7 +552,7 @@ disabled.
 
 When a `node` detects that a `peer` has disconnected from the network, 
 1. it updates its set of active peers,
-2. it updates its routing table by reseting all routes that have `peer` as either a source or target, and
+2. it updates its routing table by resetting all routes that have `peer` as either a source or target, and
 3. it triggers a redundancy adjustment.
 ```bluespec "actions" +=
 action updateDisconnectedPeer(node, peer) = all {

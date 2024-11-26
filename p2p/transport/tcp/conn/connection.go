@@ -103,7 +103,7 @@ type MConnection struct {
 	// streamID -> list of incoming messages
 	recvMsgsByStreamID map[byte]chan []byte
 	// streamID -> channel
-	channelsIdx map[byte]*Channel
+	channelsIdx map[byte]*stream
 	// Because OpenStream is only called after peer is started, some messages
 	// might come before that. Store 100 messages with unknown stream ID and
 	// replay them.
@@ -164,7 +164,7 @@ func NewMConnection(conn net.Conn, config MConnConfig) *MConnection {
 		config:                  config,
 		created:                 time.Now(),
 		recvMsgsByStreamID:      make(map[byte]chan []byte),
-		channelsIdx:             make(map[byte]*Channel),
+		channelsIdx:             make(map[byte]*stream),
 		recvMsgsUnknownStreamID: make(chan tmp2p.PacketMsg, 100),
 	}
 
@@ -535,14 +535,14 @@ func (c *MConnection) sendBatchPacketMsgs(w protoio.Writer, batchSize int) bool 
 // TODO: Make "batchChannelToGossipOn", so we can do our proto marshaling overheads in parallel,
 // and we can avoid re-checking for `isSendPending`.
 // We can easily mock the recentlySent differences for the batch choosing.
-func (c *MConnection) selectChannelToGossipOn() *Channel {
+func (c *MConnection) selectChannelToGossipOn() *stream {
 	c.mtx.RLock()
 	defer c.mtx.RUnlock()
 
 	// Choose a channel to create a PacketMsg from.
 	// The chosen channel will be the one whose recentlySent/priority is the least.
 	var leastRatio float32 = math.MaxFloat32
-	var leastChannel *Channel
+	var leastChannel *stream
 	for _, channel := range c.channelsIdx {
 		// If nothing to send, skip this channel
 		// TODO: Skip continually looking for isSendPending on channels we've already skipped in this batch-send.
@@ -562,7 +562,7 @@ func (c *MConnection) selectChannelToGossipOn() *Channel {
 }
 
 // returns (num_bytes_written, error_occurred).
-func (c *MConnection) sendPacketMsgOnChannel(w protoio.Writer, sendChannel *Channel) (int, bool) {
+func (c *MConnection) sendPacketMsgOnChannel(w protoio.Writer, sendChannel *stream) (int, bool) {
 	// Make & send a PacketMsg from this channel
 	n, err := sendChannel.writePacketMsgTo(w)
 	if err != nil {
@@ -775,9 +775,8 @@ func (c *MConnection) maxPacketMsgSize() int {
 
 // -----------------------------------------------------------------------------
 
-// TODO: lowercase.
 // NOTE: not goroutine-safe.
-type Channel struct {
+type stream struct {
 	conn          *MConnection
 	desc          StreamDescriptor
 	sendQueue     chan []byte
@@ -795,12 +794,12 @@ type Channel struct {
 	Logger log.Logger
 }
 
-func newChannel(conn *MConnection, desc StreamDescriptor) *Channel {
+func newChannel(conn *MConnection, desc StreamDescriptor) *stream {
 	desc = desc.FillDefaults()
 	if desc.Priority <= 0 {
 		panic("Channel default priority must be a positive integer")
 	}
-	return &Channel{
+	return &stream{
 		conn:                    conn,
 		desc:                    desc,
 		sendQueue:               make(chan []byte, desc.SendQueueCapacity),
@@ -812,7 +811,7 @@ func newChannel(conn *MConnection, desc StreamDescriptor) *Channel {
 	}
 }
 
-func (ch *Channel) SetLogger(l log.Logger) {
+func (ch *stream) SetLogger(l log.Logger) {
 	ch.Logger = l
 }
 
@@ -820,7 +819,7 @@ func (ch *Channel) SetLogger(l log.Logger) {
 // Goroutine-safe
 // It returns ErrTimeout if bytes were not queued after timeout.
 // If timeout is zero, it will wait forever.
-func (ch *Channel) sendBytes(bytes []byte, timeout time.Duration) error {
+func (ch *stream) sendBytes(bytes []byte, timeout time.Duration) error {
 	if timeout == 0 {
 		select {
 		case ch.sendQueue <- bytes:
@@ -843,20 +842,20 @@ func (ch *Channel) sendBytes(bytes []byte, timeout time.Duration) error {
 }
 
 // Goroutine-safe.
-func (ch *Channel) loadSendQueueSize() (size int) {
+func (ch *stream) loadSendQueueSize() (size int) {
 	return int(atomic.LoadInt32(&ch.sendQueueSize))
 }
 
 // Goroutine-safe
 // Use only as a heuristic.
-func (ch *Channel) canSend() bool {
+func (ch *stream) canSend() bool {
 	return ch.loadSendQueueSize() < defaultSendQueueCapacity
 }
 
 // Returns true if any PacketMsgs are pending to be sent.
 // Call before calling updateNextPacket
 // Goroutine-safe.
-func (ch *Channel) isSendPending() bool {
+func (ch *stream) isSendPending() bool {
 	if len(ch.sending) == 0 {
 		if len(ch.sendQueue) == 0 {
 			return false
@@ -868,7 +867,7 @@ func (ch *Channel) isSendPending() bool {
 
 // Updates the nextPacket proto message for us to send.
 // Not goroutine-safe.
-func (ch *Channel) updateNextPacket() {
+func (ch *stream) updateNextPacket() {
 	maxSize := ch.maxPacketMsgPayloadSize
 	if len(ch.sending) <= maxSize {
 		ch.nextPacketMsg.Data = ch.sending
@@ -887,7 +886,7 @@ func (ch *Channel) updateNextPacket() {
 
 // Writes next PacketMsg to w and updates c.recentlySent.
 // Not goroutine-safe.
-func (ch *Channel) writePacketMsgTo(w protoio.Writer) (n int, err error) {
+func (ch *stream) writePacketMsgTo(w protoio.Writer) (n int, err error) {
 	ch.updateNextPacket()
 	n, err = w.WriteMsg(ch.nextPacket)
 	if err != nil {
@@ -901,7 +900,7 @@ func (ch *Channel) writePacketMsgTo(w protoio.Writer) (n int, err error) {
 // Handles incoming PacketMsgs. It returns a message bytes if message is
 // complete. NOTE message bytes may change on next call to recvPacketMsg.
 // Not goroutine-safe.
-func (ch *Channel) recvPacketMsg(packet tmp2p.PacketMsg) ([]byte, error) {
+func (ch *stream) recvPacketMsg(packet tmp2p.PacketMsg) ([]byte, error) {
 	recvCap, recvReceived := ch.desc.RecvMessageCapacity, len(ch.recving)+len(packet.Data)
 	if recvCap < recvReceived {
 		return nil, ErrPacketTooBig{Max: recvCap, Received: recvReceived}
@@ -923,7 +922,7 @@ func (ch *Channel) recvPacketMsg(packet tmp2p.PacketMsg) ([]byte, error) {
 
 // Call this periodically to update stats for throttling purposes.
 // Not goroutine-safe.
-func (ch *Channel) updateStats() {
+func (ch *stream) updateStats() {
 	// Exponential decay of stats.
 	// TODO: optimize.
 	atomic.StoreInt64(&ch.recentlySent, int64(float64(atomic.LoadInt64(&ch.recentlySent))*0.8))

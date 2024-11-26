@@ -272,17 +272,13 @@ func NewCLI() *CLI {
 			} else if len(loadTargetNodes) > 0 {
 				cli.testnet.LoadTargetNodes = loadTargetNodes
 			}
-			if err = cli.testnet.Validate(); err != nil {
-				return err
-			}
-
 			if duplicateTxsToN, err := cmd.Flags().GetInt("duplicate-num-nodes"); err != nil {
 				return err
 			} else if duplicateTxsToN > 0 {
-				if duplicateTxsToN > len(cli.testnet.Nodes) {
-					return errors.New("value must be less or equal to the number of nodes in the manifest")
-				}
 				cli.testnet.LoadDuplicateTxs = duplicateTxsToN
+			}
+			if err = cli.testnet.Validate(); err != nil {
+				return err
 			}
 
 			return Load(context.Background(), cli.testnet, useInternalIP)

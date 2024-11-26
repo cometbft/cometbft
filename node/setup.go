@@ -26,11 +26,11 @@ import (
 	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/p2p/abstract"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/p2p/pex"
+	"github.com/cometbft/cometbft/p2p/transport"
 	"github.com/cometbft/cometbft/p2p/transport/tcp"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	"github.com/cometbft/cometbft/privval"
@@ -485,7 +485,7 @@ func createTransport(
 }
 
 func createSwitch(config *cfg.Config,
-	transport abstract.Transport,
+	transport transport.Transport,
 	p2pMetrics *p2p.Metrics,
 	peerFilters []p2p.PeerFilterFunc,
 	mempoolReactor p2p.Reactor,

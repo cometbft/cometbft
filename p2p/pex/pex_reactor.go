@@ -12,9 +12,9 @@ import (
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/p2p/abstract"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/nodekey"
+	"github.com/cometbft/cometbft/p2p/transport"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
 
@@ -169,8 +169,8 @@ func (r *Reactor) Stop() error {
 }
 
 // StreamDescriptors implements Reactor.
-func (*Reactor) StreamDescriptors() []abstract.StreamDescriptor {
-	return []abstract.StreamDescriptor{
+func (*Reactor) StreamDescriptors() []transport.StreamDescriptor {
+	return []transport.StreamDescriptor{
 		tcpconn.ChannelDescriptor{
 			ID:                  PexChannel,
 			Priority:            1,

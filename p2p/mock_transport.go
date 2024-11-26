@@ -4,7 +4,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/cometbft/cometbft/p2p/abstract"
+	"github.com/cometbft/cometbft/p2p/transport"
 )
 
 type mockStream struct {
@@ -38,7 +38,7 @@ func newMockConnection(c net.Conn) *mockConnection {
 	}
 }
 
-func (c mockConnection) OpenStream(byte, any) (abstract.Stream, error) {
+func (c mockConnection) OpenStream(byte, any) (transport.Stream, error) {
 	return &mockStream{
 		Conn: c.Conn,
 	}, nil

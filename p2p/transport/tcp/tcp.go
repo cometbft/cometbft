@@ -10,10 +10,10 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/p2p/abstract"
 	"github.com/cometbft/cometbft/p2p/internal/fuzz"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/nodekey"
+	"github.com/cometbft/cometbft/p2p/transport"
 	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
 
@@ -119,7 +119,7 @@ type MultiplexTransport struct {
 
 // Test multiplexTransport for interface completeness.
 var (
-	_ abstract.Transport = (*MultiplexTransport)(nil)
+	_ transport.Transport = (*MultiplexTransport)(nil)
 )
 
 // NewMultiplexTransport returns a tcp connected multiplexed peer.
@@ -149,7 +149,7 @@ func (mt *MultiplexTransport) NetAddr() na.NetAddr {
 }
 
 // Accept implements Transport.
-func (mt *MultiplexTransport) Accept() (abstract.Connection, *na.NetAddr, error) {
+func (mt *MultiplexTransport) Accept() (transport.Connection, *na.NetAddr, error) {
 	select {
 	// This case should never have any side-effectful/blocking operations to
 	// ensure that quality peers are ready to be used.
@@ -165,7 +165,7 @@ func (mt *MultiplexTransport) Accept() (abstract.Connection, *na.NetAddr, error)
 }
 
 // Dial implements Transport.
-func (mt *MultiplexTransport) Dial(addr na.NetAddr) (abstract.Connection, error) {
+func (mt *MultiplexTransport) Dial(addr na.NetAddr) (transport.Connection, error) {
 	c, err := addr.DialTimeout(mt.dialTimeout)
 	if err != nil {
 		return nil, err

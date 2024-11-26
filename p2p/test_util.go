@@ -9,10 +9,10 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtnet "github.com/cometbft/cometbft/internal/net"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/p2p/abstract"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
+	"github.com/cometbft/cometbft/p2p/transport"
 	"github.com/cometbft/cometbft/p2p/transport/tcp"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
@@ -49,7 +49,7 @@ func CreateRandomPeer(outbound bool) Peer {
 		},
 		nodeInfo: mockNodeInfo{netAddr},
 		metrics:  NopMetrics(),
-		streams:  make(map[byte]abstract.Stream),
+		streams:  make(map[byte]transport.Stream),
 	}
 	// PEX
 	p.streams[0x00] = &nopStream{}
@@ -193,7 +193,7 @@ func ConnectStarSwitches(c int) func([]*Switch, int, int) {
 	}
 }
 
-func (sw *Switch) addPeerWithConnection(conn abstract.Connection) error {
+func (sw *Switch) addPeerWithConnection(conn transport.Connection) error {
 	closeConn := func(err error) {
 		if cErr := conn.Close(err.Error()); cErr != nil {
 			sw.Logger.Error("Error closing connection", "err", cErr)
@@ -289,14 +289,14 @@ func MakeSwitch(
 }
 
 func testInboundPeerConn(
-	conn abstract.Connection,
+	conn transport.Connection,
 	socketAddr *na.NetAddr,
 ) (peerConn, error) {
 	return testPeerConn(conn, false, false, socketAddr)
 }
 
 func testPeerConn(
-	conn abstract.Connection,
+	conn transport.Connection,
 	outbound, persistent bool,
 	socketAddr *na.NetAddr,
 ) (pc peerConn, err error) {

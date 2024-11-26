@@ -24,10 +24,10 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	"github.com/cometbft/cometbft/p2p/abstract"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
+	"github.com/cometbft/cometbft/p2p/transport"
 	"github.com/cometbft/cometbft/p2p/transport/tcp"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
@@ -49,13 +49,13 @@ type TestReactor struct {
 	BaseReactor
 
 	mtx               cmtsync.Mutex
-	streamDescriptors []abstract.StreamDescriptor
+	streamDescriptors []transport.StreamDescriptor
 	logMessages       bool
 	msgsCounter       int
 	msgsReceived      map[byte][]PeerMessage
 }
 
-func NewTestReactor(descs []abstract.StreamDescriptor, logMessages bool) *TestReactor {
+func NewTestReactor(descs []transport.StreamDescriptor, logMessages bool) *TestReactor {
 	tr := &TestReactor{
 		streamDescriptors: descs,
 		logMessages:       logMessages,
@@ -66,7 +66,7 @@ func NewTestReactor(descs []abstract.StreamDescriptor, logMessages bool) *TestRe
 	return tr
 }
 
-func (tr *TestReactor) StreamDescriptors() []abstract.StreamDescriptor {
+func (tr *TestReactor) StreamDescriptors() []transport.StreamDescriptor {
 	return tr.streamDescriptors
 }
 
@@ -106,7 +106,7 @@ func initSwitchFunc(_ int, sw *Switch) *Switch {
 	})
 
 	// Make two reactors of two channels each
-	sw.AddReactor("foo", NewTestReactor([]abstract.StreamDescriptor{
+	sw.AddReactor("foo", NewTestReactor([]transport.StreamDescriptor{
 		tcpconn.ChannelDescriptor{
 			ID:           byte(0x01),
 			Priority:     1,
@@ -118,7 +118,7 @@ func initSwitchFunc(_ int, sw *Switch) *Switch {
 			MessageTypeI: &p2pproto.Message{},
 		},
 	}, true))
-	sw.AddReactor("bar", NewTestReactor([]abstract.StreamDescriptor{
+	sw.AddReactor("bar", NewTestReactor([]transport.StreamDescriptor{
 		tcpconn.ChannelDescriptor{
 			ID:           byte(0x03),
 			Priority:     3,
@@ -666,7 +666,7 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 		stream, err := c.OpenStream(testCh, nil)
 		require.NoError(t, err)
 		// spawn a reading routine to prevent connection from closing
-		go func(s abstract.Stream) {
+		go func(s transport.Stream) {
 			for {
 				one := make([]byte, 1)
 				_, err := s.Read(one)
@@ -701,7 +701,7 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 		stream, err := c.OpenStream(testCh, nil)
 		require.NoError(t, err)
 		// spawn a reading routine to prevent connection from closing
-		go func(s abstract.Stream) {
+		go func(s transport.Stream) {
 			for {
 				one := make([]byte, 1)
 				_, err := s.Read(one)
@@ -726,25 +726,25 @@ type errorTransport struct {
 	acceptErr error
 }
 
-var _ abstract.Transport = errorTransport{}
+var _ transport.Transport = errorTransport{}
 
 func (errorTransport) NetAddr() na.NetAddr {
 	panic("not implemented")
 }
 
-func (et errorTransport) Accept() (abstract.Connection, *na.NetAddr, error) {
+func (et errorTransport) Accept() (transport.Connection, *na.NetAddr, error) {
 	return nil, nil, et.acceptErr
 }
 
-func (errorTransport) Dial(na.NetAddr) (abstract.Connection, error) {
+func (errorTransport) Dial(na.NetAddr) (transport.Connection, error) {
 	panic("not implemented")
 }
 
-func (errorTransport) Cleanup(abstract.Connection) error {
+func (errorTransport) Cleanup(transport.Connection) error {
 	panic("not implemented")
 }
 
-func (errorTransport) UpdateStreamDescriptors([]abstract.StreamDescriptor) {
+func (errorTransport) UpdateStreamDescriptors([]transport.StreamDescriptor) {
 	panic("not implemented")
 }
 
@@ -970,7 +970,7 @@ func (rp *remoteTCPPeer) Stop() {
 	rp.transport.Close()
 }
 
-func (rp *remoteTCPPeer) Dial(addr *na.NetAddr) (abstract.Connection, error) {
+func (rp *remoteTCPPeer) Dial(addr *na.NetAddr) (transport.Connection, error) {
 	c, err := rp.transport.Dial(*addr)
 	if err != nil {
 		return nil, err

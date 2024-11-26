@@ -17,10 +17,10 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/p2p/abstract"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
+	"github.com/cometbft/cometbft/p2p/transport"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
 
@@ -99,7 +99,7 @@ func createOutboundPeerAndPerformHandshake(
 
 	// create peer
 	var (
-		streamDescs = []abstract.StreamDescriptor{
+		streamDescs = []transport.StreamDescriptor{
 			tcpconn.ChannelDescriptor{
 				ID:           testCh,
 				Priority:     1,
@@ -118,7 +118,7 @@ func createOutboundPeerAndPerformHandshake(
 	return p, nil
 }
 
-func testDial(addr *na.NetAddr, cfg *config.P2PConfig) (abstract.Connection, error) {
+func testDial(addr *na.NetAddr, cfg *config.P2PConfig) (transport.Connection, error) {
 	if cfg.TestDialFail {
 		return nil, errors.New("dial err (peerConfig.DialFail == true)")
 	}
@@ -187,7 +187,7 @@ func (rp *remotePeer) Stop() {
 	rp.listener.Close()
 }
 
-func (rp *remotePeer) Dial(addr *na.NetAddr) (abstract.Connection, error) {
+func (rp *remotePeer) Dial(addr *na.NetAddr) (transport.Connection, error) {
 	pc, err := testOutboundPeerConn(addr, rp.Config, false)
 	if err != nil {
 		return nil, err

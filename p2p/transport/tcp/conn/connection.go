@@ -22,7 +22,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/libs/service"
-	"github.com/cometbft/cometbft/p2p/abstract"
+	"github.com/cometbft/cometbft/p2p/transport"
 )
 
 const (
@@ -110,7 +110,7 @@ type MConnection struct {
 	recvMsgsUnknownStreamID chan tmp2p.PacketMsg
 }
 
-var _ abstract.Connection = (*MConnection)(nil)
+var _ transport.Connection = (*MConnection)(nil)
 
 // MConnConfig is a MConnection configuration.
 type MConnConfig struct {
@@ -241,7 +241,7 @@ func (c *MConnection) RemoteAddr() net.Addr {
 	return c.conn.RemoteAddr()
 }
 
-func (c *MConnection) OpenStream(streamID byte, desc any) (abstract.Stream, error) {
+func (c *MConnection) OpenStream(streamID byte, desc any) (transport.Stream, error) {
 	c.Logger.Debug("Opening stream", "streamID", streamID, "desc", desc)
 
 	c.mtx.Lock()

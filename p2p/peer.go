@@ -14,10 +14,10 @@ import (
 	"github.com/cometbft/cometbft/internal/cmap"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
-	"github.com/cometbft/cometbft/p2p/abstract"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
+	"github.com/cometbft/cometbft/p2p/transport"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	"github.com/cometbft/cometbft/types"
 )
@@ -72,9 +72,9 @@ type Peer interface {
 
 // peerConn contains the raw connection and its config.
 type peerConn struct {
-	outbound            bool
-	persistent          bool
-	abstract.Connection // Source connection
+	outbound             bool
+	persistent           bool
+	transport.Connection // Source connection
 
 	socketAddr *na.NetAddr
 
@@ -84,7 +84,7 @@ type peerConn struct {
 
 func newPeerConn(
 	outbound, persistent bool,
-	conn abstract.Connection,
+	conn transport.Connection,
 	socketAddr *na.NetAddr,
 ) peerConn {
 	return peerConn{
@@ -140,7 +140,7 @@ type peer struct {
 	// cached to avoid copying nodeInfo in HasChannel
 	nodeInfo ni.NodeInfo
 	channels []byte
-	streams  map[byte]abstract.Stream
+	streams  map[byte]transport.Stream
 
 	// User data
 	Data *cmap.CMap
@@ -191,7 +191,7 @@ func newPeer(
 	return p
 }
 
-func (p *peer) streamReadLoop(streamID byte, stream abstract.Stream) {
+func (p *peer) streamReadLoop(streamID byte, stream transport.Stream) {
 	defer func() {
 		if r := recover(); r != nil {
 			p.Logger.Error("Peer panicked", "err", r, "stack", string(debug.Stack()))
@@ -271,9 +271,9 @@ func (p *peer) SetLogger(l log.Logger) {
 // OnStart implements BaseService.
 func (p *peer) OnStart() error {
 	// Open streams for all reactors.
-	p.streams = make(map[byte]abstract.Stream)
+	p.streams = make(map[byte]transport.Stream)
 	for streamID, info := range p.streamInfoByStreamID {
-		var d abstract.StreamDescriptor
+		var d transport.StreamDescriptor
 		descs := info.reactor.StreamDescriptors()
 		for _, desc := range descs {
 			if desc.StreamID() == streamID {
@@ -523,7 +523,7 @@ func (p *peer) metricsReporter() {
 // ------------------------------------------------------------------
 // helper funcs
 
-func wrapPeer(c abstract.Connection, ni ni.NodeInfo, cfg peerConfig, socketAddr *na.NetAddr) Peer {
+func wrapPeer(c transport.Connection, ni ni.NodeInfo, cfg peerConfig, socketAddr *na.NetAddr) Peer {
 	persistent := false
 	if cfg.isPersistent != nil {
 		if cfg.outbound {

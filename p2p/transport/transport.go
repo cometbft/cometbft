@@ -1,4 +1,4 @@
-package abstract
+package transport
 
 import (
 	"github.com/cosmos/gogoproto/proto"

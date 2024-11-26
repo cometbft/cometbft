@@ -22,7 +22,7 @@ import (
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/p2p/abstract"
+	"github.com/cometbft/cometbft/p2p/transport"
 	"github.com/cometbft/cometbft/proxy"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
@@ -567,7 +567,7 @@ func NewByzantineReactor(conR *Reactor) *ByzantineReactor {
 }
 
 func (br *ByzantineReactor) SetSwitch(s *p2p.Switch) { br.reactor.SetSwitch(s) }
-func (br *ByzantineReactor) StreamDescriptors() []abstract.StreamDescriptor {
+func (br *ByzantineReactor) StreamDescriptors() []transport.StreamDescriptor {
 	return br.reactor.StreamDescriptors()
 }
 

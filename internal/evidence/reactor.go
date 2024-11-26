@@ -10,7 +10,7 @@ import (
 	"github.com/cometbft/cometbft/internal/clist"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/p2p/abstract"
+	"github.com/cometbft/cometbft/p2p/transport"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	"github.com/cometbft/cometbft/types"
 )
@@ -53,8 +53,8 @@ func (evR *Reactor) SetLogger(l log.Logger) {
 
 // StreamDescriptors implements Reactor.
 // It returns the list of channels for this reactor.
-func (*Reactor) StreamDescriptors() []abstract.StreamDescriptor {
-	return []abstract.StreamDescriptor{
+func (*Reactor) StreamDescriptors() []transport.StreamDescriptor {
+	return []transport.StreamDescriptor{
 		tcpconn.ChannelDescriptor{
 			ID:                  EvidenceChannel,
 			Priority:            6,

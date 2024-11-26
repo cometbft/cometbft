@@ -38,11 +38,10 @@ const (
 	// TODO: remove values present in config.
 	defaultFlushThrottle = 10 * time.Millisecond
 
-	defaultSendQueueCapacity = 1
-	defaultSendRate          = int64(512000) // 500KB/s
-	defaultRecvRate          = int64(512000) // 500KB/s
-	defaultPingInterval      = 60 * time.Second
-	defaultPongTimeout       = 45 * time.Second
+	defaultSendRate     = int64(512000) // 500KB/s
+	defaultRecvRate     = int64(512000) // 500KB/s
+	defaultPingInterval = 60 * time.Second
+	defaultPongTimeout  = 45 * time.Second
 
 	// Capacity of the receive channel for each stream.
 	maxRecvChanCap = 1000

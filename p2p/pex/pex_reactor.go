@@ -171,7 +171,7 @@ func (r *Reactor) Stop() error {
 // StreamDescriptors implements Reactor.
 func (*Reactor) StreamDescriptors() []transport.StreamDescriptor {
 	return []transport.StreamDescriptor{
-		tcpconn.ChannelDescriptor{
+		tcpconn.StreamDescriptor{
 			ID:                  PexChannel,
 			Priority:            1,
 			SendQueueCapacity:   10,

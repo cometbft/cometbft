@@ -100,7 +100,7 @@ func createOutboundPeerAndPerformHandshake(
 	// create peer
 	var (
 		streamDescs = []transport.StreamDescriptor{
-			tcpconn.ChannelDescriptor{
+			tcpconn.StreamDescriptor{
 				ID:           testCh,
 				Priority:     1,
 				MessageTypeI: &p2p.Message{},

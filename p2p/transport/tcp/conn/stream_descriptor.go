@@ -7,8 +7,8 @@ const (
 	defaultRecvMessageCapacity = 22020096 // 21MB
 )
 
-// ChannelDescriptor describes a channel.
-type ChannelDescriptor struct {
+// StreamDescriptor describes a channel.
+type StreamDescriptor struct {
 	// ID is a unique identifier for the channel.
 	ID byte
 	// Priority is the priority of the channel.
@@ -24,17 +24,17 @@ type ChannelDescriptor struct {
 }
 
 // StreamID returns the channel ID. Implements p2p.StreamDescriptor.
-func (d ChannelDescriptor) StreamID() byte {
+func (d StreamDescriptor) StreamID() byte {
 	return d.ID
 }
 
 // MessageType returns the message type. Implements p2p.StreamDescriptor.
-func (d ChannelDescriptor) MessageType() proto.Message {
+func (d StreamDescriptor) MessageType() proto.Message {
 	return d.MessageTypeI
 }
 
 // FIllDefaults fills in default values for the channel descriptor.
-func (d ChannelDescriptor) FillDefaults() (filled ChannelDescriptor) {
+func (d StreamDescriptor) FillDefaults() (filled StreamDescriptor) {
 	if d.SendQueueCapacity == 0 {
 		d.SendQueueCapacity = defaultSendQueueCapacity
 	}

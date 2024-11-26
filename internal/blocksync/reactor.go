@@ -177,7 +177,7 @@ func (bcR *Reactor) OnStop() {
 // StreamDescriptors implements Reactor.
 func (*Reactor) StreamDescriptors() []transport.StreamDescriptor {
 	return []transport.StreamDescriptor{
-		tcpconn.ChannelDescriptor{
+		tcpconn.StreamDescriptor{
 			ID:                  BlocksyncChannel,
 			Priority:            5,
 			SendQueueCapacity:   1000,

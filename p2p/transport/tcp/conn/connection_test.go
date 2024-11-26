@@ -340,10 +340,10 @@ func newClientAndServerConnsForReadErrors(t *testing.T) (*MConnection, *MConnect
 	cfg.PingInterval = 90 * time.Millisecond
 	cfg.PongTimeout = 45 * time.Millisecond
 	mconnClient := NewMConnection(client, cfg)
-	clientStream, err := mconnClient.OpenStream(testStreamID, ChannelDescriptor{ID: testStreamID, Priority: 1, SendQueueCapacity: 1})
+	clientStream, err := mconnClient.OpenStream(testStreamID, StreamDescriptor{ID: testStreamID, Priority: 1, SendQueueCapacity: 1})
 	require.NoError(t, err)
 	// create another channel
-	_, err = mconnClient.OpenStream(0x02, ChannelDescriptor{ID: 0x02, Priority: 1, SendQueueCapacity: 1})
+	_, err = mconnClient.OpenStream(0x02, StreamDescriptor{ID: 0x02, Priority: 1, SendQueueCapacity: 1})
 	require.NoError(t, err)
 	mconnClient.SetLogger(log.TestingLogger().With("module", "client"))
 	err = mconnClient.Start()

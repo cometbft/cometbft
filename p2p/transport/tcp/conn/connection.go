@@ -250,11 +250,11 @@ func (c *MConnection) OpenStream(streamID byte, desc any) (transport.Stream, err
 		return nil, fmt.Errorf("stream %X already exists", streamID)
 	}
 
-	d := ChannelDescriptor{
+	d := StreamDescriptor{
 		ID:       streamID,
 		Priority: 1,
 	}
-	if desc, ok := desc.(ChannelDescriptor); ok {
+	if desc, ok := desc.(StreamDescriptor); ok {
 		d = desc
 	}
 	c.channelsIdx[streamID] = newChannel(c, d)
@@ -779,7 +779,7 @@ func (c *MConnection) maxPacketMsgSize() int {
 // NOTE: not goroutine-safe.
 type Channel struct {
 	conn          *MConnection
-	desc          ChannelDescriptor
+	desc          StreamDescriptor
 	sendQueue     chan []byte
 	sendQueueSize int32 // atomic.
 	recving       []byte
@@ -795,7 +795,7 @@ type Channel struct {
 	Logger log.Logger
 }
 
-func newChannel(conn *MConnection, desc ChannelDescriptor) *Channel {
+func newChannel(conn *MConnection, desc StreamDescriptor) *Channel {
 	desc = desc.FillDefaults()
 	if desc.Priority <= 0 {
 		panic("Channel default priority must be a positive integer")

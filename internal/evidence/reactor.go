@@ -55,7 +55,7 @@ func (evR *Reactor) SetLogger(l log.Logger) {
 // It returns the list of channels for this reactor.
 func (*Reactor) StreamDescriptors() []transport.StreamDescriptor {
 	return []transport.StreamDescriptor{
-		tcpconn.ChannelDescriptor{
+		tcpconn.StreamDescriptor{
 			ID:                  EvidenceChannel,
 			Priority:            6,
 			RecvMessageCapacity: maxMsgSize,

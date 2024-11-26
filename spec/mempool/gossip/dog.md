@@ -152,12 +152,15 @@ The _redundancy level_ is calculated as the ratio of duplicate transactions to f
 transactions.
 ```bluespec "rc" +=
 pure def redundancy(_rc) =
-    if (_rc.firstTimeTxs == 0) upperBound else _rc.duplicateTxs / _rc.firstTimeTxs
+    if (_rc.firstTimeTxs == 0) 
+        upperBound 
+    else 
+        _rc.duplicateTxs / _rc.firstTimeTxs
 ```
-If the number of first-time transactions (`firstTimeTxs`) is 0, the redundancy level is set to a
-predefined maximum value (the constant `upperBound` defined below) to prompt the controller to
-reduce redundancy. Conversely, the redundancy level is set to 0 if there are no duplicate
-transactions (`duplicateTxs`), signaling the controller to increase redundancy. 
+If the number of first-time transactions is 0, the redundancy level is set to a predefined maximum
+value (the constant `upperBound` defined below) to prompt the controller to reduce redundancy.
+Conversely, the redundancy level is set to 0 if there are no duplicate transactions, signaling the
+controller to increase redundancy. 
 
 For example, a redundancy of 0.5 means that, for every two first-time transactions received, the
 node receives one duplicate transaction (not necessarily a duplicate of any of those two first-time

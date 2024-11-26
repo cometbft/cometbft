@@ -1,6 +1,9 @@
 package storage
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 var (
 	// errBatchClosed is returned when a closed or written batch is used.
@@ -184,4 +187,14 @@ type Iterator interface {
 
 	// Close closes the iterator, releasing any allocated resources.
 	Close() error
+}
+
+// NewDB returns a new database with the given name, located at the given directory.
+func NewDB(name, dir string) (DB, error) {
+	pDB, err := newPebbleDB(name, dir)
+	if err != nil {
+		return nil, fmt.Errorf("creating new database: %w", err)
+	}
+
+	return pDB, nil
 }

@@ -16,26 +16,26 @@ type PebbleDB struct {
 
 var _ DB = (*PebbleDB)(nil)
 
-// NewPebbleDB returns a new PebbleDB instance using the default options.
-func NewPebbleDB(name, dir string) (*PebbleDB, error) {
+// newPebbleDB returns a new PebbleDB instance using the default options.
+func newPebbleDB(name, dir string) (*PebbleDB, error) {
 	opts := &pebble.Options{}
 
-	return NewPebbleDBWithOpts(name, dir, opts)
+	return newPebbleDBWithOpts(name, dir, opts)
 }
 
-// NewPebbleDBWithOpts returns a new PebbleDB instance using the provided options.
-func NewPebbleDBWithOpts(name, dir string, opts *pebble.Options) (*PebbleDB, error) {
+// newPebbleDBWithOpts returns a new PebbleDB instance using the provided options.
+func newPebbleDBWithOpts(name, dir string, opts *pebble.Options) (*PebbleDB, error) {
 	dbPath := filepath.Join(dir, name+".db")
 	opts.EnsureDefaults()
 
 	db, err := pebble.Open(dbPath, opts)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("opening pebble instance %q: %w", name, err)
 	}
 
 	pebbleDB := &PebbleDB{db: db}
 
-	return pebbleDB, err
+	return pebbleDB, nil
 }
 
 // DB returns the underlying PebbleDB instance.
@@ -436,7 +436,7 @@ func (b *pebbleDBBatch) commitWithOpts(writeOpts *pebble.WriteOptions) error {
 	}
 
 	if err := b.batch.Commit(writeOpts); err != nil {
-		return fmt.Errorf("writing batch to DB: %w", err)
+		return fmt.Errorf("writing batch to database: %w", err)
 	}
 
 	// Make sure batch cannot be used afterwards.

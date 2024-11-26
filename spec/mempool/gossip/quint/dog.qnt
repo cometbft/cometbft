@@ -33,12 +33,15 @@ module dog {
     //--------------------------------------------------------------------------
     type Route = (NodeID, NodeID)
     var dr: NodeID -> Set[Route]
-    pure def disableRoute(_dr, node, source, target) =
-        _dr.update(node, routes => routes.join((source, target)))
-    pure def enableRoute(_dr, peer) = 
-        _dr.filter(route => not(peer.isSourceOrTargetIn(route)))
     def DisabledRoutes(node) = dr.get(node)
+    pure def disableRoute(routes, route) = routes.join(route)
+    pure def enableRoute(routes, route) = routes.exclude(Set(route))
     pure def isSourceOrTargetIn(node, route) = node == route._1 or node == route._2
+    pure def routesWithSource(routes, source) = routes.filter(r => r._1 == source)
+    pure def routesWithTarget(routes, target) = routes.filter(r => r._2 == target)
+    pure def mapTargets(routes) = routes.map(r => r._2)
+    pure def resetRoutes(routes, peer) = 
+        routes.filter(route => not(peer.isSourceOrTargetIn(route)))
 
     //--------------------------------------------------------------------------
     // Redundancy Controller
@@ -123,7 +126,8 @@ module dog {
         }
     action handleHaveTxMessage(node, _incomingMsgs, sender, txID) = all {
         val txSenders = node.sendersOf(txID)
-        dr' = if (length(txSenders) > 0) dr.disableRoute(node, txSenders[0], sender) else dr,
+        dr' = dr.update(node, drs => 
+            if (length(txSenders) > 0) drs.disableRoute((txSenders[0], sender)) else drs),
         incomingMsgs' = _incomingMsgs,
         peers' = peers,
         mempool' = mempool,
@@ -131,7 +135,8 @@ module dog {
         rc' = rc,
     }
     action handleResetMessage(node, _incomingMsgs, sender) = all {
-        dr' = dr.update(node, drs => drs.enableRoute(sender)),
+        nondet randomRoute = oneOf(node.DisabledRoutes().routesWithTarget(sender))
+        dr' = dr.update(node, drs => drs.enableRoute(randomRoute)),
         incomingMsgs' = _incomingMsgs,
         peers' = peers,
         mempool' = mempool,
@@ -140,15 +145,16 @@ module dog {
     }
     def mkTargetNodes(node, tx) =
         val txSenders = node.sendersOf(hash(tx))
-        val disabledTargets = node.DisabledRoutes()
-            // Keep routes whose source is tx's first sender, if any.
-            .filter(r => if (length(txSenders) > 0) r._1 == txSenders[0] else false)
-            // Map routes to targets.
-            .map(r => r._2)
-        node.Peers().exclude(txSenders.listToSet()).exclude(disabledTargets)
+        val disabledTargets = 
+            if (length(txSenders) > 0)
+                node.DisabledRoutes().routesWithSource(txSenders[0]).mapTargets()
+            else Set()
+        node.Peers()
+            .exclude(txSenders.listToSet())
+            .exclude(disabledTargets)
     action updateDisconnectedPeer(node, peer) = all {
         peers' = peers.update(node, ps => ps.exclude(Set(peer))),
-        dr' = dr.update(node, drs => drs.enableRoute(peer)),
+        dr' = dr.update(node, drs => drs.resetRoutes(peer)),
         node.adjustRedundancy(),
     }
 

@@ -12,7 +12,7 @@ preserving low latency performance and ensuring robustness against Byzantine att
   spanning trees--the optimal P2P connection structure for disseminating data across the network.
 
 * **Redundancy Control mechanism.** For keeping nodes resilient to Byzantine attacks, the protocol
-  maintains a minimum level of redundant transactions. Nodes periodically measure the redundancy
+  maintains a minimum level of transaction redundancy. Nodes periodically measure the redundancy
   level of received transactions and decide if they should request peers for more or less
   transactions. If a node is not receiving enough duplicate transactions, it will request its peers
   to re-activate a previously disabled route. This ensures a steady yet controlled flow of data.
@@ -85,37 +85,34 @@ send a transaction `tx`, received from peer `A`, to peer `C` only if the route `
 routes. Since a transaction can be received from multiple peers, we define its sender `A` as the first node in `tx`'s list of senders (see the section on [Transaction
 dissemination](#transaction-dissemination)).
 
-We define the following functions on routes:
-
-* `disableRoute` adds the route `source -> target` to a set of disabled routes.
-    ```bluespec "routing" +=
-    pure def disableRoute(_dr, node, source, target) =
-        _dr.update(node, routes => routes.join((source, target)))
-    ```
-
-* `enableRoute` enables all routes to `peer` or from `peer` by removing any disabled route that has
-`peer` as source or target. 
-    ```bluespec "routing" +=
-    pure def enableRoute(_dr, peer) = 
-        _dr.filter(route => not(peer.isSourceOrTargetIn(route)))
-    ```
-
 <details>
   <summary>Auxiliary definitions</summary>
 
 ```bluespec "routing" +=
 def DisabledRoutes(node) = dr.get(node)
+pure def disableRoute(routes, route) = routes.join(route)
+pure def enableRoute(routes, route) = routes.exclude(Set(route))
 pure def isSourceOrTargetIn(node, route) = node == route._1 or node == route._2
+pure def routesWithSource(routes, source) = routes.filter(r => r._1 == source)
+pure def routesWithTarget(routes, target) = routes.filter(r => r._2 == target)
+pure def mapTargets(routes) = routes.map(r => r._2)
+```
+
+`resetRoutes` re-enables all routes to `peer` or from `peer` by removing any disabled route that has
+`peer` as source or target. 
+```bluespec "routing" +=
+pure def resetRoutes(routes, peer) = 
+    routes.filter(route => not(peer.isSourceOrTargetIn(route)))
 ```
 </details>
 
 ## Redundancy Control
 
-The Redundancy Controller (RC) implements a closed-loop mechanism that dynamically adjusts the level
-of redundant transactions received by a node.
-
-Each node has a _controller_ that periodically measures the redundancy level (defined below) and
-tries to keep it within pre-configured bounds by sending `HaveTx` and `Reset` messages to peers.
+Each node implements a Redundancy Controller (RC) with a closed-loop feedback mechanism, commonly
+used in control systems for dynamic self-regulation. The controller periodically monitors the level
+of redundant transactions received and adjusts accordingly by sending `HaveTx` and `Reset` messages
+to peers. This ensures the redundancy level remains within predefined bounds, adapting to changes in
+network conditions in real time.
 ```bluespec "rc" +=
 var rc: NodeID -> RedundancyController
 ```
@@ -162,15 +159,15 @@ predefined maximum value (the constant `upperBound` defined below) to prompt the
 reduce redundancy. Conversely, the redundancy level is set to 0 if there are no duplicate
 transactions (`duplicateTxs`), signaling the controller to increase redundancy. 
 
-For example, a redundancy of 0.5 means that, for every two first-time transactions, the node
-receives one duplicate transaction (not necessarily a duplicate of any of those two first-time
+For example, a redundancy of 0.5 means that, for every two first-time transactions received, the
+node receives one duplicate transaction (not necessarily a duplicate of any of those two first-time
 transactions).
 
 ### How to adjust
 
-Function `controllerActions` computes the current `redundancy` level and determines the controller
-actions by returning an updated controller state and whether the controller should send a `Reset`
-message:
+Function `controllerActions` computes the current `redundancy` level and determines which actions
+the controller will take by returning an updated controller state and whether the controller should
+send a `Reset` message:
 - If no transactions were received during the last iteration, the controller should not react in
   order to preserve the current state of the routes.
 - If `redundancy` is too low, the controller should request more transactions by sending a `Reset`
@@ -193,14 +190,18 @@ Note that if the target redundancy is 0 (see [parameters](#parameters)), the low
 are also equal to 0. Then `controllerActions` will be able to unblock `HaveTx` but it will never
 send `Reset` messages.
 
+An important aspect of the controller actions is that, on each iteration, the controller allows the
+node to send at most one `HaveTx` or one `Reset` message, as explained next.
+
 ### When to adjust
 
 The Redundancy Controller runs in a separate thread a control loop that periodically calls
 `adjustRedundancy` in order to reach and maintain the target redundancy level.
 
 The `adjustRedundancy` action:
-1. First it calls `controllerActions` to compute the current redundancy level and determine the next
-steps such as unblocking `HaveTx` messages or sending a `Reset` message to a randomly chosen peer.
+1. First it calls `controllerActions` to compute the current redundancy level and determines the
+next steps such as unblocking `HaveTx` messages or sending a `Reset` message to a randomly chosen
+peer.
 2. After making the adjustment, it resets the transaction counters so that redundancy is computed
 independently of past measurements.
 ```bluespec "actions" +=
@@ -221,23 +222,25 @@ action adjustRedundancy(node) =
 Adjustments should be paced by a timer to account for message propagation delays. If redundancy
 adjustments are made too frequently, a node risks isolation as all peers may cut routes prematurely.
 The timer should align with the network’s maximum round-trip time (RTT) to allow `HaveTx` and
-`Reset` messages to propagate and take effect before initiating further adjustments. 
+`Reset` messages to propagate and take effect before initiating further adjustments. Consequently,
+the controller is designed to send at most one control message per iteration in order to prevent
+over-correction.
 
-Suppose node `A` receives a duplicate transaction from `B` and replies with a `HaveTx` message.
-Until `B` receives and process the `HaveTx` message, thus cutting a route to `A`, it will pass at least
-a round-trip time (RTT) until `A` stops seeing traffic from `B`. In the meantime, `A` may still
-continue to receive duplicates from `B` and other peers, causing `A`'s redundancy level to be high.
-During that time, `A` should not send `HaveTx` messages to other peers because that may end up
-cutting all routes to it. See the `adjustInterval` [parameter](#parameters) for more details.
+For example, suppose node `A` receives a duplicate transaction from `B` and replies with a `HaveTx`
+message. Until `B` receives and process the `HaveTx` message, thus cutting a route to `A`, it will
+pass at least a round-trip time (RTT) until `A` stops seeing traffic from `B`. In the meantime, `A`
+may still continue to receive duplicates from `B` and other peers, causing `A`'s redundancy level to
+be high. During that time, `A` should not send `HaveTx` messages to other peers because that may end
+up cutting all routes to it. See the `adjustInterval` [parameter](#parameters) for more details.
 
 > An alternative to triggering `adjustRedundancy` at fixed time intervals is to base it on the
 > number of received transactions. While this approach eliminates dependency on time constraints, it
 > introduces vulnerabilities that could destabilize nodes. For example, an attacker could exploit
 > this mechanism by sending bursts of numerous small transactions to a node, causing the node to
 > trigger `adjustRedundancy` too frequently. This results in the near-continuous activation of
-> `HaveTx` messages, leading nodes to repeatedly sending `HaveTx` and `Reset` messages. On testnets,
-> we have observed that nodes continue to operate normally, except that bandwidth does not decrease
-> as expected.
+> `HaveTx` messages, leading nodes to repeatedly alternating between sending `HaveTx` and `Reset`
+> messages. On testnets, we have observed that nodes continue to operate normally, except that
+> bandwidth does not decrease as expected.
 
 ## Parameters
 
@@ -295,7 +298,7 @@ The following parameters must be configured by each node at initialization.
 
     Optimal values depend on empirical measurements of network latency. However, in practice, a value of
     1000ms or above is recommended to allow message processing and delivery times in diverse network
-    environments. 
+    environments and load scenarios.
     
     This value is also related to the number of peers a node has, which determines the maximum number of
     routes. For instance, a node with 50 peers will have a maximum of `50 * (50 - 1) = 2450` routes.
@@ -345,7 +348,11 @@ describes the missing details of each step.
     },
     ```
 
-3. A node joins the network (same as in Flood).
+  > In the actual implementation, each peer has its own independent dissemination goroutine,
+  > resulting in transactions being sent to different peers at different times. However, for
+  > simplicity, in this spec we model all of these actions in one atomic step.
+
+4. A node joins the network (same as in Flood).
     ```bluespec "steps" +=
     // Node joins network
     all {
@@ -357,7 +364,7 @@ describes the missing details of each step.
     },
     ```
 
-4. A node disconnects from the network.
+5. A node disconnects from the network.
     ```bluespec "steps" +=
     // Node disconnects from network
     all {
@@ -372,7 +379,7 @@ describes the missing details of each step.
     },
     ```
 
-5. A node detects that a peer is disconnected from the network.
+6. A node detects that a peer is disconnected from the network.
     ```bluespec "steps" +=
     // Node detects a peer is disconnected
     nondet node = oneOf(nodesInNetwork)
@@ -385,7 +392,7 @@ describes the missing details of each step.
     },
     ```
 
-6. The Redundancy Controller periodically tries to adjust the redundancy level.
+7. The Redundancy Controller periodically tries to adjust the redundancy level.
     ```bluespec "steps" +=
     // Redundancy Controller process loop
     all {
@@ -482,7 +489,8 @@ action handleMessage(node, _incomingMsgs, sender, msg) =
     ```bluespec "actions" +=
     action handleHaveTxMessage(node, _incomingMsgs, sender, txID) = all {
         val txSenders = node.sendersOf(txID)
-        dr' = if (length(txSenders) > 0) dr.disableRoute(node, txSenders[0], sender) else dr,
+        dr' = dr.update(node, drs => 
+            if (length(txSenders) > 0) drs.disableRoute((txSenders[0], sender)) else drs),
         incomingMsgs' = _incomingMsgs,
         peers' = peers,
         mempool' = mempool,
@@ -499,10 +507,11 @@ action handleMessage(node, _incomingMsgs, sender, msg) =
 
 * **Handling Reset messages**
 
-    Upon receiving `ResetMsg`, `node` removes any route that has `sender` as source or target. 
+    Upon receiving `ResetMsg`, `node` re-enables a random disabled route that has `sender` as target.
     ```bluespec "actions" +=
     action handleResetMessage(node, _incomingMsgs, sender) = all {
-        dr' = dr.update(node, drs => drs.enableRoute(sender)),
+        nondet randomRoute = oneOf(node.DisabledRoutes().routesWithTarget(sender))
+        dr' = dr.update(node, drs => drs.enableRoute(randomRoute)),
         incomingMsgs' = _incomingMsgs,
         peers' = peers,
         mempool' = mempool,
@@ -510,8 +519,12 @@ action handleMessage(node, _incomingMsgs, sender, msg) =
         rc' = rc,
     }
     ```
-    This will allow traffic to flow again to the sender, and other nodes will dynamically adapt to the
-    new traffic, closing routes when needed.
+    This will allow some traffic to flow again to `sender`. Other nodes will dynamically adapt to
+    the new traffic, closing routes when needed.
+
+    The protocol re-enables only one route per `Reset` message to allow traffic to `sender` to
+    increase gradually. If that peer still needs more transactions, it will send another `Reset`
+    message at a later time.
 
 ### Transaction dissemination
 
@@ -521,12 +534,13 @@ senders.
 ```bluespec "actions" +=
 def mkTargetNodes(node, tx) =
     val txSenders = node.sendersOf(hash(tx))
-    val disabledTargets = node.DisabledRoutes()
-        // Keep routes whose source is tx's first sender, if any.
-        .filter(r => if (length(txSenders) > 0) r._1 == txSenders[0] else false)
-        // Map routes to targets.
-        .map(r => r._2)
-    node.Peers().exclude(txSenders.listToSet()).exclude(disabledTargets)
+    val disabledTargets = 
+        if (length(txSenders) > 0)
+            node.DisabledRoutes().routesWithSource(txSenders[0]).mapTargets()
+        else Set()
+    node.Peers()
+        .exclude(txSenders.listToSet())
+        .exclude(disabledTargets)
 ```
 The protocol selects the first sender in the list based on the same reasoning applied when handling
 received `HaveTx` messages. The first sender is likely responsible for the majority of traffic
@@ -538,12 +552,12 @@ disabled.
 
 When a `node` detects that a `peer` has disconnected from the network, 
 1. it updates its set of active peers,
-2. it updates its routing table by removing all routes that have `peer` as either a source or target, and
+2. it updates its routing table by reseting all routes that have `peer` as either a source or target, and
 3. it triggers a redundancy adjustment.
 ```bluespec "actions" +=
 action updateDisconnectedPeer(node, peer) = all {
     peers' = peers.update(node, ps => ps.exclude(Set(peer))),
-    dr' = dr.update(node, drs => drs.enableRoute(peer)),
+    dr' = dr.update(node, drs => drs.resetRoutes(peer)),
     node.adjustRedundancy(),
 }
 ```

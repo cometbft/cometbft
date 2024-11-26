@@ -8,26 +8,33 @@ transactions in the network.
 - [Flood](flood.md). Currently implemented by CometBFT, Flood is a straightforward gossip protocol
   with a focus on rapid transaction propagation.
   - Pros:
-    + Latency: nodes forward transactions to their peers as soon as they receive them, resulting in
-      the minimum possible latency of decentralised P2P networks.
+    + Low Latency: nodes forward transactions to their peers as soon as they receive them, resulting
+      in the minimum possible latency of decentralised P2P networks.
     + Byzantine Fault Tolerance (BFT): flooding the network with messages ensures malicious actors
-      cannot easily prevent transaction dissemination (i.e., censoring), making it resilient to network disruptions
-      and attacks.
+      cannot easily prevent transaction dissemination (i.e., censoring), making it resilient to
+      network disruptions and attacks.
   - Cons:
-    - Bandwidth: the broadcast nature of Flood results in significant redundancy in message
-      propagation, leading to exponential increases in bandwidth usage.
+    - Exponential Bandwidth Usage: the broadcast nature of Flood results in significant redundancy
+      in message propagation, leading to exponential increases in bandwidth usage.
 
 - [Dynamic Optimal Graph (DOG)](dog.md). Building on Flood, DOG introduces improvements that
-  significantly reduces redundant transactions, enhancing bandwidth efficiency while maintaining similar
-  latency and resilience properties.
+  significantly reduces redundant transactions, enhancing bandwidth efficiency while maintaining
+  similar latency and resilience properties.
   - Pros:
-    + Latency: DOG does not introduce delays or communication steps that add latency, as in "pull"
-      mechanisms. Instead, it selectively filters transactions before forwarding them to
-      peers.
+    + Efficient Bandwidth Usage: DOG implements a routing mechanism that significantly reduces
+      bandwidth usage when compared to Flood.
+    + Low Latency: DOG does not introduce delays or extra communication steps that add latency, as
+      in "pull" gossip protocols. Instead, it selectively filters transactions before forwarding
+      them to peers.
     + Byzantine Fault Tolerance (BFT): DOG keeps a minimum level of transaction redundancy for
-      preserving the resilience needed to mitigate the impact of malicious attacks.
-    + Bandwidth: DOG implements a routing mechanism that reduces bandwidth usage by orders of
-      magnitude when compared to Flood.
+      preserving the resilience needed to mitigate the impact of Byzantine attacks.
+  - Cons:
+    - Convergence Time for Redundancy: Reaching the optimal routes for the desired levels of
+      transaction redundancy may take each node a time proportional to the number of peers it has,
+      though typically in the order of a few minutes.
+    - Traffic Fairness: Nodes with high-speed connections and a large number of peers may end up
+      handling higher traffic load compared to other nodes. However, as the network topology evolves
+      dynamically, this imbalance changes over time.
 
 ## Specifications with Quint snippets
 

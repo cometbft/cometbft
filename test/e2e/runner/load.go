@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"slices"
 	"sync"
 	"time"
@@ -40,7 +41,9 @@ func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 	nodesSingleLoad := make([]*e2e.Node, 0, len(testnet.Nodes))
 	nodesToSendLoadTo := make([]*e2e.Node, 0, testnet.LoadDuplicateTxs)
 
-	for _, n := range testnet.Nodes {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	for _, idx := range r.Perm(len(testnet.Nodes)) {
+		n := testnet.Nodes[idx]
 		if len(testnet.LoadTargetNodes) == 0 {
 			if n.SendNoLoad {
 				continue
@@ -48,7 +51,7 @@ func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 		} else if !slices.Contains(testnet.LoadTargetNodes, n.Name) {
 			continue
 		}
-		if len(nodesToSendLoadTo) < testnet.LoadDuplicateTxs && n.Mode != e2e.ModeSeed {
+		if len(nodesToSendLoadTo) < testnet.LoadDuplicateTxs {
 			nodesToSendLoadTo = append(nodesToSendLoadTo, n)
 		} else {
 			nodesSingleLoad = append(nodesSingleLoad, n)
@@ -63,6 +66,7 @@ func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 
 	for _, n := range nodesSingleLoad {
 		for w := 0; w < testnet.LoadTxConnections; w++ {
+
 			go loadProcess(ctx, txCh, chSuccess, chFailed, n, useInternalIP)
 		}
 	}

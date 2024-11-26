@@ -272,7 +272,7 @@ func NewCLI() *CLI {
 			} else if len(loadTargetNodes) > 0 {
 				cli.testnet.LoadTargetNodes = loadTargetNodes
 			}
-			if duplicateTxsToN, err := cmd.Flags().GetInt("duplicate-num-nodes"); err != nil {
+			if duplicateTxsToN, err := cmd.Flags().GetInt("num-nodes-per-tx"); err != nil {
 				return err
 			} else if duplicateTxsToN > 0 {
 				cli.testnet.LoadDuplicateTxs = duplicateTxsToN
@@ -296,7 +296,7 @@ func NewCLI() *CLI {
 		"Comma-separated list of node names to send load to. Manifest option send_no_load will be ignored.")
 	loadCmd.PersistentFlags().BoolP("internal-ip", "i", false,
 		"Use nodes' internal IP addresses when sending transaction load. For running from inside a DO private network.")
-	loadCmd.PersistentFlags().IntP("duplicate-num-nodes", "", 0,
+	loadCmd.PersistentFlags().IntP("num-nodes-per-tx", "", 0,
 		"Number of nodes that will receive the same transactions")
 
 	cli.root.AddCommand(loadCmd)

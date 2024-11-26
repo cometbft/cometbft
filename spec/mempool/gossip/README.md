@@ -18,11 +18,11 @@ transactions in the network.
       propagation, leading to exponential increases in bandwidth usage.
 
 - [Dynamic Optimal Graph (DOG)](dog.md). Building on Flood, DOG introduces improvements that
-  significantly reduces redundant messages, enhancing bandwidth efficiency while maintaining similar
+  significantly reduces redundant transactions, enhancing bandwidth efficiency while maintaining similar
   latency and resilience properties.
   - Pros:
-    + Latency: DOG does not introduce delays or extra messages that add latency as in "pull"
-      mechanisms. Instead, it selectively filters transactions messages before forwarding them to
+    + Latency: DOG does not introduce delays or communication steps that add latency, as in "pull"
+      mechanisms. Instead, it selectively filters transactions before forwarding them to
       peers.
     + Byzantine Fault Tolerance (BFT): DOG keeps a minimum level of transaction redundancy for
       preserving the resilience needed to mitigate the impact of malicious attacks.

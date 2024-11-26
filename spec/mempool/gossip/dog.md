@@ -7,13 +7,13 @@ preserving low latency performance and ensuring robustness against Byzantine att
   to its peers. When a node `A` receives from node `B` a transaction that is already present in its
   cache, this means that there is a cycle in the network topology. In this case, `A` will message
   `B` indicating to not send any more transactions, and `B` will close one of the "routes" that
-  sends transactions to `A`, thus cutting the cycle. Eventually, transactions will have only one
+  are used to forward transactions to `A`, thus cutting the cycle. Eventually, transactions will have only one
   path to reach all nodes in the network, with the resulting routes forming a superposition of
   spanning trees--the optimal P2P connection structure for disseminating data across the network.
 
 * **Redundancy Control mechanism.** For keeping nodes resilient to Byzantine attacks, the protocol
   maintains a minimum level of redundant transactions. Nodes periodically measure the redundancy
-  level of received transactions and decide if they need to request peers for more or less
+  level of received transactions and decide if they should request peers for more or less
   transactions. If a node is not receiving enough duplicate transactions, it will request its peers
   to re-activate a previously disabled route. This ensures a steady yet controlled flow of data.
 
@@ -50,14 +50,14 @@ type Message =
         | TxMsg(TX)
     ```
 
-* A node sends `HaveTxMsg` messages to signal that it already received the transaction. The receiver
+* A node sends a `HaveTxMsg` message to signal that it already received a transaction. The receiver
   will cut a route related to `tx` that is forming a cycle in the network topology.
     ```bluespec "messages" +=
         | HaveTxMsg(TxID)
     ```
 
-* A node sends `ResetMsg` messages to signal that it is not receiving enough transactions. The
-  receiver should re-enable some route to the node if possible.
+* A node sends a `ResetMsg` message to signal that it is not receiving enough transactions. The
+  receiver should, if possible, re-enable some route to the node.
     ```bluespec "messages" +=
         | ResetMsg
     ```
@@ -81,8 +81,8 @@ Each node maintains a set of disabled routes (`dr`) to manage active connections
 var dr: NodeID -> Set[Route]
 ```
 By default, all routes are enabled, that is, the set of disabled routes is empty. A node `B` will
-send a transaction `tx` to peer `C` only if the route `A -> C` is not in `B`'s set of disabled
-routes, where `A` is the first node in `tx`'s list of senders (see the section on [Transaction
+send a transaction `tx`, received from peer `A`, to peer `C` only if the route `A -> C` is not in `B`'s set of disabled
+routes. Since a transaction can be received from multiple peers, we define its sender `A` as the first node in `tx`'s list of senders (see the section on [Transaction
 dissemination](#transaction-dissemination)).
 
 We define the following functions on routes:
@@ -224,7 +224,7 @@ The timer should align with the network’s maximum round-trip time (RTT) to all
 `Reset` messages to propagate and take effect before initiating further adjustments. 
 
 Suppose node `A` receives a duplicate transaction from `B` and replies with a `HaveTx` message.
-Until `B` receives and process the `HaveTx` message, and cuts a route to `A`, it will pass at least
+Until `B` receives and process the `HaveTx` message, thus cutting a route to `A`, it will pass at least
 a round-trip time (RTT) until `A` stops seeing traffic from `B`. In the meantime, `A` may still
 continue to receive duplicates from `B` and other peers, causing `A`'s redundancy level to be high.
 During that time, `A` should not send `HaveTx` messages to other peers because that may end up
@@ -493,7 +493,7 @@ action handleMessage(node, _incomingMsgs, sender, msg) =
     The list of `tx`’s senders contains the node IDs from which `node` received the transaction,
     ordered by the arrival time of the corresponding messages. To avoid disabling the routes from
     all those senders at once, the protocol picks the first sender in the list, which is the first
-    peer from which `node` received `tx`. Subsequent entries in the list are nodes whose transaction
+    peer from which `node` received `tx` for the first time. Subsequent entries in the list are nodes whose transaction
     messages arrived later as duplicates. As such, most routes from those peers to `node` will
     eventually be disabled, with most traffic coming primarily from the first peer.
 

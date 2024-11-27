@@ -513,7 +513,7 @@ func (c *MConnection) sendBatchPacketMsgs(w protoio.Writer, batchSize int) bool 
 		}
 	}()
 	for i := 0; i < batchSize; i++ {
-		channel := c.selectChannelToGossipOn()
+		channel := c.selectChannel()
 		// nothing to send across any channel.
 		if channel == nil {
 			return true
@@ -531,7 +531,7 @@ func (c *MConnection) sendBatchPacketMsgs(w protoio.Writer, batchSize int) bool 
 // TODO: Make "batchChannelToGossipOn", so we can do our proto marshaling overheads in parallel,
 // and we can avoid re-checking for `isSendPending`.
 // We can easily mock the recentlySent differences for the batch choosing.
-func (c *MConnection) selectChannelToGossipOn() *stream {
+func (c *MConnection) selectChannel() *stream {
 	c.mtx.RLock()
 	defer c.mtx.RUnlock()
 

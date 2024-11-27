@@ -42,6 +42,13 @@ sender, thus creating a lot of duplicates.
 
 This is the exact problem DOG was designed to tackle.
 
+### CAT protocol
+
+[Content-Addressable Transaction (CAT)](https://github.com/celestiaorg/celestia-core/blob/feature/cat/docs/celestia-architecture/adr-009-cat-pool.md) is a "push-pull" gossip protocol originally implemented by Celestia on top of the priority-mempool (aka v1), which existed in Tendermint Core until v0.36 and CometBFT until v0.37. 
+
+With CAT, nodes forward ("push") transactions received from users via RPC endpoints to their peers. When a node `A` receives a transaction from another node, it will notify its peers that it has the transaction with a `SeenTx(hash(tx))` message. A node `B`, upon receiving the `SeenTx` message from `A`, will check whether the transaction is in its mempool. If not, it will "pull" the transaction from `A` by sending a `WantTx(hash(tx))` message, to which `A` responds with a `Tx` message carrying the full transaction. While `SeenTx` and `HaveTx` messages are much smaller than `Tx` messages, these additional communication steps introduce latency when disseminating transactions. The CAT protocol was especially designed for networks with low throughput and large transaction sizes. 
+
+Efforts to port the CAT mempool to CometBFT were documented in #2027. Experimental results on a small testnet from #1472 showed that CAT effectively reduces bandwidth usage. However, its impact on latency was not evaluated in those tests. Porting CAT was finally deprioritised in favor of DOG.
 
 
 ## Decision

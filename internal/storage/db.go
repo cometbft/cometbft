@@ -1,6 +1,9 @@
 package storage
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 var (
 	// errBatchClosed is returned when a closed or written batch is used.
@@ -184,4 +187,49 @@ type Iterator interface {
 
 	// Close closes the iterator, releasing any allocated resources.
 	Close() error
+}
+
+// PrefixIterator returns an iterator over the keys that begin with the given prefix.
+// It is safe to modify the contents of prefix after PrefixIterator returns.
+// If the length of the prefix is 0, PrefixIterator will return an iterator that
+// will iterate over all keys in the database.
+func PrefixIterator(db DB, prefix []byte) (Iterator, error) {
+	var start, end []byte
+
+	if len(prefix) > 0 {
+		start = make([]byte, len(prefix))
+		copy(start, prefix)
+
+		end = incrementBigEndian(prefix)
+	}
+
+	it, err := db.Iterator(start, end)
+	if err != nil {
+		return nil, fmt.Errorf("creating iterator with prefix %v: %w", prefix, err)
+	}
+
+	return it, nil
+}
+
+// incrementBigEndian treats the input slice as a big-endian unsigned integer.
+// It creates a new slice of the same length, increments the value by one,
+// and returns the result.
+// If the input slice represents the maximum value for its length (all bytes are
+// 0xFF), incrementBigEndian returns nil to indicate overflow.
+// The input slice s remains unmodified. The function is a no-op if the input
+// slice's length is 0.
+func incrementBigEndian(s []byte) []byte {
+	result := make([]byte, len(s))
+	copy(result, s)
+
+	for i := len(result) - 1; i >= 0; i-- {
+		if result[i] < 0xFF {
+			result[i]++
+			return result
+		}
+		result[i] = 0x00 // Carry over to the next byte
+	}
+
+	// Overflow if the loop finishes without returning
+	return nil
 }

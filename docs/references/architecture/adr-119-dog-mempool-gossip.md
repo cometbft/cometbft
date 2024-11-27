@@ -18,7 +18,7 @@ causing a lot of network traffic and nodes receiving duplicate transactions
 very frequently. 
 
 Benchmarks have also confirmed a large portion of the sent and received bytes 
-is due to transaction gossiping. 
+by the network layer of a node is due to transaction gossiping. 
 
 DOG is a protocol that aims to reduce the number of duplicate transactions sent
 while maintaining the resilience to attacks. 
@@ -36,7 +36,7 @@ The existing alternative approaches for transaction gossiping are:
 
 Currently, CometBFT gossips each transaction to all the connected peers, except the sender
 of the transaction. Thus, for every transaction, CometBFT keeps a list of senders to make sure
-it is not sent again to a node that has sent it. 
+it is not sent again to a node from which the node has received it.
 This does not prevent a node to send the transaction to a node that has sent it to the 
 sender, thus creating a lot of duplicates. 
 
@@ -109,7 +109,7 @@ The bulk of the changes is constrained to the mempool reactor.
 
 - The `Mempool` interface is expanded with a method : 
 ```go
-// GetSenders returns the list of node IDs from which we receive the given transaction.
+// GetSenders returns the list of node IDs from which we have received a transaction.
 GetSenders(txKey types.TxKey) ([]nodekey.ID, error)
 ``` 
 - The `Entry` interface in the mempool package is expanded with a method:
@@ -119,7 +119,7 @@ GetSenders(txKey types.TxKey) ([]nodekey.ID, error)
 ```
 - We introduce a new communication channel, called `Mempool Control Channel`. The channel
 is used to transmit the messages needed for the implementation of the protocol. The channel ID
-is `31` and it has a priority of `10` .
+is `31` and it has priority `10`.
 
 Additionally, the mempool reactor is extended with a 
 `gossipRouter` and a `redundancyControl` struct to keep track of the redundancy
@@ -179,12 +179,12 @@ adjust routing between peers.
 
 `broadcastTxRoutine`
 
-Before sending a transaction, we filter the peers to send to based on the `disabeldRoutes`. Again,
+Before sending a transaction, we filter the peers to send to based on the `disabledRoutes`. Again,
 only if DOG is enabled. 
 
 `RemovePeer`
 
-When a peer is removed, we remove any existing entries related to this peer from the `DisabledRoutes` 
+When a peer is removed, we remove any existing entries related to this peer from the `disabledRoutes` 
 map and explicitly trigger redundancy re-adjustment. The later is not strictly needed, but 
 can lead to quicker propagation of this information through the network.
 
@@ -216,7 +216,7 @@ The impact of the protocol on operations can also be observed by looking at the 
 
 - `AlreadyReceivedTx` - the number of redundant transactions. When DOG is enabled these values should drop. 
 
-- `BytesReceived` - This metric shows the number of bytes received per message type. Without DOG, the transactions dominate the number of bytes, while, when enabled, the block parts dominate.
+- `BytesReceived` - This metric shows the number of bytes received per message type. Without DOG, the transactions tend to dominate the number of bytes, while, when enabled, the block parts should dominate it.
 
 This ADR introduces a set of metrics which can be used to observe the parameters of the protocol: 
 

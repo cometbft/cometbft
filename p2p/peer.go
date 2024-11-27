@@ -367,12 +367,19 @@ func (p *peer) TrySend(e Envelope) error {
 	if !ok {
 		panic(fmt.Sprintf("stream %d not found", e.ChannelID))
 	}
-	return p.send(e.ChannelID, e.Message, stream.TryWrite /* non-blocking */)
+
+	err := p.send(e.ChannelID, e.Message, stream.TryWrite /* non-blocking */)
+	if e, ok := err.(transport.WriteError); ok && e.Full() {
+		p.Logger.Debug("Send", "err", err)
+	} else {
+		p.Logger.Error("Send", "err", err)
+	}
+	return err
 }
 
 func (p *peer) send(streamID byte, msg proto.Message, writeFn func([]byte) (int, error)) error {
 	if !p.IsRunning() {
-		return ErrPeerNotRunning
+		return nil
 	}
 
 	msgType := getMsgType(msg)
@@ -382,16 +389,14 @@ func (p *peer) send(streamID byte, msg proto.Message, writeFn func([]byte) (int,
 
 	msgBytes, err := proto.Marshal(msg)
 	if err != nil {
-		p.Logger.Error("proto.Marshal", "err", err)
 		return fmt.Errorf("proto.Marshal: %w", err)
 	}
 
 	n, err := writeFn(msgBytes)
 	if err != nil {
-		p.Logger.Error("stream.(Try)Write", "err", err)
-		return fmt.Errorf("stream.(Try)Write: %w", err)
+		return err
 	} else if n != len(msgBytes) {
-		p.Logger.Error("Incomplete write", "got", n, "wanted", len(msgBytes))
+		// Should never happen in the current implementation.
 		return fmt.Errorf("incomplete write: got %d, wanted %d", n, len(msgBytes))
 	}
 

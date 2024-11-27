@@ -11,6 +11,10 @@ import (
 type (
 	// ConnState describes the state of a connection.
 	ConnState = transport.ConnState
+	// SendError is an error emitted by Peer#TrySend.
+	//
+	// If the send queue is full, Full() returns true.
+	SendError = transport.WriteError
 )
 
 // Envelope contains a message with sender routing info.

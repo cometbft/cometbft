@@ -371,7 +371,7 @@ func (c *MConnection) sendBytes(chID byte, msgBytes []byte, blocking bool) error
 		panic(fmt.Sprintf("Unknown channel %X. Forgot to register?", chID))
 	}
 	if err := channel.sendBytes(msgBytes, blocking); err != nil {
-		c.Logger.Error("Send failed", "err", err)
+		// c.Logger.Error("Send failed", "err", err)
 		return err
 	}
 

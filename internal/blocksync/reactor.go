@@ -448,7 +448,7 @@ func (bcR *Reactor) handleBlockRequest(request BlockRequest) {
 		Message:   &bcproto.BlockRequest{Height: request.Height},
 	})
 	if err != nil {
-		if e, ok := err.(transport.WriteError); ok && e.Full() {
+		if e, ok := err.(p2p.SendError); ok && e.Full() {
 			bcR.Logger.Debug("Send queue is full, drop block request", "peer", peer.ID(), "height", request.Height)
 		}
 	}

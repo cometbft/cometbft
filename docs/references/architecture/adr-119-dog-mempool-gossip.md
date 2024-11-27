@@ -20,7 +20,7 @@ very frequently.
 Benchmarks have also confirmed a large portion of the sent and received bytes 
 is due to transaction gossiping. 
 
-DOG is a protocol that aims to reduce the number of duplicate transactions sent
+DOG is a protocol that aims to reduce the number of duplicate transactions received
 while maintaining the resilience to attacks. 
 
 ## Alternative Approaches
@@ -48,7 +48,7 @@ This is the exact problem DOG was designed to tackle.
 
 The CometBFT team has decided to implement the protocol on top of the existing mempool
 (`flood` ) dissemination protocol, but make it optional. The protocol can be activated/deactivated
-via a new config flag `enable_dog_protocol`. More details on this in the sections below. 
+via a new config flag `mempool.enable_dog_protocol`. More details on this in the sections below. 
 
 ## Detailed Design
 
@@ -165,7 +165,7 @@ When DOG is enabled we count the number of unique and duplicate transactions, an
 `HaveTx` messages if the redundancy is too high. 
 
 Once a `HaveTx` message is sent,
-sending further messages is blocked. It is unblocked by the redundancy control mechanism 
+sending further `HaveTx` messages is blocked. It is unblocked by the redundancy control mechanism 
 once it is triggered again. This will be discussed below, but overall the frequency
 of `HaveTx` messages should be aligned with the time it takes to send a message and 
 adjust routing between peers. 
@@ -211,7 +211,7 @@ The impact of the protocol on operations can also be observed by looking at the 
 
 - `BytesReceived` - This metric shows the number of bytes received per message type. Without DOG, the transactions dominate the number of bytes, while, when enabled, the block parts dominate.
 
-This ADR introduces a set of metrics which can be used to observe the parameters of the protocol: 
+This ADR introduces a set of metrics into the `mempool` module. They can be used to observe the parameters of the protocol: 
 
 
 <!-- - `HaveTxMsgsReceived` -  Number of HaveTx messages received (cumulative). 
@@ -227,10 +227,10 @@ This ADR introduces a set of metrics which can be used to observe the parameters
 ### Configuration parameters
 
 
-- `config.EnableDOGProtocol: bool`: Enabling or disabling the DOG protocol. `true` by default.
+- `mempool.enable_dog_protocol: bool`: Enabling or disabling the DOG protocol. `true` by default.
 <!-- TODO verify this. But not a single benchmark
 showed a reason to not enable it. --->
-- `config.TargetRedundancy: float`: The redundancy level that the gossip protocol should aim to
+- `mempool.target_redundancy: float`: The redundancy level that the gossip protocol should aim to
   maintain. It is `1` by default. It cannot be `0` as this would open the node
   to byzantine attacks.
    <!-- TODO should we remove this too? If yes, remove the above sentence 

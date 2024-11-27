@@ -31,10 +31,9 @@ func TestPeerBasic(t *testing.T) {
 	rp.Start()
 	defer rp.Stop()
 
-	p, err := createOutboundPeerAndPerformHandshake(t, rp.Addr(), cfg)
-	require.NoError(t, err)
+	p := createOutboundPeerAndPerformHandshake(t, rp.Addr(), cfg)
 
-	err = p.Start()
+	err := p.Start()
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := p.Stop(); err != nil {
@@ -60,10 +59,9 @@ func TestPeerSend(t *testing.T) {
 	rp.Start()
 	defer rp.Stop()
 
-	p, err := createOutboundPeerAndPerformHandshake(t, rp.Addr(), config)
-	require.NoError(t, err)
+	p := createOutboundPeerAndPerformHandshake(t, rp.Addr(), config)
 
-	err = p.Start()
+	err := p.Start()
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := p.Stop(); err != nil {
@@ -78,15 +76,11 @@ func createOutboundPeerAndPerformHandshake(
 	t *testing.T,
 	addr *na.NetAddr,
 	config *config.P2PConfig,
-) (*peer, error) {
+) *peer {
 	t.Helper()
 
 	pc, err := testOutboundPeerConn(addr, config, false)
 	require.NoError(t, err)
-
-	stream, err := pc.OpenStream(HandshakeStreamID, nil)
-	require.NoError(t, err)
-	defer stream.Close()
 
 	// create dummy node info and perform handshake
 	var (
@@ -94,7 +88,7 @@ func createOutboundPeerAndPerformHandshake(
 		ourNodeID   = nodekey.PubKeyToID(ed25519.GenPrivKey().PubKey())
 		ourNodeInfo = testNodeInfo(ourNodeID, "host_peer")
 	)
-	peerNodeInfo, err := handshake(ourNodeInfo, stream, timeout)
+	peerNodeInfo, err := handshake(ourNodeInfo, pc, timeout)
 	require.NoError(t, err)
 
 	// create peer
@@ -115,7 +109,7 @@ func createOutboundPeerAndPerformHandshake(
 	)
 	p := newPeer(pc, peerNodeInfo, streamInfoByStreamID, func(_ Peer, _ any) {})
 	p.SetLogger(log.TestingLogger().With("peer", addr))
-	return p, nil
+	return p
 }
 
 func testDial(addr *na.NetAddr, cfg *config.P2PConfig) (transport.Connection, error) {
@@ -193,13 +187,7 @@ func (rp *remotePeer) Dial(addr *na.NetAddr) (transport.Connection, error) {
 		return nil, err
 	}
 
-	stream, err := pc.OpenStream(HandshakeStreamID, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer stream.Close()
-
-	_, err = handshake(rp.nodeInfo(), stream, time.Second)
+	_, err = handshake(rp.nodeInfo(), pc, time.Second)
 	if err != nil {
 		return nil, err
 	}
@@ -221,14 +209,7 @@ func (rp *remotePeer) accept() {
 
 		conn := newMockConnection(netConn)
 
-		stream, err := conn.OpenStream(HandshakeStreamID, nil)
-		if err != nil {
-			_ = conn.Close(err.Error())
-			golog.Fatalf("Failed to open the handshake stream: %+v", err)
-		}
-		defer stream.Close()
-
-		ni, err := handshake(rp.nodeInfo(), stream, time.Second)
+		ni, err := handshake(rp.nodeInfo(), conn, time.Second)
 		if err != nil {
 			_ = conn.Close(err.Error())
 			golog.Printf("Failed to perform handshake: %+v", err)

@@ -988,14 +988,7 @@ func (rp *remoteTCPPeer) Dial(addr *na.NetAddr) (transport.Connection, error) {
 		return nil, err
 	}
 
-	stream, err := c.OpenStream(HandshakeStreamID, nil)
-	if err != nil {
-		_ = c.Close(err.Error())
-		return nil, err
-	}
-
-	_, err = handshake(rp.nodeInfo(), stream, time.Second)
-	stream.Close()
+	_, err = handshake(rp.nodeInfo(), c, time.Second)
 	if err != nil {
 		_ = c.Close(err.Error())
 		return nil, err
@@ -1019,13 +1012,7 @@ func (rp *remoteTCPPeer) accept() {
 			return
 		}
 
-		stream, err := c.OpenStream(HandshakeStreamID, nil)
-		if err != nil {
-			_ = c.Close(err.Error())
-		}
-
-		_, err = handshake(rp.nodeInfo(), stream, time.Second)
-		stream.Close()
+		_, err = handshake(rp.nodeInfo(), c, time.Second)
 		if err != nil {
 			// Fixes TestSwitchFiltersOutItself.
 			//

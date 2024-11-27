@@ -200,14 +200,7 @@ func (sw *Switch) addPeerWithConnection(conn transport.Connection) error {
 		}
 	}
 
-	stream, err := conn.OpenStream(HandshakeStreamID, nil)
-	if err != nil {
-		closeConn(err)
-		return err
-	}
-	defer stream.Close()
-
-	ni, err := handshake(sw.nodeInfo, stream, time.Second)
+	ni, err := handshake(sw.nodeInfo, conn, time.Second)
 	if err != nil {
 		closeConn(err)
 		return err

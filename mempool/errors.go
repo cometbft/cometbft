@@ -11,10 +11,6 @@ var ErrTxNotFound = errors.New("transaction not found in mempool")
 // ErrTxInCache is returned to the client if we saw tx earlier.
 var ErrTxInCache = errors.New("tx already exists in cache")
 
-// ErrInvalidTx is returned when a transaction that is trying to be added to the
-// mempool is invalid.
-var ErrInvalidTx = errors.New("tx is invalid")
-
 // ErrTxInMempool is returned when a transaction that is trying to be added to
 // the mempool is already there.
 var ErrTxInMempool = errors.New("transaction already in mempool, not adding it again")
@@ -30,6 +26,27 @@ var ErrLateRecheckResponse = errors.New("rechecking has finished; discard late r
 // ErrRecheckFull is returned when checking if the mempool is full and
 // rechecking is still in progress after a new block was committed.
 var ErrRecheckFull = errors.New("mempool is still rechecking after a new committed block, so it is considered as full")
+
+// ErrInvalidTx is returned when a transaction that is trying to be added to the
+// mempool is invalid.
+type ErrInvalidTx struct {
+	Code      uint32
+	Data      []byte
+	Log       string
+	Codespace string
+	Hash      []byte
+}
+
+func (e ErrInvalidTx) Error() string {
+	return fmt.Sprintf(
+		"tx %X is invalid: code=%d, data=%X, log='%s', codespace='%s'",
+		e.Hash,
+		e.Code,
+		e.Data,
+		e.Log,
+		e.Codespace,
+	)
+}
 
 // ErrTxTooLarge defines an error when a transaction is too big to be sent in a
 // message to other peers.

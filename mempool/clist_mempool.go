@@ -421,7 +421,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender nodekey.ID) f
 			if postCheckErr != nil {
 				return postCheckErr
 			}
-			return ErrInvalidTx
+			return ErrInvalidTx{Code: res.Code, Data: res.Data, Log: res.Log, Codespace: res.Codespace, Hash: tx.Hash()}
 		}
 
 		// If the app returned a non-empty lane, use it; otherwise use the default lane.
@@ -647,7 +647,7 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 			if postCheckErr != nil {
 				return postCheckErr
 			}
-			return ErrInvalidTx
+			return ErrInvalidTx{Code: res.Code, Data: res.Data, Log: res.Log, Codespace: res.Codespace, Hash: tx.Hash()}
 		}
 
 		return nil

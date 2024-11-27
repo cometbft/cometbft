@@ -14,7 +14,7 @@ import (
 const (
 	// HandshakeStreamID is the stream ID for the handshake stream.
 	// This stream can be reused by any reactor.
-	HandshakeStreamID byte = 0x00
+	HandshakeStreamID byte = 0xFF
 )
 
 type HandshakeStream interface {

@@ -219,7 +219,7 @@ message HaveTx {
 }
 ```
 
-```
+```proto
 message ResetRoute {
 }
 ```
@@ -243,7 +243,7 @@ message Message {
 
 The impact of the protocol on operations can also be observed by looking at the following metrics that already exist:
 
-- `AlreadyReceivedTx` - the number of redundant transactions. When DOG is enabled these values should drop. 
+- `mempool.already_received_txs` - the number of redundant transactions. When DOG is enabled these values should drop. 
 
 - `p2p.message_send_bytes_total` - This metric shows the number of bytes sent per message type. Without DOG, the transactions tend to dominate the number of bytes, while, when enabled, the block parts should dominate it.
 
@@ -257,9 +257,9 @@ This ADR introduces a set of metrics into the `mempool` module. They can be used
 
 - `ResetMsgsSent` - Number of Reset messages sent (cumulative). -->
 
-- `DisabledRoutes` - Number of disabled routes.
+- `mempool.disabled_routes` - Number of disabled routes.
 
-- `Redundancy` -  The current level of redundancy computed as the ratio between duplicate and unique transactions. 
+- `mempool.redundancy` -  The current level of redundancy computed as the ratio between duplicate and unique transactions. 
 
 
 ### Configuration parameters

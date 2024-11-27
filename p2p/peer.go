@@ -368,13 +368,11 @@ func (p *peer) Status() any {
 //
 // thread safe.
 func (p *peer) Send(e Envelope) bool {
-	streamID := e.ChannelID
-	stream, ok := p.streams[streamID]
+	stream, ok := p.streams[e.ChannelID]
 	if !ok {
-		panic(fmt.Sprintf("stream %d not found", streamID))
+		panic(fmt.Sprintf("stream %d not found", e.ChannelID))
 	}
-	_ = stream.SetWriteDeadline(time.Now().Add(10 * time.Second))
-	return p.send(e.ChannelID, e.Message, stream.Write)
+	return p.send(e.ChannelID, e.Message, stream, 10*time.Second)
 }
 
 // TrySend tries to send the given envelope the stream identified by e.ChannelID.
@@ -382,16 +380,14 @@ func (p *peer) Send(e Envelope) bool {
 //
 // thread safe.
 func (p *peer) TrySend(e Envelope) bool {
-	streamID := e.ChannelID
-	stream, ok := p.streams[streamID]
+	stream, ok := p.streams[e.ChannelID]
 	if !ok {
-		panic(fmt.Sprintf("stream %d not found", streamID))
+		panic(fmt.Sprintf("stream %d not found", e.ChannelID))
 	}
-	_ = stream.SetWriteDeadline(time.Now().Add(100 * time.Millisecond))
-	return p.send(e.ChannelID, e.Message, stream.Write)
+	return p.send(e.ChannelID, e.Message, stream, 100*time.Millisecond)
 }
 
-func (p *peer) send(streamID byte, msg proto.Message, sendFunc func([]byte) (int, error)) bool {
+func (p *peer) send(streamID byte, msg proto.Message, stream transport.Stream, timeout time.Duration) bool {
 	if !p.IsRunning() {
 		return false
 	} else if !p.HasChannel(streamID) {
@@ -409,7 +405,9 @@ func (p *peer) send(streamID byte, msg proto.Message, sendFunc func([]byte) (int
 		return false
 	}
 
-	n, err := sendFunc(msgBytes)
+	_ = stream.SetWriteDeadline(time.Now().Add(timeout))
+
+	n, err := stream.Write(msgBytes)
 	if err != nil {
 		p.Logger.Error("Stream.Write", "err", err, "streamID", streamID, "msgType", msgType)
 		return false

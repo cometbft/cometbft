@@ -141,7 +141,7 @@ func TestMConnectionStatus(t *testing.T) {
 
 	state := mconn.ConnState()
 	assert.NotNil(t, state)
-	assert.Zero(t, state.StreamsState[testStreamID].SendQueueSize)
+	assert.Zero(t, state.StreamStates[testStreamID].SendQueueSize)
 }
 
 func TestMConnection_PongTimeoutResultsInError(t *testing.T) {

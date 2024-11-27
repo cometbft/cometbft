@@ -322,11 +322,11 @@ func (c *MConnection) ConnState() (state transport.ConnState) {
 	state.ConnectedFor = time.Since(c.created)
 	state.SendRateLimiterDelay = c.sendMonitor.Status().SleepTime
 	state.RecvRateLimiterDelay = c.recvMonitor.Status().SleepTime
-	state.StreamsState = make(map[byte]transport.StreamState)
+	state.StreamStates = make(map[byte]transport.StreamState)
 
 	c.mtx.RLock()
 	for streamID, channel := range c.channelsIdx {
-		state.StreamsState[streamID] = transport.StreamState{
+		state.StreamStates[streamID] = transport.StreamState{
 			SendQueueSize:     int(atomic.LoadInt32(&channel.sendQueueSize)),
 			SendQueueCapacity: cap(channel.sendQueue),
 		}

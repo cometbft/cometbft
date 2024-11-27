@@ -465,7 +465,7 @@ func (p *peer) eventLoop() {
 		case <-metricsTicker.C:
 			state := p.ConnState()
 			var totalSendQueueSize int
-			for _, s := range state.StreamsState {
+			for _, s := range state.StreamStates {
 				totalSendQueueSize += s.SendQueueSize
 			}
 			p.metrics.RecvRateLimiterDelay.With("peer_id", string(p.ID())).

@@ -6,8 +6,8 @@ import "time"
 type ConnState struct {
 	// ConnectedFor is the duration for which the connection has been connected.
 	ConnectedFor time.Duration `json:"connected_for"`
-	// StreamsState describes the state of streams.
-	StreamsState map[byte]StreamState `json:"streams_state"`
+	// StreamStates describes the state of streams.
+	StreamStates map[byte]StreamState `json:"stream_states"`
 	// SendRateLimiterDelay is the delay imposed by the send rate limiter.
 	//
 	// Only applies to TCP.

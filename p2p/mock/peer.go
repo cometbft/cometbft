@@ -9,7 +9,7 @@ import (
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
-	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
+	"github.com/cometbft/cometbft/p2p/transport"
 )
 
 type Peer struct {
@@ -63,10 +63,10 @@ func (mp *Peer) NodeInfo() ni.NodeInfo {
 		ListenAddr:    mp.addr.DialString(),
 	}
 }
-func (*Peer) Status() any           { return conn.ConnectionStatus{} }
-func (mp *Peer) ID() nodekey.ID     { return mp.id }
-func (mp *Peer) IsOutbound() bool   { return mp.Outbound }
-func (mp *Peer) IsPersistent() bool { return mp.Persistent }
+func (*Peer) ConnState() transport.ConnState { return transport.ConnState{} }
+func (mp *Peer) ID() nodekey.ID              { return mp.id }
+func (mp *Peer) IsOutbound() bool            { return mp.Outbound }
+func (mp *Peer) IsPersistent() bool          { return mp.Persistent }
 func (mp *Peer) Get(key string) any {
 	if value, ok := mp.kv[key]; ok {
 		return value

@@ -29,9 +29,9 @@ type Connection interface {
 	// Any blocked Read operations will be unblocked and return errors.
 	FlushAndClose(reason string) error
 
-	// ConnectionState returns basic details about the connection.
+	// ConnState returns basic details about the connection.
 	// Warning: This API should not be considered stable and might change soon.
-	ConnectionState() any
+	ConnState() ConnState
 
 	// ErrorCh returns a channel that will receive errors from the connection.
 	ErrorCh() <-chan error

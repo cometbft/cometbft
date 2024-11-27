@@ -18,7 +18,6 @@ import (
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/p2p/transport"
-	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -53,9 +52,9 @@ type Peer interface {
 	IsOutbound() bool   // did we dial the peer
 	IsPersistent() bool // do we redial this peer when we disconnect
 
-	NodeInfo() ni.NodeInfo // peer's info
-	Status() any
-	SocketAddr() *na.NetAddr // actual address of the socket
+	NodeInfo() ni.NodeInfo          // peer's info
+	ConnState() transport.ConnState // connection state
+	SocketAddr() *na.NetAddr        // actual address of the socket
 
 	HasChannel(chID byte) bool // Does the peer implement this channel?
 	Send(e Envelope) bool      // Send a message to the peer, blocking version
@@ -346,11 +345,6 @@ func (p *peer) SocketAddr() *na.NetAddr {
 	return p.peerConn.socketAddr
 }
 
-// Status returns the peer's ConnectionStatus.
-func (p *peer) Status() any {
-	return p.ConnectionState()
-}
-
 // Send sends the given envelope via the stream identified by e.ChannelID.
 // Returns false if the send queue is full after 10s.
 //
@@ -469,19 +463,16 @@ func (p *peer) eventLoop() {
 			p.onPeerError(p, err)
 			return
 		case <-metricsTicker.C:
-			// TODO: this is a bit of a hack, we should have a better way to get the status.
-			status := p.Status().(tcpconn.ConnectionStatus)
-			var sendQueueSize float64
-			for _, chStatus := range status.Channels {
-				sendQueueSize += float64(chStatus.SendQueueSize)
+			state := p.ConnState()
+			var totalSendQueueSize int
+			for _, s := range state.StreamsState {
+				totalSendQueueSize += s.SendQueueSize
 			}
-
 			p.metrics.RecvRateLimiterDelay.With("peer_id", string(p.ID())).
-				Add(status.RecvMonitor.SleepTime.Seconds())
+				Add(state.RecvRateLimiterDelay.Seconds())
 			p.metrics.SendRateLimiterDelay.With("peer_id", string(p.ID())).
-				Add(status.SendMonitor.SleepTime.Seconds())
-
-			p.metrics.PeerPendingSendBytes.With("peer_id", string(p.ID())).Set(sendQueueSize)
+				Add(state.SendRateLimiterDelay.Seconds())
+			p.metrics.PeerPendingSendBytes.With("peer_id", string(p.ID())).Set(float64(totalSendQueueSize))
 
 			// Report per peer, per message total bytes, since the last interval
 			func() {

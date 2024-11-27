@@ -318,26 +318,22 @@ func (c *MConnection) FlushAndClose(reason string) error {
 	return c.conn.Close()
 }
 
-func (c *MConnection) ConnectionState() any {
-	var status ConnectionStatus
-	status.Duration = time.Since(c.created)
-	status.SendMonitor = c.sendMonitor.Status()
-	status.RecvMonitor = c.recvMonitor.Status()
+func (c *MConnection) ConnState() (state transport.ConnState) {
+	state.ConnectedFor = time.Since(c.created)
+	state.SendRateLimiterDelay = c.sendMonitor.Status().SleepTime
+	state.RecvRateLimiterDelay = c.recvMonitor.Status().SleepTime
+	state.StreamsState = make(map[byte]transport.StreamState)
+
 	c.mtx.RLock()
-	status.Channels = make([]ChannelStatus, len(c.channelsIdx))
-	i := 0
-	for _, channel := range c.channelsIdx {
-		status.Channels[i] = ChannelStatus{
-			ID:                channel.desc.ID,
-			SendQueueCapacity: cap(channel.sendQueue),
+	for streamID, channel := range c.channelsIdx {
+		state.StreamsState[streamID] = transport.StreamState{
 			SendQueueSize:     int(atomic.LoadInt32(&channel.sendQueueSize)),
-			Priority:          channel.desc.Priority,
-			RecentlySent:      atomic.LoadInt64(&channel.recentlySent),
+			SendQueueCapacity: cap(channel.sendQueue),
 		}
-		i++
 	}
 	c.mtx.RUnlock()
-	return status
+
+	return state
 }
 
 func (c *MConnection) String() string {

@@ -139,9 +139,9 @@ func TestMConnectionStatus(t *testing.T) {
 	require.NoError(t, err)
 	defer mconn.Close("normal")
 
-	state := mconn.ConnectionState()
+	state := mconn.ConnState()
 	assert.NotNil(t, state)
-	assert.Zero(t, state.(ConnectionStatus).Channels[0].SendQueueSize)
+	assert.Zero(t, state.StreamsState[testStreamID].SendQueueSize)
 }
 
 func TestMConnection_PongTimeoutResultsInError(t *testing.T) {

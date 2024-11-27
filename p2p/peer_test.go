@@ -282,13 +282,8 @@ func (c mockConnection) Close(string) error         { return c.Conn.Close() }
 func (c mockConnection) FlushAndClose(string) error { return c.Conn.Close() }
 func (mockConnection) ErrorCh() <-chan error        { return nil }
 
-type mockStatus struct {
-	connectedFor time.Duration
-}
-
-func (s mockStatus) ConnectedFor() time.Duration { return s.connectedFor }
-func (c mockConnection) ConnectionState() any {
-	return &mockStatus{
-		connectedFor: time.Since(c.connectedAt),
+func (c mockConnection) ConnState() transport.ConnState {
+	return transport.ConnState{
+		ConnectedFor: time.Since(c.connectedAt),
 	}
 }

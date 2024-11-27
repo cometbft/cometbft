@@ -110,7 +110,7 @@ type MConnection struct {
 	recvMsgsUnknownStreamID chan tmp2p.PacketMsg
 }
 
-var _ transport.Connection = (*MConnection)(nil)
+var _ transport.Conn = (*MConnection)(nil)
 
 // MConnConfig is a MConnection configuration.
 type MConnConfig struct {

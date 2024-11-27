@@ -745,15 +745,15 @@ func (errorTransport) NetAddr() na.NetAddr {
 	panic("not implemented")
 }
 
-func (et errorTransport) Accept() (transport.Connection, *na.NetAddr, error) {
+func (et errorTransport) Accept() (transport.Conn, *na.NetAddr, error) {
 	return nil, nil, et.acceptErr
 }
 
-func (errorTransport) Dial(na.NetAddr) (transport.Connection, error) {
+func (errorTransport) Dial(na.NetAddr) (transport.Conn, error) {
 	panic("not implemented")
 }
 
-func (errorTransport) Cleanup(transport.Connection) error {
+func (errorTransport) Cleanup(transport.Conn) error {
 	panic("not implemented")
 }
 
@@ -983,7 +983,7 @@ func (rp *remoteTCPPeer) Stop() {
 	rp.transport.Close()
 }
 
-func (rp *remoteTCPPeer) Dial(addr *na.NetAddr) (transport.Connection, error) {
+func (rp *remoteTCPPeer) Dial(addr *na.NetAddr) (transport.Conn, error) {
 	c, err := rp.transport.Dial(*addr)
 	if err != nil {
 		return nil, err

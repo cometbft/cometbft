@@ -73,9 +73,9 @@ type Peer interface {
 
 // peerConn contains the raw connection and its config.
 type peerConn struct {
-	outbound             bool
-	persistent           bool
-	transport.Connection // Source connection
+	outbound       bool
+	persistent     bool
+	transport.Conn // Source connection
 
 	socketAddr *na.NetAddr
 
@@ -85,13 +85,13 @@ type peerConn struct {
 
 func newPeerConn(
 	outbound, persistent bool,
-	conn transport.Connection,
+	conn transport.Conn,
 	socketAddr *na.NetAddr,
 ) peerConn {
 	return peerConn{
 		outbound:   outbound,
 		persistent: persistent,
-		Connection: conn,
+		Conn:       conn,
 		socketAddr: socketAddr,
 	}
 }
@@ -453,7 +453,7 @@ func (p *peer) GetRemovalFailed() bool {
 
 // RemoteAddr returns peer's remote network address.
 func (p *peer) RemoteAddr() net.Addr {
-	return p.Connection.RemoteAddr()
+	return p.Conn.RemoteAddr()
 }
 
 // ---------------------------------------------------
@@ -471,7 +471,7 @@ func (p *peer) eventLoop() {
 
 	for {
 		select {
-		case err := <-p.Connection.ErrorCh():
+		case err := <-p.Conn.ErrorCh():
 			p.Logger.Error("Connection error", "err", err)
 			p.onPeerError(p, err)
 			return
@@ -516,7 +516,7 @@ func (p *peer) eventLoop() {
 // ------------------------------------------------------------------
 // helper funcs
 
-func wrapPeer(c transport.Connection, ni ni.NodeInfo, cfg peerConfig, socketAddr *na.NetAddr) Peer {
+func wrapPeer(c transport.Conn, ni ni.NodeInfo, cfg peerConfig, socketAddr *na.NetAddr) Peer {
 	persistent := false
 	if cfg.isPersistent != nil {
 		if cfg.outbound {

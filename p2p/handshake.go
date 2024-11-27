@@ -85,7 +85,7 @@ func (e ErrRejected) IsSelf() bool { return e.isSelf }
 func (e ErrRejected) Unwrap() error { return e.err }
 
 // Do a handshake and verify the node info.
-func handshake(ourNodeInfo ni.NodeInfo, conn transport.Connection, handshakeTimeout time.Duration) (ni.NodeInfo, error) {
+func handshake(ourNodeInfo ni.NodeInfo, conn transport.Conn, handshakeTimeout time.Duration) (ni.NodeInfo, error) {
 	stream, err := conn.OpenStream(handshakeStreamID, nil)
 	if err != nil {
 		return nil, err

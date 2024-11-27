@@ -6,9 +6,9 @@ import (
 	"time"
 )
 
-// Connection is a multiplexed connection that can send and receive data
+// Conn is a multiplexed connection that can send and receive data
 // on multiple streams.
-type Connection interface {
+type Conn interface {
 	// OpenStream opens a new stream on the connection with an optional
 	// description.
 	OpenStream(streamID byte, desc any) (Stream, error)

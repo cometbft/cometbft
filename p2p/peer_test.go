@@ -112,7 +112,7 @@ func createOutboundPeerAndPerformHandshake(
 	return p
 }
 
-func testDial(addr *na.NetAddr, cfg *config.P2PConfig) (transport.Connection, error) {
+func testDial(addr *na.NetAddr, cfg *config.P2PConfig) (transport.Conn, error) {
 	if cfg.TestDialFail {
 		return nil, errors.New("dial err (peerConfig.DialFail == true)")
 	}
@@ -181,7 +181,7 @@ func (rp *remotePeer) Stop() {
 	rp.listener.Close()
 }
 
-func (rp *remotePeer) Dial(addr *na.NetAddr) (transport.Connection, error) {
+func (rp *remotePeer) Dial(addr *na.NetAddr) (transport.Conn, error) {
 	pc, err := testOutboundPeerConn(addr, rp.Config, false)
 	if err != nil {
 		return nil, err

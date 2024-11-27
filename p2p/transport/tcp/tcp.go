@@ -149,7 +149,7 @@ func (mt *MultiplexTransport) NetAddr() na.NetAddr {
 }
 
 // Accept implements Transport.
-func (mt *MultiplexTransport) Accept() (transport.Connection, *na.NetAddr, error) {
+func (mt *MultiplexTransport) Accept() (transport.Conn, *na.NetAddr, error) {
 	select {
 	// This case should never have any side-effectful/blocking operations to
 	// ensure that quality peers are ready to be used.
@@ -165,7 +165,7 @@ func (mt *MultiplexTransport) Accept() (transport.Connection, *na.NetAddr, error
 }
 
 // Dial implements Transport.
-func (mt *MultiplexTransport) Dial(addr na.NetAddr) (transport.Connection, error) {
+func (mt *MultiplexTransport) Dial(addr na.NetAddr) (transport.Conn, error) {
 	c, err := addr.DialTimeout(mt.dialTimeout)
 	if err != nil {
 		return nil, err

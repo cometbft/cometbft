@@ -199,7 +199,7 @@ func TestTransportMultiplex_AcceptMultiple(t *testing.T) {
 		}
 	}
 
-	conns := []transport.Connection{}
+	conns := []transport.Conn{}
 
 	// Accept all connections.
 	for i := 0; i < cap(errc); i++ {

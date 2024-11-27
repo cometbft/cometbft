@@ -12,10 +12,10 @@ type Transport interface {
 	NetAddr() na.NetAddr
 
 	// Accept waits for and returns the next connection to the local node.
-	Accept() (Connection, *na.NetAddr, error)
+	Accept() (Conn, *na.NetAddr, error)
 
 	// Dial dials the given address and returns a connection.
-	Dial(addr na.NetAddr) (Connection, error)
+	Dial(addr na.NetAddr) (Conn, error)
 }
 
 // StreamDescriptor describes a data stream. This could be a substream within a

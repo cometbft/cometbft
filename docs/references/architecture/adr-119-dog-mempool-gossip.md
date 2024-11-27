@@ -199,14 +199,28 @@ message should be sent.
 The protocol introduces two new p2p messages whose protobuf definition is given below:
 
 ```proto
-type HaveTx struct {
-	TxKey []byte 
+message HaveTx {
+  bytes tx_key = 1;
 }
 ```
 
 ```
-type Reset struct {
+message Reset {
+}
+```
 
+We expand the abstract definition of a mempool message with these message types as well:
+
+
+```proto
+// Message is an abstract mempool message.
+message Message {
+  // Sum of all possible messages.
+  oneof sum {
+    Txs txs = 1;
+    HaveTx have_tx = 2;
+    Reset reset = 3;
+  }
 }
 ```
 

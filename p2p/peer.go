@@ -355,7 +355,13 @@ func (p *peer) Send(e Envelope) error {
 		// This should never happen.
 		return fmt.Errorf("stream %d not found", e.ChannelID)
 	}
-	return p.send(e.ChannelID, e.Message, stream.Write /* blocking */)
+	err := p.send(e.Message, stream.Write /* blocking */)
+	if err != nil {
+		p.Logger.Error("Send", "err", err)
+		return err
+	}
+	p.Logger.Debug("Sent message", "streamID", e.ChannelID)
+	return nil
 }
 
 // TrySend tries to send the given envelope via the stream identified by e.ChannelID.
@@ -365,19 +371,24 @@ func (p *peer) Send(e Envelope) error {
 func (p *peer) TrySend(e Envelope) error {
 	stream, ok := p.streams[e.ChannelID]
 	if !ok {
-		panic(fmt.Sprintf("stream %d not found", e.ChannelID))
+		// This should never happen.
+		return fmt.Errorf("stream %d not found", e.ChannelID)
 	}
 
-	err := p.send(e.ChannelID, e.Message, stream.TryWrite /* non-blocking */)
-	if e, ok := err.(transport.WriteError); ok && e.Full() {
-		p.Logger.Debug("Send", "err", err)
-	} else {
-		p.Logger.Error("Send", "err", err)
+	err := p.send(e.Message, stream.TryWrite /* non-blocking */)
+	if err != nil {
+		if e, ok := err.(transport.WriteError); ok && e.Full() {
+			p.Logger.Debug("Send", "err", err)
+		} else {
+			p.Logger.Error("Send", "err", err)
+		}
+		return err
 	}
-	return err
+	p.Logger.Debug("Sent message", "streamID", e.ChannelID)
+	return nil
 }
 
-func (p *peer) send(streamID byte, msg proto.Message, writeFn func([]byte) (int, error)) error {
+func (p *peer) send(msg proto.Message, writeFn func([]byte) (int, error)) error {
 	if !p.IsRunning() {
 		return nil
 	}
@@ -400,7 +411,6 @@ func (p *peer) send(streamID byte, msg proto.Message, writeFn func([]byte) (int,
 		return fmt.Errorf("incomplete write: got %d, wanted %d", n, len(msgBytes))
 	}
 
-	p.Logger.Debug("Sent message", "streamID", streamID, "msgType", msgType)
 	p.pendingMetrics.AddPendingSendBytes(msgType, n)
 	return nil
 }

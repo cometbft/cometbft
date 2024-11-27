@@ -293,19 +293,7 @@ func (p *peer) OnStart() error {
 		go p.streamReadLoop(streamID, stream)
 	}
 
-	go p.metricsReporter()
-
-	// Handle connection errors.
-	go func() {
-		select {
-		case <-p.Quit():
-			return
-		case err := <-p.Connection.ErrorCh():
-			p.Logger.Error("Connection error", "err", err)
-			p.onPeerError(p, err)
-			return
-		}
-	}()
+	go p.eventLoop()
 
 	return nil
 }
@@ -469,12 +457,17 @@ func PeerMetrics(metrics *Metrics) PeerOption {
 	}
 }
 
-func (p *peer) metricsReporter() {
+// report metrics + handle underlying connection errors.
+func (p *peer) eventLoop() {
 	metricsTicker := time.NewTicker(metricsTickerDuration)
 	defer metricsTicker.Stop()
 
 	for {
 		select {
+		case err := <-p.Connection.ErrorCh():
+			p.Logger.Error("Connection error", "err", err)
+			p.onPeerError(p, err)
+			return
 		case <-metricsTicker.C:
 			// TODO: this is a bit of a hack, we should have a better way to get the status.
 			status := p.Status().(tcpconn.ConnectionStatus)

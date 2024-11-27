@@ -132,7 +132,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 			for _, snapshot := range snapshots {
 				r.Logger.Debug("Advertising snapshot", "height", snapshot.Height,
 					"format", snapshot.Format, "peer", e.Src.ID())
-				e.Src.Send(p2p.Envelope{
+				_ = e.Src.Send(p2p.Envelope{
 					ChannelID: e.ChannelID,
 					Message: &ssproto.SnapshotsResponse{
 						Height:   snapshot.Height,
@@ -187,7 +187,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 			}
 			r.Logger.Debug("Sending chunk", "height", msg.Height, "format", msg.Format,
 				"chunk", msg.Index, "peer", e.Src.ID())
-			e.Src.Send(p2p.Envelope{
+			_ = e.Src.Send(p2p.Envelope{
 				ChannelID: ChunkChannel,
 				Message: &ssproto.ChunkResponse{
 					Height:  msg.Height,

@@ -65,22 +65,20 @@ type ReceiveStream interface {
 // A SendStream is a unidirectional Send Stream.
 type SendStream interface {
 	// Write writes data to the stream.
-	// Write can be made to time out and return a net.Error with Timeout() == true
-	// after a fixed time limit; see SetDeadline and SetWriteDeadline.
-	// If the stream was canceled by the peer, the error is a StreamError and
-	// Remote == true.
-	// If the connection was closed due to a timeout, the error satisfies
-	// the net.Error interface, and Timeout() will be true.
+	// It blocks until data is sent or the stream is closed.
 	io.Writer
 	// Close closes the write-direction of the stream.
 	// Future calls to Write are not permitted after calling Close.
 	// It must not be called concurrently with Write.
 	// It must not be called after calling CancelWrite.
 	io.Closer
-	// SetWriteDeadline sets the deadline for future Write calls
-	// and any currently-blocked Write call.
-	// Even if write times out, it may return n > 0, indicating that
-	// some data was successfully written.
-	// A zero value for t means Write will not time out.
-	SetWriteDeadline(t time.Time) error
+	// TryWrite attempts to write data to the stream.
+	// If the send queue is full, the error satisfies the WriteError interface, and Full() will be true.
+	TryWrite(b []byte) (n int, err error)
+}
+
+// WriteError is returned by TryWrite when the send queue is full.
+type WriteError interface {
+	error
+	Full() bool // Is the error due to the send queue being full?
 }

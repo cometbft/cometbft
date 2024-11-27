@@ -24,8 +24,8 @@ type mockPeer struct {
 
 func (mp *mockPeer) FlushStop()                  { mp.Stop() } //nolint:errcheck // ignore error
 func (*mockPeer) HasChannel(byte) bool           { return true }
-func (*mockPeer) TrySend(Envelope) bool          { return true }
-func (*mockPeer) Send(Envelope) bool             { return true }
+func (*mockPeer) TrySend(Envelope) error         { return nil }
+func (*mockPeer) Send(Envelope) error            { return nil }
 func (*mockPeer) NodeInfo() ni.NodeInfo          { return ni.Default{} }
 func (*mockPeer) ConnState() transport.ConnState { return transport.ConnState{} }
 func (mp *mockPeer) ID() nodekey.ID              { return mp.id }

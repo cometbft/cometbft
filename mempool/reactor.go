@@ -297,11 +297,11 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			memR.Logger.Debug("Sending transaction to peer",
 				"tx", log.NewLazySprintf("%X", txHash), "peer", peer.ID())
 
-			success := peer.Send(p2p.Envelope{
+			err := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
 				Message:   &protomem.Txs{Txs: [][]byte{entry.Tx()}},
 			})
-			if success {
+			if err == nil {
 				break
 			}
 

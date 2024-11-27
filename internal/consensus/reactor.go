@@ -317,7 +317,7 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 			if votes := ourVotes.ToProto(); votes != nil {
 				eMsg.Votes = *votes
 			}
-			e.Src.TrySend(p2p.Envelope{
+			_ = e.Src.TrySend(p2p.Envelope{
 				ChannelID: VoteSetBitsChannel,
 				Message:   eMsg,
 			})
@@ -577,7 +577,7 @@ func makeRoundStepMessage(rs *cstypes.RoundState) (nrsMsg *cmtcons.NewRoundStep)
 func (conR *Reactor) sendNewRoundStepMessage(peer p2p.Peer) {
 	rs := conR.getRoundState()
 	nrsMsg := makeRoundStepMessage(&rs)
-	peer.Send(p2p.Envelope{
+	_ = peer.Send(p2p.Envelope{
 		ChannelID: StateChannel,
 		Message:   nrsMsg,
 	})
@@ -732,7 +732,7 @@ OUTER_LOOP:
 			prs := ps.GetRoundState()
 			if rs.Height == prs.Height {
 				if maj23, ok := rs.Votes.Prevotes(prs.Round).TwoThirdsMajority(); ok {
-					peer.TrySend(p2p.Envelope{
+					_ = peer.TrySend(p2p.Envelope{
 						ChannelID: StateChannel,
 						Message: &cmtcons.VoteSetMaj23{
 							Height:  prs.Height,
@@ -752,7 +752,7 @@ OUTER_LOOP:
 			prs := ps.GetRoundState()
 			if rs.Height == prs.Height {
 				if maj23, ok := rs.Votes.Precommits(prs.Round).TwoThirdsMajority(); ok {
-					peer.TrySend(p2p.Envelope{
+					_ = peer.TrySend(p2p.Envelope{
 						ChannelID: StateChannel,
 						Message: &cmtcons.VoteSetMaj23{
 							Height:  prs.Height,
@@ -772,7 +772,7 @@ OUTER_LOOP:
 			prs := ps.GetRoundState()
 			if rs.Height == prs.Height && prs.ProposalPOLRound >= 0 {
 				if maj23, ok := rs.Votes.Prevotes(prs.ProposalPOLRound).TwoThirdsMajority(); ok {
-					peer.TrySend(p2p.Envelope{
+					_ = peer.TrySend(p2p.Envelope{
 						ChannelID: StateChannel,
 						Message: &cmtcons.VoteSetMaj23{
 							Height:  prs.Height,
@@ -795,7 +795,7 @@ OUTER_LOOP:
 			if prs.CatchupCommitRound != -1 && prs.Height > 0 && prs.Height <= conR.conS.blockStore.Height() &&
 				prs.Height >= conR.conS.blockStore.Base() {
 				if commit := conR.conS.LoadCommit(prs.Height); commit != nil {
-					peer.TrySend(p2p.Envelope{
+					_ = peer.TrySend(p2p.Envelope{
 						ChannelID: StateChannel,
 						Message: &cmtcons.VoteSetMaj23{
 							Height:  prs.Height,
@@ -1229,19 +1229,20 @@ func (ps *PeerState) SendPartSetHasPart(part *types.Part, prs *cstypes.PeerRound
 		ps.logger.Error("Could not convert part to proto", "index", part.Index, "error", err)
 		return false
 	}
-	if ps.peer.Send(p2p.Envelope{
+	if err = ps.peer.Send(p2p.Envelope{
 		ChannelID: DataChannel,
 		Message: &cmtcons.BlockPart{
 			Height: prs.Height, // Not our height, so it doesn't matter.
 			Round:  prs.Round,  // Not our height, so it doesn't matter.
 			Part:   *pp,
 		},
-	}) {
-		ps.SetHasProposalBlockPart(prs.Height, prs.Round, int(part.Index))
-		return true
+	}); err != nil {
+		ps.logger.Debug("Sending block part failed")
+		return false
 	}
-	ps.logger.Debug("Sending block part failed")
-	return false
+
+	ps.SetHasProposalBlockPart(prs.Height, prs.Round, int(part.Index))
+	return true
 }
 
 // SendProposalSetHasProposal sends the Proposal (and ProposalPOL if there is one) to the peer.
@@ -1253,10 +1254,10 @@ func (ps *PeerState) SendProposalSetHasProposal(
 ) {
 	// Proposal: share the proposal metadata with peer.
 	logger.Debug("Sending proposal", "height", prs.Height, "round", prs.Round)
-	if ps.peer.Send(p2p.Envelope{
+	if err := ps.peer.Send(p2p.Envelope{
 		ChannelID: DataChannel,
 		Message:   &cmtcons.Proposal{Proposal: *rs.Proposal.ToProto()},
-	}) {
+	}); err == nil {
 		// NOTE[ZM]: A peer might have received different proposal msg so this Proposal msg will be rejected!
 		ps.SetHasProposal(rs.Proposal)
 	}
@@ -1267,7 +1268,7 @@ func (ps *PeerState) SendProposalSetHasProposal(
 	// so we definitely have rs.Votes.Prevotes(rs.Proposal.POLRound).
 	if 0 <= rs.Proposal.POLRound {
 		logger.Debug("Sending POL", "height", prs.Height, "round", prs.Round)
-		ps.peer.Send(p2p.Envelope{
+		_ = ps.peer.Send(p2p.Envelope{
 			ChannelID: DataChannel,
 			Message: &cmtcons.ProposalPOL{
 				Height:           rs.Height,
@@ -1282,16 +1283,17 @@ func (ps *PeerState) SendProposalSetHasProposal(
 // Returns true and marks the peer as having the vote if the vote was sent.
 func (ps *PeerState) sendVoteSetHasVote(vote *types.Vote) bool {
 	ps.logger.Debug("Sending vote message", "ps", ps, "vote", vote)
-	if ps.peer.Send(p2p.Envelope{
+	if err := ps.peer.Send(p2p.Envelope{
 		ChannelID: VoteChannel,
 		Message: &cmtcons.Vote{
 			Vote: vote.ToProto(),
 		},
-	}) {
-		ps.SetHasVote(vote)
-		return true
+	}); err != nil {
+		return false
 	}
-	return false
+
+	ps.SetHasVote(vote)
+	return true
 }
 
 // PickVoteToSend picks a vote to send to the peer.

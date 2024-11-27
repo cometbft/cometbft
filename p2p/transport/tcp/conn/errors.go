@@ -3,6 +3,8 @@ package conn
 import (
 	"errors"
 	"fmt"
+
+	"github.com/cometbft/cometbft/p2p/transport"
 )
 
 var (
@@ -12,9 +14,20 @@ var (
 
 	// ErrTimeout is returned when a read or write operation times out.
 	ErrTimeout = errors.New("read/write timeout")
-	// ErrNotRunning is returned when a connection is not running.
-	ErrNotRunning = errors.New("connection is stopped")
 )
+
+// ErrWriteQueueFull is returned when the write queue is full.
+type ErrWriteQueueFull struct{}
+
+var _ transport.WriteError = ErrWriteQueueFull{}
+
+func (ErrWriteQueueFull) Error() string {
+	return "write queue is full"
+}
+
+func (ErrWriteQueueFull) Full() bool {
+	return true
+}
 
 // ErrPacketWrite Packet error when writing.
 type ErrPacketWrite struct {

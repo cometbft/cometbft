@@ -11,10 +11,9 @@ type MConnectionStream struct {
 	streamID    byte
 	unreadBytes []byte
 
-	mtx           sync.RWMutex
-	deadline      time.Time
-	readDeadline  time.Time
-	writeDeadline time.Time
+	mtx          sync.RWMutex
+	deadline     time.Time
+	readDeadline time.Time
 }
 
 // Read reads whole messages from the internal map, which is populated by the
@@ -48,7 +47,7 @@ func (s *MConnectionStream) Read(b []byte) (n int, err error) {
 				}
 				return n, nil
 			case <-s.conn.Quit():
-				return 0, ErrNotRunning
+				return 0, nil
 			case <-time.After(readTimeout):
 				return 0, ErrTimeout
 			}
@@ -63,7 +62,7 @@ func (s *MConnectionStream) Read(b []byte) (n int, err error) {
 			}
 			return n, nil
 		case <-s.conn.Quit():
-			return 0, ErrNotRunning
+			return 0, nil
 		}
 	}
 
@@ -71,11 +70,19 @@ func (s *MConnectionStream) Read(b []byte) (n int, err error) {
 	return 0, nil
 }
 
-// Write queues bytes to be sent onto the internal write queue. It returns
-// len(b), but it doesn't guarantee that the Write actually succeeds.
+// Write queues bytes to be sent onto the internal write queue.
 // thread-safe.
 func (s *MConnectionStream) Write(b []byte) (n int, err error) {
-	if err := s.conn.sendBytes(s.streamID, b, s.writeTimeout()); err != nil {
+	if err := s.conn.sendBytes(s.streamID, b, true /* blocking */); err != nil {
+		return 0, err
+	}
+	return len(b), nil
+}
+
+// TryWrite queues bytes to be sent onto the internal write queue.
+// thread-safe.
+func (s *MConnectionStream) TryWrite(b []byte) (n int, err error) {
+	if err := s.conn.sendBytes(s.streamID, b, false /* non-blocking */); err != nil {
 		return 0, err
 	}
 	return len(b), nil
@@ -117,19 +124,6 @@ func (s *MConnectionStream) SetReadDeadline(t time.Time) error {
 	return nil
 }
 
-// SetWriteDeadline sets the write deadline for this stream. It does not set the
-// write deadline on the underlying TCP connection! A zero value for t means
-// Conn.Write will not time out.
-//
-// Only applies to new writes.
-// thread-safe.
-func (s *MConnectionStream) SetWriteDeadline(t time.Time) error {
-	s.mtx.Lock()
-	s.writeDeadline = t
-	s.mtx.Unlock()
-	return nil
-}
-
 func (s *MConnectionStream) readTimeout() time.Duration {
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
@@ -140,22 +134,6 @@ func (s *MConnectionStream) readTimeout() time.Duration {
 		return 0
 	case s.readDeadline.After(now):
 		return s.readDeadline.Sub(now)
-	case s.deadline.After(now):
-		return s.deadline.Sub(now)
-	}
-	return 0
-}
-
-func (s *MConnectionStream) writeTimeout() time.Duration {
-	s.mtx.RLock()
-	defer s.mtx.RUnlock()
-
-	now := time.Now()
-	switch {
-	case s.writeDeadline.IsZero() && s.deadline.IsZero():
-		return 0
-	case s.writeDeadline.After(now):
-		return s.writeDeadline.Sub(now)
 	case s.deadline.After(now):
 		return s.deadline.Sub(now)
 	}

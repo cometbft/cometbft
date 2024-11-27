@@ -491,10 +491,11 @@ func TestSwitchStopPeerForError(t *testing.T) {
 
 	// send messages to the peer from sw1
 	p := sw1.Peers().Copy()[0]
-	p.Send(Envelope{
+	err := p.Send(Envelope{
 		ChannelID: 0x1,
 		Message:   &p2pproto.Message{},
 	})
+	require.NoError(t, err)
 
 	// stop sw2. this should cause the p to fail,
 	// which results in calling StopPeerForError internally

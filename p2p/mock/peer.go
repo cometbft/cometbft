@@ -54,9 +54,9 @@ func (mp *Peer) OnStop() {
 	mp.server.Close()
 	mp.client.Close()
 }
-func (*Peer) HasChannel(_ byte) bool      { return true }
-func (*Peer) TrySend(_ p2p.Envelope) bool { return true }
-func (*Peer) Send(_ p2p.Envelope) bool    { return true }
+func (*Peer) HasChannel(_ byte) bool       { return true }
+func (*Peer) TrySend(_ p2p.Envelope) error { return nil }
+func (*Peer) Send(_ p2p.Envelope) error    { return nil }
 func (mp *Peer) NodeInfo() ni.NodeInfo {
 	return ni.Default{
 		DefaultNodeID: mp.addr.ID,

@@ -93,9 +93,8 @@ func TestMConnection_StreamWrite(t *testing.T) {
 	assert.True(t, mconn.CanSend(testStreamID))
 
 	msg = []byte("Spider-Man")
-	err = clientStream.SetWriteDeadline(time.Now().Add(100 * time.Millisecond))
 	require.NoError(t, err)
-	_, err = clientStream.Write(msg)
+	_, err = clientStream.TryWrite(msg)
 	require.NoError(t, err)
 	_, err = server.Read(make([]byte, len(msg)))
 	require.NoError(t, err)

@@ -315,18 +315,18 @@ func (_m *Peer) Reset() error {
 }
 
 // Send provides a mock function with given fields: e
-func (_m *Peer) Send(e p2p.Envelope) bool {
+func (_m *Peer) Send(e p2p.Envelope) error {
 	ret := _m.Called(e)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Send")
 	}
 
-	var r0 bool
-	if rf, ok := ret.Get(0).(func(p2p.Envelope) bool); ok {
+	var r0 error
+	if rf, ok := ret.Get(0).(func(p2p.Envelope) error); ok {
 		r0 = rf(e)
 	} else {
-		r0 = ret.Get(0).(bool)
+		r0 = ret.Error(0)
 	}
 
 	return r0
@@ -422,18 +422,18 @@ func (_m *Peer) String() string {
 }
 
 // TrySend provides a mock function with given fields: e
-func (_m *Peer) TrySend(e p2p.Envelope) bool {
+func (_m *Peer) TrySend(e p2p.Envelope) error {
 	ret := _m.Called(e)
 
 	if len(ret) == 0 {
 		panic("no return value specified for TrySend")
 	}
 
-	var r0 bool
-	if rf, ok := ret.Get(0).(func(p2p.Envelope) bool); ok {
+	var r0 error
+	if rf, ok := ret.Get(0).(func(p2p.Envelope) error); ok {
 		r0 = rf(e)
 	} else {
-		r0 = ret.Get(0).(bool)
+		r0 = ret.Error(0)
 	}
 
 	return r0

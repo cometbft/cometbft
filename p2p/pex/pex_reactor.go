@@ -333,7 +333,7 @@ func (r *Reactor) RequestAddrs(p Peer) {
 	}
 	r.Logger.Debug("Request addrs", "from", p)
 	r.requestsSent.Set(id, struct{}{})
-	p.Send(p2p.Envelope{
+	_ = p.Send(p2p.Envelope{
 		ChannelID: PexChannel,
 		Message:   &tmp2p.PexRequest{},
 	})
@@ -385,7 +385,7 @@ func (*Reactor) SendAddrs(p Peer, netAddrs []*na.NetAddr) {
 		ChannelID: PexChannel,
 		Message:   &tmp2p.PexAddrs{Addrs: na.AddrsToProtos(netAddrs)},
 	}
-	p.Send(e)
+	_ = p.Send(e)
 }
 
 // SetEnsurePeersPeriod sets period to ensure peers connected.

@@ -1,12 +1,15 @@
 package p2p
 
 import (
+	"errors"
 	"fmt"
 	"net"
 
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 )
+
+var ErrPeerNotRunning = errors.New("peer not running")
 
 // ErrSwitchDuplicatePeerID to be raised when a peer is connecting with a known
 // ID.

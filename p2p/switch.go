@@ -249,8 +249,7 @@ func (sw *Switch) OnStop() {
 func (sw *Switch) Broadcast(e Envelope) {
 	sw.peers.ForEach(func(p Peer) {
 		go func(peer Peer) {
-			success := peer.Send(e)
-			_ = success
+			_ = peer.Send(e)
 		}(p)
 	})
 }
@@ -262,7 +261,7 @@ func (sw *Switch) Broadcast(e Envelope) {
 func (sw *Switch) TryBroadcast(e Envelope) {
 	sw.peers.ForEach(func(p Peer) {
 		go func(peer Peer) {
-			peer.TrySend(e)
+			_ = peer.TrySend(e)
 		}(p)
 	})
 }

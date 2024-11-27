@@ -29,12 +29,15 @@ func (nopStream) Write(b []byte) (n int, err error) {
 	return len(b), nil
 }
 
+func (nopStream) TryWrite(b []byte) (n int, err error) {
+	return len(b), nil
+}
+
 func (nopStream) Close() error {
 	return nil
 }
-func (nopStream) SetDeadline(time.Time) error      { return nil }
-func (nopStream) SetReadDeadline(time.Time) error  { return nil }
-func (nopStream) SetWriteDeadline(time.Time) error { return nil }
+func (nopStream) SetDeadline(time.Time) error     { return nil }
+func (nopStream) SetReadDeadline(time.Time) error { return nil }
 
 func AddPeerToSwitchPeerSet(sw *Switch, peer Peer) {
 	sw.peers.Add(peer) //nolint:errcheck // ignore error

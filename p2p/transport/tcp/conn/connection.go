@@ -62,8 +62,9 @@ const (
 //
 // Connection errors are communicated through the ErrorCh channel.
 //
-// Connection can be closed either by calling Close. If you need to flush all
-// pending messages before closing the connection, call FlushAndClose.
+// Connection can be closed either by calling Close or FlushAndClose. If you
+// need to flush all pending messages before closing the connection, call
+// FlushAndClose. Otherwise, call Close.
 type MConnection struct {
 	service.BaseService
 
@@ -353,9 +354,9 @@ func (c *MConnection) _recover() {
 }
 
 // thread-safe.
-func (c *MConnection) sendBytes(chID byte, msgBytes []byte, timeout time.Duration) error {
+func (c *MConnection) sendBytes(chID byte, msgBytes []byte, blocking bool) error {
 	if !c.IsRunning() {
-		return ErrNotRunning
+		return nil
 	}
 
 	// c.Logger.Debug("Send",
@@ -369,7 +370,7 @@ func (c *MConnection) sendBytes(chID byte, msgBytes []byte, timeout time.Duratio
 	if !ok {
 		panic(fmt.Sprintf("Unknown channel %X. Forgot to register?", chID))
 	}
-	if err := channel.sendBytes(msgBytes, timeout); err != nil {
+	if err := channel.sendBytes(msgBytes, blocking); err != nil {
 		c.Logger.Error("Send failed", "err", err)
 		return err
 	}
@@ -810,18 +811,16 @@ func (ch *stream) SetLogger(l log.Logger) {
 	ch.Logger = l
 }
 
-// Queues message to send to this channel.
-// Goroutine-safe
-// It returns ErrTimeout if bytes were not queued after timeout.
-// If timeout is zero, it will wait forever.
-func (ch *stream) sendBytes(bytes []byte, timeout time.Duration) error {
-	if timeout == 0 {
+// Queues message to send to this channel. Blocks if blocking is true.
+// thread-safe.
+func (ch *stream) sendBytes(bytes []byte, blocking bool) error {
+	if blocking {
 		select {
 		case ch.sendQueue <- bytes:
 			atomic.AddInt32(&ch.sendQueueSize, 1)
 			return nil
 		case <-ch.conn.Quit():
-			return ErrNotRunning
+			return nil
 		}
 	}
 
@@ -829,10 +828,10 @@ func (ch *stream) sendBytes(bytes []byte, timeout time.Duration) error {
 	case ch.sendQueue <- bytes:
 		atomic.AddInt32(&ch.sendQueueSize, 1)
 		return nil
+	default:
+		return ErrWriteQueueFull{}
 	case <-ch.conn.Quit():
-		return ErrNotRunning
-	case <-time.After(timeout):
-		return ErrTimeout
+		return nil
 	}
 }
 

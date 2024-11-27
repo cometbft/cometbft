@@ -57,8 +57,10 @@ type Peer interface {
 	SocketAddr() *na.NetAddr        // actual address of the socket
 
 	HasChannel(chID byte) bool // Does the peer implement this channel?
-	Send(e Envelope) bool      // Send a message to the peer, blocking version
-	TrySend(e Envelope) bool   // Send a message to the peer, non-blocking version
+	// Send a message to the peer, blocking version.
+	Send(e Envelope) error
+	// TrySend is a non-blocking version of Send.
+	TrySend(e Envelope) error
 
 	Set(key string, value any)
 	Get(key string) any
@@ -298,9 +300,7 @@ func (p *peer) OnStart() error {
 }
 
 // FlushStop mimics OnStop but additionally ensures that all successful
-// .Send() calls will get flushed before closing the connection.
-//
-// NOTE: it is not safe to call this method more than once.
+// Send calls will get flushed before closing the connection.
 func (p *peer) FlushStop() {
 	if err := p.FlushAndClose("stopping peer"); err != nil {
 		p.Logger.Error("Close", "err", err)
@@ -345,35 +345,34 @@ func (p *peer) SocketAddr() *na.NetAddr {
 	return p.peerConn.socketAddr
 }
 
-// Send sends the given envelope via the stream identified by e.ChannelID.
-// Returns false if the send queue is full after 10s.
+// Send sends the given envelope via the stream identified by e.ChannelID. It
+// blocks until the message is sent.
 //
-// thread safe.
-func (p *peer) Send(e Envelope) bool {
+// thread-safe.
+func (p *peer) Send(e Envelope) error {
+	stream, ok := p.streams[e.ChannelID]
+	if !ok {
+		// This should never happen.
+		return fmt.Errorf("stream %d not found", e.ChannelID)
+	}
+	return p.send(e.ChannelID, e.Message, stream.Write /* blocking */)
+}
+
+// TrySend tries to send the given envelope via the stream identified by e.ChannelID.
+// It's non-blocking and returns immediately if the send queue is full.
+//
+// thread-safe.
+func (p *peer) TrySend(e Envelope) error {
 	stream, ok := p.streams[e.ChannelID]
 	if !ok {
 		panic(fmt.Sprintf("stream %d not found", e.ChannelID))
 	}
-	return p.send(e.ChannelID, e.Message, stream, 10*time.Second)
+	return p.send(e.ChannelID, e.Message, stream.TryWrite /* non-blocking */)
 }
 
-// TrySend tries to send the given envelope the stream identified by e.ChannelID.
-// Returns false if the send queue is full after 100ms.
-//
-// thread safe.
-func (p *peer) TrySend(e Envelope) bool {
-	stream, ok := p.streams[e.ChannelID]
-	if !ok {
-		panic(fmt.Sprintf("stream %d not found", e.ChannelID))
-	}
-	return p.send(e.ChannelID, e.Message, stream, 100*time.Millisecond)
-}
-
-func (p *peer) send(streamID byte, msg proto.Message, stream transport.Stream, timeout time.Duration) bool {
+func (p *peer) send(streamID byte, msg proto.Message, writeFn func([]byte) (int, error)) error {
 	if !p.IsRunning() {
-		return false
-	} else if !p.HasChannel(streamID) {
-		return false
+		return ErrPeerNotRunning
 	}
 
 	msgType := getMsgType(msg)
@@ -383,23 +382,22 @@ func (p *peer) send(streamID byte, msg proto.Message, stream transport.Stream, t
 
 	msgBytes, err := proto.Marshal(msg)
 	if err != nil {
-		p.Logger.Error("proto.Marshal", "err", err, "streamID", streamID, "msgType", msgType)
-		return false
+		p.Logger.Error("proto.Marshal", "err", err)
+		return fmt.Errorf("proto.Marshal: %w", err)
 	}
 
-	_ = stream.SetWriteDeadline(time.Now().Add(timeout))
-
-	n, err := stream.Write(msgBytes)
+	n, err := writeFn(msgBytes)
 	if err != nil {
-		p.Logger.Error("Stream.Write", "err", err, "streamID", streamID, "msgType", msgType)
-		return false
+		p.Logger.Error("stream.(Try)Write", "err", err)
+		return fmt.Errorf("stream.(Try)Write: %w", err)
 	} else if n != len(msgBytes) {
-		panic("unimplemented")
+		p.Logger.Error("Incomplete write", "got", n, "wanted", len(msgBytes))
+		return fmt.Errorf("incomplete write: got %d, wanted %d", n, len(msgBytes))
 	}
 
 	p.Logger.Debug("Sent message", "streamID", streamID, "msgType", msgType)
 	p.pendingMetrics.AddPendingSendBytes(msgType, n)
-	return true
+	return nil
 }
 
 // Get the data for a given key.

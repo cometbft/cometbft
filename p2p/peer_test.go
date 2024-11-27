@@ -69,7 +69,7 @@ func TestPeerSend(t *testing.T) {
 		}
 	})
 
-	assert.True(t, p.Send(Envelope{ChannelID: testCh, Message: &p2p.Message{}}))
+	assert.Nil(t, p.Send(Envelope{ChannelID: testCh, Message: &p2p.Message{}}))
 }
 
 func createOutboundPeerAndPerformHandshake(
@@ -246,12 +246,15 @@ func (s mockStream) Write(b []byte) (n int, err error) {
 	return s.Conn.Write(b)
 }
 
+func (s mockStream) TryWrite(b []byte) (n int, err error) {
+	return s.Conn.Write(b)
+}
+
 func (mockStream) Close() error {
 	return nil
 }
-func (s mockStream) SetDeadline(t time.Time) error      { return s.Conn.SetReadDeadline(t) }
-func (s mockStream) SetReadDeadline(t time.Time) error  { return s.Conn.SetReadDeadline(t) }
-func (s mockStream) SetWriteDeadline(t time.Time) error { return s.Conn.SetWriteDeadline(t) }
+func (s mockStream) SetDeadline(t time.Time) error     { return s.Conn.SetReadDeadline(t) }
+func (s mockStream) SetReadDeadline(t time.Time) error { return s.Conn.SetReadDeadline(t) }
 
 type mockConnection struct {
 	net.Conn

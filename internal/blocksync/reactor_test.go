@@ -499,10 +499,11 @@ func (bcR *ByzantineReactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Pe
 	block, _ := bcR.store.LoadBlock(msg.Height)
 	if block == nil {
 		bcR.Logger.Info("Peer asking for a block we don't have", "src", src, "height", msg.Height)
-		return src.TrySend(p2p.Envelope{
+		err := src.TrySend(p2p.Envelope{
 			ChannelID: BlocksyncChannel,
 			Message:   &bcproto.NoBlockResponse{Height: msg.Height},
 		})
+		return err == nil
 	}
 
 	state, err := bcR.blockExec.Store().Load()
@@ -527,13 +528,14 @@ func (bcR *ByzantineReactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Pe
 		return false
 	}
 
-	return src.TrySend(p2p.Envelope{
+	err = src.TrySend(p2p.Envelope{
 		ChannelID: BlocksyncChannel,
 		Message: &bcproto.BlockResponse{
 			Block:     bl,
 			ExtCommit: extCommit.ToProto(),
 		},
 	})
+	return err == nil
 }
 
 // Receive implements Reactor by handling 4 types of messages (look below).
@@ -575,7 +577,7 @@ func (bcR *ByzantineReactor) Receive(e p2p.Envelope) {
 		}
 	case *bcproto.StatusRequest:
 		// Send peer our state.
-		e.Src.TrySend(p2p.Envelope{
+		_ = e.Src.TrySend(p2p.Envelope{
 			ChannelID: BlocksyncChannel,
 			Message: &bcproto.StatusResponse{
 				Height: bcR.store.Height(),

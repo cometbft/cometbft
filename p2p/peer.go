@@ -403,23 +403,21 @@ func (p *peer) send(streamID byte, msg proto.Message, sendFunc func([]byte) (int
 		msg = w.Wrap()
 	}
 
-	sLogger := p.Logger.With("streamID", streamID, "msgType", msgType)
-
 	msgBytes, err := proto.Marshal(msg)
 	if err != nil {
-		sLogger.Error("proto.Marshal", "err", err)
+		p.Logger.Error("proto.Marshal", "err", err, "streamID", streamID, "msgType", msgType)
 		return false
 	}
 
 	n, err := sendFunc(msgBytes)
 	if err != nil {
-		sLogger.Error("Stream.Write", "err", err)
+		p.Logger.Error("Stream.Write", "err", err, "streamID", streamID, "msgType", msgType)
 		return false
 	} else if n != len(msgBytes) {
 		panic("unimplemented")
 	}
 
-	sLogger.Debug("Sent message")
+	p.Logger.Debug("Sent message", "streamID", streamID, "msgType", msgType)
 	p.pendingMetrics.AddPendingSendBytes(msgType, n)
 	return true
 }

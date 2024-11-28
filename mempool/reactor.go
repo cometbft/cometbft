@@ -168,6 +168,7 @@ func (memR *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 		// adjust redundancy.
 		memR.router.resetRoutes(peer.ID())
 		memR.redundancyControl.triggerAdjustment()
+		memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
 	}
 }
 
@@ -204,12 +205,14 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 				// Disable route with tx's first sender as source and peer as target.
 				memR.router.disableRoute(senders[0], senderID)
 				memR.Logger.Debug("Disable route", "source", senders[0], "target", senderID)
+				memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
 			}
 
 		case *protomem.ResetRoute:
 			memR.Logger.Debug("Received Reset", "from", senderID)
 			if memR.router != nil {
 				memR.router.resetRandomRouteWithTarget(senderID)
+				memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
 			}
 
 		default:
@@ -510,6 +513,19 @@ func (r *gossipRouter) resetRandomRouteWithTarget(target nodekey.ID) {
 	}
 }
 
+// numRoutes returns the number of disabled routes in this node. Used for
+// metrics.
+func (r *gossipRouter) numRoutes() int {
+	r.mtx.RLock()
+	defer r.mtx.RUnlock()
+
+	count := 0
+	for _, targets := range r.disabledRoutes {
+		count += len(targets)
+	}
+	return count
+}
+
 type redundancyControl struct {
 	// Pre-computed upper and lower bounds of accepted redundancy.
 	lowerBound float64
@@ -569,6 +585,10 @@ func (rc *redundancyControl) controlLoop(memR *Reactor) {
 				// Unblock HaveTx messages.
 				rc.haveTxBlocked.Store(false)
 			}
+
+			// Update metrics.
+			memR.mempool.metrics.Redundancy.Set(redundancy)
+
 		case <-memR.Quit():
 			return
 		}

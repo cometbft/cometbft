@@ -21,6 +21,11 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+// A number in the open interval (0, 100) representing a percentage of
+// config.DOGTargetRedundancy. In the DOG protocol, it defines acceptable lower
+// and upper bounds for redundancy levels as a deviation from the target value.
+const TargetRedundancyDeltaPercent = 10
+
 // Reactor handles mempool tx broadcasting amongst peers.
 // It maintains a map from peer ID to counter, to prevent gossiping txs to the
 // peers you received it from.
@@ -33,7 +38,8 @@ type Reactor struct {
 	waitSyncCh chan struct{} // for signaling when to start receiving and sending txs
 
 	// DOG protocol: Control enabled/disabled routes for disseminating txs.
-	router *gossipRouter
+	router            *gossipRouter
+	redundancyControl *redundancyControl
 
 	// Semaphores to keep track of how many connections to peers are active for broadcasting
 	// transactions. Each semaphore has a capacity that puts an upper bound on the number of
@@ -76,6 +82,8 @@ func (memR *Reactor) OnStart() error {
 	}
 	if memR.config.DOGProtocolEnabled {
 		memR.router = newGossipRouter()
+		memR.redundancyControl = newRedundancyControl(memR.config)
+		go memR.redundancyControl.controlLoop(memR)
 	}
 	return nil
 }
@@ -156,8 +164,10 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 
 func (memR *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 	if memR.router != nil {
-		// Remove all routes with peer as source or target.
+		// Remove all routes with peer as source or target and immediately
+		// adjust redundancy.
 		memR.router.resetRoutes(peer.ID())
+		memR.redundancyControl.triggerAdjustment()
 	}
 }
 
@@ -249,6 +259,20 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 		switch {
 		case errors.Is(err, ErrTxInCache):
 			memR.Logger.Debug("Tx already exists in cache", "tx", txKey.Hash(), "sender", senderID)
+			if memR.redundancyControl != nil {
+				memR.redundancyControl.incDuplicateTxs()
+				if memR.redundancyControl.isHaveTxBlocked() {
+					return nil, err
+				}
+				ok := sender.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.HaveTx{TxKey: txKey[:]}})
+				if !ok {
+					memR.Logger.Error("Failed to send HaveTx message", "peer", senderID, "txKey", txKey)
+				} else {
+					memR.Logger.Debug("Sent HaveTx message", "tx", txKey.Hash(), "peer", senderID)
+					// Block HaveTx and restart timer, during which time, sending HaveTx is not allowed.
+					memR.redundancyControl.blockHaveTx()
+				}
+			}
 			return nil, err
 
 		case errors.As(err, &ErrMempoolIsFull{}):
@@ -260,6 +284,10 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 			memR.Logger.Info("Could not check tx", "tx", txKey.Hash(), "sender", senderID, "err", err)
 			return nil, err
 		}
+	}
+
+	if memR.redundancyControl != nil {
+		memR.redundancyControl.incFirstTimeTxs()
 	}
 
 	return reqRes, nil
@@ -480,4 +508,120 @@ func (r *gossipRouter) resetRandomRouteWithTarget(target nodekey.ID) {
 		randomSource := sourcesWithTarget[cmtrand.Intn(len(sourcesWithTarget))]
 		delete(r.disabledRoutes[randomSource], target)
 	}
+}
+
+type redundancyControl struct {
+	// Pre-computed upper and lower bounds of accepted redundancy.
+	lowerBound float64
+	upperBound float64
+
+	// Timer to adjust redundancy periodically.
+	adjustTicker   *time.Ticker
+	adjustInterval time.Duration
+
+	// Counters for calculating the redundancy level.
+	mtx          cmtsync.RWMutex
+	firstTimeTxs int64 // number of transactions received for the first time
+	duplicateTxs int64 // number of duplicate transactions
+
+	// If true, do not send HaveTx messages.
+	haveTxBlocked atomic.Bool
+}
+
+func newRedundancyControl(config *cfg.MempoolConfig) *redundancyControl {
+	adjustInterval := config.DOGAdjustInterval
+	targetRedundancyDeltaAbs := config.DOGTargetRedundancy * TargetRedundancyDeltaPercent / 100
+	return &redundancyControl{
+		lowerBound:     config.DOGTargetRedundancy - targetRedundancyDeltaAbs,
+		upperBound:     config.DOGTargetRedundancy + targetRedundancyDeltaAbs,
+		adjustTicker:   time.NewTicker(adjustInterval),
+		adjustInterval: adjustInterval,
+	}
+}
+
+func (rc *redundancyControl) controlLoop(memR *Reactor) {
+	for {
+		select {
+		case <-rc.adjustTicker.C:
+			// Compute current redundancy level and reset transaction counters.
+			redundancy := rc.currentRedundancy()
+			if redundancy < 0 {
+				// There were no transactions during the last iteration. Do not adjust.
+				continue
+			}
+
+			// If redundancy level is low, ask a random peer for more transactions.
+			if redundancy < rc.lowerBound {
+				memR.Logger.Debug("TX redundancy BELOW lower limit: increase it (send Reset)", "redundancy", redundancy)
+				// Send Reset message to random peer.
+				randomPeer := memR.Switch.Peers().Random()
+				if randomPeer != nil {
+					ok := randomPeer.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.ResetRoute{}})
+					if !ok {
+						memR.Logger.Error("Failed to send Reset message", "peer", randomPeer.ID())
+					}
+				}
+			}
+
+			// If redundancy level is high, ask peers for less txs.
+			if redundancy >= rc.upperBound {
+				memR.Logger.Debug("TX redundancy ABOVE upper limit: decrease it (unblock HaveTx)", "redundancy", redundancy)
+				// Unblock HaveTx messages.
+				rc.haveTxBlocked.Store(false)
+			}
+		case <-memR.Quit():
+			return
+		}
+	}
+}
+
+// currentRedundancy returns the current redundancy level and resets the
+// counters. If there are no transactions, return -1. If firstTimeTxs is 0,
+// return upperBound. If duplicateTxs is 0, return 0.
+func (rc *redundancyControl) currentRedundancy() float64 {
+	rc.mtx.Lock()
+	defer rc.mtx.Unlock()
+
+	if rc.firstTimeTxs+rc.duplicateTxs == 0 {
+		return -1
+	}
+
+	redundancy := rc.upperBound
+	if rc.firstTimeTxs != 0 {
+		redundancy = float64(rc.duplicateTxs) / float64(rc.firstTimeTxs)
+	}
+
+	// Reset counters.
+	rc.firstTimeTxs, rc.duplicateTxs = 0, 0
+
+	return redundancy
+}
+
+func (rc *redundancyControl) incDuplicateTxs() {
+	rc.mtx.Lock()
+	rc.duplicateTxs++
+	rc.mtx.Unlock()
+}
+
+func (rc *redundancyControl) incFirstTimeTxs() {
+	rc.mtx.Lock()
+	rc.firstTimeTxs++
+	rc.mtx.Unlock()
+}
+
+func (rc *redundancyControl) isHaveTxBlocked() bool {
+	return rc.haveTxBlocked.Load()
+}
+
+// blockHaveTx blocks sending HaveTx messages and restarts the timer that
+// adjusts redundancy.
+func (rc *redundancyControl) blockHaveTx() {
+	rc.haveTxBlocked.Store(true)
+	// Wait until next adjustment to check if HaveTx messages should be unblocked.
+	rc.adjustTicker.Reset(rc.adjustInterval)
+}
+
+func (rc *redundancyControl) triggerAdjustment() {
+	<-rc.adjustTicker.C
+	rc.adjustTicker.Reset(rc.adjustInterval)
 }

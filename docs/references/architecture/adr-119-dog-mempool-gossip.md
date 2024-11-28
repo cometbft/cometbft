@@ -310,7 +310,7 @@ of the interval, it takes a certain amount of time for the information to propag
 - The Entire network should use DOG. Otherwise the impact will be minimal. 
 
 
-> The protocol implicitly favors routes with low latency, by cutting routes to peers that send the duplicate transaction at a later time.
+- The protocol implicitly favors faster routes, by cutting routes to peers that send the duplicate transaction at a later time.
 
 - Is this true? We don't cut ties with the sender of the transaction, rather we are telling it to cut ties with some other node that has sent us the tx before that. 
 So sender could still forward us transactions but not the ones received from this particular node. 

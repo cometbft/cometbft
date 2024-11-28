@@ -41,8 +41,8 @@ was received via RPC, it is gossiped to all connected peers. Transactions receiv
 are forwarded to all the peers which have not already sent this particular transaction.
 
 This is enabled by CometBFT keeping the ID of each peer that has sent a transaction.
-This does not prevent a node to send the transaction to a node that has sent it to the 
-sender, thus creating a lot of duplicates. 
+This does not prevent a node to send the transaction to a node that has already
+received this transactions from its peers, thus creating a lot of duplicates. 
 
 This is the exact problem DOG was designed to tackle.
 

@@ -16,7 +16,7 @@ module dog {
     type Message =
         | TxMsg(TX)
         | HaveTxMsg(TxID)
-        | ResetMsg
+        | ResetRouteMsg
 
     //--------------------------------------------------------------------------
     // Parameters
@@ -60,7 +60,10 @@ module dog {
     pure def unblockHaveTx(_rc) = { isHaveTxBlocked: false, ..._rc }
     pure def blockHaveTx(_rc) = { isHaveTxBlocked: true, ..._rc }
     pure def redundancy(_rc) =
-        if (_rc.firstTimeTxs == 0) upperBound else _rc.duplicateTxs / _rc.firstTimeTxs
+        if (_rc.firstTimeTxs == 0) 
+            upperBound 
+        else 
+            _rc.duplicateTxs / _rc.firstTimeTxs
     pure def controllerActions(_rc) =
         if (_rc.firstTimeTxs + _rc.duplicateTxs == 0)
             (_rc, false)
@@ -84,11 +87,11 @@ module dog {
         nondet randomPeer = oneOf(node.Peers())
         val res = node.RC().controllerActions()
         val updatedNodeRC = res._1
-        val sendReset = res._2
+        val sendResetRoute = res._2
         all {
             incomingMsgs' = 
-                if (sendReset) 
-                    node.send(incomingMsgs, randomPeer, ResetMsg)
+                if (sendResetRoute) 
+                    node.send(incomingMsgs, randomPeer, ResetRouteMsg)
                 else incomingMsgs,
             rc' = rc.put(node, updatedNodeRC.resetCounters()),
         }
@@ -122,7 +125,7 @@ module dog {
         match msg {
         | TxMsg(tx) => node.tryAddTx(_incomingMsgs, Some(sender), tx)
         | HaveTxMsg(txID) => node.handleHaveTxMessage(_incomingMsgs, sender, txID)
-        | ResetMsg => node.handleResetMessage(_incomingMsgs, sender)
+        | ResetRouteMsg => node.handleResetRouteMessage(_incomingMsgs, sender)
         }
     action handleHaveTxMessage(node, _incomingMsgs, sender, txID) = all {
         val txSenders = node.sendersOf(txID)
@@ -134,7 +137,7 @@ module dog {
         senders' = senders,
         rc' = rc,
     }
-    action handleResetMessage(node, _incomingMsgs, sender) = all {
+    action handleResetRouteMessage(node, _incomingMsgs, sender) = all {
         nondet randomRoute = oneOf(node.DisabledRoutes().routesWithTarget(sender))
         dr' = dr.update(node, drs => drs.enableRoute(randomRoute)),
         incomingMsgs' = _incomingMsgs,

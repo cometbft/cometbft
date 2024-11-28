@@ -56,14 +56,14 @@ type Message =
         | HaveTxMsg(TxID)
     ```
 
-* A node sends a `ResetMsg` message to signal that it is not receiving enough transactions. The
+* A node sends a `ResetRouteMsg` message to signal that it is not receiving enough transactions. The
   receiver should, if possible, re-enable some route to the node.
     ```bluespec "messages" +=
-        | ResetMsg
+        | ResetRouteMsg
     ```
 
-Note that the size of `HaveTxMsg` and `ResetMsg` is negligible compared to `TxMsg`, which carries a
-full transaction.
+Note that the size of `HaveTxMsg` and `ResetRouteMsg` is negligible compared to `TxMsg`, which
+carries a full transaction.
 
 ## Dynamic Routing
 
@@ -110,9 +110,9 @@ pure def resetRoutes(routes, peer) =
 
 Each node implements a Redundancy Controller (RC) with a closed-loop feedback mechanism, commonly
 used in control systems for dynamic self-regulation. The controller periodically monitors the level
-of redundant transactions received and adjusts accordingly by sending `HaveTx` and `Reset` messages
-to peers. This ensures the redundancy level remains within predefined bounds, adapting to changes in
-network conditions in real time.
+of redundant transactions received and adjusts accordingly by sending `HaveTx` and `ResetRoute`
+messages to peers. This ensures the redundancy level remains within predefined bounds, adapting to
+changes in network conditions in real time.
 ```bluespec "rc" +=
 var rc: NodeID -> RedundancyController
 ```
@@ -170,11 +170,11 @@ transactions).
 
 Function `controllerActions` computes the current `redundancy` level and determines which actions
 the controller will take by returning an updated controller state and whether the controller should
-send a `Reset` message:
+send a `ResetRoute` message:
 - If no transactions were received during the last iteration, the controller should not react in
   order to preserve the current state of the routes.
-- If `redundancy` is too low, the controller should request more transactions by sending a `Reset`
-  message to a random peer.
+- If `redundancy` is too low, the controller should request more transactions by sending a
+  `ResetRoute` message to a random peer.
 - If `redundancy` is too high, the controller should signal peers to reduce traffic by temporarily
   allowing to reply with a `HaveTx` message the next time the node receives a duplicate transaction.
 - If `redundancy` is within acceptable limits, the controller takes no action.
@@ -191,10 +191,10 @@ pure def controllerActions(_rc) =
 ```
 Note that if the target redundancy is 0 (see [parameters](#parameters)), the lower and upper bounds
 are also equal to 0. Then `controllerActions` will be able to unblock `HaveTx` but it will never
-send `Reset` messages.
+send `ResetRoute` messages.
 
 An important aspect of the controller actions is that, on each iteration, the controller allows the
-node to send at most one `HaveTx` or one `Reset` message, as explained next.
+node to send at most one `HaveTx` or one `ResetRoute` message, as explained next.
 
 ### When to adjust
 
@@ -203,8 +203,8 @@ The Redundancy Controller runs in a separate thread a control loop that periodic
 
 The `adjustRedundancy` action:
 1. First it calls `controllerActions` to compute the current redundancy level and determines the
-next steps such as unblocking `HaveTx` messages or sending a `Reset` message to a randomly chosen
-peer.
+next steps such as unblocking `HaveTx` messages or sending a `ResetRoute` message to a randomly
+chosen peer.
 2. After making the adjustment, it resets the transaction counters so that redundancy is computed
 independently of past measurements.
 ```bluespec "actions" +=
@@ -212,11 +212,11 @@ action adjustRedundancy(node) =
     nondet randomPeer = oneOf(node.Peers())
     val res = node.RC().controllerActions()
     val updatedNodeRC = res._1
-    val sendReset = res._2
+    val sendResetRoute = res._2
     all {
         incomingMsgs' = 
-            if (sendReset) 
-                node.send(incomingMsgs, randomPeer, ResetMsg)
+            if (sendResetRoute) 
+                node.send(incomingMsgs, randomPeer, ResetRouteMsg)
             else incomingMsgs,
         rc' = rc.put(node, updatedNodeRC.resetCounters()),
     }
@@ -225,9 +225,9 @@ action adjustRedundancy(node) =
 Adjustments should be paced by a timer to account for message propagation delays. If redundancy
 adjustments are made too frequently, a node risks isolation as all peers may cut routes prematurely.
 The timer should align with the network’s maximum round-trip time (RTT) to allow `HaveTx` and
-`Reset` messages to propagate and take effect before initiating further adjustments. Consequently,
-the controller is designed to send at most one control message per iteration in order to prevent
-over-correction.
+`ResetRoute` messages to propagate and take effect before initiating further adjustments.
+Consequently, the controller is designed to send at most one control message per iteration in order
+to prevent over-correction.
 
 For example, suppose node `A` receives a duplicate transaction from `B` and replies with a `HaveTx`
 message. Until `B` receives and process the `HaveTx` message, thus cutting a route to `A`, it will
@@ -241,9 +241,9 @@ up cutting all routes to it. See the `adjustInterval` [parameter](#parameters) f
 > introduces vulnerabilities that could destabilize nodes. For example, an attacker could exploit
 > this mechanism by sending bursts of numerous small transactions to a node, causing the node to
 > trigger `adjustRedundancy` too frequently. This results in the near-continuous activation of
-> `HaveTx` messages, leading nodes to repeatedly alternating between sending `HaveTx` and `Reset`
-> messages. On testnets, we have observed that nodes continue to operate normally, except that
-> bandwidth does not decrease as expected.
+> `HaveTx` messages, leading nodes to repeatedly alternating between sending `HaveTx` and
+> `ResetRoute` messages. On testnets, we have observed that nodes continue to operate normally,
+> except that bandwidth does not decrease as expected.
 
 ## Parameters
 
@@ -255,12 +255,12 @@ The following parameters must be configured by each node at initialization.
     const TargetRedundancy: int
     ```
     A target equal to 0 partially disables the Redundancy Control mechanism: the controller can
-    block `HaveTx` messages but cannot send `Reset` messages. Zero redundancy minimizes bandwidth
-    usage, achieving the lowest possible message overhead. In non-Byzantines networks, this is the
-    best possible scenario. However, in Byzantine networks it could potentially render nodes
-    isolated from transaction data. Therefore, the target should be set to a value greater than 0.
-    Experimental results suggest a value between 0.5 and 1, which is a safe number that does not
-    result in excessive duplicate transactions.
+    block `HaveTx` messages but cannot send `ResetRoute` messages. Zero redundancy minimizes
+    bandwidth usage, achieving the lowest possible message overhead. In non-Byzantines networks,
+    this is the best possible scenario. However, in Byzantine networks it could potentially render
+    nodes isolated from transaction data. Therefore, the target should be set to a value greater
+    than 0. Experimental results suggest a value between 0.5 and 1, which is a safe number that does
+    not result in excessive duplicate transactions.
 
     > Note: `TargetRedundancy` should ideally be specified as a real number, but reals are not
     > currently supported by Quint.
@@ -292,7 +292,7 @@ The following parameters must be configured by each node at initialization.
     ```bluespec "params" +=
     const adjustInterval: int
     ```
-	This interval should allow sufficient time for control messages (`HaveTx` and `Reset`) to
+	This interval should allow sufficient time for control messages (`HaveTx` and `ResetRoute`) to
 	propagate through the network and take effect.
 	
     A minimum value for `adjustInterval` depends on the network’s round-trip time (RTT). Assuming that
@@ -480,7 +480,7 @@ action handleMessage(node, _incomingMsgs, sender, msg) =
     match msg {
     | TxMsg(tx) => node.tryAddTx(_incomingMsgs, Some(sender), tx)
     | HaveTxMsg(txID) => node.handleHaveTxMessage(_incomingMsgs, sender, txID)
-    | ResetMsg => node.handleResetMessage(_incomingMsgs, sender)
+    | ResetRouteMsg => node.handleResetRouteMessage(_incomingMsgs, sender)
     }
 ```
 
@@ -504,15 +504,17 @@ action handleMessage(node, _incomingMsgs, sender, msg) =
     The list of `tx`’s senders contains the node IDs from which `node` received the transaction,
     ordered by the arrival time of the corresponding messages. To avoid disabling the routes from
     all those senders at once, the protocol picks the first sender in the list, which is the first
-    peer from which `node` received `tx` for the first time. Subsequent entries in the list are nodes whose transaction
-    messages arrived later as duplicates. As such, most routes from those peers to `node` will
-    eventually be disabled, with most traffic coming primarily from the first peer.
+    peer from which `node` received `tx` for the first time. Subsequent entries in the list are
+    nodes whose transaction messages arrived later as duplicates. As such, most routes from those
+    peers to `node` will eventually be disabled, with most traffic coming primarily from the first
+    peer.
 
-* **Handling Reset messages**
+* **Handling ResetRoute messages**
 
-    Upon receiving `ResetMsg`, `node` re-enables a random disabled route that has `sender` as target.
+    Upon receiving `ResetRouteMsg`, `node` re-enables a random disabled route that has `sender` as
+    target.
     ```bluespec "actions" +=
-    action handleResetMessage(node, _incomingMsgs, sender) = all {
+    action handleResetRouteMessage(node, _incomingMsgs, sender) = all {
         nondet randomRoute = oneOf(node.DisabledRoutes().routesWithTarget(sender))
         dr' = dr.update(node, drs => drs.enableRoute(randomRoute)),
         incomingMsgs' = _incomingMsgs,
@@ -525,9 +527,9 @@ action handleMessage(node, _incomingMsgs, sender, msg) =
     This will allow some traffic to flow again to `sender`. Other nodes will dynamically adapt to
     the new traffic, closing routes when needed.
 
-    The protocol re-enables only one route per `Reset` message to allow traffic to `sender` to
-    increase gradually. If that peer still needs more transactions, it will send another `Reset`
-    message at a later time.
+    The protocol re-enables only one route per `ResetRoute` message to allow traffic to `sender` to
+    increase gradually. If that peer still needs more transactions, it will send another
+    `ResetRoute` message at a later time.
 
 ### Transaction dissemination
 

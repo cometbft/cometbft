@@ -1,13 +1,5 @@
 prometheus = true
-upgrade_version = "cometbft/e2e-node:local-version"
 [node.validator00]
-version = "cometbft/e2e-node:latest"
 [node.validator01]
-version = "cometbft/e2e-node:latest"
-perturb = ["upgrade"]
 [node.validator02]
-version = "cometbft/e2e-node:latest"
-perturb = ["upgrade"]
 [node.validator03]
-version = "cometbft/e2e-node:latest"
-perturb = ["upgrade"]

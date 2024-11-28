@@ -265,7 +265,7 @@ The following parameters must be configured by each node at initialization.
     > Note: `TargetRedundancy` should ideally be specified as a real number, but reals are not
     > currently supported by Quint.
 
-* `TargetRedundancyDeltaPercent`: a percentage (a number in the range `[0, 100)`) of
+* `TargetRedundancyDeltaPercent`: a percentage (a number in the open interval `(0, 100)`) of
   `TargetRedundancy` that defines acceptable lower and upper bounds for redundancy levels as a
   deviation from the target value.
     ```bluespec "params" +=

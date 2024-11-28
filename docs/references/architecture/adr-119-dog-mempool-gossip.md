@@ -12,7 +12,9 @@ Accepted: [\#3297][tracking-issue].
 ## Context
 
 The current transaction dissemination protocol of the mempool sends each received 
-transaction to all the peers a node is connected to, except for the sender. 
+transaction to all the peers a node is connected to, except for the sender.
+In case transactions were received via RPC, they are broadcasted to all
+connected peers. 
 While resilient to Byzantine attacks, this type of transaction gossiping is 
 causing a lot of network traffic and nodes receiving duplicate transactions
 very frequently. 
@@ -57,7 +59,7 @@ Efforts to port the CAT mempool to CometBFT were documented in [\#2027]. Experim
 
 ### Limiting the number of peers a transaction is forwarded to
 
-CometBFT allowes operators to configure `p2p.experimental_max_gossip_connections_to_non_persistent_peers` and `p2p.experimental_max_gossip_connections_to_persistent_peers`  as a maximum number of peers to send  transactions to. 
+CometBFT allows operators to configure `p2p.experimental_max_gossip_connections_to_non_persistent_peers` and `p2p.experimental_max_gossip_connections_to_persistent_peers`  as a maximum number of peers to send  transactions to. 
 This reduces bandwitdth compared to when they are disabled but there is no rule to determine which peers transactions
 are not forwarded to. DOG can be looked at as an enahanced, more informed version of this protocol.
 
@@ -104,7 +106,7 @@ The redundancy is set to `1` and impacts the gossiping of transactions as follow
     enableRouteDisabling() 
 ```
 
-The number of unique and duplicate transactions is upadated as transactions come in and,
+The number of unique and duplicate transactions is updated as transactions come in and,
 periodically (every `1s`), DOG recomputes the redundnacy of the system. 
 
 A redundancy of `1` implies that we allow for each unoque we tolerate a duplicate of the same transaction.
@@ -203,8 +205,8 @@ When a peer is removed, we remove any existing entries related to this peer from
 map and explicitly trigger redundancy re-adjustment. The later is not strictly needed, but 
 can lead to quicker propagation of this information through the network.
 
-Note that we had concidered a scenario where, upon removing a peer, a node sends `ResetRoute` messages to all its peers. 
-This lead to routes beeing disabled too many times, and the process of stabilizing redundancy would be re-triggered
+Note that we had considered a scenario where, upon removing a peer, a node sends `ResetRoute` messages to all its peers. 
+This lead to routes being disabled too many times, and the process of stabilizing redundancy would be re-triggered
 too frequently. The adapted logic relies in the redundancy controller to decide whether a `ResetRoute` 
 message should be sent. 
 
@@ -270,7 +272,7 @@ The only reason for this is the incompatibility of DOG with the existing experim
 that disables sending transactions to all peers. 
 
 
-The [specification]() of the protocol introduces 3 additonal variables. 
+The [specification]() of the protocol introduces 3 additional variables. 
 In the first implementation of the protocol, we were inclined to expose them as configuration parameters.
 
 Part of the work on the protocol was extensive testing of its performance and impact on the network, as well 
@@ -298,7 +300,7 @@ of acceptable redundancy levels. The actual redundancy will be: `redundancy +- r
 did not lead to a visible reduction in redundancy, while slightly increasing the number of control messages sent. 
 We have therefore opted to not reduce this value further. 
 
-- `config.AdjustmentInterval: time.Duration`: Set to `1s`. Indicates how often the redundancy controler readjusts 
+- `config.AdjustmentInterval: time.Duration`: Set to `1s`. Indicates how often the redundancy controller readjusts 
 the redundancy and has a chance to trigger sending of `HaveTx` or `ResetRoute` messages. As with the delta, we 
 have not observed a reduction in redundancy due to a lower interval. Most likely due to the fact that, regardless
 of the interval, it takes a certain amount of time for the information to propagate through the network. 
@@ -333,7 +335,7 @@ to behave correctly. It should however not be used in combination with the param
 
 ### Neutral
 
-- At this point, DOG cannot be fine tuned with too many parameters. The reason for this is that the protocol was very resilient based on all our tests. But this is something that might be revisted when users start using it in production. 
+- At this point, DOG cannot be fine tuned with too many parameters. The reason for this is that the protocol was very resilient based on all our tests. But this is something that might be revisited when users start using it in production. 
 - Mixed networks are supported, nodes not having DOG enabled will not receive the new messages related to the protocol. But the network will not benefit from the protocol as expected. 
 
 ## References

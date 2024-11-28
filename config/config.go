@@ -991,6 +991,22 @@ type MempoolConfig struct {
 	// Note: Enabling this feature may introduce potential delays in transaction processing due to blocking behavior.
 	// Use this feature with caution and consider the impact on transaction processing performance.
 	ExperimentalPublishEventPendingTx bool `mapstructure:"experimental_publish_event_pending_tx"`
+
+	// When using the Flood mempool type, enable the DOG gossip protocol to
+	// reduce network bandwidth on transaction dissemination (for details, see
+	// specs/mempool/gossip/).
+	DOGProtocolEnabled bool `mapstructure:"dog_protocol_enabled"`
+
+	// Used by the DOG protocol to set the desired transaction redundancy level
+	// for the node. For example, a redundancy of 0.5 means that, for every two
+	// first-time transactions received, the node will receive one duplicate
+	// transaction.
+	DOGTargetRedundancy float64 `mapstructure:"dog_target_redundancy"`
+
+	// Used by the DOG protocol to set how often it will attempt to adjust the
+	// redundancy level. The higher the value, the longer it will take the node
+	// to reduce bandwidth and converge to a stable redundancy level.
+	DOGAdjustInterval time.Duration `mapstructure:"dog_adjust_interval"`
 }
 
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool.
@@ -1008,6 +1024,9 @@ func DefaultMempoolConfig() *MempoolConfig {
 		CacheSize:   10000,
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: 0,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    0,
+		DOGProtocolEnabled:  true,
+		DOGTargetRedundancy: 0.5,
+		DOGAdjustInterval:   1000 * time.Millisecond,
 	}
 }
 
@@ -1057,6 +1076,28 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 		if cfg.MaxTxBytes == 0 {
 			return cmterrors.ErrNegativeOrZeroField{Field: "max_tx_bytes"}
 		}
+	}
+
+	// DOG gossip protocol
+	if cfg.Type != MempoolTypeFlood && cfg.DOGProtocolEnabled {
+		return cmterrors.ErrWrongField{
+			Field: "dog_protocol_enabled",
+			Err:   errors.New("DOG protocol only works with the Flood mempool type"),
+		}
+	}
+	if cfg.DOGProtocolEnabled &&
+		(cfg.ExperimentalMaxGossipConnectionsToPersistentPeers > 0 ||
+			cfg.ExperimentalMaxGossipConnectionsToNonPersistentPeers > 0) {
+		return cmterrors.ErrWrongField{
+			Field: "dog_protocol_enabled",
+			Err:   errors.New("DOG protocol is not compatible with experimental_max_gossip_connections_to_*_peers feature"),
+		}
+	}
+	if cfg.DOGTargetRedundancy <= 0 {
+		return cmterrors.ErrNegativeOrZeroField{Field: "target_redundancy"}
+	}
+	if cfg.DOGAdjustInterval.Milliseconds() < 1000 {
+		return errors.New("DOG protocol requires the adjustment interval to be higher than 1000ms")
 	}
 
 	return nil

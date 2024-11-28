@@ -14,6 +14,7 @@ type PebbleDB struct {
 	db *pebble.DB
 }
 
+// compile-time check: does *PebbleDB satisfy the DB interface?
 var _ DB = (*PebbleDB)(nil)
 
 // NewPebbleDB returns a new PebbleDB instance using the default options.
@@ -46,6 +47,7 @@ func (pDB *PebbleDB) DB() *pebble.DB {
 // Get fetches the value of the given key, or nil if it does not exist.
 // It is safe to modify the contents of key and of the returned slice after Get
 // returns.
+//
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) Get(key []byte) ([]byte, error) {
 	if len(key) == 0 {
@@ -57,7 +59,7 @@ func (pDB *PebbleDB) Get(key []byte) ([]byte, error) {
 		if err == pebble.ErrNotFound {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("fetching value for key %s: %w", key, err)
+		return nil, fmt.Errorf("fetching value from the DB for key %X: %w", key, err)
 	}
 	defer closer.Close()
 
@@ -69,6 +71,7 @@ func (pDB *PebbleDB) Get(key []byte) ([]byte, error) {
 
 // Has returns true if the key exists in the database.
 // It is safe to modify the contents of key after Has returns.
+//
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) Has(key []byte) (bool, error) {
 	if len(key) == 0 {
@@ -77,7 +80,7 @@ func (pDB *PebbleDB) Has(key []byte) (bool, error) {
 
 	bytesPeb, err := pDB.Get(key)
 	if err != nil {
-		return false, fmt.Errorf("checking if key %s exists: %w", key, err)
+		return false, fmt.Errorf("checking if key %X exists in the DB: %w", key, err)
 	}
 
 	return bytesPeb != nil, nil
@@ -131,7 +134,7 @@ func (pDB *PebbleDB) setWithOpts(
 
 	err := pDB.db.Set(key, value, writeOpts)
 	if err != nil {
-		return fmt.Errorf("setting value %s\nfor key %s: %w", value, key, err)
+		return fmt.Errorf("setting (k,v)=( %X , %X ) to DB: %w", value, key, err)
 	}
 
 	return nil

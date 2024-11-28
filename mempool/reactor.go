@@ -81,11 +81,22 @@ func (memR *Reactor) StreamDescriptors() []p2p.StreamDescriptor {
 		},
 	}
 
+	key := types.Tx(largestTx).Key()
+	haveTxMsg := protomem.Message{
+		Sum: &protomem.Message_HaveTx{HaveTx: &protomem.HaveTx{TxKey: key[:]}},
+	}
+
 	return []p2p.StreamDescriptor{
 		&tcpconn.ChannelDescriptor{
 			ID:                  MempoolChannel,
 			Priority:            5,
 			RecvMessageCapacity: batchMsg.Size(),
+			MessageTypeI:        &protomem.Message{},
+		},
+		&tcpconn.ChannelDescriptor{
+			ID:                  MempoolControlChannel,
+			Priority:            10,
+			RecvMessageCapacity: haveTxMsg.Size(),
 			MessageTypeI:        &protomem.Message{},
 		},
 	}

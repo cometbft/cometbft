@@ -643,7 +643,7 @@ func (sw *Switch) acceptRoutine() {
 			break
 		}
 
-		nodeInfo, err := handshake(sw.nodeInfo, conn, sw.config.HandshakeTimeout)
+		nodeInfo, err := handshake(sw.nodeInfo, conn.HandshakeStream(), sw.config.HandshakeTimeout)
 		if err != nil {
 			errRejected, ok := err.(ErrRejected)
 			if ok && errRejected.IsSelf() {
@@ -660,6 +660,8 @@ func (sw *Switch) acceptRoutine() {
 				"err", errRejected,
 				"numPeers", sw.peers.Size(),
 			)
+
+			_ = conn.Close(err.Error())
 
 			continue
 		}
@@ -687,6 +689,9 @@ func (sw *Switch) acceptRoutine() {
 					"max", sw.config.MaxNumInboundPeers,
 				)
 
+				// XXX: closing conn here leads to TestSwitchAcceptRoutine failure.
+				// _ = conn.Close("already have enough inbound peers")
+
 				continue
 			}
 		}
@@ -695,6 +700,10 @@ func (sw *Switch) acceptRoutine() {
 			if p.IsRunning() {
 				_ = p.Stop()
 			}
+			// XXX: closing conn here leads to TestSwitchAcceptRoutine failure.
+			// } else {
+			// 	_ = conn.Close(err.Error())
+			// }
 			sw.Logger.Info(
 				"Ignoring inbound connection: error while adding peer",
 				"peer", addr,
@@ -732,7 +741,7 @@ func (sw *Switch) addOutboundPeerWithConfig(
 		return err
 	}
 
-	nodeInfo, err := handshake(sw.nodeInfo, conn, sw.config.HandshakeTimeout)
+	nodeInfo, err := handshake(sw.nodeInfo, conn.HandshakeStream(), sw.config.HandshakeTimeout)
 	if err != nil {
 		sw.Logger.Error("Handshake failed", "peer", addr, "err", err)
 		errRejected, ok := err.(ErrRejected)

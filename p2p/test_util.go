@@ -123,11 +123,7 @@ func Connect2Switches(switches []*Switch, i, j int) {
 	go func() {
 		mconn := tcpconn.NewMConnection(c1, tcpconn.DefaultMConnConfig())
 		mconn.SetLogger(log.TestingLogger().With("mconn", i))
-		err := mconn.Start()
-		if err != nil {
-			panic(err)
-		}
-		err = switchI.addPeerWithConnection(mconn)
+		err := switchI.addPeerWithConnection(mconn)
 		if err != nil {
 			panic(err)
 		}
@@ -136,11 +132,7 @@ func Connect2Switches(switches []*Switch, i, j int) {
 	go func() {
 		mconn := tcpconn.NewMConnection(c2, tcpconn.DefaultMConnConfig())
 		mconn.SetLogger(log.TestingLogger().With("mconn", j))
-		err := mconn.Start()
-		if err != nil {
-			panic(err)
-		}
-		err = switchJ.addPeerWithConnection(mconn)
+		err := switchJ.addPeerWithConnection(mconn)
 		if err != nil {
 			panic(err)
 		}
@@ -168,11 +160,7 @@ func ConnectStarSwitches(c int) func([]*Switch, int, int) {
 		go func() {
 			mconn := tcpconn.NewMConnection(c1, tcpconn.DefaultMConnConfig())
 			mconn.SetLogger(log.TestingLogger().With("mconn", i))
-			err := mconn.Start()
-			if err != nil {
-				panic(err)
-			}
-			err = switchI.addPeerWithConnection(mconn)
+			err := switchI.addPeerWithConnection(mconn)
 			if err != nil {
 				panic(err)
 			}
@@ -181,11 +169,7 @@ func ConnectStarSwitches(c int) func([]*Switch, int, int) {
 		go func() {
 			mconn := tcpconn.NewMConnection(c2, tcpconn.DefaultMConnConfig())
 			mconn.SetLogger(log.TestingLogger().With("mconn", j))
-			err := mconn.Start()
-			if err != nil {
-				panic(err)
-			}
-			err = switchJ.addPeerWithConnection(mconn)
+			err := switchJ.addPeerWithConnection(mconn)
 			if err != nil {
 				panic(err)
 			}
@@ -203,7 +187,7 @@ func (sw *Switch) addPeerWithConnection(conn transport.Conn) error {
 		}
 	}
 
-	ni, err := handshake(sw.nodeInfo, conn, time.Second)
+	ni, err := handshake(sw.nodeInfo, conn.HandshakeStream(), time.Second)
 	if err != nil {
 		closeConn(err)
 		return err

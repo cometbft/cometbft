@@ -189,7 +189,7 @@ func (mt *MultiplexTransport) Dial(addr na.NetAddr) (transport.Conn, error) {
 
 	go mt.cleanupConn(c.RemoteAddr(), mconn.Quit())
 
-	return mconn, mconn.Start()
+	return mconn, nil
 }
 
 func (mt *MultiplexTransport) Close() error {
@@ -285,7 +285,6 @@ func (mt *MultiplexTransport) acceptPeers() {
 					netAddr = na.New(id, addr)
 					mconn.SetLogger(mt.logger.With("remote", netAddr))
 					go mt.cleanupConn(addr, mconn.Quit())
-					err = mconn.Start()
 				}
 			}
 

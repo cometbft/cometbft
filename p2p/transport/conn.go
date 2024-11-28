@@ -10,7 +10,8 @@ import (
 // on multiple streams.
 type Conn interface {
 	// OpenStream opens a new stream on the connection with an optional
-	// description.
+	// description. If you're using tcp.MultiplexTransport, all streams must be
+	// registered in advance.
 	OpenStream(streamID byte, desc any) (Stream, error)
 
 	// LocalAddr returns the local network address, if known.
@@ -35,6 +36,9 @@ type Conn interface {
 
 	// ErrorCh returns a channel that will receive errors from the connection.
 	ErrorCh() <-chan error
+
+	// HandshakeStream returns the stream to be used for the handshake.
+	HandshakeStream() HandshakeStream
 }
 
 // Stream is the interface implemented by QUIC streams or multiplexed TCP connection.
@@ -81,4 +85,10 @@ type SendStream interface {
 type WriteError interface {
 	error
 	Full() bool // Is the error due to the send queue being full?
+}
+
+// HandshakeStream is a stream that is used for the handshake.
+type HandshakeStream interface {
+	SetDeadline(t time.Time) error
+	io.ReadWriter
 }

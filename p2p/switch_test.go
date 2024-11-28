@@ -4,6 +4,7 @@ import (
 	stdbytes "bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -674,9 +675,7 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 		peer := newRemoteTCPPeer()
 		peers = append(peers, peer)
 		peer.Start()
-		c, err := peer.Dial(sw.NetAddr())
-		require.NoError(t, err)
-		stream, err := c.OpenStream(testCh, nil)
+		_, err := peer.Dial(sw.NetAddr())
 		require.NoError(t, err)
 		// spawn a reading routine to prevent connection from closing
 		go func(s transport.Stream) {
@@ -687,7 +686,7 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 					return
 				}
 			}
-		}(stream)
+		}(peer.testStream)
 	}
 	time.Sleep(100 * time.Millisecond)
 	assert.Equal(t, cfg.MaxNumInboundPeers, sw.Peers().Size())
@@ -695,23 +694,19 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 	// 2. check we close new connections if we already have MaxNumInboundPeers peers
 	peer := newRemoteTCPPeer()
 	peer.Start()
-	conn, err := peer.Dial(sw.NetAddr())
-	require.NoError(t, err)
-	stream, err := conn.OpenStream(testCh, nil)
+	_, err = peer.Dial(sw.NetAddr())
 	require.NoError(t, err)
 	// check conn is closed
 	one := make([]byte, 1)
-	_ = stream.SetReadDeadline(time.Now().Add(10 * time.Millisecond))
-	_, err = stream.Read(one)
+	_ = peer.testStream.SetReadDeadline(time.Now().Add(10 * time.Millisecond))
+	_, err = peer.testStream.Read(one)
 	require.Error(t, err)
 	assert.Equal(t, cfg.MaxNumInboundPeers, sw.Peers().Size())
 	peer.Stop()
 
 	// 3. check we connect to unconditional peers despite the limit.
 	for _, peer := range unconditionalPeers {
-		c, err := peer.Dial(sw.NetAddr())
-		require.NoError(t, err)
-		stream, err := c.OpenStream(testCh, nil)
+		_, err := peer.Dial(sw.NetAddr())
 		require.NoError(t, err)
 		// spawn a reading routine to prevent connection from closing
 		go func(s transport.Stream) {
@@ -722,7 +717,7 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 					return
 				}
 			}
-		}(stream)
+		}(peer.testStream)
 	}
 	time.Sleep(10 * time.Millisecond)
 	assert.Equal(t, cfg.MaxNumInboundPeers+unconditionalPeersNum, sw.Peers().Size())
@@ -934,8 +929,9 @@ func TestSwitchRemovalErr(t *testing.T) {
 }
 
 type remoteTCPPeer struct {
-	privKey   crypto.PrivKey
-	transport *tcp.MultiplexTransport
+	privKey    crypto.PrivKey
+	transport  *tcp.MultiplexTransport
+	testStream transport.Stream
 }
 
 func newRemoteTCPPeer() *remoteTCPPeer {
@@ -989,10 +985,23 @@ func (rp *remoteTCPPeer) Dial(addr *na.NetAddr) (transport.Conn, error) {
 		return nil, err
 	}
 
-	_, err = handshake(rp.nodeInfo(), c, time.Second)
+	_, err = handshake(rp.nodeInfo(), c.HandshakeStream(), time.Second)
 	if err != nil {
 		_ = c.Close(err.Error())
 		return nil, err
+	}
+
+	rp.testStream, err = c.OpenStream(testCh, nil)
+	if err != nil {
+		_ = c.Close(err.Error())
+		return nil, err
+	}
+
+	if mconn, ok := c.(*tcpconn.MConnection); ok {
+		if err := mconn.Start(); err != nil {
+			_ = c.Close(err.Error())
+			return nil, fmt.Errorf("starting MConnection: %w", err)
+		}
 	}
 
 	return c, err
@@ -1013,7 +1022,7 @@ func (rp *remoteTCPPeer) accept() {
 			return
 		}
 
-		_, err = handshake(rp.nodeInfo(), c, time.Second)
+		_, err = handshake(rp.nodeInfo(), c.HandshakeStream(), time.Second)
 		if err != nil {
 			// Fixes TestSwitchFiltersOutItself.
 			//
@@ -1024,6 +1033,20 @@ func (rp *remoteTCPPeer) accept() {
 			// ErrRejected.
 			time.Sleep(100 * time.Millisecond)
 			_ = c.Close(err.Error())
+			return
+		}
+
+		rp.testStream, err = c.OpenStream(testCh, nil)
+		if err != nil {
+			_ = c.Close(err.Error())
+			return
+		}
+
+		if mconn, ok := c.(*tcpconn.MConnection); ok {
+			if err := mconn.Start(); err != nil {
+				_ = c.Close(err.Error())
+				return
+			}
 		}
 	}
 }

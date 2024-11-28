@@ -18,6 +18,7 @@ import (
 	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/p2p/transport"
+	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -287,6 +288,14 @@ func (p *peer) OnStart() error {
 			return fmt.Errorf("opening stream %v: %w", streamID, err)
 		}
 		p.streams[streamID] = stream
+	}
+
+	// Start the MConnection if it's an MConnection.
+	// NOTE: we do not start the MConnection until all the streams are registered.
+	if mconn, ok := p.peerConn.Conn.(*tcpconn.MConnection); ok {
+		if err := mconn.Start(); err != nil {
+			return fmt.Errorf("starting MConnection: %w", err)
+		}
 	}
 
 	// TODO: establish priority for reading from streams (consensus -> evidence -> mempool).

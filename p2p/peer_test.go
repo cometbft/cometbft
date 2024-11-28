@@ -88,7 +88,7 @@ func createOutboundPeerAndPerformHandshake(
 		ourNodeID   = nodekey.PubKeyToID(ed25519.GenPrivKey().PubKey())
 		ourNodeInfo = testNodeInfo(ourNodeID, "host_peer")
 	)
-	peerNodeInfo, err := handshake(ourNodeInfo, pc, timeout)
+	peerNodeInfo, err := handshake(ourNodeInfo, pc.HandshakeStream(), timeout)
 	require.NoError(t, err)
 
 	// create peer
@@ -187,7 +187,7 @@ func (rp *remotePeer) Dial(addr *na.NetAddr) (transport.Conn, error) {
 		return nil, err
 	}
 
-	_, err = handshake(rp.nodeInfo(), pc, time.Second)
+	_, err = handshake(rp.nodeInfo(), pc.HandshakeStream(), time.Second)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ func (rp *remotePeer) accept() {
 
 		conn := newMockConnection(netConn)
 
-		ni, err := handshake(rp.nodeInfo(), conn, time.Second)
+		ni, err := handshake(rp.nodeInfo(), conn.HandshakeStream(), time.Second)
 		if err != nil {
 			_ = conn.Close(err.Error())
 			golog.Printf("Failed to perform handshake: %+v", err)
@@ -281,9 +281,10 @@ func (c mockConnection) LocalAddr() net.Addr {
 func (c mockConnection) RemoteAddr() net.Addr {
 	return c.Conn.RemoteAddr()
 }
-func (c mockConnection) Close(string) error         { return c.Conn.Close() }
-func (c mockConnection) FlushAndClose(string) error { return c.Conn.Close() }
-func (mockConnection) ErrorCh() <-chan error        { return nil }
+func (c mockConnection) Close(string) error                         { return c.Conn.Close() }
+func (c mockConnection) FlushAndClose(string) error                 { return c.Conn.Close() }
+func (mockConnection) ErrorCh() <-chan error                        { return nil }
+func (c mockConnection) HandshakeStream() transport.HandshakeStream { return c.Conn }
 
 func (c mockConnection) ConnState() transport.ConnState {
 	return transport.ConnState{

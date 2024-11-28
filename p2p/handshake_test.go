@@ -19,7 +19,7 @@ func TestHandshake(t *testing.T) {
 			pk       = ed25519.GenPrivKey()
 			nodeInfo = testNodeInfo(nodekey.PubKeyToID(pk.PubKey()), "c2")
 		)
-		_, err := handshakeOverStream(nodeInfo, c1, 20*time.Millisecond)
+		_, err := handshake(nodeInfo, c1, 20*time.Millisecond)
 		if err != nil {
 			panic("handshake failed: " + err.Error())
 		}
@@ -30,7 +30,7 @@ func TestHandshake(t *testing.T) {
 		nodeInfo = testNodeInfo(nodekey.PubKeyToID(pk.PubKey()), "c1")
 	)
 
-	_, err := handshakeOverStream(nodeInfo, c2, 20*time.Millisecond)
+	_, err := handshake(nodeInfo, c2, 20*time.Millisecond)
 	require.NoError(t, err)
 }
 
@@ -46,7 +46,7 @@ func TestHandshake_InvalidNodeInfo(t *testing.T) {
 		// modify nodeInfo to be invalid
 		nodeInfo.Other.TxIndex = "invalid"
 
-		_, err := handshakeOverStream(nodeInfo, c1, 20*time.Millisecond)
+		_, err := handshake(nodeInfo, c1, 20*time.Millisecond)
 		if err != nil {
 			panic("handshake failed: " + err.Error())
 		}
@@ -57,7 +57,7 @@ func TestHandshake_InvalidNodeInfo(t *testing.T) {
 		nodeInfo = testNodeInfo(nodekey.PubKeyToID(pk.PubKey()), "c1")
 	)
 
-	_, err := handshakeOverStream(nodeInfo, c2, 20*time.Millisecond)
+	_, err := handshake(nodeInfo, c2, 20*time.Millisecond)
 	require.Error(t, err)
 
 	if e, ok := err.(ErrRejected); ok {
@@ -80,13 +80,13 @@ func TestTransportMultiplexRejectSelf(t *testing.T) {
 	go func() {
 		nodeInfo2 := testNodeInfo(nodeInfo1.ID(), "c2")
 
-		_, err := handshakeOverStream(nodeInfo2, c1, 20*time.Millisecond)
+		_, err := handshake(nodeInfo2, c1, 20*time.Millisecond)
 		if err == nil {
 			panic("expected handshake to fail")
 		}
 	}()
 
-	_, err := handshakeOverStream(nodeInfo1, c2, 20*time.Millisecond)
+	_, err := handshake(nodeInfo1, c2, 20*time.Millisecond)
 	require.Error(t, err)
 
 	if err, ok := err.(ErrRejected); ok {
@@ -110,7 +110,7 @@ func TestHandshake_Incompatible(t *testing.T) {
 		// modify nodeInfo to be incompatible
 		nodeInfo.Network = "other"
 
-		_, err := handshakeOverStream(nodeInfo, c1, 20*time.Millisecond)
+		_, err := handshake(nodeInfo, c1, 20*time.Millisecond)
 		if err == nil {
 			panic("expected handshake to fail")
 		}
@@ -121,7 +121,7 @@ func TestHandshake_Incompatible(t *testing.T) {
 		nodeInfo = testNodeInfo(nodekey.PubKeyToID(pk.PubKey()), "c1")
 	)
 
-	_, err := handshakeOverStream(nodeInfo, c2, 20*time.Millisecond)
+	_, err := handshake(nodeInfo, c2, 20*time.Millisecond)
 	require.Error(t, err)
 
 	if e, ok := err.(ErrRejected); ok {

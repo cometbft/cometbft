@@ -31,9 +31,7 @@ func (s *MConnectionStream) Read(b []byte) (n int, err error) {
 		return n, nil
 	}
 
-	s.conn.mtx.RLock()
 	ch, ok := s.conn.recvMsgsByStreamID[s.streamID]
-	s.conn.mtx.RUnlock()
 
 	// If there are messages to read, read them.
 	if ok {
@@ -91,10 +89,8 @@ func (s *MConnectionStream) TryWrite(b []byte) (n int, err error) {
 // Close does nothing.
 // thread-safe.
 func (s *MConnectionStream) Close() error {
-	s.conn.mtx.Lock()
 	delete(s.conn.recvMsgsByStreamID, s.streamID)
 	delete(s.conn.channelsIdx, s.streamID)
-	s.conn.mtx.Unlock()
 	return nil
 }
 

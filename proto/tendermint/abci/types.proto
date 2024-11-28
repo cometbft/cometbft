@@ -185,7 +185,8 @@ message ResponseInitChain {
   ConsensusParams          consensus_params = 1;
   repeated ValidatorUpdate validators       = 2 [(gogoproto.nullable) = false];
   bytes                    app_hash         = 3;
-  RollappParams   rollapp_params = 4;
+  RollappParams   rollapp_params            = 4;
+  bytes           genesis_bridge_data_bytes = 5;
 }
 
 message ResponseQuery {

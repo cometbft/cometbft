@@ -110,7 +110,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 		}
 		req, ok := e.Message.(*ssproto.SnapshotsRequest)
 		return ok && e.ChannelID == SnapshotChannel && req != nil
-	})).Return(true)
+	})).Return(nil)
 	syncer.AddPeer(peerA)
 	peerA.AssertExpectations(t)
 
@@ -123,7 +123,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 		}
 		req, ok := e.Message.(*ssproto.SnapshotsRequest)
 		return ok && e.ChannelID == SnapshotChannel && req != nil
-	})).Return(true)
+	})).Return(nil)
 	syncer.AddPeer(peerB)
 	peerB.AssertExpectations(t)
 
@@ -184,11 +184,11 @@ func TestSyncer_SyncAny(t *testing.T) {
 	peerA.On("Send", mock.MatchedBy(func(i any) bool {
 		e, ok := i.(p2p.Envelope)
 		return ok && e.ChannelID == ChunkChannel
-	})).Maybe().Run(onChunkRequest).Return(true)
+	})).Maybe().Run(onChunkRequest).Return(nil)
 	peerB.On("Send", mock.MatchedBy(func(i any) bool {
 		e, ok := i.(p2p.Envelope)
 		return ok && e.ChannelID == ChunkChannel
-	})).Maybe().Run(onChunkRequest).Return(true)
+	})).Maybe().Run(onChunkRequest).Return(nil)
 
 	// The first time we're applying chunk 2 we tell it to retry the snapshot and discard chunk 1,
 	// which should cause it to keep the existing chunk 0 and 2, and restart restoration from

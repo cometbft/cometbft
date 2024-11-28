@@ -34,7 +34,7 @@ func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error
 		peers = append(peers, ctypes.Peer{
 			NodeInfo:         nodeInfo,
 			IsOutbound:       peer.IsOutbound(),
-			ConnectionStatus: peer.Status(),
+			ConnectionStatus: peer.ConnState(),
 			RemoteIP:         peer.RemoteIP().String(),
 		})
 	})

@@ -506,6 +506,8 @@ func NewNodeWithCliParams(ctx context.Context,
 	transport, peerFilters := createTransport(config, nodeKey, proxyApp)
 
 	p2pLogger := logger.With("module", "p2p")
+	transport.SetLogger(p2pLogger)
+
 	sw := createSwitch(
 		config, transport, p2pMetrics, peerFilters, mempoolReactor, bcReactor,
 		stateSyncReactor, consensusReactor, evidenceReactor, nodeInfo, nodeKey, p2pLogger,

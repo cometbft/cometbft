@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/p2p/transport"
 )
 
 // Reactor is responsible for handling incoming messages on one or more
@@ -19,7 +20,7 @@ type Reactor interface {
 
 	// StreamDescriptors returns the list of stream descriptors. Make sure
 	// that each ID is unique across all the reactors added to the switch.
-	StreamDescriptors() []StreamDescriptor
+	StreamDescriptors() []transport.StreamDescriptor
 
 	// InitPeer is called by the switch before the peer is started. Use it to
 	// initialize data for the peer (e.g. peer state).
@@ -59,8 +60,8 @@ func NewBaseReactor(name string, impl Reactor) *BaseReactor {
 func (br *BaseReactor) SetSwitch(sw *Switch) {
 	br.Switch = sw
 }
-func (*BaseReactor) StreamDescriptors() []StreamDescriptor { return nil }
-func (*BaseReactor) AddPeer(Peer)                          {}
-func (*BaseReactor) RemovePeer(Peer, any)                  {}
-func (*BaseReactor) Receive(Envelope)                      {}
-func (*BaseReactor) InitPeer(peer Peer) Peer               { return peer }
+func (*BaseReactor) StreamDescriptors() []transport.StreamDescriptor { return nil }
+func (*BaseReactor) AddPeer(Peer)                                    {}
+func (*BaseReactor) RemovePeer(Peer, any)                            {}
+func (*BaseReactor) Receive(Envelope)                                {}
+func (*BaseReactor) InitPeer(peer Peer) Peer                         { return peer }

@@ -157,6 +157,18 @@ func NewCListMempool(
 	return mp
 }
 
+func (mem *CListMempool) GetSenders(txKey types.TxKey) ([]nodekey.ID, error) {
+	mem.txsMtx.RLock()
+	defer mem.txsMtx.RUnlock()
+
+	elem, ok := mem.txsMap[txKey]
+	if !ok {
+		return nil, ErrTxNotFound
+	}
+	memTx := elem.Value.(*mempoolTx)
+	return memTx.Senders(), nil
+}
+
 func (mem *CListMempool) addToCache(tx types.Tx) bool {
 	return mem.cache.Push(tx)
 }

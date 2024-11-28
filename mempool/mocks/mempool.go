@@ -96,6 +96,36 @@ func (_m *Mempool) FlushAppConn() error {
 	return r0
 }
 
+// GetSenders provides a mock function with given fields: txKey
+func (_m *Mempool) GetSenders(txKey types.TxKey) ([]nodekey.ID, error) {
+	ret := _m.Called(txKey)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetSenders")
+	}
+
+	var r0 []nodekey.ID
+	var r1 error
+	if rf, ok := ret.Get(0).(func(types.TxKey) ([]nodekey.ID, error)); ok {
+		return rf(txKey)
+	}
+	if rf, ok := ret.Get(0).(func(types.TxKey) []nodekey.ID); ok {
+		r0 = rf(txKey)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]nodekey.ID)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(types.TxKey) error); ok {
+		r1 = rf(txKey)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetTxByHash provides a mock function with given fields: hash
 func (_m *Mempool) GetTxByHash(hash []byte) types.Tx {
 	ret := _m.Called(hash)

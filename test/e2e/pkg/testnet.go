@@ -508,6 +508,9 @@ func (t Testnet) Validate() error {
 	if t.LoadNumNodesPerTx > len(t.Nodes) {
 		return errors.New("value must be less or equal to the number of nodes in the manifest")
 	}
+	if len(t.LoadTargetNodes) > 0 && t.LoadNumNodesPerTx > len(t.LoadTargetNodes) {
+		return errors.New("value must be less or equal to the number of target nodes")
+	}
 	return nil
 }
 

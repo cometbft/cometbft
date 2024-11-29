@@ -321,29 +321,39 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 		for _, peer := range peers {
 			pool.SetPeerRange(peer.id, peer.base, peer.height)
 		}
+
+		ticker := time.NewTicker(1 * time.Second) // Speed of new block creation
+		defer ticker.Stop()
 		for {
-			time.Sleep(1 * time.Second) // Speed of new block creation
-			for _, peer := range peers {
-				peer.height++                                      // Network height increases on all peers
-				pool.SetPeerRange(peer.id, peer.base, peer.height) // Tell the pool that a new height is available
+			select {
+			case <-pool.Quit():
+				return
+			case <-ticker.C:
+				for _, peer := range peers {
+					peer.height++
+					pool.SetPeerRange(peer.id, peer.base, peer.height) // Tell the pool that a new height is available
+				}
 			}
 		}
 	}()
 
 	// Start a goroutine to verify blocks
 	go func() {
+		ticker := time.NewTicker(500 * time.Millisecond) // Speed of new block creation
+		defer ticker.Stop()
 		for {
-			time.Sleep(500 * time.Millisecond) // Speed of block verification
-			if !pool.IsRunning() {
+			select {
+			case <-pool.Quit():
 				return
-			}
-			first, second, _ := pool.PeekTwoBlocks()
-			if first != nil && second != nil {
-				if second.LastCommit == nil {
-					// Second block is fake
-					pool.RemovePeerAndRedoAllPeerRequests(second.Height)
-				} else {
-					pool.PopRequest()
+			case <-ticker.C:
+				first, second, _ := pool.PeekTwoBlocks()
+				if first != nil && second != nil {
+					if second.LastCommit == nil {
+						// Second block is fake
+						pool.RemovePeerAndRedoAllPeerRequests(second.Height)
+					} else {
+						pool.PopRequest()
+					}
 				}
 			}
 		}

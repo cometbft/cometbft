@@ -93,9 +93,7 @@ In an ideal setting, receiving a transaction more than once is not needed. But i
 
 Operators can thus configure a desired redundancy and the gossip protocol will adjust route disabling based on this setting. Redundancy is defined as the ratio between duplicate and unique transactions. 
 
-<!-- Operators can also define how much they tolerate the redundancy to deviate from the desired level. -->
-
-The redundancy is set to `1` and impacts the gossiping of transactions as follows:
+The redundancy is set to `0.5` and impacts the gossiping of transactions as follows:
 
 
 ```go
@@ -109,7 +107,7 @@ The redundancy is set to `1` and impacts the gossiping of transactions as follow
 The number of unique and duplicate transactions is updated as transactions come in and,
 periodically (every `1s`), DOG recomputes the redundnacy of the system. 
 
-A redundancy of `1` implies that we allow for each unoque we tolerate a duplicate of the same transaction.
+A redundancy of `0.5` implies that we allow one duplicate transaction for every two unique.
 
 #### Redundancy adjustment triggering
 
@@ -127,12 +125,12 @@ The changes are constrained to the mempool reactor.
 - The `Mempool` interface is expanded with a method : 
 ```go
 // GetSenders returns the list of node IDs from which we have received a transaction.
-GetSenders(txKey types.TxKey) ([]nodekey.ID, error)
+GetSenders(txKey types.TxKey) ([]p2p.ID, error)
 ``` 
 - The `Entry` interface in the mempool package is expanded with a method:
 ```go
 // Senders returns the list of registered peers that sent us the transaction.
-	Senders() []nodekey.ID
+	Senders() []p2p.ID
 ```
 - We introduce a new communication channel, called `Mempool Control Channel`. The channel
 is used to transmit the messages needed for the implementation of the protocol. The channel ID
@@ -148,7 +146,7 @@ type gossipRouter struct {
 	mtx cmtsync.RWMutex
 	// A set of `source -> target` routes that are disabled for disseminating transactions. Source
 	// and target are node IDs.
-	disabledRoutes map[nodekey.ID]p2pIDSet
+	disabledRoutes map[p2p.ID]p2pIDSet
 }
 ``` 
 
@@ -249,15 +247,13 @@ The impact of the protocol on operations can also be observed by looking at the 
 
 - `p2p.message_send_bytes_total` - This metric shows the number of bytes sent per message type. Without DOG, the transactions tend to dominate the number of bytes, while, when enabled, the block parts should dominate it.
 
-- `p2p.message_receive_bytes_total` - This metric shows the number of bytes received per message type. As with the metric abobe, with DOG the dominating messages should be block parts.
+- `p2p.message_receive_bytes_total` - This metric shows the number of bytes received per message type. As with the metric abobe, with DOG the dominating messages should be block parts. 
+
+The received and sent bytes metrics are reported by message type which enables operators to observe the number of `HaveTx` and `ResetRoute` messages sent.
 
 
 This ADR introduces a set of metrics into the `mempool` module. They can be used to observe the parameters of the protocol: 
 
-
-<!-- - `HaveTxMsgsReceived` -  Number of HaveTx messages received (cumulative). 
-
-- `ResetMsgsSent` - Number of Reset messages sent (cumulative). -->
 
 - `mempool.disabled_routes` - Number of disabled routes.
 
@@ -272,38 +268,39 @@ The only reason for this is the incompatibility of DOG with the existing experim
 that disables sending transactions to all peers. 
 
 
-The [specification]() of the protocol introduces 3 additional variables. 
-In the first implementation of the protocol, we were inclined to expose them as configuration parameters.
+The [specification](https://github.com/cometbft/cometbft/spec/mempool/gossip/dog.md) of the protocol introduces 3 additional variables. 
+Out of the tree, we have made the following configuration parameters:
+ 
+- `mempool.adjust_redundancy_interval: time.Duration`: Set to `1s`. Indicates how often the redundancy controller readjusts 
+the redundancy and has a chance to trigger sending of `HaveTx` or `ResetRoute` messages. As with the delta, we 
+have not observed a reduction in redundancy due to a lower interval. Most likely due to the fact that, regardless
+of the interval, it takes a certain amount of time for the information to propagate through the network.  
+
+- `mempool.target_redundancy: float`: Set to `0.5`. The redundancy level that the gossip protocol should aim to
+achieve. An acceptable value, based on our tests was also `1`. While still having, for each unique transaction, one duplicate, the number of transaction messages in the system was significantly lower. Overall increasing this value above `2` would lead to too many duplicates without an improvement in the tolerance of the system to byzantine attacks.  
+
+The third parameter defines the bounds of acceptable redundancy levels: 
+- `TargetRedundancyDeltaPercent: float`: Set to `0.1` (10%). It defines the bounds
+of acceptable redundancy levels. The actual redundancy will be: `redundancy +- redundancy*delta`. A lower delta 
+did not lead to a visible reduction in redundancy, while slightly increasing the number of control messages sent. 
+We have therefore opted to not reduce this value further. It does not impact the protocol as much as the target redundancy or the redundancy adjustment interval. 
 
 Part of the work on the protocol was extensive testing of its performance and impact on the network, as well 
 as the impact of the network configuration and load on the protocol itself. 
-Issue [\#4320] covers the experiments performed on DOG. All the findings can be found in [TODO](link)
+Issue [\#4320] covers the experiments performed on DOG.
 
 We have also tested scenarios where we send the same load to 100 of the 200 nodes. DOG was able 
-to reduce the number of duplicates in the system, even under a high load. 
+to reduce the number of duplicates in the system, even under a high load, even when the target redundancy is `1`. 
 
 After extensive testing, we did not find compelling evidence and differences in a variety of runs to varrant the
-tuning the default values chosen. Therefore, in the first version of the protocol,
-we are fixing a set of values for them. 
+tuning of the default values chosen. We have left the target redundancy and redundancy adjustment interval 
+as something operators can adjust so that users can experiment in their testnets. But none of our experiments
+found a degradation in performance and correctness for these value. 
 
 More details on the experiments used to make this decision
  can be found in Issue [\#4320].
 
-- `mempool.target_redundancy: float`: Set to `1`. The redundancy level that the gossip protocol should aim to
-achieve. Increasing this value above `2` would lead to too many duplicates. Lowering it would reduce the redundancy 
-but not by a very significant amount during high load or network updates.<!-- TODO verify this claim i nthe results for perturbations and load --> As lower values introduce the potential
-for attacks on nodes, we decided to leave the value of `1` as the target redundancy. 
 
-
-- `TargetRedundancyDeltaPercent: float`: Set to `0.2` (20%). It defines the bounds
-of acceptable redundancy levels. The actual redundancy will be: `redundancy +- redundancy*delta`. A lower delta 
-did not lead to a visible reduction in redundancy, while slightly increasing the number of control messages sent. 
-We have therefore opted to not reduce this value further. 
-
-- `config.AdjustmentInterval: time.Duration`: Set to `1s`. Indicates how often the redundancy controller readjusts 
-the redundancy and has a chance to trigger sending of `HaveTx` or `ResetRoute` messages. As with the delta, we 
-have not observed a reduction in redundancy due to a lower interval. Most likely due to the fact that, regardless
-of the interval, it takes a certain amount of time for the information to propagate through the network. 
 
 ## User recommendation
 
@@ -312,10 +309,11 @@ of the interval, it takes a certain amount of time for the information to propag
 
 - The protocol implicitly favors faster routes, by cutting routes to peers that send the duplicate transaction at a later time.
 
-- Is this true? We don't cut ties with the sender of the transaction, rather we are telling it to cut ties with some other node that has sent us the tx before that. 
-So sender could still forward us transactions but not the ones received from this particular node. 
 
 - If the frequency of `HaveTx` messages is too high, nodes will have too many routes cut.
+
+-  While we did not observe any single node missing out on transactions when the lowering the target 
+reduncancy event to `0.1`, we do not advise users to do this without a strong justification and testing. 
 
 
 ## Consequences

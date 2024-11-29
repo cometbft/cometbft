@@ -6,7 +6,7 @@
 - 2024-11-25: Applied comments from @hvanz and added information on decided metrics (@jmalicevic)
 
 ## Status
-Accepted: [\#3297][tracking-issue].
+Accepted: Tracking issue [\#3297].
 
 
 ## Context

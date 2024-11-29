@@ -4,6 +4,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
+	ni "github.com/cometbft/cometbft/p2p/internal/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	"github.com/cometbft/cometbft/types"
@@ -13,6 +14,15 @@ type (
 	ConnectionStatus = conn.ConnectionStatus
 	// ID is the unique identifier for a peer.
 	ID = nodekey.ID
+
+	// NodeInfo is the information about a peer.
+	NodeInfo = ni.NodeInfo
+	// NodeInfoDefault is the default implementation of NodeInfo.
+	NodeInfoDefault = ni.Default
+	// NodeInfoDefaultOther is the default implementation of NodeInfo for other peers.
+	NodeInfoDefaultOther = ni.DefaultOther
+	// ProtocolVersion is the protocol version for the software.
+	ProtocolVersion = ni.ProtocolVersion
 )
 
 // Envelope contains a message with sender routing info.

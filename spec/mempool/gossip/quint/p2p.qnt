@@ -23,12 +23,19 @@ module p2p {
     var peers: NodeID -> Set[NodeID]
     pure def multiSend(node, _incomingMsgs, targetNodes, msg) =
         _incomingMsgs.updateMultiple(targetNodes, ms => ms.append((node, msg)))
+    pure def send(node, _incomingMsgs, targetNode, msg) =
+        node.multiSend(_incomingMsgs, Set(targetNode), msg)
     
     // Auxiliary definitions
     def IncomingMsgs(node) = incomingMsgs.get(node)
     def Peers(node) = peers.get(node)
     val nodesInNetwork = NodeIDs.filter(node => node.Peers().nonEmpty())
     val nodesNotInNetwork = NodeIDs.exclude(nodesInNetwork)
+    pure def disconnect(_peers, node) =
+        // TODO: check that the network does not become disconnected; we don't want to model that.
+        _peers.put(node, Set())
+    def disconnectedPeers(node) = 
+        node.Peers().filter(p => not(node.in(p.Peers())))
 
     //--------------------------------------------------------------------------
     // Actions
@@ -64,21 +71,6 @@ module p2p {
         // Pick a non-empty set of nodes in the network to be the node's peers.
         nondet peerSet = oneOf(nodesInNetwork.powerset().exclude(Set()))
         node.joinNetwork(peerSet),
-    }
-    // TODO: the network must not become disconnected; we don't want to model that.
-    action disconnectNetwork(nodeToDisconnect, _incomingMsgs) = all {
-        peers' = peers
-            // Clean node's state and remove all its peers.
-            .put(nodeToDisconnect, Set())
-            // Remove node from other peers' state.
-            .updateMultiple(nodesInNetwork, ps => ps.exclude(Set(nodeToDisconnect))),
-        incomingMsgs' = _incomingMsgs,
-    }
-    action pickNodeAndDisconnect = all {
-        // Pick a node that is not the only node in the network.
-        require(size(nodesInNetwork) > 1),
-        nondet nodeToDisconnect = oneOf(nodesInNetwork) 
-        disconnectNetwork(nodeToDisconnect, incomingMsgs),
     }
     
     //--------------------------------------------------------------------------

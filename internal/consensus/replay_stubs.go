@@ -7,7 +7,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/clist"
 	mempl "github.com/cometbft/cometbft/mempool"
-	"github.com/cometbft/cometbft/p2p/nodekey"
+	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 )
@@ -23,7 +23,7 @@ func (emptyMempool) Unlock()          {}
 func (emptyMempool) PreUpdate()       {}
 func (emptyMempool) Size() int        { return 0 }
 func (emptyMempool) SizeBytes() int64 { return 0 }
-func (emptyMempool) CheckTx(types.Tx, nodekey.ID) (*abcicli.ReqRes, error) {
+func (emptyMempool) CheckTx(types.Tx, p2p.ID) (*abcicli.ReqRes, error) {
 	return nil, nil
 }
 func (emptyMempool) RemoveTxByKey(types.TxKey) error           { return nil }

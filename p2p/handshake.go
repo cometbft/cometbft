@@ -7,8 +7,8 @@ import (
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/libs/protoio"
+	ni "github.com/cometbft/cometbft/p2p/internal/nodeinfo"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
-	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 )
 

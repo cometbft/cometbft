@@ -181,6 +181,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	if testnet.LoadTxSizeBytes == 0 {
 		testnet.LoadTxSizeBytes = defaultTxSizeBytes
 	}
+	if testnet.LoadNumNodesPerTx == 0 {
+		testnet.LoadNumNodesPerTx = 1
+	}
 
 	if len(testnet.Lanes) == 0 {
 		testnet.Lanes = app.DefaultLanes()
@@ -502,8 +505,11 @@ func (t Testnet) Validate() error {
 			return err
 		}
 	}
-	if t.LoadDuplicateTxs > len(t.Nodes) {
+	if t.LoadNumNodesPerTx > len(t.Nodes) {
 		return errors.New("value must be less or equal to the number of nodes in the manifest")
+	}
+	if len(t.LoadTargetNodes) > 0 && t.LoadNumNodesPerTx > len(t.LoadTargetNodes) {
+		return errors.New("value must be less or equal to the number of target nodes")
 	}
 	return nil
 }

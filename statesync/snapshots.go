@@ -8,7 +8,6 @@ import (
 
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/p2p/nodekey"
 )
 
 // snapshotKey is a snapshot key used for lookups.
@@ -43,16 +42,16 @@ func (s *snapshot) Key() snapshotKey {
 type snapshotPool struct {
 	cmtsync.Mutex
 	snapshots     map[snapshotKey]*snapshot
-	snapshotPeers map[snapshotKey]map[nodekey.ID]p2p.Peer
+	snapshotPeers map[snapshotKey]map[p2p.ID]p2p.Peer
 
 	// indexes for fast searches
 	formatIndex map[uint32]map[snapshotKey]bool
 	heightIndex map[uint64]map[snapshotKey]bool
-	peerIndex   map[nodekey.ID]map[snapshotKey]bool
+	peerIndex   map[p2p.ID]map[snapshotKey]bool
 
 	// denylists for rejected items
 	formatRejectlist   map[uint32]bool
-	peerRejectlist     map[nodekey.ID]bool
+	peerRejectlist     map[p2p.ID]bool
 	snapshotRejectlist map[snapshotKey]bool
 }
 
@@ -60,12 +59,12 @@ type snapshotPool struct {
 func newSnapshotPool() *snapshotPool {
 	return &snapshotPool{
 		snapshots:          make(map[snapshotKey]*snapshot),
-		snapshotPeers:      make(map[snapshotKey]map[nodekey.ID]p2p.Peer),
+		snapshotPeers:      make(map[snapshotKey]map[p2p.ID]p2p.Peer),
 		formatIndex:        make(map[uint32]map[snapshotKey]bool),
 		heightIndex:        make(map[uint64]map[snapshotKey]bool),
-		peerIndex:          make(map[nodekey.ID]map[snapshotKey]bool),
+		peerIndex:          make(map[p2p.ID]map[snapshotKey]bool),
 		formatRejectlist:   make(map[uint32]bool),
-		peerRejectlist:     make(map[nodekey.ID]bool),
+		peerRejectlist:     make(map[p2p.ID]bool),
 		snapshotRejectlist: make(map[snapshotKey]bool),
 	}
 }
@@ -91,7 +90,7 @@ func (p *snapshotPool) Add(peer p2p.Peer, snapshot *snapshot) (bool, error) {
 	}
 
 	if p.snapshotPeers[key] == nil {
-		p.snapshotPeers[key] = make(map[nodekey.ID]p2p.Peer)
+		p.snapshotPeers[key] = make(map[p2p.ID]p2p.Peer)
 	}
 	p.snapshotPeers[key][peer.ID()] = peer
 
@@ -210,7 +209,7 @@ func (p *snapshotPool) RejectFormat(format uint32) {
 }
 
 // RejectPeer rejects a peer. It will never be used again.
-func (p *snapshotPool) RejectPeer(peerID nodekey.ID) {
+func (p *snapshotPool) RejectPeer(peerID p2p.ID) {
 	if peerID == "" {
 		return
 	}
@@ -222,14 +221,14 @@ func (p *snapshotPool) RejectPeer(peerID nodekey.ID) {
 }
 
 // RemovePeer removes a peer from the pool, and any snapshots that no longer have peers.
-func (p *snapshotPool) RemovePeer(peerID nodekey.ID) {
+func (p *snapshotPool) RemovePeer(peerID p2p.ID) {
 	p.Lock()
 	defer p.Unlock()
 	p.removePeer(peerID)
 }
 
 // removePeer removes a peer. The caller must hold the mutex lock.
-func (p *snapshotPool) removePeer(peerID nodekey.ID) {
+func (p *snapshotPool) removePeer(peerID p2p.ID) {
 	for key := range p.peerIndex[peerID] {
 		delete(p.snapshotPeers[key], peerID)
 		if len(p.snapshotPeers[key]) == 0 {

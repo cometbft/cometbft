@@ -4,6 +4,7 @@
 
 - 2024-11-04: Initial notes (@hvanz and @jmalicevic)
 - 2024-11-25: Applied comments from @hvanz and added information on decided metrics (@jmalicevic)
+- 2024-11-27: CAT mempool description (@hvanz)
 
 ## Status
 Accepted: Tracking issue [\#3297].
@@ -28,10 +29,10 @@ while maintaining the resilience to attacks.
 ## Alternative Approaches
 
 The existing alternative approaches for transaction gossiping are:
-- FLOOD - the current transaction gossiping protocol in CometBFT
+- Flood - the current transaction gossiping protocol in CometBFT
 - CAT Mempool - the transaction gossiping proposed by Celestia
 - Limiting number of peers to send a transaction to - Experimental protocol in CometBFT
-- Etherium's transaction gossiping protocol.
+- libp2p gossipSub protocol
 
 
 ### FLOOD - the current transaction gossiping protocol in CometBFT
@@ -54,16 +55,17 @@ With CAT, nodes forward ("push") transactions received from users via RPC endpoi
 
 Efforts to port the CAT mempool to CometBFT were documented in [\#2027]. Experimental results on a small testnet from [\#1472] showed that CAT effectively reduces bandwidth usage. However, its impact on latency was not evaluated in those tests. Porting CAT was finally deprioritised in favor of DOG.
 
-
-
-
 ### Limiting the number of peers a transaction is forwarded to
 
 CometBFT allows operators to configure `p2p.experimental_max_gossip_connections_to_non_persistent_peers` and `p2p.experimental_max_gossip_connections_to_persistent_peers`  as a maximum number of peers to send  transactions to. 
 This reduces bandwitdth compared to when they are disabled but there is no rule to determine which peers transactions
 are not forwarded to. DOG can be looked at as an enahanced, more informed version of this protocol.
 
-A node should use either this or DOG. 
+A node should use either this or DOG, but not both at the same time.
+
+
+# libp2p's gossipSub gossiping protocol
+ <!-- TODO -->
 
 ## Decision
 
@@ -343,4 +345,7 @@ to behave correctly. It should however not be used in combination with the param
 [\#3297]: https://github.com/cometbft/cometbft/issues/3297
 [\#1472]: https://github.com/cometbft/cometbft/pull/1472
 [\#2027]: https://github.com/cometbft/cometbft/issues/2027
+
+
+* [FLOOD](https://github.com/cometbft/cometbft/blob/main/spec/mempool/gossip/flood.md)
 

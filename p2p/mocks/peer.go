@@ -14,7 +14,7 @@ import (
 
 	nodeinfo "github.com/cometbft/cometbft/p2p/internal/nodeinfo"
 
-	nodekey "github.com/cometbft/cometbft/p2p/nodekey"
+	nodekey "github.com/cometbft/cometbft/p2p/internal/nodekey"
 
 	p2p "github.com/cometbft/cometbft/p2p"
 )

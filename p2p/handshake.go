@@ -8,8 +8,8 @@ import (
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/libs/protoio"
 	ni "github.com/cometbft/cometbft/p2p/internal/nodeinfo"
+	"github.com/cometbft/cometbft/p2p/internal/nodekey"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
-	"github.com/cometbft/cometbft/p2p/nodekey"
 )
 
 // ErrRejected indicates that a Peer was rejected carrying additional

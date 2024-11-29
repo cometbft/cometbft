@@ -31,7 +31,6 @@ import (
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
-	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/p2p/transport/tcp"
 	"github.com/cometbft/cometbft/proxy"
@@ -65,7 +64,7 @@ type Node struct {
 	sw          *p2p.Switch  // p2p connections
 	addrBook    pex.AddrBook // known peers
 	nodeInfo    p2p.NodeInfo
-	nodeKey     *nodekey.NodeKey // our node privkey
+	nodeKey     *p2p.NodeKey // our node privkey
 	isListening bool
 
 	// services
@@ -284,7 +283,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 func NewNode(ctx context.Context,
 	config *cfg.Config,
 	privValidator types.PrivValidator,
-	nodeKey *nodekey.NodeKey,
+	nodeKey *p2p.NodeKey,
 	clientCreator proxy.ClientCreator,
 	genesisDocProvider GenesisDocProvider,
 	dbProvider cfg.DBProvider,
@@ -312,7 +311,7 @@ func NewNode(ctx context.Context,
 func NewNodeWithCliParams(ctx context.Context,
 	config *cfg.Config,
 	privValidator types.PrivValidator,
-	nodeKey *nodekey.NodeKey,
+	nodeKey *p2p.NodeKey,
 	clientCreator proxy.ClientCreator,
 	genesisDocProvider GenesisDocProvider,
 	dbProvider cfg.DBProvider,
@@ -1081,7 +1080,7 @@ func (n *Node) NodeInfo() p2p.NodeInfo {
 
 func makeNodeInfo(
 	config *cfg.Config,
-	nodeKey *nodekey.NodeKey,
+	nodeKey *p2p.NodeKey,
 	txIndexer txindex.TxIndexer,
 	genDoc *types.GenesisDoc,
 	state sm.State,

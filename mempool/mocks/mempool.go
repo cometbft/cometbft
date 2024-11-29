@@ -8,7 +8,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	nodekey "github.com/cometbft/cometbft/p2p/nodekey"
+	p2p "github.com/cometbft/cometbft/p2p"
 
 	types "github.com/cometbft/cometbft/types"
 
@@ -21,7 +21,7 @@ type Mempool struct {
 }
 
 // CheckTx provides a mock function with given fields: tx, sender
-func (_m *Mempool) CheckTx(tx types.Tx, sender nodekey.ID) (*abcicli.ReqRes, error) {
+func (_m *Mempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, error) {
 	ret := _m.Called(tx, sender)
 
 	if len(ret) == 0 {
@@ -30,10 +30,10 @@ func (_m *Mempool) CheckTx(tx types.Tx, sender nodekey.ID) (*abcicli.ReqRes, err
 
 	var r0 *abcicli.ReqRes
 	var r1 error
-	if rf, ok := ret.Get(0).(func(types.Tx, nodekey.ID) (*abcicli.ReqRes, error)); ok {
+	if rf, ok := ret.Get(0).(func(types.Tx, p2p.ID) (*abcicli.ReqRes, error)); ok {
 		return rf(tx, sender)
 	}
-	if rf, ok := ret.Get(0).(func(types.Tx, nodekey.ID) *abcicli.ReqRes); ok {
+	if rf, ok := ret.Get(0).(func(types.Tx, p2p.ID) *abcicli.ReqRes); ok {
 		r0 = rf(tx, sender)
 	} else {
 		if ret.Get(0) != nil {
@@ -41,7 +41,7 @@ func (_m *Mempool) CheckTx(tx types.Tx, sender nodekey.ID) (*abcicli.ReqRes, err
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(types.Tx, nodekey.ID) error); ok {
+	if rf, ok := ret.Get(1).(func(types.Tx, p2p.ID) error); ok {
 		r1 = rf(tx, sender)
 	} else {
 		r1 = ret.Error(1)

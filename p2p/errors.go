@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/cometbft/cometbft/p2p/internal/nodekey"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
-	"github.com/cometbft/cometbft/p2p/nodekey"
 )
 
 // ErrSwitchDuplicatePeerID to be raised when a peer is connecting with a known

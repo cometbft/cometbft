@@ -272,10 +272,10 @@ func NewCLI() *CLI {
 			} else if len(loadTargetNodes) > 0 {
 				cli.testnet.LoadTargetNodes = loadTargetNodes
 			}
-			if duplicateTxsToN, err := cmd.Flags().GetInt("num-nodes-per-tx"); err != nil {
+			if numNodesPerTx, err := cmd.Flags().GetInt("num-nodes-per-tx"); err != nil {
 				return err
-			} else if duplicateTxsToN > 0 {
-				cli.testnet.LoadDuplicateTxs = duplicateTxsToN
+			} else if numNodesPerTx > 0 {
+				cli.testnet.LoadNumNodesPerTx = numNodesPerTx
 			}
 			if err = cli.testnet.Validate(); err != nil {
 				return err

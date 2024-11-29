@@ -55,17 +55,11 @@ jobs:
           channel-id: 'C03Q5J9SXS8' # cometbft-engineering
           # channel-id: 'shared-sdk-comet'
           payload: |
-            {
-              "text": "New breaking changes (pushed in ${{ github.event.pull_request.html_url || github.event.head_commit.url }}):",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "${{ steps.read-content.outputs.file_content }}"
-                  }
-                }
-              ]
-            }
+            text: "New breaking changes (pushed in ${{ github.event.pull_request.html_url || github.event.head_commit.url }}):"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "${{ steps.read-content.outputs.file_content }}"
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

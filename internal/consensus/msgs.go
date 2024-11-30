@@ -11,7 +11,7 @@ import (
 	"github.com/cometbft/cometbft/internal/bits"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	"github.com/cometbft/cometbft/p2p/nodekey"
+	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
@@ -338,7 +338,7 @@ func WALFromProto(msg *cmtcons.WALMessage) (WALMessage, error) {
 		}
 		msgInfo := msgInfo{
 			Msg:    walMsg,
-			PeerID: nodekey.ID(msg.MsgInfo.PeerID),
+			PeerID: p2p.ID(msg.MsgInfo.PeerID),
 		}
 
 		if msg.MsgInfo.ReceiveTime != nil {

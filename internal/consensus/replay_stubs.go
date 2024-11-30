@@ -7,7 +7,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/clist"
 	mempl "github.com/cometbft/cometbft/mempool"
-	"github.com/cometbft/cometbft/p2p/nodekey"
+	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 )
@@ -23,7 +23,7 @@ func (emptyMempool) Unlock()          {}
 func (emptyMempool) PreUpdate()       {}
 func (emptyMempool) Size() int        { return 0 }
 func (emptyMempool) SizeBytes() int64 { return 0 }
-func (emptyMempool) CheckTx(types.Tx, nodekey.ID) (*abcicli.ReqRes, error) {
+func (emptyMempool) CheckTx(types.Tx, p2p.ID) (*abcicli.ReqRes, error) {
 	return nil, nil
 }
 func (emptyMempool) RemoveTxByKey(types.TxKey) error           { return nil }
@@ -39,15 +39,15 @@ func (emptyMempool) Update(
 ) error {
 	return nil
 }
-func (emptyMempool) Flush()                                       {}
-func (emptyMempool) FlushAppConn() error                          { return nil }
-func (emptyMempool) Contains(types.TxKey) bool                    { return false }
-func (emptyMempool) TxsAvailable() <-chan struct{}                { return make(chan struct{}) }
-func (emptyMempool) EnableTxsAvailable()                          {}
-func (emptyMempool) TxsBytes() int64                              { return 0 }
-func (emptyMempool) TxsFront() *clist.CElement                    { return nil }
-func (emptyMempool) TxsWaitChan() <-chan struct{}                 { return nil }
-func (emptyMempool) GetSenders(types.TxKey) ([]nodekey.ID, error) { return nil, nil }
+func (emptyMempool) Flush()                                   {}
+func (emptyMempool) FlushAppConn() error                      { return nil }
+func (emptyMempool) Contains(types.TxKey) bool                { return false }
+func (emptyMempool) TxsAvailable() <-chan struct{}            { return make(chan struct{}) }
+func (emptyMempool) EnableTxsAvailable()                      {}
+func (emptyMempool) TxsBytes() int64                          { return 0 }
+func (emptyMempool) TxsFront() *clist.CElement                { return nil }
+func (emptyMempool) TxsWaitChan() <-chan struct{}             { return nil }
+func (emptyMempool) GetSenders(types.TxKey) ([]p2p.ID, error) { return nil, nil }
 
 // -----------------------------------------------------------------------------
 // newMockProxyApp uses ABCIResponses to give the right results.

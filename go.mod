@@ -1,6 +1,7 @@
 module github.com/tendermint/tendermint
 
 go 1.22.0
+toolchain go1.22.9
 
 require (
 	github.com/BurntSushi/toml v1.4.0
@@ -29,7 +30,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/crypto v0.28.0
 	golang.org/x/net v0.30.0
-	google.golang.org/grpc v1.67.1
+	google.golang.org/grpc v1.68.0
 )
 
 require github.com/google/uuid v1.6.0

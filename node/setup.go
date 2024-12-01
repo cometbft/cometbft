@@ -27,7 +27,6 @@ import (
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
-	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/p2p/transport/tcp"
@@ -485,7 +484,7 @@ func createSwitch(config *cfg.Config,
 	stateSyncReactor *statesync.Reactor,
 	consensusReactor *cs.Reactor,
 	evidenceReactor *evidence.Reactor,
-	nodeInfo ni.NodeInfo,
+	nodeInfo p2p.NodeInfo,
 	nodeKey *nodekey.NodeKey,
 	p2pLogger log.Logger,
 ) *p2p.Switch {

@@ -12,7 +12,7 @@ import (
 
 	netaddr "github.com/cometbft/cometbft/p2p/netaddr"
 
-	nodeinfo "github.com/cometbft/cometbft/p2p/nodeinfo"
+	nodeinfo "github.com/cometbft/cometbft/p2p/internal/nodeinfo"
 
 	nodekey "github.com/cometbft/cometbft/p2p/nodekey"
 

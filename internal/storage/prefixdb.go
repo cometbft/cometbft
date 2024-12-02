@@ -605,9 +605,12 @@ func prependPrefix(prefix, key []byte) []byte {
 // and returns the result.
 // If the input slice represents the maximum value for its length (all bytes are
 // 0xFF), incrementBigEndian returns nil to indicate overflow.
-// The input slice s remains unmodified. The function is a no-op if the input
-// slice's length is 0.
+// The input slice s remains unmodified.
 func incrementBigEndian(s []byte) []byte {
+	if len(s) == 0 {
+		panic("incrementBigEndian called with empty slice")
+	}
+
 	result := make([]byte, len(s))
 	copy(result, s)
 

@@ -9,7 +9,7 @@ func TestPrefixIterator(t *testing.T) {
 	// We create an an empty DB because we won't be iterating through keys.
 	// This test checks whether the iterator is initialized correctly, that is,
 	// whether its start and end keys are set correctly.
-	pDB, closer, err := newTestEmptyDB()
+	pDB, closer, err := newTestPebbleDB()
 	if err != nil {
 		t.Fatal(err)
 	}

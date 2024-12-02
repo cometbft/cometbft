@@ -13,7 +13,7 @@ import (
 )
 
 func TestPrefixDBGet(t *testing.T) {
-	pebbleDB, dbCloser, err := newTestEmptyDB()
+	pebbleDB, dbCloser, err := newTestPebbleDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +64,7 @@ func TestPrefixDBGet(t *testing.T) {
 }
 
 func TestPrefixDBHas(t *testing.T) {
-	pebbleDB, dbcloser, err := newTestEmptyDB()
+	pebbleDB, dbcloser, err := newTestPebbleDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestPrefixDBHas(t *testing.T) {
 }
 
 func TestPrefixDBSet(t *testing.T) {
-	pebbleDB, dbCloser, err := newTestEmptyDB()
+	pebbleDB, dbCloser, err := newTestPebbleDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,7 +170,7 @@ func TestPrefixDBSet(t *testing.T) {
 }
 
 func TestPrefixDBDelete(t *testing.T) {
-	pebbleDB, dbCloser, err := newTestEmptyDB()
+	pebbleDB, dbCloser, err := newTestPebbleDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,7 +206,7 @@ func TestPrefixDBDelete(t *testing.T) {
 }
 
 func TestPrefixDBPrint(t *testing.T) {
-	pebbleDB, dbCloser, err := newTestEmptyDB()
+	pebbleDB, dbCloser, err := newTestPebbleDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -237,7 +237,7 @@ func TestPrefixDBPrint(t *testing.T) {
 		t.Fatalf(format, err)
 	}
 
-	// // store os.Stdout and redirect it to print to the writer we just created
+	// store os.Stdout and redirect it to print to the writer we just created
 	stdOut := os.Stdout
 	os.Stdout = w
 
@@ -270,8 +270,203 @@ func TestPrefixDBPrint(t *testing.T) {
 	}
 }
 
+func TestPrefixDBBatchSet(t *testing.T) {
+	pebbleBatch, closer, err := newTestPebbleBatch()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(closer)
+
+	prefixBatch := &prefixDBBatch{
+		source: pebbleBatch,
+		prefix: []byte{'t', 'e', 's', 't'},
+	}
+
+	t.Run("EmptyKeyErr", func(t *testing.T) {
+		if err := prefixBatch.Set(nil, nil); !errors.Is(err, errKeyEmpty) {
+			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		}
+	})
+
+	t.Run("ValueNilErr", func(t *testing.T) {
+		key := []byte{'a'}
+		if err := prefixBatch.Set(key, nil); !errors.Is(err, errValueNil) {
+			t.Errorf("expected %s, got: %s", errValueNil, err)
+		}
+	})
+
+	// Our implementation's batch isn't indexed, so we can't call Get() on it to
+	// retrieve keys that we added to it. Therefore, we can't check if the call to
+	// Set() added the key to the batch. To do that, we would have to commit the
+	// batch and then query the database for the key. However, committing a batch is
+	// what Write() and WriteSync() do—not what Set() does; we test this behavior
+	// in TestBatchWrite. Therefore, here we only check that after a call to Set()
+	// the batch isn't empty and contains exactly the number of updates that we set.
+	t.Run("NoErr", func(t *testing.T) {
+		var (
+			keys = [][]byte{{'a'}, {'b'}, {'c'}}
+			vals = [][]byte{{0x01}, {0x02}, {0x03}}
+		)
+		for i, key := range keys {
+			val := vals[i]
+
+			if err := prefixBatch.Set(key, val); err != nil {
+				formatStr := "adding set (k,v)=(%s,%v) operation to batch: %s"
+				t.Fatalf(formatStr, key, val, err)
+			}
+		}
+
+		var (
+			// we are a bit cheating here, since we don't have access to the actual
+			// pebble batch from the prefixDBBatch object.
+			emptyBatch = pebbleBatch.batch.Empty()
+			nUpdates   = pebbleBatch.batch.Count()
+		)
+		if emptyBatch || (nUpdates != uint32(len(keys))) {
+			t.Errorf("expected %d batch updates, got %d", len(keys), nUpdates)
+		}
+	})
+
+	t.Run("BatchNilErr", func(t *testing.T) {
+		if err := prefixBatch.Close(); err != nil {
+			t.Fatalf("closing test batch: %s", err)
+		}
+		var (
+			key   = []byte{'a'}
+			value = []byte{'b'}
+		)
+		if err := prefixBatch.Set(key, value); !errors.Is(err, errBatchClosed) {
+			t.Errorf("expected %s, got: %s", errBatchClosed, err)
+		}
+	})
+}
+
+func TestPrefixDBBatchDelete(t *testing.T) {
+	pebbleBatch, closer, err := newTestPebbleBatch()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(closer)
+
+	prefixBatch := &prefixDBBatch{
+		source: pebbleBatch,
+		prefix: []byte{'t', 'e', 's', 't'},
+	}
+
+	t.Run("EmptyKeyErr", func(t *testing.T) {
+		if err := prefixBatch.Delete(nil); !errors.Is(err, errKeyEmpty) {
+			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		}
+	})
+
+	// Our implementation's batch isn't indexed, so we can't call Get() on it to
+	// retrieve keys that we added to it. Therefore, we can't check if the call to
+	// Delete() added the key to the batch. To do that, we would have to commit the
+	// batch and then query the database for the key. However, committing a batch is
+	// what Write() and WriteSync() do—not what Delete() does; we test this behavior
+	// in TestBatchWrite. Therefore, here we only check that after a call to Delete()
+	// the batch isn't empty and contains exactly one update.
+	t.Run("NoErr", func(t *testing.T) {
+		key := []byte{'a'}
+		if err := prefixBatch.Delete(key); err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+
+		var (
+			// we are a bit cheating here, since we don't have access to the actual
+			// pebble batch from the prefixDBBatch object.
+			emptyBatch = pebbleBatch.batch.Empty()
+			nUpdates   = pebbleBatch.batch.Count()
+		)
+		if emptyBatch || (nUpdates != 1) {
+			t.Errorf("expected %d batch updates, got %d", 1, nUpdates)
+		}
+	})
+
+	t.Run("BatchNilErr", func(t *testing.T) {
+		if err := prefixBatch.Close(); err != nil {
+			t.Fatalf("closing test batch: %s", err)
+		}
+
+		key := []byte{'a'}
+		if err := prefixBatch.Delete(key); !errors.Is(err, errBatchClosed) {
+			t.Errorf("expected %s, got: %s", errBatchClosed, err)
+		}
+	})
+}
+
+func TestPrefixDBBatchWrite(t *testing.T) {
+	// Because Write and WriteSync close the batch after committing it, we need to
+	// create a new batch for each test.
+	t.Run("UnsyncedWriteNoErr", func(t *testing.T) {
+		pebbleBatch, closer, err := newTestPebbleBatch()
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(closer)
+
+		var (
+			prefix   = []byte{'t', 'e', 's', 't'}
+			prefixDB = &PrefixDB{
+				db:     pebbleBatch.db,
+				prefix: prefix,
+			}
+			prefixBatch = &prefixDBBatch{
+				source: pebbleBatch,
+				prefix: prefix,
+			}
+		)
+		err = pebbleBatchWriteTestHelper(prefixBatch, prefixDB, false)
+		if err != nil {
+			t.Error(err)
+		}
+	})
+
+	t.Run("SyncedWriteNoErr", func(t *testing.T) {
+		pebbleBatch, closer, err := newTestPebbleBatch()
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(closer)
+
+		var (
+			prefix   = []byte{'t', 'e', 's', 't'}
+			prefixDB = &PrefixDB{
+				db:     pebbleBatch.db,
+				prefix: prefix,
+			}
+			prefixBatch = &prefixDBBatch{
+				source: pebbleBatch,
+				prefix: prefix,
+			}
+		)
+		err = pebbleBatchWriteTestHelper(prefixBatch, prefixDB, true)
+		if err != nil {
+			t.Error(err)
+		}
+	})
+
+	t.Run("BatchNilErr", func(t *testing.T) {
+		pebbleBatch, closer, err := newTestPebbleBatch()
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(closer)
+
+		prefixBatch := &prefixDBBatch{
+			source: pebbleBatch,
+			prefix: []byte{'t', 'e', 's', 't'},
+		}
+		if err := prefixBatch.Close(); err != nil {
+			t.Fatalf("closing test batch: %s", err)
+		}
+		if err := prefixBatch.Write(); !errors.Is(err, errBatchClosed) {
+			t.Errorf("expected %s, got: %s", errBatchClosed, err)
+		}
+	})
+}
 func TestPrefixIteratorIterating(t *testing.T) {
-	pebbleDB, dbCloser, err := newTestEmptyDB()
+	pebbleDB, dbCloser, err := newTestPebbleDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -286,7 +481,7 @@ func TestPrefixIteratorIterating(t *testing.T) {
 		a, b, c, d = []byte{'a'}, []byte{'b'}, []byte{'c'}, []byte{'d'}
 		keys       = [][]byte{a, b, c, d}
 
-		testCases = []struct {
+		testCases = []struct { //nolint:dupl
 			start, end []byte
 			reverse    bool
 
@@ -531,7 +726,6 @@ func TestIncrementBigEndian(t *testing.T) {
 		{[]byte{0x00, 0x01}, []byte{0x00, 0x02}}, // simple increment
 		{[]byte{0x00, 0xFF}, []byte{0x01, 0x00}}, // carry over
 		{[]byte{0xFF, 0xFF}, nil},                // overflow
-		{[]byte{}, []byte{}},                     // no-op
 	}
 
 	for i, tc := range testCases {

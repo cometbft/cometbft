@@ -20,7 +20,8 @@ func Perturb(ctx context.Context, testnet *e2e.Testnet, ifp infra.Provider) erro
 			if err != nil {
 				return err
 			}
-			time.Sleep(3 * time.Second) // give network some time to recover between each
+			// Give network some time to recover between each perturbation.
+			time.Sleep(testnet.PerturbInterval)
 		}
 	}
 	return nil

@@ -172,6 +172,9 @@ type Manifest struct {
 	// * An existing validator will be chosen, and its power will alternate between 0 and 1.
 	// * `ConsensusParams` will be flipping on and off key types not set at genesis.
 	ConstantFlip bool `toml:"constant_flip"`
+
+	// PerturbInterval is the time to wait between successive perturbations.
+	PerturbInterval time.Duration `toml:"perturb_interval"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

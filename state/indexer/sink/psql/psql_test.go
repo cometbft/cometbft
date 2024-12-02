@@ -260,7 +260,7 @@ func TestStop(t *testing.T) {
 	require.NoError(t, indexer.Stop())
 }
 
-// newTestBlock constructs a fresh copy of a new block event containing
+// newTestBlockEvents constructs a fresh copy of a new block event containing
 // known test values to exercise the indexer.
 func newTestBlockEvents() types.EventDataNewBlockEvents {
 	return types.EventDataNewBlockEvents{

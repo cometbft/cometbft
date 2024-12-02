@@ -196,14 +196,18 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 			if memR.router != nil {
 				// Get tx's list of senders.
 				senders, err := memR.mempool.GetSenders(txKey)
-				if err != nil || len(senders) == 0 || senders[0] == noSender {
+				if err != nil || len(senders) == 0 || senders[0] == noSender || (len(senders) == 1 && senders[0] == senderID) {
 					// It is possible that tx got removed from the mempool.
 					memR.Logger.Debug("Received HaveTx but failed to get sender", "tx", txKey.Hash(), "err", err)
 					return
 				}
+				if senders[0] == senderID {
+					memR.router.disableRoute(senders[1], senderID)
+				} else {
+					// Disable route with tx's first sender as source and peer as target.
+					memR.router.disableRoute(senders[0], senderID)
+				}
 
-				// Disable route with tx's first sender as source and peer as target.
-				memR.router.disableRoute(senders[0], senderID)
 				memR.Logger.Debug("Disable route", "source", senders[0], "target", senderID)
 				memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
 			}
@@ -264,6 +268,7 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 			memR.Logger.Debug("Tx already exists in cache", "tx", txKey.Hash(), "sender", senderID)
 			if memR.redundancyControl != nil {
 				memR.redundancyControl.incDuplicateTxs()
+				memR.router.lastPeer = senderID
 				if memR.redundancyControl.isHaveTxBlocked() {
 					return nil, err
 				}
@@ -441,6 +446,8 @@ type gossipRouter struct {
 	// A set of `source -> target` routes that are disabled for disseminating
 	// transactions, where source and target are node IDs.
 	disabledRoutes map[nodekey.ID]map[nodekey.ID]struct{}
+
+	lastPeer nodekey.ID
 }
 
 func newGossipRouter() *gossipRouter {
@@ -570,7 +577,7 @@ func (rc *redundancyControl) controlLoop(memR *Reactor) {
 			if redundancy < rc.lowerBound {
 				memR.Logger.Debug("TX redundancy BELOW lower limit: increase it (send Reset)", "redundancy", redundancy)
 				// Send Reset message to random peer.
-				randomPeer := memR.Switch.Peers().Random()
+				randomPeer := memR.Switch.Peers().Get(memR.router.lastPeer) // memR.Switch.Peers().Random()
 				if randomPeer != nil {
 					ok := randomPeer.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.ResetRoute{}})
 					if !ok {

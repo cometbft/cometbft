@@ -737,6 +737,7 @@ func TestDOGTransactionCount(t *testing.T) {
 // a cycle in the network topology.
 // Therefore, a tells B to stop sending transactions B would be getting from C
 // (i.e. A tells B to disable route C → A → B).
+// We then reduce the redundancy level forcing A to tell B to re-enable the routes.
 func TestDOGDisabledRoute(t *testing.T) {
 	config := cfg.TestConfig()
 	config.Mempool.DOGProtocolEnabled = true
@@ -749,10 +750,14 @@ func TestDOGDisabledRoute(t *testing.T) {
 	txs := NewRandomTxs(numTxs, 20)
 	secondNodeID := reactors[1].Switch.NodeInfo().ID()
 	secondNode := reactors[0].Switch.Peers().Get(secondNodeID)
+	secondNodeFromThird := reactors[2].Switch.Peers().Get(secondNodeID)
 
 	thirdNodeID := reactors[2].Switch.NodeInfo().ID()
 	thirdNodeFromFirst := reactors[0].Switch.Peers().Get(thirdNodeID)
 	thirdNodeFromSecond := reactors[1].Switch.Peers().Get(thirdNodeID)
+
+	firstNodeID := reactors[0].Switch.NodeInfo().ID()
+	firstNodeFromThird := reactors[2].Switch.Peers().Get(firstNodeID)
 
 	txUnique := make(map[string][]byte, len(txs))
 	for _, tx := range txs {
@@ -764,15 +769,17 @@ func TestDOGDisabledRoute(t *testing.T) {
 		_, err := reactors[1].TryAddTx(tx, thirdNodeFromSecond)
 		require.NoError(t, err)
 	}
-	// Add transactions to node 1 from node 2
+
+	// Add transactions to node 3 from node 2
+	// node3.senders[tx] = node2
 	for _, tx := range txUnique {
-		_, err := reactors[0].TryAddTx(tx, secondNode)
+		_, err := reactors[2].TryAddTx(tx, secondNodeFromThird)
 		require.NoError(t, err)
 	}
 
-	// Add transactions to node 3 from node 2
+	// Add transactions to node 1 from node 2
 	for _, tx := range txUnique {
-		_, err := reactors[2].TryAddTx(tx, secondNode)
+		_, err := reactors[0].TryAddTx(tx, secondNode)
 		require.NoError(t, err)
 	}
 
@@ -783,11 +790,25 @@ func TestDOGDisabledRoute(t *testing.T) {
 	for _, tx := range txUnique {
 		_, err := reactors[0].TryAddTx(tx, thirdNodeFromFirst)
 		// The transaction is in cache, hence the Error
-		require.Error(t, err)
+		require.ErrorIs(t, err, ErrTxInCache)
 	}
 
 	// Wait for the redundancy adjustment to kick in
 	time.Sleep(config.Mempool.DOGAdjustInterval)
 
+	// Make sure that Node 3 has at least one disabled route
 	require.Greater(t, len(reactors[2].router.disabledRoutes), 0)
+
+	require.True(t, reactors[2].router.isRouteDisabled(secondNodeFromThird.ID(), firstNodeFromThird.ID()))
+	txs = NewRandomTxs(numTxs, 20)
+	for _, tx := range txs {
+		_, err := reactors[0].TryAddTx(tx, thirdNodeFromFirst)
+		require.NoError(t, err)
+	}
+	reactors[0].Switch.StopPeerGracefully(secondNode)
+	// Wait for the redundancy adjustment to kick in
+	time.Sleep(config.Mempool.DOGAdjustInterval)
+	require.False(t, reactors[2].router.isRouteDisabled(secondNodeFromThird.ID(), firstNodeFromThird.ID()))
+
+	// TEST Reset on peer disconnect
 }

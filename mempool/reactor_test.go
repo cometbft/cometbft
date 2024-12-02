@@ -812,3 +812,35 @@ func TestDOGDisabledRoute(t *testing.T) {
 
 	// TEST Reset on peer disconnect
 }
+
+// When a peer disconnects we want to remove all disabled route info
+// for that peer only.
+func TestDOGRemoveDisabledRoutesOnDisconnect(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.DOGProtocolEnabled = true
+
+	// Put the interval to a higher value to make sure the values don't get reset
+	config.Mempool.DOGAdjustInterval = 5 * time.Second
+	reactors, _ := makeAndConnectReactors(config, 3, nil)
+
+	firstNodeID := reactors[0].Switch.NodeInfo().ID()
+
+	secondNodeID := reactors[1].Switch.NodeInfo().ID()
+	secondNode := reactors[0].Switch.Peers().Get(secondNodeID)
+
+	thirdNodeID := reactors[2].Switch.NodeInfo().ID()
+
+	reactors[0].router.disableRoute(secondNodeID, firstNodeID)
+	reactors[0].router.disableRoute(thirdNodeID, firstNodeID)
+	reactors[0].router.disableRoute(thirdNodeID, secondNodeID)
+
+	require.True(t, reactors[0].router.isRouteDisabled(secondNodeID, firstNodeID))
+	require.True(t, reactors[0].router.isRouteDisabled(thirdNodeID, firstNodeID))
+	require.True(t, reactors[0].router.isRouteDisabled(thirdNodeID, secondNodeID))
+
+	reactors[0].Switch.StopPeerGracefully(secondNode)
+
+	require.False(t, reactors[0].router.isRouteDisabled(secondNodeID, firstNodeID))
+	require.False(t, reactors[0].router.isRouteDisabled(thirdNodeID, secondNodeID))
+	require.True(t, reactors[0].router.isRouteDisabled(thirdNodeID, firstNodeID))
+}

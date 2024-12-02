@@ -465,6 +465,7 @@ func TestPrefixDBBatchWrite(t *testing.T) {
 		}
 	})
 }
+
 func TestPrefixIteratorIterating(t *testing.T) {
 	pebbleDB, dbCloser, err := newTestPebbleDB()
 	if err != nil {

@@ -726,3 +726,68 @@ func TestDOGTransactionCount(t *testing.T) {
 	require.Equal(t, int64(0), reactors[0].redundancyControl.duplicateTxs)
 	require.Equal(t, int64(0), reactors[0].redundancyControl.firstTimeTxs)
 }
+
+// Testing the disabled route between two nodes
+// AS the description of DOG in the issue:
+// The core idea of the protocol is the following.
+// Consider a node A that receives from node B a transaction
+// that it already has. Let's assume B itself had received
+// the transaction from C. The fact that A received from B
+// a transaction it already has means that there must exist
+// a cycle in the network topology.
+// Therefore, a tells B to stop sending transactions B would be getting from C
+// (i.e. A tells B to disable route C → A → B).
+func TestDOGDisabledRoute(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.DOGProtocolEnabled = true
+
+	// Put the interval to a higher value to make sure the values don't get reset
+	config.Mempool.DOGAdjustInterval = 5 * time.Second
+	reactors, _ := makeAndConnectReactors(config, 3, nil)
+
+	// create random transactions
+	txs := NewRandomTxs(numTxs, 20)
+	secondNodeID := reactors[1].Switch.NodeInfo().ID()
+	secondNode := reactors[0].Switch.Peers().Get(secondNodeID)
+
+	thirdNodeID := reactors[2].Switch.NodeInfo().ID()
+	thirdNodeFromFirst := reactors[0].Switch.Peers().Get(thirdNodeID)
+	thirdNodeFromSecond := reactors[1].Switch.Peers().Get(thirdNodeID)
+
+	txUnique := make(map[string][]byte, len(txs))
+	for _, tx := range txs {
+		txUnique[string(tx.Hash())] = tx
+	}
+
+	// Add transactions to node 2 from node 3
+	for _, tx := range txUnique {
+		_, err := reactors[1].TryAddTx(tx, thirdNodeFromSecond)
+		require.NoError(t, err)
+	}
+	// Add transactions to node 1 from node 2
+	for _, tx := range txUnique {
+		_, err := reactors[0].TryAddTx(tx, secondNode)
+		require.NoError(t, err)
+	}
+
+	// Add transactions to node 3 from node 2
+	for _, tx := range txUnique {
+		_, err := reactors[2].TryAddTx(tx, secondNode)
+		require.NoError(t, err)
+	}
+
+	// Trying to add the same transactions node 1 has received
+	// from node 2, but this time from node 3
+	// Node 1 should now ask node 3 to disable the route between
+	// a node that has sent this tx to node 3(node 2) and node1
+	for _, tx := range txUnique {
+		_, err := reactors[0].TryAddTx(tx, thirdNodeFromFirst)
+		// The transaction is in cache, hence the Error
+		require.Error(t, err)
+	}
+
+	// Wait for the redundancy adjustment to kick in
+	time.Sleep(config.Mempool.DOGAdjustInterval)
+
+	require.Greater(t, len(reactors[2].router.disabledRoutes), 0)
+}

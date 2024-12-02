@@ -685,3 +685,44 @@ func TestMempoolVectors(t *testing.T) {
 		require.Equal(t, tc.expBytes, hex.EncodeToString(bz), tc.testName)
 	}
 }
+
+// Verify that counting of duplicates and first time transactions work
+// The test sends transactions from node2 to node1 twice.
+// The second time they will get rejected.
+func TestDOGTransactionCount(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.DOGProtocolEnabled = true
+
+	// Put the interval to a higher value to make sure the values don't get reset
+	config.Mempool.DOGAdjustInterval = 5 * time.Second
+	reactors, _ := makeAndConnectReactors(config, 2, nil)
+
+	// create random transactions
+	txs := NewRandomTxs(numTxs, 20)
+	secondNodeID := reactors[1].Switch.NodeInfo().ID()
+	secondNode := reactors[0].Switch.Peers().Get(secondNodeID)
+
+	txUnique := make(map[string][]byte, len(txs))
+	for _, tx := range txs {
+		txUnique[string(tx.Hash())] = tx
+	}
+
+	for _, tx := range txUnique {
+		_, err := reactors[0].TryAddTx(tx, secondNode)
+		require.NoError(t, err)
+	}
+
+	require.Equal(t, int64(len(txUnique)), reactors[0].redundancyControl.firstTimeTxs)
+	for _, tx := range txUnique {
+		_, err := reactors[0].TryAddTx(tx, secondNode)
+		// The transaction is in cache, hence the Error
+		require.Error(t, err)
+	}
+	require.Equal(t, int64(len(txUnique)), reactors[0].redundancyControl.duplicateTxs)
+
+	// Wait for the redundancy adjustment to kick in
+	time.Sleep(config.Mempool.DOGAdjustInterval)
+	// Now the counters should be reset
+	require.Equal(t, int64(0), reactors[0].redundancyControl.duplicateTxs)
+	require.Equal(t, int64(0), reactors[0].redundancyControl.firstTimeTxs)
+}

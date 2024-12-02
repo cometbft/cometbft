@@ -210,26 +210,3 @@ func PrefixIterator(db DB, prefix []byte) (Iterator, error) {
 
 	return it, nil
 }
-
-// incrementBigEndian treats the input slice as a big-endian unsigned integer.
-// It creates a new slice of the same length, increments the value by one,
-// and returns the result.
-// If the input slice represents the maximum value for its length (all bytes are
-// 0xFF), incrementBigEndian returns nil to indicate overflow.
-// The input slice s remains unmodified. The function is a no-op if the input
-// slice's length is 0.
-func incrementBigEndian(s []byte) []byte {
-	result := make([]byte, len(s))
-	copy(result, s)
-
-	for i := len(result) - 1; i >= 0; i-- {
-		if result[i] < 0xFF {
-			result[i]++
-			return result
-		}
-		result[i] = 0x00 // Carry over to the next byte
-	}
-
-	// Overflow if the loop finishes without returning
-	return nil
-}

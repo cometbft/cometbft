@@ -66,24 +66,3 @@ func TestPrefixIterator(t *testing.T) {
 		}
 	})
 }
-
-func TestIncrementBigEndian(t *testing.T) {
-	testCases := []struct {
-		input      []byte
-		wantResult []byte
-	}{
-		{[]byte{0xFE}, []byte{0xFF}},             // simple increment
-		{[]byte{0xFF}, nil},                      // overflow
-		{[]byte{0x00, 0x01}, []byte{0x00, 0x02}}, // simple increment
-		{[]byte{0x00, 0xFF}, []byte{0x01, 0x00}}, // carry over
-		{[]byte{0xFF, 0xFF}, nil},                // overflow
-		{[]byte{}, []byte{}},                     // no-op
-	}
-
-	for i, tc := range testCases {
-		gotResult := incrementBigEndian(tc.input)
-		if !bytes.Equal(gotResult, tc.wantResult) {
-			t.Errorf("test %d: want: %v, got: %v", i, tc.wantResult, gotResult)
-		}
-	}
-}

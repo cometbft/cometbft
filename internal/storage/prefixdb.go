@@ -530,11 +530,8 @@ func (it *prefixDBIterator) Next() {
 	it.assertIsValid()
 	it.source.Next()
 
-	var (
-		srcItInvalid  = !it.source.Valid()
-		missingPrefix = !bytes.HasPrefix(it.source.Key(), it.prefix)
-	)
-	if srcItInvalid || missingPrefix {
+	srcItInvalid := !it.source.Valid()
+	if srcItInvalid || !bytes.HasPrefix(it.source.Key(), it.prefix) {
 		it.valid = false
 		return
 	}
@@ -557,16 +554,15 @@ func (it *prefixDBIterator) Next() {
 // It implements the [Iterator] interface for type prefixDBIterator.
 func (it *prefixDBIterator) Valid() bool {
 	if !it.valid || it.err != nil || !it.source.Valid() {
-		it.valid = false
 		return false
 	}
 
 	var (
-		key            = it.source.Key()
-		keyTooShort    = len(key) < len(it.prefix)
-		prefixMismatch = !bytes.Equal(key[:len(it.prefix)], it.prefix)
+		key         = it.source.Key()
+		prefixLen   = len(it.prefix)
+		keyTooShort = len(key) < prefixLen
 	)
-	if keyTooShort || prefixMismatch {
+	if keyTooShort || !bytes.Equal(key[:prefixLen], it.prefix) {
 		const format = "received invalid key from backend: %x (expected prefix %x)"
 		it.err = fmt.Errorf(format, key, it.prefix)
 
@@ -597,15 +593,34 @@ func (it *prefixDBIterator) assertIsValid() {
 
 // prependPrefix concatenates a prefix with a key.
 func prependPrefix(prefix, key []byte) []byte {
-	if len(key) == 0 {
-		return prefix
-	}
-
 	prefixed := make([]byte, len(prefix)+len(key))
 	copy(prefixed, prefix)
 	copy(prefixed[len(prefix):], key)
 
 	return prefixed
+}
+
+// incrementBigEndian treats the input slice as a big-endian unsigned integer.
+// It creates a new slice of the same length, increments the value by one,
+// and returns the result.
+// If the input slice represents the maximum value for its length (all bytes are
+// 0xFF), incrementBigEndian returns nil to indicate overflow.
+// The input slice s remains unmodified. The function is a no-op if the input
+// slice's length is 0.
+func incrementBigEndian(s []byte) []byte {
+	result := make([]byte, len(s))
+	copy(result, s)
+
+	for i := len(result) - 1; i >= 0; i-- {
+		if result[i] < 0xFF {
+			result[i]++
+			return result
+		}
+		result[i] = 0x00 // Carry over to the next byte
+	}
+
+	// Overflow if the loop finishes without returning
+	return nil
 }
 
 // prefixedIteratorBounds takes the lower and upper bounds for an iterator and

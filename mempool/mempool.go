@@ -6,7 +6,7 @@ import (
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/p2p/nodekey"
+	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -26,7 +26,7 @@ const (
 type Mempool interface {
 	// CheckTx executes a new transaction against the application to determine
 	// its validity and whether it should be added to the mempool.
-	CheckTx(tx types.Tx, sender nodekey.ID) (*abcicli.ReqRes, error)
+	CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, error)
 
 	// RemoveTxByKey removes a transaction, identified by its key,
 	// from the mempool.
@@ -165,7 +165,7 @@ type Entry interface {
 	GasWanted() int64
 
 	// IsSender returns whether we received the transaction from the given peer ID.
-	IsSender(peerID nodekey.ID) bool
+	IsSender(peerID p2p.ID) bool
 }
 
 // An iterator is used to iterate through the mempool entries.

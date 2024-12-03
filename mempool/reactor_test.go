@@ -743,11 +743,9 @@ func TestDOGDisabledRoute(t *testing.T) {
 	config.Mempool.DOGProtocolEnabled = true
 
 	// Put the interval to a higher value to make sure the values don't get reset
-	config.Mempool.DOGAdjustInterval = 5 * time.Second
+	config.Mempool.DOGAdjustInterval = 35 * time.Second
 	reactors, _ := makeAndConnectReactors(config, 3, nil)
 
-	// create random transactions
-	txs := NewRandomTxs(numTxs, 20)
 	secondNodeID := reactors[1].Switch.NodeInfo().ID()
 	secondNode := reactors[0].Switch.Peers().Get(secondNodeID)
 	secondNodeFromThird := reactors[2].Switch.Peers().Get(secondNodeID)
@@ -758,6 +756,9 @@ func TestDOGDisabledRoute(t *testing.T) {
 	firstNodeID := reactors[0].Switch.NodeInfo().ID()
 	firstNodeFromThird := reactors[2].Switch.Peers().Get(firstNodeID)
 
+	// create random transactions
+	txs := NewRandomTxs(numTxs, 20)
+	// Making sure they are unique
 	txUnique := make(map[string][]byte, len(txs))
 	for _, tx := range txs {
 		txUnique[string(tx.Hash())] = tx
@@ -770,7 +771,7 @@ func TestDOGDisabledRoute(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// Add transactions to node 1 from node 2
+	// Add the same transactions to node 1 from node 2
 	for _, tx := range txUnique {
 		_, err := reactors[0].TryAddTx(tx, secondNode)
 		require.NoError(t, err)
@@ -786,21 +787,19 @@ func TestDOGDisabledRoute(t *testing.T) {
 		require.ErrorIs(t, err, ErrTxInCache)
 	}
 
+	reactors[0].redundancyControl.triggerAdjustment()
 	// Wait for the redundancy adjustment to kick in
-	time.Sleep(config.Mempool.DOGAdjustInterval)
+	time.Sleep(1 * time.Second)
 
 	// Make sure that Node 3 has at least one disabled route
 	require.Greater(t, len(reactors[2].router.disabledRoutes), 0)
 
 	require.True(t, reactors[2].router.isRouteDisabled(secondNodeFromThird.ID(), firstNodeFromThird.ID()))
-	txs = NewRandomTxs(numTxs, 20)
-	for _, tx := range txs {
-		_, err := reactors[0].TryAddTx(tx, thirdNodeFromFirst)
-		require.NoError(t, err)
-	}
-	reactors[0].Switch.StopPeerGracefully(secondNode)
-	// Wait for the redundancy adjustment to kick in
-	time.Sleep(config.Mempool.DOGAdjustInterval)
+
+	// This will force Node 3 to delete all disabled routes
+	reactors[2].Switch.StopPeerGracefully(secondNode)
+
+	// The route should not be there
 	require.False(t, reactors[2].router.isRouteDisabled(secondNodeFromThird.ID(), firstNodeFromThird.ID()))
 }
 

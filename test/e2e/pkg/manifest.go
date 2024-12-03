@@ -88,6 +88,7 @@ type Manifest struct {
 	LoadTxConnections int `toml:"load_tx_connections"`
 	LoadMaxSeconds    int `toml:"load_max_seconds"`
 	LoadMaxTxs        int `toml:"load_max_txs"`
+	LoadNumNodesPerTx int `toml:"load_num_nodes_per_tx"`
 
 	// Weight for each lane defined by the app. The transaction loader will
 	// assign lanes to generated transactions proportionally to their weights.

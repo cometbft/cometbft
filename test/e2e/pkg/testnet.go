@@ -183,6 +183,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	if testnet.LoadTxSizeBytes == 0 {
 		testnet.LoadTxSizeBytes = defaultTxSizeBytes
 	}
+	if testnet.LoadNumNodesPerTx == 0 {
+		testnet.LoadNumNodesPerTx = 1
+	}
 	if testnet.PerturbInterval == 0 {
 		testnet.PerturbInterval = DefaultPerturbInterval
 	}
@@ -509,6 +512,12 @@ func (t Testnet) Validate() error {
 		if _, _, err := ParseKeyValueField("config", field); err != nil {
 			return err
 		}
+	}
+	if t.LoadNumNodesPerTx > len(t.Nodes) {
+		return errors.New("value must be less or equal to the number of nodes in the manifest")
+	}
+	if len(t.LoadTargetNodes) > 0 && t.LoadNumNodesPerTx > len(t.LoadTargetNodes) {
+		return errors.New("value must be less or equal to the number of target nodes")
 	}
 	return nil
 }

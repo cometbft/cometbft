@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/log"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -35,9 +36,8 @@ func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 	started := time.Now()
 	u := [16]byte(uuid.New()) // generate run ID on startup
 
-	txCh := make(chan types.Tx)
-	go loadGenerate(ctx, txCh, testnet, u[:])
-
+	// Nodes that will receive load.
+	targetNodes := make([]*e2e.Node, 0)
 	for _, n := range testnet.Nodes {
 		if len(testnet.LoadTargetNodes) == 0 {
 			if n.SendNoLoad {
@@ -46,9 +46,20 @@ func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 		} else if !slices.Contains(testnet.LoadTargetNodes, n.Name) {
 			continue
 		}
+		targetNodes = append(targetNodes, n)
+	}
 
+	// Create one channel per target node.
+	txChs := make([](chan types.Tx), len(targetNodes))
+	for i := range targetNodes {
+		txChs[i] = make(chan types.Tx)
+	}
+	go loadGenerate(ctx, txChs, testnet, targetNodes, u[:])
+
+	// Create a loading goroutine per target node and per connection.
+	for i, n := range targetNodes {
 		for w := 0; w < testnet.LoadTxConnections; w++ {
-			go loadProcess(ctx, txCh, chSuccess, chFailed, n, useInternalIP)
+			go loadProcess(ctx, txChs[i], chSuccess, chFailed, n, useInternalIP)
 		}
 	}
 
@@ -110,14 +121,16 @@ func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 }
 
 // loadGenerate generates jobs until the context is canceled.
-func loadGenerate(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testnet, id []byte) {
+func loadGenerate(ctx context.Context, txChs []chan types.Tx, testnet *e2e.Testnet, targetNodes []*e2e.Node, id []byte) {
 	t := time.NewTimer(0)
 	defer t.Stop()
 	for {
 		select {
 		case <-t.C:
 		case <-ctx.Done():
-			close(txCh)
+			for _, ch := range txChs {
+				close(ch)
+			}
 			return
 		}
 		t.Reset(time.Second)
@@ -127,7 +140,7 @@ func loadGenerate(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testne
 		// the next batch is set to be sent out, then the context is canceled so that
 		// the current batch is halted, allowing the next batch to begin.
 		tctx, cf := context.WithTimeout(ctx, time.Second)
-		createTxBatch(tctx, txCh, testnet, id)
+		createTxBatch(tctx, txChs, testnet, targetNodes, id)
 		cf()
 	}
 }
@@ -135,7 +148,7 @@ func loadGenerate(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testne
 // createTxBatch creates new transactions and sends them into the txCh. createTxBatch
 // returns when either a full batch has been sent to the txCh or the context
 // is canceled.
-func createTxBatch(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testnet, id []byte) {
+func createTxBatch(ctx context.Context, txChs []chan types.Tx, testnet *e2e.Testnet, targetNodes []*e2e.Node, id []byte) {
 	wg := &sync.WaitGroup{}
 	genCh := make(chan struct{})
 	for i := 0; i < workerPoolSize; i++ {
@@ -154,10 +167,21 @@ func createTxBatch(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testn
 					panic(fmt.Sprintf("Failed to generate tx: %v", err))
 				}
 
-				select {
-				case txCh <- tx:
-				case <-ctx.Done():
-					return
+				var nodeIndices []int
+				if testnet.LoadNumNodesPerTx <= 1 {
+					// Pick one random node to send the transaction.
+					nodeIndices = []int{cmtrand.Intn(len(targetNodes))}
+				} else {
+					// Pick LoadNumNodesPerTx random nodes (channel indices) to
+					// send the transaction.
+					nodeIndices = cmtrand.Perm(len(targetNodes))[:testnet.LoadNumNodesPerTx]
+				}
+				for _, i := range nodeIndices {
+					select {
+					case txChs[i] <- tx:
+					case <-ctx.Done():
+						return
+					}
 				}
 			}
 		}()

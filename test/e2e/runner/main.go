@@ -282,9 +282,15 @@ func NewCLI() *CLI {
 			} else if len(loadTargetNodes) > 0 {
 				cli.testnet.LoadTargetNodes = loadTargetNodes
 			}
+			if numNodesPerTx, err := cmd.Flags().GetInt("num-nodes-per-tx"); err != nil {
+				return err
+			} else if numNodesPerTx > 0 {
+				cli.testnet.LoadNumNodesPerTx = numNodesPerTx
+			}
 			if err = cli.testnet.Validate(); err != nil {
 				return err
 			}
+
 			return Load(context.Background(), cli.testnet, useInternalIP)
 		},
 	}
@@ -300,6 +306,9 @@ func NewCLI() *CLI {
 		"Comma-separated list of node names to send load to. Manifest option send_no_load will be ignored.")
 	loadCmd.PersistentFlags().BoolP("internal-ip", "i", false,
 		"Use nodes' internal IP addresses when sending transaction load. For running from inside a DO private network.")
+	loadCmd.PersistentFlags().IntP("num-nodes-per-tx", "", 0,
+		"Number of nodes that will receive the same transactions")
+
 	cli.root.AddCommand(loadCmd)
 
 	cli.root.AddCommand(&cobra.Command{

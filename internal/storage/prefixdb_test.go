@@ -2,36 +2,27 @@ package storage
 
 import (
 	"bytes"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
-	"os"
 	"slices"
-	"strings"
 	"testing"
 )
 
 func TestPrefixDBGet(t *testing.T) {
-	pebbleDB, dbCloser, err := newTestPebbleDB()
+	pDB, err := newTestPrefixDB()
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(dbCloser)
-
-	prefixDB := &PrefixDB{
-		db:     pebbleDB,
-		prefix: []byte{'t', 'e', 's', 't'},
-	}
+	t.Cleanup(func() { pDB.Close() })
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if _, err := prefixDB.Get(nil); !errors.Is(err, errKeyEmpty) {
+		if _, err := pDB.Get(nil); !errors.Is(err, errKeyEmpty) {
 			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
 		}
 	})
 
 	t.Run("KeyNotExistReturnsNil", func(t *testing.T) {
-		val, err := prefixDB.Get([]byte{'a'})
+		val, err := pDB.Get([]byte{'a'})
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
@@ -43,16 +34,16 @@ func TestPrefixDBGet(t *testing.T) {
 	t.Run("KeyExistReturnsValue", func(t *testing.T) {
 		var (
 			key         = []byte{'a'}
-			prefixedKey = append(prefixDB.prefix, key...)
+			prefixedKey = append(pDB.prefix, key...)
 			val         = []byte{'b'}
 		)
 		// we are calling PebbleDB's [SetSync] directly, therefore we must prepend
 		// the prefix to the key ourselves.
-		if err := prefixDB.db.SetSync(prefixedKey, val); err != nil {
+		if err := pDB.db.SetSync(prefixedKey, val); err != nil {
 			t.Fatalf("writing to test DB: %s", err)
 		}
 
-		gotVal, err := prefixDB.Get(key)
+		gotVal, err := pDB.Get(key)
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
@@ -64,25 +55,20 @@ func TestPrefixDBGet(t *testing.T) {
 }
 
 func TestPrefixDBHas(t *testing.T) {
-	pebbleDB, dbcloser, err := newTestPebbleDB()
+	pDB, err := newTestPrefixDB()
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(dbcloser)
-
-	prefixDB := &PrefixDB{
-		db:     pebbleDB,
-		prefix: []byte{'t', 'e', 's', 't'},
-	}
+	t.Cleanup(func() { pDB.Close() })
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if _, err := prefixDB.Has(nil); !errors.Is(err, errKeyEmpty) {
+		if _, err := pDB.Has(nil); !errors.Is(err, errKeyEmpty) {
 			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
 		}
 	})
 
 	t.Run("KeyNotExistReturnsFalse", func(t *testing.T) {
-		hasKey, err := prefixDB.Has([]byte{'a'})
+		hasKey, err := pDB.Has([]byte{'a'})
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
@@ -94,16 +80,16 @@ func TestPrefixDBHas(t *testing.T) {
 	t.Run("KeyExistReturnsTrue", func(t *testing.T) {
 		var (
 			key         = []byte{'a'}
-			prefixedKey = append(prefixDB.prefix, key...)
+			prefixedKey = append(pDB.prefix, key...)
 			val         = []byte{'b'}
 		)
 		// we are calling PebbleDB's [SetSync] directly, therefore we must prepend
 		// the prefix to the key ourselves.
-		if err := prefixDB.db.SetSync(prefixedKey, val); err != nil {
+		if err := pDB.db.SetSync(prefixedKey, val); err != nil {
 			t.Fatalf("writing to test DB: %s", err)
 		}
 
-		hasKey, err := prefixDB.Has(key)
+		hasKey, err := pDB.Has(key)
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
@@ -114,26 +100,21 @@ func TestPrefixDBHas(t *testing.T) {
 }
 
 func TestPrefixDBSet(t *testing.T) {
-	pebbleDB, dbCloser, err := newTestPebbleDB()
+	pDB, err := newTestPrefixDB()
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(dbCloser)
-
-	prefixDB := &PrefixDB{
-		db:     pebbleDB,
-		prefix: []byte{'t', 'e', 's', 't'},
-	}
+	t.Cleanup(func() { pDB.Close() })
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if err := prefixDB.Set(nil, nil); !errors.Is(err, errKeyEmpty) {
+		if err := pDB.Set(nil, nil); !errors.Is(err, errKeyEmpty) {
 			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
 		}
 	})
 
 	t.Run("NilValueErr", func(t *testing.T) {
 		key := []byte{'a'}
-		if err := prefixDB.Set(key, nil); !errors.Is(err, errValueNil) {
+		if err := pDB.Set(key, nil); !errors.Is(err, errValueNil) {
 			t.Errorf("expected %s, got: %s", errValueNil, err)
 		}
 	})
@@ -143,19 +124,19 @@ func TestPrefixDBSet(t *testing.T) {
 			keys = [][]byte{{'a'}, {'b'}}
 			vals = [][]byte{{0x01}, {0x02}}
 		)
-		if err := prefixDB.Set(keys[0], vals[0]); err != nil {
+		if err := pDB.Set(keys[0], vals[0]); err != nil {
 			t.Fatalf("unsynced Set unexpected error: %s", err)
 		}
 
-		if err := prefixDB.SetSync(keys[1], vals[1]); err != nil {
+		if err := pDB.SetSync(keys[1], vals[1]); err != nil {
 			t.Fatalf("synced Set unexpected error: %s", err)
 		}
 
 		for i, key := range keys {
 			// we are calling PebbleDB's [Get] directly, therefore we must u
 			// prepend the prefix to the key ourselves.
-			prefixedKey := append(prefixDB.prefix, key...)
-			storedVal, err := prefixDB.db.Get(prefixedKey)
+			prefixedKey := append(pDB.prefix, key...)
+			storedVal, err := pDB.db.Get(prefixedKey)
 			if err != nil {
 				t.Errorf("test %d: reading from test DB: %s", i, err)
 			}
@@ -170,104 +151,34 @@ func TestPrefixDBSet(t *testing.T) {
 }
 
 func TestPrefixDBDelete(t *testing.T) {
-	pebbleDB, dbCloser, err := newTestPebbleDB()
+	pDB, err := newTestPrefixDB()
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(dbCloser)
-
-	prefixDB := &PrefixDB{
-		db:     pebbleDB,
-		prefix: []byte{'t', 'e', 's', 't'},
-	}
+	t.Cleanup(func() { pDB.Close() })
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if err := prefixDB.Delete(nil); !errors.Is(err, errKeyEmpty) {
+		if err := pDB.Delete(nil); !errors.Is(err, errKeyEmpty) {
 			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
 		}
 	})
 
 	t.Run("KeyNotExistNoErr", func(t *testing.T) {
 		key := []byte{'a'}
-		if err := prefixDB.Delete(key); err != nil {
+		if err := pDB.Delete(key); err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
 	})
 
 	t.Run("KeyExistNoErr", func(t *testing.T) {
-		if err := deletePrefixDBHelper(prefixDB, false); err != nil {
+		if err := deletePrefixDBHelper(pDB, false); err != nil {
 			t.Errorf("unsynced Delete unexpected error: %s", err)
 		}
 
-		if err := deletePrefixDBHelper(prefixDB, true); err != nil {
+		if err := deletePrefixDBHelper(pDB, true); err != nil {
 			t.Errorf("synced Delete unexpected error: %s", err)
 		}
 	})
-}
-
-func TestPrefixDBPrint(t *testing.T) {
-	pebbleDB, dbCloser, err := newTestPebbleDB()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(dbCloser)
-
-	prefixDB := &PrefixDB{
-		db:     pebbleDB,
-		prefix: []byte{'t', 'e', 's', 't'},
-	}
-
-	kvPairs := map[string]string{
-		"a": "1",
-		"b": "2",
-		"c": "3",
-	}
-	for k, v := range kvPairs {
-		prefixedKey := prependPrefix(prefixDB.prefix, []byte(k))
-		if err := pebbleDB.Set(prefixedKey, []byte(v)); err != nil {
-			t.Fatalf("writing key %s to test DB: %s", prefixedKey, err)
-		}
-	}
-
-	// Print() writes to os.Stdout, so we need to do some awkward shenanigans to
-	// capture the output and check it's correct.
-	r, w, err := os.Pipe()
-	if err != nil {
-		const format = "Error creating pipe to capture os.Stdout contents: %s"
-		t.Fatalf(format, err)
-	}
-
-	// store os.Stdout and redirect it to print to the writer we just created
-	stdOut := os.Stdout
-	os.Stdout = w
-
-	if err := prefixDB.Print(); err != nil {
-		t.Fatalf("unexpected error: %s", err)
-	}
-	w.Close()
-
-	// restore os.Stdout
-	os.Stdout = stdOut
-
-	var buf bytes.Buffer
-	if _, err := io.Copy(&buf, r); err != nil {
-		t.Fatalf("reading os.Stdout contents: %s", err)
-	}
-	r.Close()
-
-	outputStr := buf.String()
-	for k, v := range kvPairs {
-		var (
-			kStr = strings.ToUpper(hex.EncodeToString([]byte(k)))
-			vStr = strings.ToUpper(hex.EncodeToString([]byte(v)))
-
-			wantStr = "[" + kStr + "]:\t[" + vStr + "]\n"
-		)
-		if !strings.Contains(outputStr, wantStr) {
-			const formatStr = "\nthis line was not printed: %q\nfull print: %q"
-			t.Errorf(formatStr, wantStr, outputStr)
-		}
-	}
 }
 
 func TestPrefixDBBatchSet(t *testing.T) {
@@ -748,6 +659,23 @@ func TestIncrementBigEndian(t *testing.T) {
 
 		incrementBigEndian([]byte{})
 	})
+}
+
+// newTestPrefixDB creates an instance of a PrefixDB for testing.
+// Under the hood, it wraps an in-memory instance of PebbleDB and scopes its keys
+// with the prefix "test".
+func newTestPrefixDB() (*PrefixDB, error) {
+	pebbleDB, _, err := newTestPebbleDB()
+	if err != nil {
+		return nil, fmt.Errorf("creating prefix-wrapped DB: %w", err)
+	}
+
+	pDB := &PrefixDB{
+		db:     pebbleDB,
+		prefix: []byte{'t', 'e', 's', 't'},
+	}
+
+	return pDB, nil
 }
 
 // deletePrefixDBHelper is a utility function supporting TestPrefixDBDelete.

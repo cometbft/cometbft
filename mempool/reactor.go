@@ -264,7 +264,6 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 			memR.Logger.Debug("Tx already exists in cache", "tx", txKey.Hash(), "sender", senderID)
 			if memR.redundancyControl != nil {
 				memR.redundancyControl.incDuplicateTxs()
-				memR.router.lastPeer = senderID
 				if memR.redundancyControl.isHaveTxBlocked() {
 					return nil, err
 				}
@@ -442,8 +441,6 @@ type gossipRouter struct {
 	// A set of `source -> target` routes that are disabled for disseminating
 	// transactions, where source and target are node IDs.
 	disabledRoutes map[nodekey.ID]map[nodekey.ID]struct{}
-
-	lastPeer nodekey.ID
 }
 
 func newGossipRouter() *gossipRouter {

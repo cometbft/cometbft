@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
 
-	db "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
@@ -22,7 +22,7 @@ import (
 )
 
 func TestBlockerIndexer_Prune(t *testing.T) {
-	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
+	store := storage.NewPrefixDB(storage.NewMemDB(), []byte("block_events"))
 	indexer := blockidxkv.New(store)
 
 	events1 := getEventsForTesting(1)
@@ -66,7 +66,7 @@ func BenchmarkBlockerIndexer_Prune(_ *testing.B) {
 		}
 	}()
 
-	store, err := db.NewDB("block", db.PebbleDBBackend, config.DBDir())
+	store, err := storage.NewDB("block", config.DBDir())
 	if err != nil {
 		panic(err)
 	}
@@ -90,7 +90,7 @@ func BenchmarkBlockerIndexer_Prune(_ *testing.B) {
 }
 
 func TestBlockIndexer(t *testing.T) {
-	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
+	store := storage.NewPrefixDB(storage.NewMemDB(), []byte("block_events"))
 	indexer := blockidxkv.New(store)
 
 	require.NoError(t, indexer.Index(types.EventDataNewBlockEvents{
@@ -216,7 +216,7 @@ func TestBlockIndexer(t *testing.T) {
 }
 
 func TestBlockIndexerMulti(t *testing.T) {
-	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
+	store := storage.NewPrefixDB(storage.NewMemDB(), []byte("block_events"))
 	indexer := blockidxkv.New(store)
 
 	require.NoError(t, indexer.Index(types.EventDataNewBlockEvents{
@@ -377,7 +377,7 @@ func TestBigInt(t *testing.T) {
 	bigFloat := bigInt + ".76"
 	bigFloatLower := bigInt + ".1"
 	bigIntSmaller := "9999999999999999999"
-	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
+	store := storage.NewPrefixDB(storage.NewMemDB(), []byte("block_events"))
 	indexer := blockidxkv.New(store)
 
 	require.NoError(t, indexer.Index(types.EventDataNewBlockEvents{

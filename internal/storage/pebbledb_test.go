@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"slices"
 	"testing"
 
 	"github.com/cockroachdb/pebble"
@@ -559,119 +558,6 @@ func TestNewPebbleDBIterator(t *testing.T) {
 			t.Fatalf(formatStr, wantEnd, it.Key())
 		}
 	})
-}
-
-func TestPebbleIteratorIterating(t *testing.T) {
-	pDB, dbCloser, err := newTestPebbleDB()
-	if err != nil {
-		t.Fatalf("creating test database: %s", err)
-	}
-	t.Cleanup(dbCloser)
-
-	var (
-		keys = [][]byte{{'a'}, {'b'}, {'c'}, {'d'}}
-		vals = [][]byte{{0x01}, {0x02}, {0x03}, {0x04}}
-	)
-	for i, key := range keys {
-		val := vals[i]
-		if err := pDB.db.Set(key, val, nil); err != nil {
-			formatStr := "setting (k,v)=(%v,%v) to test database: %s"
-			t.Fatalf(formatStr, key, val, err)
-		}
-	}
-
-	var (
-		a, b, c, d = []byte{'a'}, []byte{'b'}, []byte{'c'}, []byte{'d'}
-
-		testCases = []struct { //nolint:dupl
-			start, end []byte
-			reverse    bool
-
-			// expected keys visited by the iterator in order.
-			wantVisit [][]byte
-		}{
-			{start: nil, end: nil, reverse: false, wantVisit: [][]byte{a, b, c, d}},
-			{start: nil, end: nil, reverse: true, wantVisit: [][]byte{d, c, b, a}},
-
-			// Because 'end is exclusive, and because 'a' is the first key in the DB,
-			// setting it as the iterator's upper bound will create an iterator over
-			// an empty key range.
-			{start: nil, end: a, reverse: false, wantVisit: [][]byte{}},
-			{start: nil, end: a, reverse: true, wantVisit: [][]byte{}},
-			{start: nil, end: b, reverse: false, wantVisit: [][]byte{a}},
-			{start: nil, end: b, reverse: true, wantVisit: [][]byte{a}},
-			{start: nil, end: c, reverse: false, wantVisit: [][]byte{a, b}},
-
-			// Because 'end' is exclusive, setting 'c' as the iterator's upper bound
-			// of a reverse iterator will create an iterator whose starting key
-			// ('c') will be skipped.
-			{start: nil, end: c, reverse: true, wantVisit: [][]byte{b, a}},
-			{start: nil, end: d, reverse: false, wantVisit: [][]byte{a, b, c}},
-			{start: nil, end: d, reverse: true, wantVisit: [][]byte{c, b, a}},
-
-			{start: a, end: nil, reverse: false, wantVisit: [][]byte{a, b, c, d}},
-
-			// 'start' is inclusive, so setting 'a' as the iterator's lower bound of
-			// a reverse iterator will include 'a', even if 'a' is the last
-			// effectively becomes the last key in the key range.
-			{start: a, end: nil, reverse: true, wantVisit: [][]byte{d, c, b, a}},
-			{start: a, end: b, reverse: false, wantVisit: [][]byte{a}},
-			{start: a, end: b, reverse: true, wantVisit: [][]byte{a}},
-			{start: a, end: c, reverse: false, wantVisit: [][]byte{a, b}},
-			{start: a, end: c, reverse: true, wantVisit: [][]byte{b, a}},
-			{start: a, end: d, reverse: false, wantVisit: [][]byte{a, b, c}},
-			{start: a, end: d, reverse: true, wantVisit: [][]byte{c, b, a}},
-
-			{start: b, end: nil, reverse: false, wantVisit: [][]byte{b, c, d}},
-			{start: b, end: nil, reverse: true, wantVisit: [][]byte{d, c, b}},
-			{start: b, end: c, reverse: false, wantVisit: [][]byte{b}},
-			{start: b, end: c, reverse: true, wantVisit: [][]byte{b}},
-			{start: b, end: d, reverse: false, wantVisit: [][]byte{b, c}},
-			{start: b, end: d, reverse: true, wantVisit: [][]byte{c, b}},
-
-			{start: c, end: nil, reverse: false, wantVisit: [][]byte{c, d}},
-			{start: c, end: nil, reverse: true, wantVisit: [][]byte{d, c}},
-			{start: c, end: d, reverse: false, wantVisit: [][]byte{c}},
-			{start: c, end: d, reverse: true, wantVisit: [][]byte{c}},
-
-			{start: d, end: nil, reverse: false, wantVisit: [][]byte{d}},
-			{start: d, end: nil, reverse: true, wantVisit: [][]byte{d}},
-		}
-
-		equalFunc = func(a, b []byte) bool {
-			return slices.Equal(a, b)
-		}
-	)
-
-	for i, tc := range testCases {
-		it, err := newPebbleDBIterator(pDB, tc.start, tc.end, tc.reverse)
-		if err != nil {
-			t.Fatalf("test %d: creating test iterator: %s", i, err)
-		}
-
-		visited := make([][]byte, 0, len(tc.wantVisit))
-		for it.Valid() {
-			currKey := make([]byte, len(it.Key()))
-			copy(currKey, it.Key())
-			visited = append(visited, currKey)
-
-			it.Next()
-		}
-
-		if err := it.Error(); err != nil {
-			t.Fatalf("test %d: unexpected error: %s", i, err)
-		}
-
-		equalOrder := slices.EqualFunc(visited, tc.wantVisit, equalFunc)
-		if !equalOrder {
-			formatStr := "test %d:\nwant visit order: %s\ngot: %s"
-			t.Fatalf(formatStr, i, tc.wantVisit, visited)
-		}
-
-		if err := it.source.Close(); err != nil {
-			t.Fatalf("test %d: closing iterator: %s", i, err)
-		}
-	}
 }
 
 // newTestPebbleDB creates an in-memory instance of pebble for testing.

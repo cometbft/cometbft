@@ -8,7 +8,6 @@ import (
 	gogo "github.com/cosmos/gogoproto/types"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/cometbft/cometbft-db"
 	abciv1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	abciv1beta1 "github.com/cometbft/cometbft/api/cometbft/abci/v1beta1"
 	abciv1beta2 "github.com/cometbft/cometbft/api/cometbft/abci/v1beta2"
@@ -21,6 +20,7 @@ import (
 	typesv1beta1 "github.com/cometbft/cometbft/api/cometbft/types/v1beta1"
 	typesv1beta2 "github.com/cometbft/cometbft/api/cometbft/types/v1beta2"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/internal/storage"
 	sm "github.com/cometbft/cometbft/state"
 )
 
@@ -46,7 +46,7 @@ var (
 // - StoreOptions (sm.StoreOptions): The options for the MultiStore.
 type MultiStore struct {
 	sm.Store
-	db dbm.DB
+	db storage.DB
 	sm.StoreOptions
 }
 
@@ -60,7 +60,7 @@ type MultiStore struct {
 //
 // Returns:
 // - *MultiStore: A pointer to the newly created MultiStore instance.
-func NewMultiStore(db dbm.DB, options sm.StoreOptions, store sm.Store) *MultiStore {
+func NewMultiStore(db storage.DB, options sm.StoreOptions, store sm.Store) *MultiStore {
 	return &MultiStore{
 		Store:        store,
 		db:           db,

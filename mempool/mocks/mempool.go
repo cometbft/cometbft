@@ -50,17 +50,39 @@ func (_m *Mempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, error) 
 	return r0, r1
 }
 
+<<<<<<< HEAD
 // EnableTxsAvailable provides a mock function with given fields:
+=======
+// Contains provides a mock function with given fields: txKey
+func (_m *Mempool) Contains(txKey types.TxKey) bool {
+	ret := _m.Called(txKey)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Contains")
+	}
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(types.TxKey) bool); ok {
+		r0 = rf(txKey)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
+// EnableTxsAvailable provides a mock function with no fields
+>>>>>>> 299393430 (chore(mocks): regenerate mocks (#4602))
 func (_m *Mempool) EnableTxsAvailable() {
 	_m.Called()
 }
 
-// Flush provides a mock function with given fields:
+// Flush provides a mock function with no fields
 func (_m *Mempool) Flush() {
 	_m.Called()
 }
 
-// FlushAppConn provides a mock function with given fields:
+// FlushAppConn provides a mock function with no fields
 func (_m *Mempool) FlushAppConn() error {
 	ret := _m.Called()
 
@@ -78,12 +100,36 @@ func (_m *Mempool) FlushAppConn() error {
 	return r0
 }
 
+<<<<<<< HEAD
 // Lock provides a mock function with given fields:
+=======
+// GetTxByHash provides a mock function with given fields: hash
+func (_m *Mempool) GetTxByHash(hash []byte) types.Tx {
+	ret := _m.Called(hash)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTxByHash")
+	}
+
+	var r0 types.Tx
+	if rf, ok := ret.Get(0).(func([]byte) types.Tx); ok {
+		r0 = rf(hash)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.Tx)
+		}
+	}
+
+	return r0
+}
+
+// Lock provides a mock function with no fields
+>>>>>>> 299393430 (chore(mocks): regenerate mocks (#4602))
 func (_m *Mempool) Lock() {
 	_m.Called()
 }
 
-// PreUpdate provides a mock function with given fields:
+// PreUpdate provides a mock function with no fields
 func (_m *Mempool) PreUpdate() {
 	_m.Called()
 }
@@ -146,7 +192,7 @@ func (_m *Mempool) RemoveTxByKey(txKey types.TxKey) error {
 	return r0
 }
 
-// Size provides a mock function with given fields:
+// Size provides a mock function with no fields
 func (_m *Mempool) Size() int {
 	ret := _m.Called()
 
@@ -164,7 +210,7 @@ func (_m *Mempool) Size() int {
 	return r0
 }
 
-// SizeBytes provides a mock function with given fields:
+// SizeBytes provides a mock function with no fields
 func (_m *Mempool) SizeBytes() int64 {
 	ret := _m.Called()
 
@@ -182,7 +228,7 @@ func (_m *Mempool) SizeBytes() int64 {
 	return r0
 }
 
-// TxsAvailable provides a mock function with given fields:
+// TxsAvailable provides a mock function with no fields
 func (_m *Mempool) TxsAvailable() <-chan struct{} {
 	ret := _m.Called()
 
@@ -202,7 +248,7 @@ func (_m *Mempool) TxsAvailable() <-chan struct{} {
 	return r0
 }
 
-// Unlock provides a mock function with given fields:
+// Unlock provides a mock function with no fields
 func (_m *Mempool) Unlock() {
 	_m.Called()
 }

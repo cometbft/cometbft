@@ -19,7 +19,7 @@ type BlockIndexer struct {
 	mock.Mock
 }
 
-// GetRetainHeight provides a mock function with given fields:
+// GetRetainHeight provides a mock function with no fields
 func (_m *BlockIndexer) GetRetainHeight() (int64, error) {
 	ret := _m.Called()
 

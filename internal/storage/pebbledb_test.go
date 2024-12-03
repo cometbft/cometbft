@@ -546,11 +546,23 @@ func TestNewPebbleDBIterator(t *testing.T) {
 		}
 	})
 
-	pDB, dbCloser, err := newTestDB()
+	pDB, dbCloser, err := newTestPebbleDB()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("creating test database: %s", err)
 	}
 	t.Cleanup(dbCloser)
+
+	var (
+		keys = [][]byte{{'a'}, {'b'}, {'c'}, {'d'}}
+		vals = [][]byte{{0x01}, {0x02}, {0x03}, {0x04}}
+	)
+	for i, key := range keys {
+		val := vals[i]
+		if err := pDB.db.Set(key, val, nil); err != nil {
+			formatStr := "setting (k,v)=(%v,%v) to test database: %s"
+			t.Fatalf(formatStr, key, val, err)
+		}
+	}
 
 	t.Run("ForwardIteratorNoErr", func(t *testing.T) {
 		var (
@@ -612,11 +624,23 @@ func TestNewPebbleDBIterator(t *testing.T) {
 }
 
 func TestPebbleIteratorIterating(t *testing.T) {
-	pDB, dbCloser, err := newTestDB()
+	pDB, dbCloser, err := newTestPebbleDB()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("creating test database: %s", err)
 	}
 	t.Cleanup(dbCloser)
+
+	var (
+		keys = [][]byte{{'a'}, {'b'}, {'c'}, {'d'}}
+		vals = [][]byte{{0x01}, {0x02}, {0x03}, {0x04}}
+	)
+	for i, key := range keys {
+		val := vals[i]
+		if err := pDB.db.Set(key, val, nil); err != nil {
+			formatStr := "setting (k,v)=(%v,%v) to test database: %s"
+			t.Fatalf(formatStr, key, val, err)
+		}
+	}
 
 	var (
 		a, b, c, d = []byte{'a'}, []byte{'b'}, []byte{'c'}, []byte{'d'}
@@ -727,31 +751,6 @@ func newTestPebbleDB() (*PebbleDB, func(), error) {
 		pDB    = &PebbleDB{db: memDB}
 	)
 	return pDB, closer, nil
-}
-
-// newTestDB creates an in-memory instance of pebble for testing pre-populated with
-// a few dummy kv pairs.
-// It returns a closer function that must be called to close the database when done
-// with it.
-func newTestDB() (*PebbleDB, func(), error) {
-	pDB, dbCloser, err := newTestPebbleDB()
-	if err != nil {
-		return nil, nil, fmt.Errorf("creating test iterator: %w", err)
-	}
-
-	var (
-		keys = [][]byte{{'a'}, {'b'}, {'c'}, {'d'}}
-		vals = [][]byte{{0x01}, {0x02}, {0x03}, {0x04}}
-	)
-	for i, key := range keys {
-		val := vals[i]
-		if err := pDB.db.Set(key, val, nil); err != nil {
-			formatStr := "creating test iterator: setting (k,v)=(%v,%v): %s"
-			return nil, nil, fmt.Errorf(formatStr, key, val, err)
-		}
-	}
-
-	return pDB, dbCloser, nil
 }
 
 // newTestPebbleBatch creates a new batch you can use to apply operations to a

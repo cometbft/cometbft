@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/cometbft/cometbft-db"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	"github.com/cometbft/cometbft/internal/storage"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 )
@@ -29,7 +29,7 @@ func TestTxFilter(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		stateDB, err := dbm.NewDB("state", "memdb", os.TempDir())
+		stateDB, err := storage.NewDB("state", os.TempDir())
 		require.NoError(t, err)
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,

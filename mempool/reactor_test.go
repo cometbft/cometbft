@@ -797,10 +797,12 @@ func TestDOGDisabledRoute(t *testing.T) {
 	// Wait for the redundancy adjustment to kick in
 	time.Sleep(1 * time.Second)
 
+	reactors[2].router.mtx.RLock()
 	// Make sure that Node 3 has at least one disabled route
 	require.Greater(t, len(reactors[2].router.disabledRoutes), 0)
 
 	require.True(t, reactors[2].router.isRouteDisabled(secondNodeFromThird.ID(), firstNodeFromThird.ID()))
+	reactors[2].router.mtx.RUnlock()
 
 	// This will force Node 3 to delete all disabled routes
 	reactors[2].Switch.StopPeerGracefully(secondNode)

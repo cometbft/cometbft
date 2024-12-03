@@ -260,7 +260,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			node.ABCIProtocol = ProtocolBuiltin
 		}
 		if node.Database == "" {
-			node.Database = "pebbledb"
+			node.Database = "goleveldb"
 		}
 		if nodeManifest.PrivvalProtocolStr != "" {
 			node.PrivvalProtocol = Protocol(nodeManifest.PrivvalProtocolStr)

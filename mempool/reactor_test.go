@@ -754,7 +754,6 @@ func TestDOGDisabledRoute(t *testing.T) {
 
 	thirdNodeID := reactors[2].Switch.NodeInfo().ID()
 	thirdNodeFromFirst := reactors[0].Switch.Peers().Get(thirdNodeID)
-	thirdNodeFromSecond := reactors[1].Switch.Peers().Get(thirdNodeID)
 
 	firstNodeID := reactors[0].Switch.NodeInfo().ID()
 	firstNodeFromThird := reactors[2].Switch.Peers().Get(firstNodeID)
@@ -762,12 +761,6 @@ func TestDOGDisabledRoute(t *testing.T) {
 	txUnique := make(map[string][]byte, len(txs))
 	for _, tx := range txs {
 		txUnique[string(tx.Hash())] = tx
-	}
-
-	// Add transactions to node 2 from node 3
-	for _, tx := range txUnique {
-		_, err := reactors[1].TryAddTx(tx, thirdNodeFromSecond)
-		require.NoError(t, err)
 	}
 
 	// Add transactions to node 3 from node 2
@@ -809,8 +802,6 @@ func TestDOGDisabledRoute(t *testing.T) {
 	// Wait for the redundancy adjustment to kick in
 	time.Sleep(config.Mempool.DOGAdjustInterval)
 	require.False(t, reactors[2].router.isRouteDisabled(secondNodeFromThird.ID(), firstNodeFromThird.ID()))
-
-	// TEST Reset on peer disconnect
 }
 
 // When a peer disconnects we want to remove all disabled route info

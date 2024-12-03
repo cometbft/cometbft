@@ -201,7 +201,7 @@ type Store interface {
 	Close() error
 }
 
-// dbStore wraps a db (github.com/cometbft/cometbft-db).
+// dbStore wraps a [storage.DB]
 type dbStore struct {
 	db storage.DB
 

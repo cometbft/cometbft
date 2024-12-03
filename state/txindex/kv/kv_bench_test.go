@@ -7,8 +7,8 @@ import (
 	"os"
 	"testing"
 
-	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/state/txindex"
 	"github.com/cometbft/cometbft/types"
@@ -62,7 +62,7 @@ func BenchmarkTxSearchDisk(b *testing.B) {
 		b.Errorf("failed to create temporary directory: %s", err)
 	}
 
-	db, err := dbm.NewPebbleDB("benchmark_tx_search_test", dbDir)
+	db, err := storage.NewDB("benchmark_tx_search_test", dbDir)
 	if err != nil {
 		b.Errorf("failed to create database: %s", err)
 	}
@@ -84,7 +84,11 @@ func BenchmarkTxSearchDisk(b *testing.B) {
 }
 
 func BenchmarkTxSearchBigResult(b *testing.B) {
-	db := dbm.NewMemDB()
+	db, err := storage.NewMemDB()
+	if err != nil {
+		b.Errorf("failed to create test database: %s", err)
+	}
+
 	indexer := NewTxIndex(db)
 	generateDummyTxs(b, indexer, 20000, 50)
 

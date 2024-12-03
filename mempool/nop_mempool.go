@@ -7,7 +7,6 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -23,7 +22,7 @@ var errNotAllowed = errors.New("not allowed with `nop` mempool")
 var _ Mempool = &NopMempool{}
 
 // CheckTx always returns an error.
-func (*NopMempool) CheckTx(types.Tx, nodekey.ID) (*abcicli.ReqRes, error) {
+func (*NopMempool) CheckTx(types.Tx, p2p.ID) (*abcicli.ReqRes, error) {
 	return nil, errNotAllowed
 }
 
@@ -82,7 +81,7 @@ func (*NopMempool) Size() int { return 0 }
 func (*NopMempool) SizeBytes() int64 { return 0 }
 
 // GetSenders always returns nil.
-func (*NopMempool) GetSenders(_ types.TxKey) ([]nodekey.ID, error) { return nil, nil }
+func (*NopMempool) GetSenders(_ types.TxKey) ([]p2p.ID, error) { return nil, nil }
 
 // NopMempoolReactor is a mempool reactor that does nothing.
 type NopMempoolReactor struct {

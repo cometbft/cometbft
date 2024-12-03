@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/cometbft/cometbft/p2p/nodekey"
+	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -35,13 +35,13 @@ func (memTx *mempoolTx) GasWanted() int64 {
 	return memTx.gasWanted
 }
 
-func (memTx *mempoolTx) IsSender(peerID nodekey.ID) bool {
+func (memTx *mempoolTx) IsSender(peerID p2p.ID) bool {
 	_, ok := memTx.senders.Load(peerID)
 	return ok
 }
 
 // Add the peer ID to the list of senders. Return true iff it exists already in the list.
-func (memTx *mempoolTx) addSender(peerID nodekey.ID) bool {
+func (memTx *mempoolTx) addSender(peerID p2p.ID) bool {
 	if len(peerID) == 0 {
 		return false
 	}
@@ -51,10 +51,10 @@ func (memTx *mempoolTx) addSender(peerID nodekey.ID) bool {
 	return false
 }
 
-func (memTx *mempoolTx) Senders() []nodekey.ID {
-	senders := make([]nodekey.ID, 0)
+func (memTx *mempoolTx) Senders() []p2p.ID {
+	senders := make([]p2p.ID, 0)
 	memTx.senders.Range(func(key, _ any) bool {
-		senders = append(senders, key.(nodekey.ID))
+		senders = append(senders, key.(p2p.ID))
 		return true
 	})
 	return senders

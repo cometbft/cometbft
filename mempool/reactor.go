@@ -16,7 +16,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/p2p/nodekey"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	"github.com/cometbft/cometbft/types"
 )
@@ -440,17 +439,17 @@ type gossipRouter struct {
 	mtx cmtsync.RWMutex
 	// A set of `source -> target` routes that are disabled for disseminating
 	// transactions, where source and target are node IDs.
-	disabledRoutes map[nodekey.ID]map[nodekey.ID]struct{}
+	disabledRoutes map[p2p.ID]map[p2p.ID]struct{}
 }
 
 func newGossipRouter() *gossipRouter {
 	return &gossipRouter{
-		disabledRoutes: make(map[nodekey.ID]map[nodekey.ID]struct{}),
+		disabledRoutes: make(map[p2p.ID]map[p2p.ID]struct{}),
 	}
 }
 
 // disableRoute marks the route `source -> target` as disabled.
-func (r *gossipRouter) disableRoute(source, target nodekey.ID) {
+func (r *gossipRouter) disableRoute(source, target p2p.ID) {
 	if source == noSender || target == noSender {
 		// TODO: this shouldn't happen
 		return
@@ -461,14 +460,14 @@ func (r *gossipRouter) disableRoute(source, target nodekey.ID) {
 
 	targets, ok := r.disabledRoutes[source]
 	if !ok {
-		targets = make(map[nodekey.ID]struct{})
+		targets = make(map[p2p.ID]struct{})
 	}
 	targets[target] = struct{}{}
 	r.disabledRoutes[source] = targets
 }
 
 // isRouteEnabled returns true iff the route source->target is disabled.
-func (r *gossipRouter) isRouteDisabled(source, target nodekey.ID) bool {
+func (r *gossipRouter) isRouteDisabled(source, target p2p.ID) bool {
 	r.mtx.RLock()
 	defer r.mtx.RUnlock()
 
@@ -481,7 +480,7 @@ func (r *gossipRouter) isRouteDisabled(source, target nodekey.ID) bool {
 }
 
 // resetRoutes removes all disabled routes with peerID as source or target.
-func (r *gossipRouter) resetRoutes(peerID nodekey.ID) {
+func (r *gossipRouter) resetRoutes(peerID p2p.ID) {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
@@ -496,11 +495,11 @@ func (r *gossipRouter) resetRoutes(peerID nodekey.ID) {
 
 // resetRandomRouteWithTarget removes a random disabled route that has the given
 // target.
-func (r *gossipRouter) resetRandomRouteWithTarget(target nodekey.ID) {
+func (r *gossipRouter) resetRandomRouteWithTarget(target p2p.ID) {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
-	sourcesWithTarget := make([]nodekey.ID, 0)
+	sourcesWithTarget := make([]p2p.ID, 0)
 	for s, targets := range r.disabledRoutes {
 		if _, ok := targets[target]; ok {
 			sourcesWithTarget = append(sourcesWithTarget, s)

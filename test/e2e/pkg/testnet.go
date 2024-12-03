@@ -37,6 +37,8 @@ const (
 	defaultConnections = 1
 	defaultTxSizeBytes = 1024
 
+	DefaultPerturbInterval = 3 * time.Second
+
 	localVersion = "cometbft/e2e-node:local-version"
 )
 
@@ -183,6 +185,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 	if testnet.LoadNumNodesPerTx == 0 {
 		testnet.LoadNumNodesPerTx = 1
+	}
+	if testnet.PerturbInterval == 0 {
+		testnet.PerturbInterval = DefaultPerturbInterval
 	}
 
 	if len(testnet.Lanes) == 0 {
@@ -481,6 +486,9 @@ func (t Testnet) Validate() error {
 			"the number of lanes defined by the app (%d)",
 			len(t.LoadLaneWeights), len(t.Lanes),
 		)
+	}
+	if t.PerturbInterval < 0 {
+		return errors.New("value of perturb_interval cannot be less than 0")
 	}
 	for lane := range t.Lanes {
 		if _, ok := t.LoadLaneWeights[lane]; !ok {

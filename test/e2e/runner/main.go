@@ -214,13 +214,23 @@ func NewCLI() *CLI {
 		},
 	})
 
-	cli.root.AddCommand(&cobra.Command{
+	perturbCmd := cobra.Command{
 		Use:   "perturb",
 		Short: "Perturbs the testnet, e.g. by restarting or disconnecting nodes",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if cmd.Flags().Lookup("interval").Changed {
+				if interval, err := cmd.Flags().GetDuration("interval"); err != nil {
+					return err
+				} else if interval >= 0 {
+					cli.testnet.PerturbInterval = interval
+				}
+			}
 			return Perturb(cmd.Context(), cli.testnet, cli.infp)
 		},
-	})
+	}
+	perturbCmd.PersistentFlags().DurationP("interval", "i", e2e.DefaultPerturbInterval,
+		"Time to wait between successive perturbations.")
+	cli.root.AddCommand(&perturbCmd)
 
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "wait",

@@ -12,7 +12,7 @@ type BlockStore struct {
 	mock.Mock
 }
 
-// Height provides a mock function with given fields:
+// Height provides a mock function with no fields
 func (_m *BlockStore) Height() int64 {
 	ret := _m.Called()
 

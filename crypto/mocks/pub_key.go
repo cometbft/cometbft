@@ -12,7 +12,7 @@ type PubKey struct {
 	mock.Mock
 }
 
-// Address provides a mock function with given fields:
+// Address provides a mock function with no fields
 func (_m *PubKey) Address() crypto.Address {
 	ret := _m.Called()
 
@@ -32,7 +32,7 @@ func (_m *PubKey) Address() crypto.Address {
 	return r0
 }
 
-// Bytes provides a mock function with given fields:
+// Bytes provides a mock function with no fields
 func (_m *PubKey) Bytes() []byte {
 	ret := _m.Called()
 
@@ -52,7 +52,7 @@ func (_m *PubKey) Bytes() []byte {
 	return r0
 }
 
-// Type provides a mock function with given fields:
+// Type provides a mock function with no fields
 func (_m *PubKey) Type() string {
 	ret := _m.Called()
 

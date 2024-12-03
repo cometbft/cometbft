@@ -206,7 +206,7 @@ func TestPrefixIterator(t *testing.T) {
 
 	t.Run("EmptyPrefix", func(t *testing.T) {
 		prefix := []byte{}
-		it, err := PrefixIterator(pDB, prefix)
+		it, err := IteratePrefix(pDB, prefix)
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
@@ -231,7 +231,7 @@ func TestPrefixIterator(t *testing.T) {
 
 	t.Run("Prefix", func(t *testing.T) {
 		prefix := []byte("test_prefix_iterator")
-		it, err := PrefixIterator(pDB, prefix)
+		it, err := IteratePrefix(pDB, prefix)
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}

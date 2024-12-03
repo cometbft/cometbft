@@ -189,11 +189,11 @@ type Iterator interface {
 	Close() error
 }
 
-// PrefixIterator returns an iterator over the keys that begin with the given prefix.
-// It is safe to modify the contents of prefix after PrefixIterator returns.
-// If the length of the prefix is 0, PrefixIterator will return an iterator that
+// IteratePrefix returns an iterator over the keys that begin with the given prefix.
+// It is safe to modify the contents of prefix after IteratePrefix returns.
+// If the length of the prefix is 0, IteratePrefix will return an iterator that
 // will iterate over all keys in the database.
-func PrefixIterator(db DB, prefix []byte) (Iterator, error) {
+func IteratePrefix(db DB, prefix []byte) (Iterator, error) {
 	var start, end []byte
 
 	if len(prefix) > 0 {

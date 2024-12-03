@@ -18,13 +18,13 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/abci/types/mocks"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	mempl "github.com/cometbft/cometbft/mempool"
@@ -68,7 +68,7 @@ func TestMain(m *testing.M) {
 func startNewStateAndWaitForBlock(
 	t *testing.T,
 	consensusReplayConfig *cfg.Config,
-	blockDB dbm.DB,
+	blockDB storage.DB,
 	stateStore sm.Store,
 ) {
 	t.Helper()
@@ -138,17 +138,17 @@ func sendTxs(ctx context.Context, cs *State) {
 func TestWALCrash(t *testing.T) {
 	testCases := []struct {
 		name         string
-		initFn       func(dbm.DB, *State, context.Context)
+		initFn       func(storage.DB, *State, context.Context)
 		heightToStop int64
 	}{
 		{
 			"empty block",
-			func(_ dbm.DB, _ *State, _ context.Context) {},
+			func(_ storage.DB, _ *State, _ context.Context) {},
 			1,
 		},
 		{
 			"many non-empty blocks",
-			func(_ dbm.DB, cs *State, ctx context.Context) {
+			func(_ storage.DB, cs *State, ctx context.Context) {
 				go sendTxs(ctx, cs)
 			},
 			3,
@@ -164,7 +164,7 @@ func TestWALCrash(t *testing.T) {
 }
 
 func crashWALandCheckLiveness(t *testing.T, consensusReplayConfig *cfg.Config,
-	initFn func(dbm.DB, *State, context.Context), heightToStop int64,
+	initFn func(storage.DB, *State, context.Context), heightToStop int64,
 ) {
 	t.Helper()
 	walPanicked := make(chan error)
@@ -177,7 +177,8 @@ LOOP:
 
 		// create consensus state from a clean slate
 		logger := log.NewNopLogger()
-		blockDB := dbm.NewMemDB()
+		blockDB, err := storage.NewMemDB()
+		require.NoError(t, err)
 		stateDB := blockDB
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
@@ -604,15 +605,17 @@ func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uin
 		chain        []*types.Block
 		extCommits   []*types.ExtendedCommit
 		store        *mockBlockStore
-		stateDB      dbm.DB
+		stateDB      storage.DB
 		genesisState sm.State
 		mempool      = emptyMempool{}
 		evpool       = sm.EmptyEvidencePool{}
+		err          error
 	)
 
 	if testValidatorsChange {
 		testConfig, chain, extCommits, genesisState = setupChainWithChangingValidators(t, fmt.Sprintf("%d_%d_m", nBlocks, mode), numBlocks)
-		stateDB = dbm.NewMemDB()
+		stateDB, err = storage.NewMemDB()
+		require.NoError(t, err)
 		store = newMockBlockStore(t, config, genesisState.ConsensusParams)
 	} else {
 		testConfig = ResetConfig(fmt.Sprintf("%d_%d_s", nBlocks, mode))
@@ -664,11 +667,12 @@ func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uin
 		// run nBlocks against a new client to build up the app state.
 		// use a throwaway CometBFT state
 		proxyApp := proxy.NewAppConns(clientCreator2, proxy.NopMetrics())
-		stateDB1 := dbm.NewMemDB()
+		stateDB1, err := storage.NewMemDB()
+		require.NoError(t, err)
 		dummyStateStore := sm.NewStore(stateDB1, sm.StoreOptions{
 			DiscardABCIResponses: false,
 		})
-		err := dummyStateStore.Save(genesisState)
+		err = dummyStateStore.Save(genesisState)
 		require.NoError(t, err)
 		buildAppStateFromChain(t, proxyApp, dummyStateStore, mempool, evpool, genesisState, chain, nBlocks, mode, store)
 	}
@@ -1129,9 +1133,10 @@ func stateAndStore(
 	t *testing.T,
 	config *cfg.Config,
 	appVersion uint64,
-) (dbm.DB, sm.State, *mockBlockStore) {
+) (storage.DB, sm.State, *mockBlockStore) {
 	t.Helper()
-	stateDB := dbm.NewMemDB()
+	stateDB, err := storage.NewMemDB()
+	require.NoError(t, err)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})

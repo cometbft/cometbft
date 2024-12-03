@@ -15,7 +15,7 @@ import (
 	"github.com/cockroachdb/pebble/vfs"
 )
 
-func TestGet(t *testing.T) {
+func TestPebbleDBGet(t *testing.T) {
 	pDB, dbCloser, err := newTestPebbleDB()
 	if err != nil {
 		t.Fatal(err)
@@ -58,7 +58,7 @@ func TestGet(t *testing.T) {
 	})
 }
 
-func TestHas(t *testing.T) {
+func TestPebbleDBHas(t *testing.T) {
 	pDB, dbcloser, err := newTestPebbleDB()
 	if err != nil {
 		t.Fatal(err)
@@ -106,7 +106,7 @@ func TestHas(t *testing.T) {
 // This should be sufficient to test the Set and SetSync methods, because under the
 // hood they only differ in that they call setWithOpts with pebble.NoSync and
 // pebble.Sync respectively.
-func TestSet(t *testing.T) {
+func TestPebbleDBSet(t *testing.T) {
 	pDB, dbCloser, err := newTestPebbleDB()
 	if err != nil {
 		t.Fatal(err)
@@ -150,7 +150,7 @@ func TestSet(t *testing.T) {
 // This should be sufficient to test the Delete and DeleteSync methods, because
 // under the hood they only differ in that they call deleteWithOpts with
 // pebble.NoSync and pebble.Sync respectively.
-func TestDelete(t *testing.T) {
+func TestPebbleDBDelete(t *testing.T) {
 	pDB, dbCloser, err := newTestPebbleDB()
 	if err != nil {
 		t.Fatal(err)
@@ -187,7 +187,7 @@ func TestDelete(t *testing.T) {
 	})
 }
 
-func TestCompact(t *testing.T) {
+func TestPebbleDBCompact(t *testing.T) {
 	var (
 		// make sure keys and vals are the same length.
 		keys = [][]byte{
@@ -284,7 +284,7 @@ func TestCompact(t *testing.T) {
 	})
 }
 
-func TestPrint(t *testing.T) {
+func TestPebbleDBPrint(t *testing.T) {
 	pDB, dbCloser, err := newTestPebbleDB()
 	if err != nil {
 		t.Fatal(err)
@@ -342,7 +342,7 @@ func TestPrint(t *testing.T) {
 	}
 }
 
-func TestBatchSet(t *testing.T) {
+func TestPebbleDBBatchSet(t *testing.T) {
 	pBatch, dbCloser, err := newTestPebbleBatch()
 	if err != nil {
 		t.Fatal(err)
@@ -407,7 +407,7 @@ func TestBatchSet(t *testing.T) {
 	})
 }
 
-func TestBatchDelete(t *testing.T) {
+func TestPebbleDBBatchDelete(t *testing.T) {
 	pBatch, dbCloser, err := newTestPebbleBatch()
 	if err != nil {
 		t.Fatal(err)
@@ -462,7 +462,7 @@ func TestBatchDelete(t *testing.T) {
 // This should be sufficient to test the Write and WriteSync methods, because under
 // the hood they only differ in that they call commitWithOpts with pebble.NoSync and
 // pebble.Sync respectively.
-func TestBatchWrite(t *testing.T) {
+func TestPebbleDBBatchWrite(t *testing.T) {
 	t.Run("BatchNilErr", func(t *testing.T) {
 		var (
 			pBatch = &pebbleDBBatch{
@@ -484,7 +484,7 @@ func TestBatchWrite(t *testing.T) {
 		}
 		t.Cleanup(dbCloser)
 
-		if err := pebbleBatchWriteTestHelper(pBatch, pBatch.db, false); err != nil {
+		if err := batchWriteTestHelper(pBatch, pBatch.db, false); err != nil {
 			t.Error(err)
 		}
 	})
@@ -496,13 +496,13 @@ func TestBatchWrite(t *testing.T) {
 		}
 		t.Cleanup(dbCloser)
 
-		if err := pebbleBatchWriteTestHelper(pBatch, pBatch.db, true); err != nil {
+		if err := batchWriteTestHelper(pBatch, pBatch.db, true); err != nil {
 			t.Error(err)
 		}
 	})
 }
 
-func TestBatchClose(t *testing.T) {
+func TestPebbleDBBatchClose(t *testing.T) {
 	t.Run("BatchNilNoErr", func(t *testing.T) {
 		pBatch := &pebbleDBBatch{
 			batch: nil,
@@ -611,7 +611,7 @@ func TestNewPebbleDBIterator(t *testing.T) {
 	})
 }
 
-func TestIteratorIterating(t *testing.T) {
+func TestPebbleIteratorIterating(t *testing.T) {
 	pDB, dbCloser, err := newTestDB()
 	if err != nil {
 		t.Fatal(err)
@@ -831,14 +831,10 @@ func pebbleDeleteTestHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error
 	return nil
 }
 
-// pebbleBatchWriteHelper is a utility function supporting TestBatchWrite.
+// batchWriteTestHelper is a utility function supporting TestBatchWrite.
 // It creates a batch with three sets and one delete operation, commits it, then
 // reads the data back.
-func pebbleBatchWriteTestHelper(
-	batch Batch,
-	db DB,
-	synced bool,
-) error {
+func batchWriteTestHelper(batch Batch, db DB, synced bool) error {
 	var (
 		keys = [][]byte{{'a'}, {'b'}, {'c'}}
 		vals = [][]byte{{0x01}, {0x02}, {0x03}}

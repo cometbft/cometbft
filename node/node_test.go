@@ -17,7 +17,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
@@ -27,6 +26,7 @@ import (
 	kt "github.com/cometbft/cometbft/internal/keytypes"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/internal/test"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
@@ -330,8 +330,11 @@ func TestCreateProposalBlock(t *testing.T) {
 		mempl.WithPostCheck(sm.TxPostCheck(state)))
 
 	// Make EvidencePool
-	evidenceDB := dbm.NewMemDB()
-	blockStore := store.NewBlockStore(dbm.NewMemDB())
+	evidenceDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+	blkStoreDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+	blockStore := store.NewBlockStore(blkStoreDB)
 	evidencePool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	require.NoError(t, err)
 	evidencePool.SetLogger(logger)
@@ -435,7 +438,9 @@ func TestMaxProposalBlockSize(t *testing.T) {
 		mempl.WithPreCheck(sm.TxPreCheck(state)),
 		mempl.WithPostCheck(sm.TxPostCheck(state)))
 
-	blockStore := store.NewBlockStore(dbm.NewMemDB())
+	blkStoreDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+	blockStore := store.NewBlockStore(blkStoreDB)
 
 	// fill the mempool with one txs just below the maximum size
 	txLength := int(types.MaxDataBytesNoEvidence(maxBytes, 1))
@@ -525,8 +530,6 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_delete_genesis_from_db")
 	defer os.RemoveAll(config.RootDir)
-	// Use goleveldb so we can reuse the same db for the second NewNode()
-	config.DBBackend = string(dbm.PebbleDBBackend)
 	// Ensure the genesis doc hash is saved to db
 	stateDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "state", Config: config})
 	require.NoError(t, err)
@@ -579,9 +582,6 @@ func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
 func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_genesis_hash")
 	defer os.RemoveAll(config.RootDir)
-
-	// Use goleveldb so we can reuse the same db for the second NewNode()
-	config.DBBackend = string(dbm.PebbleDBBackend)
 
 	nodeKey, err := nodekey.LoadOrGen(config.NodeKeyFile())
 	require.NoError(t, err)
@@ -650,7 +650,6 @@ func TestNodeGenesisHashFlagMatch(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_genesis_hash_flag_match")
 	defer os.RemoveAll(config.RootDir)
 
-	config.DBBackend = string(dbm.PebbleDBBackend)
 	nodeKey, err := nodekey.LoadOrGen(config.NodeKeyFile())
 	require.NoError(t, err)
 	// Get correct hash of correct genesis file
@@ -681,9 +680,6 @@ func TestNodeGenesisHashFlagMatch(t *testing.T) {
 func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_genesis_hash_flag_mismatch")
 	defer os.RemoveAll(config.RootDir)
-
-	// Use goleveldb so we can reuse the same db for the second NewNode()
-	config.DBBackend = string(dbm.PebbleDBBackend)
 
 	nodeKey, err := nodekey.LoadOrGen(config.NodeKeyFile())
 	require.NoError(t, err)
@@ -723,7 +719,6 @@ func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 
 func TestLoadStateFromDBOrGenesisDocProviderWithConfig(t *testing.T) {
 	config := test.ResetTestRoot(t.Name())
-	config.DBBackend = string(dbm.PebbleDBBackend)
 
 	_, stateDB, err := initDBs(config, cfg.DefaultDBProvider)
 	require.NoErrorf(t, err, "state DB setup: %s", err)
@@ -863,7 +858,7 @@ func TestGenesisDoc(t *testing.T) {
 	})
 }
 
-func state(nVals int, height int64) (sm.State, dbm.DB, []types.PrivValidator) {
+func state(nVals int, height int64) (sm.State, storage.DB, []types.PrivValidator) {
 	privVals := make([]types.PrivValidator, nVals)
 	vals := make([]types.GenesisValidator, nVals)
 	for i := 0; i < nVals; i++ {
@@ -883,7 +878,10 @@ func state(nVals int, height int64) (sm.State, dbm.DB, []types.PrivValidator) {
 	})
 
 	// save validators to db for 2 heights
-	stateDB := dbm.NewMemDB()
+	stateDB, err := storage.NewMemDB()
+	if err != nil {
+		panic(err)
+	}
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})

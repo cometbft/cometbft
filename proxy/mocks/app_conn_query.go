@@ -45,7 +45,7 @@ func (_m *AppConnQuery) Echo(ctx context.Context, echo string) (*v1.EchoResponse
 	return r0, r1
 }
 
-// Error provides a mock function with given fields:
+// Error provides a mock function with no fields
 func (_m *AppConnQuery) Error() error {
 	ret := _m.Called()
 

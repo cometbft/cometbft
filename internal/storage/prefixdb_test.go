@@ -416,7 +416,7 @@ func TestPrefixDBBatchWrite(t *testing.T) {
 				prefix: prefix,
 			}
 		)
-		err = pebbleBatchWriteTestHelper(prefixBatch, prefixDB, false)
+		err = batchWriteTestHelper(prefixBatch, prefixDB, false)
 		if err != nil {
 			t.Error(err)
 		}
@@ -440,7 +440,7 @@ func TestPrefixDBBatchWrite(t *testing.T) {
 				prefix: prefix,
 			}
 		)
-		err = pebbleBatchWriteTestHelper(prefixBatch, prefixDB, true)
+		err = batchWriteTestHelper(prefixBatch, prefixDB, true)
 		if err != nil {
 			t.Error(err)
 		}
@@ -460,6 +460,7 @@ func TestPrefixDBBatchWrite(t *testing.T) {
 		if err := prefixBatch.Close(); err != nil {
 			t.Fatalf("closing test batch: %s", err)
 		}
+
 		if err := prefixBatch.Write(); !errors.Is(err, errBatchClosed) {
 			t.Errorf("expected %s, got: %s", errBatchClosed, err)
 		}
@@ -718,23 +719,35 @@ func TestPrefixedIteratorBounds(t *testing.T) {
 }
 
 func TestIncrementBigEndian(t *testing.T) {
-	testCases := []struct {
-		input      []byte
-		wantResult []byte
-	}{
-		{[]byte{0xFE}, []byte{0xFF}},             // simple increment
-		{[]byte{0xFF}, nil},                      // overflow
-		{[]byte{0x00, 0x01}, []byte{0x00, 0x02}}, // simple increment
-		{[]byte{0x00, 0xFF}, []byte{0x01, 0x00}}, // carry over
-		{[]byte{0xFF, 0xFF}, nil},                // overflow
-	}
-
-	for i, tc := range testCases {
-		gotResult := incrementBigEndian(tc.input)
-		if !bytes.Equal(gotResult, tc.wantResult) {
-			t.Errorf("test %d: want: %v, got: %v", i, tc.wantResult, gotResult)
+	t.Run("NoErr", func(t *testing.T) {
+		testCases := []struct {
+			input      []byte
+			wantResult []byte
+		}{
+			{[]byte{0xFE}, []byte{0xFF}},             // simple increment
+			{[]byte{0xFF}, nil},                      // overflow
+			{[]byte{0x00, 0x01}, []byte{0x00, 0x02}}, // simple increment
+			{[]byte{0x00, 0xFF}, []byte{0x01, 0x00}}, // carry over
+			{[]byte{0xFF, 0xFF}, nil},                // overflow
 		}
-	}
+
+		for i, tc := range testCases {
+			gotResult := incrementBigEndian(tc.input)
+			if !bytes.Equal(gotResult, tc.wantResult) {
+				t.Errorf("test %d: want: %v, got: %v", i, tc.wantResult, gotResult)
+			}
+		}
+	})
+
+	t.Run("Panic", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Errorf("incrementBigEndian did not panic")
+			}
+		}()
+
+		incrementBigEndian([]byte{})
+	})
 }
 
 // deletePrefixDBHelper is a utility function supporting TestPrefixDBDelete.

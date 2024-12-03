@@ -6,9 +6,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	dbm "github.com/cometbft/cometbft-db"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/os"
+	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
 )
@@ -66,14 +66,12 @@ func RollbackState(config *cfg.Config, removeBlock bool) (int64, []byte, error) 
 }
 
 func loadStateAndBlockStore(config *cfg.Config) (*store.BlockStore, state.Store, error) {
-	dbType := dbm.BackendType(config.DBBackend)
-
 	if !os.FileExists(filepath.Join(config.DBDir(), "blockstore.db")) {
 		return nil, nil, fmt.Errorf("no blockstore found in %v", config.DBDir())
 	}
 
 	// Get BlockStore
-	blockStoreDB, err := dbm.NewDB("blockstore", dbType, config.DBDir())
+	blockStoreDB, err := storage.NewDB("blockstore", config.DBDir())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -84,7 +82,7 @@ func loadStateAndBlockStore(config *cfg.Config) (*store.BlockStore, state.Store,
 	}
 
 	// Get StateStore
-	stateDB, err := dbm.NewDB("state", dbType, config.DBDir())
+	stateDB, err := storage.NewDB("state", config.DBDir())
 	if err != nil {
 		return nil, nil, err
 	}

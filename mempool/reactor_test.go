@@ -694,7 +694,7 @@ func TestDOGTransactionCount(t *testing.T) {
 	config.Mempool.DOGProtocolEnabled = true
 
 	// Put the interval to a higher value to make sure the values don't get reset
-	config.Mempool.DOGAdjustInterval = 5 * time.Second
+	config.Mempool.DOGAdjustInterval = 15 * time.Second
 	reactors, _ := makeAndConnectReactors(config, 2, nil)
 
 	// create random transactions
@@ -720,11 +720,17 @@ func TestDOGTransactionCount(t *testing.T) {
 	}
 	require.Equal(t, int64(len(txUnique)), reactors[0].redundancyControl.duplicateTxs)
 
-	// Wait for the redundancy adjustment to kick in
-	time.Sleep(config.Mempool.DOGAdjustInterval)
+	reactors[0].redundancyControl.triggerAdjustment()
+	time.Sleep(1 * time.Second)
+
+	reactors[0].redundancyControl.mtx.RLock()
+	dupTx := reactors[0].redundancyControl.duplicateTxs
+	firstTimeTx := reactors[0].redundancyControl.firstTimeTxs
+	reactors[0].redundancyControl.mtx.RUnlock()
+
 	// Now the counters should be reset
-	require.Equal(t, int64(0), reactors[0].redundancyControl.duplicateTxs)
-	require.Equal(t, int64(0), reactors[0].redundancyControl.firstTimeTxs)
+	require.Equal(t, int64(0), dupTx)
+	require.Equal(t, int64(0), firstTimeTx)
 }
 
 // Testing the disabled route between two nodes
@@ -831,4 +837,30 @@ func TestDOGRemoveDisabledRoutesOnDisconnect(t *testing.T) {
 	require.False(t, reactors[0].router.isRouteDisabled(secondNodeID, fourthNodeID))
 	require.False(t, reactors[0].router.isRouteDisabled(thirdNodeID, secondNodeID))
 	require.True(t, reactors[0].router.isRouteDisabled(thirdNodeID, fourthNodeID))
+}
+
+// Test redundancy values depending on Number of transactions.
+func TestDOGTestRedundancyCalculation(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.DOGProtocolEnabled = true
+	config.Mempool.DOGTargetRedundancy = 0.5
+	reactors, _ := makeAndConnectReactors(config, 1, nil)
+
+	redundancy := reactors[0].redundancyControl.currentRedundancy()
+	require.Equal(t, redundancy, float64(-1))
+
+	reactors[0].redundancyControl.firstTimeTxs = 10
+	reactors[0].redundancyControl.duplicateTxs = 0
+	redundancy = reactors[0].redundancyControl.currentRedundancy()
+	require.Equal(t, redundancy, float64(0))
+
+	reactors[0].redundancyControl.duplicateTxs = 1000
+	reactors[0].redundancyControl.firstTimeTxs = 10
+	redundancy = reactors[0].redundancyControl.currentRedundancy()
+	require.Greater(t, redundancy, config.Mempool.DOGTargetRedundancy)
+
+	reactors[0].redundancyControl.duplicateTxs = 1000
+	reactors[0].redundancyControl.firstTimeTxs = 0
+	redundancy = reactors[0].redundancyControl.currentRedundancy()
+	require.Equal(t, redundancy, reactors[0].redundancyControl.upperBound)
 }

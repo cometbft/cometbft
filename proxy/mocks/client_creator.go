@@ -12,7 +12,7 @@ type ClientCreator struct {
 	mock.Mock
 }
 
-// NewABCIClient provides a mock function with given fields:
+// NewABCIClient provides a mock function with no fields
 func (_m *ClientCreator) NewABCIClient() (abcicli.Client, error) {
 	ret := _m.Called()
 

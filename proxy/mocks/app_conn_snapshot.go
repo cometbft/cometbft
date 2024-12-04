@@ -43,7 +43,7 @@ func (_m *AppConnSnapshot) ApplySnapshotChunkSync(_a0 types.RequestApplySnapshot
 	return r0, r1
 }
 
-// Error provides a mock function with given fields:
+// Error provides a mock function with no fields
 func (_m *AppConnSnapshot) Error() error {
 	ret := _m.Called()
 

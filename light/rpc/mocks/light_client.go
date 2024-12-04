@@ -17,7 +17,7 @@ type LightClient struct {
 	mock.Mock
 }
 
-// ChainID provides a mock function with given fields:
+// ChainID provides a mock function with no fields
 func (_m *LightClient) ChainID() string {
 	ret := _m.Called()
 

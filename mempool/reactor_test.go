@@ -698,27 +698,22 @@ func TestDOGTransactionCount(t *testing.T) {
 	reactors, _ := makeAndConnectReactors(config, 2, nil)
 
 	// create random transactions
-	txs := NewRandomTxs(numTxs, 20)
+	txs := newUniqueTxs(numTxs)
 	secondNodeID := reactors[1].Switch.NodeInfo().ID()
 	secondNode := reactors[0].Switch.Peers().Get(secondNodeID)
 
-	txUnique := make(map[string][]byte, len(txs))
 	for _, tx := range txs {
-		txUnique[string(tx.Hash())] = tx
-	}
-
-	for _, tx := range txUnique {
 		_, err := reactors[0].TryAddTx(tx, secondNode)
 		require.NoError(t, err)
 	}
 
-	require.Equal(t, int64(len(txUnique)), reactors[0].redundancyControl.firstTimeTxs)
-	for _, tx := range txUnique {
+	require.Equal(t, int64(len(txs)), reactors[0].redundancyControl.firstTimeTxs)
+	for _, tx := range txs {
 		_, err := reactors[0].TryAddTx(tx, secondNode)
 		// The transaction is in cache, hence the Error
 		require.Error(t, err)
 	}
-	require.Equal(t, int64(len(txUnique)), reactors[0].redundancyControl.duplicateTxs)
+	require.Equal(t, int64(len(txs)), reactors[0].redundancyControl.duplicateTxs)
 
 	reactors[0].redundancyControl.triggerAdjustment(reactors[0])
 	time.Sleep(1 * time.Second)
@@ -763,22 +758,16 @@ func TestDOGDisabledRoute(t *testing.T) {
 	firstNodeFromThird := reactors[2].Switch.Peers().Get(firstNodeID)
 
 	// create random transactions
-	txs := NewRandomTxs(numTxs, 20)
-	// Making sure they are unique
-	txUnique := make(map[string][]byte, len(txs))
-	for _, tx := range txs {
-		txUnique[string(tx.Hash())] = tx
-	}
-
+	txs := newUniqueTxs(numTxs)
 	// Add transactions to node 3 from node 2
 	// node3.senders[tx] = node2
-	for _, tx := range txUnique {
+	for _, tx := range txs {
 		_, err := reactors[2].TryAddTx(tx, secondNodeFromThird)
 		require.NoError(t, err)
 	}
 
 	// Add the same transactions to node 1 from node 2
-	for _, tx := range txUnique {
+	for _, tx := range txs {
 		_, err := reactors[0].TryAddTx(tx, secondNode)
 		require.NoError(t, err)
 	}
@@ -787,7 +776,7 @@ func TestDOGDisabledRoute(t *testing.T) {
 	// from node 2, but this time from node 3
 	// Node 1 should now ask node 3 to disable the route between
 	// a node that has sent this tx to node 3(node 2) and node1
-	for _, tx := range txUnique {
+	for _, tx := range txs {
 		_, err := reactors[0].TryAddTx(tx, thirdNodeFromFirst)
 		// The transaction is in cache, hence the Error
 		require.ErrorIs(t, err, ErrTxInCache)

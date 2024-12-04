@@ -45,7 +45,7 @@ func (_m *AppConnConsensus) Commit(ctx context.Context) (*v1.CommitResponse, err
 	return r0, r1
 }
 
-// Error provides a mock function with given fields:
+// Error provides a mock function with no fields
 func (_m *AppConnConsensus) Error() error {
 	ret := _m.Called()
 

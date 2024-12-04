@@ -5,6 +5,7 @@
 - 2024-11-04: Initial notes (@hvanz and @jmalicevic)
 - 2024-11-25: Applied comments from @hvanz and added information on decided metrics (@jmalicevic)
 - 2024-11-27: CAT mempool description (@hvanz)
+- 2024-12-04: libp2p gossipSub description (@jmalicevic)
 
 ## Status
 Accepted: Tracking issue [\#3297].
@@ -63,7 +64,14 @@ A node can use either this or DOG, but not both at the same time.
 
 
 # libp2p's gossipSub gossiping protocol
- <!-- TODO -->
+
+ The gossip protocol of `libp2p` aims to reduce the bandwidth used for gossiping by limiting the number of peers a node exchange data with. The peering is controlled by a router keeping track of peering state and information about the topics peers are subscribed to. 
+
+ Peers form meshes, where nodes within a mesh are subscribed to the same topic and the size of the mesh is defined with a configuration parameter. 
+
+ `gossipSub` allows peers to indicate they already have a particular transaction so that other peers do not forward it to them, by sending a `IHAVE` message. That, however this is done for each individual message. DOG on the other hand, instructs peers to stop forwarding anything from a given peer with one message. 
+
+ There is [ongoing work](https://github.com/libp2p/specs/pull/413/files) within `gossipSub` that might achieve something similar. A peer can send a message instructing another peer not to forward anything to it. DOG on the other hand blocks only one route, allowing traffic to continue through the peer.
 
 ## Decision
 

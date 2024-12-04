@@ -77,7 +77,7 @@ We start the design section with a general description of how the algorithm work
 
 CometBFT caches received transactions and stores the IDs of all the peers that have sent it in a `senders` list. When a transaction enters the mempool,
 if it was already received it can be retrieved from the cache. When this happens a certain number of times, the receiving node notifies the sender to stop forwarding any transaction from the peer 
-that had originally sent the transaction. The exact point when the notification is sent is defined below as a redundancy threshold. (TODO LiNK)
+that had originally sent the transaction. The exact point when the notification is sent is defined below as a redundancy threshold (see `Redundancy control`).
 
 Namely, let's assume that transaction `tx_1` was sent by node `B` to node `C` which forwarded it to `A`. `A` already has the transaction and notifies node `C` about this. Node `C` will look up the senders of transaction `tx_1` and in the future disable transaction forwarding from node `B` to node `A`.
 
@@ -93,7 +93,7 @@ In an ideal setting, receiving a transaction more than once is not needed. But i
 
 Operators can thus configure a desired redundancy and the gossip protocol will adjust route disabling based on this setting. Redundancy is defined as the ratio between duplicate and unique transactions. 
 
-The redundancy is set to `0.5` and impacts the gossiping of transactions as follows:
+The redundancy is set to `1` and impacts the gossiping of transactions as follows:
 
 
 ```go
@@ -107,7 +107,7 @@ The redundancy is set to `0.5` and impacts the gossiping of transactions as foll
 The number of unique and duplicate transactions is updated as transactions come in and,
 periodically (every `1s`), DOG recomputes the redundnacy of the system. 
 
-A redundancy of `0.5` implies that we allow one duplicate transaction for every two unique.
+A redundancy of `1` implies that we allow one duplicate transaction for every unique transaction.
 
 #### Redundancy adjustment triggering
 
@@ -276,8 +276,10 @@ the redundancy and has a chance to trigger sending of `HaveTx` or `ResetRoute` m
 have not observed a reduction in redundancy due to a lower interval. Most likely due to the fact that, regardless
 of the interval, it takes a certain amount of time for the information to propagate through the network.  
 
-- `mempool.target_redundancy: float`: Set to `0.5`. The redundancy level that the gossip protocol should aim to
-achieve. An acceptable value, based on our tests was also `1`. While still having, for each unique transaction, one duplicate, the number of transaction messages in the system was significantly lower. Overall increasing this value above `2` would lead to too many duplicates without an improvement in the tolerance of the system to byzantine attacks.  
+- `mempool.target_redundancy: float`: Set to `1`. The redundancy level that the gossip protocol should aim to
+achieve. An acceptable value, based on our tests was also `0,5`. While still having, for each unique transaction, one duplicate, the number of transaction messages in the system was significantly lower and we did not see a great benefit in using `0.5` over `1`. Therefore we set the default to a safer value in terms of resilience to attacks.
+
+ Overall increasing this value above `2` would lead to too many duplicates without an improvement in the tolerance of the system to byzantine attacks.  
 
 The third parameter defines the bounds of acceptable redundancy levels: 
 - `TargetRedundancyDeltaPercent: float`: Set to `0.1` (10%). It defines the bounds
@@ -307,7 +309,7 @@ More details on the experiments used to make this decision
 - The Entire network should use DOG. Otherwise the impact will be minimal. 
 
 
-- The protocol implicitly favors faster routes, by cutting routes to peers that send the duplicate transaction at a later time.
+- The protocol implicitly favors faster routes, by cutting routes through peers that send the duplicate transaction at a later time.
 
 
 - If the frequency of `HaveTx` messages is too high, nodes will have too many routes cut.
@@ -327,6 +329,8 @@ to behave correctly. It should however not be used in combination with the param
 
 - Except for enabling DOG on all nodes, users do not have to change any other aspects of their application. 
 - Gossiping using DOG leads to a significant reduction in network traffic caused by transactions. 
+- Routes with lower latencies are implicitly favoured by cutting routes to peers that send the duplicate 
+- By cutting routes that go through a peer that sent the duplicates later in time, the protocol implicitly favors faster routes.
 
 ### Negative
 

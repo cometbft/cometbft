@@ -190,7 +190,7 @@ func (pDB *PebbleDB) deleteWithOpts(
 	}
 
 	if err := pDB.db.Delete(key, writeOpts); err != nil {
-		return fmt.Errorf("deleting key %s: %w", key, err)
+		return fmt.Errorf("deleting key %X: %w", key, err)
 	}
 
 	return nil
@@ -205,7 +205,7 @@ func (pDB *PebbleDB) Compact(start, end []byte) error {
 	// If start==end pebbleDB will throw an error.
 	if start != nil && end != nil {
 		if err := pDB.db.Compact(start, end, true /* parallelize */); err != nil {
-			return fmt.Errorf("compacting range [%s, %s]: %w", start, end, err)
+			return fmt.Errorf("compacting range [%X, %X]: %w", start, end, err)
 		}
 	}
 
@@ -227,7 +227,7 @@ func (pDB *PebbleDB) Compact(start, end []byte) error {
 	}
 
 	if err := pDB.db.Compact(start, end, true /* parallelize */); err != nil {
-		compactErr := fmt.Errorf("compacting range [%s, %s]: %w", start, end, err)
+		compactErr := fmt.Errorf("compacting range [%X, %X]: %w", start, end, err)
 
 		if err := iter.Close(); err != nil {
 			itCloseErr := fmt.Errorf("closing compaction iterator: %w", err)
@@ -377,7 +377,7 @@ func (b *pebbleDBBatch) Set(key, value []byte) error {
 	// the nil parameter is for the write options, but pebble's own library sets it
 	// to _ in the function definition, thus ignoring it.
 	if err := b.batch.Set(key, value, nil); err != nil {
-		formatStr := "adding set update (k,v)=(%s,%s) to batch: %w"
+		formatStr := "adding set update (k,v)=(%X,%X) to batch: %w"
 		return fmt.Errorf(formatStr, key, value, err)
 	}
 
@@ -399,7 +399,7 @@ func (b *pebbleDBBatch) Delete(key []byte) error {
 	// the nil parameter is for the write options. pebble's own library sets it
 	// to _ in the function definition, thus ignoring it.
 	if err := b.batch.Delete(key, nil); err != nil {
-		formatStr := "adding delete update (k)=(%s) to batch: %w"
+		formatStr := "adding delete update (k)=(%X) to batch: %w"
 		return fmt.Errorf(formatStr, key, err)
 	}
 

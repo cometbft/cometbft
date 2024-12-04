@@ -205,7 +205,7 @@ func IteratePrefix(db DB, prefix []byte) (Iterator, error) {
 
 	it, err := db.Iterator(start, end)
 	if err != nil {
-		return nil, fmt.Errorf("creating iterator with prefix %v: %w", prefix, err)
+		return nil, fmt.Errorf("creating iterator with prefix %X: %w", prefix, err)
 	}
 
 	return it, nil

@@ -563,7 +563,7 @@ func (it *prefixDBIterator) Valid() bool {
 		keyTooShort = len(key) < prefixLen
 	)
 	if keyTooShort || !bytes.Equal(key[:prefixLen], it.prefix) {
-		const format = "received invalid key from backend: %x (expected prefix %x)"
+		const format = "received invalid key from backend: %X (expected prefix %X)"
 		it.err = fmt.Errorf(format, key, it.prefix)
 
 		return false

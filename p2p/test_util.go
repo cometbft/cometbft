@@ -9,8 +9,8 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtnet "github.com/cometbft/cometbft/internal/net"
 	"github.com/cometbft/cometbft/libs/log"
+	ni "github.com/cometbft/cometbft/p2p/internal/nodeinfo"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
-	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/p2p/transport"
 	"github.com/cometbft/cometbft/p2p/transport/tcp"
@@ -335,13 +335,17 @@ func (mockNodeInfo) Handshake(net.Conn, time.Duration) (ni.NodeInfo, error) { re
 
 func testNodeInfo(id nodekey.ID, name string) ni.Default {
 	return ni.Default{
-		ProtocolVersion: ni.NewProtocolVersion(0, 0, 0),
-		DefaultNodeID:   id,
-		ListenAddr:      fmt.Sprintf("127.0.0.1:%d", getFreePort()),
-		Network:         "testing",
-		Version:         "1.2.3-rc0-deadbeef",
-		Channels:        []byte{0x01},
-		Moniker:         name,
+		ProtocolVersion: ni.ProtocolVersion{
+			P2P:   0,
+			Block: 0,
+			App:   0,
+		},
+		DefaultNodeID: id,
+		ListenAddr:    fmt.Sprintf("127.0.0.1:%d", getFreePort()),
+		Network:       "testing",
+		Version:       "1.2.3-rc0-deadbeef",
+		Channels:      []byte{0x01},
+		Moniker:       name,
 		Other: ni.DefaultOther{
 			TxIndex:    "on",
 			RPCAddress: fmt.Sprintf("127.0.0.1:%d", getFreePort()),

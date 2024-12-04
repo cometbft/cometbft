@@ -15,14 +15,14 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	"github.com/cometbft/cometbft/p2p/nodekey"
+	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 const (
-	noSender    = nodekey.ID("")
+	noSender    = p2p.ID("")
 	defaultLane = "default"
 )
 
@@ -189,7 +189,7 @@ func (mem *CListMempool) removeAllTxs(lane LaneID) {
 
 // addSender adds a peer ID to the list of senders on the entry corresponding to
 // tx, identified by its key.
-func (mem *CListMempool) addSender(txKey types.TxKey, sender nodekey.ID) error {
+func (mem *CListMempool) addSender(txKey types.TxKey, sender p2p.ID) error {
 	if sender == noSender {
 		return nil
 	}
@@ -330,7 +330,7 @@ func (mem *CListMempool) Contains(txKey types.TxKey) bool {
 
 // It blocks if we're waiting on Update() or Reap().
 // Safe for concurrent use by multiple goroutines.
-func (mem *CListMempool) CheckTx(tx types.Tx, sender nodekey.ID) (*abcicli.ReqRes, error) {
+func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, error) {
 	mem.updateMtx.RLock()
 	// use defer to unlock mutex because application (*local client*) might panic
 	defer mem.updateMtx.RUnlock()
@@ -390,7 +390,7 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender nodekey.ID) (*abcicli.ReqRe
 // handleCheckTxResponse handles CheckTx responses for transactions validated for the first time.
 //
 //   - sender optionally holds the ID of the peer that sent the transaction, if any.
-func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender nodekey.ID) func(res *abci.Response) error {
+func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(res *abci.Response) error {
 	return func(r *abci.Response) error {
 		res := r.GetCheckTx()
 		if res == nil {
@@ -421,7 +421,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender nodekey.ID) f
 			if postCheckErr != nil {
 				return postCheckErr
 			}
-			return ErrInvalidTx
+			return ErrInvalidTx{Code: res.Code, Data: res.Data, Log: res.Log, Codespace: res.Codespace, Hash: tx.Hash()}
 		}
 
 		// If the app returned a non-empty lane, use it; otherwise use the default lane.
@@ -469,7 +469,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender nodekey.ID) f
 
 // Called from:
 //   - handleCheckTxResponse (lock not held) if tx is valid
-func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender nodekey.ID, lane LaneID) {
+func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane LaneID) {
 	mem.txsMtx.Lock()
 	defer mem.txsMtx.Unlock()
 
@@ -647,7 +647,7 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 			if postCheckErr != nil {
 				return postCheckErr
 			}
-			return ErrInvalidTx
+			return ErrInvalidTx{Code: res.Code, Data: res.Data, Log: res.Log, Codespace: res.Codespace, Hash: tx.Hash()}
 		}
 
 		return nil

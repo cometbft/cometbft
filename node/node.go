@@ -31,7 +31,6 @@ import (
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
-	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/p2p/transport/tcp"
@@ -65,7 +64,7 @@ type Node struct {
 	transport   *tcp.MultiplexTransport
 	sw          *p2p.Switch  // p2p connections
 	addrBook    pex.AddrBook // known peers
-	nodeInfo    ni.NodeInfo
+	nodeInfo    p2p.NodeInfo
 	nodeKey     *nodekey.NodeKey // our node privkey
 	isListening bool
 
@@ -133,7 +132,7 @@ func CustomReactors(reactors map[string]p2p.Reactor) Option {
 			// NOTE: This is a bit messy now with the type casting but is
 			// cleaned up in the following version when NodeInfo is changed from
 			// and interface to a concrete type
-			if ni, ok := n.nodeInfo.(ni.Default); ok {
+			if ni, ok := n.nodeInfo.(p2p.NodeInfoDefault); ok {
 				for _, chDesc := range reactor.StreamDescriptors() {
 					if !ni.HasChannel(chDesc.StreamID()) {
 						ni.Channels = append(ni.Channels, chDesc.StreamID())
@@ -141,7 +140,7 @@ func CustomReactors(reactors map[string]p2p.Reactor) Option {
 				}
 				n.nodeInfo = ni
 			} else {
-				n.Logger.Error("Node info is not of type ni.Default. Custom reactor channels can not be added.")
+				n.Logger.Error("Node info is not of type p2p.NodeInfoDefault. Custom reactor channels can not be added.")
 			}
 		}
 	}
@@ -1078,7 +1077,7 @@ func (n *Node) IsListening() bool {
 }
 
 // NodeInfo returns the Node's Info from the Switch.
-func (n *Node) NodeInfo() ni.NodeInfo {
+func (n *Node) NodeInfo() p2p.NodeInfo {
 	return n.nodeInfo
 }
 
@@ -1088,18 +1087,18 @@ func makeNodeInfo(
 	txIndexer txindex.TxIndexer,
 	genDoc *types.GenesisDoc,
 	state sm.State,
-) (ni.Default, error) {
+) (p2p.NodeInfoDefault, error) {
 	txIndexerStatus := "on"
 	if _, ok := txIndexer.(*null.TxIndex); ok {
 		txIndexerStatus = "off"
 	}
 
-	nodeInfo := ni.Default{
-		ProtocolVersion: ni.NewProtocolVersion(
-			version.P2PProtocol, // global
-			state.Version.Consensus.Block,
-			state.Version.Consensus.App,
-		),
+	nodeInfo := p2p.NodeInfoDefault{
+		ProtocolVersion: p2p.ProtocolVersion{
+			P2P:   version.P2PProtocol, // global
+			Block: state.Version.Consensus.Block,
+			App:   state.Version.Consensus.App,
+		},
 		DefaultNodeID: nodeKey.ID(),
 		Network:       genDoc.ChainID,
 		Version:       version.CMTSemVer,
@@ -1111,7 +1110,7 @@ func makeNodeInfo(
 			statesync.SnapshotChannel, statesync.ChunkChannel,
 		},
 		Moniker: config.Moniker,
-		Other: ni.DefaultOther{
+		Other: p2p.NodeInfoDefaultOther{
 			TxIndex:    txIndexerStatus,
 			RPCAddress: config.RPC.ListenAddress,
 		},

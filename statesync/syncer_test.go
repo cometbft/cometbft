@@ -18,7 +18,6 @@ import (
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"
 	p2pmocks "github.com/cometbft/cometbft/p2p/mocks"
-	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/proxy"
 	proxymocks "github.com/cometbft/cometbft/proxy/mocks"
 	sm "github.com/cometbft/cometbft/state"
@@ -48,7 +47,7 @@ func setupOfferSyncer() (*syncer, *proxymocks.AppConnSnapshot) {
 // Sets up a simple peer mock with an ID.
 func simplePeer(id string) *p2pmocks.Peer {
 	peer := &p2pmocks.Peer{}
-	peer.On("ID").Return(nodekey.ID(id))
+	peer.On("ID").Return(p2p.ID(id))
 	return peer
 }
 
@@ -102,7 +101,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 
 	// Adding a couple of peers should trigger snapshot discovery messages
 	peerA := &p2pmocks.Peer{}
-	peerA.On("ID").Return(nodekey.ID("a"))
+	peerA.On("ID").Return(p2p.ID("a"))
 	peerA.On("Send", mock.MatchedBy(func(i any) bool {
 		e, ok := i.(p2p.Envelope)
 		if !ok {
@@ -115,7 +114,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 	peerA.AssertExpectations(t)
 
 	peerB := &p2pmocks.Peer{}
-	peerB.On("ID").Return(nodekey.ID("b"))
+	peerB.On("ID").Return(p2p.ID("b"))
 	peerB.On("Send", mock.MatchedBy(func(i any) bool {
 		e, ok := i.(p2p.Envelope)
 		if !ok {

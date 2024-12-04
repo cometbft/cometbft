@@ -65,7 +65,7 @@ A node can use either this or DOG, but not both at the same time.
 
 # libp2p's gossipSub gossiping protocol
 
- The gossip protocol of `libp2p` aims to reduce the bandwidth used for gossiping by limiting the number of peers a node exchange data with. The peering is controlled by a router keeping track of peering state and information about the topics peers are subscribed to. 
+ [gossipsub](https://github.com/libp2p/specs/blob/master/pubsub/gossipsub/gossipsub-v1.0.md), the gossip protocol of `libp2p`, aims to reduce the bandwidth used for gossiping by limiting the number of peers a node exchange data with. The peering is controlled by a router keeping track of peering state and information about the topics peers are subscribed to. 
 
  Peers form meshes, where nodes within a mesh are subscribed to the same topic and the size of the mesh is defined with a configuration parameter. 
 

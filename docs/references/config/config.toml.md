@@ -1487,7 +1487,7 @@ compatible `mempool.experimental_max_gossip_connections_to_*_peers`.
 
 ### mempool.dog_target_redundancy
 ```toml
-dog_target_redundancy = 0.5
+dog_target_redundancy = 1
 ```
 
 | Value type          |  real  |
@@ -1497,7 +1497,10 @@ dog_target_redundancy = 0.5
 Used by the DOG protocol to set the desired transaction redundancy level for the node. For example,
 a redundancy of 0.5 means that, for every two first-time transactions received, the node will
 receive one duplicate transaction. Zero redundancy is disabled because it could render the node
-isolated from transaction data in case of Byzantine actors.
+isolated from transaction data.
+
+Check out the issue [#4597](https://github.com/cometbft/cometbft/issues/4597) for discussions about
+possible values.
 
 ### mempool.dog_adjust_interval
 ```toml
@@ -1511,7 +1514,8 @@ dog_adjust_interval = 1000
 Used by the DOG protocol to set how often it will attempt to adjust the redundancy level. The higher
 the value, the longer it will take the node to reduce bandwidth and converge to a stable redundancy
 level. In networks with high latency between nodes (> 500ms), it could be necessary to increase the
-default value.
+default value, as explained in the
+[spec](https://github.com/cometbft/cometbft/blob/13d852b43068d2e19de0f307d2bc399b30c0ae68/spec/mempool/gossip/dog.md#when-to-adjust).
 
 ## State synchronization
 State sync rapidly bootstraps a new node by discovering, fetching, and restoring a state machine snapshot from peers

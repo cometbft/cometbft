@@ -169,7 +169,7 @@ func (_m *Client) Echo(_a0 context.Context, _a1 string) (*types.ResponseEcho, er
 	return r0, r1
 }
 
-// Error provides a mock function with given fields:
+// Error provides a mock function with no fields
 func (_m *Client) Error() error {
 	ret := _m.Called()
 
@@ -325,7 +325,7 @@ func (_m *Client) InitChain(_a0 context.Context, _a1 *types.RequestInitChain) (*
 	return r0, r1
 }
 
-// IsRunning provides a mock function with given fields:
+// IsRunning provides a mock function with no fields
 func (_m *Client) IsRunning() bool {
 	ret := _m.Called()
 
@@ -433,7 +433,7 @@ func (_m *Client) OfferSnapshot(_a0 context.Context, _a1 *types.RequestOfferSnap
 	return r0, r1
 }
 
-// OnReset provides a mock function with given fields:
+// OnReset provides a mock function with no fields
 func (_m *Client) OnReset() error {
 	ret := _m.Called()
 
@@ -451,7 +451,7 @@ func (_m *Client) OnReset() error {
 	return r0
 }
 
-// OnStart provides a mock function with given fields:
+// OnStart provides a mock function with no fields
 func (_m *Client) OnStart() error {
 	ret := _m.Called()
 
@@ -469,7 +469,7 @@ func (_m *Client) OnStart() error {
 	return r0
 }
 
-// OnStop provides a mock function with given fields:
+// OnStop provides a mock function with no fields
 func (_m *Client) OnStop() {
 	_m.Called()
 }
@@ -564,7 +564,7 @@ func (_m *Client) Query(_a0 context.Context, _a1 *types.RequestQuery) (*types.Re
 	return r0, r1
 }
 
-// Quit provides a mock function with given fields:
+// Quit provides a mock function with no fields
 func (_m *Client) Quit() <-chan struct{} {
 	ret := _m.Called()
 
@@ -584,7 +584,7 @@ func (_m *Client) Quit() <-chan struct{} {
 	return r0
 }
 
-// Reset provides a mock function with given fields:
+// Reset provides a mock function with no fields
 func (_m *Client) Reset() error {
 	ret := _m.Called()
 
@@ -612,7 +612,7 @@ func (_m *Client) SetResponseCallback(_a0 abcicli.Callback) {
 	_m.Called(_a0)
 }
 
-// Start provides a mock function with given fields:
+// Start provides a mock function with no fields
 func (_m *Client) Start() error {
 	ret := _m.Called()
 
@@ -630,7 +630,7 @@ func (_m *Client) Start() error {
 	return r0
 }
 
-// Stop provides a mock function with given fields:
+// Stop provides a mock function with no fields
 func (_m *Client) Stop() error {
 	ret := _m.Called()
 
@@ -648,7 +648,7 @@ func (_m *Client) Stop() error {
 	return r0
 }
 
-// String provides a mock function with given fields:
+// String provides a mock function with no fields
 func (_m *Client) String() string {
 	ret := _m.Called()
 

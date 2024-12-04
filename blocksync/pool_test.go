@@ -1,6 +1,7 @@
 package blocksync
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -314,38 +315,52 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 	t.Cleanup(func() { peers.stop() })
 
 	// Simulate blocks created on each peer regularly and update pool max height.
-	go func() {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(func() { cancel() })
+	go func(ctx context.Context) {
 		// Introduce each peer
 		for _, peer := range peers {
 			pool.SetPeerRange(peer.id, peer.base, peer.height)
 		}
 		for {
-			time.Sleep(1 * time.Second) // Speed of new block creation
-			for _, peer := range peers {
-				peer.height += 1                                   // Network height increases on all peers
-				pool.SetPeerRange(peer.id, peer.base, peer.height) // Tell the pool that a new height is available
-			}
-		}
-	}()
-
-	// Start a goroutine to verify blocks
-	go func() {
-		for {
-			time.Sleep(500 * time.Millisecond) // Speed of block verification
-			if !pool.IsRunning() {
+			select {
+			case <-ctx.Done():
 				return
-			}
-			first, second, _ := pool.PeekTwoBlocks()
-			if first != nil && second != nil {
-				if second.LastCommit == nil {
-					// Second block is fake
-					pool.RemovePeerAndRedoAllPeerRequests(second.Height)
-				} else {
-					pool.PopRequest()
+			default:
+				time.Sleep(1 * time.Second) // Speed of new block creation
+				for _, peer := range peers {
+					peer.height += 1                                   // Network height increases on all peers
+					pool.SetPeerRange(peer.id, peer.base, peer.height) // Tell the pool that a new height is available
 				}
 			}
 		}
-	}()
+	}(ctx)
+
+	// Start a goroutine to verify blocks
+	ctx2, cancel2 := context.WithCancel(context.Background())
+	t.Cleanup(func() { cancel2() })
+	go func(ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				time.Sleep(500 * time.Millisecond) // Speed of block verification
+				if !pool.IsRunning() {
+					return
+				}
+				first, second, _ := pool.PeekTwoBlocks()
+				if first != nil && second != nil {
+					if second.LastCommit == nil {
+						// Second block is fake
+						pool.RemovePeerAndRedoAllPeerRequests(second.Height)
+					} else {
+						pool.PopRequest()
+					}
+				}
+			}
+		}
+	}(ctx2)
 
 	testTicker := time.NewTicker(200 * time.Millisecond) // speed of test execution
 	t.Cleanup(func() { testTicker.Stop() })

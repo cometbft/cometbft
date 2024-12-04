@@ -44,7 +44,7 @@ func (_m *AppConnConsensus) BeginBlockSync(_a0 types.RequestBeginBlock) (*types.
 	return r0, r1
 }
 
-// CommitSync provides a mock function with given fields:
+// CommitSync provides a mock function with no fields
 func (_m *AppConnConsensus) CommitSync() (*types.ResponseCommit, error) {
 	ret := _m.Called()
 
@@ -124,7 +124,7 @@ func (_m *AppConnConsensus) EndBlockSync(_a0 types.RequestEndBlock) (*types.Resp
 	return r0, r1
 }
 
-// Error provides a mock function with given fields:
+// Error provides a mock function with no fields
 func (_m *AppConnConsensus) Error() error {
 	ret := _m.Called()
 

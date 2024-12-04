@@ -166,7 +166,7 @@ func (_m *Client) CheckTxSync(_a0 types.RequestCheckTx) (*types.ResponseCheckTx,
 	return r0, r1
 }
 
-// CommitAsync provides a mock function with given fields:
+// CommitAsync provides a mock function with no fields
 func (_m *Client) CommitAsync() *abcicli.ReqRes {
 	ret := _m.Called()
 
@@ -186,7 +186,7 @@ func (_m *Client) CommitAsync() *abcicli.ReqRes {
 	return r0
 }
 
-// CommitSync provides a mock function with given fields:
+// CommitSync provides a mock function with no fields
 func (_m *Client) CommitSync() (*types.ResponseCommit, error) {
 	ret := _m.Called()
 
@@ -366,7 +366,7 @@ func (_m *Client) EndBlockSync(_a0 types.RequestEndBlock) (*types.ResponseEndBlo
 	return r0, r1
 }
 
-// Error provides a mock function with given fields:
+// Error provides a mock function with no fields
 func (_m *Client) Error() error {
 	ret := _m.Called()
 
@@ -384,7 +384,7 @@ func (_m *Client) Error() error {
 	return r0
 }
 
-// FlushAsync provides a mock function with given fields:
+// FlushAsync provides a mock function with no fields
 func (_m *Client) FlushAsync() *abcicli.ReqRes {
 	ret := _m.Called()
 
@@ -404,7 +404,7 @@ func (_m *Client) FlushAsync() *abcicli.ReqRes {
 	return r0
 }
 
-// FlushSync provides a mock function with given fields:
+// FlushSync provides a mock function with no fields
 func (_m *Client) FlushSync() error {
 	ret := _m.Called()
 
@@ -522,7 +522,7 @@ func (_m *Client) InitChainSync(_a0 types.RequestInitChain) (*types.ResponseInit
 	return r0, r1
 }
 
-// IsRunning provides a mock function with given fields:
+// IsRunning provides a mock function with no fields
 func (_m *Client) IsRunning() bool {
 	ret := _m.Called()
 
@@ -690,7 +690,7 @@ func (_m *Client) OfferSnapshotSync(_a0 types.RequestOfferSnapshot) (*types.Resp
 	return r0, r1
 }
 
-// OnReset provides a mock function with given fields:
+// OnReset provides a mock function with no fields
 func (_m *Client) OnReset() error {
 	ret := _m.Called()
 
@@ -708,7 +708,7 @@ func (_m *Client) OnReset() error {
 	return r0
 }
 
-// OnStart provides a mock function with given fields:
+// OnStart provides a mock function with no fields
 func (_m *Client) OnStart() error {
 	ret := _m.Called()
 
@@ -726,7 +726,7 @@ func (_m *Client) OnStart() error {
 	return r0
 }
 
-// OnStop provides a mock function with given fields:
+// OnStop provides a mock function with no fields
 func (_m *Client) OnStop() {
 	_m.Called()
 }
@@ -881,7 +881,7 @@ func (_m *Client) QuerySync(_a0 types.RequestQuery) (*types.ResponseQuery, error
 	return r0, r1
 }
 
-// Quit provides a mock function with given fields:
+// Quit provides a mock function with no fields
 func (_m *Client) Quit() <-chan struct{} {
 	ret := _m.Called()
 
@@ -901,7 +901,7 @@ func (_m *Client) Quit() <-chan struct{} {
 	return r0
 }
 
-// Reset provides a mock function with given fields:
+// Reset provides a mock function with no fields
 func (_m *Client) Reset() error {
 	ret := _m.Called()
 
@@ -929,7 +929,7 @@ func (_m *Client) SetResponseCallback(_a0 abcicli.Callback) {
 	_m.Called(_a0)
 }
 
-// Start provides a mock function with given fields:
+// Start provides a mock function with no fields
 func (_m *Client) Start() error {
 	ret := _m.Called()
 
@@ -947,7 +947,7 @@ func (_m *Client) Start() error {
 	return r0
 }
 
-// Stop provides a mock function with given fields:
+// Stop provides a mock function with no fields
 func (_m *Client) Stop() error {
 	ret := _m.Called()
 
@@ -965,7 +965,7 @@ func (_m *Client) Stop() error {
 	return r0
 }
 
-// String provides a mock function with given fields:
+// String provides a mock function with no fields
 func (_m *Client) String() string {
 	ret := _m.Called()
 

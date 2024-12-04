@@ -716,7 +716,7 @@ func TestDOGTransactionCount(t *testing.T) {
 	require.Equal(t, int64(len(txs)), reactors[0].redundancyControl.duplicateTxs)
 
 	reactors[0].redundancyControl.triggerAdjustment(reactors[0])
-	time.Sleep(1 * time.Second)
+	time.Sleep(100 * time.Millisecond)
 
 	reactors[0].redundancyControl.mtx.RLock()
 	dupTx := reactors[0].redundancyControl.duplicateTxs
@@ -784,7 +784,7 @@ func TestDOGDisabledRoute(t *testing.T) {
 
 	reactors[0].redundancyControl.triggerAdjustment(reactors[0])
 	// Wait for the redundancy adjustment to kick in
-	time.Sleep(1 * time.Second)
+	time.Sleep(100 * time.Millisecond)
 
 	reactors[2].router.mtx.RLock()
 	// Make sure that Node 3 has at least one disabled route

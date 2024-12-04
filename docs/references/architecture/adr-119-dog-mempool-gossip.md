@@ -297,7 +297,7 @@ We have therefore opted to not reduce this value further. It does not impact the
 
 Part of the work on the protocol was extensive testing of its performance and impact on the network, as well 
 as the impact of the network configuration and load on the protocol itself. 
-Issue [\#4320] covers the experiments performed on DOG.
+Issue [\#4543] covers the experiments performed on DOG.
 
 We have also tested scenarios where we send each transaction to 100 of the 200 nodes. Typically we only send each transaction to one node. DOG was able 
 to reduce the number of duplicates in the system, even under a high load, even when the target redundancy is `1`. 
@@ -308,7 +308,7 @@ as something operators can adjust so that users can experiment in their testnets
 found a degradation in performance and correctness for these value. 
 
 More details on the experiments used to make this decision
- can be found in Issue [\#4320].
+ can be found in issue [\#4543].
 
 
 
@@ -337,6 +337,9 @@ to behave correctly. It should however not be used in combination with the param
 
 - Except for enabling DOG on all nodes, users do not have to change any other aspects of their application. 
 - Gossiping using DOG leads to a significant reduction in network traffic caused by transactions. 
+  Moreover, in our experiments most metrics have improved, with no observed degradation in any area. The 
+  reduction of redundant messages has a system-wide positive impact, contributing to faster consensus, lower 
+  transaction latency, and more efficient resource utilization (#4606).
 - Routes with lower latencies are implicitly favoured by cutting routes to peers that send the duplicate 
 - By cutting routes that go through a peer that sent the duplicates later in time, the protocol implicitly favors faster routes.
 

@@ -43,7 +43,7 @@ func (_m *AppConnQuery) EchoSync(_a0 string) (*types.ResponseEcho, error) {
 	return r0, r1
 }
 
-// Error provides a mock function with given fields:
+// Error provides a mock function with no fields
 func (_m *AppConnQuery) Error() error {
 	ret := _m.Called()
 

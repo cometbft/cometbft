@@ -66,7 +66,7 @@ func (_m *Application) CheckTx(_a0 types.RequestCheckTx) types.ResponseCheckTx {
 	return r0
 }
 
-// Commit provides a mock function with given fields:
+// Commit provides a mock function with no fields
 func (_m *Application) Commit() types.ResponseCommit {
 	ret := _m.Called()
 

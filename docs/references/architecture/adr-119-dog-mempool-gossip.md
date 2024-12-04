@@ -16,15 +16,13 @@ The current transaction dissemination protocol of the mempool sends each receive
 transaction to all the peers a node is connected to, except for the sender.
 In case transactions were received via RPC, they are broadcasted to all
 connected peers. 
-While resilient to Byzantine attacks, this type of transaction gossiping is 
-causing a lot of network traffic and nodes receiving duplicate transactions
-very frequently. 
+While this approach provides resilience to Byzantine attacks and optimal transaction latency, it generates significant network traffic, with nodes receiving an exponential number of duplicate transactions.
 
 Benchmarks have also confirmed a large portion of the sent and received bytes 
 by the network layer of a node is due to transaction gossiping. 
 
 DOG is a protocol that aims to reduce the number of duplicate transactions received
-while maintaining the resilience to attacks. 
+while maintaining the resilience to attacks and low transaction latency. 
 
 ## Alternative Approaches
 
@@ -57,11 +55,11 @@ Efforts to port the CAT mempool to CometBFT were documented in [\#2027]. Experim
 
 ### Limiting the number of peers a transaction is forwarded to
 
-CometBFT allows operators to configure `p2p.experimental_max_gossip_connections_to_non_persistent_peers` and `p2p.experimental_max_gossip_connections_to_persistent_peers`  as a maximum number of peers to send  transactions to. 
+CometBFT allows operators to configure `p2p.experimental_max_gossip_connections_to_non_persistent_peers` and `p2p.experimental_max_gossip_connections_to_persistent_peers`  as a maximum number of peers to send  transactions to ([#1558](https://github.com/cometbft/cometbft/pull/1558) and [#1584](https://github.com/cometbft/cometbft/pull/1584)). 
 This reduces bandwitdth compared to when they are disabled but there is no rule to determine which peers transactions
 are not forwarded to. DOG can be looked at as an enahanced, more informed version of this protocol.
 
-A node should use either this or DOG, but not both at the same time.
+A node can use either this or DOG, but not both at the same time.
 
 
 # libp2p's gossipSub gossiping protocol
@@ -71,7 +69,7 @@ A node should use either this or DOG, but not both at the same time.
 
 The CometBFT team has decided to implement the protocol on top of the existing mempool
 (`flood` ) dissemination protocol, but make it optional. The protocol can be activated/deactivated
-via a new config flag `mempool.enable_dog_protocol`. More details on this in the sections below. 
+via a new config flag `mempool.dog_protocol_enabled`. More details on this in the sections below. 
 
 ## Detailed Design
 
@@ -265,7 +263,7 @@ This ADR introduces a set of metrics into the `mempool` module. They can be used
 ### Configuration parameters
 
 
-- `mempool.enable_dog_protocol: bool`: Enabling or disabling the DOG protocol. `false` by default.
+- `mempool.dog_protocol_enabled: bool`: Enabling or disabling the DOG protocol. `true` by default.
 The only reason for this is the incompatibility of DOG with the existing experimental feature
 that disables sending transactions to all peers. 
 
@@ -273,7 +271,7 @@ that disables sending transactions to all peers.
 The [specification](https://github.com/cometbft/cometbft/spec/mempool/gossip/dog.md) of the protocol introduces 3 additional variables. 
 Out of the tree, we have made the following configuration parameters:
  
-- `mempool.adjust_redundancy_interval: time.Duration`: Set to `1s`. Indicates how often the redundancy controller readjusts 
+- `mempool.dog_adjust_interval: time.Duration`: Set to `1s` by default. Indicates how often the redundancy controller readjusts 
 the redundancy and has a chance to trigger sending of `HaveTx` or `ResetRoute` messages. As with the delta, we 
 have not observed a reduction in redundancy due to a lower interval. Most likely due to the fact that, regardless
 of the interval, it takes a certain amount of time for the information to propagate through the network.  
@@ -291,10 +289,10 @@ Part of the work on the protocol was extensive testing of its performance and im
 as the impact of the network configuration and load on the protocol itself. 
 Issue [\#4320] covers the experiments performed on DOG.
 
-We have also tested scenarios where we send the same load to 100 of the 200 nodes. DOG was able 
+We have also tested scenarios where we send each transaction to 100 of the 200 nodes. Typically we only send each transaction to one node. DOG was able 
 to reduce the number of duplicates in the system, even under a high load, even when the target redundancy is `1`. 
 
-After extensive testing, we did not find compelling evidence and differences in a variety of runs to varrant the
+After extensive testing, we did not find compelling evidence and differences in a variety of runs to warrant the
 tuning of the default values chosen. We have left the target redundancy and redundancy adjustment interval 
 as something operators can adjust so that users can experiment in their testnets. But none of our experiments
 found a degradation in performance and correctness for these value. 
@@ -317,6 +315,7 @@ More details on the experiments used to make this decision
 -  While we did not observe any single node missing out on transactions when the lowering the target 
 reduncancy event to `0.1`, we do not advise users to do this without a strong justification and testing. 
 
+- In networks that have slow connections between nodes (latencies bigger than 500ms), it is recommended to increase `config.dog_adjust_interval` to a higher value, at least as high as the maximum round-trip time (RTT) in the network.
 
 ## Consequences
 

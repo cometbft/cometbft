@@ -34,7 +34,7 @@ func (_m *Store) Bootstrap(_a0 state.State) error {
 	return r0
 }
 
-// Close provides a mock function with given fields:
+// Close provides a mock function with no fields
 func (_m *Store) Close() error {
 	ret := _m.Called()
 
@@ -52,7 +52,7 @@ func (_m *Store) Close() error {
 	return r0
 }
 
-// GetOfflineStateSyncHeight provides a mock function with given fields:
+// GetOfflineStateSyncHeight provides a mock function with no fields
 func (_m *Store) GetOfflineStateSyncHeight() (int64, error) {
 	ret := _m.Called()
 
@@ -80,7 +80,7 @@ func (_m *Store) GetOfflineStateSyncHeight() (int64, error) {
 	return r0, r1
 }
 
-// Load provides a mock function with given fields:
+// Load provides a mock function with no fields
 func (_m *Store) Load() (state.State, error) {
 	ret := _m.Called()
 

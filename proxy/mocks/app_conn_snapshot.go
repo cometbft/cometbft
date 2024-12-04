@@ -45,7 +45,7 @@ func (_m *AppConnSnapshot) ApplySnapshotChunk(_a0 context.Context, _a1 *types.Re
 	return r0, r1
 }
 
-// Error provides a mock function with given fields:
+// Error provides a mock function with no fields
 func (_m *AppConnSnapshot) Error() error {
 	ret := _m.Called()
 

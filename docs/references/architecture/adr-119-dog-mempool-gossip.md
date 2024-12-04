@@ -282,18 +282,18 @@ Out of the tree, we have made the following configuration parameters:
 - `mempool.dog_adjust_interval: time.Duration`: Set to `1s` by default. Indicates how often the redundancy controller readjusts 
 the redundancy and has a chance to trigger sending of `HaveTx` or `ResetRoute` messages. As with the delta, we 
 have not observed a reduction in redundancy due to a lower interval. Most likely due to the fact that, regardless
-of the interval, it takes a certain amount of time for the information to propagate through the network.  
+of the interval, it takes a certain amount of time for the information to propagate through the network.<br/>See [\#4598] for more information about the experiments. 
 
 - `mempool.target_redundancy: float`: Set to `1`. The redundancy level that the gossip protocol should aim to
 achieve. An acceptable value, based on our tests was also `0,5`. While still having, for each unique transaction, one duplicate, the number of transaction messages in the system was significantly lower and we did not see a great benefit in using `0.5` over `1`. Therefore we set the default to a safer value in terms of resilience to attacks.
+Overall increasing this value above `2` would lead to too many duplicates without an improvement in the tolerance of the system to byzantine attacks. 
+<br/>See [\#4597] for more information about the experiments. 
 
- Overall increasing this value above `2` would lead to too many duplicates without an improvement in the tolerance of the system to byzantine attacks.  
-
-The third parameter defines the bounds of acceptable redundancy levels: 
+The third parameter defines the bounds of acceptable redundancy levels and cannot be configured: 
 - `TargetRedundancyDeltaPercent: float`: Set to `0.1` (10%). It defines the bounds
 of acceptable redundancy levels. The actual redundancy will be: `redundancy +- redundancy*delta`. A lower delta 
 did not lead to a visible reduction in redundancy, while slightly increasing the number of control messages sent. 
-We have therefore opted to not reduce this value further. It does not impact the protocol as much as the target redundancy or the redundancy adjustment interval. 
+We have therefore opted to not reduce this value further. It does not impact the protocol as much as the target redundancy or the redundancy adjustment interval.<br/>See [\#4569] for more information about the experiments. 
 
 Part of the work on the protocol was extensive testing of its performance and impact on the network, as well 
 as the impact of the network configuration and load on the protocol itself. 
@@ -322,8 +322,7 @@ More details on the experiments used to make this decision
 
 - If the frequency of `HaveTx` messages is too high, nodes will have too many routes cut.
 
--  While we did not observe any single node missing out on transactions when the lowering the target 
-reduncancy event to `0.1`, we do not advise users to do this without a strong justification and testing. 
+-  We have performed some tests with a target redundancy of `0.1`. While we did not observe any single node missing out on transactions, we have not thoroughly tested this, in particular in the presence of perturbations (nodes going down) or heavy load. We thus do not advise to lower this parameter without thorough testing. 
 
 - In networks that have slow connections between nodes (latencies bigger than 500ms), it is recommended to increase `config.dog_adjust_interval` to a higher value, at least as high as the maximum round-trip time (RTT) in the network.
 
@@ -340,16 +339,16 @@ to behave correctly. It should however not be used in combination with the param
   Moreover, in our experiments most metrics have improved, with no observed degradation in any area. The 
   reduction of redundant messages has a system-wide positive impact, contributing to faster consensus, lower 
   transaction latency, and more efficient resource utilization (#4606).
-- Routes with lower latencies are implicitly favoured by cutting routes to peers that send the duplicate 
-- By cutting routes that go through a peer that sent the duplicates later in time, the protocol implicitly favors faster routes.
+- Routes with lower latencies are implicitly favoured by cutting routes through peers that sent a duplicate transaction later in time.
 
 ### Negative
 
-- The new protocol is not compatible with the existing experimental feature that limits disseminating transactions up to a specified number of peers. If both are enabled simultaneously, the mempool will work but not as expected.
+- It takes around 5 to 15 minutes for nodes to build a stable routing table, depending on network conditions and node configuration. This shouldn't pose a problem as it is expected for nodes to run for a long time.
 
 ### Neutral
 
-- At this point, DOG cannot be fine tuned with too many parameters. The reason for this is that the protocol was very resilient based on all our tests. But this is something that might be revisited when users start using it in production. 
+- The new protocol is not compatible with the existing experimental feature that limits disseminating transactions up to a specified number of peers. If both are enabled simultaneously, the mempool will work but not as expected.
+
 - Mixed networks are supported, nodes not having DOG enabled will not receive the new messages related to the protocol. But the network will not benefit from the protocol as expected. 
 
 ## References
@@ -359,7 +358,9 @@ to behave correctly. It should however not be used in combination with the param
 [\#3297]: https://github.com/cometbft/cometbft/issues/3297
 [\#1472]: https://github.com/cometbft/cometbft/pull/1472
 [\#2027]: https://github.com/cometbft/cometbft/issues/2027
-
+[\#4569]: https://github.com/cometbft/cometbft/issues/4596
+[\#4598]: https://github.com/cometbft/cometbft/issues/4598
+[\#4597]: https://github.com/cometbft/cometbft/issues/4597
 
 * [FLOOD](https://github.com/cometbft/cometbft/blob/main/spec/mempool/gossip/flood.md)
 * [DOG Specification](https://github.com/cometbft/cometbft/blob/main/spec/mempool/gossip/dog.md). 

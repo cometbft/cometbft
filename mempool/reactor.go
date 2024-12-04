@@ -166,7 +166,7 @@ func (memR *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 		// Remove all routes with peer as source or target and immediately
 		// adjust redundancy.
 		memR.router.resetRoutes(peer.ID())
-		memR.redundancyControl.triggerAdjustment()
+		memR.redundancyControl.triggerAdjustment(memR)
 		memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
 	}
 }
@@ -200,9 +200,9 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 					memR.Logger.Debug("Received HaveTx but failed to get sender", "tx", txKey.Hash(), "err", err)
 					return
 				}
-
 				// Disable route with tx's first sender as source and peer as target.
 				memR.router.disableRoute(senders[0], senderID)
+
 				memR.Logger.Debug("Disable route", "source", senders[0], "target", senderID)
 				memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
 			}
@@ -554,40 +554,43 @@ func newRedundancyControl(config *cfg.MempoolConfig) *redundancyControl {
 	}
 }
 
+func (rc *redundancyControl) adjustRedundancy(memR *Reactor) {
+	// Compute current redundancy level and reset transaction counters.
+	redundancy := rc.currentRedundancy()
+	if redundancy < 0 {
+		// There were no transactions during the last iteration. Do not adjust.
+		return
+	}
+
+	// If redundancy level is low, ask a random peer for more transactions.
+	if redundancy < rc.lowerBound {
+		memR.Logger.Debug("TX redundancy BELOW lower limit: increase it (send Reset)", "redundancy", redundancy)
+		// Send Reset message to random peer.
+		randomPeer := memR.Switch.Peers().Random()
+		if randomPeer != nil {
+			ok := randomPeer.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.ResetRoute{}})
+			if !ok {
+				memR.Logger.Error("Failed to send Reset message", "peer", randomPeer.ID())
+			}
+		}
+	}
+
+	// If redundancy level is high, ask peers for less txs.
+	if redundancy >= rc.upperBound {
+		memR.Logger.Debug("TX redundancy ABOVE upper limit: decrease it (unblock HaveTx)", "redundancy", redundancy)
+		// Unblock HaveTx messages.
+		rc.haveTxBlocked.Store(false)
+	}
+
+	// Update metrics.
+	memR.mempool.metrics.Redundancy.Set(redundancy)
+}
+
 func (rc *redundancyControl) controlLoop(memR *Reactor) {
 	for {
 		select {
 		case <-rc.adjustTicker.C:
-			// Compute current redundancy level and reset transaction counters.
-			redundancy := rc.currentRedundancy()
-			if redundancy < 0 {
-				// There were no transactions during the last iteration. Do not adjust.
-				continue
-			}
-
-			// If redundancy level is low, ask a random peer for more transactions.
-			if redundancy < rc.lowerBound {
-				memR.Logger.Debug("TX redundancy BELOW lower limit: increase it (send Reset)", "redundancy", redundancy)
-				// Send Reset message to random peer.
-				randomPeer := memR.Switch.Peers().Random()
-				if randomPeer != nil {
-					ok := randomPeer.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.ResetRoute{}})
-					if !ok {
-						memR.Logger.Error("Failed to send Reset message", "peer", randomPeer.ID())
-					}
-				}
-			}
-
-			// If redundancy level is high, ask peers for less txs.
-			if redundancy >= rc.upperBound {
-				memR.Logger.Debug("TX redundancy ABOVE upper limit: decrease it (unblock HaveTx)", "redundancy", redundancy)
-				// Unblock HaveTx messages.
-				rc.haveTxBlocked.Store(false)
-			}
-
-			// Update metrics.
-			memR.mempool.metrics.Redundancy.Set(redundancy)
-
+			rc.adjustRedundancy(memR)
 		case <-memR.Quit():
 			return
 		}
@@ -640,7 +643,7 @@ func (rc *redundancyControl) blockHaveTx() {
 	rc.adjustTicker.Reset(rc.adjustInterval)
 }
 
-func (rc *redundancyControl) triggerAdjustment() {
-	<-rc.adjustTicker.C
+func (rc *redundancyControl) triggerAdjustment(memR *Reactor) {
+	rc.adjustRedundancy(memR)
 	rc.adjustTicker.Reset(rc.adjustInterval)
 }

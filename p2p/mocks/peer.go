@@ -24,7 +24,7 @@ type Peer struct {
 	mock.Mock
 }
 
-// ConnState provides a mock function with given fields:
+// ConnState provides a mock function with no fields
 func (_m *Peer) ConnState() transport.ConnState {
 	ret := _m.Called()
 
@@ -385,7 +385,7 @@ func (_m *Peer) Start() error {
 	return r0
 }
 
-// Stop provides a mock function with given fields:
+// Stop provides a mock function with no fields
 func (_m *Peer) Stop() error {
 	ret := _m.Called()
 

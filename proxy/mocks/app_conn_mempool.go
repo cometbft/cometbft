@@ -64,7 +64,7 @@ func (_m *AppConnMempool) CheckTxSync(_a0 types.RequestCheckTx) (*types.Response
 	return r0, r1
 }
 
-// Error provides a mock function with given fields:
+// Error provides a mock function with no fields
 func (_m *AppConnMempool) Error() error {
 	ret := _m.Called()
 
@@ -82,7 +82,7 @@ func (_m *AppConnMempool) Error() error {
 	return r0
 }
 
-// FlushAsync provides a mock function with given fields:
+// FlushAsync provides a mock function with no fields
 func (_m *AppConnMempool) FlushAsync() *abcicli.ReqRes {
 	ret := _m.Called()
 
@@ -102,7 +102,7 @@ func (_m *AppConnMempool) FlushAsync() *abcicli.ReqRes {
 	return r0
 }
 
-// FlushSync provides a mock function with given fields:
+// FlushSync provides a mock function with no fields
 func (_m *AppConnMempool) FlushSync() error {
 	ret := _m.Called()
 

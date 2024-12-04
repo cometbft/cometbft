@@ -81,7 +81,7 @@ via a new config flag `mempool.dog_protocol_enabled`. More details on this in th
 
 ## Detailed Design
 
-We start the design section with a general description of how the algorithm works. The protocol is explained in detail in the accompanying [specification](https://github.com/cometbft/cometbft/spec/mempool/gossip/dog.md). 
+We start the design section with a general description of how the algorithm works. The protocol is explained in detail in the accompanying [specification](https://github.com/cometbft/cometbft/blob/main/spec/mempool/gossip/dog.md). 
 
 CometBFT caches received transactions and stores the IDs of all the peers that have sent it in a `senders` list. When a transaction enters the mempool,
 if it was already received it can be retrieved from the cache. When this happens a certain number of times, the receiving node notifies the sender to stop forwarding any transaction from the peer 
@@ -359,4 +359,5 @@ to behave correctly. It should however not be used in combination with the param
 
 
 * [FLOOD](https://github.com/cometbft/cometbft/blob/main/spec/mempool/gossip/flood.md)
+* [DOG Specification](https://github.com/cometbft/cometbft/blob/main/spec/mempool/gossip/dog.md). 
 

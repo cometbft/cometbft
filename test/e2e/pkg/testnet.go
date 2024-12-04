@@ -37,6 +37,8 @@ const (
 	defaultConnections = 1
 	defaultTxSizeBytes = 1024
 
+	DefaultPerturbInterval = 3 * time.Second
+
 	localVersion = "cometbft/e2e-node:local-version"
 )
 
@@ -180,6 +182,12 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 	if testnet.LoadTxSizeBytes == 0 {
 		testnet.LoadTxSizeBytes = defaultTxSizeBytes
+	}
+	if testnet.LoadNumNodesPerTx == 0 {
+		testnet.LoadNumNodesPerTx = 1
+	}
+	if testnet.PerturbInterval == 0 {
+		testnet.PerturbInterval = DefaultPerturbInterval
 	}
 
 	if len(testnet.Lanes) == 0 {
@@ -479,6 +487,9 @@ func (t Testnet) Validate() error {
 			len(t.LoadLaneWeights), len(t.Lanes),
 		)
 	}
+	if t.PerturbInterval < 0 {
+		return errors.New("value of perturb_interval cannot be less than 0")
+	}
 	for lane := range t.Lanes {
 		if _, ok := t.LoadLaneWeights[lane]; !ok {
 			return fmt.Errorf("lane %s not in weights map", lane)
@@ -501,6 +512,12 @@ func (t Testnet) Validate() error {
 		if _, _, err := ParseKeyValueField("config", field); err != nil {
 			return err
 		}
+	}
+	if t.LoadNumNodesPerTx > len(t.Nodes) {
+		return errors.New("value must be less or equal to the number of nodes in the manifest")
+	}
+	if len(t.LoadTargetNodes) > 0 && t.LoadNumNodesPerTx > len(t.LoadTargetNodes) {
+		return errors.New("value must be less or equal to the number of target nodes")
 	}
 	return nil
 }

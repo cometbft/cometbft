@@ -88,6 +88,7 @@ type Manifest struct {
 	LoadTxConnections int `toml:"load_tx_connections"`
 	LoadMaxSeconds    int `toml:"load_max_seconds"`
 	LoadMaxTxs        int `toml:"load_max_txs"`
+	LoadNumNodesPerTx int `toml:"load_num_nodes_per_tx"`
 
 	// Weight for each lane defined by the app. The transaction loader will
 	// assign lanes to generated transactions proportionally to their weights.
@@ -172,6 +173,9 @@ type Manifest struct {
 	// * An existing validator will be chosen, and its power will alternate between 0 and 1.
 	// * `ConsensusParams` will be flipping on and off key types not set at genesis.
 	ConstantFlip bool `toml:"constant_flip"`
+
+	// PerturbInterval is the time to wait between successive perturbations.
+	PerturbInterval time.Duration `toml:"perturb_interval"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

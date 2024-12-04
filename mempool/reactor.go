@@ -166,7 +166,7 @@ func (memR *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 		// Remove all routes with peer as source or target and immediately
 		// adjust redundancy.
 		memR.router.resetRoutes(peer.ID())
-		memR.redundancyControl.triggerAdjustment()
+		memR.redundancyControl.triggerAdjustment(memR)
 		memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
 	}
 }
@@ -534,8 +534,6 @@ type redundancyControl struct {
 	adjustTicker   *time.Ticker
 	adjustInterval time.Duration
 
-	triggerAdjustmentCh chan struct{}
-
 	// Counters for calculating the redundancy level.
 	mtx          cmtsync.RWMutex
 	firstTimeTxs int64 // number of transactions received for the first time
@@ -549,11 +547,10 @@ func newRedundancyControl(config *cfg.MempoolConfig) *redundancyControl {
 	adjustInterval := config.DOGAdjustInterval
 	targetRedundancyDeltaAbs := config.DOGTargetRedundancy * TargetRedundancyDeltaPercent / 100
 	return &redundancyControl{
-		lowerBound:          config.DOGTargetRedundancy - targetRedundancyDeltaAbs,
-		upperBound:          config.DOGTargetRedundancy + targetRedundancyDeltaAbs,
-		adjustTicker:        time.NewTicker(adjustInterval),
-		adjustInterval:      adjustInterval,
-		triggerAdjustmentCh: make(chan struct{}),
+		lowerBound:     config.DOGTargetRedundancy - targetRedundancyDeltaAbs,
+		upperBound:     config.DOGTargetRedundancy + targetRedundancyDeltaAbs,
+		adjustTicker:   time.NewTicker(adjustInterval),
+		adjustInterval: adjustInterval,
 	}
 }
 
@@ -592,8 +589,6 @@ func (rc *redundancyControl) adjustRedundancy(memR *Reactor) {
 func (rc *redundancyControl) controlLoop(memR *Reactor) {
 	for {
 		select {
-		case <-rc.triggerAdjustmentCh:
-			rc.adjustRedundancy(memR)
 		case <-rc.adjustTicker.C:
 			rc.adjustRedundancy(memR)
 		case <-memR.Quit():
@@ -648,7 +643,7 @@ func (rc *redundancyControl) blockHaveTx() {
 	rc.adjustTicker.Reset(rc.adjustInterval)
 }
 
-func (rc *redundancyControl) triggerAdjustment() {
-	rc.triggerAdjustmentCh <- struct{}{}
+func (rc *redundancyControl) triggerAdjustment(memR *Reactor) {
+	rc.adjustRedundancy(memR)
 	rc.adjustTicker.Reset(rc.adjustInterval)
 }

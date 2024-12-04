@@ -720,7 +720,7 @@ func TestDOGTransactionCount(t *testing.T) {
 	}
 	require.Equal(t, int64(len(txUnique)), reactors[0].redundancyControl.duplicateTxs)
 
-	reactors[0].redundancyControl.triggerAdjustment()
+	reactors[0].redundancyControl.triggerAdjustment(reactors[0])
 	time.Sleep(1 * time.Second)
 
 	reactors[0].redundancyControl.mtx.RLock()
@@ -793,7 +793,7 @@ func TestDOGDisabledRoute(t *testing.T) {
 		require.ErrorIs(t, err, ErrTxInCache)
 	}
 
-	reactors[0].redundancyControl.triggerAdjustment()
+	reactors[0].redundancyControl.triggerAdjustment(reactors[0])
 	// Wait for the redundancy adjustment to kick in
 	time.Sleep(1 * time.Second)
 

@@ -60,12 +60,27 @@ same.
 ```bluespec "state" +=
 pure def multiSend(node, _incomingMsgs, targetNodes, msg) =
     _incomingMsgs.updateMultiple(targetNodes, ms => ms.append((node, msg)))
+pure def send(node, _incomingMsgs, targetNode, msg) =
+    node.multiSend(_incomingMsgs, Set(targetNode), msg)
 ```
 
 A node is in the network if it has peers:
 ```bluespec "auxstate" +=
 val nodesInNetwork = NodeIDs.filter(node => node.Peers().nonEmpty())
 val nodesNotInNetwork = NodeIDs.exclude(nodesInNetwork)
+```
+
+A node disconnects from the network when it does not have peers.
+```bluespec "auxstate" +=
+pure def disconnect(_peers, node) =
+    // TODO: check that the network does not become disconnected; we don't want to model that.
+    _peers.put(node, Set())
+```
+
+The set of `node`'s peers that are not themselves connected to `node`.
+```bluespec "auxstate" +=
+def disconnectedPeers(node) = 
+    node.Peers().filter(p => not(node.in(p.Peers())))
 ```
 </details>
 
@@ -119,30 +134,6 @@ action pickNodeAndJoin = all {
     // Pick a non-empty set of nodes in the network to be the node's peers.
     nondet peerSet = oneOf(nodesInNetwork.powerset().exclude(Set()))
     node.joinNetwork(peerSet),
-}
-```
-
-A node gets disconnected from the network. All its peers are immediately aware that the node is no
-longer one of their peers, so their state is updated accordingly.
-```bluespec "actions" +=
-// TODO: the network must not become disconnected; we don't want to model that.
-action disconnectNetwork(nodeToDisconnect, _incomingMsgs) = all {
-    peers' = peers
-        // Clean node's state and remove all its peers.
-        .put(nodeToDisconnect, Set())
-        // Remove node from other peers' state.
-        .updateMultiple(nodesInNetwork, ps => ps.exclude(Set(nodeToDisconnect))),
-    incomingMsgs' = _incomingMsgs,
-}
-```
-
-Non-deterministically pick a node to disconnect from the network.
-```bluespec "actions" +=
-action pickNodeAndDisconnect = all {
-    // Pick a node that is not the only node in the network.
-    require(size(nodesInNetwork) > 1),
-    nondet nodeToDisconnect = oneOf(nodesInNetwork) 
-    disconnectNetwork(nodeToDisconnect, incomingMsgs),
 }
 ```
 

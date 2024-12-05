@@ -68,7 +68,7 @@ func (_m *TxIndexer) Get(hash []byte) (*v1.TxResult, error) {
 	return r0, r1
 }
 
-// GetRetainHeight provides a mock function with given fields:
+// GetRetainHeight provides a mock function with no fields
 func (_m *TxIndexer) GetRetainHeight() (int64, error) {
 	ret := _m.Called()
 

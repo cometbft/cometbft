@@ -26,7 +26,7 @@ import (
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	"github.com/cometbft/cometbft/p2p/nodekey"
+	"github.com/cometbft/cometbft/p2p"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
@@ -37,9 +37,9 @@ var msgQueueSize = 1000
 
 // msgs from the reactor which may update the state.
 type msgInfo struct {
-	Msg         Message    `json:"msg"`
-	PeerID      nodekey.ID `json:"peer_key"`
-	ReceiveTime time.Time  `json:"receive_time"`
+	Msg         Message   `json:"msg"`
+	PeerID      p2p.ID    `json:"peer_key"`
+	ReceiveTime time.Time `json:"receive_time"`
 }
 
 // internally generated messages which may update the state.
@@ -480,7 +480,7 @@ func (cs *State) OpenWAL(walFile string) (WAL, error) {
 // TODO: should these return anything or let callers just use events?
 
 // AddVote inputs a vote.
-func (cs *State) AddVote(vote *types.Vote, peerID nodekey.ID) (added bool, err error) {
+func (cs *State) AddVote(vote *types.Vote, peerID p2p.ID) (added bool, err error) {
 	if peerID == "" {
 		cs.internalMsgQueue <- msgInfo{&VoteMessage{vote}, "", time.Time{}}
 	} else {
@@ -492,7 +492,7 @@ func (cs *State) AddVote(vote *types.Vote, peerID nodekey.ID) (added bool, err e
 }
 
 // SetProposal inputs a proposal.
-func (cs *State) SetProposal(proposal *types.Proposal, peerID nodekey.ID) error {
+func (cs *State) SetProposal(proposal *types.Proposal, peerID p2p.ID) error {
 	if peerID == "" {
 		cs.internalMsgQueue <- msgInfo{&ProposalMessage{proposal}, "", cmttime.Now()}
 	} else {
@@ -504,7 +504,7 @@ func (cs *State) SetProposal(proposal *types.Proposal, peerID nodekey.ID) error 
 }
 
 // AddProposalBlockPart inputs a part of the proposal block.
-func (cs *State) AddProposalBlockPart(height int64, round int32, part *types.Part, peerID nodekey.ID) error {
+func (cs *State) AddProposalBlockPart(height int64, round int32, part *types.Part, peerID p2p.ID) error {
 	if peerID == "" {
 		cs.internalMsgQueue <- msgInfo{&BlockPartMessage{height, round, part}, "", time.Time{}}
 	} else {
@@ -519,7 +519,7 @@ func (cs *State) AddProposalBlockPart(height int64, round int32, part *types.Par
 func (cs *State) SetProposalAndBlock(
 	proposal *types.Proposal,
 	parts *types.PartSet,
-	peerID nodekey.ID,
+	peerID p2p.ID,
 ) error {
 	// TODO: Since the block parameter is not used, we should instead expose just a SetProposal method.
 	if err := cs.SetProposal(proposal, peerID); err != nil {
@@ -2126,7 +2126,7 @@ func (cs *State) readSerializedBlockFromBlockParts() ([]byte, error) {
 // NOTE: block is not necessarily valid.
 // Asynchronously triggers either enterPrevote (before we timeout of propose) or tryFinalizeCommit,
 // once we have the full block.
-func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID nodekey.ID) (added bool, err error) {
+func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (added bool, err error) {
 	height, round, part := msg.Height, msg.Round, msg.Part
 
 	// Blocks might be reused, so round mismatch is OK
@@ -2247,7 +2247,7 @@ func (cs *State) handleCompleteProposal(blockHeight int64) {
 }
 
 // Attempt to add the vote. if its a duplicate signature, dupeout the validator.
-func (cs *State) tryAddVote(vote *types.Vote, peerID nodekey.ID) (bool, error) {
+func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 	added, err := cs.addVote(vote, peerID)
 	// NOTE: some of these errors are swallowed here
 	if err != nil {
@@ -2293,7 +2293,7 @@ func (cs *State) tryAddVote(vote *types.Vote, peerID nodekey.ID) (bool, error) {
 	return added, nil
 }
 
-func (cs *State) addVote(vote *types.Vote, peerID nodekey.ID) (added bool, err error) {
+func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error) {
 	cs.Logger.Debug(
 		"Adding vote",
 		"vote_height", vote.Height,

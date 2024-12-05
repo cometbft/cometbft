@@ -12,7 +12,7 @@ import (
 
 	netaddr "github.com/cometbft/cometbft/p2p/netaddr"
 
-	nodeinfo "github.com/cometbft/cometbft/p2p/nodeinfo"
+	nodeinfo "github.com/cometbft/cometbft/p2p/internal/nodeinfo"
 
 	nodekey "github.com/cometbft/cometbft/p2p/nodekey"
 
@@ -24,7 +24,7 @@ type Peer struct {
 	mock.Mock
 }
 
-// Conn provides a mock function with given fields:
+// Conn provides a mock function with no fields
 func (_m *Peer) Conn() net.Conn {
 	ret := _m.Called()
 
@@ -44,7 +44,7 @@ func (_m *Peer) Conn() net.Conn {
 	return r0
 }
 
-// FlushStop provides a mock function with given fields:
+// FlushStop provides a mock function with no fields
 func (_m *Peer) FlushStop() {
 	_m.Called()
 }
@@ -69,7 +69,7 @@ func (_m *Peer) Get(key string) any {
 	return r0
 }
 
-// GetRemovalFailed provides a mock function with given fields:
+// GetRemovalFailed provides a mock function with no fields
 func (_m *Peer) GetRemovalFailed() bool {
 	ret := _m.Called()
 
@@ -105,7 +105,7 @@ func (_m *Peer) HasChannel(chID byte) bool {
 	return r0
 }
 
-// ID provides a mock function with given fields:
+// ID provides a mock function with no fields
 func (_m *Peer) ID() nodekey.ID {
 	ret := _m.Called()
 
@@ -123,7 +123,7 @@ func (_m *Peer) ID() nodekey.ID {
 	return r0
 }
 
-// IsOutbound provides a mock function with given fields:
+// IsOutbound provides a mock function with no fields
 func (_m *Peer) IsOutbound() bool {
 	ret := _m.Called()
 
@@ -141,7 +141,7 @@ func (_m *Peer) IsOutbound() bool {
 	return r0
 }
 
-// IsPersistent provides a mock function with given fields:
+// IsPersistent provides a mock function with no fields
 func (_m *Peer) IsPersistent() bool {
 	ret := _m.Called()
 
@@ -159,7 +159,7 @@ func (_m *Peer) IsPersistent() bool {
 	return r0
 }
 
-// IsRunning provides a mock function with given fields:
+// IsRunning provides a mock function with no fields
 func (_m *Peer) IsRunning() bool {
 	ret := _m.Called()
 
@@ -177,7 +177,7 @@ func (_m *Peer) IsRunning() bool {
 	return r0
 }
 
-// NodeInfo provides a mock function with given fields:
+// NodeInfo provides a mock function with no fields
 func (_m *Peer) NodeInfo() nodeinfo.NodeInfo {
 	ret := _m.Called()
 
@@ -197,7 +197,7 @@ func (_m *Peer) NodeInfo() nodeinfo.NodeInfo {
 	return r0
 }
 
-// OnReset provides a mock function with given fields:
+// OnReset provides a mock function with no fields
 func (_m *Peer) OnReset() error {
 	ret := _m.Called()
 
@@ -215,7 +215,7 @@ func (_m *Peer) OnReset() error {
 	return r0
 }
 
-// OnStart provides a mock function with given fields:
+// OnStart provides a mock function with no fields
 func (_m *Peer) OnStart() error {
 	ret := _m.Called()
 
@@ -233,12 +233,12 @@ func (_m *Peer) OnStart() error {
 	return r0
 }
 
-// OnStop provides a mock function with given fields:
+// OnStop provides a mock function with no fields
 func (_m *Peer) OnStop() {
 	_m.Called()
 }
 
-// Quit provides a mock function with given fields:
+// Quit provides a mock function with no fields
 func (_m *Peer) Quit() <-chan struct{} {
 	ret := _m.Called()
 
@@ -258,7 +258,7 @@ func (_m *Peer) Quit() <-chan struct{} {
 	return r0
 }
 
-// RemoteAddr provides a mock function with given fields:
+// RemoteAddr provides a mock function with no fields
 func (_m *Peer) RemoteAddr() net.Addr {
 	ret := _m.Called()
 
@@ -278,7 +278,7 @@ func (_m *Peer) RemoteAddr() net.Addr {
 	return r0
 }
 
-// RemoteIP provides a mock function with given fields:
+// RemoteIP provides a mock function with no fields
 func (_m *Peer) RemoteIP() net.IP {
 	ret := _m.Called()
 
@@ -298,7 +298,7 @@ func (_m *Peer) RemoteIP() net.IP {
 	return r0
 }
 
-// Reset provides a mock function with given fields:
+// Reset provides a mock function with no fields
 func (_m *Peer) Reset() error {
 	ret := _m.Called()
 
@@ -344,12 +344,12 @@ func (_m *Peer) SetLogger(l log.Logger) {
 	_m.Called(l)
 }
 
-// SetRemovalFailed provides a mock function with given fields:
+// SetRemovalFailed provides a mock function with no fields
 func (_m *Peer) SetRemovalFailed() {
 	_m.Called()
 }
 
-// SocketAddr provides a mock function with given fields:
+// SocketAddr provides a mock function with no fields
 func (_m *Peer) SocketAddr() *netaddr.NetAddr {
 	ret := _m.Called()
 
@@ -369,7 +369,7 @@ func (_m *Peer) SocketAddr() *netaddr.NetAddr {
 	return r0
 }
 
-// Start provides a mock function with given fields:
+// Start provides a mock function with no fields
 func (_m *Peer) Start() error {
 	ret := _m.Called()
 
@@ -387,7 +387,7 @@ func (_m *Peer) Start() error {
 	return r0
 }
 
-// Status provides a mock function with given fields:
+// Status provides a mock function with no fields
 func (_m *Peer) Status() conn.ConnectionStatus {
 	ret := _m.Called()
 
@@ -405,7 +405,7 @@ func (_m *Peer) Status() conn.ConnectionStatus {
 	return r0
 }
 
-// Stop provides a mock function with given fields:
+// Stop provides a mock function with no fields
 func (_m *Peer) Stop() error {
 	ret := _m.Called()
 
@@ -423,7 +423,7 @@ func (_m *Peer) Stop() error {
 	return r0
 }
 
-// String provides a mock function with given fields:
+// String provides a mock function with no fields
 func (_m *Peer) String() string {
 	ret := _m.Called()
 

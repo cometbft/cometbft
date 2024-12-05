@@ -13,7 +13,7 @@ type Source struct {
 	mock.Mock
 }
 
-// Now provides a mock function with given fields:
+// Now provides a mock function with no fields
 func (_m *Source) Now() time.Time {
 	ret := _m.Called()
 

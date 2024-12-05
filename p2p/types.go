@@ -5,7 +5,7 @@ import (
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	ni "github.com/cometbft/cometbft/p2p/internal/nodeinfo"
-	"github.com/cometbft/cometbft/p2p/nodekey"
+	"github.com/cometbft/cometbft/p2p/internal/nodekey"
 	"github.com/cometbft/cometbft/p2p/transport"
 	"github.com/cometbft/cometbft/types"
 )
@@ -19,6 +19,8 @@ type (
 	SendError = transport.WriteError
 	// ID is the unique identifier for a peer.
 	ID = nodekey.ID
+	// NodeKey is the node key.
+	NodeKey = nodekey.NodeKey
 
 	// NodeInfo is the information about a peer.
 	NodeInfo = ni.NodeInfo
@@ -41,3 +43,13 @@ var (
 	_ types.Wrapper = &tmp2p.PexRequest{}
 	_ types.Wrapper = &tmp2p.PexAddrs{}
 )
+
+// LoadOrGenNodeKey loads a node key from the given path or generates a new one.
+func LoadOrGenNodeKey(path string) (*nodekey.NodeKey, error) {
+	return nodekey.LoadOrGen(path)
+}
+
+// LoadNodeKey loads a node key from the given path.
+func LoadNodeKey(path string) (*nodekey.NodeKey, error) {
+	return nodekey.Load(path)
+}

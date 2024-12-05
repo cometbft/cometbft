@@ -27,7 +27,6 @@ import (
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
-	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/p2p/transport"
 	"github.com/cometbft/cometbft/p2p/transport/tcp"
@@ -106,7 +105,7 @@ func DefaultNewNode(
 	cliParams CliParams,
 	keyGenF func() (crypto.PrivKey, error),
 ) (*Node, error) {
-	nodeKey, err := nodekey.LoadOrGen(config.NodeKeyFile())
+	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	if err != nil {
 		return nil, ErrorLoadOrGenNodeKey{Err: err, NodeKeyFile: config.NodeKeyFile()}
 	}
@@ -411,7 +410,7 @@ func createConsensusReactor(config *cfg.Config,
 
 func createTransport(
 	config *cfg.Config,
-	nodeKey *nodekey.NodeKey,
+	nodeKey *p2p.NodeKey,
 	proxyApp proxy.AppConns,
 ) (
 	*tcp.MultiplexTransport,
@@ -493,7 +492,7 @@ func createSwitch(config *cfg.Config,
 	consensusReactor *cs.Reactor,
 	evidenceReactor *evidence.Reactor,
 	nodeInfo p2p.NodeInfo,
-	nodeKey *nodekey.NodeKey,
+	nodeKey *p2p.NodeKey,
 	p2pLogger log.Logger,
 ) *p2p.Switch {
 	sw := p2p.NewSwitch(
@@ -519,7 +518,7 @@ func createSwitch(config *cfg.Config,
 }
 
 func createAddrBookAndSetOnSwitch(config *cfg.Config, sw *p2p.Switch,
-	p2pLogger log.Logger, nodeKey *nodekey.NodeKey,
+	p2pLogger log.Logger, nodeKey *p2p.NodeKey,
 ) (pex.AddrBook, error) {
 	addrBook := pex.NewAddrBook(config.P2P.AddrBookFile(), config.P2P.AddrBookStrict)
 	addrBook.SetLogger(p2pLogger.With("book", config.P2P.AddrBookFile()))

@@ -94,6 +94,7 @@ Node `C` keeps a map of `disabledRoutes` per peer and uses it to determine wheth
 
 Entries for a particular peer are reset if a peer sends a `ResetRoute` message or if a peer disconnects. 
 
+
 ### Redundancy control
 
 In an ideal setting, receiving a transaction more than once is not needed. But in a Byzantine setting, allowing for only one route for a transaction can introduce an attack vector. 
@@ -124,9 +125,38 @@ as an optimization to speed up the time between changes in the network and the s
 
 ### Impacted areas of code
 
-The changes are constrained to the mempool reactor. 
+The changes are constrained to the mempool reactor, and two new p2p control messages.
+
+#### New p2p messages
+
+The protocol introduces two new p2p messages whose protobuf definition is given below:
+
+```proto
+message HaveTx {
+  bytes tx_key = 1;
+}
+```
+
+```proto
+message ResetRoute {
+}
+```
+
+We expand the abstract definition of a mempool message with these message types as well:
 
 
+```proto
+// Message is an abstract mempool message.
+message Message {
+  // Sum of all possible messages.
+  oneof sum {
+    Txs txs = 1;
+    HaveTx have_tx = 2;
+    ResetRoute reset_route = 3;
+  }
+}
+```
+ 
 #### Breaking changes and new additions
 
 - The `Mempool` interface is expanded with a method : 
@@ -215,36 +245,6 @@ This lead to routes being disabled too many times, and the process of stabilizin
 too frequently. The adapted logic relies in the redundancy controller to decide whether a `ResetRoute` 
 message should be sent. 
 
-
-#### New p2p messages
-
-The protocol introduces two new p2p messages whose protobuf definition is given below:
-
-```proto
-message HaveTx {
-  bytes tx_key = 1;
-}
-```
-
-```proto
-message ResetRoute {
-}
-```
-
-We expand the abstract definition of a mempool message with these message types as well:
-
-
-```proto
-// Message is an abstract mempool message.
-message Message {
-  // Sum of all possible messages.
-  oneof sum {
-    Txs txs = 1;
-    HaveTx have_tx = 2;
-    ResetRoute reset_route = 3;
-  }
-}
-```
 
 #### Monitoring
 

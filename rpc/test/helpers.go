@@ -14,7 +14,7 @@ import (
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	nm "github.com/cometbft/cometbft/node"
-	"github.com/cometbft/cometbft/p2p/nodekey"
+	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
@@ -158,7 +158,7 @@ func NewCometBFT(app abci.Application, opts *Options) *nm.Node {
 		panic(err)
 	}
 	papp := proxy.NewLocalClientCreator(app)
-	nodeKey, err := nodekey.LoadOrGen(config.NodeKeyFile())
+	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	if err != nil {
 		panic(err)
 	}

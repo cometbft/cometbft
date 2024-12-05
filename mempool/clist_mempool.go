@@ -335,7 +335,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 			if postCheckErr != nil {
 				return postCheckErr
 			}
-			return ErrInvalidTx
+			return ErrInvalidTx{Code: res.Code, Data: res.Data, Log: res.Log, Codespace: res.Codespace, Hash: tx.Hash()}
 		}
 
 		// Check again that mempool isn't full, to reduce the chance of exceeding the limits.
@@ -482,7 +482,7 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 			if postCheckErr != nil {
 				return postCheckErr
 			}
-			return ErrInvalidTx
+			return ErrInvalidTx{Code: res.Code, Data: res.Data, Log: res.Log, Codespace: res.Codespace, Hash: tx.Hash()}
 		}
 
 		return nil

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"sync"
 )
 
 // PrefixDB provides a logical database by wrapping a namespace of another database.
@@ -30,7 +29,6 @@ import (
 // In this example, the key "key" will be stored in 'baseDB' with the actual key
 // being "namespace:key".
 type PrefixDB struct {
-	mu     sync.Mutex
 	db     DB
 	prefix []byte
 }
@@ -56,8 +54,6 @@ func (pDB *PrefixDB) Get(key []byte) ([]byte, error) {
 	if len(key) == 0 {
 		return nil, errKeyEmpty
 	}
-	pDB.mu.Lock()
-	defer pDB.mu.Unlock()
 
 	prefixedKey := prependPrefix(pDB.prefix, key)
 	value, err := pDB.db.Get(prefixedKey)
@@ -75,8 +71,6 @@ func (pDB *PrefixDB) Has(key []byte) (bool, error) {
 	if len(key) == 0 {
 		return false, errKeyEmpty
 	}
-	pDB.mu.Lock()
-	defer pDB.mu.Unlock()
 
 	prefixedKey := prependPrefix(pDB.prefix, key)
 	ok, err := pDB.db.Has(prefixedKey)
@@ -102,8 +96,6 @@ func (pDB *PrefixDB) Set(key []byte, value []byte) error {
 	if value == nil {
 		return errValueNil
 	}
-	pDB.mu.Lock()
-	defer pDB.mu.Unlock()
 
 	prefixedKey := prependPrefix(pDB.prefix, key)
 	if err := pDB.db.Set(prefixedKey, value); err != nil {
@@ -127,8 +119,6 @@ func (pDB *PrefixDB) SetSync(key []byte, value []byte) error {
 	if value == nil {
 		return errValueNil
 	}
-	pDB.mu.Lock()
-	defer pDB.mu.Unlock()
 
 	prefixedKey := prependPrefix(pDB.prefix, key)
 	if err := pDB.db.SetSync(prefixedKey, value); err != nil {
@@ -151,8 +141,6 @@ func (pDB *PrefixDB) Delete(key []byte) error {
 	if len(key) == 0 {
 		return errKeyEmpty
 	}
-	pDB.mu.Lock()
-	defer pDB.mu.Unlock()
 
 	prefixedKey := prependPrefix(pDB.prefix, key)
 	if err := pDB.db.Delete(prefixedKey); err != nil {
@@ -174,8 +162,6 @@ func (pDB *PrefixDB) DeleteSync(key []byte) error {
 	if len(key) == 0 {
 		return errKeyEmpty
 	}
-	pDB.mu.Lock()
-	defer pDB.mu.Unlock()
 
 	prefixedKey := prependPrefix(pDB.prefix, key)
 	if err := pDB.db.DeleteSync(prefixedKey); err != nil {
@@ -200,9 +186,6 @@ func (pDB *PrefixDB) Iterator(start, end []byte) (Iterator, error) {
 		return nil, fmt.Errorf("prefixed DB namespace reverse iterator: %w", err)
 	}
 
-	pDB.mu.Lock()
-	defer pDB.mu.Unlock()
-
 	it, err := pDB.db.Iterator(itStart, itEnd)
 	if err != nil {
 		return nil, fmt.Errorf("prefixed DB namespace iterator: %w", err)
@@ -226,9 +209,6 @@ func (pDB *PrefixDB) ReverseIterator(start, end []byte) (Iterator, error) {
 		return nil, fmt.Errorf("prefixed DB namespace reverse iterator: %w", err)
 	}
 
-	pDB.mu.Lock()
-	defer pDB.mu.Unlock()
-
 	it, err := pDB.db.ReverseIterator(itStart, itEnd)
 	if err != nil {
 		return nil, fmt.Errorf("prefixed DB namespace reverse iterator: %w", err)
@@ -242,9 +222,6 @@ func (pDB *PrefixDB) ReverseIterator(start, end []byte) (Iterator, error) {
 //
 // It implements the [DB] interface for type PrefixDB.
 func (pDB *PrefixDB) NewBatch() Batch {
-	pDB.mu.Lock()
-	defer pDB.mu.Unlock()
-
 	return newPrefixDBBatch(pDB.prefix, pDB.db.NewBatch())
 }
 
@@ -265,9 +242,6 @@ func (pDB *PrefixDB) Compact(start, end []byte) error {
 //
 // It implements the [DB] interface for type PrefixDB.
 func (pDB *PrefixDB) Close() error {
-	pDB.mu.Lock()
-	defer pDB.mu.Unlock()
-
 	return pDB.db.Close()
 }
 

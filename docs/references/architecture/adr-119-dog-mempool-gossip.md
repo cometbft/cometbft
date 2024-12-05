@@ -92,7 +92,8 @@ In reality, if node `C` ha received `tx_1` from multiple senders (`X`,`Y`, `B`),
 
 Node `C` keeps a map of `disabledRoutes` per peer and uses it to determine whether a transaction should be forwarded. 
 
-Entries for a particular peer are reset if a peer sends a `ResetRoute` message or if a peer disconnects. 
+Entries for a particular peer are reset if a peer sends a `ResetRoute` message or if a peer disconnects.
+More details on the messages exchanged to achieve this can be found in the section on newly introduced code changes. 
 
 
 ### Redundancy control

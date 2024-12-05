@@ -84,7 +84,8 @@ via a new config flag `mempool.dog_protocol_enabled`. More details on this in th
 We start the design section with a general description of how the algorithm works. The protocol is explained in detail in the accompanying [specification](https://github.com/cometbft/cometbft/blob/main/spec/mempool/gossip/dog.md). 
 
 CometBFT nodes cache received transactions and store the IDs of all the peers that have sent it in a `senders` list. 
-When an incoming transaction is in the cache, the receiving node notifies the sender that it already has that transaction. The sender will stop forwarding any transaction from the peer that had originally sent the transaction.
+
+Upon receiving a duplicate transaction on node `N` , DOG uses this list to retrieve a `sender`. The `sender` is informed that `N` has received this transaction already. Upon receiving this information, the `sender` looks up who sent this transaction to him, and disables any transaction forwarding between this node and `N`. 
 
 Namely, let's assume that transaction `tx_1` was sent by node `B` to node `C` which forwarded it to `A`. `A` already has the transaction and notifies node `C` about this. Node `C` will look up the senders of transaction `tx_1` and in the future disable transaction forwarding from node `B` to node `A`.
 

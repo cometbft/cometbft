@@ -63,7 +63,7 @@ are not forwarded to. DOG can be looked at as an enahanced, more informed versio
 A node can use either this or DOG, but not both at the same time.
 
 
-# libp2p's gossipSub gossiping protocol
+### libp2p's gossipSub protocol
 
  [gossipsub](https://github.com/libp2p/specs/blob/master/pubsub/gossipsub/gossipsub-v1.0.md), the gossip protocol of `libp2p`, aims to reduce the bandwidth used for gossiping by limiting the number of peers a node exchange data with. The peering is controlled by a router keeping track of peering state and information about the topics peers are subscribed to. 
 
@@ -83,9 +83,8 @@ via a new config flag `mempool.dog_protocol_enabled`. More details on this in th
 
 We start the design section with a general description of how the algorithm works. The protocol is explained in detail in the accompanying [specification](https://github.com/cometbft/cometbft/blob/main/spec/mempool/gossip/dog.md). 
 
-CometBFT caches received transactions and stores the IDs of all the peers that have sent it in a `senders` list. When a transaction enters the mempool,
-if it was already received it can be retrieved from the cache. When this happens a certain number of times, the receiving node notifies the sender to stop forwarding any transaction from the peer 
-that had originally sent the transaction. The exact point when the notification is sent is defined below as a redundancy threshold (see `Redundancy control`).
+CometBFT nodes cache received transactions and store the IDs of all the peers that have sent it in a `senders` list. 
+When an incoming transaction is in the cache, the receiving node notifies the sender that it already has that transaction. The sender will stop forwarding any transaction from the peer that had originally sent the transaction.
 
 Namely, let's assume that transaction `tx_1` was sent by node `B` to node `C` which forwarded it to `A`. `A` already has the transaction and notifies node `C` about this. Node `C` will look up the senders of transaction `tx_1` and in the future disable transaction forwarding from node `B` to node `A`.
 
@@ -140,7 +139,7 @@ GetSenders(txKey types.TxKey) ([]p2p.ID, error)
 // Senders returns the list of registered peers that sent us the transaction.
 	Senders() []p2p.ID
 ```
-- We introduce a new communication channel, called `Mempool Control Channel`. The channel
+- We introduce a new communication channel, called `MempoolControlChannel`. The channel
 is used to transmit the messages needed for the implementation of the protocol. The channel ID
 is `31` with priority `10` (for context, the mempool channel sending transaction has a priority of `5`).
 

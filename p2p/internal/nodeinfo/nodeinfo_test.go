@@ -11,8 +11,8 @@ import (
 
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtnet "github.com/cometbft/cometbft/internal/net"
+	"github.com/cometbft/cometbft/p2p/internal/nodekey"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
-	"github.com/cometbft/cometbft/p2p/nodekey"
 )
 
 const testCh = 0x01
@@ -29,7 +29,7 @@ func (mockNodeInfo) Handshake(net.Conn, time.Duration) (NodeInfo, error) { retur
 
 func testNodeInfo(id nodekey.ID) NodeInfo {
 	return Default{
-		ProtocolVersion: NewProtocolVersion(0, 0, 0),
+		ProtocolVersion: ProtocolVersion{0, 0, 0},
 		DefaultNodeID:   id,
 		ListenAddr:      fmt.Sprintf("127.0.0.1:%d", getFreePort()),
 		Network:         "testing",

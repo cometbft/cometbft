@@ -232,10 +232,17 @@ func (pDB *PrefixDB) NewBatch() Batch {
 }
 
 // Compact compacts the specified range of keys in the database.
+// Note that, as with all operations of a [PrefixDB], the start and end keys are
+// prefixed with the prefix given to [NewPrefixDB].
 //
 // It implements the [DB] interface for type PrefixDB.
 func (pDB *PrefixDB) Compact(start, end []byte) error {
-	if err := pDB.db.Compact(start, end); err != nil {
+	itStart, itEnd, err := prefixedIteratorBounds(pDB.prefix, start, end)
+	if err != nil {
+		return fmt.Errorf("prefixed DB namespace compaction: %w", err)
+	}
+
+	if err := pDB.db.Compact(itStart, itEnd); err != nil {
 		return fmt.Errorf("prefixed DB namespace compaction: %w", err)
 	}
 	return nil

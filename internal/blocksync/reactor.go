@@ -10,6 +10,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/transport"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
@@ -173,9 +174,9 @@ func (bcR *Reactor) OnStop() {
 }
 
 // StreamDescriptors implements Reactor.
-func (*Reactor) StreamDescriptors() []p2p.StreamDescriptor {
-	return []p2p.StreamDescriptor{
-		&tcpconn.ChannelDescriptor{
+func (*Reactor) StreamDescriptors() []transport.StreamDescriptor {
+	return []transport.StreamDescriptor{
+		tcpconn.StreamDescriptor{
 			ID:                  BlocksyncChannel,
 			Priority:            5,
 			SendQueueCapacity:   1000,
@@ -188,14 +189,14 @@ func (*Reactor) StreamDescriptors() []p2p.StreamDescriptor {
 
 // AddPeer implements Reactor by sending our state to peer.
 func (bcR *Reactor) AddPeer(peer p2p.Peer) {
-	peer.Send(p2p.Envelope{
+	// it's OK if send fails. will try later in poolRoutine
+	_ = peer.Send(p2p.Envelope{
 		ChannelID: BlocksyncChannel,
 		Message: &bcproto.StatusResponse{
 			Base:   bcR.store.Base(),
 			Height: bcR.store.Height(),
 		},
 	})
-	// it's OK if send fails. will try later in poolRoutine
 
 	// peer is added to the pool once we receive the first
 	// bcStatusResponseMessage from the peer and call pool.SetPeerRange
@@ -212,10 +213,11 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 	block, _ := bcR.store.LoadBlock(msg.Height)
 	if block == nil {
 		bcR.Logger.Info("Peer asking for a block we don't have", "src", src, "height", msg.Height)
-		return src.TrySend(p2p.Envelope{
+		err := src.TrySend(p2p.Envelope{
 			ChannelID: BlocksyncChannel,
 			Message:   &bcproto.NoBlockResponse{Height: msg.Height},
 		})
+		return err == nil
 	}
 
 	state, err := bcR.blockExec.Store().Load()
@@ -238,13 +240,14 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 		return false
 	}
 
-	return src.TrySend(p2p.Envelope{
+	err = src.TrySend(p2p.Envelope{
 		ChannelID: BlocksyncChannel,
 		Message: &bcproto.BlockResponse{
 			Block:     bl,
 			ExtCommit: extCommit.ToProto(),
 		},
 	})
+	return err == nil
 }
 
 func (bcR *Reactor) handlePeerResponse(msg *bcproto.BlockResponse, src p2p.Peer) {
@@ -289,7 +292,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 		go bcR.handlePeerResponse(msg, e.Src)
 	case *bcproto.StatusRequest:
 		// Send peer our state.
-		e.Src.TrySend(p2p.Envelope{
+		_ = e.Src.TrySend(p2p.Envelope{
 			ChannelID: BlocksyncChannel,
 			Message: &bcproto.StatusResponse{
 				Height: bcR.store.Height(),
@@ -439,12 +442,14 @@ func (bcR *Reactor) handleBlockRequest(request BlockRequest) {
 	if peer == nil {
 		return
 	}
-	queued := peer.TrySend(p2p.Envelope{
+	err := peer.TrySend(p2p.Envelope{
 		ChannelID: BlocksyncChannel,
 		Message:   &bcproto.BlockRequest{Height: request.Height},
 	})
-	if !queued {
-		bcR.Logger.Debug("Send queue is full, drop block request", "peer", peer.ID(), "height", request.Height)
+	if err != nil {
+		if e, ok := err.(p2p.SendError); ok && e.Full() {
+			bcR.Logger.Debug("Send queue is full, drop block request", "peer", peer.ID(), "height", request.Height)
+		}
 	}
 }
 

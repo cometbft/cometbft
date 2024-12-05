@@ -10,8 +10,10 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/log"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/nodekey"
+	"github.com/cometbft/cometbft/p2p/transport"
 	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
 
@@ -32,6 +34,7 @@ func TestTransportMultiplex_ConnFilter(t *testing.T) {
 			PrivKey: ed25519.GenPrivKey(),
 		},
 	)
+	mt.SetLogger(log.TestingLogger())
 	id := mt.nodeKey.ID()
 
 	MultiplexTransportConnFilters(
@@ -85,6 +88,7 @@ func TestTransportMultiplex_ConnFilterTimeout(t *testing.T) {
 			PrivKey: ed25519.GenPrivKey(),
 		},
 	)
+	mt.SetLogger(log.TestingLogger())
 	id := mt.nodeKey.ID()
 
 	MultiplexTransportFilterTimeout(5 * time.Millisecond)(mt)
@@ -195,7 +199,7 @@ func TestTransportMultiplex_AcceptMultiple(t *testing.T) {
 		}
 	}
 
-	conns := []net.Conn{}
+	conns := []transport.Conn{}
 
 	// Accept all connections.
 	for i := 0; i < cap(errc); i++ {
@@ -209,12 +213,6 @@ func TestTransportMultiplex_AcceptMultiple(t *testing.T) {
 
 	if have, want := len(conns), cap(errc); have != want {
 		t.Errorf("have %v, want %v", have, want)
-	}
-
-	for _, c := range conns {
-		if err := mt.Cleanup(c); err != nil {
-			t.Fatal(err)
-		}
 	}
 
 	if err := mt.Close(); err != nil {
@@ -231,6 +229,7 @@ func testDialer(dialAddr na.NetAddr, errc chan error) {
 			},
 		)
 	)
+	dialer.SetLogger(log.TestingLogger())
 
 	_, err := dialer.Dial(dialAddr)
 	if err != nil {
@@ -295,6 +294,7 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 				PrivKey: fastNodePV,
 			},
 		)
+		dialer.SetLogger(log.TestingLogger())
 		addr := na.New(mt.nodeKey.ID(), mt.listener.Addr())
 
 		_, err := dialer.Dial(*addr)
@@ -329,6 +329,7 @@ func TestTransportMultiplexDialRejectWrongID(t *testing.T) {
 			},
 		)
 	)
+	dialer.SetLogger(log.TestingLogger())
 
 	wrongID := nodekey.PubKeyToID(ed25519.GenPrivKey().PubKey())
 	addr := na.New(wrongID, mt.listener.Addr())
@@ -384,6 +385,7 @@ func testSetupMultiplexTransport(t *testing.T) *MultiplexTransport {
 			},
 		)
 	)
+	mt.SetLogger(log.TestingLogger())
 
 	addr, err := na.NewFromString(na.IDAddrString(id, "127.0.0.1:0"))
 	if err != nil {

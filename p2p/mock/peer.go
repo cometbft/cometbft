@@ -9,7 +9,7 @@ import (
 	ni "github.com/cometbft/cometbft/p2p/internal/nodeinfo"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/nodekey"
-	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
+	"github.com/cometbft/cometbft/p2p/transport"
 )
 
 type Peer struct {
@@ -54,19 +54,19 @@ func (mp *Peer) OnStop() {
 	mp.server.Close()
 	mp.client.Close()
 }
-func (*Peer) HasChannel(_ byte) bool      { return true }
-func (*Peer) TrySend(_ p2p.Envelope) bool { return true }
-func (*Peer) Send(_ p2p.Envelope) bool    { return true }
+func (*Peer) HasChannel(_ byte) bool       { return true }
+func (*Peer) TrySend(_ p2p.Envelope) error { return nil }
+func (*Peer) Send(_ p2p.Envelope) error    { return nil }
 func (mp *Peer) NodeInfo() ni.NodeInfo {
 	return ni.Default{
 		DefaultNodeID: mp.addr.ID,
 		ListenAddr:    mp.addr.DialString(),
 	}
 }
-func (*Peer) Status() conn.ConnectionStatus { return conn.ConnectionStatus{} }
-func (mp *Peer) ID() nodekey.ID             { return mp.id }
-func (mp *Peer) IsOutbound() bool           { return mp.Outbound }
-func (mp *Peer) IsPersistent() bool         { return mp.Persistent }
+func (*Peer) ConnState() transport.ConnState { return transport.ConnState{} }
+func (mp *Peer) ID() nodekey.ID              { return mp.id }
+func (mp *Peer) IsOutbound() bool            { return mp.Outbound }
+func (mp *Peer) IsPersistent() bool          { return mp.Persistent }
 func (mp *Peer) Get(key string) any {
 	if value, ok := mp.kv[key]; ok {
 		return value
@@ -80,6 +80,5 @@ func (mp *Peer) Set(key string, value any) {
 func (mp *Peer) RemoteIP() net.IP        { return mp.ip }
 func (mp *Peer) SocketAddr() *na.NetAddr { return mp.addr }
 func (mp *Peer) RemoteAddr() net.Addr    { return &net.TCPAddr{IP: mp.ip, Port: 8800} }
-func (mp *Peer) Conn() net.Conn          { return mp.server }
 func (*Peer) SetRemovalFailed()          {}
 func (*Peer) GetRemovalFailed() bool     { return false }

@@ -14,6 +14,7 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/nodekey"
+	"github.com/cometbft/cometbft/p2p/transport"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
 
@@ -168,9 +169,9 @@ func (r *Reactor) Stop() error {
 }
 
 // StreamDescriptors implements Reactor.
-func (*Reactor) StreamDescriptors() []p2p.StreamDescriptor {
-	return []p2p.StreamDescriptor{
-		&tcpconn.ChannelDescriptor{
+func (*Reactor) StreamDescriptors() []transport.StreamDescriptor {
+	return []transport.StreamDescriptor{
+		tcpconn.StreamDescriptor{
 			ID:                  PexChannel,
 			Priority:            1,
 			SendQueueCapacity:   10,
@@ -332,7 +333,7 @@ func (r *Reactor) RequestAddrs(p Peer) {
 	}
 	r.Logger.Debug("Request addrs", "from", p)
 	r.requestsSent.Set(id, struct{}{})
-	p.Send(p2p.Envelope{
+	_ = p.Send(p2p.Envelope{
 		ChannelID: PexChannel,
 		Message:   &tmp2p.PexRequest{},
 	})
@@ -384,7 +385,7 @@ func (*Reactor) SendAddrs(p Peer, netAddrs []*na.NetAddr) {
 		ChannelID: PexChannel,
 		Message:   &tmp2p.PexAddrs{Addrs: na.AddrsToProtos(netAddrs)},
 	}
-	p.Send(e)
+	_ = p.Send(e)
 }
 
 // SetEnsurePeersPeriod sets period to ensure peers connected.
@@ -733,7 +734,8 @@ func (r *Reactor) cleanupCrawlPeerInfos() {
 // attemptDisconnects checks if we've been with each peer long enough to disconnect.
 func (r *Reactor) attemptDisconnects() {
 	for _, peer := range r.Switch.Peers().Copy() {
-		if peer.Status().Duration < r.config.SeedDisconnectWaitPeriod {
+		state := peer.ConnState()
+		if state.ConnectedFor < r.config.SeedDisconnectWaitPeriod {
 			continue
 		}
 		if peer.IsPersistent() {

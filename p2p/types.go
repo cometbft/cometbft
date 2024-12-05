@@ -6,12 +6,13 @@ import (
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	ni "github.com/cometbft/cometbft/p2p/internal/nodeinfo"
 	"github.com/cometbft/cometbft/p2p/nodekey"
-	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
+	"github.com/cometbft/cometbft/p2p/transport"
 	"github.com/cometbft/cometbft/types"
 )
 
 type (
-	ConnectionStatus = conn.ConnectionStatus
+	// ConnState describes the state of a connection.
+	ConnState = transport.ConnState
 	// ID is the unique identifier for a peer.
 	ID = nodekey.ID
 
@@ -23,6 +24,10 @@ type (
 	NodeInfoDefaultOther = ni.DefaultOther
 	// ProtocolVersion is the protocol version for the software.
 	ProtocolVersion = ni.ProtocolVersion
+	// SendError is an error emitted by Peer#TrySend.
+	//
+	// If the send queue is full, Full() returns true.
+	SendError = transport.WriteError
 )
 
 // Envelope contains a message with sender routing info.
@@ -36,12 +41,3 @@ var (
 	_ types.Wrapper = &tmp2p.PexRequest{}
 	_ types.Wrapper = &tmp2p.PexAddrs{}
 )
-
-// StreamDescriptor describes a data stream. This could be a substream within a
-// multiplexed TCP connection, QUIC stream, etc.
-type StreamDescriptor interface {
-	// StreamID returns the ID of the stream.
-	StreamID() byte
-	// MessageType returns the type of the message sent/received on this stream.
-	MessageType() proto.Message
-}

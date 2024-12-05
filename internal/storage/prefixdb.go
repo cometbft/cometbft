@@ -34,7 +34,6 @@ type PrefixDB struct {
 	prefix []byte
 }
 
-// compile-time check: does *PrefixDB satisfy the DB interface?
 var _ DB = (*PrefixDB)(nil)
 
 // NewPrefixDB returns a new PrefixDB wrapping the given database and scoping it to
@@ -310,14 +309,13 @@ type prefixDBBatch struct {
 	source Batch
 }
 
-// compile-time check: does *prefixDBBatch satisfy the Batch interface?
 var _ Batch = (*prefixDBBatch)(nil)
 
 // newPrefixDBBatch returns a new prefixDBBatch wrapping the given [Batch] and
 // scoping it to the given prefix.
 // Use a batch for atomic database updates.
-func newPrefixDBBatch(prefix []byte, source Batch) prefixDBBatch {
-	return prefixDBBatch{
+func newPrefixDBBatch(prefix []byte, source Batch) *prefixDBBatch {
+	return &prefixDBBatch{
 		prefix: prefix,
 		source: source,
 	}
@@ -327,7 +325,7 @@ func newPrefixDBBatch(prefix []byte, source Batch) prefixDBBatch {
 // It is safe to modify the contents of the arguments after Set returns.
 //
 // It implements the [Batch] interface for type prefixDBBatch.
-func (b prefixDBBatch) Set(key, value []byte) error {
+func (b *prefixDBBatch) Set(key, value []byte) error {
 	if len(key) == 0 {
 		return errKeyEmpty
 	}
@@ -347,7 +345,7 @@ func (b prefixDBBatch) Set(key, value []byte) error {
 // key. It is safe to modify the contents of the arguments after Delete returns.
 //
 // It implements the [Batch] interface for type prefixDBBatch.
-func (b prefixDBBatch) Delete(key []byte) error {
+func (b *prefixDBBatch) Delete(key []byte) error {
 	if len(key) == 0 {
 		return errKeyEmpty
 	}
@@ -364,7 +362,7 @@ func (b prefixDBBatch) Delete(key []byte) error {
 // is persisted to disk before returning.
 //
 // It implements the [Batch] interface for type prefixDBBatch.
-func (b prefixDBBatch) Write() error {
+func (b *prefixDBBatch) Write() error {
 	if err := b.source.Write(); err != nil {
 		return fmt.Errorf("prefixed DB namespace batch write: %w", err)
 	}
@@ -375,7 +373,7 @@ func (b prefixDBBatch) Write() error {
 // is persisted to disk before returning.
 //
 // It implements the [Batch] interface for type prefixDBBatch.
-func (b prefixDBBatch) WriteSync() error {
+func (b *prefixDBBatch) WriteSync() error {
 	if err := b.source.WriteSync(); err != nil {
 		return fmt.Errorf("prefixed DB namespace batch write: %w", err)
 	}
@@ -386,7 +384,7 @@ func (b prefixDBBatch) WriteSync() error {
 // other methods on the batch after closing it will return an error.
 //
 // It implements the [Batch] interface for type prefixDBBatch.
-func (b prefixDBBatch) Close() error {
+func (b *prefixDBBatch) Close() error {
 	if err := b.source.Close(); err != nil {
 		return fmt.Errorf("prefixed DB namespace batch close: %w", err)
 	}

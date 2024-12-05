@@ -3,6 +3,7 @@ package storage
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"fmt"
 )
 
@@ -38,11 +39,17 @@ var _ DB = (*PrefixDB)(nil)
 
 // NewPrefixDB returns a new PrefixDB wrapping the given database and scoping it to
 // the given prefix.
-func NewPrefixDB(db DB, prefix []byte) *PrefixDB {
-	return &PrefixDB{
+func NewPrefixDB(db DB, prefix []byte) (*PrefixDB, error) {
+	if len(prefix) == 0 {
+		return nil, errors.New("trying to create a prefixed DB namespace with an empty prefix")
+	}
+
+	pDB := &PrefixDB{
 		prefix: prefix,
 		db:     db,
 	}
+
+	return pDB, nil
 }
 
 // Get fetches the value of the given key, or nil if it does not exist.

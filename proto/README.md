@@ -35,21 +35,21 @@ is published in packages suffixed with `.v1`. Earlier revisions of the
 definitions, where they differed, are provided alongside in `.v1beta`_N_
 packages. The correspondence between package suffixes and releases is as follows:
 
-| Domain          | 0.34      | 0.37      | 0.38      | 1.0  |
-|-----------------|-----------|-----------|-----------|------|
-| `abci`          | `v1beta1` | `v1beta2` | `v1beta3` | `v1` |
-| `blocksync`     |           | `v1beta1` | `v1`      | `v1` |
-| `consensus`     | `v1beta1` | `v1beta1` | `v1beta1` | `v1` |
-| `crypto`        | `v1`      | `v1`      | `v1`      | `v1` |
-| `libs/bits`     | `v1`      | `v1`      | `v1`      | `v1` |
-| `mempool`       | `v1`      | `v1`      | `v1`      | `v1` |
-| `p2p`           | `v1`      | `v1`      | `v1`      | `v1` |
-| `privval`       | `v1beta1` | `v1beta1` | `v1beta2` | `v1` |
-| `rpc/grpc`[^1]  | `v1beta1` | `v1beta2` | `v1beta3` |      |
-| `state`         | `v1beta1` | `v1beta2` | `v1beta3` | `v1` |
-| `statesync`     | `v1`      | `v1`      | `v1`      | `v1` |
-| `types`         | `v1beta1` | `v1beta2` | `v1`      | `v1` |
-| `version`       | `v1`      | `v1`      | `v1`      | `v1` |
+| Domain         | 0.34      | 0.37      | 0.38      | 1.0  | main |
+| -------------- | --------- | --------- | --------- | ---- | ---- |
+| `abci`         | `v1beta1` | `v1beta2` | `v1beta3` | `v1` | `v1` |
+| `blocksync`    |           | `v1beta1` | `v1`      | `v1` | `v1` |
+| `consensus`    | `v1beta1` | `v1beta1` | `v1beta1` | `v1` | `v1` |
+| `crypto`       | `v1`      | `v1`      | `v1`      | `v1` | `v1` |
+| `libs/bits`    | `v1`      | `v1`      | `v1`      | `v1` | `v1` |
+| `mempool`      | `v1`      | `v1`      | `v1`      | `v1` | `v2` |
+| `p2p`          | `v1`      | `v1`      | `v1`      | `v1` | `v1` |
+| `privval`      | `v1beta1` | `v1beta1` | `v1beta2` | `v1` | `v1` |
+| `rpc/grpc`[^1] | `v1beta1` | `v1beta2` | `v1beta3` |      |      |
+| `state`        | `v1beta1` | `v1beta2` | `v1beta3` | `v1` | `v1` |
+| `statesync`    | `v1`      | `v1`      | `v1`      | `v1` | `v1` |
+| `types`        | `v1beta1` | `v1beta2` | `v1`      | `v1` | `v1` |
+| `version`      | `v1`      | `v1`      | `v1`      | `v1` | `v1` |
 
 [^1]: Retired in 1.0
 

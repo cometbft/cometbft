@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sync/semaphore"
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
-	protomem "github.com/cometbft/cometbft/api/cometbft/mempool/v1"
+	protomem "github.com/cometbft/cometbft/api/cometbft/mempool/v2"
 	cfg "github.com/cometbft/cometbft/config"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/log"

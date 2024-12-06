@@ -285,7 +285,7 @@ the redundancy and has a chance to trigger sending of `HaveTx` or `ResetRoute` m
 have not observed a reduction in redundancy due to a lower interval. Most likely due to the fact that, regardless
 of the interval, it takes a certain amount of time for the information to propagate through the network.<br/>See [\#4598] for more information about the experiments. 
 
-- `mempool.target_redundancy: float`: Set to `1`. The redundancy level that the gossip protocol should aim to
+- `mempool.dog_target_redundancy: float`: Set to `1`. The redundancy level that the gossip protocol should aim to
 achieve. An acceptable value, based on our tests was also `0,5`. While still having, for each unique transaction, one duplicate, the number of transaction messages in the system was significantly lower and we did not see a great benefit in using `0.5` over `1`. Therefore we set the default to a safer value in terms of resilience to attacks.
 Overall increasing this value above `2` would lead to too many duplicates without an improvement in the tolerance of the system to byzantine attacks. 
 <br/>See [\#4597] for more information about the experiments. 

@@ -433,6 +433,25 @@ func newPrefixDBIterator(
 	prefix, start, end []byte,
 	source Iterator,
 ) (*prefixDBIterator, error) { //nolint:unparam
+	// NOTE: Do not delete itInvalid and return an error below.
+	// The current design allows the creation of an Iterator with the key range
+	// [nil:nil], which we interpret as "from the first to the last key in the
+	// database." However, there is a corner case: creating an Iterator with the
+	// range [nil:some_key] when there is only one key in the database (or only one
+	// key with the given prefix, i.e., prefix+some_key). Because the iterator's
+	// upper bound is exclusive, this results in an empty key range. There might be
+	// other corner cases that I haven't found, though.
+	//
+	// In the case of Pebble (and possibly other databases), such a scenario leads
+	// to an invalid iterator state. According to Pebble's documentation, this
+	// situation produces an iterator that "has a non-exhausted internalIterator,
+	// but has reached a limit without any key for the caller." In other words, a
+	// call to Valid() will fail, and therefore the creation of the Iterator itself
+	// will fail.
+	//
+	// I think cometbft’s code depends on newPrefixDBIterator returning an invalid
+	// iterator rather than an error. This design is not ideal, but changing it
+	// would likely require revisiting a large portion of cometbft’s codebase.
 	itInvalid := &prefixDBIterator{
 		prefix: prefix,
 		start:  start,

@@ -6,14 +6,14 @@ import (
 )
 
 var (
-	// errBatchClosed is returned when a closed or written batch is used.
-	errBatchClosed = errors.New("batch has been written or closed")
+	// ErrBatchClosed is returned when a closed or written batch is used.
+	ErrBatchClosed = errors.New("batch has been committed to database or closed")
 
-	// errKeyEmpty is returned when attempting to use an empty or nil key.
-	errKeyEmpty = errors.New("key cannot be empty")
+	// ErrKeyEmpty is returned when attempting to use an empty or nil key.
+	ErrKeyEmpty = errors.New("database key cannot be empty")
 
-	// errValueNil is returned when attempting to set a nil value.
-	errValueNil = errors.New("value cannot be nil")
+	// ErrValueNil is returned when attempting to set a nil value.
+	ErrValueNil = errors.New("value for a database key cannot be nil")
 )
 
 // DB is the main interface for all database backends. DBs are concurrency-safe.

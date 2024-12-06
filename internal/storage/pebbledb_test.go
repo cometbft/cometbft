@@ -18,8 +18,8 @@ func TestPebbleDBGet(t *testing.T) {
 	t.Cleanup(dbCloser)
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if _, err := pDB.Get(nil); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		if _, err := pDB.Get(nil); !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected %s, got: %s", ErrKeyEmpty, err)
 		}
 	})
 
@@ -61,8 +61,8 @@ func TestPebbleDBHas(t *testing.T) {
 	t.Cleanup(dbcloser)
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if _, err := pDB.Has(nil); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		if _, err := pDB.Has(nil); !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected %s, got: %s", ErrKeyEmpty, err)
 		}
 	})
 
@@ -113,16 +113,16 @@ func TestPebbleDBSet(t *testing.T) {
 		noSync = pebble.NoSync
 	)
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if err := pDB.setWithOpts(nil, nil, noSync); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		if err := pDB.setWithOpts(nil, nil, noSync); !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected %s, got: %s", ErrKeyEmpty, err)
 		}
 	})
 
 	t.Run("NilValueErr", func(t *testing.T) {
 		key := []byte{'a'}
 		// called by SetSync
-		if err := pDB.setWithOpts(key, nil, sync); !errors.Is(err, errValueNil) {
-			t.Errorf("expected %s, got: %s", errValueNil, err)
+		if err := pDB.setWithOpts(key, nil, sync); !errors.Is(err, ErrValueNil) {
+			t.Errorf("expected %s, got: %s", ErrValueNil, err)
 		}
 	})
 
@@ -157,8 +157,8 @@ func TestPebbleDBDelete(t *testing.T) {
 		noSync = pebble.NoSync
 	)
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if err := pDB.deleteWithOpts(nil, noSync); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		if err := pDB.deleteWithOpts(nil, noSync); !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected %s, got: %s", ErrKeyEmpty, err)
 		}
 	})
 
@@ -287,15 +287,15 @@ func TestPebbleDBBatchSet(t *testing.T) {
 	t.Cleanup(dbCloser)
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if err := pBatch.Set(nil, nil); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		if err := pBatch.Set(nil, nil); !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected %s, got: %s", ErrKeyEmpty, err)
 		}
 	})
 
 	t.Run("ValueNilErr", func(t *testing.T) {
 		key := []byte{'a'}
-		if err := pBatch.Set(key, nil); !errors.Is(err, errValueNil) {
-			t.Errorf("expected %s, got: %s", errValueNil, err)
+		if err := pBatch.Set(key, nil); !errors.Is(err, ErrValueNil) {
+			t.Errorf("expected %s, got: %s", ErrValueNil, err)
 		}
 	})
 
@@ -308,8 +308,8 @@ func TestPebbleDBBatchSet(t *testing.T) {
 			key   = []byte{'a'}
 			value = []byte{'b'}
 		)
-		if err := pBatch.Set(key, value); !errors.Is(err, errBatchClosed) {
-			t.Errorf("expected %s, got: %s", errBatchClosed, err)
+		if err := pBatch.Set(key, value); !errors.Is(err, ErrBatchClosed) {
+			t.Errorf("expected %s, got: %s", ErrBatchClosed, err)
 		}
 	})
 
@@ -352,8 +352,8 @@ func TestPebbleDBBatchDelete(t *testing.T) {
 	t.Cleanup(dbCloser)
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if err := pBatch.Delete(nil); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		if err := pBatch.Delete(nil); !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected %s, got: %s", ErrKeyEmpty, err)
 		}
 	})
 
@@ -364,8 +364,8 @@ func TestPebbleDBBatchDelete(t *testing.T) {
 			}
 			key = []byte{'a'}
 		)
-		if err := pBatch.Delete(key); !errors.Is(err, errBatchClosed) {
-			t.Errorf("expected %s, got: %s", errBatchClosed, err)
+		if err := pBatch.Delete(key); !errors.Is(err, ErrBatchClosed) {
+			t.Errorf("expected %s, got: %s", ErrBatchClosed, err)
 		}
 	})
 
@@ -407,8 +407,8 @@ func TestPebbleDBBatchWrite(t *testing.T) {
 			}
 			sync = pebble.Sync
 		)
-		if err := pBatch.commitWithOpts(sync); !errors.Is(err, errBatchClosed) {
-			t.Errorf("expected %s, got: %s", errBatchClosed, err)
+		if err := pBatch.commitWithOpts(sync); !errors.Is(err, ErrBatchClosed) {
+			t.Errorf("expected %s, got: %s", ErrBatchClosed, err)
 		}
 	})
 
@@ -471,15 +471,15 @@ func TestNewPebbleDBIterator(t *testing.T) {
 
 	t.Run("EmptyStartErr", func(t *testing.T) {
 		_, err := newPebbleDBIterator(nil, emptyKey, nil, false)
-		if !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected error: %s\n got: %s", errKeyEmpty, err)
+		if !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected error: %s\n got: %s", ErrKeyEmpty, err)
 		}
 	})
 
 	t.Run("EmptyEndErr", func(t *testing.T) {
 		_, err := newPebbleDBIterator(nil, nil, emptyKey, false)
-		if !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected error: %s\n got: %s", errKeyEmpty, err)
+		if !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected error: %s\n got: %s", ErrKeyEmpty, err)
 		}
 	})
 

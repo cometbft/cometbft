@@ -60,7 +60,7 @@ func NewPrefixDB(db DB, prefix []byte) (*PrefixDB, error) {
 // It implements the [DB] interface for type PrefixDB.
 func (pDB *PrefixDB) Get(key []byte) ([]byte, error) {
 	if len(key) == 0 {
-		return nil, errKeyEmpty
+		return nil, ErrKeyEmpty
 	}
 
 	prefixedKey := prependPrefix(pDB.prefix, key)
@@ -77,7 +77,7 @@ func (pDB *PrefixDB) Get(key []byte) ([]byte, error) {
 // It implements the [DB] interface for type PrefixDB.
 func (pDB *PrefixDB) Has(key []byte) (bool, error) {
 	if len(key) == 0 {
-		return false, errKeyEmpty
+		return false, ErrKeyEmpty
 	}
 
 	prefixedKey := prependPrefix(pDB.prefix, key)
@@ -99,10 +99,10 @@ func (pDB *PrefixDB) Has(key []byte) (bool, error) {
 // It implements the [DB] interface for type PrefixDB.
 func (pDB *PrefixDB) Set(key []byte, value []byte) error {
 	if len(key) == 0 {
-		return errKeyEmpty
+		return ErrKeyEmpty
 	}
 	if value == nil {
-		return errValueNil
+		return ErrValueNil
 	}
 
 	prefixedKey := prependPrefix(pDB.prefix, key)
@@ -122,10 +122,10 @@ func (pDB *PrefixDB) Set(key []byte, value []byte) error {
 // It implements the [DB] interface for type PrefixDB.
 func (pDB *PrefixDB) SetSync(key []byte, value []byte) error {
 	if len(key) == 0 {
-		return errKeyEmpty
+		return ErrKeyEmpty
 	}
 	if value == nil {
-		return errValueNil
+		return ErrValueNil
 	}
 
 	prefixedKey := prependPrefix(pDB.prefix, key)
@@ -147,7 +147,7 @@ func (pDB *PrefixDB) SetSync(key []byte, value []byte) error {
 // It implements the [DB] interface for type PrefixDB.
 func (pDB *PrefixDB) Delete(key []byte) error {
 	if len(key) == 0 {
-		return errKeyEmpty
+		return ErrKeyEmpty
 	}
 
 	prefixedKey := prependPrefix(pDB.prefix, key)
@@ -168,7 +168,7 @@ func (pDB *PrefixDB) Delete(key []byte) error {
 // It implements the [DB] interface for type PrefixDB.
 func (pDB *PrefixDB) DeleteSync(key []byte) error {
 	if len(key) == 0 {
-		return errKeyEmpty
+		return ErrKeyEmpty
 	}
 
 	prefixedKey := prependPrefix(pDB.prefix, key)
@@ -338,10 +338,10 @@ func newPrefixDBBatch(prefix []byte, source Batch) *prefixDBBatch {
 // It implements the [Batch] interface for type prefixDBBatch.
 func (b *prefixDBBatch) Set(key, value []byte) error {
 	if len(key) == 0 {
-		return errKeyEmpty
+		return ErrKeyEmpty
 	}
 	if value == nil {
-		return errValueNil
+		return ErrValueNil
 	}
 
 	prefixedKey := prependPrefix(b.prefix, key)
@@ -358,7 +358,7 @@ func (b *prefixDBBatch) Set(key, value []byte) error {
 // It implements the [Batch] interface for type prefixDBBatch.
 func (b *prefixDBBatch) Delete(key []byte) error {
 	if len(key) == 0 {
-		return errKeyEmpty
+		return ErrKeyEmpty
 	}
 
 	prefixedKey := prependPrefix(b.prefix, key)
@@ -639,10 +639,10 @@ func incrementBigEndian(s []byte) []byte {
 // prepends the prefix. The bounds are ready for use in a prefixDBIterator.
 func prefixedIteratorBounds(prefix, start, end []byte) ([]byte, []byte, error) {
 	if start != nil && len(start) == 0 {
-		return nil, nil, fmt.Errorf("lower bound: %w", errKeyEmpty)
+		return nil, nil, fmt.Errorf("lower bound: %w", ErrKeyEmpty)
 	}
 	if end != nil && len(end) == 0 {
-		return nil, nil, fmt.Errorf("upper bound: %w", errKeyEmpty)
+		return nil, nil, fmt.Errorf("upper bound: %w", ErrKeyEmpty)
 	}
 
 	var (

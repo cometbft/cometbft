@@ -15,8 +15,8 @@ func TestPrefixDBGet(t *testing.T) {
 	t.Cleanup(func() { pDB.Close() })
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if _, err := pDB.Get(nil); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		if _, err := pDB.Get(nil); !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected %s, got: %s", ErrKeyEmpty, err)
 		}
 	})
 
@@ -61,8 +61,8 @@ func TestPrefixDBHas(t *testing.T) {
 	t.Cleanup(func() { pDB.Close() })
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if _, err := pDB.Has(nil); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		if _, err := pDB.Has(nil); !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected %s, got: %s", ErrKeyEmpty, err)
 		}
 	})
 
@@ -106,15 +106,15 @@ func TestPrefixDBSet(t *testing.T) {
 	t.Cleanup(func() { pDB.Close() })
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if err := pDB.Set(nil, nil); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		if err := pDB.Set(nil, nil); !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected %s, got: %s", ErrKeyEmpty, err)
 		}
 	})
 
 	t.Run("NilValueErr", func(t *testing.T) {
 		key := []byte{'a'}
-		if err := pDB.Set(key, nil); !errors.Is(err, errValueNil) {
-			t.Errorf("expected %s, got: %s", errValueNil, err)
+		if err := pDB.Set(key, nil); !errors.Is(err, ErrValueNil) {
+			t.Errorf("expected %s, got: %s", ErrValueNil, err)
 		}
 	})
 
@@ -157,8 +157,8 @@ func TestPrefixDBDelete(t *testing.T) {
 	t.Cleanup(func() { pDB.Close() })
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if err := pDB.Delete(nil); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		if err := pDB.Delete(nil); !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected %s, got: %s", ErrKeyEmpty, err)
 		}
 	})
 
@@ -193,15 +193,15 @@ func TestPrefixDBBatchSet(t *testing.T) {
 	}
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if err := prefixBatch.Set(nil, nil); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		if err := prefixBatch.Set(nil, nil); !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected %s, got: %s", ErrKeyEmpty, err)
 		}
 	})
 
 	t.Run("ValueNilErr", func(t *testing.T) {
 		key := []byte{'a'}
-		if err := prefixBatch.Set(key, nil); !errors.Is(err, errValueNil) {
-			t.Errorf("expected %s, got: %s", errValueNil, err)
+		if err := prefixBatch.Set(key, nil); !errors.Is(err, ErrValueNil) {
+			t.Errorf("expected %s, got: %s", ErrValueNil, err)
 		}
 	})
 
@@ -245,8 +245,8 @@ func TestPrefixDBBatchSet(t *testing.T) {
 			key   = []byte{'a'}
 			value = []byte{'b'}
 		)
-		if err := prefixBatch.Set(key, value); !errors.Is(err, errBatchClosed) {
-			t.Errorf("expected %s, got: %s", errBatchClosed, err)
+		if err := prefixBatch.Set(key, value); !errors.Is(err, ErrBatchClosed) {
+			t.Errorf("expected %s, got: %s", ErrBatchClosed, err)
 		}
 	})
 }
@@ -264,8 +264,8 @@ func TestPrefixDBBatchDelete(t *testing.T) {
 	}
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if err := prefixBatch.Delete(nil); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		if err := prefixBatch.Delete(nil); !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected %s, got: %s", ErrKeyEmpty, err)
 		}
 	})
 
@@ -299,8 +299,8 @@ func TestPrefixDBBatchDelete(t *testing.T) {
 		}
 
 		key := []byte{'a'}
-		if err := prefixBatch.Delete(key); !errors.Is(err, errBatchClosed) {
-			t.Errorf("expected %s, got: %s", errBatchClosed, err)
+		if err := prefixBatch.Delete(key); !errors.Is(err, ErrBatchClosed) {
+			t.Errorf("expected %s, got: %s", ErrBatchClosed, err)
 		}
 	})
 }
@@ -371,8 +371,8 @@ func TestPrefixDBBatchWrite(t *testing.T) {
 			t.Fatalf("closing test batch: %s", err)
 		}
 
-		if err := prefixBatch.Write(); !errors.Is(err, errBatchClosed) {
-			t.Errorf("expected %s, got: %s", errBatchClosed, err)
+		if err := prefixBatch.Write(); !errors.Is(err, ErrBatchClosed) {
+			t.Errorf("expected %s, got: %s", ErrBatchClosed, err)
 		}
 	})
 }
@@ -490,12 +490,12 @@ func TestPrefixedIteratorBounds(t *testing.T) {
 		{ // empty start
 			start:   []byte{},
 			end:     end,
-			wantErr: errKeyEmpty,
+			wantErr: ErrKeyEmpty,
 		},
 		{ // empty end
 			start:   start,
 			end:     []byte{},
-			wantErr: errKeyEmpty,
+			wantErr: ErrKeyEmpty,
 		},
 	}
 	for i, tc := range failureCases {

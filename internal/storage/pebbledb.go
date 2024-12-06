@@ -51,7 +51,7 @@ func (pDB *PebbleDB) DB() *pebble.DB {
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) Get(key []byte) ([]byte, error) {
 	if len(key) == 0 {
-		return nil, errKeyEmpty
+		return nil, ErrKeyEmpty
 	}
 
 	value, closer, err := pDB.db.Get(key)
@@ -75,7 +75,7 @@ func (pDB *PebbleDB) Get(key []byte) ([]byte, error) {
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) Has(key []byte) (bool, error) {
 	if len(key) == 0 {
-		return false, errKeyEmpty
+		return false, ErrKeyEmpty
 	}
 
 	bytesPeb, err := pDB.Get(key)
@@ -126,10 +126,10 @@ func (pDB *PebbleDB) setWithOpts(
 	writeOpts *pebble.WriteOptions,
 ) error {
 	if len(key) == 0 {
-		return errKeyEmpty
+		return ErrKeyEmpty
 	}
 	if value == nil {
-		return errValueNil
+		return ErrValueNil
 	}
 
 	err := pDB.db.Set(key, value, writeOpts)
@@ -186,7 +186,7 @@ func (pDB *PebbleDB) deleteWithOpts(
 	writeOpts *pebble.WriteOptions,
 ) error {
 	if len(key) == 0 {
-		return errKeyEmpty
+		return ErrKeyEmpty
 	}
 
 	if err := pDB.db.Delete(key, writeOpts); err != nil {
@@ -368,13 +368,13 @@ func newPebbleDBBatch(pDB *PebbleDB) *pebbleDBBatch {
 // It implements the [Batch] interface for type pebbleDBBatch.
 func (b *pebbleDBBatch) Set(key, value []byte) error {
 	if len(key) == 0 {
-		return errKeyEmpty
+		return ErrKeyEmpty
 	}
 	if value == nil {
-		return errValueNil
+		return ErrValueNil
 	}
 	if b.batch == nil {
-		return errBatchClosed
+		return ErrBatchClosed
 	}
 
 	// the nil parameter is for the write options, but pebble's own library sets it
@@ -393,10 +393,10 @@ func (b *pebbleDBBatch) Set(key, value []byte) error {
 // It implements the [Batch] interface for type pebbleDBBatch.
 func (b *pebbleDBBatch) Delete(key []byte) error {
 	if len(key) == 0 {
-		return errKeyEmpty
+		return ErrKeyEmpty
 	}
 	if b.batch == nil {
-		return errBatchClosed
+		return ErrBatchClosed
 	}
 
 	// the nil parameter is for the write options. pebble's own library sets it
@@ -438,7 +438,7 @@ func (b *pebbleDBBatch) WriteSync() error {
 // commitWithOpts applies the batch to the database.
 func (b *pebbleDBBatch) commitWithOpts(writeOpts *pebble.WriteOptions) error {
 	if b.batch == nil {
-		return errBatchClosed
+		return ErrBatchClosed
 	}
 
 	if err := b.batch.Commit(writeOpts); err != nil {
@@ -499,11 +499,11 @@ func newPebbleDBIterator(
 	isReverse bool,
 ) (*pebbleDBIterator, error) {
 	if start != nil && len(start) == 0 {
-		return nil, fmt.Errorf("iterator's lower bound: %w", errKeyEmpty)
+		return nil, fmt.Errorf("iterator's lower bound: %w", ErrKeyEmpty)
 	}
 
 	if end != nil && len(end) == 0 {
-		return nil, fmt.Errorf("iterator's upper bound: %w", errKeyEmpty)
+		return nil, fmt.Errorf("iterator's upper bound: %w", ErrKeyEmpty)
 	}
 
 	o := pebble.IterOptions{

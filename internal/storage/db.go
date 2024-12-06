@@ -1,16 +1,19 @@
 package storage
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 var (
-	// errBatchClosed is returned when a closed or written batch is used.
-	errBatchClosed = errors.New("batch has been written or closed")
+	// ErrBatchClosed is returned when a closed or written batch is used.
+	ErrBatchClosed = errors.New("batch has been committed to database or closed")
 
-	// errKeyEmpty is returned when attempting to use an empty or nil key.
-	errKeyEmpty = errors.New("key cannot be empty")
+	// ErrKeyEmpty is returned when attempting to use an empty or nil key.
+	ErrKeyEmpty = errors.New("database key cannot be empty")
 
-	// errValueNil is returned when attempting to set a nil value.
-	errValueNil = errors.New("value cannot be nil")
+	// ErrValueNil is returned when attempting to set a nil value.
+	ErrValueNil = errors.New("value for a database key cannot be nil")
 )
 
 // DB is the main interface for all database backends. DBs are concurrency-safe.
@@ -184,4 +187,26 @@ type Iterator interface {
 
 	// Close closes the iterator, releasing any allocated resources.
 	Close() error
+}
+
+// IteratePrefix returns an iterator over the keys that begin with the given prefix.
+// It is safe to modify the contents of prefix after IteratePrefix returns.
+// If the length of the prefix is 0, IteratePrefix will return an iterator that
+// will iterate over all keys in the database.
+func IteratePrefix(db DB, prefix []byte) (Iterator, error) {
+	var start, end []byte
+
+	if len(prefix) > 0 {
+		start = make([]byte, len(prefix))
+		copy(start, prefix)
+
+		end = incrementBigEndian(prefix)
+	}
+
+	it, err := db.Iterator(start, end)
+	if err != nil {
+		return nil, fmt.Errorf("creating iterator with prefix %X: %w", prefix, err)
+	}
+
+	return it, nil
 }

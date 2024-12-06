@@ -78,8 +78,15 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 		return
 	}
 
+	TIMEOUT := time.Second * 5
+	chainState, err := consensusState.GetStateWithTimeout(TIMEOUT)
+	if err != nil {
+		log.Errorf("timed out trying to get chain state within %v", TIMEOUT)
+		return
+	}
+
 	// signing of vote should append the signature field of gossipVote
-	if err := oracleInfo.PrivValidator.SignOracleVote(consensusState.GetState().ChainID, newGossipVote, sigPrefix); err != nil {
+	if err := oracleInfo.PrivValidator.SignOracleVote(chainState.ChainID, newGossipVote, sigPrefix); err != nil {
 		log.Errorf("processSignVoteQueue: error signing oracle votes: %v", err)
 		return
 	}
@@ -108,16 +115,22 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 
 		ticker := time.Tick(pruneInterval)
 		for range ticker {
-			lastBlockTime := consensusState.GetState().LastBlockTime.Unix()
-			currTimestampsLen := len(oracleInfo.BlockTimestamps)
+			TIMEOUT := time.Second * 3
+			chainState, err := consensusState.GetStateWithTimeout(TIMEOUT)
+			if err != nil {
+				log.Warnf("timed out trying to get chain state after %v", TIMEOUT)
+			} else {
+				lastBlockTime := chainState.LastBlockTime.Unix()
+				currTimestampsLen := len(oracleInfo.BlockTimestamps)
 
-			if currTimestampsLen == 0 {
-				oracleInfo.BlockTimestamps = append(oracleInfo.BlockTimestamps, lastBlockTime)
-				continue
-			}
+				if currTimestampsLen == 0 {
+					oracleInfo.BlockTimestamps = append(oracleInfo.BlockTimestamps, lastBlockTime)
+					continue
+				}
 
-			if oracleInfo.BlockTimestamps[currTimestampsLen-1] != lastBlockTime {
-				oracleInfo.BlockTimestamps = append(oracleInfo.BlockTimestamps, lastBlockTime)
+				if oracleInfo.BlockTimestamps[currTimestampsLen-1] != lastBlockTime {
+					oracleInfo.BlockTimestamps = append(oracleInfo.BlockTimestamps, lastBlockTime)
+				}
 			}
 
 			// only keep last x number of block timestamps, where x = maxOracleGossipBlocksDelayed
@@ -198,6 +211,11 @@ func Run(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 
 		if res.Vote == nil {
 			continue
+		}
+
+		// drop old votes when channel hits half cap
+		if len(oracleInfo.SignVotesChan) >= cap(oracleInfo.SignVotesChan)/2 {
+			<-oracleInfo.SignVotesChan
 		}
 
 		oracleInfo.SignVotesChan <- res.Vote

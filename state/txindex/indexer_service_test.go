@@ -65,7 +65,10 @@ func createTestSetup(t *testing.T) (*txindex.IndexerService, *kv.TxIndex, indexe
 	store, err := storage.NewMemDB()
 	require.NoError(t, err)
 	txIndexer := kv.NewTxIndex(store)
-	blockIndexer := blockidxkv.New(storage.NewPrefixDB(store, []byte("block_events")))
+
+	prefixDB, err := storage.NewPrefixDB(store, []byte("block_events"))
+	require.NoError(t, err)
+	blockIndexer := blockidxkv.New(prefixDB)
 
 	service := txindex.NewIndexerService(txIndexer, blockIndexer, eventBus, false)
 	service.SetLogger(log.TestingLogger())

@@ -22,7 +22,12 @@ import (
 )
 
 func TestBlockerIndexer_Prune(t *testing.T) {
-	store := storage.NewPrefixDB(storage.NewMemDB(), []byte("block_events"))
+	memDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+
+	store, err := storage.NewPrefixDB(memDB, []byte("block_events"))
+	require.NoError(t, err)
+
 	indexer := blockidxkv.New(store)
 
 	events1 := getEventsForTesting(1)
@@ -35,7 +40,7 @@ func TestBlockerIndexer_Prune(t *testing.T) {
 		blockidxkv.BlockIndexerRetainHeightKey,
 	}
 
-	err := indexer.Index(events1)
+	err = indexer.Index(events1)
 	require.NoError(t, err)
 
 	keys1 := blockidxkv.GetKeys(*indexer)
@@ -90,7 +95,12 @@ func BenchmarkBlockerIndexer_Prune(_ *testing.B) {
 }
 
 func TestBlockIndexer(t *testing.T) {
-	store := storage.NewPrefixDB(storage.NewMemDB(), []byte("block_events"))
+	memDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+
+	store, err := storage.NewPrefixDB(memDB, []byte("block_events"))
+	require.NoError(t, err)
+
 	indexer := blockidxkv.New(store)
 
 	require.NoError(t, indexer.Index(types.EventDataNewBlockEvents{
@@ -216,7 +226,12 @@ func TestBlockIndexer(t *testing.T) {
 }
 
 func TestBlockIndexerMulti(t *testing.T) {
-	store := storage.NewPrefixDB(storage.NewMemDB(), []byte("block_events"))
+	memDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+
+	store, err := storage.NewPrefixDB(memDB, []byte("block_events"))
+	require.NoError(t, err)
+
 	indexer := blockidxkv.New(store)
 
 	require.NoError(t, indexer.Index(types.EventDataNewBlockEvents{
@@ -377,7 +392,13 @@ func TestBigInt(t *testing.T) {
 	bigFloat := bigInt + ".76"
 	bigFloatLower := bigInt + ".1"
 	bigIntSmaller := "9999999999999999999"
-	store := storage.NewPrefixDB(storage.NewMemDB(), []byte("block_events"))
+
+	memDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+
+	store, err := storage.NewPrefixDB(memDB, []byte("block_events"))
+	require.NoError(t, err)
+
 	indexer := blockidxkv.New(store)
 
 	require.NoError(t, indexer.Index(types.EventDataNewBlockEvents{

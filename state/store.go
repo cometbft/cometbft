@@ -201,7 +201,7 @@ type Store interface {
 	Close() error
 }
 
-// dbStore wraps a [storage.DB]
+// dbStore wraps a [storage.DB].
 type dbStore struct {
 	db storage.DB
 

@@ -181,7 +181,11 @@ func createTestSetup(t *testing.T) (*sm.Pruner, *kv.TxIndex, blockidxkv.BlockerI
 	memDB, err := storage.NewMemDB()
 	require.NoError(t, err)
 	txIndexer := kv.NewTxIndex(memDB)
-	blockIndexer := blockidxkv.New(storage.NewPrefixDB(memDB, []byte("block_events")))
+
+	prefixDB, err := storage.NewPrefixDB(memDB, []byte("block_events"))
+	require.NoError(t, err)
+
+	blockIndexer := blockidxkv.New(prefixDB)
 
 	blockDB, err := storage.NewMemDB()
 	require.NoError(t, err)

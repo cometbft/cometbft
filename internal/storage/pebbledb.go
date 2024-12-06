@@ -201,14 +201,17 @@ func (pDB *PebbleDB) deleteWithOpts(
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) Compact(start, end []byte) error {
 	// Currently nil,nil is an invalid range in Pebble.
-	// This was taken from https://github.com/cockroachdb/pebble/issues/1474
 	// If start==end pebbleDB will throw an error.
+	// See comment below as well.
 	if start != nil && end != nil {
 		if err := pDB.db.Compact(start, end, true /* parallelize */); err != nil {
 			return fmt.Errorf("compacting range [%X, %X]: %w", start, end, err)
 		}
 	}
 
+	// Lines 214-229 address the issue described above and was adapted from
+	// this issue from pebble's repo:
+	// https://github.com/cockroachdb/pebble/issues/1474#issuecomment-1022313365
 	iter, err := pDB.db.NewIter(nil)
 	if err != nil {
 		return fmt.Errorf("creating compaction iterator: %w", err)

@@ -68,7 +68,7 @@ func BenchmarkLoadValidators(b *testing.B) {
 	config := test.ResetTestRoot("state_")
 	defer os.RemoveAll(config.RootDir)
 
-	stateDB, err := storage.NewDB("state", config.DBDir())
+	stateDB, err := storage.NewMemDB()
 	require.NoError(b, err)
 
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{

@@ -77,7 +77,7 @@ func (_m *AppConnMempool) CheckTxAsync(ctx context.Context, req *v1.CheckTxReque
 	return r0, r1
 }
 
-// Error provides a mock function with given fields:
+// Error provides a mock function with no fields
 func (_m *AppConnMempool) Error() error {
 	ret := _m.Called()
 

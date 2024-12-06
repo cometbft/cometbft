@@ -2,29 +2,24 @@ package storage
 
 import (
 	"bytes"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
-	"os"
-	"slices"
-	"strings"
 	"testing"
 
 	"github.com/cockroachdb/pebble"
 	"github.com/cockroachdb/pebble/vfs"
 )
 
-func TestGet(t *testing.T) {
-	pDB, dbCloser, err := newTestEmptyDB()
+func TestPebbleDBGet(t *testing.T) {
+	pDB, dbCloser, err := newTestPebbleDB()
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(dbCloser)
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if _, err := pDB.Get(nil); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		if _, err := pDB.Get(nil); !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected %s, got: %s", ErrKeyEmpty, err)
 		}
 	})
 
@@ -58,16 +53,16 @@ func TestGet(t *testing.T) {
 	})
 }
 
-func TestHas(t *testing.T) {
-	pDB, dbcloser, err := newTestEmptyDB()
+func TestPebbleDBHas(t *testing.T) {
+	pDB, dbcloser, err := newTestPebbleDB()
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(dbcloser)
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if _, err := pDB.Has(nil); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		if _, err := pDB.Has(nil); !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected %s, got: %s", ErrKeyEmpty, err)
 		}
 	})
 
@@ -106,8 +101,8 @@ func TestHas(t *testing.T) {
 // This should be sufficient to test the Set and SetSync methods, because under the
 // hood they only differ in that they call setWithOpts with pebble.NoSync and
 // pebble.Sync respectively.
-func TestSet(t *testing.T) {
-	pDB, dbCloser, err := newTestEmptyDB()
+func TestPebbleDBSet(t *testing.T) {
+	pDB, dbCloser, err := newTestPebbleDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,27 +113,27 @@ func TestSet(t *testing.T) {
 		noSync = pebble.NoSync
 	)
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if err := pDB.setWithOpts(nil, nil, noSync); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		if err := pDB.setWithOpts(nil, nil, noSync); !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected %s, got: %s", ErrKeyEmpty, err)
 		}
 	})
 
 	t.Run("NilValueErr", func(t *testing.T) {
 		key := []byte{'a'}
 		// called by SetSync
-		if err := pDB.setWithOpts(key, nil, sync); !errors.Is(err, errValueNil) {
-			t.Errorf("expected %s, got: %s", errValueNil, err)
+		if err := pDB.setWithOpts(key, nil, sync); !errors.Is(err, ErrValueNil) {
+			t.Errorf("expected %s, got: %s", ErrValueNil, err)
 		}
 	})
 
 	t.Run("NoErr", func(t *testing.T) {
 		// called by Set
-		if err := setHelper(pDB, noSync); err != nil {
+		if err := pebbleSetTestHelper(pDB, noSync); err != nil {
 			t.Fatal(err)
 		}
 
 		// called by SetSync
-		if err := setHelper(pDB, sync); err != nil {
+		if err := pebbleSetTestHelper(pDB, sync); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -150,8 +145,8 @@ func TestSet(t *testing.T) {
 // This should be sufficient to test the Delete and DeleteSync methods, because
 // under the hood they only differ in that they call deleteWithOpts with
 // pebble.NoSync and pebble.Sync respectively.
-func TestDelete(t *testing.T) {
-	pDB, dbCloser, err := newTestEmptyDB()
+func TestPebbleDBDelete(t *testing.T) {
+	pDB, dbCloser, err := newTestPebbleDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,8 +157,8 @@ func TestDelete(t *testing.T) {
 		noSync = pebble.NoSync
 	)
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if err := pDB.deleteWithOpts(nil, noSync); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		if err := pDB.deleteWithOpts(nil, noSync); !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected %s, got: %s", ErrKeyEmpty, err)
 		}
 	})
 
@@ -176,18 +171,18 @@ func TestDelete(t *testing.T) {
 
 	t.Run("KeyExistNoErr", func(t *testing.T) {
 		// called by Delete
-		if err := deleteHelper(pDB, noSync); err != nil {
+		if err := pebbleDeleteTestHelper(pDB, noSync); err != nil {
 			t.Fatal(err)
 		}
 
 		// called by DeleteSync
-		if err := deleteHelper(pDB, sync); err != nil {
+		if err := pebbleDeleteTestHelper(pDB, sync); err != nil {
 			t.Fatal(err)
 		}
 	})
 }
 
-func TestCompact(t *testing.T) {
+func TestPebbleDBCompact(t *testing.T) {
 	var (
 		// make sure keys and vals are the same length.
 		keys = [][]byte{
@@ -220,7 +215,7 @@ func TestCompact(t *testing.T) {
 		createTestDB = func(t *testing.T) (*PebbleDB, func()) {
 			t.Helper()
 
-			pDB, dbCloser, err := newTestEmptyDB()
+			pDB, dbCloser, err := newTestPebbleDB()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -284,81 +279,23 @@ func TestCompact(t *testing.T) {
 	})
 }
 
-func TestPrint(t *testing.T) {
-	pDB, dbCloser, err := newTestEmptyDB()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(dbCloser)
-
-	kvPairs := map[string]string{
-		"a": "1",
-		"b": "2",
-		"c": "3",
-	}
-	for k, v := range kvPairs {
-		if err := pDB.Set([]byte(k), []byte(v)); err != nil {
-			t.Fatalf("writing key %s: %s", k, err)
-		}
-	}
-
-	// Print() writes to os.Stdout, so we need to do some awkward shenanigans to
-	// capture the output and check it's correct.
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("Error creating pipe to capture os.Stdout contents: %s", err)
-	}
-
-	// store os.Stdout and redirect it to print to the writer we just created
-	stdOut := os.Stdout
-	os.Stdout = w
-
-	if err := pDB.Print(); err != nil {
-		t.Fatalf("unexpected error: %s", err)
-	}
-	w.Close()
-
-	// restore os.Stdout
-	os.Stdout = stdOut
-
-	var buf bytes.Buffer
-	if _, err := io.Copy(&buf, r); err != nil {
-		t.Fatalf("reading os.Stdout contents: %s", err)
-	}
-	r.Close()
-
-	outputStr := buf.String()
-	for k, v := range kvPairs {
-		var (
-			kStr = strings.ToUpper(hex.EncodeToString([]byte(k)))
-			vStr = strings.ToUpper(hex.EncodeToString([]byte(v)))
-
-			wantStr = "[" + kStr + "]:\t[" + vStr + "]\n"
-		)
-		if !strings.Contains(outputStr, wantStr) {
-			formatStr := "this line was not printed: %q\nfull print: %q"
-			t.Errorf(formatStr, wantStr, outputStr)
-		}
-	}
-}
-
-func TestBatchSet(t *testing.T) {
-	pBatch, dbCloser, err := newBatch()
+func TestPebbleDBBatchSet(t *testing.T) {
+	pBatch, dbCloser, err := newTestPebbleBatch()
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(dbCloser)
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if err := pBatch.Set(nil, nil); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		if err := pBatch.Set(nil, nil); !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected %s, got: %s", ErrKeyEmpty, err)
 		}
 	})
 
 	t.Run("ValueNilErr", func(t *testing.T) {
 		key := []byte{'a'}
-		if err := pBatch.Set(key, nil); !errors.Is(err, errValueNil) {
-			t.Errorf("expected %s, got: %s", errValueNil, err)
+		if err := pBatch.Set(key, nil); !errors.Is(err, ErrValueNil) {
+			t.Errorf("expected %s, got: %s", ErrValueNil, err)
 		}
 	})
 
@@ -371,8 +308,8 @@ func TestBatchSet(t *testing.T) {
 			key   = []byte{'a'}
 			value = []byte{'b'}
 		)
-		if err := pBatch.Set(key, value); !errors.Is(err, errBatchClosed) {
-			t.Errorf("expected %s, got: %s", errBatchClosed, err)
+		if err := pBatch.Set(key, value); !errors.Is(err, ErrBatchClosed) {
+			t.Errorf("expected %s, got: %s", ErrBatchClosed, err)
 		}
 	})
 
@@ -407,16 +344,16 @@ func TestBatchSet(t *testing.T) {
 	})
 }
 
-func TestBatchDelete(t *testing.T) {
-	pBatch, dbCloser, err := newBatch()
+func TestPebbleDBBatchDelete(t *testing.T) {
+	pBatch, dbCloser, err := newTestPebbleBatch()
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(dbCloser)
 
 	t.Run("EmptyKeyErr", func(t *testing.T) {
-		if err := pBatch.Delete(nil); !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected %s, got: %s", errKeyEmpty, err)
+		if err := pBatch.Delete(nil); !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected %s, got: %s", ErrKeyEmpty, err)
 		}
 	})
 
@@ -427,8 +364,8 @@ func TestBatchDelete(t *testing.T) {
 			}
 			key = []byte{'a'}
 		)
-		if err := pBatch.Delete(key); !errors.Is(err, errBatchClosed) {
-			t.Errorf("expected %s, got: %s", errBatchClosed, err)
+		if err := pBatch.Delete(key); !errors.Is(err, ErrBatchClosed) {
+			t.Errorf("expected %s, got: %s", ErrBatchClosed, err)
 		}
 	})
 
@@ -462,49 +399,47 @@ func TestBatchDelete(t *testing.T) {
 // This should be sufficient to test the Write and WriteSync methods, because under
 // the hood they only differ in that they call commitWithOpts with pebble.NoSync and
 // pebble.Sync respectively.
-func TestBatchWrite(t *testing.T) {
-	var (
-		sync   = pebble.Sync
-		noSync = pebble.NoSync
-	)
-
+func TestPebbleDBBatchWrite(t *testing.T) {
 	t.Run("BatchNilErr", func(t *testing.T) {
-		pBatch := &pebbleDBBatch{
-			batch: nil,
-		}
-		if err := pBatch.commitWithOpts(sync); !errors.Is(err, errBatchClosed) {
-			t.Errorf("expected %s, got: %s", errBatchClosed, err)
+		var (
+			pBatch = &pebbleDBBatch{
+				batch: nil,
+			}
+			sync = pebble.Sync
+		)
+		if err := pBatch.commitWithOpts(sync); !errors.Is(err, ErrBatchClosed) {
+			t.Errorf("expected %s, got: %s", ErrBatchClosed, err)
 		}
 	})
 
 	// Because Write and WriteSync close the batch after committing it, we need to
 	// create a new batch for each test.
 	t.Run("UnsyncedWriteNoErr", func(t *testing.T) {
-		pBatch, dbCloser, err := newBatch()
+		pBatch, dbCloser, err := newTestPebbleBatch()
 		if err != nil {
 			t.Fatal(err)
 		}
 		t.Cleanup(dbCloser)
 
-		if err := batchWriteHelper(pBatch, noSync); err != nil {
+		if err := batchWriteTestHelper(pBatch, pBatch.db, false); err != nil {
 			t.Error(err)
 		}
 	})
 
 	t.Run("SyncedWriteNoErr", func(t *testing.T) {
-		pBatch, dbCloser, err := newBatch()
+		pBatch, dbCloser, err := newTestPebbleBatch()
 		if err != nil {
 			t.Fatal(err)
 		}
 		t.Cleanup(dbCloser)
 
-		if err := batchWriteHelper(pBatch, sync); err != nil {
+		if err := batchWriteTestHelper(pBatch, pBatch.db, true); err != nil {
 			t.Error(err)
 		}
 	})
 }
 
-func TestBatchClose(t *testing.T) {
+func TestPebbleDBBatchClose(t *testing.T) {
 	t.Run("BatchNilNoErr", func(t *testing.T) {
 		pBatch := &pebbleDBBatch{
 			batch: nil,
@@ -515,7 +450,7 @@ func TestBatchClose(t *testing.T) {
 	})
 
 	t.Run("NoErr", func(t *testing.T) {
-		pBatch, dbCloser, err := newBatch()
+		pBatch, dbCloser, err := newTestPebbleBatch()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -536,23 +471,35 @@ func TestNewPebbleDBIterator(t *testing.T) {
 
 	t.Run("EmptyStartErr", func(t *testing.T) {
 		_, err := newPebbleDBIterator(nil, emptyKey, nil, false)
-		if !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected error: %s\n got: %s", errKeyEmpty, err)
+		if !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected error: %s\n got: %s", ErrKeyEmpty, err)
 		}
 	})
 
 	t.Run("EmptyEndErr", func(t *testing.T) {
 		_, err := newPebbleDBIterator(nil, nil, emptyKey, false)
-		if !errors.Is(err, errKeyEmpty) {
-			t.Errorf("expected error: %s\n got: %s", errKeyEmpty, err)
+		if !errors.Is(err, ErrKeyEmpty) {
+			t.Errorf("expected error: %s\n got: %s", ErrKeyEmpty, err)
 		}
 	})
 
-	pDB, dbCloser, err := newTestDB()
+	pDB, dbCloser, err := newTestPebbleDB()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("creating test database: %s", err)
 	}
 	t.Cleanup(dbCloser)
+
+	var (
+		keys = [][]byte{{'a'}, {'b'}, {'c'}, {'d'}}
+		vals = [][]byte{{0x01}, {0x02}, {0x03}, {0x04}}
+	)
+	for i, key := range keys {
+		val := vals[i]
+		if err := pDB.db.Set(key, val, nil); err != nil {
+			formatStr := "setting (k,v)=(%v,%v) to test database: %s"
+			t.Fatalf(formatStr, key, val, err)
+		}
+	}
 
 	t.Run("ForwardIteratorNoErr", func(t *testing.T) {
 		var (
@@ -613,111 +560,10 @@ func TestNewPebbleDBIterator(t *testing.T) {
 	})
 }
 
-func TestIteratorIterating(t *testing.T) {
-	pDB, dbCloser, err := newTestDB()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(dbCloser)
-
-	var (
-		a, b, c, d = []byte{'a'}, []byte{'b'}, []byte{'c'}, []byte{'d'}
-
-		testCases = []struct {
-			start, end []byte
-			reverse    bool
-
-			// expected keys visited by the iterator in order.
-			wantVisit [][]byte
-		}{
-			{start: nil, end: nil, reverse: false, wantVisit: [][]byte{a, b, c, d}},
-			{start: nil, end: nil, reverse: true, wantVisit: [][]byte{d, c, b, a}},
-
-			// Because 'end is exclusive, and because 'a' is the first key in the DB,
-			// setting it as the iterator's upper bound will create an iterator over
-			// an empty key range.
-			{start: nil, end: a, reverse: false, wantVisit: [][]byte{}},
-			{start: nil, end: a, reverse: true, wantVisit: [][]byte{}},
-			{start: nil, end: b, reverse: false, wantVisit: [][]byte{a}},
-			{start: nil, end: b, reverse: true, wantVisit: [][]byte{a}},
-			{start: nil, end: c, reverse: false, wantVisit: [][]byte{a, b}},
-
-			// Because 'end' is exclusive, setting 'c' as the iterator's upper bound
-			// of a reverse iterator will create an iterator whose starting key
-			// ('c') will be skipped.
-			{start: nil, end: c, reverse: true, wantVisit: [][]byte{b, a}},
-			{start: nil, end: d, reverse: false, wantVisit: [][]byte{a, b, c}},
-			{start: nil, end: d, reverse: true, wantVisit: [][]byte{c, b, a}},
-
-			{start: a, end: nil, reverse: false, wantVisit: [][]byte{a, b, c, d}},
-
-			// 'start' is inclusive, so setting 'a' as the iterator's lower bound of
-			// a reverse iterator will include 'a', even if 'a' is the last
-			// effectively becomes the last key in the key range.
-			{start: a, end: nil, reverse: true, wantVisit: [][]byte{d, c, b, a}},
-			{start: a, end: b, reverse: false, wantVisit: [][]byte{a}},
-			{start: a, end: b, reverse: true, wantVisit: [][]byte{a}},
-			{start: a, end: c, reverse: false, wantVisit: [][]byte{a, b}},
-			{start: a, end: c, reverse: true, wantVisit: [][]byte{b, a}},
-			{start: a, end: d, reverse: false, wantVisit: [][]byte{a, b, c}},
-			{start: a, end: d, reverse: true, wantVisit: [][]byte{c, b, a}},
-
-			{start: b, end: nil, reverse: false, wantVisit: [][]byte{b, c, d}},
-			{start: b, end: nil, reverse: true, wantVisit: [][]byte{d, c, b}},
-			{start: b, end: c, reverse: false, wantVisit: [][]byte{b}},
-			{start: b, end: c, reverse: true, wantVisit: [][]byte{b}},
-			{start: b, end: d, reverse: false, wantVisit: [][]byte{b, c}},
-			{start: b, end: d, reverse: true, wantVisit: [][]byte{c, b}},
-
-			{start: c, end: nil, reverse: false, wantVisit: [][]byte{c, d}},
-			{start: c, end: nil, reverse: true, wantVisit: [][]byte{d, c}},
-			{start: c, end: d, reverse: false, wantVisit: [][]byte{c}},
-			{start: c, end: d, reverse: true, wantVisit: [][]byte{c}},
-
-			{start: d, end: nil, reverse: false, wantVisit: [][]byte{d}},
-			{start: d, end: nil, reverse: true, wantVisit: [][]byte{d}},
-		}
-
-		equalFunc = func(a, b []byte) bool {
-			return slices.Equal(a, b)
-		}
-	)
-
-	for i, tc := range testCases {
-		it, err := newPebbleDBIterator(pDB, tc.start, tc.end, tc.reverse)
-		if err != nil {
-			t.Fatalf("test %d: creating test iterator: %s", i, err)
-		}
-
-		visited := make([][]byte, 0, len(tc.wantVisit))
-		for it.Valid() {
-			currKey := make([]byte, len(it.Key()))
-			copy(currKey, it.Key())
-			visited = append(visited, currKey)
-
-			it.Next()
-		}
-
-		if err := it.Error(); err != nil {
-			t.Fatalf("test %d: unexpected error: %s", i, err)
-		}
-
-		equalOrder := slices.EqualFunc(visited, tc.wantVisit, equalFunc)
-		if !equalOrder {
-			formatStr := "test %d:\nwant visit order: %s\ngot: %s"
-			t.Fatalf(formatStr, i, tc.wantVisit, visited)
-		}
-
-		if err := it.source.Close(); err != nil {
-			t.Fatalf("test %d: closing iterator: %s", i, err)
-		}
-	}
-}
-
-// newTestEmptyDB creates an in-memory instance of pebble for testing.
+// newTestPebbleDB creates an in-memory instance of pebble for testing.
 // It returns a closer function that must be called to close the database when done
 // with it.
-func newTestEmptyDB() (*PebbleDB, func(), error) {
+func newTestPebbleDB() (*PebbleDB, func(), error) {
 	opts := &pebble.Options{FS: vfs.NewMem()}
 	memDB, err := pebble.Open("", opts)
 	if err != nil {
@@ -731,37 +577,13 @@ func newTestEmptyDB() (*PebbleDB, func(), error) {
 	return pDB, closer, nil
 }
 
-// newTestDB creates an in-memory instance of pebble for testing pre-populated with
-// a few dummy kv pairs.
-// It returns a closer function that must be called to close the database when done
-// with it.
-func newTestDB() (*PebbleDB, func(), error) {
-	pDB, dbCloser, err := newTestEmptyDB()
-	if err != nil {
-		return nil, nil, fmt.Errorf("creating test iterator: %w", err)
-	}
-
-	var (
-		keys = [][]byte{{'a'}, {'b'}, {'c'}, {'d'}}
-		vals = [][]byte{{0x01}, {0x02}, {0x03}, {0x04}}
-	)
-	for i, key := range keys {
-		val := vals[i]
-		if err := pDB.db.Set(key, val, nil); err != nil {
-			formatStr := "creating test iterator: setting (k,v)=(%v,%v): %s"
-			return nil, nil, fmt.Errorf(formatStr, key, val, err)
-		}
-	}
-
-	return pDB, dbCloser, nil
-}
-
-// newBatch creates a new batch you can use to apply operations to a database that
-// the function creates. The underlying database is an in-memory instance of pebble.
-// newBatch returns a closer function that must be called to close the batch and the
-// database when done with them.
-func newBatch() (*pebbleDBBatch, func(), error) {
-	pDB, dbCloser, err := newTestEmptyDB()
+// newTestPebbleBatch creates a new batch you can use to apply operations to a
+// database that the function creates. The underlying database is an in-memory
+// instance of pebble.
+// newTestPebbleBatch returns a closer function that must be called to close the
+// batch and the database when done with them.
+func newTestPebbleBatch() (*pebbleDBBatch, func(), error) {
+	pDB, dbCloser, err := newTestPebbleDB()
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating test batch: %w", err)
 	}
@@ -784,9 +606,9 @@ func newBatch() (*pebbleDBBatch, func(), error) {
 	return pBatch, closer, nil
 }
 
-// setHelper is a utility function supporting TestSet.
+// pebbleSetTestHelper is a utility function supporting TestSet.
 // It writes a key-value pair to the database, then reads it back.
-func setHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error {
+func pebbleSetTestHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error {
 	var (
 		key = []byte{'a'}
 		val = []byte{0x01}
@@ -807,10 +629,10 @@ func setHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error {
 	return nil
 }
 
-// deleteHelper is a utility function supporting TestDelete.
+// pebbleDeleteTestHelper is a utility function supporting TestDelete.
 // It writes a key-value pair to the database, deletes it, then checks that the key
 // is deleted.
-func deleteHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error {
+func pebbleDeleteTestHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error {
 	var (
 		key = []byte{'a'}
 		val = []byte{0x01}
@@ -832,10 +654,10 @@ func deleteHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error {
 	return nil
 }
 
-// batchWriteHelper is a utility function supporting TestBatchWrite.
+// batchWriteTestHelper is a utility function supporting TestBatchWrite.
 // It creates a batch with three sets and one delete operation, commits it, then
 // reads the data back.
-func batchWriteHelper(pBatch *pebbleDBBatch, writeOpts *pebble.WriteOptions) error {
+func batchWriteTestHelper(batch Batch, db DB, synced bool) error {
 	var (
 		keys = [][]byte{{'a'}, {'b'}, {'c'}}
 		vals = [][]byte{{0x01}, {0x02}, {0x03}}
@@ -843,33 +665,44 @@ func batchWriteHelper(pBatch *pebbleDBBatch, writeOpts *pebble.WriteOptions) err
 	for i, key := range keys {
 		val := vals[i]
 
-		// the nil parameter is for the write options, but pebble's own library sets
-		// it to _ in the function definition, thus ignoring it.
-		if err := pBatch.batch.Set(key, val, nil); err != nil {
+		if err := batch.Set(key, val); err != nil {
 			formatStr := "adding set (k,v)=(%s,%v) operation to batch: %s"
 			return fmt.Errorf(formatStr, key, val, err)
 		}
 	}
 
 	// add a Delete for good measure.
-	if err := pBatch.batch.Delete(keys[0], nil); err != nil {
+	if err := batch.Delete(keys[0]); err != nil {
 		formatStr := "adding delete (k)=(%s) operation to batch: %s"
 		return fmt.Errorf(formatStr, keys[0], err)
 	}
 
-	if err := pBatch.commitWithOpts(writeOpts); err != nil {
-		return fmt.Errorf("unexpected error: %s", err)
+	if synced {
+		if err := batch.WriteSync(); err != nil {
+			return fmt.Errorf("unexpected error: %s", err)
+		}
+	} else {
+		if err := batch.Write(); err != nil {
+			return fmt.Errorf("unexpected error: %s", err)
+		}
 	}
 
 	// check keys[0] is deleted
-	_, _, err := pBatch.db.db.Get(keys[0])
-	if !errors.Is(err, pebble.ErrNotFound) {
-		return fmt.Errorf("want error: %s\nbut got: %s", pebble.ErrNotFound, err)
+	gotVal, err := db.Get(keys[0])
+	if err != nil {
+		return fmt.Errorf("reading form test DB: %s", err)
+	}
+	// our implementation of PebbleDB does not return an error if a key
+	// is not found. Instead, it returns a nil error and a nil value.
+	// Therefore, to check if the deletion was successful we must check
+	// that the value has 0 length (len(nil_slice)==0).
+	if len(gotVal) > 0 {
+		return fmt.Errorf("expected empty slice, got: %v", gotVal)
 	}
 
 	// we deleted keys[0], so we don't look for it
 	for i, key := range keys[1:] {
-		storedVal, closer, err := pBatch.db.db.Get(key)
+		storedVal, err := db.Get(key)
 		if err != nil {
 			return fmt.Errorf("querying key %s: %s", key, err)
 		}
@@ -878,8 +711,6 @@ func batchWriteHelper(pBatch *pebbleDBBatch, writeOpts *pebble.WriteOptions) err
 		if !bytes.Equal(val, storedVal) {
 			return fmt.Errorf("key %s: want val %v, but got %v", key, val, storedVal)
 		}
-
-		closer.Close()
 	}
 
 	return nil

@@ -60,7 +60,7 @@ func SaveValidatorsInfo(db storage.DB, height, lastHeightChanged int64, valSet *
 	return nil
 }
 
-// FindMinBlockRetainHeight is an alias for the private
+// FindMinRetainHeight is an alias for the private
 // findMinBlockRetainHeight method in pruner.go, exported exclusively and
 // explicitly for testing.
 func (p *Pruner) FindMinRetainHeight() int64 {

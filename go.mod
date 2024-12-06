@@ -14,7 +14,7 @@ require (
 	github.com/creachadair/atomicfile v0.3.6
 	github.com/creachadair/tomledit v0.0.26
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
-	github.com/dgraph-io/badger/v4 v4.4.0
+	github.com/dgraph-io/badger/v4 v4.5.0
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/goccmack/goutil v1.2.3
 	github.com/golang/protobuf v1.5.4 // indirect
@@ -54,7 +54,7 @@ require (
 require (
 	github.com/cockroachdb/pebble v1.1.2
 	github.com/go-git/go-git/v5 v5.12.0
-	google.golang.org/protobuf v1.35.1
+	google.golang.org/protobuf v1.35.2
 )
 
 require (

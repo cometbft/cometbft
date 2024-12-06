@@ -14,6 +14,7 @@ type PebbleDB struct {
 	db *pebble.DB
 }
 
+// compile-time check: does *PebbleDB satisfy the DB interface?
 var _ DB = (*PebbleDB)(nil)
 
 // newPebbleDB returns a new PebbleDB instance using the default options.
@@ -46,10 +47,11 @@ func (pDB *PebbleDB) DB() *pebble.DB {
 // Get fetches the value of the given key, or nil if it does not exist.
 // It is safe to modify the contents of key and of the returned slice after Get
 // returns.
+//
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) Get(key []byte) ([]byte, error) {
 	if len(key) == 0 {
-		return nil, errKeyEmpty
+		return nil, ErrKeyEmpty
 	}
 
 	value, closer, err := pDB.db.Get(key)
@@ -57,7 +59,7 @@ func (pDB *PebbleDB) Get(key []byte) ([]byte, error) {
 		if err == pebble.ErrNotFound {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("fetching value for key %s: %w", key, err)
+		return nil, fmt.Errorf("fetching value from the DB for key %X: %w", key, err)
 	}
 	defer closer.Close()
 
@@ -69,15 +71,16 @@ func (pDB *PebbleDB) Get(key []byte) ([]byte, error) {
 
 // Has returns true if the key exists in the database.
 // It is safe to modify the contents of key after Has returns.
+//
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) Has(key []byte) (bool, error) {
 	if len(key) == 0 {
-		return false, errKeyEmpty
+		return false, ErrKeyEmpty
 	}
 
 	bytesPeb, err := pDB.Get(key)
 	if err != nil {
-		return false, fmt.Errorf("checking if key %s exists: %w", key, err)
+		return false, fmt.Errorf("checking if key %X exists in the DB: %w", key, err)
 	}
 
 	return bytesPeb != nil, nil
@@ -123,15 +126,15 @@ func (pDB *PebbleDB) setWithOpts(
 	writeOpts *pebble.WriteOptions,
 ) error {
 	if len(key) == 0 {
-		return errKeyEmpty
+		return ErrKeyEmpty
 	}
 	if value == nil {
-		return errValueNil
+		return ErrValueNil
 	}
 
 	err := pDB.db.Set(key, value, writeOpts)
 	if err != nil {
-		return fmt.Errorf("setting value %s\nfor key %s: %w", value, key, err)
+		return fmt.Errorf("setting (k,v)=( %X , %X ) to DB: %w", value, key, err)
 	}
 
 	return nil
@@ -183,11 +186,11 @@ func (pDB *PebbleDB) deleteWithOpts(
 	writeOpts *pebble.WriteOptions,
 ) error {
 	if len(key) == 0 {
-		return errKeyEmpty
+		return ErrKeyEmpty
 	}
 
 	if err := pDB.db.Delete(key, writeOpts); err != nil {
-		return fmt.Errorf("deleting key %s: %w", key, err)
+		return fmt.Errorf("deleting key %X: %w", key, err)
 	}
 
 	return nil
@@ -198,14 +201,17 @@ func (pDB *PebbleDB) deleteWithOpts(
 // It implements the [DB] interface for type PebbleDB.
 func (pDB *PebbleDB) Compact(start, end []byte) error {
 	// Currently nil,nil is an invalid range in Pebble.
-	// This was taken from https://github.com/cockroachdb/pebble/issues/1474
 	// If start==end pebbleDB will throw an error.
+	// See comment below as well.
 	if start != nil && end != nil {
 		if err := pDB.db.Compact(start, end, true /* parallelize */); err != nil {
-			return fmt.Errorf("compacting range [%s, %s]: %w", start, end, err)
+			return fmt.Errorf("compacting range [%X, %X]: %w", start, end, err)
 		}
 	}
 
+	// Lines 214-229 address the issue described above and was adapted from
+	// this issue from pebble's repo:
+	// https://github.com/cockroachdb/pebble/issues/1474#issuecomment-1022313365
 	iter, err := pDB.db.NewIter(nil)
 	if err != nil {
 		return fmt.Errorf("creating compaction iterator: %w", err)
@@ -224,7 +230,7 @@ func (pDB *PebbleDB) Compact(start, end []byte) error {
 	}
 
 	if err := pDB.db.Compact(start, end, true /* parallelize */); err != nil {
-		compactErr := fmt.Errorf("compacting range [%s, %s]: %w", start, end, err)
+		compactErr := fmt.Errorf("compacting range [%X, %X]: %w", start, end, err)
 
 		if err := iter.Close(); err != nil {
 			itCloseErr := fmt.Errorf("closing compaction iterator: %w", err)
@@ -362,19 +368,19 @@ func newPebbleDBBatch(pDB *PebbleDB) *pebbleDBBatch {
 // It implements the [Batch] interface for type pebbleDBBatch.
 func (b *pebbleDBBatch) Set(key, value []byte) error {
 	if len(key) == 0 {
-		return errKeyEmpty
+		return ErrKeyEmpty
 	}
 	if value == nil {
-		return errValueNil
+		return ErrValueNil
 	}
 	if b.batch == nil {
-		return errBatchClosed
+		return ErrBatchClosed
 	}
 
 	// the nil parameter is for the write options, but pebble's own library sets it
 	// to _ in the function definition, thus ignoring it.
 	if err := b.batch.Set(key, value, nil); err != nil {
-		formatStr := "adding set update (k,v)=(%s,%s) to batch: %w"
+		formatStr := "adding set update (k,v)=(%X,%X) to batch: %w"
 		return fmt.Errorf(formatStr, key, value, err)
 	}
 
@@ -387,16 +393,16 @@ func (b *pebbleDBBatch) Set(key, value []byte) error {
 // It implements the [Batch] interface for type pebbleDBBatch.
 func (b *pebbleDBBatch) Delete(key []byte) error {
 	if len(key) == 0 {
-		return errKeyEmpty
+		return ErrKeyEmpty
 	}
 	if b.batch == nil {
-		return errBatchClosed
+		return ErrBatchClosed
 	}
 
 	// the nil parameter is for the write options. pebble's own library sets it
 	// to _ in the function definition, thus ignoring it.
 	if err := b.batch.Delete(key, nil); err != nil {
-		formatStr := "adding delete update (k)=(%s) to batch: %w"
+		formatStr := "adding delete update (k)=(%X) to batch: %w"
 		return fmt.Errorf(formatStr, key, err)
 	}
 
@@ -432,7 +438,7 @@ func (b *pebbleDBBatch) WriteSync() error {
 // commitWithOpts applies the batch to the database.
 func (b *pebbleDBBatch) commitWithOpts(writeOpts *pebble.WriteOptions) error {
 	if b.batch == nil {
-		return errBatchClosed
+		return ErrBatchClosed
 	}
 
 	if err := b.batch.Commit(writeOpts); err != nil {
@@ -493,11 +499,11 @@ func newPebbleDBIterator(
 	isReverse bool,
 ) (*pebbleDBIterator, error) {
 	if start != nil && len(start) == 0 {
-		return nil, fmt.Errorf("iterator's lower bound: %w", errKeyEmpty)
+		return nil, fmt.Errorf("iterator's lower bound: %w", ErrKeyEmpty)
 	}
 
 	if end != nil && len(end) == 0 {
-		return nil, fmt.Errorf("iterator's upper bound: %w", errKeyEmpty)
+		return nil, fmt.Errorf("iterator's upper bound: %w", ErrKeyEmpty)
 	}
 
 	o := pebble.IterOptions{

@@ -9,14 +9,14 @@ import (
 )
 
 var (
-	// errBatchClosed is returned when a closed or written batch is used.
-	errBatchClosed = errors.New("batch has been written or closed")
+	// ErrBatchClosed is returned when a closed or written batch is used.
+	ErrBatchClosed = errors.New("batch has been committed to database or closed")
 
-	// errKeyEmpty is returned when attempting to use an empty or nil key.
-	errKeyEmpty = errors.New("key cannot be empty")
+	// ErrKeyEmpty is returned when attempting to use an empty or nil key.
+	ErrKeyEmpty = errors.New("database key cannot be empty")
 
-	// errValueNil is returned when attempting to set a nil value.
-	errValueNil = errors.New("value cannot be nil")
+	// ErrValueNil is returned when attempting to set a nil value.
+	ErrValueNil = errors.New("value for a database key cannot be nil")
 )
 
 // DB is the main interface for all database backends. DBs are concurrency-safe.
@@ -213,11 +213,11 @@ func NewMemDB() (DB, error) {
 	return pDB, nil
 }
 
-// PrefixIterator returns an iterator over the keys that begin with the given prefix.
-// It is safe to modify the contents of prefix after PrefixIterator returns.
-// If the length of the prefix is 0, PrefixIterator will return an iterator that
+// IteratePrefix returns an iterator over the keys that begin with the given prefix.
+// It is safe to modify the contents of prefix after IteratePrefix returns.
+// If the length of the prefix is 0, IteratePrefix will return an iterator that
 // will iterate over all keys in the database.
-func PrefixIterator(db DB, prefix []byte) (Iterator, error) {
+func IteratePrefix(db DB, prefix []byte) (Iterator, error) {
 	var start, end []byte
 
 	if len(prefix) > 0 {
@@ -229,31 +229,8 @@ func PrefixIterator(db DB, prefix []byte) (Iterator, error) {
 
 	it, err := db.Iterator(start, end)
 	if err != nil {
-		return nil, fmt.Errorf("creating iterator with prefix %v: %w", prefix, err)
+		return nil, fmt.Errorf("creating iterator with prefix %X: %w", prefix, err)
 	}
 
 	return it, nil
-}
-
-// incrementBigEndian treats the input slice as a big-endian unsigned integer.
-// It creates a new slice of the same length, increments the value by one,
-// and returns the result.
-// If the input slice represents the maximum value for its length (all bytes are
-// 0xFF), incrementBigEndian returns nil to indicate overflow.
-// The input slice s remains unmodified. The function is a no-op if the input
-// slice's length is 0.
-func incrementBigEndian(s []byte) []byte {
-	result := make([]byte, len(s))
-	copy(result, s)
-
-	for i := len(result) - 1; i >= 0; i-- {
-		if result[i] < 0xFF {
-			result[i]++
-			return result
-		}
-		result[i] = 0x00 // Carry over to the next byte
-	}
-
-	// Overflow if the loop finishes without returning
-	return nil
 }

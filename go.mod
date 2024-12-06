@@ -51,7 +51,7 @@ require (
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/golang/protobuf v1.5.4
 	github.com/ory/dockertest v3.3.5+incompatible
-	golang.org/x/sync v0.8.0
+	golang.org/x/sync v0.9.0
 	gonum.org/v1/gonum v0.15.0
 	google.golang.org/protobuf v1.35.1
 )

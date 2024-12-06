@@ -112,17 +112,21 @@ func TestLoadBlockStore(t *testing.T) {
 	_, _, err := loadStateAndBlockStore(cfg)
 	require.Error(t, err)
 
-	_, err = storage.NewDB("blockstore", cfg.DBDir())
+	blkStore, err := storage.NewDB("blockstore", cfg.DBDir())
 	require.NoError(t, err)
+	require.NoError(t, blkStore.Close())
 
 	// Get StateStore
-	_, err = storage.NewDB("state", cfg.DBDir())
+	sttStore, err := storage.NewDB("state", cfg.DBDir())
 	require.NoError(t, err)
+	require.NoError(t, sttStore.Close())
 
 	bs, ss, err := loadStateAndBlockStore(cfg)
 	require.NoError(t, err)
 	require.NotNil(t, bs)
 	require.NotNil(t, ss)
+	require.NoError(t, bs.Close())
+	require.NoError(t, ss.Close())
 }
 
 func TestReIndexEvent(t *testing.T) {

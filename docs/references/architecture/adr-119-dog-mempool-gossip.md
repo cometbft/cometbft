@@ -57,8 +57,8 @@ Efforts to port the CAT mempool to CometBFT were documented in [\#2027]. Experim
 ### Limiting the number of peers a transaction is forwarded to
 
 CometBFT allows operators to configure `p2p.experimental_max_gossip_connections_to_non_persistent_peers` and `p2p.experimental_max_gossip_connections_to_persistent_peers`  as a maximum number of peers to send  transactions to ([#1558](https://github.com/cometbft/cometbft/pull/1558) and [#1584](https://github.com/cometbft/cometbft/pull/1584)). 
-This reduces bandwitdth compared to when they are disabled but there is no rule to determine which peers transactions
-are not forwarded to. DOG can be looked at as an enahanced, more informed version of this protocol.
+This reduces bandwidth compared to when they are disabled, but there is no rule to determine which peers transactions
+are not forwarded to. DOG can be considered an enhanced, more informed version of this protocol.
 
 A node can use either this or DOG, but not both at the same time.
 
@@ -115,15 +115,15 @@ The redundancy is set to `1` and impacts the gossiping of transactions as follow
 ```
 
 The number of unique and duplicate transactions is updated as transactions come in and,
-periodically (every `1s`), DOG recomputes the redundnacy of the system. 
+periodically (every `1s`), DOG recomputes the system's redundancy. 
 
 A redundancy of `1` implies that we allow one duplicate transaction for every unique transaction.
 
 #### Redundancy adjustment triggering
 
-As explained, redundancy is adjusted periodicially. It is also explicitly triggered when a peer is disconnected. 
+As explained, redundancy is adjusted periodically. It is also explicitly triggered when a peer is disconnected. 
 While not required to adjusted immediately on a disconnect, we trigger the re-evaluation of existing redundancy 
-as an optimization to speed up the time between changes in the network and the state of the syetem. 
+as an optimization to speed up the time between changes in the network and the state of the system. 
 
 ### Impacted areas of code
 

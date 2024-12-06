@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/cometbft/cometbft-db"
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmtcfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/internal/test"
 	blockmocks "github.com/cometbft/cometbft/state/indexer/mocks"
 	"github.com/cometbft/cometbft/state/mocks"
@@ -112,17 +112,21 @@ func TestLoadBlockStore(t *testing.T) {
 	_, _, err := loadStateAndBlockStore(cfg)
 	require.Error(t, err)
 
-	_, err = dbm.NewDB("blockstore", dbm.PebbleDBBackend, cfg.DBDir())
+	blkStore, err := storage.NewDB("blockstore", cfg.DBDir())
 	require.NoError(t, err)
+	require.NoError(t, blkStore.Close())
 
 	// Get StateStore
-	_, err = dbm.NewDB("state", dbm.PebbleDBBackend, cfg.DBDir())
+	sttStore, err := storage.NewDB("state", cfg.DBDir())
 	require.NoError(t, err)
+	require.NoError(t, sttStore.Close())
 
 	bs, ss, err := loadStateAndBlockStore(cfg)
 	require.NoError(t, err)
 	require.NotNil(t, bs)
 	require.NotNil(t, ss)
+	require.NoError(t, bs.Close())
+	require.NoError(t, ss.Close())
 }
 
 func TestReIndexEvent(t *testing.T) {

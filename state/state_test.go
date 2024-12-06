@@ -12,28 +12,27 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/internal/test"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 )
 
 // setupTestCase does setup common to all test cases.
-func setupTestCase(t *testing.T) (func(t *testing.T), dbm.DB, sm.State) {
+func setupTestCase(t *testing.T) (func(t *testing.T), storage.DB, sm.State) {
 	t.Helper()
 	tearDown, stateDB, state, _ := setupTestCaseWithStore(t)
 	return tearDown, stateDB, state
 }
 
 // setupTestCase does setup common to all test cases.
-func setupTestCaseWithStore(t *testing.T) (func(t *testing.T), dbm.DB, sm.State, sm.Store) {
+func setupTestCaseWithStore(t *testing.T) (func(t *testing.T), storage.DB, sm.State, sm.Store) {
 	t.Helper()
 	config := test.ResetTestRoot("state_")
-	dbType := dbm.BackendType(config.DBBackend)
-	stateDB, err := dbm.NewDB("state", dbType, config.DBDir())
+	stateDB, err := storage.NewDB("state", config.DBDir())
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})

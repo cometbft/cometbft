@@ -12,9 +12,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
 
-	db "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 	"github.com/cometbft/cometbft/state/txindex"
@@ -29,7 +29,9 @@ var DefaultPagination = txindex.Pagination{
 }
 
 func TestTxIndex(t *testing.T) {
-	indexer := NewTxIndex(db.NewMemDB())
+	indexerDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+	indexer := NewTxIndex(indexerDB)
 
 	tx := types.Tx("HELLO WORLD")
 	txResult := &abci.TxResult{
@@ -47,7 +49,7 @@ func TestTxIndex(t *testing.T) {
 	if err := batch.Add(txResult); err != nil {
 		t.Error(err)
 	}
-	err := indexer.AddBatch(batch)
+	err = indexer.AddBatch(batch)
 	require.NoError(t, err)
 
 	loadedTxResult, err := indexer.Get(hash)
@@ -75,7 +77,9 @@ func TestTxIndex(t *testing.T) {
 }
 
 func TestTxIndex_Prune(t *testing.T) {
-	indexer := NewTxIndex(db.NewMemDB())
+	indexerDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+	indexer := NewTxIndex(indexerDB)
 
 	metaKeys := [][]byte{
 		LastTxIndexerRetainHeightKey,
@@ -106,7 +110,7 @@ func TestTxIndex_Prune(t *testing.T) {
 	if err := batch.Add(txResult); err != nil {
 		t.Error(err)
 	}
-	err := indexer.AddBatch(batch)
+	err = indexer.AddBatch(batch)
 	require.NoError(t, err)
 
 	keys1 := GetKeys(indexer)
@@ -150,7 +154,9 @@ func TestTxIndex_Prune(t *testing.T) {
 }
 
 func TestTxSearch(t *testing.T) {
-	indexer := NewTxIndex(db.NewMemDB())
+	indexerDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+	indexer := NewTxIndex(indexerDB)
 
 	txResult := txResultWithEvents([]abci.Event{
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "1", Index: true}}},
@@ -159,7 +165,7 @@ func TestTxSearch(t *testing.T) {
 	})
 	hash := types.Tx(txResult.Tx).Hash()
 
-	err := indexer.Index(txResult)
+	err = indexer.Index(txResult)
 	require.NoError(t, err)
 
 	testCases := []struct {
@@ -238,7 +244,9 @@ func TestTxSearch(t *testing.T) {
 }
 
 func TestTxSearchEventMatch(t *testing.T) {
-	indexer := NewTxIndex(db.NewMemDB())
+	indexerDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+	indexer := NewTxIndex(indexerDB)
 
 	txResult := txResultWithEvents([]abci.Event{
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "1", Index: true}, {Key: "owner", Value: "Ana", Index: true}}},
@@ -247,7 +255,7 @@ func TestTxSearchEventMatch(t *testing.T) {
 		{Type: "", Attributes: []abci.EventAttribute{{Key: "not_allowed", Value: "Vlad", Index: true}}},
 	})
 
-	err := indexer.Index(txResult)
+	err = indexer.Index(txResult)
 	require.NoError(t, err)
 
 	testCases := map[string]struct {
@@ -330,13 +338,15 @@ func TestTxSearchEventMatch(t *testing.T) {
 }
 
 func TestTxSearchEventMatchByHeight(t *testing.T) {
-	indexer := NewTxIndex(db.NewMemDB())
+	indexerDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+	indexer := NewTxIndex(indexerDB)
 
 	txResult := txResultWithEvents([]abci.Event{
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "1", Index: true}, {Key: "owner", Value: "Ana", Index: true}}},
 	})
 
-	err := indexer.Index(txResult)
+	err = indexer.Index(txResult)
 	require.NoError(t, err)
 
 	txResult10 := txResultWithEvents([]abci.Event{
@@ -410,14 +420,16 @@ func TestTxSearchEventMatchByHeight(t *testing.T) {
 }
 
 func TestTxSearchWithCancelation(t *testing.T) {
-	indexer := NewTxIndex(db.NewMemDB())
+	indexerDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+	indexer := NewTxIndex(indexerDB)
 
 	txResult := txResultWithEvents([]abci.Event{
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "1", Index: true}}},
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: "owner", Value: "Ivan", Index: true}}},
 		{Type: "", Attributes: []abci.EventAttribute{{Key: "not_allowed", Value: "Vlad", Index: true}}},
 	})
-	err := indexer.Index(txResult)
+	err = indexer.Index(txResult)
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -428,7 +440,9 @@ func TestTxSearchWithCancelation(t *testing.T) {
 }
 
 func TestTxSearchDeprecatedIndexing(t *testing.T) {
-	indexer := NewTxIndex(db.NewMemDB())
+	indexerDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+	indexer := NewTxIndex(indexerDB)
 
 	// index tx using events indexing (composite key)
 	txResult1 := txResultWithEvents([]abci.Event{
@@ -436,7 +450,7 @@ func TestTxSearchDeprecatedIndexing(t *testing.T) {
 	})
 	hash1 := types.Tx(txResult1.Tx).Hash()
 
-	err := indexer.Index(txResult1)
+	err = indexer.Index(txResult1)
 	require.NoError(t, err)
 
 	// index tx also using deprecated indexing (event as key)
@@ -506,7 +520,9 @@ func TestTxSearchDeprecatedIndexing(t *testing.T) {
 }
 
 func TestTxSearchOneTxWithMultipleSameTagsButDifferentValues(t *testing.T) {
-	indexer := NewTxIndex(db.NewMemDB())
+	indexerDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+	indexer := NewTxIndex(indexerDB)
 
 	txResult := txResultWithEvents([]abci.Event{
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "1", Index: true}}},
@@ -514,7 +530,7 @@ func TestTxSearchOneTxWithMultipleSameTagsButDifferentValues(t *testing.T) {
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "3", Index: false}}},
 	})
 
-	err := indexer.Index(txResult)
+	err = indexer.Index(txResult)
 	require.NoError(t, err)
 
 	testCases := []struct {
@@ -663,10 +679,12 @@ func TestTxIndexDuplicatePreviouslySuccessful(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			indexer := NewTxIndex(db.NewMemDB())
+			indexerDB, err := storage.NewMemDB()
+			require.NoError(t, err)
+			indexer := NewTxIndex(indexerDB)
 
 			// index the first tx
-			err := indexer.Index(tc.tx1)
+			err = indexer.Index(tc.tx1)
 			require.NoError(t, err)
 
 			// index the same tx with different results
@@ -686,7 +704,9 @@ func TestTxIndexDuplicatePreviouslySuccessful(t *testing.T) {
 }
 
 func TestTxSearchMultipleTxs(t *testing.T) {
-	indexer := NewTxIndex(db.NewMemDB())
+	indexerDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+	indexer := NewTxIndex(indexerDB)
 
 	// indexed first, but bigger height (to test the order of transactions)
 	txResult := txResultWithEvents([]abci.Event{
@@ -696,7 +716,7 @@ func TestTxSearchMultipleTxs(t *testing.T) {
 	txResult.Tx = types.Tx("Bob's account")
 	txResult.Height = 2
 	txResult.Index = 1
-	err := indexer.Index(txResult)
+	err = indexer.Index(txResult)
 	require.NoError(t, err)
 
 	// indexed second, but smaller height (to test the order of transactions)
@@ -760,7 +780,7 @@ func benchmarkTxIndex(b *testing.B, txsCount int64) {
 	require.NoError(b, err)
 	defer os.RemoveAll(dir)
 
-	store, err := db.NewDB("tx_index", "goleveldb", dir)
+	store, err := storage.NewDB("tx_index", dir)
 	require.NoError(b, err)
 	indexer := NewTxIndex(store)
 
@@ -796,7 +816,9 @@ func benchmarkTxIndex(b *testing.B, txsCount int64) {
 }
 
 func TestBigInt(t *testing.T) {
-	indexer := NewTxIndex(db.NewMemDB())
+	indexerDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+	indexer := NewTxIndex(indexerDB)
 
 	bigInt := "10000000000000000000"
 	bigIntPlus1 := "10000000000000000001"
@@ -815,7 +837,7 @@ func TestBigInt(t *testing.T) {
 	})
 	hash := types.Tx(txResult.Tx).Hash()
 
-	err := indexer.Index(txResult)
+	err = indexer.Index(txResult)
 
 	require.NoError(t, err)
 

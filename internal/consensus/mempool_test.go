@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/internal/storage"
 	mempl "github.com/cometbft/cometbft/mempool"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
@@ -120,12 +120,13 @@ func deliverTxsRange(t *testing.T, cs *State, end int) {
 
 func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 	state, privVals := randGenesisState(1, nil)
-	blockDB := dbm.NewMemDB()
+	blockDB, err := storage.NewMemDB()
+	require.NoError(t, err)
 	stateStore := sm.NewStore(blockDB, sm.StoreOptions{DiscardABCIResponses: false})
 	app := kvstore.NewInMemoryApplication()
 	_, lanesInfo := fetchAppInfo(app)
 	cs := newStateWithConfigAndBlockStore(config, state, privVals[0], app, blockDB, lanesInfo)
-	err := stateStore.Save(state)
+	err = stateStore.Save(state)
 	require.NoError(t, err)
 	newBlockEventsCh := subscribe(cs.eventBus, types.EventQueryNewBlockEvents)
 
@@ -148,11 +149,12 @@ func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 func TestMempoolRmBadTx(t *testing.T) {
 	state, privVals := randGenesisState(1, nil)
 	app := kvstore.NewInMemoryApplication()
-	blockDB := dbm.NewMemDB()
+	blockDB, err := storage.NewMemDB()
+	require.NoError(t, err)
 	stateStore := sm.NewStore(blockDB, sm.StoreOptions{DiscardABCIResponses: false})
 	_, lanesInfo := fetchAppInfo(app)
 	cs := newStateWithConfigAndBlockStore(config, state, privVals[0], app, blockDB, lanesInfo)
-	err := stateStore.Save(state)
+	err = stateStore.Save(state)
 	require.NoError(t, err)
 
 	// increment the counter by 1

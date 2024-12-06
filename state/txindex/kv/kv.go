@@ -14,9 +14,9 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	idxutil "github.com/cometbft/cometbft/internal/indexer"
+	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
@@ -40,7 +40,7 @@ var (
 
 // TxIndex is the simplest possible indexer, backed by key-value storage (levelDB).
 type TxIndex struct {
-	store dbm.DB
+	store storage.DB
 	// Number the events in the event list
 	eventSeq int64
 
@@ -86,7 +86,7 @@ func (txi *TxIndex) Prune(retainHeight int64) (numPruned int64, newRetainHeight 
 	}
 
 	batch := txi.store.NewBatch()
-	closeBatch := func(batch dbm.Batch) {
+	closeBatch := func(batch storage.Batch) {
 		err := batch.Close()
 		if err != nil {
 			txi.log.Error(fmt.Sprintf("Error when closing tx indexer pruning batch: %v", err))
@@ -94,7 +94,7 @@ func (txi *TxIndex) Prune(retainHeight int64) (numPruned int64, newRetainHeight 
 	}
 	defer closeBatch(batch)
 	pruned := uint64(0)
-	flush := func(batch dbm.Batch) error {
+	flush := func(batch storage.Batch) error {
 		err := batch.WriteSync()
 		if err != nil {
 			return fmt.Errorf("failed to flush tx indexer pruning batch %w", err)
@@ -180,7 +180,7 @@ func (txi *TxIndex) GetRetainHeight() (int64, error) {
 	return height, nil
 }
 
-func (*TxIndex) setIndexerRetainHeight(height int64, batch dbm.Batch) error {
+func (*TxIndex) setIndexerRetainHeight(height int64, batch storage.Batch) error {
 	return batch.Set(LastTxIndexerRetainHeightKey, int64ToBytes(height))
 }
 
@@ -197,7 +197,7 @@ func (txi *TxIndex) getIndexerRetainHeight() (int64, error) {
 }
 
 // NewTxIndex creates new KV indexer.
-func NewTxIndex(store dbm.DB, options ...IndexerOption) *TxIndex {
+func NewTxIndex(store storage.DB, options ...IndexerOption) *TxIndex {
 	txIndex := &TxIndex{
 		store: store,
 	}
@@ -274,7 +274,7 @@ func (txi *TxIndex) AddBatch(b *txindex.Batch) error {
 	return storeBatch.WriteSync()
 }
 
-func (txi *TxIndex) deleteResult(result *abci.TxResult, batch dbm.Batch) error {
+func (txi *TxIndex) deleteResult(result *abci.TxResult, batch storage.Batch) error {
 	hash := types.Tx(result.Tx).Hash()
 	err := txi.deleteEvents(result, batch)
 	if err != nil {
@@ -344,7 +344,7 @@ func (txi *TxIndex) Index(result *abci.TxResult) error {
 	return b.WriteSync()
 }
 
-func (txi *TxIndex) deleteEvents(result *abci.TxResult, batch dbm.Batch) error {
+func (txi *TxIndex) deleteEvents(result *abci.TxResult, batch storage.Batch) error {
 	for _, event := range result.Result.Events {
 		// only delete events with a non-empty type
 		if len(event.Type) == 0 {
@@ -376,7 +376,7 @@ func (txi *TxIndex) deleteEvents(result *abci.TxResult, batch dbm.Batch) error {
 	return nil
 }
 
-func (txi *TxIndex) indexEvents(result *abci.TxResult, hash []byte, store dbm.Batch) error {
+func (txi *TxIndex) indexEvents(result *abci.TxResult, hash []byte, store storage.Batch) error {
 	for _, event := range result.Result.Events {
 		txi.eventSeq++
 		// only index events with a non-empty type
@@ -632,7 +632,7 @@ type TxInfo struct {
 }
 
 func (*TxIndex) setTmpHashes(tmpHeights map[string]TxInfo, key, value []byte, height int64) {
-	// value comes from cometbft-db Iterator interface Value() API.
+	// value comes from storage.Iterator interface Value() API.
 	// Therefore, we must make a copy before storing references to it.
 	valueCp := make([]byte, len(value))
 	copy(valueCp, value)
@@ -673,7 +673,7 @@ func (txi *TxIndex) match(
 
 	switch {
 	case c.Op == syntax.TEq:
-		it, err := dbm.IteratePrefix(txi.store, startKeyBz)
+		it, err := storage.IteratePrefix(txi.store, startKeyBz)
 		if err != nil {
 			panic(err)
 		}
@@ -712,7 +712,7 @@ func (txi *TxIndex) match(
 	case c.Op == syntax.TExists:
 		// XXX: can't use startKeyBz here because c.Operand is nil
 		// (e.g. "account.owner/<nil>/" won't match w/ a single row)
-		it, err := dbm.IteratePrefix(txi.store, startKey(c.Tag))
+		it, err := storage.IteratePrefix(txi.store, startKey(c.Tag))
 		if err != nil {
 			panic(err)
 		}
@@ -751,7 +751,7 @@ func (txi *TxIndex) match(
 		// XXX: startKey does not apply here.
 		// For example, if startKey = "account.owner/an/" and search query = "account.owner CONTAINS an"
 		// we can't iterate with prefix "account.owner/an/" because we might miss keys like "account.owner/Ulan/"
-		it, err := dbm.IteratePrefix(txi.store, startKey(c.Tag))
+		it, err := storage.IteratePrefix(txi.store, startKey(c.Tag))
 		if err != nil {
 			panic(err)
 		}
@@ -855,7 +855,7 @@ func (txi *TxIndex) matchRange(
 
 	tmpHashes := make(map[string]TxInfo)
 
-	it, err := dbm.IteratePrefix(txi.store, startKey)
+	it, err := storage.IteratePrefix(txi.store, startKey)
 	if err != nil {
 		panic(err)
 	}

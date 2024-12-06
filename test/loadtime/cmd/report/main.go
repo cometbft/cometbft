@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	dbm "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/test/loadtime/report"
 )
@@ -41,8 +41,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	dbType := dbm.BackendType(*db)
-	db, err := dbm.NewDB("blockstore", dbType, d)
+	db, err := storage.NewDB("blockstore", d)
 	if err != nil {
 		panic(err)
 	}

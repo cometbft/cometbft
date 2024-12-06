@@ -2,14 +2,19 @@ package config
 
 import (
 	"context"
+	"fmt"
 
-	dbm "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
 )
 
 // ServiceProvider takes a config and a logger and returns a ready to go Node.
-type ServiceProvider func(context.Context, *Config, log.Logger) (service.Service, error)
+type ServiceProvider func(
+	context.Context,
+	*Config,
+	log.Logger,
+) (service.Service, error)
 
 // DBContext specifies config information for loading a new DB.
 type DBContext struct {
@@ -18,12 +23,19 @@ type DBContext struct {
 }
 
 // DBProvider takes a DBContext and returns an instantiated DB.
-type DBProvider func(*DBContext) (dbm.DB, error)
+type DBProvider func(*DBContext) (storage.DB, error)
 
 // DefaultDBProvider returns a database using the DBBackend and DBDir
 // specified in the Config.
-func DefaultDBProvider(ctx *DBContext) (dbm.DB, error) {
-	dbType := dbm.BackendType(ctx.Config.DBBackend)
+func DefaultDBProvider(ctx *DBContext) (storage.DB, error) {
+	var (
+		dbName = ctx.ID
+		dbDir  = ctx.Config.DBDir()
+	)
+	db, err := storage.NewDB(dbName, dbDir)
+	if err != nil {
+		return nil, fmt.Errorf("database provider: %w", err)
+	}
 
-	return dbm.NewDB(ctx.ID, dbType, ctx.Config.DBDir())
+	return db, nil
 }

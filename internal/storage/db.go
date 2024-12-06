@@ -3,6 +3,9 @@ package storage
 import (
 	"errors"
 	"fmt"
+
+	"github.com/cockroachdb/pebble"
+	"github.com/cockroachdb/pebble/vfs"
 )
 
 var (
@@ -187,6 +190,27 @@ type Iterator interface {
 
 	// Close closes the iterator, releasing any allocated resources.
 	Close() error
+}
+
+// NewDB returns a new database with the given name, located at the given directory.
+func NewDB(name, dir string) (DB, error) {
+	pDB, err := newPebbleDB(name, dir)
+	if err != nil {
+		return nil, fmt.Errorf("creating new database: %w", err)
+	}
+
+	return pDB, nil
+}
+
+// NewMemDB return a new database whose (k,v) pairs will be stored in memory.
+// This is useful for testing. It should not be used in production.
+func NewMemDB() (DB, error) {
+	opts := &pebble.Options{FS: vfs.NewMem()}
+	pDB, err := newPebbleDBWithOpts("memdb", "", opts)
+	if err != nil {
+		return nil, fmt.Errorf("creating new in-memory database: %w", err)
+	}
+	return pDB, nil
 }
 
 // IteratePrefix returns an iterator over the keys that begin with the given prefix.

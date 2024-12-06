@@ -121,8 +121,14 @@ func loadEventSinks(cfg *cmtcfg.Config, chainID string) (indexer.BlockIndexer, t
 			return nil, nil, err
 		}
 
+		prefixDB, err := storage.NewPrefixDB(store, []byte("block_events"))
+		if err != nil {
+			return nil, nil, fmt.Errorf("loading event sink: %w", err)
+		}
+
+		blockIndexer := blockidxkv.New(prefixDB)
 		txIndexer := kv.NewTxIndex(store)
-		blockIndexer := blockidxkv.New(storage.NewPrefixDB(store, []byte("block_events")))
+
 		return blockIndexer, txIndexer, nil
 	default:
 		return nil, nil, fmt.Errorf("unsupported event sink type: %s", cfg.TxIndex.Indexer)

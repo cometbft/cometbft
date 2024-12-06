@@ -27,8 +27,12 @@ func IndexerFromConfig(cfg *config.Config, dbProvider config.DBProvider, chainID
 			return nil, nil, false, err
 		}
 
+		prefixDB, err := storage.NewPrefixDB(store, []byte("block_events"))
+		if err != nil {
+			return nil, nil, false, fmt.Errorf("creating indexer: %w", err)
+		}
 		return kv.NewTxIndex(store),
-			blockidxkv.New(storage.NewPrefixDB(store, []byte("block_events")),
+			blockidxkv.New(prefixDB,
 				blockidxkv.WithCompaction(cfg.Storage.Compact, cfg.Storage.CompactionInterval)),
 			false,
 			nil

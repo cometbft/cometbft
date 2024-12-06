@@ -81,7 +81,7 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 	TIMEOUT := time.Second * 5
 	chainState, err := consensusState.GetStateWithTimeout(TIMEOUT)
 	if err != nil {
-		log.Errorf("timed out trying to get chain state within %v", TIMEOUT)
+		log.Errorf("processSignVoteQueue: timed out trying to get chain state within %v", TIMEOUT)
 		return
 	}
 
@@ -118,7 +118,7 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 			TIMEOUT := time.Second * 3
 			chainState, err := consensusState.GetStateWithTimeout(TIMEOUT)
 			if err != nil {
-				log.Warnf("timed out trying to get chain state after %v", TIMEOUT)
+				log.Warnf("PruneVoteBuffers: timed out trying to get chain state after %v", TIMEOUT)
 			} else {
 				lastBlockTime := chainState.LastBlockTime.Unix()
 				currTimestampsLen := len(oracleInfo.BlockTimestamps)

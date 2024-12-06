@@ -39,6 +39,10 @@ func (tx Tx) String() string {
 	return fmt.Sprintf("Tx{%X}", []byte(tx))
 }
 
+func (txKey TxKey) Hash() []byte {
+	return txKey[:]
+}
+
 // Txs is a slice of Tx.
 type Txs []Tx
 

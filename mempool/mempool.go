@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	MempoolChannel = byte(0x30)
+	MempoolChannel        = byte(0x30)
+	MempoolControlChannel = byte(0x31)
 
 	// PeerCatchupSleepIntervalMS defines how much time to sleep if a peer is behind.
 	PeerCatchupSleepIntervalMS = 100
@@ -104,6 +105,9 @@ type Mempool interface {
 
 	// SizeBytes returns the total size of all txs in the mempool.
 	SizeBytes() int64
+
+	// GetSenders returns the list of node IDs from which we receive the given transaction.
+	GetSenders(txKey types.TxKey) ([]p2p.ID, error)
 }
 
 // PreCheckFunc is an optional filter executed before CheckTx and rejects
@@ -166,6 +170,9 @@ type Entry interface {
 
 	// IsSender returns whether we received the transaction from the given peer ID.
 	IsSender(peerID p2p.ID) bool
+
+	// Senders returns the list of registered peers that sent us the transaction.
+	Senders() []p2p.ID
 }
 
 // An iterator is used to iterate through the mempool entries.

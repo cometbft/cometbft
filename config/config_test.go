@@ -146,6 +146,7 @@ func TestMempoolConfigValidateBasic(t *testing.T) {
 	reflect.ValueOf(cfg).Elem().FieldByName("Type").SetString("invalid")
 	require.Error(t, cfg.ValidateBasic())
 	reflect.ValueOf(cfg).Elem().FieldByName("Type").SetString(config.MempoolTypeFlood)
+	reflect.ValueOf(cfg).Elem().FieldByName("DOGProtocolEnabled").SetBool(false)
 
 	setFieldTo := func(fieldName string, value int64) {
 		reflect.ValueOf(cfg).Elem().FieldByName(fieldName).SetInt(value)
@@ -190,6 +191,14 @@ func TestMempoolConfigValidateBasic(t *testing.T) {
 		require.NoError(t, cfg.ValidateBasic())
 		setFieldTo(name, 1) // reset
 	}
+
+	// with DOG protocol only works with Flood and no MaxGossip feature.
+	reflect.ValueOf(cfg).Elem().FieldByName("DOGProtocolEnabled").SetBool(true)
+	require.Error(t, cfg.ValidateBasic())
+	reflect.ValueOf(cfg).Elem().FieldByName("Type").SetString(config.MempoolTypeFlood)
+	reflect.ValueOf(cfg).Elem().FieldByName("ExperimentalMaxGossipConnectionsToPersistentPeers").SetInt(0)
+	reflect.ValueOf(cfg).Elem().FieldByName("ExperimentalMaxGossipConnectionsToNonPersistentPeers").SetInt(0)
+	require.NoError(t, cfg.ValidateBasic())
 }
 
 func TestStateSyncConfigValidateBasic(t *testing.T) {

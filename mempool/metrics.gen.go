@@ -96,6 +96,18 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "recheck_duration_seconds",
 			Help:      "Cumulative time spent rechecking transactions",
 		}, labels).With(labelsAndValues...),
+		DisabledRoutes: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "disabled_routes",
+			Help:      "Number of disabled routes.",
+		}, labels).With(labelsAndValues...),
+		Redundancy: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "redundancy",
+			Help:      "Redundancy level.",
+		}, labels).With(labelsAndValues...),
 	}
 }
 
@@ -114,5 +126,7 @@ func NopMetrics() *Metrics {
 		AlreadyReceivedTxs:        discard.NewCounter(),
 		ActiveOutboundConnections: discard.NewGauge(),
 		RecheckDurationSeconds:    discard.NewGauge(),
+		DisabledRoutes:            discard.NewGauge(),
+		Redundancy:                discard.NewGauge(),
 	}
 }

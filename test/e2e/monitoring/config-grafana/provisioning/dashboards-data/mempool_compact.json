@@ -651,7 +651,7 @@
                     },
                     "disableTextWrap": false,
                     "editorMode": "code",
-                    "expr": "sum(rate(cometbft_p2p_message_send_bytes_total{message_type=~\"v1_Txs|v1_SeenTx|v1_WantTx\"}[$__rate_interval]))/1024",
+                    "expr": "sum(rate(cometbft_p2p_message_send_bytes_total{message_type=~\".._Txs|.._Tx|.._WantTx|.._SeenTx|.._HaveTx|.._ResetRoute\"}[$__rate_interval]))/1024",
                     "fullMetaSearch": false,
                     "hide": false,
                     "includeNullMetadata": true,
@@ -813,7 +813,7 @@
                         "uid": "$datasource"
                     },
                     "editorMode": "code",
-                    "expr": "(sum(sum(rate(cometbft_p2p_message_receive_bytes_total{message_type=~\"v1_Txs|v1_SeenTx|v1_WantTx\"}[$__rate_interval])) by (message_type)))/1024",
+                    "expr": "(sum(sum(rate(cometbft_p2p_message_receive_bytes_total{message_type=~\".._Txs|.._Tx|.._WantTx|.._SeenTx|.._HaveTx|.._ResetRoute\"}[$__rate_interval])) by (message_type)))/1024",
                     "hide": false,
                     "legendFormat": "mempool_*",
                     "range": true,
@@ -1186,7 +1186,7 @@
                         "uid": "$datasource"
                     },
                     "editorMode": "code",
-                    "expr": "(sum(rate(cometbft_p2p_message_send_bytes_total{message_type=~\"v1_Txs|v1_Message|v1_SeenTx|v1_WantTx\", job=\"validator001\"}[$__rate_interval])))/1024",
+                    "expr": "(sum(rate(cometbft_p2p_message_send_bytes_total{message_type=~\".._Txs|.._Tx|.._WantTx|.._SeenTx|.._HaveTx|.._ResetRoute\", job=\"validator001\"}[$__rate_interval])))/1024",
                     "legendFormat": "validator receiving all load",
                     "range": true,
                     "refId": "A"
@@ -1197,7 +1197,7 @@
                         "uid": "$datasource"
                     },
                     "editorMode": "code",
-                    "expr": "(avg(rate(cometbft_p2p_message_send_bytes_total{message_type=~\"v1_Txs|v1_Message|v1_SeenTx|v1_WantTx\", job!=\"validator001\"}[$__rate_interval])))/1024",
+                    "expr": "(avg(rate(cometbft_p2p_message_send_bytes_total{message_type=~\".._Txs|.._Tx|.._WantTx|.._SeenTx|.._HaveTx|.._ResetRoute\", job!=\"validator001\"}[$__rate_interval])))/1024",
                     "hide": false,
                     "legendFormat": "avg. of other validators",
                     "range": true,
@@ -1336,7 +1336,7 @@
                         "uid": "$datasource"
                     },
                     "editorMode": "code",
-                    "expr": "(sum(rate(cometbft_p2p_message_receive_bytes_total{message_type=~\"v1_Txs|v1_Message|v1_WantTx|v1_SeenTx\", job=\"validator001\"}[$__rate_interval])))/1024",
+                    "expr": "(sum(rate(cometbft_p2p_message_receive_bytes_total{message_type=~\".._Txs|.._Tx|.._WantTx|.._SeenTx|.._HaveTx|.._ResetRoute\", job=\"validator001\"}[$__rate_interval])))/1024",
                     "hide": false,
                     "legendFormat": "validator receiving all load",
                     "range": true,
@@ -1348,7 +1348,7 @@
                         "uid": "$datasource"
                     },
                     "editorMode": "code",
-                    "expr": "(avg(rate(cometbft_p2p_message_receive_bytes_total{message_type=~\"v1_Txs|v1_Message|v1_WantTx|v1_SeenTx\", job!=\"validator001\"}[$__rate_interval])))/1024",
+                    "expr": "(avg(rate(cometbft_p2p_message_receive_bytes_total{message_type=~\".._Txs|.._Tx|.._WantTx|.._SeenTx|.._HaveTx|.._ResetRoute\", job!=\"validator001\"}[$__rate_interval])))/1024",
                     "hide": false,
                     "legendFormat": "avg. of other validators",
                     "range": true,

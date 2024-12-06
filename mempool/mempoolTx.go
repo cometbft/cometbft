@@ -50,3 +50,12 @@ func (memTx *mempoolTx) addSender(peerID p2p.ID) bool {
 	}
 	return false
 }
+
+func (memTx *mempoolTx) Senders() []p2p.ID {
+	senders := make([]p2p.ID, 0)
+	memTx.senders.Range(func(key, _ any) bool {
+		senders = append(senders, key.(p2p.ID))
+		return true
+	})
+	return senders
+}

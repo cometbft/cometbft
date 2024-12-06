@@ -43,7 +43,6 @@ numbering our ADRs from 100 onwards.
 ### Proposed
 
 - [ADR-113: Modular transaction hashing](adr-113-modular-transaction-hashing.md)
-- [ADR-118: Mempool Lanes](adr-118-mempool-lanes.md)
 
 ### Accepted
 
@@ -59,6 +58,8 @@ numbering our ADRs from 100 onwards.
 - [ADR-112: Proposer-Based Timestamps](adr-112-proposer-based-timestamps.md)
 - [ADR-114: Partly Undo ADR 109](adr-114-undo-109.md)
 - [ADR-115: Predictable Block Times](adr-115-predictable-block-times.md)
+- [ADR-118: Mempool Lanes](adr-118-mempool-lanes.md)
+- [ADR-119: Dynamic Optimal Graph (DOG) gossip protocol](adr-119-dog-mempool-gossip.md)
 
 ### Accepted but Not (Yet) Implemented
 

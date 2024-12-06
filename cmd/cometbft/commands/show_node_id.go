@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cometbft/cometbft/p2p/nodekey"
+	"github.com/cometbft/cometbft/p2p"
 )
 
 // ShowNodeIDCmd dumps node's ID to the standard output.
@@ -17,7 +17,7 @@ var ShowNodeIDCmd = &cobra.Command{
 }
 
 func showNodeID(*cobra.Command, []string) error {
-	nk, err := nodekey.Load(config.NodeKeyFile())
+	nk, err := p2p.LoadNodeKey(config.NodeKeyFile())
 	if err != nil {
 		return err
 	}

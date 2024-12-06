@@ -23,7 +23,7 @@ import (
 // A number in the open interval (0, 100) representing a percentage of
 // config.DOGTargetRedundancy. In the DOG protocol, it defines acceptable lower
 // and upper bounds for redundancy levels as a deviation from the target value.
-const TargetRedundancyDeltaPercent = 10
+const targetRedundancyDeltaPercent = 10
 
 // Reactor handles mempool tx broadcasting amongst peers.
 // It maintains a map from peer ID to counter, to prevent gossiping txs to the
@@ -545,7 +545,7 @@ type redundancyControl struct {
 
 func newRedundancyControl(config *cfg.MempoolConfig) *redundancyControl {
 	adjustInterval := config.DOGAdjustInterval
-	targetRedundancyDeltaAbs := config.DOGTargetRedundancy * TargetRedundancyDeltaPercent / 100
+	targetRedundancyDeltaAbs := config.DOGTargetRedundancy * targetRedundancyDeltaPercent / 100
 	return &redundancyControl{
 		lowerBound:     config.DOGTargetRedundancy - targetRedundancyDeltaAbs,
 		upperBound:     config.DOGTargetRedundancy + targetRedundancyDeltaAbs,

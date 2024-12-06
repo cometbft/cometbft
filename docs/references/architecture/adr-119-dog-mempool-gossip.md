@@ -76,8 +76,10 @@ A node can use either this or DOG, but not both at the same time.
 ## Decision
 
 The CometBFT team has decided to implement the protocol on top of the existing mempool
-(`flood` ) dissemination protocol, but make it optional. The protocol can be activated/deactivated
-via a new config flag `mempool.dog_protocol_enabled`. More details on this in the sections below. 
+(`flood` ) dissemination protocol, but make it optional.
+The protocol can be activated/deactivated
+via a new config flag `mempool.dog_protocol_enabled`. It will be enabled by default.
+ More details on this in the sections below. 
 
 ## Detailed Design
 

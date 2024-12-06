@@ -29,6 +29,8 @@ import (
 //
 // In this example, the key "key" will be stored in 'baseDB' with the actual key
 // being "namespace:key".
+// The responsibility for closing the underlying [DB] is on the code that created
+// the PrefixDB instance after it is no longer needed.
 type PrefixDB struct {
 	db     DB
 	prefix []byte
@@ -248,14 +250,16 @@ func (pDB *PrefixDB) Compact(start, end []byte) error {
 	return nil
 }
 
-// Close closes the database connection.
-// It is not safe to close a DB until all outstanding iterators are closed
-// or to call Close concurrently with any other DB method. It is not valid
-// to call any of a DB's methods after the DB has been closed.
+// Close does nothing for PrefixDB because it's a logical wrapper around
+// an underlying database. If multiple PrefixDB instances share the same
+// underlying database, calling Close on one PrefixDB will close the
+// underlying database for all of them, which may be unexpected.
+// Therefore, the responsibility for closing the underlying database is on the code
+// that created it, after all PrefixDB instances are no longer needed.
 //
 // It implements the [DB] interface for type PrefixDB.
-func (pDB *PrefixDB) Close() error {
-	return pDB.db.Close()
+func (*PrefixDB) Close() error {
+	return nil
 }
 
 // Print prints all the key/value pairs in the database for debugging purposes.

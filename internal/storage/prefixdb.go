@@ -432,15 +432,7 @@ var _ Iterator = (*prefixDBIterator)(nil)
 func newPrefixDBIterator(
 	prefix, start, end []byte,
 	source Iterator,
-) (*prefixDBIterator, error) { //nolint:unparam
-	itInvalid := &prefixDBIterator{
-		prefix: prefix,
-		start:  start,
-		end:    end,
-		source: source,
-		valid:  false,
-	}
-
+) (*prefixDBIterator, error) {
 	// Empty keys are not allowed, so if a key exists in the database that exactly
 	// matches the prefix, we need to skip it.
 	if source.Valid() && bytes.Equal(source.Key(), prefix) {
@@ -453,7 +445,9 @@ func newPrefixDBIterator(
 	}
 
 	if !source.Valid() || !bytes.HasPrefix(source.Key(), prefix) {
-		return itInvalid, nil
+		const format = "can't create a new iterator for prefix %X: the iterator for the underlying database is invalid"
+
+		return nil, fmt.Errorf(format, prefix)
 	}
 
 	it := &prefixDBIterator{

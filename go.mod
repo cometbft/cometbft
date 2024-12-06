@@ -43,7 +43,7 @@ require (
 )
 
 require (
-	github.com/Masterminds/semver/v3 v3.3.0
+	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cometbft/cometbft-db v0.9.5
 	github.com/cosmos/gogoproto v1.7.0

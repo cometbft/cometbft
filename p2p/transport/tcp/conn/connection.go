@@ -46,6 +46,10 @@ const (
 	maxRecvChanCap = 1000
 )
 
+// OnReceiveFn is a callback func, which is called by the MConnection when a
+// new message is received.
+type OnReceiveFn = func(byte, []byte)
+
 // MConnection is a multiplexed connection.
 //
 // __multiplex__ *noun* a system or signal involving simultaneous transmission
@@ -98,10 +102,13 @@ type MConnection struct {
 
 	_maxPacketMsgSize int
 
-	// streamID -> list of incoming messages
-	recvMsgsByStreamID map[byte]chan []byte
 	// streamID -> channel
 	channelsIdx map[byte]*stream
+
+	// A map which stores the received messages. Used in tests.
+	msgsByStreamIDMap map[byte][]byte
+
+	onReceiveFn OnReceiveFn
 }
 
 var _ transport.Conn = (*MConnection)(nil)
@@ -147,18 +154,18 @@ func NewMConnection(conn net.Conn, config MConnConfig) *MConnection {
 	}
 
 	mconn := &MConnection{
-		conn:               conn,
-		bufConnReader:      bufio.NewReaderSize(conn, minReadBufferSize),
-		bufConnWriter:      bufio.NewWriterSize(conn, minWriteBufferSize),
-		sendMonitor:        flow.New(0, 0),
-		recvMonitor:        flow.New(0, 0),
-		send:               make(chan struct{}, 1),
-		pong:               make(chan struct{}, 1),
-		errorCh:            make(chan error, 1),
-		config:             config,
-		created:            time.Now(),
-		recvMsgsByStreamID: make(map[byte]chan []byte),
-		channelsIdx:        make(map[byte]*stream),
+		conn:              conn,
+		bufConnReader:     bufio.NewReaderSize(conn, minReadBufferSize),
+		bufConnWriter:     bufio.NewWriterSize(conn, minWriteBufferSize),
+		sendMonitor:       flow.New(0, 0),
+		recvMonitor:       flow.New(0, 0),
+		send:              make(chan struct{}, 1),
+		pong:              make(chan struct{}, 1),
+		errorCh:           make(chan error, 1),
+		config:            config,
+		created:           time.Now(),
+		channelsIdx:       make(map[byte]*stream),
+		msgsByStreamIDMap: make(map[byte][]byte),
 	}
 
 	mconn.BaseService = *service.NewBaseService(nil, "MConnection", mconn)
@@ -167,6 +174,11 @@ func NewMConnection(conn net.Conn, config MConnConfig) *MConnection {
 	mconn._maxPacketMsgSize = mconn.maxPacketMsgSize()
 
 	return mconn
+}
+
+// OnReceive sets the callback function to be executed each time we read a message.
+func (c *MConnection) OnReceive(fn OnReceiveFn) {
+	c.onReceiveFn = fn
 }
 
 func (c *MConnection) SetLogger(l log.Logger) {
@@ -259,8 +271,6 @@ func (c *MConnection) OpenStream(streamID byte, desc any) (transport.Stream, err
 	}
 	c.channelsIdx[streamID] = newChannel(c, d)
 	c.channelsIdx[streamID].SetLogger(c.Logger.With("streamID", streamID))
-
-	c.recvMsgsByStreamID[streamID] = make(chan []byte, maxRecvChanCap)
 
 	return &MConnectionStream{conn: c, streamID: streamID}, nil
 }
@@ -662,7 +672,13 @@ FOR_LOOP:
 			}
 			if msgBytes != nil {
 				// c.Logger.Debug("Received", "streamID", channelID, "msgBytes", log.NewLazySprintf("%X", msgBytes))
-				c.pushRecvMsg(channelID, msgBytes)
+				if c.onReceiveFn != nil {
+					c.onReceiveFn(channelID, msgBytes)
+				} else {
+					bz := make([]byte, len(msgBytes))
+					copy(bz, msgBytes)
+					c.msgsByStreamIDMap[channelID] = bz
+				}
 			}
 		default:
 			err := fmt.Errorf("unknown message type %v", reflect.TypeOf(packet))
@@ -676,18 +692,13 @@ FOR_LOOP:
 	close(c.pong)
 }
 
-// Panics if the stream is unknown.
-func (c *MConnection) pushRecvMsg(streamID byte, msgBytes []byte) {
-	ch, ok := c.recvMsgsByStreamID[streamID]
-	if !ok {
-		panic(fmt.Sprintf("unknown stream %X", streamID))
+// Used in tests.
+func (c *MConnection) readBytes(streamID byte, b []byte) (n int, err error) {
+	if msgBytes, ok := c.msgsByStreamIDMap[streamID]; ok {
+		n = copy(b, msgBytes)
+		return n, nil
 	}
-
-	// Make a copy to avoid a DATA RACE.
-	msgCopy := make([]byte, len(msgBytes))
-	copy(msgCopy, msgBytes)
-
-	ch <- msgCopy
+	return 0, nil
 }
 
 // not goroutine-safe.

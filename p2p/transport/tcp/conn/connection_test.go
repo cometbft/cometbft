@@ -362,8 +362,6 @@ func newClientAndServerConnsForReadErrors(t *testing.T) (*MConnection, *MConnect
 func assertBytes(t *testing.T, s *MConnectionStream, want []byte) {
 	t.Helper()
 
-	err := s.SetReadDeadline(time.Now().Add(5 * time.Second))
-	require.NoError(t, err)
 	buf := make([]byte, len(want))
 	n, err := s.Read(buf)
 	require.NoError(t, err)
@@ -502,5 +500,4 @@ func TestMConnection_ChannelOverflow(t *testing.T) {
 	packet.ChannelID = int32(1025)
 	_, err = protoWriter.WriteMsg(mustWrapPacket(&packet))
 	require.NoError(t, err)
-	// assert.False(t, expectBytes(mconnServer.recvMsgsByStreamID[1025]))
 }

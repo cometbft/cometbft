@@ -43,27 +43,7 @@ type Conn interface {
 
 // Stream is the interface implemented by QUIC streams or multiplexed TCP connection.
 type Stream interface {
-	ReceiveStream
 	SendStream
-	// SetDeadline sets the read and write deadlines associated with the connection. It is equivalent to calling both
-	// SetReadDeadline and SetWriteDeadline.
-	SetDeadline(t time.Time) error
-}
-
-// A ReceiveStream is a unidirectional Receive Stream.
-type ReceiveStream interface {
-	// Read reads data from the stream.
-	// Read can be made to time out and return a net.Error with Timeout() == true
-	// after a fixed time limit; see SetDeadline and SetReadDeadline.
-	// If the stream was canceled by the peer, the error is a StreamError and
-	// Remote == true.
-	// If the connection was closed due to a timeout, the error satisfies
-	// the net.Error interface, and Timeout() will be true.
-	io.Reader
-	// SetReadDeadline sets the deadline for future Read calls and
-	// any currently-blocked Read call.
-	// A zero value for t means Read will not time out.
-	SetReadDeadline(t time.Time) error
 }
 
 // A SendStream is a unidirectional Send Stream.

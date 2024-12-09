@@ -378,7 +378,10 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 			// Process request
 			peers[request.PeerID].inputChan <- inputData{t, pool, request}
 		case <-testTicker.C:
+			// Fixes race between the goroutines above and the following fn call.
+			pool.mtx.Lock()
 			banned := pool.isPeerBanned("bad")
+			pool.mtx.Unlock()
 			bannedOnce = bannedOnce || banned // Keep bannedOnce true, even if the malicious peer gets unbanned
 			caughtUp, _, _ := pool.IsCaughtUp()
 			// Success: pool caught up and malicious peer was banned at least once

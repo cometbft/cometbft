@@ -109,7 +109,7 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 		ticker := time.Tick(pruneInterval)
 		for range ticker {
 			// keep this timeout close to lowest oracle resolution so that buffers do not build up even when chain is stale, but oracle service is still running
-			timeout := time.Second * 3
+			timeout := pruneInterval
 			chainState, err := consensusState.GetStateWithTimeout(timeout)
 			if err != nil {
 				log.Warnf("PruneVoteBuffers: timed out trying to get chain state after %v", timeout)

@@ -9,7 +9,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/oracle/service/types"
 	"github.com/cometbft/cometbft/oracle/service/utils"
 
@@ -100,25 +99,12 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, chainId string) {
 
 func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 	go func(oracleInfo *types.OracleInfo) {
-		defaultOracleConfig := config.DefaultOracleConfig()
-
 		// only keep votes that are less than x blocks old, where x = Config.MaxOracleGossipBlocksDelayed
 		maxOracleGossipBlocksDelayed := oracleInfo.Config.MaxOracleGossipBlocksDelayed
-		if maxOracleGossipBlocksDelayed == 0 {
-			maxOracleGossipBlocksDelayed = defaultOracleConfig.MaxOracleGossipBlocksDelayed
-		}
-
 		// only keep votes that are less than x seconds old, where x = Config.MaxOracleGossipAge
 		maxOracleGossipAge := oracleInfo.Config.MaxOracleGossipAge
-		if maxOracleGossipAge == 0 {
-			maxOracleGossipAge = defaultOracleConfig.MaxOracleGossipAge
-		}
-
 		// run pruner every x milliseconds, where x = Config.PruneInterval
 		pruneInterval := oracleInfo.Config.PruneInterval
-		if pruneInterval == 0 {
-			pruneInterval = defaultOracleConfig.PruneInterval
-		}
 
 		ticker := time.Tick(pruneInterval)
 		for range ticker {

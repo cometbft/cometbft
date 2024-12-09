@@ -9,6 +9,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/oracle/service/types"
 	"github.com/cometbft/cometbft/oracle/service/utils"
 
@@ -17,7 +18,7 @@ import (
 	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 )
 
-func RunProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State) {
+func RunProcessSignVoteQueue(oracleInfo *types.OracleInfo, chainId string) {
 	// sign votes every x milliseconds, where x = Config.SignInterval
 	interval := oracleInfo.Config.SignInterval
 
@@ -28,13 +29,13 @@ func RunProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.St
 				return
 			default:
 				time.Sleep(interval)
-				ProcessSignVoteQueue(oracleInfo, consensusState)
+				ProcessSignVoteQueue(oracleInfo, chainId)
 			}
 		}
 	}(oracleInfo)
 }
 
-func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State) {
+func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, chainId string) {
 	votes := []*oracleproto.Vote{}
 
 	for {
@@ -78,15 +79,8 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 		return
 	}
 
-	TIMEOUT := time.Second * 5
-	chainState, err := consensusState.GetStateWithTimeout(TIMEOUT)
-	if err != nil {
-		log.Errorf("processSignVoteQueue: timed out trying to get chain state within %v", TIMEOUT)
-		return
-	}
-
 	// signing of vote should append the signature field of gossipVote
-	if err := oracleInfo.PrivValidator.SignOracleVote(chainState.ChainID, newGossipVote, sigPrefix); err != nil {
+	if err := oracleInfo.PrivValidator.SignOracleVote(chainId, newGossipVote, sigPrefix); err != nil {
 		log.Errorf("processSignVoteQueue: error signing oracle votes: %v", err)
 		return
 	}
@@ -106,29 +100,38 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 
 func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 	go func(oracleInfo *types.OracleInfo) {
+		defaultOracleConfig := config.DefaultOracleConfig()
+
 		// only keep votes that are less than x blocks old, where x = Config.MaxOracleGossipBlocksDelayed
 		maxOracleGossipBlocksDelayed := oracleInfo.Config.MaxOracleGossipBlocksDelayed
+		if maxOracleGossipBlocksDelayed == 0 {
+			maxOracleGossipBlocksDelayed = defaultOracleConfig.MaxOracleGossipBlocksDelayed
+		}
+
 		// only keep votes that are less than x seconds old, where x = Config.MaxOracleGossipAge
 		maxOracleGossipAge := oracleInfo.Config.MaxOracleGossipAge
+		if maxOracleGossipAge == 0 {
+			maxOracleGossipAge = defaultOracleConfig.MaxOracleGossipAge
+		}
+
 		// run pruner every x milliseconds, where x = Config.PruneInterval
 		pruneInterval := oracleInfo.Config.PruneInterval
+		if pruneInterval == 0 {
+			pruneInterval = defaultOracleConfig.PruneInterval
+		}
 
 		ticker := time.Tick(pruneInterval)
 		for range ticker {
-			TIMEOUT := time.Second * 3
-			chainState, err := consensusState.GetStateWithTimeout(TIMEOUT)
+			// keep this timeout close to lowest oracle resolution so that buffers do not build up even when chain is stale, but oracle service is still running
+			timeout := time.Second * 3
+			chainState, err := consensusState.GetStateWithTimeout(timeout)
 			if err != nil {
-				log.Warnf("PruneVoteBuffers: timed out trying to get chain state after %v", TIMEOUT)
+				log.Warnf("PruneVoteBuffers: timed out trying to get chain state after %v", timeout)
 			} else {
 				lastBlockTime := chainState.LastBlockTime.Unix()
 				currTimestampsLen := len(oracleInfo.BlockTimestamps)
 
-				if currTimestampsLen == 0 {
-					oracleInfo.BlockTimestamps = append(oracleInfo.BlockTimestamps, lastBlockTime)
-					continue
-				}
-
-				if oracleInfo.BlockTimestamps[currTimestampsLen-1] != lastBlockTime {
+				if currTimestampsLen == 0 || oracleInfo.BlockTimestamps[currTimestampsLen-1] != lastBlockTime {
 					oracleInfo.BlockTimestamps = append(oracleInfo.BlockTimestamps, lastBlockTime)
 				}
 			}
@@ -202,8 +205,8 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 }
 
 // Run run oracles
-func Run(oracleInfo *types.OracleInfo, consensusState *cs.State) {
-	RunProcessSignVoteQueue(oracleInfo, consensusState)
+func Run(oracleInfo *types.OracleInfo, consensusState *cs.State, chainId string) {
+	RunProcessSignVoteQueue(oracleInfo, chainId)
 	PruneVoteBuffers(oracleInfo, consensusState)
 	// start to take votes from app
 	for {
@@ -220,6 +223,7 @@ func Run(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 
 		// drop old votes when channel hits half cap
 		if len(oracleInfo.SignVotesChan) >= cap(oracleInfo.SignVotesChan)/2 {
+			log.Warnf("dropping old vote from signVotesChan as it is at half capacity")
 			<-oracleInfo.SignVotesChan
 		}
 

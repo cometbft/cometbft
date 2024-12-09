@@ -46,6 +46,7 @@ type Reactor struct {
 	OracleInfo     *oracletypes.OracleInfo
 	ids            *oracleIDs
 	ConsensusState *cs.State
+	ChainId        string
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
@@ -92,7 +93,7 @@ func (oracleR *Reactor) SetLogger(l log.Logger) {
 // OnStart implements p2p.BaseReactor.
 func (oracleR *Reactor) OnStart() error {
 	go func() {
-		runner.Run(oracleR.OracleInfo, oracleR.ConsensusState)
+		runner.Run(oracleR.OracleInfo, oracleR.ConsensusState, oracleR.ChainId)
 	}()
 	return nil
 }
@@ -193,14 +194,7 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 			return
 		}
 
-		TIMEOUT := time.Second * 5
-		chainState, err := oracleR.ConsensusState.GetStateWithTimeout(TIMEOUT)
-		if err != nil {
-			logrus.Errorf("timed out trying to get chain state within %v", TIMEOUT)
-			return
-		}
-
-		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(chainState.ChainID, msg), signatureWithoutPrefix); !success {
+		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(oracleR.ChainId, msg), signatureWithoutPrefix); !success {
 			logrus.Errorf("failed signature verification for validator: %v, skipping gossip", pubKey.Address().String())
 			return
 		}

@@ -323,12 +323,6 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 		ticker := time.NewTicker(1 * time.Second) // Speed of new block creation
 		defer ticker.Stop()
 		for {
-<<<<<<< HEAD:blocksync/pool_test.go
-			time.Sleep(1 * time.Second) // Speed of new block creation
-			for _, peer := range peers {
-				peer.height += 1                                   // Network height increases on all peers
-				pool.SetPeerRange(peer.id, peer.base, peer.height) // Tell the pool that a new height is available
-=======
 			select {
 			case <-pool.Quit():
 				return
@@ -337,7 +331,6 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 					peer.height++                                      // Network height increases on all peers
 					pool.SetPeerRange(peer.id, peer.base, peer.height) // Tell the pool that a new height is available
 				}
->>>>>>> fdaca920d (fix(test): `TestBlockPoolMaliciousNode` shutdown threads at exit (#4633)):internal/blocksync/pool_test.go
 			}
 		}
 	}()

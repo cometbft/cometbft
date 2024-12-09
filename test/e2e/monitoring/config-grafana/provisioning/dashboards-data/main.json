@@ -3201,7 +3201,7 @@
             "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "sum(rate(cometbft_p2p_message_receive_bytes_total{message_type=~\"mempool_Txs|v1_Txs|mempool_Tx|v1_Tx|v1_Message|v1_WantTx|v1_SeenTx|v1_HaveTx|v1_Reset\"}[$__rate_interval])/1024) by (job)",
+          "expr": "sum(rate(cometbft_p2p_message_receive_bytes_total{message_type=~\".._Txs|.._Tx|.._WantTx|.._SeenTx|.._HaveTx|.._ResetRoute\"}[$__rate_interval])/1024) by (job)",
           "hide": false,
           "legendFormat": "{{job}}",
           "range": true,
@@ -3298,7 +3298,7 @@
             "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "sum(rate(cometbft_p2p_message_send_bytes_total{message_type=~\"mempool_Txs|v1_Txs|mempool_Tx|v1_Tx|v1_Message|v1_WantTx|v1_SeenTx|v1_HaveTx|v1_Reset\"}[$__rate_interval])/1024) by (job)",
+          "expr": "sum(rate(cometbft_p2p_message_send_bytes_total{message_type=~\".._Txs|.._Tx|.._WantTx|.._SeenTx|.._HaveTx|.._ResetRoute\"}[$__rate_interval])/1024) by (job)",
           "legendFormat": "{{job}}",
           "range": true,
           "refId": "A"

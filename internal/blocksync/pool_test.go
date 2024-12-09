@@ -330,7 +330,7 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 				return
 			case <-ticker.C:
 				for _, peer := range peers {
-					peer.height++
+					peer.height++                                      // Network height increases on all peers
 					pool.SetPeerRange(peer.id, peer.base, peer.height) // Tell the pool that a new height is available
 				}
 			}

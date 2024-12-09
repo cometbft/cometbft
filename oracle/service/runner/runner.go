@@ -144,10 +144,16 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 				latestAllowableTimestamp = oracleInfo.BlockTimestamps[0]
 			}
 
-			oracleInfo.UnsignedVoteBuffer.Lock()
+			resp, err := oracleInfo.ProxyApp.FetchOracleResults(context.Background(), &abcitypes.RequestFetchOracleResults{})
+			if err != nil {
+				log.Warnf("PruneVoteBuffers: unable to fetch oracle results: %v", err)
+			}
+
 			newVotes := []*oracleproto.Vote{}
 			unsignedVoteBuffer := oracleInfo.UnsignedVoteBuffer.Buffer
 			visitedVoteMap := make(map[string]struct{})
+
+			oracleInfo.UnsignedVoteBuffer.Lock()
 			for _, vote := range unsignedVoteBuffer {
 				// check for dup votes
 				key := fmt.Sprintf("%v:%v", vote.Timestamp, vote.OracleId)
@@ -158,13 +164,12 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 
 				visitedVoteMap[key] = struct{}{}
 
-				// also prune votes for a given oracle id and timestamp, that have already been committed as results on chain
-				res, err := oracleInfo.ProxyApp.DoesOracleResultExist(context.Background(), &abcitypes.RequestDoesOracleResultExist{Key: key})
-				if err != nil {
-					log.Warnf("PruneVoteBuffers: unable to check if oracle result exist for vote: %v: %v", vote, err)
+				oracleResultExists := false
+				if resp != nil && resp.Results != nil {
+					_, oracleResultExists = resp.Results[key]
 				}
 
-				if res.DoesExist {
+				if oracleResultExists {
 					continue
 				}
 

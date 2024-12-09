@@ -39,7 +39,7 @@ type Application interface {
 	CreateOracleResultTx(context.Context, *RequestCreateOracleResultTx) (*ResponseCreateOracleResultTx, error)
 	FetchOracleVotes(context.Context, *RequestFetchOracleVotes) (*ResponseFetchOracleVotes, error)
 	ValidateOracleVotes(context.Context, *RequestValidateOracleVotes) (*ResponseValidateOracleVotes, error)
-	DoesOracleResultExist(context.Context, *RequestDoesOracleResultExist) (*ResponseDoesOracleResultExist, error)
+	FetchOracleResults(context.Context, *RequestFetchOracleResults) (*ResponseFetchOracleResults, error)
 	DoesSubAccountBelongToVal(context.Context, *RequestDoesSubAccountBelongToVal) (*ResponseDoesSubAccountBelongToVal, error)
 }
 
@@ -139,8 +139,8 @@ func (BaseApplication) ValidateOracleVotes(_ context.Context, req *RequestValida
 	return &ResponseValidateOracleVotes{}, nil
 }
 
-func (BaseApplication) DoesOracleResultExist(_ context.Context, req *RequestDoesOracleResultExist) (*ResponseDoesOracleResultExist, error) {
-	return &ResponseDoesOracleResultExist{}, nil
+func (BaseApplication) FetchOracleResults(_ context.Context, req *RequestFetchOracleResults) (*ResponseFetchOracleResults, error) {
+	return &ResponseFetchOracleResults{}, nil
 }
 
 func (BaseApplication) DoesSubAccountBelongToVal(_ context.Context, req *RequestDoesSubAccountBelongToVal) (*ResponseDoesSubAccountBelongToVal, error) {

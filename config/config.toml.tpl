@@ -386,6 +386,21 @@ experimental_max_gossip_connections_to_non_persistent_peers = {{ .Mempool.Experi
 # Use this feature with caution and consider the impact on transaction processing performance.
 experimental_publish_event_pending_tx = {{ .Mempool.ExperimentalPublishEventPendingTx }}
 
+# When using the Flood mempool type, enable the DOG gossip protocol to
+# reduce network bandwidth on transaction dissemination (for details, see
+# specs/mempool/gossip/).
+dog_protocol_enabled = {{ .Mempool.DOGProtocolEnabled }}
+
+# Used by the DOG protocol to set the desired transaction redundancy level
+# for the node. For example, redundancy of 0.5 means that, for every two first-time
+# transactions received, the node will receive one duplicate transaction.
+dog_target_redundancy = {{ .Mempool.DOGTargetRedundancy }}
+
+# Used by the DOG protocol to set how often it will attempt to adjust the
+# redundancy level. The higher the value, the longer it will take the node
+# to reduce bandwidth and converge to a stable redundancy level.
+dog_adjust_interval = "{{ .Mempool.DOGAdjustInterval }}"
+
 #######################################################
 ###         State Sync Configuration Options        ###
 #######################################################

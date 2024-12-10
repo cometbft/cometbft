@@ -1,4 +1,4 @@
-package merkle
+package merkle_test
 
 import (
 	"errors"

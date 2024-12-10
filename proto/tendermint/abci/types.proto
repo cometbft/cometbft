@@ -417,10 +417,8 @@ message ResponseValidateOracleVotes {
 }
 
 message ResponseFetchOracleResults {
-  map<string, EmptyStruct> results = 1;
+  map<string, bool> results = 1;
 }
-
-message EmptyStruct {}
 
 message ResponseDoesSubAccountBelongToVal {
   bool belongs_to_val = 1;

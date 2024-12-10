@@ -31,9 +31,12 @@ func TestInspectConstructor(t *testing.T) {
 	t.Cleanup(leaktest.Check(t))
 	defer func() { _ = os.RemoveAll(cfg.RootDir) }()
 	t.Run("from config", func(t *testing.T) {
-		d, err := inspect.NewFromConfig(cfg)
+		i, err := inspect.NewFromConfig(cfg)
 		require.NoError(t, err)
-		require.NotNil(t, d)
+		require.NotNil(t, i)
+
+		err = i.Close()
+		require.NoError(t, err)
 	})
 }
 
@@ -44,7 +47,9 @@ func TestInspectRun(t *testing.T) {
 	t.Run("from config", func(t *testing.T) {
 		d, err := inspect.NewFromConfig(cfg)
 		require.NoError(t, err)
+
 		ctx, cancel := context.WithCancel(context.Background())
+
 		stoppedWG := &sync.WaitGroup{}
 		stoppedWG.Add(1)
 		go func() {

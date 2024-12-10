@@ -3,8 +3,10 @@ package inspect
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"os"
+	"strings"
 
 	"golang.org/x/sync/errgroup"
 
@@ -38,8 +40,9 @@ type Inspector struct {
 
 	// References to the state store and block store are maintained to enable
 	// the Inspector to safely close them on shutdown.
-	ss state.Store
-	bs state.BlockStore
+	ss    state.Store
+	bs    state.BlockStore
+	txIdx txindex.TxIndexer
 }
 
 // New returns an Inspector that serves RPC on the specified BlockStore and StateStore.
@@ -64,6 +67,7 @@ func New(
 		logger: logger,
 		ss:     ss,
 		bs:     bs,
+		txIdx:  txidx,
 	}
 }
 
@@ -93,16 +97,43 @@ func NewFromConfig(cfg *config.Config) (*Inspector, error) {
 // Run starts the Inspector servers and blocks until the servers shut down. The passed
 // in context is used to control the lifecycle of the servers.
 func (ins *Inspector) Run(ctx context.Context) error {
-	defer ins.bs.Close()
-	defer ins.ss.Close()
+	defer ins.Close()
 
 	return startRPCServers(ctx, ins.config, ins.logger, ins.routes)
 }
 
-func startRPCServers(ctx context.Context, cfg *config.RPCConfig, logger log.Logger, routes rpccore.RoutesMap) error {
-	g, tctx := errgroup.WithContext(ctx)
-	listenAddrs := cmtstrings.SplitAndTrimEmpty(cfg.ListenAddress, ",", " ")
-	rh := rpc.Handler(cfg, routes, logger)
+// Close closes all of the databases that the Inspector uses.
+func (ins *Inspector) Close() error {
+	var errs []string
+
+	if err := ins.txIdx.Close(); err != nil {
+		errs = append(errs, "txIdx: "+err.Error())
+	}
+	if err := ins.ss.Close(); err != nil {
+		errs = append(errs, "ss: "+err.Error())
+	}
+	if err := ins.bs.Close(); err != nil {
+		errs = append(errs, "bs: "+err.Error())
+	}
+
+	if len(errs) == 0 {
+		return nil
+	}
+
+	return fmt.Errorf("closing inspector's databases: %s", strings.Join(errs, "; "))
+}
+
+func startRPCServers(
+	ctx context.Context,
+	cfg *config.RPCConfig,
+	logger log.Logger,
+	routes rpccore.RoutesMap,
+) error {
+	var (
+		g, tctx     = errgroup.WithContext(ctx)
+		listenAddrs = cmtstrings.SplitAndTrimEmpty(cfg.ListenAddress, ",", " ")
+		rh          = rpc.Handler(cfg, routes, logger)
+	)
 	for _, listenerAddr := range listenAddrs {
 		server := rpc.Server{
 			Logger:  logger,
@@ -111,27 +142,38 @@ func startRPCServers(ctx context.Context, cfg *config.RPCConfig, logger log.Logg
 			Addr:    listenerAddr,
 		}
 		if cfg.IsTLSEnabled() {
-			keyFile := cfg.KeyFile()
-			certFile := cfg.CertFile()
-			listenerAddr := listenerAddr
+			var (
+				keyFile      = cfg.KeyFile()
+				certFile     = cfg.CertFile()
+				listenerAddr = listenerAddr
+			)
 			g.Go(func() error {
-				logger.Info("RPC HTTPS server starting", "address", listenerAddr,
-					"certfile", certFile, "keyfile", keyFile)
+				logger.Info(
+					"RPC HTTPS server starting",
+					"address", listenerAddr,
+					"certfile", certFile,
+					"keyfile", keyFile,
+				)
+
 				err := server.ListenAndServeTLS(tctx, certFile, keyFile)
 				if !errors.Is(err, net.ErrClosed) {
 					return err
 				}
+
 				logger.Info("RPC HTTPS server stopped", "address", listenerAddr)
 				return nil
 			})
 		} else {
 			listenerAddr := listenerAddr
+
 			g.Go(func() error {
 				logger.Info("RPC HTTP server starting", "address", listenerAddr)
+
 				err := server.ListenAndServe(tctx)
 				if !errors.Is(err, net.ErrClosed) {
 					return err
 				}
+
 				logger.Info("RPC HTTP server stopped", "address", listenerAddr)
 				return nil
 			})

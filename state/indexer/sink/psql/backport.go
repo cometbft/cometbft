@@ -70,6 +70,10 @@ func (BackportTxIndexer) Search(context.Context, *query.Query, txindex.Paginatio
 
 func (BackportTxIndexer) SetLogger(log.Logger) {}
 
+func (b BackportTxIndexer) Close() error {
+	return b.psql.Stop()
+}
+
 // BlockIndexer returns a bridge that implements the CometBFT v0.34 block
 // indexer interface, using the Postgres event sink as a backing store.
 func (es *EventSink) BlockIndexer() BackportBlockIndexer {

@@ -8,7 +8,7 @@ import (
 	"io"
 	"math/big"
 
-	secp256k1 "github.com/btcsuite/btcd/btcec/v2"
+	secp256k1 "github.com/decred/dcrd/dcrec/secp256k1/v4"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/cometbft/cometbft/crypto"

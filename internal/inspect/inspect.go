@@ -104,7 +104,7 @@ func (ins *Inspector) Run(ctx context.Context) error {
 
 // Close closes all of the databases that the Inspector uses.
 func (ins *Inspector) Close() error {
-	var errs []string
+	errs := make([]string, 0, 3)
 
 	if err := ins.txIdx.Close(); err != nil {
 		errs = append(errs, "txIdx: "+err.Error())

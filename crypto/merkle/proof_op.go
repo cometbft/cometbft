@@ -38,6 +38,7 @@ func (poz ProofOperators) VerifyValue(root []byte, keypath string, value []byte)
 	return poz.Verify(root, keypath, [][]byte{value})
 }
 
+// Verify applies a series of ProofOperators to verify the provided args (byte slices).
 func (poz ProofOperators) Verify(root []byte, keypath string, args [][]byte) error {
 	keys, err := KeyPathToKeys(keypath)
 	if err != nil {
@@ -91,6 +92,7 @@ func NewProofRuntime() *ProofRuntime {
 	}
 }
 
+// RegisterOpDecoder registers a new OpDecoder for a specific proof operation type.
 func (prt *ProofRuntime) RegisterOpDecoder(typ string, dec OpDecoder) {
 	_, ok := prt.decoders[typ]
 	if ok {
@@ -99,6 +101,7 @@ func (prt *ProofRuntime) RegisterOpDecoder(typ string, dec OpDecoder) {
 	prt.decoders[typ] = dec
 }
 
+// Decode decodes a cmtcrypto.ProofOp into a ProofOperator using the appropriate decoder.
 func (prt *ProofRuntime) Decode(pop cmtcrypto.ProofOp) (ProofOperator, error) {
 	decoder := prt.decoders[pop.Type]
 	if decoder == nil {
@@ -109,6 +112,7 @@ func (prt *ProofRuntime) Decode(pop cmtcrypto.ProofOp) (ProofOperator, error) {
 	return decoder(pop)
 }
 
+// DecodeProof decodes a list of cmtcrypto.ProofOps into a ProofOperators slice.
 func (prt *ProofRuntime) DecodeProof(proof *cmtcrypto.ProofOps) (ProofOperators, error) {
 	poz := make(ProofOperators, 0, len(proof.Ops))
 	for _, pop := range proof.Ops {
@@ -133,6 +137,7 @@ func (prt *ProofRuntime) VerifyAbsence(proof *cmtcrypto.ProofOps, root []byte, k
 	return prt.Verify(proof, root, keypath, nil)
 }
 
+// Verify verifies a proof by decoding it into ProofOperators.
 func (prt *ProofRuntime) Verify(proof *cmtcrypto.ProofOps, root []byte, keypath string, args [][]byte) (err error) {
 	poz, err := prt.DecodeProof(proof)
 	if err != nil {

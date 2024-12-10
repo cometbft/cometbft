@@ -20,10 +20,11 @@ FAILED=()
 for MANIFEST in "$@"; do
 	START=$SECONDS
 	echo "==> Running testnet: $MANIFEST"
+	echo "==> Manifest:"
+	cat "$MANIFEST"
 
 	if ! ./build/runner -f "$MANIFEST"; then
-		echo "==> Testnet $MANIFEST failed, dumping manifest..."
-		cat "$MANIFEST"
+		echo "==> Testnet failed: $MANIFEST"
 
 		echo "==> Dumping container logs for $MANIFEST..."
 		./build/runner -f "$MANIFEST" logs

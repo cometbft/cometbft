@@ -170,6 +170,10 @@ type PartSet struct {
 	// a count of the total size (in bytes). Used to ensure that the
 	// part set doesn't exceed the maximum block bytes
 	byteSize int64
+
+	// Workaround to prevent the consensus Reactor from reading from an
+	// incomplete part set when the node is the round's proposer.
+	locked bool
 }
 
 // NewPartSetFromData returns an immutable, full PartSet from the data bytes.
@@ -327,6 +331,24 @@ func (ps *PartSet) GetReader() io.Reader {
 		panic("Cannot GetReader() on incomplete PartSet")
 	}
 	return NewPartSetReader(ps.parts)
+}
+
+func (ps *PartSet) IsLocked() bool {
+	ps.mtx.Lock()
+	defer ps.mtx.Unlock()
+	return ps.locked
+}
+
+func (ps *PartSet) Lock() {
+	ps.mtx.Lock()
+	defer ps.mtx.Unlock()
+	ps.locked = true
+}
+
+func (ps *PartSet) Unlock() {
+	ps.mtx.Lock()
+	defer ps.mtx.Unlock()
+	ps.locked = false
 }
 
 type PartSetReader struct {

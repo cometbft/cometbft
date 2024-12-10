@@ -1,7 +1,7 @@
 package store
 
 import (
-	"github.com/go-kit/kit/metrics"
+	"github.com/cometbft/cometbft/libs/metrics"
 )
 
 const (

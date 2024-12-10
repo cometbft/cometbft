@@ -101,7 +101,7 @@ func init() {
 
 func runProxy(_ *cobra.Command, args []string) error {
 	// Initialize logger.
-	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	logger := log.NewLogger(os.Stdout)
 	var option log.Option
 	if verbose {
 		option, _ = log.AllowLevel("debug")
@@ -118,7 +118,7 @@ func runProxy(_ *cobra.Command, args []string) error {
 		witnessesAddrs = strings.Split(witnessAddrsJoined, ",")
 	}
 
-	db, err := dbm.NewGoLevelDB("light-client-db", home)
+	db, err := dbm.NewPebbleDB("light-client-db", home)
 	if err != nil {
 		return fmt.Errorf("can't create a db: %w", err)
 	}
@@ -195,6 +195,9 @@ func runProxy(_ *cobra.Command, args []string) error {
 			dbs.New(db, chainID),
 			options...,
 		)
+		if errors.Is(err, light.ErrEmptyTrustedStore) {
+			logger.Error("Cannot start the light client from an empty trusted store. Please provide either an initialized trusted store, using the `--home-dir` flag, or trusted information to bootstrap the trusted store, via `--hash` and `--height` flags.")
+		}
 	}
 	if err != nil {
 		return err

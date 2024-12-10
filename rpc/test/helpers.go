@@ -145,7 +145,7 @@ func NewCometBFT(app abci.Application, opts *Options) *nm.Node {
 	if opts.suppressStdout {
 		logger = log.NewNopLogger()
 	} else {
-		logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+		logger = log.NewLogger(os.Stdout)
 		logger = log.NewFilter(logger, log.AllowError())
 	}
 	if opts.maxReqBatchSize > 0 {

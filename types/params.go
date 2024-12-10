@@ -199,10 +199,10 @@ func DefaultFeatureParams() FeatureParams {
 
 func DefaultSynchronyParams() SynchronyParams {
 	// Default values determined based on experimental results and on
-	// https://github.com/tendermint/tendermint/issues/7202
+	// https://github.com/cometbft/cometbft/issues/4246
 	return SynchronyParams{
-		Precision:    500 * time.Millisecond,
-		MessageDelay: 2 * time.Second,
+		Precision:    505 * time.Millisecond,
+		MessageDelay: 15 * time.Second,
 	}
 }
 

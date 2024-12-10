@@ -6,9 +6,11 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/abci/types"
@@ -26,6 +28,7 @@ var (
 const (
 	ValidatorPrefix        = "val="
 	AppVersion      uint64 = 1
+	defaultLane     string = "default"
 )
 
 var _ types.Application = (*Application)(nil)
@@ -48,35 +51,79 @@ type Application struct {
 	// If true, the app will generate block events in BeginBlock. Used to test the event indexer
 	// Should be false by default to avoid generating too much data.
 	genBlockEvents bool
+
+	// Map from lane IDs to their priorities.
+	lanePriorities map[string]uint32
+
+	nextBlockDelay time.Duration
 }
 
-// NewApplication creates an instance of the kvstore from the provided database.
-func NewApplication(db dbm.DB) *Application {
+// NewApplication creates an instance of the kvstore from the provided database,
+// with the given lanes and priorities.
+func NewApplication(db dbm.DB, lanePriorities map[string]uint32) *Application {
 	return &Application{
 		logger:             log.NewNopLogger(),
 		state:              loadState(db),
 		valAddrToPubKeyMap: make(map[string]crypto.PubKey),
+		lanePriorities:     lanePriorities,
+		nextBlockDelay:     0, // zero by default because kvstore is mostly used for testing
 	}
 }
 
-// NewPersistentApplication creates a new application using the goleveldb database engine.
-func NewPersistentApplication(dbDir string) *Application {
+// newDB creates a DB engine for persisting the application state.
+func newDB(dbDir string) *dbm.PebbleDB {
 	name := "kvstore"
-	db, err := dbm.NewGoLevelDB(name, dbDir)
+	db, err := dbm.NewPebbleDB(name, dbDir)
 	if err != nil {
 		panic(fmt.Errorf("failed to create persistent app at %s: %w", dbDir, err))
 	}
-	return NewApplication(db)
+	return db
 }
 
-// NewInMemoryApplication creates a new application from an in memory database.
-// Nothing will be persisted.
+// NewPersistentApplication creates a new application using the pebbledb
+// database engine and default lanes.
+func NewPersistentApplication(dbDir string) *Application {
+	return NewApplication(newDB(dbDir), DefaultLanes())
+}
+
+// NewPersistentApplicationWithoutLanes creates a new application using the
+// pebbledb database engine and without lanes.
+func NewPersistentApplicationWithoutLanes(dbDir string) *Application {
+	return NewApplication(newDB(dbDir), nil)
+}
+
+// NewInMemoryApplication creates a new application from an in memory database
+// that uses default lanes. Nothing will be persisted.
 func NewInMemoryApplication() *Application {
-	return NewApplication(dbm.NewMemDB())
+	return NewApplication(dbm.NewMemDB(), DefaultLanes())
+}
+
+// NewInMemoryApplication creates a new application from an in memory database
+// and without lanes. Nothing will be persisted.
+func NewInMemoryApplicationWithoutLanes() *Application {
+	return NewApplication(dbm.NewMemDB(), nil)
+}
+
+// DefaultLanes returns a map from lane names to their priorities. Priority 0 is
+// reserved. The higher the value, the higher the priority.
+func DefaultLanes() map[string]uint32 {
+	return map[string]uint32{
+		"val":       9, // for validator updates
+		"foo":       7,
+		defaultLane: 3,
+		"bar":       1,
+	}
 }
 
 func (app *Application) SetGenBlockEvents() {
 	app.genBlockEvents = true
+}
+
+// SetNextBlockDelay sets the delay for the next finalized block. Default is 0
+// here because kvstore is mostly used for testing. In production, the default
+// is 1s, mimicking the default for the deprecated `timeout_commit` parameter.
+func (app *Application) SetNextBlockDelay(delay time.Duration) {
+	app.nextBlockDelay = delay
 }
 
 // Info returns information about the state of the application. This is generally used every time a Tendermint instance
@@ -96,12 +143,18 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 		}
 	}
 
+	var defLane string
+	if len(app.lanePriorities) != 0 {
+		defLane = defaultLane
+	}
 	return &types.InfoResponse{
 		Data:             fmt.Sprintf("{\"size\":%v}", app.state.Size),
 		Version:          version.ABCIVersion,
 		AppVersion:       AppVersion,
 		LastBlockHeight:  app.state.Height,
 		LastBlockAppHash: app.state.Hash(),
+		LanePriorities:   app.lanePriorities,
+		DefaultLane:      defLane,
 	}, nil
 }
 
@@ -126,18 +179,66 @@ func (app *Application) InitChain(_ context.Context, req *types.InitChainRequest
 // - Contains one and only one `=`
 // - `=` is not the first or last byte.
 // - if key is `val` that the validator update transaction is also valid.
-func (*Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*types.CheckTxResponse, error) {
+func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*types.CheckTxResponse, error) {
 	// If it is a validator update transaction, check that it is correctly formatted
 	if isValidatorTx(req.Tx) {
 		if _, _, _, err := parseValidatorTx(req.Tx); err != nil {
-			//nolint:nilerr
-			return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil
+			return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil //nolint:nilerr // error is not nil but it returns nil
 		}
 	} else if !isValidTx(req.Tx) {
 		return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil
 	}
 
-	return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1}, nil
+	if len(app.lanePriorities) == 0 {
+		return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1}, nil
+	}
+	laneID := assignLane(req.Tx)
+	return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, LaneId: laneID}, nil
+}
+
+// assignLane deterministically computes a lane for the given tx.
+func assignLane(tx []byte) string {
+	lane := defaultLane
+	if isValidatorTx(tx) {
+		return "val" // priority 9
+	}
+	key, _, err := parseTx(tx)
+	if err != nil {
+		return lane
+	}
+
+	// If the transaction key is an integer (for example, a transaction of the
+	// form 2=2), we will assign a lane. Any other type of transaction will go
+	// to the default lane.
+	keyInt, err := strconv.Atoi(key)
+	if err != nil {
+		return lane
+	}
+
+	// Since a key is usually a numerical value, we assign lanes by computing
+	// the key modulo some pre-selected divisors. As a result, some lanes will
+	// be assigned less frequently than others, and we will be able to compute
+	// in advance the lane assigned to a transaction (useful for testing).
+	switch {
+	case keyInt%11 == 0:
+		return "foo" // priority 7
+	case keyInt%3 == 0:
+		return "bar" // priority 1
+	default:
+		return lane // priority 3
+	}
+}
+
+// parseTx parses a tx in 'key=value' format into a key and value.
+func parseTx(tx []byte) (key, value string, err error) {
+	parts := bytes.Split(tx, []byte("="))
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid tx format: %q", string(tx))
+	}
+	if len(parts[0]) == 0 {
+		return "", "", errors.New("key cannot be empty")
+	}
+	return string(parts[0]), string(parts[1]), nil
 }
 
 // Tx must have a format like key:value or key=value. That is:
@@ -272,7 +373,13 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.FinalizeBloc
 
 	app.state.Height = req.Height
 
-	response := &types.FinalizeBlockResponse{TxResults: respTxs, ValidatorUpdates: app.valUpdates, AppHash: app.state.Hash()}
+	response := &types.FinalizeBlockResponse{
+		TxResults:        respTxs,
+		ValidatorUpdates: app.valUpdates,
+		AppHash:          app.state.Hash(),
+		NextBlockDelay:   app.nextBlockDelay,
+	}
+
 	if !app.genBlockEvents {
 		return response, nil
 	}

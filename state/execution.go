@@ -234,7 +234,6 @@ func (blockExec *BlockExecutor) ApplyBlock(
 }
 
 func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, block *types.Block, syncingToHeight int64) (State, error) {
-	startTime := cmttime.Now().UnixNano()
 	abciResponse, err := blockExec.proxyApp.FinalizeBlock(context.TODO(), &abci.FinalizeBlockRequest{
 		Hash:               block.Hash(),
 		NextValidatorsHash: block.NextValidatorsHash,
@@ -246,8 +245,6 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 		Txs:                block.Txs.ToSliceOfBytes(),
 		SyncingToHeight:    syncingToHeight,
 	})
-	endTime := cmttime.Now().UnixNano()
-	blockExec.metrics.BlockProcessingTime.Observe(float64(endTime-startTime) / 1000000)
 	if err != nil {
 		blockExec.logger.Error("Error in proxyAppConn.FinalizeBlock", "err", err)
 		return state, err
@@ -334,7 +331,7 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 
 	// Events are fired after everything else.
 	// NOTE: if we crash between Commit and Save, events won't be fired during replay
-	fireEvents(blockExec.logger, blockExec.eventBus, block, blockID, abciResponse, validatorUpdates)
+	fireEvents(blockExec.logger, blockExec.eventBus, block, blockID, abciResponse, validatorUpdates, blockExec.metrics)
 
 	return state, nil
 }
@@ -713,7 +710,12 @@ func fireEvents(
 	blockID types.BlockID,
 	abciResponse *abci.FinalizeBlockResponse,
 	validatorUpdates []*types.Validator,
+	metrics *Metrics,
 ) {
+	defer func(start time.Time) {
+		metrics.FireBlockEventsDelaySeconds.Set(cmttime.Since(start).Seconds())
+	}(cmttime.Now())
+
 	if err := eventBus.PublishEventNewBlock(types.EventDataNewBlock{
 		Block:               block,
 		BlockID:             blockID,

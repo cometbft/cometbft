@@ -249,7 +249,7 @@ func (cs *State) GetLastHeight() int64 {
 
 // GetRoundState returns a shallow copy of the internal consensus state.
 // This function is thread-safe.
-func (cs *State) GetRoundState() *cstypes.RoundState {
+func (cs *State) GetRoundState() cstypes.RoundState {
 	cs.mtx.RLock()
 	rs := cs.getRoundState()
 	cs.mtx.RUnlock()
@@ -258,9 +258,8 @@ func (cs *State) GetRoundState() *cstypes.RoundState {
 
 // getRoundState returns a shallow copy of the internal consensus state.
 // This function is not thread-safe. Use GetRoundState for the thread-safe version.
-func (cs *State) getRoundState() *cstypes.RoundState {
-	rs := cs.RoundState // copy
-	return &rs
+func (cs *State) getRoundState() cstypes.RoundState {
+	return cs.RoundState // copy
 }
 
 // GetRoundStateJSON returns a json of RoundState.
@@ -403,7 +402,8 @@ func (cs *State) OnStart() error {
 
 	// schedule the first round!
 	// use GetRoundState so we don't race the receiveRoutine for access
-	cs.scheduleRound0(cs.GetRoundState())
+	rs := cs.GetRoundState()
+	cs.scheduleRound0(&rs)
 
 	return nil
 }
@@ -780,7 +780,7 @@ func (cs *State) newStep() {
 			cs.Logger.Error("Failed publishing new round step", "err", err)
 		}
 
-		cs.evsw.FireEvent(types.EventNewRoundStep, &cs.RoundState)
+		cs.evsw.FireEvent(types.EventNewRoundStep, cs.RoundState)
 	}
 }
 
@@ -1784,7 +1784,7 @@ func (cs *State) enterCommit(height int64, commitRound int32) {
 		if !cs.ProposalBlockParts.HasHeader(blockID.PartSetHeader) {
 			logger.Info(
 				"Commit is for a block we do not know about; set ProposalBlock=nil",
-				"proposal", log.NewLazyBlockHash(cs.ProposalBlock),
+				"proposal", log.NewLazyHash(cs.ProposalBlock),
 				"commit", blockID.Hash,
 			)
 
@@ -1797,7 +1797,7 @@ func (cs *State) enterCommit(height int64, commitRound int32) {
 				logger.Error("Failed publishing valid block", "err", err)
 			}
 
-			cs.evsw.FireEvent(types.EventValidBlock, &cs.RoundState)
+			cs.evsw.FireEvent(types.EventValidBlock, cs.RoundState)
 		}
 	}
 }
@@ -1821,7 +1821,7 @@ func (cs *State) tryFinalizeCommit(height int64) {
 		// TODO: ^^ wait, why does it matter that we're a validator?
 		logger.Debug(
 			"Failed attempt to finalize commit; we do not have the commit block",
-			"proposal_block", log.NewLazyBlockHash(cs.ProposalBlock),
+			"proposal_block", log.NewLazyHash(cs.ProposalBlock),
 			"commit_block", blockID.Hash,
 		)
 		return
@@ -1863,7 +1863,7 @@ func (cs *State) finalizeCommit(height int64) {
 
 	logger.Info(
 		"Finalizing commit of block",
-		"hash", log.NewLazyBlockHash(block),
+		"hash", log.NewLazyHash(block),
 		"root", block.AppHash,
 		"num_txs", len(block.Txs),
 	)
@@ -2065,8 +2065,8 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal, recvTime time.Time
 
 	p := proposal.ToProto()
 	// Verify signature
-	pubKey := cs.Validators.GetProposer().PubKey
-	if !pubKey.VerifySignature(
+	proposer := cs.Validators.GetProposer()
+	if !proposer.PubKey.VerifySignature(
 		types.ProposalSignBytes(cs.state.ChainID, p), proposal.Signature,
 	) {
 		return ErrInvalidProposalSignature
@@ -2090,9 +2090,15 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal, recvTime time.Time
 	// TODO: We can check if Proposal is for a different block as this is a sign of misbehavior!
 	if cs.ProposalBlockParts == nil {
 		cs.ProposalBlockParts = types.NewPartSetFromHeader(proposal.BlockID.PartSetHeader)
+
+		// If we signed this Proposal, lock the PartSet until we load
+		// all the BlockParts that should come just after the Proposal.
+		if bytes.Equal(proposer.Address, cs.privValidatorPubKey.Address()) {
+			cs.ProposalBlockParts.Lock()
+		}
 	}
 
-	cs.Logger.Info("Received proposal", "proposal", proposal, "proposer", pubKey.Address())
+	cs.Logger.Info("Received proposal", "proposal", proposal, "proposer", proposer.Address)
 	return nil
 }
 
@@ -2193,6 +2199,7 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 		}
 
 		cs.ProposalBlock = block
+		cs.ProposalBlockParts.Unlock()
 
 		// NOTE: it's possible to receive complete proposal blocks for future rounds without having the proposal
 		cs.Logger.Info("Received complete proposal block",
@@ -2216,7 +2223,7 @@ func (cs *State) handleCompleteProposal(blockHeight int64) {
 			cs.Logger.Debug(
 				"Updating valid block to new proposal block",
 				"valid_round", cs.Round,
-				"valid_block_hash", log.NewLazyBlockHash(cs.ProposalBlock),
+				"valid_block_hash", log.NewLazyHash(cs.ProposalBlock),
 			)
 
 			cs.ValidRound = cs.Round
@@ -2250,7 +2257,7 @@ func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 		// If the vote height is off, we'll just ignore it,
 		// But if it's a conflicting sig, add it to the cs.evpool.
 		// If it's otherwise invalid, punish peer.
-		//nolint: gocritic
+
 		if voteErr, ok := err.(*types.ErrVoteConflictingVotes); ok {
 			if cs.privValidatorPubKey == nil {
 				return false, ErrPubKeyIsNotSet
@@ -2276,19 +2283,14 @@ func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 			)
 
 			return added, err
-		} else if errors.Is(err, types.ErrVoteNonDeterministicSignature) {
-			cs.Logger.Info("Vote has non-deterministic signature", "err", err)
-		} else if errors.Is(err, types.ErrInvalidVoteExtension) {
-			cs.Logger.Info("Vote has invalid extension")
-		} else {
-			// Either
-			// 1) bad peer OR
-			// 2) not a bad peer? this can also err sometimes with "Unexpected step" OR
-			// 3) tmkms use with multiple validators connecting to a single tmkms instance
-			// 		(https://github.com/tendermint/tendermint/issues/3839).
-			cs.Logger.Info("Failed attempting to add vote", "err", err)
-			return added, ErrAddingVote
 		}
+
+		// Either
+		// 1) bad peer OR
+		// 2) not a bad peer? this can also err sometimes with "Unexpected step" OR
+		// 3) tmkms use with multiple validators connecting to a single tmkms instance
+		// 		(https://github.com/tendermint/tendermint/issues/3839).
+		return added, ErrAddingVote{Err: err}
 	}
 
 	return added, nil
@@ -2372,6 +2374,14 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 			// Here, we verify the signature of the vote extension included in the vote
 			// message.
 			_, val := cs.state.Validators.GetByIndex(vote.ValidatorIndex)
+			if val == nil { // TODO: we should disconnect from this malicious peer
+				valsCount := cs.state.Validators.Size()
+				cs.Logger.Info("Peer sent us vote with invalid ValidatorIndex",
+					"peer", peerID,
+					"validator_index", vote.ValidatorIndex,
+					"len_validators", valsCount)
+				return added, ErrInvalidVote{Reason: fmt.Sprintf("ValidatorIndex %d is out of bounds [0, %d)", vote.ValidatorIndex, valsCount)}
+			}
 			if err := vote.VerifyExtension(cs.state.ChainID, val.PubKey); err != nil {
 				return false, err
 			}
@@ -2434,7 +2444,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 				} else {
 					cs.Logger.Debug(
 						"Valid block we do not know about; set ProposalBlock=nil",
-						"proposal", log.NewLazyBlockHash(cs.ProposalBlock),
+						"proposal", log.NewLazyHash(cs.ProposalBlock),
 						"block_id", blockID.Hash,
 					)
 
@@ -2446,7 +2456,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 					cs.ProposalBlockParts = types.NewPartSetFromHeader(blockID.PartSetHeader)
 				}
 
-				cs.evsw.FireEvent(types.EventValidBlock, &cs.RoundState)
+				cs.evsw.FireEvent(types.EventValidBlock, cs.RoundState)
 				if err := cs.eventBus.PublishEventValidBlock(cs.RoundStateEvent()); err != nil {
 					return added, err
 				}

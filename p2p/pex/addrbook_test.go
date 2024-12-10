@@ -15,7 +15,8 @@ import (
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/internal/nodekey"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 )
 
 // FIXME These tests should not rely on .(*addrBook) assertions
@@ -32,7 +33,7 @@ func TestAddrBookPickAddress(t *testing.T) {
 	addr := book.PickAddress(50)
 	assert.Nil(t, addr, "expected no address")
 
-	randAddrs := randNetAddressPairs(t, 1)
+	randAddrs := randNetAddrPairs(t, 1)
 	addrSrc := randAddrs[0]
 	err := book.AddAddress(addrSrc.addr, addrSrc.src)
 	require.NoError(t, err)
@@ -74,7 +75,7 @@ func TestAddrBookSaveLoad(t *testing.T) {
 	assert.True(t, book.Empty())
 
 	// 100 addresses
-	randAddrs := randNetAddressPairs(t, 100)
+	randAddrs := randNetAddrPairs(t, 100)
 
 	for _, addrSrc := range randAddrs {
 		err := book.AddAddress(addrSrc.addr, addrSrc.src)
@@ -96,7 +97,7 @@ func TestAddrBookLookup(t *testing.T) {
 	fname := createTempFileName()
 	defer deleteTempFile(fname)
 
-	randAddrs := randNetAddressPairs(t, 100)
+	randAddrs := randNetAddrPairs(t, 100)
 
 	book := NewAddrBook(fname, true)
 	book.SetLogger(log.TestingLogger())
@@ -115,7 +116,7 @@ func TestAddrBookPromoteToOld(t *testing.T) {
 	fname := createTempFileName()
 	defer deleteTempFile(fname)
 
-	randAddrs := randNetAddressPairs(t, 100)
+	randAddrs := randNetAddrPairs(t, 100)
 
 	book := NewAddrBook(fname, true)
 	book.SetLogger(log.TestingLogger())
@@ -162,7 +163,7 @@ func TestAddrBookHandlesDuplicates(t *testing.T) {
 	book := NewAddrBook(fname, true)
 	book.SetLogger(log.TestingLogger())
 
-	randAddrs := randNetAddressPairs(t, 100)
+	randAddrs := randNetAddrPairs(t, 100)
 
 	differentSrc := randIPv4Address(t)
 	for _, addrSrc := range randAddrs {
@@ -177,21 +178,21 @@ func TestAddrBookHandlesDuplicates(t *testing.T) {
 	assert.Equal(t, 100, book.Size())
 }
 
-type netAddressPair struct {
-	addr *p2p.NetAddress
-	src  *p2p.NetAddress
+type netAddrPair struct {
+	addr *na.NetAddr
+	src  *na.NetAddr
 }
 
-func randNetAddressPairs(t *testing.T, n int) []netAddressPair {
+func randNetAddrPairs(t *testing.T, n int) []netAddrPair {
 	t.Helper()
-	randAddrs := make([]netAddressPair, n)
+	randAddrs := make([]netAddrPair, n)
 	for i := 0; i < n; i++ {
-		randAddrs[i] = netAddressPair{addr: randIPv4Address(t), src: randIPv4Address(t)}
+		randAddrs[i] = netAddrPair{addr: randIPv4Address(t), src: randIPv4Address(t)}
 	}
 	return randAddrs
 }
 
-func randIPv4Address(t *testing.T) *p2p.NetAddress {
+func randIPv4Address(t *testing.T) *na.NetAddr {
 	t.Helper()
 	for {
 		ip := fmt.Sprintf("%v.%v.%v.%v",
@@ -201,9 +202,9 @@ func randIPv4Address(t *testing.T) *p2p.NetAddress {
 			cmtrand.Intn(255),
 		)
 		port := cmtrand.Intn(65535-1) + 1
-		id := p2p.ID(hex.EncodeToString(cmtrand.Bytes(p2p.IDByteLength)))
-		idAddr := p2p.IDAddressString(id, fmt.Sprintf("%v:%v", ip, port))
-		addr, err := p2p.NewNetAddressString(idAddr)
+		id := nodekey.ID(hex.EncodeToString(cmtrand.Bytes(nodekey.IDByteLength)))
+		idAddr := na.IDAddrString(id, fmt.Sprintf("%v:%v", ip, port))
+		addr, err := na.NewFromString(idAddr)
 		require.NoError(t, err)
 		if addr.Routable() {
 			return addr
@@ -278,14 +279,14 @@ func TestAddrBookGetSelection(t *testing.T) {
 	assert.Equal(t, addr, book.GetSelection()[0])
 
 	// 3) add a bunch of addresses
-	randAddrs := randNetAddressPairs(t, 100)
+	randAddrs := randNetAddrPairs(t, 100)
 	for _, addrSrc := range randAddrs {
 		err := book.AddAddress(addrSrc.addr, addrSrc.src)
 		require.NoError(t, err)
 	}
 
 	// check there is no duplicates
-	addrs := make(map[string]*p2p.NetAddress)
+	addrs := make(map[string]*na.NetAddr)
 	selection := book.GetSelection()
 	for _, addr := range selection {
 		if dup, ok := addrs[addr.String()]; ok {
@@ -322,14 +323,14 @@ func TestAddrBookGetSelectionWithBias(t *testing.T) {
 	assert.Equal(t, addr, selection[0])
 
 	// 3) add a bunch of addresses
-	randAddrs := randNetAddressPairs(t, 100)
+	randAddrs := randNetAddrPairs(t, 100)
 	for _, addrSrc := range randAddrs {
 		err := book.AddAddress(addrSrc.addr, addrSrc.src)
 		require.NoError(t, err)
 	}
 
 	// check there is no duplicates
-	addrs := make(map[string]*p2p.NetAddress)
+	addrs := make(map[string]*na.NetAddr)
 	selection = book.GetSelectionWithBias(biasTowardsNewAddrs)
 	for _, addr := range selection {
 		if dup, ok := addrs[addr.String()]; ok {
@@ -401,9 +402,9 @@ func TestAddrBookHasAddress(t *testing.T) {
 	assert.False(t, book.HasAddress(addr))
 }
 
-func testCreatePrivateAddrs(t *testing.T, numAddrs int) ([]*p2p.NetAddress, []string) {
+func testCreatePrivateAddrs(t *testing.T, numAddrs int) ([]*na.NetAddr, []string) {
 	t.Helper()
-	addrs := make([]*p2p.NetAddress, numAddrs)
+	addrs := make([]*na.NetAddr, numAddrs)
 	for i := 0; i < numAddrs; i++ {
 		addrs[i] = randIPv4Address(t)
 	}
@@ -431,7 +432,7 @@ func TestBanBadPeers(t *testing.T) {
 	assert.True(t, book.IsBanned(addr))
 
 	err := book.AddAddress(addr, addr)
-	// book should not add address from the blacklist
+	// book should not add address from the denylist
 	require.Error(t, err)
 
 	time.Sleep(1 * time.Second)
@@ -608,13 +609,13 @@ func TestAddrBookAddDoesNotOverwriteOldIP(t *testing.T) {
 	// to ensure we aren't in a case that got probabilistically ignored
 	numOverrideAttempts := 10
 
-	peerRealAddr, err := p2p.NewNetAddressString(peerID + "@" + peerRealIP)
+	peerRealAddr, err := na.NewFromString(peerID + "@" + peerRealIP)
 	require.NoError(t, err)
 
-	peerOverrideAttemptAddr, err := p2p.NewNetAddressString(peerID + "@" + peerOverrideAttemptIP)
+	peerOverrideAttemptAddr, err := na.NewFromString(peerID + "@" + peerOverrideAttemptIP)
 	require.NoError(t, err)
 
-	src, err := p2p.NewNetAddressString(srcAddr)
+	src, err := na.NewFromString(srcAddr)
 	require.NoError(t, err)
 
 	book := NewAddrBook(fname, true)
@@ -678,7 +679,7 @@ func TestAddrBookGroupKey(t *testing.T) {
 
 	for i, tc := range testCases {
 		nip := net.ParseIP(tc.ip)
-		key := groupKeyFor(p2p.NewNetAddressIPPort(nip, 26656), false)
+		key := groupKeyFor(na.NewFromIPPort(nip, 26656), false)
 		assert.Equal(t, tc.expKey, key, "#%d", i)
 	}
 
@@ -708,12 +709,12 @@ func TestAddrBookGroupKey(t *testing.T) {
 
 	for i, tc := range testCases {
 		nip := net.ParseIP(tc.ip)
-		key := groupKeyFor(p2p.NewNetAddressIPPort(nip, 26656), true)
+		key := groupKeyFor(na.NewFromIPPort(nip, 26656), true)
 		assert.Equal(t, tc.expKey, key, "#%d", i)
 	}
 }
 
-func assertMOldAndNNewAddrsInSelection(t *testing.T, m, n int, addrs []*p2p.NetAddress, book *addrBook) {
+func assertMOldAndNNewAddrsInSelection(t *testing.T, m, n int, addrs []*na.NetAddr, book *addrBook) {
 	t.Helper()
 	nOld, nNew := countOldAndNewAddrsInSelection(addrs, book)
 	assert.Equal(t, m, nOld, "old addresses")
@@ -749,14 +750,14 @@ func createAddrBookWithMOldAndNNewAddrs(t *testing.T, nOld, nNew int) (book *add
 	book.SetLogger(log.TestingLogger())
 	assert.Zero(t, book.Size())
 
-	randAddrs := randNetAddressPairs(t, nOld)
+	randAddrs := randNetAddrPairs(t, nOld)
 	for _, addr := range randAddrs {
 		err := book.AddAddress(addr.addr, addr.src)
 		require.NoError(t, err)
 		book.MarkGood(addr.addr.ID)
 	}
 
-	randAddrs = randNetAddressPairs(t, nNew)
+	randAddrs = randNetAddrPairs(t, nNew)
 	for _, addr := range randAddrs {
 		err := book.AddAddress(addr.addr, addr.src)
 		require.NoError(t, err)
@@ -765,7 +766,7 @@ func createAddrBookWithMOldAndNNewAddrs(t *testing.T, nOld, nNew int) (book *add
 	return book, fname
 }
 
-func countOldAndNewAddrsInSelection(addrs []*p2p.NetAddress, book *addrBook) (nOld, nNew int) {
+func countOldAndNewAddrsInSelection(addrs []*na.NetAddr, book *addrBook) (nOld, nNew int) {
 	for _, addr := range addrs {
 		if book.IsGood(addr) {
 			nOld++
@@ -780,7 +781,7 @@ func countOldAndNewAddrsInSelection(addrs []*p2p.NetAddress, book *addrBook) (nO
 // Returns:
 // - seqLens - the lengths of the sequences of addresses of same type
 // - seqTypes - the types of sequences in selection.
-func analyseSelectionLayout(book *addrBook, addrs []*p2p.NetAddress) (seqLens, seqTypes []int) {
+func analyseSelectionLayout(book *addrBook, addrs []*na.NetAddr) (seqLens, seqTypes []int) {
 	// address types are: 0 - nil, 1 - new, 2 - old
 	var (
 		prevType      = 0

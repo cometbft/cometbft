@@ -22,6 +22,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/bits"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
@@ -162,8 +163,10 @@ func TestReactorWithEvidence(t *testing.T) {
 		proxyAppConnMem := proxy.NewAppConnMempool(abcicli.NewLocalClient(mtx, app), proxy.NopMetrics())
 
 		// Make Mempool
+		_, lanesInfo := fetchAppInfo(app)
 		mempool := mempl.NewCListMempool(config.Mempool,
 			proxyAppConnMem,
+			lanesInfo,
 			state.LastBlockHeight,
 			mempl.WithMetrics(memplMetrics),
 			mempl.WithPreCheck(sm.TxPreCheck(state)),
@@ -445,6 +448,7 @@ func TestReactorRecordsVotesAndBlockParts(t *testing.T) {
 func TestReactorVotingPowerChange(t *testing.T) {
 	nVals := 4
 	logger := log.TestingLogger()
+
 	css, cleanup := randConsensusNet(
 		t,
 		nVals,
@@ -1112,4 +1116,41 @@ func TestMarshalJSONPeerState(t *testing.T) {
 			"votes":"0",
 			"block_parts":"0"}
 		}`, string(data))
+}
+
+func TestVoteMessageValidateBasic(t *testing.T) {
+	cs, vss := randState(2)
+	chainID := cs.state.ChainID
+
+	randBytes := cmtrand.Bytes(tmhash.Size)
+	blockID := types.BlockID{
+		Hash: randBytes,
+		PartSetHeader: types.PartSetHeader{
+			Total: 1,
+			Hash:  randBytes,
+		},
+	}
+	vote := signVote(vss[1], types.PrecommitType, chainID, blockID, true)
+
+	testCases := []struct {
+		malleateFn func(*VoteMessage)
+		expErr     string
+	}{
+		{func(_ *VoteMessage) {}, ""},
+		{func(msg *VoteMessage) { msg.Vote.ValidatorIndex = -1 }, "negative ValidatorIndex"},
+		// INVALID, but passes ValidateBasic, since the method does not know the number of active validators
+		{func(msg *VoteMessage) { msg.Vote.ValidatorIndex = 1000 }, ""},
+	}
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("#%d", i), func(t *testing.T) {
+			msg := &VoteMessage{vote}
+
+			tc.malleateFn(msg)
+			err := msg.ValidateBasic()
+			if tc.expErr != "" && assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+				assert.Contains(t, err.Error(), tc.expErr)
+			}
+		})
+	}
 }

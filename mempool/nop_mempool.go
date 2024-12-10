@@ -80,6 +80,9 @@ func (*NopMempool) Size() int { return 0 }
 // SizeBytes always returns 0.
 func (*NopMempool) SizeBytes() int64 { return 0 }
 
+// GetSenders always returns nil.
+func (*NopMempool) GetSenders(_ types.TxKey) ([]p2p.ID, error) { return nil, nil }
+
 // NopMempoolReactor is a mempool reactor that does nothing.
 type NopMempoolReactor struct {
 	service.BaseService
@@ -97,8 +100,8 @@ var _ p2p.Reactor = &NopMempoolReactor{}
 // WaitSync always returns false.
 func (*NopMempoolReactor) WaitSync() bool { return false }
 
-// GetChannels always returns nil.
-func (*NopMempoolReactor) GetChannels() []*p2p.ChannelDescriptor { return nil }
+// StreamDescriptors always returns nil.
+func (*NopMempoolReactor) StreamDescriptors() []p2p.StreamDescriptor { return nil }
 
 // AddPeer does nothing.
 func (*NopMempoolReactor) AddPeer(p2p.Peer) {}

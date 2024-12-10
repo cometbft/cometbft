@@ -229,25 +229,21 @@ type BaseConfig struct {
 	// A custom human readable name for this node
 	Moniker string `mapstructure:"moniker"`
 
-	// Database backend: goleveldb | rocksdb | badgerdb | pebbledb
+	// Database backend: badgerdb | goleveldb | pebbledb | rocksdb
+	// * badgerdb (uses github.com/dgraph-io/badger)
+	//   - stable
+	//   - pure go
+	//   - use badgerdb build tag (go build -tags badgerdb)
 	// * goleveldb (github.com/syndtr/goleveldb)
 	//   - UNMAINTAINED
 	//   - stable
 	//   - pure go
+	// * pebbledb (uses github.com/cockroachdb/pebble)
+	//   - stable
+	//   - pure go
 	// * rocksdb (uses github.com/linxGnu/grocksdb)
-	//   - EXPERIMENTAL
 	//   - requires gcc
 	//   - use rocksdb build tag (go build -tags rocksdb)
-	// * badgerdb (uses github.com/dgraph-io/badger)
-	//   - EXPERIMENTAL
-	//   - stable
-	//   - pure go
-	//   - use badgerdb build tag (go build -tags badgerdb)
-	// * pebbledb (uses github.com/cockroachdb/pebble)
-	//   - EXPERIMENTAL
-	//   - stable
-	//   - pure go
-	//   - use pebbledb build tag (go build -tags pebbledb)
 	DBBackend string `mapstructure:"db_backend"`
 
 	// Database directory
@@ -256,8 +252,11 @@ type BaseConfig struct {
 	// Output level for logging
 	LogLevel string `mapstructure:"log_level"`
 
-	// Output format: 'plain' (colored text) or 'json'
+	// Output format: 'plain' or 'json'
 	LogFormat string `mapstructure:"log_format"`
+
+	// Colored log output. Considered only when `log_format = plain`.
+	LogColors bool `mapstructure:"log_colors"`
 
 	// Path to the JSON file containing the initial validator set and other meta data
 	Genesis string `mapstructure:"genesis_file"`
@@ -296,8 +295,9 @@ func DefaultBaseConfig() BaseConfig {
 		ABCI:               "socket",
 		LogLevel:           DefaultLogLevel,
 		LogFormat:          LogFormatPlain,
+		LogColors:          true,
 		FilterPeers:        false,
-		DBBackend:          "goleveldb",
+		DBBackend:          "pebbledb",
 		DBPath:             DefaultDataDir,
 	}
 }
@@ -966,7 +966,7 @@ type MempoolConfig struct {
 	// transactions and a 5MB maximum mempool byte size, the mempool will
 	// only accept five transactions.
 	MaxTxsBytes int64 `mapstructure:"max_txs_bytes"`
-	// Size of the cache (used to filter transactions we saw earlier) in transactions
+	// Size of the cache (used to filter transactions we saw earlier) in transactions.
 	CacheSize int `mapstructure:"cache_size"`
 	// Do not remove invalid transactions from the cache (default: false)
 	// Set to true if it's not possible for any invalid transaction to become
@@ -991,6 +991,22 @@ type MempoolConfig struct {
 	// Note: Enabling this feature may introduce potential delays in transaction processing due to blocking behavior.
 	// Use this feature with caution and consider the impact on transaction processing performance.
 	ExperimentalPublishEventPendingTx bool `mapstructure:"experimental_publish_event_pending_tx"`
+
+	// When using the Flood mempool type, enable the DOG gossip protocol to
+	// reduce network bandwidth on transaction dissemination (for details, see
+	// specs/mempool/gossip/).
+	DOGProtocolEnabled bool `mapstructure:"dog_protocol_enabled"`
+
+	// Used by the DOG protocol to set the desired transaction redundancy level
+	// for the node. For example, a redundancy of 0.5 means that, for every two
+	// first-time transactions received, the node will receive one duplicate
+	// transaction.
+	DOGTargetRedundancy float64 `mapstructure:"dog_target_redundancy"`
+
+	// Used by the DOG protocol to set how often it will attempt to adjust the
+	// redundancy level. The higher the value, the longer it will take the node
+	// to reduce bandwidth and converge to a stable redundancy level.
+	DOGAdjustInterval time.Duration `mapstructure:"dog_adjust_interval"`
 }
 
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool.
@@ -1008,6 +1024,9 @@ func DefaultMempoolConfig() *MempoolConfig {
 		CacheSize:   10000,
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: 0,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    0,
+		DOGProtocolEnabled:  true,
+		DOGTargetRedundancy: 1,
+		DOGAdjustInterval:   1000 * time.Millisecond,
 	}
 }
 
@@ -1045,6 +1064,42 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 	if cfg.ExperimentalMaxGossipConnectionsToNonPersistentPeers < 0 {
 		return cmterrors.ErrNegativeField{Field: "experimental_max_gossip_connections_to_non_persistent_peers"}
 	}
+
+	// Flood mempool with zero capacity is not allowed.
+	if cfg.Type != MempoolTypeNop {
+		if cfg.Size == 0 {
+			return cmterrors.ErrNegativeOrZeroField{Field: "size"}
+		}
+		if cfg.MaxTxsBytes == 0 {
+			return cmterrors.ErrNegativeOrZeroField{Field: "max_txs_bytes"}
+		}
+		if cfg.MaxTxBytes == 0 {
+			return cmterrors.ErrNegativeOrZeroField{Field: "max_tx_bytes"}
+		}
+	}
+
+	// DOG gossip protocol
+	if cfg.Type != MempoolTypeFlood && cfg.DOGProtocolEnabled {
+		return cmterrors.ErrWrongField{
+			Field: "dog_protocol_enabled",
+			Err:   errors.New("DOG protocol only works with the Flood mempool type"),
+		}
+	}
+	if cfg.DOGProtocolEnabled &&
+		(cfg.ExperimentalMaxGossipConnectionsToPersistentPeers > 0 ||
+			cfg.ExperimentalMaxGossipConnectionsToNonPersistentPeers > 0) {
+		return cmterrors.ErrWrongField{
+			Field: "dog_protocol_enabled",
+			Err:   errors.New("DOG protocol is not compatible with experimental_max_gossip_connections_to_*_peers feature"),
+		}
+	}
+	if cfg.DOGTargetRedundancy <= 0 {
+		return cmterrors.ErrNegativeOrZeroField{Field: "target_redundancy"}
+	}
+	if cfg.DOGAdjustInterval.Milliseconds() < 1000 {
+		return errors.New("DOG protocol requires the adjustment interval to be higher than 1000ms")
+	}
+
 	return nil
 }
 
@@ -1059,7 +1114,7 @@ type StateSyncConfig struct {
 	TrustPeriod         time.Duration `mapstructure:"trust_period"`
 	TrustHeight         int64         `mapstructure:"trust_height"`
 	TrustHash           string        `mapstructure:"trust_hash"`
-	DiscoveryTime       time.Duration `mapstructure:"discovery_time"`
+	MaxDiscoveryTime    time.Duration `mapstructure:"max_discovery_time"`
 	ChunkRequestTimeout time.Duration `mapstructure:"chunk_request_timeout"`
 	ChunkFetchers       int32         `mapstructure:"chunk_fetchers"`
 }
@@ -1077,7 +1132,7 @@ func (cfg *StateSyncConfig) TrustHashBytes() []byte {
 func DefaultStateSyncConfig() *StateSyncConfig {
 	return &StateSyncConfig{
 		TrustPeriod:         168 * time.Hour,
-		DiscoveryTime:       15 * time.Second,
+		MaxDiscoveryTime:    2 * time.Minute,
 		ChunkRequestTimeout: 10 * time.Second,
 		ChunkFetchers:       4,
 	}
@@ -1105,8 +1160,8 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 			}
 		}
 
-		if cfg.DiscoveryTime != 0 && cfg.DiscoveryTime < 5*time.Second {
-			return ErrInsufficientDiscoveryTime
+		if cfg.MaxDiscoveryTime < 0 {
+			return cmterrors.ErrNegativeField{Field: "max_discovery_time"}
 		}
 
 		if cfg.TrustPeriod <= 0 {
@@ -1220,7 +1275,7 @@ func DefaultConsensusConfig() *ConsensusConfig {
 		TimeoutProposeDelta:              500 * time.Millisecond,
 		TimeoutVote:                      1000 * time.Millisecond,
 		TimeoutVoteDelta:                 500 * time.Millisecond,
-		TimeoutCommit:                    1000 * time.Millisecond,
+		TimeoutCommit:                    0 * time.Millisecond,
 		CreateEmptyBlocks:                true,
 		CreateEmptyBlocksInterval:        0 * time.Second,
 		PeerGossipSleepDuration:          100 * time.Millisecond,

@@ -5,6 +5,7 @@ import (
 
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/p2p/internal/nodekey"
 )
 
 // IPeerSet has a (immutable) subset of the methods of PeerSet.
@@ -30,7 +31,7 @@ type IPeerSet interface {
 // PeerSet is a special thread-safe structure for keeping a table of peers.
 type PeerSet struct {
 	mtx    cmtsync.Mutex
-	lookup map[ID]*peerSetItem
+	lookup map[nodekey.ID]*peerSetItem
 	list   []Peer
 }
 
@@ -42,7 +43,7 @@ type peerSetItem struct {
 // NewPeerSet creates a new peerSet with a list of initial capacity of 256 items.
 func NewPeerSet() *PeerSet {
 	return &PeerSet{
-		lookup: make(map[ID]*peerSetItem),
+		lookup: make(map[nodekey.ID]*peerSetItem),
 		list:   make([]Peer, 0, 256),
 	}
 }

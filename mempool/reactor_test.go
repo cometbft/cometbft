@@ -8,14 +8,14 @@ import (
 	"time"
 
 	"github.com/fortytw2/leaktest"
-	"github.com/go-kit/log/term"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
-	memproto "github.com/cometbft/cometbft/api/cometbft/mempool/v1"
+	memproto "github.com/cometbft/cometbft/api/cometbft/mempool/v2"
 	cfg "github.com/cometbft/cometbft/config"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
@@ -59,7 +59,7 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 	}
 
 	txs := addRandomTxs(t, reactors[0].mempool, numTxs)
-	waitForReactors(t, txs, reactors, checkTxsInOrder)
+	waitForReactors(t, txs, reactors, checkTxsInMempool)
 }
 
 // regression test for https://github.com/tendermint/tendermint/issues/5408
@@ -127,7 +127,7 @@ func TestReactorConcurrency(t *testing.T) {
 func TestReactorNoBroadcastToSender(t *testing.T) {
 	config := cfg.TestConfig()
 	const n = 2
-	reactors, _ := makeAndConnectReactors(config, n, nil)
+	reactors, _ := makeAndConnectReactorsNoLanes(config, n, nil)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -144,16 +144,39 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 	// create random transactions
 	txs := NewRandomTxs(numTxs, 20)
 
-	// the second peer sends all the transactions to the first peer
+	// This subset should be broadcast
+	var txsToBroadcast types.Txs
+	const minToBroadcast = numTxs / 10
+
+	// The second peer sends some transactions to the first peer
 	secondNodeID := reactors[1].Switch.NodeInfo().ID()
 	secondNode := reactors[0].Switch.Peers().Get(secondNodeID)
-	for _, tx := range txs {
-		_, err := reactors[0].TryAddTx(tx, secondNode)
-		require.NoError(t, err)
+	for i, tx := range txs {
+		shouldBroadcast := cmtrand.Bool() || // random choice
+			// Force shouldBroadcast == true to ensure that
+			// len(txsToBroadcast) >= minToBroadcast
+			(len(txsToBroadcast) < minToBroadcast &&
+				len(txs)-i <= minToBroadcast)
+
+		t.Log(i, "adding", tx, "shouldBroadcast", shouldBroadcast)
+
+		if !shouldBroadcast {
+			// From the second peer => should not be broadcast
+			_, err := reactors[0].TryAddTx(tx, secondNode)
+			require.NoError(t, err)
+		} else {
+			// Emulate a tx received via RPC => should broadcast
+			_, err := reactors[0].TryAddTx(tx, nil)
+			require.NoError(t, err)
+			txsToBroadcast = append(txsToBroadcast, tx)
+		}
 	}
 
-	// the second peer should not receive any transaction
-	ensureNoTxs(t, reactors[1], 100*time.Millisecond)
+	t.Log("Added", len(txs), "transactions, only", len(txsToBroadcast),
+		"should be sent to the peer")
+
+	// The second peer should receive only txsToBroadcast transactions
+	waitForReactors(t, txsToBroadcast, reactors[1:], checkTxsInOrder)
 }
 
 // Test that a lagging peer does not receive txs.
@@ -175,16 +198,16 @@ func TestMempoolReactorSendLaggingPeer(t *testing.T) {
 	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{1})
 
 	// Add a bunch of txs to the first reactor. The second reactor should not receive any tx.
-	txs1 := addRandomTxs(t, reactors[0].mempool, numTxs)
+	txs1 := addTxs(t, reactors[0].mempool, 0, numTxs)
 	ensureNoTxs(t, reactors[1], 5*PeerCatchupSleepIntervalMS*time.Millisecond)
 
 	// Now we know that the second reactor has advanced to height 9, so it should receive all txs.
 	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{9})
-	waitForReactors(t, txs1, reactors, checkTxsInOrder)
+	waitForReactors(t, txs1, reactors, checkTxsInMempool)
 
 	// Add a bunch of txs to first reactor. The second reactor should receive them all.
-	txs2 := addRandomTxs(t, reactors[0].mempool, numTxs)
-	waitForReactors(t, append(txs1, txs2...), reactors, checkTxsInOrder)
+	txs2 := addTxs(t, reactors[0].mempool, numTxs, numTxs)
+	waitForReactors(t, append(txs1, txs2...), reactors, checkTxsInMempool)
 }
 
 // Test the scenario where a tx selected for being sent to a peer is removed
@@ -224,7 +247,7 @@ func TestMempoolReactorSendRemovedTx(t *testing.T) {
 	// Now we know that the second reactor is not lagging, so it should receive
 	// all txs except those that were removed.
 	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{9})
-	waitForReactors(t, txsLeft, reactors, checkTxsInOrder)
+	waitForReactors(t, txsLeft, reactors, checkTxsInMempool)
 }
 
 func TestMempoolReactorMaxTxBytes(t *testing.T) {
@@ -422,7 +445,7 @@ func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 
 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 	// receive any tx. (The second reactor only sends transactions to the first reactor.)
-	checkTxsInOrder(t, txs, reactors[1], 0)
+	checkTxsInMempool(t, txs, reactors[1], 0)
 	for _, r := range reactors[2:] {
 		require.Zero(t, r.mempool.Size())
 	}
@@ -433,8 +456,8 @@ func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 
 	// Now the third reactor should start receiving transactions from the first reactor and
 	// the fourth reactor from the second
-	checkTxsInOrder(t, txs, reactors[2], 0)
-	checkTxsInOrder(t, txs, reactors[3], 0)
+	checkTxsInMempool(t, txs, reactors[2], 0)
+	checkTxsInMempool(t, txs, reactors[3], 0)
 }
 
 // Test the experimental feature that limits the number of outgoing connections for gossiping
@@ -465,8 +488,8 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 
 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 	// receive any tx. (The second reactor only sends transactions to the first reactor.)
-	checkTxsInOrder(t, txs, reactors[0], 0)
-	checkTxsInOrder(t, txs, reactors[1], 0)
+	checkTxsInMempool(t, txs, reactors[0], 0)
+	checkTxsInMempool(t, txs, reactors[1], 0)
 
 	for _, r := range reactors[2:] {
 		require.Zero(t, r.mempool.Size())
@@ -478,9 +501,9 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 
 	// Now the third reactor should start receiving transactions from the first reactor; the fourth
 	// reactor's mempool should still be empty.
-	checkTxsInOrder(t, txs, reactors[0], 0)
-	checkTxsInOrder(t, txs, reactors[1], 0)
-	checkTxsInOrder(t, txs, reactors[2], 0)
+	checkTxsInMempool(t, txs, reactors[0], 0)
+	checkTxsInMempool(t, txs, reactors[1], 0)
+	checkTxsInMempool(t, txs, reactors[2], 0)
 	for _, r := range reactors[3:] {
 		require.Zero(t, r.mempool.Size())
 	}
@@ -489,14 +512,7 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 // mempoolLogger is a TestingLogger which uses a different
 // color for each validator ("validator" key must exist).
 func mempoolLogger(level string) *log.Logger {
-	logger := log.TestingLoggerWithColorFn(func(keyvals ...any) term.FgBgColor {
-		for i := 0; i < len(keyvals)-1; i += 2 {
-			if keyvals[i] == "validator" {
-				return term.FgBgColor{Fg: term.Color(uint8(keyvals[i+1].(int) + 1))}
-			}
-		}
-		return term.FgBgColor{}
-	})
+	logger := log.TestingLogger()
 
 	// Customize log level
 	option, err := log.AllowLevel(level)
@@ -509,13 +525,18 @@ func mempoolLogger(level string) *log.Logger {
 }
 
 // makeReactors creates n mempool reactors.
-func makeReactors(config *cfg.Config, n int, logger *log.Logger) []*Reactor {
+func makeReactors(config *cfg.Config, n int, logger *log.Logger, lanesEnabled bool) []*Reactor {
 	if logger == nil {
-		logger = mempoolLogger("debug")
+		logger = mempoolLogger("info")
 	}
 	reactors := make([]*Reactor, n)
 	for i := 0; i < n; i++ {
-		app := kvstore.NewInMemoryApplication()
+		var app *kvstore.Application
+		if lanesEnabled {
+			app = kvstore.NewInMemoryApplication()
+		} else {
+			app = kvstore.NewInMemoryApplicationWithoutLanes()
+		}
 		cc := proxy.NewLocalClientCreator(app)
 		mempool, cleanup := newMempoolWithApp(cc)
 		defer cleanup()
@@ -538,15 +559,21 @@ func connectReactors(config *cfg.Config, reactors []*Reactor, connect func([]*p2
 	return p2p.StartAndConnectSwitches(switches, connect)
 }
 
+func makeAndConnectReactorsNoLanes(config *cfg.Config, n int, logger *log.Logger) ([]*Reactor, []*p2p.Switch) {
+	reactors := makeReactors(config, n, logger, false)
+	switches := connectReactors(config, reactors, p2p.Connect2Switches)
+	return reactors, switches
+}
+
 func makeAndConnectReactors(config *cfg.Config, n int, logger *log.Logger) ([]*Reactor, []*p2p.Switch) {
-	reactors := makeReactors(config, n, logger)
+	reactors := makeReactors(config, n, logger, true)
 	switches := connectReactors(config, reactors, p2p.Connect2Switches)
 	return reactors, switches
 }
 
 // connect N mempool reactors through N switches as a star centered in c.
 func makeAndConnectReactorsStar(config *cfg.Config, c, n int, logger *log.Logger) ([]*Reactor, []*p2p.Switch) {
-	reactors := makeReactors(config, n, logger)
+	reactors := makeReactors(config, n, logger, true)
 	switches := connectReactors(config, reactors, p2p.ConnectStarSwitches(c))
 	return reactors, switches
 }
@@ -612,6 +639,7 @@ func checkTxsInOrder(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex
 
 	// Check that all transactions in the mempool are in the same order as txs.
 	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
+	require.Equal(t, len(txs), len(reapedTxs))
 	for i, tx := range txs {
 		assert.Equalf(t, tx, reapedTxs[i],
 			"txs at index %d on reactor %d don't match: %v vs %v", i, reactorIndex, tx, reapedTxs[i])
@@ -656,4 +684,177 @@ func TestMempoolVectors(t *testing.T) {
 
 		require.Equal(t, tc.expBytes, hex.EncodeToString(bz), tc.testName)
 	}
+}
+
+// Verify that counting of duplicates and first time transactions work
+// The test sends transactions from node2 to node1 twice.
+// The second time they will get rejected.
+func TestDOGTransactionCount(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.DOGProtocolEnabled = true
+
+	// Put the interval to a higher value to make sure the values don't get reset
+	config.Mempool.DOGAdjustInterval = 15 * time.Second
+	reactors, _ := makeAndConnectReactors(config, 2, nil)
+
+	// create random transactions
+	txs := newUniqueTxs(numTxs)
+	secondNodeID := reactors[1].Switch.NodeInfo().ID()
+	secondNode := reactors[0].Switch.Peers().Get(secondNodeID)
+
+	for _, tx := range txs {
+		_, err := reactors[0].TryAddTx(tx, secondNode)
+		require.NoError(t, err)
+	}
+
+	require.Equal(t, int64(len(txs)), reactors[0].redundancyControl.firstTimeTxs)
+	for _, tx := range txs {
+		_, err := reactors[0].TryAddTx(tx, secondNode)
+		// The transaction is in cache, hence the Error
+		require.Error(t, err)
+	}
+	require.Equal(t, int64(len(txs)), reactors[0].redundancyControl.duplicateTxs)
+
+	reactors[0].redundancyControl.triggerAdjustment(reactors[0])
+	// This is done to give enough time for the route changes to take effect
+	// If the test starts failing, revisit this value
+	time.Sleep(100 * time.Millisecond)
+
+	reactors[0].redundancyControl.mtx.RLock()
+	dupTx := reactors[0].redundancyControl.duplicateTxs
+	firstTimeTx := reactors[0].redundancyControl.firstTimeTxs
+	reactors[0].redundancyControl.mtx.RUnlock()
+
+	// Now the counters should be reset
+	require.Equal(t, int64(0), dupTx)
+	require.Equal(t, int64(0), firstTimeTx)
+}
+
+// Testing the disabled route between two nodes
+// AS the description of DOG in the issue:
+// The core idea of the protocol is the following.
+// Consider a node A that receives from node B a transaction
+// that it already has. Let's assume B itself had received
+// the transaction from C. The fact that A received from B
+// a transaction it already has means that there must exist
+// a cycle in the network topology.
+// Therefore, a tells B to stop sending transactions B would be getting from C
+// (i.e. A tells B to disable route C → A → B).
+// We then reduce the redundancy level forcing A to tell B to re-enable the routes.
+func TestDOGDisabledRoute(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.DOGProtocolEnabled = true
+
+	// Put the interval to a higher value to make sure the values don't get reset
+	config.Mempool.DOGAdjustInterval = 35 * time.Second
+	reactors, _ := makeAndConnectReactors(config, 3, nil)
+
+	secondNodeID := reactors[1].Switch.NodeInfo().ID()
+	secondNode := reactors[0].Switch.Peers().Get(secondNodeID)
+	secondNodeFromThird := reactors[2].Switch.Peers().Get(secondNodeID)
+
+	thirdNodeID := reactors[2].Switch.NodeInfo().ID()
+	thirdNodeFromFirst := reactors[0].Switch.Peers().Get(thirdNodeID)
+
+	firstNodeID := reactors[0].Switch.NodeInfo().ID()
+	firstNodeFromThird := reactors[2].Switch.Peers().Get(firstNodeID)
+
+	// create random transactions
+	txs := newUniqueTxs(numTxs)
+	// Add transactions to node 3 from node 2
+	// node3.senders[tx] = node2
+	for _, tx := range txs {
+		_, err := reactors[2].TryAddTx(tx, secondNodeFromThird)
+		require.NoError(t, err)
+	}
+
+	// Add the same transactions to node 1 from node 2
+	for _, tx := range txs {
+		_, err := reactors[0].TryAddTx(tx, secondNode)
+		require.NoError(t, err)
+	}
+
+	// Trying to add the same transactions node 1 has received
+	// from node 2, but this time from node 3
+	// Node 1 should now ask node 3 to disable the route between
+	// a node that has sent this tx to node 3(node 2) and node1
+	for _, tx := range txs {
+		_, err := reactors[0].TryAddTx(tx, thirdNodeFromFirst)
+		// The transaction is in cache, hence the Error
+		require.ErrorIs(t, err, ErrTxInCache)
+	}
+
+	reactors[0].redundancyControl.triggerAdjustment(reactors[0])
+	// Wait for the redundancy adjustment to kick in
+	// If the test starts failing, revisit this value
+	time.Sleep(100 * time.Second)
+
+	reactors[2].router.mtx.RLock()
+	// Make sure that Node 3 has at least one disabled route
+	require.Greater(t, len(reactors[2].router.disabledRoutes), 0)
+
+	require.True(t, reactors[2].router.isRouteDisabled(secondNodeFromThird.ID(), firstNodeFromThird.ID()))
+	reactors[2].router.mtx.RUnlock()
+
+	// This will force Node 3 to delete all disabled routes
+	reactors[2].Switch.StopPeerGracefully(secondNode)
+
+	// The route should not be there
+	require.False(t, reactors[2].router.isRouteDisabled(secondNodeFromThird.ID(), firstNodeFromThird.ID()))
+}
+
+// When a peer disconnects we want to remove all disabled route info
+// for that peer only.
+func TestDOGRemoveDisabledRoutesOnDisconnect(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.DOGProtocolEnabled = true
+
+	reactors, _ := makeAndConnectReactors(config, 4, nil)
+
+	fourthNodeID := reactors[3].Switch.NodeInfo().ID()
+
+	secondNodeID := reactors[1].Switch.NodeInfo().ID()
+	secondNode := reactors[0].Switch.Peers().Get(secondNodeID)
+
+	thirdNodeID := reactors[2].Switch.NodeInfo().ID()
+
+	reactors[0].router.disableRoute(secondNodeID, fourthNodeID)
+	reactors[0].router.disableRoute(thirdNodeID, fourthNodeID)
+	reactors[0].router.disableRoute(thirdNodeID, secondNodeID)
+
+	require.True(t, reactors[0].router.isRouteDisabled(secondNodeID, fourthNodeID))
+	require.True(t, reactors[0].router.isRouteDisabled(thirdNodeID, fourthNodeID))
+	require.True(t, reactors[0].router.isRouteDisabled(thirdNodeID, secondNodeID))
+
+	reactors[0].Switch.StopPeerGracefully(secondNode)
+
+	require.False(t, reactors[0].router.isRouteDisabled(secondNodeID, fourthNodeID))
+	require.False(t, reactors[0].router.isRouteDisabled(thirdNodeID, secondNodeID))
+	require.True(t, reactors[0].router.isRouteDisabled(thirdNodeID, fourthNodeID))
+}
+
+// Test redundancy values depending on Number of transactions.
+func TestDOGTestRedundancyCalculation(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.DOGProtocolEnabled = true
+	config.Mempool.DOGTargetRedundancy = 0.5
+	reactors, _ := makeAndConnectReactors(config, 1, nil)
+
+	redundancy := reactors[0].redundancyControl.currentRedundancy()
+	require.Equal(t, redundancy, float64(-1))
+
+	reactors[0].redundancyControl.firstTimeTxs = 10
+	reactors[0].redundancyControl.duplicateTxs = 0
+	redundancy = reactors[0].redundancyControl.currentRedundancy()
+	require.Equal(t, redundancy, float64(0))
+
+	reactors[0].redundancyControl.duplicateTxs = 1000
+	reactors[0].redundancyControl.firstTimeTxs = 10
+	redundancy = reactors[0].redundancyControl.currentRedundancy()
+	require.Greater(t, redundancy, config.Mempool.DOGTargetRedundancy)
+
+	reactors[0].redundancyControl.duplicateTxs = 1000
+	reactors[0].redundancyControl.firstTimeTxs = 0
+	redundancy = reactors[0].redundancyControl.currentRedundancy()
+	require.Equal(t, redundancy, reactors[0].redundancyControl.upperBound)
 }

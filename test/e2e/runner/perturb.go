@@ -20,7 +20,8 @@ func Perturb(ctx context.Context, testnet *e2e.Testnet, ifp infra.Provider) erro
 			if err != nil {
 				return err
 			}
-			time.Sleep(3 * time.Second) // give network some time to recover between each
+			// Give network some time to recover between each perturbation.
+			time.Sleep(testnet.PerturbInterval)
 		}
 	}
 	return nil
@@ -64,6 +65,10 @@ func PerturbNode(ctx context.Context, node *e2e.Node, perturbation e2e.Perturbat
 		}
 		if node.PersistInterval == 0 {
 			timeout *= 5
+		} else {
+			// still need to give some extra time to the runner
+			// to wait for the node to restart when killing
+			timeout *= 2
 		}
 
 	case e2e.PerturbationPause:

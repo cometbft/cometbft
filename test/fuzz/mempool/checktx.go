@@ -1,6 +1,8 @@
 package reactor
 
 import (
+	"context"
+
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	"github.com/cometbft/cometbft/config"
 	mempl "github.com/cometbft/cometbft/mempool"
@@ -20,7 +22,16 @@ func init() {
 
 	cfg := config.DefaultMempoolConfig()
 	cfg.Broadcast = false
-	mempool = mempl.NewCListMempool(cfg, appConnMem, 0)
+
+	resp, err := app.Info(context.Background(), proxy.InfoRequest)
+	if err != nil {
+		panic(err)
+	}
+	lanesInfo, err := mempl.BuildLanesInfo(resp.LanePriorities, resp.DefaultLane)
+	if err != nil {
+		panic(err)
+	}
+	mempool = mempl.NewCListMempool(cfg, appConnMem, lanesInfo, 0)
 }
 
 func Fuzz(data []byte) int {

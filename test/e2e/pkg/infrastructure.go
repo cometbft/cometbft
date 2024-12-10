@@ -46,10 +46,10 @@ type InstanceData struct {
 	PrivilegedGRPCPort uint32 `json:"privileged_grpc_port"`
 }
 
-func sortNodeNames(m Manifest) []string {
+func sortNodeNames(m *Manifest) []string {
 	// Set up nodes, in alphabetical order (IPs and ports get same order).
 	nodeNames := []string{}
-	for name := range m.Nodes {
+	for name := range m.NodesMap {
 		nodeNames = append(nodeNames, name)
 	}
 	sort.Strings(nodeNames)
@@ -74,7 +74,7 @@ func NewDockerInfrastructureData(m Manifest) (InfrastructureData, error) {
 		Network:   netAddress,
 	}
 	localHostIP := net.ParseIP("127.0.0.1")
-	for _, name := range sortNodeNames(m) {
+	for _, name := range sortNodeNames(&m) {
 		ifd.Instances[name] = InstanceData{
 			IPAddress:          ipGen.Next(),
 			ExtIPAddress:       localHostIP,

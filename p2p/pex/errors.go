@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/internal/nodekey"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
 )
 
 var (
@@ -15,7 +16,7 @@ var (
 )
 
 type ErrAddrBookNonRoutable struct {
-	Addr *p2p.NetAddress
+	Addr *na.NetAddr
 }
 
 func (err ErrAddrBookNonRoutable) Error() string {
@@ -23,7 +24,7 @@ func (err ErrAddrBookNonRoutable) Error() string {
 }
 
 type ErrAddrBookOldAddressNewBucket struct {
-	Addr     *p2p.NetAddress
+	Addr     *na.NetAddr
 	BucketID int
 }
 
@@ -34,7 +35,7 @@ func (err ErrAddrBookOldAddressNewBucket) Error() string {
 }
 
 type ErrAddrBookSelf struct {
-	Addr *p2p.NetAddress
+	Addr *na.NetAddr
 }
 
 func (err ErrAddrBookSelf) Error() string {
@@ -42,7 +43,7 @@ func (err ErrAddrBookSelf) Error() string {
 }
 
 type ErrAddrBookPrivate struct {
-	Addr *p2p.NetAddress
+	Addr *na.NetAddr
 }
 
 func (err ErrAddrBookPrivate) Error() string {
@@ -54,7 +55,7 @@ func (ErrAddrBookPrivate) PrivateAddr() bool {
 }
 
 type ErrAddrBookPrivateSrc struct {
-	Src *p2p.NetAddress
+	Src *na.NetAddr
 }
 
 func (err ErrAddrBookPrivateSrc) Error() string {
@@ -66,8 +67,8 @@ func (ErrAddrBookPrivateSrc) PrivateAddr() bool {
 }
 
 type ErrAddrBookNilAddr struct {
-	Addr *p2p.NetAddress
-	Src  *p2p.NetAddress
+	Addr *na.NetAddr
+	Src  *na.NetAddr
 }
 
 func (err ErrAddrBookNilAddr) Error() string {
@@ -75,7 +76,7 @@ func (err ErrAddrBookNilAddr) Error() string {
 }
 
 type ErrAddrBookInvalidAddr struct {
-	Addr    *p2p.NetAddress
+	Addr    *na.NetAddr
 	AddrErr error
 }
 
@@ -85,7 +86,7 @@ func (err ErrAddrBookInvalidAddr) Error() string {
 
 // ErrAddressBanned is thrown when the address has been banned and therefore cannot be used.
 type ErrAddressBanned struct {
-	Addr *p2p.NetAddress
+	Addr *na.NetAddr
 }
 
 func (err ErrAddressBanned) Error() string {
@@ -94,7 +95,7 @@ func (err ErrAddressBanned) Error() string {
 
 // ErrReceivedPEXRequestTooSoon is thrown when a peer sends a PEX request too soon after the last one.
 type ErrReceivedPEXRequestTooSoon struct {
-	Peer         p2p.ID
+	Peer         nodekey.ID
 	LastReceived time.Time
 	Now          time.Time
 	MinInterval  time.Duration

@@ -24,6 +24,11 @@ type (
 		Field string
 		Err   error
 	}
+
+	// ErrNegativeOrZeroField is returned every time some field which should be positive turns out negative or zero.
+	ErrNegativeOrZeroField struct {
+		Field string
+	}
 )
 
 func (e ErrNegativeField) Error() string {
@@ -40,4 +45,8 @@ func (e ErrInvalidField) Error() string {
 
 func (e ErrWrongField) Error() string {
 	return fmt.Sprintf("wrong %s: %v", e.Field, e.Err)
+}
+
+func (e ErrNegativeOrZeroField) Error() string {
+	return e.Field + " must be positive"
 }

@@ -3,15 +3,15 @@ package pex
 import (
 	"testing"
 
-	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/internal/nodekey"
 )
 
 func BenchmarkAddrBook_hash(b *testing.B) {
 	book := &addrBook{
 		ourAddrs:          make(map[string]struct{}),
-		privateIDs:        make(map[p2p.ID]struct{}),
-		addrLookup:        make(map[p2p.ID]*knownAddress),
-		badPeers:          make(map[p2p.ID]*knownAddress),
+		privateIDs:        make(map[nodekey.ID]struct{}),
+		addrLookup:        make(map[nodekey.ID]*knownAddress),
+		badPeers:          make(map[nodekey.ID]*knownAddress),
 		filePath:          "",
 		routabilityStrict: true,
 	}

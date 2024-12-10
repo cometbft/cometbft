@@ -14,10 +14,15 @@ name: "CodeQL"
 on:
   workflow_dispatch:  # allow running workflow manually
   push:
-    branches: ["main"]
+    branches:
+      - main
+    paths:
+      - "**.go"
   pull_request:
-    # The branches below must be a subset of the branches above
-    branches: ["main"]
+    branches:
+      - main
+    paths:
+      - "**.go"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

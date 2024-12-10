@@ -1,5 +1,6 @@
 key_type = "secp256k1eth"
 
+prometheus = true
 [node.validator00]
 [node.validator01]
 [node.validator02]

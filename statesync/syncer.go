@@ -22,10 +22,6 @@ import (
 const (
 	// chunkTimeout is the timeout while waiting for the next chunk from the chunk queue.
 	chunkTimeout = 2 * time.Minute
-
-	// minimumDiscoveryTime is the lowest allowable time for a
-	// SyncAny discovery time.
-	minimumDiscoveryTime = 5 * time.Second
 )
 
 var (
@@ -138,18 +134,18 @@ func (s *syncer) RemovePeer(peer p2p.Peer) {
 	s.snapshots.RemovePeer(peer.ID())
 }
 
-// SyncAny tries to sync any of the snapshots in the snapshot pool, waiting to discover further
-// snapshots if none were found and discoveryTime > 0. It returns the latest state and block commit
-// which the caller must use to bootstrap the node.
-func (s *syncer) SyncAny(discoveryTime time.Duration, retryHook func()) (sm.State, *types.Commit, error) {
-	if discoveryTime != 0 && discoveryTime < minimumDiscoveryTime {
-		discoveryTime = 5 * minimumDiscoveryTime
-	}
+// SyncAny tries to sync any of the snapshots in the snapshot pool, waiting to
+// discover further snapshots if none were found within discoveryTime. It
+// returns the latest state and block commit which the caller must use to
+// bootstrap the node.
+//
+// If none snapshots are found after maxDiscoveryTime, errNoSnapshots is
+// returned.
+func (s *syncer) SyncAny(discoveryTime, maxDiscoveryTime time.Duration, retryHook func()) (sm.State, *types.Commit, error) {
+	timeStart := time.Now()
 
-	if discoveryTime > 0 {
-		s.logger.Info("Discovering snapshots", "discoverTime", discoveryTime)
-		time.Sleep(discoveryTime)
-	}
+	s.logger.Info(fmt.Sprintf("Discovering snapshots for %v", discoveryTime))
+	time.Sleep(discoveryTime)
 
 	// The app may ask us to retry a snapshot restoration, in which case we need to reuse
 	// the snapshot and chunk queue from the previous loop iteration.
@@ -165,11 +161,11 @@ func (s *syncer) SyncAny(discoveryTime time.Duration, retryHook func()) (sm.Stat
 			chunks = nil
 		}
 		if snapshot == nil {
-			if discoveryTime == 0 {
+			if maxDiscoveryTime > 0 && time.Since(timeStart) >= maxDiscoveryTime {
 				return sm.State{}, nil, errNoSnapshots
 			}
 			retryHook()
-			s.logger.Info("sync any", "msg", log.NewLazySprintf("Discovering snapshots for %v", discoveryTime))
+			s.logger.Info("sync any", "msg", fmt.Sprintf("Discovering snapshots for %v", discoveryTime))
 			time.Sleep(discoveryTime)
 			continue
 		}

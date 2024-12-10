@@ -26,7 +26,7 @@ type (
 )
 
 // Hash computes the TMHASH hash of the wire encoded transaction.
-func (tx Tx) Hash() []byte {
+func (tx Tx) Hash() cmtbytes.HexBytes {
 	return tmhash.Sum(tx)
 }
 
@@ -37,6 +37,10 @@ func (tx Tx) Key() TxKey {
 // String returns the hex-encoded transaction as a string.
 func (tx Tx) String() string {
 	return fmt.Sprintf("Tx{%X}", []byte(tx))
+}
+
+func (txKey TxKey) Hash() []byte {
+	return txKey[:]
 }
 
 // Txs is a slice of Tx.

@@ -1,36 +1,45 @@
---- 
+---
 order: 11
 ---
 
 # State Sync
 
-With block sync a node is downloading all of the data of an application from genesis and verifying it.
-With state sync your node will download data related to the head or near the head of the chain and verify the data.
-This leads to drastically shorter times for joining a network.
+With block sync a node is downloading all of the data of an application from
+genesis and verifying it.
+
+With state sync your node will download data related to the head or near the
+head of the chain and verify the data. This leads to drastically shorter times
+for joining a network.
 
 ## Using State Sync
 
-State sync will continuously work in the background to supply nodes with chunked data when bootstrapping.
+State sync will continuously work in the background to supply nodes with
+chunked data when bootstrapping.
 
-> NOTE: Before trying to use state sync, see if the application you are operating a node for supports it.
+> NOTE: Before trying to use state sync, see if the application you are
+> operating a node for supports it.
 
-Under the state sync section in `config.toml` you will find multiple settings that need to be configured in order for your node to use state sync.
+Under the state sync section in `config.toml` you will find multiple settings
+that need to be configured in order for your node to use state sync.
 
 Lets breakdown the settings:
 
-- `enable`: Enable is to inform the node that you will be using state sync to bootstrap your node.
-- `rpc_servers`: RPC servers are needed because state sync utilizes the light client for verification.
+- `enable`: Enable is to inform the node that you will be using state sync to
+  bootstrap your node.
+- `rpc_servers`: RPC servers are needed because state sync utilizes the light
+  client for verification.
     - 2 servers are required, more is always helpful.
-- `temp_dir`: Temporary directory is store the chunks in the machines local storage, If nothing is set it will create a directory in `/tmp`
 
-The next information you will need to acquire it through publicly exposed RPC's or a block explorer which you trust.
-
-- `trust_height`: Trusted height defines at which height your node should trust the chain.
-- `trust_hash`: Trusted hash is the hash in the `BlockID` corresponding to the trusted height.
+- `trust_height`: Trusted height defines at which height your node should trust
+  the chain.
+- `trust_hash`: Trusted hash is the hash of the block at the trusted height.
 - `trust_period`: Trust period is the period in which headers can be verified.
   > :warning: This value should be significantly smaller than the unbonding period.
 
-If you are relying on publicly exposed RPC's to get the need information, you can use `curl` and [`jq`][jq].
+For other settings, visit the [Configuration](./configuration) page.
+
+If you need to get the information you need from publicly exposed RPCs, you 
+can use `curl` and [`jq`][jq].
 
 Example:
 

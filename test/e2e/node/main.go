@@ -32,12 +32,12 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
-var logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+var logger = log.NewLogger(os.Stdout)
 
 // main is the binary entrypoint.
 func main() {
 	if len(os.Args) != 2 {
-		fmt.Printf("Usage: %v <configfile>", os.Args[0])
+		fmt.Printf("Usage: %v <configfile>\n", os.Args[0])
 		return
 	}
 	configFile := ""
@@ -268,15 +268,15 @@ func setupNode() (*config.Config, log.Logger, *p2p.NodeKey, error) {
 	}
 
 	if cmtcfg.LogFormat == config.LogFormatJSON {
-		logger = log.NewTMJSONLogger(log.NewSyncWriter(os.Stdout))
+		logger = log.NewJSONLogger(os.Stdout)
+	} else if !cmtcfg.LogColors {
+		logger = log.NewLoggerWithColor(os.Stdout, false)
 	}
 
 	nodeLogger, err := cmtflags.ParseLogLevel(cmtcfg.LogLevel, logger, config.DefaultLogLevel)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-
-	nodeLogger = nodeLogger.With("module", "main")
 
 	nodeKey, err := p2p.LoadOrGenNodeKey(cmtcfg.NodeKeyFile())
 	if err != nil {

@@ -847,9 +847,7 @@ OUTER_LOOP:
 					// If the second peer was just set, reset the retryTimer to give the
 					// second peer a chance to respond.
 					if picked := bpr.pickSecondPeerAndSendRequest(); picked {
-						if !retryTimer.Stop() { //nolint:revive // suppress max-control-nesting linter
-							<-retryTimer.C
-						}
+						_ = retryTimer.Stop()
 						retryTimer.Reset(requestRetrySeconds * time.Second)
 					}
 				}

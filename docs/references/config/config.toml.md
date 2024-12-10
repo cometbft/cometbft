@@ -109,24 +109,27 @@ Nodes on the peer-to-peer network are identified by `nodeID@host:port` as discus
 ### db_backend
 The chosen database backend for the node.
 ```toml
-db_backend = "goleveldb"
+db_backend = "pebbledb"
 ```
 
 | Value type          | string        | dependencies  | GitHub                                           |
 |:--------------------|:--------------|:--------------|:-------------------------------------------------|
-| **Possible values** | `"goleveldb"` | pure Golang   | [goleveldb](https://github.com/syndtr/goleveldb) |
-|                     | `"rocksdb"`   | requires gcc  | [grocksdb](https://github.com/linxGnu/grocksdb)  |
-|                     | `"badgerdb"`  | pure Golang   | [badger](https://github.com/dgraph-io/badger)    |
+| **Possible values** | `"badgerdb"`  | pure Golang   | [badger](https://github.com/dgraph-io/badger)    |
+|                     | `"goleveldb"` | pure Golang   | [goleveldb](https://github.com/syndtr/goleveldb) |
 |                     | `"pebbledb"`  | pure Golang   | [pebble](https://github.com/cockroachdb/pebble)  |
+|                     | `"rocksdb"`   | requires gcc  | [grocksdb](https://github.com/linxGnu/grocksdb)  |
 
-During the build process, by default, only the `goleveldb` library is built into the binary.
+During the build process, by default, only the `pebbledb` library is built into the binary.
 To add support for alternative databases, you need to add them in the build tags.
 For example: `go build -tags rocksdb`.
 
-The RocksDB fork has API changes from the upstream RocksDB implementation. All other databases claim a stable API.
+`goleveldb` is supported by default too, but it is no longer recommended for
+production use.
 
-The CometBFT team tests rely on the GoLevelDB implementation. All other implementations are considered experimental from
-a CometBFT perspective. The supported databases are part of the [cometbft-db](https://github.com/cometbft/cometbft-db) library
+The RocksDB fork has API changes from the upstream RocksDB implementation. All
+other databases claim a stable API.
+
+The supported databases are part of the [cometbft-db](https://github.com/cometbft/cometbft-db) library
 that CometBFT uses as a common database interface to various databases.
 
 ### db_dir
@@ -187,8 +190,28 @@ Set RPC server logs to `debug` and leave everything else at `info`:
 log_level = "rpc-server:debug"
 ```
 
+#### Stripping debug log messages at compile-time
+
+Logging debug messages can lead to significant memory allocations, especially when outputting variable values. In Go,
+even if `log_level` is not set to `debug`, these allocations can still occur because the program evaluates the debug
+statements regardless of the log level.
+
+To prevent unnecessary memory usage, you can strip out all debug-level code from the binary at compile time using
+build flags. This approach improves the performance of CometBFT by excluding debug messages entirely, even when log_level
+is set to debug. This technique is ideal for production environments that prioritize performance optimization over debug logging.
+
+In order to build a binary stripping all debug log messages (e.g. `log.Debug()`) from the binary, use the `nodebug` tag:
+```
+COMETBFT_BUILD_OPTIONS=nodebug make install
+```
+
+> Note: Compiling CometBFT with this method will completely disable all debug messages. If you require debug output,
+> avoid compiling the binary with the `nodebug` build tag.
+
 ### log_format
+
 Define the output format of the logs.
+
 ```toml
 log_format = "plain"
 ```
@@ -198,9 +221,10 @@ log_format = "plain"
 | **Possible values** | `"plain"` |
 |                     | `"json"`  |
 
-`plain` provides ANSI color-coded plain-text logs.
+`plain` provides ANSI plain-text logs, by default color-coded (can be changed using [`log_colors`](#log_colors)).
 
 `json` provides JSON objects (one per line, not prettified) using the following (incomplete) schema:
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -249,6 +273,22 @@ log_format = "plain"
 > Note: The list of properties is not exhaustive. When implementing log parsing, check your logs and update the schema.
 
 <!--- Todo: Probably we should create separate schemas for the different log levels or modules. --->
+
+### log_colors
+
+Define whether the log output should be colored.
+Only relevant when [`log_format`](#log_format) is `plain`.
+
+```toml
+log_colors = true
+```
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Possible values** | `true`  |
+|                     | `false` |
+
+The default is `true` when [`log_format`](#log_format) is `plain`.
 
 ### genesis_file
 Path to the JSON file containing the initial conditions for a CometBFT blockchain and the initial state of the application (more details [here](./genesis.json.md)).
@@ -1431,6 +1471,52 @@ to limit broadcasts to persistent peer nodes.
 For non-persistent peers, if enabled, a value of 10 is recommended based on experimental performance results using the
 default P2P configuration.
 
+### mempool.dog_protocol_enabled
+```toml
+dog_protocol_enabled = true
+```
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Possible values** | `false` |
+|                     | `true`  |
+
+When set to `true`, it enables the DOG [gossip protocol](../../../specs/mempool/gossip) to reduce redundant
+messages during transaction dissemination. It only works with `mempool.type = "flood"`, and it's not
+compatible `mempool.experimental_max_gossip_connections_to_*_peers`.
+
+### mempool.dog_target_redundancy
+```toml
+dog_target_redundancy = 1
+```
+
+| Value type          |  real  |
+|:--------------------|:-------|
+| **Possible values** |  > 0   |
+
+Used by the DOG protocol to set the desired transaction redundancy level for the node. For example,
+a redundancy of 0.5 means that, for every two first-time transactions received, the node will
+receive one duplicate transaction. Zero redundancy is disabled because it could render the node
+isolated from transaction data.
+
+Check out the issue [#4597](https://github.com/cometbft/cometbft/issues/4597) for discussions about
+possible values.
+
+### mempool.dog_adjust_interval
+```toml
+dog_adjust_interval = 1000
+```
+
+| Value type          |  integer   |
+|:--------------------|:-----------|
+| **Possible values** | &ge; 1000 |
+
+Used by the DOG protocol to set how often it will attempt to adjust the redundancy level. The higher
+the value, the longer it will take the node to reduce bandwidth and converge to a stable redundancy
+level. In networks with high latency between nodes (> 500ms), it could be necessary to increase the
+default value, as explained in the
+[spec](https://github.com/cometbft/cometbft/blob/13d852b43068d2e19de0f307d2bc399b30c0ae68/spec/mempool/gossip/dog.md#when-to-adjust).
+
 ## State synchronization
 State sync rapidly bootstraps a new node by discovering, fetching, and restoring a state machine snapshot from peers
 instead of fetching and replaying historical blocks. It requires some peers in the network to take and serve state
@@ -1506,17 +1592,15 @@ trust_period = "168h0m0s"
 For Cosmos SDK-based chains, `statesync.trust_period` should usually be about 2/3rd of the unbonding period
 (about 2 weeks) during which they can be financially punished (slashed) for misbehavior.
 
-### statesync.discovery_time
-Time to spend discovering snapshots before initiating a restore.
+### statesync.max_discovery_time
+Time to spend discovering snapshots before switching to blocksync. If set to 0, state sync will be trying indefinitely.
 ```toml
-discovery_time = "15s"
+max_discovery_time = "2m"
 ```
 
-If `discovery_time` is &gt; 0 and  &lt; 5 seconds, its value will be overridden to 5 seconds.
+If `max_discovery_time` is zero, the node will keep trying to discover snapshots indefinitely.
 
-If `discovery_time` is zero, the node will not wait for replies once it has broadcast the "snapshot request" message to its peers. If no snapshot data is received, state sync will fail without retrying.
-
-If `discovery_time` is &gt;= 5 seconds, the node will broadcast the "snapshot request" message to its peers and then wait for `discovery_time`. If no snapshot data has been received after that period, the node will retry: it will broadcast the "snapshot request" message again and wait for `discovery_time`, and so on.
+If `max_discovery_time` is greater than zero, the node will broadcast the "snapshot request" message to its peers and then wait for 5 sec. If no snapshot data has been received after that period, the node will retry: it will broadcast the "snapshot request" message again and wait for 5s, and so on until `max_discovery_time` is reached, after which the node will switch to blocksync.
 
 ### statesync.temp_dir
 Temporary directory for state sync snapshot chunks.

@@ -59,11 +59,14 @@ CometBFT adopts [zip215](https://zips.z.cash/zip-0215) for verification of ed255
 
 #### Secp256k1
 
-The address is the first 20-bytes of the SHA256 hash of the raw 32-byte public key:
+The address is the RIPEMD160 hash of the SHA256 hash of the raw 33-byte public key:
+
 
 ```go
-address = SHA256(pubkey)[:20]
+address = RIPEMD160(SHA256(pubkey))
 ```
+
+RIPEMD160 checksum size is 20 bytes.
 
 The public key comprised of 32 bytes for one field element (the x-coordinate),
 plus one byte for the parity of the y-coordinate. The first byte depends is a

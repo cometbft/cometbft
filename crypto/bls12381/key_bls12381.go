@@ -23,6 +23,9 @@ const (
 var (
 	// ErrDeserialization is returned when deserialization fails.
 	ErrDeserialization = errors.New("bls12381: deserialization error")
+	// ErrInfinitePubKey is returned when the public key is infinite. It is part
+	// of a more comprehensive subgroup check on the key.
+	ErrInfinitePubKey = errors.New("bls12381: pubkey is infinite")
 
 	dstMinSig = []byte("BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_")
 )
@@ -105,15 +108,8 @@ func (PrivKey) Type() string {
 	return KeyType
 }
 
-// Sign signs the given byte array. If msg is larger than
-// MaxMsgLen, SHA256 sum will be signed instead of the raw bytes.
+// Sign signs the given byte array.
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
-	if len(msg) > MaxMsgLen {
-		hash := sha256.Sum256(msg)
-		signature := new(blstSignature).Sign(privKey.sk, hash[:], dstMinSig)
-		return signature.Compress(), nil
-	}
-
 	signature := new(blstSignature).Sign(privKey.sk, msg, dstMinSig)
 	return signature.Compress(), nil
 }
@@ -162,6 +158,10 @@ func NewPublicKeyFromBytes(bz []byte) (*PubKey, error) {
 	if pk == nil {
 		return nil, ErrDeserialization
 	}
+	// Subgroup and infinity check
+	if !pk.KeyValidate() {
+		return nil, ErrInfinitePubKey
+	}
 	return &PubKey{pk: pk}, nil
 }
 
@@ -183,11 +183,6 @@ func (pubKey PubKey) VerifySignature(msg, sig []byte) bool {
 	// could be infinite.
 	if !signature.SigValidate(false) {
 		return false
-	}
-
-	if len(msg) > MaxMsgLen {
-		hash := sha256.Sum256(msg)
-		return signature.Verify(false, pubKey.pk, false, hash[:], dstMinSig)
 	}
 
 	return signature.Verify(false, pubKey.pk, false, msg, dstMinSig)

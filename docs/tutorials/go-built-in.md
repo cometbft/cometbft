@@ -48,7 +48,7 @@ have installed and the computer platform):
 
 ```bash
 $ go version
-go version go1.22.2 darwin/amd64
+go version go1.23.1 darwin/amd64
 
 ```
 
@@ -122,7 +122,7 @@ go: to add module requirements and sums:
 	go mod tidy
 ```
 
-go 1.22.2
+go 1.23.1
 Now, lets add `cometbft` as a dependency to our project. Run the `go get` command below:
 
 ```bash
@@ -143,7 +143,7 @@ The go.mod file should look similar to:
 ```go
 module kvstore
 
-go 1.21.8
+go 1.23.1
 
 require github.com/cometbft/cometbft v1.0.0 // indirect
 ```
@@ -649,12 +649,12 @@ func main() {
         config.PrivValidatorStateFile(),
     )
 
-    nodeKey, err := p2p.LoadNodeKey(config.NodeKeyFile())
+    nodeKey, err := nodekey.LoadNodeKey(config.NodeKeyFile())
     if err != nil {
         log.Fatalf("failed to load node's key: %v", err)
     }
 
-    logger := cmtlog.NewTMLogger(cmtlog.NewSyncWriter(os.Stdout))
+    logger := cmtlog.NewLogger(os.Stdout)
     logger, err = cmtflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)
 
     if err != nil {
@@ -741,7 +741,7 @@ pv := privval.LoadFilePV(
 `nodeKey` is needed to identify the node in a p2p network.
 
 ```go
-nodeKey, err := p2p.LoadNodeKey(config.NodeKeyFile())
+nodeKey, err := nodekey.LoadNodeKey(config.NodeKeyFile())
 if err != nil {
     return nil, fmt.Errorf("failed to load node's key: %w", err)
 }

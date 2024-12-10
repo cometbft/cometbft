@@ -31,10 +31,12 @@ var (
 	h1       = keys.GenSignedHeader(chainID, 1, bTime, nil, vals, vals,
 		hash("app_hash"), hash("cons_hash"), hash("results_hash"), 0, len(keys))
 	// 3/3 signed.
-	h2 = keys.GenSignedHeaderLastBlockID(chainID, 2, bTime.Add(30*time.Minute), nil, vals, vals,
+	vals2 = vals.CopyIncrementProposerPriority(1)
+	h2    = keys.GenSignedHeaderLastBlockID(chainID, 2, bTime.Add(30*time.Minute), nil, vals2, vals2,
 		hash("app_hash"), hash("cons_hash"), hash("results_hash"), 0, len(keys), types.BlockID{Hash: h1.Hash()})
 	// 3/3 signed.
-	h3 = keys.GenSignedHeaderLastBlockID(chainID, 3, bTime.Add(1*time.Hour), nil, vals, vals,
+	vals3 = vals2.CopyIncrementProposerPriority(1)
+	h3    = keys.GenSignedHeaderLastBlockID(chainID, 3, bTime.Add(1*time.Hour), nil, vals3, vals3,
 		hash("app_hash"), hash("cons_hash"), hash("results_hash"), 0, len(keys), types.BlockID{Hash: h2.Hash()})
 	trustPeriod  = 4 * time.Hour
 	trustOptions = light.TrustOptions{
@@ -44,9 +46,9 @@ var (
 	}
 	valSet = map[int64]*types.ValidatorSet{
 		1: vals,
-		2: vals,
-		3: vals,
-		4: vals,
+		2: vals2,
+		3: vals3,
+		4: vals.CopyIncrementProposerPriority(1),
 	}
 	headerSet = map[int64]*types.SignedHeader{
 		1: h1,
@@ -56,7 +58,7 @@ var (
 		3: h3,
 	}
 	l1       = &types.LightBlock{SignedHeader: h1, ValidatorSet: vals}
-	l2       = &types.LightBlock{SignedHeader: h2, ValidatorSet: vals}
+	l2       = &types.LightBlock{SignedHeader: h2, ValidatorSet: vals2}
 	fullNode = mockp.New(
 		chainID,
 		headerSet,
@@ -903,19 +905,40 @@ func TestClient_NewClientFromTrustedStore(t *testing.T) {
 	assert.EqualValues(t, l1.Height, h.Height)
 }
 
+func TestClient_NewClientFromEmptyTrustedStore(t *testing.T) {
+	// empty DB
+	db := dbs.New(dbm.NewMemDB(), chainID)
+
+	c, err := light.NewClientFromTrustedStore(
+		chainID,
+		trustPeriod,
+		fullNode,
+		[]provider.Provider{fullNode},
+		db,
+	)
+
+	if err == nil {
+		assert.NotPanics(t, func() {
+			_, _ = c.VerifyLightBlockAtHeight(ctx, 2, bTime)
+		})
+	} else {
+		require.ErrorIs(t, err, light.ErrEmptyTrustedStore)
+	}
+}
+
 func TestClientRemovesWitnessIfItSendsUsIncorrectHeader(t *testing.T) {
 	// different headers hash then primary plus less than 1/3 signed (no fork)
 	badProvider1 := mockp.New(
 		chainID,
 		map[int64]*types.SignedHeader{
 			1: h1,
-			2: keys.GenSignedHeaderLastBlockID(chainID, 2, bTime.Add(30*time.Minute), nil, vals, vals,
+			2: keys.GenSignedHeaderLastBlockID(chainID, 2, bTime.Add(30*time.Minute), nil, vals2, vals2,
 				hash("app_hash2"), hash("cons_hash"), hash("results_hash"),
 				len(keys), len(keys), types.BlockID{Hash: h1.Hash()}),
 		},
 		map[int64]*types.ValidatorSet{
 			1: vals,
-			2: vals,
+			2: vals2,
 		},
 	)
 	// header is empty
@@ -927,7 +950,7 @@ func TestClientRemovesWitnessIfItSendsUsIncorrectHeader(t *testing.T) {
 		},
 		map[int64]*types.ValidatorSet{
 			1: vals,
-			2: vals,
+			2: vals2,
 		},
 	)
 
@@ -1150,4 +1173,57 @@ func TestClientHandlesContexts(t *testing.T) {
 	require.Error(t, ctxCancel.Err())
 	require.Error(t, err)
 	require.ErrorIs(t, err, context.Canceled)
+}
+
+// TestClientErrorsDifferentProposerPriorities tests the case where the witness
+// sends us a light block with a validator set with different proposer priorities.
+func TestClientErrorsDifferentProposerPriorities(t *testing.T) {
+	primary := mockp.New(
+		chainID,
+		map[int64]*types.SignedHeader{
+			1: h1,
+			2: h2,
+		},
+		map[int64]*types.ValidatorSet{
+			1: vals,
+			2: vals2,
+		},
+	)
+	witness := mockp.New(
+		chainID,
+		map[int64]*types.SignedHeader{
+			1: h1,
+			2: h2,
+		},
+		map[int64]*types.ValidatorSet{
+			1: vals,
+			2: vals,
+		},
+	)
+
+	// Proposer priorities in vals and vals2 are different.
+	// This is because vals2 = vals.CopyIncrementProposerPriority(1)
+	require.Equal(t, vals.Hash(), vals2.Hash())
+	require.NotEqual(t, vals.ProposerPriorityHash(), vals2.ProposerPriorityHash())
+
+	c, err := light.NewClient(
+		ctx,
+		chainID,
+		trustOptions,
+		fullNode,
+		[]provider.Provider{primary, witness},
+		dbs.New(dbm.NewMemDB(), chainID),
+		light.Logger(log.TestingLogger()),
+		light.MaxRetryAttempts(1),
+	)
+	// witness should have behaved properly -> no error
+	require.NoError(t, err)
+	assert.EqualValues(t, 2, len(c.Witnesses()))
+
+	// witness behaves incorrectly, but we can't prove who's guilty -> error
+	_, err = c.VerifyLightBlockAtHeight(ctx, 2, bTime.Add(2*time.Hour))
+	require.Error(t, err)
+
+	// witness left in the list
+	assert.EqualValues(t, 2, len(c.Witnesses()))
 }

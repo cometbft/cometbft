@@ -6,9 +6,9 @@ import (
 	"io"
 	"math/big"
 
-	secp256k1 "github.com/btcsuite/btcd/btcec/v2"
-	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
-	"golang.org/x/crypto/ripemd160" //nolint: staticcheck // necessary for Bitcoin address format
+	"github.com/decred/dcrd/dcrec/secp256k1/v4"
+	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
+	"golang.org/x/crypto/ripemd160" //nolint: gosec,staticcheck // necessary for Bitcoin address format
 
 	"github.com/cometbft/cometbft/crypto"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
@@ -33,32 +33,36 @@ var _ crypto.PrivKey = PrivKey{}
 // PrivKey implements PrivKey.
 type PrivKey []byte
 
-// Bytes marshalls the private key using amino encoding.
+// Bytes returns the privkey as bytes.
 func (privKey PrivKey) Bytes() []byte {
 	return []byte(privKey)
 }
 
 // PubKey performs the point-scalar multiplication from the privKey on the
 // generator point to get the pubkey.
+//
+// See secp256k1.PrivKeyFromBytes.
 func (privKey PrivKey) PubKey() crypto.PubKey {
-	_, pubkeyObject := secp256k1.PrivKeyFromBytes(privKey)
+	secpPrivKey := secp256k1.PrivKeyFromBytes(privKey)
 
-	pk := pubkeyObject.SerializeCompressed()
+	pk := secpPrivKey.PubKey().SerializeCompressed()
 
 	return PubKey(pk)
 }
 
+// Type returns the key type.
 func (PrivKey) Type() string {
 	return KeyType
 }
 
 // GenPrivKey generates a new ECDSA private key on curve secp256k1 private key.
 // It uses OS randomness to generate the private key.
+//
+// See crypto.CReader.
 func GenPrivKey() PrivKey {
 	return genPrivKey(crypto.CReader())
 }
 
-// genPrivKey generates a new secp256k1 private key using the provided reader.
 func genPrivKey(rand io.Reader) PrivKey {
 	var privKeyBytes [PrivKeySize]byte
 	d := new(big.Int)
@@ -117,7 +121,7 @@ func GenPrivKeySecp256k1(secret []byte) PrivKey {
 // Sign creates an ECDSA signature on curve Secp256k1, using SHA256 on the msg.
 // The returned signature will be of the form R || S (in lower-S form).
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
-	priv, _ := secp256k1.PrivKeyFromBytes(privKey)
+	priv := secp256k1.PrivKeyFromBytes(privKey)
 
 	sum := sha256.Sum256(msg)
 	sig := ecdsa.SignCompact(priv, sum[:], false)
@@ -141,22 +145,33 @@ const PubKeySize = 33
 // This prefix is followed with the x-coordinate.
 type PubKey []byte
 
-// Address returns a Bitcoin style addresses: RIPEMD160(SHA256(pubkey)).
+// Address returns a Bitcoin style address: RIPEMD160(SHA256(pubkey)).
 func (pubKey PubKey) Address() crypto.Address {
 	if len(pubKey) != PubKeySize {
 		panic(fmt.Sprintf("length of pubkey is incorrect %d != %d", len(pubKey), PubKeySize))
 	}
 	hasherSHA256 := sha256.New()
-	_, _ = hasherSHA256.Write(pubKey) // does not error
+	_, err := hasherSHA256.Write(pubKey)
+	if err != nil {
+		panic(err)
+	}
 	sha := hasherSHA256.Sum(nil)
 
-	hasherRIPEMD160 := ripemd160.New()
-	_, _ = hasherRIPEMD160.Write(sha) // does not error
+	// Check if the size of the hash is what we expect.
+	if ripemd160.Size != crypto.AddressSize {
+		panic("ripemd160.Size != crypto.AddressSize")
+	}
+
+	hasherRIPEMD160 := ripemd160.New() // #nosec G406 // necessary for Bitcoin address format
+	_, err = hasherRIPEMD160.Write(sha)
+	if err != nil {
+		panic(err)
+	}
 
 	return crypto.Address(hasherRIPEMD160.Sum(nil))
 }
 
-// Bytes returns the pubkey marshaled with amino encoding.
+// Bytes returns the pubkey as bytes.
 func (pubKey PubKey) Bytes() []byte {
 	return []byte(pubKey)
 }
@@ -165,6 +180,7 @@ func (pubKey PubKey) String() string {
 	return fmt.Sprintf("PubKeySecp256k1{%X}", []byte(pubKey))
 }
 
+// Type returns the key type.
 func (PubKey) Type() string {
 	return KeyType
 }
@@ -183,7 +199,7 @@ func (pubKey PubKey) VerifySignature(msg []byte, sigStr []byte) bool {
 
 	// parse the signature:
 	signature := signatureFromBytes(sigStr)
-	// Reject malleable signatures. libsecp256k1 does this check but btcec doesn't.
+	// Reject malleable signatures. libsecp256k1 does this check but decred doesn't.
 	// see: https://github.com/ethereum/go-ethereum/blob/f9401ae011ddf7f8d2d95020b7446c17f8d98dc1/crypto/signature_nocgo.go#L90-L93
 	// Serialize() would negate S value if it is over half order.
 	// Hence, if the signature is different after Serialize() if should be rejected.

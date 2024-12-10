@@ -150,16 +150,27 @@ func TestBlock_Time(t *testing.T) {
 	blocks := fetchBlockChain(t)
 	testnet := loadTestnet(t)
 
+	// blocks are 1-indexed, i.e., blocks[0] = height 1, blocks[1] = height 2, etc.
 	lastBlock := blocks[0]
-	valSchedule := newValidatorSchedule(testnet)
+	valSchedule := newValidatorSchedule(t, &testnet)
 	for _, block := range blocks[1:] {
 		require.Less(t, lastBlock.Time, block.Time)
 		lastBlock = block
 
-		valSchedule.Increment(1)
 		if testnet.PbtsEnableHeight == 0 || block.Height < testnet.PbtsEnableHeight {
 			expTime := block.LastCommit.MedianTime(valSchedule.Set)
-			require.Equal(t, expTime, block.Time, "height=%d", block.Height)
+
+			require.Equal(
+				t,
+				expTime,
+				block.Time,
+				"height=%d, valSet=%s\n%s",
+				block.Height,
+				valSchedule.Set,
+				block.LastCommit.StringIndented("  "),
+			)
 		}
+
+		valSchedule.IncreaseHeight(t, 1)
 	}
 }

@@ -20,7 +20,7 @@ CometBFT keeps multiple distinct databases in the `$CMTHOME/data`:
   used to temporarily store intermediate results during block processing.
 - `tx_index.db`: Indexes transactions and by tx hash and height. The tx results are indexed if they are added to the `FinalizeBlock` response in the application.
 
-> By default, CometBFT will only index transactions by their hash and height, if you want the result events to be indexed, see [indexing transactions](../../guides/app-dev/indexing-transactions.md#adding-events) for
+> By default, CometBFT will only index transactions by their hash and height, if you want the result events to be indexed, see [indexing transactions](../../guides/app-dev/indexing-transactions.md#adding-events)
 for details.
 
 Applications can expose block pruning strategies to the node operator.
@@ -31,13 +31,42 @@ Applications can use [state sync](state-sync.md) to help nodes bootstrap quickly
 ## Logging
 
 Default logging level (`log_level = "main:info,state:info,statesync:info,*:error"`) should suffice for
-normal operation mode. Read [this
-post](https://blog.cosmos.network/one-of-the-exciting-new-features-in-0-10-0-release-is-smart-log-level-flag-e2506b4ab756)
-for details on how to configure `log_level` config variable. Some of the
-modules can be found [here](how-to-read-logs.md#list-of-modules). If
-you're trying to debug CometBFT or asked to provide logs with debug
-logging level, you can do so by running CometBFT with
-`--log_level="*:debug"`.
+normal operation mode. It will log info messages from the `main`, `state` and
+`statesync` modules and error messages from all other modules.
+
+The format of the logging level is:
+
+```
+<module1>:<level>,<module2>:<level>,...,<moduleN>:<level>
+```
+
+Where `<moduleN>` is the module that generated the log message, `<level>` is
+one of the log levels: `info`, `error`, `debug` or `none`. Some of
+the modules can be found [here](how-to-read-logs.md#list-of-modules). Others
+could be observed by running CometBFT. `none` log level could be used
+to suppress messages from a particular module or all modules (`log_level =
+"state:info,*:none"` will only log info messages from the `state` module).
+
+If you're trying to debug CometBFT or asked to provide logs with debug logging
+level, you can do so by running CometBFT with `--log_level="*:debug"`.
+
+#### Stripping debug log messages at compile-time
+
+Logging debug messages can lead to significant memory allocations, especially when outputting variable values. In Go,
+even if `log_level` is not set to `debug`, these allocations can still occur because the program evaluates the debug
+statements regardless of the log level.
+
+To prevent unnecessary memory usage, you can strip out all debug-level code from the binary at compile time using
+build flags. This approach improves the performance of CometBFT by excluding debug messages entirely, even when log_level
+is set to debug. This technique is ideal for production environments that prioritize performance optimization over debug logging.
+
+In order to build a binary stripping all debug log messages (e.g. `log.Debug()`) from the binary, use the `nodebug` tag:
+```
+COMETBFT_BUILD_OPTIONS=nodebug make install
+```
+
+> Note: Compiling CometBFT with this method will completely disable all debug messages. If you require debug output,
+> avoid compiling the binary with the `nodebug` build tag.
 
 ## Write Ahead Logs (WAL)
 
@@ -286,7 +315,7 @@ Both our `ed25519` and `secp256k1` implementations require constant time
 private keys on both `ed25519` and `secp256k1`. This doesn't exist in hardware
 on 32 bit x86 platforms ([source](https://bearssl.org/ctmul.html)), and it
 depends on the compiler to enforce that it is constant time. It's unclear at
-this point whenever the Golang compiler does this correctly for all
+this point whether the Golang compiler does this correctly for all
 implementations.
 
 **We do not support nor recommend running a validator on 32 bit architectures OR
@@ -371,7 +400,7 @@ application to process the committed block.
 
 By default, CometBFT checks whenever a peer's address is routable before
 saving it to the address book. The address is considered as routable if the IP
-is [valid and within allowed ranges](https://github.com/cometbft/cometbft/blob/main/p2p/netaddress.go#L258).
+is [valid and within allowed ranges](https://github.com/cometbft/cometbft/blob/main/p2p/netaddr/netaddr.go#L258).
 
 This may not be the case for private or local networks, where your IP range is usually
 strictly limited and private. If that case, you need to set `addr_book_strict`

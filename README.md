@@ -21,12 +21,14 @@
 
 CometBFT is a Byzantine Fault Tolerant (BFT) middleware that takes a
 state transition machine - written in any programming language - and securely
-replicates it on many machines.
+replicates it on many machines. In modular blockchain terminology,
+CometBFT can be thought of as a sequencer layer and is indeed used in
+modern decentralized (shared) sequencer implementations.
 
 CometBFT is the canonical implementation of the Tendermint consensus algorithm and is a
 primary building block for the [Interchain Stack](https://interchain.io/). Historically,
 CometBFT originated as a fork of [Tendermint Core][tm-core] in early 2023
-(announcement [here][comet-announcement]) and since then it diverged significantly by adopting modern features such as [PBTS][pbts] or [ABCI v2][abci-v2].
+(announcement [here][comet-announcement]) and since then it diverged significantly by adopting modern features such as [PBTS][pbts] or [ABCI v2][abci-v2]. CometBFT provides [optimistic responsiveness][optimistic-responsive] guarantees.
 
 For protocol details, refer to the [CometBFT Specification](./spec/README.md).
 
@@ -59,6 +61,14 @@ in order of preference:
 
 More on how releases are conducted can be found [here](./RELEASES.md).
 
+## Support Policy
+
+CometBFT aligns with other components of the [Interchain Stack](https://interchain.io/)
+and we offer long-term support (LTS) guarantees for certain releases. The
+complete End of Life (EOL) schedule, LTS plans, and the general support policy is
+in documented and regularly updated in the
+discussion [Support policy for CometBFT releases #590](https://github.com/cometbft/cometbft/discussions/590).
+
 ## Security
 
 Please see [SECURITY.md](./SECURITY.md).
@@ -67,11 +77,11 @@ Please see [SECURITY.md](./SECURITY.md).
 
 | CometBFT version | Requirement | Version        | Tested with  |
 |------------------|-------------|----------------|--------------|
-| main             | Go version  | 1.22 or higher | up to 1.22.5 |
-| v1.x             | Go version  | 1.22 or higher | up to 1.22   |
-| v0.38.x          | Go version  | 1.21 or higher | up to 1.22   |
-| v0.37.x          | Go version  | 1.20 or higher | up to 1.22   |
-| v0.34.x          | Go version  | 1.20 or higher | up to 1.20   |
+| main             | Go version  | 1.23 or higher | up to 1.23.1 |
+| v1.x             | Go version  | 1.23 or higher | up to 1.23.1 |
+| v0.38.x          | Go version  | 1.22 or higher | up to 1.22   |
+| v0.37.x          | Go version  | 1.22 or higher | up to 1.22   |
+| v0.34.x          | Go version  | 1.22 or higher | up to 1.22   |
 
 ### Install
 
@@ -80,7 +90,6 @@ See the [install guide](docs/tutorials/install.md).
 ### Quick Start
 
 - [Single node](docs/tutorials/quick-start.md)
-- [Local cluster using docker-compose](./docs/guides/networks/docker-compose.md)
 
 ## Contributing
 
@@ -177,6 +186,7 @@ maintains [cometbft.com](https://cometbft.com).
 
 [bft]: https://en.wikipedia.org/wiki/Byzantine_fault_tolerance
 [smr]: https://en.wikipedia.org/wiki/State_machine_replication
+[optimistic-responsive]: https://informal.systems/blog/tendermint-responsiveness
 [Blockchain]: https://en.wikipedia.org/wiki/Blockchain
 [version-badge]: https://img.shields.io/github/v/release/cometbft/cometbft.svg
 [version-url]: https://github.com/cometbft/cometbft/releases/latest

@@ -1,14 +1,14 @@
 # We need to build in a Linux environment to support C libraries, e.g. RocksDB.
 # We use Debian instead of Alpine, so that we can use binary database packages
 # instead of spending time compiling them.
-FROM cometbft/cometbft-db-testing:v0.14.0
+FROM cometbft/cometbft-db-testing:v1.0.1
 
 RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
 RUN apt-get -qq install -y zsh vim >/dev/null
 RUN go install github.com/go-delve/delve/cmd/dlv@latest
 
 # Set up build directory /src/cometbft
-ENV COMETBFT_BUILD_OPTIONS badgerdb,rocksdb,nostrip,pebbledb,clock_skew,bls12381
+ENV COMETBFT_BUILD_OPTIONS badgerdb,rocksdb,nostrip,clock_skew,bls12381
 WORKDIR /src/cometbft
 
 # Fetch dependencies separately (for layer caching)

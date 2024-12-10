@@ -52,7 +52,7 @@ func (env *Environment) Status(*rpctypes.Context) (*ctypes.ResultStatus, error) 
 	}
 
 	result := &ctypes.ResultStatus{
-		NodeInfo: env.P2PTransport.NodeInfo().(p2p.DefaultNodeInfo),
+		NodeInfo: env.P2PTransport.NodeInfo().(p2p.NodeInfoDefault),
 		SyncInfo: ctypes.SyncInfo{
 			LatestBlockHash:     latestBlockHash,
 			LatestAppHash:       latestAppHash,

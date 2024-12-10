@@ -2083,6 +2083,7 @@ func TestProcessProposalAccept(t *testing.T) {
 			}
 			m.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ProcessProposalResponse{Status: status}, nil)
 			m.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.PrepareProposalResponse{}, nil).Maybe()
+			m.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil).Maybe()
 			cs1, _ := randStateWithApp(4, m)
 			height, round := cs1.Height, cs1.Round
 
@@ -2137,6 +2138,7 @@ func TestExtendVoteCalledWhenEnabled(t *testing.T) {
 			}
 			m.On("Commit", mock.Anything, mock.Anything).Return(&abci.CommitResponse{}, nil).Maybe()
 			m.On("FinalizeBlock", mock.Anything, mock.Anything).Return(&abci.FinalizeBlockResponse{}, nil).Maybe()
+			m.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil).Maybe()
 			height := int64(1)
 			if !testCase.enabled {
 				height = 0
@@ -2221,6 +2223,7 @@ func TestVerifyVoteExtensionNotCalledOnAbsentPrecommit(t *testing.T) {
 	}, nil)
 	m.On("FinalizeBlock", mock.Anything, mock.Anything).Return(&abci.FinalizeBlockResponse{}, nil).Maybe()
 	m.On("Commit", mock.Anything, mock.Anything).Return(&abci.CommitResponse{}, nil).Maybe()
+	m.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil).Maybe()
 	cs1, vss := randStateWithApp(4, m)
 	height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
 	cs1.state.ConsensusParams.Feature.VoteExtensionsEnableHeight = cs1.Height
@@ -2306,6 +2309,7 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 	m.On("VerifyVoteExtension", mock.Anything, mock.Anything).Return(&abci.VerifyVoteExtensionResponse{Status: abci.VERIFY_VOTE_EXTENSION_STATUS_ACCEPT}, nil)
 	m.On("Commit", mock.Anything, mock.Anything).Return(&abci.CommitResponse{}, nil).Maybe()
 	m.On("FinalizeBlock", mock.Anything, mock.Anything).Return(&abci.FinalizeBlockResponse{}, nil)
+	m.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil).Maybe()
 
 	cs1, vss := randStateWithApp(4, m)
 	height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
@@ -2408,6 +2412,7 @@ func TestFinalizeBlockCalled(t *testing.T) {
 			r := &abci.FinalizeBlockResponse{AppHash: []byte("the_hash")}
 			m.On("FinalizeBlock", mock.Anything, mock.Anything).Return(r, nil).Maybe()
 			m.On("Commit", mock.Anything, mock.Anything).Return(&abci.CommitResponse{}, nil).Maybe()
+			m.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil).Maybe()
 
 			cs1, vss := randStateWithApp(4, m)
 			height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
@@ -2524,6 +2529,7 @@ func TestVoteExtensionEnableHeight(t *testing.T) {
 			}
 			m.On("FinalizeBlock", mock.Anything, mock.Anything).Return(&abci.FinalizeBlockResponse{}, nil).Maybe()
 			m.On("Commit", mock.Anything, mock.Anything).Return(&abci.CommitResponse{}, nil).Maybe()
+			m.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil).Maybe()
 			cs1, vss := randStateWithAppWithHeight(numValidators, m, testCase.enableHeight)
 			height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
 			cs1.state.ConsensusParams.Feature.VoteExtensionsEnableHeight = testCase.enableHeight
@@ -2570,6 +2576,38 @@ func TestVoteExtensionEnableHeight(t *testing.T) {
 			m.AssertExpectations(t)
 		})
 	}
+}
+
+// TestStateDoesntCrashOnInvalidVote tests that the state does not crash when
+// receiving an invalid vote. In particular, one with the incorrect
+// ValidatorIndex.
+func TestStateDoesntCrashOnInvalidVote(t *testing.T) {
+	cs, vss := randState(2)
+	height, round, chainID := cs.Height, cs.Round, cs.state.ChainID
+	// create dummy peer
+	peer := p2pmock.NewPeer(nil)
+
+	startTestRound(cs, height, round)
+
+	randBytes := cmtrand.Bytes(tmhash.Size)
+	blockID := types.BlockID{
+		Hash: randBytes,
+	}
+
+	vote := signVote(vss[1], types.PrecommitType, chainID, blockID, true)
+	// Non-existent validator index
+	vote.ValidatorIndex = int32(len(vss))
+
+	voteMessage := &VoteMessage{vote}
+	assert.NotPanics(t, func() {
+		cs.handleMsg(msgInfo{voteMessage, peer.ID(), time.Time{}})
+	})
+
+	added, err := cs.AddVote(vote, peer.ID())
+	assert.False(t, added)
+	assert.NoError(t, err)
+	// TODO: uncomment once we punish peer and return an error
+	// assert.Equal(t, ErrInvalidVote{Reason: "ValidatorIndex 2 is out of bounds [0, 2)"}, err)
 }
 
 // 4 vals, 3 Nil Precommits at P0

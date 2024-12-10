@@ -46,7 +46,7 @@ Verify that you have the latest version of Go installed (refer to the [official 
 
 ```bash
 $ go version
-go version go1.22.2 darwin/amd64
+go version go1.23.1 darwin/amd64
 ```
 
 ## 1.1 Installing CometBFT
@@ -137,7 +137,7 @@ The go.mod file should look similar to:
 ```go
 module kvstore
 
-go 1.22.2
+go 1.23.1
 
 
 require github.com/cometbft/cometbft v1.0.0 // indirect
@@ -615,7 +615,7 @@ func main() {
     }()
 
     app := NewKVStoreApplication(db)
-    logger := cmtlog.NewTMLogger(cmtlog.NewSyncWriter(os.Stdout))
+    logger := cmtlog.NewLogger(os.Stdout)
 
     server := abciserver.NewSocketServer(socketAddr, app)
     server.SetLogger(logger)

@@ -62,9 +62,9 @@ The `OnStop` method implements `BaseService` and stops the PEX reactor.
 
 The address book routine that periodically saves its content to disk is stopped.
 
-## GetChannels
+## StreamDescriptors
 
-The `GetChannels` method, from the `Reactor` interface, returns the descriptor
+The `StreamDescriptors` method, from the `Reactor` interface, returns the descriptor
 of the channel used by the PEX protocol.
 
 The channel ID is `PexChannel` (0), with priority `1`, send queue capacity of

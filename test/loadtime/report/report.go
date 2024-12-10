@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gofrs/uuid"
+	"github.com/google/uuid"
 	"gonum.org/v1/gonum/stat"
 
 	"github.com/cometbft/cometbft/test/loadtime/payload"
@@ -28,6 +28,7 @@ type DataPoint struct {
 	Duration  time.Duration
 	BlockTime time.Time
 	Hash      []byte
+	Lane      string
 }
 
 // Report contains the data calculated from reading the timestamped transactions
@@ -71,7 +72,7 @@ func (rs *Reports) ErrorCount() int {
 	return rs.errorCount
 }
 
-func (rs *Reports) addDataPoint(id uuid.UUID, l time.Duration, bt time.Time, hash []byte, conns, rate, size uint64) {
+func (rs *Reports) addDataPoint(id uuid.UUID, lane string, l time.Duration, bt time.Time, hash []byte, conns, rate, size uint64) {
 	r, ok := rs.s[id]
 	if !ok {
 		r = Report{
@@ -84,7 +85,7 @@ func (rs *Reports) addDataPoint(id uuid.UUID, l time.Duration, bt time.Time, has
 		}
 		rs.s[id] = r
 	}
-	r.All = append(r.All, DataPoint{Duration: l, BlockTime: bt, Hash: hash})
+	r.All = append(r.All, DataPoint{Duration: l, BlockTime: bt, Hash: hash, Lane: lane})
 	if l > r.Max {
 		r.Max = l
 	}
@@ -130,6 +131,7 @@ func (rs *Reports) addError() {
 func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 	type payloadData struct {
 		id                      uuid.UUID
+		lane                    string
 		l                       time.Duration
 		bt                      time.Time
 		hash                    []byte
@@ -173,6 +175,7 @@ func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 					bt:          b.bt,
 					hash:        b.tx.Hash(),
 					id:          uuid.UUID(*idb),
+					lane:        p.GetLane(),
 					connections: p.GetConnections(),
 					rate:        p.GetRate(),
 					size:        p.GetSize(),
@@ -213,7 +216,7 @@ func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 			reports.addError()
 			continue
 		}
-		reports.addDataPoint(pd.id, pd.l, pd.bt, pd.hash, pd.connections, pd.rate, pd.size)
+		reports.addDataPoint(pd.id, pd.lane, pd.l, pd.bt, pd.hash, pd.connections, pd.rate, pd.size)
 	}
 	reports.calculateAll()
 	return reports, nil

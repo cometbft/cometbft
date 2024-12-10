@@ -6,34 +6,41 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/p2p/conn"
+	ni "github.com/cometbft/cometbft/p2p/internal/nodeinfo"
+	"github.com/cometbft/cometbft/p2p/internal/nodekey"
+	na "github.com/cometbft/cometbft/p2p/netaddr"
+	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
 
 type Peer struct {
 	*service.BaseService
 	ip                   net.IP
-	id                   p2p.ID
-	addr                 *p2p.NetAddress
+	id                   nodekey.ID
+	addr                 *na.NetAddr
 	kv                   map[string]any
 	Outbound, Persistent bool
+	server, client       net.Conn
 }
 
 // NewPeer creates and starts a new mock peer. If the ip
 // is nil, random routable address is used.
 func NewPeer(ip net.IP) *Peer {
-	var netAddr *p2p.NetAddress
+	var netAddr *na.NetAddr
 	if ip == nil {
-		_, netAddr = p2p.CreateRoutableAddr()
+		_, netAddr = na.CreateRoutableAddr()
 	} else {
-		netAddr = p2p.NewNetAddressIPPort(ip, 26656)
+		netAddr = na.NewFromIPPort(ip, 26656)
 	}
-	nodeKey := p2p.NodeKey{PrivKey: ed25519.GenPrivKey()}
+	nodeKey := nodekey.NodeKey{PrivKey: ed25519.GenPrivKey()}
 	netAddr.ID = nodeKey.ID()
+	server, client := net.Pipe()
 	mp := &Peer{
-		ip:   ip,
-		id:   nodeKey.ID(),
-		addr: netAddr,
-		kv:   make(map[string]any),
+		ip:     ip,
+		id:     nodeKey.ID(),
+		addr:   netAddr,
+		kv:     make(map[string]any),
+		server: server,
+		client: client,
 	}
 	mp.BaseService = service.NewBaseService(nil, "MockPeer", mp)
 	if err := mp.Start(); err != nil {
@@ -42,18 +49,22 @@ func NewPeer(ip net.IP) *Peer {
 	return mp
 }
 
-func (mp *Peer) FlushStop()               { mp.Stop() } //nolint:errcheck //ignore error
+func (mp *Peer) FlushStop() { mp.Stop() } //nolint:errcheck //ignore error
+func (mp *Peer) OnStop() {
+	mp.server.Close()
+	mp.client.Close()
+}
 func (*Peer) HasChannel(_ byte) bool      { return true }
 func (*Peer) TrySend(_ p2p.Envelope) bool { return true }
 func (*Peer) Send(_ p2p.Envelope) bool    { return true }
-func (mp *Peer) NodeInfo() p2p.NodeInfo {
-	return p2p.DefaultNodeInfo{
+func (mp *Peer) NodeInfo() ni.NodeInfo {
+	return ni.Default{
 		DefaultNodeID: mp.addr.ID,
 		ListenAddr:    mp.addr.DialString(),
 	}
 }
 func (*Peer) Status() conn.ConnectionStatus { return conn.ConnectionStatus{} }
-func (mp *Peer) ID() p2p.ID                 { return mp.id }
+func (mp *Peer) ID() nodekey.ID             { return mp.id }
 func (mp *Peer) IsOutbound() bool           { return mp.Outbound }
 func (mp *Peer) IsPersistent() bool         { return mp.Persistent }
 func (mp *Peer) Get(key string) any {
@@ -66,9 +77,9 @@ func (mp *Peer) Get(key string) any {
 func (mp *Peer) Set(key string, value any) {
 	mp.kv[key] = value
 }
-func (mp *Peer) RemoteIP() net.IP            { return mp.ip }
-func (mp *Peer) SocketAddr() *p2p.NetAddress { return mp.addr }
-func (mp *Peer) RemoteAddr() net.Addr        { return &net.TCPAddr{IP: mp.ip, Port: 8800} }
-func (*Peer) CloseConn() error               { return nil }
-func (*Peer) SetRemovalFailed()              {}
-func (*Peer) GetRemovalFailed() bool         { return false }
+func (mp *Peer) RemoteIP() net.IP        { return mp.ip }
+func (mp *Peer) SocketAddr() *na.NetAddr { return mp.addr }
+func (mp *Peer) RemoteAddr() net.Addr    { return &net.TCPAddr{IP: mp.ip, Port: 8800} }
+func (mp *Peer) Conn() net.Conn          { return mp.server }
+func (*Peer) SetRemovalFailed()          {}
+func (*Peer) GetRemovalFailed() bool     { return false }

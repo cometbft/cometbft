@@ -209,8 +209,8 @@ func Run(oracleInfo *types.OracleInfo, consensusState *cs.State, chainId string)
 
 		// drop old votes when channel hits half cap
 		if len(oracleInfo.SignVotesChan) >= cap(oracleInfo.SignVotesChan)/2 {
-			log.Warnf("dropping old vote from signVotesChan as it is at half capacity")
-			<-oracleInfo.SignVotesChan
+			voteToDrop := <-oracleInfo.SignVotesChan
+			log.Warnf("dropped vote as oracle sign votes channel cap is half full, vote: %+v at %v", voteToDrop, time.Now().Unix())
 		}
 
 		oracleInfo.SignVotesChan <- res.Vote

@@ -255,7 +255,7 @@ func (cs *State) GetStateWithTimeout(timeout time.Duration) (sm.State, error) {
 		return res, nil
 
 	case <-time.After(timeout):
-		return sm.State{}, fmt.Errorf("timeout after %v", timeout)
+		return sm.State{}, fmt.Errorf("GetStateWithTimeout: timeout after %v", timeout)
 	}
 }
 

@@ -36,6 +36,11 @@ type TxIndexer interface {
 	GetRetainHeight() (int64, error)
 
 	SetRetainHeight(retainHeight int64) error
+
+	// Close closes the underlying database that a TxIndexer uses. It is the
+	// responsibility of the creator of the TxIndexer to call Close when done with
+	// it.
+	Close() error
 }
 
 // Batch groups together multiple Index operations to be performed at the same time.

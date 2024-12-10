@@ -2,6 +2,7 @@ package keytypes
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/cometbft/cometbft/crypto"
@@ -48,9 +49,13 @@ func GenPrivKey(keyType string) (crypto.PrivKey, error) {
 // SupportedKeyTypesStr returns a string of supported key types.
 func SupportedKeyTypesStr() string {
 	keyTypesSlice := make([]string, 0, len(keyTypes))
+
 	for k := range keyTypes {
 		keyTypesSlice = append(keyTypesSlice, fmt.Sprintf("%q", k))
 	}
+	sort.Slice(keyTypesSlice, func(i, j int) bool {
+		return keyTypesSlice[i] < keyTypesSlice[j]
+	})
 	return strings.Join(keyTypesSlice, ", ")
 }
 
@@ -60,6 +65,9 @@ func ListSupportedKeyTypes() []string {
 	for k := range keyTypes {
 		keyTypesSlice = append(keyTypesSlice, k)
 	}
+	sort.Slice(keyTypesSlice, func(i, j int) bool {
+		return keyTypesSlice[i] < keyTypesSlice[j]
+	})
 	return keyTypesSlice
 }
 

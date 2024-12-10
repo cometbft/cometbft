@@ -61,6 +61,8 @@ func WithCompaction(compact bool, compactionInterval int64) IndexerOption {
 	}
 }
 
+// Close closes the indexer's underlying database. The caller is responsible for
+// calling Close when done with the indexer.
 func (txi *TxIndex) Close() error {
 	if err := txi.store.Close(); err != nil {
 		return fmt.Errorf("closing transaction index: %w", err)

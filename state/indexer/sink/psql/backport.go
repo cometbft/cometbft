@@ -70,6 +70,8 @@ func (BackportTxIndexer) Search(context.Context, *query.Query, txindex.Paginatio
 
 func (BackportTxIndexer) SetLogger(log.Logger) {}
 
+// Close closes the indexer's underlying database. The caller is responsible for
+// calling Close when done with the indexer.
 func (b BackportTxIndexer) Close() error {
 	return b.psql.Stop()
 }

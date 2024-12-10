@@ -517,6 +517,7 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 
 	channels := n.NodeInfo().(p2p.NodeInfoDefault).Channels
 	assert.Contains(t, channels, mempl.MempoolChannel)
+	assert.Contains(t, channels, mempl.MempoolControlChannel)
 	assert.Contains(t, channels, cr.Channels[0].StreamID())
 }
 

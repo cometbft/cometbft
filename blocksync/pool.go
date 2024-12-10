@@ -400,6 +400,7 @@ func (pool *BlockPool) RemovePeer(peerID p2p.ID) {
 	pool.removePeer(peerID)
 }
 
+// CONTRACT: pool.mtx must be locked.
 func (pool *BlockPool) removePeer(peerID p2p.ID) {
 	for _, requester := range pool.requesters {
 		if requester.didRequestFrom(peerID) {
@@ -440,11 +441,20 @@ func (pool *BlockPool) updateMaxPeerHeight() {
 	pool.maxPeerHeight = max
 }
 
+// IsPeerBanned returns true if the peer is banned.
+func (pool *BlockPool) IsPeerBanned(peerID p2p.ID) bool {
+	pool.mtx.Lock()
+	defer pool.mtx.Unlock()
+	return pool.isPeerBanned(peerID)
+}
+
+// CONTRACT: pool.mtx must be locked.
 func (pool *BlockPool) isPeerBanned(peerID p2p.ID) bool {
 	// Todo: replace with cmttime.Since in future versions
 	return time.Since(pool.bannedPeers[peerID]) < time.Second*60
 }
 
+// CONTRACT: pool.mtx must be locked.
 func (pool *BlockPool) banPeer(peerID p2p.ID) {
 	pool.Logger.Debug("Banning peer", peerID)
 	pool.bannedPeers[peerID] = cmttime.Now()

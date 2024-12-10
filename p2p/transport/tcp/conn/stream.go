@@ -1,5 +1,7 @@
 package conn
 
+import "time"
+
 // MCConnectionStream is just a wrapper around the original net.Conn.
 type MConnectionStream struct {
 	conn     *MConnection
@@ -10,7 +12,7 @@ type MConnectionStream struct {
 // tests. Production code should use MConnection.OnReceive to avoid copying the
 // data.
 func (s *MConnectionStream) Read(b []byte) (n int, err error) {
-	return s.conn.readBytes(s.streamID, b)
+	return s.conn.readBytes(s.streamID, b, 5*time.Second)
 }
 
 // Write queues bytes to be sent onto the internal write queue.

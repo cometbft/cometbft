@@ -43,7 +43,7 @@ const (
 	defaultPongTimeout  = 45 * time.Second
 
 	// Capacity of the receive channel for each stream.
-	maxRecvChanCap = 1000
+	maxRecvChanCap = 100
 )
 
 // OnReceiveFn is a callback func, which is called by the MConnection when a
@@ -106,7 +106,7 @@ type MConnection struct {
 	channelsIdx map[byte]*stream
 
 	// A map which stores the received messages. Used in tests.
-	msgsByStreamIDMap map[byte][]byte
+	msgsByStreamIDMap map[byte]chan []byte
 
 	onReceiveFn OnReceiveFn
 }
@@ -165,7 +165,7 @@ func NewMConnection(conn net.Conn, config MConnConfig) *MConnection {
 		config:            config,
 		created:           time.Now(),
 		channelsIdx:       make(map[byte]*stream),
-		msgsByStreamIDMap: make(map[byte][]byte),
+		msgsByStreamIDMap: make(map[byte]chan []byte),
 	}
 
 	mconn.BaseService = *service.NewBaseService(nil, "MConnection", mconn)
@@ -271,6 +271,7 @@ func (c *MConnection) OpenStream(streamID byte, desc any) (transport.Stream, err
 	}
 	c.channelsIdx[streamID] = newChannel(c, d)
 	c.channelsIdx[streamID].SetLogger(c.Logger.With("streamID", streamID))
+	c.msgsByStreamIDMap[streamID] = make(chan []byte, maxRecvChanCap)
 
 	return &MConnectionStream{conn: c, streamID: streamID}, nil
 }
@@ -677,7 +678,7 @@ FOR_LOOP:
 				} else {
 					bz := make([]byte, len(msgBytes))
 					copy(bz, msgBytes)
-					c.msgsByStreamIDMap[channelID] = bz
+					c.msgsByStreamIDMap[channelID] <- bz
 				}
 			}
 		default:
@@ -693,12 +694,18 @@ FOR_LOOP:
 }
 
 // Used in tests.
-func (c *MConnection) readBytes(streamID byte, b []byte) (n int, err error) {
-	if msgBytes, ok := c.msgsByStreamIDMap[streamID]; ok {
+func (c *MConnection) readBytes(streamID byte, b []byte, timeout time.Duration) (n int, err error) {
+	select {
+	case msgBytes := <-c.msgsByStreamIDMap[streamID]:
 		n = copy(b, msgBytes)
+		if n < len(msgBytes) {
+			err = errors.New("short buffer")
+			return 0, err
+		}
 		return n, nil
+	case <-time.After(timeout):
+		return 0, errors.New("read timeout")
 	}
-	return 0, nil
 }
 
 // not goroutine-safe.

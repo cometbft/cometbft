@@ -678,15 +678,15 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 		_, err := peer.Dial(sw.NetAddr())
 		require.NoError(t, err)
 		// spawn a reading routine to prevent connection from closing
-		// go func(s transport.Stream) {
-		// 	for {
-		// 		one := make([]byte, 1)
-		// 		_, err := s.Read(one)
-		// 		if err != nil {
-		// 			return
-		// 		}
-		// 	}
-		// }(peer.testStream)
+		go func(s transport.Stream) {
+			for {
+				one := make([]byte, 1)
+				_, err := s.(*tcpconn.MConnectionStream).Read(one)
+				if err != nil {
+					return
+				}
+			}
+		}(peer.testStream)
 	}
 	time.Sleep(100 * time.Millisecond)
 	assert.Equal(t, cfg.MaxNumInboundPeers, sw.Peers().Size())
@@ -710,15 +710,15 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 		_, err := peer.Dial(sw.NetAddr())
 		require.NoError(t, err)
 		// spawn a reading routine to prevent connection from closing
-		// go func(s transport.Stream) {
-		// 	for {
-		// 		one := make([]byte, 1)
-		// 		_, err := s.Read(one)
-		// 		if err != nil {
-		// 			return
-		// 		}
-		// 	}
-		// }(peer.testStream)
+		go func(s transport.Stream) {
+			for {
+				one := make([]byte, 1)
+				_, err := s.(*tcpconn.MConnectionStream).Read(one)
+				if err != nil {
+					return
+				}
+			}
+		}(peer.testStream)
 	}
 	time.Sleep(10 * time.Millisecond)
 	assert.Equal(t, cfg.MaxNumInboundPeers+unconditionalPeersNum, sw.Peers().Size())

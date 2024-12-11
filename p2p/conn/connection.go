@@ -45,12 +45,18 @@ const (
 	defaultSendTimeout         = 10 * time.Second
 	defaultPingInterval        = 60 * time.Second
 	defaultPongTimeout         = 45 * time.Second
+	defaultMsgRecvQueueSize    = 1000
 )
 
 type (
 	receiveCbFunc func(chID byte, msgBytes []byte)
 	errorCbFunc   func(interface{})
 )
+
+type ConnMsg struct {
+	channelID byte
+	msgBytes  []byte
+}
 
 /*
 Each peer has one `MConnection` (multiplex connection) instance.
@@ -87,6 +93,7 @@ type MConnection struct {
 	recvMonitor   *flow.Monitor
 	send          chan struct{}
 	pong          chan struct{}
+	msgRecvQueue  chan ConnMsg
 	channels      []*Channel
 	channelsIdx   map[byte]*Channel
 	onReceive     receiveCbFunc
@@ -136,6 +143,9 @@ type MConnConfig struct {
 
 	// Maximum wait time for pongs
 	PongTimeout time.Duration `mapstructure:"pong_timeout"`
+
+	// Maximum number of received messages to buffer from a peer
+	MsgRecvQueueSize int `mapstructure:"msg_recv_queue_size"`
 }
 
 // DefaultMConnConfig returns the default config.
@@ -147,6 +157,7 @@ func DefaultMConnConfig() MConnConfig {
 		FlushThrottle:           defaultFlushThrottle,
 		PingInterval:            defaultPingInterval,
 		PongTimeout:             defaultPongTimeout,
+		MsgRecvQueueSize:        defaultMsgRecvQueueSize,
 	}
 }
 
@@ -185,6 +196,7 @@ func NewMConnectionWithConfig(
 		recvMonitor:   flow.New(0, 0),
 		send:          make(chan struct{}, 1),
 		pong:          make(chan struct{}, 1),
+		msgRecvQueue:  make(chan ConnMsg, config.MsgRecvQueueSize),
 		onReceive:     onReceive,
 		onError:       onError,
 		config:        config,
@@ -232,6 +244,7 @@ func (c *MConnection) OnStart() error {
 	c.quitRecvRoutine = make(chan struct{})
 	go c.sendRoutine()
 	go c.recvRoutine()
+	go c.recvMsgRoutine()
 	return nil
 }
 
@@ -561,6 +574,7 @@ func (c *MConnection) sendPacketMsg() bool {
 // Otherwise, it never blocks.
 func (c *MConnection) recvRoutine() {
 	defer c._recover()
+	defer close(c.msgRecvQueue)
 
 	protoReader := protoio.NewDelimitedReader(c.bufConnReader, c._maxPacketMsgSize)
 
@@ -646,8 +660,8 @@ FOR_LOOP:
 			}
 			if msgBytes != nil {
 				c.Logger.Debug("Received bytes", "chID", channelID, "msgBytes", msgBytes)
-				// NOTE: This means the reactor.Receive runs in the same thread as the p2p recv routine
-				c.onReceive(channelID, msgBytes)
+				connMsg := ConnMsg{channelID, msgBytes}
+				c.msgRecvQueue <- connMsg
 			}
 		default:
 			err := fmt.Errorf("unknown message type %v", reflect.TypeOf(packet))
@@ -661,6 +675,23 @@ FOR_LOOP:
 	close(c.pong)
 	for range c.pong {
 		// Drain
+	}
+}
+
+func (c *MConnection) recvMsgRoutine() {
+	defer c._recover()
+
+	for {
+		connMsg, ok := <-c.msgRecvQueue
+
+		if !ok {
+			// The recvRoutine exited and closed the msgRecvQueue channel. No more messages to process
+			break
+		}
+
+		c.Logger.Debug("Processing message", "chID", connMsg.channelID, "pendingMsgs", len(c.msgRecvQueue))
+		// NOTE: This means the reactor.Receive of all channels run in the same thread
+		c.onReceive(connMsg.channelID, connMsg.msgBytes)
 	}
 }
 
@@ -867,11 +898,7 @@ func (ch *Channel) recvPacketMsg(packet tmp2p.PacketMsg) ([]byte, error) {
 	if packet.EOF {
 		msgBytes := ch.recving
 
-		// clear the slice without re-allocating.
-		// http://stackoverflow.com/questions/16971741/how-do-you-clear-a-slice-in-go
-		//   suggests this could be a memory leak, but we might as well keep the memory for the channel until it closes,
-		//	at which point the recving slice stops being used and should be garbage collected
-		ch.recving = ch.recving[:0] // make([]byte, 0, ch.desc.RecvBufferCapacity)
+		ch.recving = make([]byte, 0, ch.desc.RecvBufferCapacity)
 		return msgBytes, nil
 	}
 	return nil, nil

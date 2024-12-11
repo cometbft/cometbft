@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"reflect"
@@ -382,7 +383,7 @@ func (p *peer) TrySend(e Envelope) error {
 
 func (p *peer) send(msg proto.Message, writeFn func([]byte) (int, error)) error {
 	if !p.IsRunning() {
-		return nil
+		return errors.New("peer not running")
 	}
 
 	msgType := getMsgType(msg)
@@ -392,6 +393,7 @@ func (p *peer) send(msg proto.Message, writeFn func([]byte) (int, error)) error 
 
 	msgBytes, err := proto.Marshal(msg)
 	if err != nil {
+		// This should never happen.
 		return fmt.Errorf("proto.Marshal: %w", err)
 	}
 
@@ -399,7 +401,7 @@ func (p *peer) send(msg proto.Message, writeFn func([]byte) (int, error)) error 
 	if err != nil {
 		return err
 	} else if n != len(msgBytes) {
-		// Should never happen in the current implementation.
+		// Should never happen in the current TCP implementation.
 		return fmt.Errorf("incomplete write: got %d, wanted %d", n, len(msgBytes))
 	}
 

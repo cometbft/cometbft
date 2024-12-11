@@ -276,6 +276,7 @@ func (c *MConnection) OpenStream(streamID byte, desc any) (transport.Stream, err
 	return &MConnectionStream{conn: c, streamID: streamID}, nil
 }
 
+// HandshakeStream returns the underlying net.Conn connection.
 func (c *MConnection) HandshakeStream() transport.HandshakeStream {
 	return c.conn
 }

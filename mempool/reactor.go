@@ -10,13 +10,20 @@ import (
 	"golang.org/x/sync/semaphore"
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
-	protomem "github.com/cometbft/cometbft/api/cometbft/mempool/v1"
+	protomem "github.com/cometbft/cometbft/api/cometbft/mempool/v2"
 	cfg "github.com/cometbft/cometbft/config"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	"github.com/cometbft/cometbft/types"
 )
+
+// A number in the open interval (0, 100) representing a percentage of
+// config.DOGTargetRedundancy. In the DOG protocol, it defines acceptable lower
+// and upper bounds for redundancy levels as a deviation from the target value.
+const targetRedundancyDeltaPercent = 10
 
 // Reactor handles mempool tx broadcasting amongst peers.
 // It maintains a map from peer ID to counter, to prevent gossiping txs to the
@@ -28,6 +35,10 @@ type Reactor struct {
 
 	waitSync   atomic.Bool
 	waitSyncCh chan struct{} // for signaling when to start receiving and sending txs
+
+	// DOG protocol: Control enabled/disabled routes for disseminating txs.
+	router            *gossipRouter
+	redundancyControl *redundancyControl
 
 	// Semaphores to keep track of how many connections to peers are active for broadcasting
 	// transactions. Each semaphore has a capacity that puts an upper bound on the number of
@@ -68,6 +79,11 @@ func (memR *Reactor) OnStart() error {
 	if !memR.config.Broadcast {
 		memR.Logger.Info("Tx broadcasting is disabled")
 	}
+	if memR.config.DOGProtocolEnabled {
+		memR.router = newGossipRouter()
+		memR.redundancyControl = newRedundancyControl(memR.config)
+		go memR.redundancyControl.controlLoop(memR)
+	}
 	return nil
 }
 
@@ -81,11 +97,22 @@ func (memR *Reactor) StreamDescriptors() []p2p.StreamDescriptor {
 		},
 	}
 
+	key := types.Tx(largestTx).Key()
+	haveTxMsg := protomem.Message{
+		Sum: &protomem.Message_HaveTx{HaveTx: &protomem.HaveTx{TxKey: key[:]}},
+	}
+
 	return []p2p.StreamDescriptor{
 		&tcpconn.ChannelDescriptor{
 			ID:                  MempoolChannel,
 			Priority:            5,
 			RecvMessageCapacity: batchMsg.Size(),
+			MessageTypeI:        &protomem.Message{},
+		},
+		&tcpconn.ChannelDescriptor{
+			ID:                  MempoolControlChannel,
+			Priority:            10,
+			RecvMessageCapacity: haveTxMsg.Size(),
 			MessageTypeI:        &protomem.Message{},
 		},
 	}
@@ -134,31 +161,87 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 	}
 }
 
+func (memR *Reactor) RemovePeer(peer p2p.Peer, _ any) {
+	if memR.router != nil {
+		// Remove all routes with peer as source or target and immediately
+		// adjust redundancy.
+		memR.router.resetRoutes(peer.ID())
+		memR.redundancyControl.triggerAdjustment(memR)
+		memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
+	}
+}
+
 // Receive implements Reactor.
 // It adds any received transactions to the mempool.
 func (memR *Reactor) Receive(e p2p.Envelope) {
-	memR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
-	switch msg := e.Message.(type) {
-	case *protomem.Txs:
-		if memR.WaitSync() {
-			memR.Logger.Debug("Ignored message received while syncing", "msg", msg)
-			return
+	if memR.WaitSync() {
+		memR.Logger.Debug("Ignore message received while syncing", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
+		return
+	}
+
+	senderID := e.Src.ID()
+
+	switch e.ChannelID {
+	case MempoolControlChannel:
+		switch msg := e.Message.(type) {
+		case *protomem.HaveTx:
+			txKey := types.TxKey(msg.GetTxKey())
+			if len(txKey) == 0 {
+				memR.Logger.Error("Received empty HaveTx message from peer", "src", e.Src.ID())
+				return
+			}
+			memR.Logger.Debug("Received HaveTx", "from", senderID, "txKey", txKey)
+
+			if memR.router != nil {
+				// Get tx's list of senders.
+				senders, err := memR.mempool.GetSenders(txKey)
+				if err != nil || len(senders) == 0 || senders[0] == noSender {
+					// It is possible that tx got removed from the mempool.
+					memR.Logger.Debug("Received HaveTx but failed to get sender", "tx", txKey.Hash(), "err", err)
+					return
+				}
+				// Disable route with tx's first sender as source and peer as target.
+				memR.router.disableRoute(senders[0], senderID)
+
+				memR.Logger.Debug("Disable route", "source", senders[0], "target", senderID)
+				memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
+			}
+
+		case *protomem.ResetRoute:
+			memR.Logger.Debug("Received Reset", "from", senderID)
+			if memR.router != nil {
+				memR.router.resetRandomRouteWithTarget(senderID)
+				memR.mempool.metrics.DisabledRoutes.Set(float64(memR.router.numRoutes()))
+			}
+
+		default:
+			memR.Logger.Error("Unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
+			memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message of type: %T", e.Message))
 		}
 
-		protoTxs := msg.GetTxs()
-		if len(protoTxs) == 0 {
-			memR.Logger.Error("Received empty Txs message from peer", "src", e.Src)
-			return
-		}
+	case MempoolChannel:
+		switch msg := e.Message.(type) {
+		case *protomem.Txs:
+			protoTxs := msg.GetTxs()
+			if len(protoTxs) == 0 {
+				memR.Logger.Error("Received empty Txs message from peer", "src", e.Src.ID())
+				return
+			}
 
-		for _, txBytes := range protoTxs {
-			_, _ = memR.TryAddTx(types.Tx(txBytes), e.Src)
+			memR.Logger.Debug("Received Txs", "from", senderID, "msg", e.Message)
+			for _, txBytes := range protoTxs {
+				_, _ = memR.TryAddTx(types.Tx(txBytes), e.Src)
+			}
+
+		default:
+			memR.Logger.Error("Unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
+			memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message of type: %T", e.Message))
+			return
 		}
 
 	default:
-		memR.Logger.Error("Unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
-		memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message of type: %T", e.Message))
-		return
+		memR.Logger.Error("Unknown channel", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
+		memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message on channel: %T", e.Message))
 	}
 
 	// broadcasting happens from go routines per peer
@@ -174,16 +257,39 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 
 	reqRes, err := memR.mempool.CheckTx(tx, senderID)
 	if err != nil {
+		txKey := tx.Key()
 		switch {
 		case errors.Is(err, ErrTxInCache):
-			memR.Logger.Debug("Tx already exists in cache", "tx", log.NewLazySprintf("%X", tx.Hash()), "sender", senderID)
+			memR.Logger.Debug("Tx already exists in cache", "tx", txKey.Hash(), "sender", senderID)
+			if memR.redundancyControl != nil {
+				memR.redundancyControl.incDuplicateTxs()
+				if memR.redundancyControl.isHaveTxBlocked() {
+					return nil, err
+				}
+				ok := sender.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.HaveTx{TxKey: txKey[:]}})
+				if !ok {
+					memR.Logger.Error("Failed to send HaveTx message", "peer", senderID, "txKey", txKey)
+				} else {
+					memR.Logger.Debug("Sent HaveTx message", "tx", txKey.Hash(), "peer", senderID)
+					// Block HaveTx and restart timer, during which time, sending HaveTx is not allowed.
+					memR.redundancyControl.blockHaveTx()
+				}
+			}
+			return nil, err
+
 		case errors.As(err, &ErrMempoolIsFull{}):
 			// using debug level to avoid flooding when traffic is high
 			memR.Logger.Debug(err.Error())
+			return nil, err
+
 		default:
-			memR.Logger.Info("Could not check tx", "tx", log.NewLazySprintf("%X", tx.Hash()), "sender", senderID, "err", err)
+			memR.Logger.Info("Could not check tx", "tx", txKey.Hash(), "sender", senderID, "err", err)
+			return nil, err
 		}
-		return nil, err
+	}
+
+	if memR.redundancyControl != nil {
+		memR.redundancyControl.incFirstTimeTxs()
 	}
 
 	return reqRes, nil
@@ -277,24 +383,35 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// We are paying the cost of computing the transaction hash in
 		// any case, even when logger level > debug. So it only once.
 		// See: https://github.com/cometbft/cometbft/issues/4167
-		txHash := entry.Tx().Hash()
+		txKey := entry.Tx().Key()
+		txHash := txKey.Hash()
 
-		// Do not send this transaction if we receive it from peer.
 		if entry.IsSender(peer.ID()) {
+			// Do not send this transaction if we receive it from peer.
 			memR.Logger.Debug("Skipping transaction, peer is sender",
-				"tx", log.NewLazySprintf("%X", txHash), "peer", peer.ID())
+				"tx", txHash, "peer", peer.ID())
 			continue
+		}
+
+		if memR.router != nil {
+			// Do not send if the route from the first sender to peer is disabled.
+			senders := entry.Senders()
+			if len(senders) > 0 && memR.router.isRouteDisabled(senders[0], peer.ID()) {
+				memR.Logger.Debug("Disabled route: do not send transaction to peer",
+					"tx", txHash, "peer", peer.ID(), "senders", senders)
+				continue
+			}
 		}
 
 		for {
 			// The entry may have been removed from the mempool since it was
 			// chosen at the beginning of the loop. Skip it if that's the case.
-			if !memR.mempool.Contains(entry.Tx().Key()) {
+			if !memR.mempool.Contains(txKey) {
 				break
 			}
 
 			memR.Logger.Debug("Sending transaction to peer",
-				"tx", log.NewLazySprintf("%X", txHash), "peer", peer.ID())
+				"tx", txHash, "peer", peer.ID())
 
 			success := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
@@ -305,7 +422,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			}
 
 			memR.Logger.Debug("Failed sending transaction to peer",
-				"tx", log.NewLazySprintf("%X", txHash), "peer", peer.ID())
+				"tx", txHash, "peer", peer.ID())
 
 			select {
 			case <-time.After(PeerCatchupSleepIntervalMS * time.Millisecond):
@@ -316,4 +433,217 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			}
 		}
 	}
+}
+
+type gossipRouter struct {
+	mtx cmtsync.RWMutex
+	// A set of `source -> target` routes that are disabled for disseminating
+	// transactions, where source and target are node IDs.
+	disabledRoutes map[p2p.ID]map[p2p.ID]struct{}
+}
+
+func newGossipRouter() *gossipRouter {
+	return &gossipRouter{
+		disabledRoutes: make(map[p2p.ID]map[p2p.ID]struct{}),
+	}
+}
+
+// disableRoute marks the route `source -> target` as disabled.
+func (r *gossipRouter) disableRoute(source, target p2p.ID) {
+	if source == noSender || target == noSender {
+		// TODO: this shouldn't happen
+		return
+	}
+
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	targets, ok := r.disabledRoutes[source]
+	if !ok {
+		targets = make(map[p2p.ID]struct{})
+	}
+	targets[target] = struct{}{}
+	r.disabledRoutes[source] = targets
+}
+
+// isRouteEnabled returns true iff the route source->target is disabled.
+func (r *gossipRouter) isRouteDisabled(source, target p2p.ID) bool {
+	r.mtx.RLock()
+	defer r.mtx.RUnlock()
+
+	if targets, ok := r.disabledRoutes[source]; ok {
+		if _, ok := targets[target]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+// resetRoutes removes all disabled routes with peerID as source or target.
+func (r *gossipRouter) resetRoutes(peerID p2p.ID) {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	// Remove peer as source.
+	delete(r.disabledRoutes, peerID)
+
+	// Remove peer as target.
+	for _, targets := range r.disabledRoutes {
+		delete(targets, peerID)
+	}
+}
+
+// resetRandomRouteWithTarget removes a random disabled route that has the given
+// target.
+func (r *gossipRouter) resetRandomRouteWithTarget(target p2p.ID) {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	sourcesWithTarget := make([]p2p.ID, 0)
+	for s, targets := range r.disabledRoutes {
+		if _, ok := targets[target]; ok {
+			sourcesWithTarget = append(sourcesWithTarget, s)
+		}
+	}
+
+	if len(sourcesWithTarget) > 0 {
+		randomSource := sourcesWithTarget[cmtrand.Intn(len(sourcesWithTarget))]
+		delete(r.disabledRoutes[randomSource], target)
+	}
+}
+
+// numRoutes returns the number of disabled routes in this node. Used for
+// metrics.
+func (r *gossipRouter) numRoutes() int {
+	r.mtx.RLock()
+	defer r.mtx.RUnlock()
+
+	count := 0
+	for _, targets := range r.disabledRoutes {
+		count += len(targets)
+	}
+	return count
+}
+
+type redundancyControl struct {
+	// Pre-computed upper and lower bounds of accepted redundancy.
+	lowerBound float64
+	upperBound float64
+
+	// Timer to adjust redundancy periodically.
+	adjustTicker   *time.Ticker
+	adjustInterval time.Duration
+
+	// Counters for calculating the redundancy level.
+	mtx          cmtsync.RWMutex
+	firstTimeTxs int64 // number of transactions received for the first time
+	duplicateTxs int64 // number of duplicate transactions
+
+	// If true, do not send HaveTx messages.
+	haveTxBlocked atomic.Bool
+}
+
+func newRedundancyControl(config *cfg.MempoolConfig) *redundancyControl {
+	adjustInterval := config.DOGAdjustInterval
+	targetRedundancyDeltaAbs := config.DOGTargetRedundancy * targetRedundancyDeltaPercent / 100
+	return &redundancyControl{
+		lowerBound:     config.DOGTargetRedundancy - targetRedundancyDeltaAbs,
+		upperBound:     config.DOGTargetRedundancy + targetRedundancyDeltaAbs,
+		adjustTicker:   time.NewTicker(adjustInterval),
+		adjustInterval: adjustInterval,
+	}
+}
+
+func (rc *redundancyControl) adjustRedundancy(memR *Reactor) {
+	// Compute current redundancy level and reset transaction counters.
+	redundancy := rc.currentRedundancy()
+	if redundancy < 0 {
+		// There were no transactions during the last iteration. Do not adjust.
+		return
+	}
+
+	// If redundancy level is low, ask a random peer for more transactions.
+	if redundancy < rc.lowerBound {
+		memR.Logger.Debug("TX redundancy BELOW lower limit: increase it (send Reset)", "redundancy", redundancy)
+		// Send Reset message to random peer.
+		randomPeer := memR.Switch.Peers().Random()
+		if randomPeer != nil {
+			ok := randomPeer.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.ResetRoute{}})
+			if !ok {
+				memR.Logger.Error("Failed to send Reset message", "peer", randomPeer.ID())
+			}
+		}
+	}
+
+	// If redundancy level is high, ask peers for less txs.
+	if redundancy >= rc.upperBound {
+		memR.Logger.Debug("TX redundancy ABOVE upper limit: decrease it (unblock HaveTx)", "redundancy", redundancy)
+		// Unblock HaveTx messages.
+		rc.haveTxBlocked.Store(false)
+	}
+
+	// Update metrics.
+	memR.mempool.metrics.Redundancy.Set(redundancy)
+}
+
+func (rc *redundancyControl) controlLoop(memR *Reactor) {
+	for {
+		select {
+		case <-rc.adjustTicker.C:
+			rc.adjustRedundancy(memR)
+		case <-memR.Quit():
+			return
+		}
+	}
+}
+
+// currentRedundancy returns the current redundancy level and resets the
+// counters. If there are no transactions, return -1. If firstTimeTxs is 0,
+// return upperBound. If duplicateTxs is 0, return 0.
+func (rc *redundancyControl) currentRedundancy() float64 {
+	rc.mtx.Lock()
+	defer rc.mtx.Unlock()
+
+	if rc.firstTimeTxs+rc.duplicateTxs == 0 {
+		return -1
+	}
+
+	redundancy := rc.upperBound
+	if rc.firstTimeTxs != 0 {
+		redundancy = float64(rc.duplicateTxs) / float64(rc.firstTimeTxs)
+	}
+
+	// Reset counters.
+	rc.firstTimeTxs, rc.duplicateTxs = 0, 0
+
+	return redundancy
+}
+
+func (rc *redundancyControl) incDuplicateTxs() {
+	rc.mtx.Lock()
+	rc.duplicateTxs++
+	rc.mtx.Unlock()
+}
+
+func (rc *redundancyControl) incFirstTimeTxs() {
+	rc.mtx.Lock()
+	rc.firstTimeTxs++
+	rc.mtx.Unlock()
+}
+
+func (rc *redundancyControl) isHaveTxBlocked() bool {
+	return rc.haveTxBlocked.Load()
+}
+
+// blockHaveTx blocks sending HaveTx messages and restarts the timer that
+// adjusts redundancy.
+func (rc *redundancyControl) blockHaveTx() {
+	rc.haveTxBlocked.Store(true)
+	// Wait until next adjustment to check if HaveTx messages should be unblocked.
+	rc.adjustTicker.Reset(rc.adjustInterval)
+}
+
+func (rc *redundancyControl) triggerAdjustment(memR *Reactor) {
+	rc.adjustRedundancy(memR)
+	rc.adjustTicker.Reset(rc.adjustInterval)
 }

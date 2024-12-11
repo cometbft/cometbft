@@ -19,8 +19,8 @@ import (
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"
 	ni "github.com/cometbft/cometbft/p2p/internal/nodeinfo"
+	"github.com/cometbft/cometbft/p2p/internal/nodekey"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
-	"github.com/cometbft/cometbft/p2p/nodekey"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
 

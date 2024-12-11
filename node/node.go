@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -31,7 +30,6 @@ import (
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
-	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/p2p/transport/tcp"
 	"github.com/cometbft/cometbft/proxy"
@@ -65,7 +63,7 @@ type Node struct {
 	sw          *p2p.Switch  // p2p connections
 	addrBook    pex.AddrBook // known peers
 	nodeInfo    p2p.NodeInfo
-	nodeKey     *nodekey.NodeKey // our node privkey
+	nodeKey     *p2p.NodeKey // our node privkey
 	isListening bool
 
 	// services
@@ -284,7 +282,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 func NewNode(ctx context.Context,
 	config *cfg.Config,
 	privValidator types.PrivValidator,
-	nodeKey *nodekey.NodeKey,
+	nodeKey *p2p.NodeKey,
 	clientCreator proxy.ClientCreator,
 	genesisDocProvider GenesisDocProvider,
 	dbProvider cfg.DBProvider,
@@ -312,7 +310,7 @@ func NewNode(ctx context.Context,
 func NewNodeWithCliParams(ctx context.Context,
 	config *cfg.Config,
 	privValidator types.PrivValidator,
-	nodeKey *nodekey.NodeKey,
+	nodeKey *p2p.NodeKey,
 	clientCreator proxy.ClientCreator,
 	genesisDocProvider GenesisDocProvider,
 	dbProvider cfg.DBProvider,
@@ -731,72 +729,46 @@ func (n *Node) OnStop() {
 	}
 }
 
-var (
-	// The following globals are only relevant to the `ConfigurerRPC` method below.
-	// The '_' prefix is to signal to other parts of the code that these are global
-	// unexported variables.
-
-	// _once is a special object that executes a function only once. We use it to
-	// ensure that `ConfigureRPC` initializes an `Environment` object only once.
-	_once sync.Once
-
-	// _rpcEnv is the `Environment` object serving RPC APIs. We treat it as a
-	// singleton and create it exactly once. See the docs of `ConfigureRPC` below
-	// for more details.
-	_rpcEnv *rpccore.Environment
-)
-
 // ConfigureRPC initializes and returns an `Environment` object with all the data
-// it needs to serve the RPC APIs. The function ensures that the `Environment` is
-// created only once to prevent other parts of the code from creating duplicate
-// `Environment` instances by calling this function directly. This is important
-// because `Environment` stores a copy of the genesis in memory; therefore,
-// multiple independent `Environment` instances would each load the genesis into
-// memory.
+// it needs to serve the RPC APIs.
 func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
-	var errToReturn error
+	pubKey, err := n.privValidator.GetPubKey()
+	if pubKey == nil || err != nil {
+		return nil, ErrGetPubKey{Err: err}
+	}
 
-	_once.Do(func() {
-		pubKey, err := n.privValidator.GetPubKey()
-		if pubKey == nil || err != nil {
-			errToReturn = ErrGetPubKey{Err: err}
-			return
-		}
+	rpcEnv := &rpccore.Environment{
+		ProxyAppQuery:   n.proxyApp.Query(),
+		ProxyAppMempool: n.proxyApp.Mempool(),
 
-		_rpcEnv = &rpccore.Environment{
-			ProxyAppQuery:   n.proxyApp.Query(),
-			ProxyAppMempool: n.proxyApp.Mempool(),
+		StateStore:     n.stateStore,
+		BlockStore:     n.blockStore,
+		EvidencePool:   n.evidencePool,
+		ConsensusState: n.consensusState,
+		P2PPeers:       n.sw,
+		P2PTransport:   n,
+		PubKey:         pubKey,
 
-			StateStore:     n.stateStore,
-			BlockStore:     n.blockStore,
-			EvidencePool:   n.evidencePool,
-			ConsensusState: n.consensusState,
-			P2PPeers:       n.sw,
-			P2PTransport:   n,
-			PubKey:         pubKey,
+		TxIndexer:        n.txIndexer,
+		BlockIndexer:     n.blockIndexer,
+		ConsensusReactor: n.consensusReactor,
+		MempoolReactor:   n.mempoolReactor,
+		EventBus:         n.eventBus,
+		Mempool:          n.mempool,
 
-			TxIndexer:        n.txIndexer,
-			BlockIndexer:     n.blockIndexer,
-			ConsensusReactor: n.consensusReactor,
-			MempoolReactor:   n.mempoolReactor,
-			EventBus:         n.eventBus,
-			Mempool:          n.mempool,
+		Logger: n.Logger.With("module", "rpc"),
 
-			Logger: n.Logger.With("module", "rpc"),
+		Config: *n.config.RPC,
 
-			Config: *n.config.RPC,
+		GenesisFilePath: n.config.GenesisFile(),
+	}
 
-			GenesisFilePath: n.config.GenesisFile(),
-		}
+	n.Logger.Info("Creating genesis file chunks if genesis file is too big...")
+	if err := rpcEnv.InitGenesisChunks(); err != nil {
+		return nil, fmt.Errorf("configuring RPC API environment: %w", err)
+	}
 
-		n.Logger.Info("Creating genesis file chunks if genesis file is too big...")
-		if err := _rpcEnv.InitGenesisChunks(); err != nil {
-			errToReturn = fmt.Errorf("configuring RPC API environment: %w", err)
-			return
-		}
-	})
-
-	return _rpcEnv, errToReturn
+	return rpcEnv, nil
 }
 
 func (n *Node) startRPC() ([]net.Listener, error) {
@@ -1081,7 +1053,7 @@ func (n *Node) NodeInfo() p2p.NodeInfo {
 
 func makeNodeInfo(
 	config *cfg.Config,
-	nodeKey *nodekey.NodeKey,
+	nodeKey *p2p.NodeKey,
 	txIndexer txindex.TxIndexer,
 	genDoc *types.GenesisDoc,
 	state sm.State,
@@ -1103,7 +1075,7 @@ func makeNodeInfo(
 		Channels: []byte{
 			bc.BlocksyncChannel,
 			cs.StateChannel, cs.DataChannel, cs.VoteChannel, cs.VoteSetBitsChannel,
-			mempl.MempoolChannel,
+			mempl.MempoolChannel, mempl.MempoolControlChannel,
 			evidence.EvidenceChannel,
 			statesync.SnapshotChannel, statesync.ChunkChannel,
 		},

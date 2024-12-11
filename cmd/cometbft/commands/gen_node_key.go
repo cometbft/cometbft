@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	cmtos "github.com/cometbft/cometbft/internal/os"
-	"github.com/cometbft/cometbft/p2p/nodekey"
+	"github.com/cometbft/cometbft/p2p"
 )
 
 // GenNodeKeyCmd allows the generation of a node key. It prints node's ID to
@@ -24,7 +24,7 @@ func genNodeKey(*cobra.Command, []string) error {
 		return fmt.Errorf("node key at %s already exists", nodeKeyFile)
 	}
 
-	nk, err := nodekey.LoadOrGen(nodeKeyFile)
+	nk, err := p2p.LoadOrGenNodeKey(nodeKeyFile)
 	if err != nil {
 		return err
 	}

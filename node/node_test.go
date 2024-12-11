@@ -55,8 +55,13 @@ func TestNodeStartStop(t *testing.T) {
 	t.Logf("Started node %v", n.sw.NodeInfo())
 
 	// wait for the node to produce a block
-	blocksSub, err := n.EventBus().Subscribe(context.Background(), "node_test", types.EventQueryNewBlock)
+	blocksSub, err := n.EventBus().Subscribe(
+		context.Background(),
+		"node_test",
+		types.EventQueryNewBlock,
+	)
 	require.NoError(t, err)
+
 	select {
 	case <-blocksSub.Out():
 	case <-blocksSub.Canceled():
@@ -64,6 +69,16 @@ func TestNodeStartStop(t *testing.T) {
 	case <-time.After(10 * time.Second):
 		t.Fatal("timed out waiting for the node to produce a block")
 	}
+
+	// The test unfolds too quickly for the node's indexer to finish its operations.
+	// Therefore, the goroutine below that calls n.Stop() will close the indexer's
+	// database right when the indexer is trying to write to it at line
+	// state/txindex/indexer_service.go:109
+	//, thus causing a panic.  This small sleep allows the indexer to finish its
+	// write operation before the node is shut down.
+	// Unfortunately, there is no graceful shutdown available for the database layer,
+	// i.e., make the database wait for all the active connections before closing.
+	time.Sleep(100 * time.Millisecond)
 
 	// stop the node
 	go func() {
@@ -77,10 +92,13 @@ func TestNodeStartStop(t *testing.T) {
 		pid := os.Getpid()
 		p, err := os.FindProcess(pid)
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
 		err = p.Signal(syscall.SIGABRT)
-		fmt.Println(err)
+		if err != nil {
+			t.Log(err)
+		}
+
 		t.Fatal("timed out waiting for shutdown")
 	}
 }

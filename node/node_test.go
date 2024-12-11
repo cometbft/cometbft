@@ -33,7 +33,6 @@ import (
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
-	"github.com/cometbft/cometbft/p2p/nodekey"
 	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
@@ -479,7 +478,7 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 	cr := p2pmock.NewReactor()
 	cr.Channels = []p2p.StreamDescriptor{
 		&conn.ChannelDescriptor{
-			ID:                  byte(0x31),
+			ID:                  byte(0xff),
 			Priority:            5,
 			SendQueueCapacity:   100,
 			RecvMessageCapacity: 100,
@@ -487,7 +486,7 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 	}
 	customBlocksyncReactor := p2pmock.NewReactor()
 
-	nodeKey, err := nodekey.LoadOrGen(config.NodeKeyFile())
+	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	require.NoError(t, err)
 
 	pv, err := privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile(), nil)
@@ -517,6 +516,7 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 
 	channels := n.NodeInfo().(p2p.NodeInfoDefault).Channels
 	assert.Contains(t, channels, mempl.MempoolChannel)
+	assert.Contains(t, channels, mempl.MempoolControlChannel)
 	assert.Contains(t, channels, cr.Channels[0].StreamID())
 }
 
@@ -540,7 +540,7 @@ func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
 
 	stateDB.Close()
 
-	nodeKey, err := nodekey.LoadOrGen(config.NodeKeyFile())
+	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	require.NoError(t, err)
 
 	pv, err := privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile(), nil)
@@ -583,7 +583,7 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	// Use goleveldb so we can reuse the same db for the second NewNode()
 	config.DBBackend = string(dbm.PebbleDBBackend)
 
-	nodeKey, err := nodekey.LoadOrGen(config.NodeKeyFile())
+	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	require.NoError(t, err)
 
 	pv, err := privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile(), nil)
@@ -651,7 +651,7 @@ func TestNodeGenesisHashFlagMatch(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 
 	config.DBBackend = string(dbm.PebbleDBBackend)
-	nodeKey, err := nodekey.LoadOrGen(config.NodeKeyFile())
+	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	require.NoError(t, err)
 	// Get correct hash of correct genesis file
 	jsonBlob, err := os.ReadFile(config.GenesisFile())
@@ -685,7 +685,7 @@ func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 	// Use goleveldb so we can reuse the same db for the second NewNode()
 	config.DBBackend = string(dbm.PebbleDBBackend)
 
-	nodeKey, err := nodekey.LoadOrGen(config.NodeKeyFile())
+	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	require.NoError(t, err)
 
 	// Generate hash of wrong file

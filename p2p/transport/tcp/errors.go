@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/cometbft/cometbft/p2p/internal/nodekey"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
-	"github.com/cometbft/cometbft/p2p/nodekey"
 )
 
 // ErrTransportClosed is raised when the Transport has been closed.

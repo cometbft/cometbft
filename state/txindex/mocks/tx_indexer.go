@@ -38,6 +38,24 @@ func (_m *TxIndexer) AddBatch(b *txindex.Batch) error {
 	return r0
 }
 
+// Close provides a mock function with no fields
+func (_m *TxIndexer) Close() error {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Close")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func() error); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Get provides a mock function with given fields: hash
 func (_m *TxIndexer) Get(hash []byte) (*v1.TxResult, error) {
 	ret := _m.Called(hash)

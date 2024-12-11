@@ -61,6 +61,15 @@ func WithCompaction(compact bool, compactionInterval int64) IndexerOption {
 	}
 }
 
+// Close closes the indexer's underlying database. The caller is responsible for
+// calling Close when done with the indexer.
+func (txi *TxIndex) Close() error {
+	if err := txi.store.Close(); err != nil {
+		return fmt.Errorf("closing transaction index: %w", err)
+	}
+	return nil
+}
+
 func (txi *TxIndex) Prune(retainHeight int64) (numPruned int64, newRetainHeight int64, err error) {
 	// Returns numPruned, newRetainHeight, err
 	// numPruned: the number of heights pruned. E.x. if heights {1, 3, 7} were pruned, numPruned == 3

@@ -101,6 +101,13 @@ message Vote {
   // consensus for the associated block.
   // Only valid for precommit messages.
   bytes extension_signature = 10;
+  // Non-Replay-Protected (NRP) vote extension provided by the application.
+  // Only valid for precommit messages.
+  bytes non_rp_extension = 11;
+  // Non-Replay-Protected (NRP) vote extension signature by the validator if
+  // they participated in consensus for the associated block.
+  // Only valid for precommit messages.
+  bytes non_rp_extension_signature = 12;
 }
 
 // Commit contains the evidence that a block was committed by a set of validators.
@@ -142,6 +149,10 @@ message ExtendedCommitSig {
   bytes extension = 5;
   // Vote extension signature
   bytes extension_signature = 6;
+  // Non-Replay-Protected vote extension data
+  bytes nrp_extension = 7;
+  // Non-Replay-Protected vote extension signature
+  bytes nrp_extension_signature = 8;
 }
 
 // Block proposal.

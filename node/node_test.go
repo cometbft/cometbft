@@ -33,7 +33,6 @@ import (
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
-	"github.com/cometbft/cometbft/p2p/transport"
 	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
@@ -477,7 +476,7 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 
 	cr := p2pmock.NewReactor()
-	cr.Channels = []transport.StreamDescriptor{
+	cr.Channels = []p2p.StreamDescriptor{
 		conn.StreamDescriptor{
 			ID:                  byte(0xff),
 			Priority:            5,

@@ -30,6 +30,10 @@ type (
 	NodeInfoDefaultOther = ni.DefaultOther
 	// ProtocolVersion is the protocol version for the software.
 	ProtocolVersion = ni.ProtocolVersion
+
+	// StreamDescriptor describes a data stream. This could be a substream within
+	// a multiplexed TCP connection, QUIC stream, etc.
+	StreamDescriptor = transport.StreamDescriptor
 )
 
 // Envelope contains a message with sender routing info.

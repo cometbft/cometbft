@@ -7,7 +7,6 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/p2p/transport"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -102,7 +101,7 @@ var _ p2p.Reactor = &NopMempoolReactor{}
 func (*NopMempoolReactor) WaitSync() bool { return false }
 
 // StreamDescriptors always returns nil.
-func (*NopMempoolReactor) StreamDescriptors() []transport.StreamDescriptor { return nil }
+func (*NopMempoolReactor) StreamDescriptors() []p2p.StreamDescriptor { return nil }
 
 // AddPeer does nothing.
 func (*NopMempoolReactor) AddPeer(p2p.Peer) {}

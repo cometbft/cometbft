@@ -372,7 +372,7 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 			// Process request
 			peers[request.PeerID].inputChan <- inputData{t, pool, request}
 		case <-testTicker.C:
-			banned := pool.isPeerBanned("bad")
+			banned := pool.IsPeerBanned("bad")
 			bannedOnce = bannedOnce || banned // Keep bannedOnce true, even if the malicious peer gets unbanned
 			caughtUp := pool.IsCaughtUp()
 			// Success: pool caught up and malicious peer was banned at least once

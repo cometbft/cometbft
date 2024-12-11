@@ -165,7 +165,6 @@ func startRPCServers(
 			})
 		} else {
 			listenerAddr := listenerAddr
-
 			g.Go(func() error {
 				logger.Info("RPC HTTP server starting", "address", listenerAddr)
 

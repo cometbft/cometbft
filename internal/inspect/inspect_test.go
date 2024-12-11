@@ -47,7 +47,6 @@ func TestInspectRun(t *testing.T) {
 	t.Run("from config", func(t *testing.T) {
 		d, err := inspect.NewFromConfig(cfg)
 		require.NoError(t, err)
-
 		ctx, cancel := context.WithCancel(context.Background())
 
 		stoppedWG := &sync.WaitGroup{}

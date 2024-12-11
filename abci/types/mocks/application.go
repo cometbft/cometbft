@@ -118,24 +118,24 @@ func (_m *Application) CreateOracleResultTx(_a0 context.Context, _a1 *types.Requ
 	return r0, r1
 }
 
-// DoesOracleResultExist provides a mock function with given fields: _a0, _a1
-func (_m *Application) DoesOracleResultExist(_a0 context.Context, _a1 *types.RequestDoesOracleResultExist) (*types.ResponseDoesOracleResultExist, error) {
+// FetchOracleResults provides a mock function with given fields: _a0, _a1
+func (_m *Application) FetchOracleResults(_a0 context.Context, _a1 *types.RequestFetchOracleResults) (*types.ResponseFetchOracleResults, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 *types.ResponseDoesOracleResultExist
+	var r0 *types.ResponseFetchOracleResults
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestDoesOracleResultExist) (*types.ResponseDoesOracleResultExist, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestFetchOracleResults) (*types.ResponseFetchOracleResults, error)); ok {
 		return rf(_a0, _a1)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestDoesOracleResultExist) *types.ResponseDoesOracleResultExist); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestFetchOracleResults) *types.ResponseFetchOracleResults); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.ResponseDoesOracleResultExist)
+			r0 = ret.Get(0).(*types.ResponseFetchOracleResults)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestDoesOracleResultExist) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestFetchOracleResults) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)

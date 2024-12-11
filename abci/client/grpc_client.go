@@ -258,8 +258,8 @@ func (cli *grpcClient) ValidateOracleVotes(ctx context.Context, req *types.Reque
 	return cli.client.ValidateOracleVotes(ctx, types.ToRequestValidateOracleVotes(req).GetValidateOracleVotes(), grpc.WaitForReady(true))
 }
 
-func (cli *grpcClient) DoesOracleResultExist(ctx context.Context, req *types.RequestDoesOracleResultExist) (*types.ResponseDoesOracleResultExist, error) {
-	return cli.client.DoesOracleResultExist(ctx, types.ToRequestDoesOracleResultExist(req).GetDoesOracleResultExist(), grpc.WaitForReady(true))
+func (cli *grpcClient) FetchOracleResults(ctx context.Context, req *types.RequestFetchOracleResults) (*types.ResponseFetchOracleResults, error) {
+	return cli.client.FetchOracleResults(ctx, types.ToRequestFetchOracleResults(req).GetFetchOracleResults(), grpc.WaitForReady(true))
 }
 
 func (cli *grpcClient) DoesSubAccountBelongToVal(ctx context.Context, req *types.RequestDoesSubAccountBelongToVal) (*types.ResponseDoesSubAccountBelongToVal, error) {

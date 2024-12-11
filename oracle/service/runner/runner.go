@@ -17,7 +17,7 @@ import (
 	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 )
 
-func RunProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State) {
+func RunProcessSignVoteQueue(oracleInfo *types.OracleInfo, chainId string) {
 	// sign votes every x milliseconds, where x = Config.SignInterval
 	interval := oracleInfo.Config.SignInterval
 
@@ -28,13 +28,13 @@ func RunProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.St
 				return
 			default:
 				time.Sleep(interval)
-				ProcessSignVoteQueue(oracleInfo, consensusState)
+				ProcessSignVoteQueue(oracleInfo, chainId)
 			}
 		}
 	}(oracleInfo)
 }
 
-func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State) {
+func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, chainId string) {
 	votes := []*oracleproto.Vote{}
 
 	for {
@@ -79,7 +79,7 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 	}
 
 	// signing of vote should append the signature field of gossipVote
-	if err := oracleInfo.PrivValidator.SignOracleVote(consensusState.GetState().ChainID, newGossipVote, sigPrefix); err != nil {
+	if err := oracleInfo.PrivValidator.SignOracleVote(chainId, newGossipVote, sigPrefix); err != nil {
 		log.Errorf("processSignVoteQueue: error signing oracle votes: %v", err)
 		return
 	}
@@ -108,16 +108,18 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 
 		ticker := time.Tick(pruneInterval)
 		for range ticker {
-			lastBlockTime := consensusState.GetState().LastBlockTime.Unix()
-			currTimestampsLen := len(oracleInfo.BlockTimestamps)
+			// keep this timeout close to lowest oracle resolution so that buffers do not build up even when chain is stale, but oracle service is still running
+			timeout := pruneInterval
+			chainState, err := consensusState.GetStateWithTimeout(timeout)
+			if err != nil {
+				log.Warnf("PruneVoteBuffers: timed out trying to get chain state after %v", timeout)
+			} else {
+				lastBlockTime := chainState.LastBlockTime.Unix()
+				currTimestampsLen := len(oracleInfo.BlockTimestamps)
 
-			if currTimestampsLen == 0 {
-				oracleInfo.BlockTimestamps = append(oracleInfo.BlockTimestamps, lastBlockTime)
-				continue
-			}
-
-			if oracleInfo.BlockTimestamps[currTimestampsLen-1] != lastBlockTime {
-				oracleInfo.BlockTimestamps = append(oracleInfo.BlockTimestamps, lastBlockTime)
+				if currTimestampsLen == 0 || oracleInfo.BlockTimestamps[currTimestampsLen-1] != lastBlockTime {
+					oracleInfo.BlockTimestamps = append(oracleInfo.BlockTimestamps, lastBlockTime)
+				}
 			}
 
 			// only keep last x number of block timestamps, where x = maxOracleGossipBlocksDelayed
@@ -131,10 +133,16 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 				latestAllowableTimestamp = oracleInfo.BlockTimestamps[0]
 			}
 
-			oracleInfo.UnsignedVoteBuffer.Lock()
+			resp, err := oracleInfo.ProxyApp.FetchOracleResults(context.Background(), &abcitypes.RequestFetchOracleResults{})
+			if err != nil {
+				log.Warnf("PruneVoteBuffers: unable to fetch oracle results: %v", err)
+			}
+
 			newVotes := []*oracleproto.Vote{}
 			unsignedVoteBuffer := oracleInfo.UnsignedVoteBuffer.Buffer
 			visitedVoteMap := make(map[string]struct{})
+
+			oracleInfo.UnsignedVoteBuffer.Lock()
 			for _, vote := range unsignedVoteBuffer {
 				// check for dup votes
 				key := fmt.Sprintf("%v:%v", vote.Timestamp, vote.OracleId)
@@ -145,13 +153,12 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 
 				visitedVoteMap[key] = struct{}{}
 
-				// also prune votes for a given oracle id and timestamp, that have already been committed as results on chain
-				res, err := oracleInfo.ProxyApp.DoesOracleResultExist(context.Background(), &abcitypes.RequestDoesOracleResultExist{Key: key})
-				if err != nil {
-					log.Warnf("PruneVoteBuffers: unable to check if oracle result exist for vote: %v: %v", vote, err)
+				oracleResultExists := false
+				if resp != nil && resp.Results != nil {
+					_, oracleResultExists = resp.Results[key]
 				}
 
-				if res.DoesExist {
+				if oracleResultExists {
 					continue
 				}
 
@@ -184,8 +191,8 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 }
 
 // Run run oracles
-func Run(oracleInfo *types.OracleInfo, consensusState *cs.State) {
-	RunProcessSignVoteQueue(oracleInfo, consensusState)
+func Run(oracleInfo *types.OracleInfo, consensusState *cs.State, chainId string) {
+	RunProcessSignVoteQueue(oracleInfo, chainId)
 	PruneVoteBuffers(oracleInfo, consensusState)
 	// start to take votes from app
 	for {
@@ -198,6 +205,12 @@ func Run(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 
 		if res.Vote == nil {
 			continue
+		}
+
+		// drop old votes when channel hits half cap
+		if len(oracleInfo.SignVotesChan) >= cap(oracleInfo.SignVotesChan)/2 {
+			voteToDrop := <-oracleInfo.SignVotesChan
+			log.Warnf("dropped vote as oracle sign votes channel cap is half full, vote: %+v at %v", voteToDrop, time.Now().Unix())
 		}
 
 		oracleInfo.SignVotesChan <- res.Vote

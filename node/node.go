@@ -426,6 +426,11 @@ func NewNodeWithContext(ctx context.Context,
 	)
 
 	oracleReactor.ConsensusState = consensusState
+	chainId := consensusState.GetState().ChainID
+	if chainId == "" {
+		return nil, fmt.Errorf("cannot init node with empty chain id")
+	}
+	oracleReactor.ChainId = chainId
 
 	err = stateStore.SetOfflineStateSyncHeight(0)
 	if err != nil {

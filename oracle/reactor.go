@@ -46,6 +46,7 @@ type Reactor struct {
 	OracleInfo     *oracletypes.OracleInfo
 	ids            *oracleIDs
 	ConsensusState *cs.State
+	ChainId        string
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
@@ -61,7 +62,7 @@ func NewReactor(config *config.OracleConfig, pubKey crypto.PubKey, privValidator
 		Config:             config,
 		UnsignedVoteBuffer: unsignedVoteBuffer,
 		GossipVoteBuffer:   gossipVoteBuffer,
-		SignVotesChan:      make(chan *oracleproto.Vote, 1024),
+		SignVotesChan:      make(chan *oracleproto.Vote, 2048),
 		PubKey:             pubKey,
 		PrivValidator:      privValidator,
 		ProxyApp:           proxyApp,
@@ -92,7 +93,7 @@ func (oracleR *Reactor) SetLogger(l log.Logger) {
 // OnStart implements p2p.BaseReactor.
 func (oracleR *Reactor) OnStart() error {
 	go func() {
-		runner.Run(oracleR.OracleInfo, oracleR.ConsensusState)
+		runner.Run(oracleR.OracleInfo, oracleR.ConsensusState, oracleR.ChainId)
 	}()
 	return nil
 }
@@ -190,8 +191,10 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 		signatureWithoutPrefix, err := utils.GetSignatureWithoutPrefix(msg.Signature)
 		if err != nil {
 			logrus.Errorf("unable to get signature without prefix, invalid signature: %v", msg.Signature)
+			return
 		}
-		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(oracleR.ConsensusState.GetState().ChainID, msg), signatureWithoutPrefix); !success {
+
+		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(oracleR.ChainId, msg), signatureWithoutPrefix); !success {
 			logrus.Errorf("failed signature verification for validator: %v, skipping gossip", pubKey.Address().String())
 			return
 		}

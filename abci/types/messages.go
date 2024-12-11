@@ -142,9 +142,9 @@ func ToRequestValidateOracleVotes(req *RequestValidateOracleVotes) *Request {
 	}
 }
 
-func ToRequestDoesOracleResultExist(req *RequestDoesOracleResultExist) *Request {
+func ToRequestFetchOracleResults(req *RequestFetchOracleResults) *Request {
 	return &Request{
-		Value: &Request_DoesOracleResultExist{req},
+		Value: &Request_FetchOracleResults{req},
 	}
 }
 

@@ -242,6 +242,23 @@ func (cs *State) GetState() sm.State {
 	return cs.state.Copy()
 }
 
+// GetStateWithTimeout trys to returns a copy of the chain state within a given timeframe, else it errors out
+func (cs *State) GetStateWithTimeout(timeout time.Duration) (sm.State, error) {
+	resCh := make(chan sm.State, 1)
+	go func() {
+		res := cs.GetState()
+		resCh <- res
+	}()
+
+	select {
+	case res := <-resCh:
+		return res, nil
+
+	case <-time.After(timeout):
+		return sm.State{}, fmt.Errorf("GetStateWithTimeout: timeout after %v", timeout)
+	}
+}
+
 // GetLastHeight returns the last height committed.
 // If there were no blocks, returns 0.
 func (cs *State) GetLastHeight() int64 {

@@ -787,7 +787,7 @@ func TestDOGDisabledRoute(t *testing.T) {
 	reactors[0].redundancyControl.triggerAdjustment(reactors[0])
 	// Wait for the redundancy adjustment to kick in
 	// If the test starts failing, revisit this value
-	time.Sleep(100 * time.Second)
+	time.Sleep(100 * time.Millisecond)
 
 	reactors[2].router.mtx.RLock()
 	// Make sure that Node 3 has at least one disabled route

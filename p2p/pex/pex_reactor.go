@@ -410,7 +410,7 @@ func (r *Reactor) ensurePeersRoutine() {
 
 	// fire once immediately.
 	// ensures we dial the seeds right away if the book is empty
-	r.ensurePeers()
+	r.ensurePeers(true)
 
 	// fire periodically
 	ticker := time.NewTicker(r.ensurePeersPeriod)
@@ -418,9 +418,9 @@ func (r *Reactor) ensurePeersRoutine() {
 	for {
 		select {
 		case <-ticker.C:
-			r.ensurePeers()
+			r.ensurePeers(true)
 		case <-r.ensurePeersCh:
-			r.ensurePeers()
+			r.ensurePeers(false)
 		case <-r.book.Quit():
 			return
 		case <-r.Quit():
@@ -434,7 +434,7 @@ func (r *Reactor) ensurePeersRoutine() {
 // heuristic that we haven't perfected yet, or, perhaps is manually edited by
 // the node operator. It should not be used to compute what addresses are
 // already connected or not.
-func (r *Reactor) ensurePeers() {
+func (r *Reactor) ensurePeers(ensurePeersPeriodElapsed bool) {
 	var (
 		out, in, dial = r.Switch.NumPeers()
 		numToDial     = r.Switch.MaxNumOutboundPeers() - (out + dial)
@@ -504,7 +504,7 @@ func (r *Reactor) ensurePeers() {
 	if r.book.NeedMoreAddrs() {
 		// 1) Pick a random peer and ask for more.
 		peer := r.Switch.Peers().Random()
-		if peer != nil {
+		if peer != nil && ensurePeersPeriodElapsed {
 			r.Logger.Info("We need more addresses. Sending pexRequest to random peer", "peer", peer)
 			r.RequestAddrs(peer)
 		}

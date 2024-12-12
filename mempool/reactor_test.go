@@ -13,7 +13,7 @@ import (
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
-	memproto "github.com/cometbft/cometbft/api/cometbft/mempool/v1"
+	memproto "github.com/cometbft/cometbft/api/cometbft/mempool/v2"
 	cfg "github.com/cometbft/cometbft/config"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/log"
@@ -684,4 +684,177 @@ func TestMempoolVectors(t *testing.T) {
 
 		require.Equal(t, tc.expBytes, hex.EncodeToString(bz), tc.testName)
 	}
+}
+
+// Verify that counting of duplicates and first time transactions work
+// The test sends transactions from node2 to node1 twice.
+// The second time they will get rejected.
+func TestDOGTransactionCount(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.DOGProtocolEnabled = true
+
+	// Put the interval to a higher value to make sure the values don't get reset
+	config.Mempool.DOGAdjustInterval = 15 * time.Second
+	reactors, _ := makeAndConnectReactors(config, 2, nil)
+
+	// create random transactions
+	txs := newUniqueTxs(numTxs)
+	secondNodeID := reactors[1].Switch.NodeInfo().ID()
+	secondNode := reactors[0].Switch.Peers().Get(secondNodeID)
+
+	for _, tx := range txs {
+		_, err := reactors[0].TryAddTx(tx, secondNode)
+		require.NoError(t, err)
+	}
+
+	require.Equal(t, int64(len(txs)), reactors[0].redundancyControl.firstTimeTxs)
+	for _, tx := range txs {
+		_, err := reactors[0].TryAddTx(tx, secondNode)
+		// The transaction is in cache, hence the Error
+		require.Error(t, err)
+	}
+	require.Equal(t, int64(len(txs)), reactors[0].redundancyControl.duplicateTxs)
+
+	reactors[0].redundancyControl.triggerAdjustment(reactors[0])
+	// This is done to give enough time for the route changes to take effect
+	// If the test starts failing, revisit this value
+	time.Sleep(100 * time.Millisecond)
+
+	reactors[0].redundancyControl.mtx.RLock()
+	dupTx := reactors[0].redundancyControl.duplicateTxs
+	firstTimeTx := reactors[0].redundancyControl.firstTimeTxs
+	reactors[0].redundancyControl.mtx.RUnlock()
+
+	// Now the counters should be reset
+	require.Equal(t, int64(0), dupTx)
+	require.Equal(t, int64(0), firstTimeTx)
+}
+
+// Testing the disabled route between two nodes
+// AS the description of DOG in the issue:
+// The core idea of the protocol is the following.
+// Consider a node A that receives from node B a transaction
+// that it already has. Let's assume B itself had received
+// the transaction from C. The fact that A received from B
+// a transaction it already has means that there must exist
+// a cycle in the network topology.
+// Therefore, a tells B to stop sending transactions B would be getting from C
+// (i.e. A tells B to disable route C → A → B).
+// We then reduce the redundancy level forcing A to tell B to re-enable the routes.
+func TestDOGDisabledRoute(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.DOGProtocolEnabled = true
+
+	// Put the interval to a higher value to make sure the values don't get reset
+	config.Mempool.DOGAdjustInterval = 35 * time.Second
+	reactors, _ := makeAndConnectReactors(config, 3, nil)
+
+	secondNodeID := reactors[1].Switch.NodeInfo().ID()
+	secondNode := reactors[0].Switch.Peers().Get(secondNodeID)
+	secondNodeFromThird := reactors[2].Switch.Peers().Get(secondNodeID)
+
+	thirdNodeID := reactors[2].Switch.NodeInfo().ID()
+	thirdNodeFromFirst := reactors[0].Switch.Peers().Get(thirdNodeID)
+
+	firstNodeID := reactors[0].Switch.NodeInfo().ID()
+	firstNodeFromThird := reactors[2].Switch.Peers().Get(firstNodeID)
+
+	// create random transactions
+	txs := newUniqueTxs(numTxs)
+	// Add transactions to node 3 from node 2
+	// node3.senders[tx] = node2
+	for _, tx := range txs {
+		_, err := reactors[2].TryAddTx(tx, secondNodeFromThird)
+		require.NoError(t, err)
+	}
+
+	// Add the same transactions to node 1 from node 2
+	for _, tx := range txs {
+		_, err := reactors[0].TryAddTx(tx, secondNode)
+		require.NoError(t, err)
+	}
+
+	// Trying to add the same transactions node 1 has received
+	// from node 2, but this time from node 3
+	// Node 1 should now ask node 3 to disable the route between
+	// a node that has sent this tx to node 3(node 2) and node1
+	for _, tx := range txs {
+		_, err := reactors[0].TryAddTx(tx, thirdNodeFromFirst)
+		// The transaction is in cache, hence the Error
+		require.ErrorIs(t, err, ErrTxInCache)
+	}
+
+	reactors[0].redundancyControl.triggerAdjustment(reactors[0])
+	// Wait for the redundancy adjustment to kick in
+	// If the test starts failing, revisit this value
+	time.Sleep(100 * time.Millisecond)
+
+	reactors[2].router.mtx.RLock()
+	// Make sure that Node 3 has at least one disabled route
+	require.Greater(t, len(reactors[2].router.disabledRoutes), 0)
+
+	require.True(t, reactors[2].router.isRouteDisabled(secondNodeFromThird.ID(), firstNodeFromThird.ID()))
+	reactors[2].router.mtx.RUnlock()
+
+	// This will force Node 3 to delete all disabled routes
+	reactors[2].Switch.StopPeerGracefully(secondNode)
+
+	// The route should not be there
+	require.False(t, reactors[2].router.isRouteDisabled(secondNodeFromThird.ID(), firstNodeFromThird.ID()))
+}
+
+// When a peer disconnects we want to remove all disabled route info
+// for that peer only.
+func TestDOGRemoveDisabledRoutesOnDisconnect(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.DOGProtocolEnabled = true
+
+	reactors, _ := makeAndConnectReactors(config, 4, nil)
+
+	fourthNodeID := reactors[3].Switch.NodeInfo().ID()
+
+	secondNodeID := reactors[1].Switch.NodeInfo().ID()
+	secondNode := reactors[0].Switch.Peers().Get(secondNodeID)
+
+	thirdNodeID := reactors[2].Switch.NodeInfo().ID()
+
+	reactors[0].router.disableRoute(secondNodeID, fourthNodeID)
+	reactors[0].router.disableRoute(thirdNodeID, fourthNodeID)
+	reactors[0].router.disableRoute(thirdNodeID, secondNodeID)
+
+	require.True(t, reactors[0].router.isRouteDisabled(secondNodeID, fourthNodeID))
+	require.True(t, reactors[0].router.isRouteDisabled(thirdNodeID, fourthNodeID))
+	require.True(t, reactors[0].router.isRouteDisabled(thirdNodeID, secondNodeID))
+
+	reactors[0].Switch.StopPeerGracefully(secondNode)
+
+	require.False(t, reactors[0].router.isRouteDisabled(secondNodeID, fourthNodeID))
+	require.False(t, reactors[0].router.isRouteDisabled(thirdNodeID, secondNodeID))
+	require.True(t, reactors[0].router.isRouteDisabled(thirdNodeID, fourthNodeID))
+}
+
+// Test redundancy values depending on Number of transactions.
+func TestDOGTestRedundancyCalculation(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.DOGProtocolEnabled = true
+	config.Mempool.DOGTargetRedundancy = 0.5
+	reactors, _ := makeAndConnectReactors(config, 1, nil)
+
+	redundancy := reactors[0].redundancyControl.currentRedundancy()
+	require.Equal(t, redundancy, float64(-1))
+
+	reactors[0].redundancyControl.firstTimeTxs = 10
+	reactors[0].redundancyControl.duplicateTxs = 0
+	redundancy = reactors[0].redundancyControl.currentRedundancy()
+	require.Equal(t, redundancy, float64(0))
+
+	reactors[0].redundancyControl.duplicateTxs = 1000
+	reactors[0].redundancyControl.firstTimeTxs = 10
+	redundancy = reactors[0].redundancyControl.currentRedundancy()
+	require.Greater(t, redundancy, config.Mempool.DOGTargetRedundancy)
+
+	reactors[0].redundancyControl.duplicateTxs = 1000
+	reactors[0].redundancyControl.firstTimeTxs = 0
+	redundancy = reactors[0].redundancyControl.currentRedundancy()
+	require.Equal(t, redundancy, reactors[0].redundancyControl.upperBound)
 }

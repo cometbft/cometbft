@@ -19,7 +19,6 @@ func (m *Message) Unwrap() (proto.Message, error) {
 	switch msg := m.Sum.(type) {
 	case *Message_Txs:
 		return m.GetTxs(), nil
-
 	default:
 		return nil, fmt.Errorf("unknown message: %T", msg)
 	}

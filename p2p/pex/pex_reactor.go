@@ -427,13 +427,7 @@ func (r *Reactor) ensurePeersRoutine() {
 		case <-ticker.C:
 			r.ensurePeers(true)
 		case <-r.ensurePeersCh:
-<<<<<<< HEAD
-			r.ensurePeers()
-=======
 			r.ensurePeers(false)
-		case <-r.book.Quit():
-			return
->>>>>>> 491379f20 (fix(p2p/pex): do not send PEX request in fast dial mode (#4644))
 		case <-r.Quit():
 			ticker.Stop()
 			return
@@ -512,15 +506,10 @@ func (r *Reactor) ensurePeers(ensurePeersPeriodElapsed bool) {
 	if r.book.NeedMoreAddrs() {
 
 		// 1) Pick a random peer and ask for more.
-<<<<<<< HEAD
 		peers := r.Switch.Peers().List()
 		peersCount := len(peers)
-		if peersCount > 0 {
+		if peersCount > 0 && ensurePeersPeriodElapsed {
 			peer := peers[cmtrand.Int()%peersCount]
-=======
-		peer := r.Switch.Peers().Random()
-		if peer != nil && ensurePeersPeriodElapsed {
->>>>>>> 491379f20 (fix(p2p/pex): do not send PEX request in fast dial mode (#4644))
 			r.Logger.Info("We need more addresses. Sending pexRequest to random peer", "peer", peer)
 			r.RequestAddrs(peer)
 		}

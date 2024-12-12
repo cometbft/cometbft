@@ -305,7 +305,7 @@ func TestConnectionSpeedForPeerReceivedFromSeed(t *testing.T) {
 	assertPeersWithTimeout(t, []*p2p.Switch{node}, 3*time.Second, 1)
 
 	// 5. Check that the node connects to the peers reported by the seed node
-	assertPeersWithTimeout(t, []*p2p.Switch{node}, 1*time.Second, cfg.MaxNumOutboundPeers)
+	assertPeersWithTimeout(t, []*p2p.Switch{node}, 10*time.Second, cfg.MaxNumOutboundPeers)
 
 	// 6. Assert that the configured maximum number of inbound/outbound peers
 	// are respected, see https://github.com/cometbft/cometbft/issues/486

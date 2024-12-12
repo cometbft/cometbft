@@ -382,6 +382,7 @@ func (c *MConnection) sendBytes(chID byte, msgBytes []byte, blocking bool) error
 		return nil
 	}
 
+	// Uncomment in you need to see raw bytes.
 	// c.Logger.Debug("Send",
 	// 	"streamID", chID,
 	// 	"msgBytes", log.NewLazySprintf("%X", msgBytes),
@@ -392,7 +393,6 @@ func (c *MConnection) sendBytes(chID byte, msgBytes []byte, blocking bool) error
 		panic(fmt.Sprintf("Unknown channel %X. Forgot to register?", chID))
 	}
 	if err := channel.sendBytes(msgBytes, blocking); err != nil {
-		// c.Logger.Error("Send failed", "err", err)
 		return err
 	}
 
@@ -661,18 +661,19 @@ FOR_LOOP:
 			channel, ok := c.channelsIdx[channelID]
 			if !ok || pkt.PacketMsg.ChannelID < 0 || pkt.PacketMsg.ChannelID > math.MaxUint8 {
 				err := fmt.Errorf("unknown channel %X", pkt.PacketMsg.ChannelID)
-				c.Logger.Error("Connection failed @ recvRoutine", "err", err)
+				c.Logger.Debug("Connection failed @ recvRoutine", "err", err)
 				c.Close(err.Error())
 				break FOR_LOOP
 			}
 
 			msgBytes, err := channel.recvPacketMsg(*pkt.PacketMsg)
 			if err != nil {
-				c.Logger.Error("Connection failed @ recvRoutine", "err", err)
+				c.Logger.Debug("Connection failed @ recvRoutine", "err", err)
 				c.Close(err.Error())
 				break FOR_LOOP
 			}
 			if msgBytes != nil {
+				// Uncomment in you need to see raw bytes.
 				// c.Logger.Debug("Received", "streamID", channelID, "msgBytes", log.NewLazySprintf("%X", msgBytes))
 				if c.onReceiveFn != nil {
 					c.onReceiveFn(channelID, msgBytes)
@@ -684,7 +685,7 @@ FOR_LOOP:
 			}
 		default:
 			err := fmt.Errorf("unknown message type %v", reflect.TypeOf(packet))
-			c.Logger.Error("Connection failed @ recvRoutine", "err", err)
+			c.Logger.Debug("Connection failed @ recvRoutine", "err", err)
 			c.Close(err.Error())
 			break FOR_LOOP
 		}

@@ -721,7 +721,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 
 	tx4 := kvstore.NewTx("A", "10")
 	rr, err = mp.CheckTx(tx4, "")
-	rr.Response.GetCheckTx()
+
 	require.NoError(t, err)
 	require.ErrorAs(t, rr.Error(), &ErrLaneIsFull{})
 

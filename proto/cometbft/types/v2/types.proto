@@ -150,9 +150,9 @@ message ExtendedCommitSig {
   // Vote extension signature
   bytes extension_signature = 6;
   // Non-Replay-Protected vote extension data
-  bytes nrp_extension = 7;
+  bytes non_rp_extension = 7;
   // Non-Replay-Protected vote extension signature
-  bytes nrp_extension_signature = 8;
+  bytes non_rp_extension_signature = 8;
 }
 
 // Block proposal.

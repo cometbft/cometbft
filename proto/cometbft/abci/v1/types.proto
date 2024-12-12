@@ -184,12 +184,11 @@ message ExtendVoteRequest {
 // produced by a different validator.
 message VerifyVoteExtensionRequest {
   // the hash of the block that this received vote corresponds to
-  bytes hash                  = 1;
+  bytes hash = 1;
   // the validator that signed the vote extension
-  bytes validator_address     = 2;
-  int64 height                = 3;
-  bytes vote_extension        = 4;
-  bytes non_rp_vote_extension = 5;
+  bytes validator_address = 2;
+  int64 height            = 3;
+  bytes vote_extension    = 4;
 }
 
 // FinalizeBlockRequest is a request to finalize the block.
@@ -402,8 +401,7 @@ enum ProcessProposalStatus {
 // ExtendVoteResponse contains the vote extension that the application would like to
 // attach to its next precommit vote.
 message ExtendVoteResponse {
-  bytes vote_extension   = 1; // this extension's signature is replay-protected
-  bytes non_rp_extension = 2; // this extension's signature is _not_ replay-protected
+  bytes vote_extension = 1;
 }
 
 // VerifyVoteExtensionResponse indicates the ABCI application's decision
@@ -556,10 +554,6 @@ message ExtendedVoteInfo {
   bytes extension_signature = 4;
   // block_id_flag indicates whether the validator voted for a block, nil, or did not vote at all
   cometbft.types.v1.BlockIDFlag block_id_flag = 5;
-  // Non-deterministic non-replay-protected extension provided by the sending validator's application.
-  bytes non_rp_vote_extension = 6;
-  // Signature on non-replay-protected extension created by CometBFT
-  bytes non_rp_extension_signature = 7;
 
   reserved 2;  // signed_last_block
 }

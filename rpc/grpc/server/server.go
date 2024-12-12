@@ -100,6 +100,7 @@ func Serve(listener net.Listener, opts ...Option) error {
 	for _, opt := range opts {
 		opt(b)
 	}
+	b.grpcOpts = append(b.grpcOpts, grpc.MaxConcurrentStreams(100)) // Limit to 100 streams per connection
 	server := grpc.NewServer(b.grpcOpts...)
 	if b.versionService != nil {
 		pbversionsvc.RegisterVersionServiceServer(server, b.versionService)

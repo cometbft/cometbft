@@ -41,9 +41,6 @@ const (
 	defaultRecvRate     = int64(512000) // 500KB/s
 	defaultPingInterval = 60 * time.Second
 	defaultPongTimeout  = 45 * time.Second
-
-	// Capacity of the receive channel for each stream.
-	maxRecvChanCap = 100
 )
 
 // OnReceiveFn is a callback func, which is called by the MConnection when a
@@ -271,7 +268,7 @@ func (c *MConnection) OpenStream(streamID byte, desc any) (transport.Stream, err
 	}
 	c.channelsIdx[streamID] = newChannel(c, d)
 	c.channelsIdx[streamID].SetLogger(c.Logger.With("streamID", streamID))
-	c.msgsByStreamIDMap[streamID] = make(chan []byte, maxRecvChanCap)
+	c.msgsByStreamIDMap[streamID] = make(chan []byte)
 
 	return &MConnectionStream{conn: c, streamID: streamID}, nil
 }

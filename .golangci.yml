@@ -74,7 +74,7 @@ linters-settings:
       - default # Default section: contains all imports that could not be matched to another section type.
       - blank # blank imports
       - dot # dot imports
-      - prefix(github.com/cometbft/cometbft, github.com/cometbft/cometbft-db, github.com/cometbft/cometbft-load-test)
+      - prefix(github.com/cometbft/cometbft, github.com/cometbft/cometbft-load-test)
     custom-order: true
   depguard:
     rules:

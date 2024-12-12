@@ -7,11 +7,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/cometbft/cometbft-db"
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
+	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/mocks"
 	"github.com/cometbft/cometbft/store"
@@ -88,8 +88,14 @@ func TestRollback(t *testing.T) {
 
 func TestRollbackHard(t *testing.T) {
 	const height int64 = 100
-	blockStore := store.NewBlockStore(dbm.NewMemDB())
-	stateStore := state.NewStore(dbm.NewMemDB(), state.StoreOptions{DiscardABCIResponses: false})
+
+	blkStoreDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+	blockStore := store.NewBlockStore(blkStoreDB)
+
+	sttStoreDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+	stateStore := state.NewStore(sttStoreDB, state.StoreOptions{DiscardABCIResponses: false})
 
 	valSet, _ := types.RandValidatorSet(5, 10)
 
@@ -203,13 +209,15 @@ func TestRollbackHard(t *testing.T) {
 }
 
 func TestRollbackNoState(t *testing.T) {
-	stateStore := state.NewStore(dbm.NewMemDB(),
+	sttStoreDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+	stateStore := state.NewStore(sttStoreDB,
 		state.StoreOptions{
 			DiscardABCIResponses: false,
 		})
 	blockStore := &mocks.BlockStore{}
 
-	_, _, err := state.Rollback(blockStore, stateStore, false)
+	_, _, err = state.Rollback(blockStore, stateStore, false)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "no state found")
 }
@@ -240,7 +248,9 @@ func TestRollbackDifferentStateHeight(t *testing.T) {
 
 func setupStateStore(t *testing.T, height int64) state.Store {
 	t.Helper()
-	stateStore := state.NewStore(dbm.NewMemDB(), state.StoreOptions{DiscardABCIResponses: false})
+	stateStoreDB, err := storage.NewMemDB()
+	require.NoError(t, err)
+	stateStore := state.NewStore(stateStoreDB, state.StoreOptions{DiscardABCIResponses: false})
 	valSet, _ := types.RandValidatorSet(5, 10)
 
 	params := types.DefaultConsensusParams()

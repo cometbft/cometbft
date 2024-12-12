@@ -714,7 +714,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 	// so that the lane overflows. So tx3 and tx4 go to the same lane
 	laneMaxBytes := int(cfg.Mempool.MaxTxsBytes) / len(mp.sortedLanes)
 	tx3 := kvstore.NewTx("B", cmtrand.Str(laneMaxBytes-2))
-	t.Log(len(tx3))
+
 	rr, err := mp.CheckTx(tx3, "")
 	require.NoError(t, err)
 	require.NoError(t, rr.Error())

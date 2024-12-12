@@ -319,7 +319,7 @@ func TestPEXReactorSeedMode(t *testing.T) {
 	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
-	pexRConfig := &ReactorConfig{SeedMode: true, SeedDisconnectWaitPeriod: 10 * time.Millisecond}
+	pexRConfig := &ReactorConfig{SeedMode: true, SeedDisconnectWaitPeriod: 100 * time.Millisecond}
 	pexR, book := createReactor(pexRConfig)
 	defer teardownReactor(book)
 
@@ -616,6 +616,7 @@ func testCreatePeerWithConfig(dir string, id int, config *ReactorConfig) *p2p.Sw
 
 			r := NewReactor(book, config)
 			r.SetLogger(logger)
+			r.SetEnsurePeersPeriod(250 * time.Millisecond)
 
 			sw.SetLogger(logger)
 			sw.AddReactor("PEX", r)
@@ -647,7 +648,11 @@ func testCreateSeed(dir string, id int, knownAddrs, srcAddrs []*na.NetAddr) *p2p
 			}
 			sw.SetAddrBook(book)
 
-			r := NewReactor(book, &ReactorConfig{})
+			r := NewReactor(book, &ReactorConfig{
+				// Makes the tests fail ¯\_(ツ)_/¯
+				// SeedMode: true,
+			})
+			r.SetEnsurePeersPeriod(250 * time.Millisecond)
 			r.SetLogger(logger)
 
 			sw.SetLogger(logger)

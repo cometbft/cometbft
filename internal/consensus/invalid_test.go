@@ -104,10 +104,13 @@ func invalidDoPrevoteFunc(t *testing.T, cs *State, sw *p2p.Switch, pv types.Priv
 		peers := sw.Peers().Copy()
 		for _, peer := range peers {
 			cs.Logger.Info("Sending bad vote", "block", blockHash, "peer", peer)
-			peer.Send(p2p.Envelope{
+			err = peer.Send(p2p.Envelope{
 				Message:   &cmtcons.Vote{Vote: precommit.ToProto()},
 				ChannelID: VoteChannel,
 			})
+			if err != nil {
+				t.Error(err)
+			}
 		}
 	}()
 }

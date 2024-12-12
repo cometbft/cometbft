@@ -2,6 +2,7 @@ package evidence_test
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -210,7 +211,7 @@ func TestReactorBroadcastEvidenceMemoryLeak(t *testing.T) {
 	p.On("Send", mock.MatchedBy(func(i any) bool {
 		e, ok := i.(p2p.Envelope)
 		return ok && e.ChannelID == evidence.EvidenceChannel
-	})).Return(false)
+	})).Return(errors.New("peer is stopped"))
 	quitChan := make(<-chan struct{})
 	p.On("Quit").Return(quitChan)
 	ps := peerState{2}

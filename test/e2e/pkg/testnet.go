@@ -333,6 +333,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		}
 	}
 
+	validatorsPerHeight := make(map[int64]map[string]struct{})
+	validatorsPerHeight[testnet.InitialHeight] = make(map[string]struct{})
 	// Set up genesis validators. If not specified explicitly, use all validator nodes.
 	if len(testnet.Validators) == 0 {
 		if testnet.Validators == nil { // Can this ever happen?
@@ -341,7 +343,12 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		for _, node := range testnet.Nodes {
 			if node.Mode == ModeValidator {
 				testnet.Validators[node.Name] = 100
+				validatorsPerHeight[testnet.InitialHeight][node.Name] = struct{}{}
 			}
+		}
+	} else {
+		for val := range testnet.Validators {
+			validatorsPerHeight[testnet.InitialHeight][val] = struct{}{}
 		}
 	}
 
@@ -361,6 +368,10 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 				return nil, fmt.Errorf("unknown validator %q for update at height %v", name, height)
 			}
 			valUpdate[node.Name] = power
+			if len(validatorsPerHeight[int64(height)]) == 0 {
+				validatorsPerHeight[int64(height)] = make(map[string]struct{})
+			}
+			validatorsPerHeight[int64(height)][node.Name] = struct{}{}
 		}
 		testnet.ValidatorUpdates[int64(height)] = valUpdate
 	}
@@ -379,6 +390,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		const flipSpan = 3000
 		minNodeInLastUpdate := false
 		for i := max(1, manifest.InitialHeight); i < manifest.InitialHeight+flipSpan; i++ {
+			if len(validatorsPerHeight[i]) <= 1 {
+				continue
+			}
 			// The idea is to take validator `minNode` and flip its
 			// voting power between 0 and 1 in alternating heights.
 

@@ -378,6 +378,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		}
 
 		const flipSpan = 3000
+		minNodeInLastUpdate := false
 		for i := max(1, manifest.InitialHeight); i < manifest.InitialHeight+flipSpan; i++ {
 			// FIXME: we do not flip the validator when there is
 			// **any** scheduled validator update for that height.
@@ -387,13 +388,41 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			// are skipping this in this case. Therefore, in the
 			// next even height we are removing a validator that is
 			// not present in the validator set.
-			if _, ok := testnet.ValidatorUpdates[i]; ok {
-				continue
+
+			// The idea is to take validator `minNode` and flip its
+			// voting power between 0 and 1 in alternating heights.
+
+			// If in the manifest we have `minNode` appear in
+			// ValidatorUpdates for height [i], this update is kept
+			// if and only if minNode was not present or had a
+			// value of `0` in height `i-1`
+
+			if update, ok := testnet.ValidatorUpdates[i]; ok {
+				if _, okVal := update[minNode]; okVal {
+					// The validator updates for height i contain `minNode`
+					// we check whether its value was `1` in `i-1`
+					if !minNodeInLastUpdate {
+						// MinNode was not part of last ValidatorUpdate or its value was 0
+						testnet.ValidatorUpdates[i][minNode] = 1
+						minNodeInLastUpdate = true
+					} else {
+						// MinNode was part of last ValidatorUpdate
+						testnet.ValidatorUpdates[i][minNode] = 0
+						minNodeInLastUpdate = false
+					}
+
+					continue
+				}
 			}
+
+			// If we get here it means that there were no updates for the current height
+			// and we add the update related to `minNode`
 			valUpdate := map[string]int64{
-				minNode: i % 2, // flipping every height
+				minNode: 1, // flipping every height
 			}
+
 			testnet.ValidatorUpdates[i] = valUpdate
+			minNodeInLastUpdate = true
 		}
 	}
 

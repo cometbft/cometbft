@@ -365,7 +365,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		testnet.ValidatorUpdates[int64(height)] = valUpdate
 	}
 
-	if testnet.ConstantFlip && len(testnet.Validators) > 1 {
+	fmt.Println("XXX: ", len(testnet.Validators))
+	if testnet.ConstantFlip {
+		fmt.Println("CONSTANT FLIP")
 		// Pick "lowest" validator by name
 		var minNode string
 		for n := range testnet.Validators {
@@ -397,35 +399,41 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			// if and only if minNode was not present or had a
 			// value of `0` in height `i-1`
 
-			if update, ok := testnet.ValidatorUpdates[i]; ok {
-				if _, okVal := update[minNode]; okVal {
-					// The validator updates for height i contain `minNode`
-					// we check whether its value was `1` in `i-1`
-					if !minNodeInLastUpdate {
-						// MinNode was not part of last ValidatorUpdate or its value was 0
-						testnet.ValidatorUpdates[i][minNode] = 1
-						minNodeInLastUpdate = true
-					} else {
-						// MinNode was part of last ValidatorUpdate
-						testnet.ValidatorUpdates[i][minNode] = 0
-						minNodeInLastUpdate = false
-					}
-
-					continue
+			if _, ok := testnet.ValidatorUpdates[i]; ok {
+				// The validator updates for height i contain `minNode`
+				// we check whether its value was `1` in `i-1`
+				if !minNodeInLastUpdate {
+					// MinNode was not part of last ValidatorUpdate or its value was 0
+					testnet.ValidatorUpdates[i][minNode] = 1
+					minNodeInLastUpdate = true
+				} else {
+					// MinNode was part of last ValidatorUpdate
+					testnet.ValidatorUpdates[i][minNode] = 0
+					minNodeInLastUpdate = false
 				}
+
+				continue
 			}
 
-			// If we get here it means that there were no updates for the current height
-			// and we add the update related to `minNode`
 			valUpdate := map[string]int64{
 				minNode: 1, // flipping every height
 			}
+			if !minNodeInLastUpdate {
+				minNodeInLastUpdate = true
+			} else {
+				// MinNode was part of last ValidatorUpdate
+				valUpdate[minNode] = 0
+				minNodeInLastUpdate = false
+			}
+			// If we get here it means that there were no updates for the current height
+			// and we add the update related to `minNode`
 
 			testnet.ValidatorUpdates[i] = valUpdate
-			minNodeInLastUpdate = true
 		}
 	}
-
+	for i := max(1, manifest.InitialHeight); i < manifest.InitialHeight+30; i++ {
+		fmt.Println("*", i, testnet.ValidatorUpdates[i])
+	}
 	return testnet, testnet.Validate()
 }
 

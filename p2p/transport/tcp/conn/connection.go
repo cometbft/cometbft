@@ -268,7 +268,8 @@ func (c *MConnection) OpenStream(streamID byte, desc any) (transport.Stream, err
 	}
 	c.channelsIdx[streamID] = newChannel(c, d)
 	c.channelsIdx[streamID].SetLogger(c.Logger.With("streamID", streamID))
-	c.msgsByStreamIDMap[streamID] = make(chan []byte)
+	// Allocate some buffer, otherwise CI tests will fail.
+	c.msgsByStreamIDMap[streamID] = make(chan []byte, 5)
 
 	return &MConnectionStream{conn: c, streamID: streamID}, nil
 }

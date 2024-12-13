@@ -90,29 +90,40 @@ func (memR *Reactor) OnStart() error {
 // StreamDescriptors implements Reactor by returning the list of channels for this
 // reactor.
 func (memR *Reactor) StreamDescriptors() []p2p.StreamDescriptor {
-	largestTx := make([]byte, memR.config.MaxTxBytes)
-	batchMsg := protomem.Message{
-		Sum: &protomem.Message_Txs{
-			Txs: &protomem.Txs{Txs: [][]byte{largestTx}},
-		},
-	}
+	var (
+		batchMsgSize  int
+		haveTxMsgSize int
+	)
 
-	key := types.Tx(largestTx).Key()
-	haveTxMsg := protomem.Message{
-		Sum: &protomem.Message_HaveTx{HaveTx: &protomem.HaveTx{TxKey: key[:]}},
+	// Calculate max message size for batchMsg and haveTxMsg,
+	// and free the memory immediately after.
+	{
+		largestTx := make([]byte, memR.config.MaxTxBytes)
+		batchMsg := protomem.Message{
+			Sum: &protomem.Message_Txs{
+				Txs: &protomem.Txs{Txs: [][]byte{largestTx}},
+			},
+		}
+		batchMsgSize = batchMsg.Size()
+
+		key := types.Tx(largestTx).Key()
+		haveTxMsg := protomem.Message{
+			Sum: &protomem.Message_HaveTx{HaveTx: &protomem.HaveTx{TxKey: key[:]}},
+		}
+		haveTxMsgSize = haveTxMsg.Size()
 	}
 
 	return []p2p.StreamDescriptor{
 		tcpconn.StreamDescriptor{
 			ID:                  MempoolChannel,
 			Priority:            5,
-			RecvMessageCapacity: batchMsg.Size(),
+			RecvMessageCapacity: batchMsgSize,
 			MessageTypeI:        &protomem.Message{},
 		},
 		tcpconn.StreamDescriptor{
 			ID:                  MempoolControlChannel,
 			Priority:            10,
-			RecvMessageCapacity: haveTxMsg.Size(),
+			RecvMessageCapacity: haveTxMsgSize,
 			MessageTypeI:        &protomem.Message{},
 		},
 	}

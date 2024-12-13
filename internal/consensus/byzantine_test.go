@@ -48,7 +48,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	css := make([]*State, nValidators)
 
 	for i := 0; i < nValidators; i++ {
-		logger := consensusLogger().With("test", "byzantine", "validator", i)
+		logger := consensusLogger().With("validator", i)
 		stateDB := dbm.NewMemDB() // each state needs its own db
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
@@ -155,16 +155,18 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 			for i, peer := range peerList {
 				if i < len(peerList)/2 {
 					bcs.Logger.Info("Signed and pushed vote", "vote", prevote1, "peer", peer)
-					peer.Send(p2p.Envelope{
+					err = peer.Send(p2p.Envelope{
 						Message:   &cmtcons.Vote{Vote: prevote1.ToProto()},
 						ChannelID: VoteChannel,
 					})
+					require.NoError(t, err)
 				} else {
 					bcs.Logger.Info("Signed and pushed vote", "vote", prevote2, "peer", peer)
-					peer.Send(p2p.Envelope{
+					err = peer.Send(p2p.Envelope{
 						Message:   &cmtcons.Vote{Vote: prevote2.ToProto()},
 						ChannelID: VoteChannel,
 					})
+					require.NoError(t, err)
 				}
 			}
 		} else {
@@ -513,10 +515,13 @@ func sendProposalAndParts(
 	parts *types.PartSet,
 ) {
 	// proposal
-	peer.Send(p2p.Envelope{
+	err := peer.Send(p2p.Envelope{
 		ChannelID: DataChannel,
 		Message:   &cmtcons.Proposal{Proposal: *proposal.ToProto()},
 	})
+	if err != nil {
+		panic(err)
+	}
 
 	// parts
 	for i := 0; i < int(parts.Total()); i++ {
@@ -525,7 +530,7 @@ func sendProposalAndParts(
 		if err != nil {
 			panic(err) // TODO: wbanfield better error handling
 		}
-		peer.Send(p2p.Envelope{
+		err = peer.Send(p2p.Envelope{
 			ChannelID: DataChannel,
 			Message: &cmtcons.BlockPart{
 				Height: height, // This tells peer that this part applies to us.
@@ -533,6 +538,9 @@ func sendProposalAndParts(
 				Part:   *pp,
 			},
 		})
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	// votes
@@ -540,14 +548,20 @@ func sendProposalAndParts(
 	prevote, _ := cs.signVote(types.PrevoteType, blockHash, parts.Header(), nil)
 	precommit, _ := cs.signVote(types.PrecommitType, blockHash, parts.Header(), block)
 	cs.mtx.Unlock()
-	peer.Send(p2p.Envelope{
+	err = peer.Send(p2p.Envelope{
 		ChannelID: VoteChannel,
 		Message:   &cmtcons.Vote{Vote: prevote.ToProto()},
 	})
-	peer.Send(p2p.Envelope{
+	if err != nil {
+		panic(err)
+	}
+	err = peer.Send(p2p.Envelope{
 		ChannelID: VoteChannel,
 		Message:   &cmtcons.Vote{Vote: precommit.ToProto()},
 	})
+	if err != nil {
+		panic(err)
+	}
 }
 
 // ----------------------------------------

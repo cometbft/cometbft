@@ -9,9 +9,11 @@ import (
 	"golang.org/x/net/netutil"
 
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p/internal/fuzz"
 	"github.com/cometbft/cometbft/p2p/internal/nodekey"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
+	"github.com/cometbft/cometbft/p2p/transport"
 	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
 
@@ -30,15 +32,8 @@ type IPResolver interface {
 // asynchronously running routine to the Accept method.
 type accept struct {
 	netAddr *na.NetAddr
-	conn    net.Conn
+	conn    *conn.MConnection
 	err     error
-}
-
-// transportLifecycle bundles the methods for callers to control start and stop
-// behavior.
-type transportLifecycle interface {
-	Close() error
-	Listen(addr na.NetAddr) error
 }
 
 // ConnFilterFunc to be implemented by filter hooks after a new connection has
@@ -118,30 +113,34 @@ type MultiplexTransport struct {
 	// TODO(xla): This config is still needed as we parameterise peerConn and
 	// peer currently. All relevant configuration should be refactored into options
 	// with sane defaults.
-	mConfig conn.MConnConfig
+	mConfig *conn.MConnConfig
+	logger  log.Logger
 }
 
 // Test multiplexTransport for interface completeness.
 var (
-	_ transportLifecycle = (*MultiplexTransport)(nil)
+	_ transport.Transport = (*MultiplexTransport)(nil)
 )
 
 // NewMultiplexTransport returns a tcp connected multiplexed peer.
-func NewMultiplexTransport(
-	nodeKey nodekey.NodeKey,
-	mConfig conn.MConnConfig,
-) *MultiplexTransport {
+func NewMultiplexTransport(nodeKey nodekey.NodeKey, mConfig conn.MConnConfig) *MultiplexTransport {
 	return &MultiplexTransport{
 		acceptc:          make(chan accept),
 		closec:           make(chan struct{}),
 		dialTimeout:      defaultDialTimeout,
 		filterTimeout:    defaultFilterTimeout,
 		handshakeTimeout: defaultHandshakeTimeout,
-		mConfig:          mConfig,
+		mConfig:          &mConfig,
 		nodeKey:          nodeKey,
 		conns:            NewConnSet(),
 		resolver:         net.DefaultResolver,
+		logger:           log.NewNopLogger(),
 	}
+}
+
+// SetLogger sets the logger for the transport.
+func (mt *MultiplexTransport) SetLogger(l log.Logger) {
+	mt.logger = l
 }
 
 // NetAddr implements Transport.
@@ -150,7 +149,7 @@ func (mt *MultiplexTransport) NetAddr() na.NetAddr {
 }
 
 // Accept implements Transport.
-func (mt *MultiplexTransport) Accept() (net.Conn, *na.NetAddr, error) {
+func (mt *MultiplexTransport) Accept() (transport.Conn, *na.NetAddr, error) {
 	select {
 	// This case should never have any side-effectful/blocking operations to
 	// ensure that quality peers are ready to be used.
@@ -159,8 +158,6 @@ func (mt *MultiplexTransport) Accept() (net.Conn, *na.NetAddr, error) {
 			return nil, nil, a.err
 		}
 
-		// cfg.outbound = false
-
 		return a.conn, a.netAddr, nil
 	case <-mt.closec:
 		return nil, nil, ErrTransportClosed{}
@@ -168,9 +165,7 @@ func (mt *MultiplexTransport) Accept() (net.Conn, *na.NetAddr, error) {
 }
 
 // Dial implements Transport.
-func (mt *MultiplexTransport) Dial(
-	addr na.NetAddr,
-) (net.Conn, error) {
+func (mt *MultiplexTransport) Dial(addr na.NetAddr) (transport.Conn, error) {
 	c, err := addr.DialTimeout(mt.dialTimeout)
 	if err != nil {
 		return nil, err
@@ -186,15 +181,17 @@ func (mt *MultiplexTransport) Dial(
 		return nil, err
 	}
 
-	secretConn, err := mt.upgrade(c, &addr)
+	mconn, _, err := mt.upgrade(c, &addr)
 	if err != nil {
 		return nil, err
 	}
+	mconn.SetLogger(mt.logger.With("remote", addr))
 
-	return secretConn, nil
+	go mt.cleanupConn(c.RemoteAddr(), mconn.Quit())
+
+	return mconn, nil
 }
 
-// Close implements transportLifecycle.
 func (mt *MultiplexTransport) Close() error {
 	close(mt.closec)
 
@@ -205,7 +202,6 @@ func (mt *MultiplexTransport) Close() error {
 	return nil
 }
 
-// Listen implements transportLifecycle.
 func (mt *MultiplexTransport) Listen(addr na.NetAddr) error {
 	ln, err := net.Listen("tcp", addr.DialString())
 	if err != nil {
@@ -216,12 +212,21 @@ func (mt *MultiplexTransport) Listen(addr na.NetAddr) error {
 		ln = netutil.LimitListener(ln, mt.maxIncomingConnections)
 	}
 
-	mt.netAddr = addr
+	mt.netAddr = *na.New(addr.ID, ln.Addr())
 	mt.listener = ln
 
 	go mt.acceptPeers()
 
 	return nil
+}
+
+func (mt *MultiplexTransport) cleanupConn(netAddr net.Addr, quitCh <-chan struct{}) {
+	select {
+	case <-quitCh:
+		mt.conns.RemoveAddr(netAddr)
+	case <-mt.closec:
+		return
+	}
 }
 
 func (mt *MultiplexTransport) acceptPeers() {
@@ -266,22 +271,25 @@ func (mt *MultiplexTransport) acceptPeers() {
 			}()
 
 			var (
-				secretConn *conn.SecretConnection
-				netAddr    *na.NetAddr
+				mconn        *conn.MConnection
+				remotePubKey crypto.PubKey
+				netAddr      *na.NetAddr
 			)
 
 			err := mt.filterConn(c)
 			if err == nil {
-				secretConn, err = mt.upgrade(c, nil)
+				mconn, remotePubKey, err = mt.upgrade(c, nil)
 				if err == nil {
 					addr := c.RemoteAddr()
-					id := nodekey.PubKeyToID(secretConn.RemotePubKey())
+					id := nodekey.PubKeyToID(remotePubKey)
 					netAddr = na.New(id, addr)
+					mconn.SetLogger(mt.logger.With("remote", netAddr))
+					go mt.cleanupConn(addr, mconn.Quit())
 				}
 			}
 
 			select {
-			case mt.acceptc <- accept{netAddr, secretConn, err}:
+			case mt.acceptc <- accept{netAddr, mconn, err}:
 				// Make the upgraded peer available.
 			case <-mt.closec:
 				// Give up if the transport was closed.
@@ -290,13 +298,6 @@ func (mt *MultiplexTransport) acceptPeers() {
 			}
 		}(c)
 	}
-}
-
-// Cleanup removes the given address from the connections set and
-// closes the connection.
-func (mt *MultiplexTransport) Cleanup(c net.Conn) error {
-	mt.conns.Remove(c)
-	return c.Close()
 }
 
 func (mt *MultiplexTransport) filterConn(c net.Conn) (err error) {
@@ -344,16 +345,18 @@ func (mt *MultiplexTransport) filterConn(c net.Conn) (err error) {
 func (mt *MultiplexTransport) upgrade(
 	c net.Conn,
 	dialedAddr *na.NetAddr,
-) (secretConn *conn.SecretConnection, err error) {
+) (*conn.MConnection, crypto.PubKey, error) {
+	var err error
 	defer func() {
 		if err != nil {
-			_ = mt.Cleanup(c)
+			mt.conns.Remove(c)
+			_ = c.Close()
 		}
 	}()
 
-	secretConn, err = upgradeSecretConn(c, mt.handshakeTimeout, mt.nodeKey.PrivKey)
+	secretConn, err := upgradeSecretConn(c, mt.handshakeTimeout, mt.nodeKey.PrivKey)
 	if err != nil {
-		return nil, ErrRejected{
+		return nil, nil, ErrRejected{
 			conn:          c,
 			err:           fmt.Errorf("secret conn failed: %w", err),
 			isAuthFailure: true,
@@ -361,10 +364,11 @@ func (mt *MultiplexTransport) upgrade(
 	}
 
 	// For outgoing conns, ensure connection key matches dialed key.
-	connID := nodekey.PubKeyToID(secretConn.RemotePubKey())
+	remotePubKey := secretConn.RemotePubKey()
+	connID := nodekey.PubKeyToID(remotePubKey)
 	if dialedAddr != nil {
 		if dialedID := dialedAddr.ID; connID != dialedID {
-			return nil, ErrRejected{
+			return nil, nil, ErrRejected{
 				conn: c,
 				id:   connID,
 				err: fmt.Errorf(
@@ -377,7 +381,8 @@ func (mt *MultiplexTransport) upgrade(
 		}
 	}
 
-	return secretConn, nil
+	// Copy MConnConfig to avoid it being modified by the transport.
+	return conn.NewMConnection(secretConn, *mt.mConfig), remotePubKey, nil
 }
 
 func upgradeSecretConn(

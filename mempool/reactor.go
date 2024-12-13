@@ -114,13 +114,13 @@ func (memR *Reactor) StreamDescriptors() []p2p.StreamDescriptor {
 	}
 
 	return []p2p.StreamDescriptor{
-		&tcpconn.ChannelDescriptor{
+		tcpconn.StreamDescriptor{
 			ID:                  MempoolChannel,
 			Priority:            5,
 			RecvMessageCapacity: batchMsgSize,
 			MessageTypeI:        &protomem.Message{},
 		},
-		&tcpconn.ChannelDescriptor{
+		tcpconn.StreamDescriptor{
 			ID:                  MempoolControlChannel,
 			Priority:            10,
 			RecvMessageCapacity: haveTxMsgSize,
@@ -277,9 +277,9 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 				if memR.redundancyControl.isHaveTxBlocked() {
 					return nil, err
 				}
-				ok := sender.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.HaveTx{TxKey: txKey[:]}})
-				if !ok {
-					memR.Logger.Error("Failed to send HaveTx message", "peer", senderID, "txKey", txKey)
+				err := sender.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.HaveTx{TxKey: txKey[:]}})
+				if err != nil {
+					memR.Logger.Error("Failed to send HaveTx message", "peer", senderID, "txKey", txKey, "err", err)
 				} else {
 					memR.Logger.Debug("Sent HaveTx message", "tx", txKey.Hash(), "peer", senderID)
 					// Block HaveTx and restart timer, during which time, sending HaveTx is not allowed.
@@ -424,11 +424,11 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			memR.Logger.Debug("Sending transaction to peer",
 				"tx", txHash, "peer", peer.ID())
 
-			success := peer.Send(p2p.Envelope{
+			err := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
 				Message:   &protomem.Txs{Txs: [][]byte{entry.Tx()}},
 			})
-			if success {
+			if err == nil {
 				break
 			}
 
@@ -579,9 +579,9 @@ func (rc *redundancyControl) adjustRedundancy(memR *Reactor) {
 		// Send Reset message to random peer.
 		randomPeer := memR.Switch.Peers().Random()
 		if randomPeer != nil {
-			ok := randomPeer.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.ResetRoute{}})
-			if !ok {
-				memR.Logger.Error("Failed to send Reset message", "peer", randomPeer.ID())
+			err := randomPeer.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.ResetRoute{}})
+			if err != nil {
+				memR.Logger.Error("Failed to send Reset message", "peer", randomPeer.ID(), "err", err)
 			}
 		}
 	}

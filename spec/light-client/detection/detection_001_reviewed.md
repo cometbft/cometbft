@@ -722,7 +722,7 @@ func CreateEvidenceForPeer(peer PeerID, root LightBlock, trace LightStore)
 #### Argument for [[LCD-DIST-INV-ATTACK.1]](#LCD-DIST-INV-ATTACK1)
 
 Under the assumption that root and trace are a verification trace,
-when in `CreateEvidenceForPeer` the detector the detector creates
+when in `CreateEvidenceForPeer` the detector creates
 evidence, then the lightclient has seen two different headers (one via
 `trace` and one via `VerifyToTarget` for the same height that can both
 be verified in one step.

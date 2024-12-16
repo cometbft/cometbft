@@ -308,7 +308,7 @@ disk space over time, we are planning to implement state syncing (See [this
 issue](https://github.com/tendermint/tendermint/issues/828)). So, storing all
 the past blocks will not be necessary.
 
-### Validator signing on 32 bit architectures (or ARM)
+### Validator signing on 32-bit architectures (or ARM)
 
 Both our `ed25519` and `secp256k1` implementations require constant time
 `uint64` multiplication. Non-constant time crypto can (and has) leaked
@@ -318,7 +318,7 @@ depends on the compiler to enforce that it is constant time. It's unclear at
 this point whether the Golang compiler does this correctly for all
 implementations.
 
-**We do not support nor recommend running a validator on 32 bit architectures OR
+**We do not support nor recommend running a validator on 32-bit architectures OR
 the "VIA Nano 2000 Series", and the architectures in the ARM section rated
 "S-".**
 

@@ -7,8 +7,8 @@ import (
 
 	"google.golang.org/grpc"
 
-	pbblocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1"
-	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1"
+	pbblocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v2"
+	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v2"
 	pbversionsvc "github.com/cometbft/cometbft/api/cometbft/services/version/v1"
 	"github.com/cometbft/cometbft/libs/log"
 	grpcerr "github.com/cometbft/cometbft/rpc/grpc/errors"

@@ -15,7 +15,7 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	abcimocks "github.com/cometbft/cometbft/abci/types/mocks"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"

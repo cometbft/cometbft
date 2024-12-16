@@ -8,7 +8,8 @@ import (
 
 	gogo "github.com/cosmos/gogoproto/types"
 
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	//cmtprotoV2 "github.com/cometbft/cometbft/api/cometbft/types/v2"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"

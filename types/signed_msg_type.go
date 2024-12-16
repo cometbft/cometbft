@@ -1,14 +1,14 @@
 package types
 
-import cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+import cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 
 type SignedMsgType = cmtproto.SignedMsgType
 
 const (
-	UnknownType   SignedMsgType = cmtproto.UnknownType
-	PrevoteType   SignedMsgType = cmtproto.PrevoteType
-	PrecommitType SignedMsgType = cmtproto.PrecommitType
-	ProposalType  SignedMsgType = cmtproto.ProposalType
+	UnknownType   cmtproto.SignedMsgType = cmtproto.UnknownType
+	PrevoteType   cmtproto.SignedMsgType = cmtproto.PrevoteType
+	PrecommitType cmtproto.SignedMsgType = cmtproto.PrecommitType
+	ProposalType  cmtproto.SignedMsgType = cmtproto.ProposalType
 )
 
 // IsVoteTypeValid returns true if t is a valid vote type.

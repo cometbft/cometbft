@@ -10,7 +10,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	gogotypes "github.com/cosmos/gogoproto/types"
 
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/merkle"
@@ -832,14 +832,14 @@ func (ecs *ExtendedCommitSig) ToProto() *cmtproto.ExtendedCommitSig {
 	}
 
 	return &cmtproto.ExtendedCommitSig{
-		BlockIdFlag:           cmtproto.BlockIDFlag(ecs.BlockIDFlag),
-		ValidatorAddress:      ecs.ValidatorAddress,
-		Timestamp:             ecs.Timestamp,
-		Signature:             ecs.Signature,
-		Extension:             ecs.Extension,
-		ExtensionSignature:    ecs.ExtensionSignature,
-		NrpExtension:          ecs.NonRpExtension,
-		NrpExtensionSignature: ecs.NonRpExtensionSignature,
+		BlockIdFlag:             cmtproto.BlockIDFlag(ecs.BlockIDFlag),
+		ValidatorAddress:        ecs.ValidatorAddress,
+		Timestamp:               ecs.Timestamp,
+		Signature:               ecs.Signature,
+		Extension:               ecs.Extension,
+		ExtensionSignature:      ecs.ExtensionSignature,
+		NonRpExtension:          ecs.NonRpExtension,
+		NonRpExtensionSignature: ecs.NonRpExtensionSignature,
 	}
 }
 
@@ -853,8 +853,8 @@ func (ecs *ExtendedCommitSig) FromProto(ecsp cmtproto.ExtendedCommitSig) error {
 	ecs.Signature = ecsp.Signature
 	ecs.Extension = ecsp.Extension
 	ecs.ExtensionSignature = ecsp.ExtensionSignature
-	ecs.NonRpExtension = ecsp.NrpExtension
-	ecs.NonRpExtensionSignature = ecsp.NrpExtensionSignature
+	ecs.NonRpExtension = ecsp.NonRpExtension
+	ecs.NonRpExtensionSignature = ecsp.NonRpExtensionSignature
 
 	return ecs.ValidateBasic()
 }
@@ -896,7 +896,7 @@ func (commit *Commit) Clone() *Commit {
 func (commit *Commit) GetVote(valIdx int32) *Vote {
 	commitSig := commit.Signatures[valIdx]
 	return &Vote{
-		Type:             PrecommitType,
+		Type:             cmtproto.PrecommitType,
 		Height:           commit.Height,
 		Round:            commit.Round,
 		BlockID:          commitSig.BlockID(commit.BlockID),

@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
-	pbtypes "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	pbtypes "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/protoio"
 )

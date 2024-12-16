@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v2"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/internal/bits"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"

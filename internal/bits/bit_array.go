@@ -219,12 +219,6 @@ func (bA *BitArray) not() *BitArray {
 
 	// Flip count is simply total bits minus current true bits
 	c.TrueBitCount = c.Bits - c.TrueBitCount
-
-	// Clear any excess bits in the last element if necessary
-	if rem := c.Bits % 64; rem != 0 {
-		c.Elems[len(c.Elems)-1] &= (uint64(1) << uint(rem)) - 1
-	}
-
 	return c
 }
 

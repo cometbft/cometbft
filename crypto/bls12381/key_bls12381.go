@@ -19,8 +19,6 @@ const (
 	Enabled = true
 )
 
-const ()
-
 var (
 	// ErrDecompression is returned when the decompression of a compressed 48-byte
 	// long BLS12-381 public key fails.

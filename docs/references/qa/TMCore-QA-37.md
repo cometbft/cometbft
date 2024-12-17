@@ -72,7 +72,7 @@ The load runner's CPU load was negligible (near 0) when running `r=200,c=2`.
 
 ### Examining latencies
 
-The method described [here](method.md) allows us to plot the latencies of transactions
+The method described [here](../../qa/method.md) allows us to plot the latencies of transactions
 for all experiments.
 
 ![all-latencies](img37/200nodes_tm037/v037_200node_latencies.png)
@@ -211,7 +211,7 @@ Version: 1cf9d8e276afe8595cba960b51cd056514965fd1
 We use the same load as in the baseline: `c=4,r=800`.
 
 Just as in the baseline tests, the version of CometBFT used for these tests is affected by #9539.
-See this paragraph in the [baseline report](method.md#rotating-node-testnet) for further details.
+See this paragraph in the [baseline report](../../qa/method.md#rotating-node-testnet) for further details.
 Finally, note that this setup allows for a fairer comparison between this version and the baseline.
 
 ### Latencies

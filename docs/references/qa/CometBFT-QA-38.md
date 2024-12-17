@@ -255,7 +255,7 @@ We use `c=1,r=400` as load, which can be considered a safe workload, as it was c
 the saturation point in the 200 node testnet. This testnet has less nodes (10 validators and 25 full nodes).
 
 Importantly, the baseline considered in this section is `v0.37.0-alpha.2` (Tendermint Core),
-which is **different** from the one used in the [previous section](method.md#200-node-testnet).
+which is **different** from the one used in the [previous section](../../qa/method.md#200-node-testnet).
 The reason is that this testnet was not re-tested for `v0.37.0-alpha.3` (CometBFT),
 since it was not deemed necessary.
 
@@ -327,7 +327,7 @@ This is the baseline plot, for comparison.
 
 The plotted values and their evolution are comparable in both plots.
 
-For further details on these plots, see the [this section](./TMCore-QA-34.md#peers-1).
+For further details on these plots, see the [this section](TMCore-QA-34.md#peers-1).
 
 #### Memory Resident Set Size
 

@@ -61,7 +61,7 @@ where we can see that the load stays close to 0 most of the time.
 
 ### Examining latencies
 
-The method described [here](method.md) allows us to plot the latencies of transactions
+The method described [here](../../qa/method.md) allows us to plot the latencies of transactions
 for all experiments.
 
 ![all-latencies](img34/v034_200node_latencies.png)

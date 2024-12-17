@@ -347,7 +347,7 @@ producing a vote signed by both itself and some other validator where the other
 validator did not actually produce the vote itself.
 
 The main mechanisms for preventing this require that each entity prove that it
-can can sign data with just their private key. The options involve either
+can sign data with just their private key. The options involve either
 ensuring that each entity sign a _different_ message when producing every
 signature _or_ producing a [proof of possession][bls-ietf-pop] (PoP) when announcing
 their key to the network.

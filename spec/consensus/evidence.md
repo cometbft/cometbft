@@ -75,14 +75,14 @@ type LightClientAttackEvidence struct {
 If a node receives evidence, it will first try to verify it, then persist it.
 Evidence of byzantine behavior should only be committed once (uniqueness) and
 should be committed within a certain period from the point that it occurred
-(timely). Timelines is defined by the `EvidenceParams`: `MaxAgeNumBlocks` and
+(timely). Timeline is defined by the `EvidenceParams`: `MaxAgeNumBlocks` and
 `MaxAgeDuration`. In Proof of Stake chains where validators are bonded, evidence
 age should be less than the unbonding period so validators still can be
 punished. Given these two propoerties the following initial checks are made.
 
 1. Has the evidence expired? This is done by taking the height of the `Vote`
    within `DuplicateVoteEvidence` or `CommonHeight` within
-   `LightClientAttakEvidence`. The evidence height is then used to retrieve the
+   `LightClientAttackEvidence`. The evidence height is then used to retrieve the
    header and thus the time of the block that corresponds to the evidence. If
    `CurrentHeight - MaxAgeNumBlocks > EvidenceHeight` && `CurrentTime -
    MaxAgeDuration > EvidenceTime`, the evidence is considered expired and

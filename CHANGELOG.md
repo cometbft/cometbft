@@ -769,6 +769,8 @@ synchronous event bus subscription.
 - `[types]` Significantly speedup types.MakePartSet and types.AddPart, which are used in creating a block proposal
   ([\#3117](https://github.com/cometbft/cometbft/issues/3117))
 - `[types]` Validate `Validator#Address` in `ValidateBasic` ([\#1715](https://github.com/cometbft/cometbft/pull/1715))
+- `[grpc]` Set grpc.MaxConcurrentStreams to 100 to limit the maximum number of concurrent streams per connection.
+  ([\#1546](https://github.com/cometbft/cometbft/issues/1546))
 
 ## v0.38.0
 

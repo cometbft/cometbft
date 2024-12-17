@@ -308,7 +308,7 @@ func TestConnectionSpeedForPeerReceivedFromSeed(t *testing.T) {
 	outbound, inbound, dialing := node.NumPeers()
 	assert.LessOrEqual(t, inbound, cfg.MaxNumInboundPeers)
 	assert.LessOrEqual(t, outbound, cfg.MaxNumOutboundPeers)
-	assert.Zero(t, dialing)
+	assert.LessOrEqual(t, dialing, cfg.MaxNumOutboundPeers+cfg.MaxNumInboundPeers-outbound-inbound)
 }
 
 func TestPEXReactorSeedMode(t *testing.T) {

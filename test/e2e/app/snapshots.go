@@ -115,7 +115,11 @@ func (s *SnapshotStore) Prune(n int) error {
 	i := 0
 	for ; i < len(s.metadata)-n; i++ {
 		h := s.metadata[i].Height
-		if err := os.Remove(filepath.Join(s.dir, fmt.Sprintf("%v.json", h))); err != nil {
+		filePath := filepath.Join(s.dir, fmt.Sprintf("%v.json", h))
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			continue
+		}
+		if err := os.Remove(filePath); err != nil {
 			return err
 		}
 	}

@@ -148,7 +148,7 @@ Implement as described in the [detailed design](#detailed-design) section.
 What this ADR proposes can already be achieved with an unmodified CometBFT since
 `v0.37.x`, albeit with a complex, poor UX (see the last alternative in section
 [Alternative Approaches](#alternative-approaches)). The core of this proposal
-is to make some internal changes so it is clear an simple for app developers,
+is to make some internal changes so it is clear a simple for app developers,
 thus improving the UX.
 
 #### `nop` Mempool

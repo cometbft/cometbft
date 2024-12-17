@@ -84,8 +84,18 @@ func NewPublicKeyFromBytes([]byte) (*PubKey, error) {
 	return nil, ErrDisabled
 }
 
+// NewPublicKeyFromCompressedBytes returns ErrDisabled.
+func NewPublicKeyFromCompressedBytes([]byte) (*PubKey, error) {
+	return nil, ErrDisabled
+}
+
 // Address always panics.
 func (PubKey) Address() crypto.Address {
+	panic("bls12_381 is disabled")
+}
+
+// Compress always panics.
+func (PubKey) Compress() []byte {
 	panic("bls12_381 is disabled")
 }
 

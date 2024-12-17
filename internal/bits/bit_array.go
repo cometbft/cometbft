@@ -16,9 +16,9 @@ import (
 // BitArray is a thread-safe implementation of a bit array.
 type BitArray struct {
 	mtx          sync.Mutex
-	TrueBitCount int `json:"true_bits_count"`     // Number of bits set to true
-	Bits         int      `json:"bits"`  // NOTE: persisted via reflect, must be exported
-	Elems        []uint64 `json:"elems"` // NOTE: persisted via reflect, must be exported
+	TrueBitCount int      `json:"true_bits_count"` // Number of bits set to true
+	Bits         int      `json:"bits"`            // NOTE: persisted via reflect, must be exported
+	Elems        []uint64 `json:"elems"`           // NOTE: persisted via reflect, must be exported
 }
 
 // NewBitArray returns a new bit array.

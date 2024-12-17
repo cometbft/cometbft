@@ -1,4 +1,4 @@
-# ADR 043: Blockhchain Reactor Riri-Org
+# ADR 043: Blockchain Reactor Riri-Org
 
 ## Changelog
 

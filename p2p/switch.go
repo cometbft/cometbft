@@ -247,6 +247,7 @@ func (sw *Switch) OnStop() {
 //
 // NOTE: Broadcast uses goroutines, so order of broadcast may not be preserved.
 func (sw *Switch) Broadcast(e Envelope) {
+	_, _ = e.marshalMessage()
 	sw.peers.ForEach(func(p Peer) {
 		go func(peer Peer) {
 			_ = peer.Send(e)
@@ -259,6 +260,7 @@ func (sw *Switch) Broadcast(e Envelope) {
 //
 // NOTE: TryBroadcast uses goroutines, so order of broadcast may not be preserved.
 func (sw *Switch) TryBroadcast(e Envelope) {
+	_, _ = e.marshalMessage()
 	sw.peers.ForEach(func(p Peer) {
 		go func(peer Peer) {
 			_ = peer.TrySend(e)

@@ -43,7 +43,7 @@ func (s *GRPCServer) OnStart() error {
 	}
 
 	s.listener = ln
-	s.server = grpc.NewServer()
+	s.server = grpc.NewServer(grpc.MaxConcurrentStreams(100)) // Limit to 100 streams per connection
 	types.RegisterABCIServer(s.server, &gRPCApplication{s.app})
 
 	s.Logger.Info("Listening", "proto", s.proto, "addr", s.addr)

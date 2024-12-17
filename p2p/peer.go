@@ -348,7 +348,7 @@ func (p *peer) Send(e Envelope) error {
 		// This should never happen.
 		return fmt.Errorf("stream %d not found", e.ChannelID)
 	}
-	err := p.send(e.Message, stream.Write /* blocking */)
+	err := p.send(e, stream.Write /* blocking */)
 	if err != nil {
 		p.Logger.Error("Send", "err", err)
 		return err
@@ -367,8 +367,7 @@ func (p *peer) TrySend(e Envelope) error {
 		// This should never happen.
 		return fmt.Errorf("stream %d not found", e.ChannelID)
 	}
-
-	err := p.send(e.Message, stream.TryWrite /* non-blocking */)
+	err := p.send(e, stream.TryWrite /* non-blocking */)
 	if err != nil {
 		if e, ok := err.(transport.WriteError); ok && e.Full() {
 			p.Logger.Debug("Send", "err", err)
@@ -381,22 +380,16 @@ func (p *peer) TrySend(e Envelope) error {
 	return nil
 }
 
-func (p *peer) send(msg proto.Message, writeFn func([]byte) (int, error)) error {
+func (p *peer) send(e Envelope, writeFn func([]byte) (int, error)) error {
 	if !p.IsRunning() {
 		return errors.New("peer not running")
 	}
 
-	msgType := getMsgType(msg)
-	if w, ok := msg.(types.Wrapper); ok {
-		msg = w.Wrap()
-	}
-
-	msgBytes, err := proto.Marshal(msg)
+	msgType := getMsgType(e.Message)
+	msgBytes, err := e.marshalMessage()
 	if err != nil {
-		// This should never happen.
-		return fmt.Errorf("proto.Marshal: %w", err)
+		return err
 	}
-
 	n, err := writeFn(msgBytes)
 	if err != nil {
 		return err

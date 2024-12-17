@@ -173,10 +173,10 @@ method is removed ([\#4040](https://github.com/cometbft/cometbft/pull/4040)).
 - `[node]` Change the signature of `GenesisDocProvider` to
   return the checksum of JSON content alongside the parsed genesis data
   ([\#1287](https://github.com/cometbft/cometbft/issues/1287)).
-- `[node]` Go API breaking change to `DefaultNewNode`. The function passes 
+- `[node]` Go API breaking change to `DefaultNewNode`. The function passes
 `CliParams` to a node now.
   ([\#3595](https://github.com/cometbft/cometbft/pull/3595))
-- `[node]` Go API breaking change to `Provider`. The function takes  
+- `[node]` Go API breaking change to `Provider`. The function takes
 `CliParams` as a parameter now.
   ([\#3595](https://github.com/cometbft/cometbft/pull/3595))
 - `[node]` Go-API breaking: Change the signature of `LoadStateFromDBOrGenesisDocProvider`
@@ -380,6 +380,8 @@ on the `/block_results` RPC endpoint.
   ([\#3527](https://github.com/cometbft/cometbft/pull/3527))
 - updated cometbft-db dependency to v0.13.0
   ([\#3596](https://github.com/cometbft/cometbft/pull/3596))
+- Bump api to v1.0.0 for v1.0.0 Release
+  ([\#4666](https://github.com/cometbft/cometbft/issues/4666))
 
 ### DEPRECATIONS
 
@@ -533,7 +535,7 @@ on the `/block_results` RPC endpoint.
 - `[abci]` Increase ABCI socket message size limit to 2GB ([\#1730](https://github.com/cometbft/cometbft/pull/1730): @troykessler)
 - `[blockstore]` Remove a redundant `Header.ValidateBasic` call in `LoadBlockMeta`, 75% reducing this time.
   ([\#2964](https://github.com/cometbft/cometbft/pull/2964))
-- `[blockstore]` Use LRU caches for LoadBlockPart. Make the LoadBlockPart and LoadBlockCommit APIs 
+- `[blockstore]` Use LRU caches for LoadBlockPart. Make the LoadBlockPart and LoadBlockCommit APIs
     return mutative copies, that the caller is expected to not modify. This saves on memory copying.
   ([\#3342](https://github.com/cometbft/cometbft/issues/3342))
 - `[blockstore]` Use LRU caches in blockstore, significiantly improving consensus gossip routine performance
@@ -589,7 +591,7 @@ on the `/block_results` RPC endpoint.
   redundancy, not critical, and may be dropped without risks for the protocol.
   ([\#3151](https://github.com/cometbft/cometbft/issues/3151))
 - `[consensus]` Make the consensus reactor no longer have packets on receive take the consensus lock.
-Consensus will now update the reactor's view after every relevant change through the existing 
+Consensus will now update the reactor's view after every relevant change through the existing
 synchronous event bus subscription.
   ([\#3211](https://github.com/cometbft/cometbft/pull/3211))
 - `[consensus]` New metrics (counters) to track duplicate votes and block parts.
@@ -1174,4 +1176,3 @@ Friendly reminder, we have a [bug bounty program](https://hackerone.com/cosmos).
 ## Previous changes
 
 For changes released before the creation of CometBFT, please refer to the Tendermint Core [CHANGELOG.md](https://github.com/tendermint/tendermint/blob/a9feb1c023e172b542c972605311af83b777855b/CHANGELOG.md).
-

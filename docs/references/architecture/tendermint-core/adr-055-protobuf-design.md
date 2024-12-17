@@ -23,7 +23,7 @@ There are a few options to pick from:
 
 - `FlatBuffers`: FlatBuffers is an efficient cross platform serialization library. Flatbuffers are more efficient than Protobuf due to the fast that there is no parsing/unpacking to a second representation. FlatBuffers has been tested and used in production but is not widely adopted.
 
-- `CapnProto`: Cap’n Proto is an insanely fast data interchange format and capability-based RPC system. Cap'n Proto does not have a encoding/decoding step. It has not seen wide adoption throughout the industry.
+- `CapnProto`: Cap’n Proto is an insanely fast data interchange format and capability-based RPC system. Cap'n Proto does not have an encoding/decoding step. It has not seen wide adoption throughout the industry.
 
 - @erikgrinaker - https://github.com/tendermint/tendermint/pull/4623#discussion_r401163501
   ```

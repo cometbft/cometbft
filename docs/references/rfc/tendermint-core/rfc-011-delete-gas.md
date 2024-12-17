@@ -136,7 +136,7 @@ well-worn territory.
 
 #### Metadata Handling: Application-Specific Metadata Field(s)
 
-An alternative approach to handling transaction metadata would be would be the
+An alternative approach to handling transaction metadata would be the
 addition of a new application-metadata field in the `ResponseCheckTx`. This field
 would be a protocol buffer message whose contents were entirely opaque to Tendermint.
 The application would be responsible for marshalling and unmarshalling whatever data

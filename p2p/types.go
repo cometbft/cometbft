@@ -1,6 +1,8 @@
 package p2p
 
 import (
+	"fmt"
+
 	"github.com/cosmos/gogoproto/proto"
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
@@ -30,6 +32,10 @@ type (
 	NodeInfoDefaultOther = ni.DefaultOther
 	// ProtocolVersion is the protocol version for the software.
 	ProtocolVersion = ni.ProtocolVersion
+
+	// StreamDescriptor describes a data stream. This could be a substream within
+	// a multiplexed TCP connection, QUIC stream, etc.
+	StreamDescriptor = transport.StreamDescriptor
 )
 
 // Envelope contains a message with sender routing info.
@@ -37,6 +43,27 @@ type Envelope struct {
 	Src       Peer          // sender (empty if outbound)
 	Message   proto.Message // message payload
 	ChannelID byte
+
+	// messageBytes are stored after first call to marshalMessage()
+	messageBytes []byte
+}
+
+// marshalMessage marshals the Message field and stores it in a private field
+// for futur use.
+// It returns the marshaled Message.
+func (e *Envelope) marshalMessage() ([]byte, error) {
+	if e.messageBytes == nil {
+		msg := e.Message
+		if w, ok := msg.(types.Wrapper); ok {
+			msg = w.Wrap()
+		}
+		msgBytes, err := proto.Marshal(msg)
+		if err != nil {
+			return nil, fmt.Errorf("proto.Marshal: %w", err)
+		}
+		e.messageBytes = msgBytes
+	}
+	return e.messageBytes, nil
 }
 
 var (

@@ -427,7 +427,7 @@ func TestMConnection_ReadErrorLongMessage(t *testing.T) {
 	// send msg that's just right
 	msg := make([]byte, mconnClient.config.MaxPacketMsgPayloadSize)
 	packet := tmp2p.PacketMsg{
-		ChannelID: 0x01,
+		ChannelID: testStreamID,
 		EOF:       true,
 		Data:      msg,
 	}
@@ -438,7 +438,7 @@ func TestMConnection_ReadErrorLongMessage(t *testing.T) {
 
 	// send msg that's too long
 	packet = tmp2p.PacketMsg{
-		ChannelID: 0x01,
+		ChannelID: testStreamID,
 		EOF:       true,
 		Data:      make([]byte, mconnClient.config.MaxPacketMsgPayloadSize+100),
 	}

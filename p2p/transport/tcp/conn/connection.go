@@ -41,10 +41,11 @@ const (
 	defaultRecvRate     = int64(512000) // 500KB/s
 	defaultPingInterval = 60 * time.Second
 	defaultPongTimeout  = 45 * time.Second
-
-	// Capacity of the receive channel for each stream.
-	maxRecvChanCap = 1000
 )
+
+// OnReceiveFn is a callback func, which is called by the MConnection when a
+// new message is received.
+type OnReceiveFn = func(byte, []byte)
 
 // MConnection is a multiplexed connection.
 //
@@ -98,10 +99,13 @@ type MConnection struct {
 
 	_maxPacketMsgSize int
 
-	// streamID -> list of incoming messages
-	recvMsgsByStreamID map[byte]chan []byte
 	// streamID -> channel
 	channelsIdx map[byte]*stream
+
+	// A map which stores the received messages. Used in tests.
+	msgsByStreamIDMap map[byte]chan []byte
+
+	onReceiveFn OnReceiveFn
 }
 
 var _ transport.Conn = (*MConnection)(nil)
@@ -147,18 +151,18 @@ func NewMConnection(conn net.Conn, config MConnConfig) *MConnection {
 	}
 
 	mconn := &MConnection{
-		conn:               conn,
-		bufConnReader:      bufio.NewReaderSize(conn, minReadBufferSize),
-		bufConnWriter:      bufio.NewWriterSize(conn, minWriteBufferSize),
-		sendMonitor:        flow.New(0, 0),
-		recvMonitor:        flow.New(0, 0),
-		send:               make(chan struct{}, 1),
-		pong:               make(chan struct{}, 1),
-		errorCh:            make(chan error, 1),
-		config:             config,
-		created:            time.Now(),
-		recvMsgsByStreamID: make(map[byte]chan []byte),
-		channelsIdx:        make(map[byte]*stream),
+		conn:              conn,
+		bufConnReader:     bufio.NewReaderSize(conn, minReadBufferSize),
+		bufConnWriter:     bufio.NewWriterSize(conn, minWriteBufferSize),
+		sendMonitor:       flow.New(0, 0),
+		recvMonitor:       flow.New(0, 0),
+		send:              make(chan struct{}, 1),
+		pong:              make(chan struct{}, 1),
+		errorCh:           make(chan error, 1),
+		config:            config,
+		created:           time.Now(),
+		channelsIdx:       make(map[byte]*stream),
+		msgsByStreamIDMap: make(map[byte]chan []byte),
 	}
 
 	mconn.BaseService = *service.NewBaseService(nil, "MConnection", mconn)
@@ -167,6 +171,11 @@ func NewMConnection(conn net.Conn, config MConnConfig) *MConnection {
 	mconn._maxPacketMsgSize = mconn.maxPacketMsgSize()
 
 	return mconn
+}
+
+// OnReceive sets the callback function to be executed each time we read a message.
+func (c *MConnection) OnReceive(fn OnReceiveFn) {
+	c.onReceiveFn = fn
 }
 
 func (c *MConnection) SetLogger(l log.Logger) {
@@ -259,12 +268,13 @@ func (c *MConnection) OpenStream(streamID byte, desc any) (transport.Stream, err
 	}
 	c.channelsIdx[streamID] = newChannel(c, d)
 	c.channelsIdx[streamID].SetLogger(c.Logger.With("streamID", streamID))
-
-	c.recvMsgsByStreamID[streamID] = make(chan []byte, maxRecvChanCap)
+	// Allocate some buffer, otherwise CI tests will fail.
+	c.msgsByStreamIDMap[streamID] = make(chan []byte, 5)
 
 	return &MConnectionStream{conn: c, streamID: streamID}, nil
 }
 
+// HandshakeStream returns the underlying net.Conn connection.
 func (c *MConnection) HandshakeStream() transport.HandshakeStream {
 	return c.conn
 }
@@ -314,6 +324,7 @@ func (c *MConnection) FlushAndClose(reason string) error {
 	}
 
 	// flush all pending writes
+	// this block is unique for FlushAndClose
 	{
 		// wait until the sendRoutine exits
 		// so we dont race on calling sendSomePacketMsgs
@@ -367,20 +378,19 @@ func (c *MConnection) _recover() {
 // thread-safe.
 func (c *MConnection) sendBytes(chID byte, msgBytes []byte, blocking bool) error {
 	if !c.IsRunning() {
-		return nil
+		return errors.New("connection is not running")
 	}
 
+	// Uncomment in you need to see raw bytes.
 	// c.Logger.Debug("Send",
 	// 	"streamID", chID,
-	// 	"msgBytes", log.NewLazySprintf("%X", msgBytes),
-	// 	"timeout", timeout)
+	// 	"msgBytes", log.NewLazySprintf("%X", msgBytes))
 
 	channel, ok := c.channelsIdx[chID]
 	if !ok {
 		panic(fmt.Sprintf("Unknown channel %X. Forgot to register?", chID))
 	}
 	if err := channel.sendBytes(msgBytes, blocking); err != nil {
-		// c.Logger.Error("Send failed", "err", err)
 		return err
 	}
 
@@ -649,24 +659,32 @@ FOR_LOOP:
 			channel, ok := c.channelsIdx[channelID]
 			if !ok || pkt.PacketMsg.ChannelID < 0 || pkt.PacketMsg.ChannelID > math.MaxUint8 {
 				err := fmt.Errorf("unknown channel %X", pkt.PacketMsg.ChannelID)
-				c.Logger.Error("Connection failed @ recvRoutine", "err", err)
+				c.Logger.Debug("Connection failed @ recvRoutine", "err", err)
 				c.Close(err.Error())
 				break FOR_LOOP
 			}
 
 			msgBytes, err := channel.recvPacketMsg(*pkt.PacketMsg)
 			if err != nil {
-				c.Logger.Error("Connection failed @ recvRoutine", "err", err)
+				c.Logger.Debug("Connection failed @ recvRoutine", "err", err)
 				c.Close(err.Error())
 				break FOR_LOOP
 			}
 			if msgBytes != nil {
+				// Uncomment in you need to see raw bytes.
 				// c.Logger.Debug("Received", "streamID", channelID, "msgBytes", log.NewLazySprintf("%X", msgBytes))
-				c.pushRecvMsg(channelID, msgBytes)
+				if c.onReceiveFn != nil {
+					c.onReceiveFn(channelID, msgBytes)
+				} else {
+					// Copy to avoid DATA RACE. Inefficient => only for tests.
+					bz := make([]byte, len(msgBytes))
+					copy(bz, msgBytes)
+					c.msgsByStreamIDMap[channelID] <- bz
+				}
 			}
 		default:
 			err := fmt.Errorf("unknown message type %v", reflect.TypeOf(packet))
-			c.Logger.Error("Connection failed @ recvRoutine", "err", err)
+			c.Logger.Debug("Connection failed @ recvRoutine", "err", err)
 			c.Close(err.Error())
 			break FOR_LOOP
 		}
@@ -676,18 +694,19 @@ FOR_LOOP:
 	close(c.pong)
 }
 
-// Panics if the stream is unknown.
-func (c *MConnection) pushRecvMsg(streamID byte, msgBytes []byte) {
-	ch, ok := c.recvMsgsByStreamID[streamID]
-	if !ok {
-		panic(fmt.Sprintf("unknown stream %X", streamID))
+// Used in tests.
+func (c *MConnection) readBytes(streamID byte, b []byte, timeout time.Duration) (n int, err error) {
+	select {
+	case msgBytes := <-c.msgsByStreamIDMap[streamID]:
+		n = copy(b, msgBytes)
+		if n < len(msgBytes) {
+			err = errors.New("short buffer")
+			return 0, err
+		}
+		return n, nil
+	case <-time.After(timeout):
+		return 0, errors.New("read timeout")
 	}
-
-	// Make a copy to avoid a DATA RACE.
-	msgCopy := make([]byte, len(msgBytes))
-	copy(msgCopy, msgBytes)
-
-	ch <- msgCopy
 }
 
 // not goroutine-safe.

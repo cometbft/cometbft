@@ -156,7 +156,7 @@ conR:
 // StreamDescriptors implements Reactor.
 func (*Reactor) StreamDescriptors() []transport.StreamDescriptor {
 	// TODO optimize
-	return []transport.StreamDescriptor{
+	return []p2p.StreamDescriptor{
 		tcpconn.StreamDescriptor{
 			ID:                  StateChannel,
 			Priority:            6,

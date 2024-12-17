@@ -190,6 +190,10 @@ func newPeer(
 		option(p)
 	}
 
+	if mconn, ok := p.peerConn.Conn.(*tcpconn.MConnection); ok {
+		mconn.OnReceive(p.onReceive)
+	}
+
 	return p
 }
 
@@ -253,6 +257,52 @@ func (p *peer) streamReadLoop(streamID byte, stream transport.Stream) {
 	}
 }
 
+func (p *peer) onReceive(streamID byte, bz []byte) {
+	defer func() {
+		if r := recover(); r != nil {
+			p.Logger.Error("Peer panicked", "err", r, "stack", string(debug.Stack()))
+			p.onPeerError(p, r)
+		}
+	}()
+
+	var (
+		reactor = p.streamInfoByStreamID[streamID].reactor
+		msgType = p.streamInfoByStreamID[streamID].msgType
+		logger  = p.Logger.With("stream", streamID)
+	)
+
+	if !p.IsRunning() {
+		return
+	}
+
+	msg := proto.Clone(msgType)
+	err := proto.Unmarshal(bz, msg)
+	if err != nil {
+		logger.Error("proto.Unmarshal", "as", reflect.TypeOf(msgType), "err", err)
+		p.onPeerError(p, err)
+		return
+	}
+
+	if w, ok := msg.(types.Unwrapper); ok {
+		msg, err = w.Unwrap()
+		if err != nil {
+			logger.Error("proto.Unwrap", "err", err)
+			p.onPeerError(p, err)
+			return
+		}
+	}
+
+	logger.Debug("Received message", "msgType", msgType)
+
+	p.pendingMetrics.AddPendingRecvBytes(getMsgType(msg), len(bz))
+
+	reactor.Receive(Envelope{
+		ChannelID: streamID,
+		Src:       p,
+		Message:   msg,
+	})
+}
+
 // String representation.
 func (p *peer) String() string {
 	if p.outbound {
@@ -296,11 +346,10 @@ func (p *peer) OnStart() error {
 		if err := mconn.Start(); err != nil {
 			return fmt.Errorf("starting MConnection: %w", err)
 		}
-	}
-
-	// TODO: establish priority for reading from streams (consensus -> evidence -> mempool).
-	for streamID, stream := range p.streams {
-		go p.streamReadLoop(streamID, stream)
+	} else {
+		for streamID, stream := range p.streams {
+			go p.streamReadLoop(streamID, stream)
+		}
 	}
 
 	go p.eventLoop()
@@ -364,7 +413,7 @@ func (p *peer) Send(e Envelope) error {
 		// This should never happen.
 		return fmt.Errorf("stream %d not found", e.ChannelID)
 	}
-	err := p.send(e.Message, stream.Write /* blocking */)
+	err := p.send(e, stream.Write /* blocking */)
 	if err != nil {
 		p.Logger.Error("Send", "err", err)
 		return err
@@ -383,8 +432,7 @@ func (p *peer) TrySend(e Envelope) error {
 		// This should never happen.
 		return fmt.Errorf("stream %d not found", e.ChannelID)
 	}
-
-	err := p.send(e.Message, stream.TryWrite /* non-blocking */)
+	err := p.send(e, stream.TryWrite /* non-blocking */)
 	if err != nil {
 		if e, ok := err.(transport.WriteError); ok && e.Full() {
 			p.Logger.Debug("Send", "err", err)
@@ -397,26 +445,21 @@ func (p *peer) TrySend(e Envelope) error {
 	return nil
 }
 
-func (p *peer) send(msg proto.Message, writeFn func([]byte) (int, error)) error {
+func (p *peer) send(e Envelope, writeFn func([]byte) (int, error)) error {
 	if !p.IsRunning() {
-		return nil
+		return errors.New("peer not running")
 	}
 
-	msgType := getMsgType(msg)
-	if w, ok := msg.(types.Wrapper); ok {
-		msg = w.Wrap()
-	}
-
-	msgBytes, err := proto.Marshal(msg)
+	msgType := getMsgType(e.Message)
+	msgBytes, err := e.marshalMessage()
 	if err != nil {
-		return fmt.Errorf("proto.Marshal: %w", err)
+		return err
 	}
-
 	n, err := writeFn(msgBytes)
 	if err != nil {
 		return err
 	} else if n != len(msgBytes) {
-		// Should never happen in the current implementation.
+		// Should never happen in the current TCP implementation.
 		return fmt.Errorf("incomplete write: got %d, wanted %d", n, len(msgBytes))
 	}
 

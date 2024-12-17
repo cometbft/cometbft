@@ -19,7 +19,13 @@ const (
 	Enabled = true
 )
 
+const ()
+
 var (
+	// ErrDecompression is returned when the decompression of a compressed 48-byte
+	// long BLS12-381 public key fails.
+	ErrPubKeyDecompression = errors.New("bls12381: public key decompression error")
+
 	// ErrDeserialization is returned when deserialization fails.
 	ErrDeserialization = errors.New("bls12381: deserialization error")
 	// ErrInfinitePubKey is returned when the public key is infinite. It is part
@@ -141,17 +147,36 @@ type PubKey struct {
 	pk *blstPublicKey
 }
 
-// NewPublicKeyFromBytes returns a new public key from the given bytes.
+// NewPublicKeyFromBytes returns a new BLS12-381 public key from the given bytes.
+// bz must be an uncompressed BLS12-381 public key of length 96 bytes.
 func NewPublicKeyFromBytes(bz []byte) (*PubKey, error) {
-	pk := new(blstPublicKey).Deserialize(bz)
-	if pk == nil {
+	pubKey := new(blstPublicKey)
+
+	pubKey = pubKey.Deserialize(bz)
+	if pubKey == nil {
 		return nil, ErrDeserialization
 	}
+
 	// Subgroup and infinity check
-	if !pk.KeyValidate() {
+	if !pubKey.KeyValidate() {
 		return nil, ErrInfinitePubKey
 	}
-	return &PubKey{pk: pk}, nil
+	return &PubKey{pk: pubKey}, nil
+}
+
+// NewPublicKeyFromCompressedBytes returns a new BLS12-381 public key from the given
+// bytes. bz must be a compressed BLS12-381 public key of length 48 bytes.
+func NewPublicKeyFromCompressedBytes(bz []byte) (*PubKey, error) {
+	pubKey := new(blstPublicKey).Uncompress(bz)
+	if pubKey == nil {
+		return nil, ErrPubKeyDecompression
+	}
+
+	// Subgroup and infinity check
+	if !pubKey.KeyValidate() {
+		return nil, ErrInfinitePubKey
+	}
+	return &PubKey{pk: pubKey}, nil
 }
 
 // Address returns the address of the key.
@@ -159,6 +184,13 @@ func NewPublicKeyFromBytes(bz []byte) (*PubKey, error) {
 // The function will panic if the public key is invalid.
 func (pubKey PubKey) Address() crypto.Address {
 	return crypto.Address(tmhash.SumTruncated(pubKey.pk.Serialize()))
+}
+
+// Compress returns a compressed 48-byte long BLS12-381 public key.
+// It does not modify the original public key. Rather, it returns a new slice storing
+// the compressed key.
+func (pubKey PubKey) Compress() []byte {
+	return pubKey.pk.Compress()
 }
 
 // VerifySignature verifies the given signature.

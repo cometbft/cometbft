@@ -1,6 +1,8 @@
 # This testnet is run by CI, and attempts to cover a broad range of
 # functionality with a single network.
 
+key_type = "secp256k1eth"
+
 ipv6 = true
 initial_height = 1000
 vote_extensions_update_height = 1004

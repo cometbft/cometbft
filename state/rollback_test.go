@@ -89,11 +89,11 @@ func TestRollback(t *testing.T) {
 func TestRollbackHard(t *testing.T) {
 	const height int64 = 100
 
-	blkStoreDB, err := cmtdb.NewMemDB()
+	blkStoreDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	blockStore := store.NewBlockStore(blkStoreDB)
 
-	sttStoreDB, err := cmtdb.NewMemDB()
+	sttStoreDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	stateStore := state.NewStore(sttStoreDB, state.StoreOptions{DiscardABCIResponses: false})
 
@@ -209,7 +209,7 @@ func TestRollbackHard(t *testing.T) {
 }
 
 func TestRollbackNoState(t *testing.T) {
-	sttStoreDB, err := cmtdb.NewMemDB()
+	sttStoreDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	stateStore := state.NewStore(sttStoreDB,
 		state.StoreOptions{
@@ -248,7 +248,7 @@ func TestRollbackDifferentStateHeight(t *testing.T) {
 
 func setupStateStore(t *testing.T, height int64) state.Store {
 	t.Helper()
-	stateStoreDB, err := cmtdb.NewMemDB()
+	stateStoreDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	stateStore := state.NewStore(stateStoreDB, state.StoreOptions{DiscardABCIResponses: false})
 	valSet, _ := types.RandValidatorSet(5, 10)

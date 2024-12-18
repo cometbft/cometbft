@@ -177,7 +177,7 @@ LOOP:
 
 		// create consensus state from a clean slate
 		logger := log.NewNopLogger()
-		blockDB, err := cmtdb.NewMemDB()
+		blockDB, err := cmtdb.NewInMem()
 		require.NoError(t, err)
 		stateDB := blockDB
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
@@ -614,7 +614,7 @@ func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uin
 
 	if testValidatorsChange {
 		testConfig, chain, extCommits, genesisState = setupChainWithChangingValidators(t, fmt.Sprintf("%d_%d_m", nBlocks, mode), numBlocks)
-		stateDB, err = cmtdb.NewMemDB()
+		stateDB, err = cmtdb.NewInMem()
 		require.NoError(t, err)
 		store = newMockBlockStore(t, config, genesisState.ConsensusParams)
 	} else {
@@ -667,7 +667,7 @@ func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uin
 		// run nBlocks against a new client to build up the app state.
 		// use a throwaway CometBFT state
 		proxyApp := proxy.NewAppConns(clientCreator2, proxy.NopMetrics())
-		stateDB1, err := cmtdb.NewMemDB()
+		stateDB1, err := cmtdb.NewInMem()
 		require.NoError(t, err)
 		dummyStateStore := sm.NewStore(stateDB1, sm.StoreOptions{
 			DiscardABCIResponses: false,
@@ -1135,7 +1135,7 @@ func stateAndStore(
 	appVersion uint64,
 ) (cmtdb.DB, sm.State, *mockBlockStore) {
 	t.Helper()
-	stateDB, err := cmtdb.NewMemDB()
+	stateDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,

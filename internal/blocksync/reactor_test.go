@@ -84,11 +84,11 @@ func newReactor(
 		panic(fmt.Errorf("error start app: %w", err))
 	}
 
-	blockDB, err := cmtdb.NewMemDB()
+	blockDB, err := cmtdb.NewInMem()
 	if err != nil {
 		panic(err)
 	}
-	stateDB, err := cmtdb.NewMemDB()
+	stateDB, err := cmtdb.NewInMem()
 	if err != nil {
 		panic(err)
 	}
@@ -119,7 +119,7 @@ func newReactor(
 	// NOTE we have to create and commit the blocks first because
 	// pool.height is determined from the store.
 	blockSync := true
-	db, err := cmtdb.NewMemDB()
+	db, err := cmtdb.NewInMem()
 	if err != nil {
 		panic(err)
 	}

@@ -62,7 +62,7 @@ func createTestSetup(t *testing.T) (*txindex.IndexerService, *kv.TxIndex, indexe
 	})
 
 	// tx indexer
-	store, err := cmtdb.NewMemDB()
+	store, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	txIndexer := kv.NewTxIndex(store)
 

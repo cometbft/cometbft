@@ -71,7 +71,7 @@ func NewLightClientStateProviderWithDBKeyVersion(ctx context.Context,
 		providerRemotes[provider] = server
 	}
 
-	lightClientDB, err := cmtdb.NewMemDB()
+	lightClientDB, err := cmtdb.NewInMem()
 	if err != nil {
 		return nil, fmt.Errorf("creating light client state provider: %w", err)
 	}

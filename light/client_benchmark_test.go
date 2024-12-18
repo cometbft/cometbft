@@ -26,7 +26,7 @@ var (
 )
 
 func BenchmarkSequence(b *testing.B) {
-	memDB, err := cmtdb.NewMemDB()
+	memDB, err := cmtdb.NewInMem()
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -58,7 +58,7 @@ func BenchmarkSequence(b *testing.B) {
 }
 
 func BenchmarkBisection(b *testing.B) {
-	memDB, err := cmtdb.NewMemDB()
+	memDB, err := cmtdb.NewInMem()
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -90,7 +90,7 @@ func BenchmarkBisection(b *testing.B) {
 
 func BenchmarkBackwards(b *testing.B) {
 	trustedBlock, _ := benchmarkFullNode.LightBlock(context.Background(), 0)
-	memDB, err := cmtdb.NewMemDB()
+	memDB, err := cmtdb.NewInMem()
 	if err != nil {
 		b.Fatal(err)
 	}

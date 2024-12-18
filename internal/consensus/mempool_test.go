@@ -120,7 +120,7 @@ func deliverTxsRange(t *testing.T, cs *State, end int) {
 
 func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 	state, privVals := randGenesisState(1, nil)
-	blockDB, err := cmtdb.NewMemDB()
+	blockDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	stateStore := sm.NewStore(blockDB, sm.StoreOptions{DiscardABCIResponses: false})
 	app := kvstore.NewInMemoryApplication()
@@ -149,7 +149,7 @@ func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 func TestMempoolRmBadTx(t *testing.T) {
 	state, privVals := randGenesisState(1, nil)
 	app := kvstore.NewInMemoryApplication()
-	blockDB, err := cmtdb.NewMemDB()
+	blockDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	stateStore := sm.NewStore(blockDB, sm.StoreOptions{DiscardABCIResponses: false})
 	_, lanesInfo := fetchAppInfo(app)

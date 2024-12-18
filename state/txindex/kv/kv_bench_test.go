@@ -84,7 +84,7 @@ func BenchmarkTxSearchDisk(b *testing.B) {
 }
 
 func BenchmarkTxSearchBigResult(b *testing.B) {
-	db, err := cmtdb.NewMemDB()
+	db, err := cmtdb.NewInMem()
 	if err != nil {
 		b.Errorf("failed to create test database: %s", err)
 	}

@@ -51,7 +51,7 @@ func TestValidateBlockHeader(t *testing.T) {
 		mock.Anything,
 		mock.Anything).Return(nil)
 
-	blkStoreDB, err := cmtdb.NewMemDB()
+	blkStoreDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	blockStore := store.NewBlockStore(blkStoreDB)
 
@@ -158,7 +158,7 @@ func TestValidateBlockCommit(t *testing.T) {
 		mock.Anything,
 		mock.Anything).Return(nil)
 
-	blkStoreDB, err := cmtdb.NewMemDB()
+	blkStoreDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	blockStore := store.NewBlockStore(blkStoreDB)
 
@@ -314,7 +314,7 @@ func TestValidateBlockEvidence(t *testing.T) {
 		mock.Anything).Return(nil)
 	state.ConsensusParams.Evidence.MaxBytes = 1000
 
-	blkStoreDB, err := cmtdb.NewMemDB()
+	blkStoreDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	blockStore := store.NewBlockStore(blkStoreDB)
 

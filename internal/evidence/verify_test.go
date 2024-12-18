@@ -86,7 +86,7 @@ func TestVerify_LunaticAttackAgainstState(t *testing.T) {
 	blockStore.On("LoadBlockCommit", commonHeight).Return(common.Commit)
 	blockStore.On("LoadBlockCommit", height).Return(trusted.Commit)
 
-	evidenceDB, err := cmtdb.NewMemDB()
+	evidenceDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	require.NoError(t, err)
@@ -111,7 +111,7 @@ func TestVerify_LunaticAttackAgainstState(t *testing.T) {
 
 	// duplicate evidence should be rejected
 	evList = types.EvidenceList{ev, ev}
-	evidenceDB, err = cmtdb.NewMemDB()
+	evidenceDB, err = cmtdb.NewInMem()
 	require.NoError(t, err)
 	pool, err = evidence.NewPool(evidenceDB, stateStore, blockStore)
 	require.NoError(t, err)
@@ -119,7 +119,7 @@ func TestVerify_LunaticAttackAgainstState(t *testing.T) {
 
 	// If evidence is submitted with an altered timestamp it should return an error
 	ev.Timestamp = defaultEvidenceTime.Add(1 * time.Minute)
-	evidenceDB, err = cmtdb.NewMemDB()
+	evidenceDB, err = cmtdb.NewInMem()
 	require.NoError(t, err)
 	pool, err = evidence.NewPool(evidenceDB, stateStore, blockStore)
 	require.NoError(t, err)
@@ -128,7 +128,7 @@ func TestVerify_LunaticAttackAgainstState(t *testing.T) {
 
 	// Evidence submitted with a different validator power should fail
 	ev.TotalVotingPower = 1
-	evidenceDB, err = cmtdb.NewMemDB()
+	evidenceDB, err = cmtdb.NewInMem()
 	require.NoError(t, err)
 	pool, err = evidence.NewPool(evidenceDB, stateStore, blockStore)
 	require.NoError(t, err)
@@ -172,7 +172,7 @@ func TestVerify_ForwardLunaticAttack(t *testing.T) {
 	blockStore.On("LoadBlockCommit", nodeHeight).Return(trusted.Commit)
 	blockStore.On("Height").Return(nodeHeight)
 
-	evidenceDB, err := cmtdb.NewMemDB()
+	evidenceDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	require.NoError(t, err)
@@ -192,7 +192,7 @@ func TestVerify_ForwardLunaticAttack(t *testing.T) {
 	oldBlockStore.On("Height").Return(nodeHeight)
 	require.Equal(t, defaultEvidenceTime, oldBlockStore.LoadBlockMeta(nodeHeight).Header.Time)
 
-	evidenceDB, err = cmtdb.NewMemDB()
+	evidenceDB, err = cmtdb.NewInMem()
 	require.NoError(t, err)
 	pool, err = evidence.NewPool(evidenceDB, stateStore, oldBlockStore)
 	require.NoError(t, err)
@@ -269,7 +269,7 @@ func TestVerifyLightClientAttack_Equivocation(t *testing.T) {
 	blockStore.On("LoadBlockMeta", int64(10)).Return(&types.BlockMeta{Header: *trustedHeader})
 	blockStore.On("LoadBlockCommit", int64(10)).Return(trustedCommit)
 
-	evidenceDB, err := cmtdb.NewMemDB()
+	evidenceDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	require.NoError(t, err)
@@ -344,7 +344,7 @@ func TestVerifyLightClientAttack_Amnesia(t *testing.T) {
 	blockStore.On("LoadBlockMeta", int64(10)).Return(&types.BlockMeta{Header: *trustedHeader})
 	blockStore.On("LoadBlockCommit", int64(10)).Return(trustedCommit)
 
-	evidenceDB, err := cmtdb.NewMemDB()
+	evidenceDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	require.NoError(t, err)
@@ -443,7 +443,7 @@ func TestVerifyDuplicateVoteEvidence(t *testing.T) {
 	blockStore := &mocks.BlockStore{}
 	blockStore.On("LoadBlockMeta", int64(10)).Return(&types.BlockMeta{Header: types.Header{Time: defaultEvidenceTime}})
 
-	evidenceDB, err := cmtdb.NewMemDB()
+	evidenceDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	require.NoError(t, err)

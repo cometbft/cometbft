@@ -453,7 +453,7 @@ func newStateWithConfig(
 	app abci.Application,
 	laneInfo *mempl.LanesInfo,
 ) *State {
-	blockDB, err := cmtdb.NewMemDB()
+	blockDB, err := cmtdb.NewInMem()
 	if err != nil {
 		panic(err)
 	}
@@ -831,7 +831,7 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 	logger := consensusLogger()
 	configRootDirs := make([]string, 0, nValidators)
 	for i := 0; i < nValidators; i++ {
-		stateDB, err := cmtdb.NewMemDB() // each state needs its own db
+		stateDB, err := cmtdb.NewInMem() // each state needs its own db
 		require.NoError(t, err)
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
@@ -877,7 +877,7 @@ func randConsensusNetWithPeers(
 	var peer0Config *cfg.Config
 	configRootDirs := make([]string, 0, nPeers)
 	for i := 0; i < nPeers; i++ {
-		stateDB, err := cmtdb.NewMemDB() // each state needs its own db
+		stateDB, err := cmtdb.NewInMem() // each state needs its own db
 		require.NoError(t, err)
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,

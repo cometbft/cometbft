@@ -136,7 +136,7 @@ func TestReactorWithEvidence(t *testing.T) {
 	css := make([]*State, nValidators)
 	logger := consensusLogger()
 	for i := 0; i < nValidators; i++ {
-		stateDB, err := cmtdb.NewMemDB() // each state needs its own db
+		stateDB, err := cmtdb.NewInMem() // each state needs its own db
 		require.NoError(t, err)
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
@@ -154,7 +154,7 @@ func TestReactorWithEvidence(t *testing.T) {
 		// duplicate code from:
 		// css[i] = newStateWithConfig(thisConfig, state, privVals[i], app)
 
-		blockDB, err := cmtdb.NewMemDB()
+		blockDB, err := cmtdb.NewInMem()
 		require.NoError(t, err)
 		blockStore := store.NewBlockStore(blockDB)
 

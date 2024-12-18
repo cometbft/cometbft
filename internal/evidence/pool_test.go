@@ -41,7 +41,7 @@ func TestEvidencePoolBasic(t *testing.T) {
 		blockStore = &mocks.BlockStore{}
 	)
 
-	evidenceDB, err := cmtdb.NewMemDB()
+	evidenceDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 
 	valSet, privVals := types.RandValidatorSet(1, 10)
@@ -109,7 +109,7 @@ func TestAddExpiredEvidence(t *testing.T) {
 		expiredHeight       = int64(2)
 	)
 
-	evidenceDB, err := cmtdb.NewMemDB()
+	evidenceDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 
 	blockStore.On("LoadBlockMeta", mock.AnythingOfType("int64")).Return(func(h int64) *types.BlockMeta {
@@ -274,7 +274,7 @@ func TestLightClientAttackEvidenceLifecycle(t *testing.T) {
 	blockStore.On("LoadBlockCommit", height).Return(trusted.Commit)
 	blockStore.On("LoadBlockCommit", commonHeight).Return(common.Commit)
 
-	evidenceDB, err := cmtdb.NewMemDB()
+	evidenceDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	require.NoError(t, err)
@@ -317,14 +317,14 @@ func TestRecoverPendingEvidence(t *testing.T) {
 	height := int64(10)
 	val := types.NewMockPV()
 	valAddress := val.PrivKey.PubKey().Address()
-	evidenceDB, err := cmtdb.NewMemDB()
+	evidenceDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 
 	stateStore := initializeValidatorState(val, height)
 	state, err := stateStore.Load()
 	require.NoError(t, err)
 
-	blkStoreDB, err := cmtdb.NewMemDB()
+	blkStoreDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 
 	blockStore, err := initializeBlockStore(blkStoreDB, state, valAddress)
@@ -370,7 +370,7 @@ func TestRecoverPendingEvidence(t *testing.T) {
 }
 
 func initializeStateFromValidatorSet(valSet *types.ValidatorSet, height int64) sm.Store {
-	stateDB, err := cmtdb.NewMemDB()
+	stateDB, err := cmtdb.NewInMem()
 	if err != nil {
 		panic(err)
 	}
@@ -465,13 +465,13 @@ func defaultTestPool(t *testing.T, height int64) (*evidence.Pool, types.MockPV) 
 	val := types.NewMockPV()
 	valAddress := val.PrivKey.PubKey().Address()
 
-	evidenceDB, err := cmtdb.NewMemDB()
+	evidenceDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 
 	stateStore := initializeValidatorState(val, height)
 	state, _ := stateStore.Load()
 
-	blkStoreDB, err := cmtdb.NewMemDB()
+	blkStoreDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	blockStore, err := initializeBlockStore(blkStoreDB, state, valAddress)
 	require.NoError(t, err)

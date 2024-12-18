@@ -188,7 +188,7 @@ func TestReactorsGossipNoCommittedEvidence(t *testing.T) {
 
 func TestReactorBroadcastEvidenceMemoryLeak(t *testing.T) {
 	evidenceTime := time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC)
-	evidenceDB, err := cmtdb.NewMemDB()
+	evidenceDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 
 	blockStore := &mocks.BlockStore{}
@@ -239,7 +239,7 @@ func makeAndConnectReactorsAndPools(config *cfg.Config, stateStores []sm.Store) 
 	evidenceTime := time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	for i := 0; i < n; i++ {
-		evidenceDB, err := cmtdb.NewMemDB()
+		evidenceDB, err := cmtdb.NewInMem()
 		if err != nil {
 			panic(err)
 		}

@@ -373,7 +373,7 @@ func makeState(nVals int, chainID string) (sm.State, map[string]cmttypes.PrivVal
 		ConsensusParams: test.ConsensusParams(),
 	})
 
-	stateDB, err := cmtdb.NewMemDB()
+	stateDB, err := cmtdb.NewInMem()
 	if err != nil {
 		panic(err)
 	}

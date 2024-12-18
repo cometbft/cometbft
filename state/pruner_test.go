@@ -178,7 +178,7 @@ func createTestSetup(t *testing.T) (*sm.Pruner, *kv.TxIndex, blockidxkv.BlockerI
 	})
 
 	// tx indexer
-	memDB, err := cmtdb.NewMemDB()
+	memDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	txIndexer := kv.NewTxIndex(memDB)
 
@@ -187,9 +187,9 @@ func createTestSetup(t *testing.T) (*sm.Pruner, *kv.TxIndex, blockidxkv.BlockerI
 
 	blockIndexer := blockidxkv.New(prefixDB)
 
-	blockDB, err := cmtdb.NewMemDB()
+	blockDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
-	stateDB, err := cmtdb.NewMemDB()
+	stateDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,

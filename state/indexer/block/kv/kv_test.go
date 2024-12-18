@@ -22,7 +22,7 @@ import (
 )
 
 func TestBlockerIndexer_Prune(t *testing.T) {
-	memDB, err := cmtdb.NewMemDB()
+	memDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 
 	store, err := cmtdb.NewWithPrefix(memDB, []byte("block_events"))
@@ -95,7 +95,7 @@ func BenchmarkBlockerIndexer_Prune(_ *testing.B) {
 }
 
 func TestBlockIndexer(t *testing.T) {
-	memDB, err := cmtdb.NewMemDB()
+	memDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 
 	store, err := cmtdb.NewWithPrefix(memDB, []byte("block_events"))
@@ -226,7 +226,7 @@ func TestBlockIndexer(t *testing.T) {
 }
 
 func TestBlockIndexerMulti(t *testing.T) {
-	memDB, err := cmtdb.NewMemDB()
+	memDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 
 	store, err := cmtdb.NewWithPrefix(memDB, []byte("block_events"))
@@ -393,7 +393,7 @@ func TestBigInt(t *testing.T) {
 	bigFloatLower := bigInt + ".1"
 	bigIntSmaller := "9999999999999999999"
 
-	memDB, err := cmtdb.NewMemDB()
+	memDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 
 	store, err := cmtdb.NewWithPrefix(memDB, []byte("block_events"))

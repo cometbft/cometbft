@@ -269,7 +269,7 @@ func makeStateWithParams(nVals, height int, params *types.ConsensusParams, chain
 		ConsensusParams: params,
 	})
 
-	stateDB, err := cmtdb.NewMemDB()
+	stateDB, err := cmtdb.NewInMem()
 	if err != nil {
 		panic(err)
 	}

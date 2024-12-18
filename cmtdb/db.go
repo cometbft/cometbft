@@ -202,9 +202,9 @@ func New(name, dir string) (DB, error) {
 	return pDB, nil
 }
 
-// NewMemDB return a new database whose (k,v) pairs will be stored in memory.
+// NewInMem return a new database whose (k,v) pairs will be stored in memory.
 // Especially useful for testing.
-func NewMemDB() (DB, error) {
+func NewInMem() (DB, error) {
 	opts := &pebble.Options{FS: vfs.NewMem()}
 	pDB, err := newPebbleDBWithOpts("memdb", "", opts)
 	if err != nil {

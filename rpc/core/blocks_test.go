@@ -77,7 +77,7 @@ func TestBlockResults(t *testing.T) {
 	}
 
 	env := &Environment{}
-	sttStoreDB, err := cmtdb.NewMemDB()
+	sttStoreDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	env.StateStore = sm.NewStore(sttStoreDB, sm.StoreOptions{
 		DiscardABCIResponses: false,

@@ -49,7 +49,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 
 	for i := 0; i < nValidators; i++ {
 		logger := consensusLogger().With("test", "byzantine", "validator", i)
-		stateDB, err := cmtdb.NewMemDB() // each state needs its own db
+		stateDB, err := cmtdb.NewInMem() // each state needs its own db
 		require.NoError(t, err)
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
@@ -63,7 +63,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		_, err = app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
 		require.NoError(t, err)
 
-		blockDB, err := cmtdb.NewMemDB()
+		blockDB, err := cmtdb.NewInMem()
 		require.NoError(t, err)
 		blockStore := store.NewBlockStore(blockDB)
 
@@ -86,7 +86,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		}
 
 		// Make a full instance of the evidence pool
-		evidenceDB, err := cmtdb.NewMemDB()
+		evidenceDB, err := cmtdb.NewInMem()
 		require.NoError(t, err)
 		evpool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 		require.NoError(t, err)

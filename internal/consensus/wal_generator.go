@@ -45,7 +45,7 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int, config *cfg.C
 	require.NoError(t, err)
 	genDoc, err := types.GenesisDocFromFile(config.GenesisFile())
 	require.NoError(t, err)
-	blockStoreDB, err := cmtdb.NewMemDB()
+	blockStoreDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	stateDB := blockStoreDB
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{

@@ -95,7 +95,7 @@ func NewPersistentApplicationWithoutLanes(dbDir string) *Application {
 // NewInMemoryApplication creates a new application from an in memory database
 // that uses default lanes. Nothing will be persisted.
 func NewInMemoryApplication() *Application {
-	memDB, err := cmtdb.NewMemDB()
+	memDB, err := cmtdb.NewInMem()
 	if err != nil {
 		panic(err)
 	}
@@ -105,7 +105,7 @@ func NewInMemoryApplication() *Application {
 // NewInMemoryApplication creates a new application from an in memory database
 // and without lanes. Nothing will be persisted.
 func NewInMemoryApplicationWithoutLanes() *Application {
-	memDB, err := cmtdb.NewMemDB()
+	memDB, err := cmtdb.NewInMem()
 	if err != nil {
 		panic(err)
 	}

@@ -347,9 +347,9 @@ func TestCreateProposalBlock(t *testing.T) {
 		mempl.WithPostCheck(sm.TxPostCheck(state)))
 
 	// Make EvidencePool
-	evidenceDB, err := cmtdb.NewMemDB()
+	evidenceDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
-	blkStoreDB, err := cmtdb.NewMemDB()
+	blkStoreDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	blockStore := store.NewBlockStore(blkStoreDB)
 	evidencePool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
@@ -455,7 +455,7 @@ func TestMaxProposalBlockSize(t *testing.T) {
 		mempl.WithPreCheck(sm.TxPreCheck(state)),
 		mempl.WithPostCheck(sm.TxPostCheck(state)))
 
-	blkStoreDB, err := cmtdb.NewMemDB()
+	blkStoreDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	blockStore := store.NewBlockStore(blkStoreDB)
 
@@ -896,7 +896,7 @@ func state(nVals int, height int64) (sm.State, cmtdb.DB, []types.PrivValidator) 
 	})
 
 	// save validators to db for 2 heights
-	stateDB, err := cmtdb.NewMemDB()
+	stateDB, err := cmtdb.NewInMem()
 	if err != nil {
 		panic(err)
 	}

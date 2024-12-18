@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cometbft/cometbft/internal/storage"
+	"github.com/cometbft/cometbft/cmtdb"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/test/loadtime/report"
 )
@@ -41,7 +41,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	db, err := storage.NewDB("blockstore", d)
+	db, err := cmtdb.NewDB("blockstore", d)
 	if err != nil {
 		panic(err)
 	}

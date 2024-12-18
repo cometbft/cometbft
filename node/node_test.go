@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
+	"github.com/cometbft/cometbft/cmtdb"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -26,7 +27,6 @@ import (
 	kt "github.com/cometbft/cometbft/internal/keytypes"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/internal/test"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
@@ -347,9 +347,9 @@ func TestCreateProposalBlock(t *testing.T) {
 		mempl.WithPostCheck(sm.TxPostCheck(state)))
 
 	// Make EvidencePool
-	evidenceDB, err := storage.NewMemDB()
+	evidenceDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
-	blkStoreDB, err := storage.NewMemDB()
+	blkStoreDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 	blockStore := store.NewBlockStore(blkStoreDB)
 	evidencePool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
@@ -455,7 +455,7 @@ func TestMaxProposalBlockSize(t *testing.T) {
 		mempl.WithPreCheck(sm.TxPreCheck(state)),
 		mempl.WithPostCheck(sm.TxPostCheck(state)))
 
-	blkStoreDB, err := storage.NewMemDB()
+	blkStoreDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 	blockStore := store.NewBlockStore(blkStoreDB)
 
@@ -876,7 +876,7 @@ func TestGenesisDoc(t *testing.T) {
 	})
 }
 
-func state(nVals int, height int64) (sm.State, storage.DB, []types.PrivValidator) {
+func state(nVals int, height int64) (sm.State, cmtdb.DB, []types.PrivValidator) {
 	privVals := make([]types.PrivValidator, nVals)
 	vals := make([]types.GenesisValidator, nVals)
 	for i := 0; i < nVals; i++ {
@@ -896,7 +896,7 @@ func state(nVals int, height int64) (sm.State, storage.DB, []types.PrivValidator
 	})
 
 	// save validators to db for 2 heights
-	stateDB, err := storage.NewMemDB()
+	stateDB, err := cmtdb.NewMemDB()
 	if err != nil {
 		panic(err)
 	}

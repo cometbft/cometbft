@@ -12,9 +12,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
+	"github.com/cometbft/cometbft/cmtdb"
 	cfg "github.com/cometbft/cometbft/config"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
@@ -45,7 +45,7 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int, config *cfg.C
 	require.NoError(t, err)
 	genDoc, err := types.GenesisDocFromFile(config.GenesisFile())
 	require.NoError(t, err)
-	blockStoreDB, err := storage.NewMemDB()
+	blockStoreDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 	stateDB := blockStoreDB
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{

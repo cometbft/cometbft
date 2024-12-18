@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/internal/storage"
+	"github.com/cometbft/cometbft/cmtdb"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
 	"github.com/cometbft/cometbft/light/provider"
@@ -43,7 +43,7 @@ func TestLightClientAttackEvidence_Lunatic(t *testing.T) {
 	}
 	primary := mockp.New(chainID, primaryHeaders, primaryValidators)
 
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 	c, err := light.NewClient(
 		ctx,
@@ -127,7 +127,7 @@ func TestLightClientAttackEvidence_Equivocation(t *testing.T) {
 		}
 		primary := mockp.New(chainID, primaryHeaders, primaryValidators)
 
-		memDB, err := storage.NewMemDB()
+		memDB, err := cmtdb.NewMemDB()
 		require.NoError(t, err)
 		c, err := light.NewClient(
 			ctx,
@@ -219,7 +219,7 @@ func TestLightClientAttackEvidence_ForwardLunatic(t *testing.T) {
 	// send the forged block
 	accomplice := primary
 
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 	c, err := light.NewClient(
 		ctx,
@@ -288,7 +288,7 @@ func TestLightClientAttackEvidence_ForwardLunatic(t *testing.T) {
 
 	// Lastly we test the unfortunate case where the light clients supporting witness doesn't update
 	// in enough time
-	memDB, err = storage.NewMemDB()
+	memDB, err = cmtdb.NewMemDB()
 	require.NoError(t, err)
 	c, err = light.NewClient(
 		ctx,
@@ -320,7 +320,7 @@ func TestClientDivergentTraces1(t *testing.T) {
 	require.NoError(t, err)
 	witness := mockp.New(genMockNode(10, 5, 2, bTime))
 
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 	_, err = light.NewClient(
 		ctx,
@@ -347,7 +347,7 @@ func TestClientDivergentTraces2(t *testing.T) {
 	firstBlock, err := primary.LightBlock(ctx, 1)
 	require.NoError(t, err)
 
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 	c, err := light.NewClient(
 		ctx,
@@ -384,7 +384,7 @@ func TestClientDivergentTraces3(t *testing.T) {
 	mockVals[1] = primaryVals[1]
 	witness := mockp.New(chainID, mockHeaders, mockVals)
 
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 	c, err := light.NewClient(
 		ctx,
@@ -423,7 +423,7 @@ func TestClientDivergentTraces4(t *testing.T) {
 		ValidatorSet: mockVals[10],
 	})
 
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 	c, err := light.NewClient(
 		ctx,

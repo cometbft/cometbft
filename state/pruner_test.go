@@ -11,7 +11,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/storage"
+	"github.com/cometbft/cometbft/cmtdb"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
@@ -178,18 +178,18 @@ func createTestSetup(t *testing.T) (*sm.Pruner, *kv.TxIndex, blockidxkv.BlockerI
 	})
 
 	// tx indexer
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 	txIndexer := kv.NewTxIndex(memDB)
 
-	prefixDB, err := storage.NewPrefixDB(memDB, []byte("block_events"))
+	prefixDB, err := cmtdb.NewWithPrefix(memDB, []byte("block_events"))
 	require.NoError(t, err)
 
 	blockIndexer := blockidxkv.New(prefixDB)
 
-	blockDB, err := storage.NewMemDB()
+	blockDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
-	stateDB, err := storage.NewMemDB()
+	stateDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,

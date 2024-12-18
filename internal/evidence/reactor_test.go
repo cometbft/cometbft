@@ -13,12 +13,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	"github.com/cometbft/cometbft/cmtdb"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/evidence"
 	"github.com/cometbft/cometbft/internal/evidence/mocks"
-	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	p2pmocks "github.com/cometbft/cometbft/p2p/mocks"
@@ -188,7 +188,7 @@ func TestReactorsGossipNoCommittedEvidence(t *testing.T) {
 
 func TestReactorBroadcastEvidenceMemoryLeak(t *testing.T) {
 	evidenceTime := time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC)
-	evidenceDB, err := storage.NewMemDB()
+	evidenceDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 
 	blockStore := &mocks.BlockStore{}
@@ -239,7 +239,7 @@ func makeAndConnectReactorsAndPools(config *cfg.Config, stateStores []sm.Store) 
 	evidenceTime := time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	for i := 0; i < n; i++ {
-		evidenceDB, err := storage.NewMemDB()
+		evidenceDB, err := cmtdb.NewMemDB()
 		if err != nil {
 			panic(err)
 		}

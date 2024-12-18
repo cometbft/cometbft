@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/cmtdb"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	mpmocks "github.com/cometbft/cometbft/mempool/mocks"
@@ -51,7 +51,7 @@ func TestValidateBlockHeader(t *testing.T) {
 		mock.Anything,
 		mock.Anything).Return(nil)
 
-	blkStoreDB, err := storage.NewMemDB()
+	blkStoreDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 	blockStore := store.NewBlockStore(blkStoreDB)
 
@@ -158,7 +158,7 @@ func TestValidateBlockCommit(t *testing.T) {
 		mock.Anything,
 		mock.Anything).Return(nil)
 
-	blkStoreDB, err := storage.NewMemDB()
+	blkStoreDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 	blockStore := store.NewBlockStore(blkStoreDB)
 
@@ -314,7 +314,7 @@ func TestValidateBlockEvidence(t *testing.T) {
 		mock.Anything).Return(nil)
 	state.ConsensusParams.Evidence.MaxBytes = 1000
 
-	blkStoreDB, err := storage.NewMemDB()
+	blkStoreDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 	blockStore := store.NewBlockStore(blkStoreDB)
 

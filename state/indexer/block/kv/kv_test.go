@@ -13,7 +13,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/storage"
+	"github.com/cometbft/cometbft/cmtdb"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
@@ -22,10 +22,10 @@ import (
 )
 
 func TestBlockerIndexer_Prune(t *testing.T) {
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 
-	store, err := storage.NewPrefixDB(memDB, []byte("block_events"))
+	store, err := cmtdb.NewWithPrefix(memDB, []byte("block_events"))
 	require.NoError(t, err)
 
 	indexer := blockidxkv.New(store)
@@ -71,7 +71,7 @@ func BenchmarkBlockerIndexer_Prune(_ *testing.B) {
 		}
 	}()
 
-	store, err := storage.NewDB("block", config.DBDir())
+	store, err := cmtdb.NewDB("block", config.DBDir())
 	if err != nil {
 		panic(err)
 	}
@@ -95,10 +95,10 @@ func BenchmarkBlockerIndexer_Prune(_ *testing.B) {
 }
 
 func TestBlockIndexer(t *testing.T) {
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 
-	store, err := storage.NewPrefixDB(memDB, []byte("block_events"))
+	store, err := cmtdb.NewWithPrefix(memDB, []byte("block_events"))
 	require.NoError(t, err)
 
 	indexer := blockidxkv.New(store)
@@ -226,10 +226,10 @@ func TestBlockIndexer(t *testing.T) {
 }
 
 func TestBlockIndexerMulti(t *testing.T) {
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 
-	store, err := storage.NewPrefixDB(memDB, []byte("block_events"))
+	store, err := cmtdb.NewWithPrefix(memDB, []byte("block_events"))
 	require.NoError(t, err)
 
 	indexer := blockidxkv.New(store)
@@ -393,10 +393,10 @@ func TestBigInt(t *testing.T) {
 	bigFloatLower := bigInt + ".1"
 	bigIntSmaller := "9999999999999999999"
 
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 
-	store, err := storage.NewPrefixDB(memDB, []byte("block_events"))
+	store, err := cmtdb.NewWithPrefix(memDB, []byte("block_events"))
 	require.NoError(t, err)
 
 	indexer := blockidxkv.New(store)

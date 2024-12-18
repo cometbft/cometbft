@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cometbft/cometbft/internal/storage"
+	"github.com/cometbft/cometbft/cmtdb"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
 )
@@ -23,16 +23,16 @@ type DBContext struct {
 }
 
 // DBProvider takes a DBContext and returns an instantiated DB.
-type DBProvider func(*DBContext) (storage.DB, error)
+type DBProvider func(*DBContext) (cmtdb.DB, error)
 
 // DefaultDBProvider returns a database using the DBBackend and DBDir
 // specified in the Config.
-func DefaultDBProvider(ctx *DBContext) (storage.DB, error) {
+func DefaultDBProvider(ctx *DBContext) (cmtdb.DB, error) {
 	var (
 		dbName = ctx.ID
 		dbDir  = ctx.Config.DBDir()
 	)
-	db, err := storage.NewDB(dbName, dbDir)
+	db, err := cmtdb.NewDB(dbName, dbDir)
 	if err != nil {
 		return nil, fmt.Errorf("database provider: %w", err)
 	}

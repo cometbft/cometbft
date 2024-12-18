@@ -213,9 +213,9 @@ func NewMemDB() (DB, error) {
 	return pDB, nil
 }
 
-// NewPrefixDB returns a new database whose keys will be prefixed with the given
+// NewWithPrefix returns a new database whose keys will be prefixed with the given
 // prefix.
-func NewPrefixDB(db DB, prefix []byte) (DB, error) {
+func NewWithPrefix(db DB, prefix []byte) (DB, error) {
 	pDB, err := newPrefixDB(db, prefix)
 	if err != nil {
 		return nil, fmt.Errorf("creating new prefixed database: %w", err)

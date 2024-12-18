@@ -2,7 +2,7 @@ package state
 
 import (
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/storage"
+	"github.com/cometbft/cometbft/cmtdb"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -39,7 +39,7 @@ func ValidateValidatorUpdates(abciUpdates []abci.ValidatorUpdate, params types.V
 
 // SaveValidatorsInfo is an alias for the private saveValidatorsInfo method in
 // store.go, exported exclusively and explicitly for testing.
-func SaveValidatorsInfo(db storage.DB, height, lastHeightChanged int64, valSet *types.ValidatorSet, keyLayoutVersion string) error {
+func SaveValidatorsInfo(db cmtdb.DB, height, lastHeightChanged int64, valSet *types.ValidatorSet, keyLayoutVersion string) error {
 	var keyLayout KeyLayout
 	switch keyLayoutVersion {
 	case "v1", "":

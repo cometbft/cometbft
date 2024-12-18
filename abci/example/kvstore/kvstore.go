@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/cmtdb"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/version"
 )
@@ -60,7 +60,7 @@ type Application struct {
 
 // NewApplication creates an instance of the kvstore from the provided database,
 // with the given lanes and priorities.
-func NewApplication(db storage.DB, lanePriorities map[string]uint32) *Application {
+func NewApplication(db cmtdb.DB, lanePriorities map[string]uint32) *Application {
 	return &Application{
 		logger:             log.NewNopLogger(),
 		state:              loadState(db),
@@ -71,9 +71,9 @@ func NewApplication(db storage.DB, lanePriorities map[string]uint32) *Applicatio
 }
 
 // newDB creates a DB engine for persisting the application state.
-func newDB(dbDir string) storage.DB {
+func newDB(dbDir string) cmtdb.DB {
 	name := "kvstore"
-	db, err := storage.NewDB(name, dbDir)
+	db, err := cmtdb.NewDB(name, dbDir)
 	if err != nil {
 		panic(fmt.Errorf("failed to create persistent app at %s: %w", dbDir, err))
 	}
@@ -95,7 +95,7 @@ func NewPersistentApplicationWithoutLanes(dbDir string) *Application {
 // NewInMemoryApplication creates a new application from an in memory database
 // that uses default lanes. Nothing will be persisted.
 func NewInMemoryApplication() *Application {
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewMemDB()
 	if err != nil {
 		panic(err)
 	}
@@ -105,7 +105,7 @@ func NewInMemoryApplication() *Application {
 // NewInMemoryApplication creates a new application from an in memory database
 // and without lanes. Nothing will be persisted.
 func NewInMemoryApplicationWithoutLanes() *Application {
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewMemDB()
 	if err != nil {
 		panic(err)
 	}
@@ -626,14 +626,14 @@ func (app *Application) getValidators() (validators []types.ValidatorUpdate) {
 // -----------------------------
 
 type State struct {
-	db storage.DB
+	db cmtdb.DB
 	// Size is essentially the amount of transactions that have been processes.
 	// This is used for the appHash
 	Size   int64 `json:"size"`
 	Height int64 `json:"height"`
 }
 
-func loadState(db storage.DB) State {
+func loadState(db cmtdb.DB) State {
 	var state State
 	state.db = db
 	stateBytes, err := db.Get(stateKey)

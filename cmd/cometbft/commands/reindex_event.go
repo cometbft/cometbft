@@ -8,9 +8,9 @@ import (
 	"github.com/spf13/cobra"
 
 	abcitypes "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/cmtdb"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/progressbar"
-	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/indexer"
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
@@ -116,12 +116,12 @@ func loadEventSinks(cfg *cmtcfg.Config, chainID string) (indexer.BlockIndexer, t
 		}
 		return es.BlockIndexer(), es.TxIndexer(), nil
 	case "kv":
-		store, err := storage.NewDB("tx_index", cfg.DBDir())
+		store, err := cmtdb.NewDB("tx_index", cfg.DBDir())
 		if err != nil {
 			return nil, nil, err
 		}
 
-		prefixDB, err := storage.NewPrefixDB(store, []byte("block_events"))
+		prefixDB, err := cmtdb.NewWithPrefix(store, []byte("block_events"))
 		if err != nil {
 			return nil, nil, fmt.Errorf("loading event sink: %w", err)
 		}

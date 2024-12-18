@@ -12,8 +12,8 @@ import (
 	"github.com/google/orderedcode"
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	"github.com/cometbft/cometbft/cmtdb"
 	"github.com/cometbft/cometbft/internal/clist"
-	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/libs/log"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
@@ -24,7 +24,7 @@ import (
 type Pool struct {
 	logger log.Logger
 
-	evidenceStore storage.DB
+	evidenceStore cmtdb.DB
 	evidenceList  *clist.CList // concurrent linked-list of evidence
 	evidenceSize  uint32       // amount of pending evidence
 
@@ -47,7 +47,7 @@ type Pool struct {
 	dbKeyLayout KeyLayout
 }
 
-func isEmpty(evidenceDB storage.DB) bool {
+func isEmpty(evidenceDB cmtdb.DB) bool {
 	iter, err := evidenceDB.Iterator(nil, nil)
 	if err != nil {
 		panic(err)
@@ -99,7 +99,7 @@ func WithDBKeyLayout(dbKeyLayoutV string) PoolOptions {
 
 // NewPool creates an evidence pool. If using an existing evidence store,
 // it will add all pending evidence to the concurrent list.
-func NewPool(evidenceDB storage.DB, stateDB sm.Store, blockStore BlockStore, options ...PoolOptions) (*Pool, error) {
+func NewPool(evidenceDB cmtdb.DB, stateDB sm.Store, blockStore BlockStore, options ...PoolOptions) (*Pool, error) {
 	state, err := stateDB.Load()
 	if err != nil {
 		return nil, sm.ErrCannotLoadState{Err: err}
@@ -420,7 +420,7 @@ func (evpool *Pool) listEvidence(prefixKey []byte, maxBytes int64) ([]types.Evid
 		evList    cmtproto.EvidenceList // used for calculating the bytes size
 	)
 
-	iter, err := storage.IteratePrefix(evpool.evidenceStore, prefixKey)
+	iter, err := cmtdb.IteratePrefix(evpool.evidenceStore, prefixKey)
 	if err != nil {
 		return nil, totalSize, fmt.Errorf("database error: %v", err)
 	}
@@ -456,7 +456,7 @@ func (evpool *Pool) listEvidence(prefixKey []byte, maxBytes int64) ([]types.Evid
 }
 
 func (evpool *Pool) removeExpiredPendingEvidence() (int64, time.Time) {
-	iter, err := storage.IteratePrefix(evpool.evidenceStore, evpool.dbKeyLayout.PrefixToBytesPending())
+	iter, err := cmtdb.IteratePrefix(evpool.evidenceStore, evpool.dbKeyLayout.PrefixToBytesPending())
 	if err != nil {
 		evpool.logger.Error("Unable to iterate over pending evidence", "err", err)
 		return evpool.State().LastBlockHeight, evpool.State().LastBlockTime

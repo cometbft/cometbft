@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/storage"
+	"github.com/cometbft/cometbft/cmtdb"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	sm "github.com/cometbft/cometbft/state"
@@ -77,7 +77,7 @@ func TestBlockResults(t *testing.T) {
 	}
 
 	env := &Environment{}
-	sttStoreDB, err := storage.NewMemDB()
+	sttStoreDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 	env.StateStore = sm.NewStore(sttStoreDB, sm.StoreOptions{
 		DiscardABCIResponses: false,

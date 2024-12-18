@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cometbft/cometbft/internal/storage"
+	"github.com/cometbft/cometbft/cmtdb"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
 	"github.com/cometbft/cometbft/light/provider"
@@ -26,7 +26,7 @@ var (
 )
 
 func BenchmarkSequence(b *testing.B) {
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewMemDB()
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -58,7 +58,7 @@ func BenchmarkSequence(b *testing.B) {
 }
 
 func BenchmarkBisection(b *testing.B) {
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewMemDB()
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -90,7 +90,7 @@ func BenchmarkBisection(b *testing.B) {
 
 func BenchmarkBackwards(b *testing.B) {
 	trustedBlock, _ := benchmarkFullNode.LightBlock(context.Background(), 0)
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewMemDB()
 	if err != nil {
 		b.Fatal(err)
 	}

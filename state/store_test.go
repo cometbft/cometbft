@@ -11,9 +11,9 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
+	"github.com/cometbft/cometbft/cmtdb"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	sm "github.com/cometbft/cometbft/state"
@@ -25,7 +25,7 @@ import (
 )
 
 func TestStoreLoadValidators(t *testing.T) {
-	stateDB, err := storage.NewMemDB()
+	stateDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
@@ -68,7 +68,7 @@ func BenchmarkLoadValidators(b *testing.B) {
 	config := test.ResetTestRoot("state_")
 	defer os.RemoveAll(config.RootDir)
 
-	stateDB, err := storage.NewMemDB()
+	stateDB, err := cmtdb.NewMemDB()
 	require.NoError(b, err)
 
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
@@ -142,7 +142,7 @@ func TestPruneStates(t *testing.T) {
 	}
 	for name, tc := range testcases {
 		t.Run(name, func(t *testing.T) {
-			db, err := storage.NewMemDB()
+			db, err := cmtdb.NewMemDB()
 			require.NoError(t, err)
 
 			stateStore := sm.NewStore(db, sm.StoreOptions{
@@ -270,11 +270,11 @@ func sliceToMap(s []int64) map[int64]bool {
 
 func makeStateAndBlockStoreAndIndexers() (sm.State, *store.BlockStore, txindex.TxIndexer, indexer.BlockIndexer, func(), sm.Store) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
-	blockDB, err := storage.NewMemDB()
+	blockDB, err := cmtdb.NewMemDB()
 	if err != nil {
 		panic(err)
 	}
-	stateDB, err := storage.NewMemDB()
+	stateDB, err := cmtdb.NewMemDB()
 	if err != nil {
 		panic(err)
 	}
@@ -382,7 +382,7 @@ func TestMinRetainHeight(t *testing.T) {
 }
 
 func TestABCIResPruningStandalone(t *testing.T) {
-	stateDB, err := storage.NewMemDB()
+	stateDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
@@ -478,7 +478,7 @@ func (o *prunerObserver) PrunerPrunedBlocks(info *sm.BlocksPrunedInfo) {
 
 func TestFinalizeBlockResponsePruning(t *testing.T) {
 	t.Run("Persisting responses", func(t *testing.T) {
-		stateDB, err := storage.NewMemDB()
+		stateDB, err := cmtdb.NewMemDB()
 		require.NoError(t, err)
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
@@ -537,7 +537,7 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 
 func TestLastFinalizeBlockResponses(t *testing.T) {
 	t.Run("persisting responses", func(t *testing.T) {
-		stateDB, err := storage.NewMemDB()
+		stateDB, err := cmtdb.NewMemDB()
 		require.NoError(t, err)
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
@@ -554,7 +554,7 @@ func TestLastFinalizeBlockResponses(t *testing.T) {
 			AppHash: make([]byte, 1),
 		}
 
-		stateDB, err = storage.NewMemDB()
+		stateDB, err = cmtdb.NewMemDB()
 		require.NoError(t, err)
 		stateStore = sm.NewStore(stateDB, sm.StoreOptions{DiscardABCIResponses: false})
 		height := int64(10)
@@ -580,7 +580,7 @@ func TestLastFinalizeBlockResponses(t *testing.T) {
 	})
 
 	t.Run("not persisting responses", func(t *testing.T) {
-		stateDB, err := storage.NewMemDB()
+		stateDB, err := cmtdb.NewMemDB()
 		require.NoError(t, err)
 		height := int64(10)
 
@@ -641,7 +641,7 @@ func TestFinalizeBlockRecoveryUsingLegacyABCIResponses(t *testing.T) {
 			Height: height,
 		}
 	)
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewMemDB()
 	require.NoError(t, err)
 
 	bz, err := legacyResp.Marshal()

@@ -14,8 +14,8 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
+	"github.com/cometbft/cometbft/cmtdb"
 	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	mpmocks "github.com/cometbft/cometbft/mempool/mocks"
@@ -84,11 +84,11 @@ func newReactor(
 		panic(fmt.Errorf("error start app: %w", err))
 	}
 
-	blockDB, err := storage.NewMemDB()
+	blockDB, err := cmtdb.NewMemDB()
 	if err != nil {
 		panic(err)
 	}
-	stateDB, err := storage.NewMemDB()
+	stateDB, err := cmtdb.NewMemDB()
 	if err != nil {
 		panic(err)
 	}
@@ -119,7 +119,7 @@ func newReactor(
 	// NOTE we have to create and commit the blocks first because
 	// pool.height is determined from the store.
 	blockSync := true
-	db, err := storage.NewMemDB()
+	db, err := cmtdb.NewMemDB()
 	if err != nil {
 		panic(err)
 	}

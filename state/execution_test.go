@@ -469,9 +469,11 @@ func TestValidateValidatorUpdates(t *testing.T) {
 		{
 			"updating a validator with mixed key types is OK",
 			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey1, 20), abci.NewValidatorUpdate(pubkey2, 10)},
-			types.ValidatorParams{PubKeyTypes: []string{
-				types.ABCIPubKeyTypeSecp256k1,
-				types.ABCIPubKeyTypeSecp256k1Eth},
+			types.ValidatorParams{
+				PubKeyTypes: []string{
+					types.ABCIPubKeyTypeSecp256k1,
+					types.ABCIPubKeyTypeSecp256k1Eth,
+				},
 			},
 			false,
 		},

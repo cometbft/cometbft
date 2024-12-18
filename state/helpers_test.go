@@ -10,7 +10,6 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/proxy"
 	sm "github.com/cometbft/cometbft/state"
@@ -172,7 +171,7 @@ func makeHeaderPartsResponsesParams(
 }
 
 func randomGenesisDoc() *types.GenesisDoc {
-	pubkey := secp256k1eth.GenPrivKey().PubKey()
+	pubkey := ed25519.GenPrivKey().PubKey()
 	return &types.GenesisDoc{
 		GenesisTime: cmttime.Now(),
 		ChainID:     "abc",
@@ -290,8 +289,5 @@ func makeStateWithParams(nVals, height int, params *types.ConsensusParams, chain
 }
 
 func makeState(nVals, height int, chainID string) (sm.State, dbm.DB, map[string]types.PrivValidator) {
-	// TODO revert?
-	c := test.ConsensusParams()
-	c.Validator.PubKeyTypes = []string{"ed25519"}
-	return makeStateWithParams(nVals, height, c, chainID)
+	return makeStateWithParams(nVals, height, test.ConsensusParams(), chainID)
 }

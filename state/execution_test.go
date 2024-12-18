@@ -17,6 +17,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 	"github.com/cometbft/cometbft/crypto/tmhash"
@@ -447,10 +448,11 @@ func TestProcessProposal(t *testing.T) {
 }
 
 func TestValidateValidatorUpdates(t *testing.T) {
-	pubkey1 := secp256k1.GenPrivKey().PubKey()
-	pubkey2 := secp256k1eth.GenPrivKey().PubKey()
+	pubkey1 := ed25519.GenPrivKey().PubKey()
+	pubkey2 := secp256k1.GenPrivKey().PubKey()
+	pubkey3 := secp256k1eth.GenPrivKey().PubKey()
 
-	defaultValidatorParams := types.ValidatorParams{PubKeyTypes: []string{types.ABCIPubKeyTypeSecp256k1}}
+	defaultValidatorParams := types.ValidatorParams{PubKeyTypes: []string{types.ABCIPubKeyTypeEd25519}}
 
 	testCases := []struct {
 		name string
@@ -471,6 +473,7 @@ func TestValidateValidatorUpdates(t *testing.T) {
 			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey1, 20), abci.NewValidatorUpdate(pubkey2, 10)},
 			types.ValidatorParams{
 				PubKeyTypes: []string{
+					types.ABCIPubKeyTypeEd25519,
 					types.ABCIPubKeyTypeSecp256k1,
 					types.ABCIPubKeyTypeSecp256k1Eth,
 				},
@@ -479,8 +482,14 @@ func TestValidateValidatorUpdates(t *testing.T) {
 		},
 		{
 			"updating a validator with key type Secp256k1Eth is OK",
-			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey2, 20)},
-			types.ValidatorParams{PubKeyTypes: []string{types.ABCIPubKeyTypeSecp256k1Eth}},
+			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey3, 20)},
+			types.ValidatorParams{
+				PubKeyTypes: []string{
+					types.ABCIPubKeyTypeEd25519,
+					types.ABCIPubKeyTypeSecp256k1,
+					types.ABCIPubKeyTypeSecp256k1Eth,
+				},
+			},
 			false,
 		},
 		{
@@ -516,7 +525,7 @@ func TestValidateValidatorUpdates(t *testing.T) {
 }
 
 func TestUpdateValidators(t *testing.T) {
-	pubkey1 := secp256k1.GenPrivKey().PubKey()
+	pubkey1 := ed25519.GenPrivKey().PubKey()
 	val1 := types.NewValidator(pubkey1, 10)
 	pubkey2 := secp256k1.GenPrivKey().PubKey()
 	val2 := types.NewValidator(pubkey2, 20)
@@ -647,11 +656,11 @@ func TestFinalizeBlockValidatorUpdates(t *testing.T) {
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 
-	state.ConsensusParams.Validator.PubKeyTypes = []string{types.ABCIPubKeyTypeSecp256k1Eth}
-	pubkey := secp256k1eth.GenPrivKey().PubKey()
+	pubkey := ed25519.GenPrivKey().PubKey()
 	app.ValidatorUpdates = []abci.ValidatorUpdate{
 		abci.NewValidatorUpdate(pubkey, 10),
 	}
+
 	state, err = blockExec.ApplyBlock(state, blockID, block, block.Height)
 	require.NoError(t, err)
 	// test new validator was added to NextValidators

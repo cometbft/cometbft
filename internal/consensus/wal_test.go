@@ -369,13 +369,11 @@ func TestWALPeriodicSync(t *testing.T) {
 func makeState(nVals int, chainID string) (sm.State, map[string]cmttypes.PrivValidator, error) {
 	vals, privVals := test.GenesisValidatorSet(nVals)
 
-	c := test.ConsensusParams()
-	c.Validator.PubKeyTypes = []string{"ed25519"} // TODO revert
 	s, err := sm.MakeGenesisState(&cmttypes.GenesisDoc{
 		ChainID:         chainID,
 		Validators:      vals,
 		AppHash:         nil,
-		ConsensusParams: c,
+		ConsensusParams: test.ConsensusParams(),
 	})
 	if err != nil {
 		return sm.State{}, nil, err
@@ -392,19 +390,6 @@ func makeState(nVals int, chainID string) (sm.State, map[string]cmttypes.PrivVal
 	return s, privVals, nil
 }
 
-/*
-var initOnce sync.Once
-
-func registerInterfacesOnce() {
-	initOnce.Do(func() {
-		var _ = wire.RegisterInterface(
-			struct{ WALMessage }{},
-			wire.ConcreteType{[]byte{}, 0x10},
-		)
-	})
-}
-*/
-
 func nBytes(n int) []byte {
 	buf := make([]byte, n)
 	n, _ = rand.Read(buf)
@@ -413,7 +398,6 @@ func nBytes(n int) []byte {
 
 func benchmarkWalDecode(b *testing.B, n int) {
 	b.Helper()
-	// registerInterfacesOnce()
 
 	buf := new(bytes.Buffer)
 	enc := NewWALEncoder(buf)

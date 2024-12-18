@@ -85,8 +85,19 @@ func TestEvidencePoolBasic(t *testing.T) {
 	next := pool.EvidenceFront()
 	assert.Equal(t, ev, next.Value.(types.Evidence))
 
-	// TODO Deal with this
-	const evidenceBytes int64 = 374
+	var evidenceBytes int64
+	if pubK, err := privVals[0].GetPubKey(); err != nil {
+		t.Fatal(err)
+	} else {
+		switch pubK.Type() {
+		case "secp256k1eth":
+			evidenceBytes = 374
+		default:
+			// default valid for ed25519, scp256k1
+			evidenceBytes = 372
+		}
+	}
+
 	evs, size = pool.PendingEvidence(evidenceBytes)
 	assert.Len(t, evs, 1)
 	assert.Equal(t, evidenceBytes, size) // check that the size of the single evidence in bytes is correct

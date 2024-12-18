@@ -1,8 +1,13 @@
 # Upgrading CometBFT
 
 This guide provides instructions for upgrading to specific versions of CometBFT.
-
 ## Unreleased
+
+### ABCI Changes
+
+Non-replay-protected vote extensions are added to CometBFT to allow applications to sign a blob of bytes by CometBFT using validator's private key infrastructure. Compared to existing vote extensions which are replay protected by containing meta information as chain-id, height and round (canonical vote extension) the data of the non-replay-protected vote extensions is signed as provided by the application. The non-replay-protected vote extension field is an optional part of the vote extension mechanism and it is up to the application to protect this field against replay attacks. If the application does not populate the non-replay-protected field and does not read it either in `VerifyVoteExtension` or `PrepareProposal` there are no security implications to consider by the application, other that limiting the fields's max length in `VerifyVoteExtension`, just as it is done with the replay protected part
+
+## v1.x
 
 CometBFT `v1.0` includes some substantial breaking API changes that will hopefully
 allow future changes to be rolled out quicker.

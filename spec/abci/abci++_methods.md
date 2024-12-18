@@ -55,11 +55,11 @@ title: Methods
     * The returned `app_version` will be included in the Header of every block.
     * CometBFT expects `last_block_app_hash` and `last_block_height` to
       be updated and persisted during `Commit`.
-    * The application does not have to define `lane_priorities`. In that case, CometBFT will assign all transactions to one lane. 
+    * The application does not have to define `lane_priorities`. In that case, CometBFT will assign all transactions to one lane.
     * `lane_priorities` is empty if and only if `default_lane` is empty.
     * `default_lane` has to be one of the identifiers defined in `lane_priorities`.
     * The lowest priority a lane can have is `1`. The value `0` is reserved for when applications do not assign lanes (empty `lane_id` in `ResponseCheckTx`).
-  
+
 
 > Note: Semantic version is a reference to [semantic versioning](https://semver.org/). Semantic versions in info will be displayed as X.X.x.
 
@@ -149,7 +149,7 @@ title: Methods
     | events     | repeated [Event](abci++_basic_concepts.md#events) | Type & Key-Value events for indexing transactions (e.g. by account). | 7            | N/A           |
     | codespace  | string                                            | Namespace for the `code`.                                            | 8            | N/A           |
     | lane_id    | string                                            | The id of the lane to which the transaction is assigned.             | 12            | N/A           |
-    
+
 
 * **Usage**:
 
@@ -165,7 +165,7 @@ title: Methods
       CometBFT attributes no other value to the response code.
     * If `lane_id` is an empty string, it means that the application did not set any lane in the
       response message, so the transaction will be assigned to the default lane.
-    * The value of `lane_id` has to be in the range of lanes defined by the application in `ResponseInfo`. 
+    * The value of `lane_id` has to be in the range of lanes defined by the application in `ResponseInfo`.
 
 ### Commit
 
@@ -508,13 +508,17 @@ When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the prop
 
 * **Response**:
 
-    | Name           | Type  | Description                                           | Field Number | Deterministic |
-    |----------------|-------|-------------------------------------------------------|--------------|---------------|
-    | vote_extension | bytes | Information signed by CometBFT. Can have 0 length. | 1            | No            |
+    | Name             | Type  | Description                                           | Field Number | Deterministic |
+    |------------------|-------|-------------------------------------------------------|--------------|---------------|
+    | vote_extension   | bytes | Information signed by CometBFT. Can have 0 length.    | 1            | No            |
+    | non_rp_extension | bytes | Information signed by CometBFT. Can have 0 length.    | 2            | No            |
+
 
 * **Usage**:
     * `ExtendVoteResponse.vote_extension` is application-generated information that will be signed
-      by CometBFT and attached to the Precommit message.
+    * `ExtendVoteResponse.non_rp_extension` is application-generated information that will be signed
+      by CometBFT and attached to the Precommit message. No replay-protection is applied to the data as
+      compared to `ExtendVoteResponse.vote_extension`. Applications can use this if raw vote extension data needs to be signed without any wrapping structure.
     * The Application may choose to use an empty vote extension (0 length).
     * The contents of `ExtendVoteRequest` correspond to the proposed block on which the consensus algorithm
       will send the Precommit message.
@@ -623,7 +627,7 @@ without calling `VerifyVoteExtension` to verify it.
     | time                 | [google.protobuf.Timestamp][protobuf-timestamp] | Timestamp of the finalized block.                                                         | 6            |
     | next_validators_hash | bytes                                           | Merkle root of the next validator set.                                                    | 7            |
     | proposer_address     | bytes                                           | [Address](../core/data_structures.md#address) of the validator that created the proposal. | 8            |
-    | syncing_to_height    | int64                                           | If the node is syncing/replaying blocks then syncing_to_height == target height. If not, syncing_to_height == height.    | 9            |  
+    | syncing_to_height    | int64                                           | If the node is syncing/replaying blocks then syncing_to_height == target height. If not, syncing_to_height == height.    | 9            |
 
 * **Response**:
 
@@ -682,9 +686,9 @@ without calling `VerifyVoteExtension` to verify it.
       time the application and CometBFT take for processing the committed block.
       In CometBFT terms, this interval gives the proposer a chance to receive
       some more precommits, even though it already has the required 2/3+.
-      - Set to 0 if you want a proposer to make progress as soon as it has all
-        the precommits and the block is processed by the application. 
-      - Previously `timeout_commit` in CometBFT config.
+        * Set to 0 if you want a proposer to make progress as soon as it has all
+        the precommits and the block is processed by the application.
+        * Previously `timeout_commit` in CometBFT config.
         **Set to constant 1s to preserve the old (v0.34 - v1.0) behavior**.
     * `FinalizeBlockResponse.next_block_delay` is a non-deterministic field.
       This means that each node MAY provide a different value, which is

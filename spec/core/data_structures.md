@@ -251,7 +251,9 @@ All these extensions have been verified by the application operating at the sign
 | Timestamp          | [Time](#time)               | This field will vary from `CommitSig` to `CommitSig`. It represents the timestamp of the validator.                                               |                                                                     |
 | Signature          | [Signature](#signature)     | Signature corresponding to the validators participation in consensus.                                                                             | Length must be > 0 and < 64                                         |
 | Extension          | bytes                       | Vote extension provided by the Application running on the sender of the precommit vote, and verified by the local application.                    | Length must be zero if BlockIDFlag is not `Commit`                  |
-| ExtensionSignature | [Signature](#signature)     | Signature of the vote extension.                                                                                                                  | Length must be > 0 and < than 64 if BlockIDFlag is `Commit`, else 0 |
+| ExtensionSignature | [Signature](#signature)     | Signature of the vote extension.                                                                                                                  a| Length must be > 0 and < than 64 if BlockIDFlag is `Commit`, else 0 |
+| NonRpExtension          | bytes                  | Non replay-protected vote extension provided by the Application running on the sender of the precommit vote, and verified by the local application.| Length must be zero if BlockIDFlag is not `Commit`              |
+| NonRpExtensionSignature | [Signature](#signature)| Signature of the vote extension.                                                                                                                   | Length must be > 0 and < than 64 if BlockIDFlag is `Commit`, else 0 |
 
 ## BlockIDFlag
 
@@ -271,18 +273,20 @@ enum BlockIDFlag {
 A vote is a signed message from a validator for a particular block.
 The vote includes information about the validator signing it. When stored in the blockchain or propagated over the network, votes are encoded in Protobuf.
 
-| Name               | Type                            | Description                                                                              | Validation                                                       |
-|--------------------|---------------------------------|------------------------------------------------------------------------------------------|------------------------------------------------------------------|
-| Type               | [SignedMsgType](#signedmsgtype) | The type of message the vote refers to                                                   | Must be `PrevoteType` or `PrecommitType`                         |
-| Height             | int64                           | Height for which this vote was created for                                               | Must be > 0                                                      |
-| Round              | int32                           | Round that the commit corresponds to.                                                    | Must be >= 0                                                     |
-| BlockID            | [BlockID](#blockid)             | The blockID of the corresponding block.                                                  |                                                                  |
-| Timestamp          | [Time](#time)                   | Timestamp represents the time at which a validator signed.                               |                                                                  |
-| ValidatorAddress   | bytes                           | Address of the validator                                                                 | Length must be equal to 20                                       |
-| ValidatorIndex     | int32                           | Index at a specific block height corresponding to the Index of the validator in the set. | Must be > 0                                                      |
-| Signature          | bytes                           | Signature by the validator if they participated in consensus for the associated block.   | Length must be > 0 and < 64 for `ed25519` or < 96 for `bls12381` |
-| Extension          | bytes                           | Vote extension provided by the Application running at the validator's node.              | Length can be 0                          |
-| ExtensionSignature | bytes                           | Signature for the extension                                                              | Length must be > 0 and < 64  for `ed25519` or < 96 for `bls12381`|
+| Name                    | Type                            | Description                                                                                      | Validation                                                       |
+|-------------------------|---------------------------------|--------------------------------------------------------------------------------------------------|------------------------------------------------------------------|
+| Type                    | [SignedMsgType](#signedmsgtype) | The type of message the vote refers to                                                           | Must be `PrevoteType` or `PrecommitType`                         |
+| Height                  | int64                           | Height for which this vote was created for                                                       | Must be > 0                                                      |
+| Round                   | int32                           | Round that the commit corresponds to.                                                            | Must be >= 0                                                     |
+| BlockID                 | [BlockID](#blockid)             | The blockID of the corresponding block.                                                          |                                                                  |
+| Timestamp               | [Time](#time)                   | Timestamp represents the time at which a validator signed.                                       |                                                                  |
+| ValidatorAddress        | bytes                           | Address of the validator                                                                         | Length must be equal to 20                                       |
+| ValidatorIndex          | int32                           | Index at a specific block height corresponding to the Index of the validator in the set.         | Must be > 0                                                      |
+| Signature               | bytes                           | Signature by the validator if they participated in consensus for the associated block.           | Length must be > 0 and < 64 for `ed25519` or < 96 for `bls12381` |
+| Extension               | bytes                           | Vote extension provided by the Application running at the validator's node.                      | Length can be 0                                                  |
+| ExtensionSignature      | bytes                           | Signature for the extension                                                                      | Length must be > 0 and < 64  for `ed25519` or < 96 for `bls12381`|
+| NonRpExtension          | bytes                           | Non replay-protected vote extension provided by the Application running at the validator's node. | Length can be 0                                                  |
+| NonRpExtensionSignature | bytes                           | Signature for the non replay-protected vote extension                                            | Length must be > 0 and < 64  for `ed25519` or < 96 for `bls12381`|
 
 ## CanonicalVote
 

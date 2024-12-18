@@ -747,7 +747,7 @@ func NewExtendedCommitSigAbsent() ExtendedCommitSig {
 // 2. first 6 bytes of vote extension
 // 3. first 6 bytes of vote extension signature
 // 4. first 6 bytes of non-replay-protected vote extension
-// 5. first 6 bytes of non-replay-protected vote extension signature
+// 5. first 6 bytes of non-replay-protected vote extension signature.
 func (ecs ExtendedCommitSig) String() string {
 	return fmt.Sprintf("ExtendedCommitSig{%s with %X %X %X %X}",
 		ecs.CommitSig,

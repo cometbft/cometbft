@@ -375,15 +375,14 @@ func (vote *Vote) ValidateBasic() error {
 			return ErrVoteNoSignature
 		}
 		if len(vote.NonRpExtensionSignature) == 0 && len(vote.NonRpExtension) != 0 {
-			return fmt.Errorf("vote extension signature absent on vote with extension")
+			return errors.New("vote extension signature absent on vote with extension")
 		}
 
 		// Vote extensions and non replay protected vote extensions must go together
 		// one is present iff the other is present
 		if (len(vote.NonRpExtensionSignature) == 0) != (len(vote.ExtensionSignature) == 0) {
-			return fmt.Errorf("vote extension and non replay protected vote extension must go together")
+			return errors.New("vote extension and non replay protected vote extension must go together")
 		}
-
 	}
 
 	return nil

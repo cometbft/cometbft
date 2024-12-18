@@ -15,7 +15,7 @@
 // 2. Mutations to the linked-list elements are atomic
 // 3. CheckTx() and/or ReapMaxBytesMaxGas() calls can be paused upon Update(), protected by .updateMtx
 
-// Garbage collection of old elements from mempool.txs is handlde via the
+// Garbage collection of old elements from mempool.txs is handled via the
 // DetachPrev() call, which makes old elements not reachable by peer
 // broadcastTxRoutine().
 

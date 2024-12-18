@@ -202,7 +202,7 @@ type ManifestNode struct {
 	PersistentPeersList []string `toml:"persistent_peers"`
 
 	// Database specifies the database backend: "goleveldb", "rocksdb",
-	// "pebbledb" or "badgerdb". Defaults to "goleveldb".
+	// "pebbledb" or "badgerdb". Defaults to "pebbledb".
 	Database string `toml:"database"`
 
 	// PrivvalProtocolStr specifies the protocol used to sign consensus messages:

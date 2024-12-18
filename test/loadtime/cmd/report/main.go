@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	db      = flag.String("database-type", "goleveldb", "the type of database holding the blockstore")
+	db      = flag.String("database-type", "pebbledb", "the type of database holding the blockstore")
 	dir     = flag.String("data-dir", "", "path to the directory containing the CometBFT databases")
 	csvOut  = flag.String("csv", "", "dump the extracted latencies as raw csv for use in additional tooling")
 	oneline = flag.Bool("oneline", false, "display the results in one line of comma-separated values")

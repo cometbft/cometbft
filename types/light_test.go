@@ -157,7 +157,7 @@ func TestSignedHeaderValidateBasic(t *testing.T) {
 				t,
 				tc.expectErr,
 				err != nil,
-				"Validate Basic had an unexpected result",
+				"Validate Basic had an unexpected result： %s",
 				err,
 			)
 		})

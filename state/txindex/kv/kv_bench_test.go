@@ -62,7 +62,7 @@ func BenchmarkTxSearchDisk(b *testing.B) {
 		b.Errorf("failed to create temporary directory: %s", err)
 	}
 
-	db, err := cmtdb.NewDB("benchmark_tx_search_test", dbDir)
+	db, err := cmtdb.New("benchmark_tx_search_test", dbDir)
 	if err != nil {
 		b.Errorf("failed to create database: %s", err)
 	}

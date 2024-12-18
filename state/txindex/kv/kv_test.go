@@ -780,7 +780,7 @@ func benchmarkTxIndex(b *testing.B, txsCount int64) {
 	require.NoError(b, err)
 	defer os.RemoveAll(dir)
 
-	store, err := cmtdb.NewDB("tx_index", dir)
+	store, err := cmtdb.New("tx_index", dir)
 	require.NoError(b, err)
 	indexer := NewTxIndex(store)
 

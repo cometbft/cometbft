@@ -71,7 +71,7 @@ func BenchmarkBlockerIndexer_Prune(_ *testing.B) {
 		}
 	}()
 
-	store, err := cmtdb.NewDB("block", config.DBDir())
+	store, err := cmtdb.New("block", config.DBDir())
 	if err != nil {
 		panic(err)
 	}

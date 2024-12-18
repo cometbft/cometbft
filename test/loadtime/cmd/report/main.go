@@ -41,7 +41,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	db, err := cmtdb.NewDB("blockstore", d)
+	db, err := cmtdb.New("blockstore", d)
 	if err != nil {
 		panic(err)
 	}

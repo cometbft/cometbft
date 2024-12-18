@@ -118,7 +118,7 @@ func runProxy(_ *cobra.Command, args []string) error {
 		witnessesAddrs = strings.Split(witnessAddrsJoined, ",")
 	}
 
-	db, err := cmtdb.NewDB("light-client-db", home)
+	db, err := cmtdb.New("light-client-db", home)
 	if err != nil {
 		return fmt.Errorf("can't create a db: %w", err)
 	}

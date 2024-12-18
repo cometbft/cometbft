@@ -21,7 +21,7 @@ import (
 //
 // Example usage:
 //
-//	db := NewPrefixDB(baseDB, []byte("namespace:"))
+//	db := newPrefixDB(baseDB, []byte("namespace:"))
 //	err := db.Set([]byte("key"), []byte("value"))
 //	if err != nil {
 //		// handle error

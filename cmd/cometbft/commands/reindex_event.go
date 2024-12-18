@@ -116,7 +116,7 @@ func loadEventSinks(cfg *cmtcfg.Config, chainID string) (indexer.BlockIndexer, t
 		}
 		return es.BlockIndexer(), es.TxIndexer(), nil
 	case "kv":
-		store, err := cmtdb.NewDB("tx_index", cfg.DBDir())
+		store, err := cmtdb.New("tx_index", cfg.DBDir())
 		if err != nil {
 			return nil, nil, err
 		}

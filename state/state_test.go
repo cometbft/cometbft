@@ -32,7 +32,7 @@ func setupTestCase(t *testing.T) (func(t *testing.T), cmtdb.DB, sm.State) {
 func setupTestCaseWithStore(t *testing.T) (func(t *testing.T), cmtdb.DB, sm.State, sm.Store) {
 	t.Helper()
 	config := test.ResetTestRoot("state_")
-	stateDB, err := cmtdb.NewDB("state", config.DBDir())
+	stateDB, err := cmtdb.New("state", config.DBDir())
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})

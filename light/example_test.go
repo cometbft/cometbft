@@ -42,7 +42,7 @@ func ExampleClient_Update() {
 		stdlog.Fatal(err)
 	}
 
-	db, err := cmtdb.NewDB("light-client-db", dbDir)
+	db, err := cmtdb.New("light-client-db", dbDir)
 	if err != nil {
 		stdlog.Fatal(err)
 	}
@@ -107,7 +107,7 @@ func ExampleClient_VerifyLightBlockAtHeight() {
 		stdlog.Fatal(err)
 	}
 
-	db, err := cmtdb.NewDB("light-client-db", dbDir)
+	db, err := cmtdb.New("light-client-db", dbDir)
 	if err != nil {
 		stdlog.Fatal(err)
 	}

@@ -73,7 +73,7 @@ func NewApplication(db cmtdb.DB, lanePriorities map[string]uint32) *Application 
 // newDB creates a DB engine for persisting the application state.
 func newDB(dbDir string) cmtdb.DB {
 	name := "kvstore"
-	db, err := cmtdb.NewDB(name, dbDir)
+	db, err := cmtdb.New(name, dbDir)
 	if err != nil {
 		panic(fmt.Errorf("failed to create persistent app at %s: %w", dbDir, err))
 	}

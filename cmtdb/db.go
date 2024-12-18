@@ -192,8 +192,8 @@ type Iterator interface {
 	Close() error
 }
 
-// NewDB returns a new database with the given name, located at the given directory.
-func NewDB(name, dir string) (DB, error) {
+// New returns a new database with the given name, located at the given directory.
+func New(name, dir string) (DB, error) {
 	pDB, err := newPebbleDB(name, dir)
 	if err != nil {
 		return nil, fmt.Errorf("creating new database: %w", err)

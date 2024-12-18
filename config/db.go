@@ -32,7 +32,7 @@ func DefaultDBProvider(ctx *DBContext) (cmtdb.DB, error) {
 		dbName = ctx.ID
 		dbDir  = ctx.Config.DBDir()
 	)
-	db, err := cmtdb.NewDB(dbName, dbDir)
+	db, err := cmtdb.New(dbName, dbDir)
 	if err != nil {
 		return nil, fmt.Errorf("database provider: %w", err)
 	}

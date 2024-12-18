@@ -112,12 +112,12 @@ func TestLoadBlockStore(t *testing.T) {
 	_, _, err := loadStateAndBlockStore(cfg)
 	require.Error(t, err)
 
-	blkStore, err := cmtdb.NewDB("blockstore", cfg.DBDir())
+	blkStore, err := cmtdb.New("blockstore", cfg.DBDir())
 	require.NoError(t, err)
 	require.NoError(t, blkStore.Close())
 
 	// Get StateStore
-	sttStore, err := cmtdb.NewDB("state", cfg.DBDir())
+	sttStore, err := cmtdb.New("state", cfg.DBDir())
 	require.NoError(t, err)
 	require.NoError(t, sttStore.Close())
 

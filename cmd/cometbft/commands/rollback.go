@@ -71,7 +71,7 @@ func loadStateAndBlockStore(config *cfg.Config) (*store.BlockStore, state.Store,
 	}
 
 	// Get BlockStore
-	blockStoreDB, err := cmtdb.NewDB("blockstore", config.DBDir())
+	blockStoreDB, err := cmtdb.New("blockstore", config.DBDir())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -82,7 +82,7 @@ func loadStateAndBlockStore(config *cfg.Config) (*store.BlockStore, state.Store,
 	}
 
 	// Get StateStore
-	stateDB, err := cmtdb.NewDB("state", config.DBDir())
+	stateDB, err := cmtdb.New("state", config.DBDir())
 	if err != nil {
 		return nil, nil, err
 	}

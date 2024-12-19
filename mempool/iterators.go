@@ -30,11 +30,14 @@ func (iter *IWRRIterator) advanceIndexes() lane {
 	return iter.sortedLanes[iter.laneIndex]
 }
 
-// Non-blocking version of the IWRR iterator to be used for reaping and
-// rechecking transactions.
+// NonBlockingIterator is a non-blocking version of the IWRR iterator.
+// It is used for reaping and rechecking transactions in a mempool.
 //
-// This iterator does not support changes on the underlying mempool once initialized (or `Reset`),
-// therefore the lock must be held on the mempool when iterating.
+// This iterator does not support changes to the underlying mempool once it is initialized
+// or after a `Reset`. Therefore, the lock must be held on the mempool when iterating to
+// ensure consistency. The iterator will traverse the lanes using the Interleaved Weighted
+// Round Robin (WRR) algorithm, which allows for fair access to transactions based on their
+// priority.
 type NonBlockingIterator struct {
 	IWRRIterator
 }

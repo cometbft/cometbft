@@ -52,7 +52,7 @@ type Manifest struct {
 	DisablePexReactor bool `toml:"disable_pex"`
 
 	// KeyType sets the curve that will be used by validators.
-	// Options are ed25519, secp256k1 and bls12381.
+	// Options are ed25519, secp256k1, secp256k1eth1 and bls12381.
 	KeyType string `toml:"key_type"`
 
 	// Evidence indicates the amount of evidence that will be injected into the

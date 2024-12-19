@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	gogo "github.com/cosmos/gogoproto/types"
@@ -12,6 +13,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 )
 
@@ -25,14 +27,16 @@ const (
 	// MaxBlockPartsCount is the maximum number of block parts.
 	MaxBlockPartsCount = (MaxBlockSizeBytes / BlockPartSizeBytes) + 1
 
-	ABCIPubKeyTypeEd25519   = ed25519.KeyType
-	ABCIPubKeyTypeSecp256k1 = secp256k1.KeyType
-	ABCIPubKeyTypeBls12381  = bls12381.KeyType
+	ABCIPubKeyTypeEd25519      = ed25519.KeyType
+	ABCIPubKeyTypeSecp256k1    = secp256k1.KeyType
+	ABCIPubKeyTypeBls12381     = bls12381.KeyType
+	ABCIPubKeyTypeSecp256k1Eth = secp256k1eth.KeyType
 )
 
 var ABCIPubKeyTypesToNames = map[string]string{
-	ABCIPubKeyTypeEd25519:   ed25519.PubKeyName,
-	ABCIPubKeyTypeSecp256k1: secp256k1.PubKeyName,
+	ABCIPubKeyTypeEd25519:      ed25519.PubKeyName,
+	ABCIPubKeyTypeSecp256k1:    secp256k1.PubKeyName,
+	ABCIPubKeyTypeSecp256k1Eth: secp256k1eth.PubKeyName,
 }
 
 func init() {
@@ -201,13 +205,17 @@ func DefaultSynchronyParams() SynchronyParams {
 	}
 }
 
-func IsValidPubkeyType(params ValidatorParams, pubkeyType string) bool {
-	for i := 0; i < len(params.PubKeyTypes); i++ {
-		if params.PubKeyTypes[i] == pubkeyType {
-			return true
+func IsValidPubkeyType(params ValidatorParams, pubkeyType string) (bool, string) {
+	nKeyTypes := len(params.PubKeyTypes)
+	suppTypes := make([]string, 0, nKeyTypes)
+	for i := 0; i < nKeyTypes; i++ {
+		k := params.PubKeyTypes[i]
+		if k == pubkeyType {
+			return true, ""
 		}
+		suppTypes = append(suppTypes, fmt.Sprintf("%q", k))
 	}
-	return false
+	return false, strings.Join(suppTypes, ", ")
 }
 
 // ValidateBasic validates the ConsensusParams to ensure **all** values are within their

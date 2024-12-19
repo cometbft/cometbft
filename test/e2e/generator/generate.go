@@ -16,6 +16,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/version"
 )
@@ -72,7 +73,7 @@ var (
 	pbtsUpdateHeight           = uniformChoice{int64(-1), int64(0), int64(1)}                // -1: genesis, 0: InitChain, 1: (use offset)
 	pbtsEnabled                = weightedChoice{true: 3, false: 1}
 	pbtsHeightOffset           = uniformChoice{int64(0), int64(10), int64(100)}
-	keyType                    = uniformChoice{ed25519.KeyType, secp256k1.KeyType, bls12381.KeyType}
+	keyType                    = uniformChoice{ed25519.KeyType, secp256k1.KeyType, bls12381.KeyType, secp256k1eth.KeyType}
 	// TODO: reinstate this once the oscillation logic is fixed.
 	// constantFlip               = uniformChoice{true, false}.
 )

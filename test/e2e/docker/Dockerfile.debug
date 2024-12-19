@@ -8,7 +8,7 @@ RUN apt-get -qq install -y zsh vim >/dev/null
 RUN go install github.com/go-delve/delve/cmd/dlv@latest
 
 # Set up build directory /src/cometbft
-ENV COMETBFT_BUILD_OPTIONS badgerdb,rocksdb,nostrip,clock_skew,bls12381
+ENV COMETBFT_BUILD_OPTIONS=badgerdb,rocksdb,nostrip,clock_skew,bls12381
 WORKDIR /src/cometbft
 
 # Fetch dependencies separately (for layer caching)

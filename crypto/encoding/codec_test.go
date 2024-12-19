@@ -10,6 +10,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 )
 
 type unsupportedPubKey struct{}
@@ -34,6 +35,18 @@ func TestPubKeyToFromProto(t *testing.T) {
 
 	// secp256k1
 	pk = secp256k1.GenPrivKey().PubKey()
+	proto, err = PubKeyToProto(pk)
+	require.NoError(t, err)
+
+	pubkey, err = PubKeyFromProto(proto)
+	require.NoError(t, err)
+	assert.Equal(t, pk.Type(), pubkey.Type())
+	assert.Equal(t, pk.Bytes(), pubkey.Bytes())
+	assert.Equal(t, pk.Address(), pubkey.Address())
+	assert.Equal(t, pk.VerifySignature([]byte("msg"), []byte("sig")), pubkey.VerifySignature([]byte("msg"), []byte("sig")))
+
+	// secp256k1eth
+	pk = secp256k1eth.GenPrivKey().PubKey()
 	proto, err = PubKeyToProto(pk)
 	require.NoError(t, err)
 
@@ -86,6 +99,19 @@ func TestPubKeyFromTypeAndBytes(t *testing.T) {
 
 	// secp256k1
 	pk = secp256k1.GenPrivKey().PubKey()
+	pubkey, err = PubKeyFromTypeAndBytes(pk.Type(), pk.Bytes())
+	assert.NoError(t, err)
+	assert.Equal(t, pk.Type(), pubkey.Type())
+	assert.Equal(t, pk.Bytes(), pubkey.Bytes())
+	assert.Equal(t, pk.Address(), pubkey.Address())
+	assert.Equal(t, pk.VerifySignature([]byte("msg"), []byte("sig")), pubkey.VerifySignature([]byte("msg"), []byte("sig")))
+
+	// secp256k1 invalid size
+	_, err = PubKeyFromTypeAndBytes(pk.Type(), pk.Bytes()[:10])
+	assert.Error(t, err)
+
+	// secp256k1eth
+	pk = secp256k1eth.GenPrivKey().PubKey()
 	pubkey, err = PubKeyFromTypeAndBytes(pk.Type(), pk.Bytes())
 	assert.NoError(t, err)
 	assert.Equal(t, pk.Type(), pubkey.Type())

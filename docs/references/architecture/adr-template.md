@@ -40,7 +40,7 @@ Accepted | Rejected | Deprecated | Superseded by
 ## Alternative Approaches
 
 > This section contains information around alternative options that are considered
-> before making a decision. It should contain a explanation on why the alternative
+> before making a decision. It should contain an explanation on why the alternative
 > approach(es) were not chosen.
 
 ## Decision

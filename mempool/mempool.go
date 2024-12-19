@@ -179,8 +179,6 @@ type Entry interface {
 // It allows multiple iterators to run concurrently, enabling
 // parallel processing of mempool entries.
 type Iterator interface {
-	// WaitNextCh returns a channel that signals when the next
-	// available entry is ready for processing. The channel will
-	// receive an Entry when it becomes available.
+	// WaitNextCh returns a channel on which to wait for the next available entry.
 	WaitNextCh() <-chan Entry
 }

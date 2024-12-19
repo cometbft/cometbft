@@ -253,7 +253,7 @@ All these extensions have been verified by the application operating at the sign
 | Extension          | bytes                       | Vote extension provided by the Application running on the sender of the precommit vote, and verified by the local application.                    | Length must be zero if BlockIDFlag is not `Commit`                  |
 | ExtensionSignature | [Signature](#signature)     | Signature of the vote extension.                                                                                                                  a| Length must be > 0 and < than 64 if BlockIDFlag is `Commit`, else 0 |
 | NonRpExtension          | bytes                  | Non replay-protected vote extension provided by the Application running on the sender of the precommit vote, and verified by the local application.| Length must be zero if BlockIDFlag is not `Commit`              |
-| NonRpExtensionSignature | [Signature](#signature)| Signature of the vote extension.                                                                                                                   | Length must be > 0 and < than 64 if BlockIDFlag is `Commit`, else 0 |
+| NonRpExtensionSignature | [Signature](#signature)| Signature of the non replay-protected vote extension.                                                                                                                   | Length must be > 0 and < than 64 if BlockIDFlag is `Commit`, else 0 |
 
 ## BlockIDFlag
 

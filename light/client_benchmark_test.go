@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	dbm "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
 	"github.com/cometbft/cometbft/light/provider"
@@ -26,6 +26,10 @@ var (
 )
 
 func BenchmarkSequence(b *testing.B) {
+	memDB, err := storage.NewMemDB()
+	if err != nil {
+		b.Fatal(err)
+	}
 	c, err := light.NewClient(
 		context.Background(),
 		chainID,
@@ -36,7 +40,7 @@ func BenchmarkSequence(b *testing.B) {
 		},
 		benchmarkFullNode,
 		[]provider.Provider{benchmarkFullNode},
-		dbs.New(dbm.NewMemDB(), chainID),
+		dbs.New(memDB, chainID),
 		light.Logger(log.TestingLogger()),
 		light.SequentialVerification(),
 	)
@@ -54,6 +58,10 @@ func BenchmarkSequence(b *testing.B) {
 }
 
 func BenchmarkBisection(b *testing.B) {
+	memDB, err := storage.NewMemDB()
+	if err != nil {
+		b.Fatal(err)
+	}
 	c, err := light.NewClient(
 		context.Background(),
 		chainID,
@@ -64,7 +72,7 @@ func BenchmarkBisection(b *testing.B) {
 		},
 		benchmarkFullNode,
 		[]provider.Provider{benchmarkFullNode},
-		dbs.New(dbm.NewMemDB(), chainID),
+		dbs.New(memDB, chainID),
 		light.Logger(log.TestingLogger()),
 	)
 	if err != nil {
@@ -82,6 +90,10 @@ func BenchmarkBisection(b *testing.B) {
 
 func BenchmarkBackwards(b *testing.B) {
 	trustedBlock, _ := benchmarkFullNode.LightBlock(context.Background(), 0)
+	memDB, err := storage.NewMemDB()
+	if err != nil {
+		b.Fatal(err)
+	}
 	c, err := light.NewClient(
 		context.Background(),
 		chainID,
@@ -92,7 +104,7 @@ func BenchmarkBackwards(b *testing.B) {
 		},
 		benchmarkFullNode,
 		[]provider.Provider{benchmarkFullNode},
-		dbs.New(dbm.NewMemDB(), chainID),
+		dbs.New(memDB, chainID),
 		light.Logger(log.TestingLogger()),
 	)
 	if err != nil {

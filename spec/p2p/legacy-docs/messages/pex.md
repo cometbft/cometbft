@@ -25,7 +25,7 @@ PexRequest is an empty message requesting a list of peers.
 
 ### PexResponse
 
-PexResponse is an list of net addresses provided to a peer to dial.
+PexResponse is a list of net addresses provided to a peer to dial.
 
 | Name  | Type                               | Description                              | Field Number |
 |-------|------------------------------------|------------------------------------------|--------------|

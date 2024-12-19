@@ -1,4 +1,4 @@
-package cmtdb
+package db
 
 import (
 	"bytes"

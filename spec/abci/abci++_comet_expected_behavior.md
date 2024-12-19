@@ -243,8 +243,8 @@ Introduced in ABCI 1.0:
 
 Introduced in ABCI 2.0:
 
-* `ExtendVote` is to set `ExtendVoteResponse.extension` to an empty byte array and return.
-* `VerifyVoteExtension` must set `VerifyVoteExtensionResponse.accept` to _true_ if the extension is
+* `ExtendVote` is to set `ExtendVoteResponse.VoteExtension` and `ExtendVoteResponse.NonRpExtension` to an empty byte array and return.
+* `VerifyVoteExtension` must set `VerifyVoteExtensionResponse.accept` to _true_ if the extension (replay-protected and non-replay-protected) is
   an empty byte array and _false_ otherwise, then return.
 * `FinalizeBlock` is to coalesce the implementation of methods `BeginBlock`, `DeliverTx`, and
   `EndBlock`. Legacy applications looking to reuse old code that implemented `DeliverTx` should

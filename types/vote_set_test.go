@@ -590,6 +590,7 @@ func TestVoteSet_VoteExtensionsEnabled(t *testing.T) {
 
 			if tc.addExtension {
 				vote.ExtensionSignature = v.ExtensionSignature
+				vote.NonRpExtensionSignature = v.NonRpExtensionSignature
 			}
 
 			added, err := voteSet.AddVote(vote)

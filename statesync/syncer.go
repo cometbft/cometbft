@@ -125,7 +125,7 @@ func (s *syncer) AddPeer(peer p2p.Peer) {
 		ChannelID: SnapshotChannel,
 		Message:   &ssproto.SnapshotsRequest{},
 	}
-	peer.Send(e)
+	_ = peer.Send(e)
 }
 
 // RemovePeer removes a peer from the pool.
@@ -253,7 +253,7 @@ func (s *syncer) Sync(snapshot *snapshot, chunks *chunkQueue) (sm.State, *types.
 	appHash, err := s.stateProvider.AppHash(hctx, snapshot.Height)
 	if err != nil {
 		s.logger.Info("failed to fetch and verify app hash", "err", err)
-		if err == light.ErrNoWitnesses {
+		if errors.Is(err, light.ErrNoWitnesses) {
 			return sm.State{}, nil, err
 		}
 		return sm.State{}, nil, errRejectSnapshot
@@ -280,7 +280,7 @@ func (s *syncer) Sync(snapshot *snapshot, chunks *chunkQueue) (sm.State, *types.
 	state, err := s.stateProvider.State(pctx, snapshot.Height)
 	if err != nil {
 		s.logger.Info("failed to fetch and verify CometBFT state", "err", err)
-		if err == light.ErrNoWitnesses {
+		if errors.Is(err, light.ErrNoWitnesses) {
 			return sm.State{}, nil, err
 		}
 		return sm.State{}, nil, errRejectSnapshot
@@ -288,7 +288,7 @@ func (s *syncer) Sync(snapshot *snapshot, chunks *chunkQueue) (sm.State, *types.
 	commit, err := s.stateProvider.Commit(pctx, snapshot.Height)
 	if err != nil {
 		s.logger.Info("failed to fetch and verify commit", "err", err)
-		if err == light.ErrNoWitnesses {
+		if errors.Is(err, light.ErrNoWitnesses) {
 			return sm.State{}, nil, err
 		}
 		return sm.State{}, nil, errRejectSnapshot
@@ -353,7 +353,7 @@ func (s *syncer) offerSnapshot(snapshot *snapshot) error {
 func (s *syncer) applyChunks(chunks *chunkQueue) error {
 	for {
 		chunk, err := chunks.Next()
-		if err == errDone {
+		if errors.Is(err, errDone) {
 			return nil
 		} else if err != nil {
 			return fmt.Errorf("failed to fetch chunk: %w", err)
@@ -461,7 +461,7 @@ func (s *syncer) requestChunk(snapshot *snapshot, chunk uint32) {
 	}
 	s.logger.Debug("Requesting snapshot chunk", "height", snapshot.Height,
 		"format", snapshot.Format, "chunk", chunk, "peer", peer.ID())
-	peer.Send(p2p.Envelope{
+	_ = peer.Send(p2p.Envelope{
 		ChannelID: ChunkChannel,
 		Message: &ssproto.ChunkRequest{
 			Height: snapshot.Height,

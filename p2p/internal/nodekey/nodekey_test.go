@@ -13,7 +13,7 @@ import (
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 )
 
-func TestLoadOrGenNodeKey(t *testing.T) {
+func TestLoadOrGen(t *testing.T) {
 	filePath := filepath.Join(os.TempDir(), cmtrand.Str(12)+"_peer_id.json")
 
 	nodeKey, err := LoadOrGen(filePath)
@@ -25,7 +25,7 @@ func TestLoadOrGenNodeKey(t *testing.T) {
 	assert.Equal(t, nodeKey, nodeKey2)
 }
 
-func TestLoadNodeKey(t *testing.T) {
+func TestLoad(t *testing.T) {
 	filePath := filepath.Join(os.TempDir(), cmtrand.Str(12)+"_peer_id.json")
 
 	_, err := Load(filePath)
@@ -39,7 +39,7 @@ func TestLoadNodeKey(t *testing.T) {
 	assert.NotNil(t, nodeKey)
 }
 
-func TestNodeKeySaveAs(t *testing.T) {
+func TestNodeKey_SaveAs(t *testing.T) {
 	filePath := filepath.Join(os.TempDir(), cmtrand.Str(12)+"_peer_id.json")
 
 	assert.NoFileExists(t, filePath)

@@ -66,14 +66,14 @@ func NewReactor(
 // StreamDescriptors implements p2p.Reactor.
 func (*Reactor) StreamDescriptors() []p2p.StreamDescriptor {
 	return []p2p.StreamDescriptor{
-		&tcpconn.ChannelDescriptor{
+		tcpconn.StreamDescriptor{
 			ID:                  SnapshotChannel,
 			Priority:            5,
 			SendQueueCapacity:   10,
 			RecvMessageCapacity: snapshotMsgSize,
 			MessageTypeI:        &ssproto.Message{},
 		},
-		&tcpconn.ChannelDescriptor{
+		tcpconn.StreamDescriptor{
 			ID:                  ChunkChannel,
 			Priority:            3,
 			SendQueueCapacity:   10,
@@ -131,7 +131,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 			for _, snapshot := range snapshots {
 				r.Logger.Debug("Advertising snapshot", "height", snapshot.Height,
 					"format", snapshot.Format, "peer", e.Src.ID())
-				e.Src.Send(p2p.Envelope{
+				_ = e.Src.Send(p2p.Envelope{
 					ChannelID: e.ChannelID,
 					Message: &ssproto.SnapshotsResponse{
 						Height:   snapshot.Height,
@@ -186,7 +186,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 			}
 			r.Logger.Debug("Sending chunk", "height", msg.Height, "format", msg.Format,
 				"chunk", msg.Index, "peer", e.Src.ID())
-			e.Src.Send(p2p.Envelope{
+			_ = e.Src.Send(p2p.Envelope{
 				ChannelID: ChunkChannel,
 				Message: &ssproto.ChunkResponse{
 					Height:  msg.Height,

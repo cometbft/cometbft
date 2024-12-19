@@ -679,7 +679,7 @@ func TestAddrBookGroupKey(t *testing.T) {
 
 	for i, tc := range testCases {
 		nip := net.ParseIP(tc.ip)
-		key := groupKeyFor(na.NewFromIPPort(nip, 26656), false)
+		key := groupKeyFor(na.TCPFromIPPort(nip, 26656), false)
 		assert.Equal(t, tc.expKey, key, "#%d", i)
 	}
 
@@ -709,7 +709,7 @@ func TestAddrBookGroupKey(t *testing.T) {
 
 	for i, tc := range testCases {
 		nip := net.ParseIP(tc.ip)
-		key := groupKeyFor(na.NewFromIPPort(nip, 26656), true)
+		key := groupKeyFor(na.TCPFromIPPort(nip, 26656), true)
 		assert.Equal(t, tc.expKey, key, "#%d", i)
 	}
 }

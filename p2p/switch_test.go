@@ -954,9 +954,8 @@ func newRemoteTCPPeerWithPrivKey(privKey crypto.PrivKey) *remoteTCPPeer {
 	}
 }
 
-func (rp *remoteTCPPeer) Addr() *na.NetAddr {
-	na := rp.transport.NetAddr()
-	return &na
+func (rp *remoteTCPPeer) Addr() na.NetAddr {
+	return rp.transport.NetAddr()
 }
 
 func (rp *remoteTCPPeer) ID() nodekey.ID {

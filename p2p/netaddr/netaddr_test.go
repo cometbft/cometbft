@@ -133,8 +133,8 @@ func TestNewFromStrings(t *testing.T) {
 	assert.Len(t, errs, 1)
 }
 
-func TestNewFromIPPort(t *testing.T) {
-	addr := NewFromIPPort(net.ParseIP("127.0.0.1"), 8080)
+func TestTCPFromIPPort(t *testing.T) {
+	addr := TCPFromIPPort(net.ParseIP("127.0.0.1"), 8080)
 	assert.Equal(t, "127.0.0.1:8080", addr.String())
 }
 
@@ -162,31 +162,5 @@ func TestProperties(t *testing.T) {
 		}
 		assert.Equal(t, tc.local, addr.Local())
 		assert.Equal(t, tc.routable, addr.Routable())
-	}
-}
-
-func TestReachabilityTo(t *testing.T) {
-	// TODO add more test cases
-	testCases := []struct {
-		addr         string
-		other        string
-		reachability int
-	}{
-		{
-			"deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@127.0.0.1:8080",
-			"deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@127.0.0.1:8081",
-			0,
-		},
-		{"deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@ya.ru:80", "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@127.0.0.1:8080", 1},
-	}
-
-	for _, tc := range testCases {
-		addr, err := NewFromString(tc.addr)
-		require.NoError(t, err)
-
-		other, err := NewFromString(tc.other)
-		require.NoError(t, err)
-
-		assert.Equal(t, tc.reachability, addr.ReachabilityTo(other))
 	}
 }

@@ -1,7 +1,10 @@
 package quic
 
 import (
+	"context"
+	"crypto/tls"
 	"net"
+	"time"
 
 	quic "github.com/quic-go/quic-go"
 
@@ -11,7 +14,7 @@ import (
 
 type QUIC struct {
 	*quic.Transport
-	lintener *quic.EarlyListener
+	lintener *quic.Listener
 }
 
 var _ transport.Transport = (*QUIC)(nil)
@@ -19,12 +22,7 @@ var _ transport.Transport = (*QUIC)(nil)
 // Listen starts listening for incoming QUIC connections.
 //
 // see net.ResolveUDPAddr.
-func Listen(address string, certFile, keyFile string) (*QUIC, error) {
-	tlsConf, err := CreateTLSConfig(certFile, keyFile)
-	if err != nil {
-		return nil, err
-	}
-
+func Listen(address string, tlsConfig *tls.Config) (*QUIC, error) {
 	netUDPAddr, err := net.ResolveUDPAddr("udp", address)
 	if err != nil {
 		return nil, err
@@ -39,8 +37,10 @@ func Listen(address string, certFile, keyFile string) (*QUIC, error) {
 		Conn: conn,
 	}
 
-	quicConf := &quic.Config{Allow0RTT: true}
-	ln, err := tr.ListenEarly(tlsConf, quicConf)
+	quicConfig := &quic.Config{
+		KeepAlivePeriod: 5 * time.Second,
+	}
+	ln, err := tr.Listen(tlsConfig, quicConfig)
 
 	return &QUIC{
 		Transport: tr,
@@ -53,7 +53,12 @@ func (q *QUIC) NetAddr() na.NetAddr {
 }
 
 func (q *QUIC) Accept() (transport.Conn, *na.NetAddr, error) {
-	panic("implement me")
+		conn, err := q.lintener.Accept(context.Background())
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return conn, na.New, nil
 }
 
 func (q *QUIC) Dial(addr na.NetAddr) (transport.Conn, error) {

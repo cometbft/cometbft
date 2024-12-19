@@ -270,7 +270,7 @@ func MakeSwitch(
 
 func testInboundPeerConn(
 	conn transport.Conn,
-	socketAddr *na.NetAddr,
+	socketAddr na.NetAddr,
 ) (peerConn, error) {
 	return testPeerConn(conn, false, false, socketAddr)
 }
@@ -278,7 +278,7 @@ func testInboundPeerConn(
 func testPeerConn(
 	conn transport.Conn,
 	outbound, persistent bool,
-	socketAddr *na.NetAddr,
+	socketAddr na.NetAddr,
 ) (pc peerConn, err error) {
 	return newPeerConn(outbound, persistent, conn, socketAddr), nil
 }
@@ -294,26 +294,26 @@ type AddrBookMock struct {
 
 var _ AddrBook = (*AddrBookMock)(nil)
 
-func (book *AddrBookMock) AddAddress(addr *na.NetAddr, _ *na.NetAddr) error {
+func (book *AddrBookMock) AddAddress(addr na.NetAddr, _ na.NetAddr) error {
 	book.Addrs[addr.String()] = struct{}{}
 	return nil
 }
 
-func (book *AddrBookMock) AddOurAddress(addr *na.NetAddr) {
+func (book *AddrBookMock) AddOurAddress(addr na.NetAddr) {
 	book.OurAddrs[addr.String()] = struct{}{}
 }
 
-func (book *AddrBookMock) OurAddress(addr *na.NetAddr) bool {
+func (book *AddrBookMock) OurAddress(addr na.NetAddr) bool {
 	_, ok := book.OurAddrs[addr.String()]
 	return ok
 }
 func (*AddrBookMock) MarkGood(nodekey.ID) {}
-func (book *AddrBookMock) HasAddress(addr *na.NetAddr) bool {
+func (book *AddrBookMock) HasAddress(addr na.NetAddr) bool {
 	_, ok := book.Addrs[addr.String()]
 	return ok
 }
 
-func (book *AddrBookMock) RemoveAddress(addr *na.NetAddr) {
+func (book *AddrBookMock) RemoveAddress(addr na.NetAddr) {
 	delete(book.Addrs, addr.String())
 }
 func (*AddrBookMock) Save() {}
@@ -324,11 +324,11 @@ func (book *AddrBookMock) AddPrivateIDs(addrs []string) {
 }
 
 type mockNodeInfo struct {
-	addr *na.NetAddr
+	addr na.NetAddr
 }
 
 func (ni mockNodeInfo) ID() nodekey.ID                                      { return ni.addr.ID }
-func (ni mockNodeInfo) NetAddr() (*na.NetAddr, error)                       { return ni.addr, nil }
+func (ni mockNodeInfo) NetAddr() (na.NetAddr, error)                        { return ni.addr, nil }
 func (mockNodeInfo) Validate() error                                        { return nil }
 func (mockNodeInfo) CompatibleWith(ni.NodeInfo) error                       { return nil }
 func (mockNodeInfo) Handshake(net.Conn, time.Duration) (ni.NodeInfo, error) { return nil, nil }

@@ -29,7 +29,7 @@ func NewPeer(ip net.IP) *Peer {
 	if ip == nil {
 		_, netAddr = na.CreateRoutableAddr()
 	} else {
-		netAddr = na.NewFromIPPort(ip, 26656)
+		netAddr = na.TCPFromIPPort(ip, 26656)
 	}
 	nodeKey := nodekey.NodeKey{PrivKey: ed25519.GenPrivKey()}
 	netAddr.ID = nodeKey.ID()

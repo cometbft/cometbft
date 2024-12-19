@@ -18,11 +18,11 @@ import (
 const testCh = 0x01
 
 type mockNodeInfo struct {
-	addr *na.NetAddr
+	addr na.NetAddr
 }
 
 func (ni mockNodeInfo) ID() nodekey.ID                                   { return ni.addr.ID }
-func (ni mockNodeInfo) NetAddr() (*na.NetAddr, error)                    { return ni.addr, nil }
+func (ni mockNodeInfo) NetAddr() (na.NetAddr, error)                     { return ni.addr, nil }
 func (mockNodeInfo) Validate() error                                     { return nil }
 func (mockNodeInfo) CompatibleWith(NodeInfo) error                       { return nil }
 func (mockNodeInfo) Handshake(net.Conn, time.Duration) (NodeInfo, error) { return nil, nil }

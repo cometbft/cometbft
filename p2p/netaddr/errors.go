@@ -22,12 +22,11 @@ func (e ErrNoID) Error() string {
 }
 
 type ErrInvalid struct {
-	Addr string
-	Err  error
+	Err error
 }
 
 func (e ErrInvalid) Error() string {
-	return fmt.Sprintf("invalid address (%s): %v", e.Addr, e.Err)
+	return "invalid address" + e.Err.Error()
 }
 
 func (e ErrInvalid) Unwrap() error { return e.Err }

@@ -54,7 +54,7 @@ on the following components.
 ### TODOs
 
 We decided to merge the files while there are still open points to
-address to record the current state an move forward. In particular,
+address to record the current state a move forward. In particular,
 the following points need to be addressed:
 
 - <https://github.com/informalsystems/tendermint-rs/pull/479#discussion_r466504876>

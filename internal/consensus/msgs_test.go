@@ -362,7 +362,7 @@ func TestWALMsgProto(t *testing.T) {
 
 			if !tt.wantErr {
 				require.NoError(t, err)
-				assert.Equal(t, tt.msg, msg, tt.testName) // need the concrete type as WAL Message is a empty interface
+				assert.Equal(t, tt.msg, msg, tt.testName) // need the concrete type as WAL Message is an empty interface
 			} else {
 				require.Error(t, err, tt.testName)
 			}

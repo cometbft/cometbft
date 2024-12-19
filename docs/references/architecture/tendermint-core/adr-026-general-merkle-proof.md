@@ -29,7 +29,7 @@ Since a proof can treat various data type, `Run()` takes `[][]byte` as the argum
 
 ### ProofOp
 
-`type ProofOp` is a protobuf message which is a triple of `Type string`, `Key []byte`, and `Data []byte`. `ProofOperator` and `ProofOp`are interconvertible, using `ProofOperator.ProofOp()` and `OpDecoder()`, where `OpDecoder` is a function that each proof type can register for their own encoding scheme. For example, we can add an byte for encoding scheme before the serialized proof, supporting JSON decoding.
+`type ProofOp` is a protobuf message which is a triple of `Type string`, `Key []byte`, and `Data []byte`. `ProofOperator` and `ProofOp`are interconvertible, using `ProofOperator.ProofOp()` and `OpDecoder()`, where `OpDecoder` is a function that each proof type can register for their own encoding scheme. For example, we can add a byte for encoding scheme before the serialized proof, supporting JSON decoding.
 
 ## Status
 

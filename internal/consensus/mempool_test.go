@@ -12,7 +12,7 @@ import (
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/cmtdb"
+	cmtdb "github.com/cometbft/cometbft/db"
 	mempl "github.com/cometbft/cometbft/mempool"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"

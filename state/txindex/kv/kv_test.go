@@ -13,7 +13,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/cmtdb"
+	cmtdb "github.com/cometbft/cometbft/db"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"

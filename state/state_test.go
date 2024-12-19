@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/cmtdb"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	cmtdb "github.com/cometbft/cometbft/db"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
 	sm "github.com/cometbft/cometbft/state"

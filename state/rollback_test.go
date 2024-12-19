@@ -9,9 +9,9 @@ import (
 
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
-	"github.com/cometbft/cometbft/cmtdb"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/mocks"
 	"github.com/cometbft/cometbft/store"

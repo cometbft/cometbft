@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	abcitypes "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/cmtdb"
 	cmtcfg "github.com/cometbft/cometbft/config"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/test"
 	blockmocks "github.com/cometbft/cometbft/state/indexer/mocks"
 	"github.com/cometbft/cometbft/state/mocks"

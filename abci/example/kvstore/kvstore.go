@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/cmtdb"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/version"
 )

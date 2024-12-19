@@ -14,8 +14,8 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
-	"github.com/cometbft/cometbft/cmtdb"
 	cfg "github.com/cometbft/cometbft/config"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	mpmocks "github.com/cometbft/cometbft/mempool/mocks"

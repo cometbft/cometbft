@@ -19,8 +19,8 @@ import (
 	typesv1 "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	typesv1beta1 "github.com/cometbft/cometbft/api/cometbft/types/v1beta1"
 	typesv1beta2 "github.com/cometbft/cometbft/api/cometbft/types/v1beta2"
-	"github.com/cometbft/cometbft/cmtdb"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	cmtdb "github.com/cometbft/cometbft/db"
 	sm "github.com/cometbft/cometbft/state"
 )
 

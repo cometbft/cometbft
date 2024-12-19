@@ -2,7 +2,7 @@ package state
 
 import (
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/cmtdb"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/types"
 )
 

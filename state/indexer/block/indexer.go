@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/cometbft/cometbft/cmtdb"
 	"github.com/cometbft/cometbft/config"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/state/indexer"
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 	blockidxnull "github.com/cometbft/cometbft/state/indexer/block/null"

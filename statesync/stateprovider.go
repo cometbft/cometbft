@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
-	"github.com/cometbft/cometbft/cmtdb"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/light"

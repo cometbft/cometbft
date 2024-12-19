@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
-	"github.com/cometbft/cometbft/cmtdb"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/evidence"
 	"github.com/cometbft/cometbft/internal/evidence/mocks"
 	"github.com/cometbft/cometbft/internal/test"

@@ -769,7 +769,7 @@ func (vals *ValidatorSet) VerifyCommitLightTrusting(
 	return VerifyCommitLightTrusting(chainID, vals, commit, trustLevel)
 }
 
-// VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
+// VerifyCommitLightTrustingWithCache verifies that trustLevel of the validator set signed
 // this commit.
 // It does NOT count all signatures.
 // CONTRACT: must run ValidateBasic() on commit before verifying.
@@ -786,7 +786,7 @@ func (vals *ValidatorSet) VerifyCommitLightTrustingWithCache(
 	return VerifyCommitLightTrustingWithCache(chainID, vals, commit, trustLevel, verifiedSignatureCache)
 }
 
-// VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
+// VerifyCommitLightTrustingAllSignatures verifies that trustLevel of the validator set signed
 // this commit.
 // It DOES count all signatures.
 // CONTRACT: must run ValidateBasic() on commit before verifying.

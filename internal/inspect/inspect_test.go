@@ -31,9 +31,12 @@ func TestInspectConstructor(t *testing.T) {
 	t.Cleanup(leaktest.Check(t))
 	defer func() { _ = os.RemoveAll(cfg.RootDir) }()
 	t.Run("from config", func(t *testing.T) {
-		d, err := inspect.NewFromConfig(cfg)
+		i, err := inspect.NewFromConfig(cfg)
 		require.NoError(t, err)
-		require.NotNil(t, d)
+		require.NotNil(t, i)
+
+		err = i.Close()
+		require.NoError(t, err)
 	})
 }
 
@@ -45,6 +48,7 @@ func TestInspectRun(t *testing.T) {
 		d, err := inspect.NewFromConfig(cfg)
 		require.NoError(t, err)
 		ctx, cancel := context.WithCancel(context.Background())
+
 		stoppedWG := &sync.WaitGroup{}
 		stoppedWG.Add(1)
 		go func() {
@@ -71,6 +75,8 @@ func TestBlock(t *testing.T) {
 	blockStoreMock.On("Close").Return(nil)
 
 	txIndexerMock := &txindexmocks.TxIndexer{}
+	txIndexerMock.On("Close").Return(nil)
+
 	blkIdxMock := &indexermocks.BlockIndexer{}
 
 	rpcConfig := config.TestRPCConfig()
@@ -118,6 +124,7 @@ func TestTxSearch(t *testing.T) {
 	blockStoreMock := &statemocks.BlockStore{}
 	blockStoreMock.On("Close").Return(nil)
 	txIndexerMock := &txindexmocks.TxIndexer{}
+	txIndexerMock.On("Close").Return(nil)
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	txIndexerMock.On("Search", mock.Anything,
 		mock.MatchedBy(func(q *query.Query) bool {
@@ -172,6 +179,7 @@ func TestTx(t *testing.T) {
 	txIndexerMock.On("Get", testHash).Return(&abcitypes.TxResult{
 		Tx: testTx,
 	}, nil)
+	txIndexerMock.On("Close").Return(nil)
 
 	rpcConfig := config.TestRPCConfig()
 	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock)
@@ -220,6 +228,8 @@ func TestConsensusParams(t *testing.T) {
 		},
 	}, nil)
 	txIndexerMock := &txindexmocks.TxIndexer{}
+	txIndexerMock.On("Close").Return(nil)
+
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
 	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock)
@@ -270,6 +280,7 @@ func TestBlockResults(t *testing.T) {
 	blockStoreMock.On("Base").Return(int64(0))
 	blockStoreMock.On("Height").Return(testHeight)
 	txIndexerMock := &txindexmocks.TxIndexer{}
+	txIndexerMock.On("Close").Return(nil)
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
 	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock)
@@ -317,6 +328,7 @@ func TestCommit(t *testing.T) {
 		Round:  testRound,
 	}, nil)
 	txIndexerMock := &txindexmocks.TxIndexer{}
+	txIndexerMock.On("Close").Return(nil)
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
 	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock)
@@ -369,6 +381,7 @@ func TestBlockByHash(t *testing.T) {
 		},
 	}, nil)
 	txIndexerMock := &txindexmocks.TxIndexer{}
+	txIndexerMock.On("Close").Return(nil)
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
 	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock)
@@ -421,6 +434,7 @@ func TestBlockchain(t *testing.T) {
 		},
 	})
 	txIndexerMock := &txindexmocks.TxIndexer{}
+	txIndexerMock.On("Close").Return(nil)
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
 	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock)
@@ -473,6 +487,7 @@ func TestValidators(t *testing.T) {
 	blockStoreMock.On("Height").Return(testHeight)
 	blockStoreMock.On("Base").Return(int64(0))
 	txIndexerMock := &txindexmocks.TxIndexer{}
+	txIndexerMock.On("Close").Return(nil)
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
 	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock)
@@ -520,6 +535,7 @@ func TestBlockSearch(t *testing.T) {
 	blockStoreMock.On("Close").Return(nil)
 
 	txIndexerMock := &txindexmocks.TxIndexer{}
+	txIndexerMock.On("Close").Return(nil)
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	blockStoreMock.On("LoadBlock", testHeight).Return(&types.Block{
 		Header: types.Header{

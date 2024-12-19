@@ -3,13 +3,31 @@ package conn
 import (
 	"errors"
 	"fmt"
+
+	"github.com/cometbft/cometbft/p2p/transport"
 )
 
 var (
 	ErrInvalidSecretConnKeySend = errors.New("send invalid secret connection key")
 	ErrInvalidSecretConnKeyRecv = errors.New("invalid receive SecretConnection Key")
 	ErrChallengeVerification    = errors.New("challenge verification failed")
+
+	// ErrTimeout is returned when a read or write operation times out.
+	ErrTimeout = errors.New("read/write timeout")
 )
+
+// ErrWriteQueueFull is returned when the write queue is full.
+type ErrWriteQueueFull struct{}
+
+var _ transport.WriteError = ErrWriteQueueFull{}
+
+func (ErrWriteQueueFull) Error() string {
+	return "write queue is full"
+}
+
+func (ErrWriteQueueFull) Full() bool {
+	return true
+}
 
 // ErrPacketWrite Packet error when writing.
 type ErrPacketWrite struct {

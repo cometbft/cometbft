@@ -67,7 +67,7 @@ func TestReactor_Receive_ChunkRequest(t *testing.T) {
 					err = proto.Unmarshal(bz, e.Message)
 					require.NoError(t, err)
 					response = e.Message.(*ssproto.ChunkResponse)
-				}).Return(true)
+				}).Return(nil)
 			}
 
 			// Start a reactor and send a ssproto.ChunkRequest, then wait for and check response
@@ -156,7 +156,7 @@ func TestReactor_Receive_SnapshotsRequest(t *testing.T) {
 					err = proto.Unmarshal(bz, e.Message)
 					require.NoError(t, err)
 					responses = append(responses, e.Message.(*ssproto.SnapshotsResponse))
-				}).Return(true)
+				}).Return(nil)
 			}
 
 			// Start a reactor and send a SnapshotsRequestMessage, then wait for and check responses

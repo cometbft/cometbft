@@ -705,15 +705,23 @@ func TestMempoolTxsBytes(t *testing.T) {
 	mp.Flush()
 	assert.EqualValues(t, 0, mp.SizeBytes())
 
+	require.NotEqual(t, len(mp.sortedLanes), 0)
 	// 5. ErrLaneIsFull is returned when/if the limit on the lane bytes capacity is reached.
+
+	// According to the logic of assigning transactions in kvstore,
+	// a lane is assigned only if the key is an integer.
+	// We make sure that the transaction here goes to the default lane
+	// so that the lane overflows. So tx3 and tx4 go to the same lane
 	laneMaxBytes := int(cfg.Mempool.MaxTxsBytes) / len(mp.sortedLanes)
-	tx3 := kvstore.NewRandomTx(laneMaxBytes)
+	tx3 := kvstore.NewTx("B", cmtrand.Str(laneMaxBytes-2))
+
 	rr, err := mp.CheckTx(tx3, "")
 	require.NoError(t, err)
 	require.NoError(t, rr.Error())
 
-	tx4 := kvstore.NewRandomTx(10)
+	tx4 := kvstore.NewTx("A", "10")
 	rr, err = mp.CheckTx(tx4, "")
+
 	require.NoError(t, err)
 	require.ErrorAs(t, rr.Error(), &ErrLaneIsFull{})
 

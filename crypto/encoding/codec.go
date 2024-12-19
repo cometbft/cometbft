@@ -112,14 +112,19 @@ func PubKeyFromProto(k pc.PublicKey) (crypto.PubKey, error) {
 			return nil, ErrUnsupportedKey{KeyType: bls12381.KeyType}
 		}
 
-		if len(k.Bls12381) != bls12381.PubKeySize {
+		switch len(k.Bls12381) {
+		case bls12381.PubKeySize:
+			return bls12381.NewPublicKeyFromBytes(k.Bls12381)
+		case bls12381.PubKeyCompressedSize:
+			return bls12381.NewPublicKeyFromCompressedBytes(k.Bls12381)
+		default:
 			return nil, ErrInvalidKeyLen{
 				Key:  k,
 				Got:  len(k.Bls12381),
 				Want: bls12381.PubKeySize,
 			}
 		}
-		return bls12381.NewPublicKeyFromBytes(k.Bls12381)
+
 	default:
 		kt := reflect.TypeOf(k)
 		if kt == nil {
@@ -165,15 +170,19 @@ func PubKeyFromTypeAndBytes(pkType string, bytes []byte) (crypto.PubKey, error) 
 			return nil, ErrUnsupportedKey{KeyType: pkType}
 		}
 
-		if len(bytes) != bls12381.PubKeySize {
+		switch len(bytes) {
+		case bls12381.PubKeySize:
+			return bls12381.NewPublicKeyFromBytes(bytes)
+		case bls12381.PubKeyCompressedSize:
+			return bls12381.NewPublicKeyFromCompressedBytes(bytes)
+		default:
 			return nil, ErrInvalidKeyLen{
-				Key:  pkType,
+				Key:  bytes,
 				Got:  len(bytes),
 				Want: bls12381.PubKeySize,
 			}
 		}
 
-		return bls12381.NewPublicKeyFromBytes(bytes)
 	default:
 		return nil, ErrUnsupportedKey{KeyType: pkType}
 	}

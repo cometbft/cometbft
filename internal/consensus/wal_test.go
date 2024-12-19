@@ -17,10 +17,10 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/autofile"
 	"github.com/cometbft/cometbft/internal/consensus/types"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	sm "github.com/cometbft/cometbft/state"
@@ -373,7 +373,7 @@ func makeState(nVals int, chainID string) (sm.State, map[string]cmttypes.PrivVal
 		ConsensusParams: test.ConsensusParams(),
 	})
 
-	stateDB, err := storage.NewMemDB()
+	stateDB, err := cmtdb.NewInMem()
 	if err != nil {
 		panic(err)
 	}

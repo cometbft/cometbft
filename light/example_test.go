@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
-	"github.com/cometbft/cometbft/internal/storage"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
 	"github.com/cometbft/cometbft/light/provider"
@@ -42,7 +42,7 @@ func ExampleClient_Update() {
 		stdlog.Fatal(err)
 	}
 
-	db, err := storage.NewDB("light-client-db", dbDir)
+	db, err := cmtdb.New("light-client-db", dbDir)
 	if err != nil {
 		stdlog.Fatal(err)
 	}
@@ -107,7 +107,7 @@ func ExampleClient_VerifyLightBlockAtHeight() {
 		stdlog.Fatal(err)
 	}
 
-	db, err := storage.NewDB("light-client-db", dbDir)
+	db, err := cmtdb.New("light-client-db", dbDir)
 	if err != nil {
 		stdlog.Fatal(err)
 	}

@@ -19,7 +19,7 @@ var (
 	ErrInvalidSignature = errors.New("ed25519: invalid signature")
 )
 
-// ErrInvalidKeyLen describes an error resulting from an passing in a
+// ErrInvalidKeyLen describes an error resulting from a passing in a
 // key with an invalid key in the call to [BatchVerifier.Add].
 type ErrInvalidKeyLen struct {
 	Got, Want int

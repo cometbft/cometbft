@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
+	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v2"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"

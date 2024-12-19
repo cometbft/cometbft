@@ -15,7 +15,7 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	abcimocks "github.com/cometbft/cometbft/abci/types/mocks"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
@@ -2196,10 +2196,11 @@ func TestExtendVoteCalledWhenEnabled(t *testing.T) {
 				addr := pv.Address()
 				if testCase.enabled {
 					m.AssertCalled(t, "VerifyVoteExtension", context.TODO(), &abci.VerifyVoteExtensionRequest{
-						Hash:             blockID.Hash,
-						ValidatorAddress: addr,
-						Height:           height,
-						VoteExtension:    []byte("extension"),
+						Hash:               blockID.Hash,
+						ValidatorAddress:   addr,
+						Height:             height,
+						VoteExtension:      []byte("extension"),
+						NonRpVoteExtension: []byte("non_replay_protected_extension"),
 					})
 				} else {
 					m.AssertNotCalled(t, "VerifyVoteExtension", mock.Anything, mock.Anything)
@@ -2271,10 +2272,11 @@ func TestVerifyVoteExtensionNotCalledOnAbsentPrecommit(t *testing.T) {
 	addr = pv.Address()
 
 	m.AssertNotCalled(t, "VerifyVoteExtension", context.TODO(), &abci.VerifyVoteExtensionRequest{
-		Hash:             blockID.Hash,
-		ValidatorAddress: addr,
-		Height:           height,
-		VoteExtension:    []byte("extension"),
+		Hash:               blockID.Hash,
+		ValidatorAddress:   addr,
+		Height:             height,
+		VoteExtension:      []byte("extension"),
+		NonRpVoteExtension: []byte("non_replay_protected_extension"),
 	})
 }
 
@@ -2292,10 +2294,17 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 		[]byte("extension 2"),
 		[]byte("extension 3"),
 	}
+	nonRpVoteExtensions := [][]byte{
+		[]byte("nrp-extension 0"),
+		[]byte("nrp-extension 1"),
+		[]byte("nrp-extension 2"),
+		[]byte("nrp-extension 3"),
+	}
 
 	m := abcimocks.NewApplication(t)
 	m.On("ExtendVote", mock.Anything, mock.Anything).Return(&abci.ExtendVoteResponse{
-		VoteExtension: voteExtensions[0],
+		VoteExtension:  voteExtensions[0],
+		NonRpExtension: nonRpVoteExtensions[0],
 	}, nil)
 	m.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ProcessProposalResponse{Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil)
 
@@ -2334,7 +2343,8 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 
 	// create a precommit for each validator with the associated vote extension.
 	for i, vs := range vss[1:] {
-		signAddPrecommitWithExtension(t, cs1, chainID, blockID, voteExtensions[i+1], vs)
+		signAddPrecommitWithExtension(t, cs1, chainID, blockID,
+			voteExtensions[i+1], nonRpVoteExtensions[i+1], vs)
 	}
 
 	ensurePrevote(voteCh, height, round)
@@ -2362,6 +2372,7 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 	for i := range vss {
 		vote := &rpp.LocalLastCommit.Votes[i]
 		require.Equal(t, vote.VoteExtension, voteExtensions[i])
+		require.Equal(t, vote.NonRpVoteExtension, nonRpVoteExtensions[i])
 
 		require.NotZero(t, len(vote.ExtensionSignature))
 		cve := cmtproto.CanonicalVoteExtension{
@@ -2555,13 +2566,14 @@ func TestVoteExtensionEnableHeight(t *testing.T) {
 			signAddVotes(cs1, types.PrevoteType, chainID, blockID, false, vss[1:]...)
 			ensurePrevoteMatch(t, voteCh, height, round, rs.ProposalBlock.Hash())
 
-			var ext []byte
+			var ext, nrpExt []byte
 			if testCase.hasExtension {
 				ext = []byte("extension")
+				nrpExt = []byte("nrp-extension")
 			}
 
 			for _, vs := range vss[1:] {
-				vote, err := vs.signVote(types.PrecommitType, chainID, blockID, ext, testCase.hasExtension, vs.clock.Now())
+				vote, err := vs.signVote(types.PrecommitType, chainID, blockID, ext, nrpExt, testCase.hasExtension, vs.clock.Now())
 				require.NoError(t, err)
 				addVotes(cs1, vote)
 			}
@@ -3252,10 +3264,11 @@ func signAddPrecommitWithExtension(
 	chainID string,
 	blockID types.BlockID,
 	extension []byte,
+	nonRpExtension []byte,
 	stub *validatorStub,
 ) {
 	t.Helper()
-	v, err := stub.signVote(types.PrecommitType, chainID, blockID, extension, true, stub.clock.Now())
+	v, err := stub.signVote(types.PrecommitType, chainID, blockID, extension, nonRpExtension, true, stub.clock.Now())
 	require.NoError(t, err, "failed to sign vote")
 	addVotes(cs, v)
 }

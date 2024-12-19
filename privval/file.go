@@ -9,7 +9,7 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtos "github.com/cometbft/cometbft/internal/os"
@@ -347,18 +347,23 @@ func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote, signExtension bo
 		// re-sign the vote extensions of precommits. For prevotes and nil
 		// precommits, the extension signature will always be empty.
 		// Even if the signed over data is empty, we still add the signature
-		var extSig []byte
+		var extSig, nonRpExtSig []byte
 		if vote.Type == types.PrecommitType && !types.ProtoBlockIDIsNil(&vote.BlockID) {
-			extSignBytes := types.VoteExtensionSignBytes(chainID, vote)
+			extSignBytes, nonRpExtSignBytes := types.VoteExtensionSignBytes(chainID, vote)
 			extSig, err = pv.Key.PrivKey.Sign(extSignBytes)
 			if err != nil {
 				return err
 			}
-		} else if len(vote.Extension) > 0 {
+			nonRpExtSig, err = pv.Key.PrivKey.Sign(nonRpExtSignBytes)
+			if err != nil {
+				return err
+			}
+		} else if len(vote.Extension) > 0 || len(vote.NonRpExtension) > 0 {
 			return errors.New("unexpected vote extension - extensions are only allowed in non-nil precommits")
 		}
 
 		vote.ExtensionSignature = extSig
+		vote.NonRpExtensionSignature = nonRpExtSig
 	}
 
 	// We might crash before writing to the wal,

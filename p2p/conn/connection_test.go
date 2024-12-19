@@ -698,6 +698,49 @@ func TestMConnectionMaxChannelSizeUnreached(t *testing.T) {
 
 }
 
+func TestMConnectionMaxByteSizeReached(t *testing.T) {
+	log.TestingLogger().Info("TestMConnectionSendMsgRecvQueueSize")
+	chOnErr := make(chan struct{})
+	chOnRcv := make(chan struct{})
+
+	mconnClient, mconnServer := newClientAndServerConnsForReadErrorsWithQueueSize(t, chOnErr)
+	defer mconnClient.Stop() //nolint:errcheck // ignore for tests
+	defer mconnServer.Stop() //nolint:errcheck // ignore for tests
+
+	//onReceiveDone := make(chan struct{})
+
+	mconnServer.onReceive = func(chID byte, msgBytes []byte) {
+		log.TestingLogger().Info(":- onReceive called")
+		//<-onReceiveDone
+		time.Sleep(10 * time.Millisecond)
+		chOnRcv <- struct{}{}
+	}
+
+	mconnServer._maxPacketMsgSize = defaultRecvMessageCapacity * 2
+	mconnServer.msgRecvQueue = make(chan ConnMsg, 100000)
+	client := mconnClient.conn
+	protoWriter := protoio.NewDelimitedWriter(client)
+
+	// send msg thats just right
+	var packet = tmp2p.PacketMsg{
+		ChannelID: 0x01,
+		EOF:       true,
+		Data:      make([]byte, defaultRecvMessageCapacity/2+1000),
+	}
+	var err error
+	_, err = protoWriter.WriteMsg(mustWrapPacket(&packet))
+	require.NoError(t, err)
+
+	_, err = protoWriter.WriteMsg(mustWrapPacket(&packet))
+	require.NoError(t, err)
+
+	//require.NoError(t, err)
+	//assert.True(t, expectSend(chOnRcv))
+	_, err = protoWriter.WriteMsg(mustWrapPacket(&packet))
+	require.Error(t, err, "read/write on closed pipe")
+
+}
+
 func newClientAndServerConnsForReadErrorsWithQueueSize(
 	t *testing.T,
 	chOnErr chan struct{}) (*MConnection, *MConnection) {

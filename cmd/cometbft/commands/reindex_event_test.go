@@ -11,7 +11,6 @@ import (
 
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmtcfg "github.com/cometbft/cometbft/config"
-	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/test"
 	blockmocks "github.com/cometbft/cometbft/state/indexer/mocks"
 	"github.com/cometbft/cometbft/state/mocks"
@@ -112,12 +111,20 @@ func TestLoadBlockStore(t *testing.T) {
 	_, _, err := loadStateAndBlockStore(cfg)
 	require.Error(t, err)
 
-	blkStore, err := cmtdb.New("blockstore", cfg.DBDir())
+	dbCtx := &cmtcfg.DBContext{
+		ID:     "blockstore",
+		Config: cfg,
+	}
+	blkStore, err := cmtcfg.DefaultDBProvider(dbCtx)
 	require.NoError(t, err)
 	require.NoError(t, blkStore.Close())
 
 	// Get StateStore
-	sttStore, err := cmtdb.New("state", cfg.DBDir())
+	dbCtx = &cmtcfg.DBContext{
+		ID:     "state",
+		Config: cfg,
+	}
+	sttStore, err := cmtcfg.DefaultDBProvider(dbCtx)
 	require.NoError(t, err)
 	require.NoError(t, sttStore.Close())
 

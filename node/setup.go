@@ -18,10 +18,10 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/blocksync"
 	cs "github.com/cometbft/cometbft/internal/consensus"
 	"github.com/cometbft/cometbft/internal/evidence"
-	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
@@ -160,7 +160,7 @@ type blockSyncReactor interface {
 
 // ------------------------------------------------------------------------------
 
-func initDBs(config *cfg.Config, dbProvider cfg.DBProvider) (bsDB storage.DB, stateDB storage.DB, err error) {
+func initDBs(config *cfg.Config, dbProvider cfg.DBProvider) (bsDB cmtdb.DB, stateDB cmtdb.DB, err error) {
 	bsDB, err = dbProvider(&cfg.DBContext{ID: "blockstore", Config: config})
 	if err != nil {
 		return nil, nil, err
@@ -627,7 +627,7 @@ var (
 )
 
 func LoadStateFromDBOrGenesisDocProviderWithConfig(
-	stateDB storage.DB,
+	stateDB cmtdb.DB,
 	genesisDocProvider GenesisDocProvider,
 	operatorGenesisHashHex string,
 	config *cfg.Config,
@@ -697,7 +697,7 @@ func LoadStateFromDBOrGenesisDocProviderWithConfig(
 // Note that if you don't have a version of the key layout set in your DB already,
 // and no config is passed, it will default to v1.
 func LoadStateFromDBOrGenesisDocProvider(
-	stateDB storage.DB,
+	stateDB cmtdb.DB,
 	genesisDocProvider GenesisDocProvider,
 	operatorGenesisHashHex string,
 ) (sm.State, *types.GenesisDoc, error) {

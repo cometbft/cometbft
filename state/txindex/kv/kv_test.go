@@ -13,8 +13,8 @@ import (
 	"golang.org/x/exp/slices"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtdb "github.com/cometbft/cometbft/db"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 	"github.com/cometbft/cometbft/state/txindex"
@@ -29,7 +29,7 @@ var DefaultPagination = txindex.Pagination{
 }
 
 func TestTxIndex(t *testing.T) {
-	indexerDB, err := storage.NewMemDB()
+	indexerDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	indexer := NewTxIndex(indexerDB)
 
@@ -77,7 +77,7 @@ func TestTxIndex(t *testing.T) {
 }
 
 func TestTxIndex_Prune(t *testing.T) {
-	indexerDB, err := storage.NewMemDB()
+	indexerDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	indexer := NewTxIndex(indexerDB)
 
@@ -154,7 +154,7 @@ func TestTxIndex_Prune(t *testing.T) {
 }
 
 func TestTxSearch(t *testing.T) {
-	indexerDB, err := storage.NewMemDB()
+	indexerDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	indexer := NewTxIndex(indexerDB)
 
@@ -244,7 +244,7 @@ func TestTxSearch(t *testing.T) {
 }
 
 func TestTxSearchEventMatch(t *testing.T) {
-	indexerDB, err := storage.NewMemDB()
+	indexerDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	indexer := NewTxIndex(indexerDB)
 
@@ -338,7 +338,7 @@ func TestTxSearchEventMatch(t *testing.T) {
 }
 
 func TestTxSearchEventMatchByHeight(t *testing.T) {
-	indexerDB, err := storage.NewMemDB()
+	indexerDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	indexer := NewTxIndex(indexerDB)
 
@@ -420,7 +420,7 @@ func TestTxSearchEventMatchByHeight(t *testing.T) {
 }
 
 func TestTxSearchWithCancelation(t *testing.T) {
-	indexerDB, err := storage.NewMemDB()
+	indexerDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	indexer := NewTxIndex(indexerDB)
 
@@ -440,7 +440,7 @@ func TestTxSearchWithCancelation(t *testing.T) {
 }
 
 func TestTxSearchDeprecatedIndexing(t *testing.T) {
-	indexerDB, err := storage.NewMemDB()
+	indexerDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	indexer := NewTxIndex(indexerDB)
 
@@ -520,7 +520,7 @@ func TestTxSearchDeprecatedIndexing(t *testing.T) {
 }
 
 func TestTxSearchOneTxWithMultipleSameTagsButDifferentValues(t *testing.T) {
-	indexerDB, err := storage.NewMemDB()
+	indexerDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	indexer := NewTxIndex(indexerDB)
 
@@ -679,7 +679,7 @@ func TestTxIndexDuplicatePreviouslySuccessful(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			indexerDB, err := storage.NewMemDB()
+			indexerDB, err := cmtdb.NewInMem()
 			require.NoError(t, err)
 			indexer := NewTxIndex(indexerDB)
 
@@ -704,7 +704,7 @@ func TestTxIndexDuplicatePreviouslySuccessful(t *testing.T) {
 }
 
 func TestTxSearchMultipleTxs(t *testing.T) {
-	indexerDB, err := storage.NewMemDB()
+	indexerDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	indexer := NewTxIndex(indexerDB)
 
@@ -780,7 +780,7 @@ func benchmarkTxIndex(b *testing.B, txsCount int64) {
 	require.NoError(b, err)
 	defer os.RemoveAll(dir)
 
-	store, err := storage.NewDB("tx_index", dir)
+	store, err := cmtdb.New("tx_index", dir)
 	require.NoError(b, err)
 	indexer := NewTxIndex(store)
 
@@ -816,7 +816,7 @@ func benchmarkTxIndex(b *testing.B, txsCount int64) {
 }
 
 func TestBigInt(t *testing.T) {
-	indexerDB, err := storage.NewMemDB()
+	indexerDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	indexer := NewTxIndex(indexerDB)
 

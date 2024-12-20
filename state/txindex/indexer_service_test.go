@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/storage"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/state/indexer"
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
@@ -62,11 +62,11 @@ func createTestSetup(t *testing.T) (*txindex.IndexerService, *kv.TxIndex, indexe
 	})
 
 	// tx indexer
-	store, err := storage.NewMemDB()
+	store, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	txIndexer := kv.NewTxIndex(store)
 
-	prefixDB, err := storage.NewPrefixDB(store, []byte("block_events"))
+	prefixDB, err := cmtdb.NewWithPrefix(store, []byte("block_events"))
 	require.NoError(t, err)
 	blockIndexer := blockidxkv.New(prefixDB)
 

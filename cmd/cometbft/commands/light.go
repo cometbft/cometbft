@@ -13,8 +13,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	cmtdb "github.com/cometbft/cometbft/db"
 	cmtos "github.com/cometbft/cometbft/internal/os"
-	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/light"
@@ -118,7 +118,7 @@ func runProxy(_ *cobra.Command, args []string) error {
 		witnessesAddrs = strings.Split(witnessAddrsJoined, ",")
 	}
 
-	db, err := storage.NewDB("light-client-db", home)
+	db, err := cmtdb.New("light-client-db", home)
 	if err != nil {
 		return fmt.Errorf("can't create a db: %w", err)
 	}
@@ -233,7 +233,7 @@ func runProxy(_ *cobra.Command, args []string) error {
 	return nil
 }
 
-func checkForExistingProviders(db storage.DB) (string, []string, error) {
+func checkForExistingProviders(db cmtdb.DB) (string, []string, error) {
 	primaryBytes, err := db.Get(primaryKey)
 	if err != nil {
 		return "", []string{""}, err
@@ -246,7 +246,7 @@ func checkForExistingProviders(db storage.DB) (string, []string, error) {
 	return string(primaryBytes), witnessesAddrs, nil
 }
 
-func saveProviders(db storage.DB, primaryAddr, witnessesAddrs string) error {
+func saveProviders(db cmtdb.DB, primaryAddr, witnessesAddrs string) error {
 	err := db.Set(primaryKey, []byte(primaryAddr))
 	if err != nil {
 		return fmt.Errorf("failed to save primary provider: %w", err)

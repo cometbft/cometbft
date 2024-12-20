@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/internal/storage"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/state/indexer"
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 	blockidxnull "github.com/cometbft/cometbft/state/indexer/block/null"
@@ -27,7 +27,7 @@ func IndexerFromConfig(cfg *config.Config, dbProvider config.DBProvider, chainID
 			return nil, nil, false, err
 		}
 
-		prefixDB, err := storage.NewPrefixDB(store, []byte("block_events"))
+		prefixDB, err := cmtdb.NewWithPrefix(store, []byte("block_events"))
 		if err != nil {
 			return nil, nil, false, fmt.Errorf("creating indexer: %w", err)
 		}

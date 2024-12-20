@@ -19,10 +19,10 @@ import (
 	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/bits"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
@@ -136,7 +136,7 @@ func TestReactorWithEvidence(t *testing.T) {
 	css := make([]*State, nValidators)
 	logger := consensusLogger()
 	for i := 0; i < nValidators; i++ {
-		stateDB, err := storage.NewMemDB() // each state needs its own db
+		stateDB, err := cmtdb.NewInMem() // each state needs its own db
 		require.NoError(t, err)
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
@@ -154,7 +154,7 @@ func TestReactorWithEvidence(t *testing.T) {
 		// duplicate code from:
 		// css[i] = newStateWithConfig(thisConfig, state, privVals[i], app)
 
-		blockDB, err := storage.NewMemDB()
+		blockDB, err := cmtdb.NewInMem()
 		require.NoError(t, err)
 		blockStore := store.NewBlockStore(blockDB)
 

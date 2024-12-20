@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/evidence"
 	"github.com/cometbft/cometbft/internal/evidence/mocks"
-	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	sm "github.com/cometbft/cometbft/state"
@@ -41,7 +41,7 @@ func TestEvidencePoolBasic(t *testing.T) {
 		blockStore = &mocks.BlockStore{}
 	)
 
-	evidenceDB, err := storage.NewMemDB()
+	evidenceDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 
 	valSet, privVals := types.RandValidatorSet(1, 10)
@@ -109,7 +109,7 @@ func TestAddExpiredEvidence(t *testing.T) {
 		expiredHeight       = int64(2)
 	)
 
-	evidenceDB, err := storage.NewMemDB()
+	evidenceDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 
 	blockStore.On("LoadBlockMeta", mock.AnythingOfType("int64")).Return(func(h int64) *types.BlockMeta {
@@ -274,7 +274,7 @@ func TestLightClientAttackEvidenceLifecycle(t *testing.T) {
 	blockStore.On("LoadBlockCommit", height).Return(trusted.Commit)
 	blockStore.On("LoadBlockCommit", commonHeight).Return(common.Commit)
 
-	evidenceDB, err := storage.NewMemDB()
+	evidenceDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	require.NoError(t, err)
@@ -317,14 +317,14 @@ func TestRecoverPendingEvidence(t *testing.T) {
 	height := int64(10)
 	val := types.NewMockPV()
 	valAddress := val.PrivKey.PubKey().Address()
-	evidenceDB, err := storage.NewMemDB()
+	evidenceDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 
 	stateStore := initializeValidatorState(val, height)
 	state, err := stateStore.Load()
 	require.NoError(t, err)
 
-	blkStoreDB, err := storage.NewMemDB()
+	blkStoreDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 
 	blockStore, err := initializeBlockStore(blkStoreDB, state, valAddress)
@@ -370,7 +370,7 @@ func TestRecoverPendingEvidence(t *testing.T) {
 }
 
 func initializeStateFromValidatorSet(valSet *types.ValidatorSet, height int64) sm.Store {
-	stateDB, err := storage.NewMemDB()
+	stateDB, err := cmtdb.NewInMem()
 	if err != nil {
 		panic(err)
 	}
@@ -425,7 +425,7 @@ func initializeValidatorState(privVal types.PrivValidator, height int64) sm.Stor
 
 // initializeBlockStore creates a block storage and populates it w/ a dummy
 // block at +height+.
-func initializeBlockStore(db storage.DB, state sm.State, valAddr []byte) (*store.BlockStore, error) {
+func initializeBlockStore(db cmtdb.DB, state sm.State, valAddr []byte) (*store.BlockStore, error) {
 	blockStore := store.NewBlockStore(db)
 
 	for i := int64(1); i <= state.LastBlockHeight; i++ {
@@ -465,13 +465,13 @@ func defaultTestPool(t *testing.T, height int64) (*evidence.Pool, types.MockPV) 
 	val := types.NewMockPV()
 	valAddress := val.PrivKey.PubKey().Address()
 
-	evidenceDB, err := storage.NewMemDB()
+	evidenceDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 
 	stateStore := initializeValidatorState(val, height)
 	state, _ := stateStore.Load()
 
-	blkStoreDB, err := storage.NewMemDB()
+	blkStoreDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	blockStore, err := initializeBlockStore(blkStoreDB, state, valAddress)
 	require.NoError(t, err)

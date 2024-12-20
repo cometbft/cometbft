@@ -13,8 +13,8 @@ import (
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtdb "github.com/cometbft/cometbft/db"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
@@ -62,7 +62,7 @@ func TestV1LBKey(t *testing.T) {
 
 func TestDBKeyLayoutVersioning(t *testing.T) {
 	prefix := "TestDBKeyLayoutVersioning"
-	db, err := storage.NewMemDB()
+	db, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	dbStore := New(db, prefix)
 
@@ -100,7 +100,7 @@ func TestDBKeyLayoutVersioning(t *testing.T) {
 	// test on v2
 
 	prefix = "TestDBKeyLayoutVersioningV2"
-	db2, err := storage.NewMemDB()
+	db2, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	dbStore2 := NewWithDBVersion(db2, prefix, "v2")
 
@@ -136,7 +136,7 @@ func TestDBKeyLayoutVersioning(t *testing.T) {
 }
 
 func TestLast_FirstLightBlockHeight(t *testing.T) {
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	dbStore := New(memDB, "TestLast_FirstLightBlockHeight")
 
@@ -163,7 +163,7 @@ func TestLast_FirstLightBlockHeight(t *testing.T) {
 }
 
 func Test_SaveLightBlockCustomConfig(t *testing.T) {
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	dbStore := NewWithDBVersion(memDB, "Test_SaveLightBlockAndValidatorSet", "v2")
 
@@ -194,7 +194,7 @@ func Test_SaveLightBlockCustomConfig(t *testing.T) {
 }
 
 func Test_LightBlockBefore(t *testing.T) {
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	dbStore := New(memDB, "Test_LightBlockBefore")
 
@@ -214,7 +214,7 @@ func Test_LightBlockBefore(t *testing.T) {
 }
 
 func Test_Prune(t *testing.T) {
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	dbStore := New(memDB, "Test_Prune")
 
@@ -253,7 +253,7 @@ func Test_Prune(t *testing.T) {
 }
 
 func Test_Concurrency(t *testing.T) {
-	memDB, err := storage.NewMemDB()
+	memDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	dbStore := New(memDB, "Test_Prune")
 

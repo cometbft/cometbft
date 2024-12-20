@@ -12,7 +12,7 @@ import (
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/storage"
+	cmtdb "github.com/cometbft/cometbft/db"
 	mempl "github.com/cometbft/cometbft/mempool"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
@@ -120,7 +120,7 @@ func deliverTxsRange(t *testing.T, cs *State, end int) {
 
 func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 	state, privVals := randGenesisState(1, nil)
-	blockDB, err := storage.NewMemDB()
+	blockDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	stateStore := sm.NewStore(blockDB, sm.StoreOptions{DiscardABCIResponses: false})
 	app := kvstore.NewInMemoryApplication()
@@ -149,7 +149,7 @@ func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 func TestMempoolRmBadTx(t *testing.T) {
 	state, privVals := randGenesisState(1, nil)
 	app := kvstore.NewInMemoryApplication()
-	blockDB, err := storage.NewMemDB()
+	blockDB, err := cmtdb.NewInMem()
 	require.NoError(t, err)
 	stateStore := sm.NewStore(blockDB, sm.StoreOptions{DiscardABCIResponses: false})
 	_, lanesInfo := fetchAppInfo(app)

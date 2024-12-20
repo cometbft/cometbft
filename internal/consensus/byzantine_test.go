@@ -15,8 +15,8 @@ import (
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/evidence"
-	"github.com/cometbft/cometbft/internal/storage"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
@@ -49,7 +49,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 
 	for i := 0; i < nValidators; i++ {
 		logger := consensusLogger().With("test", "byzantine", "validator", i)
-		stateDB, err := storage.NewMemDB() // each state needs its own db
+		stateDB, err := cmtdb.NewInMem() // each state needs its own db
 		require.NoError(t, err)
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
@@ -63,7 +63,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		_, err = app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
 		require.NoError(t, err)
 
-		blockDB, err := storage.NewMemDB()
+		blockDB, err := cmtdb.NewInMem()
 		require.NoError(t, err)
 		blockStore := store.NewBlockStore(blockDB)
 
@@ -86,7 +86,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		}
 
 		// Make a full instance of the evidence pool
-		evidenceDB, err := storage.NewMemDB()
+		evidenceDB, err := cmtdb.NewInMem()
 		require.NoError(t, err)
 		evpool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 		require.NoError(t, err)

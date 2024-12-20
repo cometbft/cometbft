@@ -518,7 +518,8 @@ When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the prop
     * `ExtendVoteResponse.vote_extension` is application-generated information that will be signed
     * `ExtendVoteResponse.non_rp_extension` is application-generated information that will be signed
       by CometBFT and attached to the Precommit message. No replay-protection is applied to the data as
-      compared to `ExtendVoteResponse.vote_extension`. Applications can use this if raw vote extension data needs to be signed without any wrapping structure.
+      compared to `ExtendVoteResponse.vote_extension`.
+      Applications can use this if raw vote extension data needs to be signed without any wrapping structure.
     * The Application may choose to use an empty vote extension (0 length).
     * The contents of `ExtendVoteRequest` correspond to the proposed block on which the consensus algorithm
       will send the Precommit message.
@@ -558,12 +559,13 @@ a [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension) fi
 
 * **Request**:
 
-    | Name              | Type  | Description                                                                               | Field Number |
-    |-------------------|-------|-------------------------------------------------------------------------------------------|--------------|
-    | hash              | bytes | The hash of the proposed block that the vote extension refers to.                         | 1            |
-    | validator_address | bytes | [Address](../core/data_structures.md#address) of the validator that signed the extension. | 2            |
-    | height            | int64 | Height of the block (for sanity check).                                                   | 3            |
-    | vote_extension    | bytes | Application-specific information signed by CometBFT. Can have 0 length.                   | 4            |
+    | Name                     | Type  | Description                                                                               | Field Number |
+    |--------------------------|-------|-------------------------------------------------------------------------------------------|--------------|
+    | hash                     | bytes | The hash of the proposed block that the vote extension refers to.                         | 1            |
+    | validator_address        | bytes | [Address](../core/data_structures.md#address) of the validator that signed the extension. | 2            |
+    | height                   | int64 | Height of the block (for sanity check).                                                   | 3            |
+    | vote_extension           | bytes | Application-specific information signed by CometBFT. Can have 0 length.                   | 4            |
+    | non_rp_vote_extension    | bytes | Application-specific information signed by CometBFT. Can have 0 length.                   | 5            |
 
 * **Response**:
 
@@ -576,6 +578,9 @@ a [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension) fi
       interpretation of it should be
       that the Application running at the process that sent the vote chose not to extend it.
       CometBFT will always call `VerifyVoteExtension`, even for 0 length vote extensions.
+    * `VerifyVoteExtensionRequest.non_rp_vote_extension` can be used for vote extension information which should be signed by
+      CometBFT as it is (no additional meta information is added before signing as compared to `vote_extension`).
+      `non_rp_vote_extension` are optional and can be empty.
     * `VerifyVoteExtension` is not called for precommit votes sent by the local process.
     * `VerifyVoteExtensionRequest.hash` refers to a proposed block. There is no guarantee that
       this proposed block has previously been exposed to the Application via `ProcessProposal`.
@@ -848,18 +853,24 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Fields**:
 
-    | Name                | Type                                                  | Description                                                                                 | Field Number |
-    |---------------------|-------------------------------------------------------|---------------------------------------------------------------------------------------------|--------------|
-    | validator           | [Validator](#validator)                               | The validator that sent the vote.                                                           | 1            |
-    | vote_extension      | bytes                                                 | Non-deterministic extension provided by the sending validator's Application.                | 3            |
-    | extension_signature | bytes                                                 | Signature of the vote extension produced by the sending validator and verified by CometBFT. | 4            |
-    | block_id_flag       | [BlockIDFlag](../core/data_structures.md#blockidflag) | Indicates whether the validator voted the last block, nil, or its vote was not received.    | 5            |
+    | Name                        | Type                                                  | Description                                                                                                      | Field Number |
+    |-----------------------------|-------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|--------------|
+    | validator                   | [Validator](#validator)                               | The validator that sent the vote.                                                                                | 1            |
+    | vote_extension              | bytes                                                 | Non-deterministic extension provided by the sending validator's Application.                                     | 3            |
+    | extension_signature         | bytes                                                 | Signature of the vote extension produced by the sending validator and verified by CometBFT.                      | 4            |
+    | block_id_flag               | [BlockIDFlag](../core/data_structures.md#blockidflag) | Indicates whether the validator voted the last block, nil, or its vote was not received.                         | 5            |
+    | non_rp_vote_extension       | bytes                                                 | Non replay-protected extension provided by the sending validator's Application.                                  | 6            |
+    | non_rp_extension_signature  | bytes                                                 | Signature of the non replay-protected vote extension produced by the sending validator and verified by CometBFT. | 7            |
 
 * **Usage**:
     * Indicates whether a validator signed the last block, allowing for rewards based on validator availability.
     * This information is extracted from CometBFT's data structures in the local process.
     * `vote_extension` contains the sending validator's vote extension, whose signature was verified by CometBFT. It can be empty.
-    * `extension_signature` is the signature of the vote extension, which was verified verified by CometBFT. This way, we expose the signature to the application for further processing or verification.
+    * `extension_signature` is the signature of the vote extension, which was verified by CometBFT. This way, we expose the signature to the application for further processing or verification.
+    * `non_rp_vote_extension` contains the sending validator's non replay-protected vote extension, whose signature was verified by CometBFT. It's optional can be empty.
+    * `non_rp_extension_signature` is the signature of the non replay-protected vote extension, which was verified by CometBFT.
+    Note that the two signatures will be present if vote extensions are enable. If no `non_rp_vote_extension` information was provided, the signature will sign an empty slice.
+    If vote extensions are disabled `vote_extension`, `non_rp_vote_extension` and their related signatures will be empty.
 
 ### CommitInfo
 

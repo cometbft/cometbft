@@ -105,7 +105,8 @@ call sequences of these methods.
   in the rounds where the local process is the proposer.
   CometBFT calls `ExtendVote` when the consensus algorithm is about to send a non-`nil` precommit message.
   The Application can provide vote extension information as replay-protected and/or
-  non-replay-protected data in the response. If the Application does not have vote extension information to provide at that time, it returns a 0-length byte array as its vote extension (replay and/or non-replay-protected).
+  non-replay-protected data in the response. If the Application does not have vote extension information to provide at that time,
+  it returns a 0-length byte array as its vote extension (replay and/or non-replay-protected).
   When using non-replay-protected vote extensions it is up to the application to protect itself against replay attacks on that data (see `VerifyVoteExtension` below).
   The logic in `ExtendVote` MAY be non-deterministic.
 
@@ -122,7 +123,10 @@ call sequences of these methods.
   It is not called for precommit votes received after the height is concluded but while waiting to accumulate more precommit votes.
   `VerifyVoteExtension` provides the two vote extension information (non-/replay-protected) to the Application.
   The replay-protected part is signed with chain-ID, height and round (canonical vote extension) whereas the non-replay-protected part
-  is signed as provided in `ExtendVote`. Application specific replay protection mechanisms for that data can be implemented as part of `VerifyVoteExtension`.
+  is signed as provided in `ExtendVote`.
+  If vote extensions are enabled, both types of vote extensions will be signed even if no non-replay protected vote extensions were used.
+  If vote extensions are disabled, both types of vote extensions and their signatures will be empty.
+  Application specific replay protection mechanisms for that data can be implemented as part of `VerifyVoteExtension`.
   The logic in `VerifyVoteExtension` MUST be deterministic.
 
 - [**FinalizeBlock:**](./abci++_methods.md#finalizeblock) It delivers a decided block to the

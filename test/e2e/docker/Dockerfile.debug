@@ -26,7 +26,7 @@ RUN cd test/e2e && make node && cp build/node /usr/bin/app
 WORKDIR /cometbft
 VOLUME /cometbft
 ENV CMTHOME=/cometbft
-ENV GORACE "halt_on_error=1"
+ENV GORACE="halt_on_error=1"
 
 EXPOSE 26656 26657 26660 6060 2345 2346
 STOPSIGNAL SIGTERM

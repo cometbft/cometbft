@@ -1,5 +1,27 @@
 # CHANGELOG
 
+## v0.37.14
+
+*December 20, 2024*
+
+This release adjusts `reconnectBackOffBaseSeconds` to increase reconnect retries to up
+1 day (~24 hours).
+
+The `reconnectBackOffBaseSeconds` is increased by a bit over 10% (from
+3.0 to 3.4 seconds) so this would not affect reconnection retries too
+much.
+
+### BUG FIXES
+
+- `[mocks]` Mockery `v2.49.0` broke the mocks. We had to add a `.mockery.yaml` to
+properly handle this change.
+  ([\#4521](https://github.com/cometbft/cometbft/pull/4521))
+
+### IMPROVEMENTS
+
+- `[p2p]` fix exponential backoff logic to increase reconnect retries close to 24 hours
+ ([\#3519](https://github.com/cometbft/cometbft/issues/3519))
+
 ## v0.37.13
 
 *October 31, 2024*
@@ -58,6 +80,9 @@ for all users.
   `btcec/v2` latest release, while avoiding breaking changes to
   local CometBFT functions
   ([\#3728](https://github.com/cometbft/cometbft/pull/3728))
+- pinned mockery's version to v2.49.2 to prevent potential
+  changes in mocks after each new release of mockery
+  ([\#4605](https://github.com/cometbft/cometbft/pull/4605))
 
 ### IMPROVEMENTS
 

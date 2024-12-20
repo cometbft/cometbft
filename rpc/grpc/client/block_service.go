@@ -5,8 +5,8 @@ import (
 
 	"github.com/cosmos/gogoproto/grpc"
 
-	blocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	blocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v2"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	"github.com/cometbft/cometbft/types"
 )
 

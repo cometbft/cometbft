@@ -47,7 +47,8 @@ func makeTestExtCommitWithNumSigs(height int64, timestamp time.Time, numSigs int
 				Timestamp:        timestamp,
 				Signature:        cmtrand.Bytes(64),
 			},
-			ExtensionSignature: []byte("ExtensionSignature"),
+			ExtensionSignature:      []byte("ExtensionSignature"),
+			NonRpExtensionSignature: []byte("NonRpExtensionSignature"),
 		})
 	}
 	return &types.ExtendedCommit{

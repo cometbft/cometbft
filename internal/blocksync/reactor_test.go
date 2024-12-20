@@ -14,7 +14,7 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
-	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
+	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v2"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"

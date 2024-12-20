@@ -6,7 +6,7 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	pb "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	pb "github.com/cometbft/cometbft/api/cometbft/abci/v2"
 	"github.com/cometbft/cometbft/libs/protoio"
 )
 

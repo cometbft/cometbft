@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 
 	dbm "github.com/cometbft/cometbft-db"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/light/store"
 	"github.com/cometbft/cometbft/types"

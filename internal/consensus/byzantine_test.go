@@ -15,7 +15,7 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v2"
 	"github.com/cometbft/cometbft/internal/evidence"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"

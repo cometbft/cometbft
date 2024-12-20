@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v2"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/internal/bits"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
@@ -421,8 +421,19 @@ func TestConsMsgsVectors(t *testing.T) {
 		BlockID:          bi,
 	}
 	vpb := v.ToProto()
+
+	// with canonical vote extension & _NO_ non-rp extension
 	v.Extension = []byte("extension")
 	vextPb := v.ToProto()
+
+	// with non-rp extension & _NO_ canonical vote extension
+	v.Extension = []byte{}
+	v.NonRpExtension = []byte("0x01")
+
+	// with canonical vote extension & non-rp extension
+	v.Extension = []byte("extension")
+	vextPbNonRp := v.ToProto()
+	vextAllPb := v.ToProto()
 
 	testCases := []struct {
 		testName string
@@ -478,6 +489,18 @@ func TestConsMsgsVectors(t *testing.T) {
 				Vote: &cmtcons.Vote{Vote: vextPb},
 			}},
 			"327b0a790802100122480a206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d1224080112206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d2a0608c0b89fdc0532146164645f6d6f72655f6578636c616d6174696f6e38014a09657874656e73696f6e",
+		},
+		{
+			"Vote_with_nrp_ext", &cmtcons.Message{Sum: &cmtcons.Message_Vote{
+				Vote: &cmtcons.Vote{Vote: vextPbNonRp},
+			}},
+			"3281010a7f0802100122480a206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d1224080112206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d2a0608c0b89fdc0532146164645f6d6f72655f6578636c616d6174696f6e38014a09657874656e73696f6e5a0430783031",
+		},
+		{
+			"Vote_with_all_vote_ext", &cmtcons.Message{Sum: &cmtcons.Message_Vote{
+				Vote: &cmtcons.Vote{Vote: vextAllPb},
+			}},
+			"3281010a7f0802100122480a206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d1224080112206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d2a0608c0b89fdc0532146164645f6d6f72655f6578636c616d6174696f6e38014a09657874656e73696f6e5a0430783031",
 		},
 		{
 			"HasVote", &cmtcons.Message{Sum: &cmtcons.Message_HasVote{

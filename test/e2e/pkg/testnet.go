@@ -783,11 +783,6 @@ func (n Node) Stateless() bool {
 	return n.Mode == ModeLight || n.Mode == ModeSeed
 }
 
-// ZoneIsSet returns if the node has a zone set for latency emulation.
-func (n Node) ZoneIsSet() bool {
-	return len(n.Zone) > 0
-}
-
 // keyGenerator generates pseudorandom Ed25519 keys based on a seed.
 type keyGenerator struct {
 	random *rand.Rand

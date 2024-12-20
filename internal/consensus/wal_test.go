@@ -234,7 +234,6 @@ func TestWALEncoder(t *testing.T) {
 	pp := p.ToProto()
 	err = vs.SignProposal(ss.ChainID, pp)
 	require.NoError(t, err)
-	fmt.Printf("XXX %X\n", pp.Signature)
 	p.Signature = pp.Signature
 
 	b := new(bytes.Buffer)

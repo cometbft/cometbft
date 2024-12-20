@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 
 	cfg "github.com/cometbft/cometbft/config"
-	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
@@ -71,7 +70,11 @@ func loadStateAndBlockStore(config *cfg.Config) (*store.BlockStore, state.Store,
 	}
 
 	// Get BlockStore
-	blockStoreDB, err := cmtdb.New("blockstore", config.DBDir())
+	blockStoreDBCtx := &cfg.DBContext{
+		ID:     "blockstore",
+		Config: config,
+	}
+	blockStoreDB, err := cfg.DefaultDBProvider(blockStoreDBCtx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -82,7 +85,11 @@ func loadStateAndBlockStore(config *cfg.Config) (*store.BlockStore, state.Store,
 	}
 
 	// Get StateStore
-	stateDB, err := cmtdb.New("state", config.DBDir())
+	stateStoreDBCtx := &cfg.DBContext{
+		ID:     "state",
+		Config: config,
+	}
+	stateDB, err := cfg.DefaultDBProvider(stateStoreDBCtx)
 	if err != nil {
 		return nil, nil, err
 	}

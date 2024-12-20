@@ -31,7 +31,7 @@ jobs:
       - name: Build
         working-directory: test/e2e
         # Run make jobs in parallel, since we can't run steps in parallel.
-        run: make -j2 docker generator runner tests
+        run: make -j2 docker generator runner
 
       - name: Generate testnets
         if: matrix.group != 5

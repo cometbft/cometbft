@@ -21,7 +21,7 @@ LABEL maintainer="hello@informal.systems"
 # private validator file into /cometbft/config.
 #
 # The /cometbft/data dir is used by CometBFT to store state.
-ENV CMTHOME /cometbft
+ENV CMTHOME=/cometbft
 
 # OS environment setup
 # Set user right away for determinism, create directory for persistence and give our user ownership

@@ -15,7 +15,17 @@ import (
 )
 
 // ErrUnsupportedPubKeyType is returned when a public key type is not supported.
-var ErrUnsupportedPubKeyType = errors.New("unsupported pubkey type, must be one of: " + keytypes.SupportedKeyTypesStr())
+type ErrUnsupportedPubKeyType struct {
+	KeyType string
+}
+
+func (e ErrUnsupportedPubKeyType) Error() string {
+	return fmt.Sprintf(
+		"unsupported pubkey type %q, must be one of: %s",
+		e.KeyType,
+		keytypes.SupportedKeyTypesStr(),
+	)
+}
 
 // Volatile state for each Validator
 // NOTE: The ProposerPriority is not included in Validator.Hash();
@@ -56,8 +66,9 @@ func (v *Validator) ValidateBasic() error {
 		return fmt.Errorf("validator address is incorrectly derived from pubkey. Exp: %v, got %v", addr, v.Address)
 	}
 
-	if !keytypes.IsSupported(v.PubKey.Type()) {
-		return ErrUnsupportedPubKeyType
+	keyType := v.PubKey.Type()
+	if !keytypes.IsSupported(keyType) {
+		return ErrUnsupportedPubKeyType{KeyType: keyType}
 	}
 
 	return nil

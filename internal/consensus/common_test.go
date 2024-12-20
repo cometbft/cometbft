@@ -896,12 +896,7 @@ func randConsensusNetWithPeers(
 		if i < nValidators {
 			privVal = privVals[i]
 		} else {
-			tempKeyFile, err := os.CreateTemp("", "priv_validator_key_")
-			require.NoError(t, err)
-			tempStateFile, err := os.CreateTemp("", "priv_validator_state_")
-			require.NoError(t, err)
-			privVal, err = privval.GenFilePV(tempKeyFile.Name(), tempStateFile.Name(), nil)
-			require.NoError(t, err)
+			privVal = types.NewMockPV()
 		}
 
 		app := appFunc(path.Join(config.DBDir(), fmt.Sprintf("%s_%d", testName, i)))

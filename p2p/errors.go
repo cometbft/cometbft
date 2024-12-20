@@ -38,7 +38,7 @@ func (e ErrSwitchConnectToSelf) Error() string {
 }
 
 type ErrSwitchAuthenticationFailure struct {
-	Dialed *na.NetAddr
+	Dialed na.NetAddr
 	Got    nodekey.ID
 }
 

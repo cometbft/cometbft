@@ -196,6 +196,11 @@ func AddrsToProtos(nas []NetAddr) []tmp2p.NetAddress {
 	return pbs
 }
 
+// IsEmpty returns true if the address is empty.
+func (na NetAddr) IsEmpty() bool {
+	return na.ID == "" && na.Multiaddr == nil
+}
+
 // ToProto converts an Addr to Protobuf.
 func (na NetAddr) ToProto() tmp2p.NetAddress {
 	return tmp2p.NetAddress{
@@ -234,12 +239,16 @@ func (na NetAddr) String() string {
 	return na.Multiaddr.Encapsulate(ma.StringCast("/p2p/" + string(na.ID))).String()
 }
 
-// DialString returns String without the "/p2p/ID" part.
+// DialString returns a net.Addr String.
 // Example:
 //
-//	/ip4/192.168.1.0/tcp/26656
+//	192.168.1.0:26656
 func (na NetAddr) DialString() string {
-	return na.Multiaddr.String()
+	netAddr, err := manet.ToNetAddr(na.Multiaddr)
+	if err != nil {
+		return ""
+	}
+	return netAddr.String()
 }
 
 // Dial calls net.Dial on the address.
@@ -289,6 +298,13 @@ func (na NetAddr) Valid() error {
 // Local returns true if it is a local address.
 func (na NetAddr) Local() bool {
 	return manet.IsIPLoopback(na.Multiaddr) || manet.IsIPUnspecified(na.Multiaddr)
+}
+
+// ToIP returns the IP address of the address when possible.
+//
+// See manet.ToIP.
+func (na NetAddr) ToIP() (net.IP, error) {
+	return manet.ToIP(na.Multiaddr)
 }
 
 // ValidateID checks if the ID is valid.

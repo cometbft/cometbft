@@ -10,8 +10,8 @@ import (
 // knownAddress tracks information about a known network address
 // that is used to determine how viable an address is.
 type knownAddress struct {
-	Addr        *na.NetAddr `json:"addr"`
-	Src         *na.NetAddr `json:"src"`
+	Addr        na.NetAddr `json:"addr"`
+	Src         na.NetAddr `json:"src"`
 	Buckets     []int       `json:"buckets"`
 	Attempts    int32       `json:"attempts"`
 	BucketType  byte        `json:"bucket_type"`
@@ -20,7 +20,7 @@ type knownAddress struct {
 	LastBanTime time.Time   `json:"last_ban_time"`
 }
 
-func newKnownAddress(addr *na.NetAddr, src *na.NetAddr) *knownAddress {
+func newKnownAddress(addr na.NetAddr, src na.NetAddr) *knownAddress {
 	return &knownAddress{
 		Addr:        addr,
 		Src:         src,

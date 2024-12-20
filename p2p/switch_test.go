@@ -286,7 +286,7 @@ func TestSwitchPeerFilter(t *testing.T) {
 	rp.Start()
 	t.Cleanup(rp.Stop)
 
-	conn, err := sw.transport.Dial(*rp.Addr())
+	conn, err := sw.transport.Dial(rp.Addr())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -341,7 +341,7 @@ func TestSwitchPeerFilterTimeout(t *testing.T) {
 	rp.Start()
 	defer rp.Stop()
 
-	conn, err := sw.transport.Dial(*rp.Addr())
+	conn, err := sw.transport.Dial(rp.Addr())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -378,7 +378,7 @@ func TestSwitchPeerFilterDuplicate(t *testing.T) {
 	rp.Start()
 	defer rp.Stop()
 
-	conn, err := sw.transport.Dial(*rp.Addr())
+	conn, err := sw.transport.Dial(rp.Addr())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -428,7 +428,7 @@ func TestSwitchStopsNonPersistentPeerOnError(t *testing.T) {
 	rp.Start()
 	defer rp.Stop()
 
-	conn, err := sw.transport.Dial(*rp.Addr())
+	conn, err := sw.transport.Dial(rp.Addr())
 	require.NoError(t, err)
 
 	p := wrapPeer(conn,
@@ -741,8 +741,8 @@ func (errorTransport) NetAddr() na.NetAddr {
 	panic("not implemented")
 }
 
-func (et errorTransport) Accept() (transport.Conn, *na.NetAddr, error) {
-	return nil, nil, et.acceptErr
+func (et errorTransport) Accept() (transport.Conn, na.NetAddr, error) {
+	return nil, na.NetAddr{}, et.acceptErr
 }
 
 func (errorTransport) Dial(na.NetAddr) (transport.Conn, error) {
@@ -968,7 +968,7 @@ func (rp *remoteTCPPeer) Start() {
 	if err != nil {
 		panic(err)
 	}
-	err = rp.transport.Listen(*addr)
+	err = rp.transport.Listen(addr)
 	if err != nil {
 		panic(err)
 	}
@@ -979,8 +979,8 @@ func (rp *remoteTCPPeer) Stop() {
 	rp.transport.Close()
 }
 
-func (rp *remoteTCPPeer) Dial(addr *na.NetAddr) (transport.Conn, error) {
-	c, err := rp.transport.Dial(*addr)
+func (rp *remoteTCPPeer) Dial(addr na.NetAddr) (transport.Conn, error) {
+	c, err := rp.transport.Dial(addr)
 	if err != nil {
 		return nil, err
 	}

@@ -52,13 +52,13 @@ func (q *QUIC) NetAddr() na.NetAddr {
 	panic("implement me")
 }
 
-func (q *QUIC) Accept() (transport.Conn, *na.NetAddr, error) {
-		conn, err := q.lintener.Accept(context.Background())
-		if err != nil {
-			return nil, nil, err
-		}
+func (q *QUIC) Accept() (transport.Conn, na.NetAddr, error) {
+	conn, err := q.lintener.Accept(context.Background())
+	if err != nil {
+		return nil, na.NetAddr{}, err
+	}
 
-		return conn, na.New, nil
+	return &Conn{Connection: conn}, na.NetAddr{}, nil
 }
 
 func (q *QUIC) Dial(addr na.NetAddr) (transport.Conn, error) {

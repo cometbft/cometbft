@@ -179,8 +179,8 @@ func TestAddrBookHandlesDuplicates(t *testing.T) {
 }
 
 type netAddrPair struct {
-	addr *na.NetAddr
-	src  *na.NetAddr
+	addr na.NetAddr
+	src  na.NetAddr
 }
 
 func randNetAddrPairs(t *testing.T, n int) []netAddrPair {
@@ -192,7 +192,7 @@ func randNetAddrPairs(t *testing.T, n int) []netAddrPair {
 	return randAddrs
 }
 
-func randIPv4Address(t *testing.T) *na.NetAddr {
+func randIPv4Address(t *testing.T) na.NetAddr {
 	t.Helper()
 	for {
 		ip := fmt.Sprintf("%v.%v.%v.%v",
@@ -286,7 +286,7 @@ func TestAddrBookGetSelection(t *testing.T) {
 	}
 
 	// check there is no duplicates
-	addrs := make(map[string]*na.NetAddr)
+	addrs := make(map[string]na.NetAddr)
 	selection := book.GetSelection()
 	for _, addr := range selection {
 		if dup, ok := addrs[addr.String()]; ok {
@@ -330,7 +330,7 @@ func TestAddrBookGetSelectionWithBias(t *testing.T) {
 	}
 
 	// check there is no duplicates
-	addrs := make(map[string]*na.NetAddr)
+	addrs := make(map[string]na.NetAddr)
 	selection = book.GetSelectionWithBias(biasTowardsNewAddrs)
 	for _, addr := range selection {
 		if dup, ok := addrs[addr.String()]; ok {
@@ -402,9 +402,9 @@ func TestAddrBookHasAddress(t *testing.T) {
 	assert.False(t, book.HasAddress(addr))
 }
 
-func testCreatePrivateAddrs(t *testing.T, numAddrs int) ([]*na.NetAddr, []string) {
+func testCreatePrivateAddrs(t *testing.T, numAddrs int) ([]na.NetAddr, []string) {
 	t.Helper()
-	addrs := make([]*na.NetAddr, numAddrs)
+	addrs := make([]na.NetAddr, numAddrs)
 	for i := 0; i < numAddrs; i++ {
 		addrs[i] = randIPv4Address(t)
 	}
@@ -509,7 +509,7 @@ func testAddrBookAddressSelection(t *testing.T, bookSize int) {
 
 		// check there's no nil addresses
 		for _, addr := range addrs {
-			if addr == nil {
+			if addr.IsEmpty() {
 				t.Fatalf("%s - got nil address in selection %v", dbgStr, addrs)
 			}
 		}
@@ -642,7 +642,11 @@ func TestAddrBookAddDoesNotOverwriteOldIP(t *testing.T) {
 	for i := 0; i < numOverrideAttempts; i++ {
 		selection := book.GetSelection()
 		for _, addr := range selection {
-			require.Equal(t, addr.IP, peerRealAddr.IP)
+			addrIP, err := addr.ToIP()
+			require.NoError(t, err)
+			peerIP, err := peerRealAddr.ToIP()
+			require.NoError(t, err)
+			require.Equal(t, addrIP, peerIP)
 		}
 	}
 }
@@ -714,7 +718,7 @@ func TestAddrBookGroupKey(t *testing.T) {
 	}
 }
 
-func assertMOldAndNNewAddrsInSelection(t *testing.T, m, n int, addrs []*na.NetAddr, book *addrBook) {
+func assertMOldAndNNewAddrsInSelection(t *testing.T, m, n int, addrs []na.NetAddr, book *addrBook) {
 	t.Helper()
 	nOld, nNew := countOldAndNewAddrsInSelection(addrs, book)
 	assert.Equal(t, m, nOld, "old addresses")
@@ -766,7 +770,7 @@ func createAddrBookWithMOldAndNNewAddrs(t *testing.T, nOld, nNew int) (book *add
 	return book, fname
 }
 
-func countOldAndNewAddrsInSelection(addrs []*na.NetAddr, book *addrBook) (nOld, nNew int) {
+func countOldAndNewAddrsInSelection(addrs []na.NetAddr, book *addrBook) (nOld, nNew int) {
 	for _, addr := range addrs {
 		if book.IsGood(addr) {
 			nOld++
@@ -781,7 +785,7 @@ func countOldAndNewAddrsInSelection(addrs []*na.NetAddr, book *addrBook) (nOld, 
 // Returns:
 // - seqLens - the lengths of the sequences of addresses of same type
 // - seqTypes - the types of sequences in selection.
-func analyseSelectionLayout(book *addrBook, addrs []*na.NetAddr) (seqLens, seqTypes []int) {
+func analyseSelectionLayout(book *addrBook, addrs []na.NetAddr) (seqLens, seqTypes []int) {
 	// address types are: 0 - nil, 1 - new, 2 - old
 	var (
 		prevType      = 0

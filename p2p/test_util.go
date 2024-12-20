@@ -247,7 +247,7 @@ func MakeSwitch(
 	mConfig := tcpconn.DefaultMConnConfig()
 	t := tcp.NewMultiplexTransport(nk, mConfig)
 
-	if err := t.Listen(*addr); err != nil {
+	if err := t.Listen(addr); err != nil {
 		panic(err)
 	}
 

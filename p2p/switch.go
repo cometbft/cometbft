@@ -87,9 +87,8 @@ type Switch struct {
 }
 
 // NetAddr returns the address the switch is listening on.
-func (sw *Switch) NetAddr() *na.NetAddr {
-	addr := sw.transport.NetAddr()
-	return &addr
+func (sw *Switch) NetAddr() na.NetAddr {
+	return sw.transport.NetAddr()
 }
 
 // SwitchOption sets an optional parameter on the Switch.
@@ -464,7 +463,7 @@ func (sw *Switch) DialPeersAsync(peers []string) error {
 	return nil
 }
 
-func (sw *Switch) dialPeersAsync(netAddrs []*na.NetAddr) {
+func (sw *Switch) dialPeersAsync(netAddrs []na.NetAddr) {
 	ourAddr := sw.NetAddr()
 
 	// TODO: this code feels like it's in the wrong place.
@@ -541,9 +540,12 @@ func (sw *Switch) randomSleep(interval time.Duration) {
 // IsDialingOrExistingAddress returns true if switch has a peer with the given
 // address or dialing it at the moment.
 func (sw *Switch) IsDialingOrExistingAddress(addr na.NetAddr) bool {
-	return sw.dialing.Has(string(addr.ID)) ||
-		sw.peers.Has(addr.ID) ||
-		(!sw.config.AllowDuplicateIP && sw.peers.HasIP(addr.IP))
+	var hasIP bool
+	if ip, err := addr.ToIP(); err == nil {
+		hasIP = !sw.config.AllowDuplicateIP && sw.peers.HasIP(ip)
+	}
+
+	return sw.dialing.Has(string(addr.ID)) || sw.peers.Has(addr.ID) || hasIP
 }
 
 // AddPersistentPeers allows you to set persistent peers. It ignores

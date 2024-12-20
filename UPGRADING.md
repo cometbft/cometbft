@@ -39,7 +39,8 @@ The upgrading guide includes detailed information about major new features in Co
 Data Companion API, several enhancements, configuration and genesis updates for a smoother
 transition to the new `v1.0` version.
 
-Please see more information on the [Upgrading from CometBFT v0.38 to v1.0](/docs/guides/upgrades/v0.38-to-v1.0.md) guide.
+Please see more information on the [Upgrading from CometBFT v0.38 to v1.0](/docs/guides/upgrades/v0.38-to-v1.0.md)
+guide.
 
 ## v0.38.0
 

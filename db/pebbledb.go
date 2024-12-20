@@ -1,4 +1,4 @@
-package storage
+package db
 
 import (
 	"bytes"
@@ -8,39 +8,39 @@ import (
 	"github.com/cockroachdb/pebble"
 )
 
-// PebbleDB is a PebbleDB backend.
+// pebbleDB is a pebbleDB backend.
 // It implements the [DB] interface.
-type PebbleDB struct {
+type pebbleDB struct {
 	db *pebble.DB
 }
 
 // compile-time check: does *PebbleDB satisfy the DB interface?
-var _ DB = (*PebbleDB)(nil)
+var _ DB = (*pebbleDB)(nil)
 
-// NewPebbleDB returns a new PebbleDB instance using the default options.
-func NewPebbleDB(name, dir string) (*PebbleDB, error) {
+// newPebbleDB returns a new PebbleDB instance using the default options.
+func newPebbleDB(name, dir string) (*pebbleDB, error) {
 	opts := &pebble.Options{}
 
-	return NewPebbleDBWithOpts(name, dir, opts)
+	return newPebbleDBWithOpts(name, dir, opts)
 }
 
-// NewPebbleDBWithOpts returns a new PebbleDB instance using the provided options.
-func NewPebbleDBWithOpts(name, dir string, opts *pebble.Options) (*PebbleDB, error) {
+// newPebbleDBWithOpts returns a new PebbleDB instance using the provided options.
+func newPebbleDBWithOpts(name, dir string, opts *pebble.Options) (*pebbleDB, error) {
 	dbPath := filepath.Join(dir, name+".db")
 	opts.EnsureDefaults()
 
 	db, err := pebble.Open(dbPath, opts)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("opening pebble instance %q: %w", name, err)
 	}
 
-	pebbleDB := &PebbleDB{db: db}
+	pebbleDB := &pebbleDB{db: db}
 
-	return pebbleDB, err
+	return pebbleDB, nil
 }
 
 // DB returns the underlying PebbleDB instance.
-func (pDB *PebbleDB) DB() *pebble.DB {
+func (pDB *pebbleDB) DB() *pebble.DB {
 	return pDB.db
 }
 
@@ -49,7 +49,7 @@ func (pDB *PebbleDB) DB() *pebble.DB {
 // returns.
 //
 // It implements the [DB] interface for type PebbleDB.
-func (pDB *PebbleDB) Get(key []byte) ([]byte, error) {
+func (pDB *pebbleDB) Get(key []byte) ([]byte, error) {
 	if len(key) == 0 {
 		return nil, ErrKeyEmpty
 	}
@@ -73,7 +73,7 @@ func (pDB *PebbleDB) Get(key []byte) ([]byte, error) {
 // It is safe to modify the contents of key after Has returns.
 //
 // It implements the [DB] interface for type PebbleDB.
-func (pDB *PebbleDB) Has(key []byte) (bool, error) {
+func (pDB *pebbleDB) Has(key []byte) (bool, error) {
 	if len(key) == 0 {
 		return false, ErrKeyEmpty
 	}
@@ -94,7 +94,7 @@ func (pDB *PebbleDB) Has(key []byte) (bool, error) {
 // compaction. Use [SetSync] to flush the write to disk immediately.
 //
 // It implements the [DB] interface for type PebbleDB.
-func (pDB *PebbleDB) Set(key, value []byte) error {
+func (pDB *pebbleDB) Set(key, value []byte) error {
 	writeOpts := pebble.NoSync
 	if err := pDB.setWithOpts(key, value, writeOpts); err != nil {
 		return fmt.Errorf("unsynced write: %w", err)
@@ -110,7 +110,7 @@ func (pDB *PebbleDB) Set(key, value []byte) error {
 // only after the data has been successfully written to persistent storage.
 //
 // It implements the [DB] interface for type PebbleDB.
-func (pDB *PebbleDB) SetSync(key, value []byte) error {
+func (pDB *pebbleDB) SetSync(key, value []byte) error {
 	writeOpts := pebble.Sync
 	if err := pDB.setWithOpts(key, value, writeOpts); err != nil {
 		return fmt.Errorf("synced write: %w", err)
@@ -121,7 +121,7 @@ func (pDB *PebbleDB) SetSync(key, value []byte) error {
 
 // setWithOpts sets the value for the given key, overwriting it if it already exists.
 // It is safe to modify the contents of the arguments after setWithOpts returns.
-func (pDB *PebbleDB) setWithOpts(
+func (pDB *pebbleDB) setWithOpts(
 	key, value []byte,
 	writeOpts *pebble.WriteOptions,
 ) error {
@@ -151,7 +151,7 @@ func (pDB *PebbleDB) setWithOpts(
 // I/O.
 //
 // It implements the [DB] interface for type PebbleDB.
-func (pDB *PebbleDB) Delete(key []byte) error {
+func (pDB *pebbleDB) Delete(key []byte) error {
 	writeOpts := pebble.NoSync
 	if err := pDB.deleteWithOpts(key, writeOpts); err != nil {
 		return fmt.Errorf("unsynced delete: %w", err)
@@ -169,7 +169,7 @@ func (pDB *PebbleDB) Delete(key []byte) error {
 // Because it incurs the latency of disk I/O, it is slower than [Delete].
 //
 // It implements the [DB] interface for type PebbleDB.
-func (pDB PebbleDB) DeleteSync(key []byte) error {
+func (pDB pebbleDB) DeleteSync(key []byte) error {
 	writeOpts := pebble.Sync
 	if err := pDB.deleteWithOpts(key, writeOpts); err != nil {
 		return fmt.Errorf("synced delete: %w", err)
@@ -181,7 +181,7 @@ func (pDB PebbleDB) DeleteSync(key []byte) error {
 // deleteWithOpts deletes the value for the given key. Deletes will succeed even if
 // the key does not exist in the database.
 // It is safe to modify the contents of the arguments after deleteWithOpts returns.
-func (pDB *PebbleDB) deleteWithOpts(
+func (pDB *pebbleDB) deleteWithOpts(
 	key []byte,
 	writeOpts *pebble.WriteOptions,
 ) error {
@@ -199,7 +199,7 @@ func (pDB *PebbleDB) deleteWithOpts(
 // Compact compacts the specified range of keys in the database.
 //
 // It implements the [DB] interface for type PebbleDB.
-func (pDB *PebbleDB) Compact(start, end []byte) error {
+func (pDB *pebbleDB) Compact(start, end []byte) error {
 	// Currently nil,nil is an invalid range in Pebble.
 	// If start==end pebbleDB will throw an error.
 	// See comment below as well.
@@ -256,7 +256,7 @@ func (pDB *PebbleDB) Compact(start, end []byte) error {
 // to call any of a DB's methods after the DB has been closed.
 //
 // It implements the [DB] interface for type PebbleDB.
-func (pDB *PebbleDB) Close() error {
+func (pDB *pebbleDB) Close() error {
 	if err := pDB.db.Close(); err != nil {
 		return fmt.Errorf("closing database: %w", err)
 	}
@@ -267,7 +267,7 @@ func (pDB *PebbleDB) Close() error {
 // Print prints all the key/value pairs in the database for debugging purposes.
 //
 // It implements the [DB] interface for type PebbleDB.
-func (pDB *PebbleDB) Print() error {
+func (pDB *pebbleDB) Print() error {
 	itr, err := pDB.Iterator(nil, nil)
 	if err != nil {
 		return fmt.Errorf("creating iterator for debug printing: %w", err)
@@ -286,7 +286,7 @@ func (pDB *PebbleDB) Print() error {
 // Stats implements the [DB] interface.
 //
 // It implements the [DB] interface for type PebbleDB.
-func (*PebbleDB) Stats() map[string]string {
+func (*pebbleDB) Stats() map[string]string {
 	return nil
 }
 
@@ -294,7 +294,7 @@ func (*PebbleDB) Stats() map[string]string {
 // The caller is responsible for calling Batch.Close() once done.
 //
 // It implements the [DB] interface for type PebbleDB.
-func (pDB *PebbleDB) NewBatch() Batch {
+func (pDB *pebbleDB) NewBatch() Batch {
 	return newPebbleDBBatch(pDB)
 }
 
@@ -308,7 +308,7 @@ func (pDB *PebbleDB) NewBatch() Batch {
 // iterator is in use.
 //
 // It implements the [DB] interface for type PebbleDB.
-func (pDB *PebbleDB) Iterator(start, end []byte) (Iterator, error) {
+func (pDB *pebbleDB) Iterator(start, end []byte) (Iterator, error) {
 	it, err := newPebbleDBIterator(pDB, start, end, false /* reverse */)
 	if err != nil {
 		return nil, fmt.Errorf("creating new forward iterator: %w", err)
@@ -327,7 +327,7 @@ func (pDB *PebbleDB) Iterator(start, end []byte) (Iterator, error) {
 // iterator is in use.
 //
 // It implements the [DB] interface for type PebbleDB.
-func (pDB *PebbleDB) ReverseIterator(start, end []byte) (Iterator, error) {
+func (pDB *pebbleDB) ReverseIterator(start, end []byte) (Iterator, error) {
 	it, err := newPebbleDBIterator(pDB, start, end, true /* reverse */)
 	if err != nil {
 		return nil, fmt.Errorf("creating new reverse iterator: %w", err)
@@ -344,12 +344,12 @@ var _ Batch = (*pebbleDBBatch)(nil)
 //
 // It implements the [Batch] interface.
 type pebbleDBBatch struct {
-	db    *PebbleDB
+	db    *pebbleDB
 	batch *pebble.Batch
 }
 
 // newPebbleDBBatch returns a new batch to be used for atomic database updates.
-func newPebbleDBBatch(pDB *PebbleDB) *pebbleDBBatch {
+func newPebbleDBBatch(pDB *pebbleDB) *pebbleDBBatch {
 	return &pebbleDBBatch{
 		// Because newPebbleDBBatch can only be called by the exported method
 		// PebbleDB.NewBatch, pDB is going to be non-nil; Therefore we don't need to
@@ -442,7 +442,7 @@ func (b *pebbleDBBatch) commitWithOpts(writeOpts *pebble.WriteOptions) error {
 	}
 
 	if err := b.batch.Commit(writeOpts); err != nil {
-		return fmt.Errorf("writing batch to DB: %w", err)
+		return fmt.Errorf("writing batch to database: %w", err)
 	}
 
 	// Make sure batch cannot be used afterwards.
@@ -494,7 +494,7 @@ var _ Iterator = (*pebbleDBIterator)(nil)
 // newPebbleDBIterator returns a new pebbleDBIterator to iterate over a range of
 // database key/value pairs of the given instance of PebbleDB.
 func newPebbleDBIterator(
-	pDB *PebbleDB,
+	pDB *pebbleDB,
 	start, end []byte,
 	isReverse bool,
 ) (*pebbleDBIterator, error) {

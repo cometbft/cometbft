@@ -12,11 +12,11 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/cometbft/cometbft-db"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/evidence"
 	"github.com/cometbft/cometbft/internal/evidence/mocks"
 	"github.com/cometbft/cometbft/libs/log"
@@ -188,7 +188,9 @@ func TestReactorsGossipNoCommittedEvidence(t *testing.T) {
 
 func TestReactorBroadcastEvidenceMemoryLeak(t *testing.T) {
 	evidenceTime := time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC)
-	evidenceDB := dbm.NewMemDB()
+	evidenceDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+
 	blockStore := &mocks.BlockStore{}
 	blockStore.On("LoadBlockMeta", mock.AnythingOfType("int64")).Return(
 		&types.BlockMeta{Header: types.Header{Time: evidenceTime}},
@@ -237,7 +239,10 @@ func makeAndConnectReactorsAndPools(config *cfg.Config, stateStores []sm.Store) 
 	evidenceTime := time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	for i := 0; i < n; i++ {
-		evidenceDB := dbm.NewMemDB()
+		evidenceDB, err := cmtdb.NewInMem()
+		if err != nil {
+			panic(err)
+		}
 		blockStore := &mocks.BlockStore{}
 		blockStore.On("LoadBlockMeta", mock.AnythingOfType("int64")).Return(
 			&types.BlockMeta{Header: types.Header{Time: evidenceTime}},

@@ -6,8 +6,8 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v2"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	"github.com/cometbft/cometbft/internal/bits"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	cmtmath "github.com/cometbft/cometbft/libs/math"

@@ -5,7 +5,7 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
+	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v2"
 	"github.com/cometbft/cometbft/types"
 )
 

@@ -14,7 +14,7 @@ import (
 	abciclientmocks "github.com/cometbft/cometbft/abci/client/mocks"
 	abci "github.com/cometbft/cometbft/abci/types"
 	abcimocks "github.com/cometbft/cometbft/abci/types/mocks"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -1130,7 +1130,7 @@ func TestCreateProposalAbsentVoteExtensions(t *testing.T) {
 			blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 			pa, _ := state.Validators.GetByIndex(0)
 			lastCommit, _ := makeValidCommit(testCase.height-1, blockID, state.Validators, privVals)
-			stripSignatures(lastCommit)
+			stripSignatures(lastCommit) // remove vote extensions and its signatures as required by test case
 			if testCase.expectPanic {
 				require.Panics(t, func() {
 					blockExec.CreateProposalBlock(ctx, testCase.height, state, lastCommit, pa) //nolint:errcheck
@@ -1147,6 +1147,8 @@ func stripSignatures(ec *types.ExtendedCommit) {
 	for i, commitSig := range ec.ExtendedSignatures {
 		commitSig.Extension = nil
 		commitSig.ExtensionSignature = nil
+		commitSig.NonRpExtension = nil
+		commitSig.NonRpExtensionSignature = nil
 		ec.ExtendedSignatures[i] = commitSig
 	}
 }

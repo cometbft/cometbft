@@ -6,7 +6,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1"
+	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v2"
 	"github.com/cometbft/cometbft/libs/log"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"

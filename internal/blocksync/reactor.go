@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
+	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v2"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"

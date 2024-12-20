@@ -11,7 +11,7 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v2"
 	auto "github.com/cometbft/cometbft/internal/autofile"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	cmtjson "github.com/cometbft/cometbft/libs/json"

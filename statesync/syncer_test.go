@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
+	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v2"
 	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/config"

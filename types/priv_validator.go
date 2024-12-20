@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 )
@@ -94,19 +94,25 @@ func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote, signExtension boo
 	vote.Signature = sig
 
 	if signExtension {
-		var extSig []byte
+		var extSig, nonRpExtSig []byte
 		// We only sign vote extensions for non-nil precommits
 		if vote.Type == PrecommitType && !ProtoBlockIDIsNil(&vote.BlockID) {
-			extSignBytes := VoteExtensionSignBytes(useChainID, vote)
+			extSignBytes, nonRpExtSignBytes := VoteExtensionSignBytes(useChainID, vote)
 			extSig, err = pv.PrivKey.Sign(extSignBytes)
 			if err != nil {
 				return err
 			}
-		} else if len(vote.Extension) > 0 {
+			nonRpExtSig, err = pv.PrivKey.Sign(nonRpExtSignBytes)
+			if err != nil {
+				return err
+			}
+		} else if len(vote.Extension) > 0 || len(vote.NonRpExtension) > 0 {
 			return errors.New("unexpected vote extension - vote extensions are only allowed in non-nil precommits")
 		}
 		vote.ExtensionSignature = extSig
+		vote.NonRpExtensionSignature = nonRpExtSig
 	}
+
 	return nil
 }
 

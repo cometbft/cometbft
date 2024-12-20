@@ -14,6 +14,8 @@ As a consequence of this incorrect behavior a node would be marked as BAD.
 - `[mocks]` Mockery `v2.49.0` broke the mocks. We had to add a `.mockery.yaml` to
 properly handle this change.
   ([\#4521](https://github.com/cometbft/cometbft/pull/4521))
+- `[p2p/pex`]: do not send PEX request in fast dial mode
+  ([\#4649](https://github.com/cometbft/cometbft/pull/4649))
 
 ## v0.38.15
 
@@ -862,4 +864,3 @@ Friendly reminder, we have a [bug bounty program](https://hackerone.com/cosmos).
 ## Previous changes
 
 For changes released before the creation of CometBFT, please refer to the Tendermint Core [CHANGELOG.md](https://github.com/tendermint/tendermint/blob/a9feb1c023e172b542c972605311af83b777855b/CHANGELOG.md).
-

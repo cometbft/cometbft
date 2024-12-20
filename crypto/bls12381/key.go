@@ -28,21 +28,21 @@ var ErrDisabled = errors.New("bls12_381 is disabled")
 var _ crypto.PrivKey = &PrivKey{}
 
 // PrivKey represents a BLS private key noop when blst is not set as a build flag and cgo is disabled.
-type PrivKey []byte
+type PrivKey struct{}
 
 // NewPrivateKeyFromBytes returns ErrDisabled.
-func NewPrivateKeyFromBytes([]byte) (PrivKey, error) {
+func NewPrivateKeyFromBytes([]byte) (*PrivKey, error) {
 	return nil, ErrDisabled
 }
 
 // GenPrivKey returns ErrDisabled.
-func GenPrivKey() (PrivKey, error) {
+func GenPrivKey() (*PrivKey, error) {
 	return nil, ErrDisabled
 }
 
 // Bytes returns the byte representation of the Key.
-func (privKey PrivKey) Bytes() []byte {
-	return privKey
+func (PrivKey) Bytes() []byte {
+	return nil
 }
 
 // PubKey always panics.
@@ -77,7 +77,7 @@ func (PrivKey) Zeroize() {
 var _ crypto.PubKey = &PubKey{}
 
 // PubKey represents a BLS private key noop when blst is not set as a build flag and cgo is disabled.
-type PubKey []byte
+type PubKey struct{}
 
 // NewPublicKeyFromBytes returns ErrDisabled.
 func NewPublicKeyFromBytes([]byte) (*PubKey, error) {

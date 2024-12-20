@@ -1,7 +1,7 @@
 package blocksync
 
 import (
-	cmtbs "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
+	cmtbs "github.com/cometbft/cometbft/api/cometbft/blocksync/v2"
 	"github.com/cometbft/cometbft/types"
 )
 

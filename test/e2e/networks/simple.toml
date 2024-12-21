@@ -1,5 +1,29 @@
 prometheus = true
+constant_flip = true
+[validators]
+validator01 = 100
+
+
+[validator_update]
+  [validator_update.0]
+    validator01 = 97
+    validator02 = 59
+  [validator_update.10]
+    validator03 = 66
+  [validator_update.15]
+    validator04 = 39
+  [validator_update.20]
+    validator05 = 50
+  [validator_update.21]
+    validator06 = 50
+  [validator_update.22]
+    validator07 = 50
+
 [node.validator00]
 [node.validator01]
 [node.validator02]
 [node.validator03]
+[node.validator04]
+[node.validator05]
+[node.validator06]
+[node.validator07]

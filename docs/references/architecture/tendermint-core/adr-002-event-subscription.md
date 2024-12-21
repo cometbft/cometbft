@@ -61,7 +61,7 @@ for the most apps (I guess we'll see).
 /txs/search?query="abci.account.owner = Igor"
 ```
 
-For historic queries we will need a indexing storage (Postgres, SQLite, ...).
+For historic queries we will need an indexing storage (Postgres, SQLite, ...).
 
 ### Issues
 

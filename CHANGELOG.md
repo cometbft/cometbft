@@ -538,7 +538,7 @@ on the `/block_results` RPC endpoint.
 - `[blockstore]` Use LRU caches for LoadBlockPart. Make the LoadBlockPart and LoadBlockCommit APIs 
     return mutative copies, that the caller is expected to not modify. This saves on memory copying.
   ([\#3342](https://github.com/cometbft/cometbft/issues/3342))
-- `[blockstore]` Use LRU caches in blockstore, significiantly improving consensus gossip routine performance
+- `[blockstore]` Use LRU caches in blockstore, significantly improving consensus gossip routine performance
   ([\#3003](https://github.com/cometbft/cometbft/issues/3003))
 - `[blocksync]` Avoid double-calling `types.BlockFromProto` for performance
   reasons ([\#2016](https://github.com/cometbft/cometbft/pull/2016))

@@ -105,8 +105,12 @@ func InjectEvidence(ctx context.Context, r *rand.Rand, testnet *e2e.Testnet, amo
 			if dve.VoteA.Height < testnet.VoteExtensionsEnableHeight {
 				dve.VoteA.Extension = nil
 				dve.VoteA.ExtensionSignature = nil
+				dve.VoteA.NonRpExtension = nil
+				dve.VoteA.NonRpExtensionSignature = nil
 				dve.VoteB.Extension = nil
 				dve.VoteB.ExtensionSignature = nil
+				dve.VoteB.NonRpExtension = nil
+				dve.VoteB.NonRpExtensionSignature = nil
 			}
 			ev = dve
 		}

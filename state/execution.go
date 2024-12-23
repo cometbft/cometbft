@@ -615,9 +615,9 @@ func validateValidatorUpdates(abciUpdates []abci.ValidatorUpdate,
 		}
 
 		// Check if validator's pubkey matches an ABCI type in the consensus params.
-		if !types.IsValidPubkeyType(params, valUpdate.PubKeyType) {
-			return fmt.Errorf("validator %X is using pubkey %s, which is unsupported for consensus",
-				valUpdate.PubKeyBytes, valUpdate.PubKeyType)
+		if isValid, suppTypes := types.IsValidPubkeyType(params, valUpdate.PubKeyType); !isValid {
+			return fmt.Errorf("validator %X is using pubkey %s, which is unsupported for consensus (supported types: %s)",
+				valUpdate.PubKeyBytes, valUpdate.PubKeyType, suppTypes)
 		}
 
 		// XXX: PubKeyBytes will be checked in PB2TM.ValidatorUpdates

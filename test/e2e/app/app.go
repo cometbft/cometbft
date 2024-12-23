@@ -768,14 +768,16 @@ func (app *Application) ExtendVote(_ context.Context, req *abci.ExtendVoteReques
 	}
 
 	// Replay protection mechanism consists of: (a) the randomness of the extension (nonce), and (b) including the height
-	nonRpExt := fmt.Sprintf("%d|%x", req.Height, ext[:extLen])
+	nonRpExt := []byte(fmt.Sprintf("%d|", req.Height))
+
+	nonRpExt = slices.Concat(nonRpExt, ext[:extLen])
 
 	app.logger.Info("generated vote extension", "height", appHeight,
-		"vote_extension", hex.EncodeToString(ext[:4]), "ve_len", extLen,
+		"vote_extension", ext, "ve_len", extLen,
 		"non_rp_vote_extension", nonRpExt, "nrp_ve_len", len(nonRpExt))
 	return &abci.ExtendVoteResponse{
 		VoteExtension:  ext[:extLen],
-		NonRpExtension: []byte(nonRpExt),
+		NonRpExtension: nonRpExt,
 	}, nil
 }
 
@@ -1122,8 +1124,8 @@ func (app *Application) verifyExtensionTx(height int64, payload string) error {
 // It also checks the non replay protected extension: its height and its data.
 // Otherwise it is the size of the extension.
 func parseVoteExtensions(cfg *Config, expHeight int64, ext, nonRpExt []byte) (int64, error) {
-	parts := strings.Split(string(nonRpExt), "|")
-	if len(parts) != 2 {
+	parts := strings.SplitN(string(nonRpExt), "|", 2)
+	if len(parts) < 2 {
 		return 0, fmt.Errorf("non replay protected vote extension must have 2 parts (%d)", len(parts))
 	}
 	height, err := strconv.ParseInt(parts[0], 10, 64)
@@ -1136,7 +1138,8 @@ func parseVoteExtensions(cfg *Config, expHeight int64, ext, nonRpExt []byte) (in
 			height,
 		)
 	}
-	xExt := hex.EncodeToString(ext)
+	xExt := string(ext)
+
 	if parts[1] != xExt {
 		return 0, fmt.Errorf("non replay protected vote extension contains incorrect data (%s!=%s)",
 			xExt,

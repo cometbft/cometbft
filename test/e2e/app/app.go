@@ -1125,7 +1125,7 @@ func (app *Application) verifyExtensionTx(height int64, payload string) error {
 // Otherwise it is the size of the extension.
 func parseVoteExtensions(cfg *Config, expHeight int64, ext, nonRpExt []byte) (int64, error) {
 	parts := strings.Split(string(nonRpExt), "|")
-	if len(parts) != 2 {
+	if len(parts) < 2 {
 		return 0, fmt.Errorf("non replay protected vote extension must have 2 parts (%d)", len(parts))
 	}
 	height, err := strconv.ParseInt(parts[0], 10, 64)

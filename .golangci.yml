@@ -92,6 +92,7 @@ linters-settings:
           - github.com/creachadair/tomledit
           - github.com/decred/dcrd/dcrec/secp256k1/v4
           - github.com/dgraph-io/badger/v4
+          - github.com/ethereum/go-ethereum/crypto
           - github.com/go-git/go-git/v5
           - github.com/google
           - github.com/gorilla/websocket

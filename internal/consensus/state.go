@@ -1408,7 +1408,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		25: else
 		26:   broadcast <PREVOTE, h_p, round_p, nil>
 
-		Here, cs.Proposal.POLRound corresponds to the -1 in the rule of the pseude-code (line 22).
+		Here, cs.Proposal.POLRound corresponds to the -1 in the rule of the pseudo-code (line 22).
 		This means that the proposer is producing a new proposal that has not previously
 		seen a 2/3 majority by the network.
 

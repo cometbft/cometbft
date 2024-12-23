@@ -8,7 +8,7 @@
  - this specification focuses on safety, so timeouts are modelled
    with non-determinism
 
- - the proposer function is non-determinstic, no fairness is assumed
+ - the proposer function is non-deterministic, no fairness is assumed
 
  - the messages by the faulty processes are injected right in the initial states
 

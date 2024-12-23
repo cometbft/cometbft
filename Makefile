@@ -315,7 +315,7 @@ $(BUILDDIR):
 
 #? help: Get more info on make commands.
 help: Makefile
-	@echo " Choose a command run in comebft:"
+	@echo " Choose a command run in cometbft:"
 	@sed -n 's/^#?//p' $< | column -t -s ':' |  sort | sed -e 's/^/ /'
 .PHONY: help
 

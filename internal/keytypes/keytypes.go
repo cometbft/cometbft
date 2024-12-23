@@ -2,12 +2,14 @@ package keytypes
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 )
 
 var keyTypes map[string]func() (crypto.PrivKey, error)
@@ -19,6 +21,9 @@ func init() {
 		},
 		secp256k1.KeyType: func() (crypto.PrivKey, error) { //nolint: unparam
 			return secp256k1.GenPrivKey(), nil
+		},
+		secp256k1eth.KeyType: func() (crypto.PrivKey, error) { //nolint: unparam
+			return secp256k1eth.GenPrivKey(), nil
 		},
 	}
 	if bls12381.Enabled {
@@ -44,9 +49,13 @@ func GenPrivKey(keyType string) (crypto.PrivKey, error) {
 // SupportedKeyTypesStr returns a string of supported key types.
 func SupportedKeyTypesStr() string {
 	keyTypesSlice := make([]string, 0, len(keyTypes))
+
 	for k := range keyTypes {
 		keyTypesSlice = append(keyTypesSlice, fmt.Sprintf("%q", k))
 	}
+	sort.Slice(keyTypesSlice, func(i, j int) bool {
+		return keyTypesSlice[i] < keyTypesSlice[j]
+	})
 	return strings.Join(keyTypesSlice, ", ")
 }
 
@@ -56,6 +65,9 @@ func ListSupportedKeyTypes() []string {
 	for k := range keyTypes {
 		keyTypesSlice = append(keyTypesSlice, k)
 	}
+	sort.Slice(keyTypesSlice, func(i, j int) bool {
+		return keyTypesSlice[i] < keyTypesSlice[j]
+	})
 	return keyTypesSlice
 }
 

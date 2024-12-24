@@ -3,8 +3,8 @@ package privval
 import (
 	"fmt"
 
-	pvproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	pvproto "github.com/cometbft/cometbft/api/cometbft/privval/v2"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/types"
 )

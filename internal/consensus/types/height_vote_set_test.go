@@ -61,6 +61,7 @@ func TestInconsistentExtensionData(t *testing.T) {
 	hvsE := NewExtendedHeightVoteSet(test.DefaultTestChainID, 1, valSet)
 	voteNoExt := makeVoteHR(20, privVals)
 	voteNoExt.Extension, voteNoExt.ExtensionSignature = nil, nil
+	voteNoExt.NonRpExtension, voteNoExt.NonRpExtensionSignature = nil, nil
 	require.Panics(t, func() {
 		_, _ = hvsE.AddVote(voteNoExt, "peer1", false)
 	})

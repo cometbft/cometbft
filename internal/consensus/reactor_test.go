@@ -17,7 +17,7 @@ import (
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v2"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/bits"
@@ -387,10 +387,13 @@ func TestSwitchToConsensusVoteExtensions(t *testing.T) {
 			var veHeight int64
 			if testCase.includeExtensions {
 				require.NotNil(t, signedVote.ExtensionSignature)
+				require.NotNil(t, signedVote.NonRpExtensionSignature)
 				veHeight = testCase.storedHeight
 			} else {
 				require.Nil(t, signedVote.Extension)
 				require.Nil(t, signedVote.ExtensionSignature)
+				require.Nil(t, signedVote.NonRpExtension)
+				require.Nil(t, signedVote.NonRpExtensionSignature)
 			}
 
 			added, err := voteSet.AddVote(signedVote)

@@ -231,7 +231,7 @@ to reconstruct the vote set given the validator set.
 | BlockIDFlag      | [BlockIDFlag](#blockidflag) | Represents the validators participation in consensus: its vote was not received, voted for the block that received the majority, or voted for nil | Must be one of the fields in the [BlockIDFlag](#blockidflag) enum |
 | ValidatorAddress | [Address](#address)         | Address of the validator                                                                                                                          | Must be of length 20                                              |
 | Timestamp        | [Time](#time)               | This field will vary from `CommitSig` to `CommitSig`. It represents the timestamp of the validator.                                               | [Time](#time)                                                     |
-| Signature        | [Signature](#signature)     | Signature corresponding to the validators participation in consensus.                                                                             | The length of the signature must be > 0 and < than  64  for `ed25519` or < 96 for `bls12381`     |
+| Signature        | [Signature](#signature)     | Signature corresponding to the validators participation in consensus.                                                                             | The length of the signature must be > 0 and < than  64  for `ed25519`, < 96 for `bls12381` or < 65 for `secp256k1eth`     |
 
 NOTE: `ValidatorAddress` and `Timestamp` fields may be removed in the future
 (see [ADR-25](https://github.com/cometbft/cometbft/blob/main/docs/architecture/adr-025-commit.md)).
@@ -282,11 +282,11 @@ The vote includes information about the validator signing it. When stored in the
 | Timestamp               | [Time](#time)                   | Timestamp represents the time at which a validator signed.                                       |                                                                  |
 | ValidatorAddress        | bytes                           | Address of the validator                                                                         | Length must be equal to 20                                       |
 | ValidatorIndex          | int32                           | Index at a specific block height corresponding to the Index of the validator in the set.         | Must be > 0                                                      |
-| Signature               | bytes                           | Signature by the validator if they participated in consensus for the associated block.           | Length must be > 0 and < 64 for `ed25519` or < 96 for `bls12381` |
+| Signature               | bytes                           | Signature by the validator if they participated in consensus for the associated block.           | Length must be > 0 and < 64 for `ed25519`, < 96 for `bls12381` or < 65 for `secp256k1eth`   |
 | Extension               | bytes                           | Vote extension provided by the Application running at the validator's node.                      | Length can be 0                                                  |
-| ExtensionSignature      | bytes                           | Signature for the extension                                                                      | Length must be > 0 and < 64  for `ed25519` or < 96 for `bls12381`|
+| ExtensionSignature      | bytes                           | Signature for the extension                                                                      | Length must be > 0 and < 64  for `ed25519`, < 96 for `bls12381` or < 65 for `secp256k1eth` |
 | NonRpExtension          | bytes                           | Non replay-protected vote extension provided by the Application running at the validator's node. | Length can be 0                                                  |
-| NonRpExtensionSignature | bytes                           | Signature for the non replay-protected vote extension                                            | Length must be > 0 and < 64  for `ed25519` or < 96 for `bls12381`|
+| NonRpExtensionSignature | bytes                           | Signature for the non replay-protected vote extension                                            | Length must be > 0 and < 64  for `ed25519`,  < 96 for `bls12381` or < 65 for `secp256k1eth` |
 
 ## CanonicalVote
 
@@ -350,7 +350,7 @@ or could have been locked in POLRound. The message is signed by the validator pr
 | POLRound  | int64                           | Proof of lock round.                                                                  | Must be >= -1                                                                  |
 | BlockID   | [BlockID](#blockid)             | The blockID of the corresponding block.                                               | [BlockID](#blockid)                                                            |
 | Timestamp | [Time](#time)                   | Timestamp represents the time at which the block was produced.                        | [Time](#time)                                                                  |
-| Signature | slice of bytes (`[]byte`)       | Signature by the validator if they participated in consensus for the associated bock. | Length of signature must be > 0 and < 64 for `ed25519` or < 96 for `bls12381`  |
+| Signature | slice of bytes (`[]byte`)       | Signature by the validator if they participated in consensus for the associated bock. | Length of signature must be > 0 and < 64 for `ed25519`, < 96 for `bls12381` or < 65 for `secp256k1eth`  |
 
 ## SignedMsgType
 

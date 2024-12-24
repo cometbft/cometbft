@@ -332,6 +332,7 @@ func CreateRoutableAddr() (addr string, netAddr NetAddr) {
 	id := nodeKey.ID()
 	for {
 		var err error
+
 		addr = fmt.Sprintf("%s@%v.%v.%v.%v:26656",
 			id,
 			cmtrand.Int()%256,

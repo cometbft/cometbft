@@ -82,16 +82,15 @@ var _ Mempool = &CListMempool{}
 // CListMempoolOption sets an optional parameter on the mempool.
 type CListMempoolOption func(*CListMempool)
 
-// A lane is defined by its ID and priority.
-// A laneID is a string uinquely identifying a lane.
+// A LaneID is a string that uniquely identifies a lane.
 // Multiple lanes can have the same priority.
 type LaneID string
 
-// The priority of a lane.
+// LanePriority represents the priority of a lane.
 type LanePriority uint32
 
-// Lane corresponds to a transaction class as defined by the application.
-// A lane is identified by a string name and has priority level.
+// lane corresponds to a transaction class as defined by the application.
+// A lane is identified by a unique string name (LaneID) and has a priority level (LanePriority).
 // Different lanes can have the same priority.
 type lane struct {
 	id       LaneID
@@ -257,16 +256,19 @@ func WithNewTxCallback(cb func(types.Tx)) CListMempoolOption {
 	return func(mem *CListMempool) { mem.onNewTx = cb }
 }
 
+// Lock acquires the exclusive lock for mempool updates.
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) Lock() {
 	mem.updateMtx.Lock()
 }
 
+// Unlock releases the exclusive lock for mempool updates.
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) Unlock() {
 	mem.updateMtx.Unlock()
 }
 
+// PreUpdate sets the recheckFull flag and logs if its state changes.
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) PreUpdate() {
 	if mem.recheck.setRecheckFull() {

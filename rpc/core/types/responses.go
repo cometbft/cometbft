@@ -5,7 +5,7 @@ import (
 	"time"
 
 	abcitypes "github.com/cometbft/cometbft/abci/types"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/p2p"
@@ -131,10 +131,10 @@ type ResultDialPeers struct {
 
 // A peer.
 type Peer struct {
-	NodeInfo         p2p.NodeInfoDefault  `json:"node_info"`
-	IsOutbound       bool                 `json:"is_outbound"`
-	ConnectionStatus p2p.ConnectionStatus `json:"connection_status"`
-	RemoteIP         string               `json:"remote_ip"`
+	NodeInfo         p2p.NodeInfoDefault `json:"node_info"`
+	IsOutbound       bool                `json:"is_outbound"`
+	ConnectionStatus p2p.ConnState       `json:"connection_status"`
+	RemoteIP         string              `json:"remote_ip"`
 }
 
 // Validators for a height.

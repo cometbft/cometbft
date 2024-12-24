@@ -406,14 +406,17 @@ func TestVoteExtensionsAreSignedIfSignExtensionIsTrue(t *testing.T) {
 	err = privVal.SignVote("mychainid", vpb1, true)
 	require.NoError(t, err, "expected no error signing vote")
 	assert.NotNil(t, vpb1.ExtensionSignature)
+	assert.NotNil(t, vpb1.NonRpExtensionSignature)
 
-	vesb1 := types.VoteExtensionSignBytes("mychainid", vpb1)
+	vesb1, venrpsb1 := types.VoteExtensionSignBytes("mychainid", vpb1)
 	assert.True(t, pubKey.VerifySignature(vesb1, vpb1.ExtensionSignature))
+	assert.True(t, pubKey.VerifySignature(venrpsb1, vpb1.NonRpExtensionSignature))
 
 	// We duplicate this vote precisely, including its timestamp, but change
 	// its extension
 	vote2 := vote1.Copy()
 	vote2.Extension = []byte("new extension")
+	vote2.NonRpExtension = []byte("new non-rp extension")
 	vpb2 := vote2.ToProto()
 
 	err = privVal.SignVote("mychainid", vpb2, true)
@@ -423,9 +426,11 @@ func TestVoteExtensionsAreSignedIfSignExtensionIsTrue(t *testing.T) {
 	// that validates against the vote extension sign bytes with the new
 	// extension, and does not validate against the vote extension sign bytes
 	// with the old extension.
-	vesb2 := types.VoteExtensionSignBytes("mychainid", vpb2)
+	vesb2, venrpsb2 := types.VoteExtensionSignBytes("mychainid", vpb2)
 	assert.True(t, pubKey.VerifySignature(vesb2, vpb2.ExtensionSignature))
 	assert.False(t, pubKey.VerifySignature(vesb1, vpb2.ExtensionSignature))
+	assert.True(t, pubKey.VerifySignature(venrpsb2, vpb2.NonRpExtensionSignature))
+	assert.False(t, pubKey.VerifySignature(venrpsb1, vpb2.NonRpExtensionSignature))
 
 	// We now manipulate the timestamp of the vote with the extension, as per
 	// TestDifferByTimestamp
@@ -439,9 +444,32 @@ func TestVoteExtensionsAreSignedIfSignExtensionIsTrue(t *testing.T) {
 	require.NoError(t, err, "expected no error signing same vote with manipulated timestamp and vote extension")
 	assert.Equal(t, expectedTimestamp, vpb2.Timestamp)
 
-	vesb3 := types.VoteExtensionSignBytes("mychainid", vpb2)
+	vesb3, venrpsb3 := types.VoteExtensionSignBytes("mychainid", vpb2)
+
 	assert.True(t, pubKey.VerifySignature(vesb3, vpb2.ExtensionSignature))
 	assert.False(t, pubKey.VerifySignature(vesb1, vpb2.ExtensionSignature))
+	assert.True(t, pubKey.VerifySignature(venrpsb3, vpb2.NonRpExtensionSignature))
+	assert.False(t, pubKey.VerifySignature(venrpsb1, vpb2.NonRpExtensionSignature))
+
+	// Check signing vote with canonical vote extension and _NO_ non replay-protected extension
+	vote3 := vote1.Copy()
+	vote3.Extension = []byte("new extension")
+	vote3.NonRpExtension = nil
+	vpb3 := vote3.ToProto()
+
+	err = privVal.SignVote("mychainid", vpb3, true)
+	require.NoError(t, err, "expected no error signing same vote without non-replay-protected extension")
+
+	// We need to ensure that a valid new extension signature has been created
+	// that validates against the vote extension sign bytes with the new
+	// extension, and does not validate against the vote extension sign bytes
+	// with the old extension.
+	vesb4, venrpsb4 := types.VoteExtensionSignBytes("mychainid", vpb3)
+	assert.True(t, pubKey.VerifySignature(vesb4, vpb3.ExtensionSignature))
+	assert.False(t, pubKey.VerifySignature(vesb1, vpb3.ExtensionSignature))
+	assert.True(t, pubKey.VerifySignature(venrpsb4, vpb3.NonRpExtensionSignature))
+	// Non-replay-protected signatures will not differ from vote 1 as content is the same (empty byte slice)
+	assert.True(t, pubKey.VerifySignature(venrpsb1, vpb3.NonRpExtensionSignature))
 }
 
 func TestVoteExtensionsAreNotSignedIfSignExtensionIsFalse(t *testing.T) {

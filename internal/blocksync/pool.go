@@ -439,7 +439,7 @@ func (pool *BlockPool) isPeerBanned(peerID p2p.ID) bool {
 
 // CONTRACT: pool.mtx must be locked.
 func (pool *BlockPool) banPeer(peerID p2p.ID) {
-	pool.Logger.Debug("Banning peer", peerID)
+	pool.Logger.Debug("Banning peer", "id", peerID)
 	pool.bannedPeers[peerID] = cmttime.Now()
 }
 

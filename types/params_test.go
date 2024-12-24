@@ -10,14 +10,52 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 )
 
 var (
-	valEd25519             = []string{ABCIPubKeyTypeEd25519}
-	valSecp256k1           = []string{ABCIPubKeyTypeSecp256k1}
-	valEd25519AndSecp256k1 = []string{ABCIPubKeyTypeEd25519, ABCIPubKeyTypeSecp256k1}
+	valEd25519                = []string{ABCIPubKeyTypeEd25519}
+	valSecp256k1              = []string{ABCIPubKeyTypeSecp256k1}
+	valEd25519AndSecp256k1    = []string{ABCIPubKeyTypeEd25519, ABCIPubKeyTypeSecp256k1}
+	valEd25519AndSecp256k1Eth = []string{ABCIPubKeyTypeEd25519, ABCIPubKeyTypeSecp256k1Eth}
 )
+
+type makeParamsArgs struct {
+	blockBytes          int64
+	blockGas            int64
+	evidenceAge         int64
+	maxEvidenceBytes    int64
+	pubkeyTypes         []string
+	voteExtensionHeight int64
+	pbtsHeight          int64
+	precision           time.Duration
+	messageDelay        time.Duration
+}
+
+func makeParams(args makeParamsArgs) ConsensusParams {
+	return ConsensusParams{
+		Block: BlockParams{
+			MaxBytes: args.blockBytes,
+			MaxGas:   args.blockGas,
+		},
+		Evidence: EvidenceParams{
+			MaxAgeNumBlocks: args.evidenceAge,
+			MaxAgeDuration:  time.Duration(args.evidenceAge),
+			MaxBytes:        args.maxEvidenceBytes,
+		},
+		Validator: ValidatorParams{
+			PubKeyTypes: args.pubkeyTypes,
+		},
+		Synchrony: SynchronyParams{
+			Precision:    args.precision,
+			MessageDelay: args.messageDelay,
+		},
+		Feature: FeatureParams{
+			VoteExtensionsEnableHeight: args.voteExtensionHeight,
+			PbtsEnableHeight:           args.pbtsHeight,
+		},
+	}
+}
 
 func TestConsensusParamsValidation(t *testing.T) {
 	testCases := []struct {
@@ -195,6 +233,33 @@ func TestConsensusParamsValidation(t *testing.T) {
 			}),
 			valid: false,
 		},
+		{
+			name: "valid pubkeyType",
+			params: makeParams(makeParamsArgs{
+				blockBytes:  1,
+				evidenceAge: 2,
+				pubkeyTypes: valSecp256k1,
+			}),
+			valid: true,
+		},
+		{
+			name: "several valid pubkeyTypes",
+			params: makeParams(makeParamsArgs{
+				blockBytes:  1,
+				evidenceAge: 2,
+				pubkeyTypes: valEd25519AndSecp256k1Eth,
+			}),
+			valid: true,
+		},
+		{
+			name: "valid pubkeyTypes and invalid pubkeyType",
+			params: makeParams(makeParamsArgs{
+				blockBytes:  1,
+				evidenceAge: 2,
+				pubkeyTypes: append(valEd25519AndSecp256k1Eth, "my little type"),
+			}),
+			valid: false,
+		},
 		// pbts enabled, invalid synchrony params
 		{
 			name: "messageDelay 0",
@@ -291,6 +356,9 @@ func TestConsensusParamsValidation(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
+		if tc.params.Validator.PubKeyTypes == nil {
+			tc.params.Validator.PubKeyTypes = valEd25519
+		}
 		if tc.valid {
 			require.NoErrorf(t, tc.params.ValidateBasic(),
 				"expected no error for valid params, test: '%s'", tc.name)
@@ -298,47 +366,6 @@ func TestConsensusParamsValidation(t *testing.T) {
 			require.Errorf(t, tc.params.ValidateBasic(),
 				"expected error for non valid params, test: '%s'", tc.name)
 		}
-	}
-}
-
-type makeParamsArgs struct {
-	blockBytes          int64
-	blockGas            int64
-	evidenceAge         int64
-	maxEvidenceBytes    int64
-	pubkeyTypes         []string
-	voteExtensionHeight int64
-	pbtsHeight          int64
-	precision           time.Duration
-	messageDelay        time.Duration
-}
-
-func makeParams(args makeParamsArgs) ConsensusParams {
-	if args.pubkeyTypes == nil {
-		args.pubkeyTypes = valEd25519
-	}
-
-	return ConsensusParams{
-		Block: BlockParams{
-			MaxBytes: args.blockBytes,
-			MaxGas:   args.blockGas,
-		},
-		Evidence: EvidenceParams{
-			MaxAgeNumBlocks: args.evidenceAge,
-			MaxAgeDuration:  time.Duration(args.evidenceAge),
-			MaxBytes:        args.maxEvidenceBytes,
-		},
-		Validator: ValidatorParams{
-			PubKeyTypes: args.pubkeyTypes,
-		},
-		Synchrony: SynchronyParams{
-			Precision:    args.precision,
-			MessageDelay: args.messageDelay,
-		},
-		Feature: FeatureParams{
-			VoteExtensionsEnableHeight: args.voteExtensionHeight,
-			PbtsEnableHeight:           args.pbtsHeight,
-		},
 	}
 }
 
@@ -486,6 +513,26 @@ func TestConsensusParamsUpdate(t *testing.T) {
 				},
 			},
 			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pubkeyTypes: valEd25519AndSecp256k1}),
+		},
+		// remove Secp256k1Eth
+		{
+			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pubkeyTypes: valEd25519AndSecp256k1Eth}),
+			updates: &cmtproto.ConsensusParams{
+				Validator: &cmtproto.ValidatorParams{
+					PubKeyTypes: valEd25519AndSecp256k1,
+				},
+			},
+			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pubkeyTypes: valEd25519AndSecp256k1}),
+		},
+		// add Secp256k1Eth
+		{
+			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pubkeyTypes: valEd25519AndSecp256k1}),
+			updates: &cmtproto.ConsensusParams{
+				Validator: &cmtproto.ValidatorParams{
+					PubKeyTypes: valEd25519AndSecp256k1Eth,
+				},
+			},
+			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pubkeyTypes: valEd25519AndSecp256k1Eth}),
 		},
 	}
 

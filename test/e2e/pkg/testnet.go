@@ -20,6 +20,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
@@ -268,7 +269,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			node.ABCIProtocol = ProtocolBuiltin
 		}
 		if node.Database == "" {
-			node.Database = "goleveldb"
+			node.Database = "pebbledb"
 		}
 		if nodeManifest.PrivvalProtocolStr != "" {
 			node.PrivvalProtocol = Protocol(nodeManifest.PrivvalProtocolStr)
@@ -847,6 +848,8 @@ func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
 		return pk
 	case ed25519.KeyType:
 		return ed25519.GenPrivKeyFromSecret(seed)
+	case secp256k1eth.KeyType:
+		return secp256k1eth.GenPrivKeySecp256k1(seed)
 	default:
 		panic("KeyType not supported") // should not make it this far
 	}

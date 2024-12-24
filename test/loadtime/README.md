@@ -47,11 +47,11 @@ the timestamp of the block the transaction was executed in to determine transact
 minimum, maximum, and average latency as well as the standard deviation.
 
 Below is a basic invocation of the report tool with a data directory under `/home/test/.cometbft/data/`
-where the data was saved in a `goleveldb` database.
+where the data was saved in a `pebbledb` database.
 
 
 ```bash
-./build/report --database-type goleveldb --data-dir ~/.cometbft/data
+./build/report --database-type pebbledb --data-dir ~/.cometbft/data
 ```
 
 The `report` tool also supports outputting the raw data as `csv`. This can be
@@ -61,7 +61,7 @@ Below is an invocation of the report tool that outputs the data to a `csv` file
 in `out.csv`
 
 ```bash
-./build/report --database-type goleveldb --data-dir ~/.cometbft/data --csv out.csv
+./build/report --database-type pebbledb --data-dir ~/.cometbft/data --csv out.csv
 ```
 
 The `report` tool outputs the data for each experiment separately, identified

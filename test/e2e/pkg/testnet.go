@@ -386,7 +386,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		}
 
 		const flipSpan = 3000
-		//	minNodeInLastUpdate := false
 
 		for i := max(1, manifest.InitialHeight); i < manifest.InitialHeight+flipSpan; i++ {
 			// The idea is to take validator `minNode` and flip its
@@ -420,12 +419,13 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 				if _, ok2 := validatorsActiveSet[minNode]; !ok2 {
 					activateMinNode = true
 				}
+				// As there are no updates for height i, we need to create
+				// an entry
 				testnet.ValidatorUpdates[i] = make(map[string]int64)
 			}
 
 			if activateMinNode {
 				testnet.ValidatorUpdates[i][minNode] = 1
-				// There were no validator updates for this height
 				validatorsActiveSet[minNode] = struct{}{}
 			} else {
 				testnet.ValidatorUpdates[i][minNode] = 0 // There were no validator updates for this height

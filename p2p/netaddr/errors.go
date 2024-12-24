@@ -26,7 +26,7 @@ type ErrInvalid struct {
 }
 
 func (e ErrInvalid) Error() string {
-	return "invalid address" + e.Err.Error()
+	return "invalid address: " + e.Err.Error()
 }
 
 func (e ErrInvalid) Unwrap() error { return e.Err }

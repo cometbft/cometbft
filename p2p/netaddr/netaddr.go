@@ -2,7 +2,6 @@ package netaddr
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"net"
 	"strconv"
@@ -13,8 +12,10 @@ import (
 	manet "github.com/multiformats/go-multiaddr/net"
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
+	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/p2p/internal/nodekey"
+	nk "github.com/cometbft/cometbft/p2p/internal/nodekey"
 )
 
 // IDAddrString returns id@hostPort. It strips the leading
@@ -236,7 +237,11 @@ func (na NetAddr) Same(other any) bool {
 //
 //	/ip4/192.168.1.0/tcp/26656/p2p/deadbeefdeadbeefdeadbeefdeadbeefdeadbeef
 func (na NetAddr) String() string {
-	return na.Multiaddr.Encapsulate(ma.StringCast("/p2p/" + string(na.ID))).String()
+	p2pAddr, err := ma.NewMultiaddr("/p2p/" + string(na.ID))
+	if err != nil {
+		panic(err)
+	}
+	return na.Multiaddr.Encapsulate(p2pAddr).String()
 }
 
 // DialString returns a net.Addr String.
@@ -311,24 +316,24 @@ func (na NetAddr) ToIP() (net.IP, error) {
 // TODO: move to nodekey package
 func ValidateID(id nodekey.ID) error {
 	if len(id) == 0 {
-		return ErrNoIP
+		// invalid error
+		return ErrNoID{""}
 	}
-	idBytes, err := hex.DecodeString(string(id))
-	if err != nil {
-		return err
-	}
-	if len(idBytes) != nodekey.IDByteLength {
-		return ErrInvalidPeerIDLength{Got: len(idBytes), Expected: nodekey.IDByteLength}
-	}
-	return nil
+
+	_, err := nk.DecodeID(string(id))
+	return err
 }
 
 // Used for testing.
 func CreateRoutableAddr() (addr string, netAddr NetAddr) {
+	nodeKey := nodekey.NodeKey{
+		PrivKey: ed25519.GenPrivKey(),
+	}
+	id := nodeKey.ID()
 	for {
 		var err error
-		addr = fmt.Sprintf("%X@%v.%v.%v.%v:26656",
-			cmtrand.Bytes(20),
+		addr = fmt.Sprintf("%s@%v.%v.%v.%v:26656",
+			id,
 			cmtrand.Int()%256,
 			cmtrand.Int()%256,
 			cmtrand.Int()%256,

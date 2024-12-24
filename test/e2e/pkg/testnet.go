@@ -334,8 +334,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		}
 	}
 
-	validatorsPerHeight := make(map[int64]map[string]struct{})
-	validatorsPerHeight[testnet.InitialHeight] = make(map[string]struct{})
+	// Keep track of which valiadtors have been activated so far
+	validatorsActiveSet := make(map[string]struct{})
 	// Set up genesis validators. If not specified explicitly, use all validator nodes.
 	if len(testnet.Validators) == 0 {
 		if testnet.Validators == nil { // Can this ever happen?
@@ -344,12 +344,12 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		for _, node := range testnet.Nodes {
 			if node.Mode == ModeValidator {
 				testnet.Validators[node.Name] = 100
-				validatorsPerHeight[testnet.InitialHeight][node.Name] = struct{}{}
+				validatorsActiveSet[node.Name] = struct{}{}
 			}
 		}
 	} else {
 		for val := range testnet.Validators {
-			validatorsPerHeight[testnet.InitialHeight][val] = struct{}{}
+			validatorsActiveSet[val] = struct{}{}
 		}
 	}
 
@@ -368,11 +368,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			if node == nil {
 				return nil, fmt.Errorf("unknown validator %q for update at height %v", name, height)
 			}
+
 			valUpdate[node.Name] = power
-			if len(validatorsPerHeight[int64(height)]) == 0 {
-				validatorsPerHeight[int64(height)] = make(map[string]struct{})
-			}
-			validatorsPerHeight[int64(height)][node.Name] = struct{}{}
 		}
 		testnet.ValidatorUpdates[int64(height)] = valUpdate
 	}
@@ -389,11 +386,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		}
 
 		const flipSpan = 3000
-		minNodeInLastUpdate := false
+		//	minNodeInLastUpdate := false
+
 		for i := max(1, manifest.InitialHeight); i < manifest.InitialHeight+flipSpan; i++ {
-			if len(validatorsPerHeight[i]) <= 1 {
-				continue
-			}
 			// The idea is to take validator `minNode` and flip its
 			// voting power between 0 and 1 in alternating heights.
 
@@ -401,34 +396,55 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			// ValidatorUpdates for height [i], this update is kept
 			// if and only if minNode was not present or had a
 			// value of `0` in height `i-1`
-			if _, ok := testnet.ValidatorUpdates[i]; ok {
-				if !minNodeInLastUpdate {
+
+			_, ok := testnet.ValidatorUpdates[i]
+
+			switch ok {
+			case true:
+				for val := range testnet.ValidatorUpdates[i] {
+					// First mark any validators that might not have been active
+					// previously as active
+					validatorsActiveSet[val] = struct{}{}
+				}
+				if _, ok2 := validatorsActiveSet[minNode]; !ok2 {
 					// MinNode was not part of last ValidatorUpdate or its value was 0
 					testnet.ValidatorUpdates[i][minNode] = 1
-					minNodeInLastUpdate = true
-				} else {
-					// MinNode was part of last ValidatorUpdate
+					//	minNodeInLastUpdate = true
+					validatorsActiveSet[minNode] = struct{}{}
+					continue
+				}
+				if len(validatorsActiveSet) > 1 {
+					// MinNode was part of last	 ValidatorUpdate
 					testnet.ValidatorUpdates[i][minNode] = 0
-					minNodeInLastUpdate = false
+					// minNodeInLastUpdate = false
+					delete(validatorsActiveSet, minNode)
 				}
 				continue
-			}
 
-			// If we get here it means that there were no updates for the current height
-			// and we add the update related to `minNode`
-			valUpdate := map[string]int64{
-				minNode: 1, // There were no validator updates for this height
+			case false:
+				// If we get here it means that there were no updates for the current height
+				// and we add the update related to `minNode`
+				valUpdate := map[string]int64{
+					minNode: 1, // There were no validator updates for this height
+				}
+				if _, ok2 := validatorsActiveSet[minNode]; !ok2 {
+					// and `minNode` was not included in the previous height
+					//	minNodeInLastUpdate = true
+					validatorsActiveSet[minNode] = struct{}{}
+				} else {
+					// If there is only one validator active, don't flip
+					if len(validatorsActiveSet) <= 1 {
+						continue
+					}
+					// MinNode was part of last ValidatorUpdate so revert the
+					// change of power
+					valUpdate[minNode] = 0
+					//	minNodeInLastUpdate = false
+					delete(validatorsActiveSet, minNode)
+				}
+				testnet.ValidatorUpdates[i] = valUpdate
+				continue
 			}
-			if !minNodeInLastUpdate {
-				// and `minNode` was not included in the previous height
-				minNodeInLastUpdate = true
-			} else {
-				// MinNode was part of last ValidatorUpdate so revert the
-				// change of power
-				valUpdate[minNode] = 0
-				minNodeInLastUpdate = false
-			}
-			testnet.ValidatorUpdates[i] = valUpdate
 		}
 	}
 	for i := max(1, manifest.InitialHeight); i < manifest.InitialHeight+30; i++ {

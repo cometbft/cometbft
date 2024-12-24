@@ -6,6 +6,7 @@ upgrade_version = "cometbft/e2e-node:local-version"
 load_tx_size_bytes = 0
 load_tx_batch_size = 100
 load_tx_connections = 0
+constant_flip = true
 
 [initial_state]
   initial01 = "a"
@@ -75,7 +76,6 @@ load_tx_connections = 0
     state_sync = false
     persist_interval = 5
     snapshot_interval = 3
-    retain_blocks = 10
     perturb = ["upgrade"]
     send_no_load = false
   [node.seed01]
@@ -89,7 +89,6 @@ load_tx_connections = 0
     state_sync = false
     persist_interval = 5
     snapshot_interval = 0
-    retain_blocks = 7
     perturb = ["upgrade"]
     send_no_load = false
   [node.validator01]
@@ -136,7 +135,6 @@ load_tx_connections = 0
     state_sync = false
     persist_interval = 1
     snapshot_interval = 0
-    retain_blocks = 12
     perturb = []
     send_no_load = false
     [node.validator03.misbehaviors]

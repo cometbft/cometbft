@@ -241,6 +241,193 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			}
 		}
 
+<<<<<<< HEAD
+=======
+		for {
+			// The entry may have been removed from the mempool since it was
+			// chosen at the beginning of the loop. Skip it if that's the case.
+			if !memR.mempool.Contains(txKey) {
+				break
+			}
+
+			memR.Logger.Debug("Sending transaction to peer",
+				"tx", txHash, "peer", peer.ID())
+
+			err := peer.Send(p2p.Envelope{
+				ChannelID: MempoolChannel,
+				Message:   &protomem.Txs{Txs: [][]byte{entry.Tx()}},
+			})
+			if err == nil {
+				break
+			}
+
+			memR.Logger.Debug("Failed sending transaction to peer",
+				"tx", txHash, "peer", peer.ID())
+
+			select {
+			case <-time.After(PeerCatchupSleepIntervalMS * time.Millisecond):
+			case <-peer.Quit():
+				return
+			case <-memR.Quit():
+				return
+			}
+		}
+	}
+}
+
+type gossipRouter struct {
+	mtx cmtsync.RWMutex
+	// A set of `source -> target` routes that are disabled for disseminating
+	// transactions, where source and target are node IDs.
+	disabledRoutes map[p2p.ID]map[p2p.ID]struct{}
+}
+
+func newGossipRouter() *gossipRouter {
+	return &gossipRouter{
+		disabledRoutes: make(map[p2p.ID]map[p2p.ID]struct{}),
+	}
+}
+
+// disableRoute marks the route `source -> target` as disabled.
+func (r *gossipRouter) disableRoute(source, target p2p.ID) {
+	if source == noSender || target == noSender {
+		// TODO: this shouldn't happen
+		return
+	}
+
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	targets, ok := r.disabledRoutes[source]
+	if !ok {
+		targets = make(map[p2p.ID]struct{})
+	}
+	targets[target] = struct{}{}
+	r.disabledRoutes[source] = targets
+}
+
+// isRouteEnabled returns true iff the route source->target is disabled.
+func (r *gossipRouter) isRouteDisabled(source, target p2p.ID) bool {
+	r.mtx.RLock()
+	defer r.mtx.RUnlock()
+
+	if targets, ok := r.disabledRoutes[source]; ok {
+		if _, ok := targets[target]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+// resetRoutes removes all disabled routes with peerID as source or target.
+func (r *gossipRouter) resetRoutes(peerID p2p.ID) {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	// Remove peer as source.
+	delete(r.disabledRoutes, peerID)
+
+	// Remove peer as target.
+	for _, targets := range r.disabledRoutes {
+		delete(targets, peerID)
+	}
+}
+
+// resetRandomRouteWithTarget removes a random disabled route that has the given
+// target.
+func (r *gossipRouter) resetRandomRouteWithTarget(target p2p.ID) {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	sourcesWithTarget := make([]p2p.ID, 0)
+	for s, targets := range r.disabledRoutes {
+		if _, ok := targets[target]; ok {
+			sourcesWithTarget = append(sourcesWithTarget, s)
+		}
+	}
+
+	if len(sourcesWithTarget) > 0 {
+		randomSource := sourcesWithTarget[cmtrand.Intn(len(sourcesWithTarget))]
+		delete(r.disabledRoutes[randomSource], target)
+	}
+}
+
+// numRoutes returns the number of disabled routes in this node. Used for
+// metrics.
+func (r *gossipRouter) numRoutes() int {
+	r.mtx.RLock()
+	defer r.mtx.RUnlock()
+
+	count := 0
+	for _, targets := range r.disabledRoutes {
+		count += len(targets)
+	}
+	return count
+}
+
+type redundancyControl struct {
+	// Pre-computed upper and lower bounds of accepted redundancy.
+	lowerBound float64
+	upperBound float64
+
+	// Timer to adjust redundancy periodically.
+	adjustTicker   *time.Ticker
+	adjustInterval time.Duration
+
+	// Counters for calculating the redundancy level.
+	firstTimeTxs atomic.Int64 // number of transactions received for the first time
+	duplicateTxs atomic.Int64 // number of duplicate transactions
+
+	// If true, do not send HaveTx messages.
+	haveTxBlocked atomic.Bool
+}
+
+func newRedundancyControl(config *cfg.MempoolConfig) *redundancyControl {
+	adjustInterval := config.DOGAdjustInterval
+	targetRedundancyDeltaAbs := config.DOGTargetRedundancy * targetRedundancyDeltaPercent / 100
+	return &redundancyControl{
+		lowerBound:     config.DOGTargetRedundancy - targetRedundancyDeltaAbs,
+		upperBound:     config.DOGTargetRedundancy + targetRedundancyDeltaAbs,
+		adjustTicker:   time.NewTicker(adjustInterval),
+		adjustInterval: adjustInterval,
+	}
+}
+
+func (rc *redundancyControl) adjustRedundancy(memR *Reactor) {
+	// Compute current redundancy level and reset transaction counters.
+	redundancy := rc.currentRedundancy()
+	if redundancy < 0 {
+		// There were no transactions during the last iteration. Do not adjust.
+		return
+	}
+
+	// If redundancy level is low, ask a random peer for more transactions.
+	if redundancy < rc.lowerBound {
+		memR.Logger.Debug("TX redundancy BELOW lower limit: increase it (send Reset)", "redundancy", redundancy)
+		// Send Reset message to random peer.
+		randomPeer := memR.Switch.Peers().Random()
+		if randomPeer != nil {
+			err := randomPeer.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.ResetRoute{}})
+			if err != nil {
+				memR.Logger.Error("Failed to send Reset message", "peer", randomPeer.ID(), "err", err)
+			}
+		}
+	}
+
+	// If redundancy level is high, ask peers for less txs.
+	if redundancy >= rc.upperBound {
+		memR.Logger.Debug("TX redundancy ABOVE upper limit: decrease it (unblock HaveTx)", "redundancy", redundancy)
+		// Unblock HaveTx messages.
+		rc.haveTxBlocked.Store(false)
+	}
+
+	// Update metrics.
+	memR.mempool.metrics.Redundancy.Set(redundancy)
+}
+
+func (rc *redundancyControl) controlLoop(memR *Reactor) {
+	for {
+>>>>>>> be894a0e (perf(mempool): use atomic instead of mutex to improve perf (#4701))
 		select {
 		case <-next.NextWaitChan():
 			// see the start of the for loop for nil check
@@ -253,6 +440,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 	}
 }
 
+<<<<<<< HEAD
 // TxsMessage is a Message containing transactions.
 type TxsMessage struct {
 	Txs []types.Tx
@@ -261,4 +449,51 @@ type TxsMessage struct {
 // String returns a string representation of the TxsMessage.
 func (m *TxsMessage) String() string {
 	return fmt.Sprintf("[TxsMessage %v]", m.Txs)
+=======
+// currentRedundancy returns the current redundancy level and resets the
+// counters. If there are no transactions, return -1. If firstTimeTxs is 0,
+// return upperBound. If duplicateTxs is 0, return 0.
+func (rc *redundancyControl) currentRedundancy() float64 {
+	firstTimeTxs := rc.firstTimeTxs.Load()
+	duplicateTxs := rc.duplicateTxs.Load()
+
+	if firstTimeTxs+duplicateTxs == 0 {
+		return -1
+	}
+
+	redundancy := rc.upperBound
+	if firstTimeTxs != 0 {
+		redundancy = float64(duplicateTxs) / float64(firstTimeTxs)
+	}
+
+	// Reset counters atomically
+	rc.firstTimeTxs.Store(0)
+	rc.duplicateTxs.Store(0)
+	return redundancy
+}
+
+func (rc *redundancyControl) incDuplicateTxs() {
+	rc.duplicateTxs.Add(1)
+}
+
+func (rc *redundancyControl) incFirstTimeTxs() {
+	rc.firstTimeTxs.Add(1)
+}
+
+func (rc *redundancyControl) isHaveTxBlocked() bool {
+	return rc.haveTxBlocked.Load()
+}
+
+// blockHaveTx blocks sending HaveTx messages and restarts the timer that
+// adjusts redundancy.
+func (rc *redundancyControl) blockHaveTx() {
+	rc.haveTxBlocked.Store(true)
+	// Wait until next adjustment to check if HaveTx messages should be unblocked.
+	rc.adjustTicker.Reset(rc.adjustInterval)
+}
+
+func (rc *redundancyControl) triggerAdjustment(memR *Reactor) {
+	rc.adjustRedundancy(memR)
+	rc.adjustTicker.Reset(rc.adjustInterval)
+>>>>>>> be894a0e (perf(mempool): use atomic instead of mutex to improve perf (#4701))
 }

@@ -546,9 +546,8 @@ type redundancyControl struct {
 	adjustInterval time.Duration
 
 	// Counters for calculating the redundancy level.
-	mtx          cmtsync.RWMutex
-	firstTimeTxs int64 // number of transactions received for the first time
-	duplicateTxs int64 // number of duplicate transactions
+	firstTimeTxs atomic.Int64 // number of transactions received for the first time
+	duplicateTxs atomic.Int64 // number of duplicate transactions
 
 	// If true, do not send HaveTx messages.
 	haveTxBlocked atomic.Bool
@@ -612,34 +611,30 @@ func (rc *redundancyControl) controlLoop(memR *Reactor) {
 // counters. If there are no transactions, return -1. If firstTimeTxs is 0,
 // return upperBound. If duplicateTxs is 0, return 0.
 func (rc *redundancyControl) currentRedundancy() float64 {
-	rc.mtx.Lock()
-	defer rc.mtx.Unlock()
+	firstTimeTxs := rc.firstTimeTxs.Load()
+	duplicateTxs := rc.duplicateTxs.Load()
 
-	if rc.firstTimeTxs+rc.duplicateTxs == 0 {
+	if firstTimeTxs+duplicateTxs == 0 {
 		return -1
 	}
 
 	redundancy := rc.upperBound
-	if rc.firstTimeTxs != 0 {
-		redundancy = float64(rc.duplicateTxs) / float64(rc.firstTimeTxs)
+	if firstTimeTxs != 0 {
+		redundancy = float64(duplicateTxs) / float64(firstTimeTxs)
 	}
 
-	// Reset counters.
-	rc.firstTimeTxs, rc.duplicateTxs = 0, 0
-
+	// Reset counters atomically
+	rc.firstTimeTxs.Store(0)
+	rc.duplicateTxs.Store(0)
 	return redundancy
 }
 
 func (rc *redundancyControl) incDuplicateTxs() {
-	rc.mtx.Lock()
-	rc.duplicateTxs++
-	rc.mtx.Unlock()
+	rc.duplicateTxs.Add(1)
 }
 
 func (rc *redundancyControl) incFirstTimeTxs() {
-	rc.mtx.Lock()
-	rc.firstTimeTxs++
-	rc.mtx.Unlock()
+	rc.firstTimeTxs.Add(1)
 }
 
 func (rc *redundancyControl) isHaveTxBlocked() bool {

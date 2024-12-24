@@ -707,23 +707,21 @@ func TestDOGTransactionCount(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	require.Equal(t, int64(len(txs)), reactors[0].redundancyControl.firstTimeTxs)
+	require.Equal(t, int64(len(txs)), reactors[0].redundancyControl.firstTimeTxs.Load())
 	for _, tx := range txs {
 		_, err := reactors[0].TryAddTx(tx, secondNode)
 		// The transaction is in cache, hence the Error
 		require.Error(t, err)
 	}
-	require.Equal(t, int64(len(txs)), reactors[0].redundancyControl.duplicateTxs)
+	require.Equal(t, int64(len(txs)), reactors[0].redundancyControl.duplicateTxs.Load())
 
 	reactors[0].redundancyControl.triggerAdjustment(reactors[0])
 	// This is done to give enough time for the route changes to take effect
 	// If the test starts failing, revisit this value
 	time.Sleep(100 * time.Millisecond)
 
-	reactors[0].redundancyControl.mtx.RLock()
-	dupTx := reactors[0].redundancyControl.duplicateTxs
-	firstTimeTx := reactors[0].redundancyControl.firstTimeTxs
-	reactors[0].redundancyControl.mtx.RUnlock()
+	dupTx := reactors[0].redundancyControl.duplicateTxs.Load()
+	firstTimeTx := reactors[0].redundancyControl.firstTimeTxs.Load()
 
 	// Now the counters should be reset
 	require.Equal(t, int64(0), dupTx)
@@ -843,18 +841,51 @@ func TestDOGTestRedundancyCalculation(t *testing.T) {
 	redundancy := reactors[0].redundancyControl.currentRedundancy()
 	require.Equal(t, redundancy, float64(-1))
 
-	reactors[0].redundancyControl.firstTimeTxs = 10
-	reactors[0].redundancyControl.duplicateTxs = 0
+	reactors[0].redundancyControl.firstTimeTxs.Store(10)
+	reactors[0].redundancyControl.duplicateTxs.Store(0)
 	redundancy = reactors[0].redundancyControl.currentRedundancy()
 	require.Equal(t, redundancy, float64(0))
 
-	reactors[0].redundancyControl.duplicateTxs = 1000
-	reactors[0].redundancyControl.firstTimeTxs = 10
+	reactors[0].redundancyControl.duplicateTxs.Store(1000)
+	reactors[0].redundancyControl.firstTimeTxs.Store(10)
 	redundancy = reactors[0].redundancyControl.currentRedundancy()
 	require.Greater(t, redundancy, config.Mempool.DOGTargetRedundancy)
 
-	reactors[0].redundancyControl.duplicateTxs = 1000
-	reactors[0].redundancyControl.firstTimeTxs = 0
+	reactors[0].redundancyControl.duplicateTxs.Store(1000)
+	reactors[0].redundancyControl.firstTimeTxs.Store(0)
 	redundancy = reactors[0].redundancyControl.currentRedundancy()
 	require.Equal(t, redundancy, reactors[0].redundancyControl.upperBound)
+}
+
+func BenchmarkCurrentRedundancy(b *testing.B) {
+	config := &cfg.MempoolConfig{
+		DOGTargetRedundancy: 1.0,
+		DOGAdjustInterval:   1 * time.Second,
+	}
+	rc := newRedundancyControl(config)
+
+	b.Run("CurrentRedundancy", func(b *testing.B) {
+		// Pre-fill some data
+		rc.incFirstTimeTxs()
+		rc.incDuplicateTxs()
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			rc.currentRedundancy()
+		}
+	})
+
+	b.Run("IncFirstTimeTxs", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			rc.incFirstTimeTxs()
+		}
+	})
+
+	b.Run("IncDuplicateTxs", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			rc.incDuplicateTxs()
+		}
+	})
 }

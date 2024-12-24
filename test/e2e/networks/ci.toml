@@ -58,7 +58,7 @@ perturb = ["restart"]
 
 [node.validator03]
 seeds = ["seed01"]
-database = "goleveldb"
+database = "badgerdb"
 privval_protocol = "unix"
 persist_interval = 3
 retain_blocks = 20
@@ -68,13 +68,13 @@ key_type = "secp256k1"
 
 [node.validator04]
 persistent_peers = ["validator01"]
-database = "goleveldb"
+database = "rocksdb"
 perturb = ["pause"]
 
 [node.validator05]
 start_at = 1005 # Becomes part of the validator set at 1010
 persistent_peers = ["validator01", "full01"]
-database = "goleveldb"
+database = "rocksdb"
 privval_protocol = "tcp"
 perturb = ["kill", "pause", "disconnect", "restart"]
 

@@ -36,7 +36,7 @@ The minimum Go version has been bumped to [v1.23][go123].
 ### Upgrading Guide (`v0.38` -> `v1.0`)
 
 Starting with the `v1.0` release, instead of providing detailed information
-about new features, changes, and other relevant details for upgrading to ComeBFT `v1.0` in this document,
+about new features, changes, and other relevant details for upgrading to CometBFT `v1.0` in this document,
 we have created a comprehensive upgrading guide from the previous `v0.38.x` release line to this new `v1.0` release.
 This guide can be utilized as a valuable resource when upgrading to the CometBFT `v1.0` release.
 

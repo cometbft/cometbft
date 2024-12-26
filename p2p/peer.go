@@ -35,7 +35,7 @@ type peerConfig struct {
 	// isPersistent allows you to set a function, which, given socket address
 	// (for outbound peers) OR self-reported address (for inbound peers), tells
 	// if the peer is persistent or not.
-	isPersistent func(*na.NetAddr) bool
+	isPersistent func(na.NetAddr) bool
 	// streamID -> streamInfo
 	streamInfoByStreamID map[byte]streamInfo
 	metrics              *Metrics
@@ -55,7 +55,7 @@ type Peer interface {
 
 	NodeInfo() ni.NodeInfo          // peer's info
 	ConnState() transport.ConnState // connection state
-	SocketAddr() *na.NetAddr        // actual address of the socket
+	SocketAddr() na.NetAddr        // actual address of the socket
 
 	HasChannel(chID byte) bool // Does the peer implement this channel?
 	// Send a message to the peer, blocking version.
@@ -78,7 +78,7 @@ type peerConn struct {
 	persistent     bool
 	transport.Conn // Source connection
 
-	socketAddr *na.NetAddr
+	socketAddr na.NetAddr
 
 	// cached RemoteIP()
 	ip net.IP
@@ -87,7 +87,7 @@ type peerConn struct {
 func newPeerConn(
 	outbound, persistent bool,
 	conn transport.Conn,
-	socketAddr *na.NetAddr,
+	socketAddr na.NetAddr,
 ) peerConn {
 	return peerConn{
 		outbound:   outbound,
@@ -399,7 +399,7 @@ func (p *peer) NodeInfo() ni.NodeInfo {
 // For outbound peers, it's the address dialed (after DNS resolution).
 // For inbound peers, it's the address returned by the underlying connection
 // (not what's reported in the peer's NodeInfo).
-func (p *peer) SocketAddr() *na.NetAddr {
+func (p *peer) SocketAddr() na.NetAddr {
 	return p.peerConn.socketAddr
 }
 
@@ -568,7 +568,7 @@ func (p *peer) eventLoop() {
 // ------------------------------------------------------------------
 // helper funcs
 
-func wrapPeer(c transport.Conn, ni ni.NodeInfo, cfg peerConfig, socketAddr *na.NetAddr) Peer {
+func wrapPeer(c transport.Conn, ni ni.NodeInfo, cfg peerConfig, socketAddr na.NetAddr) Peer {
 	persistent := false
 	if cfg.isPersistent != nil {
 		if cfg.outbound {

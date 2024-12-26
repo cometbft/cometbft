@@ -50,7 +50,7 @@ func TestTransportMultiplex_ConnFilter(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := mt.Listen(*addr); err != nil {
+	if err := mt.Listen(addr); err != nil {
 		t.Fatal(err)
 	}
 
@@ -104,7 +104,7 @@ func TestTransportMultiplex_ConnFilterTimeout(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := mt.Listen(*addr); err != nil {
+	if err := mt.Listen(addr); err != nil {
 		t.Fatal(err)
 	}
 
@@ -148,7 +148,7 @@ func TestTransportMultiplex_MaxIncomingConnections(t *testing.T) {
 	}
 	const maxIncomingConns = 2
 	MultiplexTransportMaxIncomingConnections(maxIncomingConns)(mt)
-	if err := mt.Listen(*addr); err != nil {
+	if err := mt.Listen(addr); err != nil {
 		t.Fatal(err)
 	}
 
@@ -157,7 +157,7 @@ func TestTransportMultiplex_MaxIncomingConnections(t *testing.T) {
 	// Connect more peers than max
 	for i := 0; i <= maxIncomingConns; i++ {
 		errc := make(chan error)
-		go testDialer(*laddr, errc)
+		go testDialer(laddr, errc)
 
 		err = <-errc
 		if i < maxIncomingConns {
@@ -189,7 +189,7 @@ func TestTransportMultiplex_AcceptMultiple(t *testing.T) {
 
 	// Setup dialers.
 	for i := 0; i < nDialers; i++ {
-		go testDialer(*laddr, errc)
+		go testDialer(laddr, errc)
 	}
 
 	// Catch connection errors.
@@ -297,7 +297,7 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 		dialer.SetLogger(log.TestingLogger())
 		addr := na.New(mt.nodeKey.ID(), mt.listener.Addr())
 
-		_, err := dialer.Dial(*addr)
+		_, err := dialer.Dial(addr)
 		if err != nil {
 			errc <- err
 			return
@@ -334,7 +334,7 @@ func TestTransportMultiplexDialRejectWrongID(t *testing.T) {
 	wrongID := nodekey.PubKeyToID(ed25519.GenPrivKey().PubKey())
 	addr := na.New(wrongID, mt.listener.Addr())
 
-	_, err := dialer.Dial(*addr)
+	_, err := dialer.Dial(addr)
 	if err != nil {
 		t.Logf("connection failed: %v", err)
 		if e, ok := err.(ErrRejected); ok {
@@ -392,7 +392,7 @@ func testSetupMultiplexTransport(t *testing.T) *MultiplexTransport {
 		t.Fatal(err)
 	}
 
-	if err := mt.Listen(*addr); err != nil {
+	if err := mt.Listen(addr); err != nil {
 		t.Fatal(err)
 	}
 

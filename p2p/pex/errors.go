@@ -16,7 +16,7 @@ var (
 )
 
 type ErrAddrBookNonRoutable struct {
-	Addr *na.NetAddr
+	Addr na.NetAddr
 }
 
 func (err ErrAddrBookNonRoutable) Error() string {
@@ -24,7 +24,7 @@ func (err ErrAddrBookNonRoutable) Error() string {
 }
 
 type ErrAddrBookOldAddressNewBucket struct {
-	Addr     *na.NetAddr
+	Addr     na.NetAddr
 	BucketID int
 }
 
@@ -35,7 +35,7 @@ func (err ErrAddrBookOldAddressNewBucket) Error() string {
 }
 
 type ErrAddrBookSelf struct {
-	Addr *na.NetAddr
+	Addr na.NetAddr
 }
 
 func (err ErrAddrBookSelf) Error() string {
@@ -43,7 +43,7 @@ func (err ErrAddrBookSelf) Error() string {
 }
 
 type ErrAddrBookPrivate struct {
-	Addr *na.NetAddr
+	Addr na.NetAddr
 }
 
 func (err ErrAddrBookPrivate) Error() string {
@@ -55,7 +55,7 @@ func (ErrAddrBookPrivate) PrivateAddr() bool {
 }
 
 type ErrAddrBookPrivateSrc struct {
-	Src *na.NetAddr
+	Src na.NetAddr
 }
 
 func (err ErrAddrBookPrivateSrc) Error() string {
@@ -67,8 +67,8 @@ func (ErrAddrBookPrivateSrc) PrivateAddr() bool {
 }
 
 type ErrAddrBookNilAddr struct {
-	Addr *na.NetAddr
-	Src  *na.NetAddr
+	Addr na.NetAddr
+	Src  na.NetAddr
 }
 
 func (err ErrAddrBookNilAddr) Error() string {
@@ -76,7 +76,7 @@ func (err ErrAddrBookNilAddr) Error() string {
 }
 
 type ErrAddrBookInvalidAddr struct {
-	Addr    *na.NetAddr
+	Addr    na.NetAddr
 	AddrErr error
 }
 
@@ -86,7 +86,7 @@ func (err ErrAddrBookInvalidAddr) Error() string {
 
 // ErrAddressBanned is thrown when the address has been banned and therefore cannot be used.
 type ErrAddressBanned struct {
-	Addr *na.NetAddr
+	Addr na.NetAddr
 }
 
 func (err ErrAddressBanned) Error() string {

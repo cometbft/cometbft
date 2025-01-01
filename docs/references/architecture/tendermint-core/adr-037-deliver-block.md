@@ -12,7 +12,7 @@ Initial conversation: https://github.com/tendermint/tendermint/issues/2901
 
 Some applications can handle transactions in parallel, or at least some
 part of tx processing can be parallelized. Now it is not possible for developer
-to execute txs in parallel because Tendermint delivers them consequentially.
+to execute txs in parallel because Tendermint delivers them consequently.
 
 ## Decision
 

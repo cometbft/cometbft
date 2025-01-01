@@ -48,7 +48,7 @@ require (
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
 	golang.org/x/sync v0.9.0
 	gonum.org/v1/gonum v0.15.1
-	google.golang.org/protobuf v1.35.2
+	google.golang.org/protobuf v1.36.1
 )
 
 require (

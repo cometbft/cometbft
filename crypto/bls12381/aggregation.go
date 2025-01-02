@@ -34,10 +34,14 @@ func AggregateSignatures(sigsToAgg [][]byte) ([]byte, error) {
 // VerifyAggregateSignature verifies the given compressed aggregate signature.
 //
 // Group-checks the signature.
-func VerifyAggregateSignature(agSigCompressed []byte, pubks []*blstPublicKey, msg []byte) bool {
+func VerifyAggregateSignature(agSigCompressed []byte, pubks []*PubKey, msg []byte) bool {
 	agSig := new(blstSignature).Uncompress(agSigCompressed)
 	if agSig == nil {
 		return false
 	}
-	return agSig.FastAggregateVerify(true, pubks, msg, dstMinPk)
+	blsPubKeys := make([]*blstPublicKey, len(pubks))
+	for i, pubk := range pubks {
+		blsPubKeys[i] = pubk.pk
+	}
+	return agSig.FastAggregateVerify(true, blsPubKeys, msg, dstMinPk)
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/internal/bits"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
@@ -667,6 +668,71 @@ func (voteSet *VoteSet) MakeExtendedCommit(fp FeatureParams) *ExtendedCommit {
 	if err := ec.EnsureExtensions(fp.VoteExtensionsEnabled(ec.Height)); err != nil {
 		panic(fmt.Errorf("problem with vote extension data when making extended commit of height %d; %w",
 			ec.Height, err))
+	}
+	return ec
+}
+
+// MakeBLSCommit is a variant of MakeExtendedCommit that aggregates BLS signatures.
+//
+// It additionally aggregates the BLS signatures for the block and nil. The
+// resulting commit contains two aggregated signatures:
+//
+// 1 - aggregated signature for the block
+// 2 - aggregated signature for nil.
+func (voteSet *VoteSet) MakeBLSCommit() *ExtendedCommit {
+	voteSet.mtx.Lock()
+	defer voteSet.mtx.Unlock()
+
+	if voteSet.signedMsgType != PrecommitType {
+		panic("Cannot MakeExtendCommit() unless VoteSet.Type is PrecommitType")
+	}
+
+	// Make sure we have a 2/3 majority
+	if voteSet.maj23 == nil {
+		panic("Cannot MakeExtendCommit() unless a blockhash has +2/3")
+	}
+
+	// 1. Aggregate the signatures for the block.
+	sigs := make([][]byte, 0, len(voteSet.votes))
+	for _, v := range voteSet.votes {
+		if v != nil && v.BlockID.IsComplete() {
+			// if block ID exists but doesn't match, exclude sig
+			if !v.BlockID.Equals(*voteSet.maj23) {
+				continue
+			}
+			sigs = append(sigs, v.Signature)
+		}
+	}
+	agSig1, err := bls12381.AggregateSignatures(sigs)
+	if err != nil {
+		panic(fmt.Errorf("BLS aggregation error: %w", err))
+	}
+
+	// 2. Aggregate the signatures for nil.
+	sigs = make([][]byte, 0, len(voteSet.votes))
+	for _, v := range voteSet.votes {
+		if v != nil && v.BlockID.IsNil() {
+			sigs = append(sigs, v.Signature)
+		}
+	}
+	agSig2, err := bls12381.AggregateSignatures(sigs)
+	if err != nil {
+		panic(fmt.Errorf("BLS aggregation error: %w", err))
+	}
+
+	// TODO: preserve support for vote extensions.
+	ec := &ExtendedCommit{
+		Height:  voteSet.GetHeight(),
+		Round:   voteSet.GetRound(),
+		BlockID: *voteSet.maj23,
+		ExtendedSignatures: []ExtendedCommitSig{
+			{
+				CommitSig: CommitSig{BlockIDFlag: BlockIDFlagCommit, Signature: agSig1},
+			},
+			{
+				CommitSig: CommitSig{BlockIDFlag: BlockIDFlagCommit, Signature: agSig2},
+			},
+		},
 	}
 	return ec
 }

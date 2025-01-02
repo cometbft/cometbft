@@ -17,6 +17,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/bls12381"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	cmtevents "github.com/cometbft/cometbft/internal/events"
 	"github.com/cometbft/cometbft/internal/fail"
@@ -1310,8 +1311,16 @@ func (cs *State) createProposalBlock(ctx context.Context) (*types.Block, error) 
 		lastExtCommit = &types.ExtendedCommit{}
 
 	case cs.LastCommit.HasTwoThirdsMajority():
-		// Make the commit from LastCommit
-		lastExtCommit = cs.LastCommit.MakeExtendedCommit(cs.state.ConsensusParams.Feature)
+		// If it's a BLS12-381 key
+		if _, ok := cs.privValidatorPubKey.(*bls12381.PubKey); ok {
+			// And all validators have the same key type, we can aggregate the signatures.
+			if cs.state.Validators.AllKeysHaveSameType() {
+				lastExtCommit = cs.LastCommit.MakeBLSCommit()
+			}
+		} else {
+			// Make the commit from LastCommit
+			lastExtCommit = cs.LastCommit.MakeExtendedCommit(cs.state.ConsensusParams.Feature)
+		}
 
 	default: // This shouldn't happen.
 		return nil, ErrProposalWithoutPreviousCommit

@@ -677,8 +677,8 @@ func (voteSet *VoteSet) MakeExtendedCommit(fp FeatureParams) *ExtendedCommit {
 // It additionally aggregates the BLS signatures for the block and nil. The
 // resulting commit contains two aggregated signatures:
 //
-// 1 - aggregated signature for the block
-// 2 - aggregated signature for nil.
+// 1 - aggregated signature for the block (compressed)
+// 2 - aggregated signature for nil (compressed).
 func (voteSet *VoteSet) MakeBLSCommit() *ExtendedCommit {
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()

@@ -1311,12 +1311,10 @@ func (cs *State) createProposalBlock(ctx context.Context) (*types.Block, error) 
 		lastExtCommit = &types.ExtendedCommit{}
 
 	case cs.LastCommit.HasTwoThirdsMajority():
-		// If it's a BLS12-381 key
-		if _, ok := cs.privValidatorPubKey.(*bls12381.PubKey); ok {
-			// And all validators have the same key type, we can aggregate the signatures.
-			if cs.state.Validators.AllKeysHaveSameType() {
-				lastExtCommit = cs.LastCommit.MakeBLSCommit()
-			}
+		// If it's a BLS12-381 key and all validators have the same key type, we
+		// can aggregate the signatures.
+		if _, ok := cs.privValidatorPubKey.(*bls12381.PubKey); ok && cs.state.Validators.AllKeysHaveSameType() {
+			lastExtCommit = cs.LastCommit.MakeBLSCommit()
 		} else {
 			// Make the commit from LastCommit
 			lastExtCommit = cs.LastCommit.MakeExtendedCommit(cs.state.ConsensusParams.Feature)

@@ -9,16 +9,20 @@ import (
 )
 
 // ErrAggregation is returned when aggregation fails.
-var ErrorAggregation = errors.New("bls12381: failed to aggregate signatures")
+var ErrAggregation = errors.New("bls12381: failed to aggregate signatures")
 
-// For minimal-signature-size operations.
+// For minimal-pubkey-size operations.
+//
+// Changing this to 'minimal-signature-size' would render CometBFT not Ethereum
+// compatible.
 type (
-	blstAggregateSignature = blst.P1Aggregate
-	blstAggregatePublicKey = blst.P2Aggregate
+	blstAggregateSignature = blst.P2Aggregate
 )
 
 // AggregateSignatures aggregates the given compressed signatures.
-func AggregateSignatures(sigs [][]byte) ([]byte, error) {
+//
+// Does not group-check the signatures.
+func AggregateSignatures(sigsToAgg [][]byte) ([]byte, error) {
 	var agProj blstAggregateSignature
 	if !agProj.AggregateCompressed(sigsToAgg, false) {
 		return nil, ErrAggregation
@@ -28,10 +32,12 @@ func AggregateSignatures(sigs [][]byte) ([]byte, error) {
 }
 
 // VerifyAggregateSignature verifies the given compressed aggregate signature.
+//
+// Group-checks the signature.
 func VerifyAggregateSignature(agSigCompressed []byte, pubks []*blstPublicKey, msg []byte) bool {
-	agSig := new(blstAggregateSignature).Deserialize(agSigCompressed)
+	agSig := new(blstSignature).Uncompress(agSigCompressed)
 	if agSig == nil {
 		return false
 	}
-	return agSig.FastAggregateVerify(false, pubks, msg, dstMinSig)
+	return agSig.FastAggregateVerify(true, pubks, msg, dstMinPk)
 }

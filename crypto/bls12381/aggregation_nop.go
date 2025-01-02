@@ -4,7 +4,7 @@ package bls12381
 
 import "errors"
 
-// AggregateSignatures aggregates the given compressed signatures.
+// AggregateSignatures is a nop.
 func AggregateSignatures([][]byte) ([]byte, error) {
 	return nil, errors.New("bls12381 is disabled")
 }

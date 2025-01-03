@@ -5,7 +5,7 @@ order: 4
 # State
 
 The state contains information whose cryptographic digest is included in block headers, and thus is
-necessary for validating new blocks. For instance, the validators set and the results of
+necessary for validating new blocks. For instance, the validator set and the results of
 transactions are never included in blocks, but their Merkle roots are:
 the state keeps track of them.
 
@@ -51,7 +51,7 @@ be found in [data structures](./data_structures.md)
 
 ## Execution
 
-State gets updated at the end of executing a block. Of specific interest is `EndBlockResponse` and
+The state gets updated at the end of executing a block. Of specific interest is `EndBlockResponse` and
 `CommitResponse`
 
 ```go
@@ -82,7 +82,7 @@ type CommitResponse struct {
 }
 ```
 
-`ValidatorUpdates` are used to add and remove validators to the current set as well as update
+`ValidatorUpdates` are used to add and remove validators from the current set as well as update
 validator power. Setting validator power to 0 in `ValidatorUpdate` will cause the validator to be
 removed. `ConsensusParams` are safely copied across (i.e. if a field is nil it gets ignored) and the
 `Data` from the `CommitResponse` is used as the `AppHash`

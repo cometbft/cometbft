@@ -105,7 +105,7 @@ If the interval between successive requests is less than the minimum accepted
 one, the peer is disconnected and [marked as a bad peer](./addressbook.md#bad-peers).
 An exception is made for the first two PEX requests received from a peer.
 
-> The probably reason is that, when a new peer is added, the two conditions for
+> The probable reason is that, when a new peer is added, the two conditions for
 > a node to request peer addresses can be triggered with an interval lower than
 > the minimum accepted interval.
 > Since this is a legit behavior, it should not be punished.

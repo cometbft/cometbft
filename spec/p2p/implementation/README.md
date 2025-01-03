@@ -11,9 +11,9 @@ As there were no substantial changes in the p2p implementation, the
 documentation also applies to the releases `v0.37.*` and `v0.38.*` [^v35].
 
 [^v35]: The releases `v0.35.*` and `v0.36.*`, which included a major
-  refactoring of the p2p layer implementation, were [discontinued][v35postmorten].
+  refactoring of the p2p layer implementation, were [discontinued][v35postmortem].
 
-[v35postmorten]: https://interchain-io.medium.com/discontinuing-tendermint-v0-35-a-postmortem-on-the-new-networking-layer-3696c811dabc
+[v35postmortem]: https://interchain-io.medium.com/discontinuing-tendermint-v0-35-a-postmortem-on-the-new-networking-layer-3696c811dabc
 
 ## Contents
 

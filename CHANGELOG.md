@@ -828,7 +828,7 @@ See the [specification](./spec/abci/) for more details on ABCI 2.0.
   ([\#1113](https://github.com/cometbft/cometbft/issues/1113))
 - `[p2p]` Remove unused p2p/trust package
   ([\#9625](https://github.com/tendermint/tendermint/pull/9625))
-- `[protobuf]` Remove fields `sender`, `priority`, and `mempool_error` from
+- `[protobuf]` Remove fields `sender`, `priority`, and `mempool-error` from
   `ResponseCheckTx`. ([\#260](https://github.com/cometbft/cometbft/issues/260))
 - `[pubsub]` Added support for big integers and big floats in the pubsub event query system.
   Breaking changes: function `Number` in package `libs/pubsub/query/syntax` changed its return value.
@@ -896,7 +896,7 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
 
 ### IMPROVEMENTS
 
-- `[blocksync]` Generate new metrics during BlockSync
+- `[block-sync]` Generate new metrics during BlockSync
   ([\#543](https://github.com/cometbft/cometbft/pull/543))
 - `[crypto/merkle]` Improve HashAlternatives performance
   ([\#6443](https://github.com/tendermint/tendermint/pull/6443))

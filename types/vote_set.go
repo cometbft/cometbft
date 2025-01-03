@@ -682,9 +682,7 @@ func (voteSet *VoteSet) MakeExtendedCommit(fp FeatureParams) *ExtendedCommit {
 //
 // Note the signatures count is preserved, but only the first signature in the
 // each category (block, nil) is non-empty.
-//
-// Panics if the vote extension is enabled.
-func (voteSet *VoteSet) MakeBLSCommit(fp FeatureParams) *ExtendedCommit {
+func (voteSet *VoteSet) MakeBLSCommit() *ExtendedCommit {
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
 
@@ -725,11 +723,6 @@ func (voteSet *VoteSet) MakeBLSCommit(fp FeatureParams) *ExtendedCommit {
 		panic(fmt.Errorf("BLS aggregation error: %w", err))
 	}
 
-	h := voteSet.GetHeight()
-	if fp.VoteExtensionsEnabled(h) {
-		panic("Cannot MakeBLSCommit() when vote extensions are enabled")
-	}
-
 	// For every validator, get the precommit without extensions
 	sigs := make([]ExtendedCommitSig, len(voteSet.votes))
 	for i, v := range voteSet.votes {
@@ -766,13 +759,12 @@ func (voteSet *VoteSet) MakeBLSCommit(fp FeatureParams) *ExtendedCommit {
 		}
 	}
 
-	ec := &ExtendedCommit{
-		Height:             h,
+	return &ExtendedCommit{
+		Height:             voteSet.GetHeight(),
 		Round:              voteSet.GetRound(),
 		BlockID:            *voteSet.maj23,
 		ExtendedSignatures: sigs,
 	}
-	return ec
 }
 
 // --------------------------------------------------------------------------------

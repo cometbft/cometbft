@@ -79,7 +79,7 @@ pure def disconnect(_peers, node) =
 
 The set of `node`'s peers that are not themselves connected to `node`.
 ```bluespec "auxstate" +=
-def disconnectedPeers(node) = 
+def DisconnectedPeers(node) = 
     node.Peers().filter(p => not(node.in(p.Peers())))
 ```
 </details>

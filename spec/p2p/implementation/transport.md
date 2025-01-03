@@ -2,7 +2,7 @@
 
 The transport establishes secure and authenticated connections with peers.
 
-The transport [`Dial`](#dial)s peer addresses to establish outbound connections,
+The transport [`Dial`](#dial)s peers' addresses to establish outbound connections,
 and [`Listen`](#listen)s in a configured network address
 to [`Accept`](#accept) inbound connections from peers.
 

@@ -17,6 +17,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/bls12381"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	cmtevents "github.com/cometbft/cometbft/internal/events"
 	"github.com/cometbft/cometbft/internal/fail"
@@ -1310,8 +1311,19 @@ func (cs *State) createProposalBlock(ctx context.Context) (*types.Block, error) 
 		lastExtCommit = &types.ExtendedCommit{}
 
 	case cs.LastCommit.HasTwoThirdsMajority():
-		// Make the commit from LastCommit
-		lastExtCommit = cs.LastCommit.MakeExtendedCommit(cs.state.ConsensusParams.Feature)
+		// Make the commit from LastCommit.
+		//
+		// Note we can't aggregate a commit when vote extensions are enabled
+		// because votes are different.
+		_, blsKey := cs.privValidatorPubKey.(*bls12381.PubKey)
+		canBeAggregated := blsKey &&
+			cs.state.Validators.AllKeysHaveSameType() &&
+			cs.state.ConsensusParams.Feature.VoteExtensionsEnabled(cs.Height)
+		if canBeAggregated {
+			lastExtCommit = cs.LastCommit.MakeBLSCommit()
+		} else {
+			lastExtCommit = cs.LastCommit.MakeExtendedCommit(cs.state.ConsensusParams.Feature)
+		}
 
 	default: // This shouldn't happen.
 		return nil, ErrProposalWithoutPreviousCommit

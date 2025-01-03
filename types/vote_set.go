@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/internal/bits"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
@@ -669,6 +670,101 @@ func (voteSet *VoteSet) MakeExtendedCommit(fp FeatureParams) *ExtendedCommit {
 			ec.Height, err))
 	}
 	return ec
+}
+
+// MakeBLSCommit is a variant of MakeExtendedCommit that aggregates BLS signatures.
+//
+// It additionally aggregates the BLS signatures for the block and nil. The
+// resulting commit contains only two aggregated signatures:
+//
+// 1 - aggregated signature for the block (compressed)
+// 2 - aggregated signature for nil (compressed).
+//
+// Note the signatures count is preserved, but only the first signature in the
+// each category (block, nil) is non-empty.
+func (voteSet *VoteSet) MakeBLSCommit() *ExtendedCommit {
+	voteSet.mtx.Lock()
+	defer voteSet.mtx.Unlock()
+
+	if voteSet.signedMsgType != PrecommitType {
+		panic("Cannot MakeExtendCommit() unless VoteSet.Type is PrecommitType")
+	}
+
+	// Make sure we have a 2/3 majority
+	if voteSet.maj23 == nil {
+		panic("Cannot MakeExtendCommit() unless a blockhash has +2/3")
+	}
+
+	// 1. Aggregate the signatures for the block.
+	sigsToAgg := make([][]byte, 0, len(voteSet.votes))
+	for _, v := range voteSet.votes {
+		if v != nil && v.BlockID.IsComplete() {
+			// if block ID exists but doesn't match, exclude sig
+			if !v.BlockID.Equals(*voteSet.maj23) {
+				continue
+			}
+			sigsToAgg = append(sigsToAgg, v.Signature)
+		}
+	}
+	agSig1, err := bls12381.AggregateSignatures(sigsToAgg)
+	if err != nil {
+		panic(fmt.Errorf("BLS aggregation error: %w", err))
+	}
+
+	// 2. Aggregate the signatures for nil.
+	sigsToAgg = make([][]byte, 0, len(voteSet.votes))
+	for _, v := range voteSet.votes {
+		if v != nil && v.BlockID.IsNil() {
+			sigsToAgg = append(sigsToAgg, v.Signature)
+		}
+	}
+	agSig2, err := bls12381.AggregateSignatures(sigsToAgg)
+	if err != nil {
+		panic(fmt.Errorf("BLS aggregation error: %w", err))
+	}
+
+	// For every validator, get the precommit without extensions
+	sigs := make([]ExtendedCommitSig, len(voteSet.votes))
+	for i, v := range voteSet.votes {
+		cSig := v.CommitSig()
+		cSig.Signature = []byte{0x00} // clear the signature
+		sig := ExtendedCommitSig{
+			CommitSig: cSig,
+		}
+		// if block ID exists but doesn't match, exclude sig
+		if sig.BlockIDFlag == BlockIDFlagCommit && !v.BlockID.Equals(*voteSet.maj23) {
+			sig = NewExtendedCommitSigAbsent()
+		}
+
+		sigs[i] = sig
+	}
+
+	// Add agSig1 to the first validator who voted for block.
+	for i, v := range voteSet.votes {
+		if v != nil && v.BlockID.IsComplete() {
+			// if block ID exists but doesn't match, exclude sig
+			if !v.BlockID.Equals(*voteSet.maj23) {
+				continue
+			}
+			sigs[i].CommitSig.Signature = agSig1
+			break
+		}
+	}
+
+	// Add agSig2 to the first validator who voted for nil.
+	for i, v := range voteSet.votes {
+		if v != nil && v.BlockID.IsNil() {
+			sigs[i].CommitSig.Signature = agSig2
+			break
+		}
+	}
+
+	return &ExtendedCommit{
+		Height:             voteSet.GetHeight(),
+		Round:              voteSet.GetRound(),
+		BlockID:            *voteSet.maj23,
+		ExtendedSignatures: sigs,
+	}
 }
 
 // --------------------------------------------------------------------------------

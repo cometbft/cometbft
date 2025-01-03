@@ -56,12 +56,14 @@ func CanonicalizeProposal(chainID string, proposal *cmtproto.Proposal) cmtproto.
 // relating to vote extensions.
 func CanonicalizeVote(chainID string, vote *cmtproto.Vote) cmtproto.CanonicalVote {
 	return cmtproto.CanonicalVote{
-		Type:      vote.Type,
-		Height:    vote.Height,       // encoded as sfixed64
-		Round:     int64(vote.Round), // encoded as sfixed64
-		BlockID:   CanonicalizeBlockID(vote.BlockID),
-		Timestamp: vote.Timestamp,
-		ChainID:   chainID,
+		Type:    vote.Type,
+		Height:  vote.Height,       // encoded as sfixed64
+		Round:   int64(vote.Round), // encoded as sfixed64
+		BlockID: CanonicalizeBlockID(vote.BlockID),
+		// Timestamp is not included in the canonical vote
+		// because we won't be able to aggregate votes with different timestamps.
+		// Timestamp: vote.Timestamp,
+		ChainID: chainID,
 	}
 }
 

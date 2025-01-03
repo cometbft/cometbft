@@ -30,7 +30,7 @@ var (
 	// of a more comprehensive subgroup check on the key.
 	ErrInfinitePubKey = errors.New("bls12381: pubkey is infinite")
 
-	dstMinSig = []byte("BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_")
+	dstMinPk = []byte("BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_")
 )
 
 // For minimal-pubkey-size operations.
@@ -38,10 +38,8 @@ var (
 // Changing this to 'minimal-signature-size' would render CometBFT not Ethereum
 // compatible.
 type (
-	blstPublicKey          = blst.P1Affine
-	blstSignature          = blst.P2Affine
-	blstAggregateSignature = blst.P1Aggregate
-	blstAggregatePublicKey = blst.P2Aggregate
+	blstPublicKey = blst.P1Affine
+	blstSignature = blst.P2Affine
 )
 
 // -------------------------------------.
@@ -103,7 +101,7 @@ func (PrivKey) Type() string {
 
 // Sign signs the given byte array.
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
-	signature := new(blstSignature).Sign(privKey.sk, msg, dstMinSig)
+	signature := new(blstSignature).Sign(privKey.sk, msg, dstMinPk)
 	return signature.Compress(), nil
 }
 
@@ -204,7 +202,7 @@ func (pubKey PubKey) VerifySignature(msg, sig []byte) bool {
 		return false
 	}
 
-	return signature.Verify(false, pubKey.pk, false, msg, dstMinSig)
+	return signature.Verify(false, pubKey.pk, false, msg, dstMinPk)
 }
 
 // Bytes returns the byte format.

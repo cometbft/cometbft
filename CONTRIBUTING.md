@@ -152,7 +152,7 @@ and those that may be open as issues or pull requests) and bump it by 1.
 When the problem as well as proposed solution are well understood and low-risk,
 changes should start with a **pull request**.
 
-Please adhere to the guidelines in the [Ease of reviewing](#ease-of-reviewing)
+Please, adhere to the guidelines in the [Ease of reviewing](#ease-of-reviewing)
 section above when submitting pull requests.
 
 ### Draft pull requests
@@ -209,8 +209,7 @@ build, in which case we can fall back on `go mod tidy`. Even for dependencies
 under our control, go helps us to keep multiple repos in sync as they evolve.
 Anything with an executable, such as apps, tools, and the core, should use dep.
 
-Run `go list -u -m all` to get a list of dependencies that may not be
-up-to-date.
+Run `go list -u -m all`. 
 
 When updating dependencies, please only update the particular dependencies you
 need. Instead of running `go get -u=patch`, which will update anything, specify

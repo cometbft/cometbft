@@ -20,7 +20,7 @@ hence to CometBFT.
 * Please be kind and courteous. There’s no need to be mean or rude.
 
 * Respect that people have differences of opinion and that every design or
-  implementation choice carries a trade-off and numerous costs. There is seldom
+  implementation choice carries a trade-off and numerous costs. There is rarely
   a right answer.
 
 * Please keep unstructured critique to a minimum. If you have solid ideas you

@@ -5,7 +5,7 @@ const (
 	PrivKeySize = 32
 	// PubKeySize, in Ethereum format, is comprised of 65 bytes for two field elements (x and y)
 	// and a prefix byte.
-	// Only uncompressed public keys are supported, so the the prefix byte is always set
+	// Only uncompressed public keys are supported, so the prefix byte is always set
 	// to 0x04 to indicate "uncompressed".
 	PubKeySize = 65
 	// SignatureLength is the size of the ECDSA signature.

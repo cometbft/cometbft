@@ -29,7 +29,7 @@ isolate round = {
 
 instance node : iterable # nodes are a set with an order, that can be iterated over (see order.ivy in the standard library)
 
-relation well_behaved(N:node) # whether a node is well-behaved or not. NOTE: Used only in the proof and the Byzantine model; Nodes do know know who is well-behaved and who is not.
+relation well_behaved(N:node) # whether a node is well-behaved or not. NOTE: Used only in the proof and the Byzantine model; Nodes do know who is well-behaved and who is not.
 
 isolate proposers = {
     # each round has a unique proposer in Tendermint. In order to avoid a

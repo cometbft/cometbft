@@ -88,7 +88,7 @@ func MaxUnpaddedSize() (int, error) {
 }
 
 // CalculateUnpaddedSize calculates the size of the passed in payload for the
-// purpose of determining how much padding to add to add to reach the target size.
+// purpose of determining how much padding to add to reach the target size.
 // CalculateUnpaddedSize returns an error if the payload Padding field is longer than 1.
 func CalculateUnpaddedSize(p *Payload) (int, error) {
 	if len(p.GetPadding()) != 1 {

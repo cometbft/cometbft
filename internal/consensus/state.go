@@ -1314,7 +1314,7 @@ func (cs *State) createProposalBlock(ctx context.Context) (*types.Block, error) 
 		// If it's a BLS12-381 key and all validators have the same key type, we
 		// can aggregate the signatures.
 		if _, ok := cs.privValidatorPubKey.(*bls12381.PubKey); ok && cs.state.Validators.AllKeysHaveSameType() {
-			lastExtCommit = cs.LastCommit.MakeBLSCommit()
+			lastExtCommit = cs.LastCommit.MakeBLSCommit(cs.state.ConsensusParams.Feature)
 		} else {
 			// Make the commit from LastCommit
 			lastExtCommit = cs.LastCommit.MakeExtendedCommit(cs.state.ConsensusParams.Feature)

@@ -675,11 +675,16 @@ func (voteSet *VoteSet) MakeExtendedCommit(fp FeatureParams) *ExtendedCommit {
 // MakeBLSCommit is a variant of MakeExtendedCommit that aggregates BLS signatures.
 //
 // It additionally aggregates the BLS signatures for the block and nil. The
-// resulting commit contains two aggregated signatures:
+// resulting commit contains only two aggregated signatures:
 //
 // 1 - aggregated signature for the block (compressed)
 // 2 - aggregated signature for nil (compressed).
-func (voteSet *VoteSet) MakeBLSCommit() *ExtendedCommit {
+//
+// Note the signatures count is preserved, but only the first signature in the
+// each category (block, nil) is non-empty.
+//
+// Panics if the vote extension is enabled.
+func (voteSet *VoteSet) MakeBLSCommit(fp FeatureParams) *ExtendedCommit {
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
 
@@ -693,46 +698,79 @@ func (voteSet *VoteSet) MakeBLSCommit() *ExtendedCommit {
 	}
 
 	// 1. Aggregate the signatures for the block.
-	sigs := make([][]byte, 0, len(voteSet.votes))
+	sigsToAgg := make([][]byte, 0, len(voteSet.votes))
 	for _, v := range voteSet.votes {
 		if v != nil && v.BlockID.IsComplete() {
 			// if block ID exists but doesn't match, exclude sig
 			if !v.BlockID.Equals(*voteSet.maj23) {
 				continue
 			}
-			sigs = append(sigs, v.Signature)
+			sigsToAgg = append(sigsToAgg, v.Signature)
 		}
 	}
-	agSig1, err := bls12381.AggregateSignatures(sigs)
+	agSig1, err := bls12381.AggregateSignatures(sigsToAgg)
 	if err != nil {
 		panic(fmt.Errorf("BLS aggregation error: %w", err))
 	}
 
 	// 2. Aggregate the signatures for nil.
-	sigs = make([][]byte, 0, len(voteSet.votes))
+	sigsToAgg = make([][]byte, 0, len(voteSet.votes))
 	for _, v := range voteSet.votes {
 		if v != nil && v.BlockID.IsNil() {
-			sigs = append(sigs, v.Signature)
+			sigsToAgg = append(sigsToAgg, v.Signature)
 		}
 	}
-	agSig2, err := bls12381.AggregateSignatures(sigs)
+	agSig2, err := bls12381.AggregateSignatures(sigsToAgg)
 	if err != nil {
 		panic(fmt.Errorf("BLS aggregation error: %w", err))
 	}
 
-	// TODO: preserve support for vote extensions.
+	h := voteSet.GetHeight()
+	if fp.VoteExtensionsEnabled(h) {
+		panic("Cannot MakeBLSCommit() when vote extensions are enabled")
+	}
+
+	// For every validator, get the precommit without extensions
+	sigs := make([]ExtendedCommitSig, len(voteSet.votes))
+	for i, v := range voteSet.votes {
+		cSig := v.CommitSig()
+		cSig.Signature = []byte{0x00} // clear the signature
+		sig := ExtendedCommitSig{
+			CommitSig: cSig,
+		}
+		// if block ID exists but doesn't match, exclude sig
+		if sig.BlockIDFlag == BlockIDFlagCommit && !v.BlockID.Equals(*voteSet.maj23) {
+			sig = NewExtendedCommitSigAbsent()
+		}
+
+		sigs[i] = sig
+	}
+
+	// Add agSig1 to the first validator who voted for block.
+	for i, v := range voteSet.votes {
+		if v != nil && v.BlockID.IsComplete() {
+			// if block ID exists but doesn't match, exclude sig
+			if !v.BlockID.Equals(*voteSet.maj23) {
+				continue
+			}
+			sigs[i].CommitSig.Signature = agSig1
+			break
+		}
+	}
+
+	// Add agSig2 to the first validator who voted for nil.
+	for i, v := range voteSet.votes {
+		if v != nil && v.BlockID.IsNil() {
+			sigs[i].CommitSig.Signature = agSig2
+			break
+		}
+	}
+
 	ec := &ExtendedCommit{
-		Height:  voteSet.GetHeight(),
-		Round:   voteSet.GetRound(),
-		BlockID: *voteSet.maj23,
-		ExtendedSignatures: []ExtendedCommitSig{
-			{
-				CommitSig: CommitSig{BlockIDFlag: BlockIDFlagCommit, Signature: agSig1},
-			},
-			{
-				CommitSig: CommitSig{BlockIDFlag: BlockIDFlagCommit, Signature: agSig2},
-			},
-		},
+		Height:             h,
+		Round:              voteSet.GetRound(),
+		BlockID:            *voteSet.maj23,
+		ExtendedSignatures: sigs,
 	}
 	return ec
 }

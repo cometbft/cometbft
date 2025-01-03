@@ -243,7 +243,7 @@ func (l *Lexer) GetLineColumn(i int) (line, col int) {
 	return
 }
 
-// GetLineColumnOfToken returns the line and column of token[i] in the imput
+// GetLineColumnOfToken returns the line and column of token[i] in the input
 func (l *Lexer) GetLineColumnOfToken(i int) (line, col int) {
 	return l.GetLineColumn(l.Tokens[i].Lext())
 }

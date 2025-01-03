@@ -282,6 +282,7 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 					memR.Logger.Error("Failed to send HaveTx message", "peer", senderID, "txKey", txKey, "err", err)
 				} else {
 					memR.Logger.Debug("Sent HaveTx message", "tx", txKey.Hash(), "peer", senderID)
+					memR.router.insertRequestedPartialGossip(sender.ID())
 					// Block HaveTx and restart timer, during which time, sending HaveTx is not allowed.
 					memR.redundancyControl.blockHaveTx()
 				}
@@ -451,12 +452,37 @@ type gossipRouter struct {
 	// A set of `source -> target` routes that are disabled for disseminating
 	// transactions, where source and target are node IDs.
 	disabledRoutes map[p2p.ID]map[p2p.ID]struct{}
+	// Tracks the peer IDs it has been asked to stop gossiping from some sources.
+	requestedPartialGossip map[p2p.ID]struct{}
 }
 
 func newGossipRouter() *gossipRouter {
 	return &gossipRouter{
-		disabledRoutes: make(map[p2p.ID]map[p2p.ID]struct{}),
+		disabledRoutes:         make(map[p2p.ID]map[p2p.ID]struct{}),
+		requestedPartialGossip: make(map[p2p.ID]struct{}),
 	}
+}
+
+func (r *gossipRouter) insertRequestedPartialGossip(id p2p.ID) {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+	r.requestedPartialGossip[id] = struct{}{}
+}
+
+func (r *gossipRouter) removeRequestedPartialGossip(id p2p.ID) {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+	delete(r.requestedPartialGossip, id)
+}
+
+func (r *gossipRouter) getRequestedPartialGossipList() []p2p.ID {
+	r.mtx.RLock()
+	defer r.mtx.RUnlock()
+	list := make([]p2p.ID, 0, len(r.requestedPartialGossip))
+	for id := range r.requestedPartialGossip {
+		list = append(list, id)
+	}
+	return list
 }
 
 // disableRoute marks the route `source -> target` as disabled.
@@ -491,6 +517,7 @@ func (r *gossipRouter) isRouteDisabled(source, target p2p.ID) bool {
 }
 
 // resetRoutes removes all disabled routes with peerID as source or target.
+// It clears peerID from requestedPartialGossip tracker.
 func (r *gossipRouter) resetRoutes(peerID p2p.ID) {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -502,6 +529,9 @@ func (r *gossipRouter) resetRoutes(peerID p2p.ID) {
 	for _, targets := range r.disabledRoutes {
 		delete(targets, peerID)
 	}
+
+	// Remove peer from the requestedPartialGossip list.
+	delete(r.requestedPartialGossip, peerID)
 }
 
 // resetRandomRouteWithTarget removes a random disabled route that has the given
@@ -576,11 +606,14 @@ func (rc *redundancyControl) adjustRedundancy(memR *Reactor) {
 	if redundancy < rc.lowerBound {
 		memR.Logger.Debug("TX redundancy BELOW lower limit: increase it (send Reset)", "redundancy", redundancy)
 		// Send Reset message to random peer.
-		randomPeer := memR.Switch.Peers().Random()
-		if randomPeer != nil {
+		partialGossipPeers := memR.router.getRequestedPartialGossipList()
+		randomPeer, ok := memR.Switch.Peers().RandomFrom(partialGossipPeers)
+		if ok && randomPeer != nil {
 			err := randomPeer.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.ResetRoute{}})
 			if err != nil {
 				memR.Logger.Error("Failed to send Reset message", "peer", randomPeer.ID(), "err", err)
+			} else {
+				memR.router.removeRequestedPartialGossip(randomPeer.ID())
 			}
 		}
 	}

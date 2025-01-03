@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/service"
@@ -188,4 +189,36 @@ func TestPeerSetGet(t *testing.T) {
 		}(i)
 	}
 	wg.Wait()
+}
+
+func TestPeerSetRandomFrom(t *testing.T) {
+	var (
+		peerSet = NewPeerSet()
+		peer1   = newMockPeer(nil)
+		peer2   = newMockPeer(nil)
+	)
+
+	// Empty PeerSet triggers random from unexisting peer.
+	_, ok := peerSet.RandomFrom([]ID{peer2.ID()})
+	require.False(t, ok)
+
+	require.NoError(t, peerSet.Add(peer1))
+
+	// PeerSet (single peers) triggers random from empty list.
+	_, ok = peerSet.RandomFrom([]ID{})
+	require.False(t, ok)
+	// PeerSet (single peers) triggers random from unexisting peer.
+	_, ok = peerSet.RandomFrom([]ID{peer2.ID()})
+	require.False(t, ok)
+	// PeerSet (single peers) triggers random from existing peer.
+	pickedPeer, ok := peerSet.RandomFrom([]ID{peer1.ID()})
+	require.True(t, ok)
+	require.Equal(t, peer1.ID(), pickedPeer.ID())
+
+	require.NoError(t, peerSet.Add(peer2))
+
+	// PeerSet (multiple peers) trigger random from existing peer.
+	pickedPeer, ok = peerSet.RandomFrom([]ID{peer1.ID()})
+	require.True(t, ok)
+	require.Equal(t, peer1.ID(), pickedPeer.ID())
 }

@@ -24,6 +24,8 @@ type IPeerSet interface {
 	ForEach(peer func(Peer))
 	// Random returns a random peer from the PeerSet.
 	Random() Peer
+	// RandomFrom returns a random peer from the Intersection of PeerSet and PreSelectedSet.
+	RandomFrom(preSelected []ID) (Peer, bool)
 }
 
 // -----------------------------------------------------------------------------
@@ -181,4 +183,24 @@ func (ps *PeerSet) Random() Peer {
 	}
 
 	return ps.list[cmtrand.Int()%len(ps.list)]
+}
+
+func (ps *PeerSet) RandomFrom(preSelected []ID) (Peer, bool) {
+	ps.mtx.Lock()
+	defer ps.mtx.Unlock()
+
+	selected := make([]Peer, 0, len(preSelected))
+	for _, id := range preSelected {
+		item, ok := ps.lookup[id]
+		if !ok {
+			continue
+		}
+		selected = append(selected, item.peer)
+	}
+
+	if len(selected) == 0 {
+		return Peer(nil), false
+	}
+
+	return selected[cmtrand.Int()%len(selected)], true
 }

@@ -53,3 +53,15 @@ See the following for more extensive documentation:
 - [CometBFT RPC Docs](https://docs.cometbft.com/main/rpc/)
 - [CometBFT in Production](../../explanation/core/running-in-production.md)
 - [ABCI spec](https://github.com/cometbft/cometbft/tree/main/spec/abci)
+
+## BLS12-381 aggregation
+
+CometBFT supports aggregation for BLS12-381 signatures. This drastically
+reduces the size of the blockchain and verification time.
+
+The aggregation won't work if vote extensions are enabled!
+
+To prevent [Rogue Key
+Attacks](https://hackmd.io/@benjaminion/bls12-381#Rogue-key-attacks) a proof of
+possession (PoP) must be required from validators upon the registration. This
+is left to the ABCI application to implement.

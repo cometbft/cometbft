@@ -51,11 +51,6 @@ See the [upgrading guidelines](./UPGRADING.md) and the specific changes below fo
 we are also introducing a migration guide, please refer to the
 [Upgrading from CometBFT v0.38.x to v1.0](./docs/guides/upgrades/v0.38-to-v1.0.md) document.
 
-**NB: This version is still a release candidate, which means that
-API-breaking changes, although very unlikely, might still be introduced
-before the final release.** See [RELEASES.md](./RELEASES.md) for more information on
-the stability guarantees we provide for pre-releases.
-
 ### BREAKING CHANGES
 
  - `[abci/types]` Rename `UpdateValidator` to `NewValidatorUpdate`, remove

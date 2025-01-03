@@ -20,7 +20,7 @@ Dialing a peer is implemented by the `DialPeerWithAddress` method.
 This method is invoked by the [peer manager](./peer_manager.md#ensure-peers)
 to dial a peer address and establish a connection with an outbound peer.
 
-The switch keeps a single dialing routine per peer ID.
+The switch keeps a single dialing routine per peer-ID.
 This is ensured by keeping a synchronized map `dialing` with the IDs of peers
 to which the peer is dialing.
 A peer ID is added to `dialing` when the `DialPeerWithAddress` method is called

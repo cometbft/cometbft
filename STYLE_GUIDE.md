@@ -6,7 +6,7 @@ standard is better than your style.  But if we agree to a number of stylistic pr
 and modify new code. Please feel free to make suggestions if there's something you would like to add or modify.
 
 We expect all contributors to be familiar with [Effective Go](https://golang.org/doc/effective_go.html)
-(and it's recommended reading for all Go programmers anyways). Additionally, we generally agree with the suggestions
+(and its recommended reading for all Go programmers anyways). Additionally, we generally agree with the suggestions
  in [Uber's style guide](https://github.com/uber-go/guide/blob/master/style.md) and use that as a starting point.
 
 
@@ -38,9 +38,9 @@ scroll down and understand the functionality of it just as well as you do. A loo
 
 ## Comments
 
-* Use a space after comment deliminter (ex. `// your comment`).
+* Use a space after comment delimiter (ex. `// your comment`).
 * Many comments are not sentences. These should begin with a lower case letter and end without a period.
-* Conversely, sentences in comments should be sentenced-cased and end with a period.
+* Conversely, sentences in comments should be sentenced cased and end with a period.
 
 ## Linters
 

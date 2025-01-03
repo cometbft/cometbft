@@ -9,7 +9,7 @@ but a role that is played by the [PEX reactor](./pex.md).
 
 The `ensurePeersRoutine` is a persistent routine intended to ensure that a node
 is connected to `MaxNumOutboundPeers` outbound peers.
-This routine is continuously executed by regular nodes, i.e. nodes not
+This routine is continuously executed by regular nodes, i.e., nodes not
 operating in seed mode, as part of the PEX reactor implementation.
 
 The logic defining when the node should dial peers, for selecting peers to dial

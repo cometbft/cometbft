@@ -120,6 +120,9 @@ func (privKey *PrivKey) Zeroize() {
 }
 
 // MarshalJSON marshals the private key to JSON.
+//
+// XXX: Not a pointer because our JSON encoder (libs/json) does not correctly
+// handle pointers.
 func (privKey PrivKey) MarshalJSON() ([]byte, error) {
 	return json.Marshal(privKey.Bytes())
 }
@@ -199,6 +202,9 @@ func (PubKey) Type() string {
 }
 
 // MarshalJSON marshals the public key to JSON.
+//
+// XXX: Not a pointer because our JSON encoder (libs/json) does not correctly
+// handle pointers.
 func (pubkey PubKey) MarshalJSON() ([]byte, error) {
 	return json.Marshal(pubkey.Bytes())
 }

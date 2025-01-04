@@ -120,7 +120,7 @@ func (privKey *PrivKey) Zeroize() {
 }
 
 // MarshalJSON marshals the private key to JSON.
-func (privKey *PrivKey) MarshalJSON() ([]byte, error) {
+func (privKey PrivKey) MarshalJSON() ([]byte, error) {
 	return json.Marshal(privKey.Bytes())
 }
 

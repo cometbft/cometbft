@@ -121,7 +121,7 @@ paths:
         Does not wait for DeliverTx result.
         If you want to be sure that the transaction is included in a block, you can
         subscribe for the result using JSONRPC via a websocket. See
-        https://docs.cometbft.com/main/core/subscription.html
+        https://docs.cometbft.com/v1.0/explanation/core/subscription.html
         If you haven't received anything after a couple of blocks, resend it. If the
         same happens again, send it to some other node. A few reasons why it could
         happen:
@@ -132,7 +132,7 @@ paths:
         (https://github.com/tendermint/tendermint/issues/3322)
 
 
-        Please refer to [formatting/encoding rules](https://docs.cometbft.com/main/core/using-cometbft.html#formatting)
+        Please refer to [formatting/encoding rules](https://docs.cometbft.com/v1.0/explanation/core/using-cometbft#formatting)
         for additional details
 
       parameters:
@@ -167,7 +167,7 @@ paths:
         Does not wait for CheckTx or DeliverTx results.
         If you want to be sure that the transaction is included in a block, you can
         subscribe for the result using JSONRPC via a websocket. See
-        https://docs.cometbft.com/main/core/subscription.html
+        https://docs.cometbft.com/v1.0/explanation/core/subscription.html
         If you haven't received anything after a couple of blocks, resend it. If the
         same happens again, send it to some other node. A few reasons why it could
         happen:
@@ -178,7 +178,7 @@ paths:
         (https://github.com/tendermint/tendermint/issues/3322)
         3. node can be offline
 
-        Please refer to [formatting/encoding rules](https://docs.cometbft.com/main/core/using-cometbft.html#formatting)
+        Please refer to [formatting/encoding rules](https://docs.cometbft.com/v1.0/explanation/core/using-cometbft.html#formatting)
         for additional details
 
       parameters:
@@ -220,7 +220,7 @@ paths:
         If CheckTx or DeliverTx fail, no error will be returned, but the returned result
         will contain a non-OK ABCI code.
 
-        Please refer to [formatting/encoding rules](https://docs.cometbft.com/main/core/using-cometbft.html#formatting)
+        Please refer to [formatting/encoding rules](https://docs.cometbft.com/v1.0/explanation/core/using-cometbft.html#formatting)
         for additional details
 
       parameters:
@@ -253,7 +253,7 @@ paths:
       description: |
         The transaction won't be added to the mempool.
 
-        Please refer to [formatting/encoding rules](https://docs.cometbft.com/main/core/using-cometbft.html#formatting)
+        Please refer to [formatting/encoding rules](https://docs.cometbft.com/v1.0/explanation/core/using-cometbft.html#formatting)
         for additional details
 
         Upon success, the `Cache-Control` header will be set with the default

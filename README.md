@@ -176,13 +176,10 @@ whitepapers, which CometBFT will continue to build on.
 
 ## Join us
 
-CometBFT is currently maintained by [Informal
-Systems](https://informal.systems). If you'd like to work full-time on CometBFT,
-[we're hiring](https://informal.systems/careers)!
+CometBFT is currently maintained by [Interchain Inc.](https://medium.com/the-interchain-foundation/cosmos-is-expanding-skip-joins-the-interchain-foundation-cfd346551dda). 
 
 Funding for CometBFT development comes primarily from the [Interchain
-Foundation](https://interchain.io), a Swiss non-profit. Informal Systems also
-maintains [cometbft.com](https://cometbft.com).
+Foundation](https://interchain.io), a Swiss non-profit.
 
 [bft]: https://en.wikipedia.org/wiki/Byzantine_fault_tolerance
 [smr]: https://en.wikipedia.org/wiki/State_machine_replication

@@ -42,8 +42,8 @@ func NewLocalClient(mtx *cmtsync.Mutex, app types.Application) Client {
 
 func (app *localClient) SetResponseCallback(cb Callback) {
 	app.mtx.Lock()
+	defer app.mtx.Unlock()
 	app.Callback = cb
-	app.mtx.Unlock()
 }
 
 func (app *localClient) CheckTxAsync(ctx context.Context, req *types.CheckTxRequest) (*ReqRes, error) {

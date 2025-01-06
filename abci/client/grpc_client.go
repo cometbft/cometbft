@@ -155,8 +155,8 @@ func (cli *grpcClient) Error() error {
 // NOTE: The callback may receive internally generated flush responses.
 func (cli *grpcClient) SetResponseCallback(resCb Callback) {
 	cli.mtx.Lock()
+	defer cli.mtx.Unlock()
 	cli.resCb = resCb
-	cli.mtx.Unlock()
 }
 
 // ----------------------------------------

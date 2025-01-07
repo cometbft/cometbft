@@ -92,7 +92,7 @@ When a hard fork happens, a new chain can start from a higher initial height by 
 
 > Notes:
 
->> If a Height `"0"` is specified in `initial_heigth`, then CometBFT during the genesis file validation, will change the
+>> If a Height `"0"` is specified in `initial_height`, then CometBFT during the genesis file validation, will change the
 > initial height parameter to `"1"`.
 
 >> Note: A height in CometBFT is an `int64` integer therefore its maximum value is `9223372036854775807`

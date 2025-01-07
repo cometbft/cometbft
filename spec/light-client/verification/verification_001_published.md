@@ -1105,7 +1105,7 @@ func Main (primary PeerID, lightStore LightStore, targetHeight Height)
             // maintain state
    // we do that whether VerifyToTarget was successful or not
             for i, s range auxLS {
-                lighStore.Update(s,s.State)
+                lightStore.Update(s,s.State)
             }
             return (lightStore, res2)
         }

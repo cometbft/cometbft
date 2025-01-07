@@ -1,3 +1,5 @@
+//go:build secp256k1eth
+
 package secp256k1eth
 
 import (

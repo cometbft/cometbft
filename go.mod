@@ -140,9 +140,6 @@ require (
 	gotest.tools v2.2.0+incompatible // indirect
 )
 
-// local replace for development. Move to workspaces when ready
-replace github.com/cometbft/cometbft/api => ./api
-
 retract (
 	// a regression was introduced
 	v0.38.4

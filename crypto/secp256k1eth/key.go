@@ -8,6 +8,11 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 )
 
+const (
+	// Enabled indicates if this curve is enabled.
+	Enabled = false
+)
+
 // ErrDisabled is returned if the caller didn't use the `secp256k1eth` build tag.
 var ErrDisabled = errors.New("secp256k1eth is disabled")
 
@@ -42,7 +47,7 @@ func (privKey PrivKey) Bytes() []byte {
 
 // PubKey always panics.
 func (PrivKey) PubKey() crypto.PubKey {
-	panic("secp256k1eth is disabled")
+	panic(ErrDisabled)
 }
 
 // Type returns the key's type.
@@ -52,12 +57,12 @@ func (PrivKey) Type() string {
 
 // Sign always panics.
 func (PrivKey) Sign([]byte) ([]byte, error) {
-	panic("secp256k1eth is disabled")
+	panic(ErrDisabled)
 }
 
 // Zeroize always panics.
 func (PrivKey) Zeroize() {
-	panic("secp256k1eth is disabled")
+	panic(ErrDisabled)
 }
 
 // ===============================================================================================
@@ -78,17 +83,17 @@ type PubKey []byte
 
 // Address always panics.
 func (PubKey) Address() crypto.Address {
-	panic("secp256k1eth is disabled")
+	panic(ErrDisabled)
 }
 
 // VerifySignature always panics.
 func (PubKey) VerifySignature([]byte, []byte) bool {
-	panic("secp256k1eth is disabled")
+	panic(ErrDisabled)
 }
 
 // Bytes always panics.
 func (PubKey) Bytes() []byte {
-	panic("secp256k1eth is disabled")
+	panic(ErrDisabled)
 }
 
 // Type returns the key's type.

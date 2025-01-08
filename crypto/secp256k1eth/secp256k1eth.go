@@ -19,6 +19,11 @@ import (
 
 // -------------------------------------.
 
+const (
+	// Enabled indicates if this curve is enabled.
+	Enabled = true
+)
+
 func init() {
 	cmtjson.RegisterType(PubKey{}, PubKeyName)
 	cmtjson.RegisterType(PrivKey{}, PrivKeyName)

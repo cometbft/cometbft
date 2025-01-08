@@ -1,9 +1,6 @@
 package secp256k1eth
 
 const (
-	// Enabled indicates if this curve is enabled.
-	Enabled = false
-
 	// PrivKeySize defines the length of the PrivKey byte array.
 	PrivKeySize = 32
 	// PubKeySize, in Ethereum format, is comprised of 65 bytes for two field elements (x and y)

@@ -1,3 +1,5 @@
+//go:build secp256k1eth
+
 package secp256k1eth
 
 import (
@@ -16,6 +18,11 @@ import (
 )
 
 // -------------------------------------.
+
+const (
+	// Enabled indicates if this curve is enabled.
+	Enabled = true
+)
 
 func init() {
 	cmtjson.RegisterType(PubKey{}, PubKeyName)

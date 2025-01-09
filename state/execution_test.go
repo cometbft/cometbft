@@ -19,7 +19,6 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
-	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
@@ -450,7 +449,6 @@ func TestProcessProposal(t *testing.T) {
 func TestValidateValidatorUpdates(t *testing.T) {
 	pubkey1 := ed25519.GenPrivKey().PubKey()
 	pubkey2 := secp256k1.GenPrivKey().PubKey()
-	pubkey3 := secp256k1eth.GenPrivKey().PubKey()
 
 	defaultValidatorParams := types.ValidatorParams{PubKeyTypes: []string{types.ABCIPubKeyTypeEd25519}}
 
@@ -475,19 +473,17 @@ func TestValidateValidatorUpdates(t *testing.T) {
 				PubKeyTypes: []string{
 					types.ABCIPubKeyTypeEd25519,
 					types.ABCIPubKeyTypeSecp256k1,
-					types.ABCIPubKeyTypeSecp256k1Eth,
 				},
 			},
 			false,
 		},
 		{
-			"updating a validator with key type Secp256k1Eth is OK",
-			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey3, 20)},
+			"updating a validator with key type Secp256k1 is OK",
+			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey2, 20)},
 			types.ValidatorParams{
 				PubKeyTypes: []string{
 					types.ABCIPubKeyTypeEd25519,
 					types.ABCIPubKeyTypeSecp256k1,
-					types.ABCIPubKeyTypeSecp256k1Eth,
 				},
 			},
 			false,
@@ -507,7 +503,7 @@ func TestValidateValidatorUpdates(t *testing.T) {
 		{
 			"adding a validator with unsupported key type results in an error",
 			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey1, 20)},
-			types.ValidatorParams{PubKeyTypes: []string{types.ABCIPubKeyTypeSecp256k1Eth}},
+			types.ValidatorParams{PubKeyTypes: []string{types.ABCIPubKeyTypeSecp256k1}},
 			true,
 		},
 	}
@@ -529,8 +525,6 @@ func TestUpdateValidators(t *testing.T) {
 	val1 := types.NewValidator(pubkey1, 10)
 	pubkey2 := secp256k1.GenPrivKey().PubKey()
 	val2 := types.NewValidator(pubkey2, 20)
-	pubkey3 := secp256k1eth.GenPrivKey().PubKey()
-	val3 := types.NewValidator(pubkey3, 20)
 
 	testCases := []struct {
 		name string
@@ -560,13 +554,6 @@ func TestUpdateValidators(t *testing.T) {
 			types.NewValidatorSet([]*types.Validator{val1, val2}),
 			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey2, 0)},
 			types.NewValidatorSet([]*types.Validator{val1}),
-			false,
-		},
-		{
-			"adding a validator with different key type is OK",
-			types.NewValidatorSet([]*types.Validator{val1}),
-			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey3, 20)},
-			types.NewValidatorSet([]*types.Validator{val1, val3}),
 			false,
 		},
 		{

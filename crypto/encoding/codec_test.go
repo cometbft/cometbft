@@ -46,16 +46,21 @@ func TestPubKeyToFromProto(t *testing.T) {
 	assert.Equal(t, pk.VerifySignature([]byte("msg"), []byte("sig")), pubkey.VerifySignature([]byte("msg"), []byte("sig")))
 
 	// secp256k1eth
-	pk = secp256k1eth.GenPrivKey().PubKey()
-	proto, err = PubKeyToProto(pk)
-	require.NoError(t, err)
+	if secp256k1eth.Enabled {
+		pk = secp256k1eth.GenPrivKey().PubKey()
+		proto, err = PubKeyToProto(pk)
+		require.NoError(t, err)
 
-	pubkey, err = PubKeyFromProto(proto)
-	require.NoError(t, err)
-	assert.Equal(t, pk.Type(), pubkey.Type())
-	assert.Equal(t, pk.Bytes(), pubkey.Bytes())
-	assert.Equal(t, pk.Address(), pubkey.Address())
-	assert.Equal(t, pk.VerifySignature([]byte("msg"), []byte("sig")), pubkey.VerifySignature([]byte("msg"), []byte("sig")))
+		pubkey, err = PubKeyFromProto(proto)
+		require.NoError(t, err)
+		assert.Equal(t, pk.Type(), pubkey.Type())
+		assert.Equal(t, pk.Bytes(), pubkey.Bytes())
+		assert.Equal(t, pk.Address(), pubkey.Address())
+		assert.Equal(t, pk.VerifySignature([]byte("msg"), []byte("sig")), pubkey.VerifySignature([]byte("msg"), []byte("sig")))
+	} else {
+		_, err = PubKeyToProto(secp256k1eth.PubKey{})
+		assert.Error(t, err)
+	}
 
 	// bls12381
 	if bls12381.Enabled {
@@ -111,13 +116,18 @@ func TestPubKeyFromTypeAndBytes(t *testing.T) {
 	assert.Error(t, err)
 
 	// secp256k1eth
-	pk = secp256k1eth.GenPrivKey().PubKey()
-	pubkey, err = PubKeyFromTypeAndBytes(pk.Type(), pk.Bytes())
-	assert.NoError(t, err)
-	assert.Equal(t, pk.Type(), pubkey.Type())
-	assert.Equal(t, pk.Bytes(), pubkey.Bytes())
-	assert.Equal(t, pk.Address(), pubkey.Address())
-	assert.Equal(t, pk.VerifySignature([]byte("msg"), []byte("sig")), pubkey.VerifySignature([]byte("msg"), []byte("sig")))
+	if secp256k1eth.Enabled {
+		pk = secp256k1eth.GenPrivKey().PubKey()
+		pubkey, err = PubKeyFromTypeAndBytes(pk.Type(), pk.Bytes())
+		assert.NoError(t, err)
+		assert.Equal(t, pk.Type(), pubkey.Type())
+		assert.Equal(t, pk.Bytes(), pubkey.Bytes())
+		assert.Equal(t, pk.Address(), pubkey.Address())
+		assert.Equal(t, pk.VerifySignature([]byte("msg"), []byte("sig")), pubkey.VerifySignature([]byte("msg"), []byte("sig")))
+	} else {
+		_, err = PubKeyFromTypeAndBytes(secp256k1eth.KeyType, []byte{})
+		assert.Error(t, err)
+	}
 
 	// secp256k1 invalid size
 	_, err = PubKeyFromTypeAndBytes(pk.Type(), pk.Bytes()[:10])

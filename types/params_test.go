@@ -14,10 +14,9 @@ import (
 )
 
 var (
-	valEd25519                = []string{ABCIPubKeyTypeEd25519}
-	valSecp256k1              = []string{ABCIPubKeyTypeSecp256k1}
-	valEd25519AndSecp256k1    = []string{ABCIPubKeyTypeEd25519, ABCIPubKeyTypeSecp256k1}
-	valEd25519AndSecp256k1Eth = []string{ABCIPubKeyTypeEd25519, ABCIPubKeyTypeSecp256k1Eth}
+	valEd25519             = []string{ABCIPubKeyTypeEd25519}
+	valSecp256k1           = []string{ABCIPubKeyTypeSecp256k1}
+	valEd25519AndSecp256k1 = []string{ABCIPubKeyTypeEd25519, ABCIPubKeyTypeSecp256k1}
 )
 
 type makeParamsArgs struct {
@@ -247,7 +246,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 			params: makeParams(makeParamsArgs{
 				blockBytes:  1,
 				evidenceAge: 2,
-				pubkeyTypes: valEd25519AndSecp256k1Eth,
+				pubkeyTypes: valEd25519AndSecp256k1,
 			}),
 			valid: true,
 		},
@@ -256,7 +255,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 			params: makeParams(makeParamsArgs{
 				blockBytes:  1,
 				evidenceAge: 2,
-				pubkeyTypes: append(valEd25519AndSecp256k1Eth, "my little type"),
+				pubkeyTypes: append(valEd25519AndSecp256k1, "my little type"),
 			}),
 			valid: false,
 		},
@@ -398,18 +397,21 @@ func TestConsensusParamsHash(t *testing.T) {
 
 func TestConsensusParamsUpdate(t *testing.T) {
 	testCases := []struct {
+		name          string
 		intialParams  ConsensusParams
 		updates       *cmtproto.ConsensusParams
 		updatedParams ConsensusParams
 	}{
 		// empty updates
 		{
+			name:          "empty updates",
 			intialParams:  makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3}),
 			updates:       &cmtproto.ConsensusParams{},
 			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3}),
 		},
 		{
 			// update synchrony params
+			name:         "update synchrony params",
 			intialParams: makeParams(makeParamsArgs{evidenceAge: 3, precision: time.Second, messageDelay: 3 * time.Second}),
 			updates: &cmtproto.ConsensusParams{
 				Synchrony: &cmtproto.SynchronyParams{
@@ -421,6 +423,7 @@ func TestConsensusParamsUpdate(t *testing.T) {
 		},
 		// update enable vote extensions only
 		{
+			name:         "update enable vote extensions only",
 			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3}),
 			updates: &cmtproto.ConsensusParams{
 				Feature: &cmtproto.FeatureParams{
@@ -430,6 +433,7 @@ func TestConsensusParamsUpdate(t *testing.T) {
 			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, voteExtensionHeight: 1}),
 		},
 		{
+			name:         "update enable vote extensions, with PBTS enabled",
 			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, voteExtensionHeight: 1, pbtsHeight: 4}),
 			updates: &cmtproto.ConsensusParams{
 				Feature: &cmtproto.FeatureParams{
@@ -440,6 +444,7 @@ func TestConsensusParamsUpdate(t *testing.T) {
 		},
 		// update enabled pbts only
 		{
+			name:         "update enable pbts only",
 			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3}),
 			updates: &cmtproto.ConsensusParams{
 				Feature: &cmtproto.FeatureParams{
@@ -449,6 +454,7 @@ func TestConsensusParamsUpdate(t *testing.T) {
 			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pbtsHeight: 1}),
 		},
 		{
+			name:         "update enable pbts, with vote extensions enabled",
 			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, voteExtensionHeight: 4, pbtsHeight: 1}),
 			updates: &cmtproto.ConsensusParams{
 				Feature: &cmtproto.FeatureParams{
@@ -459,6 +465,7 @@ func TestConsensusParamsUpdate(t *testing.T) {
 		},
 		// update both pbts and vote extensions enable heights
 		{
+			name:         "update both pbts and vote extensions",
 			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3}),
 			updates: &cmtproto.ConsensusParams{
 				Feature: &cmtproto.FeatureParams{
@@ -469,6 +476,7 @@ func TestConsensusParamsUpdate(t *testing.T) {
 			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, voteExtensionHeight: 1, pbtsHeight: 1}),
 		},
 		{
+			name:         "update both pbts and vote extensions, with different heights",
 			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, voteExtensionHeight: 1, pbtsHeight: 1}),
 			updates: &cmtproto.ConsensusParams{
 				Feature: &cmtproto.FeatureParams{
@@ -481,6 +489,7 @@ func TestConsensusParamsUpdate(t *testing.T) {
 
 		// fine updates
 		{
+			name:         "fine updates",
 			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3}),
 			updates: &cmtproto.ConsensusParams{
 				Block: &cmtproto.BlockParams{
@@ -506,6 +515,7 @@ func TestConsensusParamsUpdate(t *testing.T) {
 
 		// multiple pubkey types
 		{
+			name:         "multiple pubkey types",
 			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3}),
 			updates: &cmtproto.ConsensusParams{
 				Validator: &cmtproto.ValidatorParams{
@@ -514,9 +524,21 @@ func TestConsensusParamsUpdate(t *testing.T) {
 			},
 			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pubkeyTypes: valEd25519AndSecp256k1}),
 		},
-		// remove Secp256k1Eth
+		// remove Secp256k1
 		{
-			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pubkeyTypes: valEd25519AndSecp256k1Eth}),
+			name:         "pubkey types: remove Secp256k1",
+			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pubkeyTypes: valEd25519AndSecp256k1}),
+			updates: &cmtproto.ConsensusParams{
+				Validator: &cmtproto.ValidatorParams{
+					PubKeyTypes: valEd25519,
+				},
+			},
+			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pubkeyTypes: valEd25519}),
+		},
+		// add Secp256k1
+		{
+			name:         "pubkey types: add Secp256k1",
+			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pubkeyTypes: valEd25519}),
 			updates: &cmtproto.ConsensusParams{
 				Validator: &cmtproto.ValidatorParams{
 					PubKeyTypes: valEd25519AndSecp256k1,
@@ -524,20 +546,10 @@ func TestConsensusParamsUpdate(t *testing.T) {
 			},
 			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pubkeyTypes: valEd25519AndSecp256k1}),
 		},
-		// add Secp256k1Eth
-		{
-			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pubkeyTypes: valEd25519AndSecp256k1}),
-			updates: &cmtproto.ConsensusParams{
-				Validator: &cmtproto.ValidatorParams{
-					PubKeyTypes: valEd25519AndSecp256k1Eth,
-				},
-			},
-			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pubkeyTypes: valEd25519AndSecp256k1Eth}),
-		},
 	}
 
 	for _, tc := range testCases {
-		assert.Equal(t, tc.updatedParams, tc.intialParams.Update(tc.updates))
+		assert.Equal(t, tc.updatedParams, tc.intialParams.Update(tc.updates), "test: %v", tc.name)
 	}
 }
 

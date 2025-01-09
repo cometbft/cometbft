@@ -38,7 +38,7 @@ generator:
 	go build -o build/generator ./generator
 
 runner:
-	go build -tags bls12381 -o build/runner ./runner
+	go build -tags 'bls12381,secp256k1eth' -o build/runner ./runner
 
 lint:
 	@echo "--> Running linter for E2E"

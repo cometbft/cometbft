@@ -32,17 +32,17 @@ test_release:
 ### go tests
 test:
 	@echo "--> Running go test"
-	@go test -p 1 $(PACKAGES) -tags bls12381
+	@go test -p 1 $(PACKAGES) -tags bls12381,secp256k1eth
 .PHONY: test
 
 test_race:
 	@echo "--> Running go test --race"
-	@go test -p 1 -race $(PACKAGES) -tags bls12381
+	@go test -p 1 -race $(PACKAGES) -tags bls12381,secp256k1eth
 .PHONY: test_race
 
 test_deadlock:
 	@echo "--> Running go test with deadlock support"
-	@go test -p 1 $(PACKAGES) -tags deadlock,bls12381
+	@go test -p 1 $(PACKAGES) -tags deadlock,bls12381,secp256k1eth
 .PHONY: test_deadlock
 
 # Implements test splitting and running. This is pulled directly from
@@ -65,4 +65,4 @@ split-test-packages:$(BUILDDIR)/packages.txt
 # Used by the GitHub CI, in order to run tests in parallel
 test-group-%:split-test-packages
 	cat $(BUILDDIR)/packages.txt.$*
-	cat $(BUILDDIR)/packages.txt.$* | xargs go test -tags bls12381 -mod=readonly -timeout=400s -race -coverprofile=$(BUILDDIR)/$*.profile.out
+	cat $(BUILDDIR)/packages.txt.$* | xargs go test -tags 'bls12381,secp256k1eth' -mod=readonly -timeout=400s -race -coverprofile=$(BUILDDIR)/$*.profile.out

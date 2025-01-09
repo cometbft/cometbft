@@ -22,10 +22,14 @@ func init() {
 		secp256k1.KeyType: func() (crypto.PrivKey, error) { //nolint: unparam
 			return secp256k1.GenPrivKey(), nil
 		},
-		secp256k1eth.KeyType: func() (crypto.PrivKey, error) { //nolint: unparam
-			return secp256k1eth.GenPrivKey(), nil
-		},
 	}
+
+	if secp256k1eth.Enabled {
+		keyTypes[secp256k1eth.KeyType] = func() (crypto.PrivKey, error) { //nolint: unparam
+			return secp256k1eth.GenPrivKey(), nil
+		}
+	}
+
 	if bls12381.Enabled {
 		keyTypes[bls12381.KeyType] = func() (crypto.PrivKey, error) {
 			pk, err := bls12381.GenPrivKey()

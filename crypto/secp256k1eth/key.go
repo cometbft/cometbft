@@ -60,11 +60,6 @@ func (PrivKey) Sign([]byte) ([]byte, error) {
 	panic(ErrDisabled)
 }
 
-// Zeroize always panics.
-func (PrivKey) Zeroize() {
-	panic(ErrDisabled)
-}
-
 // ===============================================================================================
 // Public Key
 // ===============================================================================================

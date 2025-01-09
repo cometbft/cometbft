@@ -93,9 +93,15 @@ type ValidatorInfo struct {
 
 // Node Status
 type ResultStatus struct {
-	NodeInfo      p2p.DefaultNodeInfo `json:"node_info"`
-	SyncInfo      SyncInfo            `json:"sync_info"`
-	ValidatorInfo ValidatorInfo       `json:"validator_info"`
+	NodeInfo        p2p.DefaultNodeInfo `json:"node_info"`
+	SyncInfo        SyncInfo            `json:"sync_info"`
+	ValidatorInfo   ValidatorInfo       `json:"validator_info"`
+	DymensionStatus DymensionStatus     `json:"dymension_status,omitempty"`
+}
+
+type DymensionStatus struct {
+	DAPath        string             `json:"da_path,omitempty"`
+	RollappParams abci.RollappParams `json:"rollapp_params,omitempty"`
 }
 
 // Is TxIndexing enabled

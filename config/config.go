@@ -186,7 +186,7 @@ type BaseConfig struct { //nolint: maligned
 	// * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
 	//   - EXPERIMENTAL
 	//   - may be faster is some use-cases (random reads - indexer)
-	//   - use boltdb build tag (go build -tags boltdb)
+	//   - use boltdb build tag (go build -tags boltdb
 	// * rocksdb (uses github.com/tecbot/gorocksdb)
 	//   - EXPERIMENTAL
 	//   - requires gcc

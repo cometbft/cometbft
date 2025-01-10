@@ -286,3 +286,29 @@ func TestProposalIsTimely(t *testing.T) {
 		})
 	}
 }
+
+func TestProposalIsTimely_CHECKS(t *testing.T) {
+	timestamp, err := time.Parse(time.RFC3339, "2025-01-09T21:40:52.056591203Z")
+	require.NoError(t, err)
+	receivedTime, err := time.Parse(time.RFC3339, "2025-01-09T21:40:52.181317925Z")
+	require.NoError(t, err)
+
+	origSp := SynchronyParams{
+		Precision:    505 * time.Millisecond,
+		MessageDelay: 15 * time.Second,
+	}
+	sp := origSp.InRound(303)
+	// require.Equal(t, origSp, sp)
+
+	p := Proposal{
+		Type:      ProposalType,
+		Height:    66435,
+		Timestamp: timestamp,
+		Round:     0,
+		POLRound:  -1,
+		BlockID:   testBlockID,
+		Signature: []byte{1},
+	}
+	require.NoError(t, p.ValidateBasic())
+	require.Equal(t, true, p.IsTimely(receivedTime, sp))
+}

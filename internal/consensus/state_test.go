@@ -72,6 +72,24 @@ x * TestHalt1 - if we see +2/3 precommits after timing out into new round, we sh
 // ----------------------------------------------------------------------------------------------------
 // ProposeSuite
 
+func TestTest(t *testing.T) {
+	// func (sp SynchronyParams) InRound(round int32) SynchronyParams {
+	// 	return SynchronyParams{
+	// 		Precision:    sp.Precision,
+	// 		MessageDelay: time.Duration(math.Pow(1.1, float64(round)) * float64(sp.MessageDelay)),
+	// 	}
+	// }
+
+	originalSP := types.DefaultSynchronyParams()
+	t.Log(originalSP.InRound(10))
+	t.Log(originalSP.InRound(100))
+	t.Log(originalSP.InRound(303))
+
+	t.Log(timelyProposalMargins(originalSP, 10))
+	t.Log(timelyProposalMargins(originalSP, 100))
+	t.Log(timelyProposalMargins(originalSP, 303))
+}
+
 func TestStateProposerSelection0(t *testing.T) {
 	cs1, vss := randState(4)
 	height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID

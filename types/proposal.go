@@ -106,6 +106,18 @@ func (p *Proposal) IsTimely(recvTime time.Time, sp SynchronyParams) bool {
 	return true
 }
 
+func IsTimely(proposalTimestamp time.Time, recvTime time.Time, sp SynchronyParams) bool {
+	// lhs is `proposalTimestamp - Precision` in the first inequality
+	lhs := proposalTimestamp.Add(-sp.Precision)
+	// rhs is `proposalTimestamp + MessageDelay + Precision` in the second inequality
+	rhs := proposalTimestamp.Add(sp.MessageDelay).Add(sp.Precision)
+
+	if recvTime.Before(lhs) || recvTime.After(rhs) {
+		return false
+	}
+	return true
+}
+
 // String returns a string representation of the Proposal.
 //
 // 1. height

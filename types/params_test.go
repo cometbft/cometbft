@@ -682,6 +682,20 @@ func durationPtr(t time.Duration) *time.Duration {
 	return &t
 }
 
+func TestTest(t *testing.T) {
+	// func (sp SynchronyParams) InRound(round int32) SynchronyParams {
+	// 	return SynchronyParams{
+	// 		Precision:    sp.Precision,
+	// 		MessageDelay: time.Duration(math.Pow(1.1, float64(round)) * float64(sp.MessageDelay)),
+	// 	}
+	// }
+
+	originalSP := DefaultSynchronyParams()
+	t.Log(originalSP.InRound(10))
+	t.Log(originalSP.InRound(100))
+	t.Log(originalSP.InRound(303))
+}
+
 func TestParamsAdaptiveSynchronyParams(t *testing.T) {
 	originalSP := DefaultSynchronyParams()
 	assert.Equal(t, originalSP, originalSP.InRound(0),

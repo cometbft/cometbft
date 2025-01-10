@@ -1366,6 +1366,14 @@ func (cs *State) enterPrevote(height int64, round int32) {
 	// (so we have more time to try and collect +2/3 prevotes for a single block)
 }
 
+func timelyProposalMargins(s types.SynchronyParams, r int32) (time.Duration, time.Duration) {
+	sp := s.InRound(r)
+
+	// cs.ProposalReceiveTime - cs.Proposal.Timestamp >= -1 * Precision
+	// cs.ProposalReceiveTime - cs.Proposal.Timestamp <= MessageDelay + Precision
+	return -sp.Precision, sp.MessageDelay + sp.Precision
+}
+
 func (cs *State) timelyProposalMargins() (time.Duration, time.Duration) {
 	sp := cs.state.ConsensusParams.Synchrony.InRound(cs.Round)
 
@@ -1408,18 +1416,18 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 			return
 		}
 
-		// if cs.Proposal.POLRound == -1 && !cs.proposalIsTimely() {
-		lowerBound, upperBound := cs.timelyProposalMargins()
-		// TODO: use Warn level once available.
-		logger.Info("prevote step: Proposal is not timely; prevoting nil",
-			"timestamp", cs.Proposal.Timestamp.Format(time.RFC3339Nano),
-			"receive_time", cs.ProposalReceiveTime.Format(time.RFC3339Nano),
-			"timestamp_difference", cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp),
-			"lower_bound", lowerBound,
-			"upper_bound", upperBound)
-		// cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
-		// return
-		// }
+		if cs.Proposal.POLRound == -1 && !cs.proposalIsTimely() {
+			lowerBound, upperBound := cs.timelyProposalMargins()
+			// TODO: use Warn level once available.
+			logger.Info("prevote step: Proposal is not timely; prevoting nil",
+				"timestamp", cs.Proposal.Timestamp.Format(time.RFC3339Nano),
+				"receive_time", cs.ProposalReceiveTime.Format(time.RFC3339Nano),
+				"timestamp_difference", cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp),
+				"lower_bound", lowerBound,
+				"upper_bound", upperBound)
+			cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
+			return
+		}
 
 		if cs.Proposal.POLRound == -1 {
 			logger.Debug("prevote step: Proposal is timely",

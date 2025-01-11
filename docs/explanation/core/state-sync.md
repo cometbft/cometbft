@@ -22,7 +22,7 @@ chunked data when bootstrapping.
 Under the state sync section in `config.toml` you will find multiple settings
 that need to be configured in order for your node to use state sync.
 
-Lets breakdown the settings:
+Let's break down the settings:
 
 - `enable`: Enable is to inform the node that you will be using state sync to
   bootstrap your node.

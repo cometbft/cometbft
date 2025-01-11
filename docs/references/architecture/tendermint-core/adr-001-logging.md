@@ -76,7 +76,7 @@ go-kit is my favorite so far. Check out how easy it is to color errors in red ht
 
 ```
 go-kit +: flexible, modular
-go-kit “-”: logfmt format https://brandur.org/logfmt
+go-kit "-": logfmt format https://brandur.org/logfmt
 
 logrus +: popular, feature rich (hooks), API and output is more like what we want
 logrus -: not so flexible

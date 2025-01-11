@@ -220,7 +220,7 @@ paths:
         If CheckTx or DeliverTx fail, no error will be returned, but the returned result
         will contain a non-OK ABCI code.
 
-        Please refer to [formatting/encoding rules](https://docs.cometbft.com/v1.0/explanation/core/using-cometbft.html#formatting)
+        Please refer to [formatting/encoding rules](https://docs.cometbft.com/main/explanation/core/using-cometbft.html#formatting)
         for additional details
 
       parameters:

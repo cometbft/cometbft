@@ -13,7 +13,7 @@ require (
 	github.com/cometbft/cometbft/api v0.0.0-20250106160918-b965571e1d53
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/creachadair/atomicfile v0.3.6
-	github.com/creachadair/tomledit v0.0.26
+	github.com/creachadair/tomledit v0.0.27
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
 	github.com/dgraph-io/badger/v4 v4.5.0
 	github.com/ethereum/go-ethereum v1.14.12

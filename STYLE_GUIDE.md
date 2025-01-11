@@ -30,7 +30,7 @@ scroll down and understand the functionality of it just as well as you do. A loo
 * Use `gofmt` (or `goimport`) to format all code upon saving it.  (If you use VIM, check out vim-go).
 * Use a linter (see below) and generally try to keep the linter happy (where it makes sense).
 * Think about documentation, and try to leave godoc comments, when it will help new developers.
-* Every package should have a high level doc.go file to describe the purpose of that package, its main functions, and any other relevant information.
+* Every package should have a high-level doc.go file to describe the purpose of that package, its main functions, and any other relevant information.
 * `TODO` should not be used. If important enough should be recorded as an issue.
 * `BUG` / `FIXME` should be used sparingly to guide future developers on some of the vulnerabilities of the code.
 * `XXX` can be used in work-in-progress (prefixed with "WIP:" on github) branches but they must be removed before approving a PR.
@@ -39,7 +39,7 @@ scroll down and understand the functionality of it just as well as you do. A loo
 ## Comments
 
 * Use a space after comment deliminter (ex. `// your comment`).
-* Many comments are not sentences. These should begin with a lower case letter and end without a period.
+* Many comments are not sentences. These should begin with a lowercase letter and end without a period.
 * Conversely, sentences in comments should be sentenced-cased and end with a period.
 
 ## Linters
@@ -121,7 +121,7 @@ Sometimes it's necessary to rename libraries to avoid naming collisions or ambig
 * Instead of using pointer flags (eg. `FlagSet().StringVar`) use Viper to retrieve flag values (eg. `viper.GetString`)
     * The flag key used when setting and getting the flag should always be stored in a
    variable taking the form `FlagXxx` or `flagXxx`.
-    * Flag short variable descriptions should always start with a lower case character as to remain consistent with
+    * Flag short variable descriptions should always start with a lowercase character as to remain consistent with
    the description provided in the default `--help` flag.
 
 ## Version

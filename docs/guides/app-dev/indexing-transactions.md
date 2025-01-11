@@ -112,7 +112,7 @@ transferBalance100FinalizeBlock11          1
 transferNodeNothingFinalizeBlock11         1
 ---- event2 ------
 transferSenderTomFinalizeBlock12           1
-transferRecepientAliceFinalizeBlock12      1
+transferRecipientAliceFinalizeBlock12      1
 transferBalance200FinalizeBlock12          1
 transferNodeNothingFinalizeBlock12         1
 

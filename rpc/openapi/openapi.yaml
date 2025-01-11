@@ -132,7 +132,7 @@ paths:
         (https://github.com/tendermint/tendermint/issues/3322)
 
 
-        Please refer to [formatting/encoding rules](https://docs.cometbft.com/v1.0/explanation/core/using-cometbft#formatting)
+        Please refer to [formatting/encoding rules](https://docs.cometbft.com/main/explanation/core/using-cometbft#formatting)
         for additional details
 
       parameters:

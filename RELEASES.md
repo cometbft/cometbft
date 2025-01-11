@@ -183,7 +183,7 @@ backport branch (see above). Otherwise:
    back down locally.
 8. Once you have the changes locally, create the new tag, specifying a name and
    a tag "message":
-   `git tag -a v2.0.0-rc1 -s -m "Release Candidate v2.0.0-rc1`
+   `git tag -a v2.0.0-rc1 -s -m "Release Candidate v2.0.0-rc1"`
 9.  Push the tag back up to origin:
    `git push origin v2.0.0-rc1`
    Now the tag should be available on the repo's releases page.
@@ -269,7 +269,7 @@ To create a patch release:
    * `git push origin v2.0.1`
 
    The process for minor releases is similar to patch releases:
-   * `git tag -a v2.1.0 -s -m 'Release v2.1.0`
+   * `git tag -a v2.1.0 -s -m 'Release v2.1.0'`
    * `git push origin v2.1.0`
 6. Create a pull request back to main with the CHANGELOG and version changes
    from the latest release.
@@ -393,7 +393,7 @@ CometBFT v0.38.0 introduced **vote-extensions**, which are added as the name
 suggests, to precommit votes sent by validators. The Vote-extension Testnet is
 used to determine how vote-extensions affect the performance of CometBFT, under
 various settings. The application used in the experiment is the same used on the
-(#200-node-testnet), but is configured differently to gauge de effects of
+(#200-node-testnet), but is configured differently to gauge the effects of
 varying vote extension sizes. In the (#200-node-testnet) the application extends
 pre-commit votes with a 64 bit number encoded with variable compression. In the
 Vote-extension Testnet, pre-commit votes are extended with a non-compressed

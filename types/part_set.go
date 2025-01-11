@@ -279,10 +279,8 @@ func (ps *PartSet) Total() uint32 {
 }
 
 func (ps *PartSet) AddPart(part *Part) (bool, error) {
-	// TODO: remove this? would be preferable if this only returned (false, nil)
-	// when its a duplicate block part
 	if ps == nil {
-		return false, nil
+		return false, errors.New("cannot add part to nil PartSet")
 	}
 
 	ps.mtx.Lock()

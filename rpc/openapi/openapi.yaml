@@ -253,7 +253,7 @@ paths:
       description: |
         The transaction won't be added to the mempool.
 
-        Please refer to [formatting/encoding rules](https://docs.cometbft.com/v1.0/explanation/core/using-cometbft.html#formatting)
+        Please refer to [formatting/encoding rules](https://docs.cometbft.com/main/explanation/core/using-cometbft.html#formatting)
         for additional details
 
         Upon success, the `Cache-Control` header will be set with the default

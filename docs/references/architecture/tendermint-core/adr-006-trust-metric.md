@@ -14,7 +14,7 @@ Instead, having shorter intervals, but keeping a history of interval values, wil
 
 ### References
 
-S. Mudhakar, L. Xiong, and L. Liu, “TrustGuard: Countering Vulnerabilities in Reputation Management for Decentralized Overlay Networks,” in _Proceedings of the 14th international conference on World Wide Web, pp. 422-431_, May 2005.
+S. Mudhakar, L. Xiong, and L. Liu, "TrustGuard: Countering Vulnerabilities in Reputation Management for Decentralized Overlay Networks," in _Proceedings of the 14th international conference on World Wide Web, pp. 422-431_, May 2005.
 
 ## Decision
 

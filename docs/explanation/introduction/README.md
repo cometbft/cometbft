@@ -250,7 +250,7 @@ sources of non-determinism such as:
 - uninitialized memory (in unsafe programming languages like C
   or C++)
 - [floating point
-  arithmetic](http://gafferongames.com/networking-for-game-programmers/floating-point-determinism/)
+  arithmetic](https://gafferongames.com/post/floating_point_determinism/)
 - language features that are random (e.g. map iteration in Go)
 
 While programmers can avoid non-determinism by being careful, it is also

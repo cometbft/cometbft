@@ -41,7 +41,9 @@ func init() {
 	if bls12381.Enabled {
 		json.RegisterType((*pc.PublicKey_Bls12381)(nil), "tendermint.crypto.PublicKey_Bls12381")
 	}
-	json.RegisterType((*pc.PublicKey_Secp256K1Eth)(nil), "cometbft.crypto.v1.PublicKey_Secp256K1Eth")
+	if secp256k1eth.Enabled {
+		json.RegisterType((*pc.PublicKey_Secp256K1Eth)(nil), "cometbft.crypto.v1.PublicKey_Secp256K1Eth")
+	}
 }
 
 // PubKeyToProto takes crypto.PubKey and transforms it to a protobuf Pubkey. It
@@ -77,6 +79,10 @@ func PubKeyToProto(k crypto.PubKey) (pc.PublicKey, error) {
 			},
 		}
 	case secp256k1eth.KeyType:
+		if !secp256k1eth.Enabled {
+			return kp, ErrUnsupportedKey{KeyType: secp256k1eth.KeyType}
+		}
+
 		kp = pc.PublicKey{
 			Sum: &pc.PublicKey_Secp256K1Eth{
 				Secp256K1Eth: k.Bytes(),
@@ -129,6 +135,10 @@ func PubKeyFromProto(k pc.PublicKey) (crypto.PubKey, error) {
 		}
 		return bls12381.NewPublicKeyFromBytes(k.Bls12381)
 	case *pc.PublicKey_Secp256K1Eth:
+		if !secp256k1eth.Enabled {
+			return nil, ErrUnsupportedKey{KeyType: secp256k1eth.KeyType}
+		}
+
 		if len(k.Secp256K1Eth) != secp256k1eth.PubKeySize {
 			return nil, ErrInvalidKeyLen{
 				Key:  k,
@@ -194,6 +204,10 @@ func PubKeyFromTypeAndBytes(pkType string, bytes []byte) (crypto.PubKey, error) 
 
 		return bls12381.NewPublicKeyFromBytes(bytes)
 	case secp256k1eth.KeyType:
+		if !secp256k1eth.Enabled {
+			return nil, ErrUnsupportedKey{KeyType: pkType}
+		}
+
 		if len(bytes) != secp256k1eth.PubKeySize {
 			return nil, ErrInvalidKeyLen{
 				Key:  pkType,

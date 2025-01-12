@@ -39,8 +39,8 @@ func NewUnsyncLocalClient(app types.Application) Client {
 
 func (app *unsyncLocalClient) SetResponseCallback(cb Callback) {
 	app.mtx.Lock()
-	defer app.mtx.Unlock()
 	app.Callback = cb
+	app.mtx.Unlock()
 }
 
 func (app *unsyncLocalClient) CheckTxAsync(ctx context.Context, req *types.CheckTxRequest) (*ReqRes, error) {

@@ -2,7 +2,6 @@ package types
 
 import (
 	"bytes"
-	"math"
 	"sort"
 	"testing"
 	"time"
@@ -780,7 +779,7 @@ func TestParamsAdaptiveSynchronyParamsOverflow(t *testing.T) {
 	var overflowRound int32
 	var overflowMessageDelay time.Duration
 	// Exponentially increase rounds to find when it overflows
-	for round := int32(1); round > 0 && round <= math.MaxInt32; round *= 2 {
+	for round := int32(1); round > 0; /* no overflow */ round *= 2 {
 		adaptedSP := sp.InRound(round)
 		assert.Equal(t, adaptedSP.Precision, lastSP.Precision,
 			"Precision must not change over rounds")

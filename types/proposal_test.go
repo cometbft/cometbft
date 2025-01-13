@@ -293,7 +293,7 @@ func TestProposalIsTimelyOverflow(t *testing.T) {
 	var overflowRound int32
 	var overflowMessageDelay time.Duration
 	// Exponentially increase rounds to find when it overflows
-	for round := int32(1); round > 0 && round <= math.MaxInt32; round *= 2 {
+	for round := int32(1); round > 0; /* no overflow */ round *= 2 {
 		adaptedSP := sp.InRound(round)
 		if adaptedSP.MessageDelay == lastSP.MessageDelay { // overflow
 			overflowRound = round / 2

@@ -799,7 +799,7 @@ func TestParamsAdaptiveSynchronyParamsOverflow(t *testing.T) {
 		lastSP = adaptedSP
 	}
 
-	// Linearly seach for the exact overflow round
+	// Linearly search for the exact overflow round
 	for round := overflowRound / 2; round <= overflowRound; round++ {
 		adaptedSP := sp.InRound(round)
 		if adaptedSP.MessageDelay == overflowMessageDelay {

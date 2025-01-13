@@ -79,7 +79,9 @@ updates:
     schedule:
       interval: monthly
     target-branch: "v0.38.x"
-    open-pull-requests-limit: 10
+    # Only allow automated security-related dependency updates on release
+    # branches.
+    open-pull-requests-limit: 0
     labels:
       - dependencies
       - automerge
@@ -89,7 +91,9 @@ updates:
     schedule:
       interval: monthly
     target-branch: "v0.37.x"
-    open-pull-requests-limit: 10
+    # Only allow automated security-related dependency updates on release
+    # branches.
+    open-pull-requests-limit: 0
     labels:
       - dependencies
       - automerge
@@ -99,7 +103,9 @@ updates:
     schedule:
       interval: monthly
     target-branch: "v0.34.x"
-    open-pull-requests-limit: 10
+    # Only allow automated security-related dependency updates on release
+    # branches.
+    open-pull-requests-limit: 0
     labels:
       - dependencies
       - automerge

@@ -531,7 +531,7 @@ func TestSignAndCheckVote(t *testing.T) {
 				v.BlockID = BlockID{make([]byte, 0), PartSetHeader{0, make([]byte, 0)}}
 				return v
 			}(),
-			expectError: false,
+			expectError: true,
 		},
 		{
 			name:              "precommit without extension",

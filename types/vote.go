@@ -52,10 +52,11 @@ func NewConflictingVoteError(vote1, vote2 *Vote) *ErrVoteConflictingVotes {
 // The vote extension is only valid for non-nil precommits.
 type ErrVoteExtensionInvalid struct {
 	ExtSignature []byte
+	Reason       string
 }
 
 func (err *ErrVoteExtensionInvalid) Error() string {
-	return fmt.Sprintf("extensions must be present IFF vote is a non-nil Precommit; extension signature: %X", err.ExtSignature)
+	return fmt.Sprintf("invalid vote extension: %s; extension signature: %X", err.Reason, err.ExtSignature)
 }
 
 // Address is hex bytes.
@@ -430,16 +431,33 @@ func SignAndCheckVote(
 	isPrecommit := vote.Type == PrecommitType
 	if !isPrecommit && extensionsEnabled {
 		// Non-recoverable because the caller passed parameters that don't make sense
-		return false, &ErrVoteExtensionInvalid{ExtSignature: v.ExtensionSignature}
+		return false, &ErrVoteExtensionInvalid{
+			Reason:       "inconsistent values of `isPrecommit` and `extensionsEnabled`",
+			ExtSignature: v.ExtensionSignature,
+		}
+	}
+
+	isNil := vote.BlockID.IsNil()
+	extSignature := (len(v.ExtensionSignature) > 0)
+
+	// Error if prevote contains an extension signature
+	if extSignature && (!isPrecommit || isNil) {
+		// Non-recoverable because the vote is malformed
+		return false, &ErrVoteExtensionInvalid{
+			Reason:       "vote extension signature must not be present in prevotes or nil-precommits",
+			ExtSignature: v.ExtensionSignature,
+		}
 	}
 
 	vote.ExtensionSignature = nil
 	if extensionsEnabled {
-		isNil := vote.BlockID.IsNil()
-		extSignature := (len(v.ExtensionSignature) > 0)
-		if extSignature == (!isPrecommit || isNil) {
+		// Error if missing extension signature for non-nil Precommit
+		if !extSignature && isPrecommit && !isNil {
 			// Non-recoverable because the vote is malformed
-			return false, &ErrVoteExtensionInvalid{ExtSignature: v.ExtensionSignature}
+			return false, &ErrVoteExtensionInvalid{
+				Reason:       "vote extension signature must be present if extensions are enabled",
+				ExtSignature: v.ExtensionSignature,
+			}
 		}
 
 		vote.ExtensionSignature = v.ExtensionSignature

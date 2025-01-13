@@ -1373,7 +1373,7 @@ func (cs *State) timelyProposalMargins() (time.Duration, time.Duration) {
 
 	// cs.ProposalReceiveTime - cs.Proposal.Timestamp >= -1 * Precision
 	// cs.ProposalReceiveTime - cs.Proposal.Timestamp <= MessageDelay + Precision
-	return -sp.Precision, sp.MessageDelay + sp.Precision
+	return -sp.Precision, time.Duration(float64(sp.MessageDelay) + float64(sp.Precision))
 }
 
 func (cs *State) proposalIsTimely() bool {

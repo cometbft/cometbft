@@ -13,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	cfg "github.com/cometbft/cometbft/config"
 	cmtdb "github.com/cometbft/cometbft/db"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/libs/log"
@@ -118,7 +119,14 @@ func runProxy(_ *cobra.Command, args []string) error {
 		witnessesAddrs = strings.Split(witnessAddrsJoined, ",")
 	}
 
-	db, err := cmtdb.New("light-client-db", home)
+	configCopy := cfg.DefaultConfig()
+	configCopy.RootDir = home
+	configCopy.DBPath = ""
+	dbCtx := &cfg.DBContext{
+		ID:     "light-client-db",
+		Config: configCopy,
+	}
+	db, err := cfg.DefaultDBProvider(dbCtx)
 	if err != nil {
 		return fmt.Errorf("can't create a db: %w", err)
 	}

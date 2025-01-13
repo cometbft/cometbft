@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/cometbft/cometbft-db"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/evidence"
 	"github.com/cometbft/cometbft/internal/evidence/mocks"
 	"github.com/cometbft/cometbft/internal/test"
@@ -38,9 +38,11 @@ func TestEvidencePoolBasic(t *testing.T) {
 	var (
 		height     = int64(1)
 		stateStore = &smmocks.Store{}
-		evidenceDB = dbm.NewMemDB()
 		blockStore = &mocks.BlockStore{}
 	)
+
+	evidenceDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
 
 	valSet, privVals := types.RandValidatorSet(1, 10)
 
@@ -102,11 +104,13 @@ func TestAddExpiredEvidence(t *testing.T) {
 		val                 = types.NewMockPV()
 		height              = int64(30)
 		stateStore          = initializeValidatorState(val, height)
-		evidenceDB          = dbm.NewMemDB()
 		blockStore          = &mocks.BlockStore{}
 		expiredEvidenceTime = time.Date(2018, 1, 1, 0, 0, 0, 0, time.UTC)
 		expiredHeight       = int64(2)
 	)
+
+	evidenceDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
 
 	blockStore.On("LoadBlockMeta", mock.AnythingOfType("int64")).Return(func(h int64) *types.BlockMeta {
 		if h == height || h == expiredHeight {
@@ -270,7 +274,9 @@ func TestLightClientAttackEvidenceLifecycle(t *testing.T) {
 	blockStore.On("LoadBlockCommit", height).Return(trusted.Commit)
 	blockStore.On("LoadBlockCommit", commonHeight).Return(common.Commit)
 
-	pool, err := evidence.NewPool(dbm.NewMemDB(), stateStore, blockStore)
+	evidenceDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	require.NoError(t, err)
 	pool.SetLogger(log.TestingLogger())
 
@@ -311,11 +317,17 @@ func TestRecoverPendingEvidence(t *testing.T) {
 	height := int64(10)
 	val := types.NewMockPV()
 	valAddress := val.PrivKey.PubKey().Address()
-	evidenceDB := dbm.NewMemDB()
+	evidenceDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+
 	stateStore := initializeValidatorState(val, height)
 	state, err := stateStore.Load()
 	require.NoError(t, err)
-	blockStore, err := initializeBlockStore(dbm.NewMemDB(), state, valAddress)
+
+	blkStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+
+	blockStore, err := initializeBlockStore(blkStoreDB, state, valAddress)
 	require.NoError(t, err)
 	// create previous pool and populate it
 	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
@@ -358,7 +370,10 @@ func TestRecoverPendingEvidence(t *testing.T) {
 }
 
 func initializeStateFromValidatorSet(valSet *types.ValidatorSet, height int64) sm.Store {
-	stateDB := dbm.NewMemDB()
+	stateDB, err := cmtdb.NewInMem()
+	if err != nil {
+		panic(err)
+	}
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -410,7 +425,7 @@ func initializeValidatorState(privVal types.PrivValidator, height int64) sm.Stor
 
 // initializeBlockStore creates a block storage and populates it w/ a dummy
 // block at +height+.
-func initializeBlockStore(db dbm.DB, state sm.State, valAddr []byte) (*store.BlockStore, error) {
+func initializeBlockStore(db cmtdb.DB, state sm.State, valAddr []byte) (*store.BlockStore, error) {
 	blockStore := store.NewBlockStore(db)
 
 	for i := int64(1); i <= state.LastBlockHeight; i++ {
@@ -449,10 +464,16 @@ func defaultTestPool(t *testing.T, height int64) (*evidence.Pool, types.MockPV) 
 	t.Helper()
 	val := types.NewMockPV()
 	valAddress := val.PrivKey.PubKey().Address()
-	evidenceDB := dbm.NewMemDB()
+
+	evidenceDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+
 	stateStore := initializeValidatorState(val, height)
 	state, _ := stateStore.Load()
-	blockStore, err := initializeBlockStore(dbm.NewMemDB(), state, valAddress)
+
+	blkStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	blockStore, err := initializeBlockStore(blkStoreDB, state, valAddress)
 	require.NoError(t, err)
 	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	if err != nil {

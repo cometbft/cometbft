@@ -1,4 +1,4 @@
-package storage
+package db
 
 import (
 	"bytes"
@@ -212,7 +212,7 @@ func TestPebbleDBCompact(t *testing.T) {
 
 		sync = pebble.Sync
 
-		createTestDB = func(t *testing.T) (*PebbleDB, func()) {
+		createTestDB = func(t *testing.T) (*pebbleDB, func()) {
 			t.Helper()
 
 			pDB, dbCloser, err := newTestPebbleDB()
@@ -563,7 +563,7 @@ func TestNewPebbleDBIterator(t *testing.T) {
 // newTestPebbleDB creates an in-memory instance of pebble for testing.
 // It returns a closer function that must be called to close the database when done
 // with it.
-func newTestPebbleDB() (*PebbleDB, func(), error) {
+func newTestPebbleDB() (*pebbleDB, func(), error) {
 	opts := &pebble.Options{FS: vfs.NewMem()}
 	memDB, err := pebble.Open("", opts)
 	if err != nil {
@@ -572,7 +572,7 @@ func newTestPebbleDB() (*PebbleDB, func(), error) {
 
 	var (
 		closer = func() { memDB.Close() }
-		pDB    = &PebbleDB{db: memDB}
+		pDB    = &pebbleDB{db: memDB}
 	)
 	return pDB, closer, nil
 }
@@ -608,7 +608,7 @@ func newTestPebbleBatch() (*pebbleDBBatch, func(), error) {
 
 // pebbleSetTestHelper is a utility function supporting TestSet.
 // It writes a key-value pair to the database, then reads it back.
-func pebbleSetTestHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error {
+func pebbleSetTestHelper(pDB *pebbleDB, writeOpts *pebble.WriteOptions) error {
 	var (
 		key = []byte{'a'}
 		val = []byte{0x01}
@@ -632,7 +632,7 @@ func pebbleSetTestHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error {
 // pebbleDeleteTestHelper is a utility function supporting TestDelete.
 // It writes a key-value pair to the database, deletes it, then checks that the key
 // is deleted.
-func pebbleDeleteTestHelper(pDB *PebbleDB, writeOpts *pebble.WriteOptions) error {
+func pebbleDeleteTestHelper(pDB *pebbleDB, writeOpts *pebble.WriteOptions) error {
 	var (
 		key = []byte{'a'}
 		val = []byte{0x01}

@@ -13,12 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/cometbft/cometbft-db"
 	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	cmtdb "github.com/cometbft/cometbft/db"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
@@ -62,8 +62,16 @@ func makeTestExtCommitWithNumSigs(height int64, timestamp time.Time, numSigs int
 
 func makeStateAndBlockStoreAndIndexers() (sm.State, *BlockStore, txindex.TxIndexer, indexer.BlockIndexer, func(), sm.Store) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
-	blockDB := dbm.NewMemDB()
-	stateDB := dbm.NewMemDB()
+	blockDB, err := cmtdb.NewInMem()
+	if err != nil {
+		panic(err)
+	}
+
+	stateDB, err := cmtdb.NewInMem()
+	if err != nil {
+		panic(err)
+	}
+
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -97,10 +105,12 @@ func TestLoadBlockStoreState(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		db := dbm.NewMemDB()
+		db, err := cmtdb.NewInMem()
+		require.NoError(t, err)
+
 		batch := db.NewBatch()
 		SaveBlockStoreState(tc.bss, batch)
-		err := batch.WriteSync()
+		err = batch.WriteSync()
 		require.NoError(t, err)
 		retrBSJ := LoadBlockStoreState(db)
 		assert.Equal(t, tc.want, retrBSJ, "expected the retrieved DBs to match: %s", tc.testName)
@@ -110,10 +120,12 @@ func TestLoadBlockStoreState(t *testing.T) {
 }
 
 func TestNewBlockStore(t *testing.T) {
-	db := dbm.NewMemDB()
+	db, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+
 	bss := cmtstore.BlockStoreState{Base: 100, Height: 10000}
 	bz, _ := proto.Marshal(&bss)
-	err := db.Set(blockStoreKey, bz)
+	err = db.Set(blockStoreKey, bz)
 	require.NoError(t, err)
 	bs := NewBlockStore(db)
 	require.Equal(t, int64(100), bs.Base(), "failed to properly parse blockstore")
@@ -145,8 +157,11 @@ func TestNewBlockStore(t *testing.T) {
 	assert.Equal(t, int64(0), bs.Height(), "expecting empty bytes to be unmarshaled alright")
 }
 
-func newInMemoryBlockStore() (*BlockStore, dbm.DB) {
-	db := dbm.NewMemDB()
+func newInMemoryBlockStore() (*BlockStore, cmtdb.DB) {
+	db, err := cmtdb.NewInMem()
+	if err != nil {
+		panic(err)
+	}
 	return NewBlockStore(db), db
 }
 
@@ -471,12 +486,18 @@ func TestLoadBlockExtendedCommit(t *testing.T) {
 func TestLoadBaseMeta(t *testing.T) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
+
+	stateStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	stateStore := sm.NewStore(stateStoreDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
 	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
 	require.NoError(t, err)
-	bs := NewBlockStore(dbm.NewMemDB())
+
+	blkStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	bs := NewBlockStore(blkStoreDB)
 
 	for h := int64(1); h <= 10; h++ {
 		block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
@@ -744,13 +765,18 @@ func TestPruningService(t *testing.T) {
 func TestPruneBlocks(t *testing.T) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
+
+	sttStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	stateStore := sm.NewStore(sttStoreDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
 	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
 	require.NoError(t, err)
-	db := dbm.NewMemDB()
-	bs := NewBlockStore(db)
+
+	blkStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	bs := NewBlockStore(blkStoreDB)
 	assert.EqualValues(t, 0, bs.Base())
 	assert.EqualValues(t, 0, bs.Height())
 	assert.EqualValues(t, 0, bs.Size())
@@ -900,12 +926,18 @@ func TestLoadBlockMeta(t *testing.T) {
 func TestLoadBlockMetaByHash(t *testing.T) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
+
+	sttStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	stateStore := sm.NewStore(sttStoreDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
 	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
 	require.NoError(t, err)
-	bs := NewBlockStore(dbm.NewMemDB())
+
+	blkStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	bs := NewBlockStore(blkStoreDB)
 
 	b1 := state.MakeBlock(state.LastBlockHeight+1, test.MakeNTxs(state.LastBlockHeight+1, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
 	partSet, err := b1.MakePartSet(types.BlockPartSizeBytes)

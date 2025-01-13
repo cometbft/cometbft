@@ -1,4 +1,4 @@
-package storage
+package db
 
 import (
 	"bytes"
@@ -7,21 +7,21 @@ import (
 	"fmt"
 )
 
-// PrefixDB provides a logical database by wrapping a namespace of another database.
+// prefixDB provides a logical database by wrapping a namespace of another database.
 // It allows for the creation of multiple logical databases on top of a single
 // physical database by automatically prefixing keys with a specified namespace.
 //
 // It wraps a [DB] interface, which represents the underlying database, and
 // delegates operations to the wrapped database after prepending the prefix to the
-// key. That is, PrefixDB ensures that all keys written to or read from the
+// key. That is, prefixDB ensures that all keys written to or read from the
 // underlying database are scoped to the provided prefix.
 //
-// Concurrent access to a PrefixDB is safe as long as the underlying [DB]
+// Concurrent access to a prefixDB is safe as long as the underlying [DB]
 // implementation supports concurrent operations.
 //
 // Example usage:
 //
-//	db := NewPrefixDB(baseDB, []byte("namespace:"))
+//	db := newPrefixDB(baseDB, []byte("namespace:"))
 //	err := db.Set([]byte("key"), []byte("value"))
 //	if err != nil {
 //		// handle error
@@ -30,22 +30,22 @@ import (
 // In this example, the key "key" will be stored in 'baseDB' with the actual key
 // being "namespace:key".
 // The responsibility for closing the underlying [DB] is on the code that created
-// the PrefixDB instance after it is no longer needed.
-type PrefixDB struct {
+// the prefixDB instance after it is no longer needed.
+type prefixDB struct {
 	db     DB
 	prefix []byte
 }
 
-var _ DB = (*PrefixDB)(nil)
+var _ DB = (*prefixDB)(nil)
 
-// NewPrefixDB returns a new PrefixDB wrapping the given database and scoping it to
+// newPrefixDB returns a new PrefixDB wrapping the given database and scoping it to
 // the given prefix.
-func NewPrefixDB(db DB, prefix []byte) (*PrefixDB, error) {
+func newPrefixDB(db DB, prefix []byte) (*prefixDB, error) {
 	if len(prefix) == 0 {
 		return nil, errors.New("trying to create a prefixed DB namespace with an empty prefix")
 	}
 
-	pDB := &PrefixDB{
+	pDB := &prefixDB{
 		prefix: prefix,
 		db:     db,
 	}
@@ -58,7 +58,7 @@ func NewPrefixDB(db DB, prefix []byte) (*PrefixDB, error) {
 // returns.
 //
 // It implements the [DB] interface for type PrefixDB.
-func (pDB *PrefixDB) Get(key []byte) ([]byte, error) {
+func (pDB *prefixDB) Get(key []byte) ([]byte, error) {
 	if len(key) == 0 {
 		return nil, ErrKeyEmpty
 	}
@@ -75,7 +75,7 @@ func (pDB *PrefixDB) Get(key []byte) ([]byte, error) {
 // It is safe to modify the contents of key after Has returns.
 //
 // It implements the [DB] interface for type PrefixDB.
-func (pDB *PrefixDB) Has(key []byte) (bool, error) {
+func (pDB *prefixDB) Has(key []byte) (bool, error) {
 	if len(key) == 0 {
 		return false, ErrKeyEmpty
 	}
@@ -97,7 +97,7 @@ func (pDB *PrefixDB) Has(key []byte) (bool, error) {
 // compaction. Use [SetSync] to flush the write to disk immediately.
 //
 // It implements the [DB] interface for type PrefixDB.
-func (pDB *PrefixDB) Set(key []byte, value []byte) error {
+func (pDB *prefixDB) Set(key []byte, value []byte) error {
 	if len(key) == 0 {
 		return ErrKeyEmpty
 	}
@@ -120,7 +120,7 @@ func (pDB *PrefixDB) Set(key []byte, value []byte) error {
 // only after the data has been successfully written to persistent storage.
 //
 // It implements the [DB] interface for type PrefixDB.
-func (pDB *PrefixDB) SetSync(key []byte, value []byte) error {
+func (pDB *prefixDB) SetSync(key []byte, value []byte) error {
 	if len(key) == 0 {
 		return ErrKeyEmpty
 	}
@@ -145,7 +145,7 @@ func (pDB *PrefixDB) SetSync(key []byte, value []byte) error {
 // compaction. Use [DeleteSync] to flush the delete to disk immediately.
 //
 // It implements the [DB] interface for type PrefixDB.
-func (pDB *PrefixDB) Delete(key []byte) error {
+func (pDB *prefixDB) Delete(key []byte) error {
 	if len(key) == 0 {
 		return ErrKeyEmpty
 	}
@@ -166,7 +166,7 @@ func (pDB *PrefixDB) Delete(key []byte) error {
 // completed only after it synced with persistent storage.
 //
 // It implements the [DB] interface for type PrefixDB.
-func (pDB *PrefixDB) DeleteSync(key []byte) error {
+func (pDB *prefixDB) DeleteSync(key []byte) error {
 	if len(key) == 0 {
 		return ErrKeyEmpty
 	}
@@ -188,7 +188,7 @@ func (pDB *PrefixDB) DeleteSync(key []byte) error {
 // Do not modify the contents of the arguments while the returned iterator is in use.
 //
 // It implements the [DB] interface for type PrefixDB.
-func (pDB *PrefixDB) Iterator(start, end []byte) (Iterator, error) {
+func (pDB *prefixDB) Iterator(start, end []byte) (Iterator, error) {
 	itStart, itEnd, err := prefixedIteratorBounds(pDB.prefix, start, end)
 	if err != nil {
 		return nil, fmt.Errorf("prefixed DB namespace reverse iterator: %w", err)
@@ -211,7 +211,7 @@ func (pDB *PrefixDB) Iterator(start, end []byte) (Iterator, error) {
 // Do not modify the contents of the arguments while the returned iterator is in use.
 //
 // It implements the [DB] interface for type PrefixDB.
-func (pDB *PrefixDB) ReverseIterator(start, end []byte) (Iterator, error) {
+func (pDB *prefixDB) ReverseIterator(start, end []byte) (Iterator, error) {
 	itStart, itEnd, err := prefixedIteratorBounds(pDB.prefix, start, end)
 	if err != nil {
 		return nil, fmt.Errorf("prefixed DB namespace reverse iterator: %w", err)
@@ -229,16 +229,16 @@ func (pDB *PrefixDB) ReverseIterator(start, end []byte) (Iterator, error) {
 // The caller is responsible for calling Batch.Close() once done.
 //
 // It implements the [DB] interface for type PrefixDB.
-func (pDB *PrefixDB) NewBatch() Batch {
+func (pDB *prefixDB) NewBatch() Batch {
 	return newPrefixDBBatch(pDB.prefix, pDB.db.NewBatch())
 }
 
 // Compact compacts the specified range of keys in the database.
-// Note that, as with all operations of a [PrefixDB], the start and end keys are
-// prefixed with the prefix given to [NewPrefixDB].
+// Note that, as with all operations of a [prefixDB], the start and end keys are
+// prefixed with the prefix given to [newPrefixDB].
 //
 // It implements the [DB] interface for type PrefixDB.
-func (pDB *PrefixDB) Compact(start, end []byte) error {
+func (pDB *prefixDB) Compact(start, end []byte) error {
 	itStart, itEnd, err := prefixedIteratorBounds(pDB.prefix, start, end)
 	if err != nil {
 		return fmt.Errorf("prefixed DB namespace compaction: %w", err)
@@ -258,14 +258,14 @@ func (pDB *PrefixDB) Compact(start, end []byte) error {
 // that created it, after all PrefixDB instances are no longer needed.
 //
 // It implements the [DB] interface for type PrefixDB.
-func (*PrefixDB) Close() error {
+func (*prefixDB) Close() error {
 	return nil
 }
 
 // Print prints all the key/value pairs in the database for debugging purposes.
 //
 // It implements the [DB] interface for type PrefixDB.
-func (pDB *PrefixDB) Print() error {
+func (pDB *prefixDB) Print() error {
 	fmt.Printf("prefix: %X\n", pDB.prefix)
 
 	itr, err := pDB.Iterator(nil, nil)
@@ -285,7 +285,7 @@ func (pDB *PrefixDB) Print() error {
 }
 
 // Stats implements the [DB] interface for type PebbleDB.
-func (pDB *PrefixDB) Stats() map[string]string {
+func (pDB *prefixDB) Stats() map[string]string {
 	const (
 		prefixStrKey = "prefixdb.prefix.string"
 		prefixHexKey = "prefixdb.prefix.hex"

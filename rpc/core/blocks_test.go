@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtdb "github.com/cometbft/cometbft/db"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	sm "github.com/cometbft/cometbft/state"
@@ -77,10 +77,12 @@ func TestBlockResults(t *testing.T) {
 	}
 
 	env := &Environment{}
-	env.StateStore = sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
+	sttStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	env.StateStore = sm.NewStore(sttStoreDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
-	err := env.StateStore.SaveFinalizeBlockResponse(100, results)
+	err = env.StateStore.SaveFinalizeBlockResponse(100, results)
 	require.NoError(t, err)
 	mockstore := &mocks.BlockStore{}
 	mockstore.On("Height").Return(int64(100))

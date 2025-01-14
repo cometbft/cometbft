@@ -1,6 +1,7 @@
 module github.com/tendermint/tendermint
 
 go 1.22.0
+toolchain go1.23.3
 
 require (
 	github.com/BurntSushi/toml v1.4.0
@@ -37,7 +38,7 @@ require github.com/google/uuid v1.6.0
 require github.com/gogo/protobuf v1.3.2
 
 require (
-	github.com/creachadair/taskgroup v0.13.0
+	github.com/creachadair/taskgroup v0.13.2
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
 

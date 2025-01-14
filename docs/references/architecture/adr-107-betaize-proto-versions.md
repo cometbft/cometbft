@@ -78,7 +78,7 @@ versions.
 * [ADR 103]: Protobuf definition versioning
 * [cometbft#95], the meta tracking issue.
 
-[ADR 103]: https://github.com/cometbft/cometbft/blob/main/docs/architecture/adr-103-proto-versioning.md
+[ADR 103]: https://github.com/cometbft/cometbft/blob/main/docs/references/architecture/adr-103-proto-versioning.md
 [cometbft#95]: https://github.com/cometbft/cometbft/issues/95
 [cometbft#736]: https://github.com/cometbft/cometbft/issues/736
 [bsr]: https://buf.build/product/bsr/

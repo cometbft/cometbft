@@ -54,8 +54,9 @@ func TestFromData(t *testing.T) {
 				t.Fatalf("unable to parse from dir %q: %v", dir, err)
 			}
 			outFile := path.Join(dirName, "out.go")
+			of, err := os.Create(outFile)
 			if err != nil {
-				t.Fatalf("unable to open file %s: %v", outFile, err)
+   			 t.Fatalf("unable to open file %s: %v", outFile, err)
 			}
 			of, err := os.Create(outFile)
 			if err != nil {

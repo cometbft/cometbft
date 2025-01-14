@@ -723,13 +723,30 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 			store.Logger.Error("failed in LoadFinalizeBlockResponse", "error", ErrABCIResponseCorruptedOrSpecChangeForHeight{Height: height, Err: err})
 			return nil, ErrABCIResponseCorruptedOrSpecChangeForHeight{Height: height, Err: err}
 		}
+
+		// Ensure that the buffer is completely read to verify data integrity
+		if len(buf) > 0 {
+			store.Logger.Error("buffer not fully consumed", "remaining_bytes", len(buf))
+			return nil, ErrABCIResponseCorruptedOrSpecChangeForHeight{
+				Height: height,
+				Err:    fmt.Errorf("buffer not fully consumed, %d bytes remaining", len(buf)),
+			}
+		}
+
 		// The state store contains the old format. Migrate to
 		// the new FinalizeBlockResponse format. Note that the
 		// new struct expects the AppHash which we don't have.
 		return responseFinalizeBlockFromLegacy(legacyResp), nil
 	}
 
-	// TODO: ensure that buf is completely read.
+	// Ensure that the buffer is completely read to verify data integrity
+	if len(buf) > 0 {
+		store.Logger.Error("buffer not fully consumed", "remaining_bytes", len(buf))
+		return nil, ErrABCIResponseCorruptedOrSpecChangeForHeight{
+			Height: height,
+			Err:    fmt.Errorf("buffer not fully consumed, %d bytes remaining", len(buf)),
+		}
+	}
 
 	// Otherwise return the FinalizeBlockResponse
 	return resp, nil

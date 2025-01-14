@@ -792,6 +792,10 @@ func TestDOGDisabledRoute(t *testing.T) {
 	require.Greater(t, len(reactors[2].router.disabledRoutes), 0)
 
 	require.True(t, reactors[2].router.isRouteDisabled(secondNodeFromThird.ID(), firstNodeFromThird.ID()))
+	// On the other side  Node 1 has kept trace of its request to Node 3 to disable route.
+	requestedPartialGossip := reactors[0].router.getRequestedPartialGossipList()
+	require.Len(t, requestedPartialGossip, 1)
+	require.Equal(t, thirdNodeID, requestedPartialGossip[0])
 	reactors[2].router.mtx.RUnlock()
 
 	// This will force Node 3 to delete all disabled routes
@@ -799,6 +803,11 @@ func TestDOGDisabledRoute(t *testing.T) {
 
 	// The route should not be there
 	require.False(t, reactors[2].router.isRouteDisabled(secondNodeFromThird.ID(), firstNodeFromThird.ID()))
+
+	// This will force Node 1 to delete Node 3 from requestedPartialGossip.
+	reactors[0].Switch.StopPeerGracefully(thirdNodeFromFirst)
+	requestedPartialGossip = reactors[0].router.getRequestedPartialGossipList()
+	require.Len(t, requestedPartialGossip, 0)
 }
 
 // When a peer disconnects we want to remove all disabled route info

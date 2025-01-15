@@ -601,7 +601,6 @@ func assertPeersWithTimeout(
 
 // Creates a peer with the provided config.
 func testCreatePeerWithConfig(dir string, id int, config *ReactorConfig) *p2p.Switch {
-	// Set default EnsurePeersPeriod if not set
 	if config.EnsurePeersPeriod == 0 {
 		config.EnsurePeersPeriod = 250 * time.Millisecond
 	}

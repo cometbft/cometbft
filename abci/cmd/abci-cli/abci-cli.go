@@ -747,7 +747,7 @@ func printResponse(cmd *cobra.Command, args []string, rsps ...response) {
 		}
 
 		if len(rsp.Data) != 0 {
-			// Do no print this line when using the finalize_block command
+			// Do not print this line when using the finalize_block command
 			// because the string comes out as gibberish
 			if cmd.Use != "finalize_block" {
 				fmt.Printf("-> data: %s\n", rsp.Data)

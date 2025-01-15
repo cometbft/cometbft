@@ -303,7 +303,7 @@ func (sc *schedule) popSchedule(maxRequest int) []scBlockRequestMessage {
 
 type scPeer struct {
 	peerID               p2p.ID
-	numOustandingRequest int
+	numOutstandingRequest int
 	lastTouched          time.Time
 	monitor              flow.Monitor
 }

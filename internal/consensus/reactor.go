@@ -1480,7 +1480,8 @@ func (ps *PeerState) SetHasVote(vote *types.Vote) {
 	ps.setHasVote(vote.Height, vote.Round, vote.Type, vote.ValidatorIndex)
 }
 
-// SetHasVote sets the given vote as known by the peer.
+// SetHasVoteFromPeer sets the given vote as known by the peer and ensures the necessary vote bit arrays
+// are initialized for the given consensus height and validator sizes.
 func (ps *PeerState) SetHasVoteFromPeer(vote *types.Vote, csHeight int64, valSize, lastCommitSize int) {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()

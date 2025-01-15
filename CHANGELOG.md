@@ -1174,11 +1174,4 @@ Friendly reminder, we have a [bug bounty program](https://hackerone.com/cosmos).
 
 For changes released before the creation of CometBFT, please refer to the Tendermint Core [CHANGELOG.md](https://github.com/tendermint/tendermint/blob/a9feb1c023e172b542c972605311af83b777855b/CHANGELOG.md).
 
-## Unreleased
-
-### BREAKING CHANGES
-
-* [p2p] [\#4822](https://github.com/cometbft/cometbft/pull/4822) Move `ensurePeersPeriod` from PEX Reactor to ReactorConfig (@kscooo)
-  * `ensurePeersPeriod` is now configured through `ReactorConfig`
-  * Removed `SetEnsurePeersPeriod()` method
 

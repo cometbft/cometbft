@@ -88,9 +88,10 @@ func TestPEXReactorRunning(t *testing.T) {
 
 			sw.SetLogger(logger.With("pex", i))
 
-			r := NewReactor(books[i], &ReactorConfig{})
+			r := NewReactor(books[i], &ReactorConfig{
+				EnsurePeersPeriod: 250 * time.Millisecond,
+			})
 			r.SetLogger(logger.With("pex", i))
-			r.SetEnsurePeersPeriod(250 * time.Millisecond)
 			sw.AddReactor("PEX", r)
 
 			return sw
@@ -444,11 +445,13 @@ func TestPEXReactorSeedModeFlushStop(t *testing.T) {
 			config := &ReactorConfig{}
 			if i == 0 {
 				// first one is a seed node
-				config = &ReactorConfig{SeedMode: true}
+				config = &ReactorConfig{
+					SeedMode:          true,
+					EnsurePeersPeriod: 250 * time.Millisecond,
+				}
 			}
 			r := NewReactor(books[i], config)
 			r.SetLogger(logger.With("pex", i))
-			r.SetEnsurePeersPeriod(250 * time.Millisecond)
 			sw.AddReactor("pex", r)
 
 			return sw
@@ -598,6 +601,11 @@ func assertPeersWithTimeout(
 
 // Creates a peer with the provided config.
 func testCreatePeerWithConfig(dir string, id int, config *ReactorConfig) *p2p.Switch {
+	// Set default EnsurePeersPeriod if not set
+	if config.EnsurePeersPeriod == 0 {
+		config.EnsurePeersPeriod = 250 * time.Millisecond
+	}
+
 	return p2p.MakeSwitch(
 		cfg,
 		id,
@@ -610,7 +618,6 @@ func testCreatePeerWithConfig(dir string, id int, config *ReactorConfig) *p2p.Sw
 
 			r := NewReactor(book, config)
 			r.SetLogger(logger)
-			r.SetEnsurePeersPeriod(250 * time.Millisecond)
 
 			sw.SetLogger(logger)
 			sw.AddReactor("PEX", r)
@@ -645,8 +652,8 @@ func testCreateSeed(dir string, id int, knownAddrs, srcAddrs []*na.NetAddr) *p2p
 			r := NewReactor(book, &ReactorConfig{
 				// Makes the tests fail ¯\_(ツ)_/¯
 				// SeedMode: true,
+				EnsurePeersPeriod: 250 * time.Millisecond,
 			})
-			r.SetEnsurePeersPeriod(250 * time.Millisecond)
 			r.SetLogger(logger)
 
 			sw.SetLogger(logger)

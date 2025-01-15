@@ -1178,7 +1178,7 @@ For changes released before the creation of CometBFT, please refer to the Tender
 
 ### BREAKING CHANGES
 
-* [p2p] [\#4822](https://github.com/cometbft/cometbft/pull/4822) Move `ensurePeersPeriod` from PEX Reactor to ReactorConfig (@your-github-username)
+* [p2p] [\#4822](https://github.com/cometbft/cometbft/pull/4822) Move `ensurePeersPeriod` from PEX Reactor to ReactorConfig (@kscooo)
   * `ensurePeersPeriod` is now configured through `ReactorConfig`
   * Removed `SetEnsurePeersPeriod()` method
 

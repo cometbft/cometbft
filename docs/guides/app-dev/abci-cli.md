@@ -196,7 +196,6 @@ we do `finalize_block "abc=efg" ...` it will store `(abc, efg)`.
 You could put the commands in a file and run
 `abci-cli --verbose batch < myfile`.
 
-
 Note that the `abci-cli` is designed strictly for testing and debugging. In a real
 deployment, the role of sending messages is taken by CometBFT, which
 connects to the app using four separate connections, each with its own

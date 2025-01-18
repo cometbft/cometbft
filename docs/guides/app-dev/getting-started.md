@@ -156,6 +156,40 @@ Note the value in the result (`c2F0b3NoaQ==`); this is the base64-encoding of th
 echo -n 'c2F0b3NoaQ==' | base64 -d
 ```
 
+Sometimes we only need to know if value exists and that's the point where else you can use KV-store. In such a case we only need to specify that key equals key, for example:
+
+```sh
+curl -s 'localhost:26657/broadcast_tx_commit?tx="value=value"'
+```
+
+And then when query it
+
+```sh
+curl -s 'localhost:26657/abci_query?data="value"'
+```
+
+You get
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": -1,
+  "result": {
+    "response": {
+      "code": 0,
+      "log": "exists",
+      "info": "",
+      "index": "0",
+      "key": "dmFsdWU=",
+      "value": "dmFsdWU=",
+      "proofOps": null,
+      "height": "68935",
+      "codespace": ""
+    }
+  }
+}
+```
+
 Stay tuned for a future release that [makes this output more human-readable](https://github.com/tendermint/tendermint/issues/1794).
 
 Try some other transactions and queries to make sure everything is

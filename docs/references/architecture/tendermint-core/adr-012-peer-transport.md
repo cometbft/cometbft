@@ -49,7 +49,7 @@ type PeerTransport interface {
 
 // EXAMPLE OF DEFAULT IMPLEMENTATION
 
-// multiplexTransport accepts tcp connections and upgrades to multiplexted
+// multiplexTransport accepts tcp connections and upgrades to multiplexed
 // peers.
 type multiplexTransport struct {
 	listener net.Listener
@@ -109,5 +109,5 @@ In Review.
 - multiplexed will be the default implementation
 
 [0] These guards could be potentially extended to be pluggable much like
-middlewares to express different concerns required by differentally configured
+middlewares to express different concerns required by differently configured
 environments.

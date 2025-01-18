@@ -53,7 +53,7 @@ will allow clients to subscribe to a different types of events in the future:
 ### Fetching transactions
 
 This is a bit tricky because a) we want to support a number of indexers, all of
-which have a different API b) we don't know whenever tags will be sufficient
+which have a different API b) we don't know whether tags will be sufficient
 for the most apps (I guess we'll see).
 
 ```
@@ -61,7 +61,7 @@ for the most apps (I guess we'll see).
 /txs/search?query="abci.account.owner = Igor"
 ```
 
-For historic queries we will need a indexing storage (Postgres, SQLite, ...).
+For historic queries we will need an indexing storage (Postgres, SQLite, ...).
 
 ### Issues
 

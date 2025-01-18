@@ -199,7 +199,7 @@ Dynamic logger, which could be turned off for some modules at runtime. Public in
 
 ### Negative
 
-We may loose the ability to color keys in keyvalue pairs. go-kit allow you to easily change foreground / background colors of the whole string, but not its parts.
+We may lose the ability to color keys in keyvalue pairs. go-kit allow you to easily change foreground / background colors of the whole string, but not its parts.
 
 ### Neutral
 

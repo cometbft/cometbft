@@ -41,7 +41,7 @@ instrumentation and offers adapters to popular metrics packages:
 
 https://godoc.org/github.com/go-kit/kit/metrics#pkg-subdirectories
 
-Comparing to Prometheus API, we're losing customisability and control, but gaining
+Comparing to Prometheus API, we're losing customizability and control, but gaining
 freedom in choosing any instrument from the above list given we will extract
 metrics creation into a separate function (see "providers" in node/node.go).
 

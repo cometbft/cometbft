@@ -118,73 +118,6 @@ tool like [jq](https://stedolan.github.io/jq/) or `json_pp`.
 Now let's send some transactions to the kvstore.
 
 ```sh
-curl -s 'localhost:26657/broadcast_tx_commit?tx="abcd"'
-```
-
-Note the single quote (`'`) around the url, which ensures that the
-double quotes (`"`) are not escaped by bash. This command sent a
-transaction with bytes `abcd`, so `abcd` will be stored as both the key
-and the value in the Merkle tree. The response should look something
-like:
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": "",
-  "result": {
-    "check_tx": {},
-    "deliver_tx": {
-      "tags": [
-        {
-          "key": "YXBwLmNyZWF0b3I=",
-          "value": "amFl"
-        },
-        {
-          "key": "YXBwLmtleQ==",
-          "value": "YWJjZA=="
-        }
-      ]
-    },
-    "hash": "9DF66553F98DE3C26E3C3317A3E4CED54F714E39",
-    "height": 14
-  }
-}
-```
-
-We can confirm that our transaction worked and the value got stored by
-querying the app:
-
-```sh
-curl -s 'localhost:26657/abci_query?data="abcd"'
-```
-
-The result should look like:
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": "",
-  "result": {
-    "response": {
-      "log": "exists",
-      "index": "-1",
-      "key": "YWJjZA==",
-      "value": "YWJjZA=="
-    }
-  }
-}
-```
-
-Note the `value` in the result (`YWJjZA==`); this is the base64-encoding
-of the ASCII of `abcd`. You can verify this in a python 2 shell by
-running `"YWJjZA==".decode('base64')` or in python 3 shell by running
-`import codecs; codecs.decode(b"YWJjZA==", 'base64').decode('ascii')`.
-Stay tuned for a future release that [makes this output more
-human-readable](https://github.com/tendermint/tendermint/issues/1794).
-
-Now let's try setting a different key and value:
-
-```sh
 curl -s 'localhost:26657/broadcast_tx_commit?tx="name=satoshi"'
 ```
 
@@ -194,6 +127,36 @@ in base64:
 ```sh
 curl -s 'localhost:26657/abci_query?data="name"'
 ```
+
+The response should look something like:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": -1,
+  "result": {
+    "response": {
+      "code": 0,
+      "log": "exists",
+      "info": "",
+      "index": "0",
+      "key": "bmFtZQ==",
+      "value": "c2F0b3NoaQ==",
+      "proofOps": null,
+      "height": "20795",
+      "codespace": ""
+    }
+  }
+}
+```
+
+Note the value in the result (`c2F0b3NoaQ==`); this is the base64-encoding of the ASCII of `satoshi`. You can verify this through a simple Bash command:
+
+```bash
+echo -n 'c2F0b3NoaQ==' | base64 -d
+```
+
+Stay tuned for a future release that [makes this output more human-readable](https://github.com/tendermint/tendermint/issues/1794).
 
 Try some other transactions and queries to make sure everything is
 working!

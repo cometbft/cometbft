@@ -19,7 +19,7 @@ to execute txs in parallel because Tendermint delivers them consequently.
 Now Tendermint have `BeginBlock`, `EndBlock`, `Commit`, `DeliverTx` steps
 while executing block. This doc proposes merging this steps into one `DeliverBlock`
 step. It will allow developers of applications to decide how they want to
-execute transactions (in parallel or consequentially). Also it will simplify and
+execute transactions (in parallel or consequently). Also it will simplify and
 speed up communications between application and Tendermint.
 
 As @jaekwon [mentioned](https://github.com/tendermint/tendermint/issues/2901#issuecomment-477746128)

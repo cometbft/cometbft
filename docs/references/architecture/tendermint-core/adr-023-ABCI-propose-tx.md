@@ -58,7 +58,7 @@ exacerbated if the business logic for generating such transactions is
 potentially non-deterministic, as this should not even be done in
 `Begin/EndBlock`, which may, as a result, break consensus guarantees.
 
-Additinoally, this has serious implications for "watchers" - independent third parties,
+Additionally, this has serious implications for "watchers" - independent third parties,
 or even an auxiliary blockchain, responsible for ensuring that blocks recorded
 on the Root Chain are consistent with the Plasma chain's. Since, in this case,
 the Plasma chain is inconsistent with the canonical one maintained by Tendermint
@@ -136,7 +136,7 @@ transactions are then pushed on top of the transactions received from
 ### `DeliverTx`
 
 Since the list of `tx` received from `ProposeTx` are _not_ passed through `CheckTx`,
-it is probably a good idea to provide a means of differentiatiating "internal" transactions
+it is probably a good idea to provide a means of differentiating "internal" transactions
 from user-generated ones, in case the app developer needs/wants to take extra measures to
 ensure validity of the proposed transactions.
 
@@ -149,7 +149,7 @@ message RequestDeliverTx {
 }
 ```
 
-Alternatively, an additional method `DeliverProposeTx` may be added as an accompanient to
+Alternatively, an additional method `DeliverProposeTx` may be added as an accompaniment to
 `ProposeTx`. However, it is not clear at this stage if this additional overhead is necessary
 to preserve consensus guarantees given that a simple flag may suffice for now.
 

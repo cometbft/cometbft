@@ -2066,7 +2066,7 @@ type Error struct {
 	// Index of token that caused the error.
 	cI int
 
-	// Grammar slot at which the error occured.
+	// Grammar slot at which the error occurred.
 	Slot slot.Label
 
 	// The token at which the error occurred.

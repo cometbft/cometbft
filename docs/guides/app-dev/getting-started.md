@@ -115,13 +115,13 @@ curl -s localhost:26657/status
 The `-s` just silences `curl`. For nicer output, pipe the result into a
 tool like [jq](https://stedolan.github.io/jq/) or `json_pp`.
 
-Now let's send some transactions to the kvstore.
+Now let's send some transactions to the kvstore (Note the single quote (`'`) around the url, which ensures that the double quotes (`"`) are not escaped by bash).
 
 ```sh
 curl -s 'localhost:26657/broadcast_tx_commit?tx="name=satoshi"'
 ```
 
-Now if we query for `name`, we should get `satoshi`, or `c2F0b3NoaQ==`
+This will store the value `satoshi` under the key `name`. Now if we query for `name`, we should get `satoshi`, or `c2F0b3NoaQ==`
 in base64:
 
 ```sh

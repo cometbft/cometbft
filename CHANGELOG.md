@@ -844,7 +844,7 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
 - `[state]` Move pruneBlocks from node/state to state/execution.
   ([\#6541](https://github.com/tendermint/tendermint/pull/6541))
 - `[state]` Signature of `ExtendVote` changed in `BlockExecutor`.
-  It now includes the block whose precommit will be extended, an the state object.
+  It now includes the block whose precommit will be extended, and the state object.
   ([\#1270](https://github.com/cometbft/cometbft/pull/1270))
 
 ### BUG FIXES

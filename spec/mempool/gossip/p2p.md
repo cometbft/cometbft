@@ -35,7 +35,7 @@ The type variable `msg` can be instantiated on the message types of different pr
 var incomingMsgs: NodeID -> List[(NodeID, msg)]
 ```
 
-In the actual implementation, transaction messages are transamitted on the `Mempool` data channel of
+In the actual implementation, transaction messages are transmitted on the `Mempool` data channel of
 the P2P layer. Control messages are usually transmitted on other channels with different priorities.
 Here we model a single, reliable channel.
 

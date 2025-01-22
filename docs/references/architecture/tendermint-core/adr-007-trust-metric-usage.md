@@ -70,7 +70,7 @@ so it does not exceed MaxNumPeers.
 
 #### Peer Exchange
 
-When a peer receives a pexRequestMessage, it returns a random sample of high quality peers from the address book. Peers with no score or low score should not be inclided in a response to pexRequestMessage.
+When a peer receives a pexRequestMessage, it returns a random sample of high quality peers from the address book. Peers with no score or low score should not be included in a response to pexRequestMessage.
 
 #### Peer Quality
 

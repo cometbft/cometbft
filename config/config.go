@@ -72,6 +72,11 @@ var (
 
 	// taken from https://semver.org/
 	semverRegexp = regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`)
+
+	// DefaultTracingTables is a list of tables that are used for storing traces.
+	// This global var is filled by an init function in the schema package. This
+	// avoiding import cycles.
+	DefaultTracingTables = ""
 )
 
 // Config defines the top level configuration for a CometBFT node.

@@ -284,6 +284,17 @@ func TestConsensusParamsValidation(t *testing.T) {
 			valid: false,
 		},
 		{
+			name: "overflow synchrony",
+			params: makeParams(makeParamsArgs{
+				blockBytes:   1,
+				evidenceAge:  2,
+				precision:    time.Duration(math.MaxInt64),
+				messageDelay: time.Duration(math.MaxInt64),
+				pbtsHeight:   1,
+			}),
+			valid: false,
+		},
+		{
 			name: "precision 0",
 			params: makeParams(makeParamsArgs{
 				blockBytes:   1,

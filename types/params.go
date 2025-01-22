@@ -303,6 +303,9 @@ func (params ConsensusParams) ValidateBasic() error {
 			return fmt.Errorf("synchrony.Precision must be greater than 0. Got: %d",
 				params.Synchrony.Precision)
 		}
+		if params.Synchrony.MessageDelay > math.MaxInt64-params.Synchrony.Precision {
+			return errors.New("synchrony.MessageDelay + synchrony.Precision overflows time.Duration")
+		}
 	}
 
 	if len(params.Validator.PubKeyTypes) == 0 {

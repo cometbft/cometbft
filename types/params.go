@@ -142,7 +142,7 @@ type SynchronyParams struct {
 // parameters are set or become insufficient to preserve liveness. Refer to
 // https://github.com/cometbft/cometbft/issues/2184 for more details.
 func (sp SynchronyParams) InRound(round int32) SynchronyParams {
-	if round == 0 {
+	if round <= 0 {
 		return sp
 	}
 
@@ -152,13 +152,13 @@ func (sp SynchronyParams) InRound(round int32) SynchronyParams {
 	}
 
 	// overflow check: needed for some architectures
-	if round > 0 && int64(sp.MessageDelay) > math.MaxInt64/int64(round) {
+	if int64(sp.MessageDelay) > math.MaxInt64/int64(round) {
 		return spWithMaxMessageDelay
 	}
 
 	// overflow check 2: check exp overflow
 	f := math.Pow(1.1, float64(round)) * float64(sp.MessageDelay)
-	if math.IsInf(f, 1) || math.IsNaN(f) || f > math.MaxInt64 {
+	if math.IsInf(f, 1) || f > math.MaxInt64 {
 		return spWithMaxMessageDelay
 	}
 

@@ -49,7 +49,7 @@ type PeerTransport interface {
 
 // EXAMPLE OF DEFAULT IMPLEMENTATION
 
-// multiplexTransport accepts tcp connections and upgrades to multiplexted
+// multiplexTransport accepts tcp connections and upgrades to multiplexed
 // peers.
 type multiplexTransport struct {
 	listener net.Listener

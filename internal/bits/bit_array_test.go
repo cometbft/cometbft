@@ -76,7 +76,7 @@ func TestOr(t *testing.T) {
 			t.Error("Wrong bit from bA3", i, bA1.GetIndex(i), bA2.GetIndex(i), bA3.GetIndex(i))
 		}
 	}
-	if bA3.getNumTrueIndices() == 0 {
+	if bA3.TrueBitCount == 0 {
 		t.Error("Expected at least one true bit. " +
 			"This has a false positive rate that is less than 1 in 2^80 (cryptographically improbable).")
 	}
@@ -170,10 +170,10 @@ func TestGetNumTrueIndices(t *testing.T) {
 		var bitArr *BitArray
 		err := json.Unmarshal([]byte(`"`+tc.Input+`"`), &bitArr)
 		require.NoError(t, err)
-		result := bitArr.getNumTrueIndices()
+		result := bitArr.TrueBitCount
 		require.Equal(t, tc.ExpectedResult, result, "for input %s, expected %d, got %d", tc.Input, tc.ExpectedResult, result)
-		result = bitArr.Not().getNumTrueIndices()
-		require.Equal(t, bitArr.Bits-result, bitArr.getNumTrueIndices())
+		result = bitArr.Not().TrueBitCount
+		require.Equal(t, bitArr.Bits-result, bitArr.TrueBitCount)
 	}
 }
 

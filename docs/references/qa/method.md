@@ -68,7 +68,7 @@ _200 Node Test_, and _Rotating Nodes Test_.
 
 This test consists in spinning up 200 nodes (175 validators + 20 full nodes + 5 seed nodes) and
 performing two experiments:
-- First we find the [saturation point](saturation) of the network by running the script
+- First we find the [saturation point][saturation] of the network by running the script
   [200-node-loadscript.sh][200-node-loadscript.sh].
 - Then we run several times the testnet using the saturation point to collect data.
 

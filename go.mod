@@ -12,7 +12,7 @@ require (
 	github.com/cometbft/cometbft-load-test v0.3.0
 	github.com/cometbft/cometbft/api v1.0.0
 	github.com/cosmos/gogoproto v1.7.0
-	github.com/creachadair/atomicfile v0.3.6
+	github.com/creachadair/atomicfile v0.3.7
 	github.com/creachadair/tomledit v0.0.27
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
 	github.com/dgraph-io/badger/v4 v4.5.0

@@ -1374,10 +1374,10 @@ func (cs *State) timelyProposalMargins() (time.Duration, time.Duration) {
 
 	// cs.ProposalReceiveTime - cs.Proposal.Timestamp >= -1 * Precision
 	// cs.ProposalReceiveTime - cs.Proposal.Timestamp <= MessageDelay + Precision
-	if sp.MessageDelay+sp.Precision < 0 { // overflow check: need for some architectures
+	if sp.MessageDelay > math.MaxInt64-sp.Precision { // overflow check: needed for some architectures
 		return -sp.Precision, time.Duration(math.MaxInt64)
 	}
-	return -sp.Precision, time.Duration(float64(sp.MessageDelay) + float64(sp.Precision))
+	return -sp.Precision, sp.MessageDelay + sp.Precision
 }
 
 func (cs *State) proposalIsTimely() bool {

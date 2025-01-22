@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"math"
 	"sort"
 	"testing"
 	"time"
@@ -751,6 +752,8 @@ func TestParamsAdaptiveSynchronyParams(t *testing.T) {
 
 	lastSP := originalSP
 	for round := int32(1); round <= 10; round++ {
+		t.Logf("Round %d: %v", round, lastSP)
+
 		adaptedSP := originalSP.InRound(round)
 		assert.NotEqual(t, adaptedSP, lastSP)
 		assert.Equal(t, adaptedSP.Precision, lastSP.Precision,
@@ -760,7 +763,12 @@ func TestParamsAdaptiveSynchronyParams(t *testing.T) {
 
 		// It should not increase a lot per round, say more than 25%
 		// Safely increase message delay, accounting for overflows.
-		maxMessageDelay := time.Duration(float64(lastSP.MessageDelay) + float64(lastSP.MessageDelay/4))
+		var maxMessageDelay time.Duration
+		if int64(lastSP.MessageDelay) > math.MaxInt64-int64(lastSP.MessageDelay)/4 {
+			maxMessageDelay = time.Duration(math.MaxInt64)
+		} else {
+			maxMessageDelay = lastSP.MessageDelay + lastSP.MessageDelay/4
+		}
 		assert.LessOrEqual(t, adaptedSP.MessageDelay, maxMessageDelay,
 			"MessageDelay should not increase by more than 25% per round")
 

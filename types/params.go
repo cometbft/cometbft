@@ -148,7 +148,7 @@ func (sp SynchronyParams) InRound(round int32) SynchronyParams {
 
 	spWithMaxMessageDelay := SynchronyParams{
 		Precision:    sp.Precision,
-		MessageDelay: time.Duration(math.MaxInt64),
+		MessageDelay: time.Duration(math.MaxInt64) - sp.Precision,
 	}
 
 	// overflow check: needed for some architectures

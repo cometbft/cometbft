@@ -72,7 +72,7 @@ type ReqRes struct {
 
 	mtx cmtsync.Mutex
 
-	// callbackInvoked as a variable to track if the callback was already
+	// callbackInvoked is a variable to track if the callback was already
 	// invoked during the regular execution of the request. This variable
 	// allows clients to set the callback simultaneously without potentially
 	// invoking the callback twice by accident, once when 'SetCallback' is

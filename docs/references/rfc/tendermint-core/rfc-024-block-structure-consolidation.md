@@ -249,7 +249,7 @@ at a height, opening up a major hole in the light client security model.
 
 This creates a recursive problem. To verify the validator set that signed the
 block at height `H`, what information do we need? We could fetch the
-`NextValidatorsHash` from height `H-1`, but how do we verify that that hash is correct?
+`NextValidatorsHash` from height `H-1`, but how do we verify that hash is correct?
 
 #### ProposerAddress
 

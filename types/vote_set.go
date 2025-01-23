@@ -333,7 +333,6 @@ func (voteSet *VoteSet) addVerifiedVote(
 // If a peer claims that it has 2/3 majority for given blockKey, call this.
 // NOTE: if there are too many peers, or too much peer churn,
 // this can cause memory issues.
-// TODO: implement ability to remove peers too
 // NOTE: VoteSet must not be nil.
 func (voteSet *VoteSet) SetPeerMaj23(peerID P2PID, blockID BlockID) error {
 	if voteSet == nil {
@@ -343,30 +342,69 @@ func (voteSet *VoteSet) SetPeerMaj23(peerID P2PID, blockID BlockID) error {
 	defer voteSet.mtx.Unlock()
 
 	blockKey := blockID.Key()
-	// Make sure peer hasn't already told us something.
-	if existing, ok := voteSet.peerMaj23s[peerID]; ok {
-		if existing.Equals(blockID) {
-			return nil // Nothing to do
-		}
-		return fmt.Errorf("setPeerMaj23: Received conflicting blockID from peer %v. Got %v, expected %v",
-			peerID, blockID, existing)
+
+	// Make sure peerMaj23s is initialized.
+	if voteSet.peerMaj23s == nil {
+		voteSet.peerMaj23s = make(map[P2PID]BlockID)
 	}
+
+	// Check if the peer already has the same blockID to avoid unnecessary operations
+	if existingBlockID, ok := voteSet.peerMaj23s[peerID]; ok && existingBlockID.Equals(blockID) {
+		return nil
+	}
+
 	voteSet.peerMaj23s[peerID] = blockID
 
-	// Create .votesByBlock entry if needed.
+	// Create or get blockVotes
 	votesByBlock, ok := voteSet.votesByBlock[blockKey]
-	if ok {
-		if votesByBlock.peerMaj23 {
-			return nil // Nothing to do
-		}
-		votesByBlock.peerMaj23 = true
-		// No need to copy votes, already there.
-	} else {
+	if !ok {
 		votesByBlock = newBlockVotes(true, voteSet.valSet.Size())
 		voteSet.votesByBlock[blockKey] = votesByBlock
-		// No need to copy votes, no votes to copy over.
 	}
+	votesByBlock.peerMaj23 = true
+
 	return nil
+}
+
+// RemovePeerMaj23 removes a peer's 2/3 majority claim.
+// This should be called when a peer disconnects or when we want to clean up its state.
+// NOTE: VoteSet must not be nil.
+func (voteSet *VoteSet) RemovePeerMaj23(peerID P2PID) {
+	if voteSet == nil {
+		panic("RemovePeerMaj23() on nil VoteSet")
+	}
+	voteSet.mtx.Lock()
+	defer voteSet.mtx.Unlock()
+
+	if voteSet.peerMaj23s == nil {
+		return
+	}
+
+	// If the peer doesn't exist, nothing to do
+	blockID, ok := voteSet.peerMaj23s[peerID]
+	if !ok {
+		return
+	}
+
+	// Remove the peer
+	delete(voteSet.peerMaj23s, peerID)
+
+	// If this was the last peer claiming majority for this block,
+	// update the corresponding blockVotes
+	blockKey := blockID.Key()
+	if votesByBlock, ok := voteSet.votesByBlock[blockKey]; ok {
+		// Check if any other peer claims majority for this block
+		hasOtherMaj23 := false
+		for _, otherBlockID := range voteSet.peerMaj23s {
+			if otherBlockID.Key() == blockKey {
+				hasOtherMaj23 = true
+				break
+			}
+		}
+		if !hasOtherMaj23 {
+			votesByBlock.peerMaj23 = false
+		}
+	}
 }
 
 // BitArray implements VoteSetReader.

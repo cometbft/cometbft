@@ -1,30 +1,6 @@
 pull_request_rules:
-  - name: merge PR (v0.34.x)
-    description: merge PR if it passes tests and there are no conflicts (v0.34.x)
-    conditions:
-      - '-label=manual-backport'
-      - author=mergify[bot]
-      - head~=mergify/bp/
-      - base=v0.34.x
-      - check-success=check-mocks
-      - check-success=golangci-lint
-      - check-success=Super linter
-      - check-success=split-test-files
-      - check-success=cleanup-runs
-      - check-success=e2e-test
-      - check-success=check-proto
-      - check-success=Build
-      - check-success=tests (00)
-      - check-success=tests (01)
-      - check-success=tests (02)
-      - check-success=tests (03)
-      - check-success=test_abci_cli
-      - check-success=test_apps
-    actions:
-      merge:
-        method: squash
-  - name: merge PR (v0.37.x and v0.38.x)
-    description: merge PR if it passes tests and there are no conflicts (v0.37.x and v0.38.x)
+  - name: merge PR (v0.38.x)
+    description: merge PR if it passes tests and there are no conflicts (v0.38.x)
     conditions:
       - '-label=manual-backport'
       - author=mergify[bot]
@@ -115,25 +91,5 @@ pull_request_rules:
       backport:
         branches:
           - v0.38.x
-        assignees:
-          - "{{ author }}"
-  - name: backport patches to v0.37.x branch
-    conditions:
-      - base=main
-      - label=backport-to-v0.37.x
-    actions:
-      backport:
-        branches:
-          - v0.37.x
-        assignees:
-          - "{{ author }}"
-  - name: backport patches to v0.34.x branch
-    conditions:
-      - base=main
-      - label=backport-to-v0.34.x
-    actions:
-      backport:
-        branches:
-          - v0.34.x
         assignees:
           - "{{ author }}"

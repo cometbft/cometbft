@@ -131,7 +131,7 @@ contains a mapping from `Account:[]Tx`. On top of this primary mapping from acco
 to a list of transactions, are various indexes used to perform certain actions.
 
 The main index, `PriorityIndex`. is an ordered queue of transactions that are
-“consensus-ready” (i.e., they have a sequence number which is sequential to the
+"consensus-ready" (i.e., they have a sequence number which is sequential to the
 current sequence number for the account). This queue is ordered by gas price so
 that if a client is willing to pay more (than other clients) per unit of
 execution, then they can enter consensus earlier.

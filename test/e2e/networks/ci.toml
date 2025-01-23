@@ -64,7 +64,6 @@ persist_interval = 3
 retain_blocks = 20
 enable_companion_pruning = true
 perturb = ["kill"]
-key_type = "secp256k1"
 
 [node.validator04]
 persistent_peers = ["validator01"]

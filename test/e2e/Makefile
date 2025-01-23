@@ -1,4 +1,4 @@
-COMETBFT_BUILD_OPTIONS += clock_skew,bls12381
+COMETBFT_BUILD_OPTIONS += clock_skew,bls12381,secp256k1eth
 IMAGE_TAG=cometbft/e2e-node:local-version
 
 include ../../common.mk
@@ -38,7 +38,7 @@ generator:
 	go build -o build/generator ./generator
 
 runner:
-	go build -tags bls12381 -o build/runner ./runner
+	go build -tags 'bls12381,secp256k1eth' -o build/runner ./runner
 
 lint:
 	@echo "--> Running linter for E2E"

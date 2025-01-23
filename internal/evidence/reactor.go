@@ -6,7 +6,7 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	"github.com/cometbft/cometbft/internal/clist"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
@@ -54,7 +54,7 @@ func (evR *Reactor) SetLogger(l log.Logger) {
 // It returns the list of channels for this reactor.
 func (*Reactor) StreamDescriptors() []p2p.StreamDescriptor {
 	return []p2p.StreamDescriptor{
-		&tcpconn.ChannelDescriptor{
+		tcpconn.StreamDescriptor{
 			ID:                  EvidenceChannel,
 			Priority:            6,
 			RecvMessageCapacity: maxMsgSize,
@@ -137,11 +137,11 @@ func (evR *Reactor) broadcastEvidenceRoutine(peer p2p.Peer) {
 				panic(err)
 			}
 
-			success := peer.Send(p2p.Envelope{
+			err = peer.Send(p2p.Envelope{
 				ChannelID: EvidenceChannel,
 				Message:   evp,
 			})
-			if !success {
+			if err != nil {
 				time.Sleep(peerRetryMessageIntervalMS * time.Millisecond)
 				continue
 			}

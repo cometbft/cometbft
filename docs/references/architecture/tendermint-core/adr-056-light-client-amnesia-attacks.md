@@ -140,7 +140,7 @@ type ProofOfLockChange struct {
 
 This can be either evidence of +2/3 PREVOTES or PRECOMMITS (either warrants the honest node the right to vote) and is valid, among other checks, so long as the PRECOMMIT vote of the node in V2 came after all the votes in the `ProofOfLockChange` i.e. it received +2/3 votes for a block and then voted for that block thereafter (F is unable to prove this).
 
-In the event that an honest node receives `PotentialAmnesiaEvidence` it will first `ValidateBasic()` and `Verify()` it and then will check if it is among the suspected nodes in the evidence. If so, it will retrieve the `ProofOfLockChange` and combine it with `PotentialAmensiaEvidence` to form `AmensiaEvidence`. All honest nodes that are part of the indicted group will have a time, measured in blocks, equal to `ProofTrialPeriod`, the aforementioned evidence parameter, to gossip their `AmnesiaEvidence` with their `ProofOfLockChange`
+In the event that an honest node receives `PotentialAmnesiaEvidence` it will first `ValidateBasic()` and `Verify()` it and then will check if it is among the suspected nodes in the evidence. If so, it will retrieve the `ProofOfLockChange` and combine it with `PotentialAmnesiaEvidence` to form `AmnesiaEvidence`. All honest nodes that are part of the indicted group will have a time, measured in blocks, equal to `ProofTrialPeriod`, the aforementioned evidence parameter, to gossip their `AmnesiaEvidence` with their `ProofOfLockChange`
 
 ```golang
 type AmnesiaEvidence struct {
@@ -153,7 +153,7 @@ If the node is not required to submit any proof than it will simply broadcast th
 
 If a node receives `AmnesiaEvidence` that contains a valid `ProofOfClockChange` it will add it to the evidence store and replace any PotentialAmnesiaEvidence of the same height and round. At this stage, an amnesia evidence with polc, it is ready to be submitted to the chin. If a node receives `AmnesiaEvidence` with an empty polc it will ignore it as each honest node will conduct their own trial period to be sure that time was given for any other honest nodes to respond.
 
-There can only be one `AmnesiaEvidence` and one `PotentialAmneisaEvidence` stored for each attack (i.e. for each height).
+There can only be one `AmnesiaEvidence` and one `PotentialAmnesiaEvidence` stored for each attack (i.e. for each height).
 
 When, `state.LastBlockHeight > PotentialAmnesiaEvidence.timestamp + ProofTrialPeriod`, nodes will upgrade the corresponding `PotentialAmnesiaEvidence` and attach an empty `ProofOfLockChange`. Then honest validators of the current validator set can begin proposing the block that contains the `AmnesiaEvidence`.
 

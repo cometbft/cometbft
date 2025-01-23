@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v2"
 	cfg "github.com/cometbft/cometbft/config"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/bytes"
@@ -99,15 +99,20 @@ func invalidDoPrevoteFunc(t *testing.T, cs *State, sw *p2p.Switch, pv types.Priv
 		}
 		precommit.Signature = p.Signature
 		precommit.ExtensionSignature = p.ExtensionSignature
+		precommit.NonRpExtension = p.NonRpExtension
+		precommit.NonRpExtensionSignature = p.NonRpExtensionSignature
 		cs.privValidator = nil // disable priv val so we don't do normal votes
 
 		peers := sw.Peers().Copy()
 		for _, peer := range peers {
 			cs.Logger.Info("Sending bad vote", "block", blockHash, "peer", peer)
-			peer.Send(p2p.Envelope{
+			err = peer.Send(p2p.Envelope{
 				Message:   &cmtcons.Vote{Vote: precommit.ToProto()},
 				ChannelID: VoteChannel,
 			})
+			if err != nil {
+				t.Error(err)
+			}
 		}
 	}()
 }

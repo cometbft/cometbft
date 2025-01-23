@@ -46,6 +46,11 @@ ifeq (bls12381,$(findstring bls12381,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_TAGS += bls12381
 endif
 
+# handle secp256k1eth
+ifeq (secp256k1eth,$(findstring secp256k1eth,$(COMETBFT_BUILD_OPTIONS)))
+  BUILD_TAGS += secp256k1eth
+endif
+
 # handle nodebug
 ifeq (nodebug,$(findstring nodebug,$(COMETBFT_BUILD_OPTIONS)))
   CGO_ENABLED=1

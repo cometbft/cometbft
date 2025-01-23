@@ -23,7 +23,7 @@ synchronize a lite client without downloading the intervening headers.
 
 Light clients (and full nodes) operating in the Proof Of Stake context need a
 trusted block height from a trusted source that is no older than 1 unbonding
-window plus a configurable evidence submission synchrony bound. This is called “weak subjectivity”.
+window plus a configurable evidence submission synchrony bound. This is called "weak subjectivity".
 
 Weak subjectivity is required in Proof of Stake blockchains because it is
 costless for an attacker to buy up voting keys that are no longer bonded and

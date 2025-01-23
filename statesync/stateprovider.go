@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
+	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v2"
 	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"

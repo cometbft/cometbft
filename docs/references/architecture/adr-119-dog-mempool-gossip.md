@@ -91,7 +91,7 @@ Upon receiving a duplicate transaction on node `N` , DOG uses this list to retri
 
 Namely, let's assume that transaction `tx_1` was sent by node `B` to node `C` which forwarded it to `A`. `A` already has the transaction and notifies node `C` about this. Node `C` will look up the senders of transaction `tx_1` and in the future disable transaction forwarding from node `B` to node `A`.
 
-In reality, if node `C` ha received `tx_1` from multiple senders (`X`,`Y`, `B`), it will pick the first one that has sent it and disable that route. 
+In reality, if node `C` has received `tx_1` from multiple senders (`X`,`Y`, `B`), it will pick the first one that has sent it and disable that route. 
 
 Node `C` keeps a map of `disabledRoutes` per peer and uses it to determine whether a transaction should be forwarded. 
 
@@ -258,7 +258,7 @@ The impact of the protocol on operations can also be observed by looking at the 
 
 - `p2p.message_send_bytes_total` - This metric shows the number of bytes sent per message type. Without DOG, the transactions tend to dominate the number of bytes, while, when enabled, the block parts should dominate it.
 
-- `p2p.message_receive_bytes_total` - This metric shows the number of bytes received per message type. As with the metric abobe, with DOG the dominating messages should be block parts. 
+- `p2p.message_receive_bytes_total` - This metric shows the number of bytes received per message type. As with the metric above, with DOG the dominating messages should be block parts. 
 
 The received and sent bytes metrics are reported by message type which enables operators to observe the number of `HaveTx` and `ResetRoute` messages sent.
 

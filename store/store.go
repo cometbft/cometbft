@@ -10,7 +10,7 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 
 	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/evidence"
 	"github.com/cometbft/cometbft/libs/metrics"

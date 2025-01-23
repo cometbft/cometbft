@@ -11,8 +11,8 @@ import (
 	"github.com/google/orderedcode"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v2"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	cmtdb "github.com/cometbft/cometbft/db"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/libs/log"

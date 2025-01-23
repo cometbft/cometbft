@@ -19,7 +19,7 @@ import (
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	cmtdb "github.com/cometbft/cometbft/db"
@@ -102,6 +102,7 @@ func (vs *validatorStub) signVote(
 	chainID string,
 	blockID types.BlockID,
 	voteExtension []byte,
+	nonRpVoteExtension []byte,
 	extEnabled bool,
 	timestamp time.Time,
 ) (*types.Vote, error) {
@@ -118,6 +119,7 @@ func (vs *validatorStub) signVote(
 		ValidatorAddress: pubKey.Address(),
 		ValidatorIndex:   vs.Index,
 		Extension:        voteExtension,
+		NonRpExtension:   nonRpVoteExtension,
 	}
 	v := vote.ToProto()
 	if err = vs.PrivValidator.SignVote(chainID, v, true); err != nil {
@@ -129,14 +131,17 @@ func (vs *validatorStub) signVote(
 		v.Signature = vs.lastVote.Signature
 		v.Timestamp = vs.lastVote.Timestamp
 		v.ExtensionSignature = vs.lastVote.ExtensionSignature
+		v.NonRpExtensionSignature = vs.lastVote.NonRpExtensionSignature
 	}
 
 	vote.Signature = v.Signature
 	vote.Timestamp = v.Timestamp
 	vote.ExtensionSignature = v.ExtensionSignature
+	vote.NonRpExtensionSignature = v.NonRpExtensionSignature
 
 	if !extEnabled {
 		vote.ExtensionSignature = nil
+		vote.NonRpExtensionSignature = nil
 	}
 
 	return vote, err
@@ -146,7 +151,7 @@ func (vs *validatorStub) signVote(
 func signVoteWithTimestamp(vs *validatorStub, voteType types.SignedMsgType, chainID string,
 	blockID types.BlockID, extEnabled bool, timestamp time.Time,
 ) *types.Vote {
-	var ext []byte
+	var ext, nonRpExt []byte
 	// Only non-nil precommits are allowed to carry vote extensions.
 	if extEnabled {
 		if voteType != types.PrecommitType {
@@ -154,9 +159,10 @@ func signVoteWithTimestamp(vs *validatorStub, voteType types.SignedMsgType, chai
 		}
 		if len(blockID.Hash) != 0 || !blockID.PartSetHeader.IsZero() {
 			ext = []byte("extension")
+			nonRpExt = []byte("non_replay_protected_extension")
 		}
 	}
-	v, err := vs.signVote(voteType, chainID, blockID, ext, extEnabled, timestamp)
+	v, err := vs.signVote(voteType, chainID, blockID, ext, nonRpExt, extEnabled, timestamp)
 	if err != nil {
 		panic(fmt.Errorf("failed to sign vote: %v", err))
 	}
@@ -895,12 +901,7 @@ func randConsensusNetWithPeers(
 		if i < nValidators {
 			privVal = privVals[i]
 		} else {
-			tempKeyFile, err := os.CreateTemp("", "priv_validator_key_")
-			require.NoError(t, err)
-			tempStateFile, err := os.CreateTemp("", "priv_validator_state_")
-			require.NoError(t, err)
-			privVal, err = privval.GenFilePV(tempKeyFile.Name(), tempStateFile.Name(), nil)
-			require.NoError(t, err)
+			privVal = types.NewMockPV()
 		}
 
 		app := appFunc(path.Join(config.DBDir(), fmt.Sprintf("%s_%d", testName, i)))
@@ -1063,7 +1064,8 @@ func signDataIsEqual(v1 *types.Vote, v2 *cmtproto.Vote) bool {
 		v1.Round == v2.Round &&
 		bytes.Equal(v1.ValidatorAddress.Bytes(), v2.GetValidatorAddress()) &&
 		v1.ValidatorIndex == v2.GetValidatorIndex() &&
-		bytes.Equal(v1.Extension, v2.Extension)
+		bytes.Equal(v1.Extension, v2.Extension) &&
+		bytes.Equal(v1.NonRpExtension, v2.NonRpExtension)
 }
 
 func updateValTx(pubKey crypto.PubKey, power int64) []byte {

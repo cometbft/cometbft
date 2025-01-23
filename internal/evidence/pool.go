@@ -11,7 +11,7 @@ import (
 	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/google/orderedcode"
 
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/clist"
 	"github.com/cometbft/cometbft/libs/log"

@@ -7,8 +7,8 @@ import (
 
 	"google.golang.org/grpc"
 
-	pbblocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1"
-	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1"
+	pbblocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v2"
+	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v2"
 	pbversionsvc "github.com/cometbft/cometbft/api/cometbft/services/version/v1"
 	"github.com/cometbft/cometbft/libs/log"
 	grpcerr "github.com/cometbft/cometbft/rpc/grpc/errors"
@@ -100,6 +100,7 @@ func Serve(listener net.Listener, opts ...Option) error {
 	for _, opt := range opts {
 		opt(b)
 	}
+	b.grpcOpts = append(b.grpcOpts, grpc.MaxConcurrentStreams(100)) // Limit to 100 streams per connection
 	server := grpc.NewServer(b.grpcOpts...)
 	if b.versionService != nil {
 		pbversionsvc.RegisterVersionServiceServer(server, b.versionService)

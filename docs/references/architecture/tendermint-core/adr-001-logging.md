@@ -76,7 +76,7 @@ go-kit is my favorite so far. Check out how easy it is to color errors in red ht
 
 ```
 go-kit +: flexible, modular
-go-kit “-”: logfmt format https://brandur.org/logfmt
+go-kit "-": logfmt format https://brandur.org/logfmt
 
 logrus +: popular, feature rich (hooks), API and output is more like what we want
 logrus -: not so flexible
@@ -199,7 +199,7 @@ Dynamic logger, which could be turned off for some modules at runtime. Public in
 
 ### Negative
 
-We may loose the ability to color keys in keyvalue pairs. go-kit allow you to easily change foreground / background colors of the whole string, but not its parts.
+We may lose the ability to color keys in keyvalue pairs. go-kit allow you to easily change foreground / background colors of the whole string, but not its parts.
 
 ### Neutral
 

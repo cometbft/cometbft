@@ -157,7 +157,7 @@ func PostCheckMaxGas(maxGas int64) PostCheckFunc {
 // TxKey is the fixed length array key used as an index.
 type TxKey [sha256.Size]byte
 
-// An entry in the mempool.
+// An Entry represents a transaction stored in the mempool.
 type Entry interface {
 	// Tx returns the transaction stored in the entry.
 	Tx() types.Tx
@@ -175,8 +175,9 @@ type Entry interface {
 	Senders() []p2p.ID
 }
 
-// An iterator is used to iterate through the mempool entries.
-// Multiple iterators should be allowed to run concurrently.
+// An Iterator is used to iterate through the mempool entries.
+// It allows multiple iterators to run concurrently, enabling
+// parallel processing of mempool entries.
 type Iterator interface {
 	// WaitNextCh returns a channel on which to wait for the next available entry.
 	WaitNextCh() <-chan Entry

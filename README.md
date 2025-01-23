@@ -16,8 +16,6 @@
 | main    | [![Tests][tests-badge]][tests-url]             | [![Lint][lint-badge]][lint-url]             |
 | v1.x    | [![Tests][tests-badge-v1x]][tests-url-v1x]     | [![Lint][lint-badge-v1x]][lint-url-v1x]     |
 | v0.38.x | [![Tests][tests-badge-v038x]][tests-url-v038x] | [![Lint][lint-badge-v038x]][lint-url-v038x] |
-| v0.37.x | [![Tests][tests-badge-v037x]][tests-url-v037x] | [![Lint][lint-badge-v037x]][lint-url-v037x] |
-| v0.34.x | [![Tests][tests-badge-v034x]][tests-url-v034x] | [![Lint][lint-badge-v034x]][lint-url-v034x] |
 
 CometBFT is a Byzantine Fault Tolerant (BFT) middleware that takes a
 state transition machine - written in any programming language - and securely
@@ -32,7 +30,7 @@ CometBFT originated as a fork of [Tendermint Core][tm-core] in early 2023
 
 For protocol details, refer to the [CometBFT Specification](./spec/README.md).
 
-For detailed analysis of the Tendermint consensus protocol, including safety and liveness
+For a detailed analysis of the Tendermint consensus protocol, including safety and liveness
 proofs, read our paper, "[The latest gossip on BFT
 consensus](https://arxiv.org/abs/1807.04938)".
 
@@ -80,8 +78,6 @@ Please see [SECURITY.md](./SECURITY.md).
 | main             | Go version  | 1.23 or higher | up to 1.23.1 |
 | v1.x             | Go version  | 1.23 or higher | up to 1.23.1 |
 | v0.38.x          | Go version  | 1.22 or higher | up to 1.22   |
-| v0.37.x          | Go version  | 1.22 or higher | up to 1.22   |
-| v0.34.x          | Go version  | 1.22 or higher | up to 1.22   |
 
 ### Install
 
@@ -144,10 +140,6 @@ Currently supported versions include:
   pre-releases.
 - v0.38.x: CometBFT v0.38 introduces ABCI 2.0, which implements the entirety of
   ABCI++
-- v0.37.x: CometBFT v0.37 introduces ABCI 1.0, which is the first major step
-  towards the full ABCI++ implementation in ABCI 2.0
-- v0.34.x: The CometBFT v0.34 series is compatible with the Tendermint Core
-  v0.34 series
 
 ## Resources
 
@@ -176,13 +168,10 @@ whitepapers, which CometBFT will continue to build on.
 
 ## Join us
 
-CometBFT is currently maintained by [Informal
-Systems](https://informal.systems). If you'd like to work full-time on CometBFT,
-[we're hiring](https://informal.systems/careers)!
+CometBFT is currently maintained by [Interchain Inc.](https://medium.com/the-interchain-foundation/cosmos-is-expanding-skip-joins-the-interchain-foundation-cfd346551dda). 
 
 Funding for CometBFT development comes primarily from the [Interchain
-Foundation](https://interchain.io), a Swiss non-profit. Informal Systems also
-maintains [cometbft.com](https://cometbft.com).
+Foundation](https://interchain.io), a Swiss non-profit.
 
 [bft]: https://en.wikipedia.org/wiki/Byzantine_fault_tolerance
 [smr]: https://en.wikipedia.org/wiki/State_machine_replication
@@ -216,8 +205,6 @@ maintains [cometbft.com](https://cometbft.com).
 [lint-badge-v038x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml/badge.svg?branch=v0.38.x
 [lint-badge-v1x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml/badge.svg?branch=v1.x
 [lint-url]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml
-[lint-url-v034x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml?query=branch%3Av0.34.x
-[lint-url-v037x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml?query=branch%3Av0.37.x
 [lint-url-v038x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml?query=branch%3Av0.38.x
 [lint-url-v1x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml?query=branch%3Av1.x
 [tm-core]: https://github.com/tendermint/tendermint

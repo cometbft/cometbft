@@ -500,7 +500,7 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 
 	cr := p2pmock.NewReactor()
 	cr.Channels = []p2p.StreamDescriptor{
-		&conn.ChannelDescriptor{
+		conn.StreamDescriptor{
 			ID:                  byte(0xff),
 			Priority:            5,
 			SendQueueCapacity:   100,

@@ -123,7 +123,7 @@ engines:
   changes in the future, and could restrict our access to using the latest
   version of the library between major upgrades, present a problem?
 
-- do we do we have goals/concerns about memory footprint that Badger may
+- do we have goals/concerns about memory footprint that Badger may
   prevent us from hitting, particularly as data sets grow over time?
 
 - what kind of additional tooling might we need/like to build (dump/restore,

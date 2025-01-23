@@ -234,7 +234,7 @@ to reconstruct the vote set given the validator set.
 | Signature        | [Signature](#signature)     | Signature corresponding to the validators participation in consensus.                                                                             | The length of the signature must be > 0 and < than  64  for `ed25519`, < 96 for `bls12381` or < 65 for `secp256k1eth`     |
 
 NOTE: `ValidatorAddress` and `Timestamp` fields may be removed in the future
-(see [ADR-25](https://github.com/cometbft/cometbft/blob/main/docs/architecture/adr-025-commit.md)).
+(see [ADR-25](https://github.com/cometbft/cometbft/blob/main/docs/references/architecture/tendermint-core/adr-025-commit.md)).
 
 ## ExtendedCommitSig
 

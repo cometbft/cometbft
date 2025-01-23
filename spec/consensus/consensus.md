@@ -62,7 +62,7 @@ parameters over each successive round.
 
 ```md
                          +-------------------------------------+
-                         v                                     |(Wait til `CommmitTime+timeoutCommit`)
+                         v                                     |(Wait til `CommitTime+timeoutCommit`)
                    +-----------+                         +-----+-----+
       +----------> |  Propose  +--------------+          | NewHeight |
       |            +-----------+              |          +-----------+
@@ -315,7 +315,7 @@ adversary.
 For these types of attacks, a subset of the validators through external
 means should coordinate to sign a reorg-proposal that chooses a fork
 (and any evidence thereof) and the initial subset of validators with
-their signatures. Validators who sign such a reorg-proposal forego its
+their signatures. Validators who sign such a reorg-proposal forgo its
 collateral on all other forks. Clients should verify the signatures on
 the reorg-proposal, verify any evidence, and make a judgement or prompt
 the end-user for a decision. For example, a phone wallet app may prompt

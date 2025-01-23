@@ -68,7 +68,7 @@ _200 Node Test_, and _Rotating Nodes Test_.
 
 This test consists in spinning up 200 nodes (175 validators + 20 full nodes + 5 seed nodes) and
 performing two experiments:
-- First we find the [saturation point](saturation) of the network by running the script
+- First we find the [saturation point][saturation] of the network by running the script
   [200-node-loadscript.sh][200-node-loadscript.sh].
 - Then we run several times the testnet using the saturation point to collect data.
 
@@ -96,7 +96,7 @@ This section explains how the tests were carried out for reproducibility purpose
 2. In the `experiment.mk` file, set the following variables (do NOT commit these changes):
    1. Set `MANIFEST` to point to the file `testnets/200-nodes-with-zones.toml`.
    2. Set `VERSION_TAG` to the git hash that is to be tested.
-      * If you are running the base test, which implies an homogeneous network (all nodes are running the same version),
+      * If you are running the base test, which implies a homogeneous network (all nodes are running the same version),
         then make sure makefile variable `VERSION2_WEIGHT` is set to 0
       * If you are running a mixed network, set the variable `VERSION2_TAG` to the other version you want deployed
         in the network.

@@ -7,7 +7,7 @@ Tendermint consensus algorithm with added clocks and proposer-based timestamps.
 
 The script `runApalache.sh` runs Apalache against one of the model files in this repository. This document describes how to use it.
 
-1. Get Apalache, by following [these](https://apalache.informal.systems/docs/apalache/installation/index.html) instructions. Summarized:
+1. Get Apalache, by following [these](https://apalache-mc.org/docs/apalache/installation/index.html) instructions. Summarized:
 
     1. `git clone https://github.com/informalsystems/apalache.git`
     2. `make package`
@@ -21,9 +21,9 @@ The script `runApalache.sh` runs Apalache against one of the model files in this
     3. `MC` is a Boolean flag that controls whether the model checked has a 2/3+ majority of correct processes. Default: true
        - if `MC` is `true`, the `MC_PBT_3C_1F.tla` is used as input
        - if `MC` is `false`, the `MC_PBT_2C_2F.tla` is used as input
-    4. `DD` is a Boolean flag that controls Apalache's `--discard-disabled` flag (See [here](https://apalache.informal.systems/docs/apalache/running.html)). Ignored if `CMD=typecheck`. Default: false
+    4. `DD` is a Boolean flag that controls Apalache's `--discard-disabled` flag (See [here](https://apalache-mc.org/docs/apalache/running.html)). Ignored if `CMD=typecheck`. Default: false
 
-The results will be written to `_apalache-out` (see the [Apalache documentation](https://apalache.informal.systems/docs/adr/009adr-outputs.html)).
+The results will be written to `_apalache-out` (see the [Apalache documentation](https://apalache-mc.org/docs/adr/009adr-outputs.html)).
 
 Example:
 ```sh

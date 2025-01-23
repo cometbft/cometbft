@@ -14,10 +14,11 @@ import (
 	abciclientmocks "github.com/cometbft/cometbft/abci/client/mocks"
 	abci "github.com/cometbft/cometbft/abci/types"
 	abcimocks "github.com/cometbft/cometbft/abci/types/mocks"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
@@ -447,7 +448,7 @@ func TestProcessProposal(t *testing.T) {
 
 func TestValidateValidatorUpdates(t *testing.T) {
 	pubkey1 := ed25519.GenPrivKey().PubKey()
-	pubkey2 := ed25519.GenPrivKey().PubKey()
+	pubkey2 := secp256k1.GenPrivKey().PubKey()
 
 	defaultValidatorParams := types.ValidatorParams{PubKeyTypes: []string{types.ABCIPubKeyTypeEd25519}}
 
@@ -461,26 +462,48 @@ func TestValidateValidatorUpdates(t *testing.T) {
 	}{
 		{
 			"adding a validator is OK",
-			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey2, 20)},
-			defaultValidatorParams,
-			false,
-		},
-		{
-			"updating a validator is OK",
 			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey1, 20)},
 			defaultValidatorParams,
 			false,
 		},
 		{
+			"updating a validator with mixed key types is OK",
+			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey1, 20), abci.NewValidatorUpdate(pubkey2, 10)},
+			types.ValidatorParams{
+				PubKeyTypes: []string{
+					types.ABCIPubKeyTypeEd25519,
+					types.ABCIPubKeyTypeSecp256k1,
+				},
+			},
+			false,
+		},
+		{
+			"updating a validator with key type Secp256k1 is OK",
+			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey2, 20)},
+			types.ValidatorParams{
+				PubKeyTypes: []string{
+					types.ABCIPubKeyTypeEd25519,
+					types.ABCIPubKeyTypeSecp256k1,
+				},
+			},
+			false,
+		},
+		{
 			"removing a validator is OK",
-			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey2, 0)},
+			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey1, 0)},
 			defaultValidatorParams,
 			false,
 		},
 		{
-			"adding a validator with negative power results in error",
-			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey2, -100)},
+			"adding a validator with negative power results in an error",
+			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey1, -100)},
 			defaultValidatorParams,
+			true,
+		},
+		{
+			"adding a validator with unsupported key type results in an error",
+			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey1, 20)},
+			types.ValidatorParams{PubKeyTypes: []string{types.ABCIPubKeyTypeSecp256k1}},
 			true,
 		},
 	}
@@ -500,7 +523,7 @@ func TestValidateValidatorUpdates(t *testing.T) {
 func TestUpdateValidators(t *testing.T) {
 	pubkey1 := ed25519.GenPrivKey().PubKey()
 	val1 := types.NewValidator(pubkey1, 10)
-	pubkey2 := ed25519.GenPrivKey().PubKey()
+	pubkey2 := secp256k1.GenPrivKey().PubKey()
 	val2 := types.NewValidator(pubkey2, 20)
 
 	testCases := []struct {
@@ -1094,7 +1117,7 @@ func TestCreateProposalAbsentVoteExtensions(t *testing.T) {
 			blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 			pa, _ := state.Validators.GetByIndex(0)
 			lastCommit, _ := makeValidCommit(testCase.height-1, blockID, state.Validators, privVals)
-			stripSignatures(lastCommit)
+			stripSignatures(lastCommit) // remove vote extensions and its signatures as required by test case
 			if testCase.expectPanic {
 				require.Panics(t, func() {
 					blockExec.CreateProposalBlock(ctx, testCase.height, state, lastCommit, pa) //nolint:errcheck
@@ -1111,6 +1134,8 @@ func stripSignatures(ec *types.ExtendedCommit) {
 	for i, commitSig := range ec.ExtendedSignatures {
 		commitSig.Extension = nil
 		commitSig.ExtensionSignature = nil
+		commitSig.NonRpExtension = nil
+		commitSig.NonRpExtensionSignature = nil
 		ec.ExtendedSignatures[i] = commitSig
 	}
 }

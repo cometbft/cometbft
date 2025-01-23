@@ -30,13 +30,13 @@ type NodeKey struct {
 }
 
 // ID returns the peer's canonical ID - the hash of its public key.
-func (nodeKey *NodeKey) ID() ID {
-	return PubKeyToID(nodeKey.PubKey())
+func (nk *NodeKey) ID() ID {
+	return PubKeyToID(nk.PubKey())
 }
 
 // PubKey returns the peer's PubKey.
-func (nodeKey *NodeKey) PubKey() crypto.PubKey {
-	return nodeKey.PrivKey.PubKey()
+func (nk *NodeKey) PubKey() crypto.PubKey {
+	return nk.PrivKey.PubKey()
 }
 
 // PubKeyToID returns the ID corresponding to the given PubKey.
@@ -83,8 +83,8 @@ func Load(filePath string) (*NodeKey, error) {
 }
 
 // SaveAs persists the NodeKey to filePath.
-func (nodeKey *NodeKey) SaveAs(filePath string) error {
-	jsonBytes, err := cmtjson.Marshal(nodeKey)
+func (nk *NodeKey) SaveAs(filePath string) error {
+	jsonBytes, err := cmtjson.Marshal(nk)
 	if err != nil {
 		return err
 	}

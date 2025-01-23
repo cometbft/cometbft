@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
+	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v2"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"

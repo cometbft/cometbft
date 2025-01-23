@@ -1,0 +1,8 @@
+- `[p2p]` Modify `Peer` interface ([\#4553](https://github.com/cometbft/cometbft/issues/4553))
+  - `Send` and `TrySend` now return an error instead of `bool`
+  - Remove `Conn` method
+- `[p2p]` Modify `MConnection` ([\#4553](https://github.com/cometbft/cometbft/issues/4553))
+  - `NewMConnection` now only takes 2 arguments
+  - Rename `FlushStop` to `FlushAndClose`
+  - Remove `ConnectionStatus`. Use `transport.ConnState` instead.
+- `[p2p]` `ConnectionStatus` is now `ConnState` ([\#4553](https://github.com/cometbft/cometbft/issues/4553))

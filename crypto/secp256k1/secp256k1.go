@@ -75,13 +75,15 @@ func genPrivKey(rand io.Reader) PrivKey {
 		}
 
 		d.SetBytes(privKeyBytes[:])
-		// break if we found a valid point (i.e. > 0 and < N == curverOrder)
+		// break if we found a valid point (i.e. > 0 and < N == curveOrder)
 		isValidFieldElement := 0 < d.Sign() && d.Cmp(secp256k1.S256().N) < 0
 		if isValidFieldElement {
 			break
 		}
 	}
 
+	// crypto.CRandBytes is guaranteed to be 32 bytes long, so it can be
+	// cast to PrivKey.
 	return PrivKey(privKeyBytes[:])
 }
 
@@ -146,7 +148,7 @@ type PubKey []byte
 // Address returns a Bitcoin style address: RIPEMD160(SHA256(pubkey)).
 func (pubKey PubKey) Address() crypto.Address {
 	if len(pubKey) != PubKeySize {
-		panic("length of pubkey is incorrect")
+		panic(fmt.Sprintf("length of pubkey is incorrect %d != %d", len(pubKey), PubKeySize))
 	}
 	hasherSHA256 := sha256.New()
 	_, err := hasherSHA256.Write(pubKey)

@@ -90,29 +90,40 @@ func (memR *Reactor) OnStart() error {
 // StreamDescriptors implements Reactor by returning the list of channels for this
 // reactor.
 func (memR *Reactor) StreamDescriptors() []p2p.StreamDescriptor {
-	largestTx := make([]byte, memR.config.MaxTxBytes)
-	batchMsg := protomem.Message{
-		Sum: &protomem.Message_Txs{
-			Txs: &protomem.Txs{Txs: [][]byte{largestTx}},
-		},
-	}
+	var (
+		batchMsgSize  int
+		haveTxMsgSize int
+	)
 
-	key := types.Tx(largestTx).Key()
-	haveTxMsg := protomem.Message{
-		Sum: &protomem.Message_HaveTx{HaveTx: &protomem.HaveTx{TxKey: key[:]}},
+	// Calculate max message size for batchMsg and haveTxMsg,
+	// and free the memory immediately after.
+	{
+		largestTx := make([]byte, memR.config.MaxTxBytes)
+		batchMsg := protomem.Message{
+			Sum: &protomem.Message_Txs{
+				Txs: &protomem.Txs{Txs: [][]byte{largestTx}},
+			},
+		}
+		batchMsgSize = batchMsg.Size()
+
+		key := types.Tx(largestTx).Key()
+		haveTxMsg := protomem.Message{
+			Sum: &protomem.Message_HaveTx{HaveTx: &protomem.HaveTx{TxKey: key[:]}},
+		}
+		haveTxMsgSize = haveTxMsg.Size()
 	}
 
 	return []p2p.StreamDescriptor{
-		&tcpconn.ChannelDescriptor{
+		tcpconn.StreamDescriptor{
 			ID:                  MempoolChannel,
 			Priority:            5,
-			RecvMessageCapacity: batchMsg.Size(),
+			RecvMessageCapacity: batchMsgSize,
 			MessageTypeI:        &protomem.Message{},
 		},
-		&tcpconn.ChannelDescriptor{
+		tcpconn.StreamDescriptor{
 			ID:                  MempoolControlChannel,
 			Priority:            10,
-			RecvMessageCapacity: haveTxMsg.Size(),
+			RecvMessageCapacity: haveTxMsgSize,
 			MessageTypeI:        &protomem.Message{},
 		},
 	}
@@ -266,9 +277,9 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 				if memR.redundancyControl.isHaveTxBlocked() {
 					return nil, err
 				}
-				ok := sender.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.HaveTx{TxKey: txKey[:]}})
-				if !ok {
-					memR.Logger.Error("Failed to send HaveTx message", "peer", senderID, "txKey", txKey)
+				err := sender.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.HaveTx{TxKey: txKey[:]}})
+				if err != nil {
+					memR.Logger.Error("Failed to send HaveTx message", "peer", senderID, "txKey", txKey, "err", err)
 				} else {
 					memR.Logger.Debug("Sent HaveTx message", "tx", txKey.Hash(), "peer", senderID)
 					// Block HaveTx and restart timer, during which time, sending HaveTx is not allowed.
@@ -413,11 +424,11 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			memR.Logger.Debug("Sending transaction to peer",
 				"tx", txHash, "peer", peer.ID())
 
-			success := peer.Send(p2p.Envelope{
+			err := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
 				Message:   &protomem.Txs{Txs: [][]byte{entry.Tx()}},
 			})
-			if success {
+			if err == nil {
 				break
 			}
 
@@ -535,9 +546,8 @@ type redundancyControl struct {
 	adjustInterval time.Duration
 
 	// Counters for calculating the redundancy level.
-	mtx          cmtsync.RWMutex
-	firstTimeTxs int64 // number of transactions received for the first time
-	duplicateTxs int64 // number of duplicate transactions
+	firstTimeTxs atomic.Int64 // number of transactions received for the first time
+	duplicateTxs atomic.Int64 // number of duplicate transactions
 
 	// If true, do not send HaveTx messages.
 	haveTxBlocked atomic.Bool
@@ -568,9 +578,9 @@ func (rc *redundancyControl) adjustRedundancy(memR *Reactor) {
 		// Send Reset message to random peer.
 		randomPeer := memR.Switch.Peers().Random()
 		if randomPeer != nil {
-			ok := randomPeer.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.ResetRoute{}})
-			if !ok {
-				memR.Logger.Error("Failed to send Reset message", "peer", randomPeer.ID())
+			err := randomPeer.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.ResetRoute{}})
+			if err != nil {
+				memR.Logger.Error("Failed to send Reset message", "peer", randomPeer.ID(), "err", err)
 			}
 		}
 	}
@@ -601,34 +611,30 @@ func (rc *redundancyControl) controlLoop(memR *Reactor) {
 // counters. If there are no transactions, return -1. If firstTimeTxs is 0,
 // return upperBound. If duplicateTxs is 0, return 0.
 func (rc *redundancyControl) currentRedundancy() float64 {
-	rc.mtx.Lock()
-	defer rc.mtx.Unlock()
+	firstTimeTxs := rc.firstTimeTxs.Load()
+	duplicateTxs := rc.duplicateTxs.Load()
 
-	if rc.firstTimeTxs+rc.duplicateTxs == 0 {
+	if firstTimeTxs+duplicateTxs == 0 {
 		return -1
 	}
 
 	redundancy := rc.upperBound
-	if rc.firstTimeTxs != 0 {
-		redundancy = float64(rc.duplicateTxs) / float64(rc.firstTimeTxs)
+	if firstTimeTxs != 0 {
+		redundancy = float64(duplicateTxs) / float64(firstTimeTxs)
 	}
 
-	// Reset counters.
-	rc.firstTimeTxs, rc.duplicateTxs = 0, 0
-
+	// Reset counters atomically
+	rc.firstTimeTxs.Store(0)
+	rc.duplicateTxs.Store(0)
 	return redundancy
 }
 
 func (rc *redundancyControl) incDuplicateTxs() {
-	rc.mtx.Lock()
-	rc.duplicateTxs++
-	rc.mtx.Unlock()
+	rc.duplicateTxs.Add(1)
 }
 
 func (rc *redundancyControl) incFirstTimeTxs() {
-	rc.mtx.Lock()
-	rc.firstTimeTxs++
-	rc.mtx.Unlock()
+	rc.firstTimeTxs.Add(1)
 }
 
 func (rc *redundancyControl) isHaveTxBlocked() bool {

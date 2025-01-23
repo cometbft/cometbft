@@ -17,10 +17,12 @@ title: Overview and basic concepts
   - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
   - [Events](#events)
   - [Evidence of Misbehavior](#evidence-of-misbehavior)
-  - [Errors](#errors)
+  - [Returning Errors](#returning-errors)
+    - [ABCI response error codes (e.g. `Code` and `Codespace`)](#abci-response-error-codes-eg-code-and-codespace)
     - [`CheckTx`](#checktx)
     - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
     - [`Query`](#query)
+    - [ABCI methods' `error` return](#abci-methods-error-return)
 # Overview and basic concepts
 
 ## ABCI 2.0 vs. legacy ABCI
@@ -102,8 +104,10 @@ call sequences of these methods.
   vote it is extending, and will be made available to the Application in the next height,
   in the rounds where the local process is the proposer.
   CometBFT calls `ExtendVote` when the consensus algorithm is about to send a non-`nil` precommit message.
-  If the Application does not have vote extension information to provide at that time, it returns
-  a 0-length byte array as its vote extension.
+  The Application can provide vote extension information as replay-protected and/or
+  non-replay-protected data in the response. If the Application does not have vote extension information to provide at that time,
+  it returns a 0-length byte array as its vote extension (replay and/or non-replay-protected).
+  When using non-replay-protected vote extensions it is up to the application to protect itself against replay attacks on that data (see `VerifyVoteExtension` below).
   The logic in `ExtendVote` MAY be non-deterministic.
 
 - [**VerifyVoteExtension:**](./abci++_methods.md#verifyvoteextension) It allows
@@ -115,7 +119,14 @@ call sequences of these methods.
   should be implemented with special care.
   As a general rule, an Application that detects an invalid vote extension SHOULD
   accept it in `VerifyVoteExtensionResponse` and ignore it in its own logic. CometBFT calls it when
-  a process receives a precommit message with a (possibly empty) vote extension, for the current height. It is not called for precommit votes received after the height is concluded but while waiting to accumulate more precommit votes.
+  a process receives a precommit message with a (possibly empty) vote extension, for the current height.
+  It is not called for precommit votes received after the height is concluded but while waiting to accumulate more precommit votes.
+  `VerifyVoteExtension` provides the two vote extension information (non-/replay-protected) to the Application.
+  The replay-protected part is signed with chain-ID, height and round (canonical vote extension) whereas the non-replay-protected part
+  is signed as provided in `ExtendVote`.
+  If vote extensions are enabled, both types of vote extensions will be signed even if no non-replay protected vote extensions were used.
+  If vote extensions are disabled, both types of vote extensions and their signatures will be empty.
+  Application specific replay protection mechanisms for that data can be implemented as part of `VerifyVoteExtension`.
   The logic in `VerifyVoteExtension` MUST be deterministic.
 
 - [**FinalizeBlock:**](./abci++_methods.md#finalizeblock) It delivers a decided block to the
@@ -458,4 +469,3 @@ knowing that CometBFT will panic upon receiving the error.
 The choice between (a) and (b) is up to the application -- both are equivalent -- and depends on
 whether an application (e.g. running in a different process that CometBFT)
 prefers CometBFT to crash first.
-

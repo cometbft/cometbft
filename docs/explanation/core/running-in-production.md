@@ -159,7 +159,7 @@ explain what certain log statements mean.
 
 If, after skimming through the logs, things are not clear still, the next thing
 to try is querying the `/status` RPC endpoint. It provides the necessary info:
-whenever the node is syncing or not, what height it is on, etc.
+whether the node is syncing or not, what height it is on, etc.
 
 ```bash
 curl http(s)://{ip}:{rpcPort}/status
@@ -192,7 +192,7 @@ Each CometBFT instance has a standard `/health` RPC endpoint, which responds
 with 200 (OK) if everything is fine and 500 (or no response) - if something is
 wrong.
 
-Other useful endpoints include mentioned earlier `/status`, `/net_info` and
+Other useful endpoints include those mentioned earlier `/status`, `/net_info` and
 `/validators`.
 
 CometBFT also can report and serve Prometheus metrics. See
@@ -308,7 +308,7 @@ disk space over time, we are planning to implement state syncing (See [this
 issue](https://github.com/tendermint/tendermint/issues/828)). So, storing all
 the past blocks will not be necessary.
 
-### Validator signing on 32 bit architectures (or ARM)
+### Validator signing on 32-bit architectures (or ARM)
 
 Both our `ed25519` and `secp256k1` implementations require constant time
 `uint64` multiplication. Non-constant time crypto can (and has) leaked
@@ -318,7 +318,7 @@ depends on the compiler to enforce that it is constant time. It's unclear at
 this point whether the Golang compiler does this correctly for all
 implementations.
 
-**We do not support nor recommend running a validator on 32 bit architectures OR
+**We do not support nor recommend running a validator on 32-bit architectures OR
 the "VIA Nano 2000 Series", and the architectures in the ARM section rated
 "S-".**
 

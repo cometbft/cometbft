@@ -1,4 +1,4 @@
-package storage
+package db
 
 import (
 	"bytes"
@@ -317,7 +317,7 @@ func TestPrefixDBBatchWrite(t *testing.T) {
 
 		var (
 			prefix   = []byte{'t', 'e', 's', 't'}
-			prefixDB = &PrefixDB{
+			prefixDB = &prefixDB{
 				db:     pebbleBatch.db,
 				prefix: prefix,
 			}
@@ -341,7 +341,7 @@ func TestPrefixDBBatchWrite(t *testing.T) {
 
 		var (
 			prefix   = []byte{'t', 'e', 's', 't'}
-			prefixDB = &PrefixDB{
+			prefixDB = &prefixDB{
 				db:     pebbleBatch.db,
 				prefix: prefix,
 			}
@@ -541,13 +541,13 @@ func TestIncrementBigEndian(t *testing.T) {
 // newTestPrefixDB creates an instance of a PrefixDB for testing.
 // Under the hood, it wraps an in-memory instance of PebbleDB and scopes its keys
 // with the prefix "test".
-func newTestPrefixDB() (*PrefixDB, error) {
+func newTestPrefixDB() (*prefixDB, error) {
 	pebbleDB, _, err := newTestPebbleDB()
 	if err != nil {
 		return nil, fmt.Errorf("creating prefix-wrapped DB: %w", err)
 	}
 
-	pDB := &PrefixDB{
+	pDB := &prefixDB{
 		db:     pebbleDB,
 		prefix: []byte{'t', 'e', 's', 't'},
 	}
@@ -558,7 +558,7 @@ func newTestPrefixDB() (*PrefixDB, error) {
 // deletePrefixDBHelper is a utility function supporting TestPrefixDBDelete.
 // It writes a key-value pair to the database, deletes it, then checks that the key
 // is deleted.
-func deletePrefixDBHelper(pDB *PrefixDB, synced bool) error {
+func deletePrefixDBHelper(pDB *prefixDB, synced bool) error {
 	var (
 		key = []byte{'a'}
 		val = []byte{0x01}

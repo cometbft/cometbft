@@ -3,8 +3,8 @@ package db
 import (
 	"encoding/binary"
 
-	dbm "github.com/cometbft/cometbft-db"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtdb "github.com/cometbft/cometbft/db"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/light/store"
 	"github.com/cometbft/cometbft/types"
@@ -12,7 +12,7 @@ import (
 )
 
 type dbs struct {
-	db     dbm.DB
+	db     cmtdb.DB
 	prefix string
 
 	mtx  cmtsync.RWMutex
@@ -21,7 +21,7 @@ type dbs struct {
 	dbKeyLayout LightStoreKeyLayout
 }
 
-func isEmpty(db dbm.DB) bool {
+func isEmpty(db cmtdb.DB) bool {
 	iter, err := db.Iterator(nil, nil)
 	if err != nil {
 		panic(err)
@@ -34,7 +34,7 @@ func isEmpty(db dbm.DB) bool {
 	return true
 }
 
-func setDBKeyLayout(db dbm.DB, lightStore *dbs, dbKeyLayoutVersion string) {
+func setDBKeyLayout(db cmtdb.DB, lightStore *dbs, dbKeyLayoutVersion string) {
 	if !isEmpty(db) {
 		var version []byte
 		var err error
@@ -65,11 +65,11 @@ func setDBKeyLayout(db dbm.DB, lightStore *dbs, dbKeyLayoutVersion string) {
 
 // New returns a Store that wraps any DB (with an optional prefix in case you
 // want to use one DB with many light clients).
-func New(db dbm.DB, prefix string) store.Store {
+func New(db cmtdb.DB, prefix string) store.Store {
 	return NewWithDBVersion(db, prefix, "")
 }
 
-func NewWithDBVersion(db dbm.DB, prefix string, dbKeyVersion string) store.Store {
+func NewWithDBVersion(db cmtdb.DB, prefix string, dbKeyVersion string) store.Store {
 	dbStore := &dbs{db: db, prefix: prefix}
 
 	setDBKeyLayout(db, dbStore, dbKeyVersion)

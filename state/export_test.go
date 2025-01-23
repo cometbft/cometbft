@@ -1,8 +1,8 @@
 package state
 
 import (
-	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -39,7 +39,7 @@ func ValidateValidatorUpdates(abciUpdates []abci.ValidatorUpdate, params types.V
 
 // SaveValidatorsInfo is an alias for the private saveValidatorsInfo method in
 // store.go, exported exclusively and explicitly for testing.
-func SaveValidatorsInfo(db dbm.DB, height, lastHeightChanged int64, valSet *types.ValidatorSet, keyLayoutVersion string) error {
+func SaveValidatorsInfo(db cmtdb.DB, height, lastHeightChanged int64, valSet *types.ValidatorSet, keyLayoutVersion string) error {
 	var keyLayout KeyLayout
 	switch keyLayoutVersion {
 	case "v1", "":

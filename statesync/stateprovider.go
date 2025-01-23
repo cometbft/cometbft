@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	dbm "github.com/cometbft/cometbft-db"
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/light"
@@ -71,8 +71,20 @@ func NewLightClientStateProviderWithDBKeyVersion(ctx context.Context,
 		providerRemotes[provider] = server
 	}
 
-	lc, err := light.NewClient(ctx, chainID, trustOptions, providers[0], providers[1:],
-		lightdb.NewWithDBVersion(dbm.NewMemDB(), "", dbKeyLayoutVereson), light.Logger(logger), light.MaxRetryAttempts(5))
+	lightClientDB, err := cmtdb.NewInMem()
+	if err != nil {
+		return nil, fmt.Errorf("creating light client state provider: %w", err)
+	}
+	lc, err := light.NewClient(
+		ctx,
+		chainID,
+		trustOptions,
+		providers[0],
+		providers[1:],
+		lightdb.NewWithDBVersion(lightClientDB, "", dbKeyLayoutVereson),
+		light.Logger(logger),
+		light.MaxRetryAttempts(5),
+	)
 	if err != nil {
 		return nil, err
 	}

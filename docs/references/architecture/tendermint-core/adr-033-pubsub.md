@@ -55,7 +55,7 @@ channels to distribute msg to these goroutines).
 
 ### Non-blocking send
 
-There is also a question whenever we should have a non-blocking send.
+There is also a question whether we should have a non-blocking send.
 Currently, sends are blocking, so publishing to one client can block on
 publishing to another. This means a slow or unresponsive client can halt the
 system. Instead, we can use a non-blocking send:

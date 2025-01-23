@@ -113,7 +113,7 @@ and [some learnings](https://docs.google.com/document/d/1npGTAa1qxe8EQZ1wG0a0Sip
 Note this still requires the honest majority peer assumption.
 
 As an eager protocol, warp-sync can efficiently compress larger, more
-predicatable chunks once per snapshot and service many new peers. By
+predictable chunks once per snapshot and service many new peers. By
 comparison lazy chunkers would have to compress each chunk at request
 time.
 

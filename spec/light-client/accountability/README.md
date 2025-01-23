@@ -265,7 +265,7 @@ Execution:
 
 Consequences:
 
-* Only a single faulty validator that previously precommited nil did equivocation, while the other 1/3 of faulty validators actually executed an attack that has exactly the same sequence of messages as part of amnesia attack. Detecting this kind of attack boil down to mechanisms for equivocation and amnesia.
+* Only a single faulty validator that previously precommitted nil did equivocation, while the other 1/3 of faulty validators actually executed an attack that has exactly the same sequence of messages as part of amnesia attack. Detecting this kind of attack boil down to mechanisms for equivocation and amnesia.
 
 **Q:** should we keep this as a separate kind of attack? It seems that equivocation, amnesia and phantom validators are the only kind of attack we need to support and this gives us security also in other cases. This would not be surprising as equivocation and amnesia are attacks that followed from the protocol and phantom attack is not really an attack to Tendermint but more to the Cosmos Proof of Stake module.
 

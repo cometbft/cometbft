@@ -97,7 +97,7 @@ Invalid headers result in dropping the witness, lack of response or not having t
 just as headers that have the same hash. Headers, however,
 of a different hash then trigger the detection process between the primary and that particular witness.
 
-This begins with verification of the witness's header via skipping verification which is run in tande
+This begins with verification of the witness's header via skipping verification which is run in tandem
 with locating the Light Bifurcation Point
 
 ![](img/light-client-detector.png)

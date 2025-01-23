@@ -67,7 +67,7 @@ Arguments in favor of leaving evidence handling in Tendermint:
   significantly upgrade the mempool. Thus we would need to continue to treat evidence
   distinctly and update the ABCI to either support sending Evidence through
   CheckTx/DeliverTx, or to introduce new CheckEvidence/DeliverEvidence methods.
-  In either case we'd need to make more changes to ABCI then if Tendermint
+  In either case we'd need to make more changes to ABCI than if Tendermint
   handled things and we just added support for another evidence type that could be included
   in BeginBlock.
 

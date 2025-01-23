@@ -10,7 +10,7 @@ of Tendermint - Consensus - which currently resides in the `consensus` package.
 Over time there has been high friction making changes to the package due to the
 algorithm being scattered in a side-effectful container (the current
 `ConsensusState`). In order to test the algorithm a large object-graph needs to
-be set up and even than the non-deterministic parts of the container makes will
+be set up and even then the non-deterministic parts of the container makes will
 prevent high certainty. Where ideally we have a 1-to-1 representation of the
 [spec](https://github.com/tendermint/spec), ready and easy to test for domain
 experts.

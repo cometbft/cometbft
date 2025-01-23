@@ -39,7 +39,7 @@ limitations of a particular language binding.
   prost-build.
 * [Notes](https://docs.google.com/document/d/1DoxKiYtUx44xZv5my-bkfWZKY6TklvxpSUrdX9yOpNw/edit?usp=sharing) on the discussion during a 13 Apr 2023 meeting, detailing the
   considerations specific to CometBFT versioning.
-* [ADR 103](https://github.com/cometbft/cometbft/blob/main/docs/architecture/adr-103-proto-versioning.md) details the versioning approach as currently
+* [ADR 103](https://github.com/cometbft/cometbft/blob/main/docs/references/architecture/adr-103-proto-versioning.md) details the versioning approach as currently
   accepted.
 
 ## Discussion

@@ -10,7 +10,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cometbft/cometbft-db v1.0.1
 	github.com/cometbft/cometbft-load-test v0.3.0
-	github.com/cometbft/cometbft/api v0.0.0-20250106160918-b965571e1d53
+	github.com/cometbft/cometbft/api v0.0.0-20250113073452-29d6e45468e6
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/creachadair/atomicfile v0.3.6
 	github.com/creachadair/tomledit v0.0.27
@@ -50,7 +50,7 @@ require (
 	golang.org/x/sync v0.10.0
 	golang.org/x/text v0.21.0
 	gonum.org/v1/gonum v0.15.1
-	google.golang.org/grpc v1.69.2
+	google.golang.org/grpc v1.69.4
 )
 
 require (
@@ -148,6 +148,6 @@ retract (
 	v0.38.4
 	// a breaking change was introduced
 	v0.38.3
-	// superseeded by v0.38.3 because of ASA-2024-001
+	// superseded by v0.38.3 because of ASA-2024-001
 	[v0.38.0, v0.38.2]
 )

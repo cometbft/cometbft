@@ -15,9 +15,10 @@ import (
 
 // BitArray is a thread-safe implementation of a bit array.
 type BitArray struct {
-	mtx   sync.Mutex
-	Bits  int      `json:"bits"`  // NOTE: persisted via reflect, must be exported
-	Elems []uint64 `json:"elems"` // NOTE: persisted via reflect, must be exported
+	mtx          sync.Mutex
+	TrueBitCount int      `json:"true_bits_count"` // Number of bits set to true
+	Bits         int      `json:"bits"`            // NOTE: persisted via reflect, must be exported
+	Elems        []uint64 `json:"elems"`           // NOTE: persisted via reflect, must be exported
 }
 
 // NewBitArray returns a new bit array.
@@ -27,8 +28,9 @@ func NewBitArray(bits int) *BitArray {
 		return nil
 	}
 	return &BitArray{
-		Bits:  bits,
-		Elems: make([]uint64, (bits+63)/64),
+		Bits:         bits,
+		Elems:        make([]uint64, (bits+63)/64),
+		TrueBitCount: 0,
 	}
 }
 
@@ -40,13 +42,15 @@ func NewBitArrayFromFn(bits int, fn func(int) bool) *BitArray {
 		return nil
 	}
 	bA := &BitArray{
-		Bits:  bits,
-		Elems: make([]uint64, (bits+63)/64),
+		Bits:         bits,
+		Elems:        make([]uint64, (bits+63)/64),
+		TrueBitCount: 0,
 	}
 	for i := 0; i < bits; i++ {
 		v := fn(i)
 		if v {
 			bA.Elems[i/64] |= (uint64(1) << uint(i%64))
+			bA.TrueBitCount++
 		}
 	}
 	return bA
@@ -93,9 +97,18 @@ func (bA *BitArray) setIndex(i int, v bool) bool {
 	if i >= bA.Bits {
 		return false
 	}
+	// Check current bit value
+	oldValue := bA.getIndex(i)
+
 	if v {
+		if !oldValue {
+			bA.TrueBitCount++
+		}
 		bA.Elems[i/64] |= (uint64(1) << uint(i%64))
 	} else {
+		if oldValue {
+			bA.TrueBitCount--
+		}
 		bA.Elems[i/64] &= ^(uint64(1) << uint(i%64))
 	}
 	return true
@@ -115,17 +128,27 @@ func (bA *BitArray) copy() *BitArray {
 	c := make([]uint64, len(bA.Elems))
 	copy(c, bA.Elems)
 	return &BitArray{
-		Bits:  bA.Bits,
-		Elems: c,
+		Bits:         bA.Bits,
+		Elems:        c,
+		TrueBitCount: bA.TrueBitCount,
 	}
 }
 
 func (bA *BitArray) copyBits(bits int) *BitArray {
 	c := make([]uint64, (bits+63)/64)
 	copy(c, bA.Elems)
+
+	// Calculate true bit count for the new size
+	newTrueBitCount := 0
+	for i := 0; i < bits; i++ {
+		if c[i/64]&(uint64(1)<<uint(i%64)) > 0 {
+			newTrueBitCount++
+		}
+	}
 	return &BitArray{
-		Bits:  bits,
-		Elems: c,
+		Bits:         bits,
+		Elems:        c,
+		TrueBitCount: newTrueBitCount,
 	}
 }
 
@@ -193,6 +216,9 @@ func (bA *BitArray) not() *BitArray {
 	for i := 0; i < len(c.Elems); i++ {
 		c.Elems[i] = ^c.Elems[i]
 	}
+
+	// Flip count is simply total bits minus current true bits
+	c.TrueBitCount = c.Bits - c.TrueBitCount
 	return c
 }
 
@@ -268,34 +294,16 @@ func (bA *BitArray) PickRandom(r *rand.Rand) (int, bool) {
 	}
 
 	bA.mtx.Lock()
-	numTrueIndices := bA.getNumTrueIndices()
-	if numTrueIndices == 0 { // no bits set to true
+	if bA.TrueBitCount == 0 { // no bits set to true
 		bA.mtx.Unlock()
 		return 0, false
 	}
-	index := bA.getNthTrueIndex(r.Intn(numTrueIndices))
+	index := bA.getNthTrueIndex(r.Intn(bA.TrueBitCount))
 	bA.mtx.Unlock()
 	if index == -1 {
 		return 0, false
 	}
 	return index, true
-}
-
-func (bA *BitArray) getNumTrueIndices() int {
-	count := 0
-	numElems := len(bA.Elems)
-	// handle all elements except the last one
-	for i := 0; i < numElems-1; i++ {
-		count += bits.OnesCount64(bA.Elems[i])
-	}
-	// handle last element
-	numFinalBits := bA.Bits - (numElems-1)*64
-	for i := 0; i < numFinalBits; i++ {
-		if (bA.Elems[numElems-1] & (uint64(1) << uint64(i))) > 0 {
-			count++
-		}
-	}
-	return count
 }
 
 // getNthTrueIndex returns the index of the nth true bit in the bit array.
@@ -442,6 +450,7 @@ func (bA *BitArray) UnmarshalJSON(bz []byte) error {
 		// into a pointer with pre-allocated BitArray.
 		bA.Bits = 0
 		bA.Elems = nil
+		bA.TrueBitCount = 0
 		return nil
 	}
 
@@ -459,6 +468,7 @@ func (bA *BitArray) UnmarshalJSON(bz []byte) error {
 		// Treat it as if we encountered the case: b == "null"
 		bA.Bits = 0
 		bA.Elems = nil
+		bA.TrueBitCount = 0
 		return nil
 	}
 
@@ -468,9 +478,18 @@ func (bA *BitArray) UnmarshalJSON(bz []byte) error {
 		}
 	}
 
+	trueCount := 0
+	for i := 0; i < numBits; i++ {
+		if bits[i] == 'x' {
+			bA2.SetIndex(i, true)
+			trueCount++
+		}
+	}
+
 	// Instead of *bA = *bA2
 	bA.Bits = bA2.Bits
 	bA.Elems = make([]uint64, len(bA2.Elems))
+	bA.TrueBitCount = trueCount
 	copy(bA.Elems, bA2.Elems)
 	return nil
 }
@@ -498,5 +517,13 @@ func (bA *BitArray) FromProto(protoBitArray *cmtprotobits.BitArray) {
 	bA.Bits = int(protoBitArray.Bits)
 	if len(protoBitArray.Elems) > 0 {
 		bA.Elems = protoBitArray.Elems
+
+		// Recalculate TrueBitCount
+		bA.TrueBitCount = 0
+		for i := 0; i < bA.Bits; i++ {
+			if bA.getIndex(i) {
+				bA.TrueBitCount++
+			}
+		}
 	}
 }

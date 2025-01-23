@@ -126,7 +126,10 @@ func (privKey *PrivKey) Zeroize() {
 }
 
 // MarshalJSON marshals the private key to JSON.
-func (privKey *PrivKey) MarshalJSON() ([]byte, error) {
+//
+// XXX: Not a pointer because our JSON encoder (libs/json) does not correctly
+// handle pointers.
+func (privKey PrivKey) MarshalJSON() ([]byte, error) {
 	return json.Marshal(privKey.Bytes())
 }
 
@@ -210,6 +213,9 @@ func (pubKey PubKey) Equals(other crypto.PubKey) bool {
 }
 
 // MarshalJSON marshals the public key to JSON.
+//
+// XXX: Not a pointer because our JSON encoder (libs/json) does not correctly
+// handle pointers.
 func (pubkey PubKey) MarshalJSON() ([]byte, error) {
 	return json.Marshal(pubkey.Bytes())
 }

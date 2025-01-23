@@ -47,7 +47,7 @@ func newParser(l *lexer.Lexer) *parser {
 }
 
 // Parse returns the BSR set containing the parse forest.
-// If the parse was successfull []*Error is nil
+// If the parse was successful []*Error is nil
 func Parse(l *lexer.Lexer) (*bsr.Set, []*Error) {
 	return newParser(l).parse()
 }
@@ -2066,7 +2066,7 @@ type Error struct {
 	// Index of token that caused the error.
 	cI int
 
-	// Grammar slot at which the error occured.
+	// Grammar slot at which the error occurred.
 	Slot slot.Label
 
 	// The token at which the error occurred.

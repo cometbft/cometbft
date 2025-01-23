@@ -216,8 +216,9 @@ When updating dependencies, please only update the particular dependencies you
 need. Instead of running `go get -u=patch`, which will update anything, specify
 exactly the dependency you want to update.
 
-Do not bump the major Go version in a patch release (namely, `v0.34.x`, `v0.37.x`,
-`v0.38.x` branches) unless there's a pressing reason to do so (e.g., known security vulnerabilities).
+Do not bump the major Go version in a patch release (namely, `v0.38.x`
+branches) unless there's a pressing reason to do so (e.g., known security
+vulnerabilities).
 
 ## Logging
 

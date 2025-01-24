@@ -6,7 +6,7 @@ set -e
 
 # Get the version from the environment, or try to figure it out.
 if [ -z $VERSION ]; then
-	VERSION=$(awk -F\" 'CMTSemVer =/ { print $2; exit }' < version/version.go)
+	VERSION=$(awk -F\" '/CMTSemVer =/ { print $2; exit }' < version/version.go)
 fi
 if [ -z "$VERSION" ]; then
     echo "Please specify a version."
@@ -20,7 +20,7 @@ rm -rf build/pkg
 mkdir -p build/pkg
 
 # Get the git commit
-VERSION := "$(shell git describe --always)"
+VERSION=$(git describe --always)
 GIT_IMPORT="github.com/cometbft/cometbft/version"
 
 # Determine the arch/os combos we're building for
@@ -37,6 +37,8 @@ make tools
 echo "==> Building..."
 IFS=' ' read -ra arch_list <<< "$XC_ARCH"
 IFS=' ' read -ra os_list <<< "$XC_OS"
+unset IFS
+
 for arch in "${arch_list[@]}"; do
 	for os in "${os_list[@]}"; do
 		if [[ "$XC_EXCLUDE" !=  *" $os/$arch "* ]]; then

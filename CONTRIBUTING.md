@@ -45,7 +45,7 @@ release?
    If a single PR absolutely has to be larger, it _must_ be structured such that
    it can be reviewed commit by commit, with each commit doing _one logical
    thing_ (with a good description of what it aims to achieve in the Git
-   commit), and each commit ideally being no larger than 300 lines of code
+   commit), and each commit ideally be no larger than 300 lines of code
    changes. Poorly structured pull requests may be rejected immediately with a
    request to restructure them.
 

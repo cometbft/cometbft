@@ -22,7 +22,7 @@ While `v1` of the blockchain reactor has shown significant improvements in terms
 - Peer communication is spread over multiple components creating complex dependency graph which must be mocked out during testing.
 - Timeouts modeled as stateful tickers introduce non-determinism in tests
 
-This ADR is meant to specify the missing components and control necessary to achieve [ADR-40](https://github.com/tendermint/tendermint/blob/main/docs/architecture/adr-040-blockchain-reactor-refactor.md).
+This ADR is meant to specify the missing components and control necessary to achieve [ADR-40](https://github.com/tendermint/tendermint/blob/main_backup/docs/architecture/adr-040-blockchain-reactor-refactor.md).
 
 ## Decision
 
@@ -41,7 +41,7 @@ Diagram](https://github.com/tendermint/tendermint/blob/5cf570690f989646fb3b615b7
 
 ### Reactor changes in detail
 
-The reactor will include a demultiplexing routine which will send each message to each sub routine for independent processing. Each sub routine will then select the messages it's interested in and call the handle specific function specified in [ADR-40](https://github.com/tendermint/tendermint/blob/main/docs/architecture/adr-040-blockchain-reactor-refactor.md). The demuxRoutine acts as "pacemaker" setting the time in which events are expected to be handled.
+The reactor will include a demultiplexing routine which will send each message to each sub routine for independent processing. Each sub routine will then select the messages it's interested in and call the handle specific function specified in [ADR-40](https://github.com/tendermint/tendermint/blob/main_backup/docs/architecture/adr-040-blockchain-reactor-refactor.md). The demuxRoutine acts as "pacemaker" setting the time in which events are expected to be handled.
 
 ```go
 func demuxRoutine(msgs, scheduleMsgs, processorMsgs, ioMsgs) {

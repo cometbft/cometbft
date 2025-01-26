@@ -257,8 +257,8 @@ visual inspection.
 - Tendermint Core (Go): [client][socket-client], [server][socket-server]
 - Informal Systems [tendermint-rs](https://github.com/informalsystems/tendermint-rs) (Rust): [client](https://github.com/informalsystems/tendermint-rs/blob/master/abci/src/client.rs), [server](https://github.com/informalsystems/tendermint-rs/blob/master/abci/src/server.rs)
 - Tendermint [js-abci](https://github.com/tendermint/js-abci) (JS): [server](https://github.com/tendermint/js-abci/blob/master/src/server.js)
-- [Hotmoka](https://github.com/Hotmoka/hotmoka) ABCI (Java): [server](https://github.com/Hotmoka/hotmoka/blob/master/io-hotmoka-tendermint-abci/src/main/java/io/hotmoka/tendermint_abci/Server.java)
-- [Tower ABCI](https://github.com/penumbra-zone/tower-abci) (Rust): [server](https://github.com/penumbra-zone/tower-abci/blob/main/src/server.rs)
+- [Hotmoka](https://github.com/Hotmoka/hotmoka) ABCI (Java): [server](https://github.com/Hotmoka/hotmoka/blob/master/io-hotmoka-node-tendermint-abci/src/main/java/io/hotmoka/tendermint/abci/Server.java)
+- [Tower ABCI](https://github.com/penumbra-zone/tower-abci) (Rust): [server](https://github.com/penumbra-zone/tower-abci/blob/main/src/v038/server.rs)
 - [abci-host](https://github.com/datopia/abci-host) (Clojure): [server](https://github.com/datopia/abci-host/blob/master/src/abci/host.clj)
 - [abci_server](https://github.com/KrzysiekJ/abci_server) (Erlang): [server](https://github.com/KrzysiekJ/abci_server/blob/master/src/abci_server.erl)
 - [py-abci](https://github.com/davebryson/py-abci) (Python): [server](https://github.com/davebryson/py-abci/blob/master/src/abci/server.py)

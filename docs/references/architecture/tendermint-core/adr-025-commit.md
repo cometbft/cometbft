@@ -121,7 +121,7 @@ We may want to consider supporting other blockIDs later, as a way to capture
 evidence that might be helpful. We should clarify if/when/how doing so would
 actually help first. To implement it, we could change the `Commit.BlockID`
 field to a slice, where the first entry is the correct block ID and the other
-entries are other BlockIDs that validators precommited before. The BlockIDFlag
+entries are other BlockIDs that validators precommitted before. The BlockIDFlag
 enum can be extended to represent these additional block IDs on a per block
 basis.
 

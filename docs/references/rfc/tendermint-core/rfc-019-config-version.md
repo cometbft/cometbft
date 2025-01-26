@@ -294,7 +294,7 @@ balance:
 [condiff]: https://github.com/tendermint/tendermint/blob/main/scripts/confix/condiff
 [plan]: https://github.com/tendermint/tendermint/blob/main/scripts/confix/plan.go
 [testdata]: https://github.com/tendermint/tendermint/blob/main/scripts/confix/testdata
-[adr075]: https://github.com/tendermint/tendermint/blob/main/docs/architecture/adr-075-rpc-subscription.md
+[adr075]: https://github.com/tendermint/tendermint/blob/main_backup/docs/architecture/adr-075-rpc-subscription.md
 
 ## Appendix: Research Notes
 

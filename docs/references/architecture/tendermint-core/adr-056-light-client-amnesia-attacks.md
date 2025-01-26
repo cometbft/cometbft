@@ -40,7 +40,7 @@ In summary, this seemed like too much to ask of the application to implement onl
 - Light clients will still be able to detect amnesia attacks so long as the assumption of having at least one correct witness holds
 - Light clients will gossip the attack to witnesses and halt thus failing to validate the incorrect block (and therefore not being fooled)
 - Validators will propose and commit evidence of the amnesia attack on chain
-- No evidence will be passed to the application indicting any malicious validators, thus meaning that no malicious validators will be punished for performing the attack
+- No evidence will be passed to the application indicating any malicious validators, thus meaning that no malicious validators will be punished for performing the attack
 - If a light clients bubble of providers are all faulty the light client will falsely validate amnesia attacks as well as any other 1/3+ light client attack.
 
 ## Status

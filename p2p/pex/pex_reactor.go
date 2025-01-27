@@ -67,11 +67,10 @@ const (
 type Reactor struct {
 	p2p.BaseReactor
 
-	book              AddrBook
-	config            *ReactorConfig
-	ensurePeersCh     chan struct{} // Wakes up ensurePeersRoutine()
-	ensurePeersPeriod time.Duration // TODO: should go in the config
-	peersRoutineWg    sync.WaitGroup
+	book           AddrBook
+	config         *ReactorConfig
+	ensurePeersCh  chan struct{} // Wakes up ensurePeersRoutine()
+	peersRoutineWg sync.WaitGroup
 
 	// maps to prevent abuse
 	requestsSent         *cmap.CMap // ID->struct{}: unanswered send requests
@@ -88,7 +87,7 @@ type Reactor struct {
 func (r *Reactor) minReceiveRequestInterval() time.Duration {
 	// NOTE: must be less than ensurePeersPeriod, otherwise we'll request
 	// peers too quickly from others and they'll think we're bad!
-	return r.ensurePeersPeriod / 3
+	return r.config.EnsurePeersPeriod / 3
 }
 
 // ReactorConfig holds reactor specific configuration data.
@@ -104,6 +103,9 @@ type ReactorConfig struct {
 	// Maximum pause when redialing a persistent peer (if zero, exponential backoff is used)
 	PersistentPeersMaxDialPeriod time.Duration
 
+	// Period to ensure sufficient peers are connected
+	EnsurePeersPeriod time.Duration
+
 	// Seeds is a list of addresses reactor may use
 	// if it can't connect to peers in the addrbook.
 	Seeds []string
@@ -116,11 +118,14 @@ type _attemptsToDial struct {
 
 // NewReactor creates new PEX reactor.
 func NewReactor(b AddrBook, config *ReactorConfig) *Reactor {
+	if config.EnsurePeersPeriod == 0 {
+		config.EnsurePeersPeriod = defaultEnsurePeersPeriod
+	}
+
 	r := &Reactor{
 		book:                 b,
 		config:               config,
 		ensurePeersCh:        make(chan struct{}),
-		ensurePeersPeriod:    defaultEnsurePeersPeriod,
 		requestsSent:         cmap.NewCMap(),
 		lastReceivedRequests: cmap.NewCMap(),
 		crawlPeerInfos:       make(map[nodekey.ID]crawlPeerInfo),
@@ -388,18 +393,13 @@ func (*Reactor) SendAddrs(p Peer, netAddrs []*na.NetAddr) {
 	_ = p.Send(e)
 }
 
-// SetEnsurePeersPeriod sets period to ensure peers connected.
-func (r *Reactor) SetEnsurePeersPeriod(d time.Duration) {
-	r.ensurePeersPeriod = d
-}
-
 // Ensures that sufficient peers are connected. (continuous).
 func (r *Reactor) ensurePeersRoutine() {
 	defer r.peersRoutineWg.Done()
 
 	var (
 		seed   = cmtrand.NewRand()
-		jitter = seed.Int63n(r.ensurePeersPeriod.Nanoseconds())
+		jitter = seed.Int63n(r.config.EnsurePeersPeriod.Nanoseconds())
 	)
 
 	// Randomize first round of communication to avoid thundering herd.
@@ -414,7 +414,7 @@ func (r *Reactor) ensurePeersRoutine() {
 	r.ensurePeers(true)
 
 	// fire periodically
-	ticker := time.NewTicker(r.ensurePeersPeriod)
+	ticker := time.NewTicker(r.config.EnsurePeersPeriod)
 	defer ticker.Stop()
 	for {
 		select {

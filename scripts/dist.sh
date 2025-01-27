@@ -20,7 +20,7 @@ rm -rf build/pkg
 mkdir -p build/pkg
 
 # Get the git commit
-VERSION := "$(shell git describe --always)"
+VERSION=$(git describe --always)
 GIT_IMPORT="github.com/cometbft/cometbft/version"
 
 # Determine the arch/os combos we're building for

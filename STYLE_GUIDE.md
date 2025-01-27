@@ -21,7 +21,7 @@ scroll down and understand the functionality of it just as well as you do. A loo
 * Options (only if they are seen as critical to the struct else they should be placed in another file)
 * Initialization / Start and stop of the service
 * Msgs/Events
-* Public Functions (In order of most important)
+* Public Functions (In order of most importance)
 * Private/helper functions
 * Auxiliary structs and function (can also be above private functions or in a separate file)
 
@@ -40,7 +40,7 @@ scroll down and understand the functionality of it just as well as you do. A loo
 
 * Use a space after comment deliminter (ex. `// your comment`).
 * Many comments are not sentences. These should begin with a lowercase letter and end without a period.
-* Conversely, sentences in comments should be sentenced-cased and end with a period.
+* Conversely, sentences in comments should be sentence-cased and end with a period.
 
 ## Linters
 

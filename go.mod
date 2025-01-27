@@ -55,7 +55,7 @@ require (
 
 require (
 	github.com/go-git/go-git/v5 v5.13.2
-	google.golang.org/protobuf v1.36.3
+	google.golang.org/protobuf v1.36.4
 )
 
 require (

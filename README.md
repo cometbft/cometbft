@@ -28,7 +28,7 @@ primary building block for the [Interchain Stack](https://interchain.io/). Histo
 CometBFT originated as a fork of [Tendermint Core][tm-core] in early 2023
 (announcement [here][comet-announcement]) and since then it diverged significantly by adopting modern features such as [PBTS][pbts] or [ABCI v2][abci-v2]. CometBFT provides [optimistic responsiveness][optimistic-responsive] guarantees.
 
-For protocol details, refer to the [CometBFT Specification](./spec/README.md).
+For protocol details, please take a look at the [CometBFT Specification](./spec/README.md).
 
 For a detailed analysis of the Tendermint consensus protocol, including safety and liveness
 proofs, read our paper, "[The latest gossip on BFT

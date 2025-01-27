@@ -44,7 +44,7 @@ This file defines the JSON-RPC spec of CometBFT. This is meant to be implemented
 
 ## Timestamps
 
-Timestamps in the RPC layer of CometBFT follows RFC3339Nano.  The RFC3339Nano format removes trailing zeros from the seconds field.
+Timestamps in the RPC layer of CometBFT follow RFC3339Nano.  The RFC3339Nano format removes trailing zeros from the seconds field.
 
 This means if a block has a timestamp like: `1985-04-12T23:20:50.5200000Z`, the value returned in the RPC will be `1985-04-12T23:20:50.52Z`.
 
@@ -802,12 +802,12 @@ curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"meth
 
 ### GenesisChunked
 
-Get the genesis document in a chunks to support easily transferring larger documents.
+Get the genesis document in chunks to support easily transferring larger documents.
 
 #### Parameters
 
 - `chunk` (integer): the index number of the chunk that you wish to
-  fetch. These IDs are 0 indexed.
+  fetch. These IDs are 0-indexed.
 
 #### Request
 

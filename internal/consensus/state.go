@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"os"
 	"runtime/debug"
 	"sort"
@@ -1374,9 +1373,6 @@ func (cs *State) timelyProposalMargins() (time.Duration, time.Duration) {
 
 	// cs.ProposalReceiveTime - cs.Proposal.Timestamp >= -1 * Precision
 	// cs.ProposalReceiveTime - cs.Proposal.Timestamp <= MessageDelay + Precision
-	if sp.MessageDelay > math.MaxInt64-sp.Precision { // overflow check: needed for some architectures
-		return -sp.Precision, time.Duration(math.MaxInt64)
-	}
 	return -sp.Precision, sp.MessageDelay + sp.Precision
 }
 

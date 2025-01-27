@@ -284,12 +284,23 @@ func TestConsensusParamsValidation(t *testing.T) {
 			valid: false,
 		},
 		{
-			name: "overflow synchrony",
+			name: "messageDelay too big",
+			params: makeParams(makeParamsArgs{
+				blockBytes:   1,
+				evidenceAge:  2,
+				precision:    1 * time.Second,
+				messageDelay: time.Duration(math.MaxInt64),
+				pbtsHeight:   1,
+			}),
+			valid: false,
+		},
+		{
+			name: "precision too big",
 			params: makeParams(makeParamsArgs{
 				blockBytes:   1,
 				evidenceAge:  2,
 				precision:    time.Duration(math.MaxInt64),
-				messageDelay: time.Duration(math.MaxInt64),
+				messageDelay: 1 * time.Second,
 				pbtsHeight:   1,
 			}),
 			valid: false,
@@ -755,7 +766,7 @@ func durationPtr(t time.Duration) *time.Duration {
 
 // MessageDelay should increase over rounds, while Precision remains unchanged.
 // After 10 rounds, we expect MessageDelay to increase by at least 2x and by at
-// most 10x. See: https://github.com/cometbft/cometbft/issues/2184.
+// most 10x, up to maxMessageDelay. See: https://github.com/cometbft/cometbft/issues/2184.
 func TestParamsAdaptiveSynchronyParams(t *testing.T) {
 	originalSP := DefaultSynchronyParams()
 	assert.Equal(t, originalSP, originalSP.InRound(0),
@@ -775,8 +786,8 @@ func TestParamsAdaptiveSynchronyParams(t *testing.T) {
 		// It should not increase a lot per round, say more than 25%
 		// Safely increase message delay, accounting for overflows.
 		var maxMessageDelay time.Duration
-		if int64(lastSP.MessageDelay) > math.MaxInt64-int64(lastSP.MessageDelay)/4 {
-			maxMessageDelay = time.Duration(math.MaxInt64)
+		if lastSP.MessageDelay > MaxMessageDelay {
+			maxMessageDelay = MaxMessageDelay
 		} else {
 			maxMessageDelay = lastSP.MessageDelay + lastSP.MessageDelay/4
 		}
@@ -792,18 +803,18 @@ func TestParamsAdaptiveSynchronyParams(t *testing.T) {
 		"MessageDelay must not increase by more than 10 times after 10 rounds")
 }
 
-func TestParamsAdaptiveSynchronyParamsOverflow(t *testing.T) {
+func TestParamsAdaptiveSynchronyParamsReachesMaximum(t *testing.T) {
 	sp := DefaultSynchronyParams()
 	lastSP := sp
 	var overflowRound int32
 	var overflowMessageDelay time.Duration
-	// Exponentially increase rounds to find when it overflows
-	for round := int32(1); round > 0; /* no overflow */ round *= 2 {
+	// Exponentially increase rounds to find when it reached max
+	for round := int32(1); round > 0; round *= 2 {
 		adaptedSP := sp.InRound(round)
 		assert.Equal(t, adaptedSP.Precision, lastSP.Precision,
 			"Precision must not change over rounds")
 
-		if adaptedSP.MessageDelay == lastSP.MessageDelay { // overflow
+		if adaptedSP.MessageDelay == lastSP.MessageDelay { // reached max
 			if overflowRound == 0 {
 				overflowRound = round / 2
 				overflowMessageDelay = adaptedSP.MessageDelay
@@ -817,7 +828,7 @@ func TestParamsAdaptiveSynchronyParamsOverflow(t *testing.T) {
 		lastSP = adaptedSP
 	}
 
-	// Linearly search for the exact overflow round
+	// Linearly search for the exact round when it reached max
 	for round := overflowRound / 2; round <= overflowRound; round++ {
 		adaptedSP := sp.InRound(round)
 		if adaptedSP.MessageDelay == overflowMessageDelay {
@@ -833,8 +844,8 @@ func TestParamsAdaptiveSynchronyParamsOverflow(t *testing.T) {
 	assert.Greater(t, overflowSP.MessageDelay, preOverflowSP.MessageDelay,
 		"MessageDelay must increase over rounds")
 
-	t.Log("Pre-overflow round", overflowRound-1, "MessageDelay",
+	t.Log("Pre-max round", overflowRound-1, "MessageDelay",
 		preOverflowSP.MessageDelay)
-	t.Log("Overflow round", overflowRound, "MessageDelay",
+	t.Log("Max round", overflowRound, "MessageDelay",
 		overflowSP.MessageDelay)
 }

@@ -162,9 +162,10 @@ func (sp SynchronyParams) InRound(round int32) SynchronyParams {
 	}
 
 	d := time.Duration(math.Pow(1.1, float64(round)) * float64(sp.MessageDelay))
-	// NOTE: we don't need to check for overflow here, as MaxMessageDelay is
-	// pretty small.
-	if d > MaxMessageDelay {
+	// Overflow check (d < 0): required for certain architectures.
+	//   Used in tests with large round increments.
+	//   Not necessary in production where round grows linearly.
+	if d < 0 || d > MaxMessageDelay {
 		return SynchronyParams{
 			Precision:    sp.Precision,
 			MessageDelay: MaxMessageDelay,

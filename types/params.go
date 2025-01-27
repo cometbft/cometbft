@@ -157,13 +157,13 @@ type SynchronyParams struct {
 //
 // There's a cap (MaxMessageDelay) on the MessageDelay to prevent overflow.
 func (sp SynchronyParams) InRound(round int32) SynchronyParams {
-	// If it's the fist round or the MessageDelay is already at the maximum value
-	if round <= 0 || sp.MessageDelay >= MaxMessageDelay {
+	if round <= 0 {
 		return sp
 	}
 
-	// If the new MessageDelay is at the maximum value
 	d := time.Duration(math.Pow(1.1, float64(round)) * float64(sp.MessageDelay))
+	// NOTE: we don't need to check for overflow here, as MaxMessageDelay is
+	// pretty small.
 	if d > MaxMessageDelay {
 		return SynchronyParams{
 			Precision:    sp.Precision,

@@ -137,6 +137,7 @@ func featureEnabled(enableHeight int64, currentHeight int64, f string) bool {
 // block timestamps validity, refer to the PBTS specification:
 // https://github.com/cometbft/cometbft/tree/main/spec/consensus/proposer-based-timestamp
 type SynchronyParams struct {
+	// Maximum allowed value: MaxPrecision.
 	Precision time.Duration `json:"precision,string"`
 	// Maximum allowed value: MaxMessageDelay.
 	MessageDelay time.Duration `json:"message_delay,string"`

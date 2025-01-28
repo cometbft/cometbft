@@ -161,17 +161,10 @@ func (sp SynchronyParams) InRound(round int32) SynchronyParams {
 		return sp
 	}
 
-	d := time.Duration(math.Pow(1.1, float64(round)) * float64(sp.MessageDelay))
-	// Overflow check (d < 0): required for certain architectures.
-	//   Used in tests with large round increments.
-	//   Not necessary in production where round grows linearly.
-	if d < 0 || d > MaxMessageDelay {
-		return SynchronyParams{
-			Precision:    sp.Precision,
-			MessageDelay: MaxMessageDelay,
-		}
-	}
-
+	d := time.Duration(math.Min(
+		float64(MaxMessageDelay),
+		math.Pow(1.1, float64(round))*float64(sp.MessageDelay),
+	))
 	return SynchronyParams{
 		Precision:    sp.Precision,
 		MessageDelay: d,

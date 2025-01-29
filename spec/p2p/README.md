@@ -22,7 +22,7 @@ The peer-to-peer (p2p) communication layer is then the component of CometBFT tha
 2. manages the communication between a node and the connected peers
 3. intermediates the exchange of messages between peers in CometBFT protocols
 
-The specification the p2p layer is a work in progress,
+The specification of the p2p layer is a work in progress,
 tracked by [issue #19](https://github.com/cometbft/cometbft/issues/19).
 The current content is organized as follows:
 

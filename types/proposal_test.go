@@ -223,11 +223,11 @@ func TestProposalProtoBuf(t *testing.T) {
 
 func TestProposalIsTimely(t *testing.T) {
 	timestamp, err := time.Parse(time.RFC3339, "2019-03-13T23:00:00Z")
+	require.NoError(t, err)
 	sp := SynchronyParams{
 		Precision:    time.Nanosecond,
 		MessageDelay: 2 * time.Nanosecond,
 	}
-	require.NoError(t, err)
 	testCases := []struct {
 		name                string
 		proposalHeight      int64
@@ -285,4 +285,64 @@ func TestProposalIsTimely(t *testing.T) {
 			assert.Equal(t, testCase.expectTimely, ti)
 		})
 	}
+}
+
+func TestProposalIsTimelyOverflow(t *testing.T) {
+	sp := DefaultSynchronyParams()
+	lastSP := sp
+	var overflowRound int32
+	var overflowMessageDelay time.Duration
+	// Exponentially increase rounds to find when it overflows
+	for round := int32(1); round > 0; /* no overflow */ round *= 2 {
+		adaptedSP := sp.InRound(round)
+		if adaptedSP.MessageDelay == lastSP.MessageDelay { // overflow
+			overflowRound = round / 2
+			overflowMessageDelay = lastSP.MessageDelay
+			break
+		}
+		lastSP = adaptedSP
+	}
+
+	// Linearly search for the exact overflow round
+	for round := overflowRound / 2; round <= overflowRound; round++ {
+		adaptedSP := sp.InRound(round)
+		if adaptedSP.MessageDelay == overflowMessageDelay {
+			overflowRound = round
+			break
+		}
+	}
+
+	sp = sp.InRound(overflowRound)
+	t.Log("Overflow round", overflowRound, "MessageDelay", sp.MessageDelay)
+
+	timestamp, err := time.Parse(time.RFC3339, "2019-03-13T23:00:00Z")
+	require.NoError(t, err)
+
+	p := Proposal{
+		Type:      ProposalType,
+		Height:    2,
+		Timestamp: timestamp,
+		Round:     0,
+		POLRound:  -1,
+		BlockID:   testBlockID,
+		Signature: []byte{1},
+	}
+	require.NoError(t, p.ValidateBasic())
+
+	// Timestamp a bit in the future
+	proposalReceiveTime := timestamp.Add(-sp.Precision)
+	assert.True(t, p.IsTimely(proposalReceiveTime, sp))
+
+	// Timestamp far in the future is still rejected
+	proposalReceiveTime = timestamp.Add(-sp.Precision).Add(-1)
+	assert.False(t, p.IsTimely(proposalReceiveTime, sp))
+
+	// Receive time as in the future as it can get
+	proposalReceiveTime = timestamp.Add(sp.MessageDelay).Add(sp.Precision)
+	assert.True(t, p.IsTimely(proposalReceiveTime, sp))
+
+	// Timestamp as in the past as it can get
+	proposalReceiveTime = timestamp
+	p.Timestamp = timestamp.Add(-sp.MessageDelay).Add(-sp.Precision)
+	assert.True(t, p.IsTimely(proposalReceiveTime, sp))
 }

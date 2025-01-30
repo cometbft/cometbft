@@ -1667,6 +1667,13 @@ func TestValidatorSet_AllKeysHaveSameType(t *testing.T) {
 			vals:     NewValidatorSet([]*Validator{randValidator(100), NewValidator(secp256k1.GenPrivKey().PubKey(), 200)}),
 			sameType: false,
 		},
+<<<<<<< HEAD
+=======
+		{
+			vals:     NewValidatorSet([]*Validator{NewValidator(ed25519.GenPrivKey().PubKey(), 200), NewValidator(secp256k1.GenPrivKey().PubKey(), 200)}),
+			sameType: false,
+		},
+>>>>>>> 972fa803 (fix(pbts): hardening tests for overflows in `SynchronyParams` (#4816))
 	}
 
 	for i, tc := range testCases {

@@ -25,15 +25,9 @@ const (
 	// MaxBlockPartsCount is the maximum number of block parts.
 	MaxBlockPartsCount = (MaxBlockSizeBytes / BlockPartSizeBytes) + 1
 
-<<<<<<< HEAD
 	ABCIPubKeyTypeEd25519   = ed25519.KeyType
 	ABCIPubKeyTypeSecp256k1 = secp256k1.KeyType
 	ABCIPubKeyTypeBls12381  = bls12381.KeyType
-=======
-	ABCIPubKeyTypeEd25519      = ed25519.KeyType
-	ABCIPubKeyTypeSecp256k1    = secp256k1.KeyType
-	ABCIPubKeyTypeBls12381     = bls12381.KeyType
-	ABCIPubKeyTypeSecp256k1Eth = secp256k1eth.KeyType
 
 	// MaxMessageDelay is the maximum allowed value for SynchronyParams.MessageDelay.
 	//
@@ -45,7 +39,6 @@ const (
 	// It ensures that the SynchronyParams.Precision does not overflow int64. The
 	// 30s value was chosen based on common sense.
 	MaxPrecision = 30 * time.Second
->>>>>>> 972fa803 (fix(pbts): hardening tests for overflows in `SynchronyParams` (#4816))
 )
 
 var ABCIPubKeyTypesToNames = map[string]string{

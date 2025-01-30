@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"math"
 	"sort"
 	"testing"
 	"time"
@@ -278,6 +279,28 @@ func TestConsensusParamsValidation(t *testing.T) {
 				evidenceAge:  2,
 				precision:    time.Nanosecond,
 				messageDelay: -1,
+				pbtsHeight:   1,
+			}),
+			valid: false,
+		},
+		{
+			name: "messageDelay too big",
+			params: makeParams(makeParamsArgs{
+				blockBytes:   1,
+				evidenceAge:  2,
+				precision:    1 * time.Second,
+				messageDelay: time.Duration(math.MaxInt64),
+				pbtsHeight:   1,
+			}),
+			valid: false,
+		},
+		{
+			name: "precision too big",
+			params: makeParams(makeParamsArgs{
+				blockBytes:   1,
+				evidenceAge:  2,
+				precision:    time.Duration(math.MaxInt64),
+				messageDelay: 1 * time.Second,
 				pbtsHeight:   1,
 			}),
 			valid: false,
@@ -741,6 +764,9 @@ func durationPtr(t time.Duration) *time.Duration {
 	return &t
 }
 
+// MessageDelay should increase over rounds, while Precision remains unchanged.
+// After 10 rounds, we expect MessageDelay to increase by at least 2x and by at
+// most 10x, up to maxMessageDelay. See: https://github.com/cometbft/cometbft/issues/2184.
 func TestParamsAdaptiveSynchronyParams(t *testing.T) {
 	originalSP := DefaultSynchronyParams()
 	assert.Equal(t, originalSP, originalSP.InRound(0),
@@ -748,6 +774,8 @@ func TestParamsAdaptiveSynchronyParams(t *testing.T) {
 
 	lastSP := originalSP
 	for round := int32(1); round <= 10; round++ {
+		t.Logf("Round %d: %v", round, lastSP)
+
 		adaptedSP := originalSP.InRound(round)
 		assert.NotEqual(t, adaptedSP, lastSP)
 		assert.Equal(t, adaptedSP.Precision, lastSP.Precision,
@@ -756,7 +784,13 @@ func TestParamsAdaptiveSynchronyParams(t *testing.T) {
 			"MessageDelay must increase over rounds")
 
 		// It should not increase a lot per round, say more than 25%
-		maxMessageDelay := lastSP.MessageDelay + lastSP.MessageDelay*25/100
+		// Safely increase message delay, accounting for overflows.
+		var maxMessageDelay time.Duration
+		if lastSP.MessageDelay > MaxMessageDelay {
+			maxMessageDelay = MaxMessageDelay
+		} else {
+			maxMessageDelay = lastSP.MessageDelay + lastSP.MessageDelay/4
+		}
 		assert.LessOrEqual(t, adaptedSP.MessageDelay, maxMessageDelay,
 			"MessageDelay should not increase by more than 25% per round")
 
@@ -767,4 +801,51 @@ func TestParamsAdaptiveSynchronyParams(t *testing.T) {
 		"MessageDelay must at least double after 10 rounds")
 	assert.LessOrEqual(t, lastSP.MessageDelay, originalSP.MessageDelay*10,
 		"MessageDelay must not increase by more than 10 times after 10 rounds")
+}
+
+func TestParamsAdaptiveSynchronyParamsReachesMaximum(t *testing.T) {
+	sp := DefaultSynchronyParams()
+	lastSP := sp
+	var overflowRound int32
+	var overflowMessageDelay time.Duration
+	// Exponentially increase rounds to find when it reached max
+	for round := int32(1); round > 0; round *= 2 {
+		adaptedSP := sp.InRound(round)
+		assert.Equal(t, adaptedSP.Precision, lastSP.Precision,
+			"Precision must not change over rounds")
+
+		if adaptedSP.MessageDelay == lastSP.MessageDelay { // reached max
+			if overflowRound == 0 {
+				overflowRound = round / 2
+				overflowMessageDelay = adaptedSP.MessageDelay
+			}
+		} else if adaptedSP.MessageDelay < lastSP.MessageDelay {
+			t.Fatalf("MessageDelay should not decrease over rounds:"+
+				"it was %v (%d), not it is %v (%d)",
+				lastSP.MessageDelay, round/2,
+				adaptedSP.MessageDelay, round)
+		}
+		lastSP = adaptedSP
+	}
+
+	// Linearly search for the exact round when it reached max
+	for round := overflowRound / 2; round <= overflowRound; round++ {
+		adaptedSP := sp.InRound(round)
+		if adaptedSP.MessageDelay == overflowMessageDelay {
+			overflowRound = round
+			break
+		}
+	}
+
+	preOverflowSP := sp.InRound(overflowRound - 1)
+	overflowSP := sp.InRound(overflowRound)
+	assert.Equal(t, preOverflowSP.Precision, overflowSP.Precision,
+		"Precision must not change over rounds")
+	assert.Greater(t, overflowSP.MessageDelay, preOverflowSP.MessageDelay,
+		"MessageDelay must increase over rounds")
+
+	t.Log("Pre-max round", overflowRound-1, "MessageDelay",
+		preOverflowSP.MessageDelay)
+	t.Log("Max round", overflowRound, "MessageDelay",
+		overflowSP.MessageDelay)
 }

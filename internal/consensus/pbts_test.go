@@ -529,6 +529,31 @@ func TestPBTSTooFarInTheFutureProposal(t *testing.T) {
 	require.Nil(t, results.height2.prevote.BlockID.Hash)
 }
 
+func TestPBTSTooFarInTheFutureProposalOverflow(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// On purpose use a MessageDelay that has an overflow, i.e. infinite
+	// Emulates the logic for adaptive MessageDelay over rounds.
+	synchronyParams := types.DefaultSynchronyParams().InRound(256)
+	synchronyParams.Precision = 1 * time.Millisecond
+
+	// localtime < proposedBlockTime - Precision
+	cfg := pbtsTestConfiguration{
+		synchronyParams:                   synchronyParams,
+		timeoutPropose:                    50 * time.Millisecond,
+		height2ProposedBlockOffset:        100 * time.Millisecond,
+		height2ProposalTimeDeliveryOffset: 10 * time.Millisecond,
+		height4ProposedBlockOffset:        150 * time.Millisecond,
+	}
+
+	pbtsTest := newPBTSTestHarness(ctx, t, cfg)
+	results := pbtsTest.run(ctx, t)
+
+	// The proposal
+	require.Nil(t, results.height2.prevote.BlockID.Hash)
+}
+
 // TestPBTSEnableHeight tests the transition between BFT Time and PBTS.
 // The test runs multiple heights. BFT Time is used until the configured
 // PbtsEnableHeight. During some of these heights, the timestamp of votes

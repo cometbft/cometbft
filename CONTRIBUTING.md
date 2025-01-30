@@ -45,7 +45,7 @@ release?
    If a single PR absolutely has to be larger, it _must_ be structured such that
    it can be reviewed commit by commit, with each commit doing _one logical
    thing_ (with a good description of what it aims to achieve in the Git
-   commit), and each commit ideally being no larger than 300 lines of code
+   commit), and each commit ideally be no larger than 300 lines of code
    changes. Poorly structured pull requests may be rejected immediately with a
    request to restructure them.
 
@@ -119,15 +119,15 @@ All new contributions should start with a [GitHub Issue][new-gh-issue]. The
 issue helps capture the **problem** being solved and allows for early feedback.
 Problems must be captured in terms of the **impact** that they have on specific
 users. Once the issue is created the process can proceed in different directions
-depending on how well defined the problem and potential solution are. If the
-change is simple and well understood, maintainers will indicate their support
+depending on how well-defined the problem and potential solution are. If the
+change is simple and well-understood, maintainers will indicate their support
 with a heartfelt emoji.
 
 ### Request for comments (RFCs)
 
 If the issue would benefit from thorough discussion, maintainers may request
 that you create a [Request For Comment][rfcs] in the CometBFT repo. Discussion
-at the RFC stage will build collective understanding of the dimensions of the
+at the RFC stage will build a collective understanding of the dimensions of the
 problems and help structure conversations around trade-offs.
 
 ### Architecture decision records (ADRs)
@@ -137,19 +137,19 @@ large/complex/risky structural changes to the code base, these changes should be
 proposed in the form of an [Architectural Decision Record
 (ADR)](docs/references/architecture/). The ADR will help build consensus on an overall
 strategy to ensure the code base maintains coherence in the larger context. If
-you are not comfortable with writing an ADR, you can open a less-formal issue
+you are not comfortable with writing an ADR, you can open a less formal issue
 and the maintainers will help you turn it into an ADR. Sometimes the best way to
 demonstrate the value of an ADR is to build a proof-of-concept (PoC) along with
 the ADR - in this case, link to the PoC from the ADR PR.
 
-**How does one pick a number for an new ADR?**
+**How does one pick a number for a new ADR?**
 
 Find the largest existing ADR number (between those in `./docs/architecture/`
 and those that may be open as issues or pull requests) and bump it by 1.
 
 ### Pull requests
 
-When the problem as well as proposed solution are well understood and low-risk,
+When the problem as well as the proposed solution are well understood and low-risk,
 changes should start with a **pull request**.
 
 Please adhere to the guidelines in the [Ease of reviewing](#ease-of-reviewing)
@@ -216,8 +216,9 @@ When updating dependencies, please only update the particular dependencies you
 need. Instead of running `go get -u=patch`, which will update anything, specify
 exactly the dependency you want to update.
 
-Do not bump the major Go version in a patch release (namely, `v0.34.x`, `v0.37.x`,
-`v0.38.x` branches) unless there's a pressing reason to do so (e.g., known security vulnerabilities).
+Do not bump the major Go version in a patch release (namely, `v0.38.x`
+branches) unless there's a pressing reason to do so (e.g., known security
+vulnerabilities).
 
 ## Logging
 
@@ -294,7 +295,7 @@ values [lazily][log-lazy].
 
 ```golang
 // Operators generally wouldn't care whether an internal construct, like module
-// construction, has executed successfully.
+// construction, has been executed successfully.
 logger.Debug("Starting reactor", "module", "consensus")
 
 logger.Info("Committed block", "height", height, "appHash", appHash)
@@ -442,7 +443,7 @@ Changelog entries should be ordered alphabetically according to the `module`,
 and numerically according to the pull-request number.
 
 Changes with multiple classifications should be doubly included (e.g. a bug fix
-that is also a breaking change should be recorded under both).
+that is also a breaking change that should be recorded under both).
 
 Breaking changes are further subdivided according to the APIs/users they impact.
 Any change that affects multiple APIs/users should be recorded multiply - for
@@ -458,7 +459,7 @@ Every release is maintained in a release branch named according to its major
 release number (e.g. `v0.38.x` or `v1.x`).
 
 Pending minor releases have long-lived release candidate ("RC") branches. Minor
-release changes should be merged to these long-lived RC branches at the same
+release changes should be merged into these long-lived RC branches at the same
 time that the changes are merged to `main`.
 
 If a feature's size is big and/or its risk is high, it can be implemented in a

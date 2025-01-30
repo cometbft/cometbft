@@ -34,5 +34,5 @@ which implements the following abstractions:
   quality metrics associated to peers with which the node has interacted;
     - [Peer Manager](./peer_manager.md): defines when and to which peers a node
   should dial, in order to establish outbound connections;
-- [Types](./types.md) and [Configuration](./configuration.md) provide a list of
-  existing types and configuration parameters used by the p2p package.
+- [Types](./types.md): provide a list of
+  existing types parameters used by the p2p package.

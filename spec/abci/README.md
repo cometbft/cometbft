@@ -38,6 +38,6 @@ This specification is split as follows:
   how the different ABCI methods may be called by CometBFT. This explains what the Application
   is to expect from CometBFT.
 - [Example scenarios](./abci++_example_scenarios.md) - specific scenarios showing why the Application needs to account
-for any CometBFT's behaviour prescribed by the specification.
+for any CometBFT's behavior prescribed by the specification.
 - [Client and Server](./abci++_client_server.md) - for those looking to implement their
   own ABCI application servers.

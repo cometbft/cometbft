@@ -30,26 +30,6 @@ updates:
       - dependencies
       - automerge
 
-  - package-ecosystem: github-actions
-    directory: "/"
-    schedule:
-      interval: weekly
-    target-branch: "v0.37.x"
-    open-pull-requests-limit: 10
-    labels:
-      - dependencies
-      - automerge
-
-  - package-ecosystem: github-actions
-    directory: "/"
-    schedule:
-      interval: weekly
-    target-branch: "v0.34.x"
-    open-pull-requests-limit: 10
-    labels:
-      - dependencies
-      - automerge
-
   ###################################
   ##
   ## Update All Go Dependencies
@@ -79,26 +59,6 @@ updates:
     schedule:
       interval: monthly
     target-branch: "v0.38.x"
-    open-pull-requests-limit: 10
-    labels:
-      - dependencies
-      - automerge
-
-  - package-ecosystem: gomod
-    directory: "/"
-    schedule:
-      interval: monthly
-    target-branch: "v0.37.x"
-    open-pull-requests-limit: 10
-    labels:
-      - dependencies
-      - automerge
-
-  - package-ecosystem: gomod
-    directory: "/"
-    schedule:
-      interval: monthly
-    target-branch: "v0.34.x"
     open-pull-requests-limit: 10
     labels:
       - dependencies

@@ -28,6 +28,17 @@ const (
 	ABCIPubKeyTypeEd25519   = ed25519.KeyType
 	ABCIPubKeyTypeSecp256k1 = secp256k1.KeyType
 	ABCIPubKeyTypeBls12381  = bls12381.KeyType
+
+	// MaxMessageDelay is the maximum allowed value for SynchronyParams.MessageDelay.
+	//
+	// It ensures that the SynchronyParams.MessageDelay does not overflow int64.
+	// The 24hr value was chosen based on common sense.
+	MaxMessageDelay = 24 * time.Hour
+	// MaxPrecision is the maximum allowed value for SynchronyParams.Precision.
+	//
+	// It ensures that the SynchronyParams.Precision does not overflow int64. The
+	// 30s value was chosen based on common sense.
+	MaxPrecision = 30 * time.Second
 )
 
 var ABCIPubKeyTypesToNames = map[string]string{
@@ -117,9 +128,11 @@ func featureEnabled(enableHeight int64, currentHeight int64, f string) bool {
 // These parameters are part of the Proposer-Based Timestamps (PBTS) algorithm.
 // For more information on the relationship of the synchrony parameters to
 // block timestamps validity, refer to the PBTS specification:
-// // https://github.com/cometbft/cometbft/tree/main/spec/consensus/proposer-based-timestamp
+// https://github.com/cometbft/cometbft/tree/main/spec/consensus/proposer-based-timestamp
 type SynchronyParams struct {
-	Precision    time.Duration `json:"precision,string"`
+	// Maximum allowed value: MaxPrecision.
+	Precision time.Duration `json:"precision,string"`
+	// Maximum allowed value: MaxMessageDelay.
 	MessageDelay time.Duration `json:"message_delay,string"`
 }
 
@@ -134,10 +147,20 @@ type SynchronyParams struct {
 // The goal is facilitate the progression of consensus when improper synchrony
 // parameters are set or become insufficient to preserve liveness. Refer to
 // https://github.com/cometbft/cometbft/issues/2184 for more details.
+//
+// There's a cap (MaxMessageDelay) on the MessageDelay to prevent overflow.
 func (sp SynchronyParams) InRound(round int32) SynchronyParams {
+	if round <= 0 {
+		return sp
+	}
+
+	d := time.Duration(math.Min(
+		float64(MaxMessageDelay),
+		math.Pow(1.1, float64(round))*float64(sp.MessageDelay),
+	))
 	return SynchronyParams{
 		Precision:    sp.Precision,
-		MessageDelay: time.Duration(math.Pow(1.1, float64(round)) * float64(sp.MessageDelay)),
+		MessageDelay: d,
 	}
 }
 
@@ -271,6 +294,12 @@ func (params ConsensusParams) ValidateBasic() error {
 		if params.Synchrony.Precision <= 0 {
 			return fmt.Errorf("synchrony.Precision must be greater than 0. Got: %d",
 				params.Synchrony.Precision)
+		}
+		if params.Synchrony.MessageDelay > MaxMessageDelay {
+			return fmt.Errorf("synchrony.MessageDelay is too big, must be less than or equal to %v", MaxMessageDelay)
+		}
+		if params.Synchrony.Precision > MaxPrecision {
+			return fmt.Errorf("synchrony.Precision is too big, must be less than or equal to %v", MaxPrecision)
 		}
 	}
 

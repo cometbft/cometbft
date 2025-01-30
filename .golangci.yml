@@ -24,11 +24,8 @@ linters:
     - gocyclo
     - godox
     - gomnd
-<<<<<<< HEAD
-    - gosec
-=======
     - gomoddirectives
->>>>>>> e4cbca81 (chore(deps): bump Go version to 1.23.5 (#4888))
+    - gosec
     - interfacebloat
     - intrange
     - ireturn

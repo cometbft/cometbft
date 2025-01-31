@@ -3731,7 +3731,7 @@ func skipTypes(dAtA []byte) (n int, err error) {
 }
 
 var (
-	ErrInvalidLengthTypes        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrInvalidLengthTypes        = fmt.Errorf("proto: negative length found during unmarshalling")
 	ErrIntOverflowTypes          = fmt.Errorf("proto: integer overflow")
 	ErrUnexpectedEndOfGroupTypes = fmt.Errorf("proto: unexpected end of group")
 )

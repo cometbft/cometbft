@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## v0.38.17
+
+*February 3, 2025*
+
+This release fixes two security issues (ASA-2025-001, ASA-2025-002). Users are
+encouraged to upgrade as soon as possible.
+
+### BUG FIXES
+
+- `[blocksync]` Ban peer if it reports height lower than what was previously reported
+  ([ASA-2025-001](https://github.com/cometbft/cometbft/security/advisories/GHSA-22qq-3xwm-r5x4))
+- `[types]` Check that `Part.Index` equals `Part.Proof.Index`
+  ([ASA-2025-001](https://github.com/cometbft/cometbft/security/advisories/GHSA-r3r4-g7hq-pq4f))
+
+### DEPENDENCIES
+
+- `[go/runtime]` Bump minimum Go version to 1.22.11
+  ([\#4891](https://github.com/cometbft/cometbft/pull/4891))
+
 ## v0.38.16
 
 *December 20 2024*
@@ -14,8 +33,6 @@ As a consequence of this incorrect behavior a node would be marked as BAD.
 - `[mocks]` Mockery `v2.49.0` broke the mocks. We had to add a `.mockery.yaml` to
 properly handle this change.
   ([\#4521](https://github.com/cometbft/cometbft/pull/4521))
-- `[p2p/pex`]: do not send PEX request in fast dial mode
-  ([\#4649](https://github.com/cometbft/cometbft/pull/4649))
 
 ## v0.38.15
 
@@ -864,3 +881,4 @@ Friendly reminder, we have a [bug bounty program](https://hackerone.com/cosmos).
 ## Previous changes
 
 For changes released before the creation of CometBFT, please refer to the Tendermint Core [CHANGELOG.md](https://github.com/tendermint/tendermint/blob/a9feb1c023e172b542c972605311af83b777855b/CHANGELOG.md).
+

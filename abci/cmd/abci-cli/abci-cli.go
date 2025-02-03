@@ -407,41 +407,48 @@ func muxOnCommands(cmd *cobra.Command, pArgs []string) error {
 		return errors.New("expecting persistent args of the form: abci-cli [command] <...>")
 	}
 
-	// TODO: this parsing is fragile
-	args := []string{}
-	for i := 0; i < len(pArgs); i++ {
+	var subCommand string
+	var actualArgs []string
+	var parsedArgs []string
+
+	flagSet := cmd.Flags()
+
+	for i := 1; i < len(pArgs); i++ { // Skip the first argument ('abci-cli')
 		arg := pArgs[i]
 
-		// check for flags
+		// Check if the argument is a flag
 		if strings.HasPrefix(arg, "-") {
-			// if it has an equal, we can just skip
+			// If it is in key=value format (e.g., --flag=value), skip it
 			if strings.Contains(arg, "=") {
 				continue
 			}
-			// if its a boolean, we can just skip
-			_, err := cmd.Flags().GetBool(strings.TrimLeft(arg, "-"))
-			if err == nil {
+			// If it is a boolean flag (e.g., --verbose), skip it
+			if _, err := flagSet.GetBool(strings.TrimLeft(arg, "-")); err == nil {
 				continue
 			}
 
-			// otherwise, we need to skip the next one too
-			i++
+			// If the flag requires a value, skip the next argument as well
+			if i+1 < len(pArgs) && !strings.HasPrefix(pArgs[i+1], "-") {
+				i++ // Skip the next argument as it is the value for this flag
+			}
 			continue
 		}
 
-		// append the actual arg
-		args = append(args, arg)
+		// Append the actual argument to the parsedArgs list
+		parsedArgs = append(parsedArgs, arg)
 	}
-	var subCommand string
-	var actualArgs []string
-	if len(args) > 1 {
-		subCommand = args[1]
-	}
-	if len(args) > 2 {
-		actualArgs = args[2:]
-	}
-	cmd.Use = subCommand // for later print statements ...
 
+	// Separate subcommand and arguments
+	if len(parsedArgs) > 0 {
+		subCommand = parsedArgs[0]
+		actualArgs = parsedArgs[1:]
+	} else {
+		return errors.New("no valid command found")
+	}
+
+	cmd.Use = subCommand // Keep the original logic (though this can be improved)
+
+	// Execute the corresponding command based on the subcommand
 	switch strings.ToLower(subCommand) {
 	case "check_tx":
 		return cmdCheckTx(cmd, actualArgs)

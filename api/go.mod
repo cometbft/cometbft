@@ -1,6 +1,6 @@
 module github.com/cometbft/cometbft/api
 
-go 1.23.1
+go 1.23.5
 
 require (
 	github.com/cosmos/gogoproto v1.4.12

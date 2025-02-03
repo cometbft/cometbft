@@ -36,7 +36,7 @@ this way.
 If that is the way you wish to proceed, use the [Creating a built-in application in Go](go-built-in.md) guide instead of this one.
 
 On the other hand, having a separate application might give you better security
-guarantees as two processes would be communicating via established binary protocol.
+guarantees as two processes would be communicating via the established binary protocol.
 CometBFT will not have access to application's state.
 This is the approach followed in this tutorial.
 
@@ -46,7 +46,7 @@ Verify that you have the latest version of Go installed (refer to the [official 
 
 ```bash
 $ go version
-go version go1.23.1 darwin/amd64
+go version go1.23.5 darwin/amd64
 ```
 
 ## 1.1 Installing CometBFT
@@ -137,7 +137,7 @@ The go.mod file should look similar to:
 ```go
 module kvstore
 
-go 1.23.1
+go 1.23.5
 
 
 require github.com/cometbft/cometbft v1.0.0 // indirect
@@ -478,7 +478,7 @@ import (
 
 You may have noticed that the application we are writing will crash if it receives
 an unexpected error from the Badger database during the `FinalizeBlock` or `Commit` methods.
-This is not an accident. If the application received an error from the database, there
+This is not an accident. If the application receives an error from the database, there
 is no deterministic way for it to make progress so the only safe option is to terminate.
 
 ### 1.3.4 Query
@@ -562,7 +562,7 @@ to signal that a transaction didn't execute properly. Or `QueryResponse`, which 
 a `Code` field to signal that a query to the application was unsuccessful or it could not find the information.
 
 The `error` return, as in `(*abcitypes.[Method]Response, error)`, can be used if there are unrecoverable errors.
-In these cases, the application should abort to prevent further unintended consequences.
+In these cases, the application should be aborted to prevent further unintended consequences.
 
 ## 1.4 Starting an application and a CometBFT instance
 
@@ -654,7 +654,7 @@ app := NewKVStoreApplication(db)
 
 Then we start the ABCI server and add some signal handling to gracefully stop
 it upon receiving SIGTERM or Ctrl-C. CometBFT will act as a client,
-which connects to our server and send us transactions and other messages.
+which connects to our server and sends us transactions and other messages.
 
 ```go
 server := abciserver.NewSocketServer(socketAddr, app)
@@ -779,7 +779,7 @@ transaction was included in the blockchain.
 {"jsonrpc":"2.0","id":-1,"result":{"check_tx":{"code":0,"data":null,"log":"","info":"","gas_wanted":"0","gas_used":"0","events":[],"codespace":""},"tx_result":{"code":0,"data":null,"log":"","info":"","gas_wanted":"0","gas_used":"0","events":[{"type":"app","attributes":[{"key":"key","value":"cometbft","index":true},{"key":"value","value":"rocks","index":true}]}],"codespace":""},"hash":"71276C4844CE72F6C6C868541D10923259F5F8DA5716B230555B36AD309D6FD1","height":"64"}}
 ```
 
-Finally, let's make sure that transaction really was persisted by the application.
+Finally, let's make sure that the transaction really was persisted by the application.
 Run the following command:
 
 ```bash

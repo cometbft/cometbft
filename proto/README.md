@@ -55,7 +55,7 @@ packages. The correspondence between package suffixes and releases is as follows
 
 ## Why does CometBFT provide `tendermint` Protobuf definitions?
 
-This is as a result of CometBFT being a fork of [Tendermint Core][tmcore] and
+This is a result of CometBFT being a fork of [Tendermint Core][tmcore] and
 wanting to provide integrators with as painless a way as possible of
 transitioning from Tendermint Core to CometBFT.
 

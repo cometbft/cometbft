@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## v0.37.15
+
+*February 3, 2025*
+
+This release fixes two security issues (ASA-2025-001, ASA-2025-002). Users are
+encouraged to upgrade as soon as possible.
+
+### BUG FIXES
+
+- `[blocksync]` Ban peer if it reports height lower than what was previously reported
+  ([ASA-2025-001](https://github.com/cometbft/cometbft/security/advisories/GHSA-22qq-3xwm-r5x4))
+- `[types]` Check that `Part.Index` equals `Part.Proof.Index`
+  ([ASA-2025-001](https://github.com/cometbft/cometbft/security/advisories/GHSA-r3r4-g7hq-pq4f))
+
 ## v0.37.14
 
 *December 20, 2024*

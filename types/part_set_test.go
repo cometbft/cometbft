@@ -125,7 +125,7 @@ func TestPartSetHeaderValidateBasic(t *testing.T) {
 	}
 }
 
-func TestPartValidateBasic(t *testing.T) {
+func TestPart_ValidateBasic(t *testing.T) {
 	testCases := []struct {
 		testName     string
 		malleatePart func(*Part)
@@ -137,6 +137,7 @@ func TestPartValidateBasic(t *testing.T) {
 			pt.Index = 1
 			pt.Bytes = make([]byte, BlockPartSizeBytes-1)
 			pt.Proof.Total = 2
+			pt.Proof.Index = 1
 		}, false},
 		{"Too small inner part", func(pt *Part) {
 			pt.Index = 0
@@ -149,6 +150,11 @@ func TestPartValidateBasic(t *testing.T) {
 				Index:    1,
 				LeafHash: make([]byte, 1024*1024),
 			}
+			pt.Index = 1
+		}, true},
+		{"Index mismatch", func(pt *Part) {
+			pt.Index = 1
+			pt.Proof.Index = 0
 		}, true},
 	}
 

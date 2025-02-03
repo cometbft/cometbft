@@ -18,15 +18,16 @@ type ServiceProvider func(
 
 // DBContext specifies config information for loading a new DB.
 type DBContext struct {
-	ID     string
+	// DB name
+	ID string
+	// Node configuration
 	Config *Config
 }
 
 // DBProvider takes a DBContext and returns an instantiated DB.
 type DBProvider func(*DBContext) (cmtdb.DB, error)
 
-// DefaultDBProvider returns a database using the DBBackend and DBDir
-// specified in the Config.
+// DefaultDBProvider creates a DB using the given ctx.
 func DefaultDBProvider(ctx *DBContext) (cmtdb.DB, error) {
 	var (
 		dbName = ctx.ID

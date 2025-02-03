@@ -6,7 +6,8 @@ order: 4
 
 ## Database
 
-CometBFT uses pebbledb for its in-process key-value database.
+CometBFT uses [pebbledb](https://github.com/cockroachdb/pebble) for its
+in-process key-value database.
 
 CometBFT keeps multiple distinct databases in the `$CMTHOME/data`:
 

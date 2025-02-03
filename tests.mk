@@ -30,14 +30,19 @@ test_release:
 .PHONY: test_release
 
 ### go tests
+
+# Create a common test flags variable
+GO_TEST_TAGS ?= bls12381,secp256k1eth
+GO_TEST_FLAGS ?= -p 1 -tags $(GO_TEST_TAGS)
+
 test:
 	@echo "--> Running go test"
-	@go test -p 1 $(PACKAGES) -tags bls12381,secp256k1eth
+	@go test $(GO_TEST_FLAGS) $(PACKAGES)
 .PHONY: test
 
 test_race:
 	@echo "--> Running go test --race"
-	@go test -p 1 -race $(PACKAGES) -tags bls12381,secp256k1eth
+	@go test $(GO_TEST_FLAGS) -race $(PACKAGES)
 .PHONY: test_race
 
 test_deadlock:

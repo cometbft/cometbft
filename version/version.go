@@ -3,7 +3,7 @@ package version
 const (
 	// CMTSemVer is the used as the fallback version of CometBFT
 	// when not using git describe. It is formatted with semantic versioning.
-	CMTSemVer = "1.0.0"
+	CMTSemVer = "1.0.1"
 	// ABCISemVer is the semantic version of the ABCI protocol.
 	ABCISemVer  = "2.1.0"
 	ABCIVersion = ABCISemVer

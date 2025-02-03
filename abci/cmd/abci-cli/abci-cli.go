@@ -439,12 +439,12 @@ func muxOnCommands(cmd *cobra.Command, pArgs []string) error {
 	}
 
 	// Separate subcommand and arguments
-	if len(parsedArgs) > 0 {
-		subCommand = parsedArgs[0]
-		actualArgs = parsedArgs[1:]
-	} else {
+	if len(parsedArgs) == 0 {
 		return errors.New("no valid command found")
 	}
+
+	subCommand = parsedArgs[0]
+	actualArgs = parsedArgs[1:]
 
 	cmd.Use = subCommand // Keep the original logic (though this can be improved)
 

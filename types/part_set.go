@@ -22,6 +22,19 @@ var (
 	ErrPartInvalidSize        = errors.New("error inner part with invalid size")
 )
 
+// ErrInvalidPart is an error type for invalid parts.
+type ErrInvalidPart struct {
+	Reason error
+}
+
+func (e ErrInvalidPart) Error() string {
+	return fmt.Sprintf("invalid part: %v", e.Reason)
+}
+
+func (e ErrInvalidPart) Unwrap() error {
+	return e.Reason
+}
+
 type Part struct {
 	Index uint32            `json:"index"`
 	Bytes cmtbytes.HexBytes `json:"bytes"`
@@ -37,8 +50,11 @@ func (part *Part) ValidateBasic() error {
 	if int64(part.Index) < part.Proof.Total-1 && len(part.Bytes) != int(BlockPartSizeBytes) {
 		return ErrPartInvalidSize
 	}
+	if int64(part.Index) != part.Proof.Index {
+		return ErrInvalidPart{Reason: fmt.Errorf("part index %d != proof index %d", part.Index, part.Proof.Index)}
+	}
 	if err := part.Proof.ValidateBasic(); err != nil {
-		return fmt.Errorf("wrong Proof: %w", err)
+		return ErrInvalidPart{Reason: fmt.Errorf("wrong Proof: %w", err)}
 	}
 	return nil
 }
@@ -274,6 +290,7 @@ func (ps *PartSet) Total() uint32 {
 	return ps.total
 }
 
+// CONTRACT: part is validated using ValidateBasic.
 func (ps *PartSet) AddPart(part *Part) (bool, error) {
 	// TODO: remove this? would be preferable if this only returned (false, nil)
 	// when its a duplicate block part

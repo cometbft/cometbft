@@ -5,7 +5,7 @@ const (
 	// The default version of TMCoreSemVer is the value used as the
 	// fallback version of CometBFT when not using git describe.
 	// It is formatted with semantic versioning.
-	TMCoreSemVer = "0.37.14"
+	TMCoreSemVer = "0.37.15"
 	// ABCISemVer is the semantic version of the ABCI protocol
 	ABCISemVer  = "1.0.0"
 	ABCIVersion = ABCISemVer

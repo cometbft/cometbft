@@ -6,8 +6,7 @@ order: 4
 
 ## Database
 
-By default, CometBFT uses the `syndtr/goleveldb` package for its in-process
-key-value database.
+CometBFT uses pebbledb for its in-process key-value database.
 
 CometBFT keeps multiple distinct databases in the `$CMTHOME/data`:
 

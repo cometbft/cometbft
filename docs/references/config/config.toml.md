@@ -1958,9 +1958,6 @@ CometBFT supports storage pruning to delete data indicated as not needed by the 
 Other than the pruning interval and compaction options, the configuration parameters in this section refer to the data
 companion. The applications pruning configuration is communicated to CometBFT via ABCI.
 
-Note that for some databases (GolevelDB), the data often does not get physically removed from storage due to the DB backend
-not triggering compaction. In these cases it is necessary to enable forced compaction and set the compaction interval accordingly.
-
 ### storage.discard_abci_responses
 Discard ABCI responses from the state store, which can save a considerable amount of disk space.
 ```toml

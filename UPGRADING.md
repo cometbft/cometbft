@@ -12,7 +12,7 @@ Non-replay-protected vote extensions are added to CometBFT to allow applications
 CometBFT was refactored to use a single database, PebbleDB. CometBFT no longer
 imports `cometbft/cometbft-db`. If you want to use a different database, you
 can implement the `DB` interface yourself or simply copy the
-previously-imported wrapper from https://github.com/cometbft/cometbft-db) and
+previously-imported wrapper from https://github.com/cometbft/cometbft-db and
 use it when constructing a new node by supplying different
 [`DBProvider`](https://pkg.go.dev/github.com/cometbft/cometbft/config#DBProvider).
 

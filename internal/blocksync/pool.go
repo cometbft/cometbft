@@ -355,11 +355,21 @@ func (pool *BlockPool) SetPeerRange(peerID p2p.ID, base int64, height int64) {
 
 	peer := pool.peers[peerID]
 	if peer != nil {
+		if base < peer.base || height < peer.height {
+			pool.Logger.Info("Peer is reporting height/base that is lower than what it previously reported",
+				"peer", peerID,
+				"height", height, "base", base,
+				"prevHeight", peer.height, "prevBase", peer.base)
+			// RemovePeer will redo all requesters associated with this peer.
+			pool.removePeer(peerID)
+			pool.banPeer(peerID)
+			return
+		}
 		peer.base = base
 		peer.height = height
 	} else {
 		if pool.isPeerBanned(peerID) {
-			pool.Logger.Debug("Ignoring banned peer", peerID)
+			pool.Logger.Debug("Ignoring banned peer", "peer", peerID)
 			return
 		}
 		peer = newBPPeer(pool, peerID, base, height)

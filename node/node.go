@@ -659,8 +659,6 @@ func (n *Node) OnStart() error {
 
 // OnStop stops the Node. It implements service.Service.
 func (n *Node) OnStop() {
-	n.BaseService.OnStop()
-
 	n.Logger.Info("Stopping Node")
 
 	// first stop the non-reactor services
@@ -670,6 +668,7 @@ func (n *Node) OnStop() {
 	if err := n.eventBus.Stop(); err != nil {
 		n.Logger.Error("Error closing eventBus", "err", err)
 	}
+
 	// now stop the reactors
 	if err := n.sw.Stop(); err != nil {
 		n.Logger.Error("Error closing switch", "err", err)
@@ -681,7 +680,6 @@ func (n *Node) OnStop() {
 
 	n.isListening = false
 
-	// finally stop the listeners / external services
 	for _, l := range n.rpcListeners {
 		n.Logger.Info("Closing rpc listener", "listener", l)
 		if err := l.Close(); err != nil {
@@ -706,11 +704,17 @@ func (n *Node) OnStop() {
 			n.Logger.Error("Pprof HTTP server Shutdown", "err", err)
 		}
 	}
+
+	// Stop the indexer before the DBs, but after the eventBus because the
+	// indexer relies on it.
 	if n.indexerService != nil {
 		if err := n.indexerService.Stop(); err != nil {
 			n.Logger.Error("Error closing indexerService", "err", err)
 		}
 	}
+
+	// Close DBs at the very end. Otherwise, pebbledb will panic if a process
+	// tries to write to the DB after it's closed.
 	if n.blockStore != nil {
 		n.Logger.Info("Closing blockstore")
 		if err := n.blockStore.Close(); err != nil {

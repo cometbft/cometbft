@@ -13,6 +13,7 @@ import (
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/types"
+	cmttime "github.com/tendermint/tendermint/types/time"
 )
 
 type scTestParams struct {
@@ -28,6 +29,7 @@ type scTestParams struct {
 	targetPending int
 	startTime     time.Time
 	syncTimeout   time.Duration
+	bannedPeers   map[p2p.ID]time.Time // new field
 }
 
 func verifyScheduler(sc *scheduler) {
@@ -73,6 +75,11 @@ func newTestScheduler(params scTestParams) *scheduler {
 	for h, pid := range params.received {
 		sc.blockStates[h] = blockStateReceived
 		sc.receivedBlocks[h] = pid
+	}
+
+	// Add banned peers
+	if params.bannedPeers != nil {
+		sc.bannedPeers = params.bannedPeers
 	}
 
 	sc.peers = peers
@@ -499,7 +506,7 @@ func TestScRemovePeer(t *testing.T) {
 }
 
 func TestScSetPeerRange(t *testing.T) {
-
+	banTimeSentinel := time.Now()
 	type args struct {
 		peerID p2p.ID
 		base   int64
@@ -539,8 +546,9 @@ func TestScSetPeerRange(t *testing.T) {
 				allB:  []int64{1, 2, 3, 4}},
 			args: args{peerID: "P1", height: 2},
 			wantFields: scTestParams{
-				peers: map[string]*scPeer{"P1": {height: 4, state: peerStateRemoved}},
-				allB:  []int64{}},
+				peers:       map[string]*scPeer{"P1": {height: 4, state: peerStateRemoved}},
+				bannedPeers: map[p2p.ID]time.Time{"P1": banTimeSentinel},
+				allB:        []int64{}},
 			wantErr: true,
 		},
 		{
@@ -605,9 +613,24 @@ func TestScSetPeerRange(t *testing.T) {
 			sc := newTestScheduler(tt.fields)
 			err := sc.setPeerRange(tt.args.peerID, tt.args.base, tt.args.height)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("setPeerHeight() wantErr %v, error = %v", tt.wantErr, err)
+				t.Errorf("setPeerRange() wantErr %v, error = %v", tt.wantErr, err)
 			}
 			wantSc := newTestScheduler(tt.wantFields)
+
+			// FIXME: This is a hack to compare the wanted bannedPeers map, only
+			// because the scheduler uses the ambient clock authority.
+			{
+				// Override all the sentinel
+				// banTimes in wantSc to match the sc value.
+				for peerID, wantBanTime := range wantSc.bannedPeers {
+					if wantBanTime == banTimeSentinel {
+						if banTime, ok := sc.bannedPeers[peerID]; ok {
+							wantSc.bannedPeers[peerID] = banTime
+						}
+					}
+				}
+			}
+
 			assert.Equal(t, wantSc, sc, "wanted peers %v, got %v", wantSc.peers, sc.peers)
 		})
 	}
@@ -1018,7 +1041,8 @@ func TestScMarkProcessed(t *testing.T) {
 				peers:       map[string]*scPeer{"P1": {height: 2, state: peerStateReady}},
 				allB:        []int64{2},
 				pending:     map[int64]p2p.ID{2: "P1"},
-				pendingTime: map[int64]time.Time{2: now}},
+				pendingTime: map[int64]time.Time{2: now},
+			},
 		},
 	}
 
@@ -2000,9 +2024,10 @@ func TestScHandleStatusResponse(t *testing.T) {
 		{
 			name: "decrease height of single peer",
 			fields: scTestParams{
-				height: 5,
-				peers:  map[string]*scPeer{"P1": {height: 10, state: peerStateReady}},
-				allB:   []int64{5, 6, 7, 8, 9, 10},
+				height:      5,
+				peers:       map[string]*scPeer{"P1": {height: 10, state: peerStateReady}},
+				bannedPeers: map[p2p.ID]time.Time{"P1": now},
+				allB:        []int64{5, 6, 7, 8, 9, 10},
 			},
 			args:      args{event: statusRespP1Ev},
 			wantEvent: scPeerError{peerID: "P1", reason: fmt.Errorf("some error")},
@@ -2243,6 +2268,234 @@ func TestScHandle(t *testing.T) {
 
 				// Next step may use the wantedState as their currentState.
 				sc = newTestScheduler(*step.wantSc)
+			}
+		})
+	}
+}
+
+func TestSchedulerPeerBanning(t *testing.T) {
+	tests := []struct {
+		name       string
+		setup      func(*scheduler)
+		peerID     p2p.ID
+		wantBan    bool
+		checkAfter time.Duration // time to wait before checking ban status
+	}{
+		{
+			name: "newly banned peer is detected as banned",
+			setup: func(sc *scheduler) {
+				sc.banPeer("P1")
+			},
+			peerID:  "P1",
+			wantBan: true,
+		},
+		{
+			name:    "non-banned peer is not banned",
+			setup:   func(sc *scheduler) {},
+			peerID:  "P1",
+			wantBan: false,
+		},
+		{
+			name: "ban expires after 60 seconds",
+			setup: func(sc *scheduler) {
+				sc.bannedPeers["P1"] = cmttime.Now().Add(-61 * time.Second)
+			},
+			peerID:  "P1",
+			wantBan: false,
+		},
+		{
+			name: "ban remains active before 60 seconds",
+			setup: func(sc *scheduler) {
+				sc.bannedPeers["P1"] = cmttime.Now().Add(-59 * time.Second)
+			},
+			peerID:  "P1",
+			wantBan: true,
+		},
+		{
+			name: "banPeer sets current time",
+			setup: func(sc *scheduler) {
+				sc.banPeer("P1")
+			},
+			peerID:     "P1",
+			wantBan:    true,
+			checkAfter: time.Second, // wait 1 second before checking
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			sc := newScheduler(1, cmttime.Now())
+			tt.setup(sc)
+
+			if tt.checkAfter > 0 {
+				time.Sleep(tt.checkAfter)
+			}
+
+			if got := sc.IsPeerBanned(tt.peerID); got != tt.wantBan {
+				t.Errorf("IsPeerBanned() = %v, want %v", got, tt.wantBan)
+			}
+		})
+	}
+}
+
+func TestSchedulerSetPeerRange(t *testing.T) {
+	tests := []struct {
+		name       string
+		setup      func(*scheduler)
+		peerID     p2p.ID
+		base       int64
+		height     int64
+		wantErr    bool
+		wantErrMsg string
+		wantBanned bool
+		checkState func(*testing.T, *scheduler)
+	}{
+		{
+			name:    "accept new peer",
+			setup:   func(sc *scheduler) {},
+			peerID:  "P1",
+			base:    1,
+			height:  10,
+			wantErr: false,
+			checkState: func(t *testing.T, sc *scheduler) {
+				peer := sc.peers["P1"]
+				assert.Equal(t, "Ready", peer.state.String())
+				assert.Equal(t, int64(1), peer.base)
+				assert.Equal(t, int64(10), peer.height)
+			},
+		},
+		{
+			name: "reject banned peer",
+			setup: func(sc *scheduler) {
+				sc.banPeer("P1")
+			},
+			peerID:     "P1",
+			base:       1,
+			height:     10,
+			wantErr:    true,
+			wantErrMsg: "Ignoring banned peer P1",
+			wantBanned: true,
+		},
+		{
+			name: "accept previously banned peer after expiry",
+			setup: func(sc *scheduler) {
+				sc.bannedPeers["P1"] = cmttime.Now().Add(-61 * time.Second)
+			},
+			peerID:  "P1",
+			base:    1,
+			height:  10,
+			wantErr: false,
+			checkState: func(t *testing.T, sc *scheduler) {
+				peer := sc.peers["P1"]
+				assert.Equal(t, "Ready", peer.state.String())
+				assert.Equal(t, int64(1), peer.base)
+				assert.Equal(t, int64(10), peer.height)
+			},
+		},
+		{
+			name: "reject peer reporting lower height",
+			setup: func(sc *scheduler) {
+				sc.peers["P1"] = &scPeer{
+					peerID: "P1",
+					base:   1,
+					height: 10,
+					state:  peerStateReady,
+				}
+			},
+			peerID:     "P1",
+			base:       1,
+			height:     5,
+			wantErr:    true,
+			wantErrMsg: "peer P1 reported base 1 height 5 lower than previous base 1 height 10",
+			checkState: func(t *testing.T, sc *scheduler) {
+				peer := sc.peers["P1"]
+				assert.Equal(t, "Removed", peer.state.String())
+			},
+		},
+		{
+			name:       "reject peer with base higher than height",
+			setup:      func(sc *scheduler) {},
+			peerID:     "P1",
+			base:       10,
+			height:     5,
+			wantErr:    true,
+			wantErrMsg: "cannot set peer base higher than its height",
+			checkState: func(t *testing.T, sc *scheduler) {
+				peer := sc.peers["P1"]
+				assert.Equal(t, "Removed", peer.state.String())
+			},
+		},
+		{
+			name: "ban peer reporting lower base",
+			setup: func(sc *scheduler) {
+				sc.peers["P1"] = &scPeer{
+					peerID: "P1",
+					base:   5,
+					height: 10,
+					state:  peerStateReady,
+				}
+			},
+			peerID:     "P1",
+			base:       1,
+			height:     15,
+			wantErr:    true,
+			wantErrMsg: "peer P1 reported base 1 height 15 lower than previous base 5 height 10",
+			wantBanned: true,
+			checkState: func(t *testing.T, sc *scheduler) {
+				peer := sc.peers["P1"]
+				assert.Equal(t, "Removed", peer.state.String())
+			},
+		},
+		{
+			name: "update existing peer with higher height",
+			setup: func(sc *scheduler) {
+				sc.peers["P1"] = &scPeer{
+					peerID: "P1",
+					base:   1,
+					height: 10,
+					state:  peerStateReady,
+				}
+			},
+			peerID:  "P1",
+			base:    1,
+			height:  15,
+			wantErr: false,
+			checkState: func(t *testing.T, sc *scheduler) {
+				peer := sc.peers["P1"]
+				assert.Equal(t, "Ready", peer.state.String())
+				assert.Equal(t, int64(1), peer.base)
+				assert.Equal(t, int64(15), peer.height)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			sc := newScheduler(1, time.Now())
+			tt.setup(sc)
+
+			err := sc.setPeerRange(tt.peerID, tt.base, tt.height)
+
+			// Check error
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.wantErrMsg != "" {
+					assert.Contains(t, err.Error(), tt.wantErrMsg)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+
+			// Check if peer was banned
+			if tt.wantBanned {
+				assert.True(t, sc.IsPeerBanned(tt.peerID))
+			}
+
+			// Check final state
+			if tt.checkState != nil {
+				tt.checkState(t, sc)
 			}
 		})
 	}

@@ -121,6 +121,7 @@ func TestBlockPoolUpdatePeer(t *testing.T) {
 		args       testPeer
 		poolWanted *BlockPool
 		errWanted  error
+		checkBan   bool // new field to check if peer should be banned
 	}{
 		{
 			name:       "add a first short peer",
@@ -153,6 +154,7 @@ func TestBlockPoolUpdatePeer(t *testing.T) {
 			args:       testPeer{"P1", 0, 110},
 			errWanted:  errPeerLowersItsHeight,
 			poolWanted: makeBlockPool(testBcR, 100, []BpPeer{}, map[int64]tPBlocks{}),
+			checkBan:   true,
 		},
 		{
 			name: "decrease the height of P1 from 105 to 102 with blocks",
@@ -163,6 +165,23 @@ func TestBlockPoolUpdatePeer(t *testing.T) {
 			errWanted: errPeerLowersItsHeight,
 			poolWanted: makeBlockPool(testBcR, 100, []BpPeer{},
 				map[int64]tPBlocks{}),
+			checkBan: true,
+		},
+		{
+			name:       "peer reports lower height gets banned",
+			pool:       makeBlockPool(testBcR, 100, []BpPeer{{ID: "P1", Base: 0, Height: 120}}, map[int64]tPBlocks{}),
+			args:       testPeer{"P1", 0, 110},
+			poolWanted: makeBlockPool(testBcR, 100, []BpPeer{}, map[int64]tPBlocks{}),
+			errWanted:  errPeerLowersItsHeight,
+			checkBan:   true,
+		},
+		{
+			name:       "peer reports lower base gets banned",
+			pool:       makeBlockPool(testBcR, 100, []BpPeer{{ID: "P1", Base: 10, Height: 120}}, map[int64]tPBlocks{}),
+			args:       testPeer{"P1", 5, 120},
+			poolWanted: makeBlockPool(testBcR, 100, []BpPeer{}, map[int64]tPBlocks{}),
+			errWanted:  errPeerLowersItsHeight,
+			checkBan:   true,
 		},
 	}
 
@@ -175,6 +194,12 @@ func TestBlockPoolUpdatePeer(t *testing.T) {
 			assert.Equal(t, tt.poolWanted.blocks, tt.pool.blocks)
 			assertPeerSetsEquivalent(t, tt.poolWanted.peers, tt.pool.peers)
 			assert.Equal(t, tt.poolWanted.MaxPeerHeight, tt.pool.MaxPeerHeight)
+
+			// Check if peer was banned when expected
+			if tt.checkBan {
+				assert.True(t, pool.IsPeerBanned(tt.args.id),
+					"peer should be banned after reporting lower height/base")
+			}
 		})
 	}
 }
@@ -688,4 +713,36 @@ func TestRemovePeerAtCurrentHeight(t *testing.T) {
 			assertBlockPoolEquivalent(t, tt.poolWanted, tt.pool)
 		})
 	}
+}
+
+func TestPeerBanning(t *testing.T) {
+	testBcR := newTestBcR()
+	pool := NewBlockPool(1, testBcR)
+	pool.SetLogger(log.TestingLogger())
+
+	// Test banning a peer
+	peerID := p2p.ID("peer1")
+	pool.banPeer(peerID)
+
+	// Verify peer is banned
+	assert.True(t, pool.IsPeerBanned(peerID), "peer should be banned")
+
+	// Test ban expiration (ban time is 60 seconds)
+	// Set ban time to 61 seconds ago
+	pool.bannedPeers[peerID] = time.Now().Add(-61 * time.Second)
+
+	// Verify peer is no longer banned
+	assert.False(t, pool.IsPeerBanned(peerID), "peer should no longer be banned")
+
+	// Test that banned peers are not added to the pool
+	pool.banPeer(peerID)
+	err := pool.UpdatePeer(peerID, 1, 10)
+	assert.Equal(t, errPeerLowersItsHeight, err, "banned peer should not be added to pool")
+	assert.Nil(t, pool.peers[peerID], "banned peer should not be added to pool")
+
+	// Test multiple peers can be banned
+	peer2ID := p2p.ID("peer2")
+	pool.banPeer(peer2ID)
+	assert.True(t, pool.IsPeerBanned(peerID), "first peer should still be banned")
+	assert.True(t, pool.IsPeerBanned(peer2ID), "second peer should be banned")
 }

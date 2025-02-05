@@ -240,3 +240,104 @@ func TestBlockPoolRemovePeer(t *testing.T) {
 
 	assert.EqualValues(t, 0, pool.MaxPeerHeight())
 }
+
+func TestIgnoreBannedPeer(t *testing.T) {
+	requestsCh := make(chan BlockRequest)
+	errorsCh := make(chan peerError)
+	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool.SetLogger(log.TestingLogger())
+	err := pool.Start()
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		if err := pool.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	peerID := p2p.ID("peer1")
+	pool.banPeer(peerID)
+	pool.SetPeerRange(peerID, 1, 10)
+
+	assert.Nil(t, pool.peers[peerID], "banned peer should not be added")
+}
+
+func TestRejectAndBanPeerLowerBase(t *testing.T) {
+	requestsCh := make(chan BlockRequest)
+	errorsCh := make(chan peerError)
+	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool.SetLogger(log.TestingLogger())
+	err := pool.Start()
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		if err := pool.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	peerID := p2p.ID("peer1")
+	pool.SetPeerRange(peerID, 10, 20)
+	pool.SetPeerRange(peerID, 5, 20)
+
+	assert.Nil(t, pool.peers[peerID], "peer should be removed")
+	assert.True(t, pool.isPeerBanned(peerID), "peer should be banned")
+}
+
+func TestRejectAndBanPeerWrongHeight(t *testing.T) {
+	requestsCh := make(chan BlockRequest)
+	errorsCh := make(chan peerError)
+	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool.SetLogger(log.TestingLogger())
+	err := pool.Start()
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		if err := pool.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	peerID := p2p.ID("peer1")
+	pool.SetPeerRange(peerID, 1, 20)
+	pool.SetPeerRange(peerID, 1, 10)
+
+	assert.Nil(t, pool.peers[peerID], "peer should be removed")
+	assert.True(t, pool.isPeerBanned(peerID), "peer should be banned")
+}
+
+func TestPeerBanning(t *testing.T) {
+	requestsCh := make(chan BlockRequest)
+	errorsCh := make(chan peerError)
+	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool.SetLogger(log.TestingLogger())
+	err := pool.Start()
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		if err := pool.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	// Test banning a peer
+	peerID := p2p.ID("peer1")
+	pool.banPeer(peerID)
+
+	// Verify peer is banned
+	assert.True(t, pool.IsPeerBanned(peerID), "peer should be banned")
+
+	// Test ban expiration (ban time is 60 seconds)
+	// Set ban time to 61 seconds ago
+	pool.bannedPeers[peerID] = time.Now().Add(-61 * time.Second)
+
+	// Verify peer is no longer banned
+	assert.False(t, pool.IsPeerBanned(peerID), "peer should no longer be banned")
+
+	// Test that banned peers are not added to the pool
+	pool.banPeer(peerID)
+	pool.SetPeerRange(peerID, 1, 10)
+	assert.Nil(t, pool.peers[peerID], "banned peer should not be added to pool")
+
+	// Test multiple peers can be banned
+	peer2ID := p2p.ID("peer2")
+	pool.banPeer(peer2ID)
+	assert.True(t, pool.IsPeerBanned(peerID), "first peer should still be banned")
+	assert.True(t, pool.IsPeerBanned(peer2ID), "second peer should be banned")
+}

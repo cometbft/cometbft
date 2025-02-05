@@ -28,6 +28,18 @@ type Part struct {
 	Proof merkle.Proof      `json:"proof"`
 }
 
+// ErrInvalidPart is an error type for invalid parts.
+type ErrInvalidPart struct {
+	Reason error
+}
+
+func (e ErrInvalidPart) Error() string {
+	return fmt.Sprintf("invalid part: %v", e.Reason)
+}
+func (e ErrInvalidPart) Unwrap() error {
+	return e.Reason
+}
+
 // ValidateBasic performs basic validation.
 func (part *Part) ValidateBasic() error {
 	if len(part.Bytes) > int(BlockPartSizeBytes) {
@@ -37,9 +49,15 @@ func (part *Part) ValidateBasic() error {
 	if int64(part.Index) < part.Proof.Total-1 && len(part.Bytes) != int(BlockPartSizeBytes) {
 		return ErrPartInvalidSize
 	}
-	if err := part.Proof.ValidateBasic(); err != nil {
-		return fmt.Errorf("wrong Proof: %w", err)
+
+	if int64(part.Index) != part.Proof.Index {
+		return ErrInvalidPart{Reason: fmt.Errorf("part index %d != proof index %d", part.Index, part.Proof.Index)}
 	}
+
+	if err := part.Proof.ValidateBasic(); err != nil {
+		return ErrInvalidPart{Reason: fmt.Errorf("wrong Proof: %w", err)}
+	}
+
 	return nil
 }
 

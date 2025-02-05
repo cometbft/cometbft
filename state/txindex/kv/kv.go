@@ -30,7 +30,7 @@ const (
 	tagKeySeparator          = "/"
 	tagKeySeparatorRune      = '/'
 	eventSeqSeparator        = "$es$"
-	eventSeqSeperatorRuneAt0 = '$'
+	eventSeqSeparatorRuneAt0 = '$'
 )
 
 var (
@@ -1043,7 +1043,7 @@ func extractEventSeqFromKey(key []byte) string {
 	}
 
 	for ; endPos < len(key); endPos++ {
-		if key[endPos] == eventSeqSeperatorRuneAt0 {
+		if key[endPos] == eventSeqSeparatorRuneAt0 {
 			eventSeq := string(key[endPos:])
 			if eventSeq, ok := strings.CutPrefix(eventSeq, eventSeqSeparator); ok {
 				return eventSeq

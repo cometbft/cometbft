@@ -676,7 +676,7 @@ func (store dbStore) PruneABCIResponses(targetRetainHeight int64, forceCompact b
 // ------------------------------------------------------------------------
 
 // TxResultsHash returns the root hash of a Merkle tree of
-// ExecTxResulst responses (see ABCIResults.Hash)
+// ExecTxResults responses (see ABCIResults.Hash)
 //
 // See merkle.SimpleHashFromByteSlices.
 func TxResultsHash(txResults []*abci.ExecTxResult) []byte {

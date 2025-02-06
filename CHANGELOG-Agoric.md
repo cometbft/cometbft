@@ -34,6 +34,10 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 # Changelog
 
+## [v0.34.35-alpha.agoric.1]
+
+* Backport [`cometbft/cometbft v0.37.15`](https://github.com/cometbft/cometbft/compare/v0.37.14..v0.37.15).
+
 ## [v0.34.30-alpha.agoric.1]
 
 * Merge `cometbft/cometbft v0.34.30`.

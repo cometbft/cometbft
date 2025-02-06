@@ -79,7 +79,7 @@ CometBFT consensus.
 ### Query
 
 The `Query` ABCI method query queries the application for information about application state.
-When CometBFT receives a `ResponseQuery` with a non-zero `Code`, this code is 
+When CometBFT receives a `ResponseQuery` with a non-zero `Code`, this code is
 returned directly to the client that initiated the query.
 
 ## Events
@@ -91,7 +91,7 @@ transactions and blocks this metadata relates to.
 Events returned via these ABCI methods do not impact CometBFT consensus in any way
 and instead exist to power subscriptions and queries of CometBFT state.
 
-An `Event` contains a `type` and a list of `EventAttributes`, which are key-value 
+An `Event` contains a `type` and a list of `EventAttributes`, which are key-value
 string pairs denoting metadata about what happened during the method's execution.
 `Event` values can be used to index transactions and blocks according to what happened
 during their execution. Note that the set of events returned for a block from
@@ -163,8 +163,8 @@ Example:
 CometBFT's security model relies on the use of "evidence". Evidence is proof of
 malicious behaviour by a network participant. It is the responsibility of CometBFT
 to detect such malicious behaviour. When malicious behavior is detected, CometBFT
-will gossip evidence of the behavior to other nodes and commit the evidence to 
-the chain once it is verified by all validators. This evidence will then be 
+will gossip evidence of the behavior to other nodes and commit the evidence to
+the chain once it is verified by all validators. This evidence will then be
 passed it on to the application through the ABCI. It is the responsibility of the
 application to handle the evidence and exercise punishment.
 
@@ -289,20 +289,20 @@ the blockchain's `AppHash` which is verified via [light client verification](../
 
 * **Request**:
 
-    | Name          | Type   | Description                              | Field Number |
-    |---------------|--------|------------------------------------------|--------------|
+    | Name          | Type   | Description                            | Field Number |
+    |---------------|--------|----------------------------------------|--------------|
     | version       | string | The CometBFT software semantic version | 1            |
-    | block_version | uint64 | The CometBFT Block Protocol version    | 2            |
-    | p2p_version   | uint64 | The CometBFT P2P Protocol version      | 3            |
+    | block_version | uint64 | The CometBFT Block version             | 2            |
+    | p2p_version   | uint64 | The CometBFT P2P version               | 3            |
     | abci_version  | string | The CometBFT ABCI semantic version     | 4            |
 
 * **Response**:
-  
+
     | Name                | Type   | Description                                      | Field Number |
     |---------------------|--------|--------------------------------------------------|--------------|
     | data                | string | Some arbitrary information                       | 1            |
     | version             | string | The application software semantic version        | 2            |
-    | app_version         | uint64 | The application protocol version                 | 3            |
+    | app_version         | uint64 | The application version                          | 3            |
     | last_block_height   | int64  | Latest block for which the app has called Commit | 4            |
     | last_block_app_hash | bytes  | Latest result of Commit                          | 5            |
 
@@ -351,7 +351,7 @@ the blockchain's `AppHash` which is verified via [light client verification](../
 ### Query
 
 * **Request**:
-  
+
     | Name   | Type   | Description                                                                                                                                                                                                                                                                            | Field Number |
     |--------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
     | data   | bytes  | Raw query bytes. Can be used with or in lieu of Path.                                                                                                                                                                                                                                  | 1            |
@@ -495,7 +495,7 @@ the blockchain's `AppHash` which is verified via [light client verification](../
         * `H+3`: `LastCommitInfo` is changed to include the altered validator set.
     * `consensus_param_updates` returned for block `H` apply to the consensus
       params for block `H+1`. For more information on the consensus parameters,
-      see the [application spec entry on consensus parameters](../spec/abci/apps.md#consensus-parameters).
+      see the [application spec entry on consensus parameters](./apps.md#consensus-parameters).
 
 ### Commit
 

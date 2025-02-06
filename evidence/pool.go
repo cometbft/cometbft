@@ -132,11 +132,11 @@ func (evpool *Pool) Update(state sm.State, ev types.EvidenceList) {
 
 // AddEvidence checks the evidence is valid and adds it to the pool.
 func (evpool *Pool) AddEvidence(ev types.Evidence) error {
-	evpool.logger.Debug("Attempting to add evidence", "ev", ev)
+	evpool.logger.Info("Attempting to add evidence", "ev", ev)
 
 	// We have already verified this piece of evidence - no need to do it again
 	if evpool.isPending(ev) {
-		evpool.logger.Debug("Evidence already pending, ignoring this one", "ev", ev)
+		evpool.logger.Info("Evidence already pending, ignoring this one", "ev", ev)
 		return nil
 	}
 
@@ -144,7 +144,7 @@ func (evpool *Pool) AddEvidence(ev types.Evidence) error {
 	if evpool.isCommitted(ev) {
 		// this can happen if the peer that sent us the evidence is behind so we shouldn't
 		// punish the peer.
-		evpool.logger.Debug("Evidence was already committed, ignoring this one", "ev", ev)
+		evpool.logger.Info("Evidence was already committed, ignoring this one", "ev", ev)
 		return nil
 	}
 
@@ -505,13 +505,13 @@ func (evpool *Pool) processConsensusBuffer(state sm.State) {
 
 		// check if we already have this evidence
 		if evpool.isPending(dve) {
-			evpool.logger.Debug("evidence already pending; ignoring", "evidence", dve)
+			evpool.logger.Info("evidence already pending; ignoring", "evidence", dve)
 			continue
 		}
 
 		// check that the evidence is not already committed on chain
 		if evpool.isCommitted(dve) {
-			evpool.logger.Debug("evidence already committed; ignoring", "evidence", dve)
+			evpool.logger.Info("evidence already committed; ignoring", "evidence", dve)
 			continue
 		}
 

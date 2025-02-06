@@ -71,6 +71,7 @@ type Testnet struct {
 	LoadTxSizeBytes                                      int
 	LoadTxBatchSize                                      int
 	LoadTxConnections                                    int
+	LoadMaxTxs                                           int
 	ABCIProtocol                                         string
 	UpgradeVersion                                       string
 	Prometheus                                           bool
@@ -135,6 +136,7 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 		LoadTxSizeBytes:   manifest.LoadTxSizeBytes,
 		LoadTxBatchSize:   manifest.LoadTxBatchSize,
 		LoadTxConnections: manifest.LoadTxConnections,
+		LoadMaxTxs:        manifest.LoadMaxTxs,
 		ABCIProtocol:      manifest.ABCIProtocol,
 		UpgradeVersion:    manifest.UpgradeVersion,
 		Prometheus:        manifest.Prometheus,

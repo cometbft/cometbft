@@ -299,7 +299,6 @@ type statusInfo struct {
 }
 
 func (n *upnpNAT) getExternalIPAddress() (info statusInfo, err error) {
-	//nolint:goconst
 	message := "<u:GetExternalIPAddress xmlns:u=\"urn:" + n.urnDomain + ":service:WANIPConnection:1\">\r\n" +
 		"</u:GetExternalIPAddress>"
 

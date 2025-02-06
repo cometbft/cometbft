@@ -409,6 +409,13 @@ func (bA *BitArray) UnmarshalJSON(bz []byte) error {
 	// Construct new BitArray and copy over.
 	numBits := len(bits)
 	bA2 := NewBitArray(numBits)
+	if bA2 == nil {
+		// Treat it as if we encountered the case: b == "null"
+		bA.Bits = 0
+		bA.Elems = nil
+		return nil
+	}
+
 	for i := 0; i < numBits; i++ {
 		if bits[i] == 'x' {
 			bA2.SetIndex(i, true)

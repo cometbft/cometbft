@@ -288,3 +288,18 @@ func TestBitArrayProtoBuf(t *testing.T) {
 		}
 	}
 }
+
+// Tests that UnmarshalJSON doesn't crash when no bits are passed into the JSON.
+// See issue https://github.com/cometbft/cometbft/issues/2658
+func TestUnmarshalJSONDoesntCrashOnZeroBits(t *testing.T) {
+	type indexCorpus struct {
+		BitArray *BitArray `json:"ba"`
+		Index    int       `json:"i"`
+	}
+
+	ic := new(indexCorpus)
+	blob := []byte(`{"BA":""}`)
+	err := json.Unmarshal(blob, ic)
+	require.NoError(t, err)
+	require.Equal(t, ic.BitArray, &BitArray{Bits: 0, Elems: nil})
+}

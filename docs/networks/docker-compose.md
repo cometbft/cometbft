@@ -64,7 +64,7 @@ To change the number of validators / non-validators change the `localnet-start` 
 ```makefile
 localnet-start: localnet-stop
   @if ! [ -f build/node0/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/cometbft:Z cometbft/localnode testnet --v 5 --n 3 --o . --populate-persistent-peers --starting-ip-address 192.167.10.2 ; fi
-  docker-compose up
+  docker compose up -d
 ```
 
 The command now will generate config files for 5 validators and 3

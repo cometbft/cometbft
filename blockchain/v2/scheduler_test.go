@@ -2374,7 +2374,7 @@ func TestSchedulerSetPeerRange(t *testing.T) {
 			base:       1,
 			height:     10,
 			wantErr:    true,
-			wantErrMsg: "Ignoring banned peer P1",
+			wantErrMsg: "ignoring banned peer P1",
 			wantBanned: true,
 		},
 		{

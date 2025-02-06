@@ -26,9 +26,9 @@ require (
 	github.com/snikch/goodman v0.0.0-20171125024755-10e37e294daa
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
-	github.com/stretchr/testify v1.9.0
-	golang.org/x/crypto v0.27.0
-	golang.org/x/net v0.29.0
+	github.com/stretchr/testify v1.10.0
+	golang.org/x/crypto v0.31.0
+	golang.org/x/net v0.33.0
 	google.golang.org/grpc v1.66.1
 )
 
@@ -47,10 +47,10 @@ require (
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cometbft/cometbft-db v0.9.5
 	github.com/cometbft/cometbft-load-test v0.2.0
-	github.com/go-git/go-git/v5 v5.12.0
+	github.com/go-git/go-git/v5 v5.13.0
 	github.com/golang/protobuf v1.5.4
 	github.com/ory/dockertest v3.3.5+incompatible
-	golang.org/x/sync v0.8.0
+	golang.org/x/sync v0.10.0
 	gonum.org/v1/gonum v0.15.0
 	google.golang.org/protobuf v1.34.2
 )
@@ -61,6 +61,7 @@ require github.com/opencontainers/runc v1.2.0-rc.2 // indirect
 replace (
 	github.com/adlio/schema v1.3.6 => github.com/informalsystems/schema v0.0.0-20240910074420-6f3a29ec8110
 
+	github.com/go-git/go-git/v5 => github.com/go-git/go-git/v5 v5.13.0
 	github.com/go-kit/kit v0.13.0 => github.com/informalsystems/kit v0.0.0-20240910100206-37b6b26dc6fd
 
 	github.com/spf13/afero v1.11.0 => github.com/informalsystems/afero v0.0.0-20240822164725-478adf757a7e
@@ -73,7 +74,7 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
-	github.com/ProtonMail/go-crypto v1.0.0 // indirect
+	github.com/ProtonMail/go-crypto v1.1.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
@@ -94,7 +95,7 @@ require (
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
-	github.com/go-git/go-billy/v5 v5.5.0 // indirect
+	github.com/go-git/go-billy/v5 v5.6.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.1.0 // indirect
 	github.com/golang/glog v1.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
@@ -127,7 +128,7 @@ require (
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/skeema/knownhosts v1.2.2 // indirect
+	github.com/skeema/knownhosts v1.3.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.7.0 // indirect
@@ -138,8 +139,8 @@ require (
 	go.etcd.io/bbolt v1.3.11 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
-	golang.org/x/sys v0.25.0 // indirect
-	golang.org/x/text v0.18.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect

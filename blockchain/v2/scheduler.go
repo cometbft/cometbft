@@ -323,7 +323,7 @@ func (sc *scheduler) banPeer(peerID p2p.ID) {
 func (sc *scheduler) setPeerRange(peerID p2p.ID, base int64, height int64) error {
 	if _, ok := sc.bannedPeers[peerID]; ok {
 		if sc.isPeerBanned(peerID) {
-			return fmt.Errorf("Ignoring banned peer %s", peerID)
+			return fmt.Errorf("ignoring banned peer %s", peerID)
 		}
 	}
 	peer := sc.ensurePeer(peerID)

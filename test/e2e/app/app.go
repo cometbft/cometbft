@@ -149,6 +149,19 @@ func (app *Application) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDelive
 	return abci.ResponseDeliverTx{Code: code.CodeTypeOK}
 }
 
+func (app *Application) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+	for _, ev := range req.ByzantineValidators {
+		app.logger.Info("Misbehavior. Slashing validator",
+			"validator_address", ev.GetValidator().Address,
+			"type", ev.GetType(),
+			"height", ev.GetHeight(),
+			"time", ev.GetTime(),
+			"total_voting_power", ev.GetTotalVotingPower(),
+		)
+	}
+	return abci.ResponseBeginBlock{}
+}
+
 // EndBlock implements ABCI.
 func (app *Application) EndBlock(req abci.RequestEndBlock) abci.ResponseEndBlock {
 	valUpdates, err := app.validatorUpdates(uint64(req.Height))

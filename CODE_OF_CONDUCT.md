@@ -1,13 +1,13 @@
 # The CometBFT Code of Conduct
 
-This code of conduct applies to all projects run by the CometBFT/Cosmos team and
+This code of conduct applies to all projects run by the CometBFT team and
 hence to CometBFT.
 
 ----
 
 # Conduct
 
-## Contact: conduct@interchain.io
+## Contact: conduct@informal.systems
 
 * We are committed to providing a friendly, safe and welcoming environment for
   all, regardless of level of experience, gender, gender identity and
@@ -35,7 +35,7 @@ hence to CometBFT.
 
 * Private harassment is also unacceptable. No matter who you are, if you feel
   you have been or are being harassed or made uncomfortable by a community
-  member, please contact one of the channel admins or the person mentioned above
+  member, please get in touch with one of the channel admins or the contact address above
   immediately. Whether you’re a regular contributor or a newcomer, we care about
   making this community a safe place for you and we’ve got your back.
 

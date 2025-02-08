@@ -1,13 +1,27 @@
 package kcp
 
 import (
+	"fmt"
 	"io"
 	"testing"
 	"time"
 
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/p2p/internal/nodekey"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/stretchr/testify/require"
 )
+
+func testAddr(t *testing.T) *na.NetAddr {
+	// Create a random node ID for testing
+	privKey := ed25519.GenPrivKey()
+	nodeID := nodekey.PubKeyToID(privKey.PubKey())
+
+	// Create address with ID
+	addr, err := na.NewFromString(fmt.Sprintf("%s@127.0.0.1:0", nodeID))
+	require.NoError(t, err)
+	return addr
+}
 
 func TestKCPTransportBasics(t *testing.T) {
 	// Create transport with options
@@ -23,9 +37,9 @@ func TestKCPTransportBasics(t *testing.T) {
 	require.NoError(t, err)
 
 	// Listen on a random port
-	addr, err := na.NewFromString("127.0.0.1:0")
-	require.NoError(t, err)
+	addr := testAddr(t)
 	err = transport.Listen(*addr)
+	require.NoError(t, err)
 
 	// Get the assigned address
 	netAddr := transport.NetAddr()
@@ -77,9 +91,9 @@ func TestKCPTransportConcurrent(t *testing.T) {
 	transport, err := NewTransport(nil)
 	require.NoError(t, err)
 
-	addr, err := na.NewFromString("127.0.0.1:0")
-	require.NoError(t, err)
+	addr := testAddr(t)
 	err = transport.Listen(*addr)
+	require.NoError(t, err)
 
 	// Launch multiple concurrent connections
 	const numConns = 10
@@ -135,9 +149,10 @@ func TestKCPTransportError(t *testing.T) {
 	require.Equal(t, ErrTransportNotListening, err)
 
 	// Try to listen on invalid address
-	invalidAddr, err := na.NewFromString("invalid-addr")
+	invalidAddr, err := na.NewFromString("deadbeef@invalid-addr")
 	require.NoError(t, err)
 	err = transport.Listen(*invalidAddr)
+	require.Error(t, err)
 
 	// Try to dial invalid address
 	_, err = transport.Dial(*invalidAddr)

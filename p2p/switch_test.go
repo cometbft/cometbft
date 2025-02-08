@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -23,6 +24,7 @@ import (
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	ni "github.com/cometbft/cometbft/p2p/internal/nodeinfo"
@@ -95,8 +97,13 @@ func (tr *TestReactor) getMsgs(chID byte) []PeerMessage {
 // convenience method for creating two switches connected to each other.
 // XXX: note this uses net.Pipe and not a proper TCP conn.
 func MakeSwitchPair(initSwitch func(int, *Switch) *Switch) (*Switch, *Switch) {
-	// Create two switches that will be interconnected.
 	switches := MakeConnectedSwitches(cfg, 2, initSwitch, Connect2Switches)
+
+	// Add cleanup to ensure proper shutdown
+	for _, sw := range switches {
+		sw.SetLogger(log.TestingLogger().With("switch", sw.NodeInfo().ID()))
+	}
+
 	return switches[0], switches[1]
 }
 
@@ -234,27 +241,30 @@ func TestSwitchFiltersOutItself(t *testing.T) {
 	s1 := MakeSwitch(cfg, 1, initSwitchFunc)
 	err := s1.Start()
 	require.NoError(t, err)
-	defer s1.Stop() //nolint:errcheck
+	t.Cleanup(func() {
+		err := s1.Stop()
+		require.NoError(t, err)
+	})
 
-	// simulate s1 having a public IP by creating a remote peer with the same ID
+	// Create remote peer with same ID
 	rp := newRemoteTCPPeerWithPrivKey(s1.nodeKey.PrivKey)
 	rp.Start()
+	t.Cleanup(rp.Stop)
 
-	// addr should be rejected in addPeer based on the same ID
+	// Wait for peer to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Should be rejected since it has the same ID
 	err = s1.DialPeerWithAddress(rp.Addr())
 	require.Error(t, err)
 	if errR, ok := err.(ErrRejected); ok {
-		if !errR.IsSelf() {
-			t.Fatalf("expected self to be rejected, but got %v", errR)
-		}
+		require.True(t, errR.IsSelf())
 	} else {
-		t.Fatalf("expected ErrRejected, but got %v", err)
+		t.Fatalf("expected ErrRejected, got %v", err)
 	}
 
 	assert.True(t, s1.addrBook.OurAddress(rp.Addr()))
 	assert.False(t, s1.addrBook.HasAddress(rp.Addr()))
-
-	rp.Stop()
 
 	assertNoPeersAfterTimeout(t, s1, 100*time.Millisecond)
 }
@@ -973,7 +983,8 @@ func (rp *remoteTCPPeer) ID() nodekey.ID {
 
 func (rp *remoteTCPPeer) Start() {
 	id := nodekey.PubKeyToID(rp.privKey.PubKey())
-	addr, err := na.NewFromString(string(id) + "@127.0.0.1:0")
+	port := 20000 + cmtrand.Int31n(40000)
+	addr, err := na.NewFromString(fmt.Sprintf("%s@127.0.0.1:%d", id, port))
 	if err != nil {
 		panic(err)
 	}
@@ -985,7 +996,9 @@ func (rp *remoteTCPPeer) Start() {
 }
 
 func (rp *remoteTCPPeer) Stop() {
-	rp.transport.Close()
+	if rp.transport != nil {
+		_ = rp.transport.Close()
+	}
 }
 
 func (rp *remoteTCPPeer) Dial(addr *na.NetAddr) (transport.Conn, error) {
@@ -1028,33 +1041,28 @@ func (rp *remoteTCPPeer) accept() {
 	for {
 		c, _, err := rp.transport.Accept()
 		if err != nil {
-			return
+			if strings.Contains(err.Error(), "use of closed") {
+				return
+			}
+			continue
 		}
 
 		_, err = handshake(rp.nodeInfo(), c.HandshakeStream(), time.Second)
 		if err != nil {
-			// Fixes TestSwitchFiltersOutItself.
-			//
-			// Without this timeout, rp will close its connection and the dialing
-			// switch readLoop may fail before the handshake is done. Hence you will
-			// see tcpconn.ErrNotRunning on Switch instead of ErrRejected. If we give
-			// a little bit of time here, the dialing switch will always fail with
-			// ErrRejected.
-			time.Sleep(100 * time.Millisecond)
 			_ = c.Close(err.Error())
-			return
+			continue
 		}
 
 		rp.testStream, err = c.OpenStream(testCh, nil)
 		if err != nil {
 			_ = c.Close(err.Error())
-			return
+			continue
 		}
 
 		if mconn, ok := c.(*tcpconn.MConnection); ok {
 			if err := mconn.Start(); err != nil {
 				_ = c.Close(err.Error())
-				return
+				continue
 			}
 		}
 	}

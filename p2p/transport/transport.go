@@ -6,6 +6,12 @@ import (
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 )
 
+const (
+	TCPProtocol  Protocol = "tcp"
+	QUICProtocol Protocol = "quic"
+	KCPProtocol  Protocol = "kcp"
+)
+
 // Transport connects the local node to the rest of the network.
 type Transport interface {
 	// NetAddr returns the network address of the local node.
@@ -19,6 +25,9 @@ type Transport interface {
 
 	// Listen starts listening on the specified address
 	Listen(addr na.NetAddr) error
+
+	// Protocol returns the transport protocol type
+	Protocol() Protocol
 }
 
 // StreamDescriptor describes a data stream. This could be a substream within a

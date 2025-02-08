@@ -124,21 +124,15 @@ func NewTransport(opts *Options) (*Transport, error) {
 }
 
 // Listen implements transport.Transport
-func (t *Transport) Listen(laddr string) error {
+func (t *Transport) Listen(addr na.NetAddr) error {
 	block, _ := kcp.NewNoneBlockCrypt(nil)
-
-	listener, err := kcp.ListenWithOptions(laddr, block, t.dataShards, t.parityShards)
+	listener, err := kcp.ListenWithOptions(addr.DialString(), block, t.dataShards, t.parityShards)
 	if err != nil {
 		return err
 	}
-
-	listener.SetReadBuffer(defaultReadBufferSize)
-	listener.SetWriteBuffer(defaultWriteBufferSize)
-
 	t.listener = listener
+	t.netAddr = &addr
 	t.isListening = true
-	t.netAddr = na.New("", listener.Addr())
-
 	return nil
 }
 
@@ -237,4 +231,8 @@ func configureSession(session *kcp.UDPSession, t *Transport) {
 
 	// Set window size
 	session.SetWindowSize(t.maxWindowSize, t.maxWindowSize)
+}
+
+func (t *Transport) Protocol() transport.Protocol {
+	return transport.KCPProtocol
 }

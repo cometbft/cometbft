@@ -32,17 +32,19 @@ func TestQUICTransportBasics(t *testing.T) {
 	require.NoError(t, err)
 
 	// Listen on a random port
-	err = transport.Listen("127.0.0.1:0")
+	addr, err := na.NewFromString("127.0.0.1:0")
 	require.NoError(t, err)
+	err = transport.Listen(*addr)
 
 	// Get the assigned address
-	addr := transport.NetAddr()
+	netAddr := transport.NetAddr()
+	addr = &netAddr // Convert NetAddr to *NetAddr
 
 	// Try to connect
 	clientTransport, err := NewTransport(opts)
 	require.NoError(t, err)
 
-	conn, err := clientTransport.Dial(addr)
+	conn, err := clientTransport.Dial(*addr)
 	require.NoError(t, err)
 
 	// Write some data using the handshake stream
@@ -84,12 +86,12 @@ func TestQUICTransportError(t *testing.T) {
 	require.Equal(t, ErrTransportNotListening, err)
 
 	// Try to listen on invalid address
-	err = transport.Listen("invalid-addr")
-	require.Error(t, err)
+	invalidAddr, err := na.NewFromString("invalid-addr")
+	require.NoError(t, err)
+	err = transport.Listen(*invalidAddr)
 
 	// Try to dial invalid address
-	invalidAddr := na.NetAddr{}
-	_, err = transport.Dial(invalidAddr)
+	_, err = transport.Dial(*invalidAddr)
 	require.Error(t, err)
 
 	require.NoError(t, transport.Close())

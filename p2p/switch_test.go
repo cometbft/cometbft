@@ -761,6 +761,10 @@ func (et errorTransport) Listen(addr na.NetAddr) error {
 	return fmt.Errorf("errorTransport cannot listen")
 }
 
+func (errorTransport) Protocol() transport.Protocol {
+	return transport.TCPProtocol
+}
+
 func TestSwitchAcceptRoutineErrorCases(t *testing.T) {
 	sw := NewSwitch(cfg, errorTransport{tcp.ErrFilterTimeout{}})
 	assert.NotPanics(t, func() {

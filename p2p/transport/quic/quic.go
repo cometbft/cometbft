@@ -86,13 +86,13 @@ func NewTransport(opts *Options) (*Transport, error) {
 }
 
 // Listen implements transport.Transport
-func (t *Transport) Listen(laddr string) error {
-	addr, err := net.ResolveUDPAddr("udp", laddr)
+func (t *Transport) Listen(addr na.NetAddr) error {
+	udpAddr, err := net.ResolveUDPAddr("udp", addr.DialString())
 	if err != nil {
 		return err
 	}
 
-	udpConn, err := net.ListenUDP("udp", addr)
+	udpConn, err := net.ListenUDP("udp", udpAddr)
 	if err != nil {
 		return err
 	}
@@ -103,9 +103,8 @@ func (t *Transport) Listen(laddr string) error {
 	}
 
 	t.listener = *listener
+	t.netAddr = &addr
 	t.isListening = true
-	t.netAddr = na.New("", listener.Addr())
-
 	return nil
 }
 
@@ -186,4 +185,9 @@ func (t *Transport) Close() error {
 // SetLogger sets the logger
 func (t *Transport) SetLogger(l log.Logger) {
 	t.logger = l
+}
+
+// Protocol implements transport.Transport
+func (t *Transport) Protocol() transport.Protocol {
+	return transport.QUICProtocol
 }

@@ -415,3 +415,8 @@ func resolveIPs(resolver IPResolver, c net.Conn) ([]net.IP, error) {
 
 	return ips, nil
 }
+
+// Add this method to MultiplexTransport
+func (mt *MultiplexTransport) Protocol() transport.Protocol {
+	return transport.TCPProtocol
+}

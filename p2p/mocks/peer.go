@@ -419,6 +419,26 @@ func (_m *Peer) String() string {
 	return r0
 }
 
+// Transport provides a mock function with no fields
+func (_m *Peer) Transport() transport.Transport {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Transport")
+	}
+
+	var r0 transport.Transport
+	if rf, ok := ret.Get(0).(func() transport.Transport); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(transport.Transport)
+		}
+	}
+
+	return r0
+}
+
 // TrySend provides a mock function with given fields: e
 func (_m *Peer) TrySend(e p2p.Envelope) error {
 	ret := _m.Called(e)

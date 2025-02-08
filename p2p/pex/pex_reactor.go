@@ -9,6 +9,7 @@ import (
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/internal/cmap"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
@@ -65,7 +66,7 @@ const (
 // Only accept pexAddrsMsg from peers we sent a corresponding pexRequestMsg too.
 // Only accept one pexRequestMsg every ~defaultEnsurePeersPeriod.
 type Reactor struct {
-	p2p.BaseReactor
+	*p2p.BaseReactor
 
 	book           AddrBook
 	config         *ReactorConfig
@@ -75,6 +76,7 @@ type Reactor struct {
 	// maps to prevent abuse
 	requestsSent         *cmap.CMap // ID->struct{}: unanswered send requests
 	lastReceivedRequests *cmap.CMap // ID->time.Time: last time peer requested from us
+	Logger               log.Logger
 
 	seedAddrs []*na.NetAddr
 
@@ -130,7 +132,7 @@ func NewReactor(b AddrBook, config *ReactorConfig) *Reactor {
 		lastReceivedRequests: cmap.NewCMap(),
 		crawlPeerInfos:       make(map[nodekey.ID]crawlPeerInfo),
 	}
-	r.BaseReactor = *p2p.NewBaseReactor("PEX", r)
+	r.BaseReactor = p2p.NewBaseReactor("PEX", r)
 	return r
 }
 
@@ -753,4 +755,9 @@ func markAddrInBookBasedOnErr(addr *na.NetAddr, book AddrBook, err error) {
 	default:
 		book.MarkAttempt(addr)
 	}
+}
+
+func (r *Reactor) SetLogger(logger log.Logger) {
+	r.Logger = logger
+	r.book.SetLogger(logger)
 }

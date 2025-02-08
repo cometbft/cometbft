@@ -6,14 +6,13 @@ import (
 	"net"
 	"time"
 
-	"golang.org/x/net/netutil"
-
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p/internal/fuzz"
 	"github.com/cometbft/cometbft/p2p/internal/nodekey"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/transport"
+
 	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
 
@@ -166,28 +165,28 @@ func (mt *MultiplexTransport) Accept() (transport.Conn, *na.NetAddr, error) {
 
 // Dial implements Transport.
 func (mt *MultiplexTransport) Dial(addr na.NetAddr) (transport.Conn, error) {
-	c, err := addr.DialTimeout(mt.dialTimeout)
+	var conn net.Conn
+	var err error
+
+	conn, err = addr.DialTimeout(mt.dialTimeout)
 	if err != nil {
 		return nil, err
 	}
 
 	if mt.mConfig.TestFuzz {
 		// so we have time to do peer handshakes and get set up.
-		c = fuzz.ConnAfterFromConfig(c, 10*time.Second, mt.mConfig.TestFuzzConfig)
+		conn = fuzz.ConnAfterFromConfig(conn, 10*time.Second, mt.mConfig.TestFuzzConfig)
 	}
 
 	// TODO(xla): Evaluate if we should apply filters if we explicitly dial.
-	if err := mt.filterConn(c); err != nil {
+	if err := mt.filterConn(conn); err != nil {
 		return nil, err
 	}
 
-	mconn, _, err := mt.upgrade(c, &addr)
+	mconn, _, err := mt.upgrade(conn, &addr)
 	if err != nil {
 		return nil, err
 	}
-	mconn.SetLogger(mt.logger.With("remote", addr))
-
-	go mt.cleanupConn(c.RemoteAddr(), mconn.Quit())
 
 	return mconn, nil
 }
@@ -203,17 +202,12 @@ func (mt *MultiplexTransport) Close() error {
 }
 
 func (mt *MultiplexTransport) Listen(addr na.NetAddr) error {
-	ln, err := net.Listen("tcp", addr.DialString())
+	listener, err := net.Listen("tcp", addr.DialString())
 	if err != nil {
 		return err
 	}
-
-	if mt.maxIncomingConnections > 0 {
-		ln = netutil.LimitListener(ln, mt.maxIncomingConnections)
-	}
-
-	mt.netAddr = *na.New(addr.ID, ln.Addr())
-	mt.listener = ln
+	mt.listener = listener
+	mt.netAddr = addr
 
 	go mt.acceptPeers()
 

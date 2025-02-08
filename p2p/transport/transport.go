@@ -16,6 +16,9 @@ type Transport interface {
 
 	// Dial dials the given address and returns a connection.
 	Dial(addr na.NetAddr) (Conn, error)
+
+	// Listen starts listening on the specified address
+	Listen(addr na.NetAddr) error
 }
 
 // StreamDescriptor describes a data stream. This could be a substream within a

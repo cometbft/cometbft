@@ -757,6 +757,10 @@ func (errorTransport) UpdateStreamDescriptors([]transport.StreamDescriptor) {
 	panic("not implemented")
 }
 
+func (et errorTransport) Listen(addr na.NetAddr) error {
+	return fmt.Errorf("errorTransport cannot listen")
+}
+
 func TestSwitchAcceptRoutineErrorCases(t *testing.T) {
 	sw := NewSwitch(cfg, errorTransport{tcp.ErrFilterTimeout{}})
 	assert.NotPanics(t, func() {

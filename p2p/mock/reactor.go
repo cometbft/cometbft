@@ -8,6 +8,7 @@ import (
 
 type Reactor struct {
 	p2p.BaseReactor
+	Logger log.Logger
 
 	Channels []transport.StreamDescriptor
 }
@@ -23,3 +24,7 @@ func (r *Reactor) StreamDescriptors() []transport.StreamDescriptor { return r.Ch
 func (*Reactor) AddPeer(_ p2p.Peer)                                {}
 func (*Reactor) RemovePeer(_ p2p.Peer, _ any)                      {}
 func (*Reactor) Receive(_ p2p.Envelope)                            {}
+
+func (r *Reactor) SetLogger(logger log.Logger) {
+	r.Logger = logger
+}

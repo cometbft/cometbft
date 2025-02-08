@@ -830,6 +830,18 @@ type P2PConfig struct { //nolint: maligned
 	// Fuzz connection
 	TestFuzz       bool            `mapstructure:"test_fuzz"`
 	TestFuzzConfig *FuzzConnConfig `mapstructure:"test_fuzz_config"`
+
+	// KCP configuration
+	UseKCP bool `mapstructure:"use_kcp"`
+
+	// QUIC configuration
+	UseQUIC bool `mapstructure:"use_quic"`
+}
+
+type KCPConfig struct {
+	NoDelay        int  `mapstructure:"no_delay"`
+	FastResend     int  `mapstructure:"fast_resend"`
+	CongestionCtrl bool `mapstructure:"congestion_ctrl"`
 }
 
 // DefaultP2PConfig returns a default configuration for the peer-to-peer layer.

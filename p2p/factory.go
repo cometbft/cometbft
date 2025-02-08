@@ -11,8 +11,6 @@ import (
 	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
 
-// TransportFactory creates either the default TCP transport or libp2p transport
-// based on configuration.
 type TransportFactory struct {
 	logger    log.Logger
 	config    *config.P2PConfig
@@ -20,7 +18,6 @@ type TransportFactory struct {
 	useLibp2p bool // Feature flag to enable libp2p
 }
 
-// NewTransportFactory creates a new transport factory.
 func NewTransportFactory(logger log.Logger, config *config.Config) *TransportFactory {
 	// Obtain your nodeKey from file or generate it as needed.
 	nk, err := LoadNodeKey(config.NodeKeyFile())
@@ -35,36 +32,14 @@ func NewTransportFactory(logger log.Logger, config *config.Config) *TransportFac
 	}
 }
 
-// CreateTransport returns either TCP or libp2p transport based on configuration.
 func (f *TransportFactory) CreateTransport() (transport.Transport, error) {
 	if f.useLibp2p {
-		// TODO: Implement libp2p transport here.
 		return nil, fmt.Errorf("libp2p transport not yet implemented")
 	}
 
-	// Return the existing TCP transport.
+	// Return TCP transport by default
 	return tcp.NewMultiplexTransport(
 		f.nodeKey,
 		conn.DefaultMConnConfig(),
 	), nil
-}
-
-// CreateSwitch creates a new switch with the appropriate transport.
-func (f *TransportFactory) CreateSwitch() (*Switch, error) {
-	tr, err := f.CreateTransport()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create transport: %w", err)
-	}
-
-	sw := NewSwitch(
-		f.config,
-		tr,
-	)
-	sw.SetLogger(f.logger)
-	return sw, nil
-}
-
-// SetLibp2p enables or disables libp2p transport.
-func (f *TransportFactory) SetLibp2p(enabled bool) {
-	f.useLibp2p = enabled
 }

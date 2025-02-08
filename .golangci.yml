@@ -3,44 +3,12 @@ run:
   timeout: 10m
 
 linters:
-  enable-all: true
-  disable:
-    - containedctx
-    - contextcheck
-    - cyclop
-    - dupword
-    - err113
-    - errname
-    - errorlint
-    - execinquery
-    - exhaustive
-    - exhaustruct
-    - forbidigo
-    - forcetypeassert
-    - funlen
-    - gochecknoglobals
-    - gochecknoinits
-    - gocognit
-    - gocyclo
-    - godox
-    - gomnd
-    - gomoddirectives
-    - interfacebloat
-    - intrange
-    - ireturn
-    - lll
-    - maintidx
-    - mnd
-    - nestif
-    - nilnil
-    - nlreturn
-    - nonamedreturns
-    - predeclared
-    - tagliatelle
-    - testifylint
-    - varnamelen
-    - wrapcheck
-    - wsl
+  disable-all: true
+  enable:
+    - errcheck
+    - gocritic
+    - revive
+    - gofumpt
 
 issues:
   exclude-rules:

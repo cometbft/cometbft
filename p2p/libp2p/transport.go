@@ -8,7 +8,7 @@ type LibP2PTransport struct {
 	// ... other fields
 }
 
-// Implement existing Transport interface
+// Implement existing Transport interface.
 func (t *LibP2PTransport) Accept() (string, error) {
 	return "chicken", nil
 }

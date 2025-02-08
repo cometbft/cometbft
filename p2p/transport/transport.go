@@ -6,13 +6,17 @@ import (
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 )
 
+// Protocol is a string type for transport protocols
+type Protocol string
+
+// Define protocol constants
 const (
 	TCPProtocol  Protocol = "tcp"
 	QUICProtocol Protocol = "quic"
 	KCPProtocol  Protocol = "kcp"
 )
 
-// Transport connects the local node to the rest of the network.
+// Transport defines the interface for network transports
 type Transport interface {
 	// NetAddr returns the network address of the local node.
 	NetAddr() na.NetAddr
@@ -25,6 +29,9 @@ type Transport interface {
 
 	// Listen starts listening on the specified address
 	Listen(addr na.NetAddr) error
+
+	// Close closes the transport
+	Close() error
 
 	// Protocol returns the transport protocol type
 	Protocol() Protocol

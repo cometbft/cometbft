@@ -143,6 +143,8 @@ linters-settings:
         disabled: true
       - name: unchecked-type-assertion
         disabled: true
+      - name: redefines-builtin-id
+        disabled: true
       - name: unhandled-error
         disabled: true
         arguments:

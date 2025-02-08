@@ -8,15 +8,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 )
 
-// Protocol represents different transport protocols
-type Protocol string
-
-const (
-	ProtocolTCP  Protocol = "tcp"
-	ProtocolQUIC Protocol = "quic"
-	ProtocolKCP  Protocol = "kcp"
-)
-
 // MetricsCollector defines the interface for collecting transport metrics
 type MetricsCollector interface {
 	// RecordLatency records round-trip latency

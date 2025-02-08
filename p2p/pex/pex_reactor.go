@@ -67,6 +67,7 @@ const (
 // Only accept one pexRequestMsg every ~defaultEnsurePeersPeriod.
 type Reactor struct {
 	*p2p.BaseReactor
+	sw p2p.Switch
 
 	book           AddrBook
 	config         *ReactorConfig
@@ -264,12 +265,12 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 			go func() {
 				// In a go-routine so it doesn't block .Receive.
 				e.Src.FlushStop()
-				r.Switch.StopPeerGracefully(e.Src)
+				r.sw.StopPeerGracefully(e.Src)
 			}()
 		} else {
 			// Check we're not receiving requests too frequently.
 			if err := r.receiveRequest(e.Src); err != nil {
-				r.Switch.StopPeerForError(e.Src, err)
+				r.sw.StopPeerForError(e.Src, err)
 				r.book.MarkBad(e.Src.SocketAddr(), defaultBanTime)
 				return
 			}
@@ -280,13 +281,13 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 		// If we asked for addresses, add them to the book
 		addrs, err := na.AddrsFromProtos(msg.Addrs)
 		if err != nil {
-			r.Switch.StopPeerForError(e.Src, err)
+			r.sw.StopPeerForError(e.Src, err)
 			r.book.MarkBad(e.Src.SocketAddr(), defaultBanTime)
 			return
 		}
 		err = r.ReceiveAddrs(addrs, e.Src)
 		if err != nil {
-			r.Switch.StopPeerForError(e.Src, err)
+			r.sw.StopPeerForError(e.Src, err)
 			if errors.Is(err, ErrUnsolicitedList) {
 				r.book.MarkBad(e.Src.SocketAddr(), defaultBanTime)
 			}
@@ -426,7 +427,7 @@ func (r *Reactor) ensurePeersRoutine() {
 			r.ensurePeers(false)
 		case <-r.book.Quit():
 			return
-		case <-r.Quit():
+		case <-r.BaseReactor.Quit():
 			return
 		}
 	}
@@ -438,9 +439,12 @@ func (r *Reactor) ensurePeersRoutine() {
 // the node operator. It should not be used to compute what addresses are
 // already connected or not.
 func (r *Reactor) ensurePeers(ensurePeersPeriodElapsed bool) {
+	if !r.BaseReactor.IsRunning() || !r.book.IsRunning() {
+		return
+	}
 	var (
-		out, in, dial = r.Switch.NumPeers()
-		numToDial     = r.Switch.MaxNumOutboundPeers() - (out + dial)
+		out, in, dial = r.sw.NumPeers()
+		numToDial     = r.sw.MaxNumOutboundPeers() - (out + dial)
 	)
 	r.Logger.Info(
 		"Ensure peers",
@@ -464,7 +468,7 @@ func (r *Reactor) ensurePeers(ensurePeersPeriodElapsed bool) {
 	maxAttempts := numToDial * 3
 
 	for i := 0; i < maxAttempts && len(toDial) < numToDial; i++ {
-		if !r.IsRunning() || !r.book.IsRunning() {
+		if !r.BaseReactor.IsRunning() || !r.book.IsRunning() {
 			return
 		}
 
@@ -475,7 +479,7 @@ func (r *Reactor) ensurePeers(ensurePeersPeriodElapsed bool) {
 		if _, selected := toDial[try.ID]; selected {
 			continue
 		}
-		if r.Switch.IsDialingOrExistingAddress(try) {
+		if r.sw.IsDialingOrExistingAddress(try) {
 			continue
 		}
 		// TODO: consider moving some checks from toDial into here
@@ -506,7 +510,7 @@ func (r *Reactor) ensurePeers(ensurePeersPeriodElapsed bool) {
 
 	if r.book.NeedMoreAddrs() {
 		// 1) Pick a random peer and ask for more.
-		peer := r.Switch.Peers().Random()
+		peer := r.sw.Peers().Random()
 		if peer != nil && ensurePeersPeriodElapsed {
 			r.Logger.Info("We need more addresses. Sending pexRequest to random peer", "peer", peer)
 			r.RequestAddrs(peer)
@@ -533,7 +537,7 @@ func (r *Reactor) dialAttemptsInfo(addr *na.NetAddr) (attempts int, lastDialed t
 
 func (r *Reactor) dialPeer(addr *na.NetAddr) error {
 	attempts, lastDialed := r.dialAttemptsInfo(addr)
-	if !r.Switch.IsPeerPersistent(addr) && attempts > maxAttemptsToDial {
+	if !r.sw.IsPeerPersistent(addr) && attempts > maxAttemptsToDial {
 		r.book.MarkBad(addr, defaultBanTime)
 		return ErrMaxAttemptsToDial{Max: maxAttemptsToDial}
 	}
@@ -549,7 +553,7 @@ func (r *Reactor) dialPeer(addr *na.NetAddr) error {
 		}
 	}
 
-	err := r.Switch.DialPeerWithAddress(addr)
+	err := r.sw.DialPeerWithAddress(addr)
 	if err != nil {
 		if _, ok := err.(p2p.ErrCurrentlyDialingOrExistingAddress); ok {
 			return err
@@ -575,7 +579,7 @@ func (r *Reactor) dialPeer(addr *na.NetAddr) error {
 func (r *Reactor) maxBackoffDurationForPeer(addr *na.NetAddr, planned time.Duration) time.Duration {
 	if r.config.PersistentPeersMaxDialPeriod > 0 &&
 		planned > r.config.PersistentPeersMaxDialPeriod &&
-		r.Switch.IsPeerPersistent(addr) {
+		r.sw.IsPeerPersistent(addr) {
 		return r.config.PersistentPeersMaxDialPeriod
 	}
 	return planned
@@ -607,21 +611,18 @@ func (r *Reactor) checkSeeds() (numOnline int, netAddrs []*na.NetAddr, err error
 // randomly dial seeds until we connect to one or exhaust them.
 func (r *Reactor) dialSeeds() {
 	perm := cmtrand.Perm(len(r.seedAddrs))
-	// perm := r.Switch.rng.Perm(lSeeds)
 	for _, i := range perm {
-		// dial a random seed
 		seedAddr := r.seedAddrs[i]
-		err := r.Switch.DialPeerWithAddress(seedAddr)
+		err := r.sw.DialPeerWithAddress(seedAddr)
 
 		switch err.(type) {
 		case nil, p2p.ErrCurrentlyDialingOrExistingAddress:
 			return
 		}
-		r.Switch.Logger.Error("Error dialing seed", "err", err, "seed", seedAddr)
+		r.Logger.Error("Error dialing seed", "err", err, "seed", seedAddr)
 	}
-	// do not write error message if there were no seeds specified in config
 	if len(r.seedAddrs) > 0 {
-		r.Switch.Logger.Error("Couldn't connect to any seeds")
+		r.Logger.Error("Couldn't connect to any seeds")
 	}
 }
 
@@ -662,7 +663,7 @@ func (r *Reactor) crawlPeersRoutine() {
 			r.cleanupCrawlPeerInfos()
 		case <-r.book.Quit():
 			return
-		case <-r.Quit():
+		case <-r.BaseReactor.Quit():
 			return
 		}
 	}
@@ -671,7 +672,7 @@ func (r *Reactor) crawlPeersRoutine() {
 // nodeHasSomePeersOrDialingAny returns true if the node is connected to some
 // peers or dialing them currently.
 func (r *Reactor) nodeHasSomePeersOrDialingAny() bool {
-	out, in, dial := r.Switch.NumPeers()
+	out, in, dial := r.sw.NumPeers()
 	return out+in+dial > 0
 }
 
@@ -712,7 +713,7 @@ func (r *Reactor) crawlPeers(addrs []*na.NetAddr) {
 			continue
 		}
 
-		peer := r.Switch.Peers().Get(addr.ID)
+		peer := r.sw.Peers().Get(addr.ID)
 		if peer != nil {
 			r.RequestAddrs(peer)
 		}
@@ -735,7 +736,7 @@ func (r *Reactor) cleanupCrawlPeerInfos() {
 
 // attemptDisconnects checks if we've been with each peer long enough to disconnect.
 func (r *Reactor) attemptDisconnects() {
-	for _, peer := range r.Switch.Peers().Copy() {
+	for _, peer := range r.sw.Peers().Copy() {
 		state := peer.ConnState()
 		if state.ConnectedFor < r.config.SeedDisconnectWaitPeriod {
 			continue
@@ -743,7 +744,7 @@ func (r *Reactor) attemptDisconnects() {
 		if peer.IsPersistent() {
 			continue
 		}
-		r.Switch.StopPeerGracefully(peer)
+		r.sw.StopPeerGracefully(peer)
 	}
 }
 
@@ -760,4 +761,11 @@ func markAddrInBookBasedOnErr(addr *na.NetAddr, book AddrBook, err error) {
 func (r *Reactor) SetLogger(logger log.Logger) {
 	r.Logger = logger
 	r.book.SetLogger(logger)
+}
+
+// Update SetSwitch to match the interface requirement
+func (r *Reactor) SetSwitch(sw *p2p.Switch) {
+	r.BaseReactor.SetSwitch(sw)
+	r.sw = *sw
+	r.Logger = sw.Logger().With("reactor", "PEX")
 }

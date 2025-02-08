@@ -31,6 +31,7 @@ const metricsTickerDuration = 1 * time.Second
 type peerConfig struct {
 	onPeerError func(Peer, any)
 	outbound    bool
+	transport   transport.Transport
 	// isPersistent allows you to set a function, which, given socket address
 	// (for outbound peers) OR self-reported address (for inbound peers), tells
 	// if the peer is persistent or not.
@@ -67,6 +68,8 @@ type Peer interface {
 
 	SetRemovalFailed()
 	GetRemovalFailed() bool
+
+	Transport() transport.Transport
 }
 
 // ----------------------------------------------------------
@@ -75,6 +78,7 @@ type Peer interface {
 type peerConn struct {
 	outbound       bool
 	persistent     bool
+	transport      transport.Transport
 	transport.Conn // Source connection
 
 	socketAddr *na.NetAddr
@@ -87,12 +91,14 @@ func newPeerConn(
 	outbound, persistent bool,
 	conn transport.Conn,
 	socketAddr *na.NetAddr,
+	transport transport.Transport,
 ) peerConn {
 	return peerConn{
 		outbound:   outbound,
 		persistent: persistent,
 		Conn:       conn,
 		socketAddr: socketAddr,
+		transport:  transport,
 	}
 }
 
@@ -521,6 +527,7 @@ func wrapPeer(c transport.Conn, ni ni.NodeInfo, cfg peerConfig, socketAddr *na.N
 		persistent,
 		c,
 		socketAddr,
+		cfg.transport,
 	)
 
 	return newPeer(
@@ -530,4 +537,9 @@ func wrapPeer(c transport.Conn, ni ni.NodeInfo, cfg peerConfig, socketAddr *na.N
 		cfg.onPeerError,
 		PeerMetrics(cfg.metrics),
 	)
+}
+
+// Transport returns the underlying transport used by the peer
+func (p *peer) Transport() transport.Transport {
+	return p.peerConn.transport
 }

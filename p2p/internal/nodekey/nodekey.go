@@ -2,9 +2,10 @@ package nodekey
 
 import (
 	"bytes"
-	"encoding/hex"
 	"fmt"
 	"os"
+
+	mh "github.com/multiformats/go-multihash"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -17,7 +18,7 @@ type ID string
 
 // IDByteLength is the length of a crypto.Address. Currently only 20.
 // TODO: support other length addresses ?
-const IDByteLength = crypto.AddressSize
+const IDByteLength = 32
 
 // ------------------------------------------------------------------------------
 // Persistent peer ID
@@ -42,7 +43,18 @@ func (nk *NodeKey) PubKey() crypto.PubKey {
 // PubKeyToID returns the ID corresponding to the given PubKey.
 // It's the hex-encoding of the pubKey.Address().
 func PubKeyToID(pubKey crypto.PubKey) ID {
-	return ID(hex.EncodeToString(pubKey.Address()))
+	var alg uint64 = mh.SHA2_256
+	hash, _ := mh.Sum(pubKey.Bytes(), alg, -1)
+	return ID(hash.B58String())
+}
+
+func DecodeID(s string) (ID, error) {
+	// base58 encoded sha256 or identity multihash
+	m, err := mh.FromB58String(s)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse peer ID: %s", err)
+	}
+	return ID(m), nil
 }
 
 // LoadOrGen attempts to load the NodeKey from the given filePath. If

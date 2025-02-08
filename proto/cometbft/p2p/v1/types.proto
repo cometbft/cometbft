@@ -10,6 +10,8 @@ message NetAddress {
   string id   = 1 [(gogoproto.customname) = "ID"];
   string ip   = 2 [(gogoproto.customname) = "IP"];
   uint32 port = 3;
+  // If the multiaddr is present, ip and port can be empty.
+  bytes  multiaddr = 4;
 }
 
 // ProtocolVersion represents the current p2p protocol version.

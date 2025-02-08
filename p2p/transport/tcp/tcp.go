@@ -13,7 +13,7 @@ import (
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/transport"
 
-	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
+	"github.com/cometbft/cometbft/p2p/transport/mconn"
 )
 
 const (
@@ -31,7 +31,7 @@ type IPResolver interface {
 // asynchronously running routine to the Accept method.
 type accept struct {
 	netAddr *na.NetAddr
-	conn    *conn.MConnection
+	conn    *mconn.MConnection
 	err     error
 }
 
@@ -112,7 +112,7 @@ type MultiplexTransport struct {
 	// TODO(xla): This config is still needed as we parameterise peerConn and
 	// peer currently. All relevant configuration should be refactored into options
 	// with sane defaults.
-	mConfig *conn.MConnConfig
+	mConfig *mconn.MConnConfig
 	logger  log.Logger
 }
 
@@ -122,7 +122,7 @@ var (
 )
 
 // NewMultiplexTransport returns a tcp connected multiplexed peer.
-func NewMultiplexTransport(nodeKey nodekey.NodeKey, mConfig conn.MConnConfig) *MultiplexTransport {
+func NewMultiplexTransport(nodeKey nodekey.NodeKey, mConfig mconn.MConnConfig) *MultiplexTransport {
 	return &MultiplexTransport{
 		acceptc:          make(chan accept),
 		closec:           make(chan struct{}),
@@ -149,14 +149,18 @@ func (mt *MultiplexTransport) NetAddr() na.NetAddr {
 
 // Accept implements Transport.
 func (mt *MultiplexTransport) Accept() (transport.Conn, *na.NetAddr, error) {
+	if mt == nil || mt.listener == nil {
+		return nil, nil, ErrTransportClosed{}
+	}
+
 	select {
-	// This case should never have any side-effectful/blocking operations to
-	// ensure that quality peers are ready to be used.
 	case a := <-mt.acceptc:
+		if a.conn == nil && a.err == nil {
+			return nil, nil, ErrTransportClosed{}
+		}
 		if a.err != nil {
 			return nil, nil, a.err
 		}
-
 		return a.conn, a.netAddr, nil
 	case <-mt.closec:
 		return nil, nil, ErrTransportClosed{}
@@ -201,17 +205,48 @@ func (mt *MultiplexTransport) Close() error {
 	return nil
 }
 
+// Listen implements Transport.
 func (mt *MultiplexTransport) Listen(addr na.NetAddr) error {
-	listener, err := net.Listen("tcp", addr.DialString())
+	// Store the NetAddr for later use
+	mt.netAddr = addr
+
+	ln, err := net.Listen("tcp", addr.DialString())
 	if err != nil {
 		return err
 	}
-	mt.listener = listener
-	mt.netAddr = addr
 
+	mt.listener = ln
+
+	// Start a goroutine to accept connections
 	go mt.acceptPeers()
 
 	return nil
+}
+
+func (mt *MultiplexTransport) acceptPeers() {
+	for {
+		conn, err := mt.listener.Accept()
+
+		select {
+		case <-mt.closec:
+			if conn != nil {
+				_ = conn.Close()
+			}
+			return
+		default:
+		}
+
+		if err != nil {
+			if !mt.IsRunning() {
+				return
+			}
+			mt.logger.Error("Failed to accept connection", "err", err)
+			continue
+		}
+
+		// Handle the connection in a new goroutine
+		go mt.handleIncomingConnection(conn)
+	}
 }
 
 func (mt *MultiplexTransport) cleanupConn(netAddr net.Addr, quitCh <-chan struct{}) {
@@ -223,74 +258,54 @@ func (mt *MultiplexTransport) cleanupConn(netAddr net.Addr, quitCh <-chan struct
 	}
 }
 
-func (mt *MultiplexTransport) acceptPeers() {
-	for {
-		c, err := mt.listener.Accept()
-		if err != nil {
-			// If Close() has been called, silently exit.
-			select {
-			case _, ok := <-mt.closec:
-				if !ok {
-					return
-				}
-			default:
-				// Transport is not closed
+func (mt *MultiplexTransport) handleIncomingConnection(conn net.Conn) {
+	// Connection upgrade and filtering should be asynchronous to avoid
+	// Head-of-line blocking[0].
+	// Reference:  https://github.com/tendermint/tendermint/issues/2047
+	//
+	// [0] https://en.wikipedia.org/wiki/Head-of-line_blocking
+	defer func() {
+		if r := recover(); r != nil {
+			err := ErrRejected{
+				conn:          conn,
+				err:           fmt.Errorf("recovered from panic: %v", r),
+				isAuthFailure: true,
 			}
-
-			mt.acceptc <- accept{err: err}
-			return
-		}
-
-		// Connection upgrade and filtering should be asynchronous to avoid
-		// Head-of-line blocking[0].
-		// Reference:  https://github.com/tendermint/tendermint/issues/2047
-		//
-		// [0] https://en.wikipedia.org/wiki/Head-of-line_blocking
-		go func(c net.Conn) {
-			defer func() {
-				if r := recover(); r != nil {
-					err := ErrRejected{
-						conn:          c,
-						err:           fmt.Errorf("recovered from panic: %v", r),
-						isAuthFailure: true,
-					}
-					select {
-					case mt.acceptc <- accept{err: err}:
-					case <-mt.closec:
-						// Give up if the transport was closed.
-						_ = c.Close()
-						return
-					}
-				}
-			}()
-
-			var (
-				mconn        *conn.MConnection
-				remotePubKey crypto.PubKey
-				netAddr      *na.NetAddr
-			)
-
-			err := mt.filterConn(c)
-			if err == nil {
-				mconn, remotePubKey, err = mt.upgrade(c, nil)
-				if err == nil {
-					addr := c.RemoteAddr()
-					id := nodekey.PubKeyToID(remotePubKey)
-					netAddr = na.New(id, addr)
-					mconn.SetLogger(mt.logger.With("remote", netAddr))
-					go mt.cleanupConn(addr, mconn.Quit())
-				}
-			}
-
 			select {
-			case mt.acceptc <- accept{netAddr, mconn, err}:
-				// Make the upgraded peer available.
+			case mt.acceptc <- accept{err: err}:
 			case <-mt.closec:
 				// Give up if the transport was closed.
-				_ = c.Close()
+				_ = conn.Close()
 				return
 			}
-		}(c)
+		}
+	}()
+
+	var (
+		mconn        *mconn.MConnection
+		remotePubKey crypto.PubKey
+		netAddr      *na.NetAddr
+	)
+
+	err := mt.filterConn(conn)
+	if err == nil {
+		mconn, remotePubKey, err = mt.upgrade(conn, nil)
+		if err == nil {
+			addr := conn.RemoteAddr()
+			id := nodekey.PubKeyToID(remotePubKey)
+			netAddr = na.New(id, addr)
+			mconn.SetLogger(mt.logger.With("remote", netAddr))
+			go mt.cleanupConn(addr, mconn.Quit())
+		}
+	}
+
+	select {
+	case mt.acceptc <- accept{netAddr, mconn, err}:
+		// Make the upgraded peer available.
+	case <-mt.closec:
+		// Give up if the transport was closed.
+		_ = conn.Close()
+		return
 	}
 }
 
@@ -339,7 +354,7 @@ func (mt *MultiplexTransport) filterConn(c net.Conn) (err error) {
 func (mt *MultiplexTransport) upgrade(
 	c net.Conn,
 	dialedAddr *na.NetAddr,
-) (*conn.MConnection, crypto.PubKey, error) {
+) (*mconn.MConnection, crypto.PubKey, error) {
 	var err error
 	defer func() {
 		if err != nil {
@@ -376,19 +391,19 @@ func (mt *MultiplexTransport) upgrade(
 	}
 
 	// Copy MConnConfig to avoid it being modified by the transport.
-	return conn.NewMConnection(secretConn, *mt.mConfig), remotePubKey, nil
+	return mconn.NewMConnection(secretConn, *mt.mConfig), remotePubKey, nil
 }
 
 func upgradeSecretConn(
 	c net.Conn,
 	timeout time.Duration,
 	privKey crypto.PrivKey,
-) (*conn.SecretConnection, error) {
+) (*mconn.SecretConnection, error) {
 	if err := c.SetDeadline(time.Now().Add(timeout)); err != nil {
 		return nil, err
 	}
 
-	sc, err := conn.MakeSecretConnection(c, privKey)
+	sc, err := mconn.MakeSecretConnection(c, privKey)
 	if err != nil {
 		return nil, err
 	}
@@ -419,4 +434,14 @@ func resolveIPs(resolver IPResolver, c net.Conn) ([]net.IP, error) {
 // Add this method to MultiplexTransport
 func (mt *MultiplexTransport) Protocol() transport.Protocol {
 	return transport.TCPProtocol
+}
+
+// IsRunning returns whether the transport is running
+func (mt *MultiplexTransport) IsRunning() bool {
+	select {
+	case <-mt.closec:
+		return false
+	default:
+		return mt.listener != nil
+	}
 }

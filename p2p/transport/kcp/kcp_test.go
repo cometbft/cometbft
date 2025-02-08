@@ -1,14 +1,14 @@
-package kcp
+package kcp_test
 
 import (
 	"fmt"
 	"io"
 	"testing"
-	"time"
 
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/p2p/internal/nodekey"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
+	"github.com/cometbft/cometbft/p2p/transport/kcp"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,33 +24,32 @@ func testAddr(t *testing.T) *na.NetAddr {
 }
 
 func TestKCPTransportBasics(t *testing.T) {
-	// Create transport with options
-	opts := &Options{
+	privKey := ed25519.GenPrivKey()
+	nodeID := nodekey.PubKeyToID(privKey.PubKey())
+
+	opts := &kcp.Options{
 		DataShards:    2,
 		ParityShards:  1,
 		MaxWindowSize: 32768,
-		ReadTimeout:   time.Second,
-		WriteTimeout:  time.Second,
 	}
 
-	transport, err := NewTransport(opts)
+	transport, err := kcp.NewTransport(opts)
 	require.NoError(t, err)
 
-	// Listen on a random port
-	addr := testAddr(t)
+	// Create address without DNS lookup
+	addr, err := na.NewFromString(fmt.Sprintf("%s@127.0.0.1:0", nodeID))
+	require.NoError(t, err)
+
 	err = transport.Listen(*addr)
 	require.NoError(t, err)
 
-	// Get the assigned address
+	// Use the actual listening address
 	netAddr := transport.NetAddr()
-	addr = &netAddr // Convert NetAddr to *NetAddr
+	addr = &netAddr
 
-	// Try to connect
-	clientTransport, err := NewTransport(opts)
+	conn, err := transport.Dial(*addr)
 	require.NoError(t, err)
-
-	conn, err := clientTransport.Dial(*addr)
-	require.NoError(t, err)
+	require.NotNil(t, conn)
 
 	// Write some data using the handshake stream
 	testData := []byte("hello world")
@@ -84,11 +83,10 @@ func TestKCPTransportBasics(t *testing.T) {
 	require.NoError(t, conn.Close("test done"))
 	require.NoError(t, serverConn.Close("test done"))
 	require.NoError(t, transport.Close())
-	require.NoError(t, clientTransport.Close())
 }
 
 func TestKCPTransportConcurrent(t *testing.T) {
-	transport, err := NewTransport(nil)
+	transport, err := kcp.NewTransport(nil)
 	require.NoError(t, err)
 
 	addr := testAddr(t)
@@ -101,7 +99,7 @@ func TestKCPTransportConcurrent(t *testing.T) {
 
 	for i := 0; i < numConns; i++ {
 		go func() {
-			clientTransport, err := NewTransport(nil)
+			clientTransport, err := kcp.NewTransport(nil)
 			require.NoError(t, err)
 
 			conn, err := clientTransport.Dial(*addr)
@@ -123,13 +121,13 @@ func TestKCPTransportConcurrent(t *testing.T) {
 		serverConn, _, err := transport.Accept()
 		require.NoError(t, err)
 
-		go func(conn *Conn) {
+		go func(conn *kcp.Conn) {
 			buf := make([]byte, 1024)
 			hstream := conn.HandshakeStream()
 			_, err := io.ReadFull(hstream, buf[:9]) // len("test data") = 9
 			require.NoError(t, err)
 			require.NoError(t, conn.Close("done"))
-		}(serverConn.(*Conn))
+		}(serverConn.(*kcp.Conn))
 	}
 
 	// Wait for all clients to finish
@@ -141,12 +139,12 @@ func TestKCPTransportConcurrent(t *testing.T) {
 }
 
 func TestKCPTransportError(t *testing.T) {
-	transport, err := NewTransport(nil)
+	transport, err := kcp.NewTransport(nil)
 	require.NoError(t, err)
 
 	// Try to accept before listening
 	_, _, err = transport.Accept()
-	require.Equal(t, ErrTransportNotListening, err)
+	require.Equal(t, kcp.ErrTransportNotListening, err)
 
 	// Try to listen on invalid address
 	invalidAddr, err := na.NewFromString("deadbeef@invalid-addr")

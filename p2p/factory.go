@@ -11,9 +11,9 @@ import (
 	"github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/transport"
 	"github.com/cometbft/cometbft/p2p/transport/kcp"
+	"github.com/cometbft/cometbft/p2p/transport/mconn"
 	"github.com/cometbft/cometbft/p2p/transport/quic"
 	"github.com/cometbft/cometbft/p2p/transport/tcp"
-	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 )
 
 type TransportFactory struct {
@@ -73,7 +73,7 @@ func (f *TransportFactory) CreateTransports() ([]transport.Transport, error) {
 	transports = append(transports, kcpTransport)
 
 	// TCP Transport
-	tcpTransport := tcp.NewMultiplexTransport(f.nodeKey, conn.DefaultMConnConfig())
+	tcpTransport := tcp.NewMultiplexTransport(f.nodeKey, mconn.DefaultMConnConfig())
 	tcpAddr, err := netaddr.NewFromString("0.0.0.0:26656")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create TCP address: %w", err)

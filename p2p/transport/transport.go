@@ -4,6 +4,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 
 	na "github.com/cometbft/cometbft/p2p/netaddr"
+	"github.com/cometbft/cometbft/p2p/transport/types"
 )
 
 // Protocol is a string type for transport protocols
@@ -22,10 +23,10 @@ type Transport interface {
 	NetAddr() na.NetAddr
 
 	// Accept waits for and returns the next connection to the local node.
-	Accept() (Conn, *na.NetAddr, error)
+	Accept() (types.Conn, *na.NetAddr, error)
 
 	// Dial dials the given address and returns a connection.
-	Dial(addr na.NetAddr) (Conn, error)
+	Dial(addr na.NetAddr) (types.Conn, error)
 
 	// Listen starts listening on the specified address
 	Listen(addr na.NetAddr) error

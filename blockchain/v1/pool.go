@@ -2,20 +2,17 @@ package v1
 
 import (
 	"sort"
-	"time"
 
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/types"
-	cmttime "github.com/tendermint/tendermint/types/time"
 )
 
 // BlockPool keeps track of the fast sync peers, block requests and block responses.
 type BlockPool struct {
 	logger log.Logger
 	// Set of peers that have sent status responses, with height bigger than pool.Height
-	peers       map[p2p.ID]*BpPeer
-	bannedPeers map[p2p.ID]time.Time
+	peers map[p2p.ID]*BpPeer
 	// Set of block heights and the corresponding peers from where a block response is expected or has been received.
 	blocks map[int64]p2p.ID
 
@@ -33,7 +30,6 @@ func NewBlockPool(height int64, toBcR bcReactor) *BlockPool {
 		Height:            height,
 		MaxPeerHeight:     0,
 		peers:             make(map[p2p.ID]*BpPeer),
-		bannedPeers:       make(map[p2p.ID]time.Time),
 		blocks:            make(map[int64]p2p.ID),
 		plannedRequests:   make(map[int64]struct{}),
 		nextRequestHeight: height,
@@ -70,25 +66,6 @@ func (pool *BlockPool) updateMaxPeerHeight() {
 	pool.MaxPeerHeight = newMax
 }
 
-// IsPeerBanned returns true if the peer is banned.
-func (pool *BlockPool) IsPeerBanned(peerID p2p.ID) bool {
-	return pool.isPeerBanned(peerID)
-}
-
-// CONTRACT: pool.mtx must be locked.
-func (pool *BlockPool) isPeerBanned(peerID p2p.ID) bool {
-	// AGORIC: inline because our cmttime is too old
-	// return cmttime.Since(pool.bannedPeers[peerID]) < time.Second*60
-	t := pool.bannedPeers[peerID]
-	return cmttime.Now().Sub(t) < time.Second*60
-}
-
-// CONTRACT: pool.mtx must be locked.
-func (pool *BlockPool) banPeer(peerID p2p.ID) {
-	pool.logger.Debug("Banning peer", "id", peerID)
-	pool.bannedPeers[peerID] = cmttime.Now()
-}
-
 // UpdatePeer adds a new peer or updates an existing peer with a new base and height.
 // If a peer is short it is not added.
 func (pool *BlockPool) UpdatePeer(peerID p2p.ID, base int64, height int64) error {
@@ -96,10 +73,6 @@ func (pool *BlockPool) UpdatePeer(peerID p2p.ID, base int64, height int64) error
 	peer := pool.peers[peerID]
 
 	if peer == nil {
-		if pool.isPeerBanned(peerID) {
-			pool.logger.Debug("Ignoring banned peer", "peer", peerID)
-			return errPeerLowersItsHeight
-		}
 		if height < pool.Height {
 			pool.logger.Info("Peer height too small",
 				"peer", peerID, "height", height, "fsm_height", pool.Height)
@@ -112,14 +85,8 @@ func (pool *BlockPool) UpdatePeer(peerID p2p.ID, base int64, height int64) error
 		pool.logger.Info("added peer", "peerID", peerID, "base", base, "height", height, "num_peers", len(pool.peers))
 	} else {
 		// Check if peer is lowering its height. This is not allowed.
-		if base < peer.Base || height < peer.Height {
-			pool.logger.Info("Peer is reporting height/base that is lower than what it previously reported",
-				"peer", peerID,
-				"height", height, "base", base,
-				"prevHeight", peer.Height, "prevBase", peer.Base)
-			// RemovePeer will redo all requesters associated with this peer.
+		if height < peer.Height {
 			pool.RemovePeer(peerID, errPeerLowersItsHeight)
-			pool.banPeer(peerID)
 			return errPeerLowersItsHeight
 		}
 		// Update existing peer.
@@ -193,14 +160,7 @@ func (pool *BlockPool) removeBadPeers() {
 	for _, peer := range pool.peers {
 		if err := peer.CheckRate(); err != nil {
 			pool.RemovePeer(peer.ID, err)
-			// [AGORIC] maybe: pool.banPeer(peer.ID)
 			pool.toBcR.sendPeerError(err, peer.ID)
-		}
-	}
-
-	for peerID := range pool.bannedPeers {
-		if !pool.isPeerBanned(peerID) {
-			delete(pool.bannedPeers, peerID)
 		}
 	}
 }

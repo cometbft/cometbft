@@ -46,9 +46,8 @@ func (v *Validator) ValidateBasic() error {
 		return errors.New("validator has negative voting power")
 	}
 
-	addr := v.PubKey.Address()
-	if !bytes.Equal(v.Address, addr) {
-		return fmt.Errorf("validator address is incorrectly derived from pubkey. Exp: %v, got %v", addr, v.Address)
+	if len(v.Address) != crypto.AddressSize {
+		return fmt.Errorf("validator address is the wrong size: %v", v.Address)
 	}
 
 	return nil

@@ -2,7 +2,6 @@ package store
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"os"
 	"runtime/debug"
@@ -43,9 +42,15 @@ func makeTestCommit(height int64, timestamp time.Time) *types.Commit {
 		types.BlockID{Hash: []byte(""), PartSetHeader: types.PartSetHeader{Hash: []byte(""), Total: 2}}, commitSigs)
 }
 
+func makeTxs(height int64) (txs []types.Tx) {
+	for i := 0; i < 10; i++ {
+		txs = append(txs, types.Tx([]byte{byte(height), byte(i)}))
+	}
+	return txs
+}
+
 func makeBlock(height int64, state sm.State, lastCommit *types.Commit) *types.Block {
-	txs := []types.Tx{make([]byte, types.BlockPartSizeBytes)} // TX taking one block part alone
-	block, _ := state.MakeBlock(height, txs, lastCommit, nil, state.Validators.GetProposer().Address)
+	block, _ := state.MakeBlock(height, makeTxs(height), lastCommit, nil, state.Validators.GetProposer().Address)
 	return block
 }
 
@@ -143,7 +148,7 @@ func TestMain(m *testing.M) {
 	var cleanup cleanupFunc
 	state, _, cleanup = makeStateAndBlockStore(log.NewTMLogger(new(bytes.Buffer)))
 	block = makeBlock(1, state, new(types.Commit))
-	partSet = block.MakePartSet(types.BlockPartSizeBytes)
+	partSet = block.MakePartSet(2)
 	part1 = partSet.GetPart(0)
 	part2 = partSet.GetPart(1)
 	seenCommit1 = makeTestCommit(10, cmttime.Now())
@@ -168,15 +173,11 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 		}
 	}
 
-	// save a block big enough to have two block parts
-	txs := []types.Tx{make([]byte, types.BlockPartSizeBytes)} // TX taking one block part alone
-	block, _ := state.MakeBlock(bs.Height()+1, txs, new(types.Commit), nil, state.Validators.GetProposer().Address)
-	validPartSet := block.MakePartSet(types.BlockPartSizeBytes)
-	require.GreaterOrEqual(t, validPartSet.Total(), uint32(2))
-	part2 = validPartSet.GetPart(1)
-
-	seenCommit := makeTestCommit(block.Header.Height, cmttime.Now())
-	bs.SaveBlock(block, validPartSet, seenCommit)
+	// save a block
+	block := makeBlock(bs.Height()+1, state, new(types.Commit))
+	validPartSet := block.MakePartSet(2)
+	seenCommit := makeTestCommit(10, cmttime.Now())
+	bs.SaveBlock(block, partSet, seenCommit)
 	require.EqualValues(t, 1, bs.Base(), "expecting the new height to be changed")
 	require.EqualValues(t, block.Header.Height, bs.Height(), "expecting the new height to be changed")
 
@@ -379,7 +380,7 @@ func TestLoadBaseMeta(t *testing.T) {
 
 	for h := int64(1); h <= 10; h++ {
 		block := makeBlock(h, state, new(types.Commit))
-		partSet := block.MakePartSet(types.BlockPartSizeBytes)
+		partSet := block.MakePartSet(2)
 		seenCommit := makeTestCommit(h, cmttime.Now())
 		bs.SaveBlock(block, partSet, seenCommit)
 	}
@@ -421,13 +422,7 @@ func TestLoadBlockPart(t *testing.T) {
 	gotPart, _, panicErr := doFn(loadPart)
 	require.Nil(t, panicErr, "an existent and proper block should not panic")
 	require.Nil(t, res, "a properly saved block should return a proper block")
-
-	// Having to do this because of https://github.com/stretchr/testify/issues/1141
-	gotPartJSON, err := json.Marshal(gotPart.(*types.Part))
-	require.NoError(t, err)
-	part1JSON, err := json.Marshal(part1)
-	require.NoError(t, err)
-	require.JSONEq(t, string(gotPartJSON), string(part1JSON),
+	require.Equal(t, gotPart.(*types.Part), part1,
 		"expecting successful retrieval of previously saved block")
 }
 
@@ -455,7 +450,7 @@ func TestPruneBlocks(t *testing.T) {
 	// make more than 1000 blocks, to test batch deletions
 	for h := int64(1); h <= 1500; h++ {
 		block := makeBlock(h, state, new(types.Commit))
-		partSet := block.MakePartSet(types.BlockPartSizeBytes)
+		partSet := block.MakePartSet(2)
 		seenCommit := makeTestCommit(h, cmttime.Now())
 		bs.SaveBlock(block, partSet, seenCommit)
 	}
@@ -565,7 +560,7 @@ func TestBlockFetchAtHeight(t *testing.T) {
 	require.Equal(t, bs.Height(), int64(0), "initially the height should be zero")
 	block := makeBlock(bs.Height()+1, state, new(types.Commit))
 
-	partSet := block.MakePartSet(types.BlockPartSizeBytes)
+	partSet := block.MakePartSet(2)
 	seenCommit := makeTestCommit(10, cmttime.Now())
 	bs.SaveBlock(block, partSet, seenCommit)
 	require.Equal(t, bs.Height(), block.Header.Height, "expecting the new height to be changed")

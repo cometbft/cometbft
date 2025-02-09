@@ -31,8 +31,7 @@ func (c *Client) detectDivergence(ctx context.Context, primaryTrace []*types.Lig
 	}
 	var (
 		headerMatched      bool
-		lastVerifiedBlock  = primaryTrace[len(primaryTrace)-1]
-		lastVerifiedHeader = lastVerifiedBlock.SignedHeader
+		lastVerifiedHeader = primaryTrace[len(primaryTrace)-1].SignedHeader
 		witnessesToRemove  = make([]int, 0)
 	)
 	c.logger.Debug("Running detector against trace", "endBlockHeight", lastVerifiedHeader.Height,
@@ -49,7 +48,7 @@ func (c *Client) detectDivergence(ctx context.Context, primaryTrace []*types.Lig
 	// and compare it with the header from the primary
 	errc := make(chan error, len(c.witnesses))
 	for i, witness := range c.witnesses {
-		go c.compareNewLightBlockWithWitness(ctx, errc, lastVerifiedBlock, witness, i)
+		go c.compareNewHeaderWithWitness(ctx, errc, lastVerifiedHeader, witness, i)
 	}
 
 	// handle errors from the header comparisons as they come in
@@ -59,7 +58,7 @@ func (c *Client) detectDivergence(ctx context.Context, primaryTrace []*types.Lig
 		switch e := err.(type) {
 		case nil: // at least one header matched
 			headerMatched = true
-		case ErrConflictingHeaders:
+		case errConflictingHeaders:
 			// We have conflicting headers. This could possibly imply an attack on the light client.
 			// First we need to verify the witness's header using the same skipping verification and then we
 			// need to find the point that the headers diverge and examine this for any evidence of an attack.
@@ -80,10 +79,6 @@ func (c *Client) detectDivergence(ctx context.Context, primaryTrace []*types.Lig
 			c.logger.Info("witness returned an error during header comparison, removing...",
 				"witness", c.witnesses[e.WitnessIndex], "err", err)
 			witnessesToRemove = append(witnessesToRemove, e.WitnessIndex)
-		case ErrProposerPrioritiesDiverge:
-			c.logger.Info("witness reported validator set with different proposer priorities",
-				"witness", c.witnesses[e.WitnessIndex], "err", err)
-			return e
 		default:
 			// Benign errors which can be ignored unless there was a context
 			// canceled
@@ -109,19 +104,17 @@ func (c *Client) detectDivergence(ctx context.Context, primaryTrace []*types.Lig
 	return ErrFailedHeaderCrossReferencing
 }
 
-// compareNewLightBlockWithWitness takes the verified header from the primary and compares it with a
+// compareNewHeaderWithWitness takes the verified header from the primary and compares it with a
 // header from a specified witness. The function can return one of three errors:
 //
-// 1: ErrConflictingHeaders -> there may have been an attack on this light client
+// 1: errConflictingHeaders -> there may have been an attack on this light client
 // 2: errBadWitness -> the witness has either not responded, doesn't have the header or has given us an invalid one
 //
 //	Note: In the case of an invalid header we remove the witness
 //
 // 3: nil -> the hashes of the two headers match
-func (c *Client) compareNewLightBlockWithWitness(ctx context.Context, errc chan error, l *types.LightBlock,
-	witness provider.Provider, witnessIndex int,
-) {
-	h := l.SignedHeader
+func (c *Client) compareNewHeaderWithWitness(ctx context.Context, errc chan error, h *types.SignedHeader,
+	witness provider.Provider, witnessIndex int) {
 
 	lightBlock, err := witness.LightBlock(ctx, h.Height)
 	switch err {
@@ -157,7 +150,7 @@ func (c *Client) compareNewLightBlockWithWitness(ctx context.Context, errc chan 
 		// witness' last header is below the primary's header. We check the times to see if the blocks
 		// have conflicting times
 		if !lightBlock.Time.Before(h.Time) {
-			errc <- ErrConflictingHeaders{Block: lightBlock, WitnessIndex: witnessIndex}
+			errc <- errConflictingHeaders{Block: lightBlock, WitnessIndex: witnessIndex}
 			return
 		}
 
@@ -182,7 +175,7 @@ func (c *Client) compareNewLightBlockWithWitness(ctx context.Context, errc chan 
 		// the witness still doesn't have a block at the height of the primary.
 		// Check if there is a conflicting time
 		if !lightBlock.Time.Before(h.Time) {
-			errc <- ErrConflictingHeaders{Block: lightBlock, WitnessIndex: witnessIndex}
+			errc <- errConflictingHeaders{Block: lightBlock, WitnessIndex: witnessIndex}
 			return
 		}
 
@@ -204,13 +197,7 @@ func (c *Client) compareNewLightBlockWithWitness(ctx context.Context, errc chan 
 	}
 
 	if !bytes.Equal(h.Hash(), lightBlock.Hash()) {
-		errc <- ErrConflictingHeaders{Block: lightBlock, WitnessIndex: witnessIndex}
-	}
-
-	// ProposerPriorityHash is not part of the header hash, so we need to check it separately.
-	wanted, got := l.ValidatorSet.ProposerPriorityHash(), lightBlock.ValidatorSet.ProposerPriorityHash()
-	if !bytes.Equal(wanted, got) {
-		errc <- ErrProposerPrioritiesDiverge{WitnessHash: got, WitnessIndex: witnessIndex, PrimaryHash: wanted}
+		errc <- errConflictingHeaders{Block: lightBlock, WitnessIndex: witnessIndex}
 	}
 
 	c.logger.Debug("Matching header received by witness", "height", h.Height, "witness", witnessIndex)
@@ -258,7 +245,7 @@ func (c *Client) handleConflictingHeaders(
 	if primaryBlock.Commit.Round != witnessTrace[len(witnessTrace)-1].Commit.Round {
 		c.logger.Info("The light client has detected, and prevented, an attempted amnesia attack." +
 			" We think this attack is pretty unlikely, so if you see it, that's interesting to us." +
-			" Can you let us know by opening an issue through https://github.com/cometbft/cometbft/issues/new?")
+			" Can you let us know by opening an issue through https://github.com/comet/comet/issues/new?")
 	}
 
 	// This may not be valid because the witness itself is at fault. So now we reverse it, examining the

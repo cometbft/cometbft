@@ -18,8 +18,6 @@ import (
 var (
 	ErrPartSetUnexpectedIndex = errors.New("error part set unexpected index")
 	ErrPartSetInvalidProof    = errors.New("error part set invalid proof")
-	ErrPartTooBig             = errors.New("error part size too big")
-	ErrPartInvalidSize        = errors.New("error inner part with invalid size")
 )
 
 type Part struct {
@@ -28,36 +26,14 @@ type Part struct {
 	Proof merkle.Proof      `json:"proof"`
 }
 
-// ErrInvalidPart is an error type for invalid parts.
-type ErrInvalidPart struct {
-	Reason error
-}
-
-func (e ErrInvalidPart) Error() string {
-	return fmt.Sprintf("invalid part: %v", e.Reason)
-}
-func (e ErrInvalidPart) Unwrap() error {
-	return e.Reason
-}
-
 // ValidateBasic performs basic validation.
 func (part *Part) ValidateBasic() error {
 	if len(part.Bytes) > int(BlockPartSizeBytes) {
-		return ErrPartTooBig
+		return fmt.Errorf("too big: %d bytes, max: %d", len(part.Bytes), BlockPartSizeBytes)
 	}
-	// All parts except the last one should have the same constant size.
-	if int64(part.Index) < part.Proof.Total-1 && len(part.Bytes) != int(BlockPartSizeBytes) {
-		return ErrPartInvalidSize
-	}
-
-	if int64(part.Index) != part.Proof.Index {
-		return ErrInvalidPart{Reason: fmt.Errorf("part index %d != proof index %d", part.Index, part.Proof.Index)}
-	}
-
 	if err := part.Proof.ValidateBasic(); err != nil {
-		return ErrInvalidPart{Reason: fmt.Errorf("wrong Proof: %w", err)}
+		return fmt.Errorf("wrong Proof: %w", err)
 	}
-
 	return nil
 }
 
@@ -302,11 +278,6 @@ func (ps *PartSet) AddPart(part *Part) (bool, error) {
 	// If part already exists, return false.
 	if ps.parts[part.Index] != nil {
 		return false, nil
-	}
-
-	// The proof should be compatible with the number of parts.
-	if part.Proof.Total != int64(ps.total) {
-		return false, ErrPartSetInvalidProof
 	}
 
 	// Check hash proof

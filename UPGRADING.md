@@ -2,16 +2,6 @@
 
 This guide provides instructions for upgrading to specific versions of CometBFT.
 
-## v0.34.35
-
-It is recommended that CometBFT be built with Go v1.22+ since v1.21 is no longer
-supported.
-
-## v0.34.33
-
-It is recommended that CometBFT be built with Go v1.21+ since v1.20 is no longer
-supported.
-
 ## v0.34.29
 
 It is recommended that CometBFT be built with Go v1.20+ since v1.19 is no longer

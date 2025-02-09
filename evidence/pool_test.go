@@ -409,7 +409,8 @@ func initializeBlockStore(db dbm.DB, state sm.State, valAddr []byte) *store.Bloc
 			state.Validators.GetProposer().Address)
 		block.Header.Time = defaultEvidenceTime.Add(time.Duration(i) * time.Minute)
 		block.Header.Version = cmtversion.Consensus{Block: version.BlockProtocol, App: 1}
-		partSet := block.MakePartSet(types.BlockPartSizeBytes)
+		const parts = 1
+		partSet := block.MakePartSet(parts)
 
 		seenCommit := makeCommit(i, valAddr)
 		blockStore.SaveBlock(block, partSet, seenCommit)

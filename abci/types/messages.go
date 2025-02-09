@@ -4,13 +4,12 @@ import (
 	"bufio"
 	"encoding/binary"
 	"io"
-	"math"
 
 	"github.com/gogo/protobuf/proto"
 )
 
 const (
-	maxMsgSize = math.MaxInt32 // 2GB
+	maxMsgSize = 104857600 // 100MB
 )
 
 // WriteMessage writes a varint length-delimited protobuf message.

@@ -17,13 +17,9 @@ type LightClient struct {
 	mock.Mock
 }
 
-// ChainID provides a mock function with no fields
+// ChainID provides a mock function with given fields:
 func (_m *LightClient) ChainID() string {
 	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for ChainID")
-	}
 
 	var r0 string
 	if rf, ok := ret.Get(0).(func() string); ok {
@@ -39,15 +35,7 @@ func (_m *LightClient) ChainID() string {
 func (_m *LightClient) TrustedLightBlock(height int64) (*types.LightBlock, error) {
 	ret := _m.Called(height)
 
-	if len(ret) == 0 {
-		panic("no return value specified for TrustedLightBlock")
-	}
-
 	var r0 *types.LightBlock
-	var r1 error
-	if rf, ok := ret.Get(0).(func(int64) (*types.LightBlock, error)); ok {
-		return rf(height)
-	}
 	if rf, ok := ret.Get(0).(func(int64) *types.LightBlock); ok {
 		r0 = rf(height)
 	} else {
@@ -56,6 +44,7 @@ func (_m *LightClient) TrustedLightBlock(height int64) (*types.LightBlock, error
 		}
 	}
 
+	var r1 error
 	if rf, ok := ret.Get(1).(func(int64) error); ok {
 		r1 = rf(height)
 	} else {
@@ -69,15 +58,7 @@ func (_m *LightClient) TrustedLightBlock(height int64) (*types.LightBlock, error
 func (_m *LightClient) Update(ctx context.Context, now time.Time) (*types.LightBlock, error) {
 	ret := _m.Called(ctx, now)
 
-	if len(ret) == 0 {
-		panic("no return value specified for Update")
-	}
-
 	var r0 *types.LightBlock
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, time.Time) (*types.LightBlock, error)); ok {
-		return rf(ctx, now)
-	}
 	if rf, ok := ret.Get(0).(func(context.Context, time.Time) *types.LightBlock); ok {
 		r0 = rf(ctx, now)
 	} else {
@@ -86,6 +67,7 @@ func (_m *LightClient) Update(ctx context.Context, now time.Time) (*types.LightB
 		}
 	}
 
+	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, time.Time) error); ok {
 		r1 = rf(ctx, now)
 	} else {
@@ -99,15 +81,7 @@ func (_m *LightClient) Update(ctx context.Context, now time.Time) (*types.LightB
 func (_m *LightClient) VerifyLightBlockAtHeight(ctx context.Context, height int64, now time.Time) (*types.LightBlock, error) {
 	ret := _m.Called(ctx, height, now)
 
-	if len(ret) == 0 {
-		panic("no return value specified for VerifyLightBlockAtHeight")
-	}
-
 	var r0 *types.LightBlock
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, int64, time.Time) (*types.LightBlock, error)); ok {
-		return rf(ctx, height, now)
-	}
 	if rf, ok := ret.Get(0).(func(context.Context, int64, time.Time) *types.LightBlock); ok {
 		r0 = rf(ctx, height, now)
 	} else {
@@ -116,6 +90,7 @@ func (_m *LightClient) VerifyLightBlockAtHeight(ctx context.Context, height int6
 		}
 	}
 
+	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, int64, time.Time) error); ok {
 		r1 = rf(ctx, height, now)
 	} else {
@@ -125,12 +100,13 @@ func (_m *LightClient) VerifyLightBlockAtHeight(ctx context.Context, height int6
 	return r0, r1
 }
 
-// NewLightClient creates a new instance of LightClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-// The first argument is typically a *testing.T value.
-func NewLightClient(t interface {
+type mockConstructorTestingTNewLightClient interface {
 	mock.TestingT
 	Cleanup(func())
-}) *LightClient {
+}
+
+// NewLightClient creates a new instance of LightClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+func NewLightClient(t mockConstructorTestingTNewLightClient) *LightClient {
 	mock := &LightClient{}
 	mock.Mock.Test(t)
 

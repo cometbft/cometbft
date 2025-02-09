@@ -1,5 +1,4 @@
 version: v1
-name: buf.build/tendermint/tendermint
 deps:
   - buf.build/gogo/protobuf
 breaking:

@@ -28,7 +28,7 @@ import (
 
 var (
 	chainID             = "execution_chain"
-	testPartSize uint32 = types.BlockPartSizeBytes
+	testPartSize uint32 = 65536
 	nTxsPerBlock        = 10
 )
 

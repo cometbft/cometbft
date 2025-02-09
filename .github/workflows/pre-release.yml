@@ -16,9 +16,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v4
         with:
-          go-version: '1.22'
+          go-version: '1.20'
 
       # Similar check to ./release-version.yml, but enforces this when pushing
       # tags. The ./release-version.yml check can be bypassed and is mainly
@@ -44,7 +44,7 @@ jobs:
           echo "See the [CHANGELOG](${CHANGELOG_URL}) for changes available in this pre-release, but not yet officially released." > ../release_notes.md
 
       - name: Release
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
           args: release --clean --release-notes ../release_notes.md
@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack upon pre-release
-        uses: slackapi/slack-github-action@v1.27.0
+        uses: slackapi/slack-github-action@v1.24.0
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

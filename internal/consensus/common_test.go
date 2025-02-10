@@ -16,13 +16,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/cometbft/cometbft-db"
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
+	cmtdb "github.com/cometbft/cometbft/db"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/internal/test"
@@ -459,7 +459,10 @@ func newStateWithConfig(
 	app abci.Application,
 	laneInfo *mempl.LanesInfo,
 ) *State {
-	blockDB := dbm.NewMemDB()
+	blockDB, err := cmtdb.NewInMem()
+	if err != nil {
+		panic(err)
+	}
 	return newStateWithConfigAndBlockStore(thisConfig, state, pv, app, blockDB, laneInfo)
 }
 
@@ -468,7 +471,7 @@ func newStateWithConfigAndBlockStore(
 	state sm.State,
 	pv types.PrivValidator,
 	app abci.Application,
-	blockDB dbm.DB,
+	blockDB cmtdb.DB,
 	laneInfo *mempl.LanesInfo,
 ) *State {
 	// Get BlockStore
@@ -834,7 +837,8 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 	logger := consensusLogger()
 	configRootDirs := make([]string, 0, nValidators)
 	for i := 0; i < nValidators; i++ {
-		stateDB := dbm.NewMemDB() // each state needs its own db
+		stateDB, err := cmtdb.NewInMem() // each state needs its own db
+		require.NoError(t, err)
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
 		})
@@ -848,7 +852,7 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 		app := appFunc()
 		_, lanesInfo := fetchAppInfo(app)
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
-		_, err := app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
+		_, err = app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
 		require.NoError(t, err)
 
 		css[i] = newStateWithConfigAndBlockStore(thisConfig, state, privVals[i], app, stateDB, lanesInfo)
@@ -879,7 +883,8 @@ func randConsensusNetWithPeers(
 	var peer0Config *cfg.Config
 	configRootDirs := make([]string, 0, nPeers)
 	for i := 0; i < nPeers; i++ {
-		stateDB := dbm.NewMemDB() // each state needs its own db
+		stateDB, err := cmtdb.NewInMem() // each state needs its own db
+		require.NoError(t, err)
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
 		})

@@ -247,11 +247,6 @@ lint: pre-commit
 	@pre-commit run
 .PHONY: lint
 
-#? vulncheck: Run latest govulncheck
-vulncheck:
-	@go run golang.org/x/vuln/cmd/govulncheck@latest ./...
-.PHONY: vulncheck
-
 #? pre-commit: Create pre-commit hook using the pre-commit framework.
 pre-commit:
 	@which pre-commit || pip3 install pre-commit

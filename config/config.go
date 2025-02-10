@@ -229,23 +229,6 @@ type BaseConfig struct {
 	// A custom human readable name for this node
 	Moniker string `mapstructure:"moniker"`
 
-	// Database backend: badgerdb | goleveldb | pebbledb | rocksdb
-	// * badgerdb (uses github.com/dgraph-io/badger)
-	//   - stable
-	//   - pure go
-	//   - use badgerdb build tag (go build -tags badgerdb)
-	// * goleveldb (github.com/syndtr/goleveldb)
-	//   - UNMAINTAINED
-	//   - stable
-	//   - pure go
-	// * pebbledb (uses github.com/cockroachdb/pebble)
-	//   - stable
-	//   - pure go
-	// * rocksdb (uses github.com/linxGnu/grocksdb)
-	//   - requires gcc
-	//   - use rocksdb build tag (go build -tags rocksdb)
-	DBBackend string `mapstructure:"db_backend"`
-
 	// Database directory
 	DBPath string `mapstructure:"db_dir"`
 
@@ -297,7 +280,6 @@ func DefaultBaseConfig() BaseConfig {
 		LogFormat:          LogFormatPlain,
 		LogColors:          true,
 		FilterPeers:        false,
-		DBBackend:          "pebbledb",
 		DBPath:             DefaultDataDir,
 	}
 }
@@ -306,7 +288,6 @@ func DefaultBaseConfig() BaseConfig {
 func TestBaseConfig() BaseConfig {
 	cfg := DefaultBaseConfig()
 	cfg.ProxyApp = "kvstore"
-	cfg.DBBackend = "memdb"
 	return cfg
 }
 
@@ -1462,8 +1443,7 @@ type TxIndexConfig struct {
 	//
 	// Options:
 	//   1) "null"
-	//   2) "kv" (default) - the simplest possible indexer,
-	//      backed by key-value storage (defaults to levelDB; see DBBackend).
+	//   2) "kv" (default) - the simplest possible indexer, backed by pebbledb.
 	//   3) "psql" - the indexer services backed by PostgreSQL.
 	Indexer string `mapstructure:"indexer"`
 

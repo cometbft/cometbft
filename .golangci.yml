@@ -75,7 +75,7 @@ linters-settings:
       - default # Default section: contains all imports that could not be matched to another section type.
       - blank # blank imports
       - dot # dot imports
-      - prefix(github.com/cometbft/cometbft, github.com/cometbft/cometbft-db, github.com/cometbft/cometbft-load-test)
+      - prefix(github.com/cometbft/cometbft, github.com/cometbft/cometbft-load-test)
     custom-order: true
   depguard:
     rules:
@@ -113,6 +113,7 @@ linters-settings:
           - github.com/spf13
           - github.com/stretchr/testify/require
           - github.com/syndtr/goleveldb
+          - github.com/cockroachdb/pebble
       test:
         files:
           - "$test"
@@ -135,6 +136,7 @@ linters-settings:
           - github.com/spf13
           - github.com/stretchr/testify
           - github.com/decred/dcrd/dcrec/secp256k1/v4
+          - github.com/cockroachdb/pebble
 
   revive:
     enable-all-rules: true

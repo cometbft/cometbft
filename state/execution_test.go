@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/cometbft/cometbft-db"
 	abciclientmocks "github.com/cometbft/cometbft/abci/client/mocks"
 	abci "github.com/cometbft/cometbft/abci/types"
 	abcimocks "github.com/cometbft/cometbft/abci/types/mocks"
@@ -20,6 +19,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	mpmocks "github.com/cometbft/cometbft/mempool/mocks"
@@ -50,7 +50,10 @@ func TestApplyBlock(t *testing.T) {
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
-	blockStore := store.NewBlockStore(dbm.NewMemDB())
+
+	blkStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	blockStore := store.NewBlockStore(blkStoreDB)
 
 	mp := &mpmocks.Mempool{}
 	mp.On("Lock").Return()
@@ -109,7 +112,9 @@ func TestFinalizeBlockDecidedLastCommit(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			blockStore := store.NewBlockStore(dbm.NewMemDB())
+			blkStoreDB, err := cmtdb.NewInMem()
+			require.NoError(t, err)
+			blockStore := store.NewBlockStore(blkStoreDB)
 			evpool := &mocks.EvidencePool{}
 			evpool.On("PendingEvidence", mock.Anything).Return([]types.Evidence{}, 0)
 			evpool.On("Update", mock.Anything, mock.Anything).Return()
@@ -343,7 +348,9 @@ func TestFinalizeBlockMisbehavior(t *testing.T) {
 		mock.Anything,
 		mock.Anything).Return(nil)
 
-	blockStore := store.NewBlockStore(dbm.NewMemDB())
+	blkStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	blockStore := store.NewBlockStore(blkStoreDB)
 
 	blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyApp.Consensus(),
 		mp, evpool, blockStore)
@@ -381,7 +388,10 @@ func TestProcessProposal(t *testing.T) {
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
-	blockStore := store.NewBlockStore(dbm.NewMemDB())
+
+	blkStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	blockStore := store.NewBlockStore(blkStoreDB)
 	eventBus := types.NewEventBus()
 	err = eventBus.Start()
 	require.NoError(t, err)
@@ -614,7 +624,9 @@ func TestFinalizeBlockValidatorUpdates(t *testing.T) {
 		mock.Anything).Return(nil)
 	mp.On("ReapMaxBytesMaxGas", mock.Anything, mock.Anything).Return(types.Txs{})
 
-	blockStore := store.NewBlockStore(dbm.NewMemDB())
+	blkStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	blockStore := store.NewBlockStore(blkStoreDB)
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.TestingLogger(),
@@ -688,7 +700,10 @@ func TestFinalizeBlockValidatorUpdatesResultingInEmptySet(t *testing.T) {
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
-	blockStore := store.NewBlockStore(dbm.NewMemDB())
+
+	blkStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	blockStore := store.NewBlockStore(blkStoreDB)
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.TestingLogger(),
@@ -745,7 +760,9 @@ func TestEmptyPrepareProposal(t *testing.T) {
 		mock.Anything).Return(nil)
 	mp.On("ReapMaxBytesMaxGas", mock.Anything, mock.Anything).Return(types.Txs{})
 
-	blockStore := store.NewBlockStore(dbm.NewMemDB())
+	blkStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	blockStore := store.NewBlockStore(blkStoreDB)
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.TestingLogger(),
@@ -790,7 +807,9 @@ func TestPrepareProposalTxsAllIncluded(t *testing.T) {
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	blockStore := store.NewBlockStore(dbm.NewMemDB())
+	blkStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	blockStore := store.NewBlockStore(blkStoreDB)
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.TestingLogger(),
@@ -845,7 +864,9 @@ func TestPrepareProposalReorderTxs(t *testing.T) {
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	blockStore := store.NewBlockStore(dbm.NewMemDB())
+	blkStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	blockStore := store.NewBlockStore(blkStoreDB)
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.TestingLogger(),
@@ -901,7 +922,9 @@ func TestPrepareProposalErrorOnTooManyTxs(t *testing.T) {
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	blockStore := store.NewBlockStore(dbm.NewMemDB())
+	blkStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	blockStore := store.NewBlockStore(blkStoreDB)
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.NewNopLogger(),
@@ -958,7 +981,9 @@ func TestPrepareProposalCountSerializationOverhead(t *testing.T) {
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	blockStore := store.NewBlockStore(dbm.NewMemDB())
+	blkStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	blockStore := store.NewBlockStore(blkStoreDB)
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.NewNopLogger(),
@@ -1012,7 +1037,9 @@ func TestPrepareProposalErrorOnPrepareProposalError(t *testing.T) {
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	blockStore := store.NewBlockStore(dbm.NewMemDB())
+	blkStoreDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	blockStore := store.NewBlockStore(blkStoreDB)
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.NewNopLogger(),
@@ -1101,7 +1128,9 @@ func TestCreateProposalAbsentVoteExtensions(t *testing.T) {
 				mock.Anything).Return(nil)
 			mp.On("ReapMaxBytesMaxGas", mock.Anything, mock.Anything).Return(types.Txs{})
 
-			blockStore := store.NewBlockStore(dbm.NewMemDB())
+			blkStoreDB, err := cmtdb.NewInMem()
+			require.NoError(t, err)
+			blockStore := store.NewBlockStore(blkStoreDB)
 			blockExec := sm.NewBlockExecutor(
 				stateStore,
 				log.NewNopLogger(),

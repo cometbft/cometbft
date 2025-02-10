@@ -45,6 +45,10 @@ type WSClient struct {
 	// client is being stopped.
 	ResponsesCh chan types.RPCResponse
 
+	// Single user facing channel to get error from, closed only when the
+	// client is being stopped.
+	ErrorCh chan error
+
 	// Callback, which will be called each time after successful reconnect.
 	onReconnect func(attempt int)
 
@@ -199,6 +203,7 @@ func (c *WSClient) OnStart() error {
 	}
 
 	c.ResponsesCh = make(chan types.RPCResponse)
+	c.ErrorCh = make(chan error)
 	c.PingPongLatencyTimer = metrics.NewTimer()
 
 	c.send = make(chan types.RPCRequest)
@@ -223,6 +228,7 @@ func (c *WSClient) Stop() error {
 	}
 	// only close user-facing channels when we can't write to them
 	c.wg.Wait()
+	close(c.ErrorCh)
 	close(c.ResponsesCh)
 
 	return nil
@@ -377,6 +383,10 @@ func (c *WSClient) reconnectRoutine() {
 	for {
 		select {
 		case originalError := <-c.reconnectAfter:
+			select {
+			case c.ErrorCh <- originalError:
+			default:
+			}
 			// wait until writeRoutine and readRoutine finish
 			c.wg.Wait()
 			if err := c.reconnect(); err != nil {

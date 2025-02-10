@@ -5,11 +5,11 @@ import (
 	"context"
 	"time"
 
-	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/proxy"
 	sm "github.com/cometbft/cometbft/state"
@@ -259,7 +259,7 @@ func (*testApp) ProcessProposal(
 	return &abci.ProcessProposalResponse{Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil
 }
 
-func makeStateWithParams(nVals, height int, params *types.ConsensusParams, chainID string) (sm.State, dbm.DB, map[string]types.PrivValidator) {
+func makeStateWithParams(nVals, height int, params *types.ConsensusParams, chainID string) (sm.State, cmtdb.DB, map[string]types.PrivValidator) {
 	vals, privVals := test.GenesisValidatorSet(nVals)
 
 	s, _ := sm.MakeGenesisState(&types.GenesisDoc{
@@ -269,7 +269,10 @@ func makeStateWithParams(nVals, height int, params *types.ConsensusParams, chain
 		ConsensusParams: params,
 	})
 
-	stateDB := dbm.NewMemDB()
+	stateDB, err := cmtdb.NewInMem()
+	if err != nil {
+		panic(err)
+	}
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -288,6 +291,6 @@ func makeStateWithParams(nVals, height int, params *types.ConsensusParams, chain
 	return s, stateDB, privVals
 }
 
-func makeState(nVals, height int, chainID string) (sm.State, dbm.DB, map[string]types.PrivValidator) {
+func makeState(nVals, height int, chainID string) (sm.State, cmtdb.DB, map[string]types.PrivValidator) {
 	return makeStateWithParams(nVals, height, test.ConsensusParams(), chainID)
 }

@@ -201,10 +201,6 @@ type ManifestNode struct {
 	// this relates to the providers the light client is connected to.
 	PersistentPeersList []string `toml:"persistent_peers"`
 
-	// Database specifies the database backend: "goleveldb", "rocksdb",
-	// "pebbledb" or "badgerdb". Defaults to "pebbledb".
-	Database string `toml:"database"`
-
 	// PrivvalProtocolStr specifies the protocol used to sign consensus messages:
 	// "file", "unix", or "tcp". Defaults to "file". For unix and tcp, the ABCI
 	// application will launch a remote signer client in a separate goroutine.

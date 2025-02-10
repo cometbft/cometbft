@@ -14,7 +14,7 @@ import (
 	"github.com/cometbft/cometbft/p2p/internal/nodekey"
 	na "github.com/cometbft/cometbft/p2p/netaddr"
 	"github.com/cometbft/cometbft/p2p/transport"
-	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
+	"github.com/cometbft/cometbft/p2p/transport/mconn"
 )
 
 // newMultiplexTransport returns a tcp connected multiplexed peer
@@ -24,7 +24,7 @@ func newMultiplexTransport(
 	nodeKey nodekey.NodeKey,
 ) *MultiplexTransport {
 	return NewMultiplexTransport(
-		nodeKey, conn.DefaultMConnConfig(),
+		nodeKey, mconn.DefaultMConnConfig(),
 	)
 }
 

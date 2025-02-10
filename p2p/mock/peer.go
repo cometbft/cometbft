@@ -20,6 +20,7 @@ type Peer struct {
 	kv                   map[string]any
 	Outbound, Persistent bool
 	server, client       net.Conn
+	transport            transport.Transport
 }
 
 // NewPeer creates and starts a new mock peer. If the ip
@@ -82,3 +83,15 @@ func (mp *Peer) SocketAddr() *na.NetAddr { return mp.addr }
 func (mp *Peer) RemoteAddr() net.Addr    { return &net.TCPAddr{IP: mp.ip, Port: 8800} }
 func (*Peer) SetRemovalFailed()          {}
 func (*Peer) GetRemovalFailed() bool     { return false }
+
+func (p *Peer) Transport() transport.Transport {
+	return p.transport
+}
+
+// Update NewMockPeer to include transport
+func NewMockPeer(t transport.Transport) *Peer {
+	return &Peer{
+		transport: t,
+		// ... other fields ...
+	}
+}

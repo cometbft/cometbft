@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -23,6 +24,7 @@ import (
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	ni "github.com/cometbft/cometbft/p2p/internal/nodeinfo"
@@ -95,8 +97,12 @@ func (tr *TestReactor) getMsgs(chID byte) []PeerMessage {
 // convenience method for creating two switches connected to each other.
 // XXX: note this uses net.Pipe and not a proper TCP conn.
 func MakeSwitchPair(initSwitch func(int, *Switch) *Switch) (*Switch, *Switch) {
-	// Create two switches that will be interconnected.
 	switches := MakeConnectedSwitches(cfg, 2, initSwitch, Connect2Switches)
+
+	for _, sw := range switches {
+		sw.SetLogger(log.TestingLogger().With("switch", sw.NodeInfo().ID()))
+	}
+
 	return switches[0], switches[1]
 }
 
@@ -234,28 +240,42 @@ func TestSwitchFiltersOutItself(t *testing.T) {
 	s1 := MakeSwitch(cfg, 1, initSwitchFunc)
 	err := s1.Start()
 	require.NoError(t, err)
-	defer s1.Stop() //nolint:errcheck
 
-	// simulate s1 having a public IP by creating a remote peer with the same ID
+	// Create remote peer with same ID
 	rp := newRemoteTCPPeerWithPrivKey(s1.nodeKey.PrivKey)
 	rp.Start()
 
-	// addr should be rejected in addPeer based on the same ID
+	// Ensure proper cleanup order
+	t.Cleanup(func() {
+		// First stop the remote peer
+		rp.Stop()
+		// Then wait a bit
+		time.Sleep(200 * time.Millisecond)
+		// Finally stop the switch
+		if err := s1.Stop(); err != nil {
+			t.Error(err)
+		}
+		// Wait for everything to clean up
+		time.Sleep(200 * time.Millisecond)
+	})
+
+	// Wait for peer to start
+	time.Sleep(200 * time.Millisecond)
+
+	// Should be rejected since it has the same ID
 	err = s1.DialPeerWithAddress(rp.Addr())
 	require.Error(t, err)
 	if errR, ok := err.(ErrRejected); ok {
-		if !errR.IsSelf() {
-			t.Fatalf("expected self to be rejected, but got %v", errR)
-		}
+		require.True(t, errR.IsSelf())
 	} else {
-		t.Fatalf("expected ErrRejected, but got %v", err)
+		t.Fatalf("expected ErrRejected, got %v", err)
 	}
 
 	assert.True(t, s1.addrBook.OurAddress(rp.Addr()))
 	assert.False(t, s1.addrBook.HasAddress(rp.Addr()))
 
-	rp.Stop()
-
+	// Give time for cleanup before asserting no peers
+	time.Sleep(100 * time.Millisecond)
 	assertNoPeersAfterTimeout(t, s1, 100*time.Millisecond)
 }
 
@@ -286,7 +306,7 @@ func TestSwitchPeerFilter(t *testing.T) {
 	rp.Start()
 	t.Cleanup(rp.Stop)
 
-	conn, err := sw.transport.Dial(*rp.Addr())
+	conn, err := sw.transports[string(transport.TCPProtocol)].Dial(*rp.Addr())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -341,7 +361,7 @@ func TestSwitchPeerFilterTimeout(t *testing.T) {
 	rp.Start()
 	defer rp.Stop()
 
-	conn, err := sw.transport.Dial(*rp.Addr())
+	conn, err := sw.transports[string(transport.TCPProtocol)].Dial(*rp.Addr())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -378,7 +398,7 @@ func TestSwitchPeerFilterDuplicate(t *testing.T) {
 	rp.Start()
 	defer rp.Stop()
 
-	conn, err := sw.transport.Dial(*rp.Addr())
+	conn, err := sw.transports[string(transport.TCPProtocol)].Dial(*rp.Addr())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -428,7 +448,7 @@ func TestSwitchStopsNonPersistentPeerOnError(t *testing.T) {
 	rp.Start()
 	defer rp.Stop()
 
-	conn, err := sw.transport.Dial(*rp.Addr())
+	conn, err := sw.transports[string(transport.TCPProtocol)].Dial(*rp.Addr())
 	require.NoError(t, err)
 
 	p := wrapPeer(conn,
@@ -528,33 +548,44 @@ func TestSwitchReconnectsToOutboundPersistentPeer(t *testing.T) {
 	rp.Start()
 	defer rp.Stop()
 
+	// Give time for transport to start
+	time.Sleep(100 * time.Millisecond)
+
 	err = sw.AddPersistentPeers([]string{rp.Addr().String()})
 	require.NoError(t, err)
 
 	err = sw.DialPeerWithAddress(rp.Addr())
 	require.NoError(t, err)
+
+	// Give time for connection to establish
+	time.Sleep(100 * time.Millisecond)
 	require.NotNil(t, sw.Peers().Get(rp.ID()))
 
 	p := sw.Peers().Copy()[0]
 	err = p.(*peer).peerConn.Close("simulate failure")
 	require.NoError(t, err)
 
-	waitUntilSwitchHasAtLeastNPeers(sw, 1)
-	assert.False(t, p.IsRunning())        // old peer instance
-	assert.Equal(t, 1, sw.Peers().Size()) // new peer instance
+	// Give time for reconnection
+	time.Sleep(400 * time.Millisecond)
+	assert.Equal(t, 1, sw.Peers().Size(), "Expected exactly 1 peer")
+	assert.False(t, p.IsRunning())
 
 	// 2. simulate first time dial failure
-	rp = newRemoteTCPPeer()
-	rp.Start()
-	defer rp.Stop()
+	rp2 := newRemoteTCPPeer()
+	rp2.Start()
+	defer rp2.Stop()
+
+	// Give time for transport to start
+	time.Sleep(100 * time.Millisecond)
 
 	conf := config.DefaultP2PConfig()
-	conf.TestDialFail = true // will trigger a reconnect
-	err = sw.addOutboundPeerWithConfig(rp.Addr(), conf)
+	conf.TestDialFail = true
+	err = sw.addOutboundPeerWithConfig(rp2.Addr(), conf)
 	require.Error(t, err)
-	// DialPeerWithAddres - sw.peerConfig resets the dialer
-	waitUntilSwitchHasAtLeastNPeers(sw, 2)
-	assert.Equal(t, 2, sw.Peers().Size())
+
+	// Give time for reconnection attempts
+	time.Sleep(400 * time.Millisecond)
+	assert.Equal(t, 2, sw.Peers().Size(), "Expected exactly 2 peers")
 }
 
 func TestSwitchReconnectsToInboundPersistentPeer(t *testing.T) {
@@ -732,29 +763,31 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 }
 
 type errorTransport struct {
-	acceptErr error
-}
-
-var _ transport.Transport = errorTransport{}
-
-func (errorTransport) NetAddr() na.NetAddr {
-	panic("not implemented")
+	err error
 }
 
 func (et errorTransport) Accept() (transport.Conn, *na.NetAddr, error) {
-	return nil, nil, et.acceptErr
+	return nil, nil, et.err
 }
 
-func (errorTransport) Dial(na.NetAddr) (transport.Conn, error) {
-	panic("not implemented")
+func (et errorTransport) Dial(na.NetAddr) (transport.Conn, error) {
+	return nil, et.err
 }
 
-func (errorTransport) Cleanup(transport.Conn) error {
-	panic("not implemented")
+func (et errorTransport) Listen(na.NetAddr) error {
+	return et.err
 }
 
-func (errorTransport) UpdateStreamDescriptors([]transport.StreamDescriptor) {
-	panic("not implemented")
+func (et errorTransport) Close() error {
+	return nil
+}
+
+func (et errorTransport) Protocol() transport.Protocol {
+	return transport.TCPProtocol
+}
+
+func (et errorTransport) NetAddr() na.NetAddr {
+	return na.NetAddr{}
 }
 
 func TestSwitchAcceptRoutineErrorCases(t *testing.T) {
@@ -834,31 +867,37 @@ func TestSwitch_InitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 	// add peer
 	rp := newRemoteTCPPeer()
 	rp.Start()
-	defer rp.Stop()
+	t.Cleanup(rp.Stop)
+
+	// Give time for transport to start
+	time.Sleep(100 * time.Millisecond)
+
 	rpConn, err := rp.Dial(sw.NetAddr())
 	require.NoError(t, err)
 
-	// wait till the switch adds rp to the peer set, then stop the peer asynchronously
-	for {
-		time.Sleep(20 * time.Millisecond)
-		if peer := sw.Peers().Get(rp.ID()); peer != nil {
-			go sw.StopPeerForError(peer, "simulate failure")
-			break
-		}
-	}
+	// Wait for peer to be added to the switch
+	time.Sleep(100 * time.Millisecond)
+	peer := sw.Peers().Get(rp.ID())
+	require.NotNil(t, peer)
 
-	// Close previous connection on the remote side too.
-	//
-	// This is necessary because rp.Dial may fail otherwise because rp may be not
-	// quick enough in detecting that connection is dead.
+	// Stop peer asynchronously
+	go sw.StopPeerForError(peer, "simulate failure")
+
+	// Give time for peer to stop
+	time.Sleep(100 * time.Millisecond)
+
+	// Close previous connection and wait
 	_ = rpConn.Close("simulate failure")
-	// simulate peer reconnecting to us
+	time.Sleep(100 * time.Millisecond)
+
+	// Try reconnecting
 	_, err = rp.Dial(sw.NetAddr())
 	require.NoError(t, err)
-	// wait till the switch adds rp to the peer set
-	time.Sleep(50 * time.Millisecond)
 
-	// make sure reactor.RemovePeer is finished before InitPeer is called
+	// Give time for new connection to establish
+	time.Sleep(200 * time.Millisecond)
+
+	// Verify reactor state
 	assert.False(t, reactor.InitCalledBeforeRemoveFinished())
 	assert.Equal(t, 1, sw.Peers().Size())
 }
@@ -965,7 +1004,8 @@ func (rp *remoteTCPPeer) ID() nodekey.ID {
 
 func (rp *remoteTCPPeer) Start() {
 	id := nodekey.PubKeyToID(rp.privKey.PubKey())
-	addr, err := na.NewFromString(string(id) + "@127.0.0.1:0")
+	port := 20000 + cmtrand.Int31n(40000)
+	addr, err := na.NewFromString(fmt.Sprintf("%s@127.0.0.1:%d", id, port))
 	if err != nil {
 		panic(err)
 	}
@@ -977,7 +1017,18 @@ func (rp *remoteTCPPeer) Start() {
 }
 
 func (rp *remoteTCPPeer) Stop() {
-	rp.transport.Close()
+	if rp.transport != nil {
+		// First close the test stream if it exists
+		if rp.testStream != nil {
+			_ = rp.testStream.Close()
+			rp.testStream = nil
+		}
+
+		// Then close transport and wait longer for accept routine to finish
+		_ = rp.transport.Close()
+		time.Sleep(200 * time.Millisecond)
+		rp.transport = nil
+	}
 }
 
 func (rp *remoteTCPPeer) Dial(addr *na.NetAddr) (transport.Conn, error) {
@@ -1020,34 +1071,155 @@ func (rp *remoteTCPPeer) accept() {
 	for {
 		c, _, err := rp.transport.Accept()
 		if err != nil {
-			return
+			if strings.Contains(err.Error(), "use of closed") {
+				return
+			}
+			continue
 		}
 
 		_, err = handshake(rp.nodeInfo(), c.HandshakeStream(), time.Second)
 		if err != nil {
-			// Fixes TestSwitchFiltersOutItself.
-			//
-			// Without this timeout, rp will close its connection and the dialing
-			// switch readLoop may fail before the handshake is done. Hence you will
-			// see tcpconn.ErrNotRunning on Switch instead of ErrRejected. If we give
-			// a little bit of time here, the dialing switch will always fail with
-			// ErrRejected.
-			time.Sleep(100 * time.Millisecond)
 			_ = c.Close(err.Error())
-			return
+			continue
 		}
 
 		rp.testStream, err = c.OpenStream(testCh, nil)
 		if err != nil {
 			_ = c.Close(err.Error())
-			return
+			continue
 		}
 
 		if mconn, ok := c.(*tcpconn.MConnection); ok {
 			if err := mconn.Start(); err != nil {
 				_ = c.Close(err.Error())
-				return
+				continue
 			}
 		}
 	}
+}
+
+// Update test to use proper transport access
+func TestSwitchMultipleTransports(t *testing.T) {
+	// Create switches with all transports enabled
+	sw1 := MakeSwitch(cfg, 1, initSwitchFunc)
+	sw2 := MakeSwitch(cfg, 2, initSwitchFunc)
+
+	err := sw1.Start()
+	require.NoError(t, err)
+	err = sw2.Start()
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		if err := sw1.Stop(); err != nil {
+			t.Error(err)
+		}
+		if err := sw2.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	// Test TCP Connection
+	tcpAddr1 := sw1.transports[string(transport.TCPProtocol)].NetAddr()
+	err = sw2.DialPeerWithAddress(&tcpAddr1)
+	require.NoError(t, err)
+	assert.Equal(t, 1, sw2.Peers().Size())
+
+	// Wait for connection to establish
+	time.Sleep(100 * time.Millisecond)
+
+	// Test QUIC Connection
+	quicAddr1 := sw1.transports[protocolToString(transport.QUICProtocol)].NetAddr()
+	err = sw2.DialPeerWithAddress(&quicAddr1)
+	require.NoError(t, err)
+	assert.Equal(t, 2, sw2.Peers().Size())
+
+	// Test KCP Connection
+	kcpAddr1 := sw1.transports[protocolToString(transport.KCPProtocol)].NetAddr()
+	err = sw2.DialPeerWithAddress(&kcpAddr1)
+	require.NoError(t, err)
+	assert.Equal(t, 3, sw2.Peers().Size())
+
+	// Verify all transports are connected
+	peers := sw2.Peers().Copy()
+	protocols := make(map[string]bool)
+	for _, peer := range peers {
+		protocols[string(peer.Transport().Protocol())] = true
+	}
+
+	assert.True(t, protocols[string(transport.TCPProtocol)])
+	assert.True(t, protocols[string(transport.QUICProtocol)])
+	assert.True(t, protocols[string(transport.KCPProtocol)])
+}
+
+// Update test to use proper protocol constants
+func TestSwitchPathSelection(t *testing.T) {
+	sw1 := MakeSwitch(cfg, 1, initSwitchFunc)
+	sw2 := MakeSwitch(cfg, 2, initSwitchFunc)
+
+	err := sw1.Start()
+	require.NoError(t, err)
+	err = sw2.Start()
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		if err := sw1.Stop(); err != nil {
+			t.Error(err)
+		}
+		if err := sw2.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	// Connect using path selector
+	addr := sw1.transports[string(transport.KCPProtocol)].NetAddr()
+	transport, err := sw2.pathSelector.SelectFastestPath(addr)
+	require.NoError(t, err)
+
+	// KCP should be selected by default
+	assert.Equal(t, "kcp", transport.Protocol())
+
+	// Connect and verify
+	err = sw2.DialPeerWithAddress(&addr)
+	require.NoError(t, err)
+	assert.Equal(t, 1, sw2.Peers().Size())
+
+	// Verify the connected peer is using KCP
+	peer := sw2.Peers().Copy()[0]
+	assert.Equal(t, "kcp", peer.Transport().Protocol())
+}
+
+// Update test for transport failover
+func TestSwitchTransportFailover(t *testing.T) {
+	sw1 := MakeSwitch(cfg, 1, initSwitchFunc)
+	sw2 := MakeSwitch(cfg, 2, initSwitchFunc)
+
+	err := sw1.Start()
+	require.NoError(t, err)
+	err = sw2.Start()
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		if err := sw1.Stop(); err != nil {
+			t.Error(err)
+		}
+		if err := sw2.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	// Stop KCP transport to simulate failure
+	err = sw1.transports[string(transport.KCPProtocol)].Close()
+	require.NoError(t, err)
+
+	// Try to connect - should failover to another transport
+	addr := sw1.transports[string(transport.TCPProtocol)].NetAddr()
+	transport, err := sw2.pathSelector.SelectFastestPath(addr)
+	require.NoError(t, err)
+
+	// Should select either TCP or QUIC
+	assert.NotEqual(t, "kcp", transport.Protocol())
+	assert.Contains(t, []string{
+		"tcp",
+		"quic",
+	}, transport.Protocol())
 }

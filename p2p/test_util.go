@@ -183,7 +183,7 @@ func ConnectStarSwitches(c int) func([]*Switch, int, int) {
 func (sw *Switch) addPeerWithConnection(conn transport.Conn) error {
 	closeConn := func(err error) {
 		if cErr := conn.Close(err.Error()); cErr != nil {
-			sw.Logger.Error("Error closing connection", "err", cErr)
+			sw.logger.Error("Error closing connection", "err", cErr)
 		}
 	}
 
@@ -280,7 +280,14 @@ func testPeerConn(
 	outbound, persistent bool,
 	socketAddr *na.NetAddr,
 ) (pc peerConn, err error) {
-	return newPeerConn(outbound, persistent, conn, socketAddr), nil
+	pc = newPeerConn(
+		outbound,
+		persistent,
+		conn,
+		socketAddr,
+		nil, // transport can be nil for tests
+	)
+	return pc, nil // Return both values as expected
 }
 
 // ----------------------------------------------------------------

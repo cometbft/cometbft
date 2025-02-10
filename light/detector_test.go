@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/cometbft/cometbft-db"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
 	"github.com/cometbft/cometbft/light/provider"
@@ -43,6 +43,8 @@ func TestLightClientAttackEvidence_Lunatic(t *testing.T) {
 	}
 	primary := mockp.New(chainID, primaryHeaders, primaryValidators)
 
+	memDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
 	c, err := light.NewClient(
 		ctx,
 		chainID,
@@ -53,7 +55,7 @@ func TestLightClientAttackEvidence_Lunatic(t *testing.T) {
 		},
 		primary,
 		[]provider.Provider{witness},
-		dbs.New(dbm.NewMemDB(), chainID),
+		dbs.New(memDB, chainID),
 		light.Logger(log.TestingLogger()),
 		light.MaxRetryAttempts(1),
 	)
@@ -125,6 +127,8 @@ func TestLightClientAttackEvidence_Equivocation(t *testing.T) {
 		}
 		primary := mockp.New(chainID, primaryHeaders, primaryValidators)
 
+		memDB, err := cmtdb.NewInMem()
+		require.NoError(t, err)
 		c, err := light.NewClient(
 			ctx,
 			chainID,
@@ -135,7 +139,7 @@ func TestLightClientAttackEvidence_Equivocation(t *testing.T) {
 			},
 			primary,
 			[]provider.Provider{witness},
-			dbs.New(dbm.NewMemDB(), chainID),
+			dbs.New(memDB, chainID),
 			light.Logger(log.TestingLogger()),
 			light.MaxRetryAttempts(1),
 			verificationOption,
@@ -215,6 +219,8 @@ func TestLightClientAttackEvidence_ForwardLunatic(t *testing.T) {
 	// send the forged block
 	accomplice := primary
 
+	memDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
 	c, err := light.NewClient(
 		ctx,
 		chainID,
@@ -225,7 +231,7 @@ func TestLightClientAttackEvidence_ForwardLunatic(t *testing.T) {
 		},
 		primary,
 		[]provider.Provider{witness, accomplice},
-		dbs.New(dbm.NewMemDB(), chainID),
+		dbs.New(memDB, chainID),
 		light.Logger(log.TestingLogger()),
 		light.MaxClockDrift(1*time.Second),
 		light.MaxBlockLag(1*time.Second),
@@ -282,6 +288,8 @@ func TestLightClientAttackEvidence_ForwardLunatic(t *testing.T) {
 
 	// Lastly we test the unfortunate case where the light clients supporting witness doesn't update
 	// in enough time
+	memDB, err = cmtdb.NewInMem()
+	require.NoError(t, err)
 	c, err = light.NewClient(
 		ctx,
 		chainID,
@@ -292,7 +300,7 @@ func TestLightClientAttackEvidence_ForwardLunatic(t *testing.T) {
 		},
 		primary,
 		[]provider.Provider{laggingWitness, accomplice},
-		dbs.New(dbm.NewMemDB(), chainID),
+		dbs.New(memDB, chainID),
 		light.Logger(log.TestingLogger()),
 		light.MaxClockDrift(1*time.Second),
 		light.MaxBlockLag(1*time.Second),
@@ -312,6 +320,8 @@ func TestClientDivergentTraces1(t *testing.T) {
 	require.NoError(t, err)
 	witness := mockp.New(genMockNode(10, 5, 2, bTime))
 
+	memDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
 	_, err = light.NewClient(
 		ctx,
 		chainID,
@@ -322,7 +332,7 @@ func TestClientDivergentTraces1(t *testing.T) {
 		},
 		primary,
 		[]provider.Provider{witness},
-		dbs.New(dbm.NewMemDB(), chainID),
+		dbs.New(memDB, chainID),
 		light.Logger(log.TestingLogger()),
 		light.MaxRetryAttempts(1),
 	)
@@ -336,6 +346,9 @@ func TestClientDivergentTraces2(t *testing.T) {
 	primary := mockp.New(genMockNode(10, 5, 2, bTime))
 	firstBlock, err := primary.LightBlock(ctx, 1)
 	require.NoError(t, err)
+
+	memDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
 	c, err := light.NewClient(
 		ctx,
 		chainID,
@@ -346,7 +359,7 @@ func TestClientDivergentTraces2(t *testing.T) {
 		},
 		primary,
 		[]provider.Provider{deadNode, deadNode, primary},
-		dbs.New(dbm.NewMemDB(), chainID),
+		dbs.New(memDB, chainID),
 		light.Logger(log.TestingLogger()),
 		light.MaxRetryAttempts(1),
 	)
@@ -371,6 +384,8 @@ func TestClientDivergentTraces3(t *testing.T) {
 	mockVals[1] = primaryVals[1]
 	witness := mockp.New(chainID, mockHeaders, mockVals)
 
+	memDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
 	c, err := light.NewClient(
 		ctx,
 		chainID,
@@ -381,7 +396,7 @@ func TestClientDivergentTraces3(t *testing.T) {
 		},
 		primary,
 		[]provider.Provider{witness},
-		dbs.New(dbm.NewMemDB(), chainID),
+		dbs.New(memDB, chainID),
 		light.Logger(log.TestingLogger()),
 		light.MaxRetryAttempts(1),
 	)
@@ -408,6 +423,8 @@ func TestClientDivergentTraces4(t *testing.T) {
 		ValidatorSet: mockVals[10],
 	})
 
+	memDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
 	c, err := light.NewClient(
 		ctx,
 		chainID,
@@ -418,7 +435,7 @@ func TestClientDivergentTraces4(t *testing.T) {
 		},
 		primary,
 		[]provider.Provider{witness},
-		dbs.New(dbm.NewMemDB(), chainID),
+		dbs.New(memDB, chainID),
 		light.Logger(log.TestingLogger()),
 	)
 	require.NoError(t, err)

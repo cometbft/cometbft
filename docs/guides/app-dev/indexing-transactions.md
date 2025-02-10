@@ -52,7 +52,7 @@ be turned off regardless of other values provided.
 #
 # Options:
 #   1) "null"
-#   2) "kv" (default) - the simplest possible indexer, backed by key-value storage (defaults to levelDB; see DBBackend).
+#   2) "kv" (default) - the simplest possible indexer, backed by pebbledb.
 #     - When "kv" is chosen "tx.height" and "tx.hash" will always be indexed.
 #   3) "psql" - the indexer services backed by PostgreSQL.
 # indexer = "kv"

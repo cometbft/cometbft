@@ -106,32 +106,6 @@ Monikers do not need to be unique. They are for local administrator use and trou
 Nodes on the peer-to-peer network are identified by `nodeID@host:port` as discussed in the
 [node_key.json](node_key.json.md) section.
 
-### db_backend
-The chosen database backend for the node.
-```toml
-db_backend = "pebbledb"
-```
-
-| Value type          | string        | dependencies  | GitHub                                           |
-|:--------------------|:--------------|:--------------|:-------------------------------------------------|
-| **Possible values** | `"badgerdb"`  | pure Golang   | [badger](https://github.com/dgraph-io/badger)    |
-|                     | `"goleveldb"` | pure Golang   | [goleveldb](https://github.com/syndtr/goleveldb) |
-|                     | `"pebbledb"`  | pure Golang   | [pebble](https://github.com/cockroachdb/pebble)  |
-|                     | `"rocksdb"`   | requires gcc  | [grocksdb](https://github.com/linxGnu/grocksdb)  |
-
-During the build process, by default, only the `pebbledb` library is built into the binary.
-To add support for alternative databases, you need to add them in the build tags.
-For example: `go build -tags rocksdb`.
-
-`goleveldb` is supported by default too, but it is no longer recommended for
-production use.
-
-The RocksDB fork has API changes from the upstream RocksDB implementation. All
-other databases claim a stable API.
-
-The supported databases are part of the [cometbft-db](https://github.com/cometbft/cometbft-db) library
-that CometBFT uses as a common database interface to various databases.
-
 ### db_dir
 The directory path where the database is stored.
 ```toml
@@ -1984,9 +1958,6 @@ CometBFT supports storage pruning to delete data indicated as not needed by the 
 Other than the pruning interval and compaction options, the configuration parameters in this section refer to the data
 companion. The applications pruning configuration is communicated to CometBFT via ABCI.
 
-Note that for some databases (GolevelDB), the data often does not get physically removed from storage due to the DB backend
-not triggering compaction. In these cases it is necessary to enable forced compaction and set the compaction interval accordingly.
-
 ### storage.discard_abci_responses
 Discard ABCI responses from the state store, which can save a considerable amount of disk space.
 ```toml
@@ -2130,8 +2101,7 @@ indexer = "kv"
 
 `"null"` indexer disables indexing.
 
-`"kv"` is the simplest possible indexer, backed by a key-value storage.
-The key-value storage database backend is defined in [`db_backend`](#db_backend).
+`"kv"` is the simplest possible indexer, backed by pebbledb.
 
 `"psql"` indexer is backed by an external PostgreSQL server.
 The server connection string is defined in [`tx_index.psql-conn`](#tx_indexpsql-conn).

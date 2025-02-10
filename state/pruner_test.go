@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
 
-	db "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
@@ -178,12 +178,19 @@ func createTestSetup(t *testing.T) (*sm.Pruner, *kv.TxIndex, blockidxkv.BlockerI
 	})
 
 	// tx indexer
-	memDB := db.NewMemDB()
+	memDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
 	txIndexer := kv.NewTxIndex(memDB)
-	blockIndexer := blockidxkv.New(db.NewPrefixDB(memDB, []byte("block_events")))
 
-	blockDB := db.NewMemDB()
-	stateDB := db.NewMemDB()
+	prefixDB, err := cmtdb.NewWithPrefix(memDB, []byte("block_events"))
+	require.NoError(t, err)
+
+	blockIndexer := blockidxkv.New(prefixDB)
+
+	blockDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
+	stateDB, err := cmtdb.NewInMem()
+	require.NoError(t, err)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})

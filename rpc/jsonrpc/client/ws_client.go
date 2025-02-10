@@ -368,7 +368,7 @@ func (c *WSClient) processBacklog() error {
 		}
 		if err := c.conn.WriteJSON(request); err != nil {
 			c.Logger.Error("failed to resend request", "err", err)
-			c.reconnectAfter <- err
+			c.handleError(err)
 			// requeue request
 			c.backlog <- request
 			return err
@@ -379,14 +379,19 @@ func (c *WSClient) processBacklog() error {
 	return nil
 }
 
+func (c *WSClient) handleError(err error) {
+	select {
+	case c.ErrorCh <- err:
+	default:
+	}
+
+	c.reconnectAfter <- err
+}
+
 func (c *WSClient) reconnectRoutine() {
 	for {
 		select {
 		case originalError := <-c.reconnectAfter:
-			select {
-			case c.ErrorCh <- originalError:
-			default:
-			}
 			// wait until writeRoutine and readRoutine finish
 			c.wg.Wait()
 			if err := c.reconnect(); err != nil {
@@ -449,7 +454,7 @@ func (c *WSClient) writeRoutine() {
 			}
 			if err := c.conn.WriteJSON(request); err != nil {
 				c.Logger.Error("failed to send request", "err", err)
-				c.reconnectAfter <- err
+				c.handleError(err)
 				// add request to the backlog, so we don't lose it
 				c.backlog <- request
 				return
@@ -462,7 +467,7 @@ func (c *WSClient) writeRoutine() {
 			}
 			if err := c.conn.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
 				c.Logger.Error("failed to write ping", "err", err)
-				c.reconnectAfter <- err
+				c.handleError(err)
 				return
 			}
 			c.mtx.Lock()
@@ -522,7 +527,7 @@ func (c *WSClient) readRoutine() {
 
 			c.Logger.Error("failed to read response", "err", err)
 			close(c.readRoutineQuit)
-			c.reconnectAfter <- err
+			c.handleError(err)
 			return
 		}
 

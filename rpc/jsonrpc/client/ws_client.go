@@ -46,7 +46,7 @@ type WSClient struct {
 	ResponsesCh chan types.RPCResponse
 
 	// Callback, which will be called each time after successful reconnect.
-	onReconnect func()
+	onReconnect func(attempt int)
 
 	// internal channels
 	send            chan types.RPCRequest // user requests
@@ -170,6 +170,16 @@ func PingPeriod(pingPeriod time.Duration) func(*WSClient) {
 // OnReconnect sets the callback, which will be called every time after
 // successful reconnect.
 func OnReconnect(cb func()) func(*WSClient) {
+	return func(c *WSClient) {
+		c.onReconnect = func(int) {
+			cb()
+		}
+	}
+}
+
+// OnReconnectWithAttempts sets the callback with the number of reconnection attempts,
+// which will be called every time after successful reconnect.
+func OnReconnectWithAttempts(cb func(int)) func(*WSClient) {
 	return func(c *WSClient) {
 		c.onReconnect = cb
 	}
@@ -322,7 +332,7 @@ func (c *WSClient) reconnect() error {
 		} else {
 			c.Logger.Info("reconnected")
 			if c.onReconnect != nil {
-				go c.onReconnect()
+				go c.onReconnect(attempt)
 			}
 			return nil
 		}

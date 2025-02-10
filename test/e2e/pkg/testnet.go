@@ -769,7 +769,7 @@ func (n Node) GRPCClient(ctx context.Context) (grpcclient.Client, error) {
 	)
 }
 
-// GRPCClient creates a gRPC client for the node.
+// GRPCPrivilegedClient creates a privileged gRPC client for the node.
 func (n Node) GRPCPrivilegedClient(ctx context.Context) (grpcprivileged.Client, error) {
 	return grpcprivileged.New(
 		ctx,

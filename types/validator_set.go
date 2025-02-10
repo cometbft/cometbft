@@ -749,7 +749,7 @@ func (vals *ValidatorSet) VerifyCommitLightWithCache(chainID string, blockID Blo
 	return VerifyCommitLightWithCache(chainID, vals, blockID, height, commit, verifiedSignatureCache)
 }
 
-// VerifyCommitLight verifies +2/3 of the set had signed the given commit.
+// VerifyCommitLightAllSignatures verifies +2/3 of the set had signed the given commit.
 // It DOES count all signatures.
 func (vals *ValidatorSet) VerifyCommitLightAllSignatures(chainID string, blockID BlockID,
 	height int64, commit *Commit,

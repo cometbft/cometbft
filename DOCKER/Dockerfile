@@ -1,6 +1,10 @@
 # Use a build arg to ensure that both stages use the same,
 # hopefully current, go version.
+<<<<<<< HEAD
 ARG GOLANG_BASE_IMAGE=golang:1.22-alpine
+=======
+ARG GOLANG_BASE_IMAGE=golang:1.23.5-alpine
+>>>>>>> 4226b0ea (fix(ci): Fix docker builds (#4949))
 
 # stage 1 Generate CometBFT Binary
 FROM --platform=$BUILDPLATFORM $GOLANG_BASE_IMAGE as builder

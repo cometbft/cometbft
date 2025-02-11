@@ -2,7 +2,6 @@ name: Docker E2E Node
 # Build & Push rebuilds the e2e Testapp docker image on every push to main and creation of tags
 # and pushes the image to https://hub.docker.com/r/cometbft/e2e-node
 on:
-  pull_request:
   push:
     branches:
       - main

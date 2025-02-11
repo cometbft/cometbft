@@ -933,7 +933,7 @@ func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, 
 	return validatorsUpdates, nil
 }
 
-// logAbciRequest log the request using the app's logger.
+// logABCIRequest log the request using the app's logger.
 func (app *Application) logABCIRequest(req *abci.Request) error {
 	if !app.cfg.ABCIRequestsLoggingEnabled {
 		return nil

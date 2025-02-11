@@ -45,8 +45,12 @@ type WSClient struct {
 	// client is being stopped.
 	ResponsesCh chan types.RPCResponse
 
+	// Single user facing channel to get error from, closed only when the
+	// client is being stopped.
+	ErrorCh chan error
+
 	// Callback, which will be called each time after successful reconnect.
-	onReconnect func()
+	onReconnect func(attempt int)
 
 	// internal channels
 	send            chan types.RPCRequest // user requests
@@ -171,6 +175,16 @@ func PingPeriod(pingPeriod time.Duration) func(*WSClient) {
 // successful reconnect.
 func OnReconnect(cb func()) func(*WSClient) {
 	return func(c *WSClient) {
+		c.onReconnect = func(int) {
+			cb()
+		}
+	}
+}
+
+// OnReconnectWithAttempts sets the callback with the number of reconnection attempts,
+// which will be called every time after successful reconnect.
+func OnReconnectWithAttempts(cb func(int)) func(*WSClient) {
+	return func(c *WSClient) {
 		c.onReconnect = cb
 	}
 }
@@ -189,6 +203,7 @@ func (c *WSClient) OnStart() error {
 	}
 
 	c.ResponsesCh = make(chan types.RPCResponse)
+	c.ErrorCh = make(chan error, 1)
 	c.PingPongLatencyTimer = metrics.NewTimer()
 
 	c.send = make(chan types.RPCRequest)
@@ -213,6 +228,7 @@ func (c *WSClient) Stop() error {
 	}
 	// only close user-facing channels when we can't write to them
 	c.wg.Wait()
+	close(c.ErrorCh)
 	close(c.ResponsesCh)
 
 	return nil
@@ -322,7 +338,7 @@ func (c *WSClient) reconnect() error {
 		} else {
 			c.Logger.Info("reconnected")
 			if c.onReconnect != nil {
-				go c.onReconnect()
+				go c.onReconnect(attempt)
 			}
 			return nil
 		}
@@ -352,7 +368,7 @@ func (c *WSClient) processBacklog() error {
 		}
 		if err := c.conn.WriteJSON(request); err != nil {
 			c.Logger.Error("failed to resend request", "err", err)
-			c.reconnectAfter <- err
+			c.handleError(err)
 			// requeue request
 			c.backlog <- request
 			return err
@@ -361,6 +377,15 @@ func (c *WSClient) processBacklog() error {
 	default:
 	}
 	return nil
+}
+
+func (c *WSClient) handleError(err error) {
+	select {
+	case c.ErrorCh <- err:
+	default:
+	}
+
+	c.reconnectAfter <- err
 }
 
 func (c *WSClient) reconnectRoutine() {
@@ -429,7 +454,7 @@ func (c *WSClient) writeRoutine() {
 			}
 			if err := c.conn.WriteJSON(request); err != nil {
 				c.Logger.Error("failed to send request", "err", err)
-				c.reconnectAfter <- err
+				c.handleError(err)
 				// add request to the backlog, so we don't lose it
 				c.backlog <- request
 				return
@@ -442,7 +467,7 @@ func (c *WSClient) writeRoutine() {
 			}
 			if err := c.conn.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
 				c.Logger.Error("failed to write ping", "err", err)
-				c.reconnectAfter <- err
+				c.handleError(err)
 				return
 			}
 			c.mtx.Lock()
@@ -502,7 +527,7 @@ func (c *WSClient) readRoutine() {
 
 			c.Logger.Error("failed to read response", "err", err)
 			close(c.readRoutineQuit)
-			c.reconnectAfter <- err
+			c.handleError(err)
 			return
 		}
 

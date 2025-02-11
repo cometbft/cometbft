@@ -203,7 +203,7 @@ func (c *WSClient) OnStart() error {
 	}
 
 	c.ResponsesCh = make(chan types.RPCResponse)
-	c.ErrorCh = make(chan error)
+	c.ErrorCh = make(chan error, 1)
 	c.PingPongLatencyTimer = metrics.NewTimer()
 
 	c.send = make(chan types.RPCRequest)

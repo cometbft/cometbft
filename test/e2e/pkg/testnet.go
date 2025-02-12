@@ -331,6 +331,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		}
 	}
 
+	// Keep track of which valiadtors have been activated so far
+	validatorsActiveSet := make(map[string]struct{})
 	// Set up genesis validators. If not specified explicitly, use all validator nodes.
 	if len(testnet.Validators) == 0 {
 		if testnet.Validators == nil { // Can this ever happen?
@@ -339,7 +341,12 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		for _, node := range testnet.Nodes {
 			if node.Mode == ModeValidator {
 				testnet.Validators[node.Name] = 100
+				validatorsActiveSet[node.Name] = struct{}{}
 			}
+		}
+	} else {
+		for val := range testnet.Validators {
+			validatorsActiveSet[val] = struct{}{}
 		}
 	}
 
@@ -358,12 +365,12 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			if node == nil {
 				return nil, fmt.Errorf("unknown validator %q for update at height %v", name, height)
 			}
+
 			valUpdate[node.Name] = power
 		}
 		testnet.ValidatorUpdates[int64(height)] = valUpdate
 	}
-
-	if testnet.ConstantFlip && len(testnet.Validators) > 1 {
+	if testnet.ConstantFlip {
 		// Pick "lowest" validator by name
 		var minNode string
 		for n := range testnet.Validators {
@@ -376,25 +383,53 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		}
 
 		const flipSpan = 3000
+
 		for i := max(1, manifest.InitialHeight); i < manifest.InitialHeight+flipSpan; i++ {
-			// FIXME: we do not flip the validator when there is
-			// **any** scheduled validator update for that height.
-			// We may have a validator update that affects a
-			// **different** validator here and the height can be
-			// odd. We add our validator back in odd heights, so we
-			// are skipping this in this case. Therefore, in the
-			// next even height we are removing a validator that is
-			// not present in the validator set.
-			if _, ok := testnet.ValidatorUpdates[i]; ok {
-				continue
+			// The idea is to take validator `minNode` and flip its
+			// voting power between 0 and 1 in alternating heights.
+
+			// If in the manifest we have `minNode` appear in
+			// ValidatorUpdates for height [i], this update is kept
+			// if and only if minNode was not present or had a
+			// value of `0` in height `i-1`
+			_, ok := testnet.ValidatorUpdates[i]
+			activateMinNode := false
+
+			switch ok {
+			case true:
+				for val := range testnet.ValidatorUpdates[i] {
+					// First mark any validators that might not have been active
+					// previously as active
+					validatorsActiveSet[val] = struct{}{}
+				}
+				if len(validatorsActiveSet) <= 1 {
+					continue
+				}
+				if _, ok2 := validatorsActiveSet[minNode]; !ok2 {
+					activateMinNode = true
+				}
+			case false:
+				// If there is only one validator active, don't flip
+				if len(validatorsActiveSet) <= 1 {
+					continue
+				}
+				if _, ok2 := validatorsActiveSet[minNode]; !ok2 {
+					activateMinNode = true
+				}
+				// As there are no updates for height i, we need to create
+				// an entry
+				testnet.ValidatorUpdates[i] = make(map[string]int64)
 			}
-			valUpdate := map[string]int64{
-				minNode: i % 2, // flipping every height
+
+			if activateMinNode {
+				testnet.ValidatorUpdates[i][minNode] = 1
+				validatorsActiveSet[minNode] = struct{}{}
+			} else {
+				testnet.ValidatorUpdates[i][minNode] = 0 // There were no validator updates for this height
+				delete(validatorsActiveSet, minNode)
 			}
-			testnet.ValidatorUpdates[i] = valUpdate
 		}
 	}
-
 	return testnet, testnet.Validate()
 }
 

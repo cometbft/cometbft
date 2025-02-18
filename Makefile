@@ -253,18 +253,12 @@ lint:
 	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
 .PHONY: lint
 
-<<<<<<< HEAD
 # https://github.com/cometbft/cometbft/pull/1925#issuecomment-1875127862
 # Revisit using lint-format after CometBFT v1 release and/or after 2024-06-01.
 #lint-format:
 #	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix
 #	@go run mvdan.cc/gofumpt -l -w ./..
 #.PHONY: lint-format
-
-#? vulncheck: Run latest govulncheck
-vulncheck:
-	@go run golang.org/x/vuln/cmd/govulncheck@latest ./...
-.PHONY: vulncheck
 
 #? lint-typo: Run codespell to check typos
 lint-typo:
@@ -276,13 +270,6 @@ lint-typo:
 lint-fix-typo:
 	@codespell -w
 .PHONY: lint-fix-typo
-=======
-#? pre-commit: Create pre-commit hook using the pre-commit framework.
-pre-commit:
-	@which pre-commit || pip3 install pre-commit
-	@pre-commit install
-.PHONY: pre-commit
->>>>>>> c3ac62dc (ci: remove govulncheck (#4946))
 
 DESTINATION = ./index.html.md
 

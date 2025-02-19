@@ -1,5 +1,5 @@
 # We need to build in a Linux environment to support C libraries.
-FROM golang:1.23.5
+FROM golang:1.23
 
 RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
 

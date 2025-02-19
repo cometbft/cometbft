@@ -13,7 +13,14 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            arch: linux/amd64
+          - os: ubuntu-24.04-arm
+            arch: linux/arm64
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Prepare
@@ -35,13 +42,8 @@ jobs:
           fi
           echo "tags=${TAGS}" >> $GITHUB_OUTPUT
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@master
-        with:
-          platforms: all
-
       - name: Set up Docker Build
-        uses: docker/setup-buildx-action@v3.8.0
+        uses: docker/setup-buildx-action@v3.9.0
 
       - name: Login to DockerHub
         if: ${{ github.event_name != 'pull_request' }}
@@ -55,6 +57,6 @@ jobs:
         with:
           context: .
           file: ./test/e2e/docker/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.arch }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.prep.outputs.tags }}

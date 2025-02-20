@@ -46,7 +46,26 @@ Verify that you have the latest version of Go installed (refer to the [official 
 
 ```bash
 $ go version
+<<<<<<< HEAD:docs/guides/go.md
 go version go1.22.11 darwin/amd64
+=======
+go version go1.23.6 darwin/amd64
+```
+
+## 1.1 Installing CometBFT
+
+Let's install `CometBFT` locally by running the following command:
+
+```bash
+go install github.com/cometbft/cometbft/cmd/cometbft@v1.0
+```
+
+Test the installation:
+
+```bash
+$ cometbft version
+v1.0.0
+>>>>>>> a8b48c7e (chore: relax Go version constraint to 1.23 (#4964)):docs/tutorials/go.md
 ```
 
 ## 1.2 Creating a new Go project
@@ -94,7 +113,11 @@ The go.mod file should look similar to:
 ```go
 module kvstore
 
+<<<<<<< HEAD:docs/guides/go.md
 go 1.22
+=======
+go 1.23
+>>>>>>> a8b48c7e (chore: relax Go version constraint to 1.23 (#4964)):docs/tutorials/go.md
 
 require (
 github.com/cometbft/cometbft v0.38.0

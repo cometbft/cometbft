@@ -1,7 +1,12 @@
+<<<<<<< HEAD
 # We need to build in a Linux environment to support C libraries, e.g. RocksDB.
 # We use Debian instead of Alpine, so that we can use binary database packages
 # instead of spending time compiling them.
 FROM cometbft/cometbft-db-testing:v0.14.2
+=======
+# We need to build in a Linux environment to support C libraries.
+FROM golang:1.23
+>>>>>>> a8b48c7e (chore: relax Go version constraint to 1.23 (#4964))
 
 RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
 

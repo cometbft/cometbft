@@ -60,12 +60,20 @@ looking for, see [our security policy](SECURITY.md).
 
 ## Minimum requirements
 
+<<<<<<< HEAD
 | CometBFT version | Requirement | Notes             |
 |------------------|-------------|-------------------|
 | main             | Go version  | Go 1.22 or higher |
 | v0.38.x          | Go version  | Go 1.22 or higher |
 | v0.37.x          | Go version  | Go 1.22 or higher |
 | v0.34.x          | Go version  | Go 1.12 or higher |
+=======
+| CometBFT version | Requirement | Version        | Tested with  |
+|------------------|-------------|----------------|--------------|
+| main             | Go version  | 1.23 or higher | up to 1.23.6 |
+| v1.x             | Go version  | 1.23 or higher | up to 1.23.1 |
+| v0.38.x          | Go version  | 1.22 or higher | up to 1.22   |
+>>>>>>> a8b48c7e (chore: relax Go version constraint to 1.23 (#4964))
 
 ### Install
 

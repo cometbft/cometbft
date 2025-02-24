@@ -77,7 +77,7 @@ type Node struct {
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
 	stateSyncProvider statesync.StateProvider // provides state data for bootstrapping a node
-	state             sm.State                // provides the genesis state for state sync
+	state             sm.State                // state after the handshake
 	consensusState    *cs.State               // latest consensus state
 	consensusReactor  *cs.Reactor             // for participating in the consensus
 	pexReactor        *pex.Reactor            // for exchanging peer addresses
@@ -639,7 +639,6 @@ func (n *Node) OnStart() error {
 
 	// Start statesync.
 	if n.stateSync {
-		// Start blocksync.
 		bcR, ok := n.bcReactor.(blockSyncReactor)
 		if !ok {
 			return ErrSwitchStateSync

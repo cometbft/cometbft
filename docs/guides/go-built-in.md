@@ -46,27 +46,7 @@ Verify that you have the latest version of Go installed (refer to the [official 
 
 ```bash
 $ go version
-<<<<<<< HEAD:docs/guides/go-built-in.md
 go version go1.22.11 darwin/amd64
-=======
-go version go1.23.6 darwin/amd64
-
-```
-
-## 1.1 Installing CometBFT
-
-Let's install `CometBFT` locally by running the following command:
-
-```bash
-go install github.com/cometbft/cometbft/cmd/cometbft@v1.0
-```
-
-Test the installation:
-
-```bash
-$ cometbft version
-v1.0.0
->>>>>>> a8b48c7e (chore: relax Go version constraint to 1.23 (#4964)):docs/tutorials/go-built-in.md
 ```
 
 ## 1.2 Creating a new Go project
@@ -108,44 +88,13 @@ go mod init kvstore
 go get github.com/cometbft/cometbft@v0.38.0
 ```
 
-<<<<<<< HEAD:docs/guides/go-built-in.md
-=======
-This should an output similar to this.
-
-**NOTE**: No need to run `go mod tidy` at this time, just ignore it for now.
-
-```bash
-go: creating new go.mod: module kvstore
-go: to add module requirements and sums:
-go mod tidy
-```
-
-Now, lets add `cometbft` as a dependency to our project. Run the `go get` command below:
-
-```bash
-go get github.com/cometbft/cometbft@v1.0
-```
-
-**NOTE**: This will add the latest release in the `v1.0` line, so you might a different patch release e.g. `v1.0.0`
-or `v1.0.1`
-
-```bash
-go: added github.com/cometbft/cometbft v1.0.0
-```
-
-`
->>>>>>> a8b48c7e (chore: relax Go version constraint to 1.23 (#4964)):docs/tutorials/go-built-in.md
 After running the above commands you will see two generated files, `go.mod` and `go.sum`.
 The go.mod file should look similar to:
 
 ```go
 module kvstore
 
-<<<<<<< HEAD:docs/guides/go-built-in.md
 go 1.22
-=======
-go 1.23
->>>>>>> a8b48c7e (chore: relax Go version constraint to 1.23 (#4964)):docs/tutorials/go-built-in.md
 
 require (
 github.com/cometbft/cometbft v0.38.0

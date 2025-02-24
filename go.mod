@@ -1,12 +1,6 @@
 module github.com/cometbft/cometbft
 
-<<<<<<< HEAD
-go 1.22.11
-=======
-go 1.23
-
-replace github.com/cometbft/cometbft/api => ./api
->>>>>>> a8b48c7e (chore: relax Go version constraint to 1.23 (#4964))
+go 1.22
 
 require (
 	github.com/BurntSushi/toml v1.4.0

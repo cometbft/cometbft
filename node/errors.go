@@ -168,16 +168,16 @@ func (e ErrHandshake) Unwrap() error {
 	return e.Err
 }
 
-// ErrStartBlockSync is returned when the node fails to start the blocksync.
-type ErrStartBlockSync struct {
+// ErrStartStateSync is returned when the node fails to start the statesync.
+type ErrStartStateSync struct {
 	Err error
 }
 
-func (e ErrStartBlockSync) Error() string {
-	return fmt.Sprintf("failed to start blocksync: %v", e.Err)
+func (e ErrStartStateSync) Error() string {
+	return fmt.Sprintf("failed to start statesync: %v", e.Err)
 }
 
-func (e ErrStartBlockSync) Unwrap() error {
+func (e ErrStartStateSync) Unwrap() error {
 	return e.Err
 }
 

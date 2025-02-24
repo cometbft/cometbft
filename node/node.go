@@ -648,7 +648,7 @@ func (n *Node) OnStart() error {
 		err = startStateSync(n.stateSyncReactor, bcR, n.stateSyncProvider,
 			n.config.StateSync, n.stateStore, n.blockStore, n.state, n.config.Storage.ExperimentalKeyLayout)
 		if err != nil {
-			n.Logger.Error("statesync failed! switching to blocksync...", "err", err)
+			return ErrStartStateSync{Err: err}
 		}
 	}
 

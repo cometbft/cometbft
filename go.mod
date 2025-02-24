@@ -1,7 +1,6 @@
 module github.com/cometbft/cometbft
 
 go 1.23
-
 replace github.com/cometbft/cometbft/api => ./api
 
 require (
@@ -44,7 +43,7 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.10.0
 	github.com/supranational/blst v0.3.14
-	golang.org/x/crypto v0.33.0
+	golang.org/x/crypto v0.34.0
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
 	golang.org/x/net v0.35.0
 	golang.org/x/sync v0.11.0

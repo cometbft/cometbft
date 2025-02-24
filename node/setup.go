@@ -568,14 +568,13 @@ func createPEXReactorAndAddToSwitch(addrBook pex.AddrBook, config *cfg.Config,
 // startStateSync starts an asynchronous state sync process, then switches to block sync mode.
 func startStateSync(
 	ssR *statesync.Reactor,
-	bcR blockSyncReactor,
 	stateProvider statesync.StateProvider,
 	config *cfg.StateSyncConfig,
 	stateStore sm.Store,
 	blockStore *store.BlockStore,
 	state sm.State,
 	dbKeyLayoutVersion string,
-) error {
+) (chan sm.State, chan error, error) {
 	ssR.Logger.Info("Starting state sync")
 
 	if stateProvider == nil {
@@ -592,46 +591,36 @@ func startStateSync(
 			}, ssR.Logger.With("module", "light"),
 			dbKeyLayoutVersion)
 		if err != nil {
-			return fmt.Errorf("failed to set up light client state provider: %w", err)
+			return nil, nil, fmt.Errorf("failed to set up light client state provider: %w", err)
 		}
 	}
 
+	// Run statesync in a separate goroutine in order not to block `Node.Start`
+	stateCh := make(chan sm.State, 1)
+	errc := make(chan error, 1)
 	go func() {
-		switchToBlockSyncWithOldState := func() {
-			err := bcR.SwitchToBlockSync(state)
-			if err != nil {
-				ssR.Logger.Error("Switch to blocksync", "err", err)
-			}
-		}
-
 		newState, commit, err := ssR.Sync(stateProvider, config.MaxDiscoveryTime)
 		if err != nil {
-			ssR.Logger.Error("Statesync", "err", err)
-			switchToBlockSyncWithOldState()
+			errc <- fmt.Errorf("statesync: %w", err)
 			return
 		}
 
 		err = stateStore.Bootstrap(newState)
 		if err != nil {
-			ssR.Logger.Error("Bootstrap node with new state", "err", err)
-			switchToBlockSyncWithOldState()
+			errc <- fmt.Errorf("boostrap: %w", err)
 			return
 		}
 
 		err = blockStore.SaveSeenCommit(newState.LastBlockHeight, commit)
 		if err != nil {
-			ssR.Logger.Error("Save seen commit", "err", err)
-			switchToBlockSyncWithOldState()
+			errc <- fmt.Errorf("save seen commit: %w", err)
 			return
 		}
 
-		err = bcR.SwitchToBlockSync(newState)
-		if err != nil {
-			ssR.Logger.Error("Switch to blocksync", "err", err)
-		}
+		stateCh <- newState
 	}()
 
-	return nil
+	return stateCh, errc, nil
 }
 
 // ------------------------------------------------------------------------------

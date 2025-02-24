@@ -18,6 +18,7 @@ import (
 	_ "net/http/pprof" //nolint: gosec
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cfg "github.com/cometbft/cometbft/config"
 	bc "github.com/cometbft/cometbft/internal/blocksync"
 	cs "github.com/cometbft/cometbft/internal/consensus"
@@ -77,7 +78,7 @@ type Node struct {
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
 	stateSyncProvider statesync.StateProvider // provides state data for bootstrapping a node
-	state             sm.State                // state after the handshake
+	genesisState      sm.State                // genesis state
 	consensusState    *cs.State               // latest consensus state
 	consensusReactor  *cs.Reactor             // for participating in the consensus
 	pexReactor        *pex.Reactor            // for exchanging peer addresses
@@ -89,6 +90,11 @@ type Node struct {
 	indexerService    *txindex.IndexerService
 	prometheusSrv     *http.Server
 	pprofSrv          *http.Server
+
+	// store genesis doc until the statesync is over. if statesync fails, do the
+	// handshake and proceed with blocksync.
+	genDoc          *types.GenesisDoc
+	appInfoResponse *abcitypes.InfoResponse
 }
 
 type waitSyncP2PReactor interface {
@@ -410,18 +416,18 @@ func NewNodeWithCliParams(ctx context.Context,
 		return nil, fmt.Errorf("error calling ABCI Info method: %v", err)
 	}
 
-	// Handshake with the app, even if the state will be overwritten by statesync.
-	// This is needed in case statesync fails or max discovery time is reached.
-	if err := doHandshake(ctx, stateStore, state, blockStore, genDoc, eventBus, appInfoResponse, proxyApp, consensusLogger); err != nil {
-		return nil, ErrHandshake{Err: err}
-	}
+	if !stateSync {
+		if err := doHandshake(ctx, stateStore, state, blockStore, genDoc, eventBus, appInfoResponse, proxyApp, consensusLogger); err != nil {
+			return nil, ErrHandshake{Err: err}
+		}
 
-	// Reload the state. It will have the Version.Consensus.App set by the
-	// Handshake, and may have other modifications as well (ie. depending on
-	// what happened during block replay).
-	state, err = stateStore.Load()
-	if err != nil {
-		return nil, sm.ErrCannotLoadState{Err: err}
+		// Reload the state. It will have the Version.Consensus.App set by the
+		// Handshake, and may have other modifications as well (ie. depending on
+		// what happened during block replay).
+		state, err = stateStore.Load()
+		if err != nil {
+			return nil, sm.ErrCannotLoadState{Err: err}
+		}
 	}
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
@@ -567,7 +573,7 @@ func NewNodeWithCliParams(ctx context.Context,
 		consensusReactor: consensusReactor,
 		stateSyncReactor: stateSyncReactor,
 		stateSync:        stateSync,
-		state:            state,
+		genesisState:     state,
 		pexReactor:       pexReactor,
 		evidencePool:     evidencePool,
 		proxyApp:         proxyApp,
@@ -575,6 +581,10 @@ func NewNodeWithCliParams(ctx context.Context,
 		indexerService:   indexerService,
 		blockIndexer:     blockIndexer,
 		eventBus:         eventBus,
+
+		// needed for statesync
+		genDoc:          genDoc,
+		appInfoResponse: appInfoResponse,
 	}
 	node.BaseService = *service.NewBaseService(logger, "Node", node)
 
@@ -644,10 +654,42 @@ func (n *Node) OnStart() error {
 			return ErrSwitchStateSync
 		}
 
-		err = startStateSync(n.stateSyncReactor, bcR, n.stateSyncProvider,
-			n.config.StateSync, n.stateStore, n.blockStore, n.state, n.config.Storage.ExperimentalKeyLayout)
+		stateCh, errc, err := startStateSync(n.stateSyncReactor, n.stateSyncProvider,
+			n.config.StateSync, n.stateStore, n.blockStore, n.genesisState, n.config.Storage.ExperimentalKeyLayout)
 		if err != nil {
 			return ErrStartStateSync{Err: err}
+		}
+
+		select {
+		case newState := <-stateCh:
+			n.Logger.Info("statesync complete. switching to blocksync with new state")
+
+			err = bcR.SwitchToBlockSync(newState)
+			if err != nil {
+				return ErrStartBlockSync{Err: err}
+			}
+		case err := <-errc:
+			n.Logger.Warn("statesync failed. switching to blocksync with genesis state", "err", err)
+
+			const handshakeTimeout = 5 * time.Second
+			ctx, cancel := context.WithTimeout(context.Background(), handshakeTimeout)
+			defer cancel()
+			if err := doHandshake(ctx, n.stateStore, n.genesisState, n.blockStore, n.genDoc, n.eventBus, n.appInfoResponse, n.proxyApp, n.Logger); err != nil {
+				return ErrHandshake{Err: err}
+			}
+
+			// Reload the state. It will have the Version.Consensus.App set by the
+			// Handshake, and may have other modifications as well (ie. depending on
+			// what happened during block replay).
+			state, err := n.stateStore.Load()
+			if err != nil {
+				return sm.ErrCannotLoadState{Err: err}
+			}
+
+			err = bcR.SwitchToBlockSync(state)
+			if err != nil {
+				return ErrStartBlockSync{Err: err}
+			}
 		}
 	}
 

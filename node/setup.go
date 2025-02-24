@@ -597,33 +597,40 @@ func startStateSync(
 	}
 
 	go func() {
-		state, commit, err := ssR.Sync(stateProvider, config.MaxDiscoveryTime)
-		if err != nil {
-			ssR.Logger.Error("State sync failed", "err", err)
-			err = bcR.SwitchToBlockSync(state)
+		switchToBlockSyncWithOldState := func() {
+			err := bcR.SwitchToBlockSync(state)
 			if err != nil {
-				ssR.Logger.Error("Failed to switch to block sync", "err", err)
-				return
+				ssR.Logger.Error("Switch to blocksync", "err", err)
 			}
+		}
+
+		newState, commit, err := ssR.Sync(stateProvider, config.MaxDiscoveryTime)
+		if err != nil {
+			ssR.Logger.Error("Statesync", "err", err)
+			switchToBlockSyncWithOldState()
 			return
 		}
 
-		err = stateStore.Bootstrap(state)
+		err = stateStore.Bootstrap(newState)
 		if err != nil {
-			ssR.Logger.Error("Failed to bootstrap node with new state", "err", err)
+			ssR.Logger.Error("Bootstrap node with new state", "err", err)
+			switchToBlockSyncWithOldState()
 			return
 		}
-		err = blockStore.SaveSeenCommit(state.LastBlockHeight, commit)
+
+		err = blockStore.SaveSeenCommit(newState.LastBlockHeight, commit)
 		if err != nil {
-			ssR.Logger.Error("Failed to store last seen commit", "err", err)
+			ssR.Logger.Error("Save seen commit", "err", err)
+			switchToBlockSyncWithOldState()
 			return
 		}
-		err = bcR.SwitchToBlockSync(state)
+
+		err = bcR.SwitchToBlockSync(newState)
 		if err != nil {
-			ssR.Logger.Error("Failed to switch to block sync", "err", err)
-			return
+			ssR.Logger.Error("Switch to blocksync", "err", err)
 		}
 	}()
+
 	return nil
 }
 

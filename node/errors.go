@@ -155,16 +155,29 @@ func (e ErrDialPeers) Unwrap() error {
 	return e.Err
 }
 
-// ErrStartStateSync is returned when the node fails to start state sync.
-type ErrStartStateSync struct {
+// ErrHandshake is returned when CometBFT fails to complete the handshake with the ABCI app.
+type ErrHandshake struct {
 	Err error
 }
 
-func (e ErrStartStateSync) Error() string {
-	return fmt.Sprintf("failed to start state sync: %v", e.Err)
+func (e ErrHandshake) Error() string {
+	return fmt.Sprintf("could not complete handshake with the app: %v", e.Err)
 }
 
-func (e ErrStartStateSync) Unwrap() error {
+func (e ErrHandshake) Unwrap() error {
+	return e.Err
+}
+
+// ErrStartBlockSync is returned when the node fails to start the blocksync.
+type ErrStartBlockSync struct {
+	Err error
+}
+
+func (e ErrStartBlockSync) Error() string {
+	return fmt.Sprintf("failed to start blocksync: %v", e.Err)
+}
+
+func (e ErrStartBlockSync) Unwrap() error {
 	return e.Err
 }
 

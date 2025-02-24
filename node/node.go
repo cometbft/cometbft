@@ -77,7 +77,7 @@ type Node struct {
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
 	stateSyncProvider statesync.StateProvider // provides state data for bootstrapping a node
-	stateSyncGenesis  sm.State                // provides the genesis state for state sync
+	state             sm.State                // provides the genesis state for state sync
 	consensusState    *cs.State               // latest consensus state
 	consensusReactor  *cs.Reactor             // for participating in the consensus
 	pexReactor        *pex.Reactor            // for exchanging peer addresses
@@ -409,18 +409,19 @@ func NewNodeWithCliParams(ctx context.Context,
 	if err != nil {
 		return nil, fmt.Errorf("error calling ABCI Info method: %v", err)
 	}
-	if !stateSync {
-		if err := doHandshake(ctx, stateStore, state, blockStore, genDoc, eventBus, appInfoResponse, proxyApp, consensusLogger); err != nil {
-			return nil, err
-		}
 
-		// Reload the state. It will have the Version.Consensus.App set by the
-		// Handshake, and may have other modifications as well (ie. depending on
-		// what happened during block replay).
-		state, err = stateStore.Load()
-		if err != nil {
-			return nil, sm.ErrCannotLoadState{Err: err}
-		}
+	// Handshake with the app, even if the state will be overwritten by statesync.
+	// This is needed in case statesync fails or max discovery time is reached.
+	if err := doHandshake(ctx, stateStore, state, blockStore, genDoc, eventBus, appInfoResponse, proxyApp, consensusLogger); err != nil {
+		return nil, ErrHandshake{Err: err}
+	}
+
+	// Reload the state. It will have the Version.Consensus.App set by the
+	// Handshake, and may have other modifications as well (ie. depending on
+	// what happened during block replay).
+	state, err = stateStore.Load()
+	if err != nil {
+		return nil, sm.ErrCannotLoadState{Err: err}
 	}
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
@@ -566,7 +567,7 @@ func NewNodeWithCliParams(ctx context.Context,
 		consensusReactor: consensusReactor,
 		stateSyncReactor: stateSyncReactor,
 		stateSync:        stateSync,
-		stateSyncGenesis: state, // Shouldn't be necessary, but need a way to pass the genesis state
+		state:            state,
 		pexReactor:       pexReactor,
 		evidencePool:     evidencePool,
 		proxyApp:         proxyApp,
@@ -636,16 +637,18 @@ func (n *Node) OnStart() error {
 		return ErrDialPeers{Err: err}
 	}
 
-	// Run state sync
+	// Start statesync.
 	if n.stateSync {
+		// Start blocksync.
 		bcR, ok := n.bcReactor.(blockSyncReactor)
 		if !ok {
 			return ErrSwitchStateSync
 		}
-		err := startStateSync(n.stateSyncReactor, bcR, n.stateSyncProvider,
-			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncGenesis, n.config.Storage.ExperimentalKeyLayout)
+
+		err = startStateSync(n.stateSyncReactor, bcR, n.stateSyncProvider,
+			n.config.StateSync, n.stateStore, n.blockStore, n.state, n.config.Storage.ExperimentalKeyLayout)
 		if err != nil {
-			return ErrStartStateSync{Err: err}
+			n.Logger.Error("statesync failed! switching to blocksync...", "err", err)
 		}
 	}
 

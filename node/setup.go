@@ -607,7 +607,7 @@ func startStateSync(
 
 		err = stateStore.Bootstrap(newState)
 		if err != nil {
-			errc <- fmt.Errorf("boostrap: %w", err)
+			errc <- fmt.Errorf("bootstrap: %w", err)
 			return
 		}
 

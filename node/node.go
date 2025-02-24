@@ -662,6 +662,12 @@ func (n *Node) OnStart() error {
 
 		// Wait until statesync is over or errors, and start blocksync in a separate goroutine.
 		go func() {
+			defer func() {
+				// FREE GENESIS DOC MEMORY!
+				n.genDoc = nil
+				n.appInfoResponse = nil
+			}()
+
 			select {
 			case <-n.Quit():
 				return
@@ -700,10 +706,6 @@ func (n *Node) OnStart() error {
 					return
 				}
 			}
-
-			// FREE GENESIS DOC MEMORY!
-			n.genDoc = nil
-			n.appInfoResponse = nil
 		}()
 	}
 

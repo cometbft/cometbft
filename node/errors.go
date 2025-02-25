@@ -181,6 +181,19 @@ func (e ErrStartStateSync) Unwrap() error {
 	return e.Err
 }
 
+// ErrStartBlockSync is returned when the node fails to start the blocksync.
+type ErrStartBlockSync struct {
+	Err error
+}
+
+func (e ErrStartBlockSync) Error() string {
+	return fmt.Sprintf("failed to start blocksync: %v", e.Err)
+}
+
+func (e ErrStartBlockSync) Unwrap() error {
+	return e.Err
+}
+
 // ErrStartPruning is returned when the node fails to start background pruning routine.
 type ErrStartPruning struct {
 	Err error

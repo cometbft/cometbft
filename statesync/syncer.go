@@ -39,8 +39,8 @@ var (
 	errVerifyFailed = errors.New("verification failed")
 	// errTimeout is returned by Sync() when we've waited too long to receive a chunk.
 	errTimeout = errors.New("timed out waiting for chunk")
-	// errNoSnapshots is returned by SyncAny() if no snapshots are found and discovery is disabled.
-	errNoSnapshots = errors.New("no suitable snapshots found")
+	// ErrNoSnapshots is returned by SyncAny() if no snapshots are found and discovery is disabled.
+	ErrNoSnapshots = errors.New("no suitable snapshots found")
 )
 
 // syncer runs a state sync against an ABCI app. Use either SyncAny() to automatically attempt to
@@ -139,7 +139,7 @@ func (s *syncer) RemovePeer(peer p2p.Peer) {
 // returns the latest state and block commit which the caller must use to
 // bootstrap the node.
 //
-// If none snapshots are found after maxDiscoveryTime, errNoSnapshots is
+// If none snapshots are found after maxDiscoveryTime, ErrNoSnapshots is
 // returned.
 func (s *syncer) SyncAny(discoveryTime, maxDiscoveryTime time.Duration, retryHook func()) (sm.State, *types.Commit, error) {
 	timeStart := time.Now()
@@ -162,7 +162,7 @@ func (s *syncer) SyncAny(discoveryTime, maxDiscoveryTime time.Duration, retryHoo
 		}
 		if snapshot == nil {
 			if maxDiscoveryTime > 0 && time.Since(timeStart) >= maxDiscoveryTime {
-				return sm.State{}, nil, errNoSnapshots
+				return sm.State{}, nil, ErrNoSnapshots
 			}
 			retryHook()
 			s.logger.Info("sync any", "msg", fmt.Sprintf("Discovering snapshots for %v", discoveryTime))

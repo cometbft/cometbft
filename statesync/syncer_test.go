@@ -238,7 +238,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 func TestSyncer_SyncAny_noSnapshots(t *testing.T) {
 	syncer, _ := setupOfferSyncer()
 	_, _, err := syncer.SyncAny(0, maxDiscoveryTime, func() {})
-	assert.Equal(t, errNoSnapshots, err)
+	assert.Equal(t, ErrNoSnapshots, err)
 }
 
 func TestSyncer_SyncAny_abort(t *testing.T) {
@@ -259,7 +259,7 @@ func TestSyncer_SyncAny_abort(t *testing.T) {
 func TestSyncer_SyncAny_reject(t *testing.T) {
 	syncer, connSnapshot := setupOfferSyncer()
 
-	// s22 is tried first, then s12, then s11, then errNoSnapshots
+	// s22 is tried first, then s12, then s11, then ErrNoSnapshots
 	s22 := &snapshot{Height: 2, Format: 2, Chunks: 3, Hash: []byte{1, 2, 3}}
 	s12 := &snapshot{Height: 1, Format: 2, Chunks: 3, Hash: []byte{1, 2, 3}}
 	s11 := &snapshot{Height: 1, Format: 1, Chunks: 3, Hash: []byte{1, 2, 3}}
@@ -283,7 +283,7 @@ func TestSyncer_SyncAny_reject(t *testing.T) {
 	}).Once().Return(&abci.OfferSnapshotResponse{Result: abci.OFFER_SNAPSHOT_RESULT_REJECT}, nil)
 
 	_, _, err = syncer.SyncAny(0, maxDiscoveryTime, func() {})
-	assert.Equal(t, errNoSnapshots, err)
+	assert.Equal(t, ErrNoSnapshots, err)
 	connSnapshot.AssertExpectations(t)
 }
 
@@ -323,7 +323,7 @@ func TestSyncer_SyncAny_reject_sender(t *testing.T) {
 
 	// sbc will be offered first, which will be rejected with reject_sender, causing all snapshots
 	// submitted by both b and c (i.e. sb, sc, sbc) to be rejected. Finally, sa will reject and
-	// errNoSnapshots is returned.
+	// ErrNoSnapshots is returned.
 	sa := &snapshot{Height: 1, Format: 1, Chunks: 3, Hash: []byte{1, 2, 3}}
 	sb := &snapshot{Height: 2, Format: 1, Chunks: 3, Hash: []byte{1, 2, 3}}
 	sc := &snapshot{Height: 3, Format: 1, Chunks: 3, Hash: []byte{1, 2, 3}}
@@ -348,7 +348,7 @@ func TestSyncer_SyncAny_reject_sender(t *testing.T) {
 	}).Once().Return(&abci.OfferSnapshotResponse{Result: abci.OFFER_SNAPSHOT_RESULT_REJECT}, nil)
 
 	_, _, err = syncer.SyncAny(0, maxDiscoveryTime, func() {})
-	assert.Equal(t, errNoSnapshots, err)
+	assert.Equal(t, ErrNoSnapshots, err)
 	connSnapshot.AssertExpectations(t)
 }
 

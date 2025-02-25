@@ -565,7 +565,7 @@ func createPEXReactorAndAddToSwitch(addrBook pex.AddrBook, config *cfg.Config,
 	return pexReactor
 }
 
-// startStateSync starts an asynchronous state sync process, then switches to block sync mode.
+// startStateSync starts an asynchronous state sync process.
 func startStateSync(
 	ssR *statesync.Reactor,
 	stateProvider statesync.StateProvider,
@@ -574,7 +574,7 @@ func startStateSync(
 	blockStore *store.BlockStore,
 	state sm.State,
 	dbKeyLayoutVersion string,
-) (chan sm.State, chan error, error) {
+) (sm.State, error) {
 	ssR.Logger.Info("Starting state sync")
 
 	if stateProvider == nil {
@@ -591,36 +591,26 @@ func startStateSync(
 			}, ssR.Logger.With("module", "light"),
 			dbKeyLayoutVersion)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to set up light client state provider: %w", err)
+			return sm.State{}, fmt.Errorf("failed to set up light client state provider: %w", err)
 		}
 	}
 
-	// Run statesync in a separate goroutine in order not to block `Node.Start`
-	stateCh := make(chan sm.State, 1)
-	errc := make(chan error, 1)
-	go func() {
-		newState, commit, err := ssR.Sync(stateProvider, config.MaxDiscoveryTime)
-		if err != nil {
-			errc <- fmt.Errorf("statesync: %w", err)
-			return
-		}
+	newState, commit, err := ssR.Sync(stateProvider, config.MaxDiscoveryTime)
+	if err != nil {
+		return sm.State{}, err
+	}
 
-		err = stateStore.Bootstrap(newState)
-		if err != nil {
-			errc <- fmt.Errorf("bootstrap: %w", err)
-			return
-		}
+	err = stateStore.Bootstrap(newState)
+	if err != nil {
+		return sm.State{}, fmt.Errorf("bootstrap: %w", err)
+	}
 
-		err = blockStore.SaveSeenCommit(newState.LastBlockHeight, commit)
-		if err != nil {
-			errc <- fmt.Errorf("save seen commit: %w", err)
-			return
-		}
+	err = blockStore.SaveSeenCommit(newState.LastBlockHeight, commit)
+	if err != nil {
+		return sm.State{}, fmt.Errorf("save seen commit: %w", err)
+	}
 
-		stateCh <- newState
-	}()
-
-	return stateCh, errc, nil
+	return newState, nil
 }
 
 // ------------------------------------------------------------------------------

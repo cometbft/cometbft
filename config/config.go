@@ -801,10 +801,6 @@ type P2PConfig struct { //nolint: maligned
 	// Toggle to disable guard against peers connecting from the same ip.
 	AllowDuplicateIP bool `mapstructure:"allow_duplicate_ip"`
 
-	// Peer connection configuration.
-	HandshakeTimeout time.Duration `mapstructure:"handshake_timeout"`
-	DialTimeout      time.Duration `mapstructure:"dial_timeout"`
-
 	// Testing params.
 	// Force dial to fail
 	TestDialFail bool `mapstructure:"test_dial_fail"`
@@ -830,8 +826,6 @@ func DefaultP2PConfig() *P2PConfig {
 		PexReactor:                   true,
 		SeedMode:                     false,
 		AllowDuplicateIP:             false,
-		HandshakeTimeout:             20 * time.Second,
-		DialTimeout:                  3 * time.Second,
 		TestDialFail:                 false,
 		TestFuzz:                     false,
 		TestFuzzConfig:               DefaultFuzzConnConfig(),

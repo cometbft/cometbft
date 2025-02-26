@@ -290,10 +290,6 @@ private_peer_ids = "{{ .P2P.PrivatePeerIDs }}"
 # Toggle to disable guard against peers connecting from the same ip.
 allow_duplicate_ip = {{ .P2P.AllowDuplicateIP }}
 
-# Peer connection configuration.
-handshake_timeout = "{{ .P2P.HandshakeTimeout }}"
-dial_timeout = "{{ .P2P.DialTimeout }}"
-
 #######################################################
 ###          Mempool Configuration Options          ###
 #######################################################

@@ -248,7 +248,7 @@ func encodeStdlib(w *bytes.Buffer, v any) error {
 	}
 	// Remove the last byte from the buffer
 	w.Truncate(w.Len() - 1)
-	return err
+	return nil
 }
 
 func writeStr(w io.Writer, s string) error {

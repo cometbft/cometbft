@@ -116,7 +116,7 @@ func testDial(addr *na.NetAddr, cfg *config.P2PConfig) (transport.Conn, error) {
 	if cfg.TestDialFail {
 		return nil, errors.New("dial err (peerConfig.DialFail == true)")
 	}
-	conn, err := addr.DialTimeout(cfg.DialTimeout)
+	conn, err := addr.DialTimeout(3 * time.Second)
 	if err != nil {
 		return nil, err
 	}

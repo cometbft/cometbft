@@ -13,14 +13,6 @@ import (
 )
 
 // BlockchainInfo gets block headers for minHeight <= height <= maxHeight.
-//
-// If maxHeight does not yet exist, blocks up to the current height will be
-// returned. If minHeight does not exist (due to pruning), earliest existing
-// height will be used.
-//
-// At most 20 items will be returned. Block headers are returned in descending
-// order (highest first).
-//
 // More: https://docs.cometbft.com/main/rpc/#/Info/blockchain
 func (env *Environment) BlockchainInfo(
 	_ *rpctypes.Context,

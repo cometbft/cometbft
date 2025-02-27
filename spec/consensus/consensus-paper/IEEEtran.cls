@@ -4191,7 +4191,7 @@ between column types.}%
 % to change the font style.
 % 
 % the number of lines that are indented to clear it
-% may need to increase if using decenders
+% may need to increase if using descenders
 \def\@IEEEPARstartDROPLINES{2}
 % minimum number of lines left on a page to allow a \@IEEEPARstart
 % Does not take into consideration rubber shrink, so it tends to

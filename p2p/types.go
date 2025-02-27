@@ -49,7 +49,7 @@ type Envelope struct {
 }
 
 // marshalMessage marshals the Message field and stores it in a private field
-// for futur use.
+// for future use.
 // It returns the marshaled Message.
 func (e *Envelope) marshalMessage() ([]byte, error) {
 	if e.messageBytes == nil {

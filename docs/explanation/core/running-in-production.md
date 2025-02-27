@@ -18,7 +18,7 @@ CometBFT keeps multiple distinct databases in the `$CMTHOME/data`:
 - `state.db`: Stores the current blockchain state (i.e. height, validators,
   consensus params). Only grows if consensus params or validators change. Also
   used to temporarily store intermediate results during block processing.
-- `tx_index.db`: Indexes transactions and by tx hash and height. The tx results are indexed if they are added to the `FinalizeBlock` response in the application.
+- `tx_index.db`: Indexes transactions by tx hash and height. The tx results are indexed if they are added to the `FinalizeBlock` response in the application.
 
 > By default, CometBFT will only index transactions by their hash and height, if you want the result events to be indexed, see [indexing transactions](../../guides/app-dev/indexing-transactions.md#adding-events)
 for details.
@@ -101,7 +101,7 @@ For the above reasons, the `mempool.wal` is disabled by default. To enable, set
 
 ## DoS Exposure and Mitigation
 
-Validators are supposed to setup [Sentry Node Architecture](validators.md)
+Validators are supposed to set up [Sentry Node Architecture](validators.md)
 to prevent Denial-of-Service attacks.
 
 ### P2P

@@ -204,7 +204,7 @@ func TestProposalProtoBuf(t *testing.T) {
 		expPass bool
 	}{
 		{"success", proposal, true},
-		{"success", proposal2, false}, // blcokID cannot be empty
+		{"success", proposal2, false}, // blockID cannot be empty
 		{"empty proposal failure validatebasic", &Proposal{}, false},
 		{"nil proposal", nil, false},
 	}

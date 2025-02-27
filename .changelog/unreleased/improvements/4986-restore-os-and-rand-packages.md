@@ -1,0 +1,1 @@
+The libs/os and libs/rand packages were previously moved to internal/, making them inaccessible to external consumers. We restored them to libs/ while marking them as deprecated to provide a transition period before removal in a future release.

@@ -32,7 +32,8 @@ const (
 	reconnectBackOffAttempts    = 10
 	reconnectBackOffBaseSeconds = 3
 
-	defaultFilterTimeout = 5 * time.Second
+	defaultFilterTimeout    = 5 * time.Second
+	defaultHandshakeTimeout = 20 * time.Second
 )
 
 // -----------------------------------------------------------------------------
@@ -645,7 +646,7 @@ func (sw *Switch) acceptRoutine() {
 			break
 		}
 
-		nodeInfo, err := handshake(sw.nodeInfo, conn.HandshakeStream(), sw.config.HandshakeTimeout)
+		nodeInfo, err := handshake(sw.nodeInfo, conn.HandshakeStream(), defaultHandshakeTimeout)
 		if err != nil {
 			errRejected, ok := err.(ErrRejected)
 			if ok && errRejected.IsSelf() {
@@ -743,7 +744,7 @@ func (sw *Switch) addOutboundPeerWithConfig(
 		return err
 	}
 
-	nodeInfo, err := handshake(sw.nodeInfo, conn.HandshakeStream(), sw.config.HandshakeTimeout)
+	nodeInfo, err := handshake(sw.nodeInfo, conn.HandshakeStream(), defaultHandshakeTimeout)
 	if err != nil {
 		sw.Logger.Error("Handshake failed", "peer", addr, "err", err)
 		errRejected, ok := err.(ErrRejected)

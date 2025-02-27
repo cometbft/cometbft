@@ -52,6 +52,8 @@ func TestBlockchainInfo(t *testing.T) {
 		{1, 15, 0, 15, 20, 15, false},
 		{1, 20, 0, 15, 20, 15, false},
 		{1, 20, 0, 20, 20, 20, false},
+
+		{49, 49, 50, 50, 10, 1, true}, // max below base
 	}
 
 	for i, c := range cases {

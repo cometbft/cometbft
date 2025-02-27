@@ -1177,42 +1177,6 @@ allow_duplicate_ip = false
 When this setting is set to `true`, multiple connections are allowed from the same IP address (for example, on different
 ports).
 
-### p2p.handshake_timeout
-
-Timeout duration for protocol handshake (or secret connection negotiation).
-
-```toml
-handshake_timeout = "20s"
-```
-
-| Value type          | string (duration) |
-|:--------------------|:------------------|
-| **Possible values** | &gt;= `"0s"`      |
-
-This high-level timeout value is applied when the TCP connection has been
-established with a peer, and the node and peer are negotiating its upgrade into
-a secret authenticated connection.
-
-The value `"0s"` is undefined, and it can lead to unexpected behaviour.
-
-### p2p.dial_timeout
-
-Timeout duration for the low-level dialer that connects to the remote address on the TCP network.
-
-```toml
-dial_timeout = "3s"
-```
-
-| Value type          | string (duration) |
-|:--------------------|:------------------|
-| **Possible values** | &gt;= `"0s"`      |
-
-This parameter is the timeout value for dialing on TCP networks. If a hostname is used instead of an IP address and the
-hostname resolves to multiple IP addresses, the timeout is spread over each consecutive dial, such that each is given an
-appropriate fraction of the time to connect.
-
-Setting the value to `"0s"` disables the timeout.
-
 ## Mempool
 Mempool allows gathering and broadcasting uncommitted transactions among nodes.
 

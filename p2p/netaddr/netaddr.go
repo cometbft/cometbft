@@ -51,36 +51,42 @@ func New(id nodekey.ID, addr net.Addr) NetAddr {
 	}
 }
 
-// NewFromString returns a new address using the provided address in
-// the form of "ID@IP:Port".
+// NewFromString returns a new address using the provided address in the form
+// of either:
+//
+// - "/ip4/127.0.0.1/tcp/65537/p2p/QmR8cFFb5GVDRujmof9anGetQQjSZFKEivQuYBZXNd89X4" (new format)
+// - "QmR8cFFb5GVDRujmof9anGetQQjSZFKEivQuYBZXNd89X4@127.0.0.1:65537" (old format)
+//
 // Also resolves the host if host is not an IP.
+//
 // Errors are of type ErrXxx where Xxx is in (NoID, Invalid, Lookup).
 func NewFromString(addr string) (NetAddr, error) {
-	// Remove protocol (e.g., "http://").
-	addrWithoutProtocol := removeProtocolIfDefined(addr)
-	spl := strings.Split(addrWithoutProtocol, "@")
-	if len(spl) != 2 {
-		return NetAddr{}, ErrInvalid{Err: ErrNoID{addr}}
-	}
-
-	// Validate ID.
-	if err := ValidateID(nodekey.ID(spl[0])); err != nil {
-		return NetAddr{}, ErrInvalid{Err: err}
-	}
-	var id nodekey.ID
-	id, addrWithoutProtocol = nodekey.ID(spl[0]), spl[1]
-
 	// If it's a ma.Multiaddr, return early.
-	multiaddr, err := ma.NewMultiaddr(addrWithoutProtocol)
+	multiaddr, err := ma.NewMultiaddr(addr)
 	if err == nil {
+		multiaddr2, p2pComponent := ma.SplitLast(multiaddr)
 		return NetAddr{
-			ID:        id,
-			Multiaddr: multiaddr,
+			ID:        nodekey.ID(p2pComponent.Value()),
+			Multiaddr: multiaddr2,
 		}, nil
 	}
 
 	// Fall back to the old format.
 	{
+		// Remove protocol (e.g., "http://").
+		addrWithoutProtocol := removeProtocolIfDefined(addr)
+		spl := strings.Split(addrWithoutProtocol, "@")
+		if len(spl) != 2 {
+			return NetAddr{}, ErrInvalid{Err: ErrNoID{addr}}
+		}
+
+		// Validate ID.
+		if err := ValidateID(nodekey.ID(spl[0])); err != nil {
+			return NetAddr{}, ErrInvalid{Err: err}
+		}
+
+		var id nodekey.ID
+		id, addrWithoutProtocol = nodekey.ID(spl[0]), spl[1]
 		// get host and port
 		host, portStr, err := net.SplitHostPort(addrWithoutProtocol)
 		if err != nil {

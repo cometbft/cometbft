@@ -18,6 +18,7 @@ import (
 	_ "net/http/pprof" //nolint: gosec
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cfg "github.com/cometbft/cometbft/config"
 	bc "github.com/cometbft/cometbft/internal/blocksync"
 	cs "github.com/cometbft/cometbft/internal/consensus"
@@ -67,28 +68,32 @@ type Node struct {
 	isListening bool
 
 	// services
-	eventBus          *types.EventBus // pub/sub for services
-	stateStore        sm.Store
-	blockStore        *store.BlockStore // store the blockchain to disk
-	pruner            *sm.Pruner
-	bcReactor         p2p.Reactor    // for block-syncing
-	mempoolReactor    mempoolReactor // for gossipping transactions
-	mempool           mempl.Mempool
-	stateSync         bool                    // whether the node should state sync on startup
-	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
+	eventBus         *types.EventBus // pub/sub for services
+	stateStore       sm.Store
+	blockStore       *store.BlockStore // store the blockchain to disk
+	pruner           *sm.Pruner
+	bcReactor        p2p.Reactor    // for block-syncing
+	mempoolReactor   mempoolReactor // for gossipping transactions
+	mempool          mempl.Mempool
+	consensusState   *cs.State      // latest consensus state
+	consensusReactor *cs.Reactor    // for participating in the consensus
+	pexReactor       *pex.Reactor   // for exchanging peer addresses
+	evidencePool     *evidence.Pool // tracking evidence
+	proxyApp         proxy.AppConns // connection to the application
+	rpcListeners     []net.Listener // rpc servers
+	txIndexer        txindex.TxIndexer
+	blockIndexer     indexer.BlockIndexer
+	indexerService   *txindex.IndexerService
+	prometheusSrv    *http.Server
+	pprofSrv         *http.Server
+
+	// statesync
+	stateSync         bool                    // whether the node should statesync on startup
+	stateSyncReactor  *statesync.Reactor      // for hosting and restoring statesync snapshots
 	stateSyncProvider statesync.StateProvider // provides state data for bootstrapping a node
-	stateSyncGenesis  sm.State                // provides the genesis state for state sync
-	consensusState    *cs.State               // latest consensus state
-	consensusReactor  *cs.Reactor             // for participating in the consensus
-	pexReactor        *pex.Reactor            // for exchanging peer addresses
-	evidencePool      *evidence.Pool          // tracking evidence
-	proxyApp          proxy.AppConns          // connection to the application
-	rpcListeners      []net.Listener          // rpc servers
-	txIndexer         txindex.TxIndexer
-	blockIndexer      indexer.BlockIndexer
-	indexerService    *txindex.IndexerService
-	prometheusSrv     *http.Server
-	pprofSrv          *http.Server
+	stateSyncState    sm.State                // provides the genesis state for statesync
+	stateSyncGenDoc   *types.GenesisDoc       // store genesis doc until the statesync is over.
+	appInfoResponse   *abcitypes.InfoResponse // if statesync fails, do the handshake and proceed with blocksync.
 }
 
 type waitSyncP2PReactor interface {
@@ -409,9 +414,10 @@ func NewNodeWithCliParams(ctx context.Context,
 	if err != nil {
 		return nil, fmt.Errorf("error calling ABCI Info method: %v", err)
 	}
+
 	if !stateSync {
 		if err := doHandshake(ctx, stateStore, state, blockStore, genDoc, eventBus, appInfoResponse, proxyApp, consensusLogger); err != nil {
-			return nil, err
+			return nil, ErrHandshake{Err: err}
 		}
 
 		// Reload the state. It will have the Version.Consensus.App set by the
@@ -564,9 +570,6 @@ func NewNodeWithCliParams(ctx context.Context,
 		mempool:          mempool,
 		consensusState:   consensusState,
 		consensusReactor: consensusReactor,
-		stateSyncReactor: stateSyncReactor,
-		stateSync:        stateSync,
-		stateSyncGenesis: state, // Shouldn't be necessary, but need a way to pass the genesis state
 		pexReactor:       pexReactor,
 		evidencePool:     evidencePool,
 		proxyApp:         proxyApp,
@@ -574,6 +577,13 @@ func NewNodeWithCliParams(ctx context.Context,
 		indexerService:   indexerService,
 		blockIndexer:     blockIndexer,
 		eventBus:         eventBus,
+
+		// statesync
+		stateSync:        stateSync,
+		stateSyncReactor: stateSyncReactor,
+		stateSyncState:   state,
+		stateSyncGenDoc:  genDoc,
+		appInfoResponse:  appInfoResponse,
 	}
 	node.BaseService = *service.NewBaseService(logger, "Node", node)
 
@@ -636,17 +646,66 @@ func (n *Node) OnStart() error {
 		return ErrDialPeers{Err: err}
 	}
 
-	// Run state sync
+	// Start statesync.
 	if n.stateSync {
 		bcR, ok := n.bcReactor.(blockSyncReactor)
 		if !ok {
 			return ErrSwitchStateSync
 		}
-		err := startStateSync(n.stateSyncReactor, bcR, n.stateSyncProvider,
-			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncGenesis, n.config.Storage.ExperimentalKeyLayout)
+
+		stateCh, errc, err := startStateSync(n.stateSyncReactor, n.stateSyncProvider,
+			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncState, n.config.Storage.ExperimentalKeyLayout)
 		if err != nil {
 			return ErrStartStateSync{Err: err}
 		}
+
+		// Wait until statesync is over or errors, and start blocksync in a separate goroutine.
+		go func() {
+			defer func() {
+				// FREE GENESIS DOC MEMORY!
+				n.stateSyncGenDoc = nil
+				n.appInfoResponse = nil
+			}()
+
+			select {
+			case <-n.Quit():
+				return
+			case newState := <-stateCh:
+				n.Logger.Info("statesync complete. switching to blocksync with new state")
+
+				err = bcR.SwitchToBlockSync(newState)
+				if err != nil {
+					n.Logger.Error("failed to switch to blocksync", "err", err)
+					return
+				}
+			case err := <-errc:
+				n.Logger.Warn("statesync failed. switching to blocksync with genesis state", "err", err)
+
+				const handshakeTimeout = 5 * time.Second
+				ctx, cancel := context.WithTimeout(context.Background(), handshakeTimeout)
+				defer cancel()
+				if err := doHandshake(ctx, n.stateStore, n.stateSyncState, n.blockStore,
+					n.stateSyncGenDoc, n.eventBus, n.appInfoResponse, n.proxyApp, n.Logger); err != nil {
+					n.Logger.Error("failed to handshake with the app", "err", err)
+					return
+				}
+
+				// Reload the state. It will have the Version.Consensus.App set by the
+				// Handshake, and may have other modifications as well (ie. depending on
+				// what happened during block replay).
+				state, err := n.stateStore.Load()
+				if err != nil {
+					n.Logger.Error("failed to load state", "err", err)
+					return
+				}
+
+				err = bcR.SwitchToBlockSync(state)
+				if err != nil {
+					n.Logger.Error("failed to switch to blocksync", "err", err)
+					return
+				}
+			}
+		}()
 	}
 
 	// Start background pruning

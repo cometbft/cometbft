@@ -653,50 +653,60 @@ func (n *Node) OnStart() error {
 			return ErrSwitchStateSync
 		}
 
-		newState, err := startStateSync(n.stateSyncReactor, n.stateSyncProvider,
+		stateCh, errc, err := startStateSync(n.stateSyncReactor, n.stateSyncProvider,
 			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncState, n.config.Storage.ExperimentalKeyLayout)
-
-		switch err {
-		case nil:
-			n.Logger.Info("statesync complete. switching to blocksync with new state")
-
-			err = bcR.SwitchToBlockSync(newState)
-			if err != nil {
-				return ErrStartBlockSync{Err: err}
-			}
-		case statesync.ErrNoSnapshots:
-			n.Logger.Info("no snapshots found. switching to blocksync with genesis state")
-
-			const handshakeTimeout = 5 * time.Second
-			ctx, cancel := context.WithTimeout(context.Background(), handshakeTimeout)
-			defer cancel()
-			if err := doHandshake(ctx, n.stateStore, n.stateSyncState, n.blockStore,
-				n.stateSyncGenDoc, n.eventBus, n.appInfoResponse, n.proxyApp, n.Logger); err != nil {
-				return ErrHandshake{Err: err}
-			}
-
-			// Reload the state. It will have the Version.Consensus.App set by the
-			// Handshake, and may have other modifications as well (ie. depending on
-			// what happened during block replay).
-			state, err := n.stateStore.Load()
-			if err != nil {
-				return sm.ErrCannotLoadState{Err: err}
-			}
-
-			err = bcR.SwitchToBlockSync(state)
-			if err != nil {
-				return ErrStartBlockSync{Err: err}
-			}
-		default:
+		if err != nil {
 			return ErrStartStateSync{Err: err}
 		}
-	}
 
-	////////////////////////////
-	// FREE GENESIS DOC MEMORY!
-	n.stateSyncGenDoc = nil
-	n.appInfoResponse = nil
-	////////////////////////////
+		// Wait until statesync is over or errors, and start blocksync in a separate goroutine.
+		go func() {
+			defer func() {
+				// FREE GENESIS DOC MEMORY!
+				n.stateSyncGenDoc = nil
+				n.appInfoResponse = nil
+			}()
+
+			select {
+			case <-n.Quit():
+				return
+			case newState := <-stateCh:
+				n.Logger.Info("statesync complete. switching to blocksync with new state")
+
+				err = bcR.SwitchToBlockSync(newState)
+				if err != nil {
+					n.Logger.Error("failed to switch to blocksync", "err", err)
+					return
+				}
+			case err := <-errc:
+				n.Logger.Warn("statesync failed. switching to blocksync with genesis state", "err", err)
+
+				const handshakeTimeout = 5 * time.Second
+				ctx, cancel := context.WithTimeout(context.Background(), handshakeTimeout)
+				defer cancel()
+				if err := doHandshake(ctx, n.stateStore, n.stateSyncState, n.blockStore,
+					n.stateSyncGenDoc, n.eventBus, n.appInfoResponse, n.proxyApp, n.Logger); err != nil {
+					n.Logger.Error("failed to handshake with the app", "err", err)
+					return
+				}
+
+				// Reload the state. It will have the Version.Consensus.App set by the
+				// Handshake, and may have other modifications as well (ie. depending on
+				// what happened during block replay).
+				state, err := n.stateStore.Load()
+				if err != nil {
+					n.Logger.Error("failed to load state", "err", err)
+					return
+				}
+
+				err = bcR.SwitchToBlockSync(state)
+				if err != nil {
+					n.Logger.Error("failed to switch to blocksync", "err", err)
+					return
+				}
+			}
+		}()
+	}
 
 	// Start background pruning
 	if err := n.pruner.Start(); err != nil {

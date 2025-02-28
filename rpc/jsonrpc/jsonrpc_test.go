@@ -259,7 +259,7 @@ func echoViaWS(cl *client.WSClient, val string) (string, error) {
 
 	msg := <-cl.ResponsesCh
 	if msg.Error != nil {
-		return "", err
+		return "", msg.Error
 	}
 	result := new(ResultEcho)
 	err = json.Unmarshal(msg.Result, result)

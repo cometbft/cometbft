@@ -74,7 +74,7 @@ func TestPeerSend(t *testing.T) {
 
 func createOutboundPeerAndPerformHandshake(
 	t *testing.T,
-	addr *na.NetAddr,
+	addr na.NetAddr,
 	config *config.P2PConfig,
 ) *peer {
 	t.Helper()
@@ -112,7 +112,7 @@ func createOutboundPeerAndPerformHandshake(
 	return p
 }
 
-func testDial(addr *na.NetAddr, cfg *config.P2PConfig) (transport.Conn, error) {
+func testDial(addr na.NetAddr, cfg *config.P2PConfig) (transport.Conn, error) {
 	if cfg.TestDialFail {
 		return nil, errors.New("dial err (peerConfig.DialFail == true)")
 	}
@@ -125,7 +125,7 @@ func testDial(addr *na.NetAddr, cfg *config.P2PConfig) (transport.Conn, error) {
 
 // testOutboundPeerConn dials a remote peer and returns a peerConn.
 // It ensures the dialed ID matches the connection ID.
-func testOutboundPeerConn(addr *na.NetAddr, config *config.P2PConfig, persistent bool) (peerConn, error) {
+func testOutboundPeerConn(addr na.NetAddr, config *config.P2PConfig, persistent bool) (peerConn, error) {
 	var pc peerConn
 
 	conn, err := testDial(addr, config)
@@ -150,12 +150,12 @@ func testOutboundPeerConn(addr *na.NetAddr, config *config.P2PConfig, persistent
 type remotePeer struct {
 	PrivKey  crypto.PrivKey
 	Config   *config.P2PConfig
-	addr     *na.NetAddr
+	addr     na.NetAddr
 	channels bytes.HexBytes
 	listener net.Listener
 }
 
-func (rp *remotePeer) Addr() *na.NetAddr {
+func (rp *remotePeer) Addr() na.NetAddr {
 	return rp.addr
 }
 
@@ -181,7 +181,7 @@ func (rp *remotePeer) Stop() {
 	rp.listener.Close()
 }
 
-func (rp *remotePeer) Dial(addr *na.NetAddr) (transport.Conn, error) {
+func (rp *remotePeer) Dial(addr na.NetAddr) (transport.Conn, error) {
 	pc, err := testOutboundPeerConn(addr, rp.Config, false)
 	if err != nil {
 		return nil, err

@@ -215,7 +215,7 @@ func TestCheckSeeds(t *testing.T) {
 	peerSwitch.Stop() //nolint:errcheck // ignore for tests
 
 	// 2. create seed
-	seed := testCreateSeed(dir, 1, []*na.NetAddr{}, []*na.NetAddr{})
+	seed := testCreateSeed(dir, 1, []na.NetAddr{}, []na.NetAddr{})
 
 	// 3. test create peer with online seed works
 	peerSwitch = testCreatePeerWithSeed(dir, 2, seed)
@@ -253,7 +253,7 @@ func TestPEXReactorUsesSeedsIfNeeded(t *testing.T) {
 	defer os.RemoveAll(dir)
 
 	// 1. create seed
-	seed := testCreateSeed(dir, 0, []*na.NetAddr{}, []*na.NetAddr{})
+	seed := testCreateSeed(dir, 0, []na.NetAddr{}, []na.NetAddr{})
 	require.NoError(t, seed.Start())
 	defer seed.Stop() //nolint:errcheck // ignore for tests
 
@@ -273,7 +273,7 @@ func TestConnectionSpeedForPeerReceivedFromSeed(t *testing.T) {
 	defer os.RemoveAll(dir)
 
 	var id int
-	var knownAddrs []*na.NetAddr
+	var knownAddrs []na.NetAddr
 
 	// 1. Create some peers
 	for id = 0; id < 3; id++ {
@@ -333,7 +333,7 @@ func TestPEXReactorSeedMode(t *testing.T) {
 	defer peerSwitch.Stop() //nolint:errcheck // ignore for tests
 
 	// 1. Test crawlPeers dials the peer
-	pexR.crawlPeers([]*na.NetAddr{peerSwitch.NetAddr()})
+	pexR.crawlPeers([]na.NetAddr{peerSwitch.NetAddr()})
 	assert.Equal(t, 1, sw.Peers().Size())
 	assert.True(t, sw.Peers().Has(peerSwitch.NodeInfo().ID()))
 
@@ -375,7 +375,7 @@ func TestPEXReactorDoesNotDisconnectFromPersistentPeerInSeedMode(t *testing.T) {
 	require.NoError(t, err)
 
 	// 1. Test crawlPeers dials the peer
-	pexR.crawlPeers([]*na.NetAddr{peerSwitch.NetAddr()})
+	pexR.crawlPeers([]na.NetAddr{peerSwitch.NetAddr()})
 	assert.Equal(t, 1, sw.Peers().Size())
 	assert.True(t, sw.Peers().Has(peerSwitch.NodeInfo().ID()))
 
@@ -410,7 +410,7 @@ func TestPEXReactorDialsPeerUpToMaxAttemptsInSeedMode(t *testing.T) {
 
 	// imitate maxAttemptsToDial reached
 	pexR.attemptsToDial.Store(addr.DialString(), _attemptsToDial{maxAttemptsToDial + 1, time.Now()})
-	pexR.crawlPeers([]*na.NetAddr{addr})
+	pexR.crawlPeers([]na.NetAddr{addr})
 
 	assert.False(t, book.HasAddress(addr))
 }
@@ -627,7 +627,7 @@ func testCreateDefaultPeer(dir string, id int) *p2p.Switch {
 
 // Creates a seed which knows about the provided addresses / source address pairs.
 // Starting and stopping the seed is left to the caller.
-func testCreateSeed(dir string, id int, knownAddrs, srcAddrs []*na.NetAddr) *p2p.Switch {
+func testCreateSeed(dir string, id int, knownAddrs, srcAddrs []na.NetAddr) *p2p.Switch {
 	seed := p2p.MakeSwitch(
 		cfg,
 		id,

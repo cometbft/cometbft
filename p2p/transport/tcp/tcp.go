@@ -31,7 +31,7 @@ type IPResolver interface {
 // accept is the container to carry the upgraded connection from an
 // asynchronously running routine to the Accept method.
 type accept struct {
-	netAddr *na.NetAddr
+	netAddr na.NetAddr
 	conn    *conn.MConnection
 	err     error
 }
@@ -149,18 +149,18 @@ func (mt *MultiplexTransport) NetAddr() na.NetAddr {
 }
 
 // Accept implements Transport.
-func (mt *MultiplexTransport) Accept() (transport.Conn, *na.NetAddr, error) {
+func (mt *MultiplexTransport) Accept() (transport.Conn, na.NetAddr, error) {
 	select {
 	// This case should never have any side-effectful/blocking operations to
 	// ensure that quality peers are ready to be used.
 	case a := <-mt.acceptc:
 		if a.err != nil {
-			return nil, nil, a.err
+			return nil, na.NetAddr{}, a.err
 		}
 
 		return a.conn, a.netAddr, nil
 	case <-mt.closec:
-		return nil, nil, ErrTransportClosed{}
+		return nil, na.NetAddr{}, ErrTransportClosed{}
 	}
 }
 
@@ -212,7 +212,7 @@ func (mt *MultiplexTransport) Listen(addr na.NetAddr) error {
 		ln = netutil.LimitListener(ln, mt.maxIncomingConnections)
 	}
 
-	mt.netAddr = *na.New(addr.ID, ln.Addr())
+	mt.netAddr = na.New(addr.ID, ln.Addr())
 	mt.listener = ln
 
 	go mt.acceptPeers()
@@ -273,7 +273,7 @@ func (mt *MultiplexTransport) acceptPeers() {
 			var (
 				mconn        *conn.MConnection
 				remotePubKey crypto.PubKey
-				netAddr      *na.NetAddr
+				netAddr      = na.NetAddr{}
 			)
 
 			err := mt.filterConn(c)

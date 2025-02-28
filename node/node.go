@@ -618,7 +618,7 @@ func (n *Node) OnStart() error {
 	if err != nil {
 		return err
 	}
-	if err := n.transport.Listen(*addr); err != nil {
+	if err := n.transport.Listen(addr); err != nil {
 		return err
 	}
 

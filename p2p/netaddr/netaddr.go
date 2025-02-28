@@ -318,6 +318,13 @@ func (na NetAddr) ToIP() (net.IP, error) {
 	return manet.ToIP(na.Multiaddr)
 }
 
+// ToStdlibAddr converts a Multiaddr to a net.Addr Must be ThinWaist. acceptable protocol stacks are: /ip{4,6}/{tcp, udp}
+//
+// See manet.ToNetAddr.
+func (na NetAddr) ToStdlibAddr() (net.Addr, error) {
+	return manet.ToNetAddr(na.Multiaddr)
+}
+
 // ValidateID checks if the ID is valid.
 // TODO: move to nodekey package
 func ValidateID(id nodekey.ID) error {

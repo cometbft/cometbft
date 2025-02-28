@@ -568,14 +568,13 @@ func createPEXReactorAndAddToSwitch(addrBook pex.AddrBook, config *cfg.Config,
 // startStateSync starts an asynchronous state sync process, then switches to block sync mode.
 func startStateSync(
 	ssR *statesync.Reactor,
-	bcR blockSyncReactor,
 	stateProvider statesync.StateProvider,
 	config *cfg.StateSyncConfig,
 	stateStore sm.Store,
 	blockStore *store.BlockStore,
 	state sm.State,
 	dbKeyLayoutVersion string,
-) error {
+) (chan sm.State, chan error, error) {
 	ssR.Logger.Info("Starting state sync")
 
 	if stateProvider == nil {
@@ -592,39 +591,36 @@ func startStateSync(
 			}, ssR.Logger.With("module", "light"),
 			dbKeyLayoutVersion)
 		if err != nil {
-			return fmt.Errorf("failed to set up light client state provider: %w", err)
+			return nil, nil, fmt.Errorf("failed to set up light client state provider: %w", err)
 		}
 	}
 
+	// Run statesync in a separate goroutine in order not to block `Node.Start`
+	stateCh := make(chan sm.State, 1)
+	errc := make(chan error, 1)
 	go func() {
-		state, commit, err := ssR.Sync(stateProvider, config.MaxDiscoveryTime)
+		newState, commit, err := ssR.Sync(stateProvider, config.MaxDiscoveryTime)
 		if err != nil {
-			ssR.Logger.Error("State sync failed", "err", err)
-			err = bcR.SwitchToBlockSync(state)
-			if err != nil {
-				ssR.Logger.Error("Failed to switch to block sync", "err", err)
-				return
-			}
+			errc <- fmt.Errorf("statesync: %w", err)
 			return
 		}
 
-		err = stateStore.Bootstrap(state)
+		err = stateStore.Bootstrap(newState)
 		if err != nil {
-			ssR.Logger.Error("Failed to bootstrap node with new state", "err", err)
+			errc <- fmt.Errorf("bootstrap: %w", err)
 			return
 		}
-		err = blockStore.SaveSeenCommit(state.LastBlockHeight, commit)
+
+		err = blockStore.SaveSeenCommit(newState.LastBlockHeight, commit)
 		if err != nil {
-			ssR.Logger.Error("Failed to store last seen commit", "err", err)
+			errc <- fmt.Errorf("save seen commit: %w", err)
 			return
 		}
-		err = bcR.SwitchToBlockSync(state)
-		if err != nil {
-			ssR.Logger.Error("Failed to switch to block sync", "err", err)
-			return
-		}
+
+		stateCh <- newState
 	}()
-	return nil
+
+	return stateCh, errc, nil
 }
 
 // ------------------------------------------------------------------------------

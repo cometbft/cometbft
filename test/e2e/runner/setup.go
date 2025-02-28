@@ -324,6 +324,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		if len(cfg.StateSync.RPCServers) < 2 {
 			return nil, errors.New("unable to find 2 suitable state sync RPC servers")
 		}
+		cfg.StateSync.MaxDiscoveryTime = 30 * time.Second
 	}
 
 	cfg.P2P.Seeds = ""

@@ -270,8 +270,7 @@ func (pDB *prefixDB) Print() error {
 
 	itr, err := pDB.Iterator(nil, nil)
 	if err != nil {
-		const format = "creating a prefixed DB namespace iterator for debug printing: %w"
-		return fmt.Errorf(format, err)
+		return fmt.Errorf("creating a prefixed DB namespace iterator for debug printing: %w", err)
 	}
 	defer itr.Close()
 
@@ -572,8 +571,7 @@ func (it *prefixDBIterator) Valid() bool {
 		keyTooShort = len(key) < prefixLen
 	)
 	if keyTooShort || !bytes.Equal(key[:prefixLen], it.prefix) {
-		const format = "received invalid key from backend: %X (expected prefix %X)"
-		it.err = fmt.Errorf(format, key, it.prefix)
+		it.err = fmt.Errorf("received invalid key from backend: %X (expected prefix %X)", key, it.prefix)
 
 		return false
 	}

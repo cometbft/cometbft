@@ -2,8 +2,7 @@
 package lexer
 
 import (
-	// "fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"unicode"
 
@@ -124,7 +123,7 @@ If the input file is a normal text file NewFile treats all text in the inputfile
 as input text.
 */
 func NewFile(fname string) *Lexer {
-	buf, err := ioutil.ReadFile(fname)
+	buf, err := os.ReadFile(fname)
 	if err != nil {
 		panic(err)
 	}

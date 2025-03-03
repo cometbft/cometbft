@@ -362,6 +362,8 @@ func newClientAndServerConnsForReadErrors(t *testing.T) (*MConnection, *MConnect
 func assertBytes(t *testing.T, s *MConnectionStream, want []byte) {
 	t.Helper()
 
+	err := s.SetReadDeadline(time.Now().Add(5 * time.Second))
+	require.NoError(t, err)
 	buf := make([]byte, len(want))
 	n, err := s.Read(buf)
 	require.NoError(t, err)
@@ -425,7 +427,7 @@ func TestMConnection_ReadErrorLongMessage(t *testing.T) {
 	// send msg that's just right
 	msg := make([]byte, mconnClient.config.MaxPacketMsgPayloadSize)
 	packet := tmp2p.PacketMsg{
-		ChannelID: 0x01,
+		ChannelID: testStreamID,
 		EOF:       true,
 		Data:      msg,
 	}
@@ -436,7 +438,7 @@ func TestMConnection_ReadErrorLongMessage(t *testing.T) {
 
 	// send msg that's too long
 	packet = tmp2p.PacketMsg{
-		ChannelID: 0x01,
+		ChannelID: testStreamID,
 		EOF:       true,
 		Data:      make([]byte, mconnClient.config.MaxPacketMsgPayloadSize+100),
 	}
@@ -500,4 +502,5 @@ func TestMConnection_ChannelOverflow(t *testing.T) {
 	packet.ChannelID = int32(1025)
 	_, err = protoWriter.WriteMsg(mustWrapPacket(&packet))
 	require.NoError(t, err)
+	// assert.False(t, expectBytes(mconnServer.recvMsgsByStreamID[1025]))
 }

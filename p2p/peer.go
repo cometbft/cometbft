@@ -3,6 +3,7 @@ package p2p
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"reflect"
 	"runtime/debug"
@@ -196,6 +197,66 @@ func newPeer(
 	return p
 }
 
+func (p *peer) streamReadLoop(streamID byte, stream transport.Stream) {
+	defer func() {
+		if r := recover(); r != nil {
+			p.Logger.Error("Peer panicked", "err", r, "stack", string(debug.Stack()))
+			p.onPeerError(p, r)
+		}
+	}()
+
+	var (
+		// TODO: read value from p.streamInfoByStreamID
+		buf     = make([]byte, 1024*1024*2)
+		reactor = p.streamInfoByStreamID[streamID].reactor
+		msgType = p.streamInfoByStreamID[streamID].msgType
+		logger  = p.Logger.With("stream", streamID)
+	)
+
+	for {
+		if !p.IsRunning() {
+			return
+		}
+
+		n, err := stream.Read(buf)
+		if (n == 0 && err == nil) || errors.Is(err, io.EOF) {
+			continue
+		}
+		if err != nil {
+			logger.Error("stream.Read", "err", err)
+			p.onPeerError(p, err)
+			return
+		}
+
+		msg := proto.Clone(msgType)
+		err = proto.Unmarshal(buf[:n], msg)
+		if err != nil {
+			logger.Error("proto.Unmarshal", "as", reflect.TypeOf(msgType), "err", err)
+			p.onPeerError(p, err)
+			return
+		}
+
+		if w, ok := msg.(types.Unwrapper); ok {
+			msg, err = w.Unwrap()
+			if err != nil {
+				logger.Error("proto.Unwrap", "err", err)
+				p.onPeerError(p, err)
+				return
+			}
+		}
+
+		logger.Debug("Received message", "msgType", msgType)
+
+		p.pendingMetrics.AddPendingRecvBytes(getMsgType(msg), n)
+
+		reactor.Receive(Envelope{
+			ChannelID: streamID,
+			Src:       p,
+			Message:   msg,
+		})
+	}
+}
+
 func (p *peer) onReceive(streamID byte, bz []byte) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -284,6 +345,10 @@ func (p *peer) OnStart() error {
 	if mconn, ok := p.peerConn.Conn.(*tcpconn.MConnection); ok {
 		if err := mconn.Start(); err != nil {
 			return fmt.Errorf("starting MConnection: %w", err)
+		}
+	} else {
+		for streamID, stream := range p.streams {
+			go p.streamReadLoop(streamID, stream)
 		}
 	}
 

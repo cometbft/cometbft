@@ -6,13 +6,19 @@ import "time"
 type MConnectionStream struct {
 	conn     *MConnection
 	streamID byte
+
+	readTimeout time.Duration
 }
 
 // Read reads bytes for the given stream from the internal read queue. Used in
 // tests. Production code should use MConnection.OnReceive to avoid copying the
 // data.
 func (s *MConnectionStream) Read(b []byte) (n int, err error) {
-	return s.conn.readBytes(s.streamID, b, 5*time.Second)
+	timeout := s.readTimeout
+	if timeout == 0 {
+		timeout = 5 * time.Second
+	}
+	return s.conn.readBytes(s.streamID, b, timeout)
 }
 
 // Write queues bytes to be sent onto the internal write queue.
@@ -38,4 +44,15 @@ func (s *MConnectionStream) TryWrite(b []byte) (n int, err error) {
 func (s *MConnectionStream) Close() error {
 	delete(s.conn.channelsIdx, s.streamID)
 	return nil
+}
+
+// SetReadDeadline sets the deadline for future Read calls. Used only in tests.
+func (s *MConnectionStream) SetReadDeadline(t time.Time) error {
+	s.readTimeout = time.Until(t)
+	return nil
+}
+
+// SetDeadline is analog of calling SetReadDeadline.
+func (s *MConnectionStream) SetDeadline(t time.Time) error {
+	return s.SetReadDeadline(t)
 }

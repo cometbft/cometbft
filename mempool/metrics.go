@@ -76,4 +76,24 @@ type Metrics struct {
 
 	// Redundancy level.
 	Redundancy metrics.Gauge
+
+	// Cache hit count - number of times a transaction was found in the cache
+	// metrics:Number of cache hits.
+	CacheHits metrics.Counter
+
+	// Cache miss count - number of times a transaction was not found in the cache
+	// metrics:Number of cache misses.
+	CacheMisses metrics.Counter
+
+	// Cache eviction count - number of times a transaction was evicted from the cache
+	// metrics:Number of cache evictions.
+	CacheEvictions metrics.Counter
+
+	// Current cache size - number of transactions currently in the cache
+	// metrics:Current number of transactions in the cache.
+	CacheSize metrics.Gauge
+
+	// Cache hit ratio - ratio of cache hits to total cache lookups
+	// metrics:Ratio of cache hits to total lookups (hits + misses).
+	CacheHitRatio metrics.Gauge
 }

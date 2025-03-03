@@ -1,6 +1,7 @@
 module github.com/cometbft/cometbft
 
 go 1.23
+toolchain go1.23.6
 
 require (
 	github.com/BurntSushi/toml v1.4.0
@@ -33,7 +34,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/crypto v0.34.0
+	golang.org/x/crypto v0.35.0
 	golang.org/x/net v0.35.0
 	google.golang.org/grpc v1.70.0
 )

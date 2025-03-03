@@ -6,7 +6,7 @@ set -e
 
 # Get the version from the environment, or try to figure it out.
 if [ -z $VERSION ]; then
-	VERSION=$(awk -F\" 'CMTSemVer =/ { print $2; exit }' < version/version.go)
+	VERSION=$(awk -F\" '/CMTSemVer =/ { print $2; exit }' < version/version.go)
 fi
 if [ -z "$VERSION" ]; then
     echo "Please specify a version."

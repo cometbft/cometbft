@@ -76,7 +76,9 @@ jobs:
 
       - name: Capture Image Digest
         id: capture-digest
-        run: echo "digest_${{ matrix.arch }}=${{ steps.build.outputs.digest }}" >> $GITHUB_ENV
+        run: |
+          echo "digest_${{ matrix.arch }}=${{ steps.build.outputs.digest }}" >> $GITHUB_ENV
+          echo "::set-output name=digest_${{ matrix.arch }}::${{ steps.build.outputs.digest }}"
 
   merge:
     runs-on: ubuntu-latest
@@ -85,6 +87,11 @@ jobs:
     steps:
       - name: Get sanitized Docker tag
         run: echo "DOCKER_TAG=$(echo ${{ needs.build-image-at-tag.outputs.version }} | sed 's/[^a-zA-Z0-9\.]/-/g')" >> $GITHUB_ENV
+
+      - name: Debug Output Digests
+        run: |
+          echo "AMD64 Digest: ${{ needs.build-image-at-tag.outputs.digest_amd64 }}"
+          echo "ARM64 Digest: ${{ needs.build-image-at-tag.outputs.digest_arm64 }}"
 
       - name: Login to DockerHub
         if: ${{ github.event_name != 'pull_request' }}

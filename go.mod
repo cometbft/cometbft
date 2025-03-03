@@ -8,7 +8,7 @@ require (
 	github.com/adlio/schema v1.3.6
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
-	github.com/cometbft/cometbft-db v1.0.2
+	github.com/cometbft/cometbft-db v1.0.4
 	github.com/cometbft/cometbft-load-test v0.3.0
 	github.com/cometbft/cometbft/api v1.0.0
 	github.com/cosmos/gogoproto v1.7.0
@@ -127,7 +127,7 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
-	go.etcd.io/bbolt v1.3.11 // indirect
+	go.etcd.io/bbolt v1.4.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/mod v0.22.0 // indirect

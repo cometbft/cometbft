@@ -47,7 +47,7 @@ async def clear_n_launch_localnet(node_started_event):
 
 
 def prettify_du(s):
-	return '; '.join([f"{os.path.basename(l.split('	')[1])}: {l.split('	')[0]}" for l in filter(len, s.split('\n'))])
+	return '; '.join([f"{os.path.basename(l.split(maxsplit=1)[1])}: {l.split(maxsplit=1)[0]}" for l in filter(len, s.split('\n'))])
 		
 
 async def measure_du(rate, tx_size):
@@ -84,7 +84,7 @@ async def launch_payload(r, s, T):
 
 
 def stop_localnet():
-	stop_command = ["sudo", "make", "build", "localnet-stop"]
+	stop_command = ["sudo", "make", "localnet-stop"]
 	subprocess.run(stop_command, capture_output=True, text=True, check=True)
 
 

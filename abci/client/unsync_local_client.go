@@ -38,7 +38,7 @@ var _ Client = (*unsyncLocalClient)(nil)
 //
 // See also:
 // - [NewLocalClient]: For a client with full mutex protection
-// - docs/explanation/core/abci-clients.md: For detailed documentation on ABCI clients
+// - docs/explanation/core/abci-clients.md: For detailed documentation on ABCI clients.
 func NewUnsyncLocalClient(app types.Application) Client {
 	cli := &unsyncLocalClient{
 		Application: app,

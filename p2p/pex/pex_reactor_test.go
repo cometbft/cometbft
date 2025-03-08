@@ -72,9 +72,7 @@ func TestPEXReactorRunning(t *testing.T) {
 	switches := make([]*p2p.Switch, n)
 
 	// directory to store address books
-	dir, err := os.MkdirTemp("", "pex_reactor")
-	require.NoError(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	books := make([]AddrBook, n)
 	logger := log.TestingLogger()
@@ -206,9 +204,7 @@ func TestPEXReactorAddrsMessageAbuse(t *testing.T) {
 
 func TestCheckSeeds(t *testing.T) {
 	// directory to store address books
-	dir, err := os.MkdirTemp("", "pex_reactor")
-	require.NoError(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	// 1. test creating peer with no seeds works
 	peerSwitch := testCreateDefaultPeer(dir, 0)
@@ -249,9 +245,7 @@ func TestCheckSeeds(t *testing.T) {
 
 func TestPEXReactorUsesSeedsIfNeeded(t *testing.T) {
 	// directory to store address books
-	dir, err := os.MkdirTemp("", "pex_reactor")
-	require.NoError(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	// 1. create seed
 	seed := testCreateSeed(dir, 0, []*na.NetAddr{}, []*na.NetAddr{})
@@ -269,9 +263,7 @@ func TestPEXReactorUsesSeedsIfNeeded(t *testing.T) {
 
 func TestConnectionSpeedForPeerReceivedFromSeed(t *testing.T) {
 	// directory to store address books
-	dir, err := os.MkdirTemp("", "pex_reactor")
-	require.NoError(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	var id int
 	var knownAddrs []*na.NetAddr
@@ -313,9 +305,7 @@ func TestConnectionSpeedForPeerReceivedFromSeed(t *testing.T) {
 
 func TestPEXReactorSeedMode(t *testing.T) {
 	// directory to store address books
-	dir, err := os.MkdirTemp("", "pex_reactor")
-	require.NoError(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	pexRConfig := &ReactorConfig{SeedMode: true, SeedDisconnectWaitPeriod: 100 * time.Millisecond}
 	pexR, book := createReactor(pexRConfig)
@@ -323,7 +313,7 @@ func TestPEXReactorSeedMode(t *testing.T) {
 
 	sw := createSwitchAndAddReactors(pexR)
 	sw.SetAddrBook(book)
-	err = sw.Start()
+	err := sw.Start()
 	require.NoError(t, err)
 	defer sw.Stop() //nolint:errcheck // ignore for tests
 
@@ -352,9 +342,7 @@ func TestPEXReactorSeedMode(t *testing.T) {
 
 func TestPEXReactorDoesNotDisconnectFromPersistentPeerInSeedMode(t *testing.T) {
 	// directory to store address books
-	dir, err := os.MkdirTemp("", "pex_reactor")
-	require.NoError(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	pexRConfig := &ReactorConfig{SeedMode: true, SeedDisconnectWaitPeriod: 1 * time.Millisecond}
 	pexR, book := createReactor(pexRConfig)
@@ -362,7 +350,7 @@ func TestPEXReactorDoesNotDisconnectFromPersistentPeerInSeedMode(t *testing.T) {
 
 	sw := createSwitchAndAddReactors(pexR)
 	sw.SetAddrBook(book)
-	err = sw.Start()
+	err := sw.Start()
 	require.NoError(t, err)
 	defer sw.Stop() //nolint:errcheck // ignore for tests
 
@@ -389,10 +377,6 @@ func TestPEXReactorDoesNotDisconnectFromPersistentPeerInSeedMode(t *testing.T) {
 }
 
 func TestPEXReactorDialsPeerUpToMaxAttemptsInSeedMode(t *testing.T) {
-	// directory to store address books
-	dir, err := os.MkdirTemp("", "pex_reactor")
-	require.NoError(t, err)
-	defer os.RemoveAll(dir)
 
 	pexR, book := createReactor(&ReactorConfig{SeedMode: true})
 	defer teardownReactor(book)
@@ -404,7 +388,7 @@ func TestPEXReactorDialsPeerUpToMaxAttemptsInSeedMode(t *testing.T) {
 	peer := mock.NewPeer(nil)
 	addr := peer.SocketAddr()
 
-	err = book.AddAddress(addr, addr)
+	err := book.AddAddress(addr, addr)
 	require.NoError(t, err)
 
 	assert.True(t, book.HasAddress(addr))
@@ -426,9 +410,7 @@ func TestPEXReactorSeedModeFlushStop(t *testing.T) {
 	switches := make([]*p2p.Switch, n)
 
 	// directory to store address books
-	dir, err := os.MkdirTemp("", "pex_reactor")
-	require.NoError(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	books := make([]AddrBook, n)
 	logger := log.TestingLogger()
@@ -466,7 +448,7 @@ func TestPEXReactorSeedModeFlushStop(t *testing.T) {
 	reactor := switches[0].Reactors()["pex"].(*Reactor)
 	peerID := switches[1].NodeInfo().ID()
 
-	err = switches[1].DialPeerWithAddress(switches[0].NetAddr())
+	err := switches[1].DialPeerWithAddress(switches[0].NetAddr())
 	require.NoError(t, err)
 
 	// sleep up to a second while waiting for the peer to send us a message.

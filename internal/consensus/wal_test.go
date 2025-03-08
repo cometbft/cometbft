@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -35,9 +34,7 @@ const (
 func TestWALTruncate(t *testing.T) {
 	const numBlocks = 60
 
-	walDir, err := os.MkdirTemp("", "wal")
-	require.NoError(t, err)
-	defer os.RemoveAll(walDir)
+	walDir := t.TempDir()
 
 	walFile := filepath.Join(walDir, "wal")
 
@@ -255,9 +252,8 @@ func TestWALEncoder(t *testing.T) {
 }
 
 func TestWALWrite(t *testing.T) {
-	walDir, err := os.MkdirTemp("", "wal")
-	require.NoError(t, err)
-	defer os.RemoveAll(walDir)
+	walDir := t.TempDir()
+
 	walFile := filepath.Join(walDir, "wal")
 
 	wal, err := NewWAL(walFile)
@@ -323,9 +319,7 @@ func TestWALSearchForEndHeight(t *testing.T) {
 }
 
 func TestWALPeriodicSync(t *testing.T) {
-	walDir, err := os.MkdirTemp("", "wal")
-	require.NoError(t, err)
-	defer os.RemoveAll(walDir)
+	walDir := t.TempDir()
 
 	walFile := filepath.Join(walDir, "wal")
 	wal, err := NewWAL(walFile, autofile.GroupCheckDuration(1*time.Millisecond))

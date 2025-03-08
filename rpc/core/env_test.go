@@ -271,11 +271,7 @@ func TestCleanup(t *testing.T) {
 		// creating a directory and a sub-directory; then we'll set the parent
 		// directory's permissions to read-only, so that os.RemoveAll() will fail.
 
-		parentDir, err := os.MkdirTemp("", "parentDir")
-		if err != nil {
-			t.Fatalf("creating test parent directory: %s", err)
-		}
-		defer os.RemoveAll(parentDir)
+		parentDir := t.TempDir()
 
 		var (
 			gFilePath = filepath.Join(parentDir, "genesis.json")
@@ -294,7 +290,7 @@ func TestCleanup(t *testing.T) {
 			t.Fatalf("changing test parent directory permissions: %s", err)
 		}
 
-		err = env.Cleanup()
+		err := env.Cleanup()
 		if err == nil {
 			t.Fatalf("expected an error, got nil")
 		}
@@ -438,11 +434,7 @@ func TestMkChunksDir(t *testing.T) {
 }
 
 func TestWriteChunk(t *testing.T) {
-	cDir, err := os.MkdirTemp("", _chunksDir)
-	if err != nil {
-		t.Fatalf("creating test chunks directory: %s", err)
-	}
-	defer os.RemoveAll(cDir)
+	cDir := t.TempDir()
 
 	var (
 		chunk    = []byte("test-chunk")

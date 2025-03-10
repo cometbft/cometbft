@@ -1,5 +1,229 @@
 # CHANGELOG
 
+## v0.38.12
+
+*September 3, 2024*
+
+This release includes a security fix for the light client and is recommended
+for all users.
+
+### BUG FIXES
+
+- `[light]` Cross-check proposer priorities in retrieved validator sets
+  ([\#ASA-2024-009](https://github.com/cometbft/cometbft/security/advisories/GHSA-g5xx-c4hv-9ccc))
+- `[privval]` Ignore duplicate privval listen when already connected ([\#3828](https://github.com/cometbft/cometbft/issues/3828)
+
+### DEPENDENCIES
+
+- `[crypto/secp256k1]` Adjust to breaking interface changes in
+  `btcec/v2` latest release, while avoiding breaking changes to
+  local CometBFT functions
+  ([\#3728](https://github.com/cometbft/cometbft/pull/3728))
+
+### IMPROVEMENTS
+
+- `[types]` Check that proposer is one of the validators in `ValidateBasic`
+  ([\#ASA-2024-009](https://github.com/cometbft/cometbft/security/advisories/GHSA-g5xx-c4hv-9ccc))
+- `[e2e]` Add `log_level` option to manifest file
+  ([#3819](https://github.com/cometbft/cometbft/pull/3819)).
+- `[e2e]` Add `log_format` option to manifest file
+  ([#3836](https://github.com/cometbft/cometbft/issues/3836)).
+
+## v0.38.11
+
+*August 12, 2024*
+
+This release fixes a panic in consensus where CometBFT would previously panic
+if there's no extension signature in non-nil Precommit EVEN IF vote extensions
+themselves are disabled.
+
+It also includes a few other bug fixes and performance improvements.
+
+### BUG FIXES
+
+- `[types]` Only check IFF vote is a non-nil Precommit if extensionsEnabled
+  types ([\#3565](https://github.com/cometbft/cometbft/issues/3565))
+
+### IMPROVEMENTS
+
+- `[indexer]` Fixed ineffective select break statements; they now
+  point to their enclosing for loop label to exit
+  ([\#3544](https://github.com/cometbft/cometbft/issues/3544))
+
+## v0.38.10
+
+*July 16, 2024*
+
+This release fixes a bug in `v0.38.x` that prevented ABCI responses from being
+correctly read when upgrading from `v0.37.x` or below. It also includes a few other
+bug fixes and performance improvements.
+
+### BUG FIXES
+
+- `[p2p]` Node respects configured `max_num_outbound_peers` limit when dialing
+  peers provided by a seed node
+  ([\#486](https://github.com/cometbft/cometbft/issues/486))
+- `[rpc]` Fix an issue where a legacy ABCI response, created on `v0.37` or before, is not returned properly in `v0.38` and up
+  on the `/block_results` RPC endpoint.
+  ([\#3002](https://github.com/cometbft/cometbft/issues/3002))
+- `[blocksync]` Do not stay in blocksync if the node's validator voting power
+  is high enough to block the chain while it is not online
+  ([\#3406](https://github.com/cometbft/cometbft/pull/3406))
+
+### IMPROVEMENTS
+
+- `[p2p/conn]` Update send monitor, used for sending rate limiting, once per batch of packets sent
+  ([\#3382](https://github.com/cometbft/cometbft/pull/3382))
+- `[libs/pubsub]` Allow dash (`-`) in event tags
+  ([\#3401](https://github.com/cometbft/cometbft/issues/3401))
+- `[p2p/conn]` Remove the usage of a synchronous pool of buffers in secret connection, storing instead the buffer in the connection struct. This reduces the synchronization primitive usage, speeding up the code.
+  ([\#3403](https://github.com/cometbft/cometbft/issues/3403))
+
+## v0.38.9
+
+*July 1, 2024*
+
+This release reverts the API-breaking change to the Mempool interface introduced in the last patch
+release (v0.38.8) while still keeping the performance improvement added to the mempool. It also
+includes a minor fix to the RPC endpoints /tx and /tx_search.
+
+### BREAKING CHANGES
+
+- `[mempool]` Revert adding the method `PreUpdate()` to the `Mempool` interface, recently introduced
+  in the previous patch release (v0.38.8). Its logic is now moved into the `Lock` method. With this change,
+  the `Mempool` interface is the same as in v0.38.7.
+  ([\#3361](https://github.com/cometbft/cometbft/pull/3361))
+
+### BUG FIXES
+
+- `[rpc]` Fix nil pointer error in `/tx` and `/tx_search` when block is
+  absent ([\#3352](https://github.com/cometbft/cometbft/issues/3352))
+
+## v0.38.8
+
+*June 27, 2024*
+
+This release contains a few bug fixes and performance improvements.
+
+### BREAKING CHANGES
+
+- `[mempool]` Add to the `Mempool` interface a new method `PreUpdate()`. This method should be
+  called before acquiring the mempool lock, to signal that a new update is coming. Also add to
+  `ErrMempoolIsFull` a new field `RecheckFull`.
+  ([\#3314](https://github.com/cometbft/cometbft/pull/3314))
+
+### BUG FIXES
+
+- `[blockstore]` Added peer banning in blockstore
+  ([\#ABC-0013](https://github.com/cometbft/cometbft/security/advisories/GHSA-hg58-rf2h-6rr7))
+- `[blockstore]` Send correct error message when vote extensions do not align with received packet
+  ([\#ABC-0014](https://github.com/cometbft/cometbft/security/advisories/GHSA-hg58-rf2h-6rr7))
+- [`mempool`] Fix data race when rechecking with async ABCI client
+  ([\#1827](https://github.com/cometbft/cometbft/issues/1827))
+- `[consensus]` Fix a race condition in the consensus timeout ticker. Race is caused by two timeouts being scheduled at the same time.
+  ([\#3092](https://github.com/cometbft/cometbft/pull/2136))
+- `[types]` Do not batch verify a commit if the validator set keys have different
+  types. ([\#3195](https://github.com/cometbft/cometbft/issues/3195)
+
+### IMPROVEMENTS
+
+- `[config]` Added `recheck_timeout` mempool parameter to set how much time to wait for recheck
+  responses from the app (only applies to non-local ABCI clients).
+  ([\#1827](https://github.com/cometbft/cometbft/issues/1827/))
+- `[rpc]` Add a configurable maximum batch size for RPC requests.
+  ([\#2867](https://github.com/cometbft/cometbft/pull/2867)).
+- `[event-bus]` Remove the debug logs in PublishEventTx, which were noticed production slowdowns.
+  ([\#2911](https://github.com/cometbft/cometbft/pull/2911))
+- `[state/execution]` Cache the block hash computation inside of the Block Type, so we only compute it once.
+  ([\#2924](https://github.com/cometbft/cometbft/pull/2924))
+- `[consensus/state]` Remove a redundant `VerifyBlock` call in `FinalizeCommit`
+  ([\#2928](https://github.com/cometbft/cometbft/pull/2928))
+- `[p2p/channel]` Speedup `ProtoIO` writer creation time, and thereby speedup channel writing by 5%.
+  ([\#2949](https://github.com/cometbft/cometbft/pull/2949))
+- `[p2p/conn]` Minor speedup (3%) to connection.WritePacketMsgTo, by removing MinInt calls.
+  ([\#2952](https://github.com/cometbft/cometbft/pull/2952))
+- `[internal/bits]` 10x speedup creating initialized bitArrays, which speedsup extendedCommit.BitArray(). This is used in consensus vote gossip.
+  ([\#2959](https://github.com/cometbft/cometbft/pull/2841)).
+- `[blockstore]` Remove a redundant `Header.ValidateBasic` call in `LoadBlockMeta`, 75% reducing this time.
+  ([\#2964](https://github.com/cometbft/cometbft/pull/2964))
+- `[p2p/conn]` Speedup connection.WritePacketMsgTo, by reusing internal buffers rather than re-allocating.
+  ([\#2986](https://github.com/cometbft/cometbft/pull/2986))
+- [`blockstore`] Use LRU caches in blockstore, significiantly improving consensus gossip routine performance
+  ([\#3003](https://github.com/cometbft/cometbft/issues/3003)
+- [`consensus`] Improve performance of consensus metrics by lowering string operations
+  ([\#3017](https://github.com/cometbft/cometbft/issues/3017)
+- [`protoio`] Remove one allocation and new object call from `ReadMsg`,
+  leading to a 4% p2p message reading performance gain.
+  ([\#3018](https://github.com/cometbft/cometbft/issues/3018)
+- `[mempool]` Before updating the mempool, consider it as full if rechecking is still in progress.
+  This will stop accepting transactions in the mempool if the node can't keep up with re-CheckTx.
+  ([\#3314](https://github.com/cometbft/cometbft/pull/3314))
+
+## v0.38.7
+
+*April 26, 2024*
+
+This release contains a few bug fixes and performance improvements.
+
+### BUG FIXES
+
+- [`mempool`] Panic when a CheckTx request to the app returns an error
+  ([\#2225](https://github.com/cometbft/cometbft/pull/2225))
+- [`bits`] prevent `BitArray.UnmarshalJSON` from crashing on 0 bits
+  ([\#2774](https://github.com/cometbft/cometbft/pull/2774))
+
+### FEATURES
+
+- [`node`] Add `BootstrapStateWithGenProvider` to boostrap state using a custom
+  genesis doc provider ([\#2793](https://github.com/cometbft/cometbft/pull/2793))
+
+### IMPROVEMENTS
+
+- `[state/indexer]` Lower the heap allocation of transaction searches
+  ([\#2839](https://github.com/cometbft/cometbft/pull/2839))
+- `[internal/bits]` 10x speedup and remove heap overhead of bitArray.PickRandom (used extensively in consensus gossip)
+  ([\#2841](https://github.com/cometbft/cometbft/pull/2841)).
+- `[libs/json]` Lower the memory overhead of JSON encoding by using JSON encoders internally
+  ([\#2846](https://github.com/cometbft/cometbft/pull/2846)).
+
+## v0.38.6
+
+*March 12, 2024*
+
+This release fixes a security bug in the light client. It also introduces many
+improvements to the block sync in collaboration with the
+[Osmosis](https://osmosis.zone/) team.
+
+### BUG FIXES
+
+- `[privval]` Retry accepting a connection ([\#2047](https://github.com/cometbft/cometbft/pull/2047))
+- `[state]` Fix rollback to a specific height
+  ([\#2136](https://github.com/cometbft/cometbft/pull/2136))
+
+### FEATURES
+
+- `[e2e]` Add `block_max_bytes` option to the manifest file.
+  ([\#2362](https://github.com/cometbft/cometbft/pull/2362))
+
+### IMPROVEMENTS
+
+- `[blocksync]` Avoid double-calling `types.BlockFromProto` for performance
+  reasons ([\#2016](https://github.com/cometbft/cometbft/pull/2016))
+- `[e2e]` Add manifest option `load_max_txs` to limit the number of transactions generated by the
+  `load` command. ([\#2094](https://github.com/cometbft/cometbft/pull/2094))
+- `[jsonrpc]` enable HTTP basic auth in websocket client ([#2434](https://github.com/cometbft/cometbft/pull/2434))
+- `[blocksync]` make the max number of downloaded blocks dynamic.
+  Previously it was a const 600. Now it's `peersCount * maxPendingRequestsPerPeer (20)`
+  [\#2467](https://github.com/cometbft/cometbft/pull/2467)
+- `[blocksync]` Request a block from peer B if we are approaching pool's height
+  (less than 50 blocks) and the current peer A is slow in sending us the
+  block [\#2475](https://github.com/cometbft/cometbft/pull/2475)
+- `[blocksync]` Request the block N from peer B immediately after getting
+  `NoBlockResponse` from peer A
+  [\#2475](https://github.com/cometbft/cometbft/pull/2475)
+- `[blocksync]` Sort peers by download rate (the fastest peer is picked first)
+  [\#2475](https://github.com/cometbft/cometbft/pull/2475)
+
 ## v0.38.5
 
 *January 24, 2024*
@@ -337,6 +561,11 @@ See below for more details.
   ([\#230](https://github.com/cometbft/cometbft/pull/230))
 - Bump minimum Go version to 1.20
   ([\#385](https://github.com/cometbft/cometbft/issues/385))
+- [config] The boolean key `fastsync` is deprecated and replaced by
+    `block_sync`. ([\#9259](https://github.com/tendermint/tendermint/pull/9259))
+    At the same time, `block_sync` is also deprecated. In the next release,
+    BlocSync will always be enabled and `block_sync` will be removed.
+    ([\#409](https://github.com/cometbft/cometbft/issues/409))
 - `[abci]` Make length delimiter encoding consistent
   (`uint64`) between ABCI and P2P wire-level protocols
   ([\#5783](https://github.com/tendermint/tendermint/pull/5783))

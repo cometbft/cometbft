@@ -193,17 +193,16 @@ response messages.
 The messages are specified here: [ABCI Message
 Types](https://github.com/cometbft/cometbft/blob/v0.38.x/proto/tendermint/abci/types.proto).
 
-The **DeliverTx** message is the work horse of the application. Each
-transaction in the blockchain is delivered with this message. The
+The **FinalizeBlock** message is the work horse of the application. Each
+transaction in the blockchain is finalized within this message. The
 application needs to validate each transaction received with the
-**DeliverTx** message against the current state, application protocol,
-and the cryptographic credentials of the transaction. A validated
-transaction then needs to update the application state — by binding a
-value into a key values store, or by updating the UTXO database, for
-instance.
+**FinalizeBlock** message against the current state, application protocol,
+and the cryptographic credentials of the transaction. FinalizeBlock only
+prepares the update to be made and does not change the state of the application.
+The state change is actually committed in a later stage i.e. in commit phase.
 
-The **CheckTx** message is similar to **DeliverTx**, but it's only for
-validating transactions. CometBFT's mempool first checks the
+The **CheckTx** message is used for validating transactions.
+CometBFT's mempool first checks the
 validity of a transaction with **CheckTx**, and only relays valid
 transactions to its peers. For instance, an application may check an
 incrementing sequence number in the transaction and return an error upon

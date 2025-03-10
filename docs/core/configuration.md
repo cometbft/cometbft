@@ -41,7 +41,9 @@ proxy_app = "tcp://127.0.0.1:26658"
 moniker = "anonymous"
 
 # Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb
-# * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
+# * goleveldb (github.com/syndtr/goleveldb)
+#   - UNMAINTAINED
+#   - stable
 #   - pure go
 #   - stable
 # * cleveldb (uses levigo wrapper)
@@ -186,6 +188,16 @@ experimental_close_on_slow_client = false
 # global HTTP write timeout, which applies to all connections and endpoints.
 # See https://github.com/tendermint/tendermint/issues/3435
 timeout_broadcast_tx_commit = "10s"
+
+# Maximum number of requests that can be sent in a JSON-RPC batch request.
+# Possible values: number greater than 0.
+# If the number of requests sent in a JSON-RPC batch exceed the maximum batch
+# size configured, an error will be returned.
+# The default value is set to `10`, which will limit the number of requests
+# to 10 requests per a JSON-RPC batch request.
+# If you don't want to enforce a maximum number of requests for a batch
+# request set this value to `0`.
+max_request_batch_size = 10
 
 # Maximum size of request body, in bytes
 max_body_bytes = 1000000
@@ -538,17 +550,16 @@ Here's a brief summary of the timeouts:
   on the new height (this gives us a chance to receive some more precommits,
   even though we already have +2/3)
 
-### The effect of `timeout_propose` on the proposer selection process
+### The adverse effect of using inconsistent `timeout_propose` in a network
 
-Here's an interesting question. What if the particular validator sets a very
-small `timeout_propose`?
+Here's an interesting question. What happens if a particular validator sets a
+very small `timeout_propose`, as compared to the rest of the network?
 
 Imagine there are only two validators in your network: Alice and Bob. Bob sets
-`timeout_propose` to 1s. Alice uses the default value of 3s. Bob will create
-blocks ~ every second, Alice - every 3 seconds (given `create_empty_blocks` is
-`true`). Let's say they both have an equal voting power. Given the proposer
-selection algorithm is a weighted round-robin, you may expect Alice and Bob to
-take turns proposing blocks, and the result will be:
+`timeout_propose` to 0s. Alice uses the default value of 3s. Let's say they
+both have an equal voting power. Given the proposer selection algorithm is a
+weighted round-robin, you may expect Alice and Bob to take turns proposing
+blocks, and the result like:
 
 ```
 #1 block - Alice
@@ -564,18 +575,21 @@ What happens in reality is, however, a little bit different:
 #1 block - Bob
 #2 block - Bob
 #3 block - Bob
-#4 block - Alice
+#4 block - Bob
 ```
 
-That's because Bob is too fast at proposing blocks. This leaves Alice very
-little chances to propose a block and not always be catching up. Note every
-block Bob creates needs a vote from Alice to constitute 2/3+.
+That's because Bob doesn't wait for a proposal from Alice (prevotes `nil`).
+This leaves Alice no chances to commit a block. Note that every block Bob
+creates needs a vote from Alice to constitute 2/3+. Bob always gets one because
+Alice has `timeout_propose` set to 3s. Alice never gets one because Bob has it
+set to 0s.
 
 Imagine now there are ten geographically distributed validators. One of them
-(Bob) sets `timeout_propose` to 1s. Others have it set to 3s. Now, Bob won't be
-able to move with the speed of 1s blocks because it won't gather 2/3+ of votes
-for its block proposal in time (1s). I.e., the network moves with the speed of
-time to accumulate 2/3+ of votes, not with the speed of the fastest proposer.
+(Bob) sets `timeout_propose` to 0s. Others have it set to 3s. Now, Bob won't be
+able to move with his own speed because it still needs 2/3 votes of the other
+validators and it takes time to propagate those. I.e., the network moves with
+the speed of time to accumulate 2/3+ of votes (prevotes & precommits), not with
+the speed of the fastest proposer.
 
 > Isn't block production determined by voting power?
 
@@ -588,3 +602,19 @@ being available and must move on if such is not responding.
 
 The impact shown above is negligible in a decentralized network with enough
 decentralization.
+
+### The adverse effect of using inconsistent `timeout_commit` in a network
+
+Let's look at the same scenario as before. There are ten geographically
+distributed validators. One of them (Bob) sets `timeout_commit` to 0s. Others
+have it set to 1s (the default value). Now, Bob will be the fastest producer
+because he doesn't wait for additional precommits after creating a block. If
+waiting for precommits (`timeout_commit`) is not incentivized, Bob will accrue
+more rewards compared to the other 9 validators.
+
+This is because Bob has the advantage of broadcasting its proposal early (1
+second earlier than the others). But it also makes it possible for Bob to miss
+a proposal from another validator and prevote `nil` due to him starting
+`timeout_propose` earlier. I.e., if Bob's `timeout_commit` is too low comparing
+to other validators, then he might miss some proposals and get slashed for
+inactivity.

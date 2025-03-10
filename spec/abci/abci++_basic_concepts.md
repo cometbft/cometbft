@@ -6,21 +6,21 @@ title: Overview and basic concepts
 ## Outline
 
 - [Overview and basic concepts](#overview-and-basic-concepts)
-  - [ABCI++ vs. ABCI](#abci-vs-abci)
-  - [Methods overview](#methods-overview)
-    - [Consensus/block execution methods](#consensusblock-execution-methods)
-    - [Mempool methods](#mempool-methods)
-    - [Info methods](#info-methods)
-    - [State-sync methods](#state-sync-methods)
-    - [Other methods](#other-methods)
-  - [Proposal timeout](#proposal-timeout)
-  - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
-  - [Events](#events)
-  - [Evidence](#evidence)
-  - [Errors](#errors)
-    - [`CheckTx`](#checktx)
-    - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
-    - [`Query`](#query)
+    - [ABCI++ vs. ABCI](#abci-vs-abci)
+    - [Methods overview](#methods-overview)
+        - [Consensus/block execution methods](#consensusblock-execution-methods)
+        - [Mempool methods](#mempool-methods)
+        - [Info methods](#info-methods)
+        - [State-sync methods](#state-sync-methods)
+        - [Other methods](#other-methods)
+        - [Proposal timeout](#proposal-timeout)
+        - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
+        - [Events](#events)
+        - [Evidence](#evidence)
+        - [Errors](#errors)
+            - [`CheckTx`](#checktx)
+            - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
+            - [`Query`](#query)
 
 # Overview and basic concepts
 
@@ -74,21 +74,19 @@ call sequences of these methods.
   proposer to perform application-dependent work in a block before proposing it.
   This enables, for instance, batch optimizations to a block, which has been empirically
   demonstrated to be a key component for improved performance. Method `PrepareProposal` is called
-  every time CometBFT is about to broadcast a Proposal message and _validValue_ is `nil`.
+  every time CometBFT is about to broadcast a Proposal message and *validValue* is `nil`.
   CometBFT gathers outstanding transactions from the
   mempool, generates a block header, and uses them to create a block to propose. Then, it calls
   `RequestPrepareProposal` with the newly created proposal, called *raw proposal*. The Application
-  can make changes to the raw proposal, such as modifying the set of transactions or the order
-  in which they appear, and returns the
-  (potentially) modified proposal, called *prepared proposal* in the `ResponsePrepareProposal`
-  call.
+  can make changes to the raw proposal, such as reordering, adding and removing transactions, before returning the
+  (potentially) modified proposal, called *prepared proposal* in the `ResponsePrepareProposal`.
   The logic modifying the raw proposal MAY be non-deterministic.
 
 - [**ProcessProposal:**](./abci++_methods.md#processproposal) It allows a validator to
   perform application-dependent work in a proposed block. This enables features such as immediate
   block execution, and allows the Application to reject invalid blocks.
 
-  CometBFT calls it when it receives a proposal and _validValue_ is `nil`.
+  CometBFT calls it when it receives a proposal and *validValue* is `nil`.
   The Application cannot modify the proposal at this point but can reject it if
   invalid. If that is the case, the consensus algorithm will prevote `nil` on the proposal, which has
   strong liveness implications for CometBFT. As a general rule, the Application
@@ -114,10 +112,10 @@ call sequences of these methods.
   This has a negative impact on liveness, i.e., if vote extensions repeatedly cannot be
   verified by correct validators, the consensus algorithm may not be able to finalize a block even if sufficiently
   many (+2/3) validators send precommit votes for that block. Thus, `VerifyVoteExtension`
-  should be used with special care.
+  should be implemented with special care.
   As a general rule, an Application that detects an invalid vote extension SHOULD
   accept it in `ResponseVerifyVoteExtension` and ignore it in its own logic. CometBFT calls it when
-  a process receives a precommit message with a (possibly empty) vote extension.
+  a process receives a precommit message with a (possibly empty) vote extension, for the current height. It is not called for precommit votes received after the height is concluded but while waiting to accumulate more precommit votes.
   The logic in `VerifyVoteExtension` MUST be deterministic.
 
 - [**FinalizeBlock:**](./abci++_methods.md#finalizeblock) It delivers a decided block to the
@@ -125,6 +123,8 @@ call sequences of these methods.
   update its state accordingly. Cryptographic commitments to the block and transaction results,
   returned via the corresponding parameters in `ResponseFinalizeBlock`, are included in the header
   of the next block. CometBFT calls it when a new block is decided.
+  When calling `FinalizeBlock` with a block, the consensus algorithm run by CometBFT guarantees
+  that at least one non-byzantine validator has run `ProcessProposal` on that block.
 
 - [**Commit:**](./abci++_methods.md#commit) Instructs the Application to persist its
   state. It is a fundamental part of CometBFT's crash-recovery mechanism that ensures the
@@ -251,7 +251,8 @@ time during `FinalizeBlock`; they must only apply state changes in `Commit`.
 
 Additionally, vote extensions or the validation thereof (via `ExtendVote` or
 `VerifyVoteExtension`) must *never* have side effects on the current state.
-They can only be used when their data is provided in a `RequestPrepareProposal` call.
+They can only be used when their data is provided in a `RequestPrepareProposal` call but, again,
+without side effects to the app state.
 
 If there is some non-determinism in the state machine, consensus will eventually
 fail as nodes disagree over the correct values for the block header. The

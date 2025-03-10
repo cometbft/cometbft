@@ -945,7 +945,7 @@ paths:
           required: true
           schema:
             type: string
-            example: '"block.height > 1000 AND valset.changed > 0"'
+            example: '"block.height > 1000"'
         - in: query
           name: page
           description: "Page number (1-based)"
@@ -2416,8 +2416,10 @@ components:
             response:
               required:
                 - "data"
-                - "app_version"
                 - "version"
+                - "app_version"
+                - "last_block_height"
+                - "last_block_app_hash"
               properties:
                 data:
                   type: string
@@ -2427,7 +2429,13 @@ components:
                   example: "0.16.1"
                 app_version:
                   type: string
+                  example: "1"
+                last_block_height:
+                  type: string
                   example: "1314126"
+                last_block_app_hash:
+                  type: string
+                  example: "C9AEBB441B787D9F1D846DE51F3826F4FD386108B59B08239653ABF59455C3F8"
               type: object
           type: object
 

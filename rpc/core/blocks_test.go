@@ -74,6 +74,7 @@ func TestBlockResults(t *testing.T) {
 			{Code: 0, Data: []byte{0x02}, Log: "ok"},
 			{Code: 1, Log: "not ok"},
 		},
+		AppHash: make([]byte, 1),
 	}
 
 	env := &Environment{}
@@ -101,6 +102,7 @@ func TestBlockResults(t *testing.T) {
 			FinalizeBlockEvents:   results.Events,
 			ValidatorUpdates:      results.ValidatorUpdates,
 			ConsensusParamUpdates: results.ConsensusParamUpdates,
+			AppHash:               make([]byte, 1),
 		}},
 	}
 

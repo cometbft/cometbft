@@ -137,6 +137,9 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	genesis.ConsensusParams.Version.App = 1
 	genesis.ConsensusParams.Evidence.MaxAgeNumBlocks = e2e.EvidenceAgeHeight
 	genesis.ConsensusParams.Evidence.MaxAgeDuration = e2e.EvidenceAgeTime
+	if testnet.BlockMaxBytes != 0 {
+		genesis.ConsensusParams.Block.MaxBytes = testnet.BlockMaxBytes
+	}
 	if testnet.VoteExtensionsUpdateHeight == -1 {
 		genesis.ConsensusParams.ABCI.VoteExtensionsEnableHeight = testnet.VoteExtensionsEnableHeight
 	}
@@ -250,6 +253,14 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 			cfg.P2P.PersistentPeers += ","
 		}
 		cfg.P2P.PersistentPeers += peer.AddressP2P(true)
+	}
+
+	if node.Testnet.LogLevel != "" {
+		cfg.LogLevel = node.Testnet.LogLevel
+	}
+
+	if node.Testnet.LogFormat != "" {
+		cfg.LogFormat = node.Testnet.LogFormat
 	}
 
 	if node.Prometheus {

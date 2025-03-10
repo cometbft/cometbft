@@ -12,24 +12,24 @@ import (
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 )
 
-func randBitArray(bits int) (*BitArray, []byte) {
+var (
+	empty16Bits = "________________"
+	empty64Bits = empty16Bits + empty16Bits + empty16Bits + empty16Bits
+	full16bits  = "xxxxxxxxxxxxxxxx"
+	full64bits  = full16bits + full16bits + full16bits + full16bits
+)
+
+func randBitArray(bits int) *BitArray {
 	src := cmtrand.Bytes((bits + 7) / 8)
-	bA := NewBitArray(bits)
-	for i := 0; i < len(src); i++ {
-		for j := 0; j < 8; j++ {
-			if i*8+j >= bits {
-				return bA, src
-			}
-			setBit := src[i]&(1<<uint(j)) > 0
-			bA.SetIndex(i*8+j, setBit)
-		}
+	srcIndexToBit := func(i int) bool {
+		return src[i/8]&(1<<uint(i%8)) > 0
 	}
-	return bA, src
+	return NewBitArrayFromFn(bits, srcIndexToBit)
 }
 
 func TestAnd(t *testing.T) {
-	bA1, _ := randBitArray(51)
-	bA2, _ := randBitArray(31)
+	bA1 := randBitArray(51)
+	bA2 := randBitArray(31)
 	bA3 := bA1.And(bA2)
 
 	var bNil *BitArray
@@ -52,8 +52,8 @@ func TestAnd(t *testing.T) {
 }
 
 func TestOr(t *testing.T) {
-	bA1, _ := randBitArray(51)
-	bA2, _ := randBitArray(31)
+	bA1 := randBitArray(57)
+	bA2 := randBitArray(31)
 	bA3 := bA1.Or(bA2)
 
 	bNil := (*BitArray)(nil)
@@ -61,7 +61,7 @@ func TestOr(t *testing.T) {
 	require.Equal(t, bA1.Or(nil), bA1)
 	require.Equal(t, bNil.Or(nil), (*BitArray)(nil))
 
-	if bA3.Bits != 51 {
+	if bA3.Bits != 57 {
 		t.Error("Expected max bits")
 	}
 	if len(bA3.Elems) != len(bA1.Elems) {
@@ -72,6 +72,10 @@ func TestOr(t *testing.T) {
 		if bA3.GetIndex(i) != expected {
 			t.Error("Wrong bit from bA3", i, bA1.GetIndex(i), bA2.GetIndex(i), bA3.GetIndex(i))
 		}
+	}
+	if bA3.getNumTrueIndices() == 0 {
+		t.Error("Expected at least one true bit. " +
+			"This has a false positive rate that is less than 1 in 2^80 (cryptographically improbable).")
 	}
 }
 
@@ -115,8 +119,6 @@ func TestSub(t *testing.T) {
 }
 
 func TestPickRandom(t *testing.T) {
-	empty16Bits := "________________"
-	empty64Bits := empty16Bits + empty16Bits + empty16Bits + empty16Bits
 	testCases := []struct {
 		bA string
 		ok bool
@@ -131,6 +133,7 @@ func TestPickRandom(t *testing.T) {
 		{`"x` + empty64Bits + `"`, true},
 		{`"` + empty64Bits + `x"`, true},
 		{`"x` + empty64Bits + `x"`, true},
+		{`"` + empty64Bits + `___x"`, true},
 	}
 	for _, tc := range testCases {
 		var bitArr *BitArray
@@ -138,6 +141,88 @@ func TestPickRandom(t *testing.T) {
 		require.NoError(t, err)
 		_, ok := bitArr.PickRandom()
 		require.Equal(t, tc.ok, ok, "PickRandom got an unexpected result on input %s", tc.bA)
+	}
+}
+
+func TestGetNumTrueIndices(t *testing.T) {
+	type testcase struct {
+		Input          string
+		ExpectedResult int
+	}
+	testCases := []testcase{
+		{"x_x_x_", 3},
+		{"______", 0},
+		{"xxxxxx", 6},
+		{"x_x_x_x_x_x_x_x_x_", 9},
+	}
+	numOriginalTestCases := len(testCases)
+	for i := 0; i < numOriginalTestCases; i++ {
+		testCases = append(testCases, testcase{testCases[i].Input + "x", testCases[i].ExpectedResult + 1})
+		testCases = append(testCases, testcase{full64bits + testCases[i].Input, testCases[i].ExpectedResult + 64})
+		testCases = append(testCases, testcase{empty64Bits + testCases[i].Input, testCases[i].ExpectedResult})
+	}
+
+	for _, tc := range testCases {
+		var bitArr *BitArray
+		err := json.Unmarshal([]byte(`"`+tc.Input+`"`), &bitArr)
+		require.NoError(t, err)
+		result := bitArr.getNumTrueIndices()
+		require.Equal(t, tc.ExpectedResult, result, "for input %s, expected %d, got %d", tc.Input, tc.ExpectedResult, result)
+		result = bitArr.Not().getNumTrueIndices()
+		require.Equal(t, bitArr.Bits-result, bitArr.getNumTrueIndices())
+	}
+}
+
+func TestGetNthTrueIndex(t *testing.T) {
+	type testcase struct {
+		Input          string
+		N              int
+		ExpectedResult int
+	}
+	testCases := []testcase{
+		// Basic cases
+		{"x_x_x_", 0, 0},
+		{"x_x_x_", 1, 2},
+		{"x_x_x_", 2, 4},
+		{"______", 1, -1},         // No true indices
+		{"xxxxxx", 5, 5},          // Last true index
+		{"x_x_x_x_x_x_x_", 9, -1}, // Out-of-range
+
+		// Edge cases
+		{"xxxxxx", 7, -1}, // Out-of-range
+		{"______", 0, -1}, // No true indices
+		{"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", 49, 49},  // Last true index
+		{"____________________________________________", 1, -1},                               // No true indices
+		{"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", 63, 63},  // last index of first word
+		{"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", 64, 64},  // first index of second word
+		{"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", 100, -1}, // Out-of-range
+
+		// Input beyond 64 bits
+		{"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", 99, 99}, // Last true index
+
+		// Input less than 64 bits
+		{"x_x_x_", 3, -1}, // Out-of-range
+	}
+
+	numOriginalTestCases := len(testCases)
+	// Add 64 underscores to each test case
+	for i := 0; i < numOriginalTestCases; i++ {
+		expectedResult := testCases[i].ExpectedResult
+		if expectedResult != -1 {
+			expectedResult += 64
+		}
+		testCases = append(testCases, testcase{empty64Bits + testCases[i].Input, testCases[i].N, expectedResult})
+	}
+
+	for _, tc := range testCases {
+		var bitArr *BitArray
+		err := json.Unmarshal([]byte(`"`+tc.Input+`"`), &bitArr)
+		require.NoError(t, err)
+
+		// Get the nth true index
+		result := bitArr.getNthTrueIndex(tc.N)
+
+		require.Equal(t, tc.ExpectedResult, result, "for bit array %s, input %d,  expected %d, got %d", tc.Input, tc.N, tc.ExpectedResult, result)
 	}
 }
 
@@ -188,7 +273,7 @@ func TestEmptyFull(t *testing.T) {
 
 func TestUpdateNeverPanics(_ *testing.T) {
 	newRandBitArray := func(n int) *BitArray {
-		ba, _ := randBitArray(n)
+		ba := randBitArray(n)
 		return ba
 	}
 	pairs := []struct {
@@ -283,5 +368,32 @@ func TestBitArrayProtoBuf(t *testing.T) {
 		} else {
 			require.NotEqual(t, tc.bA1, ba, tc.msg)
 		}
+	}
+}
+
+// Tests that UnmarshalJSON doesn't crash when no bits are passed into the JSON.
+// See issue https://github.com/cometbft/cometbft/issues/2658
+func TestUnmarshalJSONDoesntCrashOnZeroBits(t *testing.T) {
+	type indexCorpus struct {
+		BitArray *BitArray `json:"ba"`
+		Index    int       `json:"i"`
+	}
+
+	ic := new(indexCorpus)
+	blob := []byte(`{"BA":""}`)
+	err := json.Unmarshal(blob, ic)
+	require.NoError(t, err)
+	require.Equal(t, ic.BitArray, &BitArray{Bits: 0, Elems: nil})
+}
+
+func BenchmarkPickRandomBitArray(b *testing.B) {
+	// A random 150 bit string to use as the benchmark bit array
+	benchmarkBitArrayStr := "_______xx__xxx_xx__x_xx_x_x_x__x_x_x_xx__xx__xxx__xx_x_xxx_x__xx____x____xx__xx____x_x__x_____xx_xx_xxxxxxx__xx_x_xxxx_x___x_xxxxx_xx__xxxx_xx_x___x_x"
+	var bitArr *BitArray
+	err := json.Unmarshal([]byte(`"`+benchmarkBitArrayStr+`"`), &bitArr)
+	require.NoError(b, err)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = bitArr.PickRandom()
 	}
 }

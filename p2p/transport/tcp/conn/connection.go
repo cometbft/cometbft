@@ -324,6 +324,7 @@ func (c *MConnection) FlushAndClose(reason string) error {
 	}
 
 	// flush all pending writes
+	// this block is unique for FlushAndClose
 	{
 		// wait until the sendRoutine exits
 		// so we dont race on calling sendSomePacketMsgs
@@ -377,14 +378,13 @@ func (c *MConnection) _recover() {
 // thread-safe.
 func (c *MConnection) sendBytes(chID byte, msgBytes []byte, blocking bool) error {
 	if !c.IsRunning() {
-		return nil
+		return errors.New("connection is not running")
 	}
 
 	// Uncomment in you need to see raw bytes.
 	// c.Logger.Debug("Send",
 	// 	"streamID", chID,
-	// 	"msgBytes", log.NewLazySprintf("%X", msgBytes),
-	// 	"timeout", timeout)
+	// 	"msgBytes", log.NewLazySprintf("%X", msgBytes))
 
 	channel, ok := c.channelsIdx[chID]
 	if !ok {
@@ -676,6 +676,7 @@ FOR_LOOP:
 				if c.onReceiveFn != nil {
 					c.onReceiveFn(channelID, msgBytes)
 				} else {
+					// Copy to avoid DATA RACE. Inefficient => only for tests.
 					bz := make([]byte, len(msgBytes))
 					copy(bz, msgBytes)
 					c.msgsByStreamIDMap[channelID] <- bz

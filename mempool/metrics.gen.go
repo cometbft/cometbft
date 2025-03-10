@@ -108,19 +108,49 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "redundancy",
 			Help:      "Redundancy level.",
 		}, labels).With(labelsAndValues...),
+		CacheHits: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "cache_hits",
+			Help:      "Number of cache hits.",
+		}, labels).With(labelsAndValues...),
+		CacheMisses: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "cache_misses",
+			Help:      "Number of cache misses.",
+		}, labels).With(labelsAndValues...),
+		CacheEvictions: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "cache_evictions",
+			Help:      "Number of cache evictions.",
+		}, labels).With(labelsAndValues...),
+		CacheSize: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "cache_size",
+			Help:      "Current number of transactions in the cache.",
+		}, labels).With(labelsAndValues...),
+		CacheHitRatio: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "cache_hit_ratio",
+			Help:      "Ratio of cache hits to total lookups (hits + misses).",
+		}, labels).With(labelsAndValues...),
 	}
 }
 
 func NopMetrics() *Metrics {
 	return &Metrics{
-		Size:                      discard.NewGauge(),
-		SizeBytes:                 discard.NewGauge(),
-		LaneSize:                  discard.NewGauge(),
-		LaneBytes:                 discard.NewGauge(),
-		TxLifeSpan:                discard.NewHistogram(),
-		TxSizeBytes:               discard.NewHistogram(),
+		Size:                     discard.NewGauge(),
+		SizeBytes:                discard.NewGauge(),
+		LaneSize:                 discard.NewGauge(),
+		LaneBytes:                discard.NewGauge(),
+		TxLifeSpan:               discard.NewHistogram(),
+		TxSizeBytes:              discard.NewHistogram(),
 		FailedTxs:                 discard.NewCounter(),
-		RejectedTxs:               discard.NewCounter(),
+		RejectedTxs:              discard.NewCounter(),
 		EvictedTxs:                discard.NewCounter(),
 		RecheckTimes:              discard.NewCounter(),
 		AlreadyReceivedTxs:        discard.NewCounter(),
@@ -128,5 +158,10 @@ func NopMetrics() *Metrics {
 		RecheckDurationSeconds:    discard.NewGauge(),
 		DisabledRoutes:            discard.NewGauge(),
 		Redundancy:                discard.NewGauge(),
+		CacheHits:                discard.NewCounter(),
+		CacheMisses:              discard.NewCounter(),
+		CacheEvictions:           discard.NewCounter(),
+		CacheSize:                discard.NewGauge(),
+		CacheHitRatio:            discard.NewGauge(),
 	}
 }

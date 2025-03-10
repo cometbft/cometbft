@@ -144,7 +144,7 @@ func NewCListMempool(
 	mp.recheck = newRecheck(mp)
 
 	if cfg.CacheSize > 0 {
-		mp.cache = NewLRUTxCache(cfg.CacheSize)
+		mp.cache = NewStatsLRUTxCache(cfg.CacheSize)
 	} else {
 		mp.cache = NopTxCache{}
 	}
@@ -386,8 +386,14 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 		// TODO: consider punishing peer for dups,
 		// its non-trivial since invalid txs can become valid,
 		// but they can spam the same tx with little cost to them atm.
+
+		// Update cache metrics after cache hit
+		mem.updateCacheMetrics()
 		return nil, ErrTxInCache
 	}
+
+	// Update cache metrics after cache miss/add
+	mem.updateCacheMetrics()
 
 	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.CheckTxRequest{
 		Tx:   tx,
@@ -824,6 +830,9 @@ func (mem *CListMempool) Update(
 		mem.updateSizeMetrics(lane)
 	}
 
+	// Update cache metrics
+	mem.updateCacheMetrics()
+
 	return nil
 }
 
@@ -989,4 +998,32 @@ func (rc *recheck) setRecheckFull() bool {
 // progress.
 func (rc *recheck) consideredFull() bool {
 	return rc.recheckFull.Load()
+}
+
+// updateCacheMetrics updates the metrics for the transaction cache
+func (mem *CListMempool) updateCacheMetrics() {
+	// Only update metrics if we have a StatsLRUTxCache
+	statsCache, ok := mem.cache.(*StatsLRUTxCache)
+	if !ok || mem.metrics == nil {
+		return
+	}
+
+	hits := statsCache.Hits()
+	misses := statsCache.Misses()
+	evictions := statsCache.Evictions()
+	size := statsCache.Size()
+
+	// Reset counters and add current values
+	mem.metrics.CacheHits.Add(float64(hits))
+	mem.metrics.CacheMisses.Add(float64(misses))
+	mem.metrics.CacheEvictions.Add(float64(evictions))
+	mem.metrics.CacheSize.Set(float64(size))
+
+	// Calculate hit ratio
+	totalLookups := hits + misses
+	hitRatio := float64(0)
+	if totalLookups > 0 {
+		hitRatio = float64(hits) / float64(totalLookups)
+	}
+	mem.metrics.CacheHitRatio.Set(hitRatio)
 }

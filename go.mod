@@ -52,6 +52,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
+	github.com/sirupsen/logrus v1.9.0
 	github.com/vektra/mockery/v2 v2.23.1
 	golang.org/x/sync v0.8.0
 	gonum.org/v1/gonum v0.12.0
@@ -249,7 +250,6 @@ require (
 	github.com/securego/gosec/v2 v2.15.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/shazow/go-diff v0.0.0-20160112020656-b6b7b6733b8c // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/sivchari/containedctx v1.0.2 // indirect
 	github.com/sivchari/nosnakecase v1.7.0 // indirect
 	github.com/sivchari/tenv v1.7.1 // indirect

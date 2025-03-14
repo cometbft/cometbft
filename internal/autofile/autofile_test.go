@@ -23,11 +23,7 @@ func TestSIGHUP(t *testing.T) {
 	})
 
 	// First, create a temporary directory and move into it
-	dir, err := os.MkdirTemp("", "sighup_test")
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		os.RemoveAll(dir)
-	})
+	dir := t.TempDir()
 	err = os.Chdir(dir)
 	require.NoError(t, err)
 
@@ -48,9 +44,7 @@ func TestSIGHUP(t *testing.T) {
 	require.NoError(t, err)
 
 	// Move into a different temporary directory
-	otherDir, err := os.MkdirTemp("", "sighup_test_other")
-	require.NoError(t, err)
-	defer os.RemoveAll(otherDir)
+	otherDir := t.TempDir()
 	err = os.Chdir(otherDir)
 	require.NoError(t, err)
 

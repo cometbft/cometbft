@@ -2,6 +2,7 @@ package db
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -56,7 +57,7 @@ func (pDB *pebbleDB) Get(key []byte) ([]byte, error) {
 
 	value, closer, err := pDB.db.Get(key)
 	if err != nil {
-		if err == pebble.ErrNotFound {
+		if errors.Is(err, pebble.ErrNotFound) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("fetching value from the DB for key %X: %w", key, err)

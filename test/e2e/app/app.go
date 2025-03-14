@@ -44,7 +44,8 @@ const (
 	suffixVoteExtHeight string = "VoteExtensionsHeight"
 	suffixPbtsHeight    string = "PbtsHeight"
 	suffixInitialHeight string = "InitialHeight"
-	txTTL               uint64 = 15 // height difference at which transactions should be invalid
+	txTTL               uint64 = 15              // height difference at which transactions should be invalid
+	txTTLDuration              = 1 * time.Minute // time difference at which transactions should be invalid
 )
 
 // Application is an ABCI application for use by end-to-end tests. It is a
@@ -59,10 +60,15 @@ type Application struct {
 	restoreSnapshot *abci.Snapshot
 	restoreChunks   [][]byte
 	// It's OK not to persist this, as it is not part of the state machine
-	seenTxs     sync.Map // cmttypes.TxKey -> uint64
+	seenTxs     sync.Map // cmttypes.TxKey -> seenTx
 	allKeyTypes []string // Cached slice of all supported key types in CometBFT
 
 	lanePriorities map[string]uint32
+}
+
+type seenTx struct {
+	height uint64
+	time   time.Time
 }
 
 // Config allows for the setting of high level parameters for running the e2e Application
@@ -370,20 +376,27 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 
 	txKey := cmttypes.Tx(req.Tx).Key()
 	stHeight, _ := app.state.Info()
-	if txHeight, ok := app.seenTxs.Load(txKey); ok {
-		if stHeight < txHeight.(uint64) {
+	if txValue, ok := app.seenTxs.Load(txKey); ok {
+		txHeight := txValue.(seenTx).height
+		txTime := txValue.(seenTx).time
+
+		if stHeight < txHeight {
 			panic(fmt.Sprintf("txHeight is less than current height; txHeight %v, height %v", txHeight, stHeight))
 		}
-		if stHeight > txHeight.(uint64)+txTTL {
-			app.logger.Debug("Application CheckTx", "msg", "transaction expired", "tx_hash", cmttypes.Tx.Hash(req.Tx), "seen_height", txHeight, "current_height", stHeight)
+
+		if stHeight > txHeight+txTTL && time.Since(txTime) > txTTLDuration {
+			app.logger.Debug("Application CheckTx", "msg", "transaction expired",
+				"tx_hash", cmttypes.Tx.Hash(req.Tx),
+				"seen_height", txHeight, "current_height", stHeight,
+				"seen_time", txTime, "current_time", time.Now())
 			app.seenTxs.Delete(txKey)
 			return &abci.CheckTxResponse{
 				Code: kvstore.CodeTypeExpired,
-				Log:  fmt.Sprintf("transaction expired; seen height %v, current height %v", txHeight, stHeight),
+				Log:  "transaction expired",
 			}, nil
 		}
 	} else {
-		app.seenTxs.Store(txKey, stHeight)
+		app.seenTxs.Store(txKey, seenTx{height: stHeight, time: time.Now()})
 	}
 
 	if app.cfg.CheckTxDelay != 0 {

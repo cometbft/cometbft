@@ -5,9 +5,7 @@ import (
 	"fmt"
 )
 
-var (
-	ErrNegativeHeight = errors.New("height must be greater than 0")
-)
+var ErrNegativeHeight = errors.New("height must be greater than 0")
 
 type ErrExceedLatestHeight struct {
 	Height int64

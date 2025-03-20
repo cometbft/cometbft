@@ -15,17 +15,17 @@ instructions](../guides/install.md) for details.
 CometBFT keeps multiple distinct databases in the `$CMTHOME/data`:
 
 - `blockstore.db`: Keeps the entire blockchain - stores blocks,
-  block commits, and block meta data, each indexed by height. Used to sync new
+  block commits, and block metadata, each indexed by height. Used to sync new
   peers.
 - `evidence.db`: Stores all verified evidence of misbehavior.
-- `state.db`: Stores the current blockchain state (ie. height, validators,
+- `state.db`: Stores the current blockchain state (i.e. height, validators,
   consensus params). Only grows if consensus params or validators change. Also
   used to temporarily store intermediate results during block processing.
-- `tx_index.db`: Indexes txs (and their results) by tx hash and by DeliverTx result events.
+- `tx_index.db`: Indexes transactions and by tx hash and height. The tx results are indexed if they are added to the `FinalizeBlock` response in the application.
 
-By default, CometBFT will only index txs by their hash and height, not by their DeliverTx
-result events. See [indexing transactions](../app-dev/indexing-transactions.md) for
-details.
+By default, CometBFT will only index transactions by their hash and height, if
+you want the result events to be indexed, see [indexing
+transactions](../app-dev/indexing-transactions.md) for for details.
 
 Applications can expose block pruning strategies to the node operator.
 Please read the documentation of your application to find out more details.
@@ -62,12 +62,12 @@ If your `consensus.wal` is corrupted, see [below](#wal-corruption).
 
 ### Mempool WAL
 
-The `mempool.wal` logs all incoming txs before running CheckTx, but is
+The `mempool.wal` logs all incoming transactions before running CheckTx, but is
 otherwise not used in any programmatic way. It's just a kind of manual
 safe guard. Note the mempool provides no durability guarantees - a tx sent to one or many nodes
 may never make it into the blockchain if those nodes crash before being able to
-propose it. Clients must monitor their txs by subscribing over websockets,
-polling for them, or using `/broadcast_tx_commit`. In the worst case, txs can be
+propose it. Clients must monitor their transactions by subscribing over websockets,
+polling for them, or using `/broadcast_tx_commit`. In the worst case, transactions can be
 resent from the mempool WAL manually.
 
 For the above reasons, the `mempool.wal` is disabled by default. To enable, set

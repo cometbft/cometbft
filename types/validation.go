@@ -12,7 +12,9 @@ import (
 const batchVerifyThreshold = 2
 
 func shouldBatchVerify(vals *ValidatorSet, commit *Commit) bool {
-	return len(commit.Signatures) >= batchVerifyThreshold && batch.SupportsBatchVerifier(vals.GetProposer().PubKey)
+	return len(commit.Signatures) >= batchVerifyThreshold &&
+		batch.SupportsBatchVerifier(vals.GetProposer().PubKey) &&
+		vals.AllKeysHaveSameType()
 }
 
 // VerifyCommit verifies +2/3 of the set had signed the given commit.

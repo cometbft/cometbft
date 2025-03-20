@@ -102,3 +102,20 @@ func TestMarshal(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkJsonMarshalStruct(b *testing.B) {
+	s := "string"
+	sPtr := &s
+	i64 := int64(64)
+	ti := time.Date(2020, 6, 2, 18, 5, 13, 4346374, time.FixedZone("UTC+2", 2*60*60))
+	car := &Car{Wheels: 4}
+	boat := Boat{Sail: true}
+	for i := 0; i < b.N; i++ {
+		_, _ = json.Marshal(Struct{
+			Bool: true, Float64: 3.14, Int32: 32, Int64: 64, Int64Ptr: &i64,
+			String: "foo", StringPtrPtr: &sPtr, Bytes: []byte{1, 2, 3},
+			Time: ti, Car: car, Boat: boat, Vehicles: []Vehicle{car, boat},
+			Child: &Struct{Bool: false, String: "child"}, private: "private",
+		})
+	}
+}

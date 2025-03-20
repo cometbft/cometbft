@@ -418,11 +418,11 @@ func parseValidatorTx(tx []byte) (string, []byte, int64, error) {
 	tx = tx[len(ValidatorPrefix):]
 
 	//  get the pubkey and power
-	typeKeyAndPower := strings.Split(string(tx), "!")
-	if len(typeKeyAndPower) != 3 {
-		return "", nil, 0, fmt.Errorf("expected 'pubkeytype!pubkey!power'. Got %v", typeKeyAndPower)
+	typePubKeyAndPower := strings.Split(string(tx), "!")
+	if len(typePubKeyAndPower) != 3 {
+		return "", nil, 0, fmt.Errorf("expected 'pubkeytype!pubkey!power'. Got %v", typePubKeyAndPower)
 	}
-	keytype, pubkeyS, powerS := typeKeyAndPower[0], typeKeyAndPower[1], typeKeyAndPower[2]
+	keyType, pubkeyS, powerS := typePubKeyAndPower[0], typePubKeyAndPower[1], typePubKeyAndPower[2]
 
 	// decode the pubkey
 	pubkey, err := base64.StdEncoding.DecodeString(pubkeyS)
@@ -440,7 +440,7 @@ func parseValidatorTx(tx []byte) (string, []byte, int64, error) {
 		return "", nil, 0, fmt.Errorf("power can not be less than 0, got %d", power)
 	}
 
-	return keytype, pubkey, power, nil
+	return keyType, pubkey, power, nil
 }
 
 // add, update, or remove a validator

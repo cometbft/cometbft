@@ -14,6 +14,7 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/sr25519"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -78,9 +79,10 @@ func TestValidatorSetBasic(t *testing.T) {
 	assert.Equal(t, proposerPriority, val.ProposerPriority)
 }
 
-func TestValidatorSetValidateBasic(t *testing.T) {
+func TestValidatorSet_ValidateBasic(t *testing.T) {
 	val, _ := RandValidator(false, 1)
 	badVal := &Validator{}
+	val2, _ := RandValidator(false, 1)
 
 	testCases := []struct {
 		vals ValidatorSet
@@ -121,6 +123,14 @@ func TestValidatorSetValidateBasic(t *testing.T) {
 			err: false,
 			msg: "",
 		},
+		{
+			vals: ValidatorSet{
+				Validators: []*Validator{val},
+				Proposer:   val2,
+			},
+			err: true,
+			msg: ErrProposerNotInVals.Error(),
+		},
 	}
 
 	for _, tc := range testCases {
@@ -148,6 +158,30 @@ func TestCopy(t *testing.T) {
 	if !bytes.Equal(vsetHash, vsetCopyHash) {
 		t.Fatalf("ValidatorSet copy had wrong hash. Orig: %X, Copy: %X", vsetHash, vsetCopyHash)
 	}
+}
+
+func TestValidatorSet_ProposerPriorityHash(t *testing.T) {
+	vset := NewValidatorSet(nil)
+	assert.Equal(t, []byte(nil), vset.ProposerPriorityHash())
+
+	vset = randValidatorSet(3)
+	assert.NotNil(t, vset.ProposerPriorityHash())
+
+	// Marshaling and unmarshalling do not affect ProposerPriorityHash
+	bz, err := vset.ToProto()
+	assert.NoError(t, err)
+	vsetProto, err := ValidatorSetFromProto(bz)
+	assert.NoError(t, err)
+	assert.Equal(t, vset.ProposerPriorityHash(), vsetProto.ProposerPriorityHash())
+
+	// Copy does not affect ProposerPriorityHash
+	vsetCopy := vset.Copy()
+	assert.Equal(t, vset.ProposerPriorityHash(), vsetCopy.ProposerPriorityHash())
+
+	// Incrementing priorities changes ProposerPriorityHash() but not Hash()
+	vset.IncrementProposerPriority(1)
+	assert.Equal(t, vset.Hash(), vsetCopy.Hash())
+	assert.NotEqual(t, vset.ProposerPriorityHash(), vsetCopy.ProposerPriorityHash())
 }
 
 // Test that IncrementProposerPriority requires positive times.
@@ -330,7 +364,7 @@ func TestProposerSelection3(t *testing.T) {
 		got := vset.GetProposer().Address
 		expected := proposerOrder[j%4].Address
 		if !bytes.Equal(got, expected) {
-			t.Fatalf(fmt.Sprintf("vset.Proposer (%X) does not match expected proposer (%X) for (%d, %d)", got, expected, i, j))
+			t.Fatalf("vset.Proposer (%X) does not match expected proposer (%X) for (%d, %d)", got, expected, i, j)
 		}
 
 		// serialize, deserialize, check proposer
@@ -341,13 +375,11 @@ func TestProposerSelection3(t *testing.T) {
 		if i != 0 {
 			if !bytes.Equal(got, computed.Address) {
 				t.Fatalf(
-					fmt.Sprintf(
-						"vset.Proposer (%X) does not match computed proposer (%X) for (%d, %d)",
-						got,
-						computed.Address,
-						i,
-						j,
-					),
+					"vset.Proposer (%X) does not match computed proposer (%X) for (%d, %d)",
+					got,
+					computed.Address,
+					i,
+					j,
 				)
 			}
 		}
@@ -1611,4 +1643,36 @@ func TestVerifyCommitSingleWithInvalidSignatures(t *testing.T) {
 
 	err := verifyCommitSingle(cid, vs, commit, votingPowerNeeded, ignore, count, true, true)
 	assert.Error(t, err)
+}
+
+func TestValidatorSet_AllKeysHaveSameType(t *testing.T) {
+	testCases := []struct {
+		vals     *ValidatorSet
+		sameType bool
+	}{
+		{
+			vals:     NewValidatorSet([]*Validator{}),
+			sameType: true,
+		},
+		{
+			vals:     randValidatorSet(1),
+			sameType: true,
+		},
+		{
+			vals:     randValidatorSet(2),
+			sameType: true,
+		},
+		{
+			vals:     NewValidatorSet([]*Validator{randValidator(100), NewValidator(sr25519.GenPrivKey().PubKey(), 200)}),
+			sameType: false,
+		},
+	}
+
+	for i, tc := range testCases {
+		if tc.sameType {
+			assert.True(t, tc.vals.AllKeysHaveSameType(), "test %d", i)
+		} else {
+			assert.False(t, tc.vals.AllKeysHaveSameType(), "test %d", i)
+		}
+	}
 }

@@ -236,6 +236,11 @@ experimental_close_on_slow_client = {{ .RPC.CloseOnSlowClient }}
 # See https://github.com/tendermint/tendermint/issues/3435
 timeout_broadcast_tx_commit = "{{ .RPC.TimeoutBroadcastTxCommit }}"
 
+# Maximum number of requests that can be sent in a batch
+# If the value is set to '0' (zero-value), then no maximum batch size will be
+# enforced for a JSON-RPC batch request.
+max_request_batch_size = {{ .RPC.MaxRequestBatchSize }}
+
 # Maximum size of request body, in bytes
 max_body_bytes = {{ .RPC.MaxBodyBytes }}
 
@@ -350,6 +355,17 @@ type = "flood"
 # mempool may become invalid. If this does not apply to your application,
 # you can disable rechecking.
 recheck = {{ .Mempool.Recheck }}
+
+# recheck_timeout is the time the application has during the rechecking process
+# to return CheckTx responses, once all requests have been sent. Responses that 
+# arrive after the timeout expires are discarded. It only applies to 
+# non-local ABCI clients and when recheck is enabled.
+#
+# The ideal value will strongly depend on the application. It could roughly be estimated as the
+# average size of the mempool multiplied by the average time it takes the application to validate one
+# transaction. We consider that the ABCI application runs in the same location as the CometBFT binary
+# so that the recheck duration is not affected by network delays when making requests and receiving responses.
+recheck_timeout = "{{ .Mempool.RecheckTimeout }}"
 
 # Broadcast (default: true) defines whether the mempool should relay
 # transactions to other peers. Setting this to false will stop the mempool

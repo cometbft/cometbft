@@ -43,10 +43,11 @@ const (
 type Block struct {
 	mtx cmtsync.Mutex
 
-	Header     `json:"header"`
-	Data       `json:"data"`
-	Evidence   EvidenceData `json:"evidence"`
-	LastCommit *Commit      `json:"last_commit"`
+	verifiedHash cmtbytes.HexBytes // Verified block hash (not included in the struct hash)
+	Header       `json:"header"`
+	Data         `json:"data"`
+	Evidence     EvidenceData `json:"evidence"`
+	LastCommit   *Commit      `json:"last_commit"`
 }
 
 // ValidateBasic performs basic validation that doesn't involve state data.
@@ -130,8 +131,13 @@ func (b *Block) Hash() cmtbytes.HexBytes {
 	if b.LastCommit == nil {
 		return nil
 	}
+	if b.verifiedHash != nil {
+		return b.verifiedHash
+	}
 	b.fillHeader()
-	return b.Header.Hash()
+	hash := b.Header.Hash()
+	b.verifiedHash = hash
+	return hash
 }
 
 // MakePartSet returns a PartSet containing parts of a serialized block.
@@ -849,6 +855,15 @@ type Commit struct {
 	hash cmtbytes.HexBytes
 }
 
+// Clone creates a deep copy of this commit.
+func (commit *Commit) Clone() *Commit {
+	sigs := make([]CommitSig, len(commit.Signatures))
+	copy(sigs, commit.Signatures)
+	commCopy := *commit
+	commCopy.Signatures = sigs
+	return &commCopy
+}
+
 // GetVote converts the CommitSig for the given valIdx to a Vote. Commits do
 // not contain vote extensions, so the vote extension and vote extension
 // signature will not be present in the returned vote.
@@ -1173,12 +1188,12 @@ func (ec *ExtendedCommit) Size() int {
 // Implements VoteSetReader.
 func (ec *ExtendedCommit) BitArray() *bits.BitArray {
 	if ec.bitArray == nil {
-		ec.bitArray = bits.NewBitArray(len(ec.ExtendedSignatures))
-		for i, extCommitSig := range ec.ExtendedSignatures {
+		initialBitFn := func(i int) bool {
 			// TODO: need to check the BlockID otherwise we could be counting conflicts,
 			//       not just the one with +2/3 !
-			ec.bitArray.SetIndex(i, extCommitSig.BlockIDFlag != BlockIDFlagAbsent)
+			return ec.ExtendedSignatures[i].BlockIDFlag != BlockIDFlagAbsent
 		}
+		ec.bitArray = bits.NewBitArrayFromFn(len(ec.ExtendedSignatures), initialBitFn)
 	}
 	return ec.bitArray
 }

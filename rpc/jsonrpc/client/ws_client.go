@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -35,7 +36,10 @@ type WSClient struct { //nolint: maligned
 
 	Address  string // IP:PORT or /path/to/socket
 	Endpoint string // /websocket/url/endpoint
-	Dialer   func(string, string) (net.Conn, error)
+	Username string
+	Password string
+
+	Dialer func(string, string) (net.Conn, error)
 
 	// Single user facing channel to read RPCResponses from, closed only when the
 	// client is being stopped.
@@ -96,16 +100,25 @@ func NewWS(remoteAddr, endpoint string, options ...func(*WSClient)) (*WSClient, 
 		parsedURL.Scheme = protoWS
 	}
 
+	// extract username and password from URL if any
+	username := ""
+	password := ""
+	if parsedURL.User.String() != "" {
+		username = parsedURL.User.Username()
+		password, _ = parsedURL.User.Password()
+	}
+
 	dialFn, err := makeHTTPDialer(remoteAddr)
 	if err != nil {
 		return nil, err
 	}
 
 	c := &WSClient{
-		Address:              parsedURL.GetTrimmedHostWithPath(),
-		Dialer:               dialFn,
-		Endpoint:             endpoint,
-		PingPongLatencyTimer: metrics.NewTimer(),
+		Address:  parsedURL.GetTrimmedHostWithPath(),
+		Username: username,
+		Password: password,
+		Dialer:   dialFn,
+		Endpoint: endpoint,
 
 		maxReconnectAttempts: defaultMaxReconnectAttempts,
 		readWait:             defaultReadWait,
@@ -176,6 +189,7 @@ func (c *WSClient) OnStart() error {
 	}
 
 	c.ResponsesCh = make(chan types.RPCResponse)
+	c.PingPongLatencyTimer = metrics.NewTimer()
 
 	c.send = make(chan types.RPCRequest)
 	// 1 additional error may come from the read/write
@@ -267,6 +281,12 @@ func (c *WSClient) dial() error {
 		Proxy:   http.ProxyFromEnvironment,
 	}
 	rHeader := http.Header{}
+
+	// Set basic auth header if username and password are provided
+	if c.Username != "" && c.Password != "" {
+		rHeader.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password)))
+	}
+
 	conn, _, err := dialer.Dial(c.protocol+"://"+c.Address+c.Endpoint, rHeader) //nolint:bodyclose
 	if err != nil {
 		return err
@@ -452,6 +472,7 @@ func (c *WSClient) readRoutine() {
 		// ignore error; it will trigger in tests
 		// likely because it's closing an already closed connection
 		// }
+		c.PingPongLatencyTimer.Stop()
 		c.wg.Done()
 	}()
 

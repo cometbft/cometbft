@@ -50,6 +50,11 @@ func Load(ctx context.Context, testnet *e2e.Testnet) error {
 		select {
 		case <-chSuccess:
 			success++
+			if testnet.LoadMaxTxs > 0 && success >= testnet.LoadMaxTxs {
+				logger.Info("load", "msg", log.NewLazySprintf("Ending transaction load after reaching %v txs (%.1f tx/s)...",
+					success, float64(success)/time.Since(started).Seconds()))
+				return nil
+			}
 			timeout = stallTimeout
 		case <-time.After(timeout):
 			return fmt.Errorf("unable to submit transactions for %v", timeout)

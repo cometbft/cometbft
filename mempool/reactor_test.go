@@ -59,7 +59,7 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 		}
 	}
 
-	txs := checkTxs(t, reactors[0].mempool, numTxs, UnknownPeerID)
+	txs := addRandomTxs(t, reactors[0].mempool, numTxs, UnknownPeerID)
 	waitForTxsOnReactors(t, txs, reactors)
 }
 
@@ -89,7 +89,7 @@ func TestReactorConcurrency(t *testing.T) {
 
 		// 1. submit a bunch of txs
 		// 2. update the whole mempool
-		txs := checkTxs(t, reactors[0].mempool, numTxs, UnknownPeerID)
+		txs := addRandomTxs(t, reactors[0].mempool, numTxs, UnknownPeerID)
 		go func() {
 			defer wg.Done()
 
@@ -106,7 +106,7 @@ func TestReactorConcurrency(t *testing.T) {
 
 		// 1. submit a bunch of txs
 		// 2. update none
-		_ = checkTxs(t, reactors[1].mempool, numTxs, UnknownPeerID)
+		_ = addRandomTxs(t, reactors[1].mempool, numTxs, UnknownPeerID)
 		go func() {
 			defer wg.Done()
 
@@ -143,11 +143,11 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 	}
 
 	const peerID = 1
-	checkTxs(t, reactors[0].mempool, numTxs, peerID)
+	addRandomTxs(t, reactors[0].mempool, numTxs, peerID)
 	ensureNoTxs(t, reactors[peerID], 100*time.Millisecond)
 }
 
-func TestReactor_MaxTxBytes(t *testing.T) {
+func TestMempoolReactorMaxTxBytes(t *testing.T) {
 	config := cfg.TestConfig()
 
 	const N = 2
@@ -283,7 +283,7 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 
 	// Add a bunch transactions to the first reactor.
 	txs := newUniqueTxs(100)
-	callCheckTx(t, reactors[0].mempool, txs)
+	callCheckTx(t, reactors[0].mempool, txs, UnknownPeerID)
 
 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 	// receive any tx. (The second reactor only sends transactions to the first reactor.)

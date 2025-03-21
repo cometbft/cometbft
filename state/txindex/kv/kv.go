@@ -759,7 +759,7 @@ func startKeyForCondition(c syntax.Condition, height int64) []byte {
 	return startKey(c.Tag, c.Arg.Value())
 }
 
-func startKey(fields ...interface{}) []byte {
+func startKey(fields ...any) []byte {
 	var b bytes.Buffer
 	for _, f := range fields {
 		b.Write([]byte(fmt.Sprintf("%v", f) + tagKeySeparator))

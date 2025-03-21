@@ -487,7 +487,7 @@ var fileDescriptor_e12598271a686f57 = []byte{
 	0x5c, 0xef, 0xfc, 0x0d, 0x00, 0x00, 0xff, 0xff, 0xb9, 0xe8, 0xce, 0x9a, 0x09, 0x04, 0x00, 0x00,
 }
 
-func (this *ConsensusParams) Equal(that interface{}) bool {
+func (this *ConsensusParams) Equal(that any) bool {
 	if that == nil {
 		return this == nil
 	}
@@ -523,7 +523,7 @@ func (this *ConsensusParams) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *BlockParams) Equal(that interface{}) bool {
+func (this *BlockParams) Equal(that any) bool {
 	if that == nil {
 		return this == nil
 	}
@@ -550,7 +550,7 @@ func (this *BlockParams) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *EvidenceParams) Equal(that interface{}) bool {
+func (this *EvidenceParams) Equal(that any) bool {
 	if that == nil {
 		return this == nil
 	}
@@ -580,7 +580,7 @@ func (this *EvidenceParams) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *ValidatorParams) Equal(that interface{}) bool {
+func (this *ValidatorParams) Equal(that any) bool {
 	if that == nil {
 		return this == nil
 	}
@@ -609,7 +609,7 @@ func (this *ValidatorParams) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *VersionParams) Equal(that interface{}) bool {
+func (this *VersionParams) Equal(that any) bool {
 	if that == nil {
 		return this == nil
 	}
@@ -633,7 +633,7 @@ func (this *VersionParams) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *HashedParams) Equal(that interface{}) bool {
+func (this *HashedParams) Equal(that any) bool {
 	if that == nil {
 		return this == nil
 	}
@@ -660,7 +660,7 @@ func (this *HashedParams) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *ABCIParams) Equal(that interface{}) bool {
+func (this *ABCIParams) Equal(that any) bool {
 	if that == nil {
 		return this == nil
 	}

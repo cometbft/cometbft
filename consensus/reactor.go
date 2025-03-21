@@ -210,7 +210,7 @@ func (conR *Reactor) AddPeer(peer p2p.Peer) {
 }
 
 // RemovePeer is a noop.
-func (conR *Reactor) RemovePeer(p2p.Peer, interface{}) {
+func (conR *Reactor) RemovePeer(p2p.Peer, any) {
 	if !conR.IsRunning() {
 		return
 	}

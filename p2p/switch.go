@@ -331,7 +331,7 @@ func (sw *Switch) Peers() IPeerSet {
 // StopPeerForError disconnects from a peer due to external error.
 // If the peer is persistent, it will attempt to reconnect.
 // TODO: make record depending on reason.
-func (sw *Switch) StopPeerForError(peer Peer, reason interface{}) {
+func (sw *Switch) StopPeerForError(peer Peer, reason any) {
 	if !peer.IsRunning() {
 		return
 	}
@@ -363,7 +363,7 @@ func (sw *Switch) StopPeerGracefully(peer Peer) {
 	sw.stopAndRemovePeer(peer, nil)
 }
 
-func (sw *Switch) stopAndRemovePeer(peer Peer, reason interface{}) {
+func (sw *Switch) stopAndRemovePeer(peer Peer, reason any) {
 	sw.transport.Cleanup(peer)
 	if err := peer.Stop(); err != nil {
 		sw.Logger.Error("error while stopping peer", "error", err) // TODO: should return error to be handled accordingly

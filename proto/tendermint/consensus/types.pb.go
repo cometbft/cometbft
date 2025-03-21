@@ -771,8 +771,8 @@ func (m *Message) GetVoteSetBits() *VoteSetBits {
 }
 
 // XXX_OneofWrappers is for the internal use of the proto package.
-func (*Message) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
+func (*Message) XXX_OneofWrappers() []any {
+	return []any{
 		(*Message_NewRoundStep)(nil),
 		(*Message_NewValidBlock)(nil),
 		(*Message_Proposal)(nil),

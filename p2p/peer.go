@@ -40,8 +40,8 @@ type Peer interface {
 	Send(Envelope) bool
 	TrySend(Envelope) bool
 
-	Set(string, interface{})
-	Get(string) interface{}
+	Set(string, any)
+	Get(string) any
 
 	SetRemovalFailed()
 	GetRemovalFailed() bool
@@ -137,7 +137,7 @@ func newPeer(
 	reactorsByCh map[byte]Reactor,
 	msgTypeByChID map[byte]proto.Message,
 	chDescs []*cmtconn.ChannelDescriptor,
-	onPeerError func(Peer, interface{}),
+	onPeerError func(Peer, any),
 	mlc *metricsLabelCache,
 	options ...PeerOption,
 ) *peer {
@@ -294,12 +294,12 @@ func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bo
 }
 
 // Get the data for a given key.
-func (p *peer) Get(key string) interface{} {
+func (p *peer) Get(key string) any {
 	return p.Data.Get(key)
 }
 
 // Set sets the data for the given key.
-func (p *peer) Set(key string, data interface{}) {
+func (p *peer) Set(key string, data any) {
 	p.Data.Set(key, data)
 }
 
@@ -392,7 +392,7 @@ func createMConnection(
 	reactorsByCh map[byte]Reactor,
 	msgTypeByChID map[byte]proto.Message,
 	chDescs []*cmtconn.ChannelDescriptor,
-	onPeerError func(Peer, interface{}),
+	onPeerError func(Peer, any),
 	config cmtconn.MConnConfig,
 ) *cmtconn.MConnection {
 	onReceive := func(chID byte, msgBytes []byte) {
@@ -427,7 +427,7 @@ func createMConnection(
 		})
 	}
 
-	onError := func(r interface{}) {
+	onError := func(r any) {
 		onPeerError(p, r)
 	}
 

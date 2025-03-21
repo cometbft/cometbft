@@ -47,7 +47,7 @@ func waitForRPC() {
 	}
 	result := new(ctypes.ResultStatus)
 	for {
-		_, err := client.Call(context.Background(), "status", map[string]interface{}{}, result)
+		_, err := client.Call(context.Background(), "status", map[string]any{}, result)
 		if err == nil {
 			return
 		}

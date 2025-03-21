@@ -272,7 +272,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 
 // MakeAppConfig generates an ABCI application config for a node.
 func MakeAppConfig(node *e2e.Node) ([]byte, error) {
-	cfg := map[string]interface{}{
+	cfg := map[string]any{
 		"chain_id":                      node.Testnet.Name,
 		"dir":                           "data/app",
 		"listen":                        AppAddressUNIX,

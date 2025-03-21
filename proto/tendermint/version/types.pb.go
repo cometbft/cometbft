@@ -158,7 +158,7 @@ var fileDescriptor_f9b42966edc5edad = []byte{
 	0xc6, 0x18, 0x10, 0x00, 0x00, 0xff, 0xff, 0x1a, 0xc7, 0x18, 0x2b, 0x1d, 0x01, 0x00, 0x00,
 }
 
-func (this *Consensus) Equal(that interface{}) bool {
+func (this *Consensus) Equal(that any) bool {
 	if that == nil {
 		return this == nil
 	}

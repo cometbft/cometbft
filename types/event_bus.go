@@ -232,7 +232,7 @@ func (NopEventBus) Subscribe(
 	context.Context,
 	string,
 	cmtpubsub.Query,
-	chan<- interface{},
+	chan<- any,
 ) error {
 	return nil
 }

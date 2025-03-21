@@ -133,8 +133,8 @@ func (m *Message) GetTxs() *Txs {
 }
 
 // XXX_OneofWrappers is for the internal use of the proto package.
-func (*Message) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
+func (*Message) XXX_OneofWrappers() []any {
+	return []any{
 		(*Message_Txs)(nil),
 	}
 }

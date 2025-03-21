@@ -92,7 +92,7 @@ func makeSecretConnPair() (fooSecConn, barSecConn *sc.SecretConnection) {
 
 	// Make connections from both sides in parallel.
 	trs, ok := async.Parallel(
-		func(_ int) (val interface{}, abort bool, err error) {
+		func(_ int) (val any, abort bool, err error) {
 			fooSecConn, err = sc.MakeSecretConnection(fooConn, fooPrvKey)
 			if err != nil {
 				log.Printf("failed to establish SecretConnection for foo: %v", err)
@@ -107,7 +107,7 @@ func makeSecretConnPair() (fooSecConn, barSecConn *sc.SecretConnection) {
 			}
 			return nil, false, nil
 		},
-		func(_ int) (val interface{}, abort bool, err error) {
+		func(_ int) (val any, abort bool, err error) {
 			barSecConn, err = sc.MakeSecretConnection(barConn, barPrvKey)
 			if barSecConn == nil {
 				log.Printf("failed to establish SecretConnection for bar: %v", err)

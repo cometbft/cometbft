@@ -247,8 +247,8 @@ func (m *Packet) GetPacketMsg() *PacketMsg {
 }
 
 // XXX_OneofWrappers is for the internal use of the proto package.
-func (*Packet) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
+func (*Packet) XXX_OneofWrappers() []any {
+	return []any{
 		(*Packet_PacketPing)(nil),
 		(*Packet_PacketPong)(nil),
 		(*Packet_PacketMsg)(nil),

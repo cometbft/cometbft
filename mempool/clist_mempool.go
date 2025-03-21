@@ -115,7 +115,7 @@ func (mem *CListMempool) removeAllTxs() {
 		e.DetachPrev()
 	}
 
-	mem.txsMap.Range(func(key, _ interface{}) bool {
+	mem.txsMap.Range(func(key, _ any) bool {
 		mem.txsMap.Delete(key)
 		return true
 	})

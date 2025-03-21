@@ -299,8 +299,8 @@ func (m *WALMessage) GetEndHeight() *EndHeight {
 }
 
 // XXX_OneofWrappers is for the internal use of the proto package.
-func (*WALMessage) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
+func (*WALMessage) XXX_OneofWrappers() []any {
+	return []any{
 		(*WALMessage_EventDataRoundState)(nil),
 		(*WALMessage_MsgInfo)(nil),
 		(*WALMessage_TimeoutInfo)(nil),

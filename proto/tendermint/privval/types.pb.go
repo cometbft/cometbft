@@ -648,8 +648,8 @@ func (m *Message) GetPingResponse() *PingResponse {
 }
 
 // XXX_OneofWrappers is for the internal use of the proto package.
-func (*Message) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
+func (*Message) XXX_OneofWrappers() []any {
+	return []any{
 		(*Message_PubKeyRequest)(nil),
 		(*Message_PubKeyResponse)(nil),
 		(*Message_SignVoteRequest)(nil),

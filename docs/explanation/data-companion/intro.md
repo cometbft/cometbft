@@ -8,7 +8,7 @@ parent:
 # Introduction
 
 A proposal was made in
-[ADR-101](https://github.com/cometbft/cometbft/blob/thane/adr-084-data-companion-pull-api/docs/architecture/adr-101-data-companion-pull-api.md)
+[ADR-101](https://github.com/cometbft/cometbft/blob/main/docs/references/architecture/adr-101-data-companion-pull-api.md)
 to introduce new gRPC endpoints that can be used by an external application to fetch data from the node and to control
 which data is pruned by the node.
 

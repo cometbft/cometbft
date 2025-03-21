@@ -2,9 +2,10 @@ package config
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
 
 	"github.com/cometbft/cometbft/internal/confix"
 )
@@ -26,7 +27,7 @@ func DiffCommand() *cobra.Command {
 
 			targetVersion := args[0]
 			if _, ok := confix.Migrations[targetVersion]; !ok {
-				return fmt.Errorf("unknown version %q, supported versions are: %q", targetVersion, maps.Keys(confix.Migrations))
+				return fmt.Errorf("unknown version %q, supported versions are: %q", targetVersion, slices.Collect(maps.Keys(confix.Migrations)))
 			}
 
 			targetVersionFile, err := confix.LoadLocalConfig(targetVersion + ".toml")

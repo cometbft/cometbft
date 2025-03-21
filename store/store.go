@@ -473,18 +473,17 @@ func (bs *BlockStore) LoadSeenCommit(height int64) *types.Commit {
 // data needed to prove evidence must not be removed.
 func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, error) {
 	if height <= 0 {
-		return 0, -1, errors.New("height must be greater than 0")
+		return 0, -1, ErrNegativeHeight
 	}
 	bs.mtx.RLock()
 	if height > bs.height {
 		bs.mtx.RUnlock()
-		return 0, -1, fmt.Errorf("cannot prune beyond the latest height %v", bs.height)
+		return 0, -1, ErrExceedLatestHeight{Height: bs.height}
 	}
 	base := bs.base
 	bs.mtx.RUnlock()
 	if height < base {
-		return 0, -1, fmt.Errorf("cannot prune to height %v, it is lower than base height %v",
-			height, base)
+		return 0, -1, ErrExceedBaseHeight{Height: height, Base: base}
 	}
 
 	pruned := uint64(0)
@@ -519,26 +518,26 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 		// if height is beyond the evidence point we dont delete the header
 		if h < evidencePoint {
 			if err := batch.Delete(bs.dbKeyLayout.CalcBlockMetaKey(h)); err != nil {
-				return 0, -1, err
+				return 0, -1, ErrDBOpt{Err: err}
 			}
 		}
 		if err := batch.Delete(bs.dbKeyLayout.CalcBlockHashKey(meta.BlockID.Hash)); err != nil {
-			return 0, -1, err
+			return 0, -1, ErrDBOpt{Err: err}
 		}
 		// if height is beyond the evidence point we dont delete the commit data
 		if h < evidencePoint {
 			if err := batch.Delete(bs.dbKeyLayout.CalcBlockCommitKey(h)); err != nil {
-				return 0, -1, err
+				return 0, -1, ErrDBOpt{Err: err}
 			}
 			bs.blockCommitCache.Remove(h)
 		}
 		if err := batch.Delete(bs.dbKeyLayout.CalcSeenCommitKey(h)); err != nil {
-			return 0, -1, err
+			return 0, -1, ErrDBOpt{Err: err}
 		}
 		bs.seenCommitCache.Remove(h)
 		for p := 0; p < int(meta.BlockID.PartSetHeader.Total); p++ {
 			if err := batch.Delete(bs.dbKeyLayout.CalcBlockPartKey(h, p)); err != nil {
-				return 0, -1, err
+				return 0, -1, ErrDBOpt{Err: err}
 			}
 			bs.blockPartCache.Remove(blockPartIndex{h, p})
 		}
@@ -548,7 +547,7 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 		if pruned%1000 == 0 && pruned > 0 {
 			err := flush(batch, h)
 			if err != nil {
-				return 0, -1, err
+				return 0, -1, ErrDBOpt{Err: err}
 			}
 			batch = bs.db.NewBatch()
 			defer batch.Close()
@@ -557,7 +556,7 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 
 	err := flush(batch, height)
 	if err != nil {
-		return 0, -1, err
+		return 0, -1, ErrDBOpt{Err: err}
 	}
 	bs.blocksDeleted += int64(pruned)
 
@@ -571,6 +570,8 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 			// Otherwise we preserve the number of blocks deleted so
 			// we can trigger compaction in the next pruning iteration
 			bs.blocksDeleted = 0
+		} else {
+			err = ErrDBOpt{Err: err}
 		}
 	}
 	return pruned, evidencePoint, err
@@ -792,9 +793,12 @@ func (bs *BlockStore) SaveSeenCommit(height int64, seenCommit *types.Commit) err
 	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "save_seen_commit"), time.Now())()
 
 	if err != nil {
-		return fmt.Errorf("unable to marshal commit: %w", err)
+		return ErrMarshalCommit{Err: err}
 	}
-	return bs.db.Set(bs.dbKeyLayout.CalcSeenCommitKey(height), seenCommitBytes)
+	if err = bs.db.Set(bs.dbKeyLayout.CalcSeenCommitKey(height), seenCommitBytes); err != nil {
+		return ErrDBOpt{Err: err}
+	}
+	return nil
 }
 
 func (bs *BlockStore) Close() error {
@@ -870,29 +874,32 @@ func (bs *BlockStore) DeleteLatestBlock() error {
 	// blocks get deleted fully.
 	if meta := bs.LoadBlockMeta(targetHeight); meta != nil {
 		if err := batch.Delete(bs.dbKeyLayout.CalcBlockHashKey(meta.BlockID.Hash)); err != nil {
-			return err
+			return ErrDBOpt{Err: err}
 		}
 		for p := 0; p < int(meta.BlockID.PartSetHeader.Total); p++ {
 			if err := batch.Delete(bs.dbKeyLayout.CalcBlockPartKey(targetHeight, p)); err != nil {
-				return err
+				return ErrDBOpt{Err: err}
 			}
 		}
 	}
 	if err := batch.Delete(bs.dbKeyLayout.CalcBlockCommitKey(targetHeight)); err != nil {
-		return err
+		return ErrDBOpt{Err: err}
 	}
 	if err := batch.Delete(bs.dbKeyLayout.CalcSeenCommitKey(targetHeight)); err != nil {
-		return err
+		return ErrDBOpt{Err: err}
 	}
 	// delete last, so as to not leave keys built on meta.BlockID dangling
 	if err := batch.Delete(bs.dbKeyLayout.CalcBlockMetaKey(targetHeight)); err != nil {
-		return err
+		return ErrDBOpt{Err: err}
 	}
 
 	bs.mtx.Lock()
 	defer bs.mtx.Unlock()
 	bs.height = targetHeight - 1
-	return bs.saveStateAndWriteDB(batch, "failed to delete the latest block")
+	if err := bs.saveStateAndWriteDB(batch, "failed to delete the latest block"); err != nil {
+		return ErrDBOpt{Err: err}
+	}
+	return nil
 }
 
 // addTimeSample returns a function that, when called, adds an observation to m.

@@ -4,7 +4,6 @@ package parser
 import (
 	"bytes"
 	"fmt"
-	"maps"
 	"sort"
 	"strings"
 
@@ -860,7 +859,9 @@ func (p *parser) ntAdd(nt symbols.NT, j int) {
 			p.dscAdd(l, j, j)
 			failed = false
 		} else {
-			maps.Copy(expected, first[l])
+			for k, v := range first[l] {
+				expected[k] = v
+			}
 		}
 	}
 	if failed {

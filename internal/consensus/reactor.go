@@ -17,6 +17,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/transport"
 	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
@@ -153,7 +154,7 @@ conR:
 }
 
 // StreamDescriptors implements Reactor.
-func (*Reactor) StreamDescriptors() []p2p.StreamDescriptor {
+func (*Reactor) StreamDescriptors() []transport.StreamDescriptor {
 	// TODO optimize
 	return []p2p.StreamDescriptor{
 		tcpconn.StreamDescriptor{

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"maps"
 	"math/rand"
 	"sort"
 )
@@ -40,9 +41,7 @@ func combiner(head map[string]any, pending []string, items map[string][]any) []m
 	result := []map[string]any{}
 	for _, value := range items[key] {
 		path := map[string]any{}
-		for k, v := range head {
-			path[k] = v
-		}
+		maps.Copy(path, head)
 		path[key] = value
 		result = append(result, combiner(path, pending, items)...)
 	}

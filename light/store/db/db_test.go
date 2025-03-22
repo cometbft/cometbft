@@ -24,7 +24,7 @@ func TestV1LBKey(t *testing.T) {
 	const prefix = "v1"
 
 	sprintf := func(h int64) []byte {
-		return []byte(fmt.Sprintf("lb/%s/%020d", prefix, h))
+		return fmt.Appendf(nil, "lb/%s/%020d", prefix, h)
 	}
 
 	cases := []struct {

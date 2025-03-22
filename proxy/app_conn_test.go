@@ -45,7 +45,7 @@ func TestEcho(t *testing.T) {
 
 	for i := 0; i < 1000; i++ {
 		_, err = proxy.CheckTx(context.Background(), &abci.CheckTxRequest{
-			Tx:   []byte(fmt.Sprintf("echo-%v", i)),
+			Tx:   fmt.Appendf(nil, "echo-%v", i),
 			Type: abci.CHECK_TX_TYPE_CHECK,
 		})
 		if err != nil {

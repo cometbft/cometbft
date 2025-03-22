@@ -30,8 +30,8 @@ func TestValidatorSetBasic(t *testing.T) {
 	assert.Panics(t, func() { vset.IncrementProposerPriority(1) })
 
 	assert.EqualValues(t, vset, vset.Copy())
-	assert.False(t, vset.HasAddress([]byte("some val")))
-	idx, val := vset.GetByAddress([]byte("some val"))
+	assert.False(t, vset.HasAddress(fmt.Appendf(nil, "some val")))
+	idx, val := vset.GetByAddress(fmt.Appendf(nil, "some val"))
 	assert.EqualValues(t, -1, idx)
 	assert.Nil(t, val)
 	addr, val := vset.GetByIndex(-100)
@@ -1635,7 +1635,7 @@ func BenchmarkUpdates(b *testing.B) {
 	// Init with n validators
 	vs := make([]*Validator, n)
 	for j := 0; j < n; j++ {
-		vs[j] = newValidator([]byte(fmt.Sprintf("v%d", j)), 100)
+		vs[j] = newValidator(fmt.Appendf(nil, "v%d", j), 100)
 	}
 	valSet := NewValidatorSet(vs)
 	l := len(valSet.Validators)
@@ -1643,7 +1643,7 @@ func BenchmarkUpdates(b *testing.B) {
 	// Make m new validators
 	newValList := make([]*Validator, m)
 	for j := 0; j < m; j++ {
-		newValList[j] = newValidator([]byte(fmt.Sprintf("v%d", j+l)), 1000)
+		newValList[j] = newValidator(fmt.Appendf(nil, "v%d", j+l), 1000)
 	}
 	b.ResetTimer()
 

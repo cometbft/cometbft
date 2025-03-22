@@ -662,7 +662,7 @@ func (app *Application) PrepareProposal(
 			panic("unable to marshall extended commit")
 		}
 		extCommitHex := hex.EncodeToString(extCommitBytes)
-		extTx := []byte(fmt.Sprintf("%s%d|%s", extTxPrefix, sum, extCommitHex))
+		extTx := fmt.Appendf(nil, "%s%d|%s", extTxPrefix, sum, extCommitHex)
 		extTxLen := cmttypes.ComputeProtoSizeForTxs([]cmttypes.Tx{extTx})
 		app.logger.Info("preparing proposal with special transaction from vote extensions", "extTxLen", extTxLen)
 		if extTxLen > req.MaxTxBytes {
@@ -781,7 +781,7 @@ func (app *Application) ExtendVote(_ context.Context, req *abci.ExtendVoteReques
 	}
 
 	// Replay protection mechanism consists of: (a) the randomness of the extension (nonce), and (b) including the height
-	nonRpExt := []byte(fmt.Sprintf("%d|", req.Height))
+	nonRpExt := fmt.Appendf(nil, "%d|", req.Height)
 
 	nonRpExt = slices.Concat(nonRpExt, ext[:extLen])
 

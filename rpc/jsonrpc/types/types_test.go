@@ -59,7 +59,7 @@ func TestUnmarshallResponses(t *testing.T) {
 	for _, tt := range responseTests {
 		response := &RPCResponse{}
 		err := json.Unmarshal(
-			[]byte(fmt.Sprintf(`{"jsonrpc":"2.0","id":%v,"result":{"Value":"hello"}}`, tt.expected)),
+			fmt.Appendf(nil, `{"jsonrpc":"2.0","id":%v,"result":{"Value":"hello"}}`, tt.expected),
 			response,
 		)
 		require.NoError(t, err)

@@ -1055,17 +1055,17 @@ func extractEventSeqFromKey(key []byte) string {
 }
 
 func keyForEvent(key string, value string, result *abci.TxResult, eventSeq int64) []byte {
-	return []byte(fmt.Sprintf("%s/%s/%d/%d%s",
+	return fmt.Appendf(nil, "%s/%s/%d/%d%s",
 		key,
 		value,
 		result.Height,
 		result.Index,
 		eventSeqSeparator+strconv.FormatInt(eventSeq, 10),
-	))
+	)
 }
 
 func keyForHeight(result *abci.TxResult) []byte {
-	return []byte(fmt.Sprintf("%s/%d/%d/%d%s",
+	return fmt.Appendf(nil, "%s/%d/%d/%d%s",
 		types.TxHeightKey,
 		result.Height,
 		result.Height,
@@ -1073,7 +1073,7 @@ func keyForHeight(result *abci.TxResult) []byte {
 		// Added to facilitate having the eventSeq in event keys
 		// Otherwise queries break expecting 5 entries
 		eventSeqSeparator+"0",
-	))
+	)
 }
 
 func startKeyForCondition(c syntax.Condition, height int64) []byte {

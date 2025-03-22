@@ -65,12 +65,12 @@ func NewRandomTxs(n int) [][]byte {
 
 // NewTxFromID creates a new transaction using the given ID.
 func NewTxFromID(i int) []byte {
-	return []byte(fmt.Sprintf("%d=%d", i, i))
+	return fmt.Appendf(nil, "%d=%d", i, i)
 }
 
 // MakeValSetChangeTx creates a transaction to add/remove/update a validator.
 // To remove, set power to 0.
 func MakeValSetChangeTx(v types.ValidatorUpdate) []byte {
 	pubStr := base64.StdEncoding.EncodeToString(v.PubKeyBytes)
-	return []byte(fmt.Sprintf("%s%s!%s!%d", ValidatorPrefix, v.PubKeyType, pubStr, v.Power))
+	return fmt.Appendf(nil, "%s%s!%s!%d", ValidatorPrefix, v.PubKeyType, pubStr, v.Power)
 }

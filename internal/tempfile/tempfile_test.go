@@ -132,7 +132,7 @@ func TestWriteFileAtomicManyDuplicates(t *testing.T) {
 		fname := "/tmp/" + atomicWriteFilePrefix + fileRand
 		firstAtomicFileBytes, err := os.ReadFile(fname)
 		require.NoError(t, err, "Error reading first atomic file")
-		require.Equal(t, []byte(fmt.Sprintf(testString, i)), firstAtomicFileBytes,
+		require.Equal(t, fmt.Appendf(nil, testString, i), firstAtomicFileBytes,
 			"atomic write file %d was overwritten", i)
 	}
 

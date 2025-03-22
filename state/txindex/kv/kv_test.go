@@ -463,12 +463,12 @@ func TestTxSearchDeprecatedIndexing(t *testing.T) {
 	rawBytes, err := proto.Marshal(txResult2)
 	require.NoError(t, err)
 
-	depKey := []byte(fmt.Sprintf("%s/%s/%d/%d",
+	depKey := fmt.Appendf(nil, "%s/%s/%d/%d",
 		"sender",
 		"addr1",
 		txResult2.Height,
 		txResult2.Index,
-	))
+	)
 
 	err = b.Set(depKey, hash2)
 	require.NoError(t, err)

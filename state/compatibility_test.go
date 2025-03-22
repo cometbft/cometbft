@@ -27,7 +27,7 @@ import (
 // Compatibility test across different state proto versions
 
 func calcABCIResponsesKey(height int64) []byte {
-	return []byte(fmt.Sprintf("abciResponsesKey:%v", height))
+	return fmt.Appendf(nil, "abciResponsesKey:%v", height)
 }
 
 var lastABCIResponseKey = []byte("lastABCIResponseKey")

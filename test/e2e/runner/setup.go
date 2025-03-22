@@ -517,7 +517,7 @@ func UpdateConfigStateSync(node *e2e.Node, height int64, hash []byte) error {
 	if err != nil {
 		return err
 	}
-	bz = regexp.MustCompile(`(?m)^trust_height =.*`).ReplaceAll(bz, []byte(fmt.Sprintf(`trust_height = %v`, height)))
-	bz = regexp.MustCompile(`(?m)^trust_hash =.*`).ReplaceAll(bz, []byte(fmt.Sprintf(`trust_hash = "%X"`, hash)))
+	bz = regexp.MustCompile(`(?m)^trust_height =.*`).ReplaceAll(bz, fmt.Appendf(nil, `trust_height = %v`, height))
+	bz = regexp.MustCompile(`(?m)^trust_hash =.*`).ReplaceAll(bz, fmt.Appendf(nil, `trust_hash = "%X"`, hash))
 	return os.WriteFile(cfgPath, bz, 0o644) //nolint:gosec
 }

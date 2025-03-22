@@ -47,7 +47,7 @@ func GenesisValidatorSet(nVals int) ([]types.GenesisValidator, map[string]types.
 	vals := make([]types.GenesisValidator, nVals)
 	privVals := make(map[string]types.PrivValidator, nVals)
 	for i := 0; i < nVals; i++ {
-		secret := []byte(fmt.Sprintf("test%d", i))
+		secret := fmt.Appendf(nil, "test%d", i)
 		pk := ed25519.GenPrivKeyFromSecret(secret)
 		valAddr := pk.PubKey().Address()
 		vals[i] = types.GenesisValidator{

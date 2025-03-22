@@ -692,7 +692,7 @@ func bE(h int64) string {
 }
 
 func keySuffix(evidence types.Evidence) []byte {
-	return []byte(fmt.Sprintf("%s/%X", bE(evidence.Height()), evidence.Hash()))
+	return fmt.Appendf(nil, "%s/%X", bE(evidence.Height()), evidence.Hash())
 }
 
 // ---------------------

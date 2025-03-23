@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -340,10 +341,8 @@ func (cfg BaseConfig) validateProxyApp() error {
 	}
 
 	// proxy is a static application.
-	for _, proxyApp := range proxyAppList {
-		if cfg.ProxyApp == proxyApp {
-			return nil
-		}
+	if slices.Contains(proxyAppList, cfg.ProxyApp) {
+		return nil
 	}
 
 	// proxy is a network address.

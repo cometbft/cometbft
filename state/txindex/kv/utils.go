@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math/big"
+	"slices"
 
 	"github.com/google/orderedcode"
 
@@ -24,12 +25,7 @@ type HeightInfo struct {
 
 // IntInSlice returns true if a is found in the list.
 func intInSlice(a int, list []int) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(list, a)
 }
 
 func ParseEventSeqFromEventKey(key []byte) (int64, error) {

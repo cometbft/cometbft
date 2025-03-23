@@ -1,6 +1,7 @@
 package pex
 
 import (
+	"slices"
 	"time"
 
 	"github.com/cometbft/cometbft/p2p/internal/nodekey"
@@ -67,12 +68,10 @@ func (ka *knownAddress) isBanned() bool {
 }
 
 func (ka *knownAddress) addBucketRef(bucketIdx int) int {
-	for _, bucket := range ka.Buckets {
-		if bucket == bucketIdx {
-			// TODO refactor to return error?
-			// log.Warn(Fmt("Bucket already exists in ka.Buckets: %v", ka))
-			return -1
-		}
+	if slices.Contains(ka.Buckets, bucketIdx) {
+		// TODO refactor to return error?
+		// log.Warn(Fmt("Bucket already exists in ka.Buckets: %v", ka))
+		return -1
 	}
 	ka.Buckets = append(ka.Buckets, bucketIdx)
 	return len(ka.Buckets)

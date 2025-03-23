@@ -6,6 +6,7 @@ import (
 	"net"
 	"reflect"
 	"runtime/debug"
+	"slices"
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -418,12 +419,7 @@ func (p *peer) Set(key string, data any) {
 
 // HasChannel returns whether the peer reported implementing this channel.
 func (p *peer) HasChannel(chID byte) bool {
-	for _, ch := range p.channels {
-		if ch == chID {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(p.channels, chID)
 }
 
 func (p *peer) SetRemovalFailed() {

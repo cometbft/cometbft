@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math/big"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -150,12 +151,7 @@ func (c condition) findAttr(event types.Event) ([]string, bool) {
 
 // matchesAny reports whether c matches at least one of the given events.
 func (c condition) matchesAny(events []types.Event) bool {
-	for _, event := range events {
-		if c.matchesEvent(event) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(events, c.matchesEvent)
 }
 
 // matchesEvent reports whether c matches the given event.
@@ -172,12 +168,7 @@ func (c condition) matchesEvent(event types.Event) bool {
 	}
 
 	// At this point, we have candidate values.
-	for _, v := range vs {
-		if c.match(v) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(vs, c.match)
 }
 
 func compileCondition(cond syntax.Condition) (condition, error) {

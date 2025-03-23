@@ -2,17 +2,13 @@ package strings
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
 // StringInSlice returns true if a is found the list.
 func StringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(list, a)
 }
 
 // SplitAndTrim slices s into all subslices separated by sep and returns a

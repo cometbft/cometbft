@@ -2,7 +2,7 @@ package keytypes
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/cometbft/cometbft/crypto"
@@ -57,9 +57,7 @@ func SupportedKeyTypesStr() string {
 	for k := range keyTypes {
 		keyTypesSlice = append(keyTypesSlice, fmt.Sprintf("%q", k))
 	}
-	sort.Slice(keyTypesSlice, func(i, j int) bool {
-		return keyTypesSlice[i] < keyTypesSlice[j]
-	})
+	slices.Sort(keyTypesSlice)
 	return strings.Join(keyTypesSlice, ", ")
 }
 
@@ -69,9 +67,7 @@ func ListSupportedKeyTypes() []string {
 	for k := range keyTypes {
 		keyTypesSlice = append(keyTypesSlice, k)
 	}
-	sort.Slice(keyTypesSlice, func(i, j int) bool {
-		return keyTypesSlice[i] < keyTypesSlice[j]
-	})
+	slices.Sort(keyTypesSlice)
 	return keyTypesSlice
 }
 

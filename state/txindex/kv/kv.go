@@ -587,12 +587,7 @@ func (txi *TxIndex) Search(ctx context.Context, q *query.Query, pagSettings txin
 
 		// Calculate pagination start and end indices
 		startIndex := (pagSettings.Page - 1) * pagSettings.PerPage
-		endIndex := startIndex + pagSettings.PerPage
-
-		// Apply pagination limits
-		if endIndex > len(hashKeys) {
-			endIndex = len(hashKeys)
-		}
+		endIndex := min(startIndex+pagSettings.PerPage, len(hashKeys))
 		if startIndex >= len(hashKeys) {
 			return []*abci.TxResult{}, 0, nil
 		}

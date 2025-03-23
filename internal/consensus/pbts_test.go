@@ -149,10 +149,7 @@ func (p *pbtsTestHarness) observedValidatorProposerHeight(t *testing.T, previous
 
 	ensureNewRound(p.roundCh, p.currentHeight, p.currentRound)
 
-	timeout := cmttime.Until(previousBlockTime.Add(ensureTimeout))
-	if timeout < ensureTimeout {
-		timeout = ensureTimeout
-	}
+	timeout := max(cmttime.Until(previousBlockTime.Add(ensureTimeout)), ensureTimeout)
 	ensureProposalWithTimeout(p.ensureProposalCh, p.currentHeight, p.currentRound, nil, timeout)
 
 	rs := p.observedState.GetRoundState()

@@ -40,10 +40,7 @@ import (
 func PopulateNormalHistogram(h metrics.Histogram, seed int) {
 	r := rand.New(rand.NewSource(int64(seed))) //nolint:gosec
 	for i := 0; i < Count; i++ {
-		sample := r.NormFloat64()*float64(Stdev) + float64(Mean)
-		if sample < 0 {
-			sample = 0
-		}
+		sample := max(r.NormFloat64()*float64(Stdev)+float64(Mean), 0)
 		h.Observe(sample)
 	}
 }

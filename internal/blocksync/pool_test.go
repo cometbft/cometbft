@@ -97,10 +97,7 @@ func makePeers(numPeers int, minHeight, maxHeight int64) testPeers {
 	for i := 0; i < numPeers; i++ {
 		peerID := p2p.ID(cmtrand.Str(12))
 		height := minHeight + cmtrand.Int63n(maxHeight-minHeight)
-		base := minHeight + int64(i)
-		if base > height {
-			base = height
-		}
+		base := min(minHeight+int64(i), height)
 		peers[peerID] = &testPeer{peerID, base, height, make(chan inputData, 10), false}
 	}
 	return peers

@@ -488,10 +488,7 @@ func (p *Pruner) findMinBlockRetainHeight() int64 {
 	}
 	// If we are here, both heights were set and the companion is enabled, so
 	// we pick the minimum.
-	if appRetainHeight < dcRetainHeight {
-		return appRetainHeight
-	}
-	return dcRetainHeight
+	return min(appRetainHeight, dcRetainHeight)
 }
 
 func (p *Pruner) pruneBlocksToHeight(height int64) (uint64, int64, error) {

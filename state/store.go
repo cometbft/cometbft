@@ -1140,13 +1140,6 @@ func (store dbStore) Close() error {
 	return store.db.Close()
 }
 
-func min(a int64, b int64) int64 {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // responseFinalizeBlockFromLegacy is a convenience function that takes the old abci responses and morphs
 // it to the finalize block response. Note that the app hash is missing.
 func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *abci.FinalizeBlockResponse {

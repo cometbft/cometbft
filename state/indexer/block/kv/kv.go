@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -344,7 +345,7 @@ func (idx *BlockerIndexer) Search(ctx context.Context, q *query.Query) ([]int64,
 
 	// for all other conditions
 	for i, c := range conditions {
-		if intInSlice(i, skipIndexes) {
+		if slices.Contains(skipIndexes, i) {
 			continue
 		}
 

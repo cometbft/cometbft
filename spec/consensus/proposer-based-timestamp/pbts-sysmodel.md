@@ -71,6 +71,12 @@ proposal message broadcast by correct processes: it is a *worst-case* parameter.
 As message delays depends on the message size, the above requirement implicitly
 indicates that the size of proposal messages is either fixed or upper bounded.
 
+**Note:** In the actual implementation of PBTS, the system parameters `MSGDELAY` and `PRECISION` are capped to upper bounds in order to prevent overflow errors in time-based computations:
+- `MSGDELAY ≤24h`
+- `PRECISION ≤30s`
+
+These limits are not inherent to the formal model, and do not affect its properties. They are practical constraints introduced in the implementation to ensure arithmetic safety.
+
 #### **[PBTS-MSG-DELAY-ADAPTIVE.0]**
 
 This specification is written assuming that there exists an end-to-end maximum

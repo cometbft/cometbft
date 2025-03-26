@@ -134,7 +134,7 @@ func (pDB *pebbleDB) setWithOpts(
 
 	err := pDB.db.Set(key, value, writeOpts)
 	if err != nil {
-		return fmt.Errorf("setting (k,v)=( %X , %X ) to DB: %w", value, key, err)
+		return fmt.Errorf("setting (k,v)=( %X , %X ) to DB: %w", key, value, err)
 	}
 
 	return nil

@@ -618,7 +618,7 @@ in the [OpenAPI file](./rpc/openapi/openapi.yaml)**.
 [`clang-format`]: https://clang.llvm.org/docs/ClangFormat.html
 [unclog]: https://github.com/informalsystems/unclog
 [git-squash]: https://stackoverflow.com/questions/5189560/squash-my-last-x-commits-together-using-git
-[go-testing]: https://golang.org/pkg/testing/
+[go-testing]: https://go.dev/pkg/testing/
 [Fuzz tests]: https://en.wikipedia.org/wiki/Fuzzing
 [delve]: https://github.com/go-delve/delve
 [log-lazy]: https://github.com/cometbft/cometbft/blob/main/libs/log/lazy.go

@@ -477,7 +477,7 @@ func (store dbStore) Bootstrap(state State) error {
 // encoding not preserving ordering: https://github.com/tendermint/tendermint/issues/4567
 // This will cause some old states to be left behind when doing incremental partial prunes,
 // specifically older checkpoints and LastHeightChanged targets.
-func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight int64, previosulyPrunedStates uint64) (uint64, error) {
+func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight int64, previouslyPrunedStates uint64) (uint64, error) {
 	defer addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "prune_states"), time.Now())()
 	if from <= 0 || to <= 0 {
 		return 0, fmt.Errorf("from height %v and to height %v must be greater than 0", from, to)
@@ -606,7 +606,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 	}
 
 	// We do not want to panic or interrupt consensus on compaction failure
-	if store.StoreOptions.Compact && previosulyPrunedStates+pruned >= uint64(store.StoreOptions.CompactionInterval) {
+	if store.StoreOptions.Compact && previouslyPrunedStates+pruned >= uint64(store.StoreOptions.CompactionInterval) {
 		// When the range is nil,nil, the database will try to compact
 		// ALL levels. Another option is to set a predefined range of
 		// specific keys.

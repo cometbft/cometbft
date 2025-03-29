@@ -10,9 +10,8 @@ import (
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
-// TestLoadBlockExtendedCommit tests loading the extended commit for a previously
-// saved block. The load method should return nil when only a commit was saved and
-// return the extended commit otherwise.
+// BenchmarkRepeatedLoadSeenCommitSameBlock benchmarks the performance of repeatedly 
+// loading the same seen commit for a block.
 func BenchmarkRepeatedLoadSeenCommitSameBlock(b *testing.B) {
 	state, bs, _, _, cleanup, _ := makeStateAndBlockStoreAndIndexers()
 	defer cleanup()

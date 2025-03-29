@@ -34,7 +34,7 @@ var InspectCmd = &cobra.Command{
 func init() {
 	InspectCmd.Flags().
 		String("rpc.laddr",
-			config.RPC.ListenAddress, "RPC listenener address. Port required")
+			config.RPC.ListenAddress, "RPC listener address. Port required")
 	InspectCmd.Flags().
 		String("db-dir", config.DBPath, "database directory")
 }

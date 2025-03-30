@@ -47,8 +47,6 @@ issues:
     - path: _test\.go
       linters:
         - gocritic
-        - gofmt
-        - goimport
         - gosec
         - noctx
         - paralleltest
@@ -56,8 +54,6 @@ issues:
         - tparallel
     - path: \.pb\.go
       linters:
-        - gofmt
-        - goimports
         - govet
         - stylecheck
   max-same-issues: 10000

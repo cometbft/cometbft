@@ -1,83 +1,79 @@
-package tcp
+package conn
 
 import (
+	"errors"
 	"fmt"
-	"net"
 
-	"github.com/cometbft/cometbft/p2p/internal/nodekey"
-	na "github.com/cometbft/cometbft/p2p/netaddr"
+	"github.com/cometbft/cometbft/p2p/transport"
 )
 
-// ErrTransportClosed is raised when the Transport has been closed.
-type ErrTransportClosed struct{}
+var (
+	ErrInvalidSecretConnKeySend = errors.New("send invalid secret connection key")
+	ErrInvalidSecretConnKeyRecv = errors.New("invalid receive SecretConnection Key")
+	ErrChallengeVerification    = errors.New("challenge verification failed")
+)
 
-func (ErrTransportClosed) Error() string {
-	return "transport has been closed"
+// ErrWriteQueueFull is returned when the write queue is full.
+type ErrWriteQueueFull struct{}
+
+var _ transport.WriteError = ErrWriteQueueFull{}
+
+func (ErrWriteQueueFull) Error() string {
+	return "write queue is full"
 }
 
-// ErrFilterTimeout indicates that a filter operation timed out.
-type ErrFilterTimeout struct{}
-
-func (ErrFilterTimeout) Error() string {
-	return "filter timed out"
+func (ErrWriteQueueFull) Full() bool {
+	return true
 }
 
-// ErrRejected indicates that a Peer was rejected carrying additional
-// information as to the reason.
-type ErrRejected struct {
-	addr          na.NetAddr
-	conn          net.Conn
-	err           error
-	id            nodekey.ID
-	isAuthFailure bool
-	isDuplicate   bool
-	isFiltered    bool
+// ErrPacketWrite Packet error when writing.
+type ErrPacketWrite struct {
+	Source error
 }
 
-// Addr returns the network address for the rejected Peer.
-func (e ErrRejected) Addr() na.NetAddr {
-	return e.addr
+func (e ErrPacketWrite) Error() string {
+	return fmt.Sprintf("failed to write packet message: %v", e.Source)
 }
 
-func (e ErrRejected) Error() string {
-	if e.isAuthFailure {
-		return fmt.Sprintf("auth failure: %s", e.err)
-	}
-
-	if e.isDuplicate {
-		if e.conn != nil {
-			return fmt.Sprintf(
-				"duplicate CONN<%s>",
-				e.conn.RemoteAddr().String(),
-			)
-		}
-		if e.id != "" {
-			return fmt.Sprintf("duplicate ID<%v>", e.id)
-		}
-	}
-
-	if e.isFiltered {
-		if e.conn != nil {
-			return fmt.Sprintf(
-				"filtered CONN<%s>: %s",
-				e.conn.RemoteAddr().String(),
-				e.err,
-			)
-		}
-
-		if e.id != "" {
-			return fmt.Sprintf("filtered ID<%v>: %s", e.id, e.err)
-		}
-	}
-
-	return e.err.Error()
+func (e ErrPacketWrite) Unwrap() error {
+	return e.Source
 }
 
-// IsAuthFailure when Peer authentication was unsuccessful.
-func (e ErrRejected) IsAuthFailure() bool { return e.isAuthFailure }
+type ErrUnexpectedPubKeyType struct {
+	Expected string
+	Got      string
+}
 
-// IsDuplicate when Peer ID or IP are present already.
-func (e ErrRejected) IsDuplicate() bool { return e.isDuplicate }
+func (e ErrUnexpectedPubKeyType) Error() string {
+	return fmt.Sprintf("expected pubkey type %s, got %s", e.Expected, e.Got)
+}
 
-// IsFiltered when Peer ID or IP was filtered.
-func (e ErrRejected) IsFiltered() bool { return e.isFiltered }
+type ErrDecryptFrame struct {
+	Source error
+}
+
+func (e ErrDecryptFrame) Error() string {
+	return fmt.Sprintf("SecretConnection: failed to decrypt the frame: %v", e.Source)
+}
+
+func (e ErrDecryptFrame) Unwrap() error {
+	return e.Source
+}
+
+type ErrPacketTooBig struct {
+	Received int
+	Max      int
+}
+
+func (e ErrPacketTooBig) Error() string {
+	return fmt.Sprintf("received message exceeds available capacity (max: %d, got: %d)", e.Max, e.Received)
+}
+
+type ErrChunkTooBig struct {
+	Received int
+	Max      int
+}
+
+func (e ErrChunkTooBig) Error() string {
+	return fmt.Sprintf("chunk too big (max: %d, got %d)", e.Max, e.Received)
+}

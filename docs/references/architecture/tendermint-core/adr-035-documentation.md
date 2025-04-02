@@ -23,7 +23,7 @@ This is done while maintaining synchrony between the docs and code, i.e., the we
 
 ## Status
 
-The two points above have been implemented; the `config.js` has a Google Analytics identifier and the documentation workflow has been up and running largely without problems for several months. Details about the documentation build & workflow can be found [here](../DOCS_README.md)
+The two points above have been implemented; the `config.js` has a Google Analytics identifier and the documentation workflow has been up and running largely without problems for several months. Details about the documentation build & workflow can be found [here](../../../DOCS_README.md)
 
 ## Consequences
 

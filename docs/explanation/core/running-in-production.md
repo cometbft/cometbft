@@ -142,7 +142,7 @@ attacks. Some examples of mitigation measures include, but are not limited to:
 If no expertise is available to the operator to assist with securing nodes' RPC
 endpoints, it is strongly recommended to never expose those endpoints publicly.
 
-**Under no condition should any of the [unsafe RPC endpoints](../rpc/#/Unsafe)
+**Under no condition should any of the [unsafe RPC endpoints](../../rpc/#/Unsafe)
 ever be exposed publicly.**
 
 #### Endpoints Returning Multiple Entries

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
@@ -20,16 +19,28 @@ import (
 
 const (
 	ApplicationVersion = 1
-	CurseWordsLimitVE  = 10
+	// MaxMetricsCount is the maximum number of metrics allowed in a vote extension
+	MaxMetricsCount = 10
 )
 
+// ForumApp is the main application implementing the ABCI interface for a forum application.
 type ForumApp struct {
 	abci.BaseApplication
+	// valAddrToPubKeyMap maps validator addresses to their public keys
 	valAddrToPubKeyMap map[string]crypto.PublicKey
-	CurseWords         string
-	state              AppState
-	onGoingBlock       *badger.Txn
-	logger             log.Logger
+	// CurseWords contains the list of words that are banned in the forum
+	CurseWords string
+	// NetworkMetrics stores the aggregated performance metrics from validators
+	NetworkMetrics map[string]float64
+	// MessageRateLimit defines how many messages a user can send per block
+	// This limit is dynamically adjusted based on network performance
+	MessageRateLimit int
+	// state contains the application state
+	state AppState
+	// onGoingBlock is the transaction for the current block being processed
+	onGoingBlock *badger.Txn
+	// logger is used for application logging
+	logger log.Logger
 }
 
 func NewForumApp(dbDir string, appConfigPath string, logger log.Logger) (*ForumApp, error) {
@@ -68,6 +79,8 @@ func NewForumApp(dbDir string, appConfigPath string, logger log.Logger) (*ForumA
 		state:              state,
 		valAddrToPubKeyMap: valMap,
 		CurseWords:         cfg.CurseWords,
+		NetworkMetrics:     make(map[string]float64),
+		MessageRateLimit:   10,
 		logger:             logger,
 	}, nil
 }
@@ -178,40 +191,45 @@ func (app *ForumApp) InitChain(_ context.Context, req *abci.InitChainRequest) (*
 func (app *ForumApp) PrepareProposal(_ context.Context, req *abci.PrepareProposalRequest) (*abci.PrepareProposalResponse, error) {
 	app.logger.Info("Executing Application PrepareProposal")
 
-	// Get the curse words from for all vote extensions received at the end of last height.
-	voteExtensionCurseWords := app.getWordsFromVe(req.LocalLastCommit.Votes)
+	// Collect network metrics from vote extensions
+	networkMetrics := app.getMetricsFromVoteExtensions(req.LocalLastCommit.Votes)
 
-	curseWords := strings.Split(voteExtensionCurseWords, "|")
-	if hasDuplicateWords(curseWords) {
-		return nil, errors.New("duplicate words found")
-	}
+	// Adapt processing speed and limits based on network performance metrics
+	app.adjustForumParameters(networkMetrics)
 
-	// Prepare req puts the BanTx first, then adds the other transactions
-	// ProcessProposal should verify this
+	// Prepare proposal with new parameters
 	proposedTxs := make([][]byte, 0)
 	finalProposal := make([][]byte, 0)
 	bannedUsersString := make(map[string]struct{})
+	userMessageCounts := make(map[string]int)
+
 	for _, tx := range req.Txs {
 		msg, err := model.ParseMessage(tx)
 		if err != nil {
 			// this should never happen since the tx should have been validated by CheckTx
 			return nil, fmt.Errorf("failed to marshal tx in PrepareProposal: %w", err)
 		}
-		// Adding the curse words from vote extensions too
-		if !hasCurseWord(msg.Message, voteExtensionCurseWords) {
-			proposedTxs = append(proposedTxs, tx)
+
+		// Check for forbidden words
+		if hasCurseWord(msg.Message, app.CurseWords) {
+			// If the message contains curse words then ban the user by
+			// creating a "ban transaction" and adding it to the final proposal
+			banTx := model.BanTx{UserName: msg.Sender}
+			bannedUsersString[msg.Sender] = struct{}{}
+			resultBytes, err := json.Marshal(banTx)
+			if err != nil {
+				// this should never happen since the ban tx should have been validated by CheckTx
+				return nil, fmt.Errorf("failed to marshal ban tx in PrepareProposal: %w", err)
+			}
+			finalProposal = append(finalProposal, resultBytes)
 			continue
 		}
-		// If the message contains curse words then ban the user by
-		// creating a "ban transaction" and adding it to the final proposal
-		banTx := model.BanTx{UserName: msg.Sender}
-		bannedUsersString[msg.Sender] = struct{}{}
-		resultBytes, err := json.Marshal(banTx)
-		if err != nil {
-			// this should never happen since the ban tx should have been validated by CheckTx
-			return nil, fmt.Errorf("failed to marshal ban tx in PrepareProposal: %w", err)
+
+		// Control message rate from users based on current limit
+		userMessageCounts[msg.Sender]++
+		if userMessageCounts[msg.Sender] <= app.MessageRateLimit {
+			proposedTxs = append(proposedTxs, tx)
 		}
-		finalProposal = append(finalProposal, resultBytes)
 	}
 
 	// Need to loop again through the proposed Txs to make sure there is none left by a user that was banned
@@ -353,15 +371,29 @@ func (app *ForumApp) Commit(_ context.Context, _ *abci.CommitRequest) (*abci.Com
 	return &abci.CommitResponse{}, nil
 }
 
-// ExtendVote returns curse words as vote extensions.
+// ExtendVote returns validator metrics as vote extensions
 func (app *ForumApp) ExtendVote(_ context.Context, _ *abci.ExtendVoteRequest) (*abci.ExtendVoteResponse, error) {
 	app.logger.Info("Executing Application ExtendVote")
 
-	return &abci.ExtendVoteResponse{VoteExtension: []byte(app.CurseWords)}, nil
+	// Collect metrics to include in the vote extension
+	metrics := map[string]float64{
+		"cpu_usage":     getCPUUsage(),        // Example function that returns CPU usage
+		"memory_usage":  getMemoryUsage(),     // Example function that returns memory usage
+		"disk_io":       getDiskIO(),          // Example function that returns disk activity
+		"message_count": getMessageCount(app), // Function that returns the number of messages in the block
+		"timestamp":     float64(time.Now().Unix()),
+	}
+
+	// Serialize metrics to JSON
+	metricsBytes, err := json.Marshal(metrics)
+	if err != nil {
+		return &abci.ExtendVoteResponse{VoteExtension: []byte("{}")}, nil
+	}
+
+	return &abci.ExtendVoteResponse{VoteExtension: metricsBytes}, nil
 }
 
-// VerifyVoteExtension verifies the vote extensions and ensure they include the curse words
-// It will not be called for extensions generated by this validator.
+// VerifyVoteExtension verifies the vote extensions and ensures they contain valid metrics
 func (app *ForumApp) VerifyVoteExtension(_ context.Context, req *abci.VerifyVoteExtensionRequest) (*abci.VerifyVoteExtensionResponse, error) {
 	app.logger.Info("Executing Application VerifyVoteExtension")
 
@@ -370,49 +402,151 @@ func (app *ForumApp) VerifyVoteExtension(_ context.Context, req *abci.VerifyVote
 		return nil, errors.New("unknown validator")
 	}
 
-	curseWords := strings.Split(string(req.VoteExtension), "|")
-	if hasDuplicateWords(curseWords) {
+	// Try to decode metrics from vote extension
+	var metrics map[string]float64
+	err := json.Unmarshal(req.VoteExtension, &metrics)
+	if err != nil {
+		app.logger.Info("Invalid metrics format in vote extension", "error", err)
 		return &abci.VerifyVoteExtensionResponse{Status: abci.VERIFY_VOTE_EXTENSION_STATUS_REJECT}, nil
 	}
 
-	// ensure vote extension curse words limit has not been exceeded
-	if len(curseWords) > CurseWordsLimitVE {
+	// Check for required fields
+	requiredMetrics := []string{"cpu_usage", "memory_usage", "timestamp"}
+	for _, metricName := range requiredMetrics {
+		if _, exists := metrics[metricName]; !exists {
+			app.logger.Info("Missing required metric in vote extension", "metric", metricName)
+			return &abci.VerifyVoteExtensionResponse{Status: abci.VERIFY_VOTE_EXTENSION_STATUS_REJECT}, nil
+		}
+	}
+
+	// Validate metric values for reasonableness
+	if metrics["cpu_usage"] < 0 || metrics["cpu_usage"] > 100 {
+		app.logger.Info("Invalid CPU usage value", "value", metrics["cpu_usage"])
 		return &abci.VerifyVoteExtensionResponse{Status: abci.VERIFY_VOTE_EXTENSION_STATUS_REJECT}, nil
 	}
+
+	if metrics["memory_usage"] < 0 {
+		app.logger.Info("Invalid memory usage value", "value", metrics["memory_usage"])
+		return &abci.VerifyVoteExtensionResponse{Status: abci.VERIFY_VOTE_EXTENSION_STATUS_REJECT}, nil
+	}
+
+	// Check that timestamp is not from the future and not too old
+	now := float64(time.Now().Unix())
+	if metrics["timestamp"] > now+60 { // Allow up to 1 minute difference
+		app.logger.Info("Timestamp is from the future", "timestamp", metrics["timestamp"], "now", now)
+		return &abci.VerifyVoteExtensionResponse{Status: abci.VERIFY_VOTE_EXTENSION_STATUS_REJECT}, nil
+	}
+
+	if now-metrics["timestamp"] > 300 { // Reject metrics older than 5 minutes
+		app.logger.Info("Timestamp is too old", "timestamp", metrics["timestamp"], "now", now)
+		return &abci.VerifyVoteExtensionResponse{Status: abci.VERIFY_VOTE_EXTENSION_STATUS_REJECT}, nil
+	}
+
 	return &abci.VerifyVoteExtensionResponse{Status: abci.VERIFY_VOTE_EXTENSION_STATUS_ACCEPT}, nil
 }
 
-// getWordsFromVe gets the curse words from the vote extensions as one string, the words are concatenated using a '|'
-// this method also ensures there are no duplicate curse words in the final set returned.
-func (app *ForumApp) getWordsFromVe(voteExtensions []abci.ExtendedVoteInfo) string {
-	curseWordMap := make(map[string]int)
+// getMetricsFromVoteExtensions collects metrics from vote extensions
+func (app *ForumApp) getMetricsFromVoteExtensions(voteExtensions []abci.ExtendedVoteInfo) map[string]float64 {
+	combinedMetrics := make(map[string]float64)
+	validatorCount := 0
+
 	for _, vote := range voteExtensions {
-		// This code gets the curse words and makes sure that we do not add them more than once
-		// Thus ensuring each validator only adds one word once
-		curseWords := strings.Split(string(vote.GetVoteExtension()), "|")
+		if len(vote.GetVoteExtension()) == 0 {
+			continue
+		}
 
-		for _, word := range curseWords {
-			if count, ok := curseWordMap[word]; !ok {
-				curseWordMap[word] = 1
+		var metrics map[string]float64
+		err := json.Unmarshal(vote.GetVoteExtension(), &metrics)
+		if err != nil {
+			app.logger.Info("Failed to unmarshal metrics from vote extension", "error", err)
+			continue
+		}
+
+		// Perform aggregation for each metric
+		for name, value := range metrics {
+			if name == "timestamp" {
+				continue // Skip timestamp, it's only needed for validation
+			}
+
+			if existing, ok := combinedMetrics[name]; ok {
+				combinedMetrics[name] = existing + value
 			} else {
-				curseWordMap[word] = count + 1
+				combinedMetrics[name] = value
 			}
 		}
-	}
-	app.logger.Info("Processed vote extensions", "curse_words", curseWordMap)
-	majority := len(app.valAddrToPubKeyMap) / 3 // We define the majority to be at least 1/3 of the validators;
 
-	voteExtensionCurseWords := ""
-	for word, count := range curseWordMap {
-		if count > majority {
-			if voteExtensionCurseWords == "" {
-				voteExtensionCurseWords = word
-			} else {
-				voteExtensionCurseWords += "|" + word
-			}
+		validatorCount++
+	}
+
+	// Calculate average values for all metrics
+	if validatorCount > 0 {
+		for name, total := range combinedMetrics {
+			combinedMetrics[name] = total / float64(validatorCount)
 		}
 	}
-	return voteExtensionCurseWords
+
+	app.logger.Info("Processed vote extensions metrics", "metrics", combinedMetrics, "validator_count", validatorCount)
+	return combinedMetrics
+}
+
+// adjustForumParameters adapts forum parameters based on network metrics
+func (app *ForumApp) adjustForumParameters(metrics map[string]float64) {
+	// Save metrics for later use
+	app.NetworkMetrics = metrics
+
+	// Adjust message rate limits based on network load
+	cpuUsage, hasCPU := metrics["cpu_usage"]
+	memoryUsage, hasMemory := metrics["memory_usage"]
+
+	// If metrics are available, adjust parameters
+	if hasCPU && hasMemory {
+		// High CPU or memory usage -> decrease message limit
+		if cpuUsage > 80 || memoryUsage > 80 {
+			app.MessageRateLimit = 5
+		} else if cpuUsage > 60 || memoryUsage > 60 {
+			app.MessageRateLimit = 8
+		} else {
+			// Low load -> increase message limit
+			app.MessageRateLimit = 15
+		}
+	}
+
+	app.logger.Info("Adjusted forum parameters based on metrics",
+		"message_rate_limit", app.MessageRateLimit,
+		"cpu_usage", cpuUsage,
+		"memory_usage", memoryUsage)
+}
+
+// getCPUUsage returns the current CPU usage as a percentage.
+// In a real implementation, this would measure actual system metrics.
+func getCPUUsage() float64 {
+	// In a real application, there would be code here to measure CPU usage
+	// For example purposes, we return a fixed value
+	return 50.0 // CPU usage percentage
+}
+
+// getMemoryUsage returns the current memory usage as a percentage.
+// In a real implementation, this would measure actual system metrics.
+func getMemoryUsage() float64 {
+	// In a real application, there would be code here to measure memory usage
+	// For example purposes, we return a fixed value
+	return 40.0 // Memory usage percentage
+}
+
+// getDiskIO returns the current disk I/O activity.
+// In a real implementation, this would measure actual system metrics.
+func getDiskIO() float64 {
+	// In a real application, there would be code here to measure disk activity
+	// For example purposes, we return a fixed value
+	return 30.0 // Operations per second or other IO metric
+}
+
+// getMessageCount returns the number of messages processed in the current block.
+// In a real implementation, this would count actual messages.
+func getMessageCount(app *ForumApp) float64 {
+	// In a real application, there would be code here to count messages
+	// For example purposes, we return a fixed value
+	return 25.0 // Number of messages
 }
 
 // hasDuplicateWords detects if there are duplicate words in the slice.

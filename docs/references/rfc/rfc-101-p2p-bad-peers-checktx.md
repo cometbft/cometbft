@@ -84,7 +84,7 @@ Note that the timing parameter sets the lower bound for when a peer will be unba
 But the p2p layer will only try to connect to banned peers if the node is not sufficiently connected. Thus the node has no
 explicit control on when a reconnect attempt will be triggered.
 
-The application can blacklist peers via ABCI if the
+The application can banned peers via ABCI if the
 [`filterPeers`](../../../spec/abci/abci++_app_requirements.md#peer-filtering)
 config flag is set, by providing a set of peers to ban to CometBFT.
 
@@ -457,8 +457,8 @@ However, that could have already be done by just disconnecting or by dropping it
 * A bug in `CheckTx`causes the rejection of all transactions and all nodes disconnect, how do we ensure the operator knows what has happened?
 
 * An attacker discovers a particular transaction that they know would be accepted, and therefore propagated, by >1/3 of the voting power on the network,
- but rejected by the rest. This would result in halting the network for the period for which we blacklist "misconfigured" peers,
- because >1/3 of the voting power would be blacklisted by the remaining peers. This means that if >1/3 of the voting power on a network has,
+ but rejected by the rest. This would result in halting the network for the period for which we denylist "misconfigured" peers,
+ because >1/3 of the voting power would be banned by the remaining peers. This means that if >1/3 of the voting power on a network has,
  for example, a minimum transaction fee requirement much lower than the remaining nodes, and application developers return a `neverValidTx=true`
  value from `CheckTx` here, they could halt their network.
 

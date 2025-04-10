@@ -8,3 +8,4 @@ build_testing:
 	docker build --tag cometbft/testing -f ./Dockerfile.testing .
 
 .PHONY: build push build_testing
+

@@ -13,6 +13,7 @@ import (
 
 func TestDBPrintImpl(t *testing.T) {
 	testDBs, err := newTestDBs()
+
 	if err != nil {
 		t.Fatal(err)
 	}

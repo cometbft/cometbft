@@ -21,16 +21,18 @@ import (
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
-// TODO: type ?
+// Step represents the stage in the consensus round.
+type Step int8
+
 const (
-	stepNone      int8 = 0 // Used to distinguish the initial state
-	stepPropose   int8 = 1
-	stepPrevote   int8 = 2
-	stepPrecommit int8 = 3
+	stepNone      Step = 0 // Used to distinguish the initial state
+	stepPropose   Step = 1
+	stepPrevote   Step = 2
+	stepPrecommit Step = 3
 )
 
 // A vote is either stepPrevote or stepPrecommit.
-func voteToStep(vote *cmtproto.Vote) int8 {
+func voteToStep(vote *cmtproto.Vote) Step {
 	switch vote.Type {
 	case types.PrevoteType:
 		return stepPrevote
@@ -75,7 +77,7 @@ func (pvKey FilePVKey) Save() {
 type FilePVLastSignState struct {
 	Height    int64             `json:"height"`
 	Round     int32             `json:"round"`
-	Step      int8              `json:"step"`
+	Step      Step              `json:"step"`
 	Signature []byte            `json:"signature,omitempty"`
 	SignBytes cmtbytes.HexBytes `json:"signbytes,omitempty"`
 
@@ -97,7 +99,7 @@ func (lss *FilePVLastSignState) reset() {
 // it returns true if the HRS matches the arguments and the SignBytes are not empty (indicating
 // we have already signed for this HRS, and can reuse the existing signature).
 // It panics if the HRS matches the arguments, there's a SignBytes, but no Signature.
-func (lss *FilePVLastSignState) CheckHRS(height int64, round int32, step int8) (bool, error) {
+func (lss *FilePVLastSignState) CheckHRS(height int64, round int32, step Step) (bool, error) {
 	if lss.Height > height {
 		return false, fmt.Errorf("height regression. Got %v, last height %v", height, lss.Height)
 	}
@@ -440,7 +442,7 @@ func (pv *FilePV) signProposal(chainID string, proposal *cmtproto.Proposal) erro
 }
 
 // Persist height/round/step and signature.
-func (pv *FilePV) saveSigned(height int64, round int32, step int8,
+func (pv *FilePV) saveSigned(height int64, round int32, step Step,
 	signBytes []byte, sig []byte,
 ) {
 	pv.LastSignState.Height = height

@@ -4,6 +4,7 @@ build:
 push:
 	@sh -c "'$(CURDIR)/push.sh'"
 
+
 build_testing:
 	docker build --tag cometbft/testing -f ./Dockerfile.testing .
 

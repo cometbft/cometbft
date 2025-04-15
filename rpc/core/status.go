@@ -62,7 +62,14 @@ func (env *Environment) Status(*rpctypes.Context) (*ctypes.ResultStatus, error) 
 			EarliestAppHash:     earliestAppHash,
 			EarliestBlockHeight: earliestBlockHeight,
 			EarliestBlockTime:   time.Unix(0, earliestBlockTimeNano),
-			CatchingUp:          env.ConsensusReactor.WaitSync(),
+			SyncStatus: func() string {
+				if env.P2PPeers.Peers().Size() == 0 {
+					return "not_enough_peers"
+				} else if env.ConsensusReactor.WaitSync() {
+					return "catching_up"
+				}
+				return "synced"
+			}(),
 		},
 		ValidatorInfo: ctypes.ValidatorInfo{
 			Address:     env.PubKey.Address(),

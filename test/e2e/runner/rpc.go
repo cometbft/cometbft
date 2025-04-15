@@ -98,7 +98,7 @@ func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time
 				return nil, fmt.Errorf("waiting for node %v timed out: exceeded %v wait timeout after waiting for %v",
 					node.Name, timeout, sinceLastChanged)
 			case err != nil:
-			case status.SyncInfo.LatestBlockHeight >= height && (height == 0 || !status.SyncInfo.CatchingUp):
+			case status.SyncInfo.LatestBlockHeight >= height && (height == 0 || status.SyncInfo.SyncStatus == "synced" || status.SyncInfo.SyncStatus == "catching_up"):
 				return status, nil
 			case curHeight < status.SyncInfo.LatestBlockHeight:
 				curHeight = status.SyncInfo.LatestBlockHeight

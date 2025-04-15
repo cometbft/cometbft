@@ -86,7 +86,7 @@ type SyncInfo struct {
 	EarliestBlockHeight int64          `json:"earliest_block_height"`
 	EarliestBlockTime   time.Time      `json:"earliest_block_time"`
 
-	CatchingUp bool `json:"catching_up"`
+	SyncStatus string `json:"sync_status"` // Possible values: "synced", "catching_up", "not_enough_peers"
 }
 
 // Info about the node's validator.

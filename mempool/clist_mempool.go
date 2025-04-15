@@ -381,12 +381,16 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 		// (eg. after committing a block, txs are removed from mempool but not cache),
 		// so we only record the sender for txs still in the mempool.
 		if err := mem.addSender(tx.Key(), sender); err != nil {
-			mem.logger.Error("Could not add sender to tx", "tx", log.NewLazyHash(tx), "sender", sender, "err", err)
+			// Only log the error if it's not one of the common cases that don't indicate a problem
+			if err != ErrTxNotFound && err != ErrTxAlreadyReceivedFromSender {
+				mem.logger.Error("Could not add sender to tx", "tx", tx.Hash(), "sender", sender, "err", err)
+			} else if err == ErrTxNotFound {
+				// Transaction is no longer in the mempool but still in cache (common after block commit)
+				mem.logger.Debug("Tx not in mempool but still in cache", "tx", tx.Hash())
+			}
 		}
-		// TODO: consider punishing peer for dups,
-		// its non-trivial since invalid txs can become valid,
-		// but they can spam the same tx with little cost to them atm.
-		return nil, ErrTxInCache
+		mem.logger.Debug("Reject tx", "tx", log.NewLazyHash(tx), "height", mem.height.Load(), "err", ErrTxInMempool)
+		return nil, ErrTxInMempool
 	}
 
 	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.CheckTxRequest{
@@ -461,10 +465,16 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 		if mem.Contains(txKey) {
 			mem.metrics.RejectedTxs.Add(1)
 			if err := mem.addSender(txKey, sender); err != nil {
-				mem.logger.Error("Could not add sender to tx", "tx", tx.Hash(), "sender", sender, "err", err)
+				// Only log the error if it's not one of the common cases that don't indicate a problem
+				if err != ErrTxNotFound && err != ErrTxAlreadyReceivedFromSender {
+					mem.logger.Error("Could not add sender to tx", "tx", tx.Hash(), "sender", sender, "err", err)
+				} else if err == ErrTxNotFound {
+					// Transaction is no longer in the mempool but still in cache (common after block commit)
+					mem.logger.Debug("Tx not in mempool but still in cache", "tx", tx.Hash())
+				}
+				mem.logger.Debug("Reject tx", "tx", log.NewLazyHash(tx), "height", mem.height.Load(), "err", ErrTxInMempool)
+				return ErrTxInMempool
 			}
-			mem.logger.Debug("Reject tx", "tx", log.NewLazyHash(tx), "height", mem.height.Load(), "err", ErrTxInMempool)
-			return ErrTxInMempool
 		}
 
 		// Add tx to mempool and notify that new txs are available.

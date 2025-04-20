@@ -568,6 +568,10 @@ These parameters are part of the Proposer-Based Timestamps (PBTS) algorithm.
 For more information on the relationship of the synchrony parameters to
 block timestamps validity, refer to the [PBTS specification][pbts].
 
+**Note:** Both `precision` and `message_delay` have upper bounds enforced in the implementation to prevent overflow errors during timestamp validation:
+- `precision` must not exceed `30s`
+- `message_delay` must not exceed `24h`
+
 [pbts]: ../consensus/proposer-based-timestamp/README.md
 [bfttime]: ../consensus/bft-time.md
 [proto-duration]: https://protobuf.dev/reference/protobuf/google.protobuf/#duration

@@ -113,6 +113,8 @@ among all of the validators in the network.
 Any two validators are expected to have clocks that differ by at most
 `Precision` at any given instant.
 
+**Note:** The `Precision` value must not exceed 30 seconds. This is a hard-coded upper limit enforced in the implementation to avoid overflow errors when used in timestamp calculations.
+
 The `Precision` parameter is of [`time.Duration`](https://pkg.go.dev/time#Duration) type.
 
 Networks should choose a `Precision` that is large enough to represent the
@@ -125,6 +127,9 @@ it is recommended to set `Precision` to at least `500ms`.
 The `MessageDelay` parameter configures the acceptable upper-bound for the
 end-to-end delay for transmitting a `Proposal` message from the proposer to
 _all_ validators in the network.
+
+**Note:** The `MessageDelay` value must not exceed `24 hours`. This cap is enforced in the implementation to avoid overflow errors in time-based computations, especially when combined with round-based  
+exponential delay adjustments.
 
 The `MessageDelay` parameter is of [`time.Duration`](https://pkg.go.dev/time#Duration) type.
 

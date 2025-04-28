@@ -4,6 +4,7 @@ package lexer
 import (
 	// "fmt"
 	"io/ioutil"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -263,21 +264,11 @@ func (l *Lexer) addToken(tok *token.Token) {
 }
 
 func any(r rune, set []rune) bool {
-	for _, r1 := range set {
-		if r == r1 {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(set, r)
 }
 
 func not(r rune, set []rune) bool {
-	for _, r1 := range set {
-		if r == r1 {
-			return false
-		}
-	}
-	return true
+	return !slices.Contains(set, r)
 }
 
 var accept = []token.Type{

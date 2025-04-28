@@ -4,6 +4,7 @@ package parser
 import (
 	"bytes"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -943,12 +944,7 @@ func (p *parser) call(L slot.Label, i, j int) {
 }
 
 func existEdge(nds []*crfNode, nd *crfNode) bool {
-	for _, nd1 := range nds {
-		if nd1 == nd {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(nds, nd)
 }
 
 func (p *parser) rtn(X symbols.NT, k, j int) {
@@ -1000,12 +996,7 @@ type descriptors struct {
 }
 
 func (ds *descriptors) contain(d *descriptor) bool {
-	for _, d1 := range ds.set {
-		if d1 == d {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(ds.set, d)
 }
 
 func (ds *descriptors) empty() bool {

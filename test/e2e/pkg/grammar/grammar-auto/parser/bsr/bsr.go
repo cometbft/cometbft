@@ -12,6 +12,7 @@ package bsr
 import (
 	"bytes"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -536,10 +537,8 @@ func isAmbiguous(b BSR) bool {
 			if len(b.GetNTChildrenI(i)) != 1 {
 				return true
 			}
-			for _, b1 := range b.GetNTChildrenI(i) {
-				if isAmbiguous(b1) {
-					return true
-				}
+			if slices.ContainsFunc(b.GetNTChildrenI(i), isAmbiguous) {
+				return true
 			}
 		}
 	}

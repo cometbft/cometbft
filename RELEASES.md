@@ -18,7 +18,7 @@ case).
 As non-breaking changes land on `main`, they should also be backported to
 these backport branches.
 
-We use Mergify's [backport feature](https://mergify.io/features/backports) to
+We use Mergify's [backport feature](https://docs.mergify.com/workflow/actions/backport/) to
 automatically backport to the needed branch. There should be a label for any
 backport branch that you'll be targeting. To notify the bot to backport a pull
 request, mark the pull request with the label corresponding to the correct

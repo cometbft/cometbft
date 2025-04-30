@@ -149,7 +149,7 @@ func startRPCServers(
 			)
 			g.Go(func() error {
 				logger.Info(
-					"RPC HTTPS server starting",
+					"RPC HTTPS ironbird server starting",
 					"address", listenerAddr,
 					"certfile", certFile,
 					"keyfile", keyFile,

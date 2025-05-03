@@ -123,5 +123,5 @@ When choosing between different client implementations, consider:
 
 ## See Also
 
-- [ABCI Specification](../../spec/abci/README.md)
+- [ABCI Specification](../../../abci/README.md)
 - [Application Development Guide](../../guides/app-dev/app-architecture.md)

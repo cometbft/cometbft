@@ -115,7 +115,7 @@ func startRPCServers(ctx context.Context, cfg *config.RPCConfig, logger log.Logg
 			certFile := cfg.CertFile()
 			listenerAddr := listenerAddr
 			g.Go(func() error {
-				logger.Info("RPC HTTPS server starting", "address", listenerAddr,
+				logger.Info("RPC ironbird HTTPS server starting", "address", listenerAddr,
 					"certfile", certFile, "keyfile", keyFile)
 				err := server.ListenAndServeTLS(tctx, certFile, keyFile)
 				if !errors.Is(err, net.ErrClosed) {

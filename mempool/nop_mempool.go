@@ -13,7 +13,7 @@ import (
 // NopMempool is a mempool that does nothing.
 //
 // The ABCI app is responsible for storing, disseminating, and proposing transactions.
-// See [ADR-111](../docs/architecture/adr-111-nop-mempool.md).
+// See [ADR-111](../docs/references/architecture/adr-111-nop-mempool.md).
 type NopMempool struct{}
 
 // errNotAllowed indicates that the operation is not allowed with `nop` mempool.

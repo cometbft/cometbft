@@ -66,28 +66,24 @@ curl -s localhost:26657/status
 With the KVstore app running, we can send transactions:
 
 ```sh
-curl -s 'localhost:26657/broadcast_tx_commit?tx="abcd"'
-```
-
-and check that it worked with:
-
-```sh
-curl -s 'localhost:26657/abci_query?data="abcd"'
-```
-
-We can send transactions with a key and value too:
-
-```sh
 curl -s 'localhost:26657/broadcast_tx_commit?tx="name=satoshi"'
 ```
 
-and query the key:
+and check that it worked with:
 
 ```sh
 curl -s 'localhost:26657/abci_query?data="name"'
 ```
 
 where the value is returned in hex.
+
+The KVstore app accepts transactions in the format `key=value` or `key:value`. For example:
+
+```sh
+curl -s 'localhost:26657/broadcast_tx_commit?tx="name:satoshi"'
+```
+
+Both will work the same way, storing the key-value pair in the KVstore.
 
 ## Cluster of Nodes
 

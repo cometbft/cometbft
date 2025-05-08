@@ -98,8 +98,8 @@ func (e ErrUnknownBlock) Error() string {
 func (e ErrBlockHashMismatch) Error() string {
 	return fmt.Sprintf(
 		"app block hash (%X) does not match core block hash (%X) for height %d",
-		e.AppHash,
 		e.CoreHash,
+		e.AppHash,
 		e.Height,
 	)
 }
@@ -123,7 +123,7 @@ func (e ErrLastStateMismatch) Error() string {
 
 func (e ErrStateMismatch) Error() string {
 	return fmt.Sprintf(
-		"state after replay does not match saved state. Got ----\n%v\nExpected ----\n%v\n",
+		"state after replay does not match saved state. Got ----\n%+v\nExpected ----\n%+v\n",
 		e.Got,
 		e.Expected,
 	)

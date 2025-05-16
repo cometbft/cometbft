@@ -78,6 +78,21 @@ func DefaultValidationRequestHandler(
 		} else {
 			res = mustWrapMsg(&pvproto.SignBytesResponse{Signature: signature, Error: nil})
 		}
+	case *pvproto.Message_SignP2PMessageRequest:
+		if r.SignP2PMessageRequest.GetChainId() != chainID {
+			return chainIDMismatchError(r.SignP2PMessageRequest.GetChainId(), chainID)
+		}
+
+		var signature []byte
+
+		signature, err = privVal.SignBytes(r.SignP2PMessageRequest.Hash)
+		if err != nil {
+			res = mustWrapMsg(&pvproto.SignedP2PMessageResponse{
+				Signature: nil, Error: &pvproto.RemoteSignerError{Code: 0, Description: err.Error()},
+			})
+		} else {
+			res = mustWrapMsg(&pvproto.SignedP2PMessageResponse{Signature: signature, Error: nil})
+		}
 	case *pvproto.Message_PingRequest:
 		err, res = nil, mustWrapMsg(&pvproto.PingResponse{})
 	default:

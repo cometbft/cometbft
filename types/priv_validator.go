@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	pvproto "github.com/cometbft/cometbft/api/cometbft/privval/v2"
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	"github.com/cometbft/cometbft/v2/crypto"
@@ -24,9 +25,41 @@ type PrivValidator interface {
 
 	// SignProposal signs a canonical representation of the proposal.
 	SignProposal(chainID string, proposal *cmtproto.Proposal) error
+	SignRawBytes(chainID, uniqueID string, rawBytes []byte) ([]byte, error)
+}
 
-	// SignBytes signs an arbitrary array of bytes.
-	SignBytes(bytes []byte) ([]byte, error)
+// RawBytesSignBytesPrefix defines a domain separator prefix added to raw bytes to ensure the resulting
+// signed message can't be confused with a consensus message, which could lead to double signing
+const RawBytesSignBytesPrefix = "COMET::RAW_BYTES::SIGN"
+
+// RawBytesMessageSignBytes returns the canonical bytes for signing raw data messages.
+// It requires non-empty chainID, uniqueID, and rawBytes to prevent security issues.
+// Returns error if any required parameter is empty or if marshaling fails.
+func RawBytesMessageSignBytes(chainID, uniqueID string, rawBytes []byte) ([]byte, error) {
+	if chainID == "" {
+		return nil, errors.New("chainID cannot be empty")
+	}
+
+	if uniqueID == "" {
+		return nil, fmt.Errorf("uniqueID cannot be empty")
+	}
+
+	if len(rawBytes) == 0 {
+		return nil, fmt.Errorf("rawBytes cannot be empty")
+	}
+
+	prefix := []byte(RawBytesSignBytesPrefix)
+
+	signRequest := &pvproto.SignRawBytesRequest{
+		ChainId:  chainID,
+		RawBytes: rawBytes,
+		UniqueId: uniqueID,
+	}
+	protoBytes, err := signRequest.Marshal()
+	if err != nil {
+		return nil, err
+	}
+	return append(prefix, protoBytes...), nil
 }
 
 type PrivValidatorsByAddress []PrivValidator
@@ -114,6 +147,23 @@ func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote, signExtension boo
 	}
 
 	return nil
+}
+
+func (pv MockPV) SignRawBytes(chainID, uniqueID string, rawBytes []byte) ([]byte, error) {
+	useChainID := chainID
+	if pv.breakProposalSigning {
+		useChainID = "incorrect-chain-id"
+	}
+
+	signBytes, err := RawBytesMessageSignBytes(useChainID, uniqueID, rawBytes)
+	if err != nil {
+		return nil, err
+	}
+	sig, err := pv.PrivKey.Sign(signBytes)
+	if err != nil {
+		return nil, err
+	}
+	return sig, nil
 }
 
 // SignProposal implements PrivValidator.

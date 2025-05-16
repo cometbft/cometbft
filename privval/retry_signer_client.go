@@ -97,13 +97,11 @@ func (sc *RetrySignerClient) SignProposal(chainID string, proposal *cmtproto.Pro
 	return fmt.Errorf("exhausted all attempts to sign proposal: %w", err)
 }
 
-func (sc *RetrySignerClient) SignBytes(bytes []byte) ([]byte, error) {
-	var (
-		sig []byte
-		err error
-	)
+func (sc *RetrySignerClient) SignRawBytes(chainID, uniqueID string, rawBytes []byte) ([]byte, error) {
+	var err error
+	var sig []byte
 	for i := 0; i < sc.retries || sc.retries == 0; i++ {
-		sig, err = sc.next.SignBytes(bytes)
+		sig, err = sc.next.SignRawBytes(chainID, uniqueID, rawBytes)
 		if err == nil {
 			return sig, nil
 		}
@@ -113,5 +111,5 @@ func (sc *RetrySignerClient) SignBytes(bytes []byte) ([]byte, error) {
 		}
 		time.Sleep(sc.timeout)
 	}
-	return nil, fmt.Errorf("exhausted all attempts to sign bytes: %w", err)
+	return nil, fmt.Errorf("exhausted all attempts to sign raw bytes: %w", err)
 }

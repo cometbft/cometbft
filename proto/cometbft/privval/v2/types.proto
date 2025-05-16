@@ -62,6 +62,19 @@ message SignBytesResponse {
   RemoteSignerError error     = 2;
 }
 
+// SignP2PMessageRequest is a request to sign a p2p message hash
+message SignP2PMessageRequest {
+  bytes  hash      = 1;
+  string chain_id  = 2;
+  string unique_id = 3;
+}
+
+// SignedP2PMessageResponse is a response containing a signature for a p2p message hash or an error
+message SignedP2PMessageResponse {
+  bytes             signature = 1;
+  RemoteSignerError error     = 2;
+}
+
 // PingRequest is a request to confirm that the connection is alive.
 message PingRequest {}
 
@@ -82,5 +95,7 @@ message Message {
     PingResponse           ping_response            = 8;
     SignBytesRequest       sign_bytes_request       = 9;
     SignBytesResponse      sign_bytes_response      = 10;
+    SignP2PMessageRequest    sign_p2p_message_request    = 11;
+    SignedP2PMessageResponse signed_p2p_message_response = 12;
   }
 }

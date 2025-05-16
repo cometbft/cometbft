@@ -36,6 +36,10 @@ func mustWrapMsg(pb proto.Message) pvproto.Message {
 		msg.Sum = &pvproto.Message_PingRequest{PingRequest: pb}
 	case *pvproto.PingResponse:
 		msg.Sum = &pvproto.Message_PingResponse{PingResponse: pb}
+	case *pvproto.SignP2PMessageRequest:
+		msg.Sum = &pvproto.Message_SignP2PMessageRequest{SignP2PMessageRequest: pb}
+	case *pvproto.SignedP2PMessageResponse:
+		msg.Sum = &pvproto.Message_SignedP2PMessageResponse{SignedP2PMessageResponse: pb}
 	default:
 		panic(fmt.Errorf("unknown message type %T", pb))
 	}

@@ -505,3 +505,31 @@ func TestSignerSignBytes(t *testing.T) {
 		require.True(t, pubKey.VerifySignature(bytes, signature))
 	}
 }
+
+func TestSignerClient_SignP2PMessage(t *testing.T) {
+	for _, tc := range getSignerTestCases(t) {
+		t.Cleanup(func() {
+			if err := tc.signerServer.Stop(); err != nil {
+				t.Error(err)
+			}
+		})
+		t.Cleanup(func() {
+			if err := tc.signerClient.Close(); err != nil {
+				t.Error(err)
+			}
+		})
+
+		// Test SignP2PMessage
+		hash := []byte("hash")
+		uniqueID := "unique-id"
+
+		signBytes, err := tc.mockPV.SignBytes(hash)
+		require.NoError(t, err)
+
+		clientSignBytes, err := tc.signerClient.SignP2PMessage(hash, uniqueID)
+		require.NoError(t, err)
+
+		// Ensure the signatures match
+		require.Equal(t, signBytes, clientSignBytes)
+	}
+}

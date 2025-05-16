@@ -150,3 +150,27 @@ func (sc *SignerClient) SignBytes(bytes []byte) ([]byte, error) {
 
 	return resp.Signature, nil
 }
+
+// SignP2PMessage requests a remote signer to sign a p2p message hash.
+func (sc *SignerClient) SignP2PMessage(hash []byte, uniqueID string) ([]byte, error) {
+	response, err := sc.endpoint.SendRequest(mustWrapMsg(
+		&pvproto.SignP2PMessageRequest{
+			Hash:     hash,
+			ChainId:  sc.chainID,
+			UniqueId: uniqueID,
+		},
+	))
+	if err != nil {
+		return nil, err
+	}
+
+	resp := response.GetSignedP2PMessageResponse()
+	if resp == nil {
+		return nil, cmterrors.ErrRequiredField{Field: "response"}
+	}
+	if resp.Error != nil {
+		return nil, &RemoteSignerError{Code: int(resp.Error.Code), Description: resp.Error.Description}
+	}
+
+	return resp.Signature, nil
+}

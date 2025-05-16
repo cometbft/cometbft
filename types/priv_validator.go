@@ -17,6 +17,12 @@ type PrivValidator interface {
 
 	SignVote(chainID string, vote *cmtproto.Vote) error
 	SignProposal(chainID string, proposal *cmtproto.Proposal) error
+	SignDigest(chainID, uniqueID string, digest cmtbytes.HexBytes) ([]byte, error)
+}
+
+// DigestSignBytes returns the bytes to sign for a digest message
+func DigestSignBytes(chainID, uniqueID string, hash cmtbytes.HexBytes) []byte {
+	return []byte(chainID + uniqueID + hash.String())
 }
 
 type PrivValidatorsByAddress []PrivValidator
@@ -52,6 +58,8 @@ type MockPV struct {
 	breakProposalSigning bool
 	breakVoteSigning     bool
 }
+
+var _ PrivValidator = &MockPV{}
 
 func NewMockPV() MockPV {
 	return MockPV{ed25519.GenPrivKey(), false, false}
@@ -96,6 +104,20 @@ func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
 	}
 	vote.ExtensionSignature = extSig
 	return nil
+}
+
+func (pv MockPV) SignDigest(chainID, uniqueID string, digest cmtbytes.HexBytes) ([]byte, error) {
+	useChainID := chainID
+	if pv.breakProposalSigning {
+		useChainID = "incorrect-chain-id"
+	}
+
+	signBytes := DigestSignBytes(useChainID, uniqueID, digest)
+	sig, err := pv.PrivKey.Sign(signBytes)
+	if err != nil {
+		return nil, err
+	}
+	return sig, nil
 }
 
 // Implements PrivValidator.

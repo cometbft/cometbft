@@ -81,7 +81,23 @@ func DefaultValidationRequestHandler(
 		}
 	case *privvalproto.Message_PingRequest:
 		err, res = nil, mustWrapMsg(&privvalproto.PingResponse{})
+	case *privvalproto.Message_SignDigestRequest:
+		if r.SignDigestRequest.ChainId != chainID {
+			res = mustWrapMsg(&privvalproto.SignedDigestResponse{
+				Signature: []byte{}, Error: &privvalproto.RemoteSignerError{
+					Code: 0, Description: "unable to sign digest"}})
+			return res, fmt.Errorf("want chainID: %s, got chainID: %s", r.SignDigestRequest.GetChainId(), chainID)
+		}
 
+		signature, err := privVal.SignDigest(chainID, r.SignDigestRequest.UniqueId, r.SignDigestRequest.Digest)
+		if err != nil {
+			res = mustWrapMsg(&privvalproto.SignedDigestResponse{
+				Signature: []byte{}, Error: &privvalproto.RemoteSignerError{
+					Code: 0, Description: "unable to sign digest"}})
+			return res, fmt.Errorf("failed to sign digest: %w", err)
+		}
+
+		res = mustWrapMsg(&privvalproto.SignedDigestResponse{Signature: signature, Error: nil})
 	default:
 		err = fmt.Errorf("unknown msg: %v", r)
 	}

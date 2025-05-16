@@ -2,6 +2,7 @@ package privval
 
 import (
 	"fmt"
+	"github.com/cometbft/cometbft/libs/bytes"
 	"time"
 
 	"github.com/cometbft/cometbft/crypto"
@@ -93,4 +94,21 @@ func (sc *RetrySignerClient) SignProposal(chainID string, proposal *cmtproto.Pro
 		time.Sleep(sc.timeout)
 	}
 	return fmt.Errorf("exhausted all attempts to sign proposal: %w", err)
+}
+
+func (sc *RetrySignerClient) SignDigest(chainID, uniqueID string, digest bytes.HexBytes) ([]byte, error) {
+	var err error
+	var sig []byte
+	for i := 0; i < sc.retries || sc.retries == 0; i++ {
+		sig, err = sc.next.SignDigest(chainID, uniqueID, digest)
+		if err == nil {
+			return sig, nil
+		}
+		// If remote signer errors, we don't retry.
+		if _, ok := err.(*RemoteSignerError); ok {
+			return nil, err
+		}
+		time.Sleep(sc.timeout)
+	}
+	return nil, fmt.Errorf("exhausted all attempts to sign proposal: %w", err)
 }

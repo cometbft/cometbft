@@ -63,8 +63,8 @@ message PingRequest {}
 message PingResponse {}
 
 message SignDigestRequest {
-  bytes  digest      = 1;
-  string chain_id  = 2;
+  string chain_id  = 1;
+  bytes  digest    = 2;
   string unique_id = 3;
 }
 

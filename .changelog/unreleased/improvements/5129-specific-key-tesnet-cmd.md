@@ -1,0 +1,1 @@
+- `[cmd]` Add `---key-type` flag to the `tesnet` command to allow specifying validator key type ([\#5129](https://github.com/cometbft/cometbft/issues/5129))

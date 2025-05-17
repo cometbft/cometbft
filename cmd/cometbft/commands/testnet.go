@@ -11,6 +11,8 @@ import (
 	"github.com/spf13/viper"
 
 	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	kt "github.com/cometbft/cometbft/internal/keytypes"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/p2p"
@@ -75,6 +77,8 @@ func init() {
 		"P2P Port")
 	TestnetFilesCmd.Flags().BoolVar(&randomMonikers, "random-monikers", false,
 		"randomize the moniker for each generated node")
+	TestnetFilesCmd.Flags().StringVar(&keyType, "key-type", ed25519.KeyType,
+		fmt.Sprintf("private key type (one of %s)", kt.SupportedKeyTypesStr()))
 }
 
 // TestnetFilesCmd allows initialisation of files for a CometBFT testnet.

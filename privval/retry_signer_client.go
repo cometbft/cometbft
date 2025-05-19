@@ -113,3 +113,22 @@ func (sc *RetrySignerClient) SignBytes(bytes []byte) ([]byte, error) {
 	}
 	return nil, fmt.Errorf("exhausted all attempts to sign bytes: %w", err)
 }
+
+func (sc *RetrySignerClient) SignP2PMessage(hash []byte, uniqueID string) ([]byte, error) {
+	var (
+		sig []byte
+		err error
+	)
+	for i := 0; i < sc.retries || sc.retries == 0; i++ {
+		sig, err = sc.next.SignP2PMessage(hash, uniqueID)
+		if err == nil {
+			return sig, nil
+		}
+		// If remote signer errors, we don't retry.
+		if _, ok := err.(*RemoteSignerError); ok {
+			return nil, err
+		}
+		time.Sleep(sc.timeout)
+	}
+	return nil, fmt.Errorf("exhausted all attempts to sign p2p message: %w", err)
+}

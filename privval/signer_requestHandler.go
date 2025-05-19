@@ -85,7 +85,7 @@ func DefaultValidationRequestHandler(
 
 		var signature []byte
 
-		signature, err = privVal.SignBytes(r.SignP2PMessageRequest.Hash)
+		signature, err = privVal.SignP2PMessage(r.SignP2PMessageRequest.Hash, r.SignP2PMessageRequest.UniqueId)
 		if err != nil {
 			res = mustWrapMsg(&pvproto.SignedP2PMessageResponse{
 				Signature: nil, Error: &pvproto.RemoteSignerError{Code: 0, Description: err.Error()},

@@ -1368,7 +1368,7 @@ type StorageConfig struct {
 	// If the DB backend supports it, this will force the DB to compact
 	// the database levels and save on storage space. Setting this to true
 	// is most beneficial when used in combination with pruning as it will
-	//physically delete the entries marked for deletion.
+	// physically delete the entries marked for deletion.
 	// false by default (forcing compaction is disabled).
 	Compact bool `mapstructure:"compact"`
 	// Compaction interval - number of blocks to try explicit compaction on.

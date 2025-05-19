@@ -299,6 +299,11 @@ func (pv *FilePV) SignBytes(bytes []byte) ([]byte, error) {
 	return pv.Key.PrivKey.Sign(bytes)
 }
 
+// SignP2PMessage signs a p2p message hash. Implements PrivValidator.
+func (pv *FilePV) SignP2PMessage(hash []byte, uniqueID string) ([]byte, error) {
+	return pv.Key.PrivKey.Sign(hash)
+}
+
 // Save persists the FilePV to disk.
 func (pv *FilePV) Save() {
 	pv.Key.Save()

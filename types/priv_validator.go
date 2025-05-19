@@ -27,6 +27,11 @@ type PrivValidator interface {
 
 	// SignBytes signs an arbitrary array of bytes.
 	SignBytes(bytes []byte) ([]byte, error)
+
+	// SignP2PMessage signs a p2p message hash and returns a signature.
+	// This is typically used for signing consensus p2p messages.
+	// The uniqueID parameter allows for correlation with specific messages.
+	SignP2PMessage(hash []byte, uniqueID string) ([]byte, error)
 }
 
 type PrivValidatorsByAddress []PrivValidator
@@ -137,6 +142,11 @@ func (pv MockPV) SignBytes(bytes []byte) ([]byte, error) {
 	return pv.PrivKey.Sign(bytes)
 }
 
+// SignP2PMessage implements PrivValidator.
+func (pv MockPV) SignP2PMessage(hash []byte, uniqueID string) ([]byte, error) {
+	return pv.PrivKey.Sign(hash)
+}
+
 func (pv MockPV) ExtractIntoValidator(votingPower int64) *Validator {
 	pubKey, _ := pv.GetPubKey()
 	return &Validator{
@@ -172,6 +182,11 @@ func (*ErroringMockPV) SignVote(string, *cmtproto.Vote, bool) error {
 // SignProposal implements PrivValidator.
 func (*ErroringMockPV) SignProposal(string, *cmtproto.Proposal) error {
 	return ErroringMockPVErr
+}
+
+// SignP2PMessage implements PrivValidator.
+func (*ErroringMockPV) SignP2PMessage([]byte, string) ([]byte, error) {
+	return nil, ErroringMockPVErr
 }
 
 // NewErroringMockPV returns a MockPV that fails on each signing request. Again, for testing only.

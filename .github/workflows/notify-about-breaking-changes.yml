@@ -50,7 +50,7 @@ jobs:
       - name: Post to a Slack channel
         id: slack
         if: steps.read-content.outputs.file_content != ''
-        uses: slackapi/slack-github-action@v2.0.0
+        uses: slackapi/slack-github-action@v2.1.0
         with:
           channel-id: 'C03Q5J9SXS8' # cometbft-engineering
           # channel-id: 'shared-sdk-comet'

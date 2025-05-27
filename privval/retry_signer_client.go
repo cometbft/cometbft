@@ -109,5 +109,5 @@ func (sc *RetrySignerClient) SignRawBytes(chainID, uniqueID string, rawBytes []b
 		}
 		time.Sleep(sc.timeout)
 	}
-	return nil, fmt.Errorf("exhausted all attempts to sign proposal: %w", err)
+	return nil, fmt.Errorf("exhausted all attempts to sign raw bytes: %w", err)
 }

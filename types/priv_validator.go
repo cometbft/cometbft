@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/proto/tendermint/privval"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -18,12 +18,40 @@ type PrivValidator interface {
 
 	SignVote(chainID string, vote *cmtproto.Vote) error
 	SignProposal(chainID string, proposal *cmtproto.Proposal) error
-	SignDigest(chainID, uniqueID string, digest cmtbytes.HexBytes) ([]byte, error)
+	SignRawBytes(chainID, uniqueID string, rawBytes []byte) ([]byte, error)
 }
 
-// DigestSignBytes returns the bytes to sign for a digest message
-func DigestSignBytes(chainID, uniqueID string, hash cmtbytes.HexBytes) []byte {
-	return []byte(chainID + uniqueID + hash.String())
+// RawDataSignBytesPrefix defines a unique prefix added to raw data for signing purposes.
+const RawDataSignBytesPrefix = "COMET::RAW_DATA::SIGN"
+
+// RawDataSignBytes returns the canonical bytes for signing raw data messages.
+// It requires non-empty chainID, uniqueID, and rawBytes to prevent security issues.
+// Returns error if any required parameter is empty or if marshaling fails.
+func RawDataSignBytes(chainID, uniqueID string, rawBytes []byte) ([]byte, error) {
+	if chainID == "" {
+		return nil, fmt.Errorf("chainID cannot be empty")
+	}
+
+	if uniqueID == "" {
+		return nil, fmt.Errorf("uniqueID cannot be empty")
+	}
+
+	if len(rawBytes) == 0 {
+		return nil, fmt.Errorf("rawBytes cannot be empty")
+	}
+
+	prefix := []byte(RawDataSignBytesPrefix)
+
+	signRequest := &privval.SignRawBytesRequest{
+		ChainId:  chainID,
+		RawBytes: rawBytes,
+		UniqueId: uniqueID,
+	}
+	protoBytes, err := signRequest.Marshal()
+	if err != nil {
+		return nil, err
+	}
+	return append(prefix, protoBytes...), nil
 }
 
 type PrivValidatorsByAddress []PrivValidator
@@ -107,13 +135,16 @@ func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
 	return nil
 }
 
-func (pv MockPV) SignDigest(chainID, uniqueID string, digest cmtbytes.HexBytes) ([]byte, error) {
+func (pv MockPV) SignRawBytes(chainID, uniqueID string, rawBytes []byte) ([]byte, error) {
 	useChainID := chainID
 	if pv.breakProposalSigning {
 		useChainID = "incorrect-chain-id"
 	}
 
-	signBytes := DigestSignBytes(useChainID, uniqueID, digest)
+	signBytes, err := RawDataSignBytes(useChainID, uniqueID, rawBytes)
+	if err != nil {
+		return nil, err
+	}
 	sig, err := pv.PrivKey.Sign(signBytes)
 	if err != nil {
 		return nil, err

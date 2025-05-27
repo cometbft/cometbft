@@ -81,23 +81,23 @@ func DefaultValidationRequestHandler(
 		}
 	case *privvalproto.Message_PingRequest:
 		err, res = nil, mustWrapMsg(&privvalproto.PingResponse{})
-	case *privvalproto.Message_SignDigestRequest:
-		if r.SignDigestRequest.ChainId != chainID {
-			res = mustWrapMsg(&privvalproto.SignedDigestResponse{
+	case *privvalproto.Message_SignRawBytesRequest:
+		if r.SignRawBytesRequest.ChainId != chainID {
+			res = mustWrapMsg(&privvalproto.SignedRawBytesResponse{
 				Signature: []byte{}, Error: &privvalproto.RemoteSignerError{
-					Code: 0, Description: "unable to sign digest"}})
-			return res, fmt.Errorf("want chainID: %s, got chainID: %s", r.SignDigestRequest.GetChainId(), chainID)
+					Code: 0, Description: "unable to sign RawBytes"}})
+			return res, fmt.Errorf("want chainID: %s, got chainID: %s", r.SignRawBytesRequest.GetChainId(), chainID)
 		}
 
-		signature, err := privVal.SignDigest(chainID, r.SignDigestRequest.UniqueId, r.SignDigestRequest.Digest)
+		signature, err := privVal.SignRawBytes(chainID, r.SignRawBytesRequest.UniqueId, r.SignRawBytesRequest.RawBytes)
 		if err != nil {
-			res = mustWrapMsg(&privvalproto.SignedDigestResponse{
+			res = mustWrapMsg(&privvalproto.SignedRawBytesResponse{
 				Signature: []byte{}, Error: &privvalproto.RemoteSignerError{
-					Code: 0, Description: "unable to sign digest"}})
-			return res, fmt.Errorf("failed to sign digest: %w", err)
+					Code: 0, Description: "unable to sign RawBytes"}})
+			return res, fmt.Errorf("failed to sign RawBytes: %w", err)
 		}
 
-		res = mustWrapMsg(&privvalproto.SignedDigestResponse{Signature: signature, Error: nil})
+		res = mustWrapMsg(&privvalproto.SignedRawBytesResponse{Signature: signature, Error: nil})
 	default:
 		err = fmt.Errorf("unknown msg: %v", r)
 	}

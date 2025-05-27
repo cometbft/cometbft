@@ -62,28 +62,28 @@ message PingRequest {}
 // PingResponse is a response to confirm that the connection is alive.
 message PingResponse {}
 
-message SignDigestRequest {
+message SignRawBytesRequest {
   string chain_id  = 1;
-  bytes  digest    = 2;
+  bytes  raw_bytes = 2;
   string unique_id = 3;
 }
 
-message SignedDigestResponse {
+message SignedRawBytesResponse {
   bytes             signature = 1;
   RemoteSignerError error     = 2;
 }
 
 message Message {
   oneof sum {
-    PubKeyRequest            pub_key_request             = 1;
-    PubKeyResponse           pub_key_response            = 2;
-    SignVoteRequest          sign_vote_request           = 3;
-    SignedVoteResponse       signed_vote_response        = 4;
-    SignProposalRequest      sign_proposal_request       = 5;
-    SignedProposalResponse   signed_proposal_response    = 6;
-    PingRequest              ping_request                = 7;
-    PingResponse             ping_response               = 8;
-    SignDigestRequest    sign_digest_request    = 9;
-    SignedDigestResponse signed_digest_response = 10;
+    PubKeyRequest          pub_key_request           = 1;
+    PubKeyResponse         pub_key_response          = 2;
+    SignVoteRequest        sign_vote_request         = 3;
+    SignedVoteResponse     signed_vote_response      = 4;
+    SignProposalRequest    sign_proposal_request     = 5;
+    SignedProposalResponse signed_proposal_response  = 6;
+    PingRequest            ping_request              = 7;
+    PingResponse           ping_response             = 8;
+    SignRawBytesRequest    sign_raw_bytes_request    = 9;
+    SignedRawBytesResponse signed_raw_bytes_response = 10;
   }
 }

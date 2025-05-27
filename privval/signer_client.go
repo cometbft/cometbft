@@ -2,7 +2,6 @@ package privval
 
 import (
 	"fmt"
-	"github.com/cometbft/cometbft/libs/bytes"
 	"time"
 
 	"github.com/cometbft/cometbft/crypto"
@@ -19,17 +18,17 @@ type SignerClient struct {
 	chainID  string
 }
 
-func (sc *SignerClient) SignDigest(chainID, uniqueID string, digest bytes.HexBytes) ([]byte, error) {
-	response, err := sc.endpoint.SendRequest(mustWrapMsg(&privvalproto.SignDigestRequest{
+func (sc *SignerClient) SignRawBytes(chainID, uniqueID string, rawBytes []byte) ([]byte, error) {
+	response, err := sc.endpoint.SendRequest(mustWrapMsg(&privvalproto.SignRawBytesRequest{
 		ChainId:  chainID,
-		Digest:   digest,
+		RawBytes: rawBytes,
 		UniqueId: uniqueID,
 	}))
 	if err != nil {
 		return nil, err
 	}
 
-	resp := response.GetSignedDigestResponse()
+	resp := response.GetSignedRawBytesResponse()
 	if resp == nil {
 		return nil, ErrUnexpectedResponse
 	}

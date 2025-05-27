@@ -63,10 +63,10 @@ curl -s localhost:26657/status
 
 ### Sending Transactions
 
-With the KVstore app running, we can send transactions with a key and value:
+With the KVstore app running, we can send transactions with a key and value, in either `key=value` or `key:value` format.
 
 ```sh
-curl -s 'localhost:26657/broadcast_tx_commit?tx="name=satoshi"'
+curl -s 'localhost:26657/broadcast_tx_commit?tx="name=satoshi"' # or ?tx="name:satoshi"
 ```
 
 and check that it worked by querying the key:

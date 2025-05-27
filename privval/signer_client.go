@@ -18,6 +18,27 @@ type SignerClient struct {
 	chainID  string
 }
 
+func (sc *SignerClient) SignRawBytes(chainID, uniqueID string, rawBytes []byte) ([]byte, error) {
+	response, err := sc.endpoint.SendRequest(mustWrapMsg(&privvalproto.SignRawBytesRequest{
+		ChainId:  chainID,
+		RawBytes: rawBytes,
+		UniqueId: uniqueID,
+	}))
+	if err != nil {
+		return nil, err
+	}
+
+	resp := response.GetSignedRawBytesResponse()
+	if resp == nil {
+		return nil, ErrUnexpectedResponse
+	}
+	if resp.Error != nil {
+		return nil, &RemoteSignerError{Code: int(resp.Error.Code), Description: resp.Error.Description}
+	}
+
+	return resp.Signature, nil
+}
+
 var _ types.PrivValidator = (*SignerClient)(nil)
 
 // NewSignerClient returns an instance of SignerClient.

@@ -10,7 +10,7 @@ import (
 
 func TestRawDataSignBytes(t *testing.T) {
 	const (
-		testPrefix   = RawDataSignBytesPrefix
+		testPrefix   = RawBytesSignBytesPrefix
 		testChainID  = "test-chain"
 		testUniqueID = "unique-id-123"
 	)

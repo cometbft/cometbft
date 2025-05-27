@@ -21,8 +21,8 @@ type PrivValidator interface {
 	SignRawBytes(chainID, uniqueID string, rawBytes []byte) ([]byte, error)
 }
 
-// RawDataSignBytesPrefix defines a unique prefix added to raw data for signing purposes.
-const RawDataSignBytesPrefix = "COMET::RAW_DATA::SIGN"
+// RawBytesSignBytesPrefix defines a unique prefix added to raw bytes for signing purposes.
+const RawBytesSignBytesPrefix = "COMET::RAW_BYTES::SIGN"
 
 // RawBytesMessageSignBytes returns the canonical bytes for signing raw data messages.
 // It requires non-empty chainID, uniqueID, and rawBytes to prevent security issues.
@@ -40,7 +40,7 @@ func RawBytesMessageSignBytes(chainID, uniqueID string, rawBytes []byte) ([]byte
 		return nil, fmt.Errorf("rawBytes cannot be empty")
 	}
 
-	prefix := []byte(RawDataSignBytesPrefix)
+	prefix := []byte(RawBytesSignBytesPrefix)
 
 	signRequest := &privval.SignRawBytesRequest{
 		ChainId:  chainID,

@@ -160,7 +160,7 @@ type FilePV struct {
 }
 
 func (pv *FilePV) SignRawBytes(chainID, uniqueID string, rawBytes []byte) ([]byte, error) {
-	signBytes, err := types.RawDataSignBytes(chainID, uniqueID, rawBytes)
+	signBytes, err := types.RawBytesMessageSignBytes(chainID, uniqueID, rawBytes)
 	if err != nil {
 		return nil, err
 	}

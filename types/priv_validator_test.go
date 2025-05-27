@@ -62,7 +62,7 @@ func TestRawDataSignBytes(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Call the function under test
-			signBytes, err := RawDataSignBytes(tc.chainID, tc.uniqueID, tc.rawBytes)
+			signBytes, err := RawBytesMessageSignBytes(tc.chainID, tc.uniqueID, tc.rawBytes)
 
 			if tc.expectError {
 				assert.Error(t, err)

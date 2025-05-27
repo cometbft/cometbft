@@ -198,9 +198,9 @@ func TestSignerVote(t *testing.T) {
 	}
 }
 
-func TestSignerDigest(t *testing.T) {
+func TestSignerRawBytes(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
-		rawData := cmtrand.Bytes(500)
+		rawBytes := cmtrand.Bytes(500)
 		uniqueID := cmtrand.Str(12)
 
 		tc := tc
@@ -215,9 +215,9 @@ func TestSignerDigest(t *testing.T) {
 			}
 		})
 
-		want, err := tc.mockPV.SignRawBytes(tc.chainID, uniqueID, rawData)
+		want, err := tc.mockPV.SignRawBytes(tc.chainID, uniqueID, rawBytes)
 		require.NoError(t, err)
-		have, err := tc.signerClient.SignRawBytes(tc.chainID, uniqueID, rawData)
+		have, err := tc.signerClient.SignRawBytes(tc.chainID, uniqueID, rawBytes)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, have)

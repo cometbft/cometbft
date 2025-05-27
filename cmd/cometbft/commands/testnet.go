@@ -77,7 +77,7 @@ func init() {
 		"randomize the moniker for each generated node")
 }
 
-// TestnetFilesCmd allows initialisation of files for a CometBFT testnet.
+// TestnetFilesCmd allows initialization of files for a CometBFT testnet.
 var TestnetFilesCmd = &cobra.Command{
 	Use:   "testnet",
 	Short: "Initialize files for a CometBFT testnet",

@@ -35,7 +35,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // LegacyABCIResponses retains the responses
 // of the legacy ABCI calls during block processing.
-// Note ReponseDeliverTx is renamed to ExecTxResult but they are semantically the same
+// Note ResponseDeliverTx is renamed to ExecTxResult but they are semantically the same
 // Kept for backwards compatibility for versions prior to v0.38
 type LegacyABCIResponses struct {
 	DeliverTxs []*v1beta3.ExecTxResult `protobuf:"bytes,1,rep,name=deliver_txs,json=deliverTxs,proto3" json:"deliver_txs,omitempty"`

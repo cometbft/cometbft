@@ -9,9 +9,9 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	lru "github.com/hashicorp/golang-lru/v2"
 
+	dbm "github.com/cometbft/cometbft-db"
 	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/evidence"
 	"github.com/cometbft/cometbft/libs/metrics"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
@@ -44,7 +44,7 @@ The store can be assumed to contain all contiguous blocks between base and heigh
 // deserializing loaded data, indicating probable corruption on disk.
 */
 type BlockStore struct {
-	db      cmtdb.DB
+	db      dbm.DB
 	metrics *Metrics
 
 	// mtx guards access to the struct fields listed below it. Although we rely on the database
@@ -121,7 +121,7 @@ func setDBLayout(bStore *BlockStore, dbKeyLayoutVersion string) {
 
 // NewBlockStore returns a new BlockStore with the given DB,
 // initialized to the last height that was committed to the DB.
-func NewBlockStore(db cmtdb.DB, options ...BlockStoreOption) *BlockStore {
+func NewBlockStore(db dbm.DB, options ...BlockStoreOption) *BlockStore {
 	start := time.Now()
 
 	bs := LoadBlockStoreState(db)
@@ -489,7 +489,7 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 	pruned := uint64(0)
 	batch := bs.db.NewBatch()
 	defer batch.Close()
-	flush := func(batch cmtdb.Batch, base int64) error {
+	flush := func(batch dbm.Batch, base int64) error {
 		// We can't trust batches to be atomic, so update base first to make sure no one
 		// tries to access missing blocks.
 		bs.mtx.Lock()
@@ -667,7 +667,7 @@ func (bs *BlockStore) saveBlockToBatch(
 	block *types.Block,
 	blockParts *types.PartSet,
 	seenCommit *types.Commit,
-	batch cmtdb.Batch,
+	batch dbm.Batch,
 ) error {
 	if block == nil {
 		panic("BlockStore can only save a non-nil block")
@@ -746,7 +746,7 @@ func (bs *BlockStore) saveBlockToBatch(
 	return nil
 }
 
-func (bs *BlockStore) saveBlockPart(height int64, index int, part *types.Part, batch cmtdb.Batch, saveBlockPartsToBatch bool) {
+func (bs *BlockStore) saveBlockPart(height int64, index int, part *types.Part, batch dbm.Batch, saveBlockPartsToBatch bool) {
 	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "save_block_part"), time.Now())()
 	pbp, err := part.ToProto()
 	if err != nil {
@@ -766,7 +766,7 @@ func (bs *BlockStore) saveBlockPart(height int64, index int, part *types.Part, b
 }
 
 // Contract: the caller MUST have, at least, a read lock on `bs`.
-func (bs *BlockStore) saveStateAndWriteDB(batch cmtdb.Batch, errMsg string) error {
+func (bs *BlockStore) saveStateAndWriteDB(batch dbm.Batch, errMsg string) error {
 	bss := cmtstore.BlockStoreState{
 		Base:   bs.base,
 		Height: bs.height,
@@ -810,7 +810,7 @@ func (bs *BlockStore) Close() error {
 var blockStoreKey = []byte("blockStore")
 
 // SaveBlockStoreState persists the blockStore state to the database.
-func SaveBlockStoreState(bsj *cmtstore.BlockStoreState, batch cmtdb.Batch) {
+func SaveBlockStoreState(bsj *cmtstore.BlockStoreState, batch dbm.Batch) {
 	bytes, err := proto.Marshal(bsj)
 	if err != nil {
 		panic(fmt.Sprintf("Could not marshal state bytes: %v", err))
@@ -822,7 +822,7 @@ func SaveBlockStoreState(bsj *cmtstore.BlockStoreState, batch cmtdb.Batch) {
 
 // LoadBlockStoreState returns the BlockStoreState as loaded from disk.
 // If no BlockStoreState was previously persisted, it returns the zero value.
-func LoadBlockStoreState(db cmtdb.DB) cmtstore.BlockStoreState {
+func LoadBlockStoreState(db dbm.DB) cmtstore.BlockStoreState {
 	bytes, err := db.Get(blockStoreKey)
 	if err != nil {
 		panic(err)

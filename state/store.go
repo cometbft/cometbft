@@ -10,10 +10,10 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/google/orderedcode"
 
+	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v2"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	cmtdb "github.com/cometbft/cometbft/db"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
@@ -201,9 +201,9 @@ type Store interface {
 	Close() error
 }
 
-// dbStore wraps a [cmtdb.DB].
+// dbStore wraps a db (github.com/cometbft/cometbft-db).
 type dbStore struct {
-	db cmtdb.DB
+	db dbm.DB
 
 	DBKeyLayout KeyLayout
 
@@ -272,7 +272,7 @@ func setDBKeyLayout(store *dbStore, dbKeyLayoutVersion string) string {
 }
 
 // NewStore creates the dbStore of the state pkg.
-func NewStore(db cmtdb.DB, options StoreOptions) Store {
+func NewStore(db dbm.DB, options StoreOptions) Store {
 	if options.Metrics == nil {
 		options.Metrics = NopMetrics()
 	}
@@ -382,7 +382,7 @@ func (store dbStore) save(state State, key []byte) error {
 	start := time.Now()
 
 	batch := store.db.NewBatch()
-	defer func(batch cmtdb.Batch) {
+	defer func(batch dbm.Batch) {
 		err := batch.Close()
 		if err != nil {
 			panic(err)
@@ -427,7 +427,7 @@ func (store dbStore) save(state State, key []byte) error {
 // BootstrapState saves a new state, used e.g. by state sync when starting from non-zero height.
 func (store dbStore) Bootstrap(state State) error {
 	batch := store.db.NewBatch()
-	defer func(batch cmtdb.Batch) {
+	defer func(batch dbm.Batch) {
 		err := batch.Close()
 		if err != nil {
 			panic(err)
@@ -968,7 +968,7 @@ func lastStoredHeightFor(height, lastHeightChanged int64) int64 {
 }
 
 // CONTRACT: Returned ValidatorsInfo can be mutated.
-func loadValidatorsInfo(db cmtdb.DB, valInfoKey []byte) (*cmtstate.ValidatorsInfo, float64, error) {
+func loadValidatorsInfo(db dbm.DB, valInfoKey []byte) (*cmtstate.ValidatorsInfo, float64, error) {
 	start := time.Now()
 	buf, err := db.Get(valInfoKey)
 	if err != nil {
@@ -998,7 +998,7 @@ func loadValidatorsInfo(db cmtdb.DB, valInfoKey []byte) (*cmtstate.ValidatorsInf
 // `height` is the effective height for which the validator is responsible for
 // signing. It should be called from s.Save(), right before the state itself is
 // persisted.
-func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet *types.ValidatorSet, batch cmtdb.Batch) error {
+func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet *types.ValidatorSet, batch dbm.Batch) error {
 	if lastHeightChanged > height {
 		return errors.New("lastHeightChanged cannot be greater than ValidatorsInfo height")
 	}
@@ -1089,7 +1089,7 @@ func (store dbStore) loadConsensusParamsInfo(height int64) (*cmtstate.ConsensusP
 // It should be called from s.Save(), right before the state itself is persisted.
 // If the consensus params did not change after processing the latest block,
 // only the last height for which they changed is persisted.
-func (store dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, params types.ConsensusParams, batch cmtdb.Batch) error {
+func (store dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, params types.ConsensusParams, batch dbm.Batch) error {
 	paramsInfo := &cmtstate.ConsensusParamsInfo{
 		LastHeightChanged: changeHeight,
 	}

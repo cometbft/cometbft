@@ -9,11 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	dbm "github.com/cometbft/cometbft-db"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	cmtdb "github.com/cometbft/cometbft/db"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
@@ -62,8 +62,7 @@ func TestV1LBKey(t *testing.T) {
 
 func TestDBKeyLayoutVersioning(t *testing.T) {
 	prefix := "TestDBKeyLayoutVersioning"
-	db, err := cmtdb.NewInMem()
-	require.NoError(t, err)
+	db := dbm.NewMemDB()
 	dbStore := New(db, prefix)
 
 	// Empty store
@@ -100,8 +99,7 @@ func TestDBKeyLayoutVersioning(t *testing.T) {
 	// test on v2
 
 	prefix = "TestDBKeyLayoutVersioningV2"
-	db2, err := cmtdb.NewInMem()
-	require.NoError(t, err)
+	db2 := dbm.NewMemDB()
 	dbStore2 := NewWithDBVersion(db2, prefix, "v2")
 
 	// Empty store
@@ -136,9 +134,7 @@ func TestDBKeyLayoutVersioning(t *testing.T) {
 }
 
 func TestLast_FirstLightBlockHeight(t *testing.T) {
-	memDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-	dbStore := New(memDB, "TestLast_FirstLightBlockHeight")
+	dbStore := New(dbm.NewMemDB(), "TestLast_FirstLightBlockHeight")
 
 	// Empty store
 	height, err := dbStore.LastLightBlockHeight()
@@ -163,9 +159,7 @@ func TestLast_FirstLightBlockHeight(t *testing.T) {
 }
 
 func Test_SaveLightBlockCustomConfig(t *testing.T) {
-	memDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-	dbStore := NewWithDBVersion(memDB, "Test_SaveLightBlockAndValidatorSet", "v2")
+	dbStore := NewWithDBVersion(dbm.NewMemDB(), "Test_SaveLightBlockAndValidatorSet", "v2")
 
 	// Empty store
 	h, err := dbStore.LightBlock(1)
@@ -194,16 +188,14 @@ func Test_SaveLightBlockCustomConfig(t *testing.T) {
 }
 
 func Test_LightBlockBefore(t *testing.T) {
-	memDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-	dbStore := New(memDB, "Test_LightBlockBefore")
+	dbStore := New(dbm.NewMemDB(), "Test_LightBlockBefore")
 
 	assert.Panics(t, func() {
 		_, _ = dbStore.LightBlockBefore(0)
 		_, _ = dbStore.LightBlockBefore(100)
 	})
 
-	err = dbStore.SaveLightBlock(randLightBlock(int64(2)))
+	err := dbStore.SaveLightBlock(randLightBlock(int64(2)))
 	require.NoError(t, err)
 
 	h, err := dbStore.LightBlockBefore(3)
@@ -214,13 +206,11 @@ func Test_LightBlockBefore(t *testing.T) {
 }
 
 func Test_Prune(t *testing.T) {
-	memDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-	dbStore := New(memDB, "Test_Prune")
+	dbStore := New(dbm.NewMemDB(), "Test_Prune")
 
 	// Empty store
 	assert.EqualValues(t, 0, dbStore.Size())
-	err = dbStore.Prune(0)
+	err := dbStore.Prune(0)
 	require.NoError(t, err)
 
 	// One header
@@ -253,9 +243,7 @@ func Test_Prune(t *testing.T) {
 }
 
 func Test_Concurrency(t *testing.T) {
-	memDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-	dbStore := New(memDB, "Test_Prune")
+	dbStore := New(dbm.NewMemDB(), "Test_Prune")
 
 	var wg sync.WaitGroup
 	for i := 1; i <= 100; i++ {

@@ -3,7 +3,6 @@ package txindex
 import (
 	"context"
 
-	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/types"
@@ -65,8 +64,6 @@ func (is *IndexerService) OnStart() error {
 	go func() {
 		for {
 			select {
-			case <-is.Quit():
-				return
 			case <-blockSub.Canceled():
 				return
 			case msg := <-blockSub.Out():
@@ -77,14 +74,7 @@ func (is *IndexerService) OnStart() error {
 				batch := NewBatch(numTxs)
 
 				for i := int64(0); i < numTxs; i++ {
-					var msg2 cmtpubsub.Message
-					select {
-					case <-is.Quit():
-						return
-					case <-txsSub.Canceled():
-						return
-					case msg2 = <-txsSub.Out():
-					}
+					msg2 := <-txsSub.Out()
 					txResult := msg2.Data().(types.EventDataTx).TxResult
 
 					if err = batch.Add(&txResult); err != nil {

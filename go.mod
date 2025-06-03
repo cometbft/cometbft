@@ -148,12 +148,3 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools v2.2.0+incompatible // indirect
 )
-
-retract (
-	// a regression was introduced
-	v0.38.4
-	// a breaking change was introduced
-	v0.38.3
-	// superseded by v0.38.3 because of ASA-2024-001
-	[v0.38.0, v0.38.2]
-)

@@ -459,7 +459,7 @@ func createTransport(
 			// ABCI query for ID filtering.
 			func(_ p2p.IPeerSet, p p2p.Peer) error {
 				res, err := proxyApp.Query().Query(context.TODO(), &abci.QueryRequest{
-					Path: fmt.Sprintf("/p2p/filter/id/%s", p.ID()),
+					Path: "/p2p/filter/id/" + p.ID(),
 				})
 				if err != nil {
 					return err

@@ -24,7 +24,7 @@ func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error
 		nodeInfo, ok := peer.NodeInfo().(p2p.NodeInfoDefault)
 		if !ok {
 			err = ErrInvalidNodeType{
-				PeerID:   string(peer.ID()),
+				PeerID:   peer.ID(),
 				Expected: fmt.Sprintf("%T", p2p.NodeInfoDefault{}),
 				Actual:   fmt.Sprintf("%T", peer.NodeInfo()),
 			}

@@ -281,7 +281,7 @@ func WALToProto(msg WALMessage) (*cmtcons.WALMessage, error) {
 			Sum: &cmtcons.WALMessage_MsgInfo{
 				MsgInfo: &cmtcons.MsgInfo{
 					Msg:         cm,
-					PeerID:      string(msg.PeerID),
+					PeerID:      msg.PeerID,
 					ReceiveTime: rtp,
 				},
 			},

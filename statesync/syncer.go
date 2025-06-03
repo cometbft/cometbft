@@ -362,7 +362,7 @@ func (s *syncer) applyChunks(chunks *chunkQueue) error {
 		resp, err := s.conn.ApplySnapshotChunk(context.TODO(), &abci.ApplySnapshotChunkRequest{
 			Index:  chunk.Index,
 			Chunk:  chunk.Chunk,
-			Sender: string(chunk.Sender),
+			Sender: chunk.Sender,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to apply chunk %v: %w", chunk.Index, err)

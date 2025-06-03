@@ -597,7 +597,7 @@ func TestSyncer_applyChunks_RejectSenders(t *testing.T) {
 				Index: 2, Chunk: []byte{2}, Sender: "c",
 			}).Once().Return(&abci.ApplySnapshotChunkResponse{
 				Result:        tc.result,
-				RejectSenders: []string{string(peerB.ID())},
+				RejectSenders: []string{peerB.ID()},
 			}, nil)
 
 			// On retry, the last chunk will be tried again, so we just accept it then.

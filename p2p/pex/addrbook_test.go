@@ -411,7 +411,7 @@ func testCreatePrivateAddrs(t *testing.T, numAddrs int) ([]*na.NetAddr, []string
 
 	private := make([]string, numAddrs)
 	for i, addr := range addrs {
-		private[i] = string(addr.ID)
+		private[i] = addr.ID
 	}
 	return addrs, private
 }

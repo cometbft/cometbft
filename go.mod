@@ -1,4 +1,4 @@
-module github.com/cometbft/cometbft
+module github.com/cometbft/cometbft/v2
 
 go 1.23.5
 

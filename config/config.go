@@ -1018,7 +1018,7 @@ func DefaultMempoolConfig() *MempoolConfig {
 		CacheSize:   10000,
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: 0,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    0,
-		DOGProtocolEnabled:  true,
+		DOGProtocolEnabled:  false,
 		DOGTargetRedundancy: 1,
 		DOGAdjustInterval:   1000 * time.Millisecond,
 	}

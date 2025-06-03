@@ -1,11 +1,12 @@
 package state_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
-	cmtdb "github.com/cometbft/cometbft/db"
+	dbm "github.com/cometbft/cometbft-db"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
@@ -28,7 +29,7 @@ func TestTxFilter(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		stateDB, err := cmtdb.NewInMem()
+		stateDB, err := dbm.NewDB("state", "memdb", os.TempDir())
 		require.NoError(t, err)
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,

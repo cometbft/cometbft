@@ -21,6 +21,23 @@ proxy_app = "{{ .BaseConfig.ProxyApp }}"
 # A custom human readable name for this node
 moniker = "{{ .BaseConfig.Moniker }}"
 
+# Database backend: badgerdb | goleveldb | pebbledb | rocksdb
+# * badgerdb (uses github.com/dgraph-io/badger)
+#   - stable
+#   - pure go
+#   - use badgerdb build tag (go build -tags badgerdb)
+# * goleveldb (github.com/syndtr/goleveldb)
+#   - UNMAINTAINED
+#   - stable
+#   - pure go
+# * pebbledb (uses github.com/cockroachdb/pebble)
+#   - stable
+#   - pure go
+# * rocksdb (uses github.com/linxGnu/grocksdb)
+#   - requires gcc
+#   - use rocksdb build tag (go build -tags rocksdb)
+db_backend = "{{ .BaseConfig.DBBackend }}"
+
 # Database directory
 db_dir = "{{ js .BaseConfig.DBPath }}"
 
@@ -540,7 +557,7 @@ initial_block_results_retain_height = {{ .Storage.Pruning.DataCompanion.InitialB
 #
 # Options:
 #   1) "null"
-#   2) "kv" (default) - the simplest possible indexer, backed by pebbledb.
+#   2) "kv" (default) - the simplest possible indexer, backed by key-value storage (defaults to levelDB; see DBBackend).
 # 		- When "kv" is chosen "tx.height" and "tx.hash" will always be indexed.
 #   3) "psql" - the indexer services backed by PostgreSQL.
 # When "kv" or "psql" is chosen "tx.height" and "tx.hash" will always be indexed.

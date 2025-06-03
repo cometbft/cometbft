@@ -14,11 +14,11 @@ import (
 
 	_ "github.com/lib/pq" //nolint: gci // provide the psql db driver.
 
+	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/blocksync"
 	cs "github.com/cometbft/cometbft/internal/consensus"
 	"github.com/cometbft/cometbft/internal/evidence"
@@ -162,7 +162,7 @@ type blockSyncReactor interface {
 
 // ------------------------------------------------------------------------------
 
-func initDBs(config *cfg.Config, dbProvider cfg.DBProvider) (bsDB cmtdb.DB, stateDB cmtdb.DB, err error) {
+func initDBs(config *cfg.Config, dbProvider cfg.DBProvider) (bsDB dbm.DB, stateDB dbm.DB, err error) {
 	bsDB, err = dbProvider(&cfg.DBContext{ID: "blockstore", Config: config})
 	if err != nil {
 		return nil, nil, err
@@ -631,7 +631,7 @@ var (
 )
 
 func LoadStateFromDBOrGenesisDocProviderWithConfig(
-	stateDB cmtdb.DB,
+	stateDB dbm.DB,
 	genesisDocProvider GenesisDocProvider,
 	operatorGenesisHashHex string,
 	config *cfg.Config,
@@ -701,7 +701,7 @@ func LoadStateFromDBOrGenesisDocProviderWithConfig(
 // Note that if you don't have a version of the key layout set in your DB already,
 // and no config is passed, it will default to v1.
 func LoadStateFromDBOrGenesisDocProvider(
-	stateDB cmtdb.DB,
+	stateDB dbm.DB,
 	genesisDocProvider GenesisDocProvider,
 	operatorGenesisHashHex string,
 ) (sm.State, *types.GenesisDoc, error) {

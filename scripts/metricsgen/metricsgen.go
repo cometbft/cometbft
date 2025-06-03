@@ -168,7 +168,7 @@ func ParseMetricsDir(dir string, structName string) (TemplateData, error) {
 
 	// Grab the package name.
 	var pkgName string
-	var pkg *ast.Package // nolint:staticcheck
+	var pkg *ast.Package //nolint:staticcheck
 	// TODO(thane): Figure out a more readable way of implementing this.
 
 	for pkgName, pkg = range d { //nolint:revive

@@ -15,7 +15,6 @@ import (
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/internal/bits"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
@@ -255,7 +254,7 @@ func TestWALMsgProto(t *testing.T) {
 				Round:  1,
 				Part:   &parts,
 			},
-			PeerID: p2p.ID("string"),
+			PeerID: "string",
 		}, &cmtcons.WALMessage{
 			Sum: &cmtcons.WALMessage_MsgInfo{
 				MsgInfo: &cmtcons.MsgInfo{
@@ -278,7 +277,7 @@ func TestWALMsgProto(t *testing.T) {
 				Round:  1,
 				Part:   &parts,
 			},
-			PeerID: p2p.ID("string"),
+			PeerID: "string",
 		}, &cmtcons.WALMessage{
 			Sum: &cmtcons.WALMessage_MsgInfo{
 				MsgInfo: &cmtcons.MsgInfo{
@@ -302,7 +301,7 @@ func TestWALMsgProto(t *testing.T) {
 				Round:  1,
 				Part:   &parts,
 			},
-			PeerID: p2p.ID("string"),
+			PeerID: "string",
 		}, &cmtcons.WALMessage{
 			Sum: &cmtcons.WALMessage_MsgInfo{
 				MsgInfo: &cmtcons.MsgInfo{

@@ -42,7 +42,7 @@ func (nk *NodeKey) PubKey() crypto.PubKey {
 // PubKeyToID returns the ID corresponding to the given PubKey.
 // It's the hex-encoding of the pubKey.Address().
 func PubKeyToID(pubKey crypto.PubKey) ID {
-	return ID(hex.EncodeToString(pubKey.Address()))
+	return hex.EncodeToString(pubKey.Address())
 }
 
 // LoadOrGen attempts to load the NodeKey from the given filePath. If

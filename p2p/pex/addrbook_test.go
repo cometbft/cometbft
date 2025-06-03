@@ -202,7 +202,7 @@ func randIPv4Address(t *testing.T) *na.NetAddr {
 			cmtrand.Intn(255),
 		)
 		port := cmtrand.Intn(65535-1) + 1
-		id := nodekey.ID(hex.EncodeToString(cmtrand.Bytes(nodekey.IDByteLength)))
+		id := hex.EncodeToString(cmtrand.Bytes(nodekey.IDByteLength))
 		idAddr := na.IDAddrString(id, fmt.Sprintf("%v:%v", ip, port))
 		addr, err := na.NewFromString(idAddr)
 		require.NoError(t, err)

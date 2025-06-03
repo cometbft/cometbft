@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	noSender    = p2p.ID("")
+	noSender    = ""
 	defaultLane = "default"
 )
 

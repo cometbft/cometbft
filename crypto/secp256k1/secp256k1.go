@@ -8,7 +8,7 @@ import (
 
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
-	"golang.org/x/crypto/ripemd160" //nolint: staticcheck // necessary for Bitcoin address format
+	"golang.org/x/crypto/ripemd160" //nolint: gosec,staticcheck // necessary for Bitcoin address format
 
 	"github.com/cometbft/cometbft/crypto"
 	cmtjson "github.com/cometbft/cometbft/libs/json"

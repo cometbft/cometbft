@@ -17,12 +17,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/evidence"
 	kt "github.com/cometbft/cometbft/internal/keytypes"
 	cmtos "github.com/cometbft/cometbft/internal/os"
@@ -55,13 +55,8 @@ func TestNodeStartStop(t *testing.T) {
 	t.Logf("Started node %v", n.sw.NodeInfo())
 
 	// wait for the node to produce a block
-	blocksSub, err := n.EventBus().Subscribe(
-		context.Background(),
-		"node_test",
-		types.EventQueryNewBlock,
-	)
+	blocksSub, err := n.EventBus().Subscribe(context.Background(), "node_test", types.EventQueryNewBlock)
 	require.NoError(t, err)
-
 	select {
 	case <-blocksSub.Out():
 	case <-blocksSub.Canceled():
@@ -69,16 +64,6 @@ func TestNodeStartStop(t *testing.T) {
 	case <-time.After(10 * time.Second):
 		t.Fatal("timed out waiting for the node to produce a block")
 	}
-
-	// The test unfolds too quickly for the node's indexer to finish its operations.
-	// Therefore, the goroutine below that calls n.Stop() will close the indexer's
-	// database right when the indexer is trying to write to it at line
-	// state/txindex/indexer_service.go:109
-	//, thus causing a panic.  This small sleep allows the indexer to finish its
-	// write operation before the node is shut down.
-	// Unfortunately, there is no graceful shutdown available for the database layer,
-	// i.e., make the database wait for all the active connections before closing.
-	time.Sleep(100 * time.Millisecond)
 
 	// stop the node
 	go func() {
@@ -92,13 +77,10 @@ func TestNodeStartStop(t *testing.T) {
 		pid := os.Getpid()
 		p, err := os.FindProcess(pid)
 		if err != nil {
-			t.Fatal(err)
+			panic(err)
 		}
 		err = p.Signal(syscall.SIGABRT)
-		if err != nil {
-			t.Log(err)
-		}
-
+		fmt.Println(err)
 		t.Fatal("timed out waiting for shutdown")
 	}
 }
@@ -347,11 +329,8 @@ func TestCreateProposalBlock(t *testing.T) {
 		mempl.WithPostCheck(sm.TxPostCheck(state)))
 
 	// Make EvidencePool
-	evidenceDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-	blkStoreDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-	blockStore := store.NewBlockStore(blkStoreDB)
+	evidenceDB := dbm.NewMemDB()
+	blockStore := store.NewBlockStore(dbm.NewMemDB())
 	evidencePool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	require.NoError(t, err)
 	evidencePool.SetLogger(logger)
@@ -455,9 +434,7 @@ func TestMaxProposalBlockSize(t *testing.T) {
 		mempl.WithPreCheck(sm.TxPreCheck(state)),
 		mempl.WithPostCheck(sm.TxPostCheck(state)))
 
-	blkStoreDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-	blockStore := store.NewBlockStore(blkStoreDB)
+	blockStore := store.NewBlockStore(dbm.NewMemDB())
 
 	// fill the mempool with one txs just below the maximum size
 	txLength := int(types.MaxDataBytesNoEvidence(maxBytes, 1))
@@ -548,6 +525,8 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_delete_genesis_from_db")
 	defer os.RemoveAll(config.RootDir)
+	// Use goleveldb so we can reuse the same db for the second NewNode()
+	config.DBBackend = string(dbm.PebbleDBBackend)
 	// Ensure the genesis doc hash is saved to db
 	stateDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "state", Config: config})
 	require.NoError(t, err)
@@ -600,6 +579,9 @@ func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
 func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_genesis_hash")
 	defer os.RemoveAll(config.RootDir)
+
+	// Use goleveldb so we can reuse the same db for the second NewNode()
+	config.DBBackend = string(dbm.PebbleDBBackend)
 
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	require.NoError(t, err)
@@ -668,6 +650,7 @@ func TestNodeGenesisHashFlagMatch(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_genesis_hash_flag_match")
 	defer os.RemoveAll(config.RootDir)
 
+	config.DBBackend = string(dbm.PebbleDBBackend)
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	require.NoError(t, err)
 	// Get correct hash of correct genesis file
@@ -698,6 +681,9 @@ func TestNodeGenesisHashFlagMatch(t *testing.T) {
 func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_genesis_hash_flag_mismatch")
 	defer os.RemoveAll(config.RootDir)
+
+	// Use goleveldb so we can reuse the same db for the second NewNode()
+	config.DBBackend = string(dbm.PebbleDBBackend)
 
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	require.NoError(t, err)
@@ -737,6 +723,7 @@ func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 
 func TestLoadStateFromDBOrGenesisDocProviderWithConfig(t *testing.T) {
 	config := test.ResetTestRoot(t.Name())
+	config.DBBackend = string(dbm.PebbleDBBackend)
 
 	_, stateDB, err := initDBs(config, cfg.DefaultDBProvider)
 	require.NoErrorf(t, err, "state DB setup: %s", err)
@@ -876,7 +863,7 @@ func TestGenesisDoc(t *testing.T) {
 	})
 }
 
-func state(nVals int, height int64) (sm.State, cmtdb.DB, []types.PrivValidator) {
+func state(nVals int, height int64) (sm.State, dbm.DB, []types.PrivValidator) {
 	privVals := make([]types.PrivValidator, nVals)
 	vals := make([]types.GenesisValidator, nVals)
 	for i := 0; i < nVals; i++ {
@@ -896,10 +883,7 @@ func state(nVals int, height int64) (sm.State, cmtdb.DB, []types.PrivValidator) 
 	})
 
 	// save validators to db for 2 heights
-	stateDB, err := cmtdb.NewInMem()
-	if err != nil {
-		panic(err)
-	}
+	stateDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})

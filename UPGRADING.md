@@ -7,15 +7,6 @@ This guide provides instructions for upgrading to specific versions of CometBFT.
 
 Non-replay-protected vote extensions are added to CometBFT to allow applications to sign a blob of bytes by CometBFT using validator's private key infrastructure. Compared to existing vote extensions which are replay protected by containing meta information as chain-id, height and round (canonical vote extension) the data of the non-replay-protected vote extensions is signed as provided by the application. The non-replay-protected vote extension field is an optional part of the vote extension mechanism and it is up to the application to protect this field against replay attacks. If the application does not populate the non-replay-protected field and does not read it either in `VerifyVoteExtension` or `PrepareProposal` there are no security implications to consider by the application, other than limiting the fields's max length (`MaxVoteExtensionSize`) in `VerifyVoteExtension`, just as it is done with the replay protected part
 
-### DB Changes
-
-CometBFT was refactored to use a single database, PebbleDB. CometBFT no longer
-imports `cometbft/cometbft-db`. If you want to use a different database, you
-can implement the `DB` interface yourself or simply copy the
-previously-imported wrapper from https://github.com/cometbft/cometbft-db and
-use it when constructing a new node by supplying different
-[`DBProvider`](https://pkg.go.dev/github.com/cometbft/cometbft/config#DBProvider).
-
 ## v1.x
 
 CometBFT `v1.0` includes some substantial breaking API changes that will hopefully

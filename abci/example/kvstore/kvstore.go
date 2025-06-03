@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
+	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/version"
 )
@@ -60,7 +60,7 @@ type Application struct {
 
 // NewApplication creates an instance of the kvstore from the provided database,
 // with the given lanes and priorities.
-func NewApplication(db cmtdb.DB, lanePriorities map[string]uint32) *Application {
+func NewApplication(db dbm.DB, lanePriorities map[string]uint32) *Application {
 	return &Application{
 		logger:             log.NewNopLogger(),
 		state:              loadState(db),
@@ -71,9 +71,9 @@ func NewApplication(db cmtdb.DB, lanePriorities map[string]uint32) *Application 
 }
 
 // newDB creates a DB engine for persisting the application state.
-func newDB(dbDir string) cmtdb.DB {
+func newDB(dbDir string) *dbm.PebbleDB {
 	name := "kvstore"
-	db, err := cmtdb.New(name, dbDir)
+	db, err := dbm.NewPebbleDB(name, dbDir)
 	if err != nil {
 		panic(fmt.Errorf("failed to create persistent app at %s: %w", dbDir, err))
 	}
@@ -95,21 +95,13 @@ func NewPersistentApplicationWithoutLanes(dbDir string) *Application {
 // NewInMemoryApplication creates a new application from an in memory database
 // that uses default lanes. Nothing will be persisted.
 func NewInMemoryApplication() *Application {
-	memDB, err := cmtdb.NewInMem()
-	if err != nil {
-		panic(err)
-	}
-	return NewApplication(memDB, DefaultLanes())
+	return NewApplication(dbm.NewMemDB(), DefaultLanes())
 }
 
 // NewInMemoryApplication creates a new application from an in memory database
 // and without lanes. Nothing will be persisted.
 func NewInMemoryApplicationWithoutLanes() *Application {
-	memDB, err := cmtdb.NewInMem()
-	if err != nil {
-		panic(err)
-	}
-	return NewApplication(memDB, nil)
+	return NewApplication(dbm.NewMemDB(), nil)
 }
 
 // DefaultLanes returns a map from lane names to their priorities. Priority 0 is
@@ -626,14 +618,14 @@ func (app *Application) getValidators() (validators []types.ValidatorUpdate) {
 // -----------------------------
 
 type State struct {
-	db cmtdb.DB
+	db dbm.DB
 	// Size is essentially the amount of transactions that have been processes.
 	// This is used for the appHash
 	Size   int64 `json:"size"`
 	Height int64 `json:"height"`
 }
 
-func loadState(db cmtdb.DB) State {
+func loadState(db dbm.DB) State {
 	var state State
 	state.db = db
 	stateBytes, err := db.Get(stateKey)

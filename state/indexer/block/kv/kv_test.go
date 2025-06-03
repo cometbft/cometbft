@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
 
+	db "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
@@ -22,12 +22,7 @@ import (
 )
 
 func TestBlockerIndexer_Prune(t *testing.T) {
-	memDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-
-	store, err := cmtdb.NewWithPrefix(memDB, []byte("block_events"))
-	require.NoError(t, err)
-
+	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
 	indexer := blockidxkv.New(store)
 
 	events1 := getEventsForTesting(1)
@@ -40,7 +35,7 @@ func TestBlockerIndexer_Prune(t *testing.T) {
 		blockidxkv.BlockIndexerRetainHeightKey,
 	}
 
-	err = indexer.Index(events1)
+	err := indexer.Index(events1)
 	require.NoError(t, err)
 
 	keys1 := blockidxkv.GetKeys(*indexer)
@@ -71,7 +66,7 @@ func BenchmarkBlockerIndexer_Prune(_ *testing.B) {
 		}
 	}()
 
-	store, err := cmtdb.New("block", config.DBDir())
+	store, err := db.NewDB("block", db.PebbleDBBackend, config.DBDir())
 	if err != nil {
 		panic(err)
 	}
@@ -95,12 +90,7 @@ func BenchmarkBlockerIndexer_Prune(_ *testing.B) {
 }
 
 func TestBlockIndexer(t *testing.T) {
-	memDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-
-	store, err := cmtdb.NewWithPrefix(memDB, []byte("block_events"))
-	require.NoError(t, err)
-
+	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
 	indexer := blockidxkv.New(store)
 
 	require.NoError(t, indexer.Index(types.EventDataNewBlockEvents{
@@ -226,12 +216,7 @@ func TestBlockIndexer(t *testing.T) {
 }
 
 func TestBlockIndexerMulti(t *testing.T) {
-	memDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-
-	store, err := cmtdb.NewWithPrefix(memDB, []byte("block_events"))
-	require.NoError(t, err)
-
+	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
 	indexer := blockidxkv.New(store)
 
 	require.NoError(t, indexer.Index(types.EventDataNewBlockEvents{
@@ -392,13 +377,7 @@ func TestBigInt(t *testing.T) {
 	bigFloat := bigInt + ".76"
 	bigFloatLower := bigInt + ".1"
 	bigIntSmaller := "9999999999999999999"
-
-	memDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-
-	store, err := cmtdb.NewWithPrefix(memDB, []byte("block_events"))
-	require.NoError(t, err)
-
+	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
 	indexer := blockidxkv.New(store)
 
 	require.NoError(t, indexer.Index(types.EventDataNewBlockEvents{

@@ -39,7 +39,8 @@ var (
 	}
 
 	// The following specify randomly chosen values for testnet nodes.
-	ipv6 = uniformChoice{false, true}
+	nodeDatabases = uniformChoice{"goleveldb", "rocksdb", "badgerdb", "pebbledb"}
+	ipv6          = uniformChoice{false, true}
 	// FIXME: grpc disabled due to https://github.com/tendermint/tendermint/issues/5439
 	nodeABCIProtocols     = uniformChoice{"unix", "tcp", "builtin", "builtin_connsync"} // "grpc"
 	nodePrivvalProtocols  = uniformChoice{"file", "unix", "tcp"}
@@ -346,6 +347,7 @@ func generateNode(
 		Version:                nodeVersions.Choose(r).(string),
 		ModeStr:                string(mode),
 		StartAt:                startAt,
+		Database:               nodeDatabases.Choose(r).(string),
 		PrivvalProtocolStr:     nodePrivvalProtocols.Choose(r).(string),
 		BlockSyncVersion:       nodeBlockSyncs.Choose(r).(string),
 		StateSync:              nodeStateSyncs.Choose(r).(bool) && startAt > 0,
@@ -398,6 +400,7 @@ func generateLightNode(r *rand.Rand, startAt int64, providers []string) *e2e.Man
 		ModeStr:             string(e2e.ModeLight),
 		Version:             nodeVersions.Choose(r).(string),
 		StartAt:             startAt,
+		Database:            nodeDatabases.Choose(r).(string),
 		PersistIntervalPtr:  ptrUint64(0),
 		PersistentPeersList: providers,
 		Perturb:             lightNodePerturbations.Choose(r),

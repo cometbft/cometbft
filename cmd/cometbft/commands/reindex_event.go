@@ -7,9 +7,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	dbm "github.com/cometbft/cometbft-db"
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmtcfg "github.com/cometbft/cometbft/config"
-	cmtdb "github.com/cometbft/cometbft/db"
 	"github.com/cometbft/cometbft/internal/progressbar"
 	"github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/indexer"
@@ -116,23 +116,13 @@ func loadEventSinks(cfg *cmtcfg.Config, chainID string) (indexer.BlockIndexer, t
 		}
 		return es.BlockIndexer(), es.TxIndexer(), nil
 	case "kv":
-		dbCtx := &cmtcfg.DBContext{
-			ID:     "tx_index",
-			Config: cfg,
-		}
-		store, err := cmtcfg.DefaultDBProvider(dbCtx)
+		store, err := dbm.NewDB("tx_index", dbm.BackendType(cfg.DBBackend), cfg.DBDir())
 		if err != nil {
 			return nil, nil, err
 		}
 
-		prefixDB, err := cmtdb.NewWithPrefix(store, []byte("block_events"))
-		if err != nil {
-			return nil, nil, fmt.Errorf("loading event sink: %w", err)
-		}
-
-		blockIndexer := blockidxkv.New(prefixDB)
 		txIndexer := kv.NewTxIndex(store)
-
+		blockIndexer := blockidxkv.New(dbm.NewPrefixDB(store, []byte("block_events")))
 		return blockIndexer, txIndexer, nil
 	default:
 		return nil, nil, fmt.Errorf("unsupported event sink type: %s", cfg.TxIndex.Indexer)

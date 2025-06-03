@@ -3,11 +3,11 @@ package proxy
 import (
 	"time"
 
-	abcicli "github.com/cometbft/cometbft/abci/client"
-	"github.com/cometbft/cometbft/abci/example/kvstore"
-	"github.com/cometbft/cometbft/abci/types"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	e2e "github.com/cometbft/cometbft/test/e2e/app"
+	abcicli "github.com/cometbft/cometbft/v2/abci/client"
+	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
+	"github.com/cometbft/cometbft/v2/abci/types"
+	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
+	e2e "github.com/cometbft/cometbft/v2/test/e2e/app"
 )
 
 //go:generate ../scripts/mockery_generate.sh ClientCreator

@@ -10,10 +10,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/libs/cli"
-	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
-	cmttime "github.com/cometbft/cometbft/types/time"
+	cfg "github.com/cometbft/cometbft/v2/config"
+	"github.com/cometbft/cometbft/v2/libs/cli"
+	rpchttp "github.com/cometbft/cometbft/v2/rpc/client/http"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
 )
 
 var dumpCmd = &cobra.Command{

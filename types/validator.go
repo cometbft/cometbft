@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	"github.com/cometbft/cometbft/crypto"
-	ce "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/internal/keytypes"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	"github.com/cometbft/cometbft/v2/crypto"
+	ce "github.com/cometbft/cometbft/v2/crypto/encoding"
+	"github.com/cometbft/cometbft/v2/internal/keytypes"
+	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
 )
 
 // ErrUnsupportedPubKeyType is returned when a public key type is not supported.

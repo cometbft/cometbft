@@ -11,11 +11,11 @@ import (
 
 	"github.com/dgraph-io/badger/v4"
 
-	"github.com/cometbft/cometbft/abci/tutorials/abci-v2-forum-app/model"
-	abci "github.com/cometbft/cometbft/abci/types"
-	cryptoencoding "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/version"
+	"github.com/cometbft/cometbft/v2/abci/tutorials/abci-v2-forum-app/model"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	cryptoencoding "github.com/cometbft/cometbft/v2/crypto/encoding"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/version"
 )
 
 const (

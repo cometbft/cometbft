@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/v2/p2p"
 )
 
 // ShowNodeIDCmd dumps node's ID to the standard output.

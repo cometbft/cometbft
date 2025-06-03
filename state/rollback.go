@@ -6,7 +6,7 @@ import (
 
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v2"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
-	"github.com/cometbft/cometbft/version"
+	"github.com/cometbft/cometbft/v2/version"
 )
 
 // Rollback overwrites the current CometBFT state (height n) with the most

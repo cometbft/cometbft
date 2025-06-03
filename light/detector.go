@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/cometbft/cometbft/light/provider"
-	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/v2/light/provider"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 // The detector component of the light client detects and handles attacks on the light client.
@@ -256,7 +256,7 @@ func (c *Client) handleConflictingHeaders(
 	if primaryBlock.Commit.Round != witnessTrace[len(witnessTrace)-1].Commit.Round {
 		c.logger.Info("The light client has detected, and prevented, an attempted amnesia attack." +
 			" We think this attack is pretty unlikely, so if you see it, that's interesting to us." +
-			" Can you let us know by opening an issue through https://github.com/cometbft/cometbft/issues/new?")
+			" Can you let us know by opening an issue through https://github.com/cometbft/cometbft/v2/issues/new?")
 	}
 
 	// This may not be valid because the witness itself is at fault. So now we reverse it, examining the

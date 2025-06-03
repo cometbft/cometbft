@@ -10,13 +10,13 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
-	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
-	"github.com/cometbft/cometbft/test/e2e/app"
-	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
-	"github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
-	"github.com/cometbft/cometbft/types"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	rpchttp "github.com/cometbft/cometbft/v2/rpc/client/http"
+	rpctypes "github.com/cometbft/cometbft/v2/rpc/core/types"
+	"github.com/cometbft/cometbft/v2/test/e2e/app"
+	e2e "github.com/cometbft/cometbft/v2/test/e2e/pkg"
+	"github.com/cometbft/cometbft/v2/test/e2e/pkg/infra/docker"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 func init() {

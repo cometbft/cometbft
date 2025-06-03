@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"slices"
 
-	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
-	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
+	e2e "github.com/cometbft/cometbft/v2/test/e2e/pkg"
+	"github.com/cometbft/cometbft/v2/test/e2e/pkg/infra"
 )
 
 // tcCommands generates the content of a shell script that includes a list of tc

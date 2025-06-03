@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
-	"github.com/cometbft/cometbft/test/e2e/pkg/grammar"
+	e2e "github.com/cometbft/cometbft/v2/test/e2e/pkg"
+	"github.com/cometbft/cometbft/v2/test/e2e/pkg/grammar"
 )
 
 func TestCheckABCIGrammar(t *testing.T) {

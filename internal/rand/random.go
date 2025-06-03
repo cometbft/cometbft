@@ -5,7 +5,7 @@ import (
 	mrand "math/rand"
 	"time"
 
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
 )
 
 const (
@@ -315,7 +315,7 @@ func (r *Rand) Perm(n int) []int {
 
 // NOTE: This relies on the os's random number generator.
 // For real security, we should salt that with some seed.
-// See github.com/cometbft/cometbft/crypto for a more secure reader.
+// See github.com/cometbft/cometbft/v2/crypto for a more secure reader.
 // This function is thread safe, see:
 // https://stackoverflow.com/questions/75685374/is-golang-crypto-rand-thread-safe
 func cRandBytes(numBytes int) []byte {

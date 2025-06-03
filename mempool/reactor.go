@@ -9,15 +9,15 @@ import (
 
 	"golang.org/x/sync/semaphore"
 
-	abcicli "github.com/cometbft/cometbft/abci/client"
+	abcicli "github.com/cometbft/cometbft/v2/abci/client"
 	protomem "github.com/cometbft/cometbft/api/cometbft/mempool/v2"
-	cfg "github.com/cometbft/cometbft/config"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/libs/log"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	"github.com/cometbft/cometbft/p2p"
-	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
-	"github.com/cometbft/cometbft/types"
+	cfg "github.com/cometbft/cometbft/v2/config"
+	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
+	"github.com/cometbft/cometbft/v2/p2p"
+	tcpconn "github.com/cometbft/cometbft/v2/p2p/transport/tcp/conn"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 // A number in the open interval (0, 100) representing a percentage of
@@ -393,7 +393,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 
 		// We are paying the cost of computing the transaction hash in
 		// any case, even when logger level > debug. So it only once.
-		// See: https://github.com/cometbft/cometbft/issues/4167
+		// See: https://github.com/cometbft/cometbft/v2/issues/4167
 		txKey := entry.Tx().Key()
 		txHash := txKey.Hash()
 

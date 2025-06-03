@@ -5,9 +5,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/cometbft/cometbft/crypto"
-	cmtnet "github.com/cometbft/cometbft/internal/net"
-	p2pconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
+	"github.com/cometbft/cometbft/v2/crypto"
+	cmtnet "github.com/cometbft/cometbft/v2/internal/net"
+	p2pconn "github.com/cometbft/cometbft/v2/p2p/transport/tcp/conn"
 )
 
 // Socket errors.

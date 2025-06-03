@@ -10,9 +10,9 @@ import (
 
 	blst "github.com/supranational/blst/bindings/go"
 
-	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/tmhash"
-	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/cometbft/cometbft/v2/crypto"
+	"github.com/cometbft/cometbft/v2/crypto/tmhash"
+	cmtjson "github.com/cometbft/cometbft/v2/libs/json"
 )
 
 const (

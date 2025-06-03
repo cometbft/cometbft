@@ -5,12 +5,12 @@ package mocks
 import (
 	context "context"
 
-	log "github.com/cometbft/cometbft/libs/log"
+	log "github.com/cometbft/cometbft/v2/libs/log"
 	mock "github.com/stretchr/testify/mock"
 
-	query "github.com/cometbft/cometbft/libs/pubsub/query"
+	query "github.com/cometbft/cometbft/v2/libs/pubsub/query"
 
-	txindex "github.com/cometbft/cometbft/state/txindex"
+	txindex "github.com/cometbft/cometbft/v2/state/txindex"
 
 	v2 "github.com/cometbft/cometbft/api/cometbft/abci/v2"
 )

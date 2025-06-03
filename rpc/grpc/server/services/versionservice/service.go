@@ -4,7 +4,7 @@ import (
 	"context"
 
 	pbsvc "github.com/cometbft/cometbft/api/cometbft/services/version/v1"
-	"github.com/cometbft/cometbft/version"
+	"github.com/cometbft/cometbft/v2/version"
 )
 
 type versionServiceServer struct{}

@@ -13,7 +13,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	metricsgen "github.com/cometbft/cometbft/scripts/metricsgen" //nolint:revive // this only works with metricsgen in front
+	metricsgen "github.com/cometbft/cometbft/v2/scripts/metricsgen" //nolint:revive // this only works with metricsgen in front
 )
 
 const testDataDir = "./testdata"
@@ -239,7 +239,7 @@ func TestParseMetricsStruct(t *testing.T) {
 			pkgLine := fmt.Sprintf("package %s\n", pkgName)
 			importClause := `
 			import(
-				"github.com/cometbft/cometbft/libs/metrics"
+				"github.com/cometbft/cometbft/v2/libs/metrics"
 			)
 			`
 
@@ -266,7 +266,7 @@ func TestParseAliasedMetric(t *testing.T) {
 			package mypkg
 
 			import(
-				mymetrics "github.com/cometbft/cometbft/libs/metrics"
+				mymetrics "github.com/cometbft/cometbft/v2/libs/metrics"
 			)
 			type Metrics struct {
 				m mymetrics.Gauge

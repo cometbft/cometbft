@@ -8,16 +8,16 @@ import (
 	"github.com/spf13/cobra"
 
 	dbm "github.com/cometbft/cometbft-db"
-	abcitypes "github.com/cometbft/cometbft/abci/types"
-	cmtcfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/internal/progressbar"
-	"github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/state/indexer"
-	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
-	"github.com/cometbft/cometbft/state/indexer/sink/psql"
-	"github.com/cometbft/cometbft/state/txindex"
-	"github.com/cometbft/cometbft/state/txindex/kv"
-	"github.com/cometbft/cometbft/types"
+	abcitypes "github.com/cometbft/cometbft/v2/abci/types"
+	cmtcfg "github.com/cometbft/cometbft/v2/config"
+	"github.com/cometbft/cometbft/v2/internal/progressbar"
+	"github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/state/indexer"
+	blockidxkv "github.com/cometbft/cometbft/v2/state/indexer/block/kv"
+	"github.com/cometbft/cometbft/v2/state/indexer/sink/psql"
+	"github.com/cometbft/cometbft/v2/state/txindex"
+	"github.com/cometbft/cometbft/v2/state/txindex/kv"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 const (

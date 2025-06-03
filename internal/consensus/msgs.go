@@ -8,11 +8,11 @@ import (
 
 	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v2"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	"github.com/cometbft/cometbft/internal/bits"
-	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
-	cmtmath "github.com/cometbft/cometbft/libs/math"
-	"github.com/cometbft/cometbft/types"
-	cmterrors "github.com/cometbft/cometbft/types/errors"
+	"github.com/cometbft/cometbft/v2/internal/bits"
+	cstypes "github.com/cometbft/cometbft/v2/internal/consensus/types"
+	cmtmath "github.com/cometbft/cometbft/v2/libs/math"
+	"github.com/cometbft/cometbft/v2/types"
+	cmterrors "github.com/cometbft/cometbft/v2/types/errors"
 )
 
 // TODO: This needs to be removed, but WALToProto depends on this.

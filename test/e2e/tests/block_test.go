@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	e2e "github.com/cometbft/cometbft/v2/test/e2e/pkg"
 )
 
 // Tests that block headers are identical across nodes where present.

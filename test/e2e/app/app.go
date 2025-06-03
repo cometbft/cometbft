@@ -21,17 +21,17 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	gogo "github.com/cosmos/gogoproto/types"
 
-	"github.com/cometbft/cometbft/abci/example/kvstore"
-	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	"github.com/cometbft/cometbft/crypto"
-	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/libs/protoio"
-	"github.com/cometbft/cometbft/test/loadtime/payload"
-	cmttypes "github.com/cometbft/cometbft/types"
-	"github.com/cometbft/cometbft/version"
+	"github.com/cometbft/cometbft/v2/crypto"
+	cryptoenc "github.com/cometbft/cometbft/v2/crypto/encoding"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/libs/protoio"
+	"github.com/cometbft/cometbft/v2/test/loadtime/payload"
+	cmttypes "github.com/cometbft/cometbft/v2/types"
+	"github.com/cometbft/cometbft/v2/version"
 )
 
 const (

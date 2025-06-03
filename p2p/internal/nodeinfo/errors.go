@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/v2/libs/bytes"
 )
 
 var ErrNoNodeInfo = errors.New("no node info found")

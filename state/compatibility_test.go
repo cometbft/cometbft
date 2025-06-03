@@ -20,8 +20,8 @@ import (
 	typesv1 "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	typesv1beta1 "github.com/cometbft/cometbft/api/cometbft/types/v1beta1"
 	typesv1beta2 "github.com/cometbft/cometbft/api/cometbft/types/v1beta2"
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/v2/crypto/ed25519"
+	sm "github.com/cometbft/cometbft/v2/state"
 )
 
 // Compatibility test across different state proto versions

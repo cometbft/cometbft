@@ -7,12 +7,12 @@ import (
 	"os"
 	"strings"
 
-	cmtjson "github.com/cometbft/cometbft/libs/json"
-	"github.com/cometbft/cometbft/p2p"
-	na "github.com/cometbft/cometbft/p2p/netaddr"
-	ctypes "github.com/cometbft/cometbft/rpc/core/types"
-	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	"github.com/cometbft/cometbft/types"
+	cmtjson "github.com/cometbft/cometbft/v2/libs/json"
+	"github.com/cometbft/cometbft/v2/p2p"
+	na "github.com/cometbft/cometbft/v2/p2p/netaddr"
+	ctypes "github.com/cometbft/cometbft/v2/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 // NetInfo returns network info.
@@ -135,7 +135,7 @@ func (env *Environment) GenesisChunked(
 	if len(env.genesisChunksFiles) == 0 {
 		// See discussion in the following PR for why we still serve chunk 0 even
 		// if env.genChunks is nil:
-		// https://github.com/cometbft/cometbft/pull/4235#issuecomment-2389109521
+		// https://github.com/cometbft/cometbft/v2/pull/4235#issuecomment-2389109521
 		if chunkID == 0 {
 			fGenesis, err := os.ReadFile(env.GenesisFilePath)
 			if err != nil {

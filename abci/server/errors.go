@@ -3,7 +3,7 @@ package server
 import (
 	"fmt"
 
-	"github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/v2/abci/types"
 )
 
 // ErrUnknownServerType is returned when trying to create a server with invalid transport option.

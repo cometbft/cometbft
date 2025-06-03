@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cometbft/cometbft/version"
+	"github.com/cometbft/cometbft/v2/version"
 )
 
 // VersionCmd ...

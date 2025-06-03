@@ -6,9 +6,9 @@ import (
 	"time"
 
 	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v2"
-	"github.com/cometbft/cometbft/libs/protoio"
-	"github.com/cometbft/cometbft/libs/service"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/v2/libs/protoio"
+	"github.com/cometbft/cometbft/v2/libs/service"
+	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
 )
 
 const (

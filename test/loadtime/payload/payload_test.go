@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/cometbft/cometbft/test/loadtime/payload"
+	"github.com/cometbft/cometbft/v2/test/loadtime/payload"
 )
 
 const payloadSizeTarget = 1024 // 1kb

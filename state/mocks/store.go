@@ -3,10 +3,10 @@
 package mocks
 
 import (
-	state "github.com/cometbft/cometbft/state"
+	state "github.com/cometbft/cometbft/v2/state"
 	mock "github.com/stretchr/testify/mock"
 
-	types "github.com/cometbft/cometbft/types"
+	types "github.com/cometbft/cometbft/v2/types"
 
 	v2 "github.com/cometbft/cometbft/api/cometbft/abci/v2"
 )

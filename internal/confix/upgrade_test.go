@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/cometbft/cometbft/internal/confix"
+	"github.com/cometbft/cometbft/v2/internal/confix"
 )
 
 func mustReadConfig(t *testing.T, path string) []byte {

@@ -102,18 +102,18 @@ func (_m *Peer) HasChannel(chID byte) bool {
 }
 
 // ID provides a mock function with no fields
-func (_m *Peer) ID() p2p.ID {
+func (_m *Peer) ID() string {
 	ret := _m.Called()
 
 	if len(ret) == 0 {
 		panic("no return value specified for ID")
 	}
 
-	var r0 p2p.ID
-	if rf, ok := ret.Get(0).(func() p2p.ID); ok {
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
 		r0 = rf()
 	} else {
-		r0 = ret.Get(0).(p2p.ID)
+		r0 = ret.Get(0).(string)
 	}
 
 	return r0

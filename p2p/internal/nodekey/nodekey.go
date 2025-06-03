@@ -13,7 +13,7 @@ import (
 )
 
 // ID is a hex-encoded crypto.Address.
-type ID string
+type ID = string
 
 // IDByteLength is the length of a crypto.Address. Currently only 20.
 // TODO: support other length addresses ?

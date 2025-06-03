@@ -8,8 +8,6 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	nodekey "github.com/cometbft/cometbft/p2p"
-
 	types "github.com/cometbft/cometbft/types"
 
 	v2 "github.com/cometbft/cometbft/api/cometbft/abci/v2"
@@ -21,7 +19,7 @@ type Mempool struct {
 }
 
 // CheckTx provides a mock function with given fields: tx, sender
-func (_m *Mempool) CheckTx(tx types.Tx, sender nodekey.ID) (*abcicli.ReqRes, error) {
+func (_m *Mempool) CheckTx(tx types.Tx, sender string) (*abcicli.ReqRes, error) {
 	ret := _m.Called(tx, sender)
 
 	if len(ret) == 0 {
@@ -30,10 +28,10 @@ func (_m *Mempool) CheckTx(tx types.Tx, sender nodekey.ID) (*abcicli.ReqRes, err
 
 	var r0 *abcicli.ReqRes
 	var r1 error
-	if rf, ok := ret.Get(0).(func(types.Tx, nodekey.ID) (*abcicli.ReqRes, error)); ok {
+	if rf, ok := ret.Get(0).(func(types.Tx, string) (*abcicli.ReqRes, error)); ok {
 		return rf(tx, sender)
 	}
-	if rf, ok := ret.Get(0).(func(types.Tx, nodekey.ID) *abcicli.ReqRes); ok {
+	if rf, ok := ret.Get(0).(func(types.Tx, string) *abcicli.ReqRes); ok {
 		r0 = rf(tx, sender)
 	} else {
 		if ret.Get(0) != nil {
@@ -41,7 +39,7 @@ func (_m *Mempool) CheckTx(tx types.Tx, sender nodekey.ID) (*abcicli.ReqRes, err
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(types.Tx, nodekey.ID) error); ok {
+	if rf, ok := ret.Get(1).(func(types.Tx, string) error); ok {
 		r1 = rf(tx, sender)
 	} else {
 		r1 = ret.Error(1)
@@ -97,23 +95,23 @@ func (_m *Mempool) FlushAppConn() error {
 }
 
 // GetSenders provides a mock function with given fields: txKey
-func (_m *Mempool) GetSenders(txKey types.TxKey) ([]nodekey.ID, error) {
+func (_m *Mempool) GetSenders(txKey types.TxKey) ([]string, error) {
 	ret := _m.Called(txKey)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetSenders")
 	}
 
-	var r0 []nodekey.ID
+	var r0 []string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(types.TxKey) ([]nodekey.ID, error)); ok {
+	if rf, ok := ret.Get(0).(func(types.TxKey) ([]string, error)); ok {
 		return rf(txKey)
 	}
-	if rf, ok := ret.Get(0).(func(types.TxKey) []nodekey.ID); ok {
+	if rf, ok := ret.Get(0).(func(types.TxKey) []string); ok {
 		r0 = rf(txKey)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]nodekey.ID)
+			r0 = ret.Get(0).([]string)
 		}
 	}
 

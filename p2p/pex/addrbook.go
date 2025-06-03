@@ -203,7 +203,7 @@ func (a *addrBook) AddPrivateIDs(ids []string) {
 	defer a.mtx.Unlock()
 
 	for _, id := range ids {
-		a.privateIDs[nodekey.ID(id)] = struct{}{}
+		a.privateIDs[id] = struct{}{}
 	}
 }
 

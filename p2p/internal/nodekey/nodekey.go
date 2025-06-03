@@ -13,7 +13,7 @@ import (
 )
 
 // ID is a hex-encoded crypto.Address.
-type ID string
+type ID = string
 
 // IDByteLength is the length of a crypto.Address. Currently only 20.
 // TODO: support other length addresses ?
@@ -42,7 +42,7 @@ func (nk *NodeKey) PubKey() crypto.PubKey {
 // PubKeyToID returns the ID corresponding to the given PubKey.
 // It's the hex-encoding of the pubKey.Address().
 func PubKeyToID(pubKey crypto.PubKey) ID {
-	return ID(hex.EncodeToString(pubKey.Address()))
+	return hex.EncodeToString(pubKey.Address())
 }
 
 // LoadOrGen attempts to load the NodeKey from the given filePath. If

@@ -154,7 +154,7 @@ func TestPEXReactorRequestMessageAbuse(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, book.HasAddress(peerAddr))
 
-	id := string(peer.ID())
+	id := peer.ID()
 
 	// first time creates the entry
 	r.Receive(p2p.Envelope{ChannelID: PexChannel, Src: peer, Message: &tmp2p.PexRequest{}})
@@ -184,7 +184,7 @@ func TestPEXReactorAddrsMessageAbuse(t *testing.T) {
 	p2p.AddPeerToSwitchPeerSet(sw, peer)
 	assert.True(t, sw.Peers().Has(peer.ID()))
 
-	id := string(peer.ID())
+	id := peer.ID()
 
 	// request addrs from the peer
 	r.RequestAddrs(peer)
@@ -473,7 +473,7 @@ func TestPEXReactorSeedModeFlushStop(t *testing.T) {
 	// this isn't perfect since it's possible the peer sends us a msg and we FlushStop
 	// before this loop catches it. but non-deterministically it works pretty well.
 	for i := 0; i < 1000; i++ {
-		v := reactor.lastReceivedRequests.Get(string(peerID))
+		v := reactor.lastReceivedRequests.Get(peerID)
 		if v != nil {
 			break
 		}
@@ -499,7 +499,7 @@ func TestPEXReactorDoesNotAddPrivatePeersToAddrBook(t *testing.T) {
 	peer := p2p.CreateRandomPeer(false)
 
 	pexR, book := createReactor(&ReactorConfig{})
-	book.AddPrivateIDs([]string{string(peer.NodeInfo().ID())})
+	book.AddPrivateIDs([]string{peer.NodeInfo().ID()})
 	defer teardownReactor(book)
 
 	// we have to send a request to receive responses

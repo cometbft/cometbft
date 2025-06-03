@@ -468,11 +468,11 @@ func (p *peer) eventLoop() {
 			for _, s := range state.StreamStates {
 				totalSendQueueSize += s.SendQueueSize
 			}
-			p.metrics.RecvRateLimiterDelay.With("peer_id", string(p.ID())).
+			p.metrics.RecvRateLimiterDelay.With("peer_id", p.ID()).
 				Add(state.RecvRateLimiterDelay.Seconds())
-			p.metrics.SendRateLimiterDelay.With("peer_id", string(p.ID())).
+			p.metrics.SendRateLimiterDelay.With("peer_id", p.ID()).
 				Add(state.SendRateLimiterDelay.Seconds())
-			p.metrics.PeerPendingSendBytes.With("peer_id", string(p.ID())).Set(float64(totalSendQueueSize))
+			p.metrics.PeerPendingSendBytes.With("peer_id", p.ID()).Set(float64(totalSendQueueSize))
 
 			// Report per peer, per message total bytes, since the last interval
 			func() {

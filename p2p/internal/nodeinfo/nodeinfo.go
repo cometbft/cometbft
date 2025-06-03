@@ -218,7 +218,7 @@ func (info Default) ToProto() *tmp2p.DefaultNodeInfo {
 		App:   info.ProtocolVersion.App,
 	}
 
-	dni.DefaultNodeID = string(info.DefaultNodeID)
+	dni.DefaultNodeID = info.DefaultNodeID
 	dni.ListenAddr = info.ListenAddr
 	dni.Network = info.Network
 	dni.Version = info.Version
@@ -243,7 +243,7 @@ func DefaultFromToProto(pb *tmp2p.DefaultNodeInfo) (Default, error) {
 			Block: pb.ProtocolVersion.Block,
 			App:   pb.ProtocolVersion.App,
 		},
-		DefaultNodeID: nodekey.ID(pb.DefaultNodeID),
+		DefaultNodeID: pb.DefaultNodeID,
 		ListenAddr:    pb.ListenAddr,
 		Network:       pb.Network,
 		Version:       pb.Version,

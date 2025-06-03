@@ -362,7 +362,7 @@ func (s *syncer) applyChunks(chunks *chunkQueue) error {
 		resp, err := s.conn.ApplySnapshotChunk(context.TODO(), &abci.ApplySnapshotChunkRequest{
 			Index:  chunk.Index,
 			Chunk:  chunk.Chunk,
-			Sender: string(chunk.Sender),
+			Sender: chunk.Sender,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to apply chunk %v: %w", chunk.Index, err)
@@ -381,8 +381,8 @@ func (s *syncer) applyChunks(chunks *chunkQueue) error {
 		// Reject any senders as requested by the app
 		for _, sender := range resp.RejectSenders {
 			if sender != "" {
-				s.snapshots.RejectPeer(p2p.ID(sender))
-				err := chunks.DiscardSender(p2p.ID(sender))
+				s.snapshots.RejectPeer(sender)
+				err := chunks.DiscardSender(sender)
 				if err != nil {
 					return fmt.Errorf("failed to reject sender: %w", err)
 				}

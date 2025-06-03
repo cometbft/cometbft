@@ -652,7 +652,7 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 		peer := newRemoteTCPPeer()
 		peer.Start()
 		unconditionalPeers[i] = peer
-		unconditionalPeerIDs[i] = string(peer.ID())
+		unconditionalPeerIDs[i] = peer.ID()
 	}
 
 	// make switch
@@ -965,7 +965,7 @@ func (rp *remoteTCPPeer) ID() nodekey.ID {
 
 func (rp *remoteTCPPeer) Start() {
 	id := nodekey.PubKeyToID(rp.privKey.PubKey())
-	addr, err := na.NewFromString(string(id) + "@127.0.0.1:0")
+	addr, err := na.NewFromString(id + "@127.0.0.1:0")
 	if err != nil {
 		panic(err)
 	}

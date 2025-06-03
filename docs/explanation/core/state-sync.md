@@ -36,7 +36,7 @@ Let's break down the settings:
 - `trust_period`: Trust period is the period in which headers can be verified.
   > :warning: This value should be significantly smaller than the unbonding period.
 
-For other settings, visit the [Configuration](./configuration) page.
+For other settings, visit the [Configuration](./configuration.md) page.
 
 If you need to get the information you need from publicly exposed RPCs, you 
 can use `curl` and [`jq`][jq].

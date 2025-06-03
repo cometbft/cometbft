@@ -709,7 +709,7 @@ late, possibly having lane definitions that do not match with those of nodes at 
 - P2P's [selectChannelToGossipOn][selectChannelToGossipOn] function
 - [Weighted Round Robin][wrr]
 - [Cosmovisor][cosmovisor]
-- [Mempool's cache][cache]
+- [Mempool's cache](../../../mempool/cache.go)
 
 [cache]: https://github.com/cometbft/cometbft/blob/main/spec/mempool/cache.md
 [adr067]: ./tendermint-core/adr-067-mempool-refactor.md

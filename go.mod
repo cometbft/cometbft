@@ -2,7 +2,7 @@ module github.com/cometbft/cometbft
 
 go 1.23.5
 
-toolchain go1.24.2
+toolchain go1.23.9
 
 replace github.com/cometbft/cometbft/api => ./api
 

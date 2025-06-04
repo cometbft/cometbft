@@ -857,6 +857,20 @@ func TestDOGTestRedundancyCalculation(t *testing.T) {
 	require.Equal(t, redundancy, reactors[0].redundancyControl.upperBound)
 }
 
+func TestDOGTestDuplicateTransactionFromRPC(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.DOGProtocolEnabled = true
+	reactors, _ := makeAndConnectReactors(config, 1, nil)
+
+	txs := newUniqueTxs(1)
+
+	_, err := reactors[0].TryAddTx(txs[0], nil)
+	require.NoError(t, err)
+
+	_, err = reactors[0].TryAddTx(txs[0], nil)
+	require.ErrorIs(t, err, ErrTxInCache)
+}
+
 func BenchmarkCurrentRedundancy(b *testing.B) {
 	config := &cfg.MempoolConfig{
 		DOGTargetRedundancy: 1.0,

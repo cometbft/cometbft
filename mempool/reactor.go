@@ -272,7 +272,7 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 		switch {
 		case errors.Is(err, ErrTxInCache):
 			memR.Logger.Debug("Tx already exists in cache", "tx", txKey.Hash(), "sender", senderID)
-			if memR.redundancyControl != nil {
+			if memR.redundancyControl != nil && sender != nil {
 				memR.redundancyControl.incDuplicateTxs()
 				if memR.redundancyControl.isHaveTxBlocked() {
 					return nil, err

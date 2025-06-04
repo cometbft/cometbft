@@ -5,13 +5,12 @@ package v2
 
 import (
 	fmt "fmt"
-	io "io"
-	math "math"
-	math_bits "math/bits"
-
 	v2 "github.com/cometbft/cometbft/api/cometbft/abci/v2"
 	v21 "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	proto "github.com/cosmos/gogoproto/proto"
+	io "io"
+	math "math"
+	math_bits "math/bits"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

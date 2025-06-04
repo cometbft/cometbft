@@ -5,11 +5,6 @@ package v1
 
 import (
 	fmt "fmt"
-	io "io"
-	math "math"
-	math_bits "math/bits"
-	time "time"
-
 	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	v11 "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	v12 "github.com/cometbft/cometbft/api/cometbft/version/v1"
@@ -18,6 +13,10 @@ import (
 	_ "github.com/cosmos/gogoproto/types"
 	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
 	_ "github.com/golang/protobuf/ptypes/duration"
+	io "io"
+	math "math"
+	math_bits "math/bits"
+	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

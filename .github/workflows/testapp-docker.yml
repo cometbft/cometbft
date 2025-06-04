@@ -16,10 +16,6 @@ env:
   ORG: cometbft
   IMAGE_NAME: e2e-node
 
-env:
-  ORG: cometbft
-  IMAGE_NAME: e2e-node
-
 jobs:
   build-image-at-tag:
     strategy:

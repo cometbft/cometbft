@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	memproto "github.com/cometbft/cometbft/api/cometbft/mempool/v2"
 	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/v2/abci/types"
-	memproto "github.com/cometbft/cometbft/api/cometbft/mempool/v2"
 	cfg "github.com/cometbft/cometbft/v2/config"
 	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
 	"github.com/cometbft/cometbft/v2/libs/log"

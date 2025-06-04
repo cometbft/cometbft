@@ -17,10 +17,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	abcicli "github.com/cometbft/cometbft/v2/abci/client"
 	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/v2/abci/types"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	cfg "github.com/cometbft/cometbft/v2/config"
 	"github.com/cometbft/cometbft/v2/crypto"
 	cstypes "github.com/cometbft/cometbft/v2/internal/consensus/types"

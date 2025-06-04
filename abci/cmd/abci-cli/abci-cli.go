@@ -11,13 +11,13 @@ import (
 
 	"github.com/spf13/cobra"
 
+	crypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	abcicli "github.com/cometbft/cometbft/v2/abci/client"
 	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
 	"github.com/cometbft/cometbft/v2/abci/server"
 	servertest "github.com/cometbft/cometbft/v2/abci/tests/server"
 	"github.com/cometbft/cometbft/v2/abci/types"
 	"github.com/cometbft/cometbft/v2/abci/version"
-	crypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	cmtos "github.com/cometbft/cometbft/v2/internal/os"
 	"github.com/cometbft/cometbft/v2/libs/log"
 )

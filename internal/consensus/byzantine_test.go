@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v2"
 	abcicli "github.com/cometbft/cometbft/v2/abci/client"
 	abci "github.com/cometbft/cometbft/v2/abci/types"
-	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v2"
 	"github.com/cometbft/cometbft/v2/internal/evidence"
 	"github.com/cometbft/cometbft/v2/libs/log"
 	"github.com/cometbft/cometbft/v2/libs/service"

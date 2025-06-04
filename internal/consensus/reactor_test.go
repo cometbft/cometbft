@@ -14,10 +14,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v2"
 	abcicli "github.com/cometbft/cometbft/v2/abci/client"
 	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/v2/abci/types"
-	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v2"
 	cfg "github.com/cometbft/cometbft/v2/config"
 	"github.com/cometbft/cometbft/v2/crypto/tmhash"
 	"github.com/cometbft/cometbft/v2/internal/bits"

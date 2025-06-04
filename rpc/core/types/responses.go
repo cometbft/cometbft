@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
-	abcitypes "github.com/cometbft/cometbft/v2/abci/types"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
+	abcitypes "github.com/cometbft/cometbft/v2/abci/types"
 	"github.com/cometbft/cometbft/v2/crypto"
 	"github.com/cometbft/cometbft/v2/libs/bytes"
 	"github.com/cometbft/cometbft/v2/p2p"

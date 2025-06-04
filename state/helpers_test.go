@@ -6,8 +6,8 @@ import (
 	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
-	abci "github.com/cometbft/cometbft/v2/abci/types"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 	"github.com/cometbft/cometbft/v2/crypto"
 	"github.com/cometbft/cometbft/v2/crypto/ed25519"
 	"github.com/cometbft/cometbft/v2/internal/test"

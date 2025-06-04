@@ -19,10 +19,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/v2/abci/types"
 	"github.com/cometbft/cometbft/v2/abci/types/mocks"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	cfg "github.com/cometbft/cometbft/v2/config"
 	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
 	"github.com/cometbft/cometbft/v2/internal/test"

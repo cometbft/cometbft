@@ -21,10 +21,10 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	gogo "github.com/cosmos/gogoproto/types"
 
-	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
-	abci "github.com/cometbft/cometbft/v2/abci/types"
 	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
+	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 	"github.com/cometbft/cometbft/v2/crypto"
 	cryptoenc "github.com/cometbft/cometbft/v2/crypto/encoding"
 	"github.com/cometbft/cometbft/v2/libs/log"

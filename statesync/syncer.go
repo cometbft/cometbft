@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	abci "github.com/cometbft/cometbft/v2/abci/types"
 	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 	"github.com/cometbft/cometbft/v2/config"
 	"github.com/cometbft/cometbft/v2/libs/log"
 	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"

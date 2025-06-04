@@ -11,11 +11,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	abciclientmocks "github.com/cometbft/cometbft/v2/abci/client/mocks"
 	abci "github.com/cometbft/cometbft/v2/abci/types"
 	abcimocks "github.com/cometbft/cometbft/v2/abci/types/mocks"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/v2/crypto"
 	"github.com/cometbft/cometbft/v2/crypto/ed25519"
 	"github.com/cometbft/cometbft/v2/crypto/secp256k1"

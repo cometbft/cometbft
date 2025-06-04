@@ -9,10 +9,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/cometbft/cometbft/v2/abci/types"
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v2"
 	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 	"github.com/cometbft/cometbft/v2/config"
 	"github.com/cometbft/cometbft/v2/libs/log"
 	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"

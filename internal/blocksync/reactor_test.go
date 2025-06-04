@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
-	abci "github.com/cometbft/cometbft/v2/abci/types"
 	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v2"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 	cfg "github.com/cometbft/cometbft/v2/config"
 	"github.com/cometbft/cometbft/v2/internal/test"
 	"github.com/cometbft/cometbft/v2/libs/log"

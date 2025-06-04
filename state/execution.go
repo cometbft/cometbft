@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	abci "github.com/cometbft/cometbft/v2/abci/types"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 	"github.com/cometbft/cometbft/v2/internal/fail"
 	"github.com/cometbft/cometbft/v2/libs/log"
 	"github.com/cometbft/cometbft/v2/mempool"

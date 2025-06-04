@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	abci "github.com/cometbft/cometbft/v2/abci/types"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 	"github.com/cometbft/cometbft/v2/crypto/merkle"
 	"github.com/cometbft/cometbft/v2/crypto/tmhash"
 	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"

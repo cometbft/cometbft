@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/cometbft/cometbft/v2/abci/types"
 	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 	"github.com/cometbft/cometbft/v2/config"
 	"github.com/cometbft/cometbft/v2/p2p"
 	p2pmocks "github.com/cometbft/cometbft/v2/p2p/mocks"

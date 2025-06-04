@@ -12,10 +12,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/v2/abci/types"
 	abcimocks "github.com/cometbft/cometbft/v2/abci/types/mocks"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	"github.com/cometbft/cometbft/v2/crypto/tmhash"
 	cstypes "github.com/cometbft/cometbft/v2/internal/consensus/types"
 	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"

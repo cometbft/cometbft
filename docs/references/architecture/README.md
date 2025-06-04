@@ -51,7 +51,7 @@ numbering our ADRs from 100 onwards.
 - [ADR-103: Protobuf definition versioning](adr-103-proto-versioning.md)
 - [ADR-104: State sync from local snapshot](adr-104-out-of-band-state-sync.md)
 - [ADR-105: Refactor list of senders in mempool](adr-105-refactor-mempool-senders.md)
-- [ADR-106: gRPC API](adr-106-grpc-api)
+- [ADR-106: gRPC API](adr-106-grpc-api.md)
 - [ADR-107: Rename protobuf versions of 0.x releases to pre-v1 betas](adr-107-betaize-proto-versions.md)
 - [ADR-109: Reduce CometBFT Go API Surface Area](adr-109-reduce-go-api-surface.md)
 - [ADR-111: `nop` Mempool](adr-111-nop-mempool.md)

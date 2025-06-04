@@ -77,10 +77,9 @@ jobs:
           platforms: ${{ matrix.platform }}
           context: .
           file: ./test/e2e/docker/Dockerfile
-          tags: |
-            ${{ env.ORG }}/${{ env.IMAGE_NAME }}:${{ steps.get-version.outputs.version }}
+          tags: ""
           push: true
-          outputs: type=image,name=${{ env.ORG }}/${{ env.IMAGE_NAME }},digest=true
+          outputs: type=image,name=${{ env.ORG }}/${{ env.IMAGE_NAME }},push=true,digest=true
 
       - name: Capture Image Digest
         id: capture-digest

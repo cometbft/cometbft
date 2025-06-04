@@ -4,10 +4,10 @@ import (
 	"strings"
 	"time"
 
-	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
-	"github.com/cometbft/cometbft/libs/metrics"
-	"github.com/cometbft/cometbft/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
+	cstypes "github.com/cometbft/cometbft/v2/internal/consensus/types"
+	"github.com/cometbft/cometbft/v2/libs/metrics"
+	"github.com/cometbft/cometbft/v2/types"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
 )
 
 const (

@@ -14,8 +14,8 @@ import (
 	"time"
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/p2p/internal/nodekey"
+	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
+	"github.com/cometbft/cometbft/v2/p2p/internal/nodekey"
 )
 
 // Empty defines the string representation of an empty NetAddress.
@@ -76,11 +76,11 @@ func NewFromString(addr string) (*NetAddr, error) {
 	}
 
 	// get ID
-	if err := ValidateID(nodekey.ID(spl[0])); err != nil {
+	if err := ValidateID(spl[0]); err != nil {
 		return nil, ErrInvalid{addrWithoutProtocol, err}
 	}
 	var id nodekey.ID
-	id, addrWithoutProtocol = nodekey.ID(spl[0]), spl[1]
+	id, addrWithoutProtocol = spl[0], spl[1]
 
 	// get host and port
 	host, portStr, err := net.SplitHostPort(addrWithoutProtocol)
@@ -149,7 +149,7 @@ func NewFromProto(pb tmp2p.NetAddress) (*NetAddr, error) {
 		return nil, ErrInvalid{Addr: pb.IP, Err: ErrInvalidPort{pb.Port}}
 	}
 	return &NetAddr{
-		ID:   nodekey.ID(pb.ID),
+		ID:   pb.ID,
 		IP:   ip,
 		Port: uint16(pb.Port),
 	}, nil
@@ -182,7 +182,7 @@ func AddrsToProtos(nas []*NetAddr) []tmp2p.NetAddress {
 // ToProto converts an Addr to Protobuf.
 func (na *NetAddr) ToProto() tmp2p.NetAddress {
 	return tmp2p.NetAddress{
-		ID:   string(na.ID),
+		ID:   na.ID,
 		IP:   na.IP.String(),
 		Port: uint32(na.Port),
 	}
@@ -281,7 +281,7 @@ func (na *NetAddr) Valid() error {
 // HasID returns true if the address has an ID.
 // NOTE: It does not check whether the ID is valid or not.
 func (na *NetAddr) HasID() bool {
-	return string(na.ID) != ""
+	return na.ID != ""
 }
 
 // Local returns true if it is a local address.
@@ -412,7 +412,7 @@ func ValidateID(id nodekey.ID) error {
 	if len(id) == 0 {
 		return ErrNoIP
 	}
-	idBytes, err := hex.DecodeString(string(id))
+	idBytes, err := hex.DecodeString(id)
 	if err != nil {
 		return err
 	}

@@ -5,9 +5,9 @@ import (
 
 	"github.com/cosmos/gogoproto/grpc"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v2"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 )
 
 type BlockResults struct {

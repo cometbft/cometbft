@@ -7,17 +7,17 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	dbm "github.com/cometbft/cometbft-db"
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v2"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
-	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/tmhash"
-	cmtdb "github.com/cometbft/cometbft/db"
-	"github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/state/mocks"
-	"github.com/cometbft/cometbft/store"
-	"github.com/cometbft/cometbft/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
-	"github.com/cometbft/cometbft/version"
+	"github.com/cometbft/cometbft/v2/crypto"
+	"github.com/cometbft/cometbft/v2/crypto/tmhash"
+	"github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/state/mocks"
+	"github.com/cometbft/cometbft/v2/store"
+	"github.com/cometbft/cometbft/v2/types"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
+	"github.com/cometbft/cometbft/v2/version"
 )
 
 func TestRollback(t *testing.T) {
@@ -88,14 +88,8 @@ func TestRollback(t *testing.T) {
 
 func TestRollbackHard(t *testing.T) {
 	const height int64 = 100
-
-	blkStoreDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-	blockStore := store.NewBlockStore(blkStoreDB)
-
-	sttStoreDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-	stateStore := state.NewStore(sttStoreDB, state.StoreOptions{DiscardABCIResponses: false})
+	blockStore := store.NewBlockStore(dbm.NewMemDB())
+	stateStore := state.NewStore(dbm.NewMemDB(), state.StoreOptions{DiscardABCIResponses: false})
 
 	valSet, _ := types.RandValidatorSet(5, 10)
 
@@ -209,15 +203,13 @@ func TestRollbackHard(t *testing.T) {
 }
 
 func TestRollbackNoState(t *testing.T) {
-	sttStoreDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-	stateStore := state.NewStore(sttStoreDB,
+	stateStore := state.NewStore(dbm.NewMemDB(),
 		state.StoreOptions{
 			DiscardABCIResponses: false,
 		})
 	blockStore := &mocks.BlockStore{}
 
-	_, _, err = state.Rollback(blockStore, stateStore, false)
+	_, _, err := state.Rollback(blockStore, stateStore, false)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "no state found")
 }
@@ -248,9 +240,7 @@ func TestRollbackDifferentStateHeight(t *testing.T) {
 
 func setupStateStore(t *testing.T, height int64) state.Store {
 	t.Helper()
-	stateStoreDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-	stateStore := state.NewStore(stateStoreDB, state.StoreOptions{DiscardABCIResponses: false})
+	stateStore := state.NewStore(dbm.NewMemDB(), state.StoreOptions{DiscardABCIResponses: false})
 	valSet, _ := types.RandValidatorSet(5, 10)
 
 	params := types.DefaultConsensusParams()

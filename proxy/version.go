@@ -1,8 +1,8 @@
 package proxy
 
 import (
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/version"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	"github.com/cometbft/cometbft/v2/version"
 )
 
 // InfoRequest contains all the information for sending

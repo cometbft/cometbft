@@ -12,15 +12,15 @@ import (
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
-	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/merkle"
-	"github.com/cometbft/cometbft/crypto/tmhash"
-	"github.com/cometbft/cometbft/internal/bits"
-	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	cmtmath "github.com/cometbft/cometbft/libs/math"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	cmttime "github.com/cometbft/cometbft/types/time"
-	"github.com/cometbft/cometbft/version"
+	"github.com/cometbft/cometbft/v2/crypto"
+	"github.com/cometbft/cometbft/v2/crypto/merkle"
+	"github.com/cometbft/cometbft/v2/crypto/tmhash"
+	"github.com/cometbft/cometbft/v2/internal/bits"
+	cmtbytes "github.com/cometbft/cometbft/v2/libs/bytes"
+	cmtmath "github.com/cometbft/cometbft/v2/libs/math"
+	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
+	"github.com/cometbft/cometbft/v2/version"
 )
 
 const (
@@ -327,7 +327,7 @@ func MaxDataBytesNoEvidence(maxBytes int64, valsCount int) int64 {
 // NOTE: changes to the Header should be duplicated in:
 // - header.Hash()
 // - abci.Header
-// - https://github.com/cometbft/cometbft/blob/main/spec/blockchain/blockchain.md
+// - https://github.com/cometbft/cometbft/v2/blob/main/spec/blockchain/blockchain.md
 type Header struct {
 	// basic block info
 	Version cmtversion.Consensus `json:"version"`
@@ -964,7 +964,7 @@ func (commit *Commit) ValidateBasic() error {
 // The BFT Time algorithm ensures that the computed median time is always picked among
 // the timestamps produced by honest processes, i.e., faulty processes cannot arbitrarily
 // increase or decrease the median time.
-// See: https://github.com/cometbft/cometbft/blob/main/spec/consensus/bft-time.md
+// See: https://github.com/cometbft/cometbft/v2/blob/main/spec/consensus/bft-time.md
 func (commit *Commit) MedianTime(validators *ValidatorSet) time.Time {
 	weightedTimes := make([]*cmttime.WeightedTime, len(commit.Signatures))
 	totalVotingPower := int64(0)

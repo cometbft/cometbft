@@ -17,36 +17,36 @@ import (
 
 	_ "net/http/pprof" //nolint: gosec
 
-	abcicli "github.com/cometbft/cometbft/abci/client"
-	abcitypes "github.com/cometbft/cometbft/abci/types"
-	cfg "github.com/cometbft/cometbft/config"
-	bc "github.com/cometbft/cometbft/internal/blocksync"
-	cs "github.com/cometbft/cometbft/internal/consensus"
-	"github.com/cometbft/cometbft/internal/evidence"
-	cmtjson "github.com/cometbft/cometbft/libs/json"
-	"github.com/cometbft/cometbft/libs/log"
-	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
-	"github.com/cometbft/cometbft/libs/service"
-	"github.com/cometbft/cometbft/light"
-	mempl "github.com/cometbft/cometbft/mempool"
-	"github.com/cometbft/cometbft/p2p"
-	na "github.com/cometbft/cometbft/p2p/netaddr"
-	"github.com/cometbft/cometbft/p2p/pex"
-	"github.com/cometbft/cometbft/p2p/transport/tcp"
-	"github.com/cometbft/cometbft/proxy"
-	rpccore "github.com/cometbft/cometbft/rpc/core"
-	grpcserver "github.com/cometbft/cometbft/rpc/grpc/server"
-	grpcprivserver "github.com/cometbft/cometbft/rpc/grpc/server/privileged"
-	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/state/indexer"
-	"github.com/cometbft/cometbft/state/txindex"
-	"github.com/cometbft/cometbft/state/txindex/null"
-	"github.com/cometbft/cometbft/statesync"
-	"github.com/cometbft/cometbft/store"
-	"github.com/cometbft/cometbft/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
-	"github.com/cometbft/cometbft/version"
+	abcicli "github.com/cometbft/cometbft/v2/abci/client"
+	abcitypes "github.com/cometbft/cometbft/v2/abci/types"
+	cfg "github.com/cometbft/cometbft/v2/config"
+	bc "github.com/cometbft/cometbft/v2/internal/blocksync"
+	cs "github.com/cometbft/cometbft/v2/internal/consensus"
+	"github.com/cometbft/cometbft/v2/internal/evidence"
+	cmtjson "github.com/cometbft/cometbft/v2/libs/json"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/v2/libs/pubsub"
+	"github.com/cometbft/cometbft/v2/libs/service"
+	"github.com/cometbft/cometbft/v2/light"
+	mempl "github.com/cometbft/cometbft/v2/mempool"
+	"github.com/cometbft/cometbft/v2/p2p"
+	na "github.com/cometbft/cometbft/v2/p2p/netaddr"
+	"github.com/cometbft/cometbft/v2/p2p/pex"
+	"github.com/cometbft/cometbft/v2/p2p/transport/tcp"
+	"github.com/cometbft/cometbft/v2/proxy"
+	rpccore "github.com/cometbft/cometbft/v2/rpc/core"
+	grpcserver "github.com/cometbft/cometbft/v2/rpc/grpc/server"
+	grpcprivserver "github.com/cometbft/cometbft/v2/rpc/grpc/server/privileged"
+	rpcserver "github.com/cometbft/cometbft/v2/rpc/jsonrpc/server"
+	sm "github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/state/indexer"
+	"github.com/cometbft/cometbft/v2/state/txindex"
+	"github.com/cometbft/cometbft/v2/state/txindex/null"
+	"github.com/cometbft/cometbft/v2/statesync"
+	"github.com/cometbft/cometbft/v2/store"
+	"github.com/cometbft/cometbft/v2/types"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
+	"github.com/cometbft/cometbft/v2/version"
 )
 
 // Node is the highest level interface to a full CometBFT node.
@@ -718,6 +718,8 @@ func (n *Node) OnStart() error {
 
 // OnStop stops the Node. It implements service.Service.
 func (n *Node) OnStop() {
+	n.BaseService.OnStop()
+
 	n.Logger.Info("Stopping Node")
 
 	// first stop the non-reactor services
@@ -727,7 +729,11 @@ func (n *Node) OnStop() {
 	if err := n.eventBus.Stop(); err != nil {
 		n.Logger.Error("Error closing eventBus", "err", err)
 	}
-
+	if n.indexerService != nil {
+		if err := n.indexerService.Stop(); err != nil {
+			n.Logger.Error("Error closing indexerService", "err", err)
+		}
+	}
 	// now stop the reactors
 	if err := n.sw.Stop(); err != nil {
 		n.Logger.Error("Error closing switch", "err", err)
@@ -739,6 +745,7 @@ func (n *Node) OnStop() {
 
 	n.isListening = false
 
+	// finally stop the listeners / external services
 	for _, l := range n.rpcListeners {
 		n.Logger.Info("Closing rpc listener", "listener", l)
 		if err := l.Close(); err != nil {
@@ -763,17 +770,6 @@ func (n *Node) OnStop() {
 			n.Logger.Error("Pprof HTTP server Shutdown", "err", err)
 		}
 	}
-
-	// Stop the indexer before the DBs, but after the eventBus because the
-	// indexer relies on it.
-	if n.indexerService != nil {
-		if err := n.indexerService.Stop(); err != nil {
-			n.Logger.Error("Error closing indexerService", "err", err)
-		}
-	}
-
-	// Close DBs at the very end. Otherwise, pebbledb will panic if a process
-	// tries to write to the DB after it's closed.
 	if n.blockStore != nil {
 		n.Logger.Info("Closing blockstore")
 		if err := n.blockStore.Close(); err != nil {

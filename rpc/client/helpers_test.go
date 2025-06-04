@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/rpc/client"
-	"github.com/cometbft/cometbft/rpc/client/mock"
-	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	"github.com/cometbft/cometbft/v2/rpc/client"
+	"github.com/cometbft/cometbft/v2/rpc/client/mock"
+	ctypes "github.com/cometbft/cometbft/v2/rpc/core/types"
 )
 
 func TestWaitForHeight(t *testing.T) {

@@ -12,19 +12,19 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	dbm "github.com/cometbft/cometbft-db"
 	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v2"
-	cfg "github.com/cometbft/cometbft/config"
-	cmtdb "github.com/cometbft/cometbft/db"
-	"github.com/cometbft/cometbft/internal/test"
-	"github.com/cometbft/cometbft/libs/log"
-	mpmocks "github.com/cometbft/cometbft/mempool/mocks"
-	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/proxy"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/store"
-	"github.com/cometbft/cometbft/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	cfg "github.com/cometbft/cometbft/v2/config"
+	"github.com/cometbft/cometbft/v2/internal/test"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	mpmocks "github.com/cometbft/cometbft/v2/mempool/mocks"
+	"github.com/cometbft/cometbft/v2/p2p"
+	"github.com/cometbft/cometbft/v2/proxy"
+	sm "github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/store"
+	"github.com/cometbft/cometbft/v2/types"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
 )
 
 var config *cfg.Config
@@ -84,14 +84,8 @@ func newReactor(
 		panic(fmt.Errorf("error start app: %w", err))
 	}
 
-	blockDB, err := cmtdb.NewInMem()
-	if err != nil {
-		panic(err)
-	}
-	stateDB, err := cmtdb.NewInMem()
-	if err != nil {
-		panic(err)
-	}
+	blockDB := dbm.NewMemDB()
+	stateDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -119,10 +113,7 @@ func newReactor(
 	// NOTE we have to create and commit the blocks first because
 	// pool.height is determined from the store.
 	blockSync := true
-	db, err := cmtdb.NewInMem()
-	if err != nil {
-		panic(err)
-	}
+	db := dbm.NewMemDB()
 	stateStore = sm.NewStore(db, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})

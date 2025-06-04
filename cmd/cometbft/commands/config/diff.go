@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
 
-	"github.com/cometbft/cometbft/internal/confix"
+	"github.com/cometbft/cometbft/v2/internal/confix"
 )
 
 // DiffCommand creates a new command for comparing configuration files.

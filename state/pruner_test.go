@@ -10,17 +10,17 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	cmtdb "github.com/cometbft/cometbft/db"
-	"github.com/cometbft/cometbft/internal/test"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/libs/pubsub/query"
-	sm "github.com/cometbft/cometbft/state"
-	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
-	"github.com/cometbft/cometbft/state/txindex"
-	"github.com/cometbft/cometbft/state/txindex/kv"
-	"github.com/cometbft/cometbft/store"
-	"github.com/cometbft/cometbft/types"
+	db "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	"github.com/cometbft/cometbft/v2/internal/test"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/libs/pubsub/query"
+	sm "github.com/cometbft/cometbft/v2/state"
+	blockidxkv "github.com/cometbft/cometbft/v2/state/indexer/block/kv"
+	"github.com/cometbft/cometbft/v2/state/txindex"
+	"github.com/cometbft/cometbft/v2/state/txindex/kv"
+	"github.com/cometbft/cometbft/v2/store"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 func TestPruneBlockIndexerToRetainHeight(t *testing.T) {
@@ -178,19 +178,12 @@ func createTestSetup(t *testing.T) (*sm.Pruner, *kv.TxIndex, blockidxkv.BlockerI
 	})
 
 	// tx indexer
-	memDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
+	memDB := db.NewMemDB()
 	txIndexer := kv.NewTxIndex(memDB)
+	blockIndexer := blockidxkv.New(db.NewPrefixDB(memDB, []byte("block_events")))
 
-	prefixDB, err := cmtdb.NewWithPrefix(memDB, []byte("block_events"))
-	require.NoError(t, err)
-
-	blockIndexer := blockidxkv.New(prefixDB)
-
-	blockDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-	stateDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
+	blockDB := db.NewMemDB()
+	stateDB := db.NewMemDB()
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})

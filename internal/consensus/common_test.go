@@ -16,28 +16,28 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	abcicli "github.com/cometbft/cometbft/abci/client"
-	"github.com/cometbft/cometbft/abci/example/kvstore"
-	abci "github.com/cometbft/cometbft/abci/types"
+	dbm "github.com/cometbft/cometbft-db"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/crypto"
-	cmtdb "github.com/cometbft/cometbft/db"
-	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
-	cmtos "github.com/cometbft/cometbft/internal/os"
-	"github.com/cometbft/cometbft/internal/test"
-	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	"github.com/cometbft/cometbft/libs/log"
-	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	mempl "github.com/cometbft/cometbft/mempool"
-	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/privval"
-	"github.com/cometbft/cometbft/proxy"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/store"
-	"github.com/cometbft/cometbft/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
+	abcicli "github.com/cometbft/cometbft/v2/abci/client"
+	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	cfg "github.com/cometbft/cometbft/v2/config"
+	"github.com/cometbft/cometbft/v2/crypto"
+	cstypes "github.com/cometbft/cometbft/v2/internal/consensus/types"
+	cmtos "github.com/cometbft/cometbft/v2/internal/os"
+	"github.com/cometbft/cometbft/v2/internal/test"
+	cmtbytes "github.com/cometbft/cometbft/v2/libs/bytes"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/v2/libs/pubsub"
+	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
+	mempl "github.com/cometbft/cometbft/v2/mempool"
+	"github.com/cometbft/cometbft/v2/p2p"
+	"github.com/cometbft/cometbft/v2/privval"
+	"github.com/cometbft/cometbft/v2/proxy"
+	sm "github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/store"
+	"github.com/cometbft/cometbft/v2/types"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
 )
 
 const (
@@ -459,10 +459,7 @@ func newStateWithConfig(
 	app abci.Application,
 	laneInfo *mempl.LanesInfo,
 ) *State {
-	blockDB, err := cmtdb.NewInMem()
-	if err != nil {
-		panic(err)
-	}
+	blockDB := dbm.NewMemDB()
 	return newStateWithConfigAndBlockStore(thisConfig, state, pv, app, blockDB, laneInfo)
 }
 
@@ -471,7 +468,7 @@ func newStateWithConfigAndBlockStore(
 	state sm.State,
 	pv types.PrivValidator,
 	app abci.Application,
-	blockDB cmtdb.DB,
+	blockDB dbm.DB,
 	laneInfo *mempl.LanesInfo,
 ) *State {
 	// Get BlockStore
@@ -837,8 +834,7 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 	logger := consensusLogger()
 	configRootDirs := make([]string, 0, nValidators)
 	for i := 0; i < nValidators; i++ {
-		stateDB, err := cmtdb.NewInMem() // each state needs its own db
-		require.NoError(t, err)
+		stateDB := dbm.NewMemDB() // each state needs its own db
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
 		})
@@ -852,7 +848,7 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 		app := appFunc()
 		_, lanesInfo := fetchAppInfo(app)
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
-		_, err = app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
+		_, err := app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
 		require.NoError(t, err)
 
 		css[i] = newStateWithConfigAndBlockStore(thisConfig, state, privVals[i], app, stateDB, lanesInfo)
@@ -883,8 +879,7 @@ func randConsensusNetWithPeers(
 	var peer0Config *cfg.Config
 	configRootDirs := make([]string, 0, nPeers)
 	for i := 0; i < nPeers; i++ {
-		stateDB, err := cmtdb.NewInMem() // each state needs its own db
-		require.NoError(t, err)
+		stateDB := dbm.NewMemDB() // each state needs its own db
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
 		})

@@ -7,17 +7,17 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/cometbft/cometbft/crypto/merkle"
-	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	cmtmath "github.com/cometbft/cometbft/libs/math"
-	"github.com/cometbft/cometbft/libs/service"
-	rpcclient "github.com/cometbft/cometbft/rpc/client"
-	ctypes "github.com/cometbft/cometbft/rpc/core/types"
-	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	"github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/types"
-	cmterrors "github.com/cometbft/cometbft/types/errors"
-	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cometbft/cometbft/v2/crypto/merkle"
+	cmtbytes "github.com/cometbft/cometbft/v2/libs/bytes"
+	cmtmath "github.com/cometbft/cometbft/v2/libs/math"
+	"github.com/cometbft/cometbft/v2/libs/service"
+	rpcclient "github.com/cometbft/cometbft/v2/rpc/client"
+	ctypes "github.com/cometbft/cometbft/v2/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/types"
+	cmterrors "github.com/cometbft/cometbft/v2/types/errors"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
 )
 
 // KeyPathFunc builds a merkle path out of the given path and key.

@@ -7,11 +7,11 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	"github.com/cometbft/cometbft/internal/clist"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/p2p"
-	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
-	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/v2/internal/clist"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/p2p"
+	tcpconn "github.com/cometbft/cometbft/v2/p2p/transport/tcp/conn"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 const (

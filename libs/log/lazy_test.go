@@ -3,8 +3,8 @@ package log_test
 import (
 	"testing"
 
-	"github.com/cometbft/cometbft/internal/test"
-	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/v2/internal/test"
+	"github.com/cometbft/cometbft/v2/libs/log"
 )
 
 func TestLazyHash_Txs(t *testing.T) {

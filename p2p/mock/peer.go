@@ -3,13 +3,13 @@ package mock
 import (
 	"net"
 
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/libs/service"
-	"github.com/cometbft/cometbft/p2p"
-	ni "github.com/cometbft/cometbft/p2p/internal/nodeinfo"
-	"github.com/cometbft/cometbft/p2p/internal/nodekey"
-	na "github.com/cometbft/cometbft/p2p/netaddr"
-	"github.com/cometbft/cometbft/p2p/transport"
+	"github.com/cometbft/cometbft/v2/crypto/ed25519"
+	"github.com/cometbft/cometbft/v2/libs/service"
+	"github.com/cometbft/cometbft/v2/p2p"
+	ni "github.com/cometbft/cometbft/v2/p2p/internal/nodeinfo"
+	"github.com/cometbft/cometbft/v2/p2p/internal/nodekey"
+	na "github.com/cometbft/cometbft/v2/p2p/netaddr"
+	"github.com/cometbft/cometbft/v2/p2p/transport"
 )
 
 type Peer struct {

@@ -7,13 +7,13 @@ import (
 	"time"
 
 	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v2"
-	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/p2p"
-	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/store"
-	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/v2/crypto"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/p2p"
+	tcpconn "github.com/cometbft/cometbft/v2/p2p/transport/tcp/conn"
+	sm "github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/store"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 const (

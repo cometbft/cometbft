@@ -11,7 +11,7 @@ import (
 	"github.com/creachadair/tomledit/transform"
 	"github.com/spf13/cobra"
 
-	"github.com/cometbft/cometbft/internal/confix"
+	"github.com/cometbft/cometbft/v2/internal/confix"
 )
 
 // SetCommand returns a CLI command to interactively update an application config value.

@@ -15,13 +15,13 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
-	"github.com/cometbft/cometbft/config"
-	flow "github.com/cometbft/cometbft/internal/flowrate"
-	"github.com/cometbft/cometbft/internal/timer"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/libs/protoio"
-	"github.com/cometbft/cometbft/libs/service"
-	"github.com/cometbft/cometbft/p2p/transport"
+	"github.com/cometbft/cometbft/v2/config"
+	flow "github.com/cometbft/cometbft/v2/internal/flowrate"
+	"github.com/cometbft/cometbft/v2/internal/timer"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/libs/protoio"
+	"github.com/cometbft/cometbft/v2/libs/service"
+	"github.com/cometbft/cometbft/v2/p2p/transport"
 )
 
 const (

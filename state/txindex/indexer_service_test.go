@@ -7,14 +7,14 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	cmtdb "github.com/cometbft/cometbft/db"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/state/indexer"
-	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
-	"github.com/cometbft/cometbft/state/txindex"
-	"github.com/cometbft/cometbft/state/txindex/kv"
-	"github.com/cometbft/cometbft/types"
+	db "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/state/indexer"
+	blockidxkv "github.com/cometbft/cometbft/v2/state/indexer/block/kv"
+	"github.com/cometbft/cometbft/v2/state/txindex"
+	"github.com/cometbft/cometbft/v2/state/txindex/kv"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 func TestIndexerServiceIndexesBlocks(t *testing.T) {
@@ -62,13 +62,9 @@ func createTestSetup(t *testing.T) (*txindex.IndexerService, *kv.TxIndex, indexe
 	})
 
 	// tx indexer
-	store, err := cmtdb.NewInMem()
-	require.NoError(t, err)
+	store := db.NewMemDB()
 	txIndexer := kv.NewTxIndex(store)
-
-	prefixDB, err := cmtdb.NewWithPrefix(store, []byte("block_events"))
-	require.NoError(t, err)
-	blockIndexer := blockidxkv.New(prefixDB)
+	blockIndexer := blockidxkv.New(db.NewPrefixDB(store, []byte("block_events")))
 
 	service := txindex.NewIndexerService(txIndexer, blockIndexer, eventBus, false)
 	service.SetLogger(log.TestingLogger())

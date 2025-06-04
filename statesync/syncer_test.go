@@ -9,22 +9,22 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v2"
 	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
-	"github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/libs/log"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	"github.com/cometbft/cometbft/p2p"
-	p2pmocks "github.com/cometbft/cometbft/p2p/mocks"
-	"github.com/cometbft/cometbft/proxy"
-	proxymocks "github.com/cometbft/cometbft/proxy/mocks"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/statesync/mocks"
-	"github.com/cometbft/cometbft/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
-	"github.com/cometbft/cometbft/version"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	"github.com/cometbft/cometbft/v2/config"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
+	"github.com/cometbft/cometbft/v2/p2p"
+	p2pmocks "github.com/cometbft/cometbft/v2/p2p/mocks"
+	"github.com/cometbft/cometbft/v2/proxy"
+	proxymocks "github.com/cometbft/cometbft/v2/proxy/mocks"
+	sm "github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/statesync/mocks"
+	"github.com/cometbft/cometbft/v2/types"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
+	"github.com/cometbft/cometbft/v2/version"
 )
 
 const (
@@ -47,7 +47,7 @@ func setupOfferSyncer() (*syncer, *proxymocks.AppConnSnapshot) {
 // Sets up a simple peer mock with an ID.
 func simplePeer(id string) *p2pmocks.Peer {
 	peer := &p2pmocks.Peer{}
-	peer.On("ID").Return(p2p.ID(id))
+	peer.On("ID").Return(id)
 	return peer
 }
 
@@ -101,7 +101,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 
 	// Adding a couple of peers should trigger snapshot discovery messages
 	peerA := &p2pmocks.Peer{}
-	peerA.On("ID").Return(p2p.ID("a"))
+	peerA.On("ID").Return("a")
 	peerA.On("Send", mock.MatchedBy(func(i any) bool {
 		e, ok := i.(p2p.Envelope)
 		if !ok {
@@ -114,7 +114,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 	peerA.AssertExpectations(t)
 
 	peerB := &p2pmocks.Peer{}
-	peerB.On("ID").Return(p2p.ID("b"))
+	peerB.On("ID").Return("b")
 	peerB.On("Send", mock.MatchedBy(func(i any) bool {
 		e, ok := i.(p2p.Envelope)
 		if !ok {
@@ -597,7 +597,7 @@ func TestSyncer_applyChunks_RejectSenders(t *testing.T) {
 				Index: 2, Chunk: []byte{2}, Sender: "c",
 			}).Once().Return(&abci.ApplySnapshotChunkResponse{
 				Result:        tc.result,
-				RejectSenders: []string{string(peerB.ID())},
+				RejectSenders: []string{peerB.ID()},
 			}, nil)
 
 			// On retry, the last chunk will be tried again, so we just accept it then.

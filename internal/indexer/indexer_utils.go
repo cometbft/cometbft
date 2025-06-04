@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/cometbft/cometbft/state/indexer"
+	"github.com/cometbft/cometbft/v2/state/indexer"
 )
 
 // If the actual event value is a float, we get the condition and parse it as a float

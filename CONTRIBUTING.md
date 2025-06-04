@@ -174,7 +174,7 @@ review.
 
 Please note that Go requires code to live under absolute paths, which
 complicates forking. While my fork lives at
-`https://github.com/ebuchman/cometbft`, the code should never exist at
+`https://github.com/cometbft/cometbft`, the code should never exist at
 `$GOPATH/src/github.com/ebuchman/cometbft`. Instead, we use `git remote` to add
 the fork as a new remote for the original repo,
 `$GOPATH/src/github.com/cometbft/cometbft`, and do all the work there.
@@ -609,7 +609,7 @@ in the [OpenAPI file](./rpc/openapi/openapi.yaml)**.
 [gh-issues]: https://github.com/cometbft/cometbft/issues
 [search-issues]: https://github.com/cometbft/cometbft/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22
 [new-gh-issue]: https://github.com/cometbft/cometbft/issues/new/choose
-[rfcs]: https://github.com/cometbft/cometbft/tree/main/docs/rfc
+[rfcs]: https://github.com/cometbft/cometbft/tree/main/docs/references/rfc
 [gh-draft-prs]: https://github.blog/2019-02-14-introducing-draft-pull-requests/
 [Go modules]: https://github.com/golang/go/wiki/Modules
 [Protocol Buffers]: https://protobuf.dev/

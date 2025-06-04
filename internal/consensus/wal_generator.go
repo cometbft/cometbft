@@ -11,16 +11,16 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/abci/example/kvstore"
-	cfg "github.com/cometbft/cometbft/config"
-	cmtdb "github.com/cometbft/cometbft/db"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/privval"
-	"github.com/cometbft/cometbft/proxy"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/store"
-	"github.com/cometbft/cometbft/types"
+	db "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
+	cfg "github.com/cometbft/cometbft/v2/config"
+	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/privval"
+	"github.com/cometbft/cometbft/v2/proxy"
+	sm "github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/store"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 // WALGenerateNBlocks generates a consensus WAL. It does this by spinning up a
@@ -45,8 +45,7 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int, config *cfg.C
 	require.NoError(t, err)
 	genDoc, err := types.GenesisDocFromFile(config.GenesisFile())
 	require.NoError(t, err)
-	blockStoreDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
+	blockStoreDB := db.NewMemDB()
 	stateDB := blockStoreDB
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,

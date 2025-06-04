@@ -7,16 +7,16 @@ import (
 	"fmt"
 	"time"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
-	"github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/libs/log"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	"github.com/cometbft/cometbft/light"
-	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/proxy"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/types"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	"github.com/cometbft/cometbft/v2/config"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
+	"github.com/cometbft/cometbft/v2/light"
+	"github.com/cometbft/cometbft/v2/p2p"
+	"github.com/cometbft/cometbft/v2/proxy"
+	sm "github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 const (
@@ -362,7 +362,7 @@ func (s *syncer) applyChunks(chunks *chunkQueue) error {
 		resp, err := s.conn.ApplySnapshotChunk(context.TODO(), &abci.ApplySnapshotChunkRequest{
 			Index:  chunk.Index,
 			Chunk:  chunk.Chunk,
-			Sender: string(chunk.Sender),
+			Sender: chunk.Sender,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to apply chunk %v: %w", chunk.Index, err)
@@ -381,8 +381,8 @@ func (s *syncer) applyChunks(chunks *chunkQueue) error {
 		// Reject any senders as requested by the app
 		for _, sender := range resp.RejectSenders {
 			if sender != "" {
-				s.snapshots.RejectPeer(p2p.ID(sender))
-				err := chunks.DiscardSender(p2p.ID(sender))
+				s.snapshots.RejectPeer(sender)
+				err := chunks.DiscardSender(sender)
 				if err != nil {
 					return fmt.Errorf("failed to reject sender: %w", err)
 				}

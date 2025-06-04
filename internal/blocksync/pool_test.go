@@ -9,10 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/types"
+	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/p2p"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 func init() {
@@ -95,7 +95,7 @@ func (ps testPeers) stop() {
 func makePeers(numPeers int, minHeight, maxHeight int64) testPeers {
 	peers := make(testPeers, numPeers)
 	for i := 0; i < numPeers; i++ {
-		peerID := p2p.ID(cmtrand.Str(12))
+		peerID := cmtrand.Str(12)
 		height := minHeight + cmtrand.Int63n(maxHeight-minHeight)
 		base := minHeight + int64(i)
 		if base > height {
@@ -235,7 +235,7 @@ func TestBlockPoolTimeout(t *testing.T) {
 func TestBlockPoolRemovePeer(t *testing.T) {
 	peers := make(testPeers, 10)
 	for i := 0; i < 10; i++ {
-		peerID := p2p.ID(strconv.Itoa(i + 1))
+		peerID := strconv.Itoa(i + 1)
 		height := int64(i + 1)
 		peers[peerID] = &testPeer{peerID, 0, height, make(chan inputData), false}
 	}
@@ -259,10 +259,10 @@ func TestBlockPoolRemovePeer(t *testing.T) {
 	assert.EqualValues(t, 10, pool.MaxPeerHeight())
 
 	// remove not-existing peer
-	assert.NotPanics(t, func() { pool.RemovePeer(p2p.ID("Superman")) })
+	assert.NotPanics(t, func() { pool.RemovePeer("Superman") })
 
 	// remove peer with biggest height
-	pool.RemovePeer(p2p.ID("10"))
+	pool.RemovePeer("10")
 	assert.EqualValues(t, 9, pool.MaxPeerHeight())
 
 	// remove all peers
@@ -292,9 +292,9 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 	//   This takes a couple of minutes to complete, so we don't run it.
 	const initialHeight = 7
 	peers := testPeers{
-		p2p.ID("good"):  &testPeer{p2p.ID("good"), 1, initialHeight, make(chan inputData), false},
-		p2p.ID("bad"):   &testPeer{p2p.ID("bad"), 1, initialHeight + MaliciousLie, make(chan inputData), true},
-		p2p.ID("good1"): &testPeer{p2p.ID("good1"), 1, initialHeight, make(chan inputData), false},
+		"good":  &testPeer{"good", 1, initialHeight, make(chan inputData), false},
+		"bad":   &testPeer{"bad", 1, initialHeight + MaliciousLie, make(chan inputData), true},
+		"good1": &testPeer{"good1", 1, initialHeight, make(chan inputData), false},
 	}
 	errorsCh := make(chan peerError, 3)
 	requestsCh := make(chan BlockRequest)
@@ -407,9 +407,9 @@ func TestBlockPoolMaliciousNodeMaxInt64(t *testing.T) {
 	// lowering the height was not accounted for.
 	const initialHeight = 7
 	peers := testPeers{
-		p2p.ID("good"):  &testPeer{p2p.ID("good"), 1, initialHeight, make(chan inputData), false},
-		p2p.ID("bad"):   &testPeer{p2p.ID("bad"), 1, math.MaxInt64, make(chan inputData), true},
-		p2p.ID("good1"): &testPeer{p2p.ID("good1"), 1, initialHeight, make(chan inputData), false},
+		"good":  &testPeer{"good", 1, initialHeight, make(chan inputData), false},
+		"bad":   &testPeer{"bad", 1, math.MaxInt64, make(chan inputData), true},
+		"good1": &testPeer{"good1", 1, initialHeight, make(chan inputData), false},
 	}
 	errorsCh := make(chan peerError, 3)
 	requestsCh := make(chan BlockRequest)
@@ -440,7 +440,7 @@ func TestBlockPoolMaliciousNodeMaxInt64(t *testing.T) {
 
 		// Report the lower height
 		peers["bad"].height = initialHeight
-		pool.SetPeerRange(p2p.ID("bad"), 1, initialHeight)
+		pool.SetPeerRange("bad", 1, initialHeight)
 
 		ticker := time.NewTicker(1 * time.Second) // Speed of new block creation
 		defer ticker.Stop()

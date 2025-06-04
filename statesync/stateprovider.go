@@ -6,20 +6,20 @@ import (
 	"fmt"
 	"strings"
 
+	dbm "github.com/cometbft/cometbft-db"
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v2"
-	cmtdb "github.com/cometbft/cometbft/db"
-	"github.com/cometbft/cometbft/libs/log"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	"github.com/cometbft/cometbft/light"
-	lightprovider "github.com/cometbft/cometbft/light/provider"
-	lighthttp "github.com/cometbft/cometbft/light/provider/http"
-	lightrpc "github.com/cometbft/cometbft/light/rpc"
-	lightdb "github.com/cometbft/cometbft/light/store/db"
-	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
-	"github.com/cometbft/cometbft/version"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
+	"github.com/cometbft/cometbft/v2/light"
+	lightprovider "github.com/cometbft/cometbft/v2/light/provider"
+	lighthttp "github.com/cometbft/cometbft/v2/light/provider/http"
+	lightrpc "github.com/cometbft/cometbft/v2/light/rpc"
+	lightdb "github.com/cometbft/cometbft/v2/light/store/db"
+	rpchttp "github.com/cometbft/cometbft/v2/rpc/client/http"
+	sm "github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/types"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
+	"github.com/cometbft/cometbft/v2/version"
 )
 
 //go:generate ../scripts/mockery_generate.sh StateProvider
@@ -71,20 +71,8 @@ func NewLightClientStateProviderWithDBKeyVersion(ctx context.Context,
 		providerRemotes[provider] = server
 	}
 
-	lightClientDB, err := cmtdb.NewInMem()
-	if err != nil {
-		return nil, fmt.Errorf("creating light client state provider: %w", err)
-	}
-	lc, err := light.NewClient(
-		ctx,
-		chainID,
-		trustOptions,
-		providers[0],
-		providers[1:],
-		lightdb.NewWithDBVersion(lightClientDB, "", dbKeyLayoutVereson),
-		light.Logger(logger),
-		light.MaxRetryAttempts(5),
-	)
+	lc, err := light.NewClient(ctx, chainID, trustOptions, providers[0], providers[1:],
+		lightdb.NewWithDBVersion(dbm.NewMemDB(), "", dbKeyLayoutVereson), light.Logger(logger), light.MaxRetryAttempts(5))
 	if err != nil {
 		return nil, err
 	}

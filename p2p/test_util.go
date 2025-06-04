@@ -5,16 +5,16 @@ import (
 	"net"
 	"time"
 
-	"github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	cmtnet "github.com/cometbft/cometbft/internal/net"
-	"github.com/cometbft/cometbft/libs/log"
-	ni "github.com/cometbft/cometbft/p2p/internal/nodeinfo"
-	"github.com/cometbft/cometbft/p2p/internal/nodekey"
-	na "github.com/cometbft/cometbft/p2p/netaddr"
-	"github.com/cometbft/cometbft/p2p/transport"
-	"github.com/cometbft/cometbft/p2p/transport/tcp"
-	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
+	"github.com/cometbft/cometbft/v2/config"
+	"github.com/cometbft/cometbft/v2/crypto/ed25519"
+	cmtnet "github.com/cometbft/cometbft/v2/internal/net"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	ni "github.com/cometbft/cometbft/v2/p2p/internal/nodeinfo"
+	"github.com/cometbft/cometbft/v2/p2p/internal/nodekey"
+	na "github.com/cometbft/cometbft/v2/p2p/netaddr"
+	"github.com/cometbft/cometbft/v2/p2p/transport"
+	"github.com/cometbft/cometbft/v2/p2p/transport/tcp"
+	tcpconn "github.com/cometbft/cometbft/v2/p2p/transport/tcp/conn"
 )
 
 // ------------------------------------------------

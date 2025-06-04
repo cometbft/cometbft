@@ -5,7 +5,7 @@ package secp256k1eth
 import (
 	"errors"
 
-	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/v2/crypto"
 )
 
 const (

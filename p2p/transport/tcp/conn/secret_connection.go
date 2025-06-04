@@ -21,12 +21,12 @@ import (
 	"golang.org/x/crypto/nacl/box"
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
-	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/internal/async"
-	"github.com/cometbft/cometbft/libs/protoio"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/v2/crypto"
+	"github.com/cometbft/cometbft/v2/crypto/ed25519"
+	cryptoenc "github.com/cometbft/cometbft/v2/crypto/encoding"
+	"github.com/cometbft/cometbft/v2/internal/async"
+	"github.com/cometbft/cometbft/v2/libs/protoio"
+	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
 )
 
 // 4 + 1024 == 1028 total frame size.
@@ -57,7 +57,7 @@ var (
 // SecretConnection implements net.Conn.
 // It is an implementation of the STS protocol.
 // For more details regarding this implementation of the STS protocol, please refer to:
-// https://github.com/cometbft/cometbft/blob/main/spec/p2p/legacy-docs/peer.md#authenticated-encryption-handshake.
+// https://github.com/cometbft/cometbft/v2/blob/main/spec/p2p/legacy-docs/peer.md#authenticated-encryption-handshake.
 //
 // The original STS protocol, which inspired this implementation:
 // https://citeseerx.ist.psu.edu/document?rapid=rep1&type=pdf&doi=b852bc961328ce74f7231a4b569eec1ab6c3cf50. # codespell:ignore

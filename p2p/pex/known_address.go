@@ -3,8 +3,8 @@ package pex
 import (
 	"time"
 
-	"github.com/cometbft/cometbft/p2p/internal/nodekey"
-	na "github.com/cometbft/cometbft/p2p/netaddr"
+	"github.com/cometbft/cometbft/v2/p2p/internal/nodekey"
+	na "github.com/cometbft/cometbft/v2/p2p/netaddr"
 )
 
 // knownAddress tracks information about a known network address

@@ -8,15 +8,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cometbft/cometbft/abci/example/kvstore"
-	cmtdb "github.com/cometbft/cometbft/db"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/light"
-	"github.com/cometbft/cometbft/light/provider"
-	httpp "github.com/cometbft/cometbft/light/provider/http"
-	dbs "github.com/cometbft/cometbft/light/store/db"
-	rpctest "github.com/cometbft/cometbft/rpc/test"
-	cmttime "github.com/cometbft/cometbft/types/time"
+	dbm "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/light"
+	"github.com/cometbft/cometbft/v2/light/provider"
+	httpp "github.com/cometbft/cometbft/v2/light/provider/http"
+	dbs "github.com/cometbft/cometbft/v2/light/store/db"
+	rpctest "github.com/cometbft/cometbft/v2/rpc/test"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
 )
 
 // Automatically getting new headers and verifying them.
@@ -42,7 +42,7 @@ func ExampleClient_Update() {
 		stdlog.Fatal(err)
 	}
 
-	db, err := cmtdb.New("light-client-db", dbDir)
+	db, err := dbm.NewPebbleDB("light-client-db", dbDir)
 	if err != nil {
 		stdlog.Fatal(err)
 	}
@@ -107,7 +107,7 @@ func ExampleClient_VerifyLightBlockAtHeight() {
 		stdlog.Fatal(err)
 	}
 
-	db, err := cmtdb.New("light-client-db", dbDir)
+	db, err := dbm.NewPebbleDB("light-client-db", dbDir)
 	if err != nil {
 		stdlog.Fatal(err)
 	}

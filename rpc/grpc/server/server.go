@@ -10,14 +10,14 @@ import (
 	pbblocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v2"
 	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v2"
 	pbversionsvc "github.com/cometbft/cometbft/api/cometbft/services/version/v1"
-	"github.com/cometbft/cometbft/libs/log"
-	grpcerr "github.com/cometbft/cometbft/rpc/grpc/errors"
-	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockresultservice"
-	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockservice"
-	"github.com/cometbft/cometbft/rpc/grpc/server/services/versionservice"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/store"
-	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	grpcerr "github.com/cometbft/cometbft/v2/rpc/grpc/errors"
+	"github.com/cometbft/cometbft/v2/rpc/grpc/server/services/blockresultservice"
+	"github.com/cometbft/cometbft/v2/rpc/grpc/server/services/blockservice"
+	"github.com/cometbft/cometbft/v2/rpc/grpc/server/services/versionservice"
+	sm "github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/store"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 // Option is any function that allows for configuration of the gRPC server

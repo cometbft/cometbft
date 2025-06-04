@@ -279,7 +279,7 @@ The only reason for this is the incompatibility of DOG with the existing experim
 that disables sending transactions to all peers. 
 
 
-The [specification](https://github.com/cometbft/cometbft/spec/mempool/gossip/dog.md) of the protocol introduces 3 additional variables. 
+The [specification](https://github.com/cometbft/cometbft/blob/main/spec/mempool/gossip/dog.md) of the protocol introduces 3 additional variables. 
 Out of the tree, we have made the following configuration parameters:
  
 - `mempool.dog_adjust_interval: time.Duration`: Set to `1s` by default. Indicates how often the redundancy controller readjusts 

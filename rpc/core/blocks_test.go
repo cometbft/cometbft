@@ -7,12 +7,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	cmtdb "github.com/cometbft/cometbft/db"
-	ctypes "github.com/cometbft/cometbft/rpc/core/types"
-	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/state/mocks"
+	dbm "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	ctypes "github.com/cometbft/cometbft/v2/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
+	sm "github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/state/mocks"
 )
 
 func TestBlockchainInfo(t *testing.T) {
@@ -79,12 +79,10 @@ func TestBlockResults(t *testing.T) {
 	}
 
 	env := &Environment{}
-	sttStoreDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-	env.StateStore = sm.NewStore(sttStoreDB, sm.StoreOptions{
+	env.StateStore = sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
-	err = env.StateStore.SaveFinalizeBlockResponse(100, results)
+	err := env.StateStore.SaveFinalizeBlockResponse(100, results)
 	require.NoError(t, err)
 	mockstore := &mocks.BlockStore{}
 	mockstore.On("Height").Return(int64(100))

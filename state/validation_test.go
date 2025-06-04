@@ -8,19 +8,19 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/crypto/tmhash"
-	cmtdb "github.com/cometbft/cometbft/db"
-	"github.com/cometbft/cometbft/internal/test"
-	"github.com/cometbft/cometbft/libs/log"
-	mpmocks "github.com/cometbft/cometbft/mempool/mocks"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/state/mocks"
-	"github.com/cometbft/cometbft/store"
-	"github.com/cometbft/cometbft/types"
-	cmterrors "github.com/cometbft/cometbft/types/errors"
-	cmttime "github.com/cometbft/cometbft/types/time"
+	dbm "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	"github.com/cometbft/cometbft/v2/crypto/ed25519"
+	"github.com/cometbft/cometbft/v2/crypto/tmhash"
+	"github.com/cometbft/cometbft/v2/internal/test"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	mpmocks "github.com/cometbft/cometbft/v2/mempool/mocks"
+	sm "github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/state/mocks"
+	"github.com/cometbft/cometbft/v2/store"
+	"github.com/cometbft/cometbft/v2/types"
+	cmterrors "github.com/cometbft/cometbft/v2/types/errors"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
 )
 
 const validationTestsStopHeight int64 = 10
@@ -51,9 +51,7 @@ func TestValidateBlockHeader(t *testing.T) {
 		mock.Anything,
 		mock.Anything).Return(nil)
 
-	blkStoreDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-	blockStore := store.NewBlockStore(blkStoreDB)
+	blockStore := store.NewBlockStore(dbm.NewMemDB())
 
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
@@ -131,7 +129,7 @@ func TestValidateBlockHeader(t *testing.T) {
 	nextHeight := validationTestsStopHeight
 	block := makeBlock(state, nextHeight, lastCommit)
 	state.InitialHeight = nextHeight + 1
-	err = blockExec.ValidateBlock(state, block)
+	err := blockExec.ValidateBlock(state, block)
 	require.Error(t, err, "expected an error when state is ahead of block")
 	assert.Contains(t, err.Error(), "lower than initial height")
 }
@@ -158,9 +156,7 @@ func TestValidateBlockCommit(t *testing.T) {
 		mock.Anything,
 		mock.Anything).Return(nil)
 
-	blkStoreDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-	blockStore := store.NewBlockStore(blkStoreDB)
+	blockStore := store.NewBlockStore(dbm.NewMemDB())
 
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
@@ -313,10 +309,7 @@ func TestValidateBlockEvidence(t *testing.T) {
 		mock.Anything,
 		mock.Anything).Return(nil)
 	state.ConsensusParams.Evidence.MaxBytes = 1000
-
-	blkStoreDB, err := cmtdb.NewInMem()
-	require.NoError(t, err)
-	blockStore := store.NewBlockStore(blkStoreDB)
+	blockStore := store.NewBlockStore(dbm.NewMemDB())
 
 	blockExec := sm.NewBlockExecutor(
 		stateStore,

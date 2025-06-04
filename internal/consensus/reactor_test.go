@@ -13,30 +13,30 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	abcicli "github.com/cometbft/cometbft/abci/client"
-	"github.com/cometbft/cometbft/abci/example/kvstore"
-	abci "github.com/cometbft/cometbft/abci/types"
+	dbm "github.com/cometbft/cometbft-db"
 	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v2"
-	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/crypto/tmhash"
-	cmtdb "github.com/cometbft/cometbft/db"
-	"github.com/cometbft/cometbft/internal/bits"
-	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/libs/bytes"
-	"github.com/cometbft/cometbft/libs/json"
-	"github.com/cometbft/cometbft/libs/log"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	mempl "github.com/cometbft/cometbft/mempool"
-	"github.com/cometbft/cometbft/p2p"
-	p2pmock "github.com/cometbft/cometbft/p2p/mock"
-	"github.com/cometbft/cometbft/proxy"
-	sm "github.com/cometbft/cometbft/state"
-	statemocks "github.com/cometbft/cometbft/state/mocks"
-	"github.com/cometbft/cometbft/store"
-	"github.com/cometbft/cometbft/types"
-	cmterrors "github.com/cometbft/cometbft/types/errors"
-	cmttime "github.com/cometbft/cometbft/types/time"
+	abcicli "github.com/cometbft/cometbft/v2/abci/client"
+	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	cfg "github.com/cometbft/cometbft/v2/config"
+	"github.com/cometbft/cometbft/v2/crypto/tmhash"
+	"github.com/cometbft/cometbft/v2/internal/bits"
+	cstypes "github.com/cometbft/cometbft/v2/internal/consensus/types"
+	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
+	"github.com/cometbft/cometbft/v2/libs/bytes"
+	"github.com/cometbft/cometbft/v2/libs/json"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
+	mempl "github.com/cometbft/cometbft/v2/mempool"
+	"github.com/cometbft/cometbft/v2/p2p"
+	p2pmock "github.com/cometbft/cometbft/v2/p2p/mock"
+	"github.com/cometbft/cometbft/v2/proxy"
+	sm "github.com/cometbft/cometbft/v2/state"
+	statemocks "github.com/cometbft/cometbft/v2/state/mocks"
+	"github.com/cometbft/cometbft/v2/store"
+	"github.com/cometbft/cometbft/v2/types"
+	cmterrors "github.com/cometbft/cometbft/v2/types/errors"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
 )
 
 // ----------------------------------------------
@@ -136,8 +136,7 @@ func TestReactorWithEvidence(t *testing.T) {
 	css := make([]*State, nValidators)
 	logger := consensusLogger()
 	for i := 0; i < nValidators; i++ {
-		stateDB, err := cmtdb.NewInMem() // each state needs its own db
-		require.NoError(t, err)
+		stateDB := dbm.NewMemDB() // each state needs its own db
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
 		})
@@ -147,15 +146,14 @@ func TestReactorWithEvidence(t *testing.T) {
 		ensureDir(path.Dir(thisConfig.Consensus.WalFile())) // dir for wal
 		app := appFunc()
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
-		_, err = app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
+		_, err := app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
 		require.NoError(t, err)
 
 		pv := privVals[i]
 		// duplicate code from:
 		// css[i] = newStateWithConfig(thisConfig, state, privVals[i], app)
 
-		blockDB, err := cmtdb.NewInMem()
-		require.NoError(t, err)
+		blockDB := dbm.NewMemDB()
 		blockStore := store.NewBlockStore(blockDB)
 
 		mtx := new(cmtsync.Mutex)

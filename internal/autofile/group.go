@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/v2/libs/service"
 )
 
 var indexedFilePattern = regexp.MustCompile(`^.+\.([0-9]{3,})$`)

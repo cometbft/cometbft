@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	cmtos "github.com/cometbft/cometbft/internal/os"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	cmtos "github.com/cometbft/cometbft/v2/internal/os"
+	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
 )
 
 func createTestGroupWithHeadSizeLimit(t *testing.T, headSizeLimit int64) *Group {

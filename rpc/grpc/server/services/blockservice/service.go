@@ -9,11 +9,11 @@ import (
 
 	blocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v2"
 	ptypes "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	"github.com/cometbft/cometbft/internal/rpctrace"
-	"github.com/cometbft/cometbft/libs/log"
-	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
-	"github.com/cometbft/cometbft/store"
-	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/v2/internal/rpctrace"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/v2/libs/pubsub"
+	"github.com/cometbft/cometbft/v2/store"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 type blockServiceServer struct {

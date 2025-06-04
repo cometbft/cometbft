@@ -12,12 +12,12 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	abciclimocks "github.com/cometbft/cometbft/abci/client/mocks"
-	"github.com/cometbft/cometbft/abci/example/kvstore"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/test"
-	"github.com/cometbft/cometbft/proxy"
-	"github.com/cometbft/cometbft/types"
+	abciclimocks "github.com/cometbft/cometbft/v2/abci/client/mocks"
+	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	"github.com/cometbft/cometbft/v2/internal/test"
+	"github.com/cometbft/cometbft/v2/proxy"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 func TestIteratorNonBlocking(t *testing.T) {

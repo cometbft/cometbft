@@ -3,7 +3,7 @@ package query_test
 import (
 	"testing"
 
-	"github.com/cometbft/cometbft/libs/pubsub/query"
+	"github.com/cometbft/cometbft/v2/libs/pubsub/query"
 )
 
 const testQuery = `tm.events.type='NewBlock' AND abci.account.name='Igor'`

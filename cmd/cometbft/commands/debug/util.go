@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	cfg "github.com/cometbft/cometbft/config"
-	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	cfg "github.com/cometbft/cometbft/v2/config"
+	rpchttp "github.com/cometbft/cometbft/v2/rpc/client/http"
 )
 
 // dumpStatus gets node status state dump from the CometBFT RPC and writes it

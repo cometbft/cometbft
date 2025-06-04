@@ -9,12 +9,12 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
-	"github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/p2p"
-	p2pmocks "github.com/cometbft/cometbft/p2p/mocks"
-	proxymocks "github.com/cometbft/cometbft/proxy/mocks"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	"github.com/cometbft/cometbft/v2/config"
+	"github.com/cometbft/cometbft/v2/p2p"
+	p2pmocks "github.com/cometbft/cometbft/v2/p2p/mocks"
+	proxymocks "github.com/cometbft/cometbft/v2/proxy/mocks"
 )
 
 func TestReactor_Receive_ChunkRequest(t *testing.T) {
@@ -52,7 +52,7 @@ func TestReactor_Receive_ChunkRequest(t *testing.T) {
 
 			// Mock peer to store response, if found
 			peer := &p2pmocks.Peer{}
-			peer.On("ID").Return(p2p.ID("id"))
+			peer.On("ID").Return("id")
 			var response *ssproto.ChunkResponse
 			if tc.expectResponse != nil {
 				peer.On("Send", mock.MatchedBy(func(i any) bool {
@@ -143,7 +143,7 @@ func TestReactor_Receive_SnapshotsRequest(t *testing.T) {
 			responses := []*ssproto.SnapshotsResponse{}
 			peer := &p2pmocks.Peer{}
 			if len(tc.expectResponses) > 0 {
-				peer.On("ID").Return(p2p.ID("id"))
+				peer.On("ID").Return("id")
 				peer.On("Send", mock.MatchedBy(func(i any) bool {
 					e, ok := i.(p2p.Envelope)
 					return ok && e.ChannelID == SnapshotChannel

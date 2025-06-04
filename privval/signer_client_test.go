@@ -9,12 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v2"
-	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/tmhash"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/types"
-	cmterrors "github.com/cometbft/cometbft/types/errors"
-	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cometbft/cometbft/v2/crypto"
+	"github.com/cometbft/cometbft/v2/crypto/tmhash"
+	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
+	"github.com/cometbft/cometbft/v2/types"
+	cmterrors "github.com/cometbft/cometbft/v2/types/errors"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
 )
 
 type signerTestCase struct {

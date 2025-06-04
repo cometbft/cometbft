@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/cometbft/cometbft/p2p/internal/nodekey"
+	"github.com/cometbft/cometbft/v2/p2p/internal/nodekey"
 )
 
 var (

@@ -766,7 +766,7 @@ func durationPtr(t time.Duration) *time.Duration {
 
 // MessageDelay should increase over rounds, while Precision remains unchanged.
 // After 10 rounds, we expect MessageDelay to increase by at least 2x and by at
-// most 10x, up to maxMessageDelay. See: https://github.com/cometbft/cometbft/issues/2184.
+// most 10x, up to maxMessageDelay. See: https://github.com/cometbft/cometbft/v2/issues/2184.
 func TestParamsAdaptiveSynchronyParams(t *testing.T) {
 	originalSP := DefaultSynchronyParams()
 	assert.Equal(t, originalSP, originalSP.InRound(0),

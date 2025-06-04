@@ -7,7 +7,7 @@ import (
 
 	blocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v2"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 // Block data returned by the CometBFT BlockService gRPC API.

@@ -13,10 +13,10 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/lib/pq"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/libs/pubsub/query"
-	"github.com/cometbft/cometbft/types"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	"github.com/cometbft/cometbft/v2/internal/rand"
+	"github.com/cometbft/cometbft/v2/libs/pubsub/query"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 const (

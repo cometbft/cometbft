@@ -7,15 +7,15 @@ import (
 	"time"
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
-	"github.com/cometbft/cometbft/internal/cmap"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	cmtmath "github.com/cometbft/cometbft/libs/math"
-	"github.com/cometbft/cometbft/libs/service"
-	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/p2p/internal/nodekey"
-	na "github.com/cometbft/cometbft/p2p/netaddr"
-	"github.com/cometbft/cometbft/p2p/transport"
-	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
+	"github.com/cometbft/cometbft/v2/internal/cmap"
+	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
+	cmtmath "github.com/cometbft/cometbft/v2/libs/math"
+	"github.com/cometbft/cometbft/v2/libs/service"
+	"github.com/cometbft/cometbft/v2/p2p"
+	"github.com/cometbft/cometbft/v2/p2p/internal/nodekey"
+	na "github.com/cometbft/cometbft/v2/p2p/netaddr"
+	"github.com/cometbft/cometbft/v2/p2p/transport"
+	tcpconn "github.com/cometbft/cometbft/v2/p2p/transport/tcp/conn"
 )
 
 type Peer = p2p.Peer
@@ -216,7 +216,7 @@ func (r *Reactor) AddPeer(p Peer) {
 
 // RemovePeer implements Reactor by resetting peer's requests info.
 func (r *Reactor) RemovePeer(p Peer, _ any) {
-	id := string(p.ID())
+	id := p.ID()
 	r.requestsSent.Delete(id)
 	r.lastReceivedRequests.Delete(id)
 }
@@ -248,7 +248,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 		// If we're a seed and this is an inbound peer,
 		// respond once and disconnect.
 		if r.config.SeedMode && !e.Src.IsOutbound() {
-			id := string(e.Src.ID())
+			id := e.Src.ID()
 			v := r.lastReceivedRequests.Get(id)
 			if v != nil {
 				// FlushStop/StopPeer are already
@@ -298,7 +298,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 
 // enforces a minimum amount of time between requests.
 func (r *Reactor) receiveRequest(src Peer) error {
-	id := string(src.ID())
+	id := src.ID()
 	v := r.lastReceivedRequests.Get(id)
 	if v == nil {
 		// initialize with empty time
@@ -332,7 +332,7 @@ func (r *Reactor) receiveRequest(src Peer) error {
 // RequestAddrs asks peer for more addresses if we do not already have a
 // request out for this peer.
 func (r *Reactor) RequestAddrs(p Peer) {
-	id := string(p.ID())
+	id := p.ID()
 	if r.requestsSent.Has(id) {
 		return
 	}
@@ -348,7 +348,7 @@ func (r *Reactor) RequestAddrs(p Peer) {
 // request for this peer and deletes the open request.
 // If there's no open request for the src peer, it returns an error.
 func (r *Reactor) ReceiveAddrs(addrs []*na.NetAddr, src Peer) error {
-	id := string(src.ID())
+	id := src.ID()
 	if !r.requestsSent.Has(id) {
 		return ErrUnsolicitedList
 	}

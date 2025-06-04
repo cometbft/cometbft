@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 )
 
 // Tests for logging each type of requests.

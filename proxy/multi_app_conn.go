@@ -1,10 +1,10 @@
 package proxy
 
 import (
-	abcicli "github.com/cometbft/cometbft/abci/client"
-	cmtos "github.com/cometbft/cometbft/internal/os"
-	cmtlog "github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/libs/service"
+	abcicli "github.com/cometbft/cometbft/v2/abci/client"
+	cmtos "github.com/cometbft/cometbft/v2/internal/os"
+	cmtlog "github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/libs/service"
 )
 
 const (

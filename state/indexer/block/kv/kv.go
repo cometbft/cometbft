@@ -12,15 +12,15 @@ import (
 
 	"github.com/google/orderedcode"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	cmtdb "github.com/cometbft/cometbft/db"
-	idxutil "github.com/cometbft/cometbft/internal/indexer"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/libs/pubsub/query"
-	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
-	"github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/state/indexer"
-	"github.com/cometbft/cometbft/types"
+	dbm "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	idxutil "github.com/cometbft/cometbft/v2/internal/indexer"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/libs/pubsub/query"
+	"github.com/cometbft/cometbft/v2/libs/pubsub/query/syntax"
+	"github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/state/indexer"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 var (
@@ -33,7 +33,7 @@ var (
 // events with an underlying KV store. Block events are indexed by their height,
 // such that matching search criteria returns the respective block height(s).
 type BlockerIndexer struct {
-	store cmtdb.DB
+	store dbm.DB
 
 	// Add unique event identifier to use when querying
 	// Matching will be done both on height AND eventSeq
@@ -54,7 +54,7 @@ func WithCompaction(compact bool, compactionInterval int64) IndexerOption {
 	}
 }
 
-func New(store cmtdb.DB, options ...IndexerOption) *BlockerIndexer {
+func New(store dbm.DB, options ...IndexerOption) *BlockerIndexer {
 	bsIndexer := &BlockerIndexer{
 		store: store,
 	}
@@ -139,7 +139,7 @@ func (idx *BlockerIndexer) Prune(retainHeight int64) (numPruned int64, newRetain
 	}
 
 	batch := idx.store.NewBatch()
-	closeBatch := func(batch cmtdb.Batch) {
+	closeBatch := func(batch dbm.Batch) {
 		err := batch.Close()
 		if err != nil {
 			idx.log.Error(fmt.Sprintf("Error when closing block indexer pruning batch: %v", err))
@@ -147,7 +147,7 @@ func (idx *BlockerIndexer) Prune(retainHeight int64) (numPruned int64, newRetain
 	}
 	defer closeBatch(batch)
 
-	flush := func(batch cmtdb.Batch) error {
+	flush := func(batch dbm.Batch) error {
 		err := batch.WriteSync()
 		if err != nil {
 			return fmt.Errorf("failed to flush block indexer pruning batch %w", err)
@@ -224,7 +224,7 @@ func (idx *BlockerIndexer) GetRetainHeight() (int64, error) {
 	return height, nil
 }
 
-func (*BlockerIndexer) setLastRetainHeight(height int64, batch cmtdb.Batch) error {
+func (*BlockerIndexer) setLastRetainHeight(height int64, batch dbm.Batch) error {
 	return batch.Set(LastBlockIndexerRetainHeightKey, int64ToBytes(height))
 }
 
@@ -426,7 +426,7 @@ func (idx *BlockerIndexer) matchRange(
 
 	tmpHeights := make(map[string][]byte)
 
-	it, err := cmtdb.IteratePrefix(idx.store, startKey)
+	it, err := dbm.IteratePrefix(idx.store, startKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create prefix iterator: %w", err)
 	}
@@ -536,12 +536,12 @@ FOR_LOOP:
 	return filteredHeights, nil
 }
 
-func (*BlockerIndexer) setTmpHeights(tmpHeights map[string][]byte, it cmtdb.Iterator) {
+func (*BlockerIndexer) setTmpHeights(tmpHeights map[string][]byte, it dbm.Iterator) {
 	// If we return attributes that occur within the same events, then store the event sequence in the
 	// result map as well
 	eventSeq, _ := parseEventSeqFromEventKey(it.Key())
 
-	// value comes from [cmtdb.Iterator] interface Value() API.
+	// value comes from cometbft-db Iterator interface Value() API.
 	// Therefore, we must make a copy before storing references to it.
 	var (
 		value   = it.Value()
@@ -576,7 +576,7 @@ func (idx *BlockerIndexer) match(
 
 	switch {
 	case c.Op == syntax.TEq:
-		it, err := cmtdb.IteratePrefix(idx.store, startKeyBz)
+		it, err := dbm.IteratePrefix(idx.store, startKeyBz)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create prefix iterator: %w", err)
 		}
@@ -614,7 +614,7 @@ func (idx *BlockerIndexer) match(
 			return nil, err
 		}
 
-		it, err := cmtdb.IteratePrefix(idx.store, prefix)
+		it, err := dbm.IteratePrefix(idx.store, prefix)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create prefix iterator: %w", err)
 		}
@@ -656,7 +656,7 @@ func (idx *BlockerIndexer) match(
 			return nil, err
 		}
 
-		it, err := cmtdb.IteratePrefix(idx.store, prefix)
+		it, err := dbm.IteratePrefix(idx.store, prefix)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create prefix iterator: %w", err)
 		}
@@ -731,7 +731,7 @@ FOR_LOOP:
 	return filteredHeights, nil
 }
 
-func (idx *BlockerIndexer) indexEvents(batch cmtdb.Batch, events []abci.Event, height int64) error {
+func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, height int64) error {
 	heightBz := int64ToBytes(height)
 
 	for _, event := range events {

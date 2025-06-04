@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"reflect"
 
-	cmtjson "github.com/cometbft/cometbft/libs/json"
+	cmtjson "github.com/cometbft/cometbft/v2/libs/json"
 )
 
 func argsToURLValues(args map[string]any) (url.Values, error) {

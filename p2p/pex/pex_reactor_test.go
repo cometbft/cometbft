@@ -13,12 +13,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
-	"github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/p2p/mock"
-	na "github.com/cometbft/cometbft/p2p/netaddr"
-	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/v2/config"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/p2p"
+	"github.com/cometbft/cometbft/v2/p2p/mock"
+	na "github.com/cometbft/cometbft/v2/p2p/netaddr"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 var cfg *config.P2PConfig
@@ -154,7 +154,7 @@ func TestPEXReactorRequestMessageAbuse(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, book.HasAddress(peerAddr))
 
-	id := string(peer.ID())
+	id := peer.ID()
 
 	// first time creates the entry
 	r.Receive(p2p.Envelope{ChannelID: PexChannel, Src: peer, Message: &tmp2p.PexRequest{}})
@@ -184,7 +184,7 @@ func TestPEXReactorAddrsMessageAbuse(t *testing.T) {
 	p2p.AddPeerToSwitchPeerSet(sw, peer)
 	assert.True(t, sw.Peers().Has(peer.ID()))
 
-	id := string(peer.ID())
+	id := peer.ID()
 
 	// request addrs from the peer
 	r.RequestAddrs(peer)
@@ -304,7 +304,7 @@ func TestConnectionSpeedForPeerReceivedFromSeed(t *testing.T) {
 	assertPeersWithTimeout(t, []*p2p.Switch{node}, 10*time.Second, 2)
 
 	// 6. Assert that the configured maximum number of inbound/outbound peers
-	// are respected, see https://github.com/cometbft/cometbft/issues/486
+	// are respected, see https://github.com/cometbft/cometbft/v2/issues/486
 	outbound, inbound, dialing := node.NumPeers()
 	assert.LessOrEqual(t, inbound, cfg.MaxNumInboundPeers)
 	assert.LessOrEqual(t, outbound, cfg.MaxNumOutboundPeers)
@@ -473,7 +473,7 @@ func TestPEXReactorSeedModeFlushStop(t *testing.T) {
 	// this isn't perfect since it's possible the peer sends us a msg and we FlushStop
 	// before this loop catches it. but non-deterministically it works pretty well.
 	for i := 0; i < 1000; i++ {
-		v := reactor.lastReceivedRequests.Get(string(peerID))
+		v := reactor.lastReceivedRequests.Get(peerID)
 		if v != nil {
 			break
 		}
@@ -499,7 +499,7 @@ func TestPEXReactorDoesNotAddPrivatePeersToAddrBook(t *testing.T) {
 	peer := p2p.CreateRandomPeer(false)
 
 	pexR, book := createReactor(&ReactorConfig{})
-	book.AddPrivateIDs([]string{string(peer.NodeInfo().ID())})
+	book.AddPrivateIDs([]string{peer.NodeInfo().ID()})
 	defer teardownReactor(book)
 
 	// we have to send a request to receive responses

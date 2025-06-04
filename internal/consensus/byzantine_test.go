@@ -12,21 +12,21 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	abcicli "github.com/cometbft/cometbft/abci/client"
-	abci "github.com/cometbft/cometbft/abci/types"
+	dbm "github.com/cometbft/cometbft-db"
 	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v2"
-	cmtdb "github.com/cometbft/cometbft/db"
-	"github.com/cometbft/cometbft/internal/evidence"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/libs/service"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	mempl "github.com/cometbft/cometbft/mempool"
-	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/proxy"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/store"
-	"github.com/cometbft/cometbft/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
+	abcicli "github.com/cometbft/cometbft/v2/abci/client"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	"github.com/cometbft/cometbft/v2/internal/evidence"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/libs/service"
+	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
+	mempl "github.com/cometbft/cometbft/v2/mempool"
+	"github.com/cometbft/cometbft/v2/p2p"
+	"github.com/cometbft/cometbft/v2/proxy"
+	sm "github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/store"
+	"github.com/cometbft/cometbft/v2/types"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
 )
 
 // ----------------------------------------------
@@ -48,9 +48,8 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	css := make([]*State, nValidators)
 
 	for i := 0; i < nValidators; i++ {
-		logger := consensusLogger().With("test", "byzantine", "validator", i)
-		stateDB, err := cmtdb.NewInMem() // each state needs its own db
-		require.NoError(t, err)
+		logger := consensusLogger().With("validator", i)
+		stateDB := dbm.NewMemDB() // each state needs its own db
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
 		})
@@ -60,11 +59,10 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		ensureDir(path.Dir(thisConfig.Consensus.WalFile())) // dir for wal
 		app := appFunc()
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
-		_, err = app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
+		_, err := app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
 		require.NoError(t, err)
 
-		blockDB, err := cmtdb.NewInMem()
-		require.NoError(t, err)
+		blockDB := dbm.NewMemDB()
 		blockStore := store.NewBlockStore(blockDB)
 
 		mtx := new(cmtsync.Mutex)
@@ -86,8 +84,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		}
 
 		// Make a full instance of the evidence pool
-		evidenceDB, err := cmtdb.NewInMem()
-		require.NoError(t, err)
+		evidenceDB := dbm.NewMemDB()
 		evpool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 		require.NoError(t, err)
 		evpool.SetLogger(logger.With("module", "evidence"))

@@ -16,17 +16,17 @@ import (
 
 	_ "embed"
 
-	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/bls12381"
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/crypto/secp256k1"
-	"github.com/cometbft/cometbft/crypto/secp256k1eth"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
-	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
-	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
-	"github.com/cometbft/cometbft/test/e2e/app"
-	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/v2/crypto"
+	"github.com/cometbft/cometbft/v2/crypto/bls12381"
+	"github.com/cometbft/cometbft/v2/crypto/ed25519"
+	"github.com/cometbft/cometbft/v2/crypto/secp256k1"
+	"github.com/cometbft/cometbft/v2/crypto/secp256k1eth"
+	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
+	rpchttp "github.com/cometbft/cometbft/v2/rpc/client/http"
+	grpcclient "github.com/cometbft/cometbft/v2/rpc/grpc/client"
+	grpcprivileged "github.com/cometbft/cometbft/v2/rpc/grpc/client/privileged"
+	"github.com/cometbft/cometbft/v2/test/e2e/app"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 const (
@@ -267,6 +267,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		}
 		if node.Mode == ModeLight {
 			node.ABCIProtocol = ProtocolBuiltin
+		}
+		if node.Database == "" {
+			node.Database = "pebbledb"
 		}
 		if nodeManifest.PrivvalProtocolStr != "" {
 			node.PrivvalProtocol = Protocol(nodeManifest.PrivvalProtocolStr)
@@ -585,6 +588,11 @@ func (n Node) Validate(testnet Testnet) error {
 	case "v0":
 	default:
 		return fmt.Errorf("invalid block sync setting %q", n.BlockSyncVersion)
+	}
+	switch n.Database {
+	case "goleveldb", "rocksdb", "badgerdb", "pebbledb":
+	default:
+		return fmt.Errorf("invalid database setting %q", n.Database)
 	}
 	switch n.ABCIProtocol {
 	case ProtocolBuiltin, ProtocolBuiltinConnSync, ProtocolUNIX, ProtocolTCP, ProtocolGRPC:

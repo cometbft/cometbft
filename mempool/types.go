@@ -2,7 +2,7 @@ package mempool
 
 import (
 	memprotos "github.com/cometbft/cometbft/api/cometbft/mempool/v2"
-	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 var (

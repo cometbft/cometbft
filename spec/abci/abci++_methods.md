@@ -544,7 +544,7 @@ then _p_ locks _v_  and sends a Precommit message in the following way
    populates the other fields in [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension),
    and signs the populated data structure.
 5. _p_ constructs and signs the [CanonicalVote](../core/data_structures.md#canonicalvote) structure.
-6. _p_ constructs the Precommit message (i.e. [Vote](../core/data_structures.md#vote) structure)
+6. _p_ constructs the Precommit message (i.e. [Vote](../../spec/core/data_structures.md#vote) structure)
    using [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension)
    and [CanonicalVote](../core/data_structures.md#canonicalvote).
 7. _p_ broadcasts the Precommit message.

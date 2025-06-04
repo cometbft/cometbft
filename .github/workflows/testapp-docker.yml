@@ -62,11 +62,7 @@ jobs:
 
       - name: Login to DockerHub
         if: ${{ github.event_name != 'pull_request' }}
-<<<<<<< HEAD
-        uses: docker/login-action@v3.4.0
-=======
         uses: docker/login-action@v3
->>>>>>> 0fb96b3f (ci(testapp-docker): release two images, not one (#5014))
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}

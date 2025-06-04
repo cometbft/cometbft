@@ -9,7 +9,7 @@ import (
 
 	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 func TestValidateMsg(t *testing.T) {

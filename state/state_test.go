@@ -13,12 +13,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/internal/test"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/types"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	"github.com/cometbft/cometbft/v2/crypto/ed25519"
+	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
+	"github.com/cometbft/cometbft/v2/internal/test"
+	sm "github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 // setupTestCase does setup common to all test cases.

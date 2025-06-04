@@ -11,14 +11,14 @@ import (
 	"github.com/google/orderedcode"
 
 	dbm "github.com/cometbft/cometbft-db"
-	abci "github.com/cometbft/cometbft/abci/types"
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v2"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	cmtos "github.com/cometbft/cometbft/internal/os"
-	"github.com/cometbft/cometbft/libs/log"
-	cmtmath "github.com/cometbft/cometbft/libs/math"
-	"github.com/cometbft/cometbft/libs/metrics"
-	"github.com/cometbft/cometbft/types"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	cmtos "github.com/cometbft/cometbft/v2/internal/os"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	cmtmath "github.com/cometbft/cometbft/v2/libs/math"
+	"github.com/cometbft/cometbft/v2/libs/metrics"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 const (

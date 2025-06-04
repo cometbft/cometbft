@@ -5,9 +5,9 @@ package mocks
 import (
 	context "context"
 
-	abcicli "github.com/cometbft/cometbft/abci/client"
+	abcicli "github.com/cometbft/cometbft/v2/abci/client"
 
-	log "github.com/cometbft/cometbft/libs/log"
+	log "github.com/cometbft/cometbft/v2/libs/log"
 
 	mock "github.com/stretchr/testify/mock"
 

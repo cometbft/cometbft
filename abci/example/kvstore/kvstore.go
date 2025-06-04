@@ -13,11 +13,11 @@ import (
 	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/crypto"
-	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/version"
+	"github.com/cometbft/cometbft/v2/abci/types"
+	"github.com/cometbft/cometbft/v2/crypto"
+	cryptoenc "github.com/cometbft/cometbft/v2/crypto/encoding"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/version"
 )
 
 var (

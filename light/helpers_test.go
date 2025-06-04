@@ -4,12 +4,12 @@ import (
 	"time"
 
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
-	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/crypto/tmhash"
-	"github.com/cometbft/cometbft/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
-	"github.com/cometbft/cometbft/version"
+	"github.com/cometbft/cometbft/v2/crypto"
+	"github.com/cometbft/cometbft/v2/crypto/ed25519"
+	"github.com/cometbft/cometbft/v2/crypto/tmhash"
+	"github.com/cometbft/cometbft/v2/types"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
+	"github.com/cometbft/cometbft/v2/version"
 )
 
 // privKeys is a helper type for testing.

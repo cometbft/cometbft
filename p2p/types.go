@@ -6,10 +6,10 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
-	ni "github.com/cometbft/cometbft/p2p/internal/nodeinfo"
-	"github.com/cometbft/cometbft/p2p/internal/nodekey"
-	"github.com/cometbft/cometbft/p2p/transport"
-	"github.com/cometbft/cometbft/types"
+	ni "github.com/cometbft/cometbft/v2/p2p/internal/nodeinfo"
+	"github.com/cometbft/cometbft/v2/p2p/internal/nodekey"
+	"github.com/cometbft/cometbft/v2/p2p/transport"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 type (

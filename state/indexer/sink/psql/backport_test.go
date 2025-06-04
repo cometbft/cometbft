@@ -1,8 +1,8 @@
 package psql
 
 import (
-	"github.com/cometbft/cometbft/state/indexer"
-	"github.com/cometbft/cometbft/state/txindex"
+	"github.com/cometbft/cometbft/v2/state/indexer"
+	"github.com/cometbft/cometbft/v2/state/txindex"
 )
 
 var (

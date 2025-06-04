@@ -8,9 +8,9 @@ import (
 
 	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v2"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	"github.com/cometbft/cometbft/crypto"
-	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	"github.com/cometbft/cometbft/libs/protoio"
+	"github.com/cometbft/cometbft/v2/crypto"
+	cmtbytes "github.com/cometbft/cometbft/v2/libs/bytes"
+	"github.com/cometbft/cometbft/v2/libs/protoio"
 )
 
 const (

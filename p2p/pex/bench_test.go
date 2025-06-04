@@ -3,7 +3,7 @@ package pex
 import (
 	"testing"
 
-	"github.com/cometbft/cometbft/p2p/internal/nodekey"
+	"github.com/cometbft/cometbft/v2/p2p/internal/nodekey"
 )
 
 func BenchmarkAddrBook_hash(b *testing.B) {

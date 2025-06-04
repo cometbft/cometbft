@@ -3,12 +3,12 @@
 package mocks
 
 import (
-	abcicli "github.com/cometbft/cometbft/abci/client"
-	mempool "github.com/cometbft/cometbft/mempool"
+	abcicli "github.com/cometbft/cometbft/v2/abci/client"
+	mempool "github.com/cometbft/cometbft/v2/mempool"
 
 	mock "github.com/stretchr/testify/mock"
 
-	types "github.com/cometbft/cometbft/types"
+	types "github.com/cometbft/cometbft/v2/types"
 
 	v2 "github.com/cometbft/cometbft/api/cometbft/abci/v2"
 )

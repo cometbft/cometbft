@@ -9,11 +9,11 @@ import (
 	"slices"
 	"time"
 
-	"github.com/cometbft/cometbft/crypto"
-	cmtos "github.com/cometbft/cometbft/internal/os"
-	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	cmtjson "github.com/cometbft/cometbft/libs/json"
-	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cometbft/cometbft/v2/crypto"
+	cmtos "github.com/cometbft/cometbft/v2/internal/os"
+	cmtbytes "github.com/cometbft/cometbft/v2/libs/bytes"
+	cmtjson "github.com/cometbft/cometbft/v2/libs/json"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
 )
 
 const (

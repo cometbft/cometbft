@@ -10,13 +10,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
-	abcitypes "github.com/cometbft/cometbft/abci/types"
-	cmtcfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/internal/test"
-	blockmocks "github.com/cometbft/cometbft/state/indexer/mocks"
-	"github.com/cometbft/cometbft/state/mocks"
-	txmocks "github.com/cometbft/cometbft/state/txindex/mocks"
-	"github.com/cometbft/cometbft/types"
+	abcitypes "github.com/cometbft/cometbft/v2/abci/types"
+	cmtcfg "github.com/cometbft/cometbft/v2/config"
+	"github.com/cometbft/cometbft/v2/internal/test"
+	blockmocks "github.com/cometbft/cometbft/v2/state/indexer/mocks"
+	"github.com/cometbft/cometbft/v2/state/mocks"
+	txmocks "github.com/cometbft/cometbft/v2/state/txindex/mocks"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 const (

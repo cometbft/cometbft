@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cometbft/cometbft/libs/bytes"
-	"github.com/cometbft/cometbft/libs/log"
-	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
-	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
-	nm "github.com/cometbft/cometbft/node"
-	rpcclient "github.com/cometbft/cometbft/rpc/client"
-	"github.com/cometbft/cometbft/rpc/core"
-	ctypes "github.com/cometbft/cometbft/rpc/core/types"
-	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/v2/libs/bytes"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/v2/libs/pubsub"
+	cmtquery "github.com/cometbft/cometbft/v2/libs/pubsub/query"
+	nm "github.com/cometbft/cometbft/v2/node"
+	rpcclient "github.com/cometbft/cometbft/v2/rpc/client"
+	"github.com/cometbft/cometbft/v2/rpc/core"
+	ctypes "github.com/cometbft/cometbft/v2/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 /*

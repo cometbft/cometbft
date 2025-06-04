@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/internal/consensus/types"
+	"github.com/cometbft/cometbft/v2/internal/consensus/types"
 )
 
 func TestTimeoutTicker(t *testing.T) {

@@ -18,10 +18,10 @@ import (
 
 	"golang.org/x/net/netutil"
 
-	"github.com/cometbft/cometbft/libs/log"
-	grpcerr "github.com/cometbft/cometbft/rpc/grpc/errors"
-	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	grpcerr "github.com/cometbft/cometbft/v2/rpc/grpc/errors"
+	"github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
 )
 
 // Config is a RPC server configuration.

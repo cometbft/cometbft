@@ -3,12 +3,12 @@ package core
 import (
 	"fmt"
 
-	cm "github.com/cometbft/cometbft/internal/consensus"
-	cmtmath "github.com/cometbft/cometbft/libs/math"
-	"github.com/cometbft/cometbft/p2p"
-	ctypes "github.com/cometbft/cometbft/rpc/core/types"
-	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	"github.com/cometbft/cometbft/types"
+	cm "github.com/cometbft/cometbft/v2/internal/consensus"
+	cmtmath "github.com/cometbft/cometbft/v2/libs/math"
+	"github.com/cometbft/cometbft/v2/p2p"
+	ctypes "github.com/cometbft/cometbft/v2/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 // Validators gets the validator set at the given block height.

@@ -13,14 +13,14 @@ import (
 	"github.com/google/orderedcode"
 
 	dbm "github.com/cometbft/cometbft-db"
-	abci "github.com/cometbft/cometbft/abci/types"
-	idxutil "github.com/cometbft/cometbft/internal/indexer"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/libs/pubsub/query"
-	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
-	"github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/state/indexer"
-	"github.com/cometbft/cometbft/types"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	idxutil "github.com/cometbft/cometbft/v2/internal/indexer"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/libs/pubsub/query"
+	"github.com/cometbft/cometbft/v2/libs/pubsub/query/syntax"
+	"github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/state/indexer"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 var (

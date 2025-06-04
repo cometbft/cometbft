@@ -1,7 +1,7 @@
 /*
 Package evidence handles all evidence storage and gossiping from detection to block proposal.
 For the different types of evidence refer to the `evidence.go` file in the types package
-or https://github.com/cometbft/cometbft/blob/main/spec/consensus/light-client/accountability.md.
+or https://github.com/cometbft/cometbft/v2/blob/main/spec/consensus/light-client/accountability.md.
 
 # Gossiping
 

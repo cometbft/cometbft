@@ -10,14 +10,14 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v2"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
-	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/tmhash"
-	"github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/state/mocks"
-	"github.com/cometbft/cometbft/store"
-	"github.com/cometbft/cometbft/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
-	"github.com/cometbft/cometbft/version"
+	"github.com/cometbft/cometbft/v2/crypto"
+	"github.com/cometbft/cometbft/v2/crypto/tmhash"
+	"github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/state/mocks"
+	"github.com/cometbft/cometbft/v2/store"
+	"github.com/cometbft/cometbft/v2/types"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
+	"github.com/cometbft/cometbft/v2/version"
 )
 
 func TestRollback(t *testing.T) {

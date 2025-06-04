@@ -12,20 +12,20 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/abci/example/kvstore"
-	abci "github.com/cometbft/cometbft/abci/types"
-	abcimocks "github.com/cometbft/cometbft/abci/types/mocks"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	"github.com/cometbft/cometbft/crypto/tmhash"
-	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/internal/test"
-	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/libs/protoio"
-	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
-	p2pmock "github.com/cometbft/cometbft/p2p/mock"
-	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	abcimocks "github.com/cometbft/cometbft/v2/abci/types/mocks"
+	"github.com/cometbft/cometbft/v2/crypto/tmhash"
+	cstypes "github.com/cometbft/cometbft/v2/internal/consensus/types"
+	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
+	"github.com/cometbft/cometbft/v2/internal/test"
+	cmtbytes "github.com/cometbft/cometbft/v2/libs/bytes"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/libs/protoio"
+	cmtpubsub "github.com/cometbft/cometbft/v2/libs/pubsub"
+	p2pmock "github.com/cometbft/cometbft/v2/p2p/mock"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 /*
@@ -1367,7 +1367,7 @@ func TestState_MissingProposalValidBlockReceivedTimeout(t *testing.T) {
 	assert.Equal(t, rs.ValidBlock.Hash(), blockID.Hash)
 
 	// Since we didn't see the round's Proposal, we should prevote nil.
-	// NOTE: introduced by https://github.com/cometbft/cometbft/pull/1203.
+	// NOTE: introduced by https://github.com/cometbft/cometbft/v2/pull/1203.
 	// In branches v0.{34,37,38}.x, the node prevotes for the valid block.
 	ensurePrevote(voteCh, height, round)
 	validatePrevote(t, cs1, round, vss[0], nil)

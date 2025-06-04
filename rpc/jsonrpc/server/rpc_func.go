@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/v2/libs/log"
 )
 
 // RegisterRPCFuncs adds a route for each function in the funcMap, as well as

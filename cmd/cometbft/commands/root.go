@@ -7,10 +7,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/libs/cli"
-	cmtflags "github.com/cometbft/cometbft/libs/cli/flags"
-	"github.com/cometbft/cometbft/libs/log"
+	cfg "github.com/cometbft/cometbft/v2/config"
+	"github.com/cometbft/cometbft/v2/libs/cli"
+	cmtflags "github.com/cometbft/cometbft/v2/libs/cli/flags"
+	"github.com/cometbft/cometbft/v2/libs/log"
 )
 
 var (

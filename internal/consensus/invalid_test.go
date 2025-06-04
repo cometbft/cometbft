@@ -5,12 +5,12 @@ import (
 	"time"
 
 	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v2"
-	cfg "github.com/cometbft/cometbft/config"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/libs/bytes"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/types"
+	cfg "github.com/cometbft/cometbft/v2/config"
+	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
+	"github.com/cometbft/cometbft/v2/libs/bytes"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/p2p"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 // ----------------------------------------------

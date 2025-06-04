@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	cmtmath "github.com/cometbft/cometbft/libs/math"
-	"github.com/cometbft/cometbft/light"
-	"github.com/cometbft/cometbft/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
+	cmtmath "github.com/cometbft/cometbft/v2/libs/math"
+	"github.com/cometbft/cometbft/v2/light"
+	"github.com/cometbft/cometbft/v2/types"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
 )
 
 const (

@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v2"
-	"github.com/cometbft/cometbft/internal/blocksync"
-	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/v2/internal/blocksync"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 func TestBcBlockRequestMessageValidateBasic(t *testing.T) {

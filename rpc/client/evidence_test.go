@@ -9,15 +9,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/crypto/tmhash"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/internal/test"
-	"github.com/cometbft/cometbft/privval"
-	"github.com/cometbft/cometbft/rpc/client"
-	rpctest "github.com/cometbft/cometbft/rpc/test"
-	"github.com/cometbft/cometbft/types"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	"github.com/cometbft/cometbft/v2/crypto/ed25519"
+	"github.com/cometbft/cometbft/v2/crypto/tmhash"
+	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
+	"github.com/cometbft/cometbft/v2/internal/test"
+	"github.com/cometbft/cometbft/v2/privval"
+	"github.com/cometbft/cometbft/v2/rpc/client"
+	rpctest "github.com/cometbft/cometbft/v2/rpc/test"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 func newEvidence(t *testing.T, val *privval.FilePV,

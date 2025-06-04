@@ -8,7 +8,7 @@ import (
 
 	"github.com/dgraph-io/badger/v4"
 
-	"github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/v2/abci/types"
 )
 
 type DB struct {

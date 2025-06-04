@@ -7,13 +7,13 @@ import (
 	"sort"
 	"time"
 
-	flow "github.com/cometbft/cometbft/internal/flowrate"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/libs/service"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
+	flow "github.com/cometbft/cometbft/v2/internal/flowrate"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/libs/service"
+	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
+	"github.com/cometbft/cometbft/v2/p2p"
+	"github.com/cometbft/cometbft/v2/types"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
 )
 
 /*

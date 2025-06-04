@@ -8,17 +8,17 @@ import (
 	"sync/atomic"
 	"time"
 
-	abcicli "github.com/cometbft/cometbft/abci/client"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/internal/clist"
-	"github.com/cometbft/cometbft/libs/log"
-	cmtmath "github.com/cometbft/cometbft/libs/math"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/proxy"
-	"github.com/cometbft/cometbft/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
+	abcicli "github.com/cometbft/cometbft/v2/abci/client"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	"github.com/cometbft/cometbft/v2/config"
+	"github.com/cometbft/cometbft/v2/internal/clist"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	cmtmath "github.com/cometbft/cometbft/v2/libs/math"
+	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
+	"github.com/cometbft/cometbft/v2/p2p"
+	"github.com/cometbft/cometbft/v2/proxy"
+	"github.com/cometbft/cometbft/v2/types"
+	cmttime "github.com/cometbft/cometbft/v2/types/time"
 )
 
 const (
@@ -456,7 +456,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 		}
 
 		// Check that tx is not already in the mempool. This can happen when the
-		// cache overflows. See https://github.com/cometbft/cometbft/pull/890.
+		// cache overflows. See https://github.com/cometbft/cometbft/v2/pull/890.
 		txKey := tx.Key()
 		if mem.Contains(txKey) {
 			mem.metrics.RejectedTxs.Add(1)

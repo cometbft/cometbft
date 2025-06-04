@@ -1,7 +1,7 @@
 package test
 
 import (
-	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 // ConsensusParams returns a default set of ConsensusParams that are suitable

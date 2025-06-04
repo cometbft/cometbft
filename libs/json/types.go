@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
 )
 
 // typeRegistry contains globally registered types for JSON encoding/decoding.

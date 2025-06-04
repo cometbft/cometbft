@@ -7,9 +7,9 @@ import (
 	"fmt"
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	"github.com/cometbft/cometbft/crypto/merkle"
-	"github.com/cometbft/cometbft/crypto/tmhash"
-	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/v2/crypto/merkle"
+	"github.com/cometbft/cometbft/v2/crypto/tmhash"
+	cmtbytes "github.com/cometbft/cometbft/v2/libs/bytes"
 )
 
 // TxKeySize is the size of the transaction key index.

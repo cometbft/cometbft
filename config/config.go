@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	cmterrors "github.com/cometbft/cometbft/types/errors"
-	"github.com/cometbft/cometbft/version"
+	cmterrors "github.com/cometbft/cometbft/v2/types/errors"
+	"github.com/cometbft/cometbft/v2/version"
 )
 
 const (
@@ -919,7 +919,7 @@ func DefaultFuzzConnConfig() *FuzzConnConfig {
 // Note: Until v0.37 there was a `Version` field to select which implementation
 // of the mempool to use. Two versions used to exist: the current, default
 // implementation (previously called v0), and a prioritized mempool (v1), which
-// was removed (see https://github.com/cometbft/cometbft/issues/260).
+// was removed (see https://github.com/cometbft/cometbft/v2/issues/260).
 type MempoolConfig struct {
 	// The type of mempool for this node to use.
 	//

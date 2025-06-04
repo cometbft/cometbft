@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	crypto "github.com/cometbft/cometbft/crypto"
+	crypto "github.com/cometbft/cometbft/v2/crypto"
 	mock "github.com/stretchr/testify/mock"
 )
 

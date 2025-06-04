@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 	blst "github.com/supranational/blst/bindings/go"
 
-	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/bls12381"
+	"github.com/cometbft/cometbft/v2/crypto"
+	"github.com/cometbft/cometbft/v2/crypto/bls12381"
 )
 
 func TestNewPrivateKeyFromBytes(t *testing.T) {

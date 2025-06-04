@@ -17,8 +17,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	cmtjson "github.com/cometbft/cometbft/libs/json"
-	"github.com/cometbft/cometbft/types"
+	cmtjson "github.com/cometbft/cometbft/v2/libs/json"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 func TestInitGenesisChunks(t *testing.T) {

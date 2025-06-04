@@ -16,17 +16,17 @@ import (
 
 	_ "embed"
 
-	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/bls12381"
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/crypto/secp256k1"
-	"github.com/cometbft/cometbft/crypto/secp256k1eth"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
-	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
-	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
-	"github.com/cometbft/cometbft/test/e2e/app"
-	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/v2/crypto"
+	"github.com/cometbft/cometbft/v2/crypto/bls12381"
+	"github.com/cometbft/cometbft/v2/crypto/ed25519"
+	"github.com/cometbft/cometbft/v2/crypto/secp256k1"
+	"github.com/cometbft/cometbft/v2/crypto/secp256k1eth"
+	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
+	rpchttp "github.com/cometbft/cometbft/v2/rpc/client/http"
+	grpcclient "github.com/cometbft/cometbft/v2/rpc/grpc/client"
+	grpcprivileged "github.com/cometbft/cometbft/v2/rpc/grpc/client/privileged"
+	"github.com/cometbft/cometbft/v2/test/e2e/app"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 const (

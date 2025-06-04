@@ -10,17 +10,17 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/pubsub"
-	"github.com/cometbft/cometbft/libs/pubsub/query"
-	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
+	"github.com/cometbft/cometbft/v2/abci/types"
+	"github.com/cometbft/cometbft/v2/libs/pubsub"
+	"github.com/cometbft/cometbft/v2/libs/pubsub/query"
+	"github.com/cometbft/cometbft/v2/libs/pubsub/query/syntax"
 )
 
 var _ pubsub.Query = (*query.Query)(nil)
 
 // Example events from the OpenAPI documentation:
 //
-//	https://github.com/cometbft/cometbft/blob/master/rpc/openapi/openapi.yaml
+//	https://github.com/cometbft/cometbft/v2/blob/master/rpc/openapi/openapi.yaml
 //
 // Redactions:
 //

@@ -18,13 +18,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/internal/net"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/rpc/jsonrpc/client"
-	"github.com/cometbft/cometbft/rpc/jsonrpc/server"
-	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/v2/internal/net"
+	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
+	cmtbytes "github.com/cometbft/cometbft/v2/libs/bytes"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/rpc/jsonrpc/client"
+	"github.com/cometbft/cometbft/v2/rpc/jsonrpc/server"
+	"github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
 )
 
 // Client and Server should work over tcp or unix sockets.

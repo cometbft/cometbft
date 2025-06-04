@@ -3,9 +3,9 @@ package core
 import (
 	"reflect"
 
-	ctypes "github.com/cometbft/cometbft/rpc/core/types"
-	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	"github.com/cometbft/cometbft/types"
+	ctypes "github.com/cometbft/cometbft/v2/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 // BroadcastEvidence broadcasts evidence of the misbehavior.

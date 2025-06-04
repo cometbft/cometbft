@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/cometbft/cometbft/libs/bytes"
-	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/v2/libs/bytes"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 var (

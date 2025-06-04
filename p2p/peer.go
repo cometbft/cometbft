@@ -10,15 +10,15 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	"github.com/cometbft/cometbft/internal/cmap"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/libs/service"
-	ni "github.com/cometbft/cometbft/p2p/internal/nodeinfo"
-	"github.com/cometbft/cometbft/p2p/internal/nodekey"
-	na "github.com/cometbft/cometbft/p2p/netaddr"
-	"github.com/cometbft/cometbft/p2p/transport"
-	tcpconn "github.com/cometbft/cometbft/p2p/transport/tcp/conn"
-	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/v2/internal/cmap"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/libs/service"
+	ni "github.com/cometbft/cometbft/v2/p2p/internal/nodeinfo"
+	"github.com/cometbft/cometbft/v2/p2p/internal/nodekey"
+	na "github.com/cometbft/cometbft/v2/p2p/netaddr"
+	"github.com/cometbft/cometbft/v2/p2p/transport"
+	tcpconn "github.com/cometbft/cometbft/v2/p2p/transport/tcp/conn"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 //go:generate ../scripts/mockery_generate.sh Peer

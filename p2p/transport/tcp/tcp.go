@@ -8,13 +8,13 @@ import (
 
 	"golang.org/x/net/netutil"
 
-	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/p2p/internal/fuzz"
-	"github.com/cometbft/cometbft/p2p/internal/nodekey"
-	na "github.com/cometbft/cometbft/p2p/netaddr"
-	"github.com/cometbft/cometbft/p2p/transport"
-	"github.com/cometbft/cometbft/p2p/transport/tcp/conn"
+	"github.com/cometbft/cometbft/v2/crypto"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/p2p/internal/fuzz"
+	"github.com/cometbft/cometbft/v2/p2p/internal/nodekey"
+	na "github.com/cometbft/cometbft/v2/p2p/netaddr"
+	"github.com/cometbft/cometbft/v2/p2p/transport"
+	"github.com/cometbft/cometbft/v2/p2p/transport/tcp/conn"
 )
 
 const (

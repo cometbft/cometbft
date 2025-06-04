@@ -15,16 +15,16 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/tmhash"
-	"github.com/cometbft/cometbft/internal/evidence"
-	"github.com/cometbft/cometbft/internal/evidence/mocks"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/p2p"
-	p2pmocks "github.com/cometbft/cometbft/p2p/mocks"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/types"
+	cfg "github.com/cometbft/cometbft/v2/config"
+	"github.com/cometbft/cometbft/v2/crypto"
+	"github.com/cometbft/cometbft/v2/crypto/tmhash"
+	"github.com/cometbft/cometbft/v2/internal/evidence"
+	"github.com/cometbft/cometbft/v2/internal/evidence/mocks"
+	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/v2/p2p"
+	p2pmocks "github.com/cometbft/cometbft/v2/p2p/mocks"
+	sm "github.com/cometbft/cometbft/v2/state"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 var (

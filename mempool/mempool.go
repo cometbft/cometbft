@@ -4,10 +4,10 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	abcicli "github.com/cometbft/cometbft/abci/client"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/types"
+	abcicli "github.com/cometbft/cometbft/v2/abci/client"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	"github.com/cometbft/cometbft/v2/p2p"
+	"github.com/cometbft/cometbft/v2/types"
 )
 
 const (

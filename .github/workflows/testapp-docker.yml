@@ -43,12 +43,19 @@ jobs:
           if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
             echo "version=latest" >> $GITHUB_ENV
             echo "::set-output name=version::latest"
+          elif [[ "${GITHUB_REF}" == "refs/heads/v0.38.x" ]]; then
+            echo "version=v0.38.x" >> $GITHUB_ENV
+            echo "::set-output name=version::v0.38.x"
+          elif [[ "${GITHUB_REF}" == "refs/heads/v1.x" ]]; then
+            echo "version=v1.x" >> $GITHUB_ENV
+            echo "::set-output name=version::v1.x"
           elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             tag_name="${GITHUB_REF#refs/tags/}"
             echo "version=$tag_name" >> $GITHUB_ENV
             echo "::set-output name=version::$tag_name"
           else
             echo "Unknown version"
+            echo "Current Ref: ${GITHUB_REF}"
             exit 1
           fi
 

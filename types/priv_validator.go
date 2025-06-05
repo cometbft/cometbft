@@ -29,7 +29,7 @@ const RawBytesSignBytesPrefix = "COMET::RAW_BYTES::SIGN"
 // Returns error if any required parameter is empty or if marshaling fails.
 func RawBytesMessageSignBytes(chainID, uniqueID string, rawBytes []byte) ([]byte, error) {
 	if chainID == "" {
-		return nil, fmt.Errorf("chainID cannot be empty")
+		return nil, errors.New("chainID cannot be empty")
 	}
 
 	if uniqueID == "" {

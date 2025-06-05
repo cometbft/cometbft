@@ -39,7 +39,7 @@ cometbft testnet --help
 
 The `genesis.json` file in `$CMTHOME/config/` defines the initial
 CometBFT state upon genesis of the blockchain ([see
-definition](https://github.com/cometbft/cometbft/blob/main/types/genesis.go)).
+definition](https://github.com/cometbft/cometbft/blob/v2.x/types/genesis.go)).
 
 #### Fields
 
@@ -49,7 +49,7 @@ definition](https://github.com/cometbft/cometbft/blob/main/types/genesis.go)).
   chain IDs, you will have a bad time. The ChainID must be less than 50 symbols.
 - `initial_height`: Height at which CometBFT should begin at. If a blockchain is conducting a network upgrade,
     starting from the stopped height brings uniqueness to previous heights.
-- `consensus_params` ([see spec](https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md#consensusparams))
+- `consensus_params` ([see spec](https://github.com/cometbft/cometbft/blob/v2.x/spec/core/data_structures.md#consensusparams))
     - `block`
         - `max_bytes`: Max block size, in bytes.
         - `max_gas`: Max gas per block.
@@ -71,7 +71,7 @@ definition](https://github.com/cometbft/cometbft/blob/main/types/genesis.go)).
   application will initialize the validator set upon `InitChain`.
     - `pub_key`: The first element specifies the key type,
     using the declared `PubKeyName` for the adopted
-    [key type](https://github.com/cometbft/cometbft/blob/main/crypto/ed25519/ed25519.go#L36).
+    [key type](https://github.com/cometbft/cometbft/blob/v2.x/crypto/ed25519/ed25519.go#L36).
     The second element are the pubkey bytes.
     - `power`: The validator's voting power.
     - `name`: Name of the validator (optional).
@@ -565,7 +565,7 @@ library will deny making connections to peers with the same IP address.
 ### Upgrading
 
 See the
-[UPGRADING.md](https://github.com/cometbft/cometbft/blob/main/UPGRADING.md)
+[UPGRADING.md](https://github.com/cometbft/cometbft/blob/v2.x/UPGRADING.md)
 guide. You may need to reset your chain between major breaking releases.
 Although, we expect CometBFT to have fewer breaking releases in the future
 (especially after 1.0 release).

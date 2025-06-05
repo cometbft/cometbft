@@ -259,12 +259,12 @@ It may take a while, but block times will eventually converge to real time.
   fix issues related to clock synchronization and the configuration of the
   `SynchronyParams` consensus parameters adopted by PBTS.
 
-[pbts-spec]: https://github.com/cometbft/cometbft/blob/main/spec/consensus/proposer-based-timestamp/README.md
-[bft-time-spec]: https://github.com/cometbft/cometbft/blob/main/spec/consensus/bft-time.md
-[block-time-spec]: https://github.com/cometbft/cometbft/blob/main/spec/consensus/time.md
+[pbts-spec]: https://github.com/cometbft/cometbft/blob/v2.x/spec/consensus/proposer-based-timestamp/README.md
+[bft-time-spec]: https://github.com/cometbft/cometbft/blob/v2.x/spec/consensus/bft-time.md
+[block-time-spec]: https://github.com/cometbft/cometbft/blob/v2.x/spec/consensus/time.md
 [pbts-runbook]: ../../guides/tools/proposer-based-timestamps-runbook.md
 
-[consensus-parameters]: https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_app_requirements.md#consensus-parameters
+[consensus-parameters]: https://github.com/cometbft/cometbft/blob/v2.x/spec/abci/abci%2B%2B_app_requirements.md#consensus-parameters
 
-[light-client-verification]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/README.md#failure-model
-[evidence-verification]: https://github.com/cometbft/cometbft/blob/main/spec/consensus/evidence.md#verification
+[light-client-verification]: https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/README.md#failure-model
+[evidence-verification]: https://github.com/cometbft/cometbft/blob/v2.x/spec/consensus/evidence.md#verification

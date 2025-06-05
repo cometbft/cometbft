@@ -67,7 +67,7 @@ Transactions received from a peer are handled within the [`Receive`](https://git
 
 Currently, the mempool triggers a disconnect from a peer in the case of the following errors:
 
-  - [Unknown message type](https://github.com/cometbft/cometbft/blob/main/mempool/reactor.go#L119)
+  - [Unknown message type](https://github.com/cometbft/cometbft/blob/v2.x/mempool/reactor.go#L119)
 
 However, disconnecting from a peer is not the same as banning the peer. The p2p layer will close the connection but
 the peer can reconnect without any penalty, and if the peer it is connecting to is configured to be its persistent peer,
@@ -78,7 +78,7 @@ from the node.
 
 The p2p layer implements banning peers by marking them
 as bad and removing them from the list of peers to connect to for *at least* a predefined amount of time. This is done by calling the
-[`MarkBad`](https://github.com/cometbft/cometbft/blob/main/spec/p2p/implementation/addressbook.md#bad-peers) routine implemented by the `Switch`.
+[`MarkBad`](https://github.com/cometbft/cometbft/blob/v2.x/spec/p2p/implementation/addressbook.md#bad-peers) routine implemented by the `Switch`.
 If the node does not set the amount of time to be banned, a default value is used.
 Note that the timing parameter sets the lower bound for when a peer will be unbanned.
 But the p2p layer will only try to connect to banned peers if the node is not sufficiently connected. Thus the node has no

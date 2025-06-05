@@ -737,6 +737,6 @@ required to make progress will always be held somewhere in the network.
 
 [abci-0-17-0]: https://github.com/cometbft/cometbft/blob/v0.34.x/spec/abci/README.md
 [abci-1-0]: https://github.com/cometbft/cometbft/blob/v0.37.x/spec/abci/README.md
-[abci-2-0]: https://github.com/cometbft/cometbft/blob/main/spec/abci/README.md
-[light-client-spec]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/README.md
+[abci-2-0]: https://github.com/cometbft/cometbft/blob/v2.x/spec/abci/README.md
+[light-client-spec]: https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/README.md
 [toggle-vote-extensions]: https://github.com/tendermint/tendermint/issues/8453

@@ -589,4 +589,4 @@ Observe that in all runs, the average number of transactions in the mempool quic
 [\#539]: https://github.com/cometbft/cometbft/issues/539
 [\#546]: https://github.com/cometbft/cometbft/issues/546
 [\#562]: https://github.com/cometbft/cometbft/issues/562
-[end-to-end]: https://github.com/cometbft/cometbft/tree/main/test/e2e
+[end-to-end]: https://github.com/cometbft/cometbft/tree/v2.x/test/e2e

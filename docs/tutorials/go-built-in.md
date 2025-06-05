@@ -174,11 +174,11 @@ Hello, CometBFT
 CometBFT communicates with the application through the Application
 BlockChain Interface (`ABCI`). The messages exchanged through the interface are
 defined in the ABCI [protobuf
-file](https://github.com/cometbft/cometbft/blob/main/proto/cometbft/abci/v1/types.proto).
+file](https://github.com/cometbft/cometbft/blob/v2.x/proto/cometbft/abci/v1/types.proto).
 
 We begin by creating the basic scaffolding for an ABCI application by
 creating a new type, `KVStoreApplication`, which implements the
-methods defined by the [abcitypes.Application](https://github.com/cometbft/cometbft/blob/main/abci/types/application.go)
+methods defined by the [abcitypes.Application](https://github.com/cometbft/cometbft/blob/v2.x/abci/types/application.go)
 interface.
 
 Create a file called `app.go` with the following contents:

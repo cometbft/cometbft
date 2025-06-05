@@ -6,7 +6,7 @@
  * when the peer is stopped. Receive is called when a message is received on a
  * channel associated with this reactor.
  */
-// Code: https://github.com/cometbft/cometbft/blob/main/p2p/base_reactor.go
+// Code: https://github.com/cometbft/cometbft/blob/v2.x/p2p/base_reactor.go
 module reactor {
 
 	// Unique ID of a node.

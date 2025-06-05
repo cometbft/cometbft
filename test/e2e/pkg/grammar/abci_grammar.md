@@ -36,7 +36,7 @@ GotVote : "verify_vote_extension" ;
 
 ```
 
-The original grammar (https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_comet_expected_behavior.md) the grammar above 
+The original grammar (https://github.com/cometbft/cometbft/blob/v2.x/spec/abci/abci%2B%2B_comet_expected_behavior.md) the grammar above 
 refers to is below: 
 
 start               = clean-start / recovery

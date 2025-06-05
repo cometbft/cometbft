@@ -474,4 +474,4 @@ In both cases, it is contained under 5 most of the time, which is considered nor
 [bft-time]: ../../../spec/consensus/bft-time.md
 [pbts]: ../../../spec/consensus/proposer-based-timestamp/README.md
 [\#486]: https://github.com/cometbft/cometbft/issues/486
-[end-to-end]: https://github.com/cometbft/cometbft/tree/main/test/e2e
+[end-to-end]: https://github.com/cometbft/cometbft/tree/v2.x/test/e2e

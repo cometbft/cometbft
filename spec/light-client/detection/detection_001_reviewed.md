@@ -767,19 +767,19 @@ Once a bogus block is recognized as such the secondary is removed.
 
 [[supervisor]] The specification of the light client supervisor.
 
-[verification]: https://github.com/cometbft/cometbft/tree/main/spec/light-client/verification
+[verification]: https://github.com/cometbft/cometbft/tree/v2.x/spec/light-client/verification
 
-[supervisor]: https://github.com/cometbft/cometbft/tree/main/spec/light-client/supervisor
+[supervisor]: https://github.com/cometbft/cometbft/tree/v2.x/spec/light-client/supervisor
 
 
 
 
 
 [CMBC-VAL-CONTAINS-CORR-link]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#cmbc-val-contains-corr1
+https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_002_draft.md#cmbc-val-contains-corr1
 
 [fetch]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#lcv-func-fetch1
+https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_002_draft.md#lcv-func-fetch1
 
 [LCV-INV-TP1-link]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#lcv-inv-tp1
+https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_002_draft.md#lcv-inv-tp1

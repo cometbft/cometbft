@@ -420,9 +420,9 @@ must eventually terminate.
 
 > These definitions imply that if the primary is faulty, a header may or
 > may not be added to *LightStore*. In any case,
-> [**[LCV-DIST-SAFE.2]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe2) must hold.
-> The invariant [**[LCV-DIST-SAFE.2]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe2) and the liveness
-> requirement [**[LCV-DIST-LIVE.2]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-life)
+> [**[LCV-DIST-SAFE.2]**](https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe2) must hold.
+> The invariant [**[LCV-DIST-SAFE.2]**](https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe2) and the liveness
+> requirement [**[LCV-DIST-LIVE.2]**](https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_001_published.md#lcv-dist-life)
 > allow that verified headers are added to *LightStore* whose
 > height was not passed
 > to the verifier (e.g., intermediate headers used in bisection; see below).
@@ -439,16 +439,16 @@ must eventually terminate.
 This specification provides a partial solution to the sequential specification.
 The *Verifier* solves the invariant of the sequential part
 
-[**[LCV-DIST-SAFE.2]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe2) => [**[LCV-SEQ-SAFE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1)
+[**[LCV-DIST-SAFE.2]**](https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe2) => [**[LCV-SEQ-SAFE.1]**](https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1)
 
 In the case the primary is correct, and *root*  is a recent header in *LightStore*, the verifier satisfies the liveness requirements.
 
 ⋀ *primary is correct*  
 ⋀ *root.header.Time* > *now* - *trustingPeriod*  
-⋀ [**[LCV-A-Comm.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-a-comm) ⋀ (
+⋀ [**[LCV-A-Comm.1]**](https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_001_published.md#lcv-a-comm) ⋀ (
        ( [**[CMBC-CorrFull.1]**][CMBC-CorrFull-link] ⋀
-         [**[LCV-DIST-LIVE.2]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-live2) )
-       ⟹ [**[LCV-SEQ-LIVE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-live1)
+         [**[LCV-DIST-LIVE.2]**](https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_001_published.md#lcv-dist-live2) )
+       ⟹ [**[LCV-SEQ-LIVE.1]**](https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_001_published.md#lcv-dist-live1)
 )
 
 # Part IV - Light Client Verification Protocol
@@ -612,7 +612,7 @@ func (ls LightStore) TraceTo(lightBlock LightBlock) (LightBlock, LightStore)
     - returns a **trusted** lightblock `root` from the lightstore with a height
       less than `lightBlock`
     - returns a lightstore that contains lightblocks that constitute a
-      [verification trace](https://github.com/cometbft/cometbft/tree/main/spec/light-client/detection) from
+      [verification trace](https://github.com/cometbft/cometbft/tree/v2.x/spec/light-client/detection) from
       `root` to `lightBlock` (including `lightBlock`)
 
 ### Inputs
@@ -1035,7 +1035,7 @@ func Backwards (primary PeerID, root LightBlock, targetHeight Height)
 
 [RPC]: https://docs.cometbft.com/v0.34/rpc/
 
-[block]: https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md
+[block]: https://github.com/cometbft/cometbft/blob/v2.x/spec/core/data_structures.md
 
 [CMBC-HEADER-link]: #cmbc-header1
 [CMBC-SEQ-link]: #cmbc-seq1
@@ -1047,8 +1047,8 @@ func Backwards (primary PeerID, root LightBlock, targetHeight Height)
 [CMBC-VAL-COMMIT-link]: #cmbc-val-commit1
 
 [lightclient]: https://github.com/interchainio/tendermint-rs/blob/e2cb9aca0b95430fca2eac154edddc9588038982/docs/architecture/adr-002-lite-client.md
-[attack-detector]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_001_reviewed.md
-[fullnode]: https://github.com/cometbft/cometbft/tree/main/spec/core
+[attack-detector]: https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/detection/detection_001_reviewed.md
+[fullnode]: https://github.com/cometbft/cometbft/tree/v2.x/spec/core
 
 [ibc-rs]:https://github.com/informalsystems/ibc-rs
 

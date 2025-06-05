@@ -36,7 +36,7 @@ The existing alternative approaches for transaction gossiping are:
 
 ### FLOOD - the current transaction gossiping protocol in CometBFT
 
-[Flood](https://github.com/cometbft/cometbft/blob/main/spec/mempool/gossip/flood.md) is the protocol currently used by CometBFT to gossip transactions. If a transaction
+[Flood](https://github.com/cometbft/cometbft/blob/v2.x/spec/mempool/gossip/flood.md) is the protocol currently used by CometBFT to gossip transactions. If a transaction
 was received via RPC, it is gossiped to all connected peers. Transactions received from other peers
 are forwarded to all the peers which have not already sent this particular transaction.
 
@@ -83,7 +83,7 @@ via a new config flag `mempool.dog_protocol_enabled`. It will be enabled by defa
 
 ## Detailed Design
 
-We start the design section with a general description of how the algorithm works. The protocol is explained in detail in the accompanying [specification](https://github.com/cometbft/cometbft/blob/main/spec/mempool/gossip/dog.md). 
+We start the design section with a general description of how the algorithm works. The protocol is explained in detail in the accompanying [specification](https://github.com/cometbft/cometbft/blob/v2.x/spec/mempool/gossip/dog.md). 
 
 CometBFT nodes cache received transactions and store the IDs of all the peers that have sent it in a `senders` list. 
 
@@ -279,7 +279,7 @@ The only reason for this is the incompatibility of DOG with the existing experim
 that disables sending transactions to all peers. 
 
 
-The [specification](https://github.com/cometbft/cometbft/blob/main/spec/mempool/gossip/dog.md) of the protocol introduces 3 additional variables. 
+The [specification](https://github.com/cometbft/cometbft/blob/v2.x/spec/mempool/gossip/dog.md) of the protocol introduces 3 additional variables. 
 Out of the tree, we have made the following configuration parameters:
  
 - `mempool.dog_adjust_interval: time.Duration`: Set to `1s` by default. Indicates how often the redundancy controller readjusts 
@@ -365,6 +365,6 @@ to behave correctly. It should however not be used in combination with the param
 [\#4598]: https://github.com/cometbft/cometbft/issues/4598
 [\#4597]: https://github.com/cometbft/cometbft/issues/4597
 
-* [FLOOD](https://github.com/cometbft/cometbft/blob/main/spec/mempool/gossip/flood.md)
-* [DOG Specification](https://github.com/cometbft/cometbft/blob/main/spec/mempool/gossip/dog.md). 
+* [FLOOD](https://github.com/cometbft/cometbft/blob/v2.x/spec/mempool/gossip/flood.md)
+* [DOG Specification](https://github.com/cometbft/cometbft/blob/v2.x/spec/mempool/gossip/dog.md). 
 

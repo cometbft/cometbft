@@ -3,7 +3,7 @@
  * This is a specification of the light client detector module.
  * It follows the English specification:
  *
- * https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md
+ * https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/detection/detection_003_reviewed.md
  *
  * The assumptions made in this specification:
  *

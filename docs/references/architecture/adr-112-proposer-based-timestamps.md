@@ -63,8 +63,8 @@ Applications often wish for some transactions to occur on a certain day, on a re
 All of these require some meaningful representation of agreed upon time.
 The following protocols and application features require a reliable source of time:
 
-* Light Clients [rely on correspondence between their known time](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/README.md#failure-model) and the block time for block verification.
-* Evidence validity is determined [either in terms of heights or in terms of time](https://github.com/cometbft/cometbft/blob/main/spec/consensus/evidence.md#verification).
+* Light Clients [rely on correspondence between their known time](https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/README.md#failure-model) and the block time for block verification.
+* Evidence validity is determined [either in terms of heights or in terms of time](https://github.com/cometbft/cometbft/blob/v2.x/spec/consensus/evidence.md#verification).
 * Unbonding of staked assets in the Cosmos Hub [occurs after a period of 21 days](https://github.com/cosmos/governance/blob/ce75de4019b0129f6efcbb0e752cd2cc9e6136d3/params-change/Staking.md#unbondingtime).
 * IBC packets can use either a [timestamp or a height to timeout packet delivery](https://docs.cosmos.network/v0.45/ibc/overview.html#acknowledgements)
 
@@ -141,7 +141,7 @@ type Vote struct {
 
 In order to ensure backwards compatibility, PBTS should be enabled using a [consensus parameter](#compatibility-parameters).
 The proposed approach is similar to the one adopted to enable vote extensions via
-[`VoteExtensionsEnableHeight`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_app_requirements.md#featureparamsvoteextensionsenableheight).
+[`VoteExtensionsEnableHeight`](https://github.com/cometbft/cometbft/blob/v2.x/spec/abci/abci++_app_requirements.md#featureparamsvoteextensionsenableheight).
 
 In summary, the network will migrate from the `BFT Time` method for assigning
 and validating timestamps to the new method for assigning and validating
@@ -159,7 +159,7 @@ Moreover, when compared to the original ([ADR 071][original-adr]), we will **NOT
 ### New consensus parameters
 
 The PBTS specification includes some new parameters that must be the same among across all validators.
-The set of [consensus parameters](https://github.com/cometbft/cometbft/blob/main/proto/cometbft/types/v1/params.proto#L13)
+The set of [consensus parameters](https://github.com/cometbft/cometbft/blob/v2.x/proto/cometbft/types/v1/params.proto#L13)
 will be updated to include new fields as follows:
 
 ```diff
@@ -204,7 +204,7 @@ type FeatureParams struct {
 ```
 
 The semantics are similar to the ones adopted to enable vote extensions via
-[`VoteExtensionsEnableHeight`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_app_requirements.md#abciparamsvoteextensionsenableheight).
+[`VoteExtensionsEnableHeight`](https://github.com/cometbft/cometbft/blob/v2.x/spec/abci/abci++_app_requirements.md#abciparamsvoteextensionsenableheight).
 The PBTS algorithm is enabled from `FeatureParams.PbtsEnableHeight`, when this
 parameter is set to a value greater than zero, and greater to the height at
 which it was set.
@@ -430,6 +430,6 @@ At this point, the transition from BFT Time to PBTS should be smooth.
 [issue2184]: https://github.com/cometbft/cometbft/issues/2184
 [issue2197]: https://github.com/cometbft/cometbft/issues/2197
 [issue2063]: https://github.com/cometbft/cometbft/issues/2063
-[bfttime]: https://github.com/cometbft/cometbft/blob/main/spec/consensus/bft-time.md
-[pbts-spec]: https://github.com/cometbft/cometbft/tree/main/spec/consensus/proposer-based-timestamp/README.md
-[original-adr]: https://github.com/cometbft/cometbft/blob/main/docs/references/architecture/tendermint-core/adr-071-proposer-based-timestamps.md
+[bfttime]: https://github.com/cometbft/cometbft/blob/v2.x/spec/consensus/bft-time.md
+[pbts-spec]: https://github.com/cometbft/cometbft/tree/v2.x/spec/consensus/proposer-based-timestamp/README.md
+[original-adr]: https://github.com/cometbft/cometbft/blob/v2.x/docs/references/architecture/tendermint-core/adr-071-proposer-based-timestamps.md

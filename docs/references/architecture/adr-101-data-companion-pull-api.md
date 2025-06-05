@@ -469,4 +469,4 @@ companion, but only if the data companion is the exclusive user of those APIs.
 [adr-100-alt]: adr-100-data-companion-push-api.md#alternative-approaches
 [\#81]: https://github.com/cometbft/cometbft/issues/81
 [abci-commit]: ../../../spec/abci/abci++_methods.md#commit
-[dc-docs]: https://github.com/cometbft/cometbft/tree/main/docs/data-companion
+[dc-docs]: https://github.com/cometbft/cometbft/tree/v2.x/docs/data-companion

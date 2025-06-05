@@ -21,7 +21,8 @@ type PrivValidator interface {
 	SignRawBytes(chainID, uniqueID string, rawBytes []byte) ([]byte, error)
 }
 
-// RawBytesSignBytesPrefix defines a unique prefix added to raw bytes for signing purposes.
+// RawBytesSignBytesPrefix defines a domain separator prefix added to raw bytes to ensure the resulting
+// signed message can't be confused with a consensus message, which could lead to double signing
 const RawBytesSignBytesPrefix = "COMET::RAW_BYTES::SIGN"
 
 // RawBytesMessageSignBytes returns the canonical bytes for signing raw data messages.

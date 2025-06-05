@@ -63,7 +63,7 @@ I[10-04|13:54:30.392] Started node                                 module=main n
 Next follows a standard block creation cycle, where we enter a new
 round, propose a block, receive more than 2/3 of prevotes, then
 precommits and finally have a chance to commit a block. For details,
-please refer to [Byzantine Consensus Algorithm](https://github.com/cometbft/cometbft/blob/main/spec/consensus/consensus.md).
+please refer to [Byzantine Consensus Algorithm](https://github.com/cometbft/cometbft/blob/v2.x/spec/consensus/consensus.md).
 
 ```sh
 I[10-04|13:54:30.393] enterNewRound(91/0). Current: 91/0/RoundStepNewHeight module=consensus
@@ -114,7 +114,7 @@ little overview what they do.
 - `abci-client` As mentioned in [Application Development Guide](../../guides/app-dev/abci-cli.md), CometBFT acts as an ABCI
   client with respect to the application and maintains 3 connections:
   mempool, consensus and query. The code used by CometBFT can
-  be found [here](https://github.com/cometbft/cometbft/blob/main/abci/client).
+  be found [here](https://github.com/cometbft/cometbft/blob/v2.x/abci/client).
 - `blockchain` Provides storage, pool (a group of peers), and reactor
   for both storing and exchanging blocks between peers.
 - `consensus` The heart of CometBFT, which is the
@@ -124,17 +124,17 @@ little overview what they do.
   from a crash.
 - `events` Simple event notification system. The list of events can be
   found
-  [here](https://github.com/cometbft/cometbft/blob/main/types/events.go).
+  [here](https://github.com/cometbft/cometbft/blob/v2.x/types/events.go).
   You can subscribe to them by calling `subscribe` RPC method. Refer
   to [RPC docs](rpc.md) for additional information.
 - `mempool` Mempool module handles all incoming transactions, whenever
   they are coming from peers or the application.
 - `p2p` Provides an abstraction around peer-to-peer communication. For
   more details, please check out the
-  [README](https://github.com/cometbft/cometbft/blob/main/p2p/README.md).
+  [README](https://github.com/cometbft/cometbft/blob/v2.x/p2p/README.md).
 - `rpc` [CometBFT's RPC](rpc.md).
 - `rpc-server` RPC server. For implementation details, please read the
-  [doc.go](https://github.com/cometbft/cometbft/blob/main/rpc/jsonrpc/doc.go).
+  [doc.go](https://github.com/cometbft/cometbft/blob/v2.x/rpc/jsonrpc/doc.go).
 - `state` Represents the latest state and execution submodule, which
   executes blocks against the application.
 - `types` A collection of the publicly exposed types and methods to

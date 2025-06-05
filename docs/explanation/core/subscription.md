@@ -64,7 +64,7 @@ Prior to version `v0.38.x`, floats were not supported as query parameters.
 When validator set changes, ValidatorSetUpdates event is published. The
 event carries a list of pubkey/power pairs. The list is the same
 CometBFT receives from ABCI application (see [EndBlock
-section](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_methods.md#endblock) in
+section](https://github.com/cometbft/cometbft/blob/v2.x/spec/abci/abci++_methods.md#endblock) in
 the ABCI spec).
 
 Response:

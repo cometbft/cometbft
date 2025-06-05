@@ -260,4 +260,4 @@ programmatically using a governance proposal. For more information, see the
 
 If the application does not implement a way to update the consensus parameters
 programmatically, then the application itself must be updated to do so. More information on updating
-the consensus parameters via ABCI can be found in the [FinalizeBlock documentation](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_methods.md#finalizeblock).
+the consensus parameters via ABCI can be found in the [FinalizeBlock documentation](https://github.com/cometbft/cometbft/blob/v2.x/spec/abci/abci%2B%2B_methods.md#finalizeblock).

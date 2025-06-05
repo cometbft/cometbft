@@ -131,7 +131,7 @@ Namely, if a transaction appears at a correct process then eventually it is comm
 The above invariant ensures that if a transaction enters the mempool (at a correct process), then it eventually leaves it at a later time.
 For this to be true, the client application must ensure that the validity of a transaction converges toward some value.
 This means that there exists a height after which $valid(tx)$ always returns the same value.
-Such a requirement is termed _eventual non-oscillation_ in the [ABCI](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_app_requirements.md#mempool-connection-requirements) documentation.
+Such a requirement is termed _eventual non-oscillation_ in the [ABCI](https://github.com/cometbft/cometbft/blob/v2.x/spec/abci/abci%2B%2B_app_requirements.md#mempool-connection-requirements) documentation.
 It also appears in [Ethereum](https://github.com/ethereum/go-ethereum/blob/5c51ef8527c47268628fe9be61522816a7f1b395/light/txpool.go#L401) as a transaction is always valid until a transaction from the same address executes with the same or higher nonce.
 A simple way to satisfy this for the programmer is by having $valid(tx)$ deterministic and stateless (e.g., a syntactic check).
 

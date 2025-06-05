@@ -72,9 +72,9 @@ the 2.x line.
    Be sure to search for all of the following links and replace `main` with your
    corresponding branch label or version (e.g. `v2.x` or `v2.0`):
 
-   * `github.com/cometbft/cometbft/blob/main` ->
+   * `github.com/cometbft/cometbft/blob/v2.x` ->
      `github.com/cometbft/cometbft/blob/v2.x`
-   * `github.com/cometbft/cometbft/tree/main` ->
+   * `github.com/cometbft/cometbft/tree/v2.x` ->
      `github.com/cometbft/cometbft/tree/v2.x`
    * `docs.cometbft.com/main` -> `docs.cometbft.com/v2`
 
@@ -115,7 +115,7 @@ After doing these steps, go back to `main` and do the following:
 4. Remove all changelog entries from `.changelog/unreleased` that are destined
    for release from the backport branch.
 
-[e2e]: https://github.com/cometbft/cometbft/blob/main/.github/workflows/e2e-nightly-main.yml
+[e2e]: https://github.com/cometbft/cometbft/blob/v2.x/.github/workflows/e2e-nightly-main.yml
 
 ## Pre-releases
 
@@ -281,7 +281,7 @@ After the release of `v1.0.0`, the backport branch is named `v1.x`. Any future m
 from the `v1.x` branch. There won't be a separate backport branch for minor releases, so there won't be a `v1.1.x` backport branch.
 
 For more details about versioning guarantees after the `v1.0.0` release, please check
-the [versioning](https://github.com/cometbft/cometbft/blob/main/UPGRADING.md#versioning) section in the `UPGRADING.md` document.
+the [versioning](https://github.com/cometbft/cometbft/blob/v2.x/UPGRADING.md#versioning) section in the `UPGRADING.md` document.
 
 ## Major Release Checklist
 
@@ -318,7 +318,7 @@ operators.
 ### Nightly End-To-End Tests
 
 The CometBFT team maintains [a set of end-to-end
-tests](https://github.com/cometbft/cometbft/blob/main/test/e2e/README.md#L1)
+tests](https://github.com/cometbft/cometbft/blob/v2.x/test/e2e/README.md#L1)
 that run each night on the latest commit of the project and on the code in the
 tip of each supported backport branch. These tests start a network of
 containerized CometBFT processes and run automated checks that the network

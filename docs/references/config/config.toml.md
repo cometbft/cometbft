@@ -1784,7 +1784,7 @@ as soon as it gathers all the mandatory +2/3 precommits for a block.
 
 **Notice** that the `timeout_commit` configuration flag is **deprecated** from v1.0.
 It is now up to the application to return a `next_block_delay` value upon
-[`FinalizeBlock`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_methods.md#finalizeblock)
+[`FinalizeBlock`](https://github.com/cometbft/cometbft/blob/v2.x/spec/abci/abci%2B%2B_methods.md#finalizeblock)
 to define how long CometBFT should wait before starting the next height.
 
 ### consensus.double_sign_check_height
@@ -2288,5 +2288,5 @@ inactivity.
 
 **Notice** that the `timeout_commit` configuration flag is **deprecated** from v1.0.
 It is now up to the application to return a `next_block_delay` value upon
-[`FinalizeBlock`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_methods.md#finalizeblock)
+[`FinalizeBlock`](https://github.com/cometbft/cometbft/blob/v2.x/spec/abci/abci%2B%2B_methods.md#finalizeblock)
 to define how long CometBFT should wait before starting the next height.

@@ -318,7 +318,7 @@ We leave this as future work.
 * [Issue #1035][1035]
 * Going further in removing `valid(v)` check: [first comment][valid-further1], [second comment][valid-further2]
 
-[abci-spec]: https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_app_requirements.md#formal-requirements
+[abci-spec]: https://github.com/cometbft/cometbft/blob/v2.x/spec/abci/abci++_app_requirements.md#formal-requirements
 [arxiv]: https://arxiv.org/abs/1807.04938
 [1171]: https://github.com/cometbft/cometbft/issues/1171
 [1174]: https://github.com/cometbft/cometbft/issues/1174

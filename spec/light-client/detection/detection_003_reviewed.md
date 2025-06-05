@@ -803,37 +803,37 @@ Once a bogus block is recognized as such the secondary is removed.
 
 [[supervisor]] The specification of the light client supervisor.
 
-[verification]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md
+[verification]: https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_002_draft.md
 
-[supervisor]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/supervisor/supervisor_001_draft.md
+[supervisor]: https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/supervisor/supervisor_001_draft.md
 
 
-[CMBC-FM-2THIRDS-link]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#cmbc-fm-2thirds1
+[CMBC-FM-2THIRDS-link]: https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_002_draft.md#cmbc-fm-2thirds1
 
-[CMBC-SOUND-DISTR-POSS-COMMIT-link]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#cmbc-sound-distr-poss-commit1
+[CMBC-SOUND-DISTR-POSS-COMMIT-link]: https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_002_draft.md#cmbc-sound-distr-poss-commit1
 
-[LCV-SEQ-SAFE-link]:https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#lcv-seq-safe1
+[LCV-SEQ-SAFE-link]:https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_002_draft.md#lcv-seq-safe1
 
 [CMBC-VAL-CONTAINS-CORR-link]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#cmbc-val-contains-corr1
+https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_002_draft.md#cmbc-val-contains-corr1
 
 [fetch]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#lcv-func-fetch1
+https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_002_draft.md#lcv-func-fetch1
 
 [LCV-INV-TP1-link]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#lcv-inv-tp1
+https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_002_draft.md#lcv-inv-tp1
 
 [LCV-LB-link]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#lcv-data-lightblock1
+https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_002_draft.md#lcv-data-lightblock1
 
 [LCV-LS-link]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#lcv-data-lightstore2
+https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_002_draft.md#lcv-data-lightstore2
 
 [LVC-HD-link]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#cmbc-header-fields2
+https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_002_draft.md#cmbc-header-fields2
 
 [repl]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/supervisor/supervisor_001_draft.md#lc-func-replace-secondary1
+https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/supervisor/supervisor_001_draft.md#lc-func-replace-secondary1
 
 [vtt]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#lcv-func-main2
+https://github.com/cometbft/cometbft/blob/v2.x/spec/light-client/verification/verification_002_draft.md#lcv-func-main2

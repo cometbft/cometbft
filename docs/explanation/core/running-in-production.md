@@ -390,7 +390,7 @@ You can try lowering it though.
 
 **Notice** that the `timeout_commit` configuration flag was deprecated in v1.0.
 It is now up to the application to return a `next_block_delay` value upon
-[`FinalizeBlock`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_methods.md#finalizeblock)
+[`FinalizeBlock`](https://github.com/cometbft/cometbft/blob/v2.x/spec/abci/abci%2B%2B_methods.md#finalizeblock)
 to define how long CometBFT should wait from when it has
 committed a block until it actually starts the next height.
 Notice that this delay includes the time it takes for CometBFT and the
@@ -400,7 +400,7 @@ application to process the committed block.
 
 By default, CometBFT checks whenever a peer's address is routable before
 saving it to the address book. The address is considered as routable if the IP
-is [valid and within allowed ranges](https://github.com/cometbft/cometbft/blob/main/p2p/netaddr/netaddr.go#L258).
+is [valid and within allowed ranges](https://github.com/cometbft/cometbft/blob/v2.x/p2p/netaddr/netaddr.go#L258).
 
 This may not be the case for private or local networks, where your IP range is usually
 strictly limited and private. If that case, you need to set `addr_book_strict`

@@ -65,7 +65,7 @@ purposes.
 We'll start a kvstore application, which was installed at the same time as
 `abci-cli` above. The kvstore just stores transactions in a Merkle tree. Its
 code can be found
-[here](https://github.com/cometbft/cometbft/blob/main/abci/example/kvstore/kvstore.go).
+[here](https://github.com/cometbft/cometbft/blob/v2.x/abci/example/kvstore/kvstore.go).
 
 Start the application by running:
 
@@ -105,7 +105,7 @@ response.
 
 The server may be generic for a particular language, and we provide a
 [reference implementation in
-Golang](https://github.com/cometbft/cometbft/tree/main/abci/server). See the
+Golang](https://github.com/cometbft/cometbft/tree/v2.x/abci/server). See the
 [list of other ABCI implementations](https://github.com/tendermint/awesome#ecosystem) for servers in
 other languages.
 

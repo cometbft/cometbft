@@ -15,7 +15,7 @@ order: 1
 - A node is said to be _at_ a given height, round, and step, or at
   `(H,R,S)`, or at `(H,R)` in short to omit the step.
 - To _prevote_ or _precommit_ something means to broadcast a prevote
-  or precommit [vote](https://github.com/cometbft/cometbft/blob/main/types/vote.go#L67)
+  or precommit [vote](https://github.com/cometbft/cometbft/blob/v2.x/types/vote.go#L67)
   for something.
 - A vote _at_ `(H,R)` is a vote signed with the bytes for `H` and `R`
   included in its [sign-bytes](../../spec/core/data_structures.md#vote).
@@ -106,7 +106,7 @@ example,
 - Nodes gossip prevotes for the proposed PoLC (proof-of-lock-change)
   round if one is proposed.
 - Nodes gossip to nodes lagging in blockchain height with block
-  [commits](https://github.com/cometbft/cometbft/blob/main/types/block.go#L738)
+  [commits](https://github.com/cometbft/cometbft/blob/v2.x/types/block.go#L738)
   for older blocks.
 - Nodes opportunistically gossip `ReceivedVote` messages to hint peers what
   votes it already has.
@@ -121,7 +121,7 @@ A proposal is signed and published by the designated proposer at each
 round. The proposer is chosen by a deterministic and non-choking round
 robin selection algorithm that selects proposers in proportion to their
 voting power (see
-[implementation](https://github.com/cometbft/cometbft/blob/main/types/validator_set.go#L51)).
+[implementation](https://github.com/cometbft/cometbft/blob/v2.x/types/validator_set.go#L51)).
 
 A proposal at `(H,R)` is composed of a block and an optional latest
 `PoLC-Round < R` which is included iff the proposer knows of one. This
@@ -293,7 +293,7 @@ may make JSet verification/gossip logic easier to implement.
 ### Censorship Attacks
 
 Due to the definition of a block
-[commit](https://github.com/cometbft/cometbft/blob/main/docs/explanation/core/validators.md), any 1/3+ coalition of
+[commit](https://github.com/cometbft/cometbft/blob/v2.x/docs/explanation/core/validators.md), any 1/3+ coalition of
 validators can halt the blockchain by not broadcasting their votes. Such
 a coalition can also censor particular transactions by rejecting blocks
 that include these transactions, though this would result in a

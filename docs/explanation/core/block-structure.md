@@ -15,5 +15,5 @@ component - that's the best place to get started.
 
 To dig deeper, check out the [types package documentation][types].
 
-[data_structures]: https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md
+[data_structures]: https://github.com/cometbft/cometbft/blob/v2.x/spec/core/data_structures.md
 [types]: https://pkg.go.dev/github.com/cometbft/cometbft/types

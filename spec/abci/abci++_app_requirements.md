@@ -266,9 +266,9 @@ the state for each connection, which are synchronized upon `Commit` calls.
 In principle, each of the four ABCI connections operates concurrently with one
 another. This means applications need to ensure access to state is
 thread safe. Both the
-[default in-process ABCI client](https://github.com/cometbft/cometbft/blob/main/abci/client/local_client.go#L13)
+[default in-process ABCI client](https://github.com/cometbft/cometbft/blob/v2.x/abci/client/local_client.go#L13)
 and the
-[default Go ABCI server](https://github.com/cometbft/cometbft/blob/main/abci/server/socket_server.go#L20)
+[default Go ABCI server](https://github.com/cometbft/cometbft/blob/v2.x/abci/server/socket_server.go#L20)
 use a global lock to guard the handling of events across all connections, so they are not
 concurrent at all. This means whether your app is compiled in-process with
 CometBFT using the `NewLocalClient`, or run out-of-process using the `SocketServer`,

@@ -18,7 +18,7 @@ See [RELEASES.md][releases] for a description of the tests that we run on the QA
 Out of the testnet-based test cases described in [the releases document][releases] we focused on two of them:
 _200 Node Test_, and _Rotating Nodes Test_.
 
-[releases]: https://github.com/cometbft/cometbft/blob/main/RELEASES.md#large-scale-testnets
+[releases]: https://github.com/cometbft/cometbft/blob/v2.x/RELEASES.md#large-scale-testnets
 
 ## Table of Contents
 - [Method](#method)

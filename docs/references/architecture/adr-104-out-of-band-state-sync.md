@@ -457,7 +457,7 @@ network based State sync has proven to be fragile.
 - Original proposal ported to CometBFT repository: [ADR 103: Local State Sync Support][adr103]
 - SDK's implementation of local state sync: [local snapshot store management][sdk-pr2] and [CometBFT state bootstrap][sdk-pr1]
 
-[state-sync]: https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_app_requirements.md#state-sync
+[state-sync]: https://github.com/cometbft/cometbft/blob/v2.x/spec/abci/abci%2B%2B_app_requirements.md#state-sync
 [original-issue]: https://github.com/tendermint/tendermint/issues/4642
 [adr083]: https://github.com/tendermint/tendermint/pull/9651
 [adr103]: https://github.com/cometbft/cometbft/pull/729

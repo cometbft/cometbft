@@ -609,7 +609,7 @@ in the [OpenAPI file](./rpc/openapi/openapi.yaml)**.
 [gh-issues]: https://github.com/cometbft/cometbft/issues
 [search-issues]: https://github.com/cometbft/cometbft/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22
 [new-gh-issue]: https://github.com/cometbft/cometbft/issues/new/choose
-[rfcs]: https://github.com/cometbft/cometbft/tree/main/docs/references/rfc
+[rfcs]: https://github.com/cometbft/cometbft/tree/v2.x/docs/references/rfc
 [gh-draft-prs]: https://github.blog/2019-02-14-introducing-draft-pull-requests/
 [Go modules]: https://github.com/golang/go/wiki/Modules
 [Protocol Buffers]: https://protobuf.dev/
@@ -621,5 +621,5 @@ in the [OpenAPI file](./rpc/openapi/openapi.yaml)**.
 [go-testing]: https://golang.org/pkg/testing/
 [Fuzz tests]: https://en.wikipedia.org/wiki/Fuzzing
 [delve]: https://github.com/go-delve/delve
-[log-lazy]: https://github.com/cometbft/cometbft/blob/main/libs/log/lazy.go
+[log-lazy]: https://github.com/cometbft/cometbft/blob/v2.x/libs/log/lazy.go
 [conventional-commits]: https://www.conventionalcommits.org/en/v1.0.0/

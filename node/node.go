@@ -99,11 +99,6 @@ type Node struct {
 	isStartupValidator bool
 }
 
-// IsStartupValidator returns whether this node has been identified as a validator upon startup.
-func (n *Node) IsStartupValidator() bool {
-	return n.isStartupValidator
-}
-
 type waitSyncP2PReactor interface {
 	p2p.Reactor
 	// required by RPC service
@@ -355,7 +350,12 @@ func NewNodeWithCliParams(ctx context.Context,
 		DBKeyLayout:          config.Storage.ExperimentalKeyLayout,
 	})
 
-	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(bstMetrics), store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval), store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
+	blockStore := store.NewBlockStore(
+		blockStoreDB,
+		store.WithMetrics(bstMetrics),
+		store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval),
+		store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout),
+	)
 	logger.Info("Blockstore version", "version", blockStore.GetVersion())
 
 	// The key will be deleted if it existed.
@@ -1119,6 +1119,11 @@ func (n *Node) IsListening() bool {
 // NodeInfo returns the Node's Info from the Switch.
 func (n *Node) NodeInfo() p2p.NodeInfo {
 	return n.nodeInfo
+}
+
+// IsStartupValidator returns whether this node has been identified as a validator upon startup.
+func (n *Node) IsStartupValidator() bool {
+	return n.isStartupValidator
 }
 
 func makeNodeInfo(

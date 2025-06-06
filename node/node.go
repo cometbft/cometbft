@@ -94,6 +94,14 @@ type Node struct {
 	stateSyncState    sm.State                // provides the genesis state for statesync
 	stateSyncGenDoc   *types.GenesisDoc       // store genesis doc until the statesync is over.
 	appInfoResponse   *abcitypes.InfoResponse // if statesync fails, do the handshake and proceed with blocksync.
+
+	// startUp info
+	isStartupValidator bool
+}
+
+// IsStartupValidator returns whether this node has been identified as a validator upon startup.
+func (n *Node) IsStartupValidator() bool {
+	return n.isStartupValidator
 }
 
 type waitSyncP2PReactor interface {
@@ -583,6 +591,8 @@ func NewNodeWithCliParams(ctx context.Context,
 		stateSyncState:   state,
 		stateSyncGenDoc:  genDoc,
 		appInfoResponse:  appInfoResponse,
+
+		isStartupValidator: isAddressValidator(state, pubKey),
 	}
 	node.BaseService = *service.NewBaseService(logger, "Node", node)
 

@@ -246,7 +246,16 @@ func doHandshake(
 	return nil
 }
 
-func logNodeStartupInfo(state sm.State, pubKey crypto.PubKey, logger, consensusLogger log.Logger) {
+// isAddressValidator returns whether the given pubkey is associated with a validator in the state.
+func isAddressValidator(state sm.State, pubKey crypto.PubKey) bool {
+	return state.Validators.HasAddress(pubKey.Address())
+}
+
+func logNodeStartupInfo(
+	state sm.State,
+	pubKey crypto.PubKey,
+	logger, consensusLogger log.Logger,
+) {
 	// Log the version info.
 	logger.Info("Version info",
 		"tendermint_version", version.CMTSemVer,
@@ -264,12 +273,11 @@ func logNodeStartupInfo(state sm.State, pubKey crypto.PubKey, logger, consensusL
 		)
 	}
 
-	addr := pubKey.Address()
 	// Log whether this node is a validator or an observer
-	if state.Validators.HasAddress(addr) {
-		consensusLogger.Info("This node is a validator", "addr", addr, "pubKey", pubKey)
+	if isAddressValidator(state, pubKey) {
+		consensusLogger.Info("This node is a validator", "addr", pubKey.Address(), "pubKey", pubKey)
 	} else {
-		consensusLogger.Info("This node is not a validator", "addr", addr, "pubKey", pubKey)
+		consensusLogger.Info("This node is not a validator", "addr", pubKey.Address(), "pubKey", pubKey)
 	}
 }
 

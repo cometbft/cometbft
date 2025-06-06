@@ -311,7 +311,6 @@ func NewNode(ctx context.Context,
 // NewNodeWithCliParams returns a new, ready to go, CometBFT node
 // where we check the hash of the provided genesis file against
 // a hash provided by the operator via cli.
-
 func NewNodeWithCliParams(ctx context.Context,
 	config *cfg.Config,
 	privValidator types.PrivValidator,

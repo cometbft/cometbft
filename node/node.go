@@ -94,6 +94,9 @@ type Node struct {
 	stateSyncState    sm.State                // provides the genesis state for statesync
 	stateSyncGenDoc   *types.GenesisDoc       // store genesis doc until the statesync is over.
 	appInfoResponse   *abcitypes.InfoResponse // if statesync fails, do the handshake and proceed with blocksync.
+
+	// startUp info
+	isStartupValidator bool
 }
 
 type waitSyncP2PReactor interface {
@@ -311,7 +314,6 @@ func NewNode(ctx context.Context,
 // NewNodeWithCliParams returns a new, ready to go, CometBFT node
 // where we check the hash of the provided genesis file against
 // a hash provided by the operator via cli.
-
 func NewNodeWithCliParams(ctx context.Context,
 	config *cfg.Config,
 	privValidator types.PrivValidator,
@@ -348,7 +350,12 @@ func NewNodeWithCliParams(ctx context.Context,
 		DBKeyLayout:          config.Storage.ExperimentalKeyLayout,
 	})
 
-	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(bstMetrics), store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval), store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
+	blockStore := store.NewBlockStore(
+		blockStoreDB,
+		store.WithMetrics(bstMetrics),
+		store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval),
+		store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout),
+	)
 	logger.Info("Blockstore version", "version", blockStore.GetVersion())
 
 	// The key will be deleted if it existed.
@@ -584,6 +591,8 @@ func NewNodeWithCliParams(ctx context.Context,
 		stateSyncState:   state,
 		stateSyncGenDoc:  genDoc,
 		appInfoResponse:  appInfoResponse,
+
+		isStartupValidator: isAddressValidator(state, pubKey),
 	}
 	node.BaseService = *service.NewBaseService(logger, "Node", node)
 
@@ -1110,6 +1119,11 @@ func (n *Node) IsListening() bool {
 // NodeInfo returns the Node's Info from the Switch.
 func (n *Node) NodeInfo() p2p.NodeInfo {
 	return n.nodeInfo
+}
+
+// IsStartupValidator returns whether this node has been identified as a validator upon startup.
+func (n *Node) IsStartupValidator() bool {
+	return n.isStartupValidator
 }
 
 func makeNodeInfo(

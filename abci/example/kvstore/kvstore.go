@@ -351,7 +351,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.FinalizeBloc
 				{
 					Type: "app",
 					Attributes: []types.EventAttribute{
-						{Key: "creator", Value: "Cosmoshi Netowoko", Index: true},
+						{Key: "creator", Value: "Cosmoshi Network", Index: true},
 						{Key: "key", Value: key, Index: true},
 						{Key: "index_key", Value: "index is working", Index: true},
 						{Key: "noindex_key", Value: "index is working", Index: false},

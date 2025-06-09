@@ -156,6 +156,8 @@ func (lss *FilePVLastSignState) Save() {
 
 // -------------------------------------------------------------------------------
 
+var _ types.PrivValidator = (*FilePV)(nil)
+
 // FilePV implements PrivValidator using data persisted to disk
 // to prevent double signing.
 // NOTE: the directories containing pv.Key.filePath and pv.LastSignState.filePath must already exist.

@@ -2,11 +2,11 @@ pull_request_rules:
   - name: merge PR (v0.38.x)
     description: merge PR if it passes tests and there are no conflicts (v0.38.x)
     conditions:
-      - '-label=manual-backport'
+      - "-label=manual-backport"
       - author=mergify[bot]
       - head~=mergify/bp/
-      - '-base=v1.x'
-      - '-base=v0.34.x'
+      - "-base=v1.x"
+      - "-base=v0.34.x"
       - check-success=Build (arm, linux)
       - check-success=check
       - check-success=golangci-lint
@@ -25,7 +25,7 @@ pull_request_rules:
   - name: merge PR (v1.x)
     description: merge PR if it passes tests and there are no conflicts (v1.x)
     conditions:
-      - '-label=manual-backport'
+      - "-label=manual-backport"
       - author=mergify[bot]
       - head~=mergify/bp/
       - base=v1.x
@@ -57,8 +57,33 @@ pull_request_rules:
 
   - name: automatically merge PR with automerge label and no manual-backport label
     conditions:
-      - '-label=manual-backport'
+      - "-label=manual-backport"
       - label=automerge
+    actions:
+      merge:
+        method: squash
+
+  - name: merge PR (v2.x)
+    description: merge PR if it passes tests and there are no conflicts (v2.x)
+    conditions:
+      - "-label=manual-backport"
+      - author=mergify[bot]
+      - head~=mergify/bp/
+      - base=v2.x
+      - check-success=Build (arm, linux)
+      - check-success=check
+      - check-success=check-mocks-metrics
+      - check-success=lint
+      - check-success=e2e-test
+      - check-success=tests (00)
+      - check-success=tests (01)
+      - check-success=tests (02)
+      - check-success=tests (03)
+      - check-success=tests (04)
+      - check-success=tests (05)
+      - check-success=test_abci_cli
+      - check-success=test_apps
+      - check-success=check-proto
     actions:
       merge:
         method: squash
@@ -68,7 +93,7 @@ pull_request_rules:
       This automatically updates PRs when they are out-of-date with the base
       branch to avoid semantic conflicts (next step is using a merge queue).
     conditions:
-      - '-draft'
+      - "-draft"
       - "#approved-reviews-by >= 1"
     actions:
       update:
@@ -91,5 +116,15 @@ pull_request_rules:
       backport:
         branches:
           - v0.38.x
+        assignees:
+          - "{{ author }}"
+  - name: backport patches to v2.x branch
+    conditions:
+      - base=main
+      - label=backport-to-v2.x
+    actions:
+      backport:
+        branches:
+          - v2.x
         assignees:
           - "{{ author }}"

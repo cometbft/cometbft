@@ -12,7 +12,7 @@ updates:
     groups:
       all-actions:
         patterns:
-          - "*"  # Groups all action updates into a single PR
+          - "*" # Groups all action updates into a single PR
 
   - package-ecosystem: github-actions
     directory: "/"
@@ -26,7 +26,7 @@ updates:
     groups:
       all-actions:
         patterns:
-          - "*"  # Groups all action updates into a single PR
+          - "*" # Groups all action updates into a single PR
 
   - package-ecosystem: github-actions
     directory: "/"
@@ -40,7 +40,21 @@ updates:
     groups:
       all-actions:
         patterns:
-          - "*"  # Groups all action updates into a single PR
+          - "*" # Groups all action updates into a single PR
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    target-branch: "v2.x"
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - automerge
+    groups:
+      all-actions:
+        patterns:
+          - "*" # Groups all action updates into a single PR
 
   ###################################
   ##
@@ -58,7 +72,7 @@ updates:
     groups:
       all-go-modules:
         patterns:
-          - "*"  # Groups all Go module updates into a single PR
+          - "*" # Groups all Go module updates into a single PR
 
   - package-ecosystem: gomod
     directory: "/"
@@ -72,7 +86,7 @@ updates:
     groups:
       all-go-modules:
         patterns:
-          - "*"  # Groups all Go module updates into a single PR
+          - "*" # Groups all Go module updates into a single PR
 
   - package-ecosystem: gomod
     directory: "/"
@@ -86,4 +100,18 @@ updates:
     groups:
       all-go-modules:
         patterns:
-          - "*"  # Groups all Go module updates into a single PR
+          - "*" # Groups all Go module updates into a single PR
+
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule:
+      interval: weekly
+    target-branch: "v2.x"
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - automerge
+    groups:
+      all-go-modules:
+        patterns:
+          - "*" # Groups all Go module updates into a single PR

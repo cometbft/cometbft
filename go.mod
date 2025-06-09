@@ -4,8 +4,6 @@ go 1.23.5
 
 toolchain go1.23.9
 
-replace github.com/cometbft/cometbft/api => ./api
-
 require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/Masterminds/semver/v3 v3.3.1
@@ -14,7 +12,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cometbft/cometbft-db v1.0.4
 	github.com/cometbft/cometbft-load-test v0.3.0
-	github.com/cometbft/cometbft/api v1.0.0
+	github.com/cometbft/cometbft/api v1.1.0-alpha.1
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/creachadair/atomicfile v0.3.7
 	github.com/creachadair/tomledit v0.0.27

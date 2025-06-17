@@ -2,8 +2,6 @@
 # Stage 1: Build environment - compiles the application and test node
 FROM cometbft/cometbft-db-testing:v1.0.4 AS build
 
-
-# Set the working directory for the build stage
 WORKDIR /src/cometbft
 
 # Copy Go module files and download dependencies
@@ -16,9 +14,7 @@ COPY . .
 
 # Set build options to include specific features and databases
 ENV COMETBFT_BUILD_OPTIONS=badgerdb,rocksdb,clock_skew,bls12381,secp256k1eth
-# Build the CometBFT binary
 RUN make build
-# Build the test node application
 RUN cd test/e2e && make node
 
 # Stage 2: Final image - minimal runtime environment

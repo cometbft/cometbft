@@ -2,10 +2,6 @@
 # Stage 1: Build environment - compiles the application and test node with debugging support
 FROM cometbft/cometbft-db-testing:v1.0.4 AS build
 
-# Update system packages and install debugging tools
-RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
-RUN apt-get -qq install -y zsh vim >/dev/null
-RUN go install github.com/go-delve/delve/cmd/dlv@latest
 
 # Set up build directory /src/cometbft
 ENV COMETBFT_BUILD_OPTIONS=badgerdb,rocksdb,nostrip,clock_skew,bls12381,secp256k1eth
@@ -25,7 +21,8 @@ FROM debian:bookworm-slim AS runtime
 
 # Install required packages for debugging
 RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
-RUN apt-get -qq install -y zsh vim >/dev/null
+RUN apt-get -qq install -y zsh vim golang >/dev/null
+RUN go install github.com/go-delve/delve/cmd/dlv@latest
 
 # Set up runtime directory
 WORKDIR /cometbft
@@ -36,8 +33,8 @@ ENV GORACE="halt_on_error=1"
 # Copy RocksDB shared libraries from the build stage
 COPY --from=build /usr/local/lib/librocksdb.so* /lib/
 
-# Copy debugging tools from the build stage
-COPY --from=build /go/bin/dlv /usr/bin/dlv
+# Move dlv to /usr/bin for easier access
+RUN cp /root/go/bin/dlv /usr/bin/dlv
 
 # Copy executables from the build stage
 COPY --from=build /src/cometbft/test/e2e/docker/entrypoint-delve /usr/bin/entrypoint-builtin

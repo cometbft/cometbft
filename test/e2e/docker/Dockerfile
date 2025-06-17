@@ -2,10 +2,6 @@
 # Stage 1: Build environment - compiles the application and test node
 FROM cometbft/cometbft-db-testing:v1.0.4 AS build
 
-# Update system packages and install network utilities
-# -qq flag reduces output verbosity, >/dev/null suppresses output
-RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
-RUN apt-get -qq install -y iputils-ping iproute2 >/dev/null
 
 # Set the working directory for the build stage
 WORKDIR /src/cometbft
@@ -27,6 +23,10 @@ RUN cd test/e2e && make node
 
 # Stage 2: Final image - minimal runtime environment
 FROM debian:bookworm-slim AS runtime
+
+# Update system packages and install network utilities
+RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
+RUN apt-get -qq install -y iputils-ping iproute2 >/dev/null
 
 WORKDIR /cometbft
 VOLUME /cometbft

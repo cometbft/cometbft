@@ -1,8 +1,8 @@
-# We need to build in a Linux environment to support C libraries, e.g. RocksDB.
-# We use Debian instead of Alpine, so that we can use binary database packages
-# instead of spending time compiling them.
-FROM cometbft/cometbft-db-testing:v1.0.4
+# Multi-stage build Dockerfile for CometBFT debug end-to-end testing
+# Stage 1: Build environment - compiles the application and test node with debugging support
+FROM cometbft/cometbft-db-testing:v1.0.4 AS build
 
+# Update system packages and install debugging tools
 RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
 RUN apt-get -qq install -y zsh vim >/dev/null
 RUN go install github.com/go-delve/delve/cmd/dlv@latest
@@ -17,16 +17,38 @@ RUN go mod download
 
 # Build CometBFT and install into /usr/bin/cometbft
 COPY . .
-RUN echo $COMETBFT_BUILD_OPTION && make build && cp build/cometbft /usr/bin/cometbft
-COPY test/e2e/docker/entrypoint-delve  /usr/bin/entrypoint-builtin
-RUN cd test/e2e && make node && cp build/node /usr/bin/app
+RUN echo $COMETBFT_BUILD_OPTION && make build
+RUN cd test/e2e && make node
 
-# Set up runtime directory. We don't use a separate runtime image since we need
-# e.g. leveldb and rocksdb which are already installed in the build image.
+# Stage 2: Final image - runtime environment with debugging support
+FROM debian:bookworm-slim AS runtime
+
+# Install required packages for debugging
+RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
+RUN apt-get -qq install -y zsh vim >/dev/null
+
+# Set up runtime directory
 WORKDIR /cometbft
 VOLUME /cometbft
 ENV CMTHOME=/cometbft
 ENV GORACE="halt_on_error=1"
 
+# Copy RocksDB shared libraries from the build stage
+COPY --from=build /usr/local/lib/librocksdb.so* /lib/
+
+# Copy debugging tools from the build stage
+COPY --from=build /go/bin/dlv /usr/bin/dlv
+
+# Copy executables from the build stage
+COPY --from=build /src/cometbft/test/e2e/docker/entrypoint-delve /usr/bin/entrypoint-builtin
+COPY --from=build /src/cometbft/build/cometbft /usr/bin/cometbft
+COPY --from=build /src/cometbft/test/e2e/build/node /usr/bin/app
+
+# Expose ports:
+# - 26656: P2P communication between nodes
+# - 26657: RPC server for API requests
+# - 26660: ABCI server for application communication
+# - 6060: Prometheus metrics endpoint
+# - 2345, 2346: Delve debugger ports
 EXPOSE 26656 26657 26660 6060 2345 2346
 STOPSIGNAL SIGTERM

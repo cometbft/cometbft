@@ -1,35 +1,33 @@
-# We need to build in a Linux environment to support C libraries, e.g. RocksDB.
-# We use Debian instead of Alpine, so that we can use binary database packages
-# instead of spending time compiling them.
-FROM cometbft/cometbft-db-testing:v1.0.4
+FROM cometbft/cometbft-db-testing:v1.0.4 AS build
 
 RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
-
-# For latency emulation, install iproute2, which includes tc.
 RUN apt-get -qq install -y iputils-ping iproute2 >/dev/null
 
-# Set up build directory /src/cometbft
-ENV COMETBFT_BUILD_OPTIONS=badgerdb,rocksdb,clock_skew,bls12381,secp256k1eth
 WORKDIR /src/cometbft
 
-# Fetch dependencies separately (for layer caching)
 COPY go.mod go.sum api/go.mod api/go.sum ./
 RUN go mod download
 
-# Build CometBFT and install into /usr/bin/cometbft
 COPY . .
-RUN make build && cp build/cometbft /usr/bin/cometbft
-COPY test/e2e/docker/entrypoint* /usr/bin/
-RUN cd test/e2e && make node && cp build/node /usr/bin/app
 
-# Set up runtime directory. We don't use a separate runtime image since we need
-# e.g. leveldb and rocksdb which are already installed in the build image.
+ENV COMETBFT_BUILD_OPTIONS=badgerdb,rocksdb,clock_skew,bls12381,secp256k1eth
+RUN make build
+RUN cd test/e2e && make node
+
+FROM debian:bookworm-slim
+
 WORKDIR /cometbft
 VOLUME /cometbft
 ENV CMTHOME=/cometbft
 ENV GORACE="halt_on_error=1"
 
+COPY --from=build /usr/local/lib/librocksdb.so* /lib/
+
+COPY --from=build /src/cometbft/test/e2e/docker/entrypoint* /usr/bin/
+COPY --from=build /src/cometbft/build/cometbft /usr/bin/cometbft
+COPY --from=build /src/cometbft/test/e2e/build/node /usr/bin/app
+
 EXPOSE 26656 26657 26660 6060
+
 ENTRYPOINT ["/usr/bin/entrypoint"]
 CMD ["node"]
-STOPSIGNAL SIGTERM

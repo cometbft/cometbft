@@ -3,4 +3,3 @@ test/e2e/build
 test/e2e/networks
 test/logs
 test/p2p/data
-.git

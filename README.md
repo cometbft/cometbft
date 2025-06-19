@@ -63,8 +63,7 @@ More on how releases are conducted can be found [here](./RELEASES.md).
 
 CometBFT aligns with other components of the [Interchain Stack](https://interchain.io/)
 and we offer long-term support (LTS) guarantees for certain releases. The
-complete End of Life (EOL) schedule, LTS plans, and the general support policy is
-in documented and regularly updated in the
+complete End of Life (EOL) schedule, LTS plans, and the general support policy is documented and regularly updated in the
 discussion [Support policy for CometBFT releases #590](https://github.com/cometbft/cometbft/discussions/590).
 
 ## Security

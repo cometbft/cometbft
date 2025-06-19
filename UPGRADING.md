@@ -75,7 +75,7 @@ coordinated upgrade.
 - The `ABCIVersion` is now `2.0.0`.
 - Added new ABCI methods `ExtendVote`, and `VerifyVoteExtension`.
   Applications upgrading to v0.38.0 must implement these methods as described
-  [here](./spec/abci/abci%2B%2B_comet_expected_behavior.md#adapting-existing-applications-that-use-abci)
+  [here](spec/abci/abci++_comet_expected_behavior.md#adapting-existing-applications-that-use-legacy-abci)
 - Removed methods `BeginBlock`, `DeliverTx`, `EndBlock`, and replaced them by
   method `FinalizeBlock`. Applications upgrading to `v0.38.0` must refactor
   the logic handling the methods removed to handle `FinalizeBlock`.

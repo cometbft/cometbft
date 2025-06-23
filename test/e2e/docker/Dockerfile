@@ -9,7 +9,7 @@ RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
 RUN apt-get -qq install -y iputils-ping iproute2 >/dev/null
 
 # Set up build directory /src/cometbft
-ENV COMETBFT_BUILD_OPTIONS badgerdb,rocksdb,clock_skew,bls12381
+ENV COMETBFT_BUILD_OPTIONS=badgerdb,rocksdb,clock_skew,bls12381,secp256k1eth
 WORKDIR /src/cometbft
 
 # Fetch dependencies separately (for layer caching)

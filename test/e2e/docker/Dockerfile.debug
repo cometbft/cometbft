@@ -8,7 +8,7 @@ RUN apt-get -qq install -y zsh vim >/dev/null
 RUN go install github.com/go-delve/delve/cmd/dlv@latest
 
 # Set up build directory /src/cometbft
-ENV COMETBFT_BUILD_OPTIONS badgerdb,rocksdb,nostrip,clock_skew,bls12381
+ENV COMETBFT_BUILD_OPTIONS=badgerdb,rocksdb,nostrip,clock_skew,bls12381,secp256k1eth
 WORKDIR /src/cometbft
 
 # Fetch dependencies separately (for layer caching)
@@ -26,7 +26,7 @@ RUN cd test/e2e && make node && cp build/node /usr/bin/app
 WORKDIR /cometbft
 VOLUME /cometbft
 ENV CMTHOME=/cometbft
-ENV GORACE "halt_on_error=1"
+ENV GORACE="halt_on_error=1"
 
 EXPOSE 26656 26657 26660 6060 2345 2346
 STOPSIGNAL SIGTERM

@@ -1,28 +1,12 @@
-<<<<<<< HEAD
-# We need to build in a Linux environment to support C libraries, e.g. RocksDB.
-# We use Debian instead of Alpine, so that we can use binary database packages
-# instead of spending time compiling them.
-FROM cometbft/cometbft-db-testing:v0.14.2
-
-RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
-
-# Set up build directory /src/cometbft
-ENV COMETBFT_BUILD_OPTIONS badgerdb,boltdb,cleveldb,rocksdb
-WORKDIR /src/cometbft
-
-# Fetch dependencies separately (for layer caching)
-COPY go.mod go.sum ./
-=======
 # Multi-stage build Dockerfile for CometBFT end-to-end testing
 # Stage 1: Build environment - compiles the application and test node
-FROM cometbft/cometbft-db-testing:v1.0.4 AS build
+FROM cometbft/cometbft-db-testing:v0.14.2 AS build
 
 WORKDIR /src/cometbft
 
 # Copy Go module files and download dependencies
 # This is done before copying the rest of the code to leverage Docker's build cache
-COPY go.mod go.sum api/go.mod api/go.sum ./
->>>>>>> e1a86048 (fix: do multistage builds for e2e-node (#5220))
+COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy the entire codebase into the container
@@ -43,13 +27,9 @@ RUN apt-get -qq install -y iputils-ping iproute2 >/dev/null
 WORKDIR /cometbft
 VOLUME /cometbft
 ENV CMTHOME=/cometbft
-<<<<<<< HEAD
-ENV GORACE "halt_on_error=1"
-=======
 
 # Configure Go race detector to halt on error
 ENV GORACE="halt_on_error=1"
->>>>>>> e1a86048 (fix: do multistage builds for e2e-node (#5220))
 
 # Copy RocksDB shared libraries from the build stage
 COPY --from=build /usr/local/lib/librocksdb.so* /lib/

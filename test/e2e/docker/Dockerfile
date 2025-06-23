@@ -23,6 +23,7 @@ FROM debian:bookworm-slim AS runtime
 # Update system packages and install network utilities
 RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
 RUN apt-get -qq install -y iputils-ping iproute2 >/dev/null
+RUN apt install libsnappy-dev libgflags-dev -y >/dev/null
 
 WORKDIR /cometbft
 VOLUME /cometbft

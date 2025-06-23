@@ -13,7 +13,7 @@ RUN go mod download
 COPY . .
 
 # Set build options to include specific features and databases
-ENV COMETBFT_BUILD_OPTIONS=badgerdb,rocksdb,clock_skew,bls12381,secp256k1eth
+ENV COMETBFT_BUILD_OPTIONS=badgerdb,boltdb,cleveldb,rocksdb
 RUN make build
 RUN cd test/e2e && make node
 
@@ -23,6 +23,7 @@ FROM debian:bookworm-slim AS runtime
 # Update system packages and install network utilities
 RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
 RUN apt-get -qq install -y iputils-ping iproute2 >/dev/null
+RUN apt install libsnappy-dev libgflags-dev libleveldb-dev -y >/dev/null
 
 WORKDIR /cometbft
 VOLUME /cometbft

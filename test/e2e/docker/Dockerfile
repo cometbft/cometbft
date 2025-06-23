@@ -1,65 +1,35 @@
-# Multi-stage build Dockerfile for CometBFT end-to-end testing
-# Stage 1: Build environment - compiles the application and test node
-FROM cometbft/cometbft-db-testing:v1.0.4 AS build
+# We need to build in a Linux environment to support C libraries, e.g. RocksDB.
+# We use Debian instead of Alpine, so that we can use binary database packages
+# instead of spending time compiling them.
+FROM cometbft/cometbft-db-testing:v1.0.4
 
-<<<<<<< HEAD
 RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
 
 # For latency emulation, install iproute2, which includes tc.
 RUN apt-get -qq install -y iputils-ping iproute2 >/dev/null
 
 # Set up build directory /src/cometbft
-ENV COMETBFT_BUILD_OPTIONS badgerdb,rocksdb,clock_skew,bls12381
-=======
->>>>>>> e1a86048 (fix: do multistage builds for e2e-node (#5220))
+ENV COMETBFT_BUILD_OPTIONS=badgerdb,rocksdb,clock_skew,bls12381,secp256k1eth
 WORKDIR /src/cometbft
 
-# Copy Go module files and download dependencies
-# This is done before copying the rest of the code to leverage Docker's build cache
+# Fetch dependencies separately (for layer caching)
 COPY go.mod go.sum api/go.mod api/go.sum ./
 RUN go mod download
 
-# Copy the entire codebase into the container
+# Build CometBFT and install into /usr/bin/cometbft
 COPY . .
+RUN make build && cp build/cometbft /usr/bin/cometbft
+COPY test/e2e/docker/entrypoint* /usr/bin/
+RUN cd test/e2e && make node && cp build/node /usr/bin/app
 
-# Set build options to include specific features and databases
-ENV COMETBFT_BUILD_OPTIONS=badgerdb,rocksdb,clock_skew,bls12381,secp256k1eth
-RUN make build
-RUN cd test/e2e && make node
-
-# Stage 2: Final image - minimal runtime environment
-FROM debian:bookworm-slim AS runtime
-
-# Update system packages and install network utilities
-RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
-RUN apt-get -qq install -y iputils-ping iproute2 >/dev/null
-
+# Set up runtime directory. We don't use a separate runtime image since we need
+# e.g. leveldb and rocksdb which are already installed in the build image.
 WORKDIR /cometbft
 VOLUME /cometbft
 ENV CMTHOME=/cometbft
-
-# Configure Go race detector to halt on error
 ENV GORACE="halt_on_error=1"
 
-# Copy RocksDB shared libraries from the build stage
-COPY --from=build /usr/local/lib/librocksdb.so* /lib/
-
-# Copy executables from the build stage
-# - entrypoint script for container initialization
-# - cometbft binary for the blockchain node
-# - app binary for the test application
-COPY --from=build /src/cometbft/test/e2e/docker/entrypoint* /usr/bin/
-COPY --from=build /src/cometbft/build/cometbft /usr/bin/cometbft
-COPY --from=build /src/cometbft/test/e2e/build/node /usr/bin/app
-
-# Expose ports:
-# - 26656: P2P communication between nodes
-# - 26657: RPC server for API requests
-# - 26660: ABCI server for application communication
-# - 6060: Prometheus metrics endpoint
 EXPOSE 26656 26657 26660 6060
-
-# Set the entrypoint script to initialize the container
 ENTRYPOINT ["/usr/bin/entrypoint"]
-# Default command to run when container starts (can be overridden)
 CMD ["node"]
+STOPSIGNAL SIGTERM

@@ -13,7 +13,7 @@ RUN go mod download
 COPY . .
 
 # Set build options to include specific features and databases
-ENV COMETBFT_BUILD_OPTIONS=badgerdb,rocksdb,clock_skew,bls12381,secp256k1eth
+ENV COMETBFT_BUILD_OPTIONS=badgerdb,boltdb,cleveldb,rocksdb
 RUN make build
 RUN cd test/e2e && make node
 

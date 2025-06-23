@@ -98,8 +98,10 @@ func (sc *RetrySignerClient) SignProposal(chainID string, proposal *cmtproto.Pro
 }
 
 func (sc *RetrySignerClient) SignRawBytes(chainID, uniqueID string, rawBytes []byte) ([]byte, error) {
-	var err error
-	var sig []byte
+	var (
+		sig []byte
+		err error
+	)
 	for i := 0; i < sc.retries || sc.retries == 0; i++ {
 		sig, err = sc.next.SignRawBytes(chainID, uniqueID, rawBytes)
 		if err == nil {

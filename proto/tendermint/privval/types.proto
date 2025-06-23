@@ -52,17 +52,6 @@ message PingRequest {}
 // PingResponse is a response to confirm that the connection is alive.
 message PingResponse {}
 
-message SignRawBytesRequest {
-  string chain_id  = 1;
-  bytes  raw_bytes = 2;
-  string unique_id = 3;
-}
-
-message SignedRawBytesResponse {
-  bytes             signature = 1;
-  RemoteSignerError error     = 2;
-}
-
 message Message {
   oneof sum {
     PubKeyRequest          pub_key_request           = 1;
@@ -73,7 +62,5 @@ message Message {
     SignedProposalResponse signed_proposal_response  = 6;
     PingRequest            ping_request              = 7;
     PingResponse           ping_response             = 8;
-    SignRawBytesRequest    sign_raw_bytes_request    = 9;
-    SignedRawBytesResponse signed_raw_bytes_response = 10;
   }
 }

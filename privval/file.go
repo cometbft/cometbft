@@ -168,6 +168,14 @@ type FilePV struct {
 	LastSignState FilePVLastSignState
 }
 
+func (pv *FilePV) SignRawBytes(chainID, uniqueID string, rawBytes []byte) ([]byte, error) {
+	signBytes, err := types.RawBytesMessageSignBytes(chainID, uniqueID, rawBytes)
+	if err != nil {
+		return nil, err
+	}
+	return pv.Key.PrivKey.Sign(signBytes)
+}
+
 // NewFilePV generates a new validator from the given key and paths.
 func NewFilePV(privKey crypto.PrivKey, keyFilePath, stateFilePath string) *FilePV {
 	return &FilePV{

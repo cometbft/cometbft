@@ -29,7 +29,6 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/lmittmann/tint v1.1.2
 	github.com/minio/highwayhash v1.0.3
-	github.com/mitchellh/mapstructure v1.5.0
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
 	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/pelletier/go-toml/v2 v2.2.4
@@ -56,8 +55,14 @@ require (
 )
 
 require (
+<<<<<<< HEAD
 	github.com/go-git/go-git/v5 v5.16.2
 	google.golang.org/protobuf v1.36.6
+=======
+	github.com/go-git/go-git/v5 v5.13.2
+	github.com/go-viper/mapstructure/v2 v2.2.1
+	google.golang.org/protobuf v1.36.5
+>>>>>>> 391b91b8 (chore: upgrade viper (#5237))
 )
 
 require (
@@ -137,8 +142,13 @@ require (
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+<<<<<<< HEAD
 	golang.org/x/sys v0.33.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250324211829-b45e905df463 // indirect
+=======
+	golang.org/x/sys v0.31.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
+>>>>>>> 391b91b8 (chore: upgrade viper (#5237))
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools v2.2.0+incompatible // indirect

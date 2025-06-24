@@ -102,7 +102,7 @@ linters-settings:
           - github.com/libp2p/go-buffer-pool
           - github.com/lmittmann/tint
           - github.com/minio/highwayhash
-          - github.com/mitchellh/mapstructure
+          - github.com/go-viper/mapstructure/v2
           - github.com/oasisprotocol/curve25519-voi
           - github.com/pelletier/go-toml/v2
           - github.com/pkg/errors

@@ -29,7 +29,6 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/lmittmann/tint v1.0.7
 	github.com/minio/highwayhash v1.0.3
-	github.com/mitchellh/mapstructure v1.5.0
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
 	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/pelletier/go-toml/v2 v2.2.3
@@ -42,7 +41,7 @@ require (
 	github.com/sasha-s/go-deadlock v0.3.5
 	github.com/snikch/goodman v0.0.0-20171125024755-10e37e294daa
 	github.com/spf13/cobra v1.9.1
-	github.com/spf13/viper v1.19.0
+	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
 	github.com/supranational/blst v0.3.14
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
@@ -57,6 +56,7 @@ require (
 
 require (
 	github.com/go-git/go-git/v5 v5.13.2
+	github.com/go-viper/mapstructure/v2 v2.2.1
 	google.golang.org/protobuf v1.36.5
 )
 
@@ -85,7 +85,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
-	github.com/fsnotify/fsnotify v1.7.0 // indirect
+	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/getsentry/sentry-go v0.31.1 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.6.2 // indirect
@@ -99,7 +99,6 @@ require (
 	github.com/google/flatbuffers v25.2.10+incompatible // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
-	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/holiman/uint256 v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.15 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -110,7 +109,6 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/linxGnu/grocksdb v1.9.8 // indirect
-	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/moby/term v0.5.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
@@ -121,14 +119,13 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
-	github.com/sagikazarmark/locafero v0.4.0 // indirect
-	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
+	github.com/sagikazarmark/locafero v0.7.0 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/skeema/knownhosts v1.3.1 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
-	github.com/spf13/afero v1.11.0 // indirect
-	github.com/spf13/cast v1.6.0 // indirect
+	github.com/spf13/afero v1.12.0 // indirect
+	github.com/spf13/cast v1.7.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
@@ -141,7 +138,6 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
-	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools v2.2.0+incompatible // indirect

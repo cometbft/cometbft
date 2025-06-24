@@ -25,6 +25,7 @@ func main() {
 		cmd.ShowValidatorCmd,
 		cmd.TestnetFilesCmd,
 		cmd.ShowNodeIDCmd,
+		cmd.ReIndexEventCmd,
 		cmd.GenNodeKeyCmd,
 		cmd.VersionCmd,
 		cmd.RollbackStateCmd,

@@ -198,6 +198,32 @@ func TestSignerVote(t *testing.T) {
 	}
 }
 
+func TestSignerRawBytes(t *testing.T) {
+	for _, tc := range getSignerTestCases(t) {
+		rawBytes := cmtrand.Bytes(500)
+		uniqueID := cmtrand.Str(12)
+
+		tc := tc
+		t.Cleanup(func() {
+			if err := tc.signerServer.Stop(); err != nil {
+				t.Error(err)
+			}
+		})
+		t.Cleanup(func() {
+			if err := tc.signerClient.Close(); err != nil {
+				t.Error(err)
+			}
+		})
+
+		want, err := tc.mockPV.SignRawBytes(tc.chainID, uniqueID, rawBytes)
+		require.NoError(t, err)
+		have, err := tc.signerClient.SignRawBytes(tc.chainID, uniqueID, rawBytes)
+		require.NoError(t, err)
+
+		assert.Equal(t, want, have)
+	}
+}
+
 func TestSignerVoteResetDeadline(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
 		ts := time.Now()
@@ -400,6 +426,8 @@ func brokenHandler(_ types.PrivValidator, request privvalproto.Message, _ string
 	case *privvalproto.Message_SignVoteRequest:
 		res = mustWrapMsg(&privvalproto.PubKeyResponse{PubKey: cryptoproto.PublicKey{}, Error: nil})
 	case *privvalproto.Message_SignProposalRequest:
+		res = mustWrapMsg(&privvalproto.PubKeyResponse{PubKey: cryptoproto.PublicKey{}, Error: nil})
+	case *privvalproto.Message_SignRawBytesRequest:
 		res = mustWrapMsg(&privvalproto.PubKeyResponse{PubKey: cryptoproto.PublicKey{}, Error: nil})
 	case *privvalproto.Message_PingRequest:
 		err, res = nil, mustWrapMsg(&privvalproto.PingResponse{})

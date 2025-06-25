@@ -20,7 +20,7 @@ var _ pubsub.Query = (*query.Query)(nil)
 
 // Example events from the OpenAPI documentation:
 //
-//	https://github.com/cometbft/cometbft/v2/blob/master/rpc/openapi/openapi.yaml
+//	https://github.com/cometbft/cometbft/blob/main/rpc/openapi/openapi.yaml
 //
 // Redactions:
 //

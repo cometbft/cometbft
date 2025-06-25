@@ -16,7 +16,7 @@ potential for mistaken use and separate the time-dependent processing of the
 "get by height" methods, making them idempotent. The use case for "get latest"
 also needs to be scrutinized here.
 
-[ADR 101]: https://github.com/cometbft/cometbft/blob/main/docs/architecture/adr-101-data-companion-pull-api.md
+[ADR 101]: https://github.com/cometbft/cometbft/blob/main/docs/references/architecture/adr-101-data-companion-pull-api.md
 
 ## Background
 

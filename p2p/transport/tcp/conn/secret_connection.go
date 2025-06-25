@@ -57,7 +57,7 @@ var (
 // SecretConnection implements net.Conn.
 // It is an implementation of the STS protocol.
 // For more details regarding this implementation of the STS protocol, please refer to:
-// https://github.com/cometbft/cometbft/v2/blob/main/spec/p2p/legacy-docs/peer.md#authenticated-encryption-handshake.
+// https://github.com/cometbft/cometbft/blob/main/spec/p2p/legacy-docs/peer.md#authenticated-encryption-handshake.
 //
 // The original STS protocol, which inspired this implementation:
 // https://citeseerx.ist.psu.edu/document?rapid=rep1&type=pdf&doi=b852bc961328ce74f7231a4b569eec1ab6c3cf50. # codespell:ignore

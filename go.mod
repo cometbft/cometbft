@@ -6,7 +6,7 @@ toolchain go1.23.9
 
 require (
 	github.com/BurntSushi/toml v1.5.0
-	github.com/Masterminds/semver/v3 v3.3.1
+	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/adlio/schema v1.3.6
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
@@ -18,7 +18,7 @@ require (
 	github.com/creachadair/tomledit v0.0.28
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0
 	github.com/dgraph-io/badger/v4 v4.7.0
-	github.com/ethereum/go-ethereum v1.15.11
+	github.com/ethereum/go-ethereum v1.16.0
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/goccmack/goutil v1.2.3
 	github.com/golang/protobuf v1.5.4 // indirect
@@ -35,7 +35,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.22.0
 	github.com/prometheus/client_model v0.6.2
-	github.com/prometheus/common v0.64.0
+	github.com/prometheus/common v0.65.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/cors v1.11.1
 	github.com/sasha-s/go-deadlock v0.3.5
@@ -45,18 +45,18 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/supranational/blst v0.3.15
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
-	golang.org/x/crypto v0.38.0
+	golang.org/x/crypto v0.39.0
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
-	golang.org/x/net v0.40.0
-	golang.org/x/sync v0.14.0
-	golang.org/x/text v0.25.0
+	golang.org/x/net v0.41.0
+	golang.org/x/sync v0.15.0
+	golang.org/x/text v0.26.0
 	gonum.org/v1/gonum v0.16.0
 	google.golang.org/grpc v1.73.0
 )
 
 require (
 	github.com/go-git/go-git/v5 v5.16.2
-	github.com/go-viper/mapstructure/v2 v2.2.1
+	github.com/go-viper/mapstructure/v2 v2.3.0
 	google.golang.org/protobuf v1.36.6
 )
 
@@ -73,7 +73,7 @@ require (
 	github.com/cockroachdb/errors v1.11.3 // indirect
 	github.com/cockroachdb/fifo v0.0.0-20240816210425-c5d0cb0b6fc0 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20241215232642-bb51bb14a506 // indirect
-	github.com/cockroachdb/pebble v1.1.4 // indirect
+	github.com/cockroachdb/pebble v1.1.5 // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06 // indirect
 	github.com/containerd/continuity v0.3.0 // indirect

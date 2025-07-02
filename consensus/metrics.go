@@ -111,10 +111,10 @@ type Metrics struct {
 	//metrics:Interval in seconds between the proposal timestamp and the timestamp of the latest prevote in a round where all validators voted.
 	FullPrevoteDelay metrics.Gauge `metrics_labels:"proposer_address"`
 
-	// PrecommitsCounted are the number of precommits counted after the timeout commit period has ended.
+	// PrecommitsCounted is the number of precommit votes counted after the timeout commit period has ended.
 	PrecommitsCounted metrics.Gauge
 
-	// PrecommitsStakingPercentage is the voting power accumulated once the timeout commit period has ended.
+	// PrecommitsStakingPercentage is the voting power percentage of precommit votes once the timeout commit period has ended.
 	PrecommitsStakingPercentage metrics.Gauge
 
 	// VoteExtensionReceiveCount is the number of vote extensions received by this

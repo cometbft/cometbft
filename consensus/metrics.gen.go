@@ -178,13 +178,13 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "precommits_counted",
-			Help:      "PrecommitsCounted are the number of precommits counted after the timeout commit period has ended.",
+			Help:      "PrecommitsCounted is the number of precommit votes counted after the timeout commit period has ended.",
 		}, labels).With(labelsAndValues...),
 		PrecommitsStakingPercentage: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "precommits_staking_percentage",
-			Help:      "PrecommitsStakingPercentage is the voting power accumulated once the timeout commit period has ended.",
+			Help:      "PrecommitsStakingPercentage is the voting power percentage of precommit votes once the timeout commit period has ended.",
 		}, labels).With(labelsAndValues...),
 		VoteExtensionReceiveCount: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,

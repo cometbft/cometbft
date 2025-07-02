@@ -980,7 +980,6 @@ func (cs *State) handleTimeout(ti timeoutInfo, rs cstypes.RoundState) {
 	case cstypes.RoundStepNewHeight:
 		// NewRound event fired from enterNewRound.
 		// XXX: should we fire timeout here (for timeout commit)?
-		// cs.emitPrecommitTimeoutMetrics() TODO: not sure if this really works
 		cs.enterNewRound(ti.Height, 0)
 
 	case cstypes.RoundStepNewRound:

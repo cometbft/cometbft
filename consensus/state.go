@@ -2548,6 +2548,10 @@ func (cs *State) emitPrecommitTimeoutMetrics(round int32) {
 }
 
 func (cs *State) calculatePrecommitMessageDelayMetrics() {
+	if cs.Proposal == nil {
+		return
+	}
+
 	ps := cs.Votes.Precommits(cs.Round)
 	pl := ps.List()
 

@@ -2541,7 +2541,7 @@ func (cs *State) emitPrecommitTimeoutMetrics(round int32) {
 	cs.metrics.PrecommitsCounted.Set(float64(totalVotesCollected))
 	cs.metrics.PrecommitsStakingPercentage.Set(stakePercentage)
 
-	cs.Logger.Info("emitted post-quorum precommit metrics",
+	cs.Logger.Debug("emitted post-quorum precommit metrics",
 		"votes_collected", totalVotesCollected,
 		"stake_percentage", stakePercentage)
 }

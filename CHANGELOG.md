@@ -4,13 +4,12 @@
 
 *July 3, 2025*
 
-This release adds precommit metrics and a reindex CLI command.
+Adds precommit metrics and reindex CLI command.
 
 ### IMPROVEMENTS
 
-- `[consensus]` The consensus package now emits precommit metrics.
-  ([\#5251](https://github.com/cometbft/cometbft/pull/5251))
-
+- Adds metrics that emit precommit data; precommit quorum delay from proposal, and precommit vote count and stake weight within timeout commit period.
+  ([\#5251](https://github.com/cometbft/cometbft/issues/5251))
 
 ## v0.38.17
 

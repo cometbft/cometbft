@@ -2,6 +2,17 @@
 
 ## v0.38.17
 
+*July 3, 2025*
+
+
+### IMPROVEMENTS
+
+- `[consensus]` The consensus package now emits precommit metrics.
+  ([\#5251](https://github.com/cometbft/cometbft/pull/5251))
+
+
+## v0.38.17
+
 *February 3, 2025*
 
 This release fixes two security issues (ASA-2025-001, ASA-2025-002). Users are

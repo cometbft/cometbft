@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## v0.38.18
+
+*July 3, 2025*
+
+Adds precommit metrics and reindex CLI command.
+
+### IMPROVEMENTS
+
+- Adds metrics that emit precommit data; precommit quorum delay from proposal, and precommit vote count and stake weight within timeout commit period.
+  ([\#5251](https://github.com/cometbft/cometbft/issues/5251))
+
 ## v0.38.17
 
 *February 3, 2025*

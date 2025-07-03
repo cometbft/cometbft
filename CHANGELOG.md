@@ -1,9 +1,10 @@
 # CHANGELOG
 
-## v0.38.17
+## v0.38.18
 
 *July 3, 2025*
 
+This release adds precommit metrics and a reindex CLI command.
 
 ### IMPROVEMENTS
 

@@ -126,8 +126,8 @@ github.com/elazarl/goproxy v1.7.2 h1:Y2o6urb7Eule09PjlhQRGNsqRfPmYI3KKQLFpCAV3+o
 github.com/elazarl/goproxy v1.7.2/go.mod h1:82vkLNir0ALaW14Rc399OTTjyNREgmdL2cVoIbS6XaE=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
 github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
-github.com/ethereum/go-ethereum v1.16.0 h1:Acf8FlRmcSWEJm3lGjlnKTdNgFvF9/l28oQ8Q6HDj1o=
-github.com/ethereum/go-ethereum v1.16.0/go.mod h1:ngYIvmMAYdo4sGW9cGzLvSsPGhDOOzL0jK5S5iXpj0g=
+github.com/ethereum/go-ethereum v1.16.1 h1:7684NfKCb1+IChudzdKyZJ12l1Tq4ybPZOITiCDXqCk=
+github.com/ethereum/go-ethereum v1.16.1/go.mod h1:ngYIvmMAYdo4sGW9cGzLvSsPGhDOOzL0jK5S5iXpj0g=
 github.com/fogleman/gg v1.2.1-0.20190220221249-0403632d5b90/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
 github.com/fortytw2/leaktest v1.3.0 h1:u8491cBMTQ8ft8aeV+adlcytMZylmA5nnwwkRZjI8vw=
 github.com/fortytw2/leaktest v1.3.0/go.mod h1:jDsjWgpAGjm2CA7WthBh/CdZYEPF31XHquHwclZch5g=

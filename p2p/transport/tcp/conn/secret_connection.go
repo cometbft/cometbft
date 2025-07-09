@@ -467,7 +467,7 @@ func shareAuthSignature(sc io.ReadWriter, pubKey crypto.PubKey, signature []byte
 func incrNonce(nonce *[aeadNonceSize]byte) {
 	counter := binary.LittleEndian.Uint64(nonce[4:])
 	if counter == math.MaxUint64 {
-		// Terminates the session and makes sure the nonce would not re-used.
+		// Terminates the session and makes sure the nonce would not reused.
 		// See https://github.com/tendermint/tendermint/issues/3531
 		panic("can't increase nonce without overflow")
 	}

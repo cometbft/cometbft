@@ -711,7 +711,7 @@ late, possibly having lane definitions that do not match with those of nodes at 
 - [Cosmovisor][cosmovisor]
 - [Mempool's cache][cache]
 
-[cache]: https://github.com/cometbft/cometbft/blob/main/spec/mempool/cache.md
+[cache]: https://github.com/cometbft/cometbft/blob/main/mempool/cache.go
 [adr067]: ./tendermint-core/adr-067-mempool-refactor.md
 [reapmaxbytesmaxgas]: https://github.com/cometbft/cometbft/blob/v0.37.6/mempool/v1/mempool.go#L315-L324
 [gulf-stream]: https://medium.com/solana-labs/gulf-stream-solanas-mempool-less-transaction-forwarding-protocol-d342e72186ad

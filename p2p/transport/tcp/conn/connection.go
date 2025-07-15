@@ -803,7 +803,7 @@ func (ch *stream) loadSendQueueSize() (size int) {
 // Goroutine-safe
 // Use only as a heuristic.
 func (ch *stream) canSend() bool {
-	return ch.loadSendQueueSize() < defaultSendQueueCapacity
+	return ch.loadSendQueueSize() < ch.desc.SendQueueCapacity
 }
 
 // Returns true if any PacketMsgs are pending to be sent.

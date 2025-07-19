@@ -4,6 +4,25 @@ order: 4
 
 # Creating a built-in application in Go
 
+## Table of Contents
+
+- [Guide Assumptions](#guide-assumptions)
+  - [Built-in app vs external app](#built-in-app-vs-external-app)
+- [1.0 Installing Go](#10-installing-go)
+- [1.1 Installing CometBFT](#11-installing-cometbft)
+- [1.2 Creating a new Go project](#12-creating-a-new-go-project)
+- [1.3 Writing a CometBFT application](#13-writing-a-cometbft-application)
+  - [1.3.1 Add a persistent data store](#131-add-a-persistent-data-store)
+  - [1.3.2 CheckTx](#132-checktx)
+  - [1.3.3 FinalizeBlock](#133-finalizeblock)
+  - [1.3.4 Query](#134-query)
+  - [1.3.5 PrepareProposal and ProcessProposal](#135-prepareproposal-and-processproposal)
+  - [1.3.6 Handling errors](#136-handling-errors)
+- [1.4 Starting an application and a CometBFT instance in the same process](#14-starting-an-application-and-a-cometbft-instance-in-the-same-process)
+- [1.5 Initializing and Running](#15-initializing-and-running)
+- [1.6 Using the application](#16-using-the-application)
+- [Outro](#outro)
+
 ## Guide Assumptions
 
 This guide is designed for beginners who want to get started with a CometBFT
@@ -313,6 +332,7 @@ Next, update the `import` stanza at the top to include the Badger library:
 
 ```go
 import(
+    "bytes"
     "context"
     abcitypes "github.com/cometbft/cometbft/abci/types"
     "github.com/dgraph-io/badger/v4"

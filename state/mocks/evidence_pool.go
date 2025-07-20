@@ -85,6 +85,11 @@ func (_m *EvidencePool) Update(_a0 state.State, evList types.EvidenceList) {
 	_m.Called(_a0, evList)
 }
 
+// ReportConflictingVotes provides a mock function with given fields: voteA, voteB
+func (_m *EvidencePool) ReportConflictingVotes(voteA, voteB *types.Vote) {
+	_m.Called(voteA, voteB)
+}
+
 // NewEvidencePool creates a new instance of EvidencePool. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewEvidencePool(t interface {

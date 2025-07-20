@@ -150,7 +150,7 @@ Upon entering `Prevote`, each validator broadcasts its prevote vote.
 
 - First, if the validator is locked on a block since `LastLockRound`
   but now has a PoLC for something else at round `PoLC-Round` where
-  `LastLockRound < PoLC-Round < R`, then it unlocks.
+  `LastLockRound <= PoLC-Round < R`, then it unlocks.
 - If the validator is still locked on a block, it prevotes that.
 - Else, if the proposed block from `Propose(H,R)` is good, it
   prevotes that.

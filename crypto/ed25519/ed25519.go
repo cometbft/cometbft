@@ -89,8 +89,11 @@ func (privKey PrivKey) Bytes() []byte {
 // If these conditions aren't met, Sign will panic or produce an
 // incorrect signature.
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
-	signatureBytes := ed25519.Sign(ed25519.PrivateKey(privKey), msg)
-	return signatureBytes, nil
+    if len(privKey) != PrivateKeySize {
+	return nil, fmt.Errorf("invalid private key size: got %d, want %d", len(privKey), PrivateKeySize)
+    }
+    signatureBytes := ed25519.Sign(ed25519.PrivateKey(privKey), msg)
+    return signatureBytes, nil
 }
 
 // PubKey gets the corresponding public key from the private key.

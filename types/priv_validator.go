@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+
 	"github.com/cometbft/cometbft/proto/tendermint/privval"
 
 	"github.com/cometbft/cometbft/crypto"

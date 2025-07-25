@@ -2,10 +2,11 @@ package types
 
 import (
 	"bytes"
+	"testing"
+
 	"github.com/cometbft/cometbft/proto/tendermint/privval"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestRawDataSignBytes(t *testing.T) {

@@ -51,7 +51,7 @@ require (
 	golang.org/x/sync v0.16.0
 	golang.org/x/text v0.27.0
 	gonum.org/v1/gonum v0.16.0
-	google.golang.org/grpc v1.73.0
+	google.golang.org/grpc v1.74.2
 )
 
 require (
@@ -137,7 +137,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250324211829-b45e905df463 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250528174236-200df99c418a // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools v2.2.0+incompatible // indirect

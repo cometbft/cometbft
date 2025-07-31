@@ -788,24 +788,6 @@ func (vals *ValidatorSet) VerifyCommitLightTrustingAllSignatures(
 	return VerifyCommitLightTrustingAllSignatures(chainID, vals, commit, trustLevel)
 }
 
-// findPreviousProposer reverses the compare proposer priority function to find the validator
-// with the lowest proposer priority which would have been the previous proposer.
-//
-// Is used when recreating a validator set from an existing array of validators.
-func (vals *ValidatorSet) findPreviousProposer() *Validator {
-	var previousProposer *Validator
-	for _, val := range vals.Validators {
-		if previousProposer == nil {
-			previousProposer = val
-			continue
-		}
-		if previousProposer == previousProposer.CompareProposerPriority(val) {
-			previousProposer = val
-		}
-	}
-	return previousProposer
-}
-
 func (vals *ValidatorSet) checkAllKeysHaveSameType() {
 	if vals.Size() == 0 {
 		vals.allKeysHaveSameType = true
@@ -991,22 +973,25 @@ func ValidatorSetFromProto(vp *cmtproto.ValidatorSet) (*ValidatorSet, error) {
 // rebuilds the exact same validator set that corresponds to it without
 // changing the proposer priority or power if any of the validators fail
 // validate basic then an empty set is returned.
-func ValidatorSetFromExistingValidators(valz []*Validator) (*ValidatorSet, error) {
+func ValidatorSetFromExistingValidators(valz []*Validator, proposerAddress Address) (*ValidatorSet, error) {
 	if len(valz) == 0 {
 		return nil, errors.New("validator set is empty")
 	}
+	vals := &ValidatorSet{}
+
 	for _, val := range valz {
 		err := val.ValidateBasic()
 		if err != nil {
 			return nil, fmt.Errorf("can't create validator set: %w", err)
 		}
+
+		if bytes.Equal(val.Address, proposerAddress) {
+			vals.Proposer = val
+		}
 	}
 
-	vals := &ValidatorSet{
-		Validators: valz,
-	}
+	vals.Validators = valz
 	vals.checkAllKeysHaveSameType()
-	vals.Proposer = vals.findPreviousProposer()
 	vals.updateTotalVotingPower()
 	sort.Sort(ValidatorsByVotingPower(vals.Validators))
 	return vals, nil

@@ -9,6 +9,7 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/protoio"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
@@ -49,7 +50,7 @@ func RawBytesMessageSignBytes(chainID, uniqueID string, rawBytes []byte) ([]byte
 		RawBytes: rawBytes,
 		UniqueId: uniqueID,
 	}
-	protoBytes, err := signRequest.Marshal()
+	protoBytes, err := protoio.MarshalDelimited(signRequest)
 	if err != nil {
 		return nil, err
 	}

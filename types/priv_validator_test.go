@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"github.com/cometbft/cometbft/libs/protoio"
 	"testing"
 
 	"github.com/cometbft/cometbft/proto/tendermint/privval"
@@ -62,7 +63,6 @@ func TestRawDataSignBytes(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Call the function under test
 			signBytes, err := RawBytesMessageSignBytes(tc.chainID, tc.uniqueID, tc.rawBytes)
 
 			if tc.expectError {
@@ -78,7 +78,7 @@ func TestRawDataSignBytes(t *testing.T) {
 				UniqueId: tc.uniqueID,
 				RawBytes: tc.rawBytes,
 			}
-			expectedProtoBytes, err := expectedReq.Marshal()
+			expectedProtoBytes, err := protoio.MarshalDelimited(expectedReq)
 			require.NoError(t, err)
 
 			expectedSignBytes := append([]byte(testPrefix), expectedProtoBytes...)
@@ -94,13 +94,13 @@ func TestRawDataSignBytes(t *testing.T) {
 
 			// Additional verification: unmarshal the protobuf part and check fields
 			protoBytes := signBytes[prefixLen:]
-			unmarshaledReq := &privval.SignRawBytesRequest{}
-			err = unmarshaledReq.Unmarshal(protoBytes)
+			unmarshalledReq := &privval.SignRawBytesRequest{}
+			err = protoio.UnmarshalDelimited(protoBytes, unmarshalledReq)
 			require.NoError(t, err, "should be able to unmarshal the protobuf bytes")
 
-			assert.Equal(t, tc.chainID, unmarshaledReq.ChainId)
-			assert.Equal(t, tc.uniqueID, unmarshaledReq.UniqueId)
-			assert.Equal(t, tc.rawBytes, unmarshaledReq.RawBytes)
+			assert.Equal(t, tc.chainID, unmarshalledReq.ChainId)
+			assert.Equal(t, tc.uniqueID, unmarshalledReq.UniqueId)
+			assert.Equal(t, tc.rawBytes, unmarshalledReq.RawBytes)
 		})
 	}
 }

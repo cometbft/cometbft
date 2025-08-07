@@ -91,8 +91,8 @@ func (*localClient) Echo(_ context.Context, msg string) (*types.EchoResponse, er
 }
 
 func (app *localClient) Info(ctx context.Context, req *types.InfoRequest) (*types.InfoResponse, error) {
-	app.mtx.Lock()
-	defer app.mtx.Unlock()
+	// app.mtx.Lock()
+	// defer app.mtx.Unlock()
 
 	return app.Application.Info(ctx, req)
 }
@@ -105,8 +105,8 @@ func (app *localClient) CheckTx(ctx context.Context, req *types.CheckTxRequest) 
 }
 
 func (app *localClient) Query(ctx context.Context, req *types.QueryRequest) (*types.QueryResponse, error) {
-	app.mtx.Lock()
-	defer app.mtx.Unlock()
+	// app.mtx.Lock()
+	// defer app.mtx.Unlock()
 
 	return app.Application.Query(ctx, req)
 }

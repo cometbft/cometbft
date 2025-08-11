@@ -60,7 +60,6 @@ func TestGRPC(t *testing.T) {
 				Type: types.CHECK_TX_TYPE_CHECK,
 			})
 		require.NoError(t, err)
-		counter++
 		if response.Code != 0 {
 			t.Error("CheckTx failed with ret_code", response.Code)
 		}

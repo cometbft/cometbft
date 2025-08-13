@@ -84,6 +84,16 @@ The following metrics are available:
 | state\_store\_access\_duration\_seconds                 | Histogram | method             | Duration of accesses to the state store labeled by which method was called on the store                                                |
 | state\_fire\_block\_events\_delay\_seconds              | Gauge     |                    | Duration of event firing related to a new block                                                                                        |
 | statesync\_syncing                                      | Gauge     |                    | Either 0 (not state syncing) or 1 (syncing)                                                                                            |
+| blocksync\_total\_txs                                   | Gauge     |                    | Total number of transactions                                                                                                           |
+| mempool\_redundancy                                     | Gauge     |                    | Redundancy level                                                                                                                       |
+| store\_block\_store\_access\_duration\_seconds          | Histogram | method             | The duration of accesses to the state store labeled by which method was called on the store                                             |
+| blocksync\_num\_txs                                     | Gauge     |                    | Number of transactions in the latest block                                                                                             |
+| blocksync\_latest\_block\_height                       | Gauge     |                    | The height of the latest block                                                                                                         |
+| blocksync\_block\_size\_bytes                           | Gauge     |                    | Size of the latest block                                                                                                               |
+| consensus\_chain\_size\_bytes                           | Gauge     |                    | Size of the chain in bytes                                                                                                             |
+| mempool\_disabled\_routes                               | Gauge     |                    | Number of disabled routes                                                                                                              |
+| mempool\_tx\_life\_span                                 | Histogram |                    | Transaction life span in seconds                                                                                                       |
+| proxy\_method\_timing\_seconds                          | Histogram | method, type       | Timings for each of the ABCI methods                                                                                                   |
 
 ## Useful queries
 

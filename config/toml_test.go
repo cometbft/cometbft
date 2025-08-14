@@ -55,9 +55,19 @@ func TestEnsureTestRoot(t *testing.T) {
 
 	assertValidConfig(t, string(data))
 
-	// TODO: make sure the cfg returned and testconfig are the same!
 	baseConfig := config.DefaultBaseConfig()
 	ensureFiles(t, rootDir, config.DefaultDataDir, baseConfig.Genesis, baseConfig.PrivValidatorKey, baseConfig.PrivValidatorState)
+	
+	// Verify that the returned config matches the expected test config structure
+	expectedTestConfig := config.TestConfig().SetRoot(rootDir)
+	assert.Equal(t, expectedTestConfig.BaseConfig, cfg.BaseConfig, "BaseConfig should match TestConfig")
+	assert.Equal(t, expectedTestConfig.RPC, cfg.RPC, "RPC config should match TestConfig")
+	assert.Equal(t, expectedTestConfig.P2P, cfg.P2P, "P2P config should match TestConfig")
+	assert.Equal(t, expectedTestConfig.Consensus, cfg.Consensus, "Consensus config should match TestConfig")
+	assert.Equal(t, expectedTestConfig.Mempool, cfg.Mempool, "Mempool config should match TestConfig")
+	assert.Equal(t, expectedTestConfig.Storage, cfg.Storage, "Storage config should match TestConfig")
+	assert.Equal(t, expectedTestConfig.TxIndex, cfg.TxIndex, "TxIndex config should match TestConfig")
+	assert.Equal(t, expectedTestConfig.Instrumentation, cfg.Instrumentation, "Instrumentation config should match TestConfig")
 }
 
 func assertValidConfig(t *testing.T, configFile string) {

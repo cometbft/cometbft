@@ -330,7 +330,7 @@ To-do list:
 ## Consequences
 
 ### Positive
-- We should be able to check whether CommetBFT respects ABCI 2.0 grammar.
+- We should be able to check whether CometBFT respects ABCI 2.0 grammar.
 ### Negative
 
 ### Neutral

@@ -72,7 +72,7 @@ The returned `retain_height` would be the lowest height that satisfies:
 
 - State sync snapshots: blocks since the _oldest_ available snapshot must be available for state sync nodes to catch up (oldest because a node may be restoring an old snapshot while a new snapshot was taken).
 
-- Local config: archive nodes may want to retain more or all blocks, e.g. via a local config option `min-retain-blocks`. There may also be a need to vary rentention for other nodes, e.g. sentry nodes which do not need historical blocks.
+- Local config: archive nodes may want to retain more or all blocks, e.g. via a local config option `min-retain-blocks`. There may also be a need to vary retention for other nodes, e.g. sentry nodes which do not need historical blocks.
 
 ![Cosmos SDK block retention diagram](img/block-retention.png)
 

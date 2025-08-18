@@ -1326,7 +1326,7 @@ max_tx_bytes = 1048576
 
 Transactions bigger than the maximum configured size are rejected by mempool,
 this applies to both transactions submitted by clients via RPC endpoints, and
-transactions receveing from peers on the mempool protocol.
+transactions receiving from peers on the mempool protocol.
 
 ### mempool.max_txs_bytes
 The maximum size in bytes of all transactions stored in the mempool.

@@ -337,7 +337,7 @@ func (wsc *wsConnection) readRoutine() {
 			err = dec.Decode(&request)
 			if err != nil {
 				if err := wsc.WriteRPCResponse(writeCtx,
-					types.RPCParseError(fmt.Errorf("error unmarshaling request: %w", err))); err != nil {
+					types.RPCParseError(fmt.Errorf("error unmarshalling request: %w", err))); err != nil {
 					wsc.Logger.Error("Error writing RPC response", "err", err)
 				}
 				continue

@@ -116,7 +116,7 @@ func NewSwitch(
 		unconditionalPeerIDs: make(map[nodekey.ID]struct{}),
 	}
 
-	// Ensure we have a completely undeterministic PRNG.
+	// Ensure we have a completely indeterministic PRNG.
 	sw.rng = rand.NewRand()
 
 	sw.BaseService = *service.NewBaseService(nil, "P2P Switch", sw)

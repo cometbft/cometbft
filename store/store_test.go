@@ -370,7 +370,7 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 }
 
 // stripExtensions removes all VoteExtension data from an ExtendedCommit. This
-// is useful when dealing with an ExendedCommit but vote extension data is
+// is useful when dealing with an ExtendedCommit but vote extension data is
 // expected to be absent.
 func stripExtensions(ec *types.ExtendedCommit) bool {
 	stripped := false

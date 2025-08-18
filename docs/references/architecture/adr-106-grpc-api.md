@@ -66,7 +66,7 @@ be worked out in the implementation.
 
 - `VersionService` - A simple service that aims to be quite stable over time in
   order to be utilized by clients to establish the version of the software with
-  which they are interacting (e.g. to pre-emptively determine compatibility).
+  which they are interacting (e.g. to preemptively determine compatibility).
   This could technically be part of the `NodeService`, but if the `NodeService`
   interface were to be modified, a new version of the service would need to be
   created, and all old versions would need to be maintained, since the

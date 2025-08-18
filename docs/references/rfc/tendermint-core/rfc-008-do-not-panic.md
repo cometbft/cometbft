@@ -112,14 +112,14 @@ In **no** other situation is it acceptable for the code to panic:
 - callers of library functions should not expect panics.
 - ensuring that arbitrary go routines can't panic.
 - ensuring that there are no arbitrary panics in core production code,
-  espically code that can run at any time during the lifetime of a
+  especially code that can run at any time during the lifetime of a
   process.
 - all test code and fixture should report normal test assertions with
   a mechanism like testify's `require` assertion rather than calling
   panic directly.
 
 The goal of this increased "panic rigor" is to ensure that any escaped
-panic is reflects a fixable bug in Tendermint.
+panic reflects a fixable bug in Tendermint.
 
 ### Removing Panics
 

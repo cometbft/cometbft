@@ -47,7 +47,7 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 			// next, try to unmarshal as a single request
 			var request types.RPCRequest
 			if err := json.Unmarshal(b, &request); err != nil {
-				res := types.RPCParseError(fmt.Errorf("error unmarshaling request: %w", err))
+				res := types.RPCParseError(fmt.Errorf("error unmarshalling request: %w", err))
 				if wErr := WriteRPCResponseHTTPError(w, http.StatusInternalServerError, res); wErr != nil {
 					logger.Error("failed to write response", "err", wErr)
 				}

@@ -23,7 +23,7 @@ jobs:
         with:
           go-version: '1.20'
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: 'v0.34.x'
 
@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack on failure
-        uses: slackapi/slack-github-action@v2.0.0
+        uses: slackapi/slack-github-action@v2.1.1
         env:
           BRANCH: ${{ needs.e2e-nightly-test.outputs.git-branch }}
           RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

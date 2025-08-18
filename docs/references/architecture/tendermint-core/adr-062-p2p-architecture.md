@@ -136,7 +136,7 @@ Non-networked endpoints (without an IP address) are considered local, and will o
 
 A connection represents an established transport connection between two endpoints (i.e. two nodes), which can be used to exchange binary messages with logical channel IDs (corresponding to the higher-level channel IDs used in the router). Connections are set up either via `Transport.Dial()` (outbound) or `Transport.Accept()` (inbound).
 
-Once a connection is esablished, `Transport.Handshake()` must be called to perform a node handshake, exchanging node info and public keys to verify node identities. Node handshakes should not really be part of the transport layer (it's an application protocol concern), this exists for backwards-compatibility with the existing MConnection protocol which conflates the two. `NodeInfo` is part of the existing MConnection protocol, but does not appear to be documented in the specification -- refer to the Go codebase for details.
+Once a connection is established, `Transport.Handshake()` must be called to perform a node handshake, exchanging node info and public keys to verify node identities. Node handshakes should not really be part of the transport layer (it's an application protocol concern), this exists for backwards-compatibility with the existing MConnection protocol which conflates the two. `NodeInfo` is part of the existing MConnection protocol, but does not appear to be documented in the specification -- refer to the Go codebase for details.
 
 The `Connection` interface is shown below. It omits certain additions that are currently implemented for backwards compatibility with the legacy P2P stack and are planned to be removed before the final release.
 
@@ -314,7 +314,7 @@ type Channel struct {
     In          <-chan Envelope  // Inbound messages (peers to reactors).
     Out         chan<- Envelope  // outbound messages (reactors to peers)
     Error       chan<- PeerError // Peer error reporting.
-    messageType proto.Message    // Channel's message type, for e.g. unmarshaling.
+    messageType proto.Message    // Channel's message type, for e.g. unmarshalling.
 }
 
 // Close closes the channel, also closing Out and Error.

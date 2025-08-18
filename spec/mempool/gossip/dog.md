@@ -17,7 +17,7 @@ preserving low latency performance and ensuring robustness against Byzantine att
   transactions. If a node is not receiving enough duplicate transactions, it will request its peers
   to re-activate a previously disabled route. This ensures a steady yet controlled flow of data.
 
-The DOG protocol is built on top of the [Flood protocol](flood.md). This spec re-uses many of the
+The DOG protocol is built on top of the [Flood protocol](flood.md). This spec reuses many of the
 same types, messages, and data structures defined in Flood's spec. 
 
 **Table of contents**

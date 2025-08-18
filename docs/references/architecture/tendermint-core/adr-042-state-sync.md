@@ -221,7 +221,7 @@ Proposed
 ### Positive
 * Safe & performant state sync design substantiated with real world implementation experience
 * General interfaces allowing application specific innovation
-* Parallizable implementation trajectory with reasonable engineering effort
+* Parallelizable implementation trajectory with reasonable engineering effort
 
 ### Negative
 * Static Scheduling lacks opportunity for real time chunk availability optimizations

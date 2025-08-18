@@ -30,7 +30,7 @@ results are hashed into the `LastResultsHash` as follows:
 
 - Since we do not expect `BeginBlock` and `EndBlock` to contain many events,
   these will be Protobuf encoded and included in the Merkle tree as leaves.
-- `LastResultsHash` therefore is the root hash of a Merkle tree w/ 3 leafs:
+- `LastResultsHash` therefore is the root hash of a Merkle tree w/ 3 leaves:
   proto-encoded `ResponseBeginBlock#Events`, root hash of a Merkle tree build
   from `ResponseDeliverTx` responses (Log, Info and Codespace fields are
   ignored), and proto-encoded `ResponseEndBlock#Events`.

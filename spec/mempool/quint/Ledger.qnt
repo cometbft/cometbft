@@ -123,7 +123,7 @@ module Ledger{
     }
     
     // Total Order: for any two processes, entries are prefix one from another.
-    pure def ledgerOrdertInv(state: LedgerState): bool = {
+    pure def ledgerOrderedInv(state: LedgerState): bool = {
       0.to(state.height()-1).forall(h => consensusAgreementInv(state.log[h]))
     }
 
@@ -139,7 +139,7 @@ module Ledger{
     val ledgerInvariant = {
       and {
         ledgerValidityInv(_ledger),
-        ledgerOrdertInv(_ledger)
+        ledgerOrderedInv(_ledger)
       }
     }
 

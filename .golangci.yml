@@ -69,6 +69,7 @@ linters:
             - github.com/spf13
             - github.com/stretchr/testify
             - github.com/decred/dcrd/dcrec/secp256k1/v4
+            - google.golang.org/protobuf/proto
     dogsled:
       max-blank-identifiers: 3
     gosec:

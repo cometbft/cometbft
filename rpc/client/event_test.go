@@ -89,10 +89,10 @@ func TestBlockEvents(t *testing.T) {
 				block := blockEvent.Block
 
 				if firstBlockHeight == 0 {
-					firstBlockHeight = block.Header.Height
+					firstBlockHeight = block.Height
 				}
 
-				require.Equal(t, firstBlockHeight+i, block.Header.Height)
+				require.Equal(t, firstBlockHeight+i, block.Height)
 			}
 		})
 	}

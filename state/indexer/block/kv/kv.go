@@ -419,8 +419,8 @@ func (idx *BlockerIndexer) match(
 
 	tmpHeights := make(map[string][]byte)
 
-	switch {
-	case c.Op == syntax.TEq:
+	switch c.Op {
+	case syntax.TEq:
 		it, err := dbm.IteratePrefix(idx.store, startKeyBz)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create prefix iterator: %w", err)
@@ -454,7 +454,7 @@ func (idx *BlockerIndexer) match(
 			return nil, err
 		}
 
-	case c.Op == syntax.TExists:
+	case syntax.TExists:
 		prefix, err := orderedcode.Append(nil, c.Tag)
 		if err != nil {
 			return nil, err
@@ -497,7 +497,7 @@ func (idx *BlockerIndexer) match(
 			return nil, err
 		}
 
-	case c.Op == syntax.TContains:
+	case syntax.TContains:
 		prefix, err := orderedcode.Append(nil, c.Tag)
 		if err != nil {
 			return nil, err

@@ -461,7 +461,7 @@ func TestCheckExtendedCommitMissing(t *testing.T) {
 }
 
 // ByzantineReactor is a blockstore reactor implementation where a corrupted block can be sent to a peer.
-// The corruption is that the block contains extended commit signatures when vote extensions are disabled or
+// The corruption is that the block contains extended commit signatures when vote extensions are disabled, or
 // it has no extended commit signatures while vote extensions are enabled.
 // If the corrupted block height is set to 0, the reactor behaves as normal.
 type ByzantineReactor struct {

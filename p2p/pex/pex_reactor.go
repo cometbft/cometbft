@@ -12,7 +12,7 @@ import (
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/conn"
-	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
+	tmp2p "github.com/cometbft/cometbft/proto/cometbft/p2p"
 )
 
 type Peer = p2p.Peer

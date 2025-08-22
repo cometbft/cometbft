@@ -13,7 +13,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/internal/test"
-	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	cmtstate "github.com/cometbft/cometbft/proto/cometbft/state"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 )

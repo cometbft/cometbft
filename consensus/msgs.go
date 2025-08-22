@@ -10,8 +10,8 @@ import (
 	"github.com/cometbft/cometbft/libs/bits"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/p2p"
-	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtcons "github.com/cometbft/cometbft/proto/cometbft/consensus"
+	cmtproto "github.com/cometbft/cometbft/proto/cometbft/types"
 	"github.com/cometbft/cometbft/types"
 )
 

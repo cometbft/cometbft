@@ -12,8 +12,8 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtos "github.com/cometbft/cometbft/libs/os"
-	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtstate "github.com/cometbft/cometbft/proto/cometbft/state"
+	cmtproto "github.com/cometbft/cometbft/proto/cometbft/types"
 	"github.com/cometbft/cometbft/types"
 )
 

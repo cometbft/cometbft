@@ -3,7 +3,7 @@ package types
 import (
 	"time"
 
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/proto/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 

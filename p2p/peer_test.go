@@ -15,7 +15,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/proto/tendermint/p2p"
+	"github.com/cometbft/cometbft/proto/cometbft/p2p"
 
 	"github.com/cometbft/cometbft/config"
 	cmtconn "github.com/cometbft/cometbft/p2p/conn"

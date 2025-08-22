@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/proto/cometbft/types"
 )
 
 // Check VerifyCommit, VerifyCommitLight and VerifyCommitLightTrusting basic

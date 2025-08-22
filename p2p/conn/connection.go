@@ -21,7 +21,7 @@ import (
 	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/libs/timer"
-	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
+	tmp2p "github.com/cometbft/cometbft/proto/cometbft/p2p"
 )
 
 const (

@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/cometbft/cometbft/crypto"
-	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	cmtversion "github.com/cometbft/cometbft/proto/cometbft/version"
 	"github.com/cometbft/cometbft/version"
 )
 

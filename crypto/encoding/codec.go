@@ -7,7 +7,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/libs/json"
-	pc "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	pc "github.com/cometbft/cometbft/proto/cometbft/crypto"
 )
 
 func init() {

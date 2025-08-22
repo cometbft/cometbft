@@ -7,7 +7,7 @@ import (
 	"github.com/go-kit/kit/metrics"
 
 	cstypes "github.com/cometbft/cometbft/consensus/types"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/proto/cometbft/types"
 	types "github.com/cometbft/cometbft/types"
 )
 

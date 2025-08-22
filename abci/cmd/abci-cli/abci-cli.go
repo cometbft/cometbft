@@ -20,7 +20,7 @@ import (
 	servertest "github.com/cometbft/cometbft/abci/tests/server"
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/abci/version"
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
+	"github.com/cometbft/cometbft/proto/cometbft/crypto"
 )
 
 // client is a global variable so it can be reused by the console

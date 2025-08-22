@@ -24,8 +24,8 @@ import (
 	"github.com/cometbft/cometbft/proxy"
 
 	"github.com/cometbft/cometbft/p2p"
-	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtcons "github.com/cometbft/cometbft/proto/cometbft/consensus"
+	cmtproto "github.com/cometbft/cometbft/proto/cometbft/types"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"

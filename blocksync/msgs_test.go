@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/blocksync"
-	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
+	bcproto "github.com/cometbft/cometbft/proto/cometbft/blocksync"
 	"github.com/cometbft/cometbft/types"
 )
 

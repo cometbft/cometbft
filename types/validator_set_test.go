@@ -17,7 +17,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/sr25519"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/proto/cometbft/types"
 )
 
 func TestValidatorSetBasic(t *testing.T) {

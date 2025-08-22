@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/p2p"
-	ssproto "github.com/cometbft/cometbft/proto/tendermint/statesync"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	ssproto "github.com/cometbft/cometbft/proto/cometbft/statesync"
+	cmtproto "github.com/cometbft/cometbft/proto/cometbft/types"
 )
 
 func TestValidateMsg(t *testing.T) {

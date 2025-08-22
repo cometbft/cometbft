@@ -48,6 +48,13 @@ linters:
             - github.com/stretchr/testify/require
             - github.com/syndtr/goleveldb
             - github.com/decred/dcrd/dcrec/secp256k1/v4
+            - google.golang.org/grpc
+            - google.golang.org/protobuf/proto
+            - golang.org/x/sync
+            - golang.org/x/crypto
+            - golang.org/x/net
+            - gonum.org/v1/gonum/stat
+            - google.golang.org/protobuf/types/known/timestampp
         test:
           files:
             - $test
@@ -69,7 +76,13 @@ linters:
             - github.com/spf13
             - github.com/stretchr/testify
             - github.com/decred/dcrd/dcrec/secp256k1/v4
+            - google.golang.org/grpc
             - google.golang.org/protobuf/proto
+            - google.golang.org/protobuf/types/known/timestampp
+            - gonum.org/v1/gonum/stat
+            - golang.org/x/sync
+            - golang.org/x/crypto
+            - golang.org/x/net
     dogsled:
       max-blank-identifiers: 3
     gosec:

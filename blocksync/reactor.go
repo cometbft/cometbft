@@ -394,7 +394,7 @@ FOR_LOOP:
 			// If VoteExtensions were disabled for the previous height then we don't need
 			// VoteExtensions.
 			//
-			// If we have sync'd at least one block, then we are guaranteed to have extensions
+			// If we have synced at least one block, then we are guaranteed to have extensions
 			// if we need them by the logic inside loop FOR_LOOP: it requires that the blocks
 			// it fetches have extensions if extensions were enabled during the height.
 			//

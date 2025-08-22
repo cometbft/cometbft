@@ -1,3 +1,4 @@
+version: "2"
 linters:
   enable:
     - asciicheck
@@ -5,141 +6,148 @@ linters:
     - depguard
     - dogsled
     - dupl
-    - errcheck
-    # - copyloopvar
     - goconst
-    - gofmt
-    - goimports
-    # - gosec
-    - gosimple
-    - govet
-    - ineffassign
     - misspell
     - nakedret
     - nolintlint
     - prealloc
     - staticcheck
-    # - structcheck // to be fixed by golangci-lint
-    - stylecheck
-    - typecheck
     - unconvert
-    - unused
-
+  settings:
+    depguard:
+      rules:
+        main:
+          files:
+            - $all
+            - '!$test'
+          allow:
+            - $gostd
+            - github.com/cometbft
+            - github.com/cosmos
+            - github.com/btcsuite/btcd/btcec/v2
+            - github.com/BurntSushi/toml
+            - github.com/go-git/go-git/v5
+            - github.com/go-kit
+            - github.com/go-logfmt/logfmt
+            - github.com/gofrs/uuid
+            - github.com/google
+            - github.com/gorilla/websocket
+            - github.com/informalsystems/tm-load-test/pkg/loadtest
+            - github.com/hashicorp/golang-lru/v2
+            - github.com/lib/pq
+            - github.com/libp2p/go-buffer-pool
+            - github.com/Masterminds/semver/v3
+            - github.com/minio/highwayhash
+            - github.com/oasisprotocol/curve25519-voi
+            - github.com/pkg/errors
+            - github.com/prometheus
+            - github.com/rcrowley/go-metrics
+            - github.com/rs/cors
+            - github.com/snikch/goodman
+            - github.com/spf13
+            - github.com/stretchr/testify/require
+            - github.com/syndtr/goleveldb
+            - github.com/decred/dcrd/dcrec/secp256k1/v4
+        test:
+          files:
+            - $test
+          allow:
+            - $gostd
+            - github.com/cosmos
+            - github.com/cometbft
+            - github.com/adlio/schema
+            - github.com/btcsuite/btcd
+            - github.com/fortytw2/leaktest
+            - github.com/go-kit
+            - github.com/google/uuid
+            - github.com/gorilla/websocket
+            - github.com/lib/pq
+            - github.com/oasisprotocol/curve25519-voi/primitives/merlin
+            - github.com/ory/dockertest
+            - github.com/pkg/errors
+            - github.com/prometheus/client_golang/prometheus/promhttp
+            - github.com/spf13
+            - github.com/stretchr/testify
+            - github.com/decred/dcrd/dcrec/secp256k1/v4
+    dogsled:
+      max-blank-identifiers: 3
+    gosec:
+      excludes:
+        - G115
+    misspell:
+      locale: US
+    revive:
+      enable-all-rules: true
+      rules:
+        - name: comment-spacings
+          disabled: true
+        - name: max-public-structs
+          disabled: true
+        - name: cognitive-complexity
+          disabled: true
+        - name: argument-limit
+          disabled: true
+        - name: cyclomatic
+          disabled: true
+        - name: deep-exit
+          disabled: true
+        - name: file-header
+          disabled: true
+        - name: function-length
+          disabled: true
+        - name: function-result-limit
+          disabled: true
+        - name: line-length-limit
+          disabled: true
+        - name: flag-parameter
+          disabled: true
+        - name: add-constant
+          disabled: true
+        - name: empty-lines
+          disabled: true
+        - name: import-shadowing
+          disabled: true
+        - name: modifies-value-receiver
+          disabled: true
+        - name: confusing-naming
+          disabled: true
+        - name: defer
+          disabled: true
+        - name: unchecked-type-assertion
+          disabled: true
+        - name: unhandled-error
+          arguments:
+            - fmt.Printf
+            - fmt.Print
+            - fmt.Println
+          disabled: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - gosec
+        path: _test\.go
+      - linters:
+          - goconst
+        path: (.+)_test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - gosec
   max-same-issues: 50
-
-linters-settings:
-  dogsled:
-    max-blank-identifiers: 3
-  goconst:
-    ignore-tests: true
-  misspell:
-    locale: US
-  depguard:
-    rules:
-      main:
-        files:
-          - $all
-          - "!$test"
-        allow:
-          - $gostd
-          - github.com/cometbft
-          - github.com/cosmos
-          - github.com/btcsuite/btcd/btcec/v2
-          - github.com/BurntSushi/toml
-          - github.com/go-git/go-git/v5
-          - github.com/go-kit
-          - github.com/go-logfmt/logfmt
-          - github.com/gofrs/uuid
-          - github.com/google
-          - github.com/gorilla/websocket
-          - github.com/informalsystems/tm-load-test/pkg/loadtest
-          - github.com/hashicorp/golang-lru/v2
-          - github.com/lib/pq
-          - github.com/libp2p/go-buffer-pool
-          - github.com/Masterminds/semver/v3
-          - github.com/minio/highwayhash
-          - github.com/oasisprotocol/curve25519-voi
-          - github.com/pkg/errors
-          - github.com/prometheus
-          - github.com/rcrowley/go-metrics
-          - github.com/rs/cors
-          - github.com/snikch/goodman
-          - github.com/spf13
-          - github.com/stretchr/testify/require
-          - github.com/syndtr/goleveldb
-          - github.com/decred/dcrd/dcrec/secp256k1/v4
-      test:
-        files:
-          - "$test"
-        allow:
-          - $gostd
-          - github.com/cosmos
-          - github.com/cometbft
-          - github.com/adlio/schema
-          - github.com/btcsuite/btcd
-          - github.com/fortytw2/leaktest
-          - github.com/go-kit
-          - github.com/google/uuid
-          - github.com/gorilla/websocket
-          - github.com/lib/pq
-          - github.com/oasisprotocol/curve25519-voi/primitives/merlin
-          - github.com/ory/dockertest
-          - github.com/pkg/errors
-          - github.com/prometheus/client_golang/prometheus/promhttp
-          - github.com/spf13
-          - github.com/stretchr/testify
-          - github.com/decred/dcrd/dcrec/secp256k1/v4
-
-  revive:
-    enable-all-rules: true
-    rules:
-      - name: comment-spacings # temporarily disabled
-        disabled: true
-      - name: max-public-structs
-        disabled: true
-      - name: cognitive-complexity
-        disabled: true
-      - name: argument-limit
-        disabled: true
-      - name: cyclomatic
-        disabled: true
-      - name: deep-exit
-        disabled: true
-      - name: file-header
-        disabled: true
-      - name: function-length
-        disabled: true
-      - name: function-result-limit
-        disabled: true
-      - name: line-length-limit
-        disabled: true
-      - name: flag-parameter
-        disabled: true
-      - name: add-constant
-        disabled: true
-      - name: empty-lines
-        disabled: true
-      - name: import-shadowing
-        disabled: true
-      - name: modifies-value-receiver
-        disabled: true
-      - name: confusing-naming
-        disabled: true
-      - name: defer
-        disabled: true
-      - name: unchecked-type-assertion
-        disabled: true
-      - name: unhandled-error
-        disabled: true
-        arguments:
-          - "fmt.Printf"
-          - "fmt.Print"
-          - "fmt.Println"
-  gosec:
-    excludes:
-      - G115
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

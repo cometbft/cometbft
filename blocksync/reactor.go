@@ -341,7 +341,7 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 
 	didProcessCh := make(chan struct{}, 1)
 
-	initialCommitHasExtensions := (bcR.initialState.LastBlockHeight > 0 && bcR.store.LoadBlockExtendedCommit(bcR.initialState.LastBlockHeight) != nil)
+	initialCommitHasExtensions := bcR.initialState.LastBlockHeight > 0 && bcR.store.LoadBlockExtendedCommit(bcR.initialState.LastBlockHeight) != nil
 
 	go func() {
 		for {

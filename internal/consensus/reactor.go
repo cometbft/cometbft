@@ -331,6 +331,16 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		}
 		switch msg := msg.(type) {
 		case *ProposalMessage:
+			maxBytes := conR.conS.state.ConsensusParams.Block.MaxBytes
+			if maxBytes == -1 {
+				maxBytes = int64(types.MaxBlockSizeBytes)
+			}
+			totalParts := int64(msg.Proposal.BlockID.PartSetHeader.Total)
+			if totalParts > (maxBytes-1)/int64(types.BlockPartSizeBytes)+1 {
+				conR.Logger.Error("Rejecting oversized proposal", "peer", e.Src, "height", msg.Proposal.Height)
+				conR.Switch.StopPeerForError(e.Src, ErrProposalTooManyParts)
+				return
+			}
 			ps.SetHasProposal(msg.Proposal)
 			conR.conS.peerMsgQueue <- msgInfo{msg, e.Src.ID(), cmttime.Now()}
 		case *ProposalPOLMessage:

@@ -1,4 +1,0 @@
-- `[blockstore]` Added peer banning in blockstore
-  ([\#ABC-0013](https://github.com/cometbft/cometbft/security/advisories/GHSA-hg58-rf2h-6rr7))
-- `[blockstore]` Send correct error message when vote extensions do not align with received packet
-  ([\#ABC-0014](https://github.com/cometbft/cometbft/security/advisories/GHSA-hg58-rf2h-6rr7))

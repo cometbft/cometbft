@@ -1,4 +1,4 @@
-FROM golang:1.22
+FROM golang:1.23
 
 # Avoid interactive prompts during apt operations
 ENV DEBIAN_FRONTEND=noninteractive

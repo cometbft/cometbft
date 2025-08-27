@@ -49,7 +49,7 @@ func main() {
 
 		if err == nil {
 			if endMsg, ok := msg.Msg.(cs.EndHeightMessage); ok {
-				_, err = os.Stdout.Write([]byte(fmt.Sprintf("ENDHEIGHT %d\n", endMsg.Height)))
+				_, err = fmt.Fprintf(os.Stdout, "ENDHEIGHT %d\n", endMsg.Height)
 			}
 		}
 

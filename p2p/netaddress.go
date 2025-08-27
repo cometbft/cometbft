@@ -255,8 +255,7 @@ func (na *NetAddress) Routable() bool {
 		return false
 	}
 	// TODO(oga) bitcoind doesn't include RFC3849 here, but should we?
-	return !(na.RFC1918() || na.RFC3927() || na.RFC4862() ||
-		na.RFC4193() || na.RFC4843() || na.Local())
+	return !na.RFC1918() && !na.RFC3927() && !na.RFC4862() && !na.RFC4193() && !na.RFC4843() && !na.Local()
 }
 
 // For IPv4 these are either a 0 or all bits set address. For IPv6 a zero

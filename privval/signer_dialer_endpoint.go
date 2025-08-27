@@ -60,7 +60,7 @@ func NewSignerDialerEndpoint(
 	}
 
 	sd.BaseService = *service.NewBaseService(logger, "SignerDialerEndpoint", sd)
-	sd.signerEndpoint.timeoutReadWrite = defaultTimeoutReadWriteSeconds * time.Second
+	sd.timeoutReadWrite = defaultTimeoutReadWriteSeconds * time.Second
 
 	for _, optionFunc := range options {
 		optionFunc(sd)

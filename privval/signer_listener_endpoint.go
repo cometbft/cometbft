@@ -20,7 +20,7 @@ type SignerListenerEndpointOption func(*SignerListenerEndpoint)
 //
 // Default: 5s
 func SignerListenerEndpointTimeoutReadWrite(timeout time.Duration) SignerListenerEndpointOption {
-	return func(sl *SignerListenerEndpoint) { sl.signerEndpoint.timeoutReadWrite = timeout }
+	return func(sl *SignerListenerEndpoint) { sl.timeoutReadWrite = timeout }
 }
 
 // SignerListenerEndpoint listens for an external process to dial in and keeps
@@ -55,7 +55,7 @@ func NewSignerListenerEndpoint(
 	}
 
 	sl.BaseService = *service.NewBaseService(logger, "SignerListenerEndpoint", sl)
-	sl.signerEndpoint.timeoutReadWrite = defaultTimeoutReadWriteSeconds * time.Second
+	sl.timeoutReadWrite = defaultTimeoutReadWriteSeconds * time.Second
 
 	for _, optionFunc := range options {
 		optionFunc(sl)
@@ -70,7 +70,7 @@ func (sl *SignerListenerEndpoint) OnStart() error {
 	sl.connectionAvailableCh = make(chan net.Conn)
 
 	// NOTE: ping timeout must be less than read/write timeout.
-	sl.pingInterval = time.Duration(sl.signerEndpoint.timeoutReadWrite.Milliseconds()*2/3) * time.Millisecond
+	sl.pingInterval = time.Duration(sl.timeoutReadWrite.Milliseconds()*2/3) * time.Millisecond
 	sl.pingTimer = time.NewTicker(sl.pingInterval)
 
 	go sl.serviceLoop()

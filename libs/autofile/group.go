@@ -357,7 +357,7 @@ func (g *Group) ReadGroupInfo() GroupInfo {
 func (g *Group) readGroupInfo() GroupInfo {
 	groupDir := filepath.Dir(g.Head.Path)
 	headBase := filepath.Base(g.Head.Path)
-	var minIndex, maxIndex int = -1, -1
+	var minIndex, maxIndex = -1, -1
 	var totalSize, headSize int64 = 0, 0
 
 	dir, err := os.Open(groupDir)
@@ -502,11 +502,11 @@ func (gr *GroupReader) openFile(index int) error {
 	gr.Group.mtx.Lock()
 	defer gr.Group.mtx.Unlock()
 
-	if index > gr.Group.maxIndex {
+	if index > gr.maxIndex {
 		return io.EOF
 	}
 
-	curFilePath := filePathForIndex(gr.Head.Path, index, gr.Group.maxIndex)
+	curFilePath := filePathForIndex(gr.Head.Path, index, gr.maxIndex)
 	curFile, err := os.OpenFile(curFilePath, os.O_RDONLY|os.O_CREATE, autoFilePerms)
 	if err != nil {
 		return err

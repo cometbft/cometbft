@@ -768,13 +768,14 @@ OUTER_LOOP:
 			}
 		}
 
-		if sleeping == 0 {
+		switch sleeping {
+		case 0:
 			// We sent nothing. Sleep...
 			sleeping = 1
 			logger.Debug("No votes to send, sleeping", "rs.Height", rs.Height, "prs.Height", prs.Height,
 				"localPV", rs.Votes.Prevotes(rs.Round).BitArray(), "peerPV", prs.Prevotes,
 				"localPC", rs.Votes.Precommits(rs.Round).BitArray(), "peerPC", prs.Precommits)
-		} else if sleeping == 2 {
+		case 2:
 			// Continued sleep...
 			sleeping = 1
 		}
@@ -1276,7 +1277,8 @@ func (ps *PeerState) EnsureVoteBitArrays(height int64, numValidators int) {
 }
 
 func (ps *PeerState) ensureVoteBitArrays(height int64, numValidators int) {
-	if ps.PRS.Height == height {
+	switch ps.PRS.Height {
+	case height:
 		if ps.PRS.Prevotes == nil {
 			ps.PRS.Prevotes = bits.NewBitArray(numValidators)
 		}
@@ -1289,7 +1291,7 @@ func (ps *PeerState) ensureVoteBitArrays(height int64, numValidators int) {
 		if ps.PRS.ProposalPOL == nil {
 			ps.PRS.ProposalPOL = bits.NewBitArray(numValidators)
 		}
-	} else if ps.PRS.Height == height+1 {
+	case height + 1:
 		if ps.PRS.LastCommit == nil {
 			ps.PRS.LastCommit = bits.NewBitArray(numValidators)
 		}

@@ -153,7 +153,7 @@ func TestSignedHeaderValidateBasic(t *testing.T) {
 				Header: tc.shHeader,
 				Commit: tc.shCommit,
 			}
-			err := sh.ValidateBasic(validSignedHeader.Header.ChainID)
+			err := sh.ValidateBasic(validSignedHeader.ChainID)
 			assert.Equalf(
 				t,
 				tc.expectErr,

@@ -250,15 +250,14 @@ format:
 #? lint: Run latest golangci-lint linter
 lint:
 	@echo "--> Running linter"
-	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
+	@go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run
 .PHONY: lint
 
-# https://github.com/cometbft/cometbft/pull/1925#issuecomment-1875127862
-# Revisit using lint-format after CometBFT v1 release and/or after 2024-06-01.
-#lint-format:
-#	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix
-#	@go run mvdan.cc/gofumpt -l -w ./..
-#.PHONY: lint-format
+#? lint: Run latest golangci-lint linter and apply fixes
+lint-fix:
+	@echo "--> Running linter"
+	@go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run --fix
+.PHONY: lint-fix
 
 #? lint-typo: Run codespell to check typos
 lint-typo:

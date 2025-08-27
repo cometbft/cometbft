@@ -701,7 +701,7 @@ func waitForAndValidateBlockWithTx(
 			// check that txs match the txs we're waiting for.
 			// note they could be spread over multiple blocks,
 			// but they should be in order.
-			for _, tx := range newBlock.Data.Txs {
+			for _, tx := range newBlock.Txs {
 				assert.EqualValues(t, txs[ntxs], tx)
 				ntxs++
 			}

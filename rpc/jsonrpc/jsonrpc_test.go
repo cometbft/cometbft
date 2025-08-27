@@ -108,9 +108,10 @@ func TestMain(m *testing.M) {
 var colorFn = func(keyvals ...interface{}) term.FgBgColor {
 	for i := 0; i < len(keyvals)-1; i += 2 {
 		if keyvals[i] == "socket" {
-			if keyvals[i+1] == "tcp" {
+			switch keyvals[i+1] {
+			case "tcp":
 				return term.FgBgColor{Fg: term.DarkBlue}
-			} else if keyvals[i+1] == "unix" {
+			case "unix":
 				return term.FgBgColor{Fg: term.DarkCyan}
 			}
 		}

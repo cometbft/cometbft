@@ -371,8 +371,8 @@ func (txi *TxIndex) match(
 
 	tmpHashes := make(map[string][]byte)
 
-	switch {
-	case c.Op == syntax.TEq:
+	switch c.Op {
+	case syntax.TEq:
 		it, err := dbm.IteratePrefix(txi.store, startKeyBz)
 		if err != nil {
 			panic(err)
@@ -410,7 +410,7 @@ func (txi *TxIndex) match(
 			panic(err)
 		}
 
-	case c.Op == syntax.TExists:
+	case syntax.TExists:
 		// XXX: can't use startKeyBz here because c.Operand is nil
 		// (e.g. "account.owner/<nil>/" won't match w/ a single row)
 		it, err := dbm.IteratePrefix(txi.store, startKey(c.Tag))
@@ -448,7 +448,7 @@ func (txi *TxIndex) match(
 			panic(err)
 		}
 
-	case c.Op == syntax.TContains:
+	case syntax.TContains:
 		// XXX: startKey does not apply here.
 		// For example, if startKey = "account.owner/an/" and search query = "account.owner CONTAINS an"
 		// we can't iterate with prefix "account.owner/an/" because we might miss keys like "account.owner/Ulan/"
@@ -720,7 +720,7 @@ func extractValueFromKey(key []byte) string {
 }
 
 func extractEventSeqFromKey(key []byte) string {
-	parts := strings.SplitN(string(key), tagKeySeparator, -1)
+	parts := strings.Split(string(key), tagKeySeparator)
 
 	lastEl := parts[len(parts)-1]
 

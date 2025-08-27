@@ -17,8 +17,8 @@ import (
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	cmtproto "github.com/cometbft/cometbft/proto/cometbft/types"
+	cmtversion "github.com/cometbft/cometbft/proto/cometbft/version"
 	"github.com/cometbft/cometbft/version"
 )
 

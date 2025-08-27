@@ -6,12 +6,12 @@ import (
 	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
-	cmtcrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtcrypto "github.com/cometbft/cometbft/proto/cometbft/crypto"
+	cmtproto "github.com/cometbft/cometbft/proto/cometbft/types"
 	sm "github.com/cometbft/cometbft/state"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	cmtstate "github.com/cometbft/cometbft/proto/cometbft/state"
 	"github.com/stretchr/testify/require"
 )
 

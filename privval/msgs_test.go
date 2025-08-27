@@ -12,9 +12,9 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	cryptoproto "github.com/cometbft/cometbft/proto/tendermint/crypto"
-	privproto "github.com/cometbft/cometbft/proto/tendermint/privval"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cryptoproto "github.com/cometbft/cometbft/proto/cometbft/crypto"
+	privproto "github.com/cometbft/cometbft/proto/cometbft/privval"
+	cmtproto "github.com/cometbft/cometbft/proto/cometbft/types"
 	"github.com/cometbft/cometbft/types"
 )
 

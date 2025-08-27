@@ -15,7 +15,7 @@ import (
 	"github.com/cometbft/cometbft/evidence/mocks"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	cmtversion "github.com/cometbft/cometbft/proto/cometbft/version"
 	sm "github.com/cometbft/cometbft/state"
 	smmocks "github.com/cometbft/cometbft/state/mocks"
 	"github.com/cometbft/cometbft/store"

@@ -24,7 +24,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p/conn"
-	p2pproto "github.com/cometbft/cometbft/proto/tendermint/p2p"
+	p2pproto "github.com/cometbft/cometbft/proto/cometbft/p2p"
 )
 
 var cfg *config.P2PConfig

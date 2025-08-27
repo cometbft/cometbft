@@ -5,7 +5,7 @@ import (
 
 	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	privvalproto "github.com/cometbft/cometbft/proto/tendermint/privval"
+	privvalproto "github.com/cometbft/cometbft/proto/cometbft/privval"
 	"github.com/cometbft/cometbft/types"
 )
 

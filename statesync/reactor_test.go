@@ -13,7 +13,7 @@ import (
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/p2p"
 	p2pmocks "github.com/cometbft/cometbft/p2p/mocks"
-	ssproto "github.com/cometbft/cometbft/proto/tendermint/statesync"
+	ssproto "github.com/cometbft/cometbft/proto/cometbft/statesync"
 	proxymocks "github.com/cometbft/cometbft/proxy/mocks"
 )
 

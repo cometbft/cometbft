@@ -1,0 +1,15 @@
+syntax = "proto3";
+package cometbft.types;
+
+option go_package = "github.com/cometbft/cometbft/proto/cometbft/types";
+
+import "gogoproto/gogo.proto";
+import "cometbft/types/types.proto";
+import "cometbft/types/evidence.proto";
+
+message Block {
+  Header                        header      = 1 [(gogoproto.nullable) = false];
+  Data                          data        = 2 [(gogoproto.nullable) = false];
+  cometbft.types.EvidenceList evidence    = 3 [(gogoproto.nullable) = false];
+  Commit                        last_commit = 4;
+}

@@ -664,7 +664,9 @@ func TestPruningService(t *testing.T) {
 		require.NotNil(t, bs.LoadBlockMeta(1100))
 		require.Nil(t, bs.LoadBlockMeta(1099))
 		require.NotNil(t, bs.LoadBlockCommit(1100))
+		require.NotNil(t, bs.LoadBlockExtendedCommit(1100))
 		require.Nil(t, bs.LoadBlockCommit(1099))
+		require.Nil(t, bs.LoadBlockExtendedCommit(1099))
 		for i := int64(1); i < 1200; i++ {
 			block, meta = bs.LoadBlock(i)
 			require.Nil(t, block)
@@ -705,7 +707,9 @@ func TestPruningService(t *testing.T) {
 		require.NotNil(t, bs.LoadBlockMeta(1100))
 		require.Nil(t, bs.LoadBlockMeta(1099))
 		require.NotNil(t, bs.LoadBlockCommit(1100))
+		require.NotNil(t, bs.LoadBlockExtendedCommit(1100))
 		require.Nil(t, bs.LoadBlockCommit(1099))
+		require.Nil(t, bs.LoadBlockExtendedCommit(1099))
 		t.Log("Done pruning up until 1300")
 	case <-time.After(5 * time.Second):
 		require.Fail(t, "timed out waiting for pruning run to complete")

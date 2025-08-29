@@ -403,8 +403,20 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 				return 0, -1, err
 			}
 		}
+<<<<<<< HEAD
 		if err := batch.Delete(calcSeenCommitKey(h)); err != nil {
 			return 0, -1, err
+=======
+		if h < evidencePoint {
+			if err := batch.Delete(bs.dbKeyLayout.CalcExtCommitKey(h)); err != nil {
+				return 0, -1, ErrDBOpt{Err: err}
+			}
+			bs.blockExtendedCommitCache.Remove(h)
+		}
+
+		if err := batch.Delete(bs.dbKeyLayout.CalcSeenCommitKey(h)); err != nil {
+			return 0, -1, ErrDBOpt{Err: err}
+>>>>>>> ca44468c (fix(store):  Properly prune extended commits (#5276))
 		}
 		for p := 0; p < int(meta.BlockID.PartSetHeader.Total); p++ {
 			if err := batch.Delete(calcBlockPartKey(h, p)); err != nil {

@@ -414,9 +414,6 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 			bs.blockExtendedCommitCache.Remove(h)
 		}
 
-		if err := batch.Delete(calcSeenCommitKey(h)); err != nil {
-			return 0, -1, err
-		}
 		for p := 0; p < int(meta.BlockID.PartSetHeader.Total); p++ {
 			if err := batch.Delete(calcBlockPartKey(h, p)); err != nil {
 				return 0, -1, err

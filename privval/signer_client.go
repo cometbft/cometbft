@@ -133,14 +133,17 @@ func (sc *SignerClient) SignProposal(chainID string, proposal *cmtproto.Proposal
 	return nil
 }
 
-// SignBytes requests a remote signer to sign bytes.
-func (sc *SignerClient) SignBytes(bytes []byte) ([]byte, error) {
-	response, err := sc.endpoint.SendRequest(mustWrapMsg(&pvproto.SignBytesRequest{Value: bytes}))
+func (sc *SignerClient) SignRawBytes(chainID, uniqueID string, rawBytes []byte) ([]byte, error) {
+	response, err := sc.endpoint.SendRequest(mustWrapMsg(&pvproto.SignRawBytesRequest{
+		ChainId:  chainID,
+		RawBytes: rawBytes,
+		UniqueId: uniqueID,
+	}))
 	if err != nil {
 		return nil, err
 	}
 
-	resp := response.GetSignBytesResponse()
+	resp := response.GetSignedRawBytesResponse()
 	if resp == nil {
 		return nil, cmterrors.ErrRequiredField{Field: "response"}
 	}

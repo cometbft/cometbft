@@ -142,3 +142,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools v2.2.0+incompatible // indirect
 )
+
+replace github.com/cometbft/cometbft/api => github.com/rach-id/cometbft/api v0.0.0-20250623161715-783975310b52

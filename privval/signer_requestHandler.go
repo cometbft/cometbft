@@ -67,17 +67,23 @@ func DefaultValidationRequestHandler(
 		} else {
 			res = mustWrapMsg(&pvproto.SignedProposalResponse{Proposal: *proposal, Error: nil})
 		}
-	case *pvproto.Message_SignBytesRequest:
-		var signature []byte
-
-		signature, err = privVal.SignBytes(r.SignBytesRequest.Value)
-		if err != nil {
-			res = mustWrapMsg(&pvproto.SignBytesResponse{
-				Signature: nil, Error: &pvproto.RemoteSignerError{Code: 0, Description: err.Error()},
-			})
-		} else {
-			res = mustWrapMsg(&pvproto.SignBytesResponse{Signature: signature, Error: nil})
+	case *pvproto.Message_SignRawBytesRequest:
+		if r.SignRawBytesRequest.ChainId != chainID {
+			res = mustWrapMsg(&pvproto.SignedRawBytesResponse{
+				Signature: []byte{}, Error: &pvproto.RemoteSignerError{
+					Code: 0, Description: "unable to sign raw bytes"}})
+			return res, fmt.Errorf("want chainID: %s, got chainID: %s", r.SignRawBytesRequest.GetChainId(), chainID)
 		}
+
+		signature, err := privVal.SignRawBytes(chainID, r.SignRawBytesRequest.UniqueId, r.SignRawBytesRequest.RawBytes)
+		if err != nil {
+			res = mustWrapMsg(&pvproto.SignedRawBytesResponse{
+				Signature: []byte{}, Error: &pvproto.RemoteSignerError{
+					Code: 0, Description: "unable to sign raw bytes"}})
+			return res, fmt.Errorf("failed to sign raw bytes: %w", err)
+		}
+
+		res = mustWrapMsg(&pvproto.SignedRawBytesResponse{Signature: signature, Error: nil})
 	case *pvproto.Message_PingRequest:
 		err, res = nil, mustWrapMsg(&pvproto.PingResponse{})
 	default:

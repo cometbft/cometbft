@@ -197,6 +197,32 @@ func TestSignerVote(t *testing.T) {
 	}
 }
 
+func TestSignerRawBytes(t *testing.T) {
+	for _, tc := range getSignerTestCases(t) {
+		rawBytes := cmtrand.Bytes(500)
+		uniqueID := cmtrand.Str(12)
+
+		tc := tc
+		t.Cleanup(func() {
+			if err := tc.signerServer.Stop(); err != nil {
+				t.Error(err)
+			}
+		})
+		t.Cleanup(func() {
+			if err := tc.signerClient.Close(); err != nil {
+				t.Error(err)
+			}
+		})
+
+		want, err := tc.mockPV.SignRawBytes(tc.chainID, uniqueID, rawBytes)
+		require.NoError(t, err)
+		have, err := tc.signerClient.SignRawBytes(tc.chainID, uniqueID, rawBytes)
+		require.NoError(t, err)
+
+		assert.Equal(t, want, have)
+	}
+}
+
 func TestSignerVoteResetDeadline(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
 		ts := cmttime.Now()
@@ -402,6 +428,8 @@ func brokenHandler(_ types.PrivValidator, request privvalproto.Message, _ string
 		res = mustWrapMsg(&privvalproto.PubKeyResponse{PubKeyType: "", PubKeyBytes: []byte{}, Error: nil})
 	case *privvalproto.Message_SignProposalRequest:
 		res = mustWrapMsg(&privvalproto.PubKeyResponse{PubKeyType: "", PubKeyBytes: []byte{}, Error: nil})
+	case *privvalproto.Message_SignRawBytesRequest:
+		res = mustWrapMsg(&privvalproto.PubKeyResponse{PubKeyType: "", PubKeyBytes: []byte{}, Error: nil})
 	case *privvalproto.Message_PingRequest:
 		err, res = nil, mustWrapMsg(&privvalproto.PingResponse{})
 	default:
@@ -480,28 +508,5 @@ func TestSignerVoteExtension(t *testing.T) {
 
 		assert.Equal(t, want.Signature, have.Signature)
 		assert.Equal(t, want.ExtensionSignature, have.ExtensionSignature)
-	}
-}
-
-func TestSignerSignBytes(t *testing.T) {
-	for _, tc := range getSignerTestCases(t) {
-		t.Cleanup(func() {
-			if err := tc.signerServer.Stop(); err != nil {
-				t.Error(err)
-			}
-		})
-		t.Cleanup(func() {
-			if err := tc.signerClient.Close(); err != nil {
-				t.Error(err)
-			}
-		})
-
-		bytes := cmtrand.Bytes(32)
-		signature, err := tc.signerClient.SignBytes(bytes)
-		require.NoError(t, err)
-
-		pubKey, err := tc.mockPV.GetPubKey()
-		require.NoError(t, err)
-		require.True(t, pubKey.VerifySignature(bytes, signature))
 	}
 }

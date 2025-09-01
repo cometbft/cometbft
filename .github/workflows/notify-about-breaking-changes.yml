@@ -12,7 +12,7 @@ jobs:
     name: Notify about breaking changes
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: 'v1.x'
 
@@ -50,7 +50,7 @@ jobs:
       - name: Post to a Slack channel
         id: slack
         if: steps.read-content.outputs.file_content != ''
-        uses: slackapi/slack-github-action@v2.1.0
+        uses: slackapi/slack-github-action@v2.1.1
         with:
           channel-id: 'C03Q5J9SXS8' # cometbft-engineering
           # channel-id: 'shared-sdk-comet'

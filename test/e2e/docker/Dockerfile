@@ -1,56 +1,60 @@
-# Multi-stage build Dockerfile for CometBFT end-to-end testing
-# Stage 1: Build environment - compiles the application and test node
-FROM cometbft/cometbft-db-testing:v0.14.2 AS build
+# ---------- Stage 0: base (Go toolchain + DB build deps + RocksDB) ----------
+ARG GO_VERSION=1.23
+FROM golang:${GO_VERSION} AS base
+ARG ROCKSDB=8.11.3
 
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      ca-certificates curl wget make tar build-essential git pkg-config \
+      libbz2-dev libgflags-dev libsnappy-dev libzstd-dev zlib1g-dev liblz4-dev \
+      libleveldb-dev libleveldb1d \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN set -eux; \
+  wget -q "https://github.com/facebook/rocksdb/archive/refs/tags/v${ROCKSDB}.tar.gz"; \
+  tar -zxf "v${ROCKSDB}.tar.gz"; \
+  cd "rocksdb-${ROCKSDB}"; \
+  DEBUG_LEVEL=0 make -j"$(nproc)" shared_lib; \
+  make install-shared; \
+  ldconfig; \
+  cd ..; \
+  rm -rf "v${ROCKSDB}.tar.gz" "rocksdb-${ROCKSDB}"
+
+# ---------- Stage 1: build (compile cometbft + e2e node) ----------
+FROM base AS build
 WORKDIR /src/cometbft
 
-# Copy Go module files and download dependencies
-# This is done before copying the rest of the code to leverage Docker's build cache
 COPY go.mod go.sum ./
 RUN go mod download
-
-# Copy the entire codebase into the container
 COPY . .
 
-# Set build options to include specific features and databases
 ENV COMETBFT_BUILD_OPTIONS=badgerdb,boltdb,cleveldb,rocksdb
 RUN make build
 RUN cd test/e2e && make node
 
-# Stage 2: Final image - minimal runtime environment
+# ---------- Stage 2: runtime (minimal) ----------
 FROM debian:bookworm-slim AS runtime
 
-# Update system packages and install network utilities
-RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
-RUN apt-get -qq install -y iputils-ping iproute2 >/dev/null
-RUN apt install libsnappy-dev libgflags-dev libleveldb-dev -y >/dev/null
+RUN apt-get -qq update \
+ && apt-get -qq upgrade -y \
+ && apt-get -qq install -y --no-install-recommends \
+      iputils-ping iproute2 \
+      libbz2-1.0 libzstd1 liblz4-1 zlib1g \
+      libleveldb1d libsnappy1v5 libgflags2.2 \
+ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /cometbft
 VOLUME /cometbft
 ENV CMTHOME=/cometbft
-
-# Configure Go race detector to halt on error
 ENV GORACE="halt_on_error=1"
 
-# Copy RocksDB shared libraries from the build stage
-COPY --from=build /usr/local/lib/librocksdb.so* /lib/
+COPY --from=build /usr/local/lib/librocksdb.so* /usr/local/lib/
+RUN ldconfig
 
-# Copy executables from the build stage
-# - entrypoint script for container initialization
-# - cometbft binary for the blockchain node
-# - app binary for the test application
 COPY --from=build /src/cometbft/test/e2e/docker/entrypoint* /usr/bin/
 COPY --from=build /src/cometbft/build/cometbft /usr/bin/cometbft
 COPY --from=build /src/cometbft/test/e2e/build/node /usr/bin/app
 
-# Expose ports:
-# - 26656: P2P communication between nodes
-# - 26657: RPC server for API requests
-# - 26660: ABCI server for application communication
-# - 6060: Prometheus metrics endpoint
 EXPOSE 26656 26657 26660 6060
-
-# Set the entrypoint script to initialize the container
 ENTRYPOINT ["/usr/bin/entrypoint"]
-# Default command to run when container starts (can be overridden)
 CMD ["node"]

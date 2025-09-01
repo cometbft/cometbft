@@ -9,7 +9,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
-	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
+	bcproto "github.com/cometbft/cometbft/proto/cometbft/blocksync"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
@@ -341,7 +341,7 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 
 	didProcessCh := make(chan struct{}, 1)
 
-	initialCommitHasExtensions := (bcR.initialState.LastBlockHeight > 0 && bcR.store.LoadBlockExtendedCommit(bcR.initialState.LastBlockHeight) != nil)
+	initialCommitHasExtensions := bcR.initialState.LastBlockHeight > 0 && bcR.store.LoadBlockExtendedCommit(bcR.initialState.LastBlockHeight) != nil
 
 	go func() {
 		for {
@@ -394,7 +394,7 @@ FOR_LOOP:
 			// If VoteExtensions were disabled for the previous height then we don't need
 			// VoteExtensions.
 			//
-			// If we have sync'd at least one block, then we are guaranteed to have extensions
+			// If we have synced at least one block, then we are guaranteed to have extensions
 			// if we need them by the logic inside loop FOR_LOOP: it requires that the blocks
 			// it fetches have extensions if extensions were enabled during the height.
 			//

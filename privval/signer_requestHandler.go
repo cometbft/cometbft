@@ -5,9 +5,9 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	cryptoproto "github.com/cometbft/cometbft/proto/tendermint/crypto"
-	privvalproto "github.com/cometbft/cometbft/proto/tendermint/privval"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cryptoproto "github.com/cometbft/cometbft/proto/cometbft/crypto"
+	privvalproto "github.com/cometbft/cometbft/proto/cometbft/privval"
+	cmtproto "github.com/cometbft/cometbft/proto/cometbft/types"
 	"github.com/cometbft/cometbft/types"
 )
 

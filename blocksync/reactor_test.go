@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
+	bcproto "github.com/cometbft/cometbft/proto/cometbft/blocksync"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -22,7 +22,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	mpmocks "github.com/cometbft/cometbft/mempool/mocks"
 	"github.com/cometbft/cometbft/p2p"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/proto/cometbft/types"
 	"github.com/cometbft/cometbft/proxy"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
@@ -455,7 +455,7 @@ func TestCheckExtendedCommitMissing(t *testing.T) {
 }
 
 // ByzantineReactor is a blockstore reactor implementation where a corrupted block can be sent to a peer.
-// The corruption is that the block contains extended commit signatures when vote extensions are disabled or
+// The corruption is that the block contains extended commit signatures when vote extensions are disabled, or
 // it has no extended commit signatures while vote extensions are enabled.
 // If the corrupted block height is set to 0, the reactor behaves as normal.
 type ByzantineReactor struct {

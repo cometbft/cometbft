@@ -10,7 +10,7 @@ import (
 
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
-	cmtprotobits "github.com/cometbft/cometbft/proto/tendermint/libs/bits"
+	cmtprotobits "github.com/cometbft/cometbft/proto/cometbft/libs/bits"
 )
 
 // BitArray is a thread-safe implementation of a bit array.

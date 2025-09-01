@@ -4,7 +4,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/cometbft/cometbft/p2p/conn"
-	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
+	tmp2p "github.com/cometbft/cometbft/proto/cometbft/p2p"
 )
 
 type ChannelDescriptor = conn.ChannelDescriptor

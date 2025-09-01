@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	cmtcrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	cmtcrypto "github.com/cometbft/cometbft/proto/cometbft/crypto"
 )
 
 const (

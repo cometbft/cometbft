@@ -136,8 +136,8 @@ endif
 proto-gen: check-proto-deps
 	@echo "Generating Protobuf files"
 	@go run github.com/bufbuild/buf/cmd/buf@latest generate
-	@mv ./proto/tendermint/abci/types.pb.go ./abci/types/
-	@cp ./proto/tendermint/rpc/grpc/types.pb.go ./rpc/grpc
+	@mv ./proto/cometbft/abci/types.pb.go ./abci/types/
+	@cp ./proto/cometbft/rpc/grpc/types.pb.go ./rpc/grpc
 .PHONY: proto-gen
 
 # These targets are provided for convenience and are intended for local

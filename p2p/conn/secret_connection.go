@@ -26,7 +26,7 @@ import (
 	"github.com/cometbft/cometbft/libs/async"
 	"github.com/cometbft/cometbft/libs/protoio"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
+	tmp2p "github.com/cometbft/cometbft/proto/cometbft/p2p"
 )
 
 // 4 + 1024 == 1028 total frame size

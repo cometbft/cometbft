@@ -10,7 +10,7 @@ import (
 
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	ctest "github.com/cometbft/cometbft/libs/test"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/proto/cometbft/types"
 )
 
 func makeTxs(cnt, size int) Txs {

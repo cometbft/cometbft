@@ -15,7 +15,7 @@ import (
 	lighthttp "github.com/cometbft/cometbft/light/provider/http"
 	lightrpc "github.com/cometbft/cometbft/light/rpc"
 	lightdb "github.com/cometbft/cometbft/light/store/db"
-	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	cmtstate "github.com/cometbft/cometbft/proto/cometbft/state"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"

@@ -1,130 +1,35 @@
+queue_rules:
+  - name: default
+    conditions:
+      - base=main
+      - label=automerge
+
 pull_request_rules:
-  - name: merge PR (v0.38.x)
-    description: merge PR if it passes tests and there are no conflicts (v0.38.x)
+  - name: Automerge to main
     conditions:
-      - "-label=manual-backport"
-      - author=mergify[bot]
-      - head~=mergify/bp/
-      - "-base=v1.x"
-      - "-base=v0.34.x"
-      - check-success=Build (arm, linux)
-      - check-success=check
-      - check-success=golangci-lint
-      - check-success=e2e-test
-      - check-success=tests (00)
-      - check-success=tests (01)
-      - check-success=tests (02)
-      - check-success=tests (03)
-      - check-success=tests (04)
-      - check-success=tests (05)
-      - check-success=test_abci_cli
-      - check-success=test_apps
-    actions:
-      merge:
-        method: squash
-  - name: merge PR (v1.x)
-    description: merge PR if it passes tests and there are no conflicts (v1.x)
-    conditions:
-      - "-label=manual-backport"
-      - author=mergify[bot]
-      - head~=mergify/bp/
-      - base=v1.x
-      - check-success=Build (arm, linux)
-      - check-success=check
-      - check-success=check-mocks-metrics
-      - check-success=lint
-      - check-success=e2e-test
-      - check-success=tests (00)
-      - check-success=tests (01)
-      - check-success=tests (02)
-      - check-success=tests (03)
-      - check-success=tests (04)
-      - check-success=tests (05)
-      - check-success=test_abci_cli
-      - check-success=test_apps
-      - check-success=check-proto
-    actions:
-      merge:
-        method: squash
-
-  - name: automatic approval for Dependabot pull requests
-    conditions:
-      - author=dependabot[bot]
-    actions:
-      review:
-        type: APPROVE
-        message: Automatically approving dependabot
-
-  - name: automatically merge PR with automerge label and no manual-backport label
-    conditions:
-      - "-label=manual-backport"
+      - base=main
       - label=automerge
     actions:
-      merge:
+      queue:
         method: squash
+        name: default
+        commit_message_template: |
+          {{ title }} (#{{ number }})
 
-  - name: merge PR (v2.x)
-    description: merge PR if it passes tests and there are no conflicts (v2.x)
-    conditions:
-      - "-label=manual-backport"
-      - author=mergify[bot]
-      - head~=mergify/bp/
-      - base=v2.x
-      - check-success=Build (arm, linux)
-      - check-success=check
-      - check-success=check-mocks-metrics
-      - check-success=lint
-      - check-success=e2e-test
-      - check-success=tests (00)
-      - check-success=tests (01)
-      - check-success=tests (02)
-      - check-success=tests (03)
-      - check-success=tests (04)
-      - check-success=tests (05)
-      - check-success=test_abci_cli
-      - check-success=test_apps
-      - check-success=check-proto
-    actions:
-      merge:
-        method: squash
-
-  - name: Make sure PR are up to date before merging
-    description: >-
-      This automatically updates PRs when they are out-of-date with the base
-      branch to avoid semantic conflicts (next step is using a merge queue).
-    conditions:
-      - "-draft"
-      - "#approved-reviews-by >= 1"
-    actions:
-      update:
-
-  - name: backport patches to v1.x branch
+          {{ body }}
+  - name: backport patches to v0.37.x branch
     conditions:
       - base=main
-      - label=backport-to-v1.x
+      - label=backport-to-v0.37.x
     actions:
       backport:
         branches:
-          - v1.x
-        assignees:
-          - "{{ author }}"
-  - name: backport patches to v0.38.x branch
+          - v0.37.x
+  - name: backport patches to v0.34.x branch
     conditions:
       - base=main
-      - label=backport-to-v0.38.x
+      - label=backport-to-v0.34.x
     actions:
       backport:
         branches:
-          - v0.38.x
-        assignees:
-          - "{{ author }}"
-  - name: backport patches to v2.x branch
-    conditions:
-      - base=main
-      - label=backport-to-v2.x
-    actions:
-      backport:
-        branches:
-          - v2.x
-        assignees:
-          - "{{ author }}"
+          - v0.34.x

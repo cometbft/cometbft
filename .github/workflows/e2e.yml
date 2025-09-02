@@ -1,55 +1,36 @@
 name: e2e
-# Runs the CI end-to-end test network on all pushes to main or release branches
+# Runs the CI end-to-end test network on all pushes to v0.38.x
 # and every pull request, but only if any Go files have been changed.
 on:
   workflow_dispatch:  # allow running workflow manually
   pull_request:
-  merge_group:
   push:
     branches:
-      - main
-      - v0.3[478].x
-      - v[1-9][0-9]?.x
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+      - v0.38.x
 
 jobs:
   e2e-test:
-    # Run two parallel jobs: for `ci.toml`, and for the regression manifests
-    strategy:
-      fail-fast: false
-      matrix:
-        group: ['networks/ci', 'networks_regressions/*']
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-
-      - id: filter
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            code:
-              - '**/*.go'
-              - 'Makefile'
-              - 'go.*'
-
-      - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
-        if: steps.filter.outputs.code == 'true'
-
       - uses: actions/setup-go@v5
-        if: steps.filter.outputs.code == 'true'
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version: '1.22'
+      - uses: actions/checkout@v4
+      - uses: technote-space/get-diff-action@v6
+        with:
+          PATTERNS: |
+            **/**.go
+            go.mod
+            go.sum
 
       - name: Build
-        if: steps.filter.outputs.code == 'true'
         working-directory: test/e2e
-        run: make -j2 docker runner
+        # Run two make jobs in parallel, since we can't run steps in parallel.
+        run: make -j2 docker runner tests
+        if: "env.GIT_DIFF != ''"
 
-      - name: Run "${{ matrix.group }}"" testnet
-        if: steps.filter.outputs.code == 'true'
+      - name: Run CI testnet
         working-directory: test/e2e
-        run: ./run-multiple.sh ${{ matrix.group }}.toml
+        run: ./run-multiple.sh networks/ci.toml
+        if: "env.GIT_DIFF != ''"

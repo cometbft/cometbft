@@ -1,4 +1,0 @@
-issue-845-fix: True
-resolve-type-alias: False
-case: underscore # deprecated
-replace-type: github.com/cometbft/cometbft/p2p/internal/nodekey.ID=github.com/cometbft/cometbft/p2p.ID

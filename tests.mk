@@ -61,15 +61,15 @@ vagrant_test:
 ### go tests
 test:
 	@echo "--> Running go test"
-	@go test -p 1 $(PACKAGES) -tags deadlock
+	@go test -p 1 $(PACKAGES) -tags bls12381,secp256k1eth
 .PHONY: test
 
 test_race:
 	@echo "--> Running go test --race"
-	@go test -p 1 -v -race $(PACKAGES)
+	@go test -p 1 -race $(PACKAGES) -tags bls12381,secp256k1eth
 .PHONY: test_race
 
 test_deadlock:
-	@echo "--> Running go test --deadlock"
-	@go test -p 1 -v  $(PACKAGES) -tags deadlock 
-.PHONY: test_race
+	@echo "--> Running go test with deadlock support"
+	@go test -p 1 $(PACKAGES) -tags deadlock,bls12381,secp256k1eth
+.PHONY: test_deadlock

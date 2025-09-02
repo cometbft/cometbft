@@ -112,7 +112,7 @@ func TestSIGHUP(t *testing.T) {
 
 func TestAutoFileSize(t *testing.T) {
 	// First, create an AutoFile writing to a tempfile dir
-	f, err := os.CreateTemp("", "sighup_test")
+	f, err := os.CreateTemp(t.TempDir(), "sighup_test")
 	require.NoError(t, err)
 	err = f.Close()
 	require.NoError(t, err)

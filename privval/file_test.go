@@ -76,9 +76,9 @@ func TestLoadOrGenValidator(t *testing.T) {
 		t.Run(keyType, func(t *testing.T) {
 			assert := assert.New(t)
 
-			tempKeyFile, err := os.CreateTemp("", "priv_validator_key_"+keyType+"_")
+			tempKeyFile, err := os.CreateTemp(t.TempDir(), "priv_validator_key_"+keyType+"_")
 			require.NoError(t, err)
-			tempStateFile, err := os.CreateTemp("", "priv_validator_state_"+keyType+"_")
+			tempStateFile, err := os.CreateTemp(t.TempDir(), "priv_validator_state_"+keyType+"_")
 			require.NoError(t, err)
 
 			tempKeyFilePath := tempKeyFile.Name()
@@ -322,9 +322,9 @@ func TestSignBytes(t *testing.T) {
 }
 
 func TestDifferByTimestamp(t *testing.T) {
-	tempKeyFile, err := os.CreateTemp("", "priv_validator_key_")
+	tempKeyFile, err := os.CreateTemp(t.TempDir(), "priv_validator_key_")
 	require.NoError(t, err)
-	tempStateFile, err := os.CreateTemp("", "priv_validator_state_")
+	tempStateFile, err := os.CreateTemp(t.TempDir(), "priv_validator_state_")
 	require.NoError(t, err)
 
 	privVal, err := GenFilePV(tempKeyFile.Name(), tempStateFile.Name(), nil)

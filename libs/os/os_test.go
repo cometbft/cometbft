@@ -14,7 +14,7 @@ import (
 )
 
 func TestCopyFile(t *testing.T) {
-	tmpfile, err := os.CreateTemp("", "example")
+	tmpfile, err := os.CreateTemp(t.TempDir(), "example")
 	if err != nil {
 		t.Fatal(err)
 	}

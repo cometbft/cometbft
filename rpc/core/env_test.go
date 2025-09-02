@@ -62,7 +62,7 @@ func TestInitGenesisChunks(t *testing.T) {
 	// GenesisDoc stored in GenDoc field.
 	// The test genesis is the genesis that the ci.toml e2e test uses.
 	t.Run("NoChunking", func(t *testing.T) {
-		gFile, err := os.CreateTemp("", "genesis.json")
+		gFile, err := os.CreateTemp(t.TempDir(), "genesis.json")
 		if err != nil {
 			t.Fatalf("creating genesis file for testing: %s", err)
 		}
@@ -110,7 +110,7 @@ func TestInitGenesisChunks(t *testing.T) {
 			t.Fatalf("test genesis serialization: %s", err)
 		}
 
-		gFile, err := os.CreateTemp("", "genesis.json")
+		gFile, err := os.CreateTemp(t.TempDir(), "genesis.json")
 		if err != nil {
 			t.Fatalf("creating genesis file for testing: %s", err)
 		}
@@ -348,7 +348,7 @@ func TestFileSize(t *testing.T) {
 		// we'll create a temporary file of 100 bytes to run this test.
 		const fSize = 100
 
-		f, err := os.CreateTemp("", "small_test_file")
+		f, err := os.CreateTemp(t.TempDir(), "small_test_file")
 		if err != nil {
 			t.Fatalf("creating temp file for testing: %s", err)
 		}
@@ -376,7 +376,7 @@ func TestFileSize(t *testing.T) {
 }
 
 func TestMkChunksDir(t *testing.T) {
-	gFile, err := os.CreateTemp("", "dummy_genesis.json")
+	gFile, err := os.CreateTemp(t.TempDir(), "dummy_genesis.json")
 	if err != nil {
 		t.Fatalf("creating temp file for testing: %s", err)
 	}
@@ -498,7 +498,7 @@ func TestWriteChunks(t *testing.T) {
 	)
 
 	// create temporary test genesis file
-	gFile, err := os.CreateTemp("", "dummy_genesis")
+	gFile, err := os.CreateTemp(t.TempDir(), "dummy_genesis")
 	if err != nil {
 		t.Fatalf("creating temp file for testing: %s", err)
 	}

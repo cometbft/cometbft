@@ -35,7 +35,6 @@ test_abci_cli:
 
 test_integrations:
 	make build_docker_test_image
-	make tools
 	make install
 	make install_abci
 	make test_cover

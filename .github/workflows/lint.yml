@@ -1,0 +1,35 @@
+name: Golang Linter
+# Lint runs golangci-lint over the entire CometBFT repository.
+#
+# This workflow is run on every pull request and push to v0.38.x.
+#
+# The `golangci` job will pass without running if no *.{go, mod, sum}
+# files have been modified.
+#
+# To run this locally, simply run `make lint` from the root of the repo.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - v0.38.x
+jobs:
+  golangci:
+    name: golangci-lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - uses: technote-space/get-diff-action@v6
+        with:
+          PATTERNS: |
+            **/**.go
+            go.mod
+            go.sum
+      - name: Run linting
+        if: env.GIT_DIFF
+        run: |
+          make lint

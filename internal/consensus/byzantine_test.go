@@ -455,6 +455,69 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 	}
 }
 
+// Large/oversized proposals should be rejected.
+func TestRejectOversizedProposals(t *testing.T) {
+	_, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	n := 2
+	css, cleanup := randConsensusNet(t, n, "consensus_reactor_test", newMockTickerFunc(false), newKVStore)
+	defer cleanup()
+
+	// give the byzantine validator a normal ticker
+	ticker := NewTimeoutTicker()
+	ticker.SetLogger(css[0].Logger)
+	css[0].SetTimeoutTicker(ticker)
+
+	switches := make([]*p2p.Switch, n)
+	p2pLogger := consensusLogger().With("module", "p2p")
+	for i := 0; i < n; i++ {
+		switches[i] = p2p.MakeSwitch(
+			config.P2P,
+			i,
+			func(_ int, sw *p2p.Switch) *p2p.Switch {
+				return sw
+			})
+		switches[i].SetLogger(p2pLogger.With("validator", i))
+	}
+
+	reactors := make([]p2p.Reactor, n)
+	for i := 0; i < n; i++ {
+		conR := NewReactor(css[i], false)
+		conR.SetLogger(consensusLogger().With("validator", i))
+		reactors[i] = conR
+	}
+
+	p2p.MakeConnectedSwitches(config.P2P, n, func(i int, _ *p2p.Switch) *p2p.Switch {
+		switches[i].AddReactor("CONSENSUS", reactors[i])
+		return switches[i]
+	}, p2p.Connect2Switches)
+
+	peers := switches[0].Peers().Copy()
+	targetPeer := peers[0]
+
+	height := int64(1)
+	round := int32(0)
+	cs := css[0]
+
+	block, blockParts, propBlockID := createProposalBlock(t, cs)
+
+	// create oversized proposal
+	propBlockID.PartSetHeader.Total = 4294967295
+
+	proposal := types.NewProposal(height, round, -1, propBlockID, block.Time)
+	p := proposal.ToProto()
+	if err := cs.privValidator.SignProposal(cs.state.ChainID, p); err != nil {
+		t.Error(err)
+	}
+	proposal.Signature = p.Signature
+
+	go func() {
+		err := sendProposalAndParts(height, round, cs, targetPeer, proposal, block, block.Hash(), blockParts)
+		require.Error(t, err)
+	}()
+}
+
 // -------------------------------
 // byzantine consensus functions
 
@@ -497,10 +560,26 @@ func byzantineDecideProposalFunc(_ context.Context, t *testing.T, height int64, 
 	t.Logf("Byzantine: broadcasting conflicting proposals to %d peers", len(peers))
 	for i, peer := range peers {
 		if i < len(peers)/2 {
-			go sendProposalAndParts(height, round, cs, peer, proposal1, block1, block1Hash, blockParts1)
+			go mustSendProposalAndParts(height, round, cs, peer, proposal1, block1, block1Hash, blockParts1)
 		} else {
-			go sendProposalAndParts(height, round, cs, peer, proposal2, block2, block2Hash, blockParts2)
+			go mustSendProposalAndParts(height, round, cs, peer, proposal2, block2, block2Hash, blockParts2)
 		}
+	}
+}
+
+func mustSendProposalAndParts(
+	height int64,
+	round int32,
+	cs *State,
+	peer p2p.Peer,
+	proposal *types.Proposal,
+	block *types.Block,
+	blockHash []byte,
+	parts *types.PartSet,
+) {
+	err := sendProposalAndParts(height, round, cs, peer, proposal, block, blockHash, parts)
+	if err != nil {
+		panic(err)
 	}
 }
 
@@ -513,14 +592,14 @@ func sendProposalAndParts(
 	block *types.Block,
 	blockHash []byte,
 	parts *types.PartSet,
-) {
+) error {
 	// proposal
 	err := peer.Send(p2p.Envelope{
 		ChannelID: DataChannel,
 		Message:   &cmtcons.Proposal{Proposal: *proposal.ToProto()},
 	})
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// parts
@@ -528,7 +607,7 @@ func sendProposalAndParts(
 		part := parts.GetPart(i)
 		pp, err := part.ToProto()
 		if err != nil {
-			panic(err) // TODO: wbanfield better error handling
+			return err // TODO: wbanfield better error handling
 		}
 		err = peer.Send(p2p.Envelope{
 			ChannelID: DataChannel,
@@ -539,7 +618,7 @@ func sendProposalAndParts(
 			},
 		})
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 
@@ -553,15 +632,17 @@ func sendProposalAndParts(
 		Message:   &cmtcons.Vote{Vote: prevote.ToProto()},
 	})
 	if err != nil {
-		panic(err)
+		return err
 	}
 	err = peer.Send(p2p.Envelope{
 		ChannelID: VoteChannel,
 		Message:   &cmtcons.Vote{Vote: precommit.ToProto()},
 	})
 	if err != nil {
-		panic(err)
+		return err
 	}
+
+	return nil
 }
 
 // ----------------------------------------
@@ -610,58 +691,3 @@ func (br *ByzantineReactor) Receive(e p2p.Envelope) {
 }
 
 func (*ByzantineReactor) InitPeer(peer p2p.Peer) p2p.Peer { return peer }
-
-// Large/oversized proposals should be rejected.
-func TestRejectOversizedProposals(t *testing.T) {
-	_, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	n := 2
-	css, cleanup := randConsensusNet(t, n, "consensus_reactor_test", newMockTickerFunc(false), newKVStore)
-	defer cleanup()
-
-	switches := make([]*p2p.Switch, n)
-	p2pLogger := consensusLogger().With("module", "p2p")
-	for i := 0; i < n; i++ {
-		switches[i] = p2p.MakeSwitch(
-			config.P2P,
-			i,
-			func(_ int, sw *p2p.Switch) *p2p.Switch {
-				return sw
-			})
-		switches[i].SetLogger(p2pLogger.With("validator", i))
-	}
-
-	reactors := make([]p2p.Reactor, n)
-	for i := 0; i < n; i++ {
-		conR := NewReactor(css[i], false)
-		conR.SetLogger(consensusLogger().With("validator", i))
-		reactors[i] = conR
-	}
-
-	p2p.MakeConnectedSwitches(config.P2P, n, func(i int, _ *p2p.Switch) *p2p.Switch {
-		switches[i].AddReactor("CONSENSUS", reactors[i])
-		return switches[i]
-	}, p2p.Connect2Switches)
-
-	peers := switches[0].Peers().Copy()
-	targetPeer := peers[0]
-
-	height := int64(1)
-	round := int32(0)
-	cs := css[0]
-
-	block, blockParts, propBlockID := createProposalBlock(t, cs)
-
-	// create oversized proposal
-	propBlockID.PartSetHeader.Total = 4294967295
-
-	proposal := types.NewProposal(height, round, -1, propBlockID, block.Time)
-	p := proposal.ToProto()
-	if err := cs.privValidator.SignProposal(cs.state.ChainID, p); err != nil {
-		t.Error(err)
-	}
-	proposal.Signature = p.Signature
-
-	go sendProposalAndParts(height, round, cs, targetPeer, proposal, block, block.Hash(), blockParts)
-}

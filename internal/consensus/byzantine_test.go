@@ -611,7 +611,7 @@ func (br *ByzantineReactor) Receive(e p2p.Envelope) {
 
 func (*ByzantineReactor) InitPeer(peer p2p.Peer) p2p.Peer { return peer }
 
-// Large/oversized proposals should be rejected
+// Large/oversized proposals should be rejected.
 func TestRejectOversizedProposals(t *testing.T) {
 	_, cancel := context.WithCancel(context.Background())
 	defer cancel()

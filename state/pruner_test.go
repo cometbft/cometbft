@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slices"
 
 	db "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/v2/abci/types"

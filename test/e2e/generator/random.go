@@ -1,7 +1,6 @@
 package main
 
 import (
-	"maps"
 	"math/rand"
 	"sort"
 )
@@ -21,27 +20,29 @@ import (
 // {"foo": 2, "bar": 6}
 // {"foo": 3, "bar": 4}
 // {"foo": 3, "bar": 5}
-// {"foo": 3, "bar": 6}.
-func combinations(items map[string][]any) []map[string]any {
+// {"foo": 3, "bar": 6}
+func combinations(items map[string][]interface{}) []map[string]interface{} {
 	keys := []string{}
 	for key := range items {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
-	return combiner(map[string]any{}, keys, items)
+	return combiner(map[string]interface{}{}, keys, items)
 }
 
 // combiner is a utility function for combinations.
-func combiner(head map[string]any, pending []string, items map[string][]any) []map[string]any {
+func combiner(head map[string]interface{}, pending []string, items map[string][]interface{}) []map[string]interface{} {
 	if len(pending) == 0 {
-		return []map[string]any{head}
+		return []map[string]interface{}{head}
 	}
 	key, pending := pending[0], pending[1:]
 
-	result := []map[string]any{}
+	result := []map[string]interface{}{}
 	for _, value := range items[key] {
-		path := map[string]any{}
-		maps.Copy(path, head)
+		path := map[string]interface{}{}
+		for k, v := range head {
+			path[k] = v
+		}
 		path[key] = value
 		result = append(result, combiner(path, pending, items)...)
 	}
@@ -49,9 +50,9 @@ func combiner(head map[string]any, pending []string, items map[string][]any) []m
 }
 
 // uniformChoice chooses a single random item from the argument list, uniformly weighted.
-type uniformChoice []any
+type uniformChoice []interface{}
 
-func (uc uniformChoice) Choose(r *rand.Rand) any {
+func (uc uniformChoice) Choose(r *rand.Rand) interface{} {
 	return uc[r.Intn(len(uc))]
 }
 
@@ -84,11 +85,11 @@ func (usc uniformSetChoice) Choose(r *rand.Rand) []string {
 }
 
 // weightedChoice chooses a single random key from a map of keys and weights.
-type weightedChoice map[any]uint
+type weightedChoice map[interface{}]uint
 
-func (wc weightedChoice) Choose(r *rand.Rand) any {
+func (wc weightedChoice) Choose(r *rand.Rand) interface{} {
 	total := 0
-	choices := make([]any, 0, len(wc))
+	choices := make([]interface{}, 0, len(wc))
 	for choice, weight := range wc {
 		total += int(weight)
 		choices = append(choices, choice)

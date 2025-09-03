@@ -1,6 +1,6 @@
 ---
 order: 6
-title: ABCI extra
+title: ABCI++ extra
 ---
 # Introduction
 
@@ -10,11 +10,11 @@ However, the grammar specified in the same section is more general and covers mo
 that an Application designer needs to account for.
 
 In this section, we give more information about these possible scenarios. We focus on methods
-introduced by ABCI 1.0: `PrepareProposal` and `ProcessProposal`. Specifically, we concentrate
-on the part of the grammar presented below.
+introduced by ABCI++: `PrepareProposal` and `ProcessProposal`. Specifically, we concentrate
+on the part of the grammar presented below.  
 
 ```abnf
-consensus-height    = *consensus-round finalize-block commit
+consensus-height    = *consensus-round decide commit
 consensus-round     = proposer / non-proposer
 
 proposer            = [prepare-proposal process-proposal]
@@ -161,4 +161,4 @@ $validValue$ and $lockedValue$ and sends $Precommit$ message. All correct proces
 rounds $0 <= r' <= r$ and that due to network asynchrony or Byzantine proposer, it does not receive the
 proposal before $timeoutPropose$ expires. As a result, it will enter round $r$ without calling
 `PrepareProposal` and `ProcessProposal` before it, and as shown in Round $r$ of [Scenario 3](#scenario-3) it
-will decide in this round. Again without calling any of these two calls.
+will decide in this round. Again without calling any of these two calls.  

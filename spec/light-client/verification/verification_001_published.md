@@ -29,7 +29,7 @@ formalized in TLA+ and model checked.
 ## Issues that need to be addressed
 
 As it is part of the larger light node, its data structures and
-functions interact with the fork detection functionality of the light
+functions interact with the fork dectection functionality of the light
 client. As a result of the work on
 [Pull Request 479](https://github.com/informalsystems/tendermint-rs/pull/479) we
 established the need for an update in the data structures in [Issue 499](https://github.com/informalsystems/tendermint-rs/issues/499). This
@@ -406,9 +406,9 @@ Each instance must eventually terminate.
 
 > These definitions imply that if the primary is faulty, a header may or
 > may not be added to *LightStore*. In any case,
-> [**[LCV-DIST-SAFE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) must hold.
-> The invariant [**[LCV-DIST-SAFE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) and the liveness
-> requirement [**[LCV-DIST-LIVE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-life1)
+> [**[LCV-DIST-SAFE.1]**](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) must hold.
+> The invariant [**[LCV-DIST-SAFE.1]**](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) and the liveness
+> requirement [**[LCV-DIST-LIVE.1]**](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/light-client/verification/verification_001_published.md#lcv-dist-life1)
 > allow that verified headers are added to *LightStore* whose
 > height was not passed
 > to the verifier (e.g., intermediate headers used in bisection; see below).
@@ -425,16 +425,16 @@ Each instance must eventually terminate.
 This specification provides a partial solution to the sequential specification.
 The *Verifier* solves the invariant of the sequential part
 
-[**[LCV-DIST-SAFE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) => [**[LCV-SEQ-SAFE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-seq-inv)
+[**[LCV-DIST-SAFE.1]**](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) => [**[LCV-SEQ-SAFE.1]**](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/light-client/verification/verification_001_published.md#lcv-seq-inv)
 
 In the case the primary is correct, and there is a recent header in *LightStore*, the verifier satisfies the liveness requirements.
 
 ⋀ *primary is correct*  
 ⋀ always ∃ verified header in LightStore. *header.Time* > *now* - *trustingPeriod*  
-⋀ [**[LCV-A-Comm.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-a-comm) ⋀ (
+⋀ [**[LCV-A-Comm.1]**](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/light-client/verification/verification_001_published.md#lcv-a-comm) ⋀ (
        ( [**[CMBC-CorrFull.1]**][CMBC-CorrFull-link] ⋀
-         [**[LCV-DIST-LIVE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-live1) )
-       ⟹ [**[LCV-SEQ-LIVE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-seq-live1)
+         [**[LCV-DIST-LIVE.1]**](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/light-client/verification/verification_001_published.md#lcv-dist-live1) )
+       ⟹ [**[LCV-SEQ-LIVE.1]**](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/light-client/verification/verification_001_published.md#lcv-seq-live1)
 )
 
 # Part IV - Light Client Verification Protocol
@@ -767,7 +767,7 @@ func VerifyToTarget(primary PeerID, lightStore LightStore,
 - Error conditions
     - if the precondition is violated
     - if `ValidAndVerified` or `FetchLightBlock` report an error
-    - if [**[LCV-INV-TP.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-inv-tp1) is violated
+    - if [**[LCV-INV-TP.1]**](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/light-client/verification/verification_001_published.md#lcv-inv-tp1) is violated
   
 ### Details of the Functions
 
@@ -854,7 +854,7 @@ func Schedule(lightStore, nextHeight, targetHeight) Height
 *trustedStore* is implemented by the light blocks in lightStore that
 have the state *StateVerified*.
 
-#### Argument for [**[LCV-DIST-SAFE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe)
+#### Argument for [**[LCV-DIST-SAFE.1]**](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe)
 
 - `ValidAndVerified` implements the soundness checks and the checks
   [**[CMBC-VAL-CONTAINS-CORR.1]**][CMBC-VAL-CONTAINS-CORR-link] and
@@ -863,7 +863,7 @@ have the state *StateVerified*.
 - Only if `ValidAndVerified` returns with `SUCCESS`, the state of a light block is
   set to *StateVerified*.
 
-#### Argument for [**[LCV-DIST-LIVE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-life)
+#### Argument for [**[LCV-DIST-LIVE.1]**](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/light-client/verification/verification_001_published.md#lcv-dist-life)
 
 - If *primary* is correct,
     - `FetchLightBlock` will always return a light block consistent
@@ -871,7 +871,7 @@ have the state *StateVerified*.
     - `ValidAndVerified` either verifies the header using the trusting
       period or falls back to sequential
       verification
-    - If [**[LCV-INV-TP.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-inv-tp1) holds, eventually every
+    - If [**[LCV-INV-TP.1]**](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/light-client/verification/verification_001_published.md#lcv-inv-tp1) holds, eventually every
    header will be verified and core verification **terminates successfully**.
     - successful termination depends on the age of *lightStore.LatestVerified*
       (for instance, initially on the age of  *trustedHeader*) and the
@@ -887,7 +887,7 @@ have the state *StateVerified*.
 
 ## Liveness Scenarios
 
-The liveness argument above assumes [**[LCV-INV-TP.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-inv-tp1)
+The liveness argument above assumes [**[LCV-INV-TP.1]**](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/light-client/verification/verification_001_published.md#lcv-inv-tp1)
 
 which requires that there is a header that does not expire before the
 target height is reached. Here we discuss scenarios to ensure this.
@@ -1150,7 +1150,7 @@ func Main (primary PeerID, lightStore LightStore, targetHeight Height)
 
 [RPC]: https://docs.cometbft.com/v0.34/rpc/
 
-[block]: https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md
+[block]: https://github.com/cometbft/cometbft/blob/v0.38.x/spec/core/data_structures.md
 
 [CMBC-SEQ-link]: #cmbc-seq1
 [CMBC-CorrFull-link]: #cmbc-corr-full1
@@ -1161,8 +1161,8 @@ func Main (primary PeerID, lightStore LightStore, targetHeight Height)
 [CMBC-VAL-COMMIT-link]: #cmbc-val-commit1
 
 [lightclient]: https://github.com/interchainio/tendermint-rs/blob/e2cb9aca0b95430fca2eac154edddc9588038982/docs/architecture/adr-002-lite-client.md
-[fork-detector]: https://github.com/cometbft/cometbft/tree/main/spec/light-client/detection
-[fullnode]: https://github.com/cometbft/cometbft/blob/main/spec/blockchain
+[fork-detector]: https://github.com/cometbft/cometbft/tree/v0.38.x/spec/light-client/detection
+[fullnode]: https://github.com/cometbft/cometbft/blob/v0.38.x/spec/blockchain
 
 [ibc-rs]:https://github.com/informalsystems/ibc-rs
 

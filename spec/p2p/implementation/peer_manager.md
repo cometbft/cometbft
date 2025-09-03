@@ -121,7 +121,7 @@ The picture below is a first attempt of illustrating the life cycle of an outbou
 
 A peer can be in the following states:
 
-- Candidate peers: peer addresses stored in the address book, that can be
+- Candidate peers: peer addresses stored in the address boook, that can be
   retrieved via the [`PickAddress`](./addressbook.md#pick-address) method
 - [Dialing](./switch.md#dialing-peers): peer addresses that are currently being
   dialed. This state exists to ensure that a single dialing routine exist per peer.

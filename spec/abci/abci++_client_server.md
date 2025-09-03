@@ -8,7 +8,7 @@ title: Client and Server
 This section is for those looking to implement their own ABCI Server, perhaps in
 a new programming language.
 
-You are expected to have read all previous sections of ABCI specification, namely
+You are expected to have read all previous sections of ABCI++ specification, namely
 [Basic Concepts](./abci%2B%2B_basic_concepts.md),
 [Methods](./abci%2B%2B_methods.md),
 [Application Requirements](./abci%2B%2B_app_requirements.md), and
@@ -17,26 +17,39 @@ You are expected to have read all previous sections of ABCI specification, namel
 ## Message Protocol and Synchrony
 
 The message protocol consists of pairs of requests and responses defined in the
-[protobuf file](https://github.com/cometbft/cometbft/blob/main/proto/cometbft/abci/v1/types.proto).
+[protobuf file](https://github.com/cometbft/cometbft/blob/v0.38.x/proto/tendermint/abci/types.proto).
 
 Some messages have no fields, while others may include byte-arrays, strings, integers,
 or custom protobuf types.
 
 For more details on protobuf, see the [documentation](https://developers.google.com/protocol-buffers/docs/overview).
 
+<!--
+As of v0.36 requests are synchronous. For each of ABCI++'s four connections (see
+[Connections](./abci%2B%2B_app_requirements.md)), when CometBFT issues a request to the
+Application, it will wait for the response before continuing execution. As a side effect,
+requests and responses are ordered for each connection, but not necessarily across connections.
+-->
 ## Server Implementations
 
 To use ABCI in your programming language of choice, there must be an ABCI
-server in that language. There are a few implementations of the ABCI server:
+server in that language. CometBFT supports four implementations of the ABCI server:
 
-- In CometBFT repository:
+- in CometBFT's repository:
     - In-process
-    - [ABCI-socket server](../../abci/server/socket_server.go)
-    - [GRPC server](../../abci/server/grpc_server.go)
+    - ABCI-socket
+    - GRPC
 - [tendermint-rs](https://github.com/informalsystems/tendermint-rs)
 - [tower-abci](https://github.com/penumbra-zone/tower-abci)
 
-The implementations in CometBFT repository can be tested using the [ABCI-CLI](../../docs/guides/app-dev/abci-cli.md) tool.
+The implementations in CometBFT's repository can be tested using `abci-cli` by setting
+the `--abci` flag appropriately.
+
+See examples, in various stages of maintenance, in
+[Go](https://github.com/cometbft/cometbft/tree/master/abci/server),
+[JavaScript](https://github.com/tendermint/js-abci),
+[C++](https://github.com/mdyring/cpp-tmsp), and
+[Java](https://github.com/jTendermint/jabci).
 
 ### In Process
 

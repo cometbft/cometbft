@@ -125,7 +125,7 @@
 %    margins will be the same and the text will be horizontally centered. 
 %    For final submission to IEEE, authors should use US letter (8.5 X 11in)
 %    paper. Note that authors should ensure that all post-processing 
-%    (ps, pdf, etc.) uses the same paper specification as the .tex document.
+%    (ps, pdf, etc.) uses the same paper specificiation as the .tex document.
 %    Problems here are by far the number one reason for incorrect margins.
 %    IEEEtran will automatically set the default paper size under pdflatex 
 %    (without requiring a change to pdftex.cfg), so this issue is more
@@ -268,7 +268,7 @@
 \newtoks\@IEEEtrantmptoksA
 
 % we use \CLASSOPTIONpt so that we can ID the point size (even for 9pt docs)
-% as well as LaTeX's \@ptsize to retain some compatibility with some
+% as well as LaTeX's \@ptsize to retain some compatability with some
 % external packages
 \def\@ptsize{0}
 % LaTeX does not support 9pt, so we set \@ptsize to 0 - same as that of 10pt
@@ -342,7 +342,7 @@
 
 % default to US letter paper, 10pt, twocolumn, one sided, final, journal
 \ExecuteOptions{letterpaper,10pt,twocolumn,oneside,final,journal}
-% override these defaults per user requests
+% overrride these defaults per user requests
 \ProcessOptions
 
 
@@ -2016,7 +2016,7 @@ Using a default centering column instead}%
 
 
 
-% creates a vertical rule that extends from the bottom to the top a cell
+% creates a vertical rule that extends from the bottom to the top a a cell
 % Provided in case other packages redefine \vline some other way.
 % usage: \IEEEeqnarrayvrule[rule thickness]
 % If no argument is provided, \arrayrulewidth will be used for the rule thickness. 
@@ -2359,7 +2359,7 @@ Using a default centering column instead}%
 \vrule width0pt height\dimen0 depth\dimen2\relax\fi}
 
 
-% creates an invisible strut, usable even outside \IEEEeqnarray
+% creates an invisible strut, useable even outside \IEEEeqnarray
 % if \IEEEvisiblestrutstrue, the strut will be visible and 0.2pt wide. 
 % usage: \IEEEstrut[height][depth][font size commands]
 % default is \IEEEstrut[0.7\normalbaselineskip][0.3\normalbaselineskip][\relax]
@@ -2469,7 +2469,7 @@ $$\@ignoretrue}
 \newif\if@IEEElastlinewassubequation%
 \@IEEElastlinewassubequationfalse
 
-% IEEEeqnarray uses a modified \\ instead of the plain \cr to
+% IEEEeqnarray uses a modifed \\ instead of the plain \cr to
 % end rows. This allows for things like \\*[vskip amount]
 % This "cr" macros are modified versions those for LaTeX2e's eqnarray
 % the {\ifnum0=`} braces must be kept away from the last column to avoid
@@ -2504,7 +2504,7 @@ $$\@ignoretrue}
     \@IEEEappendtoksA{&}%
     \advance\@IEEEeqncolcnt by 1\relax% update the col count
     \repeat
-    % this number of &'s will take us the isolation column
+    % this number of &'s will take us the the isolation column
     \fi
     % execute the &'s
     \the\@IEEEtrantmptoksA%
@@ -2639,7 +2639,7 @@ $$\@ignoretrue}
 
 
 
-% IEEEeqnarraybox uses a modified \\ instead of the plain \cr to
+% IEEEeqnarraybox uses a modifed \\ instead of the plain \cr to
 % end rows. This allows for things like \\[vskip amount]
 % This "cr" macros are modified versions those for LaTeX2e's eqnarray
 % For IEEEeqnarraybox, \\* is the same as \\
@@ -2728,7 +2728,7 @@ $$\@ignoretrue}
 \@IEEEgrabfirstoken#1\relax\relax\noindent
 % \@IEEEgrabfirstoken has the first token, the rest are discarded
 % n = number
-% g = glue (any other char in category 12)
+% g = glue (any other char in catagory 12)
 % c = letter
 % e = \end
 % u = undefined
@@ -2878,7 +2878,7 @@ in the IEEEeqnarray column specifications.}%
 \toks0={##}%
 % make preamble advance col counter if this environment needs this
 \if@advanceIEEEeqncolcnt\@IEEEappendtoksA{\global\advance\@IEEEeqncolcnt by 1\relax}\fi
-% insert the column definition into the preamble, being careful not to expand
+% insert the column defintion into the preamble, being careful not to expand
 % the column definition
 \@IEEEappendtoksA{\tabskip=\@IEEEBPcurglue}%
 \@IEEEappendNOEXPANDtoksA{\begingroup\csname @IEEEeqnarraycolPRE}%
@@ -3305,7 +3305,7 @@ between column types.}%
 \rule[-0.3\@IEEEtrantmpdimenA]{0pt}{\@IEEEtrantmpdimenA}}
 
 
-% blocks to hold the authors' names and affiliations. 
+% blocks to hold the authors' names and affilations. 
 % Makes formatting easy for conferences
 %
 % use real definitions in conference mode
@@ -4289,8 +4289,8 @@ between column types.}%
 % floating point values
 \@IEEEtrantmpdimenB=0.005\@IEEEtrantmpdimenA%
 \multiply\@IEEEtrantmpdimenB by \@IEEEtrantmpcountA%
-% \@IEEEPARstartfont is globally set to the calculated font of the big letter
-% We need to carry this out of the local calculation area to create the
+% \@IEEEPARstartfont is globaly set to the calculated font of the big letter
+% We need to carry this out of the local calculation area to to create the
 % big letter.
 \global\font\@IEEEPARstartfont\@IEEEPARstartFONTNAME\space at \@IEEEtrantmpdimenB%
 % Now set \@IEEEtrantmpdimenA to the width of the big letter
@@ -4381,7 +4381,7 @@ between column types.}%
 % if this page does not have enough space, break it and lets start
 % with a new one
 \@IEEEtranneedspace{\@IEEEtrantmpdimenA}{\relax}%
-% nominal spacer can stretch, not shrink use 1fil so user can out stretch with \vfill
+% nominal spacer can strech, not shrink use 1fil so user can out stretch with \vfill
 \vskip \@IEEEBIOskipN plus 1fil minus 0\baselineskip%
 % the default box for where the photo goes
 \def\@IEEEtempbiographybox{{\setlength{\fboxsep}{0pt}\framebox{%

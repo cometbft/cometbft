@@ -1,10 +1,10 @@
 package test
 
 import (
-	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
 )
 
-// Contract: !bytes.Equal(input, output) && len(input) >= len(output).
+// Contract: !bytes.Equal(input, output) && len(input) >= len(output)
 func MutateByteSlice(bytez []byte) []byte {
 	// If bytez is empty, panic
 	if len(bytez) == 0 {

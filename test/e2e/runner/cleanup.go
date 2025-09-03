@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 
-	e2e "github.com/cometbft/cometbft/v2/test/e2e/pkg"
-	"github.com/cometbft/cometbft/v2/test/e2e/pkg/exec"
-	"github.com/cometbft/cometbft/v2/test/e2e/pkg/infra/docker"
+	"github.com/cometbft/cometbft/libs/log"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/exec"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 )
 
 // Cleanup removes the Docker Compose containers and testnet directory.
@@ -50,20 +50,20 @@ func cleanupDocker() error {
 	return nil
 }
 
-// cleanupDir cleans up a testnet directory.
+// cleanupDir cleans up a testnet directory
 func cleanupDir(dir string) error {
 	if dir == "" {
 		return errors.New("no directory set")
 	}
 
 	_, err := os.Stat(dir)
-	if errors.Is(err, fs.ErrNotExist) {
+	if os.IsNotExist(err) {
 		return nil
 	} else if err != nil {
 		return err
 	}
 
-	logger.Info("Clean up testnet directory", "dir", dir)
+	logger.Info("cleanup dir", "msg", log.NewLazySprintf("Removing testnet directory %q", dir))
 
 	// On Linux, some local files in the volume will be owned by root since CometBFT
 	// runs as root inside the container, so we need to clean them up from within a
@@ -73,7 +73,7 @@ func cleanupDir(dir string) error {
 		return err
 	}
 	err = docker.Exec(context.Background(), "run", "--rm", "--entrypoint", "", "-v", fmt.Sprintf("%v:/network", absDir),
-		"cometbft/e2e-node:local-version", "sh", "-c", "rm -rf /network/*/")
+		"cometbft/e2e-node", "sh", "-c", "rm -rf /network/*/")
 	if err != nil {
 		return err
 	}

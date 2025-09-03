@@ -3,8 +3,8 @@ package privval
 import (
 	"time"
 
-	"github.com/cometbft/cometbft/v2/libs/log"
-	"github.com/cometbft/cometbft/v2/libs/service"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
 )
 
 const (
@@ -52,6 +52,7 @@ func NewSignerDialerEndpoint(
 	dialer SocketDialer,
 	options ...SignerServiceEndpointOption,
 ) *SignerDialerEndpoint {
+
 	sd := &SignerDialerEndpoint{
 		dialer:         dialer,
 		retryWait:      defaultRetryWaitMilliseconds * time.Millisecond,
@@ -59,7 +60,7 @@ func NewSignerDialerEndpoint(
 	}
 
 	sd.BaseService = *service.NewBaseService(logger, "SignerDialerEndpoint", sd)
-	sd.signerEndpoint.timeoutReadWrite = defaultTimeoutReadWriteSeconds * time.Second
+	sd.timeoutReadWrite = defaultTimeoutReadWriteSeconds * time.Second
 
 	for _, optionFunc := range options {
 		optionFunc(sd)
@@ -76,17 +77,17 @@ func (sd *SignerDialerEndpoint) ensureConnection() error {
 	retries := 0
 	for retries < sd.maxConnRetries {
 		conn, err := sd.dialer()
+
 		if err != nil {
 			retries++
 			sd.Logger.Debug("SignerDialer: Reconnection failed", "retries", retries, "max", sd.maxConnRetries, "err", err)
 			// Wait between retries
 			time.Sleep(sd.retryWait)
-			continue
+		} else {
+			sd.SetConnection(conn)
+			sd.Logger.Debug("SignerDialer: Connection Ready")
+			return nil
 		}
-
-		sd.SetConnection(conn)
-		sd.Logger.Debug("SignerDialer: Connection Ready")
-		return nil
 	}
 
 	sd.Logger.Debug("SignerDialer: Max retries exceeded", "retries", retries, "max", sd.maxConnRetries)

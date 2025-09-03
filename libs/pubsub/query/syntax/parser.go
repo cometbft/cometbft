@@ -95,6 +95,7 @@ func (a *Arg) Number() *big.Float {
 		return nil
 	}
 	return f
+
 }
 
 // Time returns the value of the argument text as a time, or the zero value if

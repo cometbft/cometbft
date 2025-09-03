@@ -14,17 +14,18 @@ import (
 	"github.com/spf13/cobra"
 
 	dbm "github.com/cometbft/cometbft-db"
-	cmtos "github.com/cometbft/cometbft/v2/internal/os"
-	"github.com/cometbft/cometbft/v2/libs/log"
-	cmtmath "github.com/cometbft/cometbft/v2/libs/math"
-	"github.com/cometbft/cometbft/v2/light"
-	lproxy "github.com/cometbft/cometbft/v2/light/proxy"
-	lrpc "github.com/cometbft/cometbft/v2/light/rpc"
-	dbs "github.com/cometbft/cometbft/v2/light/store/db"
-	rpcserver "github.com/cometbft/cometbft/v2/rpc/jsonrpc/server"
+
+	"github.com/cometbft/cometbft/libs/log"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+	"github.com/cometbft/cometbft/light"
+	lproxy "github.com/cometbft/cometbft/light/proxy"
+	lrpc "github.com/cometbft/cometbft/light/rpc"
+	dbs "github.com/cometbft/cometbft/light/store/db"
+	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
 )
 
-// LightCmd represents the base command when called without any subcommands.
+// LightCmd represents the base command when called without any subcommands
 var LightCmd = &cobra.Command{
 	Use:   "light [chainID]",
 	Short: "Run a light client proxy server, verifying CometBFT rpc",
@@ -101,7 +102,7 @@ func init() {
 
 func runProxy(_ *cobra.Command, args []string) error {
 	// Initialize logger.
-	logger := log.NewLogger(os.Stdout)
+	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	var option log.Option
 	if verbose {
 		option, _ = log.AllowLevel("debug")
@@ -118,7 +119,7 @@ func runProxy(_ *cobra.Command, args []string) error {
 		witnessesAddrs = strings.Split(witnessAddrsJoined, ",")
 	}
 
-	db, err := dbm.NewPebbleDB("light-client-db", home)
+	db, err := dbm.NewGoLevelDB("light-client-db", home)
 	if err != nil {
 		return fmt.Errorf("can't create a db: %w", err)
 	}
@@ -195,9 +196,6 @@ func runProxy(_ *cobra.Command, args []string) error {
 			dbs.New(db, chainID),
 			options...,
 		)
-		if errors.Is(err, light.ErrEmptyTrustedStore) {
-			logger.Error("Cannot start the light client from an empty trusted store. Please provide either an initialized trusted store, using the `--home-dir` flag, or trusted information to bootstrap the trusted store, via `--hash` and `--height` flags.")
-		}
 	}
 	if err != nil {
 		return err

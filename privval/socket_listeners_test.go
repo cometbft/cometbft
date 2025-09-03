@@ -6,17 +6,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cometbft/cometbft/v2/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/ed25519"
 )
 
-// -------------------------------------------
+//-------------------------------------------
 // helper funcs
 
 func newPrivKey() ed25519.PrivKey {
 	return ed25519.GenPrivKey()
 }
 
-// -------------------------------------------
+//-------------------------------------------
 // tests
 
 type listenerTestCase struct {
@@ -26,7 +26,7 @@ type listenerTestCase struct {
 }
 
 // testUnixAddr will attempt to obtain a platform-independent temporary file
-// name for a Unix socket.
+// name for a Unix socket
 func testUnixAddr() (string, error) {
 	f, err := os.CreateTemp("", "cometbft-privval-test-*")
 	if err != nil {
@@ -39,7 +39,6 @@ func testUnixAddr() (string, error) {
 }
 
 func tcpListenerTestCase(t *testing.T, timeoutAccept, timeoutReadWrite time.Duration) listenerTestCase {
-	t.Helper()
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -56,7 +55,6 @@ func tcpListenerTestCase(t *testing.T, timeoutAccept, timeoutReadWrite time.Dura
 }
 
 func unixListenerTestCase(t *testing.T, timeoutAccept, timeoutReadWrite time.Duration) listenerTestCase {
-	t.Helper()
 	addr, err := testUnixAddr()
 	if err != nil {
 		t.Fatal(err)
@@ -77,7 +75,6 @@ func unixListenerTestCase(t *testing.T, timeoutAccept, timeoutReadWrite time.Dur
 }
 
 func listenerTestCases(t *testing.T, timeoutAccept, timeoutReadWrite time.Duration) []listenerTestCase {
-	t.Helper()
 	return []listenerTestCase{
 		tcpListenerTestCase(t, timeoutAccept, timeoutReadWrite),
 		unixListenerTestCase(t, timeoutAccept, timeoutReadWrite),

@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/v2/crypto/tmhash"
-	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
 )
 
 func TestBlockMeta_ToProto(t *testing.T) {
@@ -30,6 +30,7 @@ func TestBlockMeta_ToProto(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.testName, func(t *testing.T) {
 			pb := tt.bm.ToProto()
 
@@ -48,14 +49,10 @@ func TestBlockMeta_ToProto(t *testing.T) {
 func TestBlockMeta_ValidateBasic(t *testing.T) {
 	h := makeRandHeader()
 	bi := BlockID{Hash: h.Hash(), PartSetHeader: PartSetHeader{Total: 123, Hash: cmtrand.Bytes(tmhash.Size)}}
-	bi2 := BlockID{
-		Hash:          cmtrand.Bytes(tmhash.Size),
-		PartSetHeader: PartSetHeader{Total: 123, Hash: cmtrand.Bytes(tmhash.Size)},
-	}
-	bi3 := BlockID{
-		Hash:          []byte("incorrect hash"),
-		PartSetHeader: PartSetHeader{Total: 123, Hash: []byte("incorrect hash")},
-	}
+	bi2 := BlockID{Hash: cmtrand.Bytes(tmhash.Size),
+		PartSetHeader: PartSetHeader{Total: 123, Hash: cmtrand.Bytes(tmhash.Size)}}
+	bi3 := BlockID{Hash: []byte("incorrect hash"),
+		PartSetHeader: PartSetHeader{Total: 123, Hash: []byte("incorrect hash")}}
 
 	bm := &BlockMeta{
 		BlockID:   bi,
@@ -88,6 +85,7 @@ func TestBlockMeta_ValidateBasic(t *testing.T) {
 		{"failure wrong length blockID hash", bm3, true},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			if err := tt.bm.ValidateBasic(); (err != nil) != tt.wantErr {
 				t.Errorf("BlockMeta.ValidateBasic() error = %v, wantErr %v", err, tt.wantErr)

@@ -6,10 +6,11 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 
-	cfg "github.com/cometbft/cometbft/v2/config"
-	rpchttp "github.com/cometbft/cometbft/v2/rpc/client/http"
+	cfg "github.com/cometbft/cometbft/config"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 )
 
 // dumpStatus gets node status state dump from the CometBFT RPC and writes it
@@ -66,7 +67,7 @@ func copyConfig(home, dir string) error {
 func dumpProfile(dir, addr, profile string, debug int) error {
 	endpoint := fmt.Sprintf("%s/debug/pprof/%s?debug=%d", addr, profile, debug)
 
-	//nolint:gosec,nolintlint,noctx
+	//nolint:gosec,nolintlint
 	resp, err := http.Get(endpoint)
 	if err != nil {
 		return fmt.Errorf("failed to query for %s profile: %w", profile, err)
@@ -78,5 +79,5 @@ func dumpProfile(dir, addr, profile string, debug int) error {
 		return fmt.Errorf("failed to read %s profile response body: %w", profile, err)
 	}
 
-	return os.WriteFile(filepath.Join(dir, profile+".out"), body, 0o600)
+	return os.WriteFile(path.Join(dir, fmt.Sprintf("%s.out", profile)), body, 0o600)
 }

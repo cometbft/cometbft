@@ -12,16 +12,13 @@ import (
 	"net/http"
 	"os"
 	"runtime/debug"
-	"strconv"
 	"strings"
 	"time"
 
 	"golang.org/x/net/netutil"
 
-	"github.com/cometbft/cometbft/v2/libs/log"
-	grpcerr "github.com/cometbft/cometbft/v2/rpc/grpc/errors"
-	"github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
-	cmttime "github.com/cometbft/cometbft/v2/types/time"
+	"github.com/cometbft/cometbft/libs/log"
+	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 // Config is a RPC server configuration.
@@ -59,12 +56,17 @@ func DefaultConfig() *Config {
 //
 // NOTE: This function blocks - you may want to call it in a go-routine.
 func Serve(listener net.Listener, handler http.Handler, logger log.Logger, config *Config) error {
-	return ServeWithShutdown(
-		listener,
-		handler,
-		logger,
-		config,
-	)
+	logger.Info("serve", "msg", log.NewLazySprintf("Starting RPC HTTP server on %s", listener.Addr()))
+	s := &http.Server{
+		Handler:           PreChecksHandler(RecoverAndLogHandler(defaultHandler{h: handler}, logger), config),
+		ReadTimeout:       config.ReadTimeout,
+		ReadHeaderTimeout: config.ReadTimeout,
+		WriteTimeout:      config.WriteTimeout,
+		MaxHeaderBytes:    config.MaxHeaderBytes,
+	}
+	err := s.Serve(listener)
+	logger.Info("RPC HTTP server stopped", "err", err)
+	return err
 }
 
 // ServeTLS creates a http.Server and calls ServeTLS with the given listener,
@@ -79,100 +81,18 @@ func ServeTLS(
 	logger log.Logger,
 	config *Config,
 ) error {
-	return ServeTLSWithShutdown(
-		listener,
-		handler,
-		certFile,
-		keyFile,
-		logger,
-		config,
-	)
-}
-
-// ServeWithShutdown creates a http.Server and calls Serve with the given
-// listener. It wraps handler with RecoverAndLogHandler and a handler, which limits
-// the max body size to config.MaxBodyBytes.
-// The function optionally takes a list of shutdown tasks to execute on shutdown.
-//
-// NOTE: This function blocks - you may want to call it in a go-routine.
-func ServeWithShutdown(
-	listener net.Listener,
-	handler http.Handler,
-	logger log.Logger,
-	config *Config,
-	shutdownTasks ...func() error,
-) error {
-	logMsg := log.NewLazySprintf("Starting RPC HTTP server on %s", listener.Addr())
-	logger.Info("serve", "msg", logMsg)
-
-	var (
-		rlHandler = RecoverAndLogHandler(defaultHandler{h: handler}, logger)
-		s         = &http.Server{
-			Handler:           PreChecksHandler(rlHandler, config),
-			ReadTimeout:       config.ReadTimeout,
-			ReadHeaderTimeout: config.ReadTimeout,
-			WriteTimeout:      config.WriteTimeout,
-			MaxHeaderBytes:    config.MaxHeaderBytes,
-		}
-	)
-	err := s.Serve(listener)
-
-	logger.Info("RPC HTTP server stopped", "err", err)
-
-	for _, f := range shutdownTasks {
-		if err := f(); err != nil {
-			logger.Error("executing RPC HTTP server post-shutdown task", "err", err)
-		}
+	logger.Info("serve tls", "msg", log.NewLazySprintf("Starting RPC HTTPS server on %s (cert: %q, key: %q)",
+		listener.Addr(), certFile, keyFile))
+	s := &http.Server{
+		Handler:           PreChecksHandler(RecoverAndLogHandler(defaultHandler{h: handler}, logger), config),
+		ReadTimeout:       config.ReadTimeout,
+		ReadHeaderTimeout: config.ReadTimeout,
+		WriteTimeout:      config.WriteTimeout,
+		MaxHeaderBytes:    config.MaxHeaderBytes,
 	}
-
-	return err
-}
-
-// ServeTLSWithShutdown creates a http.Server and calls ServeTLS with the given
-// listener, certFile and keyFile. It wraps handler with RecoverAndLogHandler and a
-// handler, which limits the max body size to config.MaxBodyBytes.
-// The function optionally takes a list of shutdown tasks to execute on shutdown.
-//
-// NOTE: This function blocks - you may want to call it in a go-routine.
-func ServeTLSWithShutdown(
-	listener net.Listener,
-	handler http.Handler,
-	certFile, keyFile string,
-	logger log.Logger,
-	config *Config,
-	shutdownTasks ...func() error,
-) error {
-	var (
-		formatStr = "Starting RPC HTTPS server on %s (cert: %q, key: %q)"
-		logMsg    = log.NewLazySprintf(
-			formatStr,
-			listener.Addr(),
-			certFile,
-			keyFile,
-		)
-	)
-	logger.Info("serve tls", "msg", logMsg)
-
-	var (
-		rlHandler = RecoverAndLogHandler(defaultHandler{h: handler}, logger)
-		s         = &http.Server{
-			Handler:           PreChecksHandler(rlHandler, config),
-			ReadTimeout:       config.ReadTimeout,
-			ReadHeaderTimeout: config.ReadTimeout,
-			WriteTimeout:      config.WriteTimeout,
-			MaxHeaderBytes:    config.MaxHeaderBytes,
-		}
-	)
 	err := s.ServeTLS(listener, certFile, keyFile)
 
 	logger.Error("RPC HTTPS server stopped", "err", err)
-
-	for _, f := range shutdownTasks {
-		if err := f(); err != nil {
-			logger.Error("executing RPC HTTP server post-shutdown task", "err", err)
-		}
-	}
-
 	return err
 }
 
@@ -191,7 +111,7 @@ func WriteRPCResponseHTTPError(
 
 	jsonBytes, err := json.Marshal(res)
 	if err != nil {
-		return ErrMarshalResponse{Source: err}
+		return fmt.Errorf("json marshal: %w", err)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -206,7 +126,7 @@ func WriteRPCResponseHTTP(w http.ResponseWriter, res ...types.RPCResponse) error
 }
 
 // WriteCacheableRPCResponseHTTP marshals res as JSON (with indent) and writes
-// it to w. Adds Cache-Control to the response header and sets the expiry to
+// it to w. Adds cache-control to the response header and sets the expiry to
 // one day.
 func WriteCacheableRPCResponseHTTP(w http.ResponseWriter, res ...types.RPCResponse) error {
 	return writeRPCResponseHTTP(w, []httpHeader{{"Cache-Control", "public, max-age=86400"}}, res...)
@@ -218,7 +138,7 @@ type httpHeader struct {
 }
 
 func writeRPCResponseHTTP(w http.ResponseWriter, headers []httpHeader, res ...types.RPCResponse) error {
-	var v any
+	var v interface{}
 	if len(res) == 1 {
 		v = res[0]
 	} else {
@@ -227,18 +147,18 @@ func writeRPCResponseHTTP(w http.ResponseWriter, headers []httpHeader, res ...ty
 
 	jsonBytes, err := json.Marshal(v)
 	if err != nil {
-		return ErrMarshalResponse{Source: err}
+		return fmt.Errorf("json marshal: %w", err)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	for _, header := range headers {
 		w.Header().Set(header.name, header.value)
 	}
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(200)
 	_, err = w.Write(jsonBytes)
 	return err
 }
 
-// -----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
 // RecoverAndLogHandler wraps an HTTP handler, adding error logging.
 // If the inner function panics, the outer function recovers, logs, sends an
@@ -247,21 +167,21 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Wrap the ResponseWriter to remember the status
 		rww := &responseWriterWrapper{-1, w}
-		begin := cmttime.Now()
+		begin := time.Now()
 
-		rww.Header().Set("X-Server-Time", strconv.FormatInt(begin.Unix(), 10))
+		rww.Header().Set("X-Server-Time", fmt.Sprintf("%v", begin.Unix()))
 
 		defer func() {
 			// Handle any panics in the panic handler below. Does not use the logger, since we want
 			// to avoid any further panics. However, we try to return a 500, since it otherwise
 			// defaults to 200 and there is no other way to terminate the connection. If that
 			// should panic for whatever reason then the Go HTTP server will handle it and
-			// terminate the connection - panicking is the de-facto and only way to get the Go HTTP
+			// terminate the connection - panicing is the de-facto and only way to get the Go HTTP
 			// server to terminate the request and close the connection/stream:
 			// https://github.com/golang/go/issues/17790#issuecomment-258481416
 			if e := recover(); e != nil {
 				fmt.Fprintf(os.Stderr, "Panic during RPC panic recovery: %v\n%v\n", e, string(debug.Stack()))
-				w.WriteHeader(http.StatusInternalServerError)
+				w.WriteHeader(500)
 			}
 		}()
 
@@ -298,7 +218,7 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 			}
 
 			// Finally, log.
-			durationMS := cmttime.Since(begin).Nanoseconds() / 1000000
+			durationMS := time.Since(begin).Nanoseconds() / 1000000
 			if rww.Status == -1 {
 				rww.Status = 200
 			}
@@ -315,7 +235,7 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 	})
 }
 
-// Remember the status for logging.
+// Remember the status for logging
 type responseWriterWrapper struct {
 	Status int
 	http.ResponseWriter
@@ -326,7 +246,7 @@ func (w *responseWriterWrapper) WriteHeader(status int) {
 	w.ResponseWriter.WriteHeader(status)
 }
 
-// implements http.Hijacker.
+// implements http.Hijacker
 func (w *responseWriterWrapper) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return w.ResponseWriter.(http.Hijacker).Hijack()
 }
@@ -344,12 +264,15 @@ func (h defaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func Listen(addr string, maxOpenConnections int) (listener net.Listener, err error) {
 	parts := strings.SplitN(addr, "://", 2)
 	if len(parts) != 2 {
-		return nil, grpcerr.ErrInvalidRemoteAddress{Addr: addr}
+		return nil, fmt.Errorf(
+			"invalid listening address %s (use fully formed addresses, including the tcp:// or unix:// prefix)",
+			addr,
+		)
 	}
 	proto, addr := parts[0], parts[1]
 	listener, err = net.Listen(proto, addr)
 	if err != nil {
-		return nil, ErrListening{Addr: addr, Source: err}
+		return nil, fmt.Errorf("failed to listen on %v: %v", addr, err)
 	}
 	if maxOpenConnections > 0 {
 		listener = netutil.LimitListener(listener, maxOpenConnections)

@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/cometbft/cometbft/v2/abci/types"
-	cmtnet "github.com/cometbft/cometbft/v2/internal/net"
+	"github.com/cometbft/cometbft/abci/types"
+	cmtnet "github.com/cometbft/cometbft/libs/net"
 )
 
 func main() {
+
 	conn, err := cmtnet.Connect("unix://test.sock")
 	if err != nil {
 		log.Fatal(err.Error())
@@ -19,7 +20,7 @@ func main() {
 	go func() {
 		counter := 0
 		for {
-			res := &types.Response{}
+			var res = &types.Response{}
 			err := types.ReadMessage(conn, res)
 			if err != nil {
 				log.Fatal(err.Error())
@@ -34,8 +35,8 @@ func main() {
 	// Write a bunch of requests
 	counter := 0
 	for i := 0; ; i++ {
-		bufWriter := bufio.NewWriter(conn)
-		req := types.ToEchoRequest("foobar")
+		var bufWriter = bufio.NewWriter(conn)
+		var req = types.ToRequestEcho("foobar")
 
 		err := types.WriteMessage(req, bufWriter)
 		if err != nil {

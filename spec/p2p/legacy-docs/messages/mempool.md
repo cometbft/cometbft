@@ -14,7 +14,7 @@ Mempool has one channel. The channel identifier is listed below.
 ## Message Types
 
 There is currently only one message that Mempool broadcasts and receives over
-the p2p gossip network (via the reactor): `Txs`
+the p2p gossip network (via the reactor): `TxsMessage`
 
 ### Txs
 

@@ -63,7 +63,7 @@ This package provides three major things:
 
 Example usage:
 
-	db, err := dbm.NewPebbleDB("light-client-db", dbDir)
+	db, err := dbm.NewGoLevelDB("light-client-db", dbDir)
 	if err != nil {
 		// handle error
 	}
@@ -94,7 +94,7 @@ Check out other examples in example_test.go
 ## 2. Pure functions to verify a new header (see verifier.go)
 
 Verify function verifies a new header against some trusted header. See
-https://github.com/cometbft/cometbft/v2/blob/main/spec/light-client/verification/README.md
+https://github.com/cometbft/cometbft/blob/v0.38.x/spec/light-client/verification/README.md
 for details.
 
 There are two methods of verification: sequential and bisection
@@ -118,10 +118,10 @@ as a wrapper, which verifies all the headers, using a light client connected to
 some other node.
 
 See
-https://docs.cometbft.com/main/explanation/core/light-client
+https://docs.cometbft.com/v0.38.x/core/light-client.html
 for usage example.
 Or see
-https://github.com/cometbft/cometbft/v2/blob/main/spec/light-client/README.md
+https://github.com/cometbft/cometbft/tree/v0.38.x/spec/consensus/light-client
 for the full spec
 */
 package light

@@ -24,7 +24,7 @@ for MANIFEST in "$@"; do
 	cat "$MANIFEST"
 
 	if ! ./build/runner -f "$MANIFEST"; then
-		echo "==> Testnet failed: $MANIFEST"
+		echo "==> Testnet failed"
 
 		echo "==> Dumping container logs for $MANIFEST..."
 		./build/runner -f "$MANIFEST" logs

@@ -3,7 +3,7 @@
  * This is a specification of the light client detector module.
  * It follows the English specification:
  *
- * https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md
+ * https://github.com/cometbft/cometbft/blob/v0.38.x/spec/light-client/detection/detection_003_reviewed.md
  *
  * The assumptions made in this specification:
  *
@@ -11,7 +11,7 @@
  *
  *  - the light client has its own local clock that can drift from the reference clock
  *    within the envelope [refClock - CLOCK_DRIFT, refClock + CLOCK_DRIFT].
- *    The local clock may increase as well as decrease in the envelope
+ *    The local clock may increase as well as decrease in the the envelope
  *    (similar to clock synchronization).
  *
  *  - the ratio of the faulty validators is set as the parameter.

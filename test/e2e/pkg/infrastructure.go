@@ -18,7 +18,7 @@ const (
 // InfrastructureData contains the relevant information for a set of existing
 // infrastructure that is to be used for running a testnet.
 type InfrastructureData struct {
-	Path string `json:"path"`
+	Path string
 
 	// Provider is the name of infrastructure provider backing the testnet.
 	// For example, 'docker' if it is running locally in a docker network or
@@ -39,17 +39,15 @@ type InfrastructureData struct {
 // InstanceData contains the relevant information for a machine instance backing
 // one of the nodes in the testnet.
 type InstanceData struct {
-	IPAddress          net.IP `json:"ip_address"`
-	ExtIPAddress       net.IP `json:"ext_ip_address"`
-	RPCPort            uint32 `json:"rpc_port"`
-	GRPCPort           uint32 `json:"grpc_port"`
-	PrivilegedGRPCPort uint32 `json:"privileged_grpc_port"`
+	IPAddress    net.IP `json:"ip_address"`
+	ExtIPAddress net.IP `json:"ext_ip_address"`
+	Port         uint32 `json:"port"`
 }
 
-func sortNodeNames(m *Manifest) []string {
+func sortNodeNames(m Manifest) []string {
 	// Set up nodes, in alphabetical order (IPs and ports get same order).
 	nodeNames := []string{}
-	for name := range m.NodesMap {
+	for name := range m.Nodes {
 		nodeNames = append(nodeNames, name)
 	}
 	sort.Strings(nodeNames)
@@ -57,13 +55,13 @@ func sortNodeNames(m *Manifest) []string {
 }
 
 func NewDockerInfrastructureData(m Manifest) (InfrastructureData, error) {
-	netAddr := dockerIPv4CIDR
+	netAddress := dockerIPv4CIDR
 	if m.IPv6 {
-		netAddr = dockerIPv6CIDR
+		netAddress = dockerIPv6CIDR
 	}
-	_, ipNet, err := net.ParseCIDR(netAddr)
+	_, ipNet, err := net.ParseCIDR(netAddress)
 	if err != nil {
-		return InfrastructureData{}, fmt.Errorf("invalid IP network address %q: %w", netAddr, err)
+		return InfrastructureData{}, fmt.Errorf("invalid IP network address %q: %w", netAddress, err)
 	}
 
 	portGen := newPortGenerator(proxyPortFirst)
@@ -71,17 +69,16 @@ func NewDockerInfrastructureData(m Manifest) (InfrastructureData, error) {
 	ifd := InfrastructureData{
 		Provider:  "docker",
 		Instances: make(map[string]InstanceData),
-		Network:   netAddr,
+		Network:   netAddress,
 	}
 	localHostIP := net.ParseIP("127.0.0.1")
-	for _, name := range sortNodeNames(&m) {
+	for _, name := range sortNodeNames(m) {
 		ifd.Instances[name] = InstanceData{
-			IPAddress:          ipGen.Next(),
-			ExtIPAddress:       localHostIP,
-			RPCPort:            portGen.Next(),
-			GRPCPort:           portGen.Next(),
-			PrivilegedGRPCPort: portGen.Next(),
+			IPAddress:    ipGen.Next(),
+			ExtIPAddress: localHostIP,
+			Port:         portGen.Next(),
 		}
+
 	}
 	return ifd, nil
 }

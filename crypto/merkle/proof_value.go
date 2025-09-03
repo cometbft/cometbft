@@ -2,11 +2,10 @@ package merkle
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 
-	cmtcrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
-	"github.com/cometbft/cometbft/v2/crypto/tmhash"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtcrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
 const ProofOpValue = "simple:v"
@@ -38,19 +37,14 @@ func NewValueOp(key []byte, proof *Proof) ValueOp {
 	}
 }
 
-// ValueOpDecoder decodes a cmtcrypto.ProofOp into a ValueOp instance.
 func ValueOpDecoder(pop cmtcrypto.ProofOp) (ProofOperator, error) {
 	if pop.Type != ProofOpValue {
-		return nil, ErrInvalidProof{
-			Err: fmt.Errorf("unexpected ProofOp.Type; got %v, want %v", pop.Type, ProofOpValue),
-		}
+		return nil, fmt.Errorf("unexpected ProofOp.Type; got %v, want %v", pop.Type, ProofOpValue)
 	}
 	var pbop cmtcrypto.ValueOp // a bit strange as we'll discard this, but it works.
 	err := pbop.Unmarshal(pop.Data)
 	if err != nil {
-		return nil, ErrInvalidProof{
-			Err: fmt.Errorf("decoding ProofOp.Data into ValueOp: %w", err),
-		}
+		return nil, fmt.Errorf("decoding ProofOp.Data into ValueOp: %w", err)
 	}
 
 	sp, err := ProofFromProto(pbop.Proof)
@@ -60,7 +54,6 @@ func ValueOpDecoder(pop cmtcrypto.ProofOp) (ProofOperator, error) {
 	return NewValueOp(pop.Key, sp), nil
 }
 
-// ProofOp encodes the ValueOp as a cmtcrypto.ProofOp, which can later be decoded.
 func (op ValueOp) ProofOp() cmtcrypto.ProofOp {
 	pbval := cmtcrypto.ValueOp{
 		Key:   op.key,
@@ -81,14 +74,9 @@ func (op ValueOp) String() string {
 	return fmt.Sprintf("ValueOp{%v}", op.GetKey())
 }
 
-// ErrTooManyArgs is returned when the input to [ValueOp.Run] has length
-// exceeding 1.
-var ErrTooManyArgs = errors.New("merkle: len(args) != 1")
-
-// Run computes the Merkle root using the ValueOp.
 func (op ValueOp) Run(args [][]byte) ([][]byte, error) {
 	if len(args) != 1 {
-		return nil, ErrTooManyArgs
+		return nil, fmt.Errorf("expected 1 arg, got %v", len(args))
 	}
 	value := args[0]
 	hasher := tmhash.New()
@@ -102,12 +90,10 @@ func (op ValueOp) Run(args [][]byte) ([][]byte, error) {
 	kvhash := leafHash(bz.Bytes())
 
 	if !bytes.Equal(kvhash, op.Proof.LeafHash) {
-		return nil, ErrInvalidHash{
-			Err: fmt.Errorf("leaf %x, want %x", kvhash, op.Proof.LeafHash),
-		}
+		return nil, fmt.Errorf("leaf hash mismatch: want %X got %X", op.Proof.LeafHash, kvhash)
 	}
 
-	rootHash, err := op.Proof.computeRootHash(tmhash.New())
+	rootHash, err := op.Proof.computeRootHash()
 	if err != nil {
 		return nil, err
 	}

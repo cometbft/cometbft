@@ -1,2 +1,0 @@
-- `[p2p]` Do not remarshal envelope message within broadcast
-  ([\#4667](https://github.com/cometbft/cometbft/pull/4667))

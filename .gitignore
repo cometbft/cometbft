@@ -33,8 +33,6 @@ remote_dump
 rpc/test/.cometbft
 scripts/cutWALUntil/cutWALUntil
 scripts/wal2json/wal2json
-scripts/db_measurements/measurements.txt
-scripts/db_measurements/process_measurements.py
 shunit2
 terraform.tfstate
 terraform.tfstate.backup
@@ -42,13 +40,9 @@ terraform.tfstate.d
 test/app/grpc_client
 test/loadtime/build
 test/e2e/build
-test/e2e/data/
 test/e2e/networks/*/
-test/e2e/networks_regressions/*/
 test/logs
 test/p2p/data/
-tools/goleveldb_perf/.ipynb_checkpoints
-tools/goleveldb_perf/measurements
 vendor
 test/fuzz/**/corpus
 test/fuzz/**/crashers
@@ -64,10 +58,3 @@ proto/spec/**/*.pb.go
 # Python virtual environments
 .venv
 go.work.sum
-cmd/cometbft/cometbft
-# gobenchdata
-assets
-benchmarks.json
-gobenchdata-web.yml
-index.html
-overrides.css

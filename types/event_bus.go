@@ -3,12 +3,11 @@ package types
 import (
 	"context"
 	"fmt"
-	"strconv"
 
-	"github.com/cometbft/cometbft/v2/abci/types"
-	"github.com/cometbft/cometbft/v2/libs/log"
-	cmtpubsub "github.com/cometbft/cometbft/v2/libs/pubsub"
-	"github.com/cometbft/cometbft/v2/libs/service"
+	"github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	"github.com/cometbft/cometbft/libs/service"
 )
 
 const defaultCapacity = 0
@@ -82,8 +81,8 @@ func (b *EventBus) Subscribe(
 	return b.pubsub.Subscribe(ctx, subscriber, query, outCapacity...)
 }
 
-// SubscribeUnbuffered can be used for a local consensus explorer and synchronous
-// testing. Do not use for public facing / untrusted subscriptions!
+// This method can be used for a local consensus explorer and synchronous
+// testing. Do not use for for public facing / untrusted subscriptions!
 func (b *EventBus) SubscribeUnbuffered(
 	ctx context.Context,
 	subscriber string,
@@ -116,13 +115,13 @@ func (*EventBus) validateAndStringifyEvents(events []types.Event) map[string][]s
 		if len(event.Type) == 0 {
 			continue
 		}
-		prefix := event.Type + "."
+
 		for _, attr := range event.Attributes {
 			if len(attr.Key) == 0 {
 				continue
 			}
 
-			compositeTag := prefix + attr.Key
+			compositeTag := fmt.Sprintf("%s.%s", event.Type, attr.Key)
 			result[compositeTag] = append(result[compositeTag], attr.Value)
 		}
 	}
@@ -169,15 +168,6 @@ func (b *EventBus) PublishEventValidBlock(data EventDataRoundState) error {
 	return b.Publish(EventValidBlock, data)
 }
 
-func (b *EventBus) PublishEventPendingTx(data EventDataPendingTx) error {
-	// no explicit deadline for publishing events
-	ctx := context.Background()
-	return b.pubsub.PublishWithEvents(ctx, data, map[string][]string{
-		EventTypeKey: {EventPendingTx},
-		TxHashKey:    {fmt.Sprintf("%X", Tx(data.Tx).Hash())},
-	})
-}
-
 // PublishEventTx publishes tx event with events from Result. Note it will add
 // predefined keys (EventTypeKey, TxHashKey). Existing events with the same keys
 // will be overwritten.
@@ -190,7 +180,7 @@ func (b *EventBus) PublishEventTx(data EventDataTx) error {
 	// add predefined compositeKeys
 	events[EventTypeKey] = append(events[EventTypeKey], EventTx)
 	events[TxHashKey] = append(events[TxHashKey], fmt.Sprintf("%X", Tx(data.Tx).Hash()))
-	events[TxHeightKey] = append(events[TxHeightKey], strconv.FormatInt(data.Height, 10))
+	events[TxHeightKey] = append(events[TxHeightKey], fmt.Sprintf("%d", data.Height))
 
 	return b.pubsub.PublishWithEvents(ctx, data, events)
 }
@@ -219,6 +209,10 @@ func (b *EventBus) PublishEventPolka(data EventDataRoundState) error {
 	return b.Publish(EventPolka, data)
 }
 
+func (b *EventBus) PublishEventUnlock(data EventDataRoundState) error {
+	return b.Publish(EventUnlock, data)
+}
+
 func (b *EventBus) PublishEventRelock(data EventDataRoundState) error {
 	return b.Publish(EventRelock, data)
 }
@@ -231,14 +225,14 @@ func (b *EventBus) PublishEventValidatorSetUpdates(data EventDataValidatorSetUpd
 	return b.Publish(EventValidatorSetUpdates, data)
 }
 
-// -----------------------------------------------------------------------------.
+// -----------------------------------------------------------------------------
 type NopEventBus struct{}
 
 func (NopEventBus) Subscribe(
 	context.Context,
 	string,
 	cmtpubsub.Query,
-	chan<- any,
+	chan<- interface{},
 ) error {
 	return nil
 }
@@ -271,10 +265,6 @@ func (NopEventBus) PublishEventVote(EventDataVote) error {
 	return nil
 }
 
-func (NopEventBus) PublishEventPendingTx(EventDataPendingTx) error {
-	return nil
-}
-
 func (NopEventBus) PublishEventTx(EventDataTx) error {
 	return nil
 }
@@ -300,6 +290,10 @@ func (NopEventBus) PublishEventCompleteProposal(EventDataRoundState) error {
 }
 
 func (NopEventBus) PublishEventPolka(EventDataRoundState) error {
+	return nil
+}
+
+func (NopEventBus) PublishEventUnlock(EventDataRoundState) error {
 	return nil
 }
 

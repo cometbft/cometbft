@@ -5,191 +5,76 @@ may be helpful to understand the goal of the project. The goal of CometBFT is to
 develop a BFT consensus engine robust enough to support permissionless
 value-carrying networks. While all contributions are welcome, contributors
 should bear this goal in mind in deciding if they should target the main
-CometBFT project or a potential fork.
+CometBFT project or a potential fork. When targeting the main CometBFT project,
+the following process leads to the best chance of landing changes in `main`.
 
-## Overview
+All work on the code base should be motivated by a [GitHub
+Issue](https://github.com/cometbft/cometbft/issues).
+[Search](https://github.com/cometbft/cometbft/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
+is a good place to start when looking for places to contribute. If you would
+like to work on an issue which already exists, please indicate so by leaving a
+comment.
 
-When targeting the main CometBFT project, following the processes outlined in
-this document will lead to the best chance of landing changes in a release.
-
-### Core team responsibility
-
-The CometBFT core team is responsible for stewarding this
-project over time. This means that the core team needs to understand the nature
-of, and agree to maintain, all of the changes that land on `main` or a backport
-branch. It may cost a few days/weeks' worth of time to _submit_ a
-particular change, but _maintaining_ that change over the years has a
-much higher cost that the core team will bear.
-
-### Ease of reviewing
-
-The fact that the core team needs to be able to deeply understand the short-,
-medium- and long-term consequences of incoming changes means that changes need
-to be **easily reviewed**.
-
-What makes a change easy to review, and more likely to land in an upcoming
-release?
-
-1. **Each pull request must do _one thing_**. It must be very clear what that
-   one thing is when looking at the pull request title, description, and linked
-   issues. It must also be very clear what value it ultimately aims to deliver,
-   and to which user(s). A single pull request that does multiple things, or
-   without a clear articulation of the problem it attempts to solve, may be
-   rejected immediately.
-
-2. **Each pull request must be at most 300 lines of code changes**. Larger
-   changes must be structured as a series of pull requests of at most 300 lines
-   of code changes each, each building upon the previous one, all ideally
-   tracked in a tracking issue.
-
-   If a single PR absolutely has to be larger, it _must_ be structured such that
-   it can be reviewed commit by commit, with each commit doing _one logical
-   thing_ (with a good description of what it aims to achieve in the Git
-   commit), and each commit ideally be no larger than 300 lines of code
-   changes. Poorly structured pull requests may be rejected immediately with a
-   request to restructure them.
-
-   This does not necessarily apply to documentation-related changes or
-   automatically generated code (e.g. generated from Protobuf definitions). But
-   automatically generated code changes should occur within separate commits, so
-   they are easily distinguishable from manual code changes.
-
-3. Make sure that your pull request addresses a particular issue and that its 
-description starts with the issue number: If it fully closes the issue, 
-please start with "Closes #XXX" (where "XXX" is the issue number), otherwise 
-"Partially closes #XXX", "Addresses #XXX" should be used. 
-
-If the work in a PR is not aligned with the team's current priorities, please
-be advised that it may take some time before it is merged - especially if it has
-not been previously discussed with the team.
-
-## Workflow
-
-The following diagram summarizes the general workflow used by the core team to
-make changes, with a full description of the workflow below the diagram.
-Exceptions to this process will naturally occur (e.g. in the case of urgent
-security fixes), but this is rare.
-
-Each stage of the process is aimed at creating feedback cycles which align
-contributors and maintainers to make sure:
-
-- Contributors don’t waste their time implementing/proposing features which
-  won't land in `main`.
-- Maintainers have the necessary context in order to support and review
-  contributions.
-
-```mermaid
-flowchart LR
-    complexity{Problem\ncomplexity}
-    issue("New issue\n(Problem articulation\nfor discussion)")
-    clarity{"Problem +\nsolution clarity"}
-    rfc("RFC pull request(s)")
-    rfc_merge("Merge RFC to main")
-    risk{"Solution\ncomplexity/risk"}
-    adr("ADR + PoC\npull request(s)")
-    adr_merge("Merge ADR to main\nand create tracking issue")
-    pr("Solution\npull request(s)")
-    merge("Merge to main/backport\nor feature branch")
-
-    complexity --"Low/Moderate/High"--> issue
-    complexity --Trivial--> pr
-    issue --> clarity
-    clarity --High--> risk
-    clarity --Low--> rfc
-    rfc --Approved--> rfc_merge
-    risk --"Moderate/High"--> adr
-    adr --"ADR accepted by core team"--> adr_merge
-    adr_merge --> pr
-    risk --Low--> pr
-    pr --Approved--> merge
-```
-
-### GitHub issues
-
-All non-trivial work on the code base should be motivated by a [GitHub
-Issue][gh-issues]. [Search][search-issues] is a good place to start when looking
-for places to contribute. If you would like to work on an issue which already
-exists, please indicate so by leaving a comment. If someone else is already
-assigned to that issue and you would like to contribute to it or take it over,
-please coordinate with the existing assignee(s) and only start work on it once
-you have been assigned to it. Unsolicited pull requests relating to issues
-assigned to other users may be rejected immediately.
-
-All new contributions should start with a [GitHub Issue][new-gh-issue]. The
-issue helps capture the **problem** being solved and allows for early feedback.
-Problems must be captured in terms of the **impact** that they have on specific
-users. Once the issue is created the process can proceed in different directions
-depending on how well-defined the problem and potential solution are. If the
-change is simple and well-understood, maintainers will indicate their support
-with a heartfelt emoji.
-
-### Request for comments (RFCs)
+All new contributions should start with a [GitHub
+Issue](https://github.com/cometbft/cometbft/issues/new/choose). The issue helps
+capture the problem you're trying to solve and allows for early feedback. Once
+the issue is created the process can proceed in different directions depending
+on how well defined the problem and potential solution are. If the change is
+simple and well understood, maintainers will indicate their support with a
+heartfelt emoji.
 
 If the issue would benefit from thorough discussion, maintainers may request
-that you create a [Request For Comment][rfcs] in the CometBFT repo. Discussion
-at the RFC stage will build a collective understanding of the dimensions of the
-problems and help structure conversations around trade-offs.
+that you create a [Request For
+Comment](https://github.com/cometbft/cometbft/tree/main/docs/rfc) in the
+CometBFT repo. Discussion at the RFC stage will build collective
+understanding of the dimensions of the problems and help structure conversations
+around trade-offs.
 
-### Architecture decision records (ADRs)
+When the problem is well understood but the solution leads to large structural
+changes to the code base, these changes should be proposed in the form of an
+[Architectural Decision Record (ADR)](./docs/architecture/). The ADR will help
+build consensus on an overall strategy to ensure the code base maintains
+coherence in the larger context. If you are not comfortable with writing an ADR,
+you can open a less-formal issue and the maintainers will help you turn it into
+an ADR.
 
-When the problem is well understood but the solution leads to
-large/complex/risky structural changes to the code base, these changes should be
-proposed in the form of an [Architectural Decision Record
-(ADR)](docs/references/architecture/). The ADR will help build consensus on an overall
-strategy to ensure the code base maintains coherence in the larger context. If
-you are not comfortable with writing an ADR, you can open a less formal issue
-and the maintainers will help you turn it into an ADR. Sometimes the best way to
-demonstrate the value of an ADR is to build a proof-of-concept (PoC) along with
-the ADR - in this case, link to the PoC from the ADR PR.
+> How to pick a number for the ADR?
 
-**How does one pick a number for a new ADR?**
+Find the largest existing ADR number and bump it by 1.
 
-Find the largest existing ADR number (between those in `./docs/architecture/`
-and those that may be open as issues or pull requests) and bump it by 1.
+When the problem as well as proposed solution are well understood,
+changes should start with a [draft
+pull request](https://github.blog/2019-02-14-introducing-draft-pull-requests/)
+against `main`. The draft signals that work is underway. When the work
+is ready for feedback, hitting "Ready for Review" will signal to the
+maintainers to take a look.
 
-### Pull requests
+![Contributing flow](./docs/imgs/contributing.png)
 
-When the problem as well as the proposed solution are well understood and low-risk,
-changes should start with a **pull request**.
+Each stage of the process is aimed at creating feedback cycles which align contributors and maintainers to make sure:
 
-Please adhere to the guidelines in the [Ease of reviewing](#ease-of-reviewing)
-section above when submitting pull requests.
+- Contributors don’t waste their time implementing/proposing features which won’t land in `main`.
+- Maintainers have the necessary context in order to support and review contributions.
 
-### Draft pull requests
-
-One can optionally submit a [draft pull request][gh-draft-prs] against `main`,
-in which case this signals that work is underway and is not ready for review.
-Only users that are familiar with the issue, or those that the author explicitly
-requested a review from are expected to write comments at this point. When the
-work is ready for feedback, hitting "Ready for Review" will signal to the
-maintainers to take a look, and to the rest of the community that feedback is
-welcome.
-
-**The team may opt to ignore unsolicited comments/feedback on draft PRs**, as
-having to respond to feedback on work that is not marked as "Ready for Review"
-interferes with the process of getting the work to the point that it is ready to
-review.
 
 ## Forking
 
-Please note that Go requires code to live under absolute paths, which
-complicates forking. While my fork lives at
-`https://github.com/cometbft/cometbft`, the code should never exist at
-`$GOPATH/src/github.com/ebuchman/cometbft`. Instead, we use `git remote` to add
-the fork as a new remote for the original repo,
+Please note that Go requires code to live under absolute paths, which complicates forking.
+While my fork lives at `https://github.com/ebuchman/cometbft`,
+the code should never exist at `$GOPATH/src/github.com/ebuchman/cometbft`.
+Instead, we use `git remote` to add the fork as a new remote for the original repo,
 `$GOPATH/src/github.com/cometbft/cometbft`, and do all the work there.
 
 For instance, to create a fork and work on a branch of it, I would:
 
 - Create the fork on GitHub, using the fork button.
-- Go to the original repo checked out locally (i.e.
-  `$GOPATH/src/github.com/cometbft/cometbft`)
+- Go to the original repo checked out locally (i.e. `$GOPATH/src/github.com/cometbft/cometbft`)
 - `git remote rename origin upstream`
 - `git remote add origin git@github.com:ebuchman/basecoin.git`
 
-Now `origin` refers to my fork and `upstream` refers to the CometBFT version. So
-I can `git push -u origin main` to update my fork, and make pull requests to
-CometBFT from there. Of course, replace `ebuchman` with your git handle.
+Now `origin` refers to my fork and `upstream` refers to the CometBFT version.
+So I can `git push -u origin main` to update my fork, and make pull requests to CometBFT from there.
+Of course, replace `ebuchman` with your git handle.
 
 To pull in updates from the origin repo, run
 
@@ -198,137 +83,34 @@ To pull in updates from the origin repo, run
 
 ## Dependencies
 
-We use [Go modules] to manage dependencies.
+We use [go modules](https://github.com/golang/go/wiki/Modules) to manage dependencies.
 
-That said, the `main` branch of every CometBFT repository should just build with
-`go get`, which means they should be kept up-to-date with their dependencies so
-we can get away with telling people they can just `go get` our software.
+That said, the `main` branch of every CometBFT repository should just build
+with `go get`, which means they should be kept up-to-date with their
+dependencies so we can get away with telling people they can just `go get` our
+software.
 
 Since some dependencies are not under our control, a third party may break our
-build, in which case we can fall back on `go mod tidy`. Even for dependencies
-under our control, go helps us to keep multiple repos in sync as they evolve.
-Anything with an executable, such as apps, tools, and the core, should use dep.
+build, in which case we can fall back on `go mod tidy`. Even for dependencies under our control, go helps us to
+keep multiple repos in sync as they evolve. Anything with an executable, such
+as apps, tools, and the core, should use dep.
 
 Run `go list -u -m all` to get a list of dependencies that may not be
 up-to-date.
 
 When updating dependencies, please only update the particular dependencies you
-need. Instead of running `go get -u=patch`, which will update anything, specify
-exactly the dependency you want to update.
-
-Do not bump the major Go version in a patch release (namely, `v0.38.x`
-branches) unless there's a pressing reason to do so (e.g., known security
-vulnerabilities).
-
-## Logging
-
-Operators, consensus engine and application developers all need information from
-the system while it is running. One avenue through which they get that
-information is via the logs. Whenever making contributions, please think
-carefully about what each of those groups of users would want to know about the
-operation of the system and try to adhere to the following guidelines as far as
-reasonably possible.
-
-### To log, or not to log
-
-Whether or not to log something at all should take into consideration how
-frequently the log message will appear. Users hate being spammed by large
-quantities of useless log messages. If you anticipate that a particular log
-message will occur frequently (e.g. a few times per minute), try to find ways to
-either eliminate that message or reduce its frequency (e.g. only logging every
-Nth message, or a summary message every minute or hour).
-
-### Log levels
-
-Different log levels should target different groups of users. CometBFT supports
-**Debug**, **Info**, **Warn** and **Error** levels.
-
-- **Debug**: Should primarily target consensus engine developers (i.e. core team
-  members and developers working on CometBFT forks).
-- **Info**, **Warn** and **Error**: Should primarily target operators and application
-  developers.
-
-### Sensitive information
-
-It should go without saying, but sensitive information (passwords/tokens,
-private keys, etc.) should **never** be logged. If one needs to inspect such
-information while debugging, rather use a [debugger][delve] or even a
-_temporary_ `fmt.Printf` statement.
-
-The logging infrastructure in CometBFT does not automatically scrub such
-sensitive information from the logs, so it is up to developers to ensure that
-they do not log such information.
-
-### Log messages
-
-Log messages should always be tailored to the intended target audience. Unlike
-Go errors, **log messages must have the first letter of the message
-capitalized**. Only _errors_ in Go should start with a lowercase letter because
-they may end up being chained/embedded, but log messages are not chained in this
-same way.
-
-### Logging parameters
-
-In general, log messages should contain the **bare minimum** amount of
-information for those messages to be actionable by the target audience. So
-instead of dumping large quantities of raw data into the logs (e.g. RPC
-responses, transactions, block data), include lightweight references to the data
-that users can go look up via the RPC, CLI tools, etc. if they are genuinely
-interested in the details.
-
-When outputting variables, also keep in mind **concurrency concerns** of doing
-so. If outputting a pointer, understand that the value associated with that
-pointer at the time of calling the log function may differ to its value at the
-time it is finally serialized into the log message. Perhaps consider creating a
-temporary copy of the specific value you want to output and logging that
-temporary value. Also keep in mind potential data races when doing so.
-
-Finally, **use expensive operations like `fmt.Sprintf` sparingly**, as this can
-have a meaningful performance impact on a running production system. Consider an
-example where one may call `fmt.Sprintf` when logging something at **debug**
-level: even though an operator has configured their system to only log at
-**info** level and above, the expensive `fmt.Sprintf` calls will still take
-place, potentially slowing the system down. In such instances, consider printing
-values [lazily][log-lazy].
-
-### Examples of good log messages
-
-```golang
-// Operators generally wouldn't care whether an internal construct, like module
-// construction, has been executed successfully.
-logger.Debug("Starting reactor", "module", "consensus")
-
-logger.Info("Committed block", "height", height, "appHash", appHash)
-
-// Include information about the error.
-logger.Error("Failed to execute important operation", "err", err)
-```
-
-### Examples of bad log messages
-
-```golang
-// Message starts with a lowercase letter, and will probably be called very
-// frequently, effectively spamming operators.
-logger.Info("connected to peer", "peerID", peerID)
-
-// Potentially prints huge quantities of data (unnecessary) in a single message,
-// and at info level, spamming operators.
-logger.Info("Committed block", "block", fmt.Sprintf("%v", block))
-
-// Just as bad as the info-level message above because the (expensive)
-// fmt.Sprintf is always called, regardless of the operator's configured log
-// level, potentially creating a meaningful performance hit.
-logger.Debug("Committed block", "block", fmt.Sprintf("%v", block))
-```
+need. Instead of running `go get -u=patch`, which will update anything,
+specify exactly the dependency you want to update.
 
 ## Protobuf
 
-We use [Protocol Buffers] along with [`gogoproto`] to generate code for use
+We use [Protocol Buffers](https://developers.google.com/protocol-buffers) along
+with [`gogoproto`](https://github.com/cosmos/gogoproto) to generate code for use
 across CometBFT.
 
 To generate proto stubs, lint, and check protos for breaking changes, you will
-need to install [buf] and `gogoproto`. Then, from the root of the repository,
-run:
+need to install [buf](https://buf.build/) and `gogoproto`. Then, from the root
+of the repository, run:
 
 ```bash
 # Lint all of the .proto files
@@ -342,8 +124,9 @@ make proto-check-breaking
 make proto-gen
 ```
 
-To automatically format `.proto` files, you will need [`clang-format`]
-installed. Once installed, you can run:
+To automatically format `.proto` files, you will need
+[`clang-format`](https://clang.llvm.org/docs/ClangFormat.html) installed. Once
+installed, you can run:
 
 ```bash
 make proto-format
@@ -351,8 +134,7 @@ make proto-format
 
 ### Visual Studio Code
 
-If you are a VS Code user, you may want to add the following to your
-`.vscode/settings.json`:
+If you are a VS Code user, you may want to add the following to your `.vscode/settings.json`:
 
 ```json
 {
@@ -366,21 +148,11 @@ If you are a VS Code user, you may want to add the following to your
 
 ## Changelog
 
-To manage and generate our changelog, we currently use [unclog].
+Every PR with types `fix`, `feat`, `deps`, and `refactor` should include an entry in `CHANGELOG.md`. Commits on the
+`main` branch should be placed under `UNRELEASED` within the correct category.
+The categories include `DEPENDENCIES`, `IMPROVEMENTS`, `FEATURES`, `BUG-FIXES`, `STATE-BREAKING`, `API-BREAKING`.
 
-Every fix, improvement, feature, or breaking change should be made in a
-pull-request that includes a file
-`.changelog/unreleased/${category}/${issue-or-pr-number}-${description}.md`,
-where:
-
-- `category` is one of `improvements`, `breaking-changes`, `bug-fixes`,
-  `features` and if multiple apply, create multiple files;
-- `description` is a short (4 to 6 word), hyphen separated description of the
-  fix, starting the component changed; and,
-- `issue or PR number` is the CometBFT issue number, if one exists, or the PR
-  number, otherwise.
-
-For examples, see the [.changelog](.changelog) folder.
+For examples, see the [CHANGELOG.md](CHANGELOG.md) file.
 
 A feature can also be worked on a feature branch, if its size and/or risk
 justifies it (see [below](#branching-model-and-release)).
@@ -395,23 +167,20 @@ title of the PR _very_ clearly explains the benefit of a change to a user.
 Some good examples of changelog entry descriptions:
 
 ```md
-- `[consensus]` Small transaction throughput improvement (approximately 3-5\%
-  from preliminary tests) through refactoring the way we use channels
-  ([\#1111](https://github.com/cometbft/cometbft/issues/1111))
-- `[mempool]` Refactor Go API to be able to easily swap out the current mempool
-  implementation in CometBFT forks
-  ([\#1112](https://github.com/cometbft/cometbft/issues/1112))
-- `[p2p]` Automatically ban peers when their messages are unsolicited or are
-  received too frequently
-  ([\#1113](https://github.com/cometbft/cometbft/issues/1113))
+- [consensus] \#1111 Small transaction throughput improvement (approximately
+  3-5\% from preliminary tests) through refactoring the way we use channels
+- [mempool] \#1112 Refactor Go API to be able to easily swap out the current
+  mempool implementation in CometBFT forks
+- [p2p] \#1113 Automatically ban peers when their messages are unsolicited or
+  are received too frequently
 ```
 
 Some bad examples of changelog entry descriptions:
 
 ```md
-- `[consensus]` Refactor channel usage
-- `[mempool]` Make API generic
-- `[p2p]` Ban for PEX message abuse
+- [consensus] \#1111 Refactor channel usage
+- [mempool] \#1112 Make API generic
+- [p2p] \#1113 Ban for PEX message abuse
 ```
 
 For more on how to write good changelog entries, see:
@@ -425,25 +194,25 @@ For more on how to write good changelog entries, see:
 Changelog entries should be formatted as follows:
 
 ```md
-- `[module]` Some description of the change
-  ([\#1234](https://github.com/cometbft/cometbft/issues/1234): @contributor)
+- [module] \#xxx Some description of the change (@contributor)
 ```
 
 Here, `module` is the part of the code that changed (typically a top-level Go
-package), `1234` is the pull-request number, and `contributor` is the author/s
-of the change (only necessary if you are not a member of the CometBFT core
-team).
+package), `xxx` is the pull-request number, and `contributor` is the author/s of
+the change.
 
-It's also acceptable for `1234` to refer to the relevant issue number, but
+It's also acceptable for `xxx` to refer to the relevant issue number, but
 pull-request numbers are preferred. Note this means pull-requests should be
 opened first so the changelog can then be updated with the pull-request's
-number.
+number. There is no need to include the full link, as this will be added
+automatically during release. But please include the backslash and pound, eg.
+`\#2313`.
 
 Changelog entries should be ordered alphabetically according to the `module`,
 and numerically according to the pull-request number.
 
-Changes with multiple classifications should be doubly included (e.g. a bug fix
-that is also a breaking change that should be recorded under both).
+Changes with multiple classifications should be doubly included (eg. a bug fix
+that is also a breaking change should be recorded under both).
 
 Breaking changes are further subdivided according to the APIs/users they impact.
 Any change that affects multiple APIs/users should be recorded multiply - for
@@ -455,11 +224,10 @@ removed from the header in RPC responses as well.
 
 The main development branch is `main`.
 
-Every release is maintained in a release branch named according to its major
-release number (e.g. `v0.38.x` or `v1.x`).
+Every release is maintained in a release branch named `vX.Y.Z`.
 
 Pending minor releases have long-lived release candidate ("RC") branches. Minor
-release changes should be merged into these long-lived RC branches at the same
+release changes should be merged to these long-lived RC branches at the same
 time that the changes are merged to `main`.
 
 If a feature's size is big and/or its risk is high, it can be implemented in a
@@ -471,8 +239,8 @@ the feature is complete, the feature branch is merged back (merge commit) into
 different features in different releases.
 
 Note, all pull requests should be squash merged except for merging to a release
-branch. This keeps the commit history clean and makes it easy to reference the
-pull request where a change was introduced.
+branch (named `vX.Y`). This keeps the commit history clean and makes it easy to
+reference the pull request where a change was introduced.
 
 ### Development Procedure
 
@@ -498,29 +266,6 @@ means that you shouldn't update someone else's branch for them; even if it seems
 like you're doing them a favor, you may be interfering with their git flow in
 some way!)
 
-### Formatting & Linting
-
-When submitting a change, please make sure to:
-
-1. Format the code using [gofumpt](https://github.com/mvdan/gofumpt)
-2. Lint the code using [golangci-lint](https://golangci-lint.run/)
-3. Check the code and docs for spelling errors using [codespell](https://github.com/codespell-project/codespell).
-
-It's recommended to install a Git pre-commit hook: `make pre-commit`. The hook will
-automatically run the above steps for you every time you commit something. You
-can also do this manually with `make lint`.
-
-The pre-commit hook uses [the pre-commit framework](https://pre-commit.com/).
-If you have Python 3 installed, you don't need to do anything else. Otherwise,
-please refer to [the installation guide](https://pre-commit.com/#install).
-
-In rare cases, you may want to skip the pre-commit hook. You can do so by adding
-`-n` (or `--no-verify`) flag to `git commit`:
-
-```bash
-git commit -n -m "add X"
-```
-
 #### Merging Pull Requests
 
 It is also our convention that authors merge their own pull requests, when
@@ -533,28 +278,43 @@ Before merging a pull request:
 - Ensure pull branch is up-to-date with a recent `main` (GitHub won't let you
   merge without this!)
 - Run `make test` to ensure that all tests pass
-- [Squash][git-squash] merge pull request
+- [Squash](https://stackoverflow.com/questions/5189560/squash-my-last-x-commits-together-using-git)
+  merge pull request
+
+#### Pull Requests for Minor Releases
+
+If your change should be included in a minor release, please also open a PR
+against the long-lived minor release candidate branch (e.g., `rc1/v0.33.5`)
+_immediately after your change has been merged to main_.
+
+You can do this by cherry-picking your commit off `main`:
+
+```sh
+$ git checkout rc1/v0.33.5
+$ git checkout -b {new branch name}
+$ git cherry-pick {commit SHA from main}
+# may need to fix conflicts, and then use git add and git cherry-pick --continue
+$ git push origin {new branch name}
+```
+
+After this, you can open a PR. Please note in the PR body if there were merge
+conflicts so that reviewers can be sure to take a thorough look.
 
 ### Git Commit Style
 
-We follow the [Conventional Commits][conventional-commits] spec. Write concise
-commits that start with a type (`fix`, `feat`, `chore`, `ci`, `docs`, etc.) and
-an optional scope - package name (e.g., `feat(internal/consensus)`), followed
-by a description that finishes the sentence "This change modifies CometBFT
-to...".
-
-If the commit introduces a breaking change, append the `!` after the scope
-(e.g., `feat(internal/consensus)!`).
-
-For example,
+We follow the [Go style guide on commit
+messages](https://tip.golang.org/doc/contribute.html#commit_messages). Write
+concise commits that start with the package name and have a description that
+finishes the sentence "This change modifies CometBFT to...". For example,
 
 ```sh
-fix(cmd/cometbft/commands/debug): execute p.Signal only when p is not nil
+cmd/debug: execute p.Signal only when p is not nil
 
 [potentially longer description in the body]
 
 Fixes #nnnn
 ```
+
 Each PR should have one commit once it lands on `main`; this can be accomplished
 by using the "squash and merge" button on GitHub. Be sure to edit your commit
 message, though!
@@ -564,15 +324,15 @@ message, though!
 ### Unit tests
 
 Unit tests are located in `_test.go` files as directed by [the Go testing
-package][go-testing]. If you're adding or removing a function, please check
-there's a `TestType_Method` test for it.
+package](https://golang.org/pkg/testing/). If you're adding or removing a
+function, please check there's a `TestType_Method` test for it.
 
 Run: `make test`
 
 ### Integration tests
 
-Integration tests are also located in `_test.go` files. What differentiates them
-is a more complicated setup, which usually involves setting up two or more
+Integration tests are also located in `_test.go` files. What differentiates
+them is a more complicated setup, which usually involves setting up two or more
 components.
 
 Run: `make test_integrations`
@@ -596,30 +356,26 @@ cd test/e2e && \
 *NOTE: if you're just submitting your first PR, you won't need to touch these
 most probably (99.9%)*.
 
-[Fuzz tests] can be found inside the `./test/fuzz` directory. See
-[README.md](./test/fuzz/README.md) for details.
+[Fuzz tests](https://en.wikipedia.org/wiki/Fuzzing) can be found inside the
+`./test/fuzz` directory. See [README.md](./test/fuzz/README.md) for details.
 
 Run: `cd test/fuzz && make fuzz-{PACKAGE-COMPONENT}`
 
 ### RPC Testing
 
-**If you contribute to the RPC endpoints it's important to document your changes
-in the [OpenAPI file](./rpc/openapi/openapi.yaml)**.
+**If you contribute to the RPC endpoints it's important to document your
+changes in the [Openapi file](./rpc/openapi/openapi.yaml)**.
 
-[gh-issues]: https://github.com/cometbft/cometbft/issues
-[search-issues]: https://github.com/cometbft/cometbft/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22
-[new-gh-issue]: https://github.com/cometbft/cometbft/issues/new/choose
-[rfcs]: https://github.com/cometbft/cometbft/tree/main/docs/references/rfc
-[gh-draft-prs]: https://github.blog/2019-02-14-introducing-draft-pull-requests/
-[Go modules]: https://github.com/golang/go/wiki/Modules
-[Protocol Buffers]: https://protobuf.dev/
-[`gogoproto`]: https://github.com/cosmos/gogoproto
-[buf]: https://buf.build/
-[`clang-format`]: https://clang.llvm.org/docs/ClangFormat.html
-[unclog]: https://github.com/informalsystems/unclog
-[git-squash]: https://stackoverflow.com/questions/5189560/squash-my-last-x-commits-together-using-git
-[go-testing]: https://golang.org/pkg/testing/
-[Fuzz tests]: https://en.wikipedia.org/wiki/Fuzzing
-[delve]: https://github.com/go-delve/delve
-[log-lazy]: https://github.com/cometbft/cometbft/blob/main/libs/log/lazy.go
-[conventional-commits]: https://www.conventionalcommits.org/en/v1.0.0/
+To test your changes you must install `nodejs` and run:
+
+```bash
+npm i -g dredd
+make build-linux build-contract-tests-hooks
+make contract-tests
+```
+
+**WARNING: these are currently broken due to <https://github.com/apiaryio/dredd>
+not supporting complete OpenAPI 3**.
+
+This command will popup a network and check every endpoint against what has
+been documented.

@@ -1,5 +1,3 @@
-// Package statesync may be internalized (made private) in future  releases.
-// XXX Deprecated.
 package statesync
 
 import (
@@ -8,21 +6,20 @@ import (
 	"sort"
 	"time"
 
-	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
-	abci "github.com/cometbft/cometbft/v2/abci/types"
-	"github.com/cometbft/cometbft/v2/config"
-	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
-	"github.com/cometbft/cometbft/v2/p2p"
-	tcpconn "github.com/cometbft/cometbft/v2/p2p/transport/tcp/conn"
-	"github.com/cometbft/cometbft/v2/proxy"
-	sm "github.com/cometbft/cometbft/v2/state"
-	"github.com/cometbft/cometbft/v2/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/config"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/p2p"
+	ssproto "github.com/cometbft/cometbft/proto/tendermint/statesync"
+	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
-	// SnapshotChannel exchanges snapshot metadata.
+	// SnapshotChannel exchanges snapshot metadata
 	SnapshotChannel = byte(0x60)
-	// ChunkChannel exchanges chunk contents.
+	// ChunkChannel exchanges chunk contents
 	ChunkChannel = byte(0x61)
 	// recentSnapshots is the number of recent snapshots to send and receive per peer.
 	recentSnapshots = 10
@@ -63,28 +60,28 @@ func NewReactor(
 	return r
 }
 
-// StreamDescriptors implements p2p.Reactor.
-func (*Reactor) StreamDescriptors() []p2p.StreamDescriptor {
-	return []p2p.StreamDescriptor{
-		tcpconn.StreamDescriptor{
+// GetChannels implements p2p.Reactor.
+func (r *Reactor) GetChannels() []*p2p.ChannelDescriptor {
+	return []*p2p.ChannelDescriptor{
+		{
 			ID:                  SnapshotChannel,
 			Priority:            5,
 			SendQueueCapacity:   10,
 			RecvMessageCapacity: snapshotMsgSize,
-			MessageTypeI:        &ssproto.Message{},
+			MessageType:         &ssproto.Message{},
 		},
-		tcpconn.StreamDescriptor{
+		{
 			ID:                  ChunkChannel,
 			Priority:            3,
 			SendQueueCapacity:   10,
 			RecvMessageCapacity: chunkMsgSize,
-			MessageTypeI:        &ssproto.Message{},
+			MessageType:         &ssproto.Message{},
 		},
 	}
 }
 
 // OnStart implements p2p.Reactor.
-func (*Reactor) OnStart() error {
+func (r *Reactor) OnStart() error {
 	return nil
 }
 
@@ -98,7 +95,7 @@ func (r *Reactor) AddPeer(peer p2p.Peer) {
 }
 
 // RemovePeer implements p2p.Reactor.
-func (r *Reactor) RemovePeer(peer p2p.Peer, _ any) {
+func (r *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
 	r.mtx.RLock()
 	defer r.mtx.RUnlock()
 	if r.syncer != nil {
@@ -131,7 +128,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 			for _, snapshot := range snapshots {
 				r.Logger.Debug("Advertising snapshot", "height", snapshot.Height,
 					"format", snapshot.Format, "peer", e.Src.ID())
-				_ = e.Src.Send(p2p.Envelope{
+				e.Src.Send(p2p.Envelope{
 					ChannelID: e.ChannelID,
 					Message: &ssproto.SnapshotsResponse{
 						Height:   snapshot.Height,
@@ -174,7 +171,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 		case *ssproto.ChunkRequest:
 			r.Logger.Debug("Received chunk request", "height", msg.Height, "format", msg.Format,
 				"chunk", msg.Index, "peer", e.Src.ID())
-			resp, err := r.conn.LoadSnapshotChunk(context.TODO(), &abci.LoadSnapshotChunkRequest{
+			resp, err := r.conn.LoadSnapshotChunk(context.TODO(), &abci.RequestLoadSnapshotChunk{
 				Height: msg.Height,
 				Format: msg.Format,
 				Chunk:  msg.Index,
@@ -186,7 +183,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 			}
 			r.Logger.Debug("Sending chunk", "height", msg.Height, "format", msg.Format,
 				"chunk", msg.Index, "peer", e.Src.ID())
-			_ = e.Src.Send(p2p.Envelope{
+			e.Src.Send(p2p.Envelope{
 				ChannelID: ChunkChannel,
 				Message: &ssproto.ChunkResponse{
 					Height:  msg.Height,
@@ -228,9 +225,9 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 	}
 }
 
-// recentSnapshots fetches the n most recent snapshots from the app.
+// recentSnapshots fetches the n most recent snapshots from the app
 func (r *Reactor) recentSnapshots(n uint32) ([]*snapshot, error) {
-	resp, err := r.conn.ListSnapshots(context.TODO(), &abci.ListSnapshotsRequest{})
+	resp, err := r.conn.ListSnapshots(context.TODO(), &abci.RequestListSnapshots{})
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +261,7 @@ func (r *Reactor) recentSnapshots(n uint32) ([]*snapshot, error) {
 
 // Sync runs a state sync, returning the new state and last commit at the snapshot height.
 // The caller must store the state and commit in the state database and block store.
-func (r *Reactor) Sync(stateProvider StateProvider, maxDiscoveryTime time.Duration) (sm.State, *types.Commit, error) {
+func (r *Reactor) Sync(stateProvider StateProvider, discoveryTime time.Duration) (sm.State, *types.Commit, error) {
 	r.mtx.Lock()
 	if r.syncer != nil {
 		r.mtx.Unlock()
@@ -286,8 +283,7 @@ func (r *Reactor) Sync(stateProvider StateProvider, maxDiscoveryTime time.Durati
 
 	hook()
 
-	const discoveryTime = 5 * time.Second
-	state, commit, err := r.syncer.SyncAny(discoveryTime, maxDiscoveryTime, hook)
+	state, commit, err := r.syncer.SyncAny(discoveryTime, hook)
 
 	r.mtx.Lock()
 	r.syncer = nil

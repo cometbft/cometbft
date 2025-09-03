@@ -7,15 +7,15 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	cfg "github.com/cometbft/cometbft/v2/config"
-	"github.com/cometbft/cometbft/v2/libs/cli"
-	cmtflags "github.com/cometbft/cometbft/v2/libs/cli/flags"
-	"github.com/cometbft/cometbft/v2/libs/log"
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/libs/cli"
+	cmtflags "github.com/cometbft/cometbft/libs/cli/flags"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 var (
 	config = cfg.DefaultConfig()
-	logger = log.NewLogger(os.Stdout)
+	logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 )
 
 func init() {
@@ -26,28 +26,8 @@ func registerFlagsRootCmd(cmd *cobra.Command) {
 	cmd.PersistentFlags().String("log_level", config.LogLevel, "log level")
 }
 
-func ConfigHome(cmd *cobra.Command) (string, error) {
-	var home string
-	switch {
-	case os.Getenv("CMTHOME") != "":
-		home = os.Getenv("CMTHOME")
-	case os.Getenv("TMHOME") != "":
-		// XXX: Deprecated.
-		home = os.Getenv("TMHOME")
-	default:
-		var err error
-		// Default: $HOME/.cometbft
-		home, err = cmd.Flags().GetString(cli.HomeFlag)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	return home, nil
-}
-
 // ParseConfig retrieves the default environment configuration,
-// sets up the CometBFT root and ensures that the root exists.
+// sets up the CometBFT root and ensures that the root exists
 func ParseConfig(cmd *cobra.Command) (*cfg.Config, error) {
 	conf := cfg.DefaultConfig()
 	err := viper.Unmarshal(conf)
@@ -55,13 +35,20 @@ func ParseConfig(cmd *cobra.Command) (*cfg.Config, error) {
 		return nil, err
 	}
 
-	if os.Getenv("TMHOME") != "" {
+	var home string
+	if os.Getenv("CMTHOME") != "" {
+		home = os.Getenv("CMTHOME")
+	} else if os.Getenv("TMHOME") != "" {
+		// XXX: Deprecated.
+		home = os.Getenv("TMHOME")
 		logger.Error("Deprecated environment variable TMHOME identified. CMTHOME should be used instead.")
+	} else {
+		home, err = cmd.Flags().GetString(cli.HomeFlag)
+		if err != nil {
+			return nil, err
+		}
 	}
-	home, err := ConfigHome(cmd)
-	if err != nil {
-		return nil, err
-	}
+
 	conf.RootDir = home
 
 	conf.SetRoot(conf.RootDir)
@@ -71,7 +58,7 @@ func ParseConfig(cmd *cobra.Command) (*cfg.Config, error) {
 	}
 	if warnings := conf.CheckDeprecated(); len(warnings) > 0 {
 		for _, warning := range warnings {
-			logger.Warn("deprecated usage found in configuration file", "usage", warning)
+			logger.Info("deprecated usage found in configuration file", "usage", warning)
 		}
 	}
 	return conf, nil
@@ -81,7 +68,7 @@ func ParseConfig(cmd *cobra.Command) (*cfg.Config, error) {
 var RootCmd = &cobra.Command{
 	Use:   "cometbft",
 	Short: "BFT state machine replication for applications in any programming languages",
-	PersistentPreRunE: func(cmd *cobra.Command, _ []string) (err error) {
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
 		if cmd.Name() == VersionCmd.Name() {
 			return nil
 		}
@@ -91,14 +78,8 @@ var RootCmd = &cobra.Command{
 			return err
 		}
 
-		for _, possibleMisconfiguration := range config.PossibleMisconfigurations() {
-			logger.Info(possibleMisconfiguration)
-		}
-
 		if config.LogFormat == cfg.LogFormatJSON {
-			logger = log.NewJSONLogger(os.Stdout)
-		} else if !config.LogColors {
-			logger = log.NewLoggerWithColor(os.Stdout, false)
+			logger = log.NewTMJSONLogger(log.NewSyncWriter(os.Stdout))
 		}
 
 		logger, err = cmtflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)
@@ -110,6 +91,7 @@ var RootCmd = &cobra.Command{
 			logger = log.NewTracingLogger(logger)
 		}
 
+		logger = logger.With("module", "main")
 		return nil
 	},
 }

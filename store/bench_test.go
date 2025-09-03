@@ -5,16 +5,16 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/v2/internal/test"
-	"github.com/cometbft/cometbft/v2/types"
-	cmttime "github.com/cometbft/cometbft/v2/types/time"
+	"github.com/cometbft/cometbft/internal/test"
+	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 // TestLoadBlockExtendedCommit tests loading the extended commit for a previously
 // saved block. The load method should return nil when only a commit was saved and
 // return the extended commit otherwise.
 func BenchmarkRepeatedLoadSeenCommitSameBlock(b *testing.B) {
-	state, bs, _, _, cleanup, _ := makeStateAndBlockStoreAndIndexers()
+	state, bs, cleanup := makeStateAndBlockStore()
 	defer cleanup()
 	h := bs.Height() + 1
 	block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)

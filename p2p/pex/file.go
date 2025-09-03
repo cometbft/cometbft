@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cometbft/cometbft/v2/internal/tempfile"
+	"github.com/cometbft/cometbft/libs/tempfile"
 )
 
 /* Loading & Saving */
@@ -35,7 +35,7 @@ func (a *addrBook) saveToFile(filePath string) {
 		a.Logger.Error("Failed to save AddrBook to file", "err", err)
 		return
 	}
-	err = tempfile.WriteFileAtomic(filePath, jsonBytes, 0o644)
+	err = tempfile.WriteFileAtomic(filePath, jsonBytes, 0644)
 	if err != nil {
 		a.Logger.Error("Failed to save AddrBook to file", "file", filePath, "err", err)
 	}

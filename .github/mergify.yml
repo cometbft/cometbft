@@ -2,54 +2,54 @@ pull_request_rules:
   - name: merge PR (v0.38.x)
     description: merge PR if it passes tests and there are no conflicts (v0.38.x)
     conditions:
-      - "-label=manual-backport"
-      - author=mergify[bot]
-      - head~=mergify/bp/
-      - "-base=v1.x"
-      - "-base=v0.34.x"
-      - check-success=Build (arm, linux)
-      - check-success=check
-      - check-success=golangci-lint
-      - check-success=e2e-test
-      - check-success=tests (00)
-      - check-success=tests (01)
-      - check-success=tests (02)
-      - check-success=tests (03)
-      - check-success=tests (04)
-      - check-success=tests (05)
-      - check-success=test_abci_cli
-      - check-success=test_apps
+      - "-label = manual-backport"
+      - author = mergify[bot]
+      - head ~= ^mergify/bp/
+      - base = v0.38.x
+      - "check-success = Build (arm, linux)"
+      - "check-success = check"
+      - "check-success = golangci-lint"
+      - "check-success = e2e-test"
+      - "check-success = tests (00)"
+      - "check-success = tests (01)"
+      - "check-success = tests (02)"
+      - "check-success = tests (03)"
+      - "check-success = tests (04)"
+      - "check-success = tests (05)"
+      - "check-success = test_abci_cli"
+      - "check-success = test_apps"
     actions:
       merge:
         method: squash
+
   - name: merge PR (v1.x)
     description: merge PR if it passes tests and there are no conflicts (v1.x)
     conditions:
-      - "-label=manual-backport"
-      - author=mergify[bot]
-      - head~=mergify/bp/
-      - base=v1.x
-      - check-success=Build (arm, linux)
-      - check-success=check
-      - check-success=check-mocks-metrics
-      - check-success=lint
-      - check-success=e2e-test
-      - check-success=tests (00)
-      - check-success=tests (01)
-      - check-success=tests (02)
-      - check-success=tests (03)
-      - check-success=tests (04)
-      - check-success=tests (05)
-      - check-success=test_abci_cli
-      - check-success=test_apps
-      - check-success=check-proto
+      - "-label = manual-backport"
+      - author = mergify[bot]
+      - head ~= ^mergify/bp/
+      - base = v1.x
+      - "check-success = Build (arm, linux)"
+      - "check-success = check"
+      - "check-success = check-mocks-metrics"
+      - "check-success = lint"
+      - "check-success = e2e-test"
+      - "check-success = tests (00)"
+      - "check-success = tests (01)"
+      - "check-success = tests (02)"
+      - "check-success = tests (03)"
+      - "check-success = tests (04)"
+      - "check-success = tests (05)"
+      - "check-success = test_abci_cli"
+      - "check-success = test_apps"
+      - "check-success = check-proto"
     actions:
       merge:
         method: squash
 
   - name: automatic approval for Dependabot pull requests
     conditions:
-      - author=dependabot[bot]
+      - author = dependabot[bot]
     actions:
       review:
         type: APPROVE
@@ -57,8 +57,8 @@ pull_request_rules:
 
   - name: automatically merge PR with automerge label and no manual-backport label
     conditions:
-      - "-label=manual-backport"
-      - label=automerge
+      - "-label = manual-backport"
+      - label = automerge
     actions:
       merge:
         method: squash
@@ -75,18 +75,19 @@ pull_request_rules:
 
   - name: backport patches to v1.x branch
     conditions:
-      - base=main
-      - label=backport-to-v1.x
+      - base = main
+      - label = backport-to-v1.x
     actions:
       backport:
         branches:
           - v1.x
         assignees:
           - "{{ author }}"
+
   - name: backport patches to v0.38.x branch
     conditions:
-      - base=main
-      - label=backport-to-v0.38.x
+      - base = main
+      - label = backport-to-v0.38.x
     actions:
       backport:
         branches:

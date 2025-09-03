@@ -12,6 +12,19 @@ This iteration of the QA was run on CometBFT `v0.37.0-alpha3`, the first `v0.37.
 
 The changes with respect to the baseline, `TM v0.37.x` as of Oct 12, 2022 (Commit: 1cf9d8e276afe8595cba960b51cd056514965fd1), include the rebranding of our fork of Tendermint Core to CometBFT and several improvements, described in the CometBFT [CHANGELOG](https://github.com/cometbft/cometbft/blob/v0.37.0-alpha.3/CHANGELOG.md).
 
+## Table of Contents
+- [Testbed](#testbed)
+  - [Saturation point](#saturation-point)
+- [Examining latencies](#examining-latencies)
+- [Prometheus Metrics on the Chosen Experiment](#prometheus-metrics-on-the-chosen-experiment)
+  - [Mempool Size](#mempool-size)
+  - [Peers](#peers)
+  - [Consensus Rounds per Height](#consensus-rounds-per-height)
+  - [Blocks Produced per Minute, Transactions Processed per Minute](#blocks-produced-per-minute-transactions-processed-per-minute)
+  - [Memory Resident Set Size](#memory-resident-set-size)
+    - [CPU utilization](#cpu-utilization)
+- [Test Results](#test-results)
+
 ## Testbed
 
 As in other iterations of our QA process, we have used a 200-node network as testbed, plus nodes to introduce load and collect metrics.
@@ -19,7 +32,7 @@ As in other iterations of our QA process, we have used a 200-node network as tes
 ### Saturation point
 
 As in previous iterations, in our QA experiments, the system is subjected to a load slightly under a saturation point.
-The method to identify the saturation point is explained [here](TMCore-QA-34.md#finding-the-saturation-point) and its application to the baseline is described [here](TMCore-QA-37.md#finding-the-saturation-point).
+The method to identify the saturation point is explained [here](CometBFT-QA-34.md#finding-the-saturation-point) and its application to the baseline is described [here](TMCore-QA-37.md#finding-the-saturation-point).
 We use the same saturation point, that is, `c`, the number of connections created by the load runner process to the target node, is 2 and `r`, the rate or number of transactions issued per second, is 200.
 
 ## Examining latencies

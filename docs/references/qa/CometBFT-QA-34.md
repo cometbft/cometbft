@@ -8,6 +8,55 @@ parent:
 
 # CometBFT QA Results v0.34.x
 
+## Table of Contents
+- [v0.34.x - From Tendermint Core to CometBFT](#v034x---from-tendermint-core-to-cometbft)
+- [Configuration and Results](#configuration-and-results)
+  - [Saturation Point](#saturation-point)
+  - [Experiments](#experiments)
+- [Examining latencies](#examining-latencies)
+  - [CometBFT Homogeneous network](#cometbft-homogeneous-network)
+  - [1/2 Tendermint Core - 1/2 CometBFT](#12-tendermint-core---12-cometbft)
+  - [1/3 Tendermint Core - 2/3 CometBFT](#13-tendermint-core---23-cometbft)
+  - [2/3 Tendermint Core - 1/3 CometBFT](#23-tendermint-core---13-cometbft)
+- [Prometheus Metrics](#prometheus-metrics)
+  - [Mempool Size](#mempool-size)
+    - [Baseline](#baseline)
+    - [CometBFT Homogeneous network](#cometbft-homogeneous-network-1)
+    - [1/2 Tendermint Core - 1/2 CometBFT](#12-tendermint-core---12-cometbft-1)
+    - [1/3 Tendermint Core - 2/3 CometBFT](#13-tendermint-core---23-cometbft-1)
+    - [2/3 Tendermint Core - 1/3 CometBFT](#23-tendermint-core---13-cometbft-1)
+  - [Consensus Rounds per Height](#consensus-rounds-per-height)
+    - [Baseline](#baseline-1)
+    - [CometBFT Homogeneous network](#cometbft-homogeneous-network-2)
+    - [1/2 Tendermint Core - 1/2 CometBFT](#12-tendermint-core---12-cometbft-2)
+    - [1/3 Tendermint Core - 2/3 CometBFT](#13-tendermint-core---23-cometbft-2)
+    - [2/3 Tendermint Core - 1/3 CometBFT](#23-tendermint-core---13-cometbft-2)
+  - [Peers](#peers)
+    - [Baseline](#baseline-2)
+    - [CometBFT Homogeneous network](#cometbft-homogeneous-network-3)
+    - [1/2 Tendermint Core - 1/2 CometBFT](#12-tendermint-core---12-cometbft-3)
+    - [1/3 Tendermint Core - 2/3 CometBFT](#13-tendermint-core---23-cometbft-3)
+    - [2/3 Tendermint Core - 1/3 CometBFT](#23-tendermint-core---13-cometbft-3)
+  - [Blocks Produced per Minute, Transactions Processed per Minute](#blocks-produced-per-minute-transactions-processed-per-minute)
+    - [Baseline](#baseline-3)
+    - [CometBFT Homogeneous network](#cometbft-homogeneous-network-4)
+    - [1/2 Tendermint Core - 1/2 CometBFT](#12-tendermint-core---12-cometbft-4)
+    - [1/3 Tendermint Core - 2/3 CometBFT](#13-tendermint-core---23-cometbft-4)
+    - [2/3 Tendermint Core - 1/3 CometBFT](#23-tendermint-core---13-cometbft-4)
+  - [Memory Resident Set Size](#memory-resident-set-size)
+    - [Baseline](#baseline-4)
+    - [CometBFT Homogeneous network](#cometbft-homogeneous-network-5)
+    - [1/2 Tendermint Core - 1/2 CometBFT](#12-tendermint-core---12-cometbft-5)
+    - [1/3 Tendermint Core - 2/3 CometBFT](#13-tendermint-core---23-cometbft-5)
+    - [2/3 Tendermint Core - 1/3 CometBFT](#23-tendermint-core---13-cometbft-5)
+  - [CPU utilization](#cpu-utilization)
+    - [Baseline](#baseline-5)
+    - [CometBFT Homogeneous network](#cometbft-homogeneous-network-6)
+    - [1/2 Tendermint Core - 1/2 CometBFT](#12-tendermint-core---12-cometbft-6)
+    - [1/3 Tendermint Core - 2/3 CometBFT](#13-tendermint-core---23-cometbft-6)
+    - [2/3 Tendermint Core - 1/3 CometBFT](#23-tendermint-core---13-cometbft-6)
+- [Test Results](#test-results)
+
 ## v0.34.x - From Tendermint Core to CometBFT
 
 This section reports on the QA process we followed before releasing the first `v0.34.x` version
@@ -114,7 +163,7 @@ This section reports on the key Prometheus metrics extracted from the following 
 * Mixed network, 1/3 Tendermint Core `v0.34.26` and 2/3 running CometBFT: experiment with UUID starting with `fc5e`.
 * Mixed network, 2/3 Tendermint Core `v0.34.26` and 1/3 running CometBFT: experiment with UUID starting with `4759`.
 
-We make explicit comparisons between the baseline and the homogenous setups, but refrain from
+We make explicit comparisons between the baseline and the homogeneous setups, but refrain from
 commenting on the mixed network experiment unless they show some exceptional results.
 
 ### Mempool Size
@@ -191,13 +240,13 @@ on the corresponding plot, shown above.
 
 ### Peers
 
-The following plots show how many peers a node had throughtout the experiment.
+The following plots show how many peers a node had throughout the experiment.
 
 The thick red dashed line represents the moving average over a sliding window of 20 seconds.
 
 #### Baseline
 
-The following graph shows the that the number of peers was stable throughout the experiment.
+The following graph shows that the number of peers was stable throughout the experiment.
 Seed nodes typically have a higher number of peers.
 The fact that non-seed nodes reach more than 50 peers is due to
 [#9548](https://github.com/tendermint/tendermint/issues/9548).
@@ -236,7 +285,7 @@ The thick red dashed line show the rates' moving averages.
 
 #### Baseline
 
-The average number of blocks/minute oscilate between 10 and 40.
+The average number of blocks/minute oscillate between 10 and 40.
 
 ![heights](img34/baseline/block_rate_regular.png)
 
@@ -327,7 +376,7 @@ command, and their average value.
 
 #### CometBFT Homogeneous network
 
-The load in the homogenous network is, similarly to the baseline case, below 5 and, therefore, normal.
+The load in the homogeneous network is, similarly to the baseline case, below 5 and, therefore, normal.
 
 ![load1-homogeneous](img34/homogeneous/cpu.png)
 
@@ -358,7 +407,7 @@ As expected, the average plot also looks similar.
 The comparison of the baseline results and the homogeneous case show that both scenarios had similar numbers and are therefore equivalent.
 
 The mixed nodes cases show that networks operate normally with a mix of compatible Tendermint Core and CometBFT versions.
-Although not the main goal, a comparison of metric numbers with the homogenous case and the baseline scenarios show similar results and therefore we can conclude that mixing compatible Tendermint Core and CometBFT introduces not performance degradation.
+Although not the main goal, a comparison of metric numbers with the homogeneous case and the baseline scenarios show similar results and therefore we can conclude that mixing compatible Tendermint Core and CometBFT introduces no performance degradation.
 
 A conclusion of these tests is shown in the following table, along with the commit versions used in the experiments.
 

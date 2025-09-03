@@ -8,6 +8,28 @@ parent:
 
 # Tendermint Core QA Results v0.37.x
 
+## Table of Contents
+- [Issues discovered](#issues-discovered)
+- [200 Node Testnet](#200-node-testnet)
+  - [Finding the Saturation Point](#finding-the-saturation-point)
+  - [Examining latencies](#examining-latencies)
+  - [Prometheus Metrics on the Chosen Experiment](#prometheus-metrics-on-the-chosen-experiment)
+    - [Mempool Size](#mempool-size)
+    - [Peers](#peers)
+    - [Consensus Rounds per Height](#consensus-rounds-per-height)
+    - [Blocks Produced per Minute, Transactions Processed per Minute](#blocks-produced-per-minute-transactions-processed-per-minute)
+    - [Memory Resident Set Size](#memory-resident-set-size)
+    - [CPU utilization](#cpu-utilization)
+  - [Test Result](#test-result)
+- [Rotating Node Testnet](#rotating-node-testnet)
+  - [Latencies](#latencies)
+  - [Prometheus Metrics](#prometheus-metrics)
+    - [Blocks and Transactions per minute](#blocks-and-transactions-per-minute)
+    - [Peers](#peers-1)
+    - [Memory Resident Set Size](#memory-resident-set-size-1)
+    - [CPU utilization](#cpu-utilization-1)
+  - [Test Result](#test-result-1)
+
 ## Issues discovered
 
 During this iteration of the QA process, the following issues were found:
@@ -32,7 +54,7 @@ During this iteration of the QA process, the following issues were found:
 ### Finding the Saturation Point
 
 The first goal is to identify the saturation point and compare it with the baseline (v0.34.x).
-For further details, see [this paragraph](TMCore-QA-34.md#finding-the-saturation-point)
+For further details, see [this paragraph](CometBFT-QA-34.md#finding-the-saturation-point)
 in the baseline version.
 
 The following table summarizes the results for v0.37.x, for the different experiments
@@ -63,7 +85,7 @@ The saturation point is beyond the diagonal:
 * `r=100,c=4`
 
 which is at the same place as the baseline. For more details on the saturation point, see
-[this paragraph](TMCore-QA-34.md#finding-the-saturation-point) in the baseline version.
+[this paragraph](CometBFT-QA-34.md#finding-the-saturation-point) in the baseline version.
 
 The experiment chosen to examine Prometheus metrics is the same as in the baseline:
 **`r=200,c=2`**.
@@ -72,7 +94,7 @@ The load runner's CPU load was negligible (near 0) when running `r=200,c=2`.
 
 ### Examining latencies
 
-The method described [here](../../qa/method.md) allows us to plot the latencies of transactions
+The method described [here](method.md) allows us to plot the latencies of transactions
 for all experiments.
 
 ![all-latencies](img37/200nodes_tm037/v037_200node_latencies.png)
@@ -211,7 +233,7 @@ Version: 1cf9d8e276afe8595cba960b51cd056514965fd1
 We use the same load as in the baseline: `c=4,r=800`.
 
 Just as in the baseline tests, the version of CometBFT used for these tests is affected by #9539.
-See this paragraph in the [baseline report](../../qa/method.md#rotating-node-testnet) for further details.
+See this paragraph in the [baseline report](CometBFT-QA-34.md#rotating-node-testnet) for further details.
 Finally, note that this setup allows for a fairer comparison between this version and the baseline.
 
 ### Latencies

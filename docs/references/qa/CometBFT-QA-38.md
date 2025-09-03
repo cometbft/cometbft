@@ -17,6 +17,42 @@ range of ABCI++ functionality (ABCI 2.0), and other several improvements
 described in the
 [CHANGELOG](https://github.com/cometbft/cometbft/blob/v0.38.0-alpha.2/CHANGELOG.md).
 
+## Table of Contents
+- [CometBFT QA Results v0.38.x](#cometbft-qa-results-v038x)
+  - [Table of Contents](#table-of-contents)
+  - [Issues discovered](#issues-discovered)
+  - [200 Node Testnet](#200-node-testnet)
+    - [Saturation point](#saturation-point)
+    - [Latencies](#latencies)
+    - [Prometheus Metrics on the Chosen Experiment](#prometheus-metrics-on-the-chosen-experiment)
+      - [Mempool Size](#mempool-size)
+      - [Peers](#peers)
+      - [Consensus Rounds per Height](#consensus-rounds-per-height)
+      - [Blocks Produced per Minute, Transactions Processed per Minute](#blocks-produced-per-minute-transactions-processed-per-minute)
+      - [Memory Resident Set Size](#memory-resident-set-size)
+      - [CPU utilization](#cpu-utilization)
+        - [Comparison to baseline](#comparison-to-baseline)
+        - [Impact of vote extension signature verification](#impact-of-vote-extension-signature-verification)
+    - [Test Results](#test-results)
+  - [Rotating Node Testnet](#rotating-node-testnet)
+    - [Latencies](#latencies-1)
+    - [Prometheus Metrics](#prometheus-metrics)
+      - [Blocks and Transactions per minute](#blocks-and-transactions-per-minute)
+      - [Peers](#peers-1)
+      - [Memory Resident Set Size](#memory-resident-set-size-1)
+      - [CPU utilization](#cpu-utilization-1)
+    - [Test Result](#test-result)
+  - [Vote Extensions Testbed](#vote-extensions-testbed)
+    - [Latency](#latency)
+    - [Blocks and Transactions per minute](#blocks-and-transactions-per-minute-1)
+      - [Overview](#overview)
+      - [First run](#first-run)
+    - [Number of rounds](#number-of-rounds)
+    - [CPU](#cpu)
+    - [Resident Memory](#resident-memory)
+    - [Mempool size](#mempool-size-1)
+    - [Results](#results)
+
 ## Issues discovered
 
 * (critical, fixed) [\#539] and [\#546] - This bug causes the proposer to crash in
@@ -255,7 +291,7 @@ We use `c=1,r=400` as load, which can be considered a safe workload, as it was c
 the saturation point in the 200 node testnet. This testnet has less nodes (10 validators and 25 full nodes).
 
 Importantly, the baseline considered in this section is `v0.37.0-alpha.2` (Tendermint Core),
-which is **different** from the one used in the [previous section](../../qa/method.md#200-node-testnet).
+which is **different** from the one used in the [previous section](#200-node-testbed).
 The reason is that this testnet was not re-tested for `v0.37.0-alpha.3` (CometBFT),
 since it was not deemed necessary.
 
@@ -271,7 +307,7 @@ The plot of all latencies can be seen here.
 
 Which is similar to the baseline.
 
-![rotating-all-latencies](img37/200nodes_tm037/v037_rotating_latencies.png)
+![rotating-all-latencies-bl](img37/200nodes_tm037/v037_rotating_latencies.png)
 
 The average increase of about 1 second with respect to the baseline is due to the higher
 transaction load produced (remember the baseline was affected by [\#9539], whereby most transactions
@@ -301,7 +337,7 @@ blocksyncing as that metric was implemented afterwards.
 
 ![rotating-heights-ephe-bl](img37/rotating/rotating_eph_heights.png)
 
-We seen that heights follow a similar pattern in both plots: they grow in length as the experiment advances.
+We see that heights follow a similar pattern in both plots: they grow in length as the experiment advances.
 
 The following plot shows the transactions processed per minute.
 

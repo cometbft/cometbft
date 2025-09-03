@@ -1,13 +1,13 @@
 package proxy
 
 import (
-	"github.com/cometbft/cometbft/v2/libs/bytes"
-	lrpc "github.com/cometbft/cometbft/v2/light/rpc"
-	rpcclient "github.com/cometbft/cometbft/v2/rpc/client"
-	ctypes "github.com/cometbft/cometbft/v2/rpc/core/types"
-	rpcserver "github.com/cometbft/cometbft/v2/rpc/jsonrpc/server"
-	rpctypes "github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
-	"github.com/cometbft/cometbft/v2/types"
+	"github.com/cometbft/cometbft/libs/bytes"
+	lrpc "github.com/cometbft/cometbft/light/rpc"
+	rpcclient "github.com/cometbft/cometbft/rpc/client"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 func RPCRoutes(c *lrpc.Client) map[string]*rpcserver.RPCFunc {
@@ -37,7 +37,6 @@ func RPCRoutes(c *lrpc.Client) map[string]*rpcserver.RPCFunc {
 		"dump_consensus_state": rpcserver.NewRPCFunc(makeDumpConsensusStateFunc(c), ""),
 		"consensus_state":      rpcserver.NewRPCFunc(makeConsensusStateFunc(c), ""),
 		"consensus_params":     rpcserver.NewRPCFunc(makeConsensusParamsFunc(c), "height", rpcserver.Cacheable("height")),
-		"unconfirmed_tx":       rpcserver.NewRPCFunc(makeUnconfirmedTxFunc(c), "hash"),
 		"unconfirmed_txs":      rpcserver.NewRPCFunc(makeUnconfirmedTxsFunc(c), "limit"),
 		"num_unconfirmed_txs":  rpcserver.NewRPCFunc(makeNumUnconfirmedTxsFunc(c), ""),
 
@@ -74,7 +73,7 @@ func makeStatusFunc(c *lrpc.Client) rpcStatusFunc {
 type rpcNetInfoFunc func(ctx *rpctypes.Context, minHeight, maxHeight int64) (*ctypes.ResultNetInfo, error)
 
 func makeNetInfoFunc(c *lrpc.Client) rpcNetInfoFunc {
-	return func(ctx *rpctypes.Context, _, _ int64) (*ctypes.ResultNetInfo, error) {
+	return func(ctx *rpctypes.Context, minHeight, maxHeight int64) (*ctypes.ResultNetInfo, error) {
 		return c.NetInfo(ctx.Context())
 	}
 }
@@ -191,7 +190,7 @@ func makeBlockSearchFunc(c *lrpc.Client) rpcBlockSearchFunc {
 	return func(
 		ctx *rpctypes.Context,
 		query string,
-		_ bool,
+		prove bool,
 		page, perPage *int,
 		orderBy string,
 	) (*ctypes.ResultBlockSearch, error) {
@@ -229,14 +228,6 @@ type rpcConsensusParamsFunc func(ctx *rpctypes.Context, height *int64) (*ctypes.
 func makeConsensusParamsFunc(c *lrpc.Client) rpcConsensusParamsFunc {
 	return func(ctx *rpctypes.Context, height *int64) (*ctypes.ResultConsensusParams, error) {
 		return c.ConsensusParams(ctx.Context(), height)
-	}
-}
-
-type rpcUnconfirmedTxFunc func(ctx *rpctypes.Context, hash []byte) (*ctypes.ResultUnconfirmedTx, error)
-
-func makeUnconfirmedTxFunc(c *lrpc.Client) rpcUnconfirmedTxFunc {
-	return func(ctx *rpctypes.Context, hash []byte) (*ctypes.ResultUnconfirmedTx, error) {
-		return c.UnconfirmedTx(ctx.Context(), hash)
 	}
 }
 

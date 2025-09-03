@@ -10,7 +10,7 @@ parent:
 This directory contains work-in-progress English and TLA+ specifications for the Light Client
 protocol. Implementations of the light client can be found in
 [Rust](https://github.com/informalsystems/tendermint-rs/tree/master/light-client) and
-[Go](https://github.com/cometbft/cometbft/tree/main/light).
+[Go](https://github.com/cometbft/cometbft/tree/v0.38.x/light).
 
 Light clients are assumed to be initialized once from a trusted source
 with a trusted header and validator set. The light client
@@ -31,8 +31,8 @@ In case a lightclient attack is detected, the lightclient submits evidence to a 
 
 The [English specification](verification/verification_001_published.md) describes the light client
 commit verification problem in terms of the temporal properties
-[LCV-DIST-SAFE.1](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) and
-[LCV-DIST-LIVE.1](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-live1).
+[LCV-DIST-SAFE.1](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) and
+[LCV-DIST-LIVE.1](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/light-client/verification/verification_001_published.md#lcv-dist-live1).
 Commit verification is assumed to operate within the Cosmos Failure Model, where +2/3 of validators are correct for some time period and
 validator sets can change arbitrarily at each height.
 
@@ -103,7 +103,7 @@ version 001. The TLA+ properties can be found in the
 [TLA+ specification](verification/Lightclient_A_1.tla).
  The experiments were run in an AWS instance equipped with 32GB
 RAM and a 4-core Intel® Xeon® CPU E5-2686 v4 @ 2.30GHz CPU.
-We write "✗=k" when a bug is reported at depth k, and "✓<=k" when
+We write “✗=k” when a bug is reported at depth k, and “✓<=k” when
 no bug is reported up to depth k.
 
 ![Experimental results](experiments.png)

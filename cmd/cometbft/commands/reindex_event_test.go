@@ -10,13 +10,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
-	abcitypes "github.com/cometbft/cometbft/v2/abci/types"
-	cmtcfg "github.com/cometbft/cometbft/v2/config"
-	"github.com/cometbft/cometbft/v2/internal/test"
-	blockmocks "github.com/cometbft/cometbft/v2/state/indexer/mocks"
-	"github.com/cometbft/cometbft/v2/state/mocks"
-	txmocks "github.com/cometbft/cometbft/v2/state/txindex/mocks"
-	"github.com/cometbft/cometbft/v2/types"
+
+	abcitypes "github.com/cometbft/cometbft/abci/types"
+	cmtcfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/internal/test"
+	blockmocks "github.com/cometbft/cometbft/state/indexer/mocks"
+	"github.com/cometbft/cometbft/state/mocks"
+	txmocks "github.com/cometbft/cometbft/state/txindex/mocks"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -27,7 +28,7 @@ const (
 func setupReIndexEventCmd() *cobra.Command {
 	reIndexEventCmd := &cobra.Command{
 		Use: ReIndexEventCmd.Use,
-		Run: func(_ *cobra.Command, _ []string) {},
+		Run: func(cmd *cobra.Command, args []string) {},
 	}
 
 	_ = reIndexEventCmd.ExecuteContext(context.Background())
@@ -112,11 +113,11 @@ func TestLoadBlockStore(t *testing.T) {
 	_, _, err := loadStateAndBlockStore(cfg)
 	require.Error(t, err)
 
-	_, err = dbm.NewDB("blockstore", dbm.PebbleDBBackend, cfg.DBDir())
+	_, err = dbm.NewDB("blockstore", dbm.GoLevelDBBackend, cfg.DBDir())
 	require.NoError(t, err)
 
 	// Get StateStore
-	_, err = dbm.NewDB("state", dbm.PebbleDBBackend, cfg.DBDir())
+	_, err = dbm.NewDB("state", dbm.GoLevelDBBackend, cfg.DBDir())
 	require.NoError(t, err)
 
 	bs, ss, err := loadStateAndBlockStore(cfg)
@@ -134,11 +135,11 @@ func TestReIndexEvent(t *testing.T) {
 	mockBlockStore.
 		On("Base").Return(base).
 		On("Height").Return(height).
-		On("LoadBlock", base).Return(nil, nil).Once().
-		On("LoadBlock", base).Return(&types.Block{Data: types.Data{Txs: types.Txs{make(types.Tx, 1)}}}, &types.BlockMeta{}).
-		On("LoadBlock", height).Return(&types.Block{Data: types.Data{Txs: types.Txs{make(types.Tx, 1)}}}, &types.BlockMeta{})
+		On("LoadBlock", base).Return(nil).Once().
+		On("LoadBlock", base).Return(&types.Block{Data: types.Data{Txs: types.Txs{make(types.Tx, 1)}}}).
+		On("LoadBlock", height).Return(&types.Block{Data: types.Data{Txs: types.Txs{make(types.Tx, 1)}}})
 
-	abciResp := &abcitypes.FinalizeBlockResponse{
+	abciResp := &abcitypes.ResponseFinalizeBlock{
 		TxResults: []*abcitypes.ExecTxResult{
 			{Code: 1},
 		},

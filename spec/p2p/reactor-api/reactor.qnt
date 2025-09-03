@@ -1,7 +1,7 @@
 // -*- mode: Bluespec; -*-
 /*
  * Reactor is responsible for handling incoming messages on one or more
- * Channel. Switch calls ChannelDescriptors when reactor is added to it. When a new
+ * Channel. Switch calls GetChannels when reactor is added to it. When a new
  * peer joins our node, InitPeer and AddPeer are called. RemovePeer is called
  * when the peer is stopped. Receive is called when a message is received on a
  * channel associated with this reactor.
@@ -77,10 +77,10 @@ module reactor {
 	// Pure definitions below represent the `p2p.Reactor` interface methods:
 
 	/*
-	 * ChannelDescriptors returns the list of MConnection.ChannelDescriptor. Make sure
+	 * GetChannels returns the list of MConnection.ChannelDescriptor. Make sure
 	 * that each ID is unique across all the reactors added to the switch.
 	 */
-	pure def ChannelDescriptors(s: ReactorState): Set[ChannelDescriptor] = {
+	pure def GetChannels(s: ReactorState): Set[ChannelDescriptor] = {
 		s.channels // Static list, configured at initialization.
 	}
 
@@ -171,7 +171,7 @@ module reactor {
 		reactor.state == "init",
 		// Assign the reactor as responsible for its channel IDs, which
 		// should not be already assigned to another reactor.
-		val chIDs = reactor.ChannelDescriptors().map(c => c.ID)
+		val chIDs = reactor.GetChannels().map(c => c.ID)
 		all {
 			size(chIDs.intersect(reactorsByCh.keys())) == 0,
 			reactorsByCh' = reactorsByCh.keys().union(chIDs).
@@ -222,7 +222,7 @@ module reactor {
 		// Reactor is assigned to the message's channel ID
 		e.ChannelID.in(reactorsByCh.keys()),
 		reactorsByCh.get(e.ChannelID) == reactor.name,
-		reactor.ChannelDescriptors().exists(c => c.ID == e.ChannelID),
+		reactor.GetChannels().exists(c => c.ID == e.ChannelID),
 		updateReactorTo(reactor.Receive(e))
 	}
 

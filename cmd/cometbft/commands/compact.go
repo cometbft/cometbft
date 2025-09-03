@@ -10,7 +10,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
 
-	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 var CompactGoLevelDBCmd = &cobra.Command{
@@ -25,7 +25,7 @@ the planned refactor to the storage engine.
 
 Currently, only GoLevelDB is supported.
 	`,
-	RunE: func(_ *cobra.Command, _ []string) error {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if config.DBBackend != "goleveldb" {
 			return errors.New("compaction is currently only supported with goleveldb")
 		}
@@ -43,10 +43,11 @@ func compactGoLevelDBs(rootDir string, logger log.Logger) {
 	wg := sync.WaitGroup{}
 
 	for _, dbName := range dbNames {
+		dbName := dbName
 		wg.Add(1)
-		go func(name string) {
+		go func() {
 			defer wg.Done()
-			dbPath := filepath.Join(rootDir, "data", name+".db")
+			dbPath := filepath.Join(rootDir, "data", dbName+".db")
 			store, err := leveldb.OpenFile(dbPath, o)
 			if err != nil {
 				logger.Error("failed to initialize cometbft db", "path", dbPath, "err", err)
@@ -60,7 +61,7 @@ func compactGoLevelDBs(rootDir string, logger log.Logger) {
 			if err != nil {
 				logger.Error("failed to compact cometbft db", "path", dbPath, "err", err)
 			}
-		}(dbName)
+		}()
 	}
 	wg.Wait()
 }

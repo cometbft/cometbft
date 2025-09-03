@@ -29,12 +29,9 @@ next block in the blockchain should be.
 ### Vote
 
 Vote is sent to vote for some block (or to inform others that a process does not vote in the
-current round). Vote is defined in the
-[Blockchain](https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md#blockidd)
-section and contains validator's
-information (validator address and index), height and round for which the vote is sent, vote type,
-blockID if process vote for some block (`nil` otherwise) and a timestamp when the vote is sent. The
-message is signed by the validator private key.
+current round). Vote contains validator's information (validator address and index), height and
+round for which the vote is sent, vote type, blockID if process vote for some block (`nil` otherwise)
+and a timestamp when the vote is sent. The message is signed by the validator private key.
 
 | Name | Type                                       | Description               | Field Number |
 |------|--------------------------------------------|---------------------------|--------------|

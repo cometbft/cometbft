@@ -5,28 +5,28 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cometbft/cometbft/v2/libs/bytes"
-	"github.com/cometbft/cometbft/v2/libs/log"
-	cmtpubsub "github.com/cometbft/cometbft/v2/libs/pubsub"
-	cmtquery "github.com/cometbft/cometbft/v2/libs/pubsub/query"
-	nm "github.com/cometbft/cometbft/v2/node"
-	rpcclient "github.com/cometbft/cometbft/v2/rpc/client"
-	"github.com/cometbft/cometbft/v2/rpc/core"
-	ctypes "github.com/cometbft/cometbft/v2/rpc/core/types"
-	rpctypes "github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
-	"github.com/cometbft/cometbft/v2/types"
+	"github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
+	nm "github.com/cometbft/cometbft/node"
+	rpcclient "github.com/cometbft/cometbft/rpc/client"
+	"github.com/cometbft/cometbft/rpc/core"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 /*
-Local is a Client implementation that directly executes the RPC
-functions on a given node, without going through HTTP.
+Local is a Client implementation that directly executes the rpc
+functions on a given node, without going through HTTP or GRPC.
 
 This implementation is useful for:
 
-  - Running tests against a node in-process without the overhead
-    of going through an HTTP server
-  - Communication between an ABCI app and CometBFT when they
-    are compiled in process.
+* Running tests against a node in-process without the overhead
+of going through an http server
+* Communication between an ABCI app and CometBFT when they
+are compiled in process.
 
 For real clients, you probably want to use client.HTTP.  For more
 powerful control during testing, you probably want the "client/mock" package.
@@ -59,18 +59,6 @@ func New(node *nm.Node) *Local {
 }
 
 var _ rpcclient.Client = (*Local)(nil)
-
-type ErrParseQuery struct {
-	Source error
-}
-
-func (e ErrParseQuery) Error() string {
-	return fmt.Sprintf("failed to parse query: %v", e.Source)
-}
-
-func (e ErrParseQuery) Unwrap() error {
-	return e.Source
-}
 
 // SetLogger allows to set a logger on the client.
 func (c *Local) SetLogger(l log.Logger) {
@@ -108,10 +96,6 @@ func (c *Local) BroadcastTxAsync(_ context.Context, tx types.Tx) (*ctypes.Result
 
 func (c *Local) BroadcastTxSync(_ context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
 	return c.env.BroadcastTxSync(c.ctx, tx)
-}
-
-func (c *Local) UnconfirmedTx(_ context.Context, hash []byte) (*ctypes.ResultUnconfirmedTx, error) {
-	return c.env.UnconfirmedTx(c.ctx, hash)
 }
 
 func (c *Local) UnconfirmedTxs(_ context.Context, limit *int) (*ctypes.ResultUnconfirmedTxs, error) {
@@ -236,7 +220,7 @@ func (c *Local) Subscribe(
 ) (out <-chan ctypes.ResultEvent, err error) {
 	q, err := cmtquery.New(query)
 	if err != nil {
-		return nil, ErrParseQuery{Source: err}
+		return nil, fmt.Errorf("failed to parse query: %w", err)
 	}
 
 	outCap := 1
@@ -248,10 +232,10 @@ func (c *Local) Subscribe(
 	if outCap > 0 {
 		sub, err = c.EventBus.Subscribe(ctx, subscriber, q, outCap)
 	} else {
-		sub, err = c.EventBus.SubscribeUnbuffered(ctx, subscriber, q)
+		sub, err = c.SubscribeUnbuffered(ctx, subscriber, q)
 	}
 	if err != nil {
-		return nil, rpcclient.ErrSubscribe{Source: err}
+		return nil, fmt.Errorf("failed to subscribe: %w", err)
 	}
 
 	outc := make(chan ctypes.ResultEvent, outCap)
@@ -316,7 +300,7 @@ func (c *Local) resubscribe(subscriber string, q cmtpubsub.Query) types.Subscrip
 func (c *Local) Unsubscribe(ctx context.Context, subscriber, query string) error {
 	q, err := cmtquery.New(query)
 	if err != nil {
-		return ErrParseQuery{Source: err}
+		return fmt.Errorf("failed to parse query: %w", err)
 	}
 	return c.EventBus.Unsubscribe(ctx, subscriber, q)
 }

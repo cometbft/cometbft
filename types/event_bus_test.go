@@ -10,47 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/cometbft/cometbft/v2/abci/types"
-	cmtpubsub "github.com/cometbft/cometbft/v2/libs/pubsub"
-	cmtquery "github.com/cometbft/cometbft/v2/libs/pubsub/query"
-	cmttime "github.com/cometbft/cometbft/v2/types/time"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 )
-
-func TestEventBusPublishEventPendingTx(t *testing.T) {
-	eventBus := NewEventBus()
-	err := eventBus.Start()
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		if err := eventBus.Stop(); err != nil {
-			t.Error(err)
-		}
-	})
-
-	tx := Tx("foo")
-	// PublishEventPendingTx adds 1 composite key, so the query below should work
-	query := fmt.Sprintf("tm.event='PendingTx' AND tx.hash='%X'", tx.Hash())
-	txsSub, err := eventBus.Subscribe(context.Background(), "test", cmtquery.MustCompile(query))
-	require.NoError(t, err)
-
-	done := make(chan struct{})
-	go func() {
-		msg := <-txsSub.Out()
-		edt := msg.Data().(EventDataPendingTx)
-		assert.EqualValues(t, tx, edt.Tx)
-		close(done)
-	}()
-
-	err = eventBus.PublishEventPendingTx(EventDataPendingTx{
-		Tx: tx,
-	})
-	require.NoError(t, err)
-
-	select {
-	case <-done:
-	case <-time.After(1 * time.Second):
-		t.Fatal("did not receive a pending transaction after 1 sec.")
-	}
-}
 
 func TestEventBusPublishEventTx(t *testing.T) {
 	eventBus := NewEventBus()
@@ -92,7 +55,7 @@ func TestEventBusPublishEventTx(t *testing.T) {
 		Tx:     tx,
 		Result: result,
 	}})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	select {
 	case <-done:
@@ -112,7 +75,7 @@ func TestEventBusPublishEventNewBlock(t *testing.T) {
 	})
 
 	block := MakeBlock(0, []Tx{}, nil, []Evidence{})
-	resultFinalizeBlock := abci.FinalizeBlockResponse{
+	resultFinalizeBlock := abci.ResponseFinalizeBlock{
 		Events: []abci.Event{
 			{Type: "testType", Attributes: []abci.EventAttribute{{Key: "baz", Value: "1"}}},
 		},
@@ -144,7 +107,7 @@ func TestEventBusPublishEventNewBlock(t *testing.T) {
 		},
 		ResultFinalizeBlock: resultFinalizeBlock,
 	})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	select {
 	case <-done:
@@ -246,7 +209,7 @@ func TestEventBusPublishEventTxDuplicateKeys(t *testing.T) {
 			Tx:     tx,
 			Result: result,
 		}})
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		select {
 		case <-done:
@@ -288,7 +251,7 @@ func TestEventBusPublishEventNewBlockHeader(t *testing.T) {
 	err = eventBus.PublishEventNewBlockHeader(EventDataNewBlockHeader{
 		Header: block.Header,
 	})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	select {
 	case <-done:
@@ -330,7 +293,7 @@ func TestEventBusPublishEventNewBlockEvents(t *testing.T) {
 			}},
 		}},
 	})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	select {
 	case <-done:
@@ -349,7 +312,7 @@ func TestEventBusPublishEventNewEvidence(t *testing.T) {
 		}
 	})
 
-	ev, err := NewMockDuplicateVoteEvidence(1, cmttime.Now(), "test-chain-id")
+	ev, err := NewMockDuplicateVoteEvidence(1, time.Now(), "test-chain-id")
 	require.NoError(t, err)
 
 	query := "tm.event='NewEvidence'"
@@ -369,7 +332,7 @@ func TestEventBusPublishEventNewEvidence(t *testing.T) {
 		Evidence: ev,
 		Height:   4,
 	})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	select {
 	case <-done:
@@ -388,7 +351,7 @@ func TestEventBusPublish(t *testing.T) {
 		}
 	})
 
-	const numEventsExpected = 14
+	const numEventsExpected = 15
 
 	sub, err := eventBus.Subscribe(context.Background(), "test", cmtquery.All, numEventsExpected)
 	require.NoError(t, err)
@@ -426,6 +389,8 @@ func TestEventBusPublish(t *testing.T) {
 	err = eventBus.PublishEventCompleteProposal(EventDataCompleteProposal{})
 	require.NoError(t, err)
 	err = eventBus.PublishEventPolka(EventDataRoundState{})
+	require.NoError(t, err)
+	err = eventBus.PublishEventUnlock(EventDataRoundState{})
 	require.NoError(t, err)
 	err = eventBus.PublishEventRelock(EventDataRoundState{})
 	require.NoError(t, err)
@@ -466,16 +431,16 @@ func BenchmarkEventBus(b *testing.B) {
 	}
 
 	for _, bm := range benchmarks {
+		bm := bm
 		b.Run(bm.name, func(b *testing.B) {
-			benchmarkEventBus(b, bm.numClients, bm.randQueries, bm.randEvents)
+			benchmarkEventBus(bm.numClients, bm.randQueries, bm.randEvents, b)
 		})
 	}
 }
 
-func benchmarkEventBus(b *testing.B, numClients int, randQueries bool, randEvents bool) {
-	b.Helper()
+func benchmarkEventBus(numClients int, randQueries bool, randEvents bool, b *testing.B) {
 	// for random* functions
-	rnd := rand.New(rand.NewSource(cmttime.Now().Unix()))
+	rnd := rand.New(rand.NewSource(time.Now().Unix()))
 
 	eventBus := NewEventBusWithBufferCapacity(0) // set buffer capacity to 0 so we are not testing cache
 	err := eventBus.Start()
@@ -535,6 +500,7 @@ var events = []string{
 	EventTimeoutPropose,
 	EventCompleteProposal,
 	EventPolka,
+	EventUnlock,
 	EventLock,
 	EventRelock,
 	EventTimeoutWait,
@@ -554,6 +520,7 @@ var queries = []cmtpubsub.Query{
 	EventQueryTimeoutPropose,
 	EventQueryCompleteProposal,
 	EventQueryPolka,
+	EventQueryUnlock,
 	EventQueryLock,
 	EventQueryRelock,
 	EventQueryTimeoutWait,

@@ -1,4 +1,4 @@
-# Light Client Verification
+# Light Client Verificaiton
 
 #### **[LCV-FUNC-VERIFYCOMMITLIGHT.1]**
 
@@ -29,7 +29,7 @@ height int64, commit *Commit) error {
       continue
     }
 
-    // If the vals and commit have a 1-to-1 correspondence we can retrieve
+    // If the vals and commit have a 1-to-1 correspondance we can retrieve
     // them by index else we need to retrieve them by address
     if lookUpByIndex {
       val = vals.Validators[idx]

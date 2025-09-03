@@ -3,19 +3,23 @@ package mempool
 import (
 	"crypto/sha256"
 	"fmt"
+	"math"
 
-	abcicli "github.com/cometbft/cometbft/v2/abci/client"
-	abci "github.com/cometbft/cometbft/v2/abci/types"
-	"github.com/cometbft/cometbft/v2/p2p"
-	"github.com/cometbft/cometbft/v2/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
-	MempoolChannel        = byte(0x30)
-	MempoolControlChannel = byte(0x31)
+	MempoolChannel = byte(0x30)
 
-	// PeerCatchupSleepIntervalMS defines how much time to sleep if a peer is behind.
+	// PeerCatchupSleepIntervalMS defines how much time to sleep if a peer is behind
 	PeerCatchupSleepIntervalMS = 100
+
+	// UnknownPeerID is the peer ID to use when running CheckTx when there is
+	// no peer (e.g. RPC)
+	UnknownPeerID uint16 = 0
+
+	MaxActiveIDs = math.MaxUint16
 )
 
 //go:generate ../scripts/mockery_generate.sh Mempool
@@ -27,7 +31,7 @@ const (
 type Mempool interface {
 	// CheckTx executes a new transaction against the application to determine
 	// its validity and whether it should be added to the mempool.
-	CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, error)
+	CheckTx(tx types.Tx, callback func(*abci.ResponseCheckTx), txInfo TxInfo) error
 
 	// RemoveTxByKey removes a transaction, identified by its key,
 	// from the mempool.
@@ -46,20 +50,14 @@ type Mempool interface {
 	// (~ all available transactions).
 	ReapMaxTxs(max int) types.Txs
 
-	// GetTxByHash returns the types.Tx with the given hash if found in the mempool,
-	// otherwise returns nil.
-	GetTxByHash(hash []byte) types.Tx
-
 	// Lock locks the mempool. The consensus must be able to hold lock to safely
 	// update.
+	// Before acquiring the lock, it signals the mempool that a new update is coming.
+	// If the mempool is still rechecking at this point, it should be considered full.
 	Lock()
 
 	// Unlock unlocks the mempool.
 	Unlock()
-
-	// PreUpdate signals that a new update is coming, before acquiring the mempool lock.
-	// If the mempool is still rechecking at this point, it should be considered full.
-	PreUpdate()
 
 	// Update informs the mempool that the given txs were committed and can be
 	// discarded.
@@ -85,10 +83,6 @@ type Mempool interface {
 	// Flush removes all transactions from the mempool and caches.
 	Flush()
 
-	// Contains returns true iff the transaction, identified by its key, is in
-	// the mempool.
-	Contains(txKey types.TxKey) bool
-
 	// TxsAvailable returns a channel which fires once for every height, and only
 	// when transactions are available in the mempool.
 	//
@@ -105,9 +99,6 @@ type Mempool interface {
 
 	// SizeBytes returns the total size of all txs in the mempool.
 	SizeBytes() int64
-
-	// GetSenders returns the list of node IDs from which we receive the given transaction.
-	GetSenders(txKey types.TxKey) ([]p2p.ID, error)
 }
 
 // PreCheckFunc is an optional filter executed before CheckTx and rejects
@@ -118,7 +109,7 @@ type PreCheckFunc func(types.Tx) error
 // PostCheckFunc is an optional filter executed after CheckTx and rejects
 // transaction if false is returned. An example would be to ensure a
 // transaction doesn't require more gas than available for the block.
-type PostCheckFunc func(types.Tx, *abci.CheckTxResponse) error
+type PostCheckFunc func(types.Tx, *abci.ResponseCheckTx) error
 
 // PreCheckMaxBytes checks that the size of the transaction is smaller or equal
 // to the expected maxBytes.
@@ -137,7 +128,7 @@ func PreCheckMaxBytes(maxBytes int64) PreCheckFunc {
 // PostCheckMaxGas checks that the wanted gas is smaller or equal to the passed
 // maxGas. Returns nil if maxGas is -1.
 func PostCheckMaxGas(maxGas int64) PostCheckFunc {
-	return func(_ types.Tx, res *abci.CheckTxResponse) error {
+	return func(tx types.Tx, res *abci.ResponseCheckTx) error {
 		if maxGas == -1 {
 			return nil
 		}
@@ -156,29 +147,3 @@ func PostCheckMaxGas(maxGas int64) PostCheckFunc {
 
 // TxKey is the fixed length array key used as an index.
 type TxKey [sha256.Size]byte
-
-// An Entry represents a transaction stored in the mempool.
-type Entry interface {
-	// Tx returns the transaction stored in the entry.
-	Tx() types.Tx
-
-	// Height returns the height of the latest block at the moment the entry was created.
-	Height() int64
-
-	// GasWanted returns the amount of gas required by the transaction.
-	GasWanted() int64
-
-	// IsSender returns whether we received the transaction from the given peer ID.
-	IsSender(peerID p2p.ID) bool
-
-	// Senders returns the list of registered peers that sent us the transaction.
-	Senders() []p2p.ID
-}
-
-// An Iterator is used to iterate through the mempool entries.
-// It allows multiple iterators to run concurrently, enabling
-// parallel processing of mempool entries.
-type Iterator interface {
-	// WaitNextCh returns a channel on which to wait for the next available entry.
-	WaitNextCh() <-chan Entry
-}

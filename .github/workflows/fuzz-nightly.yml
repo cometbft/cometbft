@@ -5,24 +5,20 @@ on:
   schedule:
     - cron: '0 3 * * *'
   pull_request:
-    branches: [main]
+    branches:
+      - v0.38.x
     paths:
       - "test/fuzz/**/*.go"
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   fuzz-nightly-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
-
       - uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version: '1.22'
+
+      - uses: actions/checkout@v4
 
       - name: Install go-fuzz
         working-directory: test/fuzz
@@ -81,7 +77,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack on failure
-        uses: slackapi/slack-github-action@v2.1.0
+        uses: slackapi/slack-github-action@v2.0.0
         env:
           BRANCH: ${{ github.ref_name }}
           CRASHERS: ${{ needs.fuzz-nightly-test.outputs.crashers-count }}
@@ -91,7 +87,7 @@ jobs:
           webhook-type: incoming-webhook
           payload: |
             blocks:
-            - type: "section"
-              text:
-                type: "mrkdwn"
-                text: ":skull: Nightly fuzz tests for `${{ env.BRANCH }}` failed with ${{ env.CRASHERS }} crasher(s). See the <${{ env.RUN_URL }}|run details>."
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: ":skull: Nightly fuzz tests for `${{ env.BRANCH }}` failed with ${{ env.CRASHERS }} crasher(s). See the <${{ env.RUN_URL }}|run details>."

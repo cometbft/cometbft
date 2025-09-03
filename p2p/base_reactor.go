@@ -1,12 +1,12 @@
 package p2p
 
 import (
-	"github.com/cometbft/cometbft/v2/libs/service"
-	"github.com/cometbft/cometbft/v2/p2p/transport"
+	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/p2p/conn"
 )
 
 // Reactor is responsible for handling incoming messages on one or more
-// Channel. Switch calls StreamDescriptors when reactor is added to it. When a new
+// Channel. Switch calls GetChannels when reactor is added to it. When a new
 // peer joins our node, InitPeer and AddPeer are called. RemovePeer is called
 // when the peer is stopped. Receive is called when a message is received on a
 // channel associated with this reactor.
@@ -16,11 +16,11 @@ type Reactor interface {
 	service.Service // Start, Stop
 
 	// SetSwitch allows setting a switch.
-	SetSwitch(sw *Switch)
+	SetSwitch(*Switch)
 
-	// StreamDescriptors returns the list of stream descriptors. Make sure
+	// GetChannels returns the list of MConnection.ChannelDescriptor. Make sure
 	// that each ID is unique across all the reactors added to the switch.
-	StreamDescriptors() []transport.StreamDescriptor
+	GetChannels() []*conn.ChannelDescriptor
 
 	// InitPeer is called by the switch before the peer is started. Use it to
 	// initialize data for the peer (e.g. peer state).
@@ -36,14 +36,14 @@ type Reactor interface {
 
 	// RemovePeer is called by the switch when the peer is stopped (due to error
 	// or other reason).
-	RemovePeer(peer Peer, reason any)
+	RemovePeer(peer Peer, reason interface{})
 
 	// Receive is called by the switch when an envelope is received from any connected
 	// peer on any of the channels registered by the reactor
-	Receive(e Envelope)
+	Receive(Envelope)
 }
 
-// --------------------------------------
+//--------------------------------------
 
 type BaseReactor struct {
 	service.BaseService // Provides Start, Stop, .Quit
@@ -60,8 +60,8 @@ func NewBaseReactor(name string, impl Reactor) *BaseReactor {
 func (br *BaseReactor) SetSwitch(sw *Switch) {
 	br.Switch = sw
 }
-func (*BaseReactor) StreamDescriptors() []transport.StreamDescriptor { return nil }
-func (*BaseReactor) AddPeer(Peer)                                    {}
-func (*BaseReactor) RemovePeer(Peer, any)                            {}
-func (*BaseReactor) Receive(Envelope)                                {}
-func (*BaseReactor) InitPeer(peer Peer) Peer                         { return peer }
+func (*BaseReactor) GetChannels() []*conn.ChannelDescriptor { return nil }
+func (*BaseReactor) AddPeer(Peer)                           {}
+func (*BaseReactor) RemovePeer(Peer, interface{})           {}
+func (*BaseReactor) Receive(Envelope)                       {}
+func (*BaseReactor) InitPeer(peer Peer) Peer                { return peer }

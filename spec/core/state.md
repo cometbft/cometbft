@@ -51,11 +51,11 @@ be found in [data structures](./data_structures.md)
 
 ## Execution
 
-State gets updated at the end of executing a block. Of specific interest is `EndBlockResponse` and
-`CommitResponse`
+State gets updated at the end of executing a block. Of specific interest is `ResponseEndBlock` and
+`ResponseCommit`
 
 ```go
-type EndBlockResponse struct {
+type ResponseEndBlock struct {
 	ValidatorUpdates      []ValidatorUpdate       `protobuf:"bytes,1,rep,name=validator_updates,json=validatorUpdates,proto3" json:"validator_updates"`
 	ConsensusParamUpdates *types1.ConsensusParams `protobuf:"bytes,2,opt,name=consensus_param_updates,json=consensusParamUpdates,proto3" json:"consensus_param_updates,omitempty"`
 	Events                []Event                 `protobuf:"bytes,3,rep,name=events,proto3" json:"events,omitempty"`
@@ -66,16 +66,15 @@ where
 
 ```go
 type ValidatorUpdate struct {
-	Power       int64  `protobuf:"varint,2,opt,name=power,proto3" json:"power,omitempty"`
-	PubKeyBytes []byte `protobuf:"bytes,3,opt,name=pub_key_bytes,json=pubKeyBytes,proto3" json:"pub_key_bytes,omitempty"`
-	PubKeyType  string `protobuf:"bytes,4,opt,name=pub_key_type,json=pubKeyType,proto3" json:"pub_key_type,omitempty"`
+	PubKey crypto.PublicKey `protobuf:"bytes,1,opt,name=pub_key,json=pubKey,proto3" json:"pub_key"`
+	Power  int64            `protobuf:"varint,2,opt,name=power,proto3" json:"power,omitempty"`
 }
 ```
 
 and
 
 ```go
-type CommitResponse struct {
+type ResponseCommit struct {
 	// reserve 1
 	Data         []byte `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
 	RetainHeight int64  `protobuf:"varint,3,opt,name=retain_height,json=retainHeight,proto3" json:"retain_height,omitempty"`
@@ -85,7 +84,7 @@ type CommitResponse struct {
 `ValidatorUpdates` are used to add and remove validators to the current set as well as update
 validator power. Setting validator power to 0 in `ValidatorUpdate` will cause the validator to be
 removed. `ConsensusParams` are safely copied across (i.e. if a field is nil it gets ignored) and the
-`Data` from the `CommitResponse` is used as the `AppHash`
+`Data` from the `ResponseCommit` is used as the `AppHash`
 
 ## Version
 
@@ -108,8 +107,8 @@ otherwise.
 The Application may set `ConsensusParams.Block.MaxBytes` to -1.
 In that case, the actual block limit is set to 100 MB,
 and CometBFT will provide all transactions in the mempool as part of `PrepareProposal`.
-The application has to be careful to return a list of transactions in `PrepareProposalResponse`
-whose size is less than or equal to `PrepareProposalRequest.MaxTxBytes`.
+The application has to be careful to return a list of transactions in `ResponsePrepareProposal`
+whose size is less than or equal to `RequestPrepareProposal.MaxTxBytes`.
 
 Blocks should additionally be limited by the amount of "gas" consumed by the
 transactions in the block, though this is not yet implemented.
@@ -128,5 +127,5 @@ implemented to mitigate spam attacks.
 
 ## Validator
 
-Validators from genesis file and `EndBlockResponse` must have pubkeys of type ∈
+Validators from genesis file and `ResponseEndBlock` must have pubkeys of type ∈
 `ConsensusParams.Validator.PubKeyTypes`.

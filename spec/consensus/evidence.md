@@ -1,10 +1,11 @@
 ---
+order: 4
 ---
 
 # Evidence
 
 Evidence is an important component of CometBFT's security model. Whilst the core
-consensus protocol provides correctness guarantees for state machine replication
+consensus protocol provides correctness gaurantees for state machine replication
 that can tolerate less than 1/3 failures, the evidence system looks to detect and
 gossip byzantine faults whose combined power is greater than  or equal to 1/3. It is worth noting that
 the evidence system is designed purely to detect possible attacks, gossip them,
@@ -38,8 +39,8 @@ evidence and begin gossiping this evidence to other nodes. [Verification](#dupli
 
 ```go
 type DuplicateVoteEvidence struct {
-    VoteA *Vote
-    VoteB *Vote
+    VoteA Vote
+    VoteB Vote
 
     // and abci specific fields
 }
@@ -62,7 +63,7 @@ then the light client sends the "forged" light block to the node.
 
 ```go
 type LightClientAttackEvidence struct {
-    ConflictingBlock *LightBlock
+    ConflictingBlock LightBlock
     CommonHeight int64
 
       // and abci specific fields
@@ -74,14 +75,14 @@ type LightClientAttackEvidence struct {
 If a node receives evidence, it will first try to verify it, then persist it.
 Evidence of byzantine behavior should only be committed once (uniqueness) and
 should be committed within a certain period from the point that it occurred
-(timely). Timeline is defined by the `EvidenceParams`: `MaxAgeNumBlocks` and
+(timely). Timelines is defined by the `EvidenceParams`: `MaxAgeNumBlocks` and
 `MaxAgeDuration`. In Proof of Stake chains where validators are bonded, evidence
 age should be less than the unbonding period so validators still can be
-punished. Given these two properties the following initial checks are made.
+punished. Given these two propoerties the following initial checks are made.
 
 1. Has the evidence expired? This is done by taking the height of the `Vote`
    within `DuplicateVoteEvidence` or `CommonHeight` within
-   `LightClientAttackEvidence`. The evidence height is then used to retrieve the
+   `LightClientAttakEvidence`. The evidence height is then used to retrieve the
    header and thus the time of the block that corresponds to the evidence. If
    `CurrentHeight - MaxAgeNumBlocks > EvidenceHeight` && `CurrentTime -
    MaxAgeDuration > EvidenceTime`, the evidence is considered expired and
@@ -126,11 +127,11 @@ Valid Light Client Attack Evidence must adhere to the following rules:
 
 ## Gossiping
 
-If a node verifies evidence it then broadcasts it to all peers, continuously sending
+If a node verifies evidence it then broadcasts it to all peers, continously sending
 the same evidence once every 10 seconds until the evidence is seen on chain or
 expires.
 
-## Committing on Chain
+## Commiting on Chain
 
 Evidence takes strict priority over regular transactions, thus a block is filled
 with evidence first and transactions take up the remainder of the space. To
@@ -143,33 +144,26 @@ will usually cache verifications so that this process is much quicker.
 ## Sending Evidence to the Application
 
 After evidence is committed, the block is then processed by the block executor
-which delivers the list of misbehavior (`[]abci.Misbehavior`) to the application via the `FinalizeBlock`.
+which delivers the evidence to the application via `EndBlock`. Evidence is
+stripped of the actual proof, split up per faulty validator and only the
+validator, height, time and evidence type is sent.
 
 ```proto
-// The type of misbehavior committed by a validator.
-enum MisbehaviorType {
-  option (gogoproto.goproto_enum_prefix) = false;
-
-  // Unknown
-  MISBEHAVIOR_TYPE_UNKNOWN = 0;
-  // Duplicate vote
-  MISBEHAVIOR_TYPE_DUPLICATE_VOTE = 1;
-  // Light client attack
-  MISBEHAVIOR_TYPE_LIGHT_CLIENT_ATTACK = 2;
+enum EvidenceType {
+  UNKNOWN             = 0;
+  DUPLICATE_VOTE      = 1;
+  LIGHT_CLIENT_ATTACK = 2;
 }
 
-// Misbehavior is a type of misbehavior committed by a validator.
-message Misbehavior {
-  MisbehaviorType type = 1;
+message Evidence {
+  EvidenceType type = 1;
   // The offending validator
   Validator validator = 2 [(gogoproto.nullable) = false];
   // The height when the offense occurred
   int64 height = 3;
   // The corresponding time where the offense occurred
   google.protobuf.Timestamp time = 4 [
-    (gogoproto.nullable) = false,
-    (gogoproto.stdtime)  = true
-  ];
+    (gogoproto.nullable) = false, (gogoproto.stdtime) = true];
   // Total voting power of the validator set in case the ABCI application does
   // not store historical validators.
   // https://github.com/tendermint/tendermint/issues/4581
@@ -177,10 +171,9 @@ message Misbehavior {
 }
 ```
 
-`DuplicateVoteEvidence` and `LightClientAttackEvidence` are can be used to derive the list of `abci.Misbehavior` for
-each byzantine validator that is sent to the application in the `FinalizeBlockRequest`.
-
-Because of this, extra fields are necessary:
+`DuplicateVoteEvidence` and `LightClientAttackEvidence` are self-contained in
+the sense that the evidence can be used to derive the `abci.Evidence` that is
+sent to the application. Because of this, extra fields are necessary:
 
 ```go
 type DuplicateVoteEvidence struct {

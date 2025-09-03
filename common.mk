@@ -3,16 +3,13 @@
 BUILD_TAGS ?= cometbft
 
 COMMIT_HASH := $(shell git rev-parse --short HEAD)
-LD_FLAGS = -X github.com/cometbft/cometbft/version.CMTGitCommitHash=$(COMMIT_HASH)
+LD_FLAGS = -X github.com/cometbft/cometbft/version.TMGitCommitHash=$(COMMIT_HASH)
 BUILD_FLAGS = -mod=readonly -ldflags "$(LD_FLAGS)"
 # allow users to pass additional flags via the conventional LDFLAGS variable
 LD_FLAGS += $(LDFLAGS)
 
 # handle nostrip
-ifeq (nostrip,$(findstring nostrip,$(COMETBFT_BUILD_OPTIONS)))
-  #prepare for delve
-  BUILD_FLAGS+= -gcflags "all=-N -l"
-else
+ifeq (,$(findstring nostrip,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_FLAGS += -trimpath
   LD_FLAGS += -s -w
 endif
@@ -23,10 +20,10 @@ ifeq (race,$(findstring race,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_FLAGS += -race
 endif
 
-# handle clock_skew
-ifeq (clock_skew,$(findstring clock_skew,$(COMETBFT_BUILD_OPTIONS)))
+# handle cleveldb
+ifeq (cleveldb,$(findstring cleveldb,$(COMETBFT_BUILD_OPTIONS)))
   CGO_ENABLED=1
-  BUILD_TAGS += clock_skew
+  BUILD_TAGS += cleveldb
 endif
 
 # handle badgerdb
@@ -40,19 +37,7 @@ ifeq (rocksdb,$(findstring rocksdb,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_TAGS += rocksdb
 endif
 
-# handle bls12381
-ifeq (bls12381,$(findstring bls12381,$(COMETBFT_BUILD_OPTIONS)))
-  CGO_ENABLED=1
-  BUILD_TAGS += bls12381
-endif
-
-# handle secp256k1eth
-ifeq (secp256k1eth,$(findstring secp256k1eth,$(COMETBFT_BUILD_OPTIONS)))
-  BUILD_TAGS += secp256k1eth
-endif
-
-# handle nodebug
-ifeq (nodebug,$(findstring nodebug,$(COMETBFT_BUILD_OPTIONS)))
-  CGO_ENABLED=1
-  BUILD_TAGS += nodebug
+# handle boltdb
+ifeq (boltdb,$(findstring boltdb,$(COMETBFT_BUILD_OPTIONS)))
+  BUILD_TAGS += boltdb
 endif

@@ -6,8 +6,8 @@ import (
 	"math/rand"
 	"sort"
 
-	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
-	"github.com/cometbft/cometbft/v2/p2p"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/p2p"
 )
 
 // snapshotKey is a snapshot key used for lookups.
@@ -30,7 +30,7 @@ type snapshot struct {
 func (s *snapshot) Key() snapshotKey {
 	// Hash.Write() never returns an error.
 	hasher := sha256.New()
-	hasher.Write([]byte(fmt.Sprintf("%v:%v:%v", s.Height, s.Format, s.Chunks)))
+	fmt.Fprintf(hasher, "%v:%v:%v", s.Height, s.Format, s.Chunks)
 	hasher.Write(s.Hash)
 	hasher.Write(s.Metadata)
 	var key snapshotKey
@@ -49,28 +49,28 @@ type snapshotPool struct {
 	heightIndex map[uint64]map[snapshotKey]bool
 	peerIndex   map[p2p.ID]map[snapshotKey]bool
 
-	// denylists for rejected items
-	formatRejectlist   map[uint32]bool
-	peerRejectlist     map[p2p.ID]bool
-	snapshotRejectlist map[snapshotKey]bool
+	// blacklists for rejected items
+	formatBlacklist   map[uint32]bool
+	peerBlacklist     map[p2p.ID]bool
+	snapshotBlacklist map[snapshotKey]bool
 }
 
-// newSnapshotPool creates a new snapshot pool. The state source is used for.
+// newSnapshotPool creates a new snapshot pool. The state source is used for
 func newSnapshotPool() *snapshotPool {
 	return &snapshotPool{
-		snapshots:          make(map[snapshotKey]*snapshot),
-		snapshotPeers:      make(map[snapshotKey]map[p2p.ID]p2p.Peer),
-		formatIndex:        make(map[uint32]map[snapshotKey]bool),
-		heightIndex:        make(map[uint64]map[snapshotKey]bool),
-		peerIndex:          make(map[p2p.ID]map[snapshotKey]bool),
-		formatRejectlist:   make(map[uint32]bool),
-		peerRejectlist:     make(map[p2p.ID]bool),
-		snapshotRejectlist: make(map[snapshotKey]bool),
+		snapshots:         make(map[snapshotKey]*snapshot),
+		snapshotPeers:     make(map[snapshotKey]map[p2p.ID]p2p.Peer),
+		formatIndex:       make(map[uint32]map[snapshotKey]bool),
+		heightIndex:       make(map[uint64]map[snapshotKey]bool),
+		peerIndex:         make(map[p2p.ID]map[snapshotKey]bool),
+		formatBlacklist:   make(map[uint32]bool),
+		peerBlacklist:     make(map[p2p.ID]bool),
+		snapshotBlacklist: make(map[snapshotKey]bool),
 	}
 }
 
 // Add adds a snapshot to the pool, unless the peer has already sent recentSnapshots snapshots. It
-// returns true if this was a new, non-rejected snapshot. The snapshot height is verified using
+// returns true if this was a new, non-blacklisted snapshot. The snapshot height is verified using
 // the light client, and the expected app hash is set for the snapshot.
 func (p *snapshotPool) Add(peer p2p.Peer, snapshot *snapshot) (bool, error) {
 	key := snapshot.Key()
@@ -79,11 +79,11 @@ func (p *snapshotPool) Add(peer p2p.Peer, snapshot *snapshot) (bool, error) {
 	defer p.Unlock()
 
 	switch {
-	case p.formatRejectlist[snapshot.Format]:
+	case p.formatBlacklist[snapshot.Format]:
 		return false, nil
-	case p.peerRejectlist[peer.ID()]:
+	case p.peerBlacklist[peer.ID()]:
 		return false, nil
-	case p.snapshotRejectlist[key]:
+	case p.snapshotBlacklist[key]:
 		return false, nil
 	case len(p.peerIndex[peer.ID()]) >= recentSnapshots:
 		return false, nil
@@ -193,7 +193,7 @@ func (p *snapshotPool) Reject(snapshot *snapshot) {
 	p.Lock()
 	defer p.Unlock()
 
-	p.snapshotRejectlist[key] = true
+	p.snapshotBlacklist[key] = true
 	p.removeSnapshot(key)
 }
 
@@ -202,7 +202,7 @@ func (p *snapshotPool) RejectFormat(format uint32) {
 	p.Lock()
 	defer p.Unlock()
 
-	p.formatRejectlist[format] = true
+	p.formatBlacklist[format] = true
 	for key := range p.formatIndex[format] {
 		p.removeSnapshot(key)
 	}
@@ -217,7 +217,7 @@ func (p *snapshotPool) RejectPeer(peerID p2p.ID) {
 	defer p.Unlock()
 
 	p.removePeer(peerID)
-	p.peerRejectlist[peerID] = true
+	p.peerBlacklist[peerID] = true
 }
 
 // RemovePeer removes a peer from the pool, and any snapshots that no longer have peers.

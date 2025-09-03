@@ -2,43 +2,30 @@
 (**
  * The common interface of the light client verification and detection.
  *) 
-EXTENDS Integers, FiniteSets, typedefs
+EXTENDS Integers, FiniteSets
 
 \* the parameters of Light Client
 CONSTANTS
-  \* the period within which the validators are trusted
-  \* @type: Int;
   TRUSTING_PERIOD,
-  \* the assumed precision of the clock
-  \* @type: Int;
+    (* the period within which the validators are trusted *)
   CLOCK_DRIFT,
-  \* the actual clock drift, which under normal circumstances should not
-  \* be larger than CLOCK_DRIFT (otherwise, there will be a bug)
-  \*
-  \* @type: Int;
+    (* the assumed precision of the clock *)
   REAL_CLOCK_DRIFT,
-  \* a pair <<a, b>> that limits that ratio of faulty validator in the blockchain
-  \* from above (exclusive). Cosmos security model prescribes 1 / 3
-  \* @type: <<Int, Int>>;
+    (* the actual clock drift, which under normal circumstances should not
+       be larger than CLOCK_DRIFT (otherwise, there will be a bug) *)
   FAULTY_RATIO
+    (* a pair <<a, b>> that limits that ratio of faulty validator in the blockchain
+       from above (exclusive). Cosmos security model prescribes 1 / 3. *)
 
 VARIABLES  
-  \* current time as measured by the light client
-  \* @type: Int;
-  localClock
+  localClock (* current time as measured by the light client *)
 
-\* The header is still within the trusting period.
-\* @type: $header => Bool;
+(* the header is still within the trusting period *)
 InTrustingPeriodLocal(header) ==
     \* note that the assumption about the drift reduces the period of trust
     localClock < header.time + TRUSTING_PERIOD - CLOCK_DRIFT
 
-(*
-  The header is still within the trusting period, even if the clock can go
-  backwards.
-
-  @type: $header => Bool;
-  *)
+(* the header is still within the trusting period, even if the clock can go backwards *)
 InTrustingPeriodLocalSurely(header) ==
     \* note that the assumption about the drift reduces the period of trust
     localClock < header.time + TRUSTING_PERIOD - 2 * CLOCK_DRIFT
@@ -49,10 +36,8 @@ IsLocalClockWithinDrift(local, global) ==
     /\ local <= global + REAL_CLOCK_DRIFT
 
 (**
-  Check that the commits in an untrusted block form 1/3 of the next validators
-  in a trusted header.
-
-  @type: ($lightHeader, $lightHeader) => Bool;
+  * Check that the commits in an untrusted block form 1/3 of the next validators
+  * in a trusted header.
  *)
 SignedByOneThirdOfTrusted(trusted, untrusted) ==
   LET TP == Cardinality(trusted.header.NextVS)
@@ -65,8 +50,6 @@ SignedByOneThirdOfTrusted(trusted, untrusted) ==
  the current time into account.
  
  [LCV-FUNC-VALID.1::TLA-PRE-UNTIMED.1]
-
- @type: ($lightHeader, $lightHeader) => Bool;
  *)
 ValidAndVerifiedPreUntimed(trusted, untrusted) ==
   LET thdr == trusted.header
@@ -93,8 +76,6 @@ ValidAndVerifiedPreUntimed(trusted, untrusted) ==
  Check the precondition of ValidAndVerified, including the time checks.
  
  [LCV-FUNC-VALID.1::TLA-PRE.1]
-
- @type: ($lightHeader, $lightHeader, Bool) => Bool;
  *)
 ValidAndVerifiedPre(trusted, untrusted, checkFuture) ==
   LET thdr == trusted.header
@@ -143,8 +124,6 @@ ValidAndVerified(trusted, untrusted, checkFuture) ==
 
 (**
   The invariant of the light store that is not related to the blockchain
-
-  @type: (Int -> $lightHeader, Int -> Str) => Bool;
  *)
 LightStoreInv(fetchedLightBlocks, lightBlockStatus) ==
     \A lh, rh \in DOMAIN fetchedLightBlocks:
@@ -169,8 +148,6 @@ LightStoreInv(fetchedLightBlocks, lightBlockStatus) ==
   an instance of Tendermint consensus.
   
   [LCV-DIST-SAFE.1::CORRECTNESS-INV.1]
-
-  @type: ($blockchain, Int -> $lightHeader, Int -> Str) => Bool;
  *)  
 CorrectnessInv(blockchain, fetchedLightBlocks, lightBlockStatus) ==
     \A h \in DOMAIN fetchedLightBlocks:
@@ -180,18 +157,13 @@ CorrectnessInv(blockchain, fetchedLightBlocks, lightBlockStatus) ==
 (**
  * When the light client terminates, there are no failed blocks.
  * (Otherwise, someone lied to us.) 
- *
- * @type: (Int -> $lightHeader, Int -> Str) => Bool;
  *)            
 NoFailedBlocksOnSuccessInv(fetchedLightBlocks, lightBlockStatus) ==
      \A h \in DOMAIN fetchedLightBlocks:
-        lightBlockStatus[h] /= "StateFailed"
+        lightBlockStatus[h] /= "StateFailed"            
 
 (**
  The expected post-condition of VerifyToTarget.
-
- @type: ($blockchain, Bool,
-         Int -> $lightHeader, Int -> Str, Int, Int, Str) => Bool;
  *)
 VerifyToTargetPost(blockchain, isPeerCorrect,
                    fetchedLightBlocks, lightBlockStatus,

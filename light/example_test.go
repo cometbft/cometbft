@@ -9,14 +9,14 @@ import (
 	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
-	"github.com/cometbft/cometbft/v2/libs/log"
-	"github.com/cometbft/cometbft/v2/light"
-	"github.com/cometbft/cometbft/v2/light/provider"
-	httpp "github.com/cometbft/cometbft/v2/light/provider/http"
-	dbs "github.com/cometbft/cometbft/v2/light/store/db"
-	rpctest "github.com/cometbft/cometbft/v2/rpc/test"
-	cmttime "github.com/cometbft/cometbft/v2/types/time"
+
+	"github.com/cometbft/cometbft/abci/example/kvstore"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/light"
+	"github.com/cometbft/cometbft/light/provider"
+	httpp "github.com/cometbft/cometbft/light/provider/http"
+	dbs "github.com/cometbft/cometbft/light/store/db"
+	rpctest "github.com/cometbft/cometbft/rpc/test"
 )
 
 // Automatically getting new headers and verifying them.
@@ -42,7 +42,7 @@ func ExampleClient_Update() {
 		stdlog.Fatal(err)
 	}
 
-	db, err := dbm.NewPebbleDB("light-client-db", dbDir)
+	db, err := dbm.NewGoLevelDB("light-client-db", dbDir)
 	if err != nil {
 		stdlog.Fatal(err)
 	}
@@ -71,7 +71,7 @@ func ExampleClient_Update() {
 
 	time.Sleep(2 * time.Second)
 
-	h, err := c.Update(context.Background(), cmttime.Now())
+	h, err := c.Update(context.Background(), time.Now())
 	if err != nil {
 		stdlog.Fatal(err)
 	}
@@ -107,7 +107,7 @@ func ExampleClient_VerifyLightBlockAtHeight() {
 		stdlog.Fatal(err)
 	}
 
-	db, err := dbm.NewPebbleDB("light-client-db", dbDir)
+	db, err := dbm.NewGoLevelDB("light-client-db", dbDir)
 	if err != nil {
 		stdlog.Fatal(err)
 	}
@@ -134,7 +134,7 @@ func ExampleClient_VerifyLightBlockAtHeight() {
 		}
 	}()
 
-	_, err = c.VerifyLightBlockAtHeight(context.Background(), 3, cmttime.Now())
+	_, err = c.VerifyLightBlockAtHeight(context.Background(), 3, time.Now())
 	if err != nil {
 		stdlog.Fatal(err)
 	}
@@ -151,11 +151,11 @@ func ExampleClient_VerifyLightBlockAtHeight() {
 func TestMain(m *testing.M) {
 	// start a CometBFT node (and kvstore) in the background to test against
 	app := kvstore.NewInMemoryApplication()
-	node := rpctest.StartCometBFT(app, rpctest.SuppressStdout)
+	node := rpctest.StartTendermint(app, rpctest.SuppressStdout)
 
 	code := m.Run()
 
 	// and shut down proper at the end
-	rpctest.StopCometBFT(node)
+	rpctest.StopTendermint(node)
 	os.Exit(code)
 }

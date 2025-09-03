@@ -22,7 +22,7 @@ The peer-to-peer (p2p) communication layer is then the component of CometBFT tha
 2. manages the communication between a node and the connected peers
 3. intermediates the exchange of messages between peers in CometBFT protocols
 
-The specification of the p2p layer is a work in progress,
+The specification the p2p layer is a work in progress,
 tracked by [issue #19](https://github.com/cometbft/cometbft/issues/19).
 The current content is organized as follows:
 
@@ -34,8 +34,13 @@ The current content is organized as follows:
   p2p layer to the protocol layer, through the `Reactor` abstraction.
   This is a high-level specification (i.e., it should not be implementation-specific)
   of the p2p layer API, covering item 3. from the list above.
+- [`legacy-docs`](./legacy-docs/): We keep older documentation in 
+  the `legacy-docs` directory, as overall, it contains useful information. 
+  However, part of this content is redundant,
+  being more comprehensively covered in more recent documents,
+  and some implementation details might be outdated
+  (see [issue #981](https://github.com/cometbft/cometbft/issues/981)).
 
 In addition to this content, some unfinished, work in progress, and auxiliary
 material can be found in the
-[knowledge-base](https://github.com/cometbft/knowledge-base/tree/main/p2p) repository,
-and on the `legacy-docs` section on Github (see [issue #981](https://github.com/cometbft/cometbft/issues/981)).
+[knowledge-base](https://github.com/cometbft/knowledge-base/tree/main/p2p) repository.

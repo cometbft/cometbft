@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
-	"github.com/cometbft/cometbft/v2/p2p"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/p2p"
 )
 
 // errDone is returned by chunkQueue.Next() when all chunks have been returned.
@@ -83,7 +83,7 @@ func (q *chunkQueue) Add(chunk *chunk) (bool, error) {
 	}
 
 	path := filepath.Join(q.dir, strconv.FormatUint(uint64(chunk.Index), 10))
-	err := os.WriteFile(path, chunk.Chunk, 0o600)
+	err := os.WriteFile(path, chunk.Chunk, 0600)
 	if err != nil {
 		return false, fmt.Errorf("failed to save chunk %v to file %v: %w", chunk.Index, path, err)
 	}

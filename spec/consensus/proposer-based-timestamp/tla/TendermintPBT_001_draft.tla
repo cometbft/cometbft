@@ -3,7 +3,7 @@
  A TLA+ specification of a simplified Tendermint consensus algorithm, with added clocks 
  and proposer-based timestamps. This TLA+ specification extends and modifies 
  the Tendermint TLA+ specification for fork accountability: 
-    https://github.com/cometbft/cometbft/blob/main/spec/light-client/accountability/TendermintAcc_004_draft.tla
+    https://github.com/cometbft/cometbft/blob/v0.38.x/spec/light-client/accountability/TendermintAcc_004_draft.tla
  
  * Version 1. A preliminary specification.
 

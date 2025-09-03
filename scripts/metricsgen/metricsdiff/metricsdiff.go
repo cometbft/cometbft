@@ -64,16 +64,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("Open: %v", err)
 	}
+	defer fa.Close()
 	fb, err := os.Open(flag.Arg(1))
 	if err != nil {
 		log.Fatalf("Open: %v", err)
 	}
+	defer fb.Close()
 	md, err := DiffFromReaders(fa, fb)
 	if err != nil {
 		log.Fatalf("Generating diff: %v", err)
 	}
-	fa.Close()
-	fb.Close()
 	fmt.Print(md)
 }
 
@@ -126,7 +126,7 @@ func toList(l map[string]*dto.MetricFamily) metricsList {
 	for name, family := range l {
 		r[idx] = parsedMetric{
 			name:   name,
-			labels: labelsToStringList(family.GetMetric()[0].GetLabel()),
+			labels: labelsToStringList(family.Metric[0].Label),
 		}
 		idx++
 	}

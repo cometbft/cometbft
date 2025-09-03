@@ -6,60 +6,38 @@
  * https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification.md
  *) 
 
-EXTENDS Integers, FiniteSets, typedefs
+EXTENDS Integers, FiniteSets
 
 \* the parameters of Light Client
 CONSTANTS
-  \* an index of the block header that the light client trusts by social consensus
-  \* @type: Int;
   TRUSTED_HEIGHT,
-  \* an index of the block header that the light client tries to verify
-  \* @type: Int;
+    (* an index of the block header that the light client trusts by social consensus *)
   TARGET_HEIGHT,
-  \* the period within which the validators are trusted
-  \* @type: Int;
+    (* an index of the block header that the light client tries to verify *)
   TRUSTING_PERIOD,
-  \* the assumed precision of the clock
-  \* @type: Int;
+    (* the period within which the validators are trusted *)
   CLOCK_DRIFT,
-  \* the actual clock drift, which under normal circumstances should not
-  \* be larger than CLOCK_DRIFT (otherwise, there will be a bug)
-  \*
-  \* @type: Int;
+    (* the assumed precision of the clock *)
   REAL_CLOCK_DRIFT,
-  \* is primary correct?
-  \* @type: Bool;
+    (* the actual clock drift, which under normal circumstances should not
+       be larger than CLOCK_DRIFT (otherwise, there will be a bug) *)
   IS_PRIMARY_CORRECT,
-  \* a pair <<a, b>> that limits that ratio of faulty validator in the blockchain
-  \* from above (exclusive). Cosmos security model prescribes 1 / 3
-  \* @type: <<Int, Int>>;
+    (* is primary correct? *)  
   FAULTY_RATIO
+    (* a pair <<a, b>> that limits that ratio of faulty validator in the blockchain
+       from above (exclusive). Cosmos security model prescribes 1 / 3. *)
 
-VARIABLES
-  \* current time as measured by the light client
-  \* @type: Int;
-  localClock,
-  \* the current state of the light client
-  \* @type: Str;
-  state,
-  \* the next height to explore by the light client
-  \* @type: Int;
-  nextHeight,
-  \* the lite client iteration, or the number of block tests
-  \* @type: Int;
-  nprobes
+VARIABLES       (* see TypeOK below for the variable types *)
+  localClock,   (* the local clock of the light client *)
+  state,        (* the current state of the light client *)
+  nextHeight,   (* the next height to explore by the light client *)
+  nprobes       (* the lite client iteration, or the number of block tests *)
   
 (* the light store *)
 VARIABLES  
-  \* a function from heights to LightBlocks
-  \* @type: Int -> $lightHeader;
-  fetchedLightBlocks,
-  \* a function from heights to block statuses
-  \* @type: Int -> Str;
-  lightBlockStatus,
-  \* the latest verified block
-  \* @type: $lightHeader;
-  latestVerified
+  fetchedLightBlocks, (* a function from heights to LightBlocks *)
+  lightBlockStatus,   (* a function from heights to block statuses *)
+  latestVerified      (* the latest verified block *)
 
 (* the variables of the lite client *)
 lcvars == <<localClock, state, nextHeight,
@@ -67,13 +45,9 @@ lcvars == <<localClock, state, nextHeight,
 
 (* the light client previous state components, used for monitoring *)
 VARIABLES
-  \* @type: $lightHeader;
   prevVerified,
-  \* @type: $lightHeader;
   prevCurrent,
-  \* @type: Int;
   prevLocalClock,
-  \* @type: Str;
   prevVerdict
 
 InitMonitor(verified, current, pLocalClock, verdict) ==
@@ -93,23 +67,11 @@ NextMonitor(verified, current, pLocalClock, verdict) ==
 
 \* the parameters that are propagated into Blockchain
 CONSTANTS
-  \* a set of all nodes that can act as validators (correct and faulty)
-  \* @type: Set($node);
   AllNodes
+    (* a set of all nodes that can act as validators (correct and faulty) *)
 
 \* the state variables of Blockchain, see Blockchain.tla for the details
-VARIABLES
-    \* the current global time in integer units as perceived by the reference chain
-    \* @type: Int;
-    refClock,
-    \* A sequence of BlockHeaders, which gives us a bird view of the blockchain
-    \* @type: Int -> $header;
-    blockchain,
-    \* A set of faulty nodes, which can act as validators.
-    \* We assume that the set of faulty processes is non-decreasing.
-    \* If a process has recovered, it should connect using a different id.
-    \* @type: Set($node);
-    Faulty
+VARIABLES refClock, blockchain, Faulty
 
 \* All the variables of Blockchain. For some reason, BC!vars does not work
 bcvars == <<refClock, blockchain, Faulty>>
@@ -152,7 +114,7 @@ LCInit ==
         /\ fetchedLightBlocks = [h \in {TRUSTED_HEIGHT} |-> trustedLightBlock]
         \* initially, lightBlockStatus is a function of one element, i.e., TRUSTED_HEIGHT
         /\ lightBlockStatus = [h \in {TRUSTED_HEIGHT} |-> "StateVerified"]
-        \* the latest verified block the trusted block
+        \* the latest verified block the the trusted block
         /\ latestVerified = trustedLightBlock
         /\ InitMonitor(trustedLightBlock, trustedLightBlock, localClock, "SUCCESS")
 
@@ -179,8 +141,6 @@ FetchLightBlockInto(block, height) ==
 \* add a block into the light store    
 \*
 \* [LCV-FUNC-UPDATE.1::TLA.1]
-\*
-\* @type: (Int -> $lightHeader, $lightHeader) => (Int -> $lightHeader);
 LightStoreUpdateBlocks(lightBlocks, block) ==
     LET ht == block.header.height IN    
     [h \in DOMAIN lightBlocks \union {ht} |->
@@ -189,8 +149,6 @@ LightStoreUpdateBlocks(lightBlocks, block) ==
 \* update the state of a light block      
 \*
 \* [LCV-FUNC-UPDATE.1::TLA.1]
-\*
-\* @type: (Int -> Str, Int, Str) => (Int -> Str);
 LightStoreUpdateStates(statuses, ht, blockState) ==
     [h \in DOMAIN statuses \union {ht} |->
         IF h = ht THEN blockState ELSE statuses[h]]      
@@ -198,8 +156,6 @@ LightStoreUpdateStates(statuses, ht, blockState) ==
 \* Check, whether newHeight is a possible next height for the light client.
 \*
 \* [LCV-FUNC-SCHEDULE.1::TLA.1]
-\*
-\* @type: (Int, $lightHeader, Int, Int) => Bool;
 CanScheduleTo(newHeight, pLatestVerified, pNextHeight, pTargetHeight) ==
     LET ht == pLatestVerified.header.height IN
     \/ /\ ht = pNextHeight

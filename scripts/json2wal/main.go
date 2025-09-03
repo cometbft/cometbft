@@ -9,15 +9,14 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 
-	cs "github.com/cometbft/cometbft/v2/internal/consensus"
-	cmtjson "github.com/cometbft/cometbft/v2/libs/json"
-	"github.com/cometbft/cometbft/v2/types"
+	cs "github.com/cometbft/cometbft/consensus"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/cometbft/cometbft/types"
 )
 
 func main() {
@@ -32,7 +31,7 @@ func main() {
 	}
 	defer f.Close()
 
-	walFile, err := os.OpenFile(os.Args[2], os.O_EXCL|os.O_WRONLY|os.O_CREATE, 0o666)
+	walFile, err := os.OpenFile(os.Args[2], os.O_EXCL|os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		panic(fmt.Errorf("failed to open WAL file: %v", err))
 	}
@@ -46,7 +45,7 @@ func main() {
 
 	for {
 		msgJSON, _, err := br.ReadLine()
-		if errors.Is(err, io.EOF) {
+		if err == io.EOF {
 			break
 		} else if err != nil {
 			panic(fmt.Errorf("failed to read file: %v", err))

@@ -1,6 +1,8 @@
 syntax = "proto3";
 package tendermint.consensus;
 
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/consensus";
+
 import "gogoproto/gogo.proto";
 import "tendermint/types/types.proto";
 import "tendermint/libs/bits/types.proto";
@@ -58,13 +60,6 @@ message HasVote {
   int32                          index  = 4;
 }
 
-// HasProposalBlockPart is sent to indicate that a particular proposal block part has been received.
-message HasProposalBlockPart {
-  int64 height = 1;
-  int32 round  = 2;
-  int32 index  = 3;
-}
-
 // VoteSetMaj23 is sent to indicate that a given BlockID has seen +2/3 votes.
 message VoteSetMaj23 {
   int64                          height   = 1;
@@ -84,15 +79,14 @@ message VoteSetBits {
 
 message Message {
   oneof sum {
-    NewRoundStep         new_round_step          = 1;
-    NewValidBlock        new_valid_block         = 2;
-    Proposal             proposal                = 3;
-    ProposalPOL          proposal_pol            = 4;
-    BlockPart            block_part              = 5;
-    Vote                 vote                    = 6;
-    HasVote              has_vote                = 7;
-    VoteSetMaj23         vote_set_maj23          = 8;
-    VoteSetBits          vote_set_bits           = 9;
-    HasProposalBlockPart has_proposal_block_part = 10;
+    NewRoundStep  new_round_step  = 1;
+    NewValidBlock new_valid_block = 2;
+    Proposal      proposal        = 3;
+    ProposalPOL   proposal_pol    = 4;
+    BlockPart     block_part      = 5;
+    Vote          vote            = 6;
+    HasVote       has_vote        = 7;
+    VoteSetMaj23  vote_set_maj23  = 8;
+    VoteSetBits   vote_set_bits   = 9;
   }
 }

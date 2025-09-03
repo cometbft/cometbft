@@ -27,11 +27,8 @@ func TestSetupEnv(t *testing.T) {
 		{nil, map[string]string{"DEMO_FOOBAR": "good"}, "good"},
 		{nil, map[string]string{"DEMOFOOBAR": "silly"}, "silly"},
 		// and that cli overrides env...
-		{
-			[]string{"--foobar", "important"},
-			map[string]string{"DEMO_FOOBAR": "ignored"},
-			"important",
-		},
+		{[]string{"--foobar", "important"},
+			map[string]string{"DEMO_FOOBAR": "ignored"}, "important"},
 	}
 
 	for idx, tc := range cases {
@@ -40,7 +37,7 @@ func TestSetupEnv(t *testing.T) {
 		var foo string
 		demo := &cobra.Command{
 			Use: "demo",
-			RunE: func(_ *cobra.Command, _ []string) error {
+			RunE: func(cmd *cobra.Command, args []string) error {
 				foo = viper.GetString("foobar")
 				return nil
 			},
@@ -52,7 +49,7 @@ func TestSetupEnv(t *testing.T) {
 		viper.Reset()
 		args := append([]string{cmd.Use}, tc.args...)
 		err := RunWithArgs(cmd, args, tc.env)
-		require.NoError(t, err, i)
+		require.Nil(t, err, i)
 		assert.Equal(t, tc.expected, foo, i)
 	}
 }
@@ -71,7 +68,7 @@ func TestSetupConfig(t *testing.T) {
 	cval1 := "fubble"
 	conf1 := tempDir()
 	err := WriteConfigVals(conf1, map[string]string{"boo": cval1})
-	require.NoError(t, err)
+	require.Nil(t, err)
 
 	cases := []struct {
 		args        []string
@@ -98,7 +95,7 @@ func TestSetupConfig(t *testing.T) {
 		var foo, two string
 		boo := &cobra.Command{
 			Use: "reader",
-			RunE: func(_ *cobra.Command, _ []string) error {
+			RunE: func(cmd *cobra.Command, args []string) error {
 				foo = viper.GetString("boo")
 				two = viper.GetString("two-words")
 				return nil
@@ -112,7 +109,7 @@ func TestSetupConfig(t *testing.T) {
 		viper.Reset()
 		args := append([]string{cmd.Use}, tc.args...)
 		err := RunWithArgs(cmd, args, tc.env)
-		require.NoError(t, err, i)
+		require.Nil(t, err, i)
 		assert.Equal(t, tc.expected, foo, i)
 		assert.Equal(t, tc.expectedTwo, two, i)
 	}
@@ -130,11 +127,11 @@ func TestSetupUnmarshal(t *testing.T) {
 	cval1, cval2 := "someone", "else"
 	conf1 := tempDir()
 	err := WriteConfigVals(conf1, map[string]string{"name": cval1})
-	require.NoError(t, err)
+	require.Nil(t, err)
 	// even with some ignored fields, should be no problem
 	conf2 := tempDir()
 	err = WriteConfigVals(conf2, map[string]string{"name": cval2, "foo": "bar"})
-	require.NoError(t, err)
+	require.Nil(t, err)
 
 	// unused is not declared on a flag and remains from base
 	base := DemoConfig{
@@ -177,7 +174,7 @@ func TestSetupUnmarshal(t *testing.T) {
 		cfg := base
 		marsh := &cobra.Command{
 			Use: "marsh",
-			RunE: func(_ *cobra.Command, _ []string) error {
+			RunE: func(cmd *cobra.Command, args []string) error {
 				return viper.Unmarshal(&cfg)
 			},
 		}
@@ -191,7 +188,7 @@ func TestSetupUnmarshal(t *testing.T) {
 		viper.Reset()
 		args := append([]string{cmd.Use}, tc.args...)
 		err := RunWithArgs(cmd, args, tc.env)
-		require.NoError(t, err, i)
+		require.Nil(t, err, i)
 		assert.Equal(t, tc.expected, cfg, i)
 	}
 }
@@ -214,7 +211,7 @@ func TestSetupTrace(t *testing.T) {
 		// test command that store value of foobar in local variable
 		trace := &cobra.Command{
 			Use: "trace",
-			RunE: func(_ *cobra.Command, _ []string) error {
+			RunE: func(cmd *cobra.Command, args []string) error {
 				return fmt.Errorf("trace flag = %t", viper.GetBool(TraceFlag))
 			},
 		}
@@ -224,14 +221,14 @@ func TestSetupTrace(t *testing.T) {
 		viper.Reset()
 		args := append([]string{cmd.Use}, tc.args...)
 		stdout, stderr, err := RunCaptureWithArgs(cmd, args, tc.env)
-		require.Error(t, err, i)
+		require.NotNil(t, err, i)
 		require.Equal(t, "", stdout, i)
 		require.NotEqual(t, "", stderr, i)
 		msg := strings.Split(stderr, "\n")
-		desired := "ERROR: " + tc.expected
+		desired := fmt.Sprintf("ERROR: %s", tc.expected)
 		assert.Equal(t, desired, msg[0], i)
 		t.Log(msg)
-		if tc.long && assert.Greater(t, len(msg), 2, i) {
+		if tc.long && assert.True(t, len(msg) > 2, i) {
 			// the next line starts the stack trace...
 			assert.Contains(t, stderr, "TestSetupTrace", i)
 			assert.Contains(t, stderr, "setup_test.go", i)

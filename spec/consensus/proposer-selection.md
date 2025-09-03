@@ -5,7 +5,7 @@ order: 3
 # Proposer Selection Procedure
 
 This document specifies the Proposer Selection Procedure that is used in Tendermint, the consensus algorithm adopted in CometBFT, to choose a round proposer.
-As Tendermint is "leader-based consensus protocol", the proposer selection is critical for its correct functioning.
+As Tendermint is “leader-based consensus protocol”, the proposer selection is critical for its correct functioning.
 
 At a given block height, the proposer selection algorithm runs with the same validator set at each round .
 Between heights, an updated validator set may be specified by the application as part of the ABCIResponses' EndBlock.
@@ -94,7 +94,7 @@ Each row shows the priority queue and the process place in it. The proposer is t
 It can be shown that:
 
 - At the end of each run k+1 the sum of the priorities is the same as at end of run k. If a new set's priorities are initialized to 0 then the sum of priorities will be 0 at each run while there are no changes.
-- The max distance between priorities is (n-1) *P.*[formal proof not finished]*
+- The max distance between priorites is (n-1) *P.*[formal proof not finished]*
 
 ## Validator Set Changes
 
@@ -108,7 +108,7 @@ Validator | p1 | p2
 ----------|----|---
 VP        | 4  | 3
 
-Let's also assume that before this change the proposer priorities were as shown in first row (last run). As it can be seen, the selection could run again, without changes, as before.
+Let's also assume that before this change the proposer priorites were as shown in first row (last run). As it can be seen, the selection could run again, without changes, as before.
 
 | Priority   Run | -2 | -1 | 0 | 1  | 2  | Comment           |
 |----------------|----|----|---|----|----|-------------------|
@@ -121,7 +121,7 @@ However, when a validator changes power from a high to a low value, some other v
 As before:
 
 - At the end of each run k+1 the sum of the priorities is the same as at run k.
-- The max distance between priorities is (n-1) * P.
+- The max distance between priorites is (n-1) * P.
 
 ### Validator Removal
 
@@ -274,7 +274,7 @@ The modified selection algorithm is:
 
 Observations:
 
-- With this modification, the maximum distance between priorities becomes 2 * P.
+- With this modification, the maximum distance between priorites becomes 2 * P.
 
 Note also that even during steady state the priority range may increase beyond 2 * P. The scaling introduced here  helps to keep the range bounded.
 

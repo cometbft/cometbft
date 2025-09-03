@@ -8,11 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
-	abci "github.com/cometbft/cometbft/v2/abci/types"
-	ctypes "github.com/cometbft/cometbft/v2/rpc/core/types"
-	rpctypes "github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
-	sm "github.com/cometbft/cometbft/v2/state"
-	"github.com/cometbft/cometbft/v2/state/mocks"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/mocks"
 )
 
 func TestBlockchainInfo(t *testing.T) {
@@ -52,8 +53,6 @@ func TestBlockchainInfo(t *testing.T) {
 		{1, 15, 0, 15, 20, 15, false},
 		{1, 20, 0, 15, 20, 15, false},
 		{1, 20, 0, 20, 20, 20, false},
-
-		{49, 49, 50, 50, 10, 1, true}, // max below base
 	}
 
 	for i, c := range cases {
@@ -69,7 +68,7 @@ func TestBlockchainInfo(t *testing.T) {
 }
 
 func TestBlockResults(t *testing.T) {
-	results := &abci.FinalizeBlockResponse{
+	results := &abci.ResponseFinalizeBlock{
 		TxResults: []*abci.ExecTxResult{
 			{Code: 0, Data: []byte{0x01}, Log: "ok"},
 			{Code: 0, Data: []byte{0x02}, Log: "ok"},
@@ -99,7 +98,7 @@ func TestBlockResults(t *testing.T) {
 		{101, true, nil},
 		{100, false, &ctypes.ResultBlockResults{
 			Height:                100,
-			TxResults:             results.TxResults,
+			TxsResults:            results.TxResults,
 			FinalizeBlockEvents:   results.Events,
 			ValidatorUpdates:      results.ValidatorUpdates,
 			ConsensusParamUpdates: results.ConsensusParamUpdates,
@@ -110,9 +109,9 @@ func TestBlockResults(t *testing.T) {
 	for _, tc := range testCases {
 		res, err := env.BlockResults(&rpctypes.Context{}, &tc.height)
 		if tc.wantErr {
-			require.Error(t, err)
+			assert.Error(t, err)
 		} else {
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tc.wantRes, res)
 		}
 	}

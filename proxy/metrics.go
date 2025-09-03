@@ -1,7 +1,7 @@
 package proxy
 
 import (
-	"github.com/cometbft/cometbft/v2/libs/metrics"
+	"github.com/go-kit/kit/metrics"
 )
 
 const (

@@ -6,25 +6,26 @@ title: Overview and basic concepts
 ## Outline
 
 - [Overview and basic concepts](#overview-and-basic-concepts)
-    - [ABCI++ vs. ABCI](#abci-vs-abci)
-    - [Methods overview](#methods-overview)
-        - [Consensus/block execution methods](#consensusblock-execution-methods)
-        - [Mempool methods](#mempool-methods)
-        - [Info methods](#info-methods)
-        - [State-sync methods](#state-sync-methods)
-        - [Other methods](#other-methods)
-        - [Proposal timeout](#proposal-timeout)
-        - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
-        - [Events](#events)
-        - [Evidence](#evidence)
-        - [Errors](#errors)
-            - [`CheckTx`](#checktx)
-            - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
-            - [`Query`](#query)
-
+  - [ABCI 2.0 vs. legacy ABCI](#abci-20-vs-legacy-abci)
+  - [Method overview](#method-overview)
+    - [Consensus/block execution methods](#consensusblock-execution-methods)
+    - [Mempool methods](#mempool-methods)
+    - [Info methods](#info-methods)
+    - [State-sync methods](#state-sync-methods)
+    - [Other methods](#other-methods)
+  - [Proposal timeout](#proposal-timeout)
+  - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
+  - [Events](#events)
+  - [Evidence of Misbehavior](#evidence-of-misbehavior)
+  - [Returning Errors](#returning-errors)
+    - [ABCI response error codes (e.g. `Code` and `Codespace`)](#abci-response-error-codes-eg-code-and-codespace)
+    - [`CheckTx`](#checktx)
+    - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
+    - [`Query`](#query)
+    - [ABCI methods' `error` return](#abci-methods-error-return)
 # Overview and basic concepts
 
-## ABCI 2.0 vs. ABCI {#abci-vs-abci}
+## ABCI 2.0 vs. legacy ABCI
 
 [&#8593; Back to Outline](#outline)
 
@@ -46,12 +47,13 @@ proposal is to be validated, and (c) at the moment a (precommit) vote is sent/re
 The new interface allows block proposers to perform application-dependent
 work in a block through the `PrepareProposal` method (a); and validators to perform application-dependent work
 and checks in a proposed block through the `ProcessProposal` method (b); and applications to require their validators
-to do more than just validate blocks through the `ExtendVote` and `VerifyVoteExtensions` methods (c).
+to do more than just validate blocks through the `ExtendVote` and `VerifyVoteExtension` methods (c).
 
 Furthermore, ABCI 2.0 coalesces {`BeginBlock`, [`DeliverTx`], `EndBlock`} into `FinalizeBlock`, as a
 simplified, efficient way to deliver a decided block to the Application.
 
-## Methods overview
+## Method overview
+
 
 [&#8593; Back to Outline](#outline)
 
@@ -64,7 +66,7 @@ The first time a new blockchain is started, CometBFT calls `InitChain`. From the
 state. During the execution of an instance of consensus, which decides the block for a given
 height, and before method `FinalizeBlock` is called, methods `PrepareProposal`, `ProcessProposal`,
 `ExtendVote`, and `VerifyVoteExtension` may be called several times. See
-[CometBFT's expected behavior](./abci++_comet_expected_behavior.md) for details on the possible
+[CometBFT's expected behavior](abci++_comet_expected_behavior.md) for details on the possible
 call sequences of these methods.
 
 - [**InitChain:**](./abci++_methods.md#initchain) This method initializes the blockchain.
@@ -77,9 +79,9 @@ call sequences of these methods.
   every time CometBFT is about to broadcast a Proposal message and *validValue* is `nil`.
   CometBFT gathers outstanding transactions from the
   mempool, generates a block header, and uses them to create a block to propose. Then, it calls
-  `RequestPrepareProposal` with the newly created proposal, called *raw proposal*. The Application
+  `PrepareProposal` with the newly created proposal, called *raw proposal*. The Application
   can make changes to the raw proposal, such as reordering, adding and removing transactions, before returning the
-  (potentially) modified proposal, called *prepared proposal* in the `ResponsePrepareProposal`.
+  (potentially) modified proposal, called *prepared proposal* in the `PrepareProposalResponse`.
   The logic modifying the raw proposal MAY be non-deterministic.
 
 - [**ProcessProposal:**](./abci++_methods.md#processproposal) It allows a validator to
@@ -102,8 +104,10 @@ call sequences of these methods.
   vote it is extending, and will be made available to the Application in the next height,
   in the rounds where the local process is the proposer.
   CometBFT calls `ExtendVote` when the consensus algorithm is about to send a non-`nil` precommit message.
-  If the Application does not have vote extension information to provide at that time, it returns
-  a 0-length byte array as its vote extension.
+  The Application can provide vote extension information as replay-protected and/or
+  non-replay-protected data in the response. If the Application does not have vote extension information to provide at that time,
+  it returns a 0-length byte array as its vote extension (replay and/or non-replay-protected).
+  When using non-replay-protected vote extensions it is up to the application to protect itself against replay attacks on that data (see `VerifyVoteExtension` below).
   The logic in `ExtendVote` MAY be non-deterministic.
 
 - [**VerifyVoteExtension:**](./abci++_methods.md#verifyvoteextension) It allows
@@ -114,14 +118,21 @@ call sequences of these methods.
   many (+2/3) validators send precommit votes for that block. Thus, `VerifyVoteExtension`
   should be implemented with special care.
   As a general rule, an Application that detects an invalid vote extension SHOULD
-  accept it in `ResponseVerifyVoteExtension` and ignore it in its own logic. CometBFT calls it when
-  a process receives a precommit message with a (possibly empty) vote extension, for the current height. It is not called for precommit votes received after the height is concluded but while waiting to accumulate more precommit votes.
+  accept it in `VerifyVoteExtensionResponse` and ignore it in its own logic. CometBFT calls it when
+  a process receives a precommit message with a (possibly empty) vote extension, for the current height.
+  It is not called for precommit votes received after the height is concluded but while waiting to accumulate more precommit votes.
+  `VerifyVoteExtension` provides the two vote extension information (non-/replay-protected) to the Application.
+  The replay-protected part is signed with chain-ID, height and round (canonical vote extension) whereas the non-replay-protected part
+  is signed as provided in `ExtendVote`.
+  If vote extensions are enabled, both types of vote extensions will be signed even if no non-replay protected vote extensions were used.
+  If vote extensions are disabled, both types of vote extensions and their signatures will be empty.
+  Application specific replay protection mechanisms for that data can be implemented as part of `VerifyVoteExtension`.
   The logic in `VerifyVoteExtension` MUST be deterministic.
 
 - [**FinalizeBlock:**](./abci++_methods.md#finalizeblock) It delivers a decided block to the
   Application. The Application must execute the transactions in the block deterministically and
   update its state accordingly. Cryptographic commitments to the block and transaction results,
-  returned via the corresponding parameters in `ResponseFinalizeBlock`, are included in the header
+  returned via the corresponding parameters in `FinalizeBlockResponse`, are included in the header
   of the next block. CometBFT calls it when a new block is decided.
   When calling `FinalizeBlock` with a block, the consensus algorithm run by CometBFT guarantees
   that at least one non-byzantine validator has run `ProcessProposal` on that block.
@@ -129,7 +140,7 @@ call sequences of these methods.
 - [**Commit:**](./abci++_methods.md#commit) Instructs the Application to persist its
   state. It is a fundamental part of CometBFT's crash-recovery mechanism that ensures the
   synchronization between CometBFT and the Application upon recovery. CometBFT calls it just after
-  having persisted the data returned by calls to `ResponseFinalizeBlock`. The Application can now discard
+  having persisted the data returned by calls to `FinalizeBlockResponse`. The Application can now discard
   any state or data except the one resulting from executing the transactions in the decided block.
 
 ### Mempool methods
@@ -251,7 +262,7 @@ time during `FinalizeBlock`; they must only apply state changes in `Commit`.
 
 Additionally, vote extensions or the validation thereof (via `ExtendVote` or
 `VerifyVoteExtension`) must *never* have side effects on the current state.
-They can only be used when their data is provided in a `RequestPrepareProposal` call but, again,
+Their data can only be used when provided in a `PrepareProposal` call but, again,
 without side effects to the app state.
 
 If there is some non-determinism in the state machine, consensus will eventually
@@ -289,7 +300,7 @@ each field's description on whether it must be deterministic or not.
 [&#8593; Back to Outline](#outline)
 
 Method `FinalizeBlock` includes an `events` field at the top level in its
-`Response*`, and one `events` field per transaction included in the block.
+`FinalizeBlockResponse`, and one `events` field per transaction included in the block.
 Applications may respond to this ABCI 2.0 method with an event list for each executed
 transaction, and a general event list for the block itself.
 Events allow applications to associate metadata with transactions and blocks.
@@ -302,7 +313,8 @@ execution. `Event` values can be used to index transactions and blocks according
 happened during their execution.
 
 Each event has a `type` which is meant to categorize the event for a particular
-`Response*` or `Tx`. A `Response*` or `Tx` may contain multiple events with duplicate
+`FinalizeBlockResponse` or `Tx`. A `FinalizeBlockResponse` or `Tx` may contain
+multiple events with duplicate
 `type` values, where each distinct entry is meant to categorize attributes for a
 particular event. Every key and value in an event's attributes must be UTF-8
 encoded strings along with the event type itself.
@@ -331,7 +343,7 @@ message EventAttribute {
 Example:
 
 ```go
- abci.ResponseFinalizeBlock{
+ abci.FinalizeBlockResponse{
   // ...
  Events: []abci.Event{
   {
@@ -363,50 +375,56 @@ Example:
 }
 ```
 
-## Evidence
+## Evidence of Misbehavior
 
 [&#8593; Back to Outline](#outline)
 
-CometBFT's security model relies on the use of evidences of misbehavior. An evidence is an
+CometBFT's security model relies on the use of evidence of misbehavior. An evidence is an
 irrefutable proof of malicious behavior by a network participant. It is the responsibility of
 CometBFT to detect such malicious behavior. When malicious behavior is detected, CometBFT
-will gossip evidences of misbehavior to other nodes and commit the evidences to
-the chain once they are verified by a subset of validators. These evidences will then be
-passed on to the Application through ABCI++. It is the responsibility of the
-Application to handle evidence of misbehavior and exercise punishment.
+will gossip evidence of misbehavior to other nodes and commit the evidence to
+the chain once they are verified by a subset of validators. These evidence of misbehavior will then be
+passed on to the Application through ABCI. It is the responsibility of the
+Application to handle the evidence of misbehavior and exercise punishment.
 
-There are two forms of evidence: Duplicate Vote and Light Client Attack. More
-information can be found in either [data structures](../core/data_structures.md)
-or [accountability](../light-client/accountability/).
+There are two forms of misbehavior: `Duplicate Vote` and `Light Client Attack`. More
+information can be found in the consensus [evidence](../consensus/evidence.md) document.
 
-EvidenceType has the following protobuf format:
+`MisbehaviorType` has the following protobuf format:
 
 ```protobuf
-enum EvidenceType {
-  UNKNOWN               = 0;
-  DUPLICATE_VOTE        = 1;
-  LIGHT_CLIENT_ATTACK   = 2;
+// The type of misbehavior committed by a validator.
+enum MisbehaviorType {
+  // Unknown
+  MISBEHAVIOR_TYPE_UNKNOWN = 0;
+  // Duplicate vote
+  MISBEHAVIOR_TYPE_DUPLICATE_VOTE = 1;
+  // Light client attack
+  MISBEHAVIOR_TYPE_LIGHT_CLIENT_ATTACK = 2;
 }
 ```
 
-## Errors
+## Returning Errors
 
 [&#8593; Back to Outline](#outline)
 
-The `Query` and `CheckTx` methods include a `Code` field in their `Response*`.
+Please note that the method signature for the ABCI methods includes a response and an error return, such as
+`(*abcitypes.[Method_Name]Response, error)`.
+
+### ABCI response error codes (e.g. `Code` and `Codespace`)
+
+Some of the ABCI methods' responses feature a field (e.g., the `Code` field) that can be used to return an error
+in the `[Method_Name]Response`. These fields play a significant role as they can return an error in the response, indicating
+to CometBFT that a problem has occurred during data processing, such as transaction validation or a query.
+
+The `Query` and `CheckTx` methods include a `Code` field in their `*Response`.
 Field `Code` is meant to contain an application-specific response code.
-A response code of `0` indicates no error.  Any other response code
-indicates to CometBFT that an error occurred.
+A response code of `0` indicates no error.  Any other response where the `Code` field is
+different from `0` indicates to CometBFT that an error occurred.
 
 These methods also return a `Codespace` string to CometBFT. This field is
 used to disambiguate `Code` values returned by different domains of the
 Application. The `Codespace` is a namespace for the `Code`.
-
-Methods `Echo`, `Info`, `Commit` and `InitChain` do not return errors.
-An error in any of these methods represents a critical issue that CometBFT
-has no reasonable way to handle. If there is an error in one
-of these methods, the Application must crash to ensure that the error is safely
-handled by an operator.
 
 Method `FinalizeBlock` is a special case. It contains a number of
 `Code` and `Codespace` fields as part of type `ExecTxResult`. Each of
@@ -419,18 +437,35 @@ The handling of non-zero response codes by CometBFT is described below.
 
 ### `CheckTx`
 
-When CometBFT receives a `ResponseCheckTx` with a non-zero `Code`, the associated
-transaction will not be added to CometBFT's mempool or it will be removed if
+When CometBFT receives a `CheckTxResponse` with a non-zero `Code`, the associated
+transaction will not be added to CometBFT's mempool, or it will be removed if
 it is already included.
 
 ### `ExecTxResult` (as part of `FinalizeBlock`)
 
 The `ExecTxResult` type delivers transaction results from the Application to CometBFT. When
-CometBFT receives a `ResponseFinalizeBlock` containing an `ExecTxResult` with a non-zero `Code`,
+CometBFT receives a `FinalizeBlockResponse` containing an `ExecTxResult` with a non-zero `Code`,
 the response code is logged. Past `Code` values can be queried by clients. As the transaction was
 part of a decided block, the `Code` does not influence consensus.
 
 ### `Query`
 
-When CometBFT receives a `ResponseQuery` with a non-zero `Code`, this code is
+When CometBFT receives a `QueryResponse` with a non-zero `Code`, this code is
 returned directly to the client that initiated the query.
+
+### ABCI methods' `error` return
+
+The `error` return, the second object returned in an ABCI method e.g., `(*abcitypes.[Method_Name]Response, error)`, is utilized in situations
+involving unrecoverable errors.
+
+All ABCI methods return errors. An error returned in any of these methods represents a critical issue that CometBFT
+has no reasonable way to handle. Therefore, if there is an error in one of these methods, CometBFT will crash
+to ensure that an operator safely handles the error: the application must be terminated to avoid any further unintended consequences.
+
+As a result, upon detecting an non-recoverable error condition, the application has the choice of either
+(a) crashing itself (e.g., a`panic` in the code detecting the unrecoverable condition), or
+(b) returning an error as the second return value in the ABCI method that detects the error condition,
+knowing that CometBFT will panic upon receiving the error.
+The choice between (a) and (b) is up to the application -- both are equivalent -- and depends on
+whether an application (e.g. running in a different process that CometBFT)
+prefers CometBFT to crash first.

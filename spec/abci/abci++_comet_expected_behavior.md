@@ -17,10 +17,10 @@ what will happen during a block height _h_ in these frequent, benign conditions:
 * Consensus will decide in round 0, for height _h_;
 * `PrepareProposal` will be called exactly once at the proposer process of round 0, height _h_;
 * `ProcessProposal` will be called exactly once at all processes, and
-  will return _accept_ in its `Response*`;
+  will return _accept_ in its `ProcessProposalResponse`;
 * `ExtendVote` will be called exactly once at all processes;
 * `VerifyVoteExtension` will be called exactly _n-1_ times at each validator process, where _n_ is
-  the number of validators, and will always return _accept_ in its `Response*`;
+  the number of validators, and will always return _accept_ in its `VerifyVoteExtensionResponse`;
 * `FinalizeBlock` will be called exactly once at all processes, conveying the same prepared
   block that all calls to `PrepareProposal` and `ProcessProposal` had previously reported for
   height _h_; and
@@ -28,32 +28,33 @@ what will happen during a block height _h_ in these frequent, benign conditions:
 
 However, the Application logic must be ready to cope with any possible run of the consensus algorithm for a given
 height, including bad periods (byzantine proposers, network being asynchronous).
-In these cases, the sequence of calls to ABCI++ methods may not be so straightforward, but
+In these cases, the sequence of calls to ABCI methods may not be so straightforward, but
 the Application should still be able to handle them, e.g., without crashing.
 The purpose of this section is to define what these sequences look like in a precise way.
 
 As mentioned in the [Basic Concepts](./abci%2B%2B_basic_concepts.md) section, CometBFT
-acts as a client of ABCI++ and the Application acts as a server. Thus, it is up to CometBFT to
-determine when and in which order the different ABCI++ methods will be called. A well-written
+acts as a client of ABCI and the Application acts as a server. Thus, it is up to CometBFT to
+determine when and in which order the different ABCI methods will be called. A well-written
 Application design should consider _any_ of these possible sequences.
 
 The following grammar, written in case-sensitive Augmented Backus–Naur form (ABNF, specified
 in [IETF rfc7405](https://datatracker.ietf.org/doc/html/rfc7405)), specifies all possible
-sequences of calls to ABCI++, taken by a **correct process**, across all heights from the genesis block,
+sequences of calls to ABCI, taken by a **correct process**, across all heights from the genesis block,
 including recovery runs, from the point of view of the Application.
 
 ```abnf
 start               = clean-start / recovery
 
-clean-start         = init-chain [state-sync] consensus-exec
+clean-start         = ( app-handshake / state-sync ) consensus-exec
+app-handshake       = info init-chain
 state-sync          = *state-sync-attempt success-sync info
 state-sync-attempt  = offer-snapshot *apply-chunk
 success-sync        = offer-snapshot 1*apply-chunk
 
-recovery            = info consensus-exec
+recovery            = info [init-chain] consensus-exec
 
 consensus-exec      = (inf)consensus-height
-consensus-height    = *consensus-round decide commit
+consensus-height    = *consensus-round finalize-block commit
 consensus-round     = proposer / non-proposer
 
 proposer            = *got-vote [prepare-proposal [process-proposal]] [extend]
@@ -68,7 +69,7 @@ prepare-proposal    = %s"<PrepareProposal>"
 process-proposal    = %s"<ProcessProposal>"
 extend-vote         = %s"<ExtendVote>"
 got-vote            = %s"<VerifyVoteExtension>"
-decide              = %s"<FinalizeBlock>"
+finalize-block      = %s"<FinalizeBlock>"
 commit              = %s"<Commit>"
 ```
 
@@ -88,7 +89,7 @@ by the grammar above. Other reasons depend on the method in question:
 Finally, method `Info` is a special case. The method's purpose is three-fold, it can be used
 
 1. as part of handling an RPC call from an external client,
-2. as a handshake between CometBFT and the Application upon recovery to check whether any blocks need
+2. as a handshake between CometBFT and the Application to check whether any blocks need
    to be replayed, and
 3. at the end of _state-sync_ to verify that the correct state has been reached.
 
@@ -104,12 +105,19 @@ Let us now examine the grammar line by line, providing further details.
 >start               = clean-start / recovery
 >```
 
-* If the process is starting from scratch, CometBFT first calls `InitChain`, then it may optionally
-  start a _state-sync_ mechanism to catch up with other processes. Finally, it enters normal
-  consensus execution.
+* If the process is starting from scratch, depending on whether the _state-sync_ is enabled, it engages in the handshake
+with the Application, or it starts the _state-sync_ mechanism to catch up with other processes. Finally, it enters
+normal consensus execution.
 
 >```abnf
->clean-start         = init-chain [state-sync] consensus-exec
+>clean-start         = ( app-handshake / state-sync ) consensus-exec
+>```
+
+* If _state-sync_ is disabled, CometBFT calls `Info` method and then
+since the process is starting from scratch and the Application has no state CometBFT calls `InitChain`.
+
+>```abnf
+>app-handshake         = info init_chain
 >```
 
 * In _state-sync_ mode, CometBFT makes one or more attempts at synchronizing the Application's state.
@@ -120,7 +128,7 @@ Let us now examine the grammar line by line, providing further details.
   At the end of a successful attempt, CometBFT calls `Info` to make sure the reconstructed state's
   _AppHash_ matches the one in the block header at the corresponding height. Note that the state
   of  the application does not contain vote extensions itself. The application can rely on
-  [CometBFT to ensure](https://github.com/cometbft/cometbft/blob/v0.38.x/docs/rfc/rfc-100-abci-vote-extension-propag.md#base-implementation-persist-and-propagate-extended-commit-history)
+  [CometBFT to ensure](../../docs/references/rfc/rfc-100-abci-vote-extension-propag.md#base-implementation-persist-and-propagate-extended-commit-history)
   the node has all the relevant data to proceed with the execution beyond this point.
 
 >```abnf
@@ -129,12 +137,11 @@ Let us now examine the grammar line by line, providing further details.
 >success-sync        = offer-snapshot 1*apply-chunk
 >```
 
-* In recovery mode, CometBFT first calls `Info` to know from which height it needs to replay decisions
-  to the Application. After this, CometBFT enters consensus execution, first in replay mode and then
-  in normal mode.
+* In recovery mode, CometBFT first calls `Info` to know from which height it needs to replay decisions to the Application. If the Application
+did not store any state CometBFT calls `InitChain`. After this, CometBFT enters consensus execution, first in replay mode, if there are blocks to replay, and then in normal mode.
 
 >```abnf
->recovery            = info consensus-exec
+>recovery            = info [init-chain] consensus-exec
 >```
 
 * The non-terminal `consensus-exec` is a key point in this grammar. It is an infinite sequence of
@@ -155,7 +162,7 @@ Let us now examine the grammar line by line, providing further details.
 
 
 >```abnf
->consensus-height    = *consensus-round decide commit
+>consensus-height    = *consensus-round finalize-block commit
 >consensus-round     = proposer / non-proposer
 >```
 
@@ -196,7 +203,7 @@ Let us now examine the grammar line by line, providing further details.
 >non-proposer        = *got-vote [process-proposal] [extend]
 >```
 
-* Finally, the grammar describes all its terminal symbols, which denote the different ABCI++ method calls that
+* Finally, the grammar describes all its terminal symbols, which denote the different ABCI method calls that
   may appear in a sequence.
 
 >```abnf
@@ -208,16 +215,16 @@ Let us now examine the grammar line by line, providing further details.
 >process-proposal    = %s"<ProcessProposal>"
 >extend-vote         = %s"<ExtendVote>"
 >got-vote            = %s"<VerifyVoteExtension>"
->decide              = %s"<FinalizeBlock>"
+>finalize-block      = %s"<FinalizeBlock>"
 >commit              = %s"<Commit>"
 >```
 
-## Adapting existing Applications that use ABCI
+## Adapting existing Applications that use legacy ABCI
 
-In some cases, an existing Application using the legacy ABCI may need to be adapted to work with ABCI++
-with as minimal changes as possible. In this case, of course, ABCI++ will not provide any advantage with respect
-to the existing implementation, but will keep the same guarantees already provided by ABCI.
-Here is how ABCI++ methods should be implemented.
+In some cases, an existing Application using the legacy ABCI may need to be adapted to work with new version of ABCI
+with as minimal changes as possible. In this case, of course, new ABCI versions will not provide any advantage with respect
+to the legacy ABCI implementation, but will keep the same guarantees.
+Here is how ABCI methods should be implemented.
 
 First of all, all the methods that did not change from ABCI 0.17.0 to ABCI 2.0, namely `Echo`, `Flush`, `Info`, `InitChain`,
 `Query`, `CheckTx`, `ListSnapshots`, `LoadSnapshotChunk`, `OfferSnapshot`, and `ApplySnapshotChunk`, do not need
@@ -225,22 +232,26 @@ to undergo any changes in their implementation.
 
 As for the new methods:
 
-* `PrepareProposal` must create a list of [transactions](./abci++_methods.md#prepareproposal)
-  by copying over the transaction list passed in `RequestPrepareProposal.txs`, in the same order.
+Introduced in ABCI 1.0:
 
+* `PrepareProposal` must create a list of [transactions](./abci++_methods.md#prepareproposal)
+  by copying over the transaction list passed in `PrepareProposalRequest.txs`, in the same order.
   The Application must check whether the size of all transactions exceeds the byte limit
-  (`RequestPrepareProposal.max_tx_bytes`). If so, the Application must remove transactions at the
+  (`PrepareProposalRequest.max_tx_bytes`). If so, the Application must remove transactions at the
   end of the list until the total byte size is at or below the limit.
-* `ProcessProposal` must set `ResponseProcessProposal.status` to _accept_ and return.
-* `ExtendVote` is to set `ResponseExtendVote.extension` to an empty byte array and return.
-* `VerifyVoteExtension` must set `ResponseVerifyVoteExtension.accept` to _true_ if the extension is
+* `ProcessProposal` must set `ProcessProposalResponse.status` to _accept_ and return.
+
+Introduced in ABCI 2.0:
+
+* `ExtendVote` is to set `ExtendVoteResponse.VoteExtension` and `ExtendVoteResponse.NonRpExtension` to an empty byte array and return.
+* `VerifyVoteExtension` must set `VerifyVoteExtensionResponse.accept` to _true_ if the extension (replay-protected and non-replay-protected) is
   an empty byte array and _false_ otherwise, then return.
 * `FinalizeBlock` is to coalesce the implementation of methods `BeginBlock`, `DeliverTx`, and
   `EndBlock`. Legacy applications looking to reuse old code that implemented `DeliverTx` should
   wrap the legacy `DeliverTx` logic in a loop that executes one transaction iteration per
-  transaction in `RequestFinalizeBlock.tx`.
+  transaction in `FinalizeBlockRequest.tx`.
 
-Finally, `Commit`, which is kept in ABCI++, no longer returns the `AppHash`. It is now up to
+Finally, `Commit`, which is kept in ABCI 2.0, no longer returns the `AppHash`. It is now up to
 `FinalizeBlock` to do so. Thus, a slight refactoring of the old `Commit` implementation will be
 needed to move the return of `AppHash` to `FinalizeBlock`.
 
@@ -261,7 +272,7 @@ However, the application can use the existing `retain_height` parameter to decid
 history it wants to keep, just as is done with the block history. The network-wide implications
 of the usage of `retain_height` stay the same.
 The decision to store
-historical commits and potential optimizations, are discussed in detail in [RFC-100](https://github.com/cometbft/cometbft/blob/v0.38.x/docs/rfc/rfc-100-abci-vote-extension-propag.md#current-limitations-and-possible-implementations)
+historical commits and potential optimizations, are discussed in detail in [RFC-100](../../docs/references/rfc/rfc-100-abci-vote-extension-propag.md#current-limitations-and-possible-implementations)
 
 ## Handling upgrades to ABCI 2.0
 

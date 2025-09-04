@@ -110,7 +110,8 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 			fmt.Printf("- %s: %d\n", ver, wt)
 		}
 	}
-	var manifests []e2e.Manifest
+
+	manifests := make([]e2e.Manifest, 0, len(testnetCombinations))
 	for _, opt := range combinations(testnetCombinations) {
 		manifest, err := generateTestnet(cfg.randSource, opt, upgradeVersion, cfg.prometheus)
 		if err != nil {

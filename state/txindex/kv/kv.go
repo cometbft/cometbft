@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math"
 	"math/big"
 	"strconv"
 	"strings"
@@ -166,38 +165,6 @@ func (txi *TxIndex) Index(result *abci.TxResult) error {
 	}
 
 	return b.WriteSync()
-}
-
-func (txi *TxIndex) deleteEvents(result *abci.TxResult, batch dbm.Batch) error {
-	for _, event := range result.Result.Events {
-		// only delete events with a non-empty type
-		if len(event.Type) == 0 {
-			continue
-		}
-
-		for _, attr := range event.Attributes {
-			if len(attr.Key) == 0 {
-				continue
-			}
-
-			compositeTag := fmt.Sprintf("%s.%s", event.Type, attr.Key)
-			if attr.GetIndex() {
-				zeroKey := keyForEvent(compositeTag, attr.Value, result, 0)
-				endKey := keyForEvent(compositeTag, attr.Value, result, math.MaxInt64)
-				itr, err := txi.store.Iterator(zeroKey, endKey)
-				if err != nil {
-					return err
-				}
-				for ; itr.Valid(); itr.Next() {
-					err := batch.Delete(itr.Key())
-					if err != nil {
-						return err
-					}
-				}
-			}
-		}
-	}
-	return nil
 }
 
 func (txi *TxIndex) indexEvents(result *abci.TxResult, hash []byte, store dbm.Batch) error {

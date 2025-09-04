@@ -1,7 +1,3 @@
----
-order: 3
----
-
 # API for Reactors
 
 This document describes the API provided by the p2p layer to the protocol
@@ -49,19 +45,20 @@ the p2p layer: the set of connected peers.
 
     func (sw *Switch) Peers() IPeerSet
 
-The `Peers()` method returns the current set of connected peers.
-The returned `IPeerSet` is an immutable concurrency-safe copy of this set.
-Observe that the `Peer` handlers returned by this method were previously
-[added to the reactor][reactor-addpeer] via the `InitPeer(Peer)` method,
-but not yet removed via the `RemovePeer(Peer)` method.
+The `Peers()` method returns the current set of connected peers. The returned
+`IPeerSet` is concurrency-safe. Observe that the `Peer` handlers returned by
+this method were previously [added to the reactor][reactor-addpeer] via the
+`InitPeer(Peer)` method, but not yet removed via the `RemovePeer(Peer)` method.
 Thus, a priori, reactors should already have this information.
 
     func (sw *Switch) NumPeers() (outbound, inbound, dialing int)
 
 The `NumPeers()` method returns the current number of connected peers,
-distinguished between `outbound` and `inbound` peers.
-An `outbound` peer is a peer the node has dialed to, while an `inbound` peer is
-a peer the node has accepted a connection from.
+distinguished between `outbound` and `inbound` peers. An `outbound` peer is a
+peer the node has dialed to, while an `inbound` peer is a peer the node has
+accepted a connection from. Note that `unconditional` peers are not being
+counted here.
+
 The third field `dialing` reports the number of peers to which the node is
 currently attempting to connect, so not (yet) connected peers.
 
@@ -94,7 +91,7 @@ returned channel, which is closed when all operations are completed.
 >   part of the `Peer.Send(Envelope)` helper method, that is, once per
 >   connected peer.
 > - The return value of the broadcast method is not considered by any of the
->   standard reactors that employ the method. One of the reasons is that is is
+>   standard reactors that employ the method. One of the reasons is that is
 >   not possible to associate each of the boolean outputs added to the
 >   returned channel to a peer.
 
@@ -185,15 +182,16 @@ From this point, reactors can use the methods of the new `Peer` instance.
 The table below summarizes the interaction of the standard reactors with
 connected peers, with the `Peer` methods used by them:
 
-| `Peer` API method                                     | consensus | block sync | state sync | mempool | evidence  | PEX   |
-|--------------------------------------------|-----------|------------|------------|---------|-----------|-------|
-| `ID() ID`                                  | x         | x          | x          | x       | x         | x     |
-| `IsRunning() bool`                         | x         |            |            | x       | x         |       |
-| `Quit() <-chan struct{}`                   |           |            |            | x       | x         |       |
-| `Get(string) interface{}`                  | x         |            |            | x       | x         |       |
-| `Set(string, interface{})`                 | x         |            |            |         |           |       |
-| `Send(Envelope) bool`                      | x         | x          | x          | x       | x         | x     |
-| `TrySend(Envelope) bool`                   | x         | x          |            |         |           |       |
+| `Peer` API method          | consensus | block sync | state sync | mempool | evidence | PEX |
+|----------------------------|-----------|------------|------------|---------|----------|-----|
+| `ID() ID`                  | x         | x          | x          | x       | x        | x   |
+| `IsRunning() bool`         | x         |            |            | x       | x        |     |
+| `Quit() <-chan struct{}`   |           |            |            | x       | x        |     |
+| `Get(string) interface{}`  | x         |            |            | x       | x        |     |
+| `Set(string, interface{})` | x         |            |            |         |          |     |
+| `HasChannel(byte) bool`    | x         |            |            | x       | x        |     |
+| `Send(Envelope) bool`      | x         | x          | x          | x       | x        | x   |
+| `TrySend(Envelope) bool`   | x         | x          |            |         |          |     |
 
 The above list is not exhaustive as it does not include all the `Peer` methods
 invoked by the PEX reactor, a special component that should be considered part
@@ -269,8 +267,10 @@ Finally, a `Peer` instance allows a reactor to send messages to companion
 reactors running at that peer.
 This is ultimately the goal of the switch when it provides `Peer` instances to
 the registered reactors.
-There are two methods for sending messages:
+There are two methods for sending messages, and one auxiliary method to check
+whether the peer supports a given channel:
 
+    func (p Peer) HasChannel(chID byte) bool
     func (p Peer) Send(e Envelope) bool
     func (p Peer) TrySend(e Envelope) bool
 
@@ -279,6 +279,9 @@ set as follows:
 
 - `ChannelID`: the channel the message should be sent through, which defines
   the reactor that will process the message;
+  - The auxiliary `HasChannel()` method allows testing whether the remote peer
+    implements a channel; if it does not, both message-sending methods will
+    immediately return `false`, as sending always fails.
 - `Src`: this field represents the source of an incoming message, which is
   irrelevant for outgoing messages;
 - `Message`: the actual message's payload, which is marshalled using protocol buffers.
@@ -304,11 +307,11 @@ could not be enqueued, because the channel's send queue is still full, after a
 The `TrySend()` method is a _non-blocking_ method, it _immediately_ returns
 `false` when the channel's send queue is full.
 
-[peer-interface]: https://github.com/cometbft/cometbft/blob/v0.38.x/p2p/peer.go
-[service-interface]: https://github.com/cometbft/cometbft/blob/v0.38.x/libs/service/service.go
-[switch-type]: https://github.com/cometbft/cometbft/blob/v0.38.x/p2p/switch.go
+[peer-interface]: ../../../p2p/peer.go
+[service-interface]: ../../../libs/service/service.go
+[switch-type]: ../../../p2p/switch.go
 
-[reactor-interface]: https://github.com/cometbft/cometbft/blob/v0.38.x/p2p/base_reactor.go
+[reactor-interface]: ../../../p2p/base_reactor.go
 [reactor-registration]: ./reactor.md#registration
 [reactor-channels]: ./reactor.md#registration
 [reactor-addpeer]: ./reactor.md#peer-management

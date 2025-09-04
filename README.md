@@ -14,8 +14,6 @@
 |---------|------------------------------------------------|---------------------------------------------|
 | main    | [![Tests][tests-badge]][tests-url]             | [![Lint][lint-badge]][lint-url]             |
 | v0.38.x | [![Tests][tests-badge-v038x]][tests-url-v038x] | [![Lint][lint-badge-v038x]][lint-url-v038x] |
-| v0.37.x | [![Tests][tests-badge-v037x]][tests-url-v037x] | [![Lint][lint-badge-v037x]][lint-url-v037x] |
-| v0.34.x | [![Tests][tests-badge-v034x]][tests-url-v034x] | [![Lint][lint-badge-v034x]][lint-url-v034x] |
 
 CometBFT is a Byzantine Fault Tolerant (BFT) middleware that takes a
 state transition machine - written in any programming language - and securely
@@ -62,10 +60,8 @@ looking for, see [our security policy](SECURITY.md).
 
 | CometBFT version | Requirement | Notes             |
 |------------------|-------------|-------------------|
-| main             | Go version  | Go 1.22 or higher |
+| main             | Go version  | Go 1.23 or higher |
 | v0.38.x          | Go version  | Go 1.22 or higher |
-| v0.37.x          | Go version  | Go 1.22 or higher |
-| v0.34.x          | Go version  | Go 1.12 or higher |
 
 ### Install
 
@@ -125,10 +121,6 @@ Currently supported versions include:
 
 - v0.38.x: CometBFT v0.38 introduces ABCI 2.0, which implements the entirety of
   ABCI++
-- v0.37.x: CometBFT v0.37 introduces ABCI 1.0, which is the first major step
-  towards the full ABCI++ implementation in ABCI 2.0
-- v0.34.x: The CometBFT v0.34 series is compatible with the Tendermint Core
-  v0.34 series
 
 ## Resources
 
@@ -136,16 +128,10 @@ Currently supported versions include:
 
 - [Cosmos SDK](http://github.com/cosmos/cosmos-sdk); A framework for building
   applications in Golang
-- [Tendermint in Rust](https://github.com/informalsystems/tendermint-rs)
-- [ABCI Tower](https://github.com/penumbra-zone/tower-abci)
 
 ### Applications
 
 - [Cosmos Hub](https://hub.cosmos.network/)
-- [Terra](https://www.terra.money/)
-- [Celestia](https://celestia.org/)
-- [Anoma](https://anoma.network/)
-- [Vocdoni](https://docs.vocdoni.io/)
 
 ### Research
 

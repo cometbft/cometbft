@@ -19,7 +19,7 @@ detects an attack, it needs to send to a witness only missing data (common heigh
 and conflicting light block) as it has its trace. Keeping light client attack data of constant size
 saves bandwidth and reduces an attack surface. As we will explain below, although in the context of
 light client core
-[verification](https://github.com/cometbft/cometbft/tree/v0.38.x/spec/light-client/verification)
+[verification](https://github.com/cometbft/cometbft/tree/main/spec/light-client/verification)
 the roles of primary and witness are clearly defined,
 in case of the attack, we run the same attack detection procedure twice where the roles are swapped.
 The rationale is that the light client does not know what peer is correct (on a right main branch)
@@ -68,7 +68,7 @@ The following invariant holds for the primary trace:
 ### Witness with a conflicting header
 
 The verified header at height `h` is cross-checked with every witness as part of
-[detection](https://github.com/cometbft/cometbft/tree/v0.38.x/spec/light-client/detection).
+[detection](https://github.com/cometbft/cometbft/tree/main/spec/light-client/detection).
 If a witness returns the conflicting header at the height `h` the following procedure is executed to verify
 if the conflicting header comes from the valid trace and if that's the case to create an attack evidence:
 

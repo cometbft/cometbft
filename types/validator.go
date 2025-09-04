@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/cometbft/cometbft/crypto"
@@ -103,12 +104,16 @@ func (v *Validator) String() string {
 
 // ValidatorListString returns a prettified validator list for logging purposes.
 func ValidatorListString(vals []*Validator) string {
-	chunks := make([]string, len(vals))
+	var sb strings.Builder
 	for i, val := range vals {
-		chunks[i] = fmt.Sprintf("%s:%d", val.Address, val.VotingPower)
+		if i > 0 {
+			sb.WriteString(",")
+		}
+		sb.WriteString(val.Address.String())
+		sb.WriteString(":")
+		sb.WriteString(strconv.FormatInt(val.VotingPower, 10))
 	}
-
-	return strings.Join(chunks, ",")
+	return sb.String()
 }
 
 // Bytes computes the unique encoding of a validator with a given voting power.

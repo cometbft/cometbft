@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/version"
 	"github.com/go-git/go-git/v5"
@@ -108,7 +110,8 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 			fmt.Printf("- %s: %d\n", ver, wt)
 		}
 	}
-	manifests := []e2e.Manifest{}
+
+	manifests := make([]e2e.Manifest, 0, len(testnetCombinations))
 	for _, opt := range combinations(testnetCombinations) {
 		manifest, err := generateTestnet(cfg.randSource, opt, upgradeVersion, cfg.prometheus)
 		if err != nil {
@@ -132,6 +135,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 		Nodes:            map[string]*e2e.ManifestNode{},
 		UpgradeVersion:   upgradeVersion,
 		Prometheus:       prometheus,
+		KeyType:          ed25519.KeyType,
 	}
 
 	switch abciDelays.Choose(r).(string) {

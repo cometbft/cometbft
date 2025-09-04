@@ -1,10 +1,10 @@
 module github.com/cometbft/cometbft
 
-go 1.22.11
+go 1.23.0
 
 require (
 	github.com/BurntSushi/toml v1.5.0
-	github.com/Masterminds/semver/v3 v3.3.1
+	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/adlio/schema v1.3.6
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
@@ -39,9 +39,9 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.10.0
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
-	golang.org/x/crypto v0.33.0
-	golang.org/x/net v0.35.0
-	golang.org/x/sync v0.11.0
+	golang.org/x/crypto v0.41.0
+	golang.org/x/net v0.42.0
+	golang.org/x/sync v0.16.0
 	gonum.org/v1/gonum v0.15.1
 	google.golang.org/grpc v1.70.0
 	google.golang.org/protobuf v1.36.5
@@ -124,10 +124,10 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
-	golang.org/x/mod v0.19.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
-	golang.org/x/tools v0.23.0 // indirect
+	golang.org/x/mod v0.26.0 // indirect
+	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/text v0.28.0 // indirect
+	golang.org/x/tools v0.35.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect

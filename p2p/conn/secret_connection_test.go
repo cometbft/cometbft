@@ -19,7 +19,6 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/crypto/sr25519"
 	"github.com/cometbft/cometbft/libs/async"
 	cmtos "github.com/cometbft/cometbft/libs/os"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
@@ -272,20 +271,6 @@ func TestNilPubkey(t *testing.T) {
 	assert.Equal(t, "toproto: key type <nil> is not supported", err.Error())
 }
 
-func TestNonEd25519Pubkey(t *testing.T) {
-	fooConn, barConn := makeKVStoreConnPair()
-	defer fooConn.Close()
-	defer barConn.Close()
-	fooPrvKey := ed25519.GenPrivKey()
-	barPrvKey := sr25519.GenPrivKey()
-
-	go MakeSecretConnection(fooConn, fooPrvKey) //nolint:errcheck // ignore for tests
-
-	_, err := MakeSecretConnection(barConn, barPrvKey)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "is not supported")
-}
-
 func writeLots(t *testing.T, wg *sync.WaitGroup, conn io.Writer, txt string, n int) {
 	defer wg.Done()
 	for i := 0; i < n; i++ {
@@ -309,7 +294,9 @@ func readLots(t *testing.T, wg *sync.WaitGroup, conn io.Reader, n int) {
 // Creates the data for a test vector file.
 // The file format is:
 // Hex(diffie_hellman_secret), loc_is_least, Hex(recvSecret), Hex(sendSecret), Hex(challenge)
-func createGoldenTestVectors(*testing.T) string {
+func createGoldenTestVectors(t *testing.T) string {
+	t.Helper()
+
 	data := ""
 	for i := 0; i < 32; i++ {
 		randSecretVector := cmtrand.Bytes(32)

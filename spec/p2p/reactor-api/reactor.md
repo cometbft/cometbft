@@ -1,7 +1,3 @@
----
-order: 2
----
-
 # Reactor API
 
 A component has to implement the [`p2p.Reactor` interface][reactor-interface]
@@ -46,7 +42,7 @@ producing events associated to a different peer:
 
 ```abnf
 start           = registration on-start *peer-management on-stop
-registration    = get-channels set-switch
+registration    = stream-descriptors set-switch
 
 ; Refers to a single peer, a reactor must support multiple concurrent peers
 peer-management = init-peer start-peer stop-peer
@@ -55,15 +51,15 @@ connected-peer  = add-peer *receive
 stop-peer       = [peer-error] remove-peer
 
 ; Service interface
-on-start        = %s"OnStart()"
-on-stop         = %s"OnStop()"
+on-start           = %s"OnStart()"
+on-stop            = %s"OnStop()"
 ; Reactor interface
-get-channels    = %s"GetChannels()"
-set-switch      = %s"SetSwitch(*Switch)"
-init-peer       = %s"InitPeer(Peer)"
-add-peer        = %s"AddPeer(Peer)"
-remove-peer     = %s"RemovePeer(Peer, reason)"
-receive         = %s"Receive(Envelope)"
+stream-descriptors = %s"StreamDescriptors()"
+set-switch         = %s"SetSwitch(*Switch)"
+init-peer          = %s"InitPeer(Peer)"
+add-peer           = %s"AddPeer(Peer)"
+remove-peer        = %s"RemovePeer(Peer, reason)"
+receive            = %s"Receive(Envelope)"
 
 ; Errors, for reference
 start-error     = %s"log(Error starting peer)"
@@ -73,7 +69,7 @@ peer-error      = %s"log(Stopping peer for error)"
 The grammar is written in case-sensitive Augmented Backus–Naur form (ABNF,
 specified in [IETF RFC 7405](https://datatracker.ietf.org/doc/html/rfc7405)).
 It is inspired on the grammar produced to specify the interaction of CometBFT
-with an ABCI++ application, available [here](../../abci/abci%2B%2B_comet_expected_behavior.md).
+with an ABCI application, available [here](../../abci/abci%2B%2B_comet_expected_behavior.md).
 
 ## Registration
 
@@ -89,11 +85,11 @@ In other words, there is no support for registering a reactor on a running node:
 reactors must be registered as part of the setup of a node.
 
 ```abnf
-registration    = get-channels set-switch
+registration    = stream-descriptors set-switch
 ```
 
 The p2p layer retrieves from the reactor a list of channels the reactor is
-responsible for, using the `GetChannels()` method.
+responsible for, using the `StreamDescriptors()` method.
 The reactor implementation should thereafter expect the delivery of every
 message received by the p2p layer in the informed channels.
 
@@ -106,7 +102,7 @@ documented in the companion [API for Reactors](./p2p-api.md#switch-api) document
 
 ## Service interface
 
-A reactor must implement the [`Service`](https://github.com/cometbft/cometbft/blob/v0.38.x/libs/service/service.go) interface,
+A reactor must implement the [`Service`](../../../libs/service/service.go) interface,
 in particular, a startup `OnStart()` and a shutdown `OnStop()` methods:
 
 ```abnf
@@ -230,5 +226,5 @@ Two important observations regarding the implementation of the `Receive` method:
    In other words, while `Receive` does not return, other messages from the
    same sender are not delivered to any reactor.
 
-[reactor-interface]: https://github.com/cometbft/cometbft/blob/v0.38.x/p2p/base_reactor.go
+[reactor-interface]: ../../../p2p/base_reactor.go
 [quint-repo]: https://github.com/informalsystems/quint

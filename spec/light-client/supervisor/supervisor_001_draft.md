@@ -307,7 +307,7 @@ type LCInitData struct {
 
 where only one of the components must be provided. `GenesisDoc` is
 defined in the [CometBFT
-Types](https://github.com/cometbft/cometbft/blob/v0.38.x/types/genesis.go).
+Types](https://github.com/cometbft/cometbft/blob/main/types/genesis.go).
 
 #### **[LC-DATA-GENESIS.1]**
 
@@ -439,7 +439,7 @@ func Sequential-Supervisor (initdata LCInitData) (Error) {
 - Implementation remark
     - infinite loop unless a light client attack is detected
     - In typical implementations (e.g., the one in Rust),
-   there are mutliple input actions:
+   there are multiple input actions:
       `VerifytoLatest`, `LatestTrusted`, and `GetStatus`. The
       information can be easily obtained from the lightstore, so that
       we do not treat these requests explicitly here but just consider
@@ -474,8 +474,8 @@ we want to maintain [LCV-INV-TP.1] from the beginning.
 > it may increase trust, when one cross-checks the initial light
 > block. However, if a peer provides a conflicting
 > lightblock, the question is to distinguish the case of a
-> [bogus](https://informal.systems) block (upon which operation should proceed) from a
-> [light client attack](https://informal.systems) (upon which operation should stop). In
+> bogus block (upon which operation should proceed) from a
+> light client attack (upon which operation should stop). In
 > case of a bogus block, the lightclient might be forced to do
 > backwards verification until the blocks are out of the trusting
 > period, to make sure no previous validator set could have generated
@@ -580,7 +580,7 @@ func VerifyAndDetect (lightStore LightStore, targetHeight Height)
     }
 
     // get the lightblock with maximum height smaller than targetHeight
-    // would typically be the heighest, if we always move forward
+    // would typically be the heights, if we always move forward
     root_of_trust, r2 = lightStore.LatestPrevious(targetHeight);
 
     if r2 = false {

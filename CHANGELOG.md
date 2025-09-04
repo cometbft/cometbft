@@ -14,10 +14,15 @@
 
 - `[store]` Prune extended commits properly
   ([5275](https://github.com/cometbft/cometbft/issues/5275))
+- `[mempool]` Fix mutex in `CListMempool.Flush` method, by changing it from read-lock to write-lock
+  ([\#2443](https://github.com/cometbft/cometbft/issues/2443)).
 
 ### STATE-BREAKING
 
 ### API-BREAKING
+
+- `[crypto]` Remove Sr25519 curve
+  ([\#3646](https://github.com/cometbft/cometbft/pull/3646))
 
 ## v0.38.18
 

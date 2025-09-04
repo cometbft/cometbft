@@ -15,10 +15,10 @@ order: 1
 - A node is said to be _at_ a given height, round, and step, or at
   `(H,R,S)`, or at `(H,R)` in short to omit the step.
 - To _prevote_ or _precommit_ something means to broadcast a prevote
-  or precommit [vote](https://github.com/cometbft/cometbft/blob/af3bc47df982e271d4d340a3c5e0d773e440466d/types/vote.go#L50)
+  or precommit [vote](https://github.com/cometbft/cometbft/blob/main/types/vote.go#L67)
   for something.
 - A vote _at_ `(H,R)` is a vote signed with the bytes for `H` and `R`
-  included in its [sign-bytes](../core/data_structures.md#vote).
+  included in its [sign-bytes](../../spec/core/data_structures.md#vote).
 - _+2/3_ is short for "more than 2/3"
 - _1/3+_ is short for "1/3 or more"
 - A set of +2/3 of prevotes for a particular block or `<nil>` at
@@ -62,7 +62,7 @@ parameters over each successive round.
 
 ```md
                          +-------------------------------------+
-                         v                                     |(Wait til `CommmitTime+timeoutCommit`)
+                         v                                     |(Wait til `CommitTime+timeoutCommit`)
                    +-----------+                         +-----+-----+
       +----------> |  Propose  +--------------+          | NewHeight |
       |            +-----------+              |          +-----------+
@@ -106,7 +106,7 @@ example,
 - Nodes gossip prevotes for the proposed PoLC (proof-of-lock-change)
   round if one is proposed.
 - Nodes gossip to nodes lagging in blockchain height with block
-  [commits](https://github.com/cometbft/cometbft/blob/af3bc47df982e271d4d340a3c5e0d773e440466d/types/block.go#L738)
+  [commits](https://github.com/cometbft/cometbft/blob/main/types/block.go#L738)
   for older blocks.
 - Nodes opportunistically gossip `ReceivedVote` messages to hint peers what
   votes it already has.
@@ -121,7 +121,7 @@ A proposal is signed and published by the designated proposer at each
 round. The proposer is chosen by a deterministic and non-choking round
 robin selection algorithm that selects proposers in proportion to their
 voting power (see
-[implementation](https://github.com/cometbft/cometbft/blob/af3bc47df982e271d4d340a3c5e0d773e440466d/types/validator_set.go#L51)).
+[implementation](https://github.com/cometbft/cometbft/blob/main/types/validator_set.go#L51)).
 
 A proposal at `(H,R)` is composed of a block and an optional latest
 `PoLC-Round < R` which is included iff the proposer knows of one. This
@@ -252,7 +252,7 @@ commit-set) are each justified in the JSet with no duplicitous vote
 signatures (by the committers).
 
 - **Lemma**: When a fork is detected by the existence of two
-  conflicting [commits](../core/data_structures.md#commit), the
+  conflicting [commits](../../spec/core/data_structures.md#commit), the
   union of the JSets for both commits (if they can be compiled) must
   include double-signing by at least 1/3+ of the validator set.
   **Proof**: The commit cannot be at the same round, because that
@@ -293,7 +293,7 @@ may make JSet verification/gossip logic easier to implement.
 ### Censorship Attacks
 
 Due to the definition of a block
-[commit](https://github.com/cometbft/cometbft/blob/v0.38.x/docs/core/validators.md), any 1/3+ coalition of
+[commit](https://github.com/cometbft/cometbft/blob/main/docs/explanation/core/validators.md), any 1/3+ coalition of
 validators can halt the blockchain by not broadcasting their votes. Such
 a coalition can also censor particular transactions by rejecting blocks
 that include these transactions, though this would result in a
@@ -315,7 +315,7 @@ adversary.
 For these types of attacks, a subset of the validators through external
 means should coordinate to sign a reorg-proposal that chooses a fork
 (and any evidence thereof) and the initial subset of validators with
-their signatures. Validators who sign such a reorg-proposal forego its
+their signatures. Validators who sign such a reorg-proposal forgo its
 collateral on all other forks. Clients should verify the signatures on
 the reorg-proposal, verify any evidence, and make a judgement or prompt
 the end-user for a decision. For example, a phone wallet app may prompt

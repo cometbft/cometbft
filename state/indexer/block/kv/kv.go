@@ -595,7 +595,7 @@ func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, hei
 			}
 
 			// index iff the event specified index:true and it's not a reserved event
-			compositeKey := fmt.Sprintf("%s.%s", event.Type, attr.Key)
+			compositeKey := event.Type + "." + attr.Key
 			if compositeKey == types.BlockHeightKey {
 				return fmt.Errorf("event type and attribute key \"%s\" is reserved; please use a different key", compositeKey)
 			}

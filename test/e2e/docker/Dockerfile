@@ -30,7 +30,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 
-ENV COMETBFT_BUILD_OPTIONS badgerdb,boltdb,cleveldb,rocksdb,pebbledb,clock_skew,bls12381
+ENV COMETBFT_BUILD_OPTIONS badgerdb,cleveldb,rocksdb,pebbledb,clock_skew,bls12381
 RUN make build
 RUN cd test/e2e && make node
 

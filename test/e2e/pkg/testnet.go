@@ -432,7 +432,7 @@ func (n Node) Validate(testnet Testnet) error {
 		return fmt.Errorf("invalid block sync setting %q", n.BlockSyncVersion)
 	}
 	switch n.Database {
-	case "goleveldb", "cleveldb", "boltdb", "rocksdb", "badgerdb":
+	case "goleveldb", "cleveldb", "rocksdb", "badgerdb":
 	default:
 		return fmt.Errorf("invalid database setting %q", n.Database)
 	}

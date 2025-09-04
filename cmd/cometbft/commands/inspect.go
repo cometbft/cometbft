@@ -39,7 +39,7 @@ func init() {
 			config.RPC.ListenAddress, "RPC listenener address. Port required")
 	InspectCmd.Flags().
 		String("db-backend",
-			config.DBBackend, "database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb")
+			config.DBBackend, "database backend: goleveldb | cleveldb | rocksdb | badgerdb")
 	InspectCmd.Flags().
 		String("db-dir", config.DBPath, "database directory")
 }

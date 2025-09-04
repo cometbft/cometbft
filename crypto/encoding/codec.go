@@ -10,6 +10,27 @@ import (
 	pc "github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
+// ErrUnsupportedKey describes an error resulting from the use of an
+// unsupported key in [PubKeyToProto] or [PubKeyFromProto].
+type ErrUnsupportedKey struct {
+	Key any
+}
+
+func (e ErrUnsupportedKey) Error() string {
+	return fmt.Sprintf("encoding: unsupported key %v", e.Key)
+}
+
+// ErrInvalidKeyLen describes an error resulting from the use of a key with
+// an invalid length in [PubKeyFromProto].
+type ErrInvalidKeyLen struct {
+	Key       any
+	Got, Want int
+}
+
+func (e ErrInvalidKeyLen) Error() string {
+	return fmt.Sprintf("encoding: invalid key length for %v, got %d, want %d", e.Key, e.Got, e.Want)
+}
+
 func init() {
 	json.RegisterType((*pc.PublicKey)(nil), "tendermint.crypto.PublicKey")
 	json.RegisterType((*pc.PublicKey_Ed25519)(nil), "tendermint.crypto.PublicKey_Ed25519")

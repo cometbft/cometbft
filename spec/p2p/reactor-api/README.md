@@ -1,7 +1,3 @@
----
-order: 1
----
-
 # Reactors
 
 Reactor is the generic name for a component that employs the p2p communication layer.
@@ -44,4 +40,4 @@ The remaining of the documentation is organized as follows:
   layer to the reactors, through the `Switch` and `Peer` abstractions.
   In other words, the interaction of the protocol layer with the p2p layer (top-down).
 
-[reactor-interface]: https://github.com/cometbft/cometbft/blob/v0.38.x/p2p/base_reactor.go
+[reactor-interface]: ../../../p2p/base_reactor.go

@@ -1408,7 +1408,7 @@ func (data *EvidenceData) StringIndented(indent string) string {
 			evStrings[i] = fmt.Sprintf("... (%v total)", len(data.Evidence))
 			break
 		}
-		evStrings[i] = fmt.Sprintf("Evidence:%v", ev)
+		evStrings[i] = "Evidence:" + ev.String()
 	}
 	return fmt.Sprintf(`EvidenceData{
 %s  %v

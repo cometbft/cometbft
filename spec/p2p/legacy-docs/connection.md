@@ -1,7 +1,3 @@
----
-order: 1
----
-
 # P2P Multiplex Connection
 
 ## MConnection
@@ -89,7 +85,7 @@ incoming messages are received on the reactor.
 // Declare a MyReactor reactor that handles messages on MyChannelID.
 type MyReactor struct{}
 
-func (reactor MyReactor) GetChannels() []*ChannelDescriptor {
+func (reactor MyReactor) StreamDescriptors() []*ChannelDescriptor {
     return []*ChannelDescriptor{ChannelDescriptor{ID:MyChannelID, Priority: 1}}
 }
 
@@ -107,7 +103,7 @@ switch := NewSwitch([]Reactor{MyReactor{}})
 ...
 
 // Send a random message to all outbound connections
-for _, peer := range switch.Peers().List() {
+for _, peer := range switch.Peers().Copy() {
     if peer.IsOutbound() {
         peer.Send(MyChannelID, "Here's a random message")
     }

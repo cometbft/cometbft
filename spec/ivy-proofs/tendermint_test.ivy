@@ -26,7 +26,7 @@ isolate protocol = {
 # Finally, call the action:
 #``` scenarios.scenario_1
 # Note that Ivy will check at runtime that all action preconditions are
-# satisfied. For example, runing the scenario twice will cause a violation of
+# satisfied. For example, running the scenario twice will cause a violation of
 # the precondition of the `start` action, because a node cannot start twice
 # (see `require ~_has_started` in action `start`).
 

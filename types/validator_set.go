@@ -711,7 +711,7 @@ func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
 	return VerifyCommitLight(chainID, vals, blockID, height, commit)
 }
 
-// VerifyCommitLight verifies +2/3 of the set had signed the given commit.
+// VerifyCommitLightAllSignatures verifies +2/3 of the set had signed the given commit.
 // It DOES count all signatures.
 func (vals *ValidatorSet) VerifyCommitLightAllSignatures(chainID string, blockID BlockID,
 	height int64, commit *Commit,
@@ -730,7 +730,7 @@ func (vals *ValidatorSet) VerifyCommitLightTrusting(
 	return VerifyCommitLightTrusting(chainID, vals, commit, trustLevel)
 }
 
-// VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
+// VerifyCommitLightTrustingAllSignatures verifies that trustLevel of the validator set signed
 // this commit.
 // It DOES count all signatures.
 func (vals *ValidatorSet) VerifyCommitLightTrustingAllSignatures(

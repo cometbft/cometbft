@@ -7,7 +7,7 @@
  *
  * It follows the English specification:
  *
- * https://github.com/cometbft/cometbft/blob/v0.38.x/spec/light-client/attacks/isolate-attackers_001_draft.md
+ * https://github.com/cometbft/cometbft/blob/main/spec/light-client/attacks/isolate-attackers_001_draft.md
  *
  * The assumptions made in this specification:
  *

@@ -621,7 +621,7 @@ func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
 	case ed25519.KeyType:
 		return ed25519.GenPrivKeyFromSecret(seed)
 	default:
-		panic(fmt.Sprintf("keyType not supported: %s", keyType)) // should not make it this far
+		return ed25519.GenPrivKeyFromSecret(seed) // default fall back to ed25519 if not specified
 	}
 }
 

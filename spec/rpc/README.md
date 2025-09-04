@@ -44,7 +44,7 @@ This file defines the JSON-RPC spec of CometBFT. This is meant to be implemented
 
 ## Timestamps
 
-Timestamps in the RPC layer of CometBFT follows RFC3339Nano.  The RFC3339Nano format removes trailing zeros from the seconds field.
+Timestamps in the RPC layer of CometBFT follow RFC3339Nano.  The RFC3339Nano format removes trailing zeros from the seconds field.
 
 This means if a block has a timestamp like: `1985-04-12T23:20:50.5200000Z`, the value returned in the RPC will be `1985-04-12T23:20:50.52Z`.
 
@@ -65,13 +65,13 @@ None
 ##### HTTP
 
 ```sh
-curl http://127.0.0.1:26657/health
+curl http://127.0.0.1:26657/v1/health
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"health\"}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"health\"}"
 ```
 
 #### Response
@@ -97,13 +97,13 @@ None
 ##### HTTP
 
 ```sh
-curl http://127.0.0.1:26657/status
+curl http://127.0.0.1:26657/v1/status
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"status\"}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"status\"}"
 ```
 
 #### Response
@@ -166,13 +166,13 @@ None
 ##### HTTP
 
 ```sh
-curl http://127.0.0.1:26657/net_info
+curl http://127.0.0.1:26657/v1/net_info
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"net_info\"}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"net_info\"}"
 ```
 
 #### Response
@@ -211,15 +211,15 @@ Get block headers. Returned in descending order. May be limited in quantity.
 ##### HTTP
 
 ```sh
-curl http://127.0.0.1:26657/blockchain
+curl http://127.0.0.1:26657/v1/blockchain
 
-curl http://127.0.0.1:26657/blockchain?minHeight=1&maxHeight=2
+curl http://127.0.0.1:26657/v1/blockchain?minHeight=1&maxHeight=2
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"blockchain\",\"params\":{\"minHeight\":\"1\", \"maxHeight\":\"2\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"blockchain\",\"params\":{\"minHeight\":\"1\", \"maxHeight\":\"2\"}}"
 ```
 
 #### Response
@@ -285,15 +285,15 @@ Get block at a specified height.
 ##### HTTP
 
 ```sh
-curl http://127.0.0.1:26657/block
+curl http://127.0.0.1:26657/v1/block
 
-curl http://127.0.0.1:26657/block?height=1
+curl http://127.0.0.1:26657/v1/block?height=1
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"block\",\"params\":{\"height\":\"1\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"block\",\"params\":{\"height\":\"1\"}}"
 ```
 
 #### Response
@@ -400,13 +400,13 @@ curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\
 ##### HTTP
 
 ```sh
-curl http://127.0.0.1:26657/block_by_hash?hash=0xD70952032620CC4E2737EB8AC379806359D8E0B17B0488F627997A0B043ABDED
+curl http://127.0.0.1:26657/v1/block_by_hash?hash=0xD70952032620CC4E2737EB8AC379806359D8E0B17B0488F627997A0B043ABDED
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"block_by_hash\",\"params\":{\"hash\":\"0xD70952032620CC4E2737EB8AC379806359D8E0B17B0488F627997A0B043ABDED\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"block_by_hash\",\"params\":{\"hash\":\"0xD70952032620CC4E2737EB8AC379806359D8E0B17B0488F627997A0B043ABDED\"}}"
 ```
 
 #### Response
@@ -513,16 +513,16 @@ curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\
 ##### HTTP
 
 ```sh
-curl  http://127.0.0.1:26657/block_results
+curl  http://127.0.0.1:26657/v1/block_results
 
 
-curl  http://127.0.0.1:26657/block_results?height=1
+curl  http://127.0.0.1:26657/v1/block_results?height=1
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"block_results\",\"params\":{\"height\":\"1\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"block_results\",\"params\":{\"height\":\"1\"}}"
 ```
 
 #### Response
@@ -620,16 +620,16 @@ curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\
 ##### HTTP
 
 ```sh
-curl  http://127.0.0.1:26657/commit
+curl  http://127.0.0.1:26657/v1/commit
 
 
-curl  http://127.0.0.1:26657/commit?height=1
+curl  http://127.0.0.1:26657/v1/commit?height=1
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"commit\",\"params\":{\"height\":\"1\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"commit\",\"params\":{\"height\":\"1\"}}"
 ```
 
 #### Response
@@ -703,13 +703,13 @@ curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\
 ##### HTTP
 
 ```sh
-curl  http://127.0.0.1:26657/validators
+curl  http://127.0.0.1:26657/v1/validators
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"validators\",\"params\":{\"height\":\"1\", \"page\":\"1\", \"per_page\":\"20\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"validators\",\"params\":{\"height\":\"1\", \"page\":\"1\", \"per_page\":\"20\"}}"
 ```
 
 #### Response
@@ -747,13 +747,13 @@ will return an error: use `genesis_chunked` instead.
 ##### HTTP
 
 ```sh
-curl  http://127.0.0.1:26657/genesis
+curl  http://127.0.0.1:26657/v1/genesis
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"genesis\"}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"genesis\"}"
 ```
 
 #### Response
@@ -802,25 +802,25 @@ curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\
 
 ### GenesisChunked
 
-Get the genesis document in a chunks to support easily transfering larger documents.
+Get the genesis document in chunks to support easily transferring larger documents.
 
 #### Parameters
 
 - `chunk` (integer): the index number of the chunk that you wish to
-  fetch. These IDs are 0 indexed.
+  fetch. These IDs are 0-indexed.
 
 #### Request
 
 ##### HTTP
 
 ```sh
-curl  http://127.0.0.1:26657/genesis_chunked?chunk=0
+curl  http://127.0.0.1:26657/v1/genesis_chunked?chunk=0
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"genesis_chunked\",\"params\":{\"chunk\":0}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"genesis_chunked\",\"params\":{\"chunk\":0}}"
 ```
 
 #### Response
@@ -850,13 +850,13 @@ Get the consensus parameters.
 ##### HTTP
 
 ```sh
-curl  http://127.0.0.1:26657/consensus_params
+curl  http://127.0.0.1:26657/v1/consensus_params
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"consensus_params\"}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"consensus_params\"}"
 ```
 
 #### Response
@@ -899,13 +899,13 @@ Get a list of unconfirmed transactions.
 ##### HTTP
 
 ```sh
-curl  http://127.0.0.1:26657/unconfirmed_txs
+curl  http://127.0.0.1:26657/v1/unconfirmed_txs
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"unconfirmed_txs\, \"params\":{\"limit\":\"20\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"unconfirmed_txs\, \"params\":{\"limit\":\"20\"}}"
 ```
 
 #### Response
@@ -938,13 +938,13 @@ None
 ##### HTTP
 
 ```sh
-curl  http://127.0.0.1:26657/num_unconfirmed_txs
+curl  http://127.0.0.1:26657/v1/num_unconfirmed_txs
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"num_unconfirmed_txs\"}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"num_unconfirmed_txs\"}"
 ```
 
 #### Response
@@ -973,13 +973,13 @@ curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\
 ##### HTTP
 
 ```sh
-curl  http://127.0.0.1:26657/num_unconfirmed_txs
+curl  http://127.0.0.1:26657/v1/num_unconfirmed_txs
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"num_unconfirmed_txs\"}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"num_unconfirmed_txs\"}"
 ```
 
 #### Response
@@ -1024,13 +1024,13 @@ Returns with the response from CheckTx. Does not wait for DeliverTx result.
 ##### HTTP
 
 ```sh
-curl  http://127.0.0.1:26657/broadcast_tx_sync?tx=encoded_tx
+curl  http://127.0.0.1:26657/v1/broadcast_tx_sync?tx=encoded_tx
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"broadcast_tx_sync\",\"params\":{\"tx\":\"a/encoded_tx/c\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"broadcast_tx_sync\",\"params\":{\"tx\":\"a/encoded_tx/c\"}}"
 ```
 
 #### Response
@@ -1063,13 +1063,13 @@ Returns right away, with no response. Does not wait for CheckTx nor DeliverTx re
 ##### HTTP
 
 ```sh
-curl  http://127.0.0.1:26657/broadcast_tx_async?tx=encoded_tx
+curl  http://127.0.0.1:26657/v1/broadcast_tx_async?tx=encoded_tx
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"broadcast_tx_async\",\"params\":{\"tx\":\"a/encoded_tx/c\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"broadcast_tx_async\",\"params\":{\"tx\":\"a/encoded_tx/c\"}}"
 ```
 
 #### Response
@@ -1102,13 +1102,13 @@ Checks the transaction without executing it.
 ##### HTTP
 
 ```sh
-curl  http://127.0.0.1:26657/check_tx?tx=encoded_tx
+curl  http://127.0.0.1:26657/v1/check_tx?tx=encoded_tx
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"check_tx\",\"params\":{\"tx\":\"a/encoded_tx/c\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"check_tx\",\"params\":{\"tx\":\"a/encoded_tx/c\"}}"
 ```
 
 #### Response
@@ -1157,13 +1157,13 @@ None
 ##### HTTP
 
 ```sh
-curl  http://127.0.0.1:26657/abci_info
+curl  http://127.0.0.1:26657/v1/abci_info
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"abci_info\"}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"abci_info\"}"
 ```
 
 #### Response
@@ -1188,23 +1188,23 @@ Query the application for some information.
 
 #### Parameters
 
-- `path (string)`: Path to the data. This is defined by the application.
-- `data (string)`: The data requested
-- `height (integer)`: Height at which the data is being requested for.
-- `prove (bool)`: Include proofs of the transactions inclusion in the block
+- `path (string)`: A request path for the application to interpret analogously to a [URI path component](https://www.rfc-editor.org/rfc/rfc3986#section-3.3) in e.g. routing.
+- `data (string)`: Request parameters for the application to interpret analogously to a [URI query component](https://www.rfc-editor.org/rfc/rfc3986#section-3.4), expressed as hexadecimal-serialized bytes.
+- `height (integer)`: The block height against which to query.
+- `prove (bool)`: Return Merkle proof with response if possible.
 
 #### Request
 
 ##### HTTP
 
 ```sh
-curl  http://127.0.0.1:26657/abci_query?path="a/b/c"=IHAVENOIDEA&height=1&prove=true
+curl 'http://127.0.0.1:26657/v1/abci_query?path="/store/foo/key"&data=0x636f6d6574626674&height=1&prove=true'
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"abci_query\",\"params\":{\"path\":\"a/b/c\", \"height\":\"1\", \"bool\":\"true\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"abci_query\",\"params\":{\"path\":\"/store/foo/key\", \"data\":\"636f6d6574626674\", \"height\":\"1\", \"prove\":\"true\"}}"
 ```
 
 #### Response
@@ -1217,8 +1217,8 @@ curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\
       "log": "exists",
       "height": "0",
       "proof": "010114FED0DAD959F36091AD761C922ABA3CBF1D8349990101020103011406AA2262E2F448242DF2C2607C3CDC705313EE3B0001149D16177BC71E445476174622EA559715C293740C",
-      "value": "61626364",
-      "key": "61626364",
+      "key": "Y29tZXRiZnQ=",
+      "value": "cm9ja3M=",
       "index": "-1",
       "code": "0"
     }
@@ -1243,13 +1243,13 @@ Broadcast evidence of the misbehavior.
 ##### HTTP
 
 ```sh
-curl http://localhost:26657/broadcast_evidence?evidence=JSON_EVIDENCE_encoded
+curl http://localhost:26657/v1/broadcast_evidence?evidence=JSON_EVIDENCE_encoded
 ```
 
 #### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"broadcast_evidence\",\"params\":{\"evidence\":\"JSON_EVIDENCE_encoded\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"broadcast_evidence\",\"params\":{\"evidence\":\"JSON_EVIDENCE_encoded\"}}"
 ```
 
 #### Response

@@ -17,7 +17,6 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
-	"github.com/cometbft/cometbft/crypto/sr25519"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cometbft/cometbft/types"
 
@@ -161,6 +160,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		Validators:                 map[*Node]int64{},
 		ValidatorUpdates:           map[int64]map[*Node]int64{},
 		Nodes:                      []*Node{},
+		KeyType:                    ed25519.KeyType,
 		Evidence:                   manifest.Evidence,
 		LoadTxSizeBytes:            manifest.LoadTxSizeBytes,
 		LoadTxBatchSize:            manifest.LoadTxBatchSize,
@@ -618,12 +618,10 @@ func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
 	switch keyType {
 	case "secp256k1":
 		return secp256k1.GenPrivKeySecp256k1(seed)
-	case "sr25519":
-		return sr25519.GenPrivKeyFromSecret(seed)
-	case "", "ed25519":
+	case ed25519.KeyType:
 		return ed25519.GenPrivKeyFromSecret(seed)
 	default:
-		panic("KeyType not supported") // should not make it this far
+		return ed25519.GenPrivKeyFromSecret(seed) // default fall back to ed25519 if not specified
 	}
 }
 

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/dilithium"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/crypto/sr25519"
@@ -609,8 +610,7 @@ func newKeyGenerator(seed int64) *keyGenerator {
 }
 
 func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
-	seed := make([]byte, ed25519.SeedSize)
-
+	seed := make([]byte, dilithium.SeedSize)
 	_, err := io.ReadFull(g.random, seed)
 	if err != nil {
 		panic(err) // this shouldn't happen
@@ -622,6 +622,8 @@ func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
 		return sr25519.GenPrivKeyFromSecret(seed)
 	case "", "ed25519":
 		return ed25519.GenPrivKeyFromSecret(seed)
+	case "dilithium":
+		return dilithium.GenPrivKeyFromSeed(seed)
 	default:
 		panic("KeyType not supported") // should not make it this far
 	}

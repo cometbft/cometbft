@@ -1,15 +1,16 @@
 package types
 
 import (
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	cmtmath "github.com/cometbft/cometbft/libs/math"
+	"github.com/cometbft/cometbft/crypto/dilithium"
+	tmmath "github.com/cometbft/cometbft/libs/math"
 )
 
 var (
 	// MaxSignatureSize is a maximum allowed signature size for the Proposal
 	// and Vote.
 	// XXX: secp256k1 does not have Size nor MaxSize defined.
-	MaxSignatureSize = cmtmath.MaxInt(ed25519.SignatureSize, 64)
+	// MaxSignatureSize = tmmath.MaxInt(ed25519.SignatureSize, 64)
+	MaxSignatureSize = tmmath.MaxInt(dilithium.SignatureSize, 2420)
 )
 
 // Signable is an interface for all signable things.

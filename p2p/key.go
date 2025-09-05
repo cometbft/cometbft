@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/dilithium"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	cmtos "github.com/cometbft/cometbft/libs/os"
 )
@@ -56,7 +56,7 @@ func LoadOrGenNodeKey(filePath string) (*NodeKey, error) {
 		return nodeKey, nil
 	}
 
-	privKey := ed25519.GenPrivKey()
+	privKey := dilithium.GenPrivKey()
 	nodeKey := &NodeKey{
 		PrivKey: privKey,
 	}

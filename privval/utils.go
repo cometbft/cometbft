@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/dilithium"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtnet "github.com/cometbft/cometbft/libs/net"
 )
@@ -39,7 +39,7 @@ func NewSignerListener(listenAddr string, logger log.Logger) (*SignerListenerEnd
 		listener = NewUnixListener(ln)
 	case "tcp":
 		// TODO: persist this key so external signer can actually authenticate us
-		listener = NewTCPListener(ln, ed25519.GenPrivKey())
+		listener = NewTCPListener(ln, dilithium.GenPrivKey())
 	default:
 		return nil, fmt.Errorf(
 			"wrong listen address: expected either 'tcp' or 'unix' protocols, got %s",

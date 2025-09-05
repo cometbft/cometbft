@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/dilithium"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
@@ -26,7 +26,8 @@ type privKeys []crypto.PrivKey
 func genPrivKeys(n int) privKeys {
 	res := make(privKeys, n)
 	for i := range res {
-		res[i] = ed25519.GenPrivKey()
+		// res[i] = ed25519.GenPrivKey()
+		res[i] = dilithium.GenPrivKey()
 	}
 	return res
 }
@@ -35,7 +36,8 @@ func genPrivKeys(n int) privKeys {
 // func (pkz privKeys) Change(i int) privKeys {
 // 	res := make(privKeys, len(pkz))
 // 	copy(res, pkz)
-// 	res[i] = ed25519.GenPrivKey()
+// // res[i] = ed25519.GenPrivKey()
+// 	res[i] = dilithium.GenPrivKey()
 // 	return res
 // }
 
@@ -59,6 +61,23 @@ func (pkz privKeys) Extend(n int) privKeys {
 // 	extra := GenSecpPrivKeys(n)
 // 	return append(pkz, extra...)
 // }
+
+
+// // GenDilithiumPrivKeys produces an array of secp256k1 private keys to generate commits.
+// func GenDilithiumPrivKeys(n int) privKeys {
+// 	res := make(privKeys, n)
+// 	for i := range res {
+// 		res[i] = dilithium.GenPrivKey()
+// 	}
+// 	return res
+// }
+
+// // ExtendDilithium adds n more secp256k1 keys (to remove, just take a slice).
+// func (pkz privKeys) ExtendDilithium(n int) privKeys {
+// 	extra := GenDilithiumPrivKeys(n)
+// 	return append(pkz, extra...)
+// }
+
 
 // ToValidators produces a valset from the set of keys.
 // The first key has weight `init` and it increases by `inc` every step

@@ -6,7 +6,8 @@ import (
 	"fmt"
 
 	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/dilithium"
+
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
@@ -54,7 +55,7 @@ type MockPV struct {
 }
 
 func NewMockPV() MockPV {
-	return MockPV{ed25519.GenPrivKey(), false, false}
+	return MockPV{dilithium.GenPrivKey(), false, false}
 }
 
 // NewMockPVWithParams allows one to create a MockPV instance, but with finer
@@ -154,5 +155,5 @@ func (pv *ErroringMockPV) SignProposal(string, *cmtproto.Proposal) error {
 // NewErroringMockPV returns a MockPV that fails on each signing request. Again, for testing only.
 
 func NewErroringMockPV() *ErroringMockPV {
-	return &ErroringMockPV{MockPV{ed25519.GenPrivKey(), false, false}}
+	return &ErroringMockPV{MockPV{dilithium.GenPrivKey(), false, false}}
 }

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/dilithium"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtnet "github.com/cometbft/cometbft/libs/net"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
@@ -182,7 +182,7 @@ func MakeSwitch(
 	opts ...SwitchOption,
 ) *Switch {
 	nodeKey := NodeKey{
-		PrivKey: ed25519.GenPrivKey(),
+		PrivKey: dilithium.GenPrivKey(),
 	}
 	nodeInfo := testNodeInfo(nodeKey.ID(), fmt.Sprintf("node%d", i))
 	addr, err := NewNetAddressString(

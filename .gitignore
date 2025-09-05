@@ -58,3 +58,6 @@ proto/spec/**/*.pb.go
 # Python virtual environments
 .venv
 go.work.sum
+
+*gogo.proto
+mytestnet

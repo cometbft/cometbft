@@ -480,7 +480,7 @@ func TestPEXReactorSeedModeFlushStop(t *testing.T) {
 
 	// by now the FlushStop should have happened. Try stopping the peer.
 	// it should be safe to do this.
-	peers := switches[0].Peers().List()
+	peers := switches[0].Peers().Copy()
 	for _, peer := range peers {
 		err := peer.Stop()
 		require.NoError(t, err)

@@ -249,7 +249,7 @@ func (sw *Switch) OnStart() error {
 // OnStop implements BaseService. It stops all peers and reactors.
 func (sw *Switch) OnStop() {
 	// Stop peers
-	for _, p := range sw.peers.List() {
+	for _, p := range sw.peers.Copy() {
 		sw.stopAndRemovePeer(p, nil)
 	}
 
@@ -257,7 +257,7 @@ func (sw *Switch) OnStop() {
 	sw.Logger.Debug("Switch: Stopping reactors")
 	for _, reactor := range sw.reactors {
 		if err := reactor.Stop(); err != nil {
-			sw.Logger.Error("error while stopped reactor", "reactor", reactor, "error", err)
+			sw.Logger.Error("error while stopped reactor", "reactor", reactor, "err", err)
 		}
 	}
 }
@@ -274,18 +274,21 @@ func (sw *Switch) OnStop() {
 func (sw *Switch) Broadcast(e Envelope) chan bool {
 	sw.Logger.Debug("Broadcast", "channel", e.ChannelID)
 
-	peers := sw.peers.List()
 	var wg sync.WaitGroup
-	wg.Add(len(peers))
-	successChan := make(chan bool, len(peers))
+	successChan := make(chan bool, sw.peers.Size())
 
-	for _, peer := range peers {
-		go func(p Peer) {
+	sw.peers.ForEach(func(p Peer) {
+		wg.Add(1) // Incrementing by one is safer.
+		go func(peer Peer) {
 			defer wg.Done()
-			success := p.Send(e)
-			successChan <- success
-		}(peer)
-	}
+			success := peer.Send(e)
+			// For rare cases where PeerSet changes between a call to `peers.Size()` and `peers.ForEach()`.
+			select {
+			case successChan <- success:
+			default:
+			}
+		}(p)
+	})
 
 	go func() {
 		wg.Wait()
@@ -298,18 +301,13 @@ func (sw *Switch) Broadcast(e Envelope) chan bool {
 // NumPeers returns the count of outbound/inbound and outbound-dialing peers.
 // unconditional peers are not counted here.
 func (sw *Switch) NumPeers() (outbound, inbound, dialing int) {
-	peers := sw.peers.List()
-	for _, peer := range peers {
-		if peer.IsOutbound() {
-			if !sw.IsPeerUnconditional(peer.ID()) {
-				outbound++
-			}
-		} else {
-			if !sw.IsPeerUnconditional(peer.ID()) {
-				inbound++
-			}
+	sw.peers.ForEach(func(peer Peer) {
+		if peer.IsOutbound() && !sw.IsPeerUnconditional(peer.ID()) {
+			outbound++
+		} else if !sw.IsPeerUnconditional(peer.ID()) {
+			inbound++
 		}
-	}
+	})
 	dialing = sw.dialing.Size()
 	return
 }
@@ -365,11 +363,14 @@ func (sw *Switch) StopPeerGracefully(peer Peer) {
 }
 
 func (sw *Switch) stopAndRemovePeer(peer Peer, reason interface{}) {
-	sw.transport.Cleanup(peer)
+	// Returning early if the peer is already stopped prevents data races because
+	// this function may be called from multiple places at once.
 	if err := peer.Stop(); err != nil {
-		sw.Logger.Error("error while stopping peer", "error", err) // TODO: should return error to be handled accordingly
+		sw.Logger.Error("error stopping peer", "peer", peer.ID(), "err", err)
+		return
 	}
 
+	sw.transport.Cleanup(peer)
 	for _, reactor := range sw.reactors {
 		reactor.RemovePeer(peer, reason)
 	}
@@ -378,13 +379,14 @@ func (sw *Switch) stopAndRemovePeer(peer Peer, reason interface{}) {
 	// reconnect to our node and the switch calls InitPeer before
 	// RemovePeer is finished.
 	// https://github.com/tendermint/tendermint/issues/3338
-	if sw.peers.Remove(peer) {
-		sw.metrics.Peers.Add(float64(-1))
-	} else {
+	if !sw.peers.Remove(peer) {
 		// Removal of the peer has failed. The function above sets a flag within the peer to mark this.
 		// We keep this message here as information to the developer.
-		sw.Logger.Debug("error on peer removal", ",", "peer", peer.ID())
+		sw.Logger.Debug("error on peer removal", "peer", peer.ID())
+		return
 	}
+
+	sw.metrics.Peers.Add(float64(-1))
 }
 
 // reconnectToPeer tries to reconnect to the addr, first repeatedly

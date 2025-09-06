@@ -18,7 +18,7 @@ import (
 
 // BroadcastTxAsync returns right away, with no response. Does not wait for
 // CheckTx nor transaction results.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Tx/broadcast_tx_async
+// More: https://docs.cometbft.com/v0.38/spec/rpc/#unconfirmedtxs
 func (env *Environment) BroadcastTxAsync(_ *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
 	err := env.Mempool.CheckTx(tx, nil, mempl.TxInfo{})
 	if err != nil {

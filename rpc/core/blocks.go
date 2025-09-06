@@ -23,7 +23,7 @@ import (
 // At most 20 items will be returned. Block headers are returned in descending
 // order (highest first).
 //
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/blockchain
+// More: https://docs.cometbft.com/v0.38/spec/rpc/#info-blockchain
 func (env *Environment) BlockchainInfo(
 	_ *rpctypes.Context,
 	minHeight, maxHeight int64,
@@ -88,7 +88,7 @@ func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
 
 // Header gets block header at a given height.
 // If no height is provided, it will fetch the latest header.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/header
+// More: https://docs.cometbft.com/v0.38/spec/rpc/#infoheader
 func (env *Environment) Header(_ *rpctypes.Context, heightPtr *int64) (*ctypes.ResultHeader, error) {
 	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
@@ -120,7 +120,7 @@ func (env *Environment) HeaderByHash(_ *rpctypes.Context, hash bytes.HexBytes) (
 
 // Block gets block at a given height.
 // If no height is provided, it will fetch the latest block.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/block
+// More: https://docs.cometbft.com/v0.38/spec/rpc/#block
 func (env *Environment) Block(_ *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlock, error) {
 	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
@@ -149,7 +149,7 @@ func (env *Environment) BlockByHash(_ *rpctypes.Context, hash []byte) (*ctypes.R
 
 // Commit gets block commit at a given height.
 // If no height is provided, it will fetch the commit for the latest block.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/commit
+// More: https://docs.cometbft.com/v0.38/spec/rpc/#info-commit
 func (env *Environment) Commit(_ *rpctypes.Context, heightPtr *int64) (*ctypes.ResultCommit, error) {
 	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {

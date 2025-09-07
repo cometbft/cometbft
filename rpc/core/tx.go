@@ -16,7 +16,7 @@ import (
 // Tx allows you to query the transaction results. `nil` could mean the
 // transaction is in the mempool, invalidated, or was not sent in the first
 // place.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/tx
+// More: https://docs.cometbft.com/v0.38/spec/rpc/#tx
 func (env *Environment) Tx(_ *rpctypes.Context, hash []byte, prove bool) (*ctypes.ResultTx, error) {
 	// if index is disabled, return error
 	if _, ok := env.TxIndexer.(*null.TxIndex); ok {

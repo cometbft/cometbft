@@ -40,7 +40,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	golang.org/x/crypto v0.41.0
-	golang.org/x/net v0.42.0
+	golang.org/x/net v0.43.0
 	golang.org/x/sync v0.16.0
 	gonum.org/v1/gonum v0.16.0
 	google.golang.org/grpc v1.75.0

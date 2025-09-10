@@ -173,7 +173,7 @@ func (info DefaultNodeInfo) Validate() error {
 	return nil
 }
 
-// CompatibleWith checks if two DefaultNodeInfo are compatible with eachother.
+// CompatibleWith checks if two DefaultNodeInfo are compatible with each other.
 // CONTRACT: two nodes are compatible if the Block version and network match
 // and they have at least one channel in common.
 func (info DefaultNodeInfo) CompatibleWith(otherInfo NodeInfo) error {

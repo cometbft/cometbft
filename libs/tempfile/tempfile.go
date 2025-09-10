@@ -65,7 +65,7 @@ func randWriteFileSuffix() string {
 	suffix := strconv.Itoa(int(r))
 	if string(suffix[0]) == "-" {
 		// Replace first "-" with "0". This is purely for UI clarity,
-		// as otherwhise there would be two `-` in a row.
+		// as otherwise there would be two `-` in a row.
 		suffix = strings.Replace(suffix, "-", "0", 1)
 	}
 	return suffix

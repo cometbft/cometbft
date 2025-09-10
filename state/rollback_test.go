@@ -123,7 +123,7 @@ func TestRollbackHard(t *testing.T) {
 
 	currState := state.State{
 		Version: cmtstate.Version{
-			Consensus: block.Header.Version,
+			Consensus: block.Version,
 			Software:  version.TMCoreSemVer,
 		},
 		LastBlockHeight:                  block.Height,
@@ -180,7 +180,7 @@ func TestRollbackHard(t *testing.T) {
 
 	nextState := state.State{
 		Version: cmtstate.Version{
-			Consensus: block.Header.Version,
+			Consensus: block.Version,
 			Software:  version.TMCoreSemVer,
 		},
 		LastBlockHeight:                  nextBlock.Height,

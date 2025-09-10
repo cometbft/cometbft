@@ -26,7 +26,7 @@ const (
 	// NOTE: dont use massive DNS name ..
 	maxAddressSize = 256
 
-	// NOTE: amplificaiton factor!
+	// NOTE: amplification factor!
 	// small request results in up to maxMsgSize response
 	maxMsgSize = maxAddressSize * maxGetSelection
 

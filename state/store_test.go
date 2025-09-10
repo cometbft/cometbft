@@ -273,7 +273,7 @@ func TestLastFinalizeBlockResponses(t *testing.T) {
 		// use an incorrect height to make sure the state store errors.
 		_, err = stateStore.LoadLastFinalizeBlockResponse(height + 1)
 		assert.Error(t, err)
-		// check if the abci response didnt save in the abciresponses.
+		// check if the abci response didn't save in the abciresponses.
 		responses, err = stateStore.LoadFinalizeBlockResponse(height)
 		require.NoError(t, err, responses)
 		require.Equal(t, response1, responses)

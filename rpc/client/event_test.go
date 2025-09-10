@@ -19,7 +19,7 @@ import (
 
 var waitForEventTimeout = 8 * time.Second
 
-// MakeTxKV returns a text transaction, allong with expected key, value pair
+// MakeTxKV returns a text transaction, along with expected key, value pair
 func MakeTxKV() ([]byte, []byte, []byte) {
 	k := []byte(cmtrand.Str(8))
 	v := []byte(cmtrand.Str(8))

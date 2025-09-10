@@ -5,104 +5,93 @@ import (
 	"net"
 	"time"
 
-	"github.com/cometbft/cometbft/v2/config"
-	"github.com/cometbft/cometbft/v2/crypto/ed25519"
-	cmtnet "github.com/cometbft/cometbft/v2/internal/net"
-	"github.com/cometbft/cometbft/v2/libs/log"
-	ni "github.com/cometbft/cometbft/v2/p2p/internal/nodeinfo"
-	"github.com/cometbft/cometbft/v2/p2p/internal/nodekey"
-	na "github.com/cometbft/cometbft/v2/p2p/netaddr"
-	"github.com/cometbft/cometbft/v2/p2p/transport"
-	"github.com/cometbft/cometbft/v2/p2p/transport/tcp"
-	tcpconn "github.com/cometbft/cometbft/v2/p2p/transport/tcp/conn"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtnet "github.com/cometbft/cometbft/libs/net"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/p2p/conn"
 )
 
-// ------------------------------------------------
+const testCh = 0x01
 
-type nopStream struct{}
+//------------------------------------------------
 
-func (nopStream) Read([]byte) (n int, err error) {
-	return 0, nil
+type mockNodeInfo struct {
+	addr *NetAddress
 }
 
-func (nopStream) Write(b []byte) (n int, err error) {
-	return len(b), nil
-}
-
-func (nopStream) TryWrite(b []byte) (n int, err error) {
-	return len(b), nil
-}
-
-func (nopStream) Close() error {
-	return nil
-}
-func (nopStream) SetDeadline(time.Time) error     { return nil }
-func (nopStream) SetReadDeadline(time.Time) error { return nil }
+func (ni mockNodeInfo) ID() ID                           { return ni.addr.ID }
+func (ni mockNodeInfo) NetAddress() (*NetAddress, error) { return ni.addr, nil }
+func (ni mockNodeInfo) Validate() error                  { return nil }
+func (ni mockNodeInfo) CompatibleWith(NodeInfo) error    { return nil }
 
 func AddPeerToSwitchPeerSet(sw *Switch, peer Peer) {
 	sw.peers.Add(peer) //nolint:errcheck // ignore error
 }
 
 func CreateRandomPeer(outbound bool) Peer {
-	addr, netAddr := na.CreateRoutableAddr()
+	addr, netAddr := CreateRoutableAddr()
 	p := &peer{
 		peerConn: peerConn{
 			outbound:   outbound,
 			socketAddr: netAddr,
 		},
 		nodeInfo: mockNodeInfo{netAddr},
+		mconn:    &conn.MConnection{},
 		metrics:  NopMetrics(),
-		streams:  make(map[byte]transport.Stream),
 	}
-	// PEX
-	p.streams[0x00] = &nopStream{}
 	p.SetLogger(log.TestingLogger().With("peer", addr))
 	return p
 }
 
-// ------------------------------------------------------------------
+func CreateRoutableAddr() (addr string, netAddr *NetAddress) {
+	for {
+		var err error
+		addr = fmt.Sprintf("%X@%v.%v.%v.%v:26656",
+			cmtrand.Bytes(20),
+			cmtrand.Int()%256,
+			cmtrand.Int()%256,
+			cmtrand.Int()%256,
+			cmtrand.Int()%256)
+		netAddr, err = NewNetAddressString(addr)
+		if err != nil {
+			panic(err)
+		}
+		if netAddr.Routable() {
+			break
+		}
+	}
+	return
+}
+
+//------------------------------------------------------------------
 // Connects switches via arbitrary net.Conn. Used for testing.
 
 const TestHost = "localhost"
 
-// MakeConnectedSwitches returns n switches, initialized according to the
-// initSwitch function, and connected according to the connect function.
+// MakeConnectedSwitches returns n switches, connected according to the connect func.
+// If connect==Connect2Switches, the switches will be fully connected.
+// initSwitch defines how the i'th switch should be initialized (ie. with what reactors).
+// NOTE: panics if any switch fails to start.
 func MakeConnectedSwitches(cfg *config.P2PConfig,
 	n int,
 	initSwitch func(int, *Switch) *Switch,
 	connect func([]*Switch, int, int),
 ) []*Switch {
-	switches := MakeSwitches(cfg, n, initSwitch)
-	return StartAndConnectSwitches(switches, connect)
-}
-
-// MakeSwitches returns n switches.
-// initSwitch defines how the i'th switch should be initialized (ie. with what reactors).
-func MakeSwitches(
-	cfg *config.P2PConfig,
-	n int,
-	initSwitch func(int, *Switch) *Switch,
-) []*Switch {
 	switches := make([]*Switch, n)
 	for i := 0; i < n; i++ {
 		switches[i] = MakeSwitch(cfg, i, initSwitch)
 	}
-	return switches
-}
 
-// StartAndConnectSwitches connects the switches according to the connect function.
-// If connect==Connect2Switches, the switches will be fully connected.
-// NOTE: panics if any switch fails to start.
-func StartAndConnectSwitches(
-	switches []*Switch,
-	connect func([]*Switch, int, int),
-) []*Switch {
 	if err := StartSwitches(switches); err != nil {
 		panic(err)
 	}
 
-	for i := 0; i < len(switches); i++ {
-		for j := i + 1; j < len(switches); j++ {
+	for i := 0; i < n; i++ {
+		for j := i + 1; j < n; j++ {
 			connect(switches, i, j)
 		}
 	}
@@ -117,22 +106,18 @@ func Connect2Switches(switches []*Switch, i, j int) {
 	switchI := switches[i]
 	switchJ := switches[j]
 
-	c1, c2 := net.Pipe()
+	c1, c2 := conn.NetPipe()
 
 	doneCh := make(chan struct{})
 	go func() {
-		mconn := tcpconn.NewMConnection(c1, tcpconn.DefaultMConnConfig())
-		mconn.SetLogger(log.TestingLogger().With("mconn", i))
-		err := switchI.addPeerWithConnection(mconn)
+		err := switchI.addPeerWithConnection(c1)
 		if err != nil {
 			panic(err)
 		}
 		doneCh <- struct{}{}
 	}()
 	go func() {
-		mconn := tcpconn.NewMConnection(c2, tcpconn.DefaultMConnConfig())
-		mconn.SetLogger(log.TestingLogger().With("mconn", j))
-		err := switchJ.addPeerWithConnection(mconn)
+		err := switchJ.addPeerWithConnection(c2)
 		if err != nil {
 			panic(err)
 		}
@@ -142,73 +127,36 @@ func Connect2Switches(switches []*Switch, i, j int) {
 	<-doneCh
 }
 
-// ConnectStarSwitches will connect switches c and j via net.Pipe().
-func ConnectStarSwitches(c int) func([]*Switch, int, int) {
-	// Blocks until a connection is established.
-	// NOTE: caller ensures i and j is within bounds.
-	return func(switches []*Switch, i, j int) {
-		if i != c {
-			return
-		}
-
-		switchI := switches[i]
-		switchJ := switches[j]
-
-		c1, c2 := net.Pipe()
-
-		doneCh := make(chan struct{})
-		go func() {
-			mconn := tcpconn.NewMConnection(c1, tcpconn.DefaultMConnConfig())
-			mconn.SetLogger(log.TestingLogger().With("mconn", i))
-			err := switchI.addPeerWithConnection(mconn)
-			if err != nil {
-				panic(err)
-			}
-			doneCh <- struct{}{}
-		}()
-		go func() {
-			mconn := tcpconn.NewMConnection(c2, tcpconn.DefaultMConnConfig())
-			mconn.SetLogger(log.TestingLogger().With("mconn", j))
-			err := switchJ.addPeerWithConnection(mconn)
-			if err != nil {
-				panic(err)
-			}
-			doneCh <- struct{}{}
-		}()
-		<-doneCh
-		<-doneCh
-	}
-}
-
-func (sw *Switch) addPeerWithConnection(conn transport.Conn) error {
-	closeConn := func(err error) {
-		if cErr := conn.Close(err.Error()); cErr != nil {
-			sw.Logger.Error("Error closing connection", "err", cErr)
-		}
-	}
-
-	ni, err := handshake(sw.nodeInfo, conn.HandshakeStream(), time.Second)
+func (sw *Switch) addPeerWithConnection(conn net.Conn) error {
+	pc, err := testInboundPeerConn(conn, sw.config, sw.nodeKey.PrivKey)
 	if err != nil {
-		closeConn(err)
+		if err := conn.Close(); err != nil {
+			sw.Logger.Error("Error closing connection", "err", err)
+		}
 		return err
 	}
 
-	addr, _ := ni.NetAddr()
-	pc, err := testInboundPeerConn(conn, addr)
+	ni, err := handshake(conn, time.Second, sw.nodeInfo)
 	if err != nil {
-		closeConn(err)
+		if err := conn.Close(); err != nil {
+			sw.Logger.Error("Error closing connection", "err", err)
+		}
 		return err
 	}
 
 	p := newPeer(
 		pc,
+		MConnConfig(sw.config),
 		ni,
-		sw.streamInfoByStreamID,
+		sw.reactorsByCh,
+		sw.msgTypeByChID,
+		sw.chDescs,
 		sw.StopPeerForError,
+		sw.mlc,
 	)
 
 	if err = sw.addPeer(p); err != nil {
-		closeConn(err)
+		pc.CloseConn()
 		return err
 	}
 
@@ -233,19 +181,18 @@ func MakeSwitch(
 	initSwitch func(int, *Switch) *Switch,
 	opts ...SwitchOption,
 ) *Switch {
-	nk := nodekey.NodeKey{
+	nodeKey := NodeKey{
 		PrivKey: ed25519.GenPrivKey(),
 	}
-	nodeInfo := testNodeInfo(nk.ID(), fmt.Sprintf("node%d", i))
-	addr, err := na.NewFromString(
-		na.IDAddrString(nk.ID(), nodeInfo.ListenAddr),
+	nodeInfo := testNodeInfo(nodeKey.ID(), fmt.Sprintf("node%d", i))
+	addr, err := NewNetAddressString(
+		IDAddressString(nodeKey.ID(), nodeInfo.(DefaultNodeInfo).ListenAddr),
 	)
 	if err != nil {
 		panic(err)
 	}
 
-	mConfig := tcpconn.DefaultMConnConfig()
-	t := tcp.NewMultiplexTransport(nk, mConfig)
+	t := NewMultiplexTransport(nodeInfo, nodeKey, MConnConfig(cfg))
 
 	if err := t.Listen(*addr); err != nil {
 		panic(err)
@@ -254,99 +201,72 @@ func MakeSwitch(
 	// TODO: let the config be passed in?
 	sw := initSwitch(i, NewSwitch(cfg, t, opts...))
 	sw.SetLogger(log.TestingLogger().With("switch", i))
-	sw.SetNodeKey(&nk)
+	sw.SetNodeKey(&nodeKey)
 
-	// reset channels
-	for ch := range sw.streamInfoByStreamID {
-		if ch != 0x01 {
-			nodeInfo.Channels = append(nodeInfo.Channels, ch)
-		}
+	ni := nodeInfo.(DefaultNodeInfo)
+	for ch := range sw.reactorsByCh {
+		ni.Channels = append(ni.Channels, ch)
 	}
+	nodeInfo = ni
 
+	// TODO: We need to setup reactors ahead of time so the NodeInfo is properly
+	// populated and we don't have to do those awkward overrides and setters.
+	t.nodeInfo = nodeInfo
 	sw.SetNodeInfo(nodeInfo)
 
 	return sw
 }
 
 func testInboundPeerConn(
-	conn transport.Conn,
-	socketAddr *na.NetAddr,
+	conn net.Conn,
+	config *config.P2PConfig,
+	ourNodePrivKey crypto.PrivKey,
 ) (peerConn, error) {
-	return testPeerConn(conn, false, false, socketAddr)
+	return testPeerConn(conn, config, false, false, ourNodePrivKey, nil)
 }
 
 func testPeerConn(
-	conn transport.Conn,
+	rawConn net.Conn,
+	cfg *config.P2PConfig,
 	outbound, persistent bool,
-	socketAddr *na.NetAddr,
+	ourNodePrivKey crypto.PrivKey,
+	socketAddr *NetAddress,
 ) (pc peerConn, err error) {
+	conn := rawConn
+
+	// Fuzz connection
+	if cfg.TestFuzz {
+		// so we have time to do peer handshakes and get set up
+		conn = FuzzConnAfterFromConfig(conn, 10*time.Second, cfg.TestFuzzConfig)
+	}
+
+	// Encrypt connection
+	conn, err = upgradeSecretConn(conn, cfg.HandshakeTimeout, ourNodePrivKey)
+	if err != nil {
+		return pc, fmt.Errorf("error creating peer: %w", err)
+	}
+
+	// Only the information we already have
 	return newPeerConn(outbound, persistent, conn, socketAddr), nil
 }
 
-// ----------------------------------------------------------------
+//----------------------------------------------------------------
 // rand node info
 
-type AddrBookMock struct {
-	Addrs        map[string]struct{}
-	OurAddrs     map[string]struct{}
-	PrivateAddrs map[string]struct{}
+func testNodeInfo(id ID, name string) NodeInfo {
+	return testNodeInfoWithNetwork(id, name, "testing")
 }
 
-var _ AddrBook = (*AddrBookMock)(nil)
-
-func (book *AddrBookMock) AddAddress(addr *na.NetAddr, _ *na.NetAddr) error {
-	book.Addrs[addr.String()] = struct{}{}
-	return nil
-}
-
-func (book *AddrBookMock) AddOurAddress(addr *na.NetAddr) {
-	book.OurAddrs[addr.String()] = struct{}{}
-}
-
-func (book *AddrBookMock) OurAddress(addr *na.NetAddr) bool {
-	_, ok := book.OurAddrs[addr.String()]
-	return ok
-}
-func (*AddrBookMock) MarkGood(nodekey.ID) {}
-func (book *AddrBookMock) HasAddress(addr *na.NetAddr) bool {
-	_, ok := book.Addrs[addr.String()]
-	return ok
-}
-
-func (book *AddrBookMock) RemoveAddress(addr *na.NetAddr) {
-	delete(book.Addrs, addr.String())
-}
-func (*AddrBookMock) Save() {}
-func (book *AddrBookMock) AddPrivateIDs(addrs []string) {
-	for _, addr := range addrs {
-		book.PrivateAddrs[addr] = struct{}{}
-	}
-}
-
-type mockNodeInfo struct {
-	addr *na.NetAddr
-}
-
-func (ni mockNodeInfo) ID() nodekey.ID                                      { return ni.addr.ID }
-func (ni mockNodeInfo) NetAddr() (*na.NetAddr, error)                       { return ni.addr, nil }
-func (mockNodeInfo) Validate() error                                        { return nil }
-func (mockNodeInfo) CompatibleWith(ni.NodeInfo) error                       { return nil }
-func (mockNodeInfo) Handshake(net.Conn, time.Duration) (ni.NodeInfo, error) { return nil, nil }
-
-func testNodeInfo(id nodekey.ID, name string) ni.Default {
-	return ni.Default{
-		ProtocolVersion: ni.ProtocolVersion{
-			P2P:   0,
-			Block: 0,
-			App:   0,
-		},
-		DefaultNodeID: id,
-		ListenAddr:    fmt.Sprintf("127.0.0.1:%d", getFreePort()),
-		Network:       "testing",
-		Version:       "1.2.3-rc0-deadbeef",
-		Channels:      []byte{0x01},
-		Moniker:       name,
-		Other: ni.DefaultOther{
+func testNodeInfoWithNetwork(id ID, name, network string) NodeInfo {
+	return DefaultNodeInfo{
+		ProtocolVersion: defaultProtocolVersion,
+		DefaultNodeID:   id,
+		ListenAddr:      fmt.Sprintf("127.0.0.1:%d", getFreePort()),
+		Network:         network,
+		Version:         "1.2.3-rc0-deadbeef",
+		Channels:        []byte{testCh},
+		Moniker:         name,
+		Other: DefaultNodeInfoOther{
 			TxIndex:    "on",
 			RPCAddress: fmt.Sprintf("127.0.0.1:%d", getFreePort()),
 		},
@@ -359,4 +279,37 @@ func getFreePort() int {
 		panic(err)
 	}
 	return port
+}
+
+type AddrBookMock struct {
+	Addrs        map[string]struct{}
+	OurAddrs     map[string]struct{}
+	PrivateAddrs map[string]struct{}
+}
+
+var _ AddrBook = (*AddrBookMock)(nil)
+
+func (book *AddrBookMock) AddAddress(addr *NetAddress, _ *NetAddress) error {
+	book.Addrs[addr.String()] = struct{}{}
+	return nil
+}
+func (book *AddrBookMock) AddOurAddress(addr *NetAddress) { book.OurAddrs[addr.String()] = struct{}{} }
+func (book *AddrBookMock) OurAddress(addr *NetAddress) bool {
+	_, ok := book.OurAddrs[addr.String()]
+	return ok
+}
+func (book *AddrBookMock) MarkGood(ID) {}
+func (book *AddrBookMock) HasAddress(addr *NetAddress) bool {
+	_, ok := book.Addrs[addr.String()]
+	return ok
+}
+
+func (book *AddrBookMock) RemoveAddress(addr *NetAddress) {
+	delete(book.Addrs, addr.String())
+}
+func (book *AddrBookMock) Save() {}
+func (book *AddrBookMock) AddPrivateIDs(addrs []string) {
+	for _, addr := range addrs {
+		book.PrivateAddrs[addr] = struct{}{}
+	}
 }

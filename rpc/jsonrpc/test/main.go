@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"os"
 
-	cmtos "github.com/cometbft/cometbft/v2/internal/os"
-	"github.com/cometbft/cometbft/v2/libs/log"
-	rpcserver "github.com/cometbft/cometbft/v2/rpc/jsonrpc/server"
-	rpctypes "github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 var routes = map[string]*rpcserver.RPCFunc{
@@ -26,7 +26,7 @@ type Result struct {
 func main() {
 	var (
 		mux    = http.NewServeMux()
-		logger = log.NewLogger(os.Stdout)
+		logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	)
 
 	// Stop upon receiving SIGTERM or CTRL-C.

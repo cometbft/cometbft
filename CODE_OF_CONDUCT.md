@@ -27,7 +27,7 @@ hence to CometBFT.
   want to experiment with, make a fork and see how it works.
 
 * We will exclude you from interaction if you insult, demean or harass anyone.
-  That is not welcome behavior. We interpret the term "harassment" as including
+  That is not welcome behavior. We interpret the term “harassment” as including
   the definition in the [Citizen Code of Conduct][ccoc]; if you have any lack of
   clarity about what might be included in that concept, please read their
   definition. In particular, we don’t tolerate behavior that excludes people in
@@ -60,7 +60,7 @@ person.
 
 3. Moderators will first respond to such remarks with a warning.
 
-4. If the warning is unheeded, the user will be "kicked," i.e., kicked out of
+4. If the warning is unheeded, the user will be “kicked,” i.e., kicked out of
    the communication channel to cool off.
 
 5. If the user comes back and continues to make trouble, they will be banned,

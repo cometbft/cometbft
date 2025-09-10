@@ -10,9 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/v2/libs/log"
-	"github.com/cometbft/cometbft/v2/libs/pubsub"
-	"github.com/cometbft/cometbft/v2/libs/pubsub/query"
+	"github.com/cometbft/cometbft/libs/log"
+
+	"github.com/cometbft/cometbft/libs/pubsub"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
 )
 
 const (
@@ -46,13 +47,13 @@ func TestSubscribe(t *testing.T) {
 		defer close(published)
 
 		err := s.Publish(ctx, "Quicksilver")
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		err = s.Publish(ctx, "Asylum")
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		err = s.Publish(ctx, "Ivan")
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}()
 
 	select {
@@ -111,10 +112,10 @@ func TestSubscribeUnbuffered(t *testing.T) {
 		defer close(published)
 
 		err := s.Publish(ctx, "Ultron")
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		err = s.Publish(ctx, "Darkhawk")
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}()
 
 	select {
@@ -205,7 +206,7 @@ func TestSubscribeDuplicateKeys(t *testing.T) {
 
 	testCases := []struct {
 		query    string
-		expected any
+		expected interface{}
 	}{
 		{
 			"withdraw.rewards='17'",
@@ -391,21 +392,20 @@ func TestBufferCapacity(t *testing.T) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
 	defer cancel()
 	err = s.Publish(ctx, "Ironclad")
-	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+	if assert.Error(t, err) {
 		assert.Equal(t, context.DeadlineExceeded, err)
 	}
 }
 
-func Benchmark10Clients(b *testing.B)   { benchmarkNClients(b, 10) }
-func Benchmark100Clients(b *testing.B)  { benchmarkNClients(b, 100) }
-func Benchmark1000Clients(b *testing.B) { benchmarkNClients(b, 1000) }
+func Benchmark10Clients(b *testing.B)   { benchmarkNClients(10, b) }
+func Benchmark100Clients(b *testing.B)  { benchmarkNClients(100, b) }
+func Benchmark1000Clients(b *testing.B) { benchmarkNClients(1000, b) }
 
-func Benchmark10ClientsOneQuery(b *testing.B)   { benchmarkNClientsOneQuery(b, 10) }
-func Benchmark100ClientsOneQuery(b *testing.B)  { benchmarkNClientsOneQuery(b, 100) }
-func Benchmark1000ClientsOneQuery(b *testing.B) { benchmarkNClientsOneQuery(b, 1000) }
+func Benchmark10ClientsOneQuery(b *testing.B)   { benchmarkNClientsOneQuery(10, b) }
+func Benchmark100ClientsOneQuery(b *testing.B)  { benchmarkNClientsOneQuery(100, b) }
+func Benchmark1000ClientsOneQuery(b *testing.B) { benchmarkNClientsOneQuery(1000, b) }
 
-func benchmarkNClients(b *testing.B, n int) {
-	b.Helper()
+func benchmarkNClients(n int, b *testing.B) {
 	s := pubsub.NewServer()
 	err := s.Start()
 	require.NoError(b, err)
@@ -420,7 +420,7 @@ func benchmarkNClients(b *testing.B, n int) {
 	for i := 0; i < n; i++ {
 		subscription, err := s.Subscribe(
 			ctx,
-			fmt.Sprintf("%s-%d", clientID, i+1),
+			clientID,
 			query.MustCompile(fmt.Sprintf("abci.Account.Owner = 'Ivan' AND abci.Invoices.Number = %d", i)),
 		)
 		if err != nil {
@@ -450,8 +450,7 @@ func benchmarkNClients(b *testing.B, n int) {
 	}
 }
 
-func benchmarkNClientsOneQuery(b *testing.B, n int) {
-	b.Helper()
+func benchmarkNClientsOneQuery(n int, b *testing.B) {
 	s := pubsub.NewServer()
 	err := s.Start()
 	require.NoError(b, err)
@@ -464,7 +463,7 @@ func benchmarkNClientsOneQuery(b *testing.B, n int) {
 	ctx := context.Background()
 	q := query.MustCompile("abci.Account.Owner = 'Ivan' AND abci.Invoices.Number = 1")
 	for i := 0; i < n; i++ {
-		subscription, err := s.Subscribe(ctx, fmt.Sprintf("%s-%d", clientID, i+1), q)
+		subscription, err := s.Subscribe(ctx, clientID, q)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -483,21 +482,18 @@ func benchmarkNClientsOneQuery(b *testing.B, n int) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		err = s.PublishWithEvents(ctx, "Gamora", map[string][]string{
-			"abci.Account.Owner":   {"Ivan"},
-			"abci.Invoices.Number": {"1"},
-		})
+		err = s.PublishWithEvents(ctx, "Gamora", map[string][]string{"abci.Account.Owner": {"Ivan"},
+			"abci.Invoices.Number": {"1"}})
 		require.NoError(b, err)
 	}
 }
 
 // HELPERS
 
-func assertReceive(t *testing.T, expected any, ch <-chan pubsub.Message) {
-	t.Helper()
+func assertReceive(t *testing.T, expected interface{}, ch <-chan pubsub.Message, msgAndArgs ...interface{}) {
 	select {
 	case actual := <-ch:
-		assert.Equal(t, expected, actual.Data())
+		assert.Equal(t, expected, actual.Data(), msgAndArgs...)
 	case <-time.After(1 * time.Second):
 		t.Errorf("expected to receive %v from the channel, got nothing after 1s", expected)
 		debug.PrintStack()
@@ -505,7 +501,6 @@ func assertReceive(t *testing.T, expected any, ch <-chan pubsub.Message) {
 }
 
 func assertCancelled(t *testing.T, subscription *pubsub.Subscription, err error) {
-	t.Helper()
 	_, ok := <-subscription.Canceled()
 	assert.False(t, ok)
 	assert.Equal(t, err, subscription.Err())

@@ -4,26 +4,21 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/cometbft/cometbft/v2/abci/types"
-	rpchttp "github.com/cometbft/cometbft/v2/rpc/client/http"
-	rpctypes "github.com/cometbft/cometbft/v2/rpc/core/types"
-	"github.com/cometbft/cometbft/v2/test/e2e/app"
-	e2e "github.com/cometbft/cometbft/v2/test/e2e/pkg"
-	"github.com/cometbft/cometbft/v2/test/e2e/pkg/infra/docker"
-	"github.com/cometbft/cometbft/v2/types"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/types"
 )
 
 func init() {
 	// This can be used to manually specify a testnet manifest and/or node to
 	// run tests against. The testnet must have been started by the runner first.
 	// os.Setenv("E2E_MANIFEST", "networks/ci.toml")
-	// os.Setenv("E2E_TESTNET_DIR", "networks/ci")
 	// os.Setenv("E2E_NODE", "validator01")
 }
 
@@ -61,44 +56,9 @@ func testNode(t *testing.T, testFunc func(*testing.T, e2e.Node)) {
 
 		node := *node
 		t.Run(node.Name, func(t *testing.T) {
+			t.Parallel()
 			testFunc(t, node)
 		})
-	}
-}
-
-// Similar to testNode, except only runs the given test on full nodes or
-// validators. Also only runs the test on the given maximum number of nodes.
-//
-// If maxNodes is set to 0 or below, all full nodes and validators will be
-// tested.
-func testFullNodesOrValidators(t *testing.T, maxNodes int, testFunc func(*testing.T, e2e.Node)) { //nolint:unparam // maxNodes always receives 0 but that could change so we should keep the parameter.
-	t.Helper()
-
-	testnet := loadTestnet(t)
-	nodes := testnet.Nodes
-
-	if name := os.Getenv("E2E_NODE"); name != "" {
-		node := testnet.LookupNode(name)
-		require.NotNil(t, node, "node %q not found in testnet %q", name, testnet.Name)
-		nodes = []*e2e.Node{node}
-	}
-
-	nodeCount := 0
-	for _, node := range nodes {
-		if node.Stateless() {
-			continue
-		}
-
-		if node.Mode == e2e.ModeFull || node.Mode == e2e.ModeValidator {
-			node := *node
-			t.Run(node.Name, func(t *testing.T) {
-				testFunc(t, node)
-			})
-			nodeCount++
-			if maxNodes > 0 && nodeCount >= maxNodes {
-				break
-			}
-		}
 	}
 }
 
@@ -138,12 +98,7 @@ func loadTestnet(t *testing.T) e2e.Testnet {
 	}
 	require.NoError(t, err)
 
-	testnetDir := os.Getenv("E2E_TESTNET_DIR")
-	if !filepath.IsAbs(testnetDir) {
-		testnetDir = filepath.Join("..", testnetDir)
-	}
-
-	testnet, err := e2e.LoadTestnet(manifestFile, ifd, testnetDir)
+	testnet, err := e2e.LoadTestnet(manifestFile, ifd)
 	require.NoError(t, err)
 	testnetCache[manifestFile] = *testnet
 	return *testnet
@@ -199,39 +154,4 @@ func fetchBlockChain(t *testing.T) []*types.Block {
 	blocksCache[testnet.Name] = blocks
 
 	return blocks
-}
-
-// fetchABCIRequests go through the logs of a specific node and collect all ABCI requests (each slice represents requests from beginning until the first crash,
-// and then between two crashes) for a specific node.
-func fetchABCIRequests(t *testing.T, nodeName string) ([][]*abci.Request, error) {
-	t.Helper()
-	testnet := loadTestnet(t)
-	logs, err := fetchNodeLogs(testnet)
-	if err != nil {
-		return nil, err
-	}
-	reqs := make([][]*abci.Request, 0)
-	// Parse output line by line.
-	lines := strings.Split(string(logs), "\n")
-	for _, line := range lines {
-		if !strings.Contains(line, nodeName) {
-			continue
-		}
-		if strings.Contains(line, "Application started") {
-			reqs = append(reqs, make([]*abci.Request, 0))
-			continue
-		}
-		r, err := app.GetABCIRequestFromString(line)
-		require.NoError(t, err)
-		// Ship the lines that does not contain abci request.
-		if r == nil {
-			continue
-		}
-		reqs[len(reqs)-1] = append(reqs[len(reqs)-1], r)
-	}
-	return reqs, nil
-}
-
-func fetchNodeLogs(testnet e2e.Testnet) ([]byte, error) {
-	return docker.ExecComposeOutput(context.Background(), testnet.Dir, "logs")
 }

@@ -2,15 +2,16 @@ package proxy
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 
-	"github.com/cometbft/cometbft/v2/libs/log"
-	cmtpubsub "github.com/cometbft/cometbft/v2/libs/pubsub"
-	"github.com/cometbft/cometbft/v2/light"
-	lrpc "github.com/cometbft/cometbft/v2/light/rpc"
-	rpchttp "github.com/cometbft/cometbft/v2/rpc/client/http"
-	rpcserver "github.com/cometbft/cometbft/v2/rpc/jsonrpc/server"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	"github.com/cometbft/cometbft/light"
+	lrpc "github.com/cometbft/cometbft/light/rpc"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
 )
 
 // A Proxy defines parameters for running an HTTP server proxy.
@@ -31,9 +32,9 @@ func NewProxy(
 	logger log.Logger,
 	opts ...lrpc.Option,
 ) (*Proxy, error) {
-	rpcClient, err := rpchttp.NewWithTimeout(providerAddr, uint(config.WriteTimeout.Seconds()))
+	rpcClient, err := rpchttp.NewWithTimeout(providerAddr, "/websocket", uint(config.WriteTimeout.Seconds()))
 	if err != nil {
-		return nil, ErrCreateHTTPClient{Addr: providerAddr, Err: err}
+		return nil, fmt.Errorf("failed to create http client for %s: %w", providerAddr, err)
 	}
 
 	return &Proxy{
@@ -103,12 +104,11 @@ func (p *Proxy) listen() (net.Listener, *http.ServeMux, error) {
 	)
 	wm.SetLogger(wmLogger)
 	mux.HandleFunc("/websocket", wm.WebsocketHandler)
-	mux.HandleFunc("/v1/websocket", wm.WebsocketHandler)
 
 	// 3) Start a client.
 	if !p.Client.IsRunning() {
 		if err := p.Client.Start(); err != nil {
-			return nil, mux, ErrStartHTTPClient{Err: err}
+			return nil, mux, fmt.Errorf("can't start client: %w", err)
 		}
 	}
 

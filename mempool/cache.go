@@ -3,8 +3,8 @@ package mempool
 import (
 	"container/list"
 
-	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
-	"github.com/cometbft/cometbft/v2/types"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/types"
 )
 
 // TxCache defines an interface for raw transaction caching in a mempool.
@@ -53,12 +53,11 @@ func (c *LRUTxCache) GetList() *list.List {
 	return c.list
 }
 
-// Reset resets the cache to an empty state.
 func (c *LRUTxCache) Reset() {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
-	clear(c.cacheMap)
+	c.cacheMap = make(map[types.TxKey]*list.Element, c.size)
 	c.list.Init()
 }
 

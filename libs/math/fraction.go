@@ -21,13 +21,13 @@ func (fr Fraction) String() string {
 	return fmt.Sprintf("%d/%d", fr.Numerator, fr.Denominator)
 }
 
-// ParseFraction takes the string of a fraction as input i.e "2/3" and converts this
+// ParseFractions takes the string of a fraction as input i.e "2/3" and converts this
 // to the equivalent fraction else returns an error. The format of the string must be
 // one number followed by a slash (/) and then the other number.
 func ParseFraction(f string) (Fraction, error) {
 	o := strings.Split(f, "/")
 	if len(o) != 2 {
-		return Fraction{}, errors.New("incorrect formatting: should have a single slash i.e. \"1/3\"")
+		return Fraction{}, errors.New("incorrect formating: should have a single slash i.e. \"1/3\"")
 	}
 	numerator, err := strconv.ParseUint(o[0], 10, 64)
 	if err != nil {

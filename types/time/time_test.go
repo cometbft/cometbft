@@ -22,7 +22,7 @@ func TestWeightedMedian(t *testing.T) {
 	median := WeightedMedian(m, totalVotingPower)
 	assert.Equal(t, t2, median)
 	// median always returns value between values of correct processes
-	assert.True(t, true, (median.After(t1) || median.Equal(t1)) &&
+	assert.Equal(t, true, (median.After(t1) || median.Equal(t1)) &&
 		(median.Before(t3) || median.Equal(t3)))
 
 	m[1] = NewWeightedTime(t1, 40) // correct processes
@@ -33,7 +33,7 @@ func TestWeightedMedian(t *testing.T) {
 	median = WeightedMedian(m, totalVotingPower)
 	assert.Equal(t, t2, median)
 	// median always returns value between values of correct processes
-	assert.True(t, true, (median.After(t1) || median.Equal(t1)) &&
+	assert.Equal(t, true, (median.After(t1) || median.Equal(t1)) &&
 		(median.Before(t2) || median.Equal(t2)))
 
 	m = make([]*WeightedTime, 8)
@@ -51,6 +51,6 @@ func TestWeightedMedian(t *testing.T) {
 	median = WeightedMedian(m, totalVotingPower)
 	assert.Equal(t, t3, median)
 	// median always returns value between values of correct processes
-	assert.True(t, (median.After(t1) || median.Equal(t1)) &&
+	assert.Equal(t, true, (median.After(t1) || median.Equal(t1)) &&
 		(median.Before(t4) || median.Equal(t4)))
 }

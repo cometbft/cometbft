@@ -3,11 +3,11 @@ package tests
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 
-	abciclient "github.com/cometbft/cometbft/v2/abci/client"
-	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
-	abciserver "github.com/cometbft/cometbft/v2/abci/server"
+	abciclient "github.com/cometbft/cometbft/abci/client"
+	"github.com/cometbft/cometbft/abci/example/kvstore"
+	abciserver "github.com/cometbft/cometbft/abci/server"
 )
 
 func TestClientServerNoAddrPrefix(t *testing.T) {
@@ -18,9 +18,9 @@ func TestClientServerNoAddrPrefix(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 
 	server, err := abciserver.NewServer(addr, transport, app)
-	require.NoError(t, err)
+	assert.NoError(t, err, "expected no error on NewServer")
 	err = server.Start()
-	require.NoError(t, err)
+	assert.NoError(t, err, "expected no error on server.Start")
 	t.Cleanup(func() {
 		if err := server.Stop(); err != nil {
 			t.Error(err)
@@ -28,9 +28,9 @@ func TestClientServerNoAddrPrefix(t *testing.T) {
 	})
 
 	client, err := abciclient.NewClient(addr, transport, true)
-	require.NoError(t, err)
+	assert.NoError(t, err, "expected no error on NewClient")
 	err = client.Start()
-	require.NoError(t, err)
+	assert.NoError(t, err, "expected no error on client.Start")
 	t.Cleanup(func() {
 		if err := client.Stop(); err != nil {
 			t.Error(err)

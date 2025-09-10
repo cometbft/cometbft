@@ -3,8 +3,8 @@ package mock
 import (
 	"context"
 
-	"github.com/cometbft/cometbft/v2/light/provider"
-	"github.com/cometbft/cometbft/v2/types"
+	"github.com/cometbft/cometbft/light/provider"
+	"github.com/cometbft/cometbft/types"
 )
 
 type deadMock struct {
@@ -18,12 +18,12 @@ func NewDeadMock(chainID string) provider.Provider {
 
 func (p *deadMock) ChainID() string { return p.chainID }
 
-func (*deadMock) String() string { return "deadMock" }
+func (p *deadMock) String() string { return "deadMock" }
 
-func (*deadMock) LightBlock(context.Context, int64) (*types.LightBlock, error) {
+func (p *deadMock) LightBlock(context.Context, int64) (*types.LightBlock, error) {
 	return nil, provider.ErrNoResponse
 }
 
-func (*deadMock) ReportEvidence(context.Context, types.Evidence) error {
+func (p *deadMock) ReportEvidence(context.Context, types.Evidence) error {
 	return provider.ErrNoResponse
 }

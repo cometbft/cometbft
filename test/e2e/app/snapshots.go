@@ -9,13 +9,13 @@ import (
 	"path/filepath"
 	"sync"
 
-	abci "github.com/cometbft/cometbft/v2/abci/types"
+	abci "github.com/cometbft/cometbft/abci/types"
 )
 
 const (
 	snapshotChunkSize = 1e6
 
-	// Keep only the most recent 10 snapshots. Older snapshots are pruned.
+	// Keep only the most recent 10 snapshots. Older snapshots are pruned
 	maxSnapshotCount = 10
 )
 
@@ -106,7 +106,7 @@ func (s *SnapshotStore) Create(state *State) (abci.Snapshot, error) {
 	return snapshot, nil
 }
 
-// Prune removes old snapshots ensuring only the most recent n snapshots remain.
+// Prune removes old snapshots ensuring only the most recent n snapshots remain
 func (s *SnapshotStore) Prune(n int) error {
 	s.Lock()
 	defer s.Unlock()
@@ -115,12 +115,7 @@ func (s *SnapshotStore) Prune(n int) error {
 	i := 0
 	for ; i < len(s.metadata)-n; i++ {
 		h := s.metadata[i].Height
-		filePath := filepath.Join(s.dir, fmt.Sprintf("%v.json", h))
-		if err := os.Remove(filePath); err != nil {
-			// Trying to prune a non-existent snapshot?
-			if os.IsNotExist(err) {
-				continue
-			}
+		if err := os.Remove(filepath.Join(s.dir, fmt.Sprintf("%v.json", h))); err != nil {
 			return err
 		}
 	}

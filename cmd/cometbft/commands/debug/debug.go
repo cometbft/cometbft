@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 var (
@@ -17,7 +17,7 @@ var (
 	flagProfAddr    = "pprof-laddr"
 	flagFrequency   = "frequency"
 
-	logger = log.NewLogger(os.Stdout)
+	logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 )
 
 // DebugCmd defines the root command containing subcommands that assist in
@@ -32,8 +32,8 @@ func init() {
 	DebugCmd.PersistentFlags().StringVar(
 		&nodeRPCAddr,
 		flagNodeRPCAddr,
-		"tcp://localhost:26657/v1",
-		"the CometBFT node's RPC address (<host>:<port>) and version",
+		"tcp://localhost:26657",
+		"the CometBFT node's RPC address (<host>:<port>)",
 	)
 
 	DebugCmd.AddCommand(killCmd)

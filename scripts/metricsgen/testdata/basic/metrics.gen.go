@@ -3,8 +3,8 @@
 package basic
 
 import (
-	"github.com/cometbft/cometbft/v2/libs/metrics/discard"
-	prometheus "github.com/cometbft/cometbft/v2/libs/metrics/prometheus"
+	"github.com/go-kit/kit/metrics/discard"
+	prometheus "github.com/go-kit/kit/metrics/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 

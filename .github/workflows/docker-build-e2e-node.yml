@@ -6,8 +6,6 @@ on:
     branches:
       - main
       - v0.38.x
-      - v1.x
-      - v2.x
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
       - "v[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+"
@@ -62,7 +60,7 @@ jobs:
           TAGS=$(echo "${{ needs.vars.outputs.tags }}" | sed "s/[^,]*/&-${{ matrix.arch }}/g")
           echo "tags=${TAGS}" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}

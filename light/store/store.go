@@ -1,6 +1,6 @@
 package store
 
-import "github.com/cometbft/cometbft/v2/types"
+import "github.com/cometbft/cometbft/types"
 
 // Store is anything that can persistently store headers.
 type Store interface {

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	"github.com/cometbft/cometbft/v2/crypto"
-	"github.com/cometbft/cometbft/v2/types"
+	"github.com/cometbft/cometbft/crypto"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 // RetrySignerClient wraps SignerClient adding retry for each operation (except
@@ -37,10 +37,8 @@ func (sc *RetrySignerClient) WaitForConnection(maxWait time.Duration) error {
 	return sc.next.WaitForConnection(maxWait)
 }
 
-// --------------------------------------------------------
+//--------------------------------------------------------
 // Implement PrivValidator
-
-var _ types.PrivValidator = (*RetrySignerClient)(nil)
 
 func (sc *RetrySignerClient) Ping() error {
 	return sc.next.Ping()
@@ -65,10 +63,10 @@ func (sc *RetrySignerClient) GetPubKey() (crypto.PubKey, error) {
 	return nil, fmt.Errorf("exhausted all attempts to get pubkey: %w", err)
 }
 
-func (sc *RetrySignerClient) SignVote(chainID string, vote *cmtproto.Vote, signExtension bool) error {
+func (sc *RetrySignerClient) SignVote(chainID string, vote *cmtproto.Vote) error {
 	var err error
 	for i := 0; i < sc.retries || sc.retries == 0; i++ {
-		err = sc.next.SignVote(chainID, vote, signExtension)
+		err = sc.next.SignVote(chainID, vote)
 		if err == nil {
 			return nil
 		}
@@ -95,23 +93,4 @@ func (sc *RetrySignerClient) SignProposal(chainID string, proposal *cmtproto.Pro
 		time.Sleep(sc.timeout)
 	}
 	return fmt.Errorf("exhausted all attempts to sign proposal: %w", err)
-}
-
-func (sc *RetrySignerClient) SignBytes(bytes []byte) ([]byte, error) {
-	var (
-		sig []byte
-		err error
-	)
-	for i := 0; i < sc.retries || sc.retries == 0; i++ {
-		sig, err = sc.next.SignBytes(bytes)
-		if err == nil {
-			return sig, nil
-		}
-		// If remote signer errors, we don't retry.
-		if _, ok := err.(*RemoteSignerError); ok {
-			return nil, err
-		}
-		time.Sleep(sc.timeout)
-	}
-	return nil, fmt.Errorf("exhausted all attempts to sign bytes: %w", err)
 }

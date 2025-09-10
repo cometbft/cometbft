@@ -4,14 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"time"
 
-	"github.com/cometbft/cometbft/v2/crypto"
-	"github.com/cometbft/cometbft/v2/types"
-	cmttime "github.com/cometbft/cometbft/v2/types/time"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/types"
 )
 
-// -----------------------------------------------------
+//-----------------------------------------------------
 // Validate block
 
 func validateBlock(state State, block *types.Block) error {
@@ -36,7 +34,7 @@ func validateBlock(state State, block *types.Block) error {
 	}
 	if state.LastBlockHeight == 0 && block.Height != state.InitialHeight {
 		return fmt.Errorf("wrong Block.Header.Height. Expected %v for initial block, got %v",
-			state.InitialHeight, block.Height)
+			block.Height, state.InitialHeight)
 	}
 	if state.LastBlockHeight > 0 && block.Height != state.LastBlockHeight+1 {
 		return fmt.Errorf("wrong Block.Header.Height. Expected %v, got %v",
@@ -54,7 +52,7 @@ func validateBlock(state State, block *types.Block) error {
 
 	// Validate app info
 	if !bytes.Equal(block.AppHash, state.AppHash) {
-		return fmt.Errorf("wrong Block.Header.AppHash.  Expected %X, got %v. Check ABCI app for non-determinism",
+		return fmt.Errorf("wrong Block.Header.AppHash.  Expected %X, got %v",
 			state.AppHash,
 			block.AppHash,
 		)
@@ -113,10 +111,6 @@ func validateBlock(state State, block *types.Block) error {
 	}
 
 	// Validate block Time
-	if block.Time != cmttime.Canonical(block.Time) {
-		return fmt.Errorf("block time %v is not canonical", block.Time)
-	}
-
 	switch {
 	case block.Height > state.InitialHeight:
 		if !block.Time.After(state.LastBlockTime) {
@@ -125,20 +119,18 @@ func validateBlock(state State, block *types.Block) error {
 				state.LastBlockTime,
 			)
 		}
-		if !state.ConsensusParams.Feature.PbtsEnabled(block.Height) {
-			medianTime := block.LastCommit.MedianTime(state.LastValidators)
-			if !block.Time.Equal(medianTime) {
-				return fmt.Errorf("invalid block time. Expected %v, got %v",
-					medianTime.Format(time.RFC3339Nano),
-					block.Time.Format(time.RFC3339Nano),
-				)
-			}
+		medianTime := MedianTime(block.LastCommit, state.LastValidators)
+		if !block.Time.Equal(medianTime) {
+			return fmt.Errorf("invalid block time. Expected %v, got %v",
+				medianTime,
+				block.Time,
+			)
 		}
 
 	case block.Height == state.InitialHeight:
 		genesisTime := state.LastBlockTime
-		if block.Time.Before(genesisTime) {
-			return fmt.Errorf("block time %v is before genesis time %v",
+		if !block.Time.Equal(genesisTime) {
+			return fmt.Errorf("block time %v is not equal to genesis time %v",
 				block.Time,
 				genesisTime,
 			)

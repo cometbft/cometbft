@@ -1,7 +1,7 @@
 package version
 
 import (
-	"github.com/cometbft/cometbft/v2/version"
+	"github.com/cometbft/cometbft/version"
 )
 
 // TODO: eliminate this after some version refactor

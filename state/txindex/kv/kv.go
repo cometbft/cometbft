@@ -263,7 +263,7 @@ func (txi *TxIndex) Search(ctx context.Context, q *query.Query) ([]*abci.TxResul
 
 			// If we have a query range over height and want to still look for
 			// specific event values we do not want to simply return all
-			// transactios in this height range. We remember the height range info
+			// transactions in this height range. We remember the height range info
 			// and pass it on to match() to take into account when processing events.
 			if qr.Key == types.TxHeightKey && !heightInfo.onlyHeightRange {
 				continue

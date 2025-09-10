@@ -8,12 +8,14 @@ It contains two server implementation:
 package server
 
 import (
-	"github.com/cometbft/cometbft/v2/abci/types"
-	"github.com/cometbft/cometbft/v2/libs/service"
+	"fmt"
+
+	"github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/service"
 )
 
 // NewServer is a utility function for out of process applications to set up either a socket or
-// grpc server that can listen to requests from the equivalent Tendermint client.
+// grpc server that can listen to requests from the equivalent Tendermint client
 func NewServer(protoAddr, transport string, app types.Application) (service.Service, error) {
 	var s service.Service
 	var err error
@@ -23,7 +25,7 @@ func NewServer(protoAddr, transport string, app types.Application) (service.Serv
 	case "grpc":
 		s = NewGRPCServer(protoAddr, app)
 	default:
-		err = ErrUnknownServerType{ServerType: transport}
+		err = fmt.Errorf("unknown server type %s", transport)
 	}
 	return s, err
 }

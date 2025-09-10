@@ -1,8 +1,8 @@
 package types
 
 import (
-	abci "github.com/cometbft/cometbft/v2/abci/types"
-	"github.com/cometbft/cometbft/v2/crypto/merkle"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/merkle"
 )
 
 // ABCIResults wraps the deliver tx results to return a proof.
@@ -13,7 +13,7 @@ type ABCIResults []*abci.ExecTxResult
 func NewResults(responses []*abci.ExecTxResult) ABCIResults {
 	res := make(ABCIResults, len(responses))
 	for i, d := range responses {
-		res[i] = abci.DeterministicExecTxResult(d)
+		res[i] = deterministicExecTxResult(d)
 	}
 	return res
 }
@@ -23,7 +23,7 @@ func (a ABCIResults) Hash() []byte {
 	return merkle.HashFromByteSlices(a.toByteSlices())
 }
 
-// ProveResult returns a merkle proof of one result from the set.
+// ProveResult returns a merkle proof of one result from the set
 func (a ABCIResults) ProveResult(i int) merkle.Proof {
 	_, proofs := merkle.ProofsFromByteSlices(a.toByteSlices())
 	return *proofs[i]
@@ -40,4 +40,15 @@ func (a ABCIResults) toByteSlices() [][]byte {
 		bzs[i] = bz
 	}
 	return bzs
+}
+
+// deterministicExecTxResult strips non-deterministic fields from
+// ExecTxResult and returns another ExecTxResult.
+func deterministicExecTxResult(response *abci.ExecTxResult) *abci.ExecTxResult {
+	return &abci.ExecTxResult{
+		Code:      response.Code,
+		Data:      response.Data,
+		GasWanted: response.GasWanted,
+		GasUsed:   response.GasUsed,
+	}
 }

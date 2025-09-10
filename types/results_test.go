@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/cometbft/cometbft/v2/abci/types"
+	abci "github.com/cometbft/cometbft/abci/types"
 )
 
 func TestABCIResults(t *testing.T) {
@@ -49,6 +49,6 @@ func TestABCIResults(t *testing.T) {
 
 		proof := results.ProveResult(i)
 		valid := proof.Verify(root, bz)
-		require.NoError(t, valid, "%d", i)
+		assert.NoError(t, valid, "%d", i)
 	}
 }

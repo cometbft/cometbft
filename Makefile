@@ -7,7 +7,7 @@ OUTPUT?=$(BUILDDIR)/cometbft
 HTTPS_GIT := https://github.com/cometbft/cometbft.git
 CGO_ENABLED ?= 0
 
-# Process Docker environment variable TARGETPLATFORM
+# Process Docker environment varible TARGETPLATFORM
 # in order to build binary with correspondent ARCH
 # by default will always build for linux/amd64
 TARGETPLATFORM ?=
@@ -85,7 +85,7 @@ build:
 
 #? install: Install CometBFT to GOBIN
 install:
-	CGO_ENABLED=$(CGO_ENABLED) go install $(BUILD_FLAGS) -tags '$(BUILD_TAGS)' ./cmd/cometbft
+	CGO_ENABLED=$(CGO_ENABLED) go install $(BUILD_FLAGS) -tags $(BUILD_TAGS) ./cmd/cometbft
 .PHONY: install
 
 ###############################################################################
@@ -120,8 +120,8 @@ mockery:
 
 #? check-proto-deps: Check protobuf deps
 check-proto-deps:
-ifeq (,$(shell which protoc-gen-gocosmos))
-	@go install github.com/cosmos/gogoproto/protoc-gen-gocosmos@latest
+ifeq (,$(shell which protoc-gen-gogofaster))
+	@go install github.com/cosmos/gogoproto/protoc-gen-gogofaster@latest
 endif
 .PHONY: check-proto-deps
 
@@ -135,7 +135,9 @@ endif
 #? proto-gen: Generate protobuf files
 proto-gen: check-proto-deps
 	@echo "Generating Protobuf files"
-	@go run github.com/bufbuild/buf/cmd/buf@latest generate --path proto/cometbft
+	@go run github.com/bufbuild/buf/cmd/buf@latest generate
+	@mv ./proto/tendermint/abci/types.pb.go ./abci/types/
+	@cp ./proto/tendermint/rpc/grpc/types.pb.go ./rpc/grpc
 .PHONY: proto-gen
 
 # These targets are provided for convenience and are intended for local
@@ -161,7 +163,6 @@ proto-check-breaking: check-proto-deps
 	@go run github.com/bufbuild/buf/cmd/buf@latest breaking --against ".git"
 .PHONY: proto-check-breaking
 
-#? proto-check-breaking-ci: Check for breaking changes in Protobuf files against v0.34.x. This is only useful if your changes have not yet been committed
 proto-check-breaking-ci:
 	@go run github.com/bufbuild/buf/cmd/buf@latest breaking --against $(HTTPS_GIT)#branch=v0.34.x
 .PHONY: proto-check-breaking-ci
@@ -202,7 +203,6 @@ go.sum: go.mod
 	@echo "--> Ensure dependencies have not been modified"
 	@go mod verify
 	@go mod tidy
-.PHONY: go.sum
 
 #? draw_deps: Generate deps graph
 draw_deps:
@@ -242,18 +242,36 @@ clean_certs:
 ###                  Formatting, linting, and vetting                       ###
 ###############################################################################
 
-#? lint: Lint, format and fix typos
-lint: pre-commit
-	@pre-commit run
+format:
+	find . -name '*.go' -type f -not -path "*.git*" -not -name '*.pb.go' -not -name '*pb_test.go' | xargs gofmt -w -s
+	find . -name '*.go' -type f -not -path "*.git*"  -not -name '*.pb.go' -not -name '*pb_test.go' | xargs goimports -w -local github.com/cometbft/cometbft
+.PHONY: format
+
+#? lint: Run latest golangci-lint linter
+lint:
+	@echo "--> Running linter"
+	@go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run
 .PHONY: lint
 
-#? pre-commit: Create pre-commit hook using the pre-commit framework.
-pre-commit:
-	@which pre-commit || pip3 install pre-commit
-	@pre-commit install
-.PHONY: pre-commit
+#? lint: Run latest golangci-lint linter and apply fixes
+lint-fix:
+	@echo "--> Running linter"
+	@go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run --fix
+.PHONY: lint-fix
+
+#? lint-typo: Run codespell to check typos
+lint-typo:
+	which codespell || pip3 install codespell
+	@codespell
+.PHONY: lint-typo
+
+#? lint-typo: Run codespell to auto fix typos
+lint-fix-typo:
+	@codespell -w
+.PHONY: lint-fix-typo
 
 DESTINATION = ./index.html.md
+
 
 ###############################################################################
 ###                           Documentation                                 ###
@@ -287,6 +305,30 @@ build-linux:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) $(MAKE) build
 .PHONY: build-linux
 
+#? build-docker-localnode: Build the "localnode" docker image
+build-docker-localnode:
+	@cd networks/local && make
+.PHONY: build-docker-localnode
+
+# Runs `make build COMETBFT_BUILD_OPTIONS=cleveldb` from within an Amazon
+# Linux (v2)-based Docker build container in order to build an Amazon
+# Linux-compatible binary. Produces a compatible binary at ./build/cometbft
+build_c-amazonlinux:
+	$(MAKE) -C ./DOCKER build_amazonlinux_buildimage
+	docker run --rm -it -v `pwd`:/cometbft cometbft/cometbft:build_c-amazonlinux
+.PHONY: build_c-amazonlinux
+
+#? localnet-start: Run a 4-node testnet locally
+localnet-start: localnet-stop build-docker-localnode
+	@if ! [ -f build/node0/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/cometbft:Z cometbft/localnode testnet --config /etc/cometbft/config-template.toml --o . --starting-ip-address 192.167.10.2; fi
+	docker compose up -d
+.PHONY: localnet-start
+
+#? localnet-stop: Stop testnet
+localnet-stop:
+	docker compose down
+.PHONY: localnet-stop
+
 #? build-contract-tests-hooks: Build hooks for dredd, to skip or add information on some steps
 build-contract-tests-hooks:
 ifeq ($(OS),Windows_NT)
@@ -298,12 +340,15 @@ endif
 
 #? contract-tests: Run a nodejs tool to test endpoints against a localnet
 # The command takes care of starting and stopping the network
-# prerequisites: build-contract-tests-hooks build-linux
+# prerequisits: build-contract-tests-hooks build-linux
 # the two build commands were not added to let this command run from generic containers or machines.
 # The binaries should be built beforehand
 contract-tests:
 	dredd
 .PHONY: contract-tests
+
+# Implements test splitting and running. This is pulled directly from
+# the github action workflows for better local reproducibility.
 
 $(BUILDDIR):
 	mkdir -p $@
@@ -313,16 +358,3 @@ help: Makefile
 	@echo " Choose a command run in comebft:"
 	@sed -n 's/^#?//p' $< | column -t -s ':' |  sort | sed -e 's/^/ /'
 .PHONY: help
-
-###############################################################################
-###                       			Benchmarking                                ###
-###############################################################################
-
-#? bench: Run benchmarks
-bench:
-	@echo "--> Running benchmarks (this might take a while)"
-	@go install go.bobheadxi.dev/gobenchdata@latest
-	@go test -bench . -benchmem ./... | gobenchdata --json benchmarks.json
-	@gobenchdata web generate .
-	@echo "--> Serving results at http://localhost:8080"
-	@gobenchdata web serve

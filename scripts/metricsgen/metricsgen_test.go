@@ -13,7 +13,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	metricsgen "github.com/cometbft/cometbft/v2/scripts/metricsgen" //nolint:revive // this only works with metricsgen in front
+	metricsgen "github.com/cometbft/cometbft/scripts/metricsgen"
 )
 
 const testDataDir = "./testdata"
@@ -37,7 +37,6 @@ func TestSimpleTemplate(t *testing.T) {
 	}
 }
 
-// TestFromData tests that the metricsgen tool can parse a directory of metrics and generate a file.
 func TestFromData(t *testing.T) {
 	infos, err := os.ReadDir(testDataDir)
 	if err != nil {
@@ -181,49 +180,6 @@ func TestParseMetricsStruct(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "parse description from comments",
-			metricsStruct: `type Metrics struct {
-				// myCounter is a counter.
-				// It does count.
-				myCounter metrics.Counter
-				nonMetric string
-				}`,
-			expected: metricsgen.TemplateData{
-				Package: pkgName,
-				ParsedMetrics: []metricsgen.ParsedMetricField{
-					{
-						Description: "myCounter is a counter. It does count.",
-						TypeName:    "Counter",
-						FieldName:   "myCounter",
-						MetricName:  "my_counter",
-					},
-				},
-			},
-		},
-		{
-			name: "parse short description from comments",
-			metricsStruct: `type Metrics struct {
-				// myCounter is a counter.
-				//
-				// myCounter needs a super long description,
-				// we don't want it on the description.
-				// metrics:It does count.
-				myCounter metrics.Counter
-				nonMetric string
-				}`,
-			expected: metricsgen.TemplateData{
-				Package: pkgName,
-				ParsedMetrics: []metricsgen.ParsedMetricField{
-					{
-						Description: "It does count.",
-						TypeName:    "Counter",
-						FieldName:   "myCounter",
-						MetricName:  "my_counter",
-					},
-				},
-			},
-		},
 	}
 	for _, testCase := range metricsTests {
 		t.Run(testCase.name, func(t *testing.T) {
@@ -239,7 +195,7 @@ func TestParseMetricsStruct(t *testing.T) {
 			pkgLine := fmt.Sprintf("package %s\n", pkgName)
 			importClause := `
 			import(
-				"github.com/cometbft/cometbft/v2/libs/metrics"
+				"github.com/go-kit/kit/metrics"
 			)
 			`
 
@@ -266,7 +222,7 @@ func TestParseAliasedMetric(t *testing.T) {
 			package mypkg
 
 			import(
-				mymetrics "github.com/cometbft/cometbft/v2/libs/metrics"
+				mymetrics "github.com/go-kit/kit/metrics"
 			)
 			type Metrics struct {
 				m mymetrics.Gauge
@@ -288,15 +244,16 @@ func TestParseAliasedMetric(t *testing.T) {
 	td, err := metricsgen.ParseMetricsDir(dir, "Metrics")
 	require.NoError(t, err)
 
-	expected := metricsgen.TemplateData{
-		Package: "mypkg",
-		ParsedMetrics: []metricsgen.ParsedMetricField{
-			{
-				TypeName:   "Gauge",
-				FieldName:  "m",
-				MetricName: "m",
+	expected :=
+		metricsgen.TemplateData{
+			Package: "mypkg",
+			ParsedMetrics: []metricsgen.ParsedMetricField{
+				{
+					TypeName:   "Gauge",
+					FieldName:  "m",
+					MetricName: "m",
+				},
 			},
-		},
-	}
+		}
 	require.Equal(t, expected, td)
 }

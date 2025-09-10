@@ -8,13 +8,12 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
 
-	cs "github.com/cometbft/cometbft/v2/internal/consensus"
-	cmtjson "github.com/cometbft/cometbft/v2/libs/json"
+	cs "github.com/cometbft/cometbft/consensus"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
 )
 
 func main() {
@@ -32,7 +31,7 @@ func main() {
 	dec := cs.NewWALDecoder(f)
 	for {
 		msg, err := dec.Decode()
-		if errors.Is(err, io.EOF) {
+		if err == io.EOF {
 			break
 		} else if err != nil {
 			panic(fmt.Errorf("failed to decode msg: %v", err))
@@ -50,7 +49,7 @@ func main() {
 
 		if err == nil {
 			if endMsg, ok := msg.Msg.(cs.EndHeightMessage); ok {
-				_, err = os.Stdout.Write([]byte(fmt.Sprintf("ENDHEIGHT %d\n", endMsg.Height)))
+				_, err = fmt.Fprintf(os.Stdout, "ENDHEIGHT %d\n", endMsg.Height)
 			}
 		}
 
@@ -58,5 +57,6 @@ func main() {
 			fmt.Println("Failed to write message", err)
 			os.Exit(1) //nolint:gocritic
 		}
+
 	}
 }

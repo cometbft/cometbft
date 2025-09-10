@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/cometbft/cometbft/v2/abci/types"
-	"github.com/cometbft/cometbft/v2/crypto/merkle"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/merkle"
 )
 
 func TestHashAndProveResults(t *testing.T) {
@@ -41,7 +41,7 @@ func TestHashAndProveResults(t *testing.T) {
 		require.NoError(t, err)
 
 		valid := proofs[i].Verify(root, bz)
-		require.NoError(t, valid, "%d", i)
+		assert.NoError(t, valid, "%d", i)
 	}
 }
 

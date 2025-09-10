@@ -7,10 +7,11 @@ import (
 	"github.com/spf13/cobra"
 
 	dbm "github.com/cometbft/cometbft-db"
-	cfg "github.com/cometbft/cometbft/v2/config"
-	"github.com/cometbft/cometbft/v2/internal/os"
-	"github.com/cometbft/cometbft/v2/state"
-	"github.com/cometbft/cometbft/v2/store"
+
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/libs/os"
+	"github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
 )
 
 var removeBlock = false
@@ -26,12 +27,12 @@ var RollbackStateCmd = &cobra.Command{
 A state rollback is performed to recover from an incorrect application state transition,
 when CometBFT has persisted an incorrect app hash and is thus unable to make
 progress. Rollback overwrites a state at height n with the state at height n - 1.
-The application should also roll back to height n - 1. If the --hard flag is not used,
-no blocks will be removed so upon restarting CometBFT the transactions in block n will be
+The application should also roll back to height n - 1. If the --hard flag is not used, 
+no blocks will be removed so upon restarting CometBFT the transactions in block n will be 
 re-executed against the application. Using --hard will also remove block n. This can
 be done multiple times.
 `,
-	RunE: func(_ *cobra.Command, _ []string) error {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		height, hash, err := RollbackState(config, removeBlock)
 		if err != nil {
 			return fmt.Errorf("failed to rollback state: %w", err)
@@ -77,7 +78,7 @@ func loadStateAndBlockStore(config *cfg.Config) (*store.BlockStore, state.Store,
 	if err != nil {
 		return nil, nil, err
 	}
-	blockStore := store.NewBlockStore(blockStoreDB, store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
+	blockStore := store.NewBlockStore(blockStoreDB)
 
 	if !os.FileExists(filepath.Join(config.DBDir(), "state.db")) {
 		return nil, nil, fmt.Errorf("no statestore found in %v", config.DBDir())

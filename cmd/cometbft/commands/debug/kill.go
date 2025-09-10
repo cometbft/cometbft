@@ -13,9 +13,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	cfg "github.com/cometbft/cometbft/v2/config"
-	"github.com/cometbft/cometbft/v2/libs/cli"
-	rpchttp "github.com/cometbft/cometbft/v2/rpc/client/http"
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/libs/cli"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 )
 
 var killCmd = &cobra.Command{
@@ -43,7 +43,7 @@ func killCmdHandler(_ *cobra.Command, args []string) error {
 		return errors.New("invalid output file")
 	}
 
-	rpc, err := rpchttp.New(nodeRPCAddr)
+	rpc, err := rpchttp.New(nodeRPCAddr, "/websocket")
 	if err != nil {
 		return fmt.Errorf("failed to create new http client: %w", err)
 	}

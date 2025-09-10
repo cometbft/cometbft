@@ -6,12 +6,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
-	cmtmath "github.com/cometbft/cometbft/v2/libs/math"
-	"github.com/cometbft/cometbft/v2/light"
-	"github.com/cometbft/cometbft/v2/types"
-	cmttime "github.com/cometbft/cometbft/v2/types/time"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	"github.com/cometbft/cometbft/light"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -48,8 +46,8 @@ func TestVerifyAdjacentHeaders(t *testing.T) {
 			vals,
 			3 * time.Hour,
 			bTime.Add(2 * time.Hour),
-			light.ErrHeaderHeightNotAdjacent,
-			"",
+			nil,
+			"headers must be adjacent in height",
 		},
 		// different chainID -> error
 		1: {
@@ -58,8 +56,8 @@ func TestVerifyAdjacentHeaders(t *testing.T) {
 			vals,
 			3 * time.Hour,
 			bTime.Add(2 * time.Hour),
-			light.ErrInvalidHeader{light.ErrHeaderValidateBasic{fmt.Errorf("header belongs to another chain %q, not %q", "different-chainID", chainID)}},
-			"",
+			nil,
+			"header belongs to another chain",
 		},
 		// new header's time is before old header's time -> error
 		2: {
@@ -68,8 +66,8 @@ func TestVerifyAdjacentHeaders(t *testing.T) {
 			vals,
 			3 * time.Hour,
 			bTime.Add(2 * time.Hour),
-			light.ErrInvalidHeader{light.ErrHeaderTimeNotMonotonic{bTime.Add(-1 * time.Hour), bTime}},
-			"",
+			nil,
+			"to be after old header time",
 		},
 		// new header's time is from the future -> error
 		3: {
@@ -78,8 +76,8 @@ func TestVerifyAdjacentHeaders(t *testing.T) {
 			vals,
 			3 * time.Hour,
 			bTime.Add(2 * time.Hour),
-			light.ErrInvalidHeader{light.ErrHeaderTimeExceedMaxClockDrift{bTime.Add(3 * time.Hour), bTime.Add(2 * time.Hour), 10 * time.Second}},
-			"",
+			nil,
+			"new header has a time from the future",
 		},
 		// new header's time is from the future, but it's acceptable (< maxClockDrift) -> no error
 		4: {
@@ -129,9 +127,8 @@ func TestVerifyAdjacentHeaders(t *testing.T) {
 			keys.ToValidators(10, 1),
 			3 * time.Hour,
 			bTime.Add(2 * time.Hour),
-			light.ErrValidatorHashMismatch{header.NextValidatorsHash, keys.GenSignedHeader(chainID, nextHeight, bTime.Add(1*time.Hour), nil, keys.ToValidators(10, 1), vals,
-				hash("app_hash"), hash("cons_hash"), hash("results_hash"), 0, len(keys)).ValidatorsHash},
-			"",
+			nil,
+			"to match those from new header",
 		},
 		// vals are inconsistent with newHeader -> error
 		9: {
@@ -140,10 +137,8 @@ func TestVerifyAdjacentHeaders(t *testing.T) {
 			keys.ToValidators(10, 1),
 			3 * time.Hour,
 			bTime.Add(2 * time.Hour),
-			light.ErrInvalidHeader{light.ErrValidatorsMismatch{keys.GenSignedHeader(chainID, nextHeight, bTime.Add(1*time.Hour), nil, vals, vals,
-				hash("app_hash"), hash("cons_hash"), hash("results_hash"), 0, len(keys)).ValidatorsHash, keys.ToValidators(10, 1).Hash(), keys.GenSignedHeader(chainID, nextHeight, bTime.Add(1*time.Hour), nil, vals, vals,
-				hash("app_hash"), hash("cons_hash"), hash("results_hash"), 0, len(keys)).Height}},
-			"",
+			nil,
+			"to match those that were supplied",
 		},
 		// old header has expired -> error
 		10: {
@@ -152,24 +147,26 @@ func TestVerifyAdjacentHeaders(t *testing.T) {
 			keys.ToValidators(10, 1),
 			1 * time.Hour,
 			bTime.Add(1 * time.Hour),
-			light.ErrOldHeaderExpired{bTime.Add(1 * time.Hour), bTime.Add(1 * time.Hour)},
-			"",
+			nil,
+			"old header has expired",
 		},
 	}
 
 	for i, tc := range testCases {
+		tc := tc
 		t.Run(fmt.Sprintf("#%d", i), func(t *testing.T) {
 			err := light.VerifyAdjacent(header, tc.newHeader, tc.newVals, tc.trustingPeriod, tc.now, maxClockDrift)
 			switch {
-			case tc.expErr != nil && assert.Error(t, err): //nolint:testifylint // require.Error doesn't work with the logic here
+			case tc.expErr != nil && assert.Error(t, err):
 				assert.Equal(t, tc.expErr, err)
 			case tc.expErrText != "":
 				assert.Contains(t, err.Error(), tc.expErrText)
 			default:
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 		})
 	}
+
 }
 
 func TestVerifyNonAdjacentHeaders(t *testing.T) {
@@ -270,18 +267,19 @@ func TestVerifyNonAdjacentHeaders(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
+		tc := tc
 		t.Run(fmt.Sprintf("#%d", i), func(t *testing.T) {
 			err := light.VerifyNonAdjacent(header, vals, tc.newHeader, tc.newVals, tc.trustingPeriod,
 				tc.now, maxClockDrift,
 				light.DefaultTrustLevel)
 
 			switch {
-			case tc.expErr != nil && assert.Error(t, err): //nolint:testifylint // require.Error doesn't work with the logic here
+			case tc.expErr != nil && assert.Error(t, err):
 				assert.Equal(t, tc.expErr, err)
 			case tc.expErrText != "":
 				assert.Contains(t, err.Error(), tc.expErrText)
 			default:
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -300,14 +298,11 @@ func TestVerifyReturnsErrorIfTrustLevelIsInvalid(t *testing.T) {
 		bTime, _ = time.Parse(time.RFC3339, "2006-01-02T15:04:05Z")
 		header   = keys.GenSignedHeader(chainID, lastHeight, bTime, nil, vals, vals,
 			hash("app_hash"), hash("cons_hash"), hash("results_hash"), 0, len(keys))
-		trustingPeriod = 2 * time.Hour
-		now            = cmttime.Now()
 	)
 
-	err := light.Verify(header, vals, header, vals, trustingPeriod, now, maxClockDrift,
+	err := light.Verify(header, vals, header, vals, 2*time.Hour, time.Now(), maxClockDrift,
 		cmtmath.Fraction{Numerator: 2, Denominator: 1})
-	expectedErr := light.ErrOldHeaderExpired{At: bTime.Add(trustingPeriod), Now: now}
-	require.EqualError(t, err, expectedErr.Error())
+	assert.Error(t, err)
 }
 
 func TestValidateTrustLevel(t *testing.T) {
@@ -332,9 +327,9 @@ func TestValidateTrustLevel(t *testing.T) {
 	for _, tc := range testCases {
 		err := light.ValidateTrustLevel(tc.lvl)
 		if !tc.valid {
-			require.EqualError(t, err, light.ErrInvalidTrustLevel{Level: tc.lvl}.Error())
+			assert.Error(t, err)
 		} else {
-			require.NoError(t, err)
+			assert.NoError(t, err)
 		}
 	}
 }

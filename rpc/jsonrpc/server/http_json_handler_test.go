@@ -12,18 +12,18 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/v2/libs/log"
-	"github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/libs/log"
+	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 func testMux() *http.ServeMux {
 	funcMap := map[string]*RPCFunc{
-		"c":     NewRPCFunc(func(_ *types.Context, _ string, _ int) (string, error) { return "foo", nil }, "s,i"),
-		"block": NewRPCFunc(func(_ *types.Context, _ int) (string, error) { return "block", nil }, "height", Cacheable("height")),
+		"c":     NewRPCFunc(func(ctx *types.Context, s string, i int) (string, error) { return "foo", nil }, "s,i"),
+		"block": NewRPCFunc(func(ctx *types.Context, h int) (string, error) { return "block", nil }, "height", Cacheable("height")),
 	}
 	mux := http.NewServeMux()
 	buf := new(bytes.Buffer)
-	logger := log.NewLogger(buf)
+	logger := log.NewTMLogger(buf)
 	RegisterRPCFuncs(mux, funcMap, logger)
 
 	return mux
@@ -39,7 +39,7 @@ func TestRPCParams(t *testing.T) {
 	tests := []struct {
 		payload    string
 		wantErr    string
-		expectedID any
+		expectedID interface{}
 	}{
 		// bad
 		{`{"jsonrpc": "2.0", "id": "0"}`, "Method not found", types.JSONRPCStringID("0")},
@@ -60,7 +60,7 @@ func TestRPCParams(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		req, _ := http.NewRequest(http.MethodPost, "http://localhost/", strings.NewReader(tt.payload))
+		req, _ := http.NewRequest("POST", "http://localhost/", strings.NewReader(tt.payload))
 		rec := httptest.NewRecorder()
 		mux.ServeHTTP(rec, req)
 		res := rec.Result()
@@ -74,13 +74,13 @@ func TestRPCParams(t *testing.T) {
 		}
 
 		recv := new(types.RPCResponse)
-		require.NoError(t, json.Unmarshal(blob, recv), "#%d: expecting successful parsing of an RPCResponse:\nblob: %s", i, blob)
+		assert.Nil(t, json.Unmarshal(blob, recv), "#%d: expecting successful parsing of an RPCResponse:\nblob: %s", i, blob)
 		assert.NotEqual(t, recv, new(types.RPCResponse), "#%d: not expecting a blank RPCResponse", i)
 		assert.Equal(t, tt.expectedID, recv.ID, "#%d: expected ID not matched in RPCResponse", i)
 		if tt.wantErr == "" {
 			assert.Nil(t, recv.Error, "#%d: not expecting an error", i)
 		} else {
-			assert.Less(t, recv.Error.Code, 0, "#%d: not expecting a positive JSONRPC code", i)
+			assert.True(t, recv.Error.Code < 0, "#%d: not expecting a positive JSONRPC code", i)
 			// The wanted error is either in the message or the data
 			assert.Contains(t, recv.Error.Message+recv.Error.Data, tt.wantErr, "#%d: expected substring", i)
 		}
@@ -92,7 +92,7 @@ func TestJSONRPCID(t *testing.T) {
 	tests := []struct {
 		payload    string
 		wantErr    bool
-		expectedID any
+		expectedID interface{}
 	}{
 		// good id
 		{`{"jsonrpc": "2.0", "method": "c", "id": "0", "params": ["a", "10"]}`, false, types.JSONRPCStringID("0")},
@@ -108,7 +108,7 @@ func TestJSONRPCID(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		req, _ := http.NewRequest(http.MethodPost, "http://localhost/", strings.NewReader(tt.payload))
+		req, _ := http.NewRequest("POST", "http://localhost/", strings.NewReader(tt.payload))
 		rec := httptest.NewRecorder()
 		mux.ServeHTTP(rec, req)
 		res := rec.Result()
@@ -123,13 +123,13 @@ func TestJSONRPCID(t *testing.T) {
 
 		recv := new(types.RPCResponse)
 		err = json.Unmarshal(blob, recv)
-		require.NoError(t, err, "#%d: expecting successful parsing of an RPCResponse:\nblob: %s", i, blob)
+		assert.Nil(t, err, "#%d: expecting successful parsing of an RPCResponse:\nblob: %s", i, blob)
 		if !tt.wantErr {
 			assert.NotEqual(t, recv, new(types.RPCResponse), "#%d: not expecting a blank RPCResponse", i)
 			assert.Equal(t, tt.expectedID, recv.ID, "#%d: expected ID not matched in RPCResponse", i)
 			assert.Nil(t, recv.Error, "#%d: not expecting an error", i)
 		} else {
-			assert.Less(t, recv.Error.Code, 0, "#%d: not expecting a positive JSONRPC code", i)
+			assert.True(t, recv.Error.Code < 0, "#%d: not expecting a positive JSONRPC code", i)
 		}
 	}
 }
@@ -137,7 +137,7 @@ func TestJSONRPCID(t *testing.T) {
 func TestRPCNotification(t *testing.T) {
 	mux := testMux()
 	body := strings.NewReader(`{"jsonrpc": "2.0"}`)
-	req, _ := http.NewRequest(http.MethodPost, "http://localhost/", body)
+	req, _ := http.NewRequest("POST", "http://localhost/", body)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 	res := rec.Result()
@@ -146,8 +146,8 @@ func TestRPCNotification(t *testing.T) {
 	require.True(t, statusOK(res.StatusCode), "should always return 2XX")
 	blob, err := io.ReadAll(res.Body)
 	res.Body.Close()
-	require.NoError(t, err, "reading from the body should not give back an error")
-	require.Empty(t, blob, "a notification SHOULD NOT be responded to by the server")
+	require.Nil(t, err, "reading from the body should not give back an error")
+	require.Equal(t, len(blob), 0, "a notification SHOULD NOT be responded to by the server")
 }
 
 func TestRPCNotificationInBatch(t *testing.T) {
@@ -174,7 +174,7 @@ func TestRPCNotificationInBatch(t *testing.T) {
 		},
 	}
 	for i, tt := range tests {
-		req, _ := http.NewRequest(http.MethodPost, "http://localhost/", strings.NewReader(tt.payload))
+		req, _ := http.NewRequest("POST", "http://localhost/", strings.NewReader(tt.payload))
 		rec := httptest.NewRecorder()
 		mux.ServeHTTP(rec, req)
 		res := rec.Result()
@@ -218,7 +218,7 @@ func TestRPCNotificationInBatch(t *testing.T) {
 
 func TestUnknownRPCPath(t *testing.T) {
 	mux := testMux()
-	req, _ := http.NewRequest(http.MethodGet, "http://localhost/unknownrpcpath", nil)
+	req, _ := http.NewRequest("GET", "http://localhost/unknownrpcpath", nil)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 	res := rec.Result()
@@ -231,48 +231,48 @@ func TestUnknownRPCPath(t *testing.T) {
 func TestRPCResponseCache(t *testing.T) {
 	mux := testMux()
 	body := strings.NewReader(`{"jsonrpc": "2.0","method":"block","id": 0, "params": ["1"]}`)
-	req, _ := http.NewRequest(http.MethodGet, "http://localhost/", body)
+	req, _ := http.NewRequest("Get", "http://localhost/", body)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 	res := rec.Result()
 
 	// Always expecting back a JSONRPCResponse
 	require.True(t, statusOK(res.StatusCode), "should always return 2XX")
-	require.Equal(t, "public, max-age=86400", res.Header.Get("Cache-Control"))
+	require.Equal(t, "public, max-age=86400", res.Header.Get("Cache-control"))
 
 	_, err := io.ReadAll(res.Body)
 	res.Body.Close()
-	require.NoError(t, err, "reading from the body should not give back an error")
+	require.Nil(t, err, "reading from the body should not give back an error")
 
 	// send a request with default height.
 	body = strings.NewReader(`{"jsonrpc": "2.0","method":"block","id": 0, "params": ["0"]}`)
-	req, _ = http.NewRequest(http.MethodGet, "http://localhost/", body)
+	req, _ = http.NewRequest("Get", "http://localhost/", body)
 	rec = httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 	res = rec.Result()
 
 	// Always expecting back a JSONRPCResponse
 	require.True(t, statusOK(res.StatusCode), "should always return 2XX")
-	require.Equal(t, "", res.Header.Get("Cache-Control"))
+	require.Equal(t, "", res.Header.Get("Cache-control"))
 
 	_, err = io.ReadAll(res.Body)
 
 	res.Body.Close()
-	require.NoError(t, err, "reading from the body should not give back an error")
+	require.Nil(t, err, "reading from the body should not give back an error")
 
 	// send a request with default height, but as empty set of parameters.
 	body = strings.NewReader(`{"jsonrpc": "2.0","method":"block","id": 0, "params": []}`)
-	req, _ = http.NewRequest(http.MethodGet, "http://localhost/", body)
+	req, _ = http.NewRequest("Get", "http://localhost/", body)
 	rec = httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 	res = rec.Result()
 
 	// Always expecting back a JSONRPCResponse
 	require.True(t, statusOK(res.StatusCode), "should always return 2XX")
-	require.Equal(t, "", res.Header.Get("Cache-Control"))
+	require.Equal(t, "", res.Header.Get("Cache-control"))
 
 	_, err = io.ReadAll(res.Body)
 
 	res.Body.Close()
-	require.NoError(t, err, "reading from the body should not give back an error")
+	require.Nil(t, err, "reading from the body should not give back an error")
 }

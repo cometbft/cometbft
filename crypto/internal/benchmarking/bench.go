@@ -4,7 +4,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/cometbft/cometbft/v2/crypto"
+	"github.com/cometbft/cometbft/crypto"
 )
 
 // The code in this file is adapted from agl/ed25519.
@@ -38,6 +38,7 @@ func BenchmarkSigning(b *testing.B, priv crypto.PrivKey) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, err := priv.Sign(message)
+
 		if err != nil {
 			b.FailNow()
 		}

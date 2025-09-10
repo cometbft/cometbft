@@ -19,7 +19,7 @@ var (
 
 // Marshal marshals the value as JSON, using Amino-compatible JSON encoding (strings for
 // 64-bit numbers, and type wrappers for registered types).
-func Marshal(v any) ([]byte, error) {
+func Marshal(v interface{}) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	err := encode(buf, v)
 	if err != nil {
@@ -29,7 +29,7 @@ func Marshal(v any) ([]byte, error) {
 }
 
 // MarshalIndent marshals the value as JSON, using the given prefix and indentation.
-func MarshalIndent(v any, prefix, indent string) ([]byte, error) {
+func MarshalIndent(v interface{}, prefix, indent string) ([]byte, error) {
 	bz, err := Marshal(v)
 	if err != nil {
 		return nil, err

@@ -1,6 +1,8 @@
 syntax = "proto3";
 package tendermint.crypto;
 
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/crypto";
+
 import "gogoproto/gogo.proto";
 
 message Proof {
@@ -25,7 +27,7 @@ message DominoOp {
 }
 
 // ProofOp defines an operation used for calculating Merkle root
-// The data could be arbitrary format, providing necessary data
+// The data could be arbitrary format, providing nessecary data
 // for example neighbouring node hash
 message ProofOp {
   string type = 1;

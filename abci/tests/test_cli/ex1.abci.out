@@ -14,11 +14,11 @@
 
 > process_proposal "abc==456"
 -> code: OK
--> status: PROCESS_PROPOSAL_STATUS_REJECT
+-> status: REJECT
 
 > process_proposal "abc=123"
 -> code: OK
--> status: PROCESS_PROPOSAL_STATUS_ACCEPT
+-> status: ACCEPT
 
 > finalize_block "abc=123"
 -> code: OK

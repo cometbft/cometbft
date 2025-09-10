@@ -1,1 +1,0 @@
-- `[state]` v1LegacyLayout keys no longer use fmt.Sprintf ([\#4484](https://github.com/cometbft/cometbft/pull/4484))

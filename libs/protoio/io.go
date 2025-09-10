@@ -28,8 +28,6 @@
 //
 // Modified to return number of bytes written by Writer.WriteMsg(), and added byteReader.
 
-// Package protoio may be internalized (made private) in future  releases.
-// XXX Deprecated.
 package protoio
 
 import (
@@ -39,7 +37,7 @@ import (
 )
 
 type Writer interface {
-	WriteMsg(msg proto.Message) (int, error)
+	WriteMsg(proto.Message) (int, error)
 }
 
 type WriteCloser interface {
@@ -60,7 +58,7 @@ type marshaler interface {
 	MarshalTo(data []byte) (n int, err error)
 }
 
-func getSize(v any) (int, bool) {
+func getSize(v interface{}) (int, bool) {
 	if sz, ok := v.(interface {
 		Size() (n int)
 	}); ok {

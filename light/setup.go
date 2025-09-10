@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/cometbft/cometbft/v2/light/provider"
-	"github.com/cometbft/cometbft/v2/light/provider/http"
-	"github.com/cometbft/cometbft/v2/light/store"
+	"github.com/cometbft/cometbft/light/provider"
+	"github.com/cometbft/cometbft/light/provider/http"
+	"github.com/cometbft/cometbft/light/store"
 )
 
 // NewHTTPClient initiates an instance of a light client using HTTP addresses
@@ -22,8 +22,8 @@ func NewHTTPClient(
 	primaryAddress string,
 	witnessesAddresses []string,
 	trustedStore store.Store,
-	options ...Option,
-) (*Client, error) {
+	options ...Option) (*Client, error) {
+
 	providers, err := providersFromAddresses(append(witnessesAddresses, primaryAddress), chainID)
 	if err != nil {
 		return nil, err
@@ -51,8 +51,8 @@ func NewHTTPClientFromTrustedStore(
 	primaryAddress string,
 	witnessesAddresses []string,
 	trustedStore store.Store,
-	options ...Option,
-) (*Client, error) {
+	options ...Option) (*Client, error) {
+
 	providers, err := providersFromAddresses(append(witnessesAddresses, primaryAddress), chainID)
 	if err != nil {
 		return nil, err

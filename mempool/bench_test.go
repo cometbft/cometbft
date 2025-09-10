@@ -1,16 +1,12 @@
 package mempool
 
 import (
-	"context"
-	"strconv"
-	"sync"
 	"sync/atomic"
 	"testing"
 
+	"github.com/cometbft/cometbft/abci/example/kvstore"
+	"github.com/cometbft/cometbft/proxy"
 	"github.com/stretchr/testify/require"
-
-	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
-	"github.com/cometbft/cometbft/v2/proxy"
 )
 
 func BenchmarkReap(b *testing.B) {
@@ -42,9 +38,8 @@ func BenchmarkCheckTx(b *testing.B) {
 		tx := kvstore.NewTxFromID(i)
 		b.StartTimer()
 
-		rr, err := mp.CheckTx(tx, "")
+		err := mp.CheckTx(tx, nil, TxInfo{})
 		require.NoError(b, err, i)
-		rr.Wait()
 	}
 }
 
@@ -64,9 +59,8 @@ func BenchmarkParallelCheckTx(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			tx := kvstore.NewTxFromID(int(next()))
-			rr, err := mp.CheckTx(tx, "")
+			err := mp.CheckTx(tx, nil, TxInfo{})
 			require.NoError(b, err, tx)
-			rr.Wait()
 		}
 	})
 }
@@ -80,7 +74,7 @@ func BenchmarkCheckDuplicateTx(b *testing.B) {
 	mp.config.Size = 2
 
 	tx := kvstore.NewTxFromID(1)
-	if _, err := mp.CheckTx(tx, ""); err != nil {
+	if err := mp.CheckTx(tx, nil, TxInfo{}); err != nil {
 		b.Fatal(err)
 	}
 	err := mp.FlushAppConn()
@@ -88,7 +82,7 @@ func BenchmarkCheckDuplicateTx(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := mp.CheckTx(tx, "")
+		err := mp.CheckTx(tx, nil, TxInfo{})
 		require.ErrorAs(b, err, &ErrTxInCache, "tx should be duplicate")
 	}
 }
@@ -104,8 +98,7 @@ func BenchmarkUpdate(b *testing.B) {
 	for i := 1; i <= b.N; i++ {
 		b.StopTimer()
 		txs := addTxs(b, mp, i*numTxs, numTxs)
-		require.Equal(b, numTxs, len(txs))
-		require.Equal(b, numTxs, mp.Size())
+		require.Equal(b, len(txs), mp.Size(), len(txs))
 		b.StartTimer()
 
 		doUpdate(b, mp, int64(i), txs)
@@ -124,14 +117,14 @@ func BenchmarkUpdateAndRecheck(b *testing.B) {
 	for i := 1; i <= b.N; i++ {
 		b.StopTimer()
 		mp.Flush()
-		txs := addTxs(b, mp, 0, numTxs)
-		require.Equal(b, numTxs, len(txs))
-		require.Equal(b, numTxs, mp.Size())
+		txs := addTxs(b, mp, i*numTxs, numTxs)
+		require.Equal(b, len(txs), mp.Size(), len(txs))
 		b.StartTimer()
 
 		// Update a part of txs and recheck the rest.
 		doUpdate(b, mp, int64(i), txs[:numTxs/2])
 	}
+
 }
 
 func BenchmarkUpdateRemoteClient(b *testing.B) {
@@ -142,7 +135,7 @@ func BenchmarkUpdateRemoteClient(b *testing.B) {
 	for i := 1; i <= b.N; i++ {
 		b.StopTimer()
 		tx := kvstore.NewTxFromID(i)
-		_, err := mp.CheckTx(tx, "")
+		err := mp.CheckTx(tx, nil, TxInfo{})
 		require.NoError(b, err)
 		err = mp.FlushAppConn()
 		require.NoError(b, err)
@@ -152,76 +145,5 @@ func BenchmarkUpdateRemoteClient(b *testing.B) {
 		txs := mp.ReapMaxTxs(mp.Size())
 		doUpdate(b, mp, int64(i), txs)
 	}
-}
 
-// Benchmarks the time it takes a blocking iterator to access all transactions
-// in the mempool.
-func BenchmarkBlockingIterator(b *testing.B) {
-	app := kvstore.NewInMemoryApplication()
-	cc := proxy.NewLocalClientCreator(app)
-	mp, cleanup := newMempoolWithApp(cc)
-	defer cleanup()
-
-	const numTxs = 1000
-	txs := addTxs(b, mp, 0, numTxs)
-	require.Equal(b, numTxs, len(txs))
-	require.Equal(b, numTxs, mp.Size())
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		b.StopTimer()
-		iter := NewBlockingIterator(context.TODO(), mp, b.Name())
-		b.StartTimer()
-
-		// Iterate until all txs in the mempool are accessed.
-		for c := 0; c < numTxs; c++ {
-			if entry := <-iter.WaitNextCh(); entry == nil {
-				continue
-			}
-		}
-	}
-}
-
-// Benchmarks the time it takes multiple concurrent blocking iterators to access
-// all transactions in the mempool.
-func BenchmarkConcurrentkBlockingIterators(b *testing.B) {
-	app := kvstore.NewInMemoryApplication()
-	cc := proxy.NewLocalClientCreator(app)
-	mp, cleanup := newMempoolWithApp(cc)
-	defer cleanup()
-
-	const numTxs = 1000
-	const numIterators = 10
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		b.StopTimer()
-		// Flush mempool and add a bunch of txs.
-		mp.Flush()
-		txs := addTxs(b, mp, 0, numTxs)
-		require.Equal(b, numTxs, len(txs))
-		require.Equal(b, numTxs, mp.Size())
-		// Create concurrent iterators.
-		iters := make([]Iterator, numIterators)
-		for j := 0; j < numIterators; j++ {
-			iters[j] = NewBlockingIterator(context.TODO(), mp, strconv.Itoa(j))
-		}
-		wg := sync.WaitGroup{}
-		wg.Add(numIterators)
-		b.StartTimer()
-
-		for j := 0; j < numIterators; j++ {
-			go func(iter Iterator) {
-				defer wg.Done()
-				// Iterate until all txs in the mempool are accessed.
-				for c := 0; c < numTxs; c++ {
-					if entry := <-iter.WaitNextCh(); entry == nil {
-						continue
-					}
-				}
-			}(iters[j])
-		}
-
-		wg.Wait()
-	}
 }

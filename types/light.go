@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 // LightBlock is a SignedHeader and a ValidatorSet.
-// It is the basis of the light client.
+// It is the basis of the light client
 type LightBlock struct {
 	*SignedHeader `json:"signed_header"`
 	ValidatorSet  *ValidatorSet `json:"validator_set"`
@@ -17,7 +17,7 @@ type LightBlock struct {
 
 // ValidateBasic checks that the data is correct and consistent
 //
-// This does no verification of the signatures.
+// This does no verification of the signatures
 func (lb LightBlock) ValidateBasic(chainID string) error {
 	if lb.SignedHeader == nil {
 		return errors.New("missing signed header")
@@ -34,16 +34,16 @@ func (lb LightBlock) ValidateBasic(chainID string) error {
 	}
 
 	// make sure the validator set is consistent with the header
-	if valSetHash := lb.ValidatorSet.Hash(); !bytes.Equal(lb.SignedHeader.ValidatorsHash, valSetHash) {
+	if valSetHash := lb.ValidatorSet.Hash(); !bytes.Equal(lb.ValidatorsHash, valSetHash) {
 		return fmt.Errorf("expected validator hash of header to match validator set hash (%X != %X)",
-			lb.SignedHeader.ValidatorsHash, valSetHash,
+			lb.ValidatorsHash, valSetHash,
 		)
 	}
 
 	return nil
 }
 
-// String returns a string representation of the LightBlock.
+// String returns a string representation of the LightBlock
 func (lb LightBlock) String() string {
 	return lb.StringIndented("")
 }
@@ -51,7 +51,7 @@ func (lb LightBlock) String() string {
 // StringIndented returns an indented string representation of the LightBlock
 //
 // SignedHeader
-// ValidatorSet.
+// ValidatorSet
 func (lb LightBlock) StringIndented(indent string) string {
 	return fmt.Sprintf(`LightBlock{
 %s  %v
@@ -62,7 +62,7 @@ func (lb LightBlock) StringIndented(indent string) string {
 		indent)
 }
 
-// ToProto converts the LightBlock to protobuf.
+// ToProto converts the LightBlock to protobuf
 func (lb *LightBlock) ToProto() (*cmtproto.LightBlock, error) {
 	if lb == nil {
 		return nil, nil
@@ -84,7 +84,7 @@ func (lb *LightBlock) ToProto() (*cmtproto.LightBlock, error) {
 }
 
 // LightBlockFromProto converts from protobuf back into the Lightblock.
-// An error is returned if either the validator set or signed header are invalid.
+// An error is returned if either the validator set or signed header are invalid
 func LightBlockFromProto(pb *cmtproto.LightBlock) (*LightBlock, error) {
 	if pb == nil {
 		return nil, errors.New("nil light block")
@@ -111,7 +111,7 @@ func LightBlockFromProto(pb *cmtproto.LightBlock) (*LightBlock, error) {
 	return lb, nil
 }
 
-// -----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
 // SignedHeader is a header along with the commits that prove it.
 type SignedHeader struct {
@@ -154,7 +154,7 @@ func (sh SignedHeader) ValidateBasic(chainID string) error {
 	if sh.Commit.Height != sh.Height {
 		return fmt.Errorf("header and commit height mismatch: %d vs %d", sh.Height, sh.Commit.Height)
 	}
-	if hhash, chash := sh.Header.Hash(), sh.Commit.BlockID.Hash; !bytes.Equal(hhash, chash) {
+	if hhash, chash := sh.Hash(), sh.Commit.BlockID.Hash; !bytes.Equal(hhash, chash) {
 		return fmt.Errorf("commit signs block %X, header is block %X", chash, hhash)
 	}
 
@@ -169,7 +169,7 @@ func (sh SignedHeader) String() string {
 // StringIndented returns an indented string representation of SignedHeader.
 //
 // Header
-// Commit.
+// Commit
 func (sh SignedHeader) StringIndented(indent string) string {
 	return fmt.Sprintf(`SignedHeader{
 %s  %v
@@ -180,7 +180,7 @@ func (sh SignedHeader) StringIndented(indent string) string {
 		indent)
 }
 
-// ToProto converts SignedHeader to protobuf.
+// ToProto converts SignedHeader to protobuf
 func (sh *SignedHeader) ToProto() *cmtproto.SignedHeader {
 	if sh == nil {
 		return nil
@@ -197,7 +197,7 @@ func (sh *SignedHeader) ToProto() *cmtproto.SignedHeader {
 	return psh
 }
 
-// SignedHeaderFromProto sets a protobuf SignedHeader to the given pointer.
+// FromProto sets a protobuf SignedHeader to the given pointer.
 // It returns an error if the header or the commit is invalid.
 func SignedHeaderFromProto(shp *cmtproto.SignedHeader) (*SignedHeader, error) {
 	if shp == nil {

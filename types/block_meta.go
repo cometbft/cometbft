@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 // BlockMeta contains meta information.
@@ -22,7 +22,7 @@ func NewBlockMeta(block *Block, blockParts *PartSet) *BlockMeta {
 		BlockID:   BlockID{block.Hash(), blockParts.Header()},
 		BlockSize: block.Size(),
 		Header:    block.Header,
-		NumTxs:    len(block.Data.Txs),
+		NumTxs:    len(block.Txs),
 	}
 }
 
@@ -38,6 +38,14 @@ func (bm *BlockMeta) ToProto() *cmtproto.BlockMeta {
 		NumTxs:    int64(bm.NumTxs),
 	}
 	return pb
+}
+
+func BlockMetaFromProto(pb *cmtproto.BlockMeta) (*BlockMeta, error) {
+	bm, err := BlockMetaFromTrustedProto(pb)
+	if err != nil {
+		return nil, err
+	}
+	return bm, bm.ValidateBasic()
 }
 
 func BlockMetaFromTrustedProto(pb *cmtproto.BlockMeta) (*BlockMeta, error) {

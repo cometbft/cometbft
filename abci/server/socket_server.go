@@ -167,7 +167,7 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 	defer func() {
 		// make sure to recover from any app-related panics to allow proper socket cleanup.
 		// In the case of a panic, we do not notify the client by passing an exception so
-		// presume that the client is still running and retying to connect
+		// presume that the client is still running and retrying to connect
 		r := recover()
 		if r != nil {
 			const size = 64 << 10

@@ -251,7 +251,7 @@ func (c *Client) handleConflictingHeaders(
 	// and generate evidence against the primary that we can send to the witness
 	commonBlock, trustedBlock := witnessTrace[0], witnessTrace[len(witnessTrace)-1]
 	evidenceAgainstPrimary := newLightClientAttackEvidence(primaryBlock, trustedBlock, commonBlock)
-	c.logger.Error("ATTEMPTED ATTACK DETECTED. Sending evidence againt primary by witness", "ev", evidenceAgainstPrimary,
+	c.logger.Error("ATTEMPTED ATTACK DETECTED. Sending evidence against primary by witness", "ev", evidenceAgainstPrimary,
 		"primary", c.primary, "witness", supportingWitness)
 	c.sendEvidence(ctx, evidenceAgainstPrimary, supportingWitness)
 

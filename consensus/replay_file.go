@@ -143,7 +143,7 @@ func (pb *playback) replayReset(count int, newStepSub types.Subscription) error 
 	pb.fp = fp
 	pb.dec = NewWALDecoder(fp)
 	count = pb.count - count
-	fmt.Printf("Reseting from %d to %d\n", pb.count, count)
+	fmt.Printf("Resetting from %d to %d\n", pb.count, count)
 	pb.count = 0
 	pb.cs = newCS
 	var msg *TimedWALMessage

@@ -270,7 +270,7 @@ func TestLastFinalizeBlockResponses(t *testing.T) {
 		require.NoError(t, err)
 		// check to see if the saved response height is the same as the loaded height.
 		assert.Equal(t, lastResponse, response1)
-		// use an incorret height to make sure the state store errors.
+		// use an incorrect height to make sure the state store errors.
 		_, err = stateStore.LoadLastFinalizeBlockResponse(height + 1)
 		assert.Error(t, err)
 		// check if the abci response didnt save in the abciresponses.

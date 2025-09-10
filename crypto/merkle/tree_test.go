@@ -68,7 +68,7 @@ func TestProof(t *testing.T) {
 		proof := proofs[i]
 
 		// Check total/index
-		require.EqualValues(t, proof.Index, i, "Unmatched indicies: %d vs %d", proof.Index, i)
+		require.EqualValues(t, proof.Index, i, "Unmatched indices: %d vs %d", proof.Index, i)
 
 		require.EqualValues(t, proof.Total, total, "Unmatched totals: %d vs %d", proof.Total, total)
 

@@ -81,7 +81,7 @@ type transportLifecycle interface {
 }
 
 // ConnFilterFunc to be implemented by filter hooks after a new connection has
-// been established. The set of exisiting connections is passed along together
+// been established. The set of existing connections is passed along together
 // with all resolved IPs for the new connection.
 type ConnFilterFunc func(ConnSet, net.Conn, []net.IP) error
 

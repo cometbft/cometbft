@@ -95,7 +95,7 @@ type DefaultNodeInfo struct {
 	Other   DefaultNodeInfoOther `json:"other"`   // other application specific data
 }
 
-// DefaultNodeInfoOther is the misc. applcation specific data
+// DefaultNodeInfoOther is the misc. application specific data
 type DefaultNodeInfoOther struct {
 	TxIndex    string `json:"tx_index"`
 	RPCAddress string `json:"rpc_address"`

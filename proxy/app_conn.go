@@ -221,7 +221,7 @@ func (app *appConnSnapshot) ApplySnapshotChunk(ctx context.Context, req *types.R
 }
 
 // addTimeSample returns a function that, when called, adds an observation to m.
-// The observation added to m is the number of seconds ellapsed since addTimeSample
+// The observation added to m is the number of seconds elapsed since addTimeSample
 // was initially called. addTimeSample is meant to be called in a defer to calculate
 // the amount of time a function takes to complete.
 func addTimeSample(m metrics.Histogram) func() {

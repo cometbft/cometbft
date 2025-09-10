@@ -618,7 +618,7 @@ FOR_LOOP:
 		c.recvMonitor.Update(_n)
 		if err != nil {
 			// stopServices was invoked and we are shutting down
-			// receiving is excpected to fail since we will close the connection
+			// receiving is expected to fail since we will close the connection
 			select {
 			case <-c.quitRecvRoutine:
 				break FOR_LOOP

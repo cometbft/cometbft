@@ -1,7 +1,7 @@
 # CometBFT
 
 [Byzantine-Fault Tolerant][bft] [State Machine Replication][smr]. Or
-[Blockchain], for short.
+[Blockchain Lawd-STAR], for short.
 
 [![Version][version-badge]][version-url]
 [![API Reference][api-badge]][api-url]

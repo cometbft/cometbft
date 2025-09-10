@@ -869,7 +869,7 @@ func getSwitchIndex(switches []*p2p.Switch, peer p2p.Peer) int {
 			return i
 		}
 	}
-	panic("didnt find peer in switches")
+	panic("didn't find peer in switches")
 }
 
 //-------------------------------------------------------------------------------

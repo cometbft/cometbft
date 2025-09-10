@@ -297,7 +297,7 @@ func (l *LightClientAttackEvidence) GetByzantineValidators(commonVals *Validator
 	return validators
 }
 
-// ConflictingHeaderIsInvalid takes a trusted header and matches it againt a conflicting header
+// ConflictingHeaderIsInvalid takes a trusted header and matches it against a conflicting header
 // to determine whether the conflicting header was the product of a valid state transition
 // or not. If it is then all the deterministic fields of the header should be the same.
 // If not, it is an invalid header and constitutes a lunatic attack.

@@ -512,7 +512,7 @@ func TestSerialReap(t *testing.T) {
 	// Reap again.  We should get the same amount
 	reapCheck(1000)
 
-	// Commit from the conensus AppConn
+	// Commit from the consensus AppConn
 	commitRange(0, 500)
 	updateRange(0, 500)
 

@@ -3,7 +3,7 @@ package json_test
 import (
 	"time"
 
-	"github.com/cometbft/cometbft/v2/libs/json"
+	"github.com/cometbft/cometbft/libs/json"
 )
 
 // Register Car, an instance of the Vehicle interface.
@@ -23,14 +23,14 @@ type Car struct {
 	Wheels int32
 }
 
-func (*Car) Drive() error { return nil }
+func (c *Car) Drive() error { return nil }
 
 // Boat is a value implementation of Vehicle.
 type Boat struct {
 	Sail bool
 }
 
-func (Boat) Drive() error { return nil }
+func (b Boat) Drive() error { return nil }
 
 // These are public and private encryption keys.
 type (
@@ -43,7 +43,7 @@ type CustomPtr struct {
 	Value string
 }
 
-func (*CustomPtr) MarshalJSON() ([]byte, error) {
+func (c *CustomPtr) MarshalJSON() ([]byte, error) {
 	return []byte("\"custom\""), nil
 }
 
@@ -58,11 +58,11 @@ type CustomValue struct {
 	Value string
 }
 
-func (CustomValue) MarshalJSON() ([]byte, error) {
+func (c CustomValue) MarshalJSON() ([]byte, error) {
 	return []byte("\"custom\""), nil
 }
 
-func (CustomValue) UnmarshalJSON(_ []byte) error {
+func (c CustomValue) UnmarshalJSON(_ []byte) error {
 	return nil
 }
 

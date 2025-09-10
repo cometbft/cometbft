@@ -3,10 +3,10 @@ package types
 import (
 	"fmt"
 
-	abci "github.com/cometbft/cometbft/v2/abci/types"
-	cmtjson "github.com/cometbft/cometbft/v2/libs/json"
-	cmtpubsub "github.com/cometbft/cometbft/v2/libs/pubsub"
-	cmtquery "github.com/cometbft/cometbft/v2/libs/pubsub/query"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 )
 
 // Reserved event types (alphabetically sorted).
@@ -20,30 +20,29 @@ const (
 	EventNewBlockHeader      = "NewBlockHeader"
 	EventNewBlockEvents      = "NewBlockEvents"
 	EventNewEvidence         = "NewEvidence"
-	EventPendingTx           = "PendingTx"
 	EventTx                  = "Tx"
 	EventValidatorSetUpdates = "ValidatorSetUpdates"
 
 	// Internal consensus events.
 	// These are used for testing the consensus state machine.
 	// They can also be used to build real-time consensus visualizers.
-	EventCompleteProposal  = "CompleteProposal"
-	EventLock              = "Lock"
-	EventNewRound          = "NewRound"
-	EventNewRoundStep      = "NewRoundStep"
-	EventPolka             = "Polka"
-	EventRelock            = "Relock"
-	EventTimeoutPropose    = "TimeoutPropose"
-	EventTimeoutWait       = "TimeoutWait"
-	EventValidBlock        = "ValidBlock"
-	EventVote              = "Vote"
-	EventProposalBlockPart = "ProposalBlockPart"
+	EventCompleteProposal = "CompleteProposal"
+	EventLock             = "Lock"
+	EventNewRound         = "NewRound"
+	EventNewRoundStep     = "NewRoundStep"
+	EventPolka            = "Polka"
+	EventRelock           = "Relock"
+	EventTimeoutPropose   = "TimeoutPropose"
+	EventTimeoutWait      = "TimeoutWait"
+	EventUnlock           = "Unlock"
+	EventValidBlock       = "ValidBlock"
+	EventVote             = "Vote"
 )
 
 // ENCODING / DECODING
 
 // TMEventData implements events.EventData.
-type TMEventData interface { //nolint:revive // this empty interface angers the linter
+type TMEventData interface {
 	// empty interface
 }
 
@@ -67,7 +66,7 @@ func init() {
 type EventDataNewBlock struct {
 	Block               *Block                     `json:"block"`
 	BlockID             BlockID                    `json:"block_id"`
-	ResultFinalizeBlock abci.FinalizeBlockResponse `json:"result_finalize_block"`
+	ResultFinalizeBlock abci.ResponseFinalizeBlock `json:"result_finalize_block"`
 }
 
 type EventDataNewBlockHeader struct {
@@ -85,17 +84,12 @@ type EventDataNewEvidence struct {
 	Evidence Evidence `json:"evidence"`
 }
 
-// All txs fire EventDataPendingTx.
-type EventDataPendingTx struct {
-	Tx []byte `json:"tx"`
-}
-
-// All txs fire EventDataTx.
+// All txs fire EventDataTx
 type EventDataTx struct {
 	abci.TxResult
 }
 
-// NOTE: This goes into the replay WAL.
+// NOTE: This goes into the replay WAL
 type EventDataRoundState struct {
 	Height int64  `json:"height"`
 	Round  int32  `json:"round"`
@@ -140,11 +134,11 @@ const (
 	EventTypeKey = "tm.event"
 
 	// TxHashKey is a reserved key, used to specify transaction's hash.
-	// see EventBus#PublishEventTx.
+	// see EventBus#PublishEventTx
 	TxHashKey = "tx.hash"
 
 	// TxHeightKey is a reserved key, used to specify transaction block's height.
-	// see EventBus#PublishEventTx.
+	// see EventBus#PublishEventTx
 	TxHeightKey = "tx.height"
 
 	// BlockHeightKey is a reserved key used for indexing FinalizeBlock events.
@@ -165,6 +159,7 @@ var (
 	EventQueryTimeoutPropose      = QueryForEvent(EventTimeoutPropose)
 	EventQueryTimeoutWait         = QueryForEvent(EventTimeoutWait)
 	EventQueryTx                  = QueryForEvent(EventTx)
+	EventQueryUnlock              = QueryForEvent(EventUnlock)
 	EventQueryValidatorSetUpdates = QueryForEvent(EventValidatorSetUpdates)
 	EventQueryValidBlock          = QueryForEvent(EventValidBlock)
 	EventQueryVote                = QueryForEvent(EventVote)
@@ -178,17 +173,16 @@ func QueryForEvent(eventType string) cmtpubsub.Query {
 	return cmtquery.MustCompile(fmt.Sprintf("%s='%s'", EventTypeKey, eventType))
 }
 
-// BlockEventPublisher publishes all block related events.
+// BlockEventPublisher publishes all block related events
 type BlockEventPublisher interface {
 	PublishEventNewBlock(block EventDataNewBlock) error
 	PublishEventNewBlockHeader(header EventDataNewBlockHeader) error
 	PublishEventNewBlockEvents(events EventDataNewBlockEvents) error
 	PublishEventNewEvidence(evidence EventDataNewEvidence) error
-	PublishEventPendingTx(tx EventDataPendingTx) error
-	PublishEventTx(tx EventDataTx) error
-	PublishEventValidatorSetUpdates(updates EventDataValidatorSetUpdates) error
+	PublishEventTx(EventDataTx) error
+	PublishEventValidatorSetUpdates(EventDataValidatorSetUpdates) error
 }
 
 type TxEventPublisher interface {
-	PublishEventTx(tx EventDataTx) error
+	PublishEventTx(EventDataTx) error
 }

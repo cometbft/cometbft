@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/cometbft/cometbft/v2/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 // Provider provides information for the light client to sync (verification
@@ -25,5 +25,5 @@ type Provider interface {
 	LightBlock(ctx context.Context, height int64) (*types.LightBlock, error)
 
 	// ReportEvidence reports an evidence of misbehavior.
-	ReportEvidence(ctx context.Context, ev types.Evidence) error
+	ReportEvidence(context.Context, types.Evidence) error
 }

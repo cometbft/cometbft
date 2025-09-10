@@ -5,10 +5,10 @@ import (
 	"net/url"
 	"reflect"
 
-	cmtjson "github.com/cometbft/cometbft/v2/libs/json"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
 )
 
-func argsToURLValues(args map[string]any) (url.Values, error) {
+func argsToURLValues(args map[string]interface{}) (url.Values, error) {
 	values := make(url.Values)
 	if len(args) == 0 {
 		return values, nil
@@ -26,7 +26,7 @@ func argsToURLValues(args map[string]any) (url.Values, error) {
 	return values, nil
 }
 
-func argsToJSON(args map[string]any) error {
+func argsToJSON(args map[string]interface{}) error {
 	for k, v := range args {
 		rt := reflect.TypeOf(v)
 		isByteSlice := rt.Kind() == reflect.Slice && rt.Elem().Kind() == reflect.Uint8

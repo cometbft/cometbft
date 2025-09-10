@@ -1,15 +1,15 @@
 package privval
 
 import (
-	"errors"
+	"fmt"
 	"net"
 	"sync/atomic"
 	"time"
 
-	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v2"
-	"github.com/cometbft/cometbft/v2/libs/log"
-	"github.com/cometbft/cometbft/v2/libs/service"
-	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	privvalproto "github.com/cometbft/cometbft/proto/tendermint/privval"
 )
 
 // SignerListenerEndpointOption sets an optional parameter on the SignerListenerEndpoint.
@@ -18,9 +18,9 @@ type SignerListenerEndpointOption func(*SignerListenerEndpoint)
 // SignerListenerEndpointTimeoutReadWrite sets the read and write timeout for
 // connections from external signing processes.
 //
-// Default: 5s.
+// Default: 5s
 func SignerListenerEndpointTimeoutReadWrite(timeout time.Duration) SignerListenerEndpointOption {
-	return func(sl *SignerListenerEndpoint) { sl.signerEndpoint.timeoutReadWrite = timeout }
+	return func(sl *SignerListenerEndpoint) { sl.timeoutReadWrite = timeout }
 }
 
 // SignerListenerEndpoint listens for an external process to dial in and keeps
@@ -55,7 +55,7 @@ func NewSignerListenerEndpoint(
 	}
 
 	sl.BaseService = *service.NewBaseService(logger, "SignerListenerEndpoint", sl)
-	sl.signerEndpoint.timeoutReadWrite = defaultTimeoutReadWriteSeconds * time.Second
+	sl.timeoutReadWrite = defaultTimeoutReadWriteSeconds * time.Second
 
 	for _, optionFunc := range options {
 		optionFunc(sl)
@@ -70,7 +70,7 @@ func (sl *SignerListenerEndpoint) OnStart() error {
 	sl.connectionAvailableCh = make(chan net.Conn)
 
 	// NOTE: ping timeout must be less than read/write timeout.
-	sl.pingInterval = time.Duration(sl.signerEndpoint.timeoutReadWrite.Milliseconds()*2/3) * time.Millisecond
+	sl.pingInterval = time.Duration(sl.timeoutReadWrite.Milliseconds()*2/3) * time.Millisecond
 	sl.pingTimer = time.NewTicker(sl.pingInterval)
 
 	go sl.serviceLoop()
@@ -81,7 +81,7 @@ func (sl *SignerListenerEndpoint) OnStart() error {
 	return nil
 }
 
-// OnStop implements service.Service.
+// OnStop implements service.Service
 func (sl *SignerListenerEndpoint) OnStop() {
 	sl.instanceMtx.Lock()
 	defer sl.instanceMtx.Unlock()
@@ -98,14 +98,14 @@ func (sl *SignerListenerEndpoint) OnStop() {
 	sl.pingTimer.Stop()
 }
 
-// WaitForConnection waits maxWait for a connection or returns a timeout error.
+// WaitForConnection waits maxWait for a connection or returns a timeout error
 func (sl *SignerListenerEndpoint) WaitForConnection(maxWait time.Duration) error {
 	sl.instanceMtx.Lock()
 	defer sl.instanceMtx.Unlock()
 	return sl.ensureConnection(maxWait)
 }
 
-// SendRequest ensures there is a connection, sends a request and waits for a response.
+// SendRequest ensures there is a connection, sends a request and waits for a response
 func (sl *SignerListenerEndpoint) SendRequest(request privvalproto.Message) (*privvalproto.Message, error) {
 	sl.instanceMtx.Lock()
 	defer sl.instanceMtx.Unlock()
@@ -154,7 +154,7 @@ func (sl *SignerListenerEndpoint) ensureConnection(maxWait time.Duration) error 
 
 func (sl *SignerListenerEndpoint) acceptNewConnection() (net.Conn, error) {
 	if !sl.IsRunning() || sl.listener == nil {
-		return nil, errors.New("endpoint is closing")
+		return nil, fmt.Errorf("endpoint is closing")
 	}
 
 	// wait for a new conn

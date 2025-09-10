@@ -5,23 +5,15 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cometbft/cometbft/v2/config"
-	cmtos "github.com/cometbft/cometbft/v2/internal/os"
+	"github.com/cometbft/cometbft/config"
+	cmtos "github.com/cometbft/cometbft/libs/os"
 )
 
 func ResetTestRoot(testName string) *config.Config {
-	return resetTestRoot(testName, "", true)
+	return ResetTestRootWithChainID(testName, "")
 }
 
 func ResetTestRootWithChainID(testName string, chainID string) *config.Config {
-	return resetTestRoot(testName, chainID, true)
-}
-
-func ResetTestRootWithChainIDNoOverwritePrivval(testName string, chainID string) *config.Config {
-	return resetTestRoot(testName, chainID, false)
-}
-
-func resetTestRoot(testName string, chainID string, overwritePrivKey bool) *config.Config {
 	// create a unique, concurrency-safe test directory under os.TempDir()
 	rootDir, err := os.MkdirTemp("", fmt.Sprintf("%s-%s_", chainID, testName))
 	if err != nil {
@@ -40,12 +32,11 @@ func resetTestRoot(testName string, chainID string, overwritePrivKey bool) *conf
 			chainID = DefaultTestChainID
 		}
 		testGenesis := fmt.Sprintf(testGenesisFmt, chainID)
-		cmtos.MustWriteFile(genesisFilePath, []byte(testGenesis), 0o644)
+		cmtos.MustWriteFile(genesisFilePath, []byte(testGenesis), 0644)
 	}
-	if overwritePrivKey {
-		cmtos.MustWriteFile(privKeyFilePath, []byte(testPrivValidatorKey), 0o644)
-	}
-	cmtos.MustWriteFile(privStateFilePath, []byte(testPrivValidatorState), 0o644)
+	// we always overwrite the priv val
+	cmtos.MustWriteFile(privKeyFilePath, []byte(testPrivValidatorKey), 0644)
+	cmtos.MustWriteFile(privStateFilePath, []byte(testPrivValidatorState), 0644)
 
 	config := config.TestConfig().SetRoot(rootDir)
 	return config
@@ -55,15 +46,11 @@ var testGenesisFmt = `{
   "genesis_time": "2018-10-10T08:20:13.695936996Z",
   "chain_id": "%s",
   "initial_height": "1",
-  "consensus_params": {
+	"consensus_params": {
 		"block": {
 			"max_bytes": "22020096",
 			"max_gas": "-1",
 			"time_iota_ms": "10"
-		},
-		"synchrony": {
-			"message_delay": "500000000",
-			"precision": "10000000"
 		},
 		"evidence": {
 			"max_age_num_blocks": "100000",
@@ -78,12 +65,8 @@ var testGenesisFmt = `{
 		"abci": {
 			"vote_extensions_enable_height": "0"
 		},
-		"version": {},
-		"feature": {
-			"vote_extensions_enable_height": "0",
-			"pbts_enable_height": "1"
-		}
-  },
+		"version": {}
+	},
   "validators": [
     {
       "pub_key": {

@@ -7,7 +7,7 @@ import (
 )
 
 // assert that all nodes that have blocks at the height of a misbehavior has evidence
-// for that misbehavior.
+// for that misbehavior
 func TestEvidence_Misbehavior(t *testing.T) {
 	blocks := fetchBlockChain(t)
 	testnet := loadTestnet(t)

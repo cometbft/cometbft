@@ -6,8 +6,8 @@ import (
 	"math/rand"
 	"sort"
 
-	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
-	"github.com/cometbft/cometbft/v2/p2p"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/p2p"
 )
 
 // snapshotKey is a snapshot key used for lookups.
@@ -30,7 +30,7 @@ type snapshot struct {
 func (s *snapshot) Key() snapshotKey {
 	// Hash.Write() never returns an error.
 	hasher := sha256.New()
-	hasher.Write([]byte(fmt.Sprintf("%v:%v:%v", s.Height, s.Format, s.Chunks)))
+	fmt.Fprintf(hasher, "%v:%v:%v", s.Height, s.Format, s.Chunks)
 	hasher.Write(s.Hash)
 	hasher.Write(s.Metadata)
 	var key snapshotKey
@@ -55,7 +55,7 @@ type snapshotPool struct {
 	snapshotRejectlist map[snapshotKey]bool
 }
 
-// newSnapshotPool creates a new snapshot pool. The state source is used for.
+// newSnapshotPool creates a new snapshot pool. The state source is used for
 func newSnapshotPool() *snapshotPool {
 	return &snapshotPool{
 		snapshots:          make(map[snapshotKey]*snapshot),

@@ -1,4 +1,4 @@
-//go:build gofuzz || go1.20
+//go:build gofuzz || go1.21
 
 package tests
 
@@ -10,9 +10,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/cometbft/cometbft/v2/libs/log"
-	rpcserver "github.com/cometbft/cometbft/v2/rpc/jsonrpc/server"
-	rpctypes "github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/libs/log"
+	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 func FuzzRPCJSONRPCServer(f *testing.F) {
@@ -21,19 +21,19 @@ func FuzzRPCJSONRPCServer(f *testing.F) {
 		I int    `json:"i"`
 	}
 	rpcFuncMap := map[string]*rpcserver.RPCFunc{
-		"c": rpcserver.NewRPCFunc(func(_ *rpctypes.Context, _ *args, _ ...rpcserver.Option) (string, error) {
+		"c": rpcserver.NewRPCFunc(func(ctx *rpctypes.Context, args *args, options ...rpcserver.Option) (string, error) {
 			return "foo", nil
 		}, "args"),
 	}
 
 	mux := http.NewServeMux()
 	rpcserver.RegisterRPCFuncs(mux, rpcFuncMap, log.NewNopLogger())
-	f.Fuzz(func(_ *testing.T, data []byte) {
+	f.Fuzz(func(t *testing.T, data []byte) {
 		if len(data) == 0 {
 			return
 		}
 
-		req, err := http.NewRequest(http.MethodPost, "http://localhost/", bytes.NewReader(data))
+		req, err := http.NewRequest("POST", "http://localhost/", bytes.NewReader(data))
 		if err != nil {
 			panic(err)
 		}

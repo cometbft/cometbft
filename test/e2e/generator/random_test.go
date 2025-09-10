@@ -7,14 +7,14 @@ import (
 )
 
 func TestCombinations(t *testing.T) {
-	input := map[string][]any{
+	input := map[string][]interface{}{
 		"bool":   {false, true},
 		"int":    {1, 2, 3},
 		"string": {"foo", "bar"},
 	}
 
 	c := combinations(input)
-	assert.Equal(t, []map[string]any{
+	assert.Equal(t, []map[string]interface{}{
 		{"bool": false, "int": 1, "string": "foo"},
 		{"bool": false, "int": 1, "string": "bar"},
 		{"bool": false, "int": 2, "string": "foo"},

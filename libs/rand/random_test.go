@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"sync"
 	"testing"
 	"time"
@@ -15,20 +14,20 @@ import (
 func TestRandStr(t *testing.T) {
 	l := 243
 	s := Str(l)
-	assert.Len(t, s, l)
+	assert.Equal(t, l, len(s))
 }
 
 func TestRandBytes(t *testing.T) {
 	l := 243
 	b := Bytes(l)
-	assert.Len(t, b, l)
+	assert.Equal(t, l, len(b))
 }
 
 func TestRandIntn(t *testing.T) {
 	n := 243
 	for i := 0; i < 100; i++ {
 		x := Intn(n)
-		assert.Less(t, x, n)
+		assert.True(t, x < n)
 	}
 }
 
@@ -55,10 +54,7 @@ func testThemAll() string {
 	// Use it.
 	out := new(bytes.Buffer)
 	perm := Perm(10)
-	blob, err := json.Marshal(perm)
-	if err != nil {
-		log.Fatalf("couldn't unmarshal perm: %v", err)
-	}
+	blob, _ := json.Marshal(perm)
 	fmt.Fprintf(out, "perm: %s\n", blob)
 	fmt.Fprintf(out, "randInt: %d\n", Int())
 	fmt.Fprintf(out, "randUint: %d\n", Uint())
@@ -87,24 +83,6 @@ func TestRngConcurrencySafety(_ *testing.T) {
 	wg.Wait()
 }
 
-// Makes a new stdlib random instance 100 times concurrently.
-// Ensures that it is concurrent safe to create rand instances, and call independent rand
-// sources in parallel.
-func TestStdlibRngConcurrencySafety(_ *testing.T) {
-	var wg sync.WaitGroup
-	for i := 0; i < 100; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			r := NewStdlibRand()
-			_ = r.Uint64()
-			<-time.After(time.Millisecond * time.Duration(Intn(100)))
-			_ = r.Perm(3)
-		}()
-	}
-	wg.Wait()
-}
-
 func BenchmarkRandBytes10B(b *testing.B) {
 	benchmarkRandBytes(b, 10)
 }
@@ -126,12 +104,10 @@ func BenchmarkRandBytes100KiB(b *testing.B) {
 }
 
 func BenchmarkRandBytes1MiB(b *testing.B) {
-	b.Helper()
 	benchmarkRandBytes(b, 1024*1024)
 }
 
 func benchmarkRandBytes(b *testing.B, n int) {
-	b.Helper()
 	for i := 0; i < b.N; i++ {
 		_ = Bytes(n)
 	}

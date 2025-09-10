@@ -6,24 +6,50 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/cometbft/cometbft/v2/abci/types"
-	"github.com/cometbft/cometbft/v2/crypto"
-	"github.com/cometbft/cometbft/v2/crypto/ed25519"
-	cryptoenc "github.com/cometbft/cometbft/v2/crypto/encoding"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 )
 
-func TestPubKey(t *testing.T) {
-	pk := ed25519.GenPrivKey().PubKey()
+func TestABCIPubKey(t *testing.T) {
+	pkEd := ed25519.GenPrivKey().PubKey()
+	err := testABCIPubKey(t, pkEd)
+	assert.NoError(t, err)
+}
 
-	// to proto
+func testABCIPubKey(t *testing.T, pk crypto.PubKey) error {
 	abciPubKey, err := cryptoenc.PubKeyToProto(pk)
 	require.NoError(t, err)
-
-	// from proto
 	pk2, err := cryptoenc.PubKeyFromProto(abciPubKey)
 	require.NoError(t, err)
-
 	require.Equal(t, pk, pk2)
+	return nil
+}
+
+func TestABCIValidators(t *testing.T) {
+	pkEd := ed25519.GenPrivKey().PubKey()
+
+	// correct validator
+	cmtValExpected := NewValidator(pkEd, 10)
+
+	cmtVal := NewValidator(pkEd, 10)
+
+	abciVal := TM2PB.ValidatorUpdate(cmtVal)
+	cmtVals, err := PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{abciVal})
+	assert.Nil(t, err)
+	assert.Equal(t, cmtValExpected, cmtVals[0])
+
+	abciVals := TM2PB.ValidatorUpdates(NewValidatorSet(cmtVals))
+	assert.Equal(t, []abci.ValidatorUpdate{abciVal}, abciVals)
+
+	// val with address
+	cmtVal.Address = pkEd.Address()
+
+	abciVal = TM2PB.ValidatorUpdate(cmtVal)
+	cmtVals, err = PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{abciVal})
+	assert.Nil(t, err)
+	assert.Equal(t, cmtValExpected, cmtVals[0])
 }
 
 type pubKeyEddie struct{}
@@ -35,30 +61,17 @@ func (pubKeyEddie) Equals(crypto.PubKey) bool           { return false }
 func (pubKeyEddie) String() string                      { return "" }
 func (pubKeyEddie) Type() string                        { return "pubKeyEddie" }
 
-func TestPubKey_UnknownType(t *testing.T) {
-	pk := pubKeyEddie{}
+func TestABCIValidatorFromPubKeyAndPower(t *testing.T) {
+	pubkey := ed25519.GenPrivKey().PubKey()
 
-	// to proto
-	_, err := cryptoenc.PubKeyToProto(pk)
-	require.Error(t, err)
+	abciVal := TM2PB.NewValidatorUpdate(pubkey, 10)
+	assert.Equal(t, int64(10), abciVal.Power)
+
+	assert.Panics(t, func() { TM2PB.NewValidatorUpdate(nil, 10) })
+	assert.Panics(t, func() { TM2PB.NewValidatorUpdate(pubKeyEddie{}, 10) })
 }
 
-func TestValidatorUpdates(t *testing.T) {
-	pkEd := ed25519.GenPrivKey().PubKey()
-	cmtValExpected := NewValidator(pkEd, 10)
-	abciVal := abci.NewValidatorUpdate(pkEd, 10)
-
-	// from proto
-	cmtVals, err := PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{abciVal})
-	require.NoError(t, err)
-	assert.Equal(t, cmtValExpected, cmtVals[0])
-
-	// to proto
-	abciVals := TM2PB.ValidatorUpdates(NewValidatorSet(cmtVals))
-	assert.Equal(t, []abci.ValidatorUpdate{abciVal}, abciVals)
-}
-
-func TestValidator_WithoutPubKey(t *testing.T) {
+func TestABCIValidatorWithoutPubKey(t *testing.T) {
 	pkEd := ed25519.GenPrivKey().PubKey()
 
 	abciVal := TM2PB.Validator(NewValidator(pkEd, 10))

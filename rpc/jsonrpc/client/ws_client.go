@@ -13,11 +13,11 @@ import (
 	"github.com/gorilla/websocket"
 	metrics "github.com/rcrowley/go-metrics"
 
-	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
-	"github.com/cometbft/cometbft/v2/libs/log"
-	"github.com/cometbft/cometbft/v2/libs/service"
-	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
-	"github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 const (
@@ -31,7 +31,7 @@ const (
 // the remote server.
 //
 // WSClient is safe for concurrent use by multiple goroutines.
-type WSClient struct {
+type WSClient struct { //nolint: maligned
 	conn *websocket.Conn
 
 	Address  string // IP:PORT or /path/to/socket
@@ -108,7 +108,7 @@ func NewWS(remoteAddr, endpoint string, options ...func(*WSClient)) (*WSClient, 
 		password, _ = parsedURL.User.Password()
 	}
 
-	dialFn, err := MakeHTTPDialer(remoteAddr)
+	dialFn, err := makeHTTPDialer(remoteAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +247,7 @@ func (c *WSClient) Send(ctx context.Context, request types.RPCRequest) error {
 }
 
 // Call enqueues a call request onto the Send queue. Requests are JSON encoded.
-func (c *WSClient) Call(ctx context.Context, method string, params map[string]any) error {
+func (c *WSClient) Call(ctx context.Context, method string, params map[string]interface{}) error {
 	request, err := types.MapToRequest(c.nextRequestID(), method, params)
 	if err != nil {
 		return err
@@ -256,8 +256,8 @@ func (c *WSClient) Call(ctx context.Context, method string, params map[string]an
 }
 
 // CallWithArrayParams enqueues a call request onto the Send queue. Params are
-// in a form of array (e.g. []any{"abcd"}). Requests are JSON encoded.
-func (c *WSClient) CallWithArrayParams(ctx context.Context, method string, params []any) error {
+// in a form of array (e.g. []interface{}{"abcd"}). Requests are JSON encoded.
+func (c *WSClient) CallWithArrayParams(ctx context.Context, method string, params []interface{}) error {
 	request, err := types.ArrayToRequest(c.nextRequestID(), method, params)
 	if err != nil {
 		return err
@@ -317,7 +317,7 @@ func (c *WSClient) reconnect() error {
 		time.Sleep(backoffDuration)
 
 		err := c.dial()
-		if err != nil { //nolint:revive // this is a false positive from early-return
+		if err != nil {
 			c.Logger.Error("failed to redial", "err", err)
 		} else {
 			c.Logger.Info("reconnected")
@@ -549,20 +549,20 @@ func (c *WSClient) readRoutine() {
 // Subscribe to a query. Note the server must have a "subscribe" route
 // defined.
 func (c *WSClient) Subscribe(ctx context.Context, query string) error {
-	params := map[string]any{"query": query}
+	params := map[string]interface{}{"query": query}
 	return c.Call(ctx, "subscribe", params)
 }
 
 // Unsubscribe from a query. Note the server must have a "unsubscribe" route
 // defined.
 func (c *WSClient) Unsubscribe(ctx context.Context, query string) error {
-	params := map[string]any{"query": query}
+	params := map[string]interface{}{"query": query}
 	return c.Call(ctx, "unsubscribe", params)
 }
 
 // UnsubscribeAll from all. Note the server must have a "unsubscribe_all" route
 // defined.
 func (c *WSClient) UnsubscribeAll(ctx context.Context) error {
-	params := map[string]any{}
+	params := map[string]interface{}{}
 	return c.Call(ctx, "unsubscribe_all", params)
 }

@@ -8,17 +8,16 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 func TestMarshalJSON(t *testing.T) {
 	b, err := json.Marshal(&ExecTxResult{Code: 1})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	// include empty fields.
 	assert.True(t, strings.Contains(string(b), "code"))
-	r1 := CheckTxResponse{
+	r1 := ResponseCheckTx{
 		Code:      1,
 		Data:      []byte("hello"),
 		GasWanted: 43,
@@ -32,17 +31,17 @@ func TestMarshalJSON(t *testing.T) {
 		},
 	}
 	b, err = json.Marshal(&r1)
-	require.NoError(t, err)
+	assert.Nil(t, err)
 
-	var r2 CheckTxResponse
+	var r2 ResponseCheckTx
 	err = json.Unmarshal(b, &r2)
-	require.NoError(t, err)
+	assert.Nil(t, err)
 	assert.Equal(t, r1, r2)
 }
 
 func TestWriteReadMessageSimple(t *testing.T) {
 	cases := []proto.Message{
-		&EchoRequest{
+		&RequestEcho{
 			Message: "Hello",
 		},
 	}
@@ -50,11 +49,11 @@ func TestWriteReadMessageSimple(t *testing.T) {
 	for _, c := range cases {
 		buf := new(bytes.Buffer)
 		err := WriteMessage(c, buf)
-		require.NoError(t, err)
+		assert.Nil(t, err)
 
-		msg := new(EchoRequest)
+		msg := new(RequestEcho)
 		err = ReadMessage(buf, msg)
-		require.NoError(t, err)
+		assert.Nil(t, err)
 
 		assert.True(t, proto.Equal(c, msg))
 	}
@@ -72,11 +71,11 @@ func TestWriteReadMessage(t *testing.T) {
 	for _, c := range cases {
 		buf := new(bytes.Buffer)
 		err := WriteMessage(c, buf)
-		require.NoError(t, err)
+		assert.Nil(t, err)
 
 		msg := new(cmtproto.Header)
 		err = ReadMessage(buf, msg)
-		require.NoError(t, err)
+		assert.Nil(t, err)
 
 		assert.True(t, proto.Equal(c, msg))
 	}
@@ -85,7 +84,7 @@ func TestWriteReadMessage(t *testing.T) {
 func TestWriteReadMessage2(t *testing.T) {
 	phrase := "hello-world"
 	cases := []proto.Message{
-		&CheckTxResponse{
+		&ResponseCheckTx{
 			Data:      []byte(phrase),
 			Log:       phrase,
 			GasWanted: 10,
@@ -104,11 +103,11 @@ func TestWriteReadMessage2(t *testing.T) {
 	for _, c := range cases {
 		buf := new(bytes.Buffer)
 		err := WriteMessage(c, buf)
-		require.NoError(t, err)
+		assert.Nil(t, err)
 
-		msg := new(CheckTxResponse)
+		msg := new(ResponseCheckTx)
 		err = ReadMessage(buf, msg)
-		require.NoError(t, err)
+		assert.Nil(t, err)
 
 		assert.True(t, proto.Equal(c, msg))
 	}

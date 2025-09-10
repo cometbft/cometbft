@@ -10,14 +10,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	cfg "github.com/cometbft/cometbft/v2/config"
-	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
-	"github.com/cometbft/cometbft/v2/libs/bytes"
-	"github.com/cometbft/cometbft/v2/p2p"
-	na "github.com/cometbft/cometbft/v2/p2p/netaddr"
-	"github.com/cometbft/cometbft/v2/privval"
-	"github.com/cometbft/cometbft/v2/types"
-	cmttime "github.com/cometbft/cometbft/v2/types/time"
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/libs/bytes"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/privval"
+	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 var (
@@ -141,8 +140,8 @@ func testnetFiles(*cobra.Command, []string) error {
 			return err
 		}
 
-		pvKeyFile := filepath.Join(nodeDir, config.BaseConfig.PrivValidatorKey)
-		pvStateFile := filepath.Join(nodeDir, config.BaseConfig.PrivValidatorState)
+		pvKeyFile := filepath.Join(nodeDir, config.PrivValidatorKey)
+		pvStateFile := filepath.Join(nodeDir, config.PrivValidatorState)
 		pv := privval.LoadFilePV(pvKeyFile, pvStateFile)
 
 		pubKey, err := pv.GetPubKey()
@@ -190,7 +189,7 @@ func testnetFiles(*cobra.Command, []string) error {
 	// Write genesis file.
 	for i := 0; i < nValidators+nNonValidators; i++ {
 		nodeDir := filepath.Join(outputDir, fmt.Sprintf("%s%d", nodeDirPrefix, i))
-		if err := genDoc.SaveAs(filepath.Join(nodeDir, config.BaseConfig.Genesis)); err != nil {
+		if err := genDoc.SaveAs(filepath.Join(nodeDir, config.Genesis)); err != nil {
 			_ = os.RemoveAll(outputDir)
 			return err
 		}
@@ -252,11 +251,11 @@ func persistentPeersString(config *cfg.Config) (string, error) {
 	for i := 0; i < nValidators+nNonValidators; i++ {
 		nodeDir := filepath.Join(outputDir, fmt.Sprintf("%s%d", nodeDirPrefix, i))
 		config.SetRoot(nodeDir)
-		nk, err := p2p.LoadNodeKey(config.NodeKeyFile())
+		nodeKey, err := p2p.LoadNodeKey(config.NodeKeyFile())
 		if err != nil {
 			return "", err
 		}
-		persistentPeers[i] = na.IDAddrString(nk.ID(), fmt.Sprintf("%s:%d", hostnameOrIP(i), p2pPort))
+		persistentPeers[i] = p2p.IDAddressString(nodeKey.ID(), fmt.Sprintf("%s:%d", hostnameOrIP(i), p2pPort))
 	}
 	return strings.Join(persistentPeers, ","), nil
 }

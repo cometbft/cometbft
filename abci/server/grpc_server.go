@@ -6,9 +6,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/cometbft/cometbft/v2/abci/types"
-	cmtnet "github.com/cometbft/cometbft/v2/internal/net"
-	"github.com/cometbft/cometbft/v2/libs/service"
+	"github.com/cometbft/cometbft/abci/types"
+	cmtnet "github.com/cometbft/cometbft/libs/net"
+	"github.com/cometbft/cometbft/libs/service"
 )
 
 type GRPCServer struct {
@@ -22,7 +22,7 @@ type GRPCServer struct {
 	app types.Application
 }
 
-// NewGRPCServer returns a new gRPC ABCI server.
+// NewGRPCServer returns a new gRPC ABCI server
 func NewGRPCServer(protoAddr string, app types.Application) service.Service {
 	proto, addr := cmtnet.ProtocolAndAddress(protoAddr)
 	s := &GRPCServer{
@@ -43,7 +43,7 @@ func (s *GRPCServer) OnStart() error {
 	}
 
 	s.listener = ln
-	s.server = grpc.NewServer(grpc.MaxConcurrentStreams(100)) // Limit to 100 streams per connection
+	s.server = grpc.NewServer()
 	types.RegisterABCIServer(s.server, &gRPCApplication{s.app})
 
 	s.Logger.Info("Listening", "proto", s.proto, "addr", s.addr)
@@ -60,17 +60,17 @@ func (s *GRPCServer) OnStop() {
 	s.server.Stop()
 }
 
-// -------------------------------------------------------
+//-------------------------------------------------------
 
-// gRPCApplication is a gRPC shim for Application.
+// gRPCApplication is a gRPC shim for Application
 type gRPCApplication struct {
 	types.Application
 }
 
-func (*gRPCApplication) Echo(_ context.Context, req *types.EchoRequest) (*types.EchoResponse, error) {
-	return &types.EchoResponse{Message: req.Message}, nil
+func (app *gRPCApplication) Echo(_ context.Context, req *types.RequestEcho) (*types.ResponseEcho, error) {
+	return &types.ResponseEcho{Message: req.Message}, nil
 }
 
-func (*gRPCApplication) Flush(context.Context, *types.FlushRequest) (*types.FlushResponse, error) {
-	return &types.FlushResponse{}, nil
+func (app *gRPCApplication) Flush(context.Context, *types.RequestFlush) (*types.ResponseFlush, error) {
+	return &types.ResponseFlush{}, nil
 }

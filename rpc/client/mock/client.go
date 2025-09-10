@@ -18,13 +18,13 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/cometbft/cometbft/v2/libs/bytes"
-	"github.com/cometbft/cometbft/v2/libs/service"
-	"github.com/cometbft/cometbft/v2/rpc/client"
-	"github.com/cometbft/cometbft/v2/rpc/core"
-	ctypes "github.com/cometbft/cometbft/v2/rpc/core/types"
-	rpctypes "github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
-	"github.com/cometbft/cometbft/v2/types"
+	"github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/rpc/client"
+	"github.com/cometbft/cometbft/rpc/core"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 // Client wraps arbitrary implementations of the various interfaces.
@@ -53,18 +53,18 @@ var _ client.Client = Client{}
 // It can also be used to configure mock responses.
 type Call struct {
 	Name     string
-	Args     any
-	Response any
+	Args     interface{}
+	Response interface{}
 	Error    error
 }
 
-// GetResponse will generate the appropriate response for us, when
+// GetResponse will generate the apporiate response for us, when
 // using the Call struct to configure a Mock handler.
 //
 // When configuring a response, if only one of Response or Error is
 // set then that will always be returned. If both are set, then
 // we return Response if the Args match the set args, Error otherwise.
-func (c Call) GetResponse(args any) (any, error) {
+func (c Call) GetResponse(args interface{}) (interface{}, error) {
 	// handle the case with no response
 	if c.Response == nil {
 		if c.Error == nil {

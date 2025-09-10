@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/v2/libs/json"
+	"github.com/cometbft/cometbft/libs/json"
 )
 
 func TestUnmarshal(t *testing.T) {
@@ -21,7 +21,7 @@ func TestUnmarshal(t *testing.T) {
 
 	testcases := map[string]struct {
 		json  string
-		value any
+		value interface{}
 		err   bool
 	}{
 		"bool true":           {"true", true, false},
@@ -131,6 +131,7 @@ func TestUnmarshal(t *testing.T) {
 		"invalid type":     {`"foo"`, Struct{}, true},
 	}
 	for name, tc := range testcases {
+		tc := tc
 		t.Run(name, func(t *testing.T) {
 			// Create a target variable as a pointer to the zero value of the tc.value type,
 			// and wrap it in an empty interface. Decode into that interface.

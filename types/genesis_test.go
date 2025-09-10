@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/v2/crypto/ed25519"
-	cmtjson "github.com/cometbft/cometbft/v2/libs/json"
-	cmttime "github.com/cometbft/cometbft/v2/types/time"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 func TestGenesisBad(t *testing.T) {
@@ -48,57 +48,33 @@ func TestGenesisBad(t *testing.T) {
 				`},"power":"10","name":""}` +
 				`]}`,
 		),
-		// unsupported validator pubkey type
-		[]byte(
-			`{
-				"chain_id": "test-chain-QDKdJr",
-				"validators": [{
-					"pub_key":{"type":"tendermint/PubKeyEd25519","value":"AT/+aaL1eB0477Mud9JMm8Sh8BIvOYlPGC9KkIUmFaE="},
-					"power":"10",
-					"name":""
-				}],
-				"consensus_params": {
-					"validator": {"pub_key_types":["secp256k1"]},
-					"block": {"max_bytes": "100"},
-					"evidence": {"max_age_num_blocks": "100", "max_age_duration": "10"}
-				}
-			}`,
-		),
 	}
 
-	for i, testCase := range testCases {
+	for _, testCase := range testCases {
 		_, err := GenesisDocFromJSON(testCase)
-		formatStr := "test case %i: expected error for invalid genesis doc"
-		require.Error(t, err, formatStr, i)
+		assert.Error(t, err, "expected error for empty genDoc json")
 	}
 }
 
-func TestBasicGenesisDoc(t *testing.T) {
+func TestGenesisGood(t *testing.T) {
 	// test a good one by raw json
 	genDocBytes := []byte(
 		`{
 			"genesis_time": "0001-01-01T00:00:00Z",
 			"chain_id": "test-chain-QDKdJr",
 			"initial_height": "1000",
+			"consensus_params": null,
 			"validators": [{
 				"pub_key":{"type":"tendermint/PubKeyEd25519","value":"AT/+aaL1eB0477Mud9JMm8Sh8BIvOYlPGC9KkIUmFaE="},
 				"power":"10",
 				"name":""
 			}],
 			"app_hash":"",
-			"app_state":{"account_owner": "Bob"},
-			"consensus_params": {
-				"synchrony":  {"precision": "1", "message_delay": "10"},
-				"validator": {"pub_key_types":["ed25519"]},
-				"block": {"max_bytes": "100"},
-				"evidence": {"max_age_num_blocks": "100", "max_age_duration": "10"},
-				"feature": {"vote_extension_enable_height": "0", "pbts_enable_height": "0"}
-			}
+			"app_state":{"account_owner": "Bob"}
 		}`,
 	)
-
 	_, err := GenesisDocFromJSON(genDocBytes)
-	require.NoError(t, err, "expected no error for good genDoc json")
+	assert.NoError(t, err, "expected no error for good genDoc json")
 
 	pubkey := ed25519.GenPrivKey().PubKey()
 	// create a base gendoc from struct
@@ -107,11 +83,11 @@ func TestBasicGenesisDoc(t *testing.T) {
 		Validators: []GenesisValidator{{pubkey.Address(), pubkey, 10, "myval"}},
 	}
 	genDocBytes, err = cmtjson.Marshal(baseGenDoc)
-	require.NoError(t, err, "error marshaling genDoc")
+	assert.NoError(t, err, "error marshaling genDoc")
 
 	// test base gendoc and check consensus params were filled
 	genDoc, err := GenesisDocFromJSON(genDocBytes)
-	require.NoError(t, err, "expected no error for valid genDoc json")
+	assert.NoError(t, err, "expected no error for valid genDoc json")
 	assert.NotNil(t, genDoc.ConsensusParams, "expected consensus params to be filled in")
 
 	// check validator's address is filled
@@ -119,16 +95,16 @@ func TestBasicGenesisDoc(t *testing.T) {
 
 	// create json with consensus params filled
 	genDocBytes, err = cmtjson.Marshal(genDoc)
-	require.NoError(t, err, "error marshaling genDoc")
+	assert.NoError(t, err, "error marshaling genDoc")
 	genDoc, err = GenesisDocFromJSON(genDocBytes)
-	require.NoError(t, err, "expected no error for valid genDoc json")
+	assert.NoError(t, err, "expected no error for valid genDoc json")
 
 	// test with invalid consensus params
 	genDoc.ConsensusParams.Block.MaxBytes = 0
 	genDocBytes, err = cmtjson.Marshal(genDoc)
-	require.NoError(t, err, "error marshaling genDoc")
+	assert.NoError(t, err, "error marshaling genDoc")
 	_, err = GenesisDocFromJSON(genDocBytes)
-	require.Error(t, err, "expected error for genDoc json with block size of 0")
+	assert.Error(t, err, "expected error for genDoc json with block size of 0")
 
 	// Genesis doc from raw json
 	missingValidatorsTestCases := [][]byte{
@@ -140,7 +116,7 @@ func TestBasicGenesisDoc(t *testing.T) {
 
 	for _, tc := range missingValidatorsTestCases {
 		_, err := GenesisDocFromJSON(tc)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}
 }
 

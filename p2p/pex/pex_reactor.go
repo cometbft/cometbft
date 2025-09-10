@@ -458,7 +458,7 @@ func (r *Reactor) ensurePeers(ensurePeersPeriodElapsed bool) {
 	}
 
 	// bias to prefer more vetted peers when we have fewer connections.
-	// not perfect, but somewhate ensures that we prioritize connecting to more-vetted
+	// not perfect, but somewhat ensures that we prioritize connecting to more-vetted
 	// NOTE: range here is [10, 90]. Too high ?
 	newBias := cmtmath.MinInt(out, 8)*10 + 10
 

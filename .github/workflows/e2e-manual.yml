@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         group: ['00', '01', '02', '03', '04', '05']
-    runs-on: depot-ubuntu-22.04-4
+    runs-on: depot-ubuntu-24.04-4
     timeout-minutes: 60
     steps:
       - uses: actions/setup-go@v6

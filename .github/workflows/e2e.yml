@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         group: ['networks/ci', 'networks_regressions/*']
-    runs-on: depot-ubuntu-22.04-4
+    runs-on: depot-ubuntu-24.04-4
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5

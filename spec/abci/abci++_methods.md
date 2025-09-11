@@ -134,7 +134,7 @@ title: Methods
     | Name | Type        | Description                                                                                                                                                                                                                             | Field Number |
     |------|-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
     | tx   | bytes       | The request transaction bytes                                                                                                                                                                                                           | 1            |
-    | type | CheckTxType | One of `CheckTx_New` or `CheckTx_Recheck`. `CheckTx_New` is the default and means that a full check of the tranasaction is required. `CheckTx_Recheck` types are used when the mempool is initiating a normal recheck of a transaction. | 2            |
+    | type | CheckTxType | One of `CheckTx_New` or `CheckTx_Recheck`. `CheckTx_New` is the default and means that a full check of the transaction is required. `CheckTx_Recheck` types are used when the mempool is initiating a normal recheck of a transaction. | 2            |
 
 * **Response**:
 

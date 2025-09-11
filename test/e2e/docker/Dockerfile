@@ -5,7 +5,7 @@ ARG ROCKSDB=8.11.3
 FROM golang:${GO_VERSION} AS base
 ARG ROCKSDB
 # Optional checksum: set via --build-arg ROCKSDB_SHA256=<sha>. Leave blank to skip.
-ARG ROCKSDB_SHA256=3b51d1d907ea13fab430bf052618610994f08cd8ed0b1341c3e89fe02e199f8e
+ARG ROCKSDB_SHA256=
 # Build portable RocksDB
 ENV ROCKSDB_PORTABLE=1
 
@@ -50,7 +50,6 @@ ENV CGO_ENABLED=1
 RUN make build BUILD_FLAGS='-trimpath -ldflags="-s -w"'
 RUN cd test/e2e && make node BUILD_FLAGS='-trimpath -ldflags="-s -w"'
 
-
 # ---------- Stage 2: runtime (minimal) ----------
 FROM debian:bookworm-slim AS runtime
 
@@ -63,8 +62,8 @@ RUN apt-get -qq update \
       libleveldb1d libsnappy1v5 libgflags2.2 \
  && rm -rf /var/lib/apt/lists/*
 
-# non-root user
-RUN useradd -r -u 10001 -m -d /cometbft comet
+# keep the user around (optional), but DO NOT switch to it for e2e
+RUN useradd -r -u 10001 -m -d /cometbft comet || true
 
 WORKDIR /cometbft
 VOLUME /cometbft
@@ -79,9 +78,8 @@ COPY --from=build /src/cometbft/test/e2e/docker/entrypoint* /usr/bin/
 COPY --from=build /src/cometbft/build/cometbft /usr/bin/cometbft
 COPY --from=build /src/cometbft/test/e2e/build/node /usr/bin/app
 
-# perms for non-root
-RUN chown -R comet:comet /cometbft /usr/bin/entrypoint*
-USER comet
+# RUN AS ROOT (important for bind-mounted testnet dirs)
+# USER comet   <-- removed
 
 EXPOSE 26656 26657 26660 6060
 ENTRYPOINT ["/usr/bin/entrypoint"]

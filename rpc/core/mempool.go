@@ -145,7 +145,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 
 // UnconfirmedTxs gets unconfirmed transactions (maximum ?limit entries)
 // including their number.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/unconfirmed_txs
+// More: https://docs.cometbft.com/v0.38/rpc/#/Info/unconfirmed_txs
 func (env *Environment) UnconfirmedTxs(_ *rpctypes.Context, limitPtr *int) (*ctypes.ResultUnconfirmedTxs, error) {
 	// reuse per_page validator
 	limit := env.validatePerPage(limitPtr)

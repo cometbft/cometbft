@@ -51,7 +51,7 @@ func NewBytes(p *Payload) ([]byte, error) {
 	return append([]byte(keyPrefix), h...), nil
 }
 
-// FromBytes extracts a paylod from the byte representation of the payload.
+// FromBytes extracts a payload from the byte representation of the payload.
 // FromBytes leaves the padding untouched, returning it to the caller to handle
 // or discard per their preference.
 func FromBytes(b []byte) (*Payload, error) {

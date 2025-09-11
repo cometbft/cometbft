@@ -474,7 +474,7 @@ type InternalEvidence struct {
 }
 ```
 
-#### **[LC-SUMBIT-EVIDENCE.1]**
+#### **[LC-SUBMIT-EVIDENCE.1]**
 
 ```go
 func submitEvidence(Evidences []InternalEvidence)

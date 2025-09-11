@@ -15,6 +15,8 @@ type IPeerSet interface {
 	HasIP(ip net.IP) bool
 	// Get returns the peer with the given key, or nil if not found.
 	Get(key ID) Peer
+	// List returns a list of peers
+	List() []Peer
 	// Copy returns a copy of the peers list.
 	Copy() []Peer
 	// Size returns the number of peers in the PeerSet.
@@ -146,6 +148,19 @@ func (ps *PeerSet) Size() int {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 	return len(ps.list)
+}
+
+// List returns the list of peers in the peerSet (NOTE: this is not a copy,
+// modifying this slice will modify the underlying list of peers within this
+// peerSet).
+//
+// Deprecated: Function is not used anymore and remains for backwards
+// compatibility. It will be removed in a later release. Change to using Copy()
+// instead.
+func (ps *PeerSet) List() []Peer {
+	ps.mtx.Lock()
+	defer ps.mtx.Unlock()
+	return ps.list
 }
 
 // Copy returns the copy of the peers list.

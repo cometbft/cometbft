@@ -57,7 +57,7 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 }
 
 // BroadcastTxCommit returns with the responses from CheckTx and ExecTxResult.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Tx/broadcast_tx_commit
+// More: https://docs.cometbft.com/v0.38/rpc/#/Tx/broadcast_tx_commit
 func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTxCommit, error) {
 	subscriber := ctx.RemoteAddr()
 

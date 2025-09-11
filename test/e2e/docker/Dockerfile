@@ -5,7 +5,7 @@ ARG ROCKSDB=8.11.3
 FROM golang:${GO_VERSION} AS base
 ARG ROCKSDB
 # Optional checksum: set via --build-arg ROCKSDB_SHA256=<sha>. Leave blank to skip.
-ARG ROCKSDB_SHA256=
+ARG ROCKSDB_SHA256=3b51d1d907ea13fab430bf052618610994f08cd8ed0b1341c3e89fe02e199f8e
 # Build portable RocksDB
 ENV ROCKSDB_PORTABLE=1
 
@@ -62,9 +62,6 @@ RUN apt-get -qq update \
       libleveldb1d libsnappy1v5 libgflags2.2 \
  && rm -rf /var/lib/apt/lists/*
 
-# keep the user around (optional), but DO NOT switch to it for e2e
-RUN useradd -r -u 10001 -m -d /cometbft comet || true
-
 WORKDIR /cometbft
 VOLUME /cometbft
 ENV CMTHOME=/cometbft
@@ -77,9 +74,6 @@ RUN ldconfig
 COPY --from=build /src/cometbft/test/e2e/docker/entrypoint* /usr/bin/
 COPY --from=build /src/cometbft/build/cometbft /usr/bin/cometbft
 COPY --from=build /src/cometbft/test/e2e/build/node /usr/bin/app
-
-# RUN AS ROOT (important for bind-mounted testnet dirs)
-# USER comet   <-- removed
 
 EXPOSE 26656 26657 26660 6060
 ENTRYPOINT ["/usr/bin/entrypoint"]

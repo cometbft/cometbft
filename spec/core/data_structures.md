@@ -430,7 +430,7 @@ The `SignedHeader` and `ValidatorSet` are linked by the hash of the validator se
 
 ## SignedHeader
 
-The SignedhHeader is the [header](#header) accompanied by the commit to prove it.
+The SignedHeader is the [header](#header) accompanied by the commit to prove it.
 
 | Name   | Type              | Description       | Validation                                                                        |
 |--------|-------------------|-------------------|-----------------------------------------------------------------------------------|

@@ -543,7 +543,7 @@ FOR_LOOP:
 
 			bcR.pool.PopRequest()
 
-			// TODO: batch saves so we dont persist to disk every block
+			// TODO: batch saves so we don't persist to disk every block
 			if extensionsEnabled {
 				bcR.store.SaveBlockWithExtendedCommit(first, firstParts, extCommit)
 			} else {

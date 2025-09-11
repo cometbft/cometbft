@@ -197,7 +197,7 @@ func TestChunkQueue_Discard(t *testing.T) {
 	assert.EqualValues(t, 1, c.Index)
 
 	// Discarding the first chunk and re-adding it should cause it to be returned
-	// immediately by Next(), before procceeding with chunk 2
+	// immediately by Next(), before proceeding with chunk 2
 	err = queue.Discard(0)
 	require.NoError(t, err)
 	added, err := queue.Add(&chunk{Height: 3, Format: 1, Index: 0, Chunk: []byte{byte(0)}})

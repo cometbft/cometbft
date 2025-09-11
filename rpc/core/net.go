@@ -11,7 +11,7 @@ import (
 )
 
 // NetInfo returns network info.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/net_info
+// More: https://docs.cometbft.com/v0.38/spec/rpc/#netinfo
 func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error) {
 	peers := make([]ctypes.Peer, 0)
 	var err error
@@ -99,7 +99,7 @@ func (env *Environment) UnsafeDialPeers(
 }
 
 // Genesis returns genesis file.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/genesis
+// More: https://docs.cometbft.com/v0.38/spec/rpc/#genesis
 func (env *Environment) Genesis(*rpctypes.Context) (*ctypes.ResultGenesis, error) {
 	if len(env.genChunks) > 1 {
 		return nil, errors.New("genesis response is large, please use the genesis_chunked API instead")

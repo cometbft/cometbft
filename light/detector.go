@@ -251,7 +251,7 @@ func (c *Client) handleConflictingHeaders(
 	// and generate evidence against the primary that we can send to the witness
 	commonBlock, trustedBlock := witnessTrace[0], witnessTrace[len(witnessTrace)-1]
 	evidenceAgainstPrimary := newLightClientAttackEvidence(primaryBlock, trustedBlock, commonBlock)
-	c.logger.Error("ATTEMPTED ATTACK DETECTED. Sending evidence againt primary by witness", "ev", evidenceAgainstPrimary,
+	c.logger.Error("ATTEMPTED ATTACK DETECTED. Sending evidence against primary by witness", "ev", evidenceAgainstPrimary,
 		"primary", c.primary, "witness", supportingWitness)
 	c.sendEvidence(ctx, evidenceAgainstPrimary, supportingWitness)
 
@@ -287,7 +287,7 @@ func (c *Client) handleConflictingHeaders(
 }
 
 // examineConflictingHeaderAgainstTrace takes a trace from one provider and a divergent header that
-// it has received from another and preforms verifySkipping at the heights of each of the intermediate
+// it has received from another and performs verifySkipping at the heights of each of the intermediate
 // headers in the trace until it reaches the divergentHeader. 1 of 2 things can happen.
 //
 //  1. The light client verifies a header that is different to the intermediate header in the trace. This

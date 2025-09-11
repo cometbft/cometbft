@@ -17,7 +17,7 @@ import (
 // validators are sorted by their voting power - this is the canonical order
 // for the validators in the set as used in computing their Merkle root.
 //
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/validators
+// More: https://docs.cometbft.com/v0.38/spec/rpc/#validators
 func (env *Environment) Validators(
 	_ *rpctypes.Context,
 	heightPtr *int64,
@@ -103,7 +103,7 @@ func (env *Environment) GetConsensusState(*rpctypes.Context) (*ctypes.ResultCons
 
 // ConsensusParams gets the consensus parameters at the given block height.
 // If no height is provided, it will fetch the latest consensus params.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/consensus_params
+// More: https://docs.cometbft.com/v0.38/spec/rpc/#consensusparams
 func (env *Environment) ConsensusParams(
 	_ *rpctypes.Context,
 	heightPtr *int64,

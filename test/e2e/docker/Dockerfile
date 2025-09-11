@@ -1,12 +1,12 @@
 # ---------- Stage 0: base (Go toolchain + DB build deps + RocksDB) ----------
 ARG GO_VERSION=1.23
 ARG ROCKSDB=8.11.3
-ARG DEBIAN_SUITE=bookworm
 
 FROM golang:${GO_VERSION} AS base
 ARG ROCKSDB
-ARG TARGETARCH
-# For reproducibility & portability of RocksDB across CPUs
+# Optional checksum: set via --build-arg ROCKSDB_SHA256=<sha>. Leave blank to skip.
+ARG ROCKSDB_SHA256=3b51d1d907ea13fab430bf052618610994f08cd8ed0b1341c3e89fe02e199f8e
+# Build portable RocksDB
 ENV ROCKSDB_PORTABLE=1
 
 RUN apt-get update \
@@ -16,22 +16,17 @@ RUN apt-get update \
       libleveldb-dev \
  && rm -rf /var/lib/apt/lists/*
 
-# Fetch & verify RocksDB
-# (update the checksum if you bump ROCKSDB)
-ENV ROCKSDB_SHA256=3b51d1d907ea13fab430bf052618610994f08cd8ed0b1341c3e89fe02e199f8e
 RUN set -eux; \
   url="https://github.com/facebook/rocksdb/archive/refs/tags/v${ROCKSDB}.tar.gz"; \
   wget -q "$url" -O rocksdb.tgz; \
-  echo "${ROCKSDB_SHA256}  rocksdb.tgz" | sha256sum -c -; \
+  if [ -n "${ROCKSDB_SHA256:-}" ] && [ "${ROCKSDB_SHA256}" != "skip" ]; then \
+    echo "${ROCKSDB_SHA256}  rocksdb.tgz" | sha256sum -c -; \
+  else \
+    echo "WARNING: skipping RocksDB SHA256 verification"; \
+  fi; \
   tar -zxf rocksdb.tgz; \
   cd "rocksdb-${ROCKSDB}"; \
-  # Build a shared library with portability; respect TARGETARCH where relevant
-  # Common flags suggested by RocksDB for shared builds
-  MAKEFLAGS="-j$(nproc)" \
-  PORTABLE="${ROCKSDB_PORTABLE}" \
-  DEBUG_LEVEL=0 \
-  CXXFLAGS="-fPIC" \
-  make ${MAKEFLAGS} shared_lib; \
+  PORTABLE="${ROCKSDB_PORTABLE}" DEBUG_LEVEL=0 CXXFLAGS="-fPIC" make -j"$(nproc)" shared_lib; \
   make install-shared; \
   ldconfig; \
   cd ..; \
@@ -41,36 +36,24 @@ RUN set -eux; \
 FROM base AS build
 WORKDIR /src/cometbft
 
-# Pre-copy go.mod/sum for better caching
+# cache-friendly Go deps
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Then copy the rest
 COPY . .
 
-# Allow selecting backends at build time; default matches your original
 ARG COMETBFT_BUILD_OPTIONS=badgerdb,boltdb,cleveldb,rocksdb
 ENV COMETBFT_BUILD_OPTIONS=${COMETBFT_BUILD_OPTIONS}
-
-# Ensure CGO is enabled (needed for RocksDB)
 ENV CGO_ENABLED=1
 
-# Optional: pass CGO flags if RocksDB is in a non-standard prefix
-# ENV CGO_CFLAGS="-I/usr/local/include" CGO_LDFLAGS="-L/usr/local/lib"
-
-# Build cometbft with smaller binary size
-# (If your Makefile already sets flags, this will add to them harmlessly.)
+# smaller binaries (safe even if Makefile sets its own flags)
 RUN make build BUILD_FLAGS='-trimpath -ldflags="-s -w"'
-
-# Build the test e2e node
 RUN cd test/e2e && make node BUILD_FLAGS='-trimpath -ldflags="-s -w"'
 
-# ---------- Stage 2: runtime (minimal) ----------
-FROM debian:${DEBIAN_SUITE}-slim AS runtime
 
-# System base + only the runtime libs you truly need
-# - libstdc++6 is required by librocksdb.so
-# - Keep LevelDB only if you actually enable + use cleveldb at runtime
+# ---------- Stage 2: runtime (minimal) ----------
+FROM debian:bookworm-slim AS runtime
+
 RUN apt-get -qq update \
  && apt-get -qq upgrade -y \
  && apt-get -qq install -y --no-install-recommends \
@@ -80,32 +63,26 @@ RUN apt-get -qq update \
       libleveldb1d libsnappy1v5 libgflags2.2 \
  && rm -rf /var/lib/apt/lists/*
 
-# Create an unprivileged user
+# non-root user
 RUN useradd -r -u 10001 -m -d /cometbft comet
+
 WORKDIR /cometbft
 VOLUME /cometbft
 ENV CMTHOME=/cometbft
 ENV GORACE="halt_on_error=1"
 
-# Bring in RocksDB shared objects from the builder
+# bring in RocksDB shared libs and binaries
 COPY --from=build /usr/local/lib/librocksdb.so* /usr/local/lib/
 RUN ldconfig
 
-# Entrypoint & binaries
 COPY --from=build /src/cometbft/test/e2e/docker/entrypoint* /usr/bin/
 COPY --from=build /src/cometbft/build/cometbft /usr/bin/cometbft
 COPY --from=build /src/cometbft/test/e2e/build/node /usr/bin/app
 
-# Permissions for the non-root user
+# perms for non-root
 RUN chown -R comet:comet /cometbft /usr/bin/entrypoint*
 USER comet
 
 EXPOSE 26656 26657 26660 6060
 ENTRYPOINT ["/usr/bin/entrypoint"]
 CMD ["node"]
-
-# ---------- Optional hardening ----------
-# If you control entrypoint and file locations tightly, you can also:
-# USER root
-# RUN apt-get purge -y iputils-ping iproute2 && rm -rf /var/lib/apt/lists/*
-# USER comet

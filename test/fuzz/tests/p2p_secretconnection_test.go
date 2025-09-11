@@ -1,4 +1,4 @@
-//go:build gofuzz || go1.20
+//go:build gofuzz || go1.21
 
 package tests
 
@@ -9,13 +9,13 @@ import (
 	"log"
 	"testing"
 
-	"github.com/cometbft/cometbft/v2/crypto/ed25519"
-	"github.com/cometbft/cometbft/v2/internal/async"
-	sc "github.com/cometbft/cometbft/v2/p2p/transport/tcp/conn"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/async"
+	sc "github.com/cometbft/cometbft/p2p/conn"
 )
 
 func FuzzP2PSecretConnection(f *testing.F) {
-	f.Fuzz(func(_ *testing.T, data []byte) {
+	f.Fuzz(func(t *testing.T, data []byte) {
 		fuzz(data)
 	})
 }
@@ -69,12 +69,12 @@ func (drw kvstoreConn) Close() (err error) {
 	err2 := drw.PipeWriter.CloseWithError(io.EOF)
 	err1 := drw.PipeReader.Close()
 	if err2 != nil {
-		return err //nolint:nilerr // this is a false positive
+		return err
 	}
 	return err1
 }
 
-// Each returned ReadWriteCloser is akin to a net.Connection.
+// Each returned ReadWriteCloser is akin to a net.Connection
 func makeKVStoreConnPair() (fooConn, barConn kvstoreConn) {
 	barReader, fooWriter := io.Pipe()
 	fooReader, barWriter := io.Pipe()
@@ -92,14 +92,14 @@ func makeSecretConnPair() (fooSecConn, barSecConn *sc.SecretConnection) {
 
 	// Make connections from both sides in parallel.
 	trs, ok := async.Parallel(
-		func(_ int) (val any, abort bool, err error) {
+		func(_ int) (val interface{}, abort bool, err error) {
 			fooSecConn, err = sc.MakeSecretConnection(fooConn, fooPrvKey)
 			if err != nil {
 				log.Printf("failed to establish SecretConnection for foo: %v", err)
 				return nil, true, err
 			}
 			remotePubBytes := fooSecConn.RemotePubKey()
-			if !bytes.Equal(remotePubBytes.Bytes(), barPubKey.Bytes()) {
+			if !remotePubBytes.Equals(barPubKey) {
 				err = fmt.Errorf("unexpected fooSecConn.RemotePubKey.  Expected %v, got %v",
 					barPubKey, fooSecConn.RemotePubKey())
 				log.Print(err)
@@ -107,14 +107,14 @@ func makeSecretConnPair() (fooSecConn, barSecConn *sc.SecretConnection) {
 			}
 			return nil, false, nil
 		},
-		func(_ int) (val any, abort bool, err error) {
+		func(_ int) (val interface{}, abort bool, err error) {
 			barSecConn, err = sc.MakeSecretConnection(barConn, barPrvKey)
 			if barSecConn == nil {
 				log.Printf("failed to establish SecretConnection for bar: %v", err)
 				return nil, true, err
 			}
 			remotePubBytes := barSecConn.RemotePubKey()
-			if !bytes.Equal(remotePubBytes.Bytes(), fooPubKey.Bytes()) {
+			if !remotePubBytes.Equals(fooPubKey) {
 				err = fmt.Errorf("unexpected barSecConn.RemotePubKey.  Expected %v, got %v",
 					fooPubKey, barSecConn.RemotePubKey())
 				log.Print(err)

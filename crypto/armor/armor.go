@@ -8,34 +8,21 @@ import (
 	"golang.org/x/crypto/openpgp/armor" //nolint: staticcheck
 )
 
-// ErrEncode represents an error from calling [EncodeArmor].
-type ErrEncode struct {
-	Err error
-}
-
-func (e ErrEncode) Error() string {
-	return fmt.Sprintf("armor: could not encode ASCII armor: %v", e.Err)
-}
-
-func (e ErrEncode) Unwrap() error {
-	return e.Err
-}
-
-func EncodeArmor(blockType string, headers map[string]string, data []byte) (string, error) {
+func EncodeArmor(blockType string, headers map[string]string, data []byte) string {
 	buf := new(bytes.Buffer)
 	w, err := armor.Encode(buf, blockType, headers)
 	if err != nil {
-		return "", ErrEncode{Err: err}
+		panic(fmt.Errorf("could not encode ascii armor: %s", err))
 	}
 	_, err = w.Write(data)
 	if err != nil {
-		return "", ErrEncode{Err: err}
+		panic(fmt.Errorf("could not encode ascii armor: %s", err))
 	}
 	err = w.Close()
 	if err != nil {
-		return "", ErrEncode{Err: err}
+		panic(fmt.Errorf("could not encode ascii armor: %s", err))
 	}
-	return buf.String(), nil
+	return buf.String()
 }
 
 func DecodeArmor(armorStr string) (blockType string, headers map[string]string, data []byte, err error) {

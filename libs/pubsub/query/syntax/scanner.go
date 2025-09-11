@@ -126,7 +126,7 @@ func (s *Scanner) Pos() int { return s.pos }
 func (s *Scanner) Err() error { return s.err }
 
 // scanNumber scans for numbers with optional fractional parts.
-// Examples: 0, 1, 3.14.
+// Examples: 0, 1, 3.14
 func (s *Scanner) scanNumber(first rune) error {
 	s.buf.WriteRune(first)
 	if err := s.scanWhile(isDigit); err != nil {
@@ -266,14 +266,13 @@ func (s *Scanner) scanDatestamp() error {
 func (s *Scanner) scanWhile(ok func(rune) bool) error {
 	for {
 		ch, err := s.rune()
-		switch {
-		case err == io.EOF:
+		if err == io.EOF {
 			return nil
-		case !ok(ch):
+		} else if err != nil {
+			return s.fail(err)
+		} else if !ok(ch) {
 			s.unrune()
 			return nil
-		case err != nil:
-			return s.fail(err)
 		}
 		s.buf.WriteRune(ch)
 	}

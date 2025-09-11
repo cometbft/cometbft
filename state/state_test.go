@@ -6,19 +6,20 @@ import (
 	"math"
 	"math/big"
 	"os"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
-	abci "github.com/cometbft/cometbft/v2/abci/types"
-	"github.com/cometbft/cometbft/v2/crypto/ed25519"
-	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
-	"github.com/cometbft/cometbft/v2/internal/test"
-	sm "github.com/cometbft/cometbft/v2/state"
-	"github.com/cometbft/cometbft/v2/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/internal/test"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
 )
 
 // setupTestCase does setup common to all test cases.
@@ -53,7 +54,6 @@ func setupTestCaseWithStore(t *testing.T) (func(t *testing.T), dbm.DB, sm.State,
 
 // TestStateCopy tests the correct copying behavior of State.
 func TestStateCopy(t *testing.T) {
-	t.Helper()
 	tearDown, _, state := setupTestCase(t)
 	defer tearDown(t)
 	assert := assert.New(t)
@@ -76,11 +76,11 @@ func TestMakeGenesisStateNilValidators(t *testing.T) {
 		ChainID:    "dummy",
 		Validators: nil,
 	}
-	require.NoError(t, doc.ValidateAndComplete())
+	require.Nil(t, doc.ValidateAndComplete())
 	state, err := sm.MakeGenesisState(&doc)
-	require.NoError(t, err)
-	require.Empty(t, state.Validators.Validators)
-	require.Empty(t, state.NextValidators.Validators)
+	require.Nil(t, err)
+	require.Equal(t, 0, len(state.Validators.Validators))
+	require.Equal(t, 0, len(state.NextValidators.Validators))
 }
 
 // TestStateSaveLoad tests saving and loading State from a db.
@@ -118,14 +118,14 @@ func TestFinalizeBlockResponsesSaveLoad1(t *testing.T) {
 	// Build mock responses.
 	block := makeBlock(state, 2, new(types.Commit))
 
-	abciResponses := new(abci.FinalizeBlockResponse)
+	abciResponses := new(abci.ResponseFinalizeBlock)
 	dtxs := make([]*abci.ExecTxResult, 2)
 	abciResponses.TxResults = dtxs
 
 	abciResponses.TxResults[0] = &abci.ExecTxResult{Data: []byte("foo"), Events: nil}
 	abciResponses.TxResults[1] = &abci.ExecTxResult{Data: []byte("bar"), Log: "ok", Events: nil}
 	abciResponses.ValidatorUpdates = []abci.ValidatorUpdate{
-		abci.NewValidatorUpdate(ed25519.GenPrivKey().PubKey(), 10),
+		types.TM2PB.NewValidatorUpdate(ed25519.GenPrivKey().PubKey(), 10),
 	}
 
 	abciResponses.AppHash = make([]byte, 1)
@@ -133,7 +133,7 @@ func TestFinalizeBlockResponsesSaveLoad1(t *testing.T) {
 	err := stateStore.SaveFinalizeBlockResponse(block.Height, abciResponses)
 	require.NoError(t, err)
 	loadedABCIResponses, err := stateStore.LoadFinalizeBlockResponse(block.Height)
-	require.NoError(t, err)
+	assert.NoError(err)
 	assert.Equal(abciResponses, loadedABCIResponses)
 }
 
@@ -198,15 +198,15 @@ func TestFinalizeBlockResponsesSaveLoad2(t *testing.T) {
 	for i := range cases {
 		h := int64(i + 1)
 		res, err := stateStore.LoadFinalizeBlockResponse(h)
-		require.Error(t, err, "%d: %#v", i, res)
+		assert.Error(err, "%d: %#v", i, res)
 	}
 
 	// Add all cases.
 	for i, tc := range cases {
 		h := int64(i + 1) // last block height, one below what we save
-		responses := &abci.FinalizeBlockResponse{
+		responses := &abci.ResponseFinalizeBlock{
 			TxResults: tc.added,
-			AppHash:   []byte(strconv.FormatInt(h, 10)),
+			AppHash:   []byte(fmt.Sprintf("%d", h)),
 		}
 		err := stateStore.SaveFinalizeBlockResponse(h, responses)
 		require.NoError(t, err)
@@ -216,11 +216,11 @@ func TestFinalizeBlockResponsesSaveLoad2(t *testing.T) {
 	for i, tc := range cases {
 		h := int64(i + 1)
 		res, err := stateStore.LoadFinalizeBlockResponse(h)
-		if assert.NoError(err, "%d", i) { //nolint:testifylint // require.Error doesn't work with the conditional here
+		if assert.NoError(err, "%d", i) {
 			t.Log(res)
-			responses := &abci.FinalizeBlockResponse{
+			responses := &abci.ResponseFinalizeBlock{
 				TxResults: tc.expected,
-				AppHash:   []byte(strconv.FormatInt(h, 10)),
+				AppHash:   []byte(fmt.Sprintf("%d", h)),
 			}
 			assert.Equal(sm.TxResultsHash(responses.TxResults), sm.TxResultsHash(res.TxResults), "%d", i)
 		}
@@ -243,12 +243,12 @@ func TestValidatorSimpleSaveLoad(t *testing.T) {
 
 	// Should be able to load for height 1.
 	v, err := statestore.LoadValidators(1)
-	require.NoError(t, err, "expected no err at height 1")
+	assert.Nil(err, "expected no err at height 1")
 	assert.Equal(v.Hash(), state.Validators.Hash(), "expected validator hashes to match")
 
 	// Should be able to load for height 2.
 	v, err = statestore.LoadValidators(2)
-	require.NoError(t, err, "expected no err at height 2")
+	assert.Nil(err, "expected no err at height 2")
 	assert.Equal(v.Hash(), state.NextValidators.Hash(), "expected validator hashes to match")
 
 	// Increment height, save; should be able to load for next & next next height.
@@ -257,14 +257,14 @@ func TestValidatorSimpleSaveLoad(t *testing.T) {
 	err = statestore.Save(state)
 	require.NoError(t, err)
 	vp0, err := statestore.LoadValidators(nextHeight + 0)
-	require.NoError(t, err)
+	assert.Nil(err, "expected no err")
 	vp1, err := statestore.LoadValidators(nextHeight + 1)
-	require.NoError(t, err)
+	assert.Nil(err, "expected no err")
 	assert.Equal(vp0.Hash(), state.Validators.Hash(), "expected validator hashes to match")
 	assert.Equal(vp1.Hash(), state.NextValidators.Hash(), "expected next validator hashes to match")
 }
 
-// TestOneValidatorChangesSaveLoad tests saving and loading a validator set with changes.
+// TestValidatorChangesSaveLoad tests saving and loading a validator set with changes.
 func TestOneValidatorChangesSaveLoad(t *testing.T) {
 	tearDown, stateDB, state := setupTestCase(t)
 	defer tearDown(t)
@@ -274,11 +274,11 @@ func TestOneValidatorChangesSaveLoad(t *testing.T) {
 
 	// Change vals at these heights.
 	changeHeights := []int64{1, 2, 4, 5, 10, 15, 16, 17, 20}
-	n := len(changeHeights)
+	N := len(changeHeights)
 
 	// Build the validator history by running updateState
 	// with the right validator set for each height.
-	highestHeight := changeHeights[n-1] + 5
+	highestHeight := changeHeights[N-1] + 5
 	changeIndex := 0
 	_, val := state.Validators.GetByIndex(0)
 	power := val.VotingPower
@@ -315,8 +315,8 @@ func TestOneValidatorChangesSaveLoad(t *testing.T) {
 
 	for i, power := range testCases {
 		v, err := stateStore.LoadValidators(int64(i + 1 + 1)) // +1 because vset changes delayed by 1 block.
-		require.NoError(t, err, "expected no err at height %d", i)
-		assert.Equal(t, 1, v.Size(), "validator set size is greater than 1: %d", v.Size())
+		assert.Nil(t, err, fmt.Sprintf("expected no err at height %d", i))
+		assert.Equal(t, v.Size(), 1, "validator set size is greater than 1: %d", v.Size())
 		_, val := v.GetByIndex(0)
 
 		assert.Equal(t, val.VotingPower, power, fmt.Sprintf(`unexpected powerat
@@ -376,10 +376,10 @@ func TestProposerFrequency(t *testing.T) {
 	maxPower := 1000
 	nTestCases := 5
 	for i := 0; i < nTestCases; i++ {
-		n := cmtrand.Int()%maxVals + 1
-		vals := make([]*types.Validator, n)
+		N := cmtrand.Int()%maxVals + 1
+		vals := make([]*types.Validator, N)
 		totalVotePower := int64(0)
-		for j := 0; j < n; j++ {
+		for j := 0; j < N; j++ {
 			// make sure votePower > 0
 			votePower := int64(cmtrand.Int()%maxPower) + 1
 			totalVotePower += votePower
@@ -396,7 +396,7 @@ func TestProposerFrequency(t *testing.T) {
 	}
 }
 
-// new val set with given powers and random initial priorities.
+// new val set with given powers and random initial priorities
 func genValSetWithPowers(powers []int64) *types.ValidatorSet {
 	size := len(powers)
 	vals := make([]*types.Validator, size)
@@ -412,16 +412,15 @@ func genValSetWithPowers(powers []int64) *types.ValidatorSet {
 	return valSet
 }
 
-// test a proposer appears as frequently as expected.
+// test a proposer appears as frequently as expected
 func testProposerFreq(t *testing.T, caseNum int, valSet *types.ValidatorSet) {
-	t.Helper()
-	n := valSet.Size()
+	N := valSet.Size()
 	totalPower := valSet.TotalVotingPower()
 
 	// run the proposer selection and track frequencies
 	runMult := 1
 	runs := int(totalPower) * runMult
-	freqs := make([]int, n)
+	freqs := make([]int, N)
 	for i := 0; i < runs; i++ {
 		prop := valSet.GetProposer()
 		idx, _ := valSet.GetByAddress(prop.Address)
@@ -440,11 +439,11 @@ func testProposerFreq(t *testing.T, caseNum int, valSet *types.ValidatorSet) {
 		// to be 1 for the 2 validator case in
 		// https://github.com/cwgoes/tm-proposer-idris
 		// and inferred to generalize to N-1
-		bound := n - 1
-		require.LessOrEqual(
+		bound := N - 1
+		require.True(
 			t,
-			abs, bound,
-			fmt.Sprintf("Case %d val %d (%d): got %d, expected %d", caseNum, i, n, gotFreq, expectFreq),
+			abs <= bound,
+			fmt.Sprintf("Case %d val %d (%d): got %d, expected %d", caseNum, i, N, gotFreq, expectFreq),
 		)
 	}
 }
@@ -468,11 +467,11 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	bps, err := block.MakePartSet(testPartSize)
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
-	abciResponses := &abci.FinalizeBlockResponse{}
+	abciResponses := &abci.ResponseFinalizeBlock{}
 	validatorUpdates, err := types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 	require.NoError(t, err)
 	updatedState, err := sm.UpdateState(state, blockID, &block.Header, abciResponses, validatorUpdates)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	curTotal := val1VotingPower
 	// one increment step and one validator: 0 + power - total_power == 0
 	assert.Equal(t, 0+val1VotingPower-curTotal, updatedState.NextValidators.Validators[0].ProposerPriority)
@@ -480,14 +479,16 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	// add a validator
 	val2PubKey := ed25519.GenPrivKey().PubKey()
 	val2VotingPower := int64(100)
+	fvp, err := cryptoenc.PubKeyToProto(val2PubKey)
+	require.NoError(t, err)
 
-	updateAddVal := abci.NewValidatorUpdate(val2PubKey, val2VotingPower)
+	updateAddVal := abci.ValidatorUpdate{PubKey: fvp, Power: val2VotingPower}
 	validatorUpdates, err = types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{updateAddVal})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	updatedState2, err := sm.UpdateState(updatedState, blockID, &block.Header, abciResponses, validatorUpdates)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
-	require.Len(t, updatedState2.NextValidators.Validators, 2)
+	require.Equal(t, len(updatedState2.NextValidators.Validators), 2)
 	_, updatedVal1 := updatedState2.NextValidators.GetByAddress(val1PubKey.Address())
 	_, addedVal2 := updatedState2.NextValidators.GetByAddress(val2PubKey.Address())
 
@@ -517,23 +518,23 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	// Updating a validator does not reset the ProposerPriority to zero:
 	// 1. Add - Val2 VotingPower change to 1 =>
 	updatedVotingPowVal2 := int64(1)
-	updateVal := abci.NewValidatorUpdate(val2PubKey, updatedVotingPowVal2)
+	updateVal := abci.ValidatorUpdate{PubKey: fvp, Power: updatedVotingPowVal2}
 	validatorUpdates, err = types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{updateVal})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	// this will cause the diff of priorities (77)
 	// to be larger than threshold == 2*totalVotingPower (22):
 	updatedState3, err := sm.UpdateState(updatedState2, blockID, &block.Header, abciResponses, validatorUpdates)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
-	require.Len(t, updatedState3.NextValidators.Validators, 2)
+	require.Equal(t, len(updatedState3.NextValidators.Validators), 2)
 	_, prevVal1 := updatedState3.Validators.GetByAddress(val1PubKey.Address())
 	_, prevVal2 := updatedState3.Validators.GetByAddress(val2PubKey.Address())
 	_, updatedVal1 = updatedState3.NextValidators.GetByAddress(val1PubKey.Address())
 	_, updatedVal2 := updatedState3.NextValidators.GetByAddress(val2PubKey.Address())
 
 	// 2. Scale
-	// old prios: cryptov1(10):-38, v2(1):39
+	// old prios: v1(10):-38, v2(1):39
 	wantVal1Prio = prevVal1.ProposerPriority
 	wantVal2Prio = prevVal2.ProposerPriority
 	// scale to diffMax = 22 = 2 * tvp, diff=39-(-38)=77
@@ -542,14 +543,14 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	dist := wantVal2Prio - wantVal1Prio
 	// ratio := (dist + 2*totalPower - 1) / 2*totalPower = 98/22 = 4
 	ratio := (dist + 2*totalPower - 1) / (2 * totalPower)
-	// cryptov1(10):-38/4, v2(1):39/4
+	// v1(10):-38/4, v2(1):39/4
 	wantVal1Prio /= ratio // -9
 	wantVal2Prio /= ratio // 9
 
 	// 3. Center - noop
 	// 4. IncrementProposerPriority() ->
-	// cryptov1(10):-9+10, v2(1):9+1 -> v2 proposer so subsract tvp(11)
-	// cryptov1(10):1, v2(1):-1
+	// v1(10):-9+10, v2(1):9+1 -> v2 proposer so subsract tvp(11)
+	// v1(10):1, v2(1):-1
 	wantVal2Prio += updatedVal2.VotingPower // 10 -> prop
 	wantVal1Prio += updatedVal1.VotingPower // 1
 	wantVal2Prio -= totalPower              // -1
@@ -580,12 +581,12 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 	// no updates:
-	abciResponses := &abci.FinalizeBlockResponse{}
+	abciResponses := &abci.ResponseFinalizeBlock{}
 	validatorUpdates, err := types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 	require.NoError(t, err)
 
 	updatedState, err := sm.UpdateState(state, blockID, &block.Header, abciResponses, validatorUpdates)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	// 0 + 10 (initial prio) - 10 (avg) - 10 (mostest - total) = -10
 	totalPower := val1VotingPower
@@ -595,14 +596,16 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 
 	// add a validator with the same voting power as the first
 	val2PubKey := ed25519.GenPrivKey().PubKey()
-	updateAddVal := abci.NewValidatorUpdate(val2PubKey, val1VotingPower)
-	validatorUpdates, err = types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{updateAddVal})
+	fvp, err := cryptoenc.PubKeyToProto(val2PubKey)
 	require.NoError(t, err)
+	updateAddVal := abci.ValidatorUpdate{PubKey: fvp, Power: val1VotingPower}
+	validatorUpdates, err = types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{updateAddVal})
+	assert.NoError(t, err)
 
 	updatedState2, err := sm.UpdateState(updatedState, blockID, &block.Header, abciResponses, validatorUpdates)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
-	require.Len(t, updatedState2.NextValidators.Validators, 2)
+	require.Equal(t, len(updatedState2.NextValidators.Validators), 2)
 	assert.Equal(t, updatedState2.Validators, updatedState.NextValidators)
 
 	// val1 will still be proposer as val2 just got added:
@@ -643,7 +646,7 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 	require.NoError(t, err)
 
 	updatedState3, err := sm.UpdateState(updatedState2, blockID, &block.Header, abciResponses, validatorUpdates)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, updatedState3.Validators.Proposer.Address, updatedState3.NextValidators.Proposer.Address)
 
@@ -678,12 +681,12 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 	// no changes in voting power and both validators have same voting power
 	// -> proposers should alternate:
 	oldState := updatedState3
-	abciResponses = &abci.FinalizeBlockResponse{}
+	abciResponses = &abci.ResponseFinalizeBlock{}
 	validatorUpdates, err = types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 	require.NoError(t, err)
 
 	oldState, err = sm.UpdateState(oldState, blockID, &block.Header, abciResponses, validatorUpdates)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	expectedVal1Prio2 = 1
 	expectedVal2Prio2 = -1
 	expectedVal1Prio = -9
@@ -691,12 +694,12 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 
 	for i := 0; i < 1000; i++ {
 		// no validator updates:
-		abciResponses := &abci.FinalizeBlockResponse{}
+		abciResponses := &abci.ResponseFinalizeBlock{}
 		validatorUpdates, err = types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 		require.NoError(t, err)
 
 		updatedState, err := sm.UpdateState(oldState, blockID, &block.Header, abciResponses, validatorUpdates)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		// alternate (and cyclic priorities):
 		assert.NotEqual(
 			t,
@@ -739,14 +742,14 @@ func TestLargeGenesisValidator(t *testing.T) {
 	// reset state validators to above validator
 	state.Validators = types.NewValidatorSet([]*types.Validator{genesisVal})
 	state.NextValidators = state.Validators
-	require.Len(t, state.Validators.Validators, 1)
+	require.True(t, len(state.Validators.Validators) == 1)
 
 	// update state a few times with no validator updates
 	// asserts that the single validator's ProposerPrio stays the same
 	oldState := state
 	for i := 0; i < 10; i++ {
 		// no updates:
-		abciResponses := &abci.FinalizeBlockResponse{}
+		abciResponses := &abci.ResponseFinalizeBlock{}
 		validatorUpdates, err := types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 		require.NoError(t, err)
 
@@ -772,10 +775,12 @@ func TestLargeGenesisValidator(t *testing.T) {
 	// see: https://github.com/tendermint/tendermint/issues/2960
 	firstAddedValPubKey := ed25519.GenPrivKey().PubKey()
 	firstAddedValVotingPower := int64(10)
-	firstAddedVal := abci.NewValidatorUpdate(firstAddedValPubKey, firstAddedValVotingPower)
-	validatorUpdates, err := types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{firstAddedVal})
+	fvp, err := cryptoenc.PubKeyToProto(firstAddedValPubKey)
 	require.NoError(t, err)
-	abciResponses := &abci.FinalizeBlockResponse{
+	firstAddedVal := abci.ValidatorUpdate{PubKey: fvp, Power: firstAddedValVotingPower}
+	validatorUpdates, err := types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{firstAddedVal})
+	assert.NoError(t, err)
+	abciResponses := &abci.ResponseFinalizeBlock{
 		ValidatorUpdates: []abci.ValidatorUpdate{firstAddedVal},
 	}
 	block := makeBlock(oldState, oldState.LastBlockHeight+1, new(types.Commit))
@@ -790,7 +795,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	lastState := updatedState
 	for i := 0; i < 200; i++ {
 		// no updates:
-		abciResponses := &abci.FinalizeBlockResponse{}
+		abciResponses := &abci.ResponseFinalizeBlock{}
 		validatorUpdates, err := types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 		require.NoError(t, err)
 
@@ -815,17 +820,19 @@ func TestLargeGenesisValidator(t *testing.T) {
 	_, addedOldVal := oldState.NextValidators.GetByAddress(firstAddedValPubKey.Address())
 	_, addedNewVal := state.NextValidators.GetByAddress(firstAddedValPubKey.Address())
 	// expect large negative proposer priority for both (genesis validator decreased, 2nd validator increased):
-	assert.Greater(t, oldGenesisVal.ProposerPriority, newGenesisVal.ProposerPriority)
-	assert.Less(t, addedOldVal.ProposerPriority, addedNewVal.ProposerPriority)
+	assert.True(t, oldGenesisVal.ProposerPriority > newGenesisVal.ProposerPriority)
+	assert.True(t, addedOldVal.ProposerPriority < addedNewVal.ProposerPriority)
 
 	// add 10 validators with the same voting power as the one added directly after genesis:
 	for i := 0; i < 10; i++ {
 		addedPubKey := ed25519.GenPrivKey().PubKey()
-		addedVal := abci.NewValidatorUpdate(addedPubKey, firstAddedValVotingPower)
-		validatorUpdates, err := types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{addedVal})
+		ap, err := cryptoenc.PubKeyToProto(addedPubKey)
 		require.NoError(t, err)
+		addedVal := abci.ValidatorUpdate{PubKey: ap, Power: firstAddedValVotingPower}
+		validatorUpdates, err := types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{addedVal})
+		assert.NoError(t, err)
 
-		abciResponses := &abci.FinalizeBlockResponse{
+		abciResponses := &abci.ResponseFinalizeBlock{
 			ValidatorUpdates: []abci.ValidatorUpdate{addedVal},
 		}
 		block := makeBlock(oldState, oldState.LastBlockHeight+1, new(types.Commit))
@@ -836,11 +843,13 @@ func TestLargeGenesisValidator(t *testing.T) {
 		state, err = sm.UpdateState(state, blockID, &block.Header, abciResponses, validatorUpdates)
 		require.NoError(t, err)
 	}
-	require.Len(t, state.NextValidators.Validators, 10+2)
+	require.Equal(t, 10+2, len(state.NextValidators.Validators))
 
 	// remove genesis validator:
-	removeGenesisVal := abci.NewValidatorUpdate(genesisPubKey, 0)
-	abciResponses = &abci.FinalizeBlockResponse{
+	gp, err := cryptoenc.PubKeyToProto(genesisPubKey)
+	require.NoError(t, err)
+	removeGenesisVal := abci.ValidatorUpdate{PubKey: gp, Power: 0}
+	abciResponses = &abci.ResponseFinalizeBlock{
 		ValidatorUpdates: []abci.ValidatorUpdate{removeGenesisVal},
 	}
 
@@ -856,7 +865,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	updatedState, err = sm.UpdateState(state, blockID, &block.Header, abciResponses, validatorUpdates)
 	require.NoError(t, err)
 	// only the first added val (not the genesis val) should be left
-	require.Len(t, updatedState.NextValidators.Validators, 11)
+	assert.Equal(t, 11, len(updatedState.NextValidators.Validators))
 
 	// call update state until the effect for the 3rd added validator
 	// being proposer for a long time after the genesis validator left wears off:
@@ -864,7 +873,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	count := 0
 	isProposerUnchanged := true
 	for isProposerUnchanged {
-		abciResponses := &abci.FinalizeBlockResponse{}
+		abciResponses := &abci.ResponseFinalizeBlock{}
 		validatorUpdates, err = types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 		require.NoError(t, err)
 		block = makeBlock(curState, curState.LastBlockHeight+1, new(types.Commit))
@@ -889,7 +898,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	proposers := make([]*types.Validator, numVals)
 	for i := 0; i < 100; i++ {
 		// no updates:
-		abciResponses := &abci.FinalizeBlockResponse{}
+		abciResponses := &abci.ResponseFinalizeBlock{}
 		validatorUpdates, err := types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 		require.NoError(t, err)
 
@@ -927,17 +936,17 @@ func TestStoreLoadValidatorsIncrementsProposerPriority(t *testing.T) {
 	nextHeight := state.LastBlockHeight + 1
 
 	v0, err := stateStore.LoadValidators(nextHeight)
-	require.NoError(t, err)
+	assert.Nil(t, err)
 	acc0 := v0.Validators[0].ProposerPriority
 
 	v1, err := stateStore.LoadValidators(nextHeight + 1)
-	require.NoError(t, err)
+	assert.Nil(t, err)
 	acc1 := v1.Validators[0].ProposerPriority
 
 	assert.NotEqual(t, acc1, acc0, "expected ProposerPriority value to change between heights")
 }
 
-// TestManyValidatorChangesSaveLoad tests saving and loading a validator set with
+// TestValidatorChangesSaveLoad tests saving and loading a validator set with
 // changes.
 func TestManyValidatorChangesSaveLoad(t *testing.T) {
 	const valSetSize = 7
@@ -964,14 +973,14 @@ func TestManyValidatorChangesSaveLoad(t *testing.T) {
 	validatorUpdates, err = types.PB2TM.ValidatorUpdates(responses.ValidatorUpdates)
 	require.NoError(t, err)
 	state, err = sm.UpdateState(state, blockID, &header, responses, validatorUpdates)
-	require.NoError(t, err)
+	require.Nil(t, err)
 	nextHeight := state.LastBlockHeight + 1
 	err = stateStore.Save(state)
 	require.NoError(t, err)
 
 	// Load nextheight, it should be the oldpubkey.
 	v0, err := stateStore.LoadValidators(nextHeight)
-	require.NoError(t, err)
+	assert.Nil(t, err)
 	assert.Equal(t, valSetSize, v0.Size())
 	index, val := v0.GetByAddress(pubkeyOld.Address())
 	assert.NotNil(t, val)
@@ -981,7 +990,7 @@ func TestManyValidatorChangesSaveLoad(t *testing.T) {
 
 	// Load nextheight+1, it should be the new pubkey.
 	v1, err := stateStore.LoadValidators(nextHeight + 1)
-	require.NoError(t, err)
+	assert.Nil(t, err)
 	assert.Equal(t, valSetSize, v1.Size())
 	index, val = v1.GetByAddress(pubkey.Address())
 	assert.NotNil(t, val)
@@ -1015,22 +1024,21 @@ func TestConsensusParamsChangesSaveLoad(t *testing.T) {
 
 	// Change vals at these heights.
 	changeHeights := []int64{1, 2, 4, 5, 10, 15, 16, 17, 20}
-	n := len(changeHeights)
+	N := len(changeHeights)
 
 	// Each valset is just one validator.
 	// create list of them.
-	params := make([]types.ConsensusParams, n+1)
+	params := make([]types.ConsensusParams, N+1)
 	params[0] = state.ConsensusParams
-	for i := 1; i < n+1; i++ {
+	for i := 1; i < N+1; i++ {
 		params[i] = *types.DefaultConsensusParams()
-		// FIXME: shouldn't PBTS be enabled by default?
-		params[i].Feature.PbtsEnableHeight = 1
 		params[i].Block.MaxBytes += int64(i)
+
 	}
 
 	// Build the params history by running updateState
 	// with the right params set for each height.
-	highestHeight := changeHeights[n-1] + 5
+	highestHeight := changeHeights[N-1] + 5
 	changeIndex := 0
 	cp := params[changeIndex]
 	var err error
@@ -1067,7 +1075,7 @@ func TestConsensusParamsChangesSaveLoad(t *testing.T) {
 
 	for _, testCase := range testCases {
 		p, err := stateStore.LoadConsensusParams(testCase.height)
-		require.NoError(t, err, "expected no err at height %d", testCase.height)
+		assert.Nil(t, err, fmt.Sprintf("expected no err at height %d", testCase.height))
 		assert.EqualValues(t, testCase.params, p, fmt.Sprintf(`unexpected consensus params at
                 height %d`, testCase.height))
 	}
@@ -1089,11 +1097,12 @@ func TestStateProto(t *testing.T) {
 	}
 
 	for _, tt := range tc {
+		tt := tt
 		pbs, err := tt.state.ToProto()
 		if !tt.expPass1 {
-			require.Error(t, err)
+			assert.Error(t, err)
 		} else {
-			require.NoError(t, err, tt.testName)
+			assert.NoError(t, err, tt.testName)
 		}
 
 		smt, err := sm.FromProto(pbs)

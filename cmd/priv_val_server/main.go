@@ -5,11 +5,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/cometbft/cometbft/v2/crypto/ed25519"
-	cmtnet "github.com/cometbft/cometbft/v2/internal/net"
-	cmtos "github.com/cometbft/cometbft/v2/internal/os"
-	"github.com/cometbft/cometbft/v2/libs/log"
-	"github.com/cometbft/cometbft/v2/privval"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtnet "github.com/cometbft/cometbft/libs/net"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+
+	"github.com/cometbft/cometbft/privval"
 )
 
 func main() {
@@ -19,8 +20,8 @@ func main() {
 		privValKeyPath   = flag.String("priv-key", "", "priv val key file path")
 		privValStatePath = flag.String("priv-state", "", "priv val state file path")
 
-		logger = log.NewLogger(
-			os.Stdout,
+		logger = log.NewTMLogger(
+			log.NewSyncWriter(os.Stdout),
 		).With("module", "priv_val")
 	)
 	flag.Parse()

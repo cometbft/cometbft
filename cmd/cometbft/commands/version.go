@@ -6,21 +6,21 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cometbft/cometbft/v2/version"
+	"github.com/cometbft/cometbft/version"
 )
 
 // VersionCmd ...
 var VersionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Show version info",
-	Run: func(_ *cobra.Command, _ []string) {
-		cmtVersion := version.CMTSemVer
-		if version.CMTGitCommitHash != "" {
-			cmtVersion += "+" + version.CMTGitCommitHash
+	Run: func(cmd *cobra.Command, args []string) {
+		cmtVersion := version.TMCoreSemVer
+		if version.TMGitCommitHash != "" {
+			cmtVersion += "+" + version.TMGitCommitHash
 		}
 
 		if verbose {
-			values, err := json.MarshalIndent(struct {
+			values, _ := json.MarshalIndent(struct {
 				CometBFT      string `json:"cometbft"`
 				ABCI          string `json:"abci"`
 				BlockProtocol uint64 `json:"block_protocol"`
@@ -31,9 +31,6 @@ var VersionCmd = &cobra.Command{
 				BlockProtocol: version.BlockProtocol,
 				P2PProtocol:   version.P2PProtocol,
 			}, "", "  ")
-			if err != nil {
-				panic(fmt.Sprintf("failed to marshal version info: %v", err))
-			}
 			fmt.Println(string(values))
 		} else {
 			fmt.Println(cmtVersion)

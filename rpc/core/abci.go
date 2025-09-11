@@ -3,15 +3,15 @@ package core
 import (
 	"context"
 
-	abci "github.com/cometbft/cometbft/v2/abci/types"
-	"github.com/cometbft/cometbft/v2/libs/bytes"
-	"github.com/cometbft/cometbft/v2/proxy"
-	ctypes "github.com/cometbft/cometbft/v2/rpc/core/types"
-	rpctypes "github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/proxy"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 // ABCIQuery queries the application for some information.
-// More: https://docs.cometbft.com/main/rpc/#/ABCI/abci_query
+// More: https://docs.cometbft.com/v0.38/spec/rpc/#abciquery
 func (env *Environment) ABCIQuery(
 	_ *rpctypes.Context,
 	path string,
@@ -19,7 +19,7 @@ func (env *Environment) ABCIQuery(
 	height int64,
 	prove bool,
 ) (*ctypes.ResultABCIQuery, error) {
-	resQuery, err := env.ProxyAppQuery.Query(context.TODO(), &abci.QueryRequest{
+	resQuery, err := env.ProxyAppQuery.Query(context.TODO(), &abci.RequestQuery{
 		Path:   path,
 		Data:   data,
 		Height: height,
@@ -33,9 +33,9 @@ func (env *Environment) ABCIQuery(
 }
 
 // ABCIInfo gets some info about the application.
-// More: https://docs.cometbft.com/main/rpc/#/ABCI/abci_info
+// More: https://docs.cometbft.com/v0.38/spec/rpc/#abciinfo
 func (env *Environment) ABCIInfo(_ *rpctypes.Context) (*ctypes.ResultABCIInfo, error) {
-	resInfo, err := env.ProxyAppQuery.Info(context.TODO(), proxy.InfoRequest)
+	resInfo, err := env.ProxyAppQuery.Info(context.TODO(), proxy.RequestInfo)
 	if err != nil {
 		return nil, err
 	}

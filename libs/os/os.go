@@ -1,7 +1,3 @@
-// Package os provides utility functions for OS-level interactions.
-//
-// Deprecated: This package will be removed in a future release. Users should migrate
-// off this package as its functionality will no longer be part of the exported interface.
 package os
 
 import (
@@ -12,16 +8,15 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 type logger interface {
-	Info(msg string, keyvals ...any)
+	Info(msg string, keyvals ...interface{})
 }
 
 // TrapSignal catches the SIGTERM/SIGINT and executes cb function. After that it exits
 // with code 0.
-// Deprecated: This function will be removed in a future release. Do not use.
 func TrapSignal(logger logger, cb func()) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -37,7 +32,6 @@ func TrapSignal(logger logger, cb func()) {
 }
 
 // Kill the running process by sending itself SIGTERM.
-// Deprecated: This function will be removed in a future release. Do not use.
 func Kill() error {
 	p, err := os.FindProcess(os.Getpid())
 	if err != nil {
@@ -46,7 +40,6 @@ func Kill() error {
 	return p.Signal(syscall.SIGTERM)
 }
 
-// Deprecated: This function will be removed in a future release. Do not use.
 func Exit(s string) {
 	fmt.Println(s)
 	os.Exit(1)
@@ -54,7 +47,6 @@ func Exit(s string) {
 
 // EnsureDir ensures the given directory exists, creating it if necessary.
 // Errors if the path already exists as a non-directory.
-// Deprecated: This function will be removed in a future release. Do not use.
 func EnsureDir(dir string, mode os.FileMode) error {
 	err := os.MkdirAll(dir, mode)
 	if err != nil {
@@ -63,18 +55,15 @@ func EnsureDir(dir string, mode os.FileMode) error {
 	return nil
 }
 
-// Deprecated: This function will be removed in a future release. Do not use.
 func FileExists(filePath string) bool {
 	_, err := os.Stat(filePath)
 	return !os.IsNotExist(err)
 }
 
-// Deprecated: This function will be removed in a future release. Do not use.
 func ReadFile(filePath string) ([]byte, error) {
 	return os.ReadFile(filePath)
 }
 
-// Deprecated: This function will be removed in a future release. Do not use.
 func MustReadFile(filePath string) []byte {
 	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
@@ -84,12 +73,10 @@ func MustReadFile(filePath string) []byte {
 	return fileBytes
 }
 
-// Deprecated: This function will be removed in a future release. Do not use.
 func WriteFile(filePath string, contents []byte, mode os.FileMode) error {
 	return os.WriteFile(filePath, contents, mode)
 }
 
-// Deprecated: This function will be removed in a future release. Do not use.
 func MustWriteFile(filePath string, contents []byte, mode os.FileMode) {
 	err := WriteFile(filePath, contents, mode)
 	if err != nil {
@@ -98,7 +85,6 @@ func MustWriteFile(filePath string, contents []byte, mode os.FileMode) {
 }
 
 // CopyFile copies a file. It truncates the destination file if it exists.
-// Deprecated: This function will be removed in a future release. Do not use.
 func CopyFile(src, dst string) error {
 	srcfile, err := os.Open(src)
 	if err != nil {

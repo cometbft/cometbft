@@ -9,12 +9,12 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
-	abci "github.com/cometbft/cometbft/v2/abci/types"
-	"github.com/cometbft/cometbft/v2/config"
-	"github.com/cometbft/cometbft/v2/p2p"
-	p2pmocks "github.com/cometbft/cometbft/v2/p2p/mocks"
-	proxymocks "github.com/cometbft/cometbft/v2/proxy/mocks"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/p2p"
+	p2pmocks "github.com/cometbft/cometbft/p2p/mocks"
+	ssproto "github.com/cometbft/cometbft/proto/tendermint/statesync"
+	proxymocks "github.com/cometbft/cometbft/proxy/mocks"
 )
 
 func TestReactor_Receive_ChunkRequest(t *testing.T) {
@@ -41,21 +41,22 @@ func TestReactor_Receive_ChunkRequest(t *testing.T) {
 	}
 
 	for name, tc := range testcases {
+		tc := tc
 		t.Run(name, func(t *testing.T) {
 			// Mock ABCI connection to return local snapshots
 			conn := &proxymocks.AppConnSnapshot{}
-			conn.On("LoadSnapshotChunk", mock.Anything, &abci.LoadSnapshotChunkRequest{
+			conn.On("LoadSnapshotChunk", mock.Anything, &abci.RequestLoadSnapshotChunk{
 				Height: tc.request.Height,
 				Format: tc.request.Format,
 				Chunk:  tc.request.Index,
-			}).Return(&abci.LoadSnapshotChunkResponse{Chunk: tc.chunk}, nil)
+			}).Return(&abci.ResponseLoadSnapshotChunk{Chunk: tc.chunk}, nil)
 
 			// Mock peer to store response, if found
 			peer := &p2pmocks.Peer{}
-			peer.On("ID").Return("id")
+			peer.On("ID").Return(p2p.ID("id"))
 			var response *ssproto.ChunkResponse
 			if tc.expectResponse != nil {
-				peer.On("Send", mock.MatchedBy(func(i any) bool {
+				peer.On("Send", mock.MatchedBy(func(i interface{}) bool {
 					e, ok := i.(p2p.Envelope)
 					return ok && e.ChannelID == ChunkChannel
 				})).Run(func(args mock.Arguments) {
@@ -67,7 +68,7 @@ func TestReactor_Receive_ChunkRequest(t *testing.T) {
 					err = proto.Unmarshal(bz, e.Message)
 					require.NoError(t, err)
 					response = e.Message.(*ssproto.ChunkResponse)
-				}).Return(nil)
+				}).Return(true)
 			}
 
 			// Start a reactor and send a ssproto.ChunkRequest, then wait for and check response
@@ -132,10 +133,11 @@ func TestReactor_Receive_SnapshotsRequest(t *testing.T) {
 	}
 
 	for name, tc := range testcases {
+		tc := tc
 		t.Run(name, func(t *testing.T) {
 			// Mock ABCI connection to return local snapshots
 			conn := &proxymocks.AppConnSnapshot{}
-			conn.On("ListSnapshots", mock.Anything, &abci.ListSnapshotsRequest{}).Return(&abci.ListSnapshotsResponse{
+			conn.On("ListSnapshots", mock.Anything, &abci.RequestListSnapshots{}).Return(&abci.ResponseListSnapshots{
 				Snapshots: tc.snapshots,
 			}, nil)
 
@@ -143,8 +145,8 @@ func TestReactor_Receive_SnapshotsRequest(t *testing.T) {
 			responses := []*ssproto.SnapshotsResponse{}
 			peer := &p2pmocks.Peer{}
 			if len(tc.expectResponses) > 0 {
-				peer.On("ID").Return("id")
-				peer.On("Send", mock.MatchedBy(func(i any) bool {
+				peer.On("ID").Return(p2p.ID("id"))
+				peer.On("Send", mock.MatchedBy(func(i interface{}) bool {
 					e, ok := i.(p2p.Envelope)
 					return ok && e.ChannelID == SnapshotChannel
 				})).Run(func(args mock.Arguments) {
@@ -156,7 +158,7 @@ func TestReactor_Receive_SnapshotsRequest(t *testing.T) {
 					err = proto.Unmarshal(bz, e.Message)
 					require.NoError(t, err)
 					responses = append(responses, e.Message.(*ssproto.SnapshotsResponse))
-				}).Return(nil)
+				}).Return(true)
 			}
 
 			// Start a reactor and send a SnapshotsRequestMessage, then wait for and check responses

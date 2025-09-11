@@ -5,6 +5,17 @@ import "tendermint/crypto/keys.proto";
 import "tendermint/types/types.proto";
 import "gogoproto/gogo.proto";
 
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/privval";
+
+enum Errors {
+  ERRORS_UNKNOWN             = 0;
+  ERRORS_UNEXPECTED_RESPONSE = 1;
+  ERRORS_NO_CONNECTION       = 2;
+  ERRORS_CONNECTION_TIMEOUT  = 3;
+  ERRORS_READ_TIMEOUT        = 4;
+  ERRORS_WRITE_TIMEOUT       = 5;
+}
+
 message RemoteSignerError {
   int32  code        = 1;
   string description = 2;
@@ -23,9 +34,8 @@ message PubKeyResponse {
 
 // SignVoteRequest is a request to sign a vote
 message SignVoteRequest {
-  tendermint.types.Vote vote                   = 1;
-  string                chain_id               = 2;
-  bool                  skip_extension_signing = 3;  // if true, the signer may skip signing the extension bytes.
+  tendermint.types.Vote vote     = 1;
+  string                chain_id = 2;
 }
 
 // SignedVoteResponse is a response containing a signed vote or an error

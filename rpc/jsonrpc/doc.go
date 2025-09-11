@@ -69,7 +69,7 @@
 //	rpcserver.RegisterRPCFuncs(mux, Routes)
 //	wm := rpcserver.NewWebsocketManager(Routes)
 //	mux.HandleFunc("/websocket", wm.WebsocketHandler)
-//	logger := log.NewTMLogger(os.Stdout)
+//	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 //	listener, err := rpc.Listen("0.0.0.0:8080", rpcserver.Config{})
 //	if err != nil { panic(err) }
 //	go rpcserver.Serve(listener, mux, logger)
@@ -80,5 +80,5 @@
 //
 // # Examples
 //
-// - [CometBFT](https://github.com/cometbft/cometbft/v2/blob/main/rpc/core/routes.go)
+// - [CometBFT](https://github.com/cometbft/cometbft/blob/v0.38.x/rpc/core/routes.go)
 package jsonrpc

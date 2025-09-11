@@ -20,7 +20,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/cometbft/cometbft/v2/crypto/tmhash"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 )
 
 func TestRFC6962Hasher(t *testing.T) {
@@ -63,6 +63,7 @@ func TestRFC6962Hasher(t *testing.T) {
 			got:  innerHash([]byte("N123"), []byte("N456")),
 		},
 	} {
+		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
 			wantBytes, err := hex.DecodeString(tc.want)
 			if err != nil {

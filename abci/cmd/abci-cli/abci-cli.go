@@ -11,37 +11,38 @@ import (
 
 	"github.com/spf13/cobra"
 
-	crypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
-	abcicli "github.com/cometbft/cometbft/v2/abci/client"
-	"github.com/cometbft/cometbft/v2/abci/example/kvstore"
-	"github.com/cometbft/cometbft/v2/abci/server"
-	servertest "github.com/cometbft/cometbft/v2/abci/tests/server"
-	"github.com/cometbft/cometbft/v2/abci/types"
-	"github.com/cometbft/cometbft/v2/abci/version"
-	cmtos "github.com/cometbft/cometbft/v2/internal/os"
-	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+
+	abcicli "github.com/cometbft/cometbft/abci/client"
+	"github.com/cometbft/cometbft/abci/example/kvstore"
+	"github.com/cometbft/cometbft/abci/server"
+	servertest "github.com/cometbft/cometbft/abci/tests/server"
+	"github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/abci/version"
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
-// client is a global variable so it can be reused by the console.
+// client is a global variable so it can be reused by the console
 var (
 	client abcicli.Client
 	logger log.Logger
 )
 
-// flags.
+// flags
 var (
-	// global.
+	// global
 	flagAddress  string
 	flagAbci     string
 	flagVerbose  bool   // for the println output
 	flagLogLevel string // for the logger
 
-	// query.
+	// query
 	flagPath   string
 	flagHeight int
 	flagProve  bool
 
-	// kvstore.
+	// kvstore
 	flagPersist string
 )
 
@@ -49,7 +50,7 @@ var RootCmd = &cobra.Command{
 	Use:   "abci-cli",
 	Short: "the ABCI CLI tool wraps an ABCI client",
 	Long:  "the ABCI CLI tool wraps an ABCI client and is used for testing ABCI servers",
-	PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		switch cmd.Use {
 		case "kvstore", "version", "help [command]":
 			return nil
@@ -60,7 +61,7 @@ var RootCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			logger = log.NewFilter(log.NewLogger(os.Stdout), allowLevel)
+			logger = log.NewFilter(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), allowLevel)
 		}
 		if client == nil {
 			var err error
@@ -232,7 +233,7 @@ var versionCmd = &cobra.Command{
 	Short: "print ABCI console version",
 	Long:  "print ABCI console version",
 	Args:  cobra.ExactArgs(0),
-	RunE: func(_ *cobra.Command, _ []string) error {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println(version.Version)
 		return nil
 	},
@@ -278,7 +279,7 @@ var testCmd = &cobra.Command{
 	RunE:  cmdTest,
 }
 
-// Generates new Args array based off of previous call args to maintain flag persistence.
+// Generates new Args array based off of previous call args to maintain flag persistence
 func persistentArgs(line []byte) []string {
 	// generate the arguments to run from original os.Args
 	// to maintain flag arguments
@@ -291,7 +292,7 @@ func persistentArgs(line []byte) []string {
 	return args
 }
 
-// --------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
 
 func compose(fs []func() error) error {
 	if len(fs) == 0 {
@@ -354,7 +355,7 @@ func cmdTest(cmd *cobra.Command, _ []string) error {
 			func() error {
 				return servertest.ProcessProposal(ctx, client, [][]byte{
 					{0x01},
-				}, types.PROCESS_PROPOSAL_STATUS_ACCEPT)
+				}, types.ResponseProcessProposal_ACCEPT)
 			},
 		})
 }
@@ -363,11 +364,12 @@ func cmdBatch(cmd *cobra.Command, _ []string) error {
 	bufReader := bufio.NewReader(os.Stdin)
 LOOP:
 	for {
+
 		line, more, err := bufReader.ReadLine()
 		switch {
 		case more:
 			return errors.New("input line is too long")
-		case errors.Is(err, io.EOF):
+		case err == io.EOF:
 			break LOOP
 		case len(line) == 0:
 			continue
@@ -490,7 +492,7 @@ func cmdUnimplemented(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Have the application echo a message.
+// Have the application echo a message
 func cmdEcho(cmd *cobra.Command, args []string) error {
 	msg := ""
 	if len(args) > 0 {
@@ -508,13 +510,13 @@ func cmdEcho(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Get some info from the application.
+// Get some info from the application
 func cmdInfo(cmd *cobra.Command, args []string) error {
 	var version string
 	if len(args) == 1 {
 		version = args[0]
 	}
-	res, err := client.Info(cmd.Context(), &types.InfoRequest{Version: version})
+	res, err := client.Info(cmd.Context(), &types.RequestInfo{Version: version})
 	if err != nil {
 		return err
 	}
@@ -526,7 +528,7 @@ func cmdInfo(cmd *cobra.Command, args []string) error {
 
 const codeBad uint32 = 10
 
-// Append new txs to application.
+// Append new txs to application
 func cmdFinalizeBlock(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		printResponse(cmd, args, response{
@@ -543,7 +545,7 @@ func cmdFinalizeBlock(cmd *cobra.Command, args []string) error {
 		}
 		txs[i] = txBytes
 	}
-	res, err := client.FinalizeBlock(cmd.Context(), &types.FinalizeBlockRequest{Txs: txs})
+	res, err := client.FinalizeBlock(cmd.Context(), &types.RequestFinalizeBlock{Txs: txs})
 	if err != nil {
 		return err
 	}
@@ -563,7 +565,7 @@ func cmdFinalizeBlock(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Validate a tx.
+// Validate a tx
 func cmdCheckTx(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		printResponse(cmd, args, response{
@@ -576,10 +578,7 @@ func cmdCheckTx(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	res, err := client.CheckTx(cmd.Context(), &types.CheckTxRequest{
-		Tx:   txBytes,
-		Type: types.CHECK_TX_TYPE_CHECK,
-	})
+	res, err := client.CheckTx(cmd.Context(), &types.RequestCheckTx{Tx: txBytes})
 	if err != nil {
 		return err
 	}
@@ -592,9 +591,9 @@ func cmdCheckTx(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Get application Merkle root hash.
+// Get application Merkle root hash
 func cmdCommit(cmd *cobra.Command, args []string) error {
-	_, err := client.Commit(cmd.Context(), &types.CommitRequest{})
+	_, err := client.Commit(cmd.Context(), &types.RequestCommit{})
 	if err != nil {
 		return err
 	}
@@ -602,7 +601,7 @@ func cmdCommit(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Query application state.
+// Query application state
 func cmdQuery(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		printResponse(cmd, args, response{
@@ -617,7 +616,7 @@ func cmdQuery(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	resQuery, err := client.Query(cmd.Context(), &types.QueryRequest{
+	resQuery, err := client.Query(cmd.Context(), &types.RequestQuery{
 		Data:   queryBytes,
 		Path:   flagPath,
 		Height: int64(flagHeight),
@@ -651,7 +650,7 @@ func cmdPrepareProposal(cmd *cobra.Command, args []string) error {
 		txsBytesArray[i] = txBytes
 	}
 
-	res, err := client.PrepareProposal(cmd.Context(), &types.PrepareProposalRequest{
+	res, err := client.PrepareProposal(cmd.Context(), &types.RequestPrepareProposal{
 		Txs: txsBytesArray,
 		// kvstore has to have this parameter in order not to reject a tx as the default value is 0
 		MaxTxBytes: 65536,
@@ -682,7 +681,7 @@ func cmdProcessProposal(cmd *cobra.Command, args []string) error {
 		txsBytesArray[i] = txBytes
 	}
 
-	res, err := client.ProcessProposal(cmd.Context(), &types.ProcessProposalRequest{
+	res, err := client.ProcessProposal(cmd.Context(), &types.RequestProcessProposal{
 		Txs: txsBytesArray,
 	})
 	if err != nil {
@@ -696,7 +695,7 @@ func cmdProcessProposal(cmd *cobra.Command, args []string) error {
 }
 
 func cmdKVStore(*cobra.Command, []string) error {
-	logger := log.NewLogger(os.Stdout)
+	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 
 	// Create the application - in memory or persisted to disk
 	var app types.Application
@@ -731,7 +730,7 @@ func cmdKVStore(*cobra.Command, []string) error {
 	select {}
 }
 
-// --------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
 
 func printResponse(cmd *cobra.Command, args []string, rsps ...response) {
 	if flagVerbose {
@@ -747,7 +746,7 @@ func printResponse(cmd *cobra.Command, args []string, rsps ...response) {
 		}
 
 		if len(rsp.Data) != 0 {
-			// Do not print this line when using the finalize_block command
+			// Do no print this line when using the finalize_block command
 			// because the string comes out as gibberish
 			if cmd.Use != "finalize_block" {
 				fmt.Printf("-> data: %s\n", rsp.Data)
@@ -758,7 +757,7 @@ func printResponse(cmd *cobra.Command, args []string, rsps ...response) {
 			fmt.Printf("-> log: %s\n", rsp.Log)
 		}
 		if cmd.Use == "process_proposal" {
-			fmt.Printf("-> status: %s\n", types.ProcessProposalStatus(rsp.Status).String())
+			fmt.Printf("-> status: %s\n", types.ResponseProcessProposal_ProposalStatus_name[rsp.Status])
 		}
 
 		if rsp.Query != nil {
@@ -778,7 +777,7 @@ func printResponse(cmd *cobra.Command, args []string, rsps ...response) {
 	}
 }
 
-// NOTE: s is interpreted as a string unless prefixed with 0x.
+// NOTE: s is interpreted as a string unless prefixed with 0x
 func stringOrHexToBytes(s string) ([]byte, error) {
 	if len(s) > 2 && strings.ToLower(s[:2]) == "0x" {
 		b, err := hex.DecodeString(s[2:])

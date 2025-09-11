@@ -5,7 +5,7 @@
 
 Here we specify the rules for validating a proposal and vote before signing.
 First we include some general notes on validating data structures common to both types.
-We then provide specific validation rules for each. Finally, we include validation rules to prevent double-sigining.
+We then provide specific validation rules for each. Finally, we include validation rules to prevent double-signing.
 
 ## SignedMsgType
 

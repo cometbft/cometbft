@@ -2,6 +2,7 @@ package light_test
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -10,13 +11,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/v2/internal/test"
-	"github.com/cometbft/cometbft/v2/libs/log"
-	"github.com/cometbft/cometbft/v2/light"
-	"github.com/cometbft/cometbft/v2/light/provider"
-	mockp "github.com/cometbft/cometbft/v2/light/provider/mock"
-	dbs "github.com/cometbft/cometbft/v2/light/store/db"
-	"github.com/cometbft/cometbft/v2/types"
+
+	"github.com/cometbft/cometbft/internal/test"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/light"
+	"github.com/cometbft/cometbft/light/provider"
+	mockp "github.com/cometbft/cometbft/light/provider/mock"
+	dbs "github.com/cometbft/cometbft/light/store/db"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -65,20 +67,20 @@ var (
 		valSet,
 	)
 	deadNode      = mockp.NewDeadMock(chainID)
-	largeFullNode = mockp.New(genMockNode(10, 3, 0, bTime))
+	largeFullNode = mockp.New(genMockNode(chainID, 10, 3, 0, bTime))
 )
 
 func TestValidateTrustOptions(t *testing.T) {
 	testCases := []struct {
-		expErr error
-		to     light.TrustOptions
+		err bool
+		to  light.TrustOptions
 	}{
 		{
-			nil,
+			false,
 			trustOptions,
 		},
 		{
-			light.ErrNegativeOrZeroPeriod,
+			true,
 			light.TrustOptions{
 				Period: -1 * time.Hour,
 				Height: 1,
@@ -86,7 +88,7 @@ func TestValidateTrustOptions(t *testing.T) {
 			},
 		},
 		{
-			light.ErrNegativeOrZeroHeight,
+			true,
 			light.TrustOptions{
 				Period: 1 * time.Hour,
 				Height: 0,
@@ -94,7 +96,7 @@ func TestValidateTrustOptions(t *testing.T) {
 			},
 		},
 		{
-			light.ErrInvalidHashSize{32, 14},
+			true,
 			light.TrustOptions{
 				Period: 1 * time.Hour,
 				Height: 1,
@@ -105,11 +107,10 @@ func TestValidateTrustOptions(t *testing.T) {
 
 	for _, tc := range testCases {
 		err := tc.to.ValidateBasic()
-		switch {
-		case tc.expErr != nil && assert.Error(t, err): //nolint:testifylint // require.Error doesn't work with the logic here
-			assert.Equal(t, tc.expErr, err)
-		default:
-			require.NoError(t, err)
+		if tc.err {
+			assert.Error(t, err)
+		} else {
+			assert.NoError(t, err)
 		}
 	}
 }
@@ -217,6 +218,7 @@ func TestClient_SequentialVerification(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			c, err := light.NewClient(
 				ctx,
@@ -246,9 +248,9 @@ func TestClient_SequentialVerification(t *testing.T) {
 
 			_, err = c.VerifyLightBlockAtHeight(ctx, 3, bTime.Add(3*time.Hour))
 			if tc.verifyErr {
-				require.Error(t, err)
+				assert.Error(t, err)
 			} else {
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -341,6 +343,7 @@ func TestClient_SkippingVerification(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			c, err := light.NewClient(
 				ctx,
@@ -369,18 +372,18 @@ func TestClient_SkippingVerification(t *testing.T) {
 
 			_, err = c.VerifyLightBlockAtHeight(ctx, 3, bTime.Add(3*time.Hour))
 			if tc.verifyErr {
-				require.Error(t, err)
+				assert.Error(t, err)
 			} else {
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 		})
 	}
 }
 
 // start from a large light block to make sure that the pivot height doesn't select a height outside
-// the appropriate range.
+// the appropriate range
 func TestClientLargeBisectionVerification(t *testing.T) {
-	veryLargeFullNode := mockp.New(genMockNode(100, 3, 0, bTime))
+	veryLargeFullNode := mockp.New(genMockNode(chainID, 100, 3, 0, bTime))
 	trustedLightBlock, err := veryLargeFullNode.LightBlock(ctx, 5)
 	require.NoError(t, err)
 	c, err := light.NewClient(
@@ -398,7 +401,7 @@ func TestClientLargeBisectionVerification(t *testing.T) {
 	)
 	require.NoError(t, err)
 	h, err := c.Update(ctx, bTime.Add(100*time.Minute))
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	h2, err := veryLargeFullNode.LightBlock(ctx, 100)
 	require.NoError(t, err)
 	assert.Equal(t, h, h2)
@@ -429,7 +432,7 @@ func TestClientBisectionBetweenTrustedHeaders(t *testing.T) {
 
 	// verify using bisection the light block between the two trusted light blocks
 	_, err = c.VerifyLightBlockAtHeight(ctx, 2, bTime.Add(1*time.Hour))
-	require.NoError(t, err)
+	assert.NoError(t, err)
 }
 
 func TestClient_Cleanup(t *testing.T) {
@@ -451,11 +454,11 @@ func TestClient_Cleanup(t *testing.T) {
 
 	// Check no light blocks exist after Cleanup.
 	l, err := c.TrustedLightBlock(1)
-	require.Error(t, err)
-	require.Nil(t, l)
+	assert.Error(t, err)
+	assert.Nil(t, l)
 }
 
-// trustedHeader.Height == options.Height.
+// trustedHeader.Height == options.Height
 func TestClientRestoresTrustedHeaderAfterStartup1(t *testing.T) {
 	// 1. options.Hash == trustedHeader.Hash
 	{
@@ -475,7 +478,7 @@ func TestClientRestoresTrustedHeaderAfterStartup1(t *testing.T) {
 		require.NoError(t, err)
 
 		l, err := c.TrustedLightBlock(1)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, l)
 		assert.Equal(t, l.Hash(), h1.Hash())
 		assert.Equal(t, l.ValidatorSet.Hash(), h1.ValidatorsHash.Bytes())
@@ -516,15 +519,15 @@ func TestClientRestoresTrustedHeaderAfterStartup1(t *testing.T) {
 		require.NoError(t, err)
 
 		l, err := c.TrustedLightBlock(1)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		if assert.NotNil(t, l) {
 			assert.Equal(t, l.Hash(), header1.Hash())
-			require.NoError(t, l.ValidateBasic(chainID))
+			assert.NoError(t, l.ValidateBasic(chainID))
 		}
 	}
 }
 
-// trustedHeader.Height < options.Height.
+// trustedHeader.Height < options.Height
 func TestClientRestoresTrustedHeaderAfterStartup2(t *testing.T) {
 	// 1. options.Hash == trustedHeader.Hash
 	{
@@ -549,10 +552,10 @@ func TestClientRestoresTrustedHeaderAfterStartup2(t *testing.T) {
 
 		// Check we still have the 1st header (+header+).
 		l, err := c.TrustedLightBlock(1)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, l)
 		assert.Equal(t, l.Hash(), h1.Hash())
-		require.NoError(t, l.ValidateBasic(chainID))
+		assert.NoError(t, l.ValidateBasic(chainID))
 	}
 
 	// 2. options.Hash != trustedHeader.Hash
@@ -595,12 +598,12 @@ func TestClientRestoresTrustedHeaderAfterStartup2(t *testing.T) {
 
 		// Check we no longer have the invalid 1st header (+header+).
 		l, err := c.TrustedLightBlock(1)
-		require.Error(t, err)
-		require.Nil(t, l)
+		assert.Error(t, err)
+		assert.Nil(t, l)
 	}
 }
 
-// trustedHeader.Height > options.Height.
+// trustedHeader.Height > options.Height
 func TestClientRestoresTrustedHeaderAfterStartup3(t *testing.T) {
 	// 1. options.Hash == trustedHeader.Hash
 	{
@@ -625,19 +628,19 @@ func TestClientRestoresTrustedHeaderAfterStartup3(t *testing.T) {
 
 		// Check we still have the 1st light block.
 		l, err := c.TrustedLightBlock(1)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, l)
 		assert.Equal(t, l.Hash(), h1.Hash())
-		require.NoError(t, l.ValidateBasic(chainID))
+		assert.NoError(t, l.ValidateBasic(chainID))
 
 		// Check we no longer have 2nd light block.
 		l, err = c.TrustedLightBlock(2)
-		require.Error(t, err)
-		require.Nil(t, l)
+		assert.Error(t, err)
+		assert.Nil(t, l)
 
 		l, err = c.TrustedLightBlock(3)
-		require.Error(t, err)
-		require.Nil(t, l)
+		assert.Error(t, err)
+		assert.Nil(t, l)
 	}
 
 	// 2. options.Hash != trustedHeader.Hash
@@ -684,15 +687,15 @@ func TestClientRestoresTrustedHeaderAfterStartup3(t *testing.T) {
 
 		// Check we have swapped invalid 1st light block (+lightblock+) with correct one (+lightblock2+).
 		l, err := c.TrustedLightBlock(1)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, l)
 		assert.Equal(t, l.Hash(), header1.Hash())
-		require.NoError(t, l.ValidateBasic(chainID))
+		assert.NoError(t, l.ValidateBasic(chainID))
 
 		// Check we no longer have invalid 2nd light block (+lightblock2+).
 		l, err = c.TrustedLightBlock(2)
-		require.Error(t, err)
-		require.Nil(t, l)
+		assert.Error(t, err)
+		assert.Nil(t, l)
 	}
 }
 
@@ -710,10 +713,10 @@ func TestClient_Update(t *testing.T) {
 
 	// should result in downloading & verifying header #3
 	l, err := c.Update(ctx, bTime.Add(2*time.Hour))
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	if assert.NotNil(t, l) {
 		assert.EqualValues(t, 3, l.Height)
-		require.NoError(t, l.ValidateBasic(chainID))
+		assert.NoError(t, l.ValidateBasic(chainID))
 	}
 }
 
@@ -744,13 +747,13 @@ func TestClient_Concurrency(t *testing.T) {
 			assert.Equal(t, chainID, c.ChainID())
 
 			_, err := c.LastTrustedHeight()
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			_, err = c.FirstTrustedHeight()
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			l, err := c.TrustedLightBlock(1)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			assert.NotNil(t, l)
 		}()
 	}
@@ -775,7 +778,7 @@ func TestClientReplacesPrimaryWithWitnessIfPrimaryIsUnavailable(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.NotEqual(t, c.Primary(), deadNode)
-	assert.Len(t, c.Witnesses(), 2)
+	assert.Equal(t, 2, len(c.Witnesses()))
 }
 
 func TestClient_BackwardsVerification(t *testing.T) {
@@ -805,12 +808,12 @@ func TestClient_BackwardsVerification(t *testing.T) {
 
 		// 2) untrusted header is expired but trusted header is not => expect no error
 		h, err = c.VerifyLightBlockAtHeight(ctx, 3, bTime.Add(8*time.Minute))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, h)
 
 		// 3) already stored headers should return the header without error
 		h, err = c.VerifyLightBlockAtHeight(ctx, 5, bTime.Add(6*time.Minute))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, h)
 
 		// 4a) First verify latest header
@@ -819,15 +822,16 @@ func TestClient_BackwardsVerification(t *testing.T) {
 
 		// 4b) Verify backwards using bisection => expect no error
 		_, err = c.VerifyLightBlockAtHeight(ctx, 7, bTime.Add(9*time.Minute))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		// shouldn't have verified this header in the process
 		_, err = c.TrustedLightBlock(8)
-		require.Error(t, err)
+		assert.Error(t, err)
 
 		// 5) Try bisection method, but closest header (at 7) has expired
 		// so expect error
 		_, err = c.VerifyLightBlockAtHeight(ctx, 8, bTime.Add(12*time.Minute))
-		require.Error(t, err)
+		assert.Error(t, err)
+
 	}
 	{
 		testCases := []struct {
@@ -878,7 +882,7 @@ func TestClient_BackwardsVerification(t *testing.T) {
 			require.NoError(t, err, idx)
 
 			_, err = c.VerifyLightBlockAtHeight(ctx, 2, bTime.Add(1*time.Hour).Add(1*time.Second))
-			require.Error(t, err, idx)
+			assert.Error(t, err, idx)
 		}
 	}
 }
@@ -901,29 +905,8 @@ func TestClient_NewClientFromTrustedStore(t *testing.T) {
 	// 2) Check light block exists (deadNode is being used to ensure we're not getting
 	// it from primary)
 	h, err := c.TrustedLightBlock(1)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.EqualValues(t, l1.Height, h.Height)
-}
-
-func TestClient_NewClientFromEmptyTrustedStore(t *testing.T) {
-	// empty DB
-	db := dbs.New(dbm.NewMemDB(), chainID)
-
-	c, err := light.NewClientFromTrustedStore(
-		chainID,
-		trustPeriod,
-		fullNode,
-		[]provider.Provider{fullNode},
-		db,
-	)
-
-	if err == nil {
-		assert.NotPanics(t, func() {
-			_, _ = c.VerifyLightBlockAtHeight(ctx, 2, bTime)
-		})
-	} else {
-		require.ErrorIs(t, err, light.ErrEmptyTrustedStore)
-	}
 }
 
 func TestClientRemovesWitnessIfItSendsUsIncorrectHeader(t *testing.T) {
@@ -973,14 +956,14 @@ func TestClientRemovesWitnessIfItSendsUsIncorrectHeader(t *testing.T) {
 
 	// witness behaves incorrectly -> removed from list, no error
 	l, err := c.VerifyLightBlockAtHeight(ctx, 2, bTime.Add(2*time.Hour))
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.EqualValues(t, 1, len(c.Witnesses()))
 	// light block should still be verified
 	assert.EqualValues(t, 2, l.Height)
 
 	// remaining witnesses don't have light block -> error
 	_, err = c.VerifyLightBlockAtHeight(ctx, 3, bTime.Add(2*time.Hour))
-	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+	if assert.Error(t, err) {
 		assert.Equal(t, light.ErrFailedHeaderCrossReferencing, err)
 	}
 	// witness does not have a light block -> left in the list
@@ -1017,11 +1000,11 @@ func TestClient_TrustedValidatorSet(t *testing.T) {
 		light.Logger(log.TestingLogger()),
 	)
 	require.NoError(t, err)
-	assert.Len(t, c.Witnesses(), 2)
+	assert.Equal(t, 2, len(c.Witnesses()))
 
 	_, err = c.VerifyLightBlockAtHeight(ctx, 2, bTime.Add(2*time.Hour).Add(1*time.Second))
-	require.NoError(t, err)
-	assert.Len(t, c.Witnesses(), 1)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(c.Witnesses()))
 }
 
 func TestClientPrunesHeadersAndValidatorSets(t *testing.T) {
@@ -1044,7 +1027,7 @@ func TestClientPrunesHeadersAndValidatorSets(t *testing.T) {
 	require.Equal(t, int64(3), h.Height)
 
 	_, err = c.TrustedLightBlock(1)
-	require.Error(t, err)
+	assert.Error(t, err)
 }
 
 func TestClientEnsureValidHeadersAndValSets(t *testing.T) {
@@ -1111,15 +1094,15 @@ func TestClientEnsureValidHeadersAndValSets(t *testing.T) {
 
 		_, err = c.VerifyLightBlockAtHeight(ctx, 3, bTime.Add(2*time.Hour))
 		if tc.err {
-			require.Error(t, err)
+			assert.Error(t, err)
 		} else {
-			require.NoError(t, err)
+			assert.NoError(t, err)
 		}
 	}
 }
 
 func TestClientHandlesContexts(t *testing.T) {
-	p := mockp.New(genMockNode(100, 10, 1, bTime))
+	p := mockp.New(genMockNode(chainID, 100, 10, 1, bTime))
 	genBlock, err := p.LightBlock(ctx, 1)
 	require.NoError(t, err)
 
@@ -1140,7 +1123,7 @@ func TestClientHandlesContexts(t *testing.T) {
 	)
 	require.Error(t, ctxTimeOut.Err())
 	require.Error(t, err)
-	require.ErrorIs(t, err, context.DeadlineExceeded)
+	require.True(t, errors.Is(err, context.DeadlineExceeded))
 
 	// instantiate the client for real
 	c, err := light.NewClient(
@@ -1163,7 +1146,7 @@ func TestClientHandlesContexts(t *testing.T) {
 	_, err = c.VerifyLightBlockAtHeight(ctxTimeOutBlock, 100, bTime.Add(100*time.Minute))
 	require.Error(t, ctxTimeOutBlock.Err())
 	require.Error(t, err)
-	require.ErrorIs(t, err, context.DeadlineExceeded)
+	require.True(t, errors.Is(err, context.DeadlineExceeded))
 
 	// verify a block with a cancel
 	ctxCancel, cancel := context.WithCancel(ctx)
@@ -1172,7 +1155,7 @@ func TestClientHandlesContexts(t *testing.T) {
 	_, err = c.VerifyLightBlockAtHeight(ctxCancel, 100, bTime.Add(100*time.Minute))
 	require.Error(t, ctxCancel.Err())
 	require.Error(t, err)
-	require.ErrorIs(t, err, context.Canceled)
+	require.True(t, errors.Is(err, context.Canceled))
 }
 
 // TestClientErrorsDifferentProposerPriorities tests the case where the witness

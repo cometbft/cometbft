@@ -1,9 +1,9 @@
 # Use a build arg to ensure that both stages use the same,
 # hopefully current, go version.
-ARG GOLANG_BASE_IMAGE=golang:1.23-alpine
+ARG GOLANG_BASE_IMAGE=golang:1.22-alpine
 
 # stage 1 Generate CometBFT Binary
-FROM --platform=$BUILDPLATFORM $GOLANG_BASE_IMAGE AS builder
+FROM --platform=$BUILDPLATFORM $GOLANG_BASE_IMAGE as builder
 RUN apk update && \
     apk upgrade && \
     apk --no-cache add make git
@@ -21,7 +21,7 @@ LABEL maintainer="hello@informal.systems"
 # private validator file into /cometbft/config.
 #
 # The /cometbft/data dir is used by CometBFT to store state.
-ENV CMTHOME=/cometbft
+ENV CMTHOME /cometbft
 
 # OS environment setup
 # Set user right away for determinism, create directory for persistence and give our user ownership

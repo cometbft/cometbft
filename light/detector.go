@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
-	"github.com/cometbft/cometbft/v2/light/provider"
-	"github.com/cometbft/cometbft/v2/types"
+	"github.com/cometbft/cometbft/light/provider"
+	"github.com/cometbft/cometbft/types"
 )
 
 // The detector component of the light client detects and handles attacks on the light client.
@@ -25,8 +26,8 @@ import (
 // If there are no conflicting headers, the light client deems the verified target header
 // trusted and saves it to the trusted store.
 func (c *Client) detectDivergence(ctx context.Context, primaryTrace []*types.LightBlock, now time.Time) error {
-	if primaryTrace == nil || len(primaryTrace) < 2 {
-		return ErrNilOrSinglePrimaryTrace
+	if len(primaryTrace) < 2 {
+		return errors.New("nil or single block primary trace")
 	}
 	var (
 		headerMatched      bool
@@ -126,6 +127,7 @@ func (c *Client) compareNewLightBlockWithWitness(ctx context.Context, errc chan 
 	switch err {
 	// no error means we move on to checking the hash of the two headers
 	case nil:
+		break
 
 	// the witness hasn't been helpful in comparing headers, we mark the response and continue
 	// comparing with the rest of the witnesses
@@ -224,7 +226,7 @@ func (c *Client) sendEvidence(ctx context.Context, ev *types.LightClientAttackEv
 }
 
 // handleConflictingHeaders handles the primary style of attack, which is where a primary and witness have
-// two headers of the same height but with different hashes.
+// two headers of the same height but with different hashes
 func (c *Client) handleConflictingHeaders(
 	ctx context.Context,
 	primaryTrace []*types.LightBlock,
@@ -256,7 +258,7 @@ func (c *Client) handleConflictingHeaders(
 	if primaryBlock.Commit.Round != witnessTrace[len(witnessTrace)-1].Commit.Round {
 		c.logger.Info("The light client has detected, and prevented, an attempted amnesia attack." +
 			" We think this attack is pretty unlikely, so if you see it, that's interesting to us." +
-			" Can you let us know by opening an issue through https://github.com/cometbft/cometbft/v2/issues/new?")
+			" Can you let us know by opening an issue through https://github.com/cometbft/cometbft/issues/new?")
 	}
 
 	// This may not be valid because the witness itself is at fault. So now we reverse it, examining the
@@ -304,6 +306,7 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 	targetBlock *types.LightBlock,
 	source provider.Provider, now time.Time,
 ) ([]*types.LightBlock, *types.LightBlock, error) {
+
 	var (
 		previouslyVerifiedBlock, sourceBlock *types.LightBlock
 		sourceTrace                          []*types.LightBlock
@@ -311,7 +314,8 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 	)
 
 	if targetBlock.Height < trace[0].Height {
-		return nil, nil, ErrTargetBlockHeightLessThanTrusted{Target: targetBlock.Height, Trusted: trace[0].Height}
+		return nil, nil, fmt.Errorf("target block has a height lower than the trusted height (%d < %d)",
+			targetBlock.Height, trace[0].Height)
 	}
 
 	for idx, traceBlock := range trace {
@@ -323,7 +327,8 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 			// the end of the trace has a lesser time than the target block then all blocks in the trace should have a
 			// lesser time
 			if traceBlock.Time.After(targetBlock.Time) {
-				return nil, nil, ErrInvalidBlockTime
+				return nil, nil,
+					errors.New("sanity check failed: expected traceblock to have a lesser time than the target block")
 			}
 
 			// before sending back the divergent block and trace we need to ensure we have verified
@@ -331,7 +336,7 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 			if previouslyVerifiedBlock.Height != targetBlock.Height {
 				sourceTrace, err = c.verifySkipping(ctx, source, previouslyVerifiedBlock, targetBlock, now)
 				if err != nil {
-					return nil, nil, ErrVerifySkipping{Err: err}
+					return nil, nil, fmt.Errorf("verifySkipping of conflicting header failed: %w", err)
 				}
 			}
 			return sourceTrace, traceBlock, nil
@@ -343,7 +348,7 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 		} else {
 			sourceBlock, err = source.LightBlock(ctx, traceBlock.Height)
 			if err != nil {
-				return nil, nil, ErrExamineTrace{Err: err}
+				return nil, nil, fmt.Errorf("failed to examine trace: %w", err)
 			}
 		}
 
@@ -351,7 +356,8 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 		// else we cannot continue with verification.
 		if idx == 0 {
 			if shash, thash := sourceBlock.Hash(), traceBlock.Hash(); !bytes.Equal(shash, thash) {
-				return nil, nil, ErrBlockHashMismatch{TraceBlockHash: thash, SourceBlockHash: shash}
+				return nil, nil, fmt.Errorf("trusted block is different to the source's first block (%X = %X)",
+					thash, shash)
 			}
 			previouslyVerifiedBlock = sourceBlock
 			continue
@@ -361,7 +367,7 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 		// intermediate height
 		sourceTrace, err = c.verifySkipping(ctx, source, previouslyVerifiedBlock, sourceBlock, now)
 		if err != nil {
-			return nil, nil, ErrVerifySkipping{Err: err}
+			return nil, nil, fmt.Errorf("verifySkipping of conflicting header failed: %w", err)
 		}
 		// check if the headers verified by the source has diverged from the trace
 		if shash, thash := sourceBlock.Hash(), traceBlock.Hash(); !bytes.Equal(shash, thash) {
@@ -377,12 +383,13 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 	// prerequisites to this function were not met. Namely that either trace[len(trace)-1].Height < targetBlock.Height
 	// or that trace[i].Hash() != targetBlock.Hash()
 	return nil, nil, errNoDivergence
+
 }
 
 // getTargetBlockOrLatest gets the latest height, if it is greater than the target height then it queries
 // the target height else it returns the latest. returns true if it successfully managed to acquire the target
 // height.
-func (*Client) getTargetBlockOrLatest(
+func (c *Client) getTargetBlockOrLatest(
 	ctx context.Context,
 	height int64,
 	witness provider.Provider,

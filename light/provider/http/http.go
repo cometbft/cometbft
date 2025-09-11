@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cometbft/cometbft/v2/light/provider"
-	rpcclient "github.com/cometbft/cometbft/v2/rpc/client"
-	rpchttp "github.com/cometbft/cometbft/v2/rpc/client/http"
-	"github.com/cometbft/cometbft/v2/types"
+	"github.com/cometbft/cometbft/light/provider"
+	rpcclient "github.com/cometbft/cometbft/rpc/client"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	"github.com/cometbft/cometbft/types"
 )
 
 var (
@@ -39,7 +39,7 @@ func New(chainID, remote string) (provider.Provider, error) {
 		remote = "http://" + remote
 	}
 
-	httpClient, err := rpchttp.NewWithTimeout(remote, timeout)
+	httpClient, err := rpchttp.NewWithTimeout(remote, "/websocket", timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -164,6 +164,7 @@ OUTER_LOOP:
 			default:
 				return nil, err
 			}
+
 		}
 	}
 
@@ -179,11 +180,11 @@ func (p *http) signedHeader(ctx context.Context, height *int64) (*types.SignedHe
 		commit, err := p.client.Commit(ctx, height)
 		switch {
 		case err == nil:
-			// See https://github.com/cometbft/cometbft/v2/issues/575
+			// See https://github.com/cometbft/cometbft/issues/575
 			// If the node is starting at a non-zero height, but does not yet
 			// have any blocks, it can return an empty signed header without
 			// returning an error.
-			if commit.SignedHeader.IsEmpty() {
+			if commit.IsEmpty() {
 				// Technically this means that the provider still needs to
 				// catch up.
 				return nil, provider.ErrHeightTooHigh
@@ -211,7 +212,7 @@ func (p *http) signedHeader(ctx context.Context, height *int64) (*types.SignedHe
 
 func validateHeight(height int64) (*int64, error) {
 	if height < 0 {
-		return nil, provider.ErrNegativeHeight{Height: height}
+		return nil, fmt.Errorf("expected height >= 0, got height %d", height)
 	}
 
 	h := &height
@@ -222,7 +223,7 @@ func validateHeight(height int64) (*int64, error) {
 }
 
 // exponential backoff (with jitter)
-// 0.5s -> 2s -> 4.5s -> 8s -> 12.5 with 1s variation.
+// 0.5s -> 2s -> 4.5s -> 8s -> 12.5 with 1s variation
 func backoffTimeout(attempt uint16) time.Duration {
 	//nolint:gosec // G404: Use of weak random number generator
 	return time.Duration(500*attempt*attempt)*time.Millisecond + time.Duration(rand.Intn(1000))*time.Millisecond

@@ -21,7 +21,7 @@ func (fr Fraction) String() string {
 	return fmt.Sprintf("%d/%d", fr.Numerator, fr.Denominator)
 }
 
-// ParseFraction takes the string of a fraction as input i.e "2/3" and converts this
+// ParseFractions takes the string of a fraction as input i.e "2/3" and converts this
 // to the equivalent fraction else returns an error. The format of the string must be
 // one number followed by a slash (/) and then the other number.
 func ParseFraction(f string) (Fraction, error) {

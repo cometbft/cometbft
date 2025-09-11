@@ -7,4 +7,7 @@ push:
 build_testing:
 	docker build --tag cometbft/testing -f ./Dockerfile.testing .
 
-.PHONY: build push build_testing
+build_amazonlinux_buildimage:
+	docker build -t "cometbft/cometbft:build_c-amazonlinux" -f Dockerfile.build_c-amazonlinux .
+
+.PHONY: build push build_testing build_amazonlinux_buildimage

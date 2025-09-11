@@ -1,18 +1,5 @@
 # End-to-End Tests
 
-- [End-to-End Tests](#end-to-end-tests)
-	- [Fast compilation](#fast-compilation)
-	- [Conceptual Overview](#conceptual-overview)
-	- [Testnet Manifests](#testnet-manifests)
-	- [Random Testnet Generation](#random-testnet-generation)
-	- [Test Stages](#test-stages)
-	- [Tests](#tests)
-		- [Running Manual Tests](#running-manual-tests)
-		- [Debugging Failures](#debugging-failures)
-	- [Enabling IPv6](#enabling-ipv6)
-	- [Benchmarking Testnets](#benchmarking-testnets)
-	- [Running Individual Nodes](#running-individual-nodes)
-
 Spins up and tests CometBFT networks in Docker Compose based on a testnet manifest. To run the CI testnet:
 
 ```sh
@@ -22,31 +9,9 @@ make
 
 This creates and runs a testnet named `ci` under `networks/ci/`.
 
-To generate the testnet files in a different directory, run:
-```sh
-./build/runner -f networks/ci.toml -d networks/foo/bar/
-```
-
-### Fast compiling
-
-If you need to run experiments on a testnet, you will probably want to compile the code multiple
-times and `make` could be slow. This is because `make` builds an image by first copying all the
-source code into it and then compiling the binary from inside. This is needed if, for example, you
-want to create a binary that uses a different database (as in `networks/ci.toml`).
-
-If you just need to (re-)compile and run the binary without any extra building options, you can use
-`make fast`, which will first compile the code and then make a slim Docker image with the binary.
-For example:
-```sh
-make fast
-./build/runner -f networks/simple.toml
-```
-
 ## Conceptual Overview
 
-End-to-end testnets are used to test CometBFT functionality as a user would use it, by spinning up a
-set of nodes with various configurations and making sure the nodes and network behave correctly. The
-background for the E2E test suite is outlined in [RFC-001][rfc-001].
+End-to-end testnets are used to test Tendermint functionality as a user would use it, by spinning up a set of nodes with various configurations and making sure the nodes and network behave correctly. The background for the E2E test suite is outlined in [RFC-001](https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-066-e2e-testing.md).
 
 The end-to-end tests can be thought of in this manner:
 
@@ -103,7 +68,7 @@ generator. For example:
 # the CometBFT version in the current local code (as specified in
 # ../../version/version.go).
 #
-# In the example below, if the local version value is "v0.34.24",
+# In the example below, if the local version.TMCoreSemVer value is "v0.34.24",
 # for example, and the latest official release is v0.34.23, then 1/3rd of the
 # network will run v0.34.23 and the remaining 2/3rds will run the E2E node built
 # from the local code.
@@ -120,19 +85,6 @@ testnet's attribute `upgrade_version` of the testnet manifest.
 The generator generates this type of perturbation both on full nodes and on light nodes.
 Perturbations of type `upgrade` are a noop if the node's version matches the
 one in `upgrade_version`.
-
-If you need to generate manifests with a specific `log_level` that will configure the log level parameter in the
-CometBFT's config file for each node, you can specify the level using the flags `-l` or `--log-level`.
-
-```
-./build/generator -g 2 -d networks/nightly/ -l "*:debug,p2p:info"
-```
-
-This will add the specified log level on each generated manifest (TOML file):
-
-```toml
-log_level = "debug"
-```
 
 ## Test Stages
 
@@ -156,11 +108,9 @@ The test runner has the following stages, which can also be executed explicitly 
 
 Auxiliary commands:
 
-* `logs`: outputs all node logs (specify `--split` to output individual logs).
+* `logs`: outputs all node logs.
 
 * `tail`: tails (follows) node logs until canceled.
-
-* `monitor`: manages monitoring tools such as Prometheus and Grafana.
 
 ## Tests
 
@@ -175,8 +125,6 @@ To run tests manually, set the `E2E_MANIFEST` environment variable to the path o
 E2E_MANIFEST=networks/ci.toml go test -v ./tests/...
 ```
 
-If the testnet files are located in a custom directory, you need to set it in the `E2E_TESTNET_DIR` environment variable.
-
 Optionally, `E2E_NODE` specifies the name of a single testnet node to test.
 
 These environment variables can also be specified in `tests/e2e_test.go` to run tests from an editor or IDE:
@@ -186,7 +134,6 @@ func init() {
 	// This can be used to manually specify a testnet manifest and/or node to
 	// run tests against. The testnet must have been started by the runner first.
 	os.Setenv("E2E_MANIFEST", "networks/ci.toml")
-	os.Setenv("E2E_TESTNET_DIR", "networks/foo")
 	os.Setenv("E2E_NODE", "validator01")
 }
 ```
@@ -270,21 +217,3 @@ cometbft start
 ```
 
 Check `node/config.go` to see how the settings of the test application can be tweaked.
-
-## Managing monitoring tools
-
-The `monitor` command manages monitoring tools such as Prometheus and Grafana, with the following
-subcommands:
-- `monitor start` will spin up a local Docker container with a Prometheus and a Granafa server.
-Their web interfaces will be available at `http://localhost:9090` and `http://localhost:3000`
-respectively.
-- `monitor stop` will shut down the Docker container.
-
-Before starting any of these services, a Prometheus configuration file `prometheus.yml` must exist
-in the `monitoring` directory. This file can be automatically generated when running `setup` on a
-manifest that contains the line `prometheus = true`.
-
-These services run independently of the testnet, to be able to analyse the data even when the
-testnet is down.
-
-[rfc-001]: https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-066-e2e-testing.md

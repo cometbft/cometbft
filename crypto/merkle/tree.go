@@ -26,7 +26,7 @@ func hashFromByteSlices(sha hash.Hash, items [][]byte) []byte {
 	}
 }
 
-// HashFromByteSlicesIterative is an iterative alternative to
+// HashFromByteSliceIterative is an iterative alternative to
 // HashFromByteSlice motivated by potential performance improvements.
 // (#2611) had suggested that an iterative version of
 // HashFromByteSlice would be faster, presumably because
@@ -97,7 +97,7 @@ func HashFromByteSlicesIterative(input [][]byte) []byte {
 	}
 }
 
-// getSplitPoint returns the largest power of 2 less than length.
+// getSplitPoint returns the largest power of 2 less than length
 func getSplitPoint(length int64) int64 {
 	if length < 1 {
 		panic("Trying to split a tree with size < 1")

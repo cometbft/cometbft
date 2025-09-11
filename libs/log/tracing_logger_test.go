@@ -9,13 +9,13 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 func TestTracingLogger(t *testing.T) {
 	var buf bytes.Buffer
 
-	logger := log.NewJSONLoggerNoTS(&buf)
+	logger := log.NewTMJSONLoggerNoTS(&buf)
 
 	logger1 := log.NewTracingLogger(logger)
 	err1 := errors.New("courage is grace under pressure")
@@ -24,11 +24,11 @@ func TestTracingLogger(t *testing.T) {
 
 	want := strings.ReplaceAll(
 		strings.ReplaceAll(
-			`{"level":"INFO","msg":"foo","err1":"`+
+			`{"_msg":"foo","err1":"`+
 				fmt.Sprintf("%+v", err1)+
 				`","err2":"`+
 				fmt.Sprintf("%+v", err2)+
-				`"}`,
+				`","level":"info"}`,
 			"\t", "",
 		), "\n", "")
 	have := strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(buf.String()), "\\n", ""), "\\t", "")
@@ -44,7 +44,10 @@ func TestTracingLogger(t *testing.T) {
 		"foo", "err2", stderr.New("once you choose hope, anything's possible"),
 	)
 
-	want = `{"level":"INFO","msg":"foo","err1":"opportunities don't happen. You create them","err2":"once you choose hope, anything's possible"}`
+	want = `{"_msg":"foo",` +
+		`"err1":"opportunities don't happen. You create them",` +
+		`"err2":"once you choose hope, anything's possible",` +
+		`"level":"info"}`
 	have = strings.TrimSpace(buf.String())
 	if want != have {
 		t.Errorf("\nwant '%s'\nhave '%s'", want, have)
@@ -54,7 +57,7 @@ func TestTracingLogger(t *testing.T) {
 
 	logger.With("user", "Sam").With("context", "value").Info("foo", "bar", "baz")
 
-	want = `{"level":"INFO","msg":"foo","user":"Sam","context":"value","bar":"baz"}`
+	want = `{"_msg":"foo","bar":"baz","context":"value","level":"info","user":"Sam"}`
 	have = strings.TrimSpace(buf.String())
 	if want != have {
 		t.Errorf("\nwant '%s'\nhave '%s'", want, have)

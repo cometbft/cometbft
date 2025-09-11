@@ -3,22 +3,20 @@ package abcicli_test
 import (
 	"fmt"
 	"math/rand"
-	"net"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"google.golang.org/grpc"
 
 	"golang.org/x/net/context"
 
-	"github.com/cometbft/cometbft/libs/log"
-	cmtnet "github.com/cometbft/cometbft/libs/net"
-
 	abciserver "github.com/cometbft/cometbft/abci/server"
 	"github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 func TestGRPC(t *testing.T) {
@@ -41,8 +39,7 @@ func TestGRPC(t *testing.T) {
 	})
 
 	// Connect to the socket
-
-	conn, err := grpc.Dial(socket, grpc.WithInsecure(), grpc.WithContextDialer(dialerFunc))
+	conn, err := grpc.NewClient(socket, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -73,8 +70,4 @@ func TestGRPC(t *testing.T) {
 		}
 
 	}
-}
-
-func dialerFunc(_ context.Context, addr string) (net.Conn, error) {
-	return cmtnet.Connect(addr)
 }

@@ -43,15 +43,15 @@ x * TestFullRoundNil - 1 val, full round of nil
 x * TestFullRound2 - 2 vals, both required for full round
 LockSuite
 x * TestLockNoPOL - 2 vals, 4 rounds. one val locked, precommits nil every round except first.
-x * TestLockPOLRelock - 4 vals, one precommits, other 3 polka at next round, so we unlock and precomit the polka
-x * TestLockPOLUnlock - 4 vals, one precommits, other 3 polka nil at next round, so we unlock and precomit nil
+x * TestLockPOLRelock - 4 vals, one precommits, other 3 polka at next round, so we unlock and precommit the polka
+x * TestLockPOLUnlock - 4 vals, one precommits, other 3 polka nil at next round, so we unlock and precommit nil
 x * TestLockPOLSafety1 - 4 vals. We shouldn't change lock based on polka at earlier round
 x * TestLockPOLSafety2 - 4 vals. After unlocking, we shouldn't relock based on polka at earlier round
   * TestNetworkLock - once +1/3 precommits, network should be locked
   * TestNetworkLockPOL - once +1/3 precommits, the block with more recent polka is committed
 SlashingSuite
 x * TestSlashingPrevotes - a validator prevoting twice in a round gets slashed
-x * TestSlashingPrecommits - a validator precomitting twice in a round gets slashed
+x * TestSlashingPrecommits - a validator precommitting twice in a round gets slashed
 CatchupSuite
   * TestCatchup - if we might be behind and we've seen any 2/3 prevotes, round skip to new round, precommit, or prevote
 HaltSuite
@@ -758,7 +758,7 @@ func TestStateLockPOLRelock(t *testing.T) {
 	ensureNewRound(newRoundCh, height+1, 0)
 }
 
-// 4 vals, one precommits, other 3 polka at next round, so we unlock and precomit the polka
+// 4 vals, one precommits, other 3 polka at next round, so we unlock and precommit the polka
 func TestStateLockPOLUnlock(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

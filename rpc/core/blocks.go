@@ -136,7 +136,7 @@ func (env *Environment) Block(_ *rpctypes.Context, heightPtr *int64) (*ctypes.Re
 }
 
 // BlockByHash gets block by hash.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/block_by_hash
+// More: https://docs.cometbft.com/v0.38/spec/rpc/#blockbyhash
 func (env *Environment) BlockByHash(_ *rpctypes.Context, hash []byte) (*ctypes.ResultBlock, error) {
 	block := env.BlockStore.LoadBlockByHash(hash)
 	if block == nil {

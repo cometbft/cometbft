@@ -124,7 +124,6 @@ func BenchmarkUpdateAndRecheck(b *testing.B) {
 		// Update a part of txs and recheck the rest.
 		doUpdate(b, mp, int64(i), txs[:numTxs/2])
 	}
-
 }
 
 func BenchmarkUpdateRemoteClient(b *testing.B) {
@@ -145,5 +144,4 @@ func BenchmarkUpdateRemoteClient(b *testing.B) {
 		txs := mp.ReapMaxTxs(mp.Size())
 		doUpdate(b, mp, int64(i), txs)
 	}
-
 }

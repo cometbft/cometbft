@@ -119,7 +119,6 @@ func (rs *Reports) calculateAll() {
 		}
 		return rs.l[i].Connections < rs.l[j].Connections
 	})
-
 }
 
 func (rs *Reports) addError() {

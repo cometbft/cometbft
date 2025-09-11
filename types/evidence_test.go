@@ -226,7 +226,6 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestMockEvidenceValidateBasic(t *testing.T) {

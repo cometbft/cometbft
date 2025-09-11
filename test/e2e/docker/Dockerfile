@@ -18,7 +18,7 @@ RUN apt-get update \
 
 # Fetch & verify RocksDB
 # (update the checksum if you bump ROCKSDB)
-ENV ROCKSDB_SHA256=1f1b0a3f4e6a0a8d6a49b81b4d4b3a2d0b0b1c3b6f9f8c0f0e0d0c0b0a0a0a0a
+ENV ROCKSDB_SHA256=3b51d1d907ea13fab430bf052618610994f08cd8ed0b1341c3e89fe02e199f8e
 RUN set -eux; \
   url="https://github.com/facebook/rocksdb/archive/refs/tags/v${ROCKSDB}.tar.gz"; \
   wget -q "$url" -O rocksdb.tgz; \

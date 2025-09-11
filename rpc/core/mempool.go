@@ -160,7 +160,7 @@ func (env *Environment) UnconfirmedTxs(_ *rpctypes.Context, limitPtr *int) (*cty
 }
 
 // NumUnconfirmedTxs gets number of unconfirmed transactions.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/num_unconfirmed_txs
+// More: https://docs.cometbft.com/v0.38/spec/rpc/#numunconfirmedtxs
 func (env *Environment) NumUnconfirmedTxs(*rpctypes.Context) (*ctypes.ResultUnconfirmedTxs, error) {
 	return &ctypes.ResultUnconfirmedTxs{
 		Count:      env.Mempool.Size(),

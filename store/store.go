@@ -364,7 +364,7 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 	batch := bs.db.NewBatch()
 	defer batch.Close()
 	flush := func(batch dbm.Batch, base int64) error {
-		// We can't trust batches to be atomic, so update base first to make sure noone
+		// We can't trust batches to be atomic, so update base first to make sure no one
 		// tries to access missing blocks.
 		bs.mtx.Lock()
 		defer batch.Close()
@@ -388,7 +388,7 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 			evidencePoint = h
 		}
 
-		// if height is beyond the evidence point we dont delete the header
+		// if height is beyond the evidence point we don't delete the header
 		if h < evidencePoint {
 			if err := batch.Delete(calcBlockMetaKey(h)); err != nil {
 				return 0, -1, err
@@ -397,7 +397,7 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 		if err := batch.Delete(calcBlockHashKey(meta.BlockID.Hash)); err != nil {
 			return 0, -1, err
 		}
-		// if height is beyond the evidence point we dont delete the commit data
+		// if height is beyond the evidence point we don't delete the commit data
 		if h < evidencePoint {
 			if err := batch.Delete(calcBlockCommitKey(h)); err != nil {
 				return 0, -1, err

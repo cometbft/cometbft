@@ -483,31 +483,31 @@ func TestVoteSet_VoteExtensionsEnabled(t *testing.T) {
 		name              string
 		requireExtensions bool
 		addExtension      bool
-		exepectError      bool
+		expectError      bool
 	}{
 		{
 			name:              "no extension but expected",
 			requireExtensions: true,
 			addExtension:      false,
-			exepectError:      true,
+			expectError:      true,
 		},
 		{
 			name:              "invalid extensions but not expected",
 			requireExtensions: true,
 			addExtension:      false,
-			exepectError:      true,
+			expectError:      true,
 		},
 		{
 			name:              "no extension and not expected",
 			requireExtensions: false,
 			addExtension:      false,
-			exepectError:      false,
+			expectError:      false,
 		},
 		{
 			name:              "extension and expected",
 			requireExtensions: true,
 			addExtension:      true,
-			exepectError:      false,
+			expectError:      false,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -548,7 +548,7 @@ func TestVoteSet_VoteExtensionsEnabled(t *testing.T) {
 			}
 
 			added, err := voteSet.AddVote(vote)
-			if tc.exepectError {
+			if tc.expectError {
 				require.Error(t, err)
 				require.False(t, added)
 			} else {

@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/v2/libs/bytes"
-	"github.com/cometbft/cometbft/v2/rpc/client/mock"
-	ctypes "github.com/cometbft/cometbft/v2/rpc/core/types"
+	"github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/rpc/client/mock"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 )
 
 func TestStatus(t *testing.T) {
@@ -23,25 +23,24 @@ func TestStatus(t *testing.T) {
 					LatestAppHash:     bytes.HexBytes("app"),
 					LatestBlockHeight: 10,
 				},
-			},
-		},
+			}},
 	}
 
 	r := mock.NewStatusRecorder(m)
-	require.Empty(r.Calls)
+	require.Equal(0, len(r.Calls))
 
 	// make sure response works proper
 	status, err := r.Status(context.Background())
-	require.NoError(err, "%+v", err)
+	require.Nil(err, "%+v", err)
 	assert.EqualValues("block", status.SyncInfo.LatestBlockHash)
 	assert.EqualValues(10, status.SyncInfo.LatestBlockHeight)
 
 	// make sure recorder works properly
-	require.Len(r.Calls, 1)
+	require.Equal(1, len(r.Calls))
 	rs := r.Calls[0]
 	assert.Equal("status", rs.Name)
 	assert.Nil(rs.Args)
-	require.NoError(rs.Error)
+	assert.Nil(rs.Error)
 	require.NotNil(rs.Response)
 	st, ok := rs.Response.(*ctypes.ResultStatus)
 	require.True(ok)

@@ -7,21 +7,25 @@ import (
 	"fmt"
 	"time"
 
-	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
-	abci "github.com/cometbft/cometbft/v2/abci/types"
-	"github.com/cometbft/cometbft/v2/config"
-	"github.com/cometbft/cometbft/v2/libs/log"
-	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
-	"github.com/cometbft/cometbft/v2/light"
-	"github.com/cometbft/cometbft/v2/p2p"
-	"github.com/cometbft/cometbft/v2/proxy"
-	sm "github.com/cometbft/cometbft/v2/state"
-	"github.com/cometbft/cometbft/v2/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/light"
+	"github.com/cometbft/cometbft/p2p"
+	ssproto "github.com/cometbft/cometbft/proto/tendermint/statesync"
+	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
 	// chunkTimeout is the timeout while waiting for the next chunk from the chunk queue.
 	chunkTimeout = 2 * time.Minute
+
+	// minimumDiscoveryTime is the lowest allowable time for a
+	// SyncAny discovery time.
+	minimumDiscoveryTime = 5 * time.Second
 )
 
 var (
@@ -69,6 +73,7 @@ func newSyncer(
 	stateProvider StateProvider,
 	tempDir string,
 ) *syncer {
+
 	return &syncer{
 		logger:        logger,
 		stateProvider: stateProvider,
@@ -125,7 +130,7 @@ func (s *syncer) AddPeer(peer p2p.Peer) {
 		ChannelID: SnapshotChannel,
 		Message:   &ssproto.SnapshotsRequest{},
 	}
-	_ = peer.Send(e)
+	peer.Send(e)
 }
 
 // RemovePeer removes a peer from the pool.
@@ -134,18 +139,18 @@ func (s *syncer) RemovePeer(peer p2p.Peer) {
 	s.snapshots.RemovePeer(peer.ID())
 }
 
-// SyncAny tries to sync any of the snapshots in the snapshot pool, waiting to
-// discover further snapshots if none were found within discoveryTime. It
-// returns the latest state and block commit which the caller must use to
-// bootstrap the node.
-//
-// If none snapshots are found after maxDiscoveryTime, errNoSnapshots is
-// returned.
-func (s *syncer) SyncAny(discoveryTime, maxDiscoveryTime time.Duration, retryHook func()) (sm.State, *types.Commit, error) {
-	timeStart := time.Now()
+// SyncAny tries to sync any of the snapshots in the snapshot pool, waiting to discover further
+// snapshots if none were found and discoveryTime > 0. It returns the latest state and block commit
+// which the caller must use to bootstrap the node.
+func (s *syncer) SyncAny(discoveryTime time.Duration, retryHook func()) (sm.State, *types.Commit, error) {
+	if discoveryTime != 0 && discoveryTime < minimumDiscoveryTime {
+		discoveryTime = 5 * minimumDiscoveryTime
+	}
 
-	s.logger.Info(fmt.Sprintf("Discovering snapshots for %v", discoveryTime))
-	time.Sleep(discoveryTime)
+	if discoveryTime > 0 {
+		s.logger.Info("Discovering snapshots", "discoverTime", discoveryTime)
+		time.Sleep(discoveryTime)
+	}
 
 	// The app may ask us to retry a snapshot restoration, in which case we need to reuse
 	// the snapshot and chunk queue from the previous loop iteration.
@@ -161,11 +166,11 @@ func (s *syncer) SyncAny(discoveryTime, maxDiscoveryTime time.Duration, retryHoo
 			chunks = nil
 		}
 		if snapshot == nil {
-			if maxDiscoveryTime > 0 && time.Since(timeStart) >= maxDiscoveryTime {
+			if discoveryTime == 0 {
 				return sm.State{}, nil, errNoSnapshots
 			}
 			retryHook()
-			s.logger.Info("sync any", "msg", fmt.Sprintf("Discovering snapshots for %v", discoveryTime))
+			s.logger.Info("sync any", "msg", log.NewLazySprintf("Discovering snapshots for %v", discoveryTime))
 			time.Sleep(discoveryTime)
 			continue
 		}
@@ -317,7 +322,7 @@ func (s *syncer) Sync(snapshot *snapshot, chunks *chunkQueue) (sm.State, *types.
 func (s *syncer) offerSnapshot(snapshot *snapshot) error {
 	s.logger.Info("Offering snapshot to ABCI app", "height", snapshot.Height,
 		"format", snapshot.Format, "hash", log.NewLazySprintf("%X", snapshot.Hash))
-	resp, err := s.conn.OfferSnapshot(context.TODO(), &abci.OfferSnapshotRequest{
+	resp, err := s.conn.OfferSnapshot(context.TODO(), &abci.RequestOfferSnapshot{
 		Snapshot: &abci.Snapshot{
 			Height:   snapshot.Height,
 			Format:   snapshot.Format,
@@ -331,17 +336,17 @@ func (s *syncer) offerSnapshot(snapshot *snapshot) error {
 		return fmt.Errorf("failed to offer snapshot: %w", err)
 	}
 	switch resp.Result {
-	case abci.OFFER_SNAPSHOT_RESULT_ACCEPT:
+	case abci.ResponseOfferSnapshot_ACCEPT:
 		s.logger.Info("Snapshot accepted, restoring", "height", snapshot.Height,
 			"format", snapshot.Format, "hash", log.NewLazySprintf("%X", snapshot.Hash))
 		return nil
-	case abci.OFFER_SNAPSHOT_RESULT_ABORT:
+	case abci.ResponseOfferSnapshot_ABORT:
 		return errAbort
-	case abci.OFFER_SNAPSHOT_RESULT_REJECT:
+	case abci.ResponseOfferSnapshot_REJECT:
 		return errRejectSnapshot
-	case abci.OFFER_SNAPSHOT_RESULT_REJECT_FORMAT:
+	case abci.ResponseOfferSnapshot_REJECT_FORMAT:
 		return errRejectFormat
-	case abci.OFFER_SNAPSHOT_RESULT_REJECT_SENDER:
+	case abci.ResponseOfferSnapshot_REJECT_SENDER:
 		return errRejectSender
 	default:
 		return fmt.Errorf("unknown ResponseOfferSnapshot result %v", resp.Result)
@@ -359,10 +364,10 @@ func (s *syncer) applyChunks(chunks *chunkQueue) error {
 			return fmt.Errorf("failed to fetch chunk: %w", err)
 		}
 
-		resp, err := s.conn.ApplySnapshotChunk(context.TODO(), &abci.ApplySnapshotChunkRequest{
+		resp, err := s.conn.ApplySnapshotChunk(context.TODO(), &abci.RequestApplySnapshotChunk{
 			Index:  chunk.Index,
 			Chunk:  chunk.Chunk,
-			Sender: chunk.Sender,
+			Sender: string(chunk.Sender),
 		})
 		if err != nil {
 			return fmt.Errorf("failed to apply chunk %v: %w", chunk.Index, err)
@@ -381,8 +386,8 @@ func (s *syncer) applyChunks(chunks *chunkQueue) error {
 		// Reject any senders as requested by the app
 		for _, sender := range resp.RejectSenders {
 			if sender != "" {
-				s.snapshots.RejectPeer(sender)
-				err := chunks.DiscardSender(sender)
+				s.snapshots.RejectPeer(p2p.ID(sender))
+				err := chunks.DiscardSender(p2p.ID(sender))
 				if err != nil {
 					return fmt.Errorf("failed to reject sender: %w", err)
 				}
@@ -390,14 +395,14 @@ func (s *syncer) applyChunks(chunks *chunkQueue) error {
 		}
 
 		switch resp.Result {
-		case abci.APPLY_SNAPSHOT_CHUNK_RESULT_ACCEPT:
-		case abci.APPLY_SNAPSHOT_CHUNK_RESULT_ABORT:
+		case abci.ResponseApplySnapshotChunk_ACCEPT:
+		case abci.ResponseApplySnapshotChunk_ABORT:
 			return errAbort
-		case abci.APPLY_SNAPSHOT_CHUNK_RESULT_RETRY:
+		case abci.ResponseApplySnapshotChunk_RETRY:
 			chunks.Retry(chunk.Index)
-		case abci.APPLY_SNAPSHOT_CHUNK_RESULT_RETRY_SNAPSHOT:
+		case abci.ResponseApplySnapshotChunk_RETRY_SNAPSHOT:
 			return errRetrySnapshot
-		case abci.APPLY_SNAPSHOT_CHUNK_RESULT_REJECT_SNAPSHOT:
+		case abci.ResponseApplySnapshotChunk_REJECT_SNAPSHOT:
 			return errRejectSnapshot
 		default:
 			return fmt.Errorf("unknown ResponseApplySnapshotChunk result %v", resp.Result)
@@ -436,18 +441,23 @@ func (s *syncer) fetchChunks(ctx context.Context, snapshot *snapshot, chunks *ch
 		s.logger.Info("Fetching snapshot chunk", "height", snapshot.Height,
 			"format", snapshot.Format, "chunk", index, "total", chunks.Size())
 
+		ticker := time.NewTicker(s.retryTimeout)
+		defer ticker.Stop()
+
 		s.requestChunk(snapshot, index)
 
 		select {
 		case <-chunks.WaitFor(index):
 			next = true
 
-		case <-time.After(s.retryTimeout):
+		case <-ticker.C:
 			next = false
 
 		case <-ctx.Done():
 			return
 		}
+
+		ticker.Stop()
 	}
 }
 
@@ -461,7 +471,7 @@ func (s *syncer) requestChunk(snapshot *snapshot, chunk uint32) {
 	}
 	s.logger.Debug("Requesting snapshot chunk", "height", snapshot.Height,
 		"format", snapshot.Format, "chunk", chunk, "peer", peer.ID())
-	_ = peer.Send(p2p.Envelope{
+	peer.Send(p2p.Envelope{
 		ChannelID: ChunkChannel,
 		Message: &ssproto.ChunkRequest{
 			Height: snapshot.Height,
@@ -471,9 +481,9 @@ func (s *syncer) requestChunk(snapshot *snapshot, chunk uint32) {
 	})
 }
 
-// verifyApp verifies the sync, checking the app hash, last block height and app version.
+// verifyApp verifies the sync, checking the app hash, last block height and app version
 func (s *syncer) verifyApp(snapshot *snapshot, appVersion uint64) error {
-	resp, err := s.connQuery.Info(context.TODO(), proxy.InfoRequest)
+	resp, err := s.connQuery.Info(context.TODO(), proxy.RequestInfo)
 	if err != nil {
 		return fmt.Errorf("failed to query ABCI app for appHash: %w", err)
 	}

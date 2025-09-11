@@ -1,6 +1,8 @@
 syntax = "proto3";
 package tendermint.types;
 
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/types";
+
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 import "tendermint/crypto/proof.proto";
@@ -12,13 +14,12 @@ enum SignedMsgType {
   option (gogoproto.goproto_enum_stringer) = true;
   option (gogoproto.goproto_enum_prefix)   = false;
 
-  // Unknown
   SIGNED_MSG_TYPE_UNKNOWN = 0 [(gogoproto.enumvalue_customname) = "UnknownType"];
-  // Prevote
-  SIGNED_MSG_TYPE_PREVOTE = 1 [(gogoproto.enumvalue_customname) = "PrevoteType"];
-  // Precommit
+  // Votes
+  SIGNED_MSG_TYPE_PREVOTE   = 1 [(gogoproto.enumvalue_customname) = "PrevoteType"];
   SIGNED_MSG_TYPE_PRECOMMIT = 2 [(gogoproto.enumvalue_customname) = "PrecommitType"];
-  // Proposal
+
+  // Proposals
   SIGNED_MSG_TYPE_PROPOSAL = 32 [(gogoproto.enumvalue_customname) = "ProposalType"];
 }
 

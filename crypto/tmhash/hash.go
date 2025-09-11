@@ -2,10 +2,7 @@ package tmhash
 
 import (
 	"crypto/sha256"
-	"errors"
-	"fmt"
 	"hash"
-	"regexp"
 )
 
 const (
@@ -36,31 +33,7 @@ func SumMany(data []byte, rest ...[]byte) []byte {
 	return h.Sum(nil)
 }
 
-// ValidateSHA256 checks if the given string is a syntactically valid SHA256 hash.
-// A valid SHA256 hash is a hex-encoded 64-character string.
-// If the hash isn't valid, it returns an error explaining why.
-func ValidateSHA256(hashStr string) error {
-	const sha256Pattern = `^[a-fA-F0-9]{64}$`
-
-	if len(hashStr) != 64 {
-		return fmt.Errorf("expected 64 characters, but have %d", len(hashStr))
-	}
-
-	match, err := regexp.MatchString(sha256Pattern, hashStr)
-	if err != nil {
-		// if this happens, there is a bug in the regex or some internal regexp
-		// package error.
-		return fmt.Errorf("can't run regex %q: %s", sha256Pattern, err)
-	}
-
-	if !match {
-		return errors.New("contains non-hexadecimal characters")
-	}
-
-	return nil
-}
-
-// -------------------------------------------------------------
+//-------------------------------------------------------------
 
 const (
 	TruncatedSize = 20
@@ -73,7 +46,6 @@ type sha256trunc struct {
 func (h sha256trunc) Write(p []byte) (n int, err error) {
 	return h.sha256.Write(p)
 }
-
 func (h sha256trunc) Sum(b []byte) []byte {
 	shasum := h.sha256.Sum(b)
 	return shasum[:TruncatedSize]
@@ -83,7 +55,7 @@ func (h sha256trunc) Reset() {
 	h.sha256.Reset()
 }
 
-func (sha256trunc) Size() int {
+func (h sha256trunc) Size() int {
 	return TruncatedSize
 }
 

@@ -8,7 +8,6 @@ const (
 	levelDebug level = 1 << iota
 	levelInfo
 	levelError
-	levelWarn
 )
 
 type filter struct {
@@ -19,8 +18,8 @@ type filter struct {
 }
 
 type keyval struct {
-	key   any
-	value any
+	key   interface{}
+	value interface{}
 }
 
 // NewFilter wraps next and implements filtering. See the commentary on the
@@ -39,23 +38,7 @@ func NewFilter(next Logger, options ...Option) Logger {
 	return l
 }
 
-func (l *filter) Error(msg string, keyvals ...any) {
-	levelAllowed := l.allowed&levelError != 0
-	if !levelAllowed {
-		return
-	}
-	l.next.Error(msg, keyvals...)
-}
-
-func (l *filter) Warn(msg string, keyvals ...any) {
-	levelAllowed := l.allowed&levelWarn != 0
-	if !levelAllowed {
-		return
-	}
-	l.next.Warn(msg, keyvals...)
-}
-
-func (l *filter) Info(msg string, keyvals ...any) {
+func (l *filter) Info(msg string, keyvals ...interface{}) {
 	levelAllowed := l.allowed&levelInfo != 0
 	if !levelAllowed {
 		return
@@ -63,14 +46,20 @@ func (l *filter) Info(msg string, keyvals ...any) {
 	l.next.Info(msg, keyvals...)
 }
 
-func (l *filter) Debug(msg string, keyvals ...any) {
-	if LogDebug {
-		levelAllowed := l.allowed&levelDebug != 0
-		if !levelAllowed {
-			return
-		}
-		l.next.Debug(msg, keyvals...)
+func (l *filter) Debug(msg string, keyvals ...interface{}) {
+	levelAllowed := l.allowed&levelDebug != 0
+	if !levelAllowed {
+		return
 	}
+	l.next.Debug(msg, keyvals...)
+}
+
+func (l *filter) Error(msg string, keyvals ...interface{}) {
+	levelAllowed := l.allowed&levelError != 0
+	if !levelAllowed {
+		return
+	}
+	l.next.Error(msg, keyvals...)
 }
 
 // With implements Logger by constructing a new filter with a keyvals appended
@@ -93,7 +82,7 @@ func (l *filter) Debug(msg string, keyvals ...any) {
 //					log.AllowError(),
 //					log.AllowInfoWith("module", "crypto"), log.AllowNoneWith("user", "Sam"))
 //			 logger.With("user", "Sam").With("module", "crypto").Info("Hello") # produces "I... Hello module=crypto user=Sam"
-func (l *filter) With(keyvals ...any) Logger {
+func (l *filter) With(keyvals ...interface{}) Logger {
 	keyInAllowedKeyvals := false
 
 	for i := len(keyvals) - 2; i >= 0; i -= 2 {
@@ -135,7 +124,7 @@ func (l *filter) With(keyvals ...any) Logger {
 	}
 }
 
-// --------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
 
 // Option sets a parameter for the filter.
 type Option func(*filter)
@@ -144,18 +133,16 @@ type Option func(*filter)
 // for such level.
 func AllowLevel(lvl string) (Option, error) {
 	switch lvl {
-	case "error":
-		return AllowError(), nil
-	case "warn":
-		return AllowWarn(), nil
-	case "info":
-		return AllowInfo(), nil
 	case "debug":
 		return AllowDebug(), nil
+	case "info":
+		return AllowInfo(), nil
+	case "error":
+		return AllowError(), nil
 	case "none":
 		return AllowNone(), nil
 	default:
-		return nil, fmt.Errorf("expected either \"error\", \"warn\", \"info\", \"debug\" or \"none\" level, given %s", lvl)
+		return nil, fmt.Errorf("expected either \"info\", \"debug\", \"error\" or \"none\" level, given %s", lvl)
 	}
 }
 
@@ -164,24 +151,19 @@ func AllowAll() Option {
 	return AllowDebug()
 }
 
+// AllowDebug allows error, info and debug level log events to pass.
+func AllowDebug() Option {
+	return allowed(levelError | levelInfo | levelDebug)
+}
+
+// AllowInfo allows error and info level log events to pass.
+func AllowInfo() Option {
+	return allowed(levelError | levelInfo)
+}
+
 // AllowError allows only error level log events to pass.
 func AllowError() Option {
 	return allowed(levelError)
-}
-
-// AllowWarn allows error and warning level log events to pass.
-func AllowWarn() Option {
-	return allowed(levelError | levelWarn)
-}
-
-// AllowInfo allows error, info and warning level log events to pass.
-func AllowInfo() Option {
-	return allowed(levelError | levelWarn | levelInfo | levelWarn)
-}
-
-// AllowDebug allows all log events to pass.
-func AllowDebug() Option {
-	return allowed(levelError | levelWarn | levelInfo | levelDebug)
 }
 
 // AllowNone allows no leveled log events to pass.
@@ -193,29 +175,22 @@ func allowed(allowed level) Option {
 	return func(l *filter) { l.allowed = allowed }
 }
 
-// AllowErrorWith allows ONLY error level log events to pass for a specific key value pair.
-func AllowErrorWith(key any, value any) Option {
+// AllowDebugWith allows error, info and debug level log events to pass for a specific key value pair.
+func AllowDebugWith(key interface{}, value interface{}) Option {
+	return func(l *filter) { l.allowedKeyvals[keyval{key, value}] = levelError | levelInfo | levelDebug }
+}
+
+// AllowInfoWith allows error and info level log events to pass for a specific key value pair.
+func AllowInfoWith(key interface{}, value interface{}) Option {
+	return func(l *filter) { l.allowedKeyvals[keyval{key, value}] = levelError | levelInfo }
+}
+
+// AllowErrorWith allows only error level log events to pass for a specific key value pair.
+func AllowErrorWith(key interface{}, value interface{}) Option {
 	return func(l *filter) { l.allowedKeyvals[keyval{key, value}] = levelError }
 }
 
-// AllowInfoWith allows error and warning level log events to pass for a specific key value pair.
-func AllowWarnWith(key any, value any) Option {
-	return func(l *filter) { l.allowedKeyvals[keyval{key, value}] = levelError | levelWarn }
-}
-
-// AllowInfoWith allows error, warning and info level log events to pass for a specific key value pair.
-func AllowInfoWith(key any, value any) Option {
-	return func(l *filter) { l.allowedKeyvals[keyval{key, value}] = levelError | levelWarn | levelInfo }
-}
-
-// AllowDebugWith allows all log events to pass for a specific key value pair.
-func AllowDebugWith(key any, value any) Option {
-	return func(l *filter) {
-		l.allowedKeyvals[keyval{key, value}] = levelError | levelWarn | levelInfo | levelDebug
-	}
-}
-
 // AllowNoneWith allows no leveled log events to pass for a specific key value pair.
-func AllowNoneWith(key any, value any) Option {
+func AllowNoneWith(key interface{}, value interface{}) Option {
 	return func(l *filter) { l.allowedKeyvals[keyval{key, value}] = 0 }
 }

@@ -1,6 +1,8 @@
 syntax = "proto3";
 package tendermint.abci;
 
+option go_package = "github.com/cometbft/cometbft/abci/types";
+
 // For more information on gogo.proto, see:
 // https://github.com/cosmos/gogoproto/blob/master/extensions.md
 import "tendermint/crypto/proof.proto";
@@ -34,7 +36,7 @@ service ABCI {
   rpc FinalizeBlock(RequestFinalizeBlock) returns (ResponseFinalizeBlock);
 }
 
-// ----------------------------------------
+//----------------------------------------
 // Request types
 
 message Request {
@@ -171,7 +173,7 @@ message RequestExtendVote {
 // Verify the vote extension
 message RequestVerifyVoteExtension {
   // the hash of the block that this received vote corresponds to
-  bytes hash = 1;
+  bytes hash              = 1;
   // the validator that signed the vote extension
   bytes validator_address = 2;
   int64 height            = 3;
@@ -191,7 +193,7 @@ message RequestFinalizeBlock {
   bytes proposer_address = 8;
 }
 
-// ----------------------------------------
+//----------------------------------------
 // Response types
 
 message Response {
@@ -343,12 +345,12 @@ message ResponseVerifyVoteExtension {
     // Incorrectly implementing this thus has liveness implications as it may affect
     // CometBFT's ability to receive 2/3+ valid votes to finalize the block.
     // Honest nodes should never be rejected.
-    REJECT = 2;
+    REJECT  = 2;
   }
 }
 
 message ResponseFinalizeBlock {
-  // set of block events emitted as part of executing the block
+  // set of block events emmitted as part of executing the block
   repeated Event events = 1
       [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
   // the result of executing each transaction including the events
@@ -363,7 +365,7 @@ message ResponseFinalizeBlock {
   bytes app_hash = 5;
 }
 
-// ----------------------------------------
+//----------------------------------------
 // Misc.
 
 message CommitInfo {
@@ -425,7 +427,7 @@ message TxResult {
   ExecTxResult result = 4 [(gogoproto.nullable) = false];
 }
 
-// ----------------------------------------
+//----------------------------------------
 // Blockchain Types
 
 message Validator {
@@ -440,10 +442,10 @@ message ValidatorUpdate {
 }
 
 message VoteInfo {
-  Validator                    validator     = 1 [(gogoproto.nullable) = false];
+  Validator validator         = 1 [(gogoproto.nullable) = false];
   tendermint.types.BlockIDFlag block_id_flag = 3;
 
-  reserved 2;  // signed_last_block
+  reserved 2; // signed_last_block
 }
 
 message ExtendedVoteInfo {
@@ -456,7 +458,7 @@ message ExtendedVoteInfo {
   // block_id_flag indicates whether the validator voted for a block, nil, or did not vote at all
   tendermint.types.BlockIDFlag block_id_flag = 5;
 
-  reserved 2;  // signed_last_block
+  reserved 2; // signed_last_block
 }
 
 enum MisbehaviorType {
@@ -480,7 +482,7 @@ message Misbehavior {
   int64 total_voting_power = 5;
 }
 
-// ----------------------------------------
+//----------------------------------------
 // State Sync Types
 
 message Snapshot {

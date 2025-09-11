@@ -11,8 +11,8 @@ This functionality is disabled by default.
 
 To enable the Prometheus metrics, set `instrumentation.prometheus=true` in your
 config file. Metrics will be served under `/metrics` on 26660 port by default.
-Listen address can be changed in the [config file](./configuration.md) (see
-`instrumentation.prometheus_listen_addr`).
+Listen address can be changed in the config file (see
+`instrumentation.prometheus\_listen\_addr`).
 
 ## List of available metrics
 
@@ -58,8 +58,6 @@ The following metrics are available:
 | p2p\_peer\_pending\_send\_bytes                         | Gauge     | peer\_id           | Number of pending bytes to be sent to a given peer                                                                                     |
 | p2p\_recv\_rate\_limiter\_delay                         | Counter   | peer\_id           | Time in seconds spent sleeping by the receive rate limiter, in seconds.                                                                |
 | p2p\_send\_rate\_limiter\_delay                         | Counter   | peer\_id           | Time in seconds spent sleeping by the send rate limiter, in seconds.                                                                   |
-| mempool\_lane\_size                                     | Counter   | lane               | Number of uncommitted transactions per lane                                                                                            |
-| mempool\_lane\_bytes                                    | Counter   | lane               | Number of used bytes per lane                                                                                                          |
 | mempool\_size                                           | Gauge     |                    | Number of uncommitted transactions in the mempool                                                                                      |
 | mempool\_size\_bytes                                    | Gauge     |                    | Total size of the mempool in bytes                                                                                                     |
 | mempool\_tx\_size\_bytes                                | Histogram |                    | Histogram of transaction sizes in bytes                                                                                                |

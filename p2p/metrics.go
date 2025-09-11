@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/cometbft/cometbft/v2/libs/metrics"
+	"github.com/go-kit/kit/metrics"
 )
 
 const (
@@ -15,10 +15,12 @@ const (
 	MetricsSubsystem = "p2p"
 )
 
-// valueToLabelRegexp is used to find the golang package name and type name
-// so that the name can be turned into a prometheus label where the characters
-// in the label do not include prometheus special characters such as '*' and '.'.
-var valueToLabelRegexp = regexp.MustCompile(`\*?(\w+)\.(.*)`)
+var (
+	// valueToLabelRegexp is used to find the golang package name and type name
+	// so that the name can be turned into a prometheus label where the characters
+	// in the label do not include prometheus special characters such as '*' and '.'.
+	valueToLabelRegexp = regexp.MustCompile(`\*?(\w+)\.(.*)`)
+)
 
 //go:generate go run ../scripts/metricsgen -struct=Metrics
 
@@ -26,67 +28,51 @@ var valueToLabelRegexp = regexp.MustCompile(`\*?(\w+)\.(.*)`)
 type Metrics struct {
 	// Number of peers.
 	Peers metrics.Gauge
+	// Number of bytes received from a given peer.
+	PeerReceiveBytesTotal metrics.Counter `metrics_labels:"peer_id,chID"`
+	// Number of bytes sent to a given peer.
+	PeerSendBytesTotal metrics.Counter `metrics_labels:"peer_id,chID"`
 	// Pending bytes to be sent to a given peer.
 	PeerPendingSendBytes metrics.Gauge `metrics_labels:"peer_id"`
+	// Number of transactions submitted by each peer.
+	NumTxs metrics.Gauge `metrics_labels:"peer_id"`
 	// Number of bytes of each message type received.
 	MessageReceiveBytesTotal metrics.Counter `metrics_labels:"message_type"`
 	// Number of bytes of each message type sent.
 	MessageSendBytesTotal metrics.Counter `metrics_labels:"message_type"`
-	// Time in seconds spent sleeping by the receive rate limiter
-	RecvRateLimiterDelay metrics.Counter `metrics_labels:"peer_id"`
-	// Time in seconds spent sleeping by the send rate limiter
-	SendRateLimiterDelay metrics.Counter `metrics_labels:"peer_id"`
 }
 
-type peerPendingMetricsCache struct {
-	mtx             sync.Mutex
-	perMessageCache map[reflect.Type]*peerPendingMetricsCacheEntry
+type metricsLabelCache struct {
+	mtx               *sync.RWMutex
+	messageLabelNames map[reflect.Type]string
 }
 
-type peerPendingMetricsCacheEntry struct {
-	label            string
-	pendingSendBytes int
-	pendingRecvBytes int
-}
+// ValueToMetricLabel is a method that is used to produce a prometheus label value of the golang
+// type that is passed in.
+// This method uses a map on the Metrics struct so that each label name only needs
+// to be produced once to prevent expensive string operations.
+func (m *metricsLabelCache) ValueToMetricLabel(i interface{}) string {
+	t := reflect.TypeOf(i)
+	m.mtx.RLock()
 
-func newPeerPendingMetricsCache() *peerPendingMetricsCache {
-	return &peerPendingMetricsCache{
-		perMessageCache: make(map[reflect.Type]*peerPendingMetricsCacheEntry),
+	if s, ok := m.messageLabelNames[t]; ok {
+		m.mtx.RUnlock()
+		return s
 	}
-}
+	m.mtx.RUnlock()
 
-func (c *peerPendingMetricsCache) AddPendingSendBytes(msgType reflect.Type, addBytes int) {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
-	if entry, ok := c.perMessageCache[msgType]; ok {
-		entry.pendingSendBytes += addBytes
-	} else {
-		c.perMessageCache[msgType] = &peerPendingMetricsCacheEntry{
-			label:            buildLabel(msgType),
-			pendingSendBytes: addBytes,
-		}
-	}
-}
-
-func (c *peerPendingMetricsCache) AddPendingRecvBytes(msgType reflect.Type, addBytes int) {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
-	if entry, ok := c.perMessageCache[msgType]; ok {
-		entry.pendingRecvBytes += addBytes
-	} else {
-		c.perMessageCache[msgType] = &peerPendingMetricsCacheEntry{
-			label:            buildLabel(msgType),
-			pendingRecvBytes: addBytes,
-		}
-	}
-}
-
-func buildLabel(msgType reflect.Type) string {
-	s := msgType.String()
+	s := t.String()
 	ss := valueToLabelRegexp.FindStringSubmatch(s)
-	return fmt.Sprintf("%s_%s", ss[1], ss[2])
+	l := fmt.Sprintf("%s_%s", ss[1], ss[2])
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+	m.messageLabelNames[t] = l
+	return l
 }
 
-func getMsgType(i any) reflect.Type {
-	return reflect.TypeOf(i)
+func newMetricsLabelCache() *metricsLabelCache {
+	return &metricsLabelCache{
+		mtx:               &sync.RWMutex{},
+		messageLabelNames: map[reflect.Type]string{},
+	}
 }

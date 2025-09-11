@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cometbft/cometbft/v2/abci/types"
-	cmtnet "github.com/cometbft/cometbft/v2/internal/net"
-	"github.com/cometbft/cometbft/v2/internal/timer"
-	"github.com/cometbft/cometbft/v2/libs/service"
+	"github.com/cometbft/cometbft/abci/types"
+	cmtnet "github.com/cometbft/cometbft/libs/net"
+	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/libs/timer"
 )
 
 const (
@@ -40,8 +40,8 @@ type socketClient struct {
 
 	mtx     sync.Mutex
 	err     error
-	reqSent *list.List // list of requests sent, waiting for response
-	resCb   Callback   // called on all requests, if set.
+	reqSent *list.List                            // list of requests sent, waiting for response
+	resCb   func(*types.Request, *types.Response) // called on all requests, if set.
 }
 
 var _ Client = (*socketClient)(nil)
@@ -108,7 +108,7 @@ func (cli *socketClient) Error() error {
 	return cli.err
 }
 
-// ----------------------------------------
+//----------------------------------------
 
 // SetResponseCallback sets a callback, which will be executed for each
 // non-error & non-empty response from the server.
@@ -120,11 +120,11 @@ func (cli *socketClient) SetResponseCallback(resCb Callback) {
 	cli.mtx.Unlock()
 }
 
-func (cli *socketClient) CheckTxAsync(ctx context.Context, req *types.CheckTxRequest) (*ReqRes, error) {
-	return cli.queueRequest(ctx, types.ToCheckTxRequest(req))
+func (cli *socketClient) CheckTxAsync(ctx context.Context, req *types.RequestCheckTx) (*ReqRes, error) {
+	return cli.queueRequest(ctx, types.ToRequestCheckTx(req))
 }
 
-// ----------------------------------------
+//----------------------------------------
 
 func (cli *socketClient) sendRequestsRoutine(conn io.Writer) {
 	w := bufio.NewWriter(conn)
@@ -152,7 +152,7 @@ func (cli *socketClient) sendRequestsRoutine(conn io.Writer) {
 			}
 		case <-cli.flushTimer.Ch: // flush queue
 			select {
-			case cli.reqQueue <- NewReqRes(types.ToFlushRequest()):
+			case cli.reqQueue <- NewReqRes(types.ToRequestFlush()):
 			default:
 				// Probably will fill the buffer, or retry later.
 			}
@@ -210,12 +210,12 @@ func (cli *socketClient) didRecvResponse(res *types.Response) error {
 	// Get the first ReqRes.
 	next := cli.reqSent.Front()
 	if next == nil {
-		return ErrUnexpectedResponse{Response: *res, Reason: "no call was made"}
+		return fmt.Errorf("unexpected response %T when no call was made", res.Value)
 	}
 
 	reqres := next.Value.(*ReqRes)
 	if !resMatchesReq(reqres.Request, res) {
-		return ErrUnexpectedResponse{Response: *res, Reason: fmt.Sprintf("unexpected response to the request %T", reqres.Request.Value)}
+		return fmt.Errorf("unexpected response %T to the request %T", res.Value, reqres.Request.Value)
 	}
 
 	reqres.Response = res
@@ -236,10 +236,10 @@ func (cli *socketClient) didRecvResponse(res *types.Response) error {
 	return nil
 }
 
-// ----------------------------------------
+//----------------------------------------
 
 func (cli *socketClient) Flush(ctx context.Context) error {
-	reqRes, err := cli.queueRequest(ctx, types.ToFlushRequest())
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestFlush())
 	if err != nil {
 		return err
 	}
@@ -247,8 +247,8 @@ func (cli *socketClient) Flush(ctx context.Context) error {
 	return nil
 }
 
-func (cli *socketClient) Echo(ctx context.Context, msg string) (*types.EchoResponse, error) {
-	reqRes, err := cli.queueRequest(ctx, types.ToEchoRequest(msg))
+func (cli *socketClient) Echo(ctx context.Context, msg string) (*types.ResponseEcho, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestEcho(msg))
 	if err != nil {
 		return nil, err
 	}
@@ -258,8 +258,8 @@ func (cli *socketClient) Echo(ctx context.Context, msg string) (*types.EchoRespo
 	return reqRes.Response.GetEcho(), cli.Error()
 }
 
-func (cli *socketClient) Info(ctx context.Context, req *types.InfoRequest) (*types.InfoResponse, error) {
-	reqRes, err := cli.queueRequest(ctx, types.ToInfoRequest(req))
+func (cli *socketClient) Info(ctx context.Context, req *types.RequestInfo) (*types.ResponseInfo, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestInfo(req))
 	if err != nil {
 		return nil, err
 	}
@@ -269,8 +269,8 @@ func (cli *socketClient) Info(ctx context.Context, req *types.InfoRequest) (*typ
 	return reqRes.Response.GetInfo(), cli.Error()
 }
 
-func (cli *socketClient) CheckTx(ctx context.Context, req *types.CheckTxRequest) (*types.CheckTxResponse, error) {
-	reqRes, err := cli.queueRequest(ctx, types.ToCheckTxRequest(req))
+func (cli *socketClient) CheckTx(ctx context.Context, req *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestCheckTx(req))
 	if err != nil {
 		return nil, err
 	}
@@ -280,8 +280,8 @@ func (cli *socketClient) CheckTx(ctx context.Context, req *types.CheckTxRequest)
 	return reqRes.Response.GetCheckTx(), cli.Error()
 }
 
-func (cli *socketClient) Query(ctx context.Context, req *types.QueryRequest) (*types.QueryResponse, error) {
-	reqRes, err := cli.queueRequest(ctx, types.ToQueryRequest(req))
+func (cli *socketClient) Query(ctx context.Context, req *types.RequestQuery) (*types.ResponseQuery, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestQuery(req))
 	if err != nil {
 		return nil, err
 	}
@@ -291,8 +291,8 @@ func (cli *socketClient) Query(ctx context.Context, req *types.QueryRequest) (*t
 	return reqRes.Response.GetQuery(), cli.Error()
 }
 
-func (cli *socketClient) Commit(ctx context.Context, _ *types.CommitRequest) (*types.CommitResponse, error) {
-	reqRes, err := cli.queueRequest(ctx, types.ToCommitRequest())
+func (cli *socketClient) Commit(ctx context.Context, _ *types.RequestCommit) (*types.ResponseCommit, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestCommit())
 	if err != nil {
 		return nil, err
 	}
@@ -302,8 +302,8 @@ func (cli *socketClient) Commit(ctx context.Context, _ *types.CommitRequest) (*t
 	return reqRes.Response.GetCommit(), cli.Error()
 }
 
-func (cli *socketClient) InitChain(ctx context.Context, req *types.InitChainRequest) (*types.InitChainResponse, error) {
-	reqRes, err := cli.queueRequest(ctx, types.ToInitChainRequest(req))
+func (cli *socketClient) InitChain(ctx context.Context, req *types.RequestInitChain) (*types.ResponseInitChain, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestInitChain(req))
 	if err != nil {
 		return nil, err
 	}
@@ -313,8 +313,8 @@ func (cli *socketClient) InitChain(ctx context.Context, req *types.InitChainRequ
 	return reqRes.Response.GetInitChain(), cli.Error()
 }
 
-func (cli *socketClient) ListSnapshots(ctx context.Context, req *types.ListSnapshotsRequest) (*types.ListSnapshotsResponse, error) {
-	reqRes, err := cli.queueRequest(ctx, types.ToListSnapshotsRequest(req))
+func (cli *socketClient) ListSnapshots(ctx context.Context, req *types.RequestListSnapshots) (*types.ResponseListSnapshots, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestListSnapshots(req))
 	if err != nil {
 		return nil, err
 	}
@@ -324,8 +324,8 @@ func (cli *socketClient) ListSnapshots(ctx context.Context, req *types.ListSnaps
 	return reqRes.Response.GetListSnapshots(), cli.Error()
 }
 
-func (cli *socketClient) OfferSnapshot(ctx context.Context, req *types.OfferSnapshotRequest) (*types.OfferSnapshotResponse, error) {
-	reqRes, err := cli.queueRequest(ctx, types.ToOfferSnapshotRequest(req))
+func (cli *socketClient) OfferSnapshot(ctx context.Context, req *types.RequestOfferSnapshot) (*types.ResponseOfferSnapshot, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestOfferSnapshot(req))
 	if err != nil {
 		return nil, err
 	}
@@ -335,8 +335,8 @@ func (cli *socketClient) OfferSnapshot(ctx context.Context, req *types.OfferSnap
 	return reqRes.Response.GetOfferSnapshot(), cli.Error()
 }
 
-func (cli *socketClient) LoadSnapshotChunk(ctx context.Context, req *types.LoadSnapshotChunkRequest) (*types.LoadSnapshotChunkResponse, error) {
-	reqRes, err := cli.queueRequest(ctx, types.ToLoadSnapshotChunkRequest(req))
+func (cli *socketClient) LoadSnapshotChunk(ctx context.Context, req *types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestLoadSnapshotChunk(req))
 	if err != nil {
 		return nil, err
 	}
@@ -346,8 +346,8 @@ func (cli *socketClient) LoadSnapshotChunk(ctx context.Context, req *types.LoadS
 	return reqRes.Response.GetLoadSnapshotChunk(), cli.Error()
 }
 
-func (cli *socketClient) ApplySnapshotChunk(ctx context.Context, req *types.ApplySnapshotChunkRequest) (*types.ApplySnapshotChunkResponse, error) {
-	reqRes, err := cli.queueRequest(ctx, types.ToApplySnapshotChunkRequest(req))
+func (cli *socketClient) ApplySnapshotChunk(ctx context.Context, req *types.RequestApplySnapshotChunk) (*types.ResponseApplySnapshotChunk, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestApplySnapshotChunk(req))
 	if err != nil {
 		return nil, err
 	}
@@ -357,8 +357,8 @@ func (cli *socketClient) ApplySnapshotChunk(ctx context.Context, req *types.Appl
 	return reqRes.Response.GetApplySnapshotChunk(), cli.Error()
 }
 
-func (cli *socketClient) PrepareProposal(ctx context.Context, req *types.PrepareProposalRequest) (*types.PrepareProposalResponse, error) {
-	reqRes, err := cli.queueRequest(ctx, types.ToPrepareProposalRequest(req))
+func (cli *socketClient) PrepareProposal(ctx context.Context, req *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestPrepareProposal(req))
 	if err != nil {
 		return nil, err
 	}
@@ -368,8 +368,8 @@ func (cli *socketClient) PrepareProposal(ctx context.Context, req *types.Prepare
 	return reqRes.Response.GetPrepareProposal(), cli.Error()
 }
 
-func (cli *socketClient) ProcessProposal(ctx context.Context, req *types.ProcessProposalRequest) (*types.ProcessProposalResponse, error) {
-	reqRes, err := cli.queueRequest(ctx, types.ToProcessProposalRequest(req))
+func (cli *socketClient) ProcessProposal(ctx context.Context, req *types.RequestProcessProposal) (*types.ResponseProcessProposal, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestProcessProposal(req))
 	if err != nil {
 		return nil, err
 	}
@@ -379,8 +379,8 @@ func (cli *socketClient) ProcessProposal(ctx context.Context, req *types.Process
 	return reqRes.Response.GetProcessProposal(), cli.Error()
 }
 
-func (cli *socketClient) ExtendVote(ctx context.Context, req *types.ExtendVoteRequest) (*types.ExtendVoteResponse, error) {
-	reqRes, err := cli.queueRequest(ctx, types.ToExtendVoteRequest(req))
+func (cli *socketClient) ExtendVote(ctx context.Context, req *types.RequestExtendVote) (*types.ResponseExtendVote, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestExtendVote(req))
 	if err != nil {
 		return nil, err
 	}
@@ -390,8 +390,8 @@ func (cli *socketClient) ExtendVote(ctx context.Context, req *types.ExtendVoteRe
 	return reqRes.Response.GetExtendVote(), cli.Error()
 }
 
-func (cli *socketClient) VerifyVoteExtension(ctx context.Context, req *types.VerifyVoteExtensionRequest) (*types.VerifyVoteExtensionResponse, error) {
-	reqRes, err := cli.queueRequest(ctx, types.ToVerifyVoteExtensionRequest(req))
+func (cli *socketClient) VerifyVoteExtension(ctx context.Context, req *types.RequestVerifyVoteExtension) (*types.ResponseVerifyVoteExtension, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestVerifyVoteExtension(req))
 	if err != nil {
 		return nil, err
 	}
@@ -401,8 +401,8 @@ func (cli *socketClient) VerifyVoteExtension(ctx context.Context, req *types.Ver
 	return reqRes.Response.GetVerifyVoteExtension(), cli.Error()
 }
 
-func (cli *socketClient) FinalizeBlock(ctx context.Context, req *types.FinalizeBlockRequest) (*types.FinalizeBlockResponse, error) {
-	reqRes, err := cli.queueRequest(ctx, types.ToFinalizeBlockRequest(req))
+func (cli *socketClient) FinalizeBlock(ctx context.Context, req *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestFinalizeBlock(req))
 	if err != nil {
 		return nil, err
 	}
@@ -457,7 +457,7 @@ LOOP:
 	}
 }
 
-// ----------------------------------------
+//----------------------------------------
 
 func resMatchesReq(req *types.Request, res *types.Response) (ok bool) {
 	switch req.Value.(type) {

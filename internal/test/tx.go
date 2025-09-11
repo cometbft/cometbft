@@ -1,6 +1,6 @@
 package test
 
-import "github.com/cometbft/cometbft/v2/types"
+import "github.com/cometbft/cometbft/types"
 
 func MakeNTxs(height, n int64) types.Txs {
 	txs := make([]types.Tx, n)

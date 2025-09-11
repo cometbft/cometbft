@@ -6,7 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	p2pmocks "github.com/cometbft/cometbft/v2/p2p/mocks"
+	"github.com/cometbft/cometbft/p2p"
+	p2pmocks "github.com/cometbft/cometbft/p2p/mocks"
 )
 
 func TestSnapshot_Key(t *testing.T) {
@@ -20,6 +21,7 @@ func TestSnapshot_Key(t *testing.T) {
 		"no metadata":     {func(s *snapshot) { s.Metadata = nil }},
 	}
 	for name, tc := range testcases {
+		tc := tc
 		t.Run(name, func(t *testing.T) {
 			s := snapshot{
 				Height:   3,
@@ -38,7 +40,7 @@ func TestSnapshot_Key(t *testing.T) {
 
 func TestSnapshotPool_Add(t *testing.T) {
 	peer := &p2pmocks.Peer{}
-	peer.On("ID").Return("id")
+	peer.On("ID").Return(p2p.ID("id"))
 
 	// Adding to the pool should work
 	pool := newSnapshotPool()
@@ -53,7 +55,7 @@ func TestSnapshotPool_Add(t *testing.T) {
 
 	// Adding again from a different peer should return false
 	otherPeer := &p2pmocks.Peer{}
-	otherPeer.On("ID").Return("other")
+	otherPeer.On("ID").Return(p2p.ID("other"))
 	added, err = pool.Add(peer, &snapshot{
 		Height: 1,
 		Format: 1,
@@ -73,9 +75,9 @@ func TestSnapshotPool_GetPeer(t *testing.T) {
 
 	s := &snapshot{Height: 1, Format: 1, Chunks: 1, Hash: []byte{1}}
 	peerA := &p2pmocks.Peer{}
-	peerA.On("ID").Return("a")
+	peerA.On("ID").Return(p2p.ID("a"))
 	peerB := &p2pmocks.Peer{}
-	peerB.On("ID").Return("b")
+	peerB.On("ID").Return(p2p.ID("b"))
 
 	_, err := pool.Add(peerA, s)
 	require.NoError(t, err)
@@ -90,9 +92,9 @@ func TestSnapshotPool_GetPeer(t *testing.T) {
 	for !seenA || !seenB {
 		peer := pool.GetPeer(s)
 		switch peer.ID() {
-		case "a":
+		case p2p.ID("a"):
 			seenA = true
-		case "b":
+		case p2p.ID("b"):
 			seenB = true
 		}
 	}
@@ -107,9 +109,9 @@ func TestSnapshotPool_GetPeers(t *testing.T) {
 
 	s := &snapshot{Height: 1, Format: 1, Chunks: 1, Hash: []byte{1}}
 	peerA := &p2pmocks.Peer{}
-	peerA.On("ID").Return("a")
+	peerA.On("ID").Return(p2p.ID("a"))
 	peerB := &p2pmocks.Peer{}
-	peerB.On("ID").Return("b")
+	peerB.On("ID").Return(p2p.ID("b"))
 
 	_, err := pool.Add(peerA, s)
 	require.NoError(t, err)
@@ -145,7 +147,7 @@ func TestSnapshotPool_Ranked_Best(t *testing.T) {
 	for i := len(expectSnapshots) - 1; i >= 0; i-- {
 		for _, peerID := range expectSnapshots[i].peers {
 			peer := &p2pmocks.Peer{}
-			peer.On("ID").Return(peerID)
+			peer.On("ID").Return(p2p.ID(peerID))
 			_, err := pool.Add(peer, expectSnapshots[i].snapshot)
 			require.NoError(t, err)
 		}
@@ -170,7 +172,7 @@ func TestSnapshotPool_Ranked_Best(t *testing.T) {
 func TestSnapshotPool_Reject(t *testing.T) {
 	pool := newSnapshotPool()
 	peer := &p2pmocks.Peer{}
-	peer.On("ID").Return("id")
+	peer.On("ID").Return(p2p.ID("id"))
 
 	snapshots := []*snapshot{
 		{Height: 2, Format: 2, Chunks: 1, Hash: []byte{1, 2}},
@@ -198,7 +200,7 @@ func TestSnapshotPool_Reject(t *testing.T) {
 func TestSnapshotPool_RejectFormat(t *testing.T) {
 	pool := newSnapshotPool()
 	peer := &p2pmocks.Peer{}
-	peer.On("ID").Return("id")
+	peer.On("ID").Return(p2p.ID("id"))
 
 	snapshots := []*snapshot{
 		{Height: 2, Format: 2, Chunks: 1, Hash: []byte{1, 2}},
@@ -228,9 +230,9 @@ func TestSnapshotPool_RejectPeer(t *testing.T) {
 	pool := newSnapshotPool()
 
 	peerA := &p2pmocks.Peer{}
-	peerA.On("ID").Return("a")
+	peerA.On("ID").Return(p2p.ID("a"))
 	peerB := &p2pmocks.Peer{}
-	peerB.On("ID").Return("b")
+	peerB.On("ID").Return(p2p.ID("b"))
 
 	s1 := &snapshot{Height: 1, Format: 1, Chunks: 1, Hash: []byte{1}}
 	s2 := &snapshot{Height: 2, Format: 1, Chunks: 1, Hash: []byte{2}}
@@ -268,9 +270,9 @@ func TestSnapshotPool_RemovePeer(t *testing.T) {
 	pool := newSnapshotPool()
 
 	peerA := &p2pmocks.Peer{}
-	peerA.On("ID").Return("a")
+	peerA.On("ID").Return(p2p.ID("a"))
 	peerB := &p2pmocks.Peer{}
-	peerB.On("ID").Return("b")
+	peerB.On("ID").Return(p2p.ID("b"))
 
 	s1 := &snapshot{Height: 1, Format: 1, Chunks: 1, Hash: []byte{1}}
 	s2 := &snapshot{Height: 2, Format: 1, Chunks: 1, Hash: []byte{2}}

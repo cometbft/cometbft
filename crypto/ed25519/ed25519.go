@@ -1,7 +1,8 @@
 package ed25519
 
 import (
-	"crypto/sha256"
+	"bytes"
+	"crypto/subtle"
 	"errors"
 	"fmt"
 	"io"
@@ -9,25 +10,12 @@ import (
 	"github.com/oasisprotocol/curve25519-voi/primitives/ed25519"
 	"github.com/oasisprotocol/curve25519-voi/primitives/ed25519/extra/cache"
 
-	"github.com/cometbft/cometbft/v2/crypto"
-	"github.com/cometbft/cometbft/v2/crypto/tmhash"
-	cmtjson "github.com/cometbft/cometbft/v2/libs/json"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
 )
 
-var (
-	ErrNotEd25519Key    = errors.New("ed25519: pubkey is not Ed25519")
-	ErrInvalidSignature = errors.New("ed25519: invalid signature")
-)
-
-// ErrInvalidKeyLen describes an error resulting from an passing in a
-// key with an invalid key in the call to [BatchVerifier.Add].
-type ErrInvalidKeyLen struct {
-	Got, Want int
-}
-
-func (e ErrInvalidKeyLen) Error() string {
-	return fmt.Sprintf("ed25519: invalid key length: got %d, want %d", e.Got, e.Want)
-}
+//-------------------------------------
 
 var (
 	_ crypto.PrivKey       = PrivKey{}
@@ -46,7 +34,7 @@ var (
 const (
 	PrivKeyName = "tendermint/PrivKeyEd25519"
 	PubKeyName  = "tendermint/PubKeyEd25519"
-	// PubKeySize is the size, in bytes, of public keys as used in this package.
+	// PubKeySize is is the size, in bytes, of public keys as used in this package.
 	PubKeySize = 32
 	// PrivateKeySize is the size, in bytes, of private keys as used in this package.
 	PrivateKeySize = 64
@@ -116,7 +104,17 @@ func (privKey PrivKey) PubKey() crypto.PubKey {
 	return PubKey(pubkeyBytes)
 }
 
-func (PrivKey) Type() string {
+// Equals - you probably don't need to use this.
+// Runs in constant time based on length of the keys.
+func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
+	if otherEd, ok := other.(PrivKey); ok {
+		return subtle.ConstantTimeCompare(privKey[:], otherEd[:]) == 1
+	}
+
+	return false
+}
+
+func (privKey PrivKey) Type() string {
 	return KeyType
 }
 
@@ -142,12 +140,12 @@ func genPrivKey(rand io.Reader) PrivKey {
 // NOTE: secret should be the output of a KDF like bcrypt,
 // if it's derived from user input.
 func GenPrivKeyFromSecret(secret []byte) PrivKey {
-	seed := sha256.Sum256(secret) // Not Ripemd160 because we want 32 bytes.
+	seed := crypto.Sha256(secret) // Not Ripemd160 because we want 32 bytes.
 
-	return PrivKey(ed25519.NewKeyFromSeed(seed[:]))
+	return PrivKey(ed25519.NewKeyFromSeed(seed))
 }
 
-// -------------------------------------
+//-------------------------------------
 
 var _ crypto.PubKey = PubKey{}
 
@@ -180,11 +178,19 @@ func (pubKey PubKey) String() string {
 	return fmt.Sprintf("PubKeyEd25519{%X}", []byte(pubKey))
 }
 
-func (PubKey) Type() string {
+func (pubKey PubKey) Type() string {
 	return KeyType
 }
 
-// -------------------------------------
+func (pubKey PubKey) Equals(other crypto.PubKey) bool {
+	if otherEd, ok := other.(PubKey); ok {
+		return bytes.Equal(pubKey[:], otherEd[:])
+	}
+
+	return false
+}
+
+//-------------------------------------
 
 // BatchVerifier implements batch verification for ed25519.
 type BatchVerifier struct {
@@ -198,18 +204,18 @@ func NewBatchVerifier() crypto.BatchVerifier {
 func (b *BatchVerifier) Add(key crypto.PubKey, msg, signature []byte) error {
 	pkEd, ok := key.(PubKey)
 	if !ok {
-		return ErrNotEd25519Key
+		return fmt.Errorf("pubkey is not Ed25519")
 	}
 
 	pkBytes := pkEd.Bytes()
 
 	if l := len(pkBytes); l != PubKeySize {
-		return ErrInvalidKeyLen{Got: l, Want: PubKeySize}
+		return fmt.Errorf("pubkey size is incorrect; expected: %d, got %d", PubKeySize, l)
 	}
 
 	// check that the signature is the correct length
 	if len(signature) != SignatureSize {
-		return ErrInvalidSignature
+		return errors.New("invalid signature")
 	}
 
 	cachingVerifier.AddWithOptions(b.BatchVerifier, ed25519.PublicKey(pkBytes), msg, signature, verifyOptions)

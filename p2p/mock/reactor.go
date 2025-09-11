@@ -1,15 +1,15 @@
 package mock
 
 import (
-	"github.com/cometbft/cometbft/v2/libs/log"
-	"github.com/cometbft/cometbft/v2/p2p"
-	"github.com/cometbft/cometbft/v2/p2p/transport"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/conn"
 )
 
 type Reactor struct {
 	p2p.BaseReactor
 
-	Channels []transport.StreamDescriptor
+	Channels []*conn.ChannelDescriptor
 }
 
 func NewReactor() *Reactor {
@@ -19,7 +19,7 @@ func NewReactor() *Reactor {
 	return r
 }
 
-func (r *Reactor) StreamDescriptors() []transport.StreamDescriptor { return r.Channels }
-func (*Reactor) AddPeer(_ p2p.Peer)                                {}
-func (*Reactor) RemovePeer(_ p2p.Peer, _ any)                      {}
-func (*Reactor) Receive(_ p2p.Envelope)                            {}
+func (r *Reactor) GetChannels() []*conn.ChannelDescriptor { return r.Channels }
+func (r *Reactor) AddPeer(_ p2p.Peer)                     {}
+func (r *Reactor) RemovePeer(_ p2p.Peer, _ interface{})   {}
+func (r *Reactor) Receive(_ p2p.Envelope)                 {}

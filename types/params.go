@@ -3,23 +3,17 @@ package types
 import (
 	"errors"
 	"fmt"
-	"math"
-	"strings"
 	"time"
 
-	gogo "github.com/cosmos/gogoproto/types"
-
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	"github.com/cometbft/cometbft/v2/crypto/bls12381"
-	"github.com/cometbft/cometbft/v2/crypto/ed25519"
-	"github.com/cometbft/cometbft/v2/crypto/secp256k1"
-	"github.com/cometbft/cometbft/v2/crypto/secp256k1eth"
-	"github.com/cometbft/cometbft/v2/crypto/tmhash"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 const (
 	// MaxBlockSizeBytes is the maximum permitted size of the blocks.
-	MaxBlockSizeBytes = 100 * 1024 * 1024
+	MaxBlockSizeBytes = 104857600 // 100MB
 
 	// BlockPartSizeBytes is the size of one block part.
 	BlockPartSizeBytes uint32 = 65536 // 64kB
@@ -27,36 +21,13 @@ const (
 	// MaxBlockPartsCount is the maximum number of block parts.
 	MaxBlockPartsCount = (MaxBlockSizeBytes / BlockPartSizeBytes) + 1
 
-	ABCIPubKeyTypeEd25519      = ed25519.KeyType
-	ABCIPubKeyTypeSecp256k1    = secp256k1.KeyType
-	ABCIPubKeyTypeBls12381     = bls12381.KeyType
-	ABCIPubKeyTypeSecp256k1Eth = secp256k1eth.KeyType
-
-	// MaxMessageDelay is the maximum allowed value for SynchronyParams.MessageDelay.
-	//
-	// It ensures that the SynchronyParams.MessageDelay does not overflow int64.
-	// The 24hr value was chosen based on common sense.
-	MaxMessageDelay = 24 * time.Hour
-	// MaxPrecision is the maximum allowed value for SynchronyParams.Precision.
-	//
-	// It ensures that the SynchronyParams.Precision does not overflow int64. The
-	// 30s value was chosen based on common sense.
-	MaxPrecision = 30 * time.Second
+	ABCIPubKeyTypeEd25519   = ed25519.KeyType
+	ABCIPubKeyTypeSecp256k1 = secp256k1.KeyType
 )
 
 var ABCIPubKeyTypesToNames = map[string]string{
 	ABCIPubKeyTypeEd25519:   ed25519.PubKeyName,
 	ABCIPubKeyTypeSecp256k1: secp256k1.PubKeyName,
-}
-
-func init() {
-	if bls12381.Enabled {
-		ABCIPubKeyTypesToNames[ABCIPubKeyTypeBls12381] = bls12381.PubKeyName
-	}
-
-	if secp256k1eth.Enabled {
-		ABCIPubKeyTypesToNames[ABCIPubKeyTypeSecp256k1Eth] = secp256k1eth.PubKeyName
-	}
 }
 
 // ConsensusParams contains consensus critical parameters that determine the
@@ -66,17 +37,17 @@ type ConsensusParams struct {
 	Evidence  EvidenceParams  `json:"evidence"`
 	Validator ValidatorParams `json:"validator"`
 	Version   VersionParams   `json:"version"`
-	Synchrony SynchronyParams `json:"synchrony"`
-	Feature   FeatureParams   `json:"feature"`
+	ABCI      ABCIParams      `json:"abci"`
 }
 
-// BlockParams define limits on the block size and gas.
+// BlockParams define limits on the block size and gas plus minimum time
+// between blocks.
 type BlockParams struct {
 	MaxBytes int64 `json:"max_bytes"`
 	MaxGas   int64 `json:"max_gas"`
 }
 
-// EvidenceParams determine the validity of evidences of Byzantine behavior.
+// EvidenceParams determine how we handle evidence of malfeasance.
 type EvidenceParams struct {
 	MaxAgeNumBlocks int64         `json:"max_age_num_blocks"` // only accept new evidence more recent than this
 	MaxAgeDuration  time.Duration `json:"max_age_duration"`
@@ -89,86 +60,26 @@ type ValidatorParams struct {
 	PubKeyTypes []string `json:"pub_key_types"`
 }
 
-// VersionParams contain the version of specific components of CometBFT.
 type VersionParams struct {
 	App uint64 `json:"app"`
 }
 
-// FeatureParams configure the height from which features of CometBFT are enabled.
-// A value of 0 means the feature is disabled. A value > 0 denotes
-// the height at which the feature will be (or has been) enabled.
-type FeatureParams struct {
+// ABCIParams configure ABCI functionality specific to the Application Blockchain
+// Interface.
+type ABCIParams struct {
 	VoteExtensionsEnableHeight int64 `json:"vote_extensions_enable_height"`
-	PbtsEnableHeight           int64 `json:"pbts_enable_height"`
 }
 
 // VoteExtensionsEnabled returns true if vote extensions are enabled at height h
 // and false otherwise.
-func (p FeatureParams) VoteExtensionsEnabled(h int64) bool {
-	enabledHeight := p.VoteExtensionsEnableHeight
-
-	return featureEnabled(enabledHeight, h, "Vote Extensions")
-}
-
-// PbtsEnabled returns true if PBTS is enabled at height h and false otherwise.
-func (p FeatureParams) PbtsEnabled(h int64) bool {
-	enabledHeight := p.PbtsEnableHeight
-
-	return featureEnabled(enabledHeight, h, "PBTS")
-}
-
-// featureEnabled returns true if `enabledHeight` points to a height that is smaller than `currentHeight“.
-func featureEnabled(enableHeight int64, currentHeight int64, f string) bool {
-	if currentHeight < 1 {
-		panic(fmt.Errorf("cannot check if %s is enabled for height %d (< 1)", f, currentHeight))
+func (a ABCIParams) VoteExtensionsEnabled(h int64) bool {
+	if h < 1 {
+		panic(fmt.Errorf("cannot check if vote extensions enabled for height %d (< 1)", h))
 	}
-
-	if enableHeight <= 0 {
+	if a.VoteExtensionsEnableHeight == 0 {
 		return false
 	}
-
-	return enableHeight <= currentHeight
-}
-
-// SynchronyParams determine the validity of block timestamps.
-//
-// These parameters are part of the Proposer-Based Timestamps (PBTS) algorithm.
-// For more information on the relationship of the synchrony parameters to
-// block timestamps validity, refer to the PBTS specification:
-// https://github.com/cometbft/cometbft/v2/tree/main/spec/consensus/proposer-based-timestamp
-type SynchronyParams struct {
-	// Maximum allowed value: MaxPrecision.
-	Precision time.Duration `json:"precision,string"`
-	// Maximum allowed value: MaxMessageDelay.
-	MessageDelay time.Duration `json:"message_delay,string"`
-}
-
-// InRound ensures an exponential back-off of SynchronyParams.MessageDelay for
-// block timestamps validation, as the associated proposal rounds increase.
-//
-// The adaptation is achieve by increasing MessageDelay by a factor of 10% each
-// subsequent round a proposal's timeliness is calculated, namely:
-//
-//	MessageDelay(round) == MessageDelay * (1.1)^round
-//
-// The goal is facilitate the progression of consensus when improper synchrony
-// parameters are set or become insufficient to preserve liveness. Refer to
-// https://github.com/cometbft/cometbft/v2/issues/2184 for more details.
-//
-// There's a cap (MaxMessageDelay) on the MessageDelay to prevent overflow.
-func (sp SynchronyParams) InRound(round int32) SynchronyParams {
-	if round <= 0 {
-		return sp
-	}
-
-	d := time.Duration(math.Min(
-		float64(MaxMessageDelay),
-		math.Pow(1.1, float64(round))*float64(sp.MessageDelay),
-	))
-	return SynchronyParams{
-		Precision:    sp.Precision,
-		MessageDelay: d,
-	}
+	return a.VoteExtensionsEnableHeight <= h
 }
 
 // DefaultConsensusParams returns a default ConsensusParams.
@@ -178,16 +89,15 @@ func DefaultConsensusParams() *ConsensusParams {
 		Evidence:  DefaultEvidenceParams(),
 		Validator: DefaultValidatorParams(),
 		Version:   DefaultVersionParams(),
-		Feature:   DefaultFeatureParams(),
-		Synchrony: DefaultSynchronyParams(),
+		ABCI:      DefaultABCIParams(),
 	}
 }
 
 // DefaultBlockParams returns a default BlockParams.
 func DefaultBlockParams() BlockParams {
 	return BlockParams{
-		MaxBytes: 4194304,  // four megabytes
-		MaxGas:   10000000, // ten million
+		MaxBytes: 22020096, // 21MB
+		MaxGas:   -1,
 	}
 }
 
@@ -214,41 +124,27 @@ func DefaultVersionParams() VersionParams {
 	}
 }
 
-// Disabled by default.
-func DefaultFeatureParams() FeatureParams {
-	return FeatureParams{
+func DefaultABCIParams() ABCIParams {
+	return ABCIParams{
+		// When set to 0, vote extensions are not required.
 		VoteExtensionsEnableHeight: 0,
-		PbtsEnableHeight:           0,
 	}
 }
 
-func DefaultSynchronyParams() SynchronyParams {
-	// Default values determined based on experimental results and on
-	// https://github.com/cometbft/cometbft/v2/issues/4246
-	return SynchronyParams{
-		Precision:    505 * time.Millisecond,
-		MessageDelay: 15 * time.Second,
-	}
-}
-
-func IsValidPubkeyType(params ValidatorParams, pubkeyType string) (bool, string) {
-	nKeyTypes := len(params.PubKeyTypes)
-	suppTypes := make([]string, 0, nKeyTypes)
-	for i := 0; i < nKeyTypes; i++ {
-		k := params.PubKeyTypes[i]
-		if k == pubkeyType {
-			return true, ""
+func IsValidPubkeyType(params ValidatorParams, pubkeyType string) bool {
+	for i := 0; i < len(params.PubKeyTypes); i++ {
+		if params.PubKeyTypes[i] == pubkeyType {
+			return true
 		}
-		suppTypes = append(suppTypes, fmt.Sprintf("%q", k))
 	}
-	return false, strings.Join(suppTypes, ", ")
+	return false
 }
 
-// ValidateBasic validates the ConsensusParams to ensure **all** values are within their
+// Validate validates the ConsensusParams to ensure all values are within their
 // allowed limits, and returns an error if they are not.
 func (params ConsensusParams) ValidateBasic() error {
 	if params.Block.MaxBytes == 0 {
-		return errors.New("block.MaxBytes cannot be 0")
+		return fmt.Errorf("block.MaxBytes cannot be 0")
 	}
 	if params.Block.MaxBytes < -1 {
 		return fmt.Errorf("block.MaxBytes must be -1 or greater than 0. Got %d",
@@ -271,7 +167,7 @@ func (params ConsensusParams) ValidateBasic() error {
 	}
 
 	if params.Evidence.MaxAgeDuration <= 0 {
-		return fmt.Errorf("evidence.MaxAgeDuration must be greater than 0 if provided, Got %v",
+		return fmt.Errorf("evidence.MaxAgeDuration must be grater than 0 if provided, Got %v",
 			params.Evidence.MaxAgeDuration)
 	}
 
@@ -288,30 +184,9 @@ func (params ConsensusParams) ValidateBasic() error {
 		return fmt.Errorf("evidence.MaxBytes must be non negative. Got: %d",
 			params.Evidence.MaxBytes)
 	}
-	if params.Feature.VoteExtensionsEnableHeight < 0 {
-		return fmt.Errorf("Feature.VoteExtensionsEnabledHeight cannot be negative. Got: %d", params.Feature.VoteExtensionsEnableHeight)
-	}
 
-	if params.Feature.PbtsEnableHeight < 0 {
-		return fmt.Errorf("Feature.PbtsEnableHeight cannot be negative. Got: %d", params.Feature.PbtsEnableHeight)
-	}
-
-	// Synchrony params are only relevant when PBTS is enabled
-	if params.Feature.PbtsEnableHeight > 0 {
-		if params.Synchrony.MessageDelay <= 0 {
-			return fmt.Errorf("synchrony.MessageDelay must be greater than 0. Got: %d",
-				params.Synchrony.MessageDelay)
-		}
-		if params.Synchrony.Precision <= 0 {
-			return fmt.Errorf("synchrony.Precision must be greater than 0. Got: %d",
-				params.Synchrony.Precision)
-		}
-		if params.Synchrony.MessageDelay > MaxMessageDelay {
-			return fmt.Errorf("synchrony.MessageDelay is too big, must be less than or equal to %v", MaxMessageDelay)
-		}
-		if params.Synchrony.Precision > MaxPrecision {
-			return fmt.Errorf("synchrony.Precision is too big, must be less than or equal to %v", MaxPrecision)
-		}
+	if params.ABCI.VoteExtensionsEnableHeight < 0 {
+		return fmt.Errorf("ABCI.VoteExtensionsEnableHeight cannot be negative. Got: %d", params.ABCI.VoteExtensionsEnableHeight)
 	}
 
 	if len(params.Validator.PubKeyTypes) == 0 {
@@ -330,91 +205,63 @@ func (params ConsensusParams) ValidateBasic() error {
 	return nil
 }
 
-// ValidateUpdate validates the updated Consensus Params
-// if updated == nil, then pass.
-func (params ConsensusParams) ValidateUpdate(updated *cmtproto.ConsensusParams, h int64) error {
-	if updated == nil {
-		return nil
-	}
-
-	var err error
-	// Validate feature update parameters.
-	if updated.Feature != nil {
-		err = validateUpdateFeatures(params.Feature, *updated.Feature, h)
-	}
-	return err
-}
-
-// validateUpdateFeatures validates the updated PBTSEnableHeight.
+// ValidateUpdate validates the updated VoteExtensionsEnableHeight.
 // | r | params...EnableHeight | updated...EnableHeight | result (nil == pass)
-// |  2 | *                    | < 0                    | EnableHeight must be positive
+// |  1 | *                    | (nil)                  | nil
+// |  2 | *                    | < 0                    | VoteExtensionsEnableHeight must be positive
 // |  3 | <=0                  | 0                      | nil
 // |  4 | X                    | X (>=0)                | nil
-// |  5 | > 0; <=height        | 0                      | Feature cannot be disabled once enabled
+// |  5 | > 0; <=height        | 0                      | vote extensions cannot be disabled once enabled
 // |  6 | > 0; > height        | 0                      | nil (disable a previous proposal)
-// |  7 | *                    | <=height               | Feature cannot be updated to a past height
+// |  7 | *                    | <=height               | vote extensions cannot be updated to a past height
 // |  8 | <=0                  | > height (*)           | nil
-// |  9 | (> 0) <=height       | > height (*)           | Feature cannot be modified once enabled
+// |  9 | (> 0) <=height       | > height (*)           | vote extensions cannot be modified once enabled
 // | 10 | (> 0) > height       | > height (*)           | nil
-// The table above reflects all cases covered.
-func validateUpdateFeatures(params FeatureParams, updated cmtproto.FeatureParams, h int64) error {
-	if updated.VoteExtensionsEnableHeight != nil {
-		err := validateUpdateFeatureEnableHeight(params.VoteExtensionsEnableHeight, updated.VoteExtensionsEnableHeight.Value, h, "Vote Extensions")
-		if err != nil {
-			return err
-		}
-	}
-
-	if updated.PbtsEnableHeight != nil {
-		err := validateUpdateFeatureEnableHeight(params.PbtsEnableHeight, updated.PbtsEnableHeight.Value, h, "PBTS")
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func validateUpdateFeatureEnableHeight(param int64, updated int64, h int64, featureName string) error {
-	// 2
-	if updated < 0 {
-		return fmt.Errorf("%s EnableHeight must be positive", featureName)
-	}
-	// 3
-	if param <= 0 && updated == 0 {
+func (params ConsensusParams) ValidateUpdate(updated *cmtproto.ConsensusParams, h int64) error {
+	// 1
+	if updated == nil || updated.Abci == nil {
 		return nil
 	}
-	// 4 (implicit: updated >= 0)
-	if param == updated {
+	// 2
+	if updated.Abci.VoteExtensionsEnableHeight < 0 {
+		return errors.New("VoteExtensionsEnableHeight must be positive")
+	}
+	// 3
+	if params.ABCI.VoteExtensionsEnableHeight <= 0 && updated.Abci.VoteExtensionsEnableHeight == 0 {
+		return nil
+	}
+	// 4 (implicit: updated.Abci.VoteExtensionsEnableHeight >= 0)
+	if params.ABCI.VoteExtensionsEnableHeight == updated.Abci.VoteExtensionsEnableHeight {
 		return nil
 	}
 	// 5 & 6
-	if param > 0 && updated == 0 {
+	if params.ABCI.VoteExtensionsEnableHeight > 0 && updated.Abci.VoteExtensionsEnableHeight == 0 {
 		// 5
-		if param <= h {
-			return fmt.Errorf("%s cannot be disabled once enabled"+
-				"enabled height: %d, current height: %d",
-				featureName, param, h)
+		if params.ABCI.VoteExtensionsEnableHeight <= h {
+			return fmt.Errorf("vote extensions cannot be disabled once enabled"+
+				"old enable height: %d, current height %d",
+				params.ABCI.VoteExtensionsEnableHeight, h)
 		}
 		// 6
 		return nil
 	}
-	// 7 (implicit: updated > 0)
-	if updated <= h {
-		return fmt.Errorf("%s cannot be updated to a past or current height, "+
-			"enabled height: %d, enable height: %d, current height %d",
-			featureName, param, updated, h)
+	// 7 (implicit: updated.Abci.VoteExtensionsEnableHeight > 0)
+	if updated.Abci.VoteExtensionsEnableHeight <= h {
+		return fmt.Errorf("vote extensions cannot be updated to a past or current height, "+
+			"enable height: %d, current height %d",
+			updated.Abci.VoteExtensionsEnableHeight, h)
 	}
-	// 8 (implicit: updated > h)
-	if param <= 0 {
+	// 8 (implicit: updated.Abci.VoteExtensionsEnableHeight > h)
+	if params.ABCI.VoteExtensionsEnableHeight <= 0 {
 		return nil
 	}
-	// 9 (implicit: param > 0 && updated > h)
-	if param <= h {
-		return fmt.Errorf("%s cannot be modified once enabled"+
-			"enabled height: %d, current height: %d",
-			featureName, param, h)
+	// 9 (implicit: params.ABCI.VoteExtensionsEnableHeight > 0 && updated.Abci.VoteExtensionsEnableHeight > h)
+	if params.ABCI.VoteExtensionsEnableHeight <= h {
+		return fmt.Errorf("vote extensions cannot be modified once enabled"+
+			"enable height: %d, current height %d",
+			params.ABCI.VoteExtensionsEnableHeight, h)
 	}
-	// 10 (implicit: param > h && updated > h)
+	// 10 (implicit: params.ABCI.VoteExtensionsEnableHeight > h && updated.Abci.VoteExtensionsEnableHeight > h)
 	return nil
 }
 
@@ -443,7 +290,7 @@ func (params ConsensusParams) Hash() []byte {
 }
 
 // Update returns a copy of the params with updates from the non-zero fields of p2.
-// NOTE: note: must not modify the original.
+// NOTE: note: must not modify the original
 func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) ConsensusParams {
 	res := params // explicit copy
 
@@ -469,24 +316,9 @@ func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) Consensu
 	if params2.Version != nil {
 		res.Version.App = params2.Version.App
 	}
-	if params2.Feature != nil {
-		if params2.Feature.VoteExtensionsEnableHeight != nil {
-			res.Feature.VoteExtensionsEnableHeight = params2.Feature.GetVoteExtensionsEnableHeight().Value
-		}
-
-		if params2.Feature.PbtsEnableHeight != nil {
-			res.Feature.PbtsEnableHeight = params2.Feature.GetPbtsEnableHeight().Value
-		}
+	if params2.Abci != nil {
+		res.ABCI.VoteExtensionsEnableHeight = params2.Abci.GetVoteExtensionsEnableHeight()
 	}
-	if params2.Synchrony != nil {
-		if params2.Synchrony.MessageDelay != nil {
-			res.Synchrony.MessageDelay = *params2.Synchrony.GetMessageDelay()
-		}
-		if params2.Synchrony.Precision != nil {
-			res.Synchrony.Precision = *params2.Synchrony.GetPrecision()
-		}
-	}
-
 	return res
 }
 
@@ -507,13 +339,8 @@ func (params *ConsensusParams) ToProto() cmtproto.ConsensusParams {
 		Version: &cmtproto.VersionParams{
 			App: params.Version.App,
 		},
-		Feature: &cmtproto.FeatureParams{
-			PbtsEnableHeight:           &gogo.Int64Value{Value: params.Feature.PbtsEnableHeight},
-			VoteExtensionsEnableHeight: &gogo.Int64Value{Value: params.Feature.VoteExtensionsEnableHeight},
-		},
-		Synchrony: &cmtproto.SynchronyParams{
-			MessageDelay: &params.Synchrony.MessageDelay,
-			Precision:    &params.Synchrony.Precision,
+		Abci: &cmtproto.ABCIParams{
+			VoteExtensionsEnableHeight: params.ABCI.VoteExtensionsEnableHeight,
 		},
 	}
 }
@@ -535,24 +362,9 @@ func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams
 		Version: VersionParams{
 			App: pbParams.Version.App,
 		},
-		Feature: FeatureParams{
-			VoteExtensionsEnableHeight: pbParams.GetFeature().GetVoteExtensionsEnableHeight().GetValue(),
-			PbtsEnableHeight:           pbParams.GetFeature().GetPbtsEnableHeight().GetValue(),
-		},
 	}
-	if pbParams.GetSynchrony().GetMessageDelay() != nil {
-		c.Synchrony.MessageDelay = *pbParams.GetSynchrony().GetMessageDelay()
-	}
-	if pbParams.GetSynchrony().GetPrecision() != nil {
-		c.Synchrony.Precision = *pbParams.GetSynchrony().GetPrecision()
-	}
-	if pbParams.GetAbci().GetVoteExtensionsEnableHeight() > 0 { //nolint: staticcheck
-		// Value set before the upgrade to V1. We can safely overwrite here because
-		// ABCIParams and FeatureParams being set is mutually exclusive (<V1 and >=V1).
-		if pbParams.GetFeature().GetVoteExtensionsEnableHeight().GetValue() > 0 {
-			panic("vote_extension_enable_height is set in two different places")
-		}
-		c.Feature.VoteExtensionsEnableHeight = pbParams.Abci.VoteExtensionsEnableHeight
+	if pbParams.Abci != nil {
+		c.ABCI.VoteExtensionsEnableHeight = pbParams.Abci.GetVoteExtensionsEnableHeight()
 	}
 	return c
 }

@@ -6,14 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"slices"
 	"time"
 
-	"github.com/cometbft/cometbft/v2/crypto"
-	cmtos "github.com/cometbft/cometbft/v2/internal/os"
-	cmtbytes "github.com/cometbft/cometbft/v2/libs/bytes"
-	cmtjson "github.com/cometbft/cometbft/v2/libs/json"
-	cmttime "github.com/cometbft/cometbft/v2/types/time"
+	"github.com/cometbft/cometbft/crypto"
+	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 const (
@@ -21,7 +20,7 @@ const (
 	MaxChainIDLen = 50
 )
 
-// ------------------------------------------------------------
+//------------------------------------------------------------
 // core types for a genesis definition
 // NOTE: any changes to the genesis definition should
 // be reflected in the documentation:
@@ -52,10 +51,10 @@ func (genDoc *GenesisDoc) SaveAs(file string) error {
 	if err != nil {
 		return err
 	}
-	return cmtos.WriteFile(file, genDocBytes, 0o644)
+	return cmtos.WriteFile(file, genDocBytes, 0644)
 }
 
-// ValidatorHash returns the hash of the validator set contained in the GenesisDoc.
+// ValidatorHash returns the hash of the validator set contained in the GenesisDoc
 func (genDoc *GenesisDoc) ValidatorHash() []byte {
 	vals := make([]*Validator, len(genDoc.Validators))
 	for i, v := range genDoc.Validators {
@@ -66,7 +65,7 @@ func (genDoc *GenesisDoc) ValidatorHash() []byte {
 }
 
 // ValidateAndComplete checks that all necessary fields are present
-// and fills in defaults for optional fields left empty.
+// and fills in defaults for optional fields left empty
 func (genDoc *GenesisDoc) ValidateAndComplete() error {
 	if genDoc.ChainID == "" {
 		return errors.New("genesis doc must include non-empty chain_id")
@@ -87,7 +86,6 @@ func (genDoc *GenesisDoc) ValidateAndComplete() error {
 		return err
 	}
 
-	acceptedPubKeyTypes := genDoc.ConsensusParams.Validator.PubKeyTypes
 	for i, v := range genDoc.Validators {
 		if v.Power == 0 {
 			return fmt.Errorf("the genesis file cannot contain validators with no voting power: %v", v)
@@ -98,11 +96,6 @@ func (genDoc *GenesisDoc) ValidateAndComplete() error {
 		if len(v.Address) == 0 {
 			genDoc.Validators[i].Address = v.PubKey.Address()
 		}
-
-		if !slices.Contains(acceptedPubKeyTypes, v.PubKey.Type()) {
-			formatStr := "validator %v uses an unsupported pubkey type: %q"
-			return fmt.Errorf(formatStr, v, v.PubKey.Type())
-		}
 	}
 
 	if genDoc.GenesisTime.IsZero() {
@@ -112,7 +105,7 @@ func (genDoc *GenesisDoc) ValidateAndComplete() error {
 	return nil
 }
 
-// ------------------------------------------------------------
+//------------------------------------------------------------
 // Make genesis state from file
 
 // GenesisDocFromJSON unmarshalls JSON data into a GenesisDoc.
@@ -120,7 +113,7 @@ func GenesisDocFromJSON(jsonBlob []byte) (*GenesisDoc, error) {
 	genDoc := GenesisDoc{}
 	err := cmtjson.Unmarshal(jsonBlob, &genDoc)
 	if err != nil {
-		return nil, fmt.Errorf("invalid json for GenesisDoc: %s", err)
+		return nil, err
 	}
 
 	if err := genDoc.ValidateAndComplete(); err != nil {

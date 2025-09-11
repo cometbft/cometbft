@@ -8,16 +8,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/v2/config"
-	"github.com/cometbft/cometbft/v2/internal/test"
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/internal/test"
 )
 
 func ensureFiles(t *testing.T, rootDir string, files ...string) {
-	t.Helper()
 	for _, f := range files {
 		p := filepath.Join(rootDir, f)
 		_, err := os.Stat(p)
-		require.NoError(t, err, p)
+		assert.NoError(t, err, p)
 	}
 }
 
@@ -26,7 +25,7 @@ func TestEnsureRoot(t *testing.T) {
 
 	// setup temp dir for test
 	tmpDir, err := os.MkdirTemp("", "config-test")
-	require.NoError(err)
+	require.Nil(err)
 	defer os.RemoveAll(tmpDir)
 
 	// create root dir
@@ -34,7 +33,7 @@ func TestEnsureRoot(t *testing.T) {
 
 	// make sure config is set properly
 	data, err := os.ReadFile(filepath.Join(tmpDir, config.DefaultConfigDir, config.DefaultConfigFileName))
-	require.NoError(err)
+	require.Nil(err)
 
 	assertValidConfig(t, string(data))
 
@@ -51,7 +50,7 @@ func TestEnsureTestRoot(t *testing.T) {
 
 	// make sure config is set properly
 	data, err := os.ReadFile(filepath.Join(rootDir, config.DefaultConfigDir, config.DefaultConfigFileName))
-	require.NoError(err)
+	require.Nil(err)
 
 	assertValidConfig(t, string(data))
 
@@ -73,7 +72,7 @@ func TestEnsureTestRoot(t *testing.T) {
 func assertValidConfig(t *testing.T, configFile string) {
 	t.Helper()
 	// list of words we expect in the config
-	elems := []string{
+	var elems = []string{
 		"moniker",
 		"seeds",
 		"proxy_app",

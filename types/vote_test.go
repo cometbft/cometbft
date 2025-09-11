@@ -9,24 +9,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	"github.com/cometbft/cometbft/v2/crypto"
-	"github.com/cometbft/cometbft/v2/crypto/ed25519"
-	"github.com/cometbft/cometbft/v2/crypto/tmhash"
-	"github.com/cometbft/cometbft/v2/libs/protoio"
-	cmttime "github.com/cometbft/cometbft/v2/types/time"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	"github.com/cometbft/cometbft/libs/protoio"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 func examplePrevote() *Vote {
-	return exampleVote(byte(PrevoteType))
+	return exampleVote(byte(cmtproto.PrevoteType))
 }
 
 func examplePrecommit() *Vote {
-	vote := exampleVote(byte(PrecommitType))
+	vote := exampleVote(byte(cmtproto.PrecommitType))
 	vote.Extension = []byte("extension")
 	vote.ExtensionSignature = []byte("signature")
-	vote.NonRpExtension = []byte("non_replay_protected_extension")
-	vote.NonRpExtensionSignature = []byte("non_replay_protected_extension_signature")
 	return vote
 }
 
@@ -37,7 +35,7 @@ func exampleVote(t byte) *Vote {
 	}
 
 	return &Vote{
-		Type:      SignedMsgType(t),
+		Type:      cmtproto.SignedMsgType(t),
 		Height:    12345,
 		Round:     2,
 		Timestamp: stamp,
@@ -77,7 +75,7 @@ func TestVoteSignBytesTestVectors(t *testing.T) {
 		},
 		// with proper (fixed size) height and round (PreCommit):
 		1: {
-			"", &Vote{Height: 1, Round: 1, Type: PrecommitType},
+			"", &Vote{Height: 1, Round: 1, Type: cmtproto.PrecommitType},
 			[]byte{
 				0x21,                                   // length
 				0x8,                                    // (field_number << 3) | wire_type
@@ -93,7 +91,7 @@ func TestVoteSignBytesTestVectors(t *testing.T) {
 		},
 		// with proper (fixed size) height and round (PreVote):
 		2: {
-			"", &Vote{Height: 1, Round: 1, Type: PrevoteType},
+			"", &Vote{Height: 1, Round: 1, Type: cmtproto.PrevoteType},
 			[]byte{
 				0x21,                                   // length
 				0x8,                                    // (field_number << 3) | wire_type
@@ -150,7 +148,7 @@ func TestVoteSignBytesTestVectors(t *testing.T) {
 				0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // height
 				0x19,                                   // (field_number << 3) | wire_type
 				0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // round
-				// remaining fields:
+				// remaning fields:
 				0x2a,                                                                // (field_number << 3) | wire_type
 				0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1, // timestamp
 				// (field_number << 3) | wire_type
@@ -187,7 +185,7 @@ func TestVoteVerifySignature(t *testing.T) {
 	signBytes := VoteSignBytes("test_chain_id", v)
 
 	// sign it
-	err = privVal.SignVote("test_chain_id", v, false)
+	err = privVal.SignVote("test_chain_id", v)
 	require.NoError(t, err)
 
 	// verify the same vote
@@ -253,17 +251,16 @@ func TestVoteExtension(t *testing.T) {
 				Height:           height,
 				Round:            round,
 				Timestamp:        cmttime.Now(),
-				Type:             PrecommitType,
+				Type:             cmtproto.PrecommitType,
 				BlockID:          makeBlockIDRandom(),
 			}
 
 			v := vote.ToProto()
-			err = privVal.SignVote("test_chain_id", v, true)
+			err = privVal.SignVote("test_chain_id", v)
 			require.NoError(t, err)
 			vote.Signature = v.Signature
 			if tc.includeSignature {
 				vote.ExtensionSignature = v.ExtensionSignature
-				vote.NonRpExtensionSignature = v.NonRpExtensionSignature
 			}
 			err = vote.VerifyExtension("test_chain_id", pk)
 			if tc.expectError {
@@ -278,16 +275,17 @@ func TestVoteExtension(t *testing.T) {
 func TestIsVoteTypeValid(t *testing.T) {
 	tc := []struct {
 		name string
-		in   SignedMsgType
+		in   cmtproto.SignedMsgType
 		out  bool
 	}{
-		{"Prevote", PrevoteType, true},
-		{"Precommit", PrecommitType, true},
-		{"InvalidType", SignedMsgType(0x3), false},
+		{"Prevote", cmtproto.PrevoteType, true},
+		{"Precommit", cmtproto.PrecommitType, true},
+		{"InvalidType", cmtproto.SignedMsgType(0x3), false},
 	}
 
 	for _, tt := range tc {
-		t.Run(tt.name, func(_ *testing.T) {
+		tt := tt
+		t.Run(tt.name, func(st *testing.T) {
 			if rs := IsVoteTypeValid(tt.in); rs != tt.out {
 				t.Errorf("got unexpected Vote type. Expected:\n%v\nGot:\n%v", rs, tt.out)
 			}
@@ -304,36 +302,35 @@ func TestVoteVerify(t *testing.T) {
 	vote.ValidatorAddress = pubkey.Address()
 
 	err = vote.Verify("test_chain_id", ed25519.GenPrivKey().PubKey())
-	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+	if assert.Error(t, err) {
 		assert.Equal(t, ErrVoteInvalidValidatorAddress, err)
 	}
 
 	err = vote.Verify("test_chain_id", pubkey)
-	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+	if assert.Error(t, err) {
 		assert.Equal(t, ErrVoteInvalidSignature, err)
 	}
 }
 
 func TestVoteString(t *testing.T) {
 	str := examplePrecommit().String()
-	expected := `Vote{56789:6AF1F4111082 12345/02/SIGNED_MSG_TYPE_PRECOMMIT(Precommit) 8B01023386C3 000000000000 657874656E73 6E6F6E5F7265 @ 2017-12-25T03:00:01.234Z}` //nolint:lll //ignore line length for tests
+	expected := `Vote{56789:6AF1F4111082 12345/02/SIGNED_MSG_TYPE_PRECOMMIT(Precommit) 8B01023386C3 000000000000 657874656E73 @ 2017-12-25T03:00:01.234Z}` //nolint:lll //ignore line length for tests
 	if str != expected {
 		t.Errorf("got unexpected string for Vote. Expected:\n%v\nGot:\n%v", expected, str)
 	}
 
 	str2 := examplePrevote().String()
-	expected = `Vote{56789:6AF1F4111082 12345/02/SIGNED_MSG_TYPE_PREVOTE(Prevote) 8B01023386C3 000000000000 000000000000 000000000000 @ 2017-12-25T03:00:01.234Z}` //nolint:lll //ignore line length for tests
+	expected = `Vote{56789:6AF1F4111082 12345/02/SIGNED_MSG_TYPE_PREVOTE(Prevote) 8B01023386C3 000000000000 000000000000 @ 2017-12-25T03:00:01.234Z}` //nolint:lll //ignore line length for tests
 	if str2 != expected {
 		t.Errorf("got unexpected string for Vote. Expected:\n%v\nGot:\n%v", expected, str2)
 	}
 }
 
-func signVote(t *testing.T, pv PrivValidator, vote *Vote) {
+func signVote(t *testing.T, pv PrivValidator, chainID string, vote *Vote) {
 	t.Helper()
-	chainID := "test_chain_id"
 
 	v := vote.ToProto()
-	require.NoError(t, pv.SignVote(chainID, v, true))
+	require.NoError(t, pv.SignVote(chainID, v))
 	vote.Signature = v.Signature
 	vote.ExtensionSignature = v.ExtensionSignature
 }
@@ -346,18 +343,12 @@ func TestValidVotes(t *testing.T) {
 		vote         *Vote
 		malleateVote func(*Vote)
 	}{
-		{"good prevote", examplePrevote(), func(_ *Vote) {}},
-		{"good precommit without vote extension", examplePrecommit(), func(v *Vote) {
-			v.Extension = nil
-			v.NonRpExtension = nil
-		}},
-		{"good precommit with vote extension", examplePrecommit(), func(v *Vote) {
-			v.Extension = []byte("extension")
-			v.NonRpExtension = []byte("non_replay_protected_extension")
-		}},
+		{"good prevote", examplePrevote(), func(v *Vote) {}},
+		{"good precommit without vote extension", examplePrecommit(), func(v *Vote) { v.Extension = nil }},
+		{"good precommit with vote extension", examplePrecommit(), func(v *Vote) { v.Extension = []byte("extension") }},
 	}
 	for _, tc := range testCases {
-		signVote(t, privVal, tc.vote)
+		signVote(t, privVal, "test_chain_id", tc.vote)
 		tc.malleateVote(tc.vote)
 		require.NoError(t, tc.vote.ValidateBasic(), "ValidateBasic for %s", tc.name)
 		require.NoError(t, tc.vote.EnsureExtension(), "EnsureExtension for %s", tc.name)
@@ -382,13 +373,13 @@ func TestInvalidVotes(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		prevote := examplePrevote()
-		signVote(t, privVal, prevote)
+		signVote(t, privVal, "test_chain_id", prevote)
 		tc.malleateVote(prevote)
 		require.Error(t, prevote.ValidateBasic(), "ValidateBasic for %s in invalid prevote", tc.name)
 		require.NoError(t, prevote.EnsureExtension(), "EnsureExtension for %s in invalid prevote", tc.name)
 
 		precommit := examplePrecommit()
-		signVote(t, privVal, precommit)
+		signVote(t, privVal, "test_chain_id", precommit)
 		tc.malleateVote(precommit)
 		require.Error(t, precommit.ValidateBasic(), "ValidateBasic for %s in invalid precommit", tc.name)
 		require.NoError(t, precommit.EnsureExtension(), "EnsureExtension for %s in invalid precommit", tc.name)
@@ -407,7 +398,7 @@ func TestInvalidPrevotes(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		prevote := examplePrevote()
-		signVote(t, privVal, prevote)
+		signVote(t, privVal, "test_chain_id", prevote)
 		tc.malleateVote(prevote)
 		require.Error(t, prevote.ValidateBasic(), "ValidateBasic for %s", tc.name)
 		require.NoError(t, prevote.EnsureExtension(), "EnsureExtension for %s", tc.name)
@@ -429,7 +420,7 @@ func TestInvalidPrecommitExtensions(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		precommit := examplePrecommit()
-		signVote(t, privVal, precommit)
+		signVote(t, privVal, "test_chain_id", precommit)
 		tc.malleateVote(precommit)
 		// ValidateBasic ensures that vote extensions, if present, are well formed
 		require.Error(t, precommit.ValidateBasic(), "ValidateBasic for %s", tc.name)
@@ -454,7 +445,7 @@ func TestEnsureVoteExtension(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		precommit := examplePrecommit()
-		signVote(t, privVal, precommit)
+		signVote(t, privVal, "test_chain_id", precommit)
 		tc.malleateVote(precommit)
 		if tc.expectError {
 			require.Error(t, precommit.EnsureExtension(), "EnsureExtension for %s", tc.name)
@@ -468,7 +459,7 @@ func TestVoteProtobuf(t *testing.T) {
 	privVal := NewMockPV()
 	vote := examplePrecommit()
 	v := vote.ToProto()
-	err := privVal.SignVote("test_chain_id", v, false)
+	err := privVal.SignVote("test_chain_id", v)
 	vote.Signature = v.Signature
 	require.NoError(t, err)
 
@@ -592,7 +583,7 @@ func TestSignAndCheckVote(t *testing.T) {
 				v.Extension = []byte("extension")
 				return v
 			}(),
-			expectError: false,
+			expectError: true,
 		},
 	}
 

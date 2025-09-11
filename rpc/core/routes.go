@@ -1,7 +1,7 @@
 package core
 
 import (
-	rpc "github.com/cometbft/cometbft/v2/rpc/jsonrpc/server"
+	rpc "github.com/cometbft/cometbft/rpc/jsonrpc/server"
 )
 
 // TODO: better system than "unsafe" prefix
@@ -37,7 +37,6 @@ func (env *Environment) GetRoutes() RoutesMap {
 		"dump_consensus_state": rpc.NewRPCFunc(env.DumpConsensusState, ""),
 		"consensus_state":      rpc.NewRPCFunc(env.GetConsensusState, ""),
 		"consensus_params":     rpc.NewRPCFunc(env.ConsensusParams, "height", rpc.Cacheable("height")),
-		"unconfirmed_tx":       rpc.NewRPCFunc(env.UnconfirmedTx, "hash"),
 		"unconfirmed_txs":      rpc.NewRPCFunc(env.UnconfirmedTxs, "limit"),
 		"num_unconfirmed_txs":  rpc.NewRPCFunc(env.NumUnconfirmedTxs, ""),
 

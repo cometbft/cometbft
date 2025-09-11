@@ -2,22 +2,17 @@ name: Markdown Linter
 on:
   push:
     branches:
-      - main
+      - v0.38.x
     paths:
       - "**.md"
       - "**.yml"
       - "**.yaml"
   pull_request:
     branches:
-      - main
+      - v0.38.x
     paths:
       - "**.md"
       - "**.yml"
-      - "**.yaml"
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   build:
@@ -25,12 +20,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Lint Code Base
         uses: docker://github/super-linter:v4
         env:
           VALIDATE_ALL_CODEBASE: true
-          DEFAULT_BRANCH: main
+          DEFAULT_BRANCH: v0.38.x
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_MD: true
           VALIDATE_OPENAPI: true

@@ -6,8 +6,7 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	pb "github.com/cometbft/cometbft/api/cometbft/abci/v2"
-	"github.com/cometbft/cometbft/v2/libs/protoio"
+	"github.com/cometbft/cometbft/libs/protoio"
 )
 
 const (
@@ -27,204 +26,204 @@ func ReadMessage(r io.Reader, msg proto.Message) error {
 	return err
 }
 
-// ----------------------------------------
+//----------------------------------------
 
-func ToEchoRequest(message string) *Request {
+func ToRequestEcho(message string) *Request {
 	return &Request{
-		Value: &pb.Request_Echo{Echo: &EchoRequest{Message: message}},
+		Value: &Request_Echo{&RequestEcho{Message: message}},
 	}
 }
 
-func ToFlushRequest() *Request {
+func ToRequestFlush() *Request {
 	return &Request{
-		Value: &pb.Request_Flush{Flush: &FlushRequest{}},
+		Value: &Request_Flush{&RequestFlush{}},
 	}
 }
 
-func ToInfoRequest(req *InfoRequest) *Request {
+func ToRequestInfo(req *RequestInfo) *Request {
 	return &Request{
-		Value: &pb.Request_Info{Info: req},
+		Value: &Request_Info{req},
 	}
 }
 
-func ToCheckTxRequest(req *CheckTxRequest) *Request {
+func ToRequestCheckTx(req *RequestCheckTx) *Request {
 	return &Request{
-		Value: &pb.Request_CheckTx{CheckTx: req},
+		Value: &Request_CheckTx{req},
 	}
 }
 
-func ToCommitRequest() *Request {
+func ToRequestCommit() *Request {
 	return &Request{
-		Value: &pb.Request_Commit{Commit: &CommitRequest{}},
+		Value: &Request_Commit{&RequestCommit{}},
 	}
 }
 
-func ToQueryRequest(req *QueryRequest) *Request {
+func ToRequestQuery(req *RequestQuery) *Request {
 	return &Request{
-		Value: &pb.Request_Query{Query: req},
+		Value: &Request_Query{req},
 	}
 }
 
-func ToInitChainRequest(req *InitChainRequest) *Request {
+func ToRequestInitChain(req *RequestInitChain) *Request {
 	return &Request{
-		Value: &pb.Request_InitChain{InitChain: req},
+		Value: &Request_InitChain{req},
 	}
 }
 
-func ToListSnapshotsRequest(req *ListSnapshotsRequest) *Request {
+func ToRequestListSnapshots(req *RequestListSnapshots) *Request {
 	return &Request{
-		Value: &pb.Request_ListSnapshots{ListSnapshots: req},
+		Value: &Request_ListSnapshots{req},
 	}
 }
 
-func ToOfferSnapshotRequest(req *OfferSnapshotRequest) *Request {
+func ToRequestOfferSnapshot(req *RequestOfferSnapshot) *Request {
 	return &Request{
-		Value: &pb.Request_OfferSnapshot{OfferSnapshot: req},
+		Value: &Request_OfferSnapshot{req},
 	}
 }
 
-func ToLoadSnapshotChunkRequest(req *LoadSnapshotChunkRequest) *Request {
+func ToRequestLoadSnapshotChunk(req *RequestLoadSnapshotChunk) *Request {
 	return &Request{
-		Value: &pb.Request_LoadSnapshotChunk{LoadSnapshotChunk: req},
+		Value: &Request_LoadSnapshotChunk{req},
 	}
 }
 
-func ToApplySnapshotChunkRequest(req *ApplySnapshotChunkRequest) *Request {
+func ToRequestApplySnapshotChunk(req *RequestApplySnapshotChunk) *Request {
 	return &Request{
-		Value: &pb.Request_ApplySnapshotChunk{ApplySnapshotChunk: req},
+		Value: &Request_ApplySnapshotChunk{req},
 	}
 }
 
-func ToPrepareProposalRequest(req *PrepareProposalRequest) *Request {
+func ToRequestPrepareProposal(req *RequestPrepareProposal) *Request {
 	return &Request{
-		Value: &pb.Request_PrepareProposal{PrepareProposal: req},
+		Value: &Request_PrepareProposal{req},
 	}
 }
 
-func ToProcessProposalRequest(req *ProcessProposalRequest) *Request {
+func ToRequestProcessProposal(req *RequestProcessProposal) *Request {
 	return &Request{
-		Value: &pb.Request_ProcessProposal{ProcessProposal: req},
+		Value: &Request_ProcessProposal{req},
 	}
 }
 
-func ToExtendVoteRequest(req *ExtendVoteRequest) *Request {
+func ToRequestExtendVote(req *RequestExtendVote) *Request {
 	return &Request{
-		Value: &pb.Request_ExtendVote{ExtendVote: req},
+		Value: &Request_ExtendVote{req},
 	}
 }
 
-func ToVerifyVoteExtensionRequest(req *VerifyVoteExtensionRequest) *Request {
+func ToRequestVerifyVoteExtension(req *RequestVerifyVoteExtension) *Request {
 	return &Request{
-		Value: &pb.Request_VerifyVoteExtension{VerifyVoteExtension: req},
+		Value: &Request_VerifyVoteExtension{req},
 	}
 }
 
-func ToFinalizeBlockRequest(req *FinalizeBlockRequest) *Request {
+func ToRequestFinalizeBlock(req *RequestFinalizeBlock) *Request {
 	return &Request{
-		Value: &pb.Request_FinalizeBlock{FinalizeBlock: req},
+		Value: &Request_FinalizeBlock{req},
 	}
 }
 
-// ----------------------------------------
+//----------------------------------------
 
-func ToExceptionResponse(errStr string) *Response {
+func ToResponseException(errStr string) *Response {
 	return &Response{
-		Value: &pb.Response_Exception{Exception: &ExceptionResponse{Error: errStr}},
+		Value: &Response_Exception{&ResponseException{Error: errStr}},
 	}
 }
 
-func ToEchoResponse(message string) *Response {
+func ToResponseEcho(message string) *Response {
 	return &Response{
-		Value: &pb.Response_Echo{Echo: &EchoResponse{Message: message}},
+		Value: &Response_Echo{&ResponseEcho{Message: message}},
 	}
 }
 
-func ToFlushResponse() *Response {
+func ToResponseFlush() *Response {
 	return &Response{
-		Value: &pb.Response_Flush{Flush: &FlushResponse{}},
+		Value: &Response_Flush{&ResponseFlush{}},
 	}
 }
 
-func ToInfoResponse(res *InfoResponse) *Response {
+func ToResponseInfo(res *ResponseInfo) *Response {
 	return &Response{
-		Value: &pb.Response_Info{Info: res},
+		Value: &Response_Info{res},
 	}
 }
 
-func ToCheckTxResponse(res *CheckTxResponse) *Response {
+func ToResponseCheckTx(res *ResponseCheckTx) *Response {
 	return &Response{
-		Value: &pb.Response_CheckTx{CheckTx: res},
+		Value: &Response_CheckTx{res},
 	}
 }
 
-func ToCommitResponse(res *CommitResponse) *Response {
+func ToResponseCommit(res *ResponseCommit) *Response {
 	return &Response{
-		Value: &pb.Response_Commit{Commit: res},
+		Value: &Response_Commit{res},
 	}
 }
 
-func ToQueryResponse(res *QueryResponse) *Response {
+func ToResponseQuery(res *ResponseQuery) *Response {
 	return &Response{
-		Value: &pb.Response_Query{Query: res},
+		Value: &Response_Query{res},
 	}
 }
 
-func ToInitChainResponse(res *InitChainResponse) *Response {
+func ToResponseInitChain(res *ResponseInitChain) *Response {
 	return &Response{
-		Value: &pb.Response_InitChain{InitChain: res},
+		Value: &Response_InitChain{res},
 	}
 }
 
-func ToListSnapshotsResponse(res *ListSnapshotsResponse) *Response {
+func ToResponseListSnapshots(res *ResponseListSnapshots) *Response {
 	return &Response{
-		Value: &pb.Response_ListSnapshots{ListSnapshots: res},
+		Value: &Response_ListSnapshots{res},
 	}
 }
 
-func ToOfferSnapshotResponse(res *OfferSnapshotResponse) *Response {
+func ToResponseOfferSnapshot(res *ResponseOfferSnapshot) *Response {
 	return &Response{
-		Value: &pb.Response_OfferSnapshot{OfferSnapshot: res},
+		Value: &Response_OfferSnapshot{res},
 	}
 }
 
-func ToLoadSnapshotChunkResponse(res *LoadSnapshotChunkResponse) *Response {
+func ToResponseLoadSnapshotChunk(res *ResponseLoadSnapshotChunk) *Response {
 	return &Response{
-		Value: &pb.Response_LoadSnapshotChunk{LoadSnapshotChunk: res},
+		Value: &Response_LoadSnapshotChunk{res},
 	}
 }
 
-func ToApplySnapshotChunkResponse(res *ApplySnapshotChunkResponse) *Response {
+func ToResponseApplySnapshotChunk(res *ResponseApplySnapshotChunk) *Response {
 	return &Response{
-		Value: &pb.Response_ApplySnapshotChunk{ApplySnapshotChunk: res},
+		Value: &Response_ApplySnapshotChunk{res},
 	}
 }
 
-func ToPrepareProposalResponse(res *PrepareProposalResponse) *Response {
+func ToResponsePrepareProposal(res *ResponsePrepareProposal) *Response {
 	return &Response{
-		Value: &pb.Response_PrepareProposal{PrepareProposal: res},
+		Value: &Response_PrepareProposal{res},
 	}
 }
 
-func ToProcessProposalResponse(res *ProcessProposalResponse) *Response {
+func ToResponseProcessProposal(res *ResponseProcessProposal) *Response {
 	return &Response{
-		Value: &pb.Response_ProcessProposal{ProcessProposal: res},
+		Value: &Response_ProcessProposal{res},
 	}
 }
 
-func ToExtendVoteResponse(res *ExtendVoteResponse) *Response {
+func ToResponseExtendVote(res *ResponseExtendVote) *Response {
 	return &Response{
-		Value: &pb.Response_ExtendVote{ExtendVote: res},
+		Value: &Response_ExtendVote{res},
 	}
 }
 
-func ToVerifyVoteExtensionResponse(res *VerifyVoteExtensionResponse) *Response {
+func ToResponseVerifyVoteExtension(res *ResponseVerifyVoteExtension) *Response {
 	return &Response{
-		Value: &pb.Response_VerifyVoteExtension{VerifyVoteExtension: res},
+		Value: &Response_VerifyVoteExtension{res},
 	}
 }
 
-func ToFinalizeBlockResponse(res *FinalizeBlockResponse) *Response {
+func ToResponseFinalizeBlock(res *ResponseFinalizeBlock) *Response {
 	return &Response{
-		Value: &pb.Response_FinalizeBlock{FinalizeBlock: res},
+		Value: &Response_FinalizeBlock{res},
 	}
 }

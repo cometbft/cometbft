@@ -2,7 +2,7 @@ package merkle
 
 import (
 	// it is ok to use math/rand here: we do not need a cryptographically secure random
-	// number generator here and we can run the tests a bit faster.
+	// number generator here and we can run the tests a bit faster
 	crand "crypto/rand"
 	"math/rand"
 	"testing"
@@ -35,7 +35,7 @@ func TestKeyPath(t *testing.T) {
 		}
 
 		res, err := KeyPathToKeys(path.String())
-		require.NoError(t, err)
+		require.Nil(t, err)
 		require.Equal(t, len(keys), len(res))
 
 		for i, key := range keys {

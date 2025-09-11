@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.0.0
 info:
   title: CometBFT RPC
   contact:
@@ -9,7 +9,7 @@ info:
 
     * URI over HTTP
     * JSONRPC over HTTP
-    * JSONRPC over WebSockets
+    * JSONRPC over websockets
 
     ## Configuration
 
@@ -27,7 +27,7 @@ info:
     section change the `cors_allowed_origins` property, please add the URL of
     the site where this OpenAPI document is running, for example:
 
-      `cors_allowed_origins = ["http://localhost:26657"]`
+      `cors_allowed_origins = ["http://localhost:8088"]`
 
     or if testing from the official documentation site:
 
@@ -38,44 +38,17 @@ info:
     Arguments which expect strings or byte arrays may be passed as quoted
     strings, like `"abc"` or as `0x`-prefixed strings, like `0x616263`.
 
-    ## Versions
-
-    Up to CometBFT v0.38.x the RPC API version followed CometBFT's version, even if there was
-    no actual change in the API.
-    In CometBFT v0.39.0, the RPC API version has changed to v1 and from then on its version
-    will be independent CometBFT's.
-
-    Also, from CometBFT v0.39.0, the URL used will be suffixed with the RPC version.
-    For example, to invoke the `block` method, one should use `localhost:26657/v1/block`
-    as endpoint.
-
-    For backwards compatibility, CometBFT v0.39.x will also supports invoking the methods
-    without the `v1` suffix, for example, `localhost:26657/block`, returning the exact same response.
-    However, the support for unsuffixed methods will be dropped in future releases and all users are
-    encouraged to migrate as soon as possible.
-
-    ## Encoding
-
-    All data is encoded in amino-compatible JSON. This mostly differs from
-    `encoding/json` in encoding of integers (64-bit integers are encoded as
-    strings, not numbers), and handling of interfaces (wrapped in an interface
-    object with type/value keys).
-
-    Please refer to [this
-    documentation](https://pkg.go.dev/github.com/cometbft/cometbft/libs/json)
-    for additional details.
-
     ## URI/HTTP
 
     A REST like interface.
 
-        curl localhost:26657/v1/block?height=5
+        curl localhost:26657/block?height=5
 
     ## JSONRPC/HTTP
 
     JSONRPC requests can be POST'd to the root RPC endpoint via HTTP.
 
-        curl --header "Content-Type: application/json" --request POST --data '{"method": "block", "params": ["5"], "id": 1}' localhost:26657/v1
+        curl --header "Content-Type: application/json" --request POST --data '{"method": "block", "params": ["5"], "id": 1}' localhost:26657
 
     ## JSONRPC/websockets
 
@@ -87,20 +60,20 @@ info:
     For example using the [websocat](https://github.com/vi/websocat) tool, you can subscribe for 'NewBlock` events
     with the following command:
 
-        echo '{ "jsonrpc": "2.0","method": "subscribe","id": 0,"params": {"query": "tm.event='"'NewBlock'"'"} }' | websocat -n -t ws://127.0.0.1:26657/v1/websocket
+        echo '{ "jsonrpc": "2.0","method": "subscribe","id": 0,"params": {"query": "tm.event='"'NewBlock'"'"} }' | websocat -n -t ws://127.0.0.1:26657/websocket
 
-  version: "v1"
+  version: "v0.38.x"
   license:
     name: Apache 2.0
-    url: https://github.com/cometbft/cometbft/blob/main/LICENSE
+    url: https://github.com/cometbft/cometbft/blob/v0.38.x/LICENSE
 servers:
   - url: https://rpc.cosmos.directory/cosmoshub
-    description: CometBFT running on a public node in the Cosmos registry
+    description: Interact with the CometBFT RPC from a public node in the Cosmos registry
   - url: http://localhost:26657
-    description: CometBFT running locally (`cors_allowed_origins` must be set; see above)
+    description: Interact with CometBFT RPC node running locally
 tags:
   - name: Info
-    description: Information about the node APIs
+    description: Informations about the node APIs
   - name: Tx
     description: Transactions broadcast APIs
   - name: ABCI
@@ -110,18 +83,16 @@ tags:
   - name: Unsafe
     description: Unsafe APIs
 paths:
-  /v1/broadcast_tx_sync:
+  /broadcast_tx_sync:
     get:
-      summary: Submits a transaction to the blockchain and returns with the response from CheckTx.
+      summary: Returns with the response from CheckTx. Does not wait for DeliverTx result.
       tags:
         - Tx
       operationId: broadcast_tx_sync
       description: |
-        Submits a transaction to be included in the blockchain and returns the response from CheckTx.
-        Does not wait for DeliverTx result.
         If you want to be sure that the transaction is included in a block, you can
         subscribe for the result using JSONRPC via a websocket. See
-        https://docs.cometbft.com/main/explanation/core/subscription.html
+        https://docs.cometbft.com/v0.38.x/core/subscription.html
         If you haven't received anything after a couple of blocks, resend it. If the
         same happens again, send it to some other node. A few reasons why it could
         happen:
@@ -132,7 +103,7 @@ paths:
         (https://github.com/tendermint/tendermint/issues/3322)
 
 
-        Please refer to [formatting/encoding rules](https://docs.cometbft.com/main/explanation/core/using-cometbft#formatting)
+        Please refer to [formatting/encoding rules](https://docs.cometbft.com/v0.38.x/core/using-cometbft.html#formatting)
         for additional details
 
       parameters:
@@ -141,8 +112,8 @@ paths:
           required: true
           schema:
             type: string
-          example: '"456"'
-          description: The transaction hash
+          example: "456"
+          description: The transaction
       responses:
         "200":
           description: Empty
@@ -156,18 +127,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/broadcast_tx_async:
+  /broadcast_tx_async:
     get:
-      summary: Submits a transaction to the blockchain and returns right away, with no response.
+      summary: Returns right away, with no response. Does not wait for CheckTx nor DeliverTx results.
       tags:
         - Tx
       operationId: broadcast_tx_async
       description: |
-        Submits a transaction to be included in the blockchain and returns immediately.
-        Does not wait for CheckTx or DeliverTx results.
         If you want to be sure that the transaction is included in a block, you can
         subscribe for the result using JSONRPC via a websocket. See
-        https://docs.cometbft.com/main/explanation/core/subscription.html
+        https://docs.cometbft.com/v0.38.x/core/subscription.html
         If you haven't received anything after a couple of blocks, resend it. If the
         same happens again, send it to some other node. A few reasons why it could
         happen:
@@ -178,7 +147,7 @@ paths:
         (https://github.com/tendermint/tendermint/issues/3322)
         3. node can be offline
 
-        Please refer to [formatting/encoding rules](https://docs.cometbft.com/main/explanation/core/using-cometbft.html#formatting)
+        Please refer to [formatting/encoding rules](https://docs.cometbft.com/v0.38.x/core/using-cometbft.html#formatting)
         for additional details
 
       parameters:
@@ -187,7 +156,7 @@ paths:
           required: true
           schema:
             type: string
-            example: '"123"'
+            example: "123"
           description: The transaction
       responses:
         "200":
@@ -202,9 +171,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/broadcast_tx_commit:
+  /broadcast_tx_commit:
     get:
-      summary: Submits a transaction to be included in the blockchain and returns CheckTx and DeliverTx results.
+      summary: Returns with the responses from CheckTx and DeliverTx.
       tags:
         - Tx
       operationId: broadcast_tx_commit
@@ -212,7 +181,7 @@ paths:
         IMPORTANT: use only for testing and development. In production, use
         BroadcastTxSync or BroadcastTxAsync. You can subscribe for the transaction
         result using JSONRPC via a websocket. See
-        https://docs.cometbft.com/main/core/subscription.html
+        https://docs.cometbft.com/v0.38.x/core/subscription.html
 
         CONTRACT: only returns error if mempool.CheckTx() errs or if we timeout
         waiting for tx to commit.
@@ -220,7 +189,7 @@ paths:
         If CheckTx or DeliverTx fail, no error will be returned, but the returned result
         will contain a non-OK ABCI code.
 
-        Please refer to [formatting/encoding rules](https://docs.cometbft.com/main/explanation/core/using-cometbft.html#formatting)
+        Please refer to [formatting/encoding rules](https://docs.cometbft.com/v0.38.x/core/using-cometbft.html#formatting)
         for additional details
 
       parameters:
@@ -229,7 +198,7 @@ paths:
           required: true
           schema:
             type: string
-            example: "0x1234"
+            example: "785"
           description: The transaction
       responses:
         "200":
@@ -244,7 +213,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/check_tx:
+  /check_tx:
     get:
       summary: Checks the transaction without executing it.
       tags:
@@ -253,7 +222,7 @@ paths:
       description: |
         The transaction won't be added to the mempool.
 
-        Please refer to [formatting/encoding rules](https://docs.cometbft.com/main/explanation/core/using-cometbft.html#formatting)
+        Please refer to [formatting/encoding rules](https://docs.cometbft.com/v0.38.x/core/using-cometbft.html#formatting)
         for additional details
 
         Upon success, the `Cache-Control` header will be set with the default
@@ -279,15 +248,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/health:
+  /health:
     get:
-      summary: Gets the node's health status information.
+      summary: Node heartbeat
       tags:
         - Info
       operationId: health
       description: |
-        Get node health status.
-        Returns empty result (200 OK) on success, no response - in case of an error.
+        Get node health. Returns empty result (200 OK) on success, no response - in case of an error.
       responses:
         "200":
           description: Gets Node Health
@@ -301,7 +269,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/status:
+  /status:
     get:
       summary: Node Status
       operationId: status
@@ -322,7 +290,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/net_info:
+  /net_info:
     get:
       summary: Network information
       operationId: net_info
@@ -343,14 +311,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/dial_seeds:
+  /dial_seeds:
     get:
       summary: Dial Seeds (Unsafe)
       operationId: dial_seeds
       tags:
         - Unsafe
       description: |
-        Dial a peer, this route in under unsafe, and has to be manually enabled to use
+        Dial a peer, this route in under unsafe, and has to manually enabled to use
 
           **Example:** curl 'localhost:26657/dial_seeds?seeds=\["f9baeaa15fedf5e1ef7448dd60f46c01f1a9e9c4@1.2.3.4:26656","0491d373a8e0fcf1023aaf18c51d6a1d0d4f31bd@5.6.7.8:26656"\]'
       parameters:
@@ -375,7 +343,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/dial_peers:
+  /dial_peers:
     get:
       summary: Add Peers/Persistent Peers (unsafe)
       operationId: dial_peers
@@ -425,7 +393,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/blockchain:
+  /blockchain:
     get:
       summary: "Get block headers (max: 20) for minHeight <= height <= maxHeight."
       operationId: blockchain
@@ -447,13 +415,7 @@ paths:
       description: |
         Get block headers for minHeight <= height <= maxHeight.
 
-        If maxHeight does not yet exist, blocks up to the current height will
-        be returned. If minHeight does not exist (due to pruning), earliest
-        existing height will be used. If maxHeight < minHeight, an error will
-        be returned.
-
-        At most 20 items will be returned. Block headers are returned in
-        descending order (highest first).
+        At most 20 items will be returned.
 
         Upon success, the `Cache-Control` header will be set with the default
         maximum age.
@@ -470,7 +432,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/header:
+  /header:
     get:
       summary: Get header at a specified height
       operationId: header
@@ -491,7 +453,7 @@ paths:
         `Cache-Control` header will be set with the default maximum age.
       responses:
         "200":
-          description: Header information.
+          description: Header informations.
           content:
             application/json:
               schema:
@@ -502,7 +464,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/header_by_hash:
+  /header_by_hash:
     get:
       summary: Get header by hash
       operationId: header_by_hash
@@ -523,7 +485,7 @@ paths:
         maximum age.
       responses:
         "200":
-          description: Header information.
+          description: Header informations.
           content:
             application/json:
               schema:
@@ -534,7 +496,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/block:
+  /block:
     get:
       summary: Get block at a specified height
       operationId: block
@@ -555,7 +517,7 @@ paths:
         `Cache-Control` header will be set with the default maximum age.
       responses:
         "200":
-          description: Block information.
+          description: Block informations.
           content:
             application/json:
               schema:
@@ -566,7 +528,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/block_by_hash:
+  /block_by_hash:
     get:
       summary: Get block by hash
       operationId: block_by_hash
@@ -587,7 +549,7 @@ paths:
         maximum age.
       responses:
         "200":
-          description: Block information.
+          description: Block informations.
           content:
             application/json:
               schema:
@@ -598,7 +560,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/block_results:
+  /block_results:
     get:
       summary: Get block results at a specified height
       operationId: block_results
@@ -630,14 +592,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/commit:
+  /commit:
     get:
       summary: Get commit results at a specified height
       operationId: commit
       parameters:
         - in: query
           name: height
-          description: height to return. If no height is provided, it will fetch commit information regarding the latest block.
+          description: height to return. If no height is provided, it will fetch commit informations regarding the latest block.
           schema:
             type: integer
             default: 0
@@ -665,7 +627,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/validators:
+  /validators:
     get:
       summary: Get validator set at a specified height
       operationId: validators
@@ -714,7 +676,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/genesis:
+  /genesis:
     get:
       summary: Get Genesis
       operationId: genesis
@@ -738,7 +700,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/genesis_chunked:
+  /genesis_chunked:
     get:
       summary: Get Genesis in multiple chunks
       operationId: genesis_chunked
@@ -773,7 +735,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/dump_consensus_state:
+  /dump_consensus_state:
     get:
       summary: Get consensus state
       operationId: dump_consensus_state
@@ -799,7 +761,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/consensus_state:
+  /consensus_state:
     get:
       summary: Get consensus state
       operationId: consensus_state
@@ -822,14 +784,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/consensus_params:
+  /consensus_params:
     get:
       summary: Get consensus parameters
       operationId: consensus_params
       parameters:
         - in: query
           name: height
-          description: height to return. If no height is provided, it will fetch commit information regarding the latest block.
+          description: height to return. If no height is provided, it will fetch commit informations regarding the latest block.
           schema:
             type: integer
             default: 0
@@ -854,36 +816,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/unconfirmed_tx:
-    get:
-      summary: Get an unconfirmed transaction by hash
-      operationId: unconfirmed_tx
-      parameters:
-        - in: query
-          name: hash
-          description: hash of transaction to retrieve
-          required: true
-          schema:
-            type: string
-            example: "0xD70952032620CC4E2737EB8AC379806359D8E0B17B0488F627997A0B043ABDED"
-      tags:
-        - Info
-      description: |
-        Get an unconfirmed transaction by hash
-      responses:
-        "200":
-          description: Unconfirmed transaction
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UnconfirmedTransactionResponse"
-        "500":
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-  /v1/unconfirmed_txs:
+  /unconfirmed_txs:
     get:
       summary: Get the list of unconfirmed transactions
       operationId: unconfirmed_txs
@@ -913,7 +846,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/num_unconfirmed_txs:
+  /num_unconfirmed_txs:
     get:
       summary: Get data about unconfirmed transactions
       operationId: num_unconfirmed_txs
@@ -934,7 +867,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/tx_search:
+  /tx_search:
     get:
       summary: Search for transactions
       description: |
@@ -980,8 +913,8 @@ paths:
           required: false
           schema:
             type: string
-            default: '"asc"'
-            example: '"asc"'
+            default: "asc"
+            example: "asc"
       tags:
         - Info
       responses:
@@ -997,7 +930,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/block_search:
+  /block_search:
     get:
       summary: Search for blocks by FinalizeBlock events
       description: |
@@ -1035,8 +968,8 @@ paths:
           required: false
           schema:
             type: string
-            default: '"desc"'
-            example: '"asc"'
+            default: "desc"
+            example: "asc"
       tags:
         - Info
       responses:
@@ -1052,7 +985,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/tx:
+
+  /tx:
     get:
       summary: Get transactions by hash
       operationId: tx
@@ -1092,7 +1026,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/abci_info:
+  /abci_info:
     get:
       summary: Get info about the application.
       operationId: abci_info
@@ -1116,38 +1050,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/abci_query:
+  /abci_query:
     get:
       summary: Query the application for some information.
       operationId: abci_query
       parameters:
         - in: query
           name: path
-          description: |
-            A request path for the application to interpret analogously to a
-            [URI path component](https://www.rfc-editor.org/rfc/rfc3986#section-3.3)
-            in e.g. routing.
-
-            Applications MUST interpret "/store" or any path starting with
-            "/store/" as a query by key on the underlying store, in which case
-            a key SHOULD be specified in `data`.
-          required: false
+          description: Path to the data ("/a/b/c")
+          required: true
           schema:
             type: string
-            example: '"/store/foo"'
+            example: '"/a/b/c"'
         - in: query
           name: data
-          description: |
-            Request parameters for the application to interpret analogously to a
-            [URI query component](https://www.rfc-editor.org/rfc/rfc3986#section-3.4),
-            expressed as hexadecimal-serialized bytes.
-          required: false
+          description: Data
+          required: true
           schema:
             type: string
-            example: "0x636f6d6574626674"
+            example: "IHAVENOIDEA"
         - in: query
           name: height
-          description: The block height against which to query (0 means latest)
+          description: Height (0 means latest)
           required: false
           schema:
             type: integer
@@ -1155,7 +1079,7 @@ paths:
             default: 0
         - in: query
           name: prove
-          description: Return Merkle proof with response if possible
+          description: Include proofs of the transactions inclusion in the block
           required: false
           schema:
             type: boolean
@@ -1178,7 +1102,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/broadcast_evidence:
+  /broadcast_evidence:
     get:
       summary: Broadcast evidence of the misbehavior.
       operationId: broadcast_evidence
@@ -1274,7 +1198,7 @@ components:
           example: "cosmoshub-2"
         version:
           type: string
-          example: "0.34.27"
+          example: "0.32.1"
         channels:
           type: string
           example: "4020212223303800"
@@ -1286,7 +1210,7 @@ components:
           properties:
             tx_index:
               type: string
-              example: '"on"'
+              example: "on"
             rpc_address:
               type: string
               example: "tcp:0.0.0.0:26657"
@@ -1585,7 +1509,7 @@ components:
         block:
           $ref: "#/components/schemas/Block"
     BlockResponse:
-      description: Block info
+      description: Blockc info
       allOf:
         - $ref: "#/components/schemas/JSONRPC"
         - type: object
@@ -2283,29 +2207,6 @@ components:
           #              - "gAPwYl3uCjCMTXENChSMnIkb5ZpYHBKIZqecFEV2tuZr7xIUA75/FmYq9WymsOBJ0XSJ8yV8zmQKMIxNcQ0KFIyciRvlmlgcEohmp5wURXa25mvvEhQbrvwbvlNiT+Yjr86G+YQNx7kRVgowjE1xDQoUjJyJG+WaWBwSiGannBRFdrbma+8SFK2m+1oxgILuQLO55n8mWfnbIzyPCjCMTXENChSMnIkb5ZpYHBKIZqecFEV2tuZr7xIUQNGfkmhTNMis4j+dyMDIWXdIPiYKMIxNcQ0KFIyciRvlmlgcEohmp5wURXa25mvvEhS8sL0D0wwgGCItQwVowak5YB38KRIUCg4KBXVhdG9tEgUxMDA1NBDoxRgaagom61rphyECn8x7emhhKdRCB2io7aS/6Cpuq5NbVqbODmqOT3jWw6kSQKUresk+d+Gw0BhjiggTsu8+1voW+VlDCQ1GRYnMaFOHXhyFv7BCLhFWxLxHSAYT8a5XqoMayosZf9mANKdXArA="
           type: object
 
-    UnconfirmedTransactionResponse:
-      type: object
-      required:
-        - "jsonrpc"
-        - "id"
-        - "result"
-      properties:
-        jsonrpc:
-          type: string
-          example: "2.0"
-        id:
-          type: integer
-          example: 0
-        result:
-          type: object
-          required:
-            - "tx"
-          properties:
-            tx:
-              type: string
-              nullable: true
-              example: "gAPwYl3uCjCMTXENChSMnIkb5ZpYHBKIZqecFEV2tuZr7xIUA75/FmYq9WymsOBJ0XSJ8yV8zmQKMIxNcQ0KFIyciRvlmlgcEohmp5wURXa25mvvEhQbrvwbvlNiT+Yjr86G+YQNx7kRVgowjE1xDQoUjJyJG+WaWBwSiGannBRFdrbma+8SFK2m+1oxgILuQLO55n8mWfnbIzyPCjCMTXENChSMnIkb5ZpYHBKIZqecFEV2tuZr7xIUQNGfkmhTNMis4j+dyMDIWXdIPiYKMIxNcQ0KFIyciRvlmlgcEohmp5wURXa25mvvEhS8sL0D0wwgGCItQwVowak5YB38KRIUCg4KBXVhdG9tEgUxMDA1NBDoxRgaagom61rphyECn8x7emhhKdRCB2io7aS/6Cpuq5NbVqbODmqOT3jWw6kSQKUresk+d+Gw0BhjiggTsu8+1voW+VlDCQ1GRYnMaFOHXhyFv7BCLhFWxLxHSAYT8a5XqoMayosZf9mANKdXArA="
-
     UnconfirmedTransactionsResponse:
       type: object
       required:
@@ -2811,9 +2712,9 @@ components:
               example: 2
           type: object
 
-    ###### Reusable types ######
+    ###### Reuseable types ######
 
-    # Validator type with proposer priority
+    # Validator type with proposer prioirty
     ValidatorPriority:
       type: object
       properties:

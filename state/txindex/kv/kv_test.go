@@ -330,7 +330,7 @@ func TestTxSearchEventMatchByHeight(t *testing.T) {
 	}
 }
 
-func TestTxSearchWithCancelation(t *testing.T) {
+func TestTxSearchWithCancellation(t *testing.T) {
 	indexer := NewTxIndex(db.NewMemDB())
 
 	txResult := txResultWithEvents([]abci.Event{

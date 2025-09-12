@@ -234,7 +234,6 @@ func parseNumber(s string) (*big.Float, error) {
 	}
 	f, _, err := big.ParseFloat(extractNum.FindString(s), 10, uint(intVal.BitLen()), big.ToNearestEven)
 	return f, err
-
 }
 
 // A map of operator ⇒ argtype ⇒ match-constructor.

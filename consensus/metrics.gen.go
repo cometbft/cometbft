@@ -172,7 +172,7 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "full_prevote_delay",
-			Help:      "Interval in seconds between the proposal timestamp and the timestamp of the latest prevote in a round where all validators voted.",
+			Help:      "FullPrevoteDelay is the interval in seconds between the proposal timestamp and the timestamp of the latest prevote in a round where 100% of the voting power on the network issued prevotes. metrics:Interval in seconds between the proposal timestamp and the timestamp of the latest prevote in a round where all validators voted.",
 		}, append(labels, "proposer_address")).With(labelsAndValues...),
 		PrecommitsCounted: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,

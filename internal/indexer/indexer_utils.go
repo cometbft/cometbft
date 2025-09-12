@@ -30,7 +30,6 @@ func compareFloat(op1 *big.Float, op2 interface{}) (int, bool, error) {
 // where 100 would equal to 100.2 because 100.2 is rounded to 100, while 100.7
 // would be rounded to 101.
 func compareInt(op1 *big.Int, op2 interface{}) (int, bool, error) {
-
 	switch opVal := op2.(type) {
 	case *big.Int:
 		return op1.Cmp(opVal), false, nil

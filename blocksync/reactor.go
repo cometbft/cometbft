@@ -79,7 +79,6 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 func NewReactorWithAddr(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
 	blockSync bool, localAddr crypto.Address, metrics *Metrics, offlineStateSyncHeight int64,
 ) *Reactor {
-
 	storeHeight := store.Height()
 	if storeHeight == 0 {
 		// If state sync was performed offline and the stores were bootstrapped to height H

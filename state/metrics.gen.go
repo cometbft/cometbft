@@ -26,13 +26,13 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "consensus_param_updates",
-			Help:      "Number of consensus parameter updates returned by the application since process start.",
+			Help:      "ConsensusParamUpdates is the total number of times the application has updated the consensus params since process start. metrics:Number of consensus parameter updates returned by the application since process start.",
 		}, labels).With(labelsAndValues...),
 		ValidatorSetUpdates: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "validator_set_updates",
-			Help:      "Number of validator set updates returned by the application since process start.",
+			Help:      "ValidatorSetUpdates is the total number of times the application has updated the validator set since process start. metrics:Number of validator set updates returned by the application since process start.",
 		}, labels).With(labelsAndValues...),
 	}
 }

@@ -471,12 +471,13 @@ func sumReceivedNumbers(numbers, doneSum chan uint64) {
 }
 
 // fireEvents takes an EventSwitch and fires a thousand integers under
-// a given `event` with the integers mootonically increasing from `offset`
+// a given `event` with the integers monotonically increasing from `offset`
 // to `offset` + 999.  It additionally returns the addition of all integers
 // sent on `doneChan` for assertion that all events have been sent, and enabling
 // the test to assert all events have also been received.
 func fireEvents(evsw Fireable, event string, doneChan chan uint64,
-	offset uint64) {
+	offset uint64,
+) {
 	var sentSum uint64
 	for i := offset; i <= offset+uint64(999); i++ {
 		sentSum += i

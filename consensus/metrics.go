@@ -81,7 +81,7 @@ type Metrics struct {
 	// was relevant to the block the node is trying to gather or not.
 	BlockGossipPartsReceived metrics.Counter `metrics_labels:"matches_current"`
 
-	// QuroumPrevoteMessageDelay is the interval in seconds between the proposal
+	// QuorumPrevoteMessageDelay is the interval in seconds between the proposal
 	// timestamp and the timestamp of the earliest prevote that achieved a quorum
 	// during the prevote step.
 	//
@@ -108,7 +108,7 @@ type Metrics struct {
 	// FullPrevoteDelay is the interval in seconds between the proposal
 	// timestamp and the timestamp of the latest prevote in a round where 100%
 	// of the voting power on the network issued prevotes.
-	//metrics:Interval in seconds between the proposal timestamp and the timestamp of the latest prevote in a round where all validators voted.
+	// metrics:Interval in seconds between the proposal timestamp and the timestamp of the latest prevote in a round where all validators voted.
 	FullPrevoteDelay metrics.Gauge `metrics_labels:"proposer_address"`
 
 	// PrecommitsCounted is the number of precommit votes counted after the timeout commit period has ended.

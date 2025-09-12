@@ -66,7 +66,6 @@ func newPeerConn(
 	conn net.Conn,
 	socketAddr *NetAddress,
 ) peerConn {
-
 	return peerConn{
 		outbound:   outbound,
 		persistent: persistent,
@@ -232,7 +231,7 @@ func (p *peer) IsOutbound() bool {
 	return p.outbound
 }
 
-// IsPersistent returns true if the peer is persitent, false otherwise.
+// IsPersistent returns true if the peer is persistent, false otherwise.
 func (p *peer) IsPersistent() bool {
 	return p.persistent
 }
@@ -396,7 +395,6 @@ func createMConnection(
 	onPeerError func(Peer, interface{}),
 	config cmtconn.MConnConfig,
 ) *cmtconn.MConnection {
-
 	onReceive := func(chID byte, msgBytes []byte) {
 		reactor := reactorsByCh[chID]
 		if reactor == nil {

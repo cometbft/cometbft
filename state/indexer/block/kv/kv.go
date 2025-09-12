@@ -157,7 +157,6 @@ func (idx *BlockerIndexer) Search(ctx context.Context, q *query.Query) ([]int64,
 				// additional constraint on events)
 
 				continue
-
 			}
 			prefix, err := orderedcode.Append(nil, qr.Key)
 			if err != nil {
@@ -394,7 +393,6 @@ func (idx *BlockerIndexer) setTmpHeights(tmpHeights map[string][]byte, it dbm.It
 	copy(value, it.Value())
 
 	tmpHeights[string(value)+strconv.FormatInt(eventSeq, 10)] = value
-
 }
 
 // match returns all matching heights that meet a given query condition and start

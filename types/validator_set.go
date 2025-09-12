@@ -731,7 +731,7 @@ func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
 // Additionally, any verified signatures will be added to the cache.
 func (vals *ValidatorSet) VerifyCommitLightWithCache(chainID string, blockID BlockID,
 	height int64, commit *Commit,
-	verifiedSignatureCache SignatureCache,
+	verifiedSignatureCache *SignatureCache,
 ) error {
 	return VerifyCommitLightWithCache(chainID, vals, blockID, height, commit, verifiedSignatureCache)
 }
@@ -767,7 +767,7 @@ func (vals *ValidatorSet) VerifyCommitLightTrustingWithCache(
 	chainID string,
 	commit *Commit,
 	trustLevel cmtmath.Fraction,
-	verifiedSignatureCache SignatureCache,
+	verifiedSignatureCache *SignatureCache,
 ) error {
 	return VerifyCommitLightTrustingWithCache(chainID, vals, commit, trustLevel, verifiedSignatureCache)
 }

@@ -6,31 +6,25 @@ type SignatureCacheValue struct {
 	VoteSignBytes    []byte
 }
 
-type SignatureCache interface {
-	Add(key string, value SignatureCacheValue)
-	Get(key string) (SignatureCacheValue, bool)
-	Len() int
-}
-
-type signatureCache struct {
+type SignatureCache struct {
 	cache map[string]SignatureCacheValue
 }
 
-func NewSignatureCache() SignatureCache {
-	return &signatureCache{
+func NewSignatureCache() *SignatureCache {
+	return &SignatureCache{
 		cache: make(map[string]SignatureCacheValue),
 	}
 }
 
-func (sc *signatureCache) Add(key string, value SignatureCacheValue) {
+func (sc *SignatureCache) Add(key string, value SignatureCacheValue) {
 	sc.cache[key] = value
 }
 
-func (sc *signatureCache) Get(key string) (SignatureCacheValue, bool) {
+func (sc *SignatureCache) Get(key string) (SignatureCacheValue, bool) {
 	value, ok := sc.cache[key]
 	return value, ok
 }
 
-func (sc *signatureCache) Len() int {
+func (sc *SignatureCache) Len() int {
 	return len(sc.cache)
 }

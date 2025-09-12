@@ -83,7 +83,7 @@ func VerifyCommitLightWithCache(
 	blockID BlockID,
 	height int64,
 	commit *Commit,
-	verifiedSignatureCache SignatureCache,
+	verifiedSignatureCache *SignatureCache,
 ) error {
 	return verifyCommitLightInternal(chainID, vals, blockID, height, commit, false, verifiedSignatureCache)
 }
@@ -108,7 +108,7 @@ func verifyCommitLightInternal(
 	height int64,
 	commit *Commit,
 	countAllSignatures bool,
-	verifiedSignatureCache SignatureCache,
+	verifiedSignatureCache *SignatureCache,
 ) error {
 	// run a basic validation of the arguments
 	if err := verifyBasicValsAndCommit(vals, commit, height, blockID); err != nil {
@@ -170,7 +170,7 @@ func VerifyCommitLightTrustingWithCache(
 	vals *ValidatorSet,
 	commit *Commit,
 	trustLevel cmtmath.Fraction,
-	verifiedSignatureCache SignatureCache,
+	verifiedSignatureCache *SignatureCache,
 ) error {
 	return verifyCommitLightTrustingInternal(chainID, vals, commit, trustLevel, false, verifiedSignatureCache)
 }
@@ -197,7 +197,7 @@ func verifyCommitLightTrustingInternal(
 	commit *Commit,
 	trustLevel cmtmath.Fraction,
 	countAllSignatures bool,
-	verifiedSignatureCache SignatureCache,
+	verifiedSignatureCache *SignatureCache,
 ) error {
 	// sanity checks
 	if vals == nil {
@@ -266,7 +266,7 @@ func verifyCommitBatch(
 	countAllSignatures bool,
 	lookUpByIndex bool,
 	batchVerifier crypto.BatchVerifier,
-	verifiedSignatureCache SignatureCache,
+	verifiedSignatureCache *SignatureCache,
 ) error {
 	var (
 		val                *Validator
@@ -413,7 +413,7 @@ func verifyCommitSingle(
 	countSig func(CommitSig) bool,
 	countAllSignatures bool,
 	lookUpByIndex bool,
-	verifiedSignatureCache SignatureCache,
+	verifiedSignatureCache *SignatureCache,
 ) error {
 	var (
 		val                *Validator

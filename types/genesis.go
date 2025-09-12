@@ -108,7 +108,7 @@ func (genDoc *GenesisDoc) ValidateAndComplete() error {
 //------------------------------------------------------------
 // Make genesis state from file
 
-// GenesisDocFromJSON unmarshalls JSON data into a GenesisDoc.
+// GenesisDocFromJSON unmarshals JSON data into a GenesisDoc.
 func GenesisDocFromJSON(jsonBlob []byte) (*GenesisDoc, error) {
 	genDoc := GenesisDoc{}
 	err := cmtjson.Unmarshal(jsonBlob, &genDoc)
@@ -123,7 +123,7 @@ func GenesisDocFromJSON(jsonBlob []byte) (*GenesisDoc, error) {
 	return &genDoc, err
 }
 
-// GenesisDocFromFile reads JSON data from a file and unmarshalls it into a GenesisDoc.
+// GenesisDocFromFile reads JSON data from a file and unmarshals it into a GenesisDoc.
 func GenesisDocFromFile(genDocFile string) (*GenesisDoc, error) {
 	jsonBlob, err := os.ReadFile(genDocFile)
 	if err != nil {

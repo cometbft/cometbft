@@ -101,7 +101,7 @@ func TestTxProofUnchangeable(t *testing.T) {
 	}
 }
 
-func testTxProofUnchangaeble(t *testing.T) {
+func testTxProofUnchangeable(t *testing.T) {
 	// make some proof
 	txs := makeTxs(randInt(2, 100), randInt(16, 128))
 	root := txs.Hash()

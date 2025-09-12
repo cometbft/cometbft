@@ -88,6 +88,9 @@ func NewNopMempoolReactor() *NopMempoolReactor {
 
 var _ p2p.Reactor = &NopMempoolReactor{}
 
+// WaitSync always returns false
+func (*NopMempoolReactor) WaitSync() bool { return false }
+
 // GetChannels always returns nil.
 func (*NopMempoolReactor) GetChannels() []*p2p.ChannelDescriptor { return nil }
 

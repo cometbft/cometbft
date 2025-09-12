@@ -52,7 +52,7 @@ func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.
 		}
 		addr := pk.Address()
 
-		idx, _ := valSet.GetByAddress(addr)
+		idx, _ := valSet.GetByAddressMut(addr)
 		if idx < 0 {
 			return nil, fmt.Errorf("validator with address %s not in validator set", addr)
 		}

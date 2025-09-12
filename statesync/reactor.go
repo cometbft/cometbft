@@ -275,7 +275,7 @@ func (r *Reactor) Sync(stateProvider StateProvider, discoveryTime time.Duration)
 		r.Logger.Debug("Requesting snapshots from known peers")
 		// Request snapshots from all currently connected peers
 
-		r.Switch.Broadcast(p2p.Envelope{
+		r.Switch.BroadcastAsync(p2p.Envelope{
 			ChannelID: SnapshotChannel,
 			Message:   &ssproto.SnapshotsRequest{},
 		})

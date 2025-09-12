@@ -16,7 +16,7 @@ import (
 func createTestGroupWithHeadSizeLimit(t *testing.T, headSizeLimit int64) *Group {
 	testID := cmtrand.Str(12)
 	testDir := "_test_" + testID
-	err := cmtos.EnsureDir(testDir, 0700)
+	err := cmtos.EnsureDir(testDir, 0o700)
 	require.NoError(t, err, "Error creating dir")
 
 	headPath := testDir + "/myfile"

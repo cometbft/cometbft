@@ -194,7 +194,7 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 			ev.CommonHeight = height
 		}, false},
 		{"Nil conflicting header", func(ev *LightClientAttackEvidence) { ev.ConflictingBlock.Header = nil }, true},
-		{"Nil conflicting blocl", func(ev *LightClientAttackEvidence) { ev.ConflictingBlock = nil }, true},
+		{"Nil conflicting block", func(ev *LightClientAttackEvidence) { ev.ConflictingBlock = nil }, true},
 		{"Nil validator set", func(ev *LightClientAttackEvidence) {
 			ev.ConflictingBlock.ValidatorSet = &ValidatorSet{}
 		}, true},
@@ -226,7 +226,6 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestMockEvidenceValidateBasic(t *testing.T) {

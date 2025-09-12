@@ -25,7 +25,8 @@ func shouldBatchVerify(vals *ValidatorSet, commit *Commit) bool {
 // includes which validators signed. For instance, Gaia incentivizes proposers
 // with a bonus for including more than +2/3 of the signatures.
 func VerifyCommit(chainID string, vals *ValidatorSet, blockID BlockID,
-	height int64, commit *Commit) error {
+	height int64, commit *Commit,
+) error {
 	// run a basic validation of the arguments
 	if err := verifyBasicValsAndCommit(vals, commit, height, blockID); err != nil {
 		return err
@@ -242,7 +243,7 @@ func verifyCommitBatch(
 			continue
 		}
 
-		// If the vals and commit have a 1-to-1 correspondance we can retrieve
+		// If the vals and commit have a 1-to-1 correspondence we can retrieve
 		// them by index else we need to retrieve them by address
 		if lookUpByIndex {
 			val = vals.Validators[idx]

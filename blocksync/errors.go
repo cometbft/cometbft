@@ -7,10 +7,8 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 )
 
-var (
-	// ErrNilMessage is returned when provided message is empty
-	ErrNilMessage = errors.New("message cannot be nil")
-)
+// ErrNilMessage is returned when provided message is empty
+var ErrNilMessage = errors.New("message cannot be nil")
 
 // ErrInvalidBase is returned when peer informs of a status with invalid height
 type ErrInvalidHeight struct {

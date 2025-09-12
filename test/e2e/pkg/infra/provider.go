@@ -9,7 +9,6 @@ import (
 // Provider defines an API for manipulating the infrastructure of a
 // specific set of testnet infrastructure.
 type Provider interface {
-
 	// Setup generates any necessary configuration for the infrastructure
 	// provider during testnet setup.
 	Setup() error

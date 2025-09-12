@@ -34,9 +34,11 @@ type inputData struct {
 }
 
 // Malicious nodes parameters
-const MaliciousLie = 5  // This is how much the malicious node claims to be higher than the real height
-const BlackholeSize = 3 // This is how many blocks the malicious node will not return (missing) above real height
-const MaliciousTestMaximumLength = 5 * time.Minute
+const (
+	MaliciousLie               = 5 // This is how much the malicious node claims to be higher than the real height
+	BlackholeSize              = 3 // This is how many blocks the malicious node will not return (missing) above real height
+	MaliciousTestMaximumLength = 5 * time.Minute
+)
 
 func (p testPeer) runInputRoutine() {
 	go func() {

@@ -151,10 +151,14 @@ func TestSignVote(t *testing.T) {
 	randbytes := cmtrand.Bytes(tmhash.Size)
 	randbytes2 := cmtrand.Bytes(tmhash.Size)
 
-	block1 := types.BlockID{Hash: randbytes,
-		PartSetHeader: types.PartSetHeader{Total: 5, Hash: randbytes}}
-	block2 := types.BlockID{Hash: randbytes2,
-		PartSetHeader: types.PartSetHeader{Total: 10, Hash: randbytes2}}
+	block1 := types.BlockID{
+		Hash:          randbytes,
+		PartSetHeader: types.PartSetHeader{Total: 5, Hash: randbytes},
+	}
+	block2 := types.BlockID{
+		Hash:          randbytes2,
+		PartSetHeader: types.PartSetHeader{Total: 10, Hash: randbytes2},
+	}
 
 	height, round := int64(10), int32(1)
 	voteType := cmtproto.PrevoteType
@@ -199,10 +203,14 @@ func TestSignProposal(t *testing.T) {
 	randbytes := cmtrand.Bytes(tmhash.Size)
 	randbytes2 := cmtrand.Bytes(tmhash.Size)
 
-	block1 := types.BlockID{Hash: randbytes,
-		PartSetHeader: types.PartSetHeader{Total: 5, Hash: randbytes}}
-	block2 := types.BlockID{Hash: randbytes2,
-		PartSetHeader: types.PartSetHeader{Total: 10, Hash: randbytes2}}
+	block1 := types.BlockID{
+		Hash:          randbytes,
+		PartSetHeader: types.PartSetHeader{Total: 5, Hash: randbytes},
+	}
+	block2 := types.BlockID{
+		Hash:          randbytes2,
+		PartSetHeader: types.PartSetHeader{Total: 10, Hash: randbytes2},
+	}
 	height, round := int64(10), int32(1)
 
 	// sign a proposal for first time
@@ -359,7 +367,8 @@ func TestVoteExtensionsAreAlwaysSigned(t *testing.T) {
 }
 
 func newVote(addr types.Address, idx int32, height int64, round int32,
-	typ cmtproto.SignedMsgType, blockID types.BlockID, extension []byte) *types.Vote {
+	typ cmtproto.SignedMsgType, blockID types.BlockID, extension []byte,
+) *types.Vote {
 	return &types.Vote{
 		ValidatorAddress: addr,
 		ValidatorIndex:   idx,

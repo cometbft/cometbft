@@ -135,7 +135,8 @@ func (app *localClient) OfferSnapshot(ctx context.Context, req *types.RequestOff
 }
 
 func (app *localClient) LoadSnapshotChunk(ctx context.Context,
-	req *types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error) {
+	req *types.RequestLoadSnapshotChunk,
+) (*types.ResponseLoadSnapshotChunk, error) {
 	app.mtx.Lock()
 	defer app.mtx.Unlock()
 
@@ -143,7 +144,8 @@ func (app *localClient) LoadSnapshotChunk(ctx context.Context,
 }
 
 func (app *localClient) ApplySnapshotChunk(ctx context.Context,
-	req *types.RequestApplySnapshotChunk) (*types.ResponseApplySnapshotChunk, error) {
+	req *types.RequestApplySnapshotChunk,
+) (*types.ResponseApplySnapshotChunk, error) {
 	app.mtx.Lock()
 	defer app.mtx.Unlock()
 

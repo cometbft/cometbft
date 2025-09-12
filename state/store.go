@@ -41,8 +41,10 @@ func calcABCIResponsesKey(height int64) []byte {
 
 //----------------------
 
-var lastABCIResponseKey = []byte("lastABCIResponseKey")
-var offlineStateSyncHeight = []byte("offlineStateSyncHeightKey")
+var (
+	lastABCIResponseKey    = []byte("lastABCIResponseKey")
+	offlineStateSyncHeight = []byte("offlineStateSyncHeightKey")
+)
 
 //go:generate ../scripts/mockery_generate.sh Store
 
@@ -731,12 +733,10 @@ func (store dbStore) SetOfflineStateSyncHeight(height int64) error {
 		return err
 	}
 	return nil
-
 }
 
 // Gets the height at which the store is bootstrapped after out of band statesync
 func (store dbStore) GetOfflineStateSyncHeight() (int64, error) {
-
 	buf, err := store.db.Get(offlineStateSyncHeight)
 	if err != nil {
 		return 0, err

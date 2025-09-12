@@ -125,7 +125,6 @@ func testTxProofUnchangeable(t *testing.T) {
 
 // This makes sure that the proof doesn't deserialize into something valid.
 func assertBadProof(t *testing.T, root []byte, bad []byte, good TxProof) {
-
 	var (
 		proof   TxProof
 		pbProof cmtproto.TxProof

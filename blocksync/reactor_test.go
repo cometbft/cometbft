@@ -221,7 +221,6 @@ func TestNoBlockResponse(t *testing.T) {
 	}
 
 	for !reactorPairs[1].reactor.pool.IsCaughtUp() {
-
 		time.Sleep(10 * time.Millisecond)
 	}
 
@@ -315,7 +314,6 @@ func TestBadBlockStopsPeer(t *testing.T) {
 	}
 
 	for !lastReactorPair.reactor.pool.IsCaughtUp() && lastReactorPair.reactor.Switch.Peers().Size() != 0 {
-
 		time.Sleep(1 * time.Second)
 	}
 

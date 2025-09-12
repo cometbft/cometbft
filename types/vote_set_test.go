@@ -118,7 +118,6 @@ func TestVoteSet_AddVote_Bad(t *testing.T) {
 			t.Errorf("expected VoteSet.Add to fail, wrong type")
 		}
 	}
-
 }
 
 func Benchmark_2_3_Maj(b *testing.B) {

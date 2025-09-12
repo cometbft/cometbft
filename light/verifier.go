@@ -10,11 +10,9 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-var (
-	// DefaultTrustLevel - new header can be trusted if at least one correct
-	// validator signed it.
-	DefaultTrustLevel = cmtmath.Fraction{Numerator: 1, Denominator: 3}
-)
+// DefaultTrustLevel - new header can be trusted if at least one correct
+// validator signed it.
+var DefaultTrustLevel = cmtmath.Fraction{Numerator: 1, Denominator: 3}
 
 // VerifyNonAdjacent verifies non-adjacent untrustedHeader against
 // trustedHeader. It ensures that:
@@ -37,8 +35,8 @@ func VerifyNonAdjacent(
 	trustingPeriod time.Duration,
 	now time.Time,
 	maxClockDrift time.Duration,
-	trustLevel cmtmath.Fraction) error {
-
+	trustLevel cmtmath.Fraction,
+) error {
 	if untrustedHeader.Height == trustedHeader.Height+1 {
 		return errors.New("headers must be non adjacent in height")
 	}
@@ -97,8 +95,8 @@ func VerifyAdjacent(
 	untrustedVals *types.ValidatorSet, // height=X+1
 	trustingPeriod time.Duration,
 	now time.Time,
-	maxClockDrift time.Duration) error {
-
+	maxClockDrift time.Duration,
+) error {
 	if untrustedHeader.Height != trustedHeader.Height+1 {
 		return errors.New("headers must be adjacent in height")
 	}
@@ -141,8 +139,8 @@ func Verify(
 	trustingPeriod time.Duration,
 	now time.Time,
 	maxClockDrift time.Duration,
-	trustLevel cmtmath.Fraction) error {
-
+	trustLevel cmtmath.Fraction,
+) error {
 	if untrustedHeader.Height != trustedHeader.Height+1 {
 		return VerifyNonAdjacent(trustedHeader, trustedVals, untrustedHeader, untrustedVals,
 			trustingPeriod, now, maxClockDrift, trustLevel)
@@ -156,8 +154,8 @@ func verifyNewHeaderAndVals(
 	untrustedVals *types.ValidatorSet,
 	trustedHeader *types.SignedHeader,
 	now time.Time,
-	maxClockDrift time.Duration) error {
-
+	maxClockDrift time.Duration,
+) error {
 	if err := untrustedHeader.ValidateBasic(trustedHeader.ChainID); err != nil {
 		return fmt.Errorf("untrustedHeader.ValidateBasic failed: %w", err)
 	}
@@ -232,14 +230,16 @@ func VerifyBackwards(untrustedHeader, trustedHeader *types.Header) error {
 		return ErrInvalidHeader{
 			fmt.Errorf("expected older header time %v to be before new header time %v",
 				untrustedHeader.Time,
-				trustedHeader.Time)}
+				trustedHeader.Time),
+		}
 	}
 
 	if !bytes.Equal(untrustedHeader.Hash(), trustedHeader.LastBlockID.Hash) {
 		return ErrInvalidHeader{
 			fmt.Errorf("older header hash %X does not match trusted header's last block %X",
 				untrustedHeader.Hash(),
-				trustedHeader.LastBlockID.Hash)}
+				trustedHeader.LastBlockID.Hash),
+		}
 	}
 
 	return nil

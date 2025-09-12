@@ -144,7 +144,6 @@ func signVote(vs *validatorStub, voteType cmtproto.SignedMsgType, hash []byte, h
 		}
 	}
 	v, err := vs.signVote(voteType, hash, header, ext, extEnabled)
-
 	if err != nil {
 		panic(fmt.Errorf("failed to sign vote: %v", err))
 	}
@@ -468,6 +467,7 @@ func randStateWithAppWithHeight(
 	c.ABCI.VoteExtensionsEnableHeight = height
 	return randStateWithAppImpl(nValidators, app, c)
 }
+
 func randStateWithApp(nValidators int, app abci.Application) (*State, []*validatorStub) {
 	c := test.ConsensusParams()
 	return randStateWithAppImpl(nValidators, app, c)
@@ -765,7 +765,8 @@ func consensusLogger() log.Logger {
 }
 
 func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc func() TimeoutTicker,
-	appFunc func() abci.Application, configOpts ...func(*cfg.Config)) ([]*State, cleanupFunc) {
+	appFunc func() abci.Application, configOpts ...func(*cfg.Config),
+) ([]*State, cleanupFunc) {
 	t.Helper()
 	genDoc, privVals := randGenesisDoc(nValidators, false, 30, nil)
 	css := make([]*State, nValidators)

@@ -194,7 +194,6 @@ func TestDuplicateListenReject(t *testing.T) {
 
 		// wait for successful connection
 		for !listenerEndpoint.IsConnected() {
-
 		}
 
 		// simulate ensureConnection, bypass triggerConnect default drop with multiple messages
@@ -270,7 +269,6 @@ func getMockEndpoints(
 	addr string,
 	socketDialer SocketDialer,
 ) (*SignerListenerEndpoint, *SignerDialerEndpoint) {
-
 	var (
 		logger           = log.TestingLogger()
 		endpointIsOpenCh = make(chan struct{})

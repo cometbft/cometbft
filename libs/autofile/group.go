@@ -357,7 +357,7 @@ func (g *Group) ReadGroupInfo() GroupInfo {
 func (g *Group) readGroupInfo() GroupInfo {
 	groupDir := filepath.Dir(g.Head.Path)
 	headBase := filepath.Base(g.Head.Path)
-	var minIndex, maxIndex = -1, -1
+	minIndex, maxIndex := -1, -1
 	var totalSize, headSize int64 = 0, 0
 
 	dir, err := os.Open(groupDir)

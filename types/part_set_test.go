@@ -178,8 +178,10 @@ func TestParSetHeaderProtoBuf(t *testing.T) {
 		expPass bool
 	}{
 		{"success empty", &PartSetHeader{}, true},
-		{"success",
-			&PartSetHeader{Total: 1, Hash: []byte("hash")}, true},
+		{
+			"success",
+			&PartSetHeader{Total: 1, Hash: []byte("hash")}, true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -195,7 +197,6 @@ func TestParSetHeaderProtoBuf(t *testing.T) {
 }
 
 func TestPartProtoBuf(t *testing.T) {
-
 	proof := merkle.Proof{
 		Total:    1,
 		Index:    1,
@@ -208,8 +209,10 @@ func TestPartProtoBuf(t *testing.T) {
 	}{
 		{"failure empty", &Part{}, false},
 		{"failure nil", nil, false},
-		{"success",
-			&Part{Index: 1, Bytes: cmtrand.Bytes(32), Proof: proof}, true},
+		{
+			"success",
+			&Part{Index: 1, Bytes: cmtrand.Bytes(32), Proof: proof}, true,
+		},
 	}
 
 	for _, tc := range testCases {

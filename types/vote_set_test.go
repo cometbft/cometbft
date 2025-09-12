@@ -205,8 +205,8 @@ func TestVoteSet_2_3MajorityRedux(t *testing.T) {
 	{
 		pubKey, err := privValidators[66].GetPubKey()
 		require.NoError(t, err)
-		adrr := pubKey.Address()
-		vote := withValidator(voteProto, adrr, 66)
+		addr := pubKey.Address()
+		vote := withValidator(voteProto, addr, 66)
 		_, err = signAddVote(privValidators[66], withBlockHash(vote, nil), voteSet)
 		require.NoError(t, err)
 		blockID, ok = voteSet.TwoThirdsMajority()
@@ -482,31 +482,31 @@ func TestVoteSet_VoteExtensionsEnabled(t *testing.T) {
 		name              string
 		requireExtensions bool
 		addExtension      bool
-		exepectError      bool
+		expectError       bool
 	}{
 		{
 			name:              "no extension but expected",
 			requireExtensions: true,
 			addExtension:      false,
-			exepectError:      true,
+			expectError:       true,
 		},
 		{
 			name:              "invalid extensions but not expected",
 			requireExtensions: true,
 			addExtension:      false,
-			exepectError:      true,
+			expectError:       true,
 		},
 		{
 			name:              "no extension and not expected",
 			requireExtensions: false,
 			addExtension:      false,
-			exepectError:      false,
+			expectError:       false,
 		},
 		{
 			name:              "extension and expected",
 			requireExtensions: true,
 			addExtension:      true,
-			exepectError:      false,
+			expectError:       false,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -547,7 +547,7 @@ func TestVoteSet_VoteExtensionsEnabled(t *testing.T) {
 			}
 
 			added, err := voteSet.AddVote(vote)
-			if tc.exepectError {
+			if tc.expectError {
 				require.Error(t, err)
 				require.False(t, added)
 			} else {

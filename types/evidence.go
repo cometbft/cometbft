@@ -339,7 +339,7 @@ func (l *LightClientAttackEvidence) String() string {
 	return fmt.Sprintf(`LightClientAttackEvidence{
 		ConflictingBlock: %v, 
 		CommonHeight: %d, 
-		ByzatineValidators: %v, 
+		ByzantineValidators: %v, 
 		TotalVotingPower: %d, 
 		Timestamp: %v}#%X`,
 		l.ConflictingBlock.String(), l.CommonHeight, l.ByzantineValidators,

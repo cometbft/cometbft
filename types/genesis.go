@@ -45,7 +45,7 @@ type GenesisDoc struct {
 	AppState        json.RawMessage    `json:"app_state,omitempty"`
 }
 
-// SaveAs is a utility method for saving GenensisDoc as a JSON file.
+// SaveAs is a utility method for saving GenesisDoc as a JSON file.
 func (genDoc *GenesisDoc) SaveAs(file string) error {
 	genDocBytes, err := cmtjson.MarshalIndent(genDoc, "", "  ")
 	if err != nil {
@@ -108,7 +108,7 @@ func (genDoc *GenesisDoc) ValidateAndComplete() error {
 //------------------------------------------------------------
 // Make genesis state from file
 
-// GenesisDocFromJSON unmarshalls JSON data into a GenesisDoc.
+// GenesisDocFromJSON unmarshals JSON data into a GenesisDoc.
 func GenesisDocFromJSON(jsonBlob []byte) (*GenesisDoc, error) {
 	genDoc := GenesisDoc{}
 	err := cmtjson.Unmarshal(jsonBlob, &genDoc)
@@ -123,7 +123,7 @@ func GenesisDocFromJSON(jsonBlob []byte) (*GenesisDoc, error) {
 	return &genDoc, err
 }
 
-// GenesisDocFromFile reads JSON data from a file and unmarshalls it into a GenesisDoc.
+// GenesisDocFromFile reads JSON data from a file and unmarshals it into a GenesisDoc.
 func GenesisDocFromFile(genDocFile string) (*GenesisDoc, error) {
 	jsonBlob, err := os.ReadFile(genDocFile)
 	if err != nil {

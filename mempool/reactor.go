@@ -3,9 +3,8 @@ package mempool
 import (
 	"context"
 	"errors"
-	"time"
-
 	"fmt"
+	"time"
 
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/clist"

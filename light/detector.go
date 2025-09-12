@@ -306,7 +306,6 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 	targetBlock *types.LightBlock,
 	source provider.Provider, now time.Time,
 ) ([]*types.LightBlock, *types.LightBlock, error) {
-
 	var (
 		previouslyVerifiedBlock, sourceBlock *types.LightBlock
 		sourceTrace                          []*types.LightBlock
@@ -383,7 +382,6 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 	// prerequisites to this function were not met. Namely that either trace[len(trace)-1].Height < targetBlock.Height
 	// or that trace[i].Hash() != targetBlock.Hash()
 	return nil, nil, errNoDivergence
-
 }
 
 // getTargetBlockOrLatest gets the latest height, if it is greater than the target height then it queries

@@ -58,7 +58,7 @@ func (env *Environment) Validators(
 // More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/dump_consensus_state
 func (env *Environment) DumpConsensusState(*rpctypes.Context) (*ctypes.ResultDumpConsensusState, error) {
 	// Get Peer consensus states.
-	peerStates := make([]ctypes.PeerStateInfo, 0)
+	peerStates := make([]ctypes.PeerStateInfo, 0, env.P2PPeers.Peers().Size())
 	var err error
 	env.P2PPeers.Peers().ForEach(func(peer p2p.Peer) {
 		peerState, ok := peer.Get(types.PeerStateKey).(*cm.PeerState)

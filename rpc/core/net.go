@@ -13,7 +13,7 @@ import (
 // NetInfo returns network info.
 // More: https://docs.cometbft.com/v0.38/spec/rpc/#netinfo
 func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error) {
-	peers := make([]ctypes.Peer, 0)
+	peers := make([]ctypes.Peer, 0, env.P2PPeers.Peers().Size())
 	var err error
 	env.P2PPeers.Peers().ForEach(func(peer p2p.Peer) {
 		nodeInfo, ok := peer.NodeInfo().(p2p.DefaultNodeInfo)

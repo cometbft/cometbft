@@ -12,8 +12,8 @@ import (
 )
 
 func MakeExtCommit(blockID BlockID, height int64, round int32,
-	voteSet *VoteSet, validators []PrivValidator, now time.Time, extEnabled bool) (*ExtendedCommit, error) {
-
+	voteSet *VoteSet, validators []PrivValidator, now time.Time, extEnabled bool,
+) (*ExtendedCommit, error) {
 	// all sign
 	for i := 0; i < len(validators); i++ {
 		pubKey, err := validators[i].GetPubKey()

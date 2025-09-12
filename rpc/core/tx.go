@@ -52,7 +52,7 @@ func (env *Environment) Tx(_ *rpctypes.Context, hash []byte, prove bool) (*ctype
 
 // TxSearch allows you to query for multiple transactions results. It returns a
 // list of transactions (maximum ?per_page entries) and the total count.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/tx_search
+// More: https://docs.cometbft.com/v0.38/rpc/#/Info/tx_search
 func (env *Environment) TxSearch(
 	ctx *rpctypes.Context,
 	query string,

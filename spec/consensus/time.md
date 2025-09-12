@@ -86,4 +86,4 @@ algorithm and recommendations on how to properly configure its parameters.
 [bft-time]: ./bft-time.md
 [pbts-spec]: ./proposer-based-timestamp/README.md
 [spec-params]: ../core/data_structures.md#consensusparams
-[pbts-doc]: https://github.com/cometbft/cometbft/blob/feature/pbts/docs/explanation/core/proposer-based-timestamps.md
+[pbts-doc]: https://docs.cometbft.com/main/explanation/core/proposer-based-timestamps

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -27,5 +28,21 @@ func Test(testnet *e2e.Testnet, ifd *e2e.InfrastructureData) error {
 		return err
 	}
 
-	return exec.CommandVerbose(context.Background(), "go", "test", "-count", "1", "./tests/...")
+	cmd := []string{"go", "test", "-tags", "bls12381", "-count", "1"}
+	verbose := os.Getenv("VERBOSE")
+	if verbose == "1" {
+		cmd = append(cmd, "-v")
+	}
+	cmd = append(cmd, "./tests/...")
+
+	tests := "all tests"
+	runTest := os.Getenv("RUN_TEST")
+	if len(runTest) != 0 {
+		cmd = append(cmd, "-run", runTest)
+		tests = fmt.Sprintf("%q", runTest)
+	}
+
+	logger.Info(fmt.Sprintf("Running %s in ./tests/...", tests))
+
+	return exec.CommandVerbose(context.Background(), cmd...)
 }

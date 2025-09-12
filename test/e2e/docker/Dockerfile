@@ -34,6 +34,8 @@ RUN set -eux; \
 
 # ---------- Stage 1: build (compile cometbft + e2e node) ----------
 FROM base AS build
+
+# Set up build directory /src/cometbft
 WORKDIR /src/cometbft
 
 # cache-friendly Go deps
@@ -42,7 +44,7 @@ RUN go mod download
 
 COPY . .
 
-ARG COMETBFT_BUILD_OPTIONS=badgerdb,boltdb,cleveldb,rocksdb
+ARG COMETBFT_BUILD_OPTIONS=badgerdb,cleveldb,rocksdb,pebbledb,clock_skew,bls12381
 ENV COMETBFT_BUILD_OPTIONS=${COMETBFT_BUILD_OPTIONS}
 ENV CGO_ENABLED=1
 

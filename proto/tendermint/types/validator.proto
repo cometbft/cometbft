@@ -17,7 +17,6 @@ enum BlockIDFlag {
   BLOCK_ID_FLAG_NIL     = 3 [(gogoproto.enumvalue_customname) = "BlockIDFlagNil"];      // voted for nil
 }
 
-
 message ValidatorSet {
   repeated Validator validators         = 1;
   Validator          proposer           = 2;

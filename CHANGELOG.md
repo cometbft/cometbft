@@ -8,7 +8,16 @@
 
 ### IMPROVEMENTS
 
+- `[e2e]` add support for testing different keytypes, including BLS
+  ([\#3513](https://github.com/cometbft/cometbft/pull/3513))
+- `[crypto]` Reduce BLS signature size to 48 bytes by increasing pubkey size to
+  192 bytes ([\#3624](https://github.com/cometbft/cometbft/issues/3624)
+
 ### FEATURES
+
+- `[crypto]` Add support for BLS12-381 keys. Since the implementation needs
+  `cgo` and brings in new dependencies, we use the `bls12381` build flag to
+  enable it ([\#2765](https://github.com/cometbft/cometbft/pull/2765))
 
 ### BUG-FIXES
 

@@ -44,7 +44,7 @@ func TestBaseServiceReset(t *testing.T) {
 	require.NoError(t, err)
 
 	err = ts.Reset()
-	require.Error(t, err, "expected cant reset service error")
+	require.Error(t, err, "expected can't reset service error")
 
 	err = ts.Stop()
 	require.NoError(t, err)

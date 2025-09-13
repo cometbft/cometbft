@@ -65,7 +65,7 @@ func decodeReflect(bz []byte, rv reflect.Value) error {
 		}
 	}
 
-	// If value implements json.Umarshaler, call it.
+	// If value implements json.Unmarshaler, call it.
 	if rv.Addr().Type().Implements(jsonUnmarshalerType) {
 		return rv.Addr().Interface().(json.Unmarshaler).UnmarshalJSON(bz)
 	}

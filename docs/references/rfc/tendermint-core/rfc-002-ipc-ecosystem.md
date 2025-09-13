@@ -208,7 +208,7 @@ the server must lock conservatively, and no optimistic scheduling is practical.
 This would be a tedious implementation change, but should be achievable without
 breaking any of the existing interfaces. More importantly, it could potentially
 address a lot of difficult concurrency and performance problems we currently
-see anecdotally but have difficultly isolating because of how intertwined these
+see anecdotally but have difficulty isolating because of how intertwined these
 separate message streams are at runtime.
 
 TODO: Impact of ABCI++ for this topic?

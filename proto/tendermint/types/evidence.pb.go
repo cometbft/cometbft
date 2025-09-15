@@ -105,8 +105,8 @@ func (m *Evidence) GetLightClientAttackEvidence() *LightClientAttackEvidence {
 }
 
 // XXX_OneofWrappers is for the internal use of the proto package.
-func (*Evidence) XXX_OneofWrappers() []any {
-	return []any{
+func (*Evidence) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Evidence_DuplicateVoteEvidence)(nil),
 		(*Evidence_LightClientAttackEvidence)(nil),
 	}

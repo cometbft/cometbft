@@ -293,7 +293,7 @@ func RegisterBroadcastAPIServer(s grpc1.Server, srv BroadcastAPIServer) {
 	s.RegisterService(&_BroadcastAPI_serviceDesc, srv)
 }
 
-func _BroadcastAPI_Ping_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _BroadcastAPI_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestPing)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -305,13 +305,13 @@ func _BroadcastAPI_Ping_Handler(srv any, ctx context.Context, dec func(any) erro
 		Server:     srv,
 		FullMethod: "/tendermint.rpc.grpc.BroadcastAPI/Ping",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(BroadcastAPIServer).Ping(ctx, req.(*RequestPing))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _BroadcastAPI_BroadcastTx_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _BroadcastAPI_BroadcastTx_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestBroadcastTx)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -323,7 +323,7 @@ func _BroadcastAPI_BroadcastTx_Handler(srv any, ctx context.Context, dec func(an
 		Server:     srv,
 		FullMethod: "/tendermint.rpc.grpc.BroadcastAPI/BroadcastTx",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(BroadcastAPIServer).BroadcastTx(ctx, req.(*RequestBroadcastTx))
 	}
 	return interceptor(ctx, in, info, handler)

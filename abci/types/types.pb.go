@@ -467,8 +467,8 @@ func (m *Request) GetFinalizeBlock() *RequestFinalizeBlock {
 }
 
 // XXX_OneofWrappers is for the internal use of the proto package.
-func (*Request) XXX_OneofWrappers() []any {
-	return []any{
+func (*Request) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Request_Echo)(nil),
 		(*Request_Flush)(nil),
 		(*Request_Info)(nil),
@@ -1831,8 +1831,8 @@ func (m *Response) GetFinalizeBlock() *ResponseFinalizeBlock {
 }
 
 // XXX_OneofWrappers is for the internal use of the proto package.
-func (*Response) XXX_OneofWrappers() []any {
-	return []any{
+func (*Response) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Response_Exception)(nil),
 		(*Response_Echo)(nil),
 		(*Response_Flush)(nil),
@@ -4124,7 +4124,7 @@ func RegisterABCIServer(s grpc1.Server, srv ABCIServer) {
 	s.RegisterService(&_ABCI_serviceDesc, srv)
 }
 
-func _ABCI_Echo_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _ABCI_Echo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestEcho)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -4136,13 +4136,13 @@ func _ABCI_Echo_Handler(srv any, ctx context.Context, dec func(any) error, inter
 		Server:     srv,
 		FullMethod: "/tendermint.abci.ABCI/Echo",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ABCIServer).Echo(ctx, req.(*RequestEcho))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ABCI_Flush_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _ABCI_Flush_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestFlush)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -4154,13 +4154,13 @@ func _ABCI_Flush_Handler(srv any, ctx context.Context, dec func(any) error, inte
 		Server:     srv,
 		FullMethod: "/tendermint.abci.ABCI/Flush",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ABCIServer).Flush(ctx, req.(*RequestFlush))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ABCI_Info_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _ABCI_Info_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestInfo)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -4172,13 +4172,13 @@ func _ABCI_Info_Handler(srv any, ctx context.Context, dec func(any) error, inter
 		Server:     srv,
 		FullMethod: "/tendermint.abci.ABCI/Info",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ABCIServer).Info(ctx, req.(*RequestInfo))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ABCI_CheckTx_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _ABCI_CheckTx_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestCheckTx)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -4190,13 +4190,13 @@ func _ABCI_CheckTx_Handler(srv any, ctx context.Context, dec func(any) error, in
 		Server:     srv,
 		FullMethod: "/tendermint.abci.ABCI/CheckTx",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ABCIServer).CheckTx(ctx, req.(*RequestCheckTx))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ABCI_Query_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _ABCI_Query_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestQuery)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -4208,13 +4208,13 @@ func _ABCI_Query_Handler(srv any, ctx context.Context, dec func(any) error, inte
 		Server:     srv,
 		FullMethod: "/tendermint.abci.ABCI/Query",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ABCIServer).Query(ctx, req.(*RequestQuery))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ABCI_Commit_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _ABCI_Commit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestCommit)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -4226,13 +4226,13 @@ func _ABCI_Commit_Handler(srv any, ctx context.Context, dec func(any) error, int
 		Server:     srv,
 		FullMethod: "/tendermint.abci.ABCI/Commit",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ABCIServer).Commit(ctx, req.(*RequestCommit))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ABCI_InitChain_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _ABCI_InitChain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestInitChain)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -4244,13 +4244,13 @@ func _ABCI_InitChain_Handler(srv any, ctx context.Context, dec func(any) error, 
 		Server:     srv,
 		FullMethod: "/tendermint.abci.ABCI/InitChain",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ABCIServer).InitChain(ctx, req.(*RequestInitChain))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ABCI_ListSnapshots_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _ABCI_ListSnapshots_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestListSnapshots)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -4262,13 +4262,13 @@ func _ABCI_ListSnapshots_Handler(srv any, ctx context.Context, dec func(any) err
 		Server:     srv,
 		FullMethod: "/tendermint.abci.ABCI/ListSnapshots",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ABCIServer).ListSnapshots(ctx, req.(*RequestListSnapshots))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ABCI_OfferSnapshot_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _ABCI_OfferSnapshot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestOfferSnapshot)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -4280,13 +4280,13 @@ func _ABCI_OfferSnapshot_Handler(srv any, ctx context.Context, dec func(any) err
 		Server:     srv,
 		FullMethod: "/tendermint.abci.ABCI/OfferSnapshot",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ABCIServer).OfferSnapshot(ctx, req.(*RequestOfferSnapshot))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ABCI_LoadSnapshotChunk_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _ABCI_LoadSnapshotChunk_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestLoadSnapshotChunk)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -4298,13 +4298,13 @@ func _ABCI_LoadSnapshotChunk_Handler(srv any, ctx context.Context, dec func(any)
 		Server:     srv,
 		FullMethod: "/tendermint.abci.ABCI/LoadSnapshotChunk",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ABCIServer).LoadSnapshotChunk(ctx, req.(*RequestLoadSnapshotChunk))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ABCI_ApplySnapshotChunk_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _ABCI_ApplySnapshotChunk_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestApplySnapshotChunk)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -4316,13 +4316,13 @@ func _ABCI_ApplySnapshotChunk_Handler(srv any, ctx context.Context, dec func(any
 		Server:     srv,
 		FullMethod: "/tendermint.abci.ABCI/ApplySnapshotChunk",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ABCIServer).ApplySnapshotChunk(ctx, req.(*RequestApplySnapshotChunk))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ABCI_PrepareProposal_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _ABCI_PrepareProposal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestPrepareProposal)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -4334,13 +4334,13 @@ func _ABCI_PrepareProposal_Handler(srv any, ctx context.Context, dec func(any) e
 		Server:     srv,
 		FullMethod: "/tendermint.abci.ABCI/PrepareProposal",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ABCIServer).PrepareProposal(ctx, req.(*RequestPrepareProposal))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ABCI_ProcessProposal_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _ABCI_ProcessProposal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestProcessProposal)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -4352,13 +4352,13 @@ func _ABCI_ProcessProposal_Handler(srv any, ctx context.Context, dec func(any) e
 		Server:     srv,
 		FullMethod: "/tendermint.abci.ABCI/ProcessProposal",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ABCIServer).ProcessProposal(ctx, req.(*RequestProcessProposal))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ABCI_ExtendVote_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _ABCI_ExtendVote_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestExtendVote)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -4370,13 +4370,13 @@ func _ABCI_ExtendVote_Handler(srv any, ctx context.Context, dec func(any) error,
 		Server:     srv,
 		FullMethod: "/tendermint.abci.ABCI/ExtendVote",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ABCIServer).ExtendVote(ctx, req.(*RequestExtendVote))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ABCI_VerifyVoteExtension_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _ABCI_VerifyVoteExtension_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestVerifyVoteExtension)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -4388,13 +4388,13 @@ func _ABCI_VerifyVoteExtension_Handler(srv any, ctx context.Context, dec func(an
 		Server:     srv,
 		FullMethod: "/tendermint.abci.ABCI/VerifyVoteExtension",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ABCIServer).VerifyVoteExtension(ctx, req.(*RequestVerifyVoteExtension))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ABCI_FinalizeBlock_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _ABCI_FinalizeBlock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestFinalizeBlock)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -4406,7 +4406,7 @@ func _ABCI_FinalizeBlock_Handler(srv any, ctx context.Context, dec func(any) err
 		Server:     srv,
 		FullMethod: "/tendermint.abci.ABCI/FinalizeBlock",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ABCIServer).FinalizeBlock(ctx, req.(*RequestFinalizeBlock))
 	}
 	return interceptor(ctx, in, info, handler)

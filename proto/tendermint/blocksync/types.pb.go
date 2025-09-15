@@ -370,8 +370,8 @@ func (m *Message) GetStatusResponse() *StatusResponse {
 }
 
 // XXX_OneofWrappers is for the internal use of the proto package.
-func (*Message) XXX_OneofWrappers() []any {
-	return []any{
+func (*Message) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Message_BlockRequest)(nil),
 		(*Message_NoBlockResponse)(nil),
 		(*Message_BlockResponse)(nil),

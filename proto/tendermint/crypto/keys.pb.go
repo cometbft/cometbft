@@ -68,10 +68,10 @@ var xxx_messageInfo_PublicKey proto.InternalMessageInfo
 
 type isPublicKey_Sum interface {
 	isPublicKey_Sum()
-	Equal(any) bool
+	Equal(interface{}) bool
 	MarshalTo([]byte) (int, error)
 	Size() int
-	Compare(any) int
+	Compare(interface{}) int
 }
 
 type PublicKey_Ed25519 struct {
@@ -106,8 +106,8 @@ func (m *PublicKey) GetSecp256K1() []byte {
 }
 
 // XXX_OneofWrappers is for the internal use of the proto package.
-func (*PublicKey) XXX_OneofWrappers() []any {
-	return []any{
+func (*PublicKey) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*PublicKey_Ed25519)(nil),
 		(*PublicKey_Secp256K1)(nil),
 	}
@@ -136,7 +136,7 @@ var fileDescriptor_cb048658b234868c = []byte{
 	0x00, 0x00, 0xff, 0xff, 0xa3, 0xfb, 0xf7, 0x98, 0xf9, 0x00, 0x00, 0x00,
 }
 
-func (this *PublicKey) Compare(that any) int {
+func (this *PublicKey) Compare(that interface{}) int {
 	if that == nil {
 		if this == nil {
 			return 0
@@ -198,7 +198,7 @@ func (this *PublicKey) Compare(that any) int {
 	}
 	return 0
 }
-func (this *PublicKey_Ed25519) Compare(that any) int {
+func (this *PublicKey_Ed25519) Compare(that interface{}) int {
 	if that == nil {
 		if this == nil {
 			return 0
@@ -228,7 +228,7 @@ func (this *PublicKey_Ed25519) Compare(that any) int {
 	}
 	return 0
 }
-func (this *PublicKey_Secp256K1) Compare(that any) int {
+func (this *PublicKey_Secp256K1) Compare(that interface{}) int {
 	if that == nil {
 		if this == nil {
 			return 0
@@ -258,7 +258,7 @@ func (this *PublicKey_Secp256K1) Compare(that any) int {
 	}
 	return 0
 }
-func (this *PublicKey) Equal(that any) bool {
+func (this *PublicKey) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
@@ -288,7 +288,7 @@ func (this *PublicKey) Equal(that any) bool {
 	}
 	return true
 }
-func (this *PublicKey_Ed25519) Equal(that any) bool {
+func (this *PublicKey_Ed25519) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
@@ -312,7 +312,7 @@ func (this *PublicKey_Ed25519) Equal(that any) bool {
 	}
 	return true
 }
-func (this *PublicKey_Secp256K1) Equal(that any) bool {
+func (this *PublicKey_Secp256K1) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}

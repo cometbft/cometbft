@@ -181,8 +181,8 @@ func (m *Message) GetPexAddrs() *PexAddrs {
 }
 
 // XXX_OneofWrappers is for the internal use of the proto package.
-func (*Message) XXX_OneofWrappers() []any {
-	return []any{
+func (*Message) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Message_PexRequest)(nil),
 		(*Message_PexAddrs)(nil),
 	}

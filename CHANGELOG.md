@@ -27,6 +27,8 @@
   ([\#2443](https://github.com/cometbft/cometbft/issues/2443)).
 - `[crypto/bls12381]` Fix JSON marshal of private key
   ([\#4772](https://github.com/cometbft/cometbft/pull/4772))
+- `[crypto/bls12381]` Modify `Sign`, `Verify` to use `dstMinPk`
+  ([\#4783](https://github.com/cometbft/cometbft/issues/4783))
 
 ### STATE-BREAKING
 

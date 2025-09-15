@@ -157,7 +157,7 @@ func Parallel(tasks ...Task) (trs *TaskResultSet, ok bool) {
 			// Run the task.
 			val, abort, err := task(i)
 			// Send val/err to taskResultCh.
-			// NOTE: Below this line, nothing must panic/
+			// NOTE: Below this line, nothing must panic.
 			taskResultCh <- TaskResult{val, err}
 			// Closing taskResultCh lets trs.Wait() work.
 			close(taskResultCh)

@@ -32,11 +32,11 @@ func ResetTestRootWithChainID(testName string, chainID string) *config.Config {
 			chainID = DefaultTestChainID
 		}
 		testGenesis := fmt.Sprintf(testGenesisFmt, chainID)
-		cmtos.MustWriteFile(genesisFilePath, []byte(testGenesis), 0644)
+		cmtos.MustWriteFile(genesisFilePath, []byte(testGenesis), 0o644)
 	}
 	// we always overwrite the priv val
-	cmtos.MustWriteFile(privKeyFilePath, []byte(testPrivValidatorKey), 0644)
-	cmtos.MustWriteFile(privStateFilePath, []byte(testPrivValidatorState), 0644)
+	cmtos.MustWriteFile(privKeyFilePath, []byte(testPrivValidatorKey), 0o644)
+	cmtos.MustWriteFile(privStateFilePath, []byte(testPrivValidatorState), 0o644)
 
 	config := config.TestConfig().SetRoot(rootDir)
 	return config

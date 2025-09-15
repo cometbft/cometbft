@@ -37,6 +37,7 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 
 	return execAnsible(ctx, p.Testnet.Dir, ymlSystemd, nodeIPs)
 }
+
 func (p Provider) StopTestnet(ctx context.Context) error {
 	nodeIPs := make([]string, len(p.Testnet.Nodes))
 	for i, n := range p.Testnet.Nodes {

@@ -30,7 +30,6 @@ func compareFloat(op1 *big.Float, op2 interface{}) (int, bool, error) {
 // where 100 would equal to 100.2 because 100.2 is rounded to 100, while 100.7
 // would be rounded to 101.
 func compareInt(op1 *big.Int, op2 interface{}) (int, bool, error) {
-
 	switch opVal := op2.(type) {
 	case *big.Int:
 		return op1.Cmp(opVal), false, nil
@@ -62,7 +61,7 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) (bool, error) {
 	upperBound := ranges.UpperBoundValue()
 
 	// *Explanation for the isFloat condition below.*
-	// In LowerBoundValue(), for floating points, we cannot simply add 1 due to the reasons explained in
+	// In LowerBoundValue(), for floating points, we cannot simply add 1 due to the reasons explained
 	// in the comment at the beginning. The same is true for subtracting one for UpperBoundValue().
 	// That means that for integers, if the condition is >=, cmp will be either 0 or 1
 	// ( cmp == -1 should always be false).

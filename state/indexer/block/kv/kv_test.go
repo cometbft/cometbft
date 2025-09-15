@@ -224,7 +224,6 @@ func TestBlockIndexerMulti(t *testing.T) {
 		q       *query.Query
 		results []int64
 	}{
-
 		"query return all events from a height - exact": {
 			q:       query.MustCompile("block.height = 1"),
 			results: []int64{1},
@@ -302,7 +301,6 @@ func TestBlockIndexerMulti(t *testing.T) {
 }
 
 func TestBigInt(t *testing.T) {
-
 	bigInt := "10000000000000000000"
 	bigFloat := bigInt + ".76"
 	bigFloatLower := bigInt + ".1"
@@ -362,7 +360,6 @@ func TestBigInt(t *testing.T) {
 		q       *query.Query
 		results []int64
 	}{
-
 		"query return all events from a height - exact": {
 			q:       query.MustCompile("block.height = 1"),
 			results: []int64{1},

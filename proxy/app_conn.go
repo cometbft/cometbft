@@ -79,7 +79,8 @@ func (app *appConnConsensus) InitChain(ctx context.Context, req *types.RequestIn
 }
 
 func (app *appConnConsensus) PrepareProposal(ctx context.Context,
-	req *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error) {
+	req *types.RequestPrepareProposal,
+) (*types.ResponsePrepareProposal, error) {
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "prepare_proposal", "type", "sync"))()
 	return app.appConn.PrepareProposal(ctx, req)
 }

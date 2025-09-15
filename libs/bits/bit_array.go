@@ -396,7 +396,7 @@ func (bA *BitArray) Bytes() []byte {
 }
 
 // Update sets the bA's bits to be that of the other bit array.
-// The copying begins from the begin of both bit arrays.
+// The copying begins from the beginning of both bit arrays.
 func (bA *BitArray) Update(o *BitArray) {
 	if bA == nil || o == nil {
 		return

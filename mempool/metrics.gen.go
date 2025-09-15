@@ -73,17 +73,16 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 	}
 }
 
-
 func NopMetrics() *Metrics {
 	return &Metrics{
-		Size:               discard.NewGauge(),
-		TxSizeBytes:        discard.NewHistogram(),
-		FailedTxs:          discard.NewCounter(),
-		RejectedTxs:        discard.NewCounter(),
+		Size:                      discard.NewGauge(),
+		SizeBytes:                 discard.NewGauge(),
+		TxSizeBytes:               discard.NewHistogram(),
+		FailedTxs:                 discard.NewCounter(),
+		RejectedTxs:               discard.NewCounter(),
 		EvictedTxs:                discard.NewCounter(),
-		RecheckTimes:       discard.NewCounter(),
-		AlreadyReceivedTxs: discard.NewCounter(),
+		RecheckTimes:              discard.NewCounter(),
 		ActiveOutboundConnections: discard.NewGauge(),
+		AlreadyReceivedTxs:        discard.NewCounter(),
 	}
 }
- 

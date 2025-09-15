@@ -25,6 +25,8 @@
   ([5275](https://github.com/cometbft/cometbft/issues/5275))
 - `[mempool]` Fix mutex in `CListMempool.Flush` method, by changing it from read-lock to write-lock
   ([\#2443](https://github.com/cometbft/cometbft/issues/2443)).
+- `[crypto/bls12381]` Fix JSON marshal of private key
+  ([\#4772](https://github.com/cometbft/cometbft/pull/4772))
 
 ### STATE-BREAKING
 

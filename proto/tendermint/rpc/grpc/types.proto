@@ -1,0 +1,36 @@
+syntax = "proto3";
+package tendermint.rpc.grpc;
+option  go_package = "github.com/cometbft/cometbft/rpc/grpc;coregrpc";
+
+import "tendermint/abci/types.proto";
+
+//----------------------------------------
+// Request types
+
+message RequestPing {}
+
+message RequestBroadcastTx {
+  bytes tx = 1;
+}
+
+//----------------------------------------
+// Response types
+
+message ResponsePing {}
+
+message ResponseBroadcastTx {
+  tendermint.abci.ResponseCheckTx check_tx  = 1;
+  tendermint.abci.ExecTxResult    tx_result = 2;
+}
+
+//----------------------------------------
+// Service Definition
+
+// BroadcastAPI
+//
+// Deprecated: This API will be superseded by a more comprehensive gRPC-based
+// broadcast API, and is scheduled for removal after v0.38.
+service BroadcastAPI {
+  rpc Ping(RequestPing) returns (ResponsePing);
+  rpc BroadcastTx(RequestBroadcastTx) returns (ResponseBroadcastTx);
+}

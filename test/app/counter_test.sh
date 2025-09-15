@@ -1,8 +1,12 @@
 #! /bin/bash
 
-set -o errexit   # abort on nonzero exitstatus
-set -o nounset   # abort on unbound variable
-set -o pipefail  # don't hide errors within pipes
+export GO111MODULE=on
+
+if [[ "$GRPC_BROADCAST_TX" == "" ]]; then
+	GRPC_BROADCAST_TX=""
+fi
+
+set -u
 
 #####################
 # counter over socket
@@ -19,8 +23,8 @@ function getCode() {
 		echo -1
 	fi
 
-	if [[ $(echo "$R" | jq 'has("code")') == "true" ]]; then
-		# this won't actually work if there's an error ...
+	if [[ $(echo $R | jq 'has("code")') == "true" ]]; then
+		# this wont actually work if theres an error ...
 		echo "$R" | jq ".code"
 	else
 		# protobuf auto adds `omitempty` to everything so code OK and empty data/log
@@ -30,6 +34,15 @@ function getCode() {
 	fi
 }
 
+# build grpc client if needed
+if [[ "$GRPC_BROADCAST_TX" != "" ]]; then
+	if [  -f test/app/grpc_client ]; then
+		rm test/app/grpc_client
+	fi
+	echo "... building grpc_client"
+	go build -mod=readonly -o test/app/grpc_client test/app/grpc_client.go
+fi
+
 function sendTx() {
 	TX=$1
 	set +u
@@ -38,12 +51,18 @@ function sendTx() {
 		SHOULD_ERR=false
 	fi
 	set -u
-    RESPONSE=$(curl -s localhost:26657/broadcast_tx_commit?tx=0x"$TX")
-    IS_ERR=$(echo "$RESPONSE" | jq 'has("error")')
-    ERROR=$(echo "$RESPONSE" | jq '.error')
-    ERROR=$(echo "$ERROR" | tr -d '"') # remove surrounding quotes
+	if [[ "$GRPC_BROADCAST_TX" == "" ]]; then
+		RESPONSE=$(curl -s localhost:26657/broadcast_tx_commit?tx=0x"$TX")
+		IS_ERR=$(echo "$RESPONSE" | jq 'has("error")')
+		ERROR=$(echo "$RESPONSE" | jq '.error')
+		ERROR=$(echo "$ERROR" | tr -d '"') # remove surrounding quotes
 
-    RESPONSE=$(echo "$RESPONSE" | jq '.result')
+		RESPONSE=$(echo "$RESPONSE" | jq '.result')
+	else
+		RESPONSE=$(./test/app/grpc_client "$TX")
+		IS_ERR=false
+		ERROR=""
+	fi
 
 	echo "RESPONSE"
 	echo "$RESPONSE"
@@ -94,7 +113,7 @@ fi
 echo "... sending tx. expect error"
 
 # second time should get rejected by the mempool (return error and non-zero code)
-sendTx "$TX" true
+sendTx $TX true
 
 
 echo "... sending tx. expect no error"

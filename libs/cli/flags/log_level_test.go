@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	cmtflags "github.com/cometbft/cometbft/v2/libs/cli/flags"
-	"github.com/cometbft/cometbft/v2/libs/log"
+	cmtflags "github.com/cometbft/cometbft/libs/cli/flags"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 const (
@@ -15,7 +15,7 @@ const (
 
 func TestParseLogLevel(t *testing.T) {
 	var buf bytes.Buffer
-	jsonLogger := log.NewJSONLoggerNoTS(&buf)
+	jsonLogger := log.NewTMJSONLoggerNoTS(&buf)
 
 	correctLogLevels := []struct {
 		lvl              string
@@ -24,25 +24,25 @@ func TestParseLogLevel(t *testing.T) {
 		{"mempool:error", []string{
 			``, // if no default is given, assume info
 			``,
-			`{"level":"ERROR","msg":"Mesmero","module":"mempool"}`,
-			`{"level":"INFO","msg":"Mind","module":"state"}`, // if no default is given, assume info
+			`{"_msg":"Mesmero","level":"error","module":"mempool"}`,
+			`{"_msg":"Mind","level":"info","module":"state"}`, // if no default is given, assume info
 			``,
 		}},
 
 		{"mempool:error,*:debug", []string{
-			`{"level":"DEBUG","msg":"Kingpin","module":"mempool","module":"wire"}`,
+			`{"_msg":"Kingpin","level":"debug","module":"wire"}`,
 			``,
-			`{"level":"ERROR","msg":"Mesmero","module":"mempool"}`,
-			`{"level":"INFO","msg":"Mind","module":"state"}`,
-			`{"level":"DEBUG","msg":"Gideon"}`,
+			`{"_msg":"Mesmero","level":"error","module":"mempool"}`,
+			`{"_msg":"Mind","level":"info","module":"state"}`,
+			`{"_msg":"Gideon","level":"debug"}`,
 		}},
 
 		{"*:debug,wire:none", []string{
 			``,
-			`{"level":"INFO","msg":"Kitty Pryde","module":"mempool"}`,
-			`{"level":"ERROR","msg":"Mesmero","module":"mempool"}`,
-			`{"level":"INFO","msg":"Mind","module":"state"}`,
-			`{"level":"DEBUG","msg":"Gideon"}`,
+			`{"_msg":"Kitty Pryde","level":"info","module":"mempool"}`,
+			`{"_msg":"Mesmero","level":"error","module":"mempool"}`,
+			`{"_msg":"Mind","level":"info","module":"state"}`,
+			`{"_msg":"Gideon","level":"debug"}`,
 		}},
 	}
 

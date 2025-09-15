@@ -9,16 +9,16 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	"github.com/cometbft/cometbft/v2/crypto"
-	"github.com/cometbft/cometbft/v2/crypto/ed25519"
-	cmtos "github.com/cometbft/cometbft/v2/internal/os"
-	"github.com/cometbft/cometbft/v2/internal/tempfile"
-	cmtbytes "github.com/cometbft/cometbft/v2/libs/bytes"
-	cmtjson "github.com/cometbft/cometbft/v2/libs/json"
-	"github.com/cometbft/cometbft/v2/libs/protoio"
-	"github.com/cometbft/cometbft/v2/types"
-	cmttime "github.com/cometbft/cometbft/v2/types/time"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+	"github.com/cometbft/cometbft/libs/protoio"
+	"github.com/cometbft/cometbft/libs/tempfile"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 // TODO: type ?
@@ -32,16 +32,16 @@ const (
 // A vote is either stepPrevote or stepPrecommit.
 func voteToStep(vote *cmtproto.Vote) int8 {
 	switch vote.Type {
-	case types.PrevoteType:
+	case cmtproto.PrevoteType:
 		return stepPrevote
-	case types.PrecommitType:
+	case cmtproto.PrecommitType:
 		return stepPrecommit
 	default:
 		panic(fmt.Sprintf("Unknown vote type: %v", vote.Type))
 	}
 }
 
-// -------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
 
 // FilePVKey stores the immutable part of PrivValidator.
 type FilePVKey struct {
@@ -69,7 +69,7 @@ func (pvKey FilePVKey) Save() {
 	}
 }
 
-// -------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
 
 // FilePVLastSignState stores the mutable part of PrivValidator.
 type FilePVLastSignState struct {
@@ -102,40 +102,32 @@ func (lss *FilePVLastSignState) CheckHRS(height int64, round int32, step int8) (
 		return false, fmt.Errorf("height regression. Got %v, last height %v", height, lss.Height)
 	}
 
-	if lss.Height != height {
-		return false, nil
-	}
+	if lss.Height == height {
+		if lss.Round > round {
+			return false, fmt.Errorf("round regression at height %v. Got %v, last round %v", height, round, lss.Round)
+		}
 
-	if lss.Round > round {
-		return false, fmt.Errorf("round regression at height %v. Got %v, last round %v", height, round, lss.Round)
+		if lss.Round == round {
+			if lss.Step > step {
+				return false, fmt.Errorf(
+					"step regression at height %v round %v. Got %v, last step %v",
+					height,
+					round,
+					step,
+					lss.Step,
+				)
+			} else if lss.Step == step {
+				if lss.SignBytes != nil {
+					if lss.Signature == nil {
+						panic("pv: Signature is nil but SignBytes is not!")
+					}
+					return true, nil
+				}
+				return false, errors.New("no SignBytes found")
+			}
+		}
 	}
-
-	if lss.Round != round {
-		return false, nil
-	}
-
-	if lss.Step > step {
-		return false, fmt.Errorf(
-			"step regression at height %v round %v. Got %v, last step %v",
-			height,
-			round,
-			step,
-			lss.Step,
-		)
-	}
-
-	if lss.Step < step {
-		return false, nil
-	}
-
-	if lss.SignBytes == nil {
-		return false, errors.New("no SignBytes found")
-	}
-
-	if lss.Signature == nil {
-		panic("pv: Signature is nil but SignBytes is not!")
-	}
-	return true, nil
+	return false, nil
 }
 
 // Save persists the FilePvLastSignState to its filePath.
@@ -154,9 +146,7 @@ func (lss *FilePVLastSignState) Save() {
 	}
 }
 
-// -------------------------------------------------------------------------------
-
-var _ types.PrivValidator = (*FilePV)(nil)
+//-------------------------------------------------------------------------------
 
 // FilePV implements PrivValidator using data persisted to disk
 // to prevent double signing.
@@ -184,18 +174,10 @@ func NewFilePV(privKey crypto.PrivKey, keyFilePath, stateFilePath string) *FileP
 	}
 }
 
-// GenFilePV calls NewFilePV with a random private key of one of the crypto libraries supported by CometBFT.
-func GenFilePV(keyFilePath, stateFilePath string, keyGen func() (crypto.PrivKey, error)) (*FilePV, error) {
-	if keyGen == nil {
-		keyGen = func() (crypto.PrivKey, error) {
-			return ed25519.GenPrivKey(), nil
-		}
-	}
-	key, err := keyGen()
-	if err != nil {
-		return nil, err
-	}
-	return NewFilePV(key, keyFilePath, stateFilePath), nil
+// GenFilePV generates a new validator with randomly generated private key
+// and sets the filePaths, but does not call Save().
+func GenFilePV(keyFilePath, stateFilePath string) *FilePV {
+	return NewFilePV(ed25519.GenPrivKey(), keyFilePath, stateFilePath)
 }
 
 // LoadFilePV loads a FilePV from the filePaths.  The FilePV handles double
@@ -251,19 +233,15 @@ func loadFilePV(keyFilePath, stateFilePath string, loadState bool) *FilePV {
 
 // LoadOrGenFilePV loads a FilePV from the given filePaths
 // or else generates a new one and saves it to the filePaths.
-func LoadOrGenFilePV(keyFilePath, stateFilePath string, keyGenF func() (crypto.PrivKey, error)) (*FilePV, error) {
+func LoadOrGenFilePV(keyFilePath, stateFilePath string) *FilePV {
 	var pv *FilePV
 	if cmtos.FileExists(keyFilePath) {
 		pv = LoadFilePV(keyFilePath, stateFilePath)
 	} else {
-		var err error
-		pv, err = GenFilePV(keyFilePath, stateFilePath, keyGenF)
-		if err != nil {
-			return nil, err
-		}
+		pv = GenFilePV(keyFilePath, stateFilePath)
 		pv.Save()
 	}
-	return pv, nil
+	return pv
 }
 
 // GetAddress returns the address of the validator.
@@ -280,8 +258,8 @@ func (pv *FilePV) GetPubKey() (crypto.PubKey, error) {
 
 // SignVote signs a canonical representation of the vote, along with the
 // chainID. Implements PrivValidator.
-func (pv *FilePV) SignVote(chainID string, vote *cmtproto.Vote, signExtension bool) error {
-	if err := pv.signVote(chainID, vote, signExtension); err != nil {
+func (pv *FilePV) SignVote(chainID string, vote *cmtproto.Vote) error {
+	if err := pv.signVote(chainID, vote); err != nil {
 		return fmt.Errorf("error signing vote: %v", err)
 	}
 	return nil
@@ -294,11 +272,6 @@ func (pv *FilePV) SignProposal(chainID string, proposal *cmtproto.Proposal) erro
 		return fmt.Errorf("error signing proposal: %v", err)
 	}
 	return nil
-}
-
-// SignBytes signs the given bytes. Implements PrivValidator.
-func (pv *FilePV) SignBytes(bytes []byte) ([]byte, error) {
-	return pv.Key.PrivKey.Sign(bytes)
 }
 
 // Save persists the FilePV to disk.
@@ -325,13 +298,13 @@ func (pv *FilePV) String() string {
 	)
 }
 
-// ------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------
 
 // signVote checks if the vote is good to sign and sets the vote signature.
 // It may need to set the timestamp as well if the vote is otherwise the same as
 // a previously signed vote (ie. we crashed after signing but before the vote hit the WAL).
 // Extension signatures are always signed for non-nil precommits (even if the data is empty).
-func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote, signExtension bool) error {
+func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote) error {
 	height, round, step := vote.Height, vote.Round, voteToStep(vote)
 
 	lss := pv.LastSignState
@@ -343,29 +316,20 @@ func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote, signExtension bo
 
 	signBytes := types.VoteSignBytes(chainID, vote)
 
-	if signExtension {
-		// Vote extensions are non-deterministic, so it is possible that an
-		// application may have created a different extension. We therefore always
-		// re-sign the vote extensions of precommits. For prevotes and nil
-		// precommits, the extension signature will always be empty.
-		// Even if the signed over data is empty, we still add the signature
-		var extSig, nonRpExtSig []byte
-		if vote.Type == types.PrecommitType && !types.ProtoBlockIDIsNil(&vote.BlockID) {
-			extSignBytes, nonRpExtSignBytes := types.VoteExtensionSignBytes(chainID, vote)
-			extSig, err = pv.Key.PrivKey.Sign(extSignBytes)
-			if err != nil {
-				return err
-			}
-			nonRpExtSig, err = pv.Key.PrivKey.Sign(nonRpExtSignBytes)
-			if err != nil {
-				return err
-			}
-		} else if len(vote.Extension) > 0 || len(vote.NonRpExtension) > 0 {
-			return errors.New("unexpected vote extension - extensions are only allowed in non-nil precommits")
+	// Vote extensions are non-deterministic, so it is possible that an
+	// application may have created a different extension. We therefore always
+	// re-sign the vote extensions of precommits. For prevotes and nil
+	// precommits, the extension signature will always be empty.
+	// Even if the signed over data is empty, we still add the signature
+	var extSig []byte
+	if vote.Type == cmtproto.PrecommitType && !types.ProtoBlockIDIsNil(&vote.BlockID) {
+		extSignBytes := types.VoteExtensionSignBytes(chainID, vote)
+		extSig, err = pv.Key.PrivKey.Sign(extSignBytes)
+		if err != nil {
+			return err
 		}
-
-		vote.ExtensionSignature = extSig
-		vote.NonRpExtensionSignature = nonRpExtSig
+	} else if len(vote.Extension) > 0 {
+		return errors.New("unexpected vote extension - extensions are only allowed in non-nil precommits")
 	}
 
 	// We might crash before writing to the wal,
@@ -382,8 +346,10 @@ func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote, signExtension bo
 			vote.Timestamp = timestamp
 			vote.Signature = lss.Signature
 		} else {
-			err = errors.New("conflicting data")
+			err = fmt.Errorf("conflicting data")
 		}
+
+		vote.ExtensionSignature = extSig
 
 		return err
 	}
@@ -395,6 +361,7 @@ func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote, signExtension bo
 	}
 	pv.saveSigned(height, round, step, signBytes, sig)
 	vote.Signature = sig
+	vote.ExtensionSignature = extSig
 
 	return nil
 }
@@ -426,7 +393,7 @@ func (pv *FilePV) signProposal(chainID string, proposal *cmtproto.Proposal) erro
 			proposal.Timestamp = timestamp
 			proposal.Signature = lss.Signature
 		} else {
-			err = errors.New("conflicting data")
+			err = fmt.Errorf("conflicting data")
 		}
 		return err
 	}
@@ -441,7 +408,7 @@ func (pv *FilePV) signProposal(chainID string, proposal *cmtproto.Proposal) erro
 	return nil
 }
 
-// Persist height/round/step and signature.
+// Persist height/round/step and signature
 func (pv *FilePV) saveSigned(height int64, round int32, step int8,
 	signBytes []byte, sig []byte,
 ) {
@@ -453,7 +420,7 @@ func (pv *FilePV) saveSigned(height int64, round int32, step int8,
 	pv.LastSignState.Save()
 }
 
-// -----------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 
 // Returns the timestamp from the lastSignBytes.
 // Returns true if the only difference in the votes is their timestamp.
@@ -478,7 +445,7 @@ func checkVotesOnlyDifferByTimestamp(lastSignBytes, newSignBytes []byte) (time.T
 }
 
 // returns the timestamp from the lastSignBytes.
-// returns true if the only difference in the proposals is their timestamp.
+// returns true if the only difference in the proposals is their timestamp
 func checkProposalsOnlyDifferByTimestamp(lastSignBytes, newSignBytes []byte) (time.Time, bool) {
 	var lastProposal, newProposal cmtproto.CanonicalProposal
 	if err := protoio.UnmarshalDelimited(lastSignBytes, &lastProposal); err != nil {

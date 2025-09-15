@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/cometbft/cometbft/v2/abci/types"
-	cmtnet "github.com/cometbft/cometbft/v2/internal/net"
+	"github.com/cometbft/cometbft/abci/types"
+	cmtnet "github.com/cometbft/cometbft/libs/net"
 )
 
 func main() {
@@ -35,7 +35,7 @@ func main() {
 	counter := 0
 	for i := 0; ; i++ {
 		bufWriter := bufio.NewWriter(conn)
-		req := types.ToEchoRequest("foobar")
+		req := types.ToRequestEcho("foobar")
 
 		err := types.WriteMessage(req, bufWriter)
 		if err != nil {

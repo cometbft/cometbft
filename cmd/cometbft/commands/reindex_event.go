@@ -8,16 +8,17 @@ import (
 	"github.com/spf13/cobra"
 
 	dbm "github.com/cometbft/cometbft-db"
-	abcitypes "github.com/cometbft/cometbft/v2/abci/types"
-	cmtcfg "github.com/cometbft/cometbft/v2/config"
-	"github.com/cometbft/cometbft/v2/internal/progressbar"
-	"github.com/cometbft/cometbft/v2/state"
-	"github.com/cometbft/cometbft/v2/state/indexer"
-	blockidxkv "github.com/cometbft/cometbft/v2/state/indexer/block/kv"
-	"github.com/cometbft/cometbft/v2/state/indexer/sink/psql"
-	"github.com/cometbft/cometbft/v2/state/txindex"
-	"github.com/cometbft/cometbft/v2/state/txindex/kv"
-	"github.com/cometbft/cometbft/v2/types"
+
+	abcitypes "github.com/cometbft/cometbft/abci/types"
+	cmtcfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/libs/progressbar"
+	"github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/indexer"
+	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
+	"github.com/cometbft/cometbft/state/indexer/sink/psql"
+	"github.com/cometbft/cometbft/state/txindex"
+	"github.com/cometbft/cometbft/state/txindex/kv"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -36,9 +37,9 @@ var ReIndexEventCmd = &cobra.Command{
 	Short:   "reindex events to the event store backends",
 	Long: `
 reindex-event is an offline tooling to re-index block and tx events to the eventsinks,
-you can run this command when the event store backend dropped/disconnected or you want to
-replace the backend. The default start-height is 0, meaning the tooling will start
-reindex from the base block height(inclusive); and the default end-height is 0, meaning
+you can run this command when the event store backend dropped/disconnected or you want to 
+replace the backend. The default start-height is 0, meaning the tooling will start 
+reindex from the base block height(inclusive); and the default end-height is 0, meaning 
 the tooling will reindex until the latest block height(inclusive). User can omit
 either or both arguments.
 
@@ -51,7 +52,7 @@ want to use this command.
 	cometbft reindex-event --end-height 10
 	cometbft reindex-event --start-height 2 --end-height 10
 	`,
-	Run: func(cmd *cobra.Command, _ []string) {
+	Run: func(cmd *cobra.Command, args []string) {
 		bs, ss, err := loadStateAndBlockStore(config)
 		if err != nil {
 			fmt.Println(reindexFailed, err)
@@ -149,7 +150,7 @@ func eventReIndex(cmd *cobra.Command, args eventReIndexArgs) error {
 		case <-cmd.Context().Done():
 			return fmt.Errorf("event re-index terminated at height %d: %w", height, cmd.Context().Err())
 		default:
-			block, _ := args.blockStore.LoadBlock(height)
+			block := args.blockStore.LoadBlock(height)
 			if block == nil {
 				return fmt.Errorf("not able to load block at height %d from the blockstore", height)
 			}

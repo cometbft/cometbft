@@ -3,9 +3,9 @@ package txindex
 import (
 	"context"
 
-	"github.com/cometbft/cometbft/v2/libs/service"
-	"github.com/cometbft/cometbft/v2/state/indexer"
-	"github.com/cometbft/cometbft/v2/types"
+	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/state/indexer"
+	"github.com/cometbft/cometbft/types"
 )
 
 // XXX/TODO: These types should be moved to the indexer package.
@@ -32,12 +32,7 @@ func NewIndexerService(
 	eventBus *types.EventBus,
 	terminateOnError bool,
 ) *IndexerService {
-	is := &IndexerService{
-		txIdxr:           txIdxr,
-		blockIdxr:        blockIdxr,
-		eventBus:         eventBus,
-		terminateOnError: terminateOnError,
-	}
+	is := &IndexerService{txIdxr: txIdxr, blockIdxr: blockIdxr, eventBus: eventBus, terminateOnError: terminateOnError}
 	is.BaseService = *service.NewBaseService(nil, "IndexerService", is)
 	return is
 }
@@ -86,7 +81,7 @@ func (is *IndexerService) OnStart() error {
 						)
 
 						if is.terminateOnError {
-							if err := is.Stop(); err != nil { //nolint:revive // suppress max-control-nesting linter
+							if err := is.Stop(); err != nil {
 								is.Logger.Error("failed to stop", "err", err)
 							}
 							return
@@ -128,6 +123,4 @@ func (is *IndexerService) OnStop() {
 	if is.eventBus.IsRunning() {
 		_ = is.eventBus.UnsubscribeAll(context.Background(), subscriber)
 	}
-
-	is.txIdxr.Close()
 }

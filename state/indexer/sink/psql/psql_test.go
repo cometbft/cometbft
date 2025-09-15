@@ -3,7 +3,6 @@ package psql
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -19,12 +18,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	_ "github.com/lib/pq"
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmlog "github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/state/txindex"
+	"github.com/cometbft/cometbft/types"
 
-	abci "github.com/cometbft/cometbft/v2/abci/types"
-	tmlog "github.com/cometbft/cometbft/v2/libs/log"
-	"github.com/cometbft/cometbft/v2/state/txindex"
-	"github.com/cometbft/cometbft/v2/types"
+	// Register the Postgres database driver.
+	_ "github.com/lib/pq"
 )
 
 var (
@@ -39,14 +39,13 @@ var (
 const (
 	user     = "postgres"
 	password = "secret"
+	port     = "5432"
 	dsn      = "postgres://%s:%s@localhost:%s/%s?sslmode=disable"
 	dbName   = "postgres"
 	chainID  = "test-chainID"
 
 	viewBlockEvents = "block_events"
 	viewTxEvents    = "tx_events"
-
-	eventTypeFinalizeBlock = "finalize_block"
 )
 
 func TestMain(m *testing.M) {
@@ -88,7 +87,7 @@ func TestMain(m *testing.M) {
 
 	// Connect to the database, clear any leftover data, and install the
 	// indexing schema.
-	conn := fmt.Sprintf(dsn, user, password, resource.GetPort("5432/tcp"), dbName)
+	conn := fmt.Sprintf(dsn, user, password, resource.GetPort(port+"/tcp"), dbName)
 	var db *sql.DB
 
 	if err := pool.Retry(func() error {
@@ -140,12 +139,11 @@ func TestMain(m *testing.M) {
 
 func TestIndexing(t *testing.T) {
 	t.Run("IndexBlockEvents", func(t *testing.T) {
-		indexer, err := NewEventSink("", chainID, WithStore(testDB()))
-		require.Nil(t, err, "event sink creation")
+		indexer := &EventSink{store: testDB(), chainID: chainID}
 		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents()))
 
-		verifyBlock(t, indexer, 1)
-		verifyBlock(t, indexer, 2)
+		verifyBlock(t, 1)
+		verifyBlock(t, 2)
 
 		verifyNotImplemented(t, "hasBlock", func() (bool, error) { return indexer.HasBlock(1) })
 		verifyNotImplemented(t, "hasBlock", func() (bool, error) { return indexer.HasBlock(2) })
@@ -155,15 +153,14 @@ func TestIndexing(t *testing.T) {
 			return v != nil, err
 		})
 
-		require.NoError(t, verifyTimeStamp(indexer.tableBlocks))
+		require.NoError(t, verifyTimeStamp(tableBlocks))
 
 		// Attempting to reindex the same events should gracefully succeed.
 		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents()))
 	})
 
 	t.Run("IndexTxEvents", func(t *testing.T) {
-		indexer, err := NewEventSink("", chainID, WithStore(testDB()))
-		require.Nil(t, err, "event sink creation")
+		indexer := &EventSink{store: testDB(), chainID: chainID}
 
 		txResult := txResultWithEvents([]abci.Event{
 			makeIndexedEvent("account.number", "1"),
@@ -180,11 +177,11 @@ func TestIndexing(t *testing.T) {
 		})
 		require.NoError(t, indexer.IndexTxEvents([]*abci.TxResult{txResult}))
 
-		txr, err := loadTxResult(indexer, types.Tx(txResult.Tx).Hash())
+		txr, err := loadTxResult(types.Tx(txResult.Tx).Hash())
 		require.NoError(t, err)
 		assert.Equal(t, txResult, txr)
 
-		require.NoError(t, verifyTimeStamp(indexer.tableTxResults))
+		require.NoError(t, verifyTimeStamp(tableTxResults))
 		require.NoError(t, verifyTimeStamp(viewTxEvents))
 
 		verifyNotImplemented(t, "getTxByHash", func() (bool, error) {
@@ -202,12 +199,11 @@ func TestIndexing(t *testing.T) {
 	})
 
 	t.Run("IndexerService", func(t *testing.T) {
-		indexer, err := NewEventSink("", chainID, WithStore(testDB()))
-		require.Nil(t, err, "event sink creation")
+		indexer := &EventSink{store: testDB(), chainID: chainID}
 
 		// event bus
 		eventBus := types.NewEventBus()
-		err = eventBus.Start()
+		err := eventBus.Start()
 		require.NoError(t, err)
 		t.Cleanup(func() {
 			if err := eventBus.Stop(); err != nil {
@@ -258,7 +254,7 @@ func TestStop(t *testing.T) {
 	require.NoError(t, indexer.Stop())
 }
 
-// newTestBlockEvents constructs a fresh copy of a new block event containing
+// newTestBlock constructs a fresh copy of a new block event containing
 // known test values to exercise the indexer.
 func newTestBlockEvents() types.EventDataNewBlockEvents {
 	return types.EventDataNewBlockEvents{
@@ -272,7 +268,7 @@ func newTestBlockEvents() types.EventDataNewBlockEvents {
 	}
 }
 
-// readSchema loads the indexing database schema file.
+// readSchema loads the indexing database schema file
 func readSchema() ([]*schema.Migration, error) {
 	const filename = "schema.sql"
 	contents, err := os.ReadFile(filename)
@@ -315,11 +311,11 @@ func txResultWithEvents(events []abci.Event) *abci.TxResult {
 	}
 }
 
-func loadTxResult(indexer *EventSink, hash []byte) (*abci.TxResult, error) {
+func loadTxResult(hash []byte) (*abci.TxResult, error) {
 	hashString := fmt.Sprintf("%X", hash)
 	var resultData []byte
-	if err := indexer.store.QueryRow(`
-SELECT tx_result FROM `+indexer.tableTxResults+` WHERE tx_hash = $1;
+	if err := testDB().QueryRow(`
+SELECT tx_result FROM `+tableTxResults+` WHERE tx_hash = $1;
 `, hashString).Scan(&resultData); err != nil {
 		return nil, fmt.Errorf("lookup transaction for hash %q failed: %v", hashString, err)
 	}
@@ -340,22 +336,21 @@ SELECT DISTINCT %[1]s.created_at
 `, tableName), time.Now().Add(-2*time.Second)).Err()
 }
 
-func verifyBlock(t *testing.T, indexer *EventSink, height int64) {
-	t.Helper()
+func verifyBlock(t *testing.T, height int64) {
 	// Check that the blocks table contains an entry for this height.
-	if err := indexer.store.QueryRow(`
-SELECT height FROM `+indexer.tableBlocks+` WHERE height = $1;
-`, height).Err(); errors.Is(err, sql.ErrNoRows) {
+	if err := testDB().QueryRow(`
+SELECT height FROM `+tableBlocks+` WHERE height = $1;
+`, height).Err(); err == sql.ErrNoRows {
 		t.Errorf("No block found for height=%d", height)
 	} else if err != nil {
 		t.Fatalf("Database query failed: %v", err)
 	}
 
 	// Verify the presence of begin_block and end_block events.
-	if err := indexer.store.QueryRow(`
+	if err := testDB().QueryRow(`
 SELECT type, height, chain_id FROM `+viewBlockEvents+`
   WHERE height = $1 AND type = $2 AND chain_id = $3;
-`, height, eventTypeFinalizeBlock, chainID).Err(); errors.Is(err, sql.ErrNoRows) {
+`, height, eventTypeFinalizeBlock, chainID).Err(); err == sql.ErrNoRows {
 		t.Errorf("No %q event found for height=%d", eventTypeFinalizeBlock, height)
 	} else if err != nil {
 		t.Fatalf("Database query failed: %v", err)
@@ -372,7 +367,7 @@ func verifyNotImplemented(t *testing.T, label string, f func() (bool, error)) {
 	want := label + " is not supported via the postgres event sink"
 	ok, err := f()
 	assert.False(t, ok)
-	require.Error(t, err)
+	require.NotNil(t, err)
 	assert.Equal(t, want, err.Error())
 }
 

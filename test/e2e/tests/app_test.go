@@ -2,7 +2,6 @@ package e2e_test
 
 import (
 	"bytes"
-	"encoding/hex"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -12,14 +11,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	e2e "github.com/cometbft/cometbft/v2/test/e2e/pkg"
-	"github.com/cometbft/cometbft/v2/types"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/types"
 )
 
 // Tests that any initial state given in genesis has made it into the app.
 func TestApp_InitialState(t *testing.T) {
 	testNode(t, func(t *testing.T, node e2e.Node) {
-		t.Helper()
 		if len(node.Testnet.InitialState) == 0 {
 			return
 		}
@@ -38,9 +36,7 @@ func TestApp_InitialState(t *testing.T) {
 // Tests that the app hash (as reported by the app) matches the last
 // block and the node sync status.
 func TestApp_Hash(t *testing.T) {
-	t.Helper()
 	testNode(t, func(t *testing.T, node e2e.Node) {
-		t.Helper()
 		client, err := node.Client()
 		require.NoError(t, err)
 
@@ -56,22 +52,20 @@ func TestApp_Hash(t *testing.T) {
 			require.NoError(t, err)
 			require.NotZero(t, status.SyncInfo.LatestBlockHeight)
 			return status.SyncInfo.LatestBlockHeight >= requestedHeight
-		}, 30*time.Second, 500*time.Millisecond)
+		}, 5*time.Second, 500*time.Millisecond)
 
 		block, err := client.Block(ctx, &requestedHeight)
 		require.NoError(t, err)
 		require.Equal(t,
-			hex.EncodeToString(info.Response.LastBlockAppHash),
-			hex.EncodeToString(block.Block.AppHash.Bytes()),
+			fmt.Sprintf("%x", info.Response.LastBlockAppHash),
+			fmt.Sprintf("%x", block.Block.AppHash.Bytes()),
 			"app hash does not match last block's app hash")
 	})
 }
 
 // Tests that we can set a value and retrieve it.
 func TestApp_Tx(t *testing.T) {
-	t.Helper()
 	testNode(t, func(t *testing.T, node e2e.Node) {
-		t.Helper()
 		client, err := node.Client()
 		require.NoError(t, err)
 
@@ -83,22 +77,19 @@ func TestApp_Tx(t *testing.T) {
 		require.NoError(t, err)
 
 		key := fmt.Sprintf("testapp-tx-%v", node.Name)
-		value := hex.EncodeToString(bz)
+		value := fmt.Sprintf("%x", bz)
 		tx := types.Tx(fmt.Sprintf("%v=%v", key, value))
 
-		res, err := client.BroadcastTxSync(ctx, tx)
+		_, err = client.BroadcastTxSync(ctx, tx)
 		require.NoError(t, err)
-		require.NotNil(t, res)
-		require.Zero(t, res.Code)
 
 		hash := tx.Hash()
-		require.Equal(t, res.Hash, hash)
-		waitTime := 2 * time.Minute
+		waitTime := 30 * time.Second
 		require.Eventuallyf(t, func() bool {
 			txResp, err := client.Tx(ctx, hash, false)
 			return err == nil && bytes.Equal(txResp.Tx, tx)
 		}, waitTime, time.Second,
-			"submitted tx (%X) wasn't committed after %v", hash, waitTime,
+			"submitted tx wasn't committed after %v", waitTime,
 		)
 
 		// NOTE: we don't test abci query of the light client
@@ -114,9 +105,7 @@ func TestApp_Tx(t *testing.T) {
 }
 
 func TestApp_VoteExtensions(t *testing.T) {
-	t.Helper()
 	testNode(t, func(t *testing.T, node e2e.Node) {
-		t.Helper()
 		client, err := node.Client()
 		require.NoError(t, err)
 		info, err := client.ABCIInfo(ctx)
@@ -130,6 +119,7 @@ func TestApp_VoteExtensions(t *testing.T) {
 		// the app to have any extension value set (via a normal tx).
 		if node.Testnet.VoteExtensionsEnableHeight != 0 &&
 			info.Response.LastBlockHeight > node.Testnet.VoteExtensionsEnableHeight {
+
 			parts := bytes.Split(resp.Response.Value, []byte("|"))
 			require.Len(t, parts, 2)
 			extSum, err := strconv.Atoi(string(parts[0]))

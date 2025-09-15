@@ -1,27 +1,26 @@
 package core
 
 import (
-	cmtquery "github.com/cometbft/cometbft/v2/libs/pubsub/query"
-	ctypes "github.com/cometbft/cometbft/v2/rpc/core/types"
-	rpctypes "github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
-	"github.com/cometbft/cometbft/v2/state/txindex"
-	"github.com/cometbft/cometbft/v2/state/txindex/null"
-	"github.com/cometbft/cometbft/v2/types"
-)
+	"errors"
+	"fmt"
+	"sort"
 
-const (
-	Ascending  = "asc"
-	Descending = "desc"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/state/txindex/null"
+	"github.com/cometbft/cometbft/types"
 )
 
 // Tx allows you to query the transaction results. `nil` could mean the
 // transaction is in the mempool, invalidated, or was not sent in the first
 // place.
-// More: https://docs.cometbft.com/main/rpc/#/Info/tx
+// More: https://docs.cometbft.com/v0.38/spec/rpc/#tx
 func (env *Environment) Tx(_ *rpctypes.Context, hash []byte, prove bool) (*ctypes.ResultTx, error) {
 	// if index is disabled, return error
 	if _, ok := env.TxIndexer.(*null.TxIndex); ok {
-		return nil, ErrTxIndexingDisabled
+		return nil, fmt.Errorf("transaction indexing is disabled")
 	}
 
 	r, err := env.TxIndexer.Get(hash)
@@ -30,14 +29,14 @@ func (env *Environment) Tx(_ *rpctypes.Context, hash []byte, prove bool) (*ctype
 	}
 
 	if r == nil {
-		return nil, ErrTxNotFound{hash}
+		return nil, fmt.Errorf("tx (%X) not found", hash)
 	}
 
 	var proof types.TxProof
 	if prove {
-		block, _ := env.BlockStore.LoadBlock(r.Height)
+		block := env.BlockStore.LoadBlock(r.Height)
 		if block != nil {
-			proof = block.Data.Txs.Proof(int(r.Index))
+			proof = block.Txs.Proof(int(r.Index))
 		}
 	}
 
@@ -53,7 +52,7 @@ func (env *Environment) Tx(_ *rpctypes.Context, hash []byte, prove bool) (*ctype
 
 // TxSearch allows you to query for multiple transactions results. It returns a
 // list of transactions (maximum ?per_page entries) and the total count.
-// More: https://docs.cometbft.com/main/rpc/#/Info/tx_search
+// More: https://docs.cometbft.com/v0.38/rpc/#/Info/tx_search
 func (env *Environment) TxSearch(
 	ctx *rpctypes.Context,
 	query string,
@@ -63,14 +62,9 @@ func (env *Environment) TxSearch(
 ) (*ctypes.ResultTxSearch, error) {
 	// if index is disabled, return error
 	if _, ok := env.TxIndexer.(*null.TxIndex); ok {
-		return nil, ErrTxIndexingDisabled
+		return nil, errors.New("transaction indexing is disabled")
 	} else if len(query) > maxQueryLength {
-		return nil, ErrQueryLength{len(query), maxQueryLength}
-	}
-
-	// if orderBy is not "asc", "desc", or blank, return error
-	if orderBy != "" && orderBy != Ascending && orderBy != Descending {
-		return nil, ErrInvalidOrderBy{orderBy}
+		return nil, errors.New("maximum query length exceeded")
 	}
 
 	q, err := cmtquery.New(query)
@@ -78,33 +72,52 @@ func (env *Environment) TxSearch(
 		return nil, err
 	}
 
-	// Validate number of results per page
-	perPage := env.validatePerPage(perPagePtr)
-	if pagePtr == nil {
-		// Default to page 1 if not specified
-		pagePtr = new(int)
-		*pagePtr = 1
-	}
-
-	pagSettings := txindex.Pagination{
-		OrderDesc:   orderBy == Descending,
-		IsPaginated: true,
-		Page:        *pagePtr,
-		PerPage:     perPage,
-	}
-
-	results, totalCount, err := env.TxIndexer.Search(ctx.Context(), q, pagSettings)
+	results, err := env.TxIndexer.Search(ctx.Context(), q)
 	if err != nil {
 		return nil, err
 	}
 
-	apiResults := make([]*ctypes.ResultTx, 0, len(results))
-	for _, r := range results {
+	// sort results (must be done before pagination)
+	switch orderBy {
+	case "desc":
+		sort.Slice(results, func(i, j int) bool {
+			if results[i].Height == results[j].Height {
+				return results[i].Index > results[j].Index
+			}
+			return results[i].Height > results[j].Height
+		})
+	case "asc", "":
+		sort.Slice(results, func(i, j int) bool {
+			if results[i].Height == results[j].Height {
+				return results[i].Index < results[j].Index
+			}
+			return results[i].Height < results[j].Height
+		})
+	default:
+		return nil, errors.New("expected order_by to be either `asc` or `desc` or empty")
+	}
+
+	// paginate results
+	totalCount := len(results)
+	perPage := env.validatePerPage(perPagePtr)
+
+	page, err := validatePage(pagePtr, perPage, totalCount)
+	if err != nil {
+		return nil, err
+	}
+
+	skipCount := validateSkipCount(page, perPage)
+	pageSize := cmtmath.MinInt(perPage, totalCount-skipCount)
+
+	apiResults := make([]*ctypes.ResultTx, 0, pageSize)
+	for i := skipCount; i < skipCount+pageSize; i++ {
+		r := results[i]
+
 		var proof types.TxProof
 		if prove {
-			block, _ := env.BlockStore.LoadBlock(r.Height)
+			block := env.BlockStore.LoadBlock(r.Height)
 			if block != nil {
-				proof = block.Data.Txs.Proof(int(r.Index))
+				proof = block.Txs.Proof(int(r.Index))
 			}
 		}
 

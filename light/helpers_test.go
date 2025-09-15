@@ -3,13 +3,14 @@ package light_test
 import (
 	"time"
 
-	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
-	"github.com/cometbft/cometbft/v2/crypto"
-	"github.com/cometbft/cometbft/v2/crypto/ed25519"
-	"github.com/cometbft/cometbft/v2/crypto/tmhash"
-	"github.com/cometbft/cometbft/v2/types"
-	cmttime "github.com/cometbft/cometbft/v2/types/time"
-	"github.com/cometbft/cometbft/v2/version"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cometbft/cometbft/version"
 )
 
 // privKeys is a helper type for testing.
@@ -108,7 +109,7 @@ func makeVote(header *types.Header, valset *types.ValidatorSet,
 		Height:           header.Height,
 		Round:            1,
 		Timestamp:        cmttime.Now(),
-		Type:             types.PrecommitType,
+		Type:             cmtproto.PrecommitType,
 		BlockID:          blockID,
 	}
 
@@ -121,17 +122,13 @@ func makeVote(header *types.Header, valset *types.ValidatorSet,
 	}
 	vote.Signature = sig
 
-	extSignBytes, nonRpExtSignBytes := types.VoteExtensionSignBytes(header.ChainID, v)
+	extSignBytes := types.VoteExtensionSignBytes(header.ChainID, v)
 	extSig, err := key.Sign(extSignBytes)
 	if err != nil {
 		panic(err)
 	}
-	nonRpExtSig, err := key.Sign(nonRpExtSignBytes)
-	if err != nil {
-		panic(err)
-	}
 	vote.ExtensionSignature = extSig
-	vote.NonRpExtensionSignature = nonRpExtSig
+
 	return vote
 }
 
@@ -188,6 +185,7 @@ func (pkz privKeys) ChangeKeys(delta int) privKeys {
 // blockSize) and with variation in validator sets. BlockIntervals are in per minute.
 // NOTE: Expected to have a large validator set size ~ 100 validators.
 func genMockNodeWithKeys(
+	chainID string,
 	blockSize int64,
 	valSize int,
 	valVariation float32,
@@ -197,7 +195,6 @@ func genMockNodeWithKeys(
 	map[int64]privKeys,
 ) {
 	var (
-		chainID         = "test-chain"
 		headers         = make(map[int64]*types.SignedHeader, blockSize)
 		valset          = make(map[int64]*types.ValidatorSet, blockSize+1)
 		keymap          = make(map[int64]privKeys, blockSize+1)
@@ -242,6 +239,7 @@ func genMockNodeWithKeys(
 }
 
 func genMockNode(
+	chainID string,
 	blockSize int64,
 	valSize int,
 	valVariation float32,
@@ -250,8 +248,7 @@ func genMockNode(
 	map[int64]*types.SignedHeader,
 	map[int64]*types.ValidatorSet,
 ) {
-	chainID := "test-chain"
-	headers, valset, _ := genMockNodeWithKeys(blockSize, valSize, valVariation, bTime)
+	headers, valset, _ := genMockNodeWithKeys(chainID, blockSize, valSize, valVariation, bTime)
 	return chainID, headers, valset
 }
 

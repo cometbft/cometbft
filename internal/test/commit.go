@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cometbft/cometbft/v2/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 func MakeCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, validators []types.PrivValidator, now time.Time) (*types.Commit, error) {
@@ -19,14 +20,14 @@ func MakeCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, valida
 			ValidatorIndex:   int32(i),
 			Height:           voteSet.GetHeight(),
 			Round:            voteSet.GetRound(),
-			Type:             types.PrecommitType,
+			Type:             cmtproto.PrecommitType,
 			BlockID:          blockID,
 			Timestamp:        now,
 		}
 
 		v := vote.ToProto()
 
-		if err := validators[i].SignVote(voteSet.ChainID(), v, false); err != nil {
+		if err := validators[i].SignVote(voteSet.ChainID(), v); err != nil {
 			return nil, err
 		}
 		vote.Signature = v.Signature
@@ -35,7 +36,7 @@ func MakeCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, valida
 		}
 	}
 
-	return voteSet.MakeExtendedCommit(types.DefaultFeatureParams()).ToCommit(), nil
+	return voteSet.MakeExtendedCommit(types.ABCIParams{VoteExtensionsEnableHeight: 0}).ToCommit(), nil
 }
 
 func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.ValidatorSet, privVals []types.PrivValidator, chainID string, now time.Time) (*types.Commit, error) {
@@ -51,7 +52,7 @@ func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.
 		}
 		addr := pk.Address()
 
-		idx, _ := valSet.GetByAddressMut(addr)
+		idx, _ := valSet.GetByAddress(addr)
 		if idx < 0 {
 			return nil, fmt.Errorf("validator with address %s not in validator set", addr)
 		}
@@ -61,14 +62,14 @@ func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.
 			ValidatorIndex:   idx,
 			Height:           height,
 			Round:            round,
-			Type:             types.PrecommitType,
+			Type:             cmtproto.PrecommitType,
 			BlockID:          blockID,
 			Timestamp:        now,
 		}
 
 		v := vote.ToProto()
 
-		if err := privVal.SignVote(chainID, v, false); err != nil {
+		if err := privVal.SignVote(chainID, v); err != nil {
 			return nil, err
 		}
 

@@ -16,8 +16,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/v2/libs/log"
-	"github.com/cometbft/cometbft/v2/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/libs/log"
+	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 type sampleResult struct {
@@ -30,7 +30,7 @@ func TestMaxOpenConnections(t *testing.T) {
 	// Start the server.
 	var open int32
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if n := atomic.AddInt32(&open, 1); n > int32(max) {
 			t.Errorf("%d open connections, want <= %d", n, max)
 		}
@@ -76,7 +76,7 @@ func TestServeTLS(t *testing.T) {
 	defer ln.Close()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "some body")
 	})
 
@@ -119,7 +119,7 @@ func TestWriteRPCResponseHTTP(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode)
 	assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
-	assert.Equal(t, "public, max-age=86400", resp.Header.Get("Cache-Control"))
+	assert.Equal(t, "public, max-age=86400", resp.Header.Get("Cache-control"))
 	assert.Equal(t, `{"jsonrpc":"2.0","id":-1,"result":{"value":"hello"}}`, string(body))
 
 	// multiple arguments
@@ -138,7 +138,6 @@ func TestWriteRPCResponseHTTP(t *testing.T) {
 	assert.Equal(t, `[{"jsonrpc":"2.0","id":-1,"result":{"value":"hello"}},{"jsonrpc":"2.0","id":-1,"result":{"value":"world"}}]`, string(body))
 }
 
-// TestWriteRPCResponseHTTPError tests WriteRPCResponseHTTPError.
 func TestWriteRPCResponseHTTPError(t *testing.T) {
 	w := httptest.NewRecorder()
 	err := WriteRPCResponseHTTPError(
@@ -146,14 +145,10 @@ func TestWriteRPCResponseHTTPError(t *testing.T) {
 		http.StatusInternalServerError,
 		types.RPCInternalError(types.JSONRPCIntID(-1), errors.New("foo")))
 	require.NoError(t, err)
-
 	resp := w.Result()
 	body, err := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
 	require.NoError(t, err)
-
-	err = resp.Body.Close()
-	require.NoError(t, err)
-
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 	assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
 	assert.Equal(t, `{"jsonrpc":"2.0","id":-1,"error":{"code":-32603,"message":"Internal error","data":"foo"}}`, string(body))

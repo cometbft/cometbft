@@ -7,8 +7,8 @@ import (
 	"log"
 	"reflect"
 
-	"github.com/cometbft/cometbft/v2/abci/types"
-	cmtnet "github.com/cometbft/cometbft/v2/internal/net"
+	"github.com/cometbft/cometbft/abci/types"
+	cmtnet "github.com/cometbft/cometbft/libs/net"
 )
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 	// Make a bunch of requests
 	counter := 0
 	for i := 0; ; i++ {
-		req := types.ToEchoRequest("foobar")
+		req := types.ToRequestEcho("foobar")
 		_, err := makeRequest(conn, req)
 		if err != nil {
 			log.Fatal(err.Error())
@@ -40,7 +40,7 @@ func makeRequest(conn io.ReadWriter, req *types.Request) (*types.Response, error
 	if err != nil {
 		return nil, err
 	}
-	err = types.WriteMessage(types.ToFlushRequest(), bufWriter)
+	err = types.WriteMessage(types.ToRequestFlush(), bufWriter)
 	if err != nil {
 		return nil, err
 	}

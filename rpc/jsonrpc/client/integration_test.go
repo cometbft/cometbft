@@ -16,7 +16,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 func TestWSClientReconnectWithJitter(t *testing.T) {
@@ -31,7 +31,7 @@ func TestWSClientReconnectWithJitter(t *testing.T) {
 	logger := log.NewTMLogger(buf)
 	for i := 0; i < n; i++ {
 		c, err := NewWS("tcp://foo", "/websocket")
-		require.NoError(t, err)
+		require.Nil(t, err)
 		c.Dialer = func(string, string) (net.Conn, error) {
 			return nil, errNotConnected
 		}

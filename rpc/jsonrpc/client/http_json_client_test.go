@@ -11,7 +11,7 @@ import (
 )
 
 func TestHTTPClientMakeHTTPDialer(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("Hi!\n"))
 	})
 	ts := httptest.NewServer(handler)
@@ -26,8 +26,8 @@ func TestHTTPClientMakeHTTPDialer(t *testing.T) {
 	for _, testURL := range []string{ts.URL, tsTLS.URL} {
 		u, err := newParsedURL(testURL)
 		require.NoError(t, err)
-		dialFn, err := MakeHTTPDialer(testURL)
-		require.NoError(t, err)
+		dialFn, err := makeHTTPDialer(testURL)
+		require.Nil(t, err)
 
 		addr, err := dialFn(u.Scheme, u.GetHostWithPath())
 		require.NoError(t, err)
@@ -85,15 +85,10 @@ func Test_parsedURL(t *testing.T) {
 			expectedHostWithPath: "example.com:8080/rpc",
 			expectedDialAddress:  "example.com:8080",
 		},
-		"https path routed endpoint with version": {
-			url:                  "https://example.com:8080/rpc/v1",
-			expectedURL:          "https://example.com:8080/rpc/v1",
-			expectedHostWithPath: "example.com:8080/rpc/v1",
-			expectedDialAddress:  "example.com:8080",
-		},
 	}
 
 	for name, tt := range tests {
+		tt := tt // suppressing linter
 		t.Run(name, func(t *testing.T) {
 			parsed, err := newParsedURL(tt.url)
 			require.NoError(t, err)

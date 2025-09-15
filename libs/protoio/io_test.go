@@ -41,7 +41,7 @@ import (
 	"github.com/cosmos/gogoproto/test"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/v2/libs/protoio"
+	"github.com/cometbft/cometbft/libs/protoio"
 )
 
 func iotest(writer protoio.WriteCloser, reader protoio.ReadCloser) error {
@@ -131,7 +131,7 @@ func TestVarintNoClose(t *testing.T) {
 	require.NoError(t, err)
 }
 
-// issue 32.
+// issue 32
 func TestVarintMaxSize(t *testing.T) {
 	buf := newBuffer()
 	writer := protoio.NewDelimitedWriter(buf)

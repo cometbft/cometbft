@@ -1,62 +1,65 @@
 # Releases
 
 CometBFT uses modified [semantic versioning](https://semver.org/) with each
-release following a `vX.Y.Z` format. The versioning approach used by CometBFT
-v1.x onwards differs from that of the v0.x series, and is documented in
-[README.md](./README.md#versioning). The `main` branch is used for active
-development and thus it is not advisable to build against it.
+release following a `vX.Y.Z` format. CometBFT is currently on major version 0
+and uses the minor version to signal breaking changes. The `main` branch is
+used for active development and thus it is not advisable to build against it.
 
 The latest changes are always initially merged into `main`. Releases are
 specified using tags and are built from long-lived "backport" branches that are
-cut from `main` when the release process begins. Each release "line" (e.g. 1.0
-or 0.38) has its own long-lived backport branch, and the backport branches have
-names like `v1.x` or `v0.38.x` (literally, `x`; it is not a placeholder in this
-case).
+cut from `main` when the release process begins. Each release "line" (e.g.
+0.34 or 0.33) has its own long-lived backport branch, and the backport branches
+have names like `v0.34.x` or `v0.33.x` (literally, `x`; it is not a placeholder
+in this case). CometBFT only maintains the last two releases at a time (the
+oldest release is predominantly just security patches).
 
 ## Backporting
 
 As non-breaking changes land on `main`, they should also be backported to
 these backport branches.
 
-We use Mergify's [backport feature](https://docs.mergify.com/workflow/actions/backport/) to
+We use Mergify's [backport feature](https://mergify.io/features/backports) to
 automatically backport to the needed branch. There should be a label for any
 backport branch that you'll be targeting. To notify the bot to backport a pull
 request, mark the pull request with the label corresponding to the correct
-backport branch. For example, to backport to v1.x, add the label
-`S:backport-to-v1.x`. Once the original pull request is merged, the bot will
+backport branch. For example, to backport to v0.38.x, add the label
+`S:backport-to-v0.38.x`. Once the original pull request is merged, the bot will
 try to cherry-pick the pull request to the backport branch. If the bot fails to
 backport, it will open a pull request. The author of the original pull request
 is responsible for solving the conflicts and merging the pull request.
 
 ### Creating a backport branch
 
-If this is the first release candidate for a major version release, e.g. v2.0.0,
-you get to have the honor of creating the backport branch!
+If this is the first release candidate for a minor version release, e.g.
+v0.25.0, you get to have the honor of creating the backport branch!
 
 Note that, after creating the backport branch, you'll also need to update the
-tags on `main` so that `go mod` is able to order the branches correctly.
+tags on `main` so that `go mod` is able to order the branches correctly. You
+should tag `main` with a "dev" tag that is "greater than" the backport
+branches tags. Otherwise, `go mod` does not 'know' whether commits on `main`
+come before or after the release.
 
 In the following example, we'll assume that we're making a backport branch for
-the 2.x line.
+the 0.38.x line.
 
 1. Start on `main`
 
 2. Ensure that there is a [branch protection
-   rule](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/managing-a-branch-protection-rule)
-   for the branch you are about to create (you will need admin access to the
-   repository in order to do this).
+   rule](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/managing-a-branch-protection-rule) for the
+   branch you are about to create (you will need admin access to the repository
+   in order to do this).
 
 3. Create and push the backport branch:
 
    ```sh
-   git checkout -b v2.x
-   git push origin v2.x
+   git checkout -b v0.38.x
+   git push origin v0.38.x
    ```
 
 4. Create a PR to update the documentation directory for the backport branch.
 
-   We rewrite any URLs pointing to `main` to point to the backport branch, so
-   that generated documentation will link to the correct versions of files
+   We rewrite any URLs pointing to `main` to point to the backport branch,
+   so that generated documentation will link to the correct versions of files
    elsewhere in the repository. The following files are to be excluded from this
    search:
 
@@ -70,21 +73,21 @@ the 2.x line.
    * `https://github.com/cometbft/cometbft/blob/main/LICENSE`
 
    Be sure to search for all of the following links and replace `main` with your
-   corresponding branch label or version (e.g. `v2.x` or `v2.0`):
+   corresponding branch label or version (e.g. `v0.38.x` or `v0.38`):
 
    * `github.com/cometbft/cometbft/blob/main` ->
-     `github.com/cometbft/cometbft/blob/v2.x`
+     `github.com/cometbft/cometbft/blob/v0.38.x`
    * `github.com/cometbft/cometbft/tree/main` ->
-     `github.com/cometbft/cometbft/tree/v2.x`
-   * `docs.cometbft.com/main` -> `docs.cometbft.com/v2`
+     `github.com/cometbft/cometbft/tree/v0.38.x`
+   * `docs.cometbft.com/main` -> `docs.cometbft.com/v0.38`
 
    Once you have updated all of the relevant documentation:
 
    ```sh
    # Create and push the PR.
-   git checkout -b update-docs-v2.x
-   git commit -m "Update docs for v2.x backport branch."
-   git push -u origin update-docs-v2.x
+   git checkout -b update-docs-v038x
+   git commit -m "Update docs for v0.38.x backport branch."
+   git push -u origin update-docs-v038x
    ```
 
    Be sure to merge this PR before making other changes on the newly-created
@@ -101,46 +104,43 @@ the 2.x line.
 
 After doing these steps, go back to `main` and do the following:
 
-1. Create a new workflow to run E2E nightlies for the new backport branch. (See
+1. Create a new workflow to run e2e nightlies for the new backport branch. (See
    [e2e-nightly-main.yml][e2e] for an example.)
 
 2. Add a new section to the Mergify config (`.github/mergify.yml`) to enable the
-   backport bot to work on this branch, and add a corresponding `backport-to-v2.x`
+   backport bot to work on this branch, and add a corresponding `backport-to-v0.38.x`
    [label](https://github.com/cometbft/cometbft/labels) so the bot can be triggered.
 
 3. Add a new section to the Dependabot config (`.github/dependabot.yml`) to
    enable automatic update of Go dependencies on this branch. Copy and edit one
    of the existing branch configurations to set the correct `target-branch`.
 
-4. Remove all changelog entries from `.changelog/unreleased` that are destined
-   for release from the backport branch.
-
 [e2e]: https://github.com/cometbft/cometbft/blob/main/.github/workflows/e2e-nightly-main.yml
 
 ## Pre-releases
 
-Before creating an official release, especially a major release, we may want to
+Before creating an official release, especially a minor release, we may want to
 create an alpha or beta version, or release candidate (RC) for our friends and
 partners to test out. We use git tags to create pre-releases, and we build them
 off of backport branches, for example:
 
-* `v2.0.0-alpha.1` - The first alpha release of `v2.0.0`. Subsequent alpha
-  releases will be numbered `v2.0.0-alpha.2`, `v2.0.0-alpha.3`, etc.
+* `v0.38.0-alpha.1` - The first alpha release of `v0.38.0`. Subsequent alpha
+  releases will be numbered `v0.38.0-alpha.2`, `v0.38.0-alpha.3`, etc.
 
   Alpha releases are to be considered the _most_ unstable of pre-releases, and
   are most likely not yet properly QA'd. These are made available to allow early
   adopters to start integrating and testing new functionality before we're done
   with QA.
 
-* `v2.0.0-beta.1` - The first beta release of `v2.0.0`. Subsequent beta
-  releases will be numbered `v2.0.0-beta.2`, `v2.0.0-beta.3`, etc.
+* `v0.38.0-beta.1` - The first beta release of `v0.38.0`. Subsequent beta
+  releases will be numbered `v0.38.0-beta.2`, `v0.38.0-beta.3`, etc.
 
   Beta releases can be considered more stable than alpha releases in that we
   will have QA'd them better than alpha releases, but there still may be
   minor breaking API changes if users have strong demands for such changes.
 
-* `v2.0.0-rc1` - The first release candidate (RC) of `v2.0.0`. Subsequent RCs
-  will be numbered `v2.0.0-rc2`, `v2.0.0-rc3`, etc.
+* `v0.38.0-rc1` - The first release candidate (RC) of `v0.38.0`. Subsequent RCs
+  will be numbered `v0.38.0-rc2`, `v0.38.0-rc3`, etc.
 
   RCs are considered more stable than beta releases in that we will have
   completed our QA on them. APIs will most likely be stable at this point. The
@@ -151,142 +151,97 @@ off of backport branches, for example:
 (Note that branches and tags _cannot_ have the same names, so it's important
 that these branches have distinct names from the tags/release names.)
 
-If this is the first pre-release for a major release, you'll have to make a new
+If this is the first pre-release for a minor release, you'll have to make a new
 backport branch (see above). Otherwise:
 
-1. Start from the backport branch (e.g. `v2.x`).
-2. Run the E2E nightlies (which can be triggered from the GitHub UI; e.g.,
-   <https://github.com/cometbft/cometbft/actions/workflows/e2e-manual.yml>).
+1. Start from the backport branch (e.g. `v0.38.x`).
+2. Run the integration tests and the E2E nightlies
+   (which can be triggered from the GitHub UI;
+   e.g., <https://github.com/cometbft/cometbft/actions/workflows/e2e-manual.yml>).
 3. Prepare the pre-release documentation:
-   * Build the changelog with [unclog] _without_ doing an unclog release (`unclog build -a > CHANGELOG.md`), and
+   * Build the changelog with [unclog] _without_ doing an unclog release, and
      commit the built changelog. This ensures that all changelog entries appear
      under an "Unreleased" heading in the pre-release's changelog. The changes
      are only considered officially "released" once we cut a regular (final)
      release.
    * Ensure that `UPGRADING.md` is up-to-date and includes notes on any breaking
      changes or other upgrading flows.
-4. Check the dependency to `github.com/cometbft/cometbft/api` in the `go.mod`
-   file. If it does not point to an official api version, run `go get github.com/cometbft/cometbft/api`
-   and `go mod tidy` (to update `go.sum`) so that it points to one. You may need to tag a new version of the api
-   if the last version is too old (i.e., it does not contain the latest
-   changes to the protos). If that is the case:
-   * `git tag -a api/v2.0.0-rc1 -s -m "Release api module v2.0.0-rc1" origin/v2.x`
-   * `git push origin api/v2.0.0-rc1`
-   * Notice the prefix `api/`, which denotes that the version refers to the `api` module.
-5. Prepare the versioning:
-   * Bump CometBFT version in `version.go`
-   * Bump P2P and block protocol versions in `version.go`, if necessary.
+4. Prepare the versioning:
+   * Bump TMVersionDefault version in  `version.go`
+   * Bump P2P and block protocol versions in  `version.go`, if necessary.
      Check the changelog for breaking changes in these components.
    * Bump ABCI protocol version in `version.go`, if necessary
-6. Open a PR with these changes against the backport branch.
-7. Once these changes have landed on the backport branch, be sure to pull them
-   back down locally.
-8. Once you have the changes locally, create the new tag, specifying a name and
-   a tag "message":
-   `git tag -a v2.0.0-rc1 -s -m "Release Candidate v2.0.0-rc1"`
-9.  Push the tag back up to origin:
-   `git push origin v2.0.0-rc1`
+5. Open a PR with these changes against the backport branch.
+6. Once these changes have landed on the backport branch, be sure to pull them back down locally.
+7. Once you have the changes locally, create the new tag, specifying a name and a tag "message":
+   `git tag -a v0.38.0-rc1 -m "Release Candidate v0.38.0-rc1`
+8. Push the tag back up to origin:
+   `git push origin v0.38.0-rc1`
    Now the tag should be available on the repo's releases page.
-10. Future pre-releases will continue to be built off of this branch.
-11. [Publish the proto changes](#publish-protos-to-the-buf-schema-registry) to the `Buf` schema registry `comet/comet`
-repository (if necessary).
+9. Future pre-releases will continue to be built off of this branch.
 
-## Major release
+## Minor release
 
-This major release process assumes that this release was preceded by release
+This minor release process assumes that this release was preceded by release
 candidates. If there were no release candidates, begin by creating a backport
 branch, as described above.
 
 Before performing these steps, be sure the
-[Major Release Checklist](#major-release-checklist) has been completed.
+[Minor Release Checklist](#minor-release-checklist) has been completed.
 
-1. Start on the backport branch (e.g. `v2.x`)
-2. Run the E2E nightlies (which can be triggered from the GitHub UI; e.g.,
-   <https://github.com/cometbft/cometbft/actions/workflows/e2e-manual.yml>).
+1. Start on the backport branch (e.g. `v0.38.x`)
+2. Run integration tests (`make test_integrations`) and the e2e nightlies.
 3. Prepare the release:
-   * Check the dependency to `github.com/cometbft/cometbft/api` in the `go.mod`
-     file. If it does not point to an official api version, run `go get github.com/cometbft/cometbft/api`
-     and `go mod tidy` (to update `go.sum`) so that it points to one. You may need to tag a new version of the api
-     if the last released version is too old (i.e., it does not contain the latest
-     changes to the protos). If that is the case:
-     * `git tag -a api/v2.0.0 -s -m "Release api module v2.0.0" origin/v2.x`
-     * `git push origin api/v2.0.0`
-     * Notice the prefix `api/`, which denotes that the version refers to the `api` module.
    * Do a [release][unclog-release] with [unclog] for the desired version,
      ensuring that you write up a good summary of the major highlights of the
      release that users would be interested in.
    * Build the changelog using unclog, and commit the built changelog.
    * Ensure that `UPGRADING.md` is up-to-date and includes notes on any breaking changes
       or other upgrading flows.
-   * Bump CometBFT version in  `version.go`
+   * Bump TMVersionDefault version in  `version.go`
    * Bump P2P and block protocol versions in  `version.go`, if necessary
    * Bump ABCI protocol version in `version.go`, if necessary
 4. Open a PR with these changes against the backport branch.
-5. Once these changes are on the backport branch, push a tag with prepared
-   release details. This will trigger the actual release `v2.0.0`.
-   * `git tag -a v2.0.0 -s -m 'Release v2.0.0'`
-   * `git push origin v2.0.0`
-6. Make sure that `main` is updated with the latest `CHANGELOG.md`,
-   `CHANGELOG_PENDING.md`, and `UPGRADING.md`.
-7. [Publish the proto changes](#publish-protos-to-the-buf-schema-registry) to the `Buf` schema registry `comet/comet`
-repository (if necessary).
+5. Once these changes are on the backport branch, push a tag with prepared release details.
+   This will trigger the actual release `v0.38.0`.
+   * `git tag -a v0.38.0 -m 'Release v0.38.0'`
+   * `git push origin v0.38.0`
+6. Make sure that `main` is updated with the latest `CHANGELOG.md`, `CHANGELOG_PENDING.md`, and `UPGRADING.md`.
 
-## Minor and patch releases
+## Patch release
 
-Minor and patch releases are done differently from major releases: they are
-built off of long-lived backport branches, rather than from `main`.  As
-non-breaking changes land on `main`, they should also be backported into these
-backport branches.
+Patch releases are done differently from minor releases: They are built off of
+long-lived backport branches, rather than from main.  As non-breaking changes
+land on `main`, they should also be backported into these backport branches.
 
 Patch releases don't have release candidates by default, although any tricky
 changes may merit a release candidate.
 
 To create a patch release:
 
-1. Checkout the long-lived backport branch: `git checkout v2.x`
-2. Run the E2E nightlies (which can be triggered from the GitHub UI; e.g.,
-   <https://github.com/cometbft/cometbft/actions/workflows/e2e-manual.yml>).
+1. Checkout the long-lived backport branch: `git checkout v0.38.x`
+2. Run integration tests (`make test_integrations`) and the nightlies.
 3. Check out a new branch and prepare the release:
-   * Check the dependency to `github.com/cometbft/cometbft/api` in the `go.mod`
-     file. If it does not point to an official api version, run `go get github.com/cometbft/cometbft/api`
-     and `go mod tidy` (to update `go.sum`) so that it points to one. You may need to tag a new version of the api
-     if the last released version is too old (i.e., it does not contain the latest
-     changes to the protos). If that is the case:
-     * `git tag -a api/v2.0.1 -s -m "Release api module v2.0.1" origin/v2.x`
-     * `git push origin api/v2.0.1`
-     * Notice the prefix `api/`, which denotes that the version refers to the `api` module.
    * Do a [release][unclog-release] with [unclog] for the desired version,
      ensuring that you write up a good summary of the major highlights of the
      release that users would be interested in.
    * Build the changelog using unclog, and commit the built changelog.
-   * Bump the CometBFT in `version.go`
+   * Bump the TMDefaultVersion in `version.go`
    * Bump the ABCI version number, if necessary. (Note that ABCI follows semver,
      and that ABCI versions are the only versions which can change during patch
      releases, and only field additions are valid patch changes.)
-4. Open a PR with these changes that will land them back on `v2.x`
+4. Open a PR with these changes that will land them back on `v0.38.x`
 5. Once this change has landed on the backport branch, make sure to pull it locally, then push a tag.
-   * `git tag -a v2.0.1 -s -m 'Release v2.0.1'`
-   * `git push origin v2.0.1`
-
-   The process for minor releases is similar to patch releases:
-   * `git tag -a v2.1.0 -s -m 'Release v2.1.0'`
-   * `git push origin v2.1.0`
-6. Create a pull request back to main with the CHANGELOG and version changes
-   from the latest release.
+   * `git tag -a v0.38.1 -m 'Release v0.38.1'`
+   * `git push origin v0.38.1`
+6. Create a pull request back to main with the CHANGELOG & version changes from the latest release.
+   * Remove all `R:patch` labels from the pull requests that were included in the release.
    * Do not merge the backport branch into main.
-7. [Publish the proto changes](#publish-protos-to-the-buf-schema-registry) to the `Buf` schema registry `comet/comet`
-    repository (if necessary).
 
-After the release of `v1.0.0`, the backport branch is named `v1.x`. Any future minor or patch releases will be cut
-from the `v1.x` branch. There won't be a separate backport branch for minor releases, so there won't be a `v1.1.x` backport branch.
-
-For more details about versioning guarantees after the `v1.0.0` release, please check
-the [versioning](https://github.com/cometbft/cometbft/blob/main/UPGRADING.md#versioning) section in the `UPGRADING.md` document.
-
-## Major Release Checklist
+## Minor Release Checklist
 
 The following set of steps are performed on all releases that increment the
-_major_ version, e.g. v1.0 to v2.0. These steps ensure that CometBFT is well
+_minor_ version, e.g. v0.25 to v0.26. These steps ensure that CometBFT is well
 tested, stable, and suitable for adoption by the various diverse projects that
 rely on CometBFT.
 
@@ -378,36 +333,28 @@ critical systems, testnets of larger sizes should be considered.
 
 #### Rotating Node Testnet
 
-Real-world deployments of CometBFT frequently see new nodes arrive and old nodes
-exit the network. The rotating node testnet ensures that CometBFT is able to
-handle this reliably. In this test, a network with 10 validators and 3 seed
-nodes is started. A rolling set of 25 full nodes are started and each connects
-to the network by dialing one of the seed nodes. Once the node is able to
-blocksync to the head of the chain and begins producing blocks using consensus
-it is stopped. Once stopped, a new node is started and takes its place. This
-network is run for several days.
+Real-world deployments of CometBFT frequently see new nodes arrive and old
+nodes exit the network. The rotating node testnet ensures that CometBFT is
+able to handle this reliably. In this test, a network with 10 validators and
+3 seed nodes is started. A rolling set of 25 full nodes are started and each
+connects to the network by dialing one of the seed nodes. Once the node is able
+to blocksync to the head of the chain and begins producing blocks using
+consensus it is stopped. Once stopped, a new node is started and
+takes its place. This network is run for several days.
 
 #### Vote-extension Testnet
 
-CometBFT v0.38.0 introduced **vote-extensions**, which are added as the name
-suggests, to precommit votes sent by validators. The Vote-extension Testnet is
-used to determine how vote-extensions affect the performance of CometBFT, under
-various settings. The application used in the experiment is the same used on the
-(#200-node-testnet), but is configured differently to gauge the effects of
-varying vote extension sizes. In the (#200-node-testnet) the application extends
-pre-commit votes with a 64 bit number encoded with variable compression. In the
-Vote-extension Testnet, pre-commit votes are extended with a non-compressed
-extension of configurable size. Experiments are run with multiple sizes to
-determine their impact and, for comparison sake, we include a run with the same
-settings as in the (#200-node-testnet).
+CometBFT v0.38.0 introduced **vote-extensions**, which are added as the name suggests, to precommit votes sent by validators.
+The Vote-extension Testnet is used to determine how vote-extensions affect the performance of CometBFT, under various settings.
+The application used in the experiment is the same used on the (#200-node-testnet), but is configured differently to gauge de effects of varying vote extension sizes.
+In the (#200-node-testnet) the application extends pre-commit votes with a 64 bit number encoded with variable compression.
+In the Vote-extension Testnet, pre-commit votes are extended with a non-compressed extension of configurable size.
+Experiments are run with multiple sizes to determine their impact and, for comparison sake, we include a run with the same settings as in the (#200-node-testnet).
 
-The testnet consists of 175 validators, 20 non-validator full-nodes, and 5 seed
-nodes. All 195 full-nodes begin by dialing a subset of the seed nodes to
-discover peers. Once all full-nodes are started, a 5 minute period is waited
-before starting an experiment. For each experiment, the load generators issue
-requests at a constant rate during 150 seconds, then wait for 5 minutes to allow
-the system to quiesce, then repeat the load generation; the load generation step
-is repeated 5 times for each experiment.
+The testnet consists of 175 validators, 20 non-validator full-nodes, and 5 seed nodes.
+All 195 full-nodes begin by dialing a subset of the seed nodes to discover peers.
+Once all full-nodes are started, a 5 minute period is waited before starting an experiment.
+For each experiment, the load generators issue requests at a constant rate during 150 seconds, then wait for 5 minutes to allow the system to quiesce, then repeat the load generation; the load generation step is repeated 5 times for each experiment.
 
 #### Network Partition Testnet
 
@@ -415,62 +362,24 @@ CometBFT is expected to recover from network partitions. A partition where no
 subset of the nodes is left with the super-majority of the stake is expected to
 stop making blocks. Upon alleviation of the partition, the network is expected
 to once again become fully connected and capable of producing blocks. The
-network partition testnet ensures that CometBFT is able to handle this reliably
-at scale. In this test, a network with 100 validators and 95 full nodes is
-started. All validators have equal stake. Once the network is producing blocks,
-a set of firewall rules is deployed to create a partitioned network with 50% of
-the stake on one side and 50% on the other. Once the network stops producing
-blocks, the firewall rules are removed and the nodes are monitored to ensure
-they reconnect and that the network again begins producing blocks.
+network partition testnet ensures that CometBFT is able to handle this
+reliably at scale. In this test, a network with 100 validators and 95 full
+nodes is started. All validators have equal stake. Once the network is
+producing blocks, a set of firewall rules is deployed to create a partitioned
+network with 50% of the stake on one side and 50% on the other. Once the
+network stops producing blocks, the firewall rules are removed and the nodes
+are monitored to ensure they reconnect and that the network again begins
+producing blocks.
 
 #### Absent Stake Testnet
 
-CometBFT networks often run with _some_ portion of the voting power offline. The
-absent stake testnet ensures that large networks are able to handle this
+CometBFT networks often run with _some_ portion of the voting power offline.
+The absent stake testnet ensures that large networks are able to handle this
 reliably. A set of 150 validator nodes and three seed nodes is started. The set
-of 150 validators is configured to only possess a cumulative stake of 67% of the
-total stake. The remaining 33% of the stake is configured to belong to a
-validator that is never actually run in the test network. The network is run for
-multiple days, ensuring that it is able to produce blocks without issue.
-
-## Publish protos to the Buf schema registry
-
-For each release, if necessary, publish the proto changes to the `Buf` schema registry `comet/comet` repository.
-
-* Install the `buf` tool:
-    * If you don't have the `buf` tool installed on your machine, please refer to the [Buf docs](https://buf.build/docs/installation)
-      in order to learn how to install it.
-* Ensure you have access to `Buf` and that you can login and publish files:
-    * Go to [Buf schema registry](https://buf.build/)
-    * Click on `Sign in`. If you don't have an account, please create one.
-    * Once you sign in, click on your username (top right), and in the dropdown menu select `Organizations`.
-    * Ensure that you can see `cometbft` under Organizations and it shows `Writer` role on the right side.
-    * If you can't see `cometbft` or you don't see the `Writer` role, please reach out to one of the CometBFT team members who have
-      admin access in Buf for the `cometbft` organization so they can grant you the right permissions.
-    * If you see `cometbft` and have `Writer` role, login in Buf via terminal:
-        - `buf registry login`
-    * When prompted for the username, type it and hit enter. It will ask for a `token` next.
-    * Go back to the Buf website and click on your username, and select `Settings`.
-    * Click on `Create new token`, add a name and select an expiry date.
-    * Once the token is created, copy the token code from the website and paste it on the terminal and hit enter. You
-      should see a message saying `Credentials saved ...`
-* Publish the files:
-    * Checkout the new release that was tagged:
-        - `git checkout v2.0.0-rc1`
-    * Change to the proto directory:
-        - `cd proto`
-    * Lint the protos:
-        - `buf lint`
-    * Update the dependencies:
-        - `buf dep update`
-    * Build the files
-        - `buf build`
-    * Push the files to the registry. This will publish a commit to the Buf registry using the last
-      commit checksum from the release.
-        - `buf push --tag "$(git rev-parse HEAD)"`
-    * Go to the `Commits` section for the `cometbft/cometbft` repository and ensure that you
-      can see commit just [published there](https://buf.build/cometbft/cometbft/commits).
-    * All set, the Buf registry now hosts the [latest proto files](https://buf.build/cometbft/cometbft) in the `cometbft/cometbft` repository.
+of 150 validators is configured to only possess a cumulative stake of 67% of
+the total stake. The remaining 33% of the stake is configured to belong to
+a validator that is never actually run in the test network. The network is run
+for multiple days, ensuring that it is able to produce blocks without issue.
 
 [unclog]: https://github.com/informalsystems/unclog
 [unclog-release]: https://github.com/informalsystems/unclog#releasing-a-new-versions-change-set

@@ -6,10 +6,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/v2/crypto"
-	"github.com/cometbft/cometbft/v2/crypto/tmhash"
-	"github.com/cometbft/cometbft/v2/types"
-	"github.com/cometbft/cometbft/v2/version"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/version"
 )
 
 const (
@@ -41,7 +41,7 @@ func MakeBlockIDWithHash(hash []byte) types.BlockID {
 }
 
 // MakeHeader fills the rest of the contents of the header such that it passes
-// validate basic.
+// validate basic
 func MakeHeader(t *testing.T, h *types.Header) *types.Header {
 	t.Helper()
 	if h.Version.Block == 0 {
@@ -50,7 +50,7 @@ func MakeHeader(t *testing.T, h *types.Header) *types.Header {
 	if h.Height == 0 {
 		h.Height = 1
 	}
-	if h.LastBlockID.IsNil() {
+	if h.LastBlockID.IsZero() {
 		h.LastBlockID = MakeBlockID()
 	}
 	if h.ChainID == "" {

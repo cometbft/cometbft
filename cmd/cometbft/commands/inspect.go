@@ -1,17 +1,19 @@
 package commands
 
 import (
+	"context"
+	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/spf13/cobra"
 
-	cfg "github.com/cometbft/cometbft/v2/config"
-	"github.com/cometbft/cometbft/v2/internal/inspect"
-	"github.com/cometbft/cometbft/v2/state"
-	"github.com/cometbft/cometbft/v2/state/indexer/block"
-	"github.com/cometbft/cometbft/v2/store"
-	"github.com/cometbft/cometbft/v2/types"
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/inspect"
+	"github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/indexer/block"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
 )
 
 // InspectCmd is the command for starting an inspect server.
@@ -34,26 +36,30 @@ var InspectCmd = &cobra.Command{
 func init() {
 	InspectCmd.Flags().
 		String("rpc.laddr",
-			config.RPC.ListenAddress, "RPC listenener address. Port required")
+			config.RPC.ListenAddress, "RPC listener address. Port required")
 	InspectCmd.Flags().
-		String(
-			"db-backend",
-			config.DBBackend,
-			"database backend: goleveldb | rocksdb | badgerdb | pebbledb",
-		)
+		String("db-backend",
+			config.DBBackend, "database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb")
 	InspectCmd.Flags().
 		String("db-dir", config.DBPath, "database directory")
 }
 
 func runInspect(cmd *cobra.Command, _ []string) error {
-	ctx, cancel := signal.NotifyContext(cmd.Context(), syscall.SIGTERM, syscall.SIGINT)
+	ctx, cancel := context.WithCancel(cmd.Context())
 	defer cancel()
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT)
+	go func() {
+		<-c
+		cancel()
+	}()
 
 	blockStoreDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "blockstore", Config: config})
 	if err != nil {
 		return err
 	}
-	blockStore := store.NewBlockStore(blockStoreDB, store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
+	blockStore := store.NewBlockStore(blockStoreDB)
 	defer blockStore.Close()
 
 	stateDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "state", Config: config})
@@ -67,7 +73,7 @@ func runInspect(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	txIndexer, blockIndexer, _, err := block.IndexerFromConfig(config, cfg.DefaultDBProvider, genDoc.ChainID)
+	txIndexer, blockIndexer, err := block.IndexerFromConfig(config, cfg.DefaultDBProvider, genDoc.ChainID)
 	if err != nil {
 		return err
 	}

@@ -3,12 +3,12 @@ package types
 import (
 	gogotypes "github.com/cosmos/gogoproto/types"
 
-	"github.com/cometbft/cometbft/v2/libs/bytes"
+	"github.com/cometbft/cometbft/libs/bytes"
 )
 
 // cdcEncode returns nil if the input is nil, otherwise returns
-// proto.Marshal(<type>Value{Value: item}).
-func cdcEncode(item any) []byte {
+// proto.Marshal(<type>Value{Value: item})
+func cdcEncode(item interface{}) []byte {
 	if item != nil && !isTypedNil(item) && !isEmpty(item) {
 		switch item := item.(type) {
 		case string:

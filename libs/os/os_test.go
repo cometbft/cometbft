@@ -1,11 +1,8 @@
-// Package os provides utility functions for OS-level interactions.
-//
-// Deprecated: This package will be removed in a future release. Users should migrate
-// off this package as its functionality will no longer be part of the exported interface.
 package os
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -24,7 +21,7 @@ func TestCopyFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	copyfile := tmpfile.Name() + ".copy"
+	copyfile := fmt.Sprintf("%s.copy", tmpfile.Name())
 	if err := CopyFile(tmpfile.Name(), copyfile); err != nil {
 		t.Fatal(err)
 	}

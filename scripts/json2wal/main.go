@@ -9,15 +9,14 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 
-	cs "github.com/cometbft/cometbft/v2/internal/consensus"
-	cmtjson "github.com/cometbft/cometbft/v2/libs/json"
-	"github.com/cometbft/cometbft/v2/types"
+	cs "github.com/cometbft/cometbft/consensus"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/cometbft/cometbft/types"
 )
 
 func main() {
@@ -46,7 +45,7 @@ func main() {
 
 	for {
 		msgJSON, _, err := br.ReadLine()
-		if errors.Is(err, io.EOF) {
+		if err == io.EOF {
 			break
 		} else if err != nil {
 			panic(fmt.Errorf("failed to read file: %v", err))

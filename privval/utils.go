@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/cometbft/cometbft/v2/crypto/ed25519"
-	cmtnet "github.com/cometbft/cometbft/v2/internal/net"
-	"github.com/cometbft/cometbft/v2/libs/log"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtnet "github.com/cometbft/cometbft/libs/net"
 )
 
 // IsConnTimeout returns a boolean indicating whether the error is known to
@@ -25,7 +25,7 @@ func IsConnTimeout(err error) bool {
 	}
 }
 
-// NewSignerListener creates a new SignerListenerEndpoint using the corresponding listen address.
+// NewSignerListener creates a new SignerListenerEndpoint using the corresponding listen address
 func NewSignerListener(listenAddr string, logger log.Logger) (*SignerListenerEndpoint, error) {
 	var listener net.Listener
 
@@ -52,7 +52,7 @@ func NewSignerListener(listenAddr string, logger log.Logger) (*SignerListenerEnd
 	return pve, nil
 }
 
-// GetFreeLocalhostAddrPort returns a free localhost:port address.
+// GetFreeLocalhostAddrPort returns a free localhost:port address
 func GetFreeLocalhostAddrPort() string {
 	port, err := cmtnet.GetFreePort()
 	if err != nil {

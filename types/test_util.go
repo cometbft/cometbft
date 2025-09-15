@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	"github.com/cometbft/cometbft/version"
 	"github.com/stretchr/testify/require"
-
-	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
-	"github.com/cometbft/cometbft/v2/version"
 )
 
 func MakeExtCommit(blockID BlockID, height int64, round int32,
@@ -25,7 +25,7 @@ func MakeExtCommit(blockID BlockID, height int64, round int32,
 			ValidatorIndex:   int32(i),
 			Height:           height,
 			Round:            round,
-			Type:             PrecommitType,
+			Type:             cmtproto.PrecommitType,
 			BlockID:          blockID,
 			Timestamp:        now,
 		}
@@ -36,12 +36,12 @@ func MakeExtCommit(blockID BlockID, height int64, round int32,
 		}
 	}
 
-	p := DefaultFeatureParams()
+	var enableHeight int64
 	if extEnabled {
-		p.VoteExtensionsEnableHeight = height
+		enableHeight = height
 	}
 
-	return voteSet.MakeExtendedCommit(p), nil
+	return voteSet.MakeExtendedCommit(ABCIParams{VoteExtensionsEnableHeight: enableHeight}), nil
 }
 
 func signAddVote(privVal PrivValidator, vote *Vote, voteSet *VoteSet) (bool, error) {
@@ -60,9 +60,9 @@ func MakeVote(
 	valIndex int32,
 	height int64,
 	round int32,
-	step SignedMsgType,
+	step cmtproto.SignedMsgType,
 	blockID BlockID,
-	votetime time.Time,
+	time time.Time,
 ) (*Vote, error) {
 	pubKey, err := val.GetPubKey()
 	if err != nil {
@@ -76,10 +76,10 @@ func MakeVote(
 		Round:            round,
 		Type:             step,
 		BlockID:          blockID,
-		Timestamp:        votetime,
+		Timestamp:        time,
 	}
 
-	extensionsEnabled := step == PrecommitType
+	extensionsEnabled := step == cmtproto.PrecommitType
 	if _, err := SignAndCheckVote(vote, val, chainID, extensionsEnabled); err != nil {
 		return nil, err
 	}
@@ -94,12 +94,10 @@ func MakeVoteNoError(
 	valIndex int32,
 	height int64,
 	round int32,
-	step SignedMsgType,
+	step cmtproto.SignedMsgType,
 	blockID BlockID,
 	time time.Time,
 ) *Vote {
-	t.Helper()
-
 	vote, err := MakeVote(val, chainID, valIndex, height, round, step, blockID, time)
 	require.NoError(t, err)
 	return vote

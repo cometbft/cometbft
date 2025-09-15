@@ -7,8 +7,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/v2/crypto"
-	"github.com/cometbft/cometbft/v2/crypto/internal/benchmarking"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/internal/benchmarking"
 )
 
 func BenchmarkKeyGeneration(b *testing.B) {
@@ -32,6 +32,7 @@ func BenchmarkVerifyBatch(b *testing.B) {
 	msg := []byte("BatchVerifyTest")
 
 	for _, sigsCount := range []int{1, 8, 64, 1024} {
+		sigsCount := sigsCount
 		b.Run(fmt.Sprintf("sig-count-%d", sigsCount), func(b *testing.B) {
 			// Pre-generate all of the keys, and signatures, but do not
 			// benchmark key-generation and signing.

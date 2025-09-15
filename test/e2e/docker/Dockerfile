@@ -1,56 +1,80 @@
-# Multi-stage build Dockerfile for CometBFT end-to-end testing
-# Stage 1: Build environment - compiles the application and test node
-FROM cometbft/cometbft-db-testing:v1.0.4 AS build
+# ---------- Stage 0: base (Go toolchain + DB build deps + RocksDB) ----------
+ARG GO_VERSION=1.24
+ARG ROCKSDB=8.11.3
 
+FROM golang:${GO_VERSION}-bookworm AS base
+ARG ROCKSDB
+# Optional checksum: set via --build-arg ROCKSDB_SHA256=<sha>. Leave blank to skip.
+ARG ROCKSDB_SHA256=3b51d1d907ea13fab430bf052618610994f08cd8ed0b1341c3e89fe02e199f8e
+# Build portable RocksDB
+ENV ROCKSDB_PORTABLE=1
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      ca-certificates curl wget make tar build-essential git pkg-config \
+      libbz2-dev libgflags-dev libsnappy-dev libzstd-dev zlib1g-dev liblz4-dev \
+      libleveldb-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN set -eux; \
+  url="https://github.com/facebook/rocksdb/archive/refs/tags/v${ROCKSDB}.tar.gz"; \
+  wget -q "$url" -O rocksdb.tgz; \
+  if [ -n "${ROCKSDB_SHA256:-}" ] && [ "${ROCKSDB_SHA256}" != "skip" ]; then \
+    echo "${ROCKSDB_SHA256}  rocksdb.tgz" | sha256sum -c -; \
+  else \
+    echo "WARNING: skipping RocksDB SHA256 verification"; \
+  fi; \
+  tar -zxf rocksdb.tgz; \
+  cd "rocksdb-${ROCKSDB}"; \
+  PORTABLE="${ROCKSDB_PORTABLE}" DEBUG_LEVEL=0 CXXFLAGS="-fPIC" make -j"$(nproc)" shared_lib; \
+  make install-shared; \
+  ldconfig; \
+  cd ..; \
+  rm -rf rocksdb.tgz "rocksdb-${ROCKSDB}"
+
+# ---------- Stage 1: build (compile cometbft + e2e node) ----------
+FROM base AS build
 WORKDIR /src/cometbft
 
-# Copy Go module files and download dependencies
-# This is done before copying the rest of the code to leverage Docker's build cache
-COPY go.mod go.sum api/go.mod api/go.sum ./
+# cache-friendly Go deps
+COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy the entire codebase into the container
 COPY . .
 
-# Set build options to include specific features and databases
-ENV COMETBFT_BUILD_OPTIONS=badgerdb,rocksdb,clock_skew,bls12381,secp256k1eth
-RUN make build
-RUN cd test/e2e && make node
+ARG COMETBFT_BUILD_OPTIONS=badgerdb,boltdb,cleveldb,rocksdb
+ENV COMETBFT_BUILD_OPTIONS=${COMETBFT_BUILD_OPTIONS}
+ENV CGO_ENABLED=1
 
-# Stage 2: Final image - minimal runtime environment
+# smaller binaries (safe even if Makefile sets its own flags)
+RUN make build BUILD_FLAGS='-trimpath -ldflags="-s -w"'
+RUN cd test/e2e && make node BUILD_FLAGS='-trimpath -ldflags="-s -w"'
+
+# ---------- Stage 2: runtime (minimal) ----------
 FROM debian:bookworm-slim AS runtime
 
-# Update system packages and install network utilities
-RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
-RUN apt-get -qq install -y iputils-ping iproute2 >/dev/null
-RUN apt install libsnappy-dev libgflags-dev -y >/dev/null
+RUN apt-get -qq update \
+ && apt-get -qq upgrade -y \
+ && apt-get -qq install -y --no-install-recommends \
+      iputils-ping iproute2 \
+      libstdc++6 \
+      libbz2-1.0 libzstd1 liblz4-1 zlib1g \
+      libleveldb1d libsnappy1v5 libgflags2.2 \
+ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /cometbft
 VOLUME /cometbft
 ENV CMTHOME=/cometbft
-
-# Configure Go race detector to halt on error
 ENV GORACE="halt_on_error=1"
 
-# Copy RocksDB shared libraries from the build stage
-COPY --from=build /usr/local/lib/librocksdb.so* /lib/
+# bring in RocksDB shared libs and binaries
+COPY --from=build /usr/local/lib/librocksdb.so* /usr/local/lib/
+RUN ldconfig
 
-# Copy executables from the build stage
-# - entrypoint script for container initialization
-# - cometbft binary for the blockchain node
-# - app binary for the test application
 COPY --from=build /src/cometbft/test/e2e/docker/entrypoint* /usr/bin/
 COPY --from=build /src/cometbft/build/cometbft /usr/bin/cometbft
 COPY --from=build /src/cometbft/test/e2e/build/node /usr/bin/app
 
-# Expose ports:
-# - 26656: P2P communication between nodes
-# - 26657: RPC server for API requests
-# - 26660: ABCI server for application communication
-# - 6060: Prometheus metrics endpoint
 EXPOSE 26656 26657 26660 6060
-
-# Set the entrypoint script to initialize the container
 ENTRYPOINT ["/usr/bin/entrypoint"]
-# Default command to run when container starts (can be overridden)
 CMD ["node"]

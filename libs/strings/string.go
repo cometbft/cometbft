@@ -5,8 +5,7 @@ import (
 	"strings"
 )
 
-// StringInSlice returns true if a is found the list.
-// Deprecated: This function will be removed in a future release. Do not use.
+// StringInSlice returns true if a is found in the list.
 func StringInSlice(a string, list []string) bool {
 	for _, b := range list {
 		if b == a {
@@ -21,7 +20,6 @@ func StringInSlice(a string, list []string) bool {
 // contained in cutset removed. If sep is empty, SplitAndTrim splits after each
 // UTF-8 sequence. First part is equivalent to strings.SplitN with a count of
 // -1.
-// Deprecated: This function will be removed in a future release. Do not use.
 func SplitAndTrim(s, sep, cutset string) []string {
 	if s == "" {
 		return []string{}
@@ -39,7 +37,6 @@ func SplitAndTrim(s, sep, cutset string) []string {
 // contained in cutset removed. If sep is empty, SplitAndTrim splits after each
 // UTF-8 sequence. First part is equivalent to strings.SplitN with a count of
 // -1.  also filter out empty strings, only return non-empty strings.
-// Deprecated: This function will be removed in a future release. Do not use.
 func SplitAndTrimEmpty(s, sep, cutset string) []string {
 	if s == "" {
 		return []string{}
@@ -57,7 +54,6 @@ func SplitAndTrimEmpty(s, sep, cutset string) []string {
 }
 
 // Returns true if s is a non-empty printable non-tab ascii character.
-// Deprecated: This function will be removed in a future release. Do not use.
 func IsASCIIText(s string) bool {
 	if len(s) == 0 {
 		return false
@@ -71,7 +67,6 @@ func IsASCIIText(s string) bool {
 }
 
 // NOTE: Assumes that s is ASCII as per IsASCIIText(), otherwise panics.
-// Deprecated: This function will be removed in a future release. Do not use.
 func ASCIITrim(s string) string {
 	r := make([]byte, 0, len(s))
 	for _, b := range []byte(s) {
@@ -88,7 +83,6 @@ func ASCIITrim(s string) string {
 }
 
 // StringSliceEqual checks if string slices a and b are equal
-// Deprecated: This function will be removed in a future release. Do not use.
 func StringSliceEqual(a, b []string) bool {
 	if len(a) != len(b) {
 		return false

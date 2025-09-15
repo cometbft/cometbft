@@ -8,7 +8,7 @@ import (
 	"math"
 
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -21,24 +21,24 @@ const (
 // to create the payload.
 func NewBytes(p *Payload) ([]byte, error) {
 	p.Padding = make([]byte, 1)
-	if p.GetTime() == nil {
+	if p.Time == nil {
 		p.Time = timestamppb.Now()
 	}
 	us, err := CalculateUnpaddedSize(p)
 	if err != nil {
 		return nil, err
 	}
-	if p.GetSize() > maxPayloadSize {
-		return nil, fmt.Errorf("configured size %d is too large (>%d)", p.GetSize(), maxPayloadSize)
+	if p.Size > maxPayloadSize {
+		return nil, fmt.Errorf("configured size %d is too large (>%d)", p.Size, maxPayloadSize)
 	}
-	pSize := int(p.GetSize()) // #nosec -- The "if" above makes this cast safe
+	pSize := int(p.Size) // #nosec -- The "if" above makes this cast safe
 	if pSize < us {
 		return nil, fmt.Errorf("configured size %d not large enough to fit unpadded transaction of size %d", pSize, us)
 	}
 
 	// We halve the padding size because we transform the TX to hex
 	p.Padding = make([]byte, (pSize-us)/2)
-	_, err = rand.Read(p.GetPadding())
+	_, err = rand.Read(p.Padding)
 	if err != nil {
 		return nil, err
 	}
@@ -88,11 +88,11 @@ func MaxUnpaddedSize() (int, error) {
 }
 
 // CalculateUnpaddedSize calculates the size of the passed in payload for the
-// purpose of determining how much padding to add to reach the target size.
+// purpose of determining how much padding to add to add to reach the target size.
 // CalculateUnpaddedSize returns an error if the payload Padding field is longer than 1.
 func CalculateUnpaddedSize(p *Payload) (int, error) {
-	if len(p.GetPadding()) != 1 {
-		return 0, fmt.Errorf("expected length of padding to be 1, received %d", len(p.GetPadding()))
+	if len(p.Padding) != 1 {
+		return 0, fmt.Errorf("expected length of padding to be 1, received %d", len(p.Padding))
 	}
 	b, err := proto.Marshal(p)
 	if err != nil {

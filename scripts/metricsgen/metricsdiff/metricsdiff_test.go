@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	metricsdiff "github.com/cometbft/cometbft/v2/scripts/metricsgen/metricsdiff" //nolint:revive // this only works with metricsdiff in front
+	metricsdiff "github.com/cometbft/cometbft/scripts/metricsgen/metricsdiff"
 )
 
 func TestDiff(t *testing.T) {

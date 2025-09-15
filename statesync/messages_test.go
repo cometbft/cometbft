@@ -7,9 +7,9 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/require"
 
-	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	"github.com/cometbft/cometbft/v2/types"
+	"github.com/cometbft/cometbft/p2p"
+	ssproto "github.com/cometbft/cometbft/proto/tendermint/statesync"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 func TestValidateMsg(t *testing.T) {
@@ -86,6 +86,7 @@ func TestValidateMsg(t *testing.T) {
 		},
 	}
 	for name, tc := range testcases {
+		tc := tc
 		t.Run(name, func(t *testing.T) {
 			err := validateMsg(tc.msg)
 			if tc.valid {
@@ -111,7 +112,8 @@ func TestStateSyncVectors(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		w := tc.msg.(types.Wrapper).Wrap()
+		tc := tc
+		w := tc.msg.(p2p.Wrapper).Wrap()
 		bz, err := proto.Marshal(w)
 		require.NoError(t, err)
 

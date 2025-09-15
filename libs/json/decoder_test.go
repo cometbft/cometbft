@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/v2/libs/json"
+	"github.com/cometbft/cometbft/libs/json"
 )
 
 func TestUnmarshal(t *testing.T) {
@@ -21,7 +21,7 @@ func TestUnmarshal(t *testing.T) {
 
 	testcases := map[string]struct {
 		json  string
-		value any
+		value interface{}
 		err   bool
 	}{
 		"bool true":           {"true", true, false},
@@ -74,7 +74,7 @@ func TestUnmarshal(t *testing.T) {
 		"boat into car iface": {`{"type":"vehicle/boat","value":{"Sail":true}}`, Vehicle(&Car{}), true},
 		"shoes":               {`{"type":"vehicle/shoes","value":{"Soles":"rubber"}}`, Car{}, true},
 		"shoes ptr":           {`{"type":"vehicle/shoes","value":{"Soles":"rubber"}}`, &Car{}, true},
-		"shoes iface":         {`{"type":"vehicle/shoes","value":{"Soles":"rubbes"}}`, Vehicle(&Car{}), true},
+		"shoes iface":         {`{"type":"vehicle/shoes","value":{"Soles":"rubber"}}`, Vehicle(&Car{}), true},
 		"key public":          {`{"type":"key/public","value":"AQIDBAUGBwg="}`, PublicKey{1, 2, 3, 4, 5, 6, 7, 8}, false},
 		"key wrong":           {`{"type":"key/public","value":"AQIDBAUGBwg="}`, PrivateKey{1, 2, 3, 4, 5, 6, 7, 8}, true},
 		"key into car":        {`{"type":"key/public","value":"AQIDBAUGBwg="}`, Vehicle(&Car{}), true},
@@ -131,6 +131,7 @@ func TestUnmarshal(t *testing.T) {
 		"invalid type":     {`"foo"`, Struct{}, true},
 	}
 	for name, tc := range testcases {
+		tc := tc
 		t.Run(name, func(t *testing.T) {
 			// Create a target variable as a pointer to the zero value of the tc.value type,
 			// and wrap it in an empty interface. Decode into that interface.

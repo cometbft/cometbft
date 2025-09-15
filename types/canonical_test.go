@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	"github.com/cometbft/cometbft/v2/crypto/tmhash"
-	cmtrand "github.com/cometbft/cometbft/v2/internal/rand"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 func TestCanonicalizeBlockID(t *testing.T) {
@@ -37,6 +37,7 @@ func TestCanonicalizeBlockID(t *testing.T) {
 		{"second", block2, &cblock2},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			if got := CanonicalizeBlockID(tt.args); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("CanonicalizeBlockID() = %v, want %v", got, tt.want)

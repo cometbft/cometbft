@@ -4,26 +4,18 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"slices"
+	"sync"
 	"sync/atomic"
 	"time"
 
-	abcicli "github.com/cometbft/cometbft/v2/abci/client"
-	abci "github.com/cometbft/cometbft/v2/abci/types"
-	"github.com/cometbft/cometbft/v2/config"
-	"github.com/cometbft/cometbft/v2/internal/clist"
-	"github.com/cometbft/cometbft/v2/libs/log"
-	cmtmath "github.com/cometbft/cometbft/v2/libs/math"
-	cmtsync "github.com/cometbft/cometbft/v2/libs/sync"
-	"github.com/cometbft/cometbft/v2/p2p"
-	"github.com/cometbft/cometbft/v2/proxy"
-	"github.com/cometbft/cometbft/v2/types"
-	cmttime "github.com/cometbft/cometbft/v2/types/time"
-)
-
-const (
-	noSender    = ""
-	defaultLane = "default"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/libs/clist"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/proxy"
+	"github.com/cometbft/cometbft/types"
 )
 
 // CListMempool is an ordered in-memory pool for transactions before they are
@@ -32,12 +24,12 @@ const (
 // mempool uses a concurrent list structure for storing transactions that can
 // be efficiently accessed by multiple concurrent readers.
 type CListMempool struct {
-	height atomic.Int64 // the last block Update()'d to
+	height   atomic.Int64 // the last block Update()'d to
+	txsBytes atomic.Int64 // total size of mempool, in bytes
 
 	// notify listeners (ie. consensus) when txs are available
 	notifiedTxsAvailable atomic.Bool
 	txsAvailable         chan struct{} // fires once for each height, when the mempool is not empty
-	onNewTx              func(types.Tx)
 
 	config *config.MempoolConfig
 
@@ -47,27 +39,15 @@ type CListMempool struct {
 	preCheck  PreCheckFunc
 	postCheck PostCheckFunc
 
+	txs          *clist.CList // concurrent linked-list of good txs
 	proxyAppConn proxy.AppConnMempool
 
 	// Keeps track of the rechecking process.
 	recheck *recheck
 
-	// Data in the following variables must to be kept in sync and updated atomically.
-	txsMtx    cmtsync.RWMutex
-	lanes     map[LaneID]*clist.CList         // each lane is a linked-list of (valid) txs
-	txsMap    map[types.TxKey]*clist.CElement // for quick access to the mempool entry of a given tx
-	laneBytes map[LaneID]int64                // number of bytes per lane (for metrics)
-	txsBytes  int64                           // total size of mempool, in bytes
-	numTxs    int64                           // total number of txs in the mempool
-
-	addTxChMtx    cmtsync.RWMutex  // Protects the fields below
-	addTxCh       chan struct{}    // Blocks until the next TX is added
-	addTxSeq      int64            // Helps detect is new TXs have been added to a given lane
-	addTxLaneSeqs map[LaneID]int64 // Sequence of the last TX added to a given lane
-
-	// Immutable fields, only set during initialization.
-	defaultLane LaneID
-	sortedLanes []lane // lanes sorted by priority, in descending order
+	// Map for quick access to txs to record sender in CheckTx.
+	// txsMap: txKey -> CElement
+	txsMap sync.Map
 
 	// Keep a cache of already-seen txs.
 	// This reduces the pressure on the proxyApp.
@@ -82,72 +62,31 @@ var _ Mempool = &CListMempool{}
 // CListMempoolOption sets an optional parameter on the mempool.
 type CListMempoolOption func(*CListMempool)
 
-// A LaneID is a string that uniquely identifies a lane.
-// Multiple lanes can have the same priority.
-type LaneID string
-
-// LanePriority represents the priority of a lane.
-type LanePriority uint32
-
-// lane corresponds to a transaction class as defined by the application.
-// A lane is identified by a unique string name (LaneID) and has a priority level (LanePriority).
-// Different lanes can have the same priority.
-type lane struct {
-	id       LaneID
-	priority LanePriority
-}
-
 // NewCListMempool returns a new mempool with the given configuration and
 // connection to an application.
 func NewCListMempool(
 	cfg *config.MempoolConfig,
 	proxyAppConn proxy.AppConnMempool,
-	lanesInfo *LanesInfo,
 	height int64,
 	options ...CListMempoolOption,
 ) *CListMempool {
 	mp := &CListMempool{
-		config:        cfg,
-		proxyAppConn:  proxyAppConn,
-		txsMap:        make(map[types.TxKey]*clist.CElement),
-		laneBytes:     make(map[LaneID]int64),
-		logger:        log.NewNopLogger(),
-		metrics:       NopMetrics(),
-		addTxCh:       make(chan struct{}),
-		addTxLaneSeqs: make(map[LaneID]int64),
+		config:       cfg,
+		proxyAppConn: proxyAppConn,
+		txs:          clist.New(),
+		recheck:      newRecheck(),
+		logger:       log.NewNopLogger(),
+		metrics:      NopMetrics(),
 	}
 	mp.height.Store(height)
-
-	// Initialize lanes
-	if lanesInfo == nil || len(lanesInfo.lanes) == 0 {
-		// The only lane will be "default" with priority 1.
-		lanesInfo = &LanesInfo{lanes: map[LaneID]LanePriority{defaultLane: 1}, defaultLane: defaultLane}
-	}
-	numLanes := len(lanesInfo.lanes)
-	mp.lanes = make(map[LaneID]*clist.CList, numLanes)
-	mp.defaultLane = lanesInfo.defaultLane
-	mp.sortedLanes = make([]lane, 0, numLanes)
-	for id, priority := range lanesInfo.lanes {
-		mp.lanes[id] = clist.New()
-		mp.sortedLanes = append(mp.sortedLanes, lane{id: id, priority: priority})
-	}
-	slices.SortStableFunc(mp.sortedLanes, func(i, j lane) int {
-		if i.priority > j.priority {
-			return -1
-		}
-		if i.priority < j.priority {
-			return 1
-		}
-		return 0
-	})
-
-	mp.recheck = newRecheck(mp)
 
 	if cfg.CacheSize > 0 {
 		mp.cache = NewLRUTxCache(cfg.CacheSize)
 	} else {
 		mp.cache = NopTxCache{}
 	}
+
+	proxyAppConn.SetResponseCallback(mp.globalCb)
 
 	for _, option := range options {
 		option(mp)
@@ -156,72 +95,33 @@ func NewCListMempool(
 	return mp
 }
 
-func (mem *CListMempool) GetSenders(txKey types.TxKey) ([]p2p.ID, error) {
-	mem.txsMtx.RLock()
-	defer mem.txsMtx.RUnlock()
-
-	elem, ok := mem.txsMap[txKey]
-	if !ok {
-		return nil, ErrTxNotFound
+func (mem *CListMempool) getCElement(txKey types.TxKey) (*clist.CElement, bool) {
+	if e, ok := mem.txsMap.Load(txKey); ok {
+		return e.(*clist.CElement), true
 	}
-	memTx := elem.Value.(*mempoolTx)
-	return memTx.Senders(), nil
+	return nil, false
 }
 
-func (mem *CListMempool) addToCache(tx types.Tx) bool {
-	return mem.cache.Push(tx)
-}
-
-func (mem *CListMempool) forceRemoveFromCache(tx types.Tx) {
-	mem.cache.Remove(tx)
-}
-
-// tryRemoveFromCache removes a transaction from the cache in case it can be
-// added to the mempool at a later stage (probably when the transaction becomes
-// valid).
-func (mem *CListMempool) tryRemoveFromCache(tx types.Tx) {
-	if !mem.config.KeepInvalidTxsInCache {
-		mem.forceRemoveFromCache(tx)
-	}
-}
-
-func (mem *CListMempool) removeAllTxs(lane LaneID) {
-	mem.txsMtx.Lock()
-	defer mem.txsMtx.Unlock()
-
-	for e := mem.lanes[lane].Front(); e != nil; e = e.Next() {
-		mem.lanes[lane].Remove(e)
-		e.DetachPrev()
-	}
-	mem.txsMap = make(map[types.TxKey]*clist.CElement)
-	delete(mem.laneBytes, lane)
-	mem.txsBytes = 0
-}
-
-// addSender adds a peer ID to the list of senders on the entry corresponding to
-// tx, identified by its key.
-func (mem *CListMempool) addSender(txKey types.TxKey, sender p2p.ID) error {
-	if sender == noSender {
-		return nil
-	}
-
-	mem.txsMtx.Lock()
-	defer mem.txsMtx.Unlock()
-
-	elem, ok := mem.txsMap[txKey]
-	if !ok {
-		return ErrTxNotFound
-	}
-
-	memTx := elem.Value.(*mempoolTx)
-	if found := memTx.addSender(sender); found {
-		// It should not be possible to receive twice a tx from the same sender.
-		return ErrTxAlreadyReceivedFromSender
+func (mem *CListMempool) getMemTx(txKey types.TxKey) *mempoolTx {
+	if e, ok := mem.getCElement(txKey); ok {
+		return e.Value.(*mempoolTx)
 	}
 	return nil
 }
 
-// NOTE: not thread safe - should only be called once, on startup.
+func (mem *CListMempool) removeAllTxs() {
+	for e := mem.txs.Front(); e != nil; e = e.Next() {
+		mem.txs.Remove(e)
+		e.DetachPrev()
+	}
+
+	mem.txsMap.Range(func(key, _ interface{}) bool {
+		mem.txsMap.Delete(key)
+		return true
+	})
+}
+
+// NOTE: not thread safe - should only be called once, on startup
 func (mem *CListMempool) EnableTxsAvailable() {
 	mem.txsAvailable = make(chan struct{}, 1)
 }
@@ -250,64 +150,27 @@ func WithMetrics(metrics *Metrics) CListMempoolOption {
 	return func(mem *CListMempool) { mem.metrics = metrics }
 }
 
-// WithNewTxCallback sets a callback function to be executed when a new transaction is added to the mempool.
-// The callback function will receive the newly added transaction as a parameter.
-func WithNewTxCallback(cb func(types.Tx)) CListMempoolOption {
-	return func(mem *CListMempool) { mem.onNewTx = cb }
-}
-
-// Lock acquires the exclusive lock for mempool updates.
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) Lock() {
+	if mem.recheck.setRecheckFull() {
+		mem.logger.Debug("the state of recheckFull has flipped")
+	}
 	mem.updateMtx.Lock()
 }
 
-// Unlock releases the exclusive lock for mempool updates.
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) Unlock() {
 	mem.updateMtx.Unlock()
 }
 
-// PreUpdate sets the recheckFull flag and logs if its state changes.
-// Safe for concurrent use by multiple goroutines.
-func (mem *CListMempool) PreUpdate() {
-	if mem.recheck.setRecheckFull() {
-		mem.logger.Debug("The state of recheckFull has flipped")
-	}
-}
-
-// Size returns the total number of transactions in the mempool (that is, all lanes).
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) Size() int {
-	mem.txsMtx.RLock()
-	defer mem.txsMtx.RUnlock()
-
-	return int(mem.numTxs)
+	return mem.txs.Len()
 }
 
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) SizeBytes() int64 {
-	mem.txsMtx.RLock()
-	defer mem.txsMtx.RUnlock()
-
-	return mem.txsBytes
-}
-
-// LaneSizes returns, the number of transactions in the given lane and the total
-// number of bytes used by all transactions in the lane.
-//
-// Safe for concurrent use by multiple goroutines.
-func (mem *CListMempool) LaneSizes(lane LaneID) (numTxs int, bytes int64) {
-	mem.txsMtx.RLock()
-	defer mem.txsMtx.RUnlock()
-
-	bytes = mem.laneBytes[lane]
-
-	txs, ok := mem.lanes[lane]
-	if !ok {
-		panic(ErrLaneNotFound{laneID: lane})
-	}
-	return txs.Len(), bytes
+	return mem.txsBytes.Load()
 }
 
 // Lock() must be help by the caller during execution.
@@ -325,26 +188,43 @@ func (mem *CListMempool) Flush() {
 	mem.updateMtx.Lock()
 	defer mem.updateMtx.Unlock()
 
-	mem.txsBytes = 0
-	mem.numTxs = 0
+	mem.txsBytes.Store(0)
 	mem.cache.Reset()
 
-	for lane := range mem.lanes {
-		mem.removeAllTxs(lane)
-	}
+	mem.removeAllTxs()
 }
 
-func (mem *CListMempool) Contains(txKey types.TxKey) bool {
-	mem.txsMtx.RLock()
-	defer mem.txsMtx.RUnlock()
+// TxsFront returns the first transaction in the ordered list for peer
+// goroutines to call .NextWait() on.
+// FIXME: leaking implementation details!
+//
+// Safe for concurrent use by multiple goroutines.
+func (mem *CListMempool) TxsFront() *clist.CElement {
+	return mem.txs.Front()
+}
 
-	_, ok := mem.txsMap[txKey]
-	return ok
+// TxsWaitChan returns a channel to wait on transactions. It will be closed
+// once the mempool is not empty (ie. the internal `mem.txs` has at least one
+// element)
+//
+// Safe for concurrent use by multiple goroutines.
+func (mem *CListMempool) TxsWaitChan() <-chan struct{} {
+	return mem.txs.WaitChan()
 }
 
 // It blocks if we're waiting on Update() or Reap().
+// cb: A callback from the CheckTx command.
+//
+//	It gets called from another goroutine.
+//
+// CONTRACT: Either cb will get called, or err returned.
+//
 // Safe for concurrent use by multiple goroutines.
-func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, error) {
+func (mem *CListMempool) CheckTx(
+	tx types.Tx,
+	cb func(*abci.ResponseCheckTx),
+	txInfo TxInfo,
+) error {
 	mem.updateMtx.RLock()
 	// use defer to unlock mutex because application (*local client*) might panic
 	defer mem.updateMtx.RUnlock()
@@ -353,11 +233,11 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 
 	if err := mem.isFull(txSize); err != nil {
 		mem.metrics.RejectedTxs.Add(1)
-		return nil, err
+		return err
 	}
 
 	if txSize > mem.config.MaxTxBytes {
-		return nil, ErrTxTooLarge{
+		return ErrTxTooLarge{
 			Max:    mem.config.MaxTxBytes,
 			Actual: txSize,
 		}
@@ -365,215 +245,140 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 
 	if mem.preCheck != nil {
 		if err := mem.preCheck(tx); err != nil {
-			return nil, ErrPreCheck{Err: err}
+			return ErrPreCheck{Err: err}
 		}
 	}
 
 	// NOTE: proxyAppConn may error if tx buffer is full
 	if err := mem.proxyAppConn.Error(); err != nil {
-		return nil, ErrAppConnMempool{Err: err}
+		return ErrAppConnMempool{Err: err}
 	}
 
-	if added := mem.addToCache(tx); !added {
-		mem.metrics.AlreadyReceivedTxs.Add(1)
+	if !mem.cache.Push(tx) { // if the transaction already exists in the cache
 		// Record a new sender for a tx we've already seen.
 		// Note it's possible a tx is still in the cache but no longer in the mempool
 		// (eg. after committing a block, txs are removed from mempool but not cache),
 		// so we only record the sender for txs still in the mempool.
-		if err := mem.addSender(tx.Key(), sender); err != nil {
-			mem.logger.Error("Could not add sender to tx", "tx", log.NewLazyHash(tx), "sender", sender, "err", err)
+		if memTx := mem.getMemTx(tx.Key()); memTx != nil {
+			memTx.addSender(txInfo.SenderID)
+			// TODO: consider punishing peer for dups,
+			// its non-trivial since invalid txs can become valid,
+			// but they can spam the same tx with little cost to them atm.
 		}
-		// TODO: consider punishing peer for dups,
-		// its non-trivial since invalid txs can become valid,
-		// but they can spam the same tx with little cost to them atm.
-		return nil, ErrTxInCache
+		return ErrTxInCache
 	}
 
-	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.CheckTxRequest{
-		Tx:   tx,
-		Type: abci.CHECK_TX_TYPE_CHECK,
-	})
+	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{Tx: tx})
 	if err != nil {
-		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", tx.Hash(), err))
+		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))
 	}
-	reqRes.SetCallback(mem.handleCheckTxResponse(tx, sender))
+	reqRes.SetCallback(mem.reqResCb(tx, txInfo, cb))
 
-	return reqRes, nil
+	return nil
 }
 
-// handleCheckTxResponse handles CheckTx responses for transactions validated for the first time.
+// Global callback that will be called after every ABCI response.
+// Having a single global callback avoids needing to set a callback for each request.
+// However, processing the checkTx response requires the peerID (so we can track which txs we heard from who),
+// and peerID is not included in the ABCI request, so we have to set request-specific callbacks that
+// include this information. If we're not in the midst of a recheck, this function will just return,
+// so the request specific callback can do the work.
 //
-//   - sender optionally holds the ID of the peer that sent the transaction, if any.
-func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(res *abci.Response) error {
-	return func(r *abci.Response) error {
-		res := r.GetCheckTx()
-		if res == nil {
-			panic(fmt.Sprintf("unexpected response value %v not of type CheckTx", r))
+// When rechecking, we don't need the peerID, so the recheck callback happens
+// here.
+func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
+	switch r := req.Value.(type) {
+	case *abci.Request_CheckTx:
+		// Process only Recheck responses.
+		if r.CheckTx.Type != abci.CheckTxType_Recheck {
+			return
 		}
+	default:
+		// ignore other type of requests
+		return
+	}
 
-		// Check that rechecking txs is not in process.
+	switch r := res.Value.(type) {
+	case *abci.Response_CheckTx:
+		tx := types.Tx(req.GetCheckTx().Tx)
+		if mem.recheck.done() {
+			mem.logger.Error("rechecking has finished; discard late recheck response",
+				"tx", log.NewLazySprintf("%v", tx.Key()))
+			return
+		}
+		mem.metrics.RecheckTimes.Add(1)
+		mem.resCbRecheck(tx, r.CheckTx)
+
+		// update metrics
+		mem.metrics.Size.Set(float64(mem.Size()))
+
+	default:
+		// ignore other messages
+	}
+}
+
+// Request specific callback that should be set on individual reqRes objects
+// to incorporate local information when processing the response.
+// This allows us to track the peer that sent us this tx, so we can avoid sending it back to them.
+// NOTE: alternatively, we could include this information in the ABCI request itself.
+//
+// External callers of CheckTx, like the RPC, can also pass an externalCb through here that is called
+// when all other response processing is complete.
+//
+// Used in CheckTx to record PeerID who sent us the tx.
+func (mem *CListMempool) reqResCb(
+	tx []byte,
+	txInfo TxInfo,
+	externalCb func(*abci.ResponseCheckTx),
+) func(res *abci.Response) {
+	return func(res *abci.Response) {
 		if !mem.recheck.done() {
-			panic(fmt.Sprint("rechecking has not finished; cannot check new tx ", tx.Hash()))
+			panic(log.NewLazySprintf("rechecking has not finished; cannot check new tx %v",
+				types.Tx(tx).Hash()))
 		}
 
-		var postCheckErr error
-		if mem.postCheck != nil {
-			postCheckErr = mem.postCheck(tx, res)
+		mem.resCbFirstTime(tx, txInfo, res)
+
+		// update metrics
+		mem.metrics.Size.Set(float64(mem.Size()))
+		mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
+
+		// passed in by the caller of CheckTx, eg. the RPC
+		if externalCb != nil {
+			externalCb(res.GetCheckTx())
 		}
-
-		// If tx is invalid, remove it from the cache.
-		if res.Code != abci.CodeTypeOK || postCheckErr != nil {
-			mem.tryRemoveFromCache(tx)
-			mem.logger.Debug(
-				"Rejected invalid transaction",
-				"tx", log.NewLazyHash(tx),
-				"res", res,
-				"err", postCheckErr,
-			)
-			mem.metrics.FailedTxs.Add(1)
-
-			if postCheckErr != nil {
-				return postCheckErr
-			}
-			return ErrInvalidTx{Code: res.Code, Data: res.Data, Log: res.Log, Codespace: res.Codespace, Hash: tx.Hash()}
-		}
-
-		// If the app returned a non-empty lane, use it; otherwise use the default lane.
-		lane := mem.defaultLane
-		if res.LaneId != "" {
-			if _, ok := mem.lanes[lane]; !ok {
-				panic(ErrLaneNotFound{laneID: lane})
-			}
-			lane = LaneID(res.LaneId)
-		}
-
-		if err := mem.isLaneFull(len(tx), lane); err != nil {
-			mem.forceRemoveFromCache(tx) // lane might have space later
-			// use debug level to avoid spamming logs when traffic is high
-			mem.logger.Debug(err.Error())
-			mem.metrics.RejectedTxs.Add(1)
-			return err
-		}
-
-		// Check that tx is not already in the mempool. This can happen when the
-		// cache overflows. See https://github.com/cometbft/cometbft/v2/pull/890.
-		txKey := tx.Key()
-		if mem.Contains(txKey) {
-			mem.metrics.RejectedTxs.Add(1)
-			if err := mem.addSender(txKey, sender); err != nil {
-				mem.logger.Error("Could not add sender to tx", "tx", tx.Hash(), "sender", sender, "err", err)
-			}
-			mem.logger.Debug("Reject tx", "tx", log.NewLazyHash(tx), "height", mem.height.Load(), "err", ErrTxInMempool)
-			return ErrTxInMempool
-		}
-
-		// Add tx to mempool and notify that new txs are available.
-		mem.addTx(tx, res.GasWanted, sender, lane)
-		mem.notifyTxsAvailable()
-
-		if mem.onNewTx != nil {
-			mem.onNewTx(tx)
-		}
-
-		mem.updateSizeMetrics(lane)
-
-		return nil
 	}
 }
 
 // Called from:
-//   - handleCheckTxResponse (lock not held) if tx is valid
-func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane LaneID) {
-	mem.txsMtx.Lock()
-	defer mem.txsMtx.Unlock()
-
-	// Get lane's clist.
-	txs, ok := mem.lanes[lane]
-	if !ok {
-		panic(ErrLaneNotFound{laneID: lane})
-	}
-
-	// Increase sequence number.
-	mem.addTxChMtx.Lock()
-	defer mem.addTxChMtx.Unlock()
-	mem.addTxSeq++
-	mem.addTxLaneSeqs[lane] = mem.addTxSeq
-
-	// Add new transaction.
-	memTx := &mempoolTx{
-		tx:        tx,
-		height:    mem.height.Load(),
-		gasWanted: gasWanted,
-		lane:      lane,
-		seq:       mem.addTxSeq,
-	}
-	_ = memTx.addSender(sender)
-	e := txs.PushBack(memTx)
-
-	// Update auxiliary variables.
-	mem.txsMap[tx.Key()] = e
-	mem.txsBytes += int64(len(tx))
-	mem.numTxs++
-	mem.laneBytes[lane] += int64(len(tx))
-
-	// Notify iterators there's a new transaction.
-	close(mem.addTxCh)
-	mem.addTxCh = make(chan struct{})
-
-	// Update metrics.
-	mem.metrics.TxSizeBytes.Observe(float64(len(tx)))
-
-	mem.logger.Debug(
-		"Added transaction",
-		"tx", log.NewLazyHash(tx),
-		"lane", lane,
-		"height", mem.height.Load(),
-		"total", mem.numTxs,
-	)
+//   - resCbFirstTime (lock not held) if tx is valid
+func (mem *CListMempool) addTx(memTx *mempoolTx) {
+	e := mem.txs.PushBack(memTx)
+	mem.txsMap.Store(memTx.tx.Key(), e)
+	mem.txsBytes.Add(int64(len(memTx.tx)))
+	mem.metrics.TxSizeBytes.Observe(float64(len(memTx.tx)))
 }
 
 // RemoveTxByKey removes a transaction from the mempool by its TxKey index.
 // Called from:
-//   - Update (updateMtx held) if tx was committed
-//   - handleRecheckTxResponse (updateMtx not held) if tx was invalidated
+//   - Update (lock held) if tx was committed
+//   - resCbRecheck (lock not held) if tx was invalidated
 func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
-	mem.txsMtx.Lock()
-	defer mem.txsMtx.Unlock()
-
-	elem, ok := mem.txsMap[txKey]
-	if !ok {
-		return ErrTxNotFound
+	if elem, ok := mem.getCElement(txKey); ok {
+		mem.txs.Remove(elem)
+		elem.DetachPrev()
+		mem.txsMap.Delete(txKey)
+		tx := elem.Value.(*mempoolTx).tx
+		mem.txsBytes.Add(int64(-len(tx)))
+		return nil
 	}
-
-	memTx := elem.Value.(*mempoolTx)
-
-	label := string(memTx.lane)
-	mem.metrics.TxLifeSpan.With("lane", label).Observe(float64(memTx.timestamp.Sub(time.Now().UTC())))
-
-	// Remove tx from lane.
-	mem.lanes[memTx.lane].Remove(elem)
-	elem.DetachPrev()
-
-	// Update auxiliary variables.
-	delete(mem.txsMap, txKey)
-	mem.txsBytes -= int64(len(memTx.tx))
-	mem.numTxs--
-	mem.laneBytes[memTx.lane] -= int64(len(memTx.tx))
-
-	mem.logger.Debug(
-		"Removed transaction",
-		"tx", log.NewLazyHash(memTx.tx),
-		"lane", memTx.lane,
-		"height", mem.height.Load(),
-		"total", mem.numTxs,
-	)
-	return nil
+	return ErrTxNotFound
 }
 
 func (mem *CListMempool) isFull(txSize int) error {
 	memSize := mem.Size()
 	txsBytes := mem.SizeBytes()
-	if memSize >= mem.config.Size || uint64(txSize)+uint64(txsBytes) > uint64(mem.config.MaxTxsBytes) {
+	if memSize >= mem.config.Size || int64(txSize)+txsBytes > mem.config.MaxTxsBytes {
 		return ErrMempoolIsFull{
 			NumTxs:      memSize,
 			MaxTxs:      mem.config.Size,
@@ -589,82 +394,111 @@ func (mem *CListMempool) isFull(txSize int) error {
 	return nil
 }
 
-func (mem *CListMempool) isLaneFull(txSize int, lane LaneID) error {
-	laneTxs, laneBytes := mem.LaneSizes(lane)
-
-	// The mempool is partitioned evenly across all lanes.
-	laneTxsCapacity := mem.config.Size / len(mem.sortedLanes)
-	laneBytesCapacity := mem.config.MaxTxsBytes / int64(len(mem.sortedLanes))
-
-	if laneTxs > laneTxsCapacity || int64(txSize)+laneBytes > laneBytesCapacity {
-		return ErrLaneIsFull{
-			Lane:     lane,
-			NumTxs:   laneTxs,
-			MaxTxs:   laneTxsCapacity,
-			Bytes:    laneBytes,
-			MaxBytes: laneBytesCapacity,
-		}
-	}
-
-	if mem.recheck.consideredFull() {
-		return ErrRecheckFull
-	}
-
-	return nil
-}
-
-// handleRecheckTxResponse handles CheckTx responses for transactions in the mempool that need to be
-// revalidated after a mempool update.
-func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Response) error {
-	return func(r *abci.Response) error {
-		res := r.GetCheckTx()
-		if res == nil {
-			panic(fmt.Sprintf("unexpected response value %v not of type CheckTx", r))
-		}
-
-		// Check whether the rechecking process has finished.
-		if mem.recheck.done() {
-			mem.logger.Error("Failed to recheck tx", "tx", log.NewLazyHash(tx), "err", ErrLateRecheckResponse)
-			return ErrLateRecheckResponse
-		}
-		mem.metrics.RecheckTimes.Add(1)
-
-		// Check whether tx is still in the list of transactions that can be rechecked.
-		if !mem.recheck.findNextEntryMatching(&tx) {
-			// Reached the end of the list and didn't find a matching tx; rechecking has finished.
-			return nil
-		}
-
+// callback, which is called after the app checked the tx for the first time.
+//
+// The case where the app checks the tx for the second and subsequent times is
+// handled by the resCbRecheck callback.
+func (mem *CListMempool) resCbFirstTime(
+	tx []byte,
+	txInfo TxInfo,
+	res *abci.Response,
+) {
+	switch r := res.Value.(type) {
+	case *abci.Response_CheckTx:
 		var postCheckErr error
 		if mem.postCheck != nil {
-			postCheckErr = mem.postCheck(tx, res)
+			postCheckErr = mem.postCheck(tx, r.CheckTx)
 		}
-
-		// If tx is invalid, remove it from the mempool and the cache.
-		if (res.Code != abci.CodeTypeOK) || postCheckErr != nil {
-			// Tx became invalidated due to newly committed block.
-			mem.logger.Debug("Tx is no longer valid", "tx", log.NewLazyHash(tx), "res", res, "postCheckErr", postCheckErr)
-			if err := mem.RemoveTxByKey(tx.Key()); err != nil {
-				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
-				return err
+		if (r.CheckTx.Code == abci.CodeTypeOK) && postCheckErr == nil {
+			// Check mempool isn't full again to reduce the chance of exceeding the
+			// limits.
+			if err := mem.isFull(len(tx)); err != nil {
+				// remove from cache (mempool might have a space later)
+				mem.cache.Remove(tx)
+				// use debug level to avoid spamming logs when traffic is high
+				mem.logger.Debug(err.Error())
+				mem.metrics.RejectedTxs.Add(1)
+				return
 			}
 
-			// update metrics
+			// Check transaction not already in the mempool
+			if e, ok := mem.txsMap.Load(types.Tx(tx).Key()); ok {
+				memTx := e.(*clist.CElement).Value.(*mempoolTx)
+				memTx.addSender(txInfo.SenderID)
+				mem.logger.Debug(
+					"transaction already there, not adding it again",
+					"tx", types.Tx(tx).Hash(),
+					"res", r,
+					"height", mem.height.Load(),
+					"total", mem.Size(),
+				)
+				mem.metrics.RejectedTxs.Add(1)
+				return
+			}
+
+			memTx := &mempoolTx{
+				height:    mem.height.Load(),
+				gasWanted: r.CheckTx.GasWanted,
+				tx:        tx,
+			}
+			memTx.addSender(txInfo.SenderID)
+			mem.addTx(memTx)
+			mem.logger.Debug(
+				"added good transaction",
+				"tx", types.Tx(tx).Hash(),
+				"res", r,
+				"height", mem.height.Load(),
+				"total", mem.Size(),
+			)
+			mem.notifyTxsAvailable()
+		} else {
+			// ignore bad transaction
+			mem.logger.Debug(
+				"rejected bad transaction",
+				"tx", types.Tx(tx).Hash(),
+				"peerID", txInfo.SenderP2PID,
+				"res", r,
+				"err", postCheckErr,
+			)
+			mem.metrics.FailedTxs.Add(1)
+
+			if !mem.config.KeepInvalidTxsInCache {
+				// remove from cache (it might be good later)
+				mem.cache.Remove(tx)
+			}
+		}
+
+	default:
+		// ignore other messages
+	}
+}
+
+// callback, which is called after the app rechecked the tx.
+//
+// The case where the app checks the tx for the first time is handled by the
+// resCbFirstTime callback.
+func (mem *CListMempool) resCbRecheck(tx types.Tx, res *abci.ResponseCheckTx) {
+	// Check whether tx is still in the list of transactions that can be rechecked.
+	if !mem.recheck.findNextEntryMatching(&tx) {
+		// Reached the end of the list and didn't find a matching tx; rechecking has finished.
+		return
+	}
+
+	var postCheckErr error
+	if mem.postCheck != nil {
+		postCheckErr = mem.postCheck(tx, res)
+	}
+
+	if (res.Code != abci.CodeTypeOK) || postCheckErr != nil {
+		// Tx became invalidated due to newly committed block.
+		mem.logger.Debug("tx is no longer valid", "tx", tx.Hash(), "res", res, "postCheckErr", postCheckErr)
+		if err := mem.RemoveTxByKey(tx.Key()); err != nil {
+			mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
+		}
+		if !mem.config.KeepInvalidTxsInCache {
+			mem.cache.Remove(tx)
 			mem.metrics.EvictedTxs.Add(1)
-			if elem, ok := mem.txsMap[tx.Key()]; ok {
-				mem.updateSizeMetrics(elem.Value.(*mempoolTx).lane)
-			} else {
-				mem.logger.Error("Cannot update metrics", "err", ErrTxNotFound)
-			}
-
-			mem.tryRemoveFromCache(tx)
-			if postCheckErr != nil {
-				return postCheckErr
-			}
-			return ErrInvalidTx{Code: res.Code, Data: res.Data, Log: res.Log, Codespace: res.Codespace, Hash: tx.Hash()}
 		}
-
-		return nil
 	}
 }
 
@@ -698,17 +532,14 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 
 	// TODO: we will get a performance boost if we have a good estimate of avg
 	// size per tx, and set the initial capacity based off of that.
-	// txs := make([]types.Tx, 0, cmtmath.MinInt(mem.Size(), max/mem.avgTxSize))
-	txs := make([]types.Tx, 0, mem.Size())
-	iter := NewNonBlockingIterator(mem)
-	for {
-		memTx := iter.Next()
-		if memTx == nil {
-			break
-		}
-		txs = append(txs, memTx.Tx())
+	// txs := make([]types.Tx, 0, cmtmath.MinInt(mem.txs.Len(), max/mem.avgTxSize))
+	txs := make([]types.Tx, 0, mem.txs.Len())
+	for e := mem.txs.Front(); e != nil; e = e.Next() {
+		memTx := e.Value.(*mempoolTx)
 
-		dataSize := types.ComputeProtoSizeForTxs([]types.Tx{memTx.Tx()})
+		txs = append(txs, memTx.tx)
+
+		dataSize := types.ComputeProtoSizeForTxs([]types.Tx{memTx.tx})
 
 		// Check total size requirement
 		if maxBytes > -1 && runningSize+dataSize > maxBytes {
@@ -721,7 +552,7 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 		// If maxGas is negative, skip this check.
 		// Since newTotalGas < masGas, which
 		// must be non-negative, it follows that this won't overflow.
-		newTotalGas := totalGas + memTx.GasWanted()
+		newTotalGas := totalGas + memTx.gasWanted
 		if maxGas > -1 && newTotalGas > maxGas {
 			return txs[:len(txs)-1]
 		}
@@ -736,34 +567,18 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 	defer mem.updateMtx.RUnlock()
 
 	if max < 0 {
-		max = mem.Size()
+		max = mem.txs.Len()
 	}
 
-	txs := make([]types.Tx, 0, cmtmath.MinInt(mem.Size(), max))
-	iter := NewNonBlockingIterator(mem)
-	for len(txs) <= max {
-		memTx := iter.Next()
-		if memTx == nil {
-			break
-		}
-		txs = append(txs, memTx.Tx())
+	txs := make([]types.Tx, 0, cmtmath.MinInt(mem.txs.Len(), max))
+	for e := mem.txs.Front(); e != nil && len(txs) <= max; e = e.Next() {
+		memTx := e.Value.(*mempoolTx)
+		txs = append(txs, memTx.tx)
 	}
 	return txs
 }
 
-// GetTxByHash returns the types.Tx with the given hash if found in the mempool, otherwise returns nil.
-func (mem *CListMempool) GetTxByHash(hash []byte) types.Tx {
-	mem.txsMtx.RLock()
-	defer mem.txsMtx.RUnlock()
-
-	if elem, ok := mem.txsMap[types.TxKey(hash)]; ok {
-		return elem.Value.(*mempoolTx).tx
-	}
-	return nil
-}
-
 // Lock() must be help by the caller during execution.
-// TODO: this function always returns nil; remove the return value.
 func (mem *CListMempool) Update(
 	height int64,
 	txs types.Txs,
@@ -787,9 +602,10 @@ func (mem *CListMempool) Update(
 	for i, tx := range txs {
 		if txResults[i].Code == abci.CodeTypeOK {
 			// Add valid committed tx to the cache (if missing).
-			_ = mem.addToCache(tx)
-		} else {
-			mem.tryRemoveFromCache(tx)
+			_ = mem.cache.Push(tx)
+		} else if !mem.config.KeepInvalidTxsInCache {
+			// Allow invalid transactions to be resubmitted.
+			mem.cache.Remove(tx)
 		}
 
 		// Remove committed tx from the mempool.
@@ -804,7 +620,7 @@ func (mem *CListMempool) Update(
 		// https://github.com/tendermint/tendermint/issues/3322.
 		if err := mem.RemoveTxByKey(tx.Key()); err != nil {
 			mem.logger.Debug("Committed transaction not in local mempool (not an error)",
-				"tx", log.NewLazyHash(tx),
+				"key", tx.Key(),
 				"error", err.Error())
 		}
 	}
@@ -820,58 +636,38 @@ func (mem *CListMempool) Update(
 	}
 
 	// Update metrics
-	for lane := range mem.lanes {
-		mem.updateSizeMetrics(lane)
-	}
-
-	return nil
-}
-
-// updateSizeMetrics updates the size-related metrics of a given lane.
-func (mem *CListMempool) updateSizeMetrics(laneID LaneID) {
-	laneTxs, laneBytes := mem.LaneSizes(laneID)
-	label := string(laneID)
-	mem.metrics.LaneSize.With("lane", label).Set(float64(laneTxs))
-	mem.metrics.LaneBytes.With("lane", label).Set(float64(laneBytes))
 	mem.metrics.Size.Set(float64(mem.Size()))
 	mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
+
+	return nil
 }
 
 // recheckTxs sends all transactions in the mempool to the app for re-validation. When the function
 // returns, all recheck responses from the app have been processed.
 func (mem *CListMempool) recheckTxs() {
-	mem.logger.Debug("Recheck txs", "height", mem.height.Load(), "num-txs", mem.Size())
+	mem.logger.Debug("recheck txs", "height", mem.height.Load(), "num-txs", mem.Size())
 
 	if mem.Size() <= 0 {
 		return
 	}
 
-	defer func(start time.Time) {
-		mem.metrics.RecheckDurationSeconds.Set(cmttime.Since(start).Seconds())
-	}(cmttime.Now())
+	mem.recheck.init(mem.txs.Front(), mem.txs.Back())
 
-	mem.recheck.init()
-
-	iter := NewNonBlockingIterator(mem)
-	for {
-		memTx := iter.Next()
-		if memTx == nil {
-			break
-		}
-
-		// NOTE: handleCheckTxResponse may be called concurrently, but CheckTx cannot be executed concurrently
-		// because this function has the lock (via Update and Lock).
+	// NOTE: globalCb may be called concurrently, but CheckTx cannot be executed concurrently
+	// because this function has the lock (via Update and Lock).
+	for e := mem.txs.Front(); e != nil; e = e.Next() {
+		tx := e.Value.(*mempoolTx).tx
 		mem.recheck.numPendingTxs.Add(1)
 
-		// Send CheckTx request to the app to re-validate transaction.
-		resReq, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.CheckTxRequest{
-			Tx:   memTx.Tx(),
-			Type: abci.CHECK_TX_TYPE_RECHECK,
+		// Send a CheckTx request to the app. If we're using a sync client, the resCbRecheck
+		// callback will be called right after receiving the response.
+		_, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{
+			Tx:   tx,
+			Type: abci.CheckTxType_Recheck,
 		})
 		if err != nil {
-			panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", memTx.Tx().Hash(), err))
+			panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))
 		}
-		resReq.SetCallback(mem.handleRecheckTxResponse(memTx.Tx()))
 	}
 
 	// Flush any pending asynchronous recheck requests to process.
@@ -882,55 +678,45 @@ func (mem *CListMempool) recheckTxs() {
 	select {
 	case <-time.After(mem.config.RecheckTimeout):
 		mem.recheck.setDone()
-		mem.logger.Error("Timed out waiting for recheck responses")
+		mem.logger.Error("timed out waiting for recheck responses")
 	case <-mem.recheck.doneRechecking():
 	}
 
 	if n := mem.recheck.numPendingTxs.Load(); n > 0 {
-		mem.logger.Error("Not all txs were rechecked", "not-rechecked", n)
+		mem.logger.Error("not all txs were rechecked", "not-rechecked", n)
 	}
-
-	mem.logger.Debug("Done rechecking", "height", mem.height.Load(), "num-txs", mem.Size())
+	mem.logger.Debug("done rechecking txs", "height", mem.height.Load(), "num-txs", mem.Size())
 }
 
-// When a recheck response for a transaction is received, cursor will point to
-// the entry in the mempool corresponding to that transaction, advancing the
-// cursor, thus narrowing the list of transactions to recheck. In case there are
-// entries between the previous and the current positions of cursor, they will
-// be ignored for rechecking. This is to guarantee that recheck responses are
-// processed in the same sequential order as they appear in the mempool.
+// The cursor and end pointers define a dynamic list of transactions that could be rechecked. The
+// end pointer is fixed. When a recheck response for a transaction is received, cursor will point to
+// the entry in the mempool corresponding to that transaction, thus narrowing the list. Transactions
+// corresponding to entries between the old and current positions of cursor will be ignored for
+// rechecking. This is to guarantee that recheck responses are processed in the same sequential
+// order as they appear in the mempool.
 type recheck struct {
-	iter          *NonBlockingIterator
-	cursor        Entry         // next expected recheck response
-	doneCh        chan struct{} // to signal that rechecking has finished successfully (for async app connections)
-	numPendingTxs atomic.Int32  // number of transactions still pending to recheck
-	isRechecking  atomic.Bool   // true iff the rechecking process has begun and is not yet finished
-	recheckFull   atomic.Bool   // whether rechecking TXs cannot be completed before a new block is decided
-	mem           *CListMempool
+	cursor        *clist.CElement // next expected recheck response
+	end           *clist.CElement // last entry in the mempool to recheck
+	doneCh        chan struct{}   // to signal that rechecking has finished successfully (for async app connections)
+	numPendingTxs atomic.Int32    // number of transactions still pending to recheck
+	isRechecking  atomic.Bool     // true iff the rechecking process has begun and is not yet finished
+	recheckFull   atomic.Bool     // whether rechecking TXs cannot be completed before a new block is decided
 }
 
-func newRecheck(mp *CListMempool) *recheck {
-	r := recheck{}
-	r.iter = NewNonBlockingIterator(mp)
-	r.mem = mp
-	return &r
+func newRecheck() *recheck {
+	return &recheck{
+		doneCh: make(chan struct{}, 1),
+	}
 }
 
-func (rc *recheck) init() {
+func (rc *recheck) init(first, last *clist.CElement) {
 	if !rc.done() {
 		panic("Having more than one rechecking process at a time is not possible.")
 	}
+	rc.cursor = first
+	rc.end = last
 	rc.numPendingTxs.Store(0)
-	rc.iter = NewNonBlockingIterator(rc.mem)
-
-	rc.cursor = rc.iter.Next()
-	rc.doneCh = make(chan struct{})
-	if rc.cursor == nil {
-		rc.setDone()
-		return
-	}
 	rc.isRechecking.Store(true)
-	rc.recheckFull.Store(false)
 }
 
 // done returns true when there is no recheck response to process.
@@ -944,20 +730,42 @@ func (rc *recheck) setDone() {
 	rc.cursor = nil
 	rc.recheckFull.Store(false)
 	rc.isRechecking.Store(false)
-	close(rc.doneCh) // notify channel that recheck has finished
+}
+
+// setNextEntry sets cursor to the next entry in the list. If there is no next, cursor will be nil.
+func (rc *recheck) setNextEntry() {
+	rc.cursor = rc.cursor.Next()
+}
+
+// tryFinish will check if the cursor is at the end of the list and notify the channel that
+// rechecking has finished. It returns true iff it's done rechecking.
+func (rc *recheck) tryFinish() bool {
+	if rc.cursor == rc.end {
+		// Reached end of the list without finding a matching tx.
+		rc.setDone()
+	}
+	if rc.done() {
+		// Notify that recheck has finished.
+		select {
+		case rc.doneCh <- struct{}{}:
+		default:
+		}
+		return true
+	}
+	return false
 }
 
 // findNextEntryMatching searches for the next transaction matching the given transaction, which
 // corresponds to the recheck response to be processed next. Then it checks if it has reached the
-// end of the list, so it can set recheck as finished.
+// end of the list, so it can finish rechecking.
 //
 // The goal is to guarantee that transactions are rechecked in the order in which they are in the
 // mempool. Transactions whose recheck response arrive late or don't arrive at all are skipped and
 // not rechecked.
-func (rc *recheck) findNextEntryMatching(tx *types.Tx) (found bool) {
-	for rc.cursor != nil {
-		expectedTx := rc.cursor.Tx()
-		rc.cursor = rc.iter.Next()
+func (rc *recheck) findNextEntryMatching(tx *types.Tx) bool {
+	found := false
+	for ; !rc.done(); rc.setNextEntry() {
+		expectedTx := rc.cursor.Value.(*mempoolTx).tx
 		if bytes.Equal(*tx, expectedTx) {
 			// Found an entry in the list of txs to recheck that matches tx.
 			found = true
@@ -966,8 +774,9 @@ func (rc *recheck) findNextEntryMatching(tx *types.Tx) (found bool) {
 		}
 	}
 
-	if rc.cursor == nil { // reached end of list
-		rc.setDone()
+	if !rc.tryFinish() {
+		// Not finished yet; set the cursor for processing the next recheck response.
+		rc.setNextEntry()
 	}
 	return found
 }

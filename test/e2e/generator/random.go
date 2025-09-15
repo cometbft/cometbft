@@ -23,7 +23,7 @@ import (
 // {"foo": 3, "bar": 5}
 // {"foo": 3, "bar": 6}
 func combinations(items map[string][]any) []map[string]any {
-	var keys []string
+	keys := make([]string, 0, len(items))
 	for key := range items {
 		keys = append(keys, key)
 	}
@@ -72,8 +72,8 @@ func (pc probSetChoice) Choose(r *rand.Rand) []string {
 type uniformSetChoice []string
 
 func (usc uniformSetChoice) Choose(r *rand.Rand) []string {
-	var choices []string
 	indexes := r.Perm(len(usc))
+	choices := make([]string, len(indexes))
 	if len(indexes) > 1 {
 		indexes = indexes[:1+r.Intn(len(indexes)-1)]
 	}

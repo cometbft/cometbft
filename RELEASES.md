@@ -354,13 +354,9 @@ Experiments are run with multiple sizes to determine their impact and, for compa
 The testnet consists of 175 validators, 20 non-validator full-nodes, and 5 seed nodes.
 All 195 full-nodes begin by dialing a subset of the seed nodes to discover peers.
 Once all full-nodes are started, a 5 minute period is waited before starting an experiment.
-<<<<<<< HEAD
-For each experiment, the load generators issue requests at a constant rate during 150 seconds, then wait for 5 minutes to allow the system to quiesce, then repeat the load generation; the load generation step is repeated 5 times for each experiment.
-||||||| parent of da0e55604 (Adds `vote_extension_size` to manifests (#858))
-=======
+
 For each experiment, the load generators issue requests at a constant rate during 150 seconds, then wait for 60 seconds allow the system to quiesce, then repeat the load generation; the load generation step is repeated 5 times for each experiment.
 A wide set of metrics is captured during the whole experiment but, unless abnormalities are observed, the first and last 30 seconds of each 150 load generation step are discarded; the remainder 90 seconds are used in computing aggregated metrics.
->>>>>>> da0e55604 (Adds `vote_extension_size` to manifests (#858))
 
 #### Network Partition Testnet
 

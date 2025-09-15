@@ -120,7 +120,6 @@ func (info DefaultNodeInfo) ID() ID {
 // url-encoding), and we just need to be careful with how we handle that in our
 // clients. (e.g. off by default).
 func (info DefaultNodeInfo) Validate() error {
-
 	// ID is already validated.
 
 	// Validate ListenAddr.
@@ -173,7 +172,7 @@ func (info DefaultNodeInfo) Validate() error {
 	return nil
 }
 
-// CompatibleWith checks if two DefaultNodeInfo are compatible with eachother.
+// CompatibleWith checks if two DefaultNodeInfo are compatible with each other.
 // CONTRACT: two nodes are compatible if the Block version and network match
 // and they have at least one channel in common.
 func (info DefaultNodeInfo) CompatibleWith(otherInfo NodeInfo) error {
@@ -228,7 +227,6 @@ func (info DefaultNodeInfo) HasChannel(chID byte) bool {
 }
 
 func (info DefaultNodeInfo) ToProto() *tmp2p.DefaultNodeInfo {
-
 	dni := new(tmp2p.DefaultNodeInfo)
 	dni.ProtocolVersion = tmp2p.ProtocolVersion{
 		P2P:   info.ProtocolVersion.P2P,

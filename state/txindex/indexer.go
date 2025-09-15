@@ -29,7 +29,7 @@ type TxIndexer interface {
 	// Search allows you to query for transactions.
 	Search(ctx context.Context, q *query.Query) ([]*abci.TxResult, error)
 
-	//Set Logger
+	// Set Logger
 	SetLogger(l log.Logger)
 }
 

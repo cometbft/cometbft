@@ -146,7 +146,7 @@ func (g *Group) OnStart() error {
 func (g *Group) OnStop() {
 	g.ticker.Stop()
 	if err := g.FlushAndSync(); err != nil {
-		g.Logger.Error("Error flushin to disk", "err", err)
+		g.Logger.Error("Error flushing to disk", "err", err)
 	}
 }
 
@@ -160,7 +160,7 @@ func (g *Group) Wait() {
 // Close closes the head file. The group must be stopped by this moment.
 func (g *Group) Close() {
 	if err := g.FlushAndSync(); err != nil {
-		g.Logger.Error("Error flushin to disk", "err", err)
+		g.Logger.Error("Error flushing to disk", "err", err)
 	}
 
 	g.mtx.Lock()
@@ -357,7 +357,7 @@ func (g *Group) ReadGroupInfo() GroupInfo {
 func (g *Group) readGroupInfo() GroupInfo {
 	groupDir := filepath.Dir(g.Head.Path)
 	headBase := filepath.Base(g.Head.Path)
-	var minIndex, maxIndex = -1, -1
+	minIndex, maxIndex := -1, -1
 	var totalSize, headSize int64 = 0, 0
 
 	dir, err := os.Open(groupDir)

@@ -120,7 +120,7 @@ type HistogramOpts struct {
 	BucketSizes string
 }
 
-// TemplateData is all of the data required for rendering a metric file template.
+// TemplateData is all data required for rendering a metric file template.
 type TemplateData struct {
 	Package       string
 	ParsedMetrics []ParsedMetricField
@@ -153,7 +153,7 @@ func ignoreTestFiles(f fs.FileInfo) bool {
 // ParseMetricsDir parses the dir and scans for a struct matching structName,
 // ignoring all test files. ParseMetricsDir iterates the fields of the metrics
 // struct and builds a TemplateData using the data obtained from the abstract syntax tree.
-func ParseMetricsDir(dir string, structName string) (TemplateData, error) {
+func ParseMetricsDir(dir, structName string) (TemplateData, error) {
 	fs := token.NewFileSet()
 	d, err := parser.ParseDir(fs, dir, ignoreTestFiles, parser.ParseComments)
 	if err != nil {
@@ -163,12 +163,14 @@ func ParseMetricsDir(dir string, structName string) (TemplateData, error) {
 		return TemplateData{}, fmt.Errorf("multiple packages found in %s", dir)
 	}
 	if len(d) == 0 {
-		return TemplateData{}, fmt.Errorf("no go pacakges found in %s", dir)
+		return TemplateData{}, fmt.Errorf("no go packages found in %s", dir)
 	}
 
 	// Grab the package name.
-	var pkgName string
-	var pkg *ast.Package //nolint:staticcheck
+	var (
+		pkgName string
+		pkg     *ast.Package //nolint:staticcheck // TODO migrate later
+	)
 	for pkgName, pkg = range d {
 	}
 	td := TemplateData{

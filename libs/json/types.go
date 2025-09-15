@@ -8,16 +8,14 @@ import (
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
-var (
-	// typeRegistry contains globally registered types for JSON encoding/decoding.
-	typeRegistry = newTypes()
-)
+// typeRegistry contains globally registered types for JSON encoding/decoding.
+var typeRegistry = newTypes()
 
 // RegisterType registers a type for Amino-compatible interface encoding in the global type
 // registry. These types will be encoded with a type wrapper `{"type":"<type>","value":<value>}`
 // regardless of which interface they are wrapped in (if any). If the type is a pointer, it will
 // still be valid both for value and pointer types, but decoding into an interface will generate
-// the a value or pointer based on the registered type.
+// a value or pointer based on the registered type.
 //
 // Should only be called in init() functions, as it panics on error.
 func RegisterType(_type interface{}, name string) {

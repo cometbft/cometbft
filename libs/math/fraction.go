@@ -11,7 +11,7 @@ import (
 // Fraction defined in terms of a numerator divided by a denominator in uint64
 // format. Fraction must be positive.
 type Fraction struct {
-	// The portion of the denominator in the faction, e.g. 2 in 2/3.
+	// The portion of the denominator in the fraction, e.g. 2 in 2/3.
 	Numerator uint64 `json:"numerator"`
 	// The value by which the numerator is divided, e.g. 3 in 2/3.
 	Denominator uint64 `json:"denominator"`
@@ -27,7 +27,7 @@ func (fr Fraction) String() string {
 func ParseFraction(f string) (Fraction, error) {
 	o := strings.Split(f, "/")
 	if len(o) != 2 {
-		return Fraction{}, errors.New("incorrect formating: should have a single slash i.e. \"1/3\"")
+		return Fraction{}, errors.New("incorrect formatting: should have a single slash i.e. \"1/3\"")
 	}
 	numerator, err := strconv.ParseUint(o[0], 10, 64)
 	if err != nil {

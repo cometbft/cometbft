@@ -162,12 +162,12 @@ func (s *SocketServer) waitForClose(closeConn chan error, connID int) {
 // Read requests from conn and deal with them
 func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, responses chan<- *types.Response) {
 	var count int
-	var bufReader = bufio.NewReader(conn)
+	bufReader := bufio.NewReader(conn)
 
 	defer func() {
 		// make sure to recover from any app-related panics to allow proper socket cleanup.
 		// In the case of a panic, we do not notify the client by passing an exception so
-		// presume that the client is still running and retying to connect
+		// presume that the client is still running and retrying to connect
 		r := recover()
 		if r != nil {
 			const size = 64 << 10
@@ -184,7 +184,7 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 
 	for {
 
-		var req = &types.Request{}
+		req := &types.Request{}
 		err := types.ReadMessage(bufReader, req)
 		if err != nil {
 			if err == io.EOF {
@@ -308,9 +308,9 @@ func (s *SocketServer) handleRequest(ctx context.Context, req *types.Request) (*
 // Pull responses from 'responses' and write them to conn.
 func (s *SocketServer) handleResponses(closeConn chan error, conn io.Writer, responses <-chan *types.Response) {
 	var count int
-	var bufWriter = bufio.NewWriter(conn)
+	bufWriter := bufio.NewWriter(conn)
 	for {
-		var res = <-responses
+		res := <-responses
 		err := types.WriteMessage(res, bufWriter)
 		if err != nil {
 			closeConn <- fmt.Errorf("error writing message: %w", err)

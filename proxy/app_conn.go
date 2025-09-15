@@ -79,7 +79,8 @@ func (app *appConnConsensus) InitChain(ctx context.Context, req *types.RequestIn
 }
 
 func (app *appConnConsensus) PrepareProposal(ctx context.Context,
-	req *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error) {
+	req *types.RequestPrepareProposal,
+) (*types.ResponsePrepareProposal, error) {
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "prepare_proposal", "type", "sync"))()
 	return app.appConn.PrepareProposal(ctx, req)
 }
@@ -221,7 +222,7 @@ func (app *appConnSnapshot) ApplySnapshotChunk(ctx context.Context, req *types.R
 }
 
 // addTimeSample returns a function that, when called, adds an observation to m.
-// The observation added to m is the number of seconds ellapsed since addTimeSample
+// The observation added to m is the number of seconds elapsed since addTimeSample
 // was initially called. addTimeSample is meant to be called in a defer to calculate
 // the amount of time a function takes to complete.
 func addTimeSample(m metrics.Histogram) func() {

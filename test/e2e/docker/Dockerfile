@@ -1,5 +1,5 @@
 # ---------- Stage 0: base (Go toolchain + DB build deps + RocksDB) ----------
-ARG GO_VERSION=1.23
+ARG GO_VERSION=1.24
 ARG ROCKSDB=8.11.3
 
 FROM golang:${GO_VERSION} AS base

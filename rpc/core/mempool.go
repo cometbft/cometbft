@@ -66,7 +66,7 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 }
 
 // BroadcastTxCommit returns with the responses from CheckTx and ExecTxResult.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Tx/broadcast_tx_commit
+// More: https://docs.cometbft.com/v0.38/rpc/#/Tx/broadcast_tx_commit
 func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTxCommit, error) {
 	if env.MempoolReactor.WaitSync() {
 		return nil, ErrEndpointClosedCatchingUp
@@ -158,7 +158,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 
 // UnconfirmedTxs gets unconfirmed transactions (maximum ?limit entries)
 // including their number.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/unconfirmed_txs
+// More: https://docs.cometbft.com/v0.38/rpc/#/Info/unconfirmed_txs
 func (env *Environment) UnconfirmedTxs(_ *rpctypes.Context, limitPtr *int) (*ctypes.ResultUnconfirmedTxs, error) {
 	// reuse per_page validator
 	limit := env.validatePerPage(limitPtr)
@@ -173,7 +173,7 @@ func (env *Environment) UnconfirmedTxs(_ *rpctypes.Context, limitPtr *int) (*cty
 }
 
 // NumUnconfirmedTxs gets number of unconfirmed transactions.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/num_unconfirmed_txs
+// More: https://docs.cometbft.com/v0.38/spec/rpc/#numunconfirmedtxs
 func (env *Environment) NumUnconfirmedTxs(*rpctypes.Context) (*ctypes.ResultUnconfirmedTxs, error) {
 	return &ctypes.ResultUnconfirmedTxs{
 		Count:      env.Mempool.Size(),

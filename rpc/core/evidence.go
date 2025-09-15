@@ -10,7 +10,7 @@ import (
 )
 
 // BroadcastEvidence broadcasts evidence of the misbehavior.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Evidence/broadcast_evidence
+// More: https://docs.cometbft.com/v0.38/spec/rpc/#broadcastevidence
 func (env *Environment) BroadcastEvidence(
 	_ *rpctypes.Context,
 	ev types.Evidence,

@@ -2,7 +2,7 @@
 ARG GO_VERSION=1.24
 ARG ROCKSDB=8.11.3
 
-FROM golang:${GO_VERSION} AS base
+FROM golang:${GO_VERSION}-bookworm AS base
 ARG ROCKSDB
 # Optional checksum: set via --build-arg ROCKSDB_SHA256=<sha>. Leave blank to skip.
 ARG ROCKSDB_SHA256=3b51d1d907ea13fab430bf052618610994f08cd8ed0b1341c3e89fe02e199f8e

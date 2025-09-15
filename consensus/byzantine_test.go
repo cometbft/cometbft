@@ -598,7 +598,7 @@ func (br *ByzantineReactor) InitPeer(peer p2p.Peer) p2p.Peer { return peer }
 
 // Large/oversized proposals should be rejected
 func TestRejectOversizedProposals(t *testing.T) {
-	_, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	n := 2
@@ -629,24 +629,50 @@ func TestRejectOversizedProposals(t *testing.T) {
 		return switches[i]
 	}, p2p.Connect2Switches)
 
-	peers := switches[0].Peers().Copy()
+	peers := switches[0].Peers().List()
 	targetPeer := peers[0]
 
 	height := int64(1)
 	round := int32(0)
 	cs := css[0]
 
-	block, blockParts, propBlockID := createProposalBlock(t, cs)
+	block, err := cs.createProposalBlock(ctx)
+	require.NoError(t, err)
+
+	blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
+	require.NoError(t, err)
 
 	// create oversized proposal
+	propBlockID := types.BlockID{Hash: block.Hash(), PartSetHeader: blockParts.Header()}
 	propBlockID.PartSetHeader.Total = 4294967295
 
-	proposal := types.NewProposal(height, round, -1, propBlockID, block.Time)
+	proposal := types.NewProposal(height, round, -1, propBlockID)
 	p := proposal.ToProto()
 	if err := cs.privValidator.SignProposal(cs.state.ChainID, p); err != nil {
 		t.Error(err)
 	}
 	proposal.Signature = p.Signature
 
-	go sendProposalAndParts(height, round, cs, targetPeer, proposal, block, block.Hash(), blockParts)
+	success := targetPeer.Send(p2p.Envelope{
+		ChannelID: DataChannel,
+		Message:   &cmtcons.Proposal{Proposal: *proposal.ToProto()},
+	})
+	require.True(t, success)
+
+	select {
+	case e := <-css[1].peerMsgQueue:
+		// if we receive a message here, the peer incorrectly accepted the
+		// oversized proposal
+		if _, receivedProposal := e.Msg.(*ProposalMessage); receivedProposal {
+			assert.Fail(t, "peer incorrectly accepted oversized proposal")
+			return
+		}
+		// invalid state, we received some other unexpected message type, fail
+		// the test
+		assert.Fail(t, "received unexpected message type on peer msg queue, expected *ProposalMessage")
+	case <-ctx.Done():
+	case <-time.After(500 * time.Millisecond):
+		// timeout after 500ms if nothing has happened and assume peer rejected
+		// the proposal
+	}
 }

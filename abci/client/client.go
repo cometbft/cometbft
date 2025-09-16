@@ -17,9 +17,11 @@ const (
 
 //go:generate ../../scripts/mockery_generate.sh Client
 
-// Client defines the interface for an ABCI client.
+// Client defines the interface for an ABCI (Application Blockchain Interface) client.
+// ABCI is the interface between CometBFT and the application, allowing the application
+// to process transactions and maintain state.
 //
-// NOTE these are client errors, eg. ABCI socket connectivity issues.
+// NOTE: these are client errors, eg. ABCI socket connectivity issues.
 // Application-related errors are reflected in response via ABCI error codes
 // and (potentially) error response.
 type Client interface {
@@ -44,7 +46,8 @@ type Client interface {
 //----------------------------------------
 
 // NewClient returns a new ABCI client of the specified transport type.
-// It returns an error if the transport is not "socket" or "grpc"
+// Supported transport types are "socket" (Unix domain socket or TCP) and "grpc".
+// It returns an error if the transport is not supported.
 func NewClient(addr, transport string, mustConnect bool) (client Client, err error) {
 	switch transport {
 	case "socket":
@@ -59,6 +62,9 @@ func NewClient(addr, transport string, mustConnect bool) (client Client, err err
 
 type Callback func(*types.Request, *types.Response)
 
+// ReqRes represents a request-response pair for asynchronous ABCI operations.
+// It provides synchronization mechanisms and callback support for handling
+// responses when they become available.
 type ReqRes struct {
 	*types.Request
 	*sync.WaitGroup
@@ -86,9 +92,9 @@ func NewReqRes(req *types.Request) *ReqRes {
 	}
 }
 
-// Sets sets the callback. If reqRes is already done, it will call the cb
-// immediately. Note, reqRes.cb should not change if reqRes.done and only one
-// callback is supported.
+// SetCallback sets the callback function for this request-response pair.
+// If the response is already available, the callback will be invoked immediately.
+// Note: only one callback is supported per ReqRes instance.
 func (r *ReqRes) SetCallback(cb func(res *types.Response)) {
 	r.mtx.Lock()
 
@@ -103,7 +109,8 @@ func (r *ReqRes) SetCallback(cb func(res *types.Response)) {
 }
 
 // InvokeCallback invokes a thread-safe execution of the configured callback
-// if non-nil.
+// if one is set. This method marks the callback as invoked to prevent
+// duplicate executions.
 func (r *ReqRes) InvokeCallback() {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -114,10 +121,10 @@ func (r *ReqRes) InvokeCallback() {
 	r.callbackInvoked = true
 }
 
-// GetCallback returns the configured callback of the ReqRes object which may be
-// nil. Note, it is not safe to concurrently call this in cases where it is
-// marked done and SetCallback is called before calling GetCallback as that
-// will invoke the callback twice and create a potential race condition.
+// GetCallback returns the configured callback function, which may be nil.
+// Note: it is not safe to concurrently call this method when the request
+// is marked as done and SetCallback is called, as this could invoke the
+// callback twice and create a race condition.
 //
 // ref: https://github.com/tendermint/tendermint/issues/5439
 func (r *ReqRes) GetCallback() func(*types.Response) {
@@ -126,6 +133,8 @@ func (r *ReqRes) GetCallback() func(*types.Response) {
 	return r.cb
 }
 
+// waitGroup1 creates a new WaitGroup with a count of 1, ready for use
+// in ReqRes to wait for a single response.
 func waitGroup1() (wg *sync.WaitGroup) {
 	wg = &sync.WaitGroup{}
 	wg.Add(1)

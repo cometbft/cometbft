@@ -78,7 +78,7 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) (bool, error) {
 				return false, err
 			}
 			if cmp == -1 || (isFloat && cmp == 0 && !ranges.IncludeLowerBound) {
-				return false, err
+				return false, nil
 			}
 		}
 		if upperBound != nil {
@@ -87,7 +87,7 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) (bool, error) {
 				return false, err
 			}
 			if cmp == 1 || (isFloat && cmp == 0 && !ranges.IncludeUpperBound) {
-				return false, err
+				return false, nil
 			}
 		}
 
@@ -98,7 +98,7 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) (bool, error) {
 				return false, err
 			}
 			if cmp == -1 || (cmp == 0 && isFloat && !ranges.IncludeLowerBound) {
-				return false, err
+				return false, nil
 			}
 		}
 		if upperBound != nil {
@@ -107,7 +107,7 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) (bool, error) {
 				return false, err
 			}
 			if cmp == 1 || (cmp == 0 && isFloat && !ranges.IncludeUpperBound) {
-				return false, err
+				return false, nil
 			}
 		}
 

@@ -8,6 +8,10 @@ import (
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
+// localClient is a local implementation of the ABCI Client interface that wraps
+// an ABCI Application. It provides thread-safe access to the application by
+// serializing all ABCI calls through a global mutex.
+//
 // NOTE: use defer to unlock mutex because Application might panic (e.g., in
 // case of malicious tx or query). It only makes sense for publicly exposed
 // methods like CheckTx (/broadcast_tx_* RPC endpoint) or Query (/abci_query
@@ -22,10 +26,11 @@ type localClient struct {
 
 var _ Client = (*localClient)(nil)
 
-// NewLocalClient creates a local client, which wraps the application interface that
-// Tendermint as the client will call to the application as the server. The only
-// difference, is that the local client has a global mutex which enforces serialization
-// of all the ABCI calls from Tendermint to the Application.
+// NewLocalClient creates a local ABCI client that wraps an ABCI Application.
+// This client is used when CometBFT and the application run in the same process,
+// eliminating the need for network communication. The client ensures thread-safe
+// access to the application by serializing all ABCI calls through a global mutex.
+// If mtx is nil, a new mutex will be created.
 func NewLocalClient(mtx *cmtsync.Mutex, app types.Application) Client {
 	if mtx == nil {
 		mtx = new(cmtsync.Mutex)
@@ -38,12 +43,17 @@ func NewLocalClient(mtx *cmtsync.Mutex, app types.Application) Client {
 	return cli
 }
 
+// SetResponseCallback sets the callback function that will be invoked for all
+// ABCI responses. This is thread-safe and can be called concurrently.
 func (app *localClient) SetResponseCallback(cb Callback) {
 	app.mtx.Lock()
 	app.Callback = cb
 	app.mtx.Unlock()
 }
 
+// CheckTxAsync performs an asynchronous CheckTx operation by calling the
+// underlying application and immediately invoking the callback with the result.
+// This method is thread-safe and serializes access to the application.
 func (app *localClient) CheckTxAsync(ctx context.Context, req *types.RequestCheckTx) (*ReqRes, error) {
 	app.mtx.Lock()
 	defer app.mtx.Unlock()
@@ -58,6 +68,9 @@ func (app *localClient) CheckTxAsync(ctx context.Context, req *types.RequestChec
 	), nil
 }
 
+// callback invokes the global callback function and creates a ReqRes object
+// for the request-response pair. The callback is marked as invoked to prevent
+// duplicate executions.
 func (app *localClient) callback(req *types.Request, res *types.Response) *ReqRes {
 	app.Callback(req, res)
 	rr := newLocalReqRes(req, res)
@@ -65,6 +78,9 @@ func (app *localClient) callback(req *types.Request, res *types.Response) *ReqRe
 	return rr
 }
 
+// newLocalReqRes creates a new ReqRes object for local client operations.
+// Unlike network clients, the response is immediately available since there
+// is no network communication involved.
 func newLocalReqRes(req *types.Request, res *types.Response) *ReqRes {
 	reqRes := NewReqRes(req)
 	reqRes.Response = res
@@ -73,14 +89,20 @@ func newLocalReqRes(req *types.Request, res *types.Response) *ReqRes {
 
 //-------------------------------------------------------
 
+// Error returns nil since local clients do not have connection errors.
+// Network-related errors are not applicable to in-process communication.
 func (app *localClient) Error() error {
 	return nil
 }
 
+// Flush is a no-op for local clients since there is no network buffer to flush.
+// This method exists to satisfy the Client interface.
 func (app *localClient) Flush(context.Context) error {
 	return nil
 }
 
+// Echo returns the same message that was sent, implementing a simple echo service.
+// This is used for connection testing in network clients but is trivial for local clients.
 func (app *localClient) Echo(_ context.Context, msg string) (*types.ResponseEcho, error) {
 	return &types.ResponseEcho{Message: msg}, nil
 }

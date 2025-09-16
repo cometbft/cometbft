@@ -514,7 +514,7 @@ func (bcR *ByzantineReactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Pe
 
 // Receive implements Reactor by handling 4 types of messages (look below).
 // Copied unchanged from reactor.go so the correct respondToPeer is called.
-func (bcR *ByzantineReactor) Receive(e p2p.Envelope) { //nolint: dupl
+func (bcR *ByzantineReactor) Receive(e p2p.Envelope) {
 	if err := ValidateMsg(e.Message); err != nil {
 		bcR.Logger.Error("Peer sent us invalid msg", "peer", e.Src, "msg", e.Message, "err", err)
 		bcR.Switch.StopPeerForError(e.Src, err)

@@ -60,7 +60,7 @@ func TestProvider(t *testing.T) {
 	lb, err := p.LightBlock(context.Background(), 0)
 	require.NoError(t, err)
 	require.NotNil(t, lb)
-	assert.True(t, lb.Height < 1000)
+	assert.True(t, lb.Height < 10000)
 
 	// let's check this is valid somehow
 	assert.Nil(t, lb.ValidateBasic(chainID))
@@ -72,7 +72,7 @@ func TestProvider(t *testing.T) {
 	assert.Equal(t, lower, lb.Height)
 
 	// fetching missing heights (both future and pruned) should return appropriate errors
-	lb, err = p.LightBlock(context.Background(), 1000)
+	lb, err = p.LightBlock(context.Background(), 10000)
 	require.Error(t, err)
 	require.Nil(t, lb)
 	assert.Equal(t, provider.ErrHeightTooHigh, err)

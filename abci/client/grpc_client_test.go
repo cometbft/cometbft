@@ -53,7 +53,6 @@ func TestGRPC(t *testing.T) {
 		// Send request
 		response, err := client.CheckTx(context.Background(), &types.RequestCheckTx{Tx: []byte("test")})
 		require.NoError(t, err)
-		counter++
 		if response.Code != 0 {
 			t.Error("CheckTx failed with ret_code", response.Code)
 		}

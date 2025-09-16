@@ -18,16 +18,22 @@ import (
 )
 
 const (
-	reqQueueSize    = 256 // TODO make configurable
-	flushThrottleMS = 20  // Don't wait longer than...
+	// reqQueueSize is the buffer size for the request queue.
+	// This allows up to 256 pending requests before blocking.
+	reqQueueSize = 256 // TODO make configurable
+	// flushThrottleMS is the maximum time to wait before auto-flushing
+	// the request buffer to the server.
+	flushThrottleMS = 20 // Don't wait longer than...
 )
 
 // socketClient is the client side implementation of the Tendermint
-// Socket Protocol (TSP). It is used by an instance of Tendermint to pass
-// ABCI requests to an out of process application running the socketServer.
+// Socket Protocol (TSP). It is used by CometBFT to communicate with
+// an out-of-process ABCI application running the socketServer.
 //
-// This is goroutine-safe. All calls are serialized to the server through an unbuffered queue. The socketClient
-// tracks responses and expects them to respect the order of the requests sent.
+// This implementation is goroutine-safe. All calls are serialized to the server
+// through a buffered queue. The socketClient tracks responses and expects them
+// to respect the order of the requests sent, ensuring proper request-response
+// matching for reliable communication.
 type socketClient struct {
 	service.BaseService
 
@@ -35,20 +41,24 @@ type socketClient struct {
 	mustConnect bool
 	conn        net.Conn
 
-	reqQueue   chan *ReqRes
+	// reqQueue buffers requests before they are sent to the server
+	reqQueue chan *ReqRes
+	// flushTimer controls automatic flushing of the request buffer
 	flushTimer *timer.ThrottleTimer
 
-	mtx     sync.Mutex
-	err     error
-	reqSent *list.List                            // list of requests sent, waiting for response
-	resCb   func(*types.Request, *types.Response) // called on all requests, if set.
+	mtx sync.Mutex
+	err error
+	// reqSent tracks requests that have been sent and are waiting for responses
+	reqSent *list.List
+	// resCb is the global callback function called for all responses
+	resCb func(*types.Request, *types.Response)
 }
 
 var _ Client = (*socketClient)(nil)
 
-// NewSocketClient creates a new socket client, which connects to a given
-// address. If mustConnect is true, the client will return an error upon start
-// if it fails to connect else it will continue to retry.
+// NewSocketClient creates a new socket client that connects to the specified address.
+// If mustConnect is true, the client will return an error immediately if it fails
+// to connect. If false, it will continue retrying the connection in the background.
 func NewSocketClient(addr string, mustConnect bool) Client {
 	cli := &socketClient{
 		reqQueue:    make(chan *ReqRes, reqQueueSize),
@@ -63,14 +73,15 @@ func NewSocketClient(addr string, mustConnect bool) Client {
 	return cli
 }
 
-// OnStart implements Service by connecting to the server and spawning reading
-// and writing goroutines.
+// OnStart implements Service by establishing a connection to the server and
+// starting the request sending and response receiving goroutines.
 func (cli *socketClient) OnStart() error {
 	var (
 		err  error
 		conn net.Conn
 	)
 
+	// Connection retry loop - attempts to establish socket connection
 	for {
 		conn, err = cmtnet.Connect(cli.addr)
 		if err != nil {
@@ -84,6 +95,7 @@ func (cli *socketClient) OnStart() error {
 		}
 		cli.conn = conn
 
+		// Start the request sending and response receiving goroutines
 		go cli.sendRequestsRoutine(conn)
 		go cli.recvResponseRoutine(conn)
 
@@ -91,7 +103,8 @@ func (cli *socketClient) OnStart() error {
 	}
 }
 
-// OnStop implements Service by closing connection and flushing all queues.
+// OnStop implements Service by closing the connection and cleaning up all
+// pending requests and timers.
 func (cli *socketClient) OnStop() {
 	if cli.conn != nil {
 		cli.conn.Close()
@@ -101,7 +114,8 @@ func (cli *socketClient) OnStop() {
 	cli.flushTimer.Stop()
 }
 
-// Error returns an error if the client was stopped abruptly.
+// Error returns any error that caused the client to stop unexpectedly.
+// This includes connection errors, protocol errors, or other failures.
 func (cli *socketClient) Error() error {
 	cli.mtx.Lock()
 	defer cli.mtx.Unlock()
@@ -110,29 +124,35 @@ func (cli *socketClient) Error() error {
 
 //----------------------------------------
 
-// SetResponseCallback sets a callback, which will be executed for each
-// non-error & non-empty response from the server.
+// SetResponseCallback sets a global callback function that will be executed
+// for each response received from the server. This callback is called for
+// all successful responses, including internally generated flush responses.
 //
-// NOTE: callback may get internally generated flush responses.
+// NOTE: callback may receive internally generated flush responses.
 func (cli *socketClient) SetResponseCallback(resCb Callback) {
 	cli.mtx.Lock()
 	cli.resCb = resCb
 	cli.mtx.Unlock()
 }
 
+// CheckTxAsync performs an asynchronous CheckTx operation by queuing the
+// request and returning immediately. The response will be available through
+// the returned ReqRes object.
 func (cli *socketClient) CheckTxAsync(ctx context.Context, req *types.RequestCheckTx) (*ReqRes, error) {
 	return cli.queueRequest(ctx, types.ToRequestCheckTx(req))
 }
 
 //----------------------------------------
 
+// sendRequestsRoutine is a goroutine that continuously sends requests from
+// the queue to the server. It handles buffering, flushing, and error conditions.
 func (cli *socketClient) sendRequestsRoutine(conn io.Writer) {
 	w := bufio.NewWriter(conn)
 	for {
 		select {
 		case reqres := <-cli.reqQueue:
-			// N.B. We must enqueue before sending out the request, otherwise the
-			// server may reply before we do it, and the receiver will fail for an
+			// N.B. We must track the request before sending it, otherwise the
+			// server may reply before we track it, and the receiver will fail for an
 			// unsolicited reply.
 			cli.trackRequest(reqres)
 
@@ -142,7 +162,7 @@ func (cli *socketClient) sendRequestsRoutine(conn io.Writer) {
 				return
 			}
 
-			// If it's a flush request, flush the current buffer.
+			// If it's a flush request, immediately flush the buffer to the server
 			if _, ok := reqres.Request.Value.(*types.Request_Flush); ok {
 				err = w.Flush()
 				if err != nil {
@@ -150,11 +170,11 @@ func (cli *socketClient) sendRequestsRoutine(conn io.Writer) {
 					return
 				}
 			}
-		case <-cli.flushTimer.Ch: // flush queue
+		case <-cli.flushTimer.Ch: // Auto-flush timer expired
 			select {
 			case cli.reqQueue <- NewReqRes(types.ToRequestFlush()):
 			default:
-				// Probably will fill the buffer, or retry later.
+				// Queue is full, skip this flush attempt
 			}
 		case <-cli.Quit():
 			return
@@ -162,6 +182,8 @@ func (cli *socketClient) sendRequestsRoutine(conn io.Writer) {
 	}
 }
 
+// recvResponseRoutine is a goroutine that continuously reads responses from
+// the server and processes them. It handles message parsing and error conditions.
 func (cli *socketClient) recvResponseRoutine(conn io.Reader) {
 	r := bufio.NewReader(conn)
 	for {
@@ -177,11 +199,12 @@ func (cli *socketClient) recvResponseRoutine(conn io.Reader) {
 		}
 
 		switch r := res.Value.(type) {
-		case *types.Response_Exception: // app responded with error
+		case *types.Response_Exception: // Application responded with an error
 			// XXX After setting cli.err, release waiters (e.g. reqres.Done())
 			cli.stopForError(errors.New(r.Exception.Error))
 			return
 		default:
+			// Process the normal response and match it with the corresponding request
 			err := cli.didRecvResponse(res)
 			if err != nil {
 				cli.stopForError(err)
@@ -191,6 +214,8 @@ func (cli *socketClient) recvResponseRoutine(conn io.Reader) {
 	}
 }
 
+// trackRequest adds a request to the list of sent requests waiting for responses.
+// This is used to match incoming responses with their corresponding requests.
 func (cli *socketClient) trackRequest(reqres *ReqRes) {
 	// N.B. We must NOT hold the client state lock while checking this, or we
 	// may deadlock with shutdown.
@@ -203,34 +228,37 @@ func (cli *socketClient) trackRequest(reqres *ReqRes) {
 	cli.reqSent.PushBack(reqres)
 }
 
+// didRecvResponse processes a received response by matching it with the
+// corresponding request and notifying any registered callbacks.
 func (cli *socketClient) didRecvResponse(res *types.Response) error {
 	cli.mtx.Lock()
 	defer cli.mtx.Unlock()
 
-	// Get the first ReqRes.
+	// Get the first pending request (FIFO order)
 	next := cli.reqSent.Front()
 	if next == nil {
 		return fmt.Errorf("unexpected response %T when no call was made", res.Value)
 	}
 
 	reqres := next.Value.(*ReqRes)
+	// Verify that the response type matches the request type
 	if !resMatchesReq(reqres.Request, res) {
 		return fmt.Errorf("unexpected response %T to the request %T", res.Value, reqres.Request.Value)
 	}
 
 	reqres.Response = res
-	reqres.Done()            // release waiters
-	cli.reqSent.Remove(next) // pop first item from linked list
+	reqres.Done()            // Release any goroutines waiting for this response
+	cli.reqSent.Remove(next) // Remove the completed request from the list
 
-	// Notify client listener if set (global callback).
+	// Notify global response callback if set
 	if cli.resCb != nil {
 		cli.resCb(reqres.Request, res)
 	}
 
-	// Notify reqRes listener if set (request specific callback).
+	// Notify request-specific callback if set
 	//
-	// NOTE: It is possible this callback isn't set on the reqres object. At this
-	// point, in which case it will be called after, when it is set.
+	// NOTE: It is possible this callback isn't set on the reqres object at this
+	// point, in which case it will be called later when it is set.
 	reqres.InvokeCallback()
 
 	return nil
@@ -238,6 +266,8 @@ func (cli *socketClient) didRecvResponse(res *types.Response) error {
 
 //----------------------------------------
 
+// Flush sends a flush request to the server and waits for the response.
+// This ensures all pending requests are transmitted immediately.
 func (cli *socketClient) Flush(ctx context.Context) error {
 	reqRes, err := cli.queueRequest(ctx, types.ToRequestFlush())
 	if err != nil {
@@ -412,6 +442,8 @@ func (cli *socketClient) FinalizeBlock(ctx context.Context, req *types.RequestFi
 	return reqRes.Response.GetFinalizeBlock(), cli.Error()
 }
 
+// queueRequest adds a request to the send queue and manages the auto-flush timer.
+// It returns a ReqRes object that can be used to wait for the response.
 func (cli *socketClient) queueRequest(ctx context.Context, req *types.Request) (*ReqRes, error) {
 	reqres := NewReqRes(req)
 
@@ -422,30 +454,32 @@ func (cli *socketClient) queueRequest(ctx context.Context, req *types.Request) (
 		return nil, ctx.Err()
 	}
 
-	// Maybe auto-flush, or unset auto-flush
+	// Manage auto-flush timer based on request type
 	switch req.Value.(type) {
 	case *types.Request_Flush:
+		// Flush requests disable auto-flush since they handle it explicitly
 		cli.flushTimer.Unset()
 	default:
+		// Other requests enable auto-flush to ensure timely transmission
 		cli.flushTimer.Set()
 	}
 
 	return reqres, nil
 }
 
-// flushQueue marks as complete and discards all remaining pending requests
-// from the queue.
+// flushQueue marks all pending requests as complete and discards them.
+// This is called during shutdown to clean up any remaining requests.
 func (cli *socketClient) flushQueue() {
 	cli.mtx.Lock()
 	defer cli.mtx.Unlock()
 
-	// mark all in-flight messages as resolved (they will get cli.Error())
+	// Mark all in-flight messages as resolved (they will get cli.Error())
 	for req := cli.reqSent.Front(); req != nil; req = req.Next() {
 		reqres := req.Value.(*ReqRes)
 		reqres.Done()
 	}
 
-	// mark all queued messages as resolved
+	// Mark all queued messages as resolved
 LOOP:
 	for {
 		select {
@@ -459,6 +493,8 @@ LOOP:
 
 //----------------------------------------
 
+// resMatchesReq verifies that a response type matches the corresponding request type.
+// This ensures proper request-response pairing in the socket protocol.
 func resMatchesReq(req *types.Request, res *types.Response) (ok bool) {
 	switch req.Value.(type) {
 	case *types.Request_Echo:
@@ -497,6 +533,8 @@ func resMatchesReq(req *types.Request, res *types.Response) (ok bool) {
 	return ok
 }
 
+// stopForError stops the client due to an error and records the error state.
+// This is called when connection errors, protocol errors, or other failures occur.
 func (cli *socketClient) stopForError(err error) {
 	if !cli.IsRunning() {
 		return

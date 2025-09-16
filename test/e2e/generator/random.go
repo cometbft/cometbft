@@ -23,7 +23,7 @@ import (
 // {"foo": 3, "bar": 5}
 // {"foo": 3, "bar": 6}
 func combinations(items map[string][]any) []map[string]any {
-	var keys []string
+	var keys []string //nolint:prealloc
 	for key := range items {
 		keys = append(keys, key)
 	}
@@ -72,7 +72,7 @@ func (pc probSetChoice) Choose(r *rand.Rand) []string {
 type uniformSetChoice []string
 
 func (usc uniformSetChoice) Choose(r *rand.Rand) []string {
-	var choices []string
+	var choices []string //nolint:prealloc
 	indexes := r.Perm(len(usc))
 	if len(indexes) > 1 {
 		indexes = indexes[:1+r.Intn(len(indexes)-1)]

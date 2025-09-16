@@ -208,7 +208,7 @@ func (voteSet *VoteSet) addVote(vote *Vote) (added bool, err error) {
 	}
 
 	// If we already know of this vote, return false.
-	if existing, ok := voteSet.getVote(valIndex, blockKey); ok {
+	if existing, ok := voteSet.getVote(valIndex, blockKey, &vote.BlockID); ok {
 		if bytes.Equal(existing.Signature, vote.Signature) {
 			return false, nil // duplicate
 		}
@@ -244,8 +244,8 @@ func (voteSet *VoteSet) addVote(vote *Vote) (added bool, err error) {
 }
 
 // getVote returns (vote, true) if vote exists for valIndex and blockKey.
-func (voteSet *VoteSet) getVote(valIndex int32, blockKey string) (vote *Vote, ok bool) {
-	if existing := voteSet.votes[valIndex]; existing != nil && existing.BlockID.Key() == blockKey {
+func (voteSet *VoteSet) getVote(valIndex int32, blockKey string, blockID *BlockID) (vote *Vote, ok bool) {
+	if existing := voteSet.votes[valIndex]; existing != nil && blockID.Equals(existing.BlockID) {
 		return existing, true
 	}
 	if existing := voteSet.votesByBlock[blockKey].getByIndex(valIndex); existing != nil {
@@ -270,7 +270,7 @@ func (voteSet *VoteSet) addVerifiedVote(
 		}
 		conflicting = existing
 		// Replace vote if blockKey matches voteSet.maj23.
-		if voteSet.maj23 != nil && voteSet.maj23.Key() == blockKey {
+		if voteSet.maj23 != nil && voteSet.maj23.Equals(vote.BlockID) {
 			voteSet.votes[valIndex] = vote
 			voteSet.votesBitArray.SetIndex(int(valIndex), true)
 		}
@@ -341,7 +341,6 @@ func (voteSet *VoteSet) SetPeerMaj23(peerID P2PID, blockID BlockID) error {
 	defer voteSet.mtx.Unlock()
 
 	blockKey := blockID.Key()
-
 	// Make sure peer hasn't already told us something.
 	if existing, ok := voteSet.peerMaj23s[peerID]; ok {
 		if existing.Equals(blockID) {
@@ -422,7 +421,7 @@ func (voteSet *VoteSet) GetByAddress(address []byte) *Vote {
 	}
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
-	valIndex, val := voteSet.valSet.GetByAddress(address)
+	valIndex, val := voteSet.valSet.GetByAddressMut(address)
 	if val == nil {
 		panic("GetByAddress(address) returned nil")
 	}

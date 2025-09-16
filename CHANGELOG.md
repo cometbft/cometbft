@@ -10,8 +10,65 @@
 
 - `[mempool]` Add a metric (a counter) to measure whether a tx was received more than once.
   ([\#634](https://github.com/cometbft/cometbft/pull/634))
+- `[p2p]` Rename `IPeerSet#List` to `Copy`, add `Random`, `ForEach` methods.
+   Rename `PeerSet#List` to `Copy`, add `Random`, `ForEach` methods.
+   ([\#2246](https://github.com/cometbft/cometbft/pull/2246))
+- `[mempool]` When the node is performing block sync or state sync, the mempool
+  reactor now discards incoming transactions from peers, and does not propagate
+  transactions to peers.
+  ([\#785](https://github.com/cometbft/cometbft/issues/785))
+- Optimized the PSQL indexer
+  ([\#2142](https://github.com/cometbft/cometbft/pull/2142)) thanks to external contributor @k0marov !
+- `[p2p]` make `PeerSet.Remove` more efficient (Author: @odeke-em)
+  ([\#2246](https://github.com/cometbft/cometbft/pull/2246))
+- `[light]` Remove duplicated signature checks in `light.VerifyNonAdjacent`
+  ([\#2365](https://github.com/cometbft/cometbft/issues/2365))
+- `[state/indexer]` Lower the heap allocation of transaction searches
+  ([\#2839](https://github.com/cometbft/cometbft/pull/2839))
+- `[libs/json]` Lower the memory overhead of JSON encoding by using JSON encoders internally
+  ([\#2846](https://github.com/cometbft/cometbft/pull/2846)).
+- `[log]` allow strip out all debug-level code from the binary at compile time using build flags
+  ([\#2847](https://github.com/cometbft/cometbft/issues/2847))
+- `[types]` Small reduction in memory allocation via swapping Key with Equals in VoteSet
+  ([\#1112](https://github.com/cometbft/cometbft/issues/1112))
+- `[event-bus]` Remove the debug logs in PublishEventTx, which were noticed production slowdowns.
+  ([\#2911](https://github.com/cometbft/cometbft/pull/2911))
+- `[state/execution]` Cache the block hash computation inside of the Block Type, so we only compute it once.
+  ([\#2924](https://github.com/cometbft/cometbft/pull/2924))
+- `[consensus/state]` Remove a redundant `VerifyBlock` call in `FinalizeCommit`
+  ([\#2928](https://github.com/cometbft/cometbft/pull/2928))
+- `[p2p/channel]` Speedup `ProtoIO` writer creation time, and thereby speedup channel writing by 5%.
+  ([\#2949](https://github.com/cometbft/cometbft/pull/2949))
+- `[p2p/conn]` Minor speedup (3%) to connection.WritePacketMsgTo, by removing MinInt calls.
+  ([\#2952](https://github.com/cometbft/cometbft/pull/2952))
+- `[blockstore]` Remove a redundant `Header.ValidateBasic` call in `LoadBlockMeta`, 75% reducing this time.
+  ([\#2964](https://github.com/cometbft/cometbft/pull/2964))
+- `[p2p]` Lower `flush_throttle_timeout` to 10ms
+  ([\#2988](https://github.com/cometbft/cometbft/issues/2988))
+- `[types]` Significantly speedup types.MakePartSet and types.AddPart, which are used in creating a block proposal
+  ([\#3117](https://github.com/cometbft/cometbft/issues/3117))
+- `[types] Make a new method `GetByAddressMut` for `ValSet`, which does not copy the returned validator.
+  ([\#3119](https://github.com/cometbft/cometbft/issues/3119))
+- `[consensus]` Make Vote messages only take one peerstate mutex
+  ([\#3156](https://github.com/cometbft/cometbft/issues/3156))
+- `[consensus]` Make the consensus reactor no longer have packets on receive take the consensus lock. Consensus will now update the reactor's view after every relevant change through the existing synchronous event bus subscription.
+  ([\#3211](https://github.com/cometbft/cometbft/pull/3211))
+- `[p2p/conn]` Speedup secret connection large writes, by buffering the write to the underlying connection.
+  ([\#3346](https://github.com/cometbft/cometbft/pull/3346))
+- `[consensus]` Make broadcasting `HasVote` and `HasProposalBlockPart` control messages use `TrySend` instead of `Send`. This saves notable amounts of performance, while at the same time those messages are for preventing redundancy, not critical, and may be dropped without risks for the protocol.
+  ([\#3151](https://github.com/cometbft/cometbft/issues/3151))
+- `[p2p/conn]` Removes several heap allocations per packet send, stemming from how we double-wrap packets prior to proto marshalling them in the connection layer. This change reduces the memory overhead and speeds up the code.
+  ([\#3423](https://github.com/cometbft/cometbft/issues/3423))
+- `[p2p/conn]` Speedup secret connection large packet reads, by buffering the read to the underlying connection.
+  ([\#3419](https://github.com/cometbft/cometbft/pull/3419))
+- `[mempool]` In the broadcast routine, get the pointer to the peer's state once, before starting to iterate through the list of transactions.
+  ([\#3430](https://github.com/cometbft/cometbft/pull/3430))
 
 ### FEATURES
+
+- `[consensus]` Make mempool updates asynchronous from consensus Commit's,
+  reducing latency for reaching consensus timeouts.
+  ([#3008](https://github.com/cometbft/cometbft/pull/3008))
 
 ### BUG-FIXES
 
@@ -24,8 +81,14 @@
 
 ### API-BREAKING
 
+- `[p2p]` Rename `IPeerSet#List` to `Copy`, add `Random`, `ForEach` methods.
+   Rename `PeerSet#List` to `Copy`, add `Random`, `ForEach` methods.
+   ([\#2246](https://github.com/cometbft/cometbft/pull/2246))
 - `[crypto]` Remove Sr25519 curve
   ([\#3646](https://github.com/cometbft/cometbft/pull/3646))
+- `[rpc]` The endpoints `broadcast_tx_*` now return an error when the node is
+  performing block sync or state sync.
+  ([\#785](https://github.com/cometbft/cometbft/issues/785))
 
 ## v0.38.18
 

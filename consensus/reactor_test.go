@@ -429,7 +429,7 @@ func TestReactorRecordsVotesAndBlockParts(t *testing.T) {
 	})
 
 	// Get peer
-	peer := reactors[1].Switch.Peers().List()[0]
+	peer := reactors[1].Switch.Peers().Copy()[0]
 	// Get peer state
 	ps := peer.Get(types.PeerStateKey).(*PeerState)
 

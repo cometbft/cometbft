@@ -320,7 +320,9 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		}
 		switch msg := msg.(type) {
 		case *ProposalMessage:
+			conR.conS.mtx.RLock()
 			maxBytes := conR.conS.state.ConsensusParams.Block.MaxBytes
+			conR.conS.mtx.RUnlock()
 			if maxBytes == -1 {
 				maxBytes = int64(types.MaxBlockSizeBytes)
 			}

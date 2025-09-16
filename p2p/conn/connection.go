@@ -34,8 +34,8 @@ const (
 
 	// some of these defaults are written in the user config
 	// flushThrottle, sendRate, recvRate
-	// TODO: remove values present in config
-	defaultFlushThrottle = 100 * time.Millisecond
+	// TODO: remove values present in config.
+	defaultFlushThrottle = 10 * time.Millisecond
 
 	defaultSendQueueCapacity   = 1
 	defaultRecvBufferCapacity  = 4096
@@ -784,6 +784,10 @@ type Channel struct {
 	sending       []byte
 	recentlySent  int64 // exponential moving average
 
+	nextPacketMsg           *tmp2p.PacketMsg
+	nextP2pWrapperPacketMsg *tmp2p.Packet_PacketMsg
+	nextPacket              *tmp2p.Packet
+
 	maxPacketMsgPayloadSize int
 
 	Logger log.Logger
@@ -799,6 +803,9 @@ func newChannel(conn *MConnection, desc ChannelDescriptor) *Channel {
 		desc:                    desc,
 		sendQueue:               make(chan []byte, desc.SendQueueCapacity),
 		recving:                 make([]byte, 0, desc.RecvBufferCapacity),
+		nextPacketMsg:           &tmp2p.PacketMsg{ChannelID: int32(desc.ID)},
+		nextP2pWrapperPacketMsg: &tmp2p.Packet_PacketMsg{},
+		nextPacket:              &tmp2p.Packet{},
 		maxPacketMsgPayloadSize: conn.config.MaxPacketMsgPayloadSize,
 	}
 }
@@ -845,8 +852,8 @@ func (ch *Channel) canSend() bool {
 }
 
 // Returns true if any PacketMsgs are pending to be sent.
-// Call before calling nextPacketMsg()
-// Goroutine-safe
+// Call before calling updateNextPacket
+// Goroutine-safe.
 func (ch *Channel) isSendPending() bool {
 	if len(ch.sending) == 0 {
 		if len(ch.sendQueue) == 0 {
@@ -857,29 +864,30 @@ func (ch *Channel) isSendPending() bool {
 	return true
 }
 
-// Creates a new PacketMsg to send.
-// Not goroutine-safe
-func (ch *Channel) nextPacketMsg() tmp2p.PacketMsg {
-	packet := tmp2p.PacketMsg{ChannelID: int32(ch.desc.ID)}
+// Updates the nextPacket proto message for us to send.
+// Not goroutine-safe.
+func (ch *Channel) updateNextPacket() {
 	maxSize := ch.maxPacketMsgPayloadSize
 	if len(ch.sending) <= maxSize {
-		packet.Data = ch.sending
-		packet.EOF = true
+		ch.nextPacketMsg.Data = ch.sending
+		ch.nextPacketMsg.EOF = true
 		ch.sending = nil
 		atomic.AddInt32(&ch.sendQueueSize, -1) // decrement sendQueueSize
 	} else {
-		packet.Data = ch.sending[:maxSize]
-		packet.EOF = false
+		ch.nextPacketMsg.Data = ch.sending[:maxSize]
+		ch.nextPacketMsg.EOF = false
 		ch.sending = ch.sending[maxSize:]
 	}
-	return packet
+
+	ch.nextP2pWrapperPacketMsg.PacketMsg = ch.nextPacketMsg
+	ch.nextPacket.Sum = ch.nextP2pWrapperPacketMsg
 }
 
 // Writes next PacketMsg to w and updates c.recentlySent.
 // Not goroutine-safe.
 func (ch *Channel) writePacketMsgTo(w protoio.Writer) (n int, err error) {
-	packet := ch.nextPacketMsg()
-	n, err = w.WriteMsg(mustWrapPacket(&packet))
+	ch.updateNextPacket()
+	n, err = w.WriteMsg(ch.nextPacket)
 	if err != nil {
 		return 0, err
 	}
@@ -923,32 +931,26 @@ func (ch *Channel) updateStats() {
 
 // mustWrapPacket takes a packet kind (oneof) and wraps it in a tmp2p.Packet message.
 func mustWrapPacket(pb proto.Message) *tmp2p.Packet {
-	var msg tmp2p.Packet
+	msg := &tmp2p.Packet{}
+	mustWrapPacketInto(pb, msg)
+	return msg
+}
 
+func mustWrapPacketInto(pb proto.Message, dst *tmp2p.Packet) {
 	switch pb := pb.(type) {
-	case *tmp2p.Packet: // already a packet
-		msg = *pb
 	case *tmp2p.PacketPing:
-		msg = tmp2p.Packet{
-			Sum: &tmp2p.Packet_PacketPing{
-				PacketPing: pb,
-			},
+		dst.Sum = &tmp2p.Packet_PacketPing{
+			PacketPing: pb,
 		}
 	case *tmp2p.PacketPong:
-		msg = tmp2p.Packet{
-			Sum: &tmp2p.Packet_PacketPong{
-				PacketPong: pb,
-			},
+		dst.Sum = &tmp2p.Packet_PacketPong{
+			PacketPong: pb,
 		}
 	case *tmp2p.PacketMsg:
-		msg = tmp2p.Packet{
-			Sum: &tmp2p.Packet_PacketMsg{
-				PacketMsg: pb,
-			},
+		dst.Sum = &tmp2p.Packet_PacketMsg{
+			PacketMsg: pb,
 		}
 	default:
 		panic(fmt.Errorf("unknown packet type %T", pb))
 	}
-
-	return &msg
 }

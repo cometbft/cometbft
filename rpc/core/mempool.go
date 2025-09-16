@@ -13,6 +13,8 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+var ErrEndpointClosedCatchingUp = errors.New("endpoint is closed while node is catching up")
+
 //-----------------------------------------------------------------------------
 // NOTE: tx should be signed, but this is only checked at the app level (not by CometBFT!)
 
@@ -20,6 +22,9 @@ import (
 // CheckTx nor transaction results.
 // More: https://docs.cometbft.com/v0.38/spec/rpc/#unconfirmedtxs
 func (env *Environment) BroadcastTxAsync(_ *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
+	if env.MempoolReactor.WaitSync() {
+		return nil, ErrEndpointClosedCatchingUp
+	}
 	err := env.Mempool.CheckTx(tx, nil, mempl.TxInfo{})
 	if err != nil {
 		return nil, err
@@ -31,6 +36,10 @@ func (env *Environment) BroadcastTxAsync(_ *rpctypes.Context, tx types.Tx) (*cty
 // the transaction result.
 // More: https://docs.cometbft.com/v0.38.x/rpc/#/Tx/broadcast_tx_sync
 func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
+	if env.MempoolReactor.WaitSync() {
+		return nil, ErrEndpointClosedCatchingUp
+	}
+
 	resCh := make(chan *abci.ResponseCheckTx, 1)
 	err := env.Mempool.CheckTx(tx, func(res *abci.ResponseCheckTx) {
 		select {
@@ -59,6 +68,10 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 // BroadcastTxCommit returns with the responses from CheckTx and ExecTxResult.
 // More: https://docs.cometbft.com/v0.38/rpc/#/Tx/broadcast_tx_commit
 func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTxCommit, error) {
+	if env.MempoolReactor.WaitSync() {
+		return nil, ErrEndpointClosedCatchingUp
+	}
+
 	subscriber := ctx.RemoteAddr()
 
 	if env.EventBus.NumClients() >= env.Config.MaxSubscriptionClients {

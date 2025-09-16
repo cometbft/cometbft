@@ -93,7 +93,7 @@ func (op ValueOp) Run(args [][]byte) ([][]byte, error) {
 		return nil, fmt.Errorf("leaf hash mismatch: want %X got %X", op.Proof.LeafHash, kvhash)
 	}
 
-	rootHash, err := op.Proof.computeRootHash()
+	rootHash, err := op.Proof.computeRootHash(tmhash.New())
 	if err != nil {
 		return nil, err
 	}

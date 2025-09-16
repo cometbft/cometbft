@@ -17,22 +17,28 @@ import (
 
 var _ Client = (*grpcClient)(nil)
 
-// A stripped copy of the remoteClient that makes
-// synchronous calls using grpc
+// grpcClient is a gRPC-based implementation of the ABCI Client interface.
+// It provides synchronous ABCI calls over gRPC protocol and handles connection
+// management, retries, and asynchronous callback dispatching.
 type grpcClient struct {
 	service.BaseService
 	mustConnect bool
 
-	client   types.ABCIClient
-	conn     *grpc.ClientConn
-	chReqRes chan *ReqRes // dispatches "async" responses to callbacks *in order*, needed by mempool
+	client types.ABCIClient
+	conn   *grpc.ClientConn
+	// chReqRes dispatches "async" responses to callbacks in order, required by mempool
+	chReqRes chan *ReqRes
 
-	mtx   sync.Mutex
-	addr  string
-	err   error
-	resCb func(*types.Request, *types.Response) // listens to all callbacks
+	mtx  sync.Mutex
+	addr string
+	err  error
+	// resCb is the global callback that listens to all ABCI responses
+	resCb func(*types.Request, *types.Response)
 }
 
+// NewGRPCClient creates a new gRPC-based ABCI client.
+// If mustConnect is true, the client will fail to start if it cannot connect immediately.
+// If false, it will retry connection attempts in the background.
 func NewGRPCClient(addr string, mustConnect bool) Client {
 	cli := &grpcClient{
 		addr:        addr,
@@ -49,6 +55,8 @@ func NewGRPCClient(addr string, mustConnect bool) Client {
 	return cli
 }
 
+// dialerFunc is a custom dialer function for gRPC connections that uses
+// CometBFT's network connection logic to handle various address formats.
 func dialerFunc(_ context.Context, addr string) (net.Conn, error) {
 	return cmtnet.Connect(addr)
 }
@@ -58,22 +66,23 @@ func (cli *grpcClient) OnStart() error {
 		return err
 	}
 
-	// This processes asynchronous request/response messages and dispatches
-	// them to callbacks.
+	// Start a goroutine to process asynchronous request/response messages
+	// and dispatch them to callbacks in the correct order.
 	go func() {
-		// Use a separate function to use defer for mutex unlocks (this handles panics)
+		// Use a separate function to ensure proper mutex unlocking with defer
+		// (this handles panics gracefully)
 		callCb := func(reqres *ReqRes) {
 			cli.mtx.Lock()
 			defer cli.mtx.Unlock()
 
 			reqres.Done()
 
-			// Notify client listener if set
+			// Notify global response callback if set
 			if cli.resCb != nil {
 				cli.resCb(reqres.Request, reqres.Response)
 			}
 
-			// Notify reqRes listener if set
+			// Notify request-specific callback if set
 			reqres.InvokeCallback()
 		}
 		for reqres := range cli.chReqRes {
@@ -85,6 +94,7 @@ func (cli *grpcClient) OnStart() error {
 		}
 	}()
 
+	// Connection retry loop - attempts to establish gRPC connection
 RETRY_LOOP:
 	for {
 		conn, err := grpc.NewClient(cli.addr,
@@ -104,6 +114,7 @@ RETRY_LOOP:
 		client := types.NewABCIClient(conn)
 		cli.conn = conn
 
+		// Echo loop to ensure the connection is fully established
 	ENSURE_CONNECTED:
 		for {
 			_, err := client.Echo(context.Background(), &types.RequestEcho{Message: "hello"}, grpc.WaitForReady(true))
@@ -128,6 +139,8 @@ func (cli *grpcClient) OnStop() {
 	close(cli.chReqRes)
 }
 
+// StopForError stops the client due to an error and records the error state.
+// This is used when gRPC operations fail and the connection needs to be reset.
 func (cli *grpcClient) StopForError(err error) {
 	if !cli.IsRunning() {
 		return
@@ -151,8 +164,8 @@ func (cli *grpcClient) Error() error {
 	return cli.err
 }
 
-// Set listener for all responses
-// NOTE: callback may get internally generated flush responses.
+// SetResponseCallback sets a global callback that will be invoked for all ABCI responses.
+// NOTE: callback may receive internally generated flush responses.
 func (cli *grpcClient) SetResponseCallback(resCb Callback) {
 	cli.mtx.Lock()
 	cli.resCb = resCb
@@ -170,8 +183,9 @@ func (cli *grpcClient) CheckTxAsync(ctx context.Context, req *types.RequestCheck
 	return cli.finishAsyncCall(types.ToRequestCheckTx(req), &types.Response{Value: &types.Response_CheckTx{CheckTx: res}}), nil
 }
 
-// finishAsyncCall creates a ReqRes for an async call, and immediately populates it
-// with the response. We don't complete it until it's been ordered via the channel.
+// finishAsyncCall creates a ReqRes for an async call and immediately populates it
+// with the response. The response is queued via the channel to ensure proper
+// ordering of callbacks, which is critical for mempool operations.
 func (cli *grpcClient) finishAsyncCall(req *types.Request, res *types.Response) *ReqRes {
 	reqres := NewReqRes(req)
 	reqres.Response = res

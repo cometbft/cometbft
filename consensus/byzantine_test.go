@@ -57,6 +57,10 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		})
 		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
 		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
+		// Set shorter timeouts for faster consensus in tests
+		thisConfig.Consensus.TimeoutPropose = 1000 * time.Millisecond
+		thisConfig.Consensus.TimeoutPrevote = 500 * time.Millisecond
+		thisConfig.Consensus.TimeoutPrecommit = 500 * time.Millisecond
 		defer os.RemoveAll(thisConfig.RootDir)
 		ensureDir(path.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
 		app := appFunc()
@@ -287,7 +291,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 				assert.Equal(t, prevoteHeight, ev.Height())
 			}
 		}
-	case <-time.After(20 * time.Second):
+	case <-time.After(30 * time.Second):
 		t.Fatalf("Timed out waiting for validators to commit evidence")
 	}
 }

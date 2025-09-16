@@ -620,7 +620,8 @@ func TestRejectOversizedProposals(t *testing.T) {
 	reactors := make([]p2p.Reactor, n)
 	for i := 0; i < n; i++ {
 		conR := NewReactor(css[i], false)
-		defer conR.Stop()
+		defer func() { require.NoError(t, conR.Stop()) }()
+
 		conR.SetLogger(consensusLogger().With("validator", i))
 		reactors[i] = conR
 	}

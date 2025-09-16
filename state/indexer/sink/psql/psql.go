@@ -69,17 +69,6 @@ func runInTransaction(db *sql.DB, query func(*sql.Tx) error) error {
 	return dbtx.Commit()
 }
 
-// queryWithID executes the specified SQL query with the given arguments,
-// expecting a single-row, single-column result containing an ID. If the query
-// succeeds, the ID from the result is returned.
-func queryWithID(tx *sql.Tx, query string, args ...any) (uint32, error) {
-	var id uint32
-	if err := tx.QueryRow(query, args...).Scan(&id); err != nil {
-		return 0, err
-	}
-	return id, nil
-}
-
 func runBulkInsert(db *sql.DB, tableName string, columns []string, inserts [][]any) error {
 	return runInTransaction(db, func(tx *sql.Tx) error {
 		stmt, err := tx.Prepare(pq.CopyIn(tableName, columns...))

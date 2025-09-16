@@ -1,9 +1,9 @@
 # Use a build arg to ensure that both stages use the same,
 # hopefully current, go version.
-ARG GOLANG_BASE_IMAGE=golang:1.22-alpine
+ARG GOLANG_BASE_IMAGE=golang:1.24-alpine3.22
 
 # stage 1 Generate CometBFT Binary
-FROM --platform=$BUILDPLATFORM $GOLANG_BASE_IMAGE as builder
+FROM --platform=$BUILDPLATFORM $GOLANG_BASE_IMAGE AS builder
 RUN apk update && \
     apk upgrade && \
     apk --no-cache add make git
@@ -21,7 +21,7 @@ LABEL maintainer="hello@informal.systems"
 # private validator file into /cometbft/config.
 #
 # The /cometbft/data dir is used by CometBFT to store state.
-ENV CMTHOME /cometbft
+ENV CMTHOME=/cometbft
 
 # OS environment setup
 # Set user right away for determinism, create directory for persistence and give our user ownership
@@ -49,7 +49,9 @@ COPY --from=builder /cometbft/build/cometbft /usr/bin/cometbft
 # You can overwrite these before the first run to influence
 # config.json and genesis.json. Additionally, you can override
 # CMD to add parameters to `cometbft node`.
-ENV PROXY_APP=kvstore MONIKER=dockernode CHAIN_ID=dockerchain
+ENV PROXY_APP=kvstore \
+    MONIKER=dockernode \
+    CHAIN_ID=dockerchain
 
 COPY ./DOCKER/docker-entrypoint.sh /usr/local/bin/
 

@@ -244,7 +244,7 @@ We now briefly describe the current catch-up mechanisms in the reactors concerne
 
 Full nodes optionally run statesync just after starting, when they start from scratch.
 If statesync succeeds, an Application snapshot is installed, and Tendermint jumps from height 0 directly
-to the height the Application snapshop represents, without applying the block of any previous height.
+to the height the Application snapshot represents, without applying the block of any previous height.
 Some light blocks are received and stored in the block store for running light-client verification of
 all the skipped blocks. Light blocks are incomplete blocks, typically containing the header and the
 canonical commit but, e.g., no transactions. They are stored in the block store as "signed headers".

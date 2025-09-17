@@ -64,12 +64,12 @@ func NewMockPVWithParams(privKey crypto.PrivKey, breakProposalSigning, breakVote
 	return MockPV{privKey, breakProposalSigning, breakVoteSigning}
 }
 
-// Implements PrivValidator.
+// GetPubKey implements PrivValidator.
 func (pv MockPV) GetPubKey() (crypto.PubKey, error) {
 	return pv.PrivKey.PubKey(), nil
 }
 
-// Implements PrivValidator.
+// SignVote implements PrivValidator.
 func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
 	useChainID := chainID
 	if pv.breakVoteSigning {
@@ -98,7 +98,7 @@ func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
 	return nil
 }
 
-// Implements PrivValidator.
+// SignProposal implements PrivValidator.
 func (pv MockPV) SignProposal(chainID string, proposal *cmtproto.Proposal) error {
 	useChainID := chainID
 	if pv.breakProposalSigning {
@@ -141,12 +141,12 @@ type ErroringMockPV struct {
 
 var ErroringMockPVErr = errors.New("erroringMockPV always returns an error")
 
-// Implements PrivValidator.
+// SignVote implements PrivValidator.
 func (pv *ErroringMockPV) SignVote(string, *cmtproto.Vote) error {
 	return ErroringMockPVErr
 }
 
-// Implements PrivValidator.
+// SignProposal implements PrivValidator.
 func (pv *ErroringMockPV) SignProposal(string, *cmtproto.Proposal) error {
 	return ErroringMockPVErr
 }

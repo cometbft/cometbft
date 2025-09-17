@@ -28,7 +28,7 @@ type tracingLogger struct {
 	next Logger
 }
 
-func (l *tracingLogger) Info(msg string, keyvals ...interface{}) {
+func (l *tracingLogger) Info(msg string, keyvals ...any) {
 	l.next.Info(msg, formatErrors(keyvals)...)
 }
 
@@ -38,16 +38,16 @@ func (l *tracingLogger) Debug(msg string, keyvals ...any) {
 	}
 }
 
-func (l *tracingLogger) Error(msg string, keyvals ...interface{}) {
+func (l *tracingLogger) Error(msg string, keyvals ...any) {
 	l.next.Error(msg, formatErrors(keyvals)...)
 }
 
-func (l *tracingLogger) With(keyvals ...interface{}) Logger {
+func (l *tracingLogger) With(keyvals ...any) Logger {
 	return &tracingLogger{next: l.next.With(formatErrors(keyvals)...)}
 }
 
-func formatErrors(keyvals []interface{}) []interface{} {
-	newKeyvals := make([]interface{}, len(keyvals))
+func formatErrors(keyvals []any) []any {
+	newKeyvals := make([]any, len(keyvals))
 	copy(newKeyvals, keyvals)
 	for i := 0; i < len(newKeyvals)-1; i += 2 {
 		if err, ok := newKeyvals[i+1].(stackTracer); ok {

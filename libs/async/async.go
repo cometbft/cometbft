@@ -12,10 +12,10 @@ import (
 // val: the value returned after task execution.
 // err: the error returned during task completion.
 // abort: tells Parallel to return, whether or not all tasks have completed.
-type Task func(i int) (val interface{}, abort bool, err error)
+type Task func(i int) (val any, abort bool, err error)
 
 type TaskResult struct {
-	Value interface{}
+	Value any
 	Error error
 }
 
@@ -96,7 +96,7 @@ func (trs *TaskResultSet) Wait() *TaskResultSet {
 
 // Returns the firstmost (by task index) error as
 // discovered by all previous Reap() calls.
-func (trs *TaskResultSet) FirstValue() interface{} {
+func (trs *TaskResultSet) FirstValue() any {
 	for _, result := range trs.results {
 		if result.Value != nil {
 			return result.Value

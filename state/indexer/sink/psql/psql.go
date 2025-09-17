@@ -100,7 +100,7 @@ var (
 
 func bulkInsertEvents(blockID, txID int64, events []abci.Event) (eventInserts, attrInserts [][]any) {
 	// Populate the transaction ID field iff one is defined (> 0).
-	var txIDArg interface{}
+	var txIDArg any
 	if txID > 0 {
 		txIDArg = txID
 	}

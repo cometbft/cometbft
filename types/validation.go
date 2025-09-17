@@ -9,6 +9,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/batch"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
 
 const batchVerifyThreshold = 2
@@ -508,12 +509,12 @@ func verifyBasicValsAndCommit(vals *ValidatorSet, commit *Commit, height int64, 
 	}
 
 	if vals.Size() != len(commit.Signatures) {
-		return NewErrInvalidCommitSignatures(vals.Size(), len(commit.Signatures))
+		return cmterrors.NewErrInvalidCommitSignatures(vals.Size(), len(commit.Signatures))
 	}
 
 	// Validate Height and BlockID.
 	if height != commit.Height {
-		return NewErrInvalidCommitHeight(height, commit.Height)
+		return cmterrors.NewErrInvalidCommitHeight(height, commit.Height)
 	}
 	if !blockID.Equals(commit.BlockID) {
 		return fmt.Errorf("invalid commit -- wrong block ID: want %v, got %v",

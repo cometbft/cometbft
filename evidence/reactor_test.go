@@ -208,7 +208,7 @@ func TestReactorBroadcastEvidenceMemoryLeak(t *testing.T) {
 	// i.e. broadcastEvidenceRoutine finishes when peer is stopped
 	defer leaktest.CheckTimeout(t, 10*time.Second)()
 
-	p.On("Send", mock.MatchedBy(func(i interface{}) bool {
+	p.On("Send", mock.MatchedBy(func(i any) bool {
 		e, ok := i.(p2p.Envelope)
 		return ok && e.ChannelID == evidence.EvidenceChannel
 	})).Return(false)
@@ -229,7 +229,7 @@ func TestReactorBroadcastEvidenceMemoryLeak(t *testing.T) {
 // evidenceLogger is a TestingLogger which uses a different
 // color for each validator ("validator" key must exist).
 func evidenceLogger() log.Logger {
-	return log.TestingLoggerWithColorFn(func(keyvals ...interface{}) term.FgBgColor {
+	return log.TestingLoggerWithColorFn(func(keyvals ...any) term.FgBgColor {
 		for i := 0; i < len(keyvals)-1; i += 2 {
 			if keyvals[i] == "validator" {
 				return term.FgBgColor{Fg: term.Color(uint8(keyvals[i+1].(int) + 1))}

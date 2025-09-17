@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 	"github.com/cosmos/gogoproto/proto"
 	gogotypes "github.com/cosmos/gogoproto/types"
 
@@ -295,7 +296,7 @@ func (evpool *Pool) isPending(evidence types.Evidence) bool {
 func (evpool *Pool) addPendingEvidence(ev types.Evidence) error {
 	evpb, err := types.EvidenceToProto(ev)
 	if err != nil {
-		return fmt.Errorf("unable to convert to proto, err: %w", err)
+		return cmterrors.ErrMsgToProto{MessageName: "Evidence", Err: err}
 	}
 
 	evBytes, err := evpb.Marshal()

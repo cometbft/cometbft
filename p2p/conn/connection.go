@@ -49,7 +49,7 @@ const (
 
 type (
 	receiveCbFunc func(chID byte, msgBytes []byte)
-	errorCbFunc   func(interface{})
+	errorCbFunc   func(any)
 )
 
 /*
@@ -343,7 +343,7 @@ func (c *MConnection) _recover() {
 	}
 }
 
-func (c *MConnection) stopForError(r interface{}) {
+func (c *MConnection) stopForError(r any) {
 	if err := c.Stop(); err != nil {
 		c.Logger.Error("Error stopping connection", "err", err)
 	}

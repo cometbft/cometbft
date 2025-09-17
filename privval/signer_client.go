@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/crypto"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
+
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	privvalproto "github.com/cometbft/cometbft/proto/tendermint/privval"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -76,7 +78,7 @@ func (sc *SignerClient) GetPubKey() (crypto.PubKey, error) {
 
 	resp := response.GetPubKeyResponse()
 	if resp == nil {
-		return nil, ErrUnexpectedResponse
+		return nil, cmterrors.ErrRequiredField{Field: "response"}
 	}
 	if resp.Error != nil {
 		return nil, &RemoteSignerError{Code: int(resp.Error.Code), Description: resp.Error.Description}
@@ -99,7 +101,7 @@ func (sc *SignerClient) SignVote(chainID string, vote *cmtproto.Vote) error {
 
 	resp := response.GetSignedVoteResponse()
 	if resp == nil {
-		return ErrUnexpectedResponse
+		return cmterrors.ErrRequiredField{Field: "response"}
 	}
 	if resp.Error != nil {
 		return &RemoteSignerError{Code: int(resp.Error.Code), Description: resp.Error.Description}
@@ -121,7 +123,7 @@ func (sc *SignerClient) SignProposal(chainID string, proposal *cmtproto.Proposal
 
 	resp := response.GetSignedProposalResponse()
 	if resp == nil {
-		return ErrUnexpectedResponse
+		return cmterrors.ErrRequiredField{Field: "response"}
 	}
 	if resp.Error != nil {
 		return &RemoteSignerError{Code: int(resp.Error.Code), Description: resp.Error.Description}

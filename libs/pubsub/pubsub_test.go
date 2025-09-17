@@ -206,7 +206,7 @@ func TestSubscribeDuplicateKeys(t *testing.T) {
 
 	testCases := []struct {
 		query    string
-		expected interface{}
+		expected any
 	}{
 		{
 			"withdraw.rewards='17'",
@@ -492,7 +492,7 @@ func benchmarkNClientsOneQuery(n int, b *testing.B) {
 
 // HELPERS
 
-func assertReceive(t *testing.T, expected interface{}, ch <-chan pubsub.Message, msgAndArgs ...interface{}) {
+func assertReceive(t *testing.T, expected any, ch <-chan pubsub.Message, msgAndArgs ...any) {
 	select {
 	case actual := <-ch:
 		assert.Equal(t, expected, actual.Data(), msgAndArgs...)

@@ -210,12 +210,12 @@ func (cli *socketClient) didRecvResponse(res *types.Response) error {
 	// Get the first ReqRes.
 	next := cli.reqSent.Front()
 	if next == nil {
-		return fmt.Errorf("unexpected response %T when no call was made", res.Value)
+		return ErrUnexpectedResponse{Response: *res, Reason: "no call was made"}
 	}
 
 	reqres := next.Value.(*ReqRes)
 	if !resMatchesReq(reqres.Request, res) {
-		return fmt.Errorf("unexpected response %T to the request %T", res.Value, reqres.Request.Value)
+		return ErrUnexpectedResponse{Response: *res, Reason: fmt.Sprintf("unexpected response to the request %T", reqres.Request.Value)}
 	}
 
 	reqres.Response = res

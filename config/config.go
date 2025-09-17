@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"time"
 
+	cmterrors "github.com/cometbft/cometbft/types/errors"
+
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -27,9 +29,9 @@ const (
 	// DefaultLogLevel defines a default log level as INFO.
 	DefaultLogLevel = "info"
 
-	DefaultTendermintDir = ".cometbft"
-	DefaultConfigDir     = "config"
-	DefaultDataDir       = "data"
+	DefaultCometDir  = ".cometbft"
+	DefaultConfigDir = "config"
+	DefaultDataDir   = "data"
 
 	DefaultConfigFileName  = "config.toml"
 	DefaultGenesisJSONName = "genesis.json"
@@ -43,6 +45,10 @@ const (
 
 	MempoolTypeFlood = "flood"
 	MempoolTypeNop   = "nop"
+
+	v0 = "v0"
+	v1 = "v1"
+	v2 = "v2"
 )
 
 // NOTE: Most of the structs & relevant comments + the
@@ -135,25 +141,25 @@ func (cfg *Config) ValidateBasic() error {
 		return err
 	}
 	if err := cfg.RPC.ValidateBasic(); err != nil {
-		return fmt.Errorf("error in [rpc] section: %w", err)
+		return ErrInSection{Section: "rpc", Err: err}
 	}
 	if err := cfg.P2P.ValidateBasic(); err != nil {
-		return fmt.Errorf("error in [p2p] section: %w", err)
+		return ErrInSection{Section: "p2p", Err: err}
 	}
 	if err := cfg.Mempool.ValidateBasic(); err != nil {
-		return fmt.Errorf("error in [mempool] section: %w", err)
+		return ErrInSection{Section: "mempool", Err: err}
 	}
 	if err := cfg.StateSync.ValidateBasic(); err != nil {
-		return fmt.Errorf("error in [statesync] section: %w", err)
+		return ErrInSection{Section: "statesync", Err: err}
 	}
 	if err := cfg.BlockSync.ValidateBasic(); err != nil {
-		return fmt.Errorf("error in [blocksync] section: %w", err)
+		return ErrInSection{Section: "blocksync", Err: err}
 	}
 	if err := cfg.Consensus.ValidateBasic(); err != nil {
-		return fmt.Errorf("error in [consensus] section: %w", err)
+		return ErrInSection{Section: "consensus", Err: err}
 	}
 	if err := cfg.Instrumentation.ValidateBasic(); err != nil {
-		return fmt.Errorf("error in [instrumentation] section: %w", err)
+		return ErrInSection{Section: "instrumentation", Err: err}
 	}
 	if !cfg.Consensus.CreateEmptyBlocks && cfg.Mempool.Type == MempoolTypeNop {
 		return fmt.Errorf("`nop` mempool does not support create_empty_blocks = false")
@@ -472,19 +478,17 @@ func (cfg *RPCConfig) ValidateBasic() error {
 		return errors.New("grpc_max_open_connections can't be negative")
 	}
 	if cfg.MaxOpenConnections < 0 {
-		return errors.New("max_open_connections can't be negative")
+		return cmterrors.ErrNegativeField{Field: "max_open_connections"}
 	}
 	if cfg.MaxSubscriptionClients < 0 {
-		return errors.New("max_subscription_clients can't be negative")
+		return cmterrors.ErrNegativeField{Field: "max_subscription_clients"}
+
 	}
 	if cfg.MaxSubscriptionsPerClient < 0 {
-		return errors.New("max_subscriptions_per_client can't be negative")
+		return cmterrors.ErrNegativeField{Field: "max_subscriptions_per_client"}
 	}
 	if cfg.SubscriptionBufferSize < minSubscriptionBufferSize {
-		return fmt.Errorf(
-			"experimental_subscription_buffer_size must be >= %d",
-			minSubscriptionBufferSize,
-		)
+		return ErrSubscriptionBufferSizeInvalid
 	}
 	if cfg.WebSocketWriteBufferSize < cfg.SubscriptionBufferSize {
 		return fmt.Errorf(
@@ -493,16 +497,16 @@ func (cfg *RPCConfig) ValidateBasic() error {
 		)
 	}
 	if cfg.TimeoutBroadcastTxCommit < 0 {
-		return errors.New("timeout_broadcast_tx_commit can't be negative")
+		return cmterrors.ErrNegativeField{Field: "timeout_broadcast_tx_commit"}
 	}
 	if cfg.MaxRequestBatchSize < 0 {
 		return errors.New("max_request_batch_size can't be negative")
 	}
 	if cfg.MaxBodyBytes < 0 {
-		return errors.New("max_body_bytes can't be negative")
+		return cmterrors.ErrNegativeField{Field: "max_body_bytes"}
 	}
 	if cfg.MaxHeaderBytes < 0 {
-		return errors.New("max_header_bytes can't be negative")
+		return cmterrors.ErrNegativeField{Field: "max_header_bytes"}
 	}
 	return nil
 }
@@ -668,25 +672,25 @@ func (cfg *P2PConfig) AddrBookFile() string {
 // returns an error if any check fails.
 func (cfg *P2PConfig) ValidateBasic() error {
 	if cfg.MaxNumInboundPeers < 0 {
-		return errors.New("max_num_inbound_peers can't be negative")
+		return cmterrors.ErrNegativeField{Field: "max_num_inbound_peers"}
 	}
 	if cfg.MaxNumOutboundPeers < 0 {
-		return errors.New("max_num_outbound_peers can't be negative")
+		return cmterrors.ErrNegativeField{Field: "max_num_outbound_peers"}
 	}
 	if cfg.FlushThrottleTimeout < 0 {
-		return errors.New("flush_throttle_timeout can't be negative")
+		return cmterrors.ErrNegativeField{Field: "flush_throttle_timeout"}
 	}
 	if cfg.PersistentPeersMaxDialPeriod < 0 {
-		return errors.New("persistent_peers_max_dial_period can't be negative")
+		return cmterrors.ErrNegativeField{Field: "persistent_peers_max_dial_period"}
 	}
 	if cfg.MaxPacketMsgPayloadSize < 0 {
-		return errors.New("max_packet_msg_payload_size can't be negative")
+		return cmterrors.ErrNegativeField{Field: "max_packet_msg_payload_size"}
 	}
 	if cfg.SendRate < 0 {
-		return errors.New("send_rate can't be negative")
+		return cmterrors.ErrNegativeField{Field: "send_rate"}
 	}
 	if cfg.RecvRate < 0 {
-		return errors.New("recv_rate can't be negative")
+		return cmterrors.ErrNegativeField{Field: "recv_rate"}
 	}
 	return nil
 }
@@ -861,16 +865,16 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 		return fmt.Errorf("unknown mempool type: %q", cfg.Type)
 	}
 	if cfg.Size < 0 {
-		return errors.New("size can't be negative")
+		return cmterrors.ErrNegativeField{Field: "size"}
 	}
 	if cfg.MaxTxsBytes < 0 {
-		return errors.New("max_txs_bytes can't be negative")
+		return cmterrors.ErrNegativeField{Field: "max_txs_bytes"}
 	}
 	if cfg.CacheSize < 0 {
-		return errors.New("cache_size can't be negative")
+		return cmterrors.ErrNegativeField{Field: "cache_size"}
 	}
 	if cfg.MaxTxBytes < 0 {
-		return errors.New("max_tx_bytes can't be negative")
+		return cmterrors.ErrNegativeField{Field: "max_tx_bytes"}
 	}
 	if cfg.ExperimentalMaxGossipConnectionsToPersistentPeers < 0 {
 		return errors.New("experimental_max_gossip_connections_to_persistent_peers can't be negative")
@@ -925,33 +929,33 @@ func TestStateSyncConfig() *StateSyncConfig {
 func (cfg *StateSyncConfig) ValidateBasic() error {
 	if cfg.Enable {
 		if len(cfg.RPCServers) == 0 {
-			return errors.New("rpc_servers is required")
+			return cmterrors.ErrRequiredField{Field: "rpc_servers"}
 		}
 
 		if len(cfg.RPCServers) < 2 {
-			return errors.New("at least two rpc_servers entries is required")
+			return ErrNotEnoughRPCServers
 		}
 
 		for _, server := range cfg.RPCServers {
 			if len(server) == 0 {
-				return errors.New("found empty rpc_servers entry")
+				return ErrEmptyRPCServerEntry
 			}
 		}
 
 		if cfg.DiscoveryTime != 0 && cfg.DiscoveryTime < 5*time.Second {
-			return errors.New("discovery time must be 0s or greater than five seconds")
+			return ErrInsufficientDiscoveryTime
 		}
 
 		if cfg.TrustPeriod <= 0 {
-			return errors.New("trusted_period is required")
+			return cmterrors.ErrRequiredField{Field: "trusted_period"}
 		}
 
 		if cfg.TrustHeight <= 0 {
-			return errors.New("trusted_height is required")
+			return cmterrors.ErrRequiredField{Field: "trusted_height"}
 		}
 
 		if len(cfg.TrustHash) == 0 {
-			return errors.New("trusted_hash is required")
+			return cmterrors.ErrRequiredField{Field: "trusted_hash"}
 		}
 
 		_, err := hex.DecodeString(cfg.TrustHash)
@@ -960,11 +964,11 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 		}
 
 		if cfg.ChunkRequestTimeout < 5*time.Second {
-			return errors.New("chunk_request_timeout must be at least 5 seconds")
+			return ErrInsufficientChunkRequestTimeout
 		}
 
 		if cfg.ChunkFetchers <= 0 {
-			return errors.New("chunk_fetchers is required")
+			return cmterrors.ErrRequiredField{Field: "chunk_fetchers"}
 		}
 	}
 
@@ -994,12 +998,12 @@ func TestBlockSyncConfig() *BlockSyncConfig {
 // ValidateBasic performs basic validation.
 func (cfg *BlockSyncConfig) ValidateBasic() error {
 	switch cfg.Version {
-	case "v0":
+	case v0:
 		return nil
-	case "v1", "v2":
-		return fmt.Errorf("blocksync version %s has been deprecated. Please use v0 instead", cfg.Version)
+	case v1, v2:
+		return ErrDeprecatedBlocksyncVersion{Version: cfg.Version, Allowed: []string{v0}}
 	default:
-		return fmt.Errorf("unknown blocksync version %s", cfg.Version)
+		return ErrUnknownBlocksyncVersion{cfg.Version}
 	}
 }
 
@@ -1132,37 +1136,37 @@ func (cfg *ConsensusConfig) SetWalFile(walFile string) {
 // returns an error if any check fails.
 func (cfg *ConsensusConfig) ValidateBasic() error {
 	if cfg.TimeoutPropose < 0 {
-		return errors.New("timeout_propose can't be negative")
+		return cmterrors.ErrNegativeField{Field: "timeout_propose"}
 	}
 	if cfg.TimeoutProposeDelta < 0 {
-		return errors.New("timeout_propose_delta can't be negative")
+		return cmterrors.ErrNegativeField{Field: "timeout_propose_delta"}
 	}
 	if cfg.TimeoutPrevote < 0 {
-		return errors.New("timeout_prevote can't be negative")
+		return cmterrors.ErrNegativeField{Field: "timeout_prevote"}
 	}
 	if cfg.TimeoutPrevoteDelta < 0 {
-		return errors.New("timeout_prevote_delta can't be negative")
+		return cmterrors.ErrNegativeField{Field: "timeout_prevote_delta"}
 	}
 	if cfg.TimeoutPrecommit < 0 {
-		return errors.New("timeout_precommit can't be negative")
+		return cmterrors.ErrNegativeField{Field: "timeout_precommit"}
 	}
 	if cfg.TimeoutPrecommitDelta < 0 {
-		return errors.New("timeout_precommit_delta can't be negative")
+		return cmterrors.ErrNegativeField{Field: "timeout_precommit_delta"}
 	}
 	if cfg.TimeoutCommit < 0 {
-		return errors.New("timeout_commit can't be negative")
+		return cmterrors.ErrNegativeField{Field: "timeout_commit"}
 	}
 	if cfg.CreateEmptyBlocksInterval < 0 {
-		return errors.New("create_empty_blocks_interval can't be negative")
+		return cmterrors.ErrNegativeField{Field: "create_empty_blocks_interval"}
 	}
 	if cfg.PeerGossipSleepDuration < 0 {
-		return errors.New("peer_gossip_sleep_duration can't be negative")
+		return cmterrors.ErrNegativeField{Field: "peer_gossip_sleep_duration"}
 	}
 	if cfg.PeerQueryMaj23SleepDuration < 0 {
-		return errors.New("peer_query_maj23_sleep_duration can't be negative")
+		return cmterrors.ErrNegativeField{Field: "peer_query_maj23_sleep_duration"}
 	}
 	if cfg.DoubleSignCheckHeight < 0 {
-		return errors.New("double_sign_check_height can't be negative")
+		return cmterrors.ErrNegativeField{Field: "double_sign_check_height"}
 	}
 	return nil
 }
@@ -1279,7 +1283,7 @@ func TestInstrumentationConfig() *InstrumentationConfig {
 // returns an error if any check fails.
 func (cfg *InstrumentationConfig) ValidateBasic() error {
 	if cfg.MaxOpenConnections < 0 {
-		return errors.New("max_open_connections can't be negative")
+		return cmterrors.ErrNegativeField{Field: "max_open_connections"}
 	}
 	return nil
 }

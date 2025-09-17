@@ -109,6 +109,10 @@ type Manifest struct {
 	// -1 denotes it is set at genesis.
 	// 0 denotes it is set at InitChain.
 	VoteExtensionsUpdateHeight int64 `toml:"vote_extensions_update_height"`
+
+	// Defines a minimum size for the vote extensions.
+	VoteExtensionSize uint `toml:"vote_extension_size"`
+
 	// Maximum number of peers to which the node gossips transactions
 	ExperimentalMaxGossipConnectionsToPersistentPeers    uint `toml:"experimental_max_gossip_connections_to_persistent_peers"`
 	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint `toml:"experimental_max_gossip_connections_to_non_persistent_peers"`

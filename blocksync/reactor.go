@@ -207,7 +207,7 @@ func (bcR *Reactor) AddPeer(peer p2p.Peer) {
 }
 
 // RemovePeer implements Reactor by removing peer from the pool.
-func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
+func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 	bcR.pool.RemovePeer(peer.ID())
 }
 

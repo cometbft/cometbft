@@ -8,6 +8,8 @@
 
 ### IMPROVEMENTS
 
+- `[mempool]` Add a metric (a counter) to measure whether a tx was received more than once.
+  ([\#634](https://github.com/cometbft/cometbft/pull/634))
 - `[p2p]` Rename `IPeerSet#List` to `Copy`, add `Random`, `ForEach` methods.
    Rename `PeerSet#List` to `Copy`, add `Random`, `ForEach` methods.
    ([\#2246](https://github.com/cometbft/cometbft/pull/2246))

@@ -197,7 +197,7 @@ func (sh *SignedHeader) ToProto() *cmtproto.SignedHeader {
 	return psh
 }
 
-// FromProto sets a protobuf SignedHeader to the given pointer.
+// SignedHeaderFromProto sets a protobuf SignedHeader to the given pointer.
 // It returns an error if the header or the commit is invalid.
 func SignedHeaderFromProto(shp *cmtproto.SignedHeader) (*SignedHeader, error) {
 	if shp == nil {

@@ -593,4 +593,88 @@ func (br *ByzantineReactor) RemovePeer(peer p2p.Peer, reason interface{}) {
 func (br *ByzantineReactor) Receive(e p2p.Envelope) {
 	br.reactor.Receive(e)
 }
+
 func (br *ByzantineReactor) InitPeer(peer p2p.Peer) p2p.Peer { return peer }
+
+// Large/oversized proposals should be rejected
+func TestRejectOversizedProposals(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	n := 2
+	css, cleanup := randConsensusNet(t, n, "consensus_reactor_test", newMockTickerFunc(false), newKVStore)
+	defer cleanup()
+
+	switches := make([]*p2p.Switch, n)
+	p2pLogger := consensusLogger().With("module", "p2p")
+	for i := 0; i < n; i++ {
+		switches[i] = p2p.MakeSwitch(
+			config.P2P,
+			i,
+			func(_ int, sw *p2p.Switch) *p2p.Switch {
+				return sw
+			})
+		switches[i].SetLogger(p2pLogger.With("validator", i))
+	}
+
+	reactors := make([]p2p.Reactor, n)
+	for i := 0; i < n; i++ {
+		conR := NewReactor(css[i], false)
+		defer func() { require.NoError(t, conR.Stop()) }()
+
+		conR.SetLogger(consensusLogger().With("validator", i))
+		reactors[i] = conR
+	}
+
+	p2p.MakeConnectedSwitches(config.P2P, n, func(i int, _ *p2p.Switch) *p2p.Switch {
+		switches[i].AddReactor("CONSENSUS", reactors[i])
+		return switches[i]
+	}, p2p.Connect2Switches)
+
+	peers := switches[0].Peers().List()
+	targetPeer := peers[0]
+
+	height := int64(1)
+	round := int32(0)
+	cs := css[0]
+
+	block, err := cs.createProposalBlock(ctx)
+	require.NoError(t, err)
+
+	blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
+	require.NoError(t, err)
+
+	// create oversized proposal
+	propBlockID := types.BlockID{Hash: block.Hash(), PartSetHeader: blockParts.Header()}
+	propBlockID.PartSetHeader.Total = 4294967295
+
+	proposal := types.NewProposal(height, round, -1, propBlockID)
+	p := proposal.ToProto()
+	if err := cs.privValidator.SignProposal(cs.state.ChainID, p); err != nil {
+		t.Error(err)
+	}
+	proposal.Signature = p.Signature
+
+	success := targetPeer.Send(p2p.Envelope{
+		ChannelID: DataChannel,
+		Message:   &cmtcons.Proposal{Proposal: *proposal.ToProto()},
+	})
+	require.True(t, success)
+
+	select {
+	case e := <-css[1].peerMsgQueue:
+		// if we receive a message here, the peer incorrectly accepted the
+		// oversized proposal
+		if _, receivedProposal := e.Msg.(*ProposalMessage); receivedProposal {
+			assert.Fail(t, "peer incorrectly accepted oversized proposal")
+			return
+		}
+		// invalid state, we received some other unexpected message type, fail
+		// the test
+		assert.Fail(t, "received unexpected message type on peer msg queue, expected *ProposalMessage")
+	case <-ctx.Done():
+	case <-time.After(500 * time.Millisecond):
+		// timeout after 500ms if nothing has happened and assume peer rejected
+		// the proposal
+	}
+}

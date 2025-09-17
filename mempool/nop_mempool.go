@@ -107,4 +107,4 @@ func (*NopMempoolReactor) RemovePeer(p2p.Peer, interface{}) {}
 func (*NopMempoolReactor) Receive(p2p.Envelope) {}
 
 // SetSwitch does nothing.
-func (*NopMempoolReactor) SetSwitch(*p2p.Switch) {}
+func (*NopMempoolReactor) SetSwitch(p2p.Switcher) {}

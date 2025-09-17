@@ -1,13 +1,19 @@
 package p2p
 
+import "github.com/cometbft/cometbft/libs/service"
+
 // Switcher handles peer connections and exposes an API to receive incoming messages
 // on `Reactors`. Each `Reactor` is responsible for handling incoming messages of one
 // or more `Channels`. So while sending outgoing messages is typically performed on the peer,
 // incoming messages are received on the reactor.
 type Switcher interface {
+	service.Service
+
 	Reactor(name string) (reactor Reactor, exists bool)
 
 	Broadcast(e Envelope) (successChan chan bool)
+	BroadcastAsync(e Envelope)
+	TryBroadcast(e Envelope)
 
 	Peers() IPeerSet
 	NumPeers() (outbound, inbound, dialing int)

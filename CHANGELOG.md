@@ -79,6 +79,8 @@
 
 ### BUG-FIXES
 
+- `[consensus]` Reject oversized proposals
+  ([\#5324](https://github.com/cometbft/cometbft/pull/5324))
 - `[store]` Prune extended commits properly
   ([5275](https://github.com/cometbft/cometbft/issues/5275))
 - `[mempool]` Fix mutex in `CListMempool.Flush` method, by changing it from read-lock to write-lock

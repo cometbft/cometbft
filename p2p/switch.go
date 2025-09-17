@@ -204,8 +204,9 @@ func (sw *Switch) Reactors() map[string]Reactor {
 
 // Reactor returns the reactor with the given name.
 // NOTE: Not goroutine safe.
-func (sw *Switch) Reactor(name string) Reactor {
-	return sw.reactors[name]
+func (sw *Switch) Reactor(name string) (Reactor, bool) {
+	reactor, ok := sw.reactors[name]
+	return reactor, ok
 }
 
 // SetNodeInfo sets the switch's NodeInfo for checking compatibility and handshaking with other nodes.

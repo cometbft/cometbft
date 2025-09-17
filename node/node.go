@@ -108,7 +108,7 @@ type Option func(*Node)
 func CustomReactors(reactors map[string]p2p.Reactor) Option {
 	return func(n *Node) {
 		for name, reactor := range reactors {
-			if existingReactor := n.sw.Reactor(name); existingReactor != nil {
+			if existingReactor, ok := n.sw.Reactor(name); ok {
 				n.sw.Logger.Info("Replacing existing reactor with a custom one",
 					"name", name, "existing", existingReactor, "custom", reactor)
 				n.sw.RemoveReactor(name, existingReactor)

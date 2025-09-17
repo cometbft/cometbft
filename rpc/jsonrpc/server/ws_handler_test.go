@@ -29,7 +29,7 @@ func TestWebsocketManagerHandler(t *testing.T) {
 	req, err := types.MapToRequest(
 		types.JSONRPCStringID("TestWebsocketManager"),
 		"c",
-		map[string]interface{}{"s": "a", "i": 10},
+		map[string]any{"s": "a", "i": 10},
 	)
 	require.NoError(t, err)
 	err = c.WriteJSON(req)

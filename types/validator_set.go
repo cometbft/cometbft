@@ -192,7 +192,7 @@ func (vals *ValidatorSet) incrementProposerPriority() *Validator {
 	return mostest
 }
 
-// Should not be called on an empty validator set.
+// computeAvgProposerPriority should not be called on an empty validator set.
 func (vals *ValidatorSet) computeAvgProposerPriority() int64 {
 	n := int64(len(vals.Validators))
 	sum := big.NewInt(0)
@@ -208,7 +208,8 @@ func (vals *ValidatorSet) computeAvgProposerPriority() int64 {
 	panic(fmt.Sprintf("Cannot represent avg ProposerPriority as an int64 %v", avg))
 }
 
-// Compute the difference between the max and min ProposerPriority of that set.
+// computeMaxMinPriorityDiff computes the difference between the max and min
+// ProposerPriority of that set.
 func computeMaxMinPriorityDiff(vals *ValidatorSet) int64 {
 	if vals.IsNilOrEmpty() {
 		panic("empty validator set")
@@ -248,7 +249,7 @@ func (vals *ValidatorSet) shiftByAvgProposerPriority() {
 	}
 }
 
-// Makes a copy of the validator list.
+// validatorListCopy makes a copy of the validator list.
 func validatorListCopy(valsList []*Validator) []*Validator {
 	if valsList == nil {
 		return nil
@@ -284,9 +285,21 @@ func (vals *ValidatorSet) HasAddress(address []byte) bool {
 // GetByAddress returns an index of the validator with address and validator
 // itself (copy) if found. Otherwise, -1 and nil are returned.
 func (vals *ValidatorSet) GetByAddress(address []byte) (index int32, val *Validator) {
+	i, val := vals.GetByAddressMut(address)
+	if i == -1 {
+		return -1, nil
+	}
+	return i, val.Copy()
+}
+
+// GetByAddressMut returns an index of the validator with address and the
+// direct validator object if found. Mutations on this return value affect the validator set.
+// This method should be used by callers who will not mutate Val.
+// Otherwise, -1 and nil are returned.
+func (vals *ValidatorSet) GetByAddressMut(address []byte) (index int32, val *Validator) {
 	for idx, val := range vals.Validators {
 		if bytes.Equal(val.Address, address) {
-			return int32(idx), val.Copy()
+			return int32(idx), val
 		}
 	}
 	return -1, nil
@@ -309,7 +322,7 @@ func (vals *ValidatorSet) Size() int {
 	return len(vals.Validators)
 }
 
-// Forces recalculation of the set's total voting power.
+// updateTotalVotingPower forces recalculation of the set's total voting power.
 // Panics if total voting power is bigger than MaxTotalVotingPower.
 func (vals *ValidatorSet) updateTotalVotingPower() {
 	sum := int64(0)
@@ -397,7 +410,8 @@ func (vals *ValidatorSet) Iterate(fn func(index int, val *Validator) bool) {
 	}
 }
 
-// Checks changes against duplicates, splits the changes in updates and
+// processChanges checks changes against duplicates,
+// splits the changes in updates and
 // removals, sorts them by address.
 //
 // Returns:
@@ -465,7 +479,7 @@ func verifyUpdates(
 	removedPower int64,
 ) (tvpAfterUpdatesBeforeRemovals int64, err error) {
 	delta := func(update *Validator, vals *ValidatorSet) int64 {
-		_, val := vals.GetByAddress(update.Address)
+		_, val := vals.GetByAddressMut(update.Address)
 		if val != nil {
 			return update.VotingPower - val.VotingPower
 		}
@@ -512,7 +526,7 @@ func numNewValidators(updates []*Validator, vals *ValidatorSet) int {
 func computeNewPriorities(updates []*Validator, vals *ValidatorSet, updatedTotalVotingPower int64) {
 	for _, valUpdate := range updates {
 		address := valUpdate.Address
-		_, val := vals.GetByAddress(address)
+		_, val := vals.GetByAddressMut(address)
 		if val == nil {
 			// add val
 			// Set ProposerPriority to -C*totalVotingPower (with C ~= 1.125) to make sure validators can't
@@ -570,13 +584,14 @@ func (vals *ValidatorSet) applyUpdates(updates []*Validator) {
 	vals.Validators = merged[:i]
 }
 
-// Checks that the validators to be removed are part of the validator set.
+// verifyRemovals checks that the validators to be removed are part of the
+// validator set.
 // No changes are made to the validator set 'vals'.
 func verifyRemovals(deletes []*Validator, vals *ValidatorSet) (votingPower int64, err error) {
 	removedVotingPower := int64(0)
 	for _, valUpdate := range deletes {
 		address := valUpdate.Address
-		_, val := vals.GetByAddress(address)
+		_, val := vals.GetByAddressMut(address)
 		if val == nil {
 			return removedVotingPower, fmt.Errorf("failed to find validator %X to remove", address)
 		}
@@ -588,7 +603,8 @@ func verifyRemovals(deletes []*Validator, vals *ValidatorSet) (votingPower int64
 	return removedVotingPower, nil
 }
 
-// Removes the validators specified in 'deletes' from validator set 'vals'.
+// applyRemovals removes the validators specified in 'deletes' from validator
+// set 'vals'.
 // Should not fail as verification has been done before.
 // Expects vals to be sorted by address (done by applyUpdates).
 func (vals *ValidatorSet) applyRemovals(deletes []*Validator) {
@@ -617,7 +633,8 @@ func (vals *ValidatorSet) applyRemovals(deletes []*Validator) {
 	vals.Validators = merged[:i]
 }
 
-// Main function used by UpdateWithChangeSet() and NewValidatorSet().
+// updateWithChangeSet is the main function used by UpdateWithChangeSet(
+// ) and NewValidatorSet().
 // If 'allowDeletes' is false then delete operations (identified by validators with voting power 0)
 // are not allowed and will trigger an error if present in 'changes'.
 // The 'allowDeletes' flag is set to false by NewValidatorSet() and to true by UpdateWithChangeSet().
@@ -711,6 +728,19 @@ func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
 	return VerifyCommitLight(chainID, vals, blockID, height, commit)
 }
 
+// VerifyCommitLightWithCache verifies +2/3 of the set had signed the given commit.
+// It does NOT count all signatures.
+//
+// The cache provided will be used to skip signature verification for entries where the
+// key (signature), validator pubkey, and vote sign bytes all match.
+// Additionally, any verified signatures will be added to the cache.
+func (vals *ValidatorSet) VerifyCommitLightWithCache(chainID string, blockID BlockID,
+	height int64, commit *Commit,
+	verifiedSignatureCache *SignatureCache,
+) error {
+	return VerifyCommitLightWithCache(chainID, vals, blockID, height, commit, verifiedSignatureCache)
+}
+
 // VerifyCommitLightAllSignatures verifies +2/3 of the set had signed the given commit.
 // It DOES count all signatures.
 func (vals *ValidatorSet) VerifyCommitLightAllSignatures(chainID string, blockID BlockID,
@@ -731,6 +761,23 @@ func (vals *ValidatorSet) VerifyCommitLightTrusting(
 }
 
 // VerifyCommitLightTrustingAllSignatures verifies that trustLevel of the validator set signed
+// this commit.
+// It does NOT count all signatures.
+// CONTRACT: must run ValidateBasic() on commit before verifying.
+//
+// The cache provided will be used to skip signature verification for entries where the
+// key (signature), validator pubkey, and vote sign bytes all match.
+// Additionally, any verified signatures will be added to the cache.
+func (vals *ValidatorSet) VerifyCommitLightTrustingWithCache(
+	chainID string,
+	commit *Commit,
+	trustLevel cmtmath.Fraction,
+	verifiedSignatureCache *SignatureCache,
+) error {
+	return VerifyCommitLightTrustingWithCache(chainID, vals, commit, trustLevel, verifiedSignatureCache)
+}
+
+// VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
 // this commit.
 // It DOES count all signatures.
 func (vals *ValidatorSet) VerifyCommitLightTrustingAllSignatures(

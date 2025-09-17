@@ -64,6 +64,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "active_outbound_connections",
 			Help:      "Number of connections being actively used for gossiping transactions (experimental feature).",
 		}, labels).With(labelsAndValues...),
+		AlreadyReceivedTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "already_received_txs",
+			Help:      "Number of duplicate transaction reception.",
+		}, labels).With(labelsAndValues...),
 	}
 }
 
@@ -77,5 +83,6 @@ func NopMetrics() *Metrics {
 		EvictedTxs:                discard.NewCounter(),
 		RecheckTimes:              discard.NewCounter(),
 		ActiveOutboundConnections: discard.NewGauge(),
+		AlreadyReceivedTxs:        discard.NewCounter(),
 	}
 }

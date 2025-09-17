@@ -9,7 +9,10 @@ BUILD_FLAGS = -mod=readonly -ldflags "$(LD_FLAGS)"
 LD_FLAGS += $(LDFLAGS)
 
 # handle nostrip
-ifeq (,$(findstring nostrip,$(COMETBFT_BUILD_OPTIONS)))
+ifeq (nostrip,$(findstring nostrip,$(COMETBFT_BUILD_OPTIONS)))
+  #prepare for delve
+  BUILD_FLAGS+= -gcflags "all=-N -l"
+else
   BUILD_FLAGS += -trimpath
   LD_FLAGS += -s -w
 endif
@@ -40,4 +43,10 @@ endif
 # handle boltdb
 ifeq (boltdb,$(findstring boltdb,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_TAGS += boltdb
+endif
+
+# handle nodebug
+ifeq (nodebug,$(findstring nodebug,$(COMETBFT_BUILD_OPTIONS)))
+  CGO_ENABLED=1
+  BUILD_TAGS += nodebug
 endif

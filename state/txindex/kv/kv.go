@@ -342,12 +342,7 @@ func lookForHash(conditions []syntax.Condition) (hash []byte, ok bool, err error
 
 func (*TxIndex) setTmpHashes(tmpHeights map[string][]byte, key, value []byte) {
 	eventSeq := extractEventSeqFromKey(key)
-
-	// Copy the value because the iterator will be reused.
-	valueCopy := make([]byte, len(value))
-	copy(valueCopy, value)
-
-	tmpHeights[string(valueCopy)+eventSeq] = valueCopy
+	tmpHeights[string(value)+eventSeq] = value
 }
 
 // match returns all matching txs by hash that meet a given condition and start
@@ -759,7 +754,7 @@ func startKeyForCondition(c syntax.Condition, height int64) []byte {
 	return startKey(c.Tag, c.Arg.Value())
 }
 
-func startKey(fields ...interface{}) []byte {
+func startKey(fields ...any) []byte {
 	var b bytes.Buffer
 	for _, f := range fields {
 		b.Write([]byte(fmt.Sprintf("%v", f) + tagKeySeparator))

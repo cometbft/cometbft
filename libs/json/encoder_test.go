@@ -19,7 +19,7 @@ func TestMarshal(t *testing.T) {
 	boat := Boat{Sail: true}
 
 	testcases := map[string]struct {
-		value  interface{}
+		value  any
 		output string
 	}{
 		"nil":             {nil, `null`},

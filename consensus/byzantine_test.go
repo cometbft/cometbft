@@ -205,7 +205,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		if lazyProposer.privValidatorPubKey == nil {
 			// If this node is a validator & proposer in the current round, it will
 			// miss the opportunity to create a block.
-			lazyProposer.Logger.Error(fmt.Sprintf("enterPropose: %v", errPubKeyIsNotSet))
+			lazyProposer.Logger.Error(fmt.Sprintf("enterPropose: %v", ErrPubKeyIsNotSet))
 			return
 		}
 		proposerAddr := lazyProposer.privValidatorPubKey.Address()
@@ -586,7 +586,7 @@ func (br *ByzantineReactor) AddPeer(peer p2p.Peer) {
 	}
 }
 
-func (br *ByzantineReactor) RemovePeer(peer p2p.Peer, reason interface{}) {
+func (br *ByzantineReactor) RemovePeer(peer p2p.Peer, reason any) {
 	br.reactor.RemovePeer(peer, reason)
 }
 

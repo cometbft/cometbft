@@ -15,6 +15,7 @@ import (
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
 
 // Evidence represents any provable malicious activity by a validator.
@@ -125,7 +126,7 @@ func (dve *DuplicateVoteEvidence) Time() time.Time {
 // ValidateBasic performs basic validation.
 func (dve *DuplicateVoteEvidence) ValidateBasic() error {
 	if dve == nil {
-		return errors.New("empty duplicate vote evidence")
+		return cmterrors.ErrRequiredField{Field: "duplicate_vote_evidence"}
 	}
 
 	if dve.VoteA == nil || dve.VoteB == nil {
@@ -337,10 +338,10 @@ func (l *LightClientAttackEvidence) Height() int64 {
 // String returns a string representation of LightClientAttackEvidence
 func (l *LightClientAttackEvidence) String() string {
 	return fmt.Sprintf(`LightClientAttackEvidence{
-		ConflictingBlock: %v, 
-		CommonHeight: %d, 
-		ByzatineValidators: %v, 
-		TotalVotingPower: %d, 
+		ConflictingBlock: %v,
+		CommonHeight: %d,
+		ByzatineValidators: %v,
+		TotalVotingPower: %d,
 		Timestamp: %v}#%X`,
 		l.ConflictingBlock.String(), l.CommonHeight, l.ByzantineValidators,
 		l.TotalVotingPower, l.Timestamp, l.Hash())
@@ -413,7 +414,7 @@ func (l *LightClientAttackEvidence) ToProto() (*cmtproto.LightClientAttackEviden
 // LightClientAttackEvidenceFromProto decodes protobuf
 func LightClientAttackEvidenceFromProto(lpb *cmtproto.LightClientAttackEvidence) (*LightClientAttackEvidence, error) {
 	if lpb == nil {
-		return nil, errors.New("empty light client attack evidence")
+		return nil, cmterrors.ErrRequiredField{Field: "light_client_attack_evidence"}
 	}
 
 	conflictingBlock, err := LightBlockFromProto(lpb.ConflictingBlock)
@@ -582,13 +583,15 @@ func (err *ErrEvidenceOverflow) Error() string {
 
 // unstable - use only for testing
 
-// assumes the round to be 0 and the validator index to be 0
+// NewMockDuplicateVoteEvidence assumes the round to be 0 and the validator
+// index to be 0
 func NewMockDuplicateVoteEvidence(height int64, time time.Time, chainID string) (*DuplicateVoteEvidence, error) {
 	val := NewMockPV()
 	return NewMockDuplicateVoteEvidenceWithValidator(height, time, val, chainID)
 }
 
-// assumes voting power to be 10 and validator to be the only one in the set
+// NewMockDuplicateVoteEvidenceWithValidator assumes voting power to be 10
+// and validator to be the only one in the set
 func NewMockDuplicateVoteEvidenceWithValidator(height int64, time time.Time,
 	pv PrivValidator, chainID string,
 ) (*DuplicateVoteEvidence, error) {

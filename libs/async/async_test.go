@@ -15,7 +15,7 @@ func TestParallel(t *testing.T) {
 	counter := new(int32)
 	tasks := make([]Task, 100*1000)
 	for i := 0; i < len(tasks); i++ {
-		tasks[i] = func(i int) (res interface{}, abort bool, err error) {
+		tasks[i] = func(i int) (res any, abort bool, err error) {
 			atomic.AddInt32(counter, 1)
 			return -1 * i, false, nil
 		}
@@ -58,22 +58,22 @@ func TestParallelAbort(t *testing.T) {
 
 	// Create tasks.
 	tasks := []Task{
-		func(i int) (res interface{}, abort bool, err error) {
+		func(i int) (res any, abort bool, err error) {
 			assert.Equal(t, i, 0)
 			flow1 <- struct{}{}
 			return 0, false, nil
 		},
-		func(i int) (res interface{}, abort bool, err error) {
+		func(i int) (res any, abort bool, err error) {
 			assert.Equal(t, i, 1)
 			flow2 <- <-flow1
 			return 1, false, errors.New("some error")
 		},
-		func(i int) (res interface{}, abort bool, err error) {
+		func(i int) (res any, abort bool, err error) {
 			assert.Equal(t, i, 2)
 			flow3 <- <-flow2
 			return 2, true, nil
 		},
-		func(i int) (res interface{}, abort bool, err error) {
+		func(i int) (res any, abort bool, err error) {
 			assert.Equal(t, i, 3)
 			<-flow4
 			return 3, false, nil
@@ -104,13 +104,13 @@ func TestParallelAbort(t *testing.T) {
 func TestParallelRecover(t *testing.T) {
 	// Create tasks.
 	tasks := []Task{
-		func(i int) (res interface{}, abort bool, err error) {
+		func(i int) (res any, abort bool, err error) {
 			return 0, false, nil
 		},
-		func(i int) (res interface{}, abort bool, err error) {
+		func(i int) (res any, abort bool, err error) {
 			return 1, false, errors.New("some error")
 		},
-		func(i int) (res interface{}, abort bool, err error) {
+		func(i int) (res any, abort bool, err error) {
 			panic(2)
 		},
 	}
@@ -127,7 +127,7 @@ func TestParallelRecover(t *testing.T) {
 
 // Wait for result
 func checkResult(t *testing.T, taskResultSet *TaskResultSet, index int,
-	val interface{}, err error, pnk interface{},
+	val any, err error, pnk any,
 ) {
 	taskResult, ok := taskResultSet.LatestResult(index)
 	taskName := fmt.Sprintf("Task #%v", index)

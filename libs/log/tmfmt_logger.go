@@ -25,7 +25,7 @@ func (l *tmfmtEncoder) Reset() {
 }
 
 var tmfmtEncoderPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		var enc tmfmtEncoder
 		enc.Encoder = logfmt.NewEncoder(&enc.buf)
 		return &enc
@@ -47,7 +47,7 @@ func NewTMFmtLogger(w io.Writer) kitlog.Logger {
 	return &tmfmtLogger{w}
 }
 
-func (l tmfmtLogger) Log(keyvals ...interface{}) error {
+func (l tmfmtLogger) Log(keyvals ...any) error {
 	enc := tmfmtEncoderPool.Get().(*tmfmtEncoder)
 	enc.Reset()
 	defer tmfmtEncoderPool.Put(enc)

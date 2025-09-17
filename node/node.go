@@ -54,7 +54,7 @@ type Node struct {
 
 	// network
 	transport   *p2p.MultiplexTransport
-	sw          *p2p.Switch  // p2p connections
+	sw          p2p.Switcher // p2p connections
 	addrBook    pex.AddrBook // known peers
 	nodeInfo    p2p.NodeInfo
 	nodeKey     *p2p.NodeKey // our node privkey
@@ -109,7 +109,7 @@ func CustomReactors(reactors map[string]p2p.Reactor) Option {
 	return func(n *Node) {
 		for name, reactor := range reactors {
 			if existingReactor, ok := n.sw.Reactor(name); ok {
-				n.sw.Logger.Info("Replacing existing reactor with a custom one",
+				n.sw.Log().Info("Replacing existing reactor with a custom one",
 					"name", name, "existing", existingReactor, "custom", reactor)
 				n.sw.RemoveReactor(name, existingReactor)
 			}
@@ -272,7 +272,8 @@ func BootstrapStateWithGenProvider(ctx context.Context, config *cfg.Config, dbPr
 //------------------------------------------------------------------------------
 
 // NewNode returns a new, ready to go, CometBFT Node.
-func NewNode(config *cfg.Config,
+func NewNode(
+	config *cfg.Config,
 	privValidator types.PrivValidator,
 	nodeKey *p2p.NodeKey,
 	clientCreator proxy.ClientCreator,
@@ -288,7 +289,8 @@ func NewNode(config *cfg.Config,
 }
 
 // NewNodeWithContext is cancellable version of NewNode.
-func NewNodeWithContext(ctx context.Context,
+func NewNodeWithContext(
+	ctx context.Context,
 	config *cfg.Config,
 	privValidator types.PrivValidator,
 	nodeKey *p2p.NodeKey,
@@ -513,6 +515,7 @@ func NewNodeWithContext(ctx context.Context,
 		blockIndexer:     blockIndexer,
 		eventBus:         eventBus,
 	}
+
 	node.BaseService = *service.NewBaseService(logger, "Node", node)
 
 	for _, option := range options {
@@ -857,7 +860,7 @@ func (n *Node) startPprofServer() *http.Server {
 }
 
 // Switch returns the Node's Switch.
-func (n *Node) Switch() *p2p.Switch {
+func (n *Node) Switch() p2p.Switcher {
 	return n.sw
 }
 

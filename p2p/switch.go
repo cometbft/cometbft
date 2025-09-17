@@ -10,6 +10,7 @@ import (
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/cmap"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p/conn"
@@ -662,6 +663,10 @@ func (sw *Switch) IsPeerPersistent(na *NetAddress) bool {
 		}
 	}
 	return false
+}
+
+func (sw *Switch) Log() log.Logger {
+	return sw.Logger
 }
 
 func (sw *Switch) acceptRoutine() {

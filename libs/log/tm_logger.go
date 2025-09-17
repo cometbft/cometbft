@@ -26,7 +26,7 @@ var _ Logger = (*tmLogger)(nil)
 // that underlying logger could be swapped with something else.
 func NewTMLogger(w io.Writer) Logger {
 	// Color by level value
-	colorFn := func(keyvals ...interface{}) term.FgBgColor {
+	colorFn := func(keyvals ...any) term.FgBgColor {
 		if keyvals[0] != kitlevel.Key() {
 			panic(fmt.Sprintf("expected level key to be first, got %v", keyvals[0]))
 		}
@@ -45,12 +45,12 @@ func NewTMLogger(w io.Writer) Logger {
 
 // NewTMLoggerWithColorFn allows you to provide your own color function. See
 // NewTMLogger for documentation.
-func NewTMLoggerWithColorFn(w io.Writer, colorFn func(keyvals ...interface{}) term.FgBgColor) Logger {
+func NewTMLoggerWithColorFn(w io.Writer, colorFn func(keyvals ...any) term.FgBgColor) Logger {
 	return &tmLogger{term.NewLogger(w, NewTMFmtLogger, colorFn)}
 }
 
 // Info logs a message at level Info.
-func (l *tmLogger) Info(msg string, keyvals ...interface{}) {
+func (l *tmLogger) Info(msg string, keyvals ...any) {
 	lWithLevel := kitlevel.Info(l.srcLogger)
 
 	if err := kitlog.With(lWithLevel, msgKey, msg).Log(keyvals...); err != nil {
@@ -60,17 +60,19 @@ func (l *tmLogger) Info(msg string, keyvals ...interface{}) {
 }
 
 // Debug logs a message at level Debug.
-func (l *tmLogger) Debug(msg string, keyvals ...interface{}) {
-	lWithLevel := kitlevel.Debug(l.srcLogger)
+func (l *tmLogger) Debug(msg string, keyvals ...any) {
+	if LogDebug {
+		lWithLevel := kitlevel.Debug(l.srcLogger)
 
-	if err := kitlog.With(lWithLevel, msgKey, msg).Log(keyvals...); err != nil {
-		errLogger := kitlevel.Error(l.srcLogger)
-		kitlog.With(errLogger, msgKey, msg).Log("err", err) //nolint:errcheck // no need to check error again
+		if err := kitlog.With(lWithLevel, msgKey, msg).Log(keyvals...); err != nil {
+			errLogger := kitlevel.Error(l.srcLogger)
+			kitlog.With(errLogger, msgKey, msg).Log("err", err) //nolint:errcheck // no need to check error again
+		}
 	}
 }
 
 // Error logs a message at level Error.
-func (l *tmLogger) Error(msg string, keyvals ...interface{}) {
+func (l *tmLogger) Error(msg string, keyvals ...any) {
 	lWithLevel := kitlevel.Error(l.srcLogger)
 
 	lWithMsg := kitlog.With(lWithLevel, msgKey, msg)
@@ -81,6 +83,6 @@ func (l *tmLogger) Error(msg string, keyvals ...interface{}) {
 
 // With returns a new contextual logger with keyvals prepended to those passed
 // to calls to Info, Debug or Error.
-func (l *tmLogger) With(keyvals ...interface{}) Logger {
+func (l *tmLogger) With(keyvals ...any) Logger {
 	return &tmLogger{kitlog.With(l.srcLogger, keyvals...)}
 }

@@ -17,7 +17,6 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/p2p/mock"
 	memproto "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
@@ -54,7 +53,7 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 		}
 	}()
 	for _, r := range reactors {
-		for _, peer := range r.Switch.Peers().List() {
+		for _, peer := range r.Switch.Peers().Copy() {
 			peer.Set(types.PeerStateKey, peerState{1})
 		}
 	}
@@ -76,7 +75,7 @@ func TestReactorConcurrency(t *testing.T) {
 		}
 	}()
 	for _, r := range reactors {
-		for _, peer := range r.Switch.Peers().List() {
+		for _, peer := range r.Switch.Peers().Copy() {
 			peer.Set(types.PeerStateKey, peerState{1})
 		}
 	}
@@ -137,7 +136,7 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 		}
 	}()
 	for _, r := range reactors {
-		for _, peer := range r.Switch.Peers().List() {
+		for _, peer := range r.Switch.Peers().Copy() {
 			peer.Set(types.PeerStateKey, peerState{1})
 		}
 	}
@@ -160,7 +159,7 @@ func TestMempoolReactorMaxTxBytes(t *testing.T) {
 		}
 	}()
 	for _, r := range reactors {
-		for _, peer := range r.Switch.Peers().List() {
+		for _, peer := range r.Switch.Peers().Copy() {
 			peer.Set(types.PeerStateKey, peerState{1})
 		}
 	}
@@ -204,7 +203,7 @@ func TestBroadcastTxForPeerStopsWhenPeerStops(t *testing.T) {
 
 	// stop peer
 	sw := reactors[1].Switch
-	sw.StopPeerForError(sw.Peers().List()[0], errors.New("some reason"))
+	sw.StopPeerForError(sw.Peers().Copy()[0], errors.New("some reason"))
 
 	// check that we are not leaking any go-routines
 	// i.e. broadcastTxRoutine finishes when peer is stopped
@@ -228,35 +227,6 @@ func TestBroadcastTxForPeerStopsWhenReactorStops(t *testing.T) {
 	// check that we are not leaking any go-routines
 	// i.e. broadcastTxRoutine finishes when reactor is stopped
 	leaktest.CheckTimeout(t, 10*time.Second)()
-}
-
-// TODO: This test tests that we don't panic and are able to generate new
-// PeerIDs for each peer we add. It seems as though we should be able to test
-// this in a much more direct way.
-// https://github.com/cometbft/cometbft/issues/9639
-func TestDontExhaustMaxActiveIDs(t *testing.T) {
-	config := cfg.TestConfig()
-	const N = 1
-	reactors, _ := makeAndConnectReactors(config, N)
-	defer func() {
-		for _, r := range reactors {
-			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
-			}
-		}
-	}()
-	reactor := reactors[0]
-
-	for i := 0; i < MaxActiveIDs+1; i++ {
-		peer := mock.NewPeer(nil)
-		reactor.Receive(p2p.Envelope{
-			ChannelID: MempoolChannel,
-			Src:       peer,
-			Message:   &memproto.Message{}, // This uses the wrong message type on purpose to stop the peer as in an error state in the reactor.
-		},
-		)
-		reactor.AddPeer(peer)
-	}
 }
 
 // Test the experimental feature that limits the number of outgoing connections for gossiping
@@ -406,7 +376,7 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 // mempoolLogger is a TestingLogger which uses a different
 // color for each validator ("validator" key must exist).
 func mempoolLogger() log.Logger {
-	return log.TestingLoggerWithColorFn(func(keyvals ...interface{}) term.FgBgColor {
+	return log.TestingLoggerWithColorFn(func(keyvals ...any) term.FgBgColor {
 		for i := 0; i < len(keyvals)-1; i += 2 {
 			if keyvals[i] == "validator" {
 				return term.FgBgColor{Fg: term.Color(uint8(keyvals[i+1].(int) + 1))}
@@ -426,7 +396,7 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 		mempool, cleanup := newMempoolWithApp(cc)
 		defer cleanup()
 
-		reactors[i] = NewReactor(config.Mempool, mempool) // so we dont start the consensus states
+		reactors[i] = NewReactor(config.Mempool, mempool, false) // so we dont start the consensus states
 		reactors[i].SetLogger(logger.With("validator", i))
 	}
 

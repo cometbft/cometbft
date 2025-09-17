@@ -149,7 +149,7 @@ func file_payload_payload_proto_rawDescGZIP() []byte {
 }
 
 var file_payload_payload_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_payload_payload_proto_goTypes = []interface{}{
+var file_payload_payload_proto_goTypes = []any{
 	(*Payload)(nil),               // 0: loadtime.payload.Payload
 	(*timestamppb.Timestamp)(nil), // 1: google.protobuf.Timestamp
 }
@@ -168,7 +168,7 @@ func file_payload_payload_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_payload_payload_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_payload_payload_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*Payload); i {
 			case 0:
 				return &v.state

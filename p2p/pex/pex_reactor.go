@@ -217,7 +217,7 @@ func (r *Reactor) AddPeer(p Peer) {
 }
 
 // RemovePeer implements Reactor by resetting peer's requests info.
-func (r *Reactor) RemovePeer(p Peer, _ interface{}) {
+func (r *Reactor) RemovePeer(p Peer, _ any) {
 	id := string(p.ID())
 	r.requestsSent.Delete(id)
 	r.lastReceivedRequests.Delete(id)
@@ -506,10 +506,8 @@ func (r *Reactor) ensurePeers(ensurePeersPeriodElapsed bool) {
 	if r.book.NeedMoreAddrs() {
 
 		// 1) Pick a random peer and ask for more.
-		peers := r.Switch.Peers().List()
-		peersCount := len(peers)
-		if peersCount > 0 && ensurePeersPeriodElapsed {
-			peer := peers[cmtrand.Int()%peersCount]
+		peer := r.Switch.Peers().Random()
+		if peer != nil {
 			r.Logger.Info("We need more addresses. Sending pexRequest to random peer", "peer", peer)
 			r.RequestAddrs(peer)
 		}
@@ -733,7 +731,7 @@ func (r *Reactor) cleanupCrawlPeerInfos() {
 
 // attemptDisconnects checks if we've been with each peer long enough to disconnect
 func (r *Reactor) attemptDisconnects() {
-	for _, peer := range r.Switch.Peers().List() {
+	for _, peer := range r.Switch.Peers().Copy() {
 		if peer.Status().Duration < r.config.SeedDisconnectWaitPeriod {
 			continue
 		}

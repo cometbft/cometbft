@@ -23,7 +23,7 @@ import (
 var (
 	// testnetCombinations defines global testnet options, where we generate a
 	// separate testnet for each combination (Cartesian product) of options.
-	testnetCombinations = map[string][]interface{}{
+	testnetCombinations = map[string][]any{
 		"topology":      {"single", "quad", "large"},
 		"initialHeight": {0, 1000},
 		"initialState": {
@@ -127,7 +127,7 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 }
 
 // generateTestnet generates a single testnet with the given options.
-func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion string, prometheus bool) (e2e.Manifest, error) {
+func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, prometheus bool) (e2e.Manifest, error) {
 	manifest := e2e.Manifest{
 		IPv6:             ipv6.Choose(r).(bool),
 		ABCIProtocol:     nodeABCIProtocols.Choose(r).(string),

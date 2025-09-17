@@ -180,6 +180,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		Prometheus:                 manifest.Prometheus,
 		BlockMaxBytes:              manifest.BlockMaxBytes,
 		VoteExtensionsEnableHeight: manifest.VoteExtensionsEnableHeight,
+		VoteExtensionSize:          manifest.VoteExtensionSize,
 		VoteExtensionsUpdateHeight: manifest.VoteExtensionsUpdateHeight,
 		VoteExtensionSize:          manifest.VoteExtensionSize,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,

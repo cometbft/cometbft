@@ -243,7 +243,7 @@ func (b *Block) ToProto() (*cmtproto.Block, error) {
 	return pb, nil
 }
 
-// FromProto sets a protobuf Block to the given pointer.
+// BlockFromProto sets a protobuf Block to the given pointer.
 // It returns an error if the block is invalid.
 func BlockFromProto(bp *cmtproto.Block) (*Block, error) {
 	if bp == nil {
@@ -347,7 +347,7 @@ type Header struct {
 	ConsensusHash      cmtbytes.HexBytes `json:"consensus_hash"`       // consensus params for current block
 	AppHash            cmtbytes.HexBytes `json:"app_hash"`             // state after txs from the previous block
 	// root hash of all results from the txs from the previous block
-	// see `deterministicExecTxResult` to understand which parts of a tx is hashed into here
+	// see `DeterministicExecTxResult` to understand which parts of a tx is hashed into here
 	LastResultsHash cmtbytes.HexBytes `json:"last_results_hash"`
 
 	// consensus info
@@ -542,7 +542,7 @@ func (h *Header) ToProto() *cmtproto.Header {
 	}
 }
 
-// FromProto sets a protobuf Header to the given pointer.
+// HeaderFromProto sets a protobuf Header to the given pointer.
 // It returns an error if the header is invalid.
 func HeaderFromProto(ph *cmtproto.Header) (Header, error) {
 	if ph == nil {
@@ -625,7 +625,7 @@ func NewCommitSigAbsent() CommitSig {
 	}
 }
 
-// CommitSig returns a string representation of CommitSig.
+// String returns a string representation of CommitSig.
 //
 // 1. first 6 bytes of signature
 // 2. first 6 bytes of validator address
@@ -772,7 +772,7 @@ func (ecs ExtendedCommitSig) ValidateBasic() error {
 	return nil
 }
 
-// EnsureExtensions validates that a vote extensions signature is present for
+// EnsureExtension validates that a vote extensions signature is present for
 // this ExtendedCommitSig.
 func (ecs ExtendedCommitSig) EnsureExtension(extEnabled bool) error {
 	if extEnabled {
@@ -938,7 +938,7 @@ func (commit *Commit) ValidateBasic() error {
 	return nil
 }
 
-// Hash returns the hash of the commit
+// Hash returns the hash of the commit.
 func (commit *Commit) Hash() cmtbytes.HexBytes {
 	if commit == nil {
 		return nil
@@ -1023,7 +1023,7 @@ func (commit *Commit) ToProto() *cmtproto.Commit {
 	return c
 }
 
-// FromProto sets a protobuf Commit to the given pointer.
+// CommitFromProto sets a protobuf Commit to the given pointer.
 // It returns an error if the commit is invalid.
 func CommitFromProto(cp *cmtproto.Commit) (*Commit, error) {
 	if cp == nil {
@@ -1535,7 +1535,7 @@ func (blockID *BlockID) ToProto() cmtproto.BlockID {
 	}
 }
 
-// FromProto sets a protobuf BlockID to the given pointer.
+// BlockIDFromProto sets a protobuf BlockID to the given pointer.
 // It returns an error if the block id is invalid.
 func BlockIDFromProto(bID *cmtproto.BlockID) (*BlockID, error) {
 	if bID == nil {

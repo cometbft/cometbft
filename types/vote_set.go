@@ -113,7 +113,7 @@ func (voteSet *VoteSet) ChainID() string {
 	return voteSet.chainID
 }
 
-// Implements VoteSetReader.
+// GetHeight implements VoteSetReader.
 func (voteSet *VoteSet) GetHeight() int64 {
 	if voteSet == nil {
 		return 0
@@ -121,7 +121,7 @@ func (voteSet *VoteSet) GetHeight() int64 {
 	return voteSet.height
 }
 
-// Implements VoteSetReader.
+// GetRound implements VoteSetReader.
 func (voteSet *VoteSet) GetRound() int32 {
 	if voteSet == nil {
 		return -1
@@ -129,7 +129,7 @@ func (voteSet *VoteSet) GetRound() int32 {
 	return voteSet.round
 }
 
-// Implements VoteSetReader.
+// Type implements VoteSetReader.
 func (voteSet *VoteSet) Type() byte {
 	if voteSet == nil {
 		return 0x00
@@ -137,7 +137,7 @@ func (voteSet *VoteSet) Type() byte {
 	return byte(voteSet.signedMsgType)
 }
 
-// Implements VoteSetReader.
+// Size implements VoteSetReader.
 func (voteSet *VoteSet) Size() int {
 	if voteSet == nil {
 		return 0
@@ -145,7 +145,7 @@ func (voteSet *VoteSet) Size() int {
 	return voteSet.valSet.Size()
 }
 
-// Returns added=true if vote is valid and new.
+// AddVote returns added=true if vote is valid and new.
 // Otherwise returns err=ErrVote[
 //
 //	UnexpectedStep | InvalidIndex | InvalidAddress |
@@ -208,7 +208,7 @@ func (voteSet *VoteSet) addVote(vote *Vote) (added bool, err error) {
 	}
 
 	// If we already know of this vote, return false.
-	if existing, ok := voteSet.getVote(valIndex, blockKey); ok {
+	if existing, ok := voteSet.getVote(valIndex, blockKey, &vote.BlockID); ok {
 		if bytes.Equal(existing.Signature, vote.Signature) {
 			return false, nil // duplicate
 		}
@@ -243,9 +243,9 @@ func (voteSet *VoteSet) addVote(vote *Vote) (added bool, err error) {
 	return added, nil
 }
 
-// Returns (vote, true) if vote exists for valIndex and blockKey.
-func (voteSet *VoteSet) getVote(valIndex int32, blockKey string) (vote *Vote, ok bool) {
-	if existing := voteSet.votes[valIndex]; existing != nil && existing.BlockID.Key() == blockKey {
+// getVote returns (vote, true) if vote exists for valIndex and blockKey.
+func (voteSet *VoteSet) getVote(valIndex int32, blockKey string, blockID *BlockID) (vote *Vote, ok bool) {
+	if existing := voteSet.votes[valIndex]; existing != nil && blockID.Equals(existing.BlockID) {
 		return existing, true
 	}
 	if existing := voteSet.votesByBlock[blockKey].getByIndex(valIndex); existing != nil {
@@ -254,7 +254,7 @@ func (voteSet *VoteSet) getVote(valIndex int32, blockKey string) (vote *Vote, ok
 	return nil, false
 }
 
-// Assumes signature is valid.
+// addVerifiedVote assumes signature is valid.
 // If conflicting vote exists, returns it.
 func (voteSet *VoteSet) addVerifiedVote(
 	vote *Vote,
@@ -270,7 +270,7 @@ func (voteSet *VoteSet) addVerifiedVote(
 		}
 		conflicting = existing
 		// Replace vote if blockKey matches voteSet.maj23.
-		if voteSet.maj23 != nil && voteSet.maj23.Key() == blockKey {
+		if voteSet.maj23 != nil && voteSet.maj23.Equals(vote.BlockID) {
 			voteSet.votes[valIndex] = vote
 			voteSet.votesBitArray.SetIndex(int(valIndex), true)
 		}
@@ -341,7 +341,6 @@ func (voteSet *VoteSet) SetPeerMaj23(peerID P2PID, blockID BlockID) error {
 	defer voteSet.mtx.Unlock()
 
 	blockKey := blockID.Key()
-
 	// Make sure peer hasn't already told us something.
 	if existing, ok := voteSet.peerMaj23s[peerID]; ok {
 		if existing.Equals(blockID) {
@@ -368,7 +367,7 @@ func (voteSet *VoteSet) SetPeerMaj23(peerID P2PID, blockID BlockID) error {
 	return nil
 }
 
-// Implements VoteSetReader.
+// BitArray implements VoteSetReader.
 func (voteSet *VoteSet) BitArray() *bits.BitArray {
 	if voteSet == nil {
 		return nil
@@ -422,7 +421,7 @@ func (voteSet *VoteSet) GetByAddress(address []byte) *Vote {
 	}
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
-	valIndex, val := voteSet.valSet.GetByAddress(address)
+	valIndex, val := voteSet.valSet.GetByAddressMut(address)
 	if val == nil {
 		panic("GetByAddress(address) returned nil")
 	}
@@ -438,7 +437,7 @@ func (voteSet *VoteSet) HasTwoThirdsMajority() bool {
 	return voteSet.maj23 != nil
 }
 
-// Implements VoteSetReader.
+// IsCommit implements VoteSetReader.
 func (voteSet *VoteSet) IsCommit() bool {
 	if voteSet == nil {
 		return false
@@ -531,7 +530,7 @@ func (voteSet *VoteSet) StringIndented(indent string) string {
 		indent)
 }
 
-// Marshal the VoteSet to JSON. Same as String(), just in JSON,
+// MarshalJSON marshals the VoteSet to JSON. Same as String(), just in JSON,
 // and without the height/round/signedMsgType (since its already included in the votes).
 func (voteSet *VoteSet) MarshalJSON() ([]byte, error) {
 	voteSet.mtx.Lock()
@@ -552,7 +551,7 @@ type VoteSetJSON struct {
 	PeerMaj23s    map[P2PID]BlockID `json:"peer_maj_23s"`
 }
 
-// Return the bit-array of votes including
+// BitArrayString returns the bit-array of votes including
 // the fraction of power that has voted like:
 // "BA{29:xx__x__x_x___x__x_______xxx__} 856/1304 = 0.66"
 func (voteSet *VoteSet) BitArrayString() string {
@@ -567,7 +566,7 @@ func (voteSet *VoteSet) bitArrayString() string {
 	return fmt.Sprintf("%s %d/%d = %.2f", bAString, voted, total, fracVoted)
 }
 
-// Returns a list of votes compressed to more readable strings.
+// VoteStrings returns a list of votes compressed to more readable strings.
 func (voteSet *VoteSet) VoteStrings() []string {
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
@@ -619,7 +618,7 @@ func (voteSet *VoteSet) LogString() string {
 	return fmt.Sprintf("Votes:%d/%d(%.3f)", voted, total, frac)
 }
 
-// return the power voted, the total, and the fraction
+// sumTotalFrac returns the power voted, the total, and the fraction
 func (voteSet *VoteSet) sumTotalFrac() (int64, int64, float64) {
 	voted, total := voteSet.sum, voteSet.valSet.TotalVotingPower()
 	fracVoted := float64(voted) / float64(total)

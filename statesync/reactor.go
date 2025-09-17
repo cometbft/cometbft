@@ -95,7 +95,7 @@ func (r *Reactor) AddPeer(peer p2p.Peer) {
 }
 
 // RemovePeer implements p2p.Reactor.
-func (r *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
+func (r *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 	r.mtx.RLock()
 	defer r.mtx.RUnlock()
 	if r.syncer != nil {

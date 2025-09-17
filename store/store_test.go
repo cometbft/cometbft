@@ -125,7 +125,7 @@ func TestNewBlockStore(t *testing.T) {
 	for i, tt := range panicCausers {
 		tt := tt
 		// Expecting a panic here on trying to parse an invalid blockStore
-		_, _, panicErr := doFn(func() (interface{}, error) {
+		_, _, panicErr := doFn(func() (any, error) {
 			err := db.Set(blockStoreKey, tt.data)
 			require.NoError(t, err)
 			_ = NewBlockStore(db)
@@ -293,7 +293,7 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 		tuple := tuple
 		bs, db := newInMemoryBlockStore()
 		// SaveBlock
-		res, err, panicErr := doFn(func() (interface{}, error) {
+		res, err, panicErr := doFn(func() (any, error) {
 			bs.SaveBlockWithExtendedCommit(tuple.block, tuple.parts, tuple.seenCommit)
 			if tuple.block == nil {
 				return nil, nil
@@ -500,7 +500,7 @@ func TestLoadBlockPart(t *testing.T) {
 
 	bs, db := newInMemoryBlockStore()
 	const height, index = 10, 1
-	loadPart := func() (interface{}, error) {
+	loadPart := func() (any, error) {
 		part := bs.LoadBlockPart(height, index)
 		return part, nil
 	}
@@ -654,7 +654,7 @@ func TestPruneBlocks(t *testing.T) {
 func TestLoadBlockMeta(t *testing.T) {
 	bs, db := newInMemoryBlockStore()
 	height := int64(10)
-	loadMeta := func() (interface{}, error) {
+	loadMeta := func() (any, error) {
 		meta := bs.LoadBlockMeta(height)
 		return meta, nil
 	}
@@ -743,7 +743,7 @@ func TestBlockFetchAtHeight(t *testing.T) {
 	require.Nil(t, blockAtHeightPlus2, "expecting an unsuccessful load of Height()+2")
 }
 
-func doFn(fn func() (interface{}, error)) (res interface{}, err error, panicErr error) {
+func doFn(fn func() (any, error)) (res any, err error, panicErr error) {
 	defer func() {
 		if r := recover(); r != nil {
 			switch e := r.(type) {

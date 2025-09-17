@@ -217,7 +217,7 @@ func (r *Reactor) AddPeer(p Peer) {
 }
 
 // RemovePeer implements Reactor by resetting peer's requests info.
-func (r *Reactor) RemovePeer(p Peer, _ interface{}) {
+func (r *Reactor) RemovePeer(p Peer, _ any) {
 	id := string(p.ID())
 	r.requestsSent.Delete(id)
 	r.lastReceivedRequests.Delete(id)

@@ -72,16 +72,16 @@ func (s *Subscription) cancel(err error) {
 
 // Message glues data and events together.
 type Message struct {
-	data   interface{}
+	data   any
 	events map[string][]string
 }
 
-func NewMessage(data interface{}, events map[string][]string) Message {
+func NewMessage(data any, events map[string][]string) Message {
 	return Message{data, events}
 }
 
 // Data returns an original data published.
-func (msg Message) Data() interface{} {
+func (msg Message) Data() any {
 	return msg.data
 }
 

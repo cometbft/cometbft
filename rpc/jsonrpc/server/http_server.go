@@ -138,7 +138,7 @@ type httpHeader struct {
 }
 
 func writeRPCResponseHTTP(w http.ResponseWriter, headers []httpHeader, res ...types.RPCResponse) error {
-	var v interface{}
+	var v any
 	if len(res) == 1 {
 		v = res[0]
 	} else {

@@ -309,7 +309,7 @@ func genEphKeys() (ephPub, ephPriv *[32]byte) {
 func shareEphPubKey(conn io.ReadWriter, locEphPub *[32]byte) (remEphPub *[32]byte, err error) {
 	// Send our pubkey and receive theirs in tandem.
 	trs, _ := async.Parallel(
-		func(_ int) (val interface{}, abort bool, err error) {
+		func(_ int) (val any, abort bool, err error) {
 			lc := *locEphPub
 			_, err = protoio.NewDelimitedWriter(conn).WriteMsg(&gogotypes.BytesValue{Value: lc[:]})
 			if err != nil {
@@ -317,7 +317,7 @@ func shareEphPubKey(conn io.ReadWriter, locEphPub *[32]byte) (remEphPub *[32]byt
 			}
 			return nil, false, nil
 		},
-		func(_ int) (val interface{}, abort bool, err error) {
+		func(_ int) (val any, abort bool, err error) {
 			var bytes gogotypes.BytesValue
 			_, err = protoio.NewDelimitedReader(conn, 1024*1024).ReadMsg(&bytes)
 			if err != nil {
@@ -411,7 +411,7 @@ type authSigMessage struct {
 func shareAuthSignature(sc io.ReadWriter, pubKey crypto.PubKey, signature []byte) (recvMsg authSigMessage, err error) {
 	// Send our info and receive theirs in tandem.
 	trs, _ := async.Parallel(
-		func(_ int) (val interface{}, abort bool, err error) {
+		func(_ int) (val any, abort bool, err error) {
 			pbpk, err := cryptoenc.PubKeyToProto(pubKey)
 			if err != nil {
 				return nil, true, err
@@ -422,7 +422,7 @@ func shareAuthSignature(sc io.ReadWriter, pubKey crypto.PubKey, signature []byte
 			}
 			return nil, false, nil
 		},
-		func(_ int) (val interface{}, abort bool, err error) {
+		func(_ int) (val any, abort bool, err error) {
 			var pba tmp2p.AuthSigMessage
 			_, err = protoio.NewDelimitedReader(sc, 1024*1024).ReadMsg(&pba)
 			if err != nil {

@@ -58,7 +58,7 @@ type marshaler interface {
 	MarshalTo(data []byte) (n int, err error)
 }
 
-func getSize(v interface{}) (int, bool) {
+func getSize(v any) (int, bool) {
 	if sz, ok := v.(interface {
 		Size() (n int)
 	}); ok {

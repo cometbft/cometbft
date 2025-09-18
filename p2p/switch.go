@@ -99,6 +99,8 @@ type Switch struct {
 	mlc     *metricsLabelCache
 }
 
+var _ Switcher = (*Switch)(nil)
+
 // NetAddress returns the address the switch is listening on.
 func (sw *Switch) NetAddress() *NetAddress {
 	addr := sw.transport.NetAddress()

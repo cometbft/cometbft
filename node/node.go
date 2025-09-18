@@ -53,7 +53,7 @@ type Node struct {
 	privValidator types.PrivValidator // local node's validator key
 
 	// network
-	transport   *p2p.MultiplexTransport
+	transport   p2p.Transport
 	sw          p2p.Switcher // p2p connections
 	addrBook    pex.AddrBook // known peers
 	nodeInfo    p2p.NodeInfo
@@ -114,21 +114,33 @@ func CustomReactors(reactors map[string]p2p.Reactor) Option {
 				n.sw.RemoveReactor(name, existingReactor)
 			}
 			n.sw.AddReactor(name, reactor)
+
 			// register the new channels to the nodeInfo
 			// NOTE: This is a bit messy now with the type casting but is
 			// cleaned up in the following version when NodeInfo is changed from
 			// and interface to a concrete type
-			if ni, ok := n.nodeInfo.(p2p.DefaultNodeInfo); ok {
-				for _, chDesc := range reactor.GetChannels() {
-					if !ni.HasChannel(chDesc.ID) {
-						ni.Channels = append(ni.Channels, chDesc.ID)
-						n.transport.AddChannel(chDesc.ID)
-					}
-				}
-				n.nodeInfo = ni
-			} else {
+			ni, ok := n.nodeInfo.(p2p.DefaultNodeInfo)
+			if !ok {
 				n.Logger.Error("Node info is not of type DefaultNodeInfo. Custom reactor channels can not be added.")
+				continue
 			}
+
+			mp, ok := n.transport.(*p2p.MultiplexTransport)
+			if !ok {
+				n.Logger.Error("Transport is not of type MultiplexTransport. Custom reactor channels can not be added.")
+				continue
+			}
+
+			for _, chDesc := range reactor.GetChannels() {
+				if ni.HasChannel(chDesc.ID) {
+					continue
+				}
+
+				ni.Channels = append(ni.Channels, chDesc.ID)
+				mp.AddChannel(chDesc.ID)
+			}
+
+			n.nodeInfo = ni
 		}
 	}
 }
@@ -443,13 +455,49 @@ func NewNodeWithContext(
 		return nil, err
 	}
 
-	transport, peerFilters := createTransport(config, nodeInfo, nodeKey, proxyApp)
-
-	p2pLogger := logger.With("module", "p2p")
-	sw := createSwitch(
-		config, transport, p2pMetrics, peerFilters, mempoolReactor, bcReactor,
-		stateSyncReactor, consensusReactor, evidenceReactor, nodeInfo, nodeKey, p2pLogger,
+	var (
+		p2pLogger = logger.With("module", "p2p")
+		sw        p2p.Switcher
+		transport p2p.Transport
 	)
+
+	// Comet P2P (default)
+	if !config.P2P.UseLibP2P {
+		transport, peerFilters := createTransport(config, nodeInfo, nodeKey, proxyApp)
+
+		sw = createCometSwitch(
+			config,
+			transport,
+			p2pMetrics,
+			peerFilters,
+			mempoolReactor,
+			bcReactor,
+			stateSyncReactor,
+			consensusReactor,
+			evidenceReactor,
+			nodeInfo,
+			nodeKey,
+			p2pLogger,
+		)
+	} else {
+		p2pLogger.Info("Using go-libp2p transport!")
+
+		reactors := []p2p.ReactorItem{
+			{Name: "MEMPOOL", Reactor: mempoolReactor},
+			{Name: "BLOCKSYNC", Reactor: bcReactor},
+			{Name: "CONSENSUS", Reactor: consensusReactor},
+			{Name: "EVIDENCE", Reactor: evidenceReactor},
+			{Name: "STATESYNC", Reactor: stateSyncReactor},
+		}
+
+		// drop mempool is nop
+		if config.Mempool.Type == cfg.MempoolTypeNop {
+			reactors = reactors[1:]
+		}
+
+		// todo args
+		sw = p2p.NewLibP2PSwitch(config.P2P, nodeInfo, nodeKey, reactors, p2pLogger)
+	}
 
 	err = sw.AddPersistentPeers(splitAndTrimEmpty(config.P2P.PersistentPeers, ",", " "))
 	if err != nil {
@@ -559,17 +607,20 @@ func (n *Node) OnStart() error {
 	if err != nil {
 		return err
 	}
-	if err := n.transport.Listen(*addr); err != nil {
-		return err
-	}
 
-	n.isListening = true
+	if mp, ok := n.transport.(*p2p.MultiplexTransport); ok {
+		if err := mp.Listen(*addr); err != nil {
+			return err
+		}
+	}
 
 	// Start the switch (the P2P server).
 	err = n.sw.Start()
 	if err != nil {
 		return err
 	}
+
+	n.isListening = true
 
 	// Always connect to persistent peers
 	err = n.sw.DialPeersAsync(splitAndTrimEmpty(n.config.P2P.PersistentPeers, ",", " "))
@@ -613,8 +664,10 @@ func (n *Node) OnStop() {
 		n.Logger.Error("Error closing switch", "err", err)
 	}
 
-	if err := n.transport.Close(); err != nil {
-		n.Logger.Error("Error closing transport", "err", err)
+	if mp, ok := n.transport.(*p2p.MultiplexTransport); ok {
+		if err := mp.Close(); err != nil {
+			n.Logger.Error("Error closing transport", "err", err)
+		}
 	}
 
 	n.isListening = false

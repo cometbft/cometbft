@@ -320,6 +320,15 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		}
 		switch msg := msg.(type) {
 		case *ProposalMessage:
+			conR.conS.mtx.RLock()
+			maxBytes := conR.conS.state.ConsensusParams.Block.MaxBytes
+			conR.conS.mtx.RUnlock()
+			if err := msg.Proposal.ValidateBlockSize(maxBytes); err != nil {
+				conR.Logger.Error("Rejecting oversized proposal", "peer", e.Src, "height", msg.Proposal.Height)
+				conR.Switch.StopPeerForError(e.Src, ErrProposalTooManyParts)
+				return
+			}
+
 			ps.SetHasProposal(msg.Proposal)
 			conR.conS.peerMsgQueue <- msgInfo{msg, e.Src.ID()}
 		case *ProposalPOLMessage:
@@ -1633,6 +1642,12 @@ type ProposalMessage struct {
 // ValidateBasic performs basic validation.
 func (m *ProposalMessage) ValidateBasic() error {
 	return m.Proposal.ValidateBasic()
+}
+
+// ValidateBlockSize validates the proposals block size against a maximum. If
+// -1 is passed, types.MaxBlockSizeBytes will be used as the maximum.
+func (m *ProposalMessage) ValidateBlockSize(maxBlockSizeBytes int64) error {
+	return m.Proposal.ValidateBlockSize(maxBlockSizeBytes)
 }
 
 // String returns a string representation.

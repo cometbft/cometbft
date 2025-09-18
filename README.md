@@ -4,7 +4,6 @@
 [Blockchain], for short.
 
 [![Version][version-badge]][version-url]
-[![API Reference][api-badge]][api-url]
 [![Go version][go-badge]][go-url]
 [![Discord chat][discord-badge]][discord-url]
 [![License][license-badge]][license-url]
@@ -30,31 +29,23 @@ consensus](https://arxiv.org/abs/1807.04938)".
 
 ## Documentation
 
-Complete documentation can be found on the
-[website](https://docs.cometbft.com/).
+Complete documentation can be found on the [website](https://docs.cometbft.com/).
 
 ## Releases
 
-Please do not depend on `main` as your production branch. Use
-[releases](https://github.com/cometbft/cometbft/releases) instead.
-
-If you intend to run CometBFT in production, we're happy to help. To contact
-us, in order of preference:
-
-- [Create a new discussion on
-  GitHub](https://github.com/cometbft/cometbft/discussions)
-- Reach out to us via [Telegram](https://t.me/CometBFT)
-- [Join the Cosmos Network Discord](https://discord.gg/interchain) and
-  discuss in
-  [`#cometbft`](https://discord.com/channels/669268347736686612/1069933855307472906)
+Please do not depend on `main` as your production branch. Use [releases](https://github.com/cometbft/cometbft/releases) instead.
 
 More on how releases are conducted can be found [here](./RELEASES.md).
 
+## Developer Community and Support
+
+The issue list of this repo is exclusively for bug reports and feature requests. We have active, helpful communities on Discord, Telegram, and Slack.
+
+**| Need Help? | Support & Community: [Discord](https://discord.com/invite/interchain) - [Telegram](https://t.me/CosmosOG) - [Talk to an Expert](https://cosmos.network/interest-form) - [Join the #Cosmos-tech Slack Channel](https://forms.gle/A8jawLgB8zuL1FN36) |**
+
 ## Security
 
-To report a security vulnerability, see our [bug bounty
-program](https://hackerone.com/cosmos). For examples of the kinds of bugs we're
-looking for, see [our security policy](SECURITY.md).
+To report a security vulnerability, see our [bug bounty program](https://hackerone.com/cosmos). For examples of the kinds of bugs we're looking for, see [our security policy](SECURITY.md).
 
 ## Minimum requirements
 

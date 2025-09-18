@@ -60,7 +60,7 @@ func NewReactor(consensusState *State, waitSync bool, options ...ReactorOption) 
 	conR := &Reactor{
 		conS:          consensusState,
 		waitSync:      atomic.Bool{},
-		rs:            consensusState.GetRoundState(),
+		rs:            consensusState.getRoundState(),
 		initialHeight: atomic.Int64{},
 		Metrics:       NopMetrics(),
 	}

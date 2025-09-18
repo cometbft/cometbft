@@ -243,11 +243,11 @@ func (cs *State) GetLastHeight() int64 {
 
 // GetRoundState returns a shallow copy of the internal consensus state.
 // This function is thread-safe.
-func (cs *State) GetRoundState() cstypes.RoundState {
+func (cs *State) GetRoundState() *cstypes.RoundState {
 	cs.mtx.RLock()
 	rs := cs.getRoundState()
 	cs.mtx.RUnlock()
-	return rs
+	return &rs
 }
 
 // getRoundState returns a shallow copy of the internal consensus state.
@@ -397,7 +397,7 @@ func (cs *State) OnStart() error {
 	// schedule the first round!
 	// use GetRoundState so we don't race the receiveRoutine for access
 	rs := cs.GetRoundState()
-	cs.scheduleRound0(&rs)
+	cs.scheduleRound0(rs)
 
 	return nil
 }

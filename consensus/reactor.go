@@ -1183,6 +1183,27 @@ func (ps *PeerState) SetHasProposalBlockPart(height int64, round int32, index in
 	ps.PRS.ProposalBlockParts.SetIndex(index, true)
 }
 
+// PickSendVote picks a vote and sends it to the peer.
+// Returns true if vote was sent.
+// deprecated: still present in this version for API compatibility, will be
+// removed in a later version
+func (ps *PeerState) PickSendVote(votes types.VoteSetReader) bool {
+	if vote := ps.PickVoteToSend(votes); vote != nil {
+		ps.logger.Debug("Sending vote message", "ps", ps, "vote", vote)
+		if ps.peer.Send(p2p.Envelope{
+			ChannelID: VoteChannel,
+			Message: &cmtcons.Vote{
+				Vote: vote.ToProto(),
+			},
+		}) {
+			ps.SetHasVote(vote)
+			return true
+		}
+		return false
+	}
+	return false
+}
+
 // sendVoteSetHasVote sends the vote to the peer.
 // Returns true and marks the peer as having the vote if the vote was sent.
 func (ps *PeerState) sendVoteSetHasVote(vote *types.Vote) bool {

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
@@ -162,7 +163,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		Validators:                 map[*Node]int64{},
 		ValidatorUpdates:           map[int64]map[*Node]int64{},
 		Nodes:                      []*Node{},
-		KeyType:                    ed25519.KeyType,
+		KeyType:                    manifest.KeyType,
 		Evidence:                   manifest.Evidence,
 		LoadTxSizeBytes:            manifest.LoadTxSizeBytes,
 		LoadTxBatchSize:            manifest.LoadTxBatchSize,
@@ -180,16 +181,20 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		Prometheus:                 manifest.Prometheus,
 		BlockMaxBytes:              manifest.BlockMaxBytes,
 		VoteExtensionsEnableHeight: manifest.VoteExtensionsEnableHeight,
-		VoteExtensionSize:          manifest.VoteExtensionSize,
 		VoteExtensionsUpdateHeight: manifest.VoteExtensionsUpdateHeight,
+		VoteExtensionSize:          manifest.VoteExtensionSize,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
 	}
+
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
 	}
 	if manifest.InitialHeight > 0 {
 		testnet.InitialHeight = manifest.InitialHeight
+	}
+	if testnet.KeyType == "" {
+		testnet.KeyType = ed25519.KeyType
 	}
 	if testnet.ABCIProtocol == "" {
 		testnet.ABCIProtocol = string(ProtocolBuiltin)
@@ -435,7 +440,7 @@ func (n Node) Validate(testnet Testnet) error {
 		return fmt.Errorf("invalid block sync setting %q", n.BlockSyncVersion)
 	}
 	switch n.Database {
-	case "goleveldb", "cleveldb", "boltdb", "rocksdb", "badgerdb":
+	case "goleveldb", "cleveldb", "rocksdb", "badgerdb":
 	default:
 		return fmt.Errorf("invalid database setting %q", n.Database)
 	}
@@ -620,8 +625,14 @@ func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
 		panic(err) // this shouldn't happen
 	}
 	switch keyType {
-	case "secp256k1":
+	case secp256k1.KeyType:
 		return secp256k1.GenPrivKeySecp256k1(seed)
+	case bls12381.KeyType:
+		pk, err := bls12381.GenPrivKeyFromSecret(seed)
+		if err != nil {
+			panic(fmt.Sprintf("unrecoverable error when generating key; key type %s, err %v", bls12381.KeyType, err))
+		}
+		return pk
 	case ed25519.KeyType:
 		return ed25519.GenPrivKeyFromSecret(seed)
 	default:

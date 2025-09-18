@@ -1830,22 +1830,6 @@ func (cs *State) finalizeCommit(height int64) {
 	// NewHeightStep!
 	cs.updateToState(stateCopy)
 
-	if len(block.Txs) > 0 {
-		sync.OnceFunc(func() {
-			f, err := os.Create("trace.out")
-			if err != nil {
-				cs.Logger.Error("failed to open 'trace.out'")
-				return
-			}
-			defer f.Close()
-
-			if _, err := cs.fr.WriteTo(f); err != nil {
-				cs.Logger.Error("failed to write flight recorder traces to 'trace.out'")
-				return
-			}
-		})()
-	}
-
 	fail.Fail() // XXX
 
 	// Private validator might have changed it's key pair => refetch pubkey.
@@ -1861,6 +1845,30 @@ func (cs *State) finalizeCommit(height int64) {
 	// * cs.Height has been increment to height+1
 	// * cs.Step is now cstypes.RoundStepNewHeight
 	// * cs.StartTime is set to when we will start round0.
+}
+
+func (cs *State) flightRecord(height int64, block *types.Block) {
+	lastBlockMeta := cs.blockStore.LoadBlockMeta(height - 1)
+	if lastBlockMeta == nil {
+		return
+	}
+
+	duraiton := block.Time.Sub(lastBlockMeta.Header.Time)
+	if duraiton > time.Second*5 {
+		sync.OnceFunc(func() {
+			f, err := os.Create("trace.out")
+			if err != nil {
+				cs.Logger.Error("failed to open 'trace.out'")
+				return
+			}
+			defer f.Close()
+
+			if _, err := cs.fr.WriteTo(f); err != nil {
+				cs.Logger.Error("failed to write flight recorder traces to 'trace.out'")
+				return
+			}
+		})()
+	}
 }
 
 func (cs *State) recordMetrics(height int64, block *types.Block) {

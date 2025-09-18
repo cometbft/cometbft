@@ -407,7 +407,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 //------------------------------------------------------------------------
 
 // TxResultsHash returns the root hash of a Merkle tree of
-// ExecTxResulst responses (see ABCIResults.Hash)
+// ExecTxResults responses (see ABCIResults.Hash)
 //
 // See merkle.SimpleHashFromByteSlices
 func TxResultsHash(txResults []*abci.ExecTxResult) []byte {

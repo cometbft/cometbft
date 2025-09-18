@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"encoding/binary"
+	"sync/atomic"
 	"testing"
 )
 
@@ -33,11 +34,11 @@ func BenchmarkCacheRemoveTime(b *testing.B) {
 
 	b.ResetTimer()
 
+	var idx int64
 	b.RunParallel(func(pb *testing.PB) {
-		idx := 0
 		for pb.Next() {
-			cache.Remove(txs[idx%b.N])
-			idx++
+			currIdx := atomic.AddInt64(&idx, 1) - 1
+			cache.Remove(txs[currIdx%int64(b.N)])
 		}
 	})
 }

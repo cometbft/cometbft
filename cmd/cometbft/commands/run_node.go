@@ -6,9 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
-
-	"runtime/trace"
 
 	"github.com/spf13/cobra"
 
@@ -105,11 +102,7 @@ func NewRunNodeCmd(nodeProvider nm.Provider) *cobra.Command {
 				return err
 			}
 
-			fr := trace.NewFlightRecorder(trace.FlightRecorderConfig{MinAge: 10 * time.Second})
-			fr.Start()
-			defer fr.Stop()
-
-			n, err := nodeProvider(config, fr, logger)
+			n, err := nodeProvider(config, logger)
 			if err != nil {
 				return fmt.Errorf("failed to create node: %w", err)
 			}

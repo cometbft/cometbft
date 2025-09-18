@@ -54,6 +54,9 @@ type Node struct {
 	genesisDoc    *types.GenesisDoc   // initial validator set
 	privValidator types.PrivValidator // local node's validator key
 
+	// telemetry
+	fr *trace.FlightRecorder
+
 	// network
 	transport   *p2p.MultiplexTransport
 	sw          *p2p.Switch  // p2p connections
@@ -141,6 +144,11 @@ func CustomReactors(reactors map[string]p2p.Reactor) Option {
 func StateProvider(stateProvider statesync.StateProvider) Option {
 	return func(n *Node) {
 		n.stateSyncProvider = stateProvider
+	}
+}
+
+func FlightRecorder(fr *trace.FlightRecorder) Option {
+	return func(n *Node) {
 	}
 }
 
@@ -282,12 +290,11 @@ func NewNode(config *cfg.Config,
 	dbProvider cfg.DBProvider,
 	metricsProvider MetricsProvider,
 	logger log.Logger,
-	fr *trace.FlightRecorder,
 	options ...Option,
 ) (*Node, error) {
 	return NewNodeWithContext(context.TODO(), config, privValidator,
 		nodeKey, clientCreator, genesisDocProvider, dbProvider,
-		metricsProvider, logger, fr, options...)
+		metricsProvider, logger, options...)
 }
 
 // NewNodeWithContext is cancellable version of NewNode.
@@ -300,9 +307,10 @@ func NewNodeWithContext(ctx context.Context,
 	dbProvider cfg.DBProvider,
 	metricsProvider MetricsProvider,
 	logger log.Logger,
-	fr *trace.FlightRecorder,
 	options ...Option,
 ) (*Node, error) {
+	fr := trace.NewFlightRecorder(trace.FlightRecorderConfig{MinAge: 5 * time.Second})
+
 	blockStore, stateDB, err := initDBs(config, dbProvider)
 	if err != nil {
 		return nil, err
@@ -517,6 +525,7 @@ func NewNodeWithContext(ctx context.Context,
 		indexerService:   indexerService,
 		blockIndexer:     blockIndexer,
 		eventBus:         eventBus,
+		fr:               fr,
 	}
 	node.BaseService = *service.NewBaseService(logger, "Node", node)
 
@@ -566,6 +575,10 @@ func (n *Node) OnStart() error {
 	}
 
 	n.isListening = true
+
+	if err := n.fr.Start(); err != nil {
+		return fmt.Errorf("error string flight recorder: %w", err)
+	}
 
 	// Start the switch (the P2P server).
 	err = n.sw.Start()
@@ -620,6 +633,8 @@ func (n *Node) OnStop() {
 	}
 
 	n.isListening = false
+
+	n.fr.Stop()
 
 	// finally stop the listeners / external services
 	for _, l := range n.rpcListeners {

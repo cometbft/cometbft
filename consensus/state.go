@@ -1830,6 +1830,8 @@ func (cs *State) finalizeCommit(height int64) {
 	// NewHeightStep!
 	cs.updateToState(stateCopy)
 
+	cs.flightRecord(height, block)
+
 	fail.Fail() // XXX
 
 	// Private validator might have changed it's key pair => refetch pubkey.

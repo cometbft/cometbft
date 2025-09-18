@@ -58,12 +58,12 @@ func DefaultGenesisDocProviderFunc(config *cfg.Config) GenesisDocProvider {
 }
 
 // Provider takes a config and a logger and returns a ready to go Node.
-type Provider func(*cfg.Config, *trace.FlightRecorder, log.Logger) (*Node, error)
+type Provider func(*cfg.Config, log.Logger) (*Node, error)
 
 // DefaultNewNode returns a CometBFT node with default settings for the
 // PrivValidator, ClientCreator, GenesisDoc, and DBProvider.
 // It implements NodeProvider.
-func DefaultNewNode(config *cfg.Config, fr *trace.FlightRecorder, logger log.Logger) (*Node, error) {
+func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	if err != nil {
 		return nil, fmt.Errorf("failed to load or gen node key %s: %w", config.NodeKeyFile(), err)
@@ -77,7 +77,6 @@ func DefaultNewNode(config *cfg.Config, fr *trace.FlightRecorder, logger log.Log
 		cfg.DefaultDBProvider,
 		DefaultMetricsProvider(config.Instrumentation),
 		logger,
-		fr,
 	)
 }
 

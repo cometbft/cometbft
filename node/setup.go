@@ -410,7 +410,8 @@ func createTransport(
 	return transport, peerFilters
 }
 
-func createSwitch(config *cfg.Config,
+func createCometSwitch(
+	config *cfg.Config,
 	transport p2p.Transport,
 	p2pMetrics *p2p.Metrics,
 	peerFilters []p2p.PeerFilterFunc,
@@ -445,8 +446,11 @@ func createSwitch(config *cfg.Config,
 	return sw
 }
 
-func createAddrBookAndSetOnSwitch(config *cfg.Config, sw *p2p.Switch,
-	p2pLogger log.Logger, nodeKey *p2p.NodeKey,
+func createAddrBookAndSetOnSwitch(
+	config *cfg.Config,
+	sw p2p.Switcher,
+	p2pLogger log.Logger,
+	nodeKey *p2p.NodeKey,
 ) (pex.AddrBook, error) {
 	addrBook := pex.NewAddrBook(config.P2P.AddrBookFile(), config.P2P.AddrBookStrict)
 	addrBook.SetLogger(p2pLogger.With("book", config.P2P.AddrBookFile()))
@@ -472,8 +476,11 @@ func createAddrBookAndSetOnSwitch(config *cfg.Config, sw *p2p.Switch,
 	return addrBook, nil
 }
 
-func createPEXReactorAndAddToSwitch(addrBook pex.AddrBook, config *cfg.Config,
-	sw *p2p.Switch, logger log.Logger,
+func createPEXReactorAndAddToSwitch(
+	addrBook pex.AddrBook,
+	config *cfg.Config,
+	sw p2p.Switcher,
+	logger log.Logger,
 ) *pex.Reactor {
 	// TODO persistent peers ? so we can have their DNS addrs saved
 	pexReactor := pex.NewReactor(addrBook,

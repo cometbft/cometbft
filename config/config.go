@@ -587,6 +587,9 @@ type P2PConfig struct { //nolint: maligned
 	// Set true to enable the peer-exchange reactor
 	PexReactor bool `mapstructure:"pex"`
 
+	// UseLibP2P (experimental) set true to use go-libp2p for networking
+	UseLibP2P bool `mapstructure:"use_libp2p"`
+
 	// Seed mode, in which node constantly crawls the network and looks for
 	// peers. If another node asks it for addresses, it responds and disconnects.
 	//
@@ -627,6 +630,7 @@ func DefaultP2PConfig() *P2PConfig {
 		SendRate:                     5120000, // 5 mB/s
 		RecvRate:                     5120000, // 5 mB/s
 		PexReactor:                   true,
+		UseLibP2P:                    false,
 		SeedMode:                     false,
 		AllowDuplicateIP:             false,
 		HandshakeTimeout:             20 * time.Second,

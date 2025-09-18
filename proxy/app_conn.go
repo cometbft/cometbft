@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"context"
+	"runtime/trace"
 	"time"
 
 	"github.com/go-kit/kit/metrics"
@@ -81,11 +82,15 @@ func (app *appConnConsensus) InitChain(ctx context.Context, req *types.RequestIn
 func (app *appConnConsensus) PrepareProposal(ctx context.Context,
 	req *types.RequestPrepareProposal,
 ) (*types.ResponsePrepareProposal, error) {
+	region := trace.StartRegion(ctx, "PrepareProposal")
+	defer region.End()
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "prepare_proposal", "type", "sync"))()
 	return app.appConn.PrepareProposal(ctx, req)
 }
 
 func (app *appConnConsensus) ProcessProposal(ctx context.Context, req *types.RequestProcessProposal) (*types.ResponseProcessProposal, error) {
+	region := trace.StartRegion(ctx, "ProcessProposal")
+	defer region.End()
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "process_proposal", "type", "sync"))()
 	return app.appConn.ProcessProposal(ctx, req)
 }
@@ -101,11 +106,15 @@ func (app *appConnConsensus) VerifyVoteExtension(ctx context.Context, req *types
 }
 
 func (app *appConnConsensus) FinalizeBlock(ctx context.Context, req *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
+	region := trace.StartRegion(ctx, "FinalizeBlock")
+	defer region.End()
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "finalize_block", "type", "sync"))()
 	return app.appConn.FinalizeBlock(ctx, req)
 }
 
 func (app *appConnConsensus) Commit(ctx context.Context) (*types.ResponseCommit, error) {
+	region := trace.StartRegion(ctx, "Commit")
+	defer region.End()
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "commit", "type", "sync"))()
 	return app.appConn.Commit(ctx, &types.RequestCommit{})
 }

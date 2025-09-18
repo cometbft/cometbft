@@ -8,7 +8,9 @@ import (
 	"io"
 	"os"
 	"runtime/debug"
+	"runtime/trace"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -135,10 +137,22 @@ type State struct {
 
 	// offline state sync height indicating to which height the node synced offline
 	offlineStateSyncHeight int64
+
+	once *sync.Once
+
+	fr             *trace.FlightRecorder
+	currentTask    *trace.Task
+	currentTaskCtx context.Context
 }
 
 // StateOption sets an optional parameter on the State.
 type StateOption func(*State)
+
+func WithFlightRecorder(fr *trace.FlightRecorder) StateOption {
+	return func(s *State) {
+		s.fr = fr
+	}
+}
 
 // NewState returns a new State.
 func NewState(
@@ -165,6 +179,8 @@ func NewState(
 		evpool:           evpool,
 		evsw:             cmtevents.NewEventSwitch(),
 		metrics:          NopMetrics(),
+		once:             new(sync.Once),
+		currentTaskCtx:   context.Background(),
 	}
 	for _, option := range options {
 		option(cs)
@@ -543,6 +559,10 @@ func (cs *State) updateRoundStep(round int32, step cstypes.RoundStepType) {
 			cs.metrics.MarkRound(cs.Round, cs.StartTime)
 		}
 		if cs.Step != step {
+			if cs.currentTask != nil {
+				cs.currentTask.End()
+			}
+			cs.currentTaskCtx, cs.currentTask = trace.NewTask(cs.currentTaskCtx, step.String())
 			cs.metrics.MarkStep(cs.Step)
 		}
 	}
@@ -1148,8 +1168,11 @@ func (cs *State) enterPropose(height int64, round int32) {
 
 	logger.Debug("entering propose step", "current", log.NewLazySprintf("%v/%v/%v", cs.Height, cs.Round, cs.Step))
 
+	region := trace.StartRegion(cs.currentTaskCtx, "EnterPropose")
+
 	defer func() {
 		// Done enterPropose:
+		region.End()
 		cs.updateRoundStep(round, cstypes.RoundStepPropose)
 		cs.newStep()
 
@@ -1200,6 +1223,9 @@ func (cs *State) isProposer(address []byte) bool {
 }
 
 func (cs *State) defaultDecideProposal(height int64, round int32) {
+	region := trace.StartRegion(cs.currentTaskCtx, "DecideProposal")
+	defer region.End()
+
 	var block *types.Block
 	var blockParts *types.PartSet
 
@@ -1210,7 +1236,7 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 	} else {
 		// Create a new proposal block from state/txs from the mempool.
 		var err error
-		block, err = cs.createProposalBlock(context.TODO())
+		block, err = cs.createProposalBlock(cs.currentTaskCtx)
 		if err != nil {
 			cs.Logger.Error("unable to create proposal block", "error", err)
 			return
@@ -1218,7 +1244,9 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 			panic("Method createProposalBlock should not provide a nil block without errors")
 		}
 		cs.metrics.ProposalCreateCount.Add(1)
-		blockParts, err = block.MakePartSet(types.BlockPartSizeBytes)
+		trace.WithRegion(cs.currentTaskCtx, "BlockMakePartSet", func() {
+			blockParts, err = block.MakePartSet(types.BlockPartSizeBytes)
+		})
 		if err != nil {
 			cs.Logger.Error("unable to create proposal block part set", "error", err)
 			return
@@ -1325,8 +1353,11 @@ func (cs *State) enterPrevote(height int64, round int32) {
 		return
 	}
 
+	region := trace.StartRegion(cs.currentTaskCtx, "EnterPrevote")
+
 	defer func() {
 		// Done enterPrevote:
+		region.End()
 		cs.updateRoundStep(round, cstypes.RoundStepPrevote)
 		cs.newStep()
 	}()
@@ -1341,6 +1372,9 @@ func (cs *State) enterPrevote(height int64, round int32) {
 }
 
 func (cs *State) defaultDoPrevote(height int64, round int32) {
+	region := trace.StartRegion(cs.currentTaskCtx, "DoPrevote")
+	defer region.End()
+
 	logger := cs.Logger.With("height", height, "round", round)
 
 	// If a block is locked, prevote that.
@@ -1450,8 +1484,11 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 
 	logger.Debug("entering precommit step", "current", log.NewLazySprintf("%v/%v/%v", cs.Height, cs.Round, cs.Step))
 
+	region := trace.StartRegion(cs.currentTaskCtx, "EnterPrecommit")
+
 	defer func() {
 		// Done enterPrecommit:
+		region.End()
 		cs.updateRoundStep(round, cstypes.RoundStepPrecommit)
 		cs.newStep()
 	}()
@@ -1657,6 +1694,9 @@ func (cs *State) enterCommit(height int64, commitRound int32) {
 func (cs *State) tryFinalizeCommit(height int64) {
 	logger := cs.Logger.With("height", height)
 
+	region := trace.StartRegion(cs.currentTaskCtx, "TryFinalizeCommti")
+	defer region.End()
+
 	if cs.Height != height {
 		panic(fmt.Sprintf("tryFinalizeCommit() cs.Height: %v vs height: %v", cs.Height, height))
 	}
@@ -1790,6 +1830,22 @@ func (cs *State) finalizeCommit(height int64) {
 	// NewHeightStep!
 	cs.updateToState(stateCopy)
 
+	if len(block.Txs) > 0 {
+		sync.OnceFunc(func() {
+			f, err := os.Create("trace.out")
+			if err != nil {
+				cs.Logger.Error("failed to open 'trace.out'")
+				return
+			}
+			defer f.Close()
+
+			if _, err := cs.fr.WriteTo(f); err != nil {
+				cs.Logger.Error("failed to write flight recorder traces to 'trace.out'")
+				return
+			}
+		})()
+	}
+
 	fail.Fail() // XXX
 
 	// Private validator might have changed it's key pair => refetch pubkey.
@@ -1883,9 +1939,8 @@ func (cs *State) recordMetrics(height int64, block *types.Block) {
 	if height > 1 {
 		lastBlockMeta := cs.blockStore.LoadBlockMeta(height - 1)
 		if lastBlockMeta != nil {
-			cs.metrics.BlockIntervalSeconds.Observe(
-				block.Time.Sub(lastBlockMeta.Header.Time).Seconds(),
-			)
+			duraiton := block.Time.Sub(lastBlockMeta.Header.Time)
+			cs.metrics.BlockIntervalSeconds.Observe(duraiton.Seconds())
 		}
 	}
 
@@ -1899,6 +1954,9 @@ func (cs *State) recordMetrics(height int64, block *types.Block) {
 //-----------------------------------------------------------------------------
 
 func (cs *State) defaultSetProposal(proposal *types.Proposal) error {
+	region := trace.StartRegion(cs.currentTaskCtx, "SetProposal")
+	defer region.End()
+
 	// Already have one
 	// TODO: possibly catch double proposals
 	if cs.Proposal != nil {
@@ -2065,6 +2123,9 @@ func (cs *State) handleCompleteProposal(blockHeight int64) {
 
 // Attempt to add the vote. if its a duplicate signature, dupeout the validator
 func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
+	region := trace.StartRegion(cs.currentTaskCtx, "TryAddVote")
+	defer region.End()
+
 	added, err := cs.addVote(vote, peerID)
 	// NOTE: some of these errors are swallowed here
 	if err != nil {

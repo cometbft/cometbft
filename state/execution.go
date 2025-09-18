@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"runtime/trace"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/fail"
@@ -108,6 +110,9 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	lastExtCommit *types.ExtendedCommit,
 	proposerAddr []byte,
 ) (*types.Block, error) {
+	region := trace.StartRegion(ctx, "Block.CreateProposalBlock")
+	defer region.End()
+
 	maxBytes := state.ConsensusParams.Block.MaxBytes
 	emptyMaxBytes := maxBytes == -1
 	if emptyMaxBytes {
@@ -125,7 +130,10 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 		maxReapBytes = -1
 	}
 
-	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
+	var txs types.Txs
+	trace.WithRegion(ctx, "Mempool.ReapMaxBytesMaxGas", func() {
+		txs = blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
+	})
 	commit := lastExtCommit.ToCommit()
 	block := state.MakeBlock(height, txs, commit, evidence, proposerAddr)
 	rpp, err := blockExec.proxyApp.PrepareProposal(

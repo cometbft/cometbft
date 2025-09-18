@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"runtime/trace"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
@@ -280,11 +282,12 @@ func NewNode(config *cfg.Config,
 	dbProvider cfg.DBProvider,
 	metricsProvider MetricsProvider,
 	logger log.Logger,
+	fr *trace.FlightRecorder,
 	options ...Option,
 ) (*Node, error) {
 	return NewNodeWithContext(context.TODO(), config, privValidator,
 		nodeKey, clientCreator, genesisDocProvider, dbProvider,
-		metricsProvider, logger, options...)
+		metricsProvider, logger, fr, options...)
 }
 
 // NewNodeWithContext is cancellable version of NewNode.
@@ -297,6 +300,7 @@ func NewNodeWithContext(ctx context.Context,
 	dbProvider cfg.DBProvider,
 	metricsProvider MetricsProvider,
 	logger log.Logger,
+	fr *trace.FlightRecorder,
 	options ...Option,
 ) (*Node, error) {
 	blockStore, stateDB, err := initDBs(config, dbProvider)
@@ -418,6 +422,7 @@ func NewNodeWithContext(ctx context.Context,
 	consensusReactor, consensusState := createConsensusReactor(
 		config, state, blockExec, blockStore, mempool, evidencePool,
 		privValidator, csMetrics, waitSync, eventBus, consensusLogger, offlineStateSyncHeight,
+		fr,
 	)
 
 	err = stateStore.SetOfflineStateSyncHeight(0)

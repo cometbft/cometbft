@@ -173,7 +173,7 @@ message RequestExtendVote {
 // Verify the vote extension
 message RequestVerifyVoteExtension {
   // the hash of the block that this received vote corresponds to
-  bytes hash              = 1;
+  bytes hash = 1;
   // the validator that signed the vote extension
   bytes validator_address = 2;
   int64 height            = 3;
@@ -345,7 +345,7 @@ message ResponseVerifyVoteExtension {
     // Incorrectly implementing this thus has liveness implications as it may affect
     // CometBFT's ability to receive 2/3+ valid votes to finalize the block.
     // Honest nodes should never be rejected.
-    REJECT  = 2;
+    REJECT = 2;
   }
 }
 
@@ -442,10 +442,10 @@ message ValidatorUpdate {
 }
 
 message VoteInfo {
-  Validator validator         = 1 [(gogoproto.nullable) = false];
+  Validator                    validator     = 1 [(gogoproto.nullable) = false];
   tendermint.types.BlockIDFlag block_id_flag = 3;
 
-  reserved 2; // signed_last_block
+  reserved 2;  // signed_last_block
 }
 
 message ExtendedVoteInfo {
@@ -458,7 +458,7 @@ message ExtendedVoteInfo {
   // block_id_flag indicates whether the validator voted for a block, nil, or did not vote at all
   tendermint.types.BlockIDFlag block_id_flag = 5;
 
-  reserved 2; // signed_last_block
+  reserved 2;  // signed_last_block
 }
 
 enum MisbehaviorType {

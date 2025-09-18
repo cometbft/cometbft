@@ -191,7 +191,7 @@ type BaseConfig struct { //nolint: maligned
 	// A custom human readable name for this node
 	Moniker string `mapstructure:"moniker"`
 
-	// Database backend: goleveldb | cleveldb | boltdb | rocksdb
+	// Database backend: goleveldb | cleveldb | rocksdb
 	// * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
 	//   - pure go
 	//   - stable
@@ -199,10 +199,6 @@ type BaseConfig struct { //nolint: maligned
 	//   - fast
 	//   - requires gcc
 	//   - use cleveldb build tag (go build -tags cleveldb)
-	// * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
-	//   - EXPERIMENTAL
-	//   - may be faster is some use-cases (random reads - indexer)
-	//   - use boltdb build tag (go build -tags boltdb)
 	// * rocksdb (uses github.com/tecbot/gorocksdb)
 	//   - EXPERIMENTAL
 	//   - requires gcc

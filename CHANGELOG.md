@@ -8,6 +8,16 @@
 
 ### IMPROVEMENTS
 
+- `[e2e]` add support for testing different keytypes, including BLS
+  ([\#3513](https://github.com/cometbft/cometbft/pull/3513))
+- `[crypto]` Reduce BLS signature size to 48 bytes by increasing pubkey size to
+  192 bytes ([\#3624](https://github.com/cometbft/cometbft/issues/3624)
+
+### FEATURES
+
+- `[crypto]` Add support for BLS12-381 keys. Since the implementation needs
+  `cgo` and brings in new dependencies, we use the `bls12381` build flag to
+  enable it ([\#2765](https://github.com/cometbft/cometbft/pull/2765))
 - `[mempool]` Add a metric (a counter) to measure whether a tx was received more than once.
   ([\#634](https://github.com/cometbft/cometbft/pull/634))
 - `[p2p]` Rename `IPeerSet#List` to `Copy`, add `Random`, `ForEach` methods.
@@ -63,9 +73,6 @@
   ([\#3419](https://github.com/cometbft/cometbft/pull/3419))
 - `[mempool]` In the broadcast routine, get the pointer to the peer's state once, before starting to iterate through the list of transactions.
   ([\#3430](https://github.com/cometbft/cometbft/pull/3430))
-
-### FEATURES
-
 - `[consensus]` Make mempool updates asynchronous from consensus Commit's,
   reducing latency for reaching consensus timeouts.
   ([#3008](https://github.com/cometbft/cometbft/pull/3008))
@@ -78,6 +85,10 @@
   ([5275](https://github.com/cometbft/cometbft/issues/5275))
 - `[mempool]` Fix mutex in `CListMempool.Flush` method, by changing it from read-lock to write-lock
   ([\#2443](https://github.com/cometbft/cometbft/issues/2443)).
+- `[crypto/bls12381]` Fix JSON marshal of private key
+  ([\#4772](https://github.com/cometbft/cometbft/pull/4772))
+- `[crypto/bls12381]` Modify `Sign`, `Verify` to use `dstMinPk`
+  ([\#4783](https://github.com/cometbft/cometbft/issues/4783))
 
 ### STATE-BREAKING
 

@@ -1,4 +1,5 @@
-COMETBFT_BUILD_OPTIONS += badgerdb,boltdb,cleveldb,rocksdb
+COMETBFT_BUILD_OPTIONS += badgerdb,cleveldb,rocksdb,pebbledb,clock_skew,bls12381
+IMAGE_TAG=cometbft/e2e-node:local-version
 
 include ../../common.mk
 
@@ -27,6 +28,6 @@ generator:
 	go build -o build/generator ./generator
 
 runner:
-	go build -o build/runner ./runner
+	go build -tags bls12381 -o build/runner ./runner
 
-.PHONY: all node docker generator runner 
+.PHONY: all node docker generator runner

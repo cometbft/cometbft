@@ -247,14 +247,13 @@ func (cs *State) GetRoundState() *cstypes.RoundState {
 	cs.mtx.RLock()
 	rs := cs.getRoundState()
 	cs.mtx.RUnlock()
-	return rs
+	return &rs
 }
 
 // getRoundState returns a shallow copy of the internal consensus state.
 // This function is not thread-safe. Use GetRoundState for the thread-safe version.
-func (cs *State) getRoundState() *cstypes.RoundState {
-	rs := cs.RoundState // copy
-	return &rs
+func (cs *State) getRoundState() cstypes.RoundState {
+	return cs.RoundState // copy
 }
 
 // GetRoundStateJSON returns a json of RoundState.
@@ -397,7 +396,8 @@ func (cs *State) OnStart() error {
 
 	// schedule the first round!
 	// use GetRoundState so we don't race the receiveRoutine for access
-	cs.scheduleRound0(cs.GetRoundState())
+	rs := cs.GetRoundState()
+	cs.scheduleRound0(rs)
 
 	return nil
 }
@@ -767,7 +767,7 @@ func (cs *State) newStep() {
 			cs.Logger.Error("failed publishing new round step", "err", err)
 		}
 
-		cs.evsw.FireEvent(types.EventNewRoundStep, &cs.RoundState)
+		cs.evsw.FireEvent(types.EventNewRoundStep, cs.RoundState)
 	}
 }
 
@@ -1648,7 +1648,7 @@ func (cs *State) enterCommit(height int64, commitRound int32) {
 				logger.Error("failed publishing valid block", "err", err)
 			}
 
-			cs.evsw.FireEvent(types.EventValidBlock, &cs.RoundState)
+			cs.evsw.FireEvent(types.EventValidBlock, cs.RoundState)
 		}
 	}
 }
@@ -2297,7 +2297,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 					cs.ProposalBlockParts = types.NewPartSetFromHeader(blockID.PartSetHeader)
 				}
 
-				cs.evsw.FireEvent(types.EventValidBlock, &cs.RoundState)
+				cs.evsw.FireEvent(types.EventValidBlock, cs.RoundState)
 				if err := cs.eventBus.PublishEventValidBlock(cs.RoundStateEvent()); err != nil {
 					return added, err
 				}

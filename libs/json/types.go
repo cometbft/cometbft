@@ -15,10 +15,10 @@ var typeRegistry = newTypes()
 // registry. These types will be encoded with a type wrapper `{"type":"<type>","value":<value>}`
 // regardless of which interface they are wrapped in (if any). If the type is a pointer, it will
 // still be valid both for value and pointer types, but decoding into an interface will generate
-// the a value or pointer based on the registered type.
+// a value or pointer based on the registered type.
 //
 // Should only be called in init() functions, as it panics on error.
-func RegisterType(_type interface{}, name string) {
+func RegisterType(_type any, name string) {
 	if _type == nil {
 		panic("cannot register nil type")
 	}

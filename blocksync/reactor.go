@@ -37,6 +37,11 @@ type consensusReactor interface {
 	SwitchToConsensus(state sm.State, skipWAL bool)
 }
 
+type mempoolReactor interface {
+	// for when we finish doing block sync or state sync
+	EnableInOutTxs()
+}
+
 type peerError struct {
 	err    error
 	peerID p2p.ID
@@ -202,7 +207,7 @@ func (bcR *Reactor) AddPeer(peer p2p.Peer) {
 }
 
 // RemovePeer implements Reactor by removing peer from the pool.
-func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
+func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 	bcR.pool.RemovePeer(peer.ID())
 }
 
@@ -247,8 +252,33 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 	})
 }
 
+func (bcR *Reactor) handlePeerResponse(msg *bcproto.BlockResponse, src p2p.Peer) {
+	bi, err := types.BlockFromProto(msg.Block)
+	if err != nil {
+		bcR.Logger.Error("Peer sent us invalid block", "peer", src, "msg", msg, "err", err)
+		bcR.Switch.StopPeerForError(src, err)
+		return
+	}
+	var extCommit *types.ExtendedCommit
+	if msg.ExtCommit != nil {
+		var err error
+		extCommit, err = types.ExtendedCommitFromProto(msg.ExtCommit)
+		if err != nil {
+			bcR.Logger.Error("failed to convert extended commit from proto",
+				"peer", src,
+				"err", err)
+			bcR.Switch.StopPeerForError(src, err)
+			return
+		}
+	}
+
+	if err := bcR.pool.AddBlock(src.ID(), bi, extCommit, msg.Block.Size()); err != nil {
+		bcR.Logger.Error("failed to add block", "peer", src, "err", err)
+	}
+}
+
 // Receive implements Reactor by handling 4 types of messages (look below).
-func (bcR *Reactor) Receive(e p2p.Envelope) { //nolint: dupl // recreated in a test
+func (bcR *Reactor) Receive(e p2p.Envelope) {
 	if err := ValidateMsg(e.Message); err != nil {
 		bcR.Logger.Error("Peer sent us invalid msg", "peer", e.Src, "msg", e.Message, "err", err)
 		bcR.Switch.StopPeerForError(e.Src, err)
@@ -261,28 +291,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) { //nolint: dupl // recreated in a t
 	case *bcproto.BlockRequest:
 		bcR.respondToPeer(msg, e.Src)
 	case *bcproto.BlockResponse:
-		bi, err := types.BlockFromProto(msg.Block)
-		if err != nil {
-			bcR.Logger.Error("Peer sent us invalid block", "peer", e.Src, "msg", e.Message, "err", err)
-			bcR.Switch.StopPeerForError(e.Src, err)
-			return
-		}
-		var extCommit *types.ExtendedCommit
-		if msg.ExtCommit != nil {
-			var err error
-			extCommit, err = types.ExtendedCommitFromProto(msg.ExtCommit)
-			if err != nil {
-				bcR.Logger.Error("failed to convert extended commit from proto",
-					"peer", e.Src,
-					"err", err)
-				bcR.Switch.StopPeerForError(e.Src, err)
-				return
-			}
-		}
-
-		if err := bcR.pool.AddBlock(e.Src.ID(), bi, extCommit, msg.Block.Size()); err != nil {
-			bcR.Logger.Error("failed to add block", "peer", e.Src, "err", err)
-		}
+		go bcR.handlePeerResponse(msg, e.Src)
 	case *bcproto.StatusRequest:
 		// Send peer our state.
 		e.Src.TrySend(p2p.Envelope{
@@ -421,12 +430,14 @@ FOR_LOOP:
 				continue FOR_LOOP
 			}
 			if bcR.pool.IsCaughtUp() || bcR.localNodeBlocksTheChain(state) {
-				bcR.Logger.Info("Time to switch to consensus reactor!", "height", height)
+				bcR.Logger.Info("Time to switch to consensus mode!", "height", height)
 				if err := bcR.pool.Stop(); err != nil {
 					bcR.Logger.Error("Error stopping pool", "err", err)
 				}
-				conR, ok := bcR.Switch.Reactor("CONSENSUS").(consensusReactor)
-				if ok {
+				if memR, ok := bcR.Switch.Reactor("MEMPOOL").(mempoolReactor); ok {
+					memR.EnableInOutTxs()
+				}
+				if conR, ok := bcR.Switch.Reactor("CONSENSUS").(consensusReactor); ok {
 					conR.SwitchToConsensus(state, blocksSynced > 0 || stateSynced)
 				}
 				// else {
@@ -572,7 +583,7 @@ FOR_LOOP:
 
 // BroadcastStatusRequest broadcasts `BlockStore` base and height.
 func (bcR *Reactor) BroadcastStatusRequest() {
-	bcR.Switch.Broadcast(p2p.Envelope{
+	bcR.Switch.BroadcastAsync(p2p.Envelope{
 		ChannelID: BlocksyncChannel,
 		Message:   &bcproto.StatusRequest{},
 	})

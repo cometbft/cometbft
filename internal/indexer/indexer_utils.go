@@ -9,7 +9,7 @@ import (
 
 // If the actual event value is a float, we get the condition and parse it as a float
 // to compare against
-func compareFloat(op1 *big.Float, op2 interface{}) (int, bool, error) {
+func compareFloat(op1 *big.Float, op2 any) (int, bool, error) {
 	switch opVal := op2.(type) {
 	case *big.Int:
 		vF := new(big.Float)
@@ -29,7 +29,7 @@ func compareFloat(op1 *big.Float, op2 interface{}) (int, bool, error) {
 // needed to represent the integer to avoid rounding issues with floats
 // where 100 would equal to 100.2 because 100.2 is rounded to 100, while 100.7
 // would be rounded to 101.
-func compareInt(op1 *big.Int, op2 interface{}) (int, bool, error) {
+func compareInt(op1 *big.Int, op2 any) (int, bool, error) {
 	switch opVal := op2.(type) {
 	case *big.Int:
 		return op1.Cmp(opVal), false, nil
@@ -42,7 +42,7 @@ func compareInt(op1 *big.Int, op2 interface{}) (int, bool, error) {
 	}
 }
 
-func CheckBounds(ranges indexer.QueryRange, v interface{}) (bool, error) {
+func CheckBounds(ranges indexer.QueryRange, v any) (bool, error) {
 	// These functions fetch the lower and upper bounds of the query
 	// It is expected that for x > 5, the value of lowerBound is 6.
 	// This is achieved by adding one to the actual lower bound.
@@ -61,7 +61,7 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) (bool, error) {
 	upperBound := ranges.UpperBoundValue()
 
 	// *Explanation for the isFloat condition below.*
-	// In LowerBoundValue(), for floating points, we cannot simply add 1 due to the reasons explained in
+	// In LowerBoundValue(), for floating points, we cannot simply add 1 due to the reasons explained
 	// in the comment at the beginning. The same is true for subtracting one for UpperBoundValue().
 	// That means that for integers, if the condition is >=, cmp will be either 0 or 1
 	// ( cmp == -1 should always be false).
@@ -78,7 +78,7 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) (bool, error) {
 				return false, err
 			}
 			if cmp == -1 || (isFloat && cmp == 0 && !ranges.IncludeLowerBound) {
-				return false, err
+				return false, nil
 			}
 		}
 		if upperBound != nil {
@@ -87,7 +87,7 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) (bool, error) {
 				return false, err
 			}
 			if cmp == 1 || (isFloat && cmp == 0 && !ranges.IncludeUpperBound) {
-				return false, err
+				return false, nil
 			}
 		}
 
@@ -98,7 +98,7 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) (bool, error) {
 				return false, err
 			}
 			if cmp == -1 || (cmp == 0 && isFloat && !ranges.IncludeLowerBound) {
-				return false, err
+				return false, nil
 			}
 		}
 		if upperBound != nil {
@@ -107,7 +107,7 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) (bool, error) {
 				return false, err
 			}
 			if cmp == 1 || (cmp == 0 && isFloat && !ranges.IncludeUpperBound) {
-				return false, err
+				return false, nil
 			}
 		}
 

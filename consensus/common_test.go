@@ -754,7 +754,7 @@ func ensureNewEventOnChannel(ch <-chan cmtpubsub.Message) {
 // consensusLogger is a TestingLogger which uses a different
 // color for each validator ("validator" key must exist).
 func consensusLogger() log.Logger {
-	return log.TestingLoggerWithColorFn(func(keyvals ...interface{}) term.FgBgColor {
+	return log.TestingLoggerWithColorFn(func(keyvals ...any) term.FgBgColor {
 		for i := 0; i < len(keyvals)-1; i += 2 {
 			if keyvals[i] == "validator" {
 				return term.FgBgColor{Fg: term.Color(uint8(keyvals[i+1].(int) + 1))}

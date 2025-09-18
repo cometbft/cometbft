@@ -155,7 +155,7 @@ func (psh *PartSetHeader) ToProto() cmtproto.PartSetHeader {
 	}
 }
 
-// FromProto sets a protobuf PartSetHeader to the given pointer
+// PartSetHeaderFromProto sets a protobuf PartSetHeader to the given pointer
 func PartSetHeaderFromProto(ppsh *cmtproto.PartSetHeader) (*PartSetHeader, error) {
 	if ppsh == nil {
 		return nil, errors.New("nil PartSetHeader")
@@ -188,15 +188,14 @@ type PartSet struct {
 	byteSize int64
 }
 
-// Returns an immutable, full PartSet from the data bytes.
+// NewPartSetFromData returns an immutable, full PartSet from the data bytes.
 // The data bytes are split into "partSize" chunks, and merkle tree computed.
 // CONTRACT: partSize is greater than zero.
 func NewPartSetFromData(data []byte, partSize uint32) *PartSet {
-	// divide data into 4kb parts.
+	// divide data into parts of size `partSize`
 	total := (uint32(len(data)) + partSize - 1) / partSize
 	parts := make([]*Part, total)
 	partsBytes := make([][]byte, total)
-	partsBitArray := bits.NewBitArray(int(total))
 	for i := uint32(0); i < total; i++ {
 		part := &Part{
 			Index: i,
@@ -204,13 +203,13 @@ func NewPartSetFromData(data []byte, partSize uint32) *PartSet {
 		}
 		parts[i] = part
 		partsBytes[i] = part.Bytes
-		partsBitArray.SetIndex(int(i), true)
 	}
 	// Compute merkle proofs
 	root, proofs := merkle.ProofsFromByteSlices(partsBytes)
 	for i := uint32(0); i < total; i++ {
 		parts[i].Proof = *proofs[i]
 	}
+	partsBitArray := bits.NewBitArrayFromFn(int(total), func(int) bool { return true })
 	return &PartSet{
 		total:         total,
 		hash:          root,
@@ -221,7 +220,7 @@ func NewPartSetFromData(data []byte, partSize uint32) *PartSet {
 	}
 }
 
-// Returns an empty PartSet ready to be populated.
+// NewPartSetFromHeader returns an empty PartSet ready to be populated.
 func NewPartSetFromHeader(header PartSetHeader) *PartSet {
 	return &PartSet{
 		total:         header.Total,

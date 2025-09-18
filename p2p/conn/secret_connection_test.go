@@ -119,7 +119,7 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 
 	// A helper that will run with (fooConn, fooWrites, fooReads) and vice versa
 	genNodeRunner := func(id string, nodeConn kvstoreConn, nodeWrites []string, nodeReads *[]string) async.Task {
-		return func(_ int) (interface{}, bool, error) {
+		return func(_ int) (any, bool, error) {
 			// Initiate cryptographic private key and secret connection through nodeConn.
 			nodePrvKey := ed25519.GenPrivKey()
 			nodeSecretConn, err := MakeSecretConnection(nodeConn, nodePrvKey)
@@ -129,7 +129,7 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 			}
 			// In parallel, handle some reads and writes.
 			trs, ok := async.Parallel(
-				func(_ int) (interface{}, bool, error) {
+				func(_ int) (any, bool, error) {
 					// Node writes:
 					for _, nodeWrite := range nodeWrites {
 						n, err := nodeSecretConn.Write([]byte(nodeWrite))
@@ -149,7 +149,7 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 					}
 					return nil, false, nil
 				},
-				func(_ int) (interface{}, bool, error) {
+				func(_ int) (any, bool, error) {
 					// Node reads:
 					readBuffer := make([]byte, dataMaxSize)
 					for {
@@ -330,7 +330,7 @@ func makeSecretConnPair(tb testing.TB) (fooSecConn, barSecConn *SecretConnection
 
 	// Make connections from both sides in parallel.
 	trs, ok := async.Parallel(
-		func(_ int) (val interface{}, abort bool, err error) {
+		func(_ int) (val any, abort bool, err error) {
 			fooSecConn, err = MakeSecretConnection(fooConn, fooPrvKey)
 			if err != nil {
 				tb.Errorf("failed to establish SecretConnection for foo: %v", err)
@@ -345,7 +345,7 @@ func makeSecretConnPair(tb testing.TB) (fooSecConn, barSecConn *SecretConnection
 			}
 			return nil, false, nil
 		},
-		func(_ int) (val interface{}, abort bool, err error) {
+		func(_ int) (val any, abort bool, err error) {
 			barSecConn, err = MakeSecretConnection(barConn, barPrvKey)
 			if barSecConn == nil {
 				tb.Errorf("failed to establish SecretConnection for bar: %v", err)

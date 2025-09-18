@@ -149,7 +149,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 			require.NoError(t, err)
 			prevote2, err := bcs.signVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
 			require.NoError(t, err)
-			peerList := reactors[byzantineNode].Switch.Peers().List()
+			peerList := reactors[byzantineNode].Switch.Peers().Copy()
 			bcs.Logger.Info("Getting peer list", "peers", peerList)
 			// send two votes to all peers (1st to one half, 2nd to another half)
 			for i, peer := range peerList {
@@ -205,7 +205,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		if lazyProposer.privValidatorPubKey == nil {
 			// If this node is a validator & proposer in the current round, it will
 			// miss the opportunity to create a block.
-			lazyProposer.Logger.Error(fmt.Sprintf("enterPropose: %v", errPubKeyIsNotSet))
+			lazyProposer.Logger.Error(fmt.Sprintf("enterPropose: %v", ErrPubKeyIsNotSet))
 			return
 		}
 		proposerAddr := lazyProposer.privValidatorPubKey.Address()
@@ -407,7 +407,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 	// byz proposer sends one block to peers[0]
 	// and the other block to peers[1] and peers[2].
 	// note peers and switches order don't match.
-	peers := switches[0].Peers().List()
+	peers := switches[0].Peers().Copy()
 
 	// partition A
 	ind0 := getSwitchIndex(switches, peers[0])
@@ -495,7 +495,7 @@ func byzantineDecideProposalFunc(ctx context.Context, t *testing.T, height int64
 	block2Hash := block2.Hash()
 
 	// broadcast conflicting proposals/block parts to peers
-	peers := sw.Peers().List()
+	peers := sw.Peers().Copy()
 	t.Logf("Byzantine: broadcasting conflicting proposals to %d peers", len(peers))
 	for i, peer := range peers {
 		if i < len(peers)/2 {
@@ -581,16 +581,100 @@ func (br *ByzantineReactor) AddPeer(peer p2p.Peer) {
 
 	// Send our state to peer.
 	// If we're syncing, broadcast a RoundStepMessage later upon SwitchToConsensus().
-	if !br.reactor.waitSync {
+	if !br.reactor.WaitSync() {
 		br.reactor.sendNewRoundStepMessage(peer)
 	}
 }
 
-func (br *ByzantineReactor) RemovePeer(peer p2p.Peer, reason interface{}) {
+func (br *ByzantineReactor) RemovePeer(peer p2p.Peer, reason any) {
 	br.reactor.RemovePeer(peer, reason)
 }
 
 func (br *ByzantineReactor) Receive(e p2p.Envelope) {
 	br.reactor.Receive(e)
 }
+
 func (br *ByzantineReactor) InitPeer(peer p2p.Peer) p2p.Peer { return peer }
+
+// Large/oversized proposals should be rejected
+func TestRejectOversizedProposals(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	n := 2
+	css, cleanup := randConsensusNet(t, n, "consensus_reactor_test", newMockTickerFunc(false), newKVStore)
+	defer cleanup()
+
+	switches := make([]*p2p.Switch, n)
+	p2pLogger := consensusLogger().With("module", "p2p")
+	for i := 0; i < n; i++ {
+		switches[i] = p2p.MakeSwitch(
+			config.P2P,
+			i,
+			func(_ int, sw *p2p.Switch) *p2p.Switch {
+				return sw
+			})
+		switches[i].SetLogger(p2pLogger.With("validator", i))
+	}
+
+	reactors := make([]p2p.Reactor, n)
+	for i := 0; i < n; i++ {
+		conR := NewReactor(css[i], false)
+		defer func() { require.NoError(t, conR.Stop()) }()
+
+		conR.SetLogger(consensusLogger().With("validator", i))
+		reactors[i] = conR
+	}
+
+	p2p.MakeConnectedSwitches(config.P2P, n, func(i int, _ *p2p.Switch) *p2p.Switch {
+		switches[i].AddReactor("CONSENSUS", reactors[i])
+		return switches[i]
+	}, p2p.Connect2Switches)
+
+	peers := switches[0].Peers().List()
+	targetPeer := peers[0]
+
+	height := int64(1)
+	round := int32(0)
+	cs := css[0]
+
+	block, err := cs.createProposalBlock(ctx)
+	require.NoError(t, err)
+
+	blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
+	require.NoError(t, err)
+
+	// create oversized proposal
+	propBlockID := types.BlockID{Hash: block.Hash(), PartSetHeader: blockParts.Header()}
+	propBlockID.PartSetHeader.Total = 4294967295
+
+	proposal := types.NewProposal(height, round, -1, propBlockID)
+	p := proposal.ToProto()
+	if err := cs.privValidator.SignProposal(cs.state.ChainID, p); err != nil {
+		t.Error(err)
+	}
+	proposal.Signature = p.Signature
+
+	success := targetPeer.Send(p2p.Envelope{
+		ChannelID: DataChannel,
+		Message:   &cmtcons.Proposal{Proposal: *proposal.ToProto()},
+	})
+	require.True(t, success)
+
+	select {
+	case e := <-css[1].peerMsgQueue:
+		// if we receive a message here, the peer incorrectly accepted the
+		// oversized proposal
+		if _, receivedProposal := e.Msg.(*ProposalMessage); receivedProposal {
+			assert.Fail(t, "peer incorrectly accepted oversized proposal")
+			return
+		}
+		// invalid state, we received some other unexpected message type, fail
+		// the test
+		assert.Fail(t, "received unexpected message type on peer msg queue, expected *ProposalMessage")
+	case <-ctx.Done():
+	case <-time.After(500 * time.Millisecond):
+		// timeout after 500ms if nothing has happened and assume peer rejected
+		// the proposal
+	}
+}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 	"github.com/cosmos/gogoproto/proto"
 	lru "github.com/hashicorp/golang-lru/v2"
 
@@ -160,7 +161,7 @@ func (bs *BlockStore) LoadBlock(height int64) *types.Block {
 
 	block, err := types.BlockFromProto(pbb)
 	if err != nil {
-		panic(fmt.Errorf("error from proto block: %w", err))
+		panic(cmterrors.ErrMsgFromProto{MessageName: "Block", Err: err})
 	}
 
 	return block
@@ -232,7 +233,7 @@ func (bs *BlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 
 	blockMeta, err := types.BlockMetaFromTrustedProto(pbbm)
 	if err != nil {
-		panic(fmt.Errorf("error from proto blockMeta: %w", err))
+		panic(cmterrors.ErrMsgFromProto{MessageName: "BlockMetadata", Err: err})
 	}
 
 	return blockMeta
@@ -280,7 +281,7 @@ func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
 	}
 	commit, err := types.CommitFromProto(pbc)
 	if err != nil {
-		panic(fmt.Errorf("converting commit to proto: %w", err))
+		panic(cmterrors.ErrMsgToProto{MessageName: "Commit", Err: err})
 	}
 	bs.blockCommitCache.Add(height, commit)
 	return commit.Clone()
@@ -584,7 +585,7 @@ func (bs *BlockStore) saveBlockToBatch(
 func (bs *BlockStore) saveBlockPart(height int64, index int, part *types.Part, batch dbm.Batch, saveBlockPartsToBatch bool) {
 	pbp, err := part.ToProto()
 	if err != nil {
-		panic(fmt.Errorf("unable to make part into proto: %w", err))
+		panic(cmterrors.ErrMsgToProto{MessageName: "Part", Err: err})
 	}
 	partBytes := mustEncode(pbp)
 	if saveBlockPartsToBatch {

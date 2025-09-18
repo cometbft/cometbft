@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// StringInSlice returns true if a is found the list.
+// StringInSlice returns true if a is found in the list.
 func StringInSlice(a string, list []string) bool {
 	for _, b := range list {
 		if b == a {

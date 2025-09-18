@@ -67,7 +67,7 @@ func (tr *TestReactor) GetChannels() []*conn.ChannelDescriptor {
 
 func (tr *TestReactor) AddPeer(Peer) {}
 
-func (tr *TestReactor) RemovePeer(Peer, interface{}) {}
+func (tr *TestReactor) RemovePeer(Peer, any) {}
 
 func (tr *TestReactor) Receive(e Envelope) {
 	if tr.logMessages {
@@ -117,12 +117,10 @@ func initSwitchFunc(_ int, sw *Switch) *Switch {
 func TestSwitches(t *testing.T) {
 	s1, s2 := MakeSwitchPair(initSwitchFunc)
 	t.Cleanup(func() {
-		if err := s1.Stop(); err != nil {
+		if err := s2.Stop(); err != nil {
 			t.Error(err)
 		}
-	})
-	t.Cleanup(func() {
-		if err := s2.Stop(); err != nil {
+		if err := s1.Stop(); err != nil {
 			t.Error(err)
 		}
 	})
@@ -156,9 +154,11 @@ func TestSwitches(t *testing.T) {
 			},
 		},
 	}
-	s1.Broadcast(Envelope{ChannelID: byte(0x00), Message: ch0Msg})
-	s1.Broadcast(Envelope{ChannelID: byte(0x01), Message: ch1Msg})
-	s1.Broadcast(Envelope{ChannelID: byte(0x02), Message: ch2Msg})
+	// Test BroadcastAsync and TryBroadcast on different channels in parallel.
+	// We have no channel capacity concerns, as each broadcast is on a distinct channel
+	s1.BroadcastAsync(Envelope{ChannelID: byte(0x00), Message: ch0Msg})
+	s1.BroadcastAsync(Envelope{ChannelID: byte(0x01), Message: ch1Msg})
+	s1.TryBroadcast(Envelope{ChannelID: byte(0x02), Message: ch2Msg})
 	assertMsgReceivedWithTimeout(t,
 		ch0Msg,
 		byte(0x00),
@@ -440,11 +440,11 @@ func TestSwitchStopPeerForError(t *testing.T) {
 		return initSwitchFunc(i, sw)
 	})
 
-	assert.Equal(t, len(sw1.Peers().List()), 1)
+	assert.Len(t, sw1.Peers().Copy(), 1)
 	assert.EqualValues(t, 1, peersMetricValue())
 
 	// send messages to the peer from sw1
-	p := sw1.Peers().List()[0]
+	p := sw1.Peers().Copy()[0]
 	p.Send(Envelope{
 		ChannelID: 0x1,
 		Message:   &p2pproto.Message{},
@@ -461,7 +461,7 @@ func TestSwitchStopPeerForError(t *testing.T) {
 	// now call StopPeerForError explicitly, eg. from a reactor
 	sw1.StopPeerForError(p, fmt.Errorf("some err"))
 
-	assert.Equal(t, len(sw1.Peers().List()), 0)
+	require.Empty(t, len(sw1.Peers().Copy()), 0)
 	assert.EqualValues(t, 0, peersMetricValue())
 }
 
@@ -487,7 +487,7 @@ func TestSwitchReconnectsToOutboundPersistentPeer(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, sw.Peers().Get(rp.ID()))
 
-	p := sw.Peers().List()[0]
+	p := sw.Peers().Copy()[0]
 	err = p.(*peer).CloseConn()
 	require.NoError(t, err)
 
@@ -746,7 +746,7 @@ type mockReactor struct {
 	initCalledBeforeRemoveFinished uint32
 }
 
-func (r *mockReactor) RemovePeer(Peer, interface{}) {
+func (r *mockReactor) RemovePeer(Peer, any) {
 	atomic.StoreUint32(&r.removePeerInProgress, 1)
 	defer atomic.StoreUint32(&r.removePeerInProgress, 0)
 	time.Sleep(100 * time.Millisecond)
@@ -809,61 +809,66 @@ func TestSwitchInitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 	assert.False(t, reactor.InitCalledBeforeRemoveFinished())
 }
 
-func BenchmarkSwitchBroadcast(b *testing.B) {
-	s1, s2 := MakeSwitchPair(func(i int, sw *Switch) *Switch {
-		// Make bar reactors of bar channels each
-		sw.AddReactor("foo", NewTestReactor([]*conn.ChannelDescriptor{
-			{ID: byte(0x00), Priority: 10},
-			{ID: byte(0x01), Priority: 10},
-		}, false))
-		sw.AddReactor("bar", NewTestReactor([]*conn.ChannelDescriptor{
-			{ID: byte(0x02), Priority: 10},
-			{ID: byte(0x03), Priority: 10},
-		}, false))
-		return sw
-	})
-
-	b.Cleanup(func() {
-		if err := s1.Stop(); err != nil {
-			b.Error(err)
-		}
-	})
-
+func makeSwitchForBenchmark(b *testing.B) *Switch {
+	b.Helper()
+	s1, s2 := MakeSwitchPair(initSwitchFunc)
 	b.Cleanup(func() {
 		if err := s2.Stop(); err != nil {
 			b.Error(err)
 		}
+		if err := s1.Stop(); err != nil {
+			b.Error(err)
+		}
 	})
-
 	// Allow time for goroutines to boot up
 	time.Sleep(1 * time.Second)
+	return s1
+}
+
+func BenchmarkSwitchBroadcast(b *testing.B) {
+	sw := makeSwitchForBenchmark(b)
+	chMsg := &p2pproto.PexAddrs{
+		Addrs: []p2pproto.NetAddress{
+			{
+				ID: "1",
+			},
+		},
+	}
 
 	b.ResetTimer()
-
-	numSuccess, numFailure := 0, 0
 
 	// Send random message from foo channel to another
 	for i := 0; i < b.N; i++ {
 		chID := byte(i % 4)
-		successChan := s1.Broadcast(Envelope{ChannelID: chID})
-		for s := range successChan {
-			if s {
-				numSuccess++
-			} else {
-				numFailure++
-			}
-		}
+		sw.BroadcastAsync(Envelope{ChannelID: chID, Message: chMsg})
+	}
+}
+
+func BenchmarkSwitchTryBroadcast(b *testing.B) {
+	sw := makeSwitchForBenchmark(b)
+	chMsg := &p2pproto.PexAddrs{
+		Addrs: []p2pproto.NetAddress{
+			{
+				ID: "1",
+			},
+		},
 	}
 
-	b.Logf("success: %v, failure: %v", numSuccess, numFailure)
+	b.ResetTimer()
+
+	// Send random message from foo channel to another
+	for i := 0; i < b.N; i++ {
+		chID := byte(i % 4)
+		sw.TryBroadcast(Envelope{ChannelID: chID, Message: chMsg})
+	}
 }
 
 func TestSwitchRemovalErr(t *testing.T) {
 	sw1, sw2 := MakeSwitchPair(func(i int, sw *Switch) *Switch {
 		return initSwitchFunc(i, sw)
 	})
-	assert.Equal(t, len(sw1.Peers().List()), 1)
-	p := sw1.Peers().List()[0]
+	require.Len(t, sw1.Peers().Copy(), 1)
+	p := sw1.Peers().Copy()[0]
 
 	sw2.StopPeerForError(p, fmt.Errorf("peer should error"))
 

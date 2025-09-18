@@ -56,6 +56,11 @@ func TestLibP2P(t *testing.T) {
 			sender   = conn.RemotePeer()
 		)
 
+		if conn.ConnState().Transport != TransportQuicV1 {
+			t.Fatalf("unexpected transport: %s", conn.ConnState().Transport)
+			return
+		}
+
 		msg, err := io.ReadAll(stream)
 		if err != nil && !errors.Is(err, io.EOF) {
 			t.Fatalf("failed to read from stream originating from %s: %v", sender, err)

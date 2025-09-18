@@ -18,6 +18,10 @@ type LibP2PHost struct {
 	host.Host
 }
 
+// TransportQuicV1 is the transport protocol for QUIC
+// @see https://docs.libp2p.io/concepts/transports/quic
+const TransportQuicV1 = "quic-v1"
+
 func NewLibP2P(config *config.P2PConfig, nodeKey *NodeKey) (*LibP2PHost, error) {
 	if !config.UseLibP2P {
 		return nil, fmt.Errorf("libp2p is disabled")
@@ -100,9 +104,8 @@ func addressToQuicMultiaddr(addr string) (ma.Multiaddr, error) {
 		return nil, fmt.Errorf("port is empty")
 	}
 
-	// /ip4/192.0.2.0/udp/65432/quic-v1/
-	// @see https://docs.libp2p.io/concepts/transports/quic
-	raw := fmt.Sprintf("/ip4/%s/udp/%s/quic-v1/", parts.Hostname(), parts.Port())
+	// eg: /ip4/192.0.2.0/udp/65432/quic-v1/
+	raw := fmt.Sprintf("/ip4/%s/udp/%s/%s/", parts.Hostname(), parts.Port(), TransportQuicV1)
 
 	return ma.NewMultiaddr(raw)
 }

@@ -515,7 +515,7 @@ func InitLightClient (initData LCInitData) (LightStore, Error) {
             newBlock := current
         }
         else {
-            // [LC-SUMBIT-EVIDENCE.1]
+            // [LC-SUBMIT-EVIDENCE.1]
             submitEvidence(Evidences);
             return(nil, ErrorAttack);
         }

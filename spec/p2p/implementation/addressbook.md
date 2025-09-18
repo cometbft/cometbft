@@ -259,8 +259,8 @@ A known address becomes bad if it is stored in buckets of new addresses, and
 when connection attempts:
 
 - Have not been made over a week, i.e., `LastAttempt` is older than a week
-- Have failed 3 times and never succeeded, i.e., `LastSucess` field is unset
-- Have failed 10 times in the last week, i.e., `LastSucess` is older than a week
+- Have failed 3 times and never succeeded, i.e., `LastSuccess` field is unset
+- Have failed 10 times in the last week, i.e., `LastSuccess` is older than a week
 
 Addresses marked as *bad* are the first candidates to be removed from a bucket of
 new addresses when the bucket becomes full.

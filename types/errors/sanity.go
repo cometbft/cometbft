@@ -19,7 +19,7 @@ type (
 		Reason string
 	}
 
-	// ErrWrongField is returned every time a value does not pass a validaty check, accompanied with error
+	// ErrWrongField is returned every time a value does not pass a validity check, accompanied with error
 	ErrWrongField struct {
 		Field string
 		Err   error

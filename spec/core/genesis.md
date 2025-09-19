@@ -25,7 +25,7 @@ The genesis file is the starting point of a chain. An application will populate 
 > Note: For evidence to be considered invalid, evidence must be older than both `max_age_num_blocks` and `max_age_duration`
 
 - `validator`
-      - `pub_key_types`: Defines which curves are to be accepted as a valid validator consensus key. CometBFT supports ed25519, secp256k1, secp256k1eth and bls12381.
+      - `pub_key_types`: Defines which curves are to be accepted as a valid validator consensus key. CometBFT supports ed25519, sr25519, secp256k1, secp256k1eth and bls12381.
 
 - `version`
       - `app_version`: The version of the application. This is set by the application and is used to identify which version of the app a user should be using in order to operate a node.

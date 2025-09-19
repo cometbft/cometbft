@@ -64,6 +64,7 @@ The type of the key defined under [`pub_key.value`](#pub_keyvalue).
 |:--------------------|:---------------------------------------------------------|
 | **Possible values** | `"tendermint/PubKeyEd25519"`                             |
 |                     | `"tendermint/PubKeySecp256k1"`                           |
+|                     | `"tendermint/PubKeySr25519"`                           |
 |                     | `"tendermint/PubKeyBls12_381"`                           |
 
 The string values are derived from the asymmetric cryptographic implementations defined in the `crypto` package.
@@ -79,6 +80,7 @@ The type of encryption is defined in [pub_key.type](#pub_keytype).
 |:--------------------|:------------------------------------|
 | **Possible values** | base64-encoded Ed25519 public key   |
 |                     | base64-encoded Secp256k1 public key |
+|                     | base64-encoded sr25519 public key   |
 |                     | base64-encoded BLS12-381 public key |
 
 CometBFT will generate an Ed25519 key-pair for consensus key by default when using the `cometbft init` or the
@@ -92,6 +94,7 @@ The type of the key defined under [`priv_key.value`](#priv_keyvalue).
 |:--------------------|:---------------------------------------------------------|
 | **Possible values** | `"tendermint/PrivKeyEd25519"`                            |
 |                     | `"tendermint/PrivKeySecp256k1"`                          |
+|                     | `"tendermint/PrivKeySr25519"`                          |
 |                     | `"tendermint/PrivKeyBls12_381"`                          |
 
 The string values are derived from the asymmetric cryptographic implementations defined in the `crypto` package.
@@ -107,6 +110,7 @@ The type of encryption is defined in [priv_key.type](#priv_keytype).
 |:--------------------|:----------------------------------------------------|
 | **Possible values** | base64-encoded Ed25519 private key **+ public key** |
 |                     | base64-encoded Secp256k1 private key                |
+|                     | base64-encoded sr25519 private key                  |
 |                     | base64-encoded BLS12-381 private key                |
 
 CometBFT will generate an Ed25519 key-pair for consensus key by default when using the `cometbft init` or the

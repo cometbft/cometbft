@@ -8,6 +8,7 @@ import (
 
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/sr25519"
 )
 
 var keyTypes map[string]func() (crypto.PrivKey, error)
@@ -19,6 +20,9 @@ func init() {
 		},
 		secp256k1.KeyType: func() (crypto.PrivKey, error) { //nolint: unparam
 			return secp256k1.GenPrivKey(), nil
+		},
+		sr25519.KeyType: func() (crypto.PrivKey, error) { //nolint: unparam
+			return sr25519.GenPrivKey(), nil
 		},
 	}
 }

@@ -37,6 +37,7 @@ Default example in context:
 |:--------------------|:---------------------------------------------------------|
 | **Possible values** | `"tendermint/PrivKeyEd25519"`                            |
 |                     | `"tendermint/PrivKeySecp256k1"`                          |
+|                     | `"tendermint/PrivKeySr25519"`                            |
 
 The string values are derived from the asymmetric cryptographic implementations defined in the `crypto` package.
 
@@ -62,6 +63,7 @@ Default example in context:
 |:--------------------|:----------------------------------------------------|
 | **Possible values** | base64-encoded Ed25519 private key **+ public key** |
 |                     | base64-encoded Secp256k1 private key                |
+|                     | base64-encoded sr25519 private key                  |
 
 CometBFT will always generate an Ed25519 key-pair for node ID using the `cometbft init` or the `cometbft gen-node-key`
 command. Other types of encryption keys have to be created manually. (See examples below.)
@@ -88,6 +90,15 @@ Secp256k1:
   "priv_key": {
     "type": "tendermint/PrivKeySecp256k1",
     "value": "2swJ5TwUhhqjJW+CvVbbSnTGxqpYmb2yvib+MHyDJIU="
+  }
+}
+```
+sr25519:
+```json
+{
+  "priv_key": {
+    "type": "tendermint/PrivKeySr25519",
+    "value": "wf5qqY9xwJ3LlHIksw38RuAe9L533/8L3gnOUuN4w48="
   }
 }
 ```

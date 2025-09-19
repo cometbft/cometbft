@@ -19,6 +19,7 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/sr25519"
 	"github.com/cometbft/cometbft/libs/async"
 	cmtos "github.com/cometbft/cometbft/libs/os"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
@@ -269,6 +270,20 @@ func TestNilPubkey(t *testing.T) {
 	_, err := MakeSecretConnection(barConn, barPrvKey)
 	require.Error(t, err)
 	assert.Equal(t, "toproto: key type <nil> is not supported", err.Error())
+}
+
+func TestNonEd25519Pubkey(t *testing.T) {
+	fooConn, barConn := makeKVStoreConnPair()
+	defer fooConn.Close()
+	defer barConn.Close()
+	fooPrvKey := ed25519.GenPrivKey()
+	barPrvKey := sr25519.GenPrivKey()
+
+	go MakeSecretConnection(fooConn, fooPrvKey) //nolint:errcheck // ignore for tests
+
+	_, err := MakeSecretConnection(barConn, barPrvKey)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unsupported key")
 }
 
 func writeLots(t *testing.T, wg *sync.WaitGroup, conn io.Writer, txt string, n int) {

@@ -1,9 +1,13 @@
 package p2p
 
 import (
+	"fmt"
+
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/p2p/lp2p"
+	"github.com/libp2p/go-libp2p/core/network"
 )
 
 // LibP2PSwitch represents alternative Switcher implementation based on go-libp2p.
@@ -13,6 +17,8 @@ type LibP2PSwitch struct {
 	config   *config.P2PConfig
 	nodeInfo NodeInfo // our node info
 	nodeKey  *NodeKey // our node private key
+
+	host *lp2p.Host
 
 	reactors map[string]Reactor
 }
@@ -31,6 +37,7 @@ func NewLibP2PSwitch(
 	cfg *config.P2PConfig,
 	nodeInfo NodeInfo,
 	nodeKey *NodeKey,
+	host *lp2p.Host,
 	reactors []ReactorItem,
 	logger log.Logger,
 ) *LibP2PSwitch {
@@ -55,12 +62,35 @@ func NewLibP2PSwitch(
 // BaseService methods
 //--------------------------------
 
-func (s *LibP2PSwitch) Start() error {
-	panic("unimplemented")
+func (s *LibP2PSwitch) OnStart() error {
+	s.Logger.Info("Starting LibP2PSwitch")
+
+	for name, reactor := range s.reactors {
+		err := reactor.OnStart()
+		if err != nil {
+			return fmt.Errorf("failed to start reactor %s: %w", name, err)
+		}
+	}
+
+	return nil
 }
 
-func (s *LibP2PSwitch) Stop() error {
-	panic("unimplemented")
+func (s *LibP2PSwitch) OnStop() {
+	s.Logger.Info("Stopping LibP2PSwitch")
+
+	for name, reactor := range s.reactors {
+		if err := reactor.Stop(); err != nil {
+			s.Logger.Error("failed to stop reactor", "name", name, "err", err)
+		}
+	}
+
+	if err := s.host.Network().Close(); err != nil {
+		s.Logger.Error("failed to close network", "err", err)
+	}
+
+	if err := s.host.Peerstore().Close(); err != nil {
+		s.Logger.Error("failed to close peerstore", "err", err)
+	}
 }
 
 func (s *LibP2PSwitch) NodeInfo() NodeInfo {
@@ -75,16 +105,23 @@ func (s *LibP2PSwitch) Log() log.Logger {
 // ReactorManager methods
 //--------------------------------
 
-func (s *LibP2PSwitch) Reactor(name string) (reactor Reactor, exists bool) {
-	panic("unimplemented")
+func (s *LibP2PSwitch) Reactor(name string) (Reactor, bool) {
+	reactor, exists := s.reactors[name]
+
+	return reactor, exists
 }
 
 func (s *LibP2PSwitch) AddReactor(name string, reactor Reactor) Reactor {
-	panic("unimplemented")
+	// todo register channels !!!
+
+	s.reactors[name] = reactor
+	reactor.SetSwitch(s)
+
+	return reactor
 }
 
-func (s *LibP2PSwitch) RemoveReactor(name string, reactor Reactor) {
-	panic("unimplemented")
+func (s *LibP2PSwitch) RemoveReactor(_ string, _ Reactor) {
+	s.logUnimplemented("RemoveReactor")
 }
 
 // --------------------------------
@@ -95,12 +132,25 @@ func (s *LibP2PSwitch) Peers() IPeerSet {
 	panic("unimplemented")
 }
 
-func (s *LibP2PSwitch) NumPeers() (outbound int, inbound int, dialing int) {
-	panic("unimplemented")
+func (s *LibP2PSwitch) NumPeers() (outbound, inbound, dialing int) {
+	for _, c := range s.host.Network().Conns() {
+		switch c.Stat().Direction {
+		case network.DirInbound:
+			inbound++
+		case network.DirOutbound:
+			outbound++
+		}
+	}
+
+	// note we don't count dialing peers here
+
+	return outbound, inbound, dialing
 }
 
 func (s *LibP2PSwitch) MaxNumOutboundPeers() int {
-	panic("unimplemented")
+	s.logUnimplemented("MaxNumOutboundPeers")
+
+	return 0
 }
 
 func (s *LibP2PSwitch) AddPersistentPeers(addrs []string) error {
@@ -119,16 +169,18 @@ func (s *LibP2PSwitch) SetAddrBook(addrBook AddrBook) {
 	panic("unimplemented")
 }
 
-func (s *LibP2PSwitch) DialPeerWithAddress(addr *NetAddress) error {
-	panic("unimplemented")
+func (s *LibP2PSwitch) DialPeerWithAddress(_ *NetAddress) error {
+	s.logUnimplemented("DialPeerWithAddress")
+
+	return nil
 }
 
 func (s *LibP2PSwitch) DialPeersAsync(peers []string) error {
 	panic("unimplemented")
 }
 
-func (s *LibP2PSwitch) StopPeerGracefully(peer Peer) {
-	panic("unimplemented")
+func (s *LibP2PSwitch) StopPeerGracefully(_ Peer) {
+	s.logUnimplemented("StopPeerGracefully")
 }
 
 func (s *LibP2PSwitch) StopPeerForError(peer Peer, reason any) {
@@ -147,8 +199,8 @@ func (s *LibP2PSwitch) IsPeerUnconditional(id ID) bool {
 	panic("unimplemented")
 }
 
-func (s *LibP2PSwitch) MarkPeerAsGood(peer Peer) {
-	panic("unimplemented")
+func (s *LibP2PSwitch) MarkPeerAsGood(_ Peer) {
+	s.logUnimplemented("MarkPeerAsGood")
 }
 
 //--------------------------------
@@ -165,4 +217,8 @@ func (s *LibP2PSwitch) BroadcastAsync(e Envelope) {
 
 func (s *LibP2PSwitch) TryBroadcast(e Envelope) {
 	panic("unimplemented")
+}
+
+func (s *LibP2PSwitch) logUnimplemented(method string) {
+	s.Logger.Info("Unimplemented LibP2PSwitch method called", "method", method)
 }

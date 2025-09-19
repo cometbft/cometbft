@@ -1,4 +1,4 @@
-package p2p
+package lp2p
 
 import (
 	"context"
@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLibP2P(t *testing.T) {
+func TestHost(t *testing.T) {
 	// ARRANGE
 	ctx := context.Background()
 
@@ -56,7 +56,7 @@ func TestLibP2P(t *testing.T) {
 			sender   = conn.RemotePeer()
 		)
 
-		if conn.ConnState().Transport != TransportQuicV1 {
+		if conn.ConnState().Transport != TransportQUIC {
 			t.Fatalf("unexpected transport: %s", conn.ConnState().Transport)
 			return
 		}
@@ -142,7 +142,7 @@ func TestLibP2P(t *testing.T) {
 	require.ElementsMatch(t, expectedEnvelopes, envelopes)
 }
 
-func makeTestHost(t *testing.T, port int) *LibP2PHost {
+func makeTestHost(t *testing.T, port int) *Host {
 	// config
 	config := config.DefaultP2PConfig()
 	config.UseLibP2P = true
@@ -153,7 +153,7 @@ func makeTestHost(t *testing.T, port int) *LibP2PHost {
 	pk := ed25519.GenPrivKey()
 
 	// lib p2p host
-	host, err := NewLibP2P(config, &NodeKey{PrivKey: pk})
+	host, err := NewHost(config, pk)
 	require.NoError(t, err)
 
 	return host

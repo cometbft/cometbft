@@ -24,6 +24,7 @@ import (
 	"github.com/cometbft/cometbft/libs/service"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/lp2p"
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/proxy"
 	rpccore "github.com/cometbft/cometbft/rpc/core"
@@ -482,6 +483,11 @@ func NewNodeWithContext(
 	} else {
 		p2pLogger.Info("Using go-libp2p transport!")
 
+		if config.P2P.PexReactor {
+			config.P2P.PexReactor = false
+			p2pLogger.Info("PEX reactor is disabled when using go-libp2p transport")
+		}
+
 		reactors := []p2p.ReactorItem{
 			{Name: "MEMPOOL", Reactor: mempoolReactor},
 			{Name: "BLOCKSYNC", Reactor: bcReactor},
@@ -495,8 +501,12 @@ func NewNodeWithContext(
 			reactors = reactors[1:]
 		}
 
-		// todo args
-		sw = p2p.NewLibP2PSwitch(config.P2P, nodeInfo, nodeKey, reactors, p2pLogger)
+		host, err := lp2p.NewHost(config.P2P, nodeKey.PrivKey)
+		if err != nil {
+			return nil, fmt.Errorf("could not create libp2p host: %w", err)
+		}
+
+		sw = p2p.NewLibP2PSwitch(config.P2P, nodeInfo, nodeKey, host, reactors, p2pLogger)
 	}
 
 	err = sw.AddPersistentPeers(splitAndTrimEmpty(config.P2P.PersistentPeers, ",", " "))

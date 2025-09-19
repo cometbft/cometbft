@@ -548,13 +548,12 @@ a given public key can only appear once within a given update. If an update incl
 duplicates, the block execution will fail irrecoverably.
 
 Structure `ValidatorUpdate` contains a public key, which is used to identify the validator:
-The public key currently supports five types:
+The public key currently supports four types:
 
 - `ed25519`
 - `secp256k1`
 - `secp256k1eth`
 - `bls12381`
-- `sr25519`
 
 Structure `ValidatorUpdate` also contains an `ìnt64` field denoting the validator's new power.
 Applications must ensure that

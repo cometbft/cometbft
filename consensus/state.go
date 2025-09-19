@@ -1858,15 +1858,16 @@ func (cs *State) flightRecord(height int64, block *types.Block) {
 	duraiton := block.Time.Sub(lastBlockMeta.Header.Time)
 	if duraiton > time.Second*5 {
 		sync.OnceFunc(func() {
-			f, err := os.Create("trace.out")
+			fname := fmt.Sprintf("trace_%d.out", height)
+			f, err := os.Create(fname)
 			if err != nil {
-				cs.Logger.Error("failed to open 'trace.out'", "err", err)
+				cs.Logger.Error("failed to open", "fname", fname, "err", err)
 				return
 			}
 			defer f.Close()
 
 			if _, err := cs.fr.WriteTo(f); err != nil {
-				cs.Logger.Error("failed to write flight recorder traces to 'trace.out'", "err", err)
+				cs.Logger.Error("failed to write flight recorder traces file", "fname", fname, "err", err)
 				return
 			}
 		})()

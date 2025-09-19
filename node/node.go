@@ -576,6 +576,7 @@ func (n *Node) OnStart() error {
 
 	n.isListening = true
 
+	n.Logger.Info("starting flight recorder!!")
 	if err := n.fr.Start(); err != nil {
 		return fmt.Errorf("error string flight recorder: %w", err)
 	}

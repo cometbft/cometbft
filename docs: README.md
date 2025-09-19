@@ -94,7 +94,7 @@ If you are interested in working on an issue, please comment on it, and take a l
 ## Documentation and Resources
 
 ### Documentation
-- [CometBFT Documentation](https://ibcprotocol.dev/)
+- [CometBFT Documentation](https://docs.cometbft.com/v0.38/)
 - [CometBFT Specification](./spec/README.md)
 - [Documentation](./docs/docs/01-ibc/01-overview.md)
 

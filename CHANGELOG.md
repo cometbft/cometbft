@@ -97,8 +97,6 @@
 - `[p2p]` Rename `IPeerSet#List` to `Copy`, add `Random`, `ForEach` methods.
    Rename `PeerSet#List` to `Copy`, add `Random`, `ForEach` methods.
    ([\#2246](https://github.com/cometbft/cometbft/pull/2246))
-- `[crypto]` Remove Sr25519 curve
-  ([\#3646](https://github.com/cometbft/cometbft/pull/3646))
 - `[rpc]` The endpoints `broadcast_tx_*` now return an error when the node is
   performing block sync or state sync.
   ([\#785](https://github.com/cometbft/cometbft/issues/785))

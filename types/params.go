@@ -32,7 +32,8 @@ const (
 var ABCIPubKeyTypesToNames = map[string]string{
 	ABCIPubKeyTypeEd25519:   ed25519.PubKeyName,
 	ABCIPubKeyTypeSecp256k1: secp256k1.PubKeyName,
-	ABCIPubKeyTypeSr25519:   sr25519.PubKeyName,
+	//nolint:staticcheck
+	ABCIPubKeyTypeSr25519: sr25519.PubKeyName,
 }
 
 func init() {

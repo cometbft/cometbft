@@ -1,6 +1,7 @@
 package sr25519
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/oasisprotocol/curve25519-voi/primitives/sr25519"
@@ -52,6 +53,13 @@ func (pubKey PubKey) VerifySignature(msg []byte, sigBytes []byte) bool {
 
 func (pubKey PubKey) String() string {
 	return fmt.Sprintf("PubKeySr25519{%X}", []byte(pubKey))
+}
+
+func (pubKey PubKey) Equals(other crypto.PubKey) bool {
+	if otherSecp, ok := other.(PubKey); ok {
+		return bytes.Equal(pubKey[:], otherSecp[:])
+	}
+	return false
 }
 
 func (PubKey) Type() string {

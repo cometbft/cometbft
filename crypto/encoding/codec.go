@@ -68,7 +68,7 @@ func PubKeyToProto(k crypto.PubKey) (pc.PublicKey, error) {
 			},
 		}
 	default:
-		return kp, fmt.Errorf("toproto: key type %v is not supported", k)
+		return kp, ErrUnsupportedKey{Key: k}
 	}
 	return kp, nil
 }
@@ -106,7 +106,7 @@ func PubKeyFromProto(k pc.PublicKey) (crypto.PubKey, error) {
 		}
 		return bls12381.NewPublicKeyFromBytes(k.Bls12381)
 	default:
-		return nil, fmt.Errorf("fromproto: key type %v is not supported", k)
+		return nil, ErrUnsupportedKey{Key: k}
 	}
 }
 

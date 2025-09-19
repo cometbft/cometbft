@@ -27,6 +27,8 @@ const (
 )
 
 // PrivKey implements crypto.PrivKey.
+//
+// Deprecated: This key type will be removed, do not use.
 type PrivKey struct {
 	msk sr25519.MiniSecretKey
 	kp  *sr25519.KeyPair

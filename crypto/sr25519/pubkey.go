@@ -21,6 +21,8 @@ const (
 )
 
 // PubKey implements crypto.PubKey for the Sr25519 signature scheme.
+//
+// Deprecated: This key type will be removed, do not use.
 type PubKey []byte
 
 // Address is the SHA256-20 of the raw pubkey bytes.

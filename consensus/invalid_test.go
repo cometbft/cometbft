@@ -101,7 +101,7 @@ func invalidDoPrevoteFunc(t *testing.T, cs *State, sw *p2p.Switch, pv types.Priv
 		precommit.ExtensionSignature = p.ExtensionSignature
 		cs.privValidator = nil // disable priv val so we don't do normal votes
 
-		peers := sw.Peers().List()
+		peers := sw.Peers().Copy()
 		for _, peer := range peers {
 			cs.Logger.Info("Sending bad vote", "block", blockHash, "peer", peer)
 			peer.Send(p2p.Envelope{

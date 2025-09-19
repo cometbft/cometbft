@@ -1118,7 +1118,7 @@ func makeBlockchainFromWAL(wal WAL) ([]*types.Block, []*types.ExtendedCommit, er
 	return blocks, extCommits, nil
 }
 
-func readPieceFromWAL(msg *TimedWALMessage) interface{} {
+func readPieceFromWAL(msg *TimedWALMessage) any {
 	// for logging
 	switch m := msg.Msg.(type) {
 	case msgInfo:

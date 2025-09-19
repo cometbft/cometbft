@@ -35,7 +35,7 @@ var _ crypto.PrivKey = PrivKey{}
 // PrivKey implements PrivKey.
 type PrivKey []byte
 
-// Bytes marshalls the private key using amino encoding.
+// Bytes marshals the private key using amino encoding.
 func (privKey PrivKey) Bytes() []byte {
 	return []byte(privKey)
 }

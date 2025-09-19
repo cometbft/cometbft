@@ -55,14 +55,14 @@ func (v *Validator) ValidateBasic() error {
 	return nil
 }
 
-// Creates a new copy of the validator so we can mutate ProposerPriority.
+// Copy creates a new copy of the validator so we can mutate ProposerPriority.
 // Panics if the validator is nil.
 func (v *Validator) Copy() *Validator {
 	vCopy := *v
 	return &vCopy
 }
 
-// Returns the one with higher ProposerPriority.
+// CompareProposerPriority returns the one with higher ProposerPriority.
 func (v *Validator) CompareProposerPriority(other *Validator) *Validator {
 	if v == nil {
 		return other
@@ -159,7 +159,7 @@ func (v *Validator) ToProto() (*cmtproto.Validator, error) {
 	return &vp, nil
 }
 
-// FromProto sets a protobuf Validator to the given pointer.
+// ValidatorFromProto sets a protobuf Validator to the given pointer.
 // It returns an error if the public key is invalid.
 func ValidatorFromProto(vp *cmtproto.Validator) (*Validator, error) {
 	if vp == nil {

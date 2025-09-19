@@ -108,7 +108,7 @@ The experiments were ran in a number of different settings:
 - **Storage footprint** 
 - **RAM usage**
 - **Block processing time** (*cometbft_state_block_processing_time*) This time here indicates the time to execute `FinalizeBlock` while reconstructing the last commit from the database and sending it to the application for processing. 
-- **Block time**: Computes the time taken for 1 block based on the number of blocks procssed in 1h. Note that for small networks the validators usually keep up and thus their average block times end up being similar.
+- **Block time**: Computes the time taken for 1 block based on the number of blocks processed in 1h. Note that for small networks the validators usually keep up and thus their average block times end up being similar.
 - **Duration of individual consensus steps** (*cometbft_consensus_step_duration_seconds* aggregated by step)
 - **consensus_total_txs**
 

@@ -1,8 +1,8 @@
 # ---------- Stage 0: base (Go toolchain + DB build deps + RocksDB) ----------
-ARG GO_VERSION=1.23
+ARG GO_VERSION=1.24
 ARG ROCKSDB=8.11.3
 
-FROM golang:${GO_VERSION} AS base
+FROM golang:${GO_VERSION}-bookworm AS base
 ARG ROCKSDB
 # Optional checksum: set via --build-arg ROCKSDB_SHA256=<sha>. Leave blank to skip.
 ARG ROCKSDB_SHA256=3b51d1d907ea13fab430bf052618610994f08cd8ed0b1341c3e89fe02e199f8e
@@ -34,6 +34,8 @@ RUN set -eux; \
 
 # ---------- Stage 1: build (compile cometbft + e2e node) ----------
 FROM base AS build
+
+# Set up build directory /src/cometbft
 WORKDIR /src/cometbft
 
 # cache-friendly Go deps
@@ -42,7 +44,7 @@ RUN go mod download
 
 COPY . .
 
-ARG COMETBFT_BUILD_OPTIONS=badgerdb,boltdb,cleveldb,rocksdb
+ARG COMETBFT_BUILD_OPTIONS=badgerdb,cleveldb,rocksdb,pebbledb,clock_skew,bls12381
 ENV COMETBFT_BUILD_OPTIONS=${COMETBFT_BUILD_OPTIONS}
 ENV CGO_ENABLED=1
 

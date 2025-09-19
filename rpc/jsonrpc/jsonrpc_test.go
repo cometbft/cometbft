@@ -105,7 +105,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-var colorFn = func(keyvals ...interface{}) term.FgBgColor {
+var colorFn = func(keyvals ...any) term.FgBgColor {
 	for i := 0; i < len(keyvals)-1; i += 2 {
 		if keyvals[i] == "socket" {
 			switch keyvals[i+1] {
@@ -170,7 +170,7 @@ func setup() {
 }
 
 func echoViaHTTP(cl client.Caller, val string) (string, error) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"arg": val,
 	}
 	result := new(ResultEcho)
@@ -181,7 +181,7 @@ func echoViaHTTP(cl client.Caller, val string) (string, error) {
 }
 
 func echoIntViaHTTP(cl client.Caller, val int) (int, error) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"arg": val,
 	}
 	result := new(ResultEchoInt)
@@ -192,7 +192,7 @@ func echoIntViaHTTP(cl client.Caller, val int) (int, error) {
 }
 
 func echoBytesViaHTTP(cl client.Caller, bytes []byte) ([]byte, error) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"arg": bytes,
 	}
 	result := new(ResultEchoBytes)
@@ -203,7 +203,7 @@ func echoBytesViaHTTP(cl client.Caller, bytes []byte) ([]byte, error) {
 }
 
 func echoDataBytesViaHTTP(cl client.Caller, bytes cmtbytes.HexBytes) (cmtbytes.HexBytes, error) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"arg": bytes,
 	}
 	result := new(ResultEchoDataBytes)
@@ -214,7 +214,7 @@ func echoDataBytesViaHTTP(cl client.Caller, bytes cmtbytes.HexBytes) (cmtbytes.H
 }
 
 func echoWithDefaultViaHTTP(cl client.Caller, v *int) (int, error) {
-	params := map[string]interface{}{}
+	params := map[string]any{}
 	if v != nil {
 		params["arg"] = *v
 	}
@@ -257,7 +257,7 @@ func testWithHTTPClient(t *testing.T, cl client.HTTPClient) {
 }
 
 func echoViaWS(cl *client.WSClient, val string) (string, error) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"arg": val,
 	}
 	err := cl.Call(context.Background(), "echo", params)
@@ -278,7 +278,7 @@ func echoViaWS(cl *client.WSClient, val string) (string, error) {
 }
 
 func echoBytesViaWS(cl *client.WSClient, bytes []byte) ([]byte, error) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"arg": bytes,
 	}
 	err := cl.Call(context.Background(), "echo_bytes", params)
@@ -370,7 +370,7 @@ func TestWSNewWSRPCFunc(t *testing.T) {
 	})
 
 	val := testVal
-	params := map[string]interface{}{
+	params := map[string]any{
 		"arg": val,
 	}
 	err = cl.Call(context.Background(), "echo_ws", params)
@@ -400,7 +400,7 @@ func TestWSHandlesArrayParams(t *testing.T) {
 	})
 
 	val := testVal
-	params := []interface{}{val}
+	params := []any{val}
 	err = cl.CallWithArrayParams(context.Background(), "echo_ws", params)
 	require.Nil(t, err)
 
@@ -438,7 +438,7 @@ func TestJSONRPCCaching(t *testing.T) {
 	require.NoError(t, err)
 
 	// Not supplying the arg should result in not caching
-	params := make(map[string]interface{})
+	params := make(map[string]any)
 	req, err := types.MapToRequest(types.JSONRPCIntID(1000), "echo_default", params)
 	require.NoError(t, err)
 
@@ -458,7 +458,7 @@ func TestJSONRPCCaching(t *testing.T) {
 	assert.Equal(t, "public, max-age=86400", res2.Header.Get("Cache-control"))
 }
 
-func rawJSONRPCRequest(t *testing.T, cl *http.Client, url string, req interface{}) (*http.Response, error) {
+func rawJSONRPCRequest(t *testing.T, cl *http.Client, url string, req any) (*http.Response, error) {
 	reqBytes, err := json.Marshal(req)
 	require.NoError(t, err)
 

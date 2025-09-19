@@ -58,7 +58,7 @@ exacerbated if the business logic for generating such transactions is
 potentially non-deterministic, as this should not even be done in
 `Begin/EndBlock`, which may, as a result, break consensus guarantees.
 
-Additinoally, this has serious implications for "watchers" - independent third parties,
+Additionally, this has serious implications for "watchers" - independent third parties,
 or even an auxiliary blockchain, responsible for ensuring that blocks recorded
 on the Root Chain are consistent with the Plasma chain's. Since, in this case,
 the Plasma chain is inconsistent with the canonical one maintained by Tendermint

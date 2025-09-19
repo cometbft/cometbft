@@ -29,7 +29,7 @@ type JSONRPCIntID int
 func (JSONRPCIntID) isJSONRPCID()      {}
 func (id JSONRPCIntID) String() string { return fmt.Sprintf("%d", id) }
 
-func idFromInterface(idInterface interface{}) (jsonrpcid, error) {
+func idFromInterface(idInterface any) (jsonrpcid, error) {
 	switch id := idInterface.(type) {
 	case string:
 		return JSONRPCStringID(id), nil
@@ -52,16 +52,16 @@ type RPCRequest struct {
 	JSONRPC string          `json:"jsonrpc"`
 	ID      jsonrpcid       `json:"id,omitempty"`
 	Method  string          `json:"method"`
-	Params  json.RawMessage `json:"params"` // must be map[string]interface{} or []interface{}
+	Params  json.RawMessage `json:"params"` // must be map[string]any or []any
 }
 
 // UnmarshalJSON custom JSON unmarshalling due to jsonrpcid being string or int
 func (req *RPCRequest) UnmarshalJSON(data []byte) error {
 	unsafeReq := struct {
 		JSONRPC string          `json:"jsonrpc"`
-		ID      interface{}     `json:"id,omitempty"`
+		ID      any             `json:"id,omitempty"`
 		Method  string          `json:"method"`
-		Params  json.RawMessage `json:"params"` // must be map[string]interface{} or []interface{}
+		Params  json.RawMessage `json:"params"` // must be map[string]any or []any
 	}{}
 
 	err := json.Unmarshal(data, &unsafeReq)
@@ -98,7 +98,7 @@ func (req RPCRequest) String() string {
 	return fmt.Sprintf("RPCRequest{%s %s/%X}", req.ID, req.Method, req.Params)
 }
 
-func MapToRequest(id jsonrpcid, method string, params map[string]interface{}) (RPCRequest, error) {
+func MapToRequest(id jsonrpcid, method string, params map[string]any) (RPCRequest, error) {
 	paramsMap := make(map[string]json.RawMessage, len(params))
 	for name, value := range params {
 		valueJSON, err := cmtjson.Marshal(value)
@@ -116,7 +116,7 @@ func MapToRequest(id jsonrpcid, method string, params map[string]interface{}) (R
 	return NewRPCRequest(id, method, payload), nil
 }
 
-func ArrayToRequest(id jsonrpcid, method string, params []interface{}) (RPCRequest, error) {
+func ArrayToRequest(id jsonrpcid, method string, params []any) (RPCRequest, error) {
 	paramsMap := make([]json.RawMessage, len(params))
 	for i, value := range params {
 		valueJSON, err := cmtjson.Marshal(value)
@@ -162,7 +162,7 @@ type RPCResponse struct {
 func (resp *RPCResponse) UnmarshalJSON(data []byte) error {
 	unsafeResp := &struct {
 		JSONRPC string          `json:"jsonrpc"`
-		ID      interface{}     `json:"id,omitempty"`
+		ID      any             `json:"id,omitempty"`
 		Result  json.RawMessage `json:"result,omitempty"`
 		Error   *RPCError       `json:"error,omitempty"`
 	}{}
@@ -184,7 +184,7 @@ func (resp *RPCResponse) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func NewRPCSuccessResponse(id jsonrpcid, res interface{}) RPCResponse {
+func NewRPCSuccessResponse(id jsonrpcid, res any) RPCResponse {
 	var rawMsg json.RawMessage
 
 	if res != nil {

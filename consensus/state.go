@@ -28,18 +28,8 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 	cmttime "github.com/cometbft/cometbft/types/time"
-)
-
-// Consensus sentinel errors
-var (
-	ErrInvalidProposalSignature   = errors.New("error invalid proposal signature")
-	ErrInvalidProposalPOLRound    = errors.New("error invalid proposal POL round")
-	ErrAddingVote                 = errors.New("error adding vote")
-	ErrSignatureFoundInPastBlocks = errors.New("found signature from the same key")
-	ErrProposalTooManyParts       = errors.New("proposal block has too many parts")
-
-	errPubKeyIsNotSet = errors.New("pubkey is not set. Look for \"Can't get private validator pubkey\" errors")
 )
 
 var msgQueueSize = 1000
@@ -252,11 +242,18 @@ func (cs *State) GetLastHeight() int64 {
 }
 
 // GetRoundState returns a shallow copy of the internal consensus state.
+// This function is thread-safe.
 func (cs *State) GetRoundState() *cstypes.RoundState {
 	cs.mtx.RLock()
-	rs := cs.RoundState // copy
+	rs := cs.getRoundState()
 	cs.mtx.RUnlock()
 	return &rs
+}
+
+// getRoundState returns a shallow copy of the internal consensus state.
+// This function is not thread-safe. Use GetRoundState for the thread-safe version.
+func (cs *State) getRoundState() cstypes.RoundState {
+	return cs.RoundState // copy
 }
 
 // GetRoundStateJSON returns a json of RoundState.
@@ -399,7 +396,8 @@ func (cs *State) OnStart() error {
 
 	// schedule the first round!
 	// use GetRoundState so we don't race the receiveRoutine for access
-	cs.scheduleRound0(cs.GetRoundState())
+	rs := cs.GetRoundState()
+	cs.scheduleRound0(rs)
 
 	return nil
 }
@@ -618,7 +616,7 @@ func (cs *State) votesFromExtendedCommit(state sm.State) (*types.VoteSet, error)
 	}
 	vs := ec.ToExtendedVoteSet(state.ChainID, state.LastValidators)
 	if !vs.HasTwoThirdsMajority() {
-		return nil, errors.New("extended commit does not have +2/3 majority")
+		return nil, ErrCommitQuorumNotMet
 	}
 	return vs, nil
 }
@@ -637,7 +635,7 @@ func (cs *State) votesFromSeenCommit(state sm.State) (*types.VoteSet, error) {
 	}
 	vs := commit.ToVoteSet(state.ChainID, state.LastValidators)
 	if !vs.HasTwoThirdsMajority() {
-		return nil, errors.New("commit does not have +2/3 majority")
+		return nil, ErrCommitQuorumNotMet
 	}
 	return vs, nil
 }
@@ -769,7 +767,7 @@ func (cs *State) newStep() {
 			cs.Logger.Error("failed publishing new round step", "err", err)
 		}
 
-		cs.evsw.FireEvent(types.EventNewRoundStep, &cs.RoundState)
+		cs.evsw.FireEvent(types.EventNewRoundStep, cs.RoundState)
 	}
 }
 
@@ -1009,7 +1007,7 @@ func (cs *State) handleTimeout(ti timeoutInfo, rs cstypes.RoundState) {
 		cs.enterNewRound(ti.Height, ti.Round+1)
 
 	default:
-		panic(fmt.Sprintf("invalid timeout step: %v", ti.Step))
+		panic(cmterrors.ErrInvalidField{Field: "timeout_step"})
 	}
 }
 
@@ -1177,7 +1175,7 @@ func (cs *State) enterPropose(height int64, round int32) {
 	if cs.privValidatorPubKey == nil {
 		// If this node is a validator & proposer in the current round, it will
 		// miss the opportunity to create a block.
-		logger.Error("propose step; empty priv validator public key", "err", errPubKeyIsNotSet)
+		logger.Error("propose step; empty priv validator public key", "err", ErrPubKeyIsNotSet)
 		return
 	}
 
@@ -1278,7 +1276,7 @@ func (cs *State) isProposalComplete() bool {
 // CONTRACT: cs.privValidator is not nil.
 func (cs *State) createProposalBlock(ctx context.Context) (*types.Block, error) {
 	if cs.privValidator == nil {
-		return nil, errors.New("entered createProposalBlock with privValidator being nil")
+		return nil, ErrNilPrivValidator
 	}
 
 	// TODO(sergio): wouldn't it be easier if CreateProposalBlock accepted cs.LastCommit directly?
@@ -1294,13 +1292,13 @@ func (cs *State) createProposalBlock(ctx context.Context) (*types.Block, error) 
 		lastExtCommit = cs.LastCommit.MakeExtendedCommit(cs.state.ConsensusParams.ABCI)
 
 	default: // This shouldn't happen.
-		return nil, errors.New("propose step; cannot propose anything without commit for the previous block")
+		return nil, ErrProposalWithoutPreviousCommit
 	}
 
 	if cs.privValidatorPubKey == nil {
 		// If this node is a validator & proposer in the current round, it will
 		// miss the opportunity to create a block.
-		return nil, fmt.Errorf("propose step; empty priv validator public key, error: %w", errPubKeyIsNotSet)
+		return nil, fmt.Errorf("propose step; empty priv validator public key, error: %w", ErrPubKeyIsNotSet)
 	}
 
 	proposerAddr := cs.privValidatorPubKey.Address()
@@ -1650,7 +1648,7 @@ func (cs *State) enterCommit(height int64, commitRound int32) {
 				logger.Error("failed publishing valid block", "err", err)
 			}
 
-			cs.evsw.FireEvent(types.EventValidBlock, &cs.RoundState)
+			cs.evsw.FireEvent(types.EventValidBlock, cs.RoundState)
 		}
 	}
 }
@@ -1836,7 +1834,7 @@ func (cs *State) recordMetrics(height int64, block *types.Block) {
 		if cs.privValidator != nil {
 			if cs.privValidatorPubKey == nil {
 				// Metrics won't be updated, but it's not critical.
-				cs.Logger.Error(fmt.Sprintf("recordMetrics: %v", errPubKeyIsNotSet))
+				cs.Logger.Error(fmt.Sprintf("recordMetrics: %v", ErrPubKeyIsNotSet))
 			} else {
 				address = cs.privValidatorPubKey.Address()
 			}
@@ -1873,7 +1871,7 @@ func (cs *State) recordMetrics(height int64, block *types.Block) {
 	)
 	for _, ev := range block.Evidence.Evidence {
 		if dve, ok := ev.(*types.DuplicateVoteEvidence); ok {
-			if _, val := cs.Validators.GetByAddress(dve.VoteA.ValidatorAddress); val != nil {
+			if _, val := cs.Validators.GetByAddressMut(dve.VoteA.ValidatorAddress); val != nil {
 				byzantineValidatorsCount++
 				byzantineValidatorsPower += val.VotingPower
 			}
@@ -2076,7 +2074,7 @@ func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 		//nolint: gocritic
 		if voteErr, ok := err.(*types.ErrVoteConflictingVotes); ok {
 			if cs.privValidatorPubKey == nil {
-				return false, errPubKeyIsNotSet
+				return false, ErrPubKeyIsNotSet
 			}
 
 			if bytes.Equal(vote.ValidatorAddress, cs.privValidatorPubKey.Address()) {
@@ -2299,7 +2297,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 					cs.ProposalBlockParts = types.NewPartSetFromHeader(blockID.PartSetHeader)
 				}
 
-				cs.evsw.FireEvent(types.EventValidBlock, &cs.RoundState)
+				cs.evsw.FireEvent(types.EventValidBlock, cs.RoundState)
 				if err := cs.eventBus.PublishEventValidBlock(cs.RoundStateEvent()); err != nil {
 					return added, err
 				}
@@ -2376,7 +2374,7 @@ func (cs *State) signVote(
 	}
 
 	if cs.privValidatorPubKey == nil {
-		return nil, errPubKeyIsNotSet
+		return nil, ErrPubKeyIsNotSet
 	}
 
 	addr := cs.privValidatorPubKey.Address()
@@ -2448,7 +2446,7 @@ func (cs *State) signAddVote(
 
 	if cs.privValidatorPubKey == nil {
 		// Vote won't be signed, but it's not critical.
-		cs.Logger.Error(fmt.Sprintf("signAddVote: %v", errPubKeyIsNotSet))
+		cs.Logger.Error(fmt.Sprintf("signAddVote: %v", ErrPubKeyIsNotSet))
 		return
 	}
 
@@ -2583,7 +2581,7 @@ func (cs *State) calculatePrevoteMessageDelayMetrics() {
 
 	var votingPowerSeen int64
 	for _, v := range pl {
-		_, val := cs.Validators.GetByAddress(v.ValidatorAddress)
+		_, val := cs.Validators.GetByAddressMut(v.ValidatorAddress)
 		votingPowerSeen += val.VotingPower
 		if votingPowerSeen >= cs.Validators.TotalVotingPower()*2/3+1 {
 			cs.metrics.QuorumPrevoteDelay.With("proposer_address", cs.Validators.GetProposer().Address.String()).Set(v.Timestamp.Sub(cs.Proposal.Timestamp).Seconds())

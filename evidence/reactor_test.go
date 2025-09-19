@@ -55,7 +55,7 @@ func TestReactorBroadcastEvidence(t *testing.T) {
 
 	// set the peer height on each reactor
 	for _, r := range reactors {
-		for _, peer := range r.Switch.Peers().List() {
+		for _, peer := range r.Switch.Peers().Copy() {
 			ps := peerState{height}
 			peer.Set(types.PeerStateKey, ps)
 		}
@@ -86,14 +86,14 @@ func TestReactorSelectiveBroadcast(t *testing.T) {
 
 	// set the peer height on each reactor
 	for _, r := range reactors {
-		for _, peer := range r.Switch.Peers().List() {
+		for _, peer := range r.Switch.Peers().Copy() {
 			ps := peerState{height1}
 			peer.Set(types.PeerStateKey, ps)
 		}
 	}
 
 	// update the first reactor peer's height to be very small
-	peer := reactors[0].Switch.Peers().List()[0]
+	peer := reactors[0].Switch.Peers().Copy()[0]
 	ps := peerState{height2}
 	peer.Set(types.PeerStateKey, ps)
 
@@ -104,8 +104,8 @@ func TestReactorSelectiveBroadcast(t *testing.T) {
 	waitForEvidence(t, evList[:numEvidence/2-1], []*evidence.Pool{pools[1]})
 
 	// peers should still be connected
-	peers := reactors[1].Switch.Peers().List()
-	assert.Equal(t, 1, len(peers))
+	peers := reactors[1].Switch.Peers().Copy()
+	assert.Len(t, peers, 1)
 }
 
 // This tests aims to ensure that reactors don't send evidence that they have committed or that ar
@@ -135,11 +135,11 @@ func TestReactorsGossipNoCommittedEvidence(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	peer := reactors[0].Switch.Peers().List()[0]
+	peer := reactors[0].Switch.Peers().Copy()[0]
 	ps := peerState{height - 2}
 	peer.Set(types.PeerStateKey, ps)
 
-	peer = reactors[1].Switch.Peers().List()[0]
+	peer = reactors[1].Switch.Peers().Copy()[0]
 	ps = peerState{height}
 	peer.Set(types.PeerStateKey, ps)
 
@@ -177,7 +177,7 @@ func TestReactorsGossipNoCommittedEvidence(t *testing.T) {
 
 	// now update the state of the second reactor
 	pools[1].Update(state, types.EvidenceList{})
-	peer = reactors[0].Switch.Peers().List()[0]
+	peer = reactors[0].Switch.Peers().Copy()[0]
 	ps = peerState{height}
 	peer.Set(types.PeerStateKey, ps)
 
@@ -208,7 +208,7 @@ func TestReactorBroadcastEvidenceMemoryLeak(t *testing.T) {
 	// i.e. broadcastEvidenceRoutine finishes when peer is stopped
 	defer leaktest.CheckTimeout(t, 10*time.Second)()
 
-	p.On("Send", mock.MatchedBy(func(i interface{}) bool {
+	p.On("Send", mock.MatchedBy(func(i any) bool {
 		e, ok := i.(p2p.Envelope)
 		return ok && e.ChannelID == evidence.EvidenceChannel
 	})).Return(false)
@@ -229,7 +229,7 @@ func TestReactorBroadcastEvidenceMemoryLeak(t *testing.T) {
 // evidenceLogger is a TestingLogger which uses a different
 // color for each validator ("validator" key must exist).
 func evidenceLogger() log.Logger {
-	return log.TestingLoggerWithColorFn(func(keyvals ...interface{}) term.FgBgColor {
+	return log.TestingLoggerWithColorFn(func(keyvals ...any) term.FgBgColor {
 		for i := 0; i < len(keyvals)-1; i += 2 {
 			if keyvals[i] == "validator" {
 				return term.FgBgColor{Fg: term.Color(uint8(keyvals[i+1].(int) + 1))}

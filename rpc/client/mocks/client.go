@@ -723,11 +723,11 @@ func (_m *Client) String() string {
 
 // Subscribe provides a mock function with given fields: ctx, subscriber, query, outCapacity
 func (_m *Client) Subscribe(ctx context.Context, subscriber string, query string, outCapacity ...int) (<-chan coretypes.ResultEvent, error) {
-	_va := make([]interface{}, len(outCapacity))
+	_va := make([]any, len(outCapacity))
 	for _i := range outCapacity {
 		_va[_i] = outCapacity[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, subscriber, query)
 	_ca = append(_ca, _va...)
 	ret := _m.Called(_ca...)

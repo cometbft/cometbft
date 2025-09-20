@@ -65,8 +65,8 @@ func TestPrivvalVectors(t *testing.T) {
 	proposal := exampleProposal()
 	proposalpb := proposal.ToProto()
 
-	// Create a Reuseable remote error
-	remoteError := &privproto.RemoteSignerError{Code: 1, Description: "it's a error"}
+	// Create a Reusable remote error
+	remoteError := &privproto.RemoteSignerError{Code: 1, Description: "it's an error"}
 
 	testCases := []struct {
 		testName string

@@ -129,7 +129,11 @@ Errors of `ErrRejected` or `ErrFilterTimeout` types are ignored,
 an `ErrTransportClosed` causes the accepted routine to be interrupted,
 while other errors cause the routine to panic.
 
-> TODO: which errors can cause the routine to panic?
+Errors that cause the routine to panic (i.e., errors returned by `Accept` that are not `ErrRejected`, `ErrFilterTimeout`, or `ErrTransportClosed`) include:
+
+- Listener accept errors propagated by the transport (e.g., `net.OpError`) from `MultiplexTransport.acceptPeers` via `acceptc`
+- IP resolution failures during connection filtering (e.g., `net.AddrError`, `net.DNSError`, or other resolver errors) returned by `resolveIPs` in `MultiplexTransport.filterConn`
+- Any other unexpected error surfaced by `MultiplexTransport.Accept` that does not match the handled types above
 
 ## Add peer
 

@@ -960,7 +960,7 @@ func (commit *Commit) Hash() cmtbytes.HexBytes {
 }
 
 // WrappedExtendedCommit wraps a commit as an ExtendedCommit.
-// The VoteExtension fields of the resulting value will by nil.
+// The VoteExtension fields of the resulting value will be nil.
 // Wrapping a Commit as an ExtendedCommit is useful when an API
 // requires an ExtendedCommit wire type but does not
 // need the VoteExtension data.

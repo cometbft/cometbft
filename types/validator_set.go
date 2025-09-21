@@ -40,7 +40,7 @@ var ErrTotalVotingPowerOverflow = fmt.Errorf("total voting power of resulting va
 // ErrProposerNotInVals is returned if the proposer is not in the validator set.
 var ErrProposerNotInVals = errors.New("proposer not in validator set")
 
-// ValidatorSet represent a set of *Validator at a given height.
+// ValidatorSet represents a set of *Validator at a given height.
 //
 // The validators can be fetched by address or index.
 // The index is in order of .VotingPower, so the indices are fixed for all

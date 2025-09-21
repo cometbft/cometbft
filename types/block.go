@@ -29,7 +29,7 @@ const (
 	MaxHeaderBytes int64 = 626
 
 	// MaxOverheadForBlock - maximum overhead to encode a block (up to
-	// MaxBlockSizeBytes in size) not including it's parts except Data.
+	// MaxBlockSizeBytes in size) not including its parts except Data.
 	// This means it also excludes the overhead for individual transactions.
 	//
 	// Uvarint length of MaxBlockSizeBytes: 4 bytes

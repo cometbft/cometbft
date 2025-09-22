@@ -10,7 +10,6 @@ import (
 	"runtime/debug"
 	"runtime/trace"
 	"sort"
-	"sync"
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -138,8 +137,6 @@ type State struct {
 	// offline state sync height indicating to which height the node synced offline
 	offlineStateSyncHeight int64
 
-	once *sync.Once
-
 	fr              *trace.FlightRecorder
 	currentTask     *trace.Task
 	currentTaskCtx  context.Context
@@ -180,7 +177,6 @@ func NewState(
 		evpool:           evpool,
 		evsw:             cmtevents.NewEventSwitch(),
 		metrics:          NopMetrics(),
-		once:             new(sync.Once),
 		currentTaskCtx:   context.Background(),
 	}
 	for _, option := range options {
@@ -1861,21 +1857,21 @@ func (cs *State) flightRecord(height int64, block *types.Block) {
 
 	go func() {
 		duraiton := block.Time.Sub(lastBlockMeta.Header.Time)
-		if duraiton > time.Second*3 {
-			sync.OnceFunc(func() {
-				fname := fmt.Sprintf("height_%d.trace", height)
-				f, err := os.Create(fname)
-				if err != nil {
-					cs.Logger.Error("failed to open", "fname", fname, "err", err)
-					return
-				}
-				defer f.Close()
+		if duraiton < time.Millisecond*1500 {
+			return
+		}
 
-				if _, err := cs.fr.WriteTo(f); err != nil {
-					cs.Logger.Error("failed to write flight recorder traces file", "fname", fname, "err", err)
-					return
-				}
-			})()
+		fname := fmt.Sprintf("height_%d.trace", height)
+		f, err := os.Create(fname)
+		if err != nil {
+			cs.Logger.Error("failed to open", "fname", fname, "err", err)
+			return
+		}
+		defer f.Close()
+
+		if _, err := cs.fr.WriteTo(f); err != nil {
+			cs.Logger.Error("failed to write flight recorder traces file", "fname", fname, "err", err)
+			return
 		}
 	}()
 }

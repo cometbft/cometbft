@@ -140,9 +140,10 @@ type State struct {
 
 	once *sync.Once
 
-	fr             *trace.FlightRecorder
-	currentTask    *trace.Task
-	currentTaskCtx context.Context
+	fr              *trace.FlightRecorder
+	currentTask     *trace.Task
+	currentTaskCtx  context.Context
+	prevRecoridngAt time.Time
 }
 
 // StateOption sets an optional parameter on the State.
@@ -1830,7 +1831,10 @@ func (cs *State) finalizeCommit(height int64) {
 	// NewHeightStep!
 	cs.updateToState(stateCopy)
 
-	cs.flightRecord(height, block)
+	if cs.prevRecoridngAt.IsZero() || time.Since(cs.prevRecoridngAt) > 10*time.Second {
+		cs.flightRecord(height, block)
+		cs.prevRecoridngAt = time.Now()
+	}
 
 	fail.Fail() // XXX
 
@@ -1855,23 +1859,25 @@ func (cs *State) flightRecord(height int64, block *types.Block) {
 		return
 	}
 
-	duraiton := block.Time.Sub(lastBlockMeta.Header.Time)
-	if duraiton > time.Second*5 {
-		sync.OnceFunc(func() {
-			fname := fmt.Sprintf("trace_%d.out", height)
-			f, err := os.Create(fname)
-			if err != nil {
-				cs.Logger.Error("failed to open", "fname", fname, "err", err)
-				return
-			}
-			defer f.Close()
+	go func() {
+		duraiton := block.Time.Sub(lastBlockMeta.Header.Time)
+		if duraiton > time.Second*3 {
+			sync.OnceFunc(func() {
+				fname := fmt.Sprintf("height_%d.trace", height)
+				f, err := os.Create(fname)
+				if err != nil {
+					cs.Logger.Error("failed to open", "fname", fname, "err", err)
+					return
+				}
+				defer f.Close()
 
-			if _, err := cs.fr.WriteTo(f); err != nil {
-				cs.Logger.Error("failed to write flight recorder traces file", "fname", fname, "err", err)
-				return
-			}
-		})()
-	}
+				if _, err := cs.fr.WriteTo(f); err != nil {
+					cs.Logger.Error("failed to write flight recorder traces file", "fname", fname, "err", err)
+					return
+				}
+			})()
+		}
+	}()
 }
 
 func (cs *State) recordMetrics(height int64, block *types.Block) {

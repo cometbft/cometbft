@@ -1857,7 +1857,7 @@ func (cs *State) flightRecord(height int64, block *types.Block) {
 
 	go func() {
 		duraiton := block.Time.Sub(lastBlockMeta.Header.Time)
-		if duraiton < time.Millisecond*1500 {
+		if duraiton < time.Millisecond*1000 {
 			return
 		}
 

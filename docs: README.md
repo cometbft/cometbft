@@ -1,4 +1,9 @@
-# CometBFT
+<div align="left">
+  <h1> CometBFT </h1>
+</div>
+
+![banner](docs/imgs/banner.svg)
+
 [![Version][version-badge]][version-url]
 [![Go version][go-badge]][go-url]
 [![Discord chat][discord-badge]][discord-url]
@@ -41,7 +46,7 @@ See the [install guide](./docs/guides/install.md).
 ### Semantic Versioning
 
 CometBFT uses [Semantic Versioning](http://semver.org/) to determine when and
-how the version changes. 
+how the version changes.
 
 To provide some stability to users of 0.X.X versions of CometBFT, the MINOR
 version is used to signal breaking changes across CometBFT's API. This API
@@ -83,13 +88,13 @@ To report a security vulnerability, see the Cosmos [bug bounty program](https://
 ## Maintainers
 [Cosmos Labs](https://cosmoslabs.io/) maintains the core components of the stack: Cosmos SDK, CometBFT, IBC, Cosmos EVM, and various developer tools and frameworks. In addition to developing and maintaining the Cosmos Stack, Cosmos Labs provides advisory and engineering services for blockchain solutions. [Get in touch with Cosmos Labs](https://www.cosmoslabs.io/contact).
 
-Cosmos Labs is a wholly-owned subsidiary of the [Interchain Foundation](https://interchain.io/), the Swiss nonprofit responsible for treasury management, funding public goods, and supporting governance for Cosmos. 
+Cosmos Labs is a wholly-owned subsidiary of the [Interchain Foundation](https://interchain.io/), the Swiss nonprofit responsible for treasury management, funding public goods, and supporting governance for Cosmos.
 
-The Cosmos Stack is supported by a robust community of open-source contributors. 
+The Cosmos Stack is supported by a robust community of open-source contributors.
 
 ## Contributing
 
-If you are interested in working on an issue, please comment on it, and take a look at the [contributing guidelines](./CONTRIBUTING.md). We welcome and appreciate community contributions! 
+If you are interested in working on an issue, please comment on it, and take a look at the [contributing guidelines](./CONTRIBUTING.md). We welcome and appreciate community contributions!
 
 ## Documentation and Resources
 
@@ -103,7 +108,7 @@ If you are interested in working on an issue, please comment on it, and take a l
 - [Cosmos SDK](http://github.com/cosmos/cosmos-sdk) - A framework for building
   applications in Golang
 - [The Inter-Blockchain Communication Protocol (IBC)](https://github.com/cosmos/ibc-go/) - A blockchain interoperability protocol that allows blockchains to transfer any type of data encoded in bytes.
-- [Cosmos EVM](https://github.com/cosmos/evm) - Native EVM layer for Cosmos SDK chains. 
+- [Cosmos EVM](https://github.com/cosmos/evm) - Native EVM layer for Cosmos SDK chains.
 
 ### Research
 

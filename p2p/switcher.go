@@ -35,8 +35,6 @@ type PeerManager interface {
 	AddPrivatePeerIDs(ids []string) error
 	AddUnconditionalPeerIDs(ids []string) error
 
-	SetAddrBook(addrBook AddrBook)
-
 	DialPeerWithAddress(addr *NetAddress) error
 	DialPeersAsync(peers []string) error
 

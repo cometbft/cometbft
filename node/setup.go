@@ -341,7 +341,40 @@ func createConsensusReactor(config *cfg.Config,
 	return consensusReactor, consensusState
 }
 
-func createTransport(
+func createCometTransportWithSwitch(
+	config *cfg.Config,
+	nodeInfo p2p.NodeInfo,
+	nodeKey *p2p.NodeKey,
+	proxyApp proxy.AppConns,
+	mempoolReactor p2p.Reactor,
+	bcReactor p2p.Reactor,
+	stateSyncReactor *statesync.Reactor,
+	consensusReactor *cs.Reactor,
+	evidenceReactor *evidence.Reactor,
+	p2pMetrics *p2p.Metrics,
+	logger log.Logger,
+) (p2p.Transport, *p2p.Switch) {
+	transport, peerFilters := createCometTransport(config, nodeInfo, nodeKey, proxyApp)
+
+	sw := createCometSwitch(
+		config,
+		transport,
+		p2pMetrics,
+		peerFilters,
+		mempoolReactor,
+		bcReactor,
+		stateSyncReactor,
+		consensusReactor,
+		evidenceReactor,
+		nodeInfo,
+		nodeKey,
+		logger,
+	)
+
+	return transport, sw
+}
+
+func createCometTransport(
 	config *cfg.Config,
 	nodeInfo p2p.NodeInfo,
 	nodeKey *p2p.NodeKey,
@@ -448,7 +481,7 @@ func createCometSwitch(
 
 func createAddrBookAndSetOnSwitch(
 	config *cfg.Config,
-	sw p2p.Switcher,
+	sw *p2p.Switch,
 	p2pLogger log.Logger,
 	nodeKey *p2p.NodeKey,
 ) (pex.AddrBook, error) {
@@ -482,21 +515,24 @@ func createPEXReactorAndAddToSwitch(
 	sw p2p.Switcher,
 	logger log.Logger,
 ) *pex.Reactor {
+	cfg := &pex.ReactorConfig{
+		Seeds:    splitAndTrimEmpty(config.P2P.Seeds, ",", " "),
+		SeedMode: config.P2P.SeedMode,
+		// See consensus/reactor.go: blocksToContributeToBecomeGoodPeer 10000
+		// blocks assuming 10s blocks ~ 28 hours.
+		// TODO (melekes): make it dynamic based on the actual block latencies
+		// from the live network.
+		// https://github.com/tendermint/tendermint/issues/3523
+		SeedDisconnectWaitPeriod:     28 * time.Hour,
+		PersistentPeersMaxDialPeriod: config.P2P.PersistentPeersMaxDialPeriod,
+	}
+
 	// TODO persistent peers ? so we can have their DNS addrs saved
-	pexReactor := pex.NewReactor(addrBook,
-		&pex.ReactorConfig{
-			Seeds:    splitAndTrimEmpty(config.P2P.Seeds, ",", " "),
-			SeedMode: config.P2P.SeedMode,
-			// See consensus/reactor.go: blocksToContributeToBecomeGoodPeer 10000
-			// blocks assuming 10s blocks ~ 28 hours.
-			// TODO (melekes): make it dynamic based on the actual block latencies
-			// from the live network.
-			// https://github.com/tendermint/tendermint/issues/3523
-			SeedDisconnectWaitPeriod:     28 * time.Hour,
-			PersistentPeersMaxDialPeriod: config.P2P.PersistentPeersMaxDialPeriod,
-		})
+	pexReactor := pex.NewReactor(addrBook, cfg)
 	pexReactor.SetLogger(logger.With("module", "pex"))
+
 	sw.AddReactor("PEX", pexReactor)
+
 	return pexReactor
 }
 

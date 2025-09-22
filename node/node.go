@@ -56,7 +56,6 @@ type Node struct {
 	// network
 	transport   p2p.Transport
 	sw          p2p.Switcher // p2p connections
-	addrBook    pex.AddrBook // known peers
 	nodeInfo    p2p.NodeInfo
 	nodeKey     *p2p.NodeKey // our node privkey
 	isListening bool
@@ -74,7 +73,6 @@ type Node struct {
 	stateSyncGenesis  sm.State                // provides the genesis state for state sync
 	consensusState    *cs.State               // latest consensus state
 	consensusReactor  *cs.Reactor             // for participating in the consensus
-	pexReactor        *pex.Reactor            // for exchanging peer addresses
 	evidencePool      *evidence.Pool          // tracking evidence
 	proxyApp          proxy.AppConns          // connection to the application
 	rpcListeners      []net.Listener          // rpc servers
@@ -451,42 +449,79 @@ func NewNodeWithContext(
 	)
 	stateSyncReactor.SetLogger(logger.With("module", "statesync"))
 
+	// true by default. Otherwise, uses libp2p
+	useCometNetworking := !config.P2P.UseLibP2P
+
+	if config.P2P.PexReactor {
+		config.P2P.PexReactor = false
+		logger.Info("PEX reactor is disabled when using go-libp2p transport")
+	}
+
 	nodeInfo, err := makeNodeInfo(config, nodeKey, txIndexer, genDoc, state)
 	if err != nil {
 		return nil, err
 	}
 
 	var (
-		p2pLogger = logger.With("module", "p2p")
-		sw        p2p.Switcher
 		transport p2p.Transport
+		sw        p2p.Switcher
+		p2pLogger = logger.With("module", "p2p")
 	)
 
 	// Comet P2P (default)
-	if !config.P2P.UseLibP2P {
-		transport, peerFilters := createTransport(config, nodeInfo, nodeKey, proxyApp)
-
-		sw = createCometSwitch(
+	if useCometNetworking {
+		cometTransport, switcher := createCometTransportWithSwitch(
 			config,
-			transport,
-			p2pMetrics,
-			peerFilters,
+			nodeInfo,
+			nodeKey,
+			proxyApp,
 			mempoolReactor,
 			bcReactor,
 			stateSyncReactor,
 			consensusReactor,
 			evidenceReactor,
-			nodeInfo,
-			nodeKey,
+			p2pMetrics,
 			p2pLogger,
 		)
+
+		err = switcher.AddPersistentPeers(splitAndTrimEmpty(config.P2P.PersistentPeers, ",", " "))
+		if err != nil {
+			return nil, fmt.Errorf("could not add peers from persistent_peers field: %w", err)
+		}
+
+		err = switcher.AddUnconditionalPeerIDs(splitAndTrimEmpty(config.P2P.UnconditionalPeerIDs, ",", " "))
+		if err != nil {
+			return nil, fmt.Errorf("could not add peer ids from unconditional_peer_ids field: %w", err)
+		}
+
+		addrBook, err := createAddrBookAndSetOnSwitch(config, switcher, p2pLogger, nodeKey)
+		if err != nil {
+			return nil, fmt.Errorf("could not create addrbook: %w", err)
+		}
+
+		// Optionally, start the pex reactor
+		//
+		// TODO:
+		//
+		// We need to set Seeds and PersistentPeers on the switch,
+		// since it needs to be able to use these (and their DNS names)
+		// even if the PEX is off. We can include the DNS name in the NetAddress,
+		// but it would still be nice to have a clear list of the current "PersistentPeers"
+		// somewhere that we can return with net_info.
+		//
+		// If PEX is on, it should handle dialing the seeds. Otherwise the switch does it.
+		// Note we currently use the addrBook regardless at least for AddOurAddress
+		if config.P2P.PexReactor {
+			_ = createPEXReactorAndAddToSwitch(addrBook, config, switcher, logger)
+		}
+
+		// Add private IDs to addrbook to block those peers being added
+		addrBook.AddPrivateIDs(splitAndTrimEmpty(config.P2P.PrivatePeerIDs, ",", " "))
+
+		transport = cometTransport
+		sw = switcher
 	} else {
 		p2pLogger.Info("Using go-libp2p transport!")
-
-		if config.P2P.PexReactor {
-			config.P2P.PexReactor = false
-			p2pLogger.Info("PEX reactor is disabled when using go-libp2p transport")
-		}
 
 		reactors := []p2p.ReactorItem{
 			{Name: "MEMPOOL", Reactor: mempoolReactor},
@@ -509,41 +544,6 @@ func NewNodeWithContext(
 		sw = p2p.NewLibP2PSwitch(config.P2P, nodeInfo, nodeKey, host, reactors, p2pLogger)
 	}
 
-	err = sw.AddPersistentPeers(splitAndTrimEmpty(config.P2P.PersistentPeers, ",", " "))
-	if err != nil {
-		return nil, fmt.Errorf("could not add peers from persistent_peers field: %w", err)
-	}
-
-	err = sw.AddUnconditionalPeerIDs(splitAndTrimEmpty(config.P2P.UnconditionalPeerIDs, ",", " "))
-	if err != nil {
-		return nil, fmt.Errorf("could not add peer ids from unconditional_peer_ids field: %w", err)
-	}
-
-	addrBook, err := createAddrBookAndSetOnSwitch(config, sw, p2pLogger, nodeKey)
-	if err != nil {
-		return nil, fmt.Errorf("could not create addrbook: %w", err)
-	}
-
-	// Optionally, start the pex reactor
-	//
-	// TODO:
-	//
-	// We need to set Seeds and PersistentPeers on the switch,
-	// since it needs to be able to use these (and their DNS names)
-	// even if the PEX is off. We can include the DNS name in the NetAddress,
-	// but it would still be nice to have a clear list of the current "PersistentPeers"
-	// somewhere that we can return with net_info.
-	//
-	// If PEX is on, it should handle dialing the seeds. Otherwise the switch does it.
-	// Note we currently use the addrBook regardless at least for AddOurAddress
-	var pexReactor *pex.Reactor
-	if config.P2P.PexReactor {
-		pexReactor = createPEXReactorAndAddToSwitch(addrBook, config, sw, logger)
-	}
-
-	// Add private IDs to addrbook to block those peers being added
-	addrBook.AddPrivateIDs(splitAndTrimEmpty(config.P2P.PrivatePeerIDs, ",", " "))
-
 	node := &Node{
 		config:        config,
 		genesisDoc:    genDoc,
@@ -551,9 +551,9 @@ func NewNodeWithContext(
 
 		transport: transport,
 		sw:        sw,
-		addrBook:  addrBook,
-		nodeInfo:  nodeInfo,
-		nodeKey:   nodeKey,
+
+		nodeInfo: nodeInfo,
+		nodeKey:  nodeKey,
 
 		stateStore:       stateStore,
 		blockStore:       blockStore,
@@ -565,7 +565,6 @@ func NewNodeWithContext(
 		stateSyncReactor: stateSyncReactor,
 		stateSync:        stateSync,
 		stateSyncGenesis: state, // Shouldn't be necessary, but need a way to pass the genesis state
-		pexReactor:       pexReactor,
 		evidencePool:     evidencePool,
 		proxyApp:         proxyApp,
 		txIndexer:        txIndexer,
@@ -945,11 +944,6 @@ func (n *Node) MempoolReactor() p2p.Reactor {
 // Mempool returns the Node's mempool.
 func (n *Node) Mempool() mempl.Mempool {
 	return n.mempool
-}
-
-// PEXReactor returns the Node's PEXReactor. It returns nil if PEX is disabled.
-func (n *Node) PEXReactor() *pex.Reactor {
-	return n.pexReactor
 }
 
 // EvidencePool returns the Node's EvidencePool.

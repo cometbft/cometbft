@@ -11,6 +11,7 @@ import (
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/test/utils"
 	"github.com/libp2p/go-libp2p/core/network"
 	corepeer "github.com/libp2p/go-libp2p/core/peer"
@@ -27,9 +28,19 @@ func TestHost(t *testing.T) {
 	// Given 2 available ports
 	ports := utils.GetFreePorts(t, 2)
 
-	// Given two hosts ...
+	// Given two hosts that are connected to each other
 	host1 := makeTestHost(t, ports[0])
-	host2 := makeTestHost(t, ports[1])
+	host2 := makeTestHost(t, ports[1], WithAddressBookConfig(&AddressBookConfig{
+		Peers: []PeerConfig{
+			{
+				Host: fmt.Sprintf("127.0.0.1:%d", ports[0]),
+				ID:   host1.ID().String(),
+			},
+		},
+	}))
+
+	host1.InitialConnect(ctx)
+	host2.InitialConnect(ctx)
 
 	t.Logf("host1: %+v", host1.AddrInfo())
 	t.Logf("host2: %+v", host2.AddrInfo())
@@ -142,18 +153,20 @@ func TestHost(t *testing.T) {
 	require.ElementsMatch(t, expectedEnvelopes, envelopes)
 }
 
-func makeTestHost(t *testing.T, port int) *Host {
+func makeTestHost(t *testing.T, port int, option ...Option) *Host {
 	// config
 	config := config.DefaultP2PConfig()
-	config.UseLibP2P = true
-	config.ListenAddress = fmt.Sprintf("tcp://127.0.0.1:%d", port)
-	config.ExternalAddress = fmt.Sprintf("tcp://127.0.0.1:%d", port)
+	config.RootDir = t.TempDir()
+	config.ListenAddress = fmt.Sprintf("127.0.0.1:%d", port)
+	config.ExternalAddress = fmt.Sprintf("127.0.0.1:%d", port)
+
+	config.LibP2PConfig.Enabled = true
 
 	// private key
 	pk := ed25519.GenPrivKey()
 
 	// lib p2p host
-	host, err := NewHost(config, pk)
+	host, err := NewHost(config, pk, log.TestingLogger(), option...)
 	require.NoError(t, err)
 
 	return host

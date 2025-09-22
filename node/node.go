@@ -450,9 +450,9 @@ func NewNodeWithContext(
 	stateSyncReactor.SetLogger(logger.With("module", "statesync"))
 
 	// true by default. Otherwise, uses libp2p
-	useCometNetworking := !config.P2P.UseLibP2P
+	useCometNetworking := !config.P2P.LibP2PEnabled()
 
-	if config.P2P.PexReactor {
+	if useCometNetworking && config.P2P.PexReactor {
 		config.P2P.PexReactor = false
 		logger.Info("PEX reactor is disabled when using go-libp2p transport")
 	}
@@ -536,10 +536,16 @@ func NewNodeWithContext(
 			reactors = reactors[1:]
 		}
 
-		host, err := lp2p.NewHost(config.P2P, nodeKey.PrivKey)
+		host, err := lp2p.NewHost(
+			config.P2P,
+			nodeKey.PrivKey,
+			p2pLogger,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("could not create libp2p host: %w", err)
 		}
+
+		host.InitialConnect(ctx)
 
 		sw = p2p.NewLibP2PSwitch(config.P2P, nodeInfo, nodeKey, host, reactors, p2pLogger)
 	}

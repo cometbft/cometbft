@@ -529,7 +529,7 @@ func (ls LightStore) LatestVerified() LightBlock
 
 ```go
 func (ls LightStore) Update(lightBlock LightBlock, 
-                            verfiedState VerifiedState
+                            verifiedState VerifiedState
        verifiedBy Height)
 ```
 

@@ -127,7 +127,7 @@ func (h *Host) InitialConnect(ctx context.Context) {
 
 	for _, peer := range h.configPeers {
 		h.logger.Info("Connecting to peer", "peer", peer.String())
-		if err := h.Host.Connect(ctx, peer); err != nil {
+		if err := h.Connect(ctx, peer); err != nil {
 			h.logger.Error("Failed to connect to peer", "peer", peer.String(), "err", err)
 		}
 	}

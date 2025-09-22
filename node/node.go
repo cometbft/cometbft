@@ -22,9 +22,9 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/lp2p"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/p2p/lp2p"
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/proxy"
 	rpccore "github.com/cometbft/cometbft/rpc/core"
@@ -523,7 +523,7 @@ func NewNodeWithContext(
 	} else {
 		p2pLogger.Info("Using go-libp2p transport!")
 
-		reactors := []p2p.ReactorItem{
+		reactors := []lp2p.ReactorItem{
 			{Name: "MEMPOOL", Reactor: mempoolReactor},
 			{Name: "BLOCKSYNC", Reactor: bcReactor},
 			{Name: "CONSENSUS", Reactor: consensusReactor},
@@ -547,7 +547,7 @@ func NewNodeWithContext(
 
 		host.InitialConnect(ctx)
 
-		sw = p2p.NewLibP2PSwitch(config.P2P, nodeInfo, nodeKey, host, reactors, p2pLogger)
+		sw = lp2p.NewSwitch(config.P2P, nodeInfo, nodeKey, host, reactors, p2pLogger)
 	}
 
 	node := &Node{

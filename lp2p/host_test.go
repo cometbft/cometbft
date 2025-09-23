@@ -2,9 +2,7 @@ package lp2p
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"sync"
 	"testing"
 	"time"
@@ -72,16 +70,18 @@ func TestHost(t *testing.T) {
 			return
 		}
 
-		msg, err := io.ReadAll(stream)
-		if err != nil && !errors.Is(err, io.EOF) {
+		msg, err := StreamReadClose(stream)
+		if err != nil {
 			t.Fatalf("failed to read from stream originating from %s: %v", sender, err)
 			return
 		}
 
-		if err := stream.Close(); err != nil {
-			t.Fatalf("failed to close stream originating from %s: %v", sender, err)
-			return
-		}
+		t.Logf(
+			"Received envelope: %s -> %s: %s",
+			sender.String(),
+			receiver.String(),
+			string(msg),
+		)
 
 		e := envelope{
 			sender:   sender,
@@ -91,13 +91,6 @@ func TestHost(t *testing.T) {
 
 		mu.Lock()
 		defer mu.Unlock()
-
-		t.Logf(
-			"Received envelope: %s -> %s: %s",
-			sender.String(),
-			receiver.String(),
-			string(msg),
-		)
 
 		envelopes = append(envelopes, e)
 	}
@@ -116,19 +109,12 @@ func TestHost(t *testing.T) {
 	stream2to1, err := host2.NewStream(ctx, host1.ID(), protocolID)
 	require.NoError(t, err, "failed to create stream 2->1")
 
-	t.Cleanup(func() {
-		stream1to2.Close()
-		stream2to1.Close()
-	})
-
 	// ACT
 	// Write host1 -> host2
-	_, err1 := stream1to2.Write([]byte("one two"))
-	require.NoError(t, stream1to2.CloseWrite(), "failed to close write stream 1->2")
+	err1 := StreamWriteClose(stream1to2, []byte("one two"))
 
 	// Write host2 -> host1
-	_, err2 := stream2to1.Write([]byte("three four"))
-	require.NoError(t, stream2to1.CloseWrite(), "failed to close write stream 2->1")
+	err2 := StreamWriteClose(stream2to1, []byte("three four"))
 
 	// ASSERT
 	// Ensure we've written to both streams

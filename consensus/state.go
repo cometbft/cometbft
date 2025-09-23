@@ -553,6 +553,7 @@ func (cs *State) updateHeight(height int64) {
 func (cs *State) updateRoundStep(round int32, step cstypes.RoundStepType) {
 	if !cs.replayMode {
 		if round != cs.Round || round == 0 && step == cstypes.RoundStepNewRound {
+			cs.flightRecordRound(round, step)
 			cs.metrics.MarkRound(cs.Round, cs.StartTime)
 		}
 		if cs.Step != step {
@@ -1827,10 +1828,10 @@ func (cs *State) finalizeCommit(height int64) {
 	// NewHeightStep!
 	cs.updateToState(stateCopy)
 
-	if cs.prevRecoridngAt.IsZero() || time.Since(cs.prevRecoridngAt) > 10*time.Second {
-		cs.flightRecord(height, block)
-		cs.prevRecoridngAt = time.Now()
-	}
+	// if cs.prevRecoridngAt.IsZero() || time.Since(cs.prevRecoridngAt) > 10*time.Second {
+	// 	cs.flightRecordBlock(height, block)
+	// 	cs.prevRecoridngAt = time.Now()
+	// }
 
 	fail.Fail() // XXX
 
@@ -1849,31 +1850,44 @@ func (cs *State) finalizeCommit(height int64) {
 	// * cs.StartTime is set to when we will start round0.
 }
 
-func (cs *State) flightRecord(height int64, block *types.Block) {
+func (cs *State) flightRecordBlock(height int64, block *types.Block) {
 	lastBlockMeta := cs.blockStore.LoadBlockMeta(height - 1)
 	if lastBlockMeta == nil {
 		return
 	}
 
-	go func() {
-		duraiton := block.Time.Sub(lastBlockMeta.Header.Time)
-		if duraiton < time.Second*10 {
-			return
-		}
+	duraiton := block.Time.Sub(lastBlockMeta.Header.Time)
+	if duraiton < time.Second*10 {
+		return
+	}
 
-		fname := fmt.Sprintf("height_%d.trace", height)
-		f, err := os.Create(fname)
-		if err != nil {
-			cs.Logger.Error("failed to open", "fname", fname, "err", err)
-			return
-		}
-		defer f.Close()
+	go cs.flightRecord(fmt.Sprintf("height_%d.trace", height))
+}
 
-		if _, err := cs.fr.WriteTo(f); err != nil {
-			cs.Logger.Error("failed to write flight recorder traces file", "fname", fname, "err", err)
-			return
-		}
-	}()
+func (cs *State) flightRecordRound(round int32, step cstypes.RoundStepType) {
+	if round == 0 {
+		return
+	}
+
+	go cs.flightRecord(fmt.Sprintf("round_%d_step_%s.trace", round, step.String()))
+}
+
+func (cs *State) flightRecord(fname string) {
+	if !cs.prevRecoridngAt.IsZero() && time.Since(cs.prevRecoridngAt) < 3*time.Second {
+		return
+	}
+	f, err := os.Create(fname)
+	if err != nil {
+		cs.Logger.Error("failed to open", "fname", fname, "err", err)
+		return
+	}
+	defer f.Close()
+
+	if _, err := cs.fr.WriteTo(f); err != nil {
+		cs.Logger.Error("failed to write flight recorder traces file", "fname", fname, "err", err)
+		return
+	}
+	cs.prevRecoridngAt = time.Now()
 }
 
 func (cs *State) recordMetrics(height int64, block *types.Block) {

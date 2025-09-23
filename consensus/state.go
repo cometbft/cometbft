@@ -1865,9 +1865,9 @@ func (cs *State) flightRecordBlock(height int64, block *types.Block) {
 }
 
 func (cs *State) flightRecordRound(round int32, step cstypes.RoundStepType) {
-	// if round == 0 {
-	// 	return
-	// }
+	if round == 0 {
+		return
+	}
 
 	cs.Logger.Info("trying to flight record")
 	if !cs.isProposer(cs.privValidatorPubKey.Address()) {

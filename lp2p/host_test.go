@@ -7,12 +7,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/test/utils"
 	"github.com/libp2p/go-libp2p/core/network"
 	corepeer "github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,8 +23,13 @@ func TestHost(t *testing.T) {
 	// ARRANGE
 	ctx := context.Background()
 
-	// Given sample protocol id
-	const protocolID = "/cometbft/foobar"
+	// Given sample protocol ids
+	var (
+		channelFoo = byte(0xaa)
+		channelBar = byte(0xbb)
+		protoFoo   = ProtocolID(channelFoo)
+		protoBar   = ProtocolID(channelBar)
+	)
 
 	// Given 2 available ports
 	ports := utils.GetFreePorts(t, 2)
@@ -48,8 +56,9 @@ func TestHost(t *testing.T) {
 		host1.Close()
 	})
 
-	// Given sample handler for both hosts
+	// Given sample envelope
 	type envelope struct {
+		protocol protocol.ID
 		sender   corepeer.ID
 		receiver corepeer.ID
 		message  string
@@ -58,6 +67,7 @@ func TestHost(t *testing.T) {
 	envelopes := []envelope{}
 	mu := sync.Mutex{}
 
+	// Given sample handler for both hosts
 	handler := func(stream network.Stream) {
 		var (
 			conn     = stream.Conn()
@@ -70,24 +80,30 @@ func TestHost(t *testing.T) {
 			return
 		}
 
-		msg, err := StreamReadClose(stream)
+		payload, err := StreamReadClose(stream)
 		if err != nil {
 			t.Fatalf("failed to read from stream originating from %s: %v", sender, err)
 			return
 		}
 
-		t.Logf(
-			"Received envelope: %s -> %s: %s",
-			sender.String(),
-			receiver.String(),
-			string(msg),
-		)
+		msg := &types.Request{}
+		require.NoError(t, msg.Unmarshal(payload))
+		require.NotNil(t, msg.GetEcho())
 
 		e := envelope{
+			protocol: stream.Protocol(),
 			sender:   sender,
 			receiver: receiver,
-			message:  string(msg),
+			message:  msg.GetEcho().GetMessage(),
 		}
+
+		t.Logf(
+			"Received envelope: %s -> %s (proto %s): %s",
+			e.sender.String(),
+			e.receiver.String(),
+			e.protocol,
+			e.message,
+		)
 
 		mu.Lock()
 		defer mu.Unlock()
@@ -95,31 +111,34 @@ func TestHost(t *testing.T) {
 		envelopes = append(envelopes, e)
 	}
 
-	host1.SetStreamHandler(protocolID, handler)
-	host2.SetStreamHandler(protocolID, handler)
+	host1.SetStreamHandler(protoFoo, handler)
+	host1.SetStreamHandler(protoBar, handler)
 
-	// Given hosts are connected
-	err := host1.Connect(ctx, host2.AddrInfo())
-	require.NoError(t, err, "failed to connect hosts")
+	host2.SetStreamHandler(protoFoo, handler)
+	host2.SetStreamHandler(protoBar, handler)
 
-	// Given streams are created
-	stream1to2, err := host1.NewStream(ctx, host2.ID(), protocolID)
-	require.NoError(t, err, "failed to create stream 1->2")
+	// Given counter peers
+	host1Peer2, err := NewPeer(host1, host2.AddrInfo())
+	require.NoError(t, err, "failed to create peer 1->2")
 
-	stream2to1, err := host2.NewStream(ctx, host1.ID(), protocolID)
-	require.NoError(t, err, "failed to create stream 2->1")
+	host2Peer1, err := NewPeer(host2, host1.AddrInfo())
+	require.NoError(t, err, "failed to create peer 2->1")
 
 	// ACT
-	// Write host1 -> host2
-	err1 := StreamWriteClose(stream1to2, []byte("one two"))
+	send1 := host1Peer2.Send(p2p.Envelope{
+		ChannelID: channelFoo,
+		Message:   types.ToRequestEcho("one two"),
+	})
 
-	// Write host2 -> host1
-	err2 := StreamWriteClose(stream2to1, []byte("three four"))
+	send2 := host2Peer1.Send(p2p.Envelope{
+		ChannelID: channelBar,
+		Message:   types.ToRequestEcho("three four"),
+	})
 
 	// ASSERT
 	// Ensure we've written to both streams
-	require.NoError(t, err1, "failed to write to stream 1->2")
-	require.NoError(t, err2, "failed to write to stream 2->1")
+	require.True(t, send1, "failed to send message 1->2")
+	require.True(t, send2, "failed to send message 2->1")
 
 	// Ensure two envelopes have been received
 	wait := func() bool {
@@ -132,8 +151,18 @@ func TestHost(t *testing.T) {
 
 	// Ensure both envelopes match the expected ones
 	expectedEnvelopes := []envelope{
-		{sender: host1.ID(), receiver: host2.ID(), message: "one two"},
-		{sender: host2.ID(), receiver: host1.ID(), message: "three four"},
+		{
+			protocol: protoFoo,
+			sender:   host1.ID(),
+			receiver: host2.ID(),
+			message:  "one two",
+		},
+		{
+			protocol: protoBar,
+			sender:   host2.ID(),
+			receiver: host1.ID(),
+			message:  "three four",
+		},
 	}
 
 	require.ElementsMatch(t, expectedEnvelopes, envelopes)

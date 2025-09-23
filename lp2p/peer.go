@@ -1,6 +1,7 @@
 package lp2p
 
 import (
+	"context"
 	"fmt"
 	"net"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/conn"
+	"github.com/cosmos/gogoproto/proto"
 	"github.com/libp2p/go-libp2p/core/peer"
 )
 
@@ -59,25 +61,53 @@ func (p *Peer) Set(key string, value any) {
 }
 
 // Send implements p2p.Peer.
-func (p *Peer) Send(p2p.Envelope) bool {
-	// todo implement
-	// logic:
-	// - skip if not running (todo how to check that peer is running?)
-	// - skip if not having the channel (todo how to check that peer has the channel? do we need to check it at all?)
-	// - marshal message
-	// - SEND(channel_id, message_bytes) !!!! {just send to the peer via lib-p2p} [might return FALSE for timeout]
-	// - collect metrics
-	// - if okay, return TRUE
-	return false
+func (p *Peer) Send(e p2p.Envelope) bool {
+	if err := p.send(e); err != nil {
+		p.Logger.Error("failed to send message", "channel", e.ChannelID, "err", err)
+		return false
+	}
+
+	return true
 }
 
-func (p *Peer) TrySend(p2p.Envelope) bool {
+func (p *Peer) TrySend(e p2p.Envelope) bool {
 	// todo same as SEND, but if current queue is full (its cap=1), immediately return FALSE
-	return false
+	if err := p.send(e); err != nil {
+		p.Logger.Error("failed to send message", "channel", e.ChannelID, "err", err)
+		return false
+	}
+
+	return true
 }
 
 func (p *Peer) CloseConn() error {
 	return p.host.Network().ClosePeer(p.addrInfo.ID)
+}
+
+func (p *Peer) send(e p2p.Envelope) error {
+	// todo implement
+	// - skip if not running (todo how to check that peer is running?)
+	// - skip if not having the channel (todo how to check that peer has the channel? do we need to check it at all?)
+	// - collect metrics
+
+	payload, err := proto.Marshal(e.Message)
+	if err != nil {
+		return fmt.Errorf("failed to marshal message: %w", err)
+	}
+
+	protocolID := ProtocolID(e.ChannelID)
+
+	ctx, cancel := context.WithTimeout(context.Background(), TimeoutStream)
+	defer cancel()
+
+	s, err := p.host.NewStream(ctx, p.addrInfo.ID, protocolID)
+	if err != nil {
+		return fmt.Errorf("failed to open stream %s: %w", protocolID, err)
+	}
+
+	defer s.Close()
+
+	return StreamWriteClose(s, payload)
 }
 
 // These methods are not implemented as they're not used by reactors

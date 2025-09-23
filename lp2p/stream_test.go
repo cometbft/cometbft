@@ -12,10 +12,10 @@ func TestProtocolID(t *testing.T) {
 		channel  byte
 		expected string
 	}{
-		{channel: 0x00, expected: "/cometbft/1.0.0/channel/0x00"},
-		{channel: 0x01, expected: "/cometbft/1.0.0/channel/0x01"},
-		{channel: 0x10, expected: "/cometbft/1.0.0/channel/0x10"},
-		{channel: 0xff, expected: "/cometbft/1.0.0/channel/0xff"},
+		{channel: 0x00, expected: "/p2p/cometbft/1.0.0/channel/0x00"},
+		{channel: 0x01, expected: "/p2p/cometbft/1.0.0/channel/0x01"},
+		{channel: 0x10, expected: "/p2p/cometbft/1.0.0/channel/0x10"},
+		{channel: 0xff, expected: "/p2p/cometbft/1.0.0/channel/0xff"},
 	} {
 		require.Equal(t, protocol.ID(tt.expected), ProtocolID(tt.channel))
 	}

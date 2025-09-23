@@ -309,7 +309,7 @@ func NewNodeWithContext(ctx context.Context,
 	logger log.Logger,
 	options ...Option,
 ) (*Node, error) {
-	fr := trace.NewFlightRecorder(trace.FlightRecorderConfig{MinAge: 5 * time.Second})
+	fr := trace.NewFlightRecorder(trace.FlightRecorderConfig{MinAge: 10 * time.Second})
 
 	blockStore, stateDB, err := initDBs(config, dbProvider)
 	if err != nil {

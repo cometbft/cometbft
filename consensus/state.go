@@ -1873,9 +1873,11 @@ func (cs *State) flightRecordRound(round int32, step cstypes.RoundStepType) {
 }
 
 func (cs *State) flightRecord(fname string) {
+	cs.Logger.Info("checkign if we should flight record", fname, fname)
 	if !cs.prevRecoridngAt.IsZero() && time.Since(cs.prevRecoridngAt) < 3*time.Second {
 		return
 	}
+	cs.Logger.Info("trying to flight record", fname, fname)
 	f, err := os.Create(fname)
 	if err != nil {
 		cs.Logger.Error("failed to open", "fname", fname, "err", err)

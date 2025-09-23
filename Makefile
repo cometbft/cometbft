@@ -7,7 +7,7 @@ OUTPUT?=$(BUILDDIR)/cometbft
 HTTPS_GIT := https://github.com/cometbft/cometbft.git
 CGO_ENABLED ?= 0
 
-# Process Docker environment varible TARGETPLATFORM
+# Process Docker environment variable TARGETPLATFORM
 # in order to build binary with correspondent ARCH
 # by default will always build for linux/amd64
 TARGETPLATFORM ?=
@@ -85,7 +85,7 @@ build:
 
 #? install: Install CometBFT to GOBIN
 install:
-	CGO_ENABLED=$(CGO_ENABLED) go install $(BUILD_FLAGS) -tags $(BUILD_TAGS) ./cmd/cometbft
+	CGO_ENABLED=$(CGO_ENABLED) go install $(BUILD_FLAGS) -tags '$(BUILD_TAGS)' ./cmd/cometbft
 .PHONY: install
 
 ###############################################################################
@@ -203,6 +203,7 @@ go.sum: go.mod
 	@echo "--> Ensure dependencies have not been modified"
 	@go mod verify
 	@go mod tidy
+.PHONY: go.sum
 
 #? draw_deps: Generate deps graph
 draw_deps:
@@ -340,7 +341,7 @@ endif
 
 #? contract-tests: Run a nodejs tool to test endpoints against a localnet
 # The command takes care of starting and stopping the network
-# prerequisits: build-contract-tests-hooks build-linux
+# prerequisites: build-contract-tests-hooks build-linux
 # the two build commands were not added to let this command run from generic containers or machines.
 # The binaries should be built beforehand
 contract-tests:

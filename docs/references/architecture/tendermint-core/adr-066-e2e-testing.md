@@ -33,7 +33,7 @@ The following lists the functionality we would like to test:
 
 #### Node/App Configurations
 
-- **Database:** goleveldb, cleveldb, boltdb, rocksdb, badgerdb
+- **Database:** goleveldb, cleveldb, rocksdb, badgerdb
 - **Fast sync:** disabled, v0, v2
 - **State sync:** disabled, enabled
 - **Block pruning:** none, keep 20, keep 1, keep random

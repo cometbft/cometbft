@@ -137,6 +137,7 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	genesis.ConsensusParams.Version.App = 1
 	genesis.ConsensusParams.Evidence.MaxAgeNumBlocks = e2e.EvidenceAgeHeight
 	genesis.ConsensusParams.Evidence.MaxAgeDuration = e2e.EvidenceAgeTime
+	genesis.ConsensusParams.Validator.PubKeyTypes = []string{testnet.KeyType}
 	if testnet.BlockMaxBytes != 0 {
 		genesis.ConsensusParams.Block.MaxBytes = testnet.BlockMaxBytes
 	}

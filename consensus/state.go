@@ -1865,18 +1865,21 @@ func (cs *State) flightRecordBlock(height int64, block *types.Block) {
 }
 
 func (cs *State) flightRecordRound(round int32, step cstypes.RoundStepType) {
-	if round == 0 {
+	// if round == 0 {
+	// 	return
+	// }
+
+	cs.Logger.Info("trying to flight record")
+	if !cs.isProposer(cs.privValidatorPubKey.Address()) {
+		cs.Logger.Info("we are not proposer, not flight recording")
 		return
 	}
+	cs.Logger.Info("HERE!! we are proposer, flight recoridng!")
 
-	go cs.flightRecord(fmt.Sprintf("round_%d_step_%s.trace", round, step.String()))
+	go cs.flightRecord(fmt.Sprintf("new_round_%d_prev_step_%s_new_step_%s.trace", round, cs.Step, step.String()))
 }
 
 func (cs *State) flightRecord(fname string) {
-	cs.Logger.Info("checking if we should flight record", fname, fname)
-	if time.Since(cs.prevRecoridngAt) < time.Second*3 {
-		return
-	}
 	cs.Logger.Info("trying to flight record", fname, fname)
 
 	f, err := os.Create(fname)

@@ -2,10 +2,15 @@ package lp2p
 
 import (
 	"fmt"
+	"net"
 	"net/url"
+	"strconv"
 	"strings"
 
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
+	manet "github.com/multiformats/go-multiaddr/net"
 )
 
 const (
@@ -41,4 +46,38 @@ func addrToQuicMultiaddr(parts *url.URL, layer4 string) (ma.Multiaddr, error) {
 	raw := fmt.Sprintf("/ip4/%s/%s/%s/%s/", parts.Hostname(), layer4, parts.Port(), TransportQUIC)
 
 	return ma.NewMultiaddr(raw)
+}
+
+// netAddressFromPeer converts a peer.AddrInfo to a p2p.NetAddress
+func netAddressFromPeer(addrInfo peer.AddrInfo) (*p2p.NetAddress, error) {
+	if len(addrInfo.Addrs) == 0 {
+		return nil, fmt.Errorf("no addresses")
+	}
+
+	// addStr ~ "1.2.3.4:1234"
+	_, ipPort, err := manet.DialArgs(addrInfo.Addrs[0])
+	if err != nil {
+		return nil, err
+	}
+
+	parts := strings.Split(ipPort, ":")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid address %s", ipPort)
+	}
+
+	ip := net.ParseIP(parts[0])
+	if ip == nil {
+		return nil, fmt.Errorf("invalid IP address %s", parts[0])
+	}
+
+	port, err := strconv.ParseUint(parts[1], 10, 16)
+	if err != nil {
+		return nil, fmt.Errorf("invalid port %s", parts[1])
+	}
+
+	return &p2p.NetAddress{
+		ID:   p2p.ID(addrInfo.ID.String()),
+		IP:   ip,
+		Port: uint16(port),
+	}, nil
 }

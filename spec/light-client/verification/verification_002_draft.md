@@ -595,7 +595,7 @@ func (ls LightStore) FilterVerified() LightStore
 #### **[LCV-FUNC-UPDATE.2]**
 
 ```go
-func (ls LightStore) Update(lightBlock LightBlock, verfiedState
+func (ls LightStore) Update(lightBlock LightBlock, verifiedState
 VerifiedState, root-height Height)
 ```
 

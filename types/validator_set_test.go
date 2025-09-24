@@ -388,7 +388,7 @@ func TestProposerSelection3(t *testing.T) {
 		times := int32(1)
 		mod := (cmtrand.Int() % 5) + 1
 		if cmtrand.Int()%mod > 0 {
-			// sometimes its up to 5
+			// sometimes it's up to 5
 			times = (cmtrand.Int31() % 4) + 1
 		}
 		vset.IncrementProposerPriority(times)

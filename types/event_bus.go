@@ -82,7 +82,7 @@ func (b *EventBus) Subscribe(
 }
 
 // SubscribeUnbuffered can be used for a local consensus explorer and synchronous
-// testing. Do not use for for public facing / untrusted subscriptions!
+// testing. Do not use for public facing / untrusted subscriptions!
 func (b *EventBus) SubscribeUnbuffered(
 	ctx context.Context,
 	subscriber string,

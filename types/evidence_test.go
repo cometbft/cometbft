@@ -121,7 +121,7 @@ func TestLightClientAttackEvidenceBasic(t *testing.T) {
 	assert.Equal(t, lcae.Height(), commonHeight) // Height should be the common Height
 	assert.NotNil(t, lcae.Bytes())
 
-	// maleate evidence to test hash uniqueness
+	// malleate evidence to test hash uniqueness
 	testCases := []struct {
 		testName         string
 		malleateEvidence func(*LightClientAttackEvidence)

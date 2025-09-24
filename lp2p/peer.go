@@ -30,11 +30,15 @@ func NewPeer(host *Host, addrInfo peer.AddrInfo) (*Peer, error) {
 		return nil, fmt.Errorf("unable to parse net address: %w", err)
 	}
 
-	return &Peer{
+	p := &Peer{
 		host:     host,
 		addrInfo: addrInfo,
 		netAddr:  netAddr,
-	}, nil
+	}
+
+	p.BaseService = *service.NewBaseService(nil, "Peer", p)
+
+	return p, nil
 }
 
 func (p *Peer) String() string {

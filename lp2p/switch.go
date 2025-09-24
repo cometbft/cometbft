@@ -35,6 +35,11 @@ type Switch struct {
 
 	// descriptorByProtocolID represents [protocol_id => channel_descriptor] mapping
 	descriptorByProtocolID map[protocol.ID]*p2p.ChannelDescriptor
+
+	// provisionedPeers represents set of peers that are added by reactors
+	provisionedPeers map[p2p.ID]struct{}
+
+	mu sync.RWMutex
 }
 
 // ReactorItem is a pair of name and reactor.
@@ -86,8 +91,6 @@ func NewSwitch(
 
 func (s *Switch) OnStart() error {
 	s.Logger.Info("Starting LibP2PSwitch")
-
-	// todo register default stream handler
 
 	for name, reactor := range s.reactorsByName {
 		err := reactor.OnStart()
@@ -239,11 +242,9 @@ func (s *Switch) StopPeerForError(peer p2p.Peer, reason any) {
 		return
 	}
 
-	if err := s.host.Network().ClosePeer(p.addrInfo.ID); err != nil {
-		s.Logger.Error("Failed to close peer", "peer", peer, "err", err)
+	if err := s.deprovisionPeer(p, reason); err != nil {
+		s.Logger.Error("Failed to deprovision peer", "peer", peer, "err", err)
 	}
-
-	s.peerSet.Remove(peer.ID())
 }
 
 func (s *Switch) IsDialingOrExistingAddress(addr *p2p.NetAddress) bool {
@@ -377,6 +378,12 @@ func (s *Switch) handleStream(stream network.Stream) {
 		return
 	}
 
+	// 4. Ensure peer is provisioned
+	if err := s.ensurePeerProvisioned(peer); err != nil {
+		s.Logger.Error("Failed to ensure peer is provisioned", "peer", peerID, "err", err)
+		return
+	}
+
 	s.Logger.Debug("Received stream envelope", "peer", peerID, "protocol", protocolID, "message", msg)
 
 	// todo metrics
@@ -386,6 +393,76 @@ func (s *Switch) handleStream(stream network.Stream) {
 		ChannelID: descriptor.ID,
 		Message:   msg,
 	})
+}
+
+func (s *Switch) ensurePeerProvisioned(peer p2p.Peer) error {
+	s.mu.RLock()
+	_, peerProvisioned := s.provisionedPeers[peer.ID()]
+	s.mu.RUnlock()
+
+	// noop
+	if peerProvisioned {
+		return nil
+	}
+
+	// should not happen
+	p, ok := peer.(*Peer)
+	if !ok {
+		return errors.New("peer is not a lp2p.Peer")
+	}
+
+	return s.provisionPeer(p)
+}
+
+func (s *Switch) provisionPeer(peer *Peer) error {
+	// todo filter peers ? we should use ConnGater instead
+
+	logger := s.Logger.With("peer", peer.addrInfo.String())
+
+	peer.SetLogger(logger)
+
+	// should not happen
+	if !s.IsRunning() {
+		return errors.New("switch is not running")
+	}
+
+	// note: order is not guaranteed (however we don't care in this case)
+	for _, reactor := range s.reactorsByName {
+		reactor.InitPeer(peer)
+		reactor.AddPeer(peer)
+	}
+
+	// note that we don't need to start Peer as with Comet's Peer
+	// because it's a thin wrapper and it doesn't handle streams
+
+	s.mu.Lock()
+	s.provisionedPeers[peer.ID()] = struct{}{}
+	s.mu.Unlock()
+
+	return nil
+}
+
+func (s *Switch) deprovisionPeer(peer *Peer, reason any) error {
+	key := peer.ID()
+	id := peer.addrInfo.ID
+
+	s.peerSet.Remove(key)
+
+	for _, reactor := range s.reactorsByName {
+		reactor.RemovePeer(peer, reason)
+	}
+
+	if err := s.host.Network().ClosePeer(id); err != nil {
+		s.Logger.Error("Failed to close peer", "peer", peer, "err", err)
+	}
+
+	s.peerSet.Remove(key)
+
+	s.mu.Lock()
+	delete(s.provisionedPeers, key)
+	s.mu.Unlock()
+
+	return nil
 }
 
 func marshalProto(msg proto.Message) ([]byte, error) {

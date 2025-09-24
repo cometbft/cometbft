@@ -547,7 +547,7 @@ func NewNodeWithContext(
 
 		host.InitialConnect(ctx)
 
-		sw = lp2p.NewSwitch(config.P2P, nodeInfo, nodeKey, host, reactors, p2pLogger)
+		sw = lp2p.NewSwitch(config.P2P, nodeKey, nodeInfo, host, reactors, p2pLogger)
 	}
 
 	node := &Node{

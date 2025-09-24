@@ -8,6 +8,7 @@ import (
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/pkg/errors"
 )
 
 // Switch represents p2p.Switcher alternative implementation based on go-libp2p.
@@ -15,10 +16,11 @@ type Switch struct {
 	service.BaseService
 
 	config   *config.P2PConfig
-	nodeInfo p2p.NodeInfo // our node info
 	nodeKey  *p2p.NodeKey // our node private key
+	nodeInfo p2p.NodeInfo // our node info
 
-	host *Host
+	host    *Host
+	peerSet *PeerSet
 
 	reactors map[string]p2p.Reactor
 }
@@ -32,20 +34,26 @@ type ReactorItem struct {
 
 var _ p2p.Switcher = (*Switch)(nil)
 
+var ErrUnsupportedPeerFormat = errors.New("unsupported peer format")
+
 // NewSwitch constructs a new Switch.
 func NewSwitch(
 	cfg *config.P2PConfig,
-	nodeInfo p2p.NodeInfo,
 	nodeKey *p2p.NodeKey,
+	nodeInfo p2p.NodeInfo,
 	host *Host,
 	reactors []ReactorItem,
 	logger log.Logger,
 ) *Switch {
 	s := &Switch{
 		config:   cfg,
-		reactors: make(map[string]p2p.Reactor),
 		nodeInfo: nodeInfo,
 		nodeKey:  nodeKey,
+
+		host:    host,
+		peerSet: NewPeerSet(host, logger),
+
+		reactors: make(map[string]p2p.Reactor),
 	}
 
 	base := service.NewBaseService(logger, "LibP2P Switch", s)
@@ -121,6 +129,7 @@ func (s *Switch) AddReactor(name string, reactor p2p.Reactor) p2p.Reactor {
 }
 
 func (s *Switch) RemoveReactor(_ string, _ p2p.Reactor) {
+	// used only by CustomReactors
 	s.logUnimplemented("RemoveReactor")
 }
 
@@ -129,7 +138,7 @@ func (s *Switch) RemoveReactor(_ string, _ p2p.Reactor) {
 // --------------------------------
 
 func (s *Switch) Peers() p2p.IPeerSet {
-	panic("unimplemented")
+	return s.peerSet
 }
 
 func (s *Switch) NumPeers() (outbound, inbound, dialing int) {
@@ -142,64 +151,87 @@ func (s *Switch) NumPeers() (outbound, inbound, dialing int) {
 		}
 	}
 
-	// note we don't count dialing peers here
+	// todo note we don't count dialing peers here
 
 	return outbound, inbound, dialing
 }
 
 func (s *Switch) MaxNumOutboundPeers() int {
+	// used only by PEX
 	s.logUnimplemented("MaxNumOutboundPeers")
 
 	return 0
 }
 
+// AddPersistentPeers addrs peers in a format of id@ip:port
 func (s *Switch) AddPersistentPeers(addrs []string) error {
-	panic("unimplemented")
+	// since lib-p2p relies on multiaddr format, we can't use it
+	return ErrUnsupportedPeerFormat
 }
 
+// AddPrivatePeerIDs ids peers in a format of Comet peer id
 func (s *Switch) AddPrivatePeerIDs(ids []string) error {
-	panic("unimplemented")
+	// since lib-p2p relies on multiaddr format, we can't use it
+	return ErrUnsupportedPeerFormat
 }
 
+// AddUnconditionalPeerIDs ids peers in a format of Comet peer id
 func (s *Switch) AddUnconditionalPeerIDs(ids []string) error {
-	panic("unimplemented")
-}
-
-func (s *Switch) SetAddrBook(addrBook p2p.AddrBook) {
-	panic("unimplemented")
+	// since lib-p2p relies on multiaddr format, we can't use it
+	return ErrUnsupportedPeerFormat
 }
 
 func (s *Switch) DialPeerWithAddress(_ *p2p.NetAddress) error {
+	// used only by PEX
 	s.logUnimplemented("DialPeerWithAddress")
 
 	return nil
 }
 
 func (s *Switch) DialPeersAsync(peers []string) error {
-	panic("unimplemented")
+	s.logUnimplemented("DialPeersAsync", "peers", peers)
+
+	return nil
 }
 
 func (s *Switch) StopPeerGracefully(_ p2p.Peer) {
+	// used only by PEX
 	s.logUnimplemented("StopPeerGracefully")
 }
 
 func (s *Switch) StopPeerForError(peer p2p.Peer, reason any) {
-	panic("unimplemented")
+	s.Logger.Info("Stopping peer for error", "peer", peer, "reason", reason)
+
+	p, ok := peer.(*Peer)
+	if !ok {
+		s.Logger.Error("Peer is not a lp2p.Peer", "peer", peer, "reason", reason)
+		return
+	}
+
+	if err := s.host.Network().ClosePeer(p.addrInfo.ID); err != nil {
+		s.Logger.Error("Failed to close peer", "peer", peer, "err", err)
+	}
+
+	s.peerSet.Remove(peer.ID())
 }
 
 func (s *Switch) IsDialingOrExistingAddress(addr *p2p.NetAddress) bool {
-	panic("unimplemented")
+	s.logUnimplemented("IsDialingOrExistingAddress")
+	return false
 }
 
-func (s *Switch) IsPeerPersistent(addr *p2p.NetAddress) bool {
-	panic("unimplemented")
+func (s *Switch) IsPeerPersistent(_ *p2p.NetAddress) bool {
+	s.logUnimplemented("IsPeerPersistent")
+	return false
 }
 
 func (s *Switch) IsPeerUnconditional(id p2p.ID) bool {
-	panic("unimplemented")
+	// todo: add support for unconditional peers (used by mempool reactor)
+	return false
 }
 
 func (s *Switch) MarkPeerAsGood(_ p2p.Peer) {
+	// used by consensus reactor
 	s.logUnimplemented("MarkPeerAsGood")
 }
 
@@ -208,17 +240,23 @@ func (s *Switch) MarkPeerAsGood(_ p2p.Peer) {
 //--------------------------------
 
 func (s *Switch) Broadcast(e p2p.Envelope) (successChan chan bool) {
+	// todo
 	panic("unimplemented")
 }
 
 func (s *Switch) BroadcastAsync(e p2p.Envelope) {
+	// todo
 	panic("unimplemented")
 }
 
 func (s *Switch) TryBroadcast(e p2p.Envelope) {
+	// todo
 	panic("unimplemented")
 }
 
-func (s *Switch) logUnimplemented(method string) {
-	s.Logger.Info("Unimplemented LibP2PSwitch method called", "method", method)
+func (s *Switch) logUnimplemented(method string, kv ...any) {
+	s.Logger.Info(
+		"Unimplemented LibP2PSwitch method called",
+		append(kv, "method", method)...,
+	)
 }

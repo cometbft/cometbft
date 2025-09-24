@@ -10,7 +10,6 @@ import (
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/conn"
-	"github.com/cosmos/gogoproto/proto"
 	"github.com/libp2p/go-libp2p/core/peer"
 )
 
@@ -94,12 +93,12 @@ func (p *Peer) send(e p2p.Envelope) error {
 	// - skip if not having the channel (todo how to check that peer has the channel? do we need to check it at all?)
 	// - collect metrics
 
-	payload, err := proto.Marshal(e.Message)
-	if err != nil {
-		return fmt.Errorf("failed to marshal message: %w", err)
-	}
-
 	protocolID := ProtocolID(e.ChannelID)
+
+	payload, err := marshalProto(e.Message)
+	if err != nil {
+		return err
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), TimeoutStream)
 	defer cancel()

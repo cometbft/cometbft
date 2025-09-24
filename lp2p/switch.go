@@ -2,16 +2,21 @@ package lp2p
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/cosmos/gogoproto/proto"
 	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/pkg/errors"
 )
 
 // Switch represents p2p.Switcher alternative implementation based on go-libp2p.
+// todo add comments to exported methods
+// todo group unused methods
 type Switch struct {
 	service.BaseService
 
@@ -22,7 +27,14 @@ type Switch struct {
 	host    *Host
 	peerSet *PeerSet
 
-	reactors map[string]p2p.Reactor
+	// reactorsByName represents [reactor_name => reactor] mapping
+	reactorsByName map[string]p2p.Reactor
+
+	// reactorsByProtocolID represents [protocol_id => reactor] mapping
+	reactorsByProtocolID map[protocol.ID]p2p.Reactor
+
+	// descriptorByProtocolID represents [protocol_id => channel_descriptor] mapping
+	descriptorByProtocolID map[protocol.ID]*p2p.ChannelDescriptor
 }
 
 // ReactorItem is a pair of name and reactor.
@@ -53,7 +65,9 @@ func NewSwitch(
 		host:    host,
 		peerSet: NewPeerSet(host, logger),
 
-		reactors: make(map[string]p2p.Reactor),
+		reactorsByName:         make(map[string]p2p.Reactor),
+		reactorsByProtocolID:   make(map[protocol.ID]p2p.Reactor),
+		descriptorByProtocolID: make(map[protocol.ID]*p2p.ChannelDescriptor),
 	}
 
 	base := service.NewBaseService(logger, "LibP2P Switch", s)
@@ -73,7 +87,9 @@ func NewSwitch(
 func (s *Switch) OnStart() error {
 	s.Logger.Info("Starting LibP2PSwitch")
 
-	for name, reactor := range s.reactors {
+	// todo register default stream handler
+
+	for name, reactor := range s.reactorsByName {
 		err := reactor.OnStart()
 		if err != nil {
 			return fmt.Errorf("failed to start reactor %s: %w", name, err)
@@ -86,7 +102,7 @@ func (s *Switch) OnStart() error {
 func (s *Switch) OnStop() {
 	s.Logger.Info("Stopping LibP2PSwitch")
 
-	for name, reactor := range s.reactors {
+	for name, reactor := range s.reactorsByName {
 		if err := reactor.Stop(); err != nil {
 			s.Logger.Error("failed to stop reactor", "name", name, "err", err)
 		}
@@ -114,15 +130,30 @@ func (s *Switch) Log() log.Logger {
 //--------------------------------
 
 func (s *Switch) Reactor(name string) (p2p.Reactor, bool) {
-	reactor, exists := s.reactors[name]
+	reactor, exists := s.reactorsByName[name]
 
 	return reactor, exists
 }
 
+// AddReactor adds the given reactor to the switch.
+// NOTE: Not goroutine safe.
 func (s *Switch) AddReactor(name string, reactor p2p.Reactor) p2p.Reactor {
-	// todo register channels !!!
+	for i := range reactor.GetChannels() {
+		var (
+			channelDescriptor = reactor.GetChannels()[i]
+			protocolID        = ProtocolID(channelDescriptor.ID)
+		)
 
-	s.reactors[name] = reactor
+		// Comet compatibility: ensure channelID is unique across all reactors
+		if _, ok := s.reactorsByProtocolID[protocolID]; ok {
+			err := fmt.Errorf("adding reactor %q: protocol %q is already registered", name, protocolID)
+			panic(err)
+		}
+
+		s.host.SetStreamHandler(protocolID, s.handleStream)
+	}
+
+	s.reactorsByName[name] = reactor
 	reactor.SetSwitch(s)
 
 	return reactor
@@ -239,19 +270,50 @@ func (s *Switch) MarkPeerAsGood(_ p2p.Peer) {
 // Broadcaster methods
 //--------------------------------
 
-func (s *Switch) Broadcast(e p2p.Envelope) (successChan chan bool) {
-	// todo
-	panic("unimplemented")
+func (s *Switch) Broadcast(e p2p.Envelope) chan bool {
+	s.Logger.Debug("Broadcast", "channel", e.ChannelID)
+
+	var wg sync.WaitGroup
+	successChan := make(chan bool, s.peerSet.Size())
+
+	s.peerSet.ForEach(func(p p2p.Peer) {
+		wg.Add(1)
+
+		go func(p p2p.Peer) {
+			defer wg.Done()
+
+			success := p.Send(e)
+			select {
+			case successChan <- success:
+			default:
+				// Skip. This means peer set changed
+				// between Size() and ForEach() calls.
+			}
+		}(p)
+	})
+
+	go func() {
+		wg.Wait()
+		close(successChan)
+	}()
+
+	return successChan
 }
 
 func (s *Switch) BroadcastAsync(e p2p.Envelope) {
-	// todo
-	panic("unimplemented")
+	s.Logger.Debug("BroadcastAsync", "channel", e.ChannelID)
+
+	s.peerSet.ForEach(func(p p2p.Peer) {
+		go p.Send(e)
+	})
 }
 
 func (s *Switch) TryBroadcast(e p2p.Envelope) {
-	// todo
-	panic("unimplemented")
+	s.Logger.Debug("TryBroadcast", "channel", e.ChannelID)
+
+	s.peerSet.ForEach(func(p p2p.Peer) {
+		go p.TrySend(e)
+	})
 }
 
 func (s *Switch) logUnimplemented(method string, kv ...any) {
@@ -259,4 +321,106 @@ func (s *Switch) logUnimplemented(method string, kv ...any) {
 		"Unimplemented LibP2PSwitch method called",
 		append(kv, "method", method)...,
 	)
+}
+
+func (s *Switch) handleStream(stream network.Stream) {
+	var (
+		peerID     = stream.Conn().RemotePeer()
+		protocolID = stream.Protocol()
+	)
+
+	defer func() {
+		if r := recover(); r != nil {
+			s.Logger.Error("Panic in Switch.handleStream",
+				"peer", peerID,
+				"protocol", protocolID,
+				"panic", r,
+			)
+			_ = stream.Reset()
+		}
+	}()
+
+	// 1. Retrieve the reactor with channel descriptor
+	reactor, ok := s.reactorsByProtocolID[protocolID]
+	if !ok {
+		// should not happen
+		s.Logger.Error("Unknown protocol", "protocol", protocolID)
+		_ = stream.Reset()
+		return
+	}
+
+	descriptor, ok := s.descriptorByProtocolID[protocolID]
+	if !ok {
+		// should not happen
+		s.Logger.Error("Unknown protocol descriptor", "protocol", protocolID)
+		_ = stream.Reset()
+		return
+	}
+
+	// 2. Retrieve the peer from the peerSet
+	peer := s.peerSet.Get(p2p.ID(peerID))
+	if peer == nil {
+		s.Logger.Error("Unable to get peer from peerSet", "peer", peerID)
+		return
+	}
+
+	// 3. Read the stream so we can "release" it on another end
+	payload, err := StreamReadClose(stream)
+	if err != nil {
+		s.Logger.Error("Failed to read payload", "protocol", protocolID, "err", err)
+		return
+	}
+
+	msg, err := unmarshalProto(descriptor, payload)
+	if err != nil {
+		s.Logger.Error("Failed to unmarshal message", "protocol", protocolID, "err", err)
+		return
+	}
+
+	s.Logger.Debug("Received stream envelope", "peer", peerID, "protocol", protocolID, "message", msg)
+
+	// todo metrics
+
+	reactor.Receive(p2p.Envelope{
+		Src:       peer,
+		ChannelID: descriptor.ID,
+		Message:   msg,
+	})
+}
+
+func marshalProto(msg proto.Message) ([]byte, error) {
+	// comet compatibility
+	// @see p2p/peer.go (*peer).send()
+	if w, ok := msg.(p2p.Wrapper); ok {
+		msg = w.Wrap()
+	}
+
+	payload, err := proto.Marshal(msg)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to marshal proto")
+	}
+
+	return payload, nil
+}
+
+func unmarshalProto(descriptor *p2p.ChannelDescriptor, payload []byte) (proto.Message, error) {
+	var (
+		msg = proto.Clone(descriptor.MessageType)
+		err = proto.Unmarshal(payload, msg)
+	)
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal message")
+	}
+
+	// comet compatibility
+	// @see p2p/peer.go createMConnection()
+	if w, ok := msg.(p2p.Unwrapper); ok {
+		msg, err = w.Unwrap()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to unwrap message")
+		}
+	}
+
+	return msg, nil
 }

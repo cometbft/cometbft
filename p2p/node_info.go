@@ -30,6 +30,7 @@ type NodeInfo interface {
 	ID() ID
 	nodeInfoAddress
 	nodeInfoTransport
+	GetMoniker() string
 }
 
 type nodeInfoAddress interface {
@@ -104,6 +105,10 @@ type DefaultNodeInfoOther struct {
 // ID returns the node's peer ID.
 func (info DefaultNodeInfo) ID() ID {
 	return info.DefaultNodeID
+}
+
+func (info DefaultNodeInfo) GetMoniker() string {
+	return info.Moniker
 }
 
 // Validate checks the self-reported DefaultNodeInfo is safe.

@@ -285,6 +285,7 @@ func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bo
 		labels := []string{
 			"peer_id", string(p.ID()),
 			"chID", fmt.Sprintf("%#x", chID),
+			"moniker", p.NodeInfo().GetMoniker(),
 		}
 		p.metrics.PeerSendBytesTotal.With(labels...).Add(float64(len(msgBytes)))
 		p.metrics.MessageSendBytesTotal.With("message_type", metricLabelValue).Add(float64(len(msgBytes)))
@@ -373,7 +374,7 @@ func (p *peer) metricsReporter() {
 				sendQueueSize += float64(chStatus.SendQueueSize)
 			}
 
-			p.metrics.PeerPendingSendBytes.With("peer_id", string(p.ID())).Set(sendQueueSize)
+			p.metrics.PeerPendingSendBytes.With("peer_id", string(p.ID()), "moniker", p.NodeInfo().GetMoniker()).Set(sendQueueSize)
 		case <-p.Quit():
 			return
 		}
@@ -408,6 +409,7 @@ func createMConnection(
 		labels := []string{
 			"peer_id", string(p.ID()),
 			"chID", fmt.Sprintf("%#x", chID),
+			"moniker", p.NodeInfo().GetMoniker(),
 		}
 		if w, ok := msg.(Unwrapper); ok {
 			msg, err = w.Unwrap()

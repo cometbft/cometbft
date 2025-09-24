@@ -12,6 +12,9 @@ import (
 	"sort"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsCfg "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/cosmos/gogoproto/proto"
 
 	cfg "github.com/cometbft/cometbft/config"
@@ -1876,7 +1879,43 @@ func (cs *State) flightRecordRound(round int32, step cstypes.RoundStepType) {
 	}
 	cs.Logger.Info("HERE!! we are proposer, flight recoridng!")
 
-	go cs.flightRecord(fmt.Sprintf("new_round_%d_prev_step_%s_new_step_%s.trace", round, cs.Step, step.String()))
+	go func() {
+		fname := fmt.Sprintf("new_round_%d_prev_step_%s_new_step_%s.trace", round, cs.Step, step.String())
+		cs.flightRecord(fname)
+
+		file, err := os.Open(fname)
+		if err != nil {
+			cs.Logger.Error("couldnt open file to upload", "fname", fname, "err", err)
+			return
+		}
+		defer file.Close()
+
+		ctx := context.Background()
+		sdkConfig, err := awsCfg.LoadDefaultConfig(ctx)
+		if err != nil {
+			cs.Logger.Error("couldnt load default aws config", "err", err)
+			return
+		}
+		s3Client := s3.NewFromConfig(sdkConfig)
+		hostname, ok := os.LookupEnv("HOSTNAME")
+		if !ok {
+			hostname = "validator"
+		}
+
+		bucketName := "comet-flight-recordings"
+		objectKey := hostname + "/" + fname
+
+		_, err = s3Client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String(objectKey),
+			Body:   file,
+		})
+		if err != nil {
+			cs.Logger.Error("couldnt upload file", "file", fname, "bucket", bucketName, "key", objectKey, "err", err)
+			return
+		}
+		cs.Logger.Info("successfully uploaded file", "file", fname, "bucket", bucketName, "key", objectKey)
+	}()
 }
 
 func (cs *State) flightRecord(fname string) {

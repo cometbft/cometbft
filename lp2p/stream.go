@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -90,14 +91,9 @@ func StreamRead(s network.Stream) ([]byte, error) {
 		return nil, errors.Wrap(err, "failed to read payload size")
 	}
 
-	payload := make([]byte, payloadSize)
-
-	bytesRead, err := reader.Read(payload)
-	switch {
-	case err != nil:
-		return nil, errors.Wrapf(err, "failed to read payload (read %d/%d bytes)", bytesRead, payloadSize)
-	case uint64(bytesRead) != payloadSize:
-		return nil, errors.Errorf("partial read (%d/%d bytes)", bytesRead, payloadSize)
+	payload, err := readExactly(reader, payloadSize)
+	if err != nil {
+		return nil, err
 	}
 
 	return payload, nil
@@ -123,6 +119,45 @@ func StreamReadClose(s network.Stream) (payload []byte, err error) {
 	}
 
 	return payload, nil
+}
+
+// readExactly allocates & reads exactly $size bytes from the reader.
+func readExactly(r io.Reader, size uint64) ([]byte, error) {
+	var (
+		out       = make([]byte, size)
+		bytesRead uint64
+		n         int
+		err       error
+		eof       bool
+	)
+
+	for {
+		n, err = r.Read(out[bytesRead:])
+		eof = errors.Is(err, io.EOF)
+
+		bytesRead += uint64(n)
+
+		switch {
+		case eof && bytesRead == size:
+			// no more bytes to read and size matches => all good!
+			return out, nil
+		case eof && bytesRead != size:
+			// no more bytes to read, but size doesn't match => partial read
+			return nil, errors.Wrapf(err, "eof partial read (%d/%d bytes)", bytesRead, size)
+		case err != nil:
+			// just some error
+			return nil, errors.Wrapf(err, "failed to read payload (read %d/%d bytes)", bytesRead, size)
+		case bytesRead < size:
+			// not enough bytes to read => continue
+			continue
+		case bytesRead > size:
+			// should not happen
+			return nil, errors.Errorf("read more bytes than expected (%d/%d bytes)", bytesRead, size)
+		default:
+			// all good!
+			return out, nil
+		}
+	}
 }
 
 func closeStream(s network.Stream) error {

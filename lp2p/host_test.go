@@ -3,6 +3,7 @@ package lp2p
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -97,12 +98,17 @@ func TestHost(t *testing.T) {
 			message:  msg.GetEcho().GetMessage(),
 		}
 
+		logMessage := e.message
+		if len(logMessage) > 64 {
+			logMessage = logMessage[:64] + "..."
+		}
+
 		t.Logf(
 			"Received envelope: %s -> %s (proto %s): %s",
 			e.sender.String(),
 			e.receiver.String(),
 			e.protocol,
-			e.message,
+			logMessage,
 		)
 
 		mu.Lock()
@@ -124,6 +130,10 @@ func TestHost(t *testing.T) {
 	host2Peer1, err := NewPeer(host2, host1.AddrInfo())
 	require.NoError(t, err, "failed to create peer 2->1")
 
+	// Given a long string
+	// 300kb
+	longStr := strings.Repeat("a", 300*1024)
+
 	// ACT
 	send1 := host1Peer2.Send(p2p.Envelope{
 		ChannelID: channelFoo,
@@ -135,16 +145,22 @@ func TestHost(t *testing.T) {
 		Message:   types.ToRequestEcho("three four"),
 	})
 
+	send3 := host1Peer2.TrySend(p2p.Envelope{
+		ChannelID: channelBar,
+		Message:   types.ToRequestEcho(longStr),
+	})
+
 	// ASSERT
 	// Ensure we've written to both streams
 	require.True(t, send1, "failed to send message 1->2")
 	require.True(t, send2, "failed to send message 2->1")
+	require.True(t, send3, "failed to send message 1->2")
 
 	// Ensure two envelopes have been received
 	wait := func() bool {
 		mu.Lock()
 		defer mu.Unlock()
-		return len(envelopes) == 2
+		return len(envelopes) == 3
 	}
 
 	require.Eventually(t, wait, 500*time.Millisecond, 50*time.Millisecond)
@@ -162,6 +178,12 @@ func TestHost(t *testing.T) {
 			sender:   host2.ID(),
 			receiver: host1.ID(),
 			message:  "three four",
+		},
+		{
+			protocol: protoBar,
+			sender:   host1.ID(),
+			receiver: host2.ID(),
+			message:  longStr,
 		},
 	}
 

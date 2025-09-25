@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/cometbft/cometbft/config"
 	cmcrypto "github.com/cometbft/cometbft/crypto"
@@ -130,6 +131,25 @@ func (h *Host) InitializePeers(ctx context.Context) {
 		if err := h.Connect(ctx, peer); err != nil {
 			h.logger.Error("Failed to connect to peer", "peer", peer.String(), "err", err)
 		}
+	}
+
+	go h.logStats()
+}
+
+func (h *Host) logStats() {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		connections := 0
+		streams := 0
+
+		for _, conn := range h.Network().Conns() {
+			connections++
+			streams += conn.Stat().NumStreams
+		}
+
+		h.logger.Info("LibP2P host stats", "connections", connections, "streams", streams)
 	}
 }
 

@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"runtime/debug"
 	"sync"
+	"time"
 
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
@@ -107,12 +109,21 @@ func (p *Peer) send(e p2p.Envelope) error {
 	ctx, cancel := context.WithTimeout(context.Background(), TimeoutStream)
 	defer cancel()
 
+	start := time.Now()
+
 	s, err := p.host.NewStream(ctx, p.addrInfo.ID, protocolID)
 	if err != nil {
 		return fmt.Errorf("failed to open stream %s: %w", protocolID, err)
 	}
 
-	defer s.Close()
+	defer func() {
+		p.Logger.Debug(
+			"sent envelope",
+			"protocol", protocolID,
+			"peer_id", p.addrInfo.ID.String(),
+			"stream_opened_duration", time.Since(start).String(),
+		)
+	}()
 
 	return StreamWriteClose(s, payload)
 }
@@ -178,6 +189,14 @@ func (p *PeerSet) HasIP(ip net.IP) bool {
 func (p *PeerSet) Get(key p2p.ID) p2p.Peer {
 	id := peer.ID(key)
 
+	if id == "" {
+		// todo drop debug
+		// todo this might happen because some reactors treat self as "" peer id
+		stack := string(debug.Stack())
+		p.logger.Info("Attempt to get an empty peer id", "stack", stack)
+		return nil
+	}
+
 	// use cache
 	if peer, ok := p.cacheGet(id); ok {
 		return peer
@@ -201,7 +220,9 @@ func (p *PeerSet) Get(key p2p.ID) p2p.Peer {
 func (p *PeerSet) add(id peer.ID) *Peer {
 	addrInfo := p.host.Peerstore().PeerInfo(id)
 	if len(addrInfo.Addrs) == 0 {
-		p.logger.Error("Peer not found", "peer", id)
+		// todo drop debug
+		stack := string(debug.Stack())
+		p.logger.Info("Peer not found", "peer_id", id, "stack", stack)
 		return nil
 	}
 

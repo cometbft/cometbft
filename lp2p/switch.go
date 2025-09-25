@@ -28,6 +28,8 @@ type Switch struct {
 	host    *Host
 	peerSet *PeerSet
 
+	reactors []ReactorItem
+
 	// reactorsByName represents [reactor_name => reactor] mapping
 	reactorsByName map[string]p2p.Reactor
 
@@ -71,6 +73,7 @@ func NewSwitch(
 		host:    host,
 		peerSet: NewPeerSet(host, logger),
 
+		reactors:               make([]ReactorItem, 0, len(reactors)),
 		reactorsByName:         make(map[string]p2p.Reactor),
 		reactorsByProtocolID:   make(map[protocol.ID]p2p.Reactor),
 		descriptorByProtocolID: make(map[protocol.ID]*p2p.ChannelDescriptor),
@@ -94,9 +97,12 @@ func NewSwitch(
 func (s *Switch) OnStart() error {
 	s.Logger.Info("Starting LibP2PSwitch")
 
-	for name, reactor := range s.reactorsByName {
-		err := reactor.OnStart()
-		if err != nil {
+	for _, el := range s.reactors {
+		name, reactor := el.Name, el.Reactor
+
+		s.Logger.Info("Starting reactor", "reactor", name)
+
+		if err := reactor.Start(); err != nil {
 			return fmt.Errorf("failed to start reactor %s: %w", name, err)
 		}
 	}
@@ -150,6 +156,9 @@ func (s *Switch) Reactor(name string) (p2p.Reactor, bool) {
 // AddReactor adds the given reactor to the switch.
 // NOTE: Not goroutine safe.
 func (s *Switch) AddReactor(name string, reactor p2p.Reactor) p2p.Reactor {
+	s.Logger.Info("Adding reactor", "name", name)
+
+	// set reactor's channels
 	for i := range reactor.GetChannels() {
 		var (
 			channelDescriptor = reactor.GetChannels()[i]
@@ -168,7 +177,10 @@ func (s *Switch) AddReactor(name string, reactor p2p.Reactor) p2p.Reactor {
 		s.host.SetStreamHandler(protocolID, s.handleStream)
 	}
 
+	// set reactor itself
+	s.reactors = append(s.reactors, ReactorItem{Name: name, Reactor: reactor})
 	s.reactorsByName[name] = reactor
+
 	reactor.SetSwitch(s)
 
 	return reactor
@@ -417,11 +429,11 @@ func (s *Switch) handleStream(stream network.Stream) {
 
 func (s *Switch) ensurePeerProvisioned(peer p2p.Peer) error {
 	s.mu.RLock()
-	_, peerProvisioned := s.provisionedPeers[peer.ID()]
+	_, exists := s.provisionedPeers[peer.ID()]
 	s.mu.RUnlock()
 
 	// noop
-	if peerProvisioned {
+	if exists {
 		return nil
 	}
 
@@ -452,26 +464,21 @@ func (s *Switch) provisionPeer(peer *Peer) error {
 		return nil
 	}
 
-	s.provisionedPeers[peer.ID()] = struct{}{}
+	s.Logger.Info("Provisioning peer", "peer_id", peer.ID())
+
+	for _, el := range s.reactors {
+		el.Reactor.InitPeer(peer)
+	}
 
 	if err := peer.Start(); err != nil {
 		return errors.Wrap(err, "failed to start peer")
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(len(s.reactorsByName))
-
-	for name := range s.reactorsByName {
-		reactor := s.reactorsByName[name]
-
-		go func() {
-			defer wg.Done()
-			reactor.InitPeer(peer)
-			reactor.AddPeer(peer)
-		}()
+	for _, el := range s.reactors {
+		el.Reactor.AddPeer(peer)
 	}
 
-	wg.Wait()
+	s.provisionedPeers[peer.ID()] = struct{}{}
 
 	return nil
 }

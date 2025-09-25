@@ -373,7 +373,7 @@ func (c *MConnection) Send(chID byte, msgBytes []byte) bool {
 		default:
 		}
 	} else {
-		c.Logger.Debug("Send failed", "channel", chID, "conn", c, "msgBytes", log.NewLazySprintf("%X", msgBytes))
+		c.Logger.Error("Send failed due to timeout", "channel", chID, "conn", c)
 	}
 	return success
 }

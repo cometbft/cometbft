@@ -10,7 +10,7 @@ import (
 )
 
 type AddressBookConfig struct {
-	Peers []PeerConfig `mapstructure:"peers"`
+	Peers []PeerConfig `mapstructure:"peers" toml:"peers"`
 }
 
 type PeerConfig struct {
@@ -75,4 +75,22 @@ func (pc *PeerConfig) AddrInfo() (peer.AddrInfo, error) {
 	}
 
 	return peer.AddrInfo{ID: id, Addrs: []ma.Multiaddr{addr}}, nil
+}
+
+func (ab *AddressBookConfig) Save(filepath string) error {
+	if err := ab.Validate(); err != nil {
+		return fmt.Errorf("failed to validate address book: %w", err)
+	}
+
+	raw, err := toml.Marshal(ab)
+	if err != nil {
+		return fmt.Errorf("failed to marshal address book: %w", err)
+	}
+
+	// rw-r--r--
+	if err := os.WriteFile(filepath, raw, 0o644); err != nil {
+		return fmt.Errorf("failed to save address book to file: %w", err)
+	}
+
+	return nil
 }

@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	cmcrypto "github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
@@ -16,6 +17,15 @@ import (
 const (
 	layer4UDP = "udp"
 )
+
+func IDFromPrivateKey(cosmosPK cmcrypto.PrivKey) (peer.ID, error) {
+	pk, err := privateKeyFromCosmosKey(cosmosPK)
+	if err != nil {
+		return "", fmt.Errorf("failed to convert private key to libp2p: %w", err)
+	}
+
+	return peer.IDFromPrivateKey(pk)
+}
 
 // AddressToMultiAddr converts a `listenAddress` to a multiaddr for the given transport
 // Currently, only QUIC is supported. Example:

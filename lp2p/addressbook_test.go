@@ -18,12 +18,8 @@ func TestAddressBook(t *testing.T) {
 		pk2 := ed25519.GenPrivKey()
 
 		pkID := func(pk ed25519.PrivKey) peer.ID {
-			pkk, err := privateKeyFromCosmosKey(pk)
+			id, err := IDFromPrivateKey(pk)
 			require.NoError(t, err)
-
-			id, err := peer.IDFromPrivateKey(pkk)
-			require.NoError(t, err)
-
 			return id
 		}
 

@@ -556,7 +556,7 @@ func (cs *State) updateHeight(height int64) {
 func (cs *State) updateRoundStep(round int32, step cstypes.RoundStepType) {
 	if !cs.replayMode {
 		if round != cs.Round || round == 0 && step == cstypes.RoundStepNewRound {
-			cs.flightRecordRound(round, step)
+			// cs.flightRecordRound(round, step)
 			cs.metrics.MarkRound(cs.Round, cs.StartTime)
 		}
 		if cs.Step != step {

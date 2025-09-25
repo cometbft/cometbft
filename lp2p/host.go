@@ -119,7 +119,7 @@ func (h *Host) AddrInfo() peer.AddrInfo {
 	return peer.AddrInfo{ID: h.ID(), Addrs: h.Addrs()}
 }
 
-func (h *Host) InitialConnect(ctx context.Context) {
+func (h *Host) InitializePeers(ctx context.Context) {
 	if len(h.configPeers) == 0 {
 		h.logger.Info("No peers in the address book!")
 		return

@@ -70,7 +70,7 @@ func (p *Peer) Set(key string, value any) {
 // Send implements p2p.Peer.
 func (p *Peer) Send(e p2p.Envelope) bool {
 	if err := p.send(e); err != nil {
-		p.Logger.Error("failed to send message", "channel", e.ChannelID, "err", err)
+		p.Logger.Error("failed to send message", "channel", e.ChannelID, "method", "Send", "err", err)
 		return false
 	}
 
@@ -80,7 +80,7 @@ func (p *Peer) Send(e p2p.Envelope) bool {
 func (p *Peer) TrySend(e p2p.Envelope) bool {
 	// todo same as SEND, but if current queue is full (its cap=1), immediately return FALSE
 	if err := p.send(e); err != nil {
-		p.Logger.Error("failed to send message", "channel", e.ChannelID, "err", err)
+		p.Logger.Error("failed to send message", "channel", e.ChannelID, "method", "TrySend", "err", err)
 		return false
 	}
 
@@ -146,8 +146,6 @@ var _ p2p.IPeerSet = (*PeerSet)(nil)
 func NewPeerSet(host *Host, logger log.Logger) *PeerSet {
 	const initialCapacity = 64
 
-	logger = logger.With("module", "lp2p_peer_set")
-
 	return &PeerSet{
 		host:   host,
 		peers:  make(map[peer.ID]*Peer, initialCapacity),
@@ -185,6 +183,22 @@ func (p *PeerSet) Get(key p2p.ID) p2p.Peer {
 		return peer
 	}
 
+	// we don't want to return self
+	if p.host.ID() == id {
+		return nil
+	}
+
+	peer := p.add(id)
+	if peer == nil {
+		return nil
+	}
+
+	p.cacheSet(peer)
+
+	return peer
+}
+
+func (p *PeerSet) add(id peer.ID) *Peer {
 	addrInfo := p.host.Peerstore().PeerInfo(id)
 	if len(addrInfo.Addrs) == 0 {
 		p.logger.Error("Peer not found", "peer", id)
@@ -193,11 +207,11 @@ func (p *PeerSet) Get(key p2p.ID) p2p.Peer {
 
 	peer, err := NewPeer(p.host, addrInfo)
 	if err != nil {
-		p.logger.Error("Failed to create peer", "peer", id, "err", err)
+		p.logger.Error("Failed to create peer", "peer_id", id, "err", err)
 		return nil
 	}
 
-	p.cacheSet(peer)
+	peer.SetLogger(p.logger.With("peer_id", peer.addrInfo.ID.String()))
 
 	return peer
 }
@@ -257,7 +271,17 @@ func (p *PeerSet) ForEach(lambda func(p2p.Peer)) {
 func (p *PeerSet) Random() p2p.Peer { return nil }
 
 func (p *PeerSet) existingPeerIDs() []peer.ID {
-	return p.host.Peerstore().PeersWithAddrs()
+	peers := p.host.Peerstore().PeersWithAddrs()
+
+	// exclude self
+	for i := 0; i < len(peers); i++ {
+		if peers[i] == p.host.ID() {
+			peers = append(peers[:i], peers[i+1:]...)
+			break
+		}
+	}
+
+	return peers
 }
 
 func (p *PeerSet) cacheGet(id peer.ID) (*Peer, bool) {

@@ -2,6 +2,7 @@ package lp2p
 
 import (
 	"fmt"
+	"runtime/debug"
 	"sync"
 
 	"github.com/cometbft/cometbft/config"
@@ -73,6 +74,7 @@ func NewSwitch(
 		reactorsByName:         make(map[string]p2p.Reactor),
 		reactorsByProtocolID:   make(map[protocol.ID]p2p.Reactor),
 		descriptorByProtocolID: make(map[protocol.ID]*p2p.ChannelDescriptor),
+		provisionedPeers:       make(map[p2p.ID]struct{}),
 	}
 
 	base := service.NewBaseService(logger, "LibP2P Switch", s)
@@ -96,6 +98,13 @@ func (s *Switch) OnStart() error {
 		err := reactor.OnStart()
 		if err != nil {
 			return fmt.Errorf("failed to start reactor %s: %w", name, err)
+		}
+	}
+
+	peers := s.peerSet.Copy()
+	for _, peer := range peers {
+		if err := s.ensurePeerProvisioned(peer); err != nil {
+			s.Logger.Error("Failed to provision peer", "peer_id", peer.ID(), "err", err)
 		}
 	}
 
@@ -147,11 +156,14 @@ func (s *Switch) AddReactor(name string, reactor p2p.Reactor) p2p.Reactor {
 			protocolID        = ProtocolID(channelDescriptor.ID)
 		)
 
-		// Comet compatibility: ensure channelID is unique across all reactors
+		// Ensure channelID is unique across all reactors
 		if _, ok := s.reactorsByProtocolID[protocolID]; ok {
 			err := fmt.Errorf("adding reactor %q: protocol %q is already registered", name, protocolID)
 			panic(err)
 		}
+
+		s.reactorsByProtocolID[protocolID] = reactor
+		s.descriptorByProtocolID[protocolID] = channelDescriptor
 
 		s.host.SetStreamHandler(protocolID, s.handleStream)
 	}
@@ -332,10 +344,12 @@ func (s *Switch) handleStream(stream network.Stream) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			s.Logger.Error("Panic in Switch.handleStream",
+			s.Logger.Error(
+				"Panic in (*lp2p.Switch).handleStream",
 				"peer", peerID,
 				"protocol", protocolID,
 				"panic", r,
+				"stack", string(debug.Stack()),
 			)
 			_ = stream.Reset()
 		}
@@ -384,7 +398,13 @@ func (s *Switch) handleStream(stream network.Stream) {
 		return
 	}
 
-	s.Logger.Debug("Received stream envelope", "peer", peerID, "protocol", protocolID, "message", msg)
+	s.Logger.Debug(
+		"Received stream envelope",
+		"peer", peerID,
+		"protocol", protocolID,
+		"message_type", log.NewLazySprintf("%T", msg),
+		"message", msg,
+	)
 
 	// todo metrics
 
@@ -414,30 +434,44 @@ func (s *Switch) ensurePeerProvisioned(peer p2p.Peer) error {
 	return s.provisionPeer(p)
 }
 
+// effectively called once per peer. note that we don't need to start Peer as with Comet's Peer
+// because it's a thin wrapper and it doesn't handle streams
 func (s *Switch) provisionPeer(peer *Peer) error {
 	// todo filter peers ? we should use ConnGater instead
-
-	logger := s.Logger.With("peer", peer.addrInfo.String())
-
-	peer.SetLogger(logger)
 
 	// should not happen
 	if !s.IsRunning() {
 		return errors.New("switch is not running")
 	}
 
-	// note: order is not guaranteed (however we don't care in this case)
-	for _, reactor := range s.reactorsByName {
-		reactor.InitPeer(peer)
-		reactor.AddPeer(peer)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// noop - might be the case during init phase.
+	if _, ok := s.provisionedPeers[peer.ID()]; ok {
+		return nil
 	}
 
-	// note that we don't need to start Peer as with Comet's Peer
-	// because it's a thin wrapper and it doesn't handle streams
-
-	s.mu.Lock()
 	s.provisionedPeers[peer.ID()] = struct{}{}
-	s.mu.Unlock()
+
+	if err := peer.Start(); err != nil {
+		return errors.Wrap(err, "failed to start peer")
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(len(s.reactorsByName))
+
+	for name := range s.reactorsByName {
+		reactor := s.reactorsByName[name]
+
+		go func() {
+			defer wg.Done()
+			reactor.InitPeer(peer)
+			reactor.AddPeer(peer)
+		}()
+	}
+
+	wg.Wait()
 
 	return nil
 }
@@ -446,7 +480,14 @@ func (s *Switch) deprovisionPeer(peer *Peer, reason any) error {
 	key := peer.ID()
 	id := peer.addrInfo.ID
 
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.peerSet.Remove(key)
+
+	if err := peer.Stop(); err != nil {
+		return errors.Wrap(err, "failed to stop peer")
+	}
 
 	for _, reactor := range s.reactorsByName {
 		reactor.RemovePeer(peer, reason)
@@ -456,11 +497,7 @@ func (s *Switch) deprovisionPeer(peer *Peer, reason any) error {
 		s.Logger.Error("Failed to close peer", "peer", peer, "err", err)
 	}
 
-	s.peerSet.Remove(key)
-
-	s.mu.Lock()
 	delete(s.provisionedPeers, key)
-	s.mu.Unlock()
 
 	return nil
 }
@@ -473,8 +510,11 @@ func marshalProto(msg proto.Message) ([]byte, error) {
 	}
 
 	payload, err := proto.Marshal(msg)
-	if err != nil {
+	switch {
+	case err != nil:
 		return nil, errors.Wrapf(err, "failed to marshal proto")
+	case len(payload) == 0:
+		return nil, errors.New("payload is empty")
 	}
 
 	return payload, nil
@@ -487,7 +527,7 @@ func unmarshalProto(descriptor *p2p.ChannelDescriptor, payload []byte) (proto.Me
 	)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal message")
+		return nil, errors.Wrap(err, "failed to unmarshal message")
 	}
 
 	// comet compatibility
@@ -495,7 +535,7 @@ func unmarshalProto(descriptor *p2p.ChannelDescriptor, payload []byte) (proto.Me
 	if w, ok := msg.(p2p.Unwrapper); ok {
 		msg, err = w.Unwrap()
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to unwrap message")
+			return nil, errors.Wrap(err, "failed to unwrap message")
 		}
 	}
 

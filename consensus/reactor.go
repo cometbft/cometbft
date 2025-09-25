@@ -240,7 +240,7 @@ func (conR *Reactor) RemovePeer(p2p.Peer, interface{}) {
 // NOTE: blocks on consensus state for proposals, block parts, and votes
 func (conR *Reactor) Receive(e p2p.Envelope) {
 	if !conR.IsRunning() {
-		conR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID)
+		conR.Logger.Debug("Receive & skip because not running", "src", e.Src, "chId", e.ChannelID)
 		return
 	}
 	msg, err := MsgFromProto(e.Message)

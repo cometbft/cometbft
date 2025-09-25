@@ -45,8 +45,8 @@ func TestHost(t *testing.T) {
 		},
 	}))
 
-	host1.InitialConnect(ctx)
-	host2.InitialConnect(ctx)
+	host1.InitializePeers(ctx)
+	host2.InitializePeers(ctx)
 
 	t.Logf("host1: %+v", host1.AddrInfo())
 	t.Logf("host2: %+v", host2.AddrInfo())

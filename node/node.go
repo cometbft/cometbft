@@ -545,7 +545,7 @@ func NewNodeWithContext(
 			return nil, fmt.Errorf("could not create libp2p host: %w", err)
 		}
 
-		host.InitialConnect(ctx)
+		host.InitializePeers(ctx)
 
 		sw = lp2p.NewSwitch(config.P2P, nodeKey, nodeInfo, host, reactors, p2pLogger)
 	}

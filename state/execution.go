@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -43,6 +44,14 @@ type BlockExecutor struct {
 	// 1-element cache of validated blocks
 	lastValidatedBlock *types.Block
 
+	// cache for validators to avoid repeated DB lookups
+	validatorCache      map[int64]*types.ValidatorSet
+	validatorCacheMutex sync.RWMutex
+
+	// cache for ABCI validators to avoid repeated conversions
+	abciValidatorCache      map[string]abci.Validator
+	abciValidatorCacheMutex sync.RWMutex
+
 	logger log.Logger
 
 	metrics *Metrics
@@ -68,14 +77,16 @@ func NewBlockExecutor(
 	options ...BlockExecutorOption,
 ) *BlockExecutor {
 	res := &BlockExecutor{
-		store:      stateStore,
-		proxyApp:   proxyApp,
-		eventBus:   types.NopEventBus{},
-		mempool:    mempool,
-		evpool:     evpool,
-		logger:     logger,
-		metrics:    NopMetrics(),
-		blockStore: blockStore,
+		store:              stateStore,
+		proxyApp:           proxyApp,
+		eventBus:           types.NopEventBus{},
+		mempool:            mempool,
+		evpool:             evpool,
+		logger:             logger,
+		metrics:            NopMetrics(),
+		blockStore:         blockStore,
+		validatorCache:     make(map[int64]*types.ValidatorSet),
+		abciValidatorCache: make(map[string]abci.Validator),
 	}
 
 	for _, option := range options {
@@ -87,6 +98,17 @@ func NewBlockExecutor(
 
 func (blockExec *BlockExecutor) Store() Store {
 	return blockExec.store
+}
+
+// ClearValidatorCache clears the validator caches to free memory
+func (blockExec *BlockExecutor) ClearValidatorCache() {
+	blockExec.validatorCacheMutex.Lock()
+	blockExec.validatorCache = make(map[int64]*types.ValidatorSet)
+	blockExec.validatorCacheMutex.Unlock()
+
+	blockExec.abciValidatorCacheMutex.Lock()
+	blockExec.abciValidatorCache = make(map[string]abci.Validator)
+	blockExec.abciValidatorCacheMutex.Unlock()
 }
 
 // SetEventBus - sets the event bus for publishing block related events.
@@ -170,7 +192,7 @@ func (blockExec *BlockExecutor) ProcessProposal(
 		Height:             block.Height,
 		Time:               block.Time,
 		Txs:                block.Txs.ToSliceOfBytes(),
-		ProposedLastCommit: buildLastCommitInfoFromStore(block, blockExec.store, state.InitialHeight),
+		ProposedLastCommit: blockExec.BuildLastCommitInfoFromStoreWithCache(block, state.InitialHeight),
 		Misbehavior:        block.Evidence.Evidence.ToABCI(),
 		ProposerAddress:    block.ProposerAddress,
 		NextValidatorsHash: block.NextValidatorsHash,
@@ -232,7 +254,7 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 		ProposerAddress:    block.ProposerAddress,
 		Height:             block.Height,
 		Time:               block.Time,
-		DecidedLastCommit:  buildLastCommitInfoFromStore(block, blockExec.store, state.InitialHeight),
+		DecidedLastCommit:  blockExec.BuildLastCommitInfoFromStoreWithCache(block, state.InitialHeight),
 		Misbehavior:        block.Evidence.Evidence.ToABCI(),
 		Txs:                block.Txs.ToSliceOfBytes(),
 	})
@@ -345,7 +367,7 @@ func (blockExec *BlockExecutor) ExtendVote(
 		Height:             vote.Height,
 		Time:               block.Time,
 		Txs:                block.Txs.ToSliceOfBytes(),
-		ProposedLastCommit: buildLastCommitInfoFromStore(block, blockExec.store, state.InitialHeight),
+		ProposedLastCommit: blockExec.BuildLastCommitInfoFromStoreWithCache(block, state.InitialHeight),
 		Misbehavior:        block.Evidence.Evidence.ToABCI(),
 		NextValidatorsHash: block.NextValidatorsHash,
 		ProposerAddress:    block.ProposerAddress,
@@ -474,6 +496,38 @@ func buildLastCommitInfoFromStore(block *types.Block, store Store, initialHeight
 	return BuildLastCommitInfo(block, lastValSet, initialHeight)
 }
 
+// BuildLastCommitInfoFromStoreWithCache is an optimized version that uses caching
+func (blockExec *BlockExecutor) BuildLastCommitInfoFromStoreWithCache(block *types.Block, initialHeight int64) abci.CommitInfo {
+	if block.Height == initialHeight { // check for initial height before loading validators
+		// there is no last commit for the initial height.
+		// return an empty value.
+		return abci.CommitInfo{}
+	}
+
+	height := block.Height - 1
+
+	// Try to get validators from cache first
+	blockExec.validatorCacheMutex.RLock()
+	lastValSet, found := blockExec.validatorCache[height]
+	blockExec.validatorCacheMutex.RUnlock()
+
+	if !found {
+		// Load from store and cache
+		var err error
+		lastValSet, err = blockExec.store.LoadValidators(height)
+		if err != nil {
+			panic(fmt.Errorf("failed to load validator set at height %d: %w", height, err))
+		}
+
+		// Cache the result
+		blockExec.validatorCacheMutex.Lock()
+		blockExec.validatorCache[height] = lastValSet
+		blockExec.validatorCacheMutex.Unlock()
+	}
+
+	return blockExec.BuildLastCommitInfoWithCache(block, lastValSet, initialHeight)
+}
+
 // BuildLastCommitInfo builds a CommitInfo from the given block and validator set.
 // If you want to load the validator set from the store instead of providing it,
 // use buildLastCommitInfoFromStore.
@@ -503,6 +557,64 @@ func BuildLastCommitInfo(block *types.Block, lastValSet *types.ValidatorSet, ini
 		commitSig := block.LastCommit.Signatures[i]
 		votes[i] = abci.VoteInfo{
 			Validator:   types.TM2PB.Validator(val),
+			BlockIdFlag: cmtproto.BlockIDFlag(commitSig.BlockIDFlag),
+		}
+	}
+
+	return abci.CommitInfo{
+		Round: block.LastCommit.Round,
+		Votes: votes,
+	}
+}
+
+// BuildLastCommitInfoWithCache is an optimized version that uses caching for ABCI validators
+func (blockExec *BlockExecutor) BuildLastCommitInfoWithCache(block *types.Block, lastValSet *types.ValidatorSet, initialHeight int64) abci.CommitInfo {
+	if block.Height == initialHeight {
+		// there is no last commit for the initial height.
+		// return an empty value.
+		return abci.CommitInfo{}
+	}
+
+	var (
+		commitSize = block.LastCommit.Size()
+		valSetLen  = len(lastValSet.Validators)
+	)
+
+	// ensure that the size of the validator set in the last commit matches
+	// the size of the validator set in the state store.
+	if commitSize != valSetLen {
+		panic(fmt.Sprintf(
+			"commit size (%d) doesn't match validator set length (%d) at height %d\n\n%v\n\n%v",
+			commitSize, valSetLen, block.Height, block.LastCommit.Signatures, lastValSet.Validators,
+		))
+	}
+
+	votes := make([]abci.VoteInfo, block.LastCommit.Size())
+	for i, val := range lastValSet.Validators {
+		commitSig := block.LastCommit.Signatures[i]
+
+		// Create cache key for this validator
+		cacheKey := fmt.Sprintf("%s_%d", val.PubKey.Address(), val.VotingPower)
+
+		// Try to get ABCI validator from cache
+		blockExec.abciValidatorCacheMutex.RLock()
+		abciVal, found := blockExec.abciValidatorCache[cacheKey]
+		blockExec.abciValidatorCacheMutex.RUnlock()
+
+		if !found {
+			// Convert to ABCI validator and cache
+			abciVal = abci.Validator{
+				Address: val.PubKey.Address(),
+				Power:   val.VotingPower,
+			}
+
+			blockExec.abciValidatorCacheMutex.Lock()
+			blockExec.abciValidatorCache[cacheKey] = abciVal
+			blockExec.abciValidatorCacheMutex.Unlock()
+		}
+
+		votes[i] = abci.VoteInfo{
+			Validator:   abciVal,
 			BlockIdFlag: cmtproto.BlockIDFlag(commitSig.BlockIDFlag),
 		}
 	}
@@ -766,6 +878,48 @@ func ExecCommitBlock(
 	initialHeight int64,
 ) ([]byte, error) {
 	commitInfo := buildLastCommitInfoFromStore(block, store, initialHeight)
+
+	resp, err := appConnConsensus.FinalizeBlock(context.TODO(), &abci.RequestFinalizeBlock{
+		Hash:               block.Hash(),
+		NextValidatorsHash: block.NextValidatorsHash,
+		ProposerAddress:    block.ProposerAddress,
+		Height:             block.Height,
+		Time:               block.Time,
+		DecidedLastCommit:  commitInfo,
+		Misbehavior:        block.Evidence.Evidence.ToABCI(),
+		Txs:                block.Txs.ToSliceOfBytes(),
+	})
+	if err != nil {
+		logger.Error("error in proxyAppConn.FinalizeBlock", "err", err)
+		return nil, err
+	}
+
+	// Assert that the application correctly returned tx results for each of the transactions provided in the block
+	if len(block.Txs) != len(resp.TxResults) {
+		return nil, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Txs), len(resp.TxResults))
+	}
+
+	logger.Info("executed block", "height", block.Height, "app_hash", fmt.Sprintf("%X", resp.AppHash))
+
+	// Commit block
+	_, err = appConnConsensus.Commit(context.TODO())
+	if err != nil {
+		logger.Error("client error during proxyAppConn.Commit", "err", err)
+		return nil, err
+	}
+
+	// ResponseCommit has no error or log
+	return resp.AppHash, nil
+}
+
+// ExecCommitBlockWithCache is an optimized version that uses caching for better performance
+func (blockExec *BlockExecutor) ExecCommitBlockWithCache(
+	appConnConsensus proxy.AppConnConsensus,
+	block *types.Block,
+	logger log.Logger,
+	initialHeight int64,
+) ([]byte, error) {
+	commitInfo := blockExec.BuildLastCommitInfoFromStoreWithCache(block, initialHeight)
 
 	resp, err := appConnConsensus.FinalizeBlock(context.TODO(), &abci.RequestFinalizeBlock{
 		Hash:               block.Hash(),

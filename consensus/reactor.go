@@ -166,9 +166,9 @@ func (conR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 			ID: DataChannel, // maybe split between gossiping current block and catchup stuff
 			// once we gossip the whole block there's nothing left to send until next height or round
 			Priority:            10,
-			SendQueueCapacity:   100,
-			RecvBufferCapacity:  50 * 4096,
-			RecvMessageCapacity: maxMsgSize,
+			SendQueueCapacity:   1000,
+			RecvBufferCapacity:  1000 * 4096,
+			RecvMessageCapacity: maxMsgSize * 3,
 			MessageType:         &cmtcons.Message{},
 		},
 		{

@@ -57,6 +57,7 @@ linters:
             - google.golang.org/protobuf/types/known/timestampp
             - github.com/libp2p/go-libp2p
             - github.com/multiformats/go-multiaddr
+            - github.com/mr-tron/base58/base58
         test:
           files:
             - $test
@@ -87,6 +88,7 @@ linters:
             - golang.org/x/net
             - github.com/libp2p/go-libp2p
             - github.com/multiformats/go-multiaddr
+            - github.com/mr-tron/base58/base58
     dogsled:
       max-blank-identifiers: 3
     gosec:

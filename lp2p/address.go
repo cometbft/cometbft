@@ -86,7 +86,7 @@ func netAddressFromPeer(addrInfo peer.AddrInfo) (*p2p.NetAddress, error) {
 	}
 
 	return &p2p.NetAddress{
-		ID:   p2p.ID(addrInfo.ID.String()),
+		ID:   peerIDToKey(addrInfo.ID),
 		IP:   ip,
 		Port: uint16(port),
 	}, nil

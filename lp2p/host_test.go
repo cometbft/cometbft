@@ -130,6 +130,9 @@ func TestHost(t *testing.T) {
 	host2Peer1, err := NewPeer(host2, host1.AddrInfo())
 	require.NoError(t, err, "failed to create peer 2->1")
 
+	t.Logf("host1Peer2: %+v", host1Peer2.ID())
+	t.Logf("host2Peer1: %+v", host2Peer1.ID())
+
 	// Given a long string
 	// 300kb
 	longStr := strings.Repeat("a", 300*1024)

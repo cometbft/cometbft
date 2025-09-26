@@ -13,6 +13,8 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/conn"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/mr-tron/base58/base58"
+	"github.com/pkg/errors"
 )
 
 type Peer struct {
@@ -48,7 +50,7 @@ func (p *Peer) String() string {
 }
 
 func (p *Peer) ID() p2p.ID {
-	return p2p.ID(p.addrInfo.ID.String())
+	return peerIDToKey(p.addrInfo.ID)
 }
 
 func (p *Peer) SocketAddr() *p2p.NetAddress {
@@ -99,6 +101,7 @@ func (p *Peer) send(e p2p.Envelope) error {
 	// - skip if not having the channel (todo how to check that peer has the channel? do we need to check it at all?)
 	// - collect metrics
 
+	peerID := p.addrInfo.ID
 	protocolID := ProtocolID(e.ChannelID)
 
 	payload, err := marshalProto(e.Message)
@@ -111,7 +114,7 @@ func (p *Peer) send(e p2p.Envelope) error {
 
 	start := time.Now()
 
-	s, err := p.host.NewStream(ctx, p.addrInfo.ID, protocolID)
+	s, err := p.host.NewStream(ctx, peerID, protocolID)
 	if err != nil {
 		return fmt.Errorf("failed to open stream %s: %w", protocolID, err)
 	}
@@ -120,7 +123,7 @@ func (p *Peer) send(e p2p.Envelope) error {
 		p.Logger.Debug(
 			"sent envelope",
 			"protocol", protocolID,
-			"peer_id", p.addrInfo.ID.String(),
+			"peer_id", peerID.String(),
 			"stream_opened_duration", time.Since(start).String(),
 		)
 	}()
@@ -142,7 +145,6 @@ func (*Peer) SetRemovalFailed()             {}
 func (*Peer) GetRemovalFailed() bool        { return false }
 
 // PeerSet represents lazy-initialized peer set adapter for go-libp2p.
-// TODO: cache calculations
 type PeerSet struct {
 	host *Host
 
@@ -166,80 +168,62 @@ func NewPeerSet(host *Host, logger log.Logger) *PeerSet {
 }
 
 func (p *PeerSet) Has(key p2p.ID) bool {
-	id := peer.ID(key)
+	id := p.keyToPeerID(key)
+	if id == "" {
+		return false
+	}
 
 	return len(p.host.Peerstore().Addrs(id)) > 0
 }
 
-func (p *PeerSet) HasIP(ip net.IP) bool {
-	peers := p.existingPeerIDs()
-
-	for _, peer := range peers {
-		addrInfo := p.host.Peerstore().PeerInfo(peer)
-
-		netAddr, err := netAddressFromPeer(addrInfo)
-		if err == nil && netAddr.IP.Equal(ip) {
-			return true
-		}
-	}
-
-	return false
-}
-
 func (p *PeerSet) Get(key p2p.ID) p2p.Peer {
-	id := peer.ID(key)
-
+	id := p.keyToPeerID(key)
 	if id == "" {
-		// todo drop debug
-		// todo this might happen because some reactors treat self as "" peer id
-		stack := string(debug.Stack())
-		p.logger.Info("Attempt to get an empty peer id", "stack", stack)
 		return nil
 	}
 
+	peer, err := p.getOrAdd(id)
+	if err != nil {
+		p.logger.Error("PeerSet.Get failed", "peer_id", id.String(), "err", err)
+		return nil
+	}
+
+	return peer
+}
+
+func (p *PeerSet) getOrAdd(id peer.ID) (*Peer, error) {
 	// use cache
 	if peer, ok := p.cacheGet(id); ok {
-		return peer
+		return peer, nil
 	}
 
 	// we don't want to return self
 	if p.host.ID() == id {
-		return nil
+		return nil, nil
 	}
 
-	peer := p.add(id)
-	if peer == nil {
-		return nil
-	}
-
-	p.cacheSet(peer)
-
-	return peer
-}
-
-func (p *PeerSet) add(id peer.ID) *Peer {
 	addrInfo := p.host.Peerstore().PeerInfo(id)
 	if len(addrInfo.Addrs) == 0 {
-		// todo drop debug
-		stack := string(debug.Stack())
-		p.logger.Info("Peer not found", "peer_id", id, "stack", stack)
-		return nil
+		return nil, errors.New("peer has no addresses in peerstore")
 	}
 
 	peer, err := NewPeer(p.host, addrInfo)
 	if err != nil {
-		p.logger.Error("Failed to create peer", "peer_id", id, "err", err)
-		return nil
+		return nil, errors.Wrap(err, "failed to create peer")
 	}
 
-	peer.SetLogger(p.logger.With("peer_id", peer.addrInfo.ID.String()))
+	peer.SetLogger(p.logger.With("peer_id", id.String()))
 
-	return peer
+	return p.cacheSet(peer), nil
 }
 
 func (p *PeerSet) Remove(key p2p.ID) {
-	id := peer.ID(key)
+	if id := p.keyToPeerID(key); id != "" {
+		p.remove(id)
+	}
+}
 
+func (p *PeerSet) remove(id peer.ID) {
 	if _, ok := p.cacheGet(id); !ok {
 		// noop
 		return
@@ -264,7 +248,7 @@ func (p *PeerSet) Copy() []p2p.Peer {
 	results := make([]p2p.Peer, 0, len(peers))
 
 	for _, id := range peers {
-		key := p2p.ID(id)
+		key := peerIDToKey(id)
 
 		if peer := p.Get(key); peer != nil {
 			results = append(results, peer)
@@ -278,9 +262,9 @@ func (p *PeerSet) ForEach(lambda func(p2p.Peer)) {
 	peers := p.existingPeerIDs()
 
 	for _, id := range peers {
-		key := p2p.ID(id)
-
+		key := peerIDToKey(id)
 		peer := p.Get(key)
+
 		if peer == nil {
 			continue
 		}
@@ -292,15 +276,18 @@ func (p *PeerSet) ForEach(lambda func(p2p.Peer)) {
 func (p *PeerSet) Random() p2p.Peer { return nil }
 
 func (p *PeerSet) existingPeerIDs() []peer.ID {
+	hostID := p.host.ID()
 	peers := p.host.Peerstore().PeersWithAddrs()
 
 	// exclude self
 	for i := 0; i < len(peers); i++ {
-		if peers[i] == p.host.ID() {
+		if peers[i] == hostID {
 			peers = append(peers[:i], peers[i+1:]...)
 			break
 		}
 	}
+
+	p.logger.Debug("Existing peer IDs", "host_id", hostID, "peers", peers)
 
 	return peers
 }
@@ -314,9 +301,54 @@ func (p *PeerSet) cacheGet(id peer.ID) (*Peer, bool) {
 	return peer, ok
 }
 
-func (p *PeerSet) cacheSet(peer *Peer) {
+func (p *PeerSet) cacheSet(peer *Peer) *Peer {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	// noop
+	if peer, ok := p.peers[peer.addrInfo.ID]; ok {
+		return peer
+	}
+
 	p.peers[peer.addrInfo.ID] = peer
+
+	return peer
+}
+
+func (p *PeerSet) keyToPeerID(key p2p.ID) peer.ID {
+	if key == "" {
+		// todo drop debug
+		// todo this might happen because some reactors treat self as "" peer id
+		stack := string(debug.Stack())
+		p.logger.Debug("Attempt to get an empty peer id", "stack", stack)
+		return ""
+	}
+
+	id, err := keyToPeerID(key)
+	if err != nil {
+		p.logger.Error("Failed to convert key to peer ID!", "peer_key", key, "err", err)
+		return ""
+	}
+
+	return id
+}
+
+func keyToPeerID(key p2p.ID) (peer.ID, error) {
+	b, err := base58.Decode(string(key))
+	if err != nil {
+		return "", errors.Wrap(err, "failed to decode base58 key")
+	}
+
+	id, err := peer.IDFromBytes(b)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to convert bytes to peer ID")
+	}
+
+	return id, nil
+}
+
+// note that peerID.String() is base58 encoded and
+// raw peerID is string([]byte)!
+func peerIDToKey(id peer.ID) p2p.ID {
+	return p2p.ID(id.String())
 }

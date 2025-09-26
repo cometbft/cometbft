@@ -385,7 +385,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 	}
 
 	// 2. Retrieve the peer from the peerSet
-	peer := s.peerSet.Get(p2p.ID(peerID))
+	peer := s.peerSet.Get(peerIDToKey(peerID))
 	if peer == nil {
 		s.Logger.Error("Unable to get peer from peerSet", "peer", peerID)
 		return

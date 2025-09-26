@@ -1,5 +1,3 @@
-log_level = "debug"
-
 [node.validator01]
 use_libp2p = true
 

@@ -87,6 +87,8 @@ func NewHost(
 
 	// Hard-coded opts for QUIC transport.
 	// TODO: make configurable
+	// todo: add support for libp2p.ResourceManager() default from json and then couple of options to override
+	// todo: add support for libp2p.BandwidthReporter()
 	opts := []libp2p.Option{
 		libp2p.Identity(privateKey),
 		libp2p.ListenAddrs(listenAddr),

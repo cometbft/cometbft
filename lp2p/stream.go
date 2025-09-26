@@ -161,21 +161,12 @@ func readExactly(r io.Reader, size uint64) ([]byte, error) {
 }
 
 func closeStream(s network.Stream) error {
-	errCloseWrite := s.CloseWrite()
+	err := s.Close()
 	switch {
-	case isErrCancelled(errCloseWrite):
+	case isErrCancelled(err):
 		// expected if peer canceled the stream
-		return nil
-	case errCloseWrite != nil:
-		return errors.Wrap(errCloseWrite, "failed to close stream for write")
-	}
-
-	errCloseRead := s.CloseRead()
-	switch {
-	case isErrCancelled(errCloseRead):
-		// expected if peer canceled the stream
-	case errCloseRead != nil:
-		return errors.Wrap(errCloseRead, "failed to close stream for read")
+	case err != nil:
+		return errors.Wrap(err, "failed to close stream")
 	}
 
 	return nil

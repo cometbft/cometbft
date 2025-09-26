@@ -975,11 +975,17 @@ func (conR *Reactor) peerStatsRoutine() {
 
 		select {
 		case msg := <-conR.conS.statsMsgQueue:
+			conR.Logger.Debug("Received message from cs.statsMsgQueue", "peer", msg.PeerID)
+
+			// local message
+			if msg.PeerID == "" {
+				continue
+			}
+
 			// Get peer
 			peer := conR.Switch.Peers().Get(msg.PeerID)
 			if peer == nil {
-				conR.Logger.Debug("Attempt to update stats for non-existent peer",
-					"peer", msg.PeerID)
+				conR.Logger.Debug("Attempt to update stats for non-existent peer", "peer", msg.PeerID)
 				continue
 			}
 			// Get peer state

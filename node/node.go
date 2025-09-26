@@ -531,7 +531,7 @@ func NewNodeWithContext(
 			{Name: "STATESYNC", Reactor: stateSyncReactor},
 		}
 
-		// drop mempool is nop
+		// drop mempool if nop
 		if config.Mempool.Type == cfg.MempoolTypeNop {
 			reactors = reactors[1:]
 		}

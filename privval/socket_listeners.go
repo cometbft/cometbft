@@ -12,7 +12,7 @@ const (
 	defaultTimeoutAcceptSeconds = 3
 )
 
-// timeoutError can be used to check if an error returned from the netp package
+// timeoutError can be used to check if an error returned from the net package
 // was due to a timeout.
 type timeoutError interface {
 	Timeout() bool

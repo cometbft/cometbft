@@ -368,7 +368,7 @@ var (
 // byte number. It then stores the first 6 bytes of the address as
 // 0xfd, 0x87, 0xd8, 0x7e, 0xeb, 0x43.
 //
-// This is the same range used by OnionCat, which is part part of the
+// This is the same range used by OnionCat, which is part of the
 // RFC4193 unique local IPv6 range.
 //
 // In summary the format is:

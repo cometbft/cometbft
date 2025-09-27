@@ -307,7 +307,7 @@ func (vals *ValidatorSet) GetByAddressMut(address []byte) (index int32, val *Val
 
 // GetByIndex returns the validator's address and validator itself (copy) by
 // index.
-// It returns nil values if index is less than 0 or greater or equal to
+// It returns nil values if index is less than 0 or greater than or equal to
 // len(ValidatorSet.Validators).
 func (vals *ValidatorSet) GetByIndex(index int32) (address []byte, val *Validator) {
 	if index < 0 || int(index) >= len(vals.Validators) {
@@ -456,7 +456,7 @@ func processChanges(origChanges []*Validator) (updates, removals []*Validator, e
 }
 
 // verifyUpdates verifies a list of updates against a validator set, making sure the allowed
-// total voting power would not be exceeded if these updates would be applied to the set.
+// total voting power would not be exceeded if these updates were applied to the set.
 //
 // Inputs:
 // updates - a list of proper validator changes, i.e. they have been verified by processChanges for duplicates
@@ -467,7 +467,7 @@ func processChanges(origChanges []*Validator) (updates, removals []*Validator, e
 // removedPower - the total voting power that will be removed after the updates are verified and applied.
 //
 // Returns:
-// tvpAfterUpdatesBeforeRemovals -  the new total voting power if these updates would be applied without the removals.
+// tvpAfterUpdatesBeforeRemovals -  the new total voting power if these updates were applied without the removals.
 //
 //	Note that this will be < 2 * MaxTotalVotingPower in case high power validators are removed and
 //	validators are added/ updated with high power values.
@@ -544,7 +544,7 @@ func computeNewPriorities(updates []*Validator, vals *ValidatorSet, updatedTotal
 }
 
 // Merges the vals' validator list with the updates list.
-// When two elements with same address are seen, the one from updates is selected.
+// When two elements with the same address are seen, the one from updates is selected.
 // Expects updates to be a list of updates sorted by address with no duplicates or errors,
 // must have been validated with verifyUpdates() and priorities computed with computeNewPriorities().
 func (vals *ValidatorSet) applyUpdates(updates []*Validator) {

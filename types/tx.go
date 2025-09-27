@@ -21,11 +21,11 @@ type (
 	// Might we want types here ?
 	Tx []byte
 
-	// TxKey is the fixed length array key used as an index.
+	// TxKey is the fixed-length array key used as an index.
 	TxKey [TxKeySize]byte
 )
 
-// Hash computes the TMHASH hash of the wire encoded transaction.
+// Hash computes the TMHASH hash of the wire-encoded transaction.
 func (tx Tx) Hash() []byte {
 	return tmhash.Sum(tx)
 }

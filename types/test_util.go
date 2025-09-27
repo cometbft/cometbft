@@ -103,7 +103,7 @@ func MakeVoteNoError(
 	return vote
 }
 
-// MakeBlock returns a new block with an empty header, except what can be
+// MakeBlock returns a new block with an empty header, except for what can be
 // computed from itself.
 // It populates the same set of fields validated by ValidateBasic.
 func MakeBlock(height int64, txs []Tx, lastCommit *Commit, evidence []Evidence) *Block {

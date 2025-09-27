@@ -128,7 +128,7 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 				assert.NoError(t, err, "VerifyCommitLight")
 			}
 
-			// only a subsection of the tests apply to VerifyCommitLightTrusting
+			// only a subsection of the tests applies to VerifyCommitLightTrusting
 			expErr := tc.expErr
 			if (!countAllSignatures && totalVotes != tc.valSize) || totalVotes < tc.valSize || !tc.blockID.Equals(blockID) || tc.height != height {
 				expErr = false

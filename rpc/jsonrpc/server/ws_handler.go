@@ -47,16 +47,41 @@ func NewWebsocketManager(
 		funcMap: funcMap,
 		Upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
-				// TODO ???
-				//
-				// The default behavior would be relevant to browser-based clients,
-				// afaik. I suppose having a pass-through is a workaround for allowing
-				// for more complex security schemes, shifting the burden of
-				// AuthN/AuthZ outside the CometBFT RPC.
-				// I can't think of other uses right now that would warrant a TODO
-				// though. The real backstory of this TODO shall remain shrouded in
-				// mystery
-				return true
+				// Security: Validate WebSocket origin to prevent Cross-Site WebSocket Hijacking (CSWSH)
+				// This replaces the previous implementation that always returned true, which was a security vulnerability
+				origin := r.Header.Get("Origin")
+
+				// Allow requests without Origin header (non-browser clients like CLI tools, mobile apps)
+				// These clients typically don't send Origin headers
+				if origin == "" {
+					return true
+				}
+
+				// For browser-based clients, validate the origin against allowed list
+				// This prevents malicious websites from connecting to the WebSocket server
+				allowedOrigins := []string{
+					"http://localhost",
+					"https://localhost",
+					"http://127.0.0.1",
+					"https://127.0.0.1",
+				}
+
+				// Check if origin matches any allowed origin (exact match or with port/path)
+				for _, allowed := range allowedOrigins {
+					if origin == allowed {
+						return true
+					}
+					// Allow origins with ports or paths (e.g., http://localhost:3000, https://localhost/app)
+					if len(origin) > len(allowed) && 
+					   origin[:len(allowed)] == allowed && 
+					   (origin[len(allowed)] == ':' || origin[len(allowed)] == '/') {
+						return true
+					}
+				}
+
+				// Reject suspicious origins to prevent CSWSH attacks
+				// In production, consider logging these attempts for security monitoring
+				return false
 			},
 		},
 		logger:        log.NewNopLogger(),

@@ -345,7 +345,7 @@ func (vote *Vote) ValidateBasic() error {
 		// we don't know if extensions are enabled so we can only
 		// enforce the signature when extension size is not nil
 		if len(vote.ExtensionSignature) == 0 && len(vote.Extension) != 0 {
-			return fmt.Errorf("vote extension signature absent on vote with extension")
+			return errors.New("vote extension signature absent on vote with extension")
 		}
 	}
 

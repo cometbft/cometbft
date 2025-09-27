@@ -531,7 +531,7 @@ func (voteSet *VoteSet) StringIndented(indent string) string {
 }
 
 // MarshalJSON marshals the VoteSet to JSON. Same as String(), just in JSON,
-// and without the height/round/signedMsgType (since its already included in the votes).
+// and without the height/round/signedMsgType (since it's already included in the votes).
 func (voteSet *VoteSet) MarshalJSON() ([]byte, error) {
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
@@ -631,7 +631,7 @@ func (voteSet *VoteSet) sumTotalFrac() (int64, int64, float64) {
 // MakeExtendedCommit constructs a Commit from the VoteSet. It only includes
 // precommits for the block, which has 2/3+ majority, and nil.
 //
-// Panics if the vote type is not PrecommitType or if there's no +2/3 votes for
+// Panics if the vote type is not PrecommitType or if there are no +2/3 votes for
 // a single block.
 func (voteSet *VoteSet) MakeExtendedCommit(ap ABCIParams) *ExtendedCommit {
 	voteSet.mtx.Lock()

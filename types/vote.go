@@ -124,7 +124,7 @@ func (vote *Vote) CommitSig() CommitSig {
 
 // ExtendedCommitSig attempts to construct an ExtendedCommitSig from this vote.
 // Panics if either the vote extension signature is missing or if the block ID
-// is not either empty or complete.
+// is neither empty nor complete.
 func (vote *Vote) ExtendedCommitSig() ExtendedCommitSig {
 	if vote == nil {
 		return NewExtendedCommitSigAbsent()
@@ -228,7 +228,7 @@ func (vote *Vote) verifyAndReturnProto(chainID string, pubKey crypto.PubKey) (*c
 }
 
 // Verify checks whether the signature associated with this vote corresponds to
-// the given chain ID and public key. This function does not validate vote
+// the given chain ID and public key. This function does not validate the vote
 // extension signatures - to do so, use VerifyWithExtension instead.
 func (vote *Vote) Verify(chainID string, pubKey crypto.PubKey) error {
 	_, err := vote.verifyAndReturnProto(chainID, pubKey)
@@ -237,7 +237,7 @@ func (vote *Vote) Verify(chainID string, pubKey crypto.PubKey) error {
 
 // VerifyVoteAndExtension performs the same verification as Verify, but
 // additionally checks whether the vote extension signature corresponds to the
-// given chain ID and public key. We only verify vote extension signatures for
+// given chain ID and public key. We only verify the vote extension signatures for
 // precommits.
 func (vote *Vote) VerifyVoteAndExtension(chainID string, pubKey crypto.PubKey) error {
 	v, err := vote.verifyAndReturnProto(chainID, pubKey)

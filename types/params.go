@@ -62,7 +62,7 @@ type EvidenceParams struct {
 	MaxBytes        int64         `json:"max_bytes"`
 }
 
-// ValidatorParams restrict the public key types validators can use.
+// ValidatorParams restrict the public key types that validators can use.
 // NOTE: uses ABCI pubkey naming, not Amino names.
 type ValidatorParams struct {
 	PubKeyTypes []string `json:"pub_key_types"`
@@ -298,7 +298,7 @@ func (params ConsensusParams) Hash() []byte {
 }
 
 // Update returns a copy of the params with updates from the non-zero fields of p2.
-// NOTE: note: must not modify the original
+// NOTE: must not modify the original
 func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) ConsensusParams {
 	res := params // explicit copy
 
@@ -306,7 +306,7 @@ func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) Consensu
 		return res
 	}
 
-	// we must defensively consider any structs may be nil
+	// we must defensively consider that any structs may be nil
 	if params2.Block != nil {
 		res.Block.MaxBytes = params2.Block.MaxBytes
 		res.Block.MaxGas = params2.Block.MaxGas
@@ -317,7 +317,7 @@ func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) Consensu
 		res.Evidence.MaxBytes = params2.Evidence.MaxBytes
 	}
 	if params2.Validator != nil {
-		// Copy params2.Validator.PubkeyTypes, and set result's value to the copy.
+		// Copy params2.Validator.PubkeyTypes, and set the result's value to the copy.
 		// This avoids having to initialize the slice to 0 values, and then write to it again.
 		res.Validator.PubKeyTypes = append([]string{}, params2.Validator.PubKeyTypes...)
 	}

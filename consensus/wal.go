@@ -311,7 +311,7 @@ func (enc *WALEncoder) Encode(v *TimedWALMessage) error {
 
 	data, err := proto.Marshal(&pv)
 	if err != nil {
-		panic(fmt.Errorf("encode timed wall message failure: %w", err))
+		panic(fmt.Errorf("encode timed wal message failure: %w", err))
 	}
 
 	crc := crc32.Checksum(data, crc32c)

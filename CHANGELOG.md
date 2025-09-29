@@ -7,7 +7,8 @@
 ### BUG FIXES
 
 ### IMPROVEMENTS
-
+-  `[mempool]` perf(mempool/cache): Optimize LRUTxCache.Remove to reduce lock contention and map access
+   ([\#5244](https://github.com/cometbft/cometbft/pull/5244))
 - `[e2e]` add support for testing different keytypes, including BLS
   ([\#3513](https://github.com/cometbft/cometbft/pull/3513))
 - `[crypto]` Reduce BLS signature size to 48 bytes by increasing pubkey size to

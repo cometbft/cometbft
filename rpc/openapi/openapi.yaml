@@ -2712,9 +2712,9 @@ components:
               example: 2
           type: object
 
-    ###### Reuseable types ######
+    ###### Reusable types ######
 
-    # Validator type with proposer prioirty
+    # Validator type with proposer priority
     ValidatorPriority:
       type: object
       properties:

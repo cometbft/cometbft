@@ -26,4 +26,6 @@ type Metrics struct {
 	// updated the validator set since process start.
 	// metrics:Number of validator set updates returned by the application since process start.
 	ValidatorSetUpdates metrics.Counter
+
+	FlushTime metrics.Histogram `metrics_bucketsizes:".0001,.0004,.002,.009,.02,.1,.65,2,6,25" metrics_labels:"type"`
 }

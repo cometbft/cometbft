@@ -34,6 +34,14 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "validator_set_updates",
 			Help:      "ValidatorSetUpdates is the total number of times the application has updated the validator set since process start. metrics:Number of validator set updates returned by the application since process start.",
 		}, labels).With(labelsAndValues...),
+		FlushTime: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "flush_time",
+			Help:      "",
+
+			Buckets: []float64{.0001, .0004, .002, .009, .02, .1, .65, 2, 6, 25},
+		}, append(labels, "type")).With(labelsAndValues...),
 	}
 }
 
@@ -42,5 +50,6 @@ func NopMetrics() *Metrics {
 		BlockProcessingTime:   discard.NewHistogram(),
 		ConsensusParamUpdates: discard.NewCounter(),
 		ValidatorSetUpdates:   discard.NewCounter(),
+		FlushTime:             discard.NewHistogram(),
 	}
 }

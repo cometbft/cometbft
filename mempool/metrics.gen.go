@@ -70,6 +70,14 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "already_received_txs",
 			Help:      "Number of duplicate transaction reception.",
 		}, labels).With(labelsAndValues...),
+		FlushTime: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "flush_time",
+			Help:      "",
+
+			Buckets: []float64{.0001, .0004, .002, .009, .02, .1, .65, 2, 6, 25},
+		}, append(labels, "type")).With(labelsAndValues...),
 	}
 }
 
@@ -84,5 +92,6 @@ func NopMetrics() *Metrics {
 		RecheckTimes:              discard.NewCounter(),
 		ActiveOutboundConnections: discard.NewGauge(),
 		AlreadyReceivedTxs:        discard.NewCounter(),
+		FlushTime:                 discard.NewHistogram(),
 	}
 }

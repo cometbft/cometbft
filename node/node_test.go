@@ -246,8 +246,7 @@ func testFreeAddr(t *testing.T) string {
 // create a proposal block using real and full
 // mempool and evidence pool and validate it.
 func TestCreateProposalBlock(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	config := test.ResetTestRoot("node_create_proposal")
 	defer os.RemoveAll(config.RootDir)
@@ -350,8 +349,7 @@ func TestCreateProposalBlock(t *testing.T) {
 }
 
 func TestMaxProposalBlockSize(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	config := test.ResetTestRoot("node_create_proposal")
 	defer os.RemoveAll(config.RootDir)

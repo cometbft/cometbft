@@ -36,8 +36,7 @@ import (
 
 // Byzantine node sends two different prevotes (nil and blockID) to the same validator
 func TestByzantinePrevoteEquivocation(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	const nValidators = 4
 	const byzantineNode = 0
@@ -301,8 +300,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 	N := 4
 	logger := consensusLogger().With("test", "byzantine")
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	app := newKVStore
 	css, cleanup := randConsensusNet(t, N, "consensus_byzantine_test", newMockTickerFunc(false), app)
@@ -598,8 +596,7 @@ func (br *ByzantineReactor) InitPeer(peer p2p.Peer) p2p.Peer { return peer }
 
 // Large/oversized proposals should be rejected
 func TestRejectOversizedProposals(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	n := 2
 	css, cleanup := randConsensusNet(t, n, "consensus_reactor_test", newMockTickerFunc(false), newKVStore)

@@ -671,11 +671,6 @@ func (mem *CListMempool) recheckTxs() {
 		}
 	}
 
-	// Flush any pending asynchronous recheck requests to process.
-	start := time.Now()
-	mem.proxyAppConn.Flush(context.TODO())
-	mem.metrics.FlushTime.With("type", "recheck").Observe(float64(time.Since(start).Seconds()))
-
 	// Give some time to finish processing the responses; then finish the rechecking process, even
 	// if not all txs were rechecked.
 	select {

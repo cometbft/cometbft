@@ -116,6 +116,10 @@ func (c Client) BroadcastTxSync(_ context.Context, tx types.Tx) (*ctypes.ResultB
 	return c.env.BroadcastTxSync(&rpctypes.Context{}, tx)
 }
 
+func (c Client) BroadcastTxUnchecked(_ context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
+	return c.env.BroadcastTxUnchecked(&rpctypes.Context{}, tx)
+}
+
 func (c Client) CheckTx(_ context.Context, tx types.Tx) (*ctypes.ResultCheckTx, error) {
 	return c.env.CheckTx(&rpctypes.Context{}, tx)
 }

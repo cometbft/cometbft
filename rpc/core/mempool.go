@@ -18,6 +18,39 @@ var ErrEndpointClosedCatchingUp = errors.New("endpoint is closed while node is c
 //-----------------------------------------------------------------------------
 // NOTE: tx should be signed, but this is only checked at the app level (not by CometBFT!)
 
+// BroadcastTxUnchecked adds a transaction to the mempool and broadcasts it to peers
+// without calling CheckTx on the application. This bypasses application validation.
+// Returns right away with a success response if the transaction was added to the mempool.
+func (env *Environment) BroadcastTxUnchecked(ctx *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
+	if env.MempoolReactor.WaitSync() {
+		return nil, ErrEndpointClosedCatchingUp
+	}
+
+	resCh := make(chan *abci.ResponseCheckTx, 1)
+	err := env.Mempool.UnCheckedTx(tx, func(res *abci.ResponseCheckTx) {
+		select {
+		case <-ctx.Context().Done():
+		case resCh <- res:
+		}
+	}, mempl.TxInfo{})
+	if err != nil {
+		return nil, err
+	}
+
+	select {
+	case <-ctx.Context().Done():
+		return nil, fmt.Errorf("broadcast confirmation not received: %w", ctx.Context().Err())
+	case res := <-resCh:
+		return &ctypes.ResultBroadcastTx{
+			Code:      res.Code,
+			Data:      res.Data,
+			Log:       res.Log,
+			Codespace: res.Codespace,
+			Hash:      tx.Hash(),
+		}, nil
+	}
+}
+
 // BroadcastTxAsync returns right away, with no response. Does not wait for
 // CheckTx nor transaction results.
 // More: https://docs.cometbft.com/v0.38/spec/rpc/#unconfirmedtxs

@@ -41,9 +41,10 @@ func (env *Environment) GetRoutes() RoutesMap {
 		"num_unconfirmed_txs":  rpc.NewRPCFunc(env.NumUnconfirmedTxs, ""),
 
 		// tx broadcast API
-		"broadcast_tx_commit": rpc.NewRPCFunc(env.BroadcastTxCommit, "tx"),
-		"broadcast_tx_sync":   rpc.NewRPCFunc(env.BroadcastTxSync, "tx"),
-		"broadcast_tx_async":  rpc.NewRPCFunc(env.BroadcastTxAsync, "tx"),
+		"broadcast_tx_commit":    rpc.NewRPCFunc(env.BroadcastTxCommit, "tx"),
+		"broadcast_tx_sync":      rpc.NewRPCFunc(env.BroadcastTxSync, "tx"),
+		"broadcast_tx_async":     rpc.NewRPCFunc(env.BroadcastTxAsync, "tx"),
+		"broadcast_tx_unchecked": rpc.NewRPCFunc(env.BroadcastTxUnchecked, "tx"),
 
 		// abci API
 		"abci_query": rpc.NewRPCFunc(env.ABCIQuery, "path,data,height,prove"),

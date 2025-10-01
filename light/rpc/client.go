@@ -202,6 +202,10 @@ func (c *Client) BroadcastTxSync(ctx context.Context, tx types.Tx) (*ctypes.Resu
 	return c.next.BroadcastTxSync(ctx, tx)
 }
 
+func (c *Client) BroadcastTxUnchecked(ctx context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
+	return c.next.BroadcastTxUnchecked(ctx, tx)
+}
+
 func (c *Client) UnconfirmedTxs(ctx context.Context, limit *int) (*ctypes.ResultUnconfirmedTxs, error) {
 	return c.next.UnconfirmedTxs(ctx, limit)
 }

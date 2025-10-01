@@ -59,6 +59,7 @@ type ABCIClient interface {
 	BroadcastTxCommit(context.Context, types.Tx) (*ctypes.ResultBroadcastTxCommit, error)
 	BroadcastTxAsync(context.Context, types.Tx) (*ctypes.ResultBroadcastTx, error)
 	BroadcastTxSync(context.Context, types.Tx) (*ctypes.ResultBroadcastTx, error)
+	BroadcastTxUnchecked(context.Context, types.Tx) (*ctypes.ResultBroadcastTx, error)
 }
 
 // SignClient groups together the functionality needed to get valid signatures

@@ -25,6 +25,11 @@ func (*NopMempool) CheckTx(types.Tx, func(*abci.ResponseCheckTx), TxInfo) error 
 	return errNotAllowed
 }
 
+// UnCheckedTx always returns an error.
+func (*NopMempool) UnCheckedTx(types.Tx, func(*abci.ResponseCheckTx), TxInfo) error {
+	return errNotAllowed
+}
+
 // RemoveTxByKey always returns an error.
 func (*NopMempool) RemoveTxByKey(types.TxKey) error { return errNotAllowed }
 

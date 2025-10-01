@@ -212,6 +212,90 @@ func (mem *CListMempool) TxsWaitChan() <-chan struct{} {
 	return mem.txs.WaitChan()
 }
 
+// UnCheckedTx adds a transaction to the mempool without calling CheckTx on the application.
+// This bypasses application validation and adds the transaction directly to the mempool for
+// broadcasting to peers. Use with caution as it skips validation.
+func (mem *CListMempool) UnCheckedTx(
+	tx types.Tx,
+	cb func(*abci.ResponseCheckTx),
+	txInfo TxInfo,
+) error {
+	mem.updateMtx.RLock()
+	// use defer to unlock mutex because application (*local client*) might panic
+	defer mem.updateMtx.RUnlock()
+
+	txSize := len(tx)
+
+	if err := mem.isFull(txSize); err != nil {
+		mem.metrics.RejectedTxs.Add(1)
+		return err
+	}
+
+	if txSize > mem.config.MaxTxBytes {
+		return ErrTxTooLarge{
+			Max:    mem.config.MaxTxBytes,
+			Actual: txSize,
+		}
+	}
+
+	if mem.preCheck != nil {
+		if err := mem.preCheck(tx); err != nil {
+			return ErrPreCheck{Err: err}
+		}
+	}
+
+	if !mem.cache.Push(tx) { // if the transaction already exists in the cache
+		mem.metrics.AlreadyReceivedTxs.Add(1)
+		// Record a new sender for a tx we've already seen.
+		// Note it's possible a tx is still in the cache but no longer in the mempool
+		// (eg. after committing a block, txs are removed from mempool but not cache),
+		// so we only record the sender for txs still in the mempool.
+		if memTx := mem.getMemTx(tx.Key()); memTx != nil {
+			memTx.addSender(txInfo.SenderID)
+		}
+		return ErrTxInCache
+	}
+
+	// Check transaction not already in the mempool
+	if e, ok := mem.txsMap.Load(tx.Key()); ok {
+		memTx := e.(*clist.CElement).Value.(*mempoolTx)
+		memTx.addSender(txInfo.SenderID)
+		mem.logger.Debug(
+			"transaction already there, not adding it again",
+			"tx", tx.Hash(),
+			"height", mem.height.Load(),
+			"total", mem.Size(),
+		)
+		mem.metrics.RejectedTxs.Add(1)
+		return ErrTxInCache
+	}
+
+	// Create mempool transaction and add it directly without CheckTx
+	memTx := &mempoolTx{
+		height:    mem.height.Load(),
+		gasWanted: 0, // unknown since we're not calling CheckTx
+		tx:        tx,
+	}
+	memTx.addSender(txInfo.SenderID)
+	mem.addTx(memTx)
+	mem.logger.Debug(
+		"added unchecked transaction",
+		"tx", tx.Hash(),
+		"height", mem.height.Load(),
+		"total", mem.Size(),
+	)
+	mem.notifyTxsAvailable()
+
+	// Call the callback immediately with a success response since we're not calling CheckTx
+	if cb != nil {
+		cb(&abci.ResponseCheckTx{
+			Code: abci.CodeTypeOK,
+		})
+	}
+
+	return nil
+}
+
 // It blocks if we're waiting on Update() or Reap().
 // cb: A callback from the CheckTx command.
 //

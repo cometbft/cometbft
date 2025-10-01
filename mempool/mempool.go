@@ -33,6 +33,10 @@ type Mempool interface {
 	// its validity and whether it should be added to the mempool.
 	CheckTx(tx types.Tx, callback func(*abci.ResponseCheckTx), txInfo TxInfo) error
 
+	// UnCheckedTx adds a transaction to the mempool without executing CheckTx
+	// against the application. This bypasses application validation entirely.
+	UnCheckedTx(tx types.Tx, callback func(*abci.ResponseCheckTx), txInfo TxInfo) error
+
 	// RemoveTxByKey removes a transaction, identified by its key,
 	// from the mempool.
 	RemoveTxByKey(txKey types.TxKey) error

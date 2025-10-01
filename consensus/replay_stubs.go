@@ -24,6 +24,10 @@ func (emptyMempool) CheckTx(types.Tx, func(*abci.ResponseCheckTx), mempl.TxInfo)
 	return nil
 }
 
+func (emptyMempool) UnCheckedTx(types.Tx, func(*abci.ResponseCheckTx), mempl.TxInfo) error {
+	return nil
+}
+
 func (txmp emptyMempool) RemoveTxByKey(types.TxKey) error {
 	return nil
 }

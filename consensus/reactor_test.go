@@ -352,8 +352,7 @@ func TestSwitchToConsensusVoteExtensions(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			cs, vs := randState(1)
 			validator := vs[0]

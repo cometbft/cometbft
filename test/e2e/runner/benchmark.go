@@ -218,10 +218,3 @@ func extractTestnetStats(intervals []time.Duration) testnetStats {
 		min:  min,
 	}
 }
-
-func min(a, b int64) int64 {
-	if a > b {
-		return b
-	}
-	return a
-}

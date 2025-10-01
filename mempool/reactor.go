@@ -264,25 +264,43 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			}
 		}
 
-		// If we suspect that the peer is lagging behind, at least by more than
-		// one block, we don't send the transaction immediately. This code
-		// reduces the mempool size and the recheck-tx rate of the receiving
-		// node. See [RFC 103] for an analysis on this optimization.
-		//
-		// [RFC 103]: https://github.com/cometbft/cometbft/pull/735
-		memTx := next.Value.(*mempoolTx)
-		if peerState.GetHeight() < memTx.Height()-1 {
-			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
-			continue
-		}
-
 		// NOTE: Transaction batching was disabled due to
 		// https://github.com/tendermint/tendermint/issues/5796
 
-		if !memTx.isSender(peerID) {
+		// Collect a batch of transactions
+		var batch [][]byte
+		batchSize := 0
+
+		for next != nil {
+			memTx := next.Value.(*mempoolTx)
+			if peerState.GetHeight() < memTx.Height()-1 {
+				time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
+				continue
+			}
+
+			// Check peer height (existing optimization)
+			if peerState.GetHeight() < memTx.Height()-1 {
+				break
+			}
+
+			// Skip if peer is the sender
+			if memTx.isSender(peerID) {
+				next = next.Next()
+				continue
+			}
+
+			txSize := len(memTx.tx)
+
+			batch = append(batch, memTx.tx)
+			batchSize += txSize
+			next = next.Next()
+		}
+
+		// Send the batch if we have transactions
+		if len(batch) > 0 {
 			success := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
-				Message:   &protomem.Txs{Txs: [][]byte{memTx.tx}},
+				Message:   &protomem.Txs{Txs: batch},
 			})
 			if !success {
 				time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
@@ -290,14 +308,16 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			}
 		}
 
-		select {
-		case <-next.NextWaitChan():
-			// see the start of the for loop for nil check
-			next = next.Next()
-		case <-peer.Quit():
-			return
-		case <-memR.Quit():
-			return
+		if next != nil {
+			select {
+			case <-next.NextWaitChan():
+				// see the start of the for loop for nil check
+				next = next.Next()
+			case <-peer.Quit():
+				return
+			case <-memR.Quit():
+				return
+			}
 		}
 	}
 }

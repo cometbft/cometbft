@@ -99,6 +99,11 @@ func (app *localClient) CheckTx(ctx context.Context, req *types.RequestCheckTx) 
 	return app.Application.CheckTx(ctx, req)
 }
 
+func (app *localClient) InsertMempool(ctx context.Context, req *types.RequestInsertMempool) (*types.ResponseInsertMempool, error) {
+	// InsertMempool does not acquire the lock to allow concurrent execution
+	return app.Application.InsertMempool(ctx, req)
+}
+
 func (app *localClient) Query(ctx context.Context, req *types.RequestQuery) (*types.ResponseQuery, error) {
 	app.mtx.Lock()
 	defer app.mtx.Unlock()

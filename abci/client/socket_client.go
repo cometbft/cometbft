@@ -280,6 +280,17 @@ func (cli *socketClient) CheckTx(ctx context.Context, req *types.RequestCheckTx)
 	return reqRes.Response.GetCheckTx(), cli.Error()
 }
 
+func (cli *socketClient) InsertMempool(ctx context.Context, req *types.RequestInsertMempool) (*types.ResponseInsertMempool, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestInsertMempool(req))
+	if err != nil {
+		return nil, err
+	}
+	if err := cli.Flush(ctx); err != nil {
+		return nil, err
+	}
+	return reqRes.Response.GetInsertMempool(), cli.Error()
+}
+
 func (cli *socketClient) Query(ctx context.Context, req *types.RequestQuery) (*types.ResponseQuery, error) {
 	reqRes, err := cli.queueRequest(ctx, types.ToRequestQuery(req))
 	if err != nil {

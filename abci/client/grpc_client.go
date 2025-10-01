@@ -198,6 +198,10 @@ func (cli *grpcClient) CheckTx(ctx context.Context, req *types.RequestCheckTx) (
 	return cli.client.CheckTx(ctx, req, grpc.WaitForReady(true))
 }
 
+func (cli *grpcClient) InsertMempool(ctx context.Context, req *types.RequestInsertMempool) (*types.ResponseInsertMempool, error) {
+	return cli.client.InsertMempool(ctx, req, grpc.WaitForReady(true))
+}
+
 func (cli *grpcClient) Query(ctx context.Context, req *types.RequestQuery) (*types.ResponseQuery, error) {
 	return cli.client.Query(ctx, types.ToRequestQuery(req).GetQuery(), grpc.WaitForReady(true))
 }

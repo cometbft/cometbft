@@ -12,7 +12,8 @@ type Application interface {
 	Query(context.Context, *RequestQuery) (*ResponseQuery, error) // Query for state
 
 	// Mempool Connection
-	CheckTx(context.Context, *RequestCheckTx) (*ResponseCheckTx, error) // Validate a tx for the mempool
+	CheckTx(context.Context, *RequestCheckTx) (*ResponseCheckTx, error)           // Validate a tx for the mempool
+	InsertMempool(context.Context, *RequestInsertMempool) (*ResponseInsertMempool, error) // Insert a tx into the application's mempool
 
 	// Consensus Connection
 	InitChain(context.Context, *RequestInitChain) (*ResponseInitChain, error) // Initialize blockchain w validators/other info from CometBFT
@@ -51,6 +52,10 @@ func (BaseApplication) Info(context.Context, *RequestInfo) (*ResponseInfo, error
 
 func (BaseApplication) CheckTx(context.Context, *RequestCheckTx) (*ResponseCheckTx, error) {
 	return &ResponseCheckTx{Code: CodeTypeOK}, nil
+}
+
+func (BaseApplication) InsertMempool(context.Context, *RequestInsertMempool) (*ResponseInsertMempool, error) {
+	return &ResponseInsertMempool{Code: CodeTypeOK}, nil
 }
 
 func (BaseApplication) Commit(context.Context, *RequestCommit) (*ResponseCommit, error) {

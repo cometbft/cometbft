@@ -22,6 +22,16 @@ func (r ResponseCheckTx) IsErr() bool {
 }
 
 // IsOK returns true if Code is OK.
+func (r ResponseInsertMempool) IsOK() bool {
+	return r.Code == CodeTypeOK
+}
+
+// IsErr returns true if Code is something other than OK.
+func (r ResponseInsertMempool) IsErr() bool {
+	return r.Code != CodeTypeOK
+}
+
+// IsOK returns true if Code is OK.
 func (r ExecTxResult) IsOK() bool {
 	return r.Code == CodeTypeOK
 }

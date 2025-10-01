@@ -33,6 +33,7 @@ type AppConnMempool interface {
 
 	CheckTx(context.Context, *types.RequestCheckTx) (*types.ResponseCheckTx, error)
 	CheckTxAsync(context.Context, *types.RequestCheckTx) (*abcicli.ReqRes, error)
+	InsertMempool(context.Context, *types.RequestInsertMempool) (*types.ResponseInsertMempool, error)
 	Flush(context.Context) error
 }
 
@@ -155,6 +156,11 @@ func (app *appConnMempool) CheckTx(ctx context.Context, req *types.RequestCheckT
 func (app *appConnMempool) CheckTxAsync(ctx context.Context, req *types.RequestCheckTx) (*abcicli.ReqRes, error) {
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "check_tx", "type", "async"))()
 	return app.appConn.CheckTxAsync(ctx, req)
+}
+
+func (app *appConnMempool) InsertMempool(ctx context.Context, req *types.RequestInsertMempool) (*types.ResponseInsertMempool, error) {
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "insert_mempool", "type", "sync"))()
+	return app.appConn.InsertMempool(ctx, req)
 }
 
 //------------------------------------------------

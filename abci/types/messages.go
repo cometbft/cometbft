@@ -124,6 +124,12 @@ func ToRequestFinalizeBlock(req *RequestFinalizeBlock) *Request {
 	}
 }
 
+func ToRequestInsertMempool(req *RequestInsertMempool) *Request {
+	return &Request{
+		Value: &Request_InsertMempool{req},
+	}
+}
+
 //----------------------------------------
 
 func ToResponseException(errStr string) *Response {
@@ -225,5 +231,11 @@ func ToResponseVerifyVoteExtension(res *ResponseVerifyVoteExtension) *Response {
 func ToResponseFinalizeBlock(res *ResponseFinalizeBlock) *Response {
 	return &Response{
 		Value: &Response_FinalizeBlock{res},
+	}
+}
+
+func ToResponseInsertMempool(res *ResponseInsertMempool) *Response {
+	return &Response{
+		Value: &Response_InsertMempool{res},
 	}
 }

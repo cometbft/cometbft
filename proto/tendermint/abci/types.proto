@@ -34,6 +34,7 @@ service ABCI {
   rpc ExtendVote(RequestExtendVote) returns (ResponseExtendVote);
   rpc VerifyVoteExtension(RequestVerifyVoteExtension) returns (ResponseVerifyVoteExtension);
   rpc FinalizeBlock(RequestFinalizeBlock) returns (ResponseFinalizeBlock);
+  rpc InsertMempool(RequestInsertMempool) returns (ResponseInsertMempool);
 }
 
 //----------------------------------------
@@ -57,6 +58,7 @@ message Request {
     RequestExtendVote          extend_vote           = 18;
     RequestVerifyVoteExtension verify_vote_extension = 19;
     RequestFinalizeBlock       finalize_block        = 20;
+    RequestInsertMempool       insert_mempool        = 21;
   }
   reserved 4, 7, 9, 10;  // SetOption, BeginBlock, DeliverTx, EndBlock
 }
@@ -193,6 +195,10 @@ message RequestFinalizeBlock {
   bytes proposer_address = 8;
 }
 
+message RequestInsertMempool {
+  bytes tx = 1;
+}
+
 //----------------------------------------
 // Response types
 
@@ -215,6 +221,7 @@ message Response {
     ResponseExtendVote          extend_vote           = 19;
     ResponseVerifyVoteExtension verify_vote_extension = 20;
     ResponseFinalizeBlock       finalize_block        = 21;
+    ResponseInsertMempool       insert_mempool        = 22;
   }
   reserved 5, 8, 10, 11;  // SetOption, BeginBlock, DeliverTx, EndBlock
 }
@@ -363,6 +370,11 @@ message ResponseFinalizeBlock {
   tendermint.types.ConsensusParams consensus_param_updates = 4;
   // app_hash is the hash of the applications' state which is used to confirm that execution of the transactions was deterministic. It is up to the application to decide which algorithm to use.
   bytes app_hash = 5;
+}
+
+message ResponseInsertMempool {
+  uint32 code = 1;
+  string log  = 2;  // nondeterministic
 }
 
 //----------------------------------------

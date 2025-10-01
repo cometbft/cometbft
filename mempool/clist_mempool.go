@@ -286,6 +286,19 @@ func (mem *CListMempool) UnCheckedTx(
 	)
 	mem.notifyTxsAvailable()
 
+	// Call InsertMempool to add the transaction to the application's mempool
+	// This call does not acquire a lock, allowing concurrent execution
+	_, err := mem.proxyAppConn.InsertMempool(context.TODO(), &abci.RequestInsertMempool{Tx: tx})
+	if err != nil {
+		mem.logger.Debug(
+			"failed to insert transaction into application mempool",
+			"tx", tx.Hash(),
+			"err", err,
+		)
+		// Note: we don't return an error here because the tx is already in the clist mempool
+		// The error is only logged for observability
+	}
+
 	// Call the callback immediately with a success response since we're not calling CheckTx
 	if cb != nil {
 		cb(&abci.ResponseCheckTx{

@@ -171,7 +171,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 		var err error
 		for _, tx := range protoTxs {
 			ntx := types.Tx(tx)
-			err = memR.mempool.CheckTx(ntx, nil, txInfo)
+			err = memR.mempool.UnCheckedTx(ntx, nil, txInfo)
 			if err != nil {
 				switch {
 				case errors.Is(err, ErrTxInCache):

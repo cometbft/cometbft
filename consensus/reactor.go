@@ -166,7 +166,7 @@ func (conR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 			ID: DataChannel, // maybe split between gossiping current block and catchup stuff
 			// once we gossip the whole block there's nothing left to send until next height or round
 			Priority:            10,
-			SendQueueCapacity:   1000,
+			SendQueueCapacity:   10000,
 			RecvBufferCapacity:  1000 * 4096,
 			RecvMessageCapacity: maxMsgSize * 3,
 			MessageType:         &cmtcons.Message{},
@@ -1600,7 +1600,6 @@ func (m *NewRoundStepMessage) ValidateHeight(initialHeight int64) error {
 			Field:  "Height",
 			Reason: fmt.Sprintf("%v should be lower than initial height %v", m.Height, initialHeight),
 		}
-
 	}
 
 	if m.Height == initialHeight && m.LastCommitRound != -1 {

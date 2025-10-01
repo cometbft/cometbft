@@ -187,8 +187,7 @@ func TestGenesisAndValidators(t *testing.T) {
 }
 
 func TestGenesisChunked(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	for _, c := range GetClients() {
 		first, err := c.GenesisChunked(ctx, 0)

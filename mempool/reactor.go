@@ -225,7 +225,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 
 		// Collect a batch of transactions
 		var batch [][]byte
-		batchSize := 0
+		batchSize := 10
 
 		for next != nil {
 			memTx := next.Value.(*mempoolTx)
@@ -245,10 +245,10 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 				continue
 			}
 
-			txSize := len(memTx.tx)
-
 			batch = append(batch, memTx.tx)
-			batchSize += txSize
+			if len(batch) > batchSize {
+				break
+			}
 			next = next.Next()
 		}
 

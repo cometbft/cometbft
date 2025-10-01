@@ -138,6 +138,6 @@ retract (
 	v0.38.4
 	// a breaking change was introduced
 	v0.38.3
-	// superseeded by v0.38.3 because of ASA-2024-001
+	// superseded by v0.38.3 because of ASA-2024-001
 	[v0.38.0, v0.38.2]
 )

@@ -134,7 +134,6 @@ func (ln *UnixListener) Accept() (net.Conn, error) {
 
 	tc, err := ln.AcceptUnix()
 	if err != nil {
-		_ = tc.Close()
 		return nil, err
 	}
 

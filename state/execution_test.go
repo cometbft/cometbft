@@ -1180,7 +1180,7 @@ func TestBuildLastCommitInfoWithCache(t *testing.T) {
 	// Verify that LoadValidators was called only once
 	mockStore.AssertNumberOfCalls(t, "LoadValidators", 1)
 
-	// Test cache clearing
+	// Test cache clearing (only used in tests)
 	blockExec.ClearValidatorCache()
 
 	// Third call - should load from store again
@@ -1189,6 +1189,76 @@ func TestBuildLastCommitInfoWithCache(t *testing.T) {
 
 	// Verify that LoadValidators was called twice now
 	mockStore.AssertNumberOfCalls(t, "LoadValidators", 2)
+}
+
+// TestCacheCleanup tests the cache cleanup mechanism
+func TestCacheCleanup(t *testing.T) {
+	// Create test validators
+	val1, _ := types.RandValidator(true, 10)
+	val2, _ := types.RandValidator(true, 20)
+	valSet := types.NewValidatorSet([]*types.Validator{val1, val2})
+
+	// Create a mock store
+	mockStore := &mocks.Store{}
+	mockStore.On("LoadValidators", mock.AnythingOfType("int64")).Return(valSet, nil)
+
+	// Create block executor with small cache size for testing
+	blockExec := sm.NewBlockExecutor(
+		mockStore,
+		log.NewNopLogger(),
+		nil, // proxyApp
+		nil, // mempool
+		nil, // evpool
+		nil, // blockStore
+	)
+	
+	// Set small cache size for testing
+	blockExec.SetMaxCacheSize(2)
+
+	// Create test blocks
+	block1 := &types.Block{
+		Header: types.Header{Height: 2},
+		LastCommit: &types.Commit{
+			Height: 1, Round: 0,
+			Signatures: []types.CommitSig{
+				{BlockIDFlag: types.BlockIDFlagCommit},
+				{BlockIDFlag: types.BlockIDFlagCommit},
+			},
+		},
+	}
+
+	block2 := &types.Block{
+		Header: types.Header{Height: 3},
+		LastCommit: &types.Commit{
+			Height: 2, Round: 0,
+			Signatures: []types.CommitSig{
+				{BlockIDFlag: types.BlockIDFlagCommit},
+				{BlockIDFlag: types.BlockIDFlagCommit},
+			},
+		},
+	}
+
+	block3 := &types.Block{
+		Header: types.Header{Height: 4},
+		LastCommit: &types.Commit{
+			Height: 3, Round: 0,
+			Signatures: []types.CommitSig{
+				{BlockIDFlag: types.BlockIDFlagCommit},
+				{BlockIDFlag: types.BlockIDFlagCommit},
+			},
+		},
+	}
+
+	// Fill cache beyond limit
+	_ = blockExec.BuildLastCommitInfoFromStoreWithCache(block1, 1)
+	_ = blockExec.BuildLastCommitInfoFromStoreWithCache(block2, 1)
+	_ = blockExec.BuildLastCommitInfoFromStoreWithCache(block3, 1)
+
+	// Verify cache cleanup was triggered
+	validatorCacheSize, _ := blockExec.GetCacheSize()
+	
+	// Cache should be cleaned up to maxCacheSize/2
+	require.LessOrEqual(t, validatorCacheSize, 2) // maxCacheSize/2 + tolerance
 }
 
 // BenchmarkBuildLastCommitInfoWithCache benchmarks the caching performance

@@ -15,7 +15,6 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/cometbft/cometbft/config"
-	flow "github.com/cometbft/cometbft/libs/flowrate"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/libs/service"
@@ -83,8 +82,6 @@ type MConnection struct {
 	conn          net.Conn
 	bufConnReader *bufio.Reader
 	bufConnWriter *bufio.Writer
-	sendMonitor   *flow.Monitor
-	recvMonitor   *flow.Monitor
 	send          chan struct{}
 	pong          chan struct{}
 	channels      []*Channel
@@ -185,8 +182,6 @@ func NewMConnectionWithConfig(
 		conn:          conn,
 		bufConnReader: bufio.NewReaderSize(conn, minReadBufferSize),
 		bufConnWriter: bufio.NewWriterSize(conn, minWriteBufferSize),
-		sendMonitor:   flow.New(0, 0),
-		recvMonitor:   flow.New(0, 0),
 		send:          make(chan struct{}, 1),
 		pong:          make(chan struct{}, 1),
 		onReceive:     onReceive,
@@ -433,7 +428,6 @@ func (c *MConnection) sendRoutine() {
 
 FOR_LOOP:
 	for {
-		var _n int
 		var err error
 	SELECTION:
 		select {
@@ -447,12 +441,11 @@ FOR_LOOP:
 			}
 		case <-c.pingTimer.C:
 			c.Logger.Debug("Send Ping")
-			_n, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPing{}))
+			_, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPing{}))
 			if err != nil {
 				c.Logger.Error("Failed to send PacketPing", "err", err)
 				break SELECTION
 			}
-			c.sendMonitor.Update(_n)
 			c.Logger.Debug("Starting pong timer", "dur", c.config.PongTimeout)
 			c.pongTimer = time.AfterFunc(c.config.PongTimeout, func() {
 				select {
@@ -470,12 +463,11 @@ FOR_LOOP:
 			}
 		case <-c.pong:
 			c.Logger.Debug("Send Pong")
-			_n, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{}))
+			_, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{}))
 			if err != nil {
 				c.Logger.Error("Failed to send PacketPong", "err", err)
 				break SELECTION
 			}
-			c.sendMonitor.Update(_n)
 			c.flush()
 		case <-c.quitSendRoutine:
 			break FOR_LOOP
@@ -507,14 +499,7 @@ FOR_LOOP:
 }
 
 // Returns true if messages from channels were exhausted.
-// Blocks in accordance to .sendMonitor throttling.
 func (c *MConnection) sendSomePacketMsgs(w protoio.Writer) bool {
-	// Block until .sendMonitor says we can write.
-	// Once we're ready we send more than we asked for,
-	// but amortized it should even out.
-	c.sendMonitor.Limit(c._maxPacketMsgSize, c.config.SendRate, true)
-
-	// Now send some PacketMsgs.
 	return c.sendBatchPacketMsgs(w, numBatchPacketMsgs)
 }
 
@@ -522,11 +507,6 @@ func (c *MConnection) sendSomePacketMsgs(w protoio.Writer) bool {
 func (c *MConnection) sendBatchPacketMsgs(w protoio.Writer, batchSize int) bool {
 	// Send a batch of PacketMsgs.
 	totalBytesWritten := 0
-	defer func() {
-		if totalBytesWritten > 0 {
-			c.sendMonitor.Update(totalBytesWritten)
-		}
-	}()
 	for i := 0; i < batchSize; i++ {
 		channel := selectChannelToGossipOn(c.channels)
 		// nothing to send across any channel.
@@ -594,9 +574,6 @@ func (c *MConnection) recvRoutine() {
 
 FOR_LOOP:
 	for {
-		// Block until .recvMonitor says we can read.
-		c.recvMonitor.Limit(c._maxPacketMsgSize, atomic.LoadInt64(&c.config.RecvRate), true)
-
 		// Peek into bufConnReader for debugging
 		/*
 			if numBytes := c.bufConnReader.Buffered(); numBytes > 0 {
@@ -614,8 +591,7 @@ FOR_LOOP:
 		// Read packet type
 		var packet tmp2p.Packet
 
-		_n, err := protoReader.ReadMsg(&packet)
-		c.recvMonitor.Update(_n)
+		_, err := protoReader.ReadMsg(&packet)
 		if err != nil {
 			// stopServices was invoked and we are shutting down
 			// receiving is excpected to fail since we will close the connection
@@ -715,10 +691,8 @@ func (c *MConnection) maxPacketMsgSize() int {
 }
 
 type ConnectionStatus struct {
-	Duration    time.Duration
-	SendMonitor flow.Status
-	RecvMonitor flow.Status
-	Channels    []ChannelStatus
+	Duration time.Duration
+	Channels []ChannelStatus
 }
 
 type ChannelStatus struct {
@@ -732,8 +706,6 @@ type ChannelStatus struct {
 func (c *MConnection) Status() ConnectionStatus {
 	var status ConnectionStatus
 	status.Duration = time.Since(c.created)
-	status.SendMonitor = c.sendMonitor.Status()
-	status.RecvMonitor = c.recvMonitor.Status()
 	status.Channels = make([]ChannelStatus, len(c.channels))
 	for i, channel := range c.channels {
 		channel := channel

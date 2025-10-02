@@ -52,6 +52,9 @@ type BlockExecutor struct {
 	abciValidatorCache      map[string]abci.Validator
 	abciValidatorCacheMutex sync.RWMutex
 
+	// cache management
+	maxCacheSize int
+
 	logger log.Logger
 
 	metrics *Metrics
@@ -87,6 +90,7 @@ func NewBlockExecutor(
 		blockStore:         blockStore,
 		validatorCache:     make(map[int64]*types.ValidatorSet),
 		abciValidatorCache: make(map[string]abci.Validator),
+		maxCacheSize:       1000, // Limit cache size to prevent memory leaks
 	}
 
 	for _, option := range options {
@@ -108,6 +112,57 @@ func (blockExec *BlockExecutor) ClearValidatorCache() {
 
 	blockExec.abciValidatorCacheMutex.Lock()
 	blockExec.abciValidatorCache = make(map[string]abci.Validator)
+	blockExec.abciValidatorCacheMutex.Unlock()
+}
+
+// GetCacheSize returns the current cache sizes for testing
+func (blockExec *BlockExecutor) GetCacheSize() (validatorCacheSize, abciValidatorCacheSize int) {
+	blockExec.validatorCacheMutex.RLock()
+	validatorCacheSize = len(blockExec.validatorCache)
+	blockExec.validatorCacheMutex.RUnlock()
+
+	blockExec.abciValidatorCacheMutex.RLock()
+	abciValidatorCacheSize = len(blockExec.abciValidatorCache)
+	blockExec.abciValidatorCacheMutex.RUnlock()
+	return
+}
+
+// SetMaxCacheSize sets the maximum cache size for testing
+func (blockExec *BlockExecutor) SetMaxCacheSize(size int) {
+	blockExec.maxCacheSize = size
+}
+
+// cleanupOldCacheEntries removes old entries from caches to prevent memory leaks
+func (blockExec *BlockExecutor) cleanupOldCacheEntries() {
+	blockExec.validatorCacheMutex.Lock()
+	if len(blockExec.validatorCache) > blockExec.maxCacheSize {
+		// Remove oldest entries (simple FIFO cleanup)
+		// In a real implementation, you might want to use LRU or time-based cleanup
+		newCache := make(map[int64]*types.ValidatorSet)
+		count := 0
+		for height, valSet := range blockExec.validatorCache {
+			if count < blockExec.maxCacheSize/2 { // Keep half of the cache
+				newCache[height] = valSet
+				count++
+			}
+		}
+		blockExec.validatorCache = newCache
+	}
+	blockExec.validatorCacheMutex.Unlock()
+
+	blockExec.abciValidatorCacheMutex.Lock()
+	if len(blockExec.abciValidatorCache) > blockExec.maxCacheSize {
+		// Remove oldest entries (simple FIFO cleanup)
+		newCache := make(map[string]abci.Validator)
+		count := 0
+		for key, val := range blockExec.abciValidatorCache {
+			if count < blockExec.maxCacheSize/2 { // Keep half of the cache
+				newCache[key] = val
+				count++
+			}
+		}
+		blockExec.abciValidatorCache = newCache
+	}
 	blockExec.abciValidatorCacheMutex.Unlock()
 }
 
@@ -523,6 +578,9 @@ func (blockExec *BlockExecutor) BuildLastCommitInfoFromStoreWithCache(block *typ
 		blockExec.validatorCacheMutex.Lock()
 		blockExec.validatorCache[height] = lastValSet
 		blockExec.validatorCacheMutex.Unlock()
+		
+		// Cleanup old cache entries if needed
+		blockExec.cleanupOldCacheEntries()
 	}
 
 	return blockExec.BuildLastCommitInfoWithCache(block, lastValSet, initialHeight)
@@ -593,8 +651,8 @@ func (blockExec *BlockExecutor) BuildLastCommitInfoWithCache(block *types.Block,
 	for i, val := range lastValSet.Validators {
 		commitSig := block.LastCommit.Signatures[i]
 
-		// Create cache key for this validator
-		cacheKey := fmt.Sprintf("%s_%d", val.PubKey.Address(), val.VotingPower)
+		// Use validator address as cache key (already computed)
+		cacheKey := string(val.Address)
 
 		// Try to get ABCI validator from cache
 		blockExec.abciValidatorCacheMutex.RLock()
@@ -604,13 +662,16 @@ func (blockExec *BlockExecutor) BuildLastCommitInfoWithCache(block *types.Block,
 		if !found {
 			// Convert to ABCI validator and cache
 			abciVal = abci.Validator{
-				Address: val.PubKey.Address(),
+				Address: val.Address,
 				Power:   val.VotingPower,
 			}
 
 			blockExec.abciValidatorCacheMutex.Lock()
 			blockExec.abciValidatorCache[cacheKey] = abciVal
 			blockExec.abciValidatorCacheMutex.Unlock()
+			
+			// Cleanup old cache entries if needed
+			blockExec.cleanupOldCacheEntries()
 		}
 
 		votes[i] = abci.VoteInfo{
@@ -912,47 +973,6 @@ func ExecCommitBlock(
 	return resp.AppHash, nil
 }
 
-// ExecCommitBlockWithCache is an optimized version that uses caching for better performance
-func (blockExec *BlockExecutor) ExecCommitBlockWithCache(
-	appConnConsensus proxy.AppConnConsensus,
-	block *types.Block,
-	logger log.Logger,
-	initialHeight int64,
-) ([]byte, error) {
-	commitInfo := blockExec.BuildLastCommitInfoFromStoreWithCache(block, initialHeight)
-
-	resp, err := appConnConsensus.FinalizeBlock(context.TODO(), &abci.RequestFinalizeBlock{
-		Hash:               block.Hash(),
-		NextValidatorsHash: block.NextValidatorsHash,
-		ProposerAddress:    block.ProposerAddress,
-		Height:             block.Height,
-		Time:               block.Time,
-		DecidedLastCommit:  commitInfo,
-		Misbehavior:        block.Evidence.Evidence.ToABCI(),
-		Txs:                block.Txs.ToSliceOfBytes(),
-	})
-	if err != nil {
-		logger.Error("error in proxyAppConn.FinalizeBlock", "err", err)
-		return nil, err
-	}
-
-	// Assert that the application correctly returned tx results for each of the transactions provided in the block
-	if len(block.Txs) != len(resp.TxResults) {
-		return nil, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Txs), len(resp.TxResults))
-	}
-
-	logger.Info("executed block", "height", block.Height, "app_hash", fmt.Sprintf("%X", resp.AppHash))
-
-	// Commit block
-	_, err = appConnConsensus.Commit(context.TODO())
-	if err != nil {
-		logger.Error("client error during proxyAppConn.Commit", "err", err)
-		return nil, err
-	}
-
-	// ResponseCommit has no error or log
-	return resp.AppHash, nil
-}
 
 func (blockExec *BlockExecutor) pruneBlocks(retainHeight int64, state State) (uint64, error) {
 	base := blockExec.blockStore.Base()

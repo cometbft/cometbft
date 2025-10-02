@@ -1131,3 +1131,204 @@ func makeBlockID(hash []byte, partSetSize uint32, partSetHash []byte) types.Bloc
 		},
 	}
 }
+
+// TestBuildLastCommitInfoWithCache tests the caching functionality
+func TestBuildLastCommitInfoWithCache(t *testing.T) {
+	// Create test validators
+	val1, _ := types.RandValidator(true, 10)
+	val2, _ := types.RandValidator(true, 20)
+	valSet := types.NewValidatorSet([]*types.Validator{val1, val2})
+
+	// Create a mock store
+	mockStore := &mocks.Store{}
+	mockStore.On("LoadValidators", int64(1)).Return(valSet, nil)
+
+	// Create block executor with cache
+	blockExec := sm.NewBlockExecutor(
+		mockStore,
+		log.NewNopLogger(),
+		nil, // proxyApp
+		nil, // mempool
+		nil, // evpool
+		nil, // blockStore
+	)
+
+	// Create a test block
+	block := &types.Block{
+		Header: types.Header{
+			Height: 2,
+		},
+		LastCommit: &types.Commit{
+			Height: 1,
+			Round:  0,
+			Signatures: []types.CommitSig{
+				{BlockIDFlag: types.BlockIDFlagCommit},
+				{BlockIDFlag: types.BlockIDFlagCommit},
+			},
+		},
+	}
+
+	// First call - should load from store and cache
+	commitInfo1 := blockExec.BuildLastCommitInfoFromStoreWithCache(block, 1)
+	require.NotEmpty(t, commitInfo1.Votes)
+	require.Len(t, commitInfo1.Votes, 2)
+
+	// Second call - should use cache (store should not be called again)
+	commitInfo2 := blockExec.BuildLastCommitInfoFromStoreWithCache(block, 1)
+	require.Equal(t, commitInfo1, commitInfo2)
+
+	// Verify that LoadValidators was called only once
+	mockStore.AssertNumberOfCalls(t, "LoadValidators", 1)
+
+	// Test that cache is working - second call should not hit the store
+}
+
+// TestCacheCleanup tests the cache cleanup mechanism
+func TestCacheCleanup(t *testing.T) {
+	// Create test validators
+	val1, _ := types.RandValidator(true, 10)
+	val2, _ := types.RandValidator(true, 20)
+	valSet := types.NewValidatorSet([]*types.Validator{val1, val2})
+
+	// Create a mock store
+	mockStore := &mocks.Store{}
+	mockStore.On("LoadValidators", mock.AnythingOfType("int64")).Return(valSet, nil)
+
+	// Create block executor with small cache size for testing
+	blockExec := sm.NewBlockExecutor(
+		mockStore,
+		log.NewNopLogger(),
+		nil, // proxyApp
+		nil, // mempool
+		nil, // evpool
+		nil, // blockStore
+	)
+
+	// Set small cache size for testing
+	blockExec.SetMaxCacheSize(2)
+
+	// Create test blocks
+	block1 := &types.Block{
+		Header: types.Header{Height: 2},
+		LastCommit: &types.Commit{
+			Height: 1, Round: 0,
+			Signatures: []types.CommitSig{
+				{BlockIDFlag: types.BlockIDFlagCommit},
+				{BlockIDFlag: types.BlockIDFlagCommit},
+			},
+		},
+	}
+
+	block2 := &types.Block{
+		Header: types.Header{Height: 3},
+		LastCommit: &types.Commit{
+			Height: 2, Round: 0,
+			Signatures: []types.CommitSig{
+				{BlockIDFlag: types.BlockIDFlagCommit},
+				{BlockIDFlag: types.BlockIDFlagCommit},
+			},
+		},
+	}
+
+	block3 := &types.Block{
+		Header: types.Header{Height: 4},
+		LastCommit: &types.Commit{
+			Height: 3, Round: 0,
+			Signatures: []types.CommitSig{
+				{BlockIDFlag: types.BlockIDFlagCommit},
+				{BlockIDFlag: types.BlockIDFlagCommit},
+			},
+		},
+	}
+
+	// Fill cache beyond limit
+	_ = blockExec.BuildLastCommitInfoFromStoreWithCache(block1, 1)
+	_ = blockExec.BuildLastCommitInfoFromStoreWithCache(block2, 1)
+	_ = blockExec.BuildLastCommitInfoFromStoreWithCache(block3, 1)
+
+	// Verify cache cleanup was triggered
+	validatorCacheSize, _ := blockExec.GetCacheSize()
+
+	// Cache should be cleaned up to maxCacheSize/2
+	require.LessOrEqual(t, validatorCacheSize, 2) // maxCacheSize/2 + tolerance
+}
+
+// BenchmarkBuildLastCommitInfoWithCache benchmarks the caching performance
+func BenchmarkBuildLastCommitInfoWithCache(b *testing.B) {
+	// Create test validators
+	val1, _ := types.RandValidator(true, 10)
+	val2, _ := types.RandValidator(true, 20)
+	valSet := types.NewValidatorSet([]*types.Validator{val1, val2})
+
+	// Create a mock store
+	mockStore := &mocks.Store{}
+	mockStore.On("LoadValidators", int64(1)).Return(valSet, nil)
+
+	// Create block executor with cache
+	blockExec := sm.NewBlockExecutor(
+		mockStore,
+		log.NewNopLogger(),
+		nil, // proxyApp
+		nil, // mempool
+		nil, // evpool
+		nil, // blockStore
+	)
+
+	// Create a test block
+	block := &types.Block{
+		Header: types.Header{
+			Height: 2,
+		},
+		LastCommit: &types.Commit{
+			Height: 1,
+			Round:  0,
+			Signatures: []types.CommitSig{
+				{BlockIDFlag: types.BlockIDFlagCommit},
+				{BlockIDFlag: types.BlockIDFlagCommit},
+			},
+		},
+	}
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			_ = blockExec.BuildLastCommitInfoFromStoreWithCache(block, 1)
+		}
+	})
+}
+
+// BenchmarkBuildLastCommitInfoOriginal benchmarks the original version without caching
+func BenchmarkBuildLastCommitInfoOriginal(b *testing.B) {
+	// Create test validators
+	val1, _ := types.RandValidator(true, 10)
+	val2, _ := types.RandValidator(true, 20)
+	valSet := types.NewValidatorSet([]*types.Validator{val1, val2})
+
+	// Create a mock store
+	mockStore := &mocks.Store{}
+	mockStore.On("LoadValidators", int64(1)).Return(valSet, nil)
+
+	// Create a test block
+	block := &types.Block{
+		Header: types.Header{
+			Height: 2,
+		},
+		LastCommit: &types.Commit{
+			Height: 1,
+			Round:  0,
+			Signatures: []types.CommitSig{
+				{BlockIDFlag: types.BlockIDFlagCommit},
+				{BlockIDFlag: types.BlockIDFlagCommit},
+			},
+		},
+	}
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			// Simulate the original behavior by calling LoadValidators each time
+			valSet, _ := mockStore.LoadValidators(1)
+			_ = sm.BuildLastCommitInfo(block, valSet, 1)
+		}
+	})
+}

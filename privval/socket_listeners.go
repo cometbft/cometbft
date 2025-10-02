@@ -78,6 +78,7 @@ func (ln *TCPListener) Accept() (net.Conn, error) {
 	timeoutConn := newTimeoutConn(tc, ln.timeoutReadWrite)
 	secretConn, err := p2pconn.MakeSecretConnection(timeoutConn, ln.secretConnKey)
 	if err != nil {
+		tc.Close()
 		return nil, err
 	}
 
@@ -133,6 +134,7 @@ func (ln *UnixListener) Accept() (net.Conn, error) {
 
 	tc, err := ln.AcceptUnix()
 	if err != nil {
+		tc.Close()
 		return nil, err
 	}
 

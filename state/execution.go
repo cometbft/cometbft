@@ -104,17 +104,6 @@ func (blockExec *BlockExecutor) Store() Store {
 	return blockExec.store
 }
 
-// ClearValidatorCache clears the validator caches to free memory
-func (blockExec *BlockExecutor) ClearValidatorCache() {
-	blockExec.validatorCacheMutex.Lock()
-	blockExec.validatorCache = make(map[int64]*types.ValidatorSet)
-	blockExec.validatorCacheMutex.Unlock()
-
-	blockExec.abciValidatorCacheMutex.Lock()
-	blockExec.abciValidatorCache = make(map[string]abci.Validator)
-	blockExec.abciValidatorCacheMutex.Unlock()
-}
-
 // GetCacheSize returns the current cache sizes for testing
 func (blockExec *BlockExecutor) GetCacheSize() (validatorCacheSize, abciValidatorCacheSize int) {
 	blockExec.validatorCacheMutex.RLock()
@@ -136,32 +125,19 @@ func (blockExec *BlockExecutor) SetMaxCacheSize(size int) {
 func (blockExec *BlockExecutor) cleanupOldCacheEntries() {
 	blockExec.validatorCacheMutex.Lock()
 	if len(blockExec.validatorCache) > blockExec.maxCacheSize {
-		// Remove oldest entries (simple FIFO cleanup)
-		// In a real implementation, you might want to use LRU or time-based cleanup
-		newCache := make(map[int64]*types.ValidatorSet)
-		count := 0
-		for height, valSet := range blockExec.validatorCache {
-			if count < blockExec.maxCacheSize/2 { // Keep half of the cache
-				newCache[height] = valSet
-				count++
-			}
-		}
-		blockExec.validatorCache = newCache
+		// Simple cleanup: clear half of the cache
+		// Since Go maps don't guarantee iteration order, we'll clear the entire cache
+		// and let it rebuild naturally. This is simpler and avoids the FIFO issue.
+		blockExec.validatorCache = make(map[int64]*types.ValidatorSet)
 	}
 	blockExec.validatorCacheMutex.Unlock()
 
 	blockExec.abciValidatorCacheMutex.Lock()
 	if len(blockExec.abciValidatorCache) > blockExec.maxCacheSize {
-		// Remove oldest entries (simple FIFO cleanup)
-		newCache := make(map[string]abci.Validator)
-		count := 0
-		for key, val := range blockExec.abciValidatorCache {
-			if count < blockExec.maxCacheSize/2 { // Keep half of the cache
-				newCache[key] = val
-				count++
-			}
-		}
-		blockExec.abciValidatorCache = newCache
+		// Simple cleanup: clear half of the cache
+		// Since Go maps don't guarantee iteration order, we'll clear the entire cache
+		// and let it rebuild naturally. This is simpler and avoids the FIFO issue.
+		blockExec.abciValidatorCache = make(map[string]abci.Validator)
 	}
 	blockExec.abciValidatorCacheMutex.Unlock()
 }
@@ -578,7 +554,7 @@ func (blockExec *BlockExecutor) BuildLastCommitInfoFromStoreWithCache(block *typ
 		blockExec.validatorCacheMutex.Lock()
 		blockExec.validatorCache[height] = lastValSet
 		blockExec.validatorCacheMutex.Unlock()
-		
+
 		// Cleanup old cache entries if needed
 		blockExec.cleanupOldCacheEntries()
 	}
@@ -669,7 +645,7 @@ func (blockExec *BlockExecutor) BuildLastCommitInfoWithCache(block *types.Block,
 			blockExec.abciValidatorCacheMutex.Lock()
 			blockExec.abciValidatorCache[cacheKey] = abciVal
 			blockExec.abciValidatorCacheMutex.Unlock()
-			
+
 			// Cleanup old cache entries if needed
 			blockExec.cleanupOldCacheEntries()
 		}
@@ -972,7 +948,6 @@ func ExecCommitBlock(
 	// ResponseCommit has no error or log
 	return resp.AppHash, nil
 }
-
 
 func (blockExec *BlockExecutor) pruneBlocks(retainHeight int64, state State) (uint64, error) {
 	base := blockExec.blockStore.Base()

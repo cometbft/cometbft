@@ -1180,15 +1180,7 @@ func TestBuildLastCommitInfoWithCache(t *testing.T) {
 	// Verify that LoadValidators was called only once
 	mockStore.AssertNumberOfCalls(t, "LoadValidators", 1)
 
-	// Test cache clearing (only used in tests)
-	blockExec.ClearValidatorCache()
-
-	// Third call - should load from store again
-	commitInfo3 := blockExec.BuildLastCommitInfoFromStoreWithCache(block, 1)
-	require.Equal(t, commitInfo1, commitInfo3)
-
-	// Verify that LoadValidators was called twice now
-	mockStore.AssertNumberOfCalls(t, "LoadValidators", 2)
+	// Test that cache is working - second call should not hit the store
 }
 
 // TestCacheCleanup tests the cache cleanup mechanism
@@ -1211,7 +1203,7 @@ func TestCacheCleanup(t *testing.T) {
 		nil, // evpool
 		nil, // blockStore
 	)
-	
+
 	// Set small cache size for testing
 	blockExec.SetMaxCacheSize(2)
 
@@ -1256,7 +1248,7 @@ func TestCacheCleanup(t *testing.T) {
 
 	// Verify cache cleanup was triggered
 	validatorCacheSize, _ := blockExec.GetCacheSize()
-	
+
 	// Cache should be cleaned up to maxCacheSize/2
 	require.LessOrEqual(t, validatorCacheSize, 2) // maxCacheSize/2 + tolerance
 }

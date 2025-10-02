@@ -3,9 +3,8 @@ package mempool
 import (
 	"context"
 	"errors"
-	"time"
-
 	"fmt"
+	"time"
 
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/clist"
@@ -225,7 +224,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 
 		// Collect a batch of transactions
 		var batch [][]byte
-		batchSize := 10
+		batchSize := 100
 
 		for next != nil {
 			memTx := next.Value.(*mempoolTx)

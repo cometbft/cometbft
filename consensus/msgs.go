@@ -236,7 +236,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	return pb, nil
 }
 
-// WALToProto takes a WAL message and return a proto walMessage and error
+// WALToProto takes a WAL message and returns a proto walMessage and error
 func WALToProto(msg WALMessage) (*cmtcons.WALMessage, error) {
 	var pb cmtcons.WALMessage
 

@@ -95,7 +95,7 @@ func startNewStateAndWaitForBlock(
 		}
 	}()
 
-	// This is just a signal that we haven't halted; its not something contained
+	// This is just a signal that we haven't halted; it's not something contained
 	// in the WAL itself. Assuming the consensus state is running, replay of any
 	// WAL, including the empty one, should eventually be followed by a new
 	// block, or else something is wrong.

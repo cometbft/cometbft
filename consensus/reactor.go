@@ -1073,7 +1073,7 @@ func (ps *PeerState) SetLogger(logger log.Logger) *PeerState {
 	return ps
 }
 
-// GetRoundState returns an shallow copy of the PeerRoundState.
+// GetRoundState returns a shallow copy of the PeerRoundState.
 // There's no point in mutating it since it won't change PeerState.
 func (ps *PeerState) GetRoundState() *cstypes.PeerRoundState {
 	ps.mtx.Lock()

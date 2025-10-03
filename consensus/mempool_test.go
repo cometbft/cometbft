@@ -66,7 +66,7 @@ func TestMempoolProgressAfterCreateEmptyBlocksInterval(t *testing.T) {
 	startTestRound(cs, cs.Height, cs.Round)
 
 	ensureNewEventOnChannel(newBlockCh)   // first block gets committed
-	ensureNoNewEventOnChannel(newBlockCh) // then we dont make a block ...
+	ensureNoNewEventOnChannel(newBlockCh) // then we don't make a block ...
 	ensureNewEventOnChannel(newBlockCh)   // until the CreateEmptyBlocksInterval has passed
 }
 
@@ -83,7 +83,7 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 	timeoutCh := subscribe(cs.eventBus, types.EventQueryTimeoutPropose)
 	cs.setProposal = func(proposal *types.Proposal) error {
 		if cs.Height == 2 && cs.Round == 0 {
-			// dont set the proposal in round 0 so we timeout and
+			// don't set the proposal in round 0 so we timeout and
 			// go to next round
 			cs.Logger.Info("Ignoring set proposal at height 2, round 0")
 			return nil
@@ -99,7 +99,7 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 	round = 0
 
 	ensureNewRound(newRoundCh, height, round) // first round at next height
-	deliverTxsRange(t, cs, 0, 1)              // we deliver txs, but dont set a proposal so we get the next round
+	deliverTxsRange(t, cs, 0, 1)              // we deliver txs, but don't set a proposal so we get the next round
 	ensureNewTimeout(timeoutCh, height, round, cs.config.TimeoutPropose.Nanoseconds())
 
 	round++                                   // moving to the next round

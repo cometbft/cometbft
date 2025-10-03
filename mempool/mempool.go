@@ -103,7 +103,7 @@ type Mempool interface {
 
 // PreCheckFunc is an optional filter executed before CheckTx and rejects
 // transaction if false is returned. An example would be to ensure that a
-// transaction doesn't exceeded the block size.
+// transaction doesn't exceed the block size.
 type PreCheckFunc func(types.Tx) error
 
 // PostCheckFunc is an optional filter executed after CheckTx and rejects

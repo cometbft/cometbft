@@ -263,7 +263,7 @@ func (mem *CListMempool) CheckTx(
 		if memTx := mem.getMemTx(tx.Key()); memTx != nil {
 			memTx.addSender(txInfo.SenderID)
 			// TODO: consider punishing peer for dups,
-			// its non-trivial since invalid txs can become valid,
+			//it's non-trivial since invalid txs can become valid,
 			// but they can spam the same tx with little cost to them atm.
 		}
 		return ErrTxInCache

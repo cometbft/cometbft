@@ -493,7 +493,7 @@ func TestStateLockNoPOL(t *testing.T) {
 	validatePrecommit(t, cs1, round, round, vss[0], theBlockHash, theBlockHash)
 
 	// we should now be stuck in limbo forever, waiting for more precommits
-	// lets add one for a different block
+	//let's add one for a different block
 	hash := make([]byte, len(theBlockHash))
 	copy(hash, theBlockHash)
 	hash[0] = (hash[0] + 1) % 255
@@ -741,7 +741,7 @@ func TestStateLockPOLRelock(t *testing.T) {
 	ensurePrevote(voteCh, height, round)
 	validatePrevote(t, cs1, round, vss[0], theBlockHash)
 
-	// now lets add prevotes from everyone else for the new block
+	// now let's add prevotes from everyone else for the new block
 	signAddVotes(cs1, cmtproto.PrevoteType, propBlockHash, propBlockParts.Header(), false, vs2, vs3, vs4)
 
 	ensurePrecommit(voteCh, height, round)
@@ -832,7 +832,7 @@ func TestStateLockPOLUnlock(t *testing.T) {
 	// go to prevote, prevote for locked block (not proposal)
 	ensurePrevote(voteCh, height, round)
 	validatePrevote(t, cs1, round, vss[0], lockedBlockHash)
-	// now lets add prevotes from everyone else for nil (a polka!)
+	// now let's add prevotes from everyone else for nil (a polka!)
 	signAddVotes(cs1, cmtproto.PrevoteType, nil, types.PartSetHeader{}, false, vs2, vs3, vs4)
 
 	// the polka makes us unlock and precommit nil
@@ -925,7 +925,7 @@ func TestStateLockPOLUnlockOnUnknownBlock(t *testing.T) {
 	ensurePrevote(voteCh, height, round)
 	validatePrevote(t, cs1, round, vss[0], firstBlockHash)
 
-	// now lets add prevotes from everyone else for the new block
+	// now let's add prevotes from everyone else for the new block
 	signAddVotes(cs1, cmtproto.PrevoteType, secondBlockHash, secondBlockParts.Header(), false, vs2, vs3, vs4)
 
 	ensurePrecommit(voteCh, height, round)

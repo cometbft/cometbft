@@ -173,7 +173,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	}
 
 	// introducing a lazy proposer means that the time of the block committed is different to the
-	// timestamp that the other nodes have. This tests to ensure that the evidence that finally gets
+	// timestamp that the other nodes have. These tests to ensure that the evidence that finally gets
 	// proposed will have a valid timestamp
 	lazyProposer := css[1]
 
@@ -379,7 +379,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 	}()
 
 	p2p.MakeConnectedSwitches(config.P2P, N, func(i int, s *p2p.Switch) *p2p.Switch {
-		// ignore new switch s, we already made ours
+		// ignore new switches, we already made ours
 		switches[i].AddReactor("CONSENSUS", reactors[i])
 		return switches[i]
 	}, func(sws []*p2p.Switch, i, j int) {

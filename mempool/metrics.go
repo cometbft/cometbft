@@ -37,7 +37,7 @@ type Metrics struct {
 	RejectedTxs metrics.Counter
 
 	// EvictedTxs defines the number of evicted transactions. These are valid
-	// transactions that passed CheckTx and make it into the mempool but later
+	// transactions that passed CheckTx and made it into the mempool but later
 	// became invalid.
 	// metrics:Number of evicted transactions.
 	EvictedTxs metrics.Counter

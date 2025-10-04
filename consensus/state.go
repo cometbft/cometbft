@@ -2496,7 +2496,7 @@ func (cs *State) checkDoubleSigningRisk(height int64) error {
 			doubleSignCheckHeight = height
 		}
 
-		for i := int64(1); i < doubleSignCheckHeight; i++ {
+		for i := int64(1); i <= doubleSignCheckHeight; i++ {
 			lastCommit := cs.blockStore.LoadSeenCommit(height - i)
 			if lastCommit != nil {
 				for sigIdx, s := range lastCommit.Signatures {

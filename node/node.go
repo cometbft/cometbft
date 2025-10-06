@@ -215,7 +215,7 @@ func BootstrapStateWithGenProvider(ctx context.Context, config *cfg.Config, dbPr
 
 	stateProvider, err := statesync.NewLightClientStateProvider(
 		ctx,
-		genState.ChainID, genState.Version, genState.InitialHeight,
+		genState.ChainID, genState.InitialHeight,
 		config.StateSync.RPCServers, light.TrustOptions{
 			Period: config.StateSync.TrustPeriod,
 			Height: config.StateSync.TrustHeight,

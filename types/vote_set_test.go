@@ -134,7 +134,7 @@ func Benchmark_2_3_Maj(b *testing.B) {
 	}
 	blockPartsTotal := uint32(123)
 	blockPartSetHeader := PartSetHeader{blockPartsTotal, crypto.CRandBytes(32)}
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 100, 1, false)
 		for i := int32(0); i < int32(100); i += 4 {
 			pubKey, _ := privValidators[i].GetPubKey()

@@ -14,7 +14,7 @@ require (
 	github.com/go-git/go-git/v5 v5.16.2
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
-	github.com/go-logfmt/logfmt v0.6.0
+	github.com/go-logfmt/logfmt v0.6.1
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/golang/protobuf v1.5.4
 	github.com/google/orderedcode v0.0.1

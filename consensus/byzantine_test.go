@@ -628,7 +628,7 @@ func TestRejectOversizedProposals(t *testing.T) {
 		return switches[i]
 	}, p2p.Connect2Switches)
 
-	peers := switches[0].Peers().List()
+	peers := switches[0].Peers().Copy()
 	targetPeer := peers[0]
 
 	height := int64(1)

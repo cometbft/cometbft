@@ -104,7 +104,7 @@ func (s *SocketServer) rmConn(connID int) error {
 
 	conn, ok := s.conns[connID]
 	if !ok {
-		return fmt.Errorf("connection %d does not exist", connID)
+		return ErrConnectionDoesNotExist{ConnID: connID}
 	}
 
 	delete(s.conns, connID)
@@ -161,7 +161,6 @@ func (s *SocketServer) waitForClose(closeConn chan error, connID int) {
 
 // Read requests from conn and deal with them
 func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, responses chan<- *types.Response) {
-	var count int
 	bufReader := bufio.NewReader(conn)
 
 	defer func() {
@@ -195,7 +194,6 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 			return
 		}
 		s.appMtx.Lock()
-		count++
 		resp, err := s.handleRequest(context.TODO(), req)
 		if err != nil {
 			// any error either from the application or because of an unknown request
@@ -301,13 +299,12 @@ func (s *SocketServer) handleRequest(ctx context.Context, req *types.Request) (*
 		}
 		return types.ToResponseVerifyVoteExtension(res), nil
 	default:
-		return nil, fmt.Errorf("unknown request from client: %T", req)
+		return nil, ErrUnknownRequest{Request: *req}
 	}
 }
 
 // Pull responses from 'responses' and write them to conn.
 func (s *SocketServer) handleResponses(closeConn chan error, conn io.Writer, responses <-chan *types.Response) {
-	var count int
 	bufWriter := bufio.NewWriter(conn)
 	for {
 		res := <-responses
@@ -330,6 +327,5 @@ func (s *SocketServer) handleResponses(closeConn chan error, conn io.Writer, res
 		if e, ok := res.Value.(*types.Response_Exception); ok {
 			closeConn <- errors.New(e.Exception.Error)
 		}
-		count++
 	}
 }

@@ -101,7 +101,7 @@ func (*NopMempoolReactor) AddPeer(p2p.Peer) {}
 func (*NopMempoolReactor) InitPeer(p2p.Peer) p2p.Peer { return nil }
 
 // RemovePeer does nothing.
-func (*NopMempoolReactor) RemovePeer(p2p.Peer, interface{}) {}
+func (*NopMempoolReactor) RemovePeer(p2p.Peer, any) {}
 
 // Receive does nothing.
 func (*NopMempoolReactor) Receive(p2p.Envelope) {}

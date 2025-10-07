@@ -198,7 +198,7 @@ func TestIncrementProposerPriorityPositiveTimes(t *testing.T) {
 }
 
 func BenchmarkValidatorSetCopy(b *testing.B) {
-	b.StopTimer()
+
 	vset := NewValidatorSet([]*Validator{})
 	for i := 0; i < 1000; i++ {
 		privKey := ed25519.GenPrivKey()
@@ -209,9 +209,8 @@ func BenchmarkValidatorSetCopy(b *testing.B) {
 			panic("Failed to add validator")
 		}
 	}
-	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		vset.Copy()
 	}
 }
@@ -388,7 +387,7 @@ func TestProposerSelection3(t *testing.T) {
 		times := int32(1)
 		mod := (cmtrand.Int() % 5) + 1
 		if cmtrand.Int()%mod > 0 {
-			// sometimes its up to 5
+			// sometimes it's up to 5
 			times = (cmtrand.Int31() % 4) + 1
 		}
 		vset.IncrementProposerPriority(times)
@@ -1601,9 +1600,8 @@ func BenchmarkUpdates(b *testing.B) {
 	for j := 0; j < m; j++ {
 		newValList[j] = newValidator([]byte(fmt.Sprintf("v%d", j+l)), 1000)
 	}
-	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		// Add m validators to valSetCopy
 		valSetCopy := valSet.Copy()
 		assert.NoError(b, valSetCopy.UpdateWithChangeSet(newValList))

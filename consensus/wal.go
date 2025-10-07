@@ -17,6 +17,7 @@ import (
 	cmtos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/libs/service"
 	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
@@ -43,7 +44,7 @@ type EndHeightMessage struct {
 	Height int64 `json:"height"`
 }
 
-type WALMessage interface{}
+type WALMessage any
 
 func init() {
 	cmtjson.RegisterType(msgInfo{}, "tendermint/wal/MsgInfo")
@@ -310,7 +311,7 @@ func (enc *WALEncoder) Encode(v *TimedWALMessage) error {
 
 	data, err := proto.Marshal(&pv)
 	if err != nil {
-		panic(fmt.Errorf("encode timed wall message failure: %w", err))
+		panic(fmt.Errorf("encode timed wal message failure: %w", err))
 	}
 
 	crc := crc32.Checksum(data, crc32c)
@@ -409,7 +410,7 @@ func (dec *WALDecoder) Decode() (*TimedWALMessage, error) {
 
 	walMsg, err := WALFromProto(res.Msg)
 	if err != nil {
-		return nil, DataCorruptionError{fmt.Errorf("failed to convert from proto: %w", err)}
+		return nil, DataCorruptionError{cmterrors.ErrMsgFromProto{MessageName: "WALMessage", Err: err}}
 	}
 	tMsgWal := &TimedWALMessage{
 		Time: res.Time,

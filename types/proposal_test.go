@@ -97,14 +97,14 @@ func TestProposalVerifySignature(t *testing.T) {
 }
 
 func BenchmarkProposalWriteSignBytes(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		ProposalSignBytes("test_chain_id", pbp)
 	}
 }
 
 func BenchmarkProposalSign(b *testing.B) {
 	privVal := NewMockPV()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := privVal.SignProposal("test_chain_id", pbp)
 		if err != nil {
 			b.Error(err)
@@ -119,7 +119,7 @@ func BenchmarkProposalVerifySignature(b *testing.B) {
 	pubKey, err := privVal.GetPubKey()
 	require.NoError(b, err)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		pubKey.VerifySignature(ProposalSignBytes("test_chain_id", pbp), testProposal.Signature)
 	}
 }
@@ -189,5 +189,32 @@ func TestProposalProtoBuf(t *testing.T) {
 		} else {
 			require.Error(t, err)
 		}
+	}
+}
+
+func TestProposalValidateBlockSize(t *testing.T) {
+	testCases := []struct {
+		testName     string
+		maxBlockSize int64
+		proposal     *Proposal
+		expectPass   bool
+	}{
+		{"10 chunk max, 5 chunk proposal, success", int64(10 * BlockPartSizeBytes), NewProposal(0, 0, 0, BlockID{PartSetHeader: PartSetHeader{Total: 5}}), true},
+		{"10 chunk max, 20 chunk proposal, fail", int64(10 * BlockPartSizeBytes), NewProposal(0, 0, 0, BlockID{PartSetHeader: PartSetHeader{Total: 20}}), false},
+		{"10 chunk max, max uint32 chunk proposal, fail", int64(10 * BlockPartSizeBytes), NewProposal(0, 0, 0, BlockID{PartSetHeader: PartSetHeader{Total: math.MaxUint32}}), false},
+		{"-1 chunk max, max uint32 chunk proposal, fail", -1, NewProposal(0, 0, 0, BlockID{PartSetHeader: PartSetHeader{Total: math.MaxUint32}}), false},
+		{"0 chunk max, max uint32 chunk proposal, fail", -1, NewProposal(0, 0, 0, BlockID{PartSetHeader: PartSetHeader{Total: math.MaxUint32}}), false},
+		{"total parts equals chunk max, success", -1, NewProposal(0, 0, 0, BlockID{PartSetHeader: PartSetHeader{Total: 1600}}), true},
+	}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.testName, func(t *testing.T) {
+			err := tc.proposal.ValidateBlockSize(tc.maxBlockSize)
+			if tc.expectPass {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
+		})
 	}
 }

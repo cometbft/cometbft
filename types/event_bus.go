@@ -81,8 +81,8 @@ func (b *EventBus) Subscribe(
 	return b.pubsub.Subscribe(ctx, subscriber, query, outCapacity...)
 }
 
-// This method can be used for a local consensus explorer and synchronous
-// testing. Do not use for for public facing / untrusted subscriptions!
+// SubscribeUnbuffered can be used for a local consensus explorer and synchronous
+// testing. Do not use for public facing / untrusted subscriptions!
 func (b *EventBus) SubscribeUnbuffered(
 	ctx context.Context,
 	subscriber string,
@@ -232,7 +232,7 @@ func (NopEventBus) Subscribe(
 	context.Context,
 	string,
 	cmtpubsub.Query,
-	chan<- interface{},
+	chan<- any,
 ) error {
 	return nil
 }

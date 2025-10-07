@@ -151,6 +151,7 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	genesis.ConsensusParams.Version.App = 1
 	genesis.ConsensusParams.Evidence.MaxAgeNumBlocks = e2e.EvidenceAgeHeight
 	genesis.ConsensusParams.Evidence.MaxAgeDuration = e2e.EvidenceAgeTime
+	genesis.ConsensusParams.Validator.PubKeyTypes = []string{testnet.KeyType}
 	if testnet.BlockMaxBytes != 0 {
 		genesis.ConsensusParams.Block.MaxBytes = testnet.BlockMaxBytes
 	}
@@ -293,7 +294,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 
 // MakeAppConfig generates an ABCI application config for a node.
 func MakeAppConfig(node *e2e.Node) ([]byte, error) {
-	cfg := map[string]interface{}{
+	cfg := map[string]any{
 		"chain_id":                      node.Testnet.Name,
 		"dir":                           "data/app",
 		"listen":                        AppAddressUNIX,
@@ -310,6 +311,7 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		"finalize_block_delay":          node.Testnet.FinalizeBlockDelay,
 		"vote_extensions_enable_height": node.Testnet.VoteExtensionsEnableHeight,
 		"vote_extensions_update_height": node.Testnet.VoteExtensionsUpdateHeight,
+		"vote_extension_size":           node.Testnet.VoteExtensionSize,
 	}
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:

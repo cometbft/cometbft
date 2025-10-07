@@ -122,12 +122,12 @@ func (u parsedURL) GetTrimmedURL() string {
 // HTTPClient is a common interface for JSON-RPC HTTP clients.
 type HTTPClient interface {
 	// Call calls the given method with the params and returns a result.
-	Call(ctx context.Context, method string, params map[string]interface{}, result interface{}) (interface{}, error)
+	Call(ctx context.Context, method string, params map[string]any, result any) (any, error)
 }
 
 // Caller implementers can facilitate calling the JSON-RPC endpoint.
 type Caller interface {
-	Call(ctx context.Context, method string, params map[string]interface{}, result interface{}) (interface{}, error)
+	Call(ctx context.Context, method string, params map[string]any, result any) (any, error)
 }
 
 //-------------------------------------------------------------
@@ -202,9 +202,9 @@ func NewWithHTTPClient(remote string, client *http.Client) (*Client, error) {
 func (c *Client) Call(
 	ctx context.Context,
 	method string,
-	params map[string]interface{},
-	result interface{},
-) (interface{}, error) {
+	params map[string]any,
+	result any,
+) (any, error) {
 	id := c.nextRequestID()
 
 	request, err := types.MapToRequest(id, method, params)
@@ -263,9 +263,9 @@ func (c *Client) NewRequestBatch() *RequestBatch {
 	}
 }
 
-func (c *Client) sendBatch(ctx context.Context, requests []*jsonRPCBufferedRequest) ([]interface{}, error) {
+func (c *Client) sendBatch(ctx context.Context, requests []*jsonRPCBufferedRequest) ([]any, error) {
 	reqs := make([]types.RPCRequest, 0, len(requests))
-	results := make([]interface{}, 0, len(requests))
+	results := make([]any, 0, len(requests))
 	for _, req := range requests {
 		reqs = append(reqs, req.request)
 		results = append(results, req.result)
@@ -323,7 +323,7 @@ func (c *Client) nextRequestID() types.JSONRPCIntID {
 // anticipated response structure.
 type jsonRPCBufferedRequest struct {
 	request types.RPCRequest
-	result  interface{} // The result will be deserialized into this object.
+	result  any // The result will be deserialized into this object.
 }
 
 // RequestBatch allows us to buffer multiple request/response structures
@@ -365,7 +365,7 @@ func (b *RequestBatch) clear() int {
 // Send will attempt to send the current batch of enqueued requests, and then
 // will clear out the requests once done. On success, this returns the
 // deserialized list of results from each of the enqueued requests.
-func (b *RequestBatch) Send(ctx context.Context) ([]interface{}, error) {
+func (b *RequestBatch) Send(ctx context.Context) ([]any, error) {
 	b.mtx.Lock()
 	defer func() {
 		b.clear()
@@ -379,9 +379,9 @@ func (b *RequestBatch) Send(ctx context.Context) ([]interface{}, error) {
 func (b *RequestBatch) Call(
 	_ context.Context,
 	method string,
-	params map[string]interface{},
-	result interface{},
-) (interface{}, error) {
+	params map[string]any,
+	result any,
+) (any, error) {
 	id := b.client.nextRequestID()
 	request, err := types.MapToRequest(id, method, params)
 	if err != nil {

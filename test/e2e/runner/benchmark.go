@@ -84,7 +84,7 @@ type testnetStats struct {
 }
 
 func (t *testnetStats) OutputJSON(net *e2e.Testnet) string {
-	jsn, err := json.Marshal(map[string]interface{}{
+	jsn, err := json.Marshal(map[string]any{
 		"case":         filepath.Base(net.File),
 		"start_height": t.startHeight,
 		"end_height":   t.endHeight,
@@ -217,11 +217,4 @@ func extractTestnetStats(intervals []time.Duration) testnetStats {
 		max:  max,
 		min:  min,
 	}
-}
-
-func min(a, b int64) int64 {
-	if a > b {
-		return b
-	}
-	return a
 }

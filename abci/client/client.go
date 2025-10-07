@@ -2,7 +2,6 @@ package abcicli
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/cometbft/cometbft/abci/types"
@@ -52,7 +51,7 @@ func NewClient(addr, transport string, mustConnect bool) (client Client, err err
 	case "grpc":
 		client = NewGRPCClient(addr, mustConnect)
 	default:
-		err = fmt.Errorf("unknown abci transport %s", transport)
+		err = ErrUnknownAbciTransport{Transport: transport}
 	}
 	return
 }
@@ -86,7 +85,7 @@ func NewReqRes(req *types.Request) *ReqRes {
 	}
 }
 
-// Sets sets the callback. If reqRes is already done, it will call the cb
+// Sets the callback. If reqRes is already done, it will call the cb
 // immediately. Note, reqRes.cb should not change if reqRes.done and only one
 // callback is supported.
 func (r *ReqRes) SetCallback(cb func(res *types.Response)) {

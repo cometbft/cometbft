@@ -67,7 +67,7 @@ func (tr *TestReactor) GetChannels() []*conn.ChannelDescriptor {
 
 func (tr *TestReactor) AddPeer(Peer) {}
 
-func (tr *TestReactor) RemovePeer(Peer, interface{}) {}
+func (tr *TestReactor) RemovePeer(Peer, any) {}
 
 func (tr *TestReactor) Receive(e Envelope) {
 	if tr.logMessages {
@@ -757,7 +757,7 @@ type mockReactor struct {
 	initCalledBeforeRemoveFinished uint32
 }
 
-func (r *mockReactor) RemovePeer(Peer, interface{}) {
+func (r *mockReactor) RemovePeer(Peer, any) {
 	atomic.StoreUint32(&r.removePeerInProgress, 1)
 	defer atomic.StoreUint32(&r.removePeerInProgress, 0)
 	time.Sleep(100 * time.Millisecond)

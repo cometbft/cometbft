@@ -1047,7 +1047,7 @@ func makeBlockchainFromWAL(wal WAL) ([]*types.Block, []*types.ExtendedCommit, er
 
 		switch p := piece.(type) {
 		case EndHeightMessage:
-			// if its not the first one, we have a full block
+			// if it's not the first one, we have a full block
 			if thisBlockParts != nil {
 				pbb := new(cmtproto.Block)
 				bz, err := io.ReadAll(thisBlockParts.GetReader())
@@ -1118,7 +1118,7 @@ func makeBlockchainFromWAL(wal WAL) ([]*types.Block, []*types.ExtendedCommit, er
 	return blocks, extCommits, nil
 }
 
-func readPieceFromWAL(msg *TimedWALMessage) interface{} {
+func readPieceFromWAL(msg *TimedWALMessage) any {
 	// for logging
 	switch m := msg.Msg.(type) {
 	case msgInfo:

@@ -44,7 +44,7 @@ type accept struct {
 // TODO(xla): Refactor out with more static Reactor setup and PeerBehaviour.
 type peerConfig struct {
 	chDescs     []*conn.ChannelDescriptor
-	onPeerError func(Peer, interface{})
+	onPeerError func(Peer, any)
 	outbound    bool
 	// isPersistent allows you to set a function, which, given socket address
 	// (for outbound peers) OR self-reported address (for inbound peers), tells
@@ -122,7 +122,7 @@ func MultiplexTransportFilterTimeout(
 	return func(mt *MultiplexTransport) { mt.filterTimeout = timeout }
 }
 
-// MultiplexTransportResolver sets the Resolver used for ip lokkups, defaults to
+// MultiplexTransportResolver sets the Resolver used for ip lookups, defaults to
 // net.DefaultResolver.
 func MultiplexTransportResolver(resolver IPResolver) MultiplexTransportOption {
 	return func(mt *MultiplexTransport) { mt.resolver = resolver }

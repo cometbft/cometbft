@@ -53,7 +53,7 @@ func NewBytes(p *Payload) ([]byte, error) {
 	return append([]byte(keyPrefix), h...), nil
 }
 
-// FromBytes extracts a paylod from the byte representation of the payload.
+// FromBytes extracts a payload from the byte representation of the payload.
 // FromBytes leaves the padding untouched, returning it to the caller to handle
 // or discard per their preference.
 func FromBytes(b []byte) (*Payload, error) {
@@ -88,7 +88,7 @@ func MaxUnpaddedSize() (int, error) {
 }
 
 // CalculateUnpaddedSize calculates the size of the passed in payload for the
-// purpose of determining how much padding to add to add to reach the target size.
+// purpose of determining how much padding to add to reach the target size.
 // CalculateUnpaddedSize returns an error if the payload Padding field is longer than 1.
 func CalculateUnpaddedSize(p *Payload) (int, error) {
 	if len(p.Padding) != 1 {

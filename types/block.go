@@ -29,7 +29,7 @@ const (
 	MaxHeaderBytes int64 = 626
 
 	// MaxOverheadForBlock - maximum overhead to encode a block (up to
-	// MaxBlockSizeBytes in size) not including it's parts except Data.
+	// MaxBlockSizeBytes in size) not including its parts except Data.
 	// This means it also excludes the overhead for individual transactions.
 	//
 	// Uvarint length of MaxBlockSizeBytes: 4 bytes
@@ -243,7 +243,7 @@ func (b *Block) ToProto() (*cmtproto.Block, error) {
 	return pb, nil
 }
 
-// FromProto sets a protobuf Block to the given pointer.
+// BlockFromProto sets a protobuf Block to the given pointer.
 // It returns an error if the block is invalid.
 func BlockFromProto(bp *cmtproto.Block) (*Block, error) {
 	if bp == nil {
@@ -347,7 +347,7 @@ type Header struct {
 	ConsensusHash      cmtbytes.HexBytes `json:"consensus_hash"`       // consensus params for current block
 	AppHash            cmtbytes.HexBytes `json:"app_hash"`             // state after txs from the previous block
 	// root hash of all results from the txs from the previous block
-	// see `deterministicExecTxResult` to understand which parts of a tx is hashed into here
+	// see `DeterministicExecTxResult` to understand which parts of a tx is hashed into here
 	LastResultsHash cmtbytes.HexBytes `json:"last_results_hash"`
 
 	// consensus info
@@ -542,7 +542,7 @@ func (h *Header) ToProto() *cmtproto.Header {
 	}
 }
 
-// FromProto sets a protobuf Header to the given pointer.
+// HeaderFromProto sets a protobuf Header to the given pointer.
 // It returns an error if the header is invalid.
 func HeaderFromProto(ph *cmtproto.Header) (Header, error) {
 	if ph == nil {
@@ -590,11 +590,16 @@ const (
 )
 
 const (
-	// Max size of commit without any commitSigs -> 82 for BlockID, 8 for Height, 4 for Round.
+	// MaxCommitOverheadBytes is the max size of commit without any commitSigs -> 82 for BlockID, 8 for Height, 4 for Round.
 	MaxCommitOverheadBytes int64 = 94
-	// Commit sig size is made up of 64 bytes for the signature, 20 bytes for the address,
-	// 1 byte for the flag and 14 bytes for the timestamp
-	MaxCommitSigBytes int64 = 109
+
+	// 4 bytes for field tags + 1 byte for signature LEN + 1 byte for
+	// validator address LEN + 1 byte for timestamp LEN.
+	maxCommitSigProtoEncOverhead = 4 + 1 + 1 + 1 + 3 // 3 ???
+	// MaxCommitSigBytes is the max commit sig size is made up of MaxSignatureSize (96) bytes for the
+	// signature, 20 bytes for the address, 1 byte for the flag and 14 bytes for
+	// the timestamp.
+	MaxCommitSigBytes = 131 + maxCommitSigProtoEncOverhead
 )
 
 // CommitSig is a part of the Vote included in a Commit.
@@ -606,9 +611,10 @@ type CommitSig struct {
 }
 
 func MaxCommitBytes(valCount int) int64 {
+	// 1 byte field tag + 1 byte LEN + 1 byte ???
+	const protoRepeatedFieldLenOverhead int64 = 3
 	// From the repeated commit sig field
-	var protoEncodingOverhead int64 = 2
-	return MaxCommitOverheadBytes + ((MaxCommitSigBytes + protoEncodingOverhead) * int64(valCount))
+	return MaxCommitOverheadBytes + ((MaxCommitSigBytes + protoRepeatedFieldLenOverhead) * int64(valCount))
 }
 
 // NewCommitSigAbsent returns new CommitSig with BlockIDFlagAbsent. Other
@@ -619,7 +625,7 @@ func NewCommitSigAbsent() CommitSig {
 	}
 }
 
-// CommitSig returns a string representation of CommitSig.
+// String returns a string representation of CommitSig.
 //
 // 1. first 6 bytes of signature
 // 2. first 6 bytes of validator address
@@ -766,7 +772,7 @@ func (ecs ExtendedCommitSig) ValidateBasic() error {
 	return nil
 }
 
-// EnsureExtensions validates that a vote extensions signature is present for
+// EnsureExtension validates that a vote extensions signature is present for
 // this ExtendedCommitSig.
 func (ecs ExtendedCommitSig) EnsureExtension(extEnabled bool) error {
 	if extEnabled {
@@ -954,7 +960,7 @@ func (commit *Commit) Hash() cmtbytes.HexBytes {
 }
 
 // WrappedExtendedCommit wraps a commit as an ExtendedCommit.
-// The VoteExtension fields of the resulting value will by nil.
+// The VoteExtension fields of the resulting value will be nil.
 // Wrapping a Commit as an ExtendedCommit is useful when an API
 // requires an ExtendedCommit wire type but does not
 // need the VoteExtension data.
@@ -1017,7 +1023,7 @@ func (commit *Commit) ToProto() *cmtproto.Commit {
 	return c
 }
 
-// FromProto sets a protobuf Commit to the given pointer.
+// CommitFromProto sets a protobuf Commit to the given pointer.
 // It returns an error if the commit is invalid.
 func CommitFromProto(cp *cmtproto.Commit) (*Commit, error) {
 	if cp == nil {
@@ -1529,7 +1535,7 @@ func (blockID *BlockID) ToProto() cmtproto.BlockID {
 	}
 }
 
-// FromProto sets a protobuf BlockID to the given pointer.
+// BlockIDFromProto sets a protobuf BlockID to the given pointer.
 // It returns an error if the block id is invalid.
 func BlockIDFromProto(bID *cmtproto.BlockID) (*BlockID, error) {
 	if bID == nil {

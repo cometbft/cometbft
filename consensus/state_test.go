@@ -188,8 +188,7 @@ func TestStateEnterProposeYesPrivValidator(t *testing.T) {
 }
 
 func TestStateBadProposal(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	cs1, vss := randState(2)
 	height, round := cs1.Height, cs1.Round
@@ -453,8 +452,7 @@ func TestStateFullRound2(t *testing.T) {
 // two validators, 4 rounds.
 // two vals take turns proposing. val1 locks on first one, precommits nil on everything else
 func TestStateLockNoPOL(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	cs1, vss := randState(2)
 	vs2 := vss[1]
@@ -658,8 +656,7 @@ func TestStateLockNoPOL(t *testing.T) {
 // in round two: v1 prevotes the same block that the node is locked on
 // the others prevote a new block hence v1 changes lock and precommits the new block with the others
 func TestStateLockPOLRelock(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	cs1, vss := randState(4)
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
@@ -760,8 +757,7 @@ func TestStateLockPOLRelock(t *testing.T) {
 
 // 4 vals, one precommits, other 3 polka at next round, so we unlock and precommit the polka
 func TestStateLockPOLUnlock(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	cs1, vss := randState(4)
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
@@ -856,8 +852,7 @@ func TestStateLockPOLUnlock(t *testing.T) {
 // v1 should unlock and precommit nil. In the third round another block is proposed, all vals
 // prevote and now v1 can lock onto the third block and precommit that
 func TestStateLockPOLUnlockOnUnknownBlock(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	cs1, vss := randState(4)
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
@@ -988,8 +983,7 @@ func TestStateLockPOLUnlockOnUnknownBlock(t *testing.T) {
 // then a polka at round 2 that we lock on
 // then we see the polka from round 1 but shouldn't unlock
 func TestStateLockPOLSafety1(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	cs1, vss := randState(4)
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
@@ -1114,8 +1108,7 @@ func TestStateLockPOLSafety1(t *testing.T) {
 // What we want:
 // dont see P0, lock on P1 at R1, dont unlock using P0 at R2
 func TestStateLockPOLSafety2(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	cs1, vss := randState(4)
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
@@ -1370,8 +1363,7 @@ func TestSetValidBlockOnDelayedPrevote(t *testing.T) {
 // P0 miss to lock B as Proposal Block is missing, but set valid block to B after
 // receiving delayed Block Proposal.
 func TestSetValidBlockOnDelayedProposal(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	cs1, vss := randState(4)
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
@@ -2094,8 +2086,7 @@ func TestWaitTimeoutProposeOnNilPolkaForTheCurrentRound(t *testing.T) {
 // What we want:
 // P0 emit NewValidBlock event upon receiving 2/3+ Precommit for B but hasn't received block B yet
 func TestEmitNewValidBlockEventOnCommitWithoutBlock(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	cs1, vss := randState(4)
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
@@ -2131,8 +2122,7 @@ func TestEmitNewValidBlockEventOnCommitWithoutBlock(t *testing.T) {
 // P0 receives 2/3+ Precommit for B for round 0, while being in round 1. It emits NewValidBlock event.
 // After receiving block, it executes block and moves to the next height.
 func TestCommitFromPreviousRound(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	cs1, vss := randState(4)
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
@@ -2249,8 +2239,7 @@ func TestStartNextHeightCorrectlyAfterTimeout(t *testing.T) {
 }
 
 func TestResetTimeoutPrecommitUponNewHeight(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	config.Consensus.SkipTimeoutCommit = false
 	cs1, vss := randState(4)

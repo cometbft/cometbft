@@ -34,7 +34,7 @@ type Option func(*RPCFunc)
 func Cacheable(noCacheDefArgs ...string) Option {
 	return func(r *RPCFunc) {
 		r.cacheable = true
-		r.noCacheDefArgs = make(map[string]interface{})
+		r.noCacheDefArgs = make(map[string]any)
 		for _, arg := range noCacheDefArgs {
 			r.noCacheDefArgs[arg] = nil
 		}
@@ -50,23 +50,23 @@ func Ws() Option {
 
 // RPCFunc contains the introspected type information for a function
 type RPCFunc struct {
-	f              reflect.Value          // underlying rpc function
-	args           []reflect.Type         // type of each function arg
-	returns        []reflect.Type         // type of each return arg
-	argNames       []string               // name of each argument
-	cacheable      bool                   // enable cache control
-	ws             bool                   // enable websocket communication
-	noCacheDefArgs map[string]interface{} // a lookup table of args that, if not supplied or are set to default values, cause us to not cache
+	f              reflect.Value  // underlying rpc function
+	args           []reflect.Type // type of each function arg
+	returns        []reflect.Type // type of each return arg
+	argNames       []string       // name of each argument
+	cacheable      bool           // enable cache control
+	ws             bool           // enable websocket communication
+	noCacheDefArgs map[string]any // a lookup table of args that, if not supplied or are set to default values, cause us to not cache
 }
 
 // NewRPCFunc wraps a function for introspection.
 // f is the function, args are comma separated argument names
-func NewRPCFunc(f interface{}, args string, options ...Option) *RPCFunc {
+func NewRPCFunc(f any, args string, options ...Option) *RPCFunc {
 	return newRPCFunc(f, args, options...)
 }
 
 // NewWSRPCFunc wraps a function for introspection and use in the websockets.
-func NewWSRPCFunc(f interface{}, args string, options ...Option) *RPCFunc {
+func NewWSRPCFunc(f any, args string, options ...Option) *RPCFunc {
 	options = append(options, Ws())
 	return newRPCFunc(f, args, options...)
 }
@@ -95,7 +95,7 @@ func (f *RPCFunc) cacheableWithArgs(args []reflect.Value) bool {
 	return true
 }
 
-func newRPCFunc(f interface{}, args string, options ...Option) *RPCFunc {
+func newRPCFunc(f any, args string, options ...Option) *RPCFunc {
 	var argNames []string
 	if args != "" {
 		argNames = strings.Split(args, ",")
@@ -116,7 +116,7 @@ func newRPCFunc(f interface{}, args string, options ...Option) *RPCFunc {
 }
 
 // return a function's argument types
-func funcArgTypes(f interface{}) []reflect.Type {
+func funcArgTypes(f any) []reflect.Type {
 	t := reflect.TypeOf(f)
 	n := t.NumIn()
 	typez := make([]reflect.Type, n)
@@ -127,7 +127,7 @@ func funcArgTypes(f interface{}) []reflect.Type {
 }
 
 // return a function's return types
-func funcReturnTypes(f interface{}) []reflect.Type {
+func funcReturnTypes(f any) []reflect.Type {
 	t := reflect.TypeOf(f)
 	n := t.NumOut()
 	typez := make([]reflect.Type, n)
@@ -140,7 +140,7 @@ func funcReturnTypes(f interface{}) []reflect.Type {
 //-------------------------------------------------------------
 
 // NOTE: assume returns is result struct and error. If error is not nil, return it
-func unreflectResult(returns []reflect.Value) (interface{}, error) {
+func unreflectResult(returns []reflect.Value) (any, error) {
 	errV := returns[1]
 	if errV.Interface() != nil {
 		return nil, fmt.Errorf("%v", errV.Interface())

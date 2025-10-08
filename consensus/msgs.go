@@ -15,7 +15,6 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-
 // MsgFromProto takes a consensus proto message and returns the native go type
 func MsgFromProto(p proto.Message) (Message, error) {
 	if p == nil {
@@ -152,7 +151,7 @@ func WALToProto(msg WALMessage) (*cmtcons.WALMessage, error) {
 		}
 	case msgInfo:
 		var consMsg proto.Message
-		
+
 		switch msg := msg.Msg.(type) {
 		case *NewRoundStepMessage:
 			consMsg = &cmtcons.NewRoundStep{
@@ -233,7 +232,7 @@ func WALToProto(msg WALMessage) (*cmtcons.WALMessage, error) {
 		default:
 			return nil, ErrConsensusMessageNotRecognized{msg}
 		}
-		
+
 		if w, ok := consMsg.(p2p.Wrapper); ok {
 			consMsg = w.Wrap()
 		}

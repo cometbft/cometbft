@@ -19,7 +19,6 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-
 func TestWALMsgProto(t *testing.T) {
 	parts := types.Part{
 		Index: 1,

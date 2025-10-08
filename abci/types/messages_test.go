@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/assert"
 
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	version "github.com/cometbft/cometbft/proto/tendermint/version"
 )
 
 func TestMarshalJSON(t *testing.T) {
@@ -65,7 +67,41 @@ func TestWriteReadMessage(t *testing.T) {
 			Height:  4,
 			ChainID: "test",
 		},
-		// TODO: add the rest
+		&cmtproto.Header{
+			Version: version.Consensus{Block: 11, App: 22},
+			ChainID: "chain-A",
+			Height:  42,
+			Time:    time.Unix(1_700_000_000, 0).UTC(),
+			LastBlockId: cmtproto.BlockID{
+				Hash: []byte{0x01, 0x02, 0x03},
+				PartSetHeader: cmtproto.PartSetHeader{
+					Total: 123,
+					Hash:  []byte{0xaa, 0xbb, 0xcc},
+				},
+			},
+			LastCommitHash:     []byte{0x10},
+			DataHash:           []byte{0x20},
+			ValidatorsHash:     []byte{0x30},
+			NextValidatorsHash: []byte{0x40},
+			ConsensusHash:      []byte{0x50},
+			AppHash:            []byte{0x60},
+			LastResultsHash:    []byte{0x70},
+			EvidenceHash:       []byte{0x80},
+			ProposerAddress:    []byte{0x90},
+		},
+		&cmtproto.Header{
+			Version: version.Consensus{Block: 0, App: 0},
+			ChainID: "chain-B",
+			Height:  1,
+			Time:    time.Unix(0, 0).UTC(),
+			LastBlockId: cmtproto.BlockID{
+				Hash: []byte{},
+				PartSetHeader: cmtproto.PartSetHeader{
+					Total: 0,
+					Hash:  nil,
+				},
+			},
+		},
 	}
 
 	for _, c := range cases {
@@ -97,7 +133,58 @@ func TestWriteReadMessage2(t *testing.T) {
 				},
 			},
 		},
-		// TODO: add the rest
+		&ResponseCheckTx{
+			Code:      1,
+			Data:      []byte("transaction data"),
+			Log:       "check tx log",
+			Info:      "additional info",
+			GasWanted: 1000,
+			GasUsed:   800,
+			Codespace: "test-codespace",
+			Events: []Event{
+				{
+					Type: "transfer",
+					Attributes: []EventAttribute{
+						{Key: "sender", Value: "alice", Index: true},
+						{Key: "receiver", Value: "bob", Index: false},
+					},
+				},
+				{
+					Type: "fee",
+					Attributes: []EventAttribute{
+						{Key: "amount", Value: "100", Index: true},
+					},
+				},
+			},
+		},
+		&ResponseCheckTx{
+			Code:      0,
+			Data:      nil,
+			Log:       "",
+			Info:      "",
+			GasWanted: 0,
+			GasUsed:   0,
+			Codespace: "",
+			Events:    nil,
+		},
+		&ResponseCheckTx{
+			Code:      42,
+			Data:      []byte{0x01, 0x02, 0x03, 0x04},
+			Log:       "error occurred",
+			Info:      "detailed error info",
+			GasWanted: 5000,
+			GasUsed:   4500,
+			Codespace: "error-codespace",
+			Events: []Event{
+				{
+					Type: "error",
+					Attributes: []EventAttribute{
+						{Key: "error_code", Value: "42", Index: true},
+						{Key: "error_message", Value: "validation failed", Index: false},
+					},
+				},
+			},
+		},
 	}
 
 	for _, c := range cases {

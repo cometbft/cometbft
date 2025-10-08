@@ -51,7 +51,7 @@ func (ab *AddressBookConfig) Validate() error {
 func (ab *AddressBookConfig) DecodePeers() ([]peer.AddrInfo, error) {
 	var (
 		out   = make([]peer.AddrInfo, 0, len(ab.Peers))
-		skip = make(map[string]struct{})
+		cache = make(map[string]struct{})
 	)
 
 	for _, pc := range ab.Peers {
@@ -61,12 +61,12 @@ func (ab *AddressBookConfig) DecodePeers() ([]peer.AddrInfo, error) {
 		}
 
 		// dedup by peer id
-		if _, ok := skip[addr.ID.String()]; ok {
+		if _, ok := cache[addr.ID.String()]; ok {
 			continue
 		}
 
 		out = append(out, addr)
-		skip[addr.ID.String()] = struct{}{}
+		cache[addr.ID.String()] = struct{}{}
 	}
 
 	return out, nil

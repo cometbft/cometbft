@@ -826,14 +826,19 @@ func (cs *State) receiveRoutine(maxSteps int) {
 			cs.handleTxsAvailable()
 
 		case mi = <-cs.peerMsgQueue:
+			cs.Logger.Debug("Received message from cs.peerMsgQueue", "peer", mi.PeerID)
+
 			if err := cs.wal.Write(mi); err != nil {
 				cs.Logger.Error("failed writing to WAL", "err", err)
 			}
+
 			// handles proposals, block parts, votes
 			// may generate internal events (votes, complete proposals, 2/3 majorities)
 			cs.handleMsg(mi)
 
 		case mi = <-cs.internalMsgQueue:
+			cs.Logger.Debug("Received message from cs.internalMsgQueue", "peer_id", mi.PeerID)
+
 			err := cs.wal.WriteSync(mi) // NOTE: fsync
 			if err != nil {
 				panic(fmt.Sprintf(
@@ -873,12 +878,15 @@ func (cs *State) receiveRoutine(maxSteps int) {
 func (cs *State) handleMsg(mi msgInfo) {
 	cs.mtx.Lock()
 	defer cs.mtx.Unlock()
+
 	var (
 		added bool
 		err   error
 	)
 
 	msg, peerID := mi.Msg, mi.PeerID
+
+	cs.Logger.Debug("State.handleMsg", "peer_id", string(peerID), "msg", msg)
 
 	switch msg := msg.(type) {
 	case *ProposalMessage:
@@ -2117,13 +2125,14 @@ func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 
 func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error) {
 	cs.Logger.Debug(
-		"adding vote",
+		"Adding vote",
 		"vote_height", vote.Height,
 		"vote_type", vote.Type,
 		"val_index", vote.ValidatorIndex,
 		"cs_height", cs.Height,
 		"extLen", len(vote.Extension),
 		"extSigLen", len(vote.ExtensionSignature),
+		"peer_id", peerID,
 	)
 
 	if vote.Height < cs.Height || (vote.Height == cs.Height && vote.Round < cs.Round) {

@@ -17,7 +17,7 @@ import (
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/lp2p"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -39,7 +39,7 @@ const (
 
 // Setup sets up the testnet configuration.
 func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
-	logger.Info("setup", "msg", log.NewLazySprintf("Generating testnet files in %q", testnet.Dir))
+	logger.Info("Generating testnet files", "dir", testnet.Dir)
 
 	if err := os.MkdirAll(testnet.Dir, os.ModePerm); err != nil {
 		return err
@@ -78,6 +78,20 @@ func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 			return err
 		}
 		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
+
+		if node.UseLibp2p {
+			ab, err := MakeLibp2pAddressBook(node)
+			if err != nil {
+				return fmt.Errorf("failed to make libp2p address book: %w", err)
+			}
+
+			filepath := filepath.Join(nodeDir, cfg.P2P.LibP2PConfig.AddressBook)
+			logger.Info("Using go-libp2p! Saving address book", "node", node.Name, "path", filepath)
+
+			if err := ab.Save(filepath); err != nil {
+				return fmt.Errorf("failed to save libp2p address book: %w", err)
+			}
+		}
 
 		appCfg, err := MakeAppConfig(node)
 		if err != nil {
@@ -248,12 +262,19 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		}
 		cfg.P2P.Seeds += seed.AddressP2P(true)
 	}
+
 	cfg.P2P.PersistentPeers = ""
 	for _, peer := range node.PersistentPeers {
 		if len(cfg.P2P.PersistentPeers) > 0 {
 			cfg.P2P.PersistentPeers += ","
 		}
 		cfg.P2P.PersistentPeers += peer.AddressP2P(true)
+	}
+
+	if node.UseLibp2p {
+		// lib-p2p and PEX are mutually exclusive
+		cfg.P2P.PexReactor = false
+		cfg.P2P.LibP2PConfig.Enabled = true
 	}
 
 	if node.Testnet.LogLevel != "" {
@@ -340,6 +361,48 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		return nil, fmt.Errorf("failed to generate app config: %w", err)
 	}
 	return buf.Bytes(), nil
+}
+
+// MakeLibp2pAddressBook creates libp2p address book for a node
+func MakeLibp2pAddressBook(node *e2e.Node) (*lp2p.AddressBookConfig, error) {
+	var (
+		peers = []lp2p.PeerConfig{}
+		cache = make(map[string]struct{})
+	)
+
+	for _, nodeConfig := range append(node.Seeds, node.PersistentPeers...) {
+		// skip if already added
+		if _, ok := cache[nodeConfig.Name]; ok {
+			continue
+		}
+
+		peerID, err := lp2p.IDFromPrivateKey(nodeConfig.NodeKey)
+		if err != nil {
+			return nil, fmt.Errorf("peer id for node %q: %w", nodeConfig.Name, err)
+		}
+
+		// todo: come up with a generic way of determining the host:port to make it work
+		// with all configurations
+		const (
+			localhost = "127.0.0.1"
+			cometPort = 26656
+		)
+
+		// for docker networks, we need to use network-assigned address (e.g. 10.186.73.5)
+		ip := nodeConfig.ExternalIP.String()
+		if ip == localhost && node.InternalIP.String() != localhost {
+			ip = nodeConfig.InternalIP.String()
+		}
+
+		peers = append(peers, lp2p.PeerConfig{
+			Host: fmt.Sprintf("%s:%d", ip, cometPort),
+			ID:   peerID.String(),
+		})
+
+		cache[nodeConfig.Name] = struct{}{}
+	}
+
+	return &lp2p.AddressBookConfig{Peers: peers}, nil
 }
 
 // UpdateConfigStateSync updates the state sync config for a node.

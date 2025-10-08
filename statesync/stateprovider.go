@@ -39,7 +39,6 @@ type StateProvider interface {
 type lightClientStateProvider struct {
 	cmtsync.Mutex // light.Client is not concurrency-safe
 	lc            *light.Client
-	version       cmtstate.Version
 	initialHeight int64
 	providers     map[lightprovider.Provider]string
 }
@@ -48,7 +47,6 @@ type lightClientStateProvider struct {
 func NewLightClientStateProvider(
 	ctx context.Context,
 	chainID string,
-	version cmtstate.Version,
 	initialHeight int64,
 	servers []string,
 	trustOptions light.TrustOptions,
@@ -79,7 +77,6 @@ func NewLightClientStateProvider(
 	}
 	return &lightClientStateProvider{
 		lc:            lc,
-		version:       version,
 		initialHeight: initialHeight,
 		providers:     providerRemotes,
 	}, nil
@@ -128,7 +125,6 @@ func (s *lightClientStateProvider) State(ctx context.Context, height uint64) (sm
 
 	state := sm.State{
 		ChainID:       s.lc.ChainID(),
-		Version:       s.version,
 		InitialHeight: s.initialHeight,
 	}
 	if state.InitialHeight == 0 {

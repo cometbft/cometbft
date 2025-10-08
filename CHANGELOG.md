@@ -5,6 +5,8 @@
 ### DEPENDENCIES
 
 ### BUG FIXES
+- `[consensus]` Fix double_sign_check_height=1 not performing any checks
+  ([\#5435](https://github.com/cometbft/cometbft/issues/5435))
 
 ### IMPROVEMENTS
 -  `[mempool]` perf(mempool/cache): Optimize LRUTxCache.Remove to reduce lock contention and map access

@@ -568,7 +568,7 @@ func VerifyAndDetect (lightStore LightStore, targetHeight Height)
                 // no attack detected, we trust the new lightblock
                 lightStore.Update(auxLS.Latest(), 
                                   StateTrusted, 
-                                  verfiedLS.Latest().verification-root);
+                                  verifiedLS.Latest().verification-root);
                 return (lightStore, OK);
             }
             else {
@@ -610,9 +610,9 @@ func VerifyAndDetect (lightStore LightStore, targetHeight Height)
         Evidences := AttackDetector(root_of_trust, verifiedLS);
         if Evidences.Empty {
             // no attack detected, we trust the new lightblock
-            verifiedLS.Update(verfiedLS.Latest(), 
+            verifiedLS.Update(verifiedLS.Latest(), 
                               StateTrusted, 
-                              verfiedLS.Latest().verification-root);
+                              verifiedLS.Latest().verification-root);
             lightStore.store_chain(verifidLS);
             return (lightStore, OK);
         }

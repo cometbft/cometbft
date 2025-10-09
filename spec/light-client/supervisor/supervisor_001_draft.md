@@ -613,7 +613,7 @@ func VerifyAndDetect (lightStore LightStore, targetHeight Height)
             verifiedLS.Update(verifiedLS.Latest(), 
                               StateTrusted, 
                               verifiedLS.Latest().verification-root);
-            lightStore.store_chain(verifidLS);
+            lightStore.store_chain(verifiedLS);
             return (lightStore, OK);
         }
         else {

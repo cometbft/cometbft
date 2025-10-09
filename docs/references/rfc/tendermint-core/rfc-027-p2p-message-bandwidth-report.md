@@ -8,7 +8,7 @@
 ## Abstract
 
 Node operators and application developers complain that Tendermint nodes consume
-larges amounts of network bandwidth. This RFC catalogues the major sources of bandwidth
+largest amounts of network bandwidth. This RFC catalogues the major sources of bandwidth
 consumption within Tendermint and suggests modifications to Tendermint that may reduce
 bandwidth consumption for nodes.
 

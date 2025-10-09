@@ -94,14 +94,14 @@ func TestValidTxProof(t *testing.T) {
 	}
 }
 
-func TestTxProofUnchangable(t *testing.T) {
+func TestTxProofUnchangeable(t *testing.T) {
 	// run the other test a bunch...
 	for i := 0; i < 40; i++ {
-		testTxProofUnchangable(t)
+		testTxProofUnchangeable(t)
 	}
 }
 
-func testTxProofUnchangable(t *testing.T) {
+func testTxProofUnchangeable(t *testing.T) {
 	// make some proof
 	txs := makeTxs(randInt(2, 100), randInt(16, 128))
 	root := txs.Hash()

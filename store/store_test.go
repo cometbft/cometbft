@@ -683,7 +683,7 @@ func TestLoadBlockMeta(t *testing.T) {
 	require.NoError(t, err)
 	gotMeta, _, panicErr := doFn(loadMeta)
 	require.Nil(t, panicErr, "an existent and proper block should not panic")
-	require.Nil(t, res, "a properly saved blockMeta should return a proper blocMeta ")
+	require.Nil(t, res, "a properly saved blockMeta should return a proper blockMeta ")
 	pbmeta := meta.ToProto()
 	if gmeta, ok := gotMeta.(*types.BlockMeta); ok {
 		pbgotMeta := gmeta.ToProto()

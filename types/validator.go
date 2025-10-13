@@ -117,7 +117,7 @@ func ValidatorListString(vals []*Validator) string {
 }
 
 // Bytes computes the unique encoding of a validator with a given voting power.
-// These are the bytes that gets hashed in consensus. It excludes address
+// These are the bytes that get hashed in consensus. It excludes address
 // as its redundant with the pubkey. This also excludes ProposerPriority
 // which changes every round.
 func (v *Validator) Bytes() []byte {

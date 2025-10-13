@@ -293,7 +293,7 @@ func (ps *PartSet) Total() uint32 {
 // CONTRACT: part is validated using ValidateBasic.
 func (ps *PartSet) AddPart(part *Part) (bool, error) {
 	// TODO: remove this? would be preferable if this only returned (false, nil)
-	// when its a duplicate block part
+	// when it's a duplicate block part
 	if ps == nil {
 		return false, nil
 	}

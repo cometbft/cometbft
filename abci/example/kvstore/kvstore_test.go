@@ -22,8 +22,7 @@ const (
 )
 
 func TestKVStoreKV(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	kvstore := NewInMemoryApplication()
 	tx := []byte(testKey + ":" + testValue)
@@ -78,8 +77,7 @@ func testKVStore(ctx context.Context, t *testing.T, app types.Application, tx []
 }
 
 func TestPersistentKVStoreEmptyTX(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	kvstore := NewPersistentApplication(t.TempDir())
 	tx := []byte("")
@@ -97,8 +95,7 @@ func TestPersistentKVStoreEmptyTX(t *testing.T) {
 }
 
 func TestPersistentKVStoreKV(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	kvstore := NewPersistentApplication(t.TempDir())
 	key := testKey
@@ -107,8 +104,7 @@ func TestPersistentKVStoreKV(t *testing.T) {
 }
 
 func TestPersistentKVStoreInfo(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	kvstore := NewPersistentApplication(t.TempDir())
 	require.NoError(t, InitKVStore(ctx, kvstore))
@@ -137,8 +133,7 @@ func TestPersistentKVStoreInfo(t *testing.T) {
 
 // add a validator, remove a validator, update a validator
 func TestValUpdates(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	kvstore := NewInMemoryApplication()
 
@@ -202,8 +197,7 @@ func TestValUpdates(t *testing.T) {
 }
 
 func TestCheckTx(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	kvstore := NewInMemoryApplication()
 
 	val := RandVal()
@@ -232,8 +226,7 @@ func TestCheckTx(t *testing.T) {
 }
 
 func TestClientServer(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	// set up socket app
 	kvstore := NewInMemoryApplication()
 	client, _, err := makeClientServer(t, kvstore, "kvstore-socket", "socket")

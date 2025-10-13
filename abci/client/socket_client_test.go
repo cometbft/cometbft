@@ -20,8 +20,7 @@ import (
 )
 
 func TestCalls(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	app := types.BaseApplication{}
 
 	_, c := setupClientServer(t, app)
@@ -167,8 +166,7 @@ func (slowApp) CheckTx(context.Context, *types.RequestCheckTx) (*types.ResponseC
 // test relies on the callback being allowed to be invoked twice if set multiple
 // times, once when set early and once when set late.
 func TestCallbackInvokedWhenSetLate(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
@@ -208,8 +206,7 @@ func (b blockedABCIApplication) CheckTxAsync(ctx context.Context, r *types.Reque
 // TestCallbackInvokedWhenSetEarly ensures that the callback is invoked when
 // set before the client completes the call into the app.
 func TestCallbackInvokedWhenSetEarly(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)

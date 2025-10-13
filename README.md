@@ -1,60 +1,29 @@
-# CometBFT
+<div align="left">
+  <h1> CometBFT </h1>
+</div>
 
-[Byzantine-Fault Tolerant][bft] [State Machine Replication][smr]. Or
-[Blockchain], for short.
+![banner](docs/imgs/banner.svg)
 
 [![Version][version-badge]][version-url]
-[![API Reference][api-badge]][api-url]
 [![Go version][go-badge]][go-url]
 [![Discord chat][discord-badge]][discord-url]
 [![License][license-badge]][license-url]
 [![Sourcegraph][sg-badge]][sg-url]
 
-| Branch  | Tests                                          | Linting                                     |
-|---------|------------------------------------------------|---------------------------------------------|
-| main    | [![Tests][tests-badge]][tests-url]             | [![Lint][lint-badge]][lint-url]             |
-| v0.38.x | [![Tests][tests-badge-v038x]][tests-url-v038x] | [![Lint][lint-badge-v038x]][lint-url-v038x] |
+CometBFT is the most widely-adopted, battle-tested consensus engine in blockchain today. It is a [Byzantine Fault Tolerant (BFT)](https://en.wikipedia.org/wiki/Byzantine_fault) middleware that takes a state transition machine - written in any programming language - and securely replicates it on many machines.
 
-CometBFT is a Byzantine Fault Tolerant (BFT) middleware that takes a
-state transition machine - written in any programming language - and securely
-replicates it on many machines.
+CometBFT is highly performant and achieves speeds of up to 10k transactions per second (TPS). Its flagship feature, ABCI++ enables developers to add programmability and customization to every step of the consensus engine.
 
-It is a fork of [Tendermint Core][tm-core] and implements the Tendermint
-consensus algorithm.
+Developers can use CometBFT for BFT state machine replication of applications written in any programming language and development environment. This modularity gives developers flexibility to choose tools and technologies best suited for specific projects, improves maintainability, and delivers the scalability required for large-scale decentralized applications.
 
-For protocol details, refer to the [CometBFT Specification](./spec/README.md).
-
-For detailed analysis of the consensus protocol, including safety and liveness
-proofs, read our paper, "[The latest gossip on BFT
-consensus](https://arxiv.org/abs/1807.04938)".
-
-## Documentation
-
-Complete documentation can be found on the
-[website](https://docs.cometbft.com/).
+CometBFT is a fork of [Tendermint Core][tm-core] and implements the Tendermint consensus algorithm.
 
 ## Releases
 
-Please do not depend on `main` as your production branch. Use
-[releases](https://github.com/cometbft/cometbft/releases) instead.
-
-If you intend to run CometBFT in production, we're happy to help. To contact
-us, in order of preference:
-
-- [Create a new discussion on
-  GitHub](https://github.com/cometbft/cometbft/discussions)
-- Reach out to us via [Telegram](https://t.me/CometBFT)
-- [Join the Cosmos Network Discord](https://discord.gg/interchain) and
-  discuss in
-  [`#cometbft`](https://discord.com/channels/669268347736686612/1069933855307472906)
+Please do not depend on `main` as your production branch. Use [releases](https://github.com/cometbft/cometbft/releases) instead.
 
 More on how releases are conducted can be found [here](./RELEASES.md).
 
-## Security
-
-To report a security vulnerability, see our [bug bounty
-program](https://hackerone.com/cosmos). For examples of the kinds of bugs we're
-looking for, see [our security policy](SECURITY.md).
 
 ## Minimum requirements
 
@@ -72,24 +41,12 @@ See the [install guide](./docs/guides/install.md).
 - [Single node](./docs/guides/quick-start.md)
 - [Local cluster using docker-compose](./docs/networks/docker-compose.md)
 
-## Contributing
-
-Please abide by the [Code of Conduct](CODE_OF_CONDUCT.md) in all interactions.
-
-Before contributing to the project, please take a look at the [contributing
-guidelines](CONTRIBUTING.md) and the [style guide](STYLE_GUIDE.md). You may also
-find it helpful to read the [specifications](./spec/README.md), and familiarize
-yourself with our [Architectural Decision Records
-(ADRs)](./docs/architecture/README.md) and [Request For Comments
-(RFCs)](./docs/rfc/README.md).
-
 ## Versioning
 
 ### Semantic Versioning
 
 CometBFT uses [Semantic Versioning](http://semver.org/) to determine when and
-how the version changes. According to SemVer, anything in the public API can
-change at any time before version 1.0.0
+how the version changes.
 
 To provide some stability to users of 0.X.X versions of CometBFT, the MINOR
 version is used to signal breaking changes across CometBFT's API. This API
@@ -101,7 +58,7 @@ Breaking changes to these public APIs will be documented in the CHANGELOG.
 
 ### Upgrades
 
-In an effort to avoid accumulating technical debt prior to 1.0.0, we do not
+In an effort to avoid accumulating technical debt, we do not
 guarantee that breaking changes (i.e. bumps in the MINOR version) will work with
 existing CometBFT blockchains. In these cases you will have to start a new
 blockchain, or write something custom to get the old data into the new chain.
@@ -112,26 +69,46 @@ For more information on upgrading, see [UPGRADING.md](./UPGRADING.md).
 
 ### Supported Versions
 
-Because we are a small core team, we have limited capacity to ship patch
-updates, including security updates. Consequently, we strongly recommend keeping
-CometBFT up-to-date. Upgrading instructions can be found in
-[UPGRADING.md](./UPGRADING.md).
-
 Currently supported versions include:
 
 - v0.38.x: CometBFT v0.38 introduces ABCI 2.0, which implements the entirety of
   ABCI++
 
-## Resources
 
-### Libraries
+## Developer Community and Support
 
-- [Cosmos SDK](http://github.com/cosmos/cosmos-sdk); A framework for building
+The issue list of this repo is exclusively for bug reports and feature requests. We have active, helpful communities on Discord, Telegram, and Slack.
+
+**| Need Help? | Support & Community: [Discord](https://discord.com/invite/interchain) - [Telegram](https://t.me/CosmosOG) - [Talk to an Expert](https://cosmos.network/interest-form) - [Join the #Cosmos-tech Slack Channel](https://forms.gle/A8jawLgB8zuL1FN36) |**
+
+## Security
+
+To report a security vulnerability, see the Cosmos [bug bounty program](https://hackerone.com/cosmos). For examples of the kinds of bugs we're looking for, see [our security policy](SECURITY.md).
+
+## Maintainers
+[Cosmos Labs](https://cosmoslabs.io/) maintains the core components of the stack: Cosmos SDK, CometBFT, IBC, Cosmos EVM, and various developer tools and frameworks. The detailed maintenance policy can be found [here](https://github.com/cosmos/security/blob/main/POLICY.md). In addition to developing and maintaining the Cosmos Stack, Cosmos Labs provides advisory and engineering services for blockchain solutions. [Get in touch with Cosmos Labs](https://www.cosmoslabs.io/contact).
+
+Cosmos Labs is a wholly-owned subsidiary of the [Interchain Foundation](https://interchain.io/), the Swiss nonprofit responsible for treasury management, funding public goods, and supporting governance for Cosmos.
+
+The Cosmos Stack is supported by a robust community of open-source contributors.
+
+## Contributing
+
+If you are interested in working on an issue, please comment on it, and take a look at the [contributing guidelines](./CONTRIBUTING.md). We welcome and appreciate community contributions!
+
+## Documentation and Resources
+
+### Documentation
+- [CometBFT Documentation](https://docs.cometbft.com/v0.38/)
+- [CometBFT Specification](./spec/README.md)
+- [Documentation](./docs/docs/01-ibc/01-overview.md)
+
+### Cosmos Stack Libraries
+
+- [Cosmos SDK](http://github.com/cosmos/cosmos-sdk) - A framework for building
   applications in Golang
-
-### Applications
-
-- [Cosmos Hub](https://hub.cosmos.network/)
+- [The Inter-Blockchain Communication Protocol (IBC)](https://github.com/cosmos/ibc-go/) - A blockchain interoperability protocol that allows blockchains to transfer any type of data encoded in bytes.
+- [Cosmos EVM](https://github.com/cosmos/evm) - Native EVM layer for Cosmos SDK chains.
 
 ### Research
 
@@ -142,15 +119,7 @@ whitepapers which CometBFT will continue to build on.
 - [Master's Thesis on Tendermint](https://atrium.lib.uoguelph.ca/xmlui/handle/10214/9769)
 - [Original Whitepaper: "Tendermint: Consensus Without Mining"](https://tendermint.com/static/docs/tendermint.pdf)
 
-## Join us
 
-CometBFT is currently maintained by [Informal
-Systems](https://informal.systems). If you'd like to work full-time on CometBFT,
-[we're hiring](https://informal.systems/careers)!
-
-Funding for CometBFT development comes primarily from the [Interchain
-Foundation](https://interchain.io), a Swiss non-profit. Informal Systems also
-maintains [cometbft.com](https://cometbft.com).
 
 [bft]: https://en.wikipedia.org/wiki/Byzantine_fault_tolerance
 [smr]: https://en.wikipedia.org/wiki/State_machine_replication

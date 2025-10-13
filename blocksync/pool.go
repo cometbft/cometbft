@@ -294,11 +294,6 @@ func (pool *BlockPool) RedoRequestFrom(height int64, peerID p2p.ID) {
 	}
 }
 
-// Deprecated: use RemovePeerAndRedoAllPeerRequests instead.
-func (pool *BlockPool) RedoRequest(height int64) p2p.ID {
-	return pool.RemovePeerAndRedoAllPeerRequests(height)
-}
-
 // AddBlock validates that the block comes from the peer it was expected from
 // and calls the requester to store it.
 //

@@ -144,40 +144,6 @@ func LookForRangesWithHeight(conditions []syntax.Condition) (queryRange QueryRan
 	return queryRange, indexes, heightRange
 }
 
-// Deprecated: This function is not used anymore and will be replaced with LookForRangesWithHeight
-func LookForRanges(conditions []syntax.Condition) (ranges QueryRanges, indexes []int) {
-	ranges = make(QueryRanges)
-	for i, c := range conditions {
-		if IsRangeOperation(c.Op) {
-			r, ok := ranges[c.Tag]
-			if !ok {
-				r = QueryRange{Key: c.Tag}
-			}
-
-			switch c.Op {
-			case syntax.TGt:
-				r.LowerBound = conditionArg(c)
-
-			case syntax.TGeq:
-				r.IncludeLowerBound = true
-				r.LowerBound = conditionArg(c)
-
-			case syntax.TLt:
-				r.UpperBound = conditionArg(c)
-
-			case syntax.TLeq:
-				r.IncludeUpperBound = true
-				r.UpperBound = conditionArg(c)
-			}
-
-			ranges[c.Tag] = r
-			indexes = append(indexes, i)
-		}
-	}
-
-	return ranges, indexes
-}
-
 // IsRangeOperation returns a boolean signifying if a query Operator is a range
 // operation or not.
 func IsRangeOperation(op syntax.Token) bool {

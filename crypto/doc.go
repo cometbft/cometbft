@@ -1,42 +1,51 @@
-// crypto is a customized/convenience cryptography package for supporting
-// CometBFT.
+// Package crypto defines common cryptographic interfaces and utilities used by
+// CometBFT and its subpackages (e.g. ed25519, secp256k1, bls12381).
 
-// It wraps select functionality of equivalent functions in the
-// Go standard library, for easy usage with our libraries.
+// Keys
 
-// Keys:
+// Key generation functions in subpackages return values that implement the
+// PrivKey interface, which defines:
 
-// All key generation functions return an instance of the PrivKey interface
-// which implements methods
-
-//     AssertIsPrivKeyInner()
 //     Bytes() []byte
-//     Sign(msg []byte) Signature
+//     Sign(msg []byte) ([]byte, error)
 //     PubKey() PubKey
 //     Equals(PrivKey) bool
-//     Wrap() PrivKey
+//     Type() string
 
-// From the above method we can:
-// a) Retrieve the public key if needed
+// The corresponding public key implements the PubKey interface:
 
-//     pubKey := key.PubKey()
+//     Address() Address
+//     Bytes() []byte
+//     VerifySignature(msg []byte, sig []byte) bool
+//     Equals(PubKey) bool
+//     Type() string
 
-// For example:
-//     privKey, err := ed25519.GenPrivKey()
-//     if err != nil {
-// 	...
-//     }
+// Basic usage
+
+//     // Generate a key (ed25519 does not return an error).
+//     //   other subpackages exist, e.g. secp256k1.GenPrivKey().
+//     privKey := ed25519.GenPrivKey()
+
 //     pubKey := privKey.PubKey()
-//     ...
-//     // And then you can use the private and public key
-//     doSomething(privKey, pubKey)
+//     msg := []byte("hello")
+//     sig, _ := privKey.Sign(msg)
+//     ok := pubKey.VerifySignature(msg, sig)
+//     _ = ok
 
-// We also provide hashing wrappers around algorithms:
+// Note: some algorithms (e.g. BLS12-381) may expose generators that return an
+// error; consult the respective subpackage docs.
 
-// Sha256
+// Addresses
+
+// Package crypto defines type Address (a hex-encoded byte slice) and helpers
+// like AddressHash. Address size is tied to tmhash.TruncatedSize. For secp256k1
+// specifically, addresses are RIPEMD160(SHA256(pubkey)).
+
+// Hashing utilities
+
+// A thin wrapper is provided for SHA-256:
+
 //     sum := crypto.Sha256([]byte("This is CometBFT"))
-//     fmt.Printf("%x\n", sum)
+//     _ = sum
 
 package crypto
-
-// TODO: Add more docs in here

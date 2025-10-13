@@ -97,14 +97,14 @@ func TestProposalVerifySignature(t *testing.T) {
 }
 
 func BenchmarkProposalWriteSignBytes(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		ProposalSignBytes("test_chain_id", pbp)
 	}
 }
 
 func BenchmarkProposalSign(b *testing.B) {
 	privVal := NewMockPV()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := privVal.SignProposal("test_chain_id", pbp)
 		if err != nil {
 			b.Error(err)
@@ -119,7 +119,7 @@ func BenchmarkProposalVerifySignature(b *testing.B) {
 	pubKey, err := privVal.GetPubKey()
 	require.NoError(b, err)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		pubKey.VerifySignature(ProposalSignBytes("test_chain_id", pbp), testProposal.Signature)
 	}
 }

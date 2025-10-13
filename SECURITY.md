@@ -29,5 +29,9 @@ infrastructure it supports, and it supersedes previous security policies that
 have been used in the past by individual teams and projects with targets in
 scope of the program.
 
+### More information
+
+* See [Maintenance and Security](https://github.com/cosmos/security) for detailed policies.
+
 [h1]: https://hackerone.com/cosmos?type=team
 [h1-policy]: https://hackerone.com/cosmos?type=team&view_policy=true

@@ -1,5 +1,33 @@
 # CHANGELOG
 
+## UNRELEASED
+
+### DEPENDENCIES
+
+### BUG FIXES
+
+### IMPROVEMENTS
+
+### FEATURES
+
+### BUG-FIXES
+
+### STATE-BREAKING
+
+### API-BREAKING
+
+## v0.37.16
+
+*October 14, 2025*
+
+This release fixes a security issue, ([ASA-2025-003](https://github.com/cometbft/cometbft/security/advisories/GHSA-hrhf-2vcr-ghch)).
+Users are encouraged to upgrade as soon as possible.
+
+### BUG-FIXES
+
+- `[bits]` Validate BitArray mismatched Bits and Elems length
+  ([ASA-2025-003](https://github.com/cometbft/cometbft/security/advisories/GHSA-hrhf-2vcr-ghch))
+
 ## v0.37.15
 
 *February 3, 2025*
@@ -341,7 +369,7 @@ gossip.
   ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 - `[config]` Add mempool parameters `experimental_max_gossip_connections_to_persistent_peers` and
   `experimental_max_gossip_connections_to_non_persistent_peers` for limiting the number of peers to
-  which the node gossip transactions. 
+  which the node gossip transactions.
   ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
   ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 

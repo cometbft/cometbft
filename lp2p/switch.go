@@ -79,7 +79,7 @@ func NewSwitch(
 		nodeKey:  nodeKey,
 
 		host:    host,
-		peerSet: NewPeerSet(host, logger),
+		peerSet: NewPeerSet(host, metrics, logger),
 
 		reactors:               make([]ReactorItem, 0, len(reactors)),
 		reactorsByName:         make(map[string]p2p.Reactor),
@@ -441,6 +441,20 @@ func (s *Switch) handleStream(stream network.Stream) {
 		return
 	}
 
+	var (
+		// peer id is is for receive metrics
+		peerStr     = s.host.ID().String()
+		messageType = protoTypeName(msg)
+		payloadLen  = float64(len(payload))
+		labels      = []string{
+			"peer_id", peerStr,
+			"chID", fmt.Sprintf("%#x", descriptor.ID),
+		}
+	)
+
+	s.metrics.PeerReceiveBytesTotal.With(labels...).Add(payloadLen)
+	s.metrics.MessageReceiveBytesTotal.With("message_type", messageType).Add(payloadLen)
+
 	s.Logger.Debug(
 		"Received stream envelope",
 		"peer", peerID,
@@ -448,8 +462,6 @@ func (s *Switch) handleStream(stream network.Stream) {
 		"message_type", log.NewLazySprintf("%T", msg),
 		"message", msg,
 	)
-
-	// todo metrics
 
 	reactor.Receive(p2p.Envelope{
 		Src:       peer,
@@ -511,6 +523,8 @@ func (s *Switch) provisionPeer(peer *Peer) error {
 
 	s.provisionedPeers[peer.ID()] = struct{}{}
 
+	s.metrics.Peers.Add(1)
+
 	return nil
 }
 
@@ -536,6 +550,8 @@ func (s *Switch) deprovisionPeer(peer *Peer, reason any) error {
 	}
 
 	delete(s.provisionedPeers, key)
+
+	s.metrics.Peers.Add(-1)
 
 	return nil
 }

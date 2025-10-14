@@ -2,6 +2,7 @@ package lp2p
 
 import (
 	"fmt"
+	"reflect"
 
 	cmcrypto "github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -73,4 +74,8 @@ func unmarshalProto(descriptor *p2p.ChannelDescriptor, payload []byte) (proto.Me
 	}
 
 	return msg, nil
+}
+
+func protoTypeName(msg proto.Message) string {
+	return reflect.TypeOf(msg).Elem().Name()
 }

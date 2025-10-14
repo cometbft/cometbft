@@ -12,14 +12,28 @@
 
 ### BUG-FIXES
 
+### STATE-BREAKING
+
+### API-BREAKING
+
+## v0.38.19
+
+*October 14, 2025*
+
+This release fixes two security issues, including ([ASA-2025-003](https://github.com/cometbft/cometbft/security/advisories/GHSA-hrhf-2vcr-ghch)).
+Users are encouraged to upgrade as soon as possible.
+
+Additionally included is a bug fix to properly prune extended commits (with
+vote extensions).
+
+### BUG-FIXES
+
 - `[consensus]` Reject oversized proposals
   ([\#5324](https://github.com/cometbft/cometbft/pull/5324))
 - `[store]` Prune extended commits properly
   ([5275](https://github.com/cometbft/cometbft/issues/5275))
-
-### STATE-BREAKING
-
-### API-BREAKING
+- `[bits]` Validate BitArray mismatched Bits and Elems length
+  ([ASA-2025-003](https://github.com/cometbft/cometbft/security/advisories/GHSA-hrhf-2vcr-ghch))
 
 ## v0.38.18
 

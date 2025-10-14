@@ -621,7 +621,12 @@ type P2PConfig struct { //nolint: maligned
 // LibP2PConfig defines the configuration options for the go-libp2p networking layer
 type LibP2PConfig struct {
 	// Enabled set true to use go-libp2p for networking
-	Enabled     bool   `mapstructure:"enabled"`
+	Enabled bool `mapstructure:"enabled"`
+
+	// DisableResourceManager set true to disable the resource manager
+	DisableResourceManager bool `mapstructure:"disable_resource_manager"`
+
+	// AddressBook path to the address book file (.toml format)
 	AddressBook string `mapstructure:"address_book_file"`
 }
 

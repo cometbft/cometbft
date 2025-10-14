@@ -3,6 +3,7 @@ use_libp2p = true
 
 [node.validator02]
 use_libp2p = true
+perturb = ["kill"]
 
 [node.validator03]
 use_libp2p = true
@@ -10,3 +11,7 @@ use_libp2p = true
 [node.validator04]
 use_libp2p = true
 perturb = ["restart"]
+
+[node.validator05]
+use_libp2p = true
+perturb = ["disconnect"]

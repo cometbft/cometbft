@@ -90,6 +90,8 @@
   ([\#4772](https://github.com/cometbft/cometbft/pull/4772))
 - `[crypto/bls12381]` Modify `Sign`, `Verify` to use `dstMinPk`
   ([\#4783](https://github.com/cometbft/cometbft/issues/4783))
+- `[bits]` Validate BitArray mismatched Bits and Elems length
+  ([ASA-2025-003](https://github.com/cometbft/cometbft/security/advisories/GHSA-hrhf-2vcr-ghch))
 
 ### STATE-BREAKING
 

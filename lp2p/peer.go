@@ -176,12 +176,7 @@ func (p *PeerSet) Has(key p2p.ID) bool {
 	return len(p.host.Peerstore().Addrs(id)) > 0
 }
 
-func (p *PeerSet) Get(key p2p.ID) p2p.Peer {
-	id := p.keyToPeerID(key)
-	if id == "" {
-		return nil
-	}
-
+func (p *PeerSet) GetByID(id peer.ID) p2p.Peer {
 	peer, err := p.getOrAdd(id)
 	if err != nil {
 		p.logger.Error("PeerSet.Get failed", "peer_id", id.String(), "err", err)
@@ -189,6 +184,15 @@ func (p *PeerSet) Get(key p2p.ID) p2p.Peer {
 	}
 
 	return peer
+}
+
+func (p *PeerSet) Get(key p2p.ID) p2p.Peer {
+	id := p.keyToPeerID(key)
+	if id == "" {
+		return nil
+	}
+
+	return p.GetByID(id)
 }
 
 func (p *PeerSet) getOrAdd(id peer.ID) (*Peer, error) {

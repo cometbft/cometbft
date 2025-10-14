@@ -47,6 +47,8 @@ type Switch struct {
 
 	eventBusSubscription event.Subscription
 
+	metrics *p2p.Metrics
+
 	mu sync.RWMutex
 }
 
@@ -68,6 +70,7 @@ func NewSwitch(
 	nodeInfo p2p.NodeInfo,
 	host *Host,
 	reactors []ReactorItem,
+	metrics *p2p.Metrics,
 	logger log.Logger,
 ) (*Switch, error) {
 	s := &Switch{
@@ -82,7 +85,10 @@ func NewSwitch(
 		reactorsByName:         make(map[string]p2p.Reactor),
 		reactorsByProtocolID:   make(map[protocol.ID]p2p.Reactor),
 		descriptorByProtocolID: make(map[protocol.ID]*p2p.ChannelDescriptor),
-		provisionedPeers:       make(map[p2p.ID]struct{}),
+
+		provisionedPeers: make(map[p2p.ID]struct{}),
+
+		metrics: metrics,
 	}
 
 	base := service.NewBaseService(logger, "LibP2P Switch", s)
@@ -113,12 +119,12 @@ func NewSwitch(
 func (s *Switch) OnStart() error {
 	s.Logger.Info("Starting LibP2PSwitch")
 
-	go s.eventListener()
+	go s.listenForEvents()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	ConnectPeers(ctx, s.host, s.host.ConfigPeers())
+	initialPeers := s.host.ConfigPeers()
 
 	for _, el := range s.reactors {
 		name, reactor := el.Name, el.Reactor
@@ -130,12 +136,8 @@ func (s *Switch) OnStart() error {
 		}
 	}
 
-	peers := s.peerSet.Copy()
-	for _, peer := range peers {
-		if err := s.ensurePeerProvisioned(peer); err != nil {
-			s.Logger.Error("Failed to provision peer", "peer_id", peer.ID(), "err", err)
-		}
-	}
+	// connection will trigger an event for listenToEvents()
+	ConnectPeers(ctx, s.host, initialPeers)
 
 	return nil
 }
@@ -538,7 +540,7 @@ func (s *Switch) deprovisionPeer(peer *Peer, reason any) error {
 	return nil
 }
 
-func (s *Switch) eventListener() {
+func (s *Switch) listenForEvents() {
 	defer func() {
 		if r := recover(); r != nil {
 			s.Logger.Error("Panic in (*lp2p.Switch).eventListener", "panic", r)
@@ -564,10 +566,26 @@ func (s *Switch) eventListener() {
 	}
 }
 
+// onPeerStatusChanged hooks to lib-p2p event bus and handles peer status changes
+// TODO test perturbations!
 func (s *Switch) onPeerStatusChanged(e event.EvtPeerConnectednessChanged) error {
 	s.Logger.Info("Peer status update", "peer", e.Peer.String(), "status", e.Connectedness.String())
 
-	// todo: do something with peerSet (eg mark as (dis)connected)
+	peer := s.peerSet.GetByID(e.Peer)
+	if peer == nil {
+		s.Logger.Error("Empty peer (onPeerStatusChanged)", "peer", e.Peer.String())
+		return nil
+	}
+
+	// We treat ANY status other than Connected as disconnected
+	// Available statuses: [NotConnected, Connected, CanConnect, CannotConnect, Limited]
+	if e.Connectedness == network.Connected {
+		return s.ensurePeerProvisioned(peer)
+	}
+
+	reason := fmt.Sprintf("peer status changed to %s", e.Connectedness.String())
+
+	s.StopPeerForError(peer, reason)
 
 	return nil
 }

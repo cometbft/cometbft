@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/BurntSushi/toml"
+	"github.com/cometbft/cometbft/config"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
 )
@@ -25,15 +26,23 @@ type PeerConfig struct {
 	// Unconditional bool   `mapstructure:"unconditional"`
 }
 
-func AddressBookFromFilePath(filepath string) (*AddressBookConfig, error) {
-	raw, err := os.ReadFile(filepath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read address book file %q: %w", filepath, err)
+func AddressBookFromConfig(config *config.P2PConfig) (AddressBookConfig, error) {
+	return AddressBookFromFilePath(config.LibP2PAddressBookFile())
+}
+
+func AddressBookFromFilePath(filepath string) (AddressBookConfig, error) {
+	if filepath == "" {
+		return AddressBookConfig{}, fmt.Errorf("address book filepath is empty")
 	}
 
-	ab := &AddressBookConfig{}
-	if err := toml.Unmarshal(raw, ab); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal address book file %q: %w", filepath, err)
+	raw, err := os.ReadFile(filepath)
+	if err != nil {
+		return AddressBookConfig{}, fmt.Errorf("failed to read address book file %q: %w", filepath, err)
+	}
+
+	ab := AddressBookConfig{}
+	if err := toml.Unmarshal(raw, &ab); err != nil {
+		return AddressBookConfig{}, fmt.Errorf("failed to unmarshal address book file %q: %w", filepath, err)
 	}
 
 	return ab, nil

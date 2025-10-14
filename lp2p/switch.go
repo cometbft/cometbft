@@ -1,15 +1,17 @@
 package lp2p
 
 import (
+	"context"
 	"fmt"
 	"runtime/debug"
 	"sync"
+	"time"
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/cosmos/gogoproto/proto"
+	"github.com/libp2p/go-libp2p/core/event"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/pkg/errors"
@@ -40,7 +42,10 @@ type Switch struct {
 	descriptorByProtocolID map[protocol.ID]*p2p.ChannelDescriptor
 
 	// provisionedPeers represents set of peers that are added by reactors
+	// todo should it live within peerSet?
 	provisionedPeers map[p2p.ID]struct{}
+
+	eventBusSubscription event.Subscription
 
 	mu sync.RWMutex
 }
@@ -64,7 +69,7 @@ func NewSwitch(
 	host *Host,
 	reactors []ReactorItem,
 	logger log.Logger,
-) *Switch {
+) (*Switch, error) {
 	s := &Switch{
 		config:   cfg,
 		nodeInfo: nodeInfo,
@@ -87,7 +92,18 @@ func NewSwitch(
 		s.AddReactor(el.Name, el.Reactor)
 	}
 
-	return s
+	eventTypes := []any{
+		&event.EvtPeerConnectednessChanged{},
+	}
+
+	sub, err := s.host.EventBus().Subscribe(eventTypes)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to subscribe to event bus")
+	}
+
+	s.eventBusSubscription = sub
+
+	return s, nil
 }
 
 //--------------------------------
@@ -96,6 +112,13 @@ func NewSwitch(
 
 func (s *Switch) OnStart() error {
 	s.Logger.Info("Starting LibP2PSwitch")
+
+	go s.eventListener()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	ConnectPeers(ctx, s.host, s.host.ConfigPeers())
 
 	for _, el := range s.reactors {
 		name, reactor := el.Name, el.Reactor
@@ -133,6 +156,12 @@ func (s *Switch) OnStop() {
 	if err := s.host.Peerstore().Close(); err != nil {
 		s.Logger.Error("failed to close peerstore", "err", err)
 	}
+
+	if err := s.eventBusSubscription.Close(); err != nil {
+		s.Logger.Error("failed to close event bus subscription", "err", err)
+	}
+
+	// todo disconnect from config peers!
 }
 
 func (s *Switch) NodeInfo() p2p.NodeInfo {
@@ -509,42 +538,36 @@ func (s *Switch) deprovisionPeer(peer *Peer, reason any) error {
 	return nil
 }
 
-func marshalProto(msg proto.Message) ([]byte, error) {
-	// comet compatibility
-	// @see p2p/peer.go (*peer).send()
-	if w, ok := msg.(p2p.Wrapper); ok {
-		msg = w.Wrap()
-	}
+func (s *Switch) eventListener() {
+	defer func() {
+		if r := recover(); r != nil {
+			s.Logger.Error("Panic in (*lp2p.Switch).eventListener", "panic", r)
+		}
+	}()
 
-	payload, err := proto.Marshal(msg)
-	switch {
-	case err != nil:
-		return nil, errors.Wrapf(err, "failed to marshal proto")
-	case len(payload) == 0:
-		return nil, errors.New("payload is empty")
-	}
+	s.Logger.Info("Starting event listener")
 
-	return payload, nil
-}
-
-func unmarshalProto(descriptor *p2p.ChannelDescriptor, payload []byte) (proto.Message, error) {
-	var (
-		msg = proto.Clone(descriptor.MessageType)
-		err = proto.Unmarshal(payload, msg)
-	)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal message")
-	}
-
-	// comet compatibility
-	// @see p2p/peer.go createMConnection()
-	if w, ok := msg.(p2p.Unwrapper); ok {
-		msg, err = w.Unwrap()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to unwrap message")
+	for msg := range s.eventBusSubscription.Out() {
+		switch tt := msg.(type) {
+		case event.EvtPeerConnectednessChanged:
+			if err := s.onPeerStatusChanged(tt); err != nil {
+				s.Logger.Error(
+					"Failed to handle onPeerConnectednessChanged",
+					"err", err,
+					"peer", tt.Peer.String(),
+					"status", tt.Connectedness.String(),
+				)
+			}
+		default:
+			s.Logger.Error("Unknown event type skipped", "type", fmt.Sprintf("%T", tt))
 		}
 	}
+}
 
-	return msg, nil
+func (s *Switch) onPeerStatusChanged(e event.EvtPeerConnectednessChanged) error {
+	s.Logger.Info("Peer status update", "peer", e.Peer.String(), "status", e.Connectedness.String())
+
+	// todo: do something with peerSet (eg mark as (dis)connected)
+
+	return nil
 }

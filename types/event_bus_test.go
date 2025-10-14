@@ -431,7 +431,6 @@ func BenchmarkEventBus(b *testing.B) {
 	}
 
 	for _, bm := range benchmarks {
-		bm := bm
 		b.Run(bm.name, func(b *testing.B) {
 			benchmarkEventBus(bm.numClients, bm.randQueries, bm.randEvents, b)
 		})

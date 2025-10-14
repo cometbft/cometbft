@@ -24,11 +24,12 @@ type Peer struct {
 
 	addrInfo peer.AddrInfo
 	netAddr  *p2p.NetAddress
+	metrics  *p2p.Metrics
 }
 
 var _ p2p.Peer = (*Peer)(nil)
 
-func NewPeer(host *Host, addrInfo peer.AddrInfo) (*Peer, error) {
+func NewPeer(host *Host, addrInfo peer.AddrInfo, metrics *p2p.Metrics) (*Peer, error) {
 	netAddr, err := netAddressFromPeer(addrInfo)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse net address: %w", err)
@@ -38,6 +39,7 @@ func NewPeer(host *Host, addrInfo peer.AddrInfo) (*Peer, error) {
 		host:     host,
 		addrInfo: addrInfo,
 		netAddr:  netAddr,
+		metrics:  metrics,
 	}
 
 	p.BaseService = *service.NewBaseService(nil, "Peer", p)
@@ -95,11 +97,12 @@ func (p *Peer) CloseConn() error {
 	return p.host.Network().ClosePeer(p.addrInfo.ID)
 }
 
-func (p *Peer) send(e p2p.Envelope) error {
-	// todo implement
-	// - skip if not running (todo how to check that peer is running?)
-	// - skip if not having the channel (todo how to check that peer has the channel? do we need to check it at all?)
-	// - collect metrics
+func (p *Peer) send(e p2p.Envelope) (err error) {
+	if !p.IsRunning() {
+		return errors.New("peer is not running")
+	}
+
+	// todo: skip if not having the channel
 
 	peerID := p.addrInfo.ID
 	protocolID := ProtocolID(e.ChannelID)
@@ -109,24 +112,48 @@ func (p *Peer) send(e p2p.Envelope) error {
 		return err
 	}
 
+	var (
+		peerIDStr    = peerID.String()
+		messageType  = protoTypeName(e.Message)
+		payloadLen   = float64(len(payload))
+		metricLabels = []string{
+			"peer_id", peerIDStr,
+			"chID", fmt.Sprintf("%#x", e.ChannelID),
+		}
+
+		// note metric's name is misleading, it's a counter, not sum(bytes_pending)
+		pendingMessagesCounter = p.metrics.PeerPendingSendBytes.With("peer_id", peerIDStr)
+	)
+
+	pendingMessagesCounter.Add(1)
+
 	ctx, cancel := context.WithTimeout(context.Background(), TimeoutStream)
 	defer cancel()
 
 	start := time.Now()
 
+	defer func() {
+		if err != nil {
+			return
+		}
+
+		p.metrics.PeerSendBytesTotal.With(metricLabels...).Add(payloadLen)
+		p.metrics.MessageSendBytesTotal.With("message_type", messageType).Add(payloadLen)
+		pendingMessagesCounter.Add(-1)
+
+		p.Logger.Debug(
+			"sent envelope",
+			"protocol", protocolID,
+			"peer_id", peerIDStr,
+			"stream_opened_duration", time.Since(start).String(),
+		)
+	}()
+
+	// if no streams are available, it will block or return an error
 	s, err := p.host.NewStream(ctx, peerID, protocolID)
 	if err != nil {
 		return fmt.Errorf("failed to open stream %s: %w", protocolID, err)
 	}
-
-	defer func() {
-		p.Logger.Debug(
-			"sent envelope",
-			"protocol", protocolID,
-			"peer_id", peerID.String(),
-			"stream_opened_duration", time.Since(start).String(),
-		)
-	}()
 
 	return StreamWriteClose(s, payload)
 }
@@ -151,19 +178,21 @@ type PeerSet struct {
 	peers map[peer.ID]*Peer
 	mu    sync.RWMutex
 
-	logger log.Logger
+	metrics *p2p.Metrics
+	logger  log.Logger
 }
 
 var _ p2p.IPeerSet = (*PeerSet)(nil)
 
-func NewPeerSet(host *Host, logger log.Logger) *PeerSet {
+func NewPeerSet(host *Host, metrics *p2p.Metrics, logger log.Logger) *PeerSet {
 	const initialCapacity = 64
 
 	return &PeerSet{
-		host:   host,
-		peers:  make(map[peer.ID]*Peer, initialCapacity),
-		mu:     sync.RWMutex{},
-		logger: logger,
+		host:    host,
+		peers:   make(map[peer.ID]*Peer, initialCapacity),
+		mu:      sync.RWMutex{},
+		metrics: metrics,
+		logger:  logger,
 	}
 }
 
@@ -211,7 +240,7 @@ func (p *PeerSet) getOrAdd(id peer.ID) (*Peer, error) {
 		return nil, errors.New("peer has no addresses in peerstore")
 	}
 
-	peer, err := NewPeer(p.host, addrInfo)
+	peer, err := NewPeer(p.host, addrInfo, p.metrics)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create peer")
 	}

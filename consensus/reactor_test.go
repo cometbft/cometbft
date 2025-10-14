@@ -885,6 +885,14 @@ func TestNewValidBlockMessageValidateBasic(t *testing.T) {
 			func(msg *NewValidBlockMessage) { msg.BlockParts = bits.NewBitArray(int(types.MaxBlockPartsCount) + 1) },
 			"blockParts bit array size 1602 not equal to BlockPartSetHeader.Total 1",
 		},
+		{
+			func(msg *NewValidBlockMessage) { msg.BlockParts.Elems = nil },
+			"wrong BlockParts",
+		},
+		{
+			func(msg *NewValidBlockMessage) { msg.BlockParts.Bits = 500 },
+			"wrong BlockParts",
+		},
 	}
 
 	for i, tc := range testCases {
@@ -920,6 +928,14 @@ func TestProposalPOLMessageValidateBasic(t *testing.T) {
 		{
 			func(msg *ProposalPOLMessage) { msg.ProposalPOL = bits.NewBitArray(types.MaxVotesCount + 1) },
 			"proposalPOL bit array is too big: 10001, max: 10000",
+		},
+		{
+			func(msg *ProposalPOLMessage) { msg.ProposalPOL.Elems = nil },
+			"wrong ProposalPOL",
+		},
+		{
+			func(msg *ProposalPOLMessage) { msg.ProposalPOL.Bits = 500 },
+			"wrong ProposalPOL",
 		},
 	}
 
@@ -1076,6 +1092,14 @@ func TestVoteSetBitsMessageValidateBasic(t *testing.T) {
 		{
 			func(msg *VoteSetBitsMessage) { msg.Votes = bits.NewBitArray(types.MaxVotesCount + 1) },
 			"votes bit array is too big: 10001, max: 10000",
+		},
+		{
+			func(msg *VoteSetBitsMessage) { msg.Votes.Elems = nil },
+			"wrong Votes",
+		},
+		{
+			func(msg *VoteSetBitsMessage) { msg.Votes.Bits = 500 },
+			"wrong Votes",
 		},
 	}
 

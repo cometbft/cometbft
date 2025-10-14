@@ -36,18 +36,17 @@ func TestHost(t *testing.T) {
 	ports := utils.GetFreePorts(t, 2)
 
 	// Given two hosts that are connected to each other
-	host1 := makeTestHost(t, ports[0])
-	host2 := makeTestHost(t, ports[1], WithAddressBookConfig(&AddressBookConfig{
+	host1 := makeTestHost(t, ports[0], AddressBookConfig{})
+	host2 := makeTestHost(t, ports[1], AddressBookConfig{
 		Peers: []PeerConfig{
 			{
 				Host: fmt.Sprintf("127.0.0.1:%d", ports[0]),
 				ID:   host1.ID().String(),
 			},
 		},
-	}))
+	})
 
-	host1.InitializePeers(ctx)
-	host2.InitializePeers(ctx)
+	ConnectPeers(ctx, host2, host2.ConfigPeers())
 
 	t.Logf("host1: %+v", host1.AddrInfo())
 	t.Logf("host2: %+v", host2.AddrInfo())
@@ -193,7 +192,7 @@ func TestHost(t *testing.T) {
 	require.ElementsMatch(t, expectedEnvelopes, envelopes)
 }
 
-func makeTestHost(t *testing.T, port int, option ...Option) *Host {
+func makeTestHost(t *testing.T, port int, addressBook AddressBookConfig) *Host {
 	// config
 	config := config.DefaultP2PConfig()
 	config.RootDir = t.TempDir()
@@ -206,7 +205,7 @@ func makeTestHost(t *testing.T, port int, option ...Option) *Host {
 	pk := ed25519.GenPrivKey()
 
 	// lib p2p host
-	host, err := NewHost(config, pk, log.TestingLogger(), option...)
+	host, err := NewHost(config, pk, addressBook, log.TestingLogger())
 	require.NoError(t, err)
 
 	return host

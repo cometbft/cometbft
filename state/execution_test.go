@@ -1205,7 +1205,7 @@ func TestCacheCleanup(t *testing.T) {
 	)
 
 	// Set small cache size for testing
-	blockExec.SetMaxCacheSize(2)
+	blockExec.SetMaxCacheSize(1)
 
 	// Create test blocks
 	block1 := &types.Block{
@@ -1241,16 +1241,83 @@ func TestCacheCleanup(t *testing.T) {
 		},
 	}
 
-	// Fill cache beyond limit
+	// Fill cache beyond limit (need to exceed maxCacheSize * 2 = 2)
 	_ = blockExec.BuildLastCommitInfoFromStoreWithCache(block1, 1)
 	_ = blockExec.BuildLastCommitInfoFromStoreWithCache(block2, 1)
 	_ = blockExec.BuildLastCommitInfoFromStoreWithCache(block3, 1)
 
-	// Verify cache cleanup was triggered
-	validatorCacheSize, _ := blockExec.GetCacheSize()
+	// Add one more to trigger cleanup (total 4 > maxCacheSize * 2 = 2)
+	block4 := &types.Block{
+		Header: types.Header{Height: 5},
+		LastCommit: &types.Commit{
+			Height: 4,
+			Signatures: []types.CommitSig{
+				{
+					ValidatorAddress: val1.Address,
+					Timestamp:        time.Now(),
+					Signature:        []byte("signature4_1"),
+				},
+				{
+					ValidatorAddress: val2.Address,
+					Timestamp:        time.Now(),
+					Signature:        []byte("signature4_2"),
+				},
+			},
+		},
+	}
+	_ = blockExec.BuildLastCommitInfoFromStoreWithCache(block4, 1)
 
-	// Cache should be cleaned up to maxCacheSize/2
-	require.LessOrEqual(t, validatorCacheSize, 2) // maxCacheSize/2 + tolerance
+	// Add one more to ensure cleanup is triggered
+	block5 := &types.Block{
+		Header: types.Header{Height: 6},
+		LastCommit: &types.Commit{
+			Height: 5,
+			Signatures: []types.CommitSig{
+				{
+					ValidatorAddress: val1.Address,
+					Timestamp:        time.Now(),
+					Signature:        []byte("signature5_1"),
+				},
+				{
+					ValidatorAddress: val2.Address,
+					Timestamp:        time.Now(),
+					Signature:        []byte("signature5_2"),
+				},
+			},
+		},
+	}
+	_ = blockExec.BuildLastCommitInfoFromStoreWithCache(block5, 1)
+
+	// Add one more to exceed threshold (total 6 > maxCacheSize * 2 = 2)
+	block6 := &types.Block{
+		Header: types.Header{Height: 7},
+		LastCommit: &types.Commit{
+			Height: 6,
+			Signatures: []types.CommitSig{
+				{
+					ValidatorAddress: val1.Address,
+					Timestamp:        time.Now(),
+					Signature:        []byte("signature6_1"),
+				},
+				{
+					ValidatorAddress: val2.Address,
+					Timestamp:        time.Now(),
+					Signature:        []byte("signature6_2"),
+				},
+			},
+		},
+	}
+	_ = blockExec.BuildLastCommitInfoFromStoreWithCache(block6, 1)
+
+	// Verify cache cleanup was triggered
+	validatorCacheSize, abciValidatorCacheSize := blockExec.GetCacheSize()
+
+	// Validator cache should be cleaned up (cleared completely when over limit)
+	require.Equal(t, 0, validatorCacheSize) // Cache is cleared when over maxCacheSize * 2
+
+	// ABCI validator cache may still have entries as it uses different keys
+	// but should not exceed the threshold significantly
+	require.LessOrEqual(t, abciValidatorCacheSize, 4) // Reasonable upper bound
 }
 
 // BenchmarkBuildLastCommitInfoWithCache benchmarks the caching performance

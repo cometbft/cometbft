@@ -123,8 +123,9 @@ func (blockExec *BlockExecutor) SetMaxCacheSize(size int) {
 
 // cleanupOldCacheEntries removes old entries from caches to prevent memory leaks
 func (blockExec *BlockExecutor) cleanupOldCacheEntries() {
+	// Only cleanup if cache is significantly over the limit to avoid frequent cleanup
 	blockExec.validatorCacheMutex.Lock()
-	if len(blockExec.validatorCache) > blockExec.maxCacheSize {
+	if len(blockExec.validatorCache) > blockExec.maxCacheSize*2 {
 		// Simple cleanup: clear half of the cache
 		// Since Go maps don't guarantee iteration order, we'll clear the entire cache
 		// and let it rebuild naturally. This is simpler and avoids the FIFO issue.
@@ -133,7 +134,7 @@ func (blockExec *BlockExecutor) cleanupOldCacheEntries() {
 	blockExec.validatorCacheMutex.Unlock()
 
 	blockExec.abciValidatorCacheMutex.Lock()
-	if len(blockExec.abciValidatorCache) > blockExec.maxCacheSize {
+	if len(blockExec.abciValidatorCache) > blockExec.maxCacheSize*2 {
 		// Simple cleanup: clear half of the cache
 		// Since Go maps don't guarantee iteration order, we'll clear the entire cache
 		// and let it rebuild naturally. This is simpler and avoids the FIFO issue.

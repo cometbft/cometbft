@@ -537,25 +537,30 @@ func (blockExec *BlockExecutor) BuildLastCommitInfoFromStoreWithCache(block *typ
 
 	height := block.Height - 1
 
-	// Try to get validators from cache first
+	// Try to get validators from cache first with double-checked locking
 	blockExec.validatorCacheMutex.RLock()
 	lastValSet, found := blockExec.validatorCache[height]
 	blockExec.validatorCacheMutex.RUnlock()
 
 	if !found {
-		// Load from store and cache
+		// Load from store
 		var err error
 		lastValSet, err = blockExec.store.LoadValidators(height)
 		if err != nil {
 			panic(fmt.Errorf("failed to load validator set at height %d: %w", height, err))
 		}
 
-		// Cache the result
+		// Double-checked locking: acquire write lock and check again
 		blockExec.validatorCacheMutex.Lock()
-		blockExec.validatorCache[height] = lastValSet
+		// Check again in case another goroutine added it
+		if existingValSet, exists := blockExec.validatorCache[height]; exists {
+			lastValSet = existingValSet
+		} else {
+			blockExec.validatorCache[height] = lastValSet
+		}
 		blockExec.validatorCacheMutex.Unlock()
 
-		// Cleanup old cache entries if needed
+		// Cleanup old cache entries if needed (outside of lock to avoid deadlock)
 		blockExec.cleanupOldCacheEntries()
 	}
 
@@ -630,23 +635,29 @@ func (blockExec *BlockExecutor) BuildLastCommitInfoWithCache(block *types.Block,
 		// Use validator address as cache key (already computed)
 		cacheKey := string(val.Address)
 
-		// Try to get ABCI validator from cache
+		// Try to get ABCI validator from cache with double-checked locking
 		blockExec.abciValidatorCacheMutex.RLock()
 		abciVal, found := blockExec.abciValidatorCache[cacheKey]
 		blockExec.abciValidatorCacheMutex.RUnlock()
 
 		if !found {
-			// Convert to ABCI validator and cache
+			// Convert to ABCI validator
 			abciVal = abci.Validator{
 				Address: val.Address,
 				Power:   val.VotingPower,
 			}
 
+			// Double-checked locking: acquire write lock and check again
 			blockExec.abciValidatorCacheMutex.Lock()
-			blockExec.abciValidatorCache[cacheKey] = abciVal
+			// Check again in case another goroutine added it
+			if existingVal, exists := blockExec.abciValidatorCache[cacheKey]; exists {
+				abciVal = existingVal
+			} else {
+				blockExec.abciValidatorCache[cacheKey] = abciVal
+			}
 			blockExec.abciValidatorCacheMutex.Unlock()
 
-			// Cleanup old cache entries if needed
+			// Cleanup old cache entries if needed (outside of lock to avoid deadlock)
 			blockExec.cleanupOldCacheEntries()
 		}
 

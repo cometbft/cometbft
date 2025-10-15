@@ -27,8 +27,7 @@ func BenchmarkRepeatedLoadSeenCommitSameBlock(b *testing.B) {
 	res := bs.LoadSeenCommit(block.Height)
 	require.Equal(b, seenCommit, res)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		res := bs.LoadSeenCommit(block.Height)
 		require.NotNil(b, res)
 	}

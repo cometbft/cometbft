@@ -34,7 +34,7 @@ var manySlices = []struct {
 func BenchmarkSHA256Many(b *testing.B) {
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		for _, tt := range manySlices {
 			got := SumMany(tt.in[0], tt.in[1:]...)
 			if !bytes.Equal(got, tt.want[:]) {

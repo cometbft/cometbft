@@ -26,7 +26,7 @@ var innerHashTests = []*innerHashTest{
 func BenchmarkInnerHash(b *testing.B) {
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		for _, tt := range innerHashTests {
 			got := innerHash([]byte(tt.left), []byte(tt.right))
 			if g, w := len(got), sha256.Size; g != w {
@@ -49,7 +49,7 @@ func BenchmarkLeafHash64kb(b *testing.B) {
 	leaf := make([]byte, 64*1024)
 	hash := sha256.New()
 
-	for i := 0; i < b.N; i++ {
+	for i := 0; b.Loop(); i++ {
 		leaf[0] = byte(i)
 		got := leafHashOpt(hash, leaf)
 		if g, w := len(got), sha256.Size; g != w {

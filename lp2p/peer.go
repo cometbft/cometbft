@@ -29,7 +29,11 @@ type Peer struct {
 
 var _ p2p.Peer = (*Peer)(nil)
 
-func NewPeer(host *Host, addrInfo peer.AddrInfo, metrics *p2p.Metrics) (*Peer, error) {
+func NewPeer(
+	host *Host,
+	addrInfo peer.AddrInfo,
+	metrics *p2p.Metrics,
+) (*Peer, error) {
 	netAddr, err := netAddressFromPeer(addrInfo)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse net address: %w", err)
@@ -42,7 +46,10 @@ func NewPeer(host *Host, addrInfo peer.AddrInfo, metrics *p2p.Metrics) (*Peer, e
 		metrics:  metrics,
 	}
 
+	logger := host.Logger().With("peer_id", addrInfo.ID.String())
+
 	p.BaseService = *service.NewBaseService(nil, "Peer", p)
+	p.BaseService.SetLogger(logger)
 
 	return p, nil
 }

@@ -583,7 +583,6 @@ func (s *Switch) listenForEvents() {
 }
 
 // onPeerStatusChanged hooks to lib-p2p event bus and handles peer status changes
-// TODO test perturbations!
 func (s *Switch) onPeerStatusChanged(e event.EvtPeerConnectednessChanged) error {
 	s.Logger.Info("Peer status update", "peer", e.Peer.String(), "status", e.Connectedness.String())
 

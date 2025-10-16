@@ -100,6 +100,10 @@ func (h *Host) ConfigPeers() []peer.AddrInfo {
 	return h.configPeers
 }
 
+func (h *Host) Logger() log.Logger {
+	return h.logger
+}
+
 func ConnectPeers(ctx context.Context, h *Host, peers []peer.AddrInfo) {
 	if len(peers) == 0 {
 		h.logger.Info("No peers to connect to!")

@@ -49,7 +49,7 @@ func NewPeer(
 	logger := host.Logger().With("peer_id", addrInfo.ID.String())
 
 	p.BaseService = *service.NewBaseService(nil, "Peer", p)
-	p.BaseService.SetLogger(logger)
+	p.SetLogger(logger)
 
 	return p, nil
 }

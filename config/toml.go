@@ -330,6 +330,15 @@ allow_duplicate_ip = {{ .P2P.AllowDuplicateIP }}
 handshake_timeout = "{{ .P2P.HandshakeTimeout }}"
 dial_timeout = "{{ .P2P.DialTimeout }}"
 
+# Experimental: configuration for go-libp2p
+[p2p.libp2p]
+
+# Enabled set true to use go-libp2p for networking instead of CometBFT's p2p.
+enabled = {{ .P2P.LibP2PConfig.Enabled }}
+
+# Path to address book .toml file
+address_book_file = "{{ .P2P.LibP2PConfig.AddressBook }}"
+
 #######################################################
 ###          Mempool Configuration Option          ###
 #######################################################

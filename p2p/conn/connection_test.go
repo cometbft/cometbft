@@ -577,7 +577,6 @@ func TestConnVectors(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 
 		pm := mustWrapPacket(tc.msg)
 		bz, err := pm.Marshal()

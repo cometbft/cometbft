@@ -30,7 +30,6 @@ func TestBlockMeta_ToProto(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.testName, func(t *testing.T) {
 			pb := tt.bm.ToProto()
 
@@ -89,7 +88,6 @@ func TestBlockMeta_ValidateBasic(t *testing.T) {
 		{"failure wrong length blockID hash", bm3, true},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			if err := tt.bm.ValidateBasic(); (err != nil) != tt.wantErr {
 				t.Errorf("BlockMeta.ValidateBasic() error = %v, wantErr %v", err, tt.wantErr)

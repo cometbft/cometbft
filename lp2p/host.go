@@ -55,9 +55,7 @@ func NewHost(
 		return nil, fmt.Errorf("failed to decode peers from address book: %w", err)
 	}
 
-	// Hard-coded opts for QUIC transport.
-	// TODO: make configurable
-	// todo: add support for libp2p.ResourceManager() default from json and then couple of options to override
+	// todo: add support for libp2p.ResourceManager() based on p2p.lp2p toml config
 	// todo: add support for libp2p.BandwidthReporter()
 	opts := []libp2p.Option{
 		libp2p.Identity(privateKey),

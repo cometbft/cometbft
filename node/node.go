@@ -452,7 +452,7 @@ func NewNodeWithContext(
 	// true by default. Otherwise, uses libp2p
 	useCometNetworking := !config.P2P.LibP2PEnabled()
 
-	if useCometNetworking && config.P2P.PexReactor {
+	if config.P2P.PexReactor && !useCometNetworking {
 		config.P2P.PexReactor = false
 		logger.Info("PEX reactor is disabled when using go-libp2p transport")
 	}

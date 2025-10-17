@@ -566,7 +566,7 @@ func NewByzantineReactor(conR *Reactor) *ByzantineReactor {
 	}
 }
 
-func (br *ByzantineReactor) SetSwitch(s *p2p.Switch)               { br.reactor.SetSwitch(s) }
+func (br *ByzantineReactor) SetSwitch(s p2p.Switcher)              { br.reactor.SetSwitch(s) }
 func (br *ByzantineReactor) GetChannels() []*p2p.ChannelDescriptor { return br.reactor.GetChannels() }
 func (br *ByzantineReactor) AddPeer(peer p2p.Peer) {
 	if !br.reactor.IsRunning() {
@@ -628,7 +628,7 @@ func TestRejectOversizedProposals(t *testing.T) {
 		return switches[i]
 	}, p2p.Connect2Switches)
 
-	peers := switches[0].Peers().List()
+	peers := switches[0].Peers().Copy()
 	targetPeer := peers[0]
 
 	height := int64(1)

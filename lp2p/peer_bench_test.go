@@ -3,9 +3,7 @@ package lp2p
 import (
 	"context"
 	"fmt"
-	"os"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,8 +18,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const envBench = "LP2P_BENCH_TEST"
-
 type lp2pUnidirectionalConfig struct {
 	duration        time.Duration
 	sendConcurrency int
@@ -32,7 +28,7 @@ type lp2pUnidirectionalConfig struct {
 // from peer A to peer B in a single direction. The payload only contains a timestamp,
 // so we can measure e2e latency.
 func TestBenchLP2PUnidirectional(t *testing.T) {
-	guardBench(t)
+	utils.GuardP2PBenchTest(t)
 
 	for _, tt := range []lp2pUnidirectionalConfig{
 		{
@@ -252,51 +248,6 @@ LOOP:
 	t.Logf("  success: %d, failure: %d", receiveSuccesses.Load(), receiveFailures.Load())
 	t.Logf("  receive RPS: %.0f", float64(receiveSuccesses.Load())/cfg.duration.Seconds())
 
-	require.NotEmpty(t, receiveLatencies)
-	sort.Slice(receiveLatencies, func(i, j int) bool {
-		return receiveLatencies[i] < receiveLatencies[j]
-	})
-
-	t.Log("Receive latency:")
-	t.Logf(
-		"  min: %s, p50: %s, p90: %s, p95: %s, p99: %s, max: %s",
-		receiveLatencies[0].String(),
-		percentile(receiveLatencies, 50).String(),
-		percentile(receiveLatencies, 90).String(),
-		percentile(receiveLatencies, 95).String(),
-		percentile(receiveLatencies, 99).String(),
-		receiveLatencies[len(receiveLatencies)-1].String(),
-	)
-
-	require.NotEmpty(t, processLatencies)
-	sort.Slice(processLatencies, func(i, j int) bool {
-		return processLatencies[i] < processLatencies[j]
-	})
-
-	t.Log("Process latency:")
-	t.Logf(
-		"  min: %s, p50: %s, p90: %s, p95: %s, p99: %s, max: %s",
-		processLatencies[0].String(),
-		percentile(processLatencies, 50).String(),
-		percentile(processLatencies, 90).String(),
-		percentile(processLatencies, 95).String(),
-		percentile(processLatencies, 99).String(),
-		processLatencies[len(processLatencies)-1].String(),
-	)
-}
-
-func percentile(durations []time.Duration, p float64) time.Duration {
-	if len(durations) == 0 {
-		return 0
-	}
-
-	idx := int(float64(len(durations)-1) * p / 100.0)
-
-	return durations[idx]
-}
-
-func guardBench(t *testing.T) {
-	if os.Getenv(envBench) == "" {
-		t.Skip("LP2P_BENCH_TEST is not set")
-	}
+	utils.LogDurationStats(t, "Receive latency:", receiveLatencies)
+	utils.LogDurationStats(t, "Process latency:", processLatencies)
 }

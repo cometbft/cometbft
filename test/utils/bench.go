@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"math"
 	"os"
 	"sort"
 	"testing"
@@ -36,11 +37,27 @@ func LogDurationStats(t *testing.T, title string, durations []time.Duration) {
 }
 
 func percentile(durations []time.Duration, p float64) time.Duration {
-	if len(durations) == 0 {
+	switch {
+	case len(durations) == 0:
 		return 0
+	case p <= 0:
+		return durations[0]
+	case p >= 100:
+		return durations[len(durations)-1]
 	}
 
-	idx := int(float64(len(durations)-1) * p / 100.0)
+	rank := (p / 100) * float64(len(durations)-1)
+	low := int(math.Floor(rank))
+	high := int(math.Ceil(rank))
 
-	return durations[idx]
+	if low == high {
+		return durations[low]
+	}
+
+	// linear interpolation between low and high
+	weight := rank - float64(low)
+	dLow := float64(durations[low])
+	dHigh := float64(durations[high])
+
+	return time.Duration(dLow + (dHigh-dLow)*weight)
 }

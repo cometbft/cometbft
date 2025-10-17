@@ -83,14 +83,14 @@ func testBenchP2PUnidirectional(t *testing.T, cfg p2pUnidirectionalConfig) {
 	p2pCfg := config.DefaultP2PConfig()
 	p2pCfg.AddrBookStrict = true
 
-	// todo
+	// uncomment to see the difference in results :)
 	// p2pCfg.SendRate = bandwidth
 	// p2pCfg.RecvRate = bandwidth
 
 	muxConnConfig := conn.DefaultMConnConfig()
 
-	// todo
-	// muxConnConfig := conn.MConnConfig{
+	// uncomment to see the difference in results :)
+	// muxConnConfig = conn.MConnConfig{
 	// SendRate:                bandwidth,
 	// RecvRate:                bandwidth,
 	// MaxPacketMsgPayloadSize: bandwidth,
@@ -137,8 +137,6 @@ func testBenchP2PUnidirectional(t *testing.T, cfg p2pUnidirectionalConfig) {
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.duration)
 	defer cancel()
 
-	t.Log("Sending messages...")
-
 	var (
 		start = time.Now()
 
@@ -146,7 +144,9 @@ func testBenchP2PUnidirectional(t *testing.T, cfg p2pUnidirectionalConfig) {
 		sendFailures  = atomic.Uint64{}
 
 		receiveSuccesses = atomic.Uint64{}
-		receiveFailures  = atomic.Uint64{}
+
+		// in this test we can't calc. receive failures (happens in conn. level)
+		// receiveFailures  = atomic.Uint64{}
 
 		receiveLatencies = make([]time.Duration, 0, 10_000)
 		processLatencies = make([]time.Duration, 0, 10_000)
@@ -178,12 +178,6 @@ func testBenchP2PUnidirectional(t *testing.T, cfg p2pUnidirectionalConfig) {
 
 	go func() {
 		for record := range recipientReactor.sink {
-			// todo
-			// if record.err != nil {
-			// receiveFailures.Add(1)
-			// continue
-			// }
-
 			receiveSuccesses.Add(1)
 
 			req, ok := record.payload.(*types.RequestEcho)
@@ -199,8 +193,12 @@ func testBenchP2PUnidirectional(t *testing.T, cfg p2pUnidirectionalConfig) {
 			processLatencies = append(processLatencies, record.processedAt.Sub(sentAt))
 		}
 
+		t.Logf("Finished receiver goroutine")
+
 		close(waitProcessing)
 	}()
+
+	t.Log("Sending messages...")
 
 LOOP:
 	for {
@@ -228,6 +226,7 @@ LOOP:
 		}
 	}
 
+	time.Sleep(time.Second)
 	<-waitProcessing
 
 	// ASSERT
@@ -237,9 +236,13 @@ LOOP:
 	t.Logf("  success: %d, failure %d", sendSuccesses.Load(), sendFailures.Load())
 	t.Logf("  send RPS: %.0f", float64(sendSuccesses.Load())/timeTaken.Seconds())
 
-	t.Logf("Received messages: %d", receiveSuccesses.Load()+receiveFailures.Load())
-	t.Logf("  success: %d, failure: %d", receiveSuccesses.Load(), receiveFailures.Load())
+	t.Logf("Received messages: %d", receiveSuccesses.Load())
 	t.Logf("  receive RPS: %.0f", float64(receiveSuccesses.Load())/timeTaken.Seconds())
+
+	messagesLost := sendSuccesses.Load() - receiveSuccesses.Load()
+	messageLossPercentage := float64(messagesLost) / float64(sendSuccesses.Load()+sendFailures.Load()) * 100
+
+	t.Logf("Messages lost: %d (%.3f%%)", int64(messagesLost), messageLossPercentage)
 
 	utils.LogDurationStats(t, "Receive latency:", receiveLatencies)
 	utils.LogDurationStats(t, "Process latency:", processLatencies)
@@ -338,7 +341,14 @@ func NewBenchReactor(t *testing.T, channelID byte, receiveDelay time.Duration) *
 
 func (r *BenchReactor) GetChannels() []*conn.ChannelDescriptor {
 	return []*conn.ChannelDescriptor{
-		{ID: r.channelID, Priority: 1, MessageType: &types.RequestEcho{}},
+		{
+			ID:                  r.channelID,
+			Priority:            1,
+			MessageType:         &types.RequestEcho{},
+			SendQueueCapacity:   1_000_000,
+			RecvBufferCapacity:  100 * (1 << 20),
+			RecvMessageCapacity: 1_000_000,
+		},
 	}
 }
 

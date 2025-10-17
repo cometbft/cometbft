@@ -89,6 +89,9 @@ func testBenchLP2PUnidirectional(t *testing.T, cfg lp2pUnidirectionalConfig) {
 		},
 	}, false)
 
+	t.Logf("host1: %+v", host1.AddrInfo().String())
+	t.Logf("host2: %+v", host2.AddrInfo().String())
+
 	ConnectPeers(ctx, host2, host2.ConfigPeers())
 	t.Cleanup(func() {
 		host2.Close()
@@ -118,6 +121,7 @@ func testBenchLP2PUnidirectional(t *testing.T, cfg lp2pUnidirectionalConfig) {
 	defer cancel()
 
 	var (
+		start         = time.Now()
 		sendSuccesses = atomic.Uint64{}
 		sendFailures  = atomic.Uint64{}
 
@@ -163,6 +167,28 @@ func testBenchLP2PUnidirectional(t *testing.T, cfg lp2pUnidirectionalConfig) {
 		}
 	})
 
+	sendFunc := func() {
+		nowStr := strconv.FormatInt(time.Now().UnixMicro(), 10)
+		msg := types.ToRequestEcho(nowStr)
+
+		sent := host2peer1.Send(p2p.Envelope{
+			ChannelID: channelFoo,
+			Message:   msg,
+		})
+
+		if sent {
+			sendSuccesses.Add(1)
+		} else {
+			sendFailures.Add(1)
+		}
+	}
+
+	finish := func() {
+		t.Logf("Finished. Waiting for processing to complete. Current sink size: %d", len(sink))
+		close(sink)
+		<-waitProcessing
+	}
+
 	// Run a routine to receive messages from host1
 	go func() {
 		for record := range sink {
@@ -186,30 +212,12 @@ func testBenchLP2PUnidirectional(t *testing.T, cfg lp2pUnidirectionalConfig) {
 			processLatencies = append(processLatencies, record.processedAt.Sub(sentAt))
 		}
 
+		t.Logf("Finished receiver goroutine")
+
 		close(waitProcessing)
 	}()
 
-	sendFunc := func() {
-		nowStr := strconv.FormatInt(time.Now().UnixMicro(), 10)
-		msg := types.ToRequestEcho(nowStr)
-
-		sent := host2peer1.Send(p2p.Envelope{
-			ChannelID: channelFoo,
-			Message:   msg,
-		})
-
-		if sent {
-			sendSuccesses.Add(1)
-		} else {
-			sendFailures.Add(1)
-		}
-	}
-
-	finish := func() {
-		t.Logf("Finished. Waiting for processing to complete. Current sink size: %d", len(sink))
-		close(sink)
-		<-waitProcessing
-	}
+	t.Log("Sending messages...")
 
 LOOP:
 	for {
@@ -240,13 +248,20 @@ LOOP:
 	<-waitProcessing
 
 	// ASSERT
+	timeTaken := time.Since(start)
+
 	t.Logf("Sent messages: %d", sendSuccesses.Load()+sendFailures.Load())
 	t.Logf("  success: %d, failure %d", sendSuccesses.Load(), sendFailures.Load())
-	t.Logf("  send RPS: %.0f", float64(sendSuccesses.Load())/cfg.duration.Seconds())
+	t.Logf("  send RPS: %.0f", float64(sendSuccesses.Load())/timeTaken.Seconds())
 
 	t.Logf("Received messages: %d", receiveSuccesses.Load()+receiveFailures.Load())
 	t.Logf("  success: %d, failure: %d", receiveSuccesses.Load(), receiveFailures.Load())
-	t.Logf("  receive RPS: %.0f", float64(receiveSuccesses.Load())/cfg.duration.Seconds())
+	t.Logf("  receive RPS: %.0f", float64(receiveSuccesses.Load())/timeTaken.Seconds())
+
+	messagesLost := sendSuccesses.Load() - receiveSuccesses.Load() - receiveFailures.Load()
+	messageLossPercentage := float64(messagesLost) / float64(sendSuccesses.Load()+sendFailures.Load()) * 100
+
+	t.Logf("Messages lost: %d (%.3f%%)", int64(messagesLost), messageLossPercentage)
 
 	utils.LogDurationStats(t, "Receive latency:", receiveLatencies)
 	utils.LogDurationStats(t, "Process latency:", processLatencies)

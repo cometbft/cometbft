@@ -207,6 +207,8 @@ func makeTestHost(
 	config.ExternalAddress = fmt.Sprintf("127.0.0.1:%d", port)
 
 	config.LibP2PConfig.Enabled = true
+
+	// toggle off to enable default resource manager
 	config.LibP2PConfig.DisableResourceManager = true
 
 	// private key

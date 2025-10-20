@@ -6,6 +6,9 @@
 
 ### BUG FIXES
 
+- `[types]` fix: correct LightClientAttackEvidence.Hash off-by-one; add regression test
+([#5418](https://github.com/cometbft/cometbft/pull/5418))
+
 ### IMPROVEMENTS
 -  `[mempool]` perf(mempool/cache): Optimize LRUTxCache.Remove to reduce lock contention and map access
    ([\#5244](https://github.com/cometbft/cometbft/pull/5244))

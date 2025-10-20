@@ -107,7 +107,7 @@ func testBenchP2PUnidirectional(t *testing.T, cfg p2pUnidirectionalConfig) {
 	// With relevant switch ...
 	recipientSwitch := createSwitchWithReactor(t, p2pCfg, muxConnConfig, "recipient", recipientReactor, logger)
 	require.NoError(t, recipientSwitch.Start())
-	defer recipientSwitch.Stop()
+	defer func() { require.NoError(t, recipientSwitch.Stop()) }()
 
 	recipientAddr := recipientSwitch.NetAddress()
 	t.Logf("Recipient listening at: %s", recipientAddr.String())
@@ -118,7 +118,7 @@ func testBenchP2PUnidirectional(t *testing.T, cfg p2pUnidirectionalConfig) {
 
 	senderSwitch := createSwitchWithReactor(t, p2pCfg, muxConnConfig, "sender", stubReactor, logger)
 	require.NoError(t, senderSwitch.Start())
-	defer senderSwitch.Stop()
+	defer func() { require.NoError(t, senderSwitch.Stop()) }()
 
 	t.Logf("Sender listening at: %s", senderSwitch.NetAddress().String())
 
@@ -185,7 +185,7 @@ func testBenchP2PUnidirectional(t *testing.T, cfg p2pUnidirectionalConfig) {
 
 			msg := strings.TrimLeft(req.Message, "\n\x10")
 			i64, err := strconv.ParseInt(msg, 10, 64)
-			require.NoError(t, err, "invalid i64: %s", string(msg))
+			require.NoError(t, err, "invalid i64: %s", msg)
 
 			sentAt := time.UnixMicro(i64)
 

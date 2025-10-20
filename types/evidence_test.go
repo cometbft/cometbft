@@ -121,7 +121,7 @@ func TestLightClientAttackEvidenceBasic(t *testing.T) {
 	assert.Equal(t, lcae.Height(), commonHeight) // Height should be the common Height
 	assert.NotNil(t, lcae.Bytes())
 
-	// malleate evidence to test hash uniqueness
+	// maleate evidence to test hash uniqueness
 	testCases := []struct {
 		testName         string
 		malleateEvidence func(*LightClientAttackEvidence)
@@ -226,6 +226,46 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLightClientAttackEvidenceHashComposition(t *testing.T) {
+    height := int64(7)
+    commonHeight := height - 2
+    nValidators := 4
+
+    voteSet, valSet, privVals := randVoteSet(height, 1, cmtproto.PrecommitType, nValidators, 1, false)
+    header := makeHeaderRandom()
+    header.Height = height
+    header.ValidatorsHash = valSet.Hash()
+    blockID := makeBlockID(header.Hash(), math.MaxInt32, tmhash.Sum([]byte("partshash")))
+    extCommit, err := MakeExtCommit(blockID, height, 1, voteSet, privVals, time.Now(), false)
+    require.NoError(t, err)
+    commit := extCommit.ToCommit()
+
+    ev := &LightClientAttackEvidence{
+        ConflictingBlock: &LightBlock{
+            SignedHeader: &SignedHeader{Header: header, Commit: commit},
+            ValidatorSet: valSet,
+        },
+        CommonHeight:        commonHeight,
+        TotalVotingPower:    valSet.TotalVotingPower(),
+        Timestamp:           header.Time,
+        ByzantineValidators: valSet.Validators[:nValidators/2],
+    }
+
+    got := ev.Hash()
+
+    // Build expected hash = sha256( headerHash || varint(commonHeight) )
+    buf := make([]byte, binary.MaxVarintLen64)
+    n := binary.PutVarint(buf, commonHeight)
+    headerHash := ev.ConflictingBlock.Hash().Bytes()
+    correct := tmhash.Sum(append(append([]byte{}, headerHash[:]...), buf[:n]...))
+
+    // Buggy (pre-fix) version used only first 31 bytes of header hash
+    buggy := tmhash.Sum(append(append([]byte{}, headerHash[:tmhash.Size-1]...), buf[:n]...))
+
+    require.Equal(t, correct, got, "hash must be computed from full header hash and commonHeight")
+    require.NotEqual(t, buggy, got, "hash must not match the off-by-one (31-byte) composition")
 }
 
 func TestMockEvidenceValidateBasic(t *testing.T) {

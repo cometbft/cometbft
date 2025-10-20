@@ -582,7 +582,6 @@ func TestSwitchFullConnectivity(t *testing.T) {
 	switches := MakeConnectedSwitches(cfg, 3, initSwitchFunc, Connect2Switches)
 	defer func() {
 		for _, sw := range switches {
-			sw := sw
 			t.Cleanup(func() {
 				if err := sw.Stop(); err != nil {
 					t.Error(err)

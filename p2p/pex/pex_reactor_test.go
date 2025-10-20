@@ -705,7 +705,6 @@ func TestPexVectors(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 
 		w := tc.msg.(p2p.Wrapper).Wrap()
 		bz, err := proto.Marshal(w)

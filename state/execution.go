@@ -90,7 +90,7 @@ func NewBlockExecutor(
 		blockStore:         blockStore,
 		validatorCache:     make(map[int64]*types.ValidatorSet),
 		abciValidatorCache: make(map[string]abci.Validator),
-		maxCacheSize:       1000, // Limit cache size to prevent memory leaks
+		maxCacheSize:       2000, // Limit cache size to prevent memory leaks
 	}
 
 	for _, option := range options {
@@ -123,24 +123,41 @@ func (blockExec *BlockExecutor) SetMaxCacheSize(size int) {
 
 // cleanupOldCacheEntries removes old entries from caches to prevent memory leaks
 func (blockExec *BlockExecutor) cleanupOldCacheEntries() {
-	// Only cleanup if cache is significantly over the limit to avoid frequent cleanup
-	blockExec.validatorCacheMutex.Lock()
-	if len(blockExec.validatorCache) > blockExec.maxCacheSize*2 {
-		// Simple cleanup: clear half of the cache
-		// Since Go maps don't guarantee iteration order, we'll clear the entire cache
-		// and let it rebuild naturally. This is simpler and avoids the FIFO issue.
-		blockExec.validatorCache = make(map[int64]*types.ValidatorSet)
-	}
-	blockExec.validatorCacheMutex.Unlock()
+	// Check validator cache size with read lock first
+	blockExec.validatorCacheMutex.RLock()
+	validatorCacheSize := len(blockExec.validatorCache)
+	blockExec.validatorCacheMutex.RUnlock()
 
-	blockExec.abciValidatorCacheMutex.Lock()
-	if len(blockExec.abciValidatorCache) > blockExec.maxCacheSize*2 {
-		// Simple cleanup: clear half of the cache
-		// Since Go maps don't guarantee iteration order, we'll clear the entire cache
-		// and let it rebuild naturally. This is simpler and avoids the FIFO issue.
-		blockExec.abciValidatorCache = make(map[string]abci.Validator)
+	if validatorCacheSize > blockExec.maxCacheSize {
+		// Only acquire write lock when we actually need to clean up
+		blockExec.validatorCacheMutex.Lock()
+		// Double-check in case another goroutine cleaned it up
+		if len(blockExec.validatorCache) > blockExec.maxCacheSize {
+			// Simple cleanup: clear the entire cache
+			// Since Go maps don't guarantee iteration order, we'll clear the entire cache
+			// and let it rebuild naturally. This is simpler and avoids the FIFO issue.
+			blockExec.validatorCache = make(map[int64]*types.ValidatorSet)
+		}
+		blockExec.validatorCacheMutex.Unlock()
 	}
-	blockExec.abciValidatorCacheMutex.Unlock()
+
+	// Check ABCI validator cache size with read lock first
+	blockExec.abciValidatorCacheMutex.RLock()
+	abciValidatorCacheSize := len(blockExec.abciValidatorCache)
+	blockExec.abciValidatorCacheMutex.RUnlock()
+
+	if abciValidatorCacheSize > blockExec.maxCacheSize {
+		// Only acquire write lock when we actually need to clean up
+		blockExec.abciValidatorCacheMutex.Lock()
+		// Double-check in case another goroutine cleaned it up
+		if len(blockExec.abciValidatorCache) > blockExec.maxCacheSize {
+			// Simple cleanup: clear the entire cache
+			// Since Go maps don't guarantee iteration order, we'll clear the entire cache
+			// and let it rebuild naturally. This is simpler and avoids the FIFO issue.
+			blockExec.abciValidatorCache = make(map[string]abci.Validator)
+		}
+		blockExec.abciValidatorCacheMutex.Unlock()
+	}
 }
 
 // SetEventBus - sets the event bus for publishing block related events.
@@ -538,7 +555,7 @@ func (blockExec *BlockExecutor) BuildLastCommitInfoFromStoreWithCache(block *typ
 
 	height := block.Height - 1
 
-	// Try to get validators from cache first with double-checked locking
+	// Try to get validators from cache first
 	blockExec.validatorCacheMutex.RLock()
 	lastValSet, found := blockExec.validatorCache[height]
 	blockExec.validatorCacheMutex.RUnlock()
@@ -551,14 +568,9 @@ func (blockExec *BlockExecutor) BuildLastCommitInfoFromStoreWithCache(block *typ
 			panic(fmt.Errorf("failed to load validator set at height %d: %w", height, err))
 		}
 
-		// Double-checked locking: acquire write lock and check again
+		// Store in cache
 		blockExec.validatorCacheMutex.Lock()
-		// Check again in case another goroutine added it
-		if existingValSet, exists := blockExec.validatorCache[height]; exists {
-			lastValSet = existingValSet
-		} else {
-			blockExec.validatorCache[height] = lastValSet
-		}
+		blockExec.validatorCache[height] = lastValSet
 		blockExec.validatorCacheMutex.Unlock()
 
 		// Cleanup old cache entries if needed (outside of lock to avoid deadlock)
@@ -636,7 +648,7 @@ func (blockExec *BlockExecutor) BuildLastCommitInfoWithCache(block *types.Block,
 		// Use validator address as cache key (already computed)
 		cacheKey := string(val.Address)
 
-		// Try to get ABCI validator from cache with double-checked locking
+		// Try to get ABCI validator from cache
 		blockExec.abciValidatorCacheMutex.RLock()
 		abciVal, found := blockExec.abciValidatorCache[cacheKey]
 		blockExec.abciValidatorCacheMutex.RUnlock()
@@ -648,14 +660,9 @@ func (blockExec *BlockExecutor) BuildLastCommitInfoWithCache(block *types.Block,
 				Power:   val.VotingPower,
 			}
 
-			// Double-checked locking: acquire write lock and check again
+			// Store in cache
 			blockExec.abciValidatorCacheMutex.Lock()
-			// Check again in case another goroutine added it
-			if existingVal, exists := blockExec.abciValidatorCache[cacheKey]; exists {
-				abciVal = existingVal
-			} else {
-				blockExec.abciValidatorCache[cacheKey] = abciVal
-			}
+			blockExec.abciValidatorCache[cacheKey] = abciVal
 			blockExec.abciValidatorCacheMutex.Unlock()
 
 			// Cleanup old cache entries if needed (outside of lock to avoid deadlock)

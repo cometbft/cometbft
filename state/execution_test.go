@@ -1230,6 +1230,7 @@ func TestCacheCleanup(t *testing.T) {
 		},
 	}
 
+
 	// Fill cache beyond limit (need to exceed maxCacheSize = 1)
 	_ = blockExec.BuildLastCommitInfoFromStoreWithCache(block1, 1)
 	_ = blockExec.BuildLastCommitInfoFromStoreWithCache(block2, 1)

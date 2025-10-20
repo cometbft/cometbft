@@ -323,7 +323,7 @@ func (l *LightClientAttackEvidence) Hash() []byte {
 	buf := make([]byte, binary.MaxVarintLen64)
 	n := binary.PutVarint(buf, l.CommonHeight)
 	bz := make([]byte, tmhash.Size+n)
-    copy(bz[:tmhash.Size], l.ConflictingBlock.Hash().Bytes())
+	copy(bz[:tmhash.Size], l.ConflictingBlock.Hash().Bytes())
 	copy(bz[tmhash.Size:], buf)
 	return tmhash.Sum(bz)
 }

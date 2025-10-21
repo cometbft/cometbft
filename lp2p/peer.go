@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"runtime/debug"
 	"sync"
 	"time"
 
@@ -216,13 +215,14 @@ func (p *PeerSet) Has(key p2p.ID) bool {
 func (p *PeerSet) GetByID(id peer.ID) p2p.Peer {
 	peer, err := p.getOrAdd(id)
 	if err != nil {
-		p.logger.Error("PeerSet.Get failed", "peer_id", id.String(), "err", err)
+		p.logger.Error("PeerSet.GetByID failed", "peer_id", id.String(), "err", err)
 		return nil
 	}
 
 	return peer
 }
 
+// Get returns the peer with the given key, or nil if not found.
 func (p *PeerSet) Get(key p2p.ID) p2p.Peer {
 	id := p.keyToPeerID(key)
 	if id == "" {
@@ -358,10 +358,6 @@ func (p *PeerSet) cacheSet(peer *Peer) *Peer {
 
 func (p *PeerSet) keyToPeerID(key p2p.ID) peer.ID {
 	if key == "" {
-		// todo drop debug
-		// todo this might happen because some reactors treat self as "" peer id
-		stack := string(debug.Stack())
-		p.logger.Debug("Attempt to get an empty peer id", "stack", stack)
 		return ""
 	}
 

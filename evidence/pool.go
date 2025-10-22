@@ -8,9 +8,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	cmterrors "github.com/cometbft/cometbft/types/errors"
 	"github.com/cosmos/gogoproto/proto"
 	gogotypes "github.com/cosmos/gogoproto/types"
+
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 
 	dbm "github.com/cometbft/cometbft-db"
 
@@ -525,7 +526,7 @@ func (evpool *Pool) processConsensusBuffer(state sm.State) {
 		}
 
 		if err := evpool.addPendingEvidence(dve); err != nil {
-			evpool.logger.Error("failed to flush evidence from consensus buffer to pending list: %w", err)
+			evpool.logger.Error("failed to flush evidence from consensus buffer to pending list", "err", err)
 			continue
 		}
 

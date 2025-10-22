@@ -34,6 +34,7 @@ type item struct {
 // New Service constructor.
 func New(ctx context.Context, host host.Host, logger log.Logger) (*Service, error) {
 	// todo configure options
+	// todo explore: https://github.com/OffchainLabs/prysm/blob/2f090c52d9220bbf6cb91f7eeb192dcfe88a3bc0/beacon-chain/p2p/pubsub.go#L136
 	pubSub, err := pubsub.NewGossipSub(ctx, host)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create gossip sub")

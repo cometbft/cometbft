@@ -110,12 +110,12 @@ func NewSwitch(
 
 	s.eventBusSubscription = sub
 
-	gossipRegistry, err := gossip.New(ctx, s.host, s.Logger)
+	gossipService, err := gossip.New(ctx, s.host, s.Logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create gossip registry")
 	}
 
-	s.gossip = gossipRegistry
+	s.gossip = gossipService
 
 	for _, el := range reactors {
 		s.AddReactor(el.Name, el.Reactor)

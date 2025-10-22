@@ -10,7 +10,9 @@ import (
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/lp2p/gossip"
 	"github.com/cometbft/cometbft/p2p"
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/event"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
@@ -47,6 +49,8 @@ type Switch struct {
 
 	eventBusSubscription event.Subscription
 
+	gossip *gossip.Service
+
 	metrics *p2p.Metrics
 
 	mu sync.RWMutex
@@ -65,6 +69,7 @@ var ErrUnsupportedPeerFormat = errors.New("unsupported peer format")
 
 // NewSwitch constructs a new Switch.
 func NewSwitch(
+	ctx context.Context,
 	cfg *config.P2PConfig,
 	nodeKey *p2p.NodeKey,
 	nodeInfo p2p.NodeInfo,
@@ -94,10 +99,6 @@ func NewSwitch(
 	base := service.NewBaseService(logger, "LibP2P Switch", s)
 	s.BaseService = *base
 
-	for _, el := range reactors {
-		s.AddReactor(el.Name, el.Reactor)
-	}
-
 	eventTypes := []any{
 		&event.EvtPeerConnectednessChanged{},
 	}
@@ -109,6 +110,17 @@ func NewSwitch(
 
 	s.eventBusSubscription = sub
 
+	gossipService, err := gossip.New(ctx, s.host, s.Logger)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create gossip registry")
+	}
+
+	s.gossip = gossipService
+
+	for _, el := range reactors {
+		s.AddReactor(el.Name, el.Reactor)
+	}
+
 	return s, nil
 }
 
@@ -119,7 +131,7 @@ func NewSwitch(
 func (s *Switch) OnStart() error {
 	s.Logger.Info("Starting LibP2PSwitch")
 
-	go s.listenForEvents()
+	go s.listenForEventBus()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -151,16 +163,19 @@ func (s *Switch) OnStop() {
 		}
 	}
 
+	// actions in reverse order of startup
+	s.gossip.Close()
+
+	if err := s.eventBusSubscription.Close(); err != nil {
+		s.Logger.Error("failed to close event bus subscription", "err", err)
+	}
+
 	if err := s.host.Network().Close(); err != nil {
 		s.Logger.Error("failed to close network", "err", err)
 	}
 
 	if err := s.host.Peerstore().Close(); err != nil {
 		s.Logger.Error("failed to close peerstore", "err", err)
-	}
-
-	if err := s.eventBusSubscription.Close(); err != nil {
-		s.Logger.Error("failed to close event bus subscription", "err", err)
 	}
 
 	// todo disconnect from config peers!
@@ -206,6 +221,11 @@ func (s *Switch) AddReactor(name string, reactor p2p.Reactor) p2p.Reactor {
 		s.descriptorByProtocolID[protocolID] = channelDescriptor
 
 		s.host.SetStreamHandler(protocolID, s.handleStream)
+
+		if err := s.gossip.Join(protocolID, s.handleGossipMessage); err != nil {
+			err = errors.Wrapf(err, "reactor %q: unable to join gossip topic %q", name, protocolID)
+			panic(err)
+		}
 	}
 
 	// set reactor itself
@@ -329,27 +349,15 @@ func (s *Switch) MarkPeerAsGood(_ p2p.Peer) {
 func (s *Switch) Broadcast(e p2p.Envelope) chan bool {
 	s.Logger.Debug("Broadcast", "channel", e.ChannelID)
 
-	var wg sync.WaitGroup
-	successChan := make(chan bool, s.peerSet.Size())
-
-	s.peerSet.ForEach(func(p p2p.Peer) {
-		wg.Add(1)
-
-		go func(p p2p.Peer) {
-			defer wg.Done()
-
-			success := p.Send(e)
-			select {
-			case successChan <- success:
-			default:
-				// Skip. This means peer set changed
-				// between Size() and ForEach() calls.
-			}
-		}(p)
-	})
+	successChan := make(chan bool)
 
 	go func() {
-		wg.Wait()
+		err := s.broadcastViaGossip(e)
+		if err != nil {
+			s.Logger.Error("Failed to broadcast via gossip", "err", err)
+		}
+
+		successChan <- (err == nil)
 		close(successChan)
 	}()
 
@@ -359,17 +367,36 @@ func (s *Switch) Broadcast(e p2p.Envelope) chan bool {
 func (s *Switch) BroadcastAsync(e p2p.Envelope) {
 	s.Logger.Debug("BroadcastAsync", "channel", e.ChannelID)
 
-	s.peerSet.ForEach(func(p p2p.Peer) {
-		go p.Send(e)
-	})
+	go func() {
+		if err := s.broadcastViaGossip(e); err != nil {
+			s.Logger.Error("Failed to broadcast via gossip", "err", err)
+		}
+	}()
 }
 
 func (s *Switch) TryBroadcast(e p2p.Envelope) {
 	s.Logger.Debug("TryBroadcast", "channel", e.ChannelID)
 
-	s.peerSet.ForEach(func(p p2p.Peer) {
-		go p.TrySend(e)
-	})
+	if err := s.broadcastViaGossip(e); err != nil {
+		s.Logger.Error("Failed to broadcast via gossip", "err", err)
+	}
+}
+
+func (s *Switch) broadcastViaGossip(e p2p.Envelope) error {
+	payload, err := marshalProto(e.Message)
+	if err != nil {
+		return errors.Wrap(err, "unable to marshal message")
+	}
+
+	protocolID := ProtocolID(e.ChannelID)
+
+	// todo metrics
+
+	if err := s.gossip.Broadcast(protocolID, payload); err != nil {
+		return errors.Wrapf(err, "unable to broadcast message (%s)", protocolID)
+	}
+
+	return nil
 }
 
 func (s *Switch) logUnimplemented(method string, kv ...any) {
@@ -379,6 +406,7 @@ func (s *Switch) logUnimplemented(method string, kv ...any) {
 	)
 }
 
+// handleStream represents an entrypoint for incoming lib-p2p streams
 func (s *Switch) handleStream(stream network.Stream) {
 	var (
 		peerID     = stream.Conn().RemotePeer()
@@ -415,14 +443,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 		return
 	}
 
-	// 2. Retrieve the peer from the peerSet
-	peer := s.peerSet.Get(peerIDToKey(peerID))
-	if peer == nil {
-		s.Logger.Error("Unable to get peer from peerSet", "peer", peerID)
-		return
-	}
-
-	// 3. Read the stream so we can "release" it on another end
+	// 2. Read the stream so we can "release" it on another end
 	payload, err := StreamReadClose(stream)
 	if err != nil {
 		s.Logger.Error("Failed to read payload", "protocol", protocolID, "err", err)
@@ -432,6 +453,13 @@ func (s *Switch) handleStream(stream network.Stream) {
 	msg, err := unmarshalProto(descriptor, payload)
 	if err != nil {
 		s.Logger.Error("Failed to unmarshal message", "protocol", protocolID, "err", err)
+		return
+	}
+
+	// 3. Retrieve the peer from the peerSet
+	peer := s.peerSet.Get(peerIDToKey(peerID))
+	if peer == nil {
+		s.Logger.Error("Unable to get peer from peerSet", "peer", peerID)
 		return
 	}
 
@@ -470,7 +498,62 @@ func (s *Switch) handleStream(stream network.Stream) {
 	})
 }
 
+// handleGossipMessage represents an entrypoint for incoming lib-p2p gossip messages
+func (s *Switch) handleGossipMessage(protocolID protocol.ID, message *pubsub.Message) error {
+	s.Logger.Debug("Received gossip message", "protocol", protocolID, "payload_len", len(message.Data))
+
+	peerID := message.ReceivedFrom
+
+	// 1. Retrieve the reactor with channel descriptor
+	reactor, ok := s.reactorsByProtocolID[protocolID]
+	if !ok {
+		return errors.New("unknown protocol")
+	}
+
+	descriptor, ok := s.descriptorByProtocolID[protocolID]
+	if !ok {
+		return errors.New("unknown protocol descriptor")
+	}
+
+	// 2. Unmarshal the message
+	msg, err := unmarshalProto(descriptor, message.Data)
+	if err != nil {
+		return errors.Wrap(err, "failed to unmarshal message")
+	}
+
+	// 3. Retrieve the peer from the peerSet
+	//
+	// NOTE: a gossiped message might be RELAYED from a third-party peer (obviously)
+	// that is NOT in our PeerSet -> this peer is not registered in the peerstore,
+	// and we don't want to establish a connection (think of a network of 1000 peers)
+	// But it's not possible with the current Reactor API as it requires
+	// envelope.Src to be a Peer instance.
+	//
+	// We need to support an explicit way to accept GOSSIPPED messages.
+	peer := s.peerSet.Get(peerIDToKey(peerID))
+
+	if err := s.ensurePeerProvisioned(peer); err != nil {
+		return errors.Wrapf(err, "failed to provision peer %s", peerID.String())
+	}
+
+	// todo metrics
+
+	reactor.Receive(p2p.Envelope{
+		Src:       peer,
+		ChannelID: descriptor.ID,
+		Message:   msg,
+	})
+
+	return nil
+}
+
 func (s *Switch) ensurePeerProvisioned(peer p2p.Peer) error {
+	// this might be possible because Peer.Get returns nil if not found
+	// (this is legacy behavior from CometBFT)
+	if peer == nil {
+		return errors.New("peer is empty")
+	}
+
 	s.mu.RLock()
 	_, exists := s.provisionedPeers[peer.ID()]
 	s.mu.RUnlock()
@@ -556,10 +639,13 @@ func (s *Switch) deprovisionPeer(peer *Peer, reason any) error {
 	return nil
 }
 
-func (s *Switch) listenForEvents() {
+// listenForEventBus listens for libp2p event bus that works only within current node.
+// we can register custom events or default default events like peer connectedness changed.
+// current implementation is SYNC ie one message blocks until it's processed.
+func (s *Switch) listenForEventBus() {
 	defer func() {
 		if r := recover(); r != nil {
-			s.Logger.Error("Panic in (*lp2p.Switch).eventListener", "panic", r)
+			s.Logger.Error("Panic in (*lp2p.Switch).listenForEventBus", "panic", r)
 		}
 	}()
 

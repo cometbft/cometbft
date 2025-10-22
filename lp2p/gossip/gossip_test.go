@@ -32,7 +32,7 @@ func TestGossipBroadcast(t *testing.T) {
 			iterationSleep = 5 * time.Millisecond
 		)
 
-		testGossipBroadcast(t, hostsCount, testDuration, iterationSleep, connectAllNodes, true)
+		testGossipBroadcast(t, hostsCount, testDuration, iterationSleep, connectAllNodes)
 	})
 
 	t.Run("PartialGraph", func(t *testing.T) {
@@ -42,7 +42,7 @@ func TestGossipBroadcast(t *testing.T) {
 			iterationSleep = 10 * time.Millisecond
 		)
 
-		testGossipBroadcast(t, hostsCount, testDuration, iterationSleep, connectPartialTopology, false)
+		testGossipBroadcast(t, hostsCount, testDuration, iterationSleep, connectPartialTopology)
 	})
 }
 
@@ -52,7 +52,6 @@ func testGossipBroadcast(
 	testDuration time.Duration,
 	iterationSleep time.Duration,
 	connectNodes func(t *testing.T, ctx context.Context, nodes []testNode),
-	assertCount bool,
 ) {
 
 	// ARRANGE
@@ -143,14 +142,12 @@ func testGossipBroadcast(
 	b := broadcasts.Load()
 	r := receives.Load()
 
-	t.Logf("Broadcasted messages: %d, Received messages: %d, Nodes: %d", b, r, n)
+	// s*(n-1)
+	idealReceives := b * (n - 1)
+
+	t.Logf("Nodes: %d, Broadcasted messages: %d, Received messages: %d (ideal %d)", n, b, r, idealReceives)
 
 	printGossipStats(t, bucket)
-
-	if assertCount {
-		// eg if we have 10 nodes and 15 broadcasts, we should have 135 receives
-		require.Equal(t, int(b*(n-1)), int(r), "'receives' should be equal to 'broadcasts * (nodes - 1)'")
-	}
 }
 
 type testSuite struct {

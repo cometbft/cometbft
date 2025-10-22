@@ -49,7 +49,7 @@ type Switch struct {
 
 	eventBusSubscription event.Subscription
 
-	gossip *gossip.Registry
+	gossip *gossip.Service
 
 	metrics *p2p.Metrics
 

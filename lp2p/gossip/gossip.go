@@ -11,9 +11,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Registry wraps lib-p2p gossip-sub. Supposed to be provisioned once on startup.
+// Service wraps lib-p2p gossip-sub.
+// Supposed to be provisioned once on startup.
 // NOTE: Not goroutine safe.
-type Registry struct {
+type Service struct {
 	ctx    context.Context
 	self   peer.ID
 	ps     *pubsub.PubSub
@@ -21,6 +22,7 @@ type Registry struct {
 	logger log.Logger
 }
 
+// Handler is a function that handles a gossip message.
 type Handler func(protocolID protocol.ID, msg *pubsub.Message) error
 
 type item struct {
@@ -29,18 +31,15 @@ type item struct {
 	sub        *pubsub.Subscription
 }
 
-func New(
-	ctx context.Context,
-	host host.Host,
-	logger log.Logger,
-) (*Registry, error) {
+// New Service constructor.
+func New(ctx context.Context, host host.Host, logger log.Logger) (*Service, error) {
 	// todo configure options
 	pubSub, err := pubsub.NewGossipSub(ctx, host)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create gossip sub")
 	}
 
-	return &Registry{
+	return &Service{
 		ctx:    ctx,
 		self:   host.ID(),
 		ps:     pubSub,
@@ -49,19 +48,21 @@ func New(
 	}, nil
 }
 
-func (r *Registry) Join(protocolID protocol.ID, handler Handler) error {
+// Join joins a gossip topic and registers a handler for incoming messages.
+// We use protocolIDs for topics.
+func (s *Service) Join(protocolID protocol.ID, handler Handler) error {
 	if handler == nil {
 		return errors.New("handler is nil")
 	}
 
-	if _, ok := r.items[protocolID]; ok {
+	if _, ok := s.items[protocolID]; ok {
 		return errors.New("already joined")
 	}
 
 	// todo: do we want to sign messages?
 	// it's required to ensure that it's not possible to DDOS the network
 	// by "relaying" malicious messages that pretend to be sent by other authentic peers
-	topic, err := r.ps.Join(string(protocolID))
+	topic, err := s.ps.Join(string(protocolID))
 	if err != nil {
 		return errors.Wrap(err, "unable to join")
 	}
@@ -77,44 +78,45 @@ func (r *Registry) Join(protocolID protocol.ID, handler Handler) error {
 		sub:        sub,
 	}
 
-	r.items[protocolID] = i
+	s.items[protocolID] = i
 
-	r.runReceiveLoop(&i, handler)
+	s.runReceiveLoop(&i, handler)
 
 	return nil
 }
 
-func (r *Registry) Close() {
-	for _, item := range r.items {
+func (s *Service) Close() {
+	for _, item := range s.items {
 		item.sub.Cancel()
 
 		if err := item.topic.Close(); err != nil {
-			r.logger.Error("Error closing gossip topic", "protocol", item.protocolID, "err", err)
+			s.logger.Error("Error closing gossip topic", "protocol", item.protocolID, "err", err)
 		}
 	}
 }
 
-func (r *Registry) Broadcast(protocolID protocol.ID, data []byte) error {
-	if _, ok := r.items[protocolID]; !ok {
+// Broadcast publishes a message to a gossip topic.
+func (s *Service) Broadcast(protocolID protocol.ID, data []byte) error {
+	if _, ok := s.items[protocolID]; !ok {
 		return errors.Errorf("protocol %s not found", protocolID)
 	}
 
 	// todo explore publish options
-	err := r.items[protocolID].topic.Publish(r.ctx, data)
+	err := s.items[protocolID].topic.Publish(s.ctx, data)
 	if err != nil {
 		return errors.Wrap(err, "unable to publish message")
 	}
 
-	r.logger.Debug("Gossiped message", "protocol", protocolID, "data_len", len(data))
+	s.logger.Debug("Gossiped message", "protocol", protocolID, "data_len", len(data))
 
 	return nil
 }
 
-func (r *Registry) runReceiveLoop(item *item, handler Handler) {
+func (s *Service) runReceiveLoop(item *item, handler Handler) {
 	go func() {
 		defer func() {
 			if p := recover(); p != nil {
-				r.logger.Error(
+				s.logger.Error(
 					"Panic in (*Registry).runReceiveLoop",
 					"panic", p,
 					"protocol", item.protocolID,
@@ -122,25 +124,25 @@ func (r *Registry) runReceiveLoop(item *item, handler Handler) {
 			}
 		}()
 
-		err := r.runReceiveLoopBlocking(item, handler)
+		err := s.runReceiveLoopBlocking(item, handler)
 		switch {
 		case errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded):
-			r.logger.Info("Context canceled or deadline exceeded for gossip", "protocol", item.protocolID)
+			s.logger.Info("Context canceled or deadline exceeded for gossip", "protocol", item.protocolID)
 		case err != nil:
-			r.logger.Error("Error in gossip receive loop", "protocol", item.protocolID, "err", err)
+			s.logger.Error("Error in gossip receive loop", "protocol", item.protocolID, "err", err)
 		}
 	}()
 }
 
-func (r *Registry) runReceiveLoopBlocking(item *item, handler Handler) error {
+func (s *Service) runReceiveLoopBlocking(item *item, handler Handler) error {
 	for {
-		msg, err := item.sub.Next(r.ctx)
+		msg, err := item.sub.Next(s.ctx)
 		if err != nil {
 			return errors.Wrap(err, "unable to get next message")
 		}
 
-		if msg.Local || msg.ReceivedFrom == r.self {
-			r.logger.Debug(
+		if msg.Local || msg.ReceivedFrom == s.self {
+			s.logger.Debug(
 				"Skipping local gossip message",
 				"protocol", item.protocolID,
 				"message_id", msg.ID,
@@ -149,14 +151,14 @@ func (r *Registry) runReceiveLoopBlocking(item *item, handler Handler) error {
 		}
 
 		// ensure messages are processed concurrently
-		go r.handleMessage(item, msg, handler)
+		go s.handleMessage(item, msg, handler)
 	}
 }
 
-func (r *Registry) handleMessage(item *item, msg *pubsub.Message, handler Handler) {
+func (s *Service) handleMessage(item *item, msg *pubsub.Message, handler Handler) {
 	defer func() {
 		if p := recover(); p != nil {
-			r.logger.Error(
+			s.logger.Error(
 				"Panic in (*Registry).handleMessage",
 				"panic", p,
 				"protocol", item.protocolID,
@@ -166,7 +168,7 @@ func (r *Registry) handleMessage(item *item, msg *pubsub.Message, handler Handle
 	}()
 
 	if err := handler(item.protocolID, msg); err != nil {
-		r.logger.Error(
+		s.logger.Error(
 			"Error in gossip message handler",
 			"protocol", item.protocolID,
 			"message_id", msg.ID,

@@ -99,10 +99,6 @@ func NewSwitch(
 	base := service.NewBaseService(logger, "LibP2P Switch", s)
 	s.BaseService = *base
 
-	for _, el := range reactors {
-		s.AddReactor(el.Name, el.Reactor)
-	}
-
 	eventTypes := []any{
 		&event.EvtPeerConnectednessChanged{},
 	}
@@ -120,6 +116,10 @@ func NewSwitch(
 	}
 
 	s.gossip = gossipRegistry
+
+	for _, el := range reactors {
+		s.AddReactor(el.Name, el.Reactor)
+	}
 
 	return s, nil
 }
@@ -500,7 +500,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 
 // handleGossipMessage represents an entrypoint for incoming lib-p2p gossip messages
 func (s *Switch) handleGossipMessage(protocolID protocol.ID, message *pubsub.Message) error {
-	s.Logger.Debug("Received gossip message", "protocol", protocolID, "message_id", message.ID)
+	s.Logger.Debug("Received gossip message", "protocol", protocolID, "payload_len", len(message.Data))
 
 	peerID := message.ReceivedFrom
 

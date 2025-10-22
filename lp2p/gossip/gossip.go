@@ -58,6 +58,9 @@ func (r *Registry) Join(protocolID protocol.ID, handler Handler) error {
 		return errors.New("already joined")
 	}
 
+	// todo: do we want to sign messages?
+	// it's required to ensure that it's not possible to DDOS the network
+	// by "relaying" malicious messages that pretend to be sent by other authentic peers
 	topic, err := r.ps.Join(string(protocolID))
 	if err != nil {
 		return errors.Wrap(err, "unable to join")
@@ -76,7 +79,7 @@ func (r *Registry) Join(protocolID protocol.ID, handler Handler) error {
 
 	r.items[protocolID] = i
 
-	r.runReceiveLoopAsync(&i, handler)
+	r.runReceiveLoop(&i, handler)
 
 	return nil
 }
@@ -91,19 +94,35 @@ func (r *Registry) Close() {
 	}
 }
 
-func (r *Registry) runReceiveLoopAsync(item *item, handler Handler) {
+func (r *Registry) Broadcast(protocolID protocol.ID, data []byte) error {
+	if _, ok := r.items[protocolID]; !ok {
+		return errors.Errorf("protocol %s not found", protocolID)
+	}
+
+	// todo explore publish options
+	err := r.items[protocolID].topic.Publish(r.ctx, data)
+	if err != nil {
+		return errors.Wrap(err, "unable to publish message")
+	}
+
+	r.logger.Debug("Gossiped message", "protocol", protocolID, "data_len", len(data))
+
+	return nil
+}
+
+func (r *Registry) runReceiveLoop(item *item, handler Handler) {
 	go func() {
 		defer func() {
 			if p := recover(); p != nil {
 				r.logger.Error(
-					"Panic in (*Registry).runReceiveLoopAsync",
+					"Panic in (*Registry).runReceiveLoop",
 					"panic", p,
 					"protocol", item.protocolID,
 				)
 			}
 		}()
 
-		err := r.runReceiveLoop(item, handler)
+		err := r.runReceiveLoopBlocking(item, handler)
 		switch {
 		case errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded):
 			r.logger.Info("Context canceled or deadline exceeded for gossip", "protocol", item.protocolID)
@@ -113,7 +132,7 @@ func (r *Registry) runReceiveLoopAsync(item *item, handler Handler) {
 	}()
 }
 
-func (r *Registry) runReceiveLoop(item *item, handler Handler) error {
+func (r *Registry) runReceiveLoopBlocking(item *item, handler Handler) error {
 	for {
 		msg, err := item.sub.Next(r.ctx)
 		if err != nil {

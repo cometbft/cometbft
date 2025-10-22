@@ -349,27 +349,15 @@ func (s *Switch) MarkPeerAsGood(_ p2p.Peer) {
 func (s *Switch) Broadcast(e p2p.Envelope) chan bool {
 	s.Logger.Debug("Broadcast", "channel", e.ChannelID)
 
-	var wg sync.WaitGroup
-	successChan := make(chan bool, s.peerSet.Size())
-
-	s.peerSet.ForEach(func(p p2p.Peer) {
-		wg.Add(1)
-
-		go func(p p2p.Peer) {
-			defer wg.Done()
-
-			success := p.Send(e)
-			select {
-			case successChan <- success:
-			default:
-				// Skip. This means peer set changed
-				// between Size() and ForEach() calls.
-			}
-		}(p)
-	})
+	successChan := make(chan bool)
 
 	go func() {
-		wg.Wait()
+		err := s.broadcastViaGossip(e)
+		if err != nil {
+			s.Logger.Error("Failed to broadcast via gossip", "err", err)
+		}
+
+		successChan <- (err == nil)
 		close(successChan)
 	}()
 
@@ -379,17 +367,36 @@ func (s *Switch) Broadcast(e p2p.Envelope) chan bool {
 func (s *Switch) BroadcastAsync(e p2p.Envelope) {
 	s.Logger.Debug("BroadcastAsync", "channel", e.ChannelID)
 
-	s.peerSet.ForEach(func(p p2p.Peer) {
-		go p.Send(e)
-	})
+	go func() {
+		if err := s.broadcastViaGossip(e); err != nil {
+			s.Logger.Error("Failed to broadcast via gossip", "err", err)
+		}
+	}()
 }
 
 func (s *Switch) TryBroadcast(e p2p.Envelope) {
 	s.Logger.Debug("TryBroadcast", "channel", e.ChannelID)
 
-	s.peerSet.ForEach(func(p p2p.Peer) {
-		go p.TrySend(e)
-	})
+	if err := s.broadcastViaGossip(e); err != nil {
+		s.Logger.Error("Failed to broadcast via gossip", "err", err)
+	}
+}
+
+func (s *Switch) broadcastViaGossip(e p2p.Envelope) error {
+	payload, err := marshalProto(e.Message)
+	if err != nil {
+		return errors.Wrap(err, "unable to marshal message")
+	}
+
+	protocolID := ProtocolID(e.ChannelID)
+
+	// todo metrics
+
+	if err := s.gossip.Broadcast(protocolID, payload); err != nil {
+		return errors.Wrapf(err, "unable to broadcast message (%s)", protocolID)
+	}
+
+	return nil
 }
 
 func (s *Switch) logUnimplemented(method string, kv ...any) {
@@ -399,6 +406,7 @@ func (s *Switch) logUnimplemented(method string, kv ...any) {
 	)
 }
 
+// handleStream represents an entrypoint for incoming lib-p2p streams
 func (s *Switch) handleStream(stream network.Stream) {
 	var (
 		peerID     = stream.Conn().RemotePeer()
@@ -490,7 +498,10 @@ func (s *Switch) handleStream(stream network.Stream) {
 	})
 }
 
+// handleGossipMessage represents an entrypoint for incoming lib-p2p gossip messages
 func (s *Switch) handleGossipMessage(protocolID protocol.ID, message *pubsub.Message) error {
+	s.Logger.Debug("Received gossip message", "protocol", protocolID, "message_id", message.ID)
+
 	peerID := message.ReceivedFrom
 
 	// 1. Retrieve the reactor with channel descriptor

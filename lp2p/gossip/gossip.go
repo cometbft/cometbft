@@ -145,7 +145,6 @@ func (s *Service) runReceiveLoopBlocking(item *item, handler Handler) error {
 			s.logger.Debug(
 				"Skipping local gossip message",
 				"protocol", item.protocolID,
-				"message_id", msg.ID,
 			)
 			continue
 		}

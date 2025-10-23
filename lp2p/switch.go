@@ -30,16 +30,7 @@ type Switch struct {
 	host    *Host
 	peerSet *PeerSet
 
-	reactors []ReactorItem
-
-	// reactorsByName represents [reactor_name => reactor] mapping
-	reactorsByName map[string]p2p.Reactor
-
-	// reactorsByProtocolID represents [protocol_id => reactor] mapping
-	reactorsByProtocolID map[protocol.ID]p2p.Reactor
-
-	// descriptorByProtocolID represents [protocol_id => channel_descriptor] mapping
-	descriptorByProtocolID map[protocol.ID]*p2p.ChannelDescriptor
+	reactors *reactorSet
 
 	// provisionedPeers represents set of peers that are added by reactors
 	// todo should it live within peerSet?
@@ -50,13 +41,6 @@ type Switch struct {
 	metrics *p2p.Metrics
 
 	mu sync.RWMutex
-}
-
-// ReactorItem is a pair of name and reactor.
-// Preserves order when adding.
-type ReactorItem struct {
-	Name    string
-	Reactor p2p.Reactor
 }
 
 var _ p2p.Switcher = (*Switch)(nil)
@@ -78,13 +62,9 @@ func NewSwitch(
 		nodeInfo: nodeInfo,
 		nodeKey:  nodeKey,
 
-		host:    host,
-		peerSet: NewPeerSet(host, metrics, logger),
-
-		reactors:               make([]ReactorItem, 0, len(reactors)),
-		reactorsByName:         make(map[string]p2p.Reactor),
-		reactorsByProtocolID:   make(map[protocol.ID]p2p.Reactor),
-		descriptorByProtocolID: make(map[protocol.ID]*p2p.ChannelDescriptor),
+		host:     host,
+		peerSet:  NewPeerSet(host, metrics, logger),
+		reactors: newReactorSet(),
 
 		provisionedPeers: make(map[p2p.ID]struct{}),
 
@@ -94,8 +74,10 @@ func NewSwitch(
 	base := service.NewBaseService(logger, "LibP2P Switch", s)
 	s.BaseService = *base
 
-	for _, el := range reactors {
-		s.AddReactor(el.Name, el.Reactor)
+	for _, item := range reactors {
+		if err := s.reactors.Add(item, s); err != nil {
+			return nil, errors.Wrapf(err, "failed to add %q reactor", item.Name)
+		}
 	}
 
 	eventTypes := []any{
@@ -124,19 +106,17 @@ func (s *Switch) OnStart() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	initialPeers := s.host.ConfigPeers()
+	protocolHandler := func(protocolID protocol.ID) {
+		s.host.SetStreamHandler(protocolID, s.handleStream)
+	}
 
-	for _, el := range s.reactors {
-		name, reactor := el.Name, el.Reactor
-
-		s.Logger.Info("Starting reactor", "reactor", name)
-
-		if err := reactor.Start(); err != nil {
-			return fmt.Errorf("failed to start reactor %s: %w", name, err)
-		}
+	err := s.reactors.Start(s, protocolHandler)
+	if err != nil {
+		return fmt.Errorf("failed to start reactors: %w", err)
 	}
 
 	// connection will trigger an event for listenToEvents()
+	initialPeers := s.host.ConfigPeers()
 	ConnectPeers(ctx, s.host, initialPeers)
 
 	return nil
@@ -145,11 +125,7 @@ func (s *Switch) OnStart() error {
 func (s *Switch) OnStop() {
 	s.Logger.Info("Stopping LibP2PSwitch")
 
-	for name, reactor := range s.reactorsByName {
-		if err := reactor.Stop(); err != nil {
-			s.Logger.Error("failed to stop reactor", "name", name, "err", err)
-		}
-	}
+	s.reactors.Stop(s)
 
 	if err := s.host.Network().Close(); err != nil {
 		s.Logger.Error("failed to close network", "err", err)
@@ -179,42 +155,16 @@ func (s *Switch) Log() log.Logger {
 //--------------------------------
 
 func (s *Switch) Reactor(name string) (p2p.Reactor, bool) {
-	reactor, exists := s.reactorsByName[name]
-
-	return reactor, exists
+	return s.reactors.GetByName(name)
 }
 
 // AddReactor adds the given reactor to the switch.
 // NOTE: Not goroutine safe.
 func (s *Switch) AddReactor(name string, reactor p2p.Reactor) p2p.Reactor {
-	s.Logger.Info("Adding reactor", "name", name)
+	// used only by CustomReactors
+	s.logUnimplemented("AddReactor")
 
-	// set reactor's channels
-	for i := range reactor.GetChannels() {
-		var (
-			channelDescriptor = reactor.GetChannels()[i]
-			protocolID        = ProtocolID(channelDescriptor.ID)
-		)
-
-		// Ensure channelID is unique across all reactors
-		if _, ok := s.reactorsByProtocolID[protocolID]; ok {
-			err := fmt.Errorf("adding reactor %q: protocol %q is already registered", name, protocolID)
-			panic(err)
-		}
-
-		s.reactorsByProtocolID[protocolID] = reactor
-		s.descriptorByProtocolID[protocolID] = channelDescriptor
-
-		s.host.SetStreamHandler(protocolID, s.handleStream)
-	}
-
-	// set reactor itself
-	s.reactors = append(s.reactors, ReactorItem{Name: name, Reactor: reactor})
-	s.reactorsByName[name] = reactor
-
-	reactor.SetSwitch(s)
-
-	return reactor
+	return nil
 }
 
 func (s *Switch) RemoveReactor(_ string, _ p2p.Reactor) {
@@ -399,16 +349,8 @@ func (s *Switch) handleStream(stream network.Stream) {
 	}()
 
 	// 1. Retrieve the reactor with channel descriptor
-	reactor, ok := s.reactorsByProtocolID[protocolID]
-	if !ok {
-		// should not happen
-		s.Logger.Error("Unknown protocol", "protocol", protocolID)
-		_ = stream.Reset()
-		return
-	}
-
-	descriptor, ok := s.descriptorByProtocolID[protocolID]
-	if !ok {
+	reactor, err := s.reactors.GetWithDescriptorByProtocolID(protocolID)
+	if err != nil {
 		// should not happen
 		s.Logger.Error("Unknown protocol descriptor", "protocol", protocolID)
 		_ = stream.Reset()
@@ -429,7 +371,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 		return
 	}
 
-	msg, err := unmarshalProto(descriptor, payload)
+	msg, err := unmarshalProto(reactor.Descriptor, payload)
 	if err != nil {
 		s.Logger.Error("Failed to unmarshal message", "protocol", protocolID, "err", err)
 		return
@@ -448,7 +390,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 		payloadLen  = float64(len(payload))
 		labels      = []string{
 			"peer_id", peerStr,
-			"chID", fmt.Sprintf("%#x", descriptor.ID),
+			"chID", fmt.Sprintf("%#x", reactor.Descriptor.ID),
 		}
 	)
 
@@ -459,13 +401,13 @@ func (s *Switch) handleStream(stream network.Stream) {
 		"Received stream envelope",
 		"peer", peerID,
 		"protocol", protocolID,
-		"message_type", log.NewLazySprintf("%T", msg),
+		"message_type", messageType,
 		"message", msg,
 	)
 
 	reactor.Receive(p2p.Envelope{
 		Src:       peer,
-		ChannelID: descriptor.ID,
+		ChannelID: reactor.Descriptor.ID,
 		Message:   msg,
 	})
 }
@@ -509,17 +451,13 @@ func (s *Switch) provisionPeer(peer *Peer) error {
 
 	s.Logger.Info("Provisioning peer", "peer_id", peer.ID())
 
-	for _, el := range s.reactors {
-		el.Reactor.InitPeer(peer)
-	}
+	s.reactors.InitPeer(peer)
 
 	if err := peer.Start(); err != nil {
 		return errors.Wrap(err, "failed to start peer")
 	}
 
-	for _, el := range s.reactors {
-		el.Reactor.AddPeer(peer)
-	}
+	s.reactors.AddPeer(peer)
 
 	s.provisionedPeers[peer.ID()] = struct{}{}
 
@@ -541,9 +479,7 @@ func (s *Switch) deprovisionPeer(peer *Peer, reason any) error {
 		return errors.Wrap(err, "failed to stop peer")
 	}
 
-	for _, reactor := range s.reactorsByName {
-		reactor.RemovePeer(peer, reason)
-	}
+	s.reactors.RemovePeer(peer, reason)
 
 	if err := s.host.Network().ClosePeer(id); err != nil {
 		s.Logger.Error("Failed to close peer", "peer", peer, "err", err)

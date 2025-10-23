@@ -6,7 +6,11 @@
 
 ### BUG FIXES
 
+- `[p2p]` fix(privval): Ephemeral Port Exhaustion
+  ([\#5433](https://github.com/cometbft/cometbft/pull/5433))
+
 ### IMPROVEMENTS
+
 -  `[mempool]` perf(mempool/cache): Optimize LRUTxCache.Remove to reduce lock contention and map access
    ([\#5244](https://github.com/cometbft/cometbft/pull/5244))
 - `[e2e]` add support for testing different keytypes, including BLS

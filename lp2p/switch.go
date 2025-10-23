@@ -392,8 +392,13 @@ func (s *Switch) handleStream(stream network.Stream) {
 			"peer_id", peerStr,
 			"chID", fmt.Sprintf("%#x", reactor.Descriptor.ID),
 		}
+		lp2pLabels = []string{
+			"message_type", messageType,
+			"reactor", reactor.Name,
+		}
 	)
 
+	// p2p metrics
 	s.metrics.PeerReceiveBytesTotal.With(labels...).Add(payloadLen)
 	s.metrics.MessageReceiveBytesTotal.With("message_type", messageType).Add(payloadLen)
 
@@ -402,14 +407,22 @@ func (s *Switch) handleStream(stream network.Stream) {
 		"peer", peerID,
 		"protocol", protocolID,
 		"message_type", messageType,
-		"message", msg,
+		"payload_len", payloadLen,
 	)
+
+	// lp2p metrics
+	s.metrics.MessagesReceived.With(lp2pLabels...).Add(1)
+	s.metrics.MessagesReactorInFlight.With(lp2pLabels...).Add(1)
+	now := time.Now()
 
 	reactor.Receive(p2p.Envelope{
 		Src:       peer,
 		ChannelID: reactor.Descriptor.ID,
 		Message:   msg,
 	})
+
+	s.metrics.MessagesReactorInFlight.With(lp2pLabels...).Add(-1)
+	s.metrics.MessageReactorReceiveDuration.With(lp2pLabels...).Observe(time.Since(now).Seconds())
 }
 
 func (s *Switch) ensurePeerProvisioned(peer p2p.Peer) error {

@@ -56,17 +56,38 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "message_send_bytes_total",
 			Help:      "Number of bytes of each message type sent.",
 		}, append(labels, "message_type")).With(labelsAndValues...),
+		MessagesReceived: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "messages_received",
+			Help:      "Number of messages received before being processed by the reactor",
+		}, append(labels, "message_type", "reactor")).With(labelsAndValues...),
+		MessagesReactorInFlight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "messages_reactor_in_flight",
+			Help:      "Number of messages in flight (wip by reactor)",
+		}, append(labels, "message_type", "reactor")).With(labelsAndValues...),
+		MessageReactorReceiveDuration: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "message_reactor_receive_duration",
+			Help:      "Duration of the message receive operation by reactor",
+		}, append(labels, "message_type", "reactor")).With(labelsAndValues...),
 	}
 }
 
 func NopMetrics() *Metrics {
 	return &Metrics{
-		Peers:                    discard.NewGauge(),
-		PeerReceiveBytesTotal:    discard.NewCounter(),
-		PeerSendBytesTotal:       discard.NewCounter(),
-		PeerPendingSendBytes:     discard.NewGauge(),
-		NumTxs:                   discard.NewGauge(),
-		MessageReceiveBytesTotal: discard.NewCounter(),
-		MessageSendBytesTotal:    discard.NewCounter(),
+		Peers:                         discard.NewGauge(),
+		PeerReceiveBytesTotal:         discard.NewCounter(),
+		PeerSendBytesTotal:            discard.NewCounter(),
+		PeerPendingSendBytes:          discard.NewGauge(),
+		NumTxs:                        discard.NewGauge(),
+		MessageReceiveBytesTotal:      discard.NewCounter(),
+		MessageSendBytesTotal:         discard.NewCounter(),
+		MessagesReceived:              discard.NewCounter(),
+		MessagesReactorInFlight:       discard.NewGauge(),
+		MessageReactorReceiveDuration: discard.NewHistogram(),
 	}
 }

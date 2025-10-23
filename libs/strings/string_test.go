@@ -8,13 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStringInSlice(t *testing.T) {
-	assert.True(t, StringInSlice("a", []string{"a", "b", "c"}))
-	assert.False(t, StringInSlice("d", []string{"a", "b", "c"}))
-	assert.True(t, StringInSlice("", []string{""}))
-	assert.False(t, StringInSlice("", []string{}))
-}
-
 func TestIsASCIIText(t *testing.T) {
 	notASCIIText := []string{
 		"", "\xC2", "\xC2\xA2", "\xFF", "\x80", "\xF0", "\n", "\t",

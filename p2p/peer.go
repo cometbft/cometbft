@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"slices"
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -309,12 +310,7 @@ func (p *peer) Set(key string, data any) {
 // hasChannel returns true if the peer reported
 // knowing about the given chID.
 func (p *peer) hasChannel(chID byte) bool {
-	for _, ch := range p.channels {
-		if ch == chID {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(p.channels, chID)
 }
 
 // CloseConn closes original connection. Used for cleaning up in cases where the peer had not been started at all.

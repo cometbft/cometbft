@@ -22,16 +22,6 @@ type HeightInfo struct {
 	onlyHeightEq    bool
 }
 
-func intInSlice(a int, list []int) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-
-	return false
-}
-
 func int64FromBytes(bz []byte) int64 {
 	v, _ := binary.Varint(bz)
 	return v

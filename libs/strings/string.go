@@ -5,16 +5,6 @@ import (
 	"strings"
 )
 
-// StringInSlice returns true if a is found in the list.
-func StringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
-}
-
 // SplitAndTrim slices s into all subslices separated by sep and returns a
 // slice of the string s with all leading and trailing Unicode code points
 // contained in cutset removed. If sep is empty, SplitAndTrim splits after each

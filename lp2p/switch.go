@@ -62,14 +62,14 @@ func NewSwitch(
 		nodeInfo: nodeInfo,
 		nodeKey:  nodeKey,
 
-		host:     host,
-		peerSet:  NewPeerSet(host, metrics, logger),
-		reactors: newReactorSet(),
-
+		host:             host,
+		peerSet:          NewPeerSet(host, metrics, logger),
 		provisionedPeers: make(map[p2p.ID]struct{}),
 
 		metrics: metrics,
 	}
+
+	s.reactors = newReactorSet(s)
 
 	base := service.NewBaseService(logger, "LibP2P Switch", s)
 	s.BaseService = *base
@@ -110,7 +110,7 @@ func (s *Switch) OnStart() error {
 		s.host.SetStreamHandler(protocolID, s.handleStream)
 	}
 
-	err := s.reactors.Start(s, protocolHandler)
+	err := s.reactors.Start(protocolHandler)
 	if err != nil {
 		return fmt.Errorf("failed to start reactors: %w", err)
 	}
@@ -392,13 +392,8 @@ func (s *Switch) handleStream(stream network.Stream) {
 			"peer_id", peerStr,
 			"chID", fmt.Sprintf("%#x", reactor.Descriptor.ID),
 		}
-		lp2pLabels = []string{
-			"message_type", messageType,
-			"reactor", reactor.Name,
-		}
 	)
 
-	// p2p metrics
 	s.metrics.PeerReceiveBytesTotal.With(labels...).Add(payloadLen)
 	s.metrics.MessageReceiveBytesTotal.With("message_type", messageType).Add(payloadLen)
 
@@ -410,19 +405,13 @@ func (s *Switch) handleStream(stream network.Stream) {
 		"payload_len", payloadLen,
 	)
 
-	// lp2p metrics
-	s.metrics.MessagesReceived.With(lp2pLabels...).Add(1)
-	s.metrics.MessagesReactorInFlight.With(lp2pLabels...).Add(1)
-	now := time.Now()
-
-	reactor.Receive(p2p.Envelope{
+	envelope := p2p.Envelope{
 		Src:       peer,
 		ChannelID: reactor.Descriptor.ID,
 		Message:   msg,
-	})
+	}
 
-	s.metrics.MessagesReactorInFlight.With(lp2pLabels...).Add(-1)
-	s.metrics.MessageReactorReceiveDuration.With(lp2pLabels...).Observe(time.Since(now).Seconds())
+	s.reactors.SubmitReceive(reactor.Name, messageType, envelope)
 }
 
 func (s *Switch) ensurePeerProvisioned(peer p2p.Peer) error {

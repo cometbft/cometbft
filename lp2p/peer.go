@@ -104,14 +104,10 @@ func (p *Peer) CloseConn() error {
 }
 
 func (p *Peer) send(e p2p.Envelope) (err error) {
-	if !p.IsRunning() {
-		return errors.New("peer is not running")
-	}
-
-	// todo: skip if not having the channel
-
-	peerID := p.addrInfo.ID
-	protocolID := ProtocolID(e.ChannelID)
+	var (
+		peerID     = p.addrInfo.ID
+		protocolID = ProtocolID(e.ChannelID)
+	)
 
 	payload, err := marshalProto(e.Message)
 	if err != nil {
@@ -149,10 +145,10 @@ func (p *Peer) send(e p2p.Envelope) (err error) {
 		p.metrics.MessageSendBytesTotal.With("message_type", messageType).Add(payloadLen)
 
 		p.Logger.Debug(
-			"sent envelope",
+			"Sent envelope",
 			"protocol", protocolID,
 			"peer_id", peerIDStr,
-			"stream_opened_duration", time.Since(start).String(),
+			"send_dur", time.Since(start).String(),
 		)
 	}()
 

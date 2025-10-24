@@ -10,6 +10,7 @@ import (
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/cmap"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p/conn"
@@ -97,6 +98,8 @@ type Switch struct {
 	metrics *Metrics
 	mlc     *metricsLabelCache
 }
+
+var _ Switcher = (*Switch)(nil)
 
 // NetAddress returns the address the switch is listening on.
 func (sw *Switch) NetAddress() *NetAddress {
@@ -204,8 +207,9 @@ func (sw *Switch) Reactors() map[string]Reactor {
 
 // Reactor returns the reactor with the given name.
 // NOTE: Not goroutine safe.
-func (sw *Switch) Reactor(name string) Reactor {
-	return sw.reactors[name]
+func (sw *Switch) Reactor(name string) (Reactor, bool) {
+	reactor, ok := sw.reactors[name]
+	return reactor, ok
 }
 
 // SetNodeInfo sets the switch's NodeInfo for checking compatibility and handshaking with other nodes.
@@ -661,6 +665,10 @@ func (sw *Switch) IsPeerPersistent(na *NetAddress) bool {
 		}
 	}
 	return false
+}
+
+func (sw *Switch) Log() log.Logger {
+	return sw.Logger
 }
 
 func (sw *Switch) acceptRoutine() {

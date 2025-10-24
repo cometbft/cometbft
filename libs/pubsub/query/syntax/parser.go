@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"slices"
 	"strings"
 	"time"
 )
@@ -197,10 +198,8 @@ func (p *Parser) require(tokens ...Token) error {
 		return fmt.Errorf("offset %d: %w", p.scanner.Pos(), err)
 	}
 	got := p.scanner.Token()
-	for _, tok := range tokens {
-		if tok == got {
-			return nil
-		}
+	if slices.Contains(tokens, got) {
+		return nil
 	}
 	return fmt.Errorf("offset %d: got %v, wanted %s", p.scanner.Pos(), got, tokLabel(tokens))
 }

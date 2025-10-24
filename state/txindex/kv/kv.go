@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -287,7 +288,7 @@ func (txi *TxIndex) Search(ctx context.Context, q *query.Query) ([]*abci.TxResul
 
 	// for all other conditions
 	for i, c := range conditions {
-		if intInSlice(i, skipIndexes) {
+		if slices.Contains(skipIndexes, i) {
 			continue
 		}
 

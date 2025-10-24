@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math/big"
+	"slices"
 	"strconv"
 
 	"github.com/google/orderedcode"
@@ -20,16 +21,6 @@ type HeightInfo struct {
 	heightEqIdx     int
 	onlyHeightRange bool
 	onlyHeightEq    bool
-}
-
-func intInSlice(a int, list []int) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-
-	return false
 }
 
 func int64FromBytes(bz []byte) int64 {

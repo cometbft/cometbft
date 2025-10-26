@@ -132,9 +132,17 @@ func killProc(pid int, dir string) error {
 
 		// allow some time to allow the CometBFT process to be killed
 		//
-		// TODO: We should 'wait' for a kill to succeed (e.g. poll for PID until it
-		// cannot be found). Regardless, this should be ample time.
-		time.Sleep(5 * time.Second)
+		deadline := time.Now().Add(15 * time.Second)
+		for {
+			if _, err := os.Stat(fmt.Sprintf("/proc/%d", pid)); err != nil && os.IsNotExist(err) {
+				break
+			}
+			if time.Now().After(deadline) {
+				fmt.Fprintf(os.Stderr, "timeout waiting for CometBFT process %d to exit\n", pid)
+				break
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
 
 		if err := cmd.Process.Kill(); err != nil {
 			fmt.Fprintf(os.Stderr, "failed to kill CometBFT process output redirection: %s", err)

@@ -336,6 +336,10 @@ dial_timeout = "{{ .P2P.DialTimeout }}"
 # Enabled set true to use go-libp2p for networking instead of CometBFT's p2p.
 enabled = {{ .P2P.LibP2PConfig.Enabled }}
 
+# Disables resource manager.
+# Warning! This might consume all of the system's resources.
+disable_resource_manager = {{ .P2P.LibP2PConfig.DisableResourceManager }}
+
 # Path to address book .toml file
 address_book_file = "{{ .P2P.LibP2PConfig.AddressBook }}"
 

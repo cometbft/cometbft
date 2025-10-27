@@ -158,8 +158,9 @@ func ParityPartFromProto(pb *cmtproto.ParityPart) (*ParityPart, error) {
 //-------------------------------------
 
 type PartSetHeader struct {
-	Total uint32            `json:"total"`
-	Hash  cmtbytes.HexBytes `json:"hash"`
+	Total  uint32            `json:"total"`
+	Hash   cmtbytes.HexBytes `json:"hash"`
+	Parity uint32            `json:"parity"`
 }
 
 // String returns a string representation of PartSetHeader.
@@ -168,15 +169,15 @@ type PartSetHeader struct {
 // 2. number of total parts that are for parity
 // 2. first 6 bytes of the hash
 func (psh PartSetHeader) String() string {
-	return fmt.Sprintf("%v:%X", psh.Total, cmtbytes.Fingerprint(psh.Hash))
+	return fmt.Sprintf("%v:%v:%X", psh.Total, psh.Parity, cmtbytes.Fingerprint(psh.Hash))
 }
 
 func (psh PartSetHeader) IsZero() bool {
-	return psh.Total == 0 && len(psh.Hash) == 0
+	return psh.Total == 0 && len(psh.Hash) == 0 && psh.Parity == 0
 }
 
 func (psh PartSetHeader) Equals(other PartSetHeader) bool {
-	return psh.Total == other.Total && bytes.Equal(psh.Hash, other.Hash)
+	return psh.Total == other.Total && bytes.Equal(psh.Hash, other.Hash) && psh.Parity == other.Parity
 }
 
 // ValidateBasic performs basic validation.
@@ -195,8 +196,9 @@ func (psh *PartSetHeader) ToProto() cmtproto.PartSetHeader {
 	}
 
 	return cmtproto.PartSetHeader{
-		Total: psh.Total,
-		Hash:  psh.Hash,
+		Total:  psh.Total,
+		Hash:   psh.Hash,
+		Parity: psh.Parity,
 	}
 }
 
@@ -208,6 +210,7 @@ func PartSetHeaderFromProto(ppsh *cmtproto.PartSetHeader) (*PartSetHeader, error
 	psh := new(PartSetHeader)
 	psh.Total = ppsh.Total
 	psh.Hash = ppsh.Hash
+	psh.Parity = ppsh.Parity
 
 	return psh, psh.ValidateBasic()
 }
@@ -215,75 +218,6 @@ func PartSetHeaderFromProto(ppsh *cmtproto.PartSetHeader) (*PartSetHeader, error
 // ProtoPartSetHeaderIsZero is similar to the IsZero function for
 // PartSetHeader, but for the Protobuf representation.
 func ProtoPartSetHeaderIsZero(ppsh *cmtproto.PartSetHeader) bool {
-	return ppsh.Total == 0 && len(ppsh.Hash) == 0
-}
-
-//-------------------------------------
-
-type PartSetHeaderWithParity struct {
-	Total  uint32
-	Hash   []byte
-	Parity uint32
-}
-
-// String returns a string representation of PartSetHeader.
-//
-// 1. total number of parts
-// 2. number of total parts that are for parity
-// 2. first 6 bytes of the hash
-func (psh PartSetHeaderWithParity) String() string {
-	return fmt.Sprintf("%v:%v:%X", psh.Total, psh.Parity, cmtbytes.Fingerprint(psh.Hash))
-}
-
-func (psh PartSetHeaderWithParity) IsZero() bool {
-	return psh.Total == 0 && len(psh.Hash) == 0 && psh.Parity == 0
-}
-
-func (psh PartSetHeaderWithParity) Equals(other PartSetHeaderWithParity) bool {
-	return psh.Total == other.Total && bytes.Equal(psh.Hash, other.Hash) && psh.Parity == other.Parity
-}
-
-// ValidateBasic performs basic validation.
-func (psh PartSetHeaderWithParity) ValidateBasic() error {
-	// Hash can be empty in case of POLBlockID.PartSetHeaderWithParity in Proposal.
-	if err := ValidateHash(psh.Hash); err != nil {
-		return fmt.Errorf("wrong Hash: %w", err)
-	}
-	if psh.Parity > 0 && psh.Parity >= psh.Total {
-		return fmt.Errorf("parity (%d) cannot be greater than total (%d)", psh.Parity, psh.Total)
-	}
-	return nil
-}
-
-// ToProto converts PartSetHeaderWithParity to protobuf
-func (psh *PartSetHeaderWithParity) ToProto() cmtproto.PartSetHeaderWithParity {
-	if psh == nil {
-		return cmtproto.PartSetHeaderWithParity{}
-	}
-
-	return cmtproto.PartSetHeaderWithParity{
-		Total:  psh.Total,
-		Parity: psh.Parity,
-		Hash:   psh.Hash,
-	}
-}
-
-// PartSetHeaderWithParityFromProto sets a protobuf PartSetHeader to the given pointer
-func PartSetHeaderWithParityFromProto(ppsh *cmtproto.PartSetHeaderWithParity) (*PartSetHeaderWithParity, error) {
-	if ppsh == nil {
-		return nil, errors.New("nil PartSetHeader")
-	}
-	psh := new(PartSetHeaderWithParity)
-	psh.Total = ppsh.Total
-	psh.Parity = ppsh.Parity
-	psh.Hash = ppsh.Hash
-
-	return psh, psh.ValidateBasic()
-}
-
-// ProtoPartSetHeaderIsZero is similar to the IsZero function for
-// PartSetHeader, but for the Protobuf representation.
-func ProtoPartSetHeaderWithParityIsZero(ppsh *cmtproto.PartSetHeaderWithParity) bool {
 	return ppsh.Total == 0 && len(ppsh.Hash) == 0 && ppsh.Parity == 0
 }
 
@@ -436,33 +370,11 @@ func NewPartSetFromHeader(header PartSetHeader) *PartSet {
 	}
 }
 
-func NewPartSetFromHeaderWithParity(header PartSetHeaderWithParity) *PartSet {
-	return &PartSet{
-		total:         header.Total,
-		parity:        header.Parity,
-		hash:          header.Hash,
-		parts:         make([]*Part, header.Total),
-		partsBitArray: bits.NewBitArray(int(header.Total)),
-		count:         0,
-		byteSize:      0,
-	}
-}
-
 func (ps *PartSet) Header() PartSetHeader {
 	if ps == nil {
 		return PartSetHeader{}
 	}
 	return PartSetHeader{
-		Total: ps.total,
-		Hash:  ps.hash,
-	}
-}
-
-func (ps *PartSet) HeaderWithParity() PartSetHeaderWithParity {
-	if ps == nil {
-		return PartSetHeaderWithParity{}
-	}
-	return PartSetHeaderWithParity{
 		Total:  ps.total,
 		Parity: ps.parity,
 		Hash:   ps.hash,

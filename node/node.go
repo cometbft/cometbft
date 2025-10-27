@@ -523,7 +523,7 @@ func NewNodeWithContext(
 	} else {
 		p2pLogger.Info("Using go-libp2p transport!")
 
-		reactors := []lp2p.ReactorItem{
+		reactors := []lp2p.SwitchReactor{
 			{Name: "MEMPOOL", Reactor: mempoolReactor},
 			{Name: "BLOCKSYNC", Reactor: bcReactor},
 			{Name: "CONSENSUS", Reactor: consensusReactor},

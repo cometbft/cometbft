@@ -43,6 +43,13 @@ type Switch struct {
 	mu sync.RWMutex
 }
 
+// SwitchReactor is a pair of name and reactor.
+// Preserves order when adding.
+type SwitchReactor struct {
+	p2p.Reactor
+	Name string
+}
+
 var _ p2p.Switcher = (*Switch)(nil)
 
 var ErrUnsupportedPeerFormat = errors.New("unsupported peer format")
@@ -53,7 +60,7 @@ func NewSwitch(
 	nodeKey *p2p.NodeKey,
 	nodeInfo p2p.NodeInfo,
 	host *Host,
-	reactors []ReactorItem,
+	reactors []SwitchReactor,
 	metrics *p2p.Metrics,
 	logger log.Logger,
 ) (*Switch, error) {
@@ -69,13 +76,13 @@ func NewSwitch(
 		metrics: metrics,
 	}
 
-	s.reactors = newReactorSet(s)
-
 	base := service.NewBaseService(logger, "LibP2P Switch", s)
 	s.BaseService = *base
 
+	s.reactors = newReactorSet(s)
+
 	for _, item := range reactors {
-		if err := s.reactors.Add(item, s); err != nil {
+		if err := s.reactors.Add(item.Reactor, item.Name); err != nil {
 			return nil, errors.Wrapf(err, "failed to add %q reactor", item.Name)
 		}
 	}
@@ -125,7 +132,7 @@ func (s *Switch) OnStart() error {
 func (s *Switch) OnStop() {
 	s.Logger.Info("Stopping LibP2PSwitch")
 
-	s.reactors.Stop(s)
+	s.reactors.Stop()
 
 	if err := s.host.Network().Close(); err != nil {
 		s.Logger.Error("failed to close network", "err", err)
@@ -349,7 +356,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 	}()
 
 	// 1. Retrieve the reactor with channel descriptor
-	reactor, err := s.reactors.GetWithDescriptorByProtocolID(protocolID)
+	proto, reactor, err := s.reactors.getReactorWithProtocol(protocolID)
 	if err != nil {
 		// should not happen
 		s.Logger.Error("Unknown protocol descriptor", "protocol", protocolID)
@@ -371,7 +378,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 		return
 	}
 
-	msg, err := unmarshalProto(reactor.Descriptor, payload)
+	msg, err := unmarshalProto(proto.descriptor, payload)
 	if err != nil {
 		s.Logger.Error("Failed to unmarshal message", "protocol", protocolID, "err", err)
 		return
@@ -390,7 +397,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 		payloadLen  = float64(len(payload))
 		labels      = []string{
 			"peer_id", peerStr,
-			"chID", fmt.Sprintf("%#x", reactor.Descriptor.ID),
+			"chID", fmt.Sprintf("%#x", proto.descriptor.ID),
 		}
 	)
 
@@ -398,7 +405,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 	s.metrics.MessageReceiveBytesTotal.With("message_type", messageType).Add(payloadLen)
 
 	s.Logger.Debug(
-		"Received stream envelope",
+		"Received stream envelope. Submitting to reactor",
 		"peer", peerID,
 		"protocol", protocolID,
 		"message_type", messageType,
@@ -407,11 +414,11 @@ func (s *Switch) handleStream(stream network.Stream) {
 
 	envelope := p2p.Envelope{
 		Src:       peer,
-		ChannelID: reactor.Descriptor.ID,
+		ChannelID: proto.descriptor.ID,
 		Message:   msg,
 	}
 
-	s.reactors.SubmitReceive(reactor.Name, messageType, envelope)
+	s.reactors.SubmitReceive(reactor.name, messageType, envelope)
 }
 
 func (s *Switch) ensurePeerProvisioned(peer p2p.Peer) error {

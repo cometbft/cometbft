@@ -42,9 +42,10 @@ func NumParityParts(total uint32) int {
 }
 
 type Part struct {
-	Index uint32            `json:"index"`
-	Bytes cmtbytes.HexBytes `json:"bytes"`
-	Proof merkle.Proof      `json:"proof"`
+	Index    uint32            `json:"index"`
+	Bytes    cmtbytes.HexBytes `json:"bytes"`
+	Proof    merkle.Proof      `json:"proof"`
+	IsParity bool              `json:"is_parity"`
 }
 
 type PartEncoding byte
@@ -122,37 +123,6 @@ func PartFromProto(pb *cmtproto.Part) (*Part, error) {
 	part.Proof = *proof
 
 	return part, part.ValidateBasic()
-}
-
-//-------------------------------------
-
-type ParityPart struct {
-	Index uint32
-	Bytes []byte
-}
-
-func (part *ParityPart) ToProto() (*cmtproto.ParityPart, error) {
-	if part == nil {
-		return nil, errors.New("nil parity part")
-	}
-	pb := new(cmtproto.ParityPart)
-
-	pb.Index = part.Index
-	pb.Bytes = part.Bytes
-
-	return pb, nil
-}
-
-func ParityPartFromProto(pb *cmtproto.ParityPart) (*ParityPart, error) {
-	if pb == nil {
-		return nil, errors.New("nil parity part")
-	}
-
-	part := new(ParityPart)
-	part.Index = pb.Index
-	part.Bytes = pb.Bytes
-
-	return part, nil
 }
 
 //-------------------------------------
@@ -237,7 +207,7 @@ type PartSet struct {
 
 	// parity is the amount of ParityPart's in this PartSet
 	parity      uint32
-	parityParts []*ParityPart
+	parityParts []*Part
 }
 
 // NewtPartSetFromData returns an immutable, full PartSet from the data bytes.
@@ -269,7 +239,7 @@ func NewRSPartSetFromData(data []byte, partSize uint32) (*PartSet, error) {
 	partsBytes := make([][]byte, dataShards)
 
 	parityShards := dataShards / 2
-	parityParts := make([]*ParityPart, parityShards)
+	parityParts := make([]*Part, parityShards)
 
 	// TODO: this is pretty arbitrary, need to do more tuning here
 	enc, err := reedsolomon.New(int(dataShards), int(parityShards))
@@ -305,9 +275,10 @@ func NewRSPartSetFromData(data []byte, partSize uint32) (*PartSet, error) {
 	partsBitArray := bits.NewBitArrayFromFn(int(dataShards), func(int) bool { return true })
 
 	for i := dataShards; i < parityShards; i++ {
-		parityParts[i] = &ParityPart{
-			Index: i,
-			Bytes: shards[i],
+		parityParts[i] = &Part{
+			Index:    i,
+			Bytes:    shards[i],
+			IsParity: true,
 		}
 	}
 
@@ -477,7 +448,7 @@ func (ps *PartSet) AddPart(part *Part) (bool, error) {
 	return true, nil
 }
 
-func (ps *PartSet) AddParityPart(part *ParityPart) (bool, error) {
+func (ps *PartSet) AddParityPart(part *Part) (bool, error) {
 	if ps == nil {
 		return false, nil
 	}
@@ -506,7 +477,7 @@ func (ps *PartSet) GetPart(index int) *Part {
 	return ps.parts[index]
 }
 
-func (ps *PartSet) GetParityPart(index int) *ParityPart {
+func (ps *PartSet) GetParityPart(index int) *Part {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 	return ps.parityParts[index]

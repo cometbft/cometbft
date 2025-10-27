@@ -1,4 +1,5 @@
 syntax = "proto3";
+
 package tendermint.types;
 
 option go_package = "github.com/cometbft/cometbft/proto/tendermint/types";
@@ -34,11 +35,6 @@ message Part {
   uint32                  index = 1;
   bytes                   bytes = 2;
   tendermint.crypto.Proof proof = 3 [(gogoproto.nullable) = false];
-}
-
-message ParityPart {
-  uint32                  index = 1;
-  bytes                   bytes = 2;
 }
 
 // BlockID

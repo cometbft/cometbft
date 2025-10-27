@@ -188,11 +188,9 @@ type PeerSet struct {
 var _ p2p.IPeerSet = (*PeerSet)(nil)
 
 func NewPeerSet(host *Host, metrics *p2p.Metrics, logger log.Logger) *PeerSet {
-	const initialCapacity = 64
-
 	return &PeerSet{
 		host:    host,
-		peers:   make(map[peer.ID]*Peer, initialCapacity),
+		peers:   make(map[peer.ID]*Peer),
 		mu:      sync.RWMutex{},
 		metrics: metrics,
 		logger:  logger,
@@ -356,27 +354,19 @@ func (p *PeerSet) keyToPeerID(key p2p.ID) peer.ID {
 		return ""
 	}
 
-	id, err := keyToPeerID(key)
-	if err != nil {
-		p.logger.Error("Failed to convert key to peer ID!", "peer_key", key, "err", err)
-		return ""
-	}
-
-	return id
-}
-
-func keyToPeerID(key p2p.ID) (peer.ID, error) {
 	b, err := base58.Decode(string(key))
 	if err != nil {
-		return "", errors.Wrap(err, "failed to decode base58 key")
+		p.logger.Error("Failed to decode base58 key", "peer_key", key, "err", err)
+		return ""
 	}
 
 	id, err := peer.IDFromBytes(b)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to convert bytes to peer ID")
+		p.logger.Error("Failed to convert bytes to peer ID", "peer_key", key, "err", err)
+		return ""
 	}
 
-	return id, nil
+	return id
 }
 
 // note that peerID.String() is base58 encoded and

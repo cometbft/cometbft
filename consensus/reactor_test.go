@@ -1127,7 +1127,7 @@ func TestMarshalJSONPeerState(t *testing.T) {
 			"start_time": "0001-01-01T00:00:00Z",
 			"proposal": false,
 			"proposal_block_part_set_header":
-				{"total":0, "hash":""},
+			{"total":0, "hash":"", "parity":0},
 			"proposal_block_parts": null,
 			"proposal_pol_round": -1,
 			"proposal_pol": null,

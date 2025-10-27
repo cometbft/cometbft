@@ -29,8 +29,7 @@ message PartSetHeader {
   bytes  hash  = 2;
 }
 
-// ECPartSetHeader
-message ECPartSetHeader {
+message PartSetHeaderWithParity {
   uint32 total = 1;
   bytes  hash  = 2;
   uint32 parity = 3;
@@ -40,6 +39,11 @@ message Part {
   uint32                  index = 1;
   bytes                   bytes = 2;
   tendermint.crypto.Proof proof = 3 [(gogoproto.nullable) = false];
+}
+
+message ParityPart {
+  uint32                  index = 1;
+  bytes                   bytes = 2;
 }
 
 // BlockID

@@ -35,7 +35,10 @@ func CanonicalizeBlockID(bid cmtproto.BlockID) *cmtproto.CanonicalBlockID {
 
 // CanonicalizePartSetHeader transforms the given PartSetHeader to a CanonicalPartSetHeader.
 func CanonicalizePartSetHeader(psh cmtproto.PartSetHeader) cmtproto.CanonicalPartSetHeader {
-	return cmtproto.CanonicalPartSetHeader(psh)
+	return cmtproto.CanonicalPartSetHeader{
+		Total: psh.Total,
+		Hash:  psh.Hash,
+	}
 }
 
 // CanonicalizeProposal transforms the given Proposal to a CanonicalProposal.

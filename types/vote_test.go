@@ -364,7 +364,9 @@ func TestInvalidVotes(t *testing.T) {
 		{"negative height", func(v *Vote) { v.Height = -1 }},
 		{"negative round", func(v *Vote) { v.Round = -1 }},
 		{"zero Height", func(v *Vote) { v.Height = 0 }},
-		{"invalid block ID", func(v *Vote) { v.BlockID = BlockID{[]byte{1, 2, 3}, PartSetHeader{111, []byte("blockparts")}} }},
+		{"invalid block ID", func(v *Vote) {
+			v.BlockID = BlockID{[]byte{1, 2, 3}, PartSetHeader{Total: 111, Hash: []byte("blockparts")}}
+		}},
 		{"invalid address", func(v *Vote) { v.ValidatorAddress = make([]byte, 1) }},
 		{"invalid validator index", func(v *Vote) { v.ValidatorIndex = -1 }},
 		{"invalid signature", func(v *Vote) { v.Signature = nil }},
@@ -517,7 +519,7 @@ func TestSignAndCheckVote(t *testing.T) {
 			extensionsEnabled: true,
 			vote: func() *Vote {
 				v := examplePrecommit()
-				v.BlockID = BlockID{make([]byte, 0), PartSetHeader{0, make([]byte, 0)}}
+				v.BlockID = BlockID{make([]byte, 0), PartSetHeader{Total: 0, Hash: make([]byte, 0)}}
 				return v
 			}(),
 			expectError: true,
@@ -527,7 +529,7 @@ func TestSignAndCheckVote(t *testing.T) {
 			extensionsEnabled: false,
 			vote: func() *Vote {
 				v := examplePrecommit()
-				v.BlockID = BlockID{make([]byte, 0), PartSetHeader{0, make([]byte, 0)}}
+				v.BlockID = BlockID{make([]byte, 0), PartSetHeader{Total: 0, Hash: make([]byte, 0)}}
 				return v
 			}(),
 			expectError: true,

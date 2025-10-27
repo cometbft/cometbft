@@ -128,9 +128,8 @@ func PartFromProto(pb *cmtproto.Part) (*Part, error) {
 //-------------------------------------
 
 type PartSetHeader struct {
-	Total  uint32            `json:"total"`
-	Hash   cmtbytes.HexBytes `json:"hash"`
-	Parity uint32            `json:"parity"`
+	Total uint32            `json:"total"`
+	Hash  cmtbytes.HexBytes `json:"hash"`
 }
 
 // String returns a string representation of PartSetHeader.
@@ -139,15 +138,15 @@ type PartSetHeader struct {
 // 2. number of total parts that are for parity
 // 2. first 6 bytes of the hash
 func (psh PartSetHeader) String() string {
-	return fmt.Sprintf("%v:%v:%X", psh.Total, psh.Parity, cmtbytes.Fingerprint(psh.Hash))
+	return fmt.Sprintf("%v:%X", psh.Total, cmtbytes.Fingerprint(psh.Hash))
 }
 
 func (psh PartSetHeader) IsZero() bool {
-	return psh.Total == 0 && len(psh.Hash) == 0 && psh.Parity == 0
+	return psh.Total == 0 && len(psh.Hash) == 0
 }
 
 func (psh PartSetHeader) Equals(other PartSetHeader) bool {
-	return psh.Total == other.Total && bytes.Equal(psh.Hash, other.Hash) && psh.Parity == other.Parity
+	return psh.Total == other.Total && bytes.Equal(psh.Hash, other.Hash)
 }
 
 // ValidateBasic performs basic validation.
@@ -166,9 +165,8 @@ func (psh *PartSetHeader) ToProto() cmtproto.PartSetHeader {
 	}
 
 	return cmtproto.PartSetHeader{
-		Total:  psh.Total,
-		Hash:   psh.Hash,
-		Parity: psh.Parity,
+		Total: psh.Total,
+		Hash:  psh.Hash,
 	}
 }
 
@@ -180,7 +178,6 @@ func PartSetHeaderFromProto(ppsh *cmtproto.PartSetHeader) (*PartSetHeader, error
 	psh := new(PartSetHeader)
 	psh.Total = ppsh.Total
 	psh.Hash = ppsh.Hash
-	psh.Parity = ppsh.Parity
 
 	return psh, psh.ValidateBasic()
 }
@@ -188,7 +185,7 @@ func PartSetHeaderFromProto(ppsh *cmtproto.PartSetHeader) (*PartSetHeader, error
 // ProtoPartSetHeaderIsZero is similar to the IsZero function for
 // PartSetHeader, but for the Protobuf representation.
 func ProtoPartSetHeaderIsZero(ppsh *cmtproto.PartSetHeader) bool {
-	return ppsh.Total == 0 && len(ppsh.Hash) == 0 && ppsh.Parity == 0
+	return ppsh.Total == 0 && len(ppsh.Hash) == 0
 }
 
 //-------------------------------------
@@ -346,9 +343,8 @@ func (ps *PartSet) Header() PartSetHeader {
 		return PartSetHeader{}
 	}
 	return PartSetHeader{
-		Total:  ps.total,
-		Parity: ps.parity,
-		Hash:   ps.hash,
+		Total: ps.total,
+		Hash:  ps.hash,
 	}
 }
 

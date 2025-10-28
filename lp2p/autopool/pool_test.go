@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPool(t *testing.T) {
@@ -111,4 +112,10 @@ func TestPool(t *testing.T) {
 	// ASSERT
 	t.Logf("Messages published: %d", messagesPublished.Load())
 	t.Logf("Messages consumed: %d", messagesConsumed.Load())
+
+	// 5%
+	delta := float64(messagesPublished.Load()) * 0.05
+
+	require.InDelta(t, messagesConsumed.Load(), messagesPublished.Load(), delta, "Consumer is too slow")
+
 }

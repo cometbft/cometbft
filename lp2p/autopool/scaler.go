@@ -23,8 +23,7 @@ type ThroughputLatencyScaler struct {
 	// latencies of the current epoch
 	epochLatencies []time.Duration
 
-	// throughput of the last epoch
-	lastThroughput uint
+	ewmaThroughput float64
 
 	mu     sync.Mutex
 	logger log.Logger
@@ -66,7 +65,7 @@ func NewThroughputLatencyScaler(
 		thresholdLatency:    thresholdLatency,
 		epochDuration:       epochDuration,
 		epochLatencies:      []time.Duration{},
-		lastThroughput:      0,
+		ewmaThroughput:      0,
 		logger:              logger.With("component", "scaler"),
 		mu:                  sync.Mutex{},
 	}
@@ -101,44 +100,47 @@ func (s *ThroughputLatencyScaler) Track(duration time.Duration) {
 	s.epochLatencies = append(s.epochLatencies, duration)
 }
 
-func (s *ThroughputLatencyScaler) Decide(currentNumWorkers int) uint8 {
+func (s *ThroughputLatencyScaler) Decide(currentNumWorkers, queueLen, queueCap int) uint8 {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	const (
+		alpha     = 0.3
+		tolerance = 0.1 // 10%
+	)
+
 	var (
-		epochThroughput    = uint(len(s.epochLatencies))
+		epochThroughput    = float64(len(s.epochLatencies))
 		epochDurPercentile = calculatePercentile(s.epochLatencies, s.thresholdPercentile)
 		logger             = s.logger.With(
 			"current_workers", currentNumWorkers,
 			"throughput", epochThroughput,
-			"prev_throughput", s.lastThroughput,
+			"ewma_throughput", s.ewmaThroughput,
 			"epoch_dur_percentile_ms", epochDurPercentile.Milliseconds(),
 		)
 	)
 
-	// handle inactivity
-	if epochThroughput == 0 {
-		s.lastThroughput = 0
-		s.epochLatencies = []time.Duration{}
+	if s.ewmaThroughput == 0 {
+		s.ewmaThroughput = epochThroughput
+	} else {
+		newEWMA := alpha*epochThroughput + (1-alpha)*s.ewmaThroughput
 
-		if currentNumWorkers == s.minWorkers {
-			logger.Debug("Inactivity detected, at min workers")
-			return ShouldStay
-		}
-
-		logger.Debug("Inactivity detected, recommending shrink")
-		return ShouldShrink
+		s.ewmaThroughput = newEWMA
 	}
 
 	var decision uint8
 	var logMessage string
 
-	if s.lastThroughput <= epochThroughput {
-		logMessage = "Scaling"
+	switch {
+	case epochThroughput > s.ewmaThroughput*(1+tolerance):
 		decision = ShouldScale
-	} else {
-		logMessage = "Shrinking"
+		logMessage = "Scaling"
+	case epochThroughput < s.ewmaThroughput*(1-tolerance):
 		decision = ShouldShrink
+		logMessage = "Shrinking"
+	default:
+		decision = ShouldStay
+		logMessage = "Staying"
 	}
 
 	if decision == ShouldScale && epochDurPercentile >= s.thresholdLatency {
@@ -159,7 +161,6 @@ func (s *ThroughputLatencyScaler) Decide(currentNumWorkers int) uint8 {
 	logger.Debug(logMessage)
 
 	// update state
-	s.lastThroughput = epochThroughput
 	s.epochLatencies = make([]time.Duration, 0, len(s.epochLatencies))
 
 	return decision

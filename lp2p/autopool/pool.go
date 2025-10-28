@@ -147,7 +147,7 @@ func (p *Pool[T]) autoscale() (exit bool) {
 		return true
 	}
 
-	decision := p.scaler.Decide(len(p.workers))
+	decision := p.scaler.Decide(len(p.workers), len(p.ch), cap(p.ch))
 
 	switch decision {
 	case ShouldScale:

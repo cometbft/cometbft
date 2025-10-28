@@ -97,7 +97,10 @@ func TestThroughputLatencyScaler(t *testing.T) {
 			scaler.Track(lt)
 		}
 
-		decision := scaler.Decide(numWorkers)
+		// todo
+		const todo = 10
+
+		decision := scaler.Decide(numWorkers, todo, todo)
 		switch decision {
 		case ShouldScale:
 			numWorkers++

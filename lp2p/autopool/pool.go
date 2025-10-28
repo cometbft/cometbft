@@ -93,7 +93,10 @@ func (p *Pool[T]) Stop() {
 }
 
 func (w *worker[T]) run() {
+	w.pool.workersWg.Add(1)
+
 	defer func() {
+		w.pool.workersWg.Done()
 		if r := recover(); r != nil {
 			w.pool.logger.Error("Panic in pool worker", "panic", r)
 		}
@@ -117,9 +120,6 @@ func (w *worker[T]) run() {
 }
 
 func (p *Pool[T]) handleMessage(msg T) {
-	p.workersWg.Add(1)
-	defer p.workersWg.Done()
-
 	now := time.Now()
 	p.receive(msg)
 	timeTaken := time.Since(now)

@@ -12,10 +12,8 @@ import (
 func TestPool(t *testing.T) {
 	// ARRANGE
 	const (
-		testDuration = 3 * time.Second
-	)
+		testDuration = 10 * time.Second
 
-	const (
 		minWorkers = 4
 		maxWorkers = 10
 
@@ -38,7 +36,7 @@ func TestPool(t *testing.T) {
 	var (
 		messagesPublished = atomic.Int64{}
 		messagesConsumed  = atomic.Int64{}
-		queue             = make(chan time.Duration)
+		queue             = make(chan time.Duration, 1024)
 		closeTest         = make(chan struct{})
 	)
 
@@ -54,12 +52,15 @@ func TestPool(t *testing.T) {
 				return
 			default:
 				// sleep for [0...latencyThreshold)
-				sleepFor := time.Duration(
+				consumerDelay := time.Duration(
 					rand.Uint64() % uint64(latencyThreshold+latencyMaxDiff),
 				)
 
-				queue <- sleepFor
+				queue <- consumerDelay
 				messagesPublished.Add(1)
+
+				// also pause producer for shorter amount of time
+				time.Sleep(consumerDelay / 8)
 			}
 		}
 	}()
@@ -67,7 +68,15 @@ func TestPool(t *testing.T) {
 	// Given consumer that consumes messages
 	consumer := func(latency time.Duration) {
 		time.Sleep(latency)
-		messagesConsumed.Add(1)
+
+		total := messagesConsumed.Add(1)
+
+		if total%100 == 0 {
+			qs := len(queue)
+			if qs > 0 {
+				logger.Info("Queue size", "size", qs)
+			}
+		}
 	}
 
 	// Given scaler
@@ -87,6 +96,7 @@ func TestPool(t *testing.T) {
 
 	// ACT
 	// start pool
+	logger.Info("Running", "duration", testDuration)
 	pool.Start()
 
 	// wait for test to finish

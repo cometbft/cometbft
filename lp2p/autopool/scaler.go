@@ -96,8 +96,6 @@ func (s *ThroughputLatencyScaler) Decide(currentNumWorkers int) uint8 {
 		)
 	)
 
-	logger.Debug("Deciding")
-
 	// handle inactivity
 	if epochThroughput == 0 {
 		s.lastThroughput = 0
@@ -112,7 +110,7 @@ func (s *ThroughputLatencyScaler) Decide(currentNumWorkers int) uint8 {
 		return ShouldShrink
 	}
 
-	decision := ShouldStay
+	var decision uint8
 
 	if s.lastThroughput <= epochThroughput {
 		logger.Debug("Scaling")

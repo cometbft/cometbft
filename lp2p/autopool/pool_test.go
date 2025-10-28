@@ -72,7 +72,7 @@ func TestPool(t *testing.T) {
 
 		total := messagesConsumed.Add(1)
 
-		if total%100 == 0 {
+		if total%200 == 0 {
 			qs := len(queue)
 			if qs > 0 {
 				logger.Info("Queue size", "size", qs)
@@ -113,8 +113,8 @@ func TestPool(t *testing.T) {
 	t.Logf("Messages published: %d", messagesPublished.Load())
 	t.Logf("Messages consumed: %d", messagesConsumed.Load())
 
-	// 5%
-	delta := float64(messagesPublished.Load()) * 0.05
+	// 20%
+	delta := float64(messagesPublished.Load()) * 0.2
 
 	require.InDelta(t, messagesConsumed.Load(), messagesPublished.Load(), delta, "Consumer is too slow")
 

@@ -17,6 +17,8 @@ func TestThroughputLatencyScaler(t *testing.T) {
 		thresholdPercentile = 90.0
 		thresholdLatency    = 100 * time.Millisecond
 		epochDuration       = time.Second
+
+		queueCap = 10
 	)
 
 	logger := log.TestingLogger()
@@ -34,32 +36,38 @@ func TestThroughputLatencyScaler(t *testing.T) {
 
 	for index, tt := range []struct {
 		latenciesMS        []int
+		queueLen           int
 		expectedDecision   uint8
 		expectedNumWorkers int
 	}{
 		{
 			latenciesMS:        []int{},
+			queueLen:           5,
 			expectedDecision:   ShouldStay,
 			expectedNumWorkers: min,
 		},
 		{
 			// one very slow req, but we can't shrink below min
 			latenciesMS:        []int{200},
+			queueLen:           5,
 			expectedDecision:   ShouldStay,
 			expectedNumWorkers: min,
 		},
 		{
 			latenciesMS:        []int{50, 50, 50},
+			queueLen:           5,
 			expectedDecision:   ShouldScale,
 			expectedNumWorkers: 5,
 		},
 		{
 			latenciesMS:        []int{50, 50, 50},
+			queueLen:           5,
 			expectedDecision:   ShouldScale,
 			expectedNumWorkers: 6,
 		},
 		{
 			latenciesMS:        []int{50, 50, 50, 80},
+			queueLen:           5,
 			expectedDecision:   ShouldScale,
 			expectedNumWorkers: 7,
 		},
@@ -70,24 +78,36 @@ func TestThroughputLatencyScaler(t *testing.T) {
 		},
 		{
 			latenciesMS:        []int{50, 50, 50, 80, 90, 90},
+			queueLen:           5,
 			expectedDecision:   ShouldScale,
 			expectedNumWorkers: 9,
 		},
 		{
 			latenciesMS:        []int{50, 50, 50},
+			queueLen:           5,
 			expectedDecision:   ShouldShrink,
 			expectedNumWorkers: 8,
 		},
 		{
 			latenciesMS:        []int{50, 50, 50, 80, 90, 90, 95, 99},
+			queueLen:           5,
 			expectedDecision:   ShouldScale,
 			expectedNumWorkers: 9,
 		},
 		{
+			// not so many processed messages, but latency is OK and channel has pressure
+			latenciesMS:        []int{50, 50, 50},
+			queueLen:           7,
+			expectedDecision:   ShouldScale,
+			expectedNumWorkers: 10,
+		},
+		{
 			// here we processed a lot of message, but the latency became too high, so we should shrink
+			// (regardless of queue pressure)
 			latenciesMS:        []int{50, 50, 50, 80, 90, 90, 95, 99, 100, 120, 130, 150},
+			queueLen:           8,
 			expectedDecision:   ShouldShrink,
-			expectedNumWorkers: 8,
+			expectedNumWorkers: 9,
 		},
 	} {
 		// ACT
@@ -97,10 +117,7 @@ func TestThroughputLatencyScaler(t *testing.T) {
 			scaler.Track(lt)
 		}
 
-		// todo
-		const todo = 10
-
-		decision := scaler.Decide(numWorkers, todo, todo)
+		decision := scaler.Decide(numWorkers, tt.queueLen, queueCap)
 		switch decision {
 		case ShouldScale:
 			numWorkers++

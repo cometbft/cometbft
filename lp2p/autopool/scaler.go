@@ -3,6 +3,7 @@ package autopool
 import (
 	"fmt"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -12,6 +13,10 @@ import (
 // ThroughputLatencyScaler is a scaler that scales the number of workers based on throughput
 // The more messages are processed, the more workers are scaled up.
 // But if latency percentile is too high, the scaler will shrink the number of workers.
+// It uses a combination of:
+// - EWMA (exponential moving average) of throughput
+// - Percentile of latency
+// - Queue length & capacity
 type ThroughputLatencyScaler struct {
 	minWorkers int
 	maxWorkers int
@@ -93,6 +98,7 @@ func (s *ThroughputLatencyScaler) Max() int {
 	return s.maxWorkers
 }
 
+// Track tracks the duration of a message processing
 func (s *ThroughputLatencyScaler) Track(duration time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -100,13 +106,20 @@ func (s *ThroughputLatencyScaler) Track(duration time.Duration) {
 	s.epochLatencies = append(s.epochLatencies, duration)
 }
 
+// Decide decides whether to scale up, scale down, or stay the same
 func (s *ThroughputLatencyScaler) Decide(currentNumWorkers, queueLen, queueCap int) uint8 {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	// EWMA constants (could be moved to config, but for now it's fine)
 	const (
 		alpha     = 0.3
 		tolerance = 0.1 // 10%
+	)
+
+	const (
+		// if queue pressure is greater than 60%, we should scale up if we can
+		queuePressureThreshold = 0.6
 	)
 
 	var (
@@ -128,37 +141,49 @@ func (s *ThroughputLatencyScaler) Decide(currentNumWorkers, queueLen, queueCap i
 		s.ewmaThroughput = newEWMA
 	}
 
-	var decision uint8
-	var logMessage string
+	decision := ShouldStay
+	reasoning := make([]string, 0, 4)
 
+	// 1. EWMA checks
 	switch {
 	case epochThroughput > s.ewmaThroughput*(1+tolerance):
 		decision = ShouldScale
-		logMessage = "Scaling"
+		reasoning = append(reasoning, "scaling")
 	case epochThroughput < s.ewmaThroughput*(1-tolerance):
 		decision = ShouldShrink
-		logMessage = "Shrinking"
+		reasoning = append(reasoning, "shrinking")
 	default:
-		decision = ShouldStay
-		logMessage = "Staying"
+		reasoning = append(reasoning, "staying")
 	}
 
+	// 2. Queue length checks
+	if queueCap > 0 {
+		queuePressure := float64(queueLen) / float64(queueCap)
+
+		if queuePressure >= queuePressureThreshold && decision != ShouldScale {
+			decision = ShouldScale
+			reasoning = append(reasoning, "scaling: queue pressure is high")
+		}
+	}
+
+	// 3. Latency checks
 	if decision == ShouldScale && epochDurPercentile >= s.thresholdLatency {
-		logMessage = "Wanted to scale, but latency is too high. Shrinking"
+		reasoning = append(reasoning, "shrinking: latency is too high")
 		decision = ShouldShrink
 	}
 
+	// 4. Worker count checks
 	if decision == ShouldScale && currentNumWorkers >= s.maxWorkers {
-		logMessage = "Wanted to scale, but at max workers. Staying"
+		reasoning = append(reasoning, "staying: at max workers")
 		decision = ShouldStay
 	}
 
 	if decision == ShouldShrink && currentNumWorkers <= s.minWorkers {
-		logMessage = "Wanted to shrink, but at min workers. Staying"
+		reasoning = append(reasoning, "staying: at min workers")
 		decision = ShouldStay
 	}
 
-	logger.Debug(logMessage)
+	logger.Debug("Scaler", "reasoning", strings.Join(reasoning, " → "))
 
 	// update state
 	s.epochLatencies = make([]time.Duration, 0, len(s.epochLatencies))

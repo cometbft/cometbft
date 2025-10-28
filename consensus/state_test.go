@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -153,6 +155,79 @@ func TestStateEnterProposeNoPrivValidator(t *testing.T) {
 
 	if cs.GetRoundState().Proposal != nil {
 		t.Error("Expected to make no proposal, since no privValidator")
+	}
+}
+
+func TestBlockReconstruction(t *testing.T) {
+	ctx := context.Background()
+
+	// create dummy peer
+	cs, _ := randState(1)
+	peer := p2pmock.NewPeer(nil)
+
+	var height int64 = 1
+	var round int32 = 0
+
+	// create a block with 100 txs, each containing 10KiB of data
+	//
+	// this will create a block of size 1000.5KiB. using the standard block
+	// part size of 64kB, this will yield 16 data block parts
+	var txs []types.Tx
+	for i := 0; i < 100; i++ {
+		txs = append(txs, types.Tx(cmtrand.Bytes(10240)))
+	}
+	proposer := cs.GetState().Validators.Proposer.Address
+	block := cs.state.MakeBlock(height, txs, new(types.Commit), nil, proposer)
+
+	pbb, err := block.ToProto()
+	require.NoError(t, err)
+
+	expectedBlockBz, err := proto.Marshal(pbb)
+	require.NoError(t, err)
+
+	// create a part set from this block with erasure coding
+	parts, err := block.MakePartSetWithEncoding(types.BlockPartSizeBytes, types.ReedSolomon)
+	require.NoError(t, err)
+
+	sub, err := cs.eventBus.Subscribe(ctx, "test", types.EventQueryCompleteProposal)
+	require.NoError(t, err)
+
+	// set this PartSetHeader as the current proposal that we are processing
+	cs.ProposalBlockParts = types.NewPartSetFromHeader(parts.Header())
+
+	// send all parity parts
+	for i := 0; i < types.NumParityParts(parts.Total()); i++ {
+		parityPart := parts.GetParityPart(i)
+		msg := &BlockPartMessage{
+			Height: height,
+			Round:  round,
+			Part:   parityPart,
+		}
+		cs.handleMsg(msgInfo{msg, peer.ID()})
+	}
+
+	select {
+	case <-time.After(ensureTimeout):
+		t.Fatal("timed out while waiting for proposal message")
+	case msg := <-sub.Out():
+		proposalEvent, ok := msg.Data().(types.EventDataCompleteProposal)
+		require.True(t, ok)
+
+		// require that proposal event has correct values about the proposal
+		// that this val received via block parts
+		require.Equal(t, height, proposalEvent.Height)
+		require.Equal(t, round, proposalEvent.Round)
+		expectedBlockID := types.BlockID{Hash: block.Hash(), PartSetHeader: parts.Header()}
+		require.Equal(t, expectedBlockID, proposalEvent.BlockID)
+
+		// require that the proposal block parts are the same as the proto
+		// marshaled block that was input
+		require.True(t, cs.ProposalBlockParts.IsComplete())
+		bz, err := io.ReadAll(cs.ProposalBlockParts.GetReader())
+		require.NoError(t, err)
+		require.Equal(t, expectedBlockBz, bz)
+
+		require.True(t, cs.ProposalBlock.HashesTo(block.Hash()))
 	}
 }
 

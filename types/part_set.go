@@ -38,7 +38,7 @@ func (e ErrInvalidPart) Unwrap() error {
 }
 
 func NumParityParts(total uint32) int {
-	return int(total / 2)
+	return int(total)
 }
 
 type Part struct {
@@ -60,15 +60,19 @@ func (part *Part) ValidateBasic() error {
 	if len(part.Bytes) > int(BlockPartSizeBytes) {
 		return ErrPartTooBig
 	}
-	// All parts except the last one should have the same constant size.
-	if int64(part.Index) < part.Proof.Total-1 && len(part.Bytes) != int(BlockPartSizeBytes) {
-		return ErrPartInvalidSize
-	}
-	if int64(part.Index) != part.Proof.Index {
-		return ErrInvalidPart{Reason: fmt.Errorf("part index %d != proof index %d", part.Index, part.Proof.Index)}
-	}
-	if err := part.Proof.ValidateBasic(); err != nil {
-		return ErrInvalidPart{Reason: fmt.Errorf("wrong Proof: %w", err)}
+
+	// parity parts have no proofs
+	if !part.IsParity {
+		// All parts except the last one should have the same constant size.
+		if int64(part.Index) < part.Proof.Total-1 && len(part.Bytes) != int(BlockPartSizeBytes) {
+			return ErrPartInvalidSize
+		}
+		if int64(part.Index) != part.Proof.Index {
+			return ErrInvalidPart{Reason: fmt.Errorf("part index %d != proof index %d", part.Index, part.Proof.Index)}
+		}
+		if err := part.Proof.ValidateBasic(); err != nil {
+			return ErrInvalidPart{Reason: fmt.Errorf("wrong Proof: %w", err)}
+		}
 	}
 	return nil
 }
@@ -99,11 +103,14 @@ func (part *Part) ToProto() (*cmtproto.Part, error) {
 		return nil, errors.New("nil part")
 	}
 	pb := new(cmtproto.Part)
-	proof := part.Proof.ToProto()
 
 	pb.Index = part.Index
 	pb.Bytes = part.Bytes
-	pb.Proof = *proof
+	pb.IsParity = part.IsParity
+	if !pb.IsParity {
+		proof := part.Proof.ToProto()
+		pb.Proof = *proof
+	}
 
 	return pb, nil
 }
@@ -114,13 +121,17 @@ func PartFromProto(pb *cmtproto.Part) (*Part, error) {
 	}
 
 	part := new(Part)
-	proof, err := merkle.ProofFromProto(&pb.Proof)
-	if err != nil {
-		return nil, err
-	}
 	part.Index = pb.Index
 	part.Bytes = pb.Bytes
-	part.Proof = *proof
+	part.IsParity = pb.IsParity
+
+	if !part.IsParity {
+		proof, err := merkle.ProofFromProto(&pb.Proof)
+		if err != nil {
+			return nil, err
+		}
+		part.Proof = *proof
+	}
 
 	return part, part.ValidateBasic()
 }
@@ -128,8 +139,9 @@ func PartFromProto(pb *cmtproto.Part) (*Part, error) {
 //-------------------------------------
 
 type PartSetHeader struct {
-	Total uint32            `json:"total"`
-	Hash  cmtbytes.HexBytes `json:"hash"`
+	Total    uint32            `json:"total"`
+	Hash     cmtbytes.HexBytes `json:"hash"`
+	ByteSize uint64            `json:"byte_size,omitempty"`
 }
 
 // String returns a string representation of PartSetHeader.
@@ -142,11 +154,11 @@ func (psh PartSetHeader) String() string {
 }
 
 func (psh PartSetHeader) IsZero() bool {
-	return psh.Total == 0 && len(psh.Hash) == 0
+	return psh.Total == 0 && len(psh.Hash) == 0 && psh.ByteSize == 0
 }
 
 func (psh PartSetHeader) Equals(other PartSetHeader) bool {
-	return psh.Total == other.Total && bytes.Equal(psh.Hash, other.Hash)
+	return psh.Total == other.Total && bytes.Equal(psh.Hash, other.Hash) && psh.ByteSize == other.ByteSize
 }
 
 // ValidateBasic performs basic validation.
@@ -164,10 +176,15 @@ func (psh *PartSetHeader) ToProto() cmtproto.PartSetHeader {
 		return cmtproto.PartSetHeader{}
 	}
 
-	return cmtproto.PartSetHeader{
+	ppsh := cmtproto.PartSetHeader{
 		Total: psh.Total,
 		Hash:  psh.Hash,
 	}
+	if psh.ByteSize != 0 {
+		ppsh.XByteSize = &cmtproto.PartSetHeader_ByteSize{ByteSize: psh.ByteSize}
+	}
+
+	return ppsh
 }
 
 // PartSetHeaderFromProto sets a protobuf PartSetHeader to the given pointer
@@ -178,6 +195,7 @@ func PartSetHeaderFromProto(ppsh *cmtproto.PartSetHeader) (*PartSetHeader, error
 	psh := new(PartSetHeader)
 	psh.Total = ppsh.Total
 	psh.Hash = ppsh.Hash
+	psh.ByteSize = ppsh.GetByteSize()
 
 	return psh, psh.ValidateBasic()
 }
@@ -185,7 +203,7 @@ func PartSetHeaderFromProto(ppsh *cmtproto.PartSetHeader) (*PartSetHeader, error
 // ProtoPartSetHeaderIsZero is similar to the IsZero function for
 // PartSetHeader, but for the Protobuf representation.
 func ProtoPartSetHeaderIsZero(ppsh *cmtproto.PartSetHeader) bool {
-	return ppsh.Total == 0 && len(ppsh.Hash) == 0
+	return ppsh.Total == 0 && len(ppsh.Hash) == 0 && ppsh.GetByteSize() == 0
 }
 
 //-------------------------------------
@@ -198,16 +216,24 @@ type PartSet struct {
 	parts         []*Part
 	partsBitArray *bits.BitArray
 	count         uint32
-	// a count of the total size (in bytes). Used to ensure that the
-	// part set doesn't exceed the maximum block bytes
+
+	// a count of the total size (in bytes). Used to ensure that the part set
+	// doesn't exceed the maximum block bytes. When building a PartSet part by
+	// part (via AddPart), byteSize will grow.
 	byteSize int64
 
+	// The total byte size of all parts. As reported by the header or from
+	// constructing via data. This value is static.
+	totalByteSize int64
+
 	// parity is the amount of ParityPart's in this PartSet
-	parity      uint32
-	parityParts []*Part
+	parity         uint32
+	parityCount    uint32
+	parityBitArray *bits.BitArray
+	parityParts    []*Part
 }
 
-// NewtPartSetFromData returns an immutable, full PartSet from the data bytes.
+// NewPartSetFromData returns an immutable, full PartSet from the data bytes.
 // The data bytes are split into "partSize" chunks, and merkle tree computed.
 // CONTRACT: partSize is greater than zero.
 func NewPartSetFromDataWithEncoding(data []byte, partSize uint32, encoding PartEncoding) (*PartSet, error) {
@@ -221,6 +247,13 @@ func NewPartSetFromDataWithEncoding(data []byte, partSize uint32, encoding PartE
 	}
 }
 
+// NewRSPartSetFromData returns an immutable, full PartSet from the data bytes.
+// The data bytes are split into "partSize" chunks, and merkle tree computed.
+// The PartSet will be ReedSolomon encoded, meaning there will be parity parts
+// computed, so the PartSet can be recomputed from the parity parts, even if
+// some Part's are missing.
+//
+// CONTRACT: partSize is greater than zero.
 func NewRSPartSetFromData(data []byte, partSize uint32) (*PartSet, error) {
 	// divide data into parts of size `partSize`
 	dataShards := (uint32(len(data)) + partSize - 1) / partSize
@@ -235,7 +268,7 @@ func NewRSPartSetFromData(data []byte, partSize uint32) (*PartSet, error) {
 	parts := make([]*Part, dataShards)
 	partsBytes := make([][]byte, dataShards)
 
-	parityShards := dataShards / 2
+	parityShards := NumParityParts(dataShards)
 	parityParts := make([]*Part, parityShards)
 
 	// TODO: this is pretty arbitrary, need to do more tuning here
@@ -271,13 +304,14 @@ func NewRSPartSetFromData(data []byte, partSize uint32) (*PartSet, error) {
 	}
 	partsBitArray := bits.NewBitArrayFromFn(int(dataShards), func(int) bool { return true })
 
-	for i := dataShards; i < parityShards; i++ {
-		parityParts[i] = &Part{
-			Index:    i,
+	for i := dataShards; i < dataShards+uint32(parityShards); i++ {
+		parityParts[i-dataShards] = &Part{
+			Index:    i - dataShards,
 			Bytes:    shards[i],
 			IsParity: true,
 		}
 	}
+	parityBitArray := bits.NewBitArrayFromFn(int(parityShards), func(int) bool { return true })
 
 	return &PartSet{
 		total:         dataShards,
@@ -290,9 +324,12 @@ func NewRSPartSetFromData(data []byte, partSize uint32) (*PartSet, error) {
 		//
 		// NOTE: this only counts the size of the data shards, not
 		// parity shards.
-		byteSize:    int64(len(data)),
-		parity:      parityShards,
-		parityParts: parityParts,
+		byteSize:       int64(len(data)),
+		totalByteSize:  int64(len(data)),
+		parity:         uint32(parityShards),
+		parityBitArray: parityBitArray,
+		parityParts:    parityParts,
+		parityCount:    uint32(parityShards),
 	}, nil
 }
 
@@ -322,19 +359,26 @@ func NewPartSetFromData(data []byte, partSize uint32) *PartSet {
 		partsBitArray: partsBitArray,
 		count:         total,
 		byteSize:      int64(len(data)),
+		totalByteSize: int64(len(data)),
 		parity:        0,
 	}
 }
 
 // NewPartSetFromHeader returns an empty PartSet ready to be populated.
 func NewPartSetFromHeader(header PartSetHeader) *PartSet {
+	parity := NumParityParts(header.Total)
 	return &PartSet{
-		total:         header.Total,
-		hash:          header.Hash,
-		parts:         make([]*Part, header.Total),
-		partsBitArray: bits.NewBitArray(int(header.Total)),
-		count:         0,
-		byteSize:      0,
+		total:          header.Total,
+		hash:           header.Hash,
+		parts:          make([]*Part, header.Total),
+		partsBitArray:  bits.NewBitArray(parity),
+		parityParts:    make([]*Part, parity),
+		parityBitArray: bits.NewBitArray(parity),
+		parity:         uint32(parity),
+		count:          0,
+		byteSize:       0,
+		totalByteSize:  int64(header.ByteSize),
+		parityCount:    0,
 	}
 }
 
@@ -343,8 +387,9 @@ func (ps *PartSet) Header() PartSetHeader {
 		return PartSetHeader{}
 	}
 	return PartSetHeader{
-		Total: ps.total,
-		Hash:  ps.hash,
+		Total:    ps.total,
+		Hash:     ps.hash,
+		ByteSize: uint64(ps.totalByteSize),
 	}
 }
 
@@ -359,6 +404,12 @@ func (ps *PartSet) BitArray() *bits.BitArray {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 	return ps.partsBitArray.Copy()
+}
+
+func (ps *PartSet) ParityBitArray() *bits.BitArray {
+	ps.mtx.Lock()
+	defer ps.mtx.Unlock()
+	return ps.parityBitArray.Copy()
 }
 
 func (ps *PartSet) Hash() []byte {
@@ -403,6 +454,66 @@ func (ps *PartSet) Parity() uint32 {
 	return ps.parity
 }
 
+func (ps *PartSet) ParityCount() uint32 {
+	if ps == nil {
+		return 0
+	}
+	return ps.parityCount
+}
+
+func (ps *PartSet) TryReconstruct() (bool, error) {
+	shards := ps.ToShards()
+
+	enc, err := reedsolomon.New(int(ps.total), int(ps.parity))
+	if err != nil {
+		return false, fmt.Errorf("creating reedsolomon encoder with %d data shards and %d parity shards: %w", ps.total, ps.parity, err)
+	}
+
+	err = enc.ReconstructData(shards)
+	if err == reedsolomon.ErrTooFewShards {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("reconstructing data: %w", err)
+	}
+
+	for i := 0; i < int(ps.total); i++ {
+		if ps.parts[i] != nil {
+			continue
+		}
+
+		ps.parts[i] = &Part{
+			Index: uint32(i),
+			Bytes: shards[i],
+		}
+	}
+	ps.count = ps.total
+	return true, nil
+}
+
+func (ps *PartSet) ToShards() [][]byte {
+	totalShards := ps.total + uint32(ps.parity)
+	shards := make([][]byte, totalShards)
+
+	for i := 0; i < int(ps.total); i++ {
+		part := ps.parts[i]
+		if part == nil {
+			continue
+		}
+		shards[part.Index] = part.Bytes
+	}
+
+	for i := 0; i < int(ps.parity); i++ {
+		parityPart := ps.parityParts[i]
+		if parityPart == nil {
+			continue
+		}
+		shards[parityPart.Index+ps.total] = parityPart.Bytes
+	}
+
+	return shards
+}
+
 // CONTRACT: part is validated using ValidateBasic.
 func (ps *PartSet) AddPart(part *Part) (bool, error) {
 	// TODO: remove this? would be preferable if this only returned (false, nil)
@@ -438,7 +549,6 @@ func (ps *PartSet) AddPart(part *Part) (bool, error) {
 	ps.parts[part.Index] = part
 	ps.partsBitArray.SetIndex(int(part.Index), true)
 	ps.count++
-	// parity parts do not count towards total byteSize
 	ps.byteSize += int64(len(part.Bytes))
 
 	return true, nil
@@ -464,6 +574,8 @@ func (ps *PartSet) AddParityPart(part *Part) (bool, error) {
 
 	// Add part
 	ps.parityParts[part.Index] = part
+	ps.parityBitArray.SetIndex(int(part.Index), true)
+	ps.parityCount++
 	return true, nil
 }
 
@@ -487,27 +599,44 @@ func (ps *PartSet) GetReader() io.Reader {
 	if !ps.IsComplete() {
 		panic("Cannot GetReader() on incomplete PartSet")
 	}
-	return NewPartSetReader(ps.parts)
+	return NewPartSetReader(ps.parts, ps.totalByteSize)
 }
 
 type PartSetReader struct {
-	i      int
-	parts  []*Part
-	reader *bytes.Reader
+	i         int
+	parts     []*Part
+	reader    *bytes.Reader
+	MaxBytes  int64
+	bytesRead int64
 }
 
-func NewPartSetReader(parts []*Part) *PartSetReader {
+func NewPartSetReader(parts []*Part, totalSize int64) *PartSetReader {
 	return &PartSetReader{
-		i:      0,
-		parts:  parts,
-		reader: bytes.NewReader(parts[0].Bytes),
+		i:         0,
+		parts:     parts,
+		reader:    bytes.NewReader(parts[0].Bytes),
+		MaxBytes:  totalSize,
+		bytesRead: 0,
 	}
 }
 
 func (psr *PartSetReader) Read(p []byte) (n int, err error) {
+	// Check if we've already read the maximum allowed bytes
+	if psr.bytesRead >= psr.MaxBytes {
+		return 0, io.EOF
+	}
+
+	// Limit the read to not exceed MaxBytes
+	remainingBytes := psr.MaxBytes - psr.bytesRead
+	if int64(len(p)) > remainingBytes {
+		p = p[:remainingBytes]
+	}
+
 	readerLen := psr.reader.Len()
 	if readerLen >= len(p) {
-		return psr.reader.Read(p)
+		n, err = psr.reader.Read(p)
+		psr.bytesRead += int64(n)
+		return n, err
 	} else if readerLen > 0 {
 		n1, err := psr.Read(p[:readerLen])
 		if err != nil {

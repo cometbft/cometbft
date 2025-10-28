@@ -436,6 +436,29 @@ func TestReactorRecordsVotesAndBlockParts(t *testing.T) {
 	assert.Equal(t, true, ps.BlockPartsSent() > 0, "number of votes sent should have increased")
 }
 
+func TestReactorRecievesParityParts(t *testing.T) {
+	N := 2
+	css, cleanup := randConsensusNet(t, N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore, func(c *cfg.Config) {
+		c.Consensus.BlockPartEncoding = types.ReedSolomon
+	})
+	defer cleanup()
+	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, N)
+	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
+
+	// wait till everyone makes the first new block
+	timeoutWaitGroup(N, func(j int) {
+		<-blocksSubs[j].Out()
+	})
+
+	// Get peer
+	peer := reactors[1].Switch.Peers().Copy()[0]
+	// Get peer state
+	ps := peer.Get(types.PeerStateKey).(*PeerState)
+
+	assert.Equal(t, true, ps.VotesSent() > 0, "number of votes sent should have increased")
+	assert.Equal(t, true, ps.BlockPartsSent() > 0, "number of votes sent should have increased")
+}
+
 //-------------------------------------------------------------
 // ensure we can make blocks despite cycling a validator set
 

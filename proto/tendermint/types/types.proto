@@ -28,12 +28,14 @@ enum SignedMsgType {
 message PartSetHeader {
   uint32 total = 1;
   bytes  hash  = 2;
+  optional uint64 byte_size = 3;
 }
 
 message Part {
   uint32                  index = 1;
   bytes                   bytes = 2;
   tendermint.crypto.Proof proof = 3 [(gogoproto.nullable) = false];
+  bool                    is_parity = 4;
 }
 
 // BlockID

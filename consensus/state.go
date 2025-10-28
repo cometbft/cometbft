@@ -9,9 +9,8 @@ import (
 	"os"
 	"runtime/debug"
 	"sort"
+	"strconv"
 	"time"
-
-	"github.com/cosmos/gogoproto/proto"
 
 	cfg "github.com/cometbft/cometbft/config"
 	cstypes "github.com/cometbft/cometbft/consensus/types"
@@ -30,6 +29,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cosmos/gogoproto/proto"
 )
 
 var msgQueueSize = 1000
@@ -1218,7 +1218,7 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 			panic("Method createProposalBlock should not provide a nil block without errors")
 		}
 		cs.metrics.ProposalCreateCount.Add(1)
-		blockParts, err = block.MakePartSet(types.BlockPartSizeBytes)
+		blockParts, err = block.MakePartSetWithEncoding(types.BlockPartSizeBytes, cs.config.BlockPartEncoding)
 		if err != nil {
 			cs.Logger.Error("unable to create proposal block part set", "error", err)
 			return
@@ -1241,9 +1241,16 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 		// send proposal and block parts on internal msg queue
 		cs.sendInternalMessage(msgInfo{&ProposalMessage{proposal}, ""})
 
+		// send block parts on internal message queue to be gossiped
 		for i := 0; i < int(blockParts.Total()); i++ {
 			part := blockParts.GetPart(i)
 			cs.sendInternalMessage(msgInfo{&BlockPartMessage{cs.Height, cs.Round, part}, ""})
+		}
+
+		// send parity parts on internal message queue to be gossiped
+		for i := int(0); i < int(blockParts.Parity()); i++ {
+			parityPart := blockParts.GetParityPart(i)
+			cs.sendInternalMessage(msgInfo{&BlockPartMessage{cs.Height, cs.Round, parityPart}, ""})
 		}
 
 		cs.Logger.Debug("signed proposal", "height", height, "round", round, "proposal", proposal)
@@ -1952,20 +1959,25 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal) error {
 // once we have the full block.
 func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (added bool, err error) {
 	height, round, part := msg.Height, msg.Round, msg.Part
+	isParity := strconv.FormatBool(part.IsParity)
 
 	// Blocks might be reused, so round mismatch is OK
 	if cs.Height != height {
 		cs.Logger.Debug("received block part from wrong height", "height", height, "round", round)
-		cs.metrics.BlockGossipPartsReceived.With("matches_current", "false").Add(1)
+		if peerID != "" {
+			cs.metrics.BlockGossipPartsReceived.With("matches_current", "false", "is_parity", isParity).Add(1)
+		}
 		return false, nil
 	}
 
 	// We're not expecting a block part.
 	if cs.ProposalBlockParts == nil {
-		cs.metrics.BlockGossipPartsReceived.With("matches_current", "false").Add(1)
+		if peerID != "" {
+			cs.metrics.BlockGossipPartsReceived.With("matches_current", "false", "is_parity", isParity).Add(1)
+		}
 		// NOTE: this can happen when we've gone to a higher round and
 		// then receive parts from the previous round - not necessarily a bad peer.
-		cs.Logger.Debug(
+		cs.Logger.Error(
 			"received a block part when we are not expecting any",
 			"height", height,
 			"round", round,
@@ -1975,19 +1987,35 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 		return false, nil
 	}
 
-	added, err = cs.ProposalBlockParts.AddPart(part)
-	if err != nil {
-		if errors.Is(err, types.ErrPartSetInvalidProof) || errors.Is(err, types.ErrPartSetUnexpectedIndex) {
-			cs.metrics.BlockGossipPartsReceived.With("matches_current", "false").Add(1)
+	if !part.IsParity {
+		added, err = cs.ProposalBlockParts.AddPart(part)
+		if err != nil {
+			if errors.Is(err, types.ErrPartSetInvalidProof) || errors.Is(err, types.ErrPartSetUnexpectedIndex) {
+				if peerID != "" {
+					cs.metrics.BlockGossipPartsReceived.With("matches_current", "false", "is_parity", isParity).Add(1)
+				}
+			}
+			return added, err
 		}
-		return added, err
+	} else {
+		added, err = cs.ProposalBlockParts.AddParityPart(part)
+		if err != nil {
+			if errors.Is(err, types.ErrPartSetUnexpectedIndex) {
+				cs.metrics.BlockGossipPartsReceived.With("matches_current", "false", "is_parity", isParity).Add(1)
+			}
+			return added, err
+		}
 	}
 
-	cs.metrics.BlockGossipPartsReceived.With("matches_current", "true").Add(1)
+	if peerID != "" {
+		cs.metrics.BlockGossipPartsReceived.With("matches_current", "true", "is_parity", isParity).Add(1)
+	}
 	if !added {
 		// NOTE: we are disregarding possible duplicates above where heights dont match or we're not expecting block parts yet
 		// but between the matches_current = true and false, we have all the info.
-		cs.metrics.DuplicateBlockPart.Add(1)
+		if peerID != "" {
+			cs.metrics.DuplicateBlockPart.With("is_parity", isParity).Add(1)
+		}
 	}
 
 	maxBytes := cs.state.ConsensusParams.Block.MaxBytes
@@ -1999,6 +2027,27 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 			cs.ProposalBlockParts.ByteSize(), maxBytes,
 		)
 	}
+
+	// if this proposal is not complete and we have received > 50% of the
+	// parity parts that we are going to receive, try and reconstruct the block
+	hasSufficientParityParts := cs.ProposalBlockParts.ParityCount() > (uint32(types.NumParityParts(cs.ProposalBlockParts.Total())) / 2)
+	hasSufficientTotalParts := (cs.ProposalBlockParts.ParityCount() + cs.ProposalBlockParts.Count()) >= cs.ProposalBlockParts.Total()
+	if !cs.ProposalBlockParts.IsComplete() && hasSufficientParityParts && hasSufficientTotalParts {
+		preParity, preData := cs.ProposalBlockParts.ParityCount(), cs.ProposalBlockParts.Count()
+		success, err := cs.ProposalBlockParts.TryReconstruct()
+		kvs := []any{"current_parity", preParity, "post_parity", cs.ProposalBlockParts.ParityCount(), "current_data", preData, "post_data", cs.ProposalBlockParts.Count()}
+		if err != nil {
+			kvs = append(kvs, "err", err)
+			cs.Logger.Info("error attempting to reconstruct a block early", kvs...)
+		}
+		if success {
+			cs.Logger.Info("reconstructed a block early", kvs...)
+		}
+		if err == nil && !success {
+			cs.Logger.Info("failed to reconstruct a block early", kvs...)
+		}
+	}
+
 	if added && cs.ProposalBlockParts.IsComplete() {
 		bz, err := io.ReadAll(cs.ProposalBlockParts.GetReader())
 		if err != nil {

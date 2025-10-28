@@ -14,7 +14,7 @@ import (
 // The more messages are processed, the more workers are scaled up.
 // But if latency percentile is too high, the scaler will shrink the number of workers.
 // It uses a combination of:
-// - EWMA (exponential moving average) of throughput
+// - EWMA (Exponentially Weighted Moving Average) of throughput
 // - Percentile of latency
 // - Queue length & capacity
 type ThroughputLatencyScaler struct {

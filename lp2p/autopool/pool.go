@@ -87,6 +87,7 @@ func (p *Pool[T]) Stop() {
 		p.removeWorker(id)
 	}
 
+	p.logger.Info("Waiting for workers to finish")
 	p.workersWg.Wait()
 	p.stopped = true
 }
@@ -124,9 +125,7 @@ func (p *Pool[T]) handleMessage(msg T) {
 	timeTaken := time.Since(now)
 
 	// record metrics
-	p.mu.Lock()
 	p.scaler.Track(timeTaken)
-	p.mu.Unlock()
 }
 
 func (p *Pool[T]) monitor() {
@@ -206,6 +205,6 @@ func (p *Pool[T]) removeWorker(id int) {
 	}
 
 	// send close signal to worker
-	w.closeCh <- struct{}{}
+	close(w.closeCh)
 	delete(p.workers, id)
 }

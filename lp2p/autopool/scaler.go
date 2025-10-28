@@ -1,7 +1,9 @@
 package autopool
 
 import (
+	"fmt"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/cometbft/cometbft/libs/log"
@@ -24,6 +26,7 @@ type ThroughputLatencyScaler struct {
 	// throughput of the last epoch
 	lastThroughput uint
 
+	mu     sync.Mutex
 	logger log.Logger
 }
 
@@ -65,7 +68,18 @@ func NewThroughputLatencyScaler(
 		epochLatencies:      []time.Duration{},
 		lastThroughput:      0,
 		logger:              logger.With("component", "scaler"),
+		mu:                  sync.Mutex{},
 	}
+}
+
+func (s *ThroughputLatencyScaler) String() string {
+	return fmt.Sprintf(
+		"ThroughputLatencyScaler{Workers[min:%d, max:%d], Percentile=%.1f, Threshold=%dms}",
+		s.minWorkers,
+		s.maxWorkers,
+		s.thresholdPercentile,
+		s.thresholdLatency.Milliseconds(),
+	)
 }
 
 func (s *ThroughputLatencyScaler) EpochDuration() time.Duration {
@@ -81,10 +95,16 @@ func (s *ThroughputLatencyScaler) Max() int {
 }
 
 func (s *ThroughputLatencyScaler) Track(duration time.Duration) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.epochLatencies = append(s.epochLatencies, duration)
 }
 
 func (s *ThroughputLatencyScaler) Decide(currentNumWorkers int) uint8 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	var (
 		epochThroughput    = uint(len(s.epochLatencies))
 		epochDurPercentile = calculatePercentile(s.epochLatencies, s.thresholdPercentile)
@@ -111,29 +131,32 @@ func (s *ThroughputLatencyScaler) Decide(currentNumWorkers int) uint8 {
 	}
 
 	var decision uint8
+	var logMessage string
 
 	if s.lastThroughput <= epochThroughput {
-		logger.Debug("Scaling")
+		logMessage = "Scaling"
 		decision = ShouldScale
 	} else {
-		logger.Debug("Shrinking")
+		logMessage = "Shrinking"
 		decision = ShouldShrink
 	}
 
 	if decision == ShouldScale && epochDurPercentile >= s.thresholdLatency {
-		logger.Debug("Wanted to scale, but latency is too high. Shrinking")
+		logMessage = "Wanted to scale, but latency is too high. Shrinking"
 		decision = ShouldShrink
 	}
 
 	if decision == ShouldScale && currentNumWorkers >= s.maxWorkers {
-		logger.Debug("Wanted to scale, but at max workers. Staying")
+		logMessage = "Wanted to scale, but at max workers. Staying"
 		decision = ShouldStay
 	}
 
 	if decision == ShouldShrink && currentNumWorkers <= s.minWorkers {
-		logger.Debug("Wanted to shrink, but at min workers. Staying")
+		logMessage = "Wanted to shrink, but at min workers. Staying"
 		decision = ShouldStay
 	}
+
+	logger.Debug(logMessage)
 
 	// update state
 	s.lastThroughput = epochThroughput

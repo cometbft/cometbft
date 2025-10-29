@@ -248,17 +248,27 @@ func (rs *reactorSet) newReactorQueue(
 		rs.receive(reactorID, e)
 	}
 
+	scaler := autopool.NewThroughputLatencyScaler(
+		minWorkers,
+		maxWorkers,
+		latencyPercentile,
+		latencyThreshold,
+		autoScaleInternal,
+		rs.switchRef.Logger,
+	)
+
+	concurrencyCounter := rs.switchRef.metrics.MessageReactorQueueConcurrency.With("reactor", reactorName)
+
 	return queue, autopool.New(
-		autopool.NewThroughputLatencyScaler(
-			minWorkers,
-			maxWorkers,
-			latencyPercentile,
-			latencyThreshold,
-			autoScaleInternal,
-			rs.switchRef.Logger,
-		),
+		scaler,
 		queue,
 		receive,
 		rs.switchRef.Logger,
+		autopool.WithOnScale[pendingEnvelope](func() {
+			concurrencyCounter.Add(1)
+		}),
+		autopool.WithOnShrink[pendingEnvelope](func() {
+			concurrencyCounter.Add(-1)
+		}),
 	)
 }

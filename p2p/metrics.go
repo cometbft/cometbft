@@ -44,6 +44,8 @@ type Metrics struct {
 	MessagesReactorInFlight metrics.Gauge `metrics_labels:"message_type,reactor"`
 	// Duration of the message receive operation by reactor
 	MessageReactorReceiveDuration metrics.Histogram `metrics_labels:"message_type,reactor"`
+	// Concurrency of the incoming message queue for a given reactor
+	MessageReactorQueueConcurrency metrics.Gauge `metrics_labels:"reactor"`
 }
 
 type metricsLabelCache struct {

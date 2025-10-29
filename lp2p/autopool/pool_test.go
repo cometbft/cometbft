@@ -92,8 +92,20 @@ func TestPool(t *testing.T) {
 
 	logger.Info(scaler.String())
 
-	// Given pool
-	pool := New(scaler, queue, consumer, logger)
+	// Given pool with decision counters
+	scaled := atomic.Int64{}
+	shrunk := atomic.Int64{}
+	stayed := atomic.Int64{}
+
+	pool := New(
+		scaler,
+		queue,
+		consumer,
+		logger,
+		WithOnScale[time.Duration](func() { scaled.Add(1) }),
+		WithOnShrink[time.Duration](func() { shrunk.Add(1) }),
+		WithOnStay[time.Duration](func() { stayed.Add(1) }),
+	)
 
 	// ACT
 	// start pool
@@ -112,6 +124,9 @@ func TestPool(t *testing.T) {
 	// ASSERT
 	t.Logf("Messages published: %d", messagesPublished.Load())
 	t.Logf("Messages consumed: %d", messagesConsumed.Load())
+	t.Logf("Scaled %d times", scaled.Load())
+	t.Logf("Shrunk %d times", shrunk.Load())
+	t.Logf("Stayed %d times", stayed.Load())
 
 	// 20%
 	delta := float64(messagesPublished.Load()) * 0.2

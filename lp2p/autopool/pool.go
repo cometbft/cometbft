@@ -25,6 +25,11 @@ type Pool[T any] struct {
 	workers   map[int]*worker[T]
 	workersWg sync.WaitGroup
 
+	// callbacks to be called when the pool is scaled or shrunk
+	onScale  func()
+	onShrink func()
+	onStay   func()
+
 	mu      sync.Mutex
 	stopped bool
 
@@ -37,23 +42,46 @@ type worker[T any] struct {
 	closeCh chan struct{}
 }
 
+type Option[T any] func(*Pool[T])
+
+func WithOnScale[T any](onScale func()) Option[T] {
+	return func(p *Pool[T]) { p.onScale = onScale }
+}
+
+func WithOnShrink[T any](onShrink func()) Option[T] {
+	return func(p *Pool[T]) { p.onShrink = onShrink }
+}
+
+func WithOnStay[T any](onStay func()) Option[T] {
+	return func(p *Pool[T]) { p.onStay = onStay }
+}
+
 // New Pool constructor.
 func New[T any](
 	scaler *ThroughputLatencyScaler,
 	producer <-chan T,
 	receiveFN func(T),
 	logger log.Logger,
+	opts ...Option[T],
 ) *Pool[T] {
-	return &Pool[T]{
+	pool := &Pool[T]{
 		ch:        producer,
 		receive:   receiveFN,
 		scaler:    scaler,
 		workers:   make(map[int]*worker[T]),
 		workersWg: sync.WaitGroup{},
+		onScale:   nil,
+		onShrink:  nil,
 		stopped:   false,
 		mu:        sync.Mutex{},
 		logger:    logger,
 	}
+
+	for _, opt := range opts {
+		opt(pool)
+	}
+
+	return pool
 }
 
 func (p *Pool[T]) Start() {
@@ -155,7 +183,9 @@ func (p *Pool[T]) autoscale() (exit bool) {
 	case ShouldShrink:
 		p.shrink()
 	case ShouldStay:
-		// do nothing
+		if p.onStay != nil {
+			p.onStay()
+		}
 	}
 
 	return false
@@ -179,6 +209,10 @@ func (p *Pool[T]) scale() {
 	p.workers[p.seqNum] = w
 
 	go w.run()
+
+	if p.onScale != nil {
+		p.onScale()
+	}
 }
 
 // lock should be hold by the caller
@@ -191,6 +225,11 @@ func (p *Pool[T]) shrink() {
 	// it's okay to do so because worker maps a relatively small
 	for id := range p.workers {
 		p.removeWorker(id)
+
+		if p.onShrink != nil {
+			p.onShrink()
+		}
+
 		return
 	}
 }

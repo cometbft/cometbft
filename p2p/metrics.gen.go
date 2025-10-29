@@ -74,20 +74,27 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "message_reactor_receive_duration",
 			Help:      "Duration of the message receive operation by reactor",
 		}, append(labels, "message_type", "reactor")).With(labelsAndValues...),
+		MessageReactorQueueConcurrency: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "message_reactor_queue_concurrency",
+			Help:      "Concurrency of the incoming message queue for a given reactor",
+		}, append(labels, "reactor")).With(labelsAndValues...),
 	}
 }
 
 func NopMetrics() *Metrics {
 	return &Metrics{
-		Peers:                         discard.NewGauge(),
-		PeerReceiveBytesTotal:         discard.NewCounter(),
-		PeerSendBytesTotal:            discard.NewCounter(),
-		PeerPendingSendBytes:          discard.NewGauge(),
-		NumTxs:                        discard.NewGauge(),
-		MessageReceiveBytesTotal:      discard.NewCounter(),
-		MessageSendBytesTotal:         discard.NewCounter(),
-		MessagesReceived:              discard.NewCounter(),
-		MessagesReactorInFlight:       discard.NewGauge(),
-		MessageReactorReceiveDuration: discard.NewHistogram(),
+		Peers:                          discard.NewGauge(),
+		PeerReceiveBytesTotal:          discard.NewCounter(),
+		PeerSendBytesTotal:             discard.NewCounter(),
+		PeerPendingSendBytes:           discard.NewGauge(),
+		NumTxs:                         discard.NewGauge(),
+		MessageReceiveBytesTotal:       discard.NewCounter(),
+		MessageSendBytesTotal:          discard.NewCounter(),
+		MessagesReceived:               discard.NewCounter(),
+		MessagesReactorInFlight:        discard.NewGauge(),
+		MessageReactorReceiveDuration:  discard.NewHistogram(),
+		MessageReactorQueueConcurrency: discard.NewGauge(),
 	}
 }

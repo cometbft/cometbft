@@ -19,6 +19,11 @@ const (
 	// BlockPartSizeBytes is the size of one block part.
 	BlockPartSizeBytes uint32 = 65536 // 64kB
 
+	// ParityBlockPartSizeBytes is the size of one parity part. A parity part
+	// is slightly larger than a block part since it encodes the block parts
+	// bytes (size of BlockPartSizeBytes) + the index + the merkle proof.
+	ParityBlockPartSizeBytes uint32 = 65660
+
 	// MaxBlockPartsCount is the maximum number of block parts.
 	MaxBlockPartsCount = (MaxBlockSizeBytes / BlockPartSizeBytes) + 1
 

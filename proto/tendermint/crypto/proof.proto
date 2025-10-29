@@ -7,7 +7,7 @@ import "gogoproto/gogo.proto";
 
 message Proof {
   int64          total     = 1;
-  int64          index     = 2;
+  optional sfixed64          index     = 2;
   bytes          leaf_hash = 3;
   repeated bytes aunts     = 4;
 }

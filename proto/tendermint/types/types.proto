@@ -32,7 +32,7 @@ message PartSetHeader {
 }
 
 message Part {
-  uint32                  index = 1;
+  optional fixed32                  index = 1;
   bytes                   bytes = 2;
   tendermint.crypto.Proof proof = 3 [(gogoproto.nullable) = false];
   bool                    is_parity = 4;

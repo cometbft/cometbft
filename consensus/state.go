@@ -1242,15 +1242,16 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 		cs.sendInternalMessage(msgInfo{&ProposalMessage{proposal}, ""})
 
 		// send block parts on internal message queue to be gossiped
-		for i := 0; i < int(blockParts.Total()); i++ {
-			part := blockParts.GetPart(i)
-			cs.sendInternalMessage(msgInfo{&BlockPartMessage{cs.Height, cs.Round, part}, ""})
-		}
-
-		// send parity parts on internal message queue to be gossiped
-		for i := int(0); i < int(blockParts.Parity()); i++ {
-			parityPart := blockParts.GetParityPart(i)
-			cs.sendInternalMessage(msgInfo{&BlockPartMessage{cs.Height, cs.Round, parityPart}, ""})
+		parts, parityParts := int(blockParts.Total()), int(blockParts.Parity())
+		for i := 0; i < max(parts, parityParts); i++ {
+			if i < int(parts) {
+				part := blockParts.GetPart(i)
+				cs.sendInternalMessage(msgInfo{&BlockPartMessage{cs.Height, cs.Round, part}, ""})
+			}
+			if i < int(parityParts) {
+				parityPart := blockParts.GetParityPart(i)
+				cs.sendInternalMessage(msgInfo{&BlockPartMessage{cs.Height, cs.Round, parityPart}, ""})
+			}
 		}
 
 		cs.Logger.Debug("signed proposal", "height", height, "round", round, "proposal", proposal)

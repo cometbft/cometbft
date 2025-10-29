@@ -1962,7 +1962,7 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 	height, round, part := msg.Height, msg.Round, msg.Part
 	isParity := strconv.FormatBool(part.IsParity)
 
-	if cs.ProposalBlockParts.IsComplete() {
+	if cs.ProposalBlockParts != nil && cs.ProposalBlockParts.IsComplete() {
 		// we may still be receiving parity parts, but if we have already
 		// completed the proposal, no need to add more
 		return false, nil

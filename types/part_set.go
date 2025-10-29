@@ -13,7 +13,6 @@ import (
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cosmos/gogoproto/proto"
 	"github.com/klauspost/reedsolomon"
 )
 
@@ -300,22 +299,10 @@ func NewRSPartSetFromData(data []byte, partSize uint32) (*PartSet, error) {
 
 	shards := make([][]byte, parts.total+uint32(parityShards))
 	for i := 0; i < int(parts.total); i++ {
-		pb, err := parts.parts[i].ToProto()
-		if err != nil {
-			return nil, fmt.Errorf("converting Part %d to proto: %w", i, err)
-		}
-		bz, err := pb.Marshal()
-		if err != nil {
-			return nil, fmt.Errorf("marshaling proto Part %d: %w", i, err)
-		}
-
-		shards[i] = bz
+		shards[i] = parts.parts[i].Bytes
 	}
 	for i := 0; i < int(parityShards); i++ {
 		shards[i+int(parts.total)] = make([]byte, len(shards[0]))
-	}
-	for i, shard := range shards {
-		fmt.Printf("len(shards[%d]: %d)\n", i, len(shard))
 	}
 	if err = enc.Encode(shards); err != nil {
 		return nil, fmt.Errorf("encoding parity into data shards: %w", err)
@@ -486,49 +473,60 @@ func (ps *PartSet) TryReconstruct() (bool, error) {
 		return false, fmt.Errorf("reconstructing data: %w", err)
 	}
 
+	hasReconstructedParts := false
 	for i := 0; i < int(ps.total); i++ {
-		existing := ps.parts[i]
-		if existing != nil {
+		if ps.parts[i] != nil {
 			continue
 		}
+		hasReconstructedParts = true
+	}
 
-		pb := new(cmtproto.Part)
-		if err := proto.Unmarshal(shards[i], pb); err != nil {
-			return false, fmt.Errorf("unmarshaling reconstructed shard to part: %w", err)
-		}
-		reconstructedPart, err := PartFromProto(pb)
-		if err != nil {
-			return false, fmt.Errorf("converting reconstructed proto part to part: %w", err)
-		}
-		if reconstructedPart.Index > uint32(len(ps.parts)) {
-			return false, fmt.Errorf("reconstructed part has out of bounds index: %w", err)
+	if hasReconstructedParts {
+		// recompute the proofs since reconstructed parts will not have any proof data
+		root, proofs := merkle.ProofsFromByteSlices(shards[0:ps.total])
+		if !bytes.Equal(root, ps.hash) {
+			return false, fmt.Errorf("reconstructed data does not match expected hash: got %X, expected %X", root, ps.hash)
 		}
 
-		if i != int(reconstructedPart.Index) {
-			panic(fmt.Errorf("reconstructed part has index %d when expecting %d", reconstructedPart.Index, i))
+		for i := 0; i < int(ps.total); i++ {
+			if ps.parts[i] != nil {
+				continue
+			}
+
+			part := &Part{
+				Index: uint32(i),
+				Bytes: shards[i],
+				Proof: *proofs[i],
+			}
+			added, err := ps.AddPart(part)
+			if err != nil {
+				return false, fmt.Errorf("adding reconstructed part %s: %w", part, err)
+			}
+			if !added {
+				return false, fmt.Errorf("could not add reconstructed part %s", part)
+			}
 		}
-		ps.parts[reconstructedPart.Index] = reconstructedPart
 	}
 
 	totalParity := NumParityParts(ps.total)
 	for i := 0; i < totalParity; i++ {
-		existing := ps.parityParts[i]
-		if existing != nil {
+		if ps.parityParts[i] != nil {
 			continue
 		}
 
-		ps.parityParts[i] = &Part{
+		parityPart := &Part{
 			Index:    uint32(i),
 			Bytes:    shards[ps.total+uint32(i)],
 			IsParity: true,
 		}
+		added, err := ps.AddParityPart(parityPart)
+		if err != nil {
+			return false, fmt.Errorf("adding reconstructed parity part %s: %w", parityPart, err)
+		}
+		if !added {
+			return false, fmt.Errorf("could not add reconstructed parity part %s", parityPart)
+		}
 	}
-
-	// update fields so that PartSet is seen as fully reconstructed
-	ps.count = ps.total
-	ps.parityCount = uint32(NumParityParts(ps.total))
-	ps.partsBitArray = bits.NewBitArrayFromFn(int(ps.total), func(int) bool { return true })
-	ps.parityBitArray = bits.NewBitArrayFromFn(NumParityParts(ps.total), func(int) bool { return true })
 
 	return true, nil
 }
@@ -546,17 +544,7 @@ func (ps *PartSet) ToShards() ([][]byte, error) {
 			continue
 		}
 
-		pb, err := part.ToProto()
-		if err != nil {
-			return nil, fmt.Errorf("converting part to proto: %d", err)
-		}
-
-		bz, err := pb.Marshal()
-		if err != nil {
-			return nil, fmt.Errorf("proto marshaling part: %w", err)
-		}
-
-		shards[part.Index] = bz
+		shards[part.Index] = part.Bytes
 	}
 
 	for i := 0; i < int(ps.parity); i++ {

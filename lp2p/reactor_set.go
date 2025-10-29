@@ -230,19 +230,20 @@ func (rs *reactorSet) newReactorQueue(
 		reactorReceiveChanCapacity = 1024
 
 		minWorkers        = 4
-		maxWorkers        = 32
+		defaultMaxWorkers = 32
+		latencyThreshold  = 100 * time.Millisecond
 		latencyPercentile = 90.0 // P90
 		autoScaleInternal = 250 * time.Millisecond
 	)
 
-	queue := make(chan pendingEnvelope, reactorReceiveChanCapacity)
+	maxWorkers := defaultMaxWorkers
 
-	// create scaler with default values
-	// mempool has lower latency threshold
-	latencyThreshold := 100 * time.Millisecond
+	// bump max workers for mempool
 	if reactorName == "MEMPOOL" {
-		latencyThreshold = 50 * time.Millisecond
+		maxWorkers = 128
 	}
+
+	queue := make(chan pendingEnvelope, reactorReceiveChanCapacity)
 
 	receive := func(e pendingEnvelope) {
 		rs.receive(reactorID, e)

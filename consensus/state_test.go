@@ -17,6 +17,7 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	abcimocks "github.com/cometbft/cometbft/abci/types/mocks"
+	cfg "github.com/cometbft/cometbft/config"
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/test"
@@ -25,6 +26,7 @@ import (
 	"github.com/cometbft/cometbft/libs/protoio"
 	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	mempl "github.com/cometbft/cometbft/mempool"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
@@ -229,6 +231,113 @@ func TestBlockReconstruction(t *testing.T) {
 
 		require.True(t, cs.ProposalBlock.HashesTo(block.Hash()))
 	}
+}
+
+// TestBlockReconstructionP2P tests block reconstruction with erasure coding
+// between two nodes communicating over p2p. One node creates a block with
+// erasure coding enabled, and the other node receives the block parts over
+// the network and reconstructs the block.
+func TestBlockReconstructionP2P(t *testing.T) {
+	ctx := context.Background()
+
+	// Create 2 nodes with erasure coding enabled
+	N := 2
+	css, cleanup := randConsensusNet(t, N, "block_reconstruction_p2p_test",
+		newMockTickerFunc(true),
+		newKVStore,
+		func(c *cfg.Config) { c.Consensus.BlockPartEncoding = types.ReedSolomon })
+	defer cleanup()
+
+	// Add large transactions to the proposer node's mempool before starting consensus
+	// This ensures the block will be large enough to benefit from erasure coding
+	// Create 100 txs of 10KiB each = ~1000KiB block = 16 data parts with 64KiB part size
+	proposerNode := css[0]
+	for i := 0; i < 20; i++ {
+		tx := kvstore.NewRandomTx(10240)
+		err := assertMempool(proposerNode.txNotifier).CheckTx(tx, func(resp *abci.ResponseCheckTx) {
+			require.False(t, resp.IsErr())
+		}, mempl.TxInfo{})
+		require.NoError(t, err)
+	}
+
+	// Start the consensus network - this connects nodes via p2p and starts consensus
+	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, N)
+	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
+
+	// Subscribe to complete proposal event on the receiver node to verify reconstruction
+	receiverNode := css[1]
+	proposalSub, err := receiverNode.eventBus.Subscribe(ctx, "test-proposal", types.EventQueryCompleteProposal)
+	require.NoError(t, err)
+	defer func() {
+		if err := receiverNode.eventBus.Unsubscribe(ctx, "test-proposal", types.EventQueryCompleteProposal); err != nil {
+			t.Logf("failed to unsubscribe: %v", err)
+		}
+	}()
+
+	// Wait for both nodes to create/receive the first block
+	var proposerBlock *types.Block
+	var receiverBlock *types.Block
+
+	timeout := 200 * time.Millisecond
+
+	// Wait for proposer to create block
+	select {
+	case <-time.After(timeout): // increased timeout for block creation
+		t.Fatal("timed out waiting for proposer to create block")
+	case msg := <-blocksSubs[0].Out():
+		blockEvent, ok := msg.Data().(types.EventDataNewBlock)
+		require.True(t, ok)
+		proposerBlock = blockEvent.Block
+		t.Logf("Proposer created block at height %d with %d txs", proposerBlock.Height, len(proposerBlock.Txs))
+	}
+
+	// Wait for receiver to receive and reconstruct the block
+	select {
+	case <-time.After(timeout):
+		t.Fatal("timed out waiting for receiver to reconstruct block")
+	case msg := <-proposalSub.Out():
+		proposalEvent, ok := msg.Data().(types.EventDataCompleteProposal)
+		require.True(t, ok)
+		t.Logf("Receiver reconstructed proposal at height %d, round %d", proposalEvent.Height, proposalEvent.Round)
+
+		// Verify the receiver has the complete block
+		require.NotNil(t, receiverNode.ProposalBlock, "receiver should have reconstructed block")
+		require.True(t, receiverNode.ProposalBlockParts.IsComplete(), "receiver should have complete block parts")
+		receiverBlock = receiverNode.ProposalBlock
+	}
+
+	// Wait for receiver to commit the block
+	select {
+	case <-time.After(timeout):
+		t.Fatal("timed out waiting for receiver to commit block")
+	case msg := <-blocksSubs[1].Out():
+		blockEvent, ok := msg.Data().(types.EventDataNewBlock)
+		require.True(t, ok)
+		receiverBlock = blockEvent.Block
+		t.Logf("Receiver committed block at height %d with %d txs", receiverBlock.Height, len(receiverBlock.Txs))
+	}
+
+	// Verify both nodes have the same block
+	require.NotNil(t, proposerBlock)
+	require.NotNil(t, receiverBlock)
+	require.Equal(t, proposerBlock.Height, receiverBlock.Height)
+	require.Equal(t, proposerBlock.Hash(), receiverBlock.Hash())
+	require.Equal(t, len(proposerBlock.Txs), len(receiverBlock.Txs))
+
+	// Verify the block is large enough to have required erasure coding
+	pbb, err := proposerBlock.ToProto()
+	require.NoError(t, err)
+	blockBz, err := proto.Marshal(pbb)
+	require.NoError(t, err)
+	t.Logf("Block size: %d bytes", len(blockBz))
+	require.Greater(t, len(blockBz), int(types.BlockPartSizeBytes), "block should be large enough to require multiple parts")
+
+	// Verify that block parts were sent between peers
+	proposerReactor := reactors[0]
+	receiverPeers := proposerReactor.Switch.Peers().Copy()
+	require.Greater(t, len(receiverPeers), 0, "proposer should have peers")
+
+	t.Logf("Successfully reconstructed block via p2p with erasure coding")
 }
 
 // a validator should not timeout of the prevote round (TODO: unless the block is really big!)

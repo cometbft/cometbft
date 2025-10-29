@@ -1961,6 +1961,12 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 	height, round, part := msg.Height, msg.Round, msg.Part
 	isParity := strconv.FormatBool(part.IsParity)
 
+	if cs.ProposalBlockParts.IsComplete() {
+		// we may still be receiving parity parts, but if we have already
+		// completed the proposal, no need to add more
+		return false, nil
+	}
+
 	// Blocks might be reused, so round mismatch is OK
 	if cs.Height != height {
 		cs.Logger.Debug("received block part from wrong height", "height", height, "round", round)
@@ -2028,11 +2034,10 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 		)
 	}
 
-	// if this proposal is not complete and we have received > 50% of the
-	// parity parts that we are going to receive, try and reconstruct the block
-	hasSufficientParityParts := cs.ProposalBlockParts.ParityCount() > (uint32(types.NumParityParts(cs.ProposalBlockParts.Total())) / 2)
+	// if this proposal has parity parts, i.e. it is erasure coded, try to
+	// reconstruct it
 	hasSufficientTotalParts := (cs.ProposalBlockParts.ParityCount() + cs.ProposalBlockParts.Count()) >= cs.ProposalBlockParts.Total()
-	if !cs.ProposalBlockParts.IsComplete() && hasSufficientParityParts && hasSufficientTotalParts {
+	if added && cs.ProposalBlockParts.Parity() > 0 && hasSufficientTotalParts {
 		preParity, preData := cs.ProposalBlockParts.ParityCount(), cs.ProposalBlockParts.Count()
 		success, err := cs.ProposalBlockParts.TryReconstruct()
 		kvs := []any{"current_parity", preParity, "post_parity", cs.ProposalBlockParts.ParityCount(), "current_data", preData, "post_data", cs.ProposalBlockParts.Count()}

@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 
 	"github.com/cometbft/cometbft/version"
@@ -1010,6 +1011,8 @@ type ConsensusConfig struct {
 	PeerQueryMaj23SleepDuration time.Duration `mapstructure:"peer_query_maj23_sleep_duration"`
 
 	DoubleSignCheckHeight int64 `mapstructure:"double_sign_check_height"`
+
+	BlockPartEncoding types.PartEncoding `mapstructure:"block_part_encoding"`
 }
 
 // DefaultConsensusConfig returns a default configuration for the consensus service
@@ -1029,6 +1032,7 @@ func DefaultConsensusConfig() *ConsensusConfig {
 		PeerGossipSleepDuration:     100 * time.Millisecond,
 		PeerQueryMaj23SleepDuration: 2000 * time.Millisecond,
 		DoubleSignCheckHeight:       int64(0),
+		BlockPartEncoding:           types.None,
 	}
 }
 
@@ -1130,6 +1134,9 @@ func (cfg *ConsensusConfig) ValidateBasic() error {
 	}
 	if cfg.DoubleSignCheckHeight < 0 {
 		return cmterrors.ErrNegativeField{Field: "double_sign_check_height"}
+	}
+	if cfg.BlockPartEncoding != types.None && cfg.BlockPartEncoding != types.ReedSolomon {
+		return cmterrors.ErrInvalidField{Field: "block_part_encoding"}
 	}
 	return nil
 }

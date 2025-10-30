@@ -107,7 +107,7 @@ func (part *Part) ToProto() (*cmtproto.Part, error) {
 	}
 	pb := new(cmtproto.Part)
 
-	pb.XIndex = &cmtproto.Part_Index{Index: part.Index}
+	pb.Index = part.Index
 	pb.Bytes = part.Bytes
 	pb.IsParity = part.IsParity
 	if !pb.IsParity {
@@ -124,7 +124,7 @@ func PartFromProto(pb *cmtproto.Part) (*Part, error) {
 	}
 
 	part := new(Part)
-	part.Index = pb.GetIndex()
+	part.Index = pb.Index
 	part.Bytes = pb.Bytes
 	part.IsParity = pb.IsParity
 

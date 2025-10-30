@@ -132,7 +132,7 @@ func (sp *Proof) ToProto() *cmtcrypto.Proof {
 	pb := new(cmtcrypto.Proof)
 
 	pb.Total = sp.Total
-	pb.XIndex = &cmtcrypto.Proof_Index{Index: sp.Index}
+	pb.Index = sp.Index
 	pb.LeafHash = sp.LeafHash
 	pb.Aunts = sp.Aunts
 
@@ -147,7 +147,7 @@ func ProofFromProto(pb *cmtcrypto.Proof) (*Proof, error) {
 	sp := new(Proof)
 
 	sp.Total = pb.Total
-	sp.Index = pb.GetIndex()
+	sp.Index = pb.Index
 	sp.LeafHash = pb.LeafHash
 	sp.Aunts = pb.Aunts
 

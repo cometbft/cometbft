@@ -173,6 +173,28 @@ func TestGetNumTrueIndices(t *testing.T) {
 	}
 }
 
+func TestGetNumTrueIndicesInvalidStates(t *testing.T) {
+	testCases := []struct {
+		name string
+		bA1  *BitArray
+		exp  int
+	}{
+		{"empty", &BitArray{}, 0},
+		{"explicit 0 bits nil elements", &BitArray{Bits: 0, Elems: nil}, 0},
+		{"explicit 0 bits 0 len elements", &BitArray{Bits: 0, Elems: make([]uint64, 0)}, 0},
+		{"nil", nil, 0},
+		{"with elements", NewBitArray(10), 0},
+		{"more elements than bits specifies", &BitArray{Bits: 0, Elems: make([]uint64, 5)}, 0},
+		{"less elements than bits specifies", &BitArray{Bits: 200, Elems: make([]uint64, 1)}, 0},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			n := tc.bA1.getNumTrueIndices()
+			require.Equal(t, n, tc.exp)
+		})
+	}
+}
+
 func TestGetNthTrueIndex(t *testing.T) {
 	type testcase struct {
 		Input          string
@@ -226,7 +248,7 @@ func TestGetNthTrueIndex(t *testing.T) {
 	}
 }
 
-func TestBytes(_ *testing.T) {
+func TestBytes(t *testing.T) {
 	bA := NewBitArray(4)
 	bA.SetIndex(0, true)
 	check := func(bA *BitArray, bz []byte) {
@@ -253,6 +275,10 @@ func TestBytes(_ *testing.T) {
 	check(bA, []byte{0x80, 0x01})
 	bA.SetIndex(9, true)
 	check(bA, []byte{0x80, 0x03})
+
+	bA = NewBitArray(4)
+	bA.Elems = nil
+	require.False(t, bA.SetIndex(1, true))
 }
 
 func TestEmptyFull(t *testing.T) {
@@ -368,6 +394,28 @@ func TestBitArrayProtoBuf(t *testing.T) {
 		} else {
 			require.NotEqual(t, tc.bA1, ba, tc.msg)
 		}
+	}
+}
+
+func TestBitArrayValidateBasic(t *testing.T) {
+	testCases := []struct {
+		name    string
+		bA1     *BitArray
+		expPass bool
+	}{
+		{"valid empty", &BitArray{}, true},
+		{"valid explicit 0 bits nil elements", &BitArray{Bits: 0, Elems: nil}, true},
+		{"valid explicit 0 bits 0 len elements", &BitArray{Bits: 0, Elems: make([]uint64, 0)}, true},
+		{"valid nil", nil, true},
+		{"valid with elements", NewBitArray(10), true},
+		{"more elements than bits specifies", &BitArray{Bits: 0, Elems: make([]uint64, 5)}, false},
+		{"less elements than bits specifies", &BitArray{Bits: 200, Elems: make([]uint64, 1)}, false},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.bA1.ValidateBasic()
+			require.Equal(t, err == nil, tc.expPass)
+		})
 	}
 }
 

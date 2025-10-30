@@ -161,6 +161,11 @@ func (p *Peer) send(e p2p.Envelope) (err error) {
 	return StreamWriteClose(s, payload)
 }
 
+func (*Peer) IsPersistent() bool {
+	// todo: STACK-1704: currently all lp2p peers are persistent
+	return true
+}
+
 // These methods are not implemented as they're not used by reactors
 // (only by PEX/p2p-transport which is not used with go-libp2p)
 
@@ -169,7 +174,6 @@ func (*Peer) NodeInfo() p2p.NodeInfo        { return nil }
 func (*Peer) RemoteIP() net.IP              { return nil }
 func (*Peer) RemoteAddr() net.Addr          { return nil }
 func (*Peer) IsOutbound() bool              { return false }
-func (*Peer) IsPersistent() bool            { return false }
 func (*Peer) FlushStop()                    {}
 func (*Peer) SetRemovalFailed()             {}
 func (*Peer) GetRemovalFailed() bool        { return false }

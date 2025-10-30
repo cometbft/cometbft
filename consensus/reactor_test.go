@@ -73,7 +73,10 @@ func startConsensusNet(t *testing.T, css []*State, n int) (
 				t.Error(err)
 			}
 		}
+
+		css[i].SetGossiper(reactors[i])
 	}
+
 	// make connected switches and start all reactors
 	p2p.MakeConnectedSwitches(config.P2P, n, func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("CONSENSUS", reactors[i])

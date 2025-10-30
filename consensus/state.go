@@ -63,6 +63,10 @@ type evidencePool interface {
 	ReportConflictingVotes(voteA, voteB *types.Vote)
 }
 
+type Gossiper interface {
+	GossipProposalBlock(proposal *types.Proposal, ps *types.PartSet) error
+}
+
 // State handles execution of the consensus algorithm.
 // It processes votes and proposals, and upon reaching agreement,
 // commits blocks to the chain and executes them against the application.
@@ -122,6 +126,14 @@ type State struct {
 	decideProposal func(height int64, round int32)
 	doPrevote      func(height int64, round int32)
 	setProposal    func(proposal *types.Proposal) error
+
+	// gossiper provides a fast path to immediately gossip block proposal and
+	// parts after a proposal is created, bypassing state machine updates and
+	// internal message queues. Gossiper is set through an option.
+	//
+	// If the gossiper is not set, parts will be broadcast via the slow path
+	// once they have been sent through the internal message queues.
+	gossiper Gossiper
 
 	// closed when we finish shutting down
 	done chan struct{}
@@ -288,6 +300,12 @@ func (cs *State) SetPrivValidator(priv types.PrivValidator) {
 	if err := cs.updatePrivValidatorPubKey(); err != nil {
 		cs.Logger.Error("failed to get private validator pubkey", "err", err)
 	}
+}
+
+func (cs *State) SetGossiper(gossiper Gossiper) {
+	cs.mtx.Lock()
+	defer cs.mtx.Unlock()
+	cs.gossiper = gossiper
 }
 
 // SetTimeoutTicker sets the local timer. It may be useful to overwrite for
@@ -1237,6 +1255,12 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 	p := proposal.ToProto()
 	if err := cs.privValidator.SignProposal(cs.state.ChainID, p); err == nil {
 		proposal.Signature = p.Signature
+
+		if cs.config.FastBlockGossip && cs.gossiper != nil {
+			if err := cs.gossiper.GossipProposalBlock(proposal, blockParts); err != nil {
+				cs.Logger.Error("error gossiping proposal", "err", err)
+			}
+		}
 
 		// send proposal and block parts on internal msg queue
 		cs.sendInternalMessage(msgInfo{&ProposalMessage{proposal}, ""})

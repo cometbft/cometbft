@@ -1013,6 +1013,8 @@ type ConsensusConfig struct {
 	DoubleSignCheckHeight int64 `mapstructure:"double_sign_check_height"`
 
 	BlockPartEncoding types.PartEncoding `mapstructure:"block_part_encoding"`
+
+	FastBlockGossip bool `mapstructure:"fast_block_gossip"`
 }
 
 // DefaultConsensusConfig returns a default configuration for the consensus service
@@ -1033,6 +1035,7 @@ func DefaultConsensusConfig() *ConsensusConfig {
 		PeerQueryMaj23SleepDuration: 2000 * time.Millisecond,
 		DoubleSignCheckHeight:       int64(0),
 		BlockPartEncoding:           types.None,
+		FastBlockGossip:             false,
 	}
 }
 

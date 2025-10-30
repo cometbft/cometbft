@@ -303,6 +303,7 @@ func TestBlockReconstructionP2P(t *testing.T) {
 		// Verify the receiver has the complete block
 		require.NotNil(t, receiverNode.ProposalBlock, "receiver should have reconstructed block")
 		require.True(t, receiverNode.ProposalBlockParts.IsComplete(), "receiver should have complete block parts")
+		require.Equal(t, receiverNode.ProposalBlockParts.Parity(), receiverNode.ProposalBlockParts.ParityCount(), "receiver should have all parity parts")
 		receiverBlock = receiverNode.ProposalBlock
 	}
 
@@ -324,6 +325,8 @@ func TestBlockReconstructionP2P(t *testing.T) {
 	require.Equal(t, proposerBlock.Hash(), receiverBlock.Hash())
 	require.Equal(t, len(proposerBlock.Txs), len(receiverBlock.Txs))
 
+	require.Greater(t, len(proposerBlock.Txs), 0, "block should contain transactions")
+
 	// Verify the block is large enough to have required erasure coding
 	pbb, err := proposerBlock.ToProto()
 	require.NoError(t, err)
@@ -338,6 +341,114 @@ func TestBlockReconstructionP2P(t *testing.T) {
 	require.Greater(t, len(receiverPeers), 0, "proposer should have peers")
 
 	t.Logf("Successfully reconstructed block via p2p with erasure coding")
+}
+
+func TestFastBlockGossip(t *testing.T) {
+	ctx := context.Background()
+
+	// Create 2 nodes with FastBlockGossip enabled
+	N := 2
+	css, cleanup := randConsensusNet(t, N, "fast_block_gossip_test",
+		newMockTickerFunc(true),
+		newKVStore,
+		func(c *cfg.Config) {
+			c.Consensus.BlockPartEncoding = types.ReedSolomon
+			c.Consensus.FastBlockGossip = true
+
+		})
+	defer cleanup()
+
+	// Add transactions to the proposer node's mempool before starting consensus
+	// This ensures we have a non-empty block to gossip
+	proposerNode := css[0]
+	for i := 0; i < 20; i++ {
+		tx := kvstore.NewRandomTx(10240)
+		err := assertMempool(proposerNode.txNotifier).CheckTx(tx, func(resp *abci.ResponseCheckTx) {
+			require.False(t, resp.IsErr())
+		}, mempl.TxInfo{})
+		require.NoError(t, err)
+	}
+
+	// Start the consensus network - this connects nodes via p2p and starts consensus
+	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, N)
+	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
+
+	// Subscribe to proposal events on the receiver node
+	receiverNode := css[1]
+	proposalSub, err := receiverNode.eventBus.Subscribe(ctx, "test-proposal", types.EventQueryCompleteProposal)
+	require.NoError(t, err)
+	defer func() {
+		if err := receiverNode.eventBus.Unsubscribe(ctx, "test-proposal", types.EventQueryCompleteProposal); err != nil {
+			t.Logf("failed to unsubscribe: %v", err)
+		}
+	}()
+
+	// Wait for both nodes to create/receive and commit blocks
+	var proposerBlock *types.Block
+	var receiverBlock *types.Block
+
+	timeout := 5 * time.Minute
+
+	// Wait for proposer to create block
+	select {
+	case <-time.After(timeout):
+		t.Fatal("timed out waiting for proposer to create block")
+	case msg := <-blocksSubs[0].Out():
+		blockEvent, ok := msg.Data().(types.EventDataNewBlock)
+		require.True(t, ok)
+		proposerBlock = blockEvent.Block
+		t.Logf("Proposer created block at height %d with %d txs", proposerBlock.Height, len(proposerBlock.Txs))
+	}
+
+	// Wait for receiver to receive the complete proposal via fast gossip
+	select {
+	case <-time.After(timeout):
+		t.Fatal("timed out waiting for receiver to receive complete proposal")
+	case msg := <-proposalSub.Out():
+		proposalEvent, ok := msg.Data().(types.EventDataCompleteProposal)
+		require.True(t, ok)
+		t.Logf("Receiver received complete proposal at height %d, round %d via fast gossip", proposalEvent.Height, proposalEvent.Round)
+
+		// Verify the receiver has the complete block
+		require.NotNil(t, receiverNode.ProposalBlock, "receiver should have proposal block")
+		require.True(t, receiverNode.ProposalBlockParts.IsComplete(), "receiver should have complete block parts")
+	}
+
+	// Wait for receiver to commit the block
+	select {
+	case <-time.After(timeout):
+		t.Fatal("timed out waiting for receiver to commit block")
+	case msg := <-blocksSubs[1].Out():
+		blockEvent, ok := msg.Data().(types.EventDataNewBlock)
+		require.True(t, ok)
+		receiverBlock = blockEvent.Block
+		t.Logf("Receiver committed block at height %d with %d txs", receiverBlock.Height, len(receiverBlock.Txs))
+	}
+
+	// Verify both nodes have the same block
+	require.NotNil(t, proposerBlock)
+	require.NotNil(t, receiverBlock)
+	require.Equal(t, proposerBlock.Height, receiverBlock.Height)
+	require.Equal(t, proposerBlock.Hash(), receiverBlock.Hash())
+	require.Equal(t, len(proposerBlock.Txs), len(receiverBlock.Txs))
+
+	// Verify the block contains transactions
+	require.Greater(t, len(proposerBlock.Txs), 0, "block should contain transactions")
+
+	// Verify the block is large enough to have required multiple parts
+	pbb, err := proposerBlock.ToProto()
+	require.NoError(t, err)
+	blockBz, err := proto.Marshal(pbb)
+	require.NoError(t, err)
+	t.Logf("Block size: %d bytes", len(blockBz))
+	require.Greater(t, len(blockBz), int(types.BlockPartSizeBytes), "block should be large enough to require multiple parts")
+
+	// Verify that the nodes are still connected
+	proposerReactor := reactors[0]
+	receiverPeers := proposerReactor.Switch.Peers().Copy()
+	require.Greater(t, len(receiverPeers), 0, "proposer should have peers")
+
+	t.Logf("Successfully verified fast block gossip between two nodes")
 }
 
 // a validator should not timeout of the prevote round (TODO: unless the block is really big!)

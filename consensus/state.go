@@ -64,7 +64,7 @@ type evidencePool interface {
 }
 
 type Gossiper interface {
-	GossipProposalBlock(proposal *types.Proposal, ps *types.PartSet) error
+	GossipProposalBlock(proposal *cmtproto.Proposal, ps *types.PartSet) error
 }
 
 // State handles execution of the consensus algorithm.
@@ -1257,7 +1257,7 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 		proposal.Signature = p.Signature
 
 		if cs.config.FastBlockGossip && cs.gossiper != nil {
-			if err := cs.gossiper.GossipProposalBlock(proposal, blockParts); err != nil {
+			if err := cs.gossiper.GossipProposalBlock(proposal.ToProto(), blockParts); err != nil {
 				cs.Logger.Error("error gossiping proposal", "err", err)
 			}
 		}
@@ -2062,7 +2062,7 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 	// if this proposal has parity parts, i.e. it is erasure coded, try to
 	// reconstruct it
 	hasSufficientTotalParts := (cs.ProposalBlockParts.ParityCount() + cs.ProposalBlockParts.Count()) >= cs.ProposalBlockParts.Total()
-	if added && cs.ProposalBlockParts.Parity() > 0 && hasSufficientTotalParts {
+	if added && cs.ProposalBlockParts.Parity() > 0 && hasSufficientTotalParts && !cs.ProposalBlockParts.IsComplete() {
 		preParity, preData := cs.ProposalBlockParts.ParityCount(), cs.ProposalBlockParts.Count()
 		success, err := cs.ProposalBlockParts.TryReconstruct()
 		kvs := []any{"current_parity", preParity, "post_parity", cs.ProposalBlockParts.ParityCount(), "current_data", preData, "post_data", cs.ProposalBlockParts.Count()}

@@ -545,9 +545,34 @@ func (bs *BlockStore) saveBlockToBatch(
 	// typically load the block meta first as an indication that the block exists
 	// and then go on to load block parts - we must make sure the block is
 	// complete as soon as the block meta is written.
+	//
+	// Track bytes saved to handle padding in erasure-coded blocks where the final
+	// part may have extra padding bytes to make all parts the same size.
+	totalBytes := int64(blockParts.Header().ByteSize)
+	bytesSaved := int64(0)
+
 	for i := 0; i < int(blockParts.Total()); i++ {
 		part := blockParts.GetPart(i)
-		bs.saveBlockPart(height, i, part, batch, saveBlockPartsToBatch)
+
+		// Check if this is the last part and it would exceed the total byte size
+		partBytesToSave := part.Bytes
+		if i == int(blockParts.Total())-1 && bytesSaved+int64(len(part.Bytes)) > totalBytes {
+			// Truncate the final part to only include actual data (remove padding)
+			actualBytesInFinalPart := totalBytes - bytesSaved
+			partBytesToSave = part.Bytes[:actualBytesInFinalPart]
+
+			// Create a new part with truncated bytes for saving
+			truncatedPart := &types.Part{
+				Index: part.Index,
+				Bytes: partBytesToSave,
+				Proof: part.Proof,
+			}
+			bs.saveBlockPart(height, i, truncatedPart, batch, saveBlockPartsToBatch)
+		} else {
+			bs.saveBlockPart(height, i, part, batch, saveBlockPartsToBatch)
+		}
+
+		bytesSaved += int64(len(partBytesToSave))
 	}
 
 	// Save block meta

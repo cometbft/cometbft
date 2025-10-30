@@ -654,11 +654,10 @@ func (blockExec *BlockExecutor) BuildLastCommitInfoWithCache(block *types.Block,
 		blockExec.abciValidatorCacheMutex.RUnlock()
 
 		if !found {
-			// Convert to ABCI validator
-			abciVal = abci.Validator{
-				Address: val.Address,
-				Power:   val.VotingPower,
-			}
+			// Convert to ABCI validator using the canonical helper to ensure
+			// all fields (e.g. PubKey) are populated identically to the
+			// non-cached path.
+			abciVal = types.TM2PB.Validator(val)
 
 			// Store in cache
 			blockExec.abciValidatorCacheMutex.Lock()

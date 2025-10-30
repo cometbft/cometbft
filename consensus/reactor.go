@@ -622,10 +622,10 @@ OUTER_LOOP:
 func (conR *Reactor) GossipProposalBlock(proposal *cmtproto.Proposal, ps *types.PartSet) error {
 	conR.Logger.Info("gossiping proposal via fast path", "height", proposal.Height, "round", proposal.Round)
 
-	go func() {
-		conR.BroadcastProposal(proposal)
-		conR.Logger.Info("done broadcasting proposal", "height", proposal.Height, "round", proposal.Round)
-	}()
+	// TOOD(ma): can maybe make a per peer goroutine that broadcasts the proposal
+	// and then does the per part goroutines
+	conR.BroadcastProposal(proposal)
+	conR.Logger.Info("done broadcasting proposal", "height", proposal.Height, "round", proposal.Round)
 
 	for i := 0; i < int(ps.Total()); i++ {
 		go func(idx int) {

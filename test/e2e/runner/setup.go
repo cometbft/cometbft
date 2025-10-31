@@ -268,6 +268,21 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		cfg.Instrumentation.Prometheus = true
 	}
 
+	// Configure block part encoding (erasure coding)
+	if node.Testnet.BlockPartEncoding != "" {
+		switch node.Testnet.BlockPartEncoding {
+		case "none":
+			cfg.Consensus.BlockPartEncoding = types.None
+		case "reed_solomon":
+			cfg.Consensus.BlockPartEncoding = types.ReedSolomon
+		default:
+			return nil, fmt.Errorf("unknown block_part_encoding: %s", node.Testnet.BlockPartEncoding)
+		}
+	}
+
+	// Configure fast block gossip
+	cfg.Consensus.FastBlockGossip = node.Testnet.FastBlockGossip
+
 	return cfg, nil
 }
 

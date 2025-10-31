@@ -98,6 +98,8 @@ type Testnet struct {
 	VoteExtensionSize                                    uint
 	ExperimentalMaxGossipConnectionsToPersistentPeers    uint
 	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint
+	BlockPartEncoding                                    string
+	FastBlockGossip                                      bool
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -184,6 +186,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		VoteExtensionSize:          manifest.VoteExtensionSize,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
+		BlockPartEncoding: manifest.BlockPartEncoding,
+		FastBlockGossip:   manifest.FastBlockGossip,
 	}
 
 	if len(manifest.KeyType) != 0 {

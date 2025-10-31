@@ -124,7 +124,7 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 	// 1. Events indexed with v0.38.x and later, will only have an event sequence
 	// 2. Events indexed between v0.34.27 and v0.37.x will have a function type and an event sequence
 	// 3. Events indexed before v0.34.27 will only have a function type
-	// function_type = 'being_block_event' | 'end_block_event'
+	// function_type = 'begin_block_event' | 'end_block_event'
 
 	if len(remaining) == 0 { // The event was not properly indexed
 		return 0, fmt.Errorf("failed to parse event sequence, invalid event format")

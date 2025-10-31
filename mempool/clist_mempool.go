@@ -225,10 +225,6 @@ func (mem *CListMempool) CheckTx(
 	cb func(*abci.ResponseCheckTx),
 	txInfo TxInfo,
 ) error {
-	mem.updateMtx.RLock()
-	// use defer to unlock mutex because application (*local client*) might panic
-	defer mem.updateMtx.RUnlock()
-
 	txSize := len(tx)
 
 	if err := mem.isFull(txSize); err != nil {
@@ -243,6 +239,10 @@ func (mem *CListMempool) CheckTx(
 		}
 	}
 
+	mem.updateMtx.RLock()
+	defer mem.updateMtx.RUnlock()
+
+	// can be changed in Update
 	if mem.preCheck != nil {
 		if err := mem.preCheck(tx); err != nil {
 			return ErrPreCheck{Err: err}
@@ -254,7 +254,10 @@ func (mem *CListMempool) CheckTx(
 		return ErrAppConnMempool{Err: err}
 	}
 
-	if !mem.cache.Push(tx) { // if the transaction already exists in the cache
+	pushed := mem.cache.Push(tx)
+
+	// if the transaction already exists in the cache
+	if !pushed {
 		mem.metrics.AlreadyReceivedTxs.Add(1)
 		// Record a new sender for a tx we've already seen.
 		// Note it's possible a tx is still in the cache but no longer in the mempool
@@ -266,6 +269,7 @@ func (mem *CListMempool) CheckTx(
 			// its non-trivial since invalid txs can become valid,
 			// but they can spam the same tx with little cost to them atm.
 		}
+
 		return ErrTxInCache
 	}
 
@@ -376,6 +380,8 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 	return ErrTxNotFound
 }
 
+// isFull checks if the mempool is full.
+// safe to call concurrently.
 func (mem *CListMempool) isFull(txSize int) error {
 	memSize := mem.Size()
 	txsBytes := mem.SizeBytes()

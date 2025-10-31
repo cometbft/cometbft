@@ -100,44 +100,52 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 // AddPeer implements Reactor.
 // It starts a broadcast routine ensuring all txs are forwarded to the given peer.
 func (memR *Reactor) AddPeer(peer p2p.Peer) {
-	if memR.config.Broadcast {
-		go func() {
-			// Always forward transactions to unconditional peers.
-			if !memR.Switch.IsPeerUnconditional(peer.ID()) {
-				// Depending on the type of peer, we choose a semaphore to limit the gossiping peers.
-				var peerSemaphore *semaphore.Weighted
-				if peer.IsPersistent() && memR.config.ExperimentalMaxGossipConnectionsToPersistentPeers > 0 {
-					peerSemaphore = memR.activePersistentPeersSemaphore
-				} else if !peer.IsPersistent() && memR.config.ExperimentalMaxGossipConnectionsToNonPersistentPeers > 0 {
-					peerSemaphore = memR.activeNonPersistentPeersSemaphore
-				}
+	if !memR.config.Broadcast {
+		return
+	}
 
-				if peerSemaphore != nil {
-					for peer.IsRunning() {
-						// Block on the semaphore until a slot is available to start gossiping with this peer.
-						// Do not block indefinitely, in case the peer is disconnected before gossiping starts.
-						ctxTimeout, cancel := context.WithTimeout(context.TODO(), 30*time.Second)
-						// Block sending transactions to peer until one of the connections become
-						// available in the semaphore.
-						err := peerSemaphore.Acquire(ctxTimeout, 1)
-						cancel()
+	var (
+		isUnconditional = memR.Switch.IsPeerUnconditional(peer.ID())
+		isPersistent    = peer.IsPersistent()
+		peerSemaphore   *semaphore.Weighted
+	)
 
-						if err != nil {
-							continue
-						}
-
-						// Release semaphore to allow other peer to start sending transactions.
-						defer peerSemaphore.Release(1)
-						break
-					}
-				}
+	go func() {
+		// always forward transactions to unconditional peers.
+		if !isUnconditional {
+			// depending on the type of peer, we choose a semaphore to limit the gossiping peers.
+			if isPersistent && memR.config.ExperimentalMaxGossipConnectionsToPersistentPeers > 0 {
+				peerSemaphore = memR.activePersistentPeersSemaphore
+			} else if !isPersistent && memR.config.ExperimentalMaxGossipConnectionsToNonPersistentPeers > 0 {
+				peerSemaphore = memR.activeNonPersistentPeersSemaphore
 			}
 
-			memR.mempool.metrics.ActiveOutboundConnections.Add(1)
-			defer memR.mempool.metrics.ActiveOutboundConnections.Add(-1)
-			memR.broadcastTxRoutine(peer)
-		}()
-	}
+			if peerSemaphore != nil {
+				for peer.IsRunning() {
+					// Block on the semaphore until a slot is available to start gossiping with this peer.
+					// Do not block indefinitely, in case the peer is disconnected before gossiping starts.
+					ctxTimeout, cancel := context.WithTimeout(context.TODO(), 30*time.Second)
+					// Block sending transactions to peer until one of the connections become
+					// available in the semaphore.
+					err := peerSemaphore.Acquire(ctxTimeout, 1)
+					cancel()
+
+					if err != nil {
+						continue
+					}
+
+					// Release semaphore to allow other peer to start sending transactions.
+					defer peerSemaphore.Release(1)
+					break
+				}
+			}
+		}
+
+		memR.mempool.metrics.ActiveOutboundConnections.Add(1)
+		defer memR.mempool.metrics.ActiveOutboundConnections.Add(-1)
+
+		memR.broadcastTxRoutine(peer)
+	}()
 }
 
 // RemovePeer implements Reactor.
@@ -150,43 +158,45 @@ func (memR *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 // It adds any received transactions to the mempool.
 func (memR *Reactor) Receive(e p2p.Envelope) {
 	memR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
-	switch msg := e.Message.(type) {
-	case *protomem.Txs:
-		if memR.WaitSync() {
-			memR.Logger.Debug("Ignored message received while syncing", "msg", msg)
-			return
-		}
 
-		protoTxs := msg.GetTxs()
-		if len(protoTxs) == 0 {
-			memR.Logger.Error("received empty txs from peer", "src", e.Src)
-			return
-		}
-		txInfo := TxInfo{SenderID: memR.ids.GetForPeer(e.Src)}
-		if e.Src != nil {
-			txInfo.SenderP2PID = e.Src.ID()
-		}
+	if memR.WaitSync() {
+		memR.Logger.Debug("Ignored message received while syncing")
+		return
+	}
 
-		var err error
-		for _, tx := range protoTxs {
-			ntx := types.Tx(tx)
-			err = memR.mempool.CheckTx(ntx, nil, txInfo)
-			if err != nil {
-				switch {
-				case errors.Is(err, ErrTxInCache):
-					memR.Logger.Debug("Tx already exists in cache", "tx", ntx.String())
-				case errors.As(err, &ErrMempoolIsFull{}):
-					// using debug level to avoid flooding when traffic is high
-					memR.Logger.Debug(err.Error())
-				default:
-					memR.Logger.Info("Could not check tx", "tx", ntx.String(), "err", err)
-				}
-			}
-		}
-	default:
+	msg, ok := e.Message.(*protomem.Txs)
+	if !ok {
 		memR.Logger.Error("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 		memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message of type: %T", e.Message))
 		return
+	}
+
+	protoTxs := msg.GetTxs()
+	if len(protoTxs) == 0 {
+		memR.Logger.Error("received empty txs from peer", "src", e.Src)
+		return
+	}
+
+	txInfo := TxInfo{SenderID: memR.ids.GetForPeer(e.Src)}
+	if e.Src != nil {
+		txInfo.SenderP2PID = e.Src.ID()
+	}
+
+	var err error
+	for _, tx := range protoTxs {
+		ntx := types.Tx(tx)
+		err = memR.mempool.CheckTx(ntx, nil, txInfo)
+		if err != nil {
+			switch {
+			case errors.Is(err, ErrTxInCache):
+				memR.Logger.Debug("Tx already exists in cache", "tx", ntx.String())
+			case errors.As(err, &ErrMempoolIsFull{}):
+				// using debug level to avoid flooding when traffic is high
+				memR.Logger.Debug("Mempool is full", "err", err)
+			default:
+				memR.Logger.Info("Could not check tx", "tx", ntx.String(), "err", err)
+			}
+		}
 	}
 
 	// broadcasting happens from go routines per peer
@@ -242,18 +252,15 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 
 	peerID := memR.ids.GetForPeer(peer)
 	var next *clist.CElement
-	for {
-		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time
-		if !memR.IsRunning() || !peer.IsRunning() {
-			return
-		}
 
+	for peer.IsRunning() && memR.IsRunning() {
 		// This happens because the CElement we were looking at got garbage
 		// collected (removed). That is, .NextWait() returned nil. Go ahead and
 		// start from the beginning.
 		if next == nil {
 			select {
-			case <-memR.mempool.TxsWaitChan(): // Wait until a tx is available
+			// Wait until a tx is available
+			case <-memR.mempool.TxsWaitChan():
 				if next = memR.mempool.TxsFront(); next == nil {
 					continue
 				}

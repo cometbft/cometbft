@@ -155,6 +155,9 @@ linters:
       - linters:
           - goconst
         path: (.+)_test\.go
+      - linters:
+          - govet
+        text: "buildtag:"
     paths:
       - third_party$
       - builtin$

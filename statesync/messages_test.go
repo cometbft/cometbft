@@ -106,7 +106,7 @@ func TestStateSyncVectors(t *testing.T) {
 		expBytes string
 	}{
 		{"SnapshotsRequest", &ssproto.SnapshotsRequest{}, "0a00"},
-		{"SnapshotsResponse", &ssproto.SnapshotsResponse{Height: 1, Format: 2, Chunks: 3, Hash: []byte("chuck hash"), Metadata: []byte("snapshot metadata")}, "1225080110021803220a636875636b20686173682a11736e617073686f74206d65746164617461"},
+		{"SnapshotsResponse", &ssproto.SnapshotsResponse{Height: 1, Format: 2, Chunks: 3, Hash: []byte("chunk hash"), Metadata: []byte("snapshot metadata")}, "1225080110021803220a636875636b20686173682a11736e617073686f74206d65746164617461"},
 		{"ChunkRequest", &ssproto.ChunkRequest{Height: 1, Format: 2, Index: 3}, "1a06080110021803"},
 		{"ChunkResponse", &ssproto.ChunkResponse{Height: 1, Format: 2, Index: 3, Chunk: []byte("it's a chunk")}, "2214080110021803220c697427732061206368756e6b"},
 	}

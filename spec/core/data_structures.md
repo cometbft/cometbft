@@ -517,7 +517,7 @@ the configured `max_gas` when processing the block.
 
 The recommended value of `max_age_duration` parameter should correspond to
 the application's "unbonding period" or other similar mechanism for handling
-[Nothing-At-Stake attacks](https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed).
+[Nothing-At-Stake attacks](https://vitalik.eth.limo/general/2017/12/31/pos_faq.html#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed).
 
 The recommended formula for calculating `max_age_num_blocks` is `max_age_duration / {average block time}`.
 

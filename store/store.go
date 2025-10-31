@@ -754,7 +754,7 @@ func (bs *BlockStore) DeleteLatestBlock() error {
 	if err := batch.Delete(calcSeenCommitKey(targetHeight)); err != nil {
 		return err
 	}
-	// delete last, so as to not leave keys built on meta.BlockID dangling
+	// delete last, so as not to leave keys built on meta.BlockID dangling
 	if err := batch.Delete(calcBlockMetaKey(targetHeight)); err != nil {
 		return err
 	}

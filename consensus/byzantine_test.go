@@ -379,7 +379,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 	}()
 
 	p2p.MakeConnectedSwitches(config.P2P, N, func(i int, s *p2p.Switch) *p2p.Switch {
-		// ignore new switch s, we already made ours
+		// ignore new switches, we already made ours
 		switches[i].AddReactor("CONSENSUS", reactors[i])
 		return switches[i]
 	}, func(sws []*p2p.Switch, i, j int) {

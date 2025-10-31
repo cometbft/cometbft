@@ -209,7 +209,12 @@ func (conR *Reactor) AddPeer(peer p2p.Peer) {
 		panic(fmt.Sprintf("peer %v has no state", peer))
 	}
 	// Begin routines for this peer.
-	go conR.gossipDataRoutine(peer, peerState)
+
+	if !conR.conS.config.FastBlockGossip {
+		// only start a gossip data routine for this peer if the consensus
+		// state does not know how to gossip data on its own via a fast path
+		go conR.gossipDataRoutine(peer, peerState)
+	}
 	go conR.gossipVotesRoutine(peer, peerState)
 	go conR.queryMaj23Routine(peer, peerState)
 
@@ -342,7 +347,7 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		case *ProposalPOLMessage:
 			ps.ApplyProposalPOLMessage(msg)
 		case *BlockPartMessage:
-			ps.SetHasProposalBlockPart(msg.Height, msg.Round, int(msg.Part.Index))
+			ps.SetHasProposalBlockPart(msg.Height, msg.Round, msg.Part)
 			conR.Metrics.BlockParts.With("peer_id", string(e.Src.ID())).Add(1)
 			conR.conS.peerMsgQueue <- msgInfo{msg, e.Src.ID()}
 		default:
@@ -614,6 +619,130 @@ OUTER_LOOP:
 	}
 }
 
+func (conR *Reactor) GossipProposalBlock(proposal *cmtproto.Proposal, ps *types.PartSet) error {
+	conR.Logger.Info("gossiping proposal via fast path", "height", proposal.Height, "round", proposal.Round)
+
+	conR.Switch.Peers().ForEach(func(p p2p.Peer) {
+		go func(p p2p.Peer) {
+			rs := conR.getRoundState()
+			prs := p.Get(types.PeerStateKey).(*PeerState).GetRoundState()
+
+			// first broadcast the proposal
+			e := p2p.Envelope{
+				ChannelID: DataChannel,
+				Message:   &cmtcons.Proposal{Proposal: *proposal},
+			}
+			if err := conR.SendWithRetry(p, e); err != nil {
+				conR.Logger.Error("cannot gossip proposal", "err", err)
+				return
+			}
+
+			if 0 <= proposal.PolRound {
+				conR.Logger.Info("Sending POL", "height", prs.Height, "round", prs.Round)
+				e := p2p.Envelope{
+					ChannelID: DataChannel,
+					Message: &cmtcons.ProposalPOL{
+						Height:           rs.Height,
+						ProposalPolRound: proposal.PolRound,
+						ProposalPol:      *rs.Votes.Prevotes(proposal.PolRound).BitArray().ToProto(),
+					},
+				}
+				if err := conR.SendWithRetry(p, e); err != nil {
+					conR.Logger.Error("cannot gossip POL", "err", err)
+					return
+				}
+			}
+
+			for i := 0; i < int(ps.Total()); i++ {
+				go func(idx int) {
+					pp, err := ps.GetPart(idx).ToProto()
+					if err != nil {
+						conR.Logger.Error("error converting part to proto", "err", err, "index", idx)
+						return
+					}
+
+					e := p2p.Envelope{
+						ChannelID: DataChannel,
+						Message: &cmtcons.BlockPart{
+							Height: prs.Height,
+							Round:  prs.Round,
+							Part:   *pp,
+						},
+					}
+					if err := conR.SendWithRetry(p, e); err != nil {
+						conR.Logger.Error("cannot gossip part", "err", err, "index", idx)
+						return
+					}
+				}(i)
+			}
+
+			for i := 0; i < int(ps.Parity()); i++ {
+				go func(idx int) {
+					pp, err := ps.GetParityPart(idx).ToProto()
+					if err != nil {
+						conR.Logger.Error("error converting part to proto", "err", err, "index", idx)
+						return
+					}
+
+					e := p2p.Envelope{
+						ChannelID: DataChannel,
+						Message: &cmtcons.BlockPart{
+							Height: prs.Height,
+							Round:  prs.Round,
+							Part:   *pp,
+						},
+					}
+					if err := conR.SendWithRetry(p, e); err != nil {
+						conR.Logger.Error("cannot gossip part", "err", err, "index", idx)
+						return
+					}
+				}(i)
+			}
+		}(p)
+	})
+
+	return nil
+}
+
+func (conR *Reactor) SendWithRetry(p p2p.Peer, e p2p.Envelope) error {
+	for count := 0; count < 3; count++ {
+		if sent := p.Send(e); sent {
+			return nil
+		}
+	}
+	return fmt.Errorf("cannot send")
+}
+
+func (conR *Reactor) BroadcastPart(proposal *cmtproto.Proposal, part *types.Part) error {
+	pp, err := part.ToProto()
+	if err != nil {
+		return fmt.Errorf("converting part to proto: %w", err)
+	}
+
+	e := p2p.Envelope{
+		ChannelID: DataChannel,
+		Message: &cmtcons.BlockPart{
+			Height: proposal.Height,
+			Round:  proposal.Round,
+			Part:   *pp,
+		},
+	}
+	conR.broadcastEnvelopeWithPeerRetry(e, 3)
+	return nil
+}
+
+func (conR *Reactor) broadcastEnvelopeWithPeerRetry(e p2p.Envelope, retires int) {
+	conR.Switch.Peers().ForEach(func(p p2p.Peer) {
+		go func() {
+			for count := 0; count < retires; count++ {
+				if sent := p.Send(e); sent {
+					return
+				}
+			}
+		}()
+	})
+}
+
 func (conR *Reactor) gossipVotesRoutine(peer p2p.Peer, ps *PeerState) {
 	logger := conR.Logger.With("peer", peer)
 
@@ -773,12 +902,14 @@ func pickPartToSend(
 	ps *PeerState,
 	prs *cstypes.PeerRoundState,
 ) (*types.Part, bool) {
-	// If peer has same part set header as us, send block parts
+	// if peer has the same header as us
 	if rs.ProposalBlockParts.HasHeader(prs.ProposalBlockPartSetHeader) {
+		// prioritize gossiping parity parts
+		if index, ok := rs.ProposalBlockParts.ParityBitArray().Sub(prs.ProposalBlockParityParts.Copy()).PickRandom(); ok {
+			return rs.ProposalBlockParts.GetParityPart(index), true
+		}
 		if index, ok := rs.ProposalBlockParts.BitArray().Sub(prs.ProposalBlockParts.Copy()).PickRandom(); ok {
-			part := rs.ProposalBlockParts.GetPart(index)
-			// If sending this part fails, restart the OUTER_LOOP (busy-waiting).
-			return part, true
+			return rs.ProposalBlockParts.GetPart(index), true
 		}
 	}
 
@@ -1122,6 +1253,7 @@ func (ps *PeerState) SetHasProposal(proposal *types.Proposal) {
 
 	ps.PRS.ProposalBlockPartSetHeader = proposal.BlockID.PartSetHeader
 	ps.PRS.ProposalBlockParts = bits.NewBitArray(int(proposal.BlockID.PartSetHeader.Total))
+	ps.PRS.ProposalBlockParityParts = bits.NewBitArray(types.NumParityParts(proposal.BlockID.PartSetHeader.Total))
 	ps.PRS.ProposalPOLRound = proposal.POLRound
 	ps.PRS.ProposalPOL = nil // Nil until ProposalPOLMessage received.
 }
@@ -1137,10 +1269,11 @@ func (ps *PeerState) InitProposalBlockParts(partSetHeader types.PartSetHeader) {
 
 	ps.PRS.ProposalBlockPartSetHeader = partSetHeader
 	ps.PRS.ProposalBlockParts = bits.NewBitArray(int(partSetHeader.Total))
+	ps.PRS.ProposalBlockParityParts = bits.NewBitArray(types.NumParityParts(partSetHeader.Total))
 }
 
 // SetHasProposalBlockPart sets the given block part index as known for the peer.
-func (ps *PeerState) SetHasProposalBlockPart(height int64, round int32, index int) {
+func (ps *PeerState) SetHasProposalBlockPart(height int64, round int32, part *types.Part) {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 
@@ -1148,7 +1281,14 @@ func (ps *PeerState) SetHasProposalBlockPart(height int64, round int32, index in
 		return
 	}
 
-	ps.PRS.ProposalBlockParts.SetIndex(index, true)
+	var parts *bits.BitArray
+	if part.IsParity {
+		parts = ps.PRS.ProposalBlockParityParts
+	} else {
+		parts = ps.PRS.ProposalBlockParts
+	}
+
+	parts.SetIndex(int(part.Index), true)
 }
 
 // PickSendVote picks a vote and sends it to the peer.
@@ -1176,7 +1316,11 @@ func (ps *PeerState) PickSendVote(votes types.VoteSetReader) bool {
 // Returns true and marks the peer as having the part if the part was sent.
 func (ps *PeerState) SendPartSetHasPart(part *types.Part, prs *cstypes.PeerRoundState) bool {
 	// Send the part
-	ps.logger.Debug("Sending block part", "height", prs.Height, "round", prs.Round, "index", part.Index)
+	if part.IsParity {
+		ps.logger.Debug("Sending parity block part", "height", prs.Height, "round", prs.Round, "index", part.Index)
+	} else {
+		ps.logger.Debug("Sending block part", "height", prs.Height, "round", prs.Round, "index", part.Index)
+	}
 	pp, err := part.ToProto()
 	if err != nil {
 		// NOTE: only returns error if part is nil, which it should never be by here
@@ -1191,10 +1335,14 @@ func (ps *PeerState) SendPartSetHasPart(part *types.Part, prs *cstypes.PeerRound
 			Part:   *pp,
 		},
 	}) {
-		ps.SetHasProposalBlockPart(prs.Height, prs.Round, int(part.Index))
+		ps.SetHasProposalBlockPart(prs.Height, prs.Round, part)
 		return true
 	}
-	ps.logger.Debug("Sending block part failed")
+	if part.IsParity {
+		ps.logger.Debug("Sending parity block part failed")
+	} else {
+		ps.logger.Debug("Sending block part failed")
+	}
 	return false
 }
 

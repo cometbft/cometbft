@@ -73,7 +73,10 @@ func startConsensusNet(t *testing.T, css []*State, n int) (
 				t.Error(err)
 			}
 		}
+
+		css[i].SetGossiper(reactors[i])
 	}
+
 	// make connected switches and start all reactors
 	p2p.MakeConnectedSwitches(config.P2P, n, func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("CONSENSUS", reactors[i])
@@ -418,6 +421,29 @@ func TestSwitchToConsensusVoteExtensions(t *testing.T) {
 func TestReactorRecordsVotesAndBlockParts(t *testing.T) {
 	N := 4
 	css, cleanup := randConsensusNet(t, N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore)
+	defer cleanup()
+	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, N)
+	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
+
+	// wait till everyone makes the first new block
+	timeoutWaitGroup(N, func(j int) {
+		<-blocksSubs[j].Out()
+	})
+
+	// Get peer
+	peer := reactors[1].Switch.Peers().Copy()[0]
+	// Get peer state
+	ps := peer.Get(types.PeerStateKey).(*PeerState)
+
+	assert.Equal(t, true, ps.VotesSent() > 0, "number of votes sent should have increased")
+	assert.Equal(t, true, ps.BlockPartsSent() > 0, "number of votes sent should have increased")
+}
+
+func TestReactorRecievesParityParts(t *testing.T) {
+	N := 2
+	css, cleanup := randConsensusNet(t, N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore, func(c *cfg.Config) {
+		c.Consensus.BlockPartEncoding = types.ReedSolomon
+	})
 	defer cleanup()
 	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, N)
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
@@ -1126,8 +1152,8 @@ func TestMarshalJSONPeerState(t *testing.T) {
 			"step": 0,
 			"start_time": "0001-01-01T00:00:00Z",
 			"proposal": false,
-			"proposal_block_part_set_header":
-				{"total":0, "hash":""},
+			"proposal_block_part_set_header": {"total":0, "hash":""},
+			"proposal_block_parity_parts": null,
 			"proposal_block_parts": null,
 			"proposal_pol_round": -1,
 			"proposal_pol": null,

@@ -146,6 +146,31 @@ func newInMemoryBlockStore() (*BlockStore, dbm.DB) {
 	return NewBlockStore(db), db
 }
 
+func TestBlockStoreRSEncoding(t *testing.T) {
+	state, bs, cleanup := makeStateAndBlockStore()
+	defer cleanup()
+
+	txs := []types.Tx{
+		cmtrand.NewRand().Bytes(int(types.BlockPartSizeBytes)),
+		cmtrand.NewRand().Bytes(int(types.BlockPartSizeBytes)),
+		cmtrand.NewRand().Bytes(int(types.BlockPartSizeBytes)),
+		cmtrand.NewRand().Bytes(int(types.BlockPartSizeBytes)),
+		cmtrand.NewRand().Bytes(int(types.BlockPartSizeBytes)),
+		cmtrand.NewRand().Bytes(int(types.BlockPartSizeBytes)),
+		cmtrand.NewRand().Bytes(int(types.BlockPartSizeBytes)),
+	}
+	block := state.MakeBlock(bs.Height()+1, txs, new(types.Commit), nil, state.Validators.GetProposer().Address)
+
+	ps, err := block.MakePartSetWithEncoding(types.BlockPartSizeBytes, types.ReedSolomon)
+	require.NoError(t, err)
+
+	seenCommit := makeTestExtCommit(block.Height, cmttime.Now())
+	bs.SaveBlockWithExtendedCommit(block, ps, seenCommit)
+
+	loaded := bs.LoadBlock(block.Height)
+	require.NotNil(t, loaded)
+}
+
 // TODO: This test should be simplified ...
 
 func TestBlockStoreSaveLoadBlock(t *testing.T) {

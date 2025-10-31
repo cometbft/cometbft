@@ -9,9 +9,8 @@ import (
 	"os"
 	"runtime/debug"
 	"sort"
+	"strconv"
 	"time"
-
-	"github.com/cosmos/gogoproto/proto"
 
 	cfg "github.com/cometbft/cometbft/config"
 	cstypes "github.com/cometbft/cometbft/consensus/types"
@@ -30,6 +29,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cosmos/gogoproto/proto"
 )
 
 var msgQueueSize = 1000
@@ -61,6 +61,10 @@ type txNotifier interface {
 type evidencePool interface {
 	// reports conflicting votes to the evidence pool to be processed into evidence
 	ReportConflictingVotes(voteA, voteB *types.Vote)
+}
+
+type Gossiper interface {
+	GossipProposalBlock(proposal *cmtproto.Proposal, ps *types.PartSet) error
 }
 
 // State handles execution of the consensus algorithm.
@@ -122,6 +126,14 @@ type State struct {
 	decideProposal func(height int64, round int32)
 	doPrevote      func(height int64, round int32)
 	setProposal    func(proposal *types.Proposal) error
+
+	// gossiper provides a fast path to immediately gossip block proposal and
+	// parts after a proposal is created, bypassing state machine updates and
+	// internal message queues. Gossiper is set through an option.
+	//
+	// If the gossiper is not set, parts will be broadcast via the slow path
+	// once they have been sent through the internal message queues.
+	gossiper Gossiper
 
 	// closed when we finish shutting down
 	done chan struct{}
@@ -288,6 +300,12 @@ func (cs *State) SetPrivValidator(priv types.PrivValidator) {
 	if err := cs.updatePrivValidatorPubKey(); err != nil {
 		cs.Logger.Error("failed to get private validator pubkey", "err", err)
 	}
+}
+
+func (cs *State) SetGossiper(gossiper Gossiper) {
+	cs.mtx.Lock()
+	defer cs.mtx.Unlock()
+	cs.gossiper = gossiper
 }
 
 // SetTimeoutTicker sets the local timer. It may be useful to overwrite for
@@ -1218,7 +1236,7 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 			panic("Method createProposalBlock should not provide a nil block without errors")
 		}
 		cs.metrics.ProposalCreateCount.Add(1)
-		blockParts, err = block.MakePartSet(types.BlockPartSizeBytes)
+		blockParts, err = block.MakePartSetWithEncoding(types.BlockPartSizeBytes, cs.config.BlockPartEncoding)
 		if err != nil {
 			cs.Logger.Error("unable to create proposal block part set", "error", err)
 			return
@@ -1238,12 +1256,26 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 	if err := cs.privValidator.SignProposal(cs.state.ChainID, p); err == nil {
 		proposal.Signature = p.Signature
 
+		if cs.config.FastBlockGossip && cs.gossiper != nil {
+			if err := cs.gossiper.GossipProposalBlock(proposal.ToProto(), blockParts); err != nil {
+				cs.Logger.Error("error gossiping proposal", "err", err)
+			}
+		}
+
 		// send proposal and block parts on internal msg queue
 		cs.sendInternalMessage(msgInfo{&ProposalMessage{proposal}, ""})
 
-		for i := 0; i < int(blockParts.Total()); i++ {
-			part := blockParts.GetPart(i)
-			cs.sendInternalMessage(msgInfo{&BlockPartMessage{cs.Height, cs.Round, part}, ""})
+		// send block parts on internal message queue to be gossiped
+		parts, parityParts := int(blockParts.Total()), int(blockParts.Parity())
+		for i := 0; i < max(parts, parityParts); i++ {
+			if i < parts {
+				part := blockParts.GetPart(i)
+				cs.sendInternalMessage(msgInfo{&BlockPartMessage{cs.Height, cs.Round, part}, ""})
+			}
+			if i < parityParts {
+				parityPart := blockParts.GetParityPart(i)
+				cs.sendInternalMessage(msgInfo{&BlockPartMessage{cs.Height, cs.Round, parityPart}, ""})
+			}
 		}
 
 		cs.Logger.Debug("signed proposal", "height", height, "round", round, "proposal", proposal)
@@ -1952,20 +1984,31 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal) error {
 // once we have the full block.
 func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (added bool, err error) {
 	height, round, part := msg.Height, msg.Round, msg.Part
+	isParity := strconv.FormatBool(part.IsParity)
+
+	if cs.ProposalBlockParts != nil && cs.ProposalBlockParts.IsComplete() {
+		// we may still be receiving parity parts, but if we have already
+		// completed the proposal, no need to add more
+		return false, nil
+	}
 
 	// Blocks might be reused, so round mismatch is OK
 	if cs.Height != height {
 		cs.Logger.Debug("received block part from wrong height", "height", height, "round", round)
-		cs.metrics.BlockGossipPartsReceived.With("matches_current", "false").Add(1)
+		if peerID != "" {
+			cs.metrics.BlockGossipPartsReceived.With("matches_current", "false", "is_parity", isParity).Add(1)
+		}
 		return false, nil
 	}
 
 	// We're not expecting a block part.
 	if cs.ProposalBlockParts == nil {
-		cs.metrics.BlockGossipPartsReceived.With("matches_current", "false").Add(1)
+		if peerID != "" {
+			cs.metrics.BlockGossipPartsReceived.With("matches_current", "false", "is_parity", isParity).Add(1)
+		}
 		// NOTE: this can happen when we've gone to a higher round and
 		// then receive parts from the previous round - not necessarily a bad peer.
-		cs.Logger.Debug(
+		cs.Logger.Error(
 			"received a block part when we are not expecting any",
 			"height", height,
 			"round", round,
@@ -1975,19 +2018,35 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 		return false, nil
 	}
 
-	added, err = cs.ProposalBlockParts.AddPart(part)
-	if err != nil {
-		if errors.Is(err, types.ErrPartSetInvalidProof) || errors.Is(err, types.ErrPartSetUnexpectedIndex) {
-			cs.metrics.BlockGossipPartsReceived.With("matches_current", "false").Add(1)
+	if !part.IsParity {
+		added, err = cs.ProposalBlockParts.AddPart(part)
+		if err != nil {
+			if errors.Is(err, types.ErrPartSetInvalidProof) || errors.Is(err, types.ErrPartSetUnexpectedIndex) {
+				if peerID != "" {
+					cs.metrics.BlockGossipPartsReceived.With("matches_current", "false", "is_parity", isParity).Add(1)
+				}
+			}
+			return added, err
 		}
-		return added, err
+	} else {
+		added, err = cs.ProposalBlockParts.AddParityPart(part)
+		if err != nil {
+			if errors.Is(err, types.ErrPartSetUnexpectedIndex) {
+				cs.metrics.BlockGossipPartsReceived.With("matches_current", "false", "is_parity", isParity).Add(1)
+			}
+			return added, err
+		}
 	}
 
-	cs.metrics.BlockGossipPartsReceived.With("matches_current", "true").Add(1)
+	if peerID != "" {
+		cs.metrics.BlockGossipPartsReceived.With("matches_current", "true", "is_parity", isParity).Add(1)
+	}
 	if !added {
 		// NOTE: we are disregarding possible duplicates above where heights dont match or we're not expecting block parts yet
 		// but between the matches_current = true and false, we have all the info.
-		cs.metrics.DuplicateBlockPart.Add(1)
+		if peerID != "" {
+			cs.metrics.DuplicateBlockPart.With("is_parity", isParity).Add(1)
+		}
 	}
 
 	maxBytes := cs.state.ConsensusParams.Block.MaxBytes
@@ -1999,6 +2058,26 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 			cs.ProposalBlockParts.ByteSize(), maxBytes,
 		)
 	}
+
+	// if this proposal has parity parts, i.e. it is erasure coded, try to
+	// reconstruct it
+	hasSufficientTotalParts := (cs.ProposalBlockParts.ParityCount() + cs.ProposalBlockParts.Count()) >= cs.ProposalBlockParts.Total()
+	if added && cs.ProposalBlockParts.Parity() > 0 && hasSufficientTotalParts && !cs.ProposalBlockParts.IsComplete() {
+		preParity, preData := cs.ProposalBlockParts.ParityCount(), cs.ProposalBlockParts.Count()
+		success, err := cs.ProposalBlockParts.TryReconstruct()
+		kvs := []any{"current_parity", preParity, "post_parity", cs.ProposalBlockParts.ParityCount(), "current_data", preData, "post_data", cs.ProposalBlockParts.Count()}
+		if err != nil {
+			kvs = append(kvs, "err", err)
+			cs.Logger.Info("error attempting to reconstruct a block early", kvs...)
+		}
+		if success {
+			cs.Logger.Info("reconstructed a block early", kvs...)
+		}
+		if err == nil && !success {
+			cs.Logger.Info("failed to reconstruct a block early", kvs...)
+		}
+	}
+
 	if added && cs.ProposalBlockParts.IsComplete() {
 		bz, err := io.ReadAll(cs.ProposalBlockParts.GetReader())
 		if err != nil {

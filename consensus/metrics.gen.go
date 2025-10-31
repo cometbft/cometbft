@@ -135,7 +135,7 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Subsystem: MetricsSubsystem,
 			Name:      "duplicate_block_part",
 			Help:      "Number of times we received a duplicate block part",
-		}, labels).With(labelsAndValues...),
+		}, append(labels, "is_parity")).With(labelsAndValues...),
 		DuplicateVote: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -155,7 +155,7 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Subsystem: MetricsSubsystem,
 			Name:      "block_gossip_parts_received",
 			Help:      "Number of block parts received by the node, separated by whether the part was relevant to the block the node is trying to gather or not.",
-		}, append(labels, "matches_current")).With(labelsAndValues...),
+		}, append(labels, "matches_current", "is_parity")).With(labelsAndValues...),
 		QuorumPrevoteDelay: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,

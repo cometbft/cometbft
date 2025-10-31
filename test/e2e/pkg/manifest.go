@@ -116,6 +116,15 @@ type Manifest struct {
 	// Maximum number of peers to which the node gossips transactions
 	ExperimentalMaxGossipConnectionsToPersistentPeers    uint `toml:"experimental_max_gossip_connections_to_persistent_peers"`
 	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint `toml:"experimental_max_gossip_connections_to_non_persistent_peers"`
+
+	// BlockPartEncoding specifies the encoding scheme for block parts: "none" or "reed_solomon".
+	// Defaults to "none". When set to "reed_solomon", blocks are erasure coded with parity parts
+	// for improved reliability during gossip.
+	BlockPartEncoding string `toml:"block_part_encoding"`
+
+	// FastBlockGossip enables immediate gossiping of proposals and block parts to peers
+	// without waiting for internal message queue processing. Defaults to false.
+	FastBlockGossip bool `toml:"fast_block_gossip"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

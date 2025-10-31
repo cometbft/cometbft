@@ -506,6 +506,11 @@ create_empty_blocks_interval = "{{ .Consensus.CreateEmptyBlocksInterval }}"
 peer_gossip_sleep_duration = "{{ .Consensus.PeerGossipSleepDuration }}"
 peer_query_maj23_sleep_duration = "{{ .Consensus.PeerQueryMaj23SleepDuration }}"
 
+# Type of encoding to use for block parts
+block_part_encoding = "{{ .Consensus.BlockPartEncoding }}"
+
+fast_block_gossip = "{{ .Consensus.FastBlockGossip }}"
+
 #######################################################
 ###         Storage Configuration Options           ###
 #######################################################

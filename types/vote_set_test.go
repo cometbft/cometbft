@@ -133,7 +133,7 @@ func Benchmark_2_3_Maj(b *testing.B) {
 		BlockID:          BlockID{nil, PartSetHeader{}},
 	}
 	blockPartsTotal := uint32(123)
-	blockPartSetHeader := PartSetHeader{blockPartsTotal, crypto.CRandBytes(32)}
+	blockPartSetHeader := PartSetHeader{Total: blockPartsTotal, Hash: crypto.CRandBytes(32)}
 	for b.Loop() {
 		voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 100, 1, false)
 		for i := int32(0); i < int32(100); i += 4 {
@@ -154,7 +154,7 @@ func Benchmark_2_3_Maj(b *testing.B) {
 			pubKey, _ = privValidators[i+2].GetPubKey()
 			adrr = pubKey.Address()
 			vote = withValidator(voteProto, adrr, i+2)
-			blockPartsHeader := PartSetHeader{blockPartsTotal, crypto.CRandBytes(32)}
+			blockPartsHeader := PartSetHeader{Total: blockPartsTotal, Hash: crypto.CRandBytes(32)}
 			_, err = signAddVote(privValidators[i+2], withBlockPartSetHeader(vote, blockPartsHeader), voteSet)
 			require.NoError(b, err)
 			_, _ = voteSet.TwoThirdsMajority()
@@ -162,7 +162,7 @@ func Benchmark_2_3_Maj(b *testing.B) {
 			pubKey, _ = privValidators[i+3].GetPubKey()
 			adrr = pubKey.Address()
 			vote = withValidator(voteProto, adrr, i+3)
-			blockPartsHeader = PartSetHeader{blockPartsTotal + 1, blockPartSetHeader.Hash}
+			blockPartsHeader = PartSetHeader{Total: blockPartsTotal + 1, Hash: blockPartSetHeader.Hash}
 			_, err = signAddVote(privValidators[i+3], withBlockPartSetHeader(vote, blockPartsHeader), voteSet)
 			require.NoError(b, err)
 			_, _ = voteSet.TwoThirdsMajority()
@@ -226,7 +226,7 @@ func TestVoteSet_2_3MajorityRedux(t *testing.T) {
 
 	blockHash := crypto.CRandBytes(32)
 	blockPartsTotal := uint32(123)
-	blockPartSetHeader := PartSetHeader{blockPartsTotal, crypto.CRandBytes(32)}
+	blockPartSetHeader := PartSetHeader{Total: blockPartsTotal, Hash: crypto.CRandBytes(32)}
 
 	voteProto := &Vote{
 		ValidatorAddress: nil, // NOTE: must fill in
@@ -270,7 +270,7 @@ func TestVoteSet_2_3MajorityRedux(t *testing.T) {
 		require.NoError(t, err)
 		addr := pubKey.Address()
 		vote := withValidator(voteProto, addr, 67)
-		blockPartsHeader := PartSetHeader{blockPartsTotal, crypto.CRandBytes(32)}
+		blockPartsHeader := PartSetHeader{Total: blockPartsTotal, Hash: crypto.CRandBytes(32)}
 		_, err = signAddVote(privValidators[67], withBlockPartSetHeader(vote, blockPartsHeader), voteSet)
 		require.NoError(t, err)
 		blockID, ok = voteSet.TwoThirdsMajority()
@@ -284,7 +284,7 @@ func TestVoteSet_2_3MajorityRedux(t *testing.T) {
 		require.NoError(t, err)
 		addr := pubKey.Address()
 		vote := withValidator(voteProto, addr, 68)
-		blockPartsHeader := PartSetHeader{blockPartsTotal + 1, blockPartSetHeader.Hash}
+		blockPartsHeader := PartSetHeader{Total: blockPartsTotal + 1, Hash: blockPartSetHeader.Hash}
 		_, err = signAddVote(privValidators[68], withBlockPartSetHeader(vote, blockPartsHeader), voteSet)
 		require.NoError(t, err)
 		blockID, ok = voteSet.TwoThirdsMajority()
@@ -451,7 +451,7 @@ func TestVoteSet_Conflicts(t *testing.T) {
 func TestVoteSet_MakeCommit(t *testing.T) {
 	height, round := int64(1), int32(0)
 	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrecommitType, 10, 1, true)
-	blockHash, blockPartSetHeader := crypto.CRandBytes(32), PartSetHeader{123, crypto.CRandBytes(32)}
+	blockHash, blockPartSetHeader := crypto.CRandBytes(32), PartSetHeader{Total: 123, Hash: crypto.CRandBytes(32)}
 
 	voteProto := &Vote{
 		ValidatorAddress: nil,
@@ -486,7 +486,7 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, 6)
 		vote = withBlockHash(vote, cmtrand.Bytes(32))
-		vote = withBlockPartSetHeader(vote, PartSetHeader{123, cmtrand.Bytes(32)})
+		vote = withBlockPartSetHeader(vote, PartSetHeader{Total: 123, Hash: cmtrand.Bytes(32)})
 
 		_, err = signAddVote(privValidators[6], vote, voteSet)
 		require.NoError(t, err)
@@ -576,7 +576,7 @@ func TestVoteSet_VoteExtensionsEnabled(t *testing.T) {
 			val0Addr := val0p.Address()
 			blockHash := crypto.CRandBytes(32)
 			blockPartsTotal := uint32(123)
-			blockPartSetHeader := PartSetHeader{blockPartsTotal, crypto.CRandBytes(32)}
+			blockPartSetHeader := PartSetHeader{Total: blockPartsTotal, Hash: crypto.CRandBytes(32)}
 
 			vote := &Vote{
 				ValidatorAddress: val0Addr,

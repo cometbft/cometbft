@@ -1,0 +1,72 @@
+# E2E test manifest for FastBlockGossip only (without erasure coding)
+# This tests that fast gossip works correctly with standard block parts
+
+initial_height = 1
+evidence = 0
+abci_protocol = "builtin"
+
+# Add delays to simulate realistic application processing
+prepare_proposal_delay = "50ms"
+process_proposal_delay = "50ms"
+check_tx_delay = "10ms"
+
+# Enable only fast block gossip (no erasure coding)
+block_part_encoding = "none"
+fast_block_gossip = true
+
+# Large block size to ensure multiple parts are needed
+block_max_bytes = 2000000
+
+# Transaction load configuration - creates large blocks
+load_tx_size_bytes = 10240
+load_tx_batch_size = 10
+load_tx_connections = 1
+load_max_txs = 100
+
+# Enable metrics for observability
+prometheus = true
+
+# Three validators for consensus
+[validators]
+validator01 = 100
+validator02 = 100
+validator03 = 100
+
+# Validator nodes with fast gossip only
+[node.validator01]
+mode = "validator"
+database = "goleveldb"
+privval_protocol = "file"
+persist_interval = 1
+snapshot_interval = 5
+retain_blocks = 0
+perturb = []
+
+[node.validator02]
+mode = "validator"
+database = "goleveldb"
+privval_protocol = "file"
+persist_interval = 1
+snapshot_interval = 5
+retain_blocks = 0
+perturb = []
+persistent_peers = ["validator01"]
+
+[node.validator03]
+mode = "validator"
+database = "goleveldb"
+privval_protocol = "file"
+persist_interval = 1
+snapshot_interval = 5
+retain_blocks = 0
+perturb = []
+persistent_peers = ["validator01", "validator02"]
+
+# Full node to verify block propagation
+[node.full01]
+mode = "full"
+database = "goleveldb"
+start_at = 0
+state_sync = false
+retain_blocks = 0
+persistent_peers = ["validator01", "validator02", "validator03"]

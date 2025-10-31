@@ -338,6 +338,11 @@ func createConsensusReactor(config *cfg.Config,
 	// services which will be publishing and/or subscribing for messages (events)
 	// consensusReactor will set it on consensusState and blockExecutor
 	consensusReactor.SetEventBus(eventBus)
+
+	if config.Consensus.FastBlockGossip {
+		consensusState.SetGossiper(consensusReactor)
+	}
+
 	return consensusReactor, consensusState
 }
 

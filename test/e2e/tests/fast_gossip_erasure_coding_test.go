@@ -128,35 +128,7 @@ func TestFastGossipOnly_BlockProduction(t *testing.T) {
 			testnet.BlockPartEncoding, testnet.FastBlockGossip)
 	}
 
-	testNode(t, func(t *testing.T, node e2e.Node) {
-		if node.Mode == e2e.ModeSeed {
-			return
-		}
-
-		client, err := node.Client()
-		require.NoError(t, err)
-
-		// Wait for the node to produce/receive multiple blocks
-		require.Eventuallyf(t, func() bool {
-			status, err := client.Status(ctx)
-			if err != nil {
-				return false
-			}
-			return status.SyncInfo.LatestBlockHeight >= node.Testnet.InitialHeight+10
-		}, 30*time.Second, 500*time.Millisecond,
-			"node %s failed to reach height %d", node.Name, node.Testnet.InitialHeight+10)
-
-		// Verify blocks are valid
-		status, err := client.Status(ctx)
-		require.NoError(t, err)
-
-		for h := node.Testnet.InitialHeight; h <= status.SyncInfo.LatestBlockHeight; h++ {
-			block, err := client.Block(ctx, &h)
-			require.NoError(t, err, "failed to get block at height %d", h)
-			require.NotNil(t, block.Block)
-			require.NoError(t, block.Block.ValidateBasic())
-		}
-	})
+	testNode(t, testBlockProduction)
 }
 
 // TestFastGossipOnly_Consensus verifies consensus with only fast gossip enabled
@@ -212,35 +184,7 @@ func TestErasureCodingOnly_BlockProduction(t *testing.T) {
 			testnet.BlockPartEncoding, testnet.FastBlockGossip)
 	}
 
-	testNode(t, func(t *testing.T, node e2e.Node) {
-		if node.Mode == e2e.ModeSeed {
-			return
-		}
-
-		client, err := node.Client()
-		require.NoError(t, err)
-
-		// Wait for the node to produce/receive multiple blocks
-		require.Eventuallyf(t, func() bool {
-			status, err := client.Status(ctx)
-			if err != nil {
-				return false
-			}
-			return status.SyncInfo.LatestBlockHeight >= node.Testnet.InitialHeight+10
-		}, 30*time.Second, 500*time.Millisecond,
-			"node %s failed to reach height %d", node.Name, node.Testnet.InitialHeight+10)
-
-		// Verify blocks are valid
-		status, err := client.Status(ctx)
-		require.NoError(t, err)
-
-		for h := node.Testnet.InitialHeight; h <= status.SyncInfo.LatestBlockHeight; h++ {
-			block, err := client.Block(ctx, &h)
-			require.NoError(t, err, "failed to get block at height %d", h)
-			require.NotNil(t, block.Block)
-			require.NoError(t, block.Block.ValidateBasic())
-		}
-	})
+	testNode(t, testBlockProduction)
 }
 
 // TestErasureCodingOnly_Consensus verifies consensus with only erasure coding enabled
@@ -283,4 +227,34 @@ func TestErasureCodingOnly_Consensus(t *testing.T) {
 			require.Equal(t, expectedBlock.Hash(), actualBlock.Block.Hash(), "node %s has different block at height %d", node.Name, expectedBlock.Height)
 		}
 	})
+}
+
+func testBlockProduction(t *testing.T, node e2e.Node) {
+	if node.Mode == e2e.ModeSeed {
+		return
+	}
+
+	client, err := node.Client()
+	require.NoError(t, err)
+
+	// Wait for the node to produce/receive multiple blocks
+	require.Eventuallyf(t, func() bool {
+		status, err := client.Status(ctx)
+		if err != nil {
+			return false
+		}
+		return status.SyncInfo.LatestBlockHeight >= node.Testnet.InitialHeight+10
+	}, 30*time.Second, 500*time.Millisecond,
+		"node %s failed to reach height %d", node.Name, node.Testnet.InitialHeight+10)
+
+	// Verify blocks are valid
+	status, err := client.Status(ctx)
+	require.NoError(t, err)
+
+	for h := node.Testnet.InitialHeight; h <= status.SyncInfo.LatestBlockHeight; h++ {
+		block, err := client.Block(ctx, &h)
+		require.NoError(t, err, "failed to get block at height %d", h)
+		require.NotNil(t, block.Block)
+		require.NoError(t, block.Block.ValidateBasic())
+	}
 }

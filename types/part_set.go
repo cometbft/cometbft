@@ -292,7 +292,7 @@ func NewRSPartSetFromData(data []byte, partSize uint32) (*PartSet, error) {
 	parityShards := NumParityParts(parts.total)
 
 	// TODO: this is pretty arbitrary, need to do more tuning here
-	enc, err := reedsolomon.New(int(parts.total), int(parityShards))
+	enc, err := reedsolomon.New(int(parts.total), parityShards)
 	if err != nil {
 		return nil, fmt.Errorf("creating rs encoder with %d data shards and %d parity shards: %w", parts.total, parityShards, err)
 	}
@@ -301,7 +301,7 @@ func NewRSPartSetFromData(data []byte, partSize uint32) (*PartSet, error) {
 	for i := 0; i < int(parts.total); i++ {
 		shards[i] = parts.parts[i].Bytes
 	}
-	for i := 0; i < int(parityShards); i++ {
+	for i := 0; i < parityShards; i++ {
 		shards[i+int(parts.total)] = make([]byte, len(shards[0]))
 	}
 	if err = enc.Encode(shards); err != nil {
@@ -316,7 +316,7 @@ func NewRSPartSetFromData(data []byte, partSize uint32) (*PartSet, error) {
 			IsParity: true,
 		}
 	}
-	parityBitArray := bits.NewBitArrayFromFn(int(parityShards), func(int) bool { return true })
+	parityBitArray := bits.NewBitArrayFromFn(parityShards, func(int) bool { return true })
 
 	parts.parity = uint32(parityShards)
 	parts.parityParts = parityParts
@@ -532,7 +532,7 @@ func (ps *PartSet) TryReconstruct() (bool, error) {
 }
 
 func (ps *PartSet) ToShards() ([][]byte, error) {
-	totalShards := ps.total + uint32(ps.parity)
+	totalShards := ps.total + ps.parity
 	shards := make([][]byte, totalShards)
 
 	// TODO(ma): we should be appending to shards while we call AddPart and

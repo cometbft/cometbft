@@ -304,7 +304,6 @@ func TestBlockReconstructionP2P(t *testing.T) {
 		require.NotNil(t, receiverNode.ProposalBlock, "receiver should have reconstructed block")
 		require.True(t, receiverNode.ProposalBlockParts.IsComplete(), "receiver should have complete block parts")
 		require.Equal(t, receiverNode.ProposalBlockParts.Parity(), receiverNode.ProposalBlockParts.ParityCount(), "receiver should have all parity parts")
-		receiverBlock = receiverNode.ProposalBlock
 	}
 
 	// Wait for receiver to commit the block

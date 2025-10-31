@@ -1268,11 +1268,11 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 		// send block parts on internal message queue to be gossiped
 		parts, parityParts := int(blockParts.Total()), int(blockParts.Parity())
 		for i := 0; i < max(parts, parityParts); i++ {
-			if i < int(parts) {
+			if i < parts {
 				part := blockParts.GetPart(i)
 				cs.sendInternalMessage(msgInfo{&BlockPartMessage{cs.Height, cs.Round, part}, ""})
 			}
-			if i < int(parityParts) {
+			if i < parityParts {
 				parityPart := blockParts.GetParityPart(i)
 				cs.sendInternalMessage(msgInfo{&BlockPartMessage{cs.Height, cs.Round, parityPart}, ""})
 			}

@@ -53,7 +53,7 @@ func AddressToMultiAddr(addr string, transport string) (ma.Multiaddr, error) {
 // addrToQuicMultiaddr converts a given address to a QUIC multiaddr
 // example: "tcp://192.0.2.0:65432" -> "/ip4/192.0.2.0/udp/65432/quic-v1"
 func addrToQuicMultiaddr(parts *url.URL, layer4 string) (ma.Multiaddr, error) {
-	raw := fmt.Sprintf("/ip4/%s/%s/%s/%s/", parts.Hostname(), layer4, parts.Port(), TransportQUIC)
+	raw := fmt.Sprintf("/ip4/%s/%s/%s/%s", parts.Hostname(), layer4, parts.Port(), TransportQUIC)
 
 	return ma.NewMultiaddr(raw)
 }

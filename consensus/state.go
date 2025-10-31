@@ -101,7 +101,7 @@ type State struct {
 	internalMsgQueue chan msgInfo
 	timeoutTicker    TimeoutTicker
 
-	// information about about added votes and block parts are written on this channel
+	// information about added votes and block parts are written on this channel
 	// so statistics can be computed by reactor
 	statsMsgQueue chan msgInfo
 

@@ -19,7 +19,7 @@ const (
 )
 
 // Subscribe for events via WebSocket.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Websocket/subscribe
+// More: https://docs.cometbft.com/v0.38/core/subscription
 func (env *Environment) Subscribe(ctx *rpctypes.Context, query string) (*ctypes.ResultSubscribe, error) {
 	addr := ctx.RemoteAddr()
 

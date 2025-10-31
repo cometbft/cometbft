@@ -622,40 +622,95 @@ OUTER_LOOP:
 func (conR *Reactor) GossipProposalBlock(proposal *cmtproto.Proposal, ps *types.PartSet) error {
 	conR.Logger.Info("gossiping proposal via fast path", "height", proposal.Height, "round", proposal.Round)
 
-	// TOOD(ma): can maybe make a per peer goroutine that broadcasts the proposal
-	// and then does the per part goroutines
-	conR.BroadcastProposal(proposal)
-	conR.Logger.Info("done broadcasting proposal", "height", proposal.Height, "round", proposal.Round)
+	conR.Switch.Peers().ForEach(func(p p2p.Peer) {
+		go func(p p2p.Peer) {
+			rs := conR.getRoundState()
+			prs := p.Get(types.PeerStateKey).(*PeerState).GetRoundState()
 
-	for i := 0; i < int(ps.Total()); i++ {
-		go func(idx int) {
-			if err := conR.BroadcastPart(proposal, ps.GetPart(idx)); err != nil {
-				conR.Logger.Error("error gossiping data part", "err", err, "index", idx)
-			} else {
-				conR.Logger.Info("done broadcasting part", "height", proposal.Height, "round", proposal.Round, "index", idx)
+			// first broadcast the proposal
+			e := p2p.Envelope{
+				ChannelID: DataChannel,
+				Message:   &cmtcons.Proposal{Proposal: *proposal},
 			}
-		}(i)
-	}
+			if err := conR.SendWithRetry(p, e); err != nil {
+				conR.Logger.Error("cannot gossip proposal", "err", err)
+				return
+			}
 
-	for i := 0; i < int(ps.Parity()); i++ {
-		go func(idx int) {
-			if err := conR.BroadcastPart(proposal, ps.GetParityPart(idx)); err != nil {
-				conR.Logger.Error("error gossiping parity part", "err", err, "index", idx)
-			} else {
-				conR.Logger.Info("done broadcasting parity part", "height", proposal.Height, "round", proposal.Round, "index", idx)
+			if 0 <= proposal.PolRound {
+				conR.Logger.Info("Sending POL", "height", prs.Height, "round", prs.Round)
+				e := p2p.Envelope{
+					ChannelID: DataChannel,
+					Message: &cmtcons.ProposalPOL{
+						Height:           rs.Height,
+						ProposalPolRound: proposal.PolRound,
+						ProposalPol:      *rs.Votes.Prevotes(proposal.PolRound).BitArray().ToProto(),
+					},
+				}
+				if err := conR.SendWithRetry(p, e); err != nil {
+					conR.Logger.Error("cannot gossip POL", "err", err)
+					return
+				}
 			}
-		}(i)
-	}
+
+			for i := 0; i < int(ps.Total()); i++ {
+				go func(idx int) {
+					pp, err := ps.GetPart(idx).ToProto()
+					if err != nil {
+						conR.Logger.Error("error converting part to proto", "err", err, "index", idx)
+						return
+					}
+
+					e := p2p.Envelope{
+						ChannelID: DataChannel,
+						Message: &cmtcons.BlockPart{
+							Height: prs.Height,
+							Round:  prs.Round,
+							Part:   *pp,
+						},
+					}
+					if err := conR.SendWithRetry(p, e); err != nil {
+						conR.Logger.Error("cannot gossip part", "err", err, "index", idx)
+						return
+					}
+				}(i)
+			}
+
+			for i := 0; i < int(ps.Parity()); i++ {
+				go func(idx int) {
+					pp, err := ps.GetParityPart(idx).ToProto()
+					if err != nil {
+						conR.Logger.Error("error converting part to proto", "err", err, "index", idx)
+						return
+					}
+
+					e := p2p.Envelope{
+						ChannelID: DataChannel,
+						Message: &cmtcons.BlockPart{
+							Height: prs.Height,
+							Round:  prs.Round,
+							Part:   *pp,
+						},
+					}
+					if err := conR.SendWithRetry(p, e); err != nil {
+						conR.Logger.Error("cannot gossip part", "err", err, "index", idx)
+						return
+					}
+				}(i)
+			}
+		}(p)
+	})
+
 	return nil
 }
 
-func (conR *Reactor) BroadcastProposal(proposal *cmtproto.Proposal) error {
-	e := p2p.Envelope{
-		ChannelID: DataChannel,
-		Message:   &cmtcons.Proposal{Proposal: *proposal},
+func (conR *Reactor) SendWithRetry(p p2p.Peer, e p2p.Envelope) error {
+	for count := 0; count < 3; count++ {
+		if sent := p.Send(e); sent {
+			return nil
+		}
 	}
-	conR.broadcastEnvelopeWithPeerRetry(e, 3)
-	return nil
+	return fmt.Errorf("cannot send")
 }
 
 func (conR *Reactor) BroadcastPart(proposal *cmtproto.Proposal, part *types.Part) error {

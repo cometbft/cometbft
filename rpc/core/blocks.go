@@ -104,7 +104,7 @@ func (env *Environment) Header(_ *rpctypes.Context, heightPtr *int64) (*ctypes.R
 }
 
 // HeaderByHash gets header by hash.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/header_by_hash
+// More: https://docs.cometbft.com/main/rpc/#/Info/header_by_hash
 func (env *Environment) HeaderByHash(_ *rpctypes.Context, hash bytes.HexBytes) (*ctypes.ResultHeader, error) {
 	// N.B. The hash parameter is HexBytes so that the reflective parameter
 	// decoding logic in the HTTP service will correctly translate from JSON.

@@ -34,7 +34,7 @@ func (env *Environment) BroadcastTxAsync(_ *rpctypes.Context, tx types.Tx) (*cty
 
 // BroadcastTxSync returns with the response from CheckTx. Does not wait for
 // the transaction result.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Tx/broadcast_tx_sync
+// More: https://docs.cometbft.com/main/rpc/#/Tx/broadcast_tx_sync
 func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
 	if env.MempoolReactor.WaitSync() {
 		return nil, ErrEndpointClosedCatchingUp

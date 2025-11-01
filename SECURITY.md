@@ -5,7 +5,7 @@ you can report it to our primary vulnerability disclosure channel, the [Cosmos
 HackerOne Bug Bounty program][h1].
 
 If you prefer to report an issue via email, you may send a bug report to
-<security@interchain.io> with the issue details, reproduction, impact, and other
+<security@cosmoslabs.io> with the issue details, reproduction, impact, and other
 information. Please submit only one unique email thread per vulnerability. Any
 issues reported via email are ineligible for bounty rewards.
 

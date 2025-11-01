@@ -81,6 +81,8 @@
 
 ### BUG-FIXES
 
+- `[evidence]` Use structured logging for consensus buffer flush error
+  ([\#5465](https://github.com/cometbft/cometbft/pull/5465))
 - `[consensus]` Reject oversized proposals
   ([\#5324](https://github.com/cometbft/cometbft/pull/5324))
 - `[store]` Prune extended commits properly

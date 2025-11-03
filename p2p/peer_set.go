@@ -11,12 +11,9 @@ import (
 type IPeerSet interface {
 	// Has returns true if the set contains the peer referred to by this key.
 	Has(key ID) bool
-	// HasIP returns true if the set contains the peer referred to by this IP
-	HasIP(ip net.IP) bool
+
 	// Get returns the peer with the given key, or nil if not found.
 	Get(key ID) Peer
-	// List returns a list of peers
-	List() []Peer
 	// Copy returns a copy of the peers list.
 	Copy() []Peer
 	// Size returns the number of peers in the PeerSet.

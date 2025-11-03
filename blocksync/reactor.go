@@ -434,11 +434,19 @@ FOR_LOOP:
 				if err := bcR.pool.Stop(); err != nil {
 					bcR.Logger.Error("Error stopping pool", "err", err)
 				}
-				if memR, ok := bcR.Switch.Reactor("MEMPOOL").(mempoolReactor); ok {
-					memR.EnableInOutTxs()
+
+				memR, exists := bcR.Switch.Reactor("MEMPOOL")
+				if exists {
+					if memR, ok := memR.(mempoolReactor); ok {
+						memR.EnableInOutTxs()
+					}
 				}
-				if conR, ok := bcR.Switch.Reactor("CONSENSUS").(consensusReactor); ok {
-					conR.SwitchToConsensus(state, blocksSynced > 0 || stateSynced)
+
+				conR, exists := bcR.Switch.Reactor("CONSENSUS")
+				if exists {
+					if conR, ok := conR.(consensusReactor); ok {
+						conR.SwitchToConsensus(state, blocksSynced > 0 || stateSynced)
+					}
 				}
 				// else {
 				// should only happen during testing

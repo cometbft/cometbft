@@ -83,7 +83,7 @@ func (p *http) LightBlock(ctx context.Context, height int64) (*types.LightBlock,
 		}
 	}
 
-	vs, err := p.validatorSet(ctx, &sh.Height, sh.Header.ProposerAddress)
+	vs, err := p.validatorSet(ctx, &sh.Height, sh.ProposerAddress)
 	if err != nil {
 		return nil, err
 	}

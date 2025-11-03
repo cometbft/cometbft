@@ -241,7 +241,7 @@ func (conR *Reactor) RemovePeer(p2p.Peer, any) {
 // NOTE: blocks on consensus state for proposals, block parts, and votes
 func (conR *Reactor) Receive(e p2p.Envelope) {
 	if !conR.IsRunning() {
-		conR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID)
+		conR.Logger.Debug("Receive & skip because not running", "src", e.Src, "chId", e.ChannelID)
 		return
 	}
 	msg, err := MsgFromProto(e.Message)
@@ -966,11 +966,17 @@ func (conR *Reactor) peerStatsRoutine() {
 
 		select {
 		case msg := <-conR.conS.statsMsgQueue:
+			conR.Logger.Debug("Received message from cs.statsMsgQueue", "peer", msg.PeerID)
+
+			// local message
+			if msg.PeerID == "" {
+				continue
+			}
+
 			// Get peer
 			peer := conR.Switch.Peers().Get(msg.PeerID)
 			if peer == nil {
-				conR.Logger.Debug("Attempt to update stats for non-existent peer",
-					"peer", msg.PeerID)
+				conR.Logger.Debug("Attempt to update stats for non-existent peer", "peer", msg.PeerID)
 				continue
 			}
 			// Get peer state

@@ -410,28 +410,43 @@ func (evpool *Pool) removeExpiredPendingEvidence() (int64, time.Time) {
 	}
 	defer iter.Close()
 	blockEvidenceMap := make(map[string]struct{})
+	var (
+		nextPruningHeight int64
+		nextPruningTime   time.Time
+		hasNextPruning    bool
+	)
 	for ; iter.Valid(); iter.Next() {
 		ev, err := bytesToEv(iter.Value())
 		if err != nil {
 			evpool.logger.Error("Error in transition evidence from protobuf", "err", err)
 			continue
 		}
-		if !evpool.isExpired(ev.Height(), ev.Time()) {
-			if len(blockEvidenceMap) != 0 {
-				evpool.removeEvidenceFromList(blockEvidenceMap)
+		if evpool.isExpired(ev.Height(), ev.Time()) {
+			// Remove expired evidence from database
+			evpool.removePendingEvidence(ev)
+			blockEvidenceMap[evMapKey(ev)] = struct{}{}
+		} else {
+			// Calculate when this non-expired evidence will expire
+			evExpiryHeight := ev.Height() + evpool.State().ConsensusParams.Evidence.MaxAgeNumBlocks + 1
+			evExpiryTime := ev.Time().Add(evpool.State().ConsensusParams.Evidence.MaxAgeDuration).Add(time.Second)
+			// Track the earliest expiry time among non-expired evidence for optimization
+			if !hasNextPruning || evExpiryHeight < nextPruningHeight ||
+				(evExpiryHeight == nextPruningHeight && evExpiryTime.Before(nextPruningTime)) {
+				nextPruningHeight = evExpiryHeight
+				nextPruningTime = evExpiryTime
+				hasNextPruning = true
 			}
-
-			// return the height and time with which this evidence will have expired so we know when to prune next
-			return ev.Height() + evpool.State().ConsensusParams.Evidence.MaxAgeNumBlocks + 1,
-				ev.Time().Add(evpool.State().ConsensusParams.Evidence.MaxAgeDuration).Add(time.Second)
 		}
-		evpool.removePendingEvidence(ev)
-		blockEvidenceMap[evMapKey(ev)] = struct{}{}
 	}
-	// We either have no pending evidence or all evidence has expired
+	// Remove all expired evidence from the clist
 	if len(blockEvidenceMap) != 0 {
 		evpool.removeEvidenceFromList(blockEvidenceMap)
 	}
+	// Return the next pruning time if we found non-expired evidence, otherwise return default values
+	if hasNextPruning {
+		return nextPruningHeight, nextPruningTime
+	}
+	// We either have no pending evidence or all evidence has expired
 	return evpool.State().LastBlockHeight, evpool.State().LastBlockTime
 }
 

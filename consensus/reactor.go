@@ -1041,7 +1041,7 @@ type PeerState struct {
 	peer   p2p.Peer
 	logger log.Logger
 
-	mtx   sync.Mutex             // NOTE: Modify below using setters, never directly.
+	mtx   sync.RWMutex           // NOTE: Modify below using setters, never directly.
 	PRS   cstypes.PeerRoundState `json:"round_state"` // Exposed.
 	Stats *peerStateStats        `json:"stats"`       // Exposed.
 }
@@ -1053,8 +1053,7 @@ type peerStateStats struct {
 }
 
 func (pss peerStateStats) String() string {
-	return fmt.Sprintf("peerStateStats{votes: %d, blockParts: %d}",
-		pss.Votes, pss.BlockParts)
+	return fmt.Sprintf("peerStateStats{votes: %d, blockParts: %d}", pss.Votes, pss.BlockParts)
 }
 
 // NewPeerState returns a new PeerState for the given Peer
@@ -1069,6 +1068,7 @@ func NewPeerState(peer p2p.Peer) *PeerState {
 			CatchupCommitRound: -1,
 		},
 		Stats: &peerStateStats{},
+		mtx:   sync.RWMutex{},
 	}
 }
 
@@ -1082,8 +1082,8 @@ func (ps *PeerState) SetLogger(logger log.Logger) *PeerState {
 // GetRoundState returns an shallow copy of the PeerRoundState.
 // There's no point in mutating it since it won't change PeerState.
 func (ps *PeerState) GetRoundState() *cstypes.PeerRoundState {
-	ps.mtx.Lock()
-	defer ps.mtx.Unlock()
+	ps.mtx.RLock()
+	defer ps.mtx.RUnlock()
 
 	prs := ps.PRS // copy
 	return &prs
@@ -1091,8 +1091,8 @@ func (ps *PeerState) GetRoundState() *cstypes.PeerRoundState {
 
 // MarshalJSON implements the json.Marshaler interface.
 func (ps *PeerState) MarshalJSON() ([]byte, error) {
-	ps.mtx.Lock()
-	defer ps.mtx.Unlock()
+	ps.mtx.RLock()
+	defer ps.mtx.RUnlock()
 
 	type jsonPeerState PeerState
 	return cmtjson.Marshal((*jsonPeerState)(ps))
@@ -1101,8 +1101,8 @@ func (ps *PeerState) MarshalJSON() ([]byte, error) {
 // GetHeight returns an atomic snapshot of the PeerRoundState's height
 // used by the mempool to ensure peers are caught up before broadcasting new txs
 func (ps *PeerState) GetHeight() int64 {
-	ps.mtx.Lock()
-	defer ps.mtx.Unlock()
+	ps.mtx.RLock()
+	defer ps.mtx.RUnlock()
 	return ps.PRS.Height
 }
 
@@ -1258,12 +1258,12 @@ func (ps *PeerState) sendVoteSetHasVote(vote *types.Vote) bool {
 // Returns true if a vote was picked.
 // NOTE: `votes` must be the correct Size() for the Height().
 func (ps *PeerState) PickVoteToSend(votes types.VoteSetReader) *types.Vote {
-	ps.mtx.Lock()
-	defer ps.mtx.Unlock()
-
 	if votes.Size() == 0 {
 		return nil
 	}
+
+	ps.mtx.Lock()
+	defer ps.mtx.Unlock()
 
 	height, round, votesType, size := votes.GetHeight(), votes.GetRound(), cmtproto.SignedMsgType(votes.Type()), votes.Size()
 
@@ -1408,8 +1408,8 @@ func (ps *PeerState) RecordVote() int {
 // VotesSent returns the number of blocks for which peer has been sending us
 // votes.
 func (ps *PeerState) VotesSent() int {
-	ps.mtx.Lock()
-	defer ps.mtx.Unlock()
+	ps.mtx.RLock()
+	defer ps.mtx.RUnlock()
 
 	return ps.Stats.Votes
 }
@@ -1426,8 +1426,8 @@ func (ps *PeerState) RecordBlockPart() int {
 
 // BlockPartsSent returns the number of useful block parts the peer has sent us.
 func (ps *PeerState) BlockPartsSent() int {
-	ps.mtx.Lock()
-	defer ps.mtx.Unlock()
+	ps.mtx.RLock()
+	defer ps.mtx.RUnlock()
 
 	return ps.Stats.BlockParts
 }

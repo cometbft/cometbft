@@ -8,7 +8,7 @@ require (
 	github.com/adlio/schema v1.3.9
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cometbft/cometbft-db v0.14.1
-	github.com/cosmos/gogoproto v1.7.0
+	github.com/cosmos/gogoproto v1.7.2
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/go-git/go-git/v5 v5.16.3

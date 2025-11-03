@@ -341,7 +341,40 @@ func createConsensusReactor(config *cfg.Config,
 	return consensusReactor, consensusState
 }
 
-func createTransport(
+func createCometTransportWithSwitch(
+	config *cfg.Config,
+	nodeInfo p2p.NodeInfo,
+	nodeKey *p2p.NodeKey,
+	proxyApp proxy.AppConns,
+	mempoolReactor p2p.Reactor,
+	bcReactor p2p.Reactor,
+	stateSyncReactor *statesync.Reactor,
+	consensusReactor *cs.Reactor,
+	evidenceReactor *evidence.Reactor,
+	p2pMetrics *p2p.Metrics,
+	logger log.Logger,
+) (p2p.Transport, *p2p.Switch) {
+	transport, peerFilters := createCometTransport(config, nodeInfo, nodeKey, proxyApp)
+
+	sw := createCometSwitch(
+		config,
+		transport,
+		p2pMetrics,
+		peerFilters,
+		mempoolReactor,
+		bcReactor,
+		stateSyncReactor,
+		consensusReactor,
+		evidenceReactor,
+		nodeInfo,
+		nodeKey,
+		logger,
+	)
+
+	return transport, sw
+}
+
+func createCometTransport(
 	config *cfg.Config,
 	nodeInfo p2p.NodeInfo,
 	nodeKey *p2p.NodeKey,
@@ -410,7 +443,8 @@ func createTransport(
 	return transport, peerFilters
 }
 
-func createSwitch(config *cfg.Config,
+func createCometSwitch(
+	config *cfg.Config,
 	transport p2p.Transport,
 	p2pMetrics *p2p.Metrics,
 	peerFilters []p2p.PeerFilterFunc,
@@ -445,8 +479,11 @@ func createSwitch(config *cfg.Config,
 	return sw
 }
 
-func createAddrBookAndSetOnSwitch(config *cfg.Config, sw *p2p.Switch,
-	p2pLogger log.Logger, nodeKey *p2p.NodeKey,
+func createAddrBookAndSetOnSwitch(
+	config *cfg.Config,
+	sw *p2p.Switch,
+	p2pLogger log.Logger,
+	nodeKey *p2p.NodeKey,
 ) (pex.AddrBook, error) {
 	addrBook := pex.NewAddrBook(config.P2P.AddrBookFile(), config.P2P.AddrBookStrict)
 	addrBook.SetLogger(p2pLogger.With("book", config.P2P.AddrBookFile()))
@@ -472,24 +509,30 @@ func createAddrBookAndSetOnSwitch(config *cfg.Config, sw *p2p.Switch,
 	return addrBook, nil
 }
 
-func createPEXReactorAndAddToSwitch(addrBook pex.AddrBook, config *cfg.Config,
-	sw *p2p.Switch, logger log.Logger,
+func createPEXReactorAndAddToSwitch(
+	addrBook pex.AddrBook,
+	config *cfg.Config,
+	sw p2p.Switcher,
+	logger log.Logger,
 ) *pex.Reactor {
+	cfg := &pex.ReactorConfig{
+		Seeds:    splitAndTrimEmpty(config.P2P.Seeds, ",", " "),
+		SeedMode: config.P2P.SeedMode,
+		// See consensus/reactor.go: blocksToContributeToBecomeGoodPeer 10000
+		// blocks assuming 10s blocks ~ 28 hours.
+		// TODO (melekes): make it dynamic based on the actual block latencies
+		// from the live network.
+		// https://github.com/tendermint/tendermint/issues/3523
+		SeedDisconnectWaitPeriod:     28 * time.Hour,
+		PersistentPeersMaxDialPeriod: config.P2P.PersistentPeersMaxDialPeriod,
+	}
+
 	// TODO persistent peers ? so we can have their DNS addrs saved
-	pexReactor := pex.NewReactor(addrBook,
-		&pex.ReactorConfig{
-			Seeds:    splitAndTrimEmpty(config.P2P.Seeds, ",", " "),
-			SeedMode: config.P2P.SeedMode,
-			// See consensus/reactor.go: blocksToContributeToBecomeGoodPeer 10000
-			// blocks assuming 10s blocks ~ 28 hours.
-			// TODO (melekes): make it dynamic based on the actual block latencies
-			// from the live network.
-			// https://github.com/tendermint/tendermint/issues/3523
-			SeedDisconnectWaitPeriod:     28 * time.Hour,
-			PersistentPeersMaxDialPeriod: config.P2P.PersistentPeersMaxDialPeriod,
-		})
+	pexReactor := pex.NewReactor(addrBook, cfg)
 	pexReactor.SetLogger(logger.With("module", "pex"))
+
 	sw.AddReactor("PEX", pexReactor)
+
 	return pexReactor
 }
 

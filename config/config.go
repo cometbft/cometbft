@@ -39,8 +39,9 @@ const (
 	DefaultPrivValKeyName   = "priv_validator_key.json"
 	DefaultPrivValStateName = "priv_validator_state.json"
 
-	DefaultNodeKeyName  = "node_key.json"
-	DefaultAddrBookName = "addrbook.json"
+	DefaultNodeKeyName           = "node_key.json"
+	DefaultAddrBookName          = "addrbook.json"
+	DefaultLibP2PAddressBookName = "addressbook.toml"
 
 	MempoolTypeFlood = "flood"
 	MempoolTypeNop   = "nop"
@@ -64,6 +65,8 @@ var (
 
 	defaultNodeKeyPath  = filepath.Join(DefaultConfigDir, DefaultNodeKeyName)
 	defaultAddrBookPath = filepath.Join(DefaultConfigDir, DefaultAddrBookName)
+
+	defaultLibP2PAddressBookPath = filepath.Join(DefaultConfigDir, DefaultLibP2PAddressBookName)
 
 	minSubscriptionBufferSize     = 100
 	defaultSubscriptionBufferSize = 200
@@ -587,6 +590,9 @@ type P2PConfig struct { //nolint: maligned
 	// Set true to enable the peer-exchange reactor
 	PexReactor bool `mapstructure:"pex"`
 
+	// LibP2PConfig (experimental) configuration for go-libp2p
+	LibP2PConfig *LibP2PConfig `mapstructure:"libp2p"`
+
 	// Seed mode, in which node constantly crawls the network and looks for
 	// peers. If another node asks it for addresses, it responds and disconnects.
 	//
@@ -612,6 +618,18 @@ type P2PConfig struct { //nolint: maligned
 	TestFuzzConfig *FuzzConnConfig `mapstructure:"test_fuzz_config"`
 }
 
+// LibP2PConfig defines the configuration options for the go-libp2p networking layer
+type LibP2PConfig struct {
+	// Enabled set true to use go-libp2p for networking
+	Enabled bool `mapstructure:"enabled"`
+
+	// DisableResourceManager set true to disable the resource manager
+	DisableResourceManager bool `mapstructure:"disable_resource_manager"`
+
+	// AddressBook path to the address book file (.toml format)
+	AddressBook string `mapstructure:"address_book_file"`
+}
+
 // DefaultP2PConfig returns a default configuration for the peer-to-peer layer
 func DefaultP2PConfig() *P2PConfig {
 	return &P2PConfig{
@@ -627,6 +645,7 @@ func DefaultP2PConfig() *P2PConfig {
 		SendRate:                     5120000, // 5 mB/s
 		RecvRate:                     5120000, // 5 mB/s
 		PexReactor:                   true,
+		LibP2PConfig:                 DefaultLibP2PConfig(),
 		SeedMode:                     false,
 		AllowDuplicateIP:             false,
 		HandshakeTimeout:             20 * time.Second,
@@ -675,6 +694,25 @@ func (cfg *P2PConfig) ValidateBasic() error {
 		return cmterrors.ErrNegativeField{Field: "recv_rate"}
 	}
 	return nil
+}
+
+func (cfg *P2PConfig) LibP2PEnabled() bool {
+	return cfg.LibP2PConfig != nil && cfg.LibP2PConfig.Enabled
+}
+
+func (cfg *P2PConfig) LibP2PAddressBookFile() string {
+	if cfg.LibP2PConfig == nil {
+		return ""
+	}
+
+	return rootify(cfg.LibP2PConfig.AddressBook, cfg.RootDir)
+}
+
+func DefaultLibP2PConfig() *LibP2PConfig {
+	return &LibP2PConfig{
+		Enabled:     false,
+		AddressBook: defaultLibP2PAddressBookPath,
+	}
 }
 
 // FuzzConnConfig is a FuzzedConnection configuration.

@@ -241,7 +241,7 @@ func (conR *Reactor) RemovePeer(p2p.Peer, any) {
 // NOTE: blocks on consensus state for proposals, block parts, and votes
 func (conR *Reactor) Receive(e p2p.Envelope) {
 	if !conR.IsRunning() {
-		conR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID)
+		conR.Logger.Debug("Receive & skip because not running", "src", e.Src, "chId", e.ChannelID)
 		return
 	}
 	msg, err := MsgFromProto(e.Message)
@@ -966,11 +966,17 @@ func (conR *Reactor) peerStatsRoutine() {
 
 		select {
 		case msg := <-conR.conS.statsMsgQueue:
+			conR.Logger.Debug("Received message from cs.statsMsgQueue", "peer", msg.PeerID)
+
+			// local message
+			if msg.PeerID == "" {
+				continue
+			}
+
 			// Get peer
 			peer := conR.Switch.Peers().Get(msg.PeerID)
 			if peer == nil {
-				conR.Logger.Debug("Attempt to update stats for non-existent peer",
-					"peer", msg.PeerID)
+				conR.Logger.Debug("Attempt to update stats for non-existent peer", "peer", msg.PeerID)
 				continue
 			}
 			// Get peer state
@@ -1712,6 +1718,9 @@ func (m *NewValidBlockMessage) ValidateBasic() error {
 	if err := m.BlockPartSetHeader.ValidateBasic(); err != nil {
 		return cmterrors.ErrWrongField{Field: "BlockPartSetHeader", Err: err}
 	}
+	if err := m.BlockParts.ValidateBasic(); err != nil {
+		return cmterrors.ErrWrongField{Field: "BlockParts", Err: err}
+	}
 	if m.BlockParts.Size() == 0 {
 		return cmterrors.ErrRequiredField{Field: "blockParts"}
 	}
@@ -1771,6 +1780,9 @@ func (m *ProposalPOLMessage) ValidateBasic() error {
 	}
 	if m.ProposalPOLRound < 0 {
 		return cmterrors.ErrNegativeField{Field: "ProposalPOLRound"}
+	}
+	if err := m.ProposalPOL.ValidateBasic(); err != nil {
+		return cmterrors.ErrWrongField{Field: "ProposalPOL", Err: err}
 	}
 	if m.ProposalPOL.Size() == 0 {
 		return cmterrors.ErrRequiredField{Field: "ProposalPOL"}
@@ -1916,6 +1928,9 @@ func (m *VoteSetBitsMessage) ValidateBasic() error {
 	}
 	if err := m.BlockID.ValidateBasic(); err != nil {
 		return cmterrors.ErrWrongField{Field: "BlockID", Err: err}
+	}
+	if err := m.Votes.ValidateBasic(); err != nil {
+		return cmterrors.ErrWrongField{Field: "Votes", Err: err}
 	}
 	// NOTE: Votes.Size() can be zero if the node does not have any
 	if m.Votes.Size() > types.MaxVotesCount {

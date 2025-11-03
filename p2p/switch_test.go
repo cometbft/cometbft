@@ -159,18 +159,23 @@ func TestSwitches(t *testing.T) {
 	s1.BroadcastAsync(Envelope{ChannelID: byte(0x00), Message: ch0Msg})
 	s1.BroadcastAsync(Envelope{ChannelID: byte(0x01), Message: ch1Msg})
 	s1.TryBroadcast(Envelope{ChannelID: byte(0x02), Message: ch2Msg})
-	assertMsgReceivedWithTimeout(t,
-		ch0Msg,
-		byte(0x00),
-		s2.Reactor("foo").(*TestReactor), 200*time.Millisecond, 5*time.Second)
-	assertMsgReceivedWithTimeout(t,
-		ch1Msg,
-		byte(0x01),
-		s2.Reactor("foo").(*TestReactor), 200*time.Millisecond, 5*time.Second)
-	assertMsgReceivedWithTimeout(t,
-		ch2Msg,
-		byte(0x02),
-		s2.Reactor("bar").(*TestReactor), 200*time.Millisecond, 5*time.Second)
+
+	getReactor := func(name string) *TestReactor {
+		r, ok := s2.Reactor(name)
+		require.True(t, ok)
+
+		tr, ok := r.(*TestReactor)
+		require.True(t, ok)
+
+		return tr
+	}
+
+	reactorFoo := getReactor("foo")
+	reactorBar := getReactor("bar")
+
+	assertMsgReceivedWithTimeout(t, ch0Msg, byte(0x00), reactorFoo, 200*time.Millisecond, 5*time.Second)
+	assertMsgReceivedWithTimeout(t, ch1Msg, byte(0x01), reactorFoo, 200*time.Millisecond, 5*time.Second)
+	assertMsgReceivedWithTimeout(t, ch2Msg, byte(0x02), reactorBar, 200*time.Millisecond, 5*time.Second)
 }
 
 func assertMsgReceivedWithTimeout(
@@ -182,10 +187,16 @@ func assertMsgReceivedWithTimeout(
 	timeout time.Duration,
 ) {
 	ticker := time.NewTicker(checkPeriod)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ticker.C:
 			msgs := reactor.getMsgs(channel)
+			if len(msgs) == 0 {
+				t.Fatalf("expected 1 message in channel %v, got %v", channel, len(msgs))
+			}
+
 			expectedBytes, err := proto.Marshal(msgs[0].Contents)
 			require.NoError(t, err)
 			gotBytes, err := proto.Marshal(msg)
@@ -582,7 +593,6 @@ func TestSwitchFullConnectivity(t *testing.T) {
 	switches := MakeConnectedSwitches(cfg, 3, initSwitchFunc, Connect2Switches)
 	defer func() {
 		for _, sw := range switches {
-			sw := sw
 			t.Cleanup(func() {
 				if err := sw.Stop(); err != nil {
 					t.Error(err)

@@ -38,6 +38,8 @@ type Metrics struct {
 	MessageReceiveBytesTotal metrics.Counter `metrics_labels:"message_type"`
 	// Number of bytes of each message type sent.
 	MessageSendBytesTotal metrics.Counter `metrics_labels:"message_type"`
+	// Number of messages sent of each message type.
+	MessageSendTotal metrics.Counter `metrics_labels:"message_type"`
 	// Number of messages received before being processed by the reactor
 	MessagesReceived metrics.Counter `metrics_labels:"message_type,reactor"`
 	// Number of messages in flight (wip by reactor)

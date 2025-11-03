@@ -56,6 +56,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "message_send_bytes_total",
 			Help:      "Number of bytes of each message type sent.",
 		}, append(labels, "message_type")).With(labelsAndValues...),
+		MessageSendTotal: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "message_send_total",
+			Help:      "Number of messages sent of each message type.",
+		}, append(labels, "message_type")).With(labelsAndValues...),
 		MessagesReceived: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -92,6 +98,7 @@ func NopMetrics() *Metrics {
 		NumTxs:                         discard.NewGauge(),
 		MessageReceiveBytesTotal:       discard.NewCounter(),
 		MessageSendBytesTotal:          discard.NewCounter(),
+		MessageSendTotal:               discard.NewCounter(),
 		MessagesReceived:               discard.NewCounter(),
 		MessagesReactorInFlight:        discard.NewGauge(),
 		MessageReactorReceiveDuration:  discard.NewHistogram(),

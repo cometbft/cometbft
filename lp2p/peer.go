@@ -143,6 +143,7 @@ func (p *Peer) send(e p2p.Envelope) (err error) {
 
 		p.metrics.PeerSendBytesTotal.With(metricLabels...).Add(payloadLen)
 		p.metrics.MessageSendBytesTotal.With("message_type", messageType).Add(payloadLen)
+		p.metrics.MessageSendTotal.With("message_type", messageType).Add(1)
 
 		p.Logger.Debug(
 			"Sent envelope",

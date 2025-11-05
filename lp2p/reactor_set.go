@@ -229,18 +229,24 @@ func (rs *reactorSet) newReactorQueue(
 		// how many message we can accept to this before blocking (per reactor)
 		reactorReceiveChanCapacity = 1024
 
-		minWorkers        = 4
-		defaultMaxWorkers = 32
-		latencyThreshold  = 100 * time.Millisecond
-		latencyPercentile = 90.0 // P90
-		autoScaleInternal = 250 * time.Millisecond
+		minWorkers              = 4
+		defaultMaxWorkers       = 32
+		defaultLatencyThreshold = 100 * time.Millisecond
+		latencyPercentile       = 90.0 // P90
+		autoScaleInternal       = 250 * time.Millisecond
 	)
 
+	latencyThreshold := defaultLatencyThreshold
 	maxWorkers := defaultMaxWorkers
 
 	// bump max workers for mempool
 	if reactorName == "MEMPOOL" {
 		maxWorkers = 128
+	}
+
+	if reactorName == "CONSENSUS" {
+		// experiment: try to effectively disable threshold cap for consensus
+		latencyThreshold = 10 * time.Second
 	}
 
 	queue := make(chan pendingEnvelope, reactorReceiveChanCapacity)

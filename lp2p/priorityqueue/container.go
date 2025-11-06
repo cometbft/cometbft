@@ -17,9 +17,9 @@ type container struct {
 
 var _ heap.Interface = &container{}
 
-func newContainer(maxHeap bool) *container {
+func newContainer(maxHeap bool, cap int) *container {
 	c := &container{
-		items: []item{},
+		items: make([]item, 0, cap),
 	}
 
 	c.comparator = minHeapComparator

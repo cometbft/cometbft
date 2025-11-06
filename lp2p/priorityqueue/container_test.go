@@ -47,7 +47,7 @@ func TestContainer(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			// ARRANGE
-			c := newContainer(tt.maxHeap)
+			c := newContainer(tt.maxHeap, len(tt.input))
 
 			// ACT
 			for _, item := range tt.input {

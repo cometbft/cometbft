@@ -164,11 +164,11 @@ func (rs *reactorSet) getReactorWithProtocol(id protocol.ID) (reactorProtocol, r
 	return protocol, rs.reactors[protocol.reactorID], nil
 }
 
-// SubmitReceive schedules receive operation for a reactor
-func (rs *reactorSet) SubmitReceive(reactorName, messageType string, envelope p2p.Envelope) {
+// Receive schedules receive operation for a reactor
+func (rs *reactorSet) Receive(reactorName, messageType string, envelope p2p.Envelope) {
 	idx, ok := rs.reactorNames[reactorName]
 	if !ok {
-		rs.switchRef.Logger.Error("SubmitReceive: reactor not found", "reactor", reactorName)
+		rs.switchRef.Logger.Error("Receive: reactor not found", "reactor", reactorName)
 		return
 	}
 
@@ -184,14 +184,22 @@ func (rs *reactorSet) SubmitReceive(reactorName, messageType string, envelope p2
 	rs.switchRef.metrics.MessagesReactorInFlight.With(labels...).Add(1)
 	now := time.Now()
 
-	reactor.envelopeQueue <- pendingEnvelope{
+	pe := pendingEnvelope{
 		Envelope:    envelope,
 		messageType: messageType,
 		addedAt:     now,
 	}
+
+	// experiment: bypass queue for everyone except mempool
+	if reactorName != "MEMPOOL" {
+		rs.receiveSync(idx, pe)
+		return
+	}
+
+	reactor.envelopeQueue <- pe
 }
 
-func (rs *reactorSet) receive(reactorID int, e pendingEnvelope) {
+func (rs *reactorSet) receiveQueued(reactorID int, e pendingEnvelope) {
 	reactor := rs.reactors[reactorID]
 
 	labels := []string{
@@ -219,6 +227,26 @@ func (rs *reactorSet) receive(reactorID int, e pendingEnvelope) {
 	rs.switchRef.metrics.MessageReactorReceiveDuration.With(labels...).Observe(timeTaken.Seconds())
 }
 
+func (rs *reactorSet) receiveSync(reactorID int, e pendingEnvelope) {
+	reactor := rs.reactors[reactorID]
+	m := rs.switchRef.metrics
+	labels := []string{
+		"reactor", reactor.name,
+		"message_type", e.messageType,
+	}
+
+	// for sync receiver, queue concurrency equals to in-flight messages
+	m.MessageReactorQueueConcurrency.With("reactor", reactor.name).Add(1)
+
+	now := time.Now()
+	reactor.Receive(e.Envelope)
+	timeTaken := time.Since(now)
+
+	m.MessagesReactorInFlight.With(labels...).Add(-1)
+	m.MessageReactorReceiveDuration.With(labels...).Observe(timeTaken.Seconds())
+	m.MessageReactorQueueConcurrency.With("reactor", reactor.name).Add(-1)
+}
+
 // newConsumerPool creates a pool of envelope consumers for a reactor
 // the idea to dynamically adjust concurrency based on the load.
 func (rs *reactorSet) newReactorQueue(
@@ -236,23 +264,20 @@ func (rs *reactorSet) newReactorQueue(
 		autoScaleInternal       = 250 * time.Millisecond
 	)
 
-	latencyThreshold := defaultLatencyThreshold
-	maxWorkers := defaultMaxWorkers
+	var (
+		latencyThreshold = defaultLatencyThreshold
+		maxWorkers       = defaultMaxWorkers
+	)
 
 	// bump max workers for mempool
 	if reactorName == "MEMPOOL" {
 		maxWorkers = 128
 	}
 
-	if reactorName == "CONSENSUS" {
-		// experiment: try to effectively disable threshold cap for consensus
-		latencyThreshold = 10 * time.Second
-	}
-
 	queue := make(chan pendingEnvelope, reactorReceiveChanCapacity)
 
 	receive := func(e pendingEnvelope) {
-		rs.receive(reactorID, e)
+		rs.receiveQueued(reactorID, e)
 	}
 
 	scaler := autopool.NewThroughputLatencyScaler(

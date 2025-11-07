@@ -22,11 +22,18 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 
 			Buckets: []float64{.0001, .0004, .002, .009, .02, .1, .65, 2, 6, 25},
 		}, append(labels, "method", "type")).With(labelsAndValues...),
+		MethodCallCount: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "method_call_count",
+			Help:      "Call Counter for each ABCI method.",
+		}, append(labels, "method", "type")).With(labelsAndValues...),
 	}
 }
 
 func NopMetrics() *Metrics {
 	return &Metrics{
 		MethodTimingSeconds: discard.NewHistogram(),
+		MethodCallCount:     discard.NewCounter(),
 	}
 }

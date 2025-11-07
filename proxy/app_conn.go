@@ -74,6 +74,7 @@ func (app *appConnConsensus) Error() error {
 }
 
 func (app *appConnConsensus) InitChain(ctx context.Context, req *types.RequestInitChain) (*types.ResponseInitChain, error) {
+	app.metrics.MethodCallCount.With("method", "init_chain", "type", "sync").Add(1)
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "init_chain", "type", "sync"))()
 	return app.appConn.InitChain(ctx, req)
 }
@@ -81,31 +82,37 @@ func (app *appConnConsensus) InitChain(ctx context.Context, req *types.RequestIn
 func (app *appConnConsensus) PrepareProposal(ctx context.Context,
 	req *types.RequestPrepareProposal,
 ) (*types.ResponsePrepareProposal, error) {
+	app.metrics.MethodCallCount.With("method", "prepare_proposal", "type", "sync").Add(1)
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "prepare_proposal", "type", "sync"))()
 	return app.appConn.PrepareProposal(ctx, req)
 }
 
 func (app *appConnConsensus) ProcessProposal(ctx context.Context, req *types.RequestProcessProposal) (*types.ResponseProcessProposal, error) {
+	app.metrics.MethodCallCount.With("method", "process_proposal", "type", "sync").Add(1)
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "process_proposal", "type", "sync"))()
 	return app.appConn.ProcessProposal(ctx, req)
 }
 
 func (app *appConnConsensus) ExtendVote(ctx context.Context, req *types.RequestExtendVote) (*types.ResponseExtendVote, error) {
+	app.metrics.MethodCallCount.With("method", "extend_vote", "type", "sync").Add(1)
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "extend_vote", "type", "sync"))()
 	return app.appConn.ExtendVote(ctx, req)
 }
 
 func (app *appConnConsensus) VerifyVoteExtension(ctx context.Context, req *types.RequestVerifyVoteExtension) (*types.ResponseVerifyVoteExtension, error) {
+	app.metrics.MethodCallCount.With("method", "verify_vote_extension", "type", "sync").Add(1)
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "verify_vote_extension", "type", "sync"))()
 	return app.appConn.VerifyVoteExtension(ctx, req)
 }
 
 func (app *appConnConsensus) FinalizeBlock(ctx context.Context, req *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
+	app.metrics.MethodCallCount.With("method", "finalize_block", "type", "sync").Add(1)
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "finalize_block", "type", "sync"))()
 	return app.appConn.FinalizeBlock(ctx, req)
 }
 
 func (app *appConnConsensus) Commit(ctx context.Context) (*types.ResponseCommit, error) {
+	app.metrics.MethodCallCount.With("method", "commit", "type", "sync").Add(1)
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "commit", "type", "sync"))()
 	return app.appConn.Commit(ctx, &types.RequestCommit{})
 }
@@ -134,17 +141,19 @@ func (app *appConnMempool) Error() error {
 }
 
 func (app *appConnMempool) Flush(ctx context.Context) error {
+	app.metrics.MethodCallCount.With("method", "flush", "type", "sync").Add(1)
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "flush", "type", "sync"))()
 	return app.appConn.Flush(ctx)
 }
 
 func (app *appConnMempool) CheckTx(ctx context.Context, req *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
+	app.metrics.MethodCallCount.With("method", "check_tx", "type", "sync").Add(1)
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "check_tx", "type", "sync"))()
 	return app.appConn.CheckTx(ctx, req)
 }
 
 func (app *appConnMempool) CheckTxAsync(ctx context.Context, req *types.RequestCheckTx) (*abcicli.ReqRes, error) {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "check_tx", "type", "async"))()
+	app.metrics.MethodCallCount.With("method", "check_tx", "type", "async").Add(1)
 	return app.appConn.CheckTxAsync(ctx, req)
 }
 
@@ -168,16 +177,19 @@ func (app *appConnQuery) Error() error {
 }
 
 func (app *appConnQuery) Echo(ctx context.Context, msg string) (*types.ResponseEcho, error) {
+	app.metrics.MethodCallCount.With("method", "echo", "type", "sync").Add(1)
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "echo", "type", "sync"))()
 	return app.appConn.Echo(ctx, msg)
 }
 
 func (app *appConnQuery) Info(ctx context.Context, req *types.RequestInfo) (*types.ResponseInfo, error) {
+	app.metrics.MethodCallCount.With("method", "info", "type", "sync").Add(1)
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "info", "type", "sync"))()
 	return app.appConn.Info(ctx, req)
 }
 
 func (app *appConnQuery) Query(ctx context.Context, req *types.RequestQuery) (*types.ResponseQuery, error) {
+	app.metrics.MethodCallCount.With("method", "query", "type", "sync").Add(1)
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "query", "type", "sync"))()
 	return app.appConn.Query(ctx, req)
 }
@@ -202,21 +214,25 @@ func (app *appConnSnapshot) Error() error {
 }
 
 func (app *appConnSnapshot) ListSnapshots(ctx context.Context, req *types.RequestListSnapshots) (*types.ResponseListSnapshots, error) {
+	app.metrics.MethodCallCount.With("method", "list_snapshots", "type", "sync").Add(1)
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "list_snapshots", "type", "sync"))()
 	return app.appConn.ListSnapshots(ctx, req)
 }
 
 func (app *appConnSnapshot) OfferSnapshot(ctx context.Context, req *types.RequestOfferSnapshot) (*types.ResponseOfferSnapshot, error) {
+	app.metrics.MethodCallCount.With("method", "offer_snapshot", "type", "sync").Add(1)
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "offer_snapshot", "type", "sync"))()
 	return app.appConn.OfferSnapshot(ctx, req)
 }
 
 func (app *appConnSnapshot) LoadSnapshotChunk(ctx context.Context, req *types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error) {
+	app.metrics.MethodCallCount.With("method", "load_snapshot_chunk", "type", "sync").Add(1)
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "load_snapshot_chunk", "type", "sync"))()
 	return app.appConn.LoadSnapshotChunk(ctx, req)
 }
 
 func (app *appConnSnapshot) ApplySnapshotChunk(ctx context.Context, req *types.RequestApplySnapshotChunk) (*types.ResponseApplySnapshotChunk, error) {
+	app.metrics.MethodCallCount.With("method", "apply_snapshot_chunk", "type", "sync").Add(1)
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "apply_snapshot_chunk", "type", "sync"))()
 	return app.appConn.ApplySnapshotChunk(ctx, req)
 }

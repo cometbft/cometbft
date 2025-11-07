@@ -16,4 +16,6 @@ const (
 type Metrics struct {
 	// Timing for each ABCI method.
 	MethodTimingSeconds metrics.Histogram `metrics_bucketsizes:".0001,.0004,.002,.009,.02,.1,.65,2,6,25" metrics_labels:"method, type"`
+	// Call Counter for each ABCI method.
+	MethodCallCount metrics.Counter `metrics_labels:"method, type"`
 }

@@ -2,6 +2,7 @@ package abcicli
 
 import (
 	"context"
+	"time"
 
 	types "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/service"
@@ -15,7 +16,8 @@ import (
 type localClient struct {
 	service.BaseService
 
-	mtx *cmtsync.Mutex
+	metrics *Metrics
+	mtx     *cmtsync.Mutex
 	types.Application
 	Callback
 }
@@ -31,6 +33,7 @@ func NewLocalClient(mtx *cmtsync.Mutex, app types.Application) Client {
 		mtx = new(cmtsync.Mutex)
 	}
 	cli := &localClient{
+		metrics:     PrometheusMetrics("cometbft"),
 		mtx:         mtx,
 		Application: app,
 	}
@@ -45,7 +48,9 @@ func (app *localClient) SetResponseCallback(cb Callback) {
 }
 
 func (app *localClient) CheckTxAsync(ctx context.Context, req *types.RequestCheckTx) (*ReqRes, error) {
+	start := time.Now()
 	app.mtx.Lock()
+	app.metrics.LockWaitSeconds.With("method", "check_tx_async").Observe(time.Since(start).Seconds())
 	defer app.mtx.Unlock()
 
 	res, err := app.Application.CheckTx(ctx, req)
@@ -86,34 +91,45 @@ func (app *localClient) Echo(_ context.Context, msg string) (*types.ResponseEcho
 }
 
 func (app *localClient) Info(ctx context.Context, req *types.RequestInfo) (*types.ResponseInfo, error) {
+	start := time.Now()
 	app.mtx.Lock()
+	app.metrics.LockWaitSeconds.With("method", "info").Observe(time.Since(start).Seconds())
 	defer app.mtx.Unlock()
 
 	return app.Application.Info(ctx, req)
 }
 
 func (app *localClient) CheckTx(ctx context.Context, req *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
+	start := time.Now()
 	app.mtx.Lock()
+	app.metrics.LockWaitSeconds.With("method", "check_tx").Observe(time.Since(start).Seconds())
 	defer app.mtx.Unlock()
 
 	return app.Application.CheckTx(ctx, req)
 }
 
 func (app *localClient) Query(ctx context.Context, req *types.RequestQuery) (*types.ResponseQuery, error) {
+	start := time.Now()
 	app.mtx.Lock()
+	app.metrics.LockWaitSeconds.With("method", "query").Observe(time.Since(start).Seconds())
 	defer app.mtx.Unlock()
 
 	return app.Application.Query(ctx, req)
 }
 
 func (app *localClient) Commit(ctx context.Context, req *types.RequestCommit) (*types.ResponseCommit, error) {
+	start := time.Now()
 	app.mtx.Lock()
+	app.metrics.LockWaitSeconds.With("method", "commit").Observe(time.Since(start).Seconds())
 	defer app.mtx.Unlock()
 
 	return app.Application.Commit(ctx, req)
 }
 
 func (app *localClient) InitChain(ctx context.Context, req *types.RequestInitChain) (*types.ResponseInitChain, error) {
+	start := time.Now()
+	app.mtx.Lock()
+	app.metrics.LockWaitSeconds.With("method", "init_chain").Observe(time.Since(start).Seconds())
 	app.mtx.Lock()
 	defer app.mtx.Unlock()
 
@@ -153,14 +169,18 @@ func (app *localClient) ApplySnapshotChunk(ctx context.Context,
 }
 
 func (app *localClient) PrepareProposal(ctx context.Context, req *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error) {
+	start := time.Now()
 	app.mtx.Lock()
+	app.metrics.LockWaitSeconds.With("method", "prepare_proposal").Observe(time.Since(start).Seconds())
 	defer app.mtx.Unlock()
 
 	return app.Application.PrepareProposal(ctx, req)
 }
 
 func (app *localClient) ProcessProposal(ctx context.Context, req *types.RequestProcessProposal) (*types.ResponseProcessProposal, error) {
+	start := time.Now()
 	app.mtx.Lock()
+	app.metrics.LockWaitSeconds.With("method", "process_proposal").Observe(time.Since(start).Seconds())
 	defer app.mtx.Unlock()
 
 	return app.Application.ProcessProposal(ctx, req)
@@ -181,7 +201,9 @@ func (app *localClient) VerifyVoteExtension(ctx context.Context, req *types.Requ
 }
 
 func (app *localClient) FinalizeBlock(ctx context.Context, req *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
+	start := time.Now()
 	app.mtx.Lock()
+	app.metrics.LockWaitSeconds.With("method", "finalize_block").Observe(time.Since(start).Seconds())
 	defer app.mtx.Unlock()
 
 	return app.Application.FinalizeBlock(ctx, req)

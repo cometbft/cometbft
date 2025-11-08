@@ -2,11 +2,18 @@ package abcicli
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	types "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
+)
+
+var (
+	// globalMetrics is shared across all local clients to avoid duplicate registration
+	globalMetrics     *Metrics
+	globalMetricsOnce sync.Once
 )
 
 // NOTE: use defer to unlock mutex because Application might panic (e.g., in
@@ -32,8 +39,14 @@ func NewLocalClient(mtx *cmtsync.Mutex, app types.Application) Client {
 	if mtx == nil {
 		mtx = new(cmtsync.Mutex)
 	}
+
+	// Use sync.Once to ensure metrics are only registered once across all local clients
+	globalMetricsOnce.Do(func() {
+		globalMetrics = PrometheusMetrics("cometbft")
+	})
+
 	cli := &localClient{
-		metrics:     PrometheusMetrics("cometbft"),
+		metrics:     globalMetrics,
 		mtx:         mtx,
 		Application: app,
 	}
@@ -130,7 +143,6 @@ func (app *localClient) InitChain(ctx context.Context, req *types.RequestInitCha
 	start := time.Now()
 	app.mtx.Lock()
 	app.metrics.LockWaitSeconds.With("method", "init_chain").Observe(time.Since(start).Seconds())
-	app.mtx.Lock()
 	defer app.mtx.Unlock()
 
 	return app.Application.InitChain(ctx, req)

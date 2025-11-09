@@ -607,7 +607,7 @@ This is a huge blob of code, so let's break it down into pieces.
 First, we use [viper](https://github.com/spf13/viper) to load the CometBFT configuration files, which we will generate later:
 
 ```go
-config := cfg.DefaultValidatorConfig()
+config := cfg.DefaultConfig()
 
 config.SetRoot(homeDir)
 

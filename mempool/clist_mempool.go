@@ -629,6 +629,9 @@ func (mem *CListMempool) Update(
 	// Recheck txs left in the mempool to remove them if they became invalid in the new state.
 	if mem.config.Recheck {
 		mem.recheckTxs()
+	} else {
+		fmt.Println("sleeping for recheck timeout", mem.config.RecheckTimeout.String())
+		time.Sleep(mem.config.RecheckTimeout)
 	}
 
 	// Notify if there are still txs left in the mempool.

@@ -258,7 +258,6 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 
 	// decrypt the frame.
 	// reads and updates the sc.recvNonce
-	fmt.Println("sealed frame", string(sealedFrame))
 	frame := sc.recvFrame
 	_, err = sc.recvAead.Open(frame[:0], sc.recvNonce[:], sealedFrame, nil)
 	if err != nil {

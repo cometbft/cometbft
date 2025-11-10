@@ -26,7 +26,7 @@ require (
 	github.com/libp2p/go-libp2p v0.43.0
 	github.com/minio/highwayhash v1.0.3
 	github.com/mr-tron/base58 v1.2.0
-	github.com/multiformats/go-multiaddr v0.16.0
+	github.com/multiformats/go-multiaddr v0.16.1
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20230904125328-1f23a7beb09a
 	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/pkg/errors v0.9.1

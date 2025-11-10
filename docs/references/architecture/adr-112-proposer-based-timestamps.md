@@ -159,7 +159,7 @@ Moreover, when compared to the original ([ADR 071][original-adr]), we will **NOT
 ### New consensus parameters
 
 The PBTS specification includes some new parameters that must be the same among across all validators.
-The set of [consensus parameters](https://github.com/cometbft/cometbft/blob/main/proto/cometbft/types/v1/params.proto#L13)
+The set of [consensus parameters](https://github.com/cometbft/cometbft/blob/main/proto/tendermint/types/params.proto#L13)
 will be updated to include new fields as follows:
 
 ```diff

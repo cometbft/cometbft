@@ -29,6 +29,7 @@ type Pool[T any] struct {
 	onScale  func()
 	onShrink func()
 	onStay   func()
+	onStop   func()
 
 	mu      sync.Mutex
 	stopped bool
@@ -54,6 +55,10 @@ func WithOnShrink[T any](onShrink func()) Option[T] {
 
 func WithOnStay[T any](onStay func()) Option[T] {
 	return func(p *Pool[T]) { p.onStay = onStay }
+}
+
+func WithOnStop[T any](onStop func()) Option[T] {
+	return func(p *Pool[T]) { p.onStop = onStop }
 }
 
 // New Pool constructor.
@@ -103,6 +108,10 @@ func (p *Pool[T]) Stop() {
 
 	if p.stopped || len(p.workers) == 0 {
 		return
+	}
+
+	if p.onStop != nil {
+		p.onStop()
 	}
 
 	// collect all ids to avoid map loop-and-delete

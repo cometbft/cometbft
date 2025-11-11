@@ -104,8 +104,9 @@ func TestPriorityQueue(t *testing.T) {
 		inputs := genRandomData(iterations, priorities)
 
 		// ACT
-		pushDurations := []time.Duration{}
-		consumeDurations := []time.Duration{}
+		pushDurations := make([]time.Duration, 0, iterations)
+		consumeDurations := make([]time.Duration, 0, iterations)
+		consumedValues := make([]string, 0, iterations)
 
 		wg := sync.WaitGroup{}
 		wg.Add(2)
@@ -133,15 +134,17 @@ func TestPriorityQueue(t *testing.T) {
 			lastConsumed := time.Now()
 
 			for {
-				_, ok := queue.Pop()
+				value, ok := queue.Pop()
 				if !ok {
 					time.Sleep(10 * time.Millisecond)
+					lastConsumed = time.Now()
 					continue
 				}
 
 				consumeDurations = append(consumeDurations, time.Since(lastConsumed))
-
+				consumedValues = append(consumedValues, value.(string))
 				consumed++
+
 				if consumed == iterations {
 					return
 				}
@@ -153,9 +156,21 @@ func TestPriorityQueue(t *testing.T) {
 		wg.Wait()
 
 		// ASSERT
+		t.Logf("Time taken: %s", time.Since(start))
 		utils.LogDurationStats(t, "Push duration:", pushDurations)
 		utils.LogDurationStats(t, "Consume duration:", consumeDurations)
-		t.Logf("Time taken: %s", time.Since(start))
+
+		// check that all values were consumed
+		actualValues := make(map[string]struct{}, len(consumedValues))
+		for _, value := range consumedValues {
+			actualValues[value] = struct{}{}
+		}
+
+		for _, item := range inputs {
+			if _, ok := actualValues[item.value]; !ok {
+				t.Fatalf("value %s not consumed", item.value)
+			}
+		}
 	})
 }
 

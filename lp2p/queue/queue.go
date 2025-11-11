@@ -10,7 +10,7 @@ import (
 // We can replace the implementation with a more efficient one if needed (ring buffer, MPMC, etc.)
 type Queue struct {
 	list *list.List
-	mu   sync.Mutex
+	mu   sync.RWMutex
 }
 
 var ErrPriority = errors.New("invalid priority")
@@ -19,13 +19,13 @@ var ErrPriority = errors.New("invalid priority")
 func New() *Queue {
 	return &Queue{
 		list: list.New(),
-		mu:   sync.Mutex{},
+		mu:   sync.RWMutex{},
 	}
 }
 
 func (q *Queue) Len() int {
-	q.mu.Lock()
-	defer q.mu.Unlock()
+	q.mu.RLock()
+	defer q.mu.RUnlock()
 
 	return q.list.Len()
 }
@@ -57,9 +57,10 @@ func (q *Queue) Pop() (any, bool) {
 // Priority is an integer between 1 and the number of priorities (inclusive).
 // Higher priority values are dequeued first.
 type PriorityQueue struct {
-	priorities int
-	levels     []*Queue
-	mu         sync.Mutex
+	priorities           int
+	levels               []*Queue
+	highestNonEmptyLevel int
+	mu                   sync.Mutex
 }
 
 func NewPriorityQueue(priorities int) *PriorityQueue {
@@ -73,9 +74,10 @@ func NewPriorityQueue(priorities int) *PriorityQueue {
 	}
 
 	return &PriorityQueue{
-		priorities: priorities,
-		levels:     queues,
-		mu:         sync.Mutex{},
+		priorities:           priorities,
+		levels:               queues,
+		highestNonEmptyLevel: -1,
+		mu:                   sync.Mutex{},
 	}
 }
 
@@ -84,26 +86,44 @@ func (q *PriorityQueue) Push(value any, priority int) error {
 		return ErrPriority
 	}
 
-	q.levels[priority-1].Push(value)
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	idx := priority - 1
+
+	q.levels[idx].Push(value)
+
+	if idx > q.highestNonEmptyLevel {
+		q.highestNonEmptyLevel = idx
+	}
 
 	return nil
 }
 
 func (q *PriorityQueue) Pop() (any, bool) {
-	// edge case: only one priority
-	if q.priorities == 1 {
-		return q.levels[0].Pop()
-	}
-
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
 	// highest priority first
-	for i := q.priorities - 1; i >= 0; i-- {
+	for i := q.highestNonEmptyLevel; i >= 0; i-- {
 		if v, ok := q.levels[i].Pop(); ok {
+			q.updateHighestNonEmpty(i)
 			return v, ok
 		}
 	}
 
 	return nil, false
+}
+
+func (q *PriorityQueue) updateHighestNonEmpty(lastLevel int) {
+	// noop
+	if q.levels[lastLevel].Len() > 0 {
+		return
+	}
+
+	// Update highestNonEmpty by scanning downward
+	q.highestNonEmptyLevel = lastLevel - 1
+	for q.highestNonEmptyLevel >= 0 && q.levels[q.highestNonEmptyLevel].Len() == 0 {
+		q.highestNonEmptyLevel--
+	}
 }

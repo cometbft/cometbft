@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/lp2p/autopool"
-	pq "github.com/cometbft/cometbft/lp2p/priorityqueue"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/libp2p/go-libp2p/core/protocol"
 )
@@ -27,7 +26,7 @@ type reactorSet struct {
 type reactorItem struct {
 	p2p.Reactor
 	name          string
-	priorityQueue *pq.Queue
+	envelopeQueue chan pendingEnvelope
 	consumerPool  *autopool.Pool[pendingEnvelope]
 }
 
@@ -80,12 +79,12 @@ func (rs *reactorSet) Add(reactor p2p.Reactor, name string) error {
 		}
 	}
 
-	consumerPool, priorityQueue := rs.newReactorQueue(nextID, name)
+	envelopeQueue, consumerPool := rs.newReactorQueue(nextID, name)
 
 	rs.reactors = append(rs.reactors, reactorItem{
 		Reactor:       reactor,
 		name:          name,
-		priorityQueue: priorityQueue,
+		envelopeQueue: envelopeQueue,
 		consumerPool:  consumerPool,
 	})
 
@@ -119,6 +118,7 @@ func (rs *reactorSet) Start(perProtocolCallback func(protocol.ID)) error {
 
 func (rs *reactorSet) Stop() {
 	for _, reactor := range rs.reactors {
+		close(reactor.envelopeQueue)
 		reactor.consumerPool.Stop()
 
 		rs.switchRef.Logger.Info("Stopping reactor", "reactor", reactor.name)
@@ -164,16 +164,8 @@ func (rs *reactorSet) getReactorWithProtocol(id protocol.ID) (reactorProtocol, r
 	return protocol, rs.reactors[protocol.reactorID], nil
 }
 
-// Receive schedules receive operation for a reactor. How it works:
-// 1) pendingEnvelope is added to a priority queue that sorts msgs (heap)
-// 2) priorityQueue exposes a chan of sorted items available to consumption
-// 3) autopool picks this channel, receives the message and calls reactorSet.receiveQueued(pendingEnvelope)
-//
-// This setup allows to handle lots of incoming message in a timely manner. System ensures that
-// - We can process as many concurrent messages as possible
-// - All messages are sorted by priority, most important are processed first
-// - In case of latency degradation, the system is downscale to preserve processing speed.
-func (rs *reactorSet) Receive(reactorName, messageType string, envelope p2p.Envelope, priority int) {
+// Receive schedules receive operation for a reactor
+func (rs *reactorSet) Receive(reactorName, messageType string, envelope p2p.Envelope) {
 	idx, ok := rs.reactorNames[reactorName]
 	if !ok {
 		rs.switchRef.Logger.Error("Receive: reactor not found", "reactor", reactorName)
@@ -198,7 +190,13 @@ func (rs *reactorSet) Receive(reactorName, messageType string, envelope p2p.Enve
 		addedAt:     now,
 	}
 
-	reactor.priorityQueue.Push(pe, uint64(priority))
+	// experiment: bypass queue for everyone except mempool
+	if reactorName != "MEMPOOL" {
+		rs.receiveSync(idx, pe)
+		return
+	}
+
+	reactor.envelopeQueue <- pe
 }
 
 func (rs *reactorSet) receiveQueued(reactorID int, e pendingEnvelope) {
@@ -229,8 +227,6 @@ func (rs *reactorSet) receiveQueued(reactorID int, e pendingEnvelope) {
 	rs.switchRef.metrics.MessageReactorReceiveDuration.With(labels...).Observe(timeTaken.Seconds())
 }
 
-/*
-// not used
 func (rs *reactorSet) receiveSync(reactorID int, e pendingEnvelope) {
 	reactor := rs.reactors[reactorID]
 	m := rs.switchRef.metrics
@@ -250,15 +246,13 @@ func (rs *reactorSet) receiveSync(reactorID int, e pendingEnvelope) {
 	m.MessageReactorReceiveDuration.With(labels...).Observe(timeTaken.Seconds())
 	m.MessageReactorQueueConcurrency.With("reactor", reactor.name).Add(-1)
 }
-*/
 
 // newConsumerPool creates a pool of envelope consumers for a reactor
 // the idea to dynamically adjust concurrency based on the load.
 func (rs *reactorSet) newReactorQueue(
 	reactorID int,
 	reactorName string,
-) (*autopool.Pool[pendingEnvelope], *pq.Queue) {
-	// Constants fro pool
+) (chan pendingEnvelope, *autopool.Pool[pendingEnvelope]) {
 	const (
 		// how many message we can accept to this before blocking (per reactor)
 		reactorReceiveChanCapacity = 1024
@@ -280,13 +274,11 @@ func (rs *reactorSet) newReactorQueue(
 		maxWorkers = 128
 	}
 
-	// 2. Create channel that receives messages from priority queue
-	// new p2p messages are written to this chan
-	// then, pool consumes these messages concurrently and calls rs.receiveQueued()
-	pendingMessagesChan := make(chan pendingEnvelope, reactorReceiveChanCapacity)
+	queue := make(chan pendingEnvelope, reactorReceiveChanCapacity)
 
-	// 3. Create consumer pool with scaler
-	concurrencyCounter := rs.switchRef.metrics.MessageReactorQueueConcurrency.With("reactor", reactorName)
+	receive := func(e pendingEnvelope) {
+		rs.receiveQueued(reactorID, e)
+	}
 
 	scaler := autopool.NewThroughputLatencyScaler(
 		minWorkers,
@@ -297,12 +289,12 @@ func (rs *reactorSet) newReactorQueue(
 		rs.switchRef.Logger,
 	)
 
-	pool := autopool.New(
+	concurrencyCounter := rs.switchRef.metrics.MessageReactorQueueConcurrency.With("reactor", reactorName)
+
+	return queue, autopool.New(
 		scaler,
-		pendingMessagesChan,
-		func(e pendingEnvelope) {
-			rs.receiveQueued(reactorID, e)
-		},
+		queue,
+		receive,
 		rs.switchRef.Logger,
 		autopool.WithOnScale[pendingEnvelope](func() {
 			concurrencyCounter.Add(1)
@@ -311,26 +303,4 @@ func (rs *reactorSet) newReactorQueue(
 			concurrencyCounter.Add(-1)
 		}),
 	)
-
-	// 4. Create priority queue. It stores all messages in heap based on message priority,
-	// And then publishes them in ordered way to consumer
-	queue := pq.New(reactorReceiveChanCapacity)
-
-	// 5. Create pipe that writes ordered messages to consumer
-	go func() {
-		ch, cancel := queue.Consumer()
-		defer cancel()
-
-		for v := range ch {
-			pe, ok := v.(pendingEnvelope)
-			if !ok {
-				// should not happen
-				panic("invalid type")
-			}
-
-			pendingMessagesChan <- pe
-		}
-	}()
-
-	return pool, queue
 }

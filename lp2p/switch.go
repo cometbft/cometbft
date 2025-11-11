@@ -418,7 +418,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 		Message:   msg,
 	}
 
-	s.reactors.Receive(reactor.name, messageType, envelope, proto.descriptor.Priority)
+	s.reactors.Receive(reactor.name, messageType, envelope)
 }
 
 func (s *Switch) ensurePeerProvisioned(peer p2p.Peer) error {

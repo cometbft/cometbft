@@ -164,7 +164,15 @@ func (rs *reactorSet) getReactorWithProtocol(id protocol.ID) (reactorProtocol, r
 	return protocol, rs.reactors[protocol.reactorID], nil
 }
 
-// Receive schedules receive operation for a reactor
+// Receive schedules receive operation for a reactor. How it works:
+// 1) pendingEnvelope is added to a priority queue that is sorted by priority and arrival time (FIFO)
+// 2) Then the system pipes this queue to a concurrent pool that auto scales based on the load
+// 3) autopool picks this channel, receives the message and calls reactorSet.receiveQueued(pendingEnvelope)
+//
+// This setup allows to handle lots of incoming message in a timely manner. System ensures that
+// - All messages are sorted by priority, most important are processed first
+// - We can process as many concurrent messages as possible
+// - In case of latency degradation, the system is downscale to preserve processing speed.
 func (rs *reactorSet) Receive(reactorName, messageType string, envelope p2p.Envelope, priority int) {
 	idx, ok := rs.reactorNames[reactorName]
 	if !ok {

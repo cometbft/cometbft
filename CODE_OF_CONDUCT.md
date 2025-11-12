@@ -106,4 +106,4 @@ avoid confusion.
 [ccoc]: https://github.com/stumpsyn/policies/blob/master/citizen_code_of_conduct.md
 [node-trolling-policy]: http://blog.izs.me/post/30036893703/policy-on-trolling
 [ccov]: http://contributor-covenant.org/version/1/3/0/
-[rust-coc]: https://www.rust-lang.org/en-US/conduct.html
+[rust-coc]: https://rust-lang.org/policies/code-of-conduct

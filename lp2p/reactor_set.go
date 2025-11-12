@@ -2,6 +2,7 @@ package lp2p
 
 import (
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	"github.com/cometbft/cometbft/lp2p/autopool"
@@ -21,6 +22,8 @@ type reactorSet struct {
 
 	// [protocol_id => reactorProtocol] mapping
 	protocols map[protocol.ID]reactorProtocol
+
+	sequence atomic.Uint64
 }
 
 // reactorItem p2p.Reactor wrapper
@@ -42,6 +45,7 @@ type pendingEnvelope struct {
 	p2p.Envelope
 	messageType string
 	addedAt     time.Time
+	sequence    uint64
 }
 
 func newReactorSet(switchRef *Switch) *reactorSet {
@@ -196,6 +200,7 @@ func (rs *reactorSet) Receive(reactorName, messageType string, envelope p2p.Enve
 		Envelope:    envelope,
 		messageType: messageType,
 		addedAt:     now,
+		sequence:    rs.sequence.Add(1),
 	}
 
 	err := reactor.priorityQueue.Push(pq, priority)
@@ -203,6 +208,13 @@ func (rs *reactorSet) Receive(reactorName, messageType string, envelope p2p.Enve
 		rs.switchRef.metrics.MessagesReactorInFlight.With(labels...).Add(-1)
 		rs.switchRef.Logger.Error("Failed to push envelope to priority queue", "reactor", reactorName, "err", err)
 	}
+
+	rs.switchRef.Logger.Debug(
+		"Envelope pushed to priority queue",
+		"reactor", reactorName,
+		"message_type", messageType,
+		"sequence", pq.sequence,
+	)
 }
 
 func (rs *reactorSet) receiveQueued(reactorID int, e pendingEnvelope) {
@@ -213,15 +225,12 @@ func (rs *reactorSet) receiveQueued(reactorID int, e pendingEnvelope) {
 		"message_type", e.messageType,
 	}
 
-	// log envelopes that are older than 1 second with a dummy sampling of 10%
-	if time.Since(e.addedAt) > time.Second && e.addedAt.UnixMilli()%10 == 0 {
-		rs.switchRef.Logger.Info(
-			"Envelope is pending for too long",
-			"reactor", reactor.name,
-			"message_type", e.messageType,
-			"pending_dur", time.Since(e.addedAt).String(),
-		)
-	}
+	rs.switchRef.Logger.Debug(
+		"Receiving envelope",
+		"reactor", reactor.name,
+		"message_type", e.messageType,
+		"sequence", e.sequence,
+	)
 
 	now := time.Now()
 

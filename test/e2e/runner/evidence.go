@@ -69,7 +69,7 @@ func InjectEvidence(ctx context.Context, r *rand.Rand, testnet *e2e.Testnet, amo
 		return err
 	}
 
-	valSet, err := types.ValidatorSetFromExistingValidators(valRes.Validators)
+	valSet, err := types.ValidatorSetFromExistingValidators(valRes.Validators, blockRes.Block.ProposerAddress)
 	if err != nil {
 		return err
 	}

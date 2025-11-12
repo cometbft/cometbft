@@ -891,7 +891,7 @@ func (ch *Channel) writePacketMsgTo(w protoio.Writer) (n int, err error) {
 	if err != nil {
 		return 0, err
 	}
-	atomic.AddInt64(&ch.recentlySent, int64(n))
+	atomic.AddInt64(&ch.recentlySent, 1)
 	return n, nil
 }
 

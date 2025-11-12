@@ -232,11 +232,9 @@ func (rs *reactorSet) receiveQueued(reactorID int, e pendingEnvelope) {
 		"sequence", e.sequence,
 	)
 
-	now := time.Now()
-
 	reactor.Receive(e.Envelope)
 
-	timeTaken := time.Since(now)
+	timeTaken := time.Since(e.addedAt)
 
 	rs.switchRef.metrics.MessagesReactorInFlight.With(labels...).Add(-1)
 	rs.switchRef.metrics.MessageReactorReceiveDuration.With(labels...).Observe(timeTaken.Seconds())

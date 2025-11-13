@@ -212,7 +212,7 @@ tls_cert_file = ""
 
 # The path to a file containing matching private key that is used to create the HTTPS server.
 # Might be either absolute path or path related to CometBFT's config directory.
-# NOTE: both tls-cert-file and tls-key-file must be present for CometBFT to create HTTPS server.
+# NOTE: both tls_cert_file and tls_key_file must be present for CometBFT to create HTTPS server.
 # Otherwise, HTTP server is run.
 tls_key_file = ""
 
@@ -378,11 +378,11 @@ discovery_time = "15s"
 temp_dir = ""
 
 # The timeout duration before re-requesting a chunk, possibly from a different
-# peer (default: 1 minute).
+# peer (default: 10s).
 chunk_request_timeout = "10s"
 
-# The number of concurrent chunk fetchers to run (default: 1).
-chunk_fetchers = "4"
+# The number of concurrent chunk fetchers to run (default: 4).
+chunk_fetchers = 4
 
 #######################################################
 ###       Block Sync Configuration Options          ###

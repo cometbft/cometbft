@@ -58,6 +58,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "recheck_times",
 			Help:      "Number of times transactions are rechecked in the mempool.",
 		}, labels).With(labelsAndValues...),
+		RecheckDuration: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "recheck_duration",
+			Help:      "Latency of the rechecking process.",
+		}, labels).With(labelsAndValues...),
 		ActiveOutboundConnections: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -82,6 +88,7 @@ func NopMetrics() *Metrics {
 		RejectedTxs:               discard.NewCounter(),
 		EvictedTxs:                discard.NewCounter(),
 		RecheckTimes:              discard.NewCounter(),
+		RecheckDuration:           discard.NewHistogram(),
 		ActiveOutboundConnections: discard.NewGauge(),
 		AlreadyReceivedTxs:        discard.NewCounter(),
 	}

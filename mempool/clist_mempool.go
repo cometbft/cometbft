@@ -92,6 +92,10 @@ func NewCListMempool(
 		option(mp)
 	}
 
+	mp.recheck.onDone = func(timeTaken time.Duration) {
+		mp.metrics.RecheckDuration.Observe(timeTaken.Seconds())
+	}
+
 	return mp
 }
 
@@ -702,6 +706,8 @@ type recheck struct {
 	numPendingTxs atomic.Int32    // number of transactions still pending to recheck
 	isRechecking  atomic.Bool     // true iff the rechecking process has begun and is not yet finished
 	recheckFull   atomic.Bool     // whether rechecking TXs cannot be completed before a new block is decided
+	startTime     time.Time       // start time of the rechecking process
+	onDone        func(duration time.Duration)
 }
 
 func newRecheck() *recheck {
@@ -718,6 +724,7 @@ func (rc *recheck) init(first, last *clist.CElement) {
 	rc.end = last
 	rc.numPendingTxs.Store(0)
 	rc.isRechecking.Store(true)
+	rc.startTime = time.Now()
 }
 
 // done returns true when there is no recheck response to process.
@@ -731,6 +738,12 @@ func (rc *recheck) setDone() {
 	rc.cursor = nil
 	rc.recheckFull.Store(false)
 	rc.isRechecking.Store(false)
+
+	if rc.onDone != nil {
+		rc.onDone(time.Since(rc.startTime))
+	}
+
+	rc.startTime = time.Time{}
 }
 
 // setNextEntry sets cursor to the next entry in the list. If there is no next, cursor will be nil.

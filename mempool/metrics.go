@@ -45,6 +45,9 @@ type Metrics struct {
 	// Number of times transactions are rechecked in the mempool.
 	RecheckTimes metrics.Counter
 
+	// Latency of the rechecking process.
+	RecheckDuration metrics.Histogram
+
 	// Number of connections being actively used for gossiping transactions
 	// (experimental feature).
 	ActiveOutboundConnections metrics.Gauge

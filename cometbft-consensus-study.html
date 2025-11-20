@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CometBFT Consensus 완벽 가이드</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: #f5f7fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+            margin-bottom: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.3em;
+            opacity: 0.95;
+        }
+
+        .toc {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+        }
+
+        .toc h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 2em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .toc ul {
+            list-style: none;
+        }
+
+        .toc li {
+            margin: 12px 0;
+            padding-left: 20px;
+        }
+
+        .toc a {
+            color: #555;
+            text-decoration: none;
+            font-size: 1.1em;
+            transition: all 0.3s;
+            display: block;
+            padding: 8px 12px;
+            border-radius: 5px;
+        }
+
+        .toc a:hover {
+            background: #f0f0f0;
+            color: #667eea;
+            transform: translateX(10px);
+        }
+
+        .toc .sub-item {
+            padding-left: 40px;
+            font-size: 0.95em;
+        }
+
+        section {
+            background: white;
+            padding: 40px;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 25px;
+            border-left: 5px solid #667eea;
+            padding-left: 20px;
+        }
+
+        h3 {
+            color: #764ba2;
+            font-size: 1.8em;
+            margin-top: 35px;
+            margin-bottom: 20px;
+        }
+
+        h4 {
+            color: #555;
+            font-size: 1.4em;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        p {
+            margin-bottom: 15px;
+            font-size: 1.05em;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .emoji {
+            font-size: 1.3em;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            color: #e83e8c;
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+            line-height: 1.5;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+
+        .diagram {
+            background: #f9f9f9;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 25px 0;
+            font-family: monospace;
+            white-space: pre;
+            overflow-x: auto;
+            line-height: 1.6;
+        }
+
+        .flow-box {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .flow-box h4 {
+            color: #667eea;
+            margin-top: 0;
+        }
+
+        .note {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .arrow {
+            text-align: center;
+            font-size: 1.5em;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        ul, ol {
+            margin: 15px 0 15px 30px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        .key-point {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 25px 0;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .key-point h4 {
+            color: white;
+            margin-top: 0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px;
+            color: #777;
+            margin-top: 50px;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 25px 0;
+        }
+
+        .comparison-item {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+        }
+
+        .comparison-item h4 {
+            margin-top: 0;
+        }
+
+        @media (max-width: 768px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 2em;
+            }
+
+            h2 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 CometBFT Consensus 완벽 가이드</h1>
+            <p>결제 체인을 위한 컨센서스 엔진 완전 정복</p>
+        </header>
+
+        <nav class="toc">
+            <h2>📚 목차</h2>
+            <ul>
+                <li><a href="#intro">1. CometBFT 개요</a></li>
+                <li class="sub-item"><a href="#architecture">전체 아키텍처</a></li>
+                <li class="sub-item"><a href="#core-concepts">핵심 개념</a></li>
+
+                <li><a href="#state">2. State 구조체와 동시성</a></li>
+                <li class="sub-item"><a href="#state-structure">State 구조체</a></li>
+                <li class="sub-item"><a href="#lock-mechanism">락(Lock) 메커니즘</a></li>
+
+                <li><a href="#consensus-flow">3. 컨센서스 흐름</a></li>
+                <li class="sub-item"><a href="#receive-routine">receiveRoutine - 메인 루프</a></li>
+                <li class="sub-item"><a href="#vote-processing">투표 처리</a></li>
+                <li class="sub-item"><a href="#consensus-steps">컨센서스 단계들</a></li>
+
+                <li><a href="#block-parts">4. 블록 조각과 P2P</a></li>
+                <li class="sub-item"><a href="#partset">블록 조각 (PartSet)</a></li>
+                <li class="sub-item"><a href="#p2p-concurrency">P2P 동시성</a></li>
+
+                <li><a href="#abci">5. ABCI 인터페이스</a></li>
+                <li class="sub-item"><a href="#abci-methods">주요 메서드</a></li>
+                <li class="sub-item"><a href="#execution">블록 실행</a></li>
+
+                <li><a href="#mempool">6. Mempool</a></li>
+                <li class="sub-item"><a href="#mempool-structure">구조와 동작</a></li>
+                <li class="sub-item"><a href="#mempool-optimization">결제 체인 최적화</a></li>
+
+                <li><a href="#summary">7. 정리 및 결론</a></li>
+            </ul>
+        </nav>
+
+        <!-- 1. 소개 -->
+        <section id="intro">
+            <h2>1. <span class="emoji">🎯</span> CometBFT 개요</h2>
+
+            <p><strong>CometBFT</strong>는 Byzantine Fault Tolerant 컨센서스 엔진으로, Cosmos 생태계의 핵심 컴포넌트입니다.
+            Tendermint 컨센서스 알고리즘을 구현하며, 애플리케이션 로직과 컨센서스 레이어를 분리하는 ABCI(Application Blockchain Interface)를 제공합니다.</p>
+
+            <div class="key-point">
+                <h4>핵심 특징</h4>
+                <ul>
+                    <li><strong>즉시 최종성(Instant Finality)</strong>: 블록 확정 즉시 되돌릴 수 없음</li>
+                    <li><strong>Byzantine Fault Tolerance</strong>: 최대 1/3 악의적 노드 허용</li>
+                    <li><strong>고성능</strong>: 초당 수천 트랜잭션 처리</li>
+                    <li><strong>ABCI</strong>: 어떤 언어로든 애플리케이션 개발 가능</li>
+                </ul>
+            </div>
+
+            <h3 id="architecture">전체 아키텍처</h3>
+
+            <div class="diagram">
+┌─────────────────────────────────────────────────┐
+│           CometBFT Node 구조                     │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│  ┌──────────────┐    ┌──────────────┐          │
+│  │  Consensus   │    │   Mempool    │          │
+│  │    Engine    │◄───┤   (Tx Pool)  │          │
+│  └──────┬───────┘    └──────────────┘          │
+│         │                                        │
+│         │ ABCI                                   │
+│         ▼                                        │
+│  ┌──────────────────────────────┐               │
+│  │     Application Layer        │               │
+│  │   (결제 로직, 상태 관리)      │               │
+│  └──────────────────────────────┘               │
+│         ▲                                        │
+│         │                                        │
+│  ┌──────┴───────┐    ┌──────────────┐          │
+│  │  Block Store │    │  State Store │          │
+│  │   (Blocks)   │    │   (AppHash)  │          │
+│  └──────────────┘    └──────────────┘          │
+│                                                 │
+│  ┌──────────────────────────────┐               │
+│  │      P2P Network Layer       │               │
+│  │  (다른 노드들과 통신)         │               │
+│  └──────────────────────────────┘               │
+└─────────────────────────────────────────────────┘
+            </div>
+
+            <h3 id="core-concepts">핵심 개념</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>개념</th>
+                        <th>설명</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Height</strong></td>
+                        <td>블록 높이 (1, 2, 3, ...)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Round</strong></td>
+                        <td>같은 높이에서 합의 시도 횟수 (0, 1, 2, ...)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Validator</strong></td>
+                        <td>블록을 제안하고 투표하는 검증자</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Proposer</strong></td>
+                        <td>블록을 제안하는 검증자 (라운드마다 순환)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Vote</strong></td>
+                        <td>검증자의 투표 (Prevote, Precommit)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>2/3 Majority</strong></td>
+                        <td>전체 투표력의 2/3 이상</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 2. State 구조체 -->
+        <section id="state">
+            <h2>2. <span class="emoji">🏗️</span> State 구조체와 동시성</h2>
+
+            <h3 id="state-structure">State 구조체</h3>
+
+            <p>State는 컨센서스의 모든 정보를 담고 있는 핵심 구조체입니다.</p>
+
+            <pre><code>type State struct {
+    // === 채널들 (메시지 전달용) ===
+    peerMsgQueue     chan msgInfo  // P2P에서 온 메시지
+    internalMsgQueue chan msgInfo  // 내부 메시지
+    timeoutTicker    TimeoutTicker // 타임아웃
+
+    // === 락으로 보호되는 공유 데이터 ===
+    mtx cmtsync.RWMutex
+
+    // 컨센서스 상태
+    Height    int64         // 현재 블록 높이
+    Round     int32         // 현재 라운드
+    Step      RoundStepType // 현재 단계
+
+    // 블록 정보
+    Proposal           *types.Proposal
+    ProposalBlock      *types.Block
+    ProposalBlockParts *types.PartSet
+
+    // Lock 정보
+    LockedRound      int32
+    LockedBlock      *types.Block
+
+    // 투표 정보
+    Votes      *HeightVoteSet  // 🔥 모든 투표
+    LastCommit *types.VoteSet
+
+    // 검증자 정보
+    Validators *types.ValidatorSet
+}</code></pre>
+
+            <h3 id="lock-mechanism">락(Lock) 메커니즘</h3>
+
+            <div class="note">
+                <h4>왜 락이 필요할까?</h4>
+                <p>CometBFT는 여러 고루틴이 동시에 State에 접근합니다:</p>
+                <ul>
+                    <li><strong>receiveRoutine</strong>: 메시지 처리 (쓰기)</li>
+                    <li><strong>P2P Reactor</strong>: 상태 읽기</li>
+                    <li><strong>RPC Handler</strong>: 사용자 쿼리 처리 (읽기)</li>
+                </ul>
+            </div>
+
+            <h4>Race Condition 예시</h4>
+
+            <div class="comparison">
+                <div class="comparison-item">
+                    <h4>❌ 락 없을 때</h4>
+                    <pre><code>[고루틴 A]
+count = votes.count  // 0 읽음
+count = count + 1
+votes.count = 1
+
+[고루틴 B]
+count = votes.count  // 0 읽음!
+count = count + 1
+votes.count = 1      // 덮어씀!
+
+결과: 2개 추가했는데 count는 1</code></pre>
+                </div>
+
+                <div class="comparison-item">
+                    <h4>✅ 락 있을 때</h4>
+                    <pre><code>[고루틴 A]
+Lock() 🔒
+count = votes.count  // 0
+count = count + 1
+votes.count = 1
+Unlock() 🔓
+
+[고루틴 B] (대기 중...)
+Lock() 🔒
+count = votes.count  // 1
+count = count + 1
+votes.count = 2
+Unlock() 🔓
+
+결과: 정확히 2</code></pre>
+                </div>
+            </div>
+
+            <h4>실제 코드에서 락 사용</h4>
+
+            <pre><code>func (cs *State) handleMsg(mi msgInfo) {
+    cs.mtx.Lock()         // 🔒 락 걸기
+    defer cs.mtx.Unlock() // 🔓 함수 끝날 때 자동 해제
+
+    // 이 안에서는 혼자만 State 수정 가능!
+    cs.Votes.AddVote(vote)
+    cs.Height = 101
+    cs.Step = Prevote
+}</code></pre>
+        </section>
+
+        <!-- 3. 컨센서스 흐름 -->
+        <section id="consensus-flow">
+            <h2>3. <span class="emoji">🔄</span> 컨센서스 흐름</h2>
+
+            <div class="diagram">
+컨센서스 단계 전환:
+
+NewHeight → Propose → Prevote → Precommit → Commit → NewHeight (반복)
+
+각 단계별 역할:
+┌────────────┬──────────────────────────────────┐
+│  단계      │  하는 일                          │
+├────────────┼──────────────────────────────────┤
+│ Propose    │ 프로포저가 블록 제안              │
+│ Prevote    │ 블록 검증 후 1차 투표             │
+│ Precommit  │ Prevote 결과 보고 2차 투표        │
+│ Commit     │ 블록 실행 & 저장                  │
+└────────────┴──────────────────────────────────┘
+            </div>
+
+            <h3 id="receive-routine">receiveRoutine - 메인 이벤트 루프</h3>
+
+            <p>컨센서스의 심장부로, 무한 루프를 돌면서 메시지를 처리합니다.</p>
+
+            <pre><code>func (cs *State) receiveRoutine(maxSteps int) {
+    for {
+        rs := cs.RoundState
+        var mi msgInfo
+
+        select {
+        case &lt;-cs.txNotifier.TxsAvailable():
+            // 트랜잭션 사용 가능
+            cs.handleTxsAvailable()
+
+        case mi = &lt;-cs.peerMsgQueue:
+            // P2P에서 메시지 받음
+            cs.wal.Write(mi)        // WAL에 기록
+            cs.handleMsg(mi)        // 처리
+
+        case mi = &lt;-cs.internalMsgQueue:
+            // 내부 메시지 (자신의 투표 등)
+            cs.wal.WriteSync(mi)    // WAL에 기록 (fsync!)
+            cs.handleMsg(mi)
+
+        case ti := &lt;-cs.timeoutTicker.Chan():
+            // 타임아웃 발생
+            cs.wal.Write(ti)
+            cs.handleTimeout(ti, rs)
+
+        case &lt;-cs.Quit():
+            // 종료
+            return
+        }
+    }
+}</code></pre>
+
+            <div class="flow-box">
+                <h4>메시지 흐름</h4>
+                <div class="diagram">
+다른 노드들 → [peerMsgQueue] ─┐
+                              │
+내부 생성   → [internalMsgQueue] ─┼→ receiveRoutine → handleMsg
+                              │
+타이머      → [timeoutTicker] ─┘
+                </div>
+            </div>
+
+            <h3 id="vote-processing">투표 처리</h3>
+
+            <p>투표가 들어오면 <code>tryAddVote</code> → <code>addVote</code> 순으로 처리됩니다.</p>
+
+            <pre><code>func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
+    // 1. 높이 체크
+    if vote.Height != cs.Height {
+        return false, nil
+    }
+
+    // 2. VoteSet에 추가
+    added, err = cs.Votes.AddVote(vote, peerID, extEnabled)
+
+    // 3. 투표 타입별 처리
+    switch vote.Type {
+    case cmtproto.PrevoteType:
+        prevotes := cs.Votes.Prevotes(vote.Round)
+
+        // 2/3 달성?
+        if blockID, ok := prevotes.TwoThirdsMajority(); ok {
+            // Lock 체크 및 업데이트
+            // ...
+
+            // 다음 단계로!
+            cs.enterPrecommit(height, vote.Round)
+        }
+
+    case cmtproto.PrecommitType:
+        precommits := cs.Votes.Precommits(vote.Round)
+
+        if blockID, ok := precommits.TwoThirdsMajority(); ok {
+            if len(blockID.Hash) != 0 {
+                // 블록 해시 있음 → 커밋!
+                cs.enterCommit(height, vote.Round)
+            }
+        }
+    }
+
+    return added, nil
+}</code></pre>
+
+            <div class="success">
+                <h4>2/3 규칙</h4>
+                <p>Byzantine 노드가 1/3 미만이면 시스템이 안전합니다.</p>
+                <p>정직한 노드가 2/3 이상 합의하면 블록이 확정됩니다.</p>
+            </div>
+
+            <h3 id="consensus-steps">컨센서스 단계들</h3>
+
+            <h4>1. enterPropose - 블록 제안</h4>
+
+            <pre><code>func (cs *State) enterPropose(height int64, round int32) {
+    // 타임아웃 설정
+    cs.scheduleTimeout(cs.config.Propose(round), ...)
+
+    // 내가 프로포저?
+    if cs.isProposer(address) {
+        // 블록 만들기
+        cs.decideProposal(height, round)
+    }
+
+    // 블록 제안 완료되면 자동으로 Prevote로
+    if cs.isProposalComplete() {
+        cs.enterPrevote(height, cs.Round)
+    }
+}</code></pre>
+
+            <h4>2. enterPrevote - 1차 투표</h4>
+
+            <pre><code>func (cs *State) defaultDoPrevote(height, round) {
+    // Lock 걸린 블록 있어?
+    if cs.LockedBlock != nil {
+        cs.signAddVote(PrevoteType, cs.LockedBlock.Hash())
+        return
+    }
+
+    // 제안된 블록 없어?
+    if cs.ProposalBlock == nil {
+        cs.signAddVote(PrevoteType, nil)
+        return
+    }
+
+    // 블록 검증
+    err := cs.blockExec.ValidateBlock(cs.state, cs.ProposalBlock)
+    if err != nil {
+        cs.signAddVote(PrevoteType, nil)
+        return
+    }
+
+    // 애플리케이션 검증
+    isAppValid := cs.blockExec.ProcessProposal(cs.ProposalBlock, cs.state)
+    if !isAppValid {
+        cs.signAddVote(PrevoteType, nil)
+        return
+    }
+
+    // 모든 검증 통과! → 찬성
+    cs.signAddVote(PrevoteType, cs.ProposalBlock.Hash())
+}</code></pre>
+
+            <h4>3. enterPrecommit - 2차 투표</h4>
+
+            <pre><code>func (cs *State) enterPrecommit(height, round) {
+    // Prevote 결과 확인
+    blockID, ok := cs.Votes.Prevotes(round).TwoThirdsMajority()
+
+    if !ok {
+        // 2/3 없음 → nil Precommit
+        cs.signAddVote(PrecommitType, nil)
+        return
+    }
+
+    if len(blockID.Hash) == 0 {
+        // 2/3가 nil → Lock 해제
+        cs.LockedBlock = nil
+        cs.signAddVote(PrecommitType, nil)
+        return
+    }
+
+    // 2/3가 특정 블록 선택!
+    if cs.ProposalBlock.HashesTo(blockID.Hash) {
+        // Lock 걸기!
+        cs.LockedRound = round
+        cs.LockedBlock = cs.ProposalBlock
+
+        cs.signAddVote(PrecommitType, blockID.Hash)
+    }
+}</code></pre>
+
+            <h4>4. finalizeCommit - 블록 실행</h4>
+
+            <pre><code>func (cs *State) finalizeCommit(height) {
+    // 1. 블록 저장
+    cs.blockStore.SaveBlock(block, blockParts, seenExtendedCommit)
+
+    // 2. WAL에 EndHeight 기록
+    cs.wal.WriteSync(EndHeightMessage{height})
+
+    // 3. 블록 실행!
+    stateCopy, err := cs.blockExec.ApplyVerifiedBlock(
+        stateCopy, blockID, block,
+    )
+
+    // 4. State 업데이트
+    cs.updateToState(stateCopy)
+    // Height + 1, Round = 0, Votes 초기화
+
+    // 5. 다음 라운드 시작
+    cs.scheduleRound0(&cs.RoundState)
+}</code></pre>
+
+            <div class="flow-box">
+                <h4>정상 케이스 흐름</h4>
+                <div class="diagram">
+Height 100, Round 0
+
+[Propose]
+  프로포저: "Block A 제안!"
+    ↓
+[Prevote]
+  67% 찬성 → Block A에 Prevote
+  (2/3 달성!)
+    ↓
+[Precommit]
+  67%가 Block A에 Lock & Precommit
+  (2/3 달성!)
+    ↓
+[Commit]
+  Block A 실행 → 디스크 저장 → Height 101로
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. 블록 조각과 P2P -->
+        <section id="block-parts">
+            <h2>4. <span class="emoji">🧩</span> 블록 조각과 P2P</h2>
+
+            <h3 id="partset">블록 조각 (PartSet)</h3>
+
+            <p>큰 블록을 작은 조각으로 나눠서 전송합니다. 보통 64KB씩 나눕니다.</p>
+
+            <pre><code>func NewPartSetFromData(data []byte, partSize uint32) *PartSet {
+    // 1. 총 조각 개수 계산
+    total := (uint32(len(data)) + partSize - 1) / partSize
+
+    // 2. 각 조각 만들기
+    parts := make([]*Part, total)
+    for i := uint32(0); i < total; i++ {
+        part := &Part{
+            Index: i,
+            Bytes: data[i*partSize : min(len(data), (i+1)*partSize)],
+        }
+        parts[i] = part
+    }
+
+    // 3. Merkle Proof 생성
+    root, proofs := merkle.ProofsFromByteSlices(partsBytes)
+    for i := 0; i < total; i++ {
+        parts[i].Proof = *proofs[i]
+    }
+
+    return &PartSet{
+        total: total,
+        hash:  root,
+        parts: parts,
+    }
+}</code></pre>
+
+            <div class="diagram">
+블록 조각 나누기:
+
+블록 (100 KB)
+   ↓
+Proto 직렬화 → 바이트 배열 [0...100,000]
+   ↓
+partSize = 64 KB로 나누기
+   ↓
+┌─────────────────────────────────────┐
+│ Part 0: bytes[0...64,000]           │
+│        + Merkle Proof               │
+├─────────────────────────────────────┤
+│ Part 1: bytes[64,000...100,000]     │
+│        + Merkle Proof               │
+└─────────────────────────────────────┘
+   ↓
+PartSet {
+  total: 2
+  hash: Merkle Root
+  parts: [Part0, Part1]
+}
+            </div>
+
+            <div class="note">
+                <h4>왜 조각으로 나눌까?</h4>
+                <ul>
+                    <li><strong>병렬 전송</strong>: 여러 조각을 동시에 받을 수 있음</li>
+                    <li><strong>네트워크 효율</strong>: 큰 블록을 한 번에 보내면 부담</li>
+                    <li><strong>검증 가능</strong>: Merkle proof로 각 조각 검증</li>
+                </ul>
+            </div>
+
+            <h3 id="p2p-concurrency">P2P 동시성</h3>
+
+            <p>각 피어마다 2개의 고루틴이 동작합니다.</p>
+
+            <div class="diagram">
+CometBFT Node
+   ↓
+Switch (P2P 매니저)
+   ↓
+├─ Peer 1 (고루틴 2개)
+│   ├─ sendRoutine (고루틴) → 메시지 전송
+│   └─ recvRoutine (고루틴) → 메시지 수신
+│
+├─ Peer 2 (고루틴 2개)
+│   ├─ sendRoutine (고루틴)
+│   └─ recvRoutine (고루틴)
+│
+├─ Peer 3 (고루틴 2개)
+   ...
+
+총 N개 피어 → 2N개 고루틴!
+            </div>
+
+            <pre><code>func (c *MConnection) OnStart() error {
+    // 🔥 각 연결마다 2개 고루틴 시작!
+    go c.sendRoutine()  // 송신 고루틴
+    go c.recvRoutine()  // 수신 고루틴
+
+    return nil
+}</code></pre>
+
+            <div class="success">
+                <h4>블록 조각 전송 예시</h4>
+                <p>100개 피어와 연결되어 있다면:</p>
+                <ul>
+                    <li>200개 고루틴이 동시 실행</li>
+                    <li>각 피어에게 블록 조각을 병렬로 전송</li>
+                    <li>빠른 블록 전파!</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- 5. ABCI -->
+        <section id="abci">
+            <h2>5. <span class="emoji">🔌</span> ABCI 인터페이스</h2>
+
+            <p>ABCI는 CometBFT(컨센서스)와 Application(비즈니스 로직)을 연결하는 인터페이스입니다.</p>
+
+            <div class="diagram">
+┌─────────────────────────────────────────┐
+│        CometBFT (컨센서스)              │
+│    블록 순서만 결정                      │
+└───────────────┬─────────────────────────┘
+                │ ABCI
+                ▼
+┌─────────────────────────────────────────┐
+│      Application (애플리케이션)         │
+│   결제 로직, 잔액 관리, 검증            │
+└─────────────────────────────────────────┘
+            </div>
+
+            <h3 id="abci-methods">주요 ABCI 메서드</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>메서드</th>
+                        <th>호출 시점</th>
+                        <th>역할</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>CheckTx</code></td>
+                        <td>Mempool 진입</td>
+                        <td>트랜잭션 기본 검증</td>
+                    </tr>
+                    <tr>
+                        <td><code>PrepareProposal</code></td>
+                        <td>블록 제안 전</td>
+                        <td>트랜잭션 재정렬/수정</td>
+                    </tr>
+                    <tr>
+                        <td><code>ProcessProposal</code></td>
+                        <td>Prevote 전</td>
+                        <td>블록 제안 검증 (Accept/Reject)</td>
+                    </tr>
+                    <tr>
+                        <td><code>FinalizeBlock</code></td>
+                        <td>Commit 단계</td>
+                        <td>블록 실행 (트랜잭션 처리)</td>
+                    </tr>
+                    <tr>
+                        <td><code>Commit</code></td>
+                        <td>실행 후</td>
+                        <td>상태 디스크에 저장</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 id="execution">블록 실행 과정</h3>
+
+            <div class="flow-box">
+                <h4>ABCI 전체 흐름</h4>
+                <div class="diagram">
+[Mempool]
+트랜잭션 들어옴
+   ↓
+CheckTx (ABCI) → 서명/잔액 검증
+   ↓
+Mempool에 추가
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Propose]
+CreateProposalBlock
+   ↓
+PrepareProposal (ABCI) → 트랜잭션 재정렬
+   ↓
+블록 제안
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Prevote]
+블록 제안 받음
+   ↓
+ProcessProposal (ABCI) → Accept or Reject
+   ↓
+투표
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Commit]
+2/3 합의 완료
+   ↓
+FinalizeBlock (ABCI) → 트랜잭션 실행
+   ↓
+Commit (ABCI) → 상태 저장
+   ↓
+Height + 1
+                </div>
+            </div>
+
+            <h4>결제 체인 예제: FinalizeBlock 구현</h4>
+
+            <pre><code>func (app *PaymentApp) FinalizeBlock(req *RequestFinalizeBlock) (*ResponseFinalizeBlock, error) {
+    txResults := []*ExecTxResult{}
+
+    for _, txBytes := range req.Txs {
+        tx := DecodeTx(txBytes)
+
+        // 트랜잭션 실행
+        if app.GetBalance(tx.From) >= tx.Amount + tx.Fee {
+            // 성공
+            app.Transfer(tx.From, tx.To, tx.Amount)
+            app.Transfer(tx.From, req.ProposerAddress, tx.Fee)
+
+            txResults = append(txResults, &ExecTxResult{
+                Code: 0,
+                Log: "success",
+            })
+        } else {
+            // 실패
+            txResults = append(txResults, &ExecTxResult{
+                Code: 1,
+                Log: "insufficient balance",
+            })
+        }
+    }
+
+    // 새 상태 해시
+    appHash := app.state.ComputeMerkleRoot()
+
+    return &ResponseFinalizeBlock{
+        TxResults: txResults,
+        AppHash:   appHash,
+    }, nil
+}</code></pre>
+
+            <div class="warning">
+                <h4>중요: 결정론적 실행</h4>
+                <p>모든 노드가 같은 블록을 실행하면 <strong>같은 결과</strong>가 나와야 합니다!</p>
+                <ul>
+                    <li>❌ <code>time.Now()</code> 사용 금지 → 블록 시간 사용</li>
+                    <li>❌ 맵 순회 금지 → 정렬 후 순회</li>
+                    <li>✅ 모든 연산이 결정론적이어야 함</li>
+                </ul>
+            </div>
+
+            <h4>각 노드가 독립적으로 실행</h4>
+
+            <div class="comparison">
+                <div class="comparison-item">
+                    <h4>Node A</h4>
+                    <pre><code>// Height 100 실행
+Tx1: Alice→Bob 100원
+  Alice: 900원
+  Bob: 600원
+
+AppHash: 0x1234ABCD...</code></pre>
+                </div>
+
+                <div class="comparison-item">
+                    <h4>Node B</h4>
+                    <pre><code>// Height 100 실행 (동일!)
+Tx1: Alice→Bob 100원
+  Alice: 900원
+  Bob: 600원
+
+AppHash: 0x1234ABCD... ✅</code></pre>
+                </div>
+            </div>
+
+            <p class="highlight">모든 노드가 같은 AppHash를 계산하면 상태 일치가 보장됩니다!</p>
+        </section>
+
+        <!-- 6. Mempool -->
+        <section id="mempool">
+            <h2>6. <span class="emoji">🗄️</span> Mempool</h2>
+
+            <p>Mempool은 블록에 포함되기 전 트랜잭션이 대기하는 곳입니다.</p>
+
+            <h3 id="mempool-structure">구조와 동작</h3>
+
+            <div class="diagram">
+Mempool = 편의점 진열대
+트랜잭션 = 상품
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            Mempool
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Tx1: Alice→Bob 100원]
+[Tx2: Carol→Dave 50원]
+[Tx3: Eve→Frank 200원]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+구조:
+- 연결 리스트 (txs): 순서 유지 (FIFO)
+- 맵 (txsMap): 빠른 검색 (O(1))
+- 캐시: 중복 방지
+            </div>
+
+            <h4>Mempool 3단계</h4>
+
+            <div class="flow-box">
+                <h4>1. CheckTx - 트랜잭션 검증 후 추가</h4>
+                <pre><code>트랜잭션 도착
+   ↓
+크기 체크 (너무 크면 거부)
+   ↓
+캐시 체크 (이미 봤으면 거부)
+   ↓
+ABCI CheckTx (애플리케이션 검증)
+   ↓
+OK → Mempool에 추가</code></pre>
+            </div>
+
+            <div class="flow-box">
+                <h4>2. ReapMaxBytesMaxGas - 블록 만들 때 가져가기</h4>
+                <pre><code>블록 제안 시간!
+   ↓
+제한: 최대 크기 1MB, 최대 Gas 10M
+   ↓
+Mempool 순회 (먼저 들어온 순):
+Tx1 (100KB, Gas 1000) → 추가 ✅
+Tx2 (200KB, Gas 2000) → 추가 ✅
+Tx3 (800KB, Gas 5000) → 제외 ❌ (크기 초과)
+   ↓
+반환: [Tx1, Tx2]</code></pre>
+            </div>
+
+            <div class="flow-box">
+                <h4>3. Update - 블록 실행 후 제거</h4>
+                <pre><code>블록 실행 완료
+   ↓
+Tx1: 성공 ✅ → Mempool에서 제거
+Tx2: 성공 ✅ → Mempool에서 제거
+Tx3: 실패 ❌ → Mempool에 유지 (재시도)
+   ↓
+Mempool 업데이트</code></pre>
+            </div>
+
+            <h3 id="mempool-optimization">결제 체인 최적화</h3>
+
+            <div class="warning">
+                <h4>문제: FIFO는 수수료 우선순위가 없음!</h4>
+                <pre><code>현재 Mempool (FIFO):
+[수수료 1원] → [수수료 100원] → [수수료 10원]
+     ↑
+  먼저 처리됨 (불공평!)</code></pre>
+            </div>
+
+            <div class="success">
+                <h4>해결책 1: PrepareProposal에서 정렬</h4>
+                <pre><code>func (app *PaymentApp) PrepareProposal(req *RequestPrepareProposal) {
+    txs := req.Txs
+
+    // 수수료로 정렬!
+    sort.Slice(txs, func(i, j int) bool {
+        feeI := ExtractFee(txs[i])
+        feeJ := ExtractFee(txs[j])
+        return feeI > feeJ  // 높은 수수료 먼저
+    })
+
+    return &ResponsePrepareProposal{Txs: txs}, nil
+}</code></pre>
+            </div>
+
+            <div class="success">
+                <h4>해결책 2: Priority Mempool 구현</h4>
+                <pre><code>type PriorityMempool struct {
+    txs *PriorityQueue  // 우선순위 큐 (힙)
+    // 수수료 높은 게 먼저 나옴
+}
+
+func (mem *PriorityMempool) ReapMaxBytesMaxGas(...) {
+    for mem.txs.Len() > 0 {
+        memTx := mem.txs.Pop()  // 최고 수수료
+        // ...
+    }
+}</code></pre>
+            </div>
+        </section>
+
+        <!-- 7. 정리 -->
+        <section id="summary">
+            <h2>7. <span class="emoji">📊</span> 정리 및 결론</h2>
+
+            <h3>핵심 컴포넌트 요약</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>컴포넌트</th>
+                        <th>역할</th>
+                        <th>핵심 포인트</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>State</strong></td>
+                        <td>컨센서스 상태 관리</td>
+                        <td>Lock으로 동시성 제어</td>
+                    </tr>
+                    <tr>
+                        <td><strong>receiveRoutine</strong></td>
+                        <td>메인 이벤트 루프</td>
+                        <td>3개 채널 감시 (peer, internal, timeout)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Consensus Steps</strong></td>
+                        <td>단계별 합의 진행</td>
+                        <td>Propose → Prevote → Precommit → Commit</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PartSet</strong></td>
+                        <td>블록 조각화</td>
+                        <td>64KB씩 나눠서 병렬 전송</td>
+                    </tr>
+                    <tr>
+                        <td><strong>P2P</strong></td>
+                        <td>네트워크 통신</td>
+                        <td>각 피어당 2개 고루틴 (send/recv)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ABCI</strong></td>
+                        <td>앱 연결</td>
+                        <td>컨센서스 ↔ 애플리케이션 분리</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Mempool</strong></td>
+                        <td>트랜잭션 대기실</td>
+                        <td>CheckTx → Reap → Update</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>컨센서스 전체 흐름</h3>
+
+            <div class="diagram">
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Height N, Round 0
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Propose
+   프로포저가 블록 제안
+   - Mempool에서 트랜잭션 가져오기
+   - PrepareProposal (ABCI)
+   - 블록 조각으로 나눠서 브로드캐스트
+   ↓
+
+2. Prevote (1차 투표)
+   각 검증자가 블록 검증
+   - ProcessProposal (ABCI) - Accept/Reject
+   - ValidateBlock
+   - 투표: 블록 or nil
+   ↓
+
+3. 2/3 Prevote 수집
+   투표 집계
+   - 2/3 이상 같은 블록 → Lock 걸고 다음 단계
+   - 2/3 없음 → PrevoteWait (타임아웃 대기)
+   ↓
+
+4. Precommit (2차 투표)
+   Prevote 결과 기반 투표
+   - 2/3가 선택한 블록에 Precommit
+   - Lock 업데이트
+   ↓
+
+5. 2/3 Precommit 수집
+   최종 합의
+   - 2/3 이상 → Commit!
+   - 2/3 없음 → 다음 Round
+   ↓
+
+6. Commit
+   블록 실행 및 저장
+   - FinalizeBlock (ABCI) - 트랜잭션 실행
+   - Commit (ABCI) - 상태 저장
+   - Height + 1
+   ↓
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Height N+1, Round 0 (반복)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            </div>
+
+            <h3>결제 체인 구현 시 고려사항</h3>
+
+            <div class="key-point">
+                <h4>CometBFT 레이어에서</h4>
+                <ul>
+                    <li><strong>블록 타임 조정</strong>: Propose timeout 줄이기</li>
+                    <li><strong>Mempool 우선순위</strong>: 수수료 기반 정렬</li>
+                    <li><strong>네트워크 최적화</strong>: 피어 연결 수 조정</li>
+                </ul>
+            </div>
+
+            <div class="key-point">
+                <h4>애플리케이션 레이어에서</h4>
+                <ul>
+                    <li><strong>CheckTx</strong>: 빠른 기본 검증 (서명, nonce, 잔액)</li>
+                    <li><strong>PrepareProposal</strong>: 수수료 높은 순 정렬</li>
+                    <li><strong>ProcessProposal</strong>: 블록 전체 검증</li>
+                    <li><strong>FinalizeBlock</strong>: 결정론적 실행 보장</li>
+                    <li><strong>수수료 분배</strong>: 검증자/재무부로 분배</li>
+                </ul>
+            </div>
+
+            <h3>주요 개념 정리</h3>
+
+            <div class="comparison">
+                <div class="comparison-item">
+                    <h4>합의 (Consensus)</h4>
+                    <ul>
+                        <li>블록 <strong>순서</strong> 결정</li>
+                        <li>네트워크 전체 참여</li>
+                        <li>2/3 합의로 확정</li>
+                    </ul>
+                </div>
+
+                <div class="comparison-item">
+                    <h4>실행 (Execution)</h4>
+                    <ul>
+                        <li>블록 <strong>내용</strong> 처리</li>
+                        <li>각 노드 독립적 수행</li>
+                        <li>결정론적 결과 필수</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="note">
+                <h4>왜 이렇게 설계했을까?</h4>
+                <p><strong>관심사의 분리 (Separation of Concerns)</strong></p>
+                <ul>
+                    <li><strong>CometBFT</strong>: 순서 합의에만 집중 (어떤 앱이든 사용 가능)</li>
+                    <li><strong>Application</strong>: 비즈니스 로직에만 집중 (컨센서스 신경 안 써도 됨)</li>
+                    <li><strong>ABCI</strong>: 둘을 깔끔하게 분리</li>
+                </ul>
+                <p class="highlight">결과: 빠른 개발, 높은 재사용성, 쉬운 유지보수!</p>
+            </div>
+
+            <h3>다음 단계</h3>
+
+            <ol>
+                <li><strong>실습</strong>: 간단한 결제 애플리케이션 만들어보기</li>
+                <li><strong>최적화</strong>: 블록 타임, throughput 개선</li>
+                <li><strong>모니터링</strong>: Metrics, 로그 분석</li>
+                <li><strong>테스트</strong>: 네트워크 장애, Byzantine 노드 시뮬레이션</li>
+            </ol>
+
+            <div class="success">
+                <h4>축하합니다! 🎉</h4>
+                <p>CometBFT 컨센서스의 핵심을 모두 이해하셨습니다!</p>
+                <p>이제 Cosmos 기반 L1 결제 체인을 만들 준비가 되었습니다.</p>
+            </div>
+        </section>
+
+        <footer>
+            <p>Created with ❤️ for CometBFT Consensus Study</p>
+            <p>Last Updated: 2025</p>
+        </footer>
+    </div>
+</body>
+</html>

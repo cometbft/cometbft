@@ -1,9 +1,9 @@
 package coregrpc
 
 import (
+	"context"
 	"net"
 
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
 	cmtnet "github.com/cometbft/cometbft/libs/net"

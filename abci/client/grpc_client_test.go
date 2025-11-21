@@ -1,6 +1,7 @@
 package abcicli_test
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"os"
@@ -8,7 +9,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 

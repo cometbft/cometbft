@@ -1366,7 +1366,7 @@ func TestNewValidatorSetFromExistingValidators(t *testing.T) {
 	newValSet := NewValidatorSet(valSet.Validators)
 	assert.NotEqual(t, valSet, newValSet)
 
-	existingValSet, err := ValidatorSetFromExistingValidators(valSet.Validators)
+	existingValSet, err := ValidatorSetFromExistingValidators(valSet.Validators, valSet.Proposer.Address)
 	assert.NoError(t, err)
 	assert.Equal(t, valSet, existingValSet)
 	assert.Equal(t, valSet.CopyIncrementProposerPriority(3), existingValSet.CopyIncrementProposerPriority(3))

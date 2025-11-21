@@ -46,6 +46,7 @@ type ConsensusParams struct {
 	Validator ValidatorParams `json:"validator"`
 	Version   VersionParams   `json:"version"`
 	ABCI      ABCIParams      `json:"abci"`
+	Authority AuthorityParams `json:"authority"`
 }
 
 // BlockParams define limits on the block size and gas plus minimum time
@@ -90,6 +91,10 @@ func (a ABCIParams) VoteExtensionsEnabled(h int64) bool {
 	return a.VoteExtensionsEnableHeight <= h
 }
 
+type AuthorityParams struct {
+	Authority string `json:"authority"`
+}
+
 // DefaultConsensusParams returns a default ConsensusParams.
 func DefaultConsensusParams() *ConsensusParams {
 	return &ConsensusParams{
@@ -98,6 +103,7 @@ func DefaultConsensusParams() *ConsensusParams {
 		Validator: DefaultValidatorParams(),
 		Version:   DefaultVersionParams(),
 		ABCI:      DefaultABCIParams(),
+		Authority: DefaultAuthorityParams(),
 	}
 }
 
@@ -136,6 +142,12 @@ func DefaultABCIParams() ABCIParams {
 	return ABCIParams{
 		// When set to 0, vote extensions are not required.
 		VoteExtensionsEnableHeight: 0,
+	}
+}
+
+func DefaultAuthorityParams() AuthorityParams {
+	return AuthorityParams{
+		Authority: "",
 	}
 }
 

@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestStatelessMempool(t *testing.T) {
+func TestAppMempool(t *testing.T) {
 	tx := func(v string) types.Tx { return types.Tx(v) }
 
 	t.Run("InsertTx", func(t *testing.T) {
@@ -32,7 +32,7 @@ func TestStatelessMempool(t *testing.T) {
 			})
 
 			// Given mempool
-		m := NewStatelessMempool(config.DefaultMempoolConfig(), app)
+		m := NewAppMempool(config.DefaultMempoolConfig(), app)
 
 		// Given txs
 		tx1, tx2, tx3 := tx("tx1"), tx("tx2"), tx("")
@@ -73,7 +73,7 @@ func TestStatelessMempool(t *testing.T) {
 			})
 
 		// Given mempool
-		m := NewStatelessMempool(config.DefaultMempoolConfig(), app)
+		m := NewAppMempool(config.DefaultMempoolConfig(), app)
 
 		// ACT
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)

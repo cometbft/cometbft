@@ -12,24 +12,23 @@ import (
 	"github.com/pkg/errors"
 )
 
-// StatelessMempool represents a mempool that is implemented completely on the app-side via ABCI methods.
-// This entity is only responsible for receiving and broadcasting transactions between peers.
-//
-// Expectations:
+// AppMempool represents a mempool that's implemented completely on the app-side via ABCI methods in opposite to
+// concurrent-list mempool that stores transactions on comet's side. AppMempool only proxies requests to the app
+// and broadcasts transactions to peers. Expectations are:
 // - The app is expected to handle PreCheck, PostCheck, and Recheck by itself;
 // - The mempool always returns 0 txs for ReapMaxBytesMaxGas as the app is expected to build the block;
-// - It doesn't block other reactors for ABCI methods as the app is expected to handle the mempool concurrently;
-type StatelessMempool struct {
+// - It doesn't block other reactors for ABCI methods --> the app is expected to handle the mempool concurrently;
+type AppMempool struct {
 	ctx     context.Context
 	config  *config.MempoolConfig
 	metrics *Metrics
-	app     AppMempool
+	app     AppMempoolClient
 	seen    TxCache
 	logger  log.Logger
 }
 
-// AppMempool is the interface for the app-side mempool.
-type AppMempool interface {
+// AppMempoolClient is the interface for the app-side mempool.
+type AppMempoolClient interface {
 	// InsertTx inserts a tx into app-side mempool
 	InsertTx(ctx context.Context, req *abci.RequestInsertTx) (*abci.ResponseInsertTx, error)
 
@@ -40,8 +39,8 @@ type AppMempool interface {
 	Flush(context.Context) error
 }
 
-// StatelessMempoolOpt is the option for StatelessMempool
-type StatelessMempoolOpt func(*StatelessMempool)
+// AppMempoolOpt is the option for AppMempool
+type AppMempoolOpt func(*AppMempool)
 
 // todo STACK-1851: move to config
 const (
@@ -51,7 +50,7 @@ const (
 	reapInterval  = 500 * time.Millisecond
 )
 
-var _ Mempool = &StatelessMempool{}
+var _ Mempool = &AppMempool{}
 
 var (
 	ErrNotImplemented = errors.New("not implemented")
@@ -59,22 +58,22 @@ var (
 	ErrSeenTx         = errors.New("tx already seen")
 )
 
-func WithSMMetics(metrics *Metrics) StatelessMempoolOpt {
-	return func(m *StatelessMempool) { m.metrics = metrics }
+func WithSMMetics(metrics *Metrics) AppMempoolOpt {
+	return func(m *AppMempool) { m.metrics = metrics }
 }
 
-func WithSMLogger(logger log.Logger) StatelessMempoolOpt {
-	return func(m *StatelessMempool) { m.logger = logger }
+func WithSMLogger(logger log.Logger) AppMempoolOpt {
+	return func(m *AppMempool) { m.logger = logger }
 }
 
-func NewStatelessMempool(
+func NewAppMempool(
 	config *config.MempoolConfig,
-	app AppMempool,
-	opts ...StatelessMempoolOpt,
-) *StatelessMempool {
+	app AppMempoolClient,
+	opts ...AppMempoolOpt,
+) *AppMempool {
 	seen := NewLRUTxCache(seenCacheSize)
 
-	m := &StatelessMempool{
+	m := &AppMempool{
 		ctx:     context.Background(),
 		config:  config,
 		app:     app,
@@ -92,7 +91,7 @@ func NewStatelessMempool(
 
 // InsertTx inserts a tx into app-side mempool. The call is blocking, but thread-safe.
 // Concurrent calls are expected and are caller's responsibility to handle.
-func (m *StatelessMempool) InsertTx(tx types.Tx) error {
+func (m *AppMempool) InsertTx(tx types.Tx) error {
 	txSize := len(tx)
 
 	if txSize == 0 {
@@ -128,7 +127,7 @@ func (m *StatelessMempool) InsertTx(tx types.Tx) error {
 	}
 }
 
-func (m *StatelessMempool) insertTx(tx types.Tx) (uint32, error) {
+func (m *AppMempool) insertTx(tx types.Tx) (uint32, error) {
 	resp, err := m.app.InsertTx(m.ctx, &abci.RequestInsertTx{Tx: tx})
 	if err != nil {
 		if resp != nil {
@@ -142,13 +141,13 @@ func (m *StatelessMempool) insertTx(tx types.Tx) (uint32, error) {
 
 // TxStream spins up a channel that streams valid transactions from app-side mempool.
 // The expectation is that the caller would share it with other peers to gossip transactions.
-func (m *StatelessMempool) TxStream(ctx context.Context, capacity int) <-chan types.Tx {
+func (m *AppMempool) TxStream(ctx context.Context, capacity int) <-chan types.Tx {
 	ch := make(chan types.Tx, capacity)
 
 	go func() {
 		defer func() {
 			if p := recover(); p != nil {
-				m.logger.Error("panic in StatelessMempool.reapTxs", "panic", p)
+				m.logger.Error("panic in AppMempool.reapTxs", "panic", p)
 			}
 		}()
 
@@ -159,7 +158,7 @@ func (m *StatelessMempool) TxStream(ctx context.Context, capacity int) <-chan ty
 	return ch
 }
 
-func (m *StatelessMempool) reapTxs(ctx context.Context, channel chan<- types.Tx) {
+func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Tx) {
 	req := &abci.RequestReapTxs{
 		MaxBytes: reapMaxBytes,
 		MaxGas:   reapMaxGas,
@@ -171,13 +170,13 @@ func (m *StatelessMempool) reapTxs(ctx context.Context, channel chan<- types.Tx)
 	for {
 		select {
 		case <-ctx.Done():
-			m.logger.Debug("StatelessMempool.reapTxs: context done")
+			m.logger.Debug("AppMempool.reapTxs: context done")
 			return
 		case <-ticker.C:
 			// no "already reaped" logic here as the app is expected to handle it
 			res, err := m.app.ReapTxs(ctx, req)
 			if err != nil {
-				m.logger.Error("StatelessMempool.reapTxs: error reaping txs", "error", err)
+				m.logger.Error("AppMempool.reapTxs: error reaping txs", "error", err)
 				continue
 			}
 
@@ -189,7 +188,7 @@ func (m *StatelessMempool) reapTxs(ctx context.Context, channel chan<- types.Tx)
 }
 
 // FlushAppConn flushes app client (copied from CListMempool)
-func (m *StatelessMempool) FlushAppConn() error {
+func (m *AppMempool) FlushAppConn() error {
 	err := m.app.Flush(m.ctx)
 	if err != nil {
 		return ErrFlushAppConn{Err: err}
@@ -199,26 +198,26 @@ func (m *StatelessMempool) FlushAppConn() error {
 }
 
 // CheckTx returns an error on purpose for explicitness
-func (m *StatelessMempool) CheckTx(_ types.Tx, _ func(*abci.ResponseCheckTx), _ TxInfo) error {
+func (m *AppMempool) CheckTx(_ types.Tx, _ func(*abci.ResponseCheckTx), _ TxInfo) error {
 	return ErrNotImplemented
 }
 
-// Update does nothing for a stateless mempool
-func (m *StatelessMempool) Update(_ int64, _ types.Txs, _ []*abci.ExecTxResult, _ PreCheckFunc, _ PostCheckFunc) error {
+// Update does nothing for an app mempool
+func (m *AppMempool) Update(_ int64, _ types.Txs, _ []*abci.ExecTxResult, _ PreCheckFunc, _ PostCheckFunc) error {
 	return nil
 }
 
-// reading from this channel will block forever, which is fine for a stateless mempool
-func (m *StatelessMempool) TxsAvailable() <-chan struct{} { return nil }
-func (m *StatelessMempool) EnableTxsAvailable()           {}
+// reading from this channel will block forever, which is fine for an app mempool
+func (m *AppMempool) TxsAvailable() <-chan struct{} { return nil }
+func (m *AppMempool) EnableTxsAvailable()           {}
 
-func (m *StatelessMempool) Size() int        { return 0 }
-func (m *StatelessMempool) SizeBytes() int64 { return 0 }
+func (m *AppMempool) Size() int        { return 0 }
+func (m *AppMempool) SizeBytes() int64 { return 0 }
 
-func (m *StatelessMempool) ReapMaxBytesMaxGas(_, _ int64) types.Txs { return nil }
-func (m *StatelessMempool) ReapMaxTxs(_ int) types.Txs              { return nil }
-func (m *StatelessMempool) RemoveTxByKey(_ types.TxKey) error       { return nil }
-func (m *StatelessMempool) Flush()                                  {}
+func (m *AppMempool) ReapMaxBytesMaxGas(_, _ int64) types.Txs { return nil }
+func (m *AppMempool) ReapMaxTxs(_ int) types.Txs              { return nil }
+func (m *AppMempool) RemoveTxByKey(_ types.TxKey) error       { return nil }
+func (m *AppMempool) Flush()                                  {}
 
-func (m *StatelessMempool) Lock()   {}
-func (m *StatelessMempool) Unlock() {}
+func (m *AppMempool) Lock()   {}
+func (m *AppMempool) Unlock() {}

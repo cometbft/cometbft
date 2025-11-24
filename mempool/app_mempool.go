@@ -114,6 +114,7 @@ func (m *AppMempool) InsertTx(tx types.Tx) error {
 	code, err := m.insertTx(tx)
 
 	// todo (@swift1337): should we define more codes and handle them respectively?
+	// todo: remove tx from seen is app returns "is full" code --> retry later
 	switch {
 	case err != nil:
 		m.metrics.FailedTxs.Add(1)
@@ -146,13 +147,14 @@ func (m *AppMempool) TxStream(ctx context.Context, capacity int) <-chan types.Tx
 
 	go func() {
 		defer func() {
+			close(ch)
+
 			if p := recover(); p != nil {
 				m.logger.Error("panic in AppMempool.reapTxs", "panic", p)
 			}
 		}()
 
 		m.reapTxs(ctx, ch)
-		close(ch)
 	}()
 
 	return ch
@@ -167,21 +169,24 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Tx) {
 	ticker := time.NewTicker(reapInterval)
 	defer ticker.Stop()
 
-	for {
-		select {
-		case <-ctx.Done():
-			m.logger.Debug("AppMempool.reapTxs: context done")
+	for range ticker.C {
+		res, err := m.app.ReapTxs(ctx, req)
+		switch {
+		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+			m.logger.Debug("AppMempool.reapTxs: context done while reaping txs")
 			return
-		case <-ticker.C:
-			// no "already reaped" logic here as the app is expected to handle it
-			res, err := m.app.ReapTxs(ctx, req)
-			if err != nil {
-				m.logger.Error("AppMempool.reapTxs: error reaping txs", "error", err)
-				continue
-			}
+		case err != nil:
+			m.logger.Error("AppMempool.reapTxs: error reaping txs", "error", err)
+			continue
+		}
 
-			for _, tx := range res.Txs {
-				channel <- tx
+		for _, tx := range res.Txs {
+			select {
+			case <-ctx.Done():
+				m.logger.Debug("AppMempool.reapTxs: context done while streaming txs")
+				return
+			case channel <- tx:
+				// all good
 			}
 		}
 	}

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync/atomic"
 	"testing"
-	"time"
 
 	abcimock "github.com/cometbft/cometbft/abci/client/mocks"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -31,7 +30,7 @@ func TestAppMempool(t *testing.T) {
 				return &abci.ResponseInsertTx{Code: abci.CodeTypeOK}, nil
 			})
 
-			// Given mempool
+		// Given mempool
 		m := NewAppMempool(config.DefaultMempoolConfig(), app)
 
 		// Given txs
@@ -54,6 +53,11 @@ func TestAppMempool(t *testing.T) {
 	t.Run("TxStream", func(t *testing.T) {
 		// ARRANGE
 		const amount = 100
+		const callsToCancel = 4
+
+		// Given context
+		ctx, cancel := context.WithCancel(context.Background())
+		calls := atomic.Uint64{}
 
 		// Given app
 		allMempoolTxs := [][]byte{}
@@ -69,6 +73,11 @@ func TestAppMempool(t *testing.T) {
 
 				allMempoolTxs = append(allMempoolTxs, txs...)
 
+				calls.Add(1)
+				if calls.Load() == callsToCancel {
+					cancel()
+				}
+
 				return &abci.ResponseReapTxs{Txs: txs}, nil
 			})
 
@@ -76,9 +85,6 @@ func TestAppMempool(t *testing.T) {
 		m := NewAppMempool(config.DefaultMempoolConfig(), app)
 
 		// ACT
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
 		// stream txs from app
 		sink := [][]byte{}
 		ch := m.TxStream(ctx, 10)
@@ -87,6 +93,6 @@ func TestAppMempool(t *testing.T) {
 			sink = append(sink, []byte(tx))
 		}
 
-		require.Equal(t, allMempoolTxs, sink)
+		require.Subset(t, allMempoolTxs, sink)
 	})
 }

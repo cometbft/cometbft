@@ -147,7 +147,7 @@ func DefaultABCIParams() ABCIParams {
 
 func DefaultAuthorityParams() AuthorityParams {
 	return AuthorityParams{
-		Authority: "",
+		Authority: "gov", // TODO: vlad to change this to an actual module address
 	}
 }
 
@@ -339,6 +339,9 @@ func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) Consensu
 	if params2.Abci != nil {
 		res.ABCI.VoteExtensionsEnableHeight = params2.Abci.GetVoteExtensionsEnableHeight()
 	}
+	if params2.Authority != nil {
+		res.Authority.Authority = params2.Authority.Authority
+	}
 	return res
 }
 
@@ -361,6 +364,9 @@ func (params *ConsensusParams) ToProto() cmtproto.ConsensusParams {
 		},
 		Abci: &cmtproto.ABCIParams{
 			VoteExtensionsEnableHeight: params.ABCI.VoteExtensionsEnableHeight,
+		},
+		Authority: &cmtproto.AuthorityParams{
+			Authority: params.Authority.Authority,
 		},
 	}
 }

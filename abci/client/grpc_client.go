@@ -198,6 +198,14 @@ func (cli *grpcClient) CheckTx(ctx context.Context, req *types.RequestCheckTx) (
 	return cli.client.CheckTx(ctx, req, grpc.WaitForReady(true))
 }
 
+func (cli *grpcClient) InsertTx(ctx context.Context, req *types.RequestInsertTx) (*types.ResponseInsertTx, error) {
+	return cli.client.InsertTx(ctx, req, grpc.WaitForReady(true))
+}
+
+func (cli *grpcClient) ReapTxs(ctx context.Context, req *types.RequestReapTxs) (*types.ResponseReapTxs, error) {
+	return cli.client.ReapTxs(ctx, req, grpc.WaitForReady(true))
+}
+
 func (cli *grpcClient) Query(ctx context.Context, req *types.RequestQuery) (*types.ResponseQuery, error) {
 	return cli.client.Query(ctx, types.ToRequestQuery(req).GetQuery(), grpc.WaitForReady(true))
 }

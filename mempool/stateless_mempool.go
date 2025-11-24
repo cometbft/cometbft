@@ -3,6 +3,7 @@ package mempool
 import (
 	"context"
 	"fmt"
+	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
@@ -42,6 +43,14 @@ type AppMempool interface {
 // StatelessMempoolOpt is the option for StatelessMempool
 type StatelessMempoolOpt func(*StatelessMempool)
 
+// todo STACK-1851: move to config
+const (
+	seenCacheSize = 100_000
+	reapMaxBytes  = 0
+	reapMaxGas    = 0
+	reapInterval  = 500 * time.Millisecond
+)
+
 var _ Mempool = &StatelessMempool{}
 
 var (
@@ -63,9 +72,6 @@ func NewStatelessMempool(
 	app AppMempool,
 	opts ...StatelessMempoolOpt,
 ) *StatelessMempool {
-	// todo STACK-1851: move to config
-	const seenCacheSize = 100_000
-
 	seen := NewLRUTxCache(seenCacheSize)
 
 	m := &StatelessMempool{
@@ -136,9 +142,50 @@ func (m *StatelessMempool) insertTx(tx types.Tx) (uint32, error) {
 
 // TxStream spins up a channel that streams valid transactions from app-side mempool.
 // The expectation is that the caller would share it with other peers to gossip transactions.
-func (m *StatelessMempool) TxStream(ctx context.Context) <-chan types.Tx {
-	// todo fire goroutine
-	return nil
+func (m *StatelessMempool) TxStream(ctx context.Context, capacity int) <-chan types.Tx {
+	ch := make(chan types.Tx, capacity)
+
+	go func() {
+		defer func() {
+			if p := recover(); p != nil {
+				m.logger.Error("panic in StatelessMempool.reapTxs", "panic", p)
+			}
+		}()
+
+		m.reapTxs(ctx, ch)
+		close(ch)
+	}()
+
+	return ch
+}
+
+func (m *StatelessMempool) reapTxs(ctx context.Context, channel chan<- types.Tx) {
+	req := &abci.RequestReapTxs{
+		MaxBytes: reapMaxBytes,
+		MaxGas:   reapMaxGas,
+	}
+
+	ticker := time.NewTicker(reapInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			m.logger.Debug("StatelessMempool.reapTxs: context done")
+			return
+		case <-ticker.C:
+			// no "already reaped" logic here as the app is expected to handle it
+			res, err := m.app.ReapTxs(ctx, req)
+			if err != nil {
+				m.logger.Error("StatelessMempool.reapTxs: error reaping txs", "error", err)
+				continue
+			}
+
+			for _, tx := range res.Txs {
+				channel <- tx
+			}
+		}
+	}
 }
 
 // FlushAppConn flushes app client (copied from CListMempool)

@@ -2,7 +2,6 @@ package lp2p
 
 import (
 	"fmt"
-	"sync/atomic"
 	"time"
 
 	"github.com/cometbft/cometbft/lp2p/autopool"
@@ -22,8 +21,6 @@ type reactorSet struct {
 
 	// [protocol_id => reactorProtocol] mapping
 	protocols map[protocol.ID]reactorProtocol
-
-	sequence atomic.Uint64
 }
 
 // reactorItem p2p.Reactor wrapper
@@ -45,7 +42,6 @@ type pendingEnvelope struct {
 	p2p.Envelope
 	messageType string
 	addedAt     time.Time
-	sequence    uint64
 }
 
 func newReactorSet(switchRef *Switch) *reactorSet {
@@ -200,7 +196,6 @@ func (rs *reactorSet) Receive(reactorName, messageType string, envelope p2p.Enve
 		Envelope:    envelope,
 		messageType: messageType,
 		addedAt:     now,
-		sequence:    rs.sequence.Add(1),
 	}
 
 	err := reactor.priorityQueue.Push(pq, priority)
@@ -213,7 +208,6 @@ func (rs *reactorSet) Receive(reactorName, messageType string, envelope p2p.Enve
 		"Envelope pushed to priority queue",
 		"reactor", reactorName,
 		"message_type", messageType,
-		"sequence", pq.sequence,
 	)
 }
 
@@ -229,7 +223,6 @@ func (rs *reactorSet) receiveQueued(reactorID int, e pendingEnvelope) {
 		"Receiving envelope",
 		"reactor", reactor.name,
 		"message_type", e.messageType,
-		"sequence", e.sequence,
 	)
 
 	reactor.Receive(e.Envelope)

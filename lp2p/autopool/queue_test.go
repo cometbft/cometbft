@@ -1,4 +1,4 @@
-package queue
+package autopool
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 )
 
 func TestQueue(t *testing.T) {
-	q := New()
+	q := NewQueue()
 
 	q.Push(1)
 	q.Push(2)

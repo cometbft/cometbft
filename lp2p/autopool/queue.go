@@ -1,4 +1,4 @@
-package queue
+package autopool
 
 import (
 	"container/list"
@@ -16,7 +16,7 @@ type Queue struct {
 var ErrPriority = errors.New("invalid priority")
 
 // New Queue constructor.
-func New() *Queue {
+func NewQueue() *Queue {
 	return &Queue{
 		list: list.New(),
 		mu:   sync.RWMutex{},
@@ -70,7 +70,7 @@ func NewPriorityQueue(priorities int) *PriorityQueue {
 
 	queues := make([]*Queue, 0, priorities)
 	for i := 0; i < priorities; i++ {
-		queues = append(queues, New())
+		queues = append(queues, NewQueue())
 	}
 
 	return &PriorityQueue{

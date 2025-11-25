@@ -8,11 +8,13 @@ import (
 )
 
 // Pool primitive auto-scaling pool for concurrent message processing.
-// It accepts a function to process messages and scales
-// the number of workers dynamically based on the message processing time.
+// It accepts a function to process messages and scales the number of workers
+// dynamically based on the message processing time. It also supports priority-based message processing.
 type Pool[T any] struct {
 	// processing channel for messages
-	ch chan T
+	inbound chan T
+
+	priorityQueue *PriorityQueue
 
 	// consumer function that is used to process messages
 	receive func(T)
@@ -48,6 +50,10 @@ func WithLogger[T any](logger log.Logger) Option[T] {
 	return func(p *Pool[T]) { p.logger = logger }
 }
 
+func WithPriorityQueue[T any](pq *PriorityQueue) Option[T] {
+	return func(p *Pool[T]) { p.priorityQueue = pq }
+}
+
 func WithOnScale[T any](onScale func()) Option[T] {
 	return func(p *Pool[T]) { p.onScale = onScale }
 }
@@ -67,17 +73,21 @@ func New[T any](
 	capacity int,
 	opts ...Option[T],
 ) *Pool[T] {
+	const defaultPriorities = 10
+
 	pool := &Pool[T]{
-		ch:        make(chan T, capacity),
-		receive:   receiveFN,
-		scaler:    scaler,
-		workers:   make(map[int]*worker[T]),
-		workersWg: sync.WaitGroup{},
-		onScale:   nil,
-		onShrink:  nil,
-		stopped:   false,
-		mu:        sync.RWMutex{},
-		logger:    log.NewNopLogger(),
+		inbound:       make(chan T, capacity),
+		receive:       receiveFN,
+		scaler:        scaler,
+		workers:       make(map[int]*worker[T]),
+		workersWg:     sync.WaitGroup{},
+		onScale:       nil,
+		onShrink:      nil,
+		onStay:        nil,
+		stopped:       false,
+		priorityQueue: NewPriorityQueue(defaultPriorities),
+		mu:            sync.RWMutex{},
+		logger:        log.NewNopLogger(),
 	}
 
 	for _, opt := range opts {
@@ -91,11 +101,17 @@ func (p *Pool[T]) Start() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	// already started or stopped
+	if len(p.workers) > 0 || p.stopped {
+		return
+	}
+
 	for i := 0; i < p.scaler.Min(); i++ {
 		p.scale()
 	}
 
 	go p.monitor()
+	go p.pipePriorityQueue()
 }
 
 // Stop stops the pool and all workers
@@ -121,18 +137,39 @@ func (p *Pool[T]) Stop() {
 	p.logger.Info("Waiting for workers to finish")
 	p.workersWg.Wait()
 	p.stopped = true
-	close(p.ch)
+	close(p.inbound)
 }
 
+// Push adds a message directly to the pool FIFO queue.
+// Blocks if the queue is full.
 func (p *Pool[T]) Push(msg T) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
 	if p.stopped {
+		p.logger.Error("Cannot push a message to a stopped pool (Push)")
 		return
 	}
 
-	p.ch <- msg
+	p.inbound <- msg
+}
+
+// PushPriority adds a message to the priority queue first.
+// Not blocking as priority queue is a linked-list
+func (p *Pool[T]) PushPriority(msg T, priority int) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	if p.stopped {
+		p.logger.Error("Cannot push a message to a stopped pool (PushPriority)")
+		return
+	}
+
+	err := p.priorityQueue.Push(msg, priority)
+	if err != nil {
+		p.logger.Error("Cannot push a message to a priority queue (PushPriority)", "err", err)
+		return
+	}
 }
 
 func (p *Pool[T]) Len() int {
@@ -143,7 +180,7 @@ func (p *Pool[T]) Len() int {
 		return 0
 	}
 
-	return len(p.ch)
+	return len(p.inbound)
 }
 
 func (p *Pool[T]) Cap() int {
@@ -154,7 +191,7 @@ func (p *Pool[T]) Cap() int {
 		return 0
 	}
 
-	return cap(p.ch)
+	return cap(p.inbound)
 }
 
 func (w *worker[T]) run() {
@@ -172,7 +209,7 @@ func (w *worker[T]) run() {
 		case <-w.closeCh:
 			// worker received a close signal
 			return
-		case msg, ok := <-w.pool.ch:
+		case msg, ok := <-w.pool.inbound:
 			// channel is closed for all workers, stop the whole pool
 			if !ok {
 				w.pool.Stop()
@@ -193,6 +230,7 @@ func (p *Pool[T]) handleMessage(msg T) {
 	p.scaler.Track(timeTaken)
 }
 
+// monitor the pool and autoscale it based on the load
 func (p *Pool[T]) monitor() {
 	ticker := time.NewTicker(p.scaler.EpochDuration())
 	defer ticker.Stop()
@@ -212,7 +250,7 @@ func (p *Pool[T]) autoscale() (exit bool) {
 		return true
 	}
 
-	decision := p.scaler.Decide(len(p.workers), len(p.ch), cap(p.ch))
+	decision := p.scaler.Decide(len(p.workers), len(p.inbound), cap(p.inbound))
 
 	switch decision {
 	case ShouldScale:
@@ -283,4 +321,25 @@ func (p *Pool[T]) removeWorker(id int) {
 	// send close signal to worker
 	close(w.closeCh)
 	delete(p.workers, id)
+}
+
+// pipePriorityQueue pipes messages from the priority queue to the inbound channel
+func (p *Pool[T]) pipePriorityQueue() {
+	for {
+		value, ok := p.priorityQueue.Pop()
+		if !ok {
+			// todo: improve this
+			time.Sleep(10 * time.Millisecond)
+			continue
+		}
+
+		tt, ok := value.(T)
+		if !ok {
+			// should never happen
+			panic("unexpected type in priority queue")
+		}
+
+		// todo: handle closed channel
+		p.inbound <- tt
+	}
 }

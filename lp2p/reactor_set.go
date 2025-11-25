@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/lp2p/autopool"
-	"github.com/cometbft/cometbft/lp2p/queue"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/libp2p/go-libp2p/core/protocol"
 )
@@ -27,8 +26,7 @@ type reactorSet struct {
 type reactorItem struct {
 	p2p.Reactor
 	name          string
-	priorityQueue *queue.PriorityQueue
-	consumerPool  *autopool.Pool[pendingEnvelope]
+	consumerQueue *autopool.Pool[pendingEnvelope]
 }
 
 // reactorProtocol represents mapping between [reactor, protocol, comet's channel descriptor]
@@ -80,13 +78,10 @@ func (rs *reactorSet) Add(reactor p2p.Reactor, name string) error {
 		}
 	}
 
-	priorityQueue, consumerPool := rs.newReactorPriorityQueue(nextID, name)
-
 	rs.reactors = append(rs.reactors, reactorItem{
 		Reactor:       reactor,
 		name:          name,
-		priorityQueue: priorityQueue,
-		consumerPool:  consumerPool,
+		consumerQueue: rs.newReactorPriorityQueue(nextID, name),
 	})
 
 	// add name to mapping
@@ -107,7 +102,7 @@ func (rs *reactorSet) Start(perProtocolCallback func(protocol.ID)) error {
 			return fmt.Errorf("failed to start reactor %s: %w", reactor.name, err)
 		}
 
-		reactor.consumerPool.Start()
+		reactor.consumerQueue.Start()
 	}
 
 	for protocolID := range rs.protocols {
@@ -119,7 +114,7 @@ func (rs *reactorSet) Start(perProtocolCallback func(protocol.ID)) error {
 
 func (rs *reactorSet) Stop() {
 	for _, reactor := range rs.reactors {
-		reactor.consumerPool.Stop()
+		reactor.consumerQueue.Stop()
 
 		rs.switchRef.Logger.Info("Stopping reactor", "reactor", reactor.name)
 		if err := reactor.Stop(); err != nil {
@@ -198,7 +193,7 @@ func (rs *reactorSet) Receive(reactorName, messageType string, envelope p2p.Enve
 		addedAt:     now,
 	}
 
-	err := reactor.priorityQueue.Push(pq, priority)
+	err := reactor.consumerQueue.PushPriority(pq, priority)
 	if err != nil {
 		rs.switchRef.metrics.MessagesReactorInFlight.With(labels...).Add(-1)
 		rs.switchRef.Logger.Error("Failed to push envelope to priority queue", "reactor", reactorName, "err", err)
@@ -236,54 +231,35 @@ func (rs *reactorSet) receiveQueued(reactorID int, e pendingEnvelope) {
 // newReactorPriorityQueue creates a consumer pool for reactor.Receive()
 // It allows to dynamically adjust consumption concurrency based on the load,
 // while maintaining the priority, order, and latency of messages.
-func (rs *reactorSet) newReactorPriorityQueue(
-	reactorID int,
-	reactorName string,
-) (*queue.PriorityQueue, *autopool.Pool[pendingEnvelope]) {
-	// 1. create a priority queue for inbound messages (priority linked-list)
-	// all new messages will be published here first ordered by priority and then by arrival time (FIFO)
-	// cometbft has up to 10 priorities
-	const priorities = 10
-	priorityQueue := queue.NewPriorityQueue(priorities)
+func (rs *reactorSet) newReactorPriorityQueue(reactorID int, reactorName string) *autopool.Pool[pendingEnvelope] {
+	const (
+		// variety of priorities (cometbft has up to 10)
+		priorities = 10
 
-	// 2. create a queue for message processing (chan)
-	// messages from the first queue will be published here for concurrent processing
-	const concurrentPoolCapacity = 512
+		// capacity of the concurrent pool (messages in flight)
+		// others will be queued in the priority queue first (FIFO)
+		concurrentPoolCapacity = 512
+	)
 
-	poolQueue := make(chan pendingEnvelope, concurrentPoolCapacity)
+	concurrencyCounter := rs.
+		switchRef.metrics.MessageReactorQueueConcurrency.
+		With("reactor", reactorName)
 
-	// 3. create a pipe from priority queue to the pool queue
-	pipeStopCh := pipeQueues(priorityQueue, poolQueue)
-
-	stopChannels := func() {
-		// will be called only once
-		close(pipeStopCh)
-		close(poolQueue)
-	}
-
-	// 4. create a scaler for the pool
-	scaler := rs.newReactorScaler(reactorName)
-
-	concurrencyCounter := rs.switchRef.metrics.MessageReactorQueueConcurrency.With("reactor", reactorName)
-
-	// 5. create a pool for message processing
-	pool := autopool.New(
-		scaler,
-		poolQueue,
+	return autopool.New(
+		rs.newReactorScaler(reactorName),
 		func(e pendingEnvelope) {
 			rs.receiveQueued(reactorID, e)
 		},
-		rs.switchRef.Logger,
+		concurrentPoolCapacity,
+		autopool.WithLogger[pendingEnvelope](rs.switchRef.Logger),
 		autopool.WithOnScale[pendingEnvelope](func() {
 			concurrencyCounter.Add(1)
 		}),
 		autopool.WithOnShrink[pendingEnvelope](func() {
 			concurrencyCounter.Add(-1)
 		}),
-		autopool.WithOnStop[pendingEnvelope](stopChannels),
+		autopool.WithPriorityQueue[pendingEnvelope](autopool.NewPriorityQueue(priorities)),
 	)
-
-	return priorityQueue, pool
 }
 
 func (rs *reactorSet) newReactorScaler(reactorName string) *autopool.ThroughputLatencyScaler {
@@ -310,35 +286,4 @@ func (rs *reactorSet) newReactorScaler(reactorName string) *autopool.ThroughputL
 		autoScaleInterval,
 		rs.switchRef.Logger,
 	)
-}
-
-func pipeQueues(producer *queue.PriorityQueue, consumer chan pendingEnvelope) chan struct{} {
-	stop := make(chan struct{})
-
-	go func() {
-		for {
-			value, ok := producer.Pop()
-			if !ok {
-				time.Sleep(10 * time.Millisecond)
-				continue
-			}
-
-			pe, ok := value.(pendingEnvelope)
-			if !ok {
-				// should never happen
-				panic("unexpected type in priority queue")
-			}
-
-			select {
-			case <-stop:
-				// stop chan called before consumer close
-				return
-			default:
-			}
-
-			consumer <- pe
-		}
-	}()
-
-	return stop
 }

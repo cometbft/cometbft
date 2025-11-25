@@ -179,6 +179,7 @@ func TestPool(t *testing.T) {
 			)
 
 			// simulate async push
+			//nolint:errcheck // test
 			go pool.PushPriority(value, priority)
 		}
 

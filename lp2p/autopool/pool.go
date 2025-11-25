@@ -155,21 +155,9 @@ func (p *Pool[T]) Push(msg T) {
 }
 
 // PushPriority adds a message to the priority queue first.
-// Not blocking as priority queue is a linked-list
-func (p *Pool[T]) PushPriority(msg T, priority int) {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-
-	if p.stopped {
-		p.logger.Error("Cannot push a message to a stopped pool (PushPriority)")
-		return
-	}
-
-	err := p.priorityQueue.Push(msg, priority)
-	if err != nil {
-		p.logger.Error("Cannot push a message to a priority queue (PushPriority)", "err", err)
-		return
-	}
+// Non-blocking as priority queue is a linked-list
+func (p *Pool[T]) PushPriority(msg T, priority int) error {
+	return p.priorityQueue.Push(msg, priority)
 }
 
 func (p *Pool[T]) Len() int {

@@ -166,29 +166,33 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Tx) {
 		MaxGas:   reapMaxGas,
 	}
 
-	ticker := time.NewTicker(reapInterval)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		res, err := m.app.ReapTxs(ctx, req)
-		switch {
-		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
-			m.logger.Debug("AppMempool.reapTxs: context done while reaping txs")
+	for {
+		select {
+		case <-ctx.Done():
+			m.logger.Debug("AppMempool.reapTxs: context is done")
 			return
-		case err != nil:
-			m.logger.Error("AppMempool.reapTxs: error reaping txs", "error", err)
-			continue
-		}
-
-		for _, tx := range res.Txs {
-			select {
-			case <-ctx.Done():
-				m.logger.Debug("AppMempool.reapTxs: context done while streaming txs")
+		case <-time.After(reapInterval):
+			res, err := m.app.ReapTxs(ctx, req)
+			switch {
+			case isErrCtx(err):
+				m.logger.Debug("AppMempool.reapTxs: context done while reaping txs")
 				return
-			case channel <- tx:
-				// all good
+			case err != nil:
+				m.logger.Error("AppMempool.reapTxs: error reaping txs", "error", err)
+				continue
+			}
+
+			for _, tx := range res.Txs {
+				select {
+				case <-ctx.Done():
+					m.logger.Debug("AppMempool.reapTxs: context done while sending txs")
+					return
+				case channel <- tx:
+					// all good
+				}
 			}
 		}
+
 	}
 }
 
@@ -226,3 +230,11 @@ func (m *AppMempool) Flush()                                  {}
 
 func (m *AppMempool) Lock()   {}
 func (m *AppMempool) Unlock() {}
+
+func isErrCtx(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
+}

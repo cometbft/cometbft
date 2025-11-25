@@ -147,7 +147,7 @@ func DefaultABCIParams() ABCIParams {
 
 func DefaultAuthorityParams() AuthorityParams {
 	return AuthorityParams{
-		Authority: "gov", // TODO: vlad to change this to an actual module address
+		Authority: "gov", // TODO: vlad to change this to an actual module address or to empty
 	}
 }
 

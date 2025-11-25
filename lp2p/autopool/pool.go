@@ -8,11 +8,11 @@ import (
 )
 
 // Pool primitive auto-scaling pool for concurrent message processing.
-// It accepts a channel of messages and a function to process them and scales
+// It accepts a function to process messages and scales
 // the number of workers dynamically based on the message processing time.
 type Pool[T any] struct {
-	// channel what is used to consume messages
-	ch <-chan T
+	// processing channel for messages
+	ch chan T
 
 	// consumer function that is used to process messages
 	receive func(T)
@@ -29,9 +29,8 @@ type Pool[T any] struct {
 	onScale  func()
 	onShrink func()
 	onStay   func()
-	onStop   func()
 
-	mu      sync.Mutex
+	mu      sync.RWMutex
 	stopped bool
 
 	logger log.Logger
@@ -45,6 +44,10 @@ type worker[T any] struct {
 
 type Option[T any] func(*Pool[T])
 
+func WithLogger[T any](logger log.Logger) Option[T] {
+	return func(p *Pool[T]) { p.logger = logger }
+}
+
 func WithOnScale[T any](onScale func()) Option[T] {
 	return func(p *Pool[T]) { p.onScale = onScale }
 }
@@ -57,20 +60,15 @@ func WithOnStay[T any](onStay func()) Option[T] {
 	return func(p *Pool[T]) { p.onStay = onStay }
 }
 
-func WithOnStop[T any](onStop func()) Option[T] {
-	return func(p *Pool[T]) { p.onStop = onStop }
-}
-
 // New Pool constructor.
 func New[T any](
 	scaler *ThroughputLatencyScaler,
-	producer <-chan T,
 	receiveFN func(T),
-	logger log.Logger,
+	capacity int,
 	opts ...Option[T],
 ) *Pool[T] {
 	pool := &Pool[T]{
-		ch:        producer,
+		ch:        make(chan T, capacity),
 		receive:   receiveFN,
 		scaler:    scaler,
 		workers:   make(map[int]*worker[T]),
@@ -78,8 +76,8 @@ func New[T any](
 		onScale:   nil,
 		onShrink:  nil,
 		stopped:   false,
-		mu:        sync.Mutex{},
-		logger:    logger,
+		mu:        sync.RWMutex{},
+		logger:    log.NewNopLogger(),
 	}
 
 	for _, opt := range opts {
@@ -110,10 +108,6 @@ func (p *Pool[T]) Stop() {
 		return
 	}
 
-	if p.onStop != nil {
-		p.onStop()
-	}
-
 	// collect all ids to avoid map loop-and-delete
 	workerIDs := make([]int, 0, len(p.workers))
 	for id := range p.workers {
@@ -127,6 +121,40 @@ func (p *Pool[T]) Stop() {
 	p.logger.Info("Waiting for workers to finish")
 	p.workersWg.Wait()
 	p.stopped = true
+	close(p.ch)
+}
+
+func (p *Pool[T]) Push(msg T) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	if p.stopped {
+		return
+	}
+
+	p.ch <- msg
+}
+
+func (p *Pool[T]) Len() int {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	if p.stopped {
+		return 0
+	}
+
+	return len(p.ch)
+}
+
+func (p *Pool[T]) Cap() int {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	if p.stopped {
+		return 0
+	}
+
+	return cap(p.ch)
 }
 
 func (w *worker[T]) run() {

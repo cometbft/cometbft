@@ -114,14 +114,17 @@ func (m *AppMempool) InsertTx(tx types.Tx) error {
 	code, err := m.insertTx(tx)
 
 	// todo (@swift1337): should we define more codes and handle them respectively?
-	// todo: remove tx from seen is app returns "is full" code --> retry later
 	switch {
 	case err != nil:
 		m.metrics.FailedTxs.Add(1)
-		return errors.Wrapf(err, "unable to insert tx (tx_hash=%x, code=%d)", tx.Hash(), code)
+		return wrapErrCode("unable to insert tx", code, err)
+	case codeRetry(code):
+		// drop tx from seen cache (to retry later), but still return the error
+		m.seen.Remove(tx)
+		fallthrough
 	case code != abci.CodeTypeOK:
 		m.metrics.RejectedTxs.Add(1)
-		return fmt.Errorf("invalid code: %d", code)
+		return wrapErrCode("invalid code", code, err)
 	default:
 		m.metrics.TxSizeBytes.Observe(float64(txSize))
 		return nil
@@ -237,4 +240,16 @@ func isErrCtx(err error) bool {
 	}
 
 	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
+}
+
+func codeRetry(code uint32) bool {
+	return code >= abci.CodeTypeRetry
+}
+
+func wrapErrCode(msg string, code uint32, err error) error {
+	if err == nil {
+		return fmt.Errorf("%s: (code=%d)", msg, code)
+	}
+
+	return errors.Wrapf(err, "%s: (code=%d)", msg, code)
 }

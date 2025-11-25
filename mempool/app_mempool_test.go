@@ -25,7 +25,12 @@ func TestAppMempool(t *testing.T) {
 		app := abcimock.NewClient(t)
 		app.
 			On("InsertTx", mock.Anything, mock.Anything).
-			Return(func(_ context.Context, _ *abci.RequestInsertTx) (*abci.ResponseInsertTx, error) {
+			Return(func(_ context.Context, req *abci.RequestInsertTx) (*abci.ResponseInsertTx, error) {
+				if string(req.Tx) == "fail" {
+					t.Logf("returning retryable error")
+					return &abci.ResponseInsertTx{Code: abci.CodeTypeRetry}, nil
+				}
+
 				added.Add(1)
 				return &abci.ResponseInsertTx{Code: abci.CodeTypeOK}, nil
 			})
@@ -34,19 +39,25 @@ func TestAppMempool(t *testing.T) {
 		m := NewAppMempool(config.DefaultMempoolConfig(), app)
 
 		// Given txs
-		tx1, tx2, tx3 := tx("tx1"), tx("tx2"), tx("")
+		txs := []types.Tx{tx("tx1"), tx("tx2"), tx(""), tx("fail")}
 
 		// ACT
-		err1 := m.InsertTx(tx1)
-		err2 := m.InsertTx(tx2)
-		err3 := m.InsertTx(tx1) // seen tx
-		err4 := m.InsertTx(tx3) // empty tx
+		err1 := m.InsertTx(txs[0])
+		err2 := m.InsertTx(txs[1])
+		err3 := m.InsertTx(txs[0]) // seen tx
+		err4 := m.InsertTx(txs[2]) // empty tx
+		err5 := m.InsertTx(txs[3]) // retryable error
 
 		// ASSERT
 		require.NoError(t, err1)
 		require.NoError(t, err2)
+
 		require.ErrorIs(t, err3, ErrSeenTx)
 		require.ErrorIs(t, err4, ErrEmptyTx)
+
+		require.ErrorContains(t, err5, "invalid code: (code=32000)")
+		require.False(t, m.seen.Has(txs[3]), "should be removed from seen cache")
+
 		require.Equal(t, uint64(2), added.Load())
 	})
 

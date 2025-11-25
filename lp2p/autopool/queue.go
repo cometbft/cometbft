@@ -115,6 +115,7 @@ func (q *PriorityQueue) Pop() (any, bool) {
 	return nil, false
 }
 
+// updateHighestNonEmpty for empty PriorityQueue it will set highestNonEmptyLevel to -1
 func (q *PriorityQueue) updateHighestNonEmpty(lastLevel int) {
 	// noop
 	if q.levels[lastLevel].Len() > 0 {

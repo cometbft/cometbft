@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cometbft/cometbft/crypto"
+
 	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
@@ -147,7 +149,7 @@ func DefaultABCIParams() ABCIParams {
 
 func DefaultAuthorityParams() AuthorityParams {
 	return AuthorityParams{
-		Authority: "gov", // TODO: vlad to change this to an actual module address or to empty
+		Authority: crypto.AddressHash([]byte("gov")).String(),
 	}
 }
 

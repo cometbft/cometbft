@@ -224,6 +224,13 @@ func (params ConsensusParams) ValidateBasic() error {
 		}
 	}
 
+	// Validate Authority params
+	const maxAuthorityLength = 256
+	if len(params.Authority.Authority) > maxAuthorityLength {
+		return fmt.Errorf("authority exceeds maximum length of %d characters (got %d)",
+			maxAuthorityLength, len(params.Authority.Authority))
+	}
+
 	return nil
 }
 
@@ -393,6 +400,9 @@ func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams
 	}
 	if pbParams.Abci != nil {
 		c.ABCI.VoteExtensionsEnableHeight = pbParams.Abci.GetVoteExtensionsEnableHeight()
+	}
+	if pbParams.Authority != nil {
+		c.Authority.Authority = pbParams.Authority.Authority
 	}
 	return c
 }

@@ -98,9 +98,9 @@ func (m *AppMempool) InsertTx(tx types.Tx) error {
 		return ErrEmptyTx
 	}
 
-	if m.config.MaxBatchBytes > 0 && txSize > m.config.MaxBatchBytes {
+	if m.config.MaxTxBytes > 0 && txSize > m.config.MaxTxBytes {
 		return ErrTxTooLarge{
-			Max:    m.config.MaxBatchBytes,
+			Max:    m.config.MaxTxBytes,
 			Actual: txSize,
 		}
 	}

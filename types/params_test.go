@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/cometbft/cometbft/crypto"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
@@ -162,6 +163,17 @@ func TestConsensusParamsUpdate_AppVersion(t *testing.T) {
 		&cmtproto.ConsensusParams{Version: &cmtproto.VersionParams{App: 1}})
 
 	assert.EqualValues(t, 1, updated.Version.App)
+}
+
+func TestConsensusParamsUpdate_Authority(t *testing.T) {
+	params := makeParams(1, 2, 3, 0, valEd25519, 0, "")
+
+	assert.Equal(t, crypto.AddressHash([]byte("gov")).String(), params.Authority.Authority)
+
+	updated := params.Update(
+		&cmtproto.ConsensusParams{Authority: &cmtproto.AuthorityParams{Authority: "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"}})
+
+	assert.Equal(t, "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn", updated.Authority.Authority)
 }
 
 func TestConsensusParamsUpdate_VoteExtensionsEnableHeight(t *testing.T) {

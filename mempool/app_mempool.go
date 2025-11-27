@@ -58,11 +58,11 @@ var (
 	ErrSeenTx         = errors.New("tx already seen")
 )
 
-func WithSMMetics(metrics *Metrics) AppMempoolOpt {
+func WithAMMetrics(metrics *Metrics) AppMempoolOpt {
 	return func(m *AppMempool) { m.metrics = metrics }
 }
 
-func WithSMLogger(logger log.Logger) AppMempoolOpt {
+func WithAMLogger(logger log.Logger) AppMempoolOpt {
 	return func(m *AppMempool) { m.logger = logger }
 }
 

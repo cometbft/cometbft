@@ -862,7 +862,7 @@ func (cfg *MempoolConfig) WalEnabled() bool {
 // returns an error if any check fails.
 func (cfg *MempoolConfig) ValidateBasic() error {
 	switch cfg.Type {
-	case MempoolTypeFlood, MempoolTypeNop:
+	case MempoolTypeFlood, MempoolTypeApp, MempoolTypeNop:
 	case "": // allow empty string to be backwards compatible
 	default:
 		return fmt.Errorf("unknown mempool type: %q", cfg.Type)

@@ -45,6 +45,7 @@ const (
 
 	MempoolTypeFlood = "flood"
 	MempoolTypeNop   = "nop"
+	MempoolTypeApp   = "app"
 
 	v0 = "v0"
 	v1 = "v1"
@@ -753,6 +754,7 @@ type MempoolConfig struct {
 	//  - "nop"   : nop-mempool (short for no operation; the ABCI app is
 	//  responsible for storing, disseminating and proposing txs).
 	//  "create_empty_blocks=false" is not supported.
+	//  - "app"   : app-side mempool (the ABCI app is responsible for mempool, comet only broadcasts txs).
 	Type string `mapstructure:"type"`
 	// RootDir is the root directory for all data. This should be configured via
 	// the $CMTHOME env variable or --home cmd flag rather than overriding this

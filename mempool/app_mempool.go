@@ -71,6 +71,8 @@ func NewAppMempool(
 	app AppMempoolClient,
 	opts ...AppMempoolOpt,
 ) *AppMempool {
+	// cache to avoid receiving the same txs from other peers.
+	// we should add TTL w/ eviction policy.
 	seen := NewLRUTxCache(seenCacheSize)
 
 	m := &AppMempool{
@@ -190,12 +192,23 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Txs) {
 				continue
 			}
 
+			txs := types.ToTxs(res.Txs)
+
 			select {
 			case <-ctx.Done():
 				m.logger.Debug("AppMempool.reapTxs: context done while streaming txs")
 				return
-			case channel <- types.ToTxs(res.Txs):
+			case channel <- txs:
 				// all good
+			}
+
+			// avoid receiving these txs again from other peers.
+			for _, tx := range txs {
+				if m.seen.Has(tx) {
+					continue
+				}
+
+				m.seen.Push(tx)
 			}
 		}
 	}

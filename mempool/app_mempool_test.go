@@ -98,10 +98,10 @@ func TestAppMempool(t *testing.T) {
 		// ACT
 		// stream txs from app
 		sink := [][]byte{}
-		ch := m.TxStream(ctx, 10)
+		ch := m.TxStream(ctx)
 
-		for tx := range ch {
-			sink = append(sink, []byte(tx))
+		for txs := range ch {
+			sink = append(sink, txs.ToSliceOfBytes()...)
 		}
 
 		require.Subset(t, allMempoolTxs, sink)

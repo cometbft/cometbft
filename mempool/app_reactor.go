@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sync/atomic"
-	"time"
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/p2p"
@@ -79,10 +78,7 @@ func (r *AppReactor) OnStart() error {
 			maxBatchSizeBytes = r.config.MaxBatchBytes
 		}
 
-		// safe default, could be moved to config
-		const batchWindow = 200 * time.Millisecond
-
-		r.broadcastTransactionsBatch(r.ctx, maxBatchSizeBytes, batchWindow)
+		r.broadcastTransactionsBatch(r.ctx, maxBatchSizeBytes)
 
 		r.Logger.Info("Broadcast routine stopped")
 	}()
@@ -176,65 +172,19 @@ func (r *AppReactor) insertTx(peerID p2p.ID, tx types.Tx) {
 // accumulates them in batches and broadcasts them to all connected peers.
 // Previously batching was disabled.
 // @see https://github.com/tendermint/tendermint/issues/5796
-func (r *AppReactor) broadcastTransactionsBatch(ctx context.Context, maxBatchSizeBytes int, window time.Duration) {
-	var (
-		batch          = [][]byte{}
-		batchSizeBytes = 0
-		timer          = time.NewTimer(window)
-	)
-
-	defer timer.Stop()
-
-	flush := func() {
-		if len(batch) > 0 {
-			// copy batch (only headers are copied)
-			sendBatch := append(make([][]byte, 0, len(batch)), batch...)
-
-			r.Switch.BroadcastAsync(p2p.Envelope{
-				Message:   &protomem.Txs{Txs: sendBatch},
-				ChannelID: MempoolChannel,
-			})
-		}
-
-		// reuse underlying array
-		batch = batch[:0]
-		batchSizeBytes = 0
-
-		// reset timer & drain if needed
-		if !timer.Stop() {
-			select {
-			case <-timer.C:
-			default:
-			}
-		}
-		timer.Reset(window)
-	}
-
+func (r *AppReactor) broadcastTransactionsBatch(ctx context.Context, maxBatchSizeBytes int) {
 	// will be closed when r.ctx is canceled, 8 is chan size,
 	// which is ok since we send async
-	txs := r.mempool.TxStream(ctx, 8)
+	stream := r.mempool.TxStream(ctx)
 
-	for {
-		select {
-		case tx, ok := <-txs:
-			if !ok {
-				// chan closed, flush and exit
-				flush()
-				return
-			}
+	for txs := range stream {
+		batches := chunkTxs(txs, maxBatchSizeBytes)
 
-			txSizeBytes := len(tx)
-
-			// tx won't fit into batch, flush previous batch
-			if (batchSizeBytes + txSizeBytes) > maxBatchSizeBytes {
-				flush()
-			}
-
-			batch = append(batch, tx)
-			batchSizeBytes += txSizeBytes
-		case <-timer.C:
-			// window expired, flush batch, reset timer
-			flush()
+		for _, batch := range batches {
+			r.Switch.BroadcastAsync(p2p.Envelope{
+				Message:   &protomem.Txs{Txs: batch.ToSliceOfBytes()},
+				ChannelID: MempoolChannel,
+			})
 		}
 	}
 }
@@ -263,6 +213,50 @@ func txsFromEnvelope(e p2p.Envelope) ([]types.Tx, error) {
 		}
 		return txs, nil
 	}
+}
+
+// chunkTxs chunks transactions into batches of maxBatchSizeBytes
+// example: [tx1, tx2, tx3, tx4, tx5, ...] -> [[tx1, tx2], [tx3, tx4], [tx5], ...]
+//
+// note: we can optimize []types.Txs to [][][]byte + have less allocs,
+// but it's not worth it for now.
+func chunkTxs(txs types.Txs, maxBatchSizeBytes int) []types.Txs {
+	// should not happen
+	if len(txs) == 0 {
+		return nil
+	}
+
+	chunks := []types.Txs{}
+
+	lastChunkSizeBytes := 0
+	lastChunk := types.Txs{}
+
+	for _, tx := range txs {
+		txSizeBytes := len(tx)
+
+		// tx won't fit into chunk, add current chunk to chunks and start a new one
+		if (lastChunkSizeBytes + txSizeBytes) > maxBatchSizeBytes {
+			// this check required to avoid adding empty chunk to chunks
+			// when a single tx is bigger than maxBatchSizeBytes
+			if len(lastChunk) > 0 {
+				chunks = append(chunks, lastChunk)
+			}
+
+			// reset chunk size
+			lastChunk = types.Txs{}
+			lastChunkSizeBytes = 0
+		}
+
+		lastChunk = append(lastChunk, tx)
+		lastChunkSizeBytes += txSizeBytes
+	}
+
+	// last chunk
+	if len(lastChunk) > 0 {
+		chunks = append(chunks, lastChunk)
+	}
+
+	return chunks
 }
 
 func txHash(tx types.Tx) string {

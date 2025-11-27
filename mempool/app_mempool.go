@@ -145,8 +145,9 @@ func (m *AppMempool) insertTx(tx types.Tx) (uint32, error) {
 
 // TxStream spins up a channel that streams valid transactions from app-side mempool.
 // The expectation is that the caller would share it with other peers to gossip transactions.
-func (m *AppMempool) TxStream(ctx context.Context, capacity int) <-chan types.Tx {
-	ch := make(chan types.Tx, capacity)
+// chan type is a list of txs, it is guaranteed to be non-empty.
+func (m *AppMempool) TxStream(ctx context.Context) <-chan types.Txs {
+	ch := make(chan types.Txs, 1)
 
 	go func() {
 		defer func() {
@@ -163,7 +164,7 @@ func (m *AppMempool) TxStream(ctx context.Context, capacity int) <-chan types.Tx
 	return ch
 }
 
-func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Tx) {
+func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Txs) {
 	req := &abci.RequestReapTxs{
 		MaxBytes: reapMaxBytes,
 		MaxGas:   reapMaxGas,
@@ -175,6 +176,7 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Tx) {
 			m.logger.Debug("AppMempool.reapTxs: context is done")
 			return
 		case <-time.After(reapInterval):
+			// note that time.After GC mem leak was fixed in go 1.23
 			res, err := m.app.ReapTxs(ctx, req)
 			switch {
 			case isErrCtx(err):
@@ -183,19 +185,19 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Tx) {
 			case err != nil:
 				m.logger.Error("AppMempool.reapTxs: error reaping txs", "error", err)
 				continue
+			case len(res.Txs) == 0:
+				// no txs to send
+				continue
 			}
 
-			for _, tx := range res.Txs {
-				select {
-				case <-ctx.Done():
-					m.logger.Debug("AppMempool.reapTxs: context done while sending txs")
-					return
-				case channel <- tx:
-					// all good
-				}
+			select {
+			case <-ctx.Done():
+				m.logger.Debug("AppMempool.reapTxs: context done while streaming txs")
+				return
+			case channel <- types.ToTxs(res.Txs):
+				// all good
 			}
 		}
-
 	}
 }
 

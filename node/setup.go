@@ -233,10 +233,11 @@ func createMempoolAndMempoolReactor(
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
 ) (mempl.Mempool, waitSyncReactor) {
+	logger = logger.With("module", "mempool")
+
 	switch config.Mempool.Type {
 	// allow empty string for backward compatibility
 	case cfg.MempoolTypeFlood, "":
-		logger = logger.With("module", "mempool")
 		mp := mempl.NewCListMempool(
 			config.Mempool,
 			proxyApp.Mempool(),
@@ -261,6 +262,17 @@ func createMempoolAndMempoolReactor(
 		// Strictly speaking, there's no need to have a `mempl.NopMempoolReactor`, but
 		// adding it leads to a cleaner code.
 		return &mempl.NopMempool{}, mempl.NewNopMempoolReactor()
+	case cfg.MempoolTypeApp:
+		mp := mempl.NewAppMempool(
+			config.Mempool,
+			proxyApp.Mempool(),
+			mempl.WithAMLogger(logger),
+			mempl.WithAMMetrics(memplMetrics),
+		)
+		reactor := mempl.NewAppReactor(config.Mempool, mp, waitSync)
+		reactor.SetLogger(logger)
+
+		return mp, reactor
 	default:
 		panic(fmt.Sprintf("unknown mempool type: %q", config.Mempool.Type))
 	}

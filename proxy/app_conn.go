@@ -32,6 +32,8 @@ type AppConnMempool interface {
 
 	CheckTx(context.Context, *types.RequestCheckTx) (*types.ResponseCheckTx, error)
 	CheckTxAsync(context.Context, *types.RequestCheckTx) (*abcicli.ReqRes, error)
+	InsertTx(context.Context, *types.RequestInsertTx) (*types.ResponseInsertTx, error)
+	ReapTxs(context.Context, *types.RequestReapTxs) (*types.ResponseReapTxs, error)
 	Flush(context.Context) error
 }
 
@@ -146,6 +148,16 @@ func (app *appConnMempool) CheckTx(ctx context.Context, req *types.RequestCheckT
 func (app *appConnMempool) CheckTxAsync(ctx context.Context, req *types.RequestCheckTx) (*abcicli.ReqRes, error) {
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "check_tx", "type", "async"))()
 	return app.appConn.CheckTxAsync(ctx, req)
+}
+
+func (app *appConnMempool) InsertTx(ctx context.Context, req *types.RequestInsertTx) (*types.ResponseInsertTx, error) {
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "insert_tx", "type", "sync"))()
+	return app.appConn.InsertTx(ctx, req)
+}
+
+func (app *appConnMempool) ReapTxs(ctx context.Context, req *types.RequestReapTxs) (*types.ResponseReapTxs, error) {
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "reap_txs", "type", "sync"))()
+	return app.appConn.ReapTxs(ctx, req)
 }
 
 //------------------------------------------------

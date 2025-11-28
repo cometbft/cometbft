@@ -1,0 +1,17 @@
+[node.validator01]
+mempool_type = "app"
+
+[node.validator02]
+mempool_type = "app"
+perturb = ["kill"]
+
+[node.validator03]
+mempool_type = "app"
+
+[node.validator04]
+mempool_type = "app"
+perturb = ["restart"]
+
+[node.validator05]
+mempool_type = "app"
+perturb = ["disconnect"]

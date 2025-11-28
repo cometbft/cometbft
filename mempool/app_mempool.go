@@ -94,6 +94,32 @@ func NewAppMempool(
 // InsertTx inserts a tx into app-side mempool. The call is blocking, but thread-safe.
 // Concurrent calls are expected and are caller's responsibility to handle.
 func (m *AppMempool) InsertTx(tx types.Tx) error {
+	if err := m.guardTx(tx); err != nil {
+		return err
+	}
+
+	code, err := m.insertTx(tx)
+
+	// todo (@swift1337): should we define more codes and handle them respectively?
+	switch {
+	case err != nil:
+		m.metrics.FailedTxs.Add(1)
+		return wrapErrCode("unable to insert tx", code, err)
+	case codeRetry(code):
+		// drop tx from seen cache (to retry later), but still return the error
+		m.seen.Remove(tx)
+		fallthrough
+	case code != abci.CodeTypeOK:
+		m.metrics.RejectedTxs.Add(1)
+		return wrapErrCode("invalid code", code, err)
+	default:
+		m.metrics.TxSizeBytes.Observe(float64(len(tx)))
+		return nil
+	}
+}
+
+// guardTx guards the tx against empty and too large errors, and adds it to the seen cache.
+func (m *AppMempool) guardTx(tx types.Tx) error {
 	txSize := len(tx)
 
 	if txSize == 0 {
@@ -113,27 +139,11 @@ func (m *AppMempool) InsertTx(tx types.Tx) error {
 		return ErrSeenTx
 	}
 
-	code, err := m.insertTx(tx)
-
-	// todo (@swift1337): should we define more codes and handle them respectively?
-	switch {
-	case err != nil:
-		m.metrics.FailedTxs.Add(1)
-		return wrapErrCode("unable to insert tx", code, err)
-	case codeRetry(code):
-		// drop tx from seen cache (to retry later), but still return the error
-		m.seen.Remove(tx)
-		fallthrough
-	case code != abci.CodeTypeOK:
-		m.metrics.RejectedTxs.Add(1)
-		return wrapErrCode("invalid code", code, err)
-	default:
-		m.metrics.TxSizeBytes.Observe(float64(txSize))
-		return nil
-	}
+	return nil
 }
 
 func (m *AppMempool) insertTx(tx types.Tx) (uint32, error) {
+	// note: other ABCI methods panic if err is not nil
 	resp, err := m.app.InsertTx(m.ctx, &abci.RequestInsertTx{Tx: tx})
 	if err != nil {
 		if resp != nil {
@@ -224,9 +234,46 @@ func (m *AppMempool) FlushAppConn() error {
 	return nil
 }
 
-// CheckTx returns an error on purpose for explicitness
-func (m *AppMempool) CheckTx(_ types.Tx, _ func(*abci.ResponseCheckTx), _ TxInfo) error {
-	return ErrNotImplemented
+// CheckTx mimics the behavior of the CListMempool's CheckTx method,
+// but actually only calls the app's InsertTx method. This is required for RPC compatibility.
+// @see: BroadcastTxSync, BroadcastTxAsync, and BroadcastTxCommit.
+func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckTx), _ TxInfo) error {
+	if err := m.guardTx(tx); err != nil {
+		return err
+	}
+
+	go func() {
+		defer func() {
+			if p := recover(); p != nil {
+				m.logger.Error("panic in AppMempool.CheckTx", "panic", p, "tx", txHash(tx))
+			}
+		}()
+
+		code, err := m.insertTx(tx)
+		if err != nil {
+			// note that other ABCI methods panic if err is not nil
+			m.logger.Error("AppMempool.CheckTx: error inserting tx", "error", err, "tx", txHash(tx))
+			return
+		}
+
+		// App mempool doesn't execute the tx, so we ALWAYS return an empty response here.
+		// This will most likely break many clients. Clients should rely on app-specific
+		// broadcasting endpoints (think of eth_sendRawTransaction, etc...).
+		if callback != nil {
+			callback(&abci.ResponseCheckTx{
+				Code:      code,
+				Data:      []byte{},
+				Log:       "",
+				Info:      "",
+				GasWanted: 0,
+				GasUsed:   0,
+				Events:    []abci.Event{},
+				Codespace: "",
+			})
+		}
+	}()
+
+	return nil
 }
 
 // Update does nothing for an app mempool

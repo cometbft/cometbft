@@ -203,6 +203,7 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Txs) {
 			}
 
 			txs := types.ToTxs(res.Txs)
+			m.metrics.ReapedTxs.Add(float64(len(txs)))
 
 			select {
 			case <-ctx.Done():

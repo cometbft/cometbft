@@ -145,6 +145,8 @@ func (r *AppReactor) Receive(e p2p.Envelope) {
 		return
 	}
 
+	r.mempool.metrics.BatchSize.With("dir", "inbound").Observe(float64(len(txs)))
+
 	for _, tx := range txs {
 		r.insertTx(peerID, tx)
 	}
@@ -179,14 +181,19 @@ func (r *AppReactor) broadcastTransactionsBatch(ctx context.Context, maxBatchSiz
 
 	for txs := range stream {
 		batches := chunkTxs(txs, maxBatchSizeBytes)
-
-		for _, batch := range batches {
-			r.Switch.BroadcastAsync(p2p.Envelope{
-				Message:   &protomem.Txs{Txs: batch.ToSliceOfBytes()},
-				ChannelID: MempoolChannel,
-			})
+		for _, txs := range batches {
+			r.broadcast(txs)
 		}
 	}
+}
+
+func (r *AppReactor) broadcast(txs types.Txs) {
+	r.mempool.metrics.BatchSize.With("dir", "outbound").Observe(float64(len(txs)))
+
+	r.Switch.BroadcastAsync(p2p.Envelope{
+		Message:   &protomem.Txs{Txs: txs.ToSliceOfBytes()},
+		ChannelID: MempoolChannel,
+	})
 }
 
 func (r *AppReactor) enabled() bool {

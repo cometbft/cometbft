@@ -52,4 +52,10 @@ type Metrics struct {
 	// Number of times transactions were received more than once.
 	//metrics:Number of duplicate transaction reception.
 	AlreadyReceivedTxs metrics.Counter
+
+	// BatchSize size of an inbound/outbound batch of mempool txs (in txs num, not bytes)
+	BatchSize metrics.Histogram `metrics_labels:"dir" metrics_bucketsizes:"1,2,5,10,30,50,100,200,300"`
+
+	// ReapedTxs is the number of transactions reaped from the mempool
+	ReapedTxs metrics.Counter
 }

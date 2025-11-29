@@ -11,7 +11,8 @@
 
 ### IMPROVEMENTS
 
--  `[mempool]` perf(mempool/cache): Optimize LRUTxCache.Remove to reduce lock contention and map access
+- `[types]` Add validation for `AuthorityParams.Authority` field in consensus params, enforcing a maximum length of 256 characters ([#5511](https://github.com/cometbft/cometbft/pull/5511))
+- `[mempool]` perf(mempool/cache): Optimize LRUTxCache.Remove to reduce lock contention and map access
    ([\#5244](https://github.com/cometbft/cometbft/pull/5244))
 - `[e2e]` add support for testing different keytypes, including BLS
   ([\#3513](https://github.com/cometbft/cometbft/pull/3513))

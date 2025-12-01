@@ -24,6 +24,9 @@ const (
 	// This LCG's has a period equal to 2**64
 	lcgA = 6364136223846793005
 	lcgC = 1442695040888963407
+)
+
+var (
 	// Create in case it doesn't exist and force kernel
 	// flush, which still leaves the potential of lingering disk cache.
 	// Never overwrites files

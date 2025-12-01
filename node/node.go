@@ -22,6 +22,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/libs/tempfile" // Added for ForceSync control
 	"github.com/cometbft/cometbft/lp2p"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
@@ -312,6 +313,15 @@ func NewNodeWithContext(
 	logger log.Logger,
 	options ...Option,
 ) (*Node, error) {
+	// 1. Configure O_SYNC behavior based on config (Performance Tuning)
+	if config.DisableOSSync {
+		logger.Info("Disabling O_SYNC for atomic file writes (Performance Mode)")
+		tempfile.ForceSync(false)
+	} else {
+		// Ensure default safe behavior
+		tempfile.ForceSync(true)
+	}
+
 	blockStore, stateDB, err := initDBs(config, dbProvider)
 	if err != nil {
 		return nil, err

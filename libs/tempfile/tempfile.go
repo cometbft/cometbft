@@ -27,8 +27,19 @@ const (
 	// Create in case it doesn't exist and force kernel
 	// flush, which still leaves the potential of lingering disk cache.
 	// Never overwrites files
-	atomicWriteFileFlag = os.O_WRONLY | os.O_CREATE | os.O_SYNC | os.O_TRUNC | os.O_EXCL
+	// atomicWriteFileFlag = os.O_WRONLY | os.O_CREATE | os.O_SYNC | os.O_TRUNC | os.O_EXCL
+	atomicWriteFileFlag = os.O_WRONLY | os.O_CREATE | os.O_TRUNC | os.O_EXCL
 )
+
+// ForceSync enables or disables O_SYNC flag for atomic file writes.
+// Set enabled=true for data safety (default behavior), enabled=false for performance (risks data loss on power failure).
+func ForceSync(enabled bool) {
+	if enabled {
+		atomicWriteFileFlag = os.O_WRONLY | os.O_CREATE | os.O_SYNC | os.O_TRUNC | os.O_EXCL
+	} else {
+		atomicWriteFileFlag = os.O_WRONLY | os.O_CREATE | os.O_TRUNC | os.O_EXCL
+	}
+}
 
 var (
 	atomicWriteFileRand   uint64

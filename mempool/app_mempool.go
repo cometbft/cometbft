@@ -58,11 +58,11 @@ var (
 	ErrSeenTx         = errors.New("tx already seen")
 )
 
-func WithSMMetics(metrics *Metrics) AppMempoolOpt {
+func WithAMMetrics(metrics *Metrics) AppMempoolOpt {
 	return func(m *AppMempool) { m.metrics = metrics }
 }
 
-func WithSMLogger(logger log.Logger) AppMempoolOpt {
+func WithAMLogger(logger log.Logger) AppMempoolOpt {
 	return func(m *AppMempool) { m.logger = logger }
 }
 
@@ -71,6 +71,8 @@ func NewAppMempool(
 	app AppMempoolClient,
 	opts ...AppMempoolOpt,
 ) *AppMempool {
+	// cache to avoid receiving the same txs from other peers.
+	// we should add TTL w/ eviction policy.
 	seen := NewLRUTxCache(seenCacheSize)
 
 	m := &AppMempool{
@@ -92,23 +94,8 @@ func NewAppMempool(
 // InsertTx inserts a tx into app-side mempool. The call is blocking, but thread-safe.
 // Concurrent calls are expected and are caller's responsibility to handle.
 func (m *AppMempool) InsertTx(tx types.Tx) error {
-	txSize := len(tx)
-
-	if txSize == 0 {
-		return ErrEmptyTx
-	}
-
-	if m.config.MaxTxBytes > 0 && txSize > m.config.MaxTxBytes {
-		return ErrTxTooLarge{
-			Max:    m.config.MaxTxBytes,
-			Actual: txSize,
-		}
-	}
-
-	pushed := m.seen.Push(tx)
-	if !pushed {
-		m.metrics.AlreadyReceivedTxs.Add(1)
-		return ErrSeenTx
+	if err := m.guardTx(tx); err != nil {
+		return err
 	}
 
 	code, err := m.insertTx(tx)
@@ -126,12 +113,37 @@ func (m *AppMempool) InsertTx(tx types.Tx) error {
 		m.metrics.RejectedTxs.Add(1)
 		return wrapErrCode("invalid code", code, err)
 	default:
-		m.metrics.TxSizeBytes.Observe(float64(txSize))
+		m.metrics.TxSizeBytes.Observe(float64(len(tx)))
 		return nil
 	}
 }
 
+// guardTx guards the tx against empty and too large errors, and adds it to the seen cache.
+func (m *AppMempool) guardTx(tx types.Tx) error {
+	txSize := len(tx)
+
+	if txSize == 0 {
+		return ErrEmptyTx
+	}
+
+	if m.config.MaxTxBytes > 0 && txSize > m.config.MaxTxBytes {
+		return &ErrTxTooLarge{
+			Max:    m.config.MaxTxBytes,
+			Actual: txSize,
+		}
+	}
+
+	pushed := m.seen.Push(tx)
+	if !pushed {
+		m.metrics.AlreadyReceivedTxs.Add(1)
+		return ErrSeenTx
+	}
+
+	return nil
+}
+
 func (m *AppMempool) insertTx(tx types.Tx) (uint32, error) {
+	// note: other ABCI methods panic if err is not nil
 	resp, err := m.app.InsertTx(m.ctx, &abci.RequestInsertTx{Tx: tx})
 	if err != nil {
 		if resp != nil {
@@ -145,8 +157,9 @@ func (m *AppMempool) insertTx(tx types.Tx) (uint32, error) {
 
 // TxStream spins up a channel that streams valid transactions from app-side mempool.
 // The expectation is that the caller would share it with other peers to gossip transactions.
-func (m *AppMempool) TxStream(ctx context.Context, capacity int) <-chan types.Tx {
-	ch := make(chan types.Tx, capacity)
+// chan type is a list of txs, it is guaranteed to be non-empty.
+func (m *AppMempool) TxStream(ctx context.Context) <-chan types.Txs {
+	ch := make(chan types.Txs, 1)
 
 	go func() {
 		defer func() {
@@ -163,7 +176,7 @@ func (m *AppMempool) TxStream(ctx context.Context, capacity int) <-chan types.Tx
 	return ch
 }
 
-func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Tx) {
+func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Txs) {
 	req := &abci.RequestReapTxs{
 		MaxBytes: reapMaxBytes,
 		MaxGas:   reapMaxGas,
@@ -175,6 +188,7 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Tx) {
 			m.logger.Debug("AppMempool.reapTxs: context is done")
 			return
 		case <-time.After(reapInterval):
+			// note that time.After GC mem leak was fixed in go 1.23
 			res, err := m.app.ReapTxs(ctx, req)
 			switch {
 			case isErrCtx(err):
@@ -183,19 +197,31 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Tx) {
 			case err != nil:
 				m.logger.Error("AppMempool.reapTxs: error reaping txs", "error", err)
 				continue
+			case len(res.Txs) == 0:
+				// no txs to send
+				continue
 			}
 
-			for _, tx := range res.Txs {
-				select {
-				case <-ctx.Done():
-					m.logger.Debug("AppMempool.reapTxs: context done while sending txs")
-					return
-				case channel <- tx:
-					// all good
+			txs := types.ToTxs(res.Txs)
+			m.metrics.ReapedTxs.Add(float64(len(txs)))
+
+			select {
+			case <-ctx.Done():
+				m.logger.Debug("AppMempool.reapTxs: context done while streaming txs")
+				return
+			case channel <- txs:
+				// all good
+			}
+
+			// avoid receiving these txs again from other peers.
+			for _, tx := range txs {
+				if m.seen.Has(tx) {
+					continue
 				}
+
+				m.seen.Push(tx)
 			}
 		}
-
 	}
 }
 
@@ -209,9 +235,46 @@ func (m *AppMempool) FlushAppConn() error {
 	return nil
 }
 
-// CheckTx returns an error on purpose for explicitness
-func (m *AppMempool) CheckTx(_ types.Tx, _ func(*abci.ResponseCheckTx), _ TxInfo) error {
-	return ErrNotImplemented
+// CheckTx mimics the behavior of the CListMempool's CheckTx method,
+// but actually only calls the app's InsertTx method. This is required for RPC compatibility.
+// @see: BroadcastTxSync, BroadcastTxAsync, and BroadcastTxCommit.
+func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckTx), _ TxInfo) error {
+	if err := m.guardTx(tx); err != nil {
+		return err
+	}
+
+	go func() {
+		defer func() {
+			if p := recover(); p != nil {
+				m.logger.Error("panic in AppMempool.CheckTx", "panic", p, "tx", txHash(tx))
+			}
+		}()
+
+		code, err := m.insertTx(tx)
+		if err != nil {
+			// note that other ABCI methods panic if err is not nil
+			m.logger.Error("AppMempool.CheckTx: error inserting tx", "error", err, "tx", txHash(tx))
+			return
+		}
+
+		// App mempool doesn't execute the tx, so we ALWAYS return an empty response here.
+		// This will most likely break many clients. Clients should rely on app-specific
+		// broadcasting endpoints (think of eth_sendRawTransaction, etc...).
+		if callback != nil {
+			callback(&abci.ResponseCheckTx{
+				Code:      code,
+				Data:      []byte{},
+				Log:       "",
+				Info:      "",
+				GasWanted: 0,
+				GasUsed:   0,
+				Events:    []abci.Event{},
+				Codespace: "",
+			})
+		}
+	}()
+
+	return nil
 }
 
 // Update does nothing for an app mempool

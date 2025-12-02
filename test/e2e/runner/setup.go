@@ -196,6 +196,15 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToNonPersistentPeers)
 	cfg.Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToPersistentPeers)
 
+	switch node.MempoolType {
+	case config.MempoolTypeFlood, config.MempoolTypeApp, config.MempoolTypeNop:
+		cfg.Mempool.Type = node.MempoolType
+	case "":
+		cfg.Mempool.Type = config.MempoolTypeFlood
+	default:
+		return nil, fmt.Errorf("unexpected mempool type %q", node.MempoolType)
+	}
+
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:
 		cfg.ProxyApp = AppAddressUNIX
@@ -312,7 +321,9 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		"vote_extensions_enable_height": node.Testnet.VoteExtensionsEnableHeight,
 		"vote_extensions_update_height": node.Testnet.VoteExtensionsUpdateHeight,
 		"vote_extension_size":           node.Testnet.VoteExtensionSize,
+		"app_side_mempool":              node.MempoolType == config.MempoolTypeApp,
 	}
+
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:
 		cfg["listen"] = AppAddressUNIX

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	abcimock "github.com/cometbft/cometbft/abci/client/mocks"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -59,6 +60,69 @@ func TestAppMempool(t *testing.T) {
 		require.False(t, m.seen.Has(txs[3]), "should be removed from seen cache")
 
 		require.Equal(t, uint64(2), added.Load())
+
+		t.Run("CheckTx", func(t *testing.T) {
+			for _, tt := range []struct {
+				name        string
+				tx          types.Tx
+				errContains string
+				noCallback  bool
+				assert      func(t *testing.T, res *abci.ResponseCheckTx)
+			}{
+				{
+					name:        "seen",
+					tx:          tx("tx1"),
+					errContains: "already seen",
+				},
+				{
+					name: "fail",
+					tx:   tx("fail"),
+					assert: func(t *testing.T, res *abci.ResponseCheckTx) {
+						require.Equal(t, abci.CodeTypeRetry, res.Code)
+					},
+				},
+				{
+					name: "ok",
+					tx:   tx("ok"),
+					assert: func(t *testing.T, res *abci.ResponseCheckTx) {
+						require.Equal(t, abci.CodeTypeOK, res.Code)
+					},
+				},
+				{
+					name: "ok-no-callback",
+					tx:   tx("ok2"),
+				},
+			} {
+				t.Run(tt.name, func(t *testing.T) {
+					// ARRANGE
+					var (
+						result       = atomic.Pointer[abci.ResponseCheckTx]{}
+						callback     = func(res *abci.ResponseCheckTx) { result.Store(res) }
+						ensureResult = func() bool { return result.Load() != nil }
+					)
+
+					if tt.noCallback {
+						callback = nil
+					}
+
+					// ACT
+					err := m.CheckTx(tt.tx, callback, TxInfo{})
+
+					// ASSERT
+					if tt.errContains != "" {
+						require.ErrorContains(t, err, tt.errContains)
+						return
+					}
+
+					require.NoError(t, err)
+					require.Eventually(t, ensureResult, time.Second, time.Millisecond*50)
+
+					if tt.assert != nil {
+						tt.assert(t, result.Load())
+					}
+				})
+			}
+		})
 	})
 
 	t.Run("TxStream", func(t *testing.T) {
@@ -98,10 +162,10 @@ func TestAppMempool(t *testing.T) {
 		// ACT
 		// stream txs from app
 		sink := [][]byte{}
-		ch := m.TxStream(ctx, 10)
+		ch := m.TxStream(ctx)
 
-		for tx := range ch {
-			sink = append(sink, []byte(tx))
+		for txs := range ch {
+			sink = append(sink, txs.ToSliceOfBytes()...)
 		}
 
 		require.Subset(t, allMempoolTxs, sink)

@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"sync/atomic"
 	testing "testing"
 
 	"github.com/stretchr/testify/require"
@@ -68,7 +69,7 @@ func TestWriteFileAtomicDuplicateFile(t *testing.T) {
 	firstFileRand := randWriteFileSuffix()
 	atomicWriteFileRand = defaultSeed
 	fname := "/tmp/" + atomicWriteFilePrefix + firstFileRand
-	f, err := os.OpenFile(fname, atomicWriteFileFlag, 0o777)
+	f, err := os.OpenFile(fname, int(atomic.LoadUint32(&atomicWriteFileFlag)), 0o777)
 	defer os.Remove(fname)
 	// Defer here, in case there is a panic in WriteFileAtomic.
 	defer os.Remove(fileToWrite)
@@ -112,7 +113,7 @@ func TestWriteFileAtomicManyDuplicates(t *testing.T) {
 	for i := 0; i < atomicWriteFileMaxNumConflicts+2; i++ {
 		fileRand := randWriteFileSuffix()
 		fname := "/tmp/" + atomicWriteFilePrefix + fileRand
-		f, err := os.OpenFile(fname, atomicWriteFileFlag, 0o777)
+		f, err := os.OpenFile(fname, int(atomic.LoadUint32(&atomicWriteFileFlag)), 0o777)
 		require.Nil(t, err)
 		_, err = fmt.Fprintf(f, testString, i)
 		require.NoError(t, err)

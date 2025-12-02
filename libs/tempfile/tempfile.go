@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
@@ -31,16 +32,17 @@ var (
 	// flush, which still leaves the potential of lingering disk cache.
 	// Never overwrites files
 	// atomicWriteFileFlag = os.O_WRONLY | os.O_CREATE | os.O_SYNC | os.O_TRUNC | os.O_EXCL
-	atomicWriteFileFlag = os.O_WRONLY | os.O_CREATE | os.O_TRUNC | os.O_EXCL
+	atomicWriteFileFlag uint32 = uint32(os.O_WRONLY | os.O_CREATE | os.O_TRUNC | os.O_EXCL)
 )
 
 // ForceSync enables or disables O_SYNC flag for atomic file writes.
 // Set enabled=true for data safety (default behavior), enabled=false for performance (risks data loss on power failure).
+// This function is thread-safe.
 func ForceSync(enabled bool) {
 	if enabled {
-		atomicWriteFileFlag = os.O_WRONLY | os.O_CREATE | os.O_SYNC | os.O_TRUNC | os.O_EXCL
+		atomic.StoreUint32(&atomicWriteFileFlag, uint32(os.O_WRONLY|os.O_CREATE|os.O_SYNC|os.O_TRUNC|os.O_EXCL))
 	} else {
-		atomicWriteFileFlag = os.O_WRONLY | os.O_CREATE | os.O_TRUNC | os.O_EXCL
+		atomic.StoreUint32(&atomicWriteFileFlag, uint32(os.O_WRONLY|os.O_CREATE|os.O_TRUNC|os.O_EXCL))
 	}
 }
 
@@ -106,7 +108,8 @@ func WriteFileAtomic(filename string, data []byte, perm os.FileMode) (err error)
 	i := 0
 	for ; i < atomicWriteFileMaxNumWriteAttempts; i++ {
 		name := filepath.Join(dir, atomicWriteFilePrefix+randWriteFileSuffix())
-		f, err = os.OpenFile(name, atomicWriteFileFlag, perm)
+		flag := int(atomic.LoadUint32(&atomicWriteFileFlag))
+		f, err = os.OpenFile(name, flag, perm)
 		// If the file already exists, try a new file
 		if os.IsExist(err) {
 			// If the files exists too many times, start reseeding as we've

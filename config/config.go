@@ -268,7 +268,7 @@ func DefaultBaseConfig() BaseConfig {
 		FilterPeers:        false,
 		DBBackend:          "goleveldb",
 		DBPath:             DefaultDataDir,
-		SafetyStartDelay:   0 * time.Second,
+		SafetyStartDelay:   6 * time.Second,
 		DisableOSSync:      false,
 	}
 }

@@ -185,7 +185,7 @@ func (params ConsensusParams) ValidateBasic() error {
 	}
 	if params.Evidence.MaxBytes > maxBytes {
 		return fmt.Errorf("evidence.MaxBytesEvidence is greater than upper bound, %d > %d",
-			params.Evidence.MaxBytes, params.Block.MaxBytes)
+			params.Evidence.MaxBytes, maxBytes)
 	}
 
 	if params.Evidence.MaxBytes < 0 {

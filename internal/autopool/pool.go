@@ -8,11 +8,15 @@ import (
 )
 
 // Pool primitive auto-scaling pool for concurrent message processing.
-// It accepts a channel of messages and a function to process them and scales
-// the number of workers dynamically based on the message processing time.
+// It accepts a function to process messages and scales the number of workers
+// dynamically based on the message processing time. It also supports priority-based message processing.
 type Pool[T any] struct {
-	// channel what is used to consume messages
-	ch <-chan T
+	// processing channel for messages
+	inbound chan T
+
+	// a queue on top of Pool for priority-based message processing.
+	// acts as a buffer + priority-based FIFO queue. Routes messages to Pool.inbound
+	priorityQueue *PriorityQueue
 
 	// consumer function that is used to process messages
 	receive func(T)
@@ -30,8 +34,8 @@ type Pool[T any] struct {
 	onShrink func()
 	onStay   func()
 
-	mu      sync.Mutex
-	stopped bool
+	mu        sync.RWMutex
+	stoppedCh chan struct{}
 
 	logger log.Logger
 }
@@ -43,6 +47,14 @@ type worker[T any] struct {
 }
 
 type Option[T any] func(*Pool[T])
+
+func WithLogger[T any](logger log.Logger) Option[T] {
+	return func(p *Pool[T]) { p.logger = logger }
+}
+
+func WithPriorityQueue[T any](pq *PriorityQueue) Option[T] {
+	return func(p *Pool[T]) { p.priorityQueue = pq }
+}
 
 func WithOnScale[T any](onScale func()) Option[T] {
 	return func(p *Pool[T]) { p.onScale = onScale }
@@ -56,25 +68,38 @@ func WithOnStay[T any](onStay func()) Option[T] {
 	return func(p *Pool[T]) { p.onStay = onStay }
 }
 
+// interval to sleep when the priority queue is idle
+// note that this should be fine because most of the time the queue will be busy.
+// I also explored var cond for a more efficient solution, but it's not worth the complexity for now.
+const priorityQueueIdleInterval = 50 * time.Millisecond
+
 // New Pool constructor.
 func New[T any](
 	scaler *ThroughputLatencyScaler,
-	producer <-chan T,
 	receiveFN func(T),
-	logger log.Logger,
+	capacity int,
 	opts ...Option[T],
 ) *Pool[T] {
+	const defaultPriorities = 10
+
 	pool := &Pool[T]{
-		ch:        producer,
-		receive:   receiveFN,
-		scaler:    scaler,
+		inbound:       make(chan T, capacity),
+		priorityQueue: NewPriorityQueue(defaultPriorities),
+
+		receive: receiveFN,
+		scaler:  scaler,
+
 		workers:   make(map[int]*worker[T]),
 		workersWg: sync.WaitGroup{},
-		onScale:   nil,
-		onShrink:  nil,
-		stopped:   false,
-		mu:        sync.Mutex{},
-		logger:    logger,
+
+		onScale:  nil,
+		onShrink: nil,
+		onStay:   nil,
+
+		stoppedCh: make(chan struct{}),
+
+		mu:     sync.RWMutex{},
+		logger: log.NewNopLogger(),
 	}
 
 	for _, opt := range opts {
@@ -88,11 +113,17 @@ func (p *Pool[T]) Start() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	// already started or stopped
+	if p.stopped() || len(p.workers) > 0 {
+		return
+	}
+
 	for i := 0; i < p.scaler.Min(); i++ {
 		p.scale()
 	}
 
 	go p.monitor()
+	go p.pipePriorityQueue()
 }
 
 // Stop stops the pool and all workers
@@ -101,7 +132,7 @@ func (p *Pool[T]) Stop() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	if p.stopped || len(p.workers) == 0 {
+	if p.stopped() || len(p.workers) == 0 {
 		return
 	}
 
@@ -117,7 +148,51 @@ func (p *Pool[T]) Stop() {
 
 	p.logger.Info("Waiting for workers to finish")
 	p.workersWg.Wait()
-	p.stopped = true
+
+	close(p.inbound)
+	close(p.stoppedCh)
+}
+
+// Push adds a message directly to the pool FIFO queue.
+// Blocks if the queue is full.
+func (p *Pool[T]) Push(msg T) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	if p.stopped() {
+		p.logger.Error("Cannot push a message to a stopped pool (Push)")
+		return
+	}
+
+	p.inbound <- msg
+}
+
+// PushPriority adds a message to the priority queue first.
+// Non-blocking as priority queue is a linked-list
+func (p *Pool[T]) PushPriority(msg T, priority int) error {
+	return p.priorityQueue.Push(msg, priority)
+}
+
+func (p *Pool[T]) Len() int {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	if p.stopped() {
+		return 0
+	}
+
+	return len(p.inbound)
+}
+
+func (p *Pool[T]) Cap() int {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	if p.stopped() {
+		return 0
+	}
+
+	return cap(p.inbound)
 }
 
 func (w *worker[T]) run() {
@@ -135,7 +210,7 @@ func (w *worker[T]) run() {
 		case <-w.closeCh:
 			// worker received a close signal
 			return
-		case msg, ok := <-w.pool.ch:
+		case msg, ok := <-w.pool.inbound:
 			// channel is closed for all workers, stop the whole pool
 			if !ok {
 				w.pool.Stop()
@@ -156,6 +231,7 @@ func (p *Pool[T]) handleMessage(msg T) {
 	p.scaler.Track(timeTaken)
 }
 
+// monitor the pool and autoscale it based on the load
 func (p *Pool[T]) monitor() {
 	ticker := time.NewTicker(p.scaler.EpochDuration())
 	defer ticker.Stop()
@@ -171,11 +247,11 @@ func (p *Pool[T]) autoscale() (exit bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	if p.stopped {
+	if p.stopped() {
 		return true
 	}
 
-	decision := p.scaler.Decide(len(p.workers), len(p.ch), cap(p.ch))
+	decision := p.scaler.Decide(len(p.workers), len(p.inbound), cap(p.inbound))
 
 	switch decision {
 	case ShouldScale:
@@ -193,7 +269,7 @@ func (p *Pool[T]) autoscale() (exit bool) {
 
 // lock should be hold by the caller
 func (p *Pool[T]) scale() {
-	if p.stopped || len(p.workers) >= p.scaler.Max() {
+	if p.stopped() || len(p.workers) >= p.scaler.Max() {
 		return
 	}
 
@@ -217,7 +293,7 @@ func (p *Pool[T]) scale() {
 
 // lock should be hold by the caller
 func (p *Pool[T]) shrink() {
-	if p.stopped || len(p.workers) == 0 {
+	if p.stopped() || len(p.workers) == 0 {
 		return
 	}
 
@@ -246,4 +322,47 @@ func (p *Pool[T]) removeWorker(id int) {
 	// send close signal to worker
 	close(w.closeCh)
 	delete(p.workers, id)
+}
+
+// pipePriorityQueue pipes messages from the priority queue to the inbound channel
+func (p *Pool[T]) pipePriorityQueue() {
+	for {
+		if p.stopped() {
+			return
+		}
+
+		value, ok := p.priorityQueue.Pop()
+		if !ok {
+			time.Sleep(priorityQueueIdleInterval)
+			continue
+		}
+
+		tt, ok := value.(T)
+		if !ok {
+			// should never happen
+			panic("unexpected type in priority queue")
+		}
+
+		// an idiomatic way of "push or exit" pattern
+		select {
+		case <-p.stoppedCh:
+			return
+		default:
+			select {
+			case <-p.stoppedCh:
+				return
+			case p.inbound <- tt:
+				// message sent successfully
+			}
+		}
+	}
+}
+
+func (p *Pool[T]) stopped() bool {
+	select {
+	case <-p.stoppedCh:
+		return true
+	default:
+		return false
+	}
 }

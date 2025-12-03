@@ -32,7 +32,7 @@ var (
 	// flush, which still leaves the potential of lingering disk cache.
 	// Never overwrites files
 	// atomicWriteFileFlag = os.O_WRONLY | os.O_CREATE | os.O_SYNC | os.O_TRUNC | os.O_EXCL
-	atomicWriteFileFlag uint32 = uint32(os.O_WRONLY | os.O_CREATE | os.O_TRUNC | os.O_EXCL)
+	atomicWriteFileFlag uint32 = uint32(os.O_WRONLY | os.O_CREATE | os.O_SYNC | os.O_TRUNC | os.O_EXCL)
 )
 
 // ForceSync enables or disables O_SYNC flag for atomic file writes.

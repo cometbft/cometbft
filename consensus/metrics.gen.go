@@ -221,7 +221,7 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Subsystem: MetricsSubsystem,
 			Name:      "peer_height",
 			Help:      "PeerHeight is the consensus reactor's view of what height their peers are currently on. It is reported with a separate tag for every peer we are connected to, and updated when their height updates in our consensus state.",
-		}, append(labels, "peer_height")).With(labelsAndValues...),
+		}, append(labels, "peer_id")).With(labelsAndValues...),
 	}
 }
 

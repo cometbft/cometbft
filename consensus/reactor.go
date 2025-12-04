@@ -276,7 +276,7 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 				return
 			}
 			ps.ApplyNewRoundStepMessage(msg)
-			conR.conS.peerMsgQueue <- msgInfo{msg, e.Src.ID()}
+			conR.conS.statsMsgQueue <- msgInfo{msg, e.Src.ID()}
 		case *NewValidBlockMessage:
 			ps.ApplyNewValidBlockMessage(msg)
 		case *HasVoteMessage:

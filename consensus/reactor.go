@@ -995,9 +995,7 @@ func (conR *Reactor) peerStatsRoutine() {
 					conR.Switch.MarkPeerAsGood(peer)
 				}
 			case *NewRoundStepMessage:
-				if ps.GetHeight() < concreteMsg.Height {
-					conR.Metrics.PeerHeight.With("peer_id", string(msg.PeerID)).Set(float64(concreteMsg.Height))
-				}
+				conR.Metrics.PeerHeight.With("peer_id", string(msg.PeerID)).Set(float64(concreteMsg.Height))
 			}
 		case <-conR.conS.Quit():
 			return

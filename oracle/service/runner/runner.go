@@ -144,6 +144,10 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 
 			oracleInfo.UnsignedVoteBuffer.Lock()
 			for _, vote := range unsignedVoteBuffer {
+				if vote == nil {
+					continue
+				}
+
 				// check for dup votes
 				key := fmt.Sprintf("%v:%v", vote.Timestamp, vote.OracleId)
 				_, exists := visitedVoteMap[key]

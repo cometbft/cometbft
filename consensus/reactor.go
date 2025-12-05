@@ -276,6 +276,7 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 				return
 			}
 			ps.ApplyNewRoundStepMessage(msg)
+			conR.conS.statsMsgQueue <- msgInfo{msg, e.Src.ID()}
 		case *NewValidBlockMessage:
 			ps.ApplyNewValidBlockMessage(msg)
 		case *HasVoteMessage:
@@ -984,7 +985,7 @@ func (conR *Reactor) peerStatsRoutine() {
 			if !ok {
 				panic(fmt.Sprintf("Peer %v has no state", peer))
 			}
-			switch msg.Msg.(type) {
+			switch concreteMsg := msg.Msg.(type) {
 			case *VoteMessage:
 				if numVotes := ps.RecordVote(); numVotes%votesToContributeToBecomeGoodPeer == 0 {
 					conR.Switch.MarkPeerAsGood(peer)
@@ -993,6 +994,8 @@ func (conR *Reactor) peerStatsRoutine() {
 				if numParts := ps.RecordBlockPart(); numParts%blocksToContributeToBecomeGoodPeer == 0 {
 					conR.Switch.MarkPeerAsGood(peer)
 				}
+			case *NewRoundStepMessage:
+				conR.Metrics.PeerHeight.With("peer_id", string(msg.PeerID)).Set(float64(concreteMsg.Height))
 			}
 		case <-conR.conS.Quit():
 			return
@@ -1669,7 +1672,6 @@ func (m *NewRoundStepMessage) ValidateHeight(initialHeight int64) error {
 			Field:  "Height",
 			Reason: fmt.Sprintf("%v should be lower than initial height %v", m.Height, initialHeight),
 		}
-
 	}
 
 	if m.Height == initialHeight && m.LastCommitRound != -1 {

@@ -37,7 +37,7 @@ require (
 	github.com/rs/cors v1.11.1
 	github.com/sasha-s/go-deadlock v0.3.6
 	github.com/snikch/goodman v0.0.0-20171125024755-10e37e294daa
-	github.com/spf13/cobra v1.10.1
+	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
 	github.com/supranational/blst v0.3.16

@@ -34,6 +34,7 @@ func waitForHeight(ctx context.Context, testnet *e2e.Testnet, height int64) (*ty
 				if node.Stateless() {
 					continue
 				}
+
 				client, ok := clients[node.Name]
 				if !ok {
 					client, err = node.Client()
@@ -45,6 +46,7 @@ func waitForHeight(ctx context.Context, testnet *e2e.Testnet, height int64) (*ty
 
 				subctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 				defer cancel()
+
 				result, err := client.Block(subctx, nil)
 				if err == context.DeadlineExceeded || err == context.Canceled {
 					return nil, nil, ctx.Err()

@@ -192,6 +192,11 @@ type ManifestNode struct {
 	// It defaults to false so unless the configured, the node will
 	// receive load.
 	SendNoLoad bool `toml:"send_no_load"`
+
+	// UseLibp2p determines if the node should use go-libp2p for networking.
+	// It defaults to false so unless the configured, the node will
+	// use the default CometBFT networking layer.
+	UseLibp2p bool `toml:"use_libp2p"`
 }
 
 // Save saves the testnet manifest to a file.

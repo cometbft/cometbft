@@ -617,11 +617,11 @@ func (r *Reactor) dialSeeds() {
 		case nil, p2p.ErrCurrentlyDialingOrExistingAddress:
 			return
 		}
-		r.Switch.Logger.Error("Error dialing seed", "err", err, "seed", seedAddr)
+		r.Logger.Error("Error dialing seed", "err", err, "seed", seedAddr)
 	}
 	// do not write error message if there were no seeds specified in config
 	if len(r.seedAddrs) > 0 {
-		r.Switch.Logger.Error("Couldn't connect to any seeds")
+		r.Logger.Error("Couldn't connect to any seeds")
 	}
 }
 

@@ -216,6 +216,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "late_votes",
 			Help:      "LateVotes stores the number of votes that were received by this node that correspond to earlier heights and rounds than this node is currently in.",
 		}, append(labels, "vote_type")).With(labelsAndValues...),
+		PeerHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "peer_height",
+			Help:      "PeerHeight is the consensus reactor's view of what height their peers are currently on. It is reported with a separate tag for every peer we are connected to, and updated when their height updates in our consensus state.",
+		}, append(labels, "peer_id")).With(labelsAndValues...),
 	}
 }
 
@@ -254,5 +260,6 @@ func NopMetrics() *Metrics {
 		ProposalCreateCount:         discard.NewCounter(),
 		RoundVotingPowerPercent:     discard.NewGauge(),
 		LateVotes:                   discard.NewCounter(),
+		PeerHeight:                  discard.NewGauge(),
 	}
 }

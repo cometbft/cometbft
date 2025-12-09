@@ -181,7 +181,7 @@ func (txi *TxIndex) indexEvents(result *abci.TxResult, hash []byte, store dbm.Ba
 			}
 
 			// index if `index: true` is set
-			compositeTag := event.Type + "." + attr.Key
+			compositeTag := fmt.Sprintf("%s.%s", event.Type, attr.Key)
 			// ensure event does not conflict with a reserved prefix key
 			if compositeTag == types.TxHashKey || compositeTag == types.TxHeightKey {
 				return fmt.Errorf("event type and attribute key \"%s\" is reserved; please use a different key", compositeTag)
@@ -263,7 +263,7 @@ func (txi *TxIndex) Search(ctx context.Context, q *query.Query) ([]*abci.TxResul
 
 			// If we have a query range over height and want to still look for
 			// specific event values we do not want to simply return all
-			// transactions in this height range. We remember the height range info
+			// transactios in this height range. We remember the height range info
 			// and pass it on to match() to take into account when processing events.
 			if qr.Key == types.TxHeightKey && !heightInfo.onlyHeightRange {
 				continue
@@ -342,7 +342,12 @@ func lookForHash(conditions []syntax.Condition) (hash []byte, ok bool, err error
 
 func (*TxIndex) setTmpHashes(tmpHeights map[string][]byte, key, value []byte) {
 	eventSeq := extractEventSeqFromKey(key)
-	tmpHeights[string(value)+eventSeq] = value
+
+	// Copy the value because the iterator will be reused.
+	valueCopy := make([]byte, len(value))
+	copy(valueCopy, value)
+
+	tmpHeights[string(valueCopy)+eventSeq] = valueCopy
 }
 
 // match returns all matching txs by hash that meet a given condition and start
@@ -754,7 +759,7 @@ func startKeyForCondition(c syntax.Condition, height int64) []byte {
 	return startKey(c.Tag, c.Arg.Value())
 }
 
-func startKey(fields ...any) []byte {
+func startKey(fields ...interface{}) []byte {
 	var b bytes.Buffer
 	for _, f := range fields {
 		b.Write([]byte(fmt.Sprintf("%v", f) + tagKeySeparator))

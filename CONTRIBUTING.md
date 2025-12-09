@@ -25,14 +25,14 @@ heartfelt emoji.
 
 If the issue would benefit from thorough discussion, maintainers may request
 that you create a [Request For
-Comment](https://github.com/cometbft/cometbft/tree/main/docs/rfc) in the
+Comment](https://github.com/cometbft/cometbft/tree/main/docs/references/rfc) in the
 CometBFT repo. Discussion at the RFC stage will build collective
 understanding of the dimensions of the problems and help structure conversations
 around trade-offs.
 
 When the problem is well understood but the solution leads to large structural
 changes to the code base, these changes should be proposed in the form of an
-[Architectural Decision Record (ADR)](./docs/architecture/). The ADR will help
+[Architectural Decision Record (ADR)](./docs/references/architecture/). The ADR will help
 build consensus on an overall strategy to ensure the code base maintains
 coherence in the larger context. If you are not comfortable with writing an ADR,
 you can open a less-formal issue and the maintainers will help you turn it into

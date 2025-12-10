@@ -5,6 +5,7 @@
 ### DEPENDENCIES
 
 ### BUG FIXES
+- `[light]` the validator with the lowest proposer priority is not guaranteed to have been the proposer of the previous block ([\#5279](https://github.com/cometbft/cometbft/pull/5279))
 
 - `[p2p]` fix(privval): Ephemeral Port Exhaustion
   ([\#5433](https://github.com/cometbft/cometbft/pull/5433))

@@ -164,7 +164,7 @@ const maxDeviationForRate int64 = 50
 // `time.Sleep` has ended).
 func statusesAreEqual(s1 *Status, s2 *Status) bool {
 	if s1.Active == s2.Active &&
-		s1.Start == s2.Start &&
+		s1.Start.Equal(s2.Start) &&
 		durationsAreEqual(s1.Duration, s2.Duration, maxDeviationForDuration) &&
 		s1.Idle == s2.Idle &&
 		s1.Bytes == s2.Bytes &&

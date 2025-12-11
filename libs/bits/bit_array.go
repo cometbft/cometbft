@@ -28,7 +28,7 @@ func NewBitArray(bits int) *BitArray {
 	}
 	return &BitArray{
 		Bits:  bits,
-		Elems: make([]uint64, (bits+63)/64),
+		Elems: make([]uint64, numElements(bits)),
 	}
 }
 
@@ -41,7 +41,7 @@ func NewBitArrayFromFn(bits int, fn func(int) bool) *BitArray {
 	}
 	bA := &BitArray{
 		Bits:  bits,
-		Elems: make([]uint64, (bits+63)/64),
+		Elems: make([]uint64, numElements(bits)),
 	}
 	for i := 0; i < bits; i++ {
 		v := fn(i)
@@ -90,7 +90,7 @@ func (bA *BitArray) SetIndex(i int, v bool) bool {
 }
 
 func (bA *BitArray) setIndex(i int, v bool) bool {
-	if i >= bA.Bits {
+	if i >= bA.Bits || i/64 >= len(bA.Elems) {
 		return false
 	}
 	if v {
@@ -121,7 +121,7 @@ func (bA *BitArray) copy() *BitArray {
 }
 
 func (bA *BitArray) copyBits(bits int) *BitArray {
-	c := make([]uint64, (bits+63)/64)
+	c := make([]uint64, numElements(bits))
 	copy(c, bA.Elems)
 	return &BitArray{
 		Bits:  bits,
@@ -282,6 +282,11 @@ func (bA *BitArray) PickRandom() (int, bool) {
 }
 
 func (bA *BitArray) getNumTrueIndices() int {
+	if bA.Size() == 0 || len(bA.Elems) == 0 || len(bA.Elems) != numElements(bA.Size()) {
+		// size and elements must be valid to do this calc
+		return 0
+	}
+
 	count := 0
 	numElems := len(bA.Elems)
 	// handle all elements except the last one
@@ -494,4 +499,23 @@ func (bA *BitArray) FromProto(protoBitArray *cmtprotobits.BitArray) {
 	if len(protoBitArray.Elems) > 0 {
 		bA.Elems = protoBitArray.Elems
 	}
+}
+
+// ValidateBasic validates a BitArray. Note that a nil BitArray and BitArray of
+// size 0 bits is valid. However the number of Bits and Elems be valid based on
+// each other.
+func (bA *BitArray) ValidateBasic() error {
+	if bA == nil {
+		return nil
+	}
+
+	expectedElems := numElements(bA.Size())
+	if expectedElems != len(bA.Elems) {
+		return fmt.Errorf("mismatch between specified number of bits %d, and number of elements %d, expected %d elements", bA.Size(), len(bA.Elems), expectedElems)
+	}
+	return nil
+}
+
+func numElements(bits int) int {
+	return (bits + 63) / 64
 }

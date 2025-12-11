@@ -310,28 +310,39 @@ func (vals *ValidatorSet) Size() int {
 }
 
 // Forces recalculation of the set's total voting power.
-// Panics if total voting power is bigger than MaxTotalVotingPower.
-func (vals *ValidatorSet) updateTotalVotingPower() {
+// Returns an error if total voting power exceeds MaxTotalVotingPower.
+func (vals *ValidatorSet) updateTotalVotingPower() error {
 	sum := int64(0)
 	for _, val := range vals.Validators {
 		// mind overflow
 		sum = safeAddClip(sum, val.VotingPower)
 		if sum > MaxTotalVotingPower {
-			panic(fmt.Sprintf(
-				"Total voting power should be guarded to not exceed %v; got: %v",
-				MaxTotalVotingPower,
-				sum))
+			return fmt.Errorf("total voting power %d exceeds maximum %d", sum, MaxTotalVotingPower)
 		}
 	}
 
 	vals.totalVotingPower = sum
+	return nil
+}
+
+// TotalVotingPowerSafe returns the sum of the voting powers of all validators,
+// or an error if the total exceeds MaxTotalVotingPower.
+func (vals *ValidatorSet) TotalVotingPowerSafe() (int64, error) {
+	if vals.totalVotingPower == 0 {
+		if err := vals.updateTotalVotingPower(); err != nil {
+			return 0, err
+		}
+	}
+	return vals.totalVotingPower, nil
 }
 
 // TotalVotingPower returns the sum of the voting powers of all validators.
 // It recomputes the total voting power if required.
 func (vals *ValidatorSet) TotalVotingPower() int64 {
 	if vals.totalVotingPower == 0 {
-		vals.updateTotalVotingPower()
+		if err := vals.updateTotalVotingPower(); err != nil {
+			panic(err)
+		}
 	}
 	return vals.totalVotingPower
 }
@@ -665,7 +676,9 @@ func (vals *ValidatorSet) updateWithChangeSet(changes []*Validator, allowDeletes
 	// Should go after additions.
 	vals.checkAllKeysHaveSameType()
 
-	vals.updateTotalVotingPower() // will panic if total voting power > MaxTotalVotingPower
+	if err = vals.updateTotalVotingPower(); err != nil {
+		panic(err)
+	}
 
 	// Scale and center.
 	vals.RescalePriorities(PriorityWindowSizeFactor * vals.TotalVotingPower())
@@ -935,7 +948,10 @@ func ValidatorSetFromProto(vp *cmtproto.ValidatorSet) (*ValidatorSet, error) {
 	// power hence we need to recompute it.
 	// FIXME: We should look to remove TotalVotingPower from proto or add it in the validators hash
 	// so we don't have to do this
-	vals.TotalVotingPower()
+	// NOTE: Use TotalVotingPowerSafe to return error instead of panicking on invalid input.
+	if _, err := vals.TotalVotingPowerSafe(); err != nil {
+		return nil, err
+	}
 
 	return vals, vals.ValidateBasic()
 }
@@ -960,7 +976,9 @@ func ValidatorSetFromExistingValidators(valz []*Validator) (*ValidatorSet, error
 	}
 	vals.checkAllKeysHaveSameType()
 	vals.Proposer = vals.findPreviousProposer()
-	vals.updateTotalVotingPower()
+	if err := vals.updateTotalVotingPower(); err != nil {
+		return nil, err
+	}
 	sort.Sort(ValidatorsByVotingPower(vals.Validators))
 	return vals, nil
 }

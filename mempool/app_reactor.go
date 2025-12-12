@@ -190,10 +190,18 @@ func (r *AppReactor) broadcastTransactionsBatch(ctx context.Context, maxBatchSiz
 func (r *AppReactor) broadcast(txs types.Txs) {
 	r.mempool.metrics.BatchSize.With("dir", "outbound").Observe(float64(len(txs)))
 
-	r.Switch.BroadcastAsync(p2p.Envelope{
-		Message:   &protomem.Txs{Txs: txs.ToSliceOfBytes()},
-		ChannelID: MempoolChannel,
-	})
+	maxMempoolPeers := r.config.ExperimentalMaxGossipConnectionsToPersistentPeers
+	if maxMempoolPeers == 0 {
+		r.Switch.BroadcastAsync(p2p.Envelope{
+			Message:   &protomem.Txs{Txs: txs.ToSliceOfBytes()},
+			ChannelID: MempoolChannel,
+		})
+	} else {
+		r.Switch.BroadcastAsyncRandomSubset(p2p.Envelope{
+			Message:   &protomem.Txs{Txs: txs.ToSliceOfBytes()},
+			ChannelID: MempoolChannel,
+		}, maxMempoolPeers)
+	}
 }
 
 func (r *AppReactor) enabled() bool {

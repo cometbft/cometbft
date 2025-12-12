@@ -140,6 +140,14 @@ abci = "{{ .BaseConfig.ABCI }}"
 # so the app can decide if we should keep the connection or not
 filter_peers = {{ .BaseConfig.FilterPeers }}
 
+# Safety start delay duration (e.g. "6s").
+# Waits for this duration before starting the node to prevent double signing on restart.
+safety_start_delay = "{{ .BaseConfig.SafetyStartDelay }}"
+
+# Disable O_SYNC for atomic file writes.
+# If true, writes to disk will be faster but less safe against power failure.
+disable_os_sync = {{ .BaseConfig.DisableOSSync }}
+
 
 #######################################################################
 ###                 Advanced Configuration Options                  ###

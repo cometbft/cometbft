@@ -325,6 +325,10 @@ func (cfg BaseConfig) ValidateBasic() error {
 		return cmterrors.ErrNegativeField{Field: "safety_start_delay"}
 	}
 
+	if cfg.DisableOSSync && cfg.SafetyStartDelay == 0 {
+		return errors.New("safety_start_delay cannot be 0 when disable_os_sync is enabled (amnesia risk)")
+	}
+
 	return nil
 }
 

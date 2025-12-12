@@ -56,6 +56,14 @@ func makeStructInfo(rt reflect.Type) *structInfo {
 	if sInfo := cache.get(rt); sInfo != nil {
 		return sInfo
 	}
+	// Double-checked locking: acquire write lock and check again
+	// to prevent multiple goroutines from creating the same structInfo.
+	cache.Lock()
+	defer cache.Unlock()
+	// Check again after acquiring the lock
+	if sInfo := cache.structInfos[rt]; sInfo != nil {
+		return sInfo
+	}
 	fields := make([]*fieldInfo, 0, rt.NumField())
 	for i := 0; i < cap(fields); i++ {
 		frt := rt.Field(i)
@@ -81,6 +89,6 @@ func makeStructInfo(rt reflect.Type) *structInfo {
 		fields = append(fields, fInfo)
 	}
 	sInfo := &structInfo{fields: fields}
-	cache.set(rt, sInfo)
+	cache.structInfos[rt] = sInfo
 	return sInfo
 }

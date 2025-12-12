@@ -607,6 +607,12 @@ func NewNodeWithContext(
 
 // OnStart starts the Node. It implements service.Service.
 func (n *Node) OnStart() error {
+	// If DisableOSSync is enabled, wait for SafetyStartDelay to prevent double signing (amnesia risk).
+	if n.config.DisableOSSync && n.config.SafetyStartDelay > 0 {
+		n.Logger.Info("Safety Start Delay active due to disabled O_SYNC", "duration", n.config.SafetyStartDelay)
+		time.Sleep(n.config.SafetyStartDelay)
+	}
+
 	now := cmttime.Now()
 	genTime := n.genesisDoc.GenesisTime
 	if genTime.After(now) {

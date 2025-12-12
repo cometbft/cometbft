@@ -42,6 +42,8 @@ type Metrics struct {
 	MessagesReceived metrics.Counter `metrics_labels:"message_type,reactor"`
 	// Number of messages in flight (wip by reactor)
 	MessagesReactorInFlight metrics.Gauge `metrics_labels:"message_type,reactor"`
+	// Duration between receiving a message and submitting it to the reactor
+	MessagesReactorPendingDuration metrics.Histogram `metrics_labels:"message_type,reactor"`
 	// Duration of the message receive operation by reactor
 	MessageReactorReceiveDuration metrics.Histogram `metrics_labels:"message_type,reactor"`
 	// Concurrency of the incoming message queue for a given reactor

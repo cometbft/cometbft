@@ -68,6 +68,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "messages_reactor_in_flight",
 			Help:      "Number of messages in flight (wip by reactor)",
 		}, append(labels, "message_type", "reactor")).With(labelsAndValues...),
+		MessagesReactorPendingDuration: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "messages_reactor_pending_duration",
+			Help:      "Duration between receiving a message and submitting it to the reactor",
+		}, append(labels, "message_type", "reactor")).With(labelsAndValues...),
 		MessageReactorReceiveDuration: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -94,6 +100,7 @@ func NopMetrics() *Metrics {
 		MessageSendBytesTotal:          discard.NewCounter(),
 		MessagesReceived:               discard.NewCounter(),
 		MessagesReactorInFlight:        discard.NewGauge(),
+		MessagesReactorPendingDuration: discard.NewHistogram(),
 		MessageReactorReceiveDuration:  discard.NewHistogram(),
 		MessageReactorQueueConcurrency: discard.NewGauge(),
 	}

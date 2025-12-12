@@ -2417,7 +2417,7 @@ func TestStateHalt1(t *testing.T) {
 	validatePrecommit(t, cs1, round, round, vss[0], propBlock.Hash(), propBlock.Hash())
 
 	// add precommits from the rest
-signAddVotes(cs1, cmtproto.PrecommitType, nil, types.PartSetHeader{}, true, vs2) // didn't receive proposal
+	signAddVotes(cs1, cmtproto.PrecommitType, nil, types.PartSetHeader{}, true, vs2) // didn't receive proposal
 	signAddVotes(cs1, cmtproto.PrecommitType, propBlock.Hash(), propBlockParts.Header(), true, vs3)
 	// we receive this later, but vs3 might receive it earlier and with ours will go to commit!
 	precommit4 := signVote(vs4, cmtproto.PrecommitType, propBlock.Hash(), propBlockParts.Header(), true)

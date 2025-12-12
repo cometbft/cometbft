@@ -229,22 +229,38 @@ func (rs *reactorSet) newReactorQueue(
 		// how many message we can accept to this before blocking (per reactor)
 		reactorReceiveChanCapacity = 1024
 
-		minWorkers        = 4
+		// workers number range
+		defaultMinWorkers = 4
 		defaultMaxWorkers = 32
-		latencyThreshold  = 100 * time.Millisecond
-		latencyPercentile = 90.0 // P90
-		autoScaleInternal = 250 * time.Millisecond
+
+		// by default, workers are scaled up until P90 is <= 100ms,
+		// otherwise they are scaled down/kept.
+		defaultLatencyThreshold = 100 * time.Millisecond
+		latencyPercentile       = 90.0 // P90
+
+		// how often to autoscale.
+		autoScaleFrequency = 200 * time.Millisecond
 	)
 
-	maxWorkers := defaultMaxWorkers
+	var (
+		minWorkers       = defaultMinWorkers
+		maxWorkers       = defaultMaxWorkers
+		latencyThreshold = defaultLatencyThreshold
+	)
 
 	// bump max workers for mempool
 	if reactorName == "MEMPOOL" {
-		maxWorkers = 128
+		minWorkers = 8
+		maxWorkers = 512
+		latencyThreshold = 500 * time.Millisecond
 	}
 
+	// "frontend" queue where we submit new envelopes.
+	// it's consumed inside autopool by many workers with dynamic concurrency.
 	queue := make(chan pendingEnvelope, reactorReceiveChanCapacity)
 
+	// "backend" function that is used to process envelopes.
+	// it's called by workers inside autopool.
 	receive := func(e pendingEnvelope) {
 		rs.receive(reactorID, e)
 	}
@@ -254,7 +270,7 @@ func (rs *reactorSet) newReactorQueue(
 		maxWorkers,
 		latencyPercentile,
 		latencyThreshold,
-		autoScaleInternal,
+		autoScaleFrequency,
 		rs.switchRef.Logger,
 	)
 

@@ -548,7 +548,7 @@ func (a *addrBook) addToNewBucket(ka *knownAddress, bucketIdx int) error {
 
 	// Add to bucket.
 	bucket[addrStr] = ka
-	// increment nNew if the peer doesnt already exist in a bucket
+	// increment nNew if the peer doesn't already exist in a bucket
 	if ka.addBucketRef(bucketIdx) == 1 {
 		a.nNew++
 	}

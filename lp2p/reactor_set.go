@@ -199,13 +199,22 @@ func (rs *reactorSet) receive(reactorID int, e pendingEnvelope) {
 		"message_type", e.messageType,
 	}
 
-	// log envelopes that are older than 1 second with a dummy sampling of 10%
-	if time.Since(e.addedAt) > time.Second && e.addedAt.UnixMilli()%10 == 0 {
+	// duration between p2p receive and piping inside the consumer queue
+	pendingFor := time.Since(e.addedAt)
+	rs.switchRef.metrics.MessagesReactorPendingDuration.With(labels...).Observe(pendingFor.Seconds())
+
+	// log slow pending envelopes if:
+	// - pending for more than 1s (but only 10% sampled with a "dummy" sampling)
+	// - pending for more than 10s
+	logSlow := (pendingFor > time.Second) &&
+		(pendingFor > 10*time.Second || e.addedAt.UnixMilli()%10 == 0)
+
+	if logSlow {
 		rs.switchRef.Logger.Info(
-			"Envelope is pending for too long",
+			"Slow pending envelope detected",
 			"reactor", reactor.name,
 			"message_type", e.messageType,
-			"pending_dur", time.Since(e.addedAt).String(),
+			"pending_for", pendingFor.String(),
 		)
 	}
 
@@ -229,22 +238,38 @@ func (rs *reactorSet) newReactorQueue(
 		// how many message we can accept to this before blocking (per reactor)
 		reactorReceiveChanCapacity = 1024
 
-		minWorkers        = 4
+		// workers number range
+		defaultMinWorkers = 4
 		defaultMaxWorkers = 32
-		latencyThreshold  = 100 * time.Millisecond
-		latencyPercentile = 90.0 // P90
-		autoScaleInternal = 250 * time.Millisecond
+
+		// by default, workers are scaled up until P90 is <= 100ms,
+		// otherwise they are scaled down/kept.
+		defaultLatencyThreshold = 100 * time.Millisecond
+		latencyPercentile       = 90.0 // P90
+
+		// how often to autoscale.
+		autoScaleFrequency = 200 * time.Millisecond
 	)
 
-	maxWorkers := defaultMaxWorkers
+	var (
+		minWorkers       = defaultMinWorkers
+		maxWorkers       = defaultMaxWorkers
+		latencyThreshold = defaultLatencyThreshold
+	)
 
 	// bump max workers for mempool
 	if reactorName == "MEMPOOL" {
-		maxWorkers = 128
+		minWorkers = 8
+		maxWorkers = 512
+		latencyThreshold = 500 * time.Millisecond
 	}
 
+	// "frontend" queue where we submit new envelopes.
+	// it's consumed inside autopool by many workers with dynamic concurrency.
 	queue := make(chan pendingEnvelope, reactorReceiveChanCapacity)
 
+	// "backend" function that is used to process envelopes.
+	// it's called by workers inside autopool.
 	receive := func(e pendingEnvelope) {
 		rs.receive(reactorID, e)
 	}
@@ -254,7 +279,7 @@ func (rs *reactorSet) newReactorQueue(
 		maxWorkers,
 		latencyPercentile,
 		latencyThreshold,
-		autoScaleInternal,
+		autoScaleFrequency,
 		rs.switchRef.Logger,
 	)
 

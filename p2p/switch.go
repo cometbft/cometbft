@@ -301,6 +301,14 @@ func (sw *Switch) Broadcast(e Envelope) chan bool {
 	return successChan
 }
 
+func (sw *Switch) BroadcastAsyncRandomSubset(e Envelope, numPeers int) {
+	sw.Logger.Debug("BroadcastAsyncRandomSubset", "channel", e.ChannelID)
+
+	sw.peers.ForEachRandomPeer(numPeers, func(p Peer) {
+		go p.Send(e)
+	})
+}
+
 // BroadcastAsync runs a go routine for each attempted send, which will block
 // trying to send for defaultSendTimeoutSeconds.
 //

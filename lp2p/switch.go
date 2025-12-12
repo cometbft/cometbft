@@ -321,6 +321,14 @@ func (s *Switch) BroadcastAsync(e p2p.Envelope) {
 	})
 }
 
+func (s *Switch) BroadcastAsyncRandomSubset(e p2p.Envelope, numPeers int) {
+	s.Logger.Debug("BroadcastAsyncRandom", "channel", e.ChannelID)
+
+	s.ForEachRandomPeer(numPeers, func(p p2p.Peer) {
+		go p.Send(e)
+	})
+}
+
 func (s *Switch) TryBroadcast(e p2p.Envelope) {
 	s.Logger.Debug("TryBroadcast", "channel", e.ChannelID)
 

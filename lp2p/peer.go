@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
@@ -311,7 +313,57 @@ func (p *PeerSet) ForEach(lambda func(p2p.Peer)) {
 	}
 }
 
-func (p *PeerSet) Random() p2p.Peer { return nil }
+func (p *PeerSet) Random() p2p.Peer {
+	ids := p.existingPeerIDs()
+	if len(ids) == 0 {
+		return nil
+	}
+
+	id := ids[cmtrand.Int()%len(ids)]
+	key := peerIDToKey(id)
+	return p.Get(key)
+}
+
+// ForEachRandomPeer calls the provided callback function on at most n random
+// peers. Note that it is best effort that the callback will be called on n
+// peers.
+func (p *PeerSet) ForEachRandomPeer(n int, lambda func(p2p.Peer)) {
+	peers := p.existingPeerIDs()
+	totalPeers := len(peers)
+
+	if totalPeers == 0 || n <= 0 {
+		return
+	}
+	if n >= totalPeers {
+		p.ForEach(lambda)
+		return
+	}
+
+	i := 0
+	selected := make(map[p2p.ID]struct{})
+	for count := 0; count < n; {
+		if i > totalPeers*2 {
+			// In case we keep choosing the same peers or every random peer is
+			// nil, just give up at this point
+			break
+		}
+
+		randomPeer := p.Random()
+		if randomPeer == nil {
+			i++
+			continue
+		}
+		if _, alreadySelected := selected[randomPeer.ID()]; alreadySelected {
+			i++
+			continue
+		}
+
+		count++
+		i++
+		selected[randomPeer.ID()] = struct{}{}
+		lambda(randomPeer)
+	}
+}
 
 func (p *PeerSet) existingPeerIDs() []peer.ID {
 	hostID := p.host.ID()

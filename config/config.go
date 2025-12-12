@@ -320,6 +320,11 @@ func (cfg BaseConfig) ValidateBasic() error {
 	default:
 		return errors.New("unknown log_format (must be 'plain' or 'json')")
 	}
+
+	if cfg.SafetyStartDelay < 0 {
+		return cmterrors.ErrNegativeField{Field: "safety_start_delay"}
+	}
+
 	return nil
 }
 

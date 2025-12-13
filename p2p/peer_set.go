@@ -186,10 +186,58 @@ func (ps *PeerSet) ForEach(fn func(peer Peer)) {
 func (ps *PeerSet) Random() Peer {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
+	return ps.random()
+}
 
+// random returns a random peer from the PeerSet.
+//
+// Assumes PeerSet lock is held.
+func (ps *PeerSet) random() Peer {
 	if len(ps.list) == 0 {
 		return nil
 	}
 
 	return ps.list[cmtrand.Int()%len(ps.list)]
+}
+
+// ForEachRandomPeer calls the provided callback function on at most n random
+// peers. Note that it is best effort that the callback will be called on n
+// peers.
+func (ps *PeerSet) ForEachRandomPeer(numPeers int, fn func(Peer)) {
+	ps.mtx.Lock()
+	defer ps.mtx.Unlock()
+
+	totalPeers := len(ps.list)
+	if totalPeers == 0 || numPeers <= 0 {
+		return
+	}
+	if numPeers >= totalPeers {
+		ps.ForEach(fn)
+		return
+	}
+
+	i := 0
+	selected := make(map[ID]struct{})
+	for count := 0; count < numPeers; {
+		if i > totalPeers*2 {
+			// In case we keep choosing the same peers or every random peer is
+			// nil, just give up at this point
+			break
+		}
+
+		randomPeer := ps.random()
+		if randomPeer == nil {
+			i++
+			continue
+		}
+		if _, alreadySelected := selected[randomPeer.ID()]; alreadySelected {
+			i++
+			continue
+		}
+
+		count++
+		i++
+		selected[randomPeer.ID()] = struct{}{}
+		fn(randomPeer)
+	}
 }

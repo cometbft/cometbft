@@ -3,7 +3,6 @@ package mempool
 import (
 	"context"
 	"fmt"
-	"sync"
 	"sync/atomic"
 
 	"github.com/cometbft/cometbft/config"
@@ -24,9 +23,6 @@ type AppReactor struct {
 
 	switchedOn           atomic.Bool
 	waitForSwitchingOnCh chan struct{}
-
-	peers     []p2p.Peer
-	peersLock sync.RWMutex
 }
 
 func NewAppReactor(
@@ -134,21 +130,6 @@ func (r *AppReactor) EnableInOutTxs() {
 	close(r.waitForSwitchingOnCh)
 }
 
-func (r *AppReactor) AddPeer(p p2p.Peer) {
-	r.peersLock.Lock()
-	defer r.peersLock.Unlock()
-
-	maxPeers := r.config.ExperimentalMaxGossipConnectionsToPersistentPeers
-	if maxPeers == 0 {
-		return
-	}
-	if len(r.peers) >= maxPeers {
-		return
-	}
-
-	r.peers = append(r.peers, p)
-}
-
 func (r *AppReactor) Receive(e p2p.Envelope) {
 	if !r.enabled() {
 		r.Logger.Debug("Ignored mempool message received while syncing")
@@ -218,11 +199,7 @@ func (r *AppReactor) broadcast(txs types.Txs) {
 	if maxMempoolPeers == 0 {
 		r.Switch.BroadcastAsync(envelope)
 	} else {
-		r.peersLock.RLock()
-		defer r.peersLock.RUnlock()
-		for _, p := range r.peers {
-			go p.Send(envelope)
-		}
+		r.Switch.BroadcastAsyncRandomSubset(envelope, maxMempoolPeers)
 	}
 }
 

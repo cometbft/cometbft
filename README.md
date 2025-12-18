@@ -101,7 +101,7 @@ If you are interested in working on an issue, please comment on it, and take a l
 ### Documentation
 - [CometBFT Documentation](https://docs.cometbft.com/v0.38/)
 - [CometBFT Specification](./spec/README.md)
-- [Documentation](./docs/docs/01-ibc/01-overview.md)
+- [Documentation](./docs/)
 
 ### Cosmos Stack Libraries
 

@@ -876,8 +876,10 @@ func (cs *State) receiveRoutine(maxSteps int) {
 
 // state transitions on complete-proposal, 2/3-any, 2/3-one
 func (cs *State) handleMsg(mi msgInfo) {
+	start := time.Now()
 	cs.mtx.Lock()
 	defer cs.mtx.Unlock()
+	cs.metrics.ConsStateLockWait.Observe(float64(time.Since(start).Seconds()))
 
 	var (
 		added bool

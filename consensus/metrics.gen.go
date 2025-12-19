@@ -216,6 +216,14 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "late_votes",
 			Help:      "LateVotes stores the number of votes that were received by this node that correspond to earlier heights and rounds than this node is currently in.",
 		}, append(labels, "vote_type")).With(labelsAndValues...),
+		ConsStateLockWait: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "cons_state_lock_wait",
+			Help:      "ConsStateLockWait is the amount of time spent in handleMsg waiting for the global state lock",
+
+			Buckets: stdprometheus.ExponentialBucketsRange(0.1, 100, 8),
+		}, labels).With(labelsAndValues...),
 	}
 }
 
@@ -254,5 +262,6 @@ func NopMetrics() *Metrics {
 		ProposalCreateCount:         discard.NewCounter(),
 		RoundVotingPowerPercent:     discard.NewGauge(),
 		LateVotes:                   discard.NewCounter(),
+		ConsStateLockWait:           discard.NewHistogram(),
 	}
 }

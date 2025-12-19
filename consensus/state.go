@@ -244,9 +244,11 @@ func (cs *State) GetLastHeight() int64 {
 // GetRoundState returns a shallow copy of the internal consensus state.
 // This function is thread-safe.
 func (cs *State) GetRoundState() *cstypes.RoundState {
+	start := time.Now()
 	cs.mtx.RLock()
 	rs := cs.getRoundState()
 	cs.mtx.RUnlock()
+	cs.metrics.GetRoundStateTime.Observe(time.Since(start).Seconds())
 	return &rs
 }
 

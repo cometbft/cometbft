@@ -222,6 +222,18 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "cons_state_lock_wait",
 			Help:      "ConsStateLockWait is the amount of time spent in handleMsg waiting for the global state lock",
 		}, labels).With(labelsAndValues...),
+		GetRoundStateTime: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "get_round_state_time",
+			Help:      "GetRoundStateTime measures the amount of time taken in consensus.State.GetRoundState",
+		}, labels).With(labelsAndValues...),
+		HeightVotesSetPeerMaj23Time: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "height_votes_set_peer_maj23_time",
+			Help:      "HeightVotesSetPeerMaj23Time measures the amount of time taken in HeightVoteSet.SetPeerMaj23",
+		}, labels).With(labelsAndValues...),
 	}
 }
 
@@ -261,5 +273,7 @@ func NopMetrics() *Metrics {
 		RoundVotingPowerPercent:     discard.NewGauge(),
 		LateVotes:                   discard.NewCounter(),
 		ConsStateLockWait:           discard.NewHistogram(),
+		GetRoundStateTime:           discard.NewHistogram(),
+		HeightVotesSetPeerMaj23Time: discard.NewHistogram(),
 	}
 }

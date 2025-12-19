@@ -146,6 +146,10 @@ type Metrics struct {
 
 	// ConsStateLockWait is the amount of time spent in handleMsg waiting for the global state lock
 	ConsStateLockWait metrics.Histogram
+	// GetRoundStateTime measures the amount of time taken in consensus.State.GetRoundState
+	GetRoundStateTime metrics.Histogram
+	// HeightVotesSetPeerMaj23Time measures the amount of time taken in HeightVoteSet.SetPeerMaj23
+	HeightVotesSetPeerMaj23Time metrics.Histogram
 }
 
 func (m *Metrics) MarkProposalProcessed(accepted bool) {

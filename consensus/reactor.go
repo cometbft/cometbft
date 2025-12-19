@@ -288,7 +288,9 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 				return
 			}
 			// Peer claims to have a maj23 for some BlockID at H,R,S,
+			start := time.Now()
 			err := votes.SetPeerMaj23(msg.Round, msg.Type, ps.peer.ID(), msg.BlockID)
+			conR.Metrics.HeightVotesSetPeerMaj23Time.Observe(time.Since(start).Seconds())
 			if err != nil {
 				conR.Switch.StopPeerForError(e.Src, err)
 				return
@@ -1669,7 +1671,6 @@ func (m *NewRoundStepMessage) ValidateHeight(initialHeight int64) error {
 			Field:  "Height",
 			Reason: fmt.Sprintf("%v should be lower than initial height %v", m.Height, initialHeight),
 		}
-
 	}
 
 	if m.Height == initialHeight && m.LastCommitRound != -1 {

@@ -86,6 +86,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "message_reactor_queue_concurrency",
 			Help:      "Concurrency of the incoming message queue for a given reactor",
 		}, append(labels, "reactor")).With(labelsAndValues...),
+		TrySendTime: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "try_send_time",
+			Help:      "TrySendTime measures the amount of time taken during Peer.TrySend",
+		}, labels).With(labelsAndValues...),
 	}
 }
 
@@ -103,5 +109,6 @@ func NopMetrics() *Metrics {
 		MessagesReactorPendingDuration: discard.NewHistogram(),
 		MessageReactorReceiveDuration:  discard.NewHistogram(),
 		MessageReactorQueueConcurrency: discard.NewGauge(),
+		TrySendTime:                    discard.NewHistogram(),
 	}
 }

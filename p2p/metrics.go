@@ -48,6 +48,8 @@ type Metrics struct {
 	MessageReactorReceiveDuration metrics.Histogram `metrics_labels:"message_type,reactor"`
 	// Concurrency of the incoming message queue for a given reactor
 	MessageReactorQueueConcurrency metrics.Gauge `metrics_labels:"reactor"`
+	// TrySendTime measures the amount of time taken during Peer.TrySend
+	TrySendTime metrics.Histogram
 }
 
 type metricsLabelCache struct {

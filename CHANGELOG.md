@@ -101,6 +101,8 @@
   ([\#4783](https://github.com/cometbft/cometbft/issues/4783))
 - `[bits]` Validate BitArray mismatched Bits and Elems length
   ([ASA-2025-003](https://github.com/cometbft/cometbft/security/advisories/GHSA-hrhf-2vcr-ghch))
+- `[cli]` Prevent inadvertent rollover of IPs in `cometbft testnet` config generator
+  ([\#5541](https://github.com/cometbft/cometbft/pull/5541))
 
 ### STATE-BREAKING
 

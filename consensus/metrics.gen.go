@@ -221,8 +221,6 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Subsystem: MetricsSubsystem,
 			Name:      "cons_state_lock_wait",
 			Help:      "ConsStateLockWait is the amount of time spent in handleMsg waiting for the global state lock",
-
-			Buckets: stdprometheus.ExponentialBucketsRange(0.1, 100, 8),
 		}, labels).With(labelsAndValues...),
 	}
 }

@@ -145,7 +145,7 @@ type Metrics struct {
 	LateVotes metrics.Counter `metrics_labels:"vote_type"`
 
 	// ConsStateLockWait is the amount of time spent in handleMsg waiting for the global state lock
-	ConsStateLockWait metrics.Histogram `metrics_buckettype:"exprange" metrics_bucketsizes:"0.1, 100, 8"`
+	ConsStateLockWait metrics.Histogram
 }
 
 func (m *Metrics) MarkProposalProcessed(accepted bool) {

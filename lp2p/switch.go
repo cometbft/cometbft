@@ -391,8 +391,8 @@ func (s *Switch) handleStream(stream network.Stream) {
 	}
 
 	var (
-		// peer id is is for receive metrics
-		peerStr     = s.host.ID().String()
+		// peer id is for receive metrics
+		peerStr     = peerID.String()
 		messageType = protoTypeName(msg)
 		payloadLen  = float64(len(payload))
 		labels      = []string{

@@ -239,7 +239,7 @@ func (rs *reactorSet) newReactorQueue(
 		reactorReceiveChanCapacity = 1024
 
 		// workers number range
-		defaultMinWorkers = 4
+		defaultMinWorkers = 10
 		defaultMaxWorkers = 32
 
 		// by default, workers are scaled up until P90 is <= 100ms,

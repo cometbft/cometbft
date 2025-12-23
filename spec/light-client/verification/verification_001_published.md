@@ -1148,7 +1148,7 @@ func Main (primary PeerID, lightStore LightStore, targetHeight Height)
 
 [[lightclient]] The light client ADR [77d2651 on Dec 27, 2019].
 
-[RPC]: https://docs.cometbft.com/v0.34/rpc/
+[RPC]: https://docs.cometbft.com/v0.38/rpc/
 
 [block]: https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md
 

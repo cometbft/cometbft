@@ -17,7 +17,7 @@ const (
 )
 
 // validateMsg validates a message.
-func validateMsg(pb proto.Message) error {
+func validateMsg(pb proto.Message, maxSnapshotChunks uint32) error {
 	if pb == nil {
 		return errors.New("message cannot be nil")
 	}
@@ -46,6 +46,9 @@ func validateMsg(pb proto.Message) error {
 		}
 		if msg.Chunks == 0 {
 			return errors.New("snapshot has no chunks")
+		}
+		if msg.Chunks > maxSnapshotChunks {
+			return fmt.Errorf("snapshot chunk count %d exceeds maximum %d", msg.Chunks, maxSnapshotChunks)
 		}
 	default:
 		return fmt.Errorf("unknown message type %T", msg)

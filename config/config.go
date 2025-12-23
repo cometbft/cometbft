@@ -936,10 +936,10 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 		if cfg.ChunkFetchers <= 0 {
 			return errors.New("chunk_fetchers is required")
 		}
-	}
 
-	if cfg.MaxSnapshotChunks == 0 {
-		return cmterrors.ErrRequiredField{Field: "max_snapshot_chunks"}
+		if cfg.MaxSnapshotChunks == 0 {
+			return errors.New("max_snapshot_chunks is required")
+		}
 	}
 
 	return nil

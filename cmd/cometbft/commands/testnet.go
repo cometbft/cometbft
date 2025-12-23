@@ -240,10 +240,22 @@ func hostnameOrIP(i int) string {
 		os.Exit(1)
 	}
 
-	for j := 0; j < i; j++ {
-		ip[3]++
+	for range i {
+		incrementIP(ip)
 	}
 	return ip.String()
+}
+
+// incrementIP increments the IP in-place.
+func incrementIP(ip net.IP) {
+	// Operation  is implicitly in-place as `net.IP` is a slice type.
+	for idx := len(ip) - 1; idx >= 0; idx-- {
+		ip[idx]++
+
+		if ip[idx] != 0 {
+			break
+		}
+	}
 }
 
 func persistentPeersString(config *cfg.Config) (string, error) {

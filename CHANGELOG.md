@@ -7,6 +7,8 @@
 ### BUG FIXES
 
 ### IMPROVEMENTS
+- `[statesync]` Add configurable `max-snapshot-chunks` parameter to validate max amount of chunks in a `SnapshotResponse`.
+  ([\#5549](https://github.com/cometbft/cometbft/pull/5549))
 
 ### FEATURES
 

@@ -16,8 +16,12 @@ const (
 	chunkMsgSize = int(16e6)
 )
 
+var (
+	ErrExceedsMaxSnapshotChunks = errors.New("amount of chunks in the snapshot exceeds the maximum allowed number of chunks")
+)
+
 // validateMsg validates a message.
-func validateMsg(pb proto.Message) error {
+func validateMsg(pb proto.Message, maxSnapshotChunks uint32) error {
 	if pb == nil {
 		return errors.New("message cannot be nil")
 	}
@@ -46,6 +50,9 @@ func validateMsg(pb proto.Message) error {
 		}
 		if msg.Chunks == 0 {
 			return errors.New("snapshot has no chunks")
+		}
+		if msg.Chunks > maxSnapshotChunks {
+			return fmt.Errorf("%w: snapshot response chunk count: %d, maximum chunks: %d", ErrExceedsMaxSnapshotChunks, msg.Chunks, maxSnapshotChunks)
 		}
 	default:
 		return fmt.Errorf("unknown message type %T", msg)

@@ -384,6 +384,9 @@ chunk_request_timeout = "10s"
 # The number of concurrent chunk fetchers to run (default: 1).
 chunk_fetchers = "4"
 
+# Maximum number of chunks allowed in a snapshot (default: 100000).
+max_snapshot_chunks = 100000
+
 #######################################################
 ###       Block Sync Configuration Options          ###
 #######################################################

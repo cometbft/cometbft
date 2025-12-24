@@ -84,11 +84,15 @@ func TestValidateMsg(t *testing.T) {
 			&ssproto.SnapshotsResponse{Height: 1, Format: 1, Chunks: 2, Hash: []byte{}},
 			false,
 		},
+		"SnapshotsResponse exceeds max chunks": {
+			&ssproto.SnapshotsResponse{Height: 1, Format: 1, Chunks: 100001, Hash: []byte{1}},
+			false,
+		},
 	}
 	for name, tc := range testcases {
 		tc := tc
 		t.Run(name, func(t *testing.T) {
-			err := validateMsg(tc.msg)
+			err := validateMsg(tc.msg, 100000)
 			if tc.valid {
 				require.NoError(t, err)
 			} else {

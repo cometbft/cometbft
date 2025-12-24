@@ -242,6 +242,14 @@ type BaseConfig struct { //nolint: maligned
 	// If true, query the ABCI app on connecting to a new peer
 	// so the app can decide if we should keep the connection or not
 	FilterPeers bool `mapstructure:"filter_peers"` // false
+
+	// Safety start delay duration (e.g. "6s").
+	// Waits for this duration before starting the node to prevent double signing on restart.
+	SafetyStartDelay time.Duration `mapstructure:"safety_start_delay"`
+
+	// Disable O_SYNC for atomic file writes.
+	// If true, writes to disk will be faster but less safe against power failure.
+	DisableOSSync bool `mapstructure:"disable_os_sync"`
 }
 
 // DefaultBaseConfig returns a default base configuration for a CometBFT node
@@ -260,6 +268,8 @@ func DefaultBaseConfig() BaseConfig {
 		FilterPeers:        false,
 		DBBackend:          "goleveldb",
 		DBPath:             DefaultDataDir,
+		SafetyStartDelay:   6 * time.Second,
+		DisableOSSync:      false,
 	}
 }
 
@@ -310,6 +320,15 @@ func (cfg BaseConfig) ValidateBasic() error {
 	default:
 		return errors.New("unknown log_format (must be 'plain' or 'json')")
 	}
+
+	if cfg.SafetyStartDelay < 0 {
+		return cmterrors.ErrNegativeField{Field: "safety_start_delay"}
+	}
+
+	if cfg.DisableOSSync && cfg.SafetyStartDelay == 0 {
+		return errors.New("safety_start_delay cannot be 0 when disable_os_sync is enabled (amnesia risk)")
+	}
+
 	return nil
 }
 

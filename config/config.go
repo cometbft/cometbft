@@ -863,6 +863,7 @@ type StateSyncConfig struct {
 	DiscoveryTime       time.Duration `mapstructure:"discovery_time"`
 	ChunkRequestTimeout time.Duration `mapstructure:"chunk_request_timeout"`
 	ChunkFetchers       int32         `mapstructure:"chunk_fetchers"`
+	MaxSnapshotChunks   uint32        `mapstructure:"max_snapshot_chunks"`
 }
 
 func (cfg *StateSyncConfig) TrustHashBytes() []byte {
@@ -881,6 +882,7 @@ func DefaultStateSyncConfig() *StateSyncConfig {
 		DiscoveryTime:       15 * time.Second,
 		ChunkRequestTimeout: 10 * time.Second,
 		ChunkFetchers:       4,
+		MaxSnapshotChunks:   100000,
 	}
 }
 
@@ -933,6 +935,10 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 
 		if cfg.ChunkFetchers <= 0 {
 			return errors.New("chunk_fetchers is required")
+		}
+
+		if cfg.MaxSnapshotChunks == 0 {
+			return errors.New("max_snapshot_chunks is required")
 		}
 	}
 

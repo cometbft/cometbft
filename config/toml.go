@@ -452,6 +452,9 @@ chunk_request_timeout = "{{ .StateSync.ChunkRequestTimeout }}"
 # The number of concurrent chunk fetchers to run (default: 1).
 chunk_fetchers = "{{ .StateSync.ChunkFetchers }}"
 
+# Maximum number of chunks allowed in a snapshot (default: 100000).
+max_snapshot_chunks = {{ .StateSync.MaxSnapshotChunks }}
+
 #######################################################
 ###       Block Sync Configuration Options          ###
 #######################################################

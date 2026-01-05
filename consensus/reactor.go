@@ -33,6 +33,10 @@ const (
 
 	blocksToContributeToBecomeGoodPeer = 10000
 	votesToContributeToBecomeGoodPeer  = 10000
+
+	// fallBehindThreshold is the number of blocks behind peers before
+	// automatically switching to blocksync mode
+	fallBehindThreshold = 5
 )
 
 //-----------------------------------------------------------------------------
@@ -51,6 +55,9 @@ type Reactor struct {
 	initialHeight atomic.Int64
 
 	Metrics *Metrics
+
+	// monitoring interval for fallbehind detection
+	fallbehindCheckInterval time.Duration
 }
 
 type ReactorOption func(*Reactor)
@@ -58,11 +65,12 @@ type ReactorOption func(*Reactor)
 // NewReactor returns a new Reactor with the given consensusState.
 func NewReactor(consensusState *State, waitSync bool, options ...ReactorOption) *Reactor {
 	conR := &Reactor{
-		conS:          consensusState,
-		waitSync:      atomic.Bool{},
-		rs:            consensusState.getRoundState(),
-		initialHeight: atomic.Int64{},
-		Metrics:       NopMetrics(),
+		conS:                    consensusState,
+		waitSync:                atomic.Bool{},
+		rs:                      consensusState.getRoundState(),
+		initialHeight:           atomic.Int64{},
+		Metrics:                 NopMetrics(),
+		fallbehindCheckInterval: 1 * time.Second,
 	}
 	conR.initialHeight.Store(consensusState.state.InitialHeight)
 	conR.BaseReactor = *p2p.NewBaseReactor("Consensus", conR)
@@ -86,6 +94,9 @@ func (conR *Reactor) OnStart() error {
 
 	// start routine that computes peer statistics for evaluating peer quality
 	go conR.peerStatsRoutine()
+
+	// start routine that monitors for falling behind and switches to blocksync
+	go conR.fallbehindMonitorRoutine()
 
 	conR.subscribeToBroadcastEvents()
 
@@ -789,6 +800,17 @@ func pickPartToSend(
 		prs.Height >= blockStoreBase {
 		heightLogger := logger.With("height", prs.Height)
 
+		// Don't help peers that are too far behind
+		// Let blocksync handle it on their end
+		if rs.Height > prs.Height+fallBehindThreshold {
+			logger.Debug("Peer too far behind for consensus catchup",
+				"peerHeight", prs.Height,
+				"ourHeight", rs.Height,
+				"threshold", fallBehindThreshold,
+			)
+			return nil, false
+		}
+
 		// if we never received the commit message from the peer, the block parts won't be initialized
 		if prs.ProposalBlockParts == nil {
 			blockMeta := blockStore.LoadBlockMeta(prs.Height)
@@ -997,6 +1019,97 @@ func (conR *Reactor) peerStatsRoutine() {
 		case <-conR.conS.Quit():
 			return
 
+		case <-conR.Quit():
+			return
+		}
+	}
+}
+
+// fallbehindMonitorRoutine periodically checks if the local node has fallen
+// behind its peers by more than 3 blocks. If so, switches to blocksync mode.
+func (conR *Reactor) fallbehindMonitorRoutine() {
+	ticker := time.NewTicker(conR.fallbehindCheckInterval)
+	defer ticker.Stop()
+
+	for {
+		if !conR.IsRunning() {
+			conR.Logger.Info("Stopping fallbehindMonitorRoutine")
+			return
+		}
+
+		select {
+		case <-ticker.C:
+			// Skip if already syncing
+			if conR.WaitSync() {
+				continue
+			}
+
+			// Get local and max peer heights
+			rs := conR.getRoundState()
+			localHeight := rs.Height
+			maxPeerHeight := int64(0)
+
+			conR.Switch.Peers().ForEach(func(peer p2p.Peer) {
+				peerState, ok := peer.Get(types.PeerStateKey).(*PeerState)
+				if !ok {
+					return
+				}
+				prs := peerState.GetRoundState()
+				if prs.Height > maxPeerHeight {
+					maxPeerHeight = prs.Height
+				}
+			})
+
+			// Check if fallen behind threshold
+			if maxPeerHeight > 0 && maxPeerHeight > localHeight+fallBehindThreshold {
+				conR.Logger.Info("Node has fallen behind, switching to blocksync",
+					"localHeight", localHeight,
+					"maxPeerHeight", maxPeerHeight,
+					"threshold", fallBehindThreshold,
+				)
+
+				// Stop consensus state machine
+				if err := conR.conS.Stop(); err != nil {
+					conR.Logger.Error("Error stopping consensus state", "err", err)
+					continue
+				}
+				conR.conS.Wait()
+
+				// Prevent consensus from processing messages
+				conR.waitSync.Store(true)
+
+				// Get blocksync reactor and switch
+				bcR, exists := conR.Switch.Reactor("BLOCKSYNC")
+				if !exists {
+					conR.Logger.Error("Blocksync reactor not found")
+					// Try to restart consensus
+					conR.waitSync.Store(false)
+					if err := conR.conS.Start(); err != nil {
+						conR.Logger.Error("Failed to restart consensus", "err", err)
+					}
+					continue
+				}
+
+				if bcReactor, ok := bcR.(interface{ SwitchToBlockSync(sm.State) error }); ok {
+					if err := bcReactor.SwitchToBlockSync(conR.conS.state); err != nil {
+						conR.Logger.Error("Failed to switch to blocksync", "err", err)
+						// Try to restart consensus
+						conR.waitSync.Store(false)
+						if err := conR.conS.Start(); err != nil {
+							conR.Logger.Error("Failed to restart consensus", "err", err)
+						}
+					}
+				} else {
+					conR.Logger.Error("Blocksync reactor missing SwitchToBlockSync method")
+					conR.waitSync.Store(false)
+					if err := conR.conS.Start(); err != nil {
+						conR.Logger.Error("Failed to restart consensus", "err", err)
+					}
+				}
+			}
+
+		case <-conR.conS.Quit():
+			return
 		case <-conR.Quit():
 			return
 		}

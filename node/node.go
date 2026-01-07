@@ -365,6 +365,15 @@ func NewNodeWithContext(
 	}
 	localAddr := pubKey.Address()
 
+	if config.BlockSync.FollowerMode {
+		if state.Validators.HasAddress(localAddr) {
+			logger.Error("Follower mode is enabled, but the node is a validator. Ignoring follower mode.")
+			config.BlockSync.FollowerMode = false
+		} else {
+			logger.Info("Follower mode is enabled!")
+		}
+	}
+
 	// Determine whether we should attempt state sync.
 	stateSync := config.StateSync.Enable && !onlyValidatorIsUs(state, localAddr)
 	if stateSync && state.LastBlockHeight > 0 {
@@ -397,7 +406,9 @@ func NewNodeWithContext(
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
 
 	// Make MempoolReactor
-	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, waitSync, memplMetrics, logger)
+	// note that mempool ignores sync wait if follower mode is enabled
+	mempoolWaitSync := waitSync && !config.BlockSync.FollowerMode
+	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, mempoolWaitSync, memplMetrics, logger)
 
 	evidenceReactor, evidencePool, err := createEvidenceReactor(config, dbProvider, stateStore, blockStore, logger)
 	if err != nil {
@@ -441,9 +452,12 @@ func NewNodeWithContext(
 		return nil, fmt.Errorf("could not create blocksync reactor: %w", err)
 	}
 
+	// in opposite to mempool' reactor,
+	// consensus reactor is "suspended" in follower mode
+	consensusWaitSync := waitSync || config.BlockSync.FollowerMode
 	consensusReactor, consensusState := createConsensusReactor(
 		config, state, blockExec, blockStore, mempool, evidencePool,
-		privValidator, csMetrics, waitSync, eventBus, consensusLogger, offlineStateSyncHeight,
+		privValidator, csMetrics, consensusWaitSync, eventBus, consensusLogger, offlineStateSyncHeight,
 	)
 
 	err = stateStore.SetOfflineStateSyncHeight(0)

@@ -313,6 +313,7 @@ func createBlocksyncReactor(
 
 	bcReactor := blocksync.NewReactor(
 		enabled,
+		config.BlockSync.FollowerMode,
 		state.Copy(),
 		blockExec,
 		blockStore,

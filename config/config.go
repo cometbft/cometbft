@@ -981,15 +981,17 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 //-----------------------------------------------------------------------------
 // BlockSyncConfig
 
-// BlockSyncConfig (formerly known as FastSync) defines the configuration for the CometBFT block sync service
+// BlockSyncConfig defines the configuration for the CometBFT block sync service
 type BlockSyncConfig struct {
-	Version string `mapstructure:"version"`
+	Version      string `mapstructure:"version"`
+	FollowerMode bool   `mapstructure:"follower_mode"`
 }
 
 // DefaultBlockSyncConfig returns a default configuration for the block sync service
 func DefaultBlockSyncConfig() *BlockSyncConfig {
 	return &BlockSyncConfig{
-		Version: "v0",
+		Version:      "v0",
+		FollowerMode: false,
 	}
 }
 

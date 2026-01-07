@@ -178,7 +178,7 @@ func newReactor(
 		}
 	}
 
-	r := NewReactor(blockSync, state.Copy(), blockExec, blockStore, nil, 0, NopMetrics())
+	r := NewReactor(blockSync, false, state.Copy(), blockExec, blockStore, nil, 0, NopMetrics())
 	bcReactor := NewByzantineReactor(incorrectBlock, r)
 	bcReactor.SetLogger(logger.With("module", "blocksync"))
 

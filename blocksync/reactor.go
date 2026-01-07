@@ -61,6 +61,9 @@ type Reactor struct {
 	// eg it can be initially disabled due to state sync being performed
 	enabled *atomic.Bool
 
+	// if enabled, we suppress switching to consensus mode, keeping node perpetually in block sync
+	followerMode bool
+
 	blockExec     *sm.BlockExecutor
 	store         sm.BlockStore
 	pool          *BlockPool
@@ -79,6 +82,7 @@ type Reactor struct {
 // NewReactorWithAddr returns new Reactor instance with local address
 func NewReactor(
 	enabled bool,
+	followerMode bool,
 	state sm.State,
 	blockExec *sm.BlockExecutor,
 	store *store.BlockStore,
@@ -127,6 +131,7 @@ func NewReactor(
 		store:                     store,
 		pool:                      pool,
 		enabled:                   enabledFlag,
+		followerMode:              followerMode,
 		localAddr:                 localAddr,
 		requestsCh:                requestsCh,
 		errorsCh:                  errorsCh,
@@ -431,6 +436,11 @@ FOR_LOOP:
 
 			// keep syncing
 			if !r.pool.IsCaughtUp() && !r.localNodeBlocksTheChain(state) {
+				continue FOR_LOOP
+			}
+
+			if r.followerMode {
+				r.Logger.Debug("Follower mode is enabled, continuing to sync", "height", state.LastBlockHeight)
 				continue FOR_LOOP
 			}
 

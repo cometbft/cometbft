@@ -281,8 +281,7 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		case *HasVoteMessage:
 			ps.ApplyHasVoteMessage(msg)
 		case *VoteSetMaj23Message:
-			// Get the updated round state as our view may be stale
-			rs := conR.conS.GetRoundState()
+			rs := conR.getRoundState()
 			height, votes := rs.Height, rs.Votes
 			if height != msg.Height {
 				return
@@ -375,8 +374,7 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		}
 		switch msg := msg.(type) {
 		case *VoteSetBitsMessage:
-			// Get the updated round state as our view may be stale
-			rs := conR.conS.GetRoundState()
+			rs := conR.getRoundState()
 
 			height, votes := rs.Height, rs.Votes
 

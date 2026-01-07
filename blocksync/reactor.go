@@ -20,11 +20,10 @@ import (
 const BlocksyncChannel = byte(0x40)
 
 const (
-	// interval for asking other peers their base (min) and height (max) blocks
-	intervalStatusUpdate = 10 * time.Second
+	defaultIntervalStatusUpdate  = 10 * time.Second
+	followerIntervalStatusUpdate = 1 * time.Second
 
-	// interval for checking whether it's time to switch from block-sync to consensus
-	intervalSwitchToConsensus = 1 * time.Second
+	defaultIntervalSwitchToConsensus = 1 * time.Second
 
 	// interval for trying to apply a block
 	intervalTrySync = 10 * time.Millisecond
@@ -76,6 +75,9 @@ type Reactor struct {
 	// interval for checking whether it's time to switch from block-sync to consensus
 	intervalSwitchToConsensus time.Duration
 
+	// interval for asking other peers their base (min) and height (max) blocks
+	intervalStatusUpdate time.Duration
+
 	metrics *Metrics
 }
 
@@ -125,6 +127,11 @@ func NewReactor(
 	enabledFlag := &atomic.Bool{}
 	enabledFlag.Store(enabled)
 
+	intervalStatusUpdate := defaultIntervalStatusUpdate
+	if followerMode {
+		intervalStatusUpdate = followerIntervalStatusUpdate
+	}
+
 	r := &Reactor{
 		initialState:              state,
 		blockExec:                 blockExec,
@@ -136,7 +143,8 @@ func NewReactor(
 		requestsCh:                requestsCh,
 		errorsCh:                  errorsCh,
 		metrics:                   metrics,
-		intervalSwitchToConsensus: intervalSwitchToConsensus,
+		intervalSwitchToConsensus: defaultIntervalSwitchToConsensus,
+		intervalStatusUpdate:      intervalStatusUpdate,
 	}
 
 	r.BaseReactor = *p2p.NewBaseReactor("Blocksync", r)
@@ -355,7 +363,7 @@ func (r *Reactor) poolRoutine(stateSynced bool) {
 	trySyncTicker := time.NewTicker(intervalTrySync)
 	defer trySyncTicker.Stop()
 
-	statusUpdateTicker := time.NewTicker(intervalStatusUpdate)
+	statusUpdateTicker := time.NewTicker(r.intervalStatusUpdate)
 	defer statusUpdateTicker.Stop()
 
 	switchToConsensusTicker := time.NewTicker(r.intervalSwitchToConsensus)

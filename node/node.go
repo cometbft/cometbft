@@ -452,8 +452,7 @@ func NewNodeWithContext(
 		return nil, fmt.Errorf("could not create blocksync reactor: %w", err)
 	}
 
-	// in opposite to mempool' reactor,
-	// consensus reactor is "suspended" in follower mode
+	// contrary to mempool, consensus reactor is "suspended" in the follower mode
 	consensusWaitSync := waitSync || config.BlockSync.FollowerMode
 	consensusReactor, consensusState := createConsensusReactor(
 		config, state, blockExec, blockStore, mempool, evidencePool,
@@ -791,6 +790,7 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 		MempoolReactor:   n.mempoolReactor,
 		EventBus:         n.eventBus,
 		Mempool:          n.mempool,
+		IsFollowerMode:   n.config.BlockSync.FollowerMode,
 
 		Logger: n.Logger.With("module", "rpc"),
 

@@ -485,8 +485,7 @@ version = "{{ .BlockSync.Version }}"
 # This is useful for RPC-only nodes that don't need to participate in consensus.
 #
 # This will be ignored if the node is a validator.
-#follower_mode = {{ .BlockSync.FollowerMode }}
-follower_mode = true
+follower_mode = {{ .BlockSync.FollowerMode }}
 
 #######################################################
 ###         Consensus Configuration Options         ###

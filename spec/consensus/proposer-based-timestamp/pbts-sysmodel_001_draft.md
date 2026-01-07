@@ -105,7 +105,7 @@ then the time `b.time` in the block `b` that is signed by `c` satisfies
 - `beginConsensus(k) - PRECISION <= b.time < endConsensus(k) + PRECISION + MSGDELAY`.
 
 
-> [PBTS-CONSENSUS-TIME-VALID.0] is based on an analysis where the proposer is faulty (and does does not count towards `beginConsensus(k)` and `endConsensus(k)`), and we estimate the times at which correct validators receive and `accept` the `propose` message. If the proposer is correct we obtain
+> [PBTS-CONSENSUS-TIME-VALID.0] is based on an analysis where the proposer is faulty (and does not count towards `beginConsensus(k)` and `endConsensus(k)`), and we estimate the times at which correct validators receive and `accept` the `propose` message. If the proposer is correct we obtain
 
 #### **[PBTS-CONSENSUS-LIVE-VALID-CORR-PROP.0]**
 

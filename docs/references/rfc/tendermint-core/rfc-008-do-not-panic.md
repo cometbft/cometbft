@@ -10,7 +10,7 @@ Today, the Tendermint core codebase has panics in a number of cases as
 a response to exceptional situations. These panics complicate testing,
 and might make tendermint components difficult to use as a library in
 some circumstances. This document outlines a project of converting
-panics to errors and describes the situations where its safe to
+panics to errors and describes the situations where it's safe to
 panic.
 
 ## Background
@@ -63,7 +63,7 @@ Examples including reading data out of the storage engine that
 is invalid or corrupt, or encountering an ambiguous situation where
 the process should halt. Generally these forms of corruption are
 detected after interacting with a trusted but external data source,
-and reflect situations where the author thinks its safer to terminate
+and reflect situations where the author thinks it's safer to terminate
 the process immediately rather than allow execution to continue.
 
 #### Unrecoverable Consensus Failure

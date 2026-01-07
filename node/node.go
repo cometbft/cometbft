@@ -365,15 +365,6 @@ func NewNodeWithContext(
 	}
 	localAddr := pubKey.Address()
 
-	if config.BlockSync.FollowerMode {
-		if state.Validators.HasAddress(localAddr) {
-			logger.Error("Follower mode is enabled, but the node is a validator. Ignoring follower mode.")
-			config.BlockSync.FollowerMode = false
-		} else {
-			logger.Info("Follower mode is enabled!")
-		}
-	}
-
 	// Determine whether we should attempt state sync.
 	stateSync := config.StateSync.Enable && !onlyValidatorIsUs(state, localAddr)
 	if stateSync && state.LastBlockHeight > 0 {
@@ -398,12 +389,21 @@ func NewNodeWithContext(
 		}
 	}
 
+	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
+
 	// Determine whether we should do block sync. This must happen after the handshake, since the
 	// app may modify the validator set, specifying ourself as the only validator.
 	blockSync := !onlyValidatorIsUs(state, localAddr)
 	waitSync := stateSync || blockSync
 
-	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
+	if config.BlockSync.FollowerMode {
+		if state.Validators.HasAddress(localAddr) {
+			logger.Error("Follower mode is enabled, but the node is a validator. Ignoring follower mode.")
+			config.BlockSync.FollowerMode = false
+		} else {
+			logger.Info("Follower mode is enabled!")
+		}
+	}
 
 	// Make MempoolReactor
 	// note that mempool ignores sync wait if follower mode is enabled

@@ -33,7 +33,7 @@ Used by the [transport](#transportgo) to store connected peers.
 
 Defines several error types.
 
-`ErrRejected` enumerates a number of reason for which a peer was rejected.
+`ErrRejected` enumerates a number of reasons for which a peer was rejected.
 Mainly produced by the [transport](#transportgo),
 but also by the [switch](#switchgo).
 

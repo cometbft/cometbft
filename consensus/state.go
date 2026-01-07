@@ -215,7 +215,7 @@ func StateMetrics(metrics *Metrics) StateOption {
 }
 
 // OfflineStateSyncHeight indicates the height at which the node
-// statesync offline - before booting sets the metrics.
+// performed statesync offline and sets the offlineStateSyncHeight field.
 func OfflineStateSyncHeight(height int64) StateOption {
 	return func(cs *State) { cs.offlineStateSyncHeight = height }
 }
@@ -2369,7 +2369,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 	return added, err
 }
 
-// CONTRACT: cs.privValidator is not nil.
+// CONTRACT: cs.privValidator and cs.privValidatorPubKey are not nil.
 func (cs *State) signVote(
 	msgType cmtproto.SignedMsgType,
 	hash []byte,
@@ -2522,10 +2522,10 @@ func (cs *State) checkDoubleSigningRisk(height int64) error {
 }
 
 // emitPrecommitTimeoutMetrics calculates and emits metrics for votes collected
-// during the TimeoutCommit period.
+// during the precommit wait period.
 func (cs *State) emitPrecommitTimeoutMetrics(round int32) {
-	// Count votes and accumulate voting power from LastCommit
-	// (these are the votes collected during TimeoutCommit for the previous height)
+	// Count votes and accumulate voting power from precommits
+	// (these are the votes collected during the precommit wait period)
 	totalVotesCollected := 0
 	totalVotingPowerCollected := int64(0)
 

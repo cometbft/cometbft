@@ -10,6 +10,8 @@ import (
 // ErrNilMessage is returned when provided message is empty
 var ErrNilMessage = errors.New("message cannot be nil")
 
+var ErrAlreadyEnabled = errors.New("block sync is already enabled")
+
 // ErrInvalidBase is returned when peer informs of a status with invalid height
 type ErrInvalidHeight struct {
 	Height int64

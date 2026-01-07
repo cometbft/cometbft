@@ -99,7 +99,7 @@ func DefaultMetricsProvider(config *cfg.InstrumentationConfig) MetricsProvider {
 }
 
 type blockSyncReactor interface {
-	SwitchToBlockSync(sm.State) error
+	Enable(sm.State) error
 }
 
 //------------------------------------------------------------------------------
@@ -295,26 +295,34 @@ func createEvidenceReactor(config *cfg.Config, dbProvider cfg.DBProvider,
 	return evidenceReactor, evidencePool, nil
 }
 
-func createBlocksyncReactor(config *cfg.Config,
+func createBlocksyncReactor(
+	enabled bool,
+	config *cfg.Config,
 	state sm.State,
 	blockExec *sm.BlockExecutor,
 	blockStore *store.BlockStore,
-	blockSync bool,
 	localAddr crypto.Address,
+	offlineStateSyncHeight int64,
 	logger log.Logger,
 	metrics *blocksync.Metrics,
-	offlineStateSyncHeight int64,
-) (bcReactor p2p.Reactor, err error) {
-	switch config.BlockSync.Version {
-	case "v0":
-		bcReactor = blocksync.NewReactorWithAddr(state.Copy(), blockExec, blockStore, blockSync, localAddr, metrics, offlineStateSyncHeight)
-	case "v1", "v2":
-		return nil, fmt.Errorf("block sync version %s has been deprecated. Please use v0", config.BlockSync.Version)
-	default:
-		return nil, fmt.Errorf("unknown block sync version %s", config.BlockSync.Version)
+) (p2p.Reactor, error) {
+	version := config.BlockSync.Version
+	if version != "v0" {
+		return nil, fmt.Errorf("invalid blocksync version %q. v1, v2 are deprecated. Use v0", version)
 	}
 
+	bcReactor := blocksync.NewReactor(
+		enabled,
+		state.Copy(),
+		blockExec,
+		blockStore,
+		localAddr,
+		offlineStateSyncHeight,
+		metrics,
+	)
+
 	bcReactor.SetLogger(logger.With("module", "blocksync"))
+
 	return bcReactor, nil
 }
 
@@ -594,8 +602,7 @@ func startStateSync(
 			return
 		}
 
-		err = bcR.SwitchToBlockSync(state)
-		if err != nil {
+		if err := bcR.Enable(state); err != nil {
 			ssR.Logger.Error("Failed to switch to block sync", "err", err)
 			return
 		}

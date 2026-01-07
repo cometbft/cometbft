@@ -178,7 +178,8 @@ func newReactor(
 		}
 	}
 
-	bcReactor := NewByzantineReactor(incorrectBlock, NewReactor(state.Copy(), blockExec, blockStore, blockSync, NopMetrics(), 0))
+	r := NewReactor(blockSync, state.Copy(), blockExec, blockStore, nil, 0, NopMetrics())
+	bcReactor := NewByzantineReactor(incorrectBlock, r)
 	bcReactor.SetLogger(logger.With("module", "blocksync"))
 
 	return ReactorPair{bcReactor, proxyApp}
@@ -329,7 +330,7 @@ func TestCheckSwitchToConsensusLastHeightZero(t *testing.T) {
 
 	reactorPairs := make([]ReactorPair, 1, 2)
 	reactorPairs[0] = newReactor(t, log.TestingLogger(), genDoc, privVals, 0)
-	reactorPairs[0].reactor.switchToConsensusMs = 50
+	reactorPairs[0].reactor.intervalSwitchToConsensus = 50 * time.Millisecond
 	defer func() {
 		for _, r := range reactorPairs {
 			err := r.reactor.Stop()
@@ -395,7 +396,7 @@ func ExtendedCommitNetworkHelper(t *testing.T, maxBlockHeight int64, enableVoteE
 
 	reactorPairs := make([]ReactorPair, 1, 2)
 	reactorPairs[0] = newReactor(t, log.TestingLogger(), genDoc, privVals, 0)
-	reactorPairs[0].reactor.switchToConsensusMs = 50
+	reactorPairs[0].reactor.intervalSwitchToConsensus = 50 * time.Millisecond
 	defer func() {
 		for _, r := range reactorPairs {
 			err := r.reactor.Stop()

@@ -422,8 +422,21 @@ func NewNodeWithContext(
 			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s; expected state store height to be %v", err, state.LastBlockHeight))
 		}
 	}
+
 	// Don't start block sync if we're doing a state sync first.
-	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, localAddr, logger, bsMetrics, offlineStateSyncHeight)
+	enableBlockSync := blockSync && !stateSync
+
+	bcReactor, err := createBlocksyncReactor(
+		enableBlockSync,
+		config,
+		state,
+		blockExec,
+		blockStore,
+		localAddr,
+		offlineStateSyncHeight,
+		logger,
+		bsMetrics,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("could not create blocksync reactor: %w", err)
 	}

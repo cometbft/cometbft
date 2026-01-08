@@ -321,13 +321,13 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 	switch msg := e.Message.(type) {
 	case *bcproto.BlockRequest:
 		// sends block response
-		go r.respondToPeer(msg, e.Src)
+		r.respondToPeer(msg, e.Src)
 	case *bcproto.BlockResponse:
 		// adds block to the pool
 		go r.handlePeerResponse(msg, e.Src)
 	case *bcproto.StatusRequest:
 		// Send peer our state.
-		go e.Src.TrySend(p2p.Envelope{
+		e.Src.TrySend(p2p.Envelope{
 			ChannelID: BlocksyncChannel,
 			Message: &bcproto.StatusResponse{
 				Height: r.store.Height(),

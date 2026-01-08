@@ -479,6 +479,14 @@ chunk_fetchers = "{{ .StateSync.ChunkFetchers }}"
 #   1) "v0" - the default block sync implementation
 version = "{{ .BlockSync.Version }}"
 
+# Experimental Follower model (bool):
+#
+# If enabled, the node will perpetually rely on block-sync to catch up.
+# This is useful for RPC-only nodes that don't need to participate in consensus.
+#
+# This will be ignored if the node is a validator.
+follower_mode = {{ .BlockSync.FollowerMode }}
+
 #######################################################
 ###         Consensus Configuration Options         ###
 #######################################################

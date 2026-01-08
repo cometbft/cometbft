@@ -80,6 +80,8 @@ type Environment struct {
 	P2PPeers         peers
 	P2PTransport     transport
 
+	IsFollowerMode bool
+
 	// objects
 	PubKey       crypto.PubKey
 	GenDoc       *types.GenesisDoc // cache the genesis structure

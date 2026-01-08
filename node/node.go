@@ -389,15 +389,26 @@ func NewNodeWithContext(
 		}
 	}
 
+	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
+
 	// Determine whether we should do block sync. This must happen after the handshake, since the
 	// app may modify the validator set, specifying ourself as the only validator.
 	blockSync := !onlyValidatorIsUs(state, localAddr)
 	waitSync := stateSync || blockSync
 
-	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
+	if config.BlockSync.FollowerMode {
+		if state.Validators.HasAddress(localAddr) {
+			logger.Error("Follower mode is enabled, but the node is a validator. Ignoring follower mode.")
+			config.BlockSync.FollowerMode = false
+		} else {
+			logger.Info("Follower mode is enabled!")
+		}
+	}
 
 	// Make MempoolReactor
-	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, waitSync, memplMetrics, logger)
+	// note that mempool ignores sync wait if follower mode is enabled
+	mempoolWaitSync := waitSync && !config.BlockSync.FollowerMode
+	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, mempoolWaitSync, memplMetrics, logger)
 
 	evidenceReactor, evidencePool, err := createEvidenceReactor(config, dbProvider, stateStore, blockStore, logger)
 	if err != nil {
@@ -422,15 +433,30 @@ func NewNodeWithContext(
 			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s; expected state store height to be %v", err, state.LastBlockHeight))
 		}
 	}
+
 	// Don't start block sync if we're doing a state sync first.
-	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, localAddr, logger, bsMetrics, offlineStateSyncHeight)
+	enableBlockSync := blockSync && !stateSync
+
+	bcReactor, err := createBlocksyncReactor(
+		enableBlockSync,
+		config,
+		state,
+		blockExec,
+		blockStore,
+		localAddr,
+		offlineStateSyncHeight,
+		logger,
+		bsMetrics,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("could not create blocksync reactor: %w", err)
 	}
 
+	// contrary to mempool, consensus reactor is "suspended" in the follower mode
+	consensusWaitSync := waitSync || config.BlockSync.FollowerMode
 	consensusReactor, consensusState := createConsensusReactor(
 		config, state, blockExec, blockStore, mempool, evidencePool,
-		privValidator, csMetrics, waitSync, eventBus, consensusLogger, offlineStateSyncHeight,
+		privValidator, csMetrics, consensusWaitSync, eventBus, consensusLogger, offlineStateSyncHeight,
 	)
 
 	err = stateStore.SetOfflineStateSyncHeight(0)
@@ -764,6 +790,7 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 		MempoolReactor:   n.mempoolReactor,
 		EventBus:         n.eventBus,
 		Mempool:          n.mempool,
+		IsFollowerMode:   n.config.BlockSync.FollowerMode,
 
 		Logger: n.Logger.With("module", "rpc"),
 

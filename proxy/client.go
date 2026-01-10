@@ -22,8 +22,9 @@ type ClientCreator interface {
 // local proxy uses a mutex on an in-proc app
 
 type localClientCreator struct {
-	mtx *cmtsync.Mutex
-	app types.Application
+	mtx     *cmtsync.Mutex
+	app     types.Application
+	metrics *abcicli.Metrics
 }
 
 // NewLocalClientCreator returns a [ClientCreator] for the given app, which
@@ -34,13 +35,14 @@ type localClientCreator struct {
 // [NewConnSyncLocalClientCreator].
 func NewLocalClientCreator(app types.Application) ClientCreator {
 	return &localClientCreator{
-		mtx: new(cmtsync.Mutex),
-		app: app,
+		mtx:     new(cmtsync.Mutex),
+		app:     app,
+		metrics: abcicli.PrometheusMetrics("cometbft"),
 	}
 }
 
 func (l *localClientCreator) NewABCIClient() (abcicli.Client, error) {
-	return abcicli.NewLocalClient(l.mtx, l.app), nil
+	return abcicli.NewLocalClient(l.mtx, l.app, l.metrics), nil
 }
 
 //----------------------------------------------------
@@ -66,7 +68,7 @@ func NewConnSyncLocalClientCreator(app types.Application) ClientCreator {
 func (c *connSyncLocalClientCreator) NewABCIClient() (abcicli.Client, error) {
 	// Specifying nil for the mutex causes each instance to create its own
 	// mutex.
-	return abcicli.NewLocalClient(nil, c.app), nil
+	return abcicli.NewLocalClient(nil, c.app, nil), nil
 }
 
 //---------------------------------------------------------------

@@ -2,6 +2,7 @@ package abcicli
 
 import (
 	"context"
+	"time"
 
 	types "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/service"
@@ -18,6 +19,7 @@ type localClient struct {
 	mtx *cmtsync.Mutex
 	types.Application
 	Callback
+	metrics *Metrics
 }
 
 var _ Client = (*localClient)(nil)
@@ -26,13 +28,14 @@ var _ Client = (*localClient)(nil)
 // Tendermint as the client will call to the application as the server. The only
 // difference, is that the local client has a global mutex which enforces serialization
 // of all the ABCI calls from Tendermint to the Application.
-func NewLocalClient(mtx *cmtsync.Mutex, app types.Application) Client {
+func NewLocalClient(mtx *cmtsync.Mutex, app types.Application, metrics *Metrics) Client {
 	if mtx == nil {
 		mtx = new(cmtsync.Mutex)
 	}
 	cli := &localClient{
 		mtx:         mtx,
 		Application: app,
+		metrics:     metrics,
 	}
 	cli.BaseService = *service.NewBaseService(nil, "localClient", cli)
 	return cli
@@ -191,8 +194,13 @@ func (app *localClient) VerifyVoteExtension(ctx context.Context, req *types.Requ
 }
 
 func (app *localClient) FinalizeBlock(ctx context.Context, req *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
+	start := time.Now()
 	app.mtx.Lock()
+	app.metrics.ClientLockWaitSeconds.With("method", "finalize_block").Observe(float64(time.Since(start).Seconds()))
 	defer app.mtx.Unlock()
 
-	return app.Application.FinalizeBlock(ctx, req)
+	start = time.Now()
+	retVal, err := app.Application.FinalizeBlock(ctx, req)
+	app.metrics.MethodTimingSeconds.With("method", "finalize_block").Observe(float64(time.Since(start).Seconds()))
+	return retVal, err
 }

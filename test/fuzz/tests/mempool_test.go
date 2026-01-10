@@ -15,7 +15,7 @@ import (
 func FuzzMempool(f *testing.F) {
 	app := kvstore.NewInMemoryApplication()
 	mtx := new(cmtsync.Mutex)
-	conn := abciclient.NewLocalClient(mtx, app)
+	conn := abciclient.NewLocalClient(mtx, app, abciclient.NopMetrics())
 	err := conn.Start()
 	if err != nil {
 		panic(err)

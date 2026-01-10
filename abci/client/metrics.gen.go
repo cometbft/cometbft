@@ -21,7 +21,7 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Help:      "Timing for each ABCI method.",
 
 			Buckets: []float64{.0001, .0004, .002, .009, .02, .1, .65, 2, 6, 25},
-		}, append(labels, "method", "type")).With(labelsAndValues...),
+		}, labels).With(labelsAndValues...),
 		ClientLockWaitSeconds: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -29,7 +29,7 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Help:      "Timing for each ABCI method lock.",
 
 			Buckets: []float64{.0001, .0004, .002, .009, .02, .1, .65, 2, 6, 25},
-		}, append(labels, "method", "type")).With(labelsAndValues...),
+		}, labels).With(labelsAndValues...),
 	}
 }
 

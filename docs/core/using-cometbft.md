@@ -59,7 +59,7 @@ definition](https://github.com/cometbft/cometbft/blob/v0.38.x/types/genesis.go))
         - `max_age_duration`: Max age of evidence, in time. It should correspond
       with an app's "unbonding period" or other similar mechanism for handling
       [Nothing-At-Stake
-      attacks](https://vitalik.ca/general/2017/12/31/pos_faq.html#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed).
+      attacks](https://vitalik.eth.limo/general/2017/12/31/pos_faq.html#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed).
         - `max_bytes`: This sets the maximum size in bytes of evidence that can be committed
       in a single block and should fall comfortably under the max block bytes.
     - `validator`

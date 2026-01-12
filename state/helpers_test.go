@@ -56,7 +56,7 @@ func makeAndCommitGoodBlock(
 func makeAndApplyGoodBlock(state sm.State, height int64, lastCommit *types.Commit, proposerAddr []byte,
 	blockExec *sm.BlockExecutor, evidence []types.Evidence,
 ) (sm.State, types.BlockID, error) {
-	block := state.MakeBlock(height, test.MakeNTxs(height, 10), lastCommit, evidence, proposerAddr)
+	block, err := state.MakeBlock(height, test.MakeNTxs(height, 10), lastCommit, evidence, proposerAddr)
 	partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
 	if err != nil {
 		return state, types.BlockID{}, err
@@ -76,7 +76,7 @@ func makeAndApplyGoodBlock(state sm.State, height int64, lastCommit *types.Commi
 	return state, blockID, nil
 }
 
-func makeBlock(state sm.State, height int64, c *types.Commit) *types.Block {
+func makeBlock(state sm.State, height int64, c *types.Commit) (*types.Block, error) {
 	return state.MakeBlock(
 		height,
 		test.MakeNTxs(state.LastBlockHeight, 10),
@@ -171,7 +171,10 @@ func makeHeaderPartsResponsesValPubKeyChange(
 	state sm.State,
 	pubkey crypto.PubKey,
 ) (types.Header, types.BlockID, *abci.ResponseFinalizeBlock) {
-	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
+	block, err := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
+	if err != nil {
+		return types.Header{}, types.BlockID{}, nil
+	}
 	abciResponses := &abci.ResponseFinalizeBlock{}
 	// If the pubkey is new, remove the old and add the new.
 	_, val := state.NextValidators.GetByIndex(0)
@@ -189,7 +192,10 @@ func makeHeaderPartsResponsesValPowerChange(
 	state sm.State,
 	power int64,
 ) (types.Header, types.BlockID, *abci.ResponseFinalizeBlock) {
-	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
+	block, err := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
+	if err != nil {
+		return types.Header{}, types.BlockID{}, nil
+	}
 	abciResponses := &abci.ResponseFinalizeBlock{}
 
 	// If the pubkey is new, remove the old and add the new.
@@ -207,7 +213,10 @@ func makeHeaderPartsResponsesParams(
 	state sm.State,
 	params cmtproto.ConsensusParams,
 ) (types.Header, types.BlockID, *abci.ResponseFinalizeBlock) {
-	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
+	block, err := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
+	if err != nil {
+		return types.Header{}, types.BlockID{}, nil
+	}
 	abciResponses := &abci.ResponseFinalizeBlock{
 		ConsensusParamUpdates: &params,
 	}

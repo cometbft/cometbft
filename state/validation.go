@@ -119,6 +119,7 @@ func validateBlock(state State, block *types.Block) error {
 				state.LastBlockTime,
 			)
 		}
+
 		medianTime, err := MedianTime(block.LastCommit, state.LastValidators)
 		if err != nil {
 			return err

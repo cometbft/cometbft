@@ -1113,7 +1113,7 @@ func TestCreateProposalAbsentVoteExtensions(t *testing.T) {
 			stripSignatures(lastCommit)
 			if testCase.expectPanic {
 				require.Panics(t, func() {
-					_, err := blockExec.CreateProposalBlock(ctx, testCase.height, state, lastCommit, pa) //nolint:errcheck
+					_, err := blockExec.CreateProposalBlock(ctx, testCase.height, state, lastCommit, pa)
 					require.NoError(t, err)
 				})
 			} else {

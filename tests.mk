@@ -32,7 +32,7 @@ test_release:
 ### go tests
 test:
 	@echo "--> Running go test"
-	@go test -p 1 $(PACKAGES)
+	@go test -p 1 $(PACKAGES) -tags bls12381,secp256k1eth
 .PHONY: test
 
 test_race:
@@ -43,7 +43,7 @@ test_race:
 test_deadlock:
 	@echo "--> Running go test --deadlock"
 	@go test -p 1 -v  $(PACKAGES) -tags deadlock
-.PHONY: test_race
+.PHONY: test_deadlock
 
 # Implements test splitting and running. This is pulled directly from
 # the github action workflows for better local reproducibility.

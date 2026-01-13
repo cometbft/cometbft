@@ -176,7 +176,7 @@ func TestValidateBlockCommit(t *testing.T) {
 			/*
 				#2589: test len(block.LastCommit.Signatures) == state.LastValidators.Size()
 			*/
-			block, err = makeBlock(state, height, wrongSigsCommit)
+			_, err = makeBlock(state, height, wrongSigsCommit)
 			require.Error(t, err)
 		}
 
@@ -379,7 +379,6 @@ func TestValidateBlockMedianTime(t *testing.T) {
 		// Set time to before the median time but after last block time
 		// This requires the median to be after last block time
 		block.Time = block.Time.Add(-time.Millisecond * 10)
-		block.Header.Time = block.Time
 
 		err = blockExec.ValidateBlock(state, block)
 		require.Error(t, err)
@@ -398,7 +397,6 @@ func TestValidateBlockMedianTime(t *testing.T) {
 
 		// Set time to after the median time
 		block.Time = block.Time.Add(time.Second)
-		block.Header.Time = block.Time
 
 		err = blockExec.ValidateBlock(state, block)
 		require.Error(t, err)
@@ -412,7 +410,6 @@ func TestValidateBlockMedianTime(t *testing.T) {
 
 		// Set time far in the future
 		block.Time = block.Time.Add(time.Hour)
-		block.Header.Time = block.Time
 
 		err = blockExec.ValidateBlock(state, block)
 		require.Error(t, err)
@@ -426,7 +423,6 @@ func TestValidateBlockMedianTime(t *testing.T) {
 
 		// Set time to state.LastBlockTime (should fail because must be after)
 		block.Time = state.LastBlockTime
-		block.Header.Time = block.Time
 
 		err = blockExec.ValidateBlock(state, block)
 		require.Error(t, err)

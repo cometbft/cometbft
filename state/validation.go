@@ -122,7 +122,7 @@ func validateBlock(state State, block *types.Block) error {
 
 		medianTime, err := MedianTime(block.LastCommit, state.LastValidators)
 		if err != nil {
-			return fmt.Errorf("error validating block while calculating median time: %v", err)
+			return fmt.Errorf("error validating block while calculating median time: %w", err)
 		}
 		if !block.Time.Equal(medianTime) {
 			return fmt.Errorf("invalid block time. Expected %v, got %v",

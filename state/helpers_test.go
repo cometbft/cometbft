@@ -3,6 +3,7 @@ package state_test
 import (
 	"bytes"
 	"fmt"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 
@@ -57,7 +58,10 @@ func makeAndCommitGoodBlock(
 func makeAndApplyGoodBlock(state sm.State, height int64, lastCommit *types.Commit, proposerAddr []byte,
 	blockExec *sm.BlockExecutor, evidence []types.Evidence,
 ) (sm.State, types.BlockID, error) {
-	block := state.MakeBlock(height, test.MakeNTxs(height, 10), lastCommit, evidence, proposerAddr)
+	block, err := state.MakeBlock(height, test.MakeNTxs(height, 10), lastCommit, evidence, proposerAddr)
+	if err != nil {
+		return state, types.BlockID{}, nil
+	}
 	partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
 	if err != nil {
 		return state, types.BlockID{}, err
@@ -75,7 +79,7 @@ func makeAndApplyGoodBlock(state sm.State, height int64, lastCommit *types.Commi
 	return state, blockID, nil
 }
 
-func makeBlock(state sm.State, height int64, c *types.Commit) *types.Block {
+func makeBlock(state sm.State, height int64, c *types.Commit) (*types.Block, error) {
 	return state.MakeBlock(
 		height,
 		test.MakeNTxs(state.LastBlockHeight, 10),
@@ -156,7 +160,8 @@ func makeHeaderPartsResponsesValPubKeyChange(
 	state sm.State,
 	pubkey crypto.PubKey,
 ) (types.Header, types.BlockID, *cmtstate.ABCIResponses) {
-	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
+	block, err := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
+	require.NoError(t, err)
 	abciResponses := &cmtstate.ABCIResponses{
 		BeginBlock: &abci.ResponseBeginBlock{},
 		EndBlock:   &abci.ResponseEndBlock{ValidatorUpdates: nil},
@@ -180,7 +185,8 @@ func makeHeaderPartsResponsesValPowerChange(
 	state sm.State,
 	power int64,
 ) (types.Header, types.BlockID, *cmtstate.ABCIResponses) {
-	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
+	block, err := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
+	require.NoError(t, err)
 	abciResponses := &cmtstate.ABCIResponses{
 		BeginBlock: &abci.ResponseBeginBlock{},
 		EndBlock:   &abci.ResponseEndBlock{ValidatorUpdates: nil},
@@ -204,7 +210,8 @@ func makeHeaderPartsResponsesParams(
 	state sm.State,
 	params cmtproto.ConsensusParams,
 ) (types.Header, types.BlockID, *cmtstate.ABCIResponses) {
-	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
+	block, err := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
+	require.NoError(t, err)
 	abciResponses := &cmtstate.ABCIResponses{
 		BeginBlock: &abci.ResponseBeginBlock{},
 		EndBlock:   &abci.ResponseEndBlock{ConsensusParamUpdates: &params},

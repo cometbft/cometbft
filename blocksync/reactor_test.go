@@ -131,7 +131,8 @@ func newReactor(
 				lastBlockMeta.BlockID, []types.CommitSig{vote.CommitSig()})
 		}
 
-		thisBlock := state.MakeBlock(blockHeight, nil, lastCommit, nil, state.Validators.Proposer.Address)
+		thisBlock, err := state.MakeBlock(blockHeight, nil, lastCommit, nil, state.Validators.Proposer.Address)
+		require.NoError(t, err)
 
 		thisParts, err := thisBlock.MakePartSet(types.BlockPartSizeBytes)
 		require.NoError(t, err)

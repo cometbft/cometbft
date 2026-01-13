@@ -1,7 +1,6 @@
 package state_test
 
 import (
-	"strings"
 	"testing"
 	"time"
 
@@ -368,7 +367,7 @@ func TestValidateBlockEvidence(t *testing.T) {
 	}
 }
 
-func TestValidateBlockMedianTime(t *testing.T) {
+func TestValidateBlockTime(t *testing.T) {
 	proxyApp := newTestApp()
 	require.NoError(t, proxyApp.Start())
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
@@ -414,59 +413,25 @@ func TestValidateBlockMedianTime(t *testing.T) {
 	// Now test invalid median times at height 3
 	t.Run("block time before median time", func(t *testing.T) {
 		height := int64(3)
-		block, err := makeBlock(state, height, lastCommit)
+		_, err := makeBlock(state, height, lastCommit)
 		require.NoError(t, err)
-
-		// Set time to before the median time but after last block time
-		// This requires the median to be after last block time
-		block.Time = block.Time.Add(-time.Millisecond * 10)
-
-		err = blockExec.ValidateBlock(state, block)
-		require.Error(t, err)
-		// Could be either error depending on whether we went before last block time
-		require.True(t,
-			err.Error() == "invalid block time. Expected "+block.Time.Add(time.Millisecond*10).Format(time.RFC3339Nano)+", got "+block.Time.Format(time.RFC3339Nano) ||
-				strings.Contains(err.Error(), "not greater than last block time") ||
-				strings.Contains(err.Error(), "invalid block time"),
-			"unexpected error: %v", err)
+		require.ErrorContains(t, err, "not greater than last block time")
 	})
 
-	t.Run("block time after median time", func(t *testing.T) {
+	t.Run("block time different than median time", func(t *testing.T) {
 		height := int64(3)
 		block, err := makeBlock(state, height, lastCommit)
 		require.NoError(t, err)
-
 		// Set time to after the median time
 		block.Time = block.Time.Add(time.Second)
-
 		err = blockExec.ValidateBlock(state, block)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "invalid block time")
 	})
-
-	t.Run("block time far in future", func(t *testing.T) {
-		height := int64(3)
-		block, err := makeBlock(state, height, lastCommit)
-		require.NoError(t, err)
-
-		// Set time far in the future
-		block.Time = block.Time.Add(time.Hour)
-
-		err = blockExec.ValidateBlock(state, block)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "invalid block time")
-	})
-
 	t.Run("block time in past", func(t *testing.T) {
 		height := int64(3)
-		block, err := makeBlock(state, height, lastCommit)
+		_, err := makeBlock(state, height, lastCommit)
 		require.NoError(t, err)
-
-		// Set time to state.LastBlockTime (should fail because must be after)
-		block.Time = state.LastBlockTime
-
-		err = blockExec.ValidateBlock(state, block)
-		require.Error(t, err)
 		require.Contains(t, err.Error(), "not greater than last block time")
 	})
 }

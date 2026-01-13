@@ -1178,7 +1178,7 @@ func TestMedianTime(t *testing.T) {
 
 		medianTime, err := sm.MedianTime(commit, vals)
 		require.NoError(t, err)
-		require.False(t, medianTime.IsZero())
+		require.Equal(t, medianTime, now.Add(1*time.Minute))
 	})
 
 	t.Run("validator not in validator set", func(t *testing.T) {
@@ -1225,6 +1225,6 @@ func TestMedianTime(t *testing.T) {
 
 		medianTime, err := sm.MedianTime(commit, vals)
 		require.NoError(t, err)
-		require.False(t, medianTime.IsZero())
+		require.Equal(t, medianTime, now)
 	})
 }

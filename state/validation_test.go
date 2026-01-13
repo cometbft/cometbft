@@ -1,10 +1,9 @@
 package state_test
 
 import (
+	"github.com/cometbft/cometbft/types/errors"
 	"testing"
 	"time"
-
-	cmterrors "github.com/cometbft/cometbft/types/errors"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -191,7 +190,7 @@ func TestValidateBlockCommit(t *testing.T) {
 			block, err := makeBlock(state, height, wrongHeightCommit)
 			require.NoError(t, err)
 			err = blockExec.ValidateBlock(state, block)
-			_, isErrInvalidCommitHeight := err.(types.ErrInvalidCommitHeight)
+			_, isErrInvalidCommitHeight := err.(errors.ErrInvalidCommitHeight)
 			require.True(t, isErrInvalidCommitHeight, "expected ErrInvalidCommitHeight at height %d but got: %v", height, err)
 
 			/*

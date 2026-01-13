@@ -410,15 +410,19 @@ func TestValidateBlockTime(t *testing.T) {
 		lastCommit = lastExtCommit.ToCommit()
 	}
 
-	// Now test invalid median times at height 3
-	t.Run("block time before median time", func(t *testing.T) {
+	t.Run("block time before last block time", func(t *testing.T) {
 		height := int64(3)
-		_, err := makeBlock(state, height, lastCommit)
+		block, err := makeBlock(state, height, lastCommit)
 		require.NoError(t, err)
+
+		// Set time to before last block time
+		block.Time = block.Time.Add(-time.Millisecond * 10)
+		err = blockExec.ValidateBlock(state, block)
+
 		require.ErrorContains(t, err, "not greater than last block time")
 	})
 
-	t.Run("block time different than median time", func(t *testing.T) {
+	t.Run("block time after last block time, different than median time", func(t *testing.T) {
 		height := int64(3)
 		block, err := makeBlock(state, height, lastCommit)
 		require.NoError(t, err)
@@ -428,11 +432,13 @@ func TestValidateBlockTime(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "invalid block time")
 	})
-	t.Run("block time in past", func(t *testing.T) {
+
+	t.Run("block time after last block time, same as median time", func(t *testing.T) {
 		height := int64(3)
-		_, err := makeBlock(state, height, lastCommit)
+		block, err := makeBlock(state, height, lastCommit)
 		require.NoError(t, err)
-		require.Contains(t, err.Error(), "not greater than last block time")
+		err = blockExec.ValidateBlock(state, block)
+		require.NoError(t, err)
 	})
 }
 

@@ -249,7 +249,7 @@ func (state State) MakeBlock(
 	} else {
 		ts, err := MedianTime(lastCommit, state.LastValidators)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error making block while calculating median time: %w", err)
 		}
 		timestamp = ts
 	}

@@ -59,17 +59,15 @@ calling the `cometbft testnet` command.
 The `./build` directory is mounted to the `/cometbft` mount point to attach
 the binary and config files to the container.
 
-To change the number of validators / non-validators change the `localnet-start` Makefile target [here](../../Makefile):
+To inspect or modify how the local testnet is generated, see the `localnet-start` Makefile target [here](../../Makefile):
 
 ```makefile
-localnet-start: localnet-stop
-  @if ! [ -f build/node0/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/cometbft:Z cometbft/localnode testnet --v 5 --n 3 --o . --populate-persistent-peers --starting-ip-address 192.167.10.2 ; fi
-  docker compose up -d
+localnet-start: localnet-stop build-docker-localnode
+	@if ! [ -f build/node0/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/cometbft:Z cometbft/localnode testnet --config /etc/cometbft/config-template.toml --o . --starting-ip-address 192.167.10.2; fi
+	docker compose up -d
 ```
 
-The command now will generate config files for 5 validators and 3
-non-validators. Along with generating new config files the docker-compose file needs to be edited.
-Adding 4 more nodes is required in order to fully utilize the config files that were generated.
+By default this command generates configuration for a 4-validator testnet. To create a network with a different number of validators or non-validators, pass the appropriate `--v` and `--n` flags to the `testnet` command (either by running it manually before `docker compose up` or by extending the Makefile target above). When increasing the number of nodes, you must also add corresponding services to `docker-compose.yml` so that each generated node directory has a matching container definition.
 
 ```yml
   node3: # bump by 1 for every node

@@ -1556,15 +1556,15 @@ trust_period = "168h0m0s"
 For Cosmos SDK-based chains, `statesync.trust_period` should usually be about 2/3rd of the unbonding period
 (about 2 weeks) during which they can be financially punished (slashed) for misbehavior.
 
-### statesync.max_discovery_time
+### statesync.discovery_time
 Time to spend discovering snapshots before switching to blocksync. If set to 0, state sync will be trying indefinitely.
 ```toml
-max_discovery_time = "2m"
+discovery_time = "2m"
 ```
 
-If `max_discovery_time` is zero, the node will keep trying to discover snapshots indefinitely.
+If `discovery_time` is zero, the node will keep trying to discover snapshots indefinitely.
 
-If `max_discovery_time` is greater than zero, the node will broadcast the "snapshot request" message to its peers and then wait for 5 sec. If no snapshot data has been received after that period, the node will retry: it will broadcast the "snapshot request" message again and wait for 5s, and so on until `max_discovery_time` is reached, after which the node will switch to blocksync.
+If `discovery_time` is greater than zero, the node will broadcast the "snapshot request" message to its peers and then wait for 5 sec. If no snapshot data has been received after that period, the node will retry: it will broadcast the "snapshot request" message again and wait for 5s, and so on until `discovery_time` is reached, after which the node will switch to blocksync.
 
 ### statesync.temp_dir
 Temporary directory for state sync snapshot chunks.
@@ -2055,7 +2055,7 @@ time will not be available to the data companion.
 The initial value for the data companion block retain height if the data companion has not yet explicitly set one.
 If the data companion has already set a block retain height, this is ignored.
 ```toml
-double_sign_check_height = 0
+initial_block_retain_height = 0
 ```
 
 | Value type          | integer |

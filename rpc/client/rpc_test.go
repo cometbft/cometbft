@@ -647,7 +647,7 @@ func TestTxSearch(t *testing.T) {
 			} else {
 				require.LessOrEqual(t, len(result.Txs), perPage)
 			}
-			totalTx = totalTx + len(result.Txs)
+			totalTx += len(result.Txs)
 			for _, tx := range result.Txs {
 				require.False(t, seen[tx.Height],
 					"Found duplicate height %v in page %v", tx.Height, page)

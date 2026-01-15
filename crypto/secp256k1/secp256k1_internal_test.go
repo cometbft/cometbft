@@ -17,7 +17,7 @@ func Test_genPrivKey(t *testing.T) {
 	copy(onePadded[32-len(oneB):32], oneB)
 	t.Logf("one padded: %v, len=%v", onePadded, len(onePadded))
 
-	validOne := append(empty, onePadded...)
+	validOne := bytes.Join([][]byte{empty, onePadded}, nil)
 	tests := []struct {
 		name        string
 		notSoRand   []byte

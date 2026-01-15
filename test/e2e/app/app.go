@@ -713,7 +713,7 @@ func (app *Application) verifyAndSum(
 			return 0, fmt.Errorf("error when marshaling signed bytes: %w", err)
 		}
 
-		//... and verify
+		// ... and verify
 		valAddr := crypto.Address(vote.Validator.Address).String()
 		pubKeyHex := app.state.Get(prefixReservedKey + valAddr)
 		if len(pubKeyHex) == 0 {

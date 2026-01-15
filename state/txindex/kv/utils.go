@@ -99,10 +99,8 @@ func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) (bool, error)
 		if err != nil || !withinBounds {
 			return false, err
 		}
-	} else {
-		if heightInfo.height != 0 && keyHeight != heightInfo.height {
-			return false, nil
-		}
+	} else if heightInfo.height != 0 && keyHeight != heightInfo.height {
+		return false, nil
 	}
 	return true, nil
 }

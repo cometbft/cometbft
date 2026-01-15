@@ -8,11 +8,13 @@ linters:
     - dogsled
     - dupl
     - goconst
+    - gocritic
     - misspell
     - nakedret
     - nolintlint
     - staticcheck
     - unconvert
+    - unused
   settings:
     depguard:
       rules:

@@ -874,9 +874,8 @@ func BenchmarkSwitchTryBroadcast(b *testing.B) {
 }
 
 func TestSwitchRemovalErr(t *testing.T) {
-	sw1, sw2 := MakeSwitchPair(func(i int, sw *Switch) *Switch {
-		return initSwitchFunc(i, sw)
-	})
+	sw1, sw2 := MakeSwitchPair(initSwitchFunc)
+
 	require.Len(t, sw1.Peers().Copy(), 1)
 	p := sw1.Peers().Copy()[0]
 

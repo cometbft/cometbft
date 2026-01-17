@@ -75,7 +75,6 @@ during testing:
 > go list -json ./... | jq '.Imports, .TestImports, .XTestImports' | grep cometbft | sort | uniq | tr -d '", '
 github.com/cometbft/cometbft/abci/server
 github.com/cometbft/cometbft/abci/types
-github.com/cometbft/cometbft/abci/types
 github.com/cometbft/cometbft/cmd/cometbft/commands
 github.com/cometbft/cometbft/config
 github.com/cometbft/cometbft/crypto
@@ -94,7 +93,6 @@ github.com/cometbft/cometbft/p2p
 github.com/cometbft/cometbft/privval
 github.com/cometbft/cometbft/proto/tendermint/crypto
 github.com/cometbft/cometbft/proto/tendermint/p2p
-github.com/cometbft/cometbft/proto/tendermint/types
 github.com/cometbft/cometbft/proto/tendermint/types
 github.com/cometbft/cometbft/proto/tendermint/version
 github.com/cometbft/cometbft/proxy
@@ -140,7 +138,6 @@ series (effectively still using Tendermint Core with the CometBFT alias):
 ```bash
 > go list -json ./... | jq '.Imports, .TestImports, .XTestImports' | grep 'tendermint/tendermint' | sort | uniq | tr -d '", '
 github.com/tendermint/tendermint/abci/types
-github.com/tendermint/tendermint/abci/types
 github.com/tendermint/tendermint/config
 github.com/tendermint/tendermint/crypto
 github.com/tendermint/tendermint/libs/cli
@@ -151,7 +148,6 @@ github.com/tendermint/tendermint/libs/rand
 github.com/tendermint/tendermint/libs/strings
 github.com/tendermint/tendermint/p2p
 github.com/tendermint/tendermint/privval
-github.com/tendermint/tendermint/proto/tendermint/types
 github.com/tendermint/tendermint/proto/tendermint/types
 github.com/tendermint/tendermint/rpc/client/http
 github.com/tendermint/tendermint/types

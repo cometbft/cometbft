@@ -123,8 +123,8 @@ func (s *Switch) OnStart() error {
 	}
 
 	// connection will trigger an event for listenToEvents()
-	initialPeers := s.host.ConfigPeers()
-	ConnectPeers(ctx, s.host, initialPeers)
+	bootstrapPeers := s.host.BootstrapPeers()
+	ConnectBootstrapPeers(ctx, s.host, bootstrapPeers)
 
 	return nil
 }

@@ -92,7 +92,7 @@ func testBenchLP2PUnidirectional(t *testing.T, cfg lp2pUnidirectionalConfig) {
 	t.Logf("host1: %+v", host1.AddrInfo().String())
 	t.Logf("host2: %+v", host2.AddrInfo().String())
 
-	ConnectPeers(ctx, host2, host2.ConfigPeers())
+	ConnectBootstrapPeers(ctx, host2, host2.BootstrapPeers())
 	t.Cleanup(func() {
 		host2.Close()
 		host1.Close()

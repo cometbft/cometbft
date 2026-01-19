@@ -46,7 +46,7 @@ func TestHost(t *testing.T) {
 		},
 	}, true)
 
-	ConnectPeers(ctx, host2, host2.ConfigPeers())
+	ConnectBootstrapPeers(ctx, host2, host2.BootstrapPeers())
 
 	t.Logf("host1: %+v", host1.AddrInfo())
 	t.Logf("host2: %+v", host2.AddrInfo())
@@ -219,7 +219,10 @@ func makeTestHost(
 		logger = log.TestingLogger()
 	}
 
-	host, err := NewHost(config, pk, addressBook, logger)
+	bootstrapPeers, err := addressBook.BootstrapPeers()
+	require.NoError(t, err)
+
+	host, err := NewHost(config, pk, bootstrapPeers, logger)
 	require.NoError(t, err)
 
 	return host

@@ -21,8 +21,11 @@ import (
 // as it's Switch's responsibility.
 type Host struct {
 	host.Host
-	logger      log.Logger
-	configPeers []peer.AddrInfo
+
+	// bootstrapPeers are initial peers specified in the address book
+	bootstrapPeers []BootstrapPeer
+
+	logger log.Logger
 }
 
 // TransportQUIC quic transport.
@@ -33,7 +36,7 @@ const TransportQUIC = "quic-v1"
 func NewHost(
 	config *config.P2PConfig,
 	nodeKey cmcrypto.PrivKey,
-	addressBook AddressBookConfig,
+	bootstrapPeers []BootstrapPeer,
 	logger log.Logger,
 ) (*Host, error) {
 	if !config.LibP2PEnabled() {
@@ -48,11 +51,6 @@ func NewHost(
 	listenAddr, err := AddressToMultiAddr(config.ListenAddress, TransportQUIC)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert %q to multiaddr: %w", config.ListenAddress, err)
-	}
-
-	peers, err := addressBook.DecodePeers()
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode peers from address book: %w", err)
 	}
 
 	// todo: add support for libp2p.ResourceManager() based on p2p.lp2p toml config
@@ -84,9 +82,9 @@ func NewHost(
 	}
 
 	return &Host{
-		Host:        host,
-		configPeers: peers,
-		logger:      logger,
+		Host:           host,
+		bootstrapPeers: bootstrapPeers,
+		logger:         logger,
 	}, nil
 }
 
@@ -94,15 +92,15 @@ func (h *Host) AddrInfo() peer.AddrInfo {
 	return peer.AddrInfo{ID: h.ID(), Addrs: h.Addrs()}
 }
 
-func (h *Host) ConfigPeers() []peer.AddrInfo {
-	return h.configPeers
+func (h *Host) BootstrapPeers() []BootstrapPeer {
+	return h.bootstrapPeers
 }
 
 func (h *Host) Logger() log.Logger {
 	return h.logger
 }
 
-func ConnectPeers(ctx context.Context, h *Host, peers []peer.AddrInfo) {
+func ConnectBootstrapPeers(ctx context.Context, h *Host, peers []BootstrapPeer) {
 	if len(peers) == 0 {
 		h.logger.Info("No peers to connect to!")
 		return
@@ -110,14 +108,14 @@ func ConnectPeers(ctx context.Context, h *Host, peers []peer.AddrInfo) {
 
 	for _, peer := range peers {
 		// dial to self
-		if h.ID().String() == peer.ID.String() {
+		if h.ID().String() == peer.AddrInfo.ID.String() {
 			continue
 		}
 
-		h.logger.Info("Connecting to peer", "peer", peer.String())
+		h.logger.Info("Connecting to peer", "peer", peer.AddrInfo.String())
 
-		if err := h.Connect(ctx, peer); err != nil {
-			h.logger.Error("Failed to connect to peer", "peer", peer.String(), "err", err)
+		if err := h.Connect(ctx, peer.AddrInfo); err != nil {
+			h.logger.Error("Failed to connect to peer", "peer", peer.AddrInfo.String(), "err", err)
 			continue
 		}
 	}

@@ -20,10 +20,13 @@ type PeerConfig struct {
 	// id example: "12D3KooWJx9i35Vx1h6T6nVqQz4YW1r2J1Y2P2nY3N4N5N6N7N8N9N0"
 	ID string `toml:"id"`
 
-	// TODO: port peer flavors
-	// Private       bool   `mapstructure:"private"`
-	// Persistent    bool   `mapstructure:"persistent"`
-	// Unconditional bool   `mapstructure:"unconditional"`
+	Private    bool `mapstructure:"private"`
+	Persistent bool `mapstructure:"persistent"`
+}
+
+type BootstrapPeer struct {
+	PeerConfig
+	AddrInfo peer.AddrInfo
 }
 
 func AddressBookFromConfig(config *config.P2PConfig) (AddressBookConfig, error) {
@@ -49,7 +52,7 @@ func AddressBookFromFilePath(filepath string) (AddressBookConfig, error) {
 }
 
 func (ab *AddressBookConfig) Validate() error {
-	_, err := ab.DecodePeers()
+	_, err := ab.BootstrapPeers()
 	if err != nil {
 		return fmt.Errorf("failed to decode peers: %w", err)
 	}
@@ -57,9 +60,9 @@ func (ab *AddressBookConfig) Validate() error {
 	return nil
 }
 
-func (ab *AddressBookConfig) DecodePeers() ([]peer.AddrInfo, error) {
+func (ab *AddressBookConfig) BootstrapPeers() ([]BootstrapPeer, error) {
 	var (
-		out   = make([]peer.AddrInfo, 0, len(ab.Peers))
+		out   = make([]BootstrapPeer, 0, len(ab.Peers))
 		cache = make(map[string]struct{})
 	)
 
@@ -74,7 +77,9 @@ func (ab *AddressBookConfig) DecodePeers() ([]peer.AddrInfo, error) {
 			continue
 		}
 
-		out = append(out, addr)
+		pp := BootstrapPeer{PeerConfig: pc, AddrInfo: addr}
+
+		out = append(out, pp)
 		cache[addr.ID.String()] = struct{}{}
 	}
 

@@ -2607,3 +2607,129 @@ func findBlockSizeLimit(t *testing.T, height, maxBytes int64, cs *State, partSiz
 	require.Fail(t, "We shouldn't hit the end of the loop")
 	return nil, nil
 }
+
+// ----------------------------------------------------------------------------
+// AsyncFireEvents tests
+
+func TestSpawnTaskRunner(t *testing.T) {
+	logger := log.TestingLogger()
+
+	t.Run("executes tasks in order", func(t *testing.T) {
+		var results []int
+		enqueue, stop := spawnTaskRunner(10, func() log.Logger { return logger })
+		defer stop()
+
+		for i := 0; i < 5; i++ {
+			i := i
+			enqueue(func() { results = append(results, i) })
+		}
+		stop()
+
+		require.Equal(t, []int{0, 1, 2, 3, 4}, results)
+	})
+
+	t.Run("stop waits for in-flight task", func(t *testing.T) {
+		started := make(chan struct{})
+		done := make(chan struct{})
+		enqueue, stop := spawnTaskRunner(1, func() log.Logger { return logger })
+
+		enqueue(func() {
+			close(started)
+			<-done // block until signaled
+		})
+
+		<-started // wait for task to start
+
+		stopDone := make(chan struct{})
+		go func() {
+			stop()
+			close(stopDone)
+		}()
+
+		// stop() should be blocked waiting for the task
+		select {
+		case <-stopDone:
+			t.Fatal("stop() returned before task completed")
+		case <-time.After(50 * time.Millisecond):
+			// expected: stop is still waiting
+		}
+
+		close(done) // unblock the task
+
+		select {
+		case <-stopDone:
+			// expected: stop completed after task finished
+		case <-time.After(time.Second):
+			t.Fatal("stop() did not return after task completed")
+		}
+	})
+
+	t.Run("handles panic without crashing", func(t *testing.T) {
+		var executed bool
+		enqueue, stop := spawnTaskRunner(10, func() log.Logger { return logger })
+		defer stop()
+
+		enqueue(func() { panic("test panic") })
+		enqueue(func() { executed = true })
+
+		stop()
+		require.True(t, executed, "task after panic should still execute")
+	})
+
+	t.Run("enqueue drops tasks after stop signaled", func(t *testing.T) {
+		var executed bool
+		enqueue, stop := spawnTaskRunner(1, func() log.Logger { return logger })
+
+		stop()
+		enqueue(func() { executed = true })
+
+		// Give some time for task to potentially execute
+		time.Sleep(50 * time.Millisecond)
+		require.False(t, executed, "task should not execute after stop")
+	})
+}
+
+func TestAsyncFireEventsConfig(t *testing.T) {
+	t.Run("disabled by default", func(t *testing.T) {
+		cs, _ := randState(1)
+		defer func() {
+			if err := cs.Stop(); err != nil {
+				t.Log("error stopping consensus state:", err)
+			}
+		}()
+
+		// When AsyncFireEvents is disabled (default), taskRunnerStop should be nil
+		require.Nil(t, cs.taskRunnerStop, "taskRunnerStop should be nil when AsyncFireEvents is disabled")
+	})
+
+	t.Run("enabled via config", func(t *testing.T) {
+		cs, _ := randStateWithAsyncFireEvents(1)
+		defer func() {
+			if err := cs.Stop(); err != nil {
+				t.Log("error stopping consensus state:", err)
+			}
+		}()
+
+		// When AsyncFireEvents is enabled, taskRunnerStop should be set
+		require.NotNil(t, cs.taskRunnerStop, "taskRunnerStop should be set when AsyncFireEvents is enabled")
+	})
+}
+
+func randStateWithAsyncFireEvents(nValidators int) (*State, []*validatorStub) {
+	c := test.ConsensusParams()
+	state, privVals := randGenesisState(nValidators, false, 10, c)
+
+	vss := make([]*validatorStub, nValidators)
+
+	thisConfig := test.ResetTestRoot("consensus_async_fire_events_test")
+	thisConfig.Consensus.AsyncFireEvents = true
+
+	cs := newStateWithConfig(thisConfig, state, privVals[0], kvstore.NewInMemoryApplication())
+
+	for i := 0; i < nValidators; i++ {
+		vss[i] = newValidatorStub(privVals[i], int32(i))
+	}
+	incrementHeight(vss[1:]...)
+
+	return cs, vss
+}

@@ -2666,7 +2666,6 @@ func TestSpawnTaskRunner(t *testing.T) {
 	t.Run("handles panic without crashing", func(t *testing.T) {
 		var executed bool
 		enqueue, stop := spawnTaskRunner(10, func() log.Logger { return logger })
-		defer stop()
 
 		enqueue(func() { panic("test panic") })
 		enqueue(func() { executed = true })

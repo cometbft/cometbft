@@ -173,9 +173,11 @@ func NewState(
 		evsw:             cmtevents.NewEventSwitch(),
 		metrics:          NopMetrics(),
 	}
-	enqueue, stop := spawnTaskRunner(taskQueueSize, func() log.Logger { return cs.Logger })
-	cs.taskRunnerStop = stop
-	blockExec.SetTaskRunner(enqueue)
+	if config.AsyncFireEvents {
+		enqueue, stop := spawnTaskRunner(taskQueueSize, func() log.Logger { return cs.Logger })
+		cs.taskRunnerStop = stop
+		blockExec.SetTaskRunner(enqueue)
+	}
 	for _, option := range options {
 		option(cs)
 	}

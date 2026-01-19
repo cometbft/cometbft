@@ -522,6 +522,10 @@ create_empty_blocks_interval = "{{ .Consensus.CreateEmptyBlocksInterval }}"
 peer_gossip_sleep_duration = "{{ .Consensus.PeerGossipSleepDuration }}"
 peer_query_maj23_sleep_duration = "{{ .Consensus.PeerQueryMaj23SleepDuration }}"
 
+# Enable asynchronous firing of events during block execution.
+# When enabled, events are fired in a background goroutine instead of synchronously.
+async_fire_events = {{ .Consensus.AsyncFireEvents }}
+
 #######################################################
 ###         Storage Configuration Options           ###
 #######################################################

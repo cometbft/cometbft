@@ -1162,7 +1162,8 @@ func (ps *PeerState) SetHasProposalBlockPart(height int64, round int32, index in
 
 // PickSendVote picks a vote and sends it to the peer.
 // Returns true if vote was sent.
-// deprecated: still present in this version for API compatibility, will be
+//
+// Deprecated: still present in this version for API compatibility, will be
 // removed in a later version
 func (ps *PeerState) PickSendVote(votes types.VoteSetReader) bool {
 	if vote := ps.PickVoteToSend(votes); vote != nil {

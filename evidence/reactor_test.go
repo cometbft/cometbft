@@ -398,7 +398,6 @@ func TestEvidenceVectors(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 
 		evi := make([]cmtproto.Evidence, len(tc.evidenceList))
 		for i := 0; i < len(tc.evidenceList); i++ {

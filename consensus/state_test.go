@@ -2705,8 +2705,8 @@ func TestAsyncFireEventsConfig(t *testing.T) {
 	t.Run("enabled via config", func(t *testing.T) {
 		cs, _ := randStateWithAsyncFireEvents(1)
 		defer func() {
-			if err := cs.Stop(); err != nil {
-				t.Log("error stopping consensus state:", err)
+			if cs.taskRunnerStop != nil {
+				cs.taskRunnerStop()
 			}
 		}()
 

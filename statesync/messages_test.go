@@ -90,7 +90,7 @@ func TestValidateMsg(t *testing.T) {
 		},
 	}
 	for name, tc := range testcases {
-		tc := tc
+
 		t.Run(name, func(t *testing.T) {
 			err := validateMsg(tc.msg, 100000)
 			if tc.valid {
@@ -116,7 +116,7 @@ func TestStateSyncVectors(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
+
 		w := tc.msg.(p2p.Wrapper).Wrap()
 		bz, err := proto.Marshal(w)
 		require.NoError(t, err)

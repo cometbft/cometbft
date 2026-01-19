@@ -344,7 +344,6 @@ func TestMempoolVectors(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 
 		msg := memproto.Message{
 			Sum: &memproto.Message_Txs{

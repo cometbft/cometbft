@@ -103,6 +103,9 @@ func (blockExec *BlockExecutor) SetEventBus(eventBus types.BlockEventPublisher) 
 	blockExec.eventBus = eventBus
 }
 
+// SetTaskRunner sets the async task runner for firing events asynchronously.
+// If not called, events are fired synchronously.
+// Must be called before concurrent block execution begins.
 func (blockExec *BlockExecutor) SetTaskRunner(runner func(func())) {
 	blockExec.asyncRunner = runner
 }

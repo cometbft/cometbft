@@ -9,6 +9,7 @@ import (
 	"os"
 	"runtime/debug"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -138,6 +139,9 @@ type State struct {
 
 	// offline state sync height indicating to which height the node synced offline
 	offlineStateSyncHeight int64
+
+	// taskRunnerStop stops the task runner goroutine spawned for block execution
+	taskRunnerStop func()
 }
 
 // StateOption sets an optional parameter on the State.
@@ -153,7 +157,6 @@ func NewState(
 	evpool evidencePool,
 	options ...StateOption,
 ) *State {
-	blockExec.SetTaskRunner(spawnTaskRunner(taskQueueSize))
 	cs := &State{
 		config:           config,
 		blockExec:        blockExec,
@@ -170,6 +173,9 @@ func NewState(
 		evsw:             cmtevents.NewEventSwitch(),
 		metrics:          NopMetrics(),
 	}
+	enqueue, stop := spawnTaskRunner(taskQueueSize, func() log.Logger { return cs.Logger })
+	cs.taskRunnerStop = stop
+	blockExec.SetTaskRunner(enqueue)
 	for _, option := range options {
 		option(cs)
 	}
@@ -440,6 +446,11 @@ func (cs *State) OnStop() {
 		cs.Logger.Error("failed trying to stop timeoutTicket", "error", err)
 	}
 	// WAL is stopped in receiveRoutine.
+
+	// Stop the task runner goroutine to prevent goroutine leak.
+	if cs.taskRunnerStop != nil {
+		cs.taskRunnerStop()
+	}
 }
 
 // Wait waits for the main routine to return.
@@ -2663,15 +2674,44 @@ func repairWalFile(src, dst string) error {
 	return nil
 }
 
-// spawnTaskRunner spawn a single goroutine to run tasks in FIFO order.
-func spawnTaskRunner(buf int) func(func()) {
+// spawnTaskRunner spawns a single goroutine to run tasks in FIFO order.
+// Returns the task enqueue function and a stop function to shut down the runner.
+// The getLogger function is called on each panic to retrieve the current logger.
+// The stop function performs a graceful shutdown: it signals the worker to stop
+// accepting new tasks, waits for any in-flight task to complete, and then returns.
+func spawnTaskRunner(buf int, getLogger func() log.Logger) (enqueue func(func()), stop func()) {
 	taskCh := make(chan func(), buf)
+	done := make(chan struct{})
+	workerDone := make(chan struct{})
 	go func() {
+		defer close(workerDone)
 		for f := range taskCh {
-			f()
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						// Log panic but keep worker alive
+						logger := getLogger()
+						if logger != nil {
+							logger.Error("panic in task runner", "err", r, "stack", string(debug.Stack()))
+						}
+					}
+				}()
+				f()
+			}()
 		}
 	}()
+	var once sync.Once
 	return func(f func()) {
-		taskCh <- f
-	}
+			select {
+			case taskCh <- f:
+			case <-done:
+				// Shutdown signaled; drop task
+			}
+		}, func() {
+			once.Do(func() {
+				close(done)
+				close(taskCh)
+				<-workerDone // Wait for worker to finish any in-flight task
+			})
+		}
 }

@@ -163,7 +163,7 @@ func TestProofValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
+
 		t.Run(tc.testName, func(t *testing.T) {
 			_, proofs := ProofsFromByteSlices([][]byte{
 				[]byte("apple"),

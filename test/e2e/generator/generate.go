@@ -365,31 +365,47 @@ func ptrUint64(i uint64) *uint64 {
 // Also returns the last version in the list, which will be used for updates.
 func parseWeightedVersions(s string) (weightedChoice, string, error) {
 	wc := make(weightedChoice)
-	lv := ""
-	wvs := strings.Split(strings.TrimSpace(s), ",")
-	for _, wv := range wvs {
-		parts := strings.Split(strings.TrimSpace(wv), ":")
+	var lastVersion string
+
+	entries := strings.Split(strings.TrimSpace(s), ",")
+
+	for _, entry := range entries {
+		parts := strings.Split(strings.TrimSpace(entry), ":")
+
 		var ver string
-		if len(parts) == 2 {
-			ver = strings.TrimSpace(strings.Join([]string{"cometbft/e2e-node", parts[0]}, ":"))
-		} else if len(parts) == 3 {
-			ver = strings.TrimSpace(strings.Join([]string{parts[0], parts[1]}, ":"))
-		} else {
-			return nil, "", fmt.Errorf("unexpected weight:version combination: %s", wv)
+		switch len(parts) {
+		case 2:
+			// tag:weight → assume default image
+			ver = strings.TrimSpace(
+				strings.Join([]string{"cometbft/e2e-node", parts[0]}, ":"),
+			)
+		case 3:
+			// image:tag:weight
+			ver = strings.TrimSpace(
+				strings.Join([]string{parts[0], parts[1]}, ":"),
+			)
+		default:
+			return nil, "", fmt.Errorf(
+				"unexpected weight:version combination: %s",
+				entry,
+			)
 		}
 
-		wt, err := strconv.Atoi(strings.TrimSpace(parts[len(parts)-1]))
+		weightStr := strings.TrimSpace(parts[len(parts)-1])
+		weight, err := strconv.Atoi(weightStr)
 		if err != nil {
-			return nil, "", fmt.Errorf("unexpected weight \"%s\": %w", parts[1], err)
+			return nil, "", fmt.Errorf("unexpected weight %q: %w", weightStr, err)
 		}
 
-		if wt < 1 {
+		if weight < 1 {
 			return nil, "", errors.New("version weights must be >= 1")
 		}
-		wc[ver] = uint(wt)
-		lv = ver
+
+		wc[ver] = uint(weight)
+		lastVersion = ver
 	}
-	return wc, lv, nil
+
+	return wc, lastVersion, nil
 }
 
 // Extracts the latest release version from the given Git repository. Uses the

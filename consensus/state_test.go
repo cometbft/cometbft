@@ -3,6 +3,7 @@ package consensus
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -23,6 +24,7 @@ import (
 	"github.com/cometbft/cometbft/libs/protoio"
 	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/libs/service"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
@@ -2620,6 +2622,7 @@ func TestSpawnTaskRunner(t *testing.T) {
 		defer stop()
 
 		for i := 0; i < 5; i++ {
+			i := i // capture loop variable by value
 			enqueue(func() { results = append(results, i) })
 		}
 		stop()
@@ -2711,7 +2714,49 @@ func TestAsyncFireEventsConfig(t *testing.T) {
 		// When AsyncFireEvents is enabled, taskRunnerStop should be set
 		require.NotNil(t, cs.taskRunnerStop, "taskRunnerStop should be set when AsyncFireEvents is enabled")
 	})
+
+	t.Run("task runner cleaned up on OnStart failure", func(t *testing.T) {
+		// This test verifies that if OnStart fails, the task runner goroutine
+		// spawned in NewState is properly cleaned up to prevent goroutine leaks.
+		cs, _ := randStateWithAsyncFireEvents(1)
+
+		// Verify task runner was created
+		require.NotNil(t, cs.taskRunnerStop, "taskRunnerStop should be set after NewState")
+
+		// Set a failing timeout ticker to cause OnStart to fail
+		cs.SetTimeoutTicker(&failingTimeoutTicker{})
+
+		// Start should fail because the timeout ticker fails
+		err := cs.Start()
+		require.Error(t, err, "Start should fail with failing timeout ticker")
+
+		// The task runner should be cleaned up (set to nil) after OnStart fails
+		require.Nil(t, cs.taskRunnerStop, "taskRunnerStop should be nil after OnStart failure to prevent goroutine leak")
+
+		// Calling Stop() should return ErrNotStarted (not panic or leak goroutines)
+		err = cs.Stop()
+		require.ErrorIs(t, err, service.ErrNotStarted, "Stop should return ErrNotStarted after failed Start")
+	})
 }
+
+// failingTimeoutTicker is a mock TimeoutTicker that fails on Start.
+type failingTimeoutTicker struct{}
+
+func (f *failingTimeoutTicker) Start() error {
+	return errors.New("simulated timeout ticker failure")
+}
+
+func (f *failingTimeoutTicker) Stop() error {
+	return nil
+}
+
+func (f *failingTimeoutTicker) Chan() <-chan timeoutInfo {
+	return make(chan timeoutInfo)
+}
+
+func (f *failingTimeoutTicker) ScheduleTimeout(timeoutInfo) {}
+
+func (f *failingTimeoutTicker) SetLogger(log.Logger) {}
 
 func randStateWithAsyncFireEvents(nValidators int) (*State, []*validatorStub) {
 	c := test.ConsensusParams()

@@ -325,7 +325,18 @@ func (cs *State) LoadCommit(height int64) *types.Commit {
 // OnStart loads the latest state via the WAL, and starts the timeout and
 // receive routines.
 func (cs *State) OnStart() error {
-	// We may set the WAL in testing before calling Start, so only OpenWAL if it's
+	// Clean up the task runner goroutine if OnStart fails.
+	// The task runner is spawned in NewState before the service starts,
+	// but cleanup only occurs in OnStop. If OnStart fails, BaseService
+	// doesn't call OnStop, causing a goroutine leak.
+	defer func() {
+		if err != nil && cs.taskRunnerStop != nil {
+			cs.taskRunnerStop()
+			cs.taskRunnerStop = nil
+		}
+	}()
+
+	// We may set the WAL in testing before calling Start, so only OpenWAL if its
 	// still the nilWAL.
 	if _, ok := cs.wal.(nilWAL); ok {
 		if err := cs.loadWalFile(); err != nil {
@@ -2685,21 +2696,37 @@ func spawnTaskRunner(buf int, getLogger func() log.Logger) (enqueue func(func())
 	taskCh := make(chan func(), buf)
 	done := make(chan struct{})
 	workerDone := make(chan struct{})
+
+	runTask := func(f func()) {
+		defer func() {
+			if r := recover(); r != nil {
+				// Log panic but keep worker alive
+				logger := getLogger()
+				if logger != nil {
+					logger.Error("panic in task runner", "err", r, "stack", string(debug.Stack()))
+				}
+			}
+		}()
+		f()
+	}
+
 	go func() {
 		defer close(workerDone)
-		for f := range taskCh {
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						// Log panic but keep worker alive
-						logger := getLogger()
-						if logger != nil {
-							logger.Error("panic in task runner", "err", r, "stack", string(debug.Stack()))
-						}
+		for {
+			select {
+			case f := <-taskCh:
+				runTask(f)
+			case <-done:
+				// Drain remaining tasks before exiting
+				for {
+					select {
+					case f := <-taskCh:
+						runTask(f)
+					default:
+						return
 					}
-				}()
-				f()
-			}()
+				}
+			}
 		}
 	}()
 	var once sync.Once
@@ -2712,7 +2739,6 @@ func spawnTaskRunner(buf int, getLogger func() log.Logger) (enqueue func(func())
 		}, func() {
 			once.Do(func() {
 				close(done)
-				close(taskCh)
 				<-workerDone // Wait for worker to finish any in-flight task
 			})
 		}

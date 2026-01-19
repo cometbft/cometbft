@@ -132,7 +132,7 @@ func TestAddExpiredEvidence(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
+
 		t.Run(tc.evDescription, func(t *testing.T) {
 			ev, err := types.NewMockDuplicateVoteEvidenceWithValidator(tc.evHeight, tc.evTime, val, evidenceChainID)
 			require.NoError(t, err)

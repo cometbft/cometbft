@@ -169,6 +169,7 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 
 	// check if oracle's gossipVoteMap has any results
 	preLockTime := time.Now().UnixMilli()
+
 	blockExec.oracleInfo.GossipVoteBuffer.RLock()
 	oracleVotesBuffer := blockExec.oracleInfo.GossipVoteBuffer.Buffer
 	votes := []*oracleproto.GossipedVotes{}

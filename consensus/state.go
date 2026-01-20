@@ -325,6 +325,16 @@ func (cs *State) LoadCommit(height int64) *types.Commit {
 // OnStart loads the latest state via the WAL, and starts the timeout and
 // receive routines.
 func (cs *State) OnStart() error {
+	// Recreate task runner if AsyncFireEvents is enabled but the runner was
+	// previously stopped (e.g., due to a failed OnStart attempt). Without this,
+	// blockExec.asyncRunner would reference a defunct enqueue function whose
+	// done channel is closed, causing events to be silently dropped.
+	if cs.config.AsyncFireEvents && cs.taskRunnerStop == nil {
+		enqueue, stop := spawnTaskRunner(taskQueueSize, func() log.Logger { return cs.Logger })
+		cs.taskRunnerStop = stop
+		cs.blockExec.SetTaskRunner(enqueue)
+	}
+
 	// Clean up the task runner goroutine if OnStart fails.
 	// The task runner is spawned in NewState before the service starts,
 	// but cleanup only occurs in OnStop. If OnStart fails, BaseService

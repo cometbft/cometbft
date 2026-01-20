@@ -2736,9 +2736,41 @@ func TestAsyncFireEventsConfig(t *testing.T) {
 		err = cs.Stop()
 		require.ErrorIs(t, err, service.ErrNotStarted, "Stop should return ErrNotStarted after failed Start")
 	})
+
+	t.Run("task runner recreated on OnStart retry after failure", func(t *testing.T) {
+		// This test verifies that if OnStart fails and is retried, the task runner
+		// is recreated so that events are not silently dropped.
+		cs, _ := randStateWithAsyncFireEvents(1)
+
+		// Capture the original task runner stop function
+		originalStop := cs.taskRunnerStop
+		require.NotNil(t, originalStop, "taskRunnerStop should be set after NewState")
+
+		// Set a failing timeout ticker to cause OnStart to fail on first attempt
+		failingTicker := &failOnceTimeoutTicker{shouldFail: true}
+		cs.SetTimeoutTicker(failingTicker)
+
+		// First Start should fail
+		err := cs.Start()
+		require.Error(t, err, "First Start should fail")
+		require.Nil(t, cs.taskRunnerStop, "taskRunnerStop should be nil after OnStart failure")
+
+		// Retry Start - the ticker will succeed this time (shouldFail was set to false)
+		// This should recreate the task runner
+		err = cs.Start()
+		require.NoError(t, err, "Retry Start should succeed")
+		defer func() {
+			if err := cs.Stop(); err != nil {
+				t.Log("error stopping consensus state:", err)
+			}
+		}()
+
+		// Verify task runner was recreated
+		require.NotNil(t, cs.taskRunnerStop, "taskRunnerStop should be recreated on successful retry")
+	})
 }
 
-// failingTimeoutTicker is a mock TimeoutTicker that fails on Start.
+// failingTimeoutTicker is a mock TimeoutTicker that always fails on Start.
 type failingTimeoutTicker struct{}
 
 func (f *failingTimeoutTicker) Start() error {
@@ -2756,6 +2788,35 @@ func (f *failingTimeoutTicker) Chan() <-chan timeoutInfo {
 func (f *failingTimeoutTicker) ScheduleTimeout(timeoutInfo) {}
 
 func (f *failingTimeoutTicker) SetLogger(log.Logger) {}
+
+// failOnceTimeoutTicker is a mock TimeoutTicker that fails on first Start, then succeeds.
+type failOnceTimeoutTicker struct {
+	shouldFail bool
+}
+
+func (f *failOnceTimeoutTicker) Start() error {
+	if f.shouldFail {
+		f.shouldFail = false // Next call will succeed
+		return errors.New("simulated timeout ticker failure (first attempt)")
+	}
+	return nil
+}
+
+func (f *failOnceTimeoutTicker) Stop() error {
+	return nil
+}
+
+func (f *failOnceTimeoutTicker) Chan() <-chan timeoutInfo {
+	return make(chan timeoutInfo)
+}
+
+func (f *failOnceTimeoutTicker) ScheduleTimeout(timeoutInfo) {}
+
+func (f *failOnceTimeoutTicker) SetLogger(log.Logger) {}
+
+func (f *failOnceTimeoutTicker) Reset() {
+	f.shouldFail = true
+}
 
 func randStateWithAsyncFireEvents(nValidators int) (*State, []*validatorStub) {
 	c := test.ConsensusParams()

@@ -2701,7 +2701,7 @@ func repairWalFile(src, dst string) error {
 // Returns the task enqueue function and a stop function to shut down the runner.
 // The getLogger function is called on each panic to retrieve the current logger.
 // The stop function performs a graceful shutdown: it signals the worker to stop
-// accepting new tasks, waits for any in-flight task to complete, and then returns.
+// accepting new tasks, drains remaining tasks, and waits for completion.
 func spawnTaskRunner(buf int, getLogger func() log.Logger) (enqueue func(func()), stop func()) {
 	taskCh := make(chan func(), buf)
 	done := make(chan struct{})
@@ -2710,9 +2710,7 @@ func spawnTaskRunner(buf int, getLogger func() log.Logger) (enqueue func(func())
 	runTask := func(f func()) {
 		defer func() {
 			if r := recover(); r != nil {
-				// Log panic but keep worker alive
-				logger := getLogger()
-				if logger != nil {
+				if logger := getLogger(); logger != nil {
 					logger.Error("panic in task runner", "err", r, "stack", string(debug.Stack()))
 				}
 			}
@@ -2739,17 +2737,17 @@ func spawnTaskRunner(buf int, getLogger func() log.Logger) (enqueue func(func())
 			}
 		}
 	}()
+
 	var once sync.Once
 	return func(f func()) {
 			select {
 			case taskCh <- f:
 			case <-done:
-				// Shutdown signaled; drop task
 			}
 		}, func() {
 			once.Do(func() {
 				close(done)
-				<-workerDone // Wait for worker to finish any in-flight task
+				<-workerDone
 			})
 		}
 }

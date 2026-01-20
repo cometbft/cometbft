@@ -1,0 +1,1 @@
+feat(consensus): async fireEvents

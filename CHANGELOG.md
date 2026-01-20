@@ -22,7 +22,6 @@
 
 ### FEATURES
 
-- `[consensus]` Add async fireEvents ([\#5578](https://github.com/cometbft/cometbft/pull/5578))
 - `[p2p]` Add experimental support for lib-p2p networking ([\#5463](https://github.com/cometbft/cometbft/pull/5463))
 - `[crypto]` Add support for BLS12-381 keys. Since the implementation needs
   `cgo` and brings in new dependencies, we use the `bls12381` build flag to

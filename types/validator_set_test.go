@@ -1809,7 +1809,6 @@ func TestValidatorSet_TotalVotingPowerSafe(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc // capture range variable
 		t.Run(tc.name, func(t *testing.T) {
 			// Create validator set without using NewValidatorSet to avoid panic on overflow
 			valSet := &ValidatorSet{

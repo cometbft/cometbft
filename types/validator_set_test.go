@@ -1699,3 +1699,141 @@ func TestValidatorSet_AllKeysHaveSameType(t *testing.T) {
 		}
 	}
 }
+
+func TestValidatorSet_TotalVotingPowerSafe(t *testing.T) {
+	testCases := []struct {
+		name          string
+		validators    []*Validator
+		expectedPower int64
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "happy path - normal validators",
+			validators: []*Validator{
+				NewValidator(ed25519.GenPrivKey().PubKey(), 100),
+				NewValidator(ed25519.GenPrivKey().PubKey(), 200),
+				NewValidator(ed25519.GenPrivKey().PubKey(), 300),
+			},
+			expectedPower: 600,
+			expectError:   false,
+		},
+		{
+			name:          "zero state - empty validator set",
+			validators:    []*Validator{},
+			expectedPower: 0,
+			expectError:   false,
+		},
+		{
+			name:          "zero state - nil validator set",
+			validators:    nil,
+			expectedPower: 0,
+			expectError:   false,
+		},
+		{
+			name: "single validator",
+			validators: []*Validator{
+				NewValidator(ed25519.GenPrivKey().PubKey(), 1000),
+			},
+			expectedPower: 1000,
+			expectError:   false,
+		},
+		{
+			name: "boundary - exactly at MaxTotalVotingPower",
+			validators: []*Validator{
+				NewValidator(ed25519.GenPrivKey().PubKey(), MaxTotalVotingPower),
+			},
+			expectedPower: MaxTotalVotingPower,
+			expectError:   false,
+		},
+		{
+			name: "boundary - sum equals MaxTotalVotingPower",
+			validators: []*Validator{
+				NewValidator(ed25519.GenPrivKey().PubKey(), MaxTotalVotingPower-100),
+				NewValidator(ed25519.GenPrivKey().PubKey(), 100),
+			},
+			expectedPower: MaxTotalVotingPower,
+			expectError:   false,
+		},
+		{
+			name: "overflow - exceeds MaxTotalVotingPower",
+			validators: []*Validator{
+				NewValidator(ed25519.GenPrivKey().PubKey(), MaxTotalVotingPower/2+1),
+				NewValidator(ed25519.GenPrivKey().PubKey(), MaxTotalVotingPower/2+1),
+			},
+			expectedPower: 0,
+			expectError:   true,
+			errorContains: "exceeds maximum",
+		},
+		{
+			name: "overflow - multiple validators exceeding MaxTotalVotingPower",
+			validators: []*Validator{
+				NewValidator(ed25519.GenPrivKey().PubKey(), MaxTotalVotingPower),
+				NewValidator(ed25519.GenPrivKey().PubKey(), 1),
+			},
+			expectedPower: 0,
+			expectError:   true,
+			errorContains: "exceeds maximum",
+		},
+		{
+			name: "overflow - three large validators",
+			validators: []*Validator{
+				NewValidator(ed25519.GenPrivKey().PubKey(), math.MaxInt64/2),
+				NewValidator(ed25519.GenPrivKey().PubKey(), math.MaxInt64/2),
+				NewValidator(ed25519.GenPrivKey().PubKey(), 100),
+			},
+			expectedPower: 0,
+			expectError:   true,
+			errorContains: "exceeds maximum",
+		},
+		{
+			name: "validators with zero voting power",
+			validators: []*Validator{
+				NewValidator(ed25519.GenPrivKey().PubKey(), 100),
+				NewValidator(ed25519.GenPrivKey().PubKey(), 0),
+				NewValidator(ed25519.GenPrivKey().PubKey(), 200),
+			},
+			expectedPower: 300,
+			expectError:   false,
+		},
+		{
+			name: "large number of validators - within limit",
+			validators: func() []*Validator {
+				vals := make([]*Validator, 100)
+				for i := 0; i < 100; i++ {
+					vals[i] = NewValidator(ed25519.GenPrivKey().PubKey(), 1000)
+				}
+				return vals
+			}(),
+			expectedPower: 100000,
+			expectError:   false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create validator set without using NewValidatorSet to avoid panic on overflow
+			valSet := &ValidatorSet{
+				Validators: tc.validators,
+			}
+
+			// Call TotalVotingPowerSafe
+			totalPower, err := valSet.TotalVotingPowerSafe()
+
+			// Assert expectations
+			if tc.expectError {
+				require.Error(t, err, "expected error but got none")
+				if tc.errorContains != "" {
+					require.Contains(t, err.Error(), tc.errorContains,
+						"error message should contain expected text")
+				}
+				require.Equal(t, tc.expectedPower, totalPower,
+					"power should be %d when error occurs", tc.expectedPower)
+			} else {
+				require.NoError(t, err, "unexpected error: %v", err)
+				require.Equal(t, tc.expectedPower, totalPower,
+					"total voting power should be %d", tc.expectedPower)
+			}
+		})
+	}
+}

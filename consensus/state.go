@@ -313,7 +313,7 @@ func (cs *State) LoadCommit(height int64) *types.Commit {
 // OnStart loads the latest state via the WAL, and starts the timeout and
 // receive routines.
 func (cs *State) OnStart() error {
-	// We may set the WAL in testing before calling Start, so only OpenWAL if its
+	// We may set the WAL in testing before calling Start, so only OpenWAL if it's
 	// still the nilWAL.
 	if _, ok := cs.wal.(nilWAL); ok {
 		if err := cs.loadWalFile(); err != nil {
@@ -438,7 +438,7 @@ func (cs *State) OnStop() {
 	// WAL is stopped in receiveRoutine.
 }
 
-// Wait waits for the the main routine to return.
+// Wait waits for the main routine to return.
 // NOTE: be sure to Stop() the event switch and drain
 // any event channels or this may deadlock
 func (cs *State) Wait() {
@@ -898,7 +898,7 @@ func (cs *State) handleMsg(mi msgInfo) {
 		// if the proposal is complete, we'll enterPrevote or tryFinalizeCommit
 		added, err = cs.addProposalBlockPart(msg, peerID)
 
-		// We unlock here to yield to any routines that need to read the the RoundState.
+		// We unlock here to yield to any routines that need to read the RoundState.
 		// Previously, this code held the lock from the point at which the final block
 		// part was received until the block executed against the application.
 		// This prevented the reactor from being able to retrieve the most updated
@@ -930,7 +930,7 @@ func (cs *State) handleMsg(mi msgInfo) {
 		}
 
 	case *VoteMessage:
-		// attempt to add the vote and dupeout the validator if its a duplicate signature
+		// attempt to add the vote and dupeout the validator if it's a duplicate signature
 		// if the vote gives us a 2/3-any or 2/3-one, we transition
 		added, err = cs.tryAddVote(msg.Vote, peerID)
 		if added {
@@ -2071,7 +2071,7 @@ func (cs *State) handleCompleteProposal(blockHeight int64) {
 	}
 }
 
-// Attempt to add the vote. if its a duplicate signature, dupeout the validator
+// Attempt to add the vote. if it's a duplicate signature, dupeout the validator
 func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 	added, err := cs.addVote(vote, peerID)
 	// NOTE: some of these errors are swallowed here

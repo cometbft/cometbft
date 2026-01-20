@@ -21,7 +21,7 @@ type Provider interface {
 	// Stops the whole network
 	StopTestnet(context.Context) error
 
-	// Returns the the provider's infrastructure data
+	// Returns the provider's infrastructure data
 	GetInfrastructureData() *e2e.InfrastructureData
 }
 
@@ -30,7 +30,7 @@ type ProviderData struct {
 	InfrastructureData e2e.InfrastructureData
 }
 
-// Returns the the provider's infrastructure data
+// Returns the provider's infrastructure data
 func (pd ProviderData) GetInfrastructureData() *e2e.InfrastructureData {
 	return &pd.InfrastructureData
 }

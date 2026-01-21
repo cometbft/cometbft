@@ -124,8 +124,8 @@ func (s *Switch) OnStart() error {
 		}
 
 		opts := PeerAddOptions{
-			Private:       bp.PeerConfig.Private,
-			Persistent:    bp.PeerConfig.Persistent,
+			Private:       bp.Private,
+			Persistent:    bp.Persistent,
 			OnBeforeStart: s.reactors.InitPeer,
 			OnAfterStart:  s.reactors.AddPeer,
 		}

@@ -3,6 +3,7 @@ package lp2p
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -41,6 +42,8 @@ type SwitchReactor struct {
 	p2p.Reactor
 	Name string
 }
+
+const MaxReconnectBackoff = 5 * time.Minute
 
 var _ p2p.Switcher = (*Switch)(nil)
 
@@ -228,14 +231,35 @@ func (s *Switch) StopPeerGracefully(_ p2p.Peer) {
 func (s *Switch) StopPeerForError(peer p2p.Peer, reason any) {
 	key := peer.ID()
 
-	opts := PeerRemovalOptions{
+	removalOpts := PeerRemovalOptions{
 		Reason:      reason,
 		OnAfterStop: s.reactors.RemovePeer,
 	}
 
-	if err := s.peerSet.Remove(key, opts); err != nil {
+	if err := s.peerSet.Remove(key, removalOpts); err != nil {
 		s.Logger.Error("Failed to remove peer", "peer_id", key, "err", err)
+		return
 	}
+
+	// reconnect logic
+	if !peer.IsPersistent() {
+		return
+	}
+
+	// should not happen
+	p, ok := peer.(*Peer)
+	if !ok {
+		return
+	}
+
+	go s.reconnectPeer(p.AddrInfo(), MaxReconnectBackoff, PeerAddOptions{
+		Persistent:    p.IsPersistent(),
+		Unconditional: p.IsUnconditional(),
+		Private:       p.IsPrivate(),
+		OnBeforeStart: s.reactors.InitPeer,
+		OnAfterStart:  s.reactors.AddPeer,
+		OnStartFailed: s.reactors.RemovePeer,
+	})
 }
 
 func (s *Switch) IsDialingOrExistingAddress(addr *p2p.NetAddress) bool {
@@ -442,5 +466,62 @@ func (s *Switch) resolvePeer(id peer.ID) (p2p.Peer, error) {
 		return nil, errors.Wrap(err, "unable to add peer")
 	default:
 		return peer, nil
+	}
+}
+
+// reconnectPeer reconnects persistent peers back to the host.
+// uses exponential backoff to reconnect.
+func (s *Switch) reconnectPeer(addrInfo peer.AddrInfo, backoffMax time.Duration, opts PeerAddOptions) {
+	defer func() {
+		if r := recover(); r != nil {
+			s.Logger.Error("Panic in (*lp2p.Switch).reconnectTo", "panic", r)
+		}
+	}()
+
+	ctx := network.WithDialPeerTimeout(context.Background(), 3*time.Second)
+
+	backoff := 1 * time.Second
+	sleep := func() {
+		jitter := time.Duration(rand.Intn(100)) * time.Millisecond
+		time.Sleep(backoff + jitter)
+
+		backoff *= 2
+		if backoffMax > 0 && backoff > backoffMax {
+			backoff = backoffMax
+		}
+	}
+
+	for {
+		if !s.IsRunning() {
+			return
+		}
+
+		// 1. ensure connection (dial or noop if already connected)
+		if err := s.host.Connect(ctx, addrInfo); err != nil {
+			s.Logger.Error(
+				"Failed to reconnect to peer",
+				"peer_id", addrInfo.ID.String(),
+				"err", err,
+				"backoff", backoff.String(),
+			)
+
+			sleep()
+			continue
+		}
+
+		// 2. add peer to the peer set
+		_, err := s.peerSet.Add(addrInfo.ID, opts)
+		if err == nil || errors.Is(err, ErrPeerExists) {
+			s.Logger.Info("Reconnected to peer", "peer_id", addrInfo.ID.String())
+			return
+		}
+
+		s.Logger.Error(
+			"Failed to add peer after reconnection",
+			"peer_id", addrInfo.ID.String(),
+			"err", err,
+			"backoff", backoff.String(),
+		)
+		sleep()
 	}
 }

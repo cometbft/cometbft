@@ -72,6 +72,10 @@ func (p *Peer) SocketAddr() *p2p.NetAddress {
 	return p.netAddr
 }
 
+func (p *Peer) AddrInfo() peer.AddrInfo {
+	return p.addrInfo
+}
+
 func (p *Peer) Get(key string) any {
 	v, err := p.host.Peerstore().Get(p.addrInfo.ID, key)
 	if err != nil {

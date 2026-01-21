@@ -338,8 +338,9 @@ func (cs *State) OnStart() error {
 	}
 
 	// Clean up the task runner goroutine if OnStart fails.
+	succeeded := false
 	defer func() {
-		if err != nil && cs.taskRunner != nil {
+		if !succeeded && cs.taskRunner != nil {
 			cs.taskRunner.Stop()
 			cs.taskRunner = nil
 		}
@@ -431,6 +432,7 @@ func (cs *State) OnStart() error {
 	rs := cs.GetRoundState()
 	cs.scheduleRound0(rs)
 
+	succeeded = true
 	return nil
 }
 

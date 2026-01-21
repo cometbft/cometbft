@@ -119,7 +119,7 @@ func (s *Switch) OnStart() error {
 
 	for _, bp := range bootstrapPeers {
 		if err := s.host.Connect(ctx, bp.AddrInfo); err != nil {
-			s.Logger.Error("Unable to connect to bootstrap peer", "peer", bp.AddrInfo.String(), "err", err)
+			s.Logger.Error("Unable to connect to bootstrap peer", "peer_id", bp.AddrInfo.String(), "err", err)
 			continue
 		}
 
@@ -131,7 +131,7 @@ func (s *Switch) OnStart() error {
 		}
 
 		if _, err := s.peerSet.Add(bp.AddrInfo.ID, opts); err != nil {
-			s.Logger.Error("Unable to add bootstrap peer", "peer", bp.AddrInfo.String(), "err", err)
+			s.Logger.Error("Unable to add bootstrap peer", "peer_id", bp.AddrInfo.ID.String(), "err", err)
 			continue
 		}
 	}
@@ -251,7 +251,7 @@ func (s *Switch) StopPeerForError(peer p2p.Peer, reason any) {
 	}
 
 	if err := s.peerSet.Remove(key, opts); err != nil {
-		s.Logger.Error("Failed to remove peer", "peer", key, "err", err)
+		s.Logger.Error("Failed to remove peer", "peer_id", key, "err", err)
 	}
 }
 
@@ -348,7 +348,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 		if r := recover(); r != nil {
 			s.Logger.Error(
 				"Panic in (*lp2p.Switch).handleStream",
-				"peer", peerID,
+				"peer_id", peerID.String(),
 				"protocol", protocolID,
 				"panic", r,
 				"stack", string(debug.Stack()),
@@ -391,7 +391,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 
 		peer, err = s.peerSet.Add(peerID, opts)
 		if err != nil {
-			s.Logger.Error("Failed to add peer", "peer", peerID, "err", err)
+			s.Logger.Error("Failed to add peer", "peer_id", peerID.String(), "err", err)
 			return
 		}
 	}
@@ -412,7 +412,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 
 	s.Logger.Debug(
 		"Received stream envelope. Submitting to reactor",
-		"peer", peerID,
+		"peer_id", peerID.String(),
 		"protocol", protocolID,
 		"message_type", messageType,
 		"payload_len", payloadLen,

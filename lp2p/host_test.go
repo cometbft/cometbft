@@ -237,9 +237,9 @@ func connectBootstrapPeers(t *testing.T, ctx context.Context, h *Host, peers []B
 			continue
 		}
 
-		h.logger.Info("Connecting to peer", "peer", peer.AddrInfo.String())
+		h.logger.Info("Connecting to peer", "peer_id", peer.AddrInfo.ID.String())
 
 		err := h.Connect(ctx, peer.AddrInfo)
-		require.NoError(t, err, "failed to connect to peer", "peer", peer.AddrInfo.String())
+		require.NoError(t, err, "failed to connect to peer", "peer_id", peer.AddrInfo.ID.String())
 	}
 }

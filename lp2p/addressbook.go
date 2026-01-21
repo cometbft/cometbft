@@ -78,9 +78,9 @@ func (ab *AddressBookConfig) BootstrapPeers() ([]BootstrapPeer, error) {
 			continue
 		}
 
-		pp := BootstrapPeer{PeerConfig: pc, AddrInfo: addr}
+		bp := BootstrapPeer{PeerConfig: pc, AddrInfo: addr}
 
-		out = append(out, pp)
+		out = append(out, bp)
 		cache[addr.ID.String()] = struct{}{}
 	}
 

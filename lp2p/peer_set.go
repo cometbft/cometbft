@@ -25,6 +25,8 @@ type PeerSet struct {
 
 var _ p2p.IPeerSet = (*PeerSet)(nil)
 
+var ErrPeerExists = errors.New("peer already exists")
+
 // NewPeerSet manager peers for a given switch
 func NewPeerSet(host *Host, metrics *p2p.Metrics, logger log.Logger) *PeerSet {
 	return &PeerSet{
@@ -56,6 +58,7 @@ type PeerAddOptions struct {
 	Unconditional bool
 	OnBeforeStart func(p *Peer)
 	OnAfterStart  func(p *Peer)
+	OnStartFailed func(p *Peer, reason any)
 }
 
 // Add adds a new peer to the peer set.
@@ -78,9 +81,8 @@ func (ps *PeerSet) Add(id peer.ID, opts PeerAddOptions) (*Peer, error) {
 	}
 
 	set := ps.set(id, p)
-
 	if !set {
-		return nil, errors.New("peer already exists")
+		return nil, ErrPeerExists
 	}
 
 	if opts.OnBeforeStart != nil {
@@ -89,6 +91,9 @@ func (ps *PeerSet) Add(id peer.ID, opts PeerAddOptions) (*Peer, error) {
 
 	if err := p.Start(); err != nil {
 		ps.unset(id)
+		if opts.OnStartFailed != nil {
+			opts.OnStartFailed(p, err)
+		}
 		return nil, errors.Wrap(err, "unable to start peer")
 	}
 
@@ -103,7 +108,7 @@ func (ps *PeerSet) Add(id peer.ID, opts PeerAddOptions) (*Peer, error) {
 
 type PeerRemovalOptions struct {
 	Reason      any
-	OnAfterStop func(p *Peer)
+	OnAfterStop func(p *Peer, reason any)
 }
 
 func (ps *PeerSet) Remove(key p2p.ID, opts PeerRemovalOptions) error {
@@ -128,7 +133,7 @@ func (ps *PeerSet) Remove(key p2p.ID, opts PeerRemovalOptions) error {
 	}
 
 	if opts.OnAfterStop != nil {
-		opts.OnAfterStop(p)
+		opts.OnAfterStop(p, opts.Reason)
 	}
 
 	ps.metrics.Peers.Add(-1)

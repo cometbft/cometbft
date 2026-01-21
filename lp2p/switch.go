@@ -11,8 +11,8 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/libp2p/go-libp2p/core/event"
 	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/pkg/errors"
 )
@@ -31,8 +31,6 @@ type Switch struct {
 	peerSet *PeerSet
 
 	reactors *reactorSet
-
-	eventBusSubscription event.Subscription
 
 	metrics *p2p.Metrics
 }
@@ -80,17 +78,6 @@ func NewSwitch(
 		}
 	}
 
-	eventTypes := []any{
-		&event.EvtPeerConnectednessChanged{},
-	}
-
-	sub, err := s.host.EventBus().Subscribe(eventTypes)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to subscribe to event bus")
-	}
-
-	s.eventBusSubscription = sub
-
 	return s, nil
 }
 
@@ -129,6 +116,7 @@ func (s *Switch) OnStart() error {
 			Unconditional: bp.Unconditional,
 			OnBeforeStart: s.reactors.InitPeer,
 			OnAfterStart:  s.reactors.AddPeer,
+			OnStartFailed: s.reactors.RemovePeer,
 		}
 
 		if _, err := s.peerSet.Add(bp.AddrInfo.ID, opts); err != nil {
@@ -152,10 +140,6 @@ func (s *Switch) OnStop() {
 
 	if err := s.host.Peerstore().Close(); err != nil {
 		s.Logger.Error("failed to close peerstore", "err", err)
-	}
-
-	if err := s.eventBusSubscription.Close(); err != nil {
-		s.Logger.Error("failed to close event bus subscription", "err", err)
 	}
 }
 
@@ -245,10 +229,8 @@ func (s *Switch) StopPeerForError(peer p2p.Peer, reason any) {
 	key := peer.ID()
 
 	opts := PeerRemovalOptions{
-		Reason: reason,
-		OnAfterStop: func(p *Peer) {
-			s.reactors.RemovePeer(p, reason)
-		},
+		Reason:      reason,
+		OnAfterStop: s.reactors.RemovePeer,
 	}
 
 	if err := s.peerSet.Remove(key, opts); err != nil {
@@ -389,20 +371,10 @@ func (s *Switch) handleStream(stream network.Stream) {
 	}
 
 	// 3. Retrieve the peer from the peerSet (or provision if it's not)
-	peer := s.peerSet.Get(peerIDToKey(peerID))
-	if peer == nil {
-		opts := PeerAddOptions{
-			Private:       false,
-			Persistent:    false,
-			OnBeforeStart: s.reactors.InitPeer,
-			OnAfterStart:  s.reactors.AddPeer,
-		}
-
-		peer, err = s.peerSet.Add(peerID, opts)
-		if err != nil {
-			s.Logger.Error("Failed to add peer", "peer_id", peerID.String(), "err", err)
-			return
-		}
+	peer, err := s.resolvePeer(peerID)
+	if err != nil {
+		s.Logger.Error("Failed to resolve peer", "peer_id", peerID.String(), "err", err)
+		return
 	}
 
 	var (
@@ -436,4 +408,39 @@ func (s *Switch) handleStream(stream network.Stream) {
 	priority := proto.descriptor.Priority
 
 	s.reactors.Receive(reactor.name, messageType, envelope, priority)
+}
+
+func (s *Switch) resolvePeer(id peer.ID) (p2p.Peer, error) {
+	key := peerIDToKey(id)
+
+	// peer exists (99% of the time)
+	if peer := s.peerSet.Get(key); peer != nil {
+		return peer, nil
+	}
+
+	// let's try to provision it
+	opts := PeerAddOptions{
+		Private:       false,
+		Persistent:    false,
+		Unconditional: false,
+		OnBeforeStart: s.reactors.InitPeer,
+		OnAfterStart:  s.reactors.AddPeer,
+		OnStartFailed: s.reactors.RemovePeer,
+	}
+
+	peer, err := s.peerSet.Add(id, opts)
+	switch {
+	case errors.Is(err, ErrPeerExists):
+		// tolerate two concurrent peer additions
+		if p := s.peerSet.Get(key); p != nil {
+			return p, nil
+		}
+
+		// should not happen
+		return nil, errors.Wrap(err, "peer exists but not found")
+	case err != nil:
+		return nil, errors.Wrap(err, "unable to add peer")
+	default:
+		return peer, nil
+	}
 }

@@ -20,8 +20,9 @@ type PeerConfig struct {
 	// id example: "12D3KooWJx9i35Vx1h6T6nVqQz4YW1r2J1Y2P2nY3N4N5N6N7N8N9N0"
 	ID string `toml:"id"`
 
-	Private    bool `mapstructure:"private"`
-	Persistent bool `mapstructure:"persistent"`
+	Private       bool `mapstructure:"private"`
+	Persistent    bool `mapstructure:"persistent"`
+	Unconditional bool `mapstructure:"unconditional"`
 }
 
 type BootstrapPeer struct {

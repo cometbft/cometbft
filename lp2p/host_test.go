@@ -123,11 +123,11 @@ func TestHost(t *testing.T) {
 	host2.SetStreamHandler(protoBar, handler)
 
 	// Given counter peers
-	host1Peer2, err := NewPeer(host1, host2.AddrInfo(), p2p.NopMetrics())
+	host1Peer2, err := NewPeer(host1, host2.AddrInfo(), p2p.NopMetrics(), false, false, false)
 	require.NoError(t, err, "failed to create peer 1->2")
 	require.NoError(t, host1Peer2.Start(), "failed to start peer 1->2")
 
-	host2Peer1, err := NewPeer(host2, host1.AddrInfo(), p2p.NopMetrics())
+	host2Peer1, err := NewPeer(host2, host1.AddrInfo(), p2p.NopMetrics(), false, false, false)
 	require.NoError(t, err, "failed to create peer 2->1")
 	require.NoError(t, host2Peer1.Start(), "failed to start peer 2->1")
 

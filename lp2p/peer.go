@@ -19,7 +19,12 @@ type Peer struct {
 
 	addrInfo peer.AddrInfo
 	netAddr  *p2p.NetAddress
-	metrics  *p2p.Metrics
+
+	isPrivate       bool
+	isPersistent    bool
+	isUnconditional bool
+
+	metrics *p2p.Metrics
 }
 
 var _ p2p.Peer = (*Peer)(nil)
@@ -28,6 +33,7 @@ func NewPeer(
 	host *Host,
 	addrInfo peer.AddrInfo,
 	metrics *p2p.Metrics,
+	isPrivate, isPersistent, isUnconditional bool,
 ) (*Peer, error) {
 	netAddr, err := netAddressFromPeer(addrInfo)
 	if err != nil {
@@ -38,7 +44,12 @@ func NewPeer(
 		host:     host,
 		addrInfo: addrInfo,
 		netAddr:  netAddr,
-		metrics:  metrics,
+
+		isPrivate:       isPrivate,
+		isPersistent:    isPersistent,
+		isUnconditional: isUnconditional,
+
+		metrics: metrics,
 	}
 
 	logger := host.Logger().With("peer_id", addrInfo.ID.String())
@@ -73,6 +84,20 @@ func (p *Peer) Get(key string) any {
 func (p *Peer) Set(key string, value any) {
 	//nolint:errcheck // always returns err=nil
 	p.host.Peerstore().Put(p.addrInfo.ID, key, value)
+}
+
+func (p *Peer) IsPersistent() bool {
+	return p.isPersistent
+}
+
+func (p *Peer) IsPrivate() bool {
+	// todo: STACK-2089
+	return p.isPrivate
+}
+
+func (p *Peer) IsUnconditional() bool {
+	// todo: STACK-2088
+	return p.isUnconditional
 }
 
 // Send implements p2p.Peer.
@@ -155,11 +180,6 @@ func (p *Peer) send(e p2p.Envelope) (err error) {
 	}
 
 	return StreamWriteClose(s, payload)
-}
-
-func (*Peer) IsPersistent() bool {
-	// todo: STACK-1704: currently all lp2p peers are persistent
-	return true
 }
 
 // These methods are not implemented as they're not used by reactors

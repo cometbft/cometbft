@@ -16,18 +16,11 @@ import (
 type PeerSet struct {
 	host *Host
 
-	peers map[peer.ID]peerSetItem
+	peers map[peer.ID]*Peer
 	mu    sync.RWMutex
 
 	metrics *p2p.Metrics
 	logger  log.Logger
-}
-
-type peerSetItem struct {
-	peer *Peer
-
-	private    bool
-	persistent bool
 }
 
 var _ p2p.IPeerSet = (*PeerSet)(nil)
@@ -36,7 +29,7 @@ var _ p2p.IPeerSet = (*PeerSet)(nil)
 func NewPeerSet(host *Host, metrics *p2p.Metrics, logger log.Logger) *PeerSet {
 	return &PeerSet{
 		host:    host,
-		peers:   make(map[peer.ID]peerSetItem),
+		peers:   make(map[peer.ID]*Peer),
 		metrics: metrics,
 		logger:  logger,
 	}
@@ -60,6 +53,7 @@ func (ps *PeerSet) Get(key p2p.ID) p2p.Peer {
 type PeerAddOptions struct {
 	Private       bool
 	Persistent    bool
+	Unconditional bool
 	OnBeforeStart func(p *Peer)
 	OnAfterStart  func(p *Peer)
 }
@@ -78,16 +72,12 @@ func (ps *PeerSet) Add(id peer.ID, opts PeerAddOptions) (*Peer, error) {
 		return nil, errors.New("peer has no addresses in peerstore")
 	}
 
-	p, err := NewPeer(ps.host, addrInfo, ps.metrics)
+	p, err := NewPeer(ps.host, addrInfo, ps.metrics, opts.Private, opts.Persistent, opts.Unconditional)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create peer")
 	}
 
-	set := ps.set(id, peerSetItem{
-		peer:       p,
-		private:    opts.Private,
-		persistent: opts.Persistent,
-	})
+	set := ps.set(id, p)
 
 	if !set {
 		return nil, errors.New("peer already exists")
@@ -128,17 +118,17 @@ func (ps *PeerSet) Remove(key p2p.ID, opts PeerRemovalOptions) error {
 
 	ps.logger.Info("Removing peer", "peer_id", id.String(), "reason", opts.Reason)
 
-	item, ok := ps.unset(id)
+	p, ok := ps.unset(id)
 	if !ok {
 		return errors.New("peer not found")
 	}
 
-	if err := item.peer.Stop(); err != nil {
+	if err := p.Stop(); err != nil {
 		return errors.Wrap(err, "failed to stop peer")
 	}
 
 	if opts.OnAfterStop != nil {
-		opts.OnAfterStop(item.peer)
+		opts.OnAfterStop(p)
 	}
 
 	ps.metrics.Peers.Add(-1)
@@ -165,8 +155,8 @@ func (ps *PeerSet) ForEach(fn func(p2p.Peer)) {
 	ps.mu.RLock()
 	defer ps.mu.RUnlock()
 
-	for _, item := range ps.peers {
-		fn(item.peer)
+	for _, p := range ps.peers {
+		fn(p)
 	}
 }
 
@@ -179,9 +169,9 @@ func (ps *PeerSet) Random() p2p.Peer {
 	}
 
 	v := rand.Intn(len(ps.peers))
-	for _, item := range ps.peers {
+	for _, p := range ps.peers {
 		if v == 0 {
-			return item.peer
+			return p
 		}
 
 		v--
@@ -194,22 +184,16 @@ func (ps *PeerSet) Random() p2p.Peer {
 // This method is barely used and remains only for backwards compatibility.
 func (ps *PeerSet) Copy() []p2p.Peer {
 	ps.mu.RLock()
+	defer ps.mu.RUnlock()
 
-	items := make([]peerSetItem, 0, len(ps.peers))
-	for _, item := range ps.peers {
-		items = append(items, item)
+	results := make([]p2p.Peer, 0, len(ps.peers))
+	for _, p := range ps.peers {
+		results = append(results, p)
 	}
 
-	ps.mu.RUnlock()
-
-	sort.Slice(items, func(i, j int) bool {
-		return items[i].peer.ID() < items[j].peer.ID()
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].ID() < results[j].ID()
 	})
-
-	results := make([]p2p.Peer, 0, len(items))
-	for _, item := range items {
-		results = append(results, item.peer)
-	}
 
 	return results
 }
@@ -231,16 +215,16 @@ func (ps *PeerSet) getByKey(key p2p.ID) (*Peer, bool) {
 	ps.mu.RLock()
 	defer ps.mu.RUnlock()
 
-	item, ok := ps.peers[id]
+	p, ok := ps.peers[id]
 	if !ok {
 		return nil, false
 	}
 
-	return item.peer, true
+	return p, true
 }
 
 // set adds a peer to the peer set and returns true if it was added
-func (ps *PeerSet) set(id peer.ID, item peerSetItem) bool {
+func (ps *PeerSet) set(id peer.ID, p *Peer) bool {
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 
@@ -248,25 +232,25 @@ func (ps *PeerSet) set(id peer.ID, item peerSetItem) bool {
 		return false
 	}
 
-	ps.peers[id] = item
+	ps.peers[id] = p
 
 	return true
 }
 
 // unset removes a peer from the peer set and returns it
 // returns nil if peer is not found
-func (ps *PeerSet) unset(id peer.ID) (peerSetItem, bool) {
+func (ps *PeerSet) unset(id peer.ID) (*Peer, bool) {
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 
-	item, ok := ps.peers[id]
+	p, ok := ps.peers[id]
 	if !ok {
-		return peerSetItem{}, false
+		return nil, false
 	}
 
 	delete(ps.peers, id)
 
-	return item, true
+	return p, true
 }
 
 func (ps *PeerSet) keyToPeerID(key p2p.ID) peer.ID {

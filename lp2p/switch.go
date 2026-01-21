@@ -126,6 +126,7 @@ func (s *Switch) OnStart() error {
 		opts := PeerAddOptions{
 			Private:       bp.Private,
 			Persistent:    bp.Persistent,
+			Unconditional: bp.Unconditional,
 			OnBeforeStart: s.reactors.InitPeer,
 			OnAfterStart:  s.reactors.AddPeer,
 		}
@@ -260,14 +261,22 @@ func (s *Switch) IsDialingOrExistingAddress(addr *p2p.NetAddress) bool {
 	return false
 }
 
-func (s *Switch) IsPeerPersistent(_ *p2p.NetAddress) bool {
-	s.logUnimplemented("IsPeerPersistent")
-	return false
+func (s *Switch) IsPeerPersistent(netAddr *p2p.NetAddress) bool {
+	p := s.peerSet.Get(netAddr.ID)
+	if p == nil {
+		return false
+	}
+
+	return p.(*Peer).IsPersistent()
 }
 
 func (s *Switch) IsPeerUnconditional(id p2p.ID) bool {
-	// todo: add support for unconditional peers (used by mempool reactor)
-	return false
+	p := s.peerSet.Get(id)
+	if p == nil {
+		return false
+	}
+
+	return p.(*Peer).IsUnconditional()
 }
 
 func (s *Switch) MarkPeerAsGood(_ p2p.Peer) {

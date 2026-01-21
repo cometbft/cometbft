@@ -2613,82 +2613,6 @@ func findBlockSizeLimit(t *testing.T, height, maxBytes int64, cs *State, partSiz
 // ----------------------------------------------------------------------------
 // AsyncFireEvents tests
 
-func TestSpawnTaskRunner(t *testing.T) {
-	logger := log.TestingLogger()
-
-	t.Run("executes tasks in order", func(t *testing.T) {
-		var results []int
-		enqueue, stop := spawnTaskRunner(10, func() log.Logger { return logger })
-		defer stop()
-
-		for i := 0; i < 5; i++ {
-			enqueue(func() { results = append(results, i) })
-		}
-		stop()
-
-		require.Equal(t, []int{0, 1, 2, 3, 4}, results)
-	})
-
-	t.Run("stop waits for in-flight task", func(t *testing.T) {
-		started := make(chan struct{})
-		done := make(chan struct{})
-		enqueue, stop := spawnTaskRunner(1, func() log.Logger { return logger })
-
-		enqueue(func() {
-			close(started)
-			<-done // block until signaled
-		})
-
-		<-started // wait for task to start
-
-		stopDone := make(chan struct{})
-		go func() {
-			stop()
-			close(stopDone)
-		}()
-
-		// stop() should be blocked waiting for the task
-		select {
-		case <-stopDone:
-			t.Fatal("stop() returned before task completed")
-		case <-time.After(50 * time.Millisecond):
-			// expected: stop is still waiting
-		}
-
-		close(done) // unblock the task
-
-		select {
-		case <-stopDone:
-			// expected: stop completed after task finished
-		case <-time.After(time.Second):
-			t.Fatal("stop() did not return after task completed")
-		}
-	})
-
-	t.Run("handles panic without crashing", func(t *testing.T) {
-		var executed bool
-		enqueue, stop := spawnTaskRunner(10, func() log.Logger { return logger })
-
-		enqueue(func() { panic("test panic") })
-		enqueue(func() { executed = true })
-
-		stop()
-		require.True(t, executed, "task after panic should still execute")
-	})
-
-	t.Run("enqueue drops tasks after stop signaled", func(t *testing.T) {
-		var executed bool
-		enqueue, stop := spawnTaskRunner(1, func() log.Logger { return logger })
-
-		stop()
-		enqueue(func() { executed = true })
-
-		// Give some time for task to potentially execute
-		time.Sleep(50 * time.Millisecond)
-		require.False(t, executed, "task should not execute after stop")
-	})
-}
-
 func TestAsyncFireEventsConfig(t *testing.T) {
 	t.Run("disabled by default", func(t *testing.T) {
 		cs, _ := randState(1)
@@ -2698,20 +2622,20 @@ func TestAsyncFireEventsConfig(t *testing.T) {
 			}
 		}()
 
-		// When AsyncFireEvents is disabled (default), taskRunnerStop should be nil
-		require.Nil(t, cs.taskRunnerStop, "taskRunnerStop should be nil when AsyncFireEvents is disabled")
+		// When AsyncFireEvents is disabled (default), taskRunner should be nil
+		require.Nil(t, cs.taskRunner, "taskRunner should be nil when AsyncFireEvents is disabled")
 	})
 
 	t.Run("enabled via config", func(t *testing.T) {
 		cs, _ := randStateWithAsyncFireEvents(1)
 		defer func() {
-			if cs.taskRunnerStop != nil {
-				cs.taskRunnerStop()
+			if cs.taskRunner != nil {
+				cs.taskRunner.Stop()
 			}
 		}()
 
-		// When AsyncFireEvents is enabled, taskRunnerStop should be set
-		require.NotNil(t, cs.taskRunnerStop, "taskRunnerStop should be set when AsyncFireEvents is enabled")
+		// When AsyncFireEvents is enabled, taskRunner should be set
+		require.NotNil(t, cs.taskRunner, "taskRunner should be set when AsyncFireEvents is enabled")
 	})
 
 	t.Run("task runner cleaned up on OnStart failure", func(t *testing.T) {
@@ -2720,7 +2644,7 @@ func TestAsyncFireEventsConfig(t *testing.T) {
 		cs, _ := randStateWithAsyncFireEvents(1)
 
 		// Verify task runner was created
-		require.NotNil(t, cs.taskRunnerStop, "taskRunnerStop should be set after NewState")
+		require.NotNil(t, cs.taskRunner, "taskRunner should be set after NewState")
 
 		// Set a failing timeout ticker to cause OnStart to fail
 		cs.SetTimeoutTicker(&failingTimeoutTicker{})
@@ -2730,7 +2654,7 @@ func TestAsyncFireEventsConfig(t *testing.T) {
 		require.Error(t, err, "Start should fail with failing timeout ticker")
 
 		// The task runner should be cleaned up (set to nil) after OnStart fails
-		require.Nil(t, cs.taskRunnerStop, "taskRunnerStop should be nil after OnStart failure to prevent goroutine leak")
+		require.Nil(t, cs.taskRunner, "taskRunner should be nil after OnStart failure to prevent goroutine leak")
 
 		// Calling Stop() should return ErrNotStarted (not panic or leak goroutines)
 		err = cs.Stop()
@@ -2742,9 +2666,8 @@ func TestAsyncFireEventsConfig(t *testing.T) {
 		// is recreated so that events are not silently dropped.
 		cs, _ := randStateWithAsyncFireEvents(1)
 
-		// Capture the original task runner stop function
-		originalStop := cs.taskRunnerStop
-		require.NotNil(t, originalStop, "taskRunnerStop should be set after NewState")
+		// Verify task runner was created
+		require.NotNil(t, cs.taskRunner, "taskRunner should be set after NewState")
 
 		// Set a failing timeout ticker to cause OnStart to fail on first attempt
 		failingTicker := &failOnceTimeoutTicker{shouldFail: true}
@@ -2753,7 +2676,7 @@ func TestAsyncFireEventsConfig(t *testing.T) {
 		// First Start should fail
 		err := cs.Start()
 		require.Error(t, err, "First Start should fail")
-		require.Nil(t, cs.taskRunnerStop, "taskRunnerStop should be nil after OnStart failure")
+		require.Nil(t, cs.taskRunner, "taskRunner should be nil after OnStart failure")
 
 		// Retry Start - the ticker will succeed this time (shouldFail was set to false)
 		// This should recreate the task runner
@@ -2766,7 +2689,7 @@ func TestAsyncFireEventsConfig(t *testing.T) {
 		}()
 
 		// Verify task runner was recreated
-		require.NotNil(t, cs.taskRunnerStop, "taskRunnerStop should be recreated on successful retry")
+		require.NotNil(t, cs.taskRunner, "taskRunner should be recreated on successful retry")
 	})
 }
 

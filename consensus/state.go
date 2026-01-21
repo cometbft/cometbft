@@ -9,7 +9,6 @@ import (
 	"os"
 	"runtime/debug"
 	"sort"
-	"sync"
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -17,6 +16,7 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/libs/async"
 	cmtevents "github.com/cometbft/cometbft/libs/events"
 	"github.com/cometbft/cometbft/libs/fail"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
@@ -140,8 +140,8 @@ type State struct {
 	// offline state sync height indicating to which height the node synced offline
 	offlineStateSyncHeight int64
 
-	// taskRunnerStop stops the task runner goroutine spawned for block execution
-	taskRunnerStop func()
+	// taskRunner executes fireEvents asynchronously when AsyncFireEvents is enabled
+	taskRunner *async.TaskRunner
 }
 
 // StateOption sets an optional parameter on the State.
@@ -174,9 +174,10 @@ func NewState(
 		metrics:          NopMetrics(),
 	}
 	if config.AsyncFireEvents {
-		enqueue, stop := spawnTaskRunner(taskQueueSize, func() log.Logger { return cs.Logger })
-		cs.taskRunnerStop = stop
-		blockExec.SetTaskRunner(enqueue)
+		cs.taskRunner = async.NewTaskRunner(taskQueueSize, func(r any, stack []byte) {
+			cs.Logger.Error("panic in async fireEvents", "err", r, "stack", string(stack))
+		})
+		blockExec.SetTaskRunner(func(f func()) { cs.taskRunner.Enqueue(f) })
 	}
 	for _, option := range options {
 		option(cs)
@@ -329,20 +330,18 @@ func (cs *State) OnStart() error {
 	// previously stopped (e.g., due to a failed OnStart attempt). Without this,
 	// blockExec.asyncRunner would reference a defunct enqueue function whose
 	// done channel is closed, causing events to be silently dropped.
-	if cs.config.AsyncFireEvents && cs.taskRunnerStop == nil {
-		enqueue, stop := spawnTaskRunner(taskQueueSize, func() log.Logger { return cs.Logger })
-		cs.taskRunnerStop = stop
-		cs.blockExec.SetTaskRunner(enqueue)
+	if cs.config.AsyncFireEvents && cs.taskRunner == nil {
+		cs.taskRunner = async.NewTaskRunner(taskQueueSize, func(r any, stack []byte) {
+			cs.Logger.Error("panic in async fireEvents", "err", r, "stack", string(stack))
+		})
+		cs.blockExec.SetTaskRunner(func(f func()) { cs.taskRunner.Enqueue(f) })
 	}
 
 	// Clean up the task runner goroutine if OnStart fails.
-	// The task runner is spawned in NewState before the service starts,
-	// but cleanup only occurs in OnStop. If OnStart fails, BaseService
-	// doesn't call OnStop, causing a goroutine leak.
 	defer func() {
-		if err != nil && cs.taskRunnerStop != nil {
-			cs.taskRunnerStop()
-			cs.taskRunnerStop = nil
+		if err != nil && cs.taskRunner != nil {
+			cs.taskRunner.Stop()
+			cs.taskRunner = nil
 		}
 	}()
 
@@ -471,8 +470,8 @@ func (cs *State) OnStop() {
 	// WAL is stopped in receiveRoutine.
 
 	// Stop the task runner goroutine to prevent goroutine leak.
-	if cs.taskRunnerStop != nil {
-		cs.taskRunnerStop()
+	if cs.taskRunner != nil {
+		cs.taskRunner.Stop()
 	}
 }
 
@@ -2695,59 +2694,4 @@ func repairWalFile(src, dst string) error {
 	}
 
 	return nil
-}
-
-// spawnTaskRunner spawns a single goroutine to run tasks in FIFO order.
-// Returns the task enqueue function and a stop function to shut down the runner.
-// The getLogger function is called on each panic to retrieve the current logger.
-// The stop function performs a graceful shutdown: it signals the worker to stop
-// accepting new tasks, drains remaining tasks, and waits for completion.
-func spawnTaskRunner(buf int, getLogger func() log.Logger) (enqueue func(func()), stop func()) {
-	taskCh := make(chan func(), buf)
-	done := make(chan struct{})
-	workerDone := make(chan struct{})
-
-	runTask := func(f func()) {
-		defer func() {
-			if r := recover(); r != nil {
-				if logger := getLogger(); logger != nil {
-					logger.Error("panic in task runner", "err", r, "stack", string(debug.Stack()))
-				}
-			}
-		}()
-		f()
-	}
-
-	go func() {
-		defer close(workerDone)
-		for {
-			select {
-			case f := <-taskCh:
-				runTask(f)
-			case <-done:
-				// Drain remaining tasks before exiting
-				for {
-					select {
-					case f := <-taskCh:
-						runTask(f)
-					default:
-						return
-					}
-				}
-			}
-		}
-	}()
-
-	var once sync.Once
-	return func(f func()) {
-			select {
-			case taskCh <- f:
-			case <-done:
-			}
-		}, func() {
-			once.Do(func() {
-				close(done)
-				<-workerDone
-			})
-		}
 }

@@ -3,7 +3,6 @@
 package lp2p
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/cometbft/cometbft/config"
@@ -98,25 +97,4 @@ func (h *Host) BootstrapPeers() []BootstrapPeer {
 
 func (h *Host) Logger() log.Logger {
 	return h.logger
-}
-
-func ConnectBootstrapPeers(ctx context.Context, h *Host, peers []BootstrapPeer) {
-	if len(peers) == 0 {
-		h.logger.Info("No peers to connect to!")
-		return
-	}
-
-	for _, peer := range peers {
-		// dial to self
-		if h.ID().String() == peer.AddrInfo.ID.String() {
-			continue
-		}
-
-		h.logger.Info("Connecting to peer", "peer", peer.AddrInfo.String())
-
-		if err := h.Connect(ctx, peer.AddrInfo); err != nil {
-			h.logger.Error("Failed to connect to peer", "peer", peer.AddrInfo.String(), "err", err)
-			continue
-		}
-	}
 }

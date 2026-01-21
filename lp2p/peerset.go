@@ -71,6 +71,8 @@ func (ps *PeerSet) Add(id peer.ID, opts PeerAddOptions) (*Peer, error) {
 		return nil, errors.New("peer is self")
 	}
 
+	ps.logger.Info("Adding peer", "peer_id", id.String())
+
 	addrInfo := ps.host.Peerstore().PeerInfo(id)
 	if len(addrInfo.Addrs) == 0 {
 		return nil, errors.New("peer has no addresses in peerstore")
@@ -110,6 +112,7 @@ func (ps *PeerSet) Add(id peer.ID, opts PeerAddOptions) (*Peer, error) {
 }
 
 type PeerRemovalOptions struct {
+	Reason      any
 	OnAfterStop func(p *Peer)
 }
 
@@ -122,6 +125,8 @@ func (ps *PeerSet) Remove(key p2p.ID, opts PeerRemovalOptions) error {
 	if id == ps.host.ID() {
 		return errors.New("peer is self")
 	}
+
+	ps.logger.Info("Removing peer", "peer_id", id.String(), "reason", opts.Reason)
 
 	item, ok := ps.unset(id)
 	if !ok {
@@ -143,6 +148,17 @@ func (ps *PeerSet) Remove(key p2p.ID, opts PeerRemovalOptions) error {
 	}
 
 	return nil
+}
+
+func (ps *PeerSet) RemoveAll(opts PeerRemovalOptions) {
+	peers := ps.Copy()
+
+	for _, peer := range peers {
+		id := peer.ID()
+		if err := ps.Remove(id, opts); err != nil {
+			ps.logger.Error("Failed to remove peer", "peer_id", id, "err", err)
+		}
+	}
 }
 
 func (ps *PeerSet) ForEach(fn func(p2p.Peer)) {

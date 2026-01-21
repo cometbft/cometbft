@@ -46,7 +46,7 @@ func TestHost(t *testing.T) {
 		},
 	}, true)
 
-	ConnectBootstrapPeers(ctx, host2, host2.BootstrapPeers())
+	connectBootstrapPeers(t, ctx, host2, host2.BootstrapPeers())
 
 	t.Logf("host1: %+v", host1.AddrInfo())
 	t.Logf("host2: %+v", host2.AddrInfo())
@@ -226,4 +226,20 @@ func makeTestHost(
 	require.NoError(t, err)
 
 	return host
+}
+
+func connectBootstrapPeers(t *testing.T, ctx context.Context, h *Host, peers []BootstrapPeer) {
+	require.NotEmpty(t, peers, "no peers to connect to")
+
+	for _, peer := range peers {
+		// dial to self
+		if h.ID().String() == peer.AddrInfo.ID.String() {
+			continue
+		}
+
+		h.logger.Info("Connecting to peer", "peer", peer.AddrInfo.String())
+
+		err := h.Connect(ctx, peer.AddrInfo);
+		require.NoError(t, err, "failed to connect to peer", "peer", peer.AddrInfo.String())
+	}
 }

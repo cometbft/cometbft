@@ -16,7 +16,6 @@ func TestTaskRunner(t *testing.T) {
 		defer tr.Stop()
 
 		for i := 0; i < 5; i++ {
-			i := i // capture
 			tr.Enqueue(func() { results = append(results, i) })
 		}
 		tr.Stop()
@@ -96,4 +95,3 @@ func TestTaskRunner(t *testing.T) {
 		require.Equal(t, 5, count, "all enqueued tasks should execute")
 	})
 }
-

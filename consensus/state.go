@@ -177,7 +177,11 @@ func NewState(
 		cs.taskRunner = async.NewTaskRunner(taskQueueSize, func(r any, stack []byte) {
 			cs.Logger.Error("panic in async fireEvents", "err", r, "stack", string(stack))
 		})
-		blockExec.SetTaskRunner(func(f func()) { cs.taskRunner.Enqueue(f) })
+		blockExec.SetTaskRunner(func(f func()) {
+			if !cs.taskRunner.Enqueue(f) {
+				cs.Logger.Error("failed to enqueue fireEvents task: runner stopped")
+			}
+		})
 	}
 	for _, option := range options {
 		option(cs)
@@ -334,7 +338,11 @@ func (cs *State) OnStart() error {
 		cs.taskRunner = async.NewTaskRunner(taskQueueSize, func(r any, stack []byte) {
 			cs.Logger.Error("panic in async fireEvents", "err", r, "stack", string(stack))
 		})
-		cs.blockExec.SetTaskRunner(func(f func()) { cs.taskRunner.Enqueue(f) })
+		cs.blockExec.SetTaskRunner(func(f func()) {
+			if !cs.taskRunner.Enqueue(f) {
+				cs.Logger.Error("failed to enqueue fireEvents task: runner stopped")
+			}
+		})
 	}
 
 	// Clean up the task runner goroutine if OnStart fails.

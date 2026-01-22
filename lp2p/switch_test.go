@@ -55,12 +55,16 @@ func TestSwitch(t *testing.T) {
 
 		err = switchA.connectPeer(ctx, hostC.AddrInfo(), PeerAddOptions{
 			Persistent: true,
+			// it doesn't influence the test, but let's also
+			// verify that unconditional checks work
+			Unconditional: true,
 		})
 		require.NoError(t, err)
 
 		peerC := switchA.Peers().Get(peerIDToKey(hostC.ID()))
 		require.NotNil(t, peerC, "peer C should be added")
-		require.True(t, peerC.IsPersistent())
+		require.True(t, switchA.IsPeerPersistent(peerC.SocketAddr()))
+		require.True(t, switchA.IsPeerUnconditional(peerC.ID()))
 
 		// ACT #1: Start switch A
 		require.NoError(t, switchA.Start())

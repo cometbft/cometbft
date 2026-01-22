@@ -5,6 +5,9 @@ import (
 	"sync"
 )
 
+// AsyncRunner executes a task asynchronously.
+type AsyncRunner func(func())
+
 // TaskRunner executes tasks sequentially in a dedicated goroutine.
 // It provides FIFO ordering, panic recovery, and graceful shutdown.
 type TaskRunner struct {

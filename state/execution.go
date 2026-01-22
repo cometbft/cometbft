@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/libs/async"
 	"github.com/cometbft/cometbft/libs/fail"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/mempool"
@@ -47,7 +49,7 @@ type BlockExecutor struct {
 
 	metrics *Metrics
 
-	asyncRunner func(func())
+	asyncRunner atomic.Value
 }
 
 type BlockExecutorOption func(executor *BlockExecutor)
@@ -58,9 +60,9 @@ func BlockExecutorWithMetrics(metrics *Metrics) BlockExecutorOption {
 	}
 }
 
-func BlockExecutorWithAsyncRunner(runner func(func())) BlockExecutorOption {
+func BlockExecutorWithAsyncRunner(runner async.AsyncRunner) BlockExecutorOption {
 	return func(blockExec *BlockExecutor) {
-		blockExec.asyncRunner = runner
+		blockExec.SetTaskRunner(runner)
 	}
 }
 
@@ -85,6 +87,7 @@ func NewBlockExecutor(
 		metrics:    NopMetrics(),
 		blockStore: blockStore,
 	}
+	res.asyncRunner.Store(async.AsyncRunner(nil))
 
 	for _, option := range options {
 		option(res)
@@ -106,8 +109,16 @@ func (blockExec *BlockExecutor) SetEventBus(eventBus types.BlockEventPublisher) 
 // SetTaskRunner sets the async task runner for firing events asynchronously.
 // If not called, events are fired synchronously.
 // Must be called before concurrent block execution begins.
-func (blockExec *BlockExecutor) SetTaskRunner(runner func(func())) {
-	blockExec.asyncRunner = runner
+func (blockExec *BlockExecutor) SetTaskRunner(runner async.AsyncRunner) {
+	blockExec.asyncRunner.Store(runner)
+}
+
+func (blockExec *BlockExecutor) getTaskRunner() async.AsyncRunner {
+	runner := blockExec.asyncRunner.Load()
+	if runner == nil {
+		return nil
+	}
+	return runner.(async.AsyncRunner)
 }
 
 // CreateProposalBlock calls state.MakeBlock with evidence from the evpool
@@ -342,8 +353,8 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 			fireEvents(blockExec.logger, blockExec.eventBus, block, blockID, abciResponse, validatorUpdates)
 		}
 
-		if blockExec.asyncRunner != nil {
-			blockExec.asyncRunner(task)
+		if runner := blockExec.getTaskRunner(); runner != nil {
+			runner(task)
 		} else {
 			task()
 		}

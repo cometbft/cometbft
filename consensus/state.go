@@ -174,14 +174,10 @@ func NewState(
 		metrics:          NopMetrics(),
 	}
 	if config.AsyncFireEvents {
-		cs.taskRunner = async.NewTaskRunner(taskQueueSize, func(r any, stack []byte) {
+		runner := async.NewTaskRunner(taskQueueSize, func(r any, stack []byte) {
 			cs.Logger.Error("panic in async fireEvents", "err", r, "stack", string(stack))
 		})
-		blockExec.SetTaskRunner(func(f func()) {
-			if !cs.taskRunner.Enqueue(f) {
-				cs.Logger.Error("failed to enqueue fireEvents task: runner stopped")
-			}
-		})
+		cs.setTaskRunner(runner)
 	}
 	for _, option := range options {
 		option(cs)
@@ -212,6 +208,20 @@ func NewState(
 	cs.BaseService = *service.NewBaseService(nil, "State", cs)
 
 	return cs
+}
+
+func (cs *State) setTaskRunner(runner *async.TaskRunner) {
+	cs.taskRunner = runner
+	if runner == nil {
+		cs.blockExec.SetTaskRunner(nil)
+		return
+	}
+
+	cs.blockExec.SetTaskRunner(func(f func()) {
+		if !runner.Enqueue(f) {
+			cs.Logger.Error("failed to enqueue fireEvents task: runner stopped")
+		}
+	})
 }
 
 // SetLogger implements Service.
@@ -335,22 +345,19 @@ func (cs *State) OnStart() error {
 	// blockExec.asyncRunner would reference a defunct enqueue function whose
 	// done channel is closed, causing events to be silently dropped.
 	if cs.config.AsyncFireEvents && cs.taskRunner == nil {
-		cs.taskRunner = async.NewTaskRunner(taskQueueSize, func(r any, stack []byte) {
+		runner := async.NewTaskRunner(taskQueueSize, func(r any, stack []byte) {
 			cs.Logger.Error("panic in async fireEvents", "err", r, "stack", string(stack))
 		})
-		cs.blockExec.SetTaskRunner(func(f func()) {
-			if !cs.taskRunner.Enqueue(f) {
-				cs.Logger.Error("failed to enqueue fireEvents task: runner stopped")
-			}
-		})
+		cs.setTaskRunner(runner)
 	}
 
 	// Clean up the task runner goroutine if OnStart fails.
 	succeeded := false
 	defer func() {
 		if !succeeded && cs.taskRunner != nil {
-			cs.taskRunner.Stop()
-			cs.taskRunner = nil
+			runner := cs.taskRunner
+			cs.setTaskRunner(nil)
+			runner.Stop()
 		}
 	}()
 
@@ -480,8 +487,9 @@ func (cs *State) OnStop() {
 	// WAL is stopped in receiveRoutine.
 	// Stop the task runner goroutine to prevent goroutine leak.
 	if cs.taskRunner != nil {
-		cs.taskRunner.Stop()
-		cs.taskRunner = nil
+		runner := cs.taskRunner
+		cs.setTaskRunner(nil)
+		runner.Stop()
 	}
 }
 

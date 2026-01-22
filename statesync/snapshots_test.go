@@ -21,7 +21,7 @@ func TestSnapshot_Key(t *testing.T) {
 		"no metadata":     {func(s *snapshot) { s.Metadata = nil }},
 	}
 	for name, tc := range testcases {
-		tc := tc
+
 		t.Run(name, func(t *testing.T) {
 			s := snapshot{
 				Height:   3,

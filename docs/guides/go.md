@@ -316,7 +316,7 @@ its validation checks. The specific value of the code is meaningless to CometBFT
 Non-zero codes are logged by CometBFT so applications can provide more specific
 information on why the transaction was rejected.
 
-Note that `CheckTx` does not execute the transaction, it only verifies that that the transaction could be executed. We do not know yet if the rest of the network has agreed to accept this transaction into a block.
+Note that `CheckTx` does not execute the transaction, it only verifies that the transaction could be executed. We do not know yet if the rest of the network has agreed to accept this transaction into a block.
 
 Finally, make sure to add the bytes package to the `import` stanza at the top of `app.go`:
 

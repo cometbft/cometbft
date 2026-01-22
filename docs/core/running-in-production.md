@@ -25,7 +25,7 @@ CometBFT keeps multiple distinct databases in the `$CMTHOME/data`:
 
 By default, CometBFT will only index transactions by their hash and height, if
 you want the result events to be indexed, see [indexing
-transactions](../app-dev/indexing-transactions.md) for for details.
+transactions](../app-dev/indexing-transactions.md) for details.
 
 Applications can expose block pruning strategies to the node operator.
 Please read the documentation of your application to find out more details.
@@ -377,7 +377,7 @@ applications, setting it to true is not a problem.
 - `consensus.peer_gossip_sleep_duration`
 
 You can try to reduce the time your node sleeps before checking if
-theres something to send its peers.
+there's something to send its peers.
 
 - `consensus.timeout_commit`
 

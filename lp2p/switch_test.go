@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/test/utils"
@@ -40,7 +39,6 @@ func TestSwitch(t *testing.T) {
 
 		// Given switch A with hosts B and C as bootstrap peers
 		switchA, err := NewSwitch(
-			config.DefaultP2PConfig(),
 			nil,
 			hostA,
 			[]SwitchReactor{},

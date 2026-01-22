@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
@@ -23,9 +22,6 @@ import (
 // todo group unused methods
 type Switch struct {
 	service.BaseService
-
-	// config is NOT used right now
-	config *config.P2PConfig
 
 	nodeInfo p2p.NodeInfo // our node info
 
@@ -52,7 +48,6 @@ var ErrUnsupportedPeerFormat = errors.New("unsupported peer format")
 
 // NewSwitch constructs a new Switch.
 func NewSwitch(
-	cfg *config.P2PConfig,
 	nodeInfo p2p.NodeInfo,
 	host *Host,
 	reactors []SwitchReactor,
@@ -60,7 +55,6 @@ func NewSwitch(
 	logger log.Logger,
 ) (*Switch, error) {
 	s := &Switch{
-		config:   cfg,
 		nodeInfo: nodeInfo,
 
 		host:    host,

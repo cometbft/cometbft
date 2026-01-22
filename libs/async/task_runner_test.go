@@ -1,7 +1,6 @@
 package async_test
 
 import (
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -13,28 +12,25 @@ import (
 
 func TestTaskRunner(t *testing.T) {
 	t.Run("executes tasks in order", func(t *testing.T) {
-		var results []int
+		results := make([]int, 0, 5)
+		resultsCh := make(chan int, 5)
 		tr := async.NewTaskRunner(10, nil)
 		defer tr.Stop()
 
-		var wg sync.WaitGroup
-		wg.Add(5)
 		for i := 0; i < 5; i++ {
-			i := i
 			tr.Enqueue(func() {
-				results = append(results, i)
-				wg.Done()
+				resultsCh <- i
 			})
 		}
-		waitDone := make(chan struct{})
-		go func() {
-			wg.Wait()
-			close(waitDone)
-		}()
-		select {
-		case <-waitDone:
-		case <-time.After(time.Second):
-			t.Fatal("tasks did not finish in time")
+
+		timeout := time.After(time.Second)
+		for i := 0; i < 5; i++ {
+			select {
+			case v := <-resultsCh:
+				results = append(results, v)
+			case <-timeout:
+				t.Fatal("tasks did not finish in time")
+			}
 		}
 
 		require.Equal(t, []int{0, 1, 2, 3, 4}, results)

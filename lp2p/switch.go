@@ -347,6 +347,16 @@ func (s *Switch) handleStream(stream network.Stream) {
 		protocolID = stream.Protocol()
 	)
 
+	if !s.IsRunning() {
+		s.Log().Debug(
+			"Ignoring stream from inactive switch",
+			"peer_id", peerID.String(),
+			"protocol", protocolID,
+		)
+		_ = stream.Reset()
+		return
+	}
+
 	defer func() {
 		if r := recover(); r != nil {
 			s.Logger.Error(

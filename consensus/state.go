@@ -478,10 +478,10 @@ func (cs *State) OnStop() {
 		cs.Logger.Error("failed trying to stop timeoutTicket", "error", err)
 	}
 	// WAL is stopped in receiveRoutine.
-
 	// Stop the task runner goroutine to prevent goroutine leak.
 	if cs.taskRunner != nil {
 		cs.taskRunner.Stop()
+		cs.taskRunner = nil
 	}
 }
 

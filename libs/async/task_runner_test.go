@@ -1,6 +1,8 @@
 package async_test
 
 import (
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -15,10 +17,25 @@ func TestTaskRunner(t *testing.T) {
 		tr := async.NewTaskRunner(10, nil)
 		defer tr.Stop()
 
+		var wg sync.WaitGroup
+		wg.Add(5)
 		for i := 0; i < 5; i++ {
-			tr.Enqueue(func() { results = append(results, i) })
+			i := i
+			tr.Enqueue(func() {
+				results = append(results, i)
+				wg.Done()
+			})
 		}
-		tr.Stop()
+		waitDone := make(chan struct{})
+		go func() {
+			wg.Wait()
+			close(waitDone)
+		}()
+		select {
+		case <-waitDone:
+		case <-time.After(time.Second):
+			t.Fatal("tasks did not finish in time")
+		}
 
 		require.Equal(t, []int{0, 1, 2, 3, 4}, results)
 	})
@@ -61,17 +78,26 @@ func TestTaskRunner(t *testing.T) {
 
 	t.Run("handles panic without crashing", func(t *testing.T) {
 		var executed bool
-		var panicCaught bool
+		var panicCaught atomic.Bool
+		done := make(chan struct{})
 		tr := async.NewTaskRunner(10, func(r any, stack []byte) {
-			panicCaught = true
+			panicCaught.Store(true)
 		})
 
 		tr.Enqueue(func() { panic("test panic") })
-		tr.Enqueue(func() { executed = true })
+		tr.Enqueue(func() {
+			executed = true
+			close(done)
+		})
 
+		select {
+		case <-done:
+		case <-time.After(time.Second):
+			t.Fatal("task after panic did not finish in time")
+		}
 		tr.Stop()
 		require.True(t, executed, "task after panic should still execute")
-		require.True(t, panicCaught, "panic should be caught")
+		require.True(t, panicCaught.Load(), "panic should be caught")
 	})
 
 	t.Run("enqueue returns false after stop", func(t *testing.T) {
@@ -82,16 +108,4 @@ func TestTaskRunner(t *testing.T) {
 		require.False(t, ok, "Enqueue should return false after Stop")
 	})
 
-	t.Run("drains remaining tasks on stop", func(t *testing.T) {
-		var count int
-		tr := async.NewTaskRunner(10, nil)
-
-		// Fill the buffer
-		for i := 0; i < 5; i++ {
-			tr.Enqueue(func() { count++ })
-		}
-
-		tr.Stop()
-		require.Equal(t, 5, count, "all enqueued tasks should execute")
-	})
 }

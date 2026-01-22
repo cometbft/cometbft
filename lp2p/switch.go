@@ -24,8 +24,9 @@ import (
 type Switch struct {
 	service.BaseService
 
-	config   *config.P2PConfig
-	nodeKey  *p2p.NodeKey // our node private key
+	// config is NOT used right now
+	config *config.P2PConfig
+
 	nodeInfo p2p.NodeInfo // our node info
 
 	host    *Host
@@ -52,7 +53,6 @@ var ErrUnsupportedPeerFormat = errors.New("unsupported peer format")
 // NewSwitch constructs a new Switch.
 func NewSwitch(
 	cfg *config.P2PConfig,
-	nodeKey *p2p.NodeKey,
 	nodeInfo p2p.NodeInfo,
 	host *Host,
 	reactors []SwitchReactor,
@@ -62,7 +62,6 @@ func NewSwitch(
 	s := &Switch{
 		config:   cfg,
 		nodeInfo: nodeInfo,
-		nodeKey:  nodeKey,
 
 		host:    host,
 		peerSet: NewPeerSet(host, metrics, logger),
@@ -108,22 +107,17 @@ func (s *Switch) OnStart() error {
 	bootstrapPeers := s.host.BootstrapPeers()
 
 	for _, bp := range bootstrapPeers {
-		if err := s.host.Connect(ctx, bp.AddrInfo); err != nil {
-			s.Logger.Error("Unable to connect to bootstrap peer", "peer_id", bp.AddrInfo.String(), "err", err)
-			continue
-		}
-
-		opts := PeerAddOptions{
+		err := s.connectPeer(ctx, bp.AddrInfo, PeerAddOptions{
 			Private:       bp.Private,
 			Persistent:    bp.Persistent,
 			Unconditional: bp.Unconditional,
 			OnBeforeStart: s.reactors.InitPeer,
 			OnAfterStart:  s.reactors.AddPeer,
 			OnStartFailed: s.reactors.RemovePeer,
-		}
+		})
 
-		if _, err := s.peerSet.Add(bp.AddrInfo.ID, opts); err != nil {
-			s.Logger.Error("Unable to add bootstrap peer", "peer_id", bp.AddrInfo.ID.String(), "err", err)
+		if err != nil {
+			s.Logger.Error("Unable to add bootstrap peer", "peer_id", bp.AddrInfo.String(), "err", err)
 			continue
 		}
 	}
@@ -467,6 +461,19 @@ func (s *Switch) resolvePeer(id peer.ID) (p2p.Peer, error) {
 	default:
 		return peer, nil
 	}
+}
+
+// connectPeer connects a peer to the host. should be used only during switch start.
+func (s *Switch) connectPeer(ctx context.Context, addrInfo peer.AddrInfo, opts PeerAddOptions) error {
+	if err := s.host.Connect(ctx, addrInfo); err != nil {
+		return errors.Wrap(err, "unable to connect to peer")
+	}
+
+	if _, err := s.peerSet.Add(addrInfo.ID, opts); err != nil {
+		return errors.Wrap(err, "unable to add peer")
+	}
+
+	return nil
 }
 
 // reconnectPeer reconnects persistent peers back to the host.

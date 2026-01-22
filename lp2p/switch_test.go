@@ -1,7 +1,9 @@
 package lp2p
 
 import (
+	"bytes"
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -15,19 +17,20 @@ import (
 func TestSwitch(t *testing.T) {
 	t.Run("PersistentPeers", func(t *testing.T) {
 		// ARRANGE
-		const enableLogging = true
-
 		var (
-			ctx    = context.Background()
-			ports  = utils.GetFreePorts(t, 3)
-			logger = log.TestingLogger()
+			ctx       = context.Background()
+			ports     = utils.GetFreePorts(t, 3)
+			logBuffer = &syncBuffer{}
+			logger    = log.NewTMLogger(logBuffer)
 		)
 
 		// Given 3 hosts: A, B, C
 		// Hosts start with NO bootstrap peers
-		hostA := makeTestHost(t, ports[0], AddressBookConfig{}, enableLogging)
-		hostB := makeTestHost(t, ports[1], AddressBookConfig{}, enableLogging)
-		hostC := makeTestHost(t, ports[2], AddressBookConfig{}, enableLogging)
+		var (
+			hostA = makeTestHost(t, ports[0], AddressBookConfig{}, true)
+			hostB = makeTestHost(t, ports[1], AddressBookConfig{}, true)
+			hostC = makeTestHost(t, ports[2], AddressBookConfig{}, true)
+		)
 
 		t.Cleanup(func() {
 			hostC.Close()
@@ -89,7 +92,29 @@ func TestSwitch(t *testing.T) {
 
 		// Verify the reconnected peer is C
 		reconnectedPeer := switchA.Peers().Get(peerIDToKey(hostC.ID()))
-		require.NotNil(t, reconnectedPeer, "reconnected peer should be C")
+		require.NotNil(t, reconnectedPeer)
 		require.True(t, reconnectedPeer.(*Peer).IsPersistent())
+
+		// Check for expected log messages
+		require.Contains(t, logBuffer.String(), "Removing peer")
+		require.Contains(t, logBuffer.String(), "Reconnected to peer")
 	})
+}
+
+// syncBuffer is a thread-safe bytes.Buffer.
+type syncBuffer struct {
+	buf bytes.Buffer
+	mu  sync.RWMutex
+}
+
+func (b *syncBuffer) Write(p []byte) (n int, err error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.Write(p)
+}
+
+func (b *syncBuffer) String() string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.buf.String()
 }

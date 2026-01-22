@@ -405,7 +405,9 @@ func TestTxsAvailable(t *testing.T) {
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 
 	// now call update with all the txs. it should not fire as there are no txs left
-	committedTxs = append(remainingTxs, moreTxs...)
+	remainingTxs = append(remainingTxs, moreTxs...)
+	committedTxs = remainingTxs
+
 	if err := mp.Update(2, committedTxs, abciResponses(len(committedTxs), abci.CodeTypeOK), nil, nil); err != nil {
 		t.Error(err)
 	}

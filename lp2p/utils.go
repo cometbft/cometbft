@@ -37,6 +37,12 @@ func withAddressFactory(addr ma.Multiaddr) libp2p.Option {
 }
 
 func marshalProto(msg proto.Message) ([]byte, error) {
+	if pm, ok := msg.(*preMarshaledMessage); ok {
+		if len(pm.payload) > 0 {
+			return pm.payload, nil
+		}
+	}
+
 	// comet compatibility
 	// @see p2p/peer.go (*peer).send()
 	if w, ok := msg.(p2p.Wrapper); ok {
@@ -78,4 +84,18 @@ func unmarshalProto(descriptor *p2p.ChannelDescriptor, payload []byte) (proto.Me
 
 func protoTypeName(msg proto.Message) string {
 	return reflect.TypeOf(msg).Elem().Name()
+}
+
+// preMarshaledMessage is a wrapper with the pre-marshaled bytes.
+// use case: avoid repeated marshaling across multiple peers when broadcasting
+type preMarshaledMessage struct {
+	proto.Message
+	payload []byte
+}
+
+func newPreMarshaledMessage(msg proto.Message) *preMarshaledMessage {
+	// tolerate potential err
+	bz, _ := marshalProto(msg)
+
+	return &preMarshaledMessage{Message: msg, payload: bz}
 }

@@ -286,6 +286,8 @@ func (s *Switch) MarkPeerAsGood(_ p2p.Peer) {
 func (s *Switch) Broadcast(e p2p.Envelope) chan bool {
 	s.Logger.Debug("Broadcast", "channel", e.ChannelID)
 
+	e.Message = newPreMarshaledMessage(e.Message)
+
 	var wg sync.WaitGroup
 	successChan := make(chan bool, s.peerSet.Size())
 
@@ -316,6 +318,8 @@ func (s *Switch) Broadcast(e p2p.Envelope) chan bool {
 func (s *Switch) BroadcastAsync(e p2p.Envelope) {
 	s.Logger.Debug("BroadcastAsync", "channel", e.ChannelID)
 
+	e.Message = newPreMarshaledMessage(e.Message)
+
 	s.peerSet.ForEach(func(p p2p.Peer) {
 		go p.Send(e)
 	})
@@ -323,6 +327,8 @@ func (s *Switch) BroadcastAsync(e p2p.Envelope) {
 
 func (s *Switch) TryBroadcast(e p2p.Envelope) {
 	s.Logger.Debug("TryBroadcast", "channel", e.ChannelID)
+
+	e.Message = newPreMarshaledMessage(e.Message)
 
 	s.peerSet.ForEach(func(p p2p.Peer) {
 		go p.TrySend(e)

@@ -217,7 +217,13 @@ func (s *Switch) StopPeerGracefully(_ p2p.Peer) {
 }
 
 func (s *Switch) StopPeerForError(peer p2p.Peer, reason any) {
-	key := peer.ID()
+	// should not happen
+	p, ok := peer.(*Peer)
+	if !ok {
+		return
+	}
+
+	key := p.ID()
 
 	removalOpts := PeerRemovalOptions{
 		Reason:      reason,
@@ -230,13 +236,7 @@ func (s *Switch) StopPeerForError(peer p2p.Peer, reason any) {
 	}
 
 	// reconnect logic
-	if !peer.IsPersistent() {
-		return
-	}
-
-	// should not happen
-	p, ok := peer.(*Peer)
-	if !ok {
+	if !p.IsPersistent() {
 		return
 	}
 

@@ -136,11 +136,12 @@ func (ps *PeerSet) Remove(key p2p.ID, opts PeerRemovalOptions) error {
 		opts.OnAfterStop(p, opts.Reason)
 	}
 
-	ps.metrics.Peers.Add(-1)
-
 	if err := ps.host.Network().ClosePeer(id); err != nil {
-		return errors.Wrap(err, "failed to close peer")
+		ps.logger.Error("Failed to close peer", "peer_id", id, "err", err)
+		// tolerate this error.
 	}
+
+	ps.metrics.Peers.Add(-1)
 
 	return nil
 }

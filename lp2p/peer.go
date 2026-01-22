@@ -100,7 +100,6 @@ func (p *Peer) IsPrivate() bool {
 }
 
 func (p *Peer) IsUnconditional() bool {
-	// todo: STACK-2088
 	return p.isUnconditional
 }
 

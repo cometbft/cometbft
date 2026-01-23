@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -116,7 +117,8 @@ func TestFinalizeBlockResponsesSaveLoad1(t *testing.T) {
 	state.LastBlockHeight++
 
 	// Build mock responses.
-	block := makeBlock(state, 2, new(types.Commit))
+	block, err := makeBlock(state, 2, new(types.Commit))
+	require.NoError(t, err)
 
 	abciResponses := new(abci.ResponseFinalizeBlock)
 	dtxs := make([]*abci.ExecTxResult, 2)
@@ -130,7 +132,7 @@ func TestFinalizeBlockResponsesSaveLoad1(t *testing.T) {
 
 	abciResponses.AppHash = make([]byte, 1)
 
-	err := stateStore.SaveFinalizeBlockResponse(block.Height, abciResponses)
+	err = stateStore.SaveFinalizeBlockResponse(block.Height, abciResponses)
 	require.NoError(t, err)
 	loadedABCIResponses, err := stateStore.LoadFinalizeBlockResponse(block.Height)
 	assert.NoError(err)
@@ -463,7 +465,8 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	// NewValidatorSet calls IncrementProposerPriority but uses on a copy of val1
 	assert.EqualValues(t, 0, val1.ProposerPriority)
 
-	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
+	block, err := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
+	require.NoError(t, err)
 	bps, err := block.MakePartSet(testPartSize)
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
@@ -576,7 +579,8 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 	// we only have one validator:
 	assert.Equal(t, val1PubKey.Address(), state.Validators.Proposer.Address)
 
-	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
+	block, err := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
+	assert.NoError(t, err)
 	bps, err := block.MakePartSet(testPartSize)
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
@@ -753,7 +757,8 @@ func TestLargeGenesisValidator(t *testing.T) {
 		validatorUpdates, err := types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 		require.NoError(t, err)
 
-		block := makeBlock(oldState, oldState.LastBlockHeight+1, new(types.Commit))
+		block, err := makeBlock(oldState, oldState.LastBlockHeight+1, new(types.Commit))
+		require.NoError(t, err)
 		bps, err := block.MakePartSet(testPartSize)
 		require.NoError(t, err)
 		blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
@@ -783,7 +788,8 @@ func TestLargeGenesisValidator(t *testing.T) {
 	abciResponses := &abci.ResponseFinalizeBlock{
 		ValidatorUpdates: []abci.ValidatorUpdate{firstAddedVal},
 	}
-	block := makeBlock(oldState, oldState.LastBlockHeight+1, new(types.Commit))
+	block, err := makeBlock(oldState, oldState.LastBlockHeight+1, new(types.Commit))
+	require.NoError(t, err)
 
 	bps, err := block.MakePartSet(testPartSize)
 	require.NoError(t, err)
@@ -799,7 +805,8 @@ func TestLargeGenesisValidator(t *testing.T) {
 		validatorUpdates, err := types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 		require.NoError(t, err)
 
-		block := makeBlock(lastState, lastState.LastBlockHeight+1, new(types.Commit))
+		block, err := makeBlock(lastState, lastState.LastBlockHeight+1, new(types.Commit))
+		require.NoError(t, err)
 
 		bps, err = block.MakePartSet(testPartSize)
 		require.NoError(t, err)
@@ -835,7 +842,8 @@ func TestLargeGenesisValidator(t *testing.T) {
 		abciResponses := &abci.ResponseFinalizeBlock{
 			ValidatorUpdates: []abci.ValidatorUpdate{addedVal},
 		}
-		block := makeBlock(oldState, oldState.LastBlockHeight+1, new(types.Commit))
+		block, err := makeBlock(oldState, oldState.LastBlockHeight+1, new(types.Commit))
+		require.NoError(t, err)
 		bps, err := block.MakePartSet(testPartSize)
 		require.NoError(t, err)
 
@@ -853,7 +861,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 		ValidatorUpdates: []abci.ValidatorUpdate{removeGenesisVal},
 	}
 
-	block = makeBlock(oldState, oldState.LastBlockHeight+1, new(types.Commit))
+	block, err = makeBlock(oldState, oldState.LastBlockHeight+1, new(types.Commit))
 	require.NoError(t, err)
 
 	bps, err = block.MakePartSet(testPartSize)
@@ -876,7 +884,8 @@ func TestLargeGenesisValidator(t *testing.T) {
 		abciResponses := &abci.ResponseFinalizeBlock{}
 		validatorUpdates, err = types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 		require.NoError(t, err)
-		block = makeBlock(curState, curState.LastBlockHeight+1, new(types.Commit))
+		block, err = makeBlock(curState, curState.LastBlockHeight+1, new(types.Commit))
+		require.NoError(t, err)
 
 		bps, err := block.MakePartSet(testPartSize)
 		require.NoError(t, err)
@@ -902,7 +911,8 @@ func TestLargeGenesisValidator(t *testing.T) {
 		validatorUpdates, err := types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 		require.NoError(t, err)
 
-		block := makeBlock(updatedState, updatedState.LastBlockHeight+1, new(types.Commit))
+		block, err := makeBlock(updatedState, updatedState.LastBlockHeight+1, new(types.Commit))
+		require.NoError(t, err)
 
 		bps, err := block.MakePartSet(testPartSize)
 		require.NoError(t, err)
@@ -1005,7 +1015,8 @@ func TestStateMakeBlock(t *testing.T) {
 
 	proposerAddress := state.Validators.GetProposer().Address
 	stateVersion := state.Version.Consensus
-	block := makeBlock(state, 2, new(types.Commit))
+	block, err := makeBlock(state, 2, new(types.Commit))
+	require.NoError(t, err)
 
 	// test we set some fields
 	assert.Equal(t, stateVersion, block.Version)
@@ -1113,4 +1124,87 @@ func TestStateProto(t *testing.T) {
 			require.Error(t, err, tt.testName)
 		}
 	}
+}
+
+func TestMedianTime(t *testing.T) {
+	val1 := types.NewValidator(ed25519.GenPrivKey().PubKey(), 30)
+	val2 := types.NewValidator(ed25519.GenPrivKey().PubKey(), 30)
+	val3 := types.NewValidator(ed25519.GenPrivKey().PubKey(), 30)
+
+	vals := types.NewValidatorSet([]*types.Validator{val1, val2, val3})
+
+	t.Run("all validators present", func(t *testing.T) {
+		now := time.Now()
+		commit := &types.Commit{
+			Height: 1,
+			Signatures: []types.CommitSig{
+				{
+					BlockIDFlag:      types.BlockIDFlagCommit,
+					ValidatorAddress: val1.Address,
+					Timestamp:        now,
+				},
+				{
+					BlockIDFlag:      types.BlockIDFlagCommit,
+					ValidatorAddress: val2.Address,
+					Timestamp:        now.Add(1 * time.Minute),
+				},
+				{
+					BlockIDFlag:      types.BlockIDFlagCommit,
+					ValidatorAddress: val3.Address,
+					Timestamp:        now.Add(2 * time.Minute),
+				},
+			},
+		}
+
+		medianTime, err := sm.MedianTime(commit, vals)
+		require.NoError(t, err)
+		require.Equal(t, medianTime, now.Add(1*time.Minute))
+	})
+
+	t.Run("validator not in validator set", func(t *testing.T) {
+		unknownVal := ed25519.GenPrivKey().PubKey().Address()
+		now := time.Now()
+		commit := &types.Commit{
+			Height: 1,
+			Signatures: []types.CommitSig{
+				{
+					BlockIDFlag:      types.BlockIDFlagCommit,
+					ValidatorAddress: val1.Address,
+					Timestamp:        now,
+				},
+				{
+					BlockIDFlag:      types.BlockIDFlagCommit,
+					ValidatorAddress: unknownVal,
+					Timestamp:        now.Add(1 * time.Minute),
+				},
+			},
+		}
+
+		_, err := sm.MedianTime(commit, vals)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "commit validator not found in validator set")
+	})
+
+	t.Run("not all validators present", func(t *testing.T) {
+		now := time.Now()
+		commit := &types.Commit{
+			Height: 1,
+			Signatures: []types.CommitSig{
+				{
+					BlockIDFlag:      types.BlockIDFlagCommit,
+					ValidatorAddress: val1.Address,
+					Timestamp:        now,
+				},
+				{
+					BlockIDFlag:      types.BlockIDFlagCommit,
+					ValidatorAddress: val2.Address,
+					Timestamp:        now.Add(1 * time.Minute),
+				},
+			},
+		}
+
+		medianTime, err := sm.MedianTime(commit, vals)
+		require.NoError(t, err)
+		require.Equal(t, medianTime, now)
+	})
 }

@@ -1,9 +1,10 @@
 package state_test
 
 import (
-	"github.com/cometbft/cometbft/types/errors"
 	"testing"
 	"time"
+
+	"github.com/cometbft/cometbft/types/errors"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

@@ -733,6 +733,11 @@ func (vals *ValidatorSet) VerifyCommit(chainID string, blockID BlockID,
 		// This means we don't need the validator address or to do any lookup.
 		val := vals.Validators[idx]
 
+		if !bytes.Equal(val.Address, commitSig.ValidatorAddress) {
+			return fmt.Errorf("validator address mismatch at index %d: expected %X, got %X",
+				idx, val.Address, commitSig.ValidatorAddress)
+		}
+
 		// Validate signature.
 		voteSignBytes := commit.VoteSignBytes(chainID, int32(idx))
 		if !val.PubKey.VerifySignature(voteSignBytes, commitSig.Signature) {

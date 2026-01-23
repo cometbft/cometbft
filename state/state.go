@@ -237,7 +237,7 @@ func (state State) MakeBlock(
 	lastCommit *types.Commit,
 	evidence []types.Evidence,
 	proposerAddress []byte,
-) *types.Block {
+) (*types.Block, error) {
 
 	// Build base block with block data.
 	block := types.MakeBlock(height, txs, lastCommit, evidence)
@@ -247,7 +247,11 @@ func (state State) MakeBlock(
 	if height == state.InitialHeight {
 		timestamp = state.LastBlockTime // genesis time
 	} else {
-		timestamp = MedianTime(lastCommit, state.LastValidators)
+		ts, err := MedianTime(lastCommit, state.LastValidators)
+		if err != nil {
+			return nil, fmt.Errorf("error making block while calculating median time: %w", err)
+		}
+		timestamp = ts
 	}
 
 	// Fill rest of header with state data.
@@ -259,14 +263,14 @@ func (state State) MakeBlock(
 		proposerAddress,
 	)
 
-	return block
+	return block, nil
 }
 
 // MedianTime computes a median time for a given Commit (based on Timestamp field of votes messages) and the
 // corresponding validator set. The computed time is always between timestamps of
 // the votes sent by honest processes, i.e., a faulty processes can not arbitrarily increase or decrease the
 // computed value.
-func MedianTime(commit *types.Commit, validators *types.ValidatorSet) time.Time {
+func MedianTime(commit *types.Commit, validators *types.ValidatorSet) (time.Time, error) {
 	weightedTimes := make([]*cmttime.WeightedTime, len(commit.Signatures))
 	totalVotingPower := int64(0)
 
@@ -276,13 +280,15 @@ func MedianTime(commit *types.Commit, validators *types.ValidatorSet) time.Time 
 		}
 		_, validator := validators.GetByAddress(commitSig.ValidatorAddress)
 		// If there's no condition, TestValidateBlockCommit panics; not needed normally.
-		if validator != nil {
-			totalVotingPower += validator.VotingPower
-			weightedTimes[i] = cmttime.NewWeightedTime(commitSig.Timestamp, validator.VotingPower)
+		if validator == nil {
+			return time.Time{}, fmt.Errorf("commit validator not found in validator set: %X",
+				commitSig.ValidatorAddress)
 		}
+		totalVotingPower += validator.VotingPower
+		weightedTimes[i] = cmttime.NewWeightedTime(commitSig.Timestamp, validator.VotingPower)
 	}
 
-	return cmttime.WeightedMedian(weightedTimes, totalVotingPower)
+	return cmttime.WeightedMedian(weightedTimes, totalVotingPower), nil
 }
 
 //------------------------------------------------------------------------

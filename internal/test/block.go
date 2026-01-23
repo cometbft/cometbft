@@ -92,10 +92,6 @@ func MakeHeader(t *testing.T, h *types.Header) *types.Header {
 	return h
 }
 
-func MakeBlock(state sm.State) *types.Block {
-	return state.MakeBlock(state.LastBlockHeight+1, MakeNTxs(state.LastBlockHeight+1, 10), new(types.Commit), nil, state.NextValidators.Proposer.Address)
-}
-
 func MakeBlocks(n int, state sm.State, privVals []types.PrivValidator) ([]*types.Block, error) {
 	blockID := MakeBlockID()
 	blocks := make([]*types.Block, n)
@@ -106,7 +102,10 @@ func MakeBlocks(n int, state sm.State, privVals []types.PrivValidator) ([]*types
 		if err != nil {
 			return nil, err
 		}
-		block := state.MakeBlock(height, MakeNTxs(height, 10), lastCommit, nil, state.LastValidators.Proposer.Address)
+		block, err := state.MakeBlock(height, MakeNTxs(height, 10), lastCommit, nil, state.LastValidators.Proposer.Address)
+		if err != nil {
+			return nil, err
+		}
 		blocks[i] = block
 		state.LastBlockID = blockID
 		state.LastBlockHeight = height

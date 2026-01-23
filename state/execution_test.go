@@ -61,7 +61,8 @@ func TestApplyBlock(t *testing.T) {
 	blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyApp.Consensus(),
 		mp, sm.EmptyEvidencePool{})
 
-	block := makeBlock(state, 1, new(types.Commit))
+	block, err := makeBlock(state, 1, new(types.Commit))
+	require.NoError(t, err)
 	bps, err := block.MakePartSet(testPartSize)
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
@@ -119,7 +120,8 @@ func TestBeginBlockValidators(t *testing.T) {
 		lastCommit := types.NewCommit(1, 0, prevBlockID, tc.lastCommitSigs)
 
 		// block for height 2
-		block := makeBlock(state, 2, lastCommit)
+		block, err := makeBlock(state, 2, lastCommit)
+		require.NoError(t, err)
 
 		_, err = sm.ExecCommitBlock(proxyApp.Consensus(), block, log.TestingLogger(), stateStore, 1)
 		require.Nil(t, err, tc.desc)
@@ -234,7 +236,8 @@ func TestBeginBlockByzantineValidators(t *testing.T) {
 	blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyApp.Consensus(),
 		mp, evpool)
 
-	block := makeBlock(state, 1, new(types.Commit))
+	block, err := makeBlock(state, 1, new(types.Commit))
+	require.NoError(t, err)
 	block.Evidence = types.EvidenceData{Evidence: ev}
 	block.Header.EvidenceHash = block.Evidence.Hash()
 	bps, err := block.MakePartSet(testPartSize)
@@ -281,7 +284,8 @@ func TestProcessProposal(t *testing.T) {
 		sm.EmptyEvidencePool{},
 	)
 
-	block0 := makeBlock(state, height-1, new(types.Commit))
+	block0, err := makeBlock(state, height-1, new(types.Commit))
+	require.NoError(t, err)
 	lastCommitSig := []types.CommitSig{}
 	partSet, err := block0.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
@@ -305,10 +309,11 @@ func TestProcessProposal(t *testing.T) {
 		lastCommitSig = append(lastCommitSig, vote.CommitSig())
 	}
 
-	block1 := makeBlock(state, height, &types.Commit{
+	block1, err := makeBlock(state, height, &types.Commit{
 		Height:     height - 1,
 		Signatures: lastCommitSig,
 	})
+	require.NoError(t, err)
 	block1.Txs = txs
 
 	expectedRpp := abci.RequestProcessProposal{
@@ -510,7 +515,8 @@ func TestEndBlockValidatorUpdates(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	block := makeBlock(state, 1, new(types.Commit))
+	block, err := makeBlock(state, 1, new(types.Commit))
+	require.NoError(t, err)
 	bps, err := block.MakePartSet(testPartSize)
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
@@ -570,7 +576,8 @@ func TestEndBlockValidatorUpdatesResultingInEmptySet(t *testing.T) {
 		sm.EmptyEvidencePool{},
 	)
 
-	block := makeBlock(state, 1, new(types.Commit))
+	block, err := makeBlock(state, 1, new(types.Commit))
+	require.NoError(t, err)
 	bps, err := block.MakePartSet(testPartSize)
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}

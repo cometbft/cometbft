@@ -397,6 +397,19 @@ func TestBitArrayProtoBuf(t *testing.T) {
 	}
 }
 
+func TestBitArrayFromProtoNil(t *testing.T) {
+	// Test that FromProto with nil properly resets the BitArray
+	ba := NewBitArray(10)
+	ba.SetIndex(5, true)
+	require.Equal(t, 10, ba.Bits)
+	require.True(t, ba.GetIndex(5))
+
+	ba.FromProto(nil)
+
+	require.Equal(t, 0, ba.Bits)
+	require.Nil(t, ba.Elems)
+}
+
 func TestBitArrayValidateBasic(t *testing.T) {
 	testCases := []struct {
 		name    string

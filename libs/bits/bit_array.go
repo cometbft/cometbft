@@ -490,6 +490,10 @@ func (bA *BitArray) ToProto() *cmtprotobits.BitArray {
 
 // FromProto sets a protobuf BitArray to the given pointer.
 func (bA *BitArray) FromProto(protoBitArray *cmtprotobits.BitArray) {
+	if bA == nil {
+		return
+	}
+
 	if protoBitArray == nil {
 		bA.Bits = 0
 		bA.Elems = nil

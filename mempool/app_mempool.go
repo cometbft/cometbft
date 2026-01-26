@@ -44,7 +44,7 @@ type AppMempoolOpt func(*AppMempool)
 
 // todo STACK-1851: move to config
 const (
-	seenCacheSize = 100_000
+	seenCacheSize = 5_000_000
 	reapMaxBytes  = 0
 	reapMaxGas    = 0
 	reapInterval  = 500 * time.Millisecond

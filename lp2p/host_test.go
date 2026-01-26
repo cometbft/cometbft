@@ -240,3 +240,20 @@ func connectBootstrapPeers(t *testing.T, ctx context.Context, h *Host, peers []B
 		require.NoError(t, err, "failed to connect to peer", "peer_id", peer.AddrInfo.ID.String())
 	}
 }
+
+func makeTestHosts(t *testing.T, numHosts int) []*Host {
+	ports := utils.GetFreePorts(t, numHosts)
+
+	hosts := make([]*Host, len(ports))
+	for i, port := range ports {
+		hosts[i] = makeTestHost(t, port, AddressBookConfig{}, false)
+	}
+
+	t.Cleanup(func() {
+		for _, host := range hosts {
+			host.Close()
+		}
+	})
+
+	return hosts
+}

@@ -1175,7 +1175,7 @@ func (ec *ExtendedCommit) Type() byte { return byte(cmtproto.PrecommitType) }
 // Implements VoteSetReader.
 func (ec *ExtendedCommit) GetHeight() int64 { return ec.Height }
 
-// GetRound returns height of the extended commit.
+// GetRound returns round of the extended commit.
 // Implements VoteSetReader.
 func (ec *ExtendedCommit) GetRound() int32 { return ec.Round }
 

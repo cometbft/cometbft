@@ -35,7 +35,7 @@ const TransportQUIC = "quic-v1"
 func NewHost(
 	config *config.P2PConfig,
 	nodeKey cmcrypto.PrivKey,
-	bootstrapPeers []BootstrapPeer,
+	addressBook AddressBookConfig,
 	logger log.Logger,
 ) (*Host, error) {
 	if !config.LibP2PEnabled() {
@@ -50,6 +50,11 @@ func NewHost(
 	listenAddr, err := AddressToMultiAddr(config.ListenAddress, TransportQUIC)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert %q to multiaddr: %w", config.ListenAddress, err)
+	}
+
+	bootstrapPeers, err := addressBook.BootstrapPeers()
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode bootstrap peers: %w", err)
 	}
 
 	// todo: add support for libp2p.ResourceManager() based on p2p.lp2p toml config

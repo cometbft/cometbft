@@ -219,10 +219,7 @@ func makeTestHost(
 		logger = log.TestingLogger()
 	}
 
-	bootstrapPeers, err := addressBook.BootstrapPeers()
-	require.NoError(t, err)
-
-	host, err := NewHost(config, pk, bootstrapPeers, logger)
+	host, err := NewHost(config, pk, addressBook, logger)
 	require.NoError(t, err)
 
 	return host

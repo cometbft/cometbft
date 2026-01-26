@@ -540,15 +540,10 @@ func NewNodeWithContext(
 			return nil, fmt.Errorf("could not create address book: %w", err)
 		}
 
-		bootstrapPeers, err := addressBook.BootstrapPeers()
-		if err != nil {
-			return nil, fmt.Errorf("could not decode bootstrap peers: %w", err)
-		}
-
 		host, err := lp2p.NewHost(
 			config.P2P,
 			nodeKey.PrivKey,
-			bootstrapPeers,
+			addressBook,
 			p2pLogger,
 		)
 		if err != nil {

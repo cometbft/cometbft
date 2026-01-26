@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[types]` fix: correct LightClientAttackEvidence.Hash off-by-one; add regression test
+([#5418](https://github.com/cometbft/cometbft/pull/5418))
 - `[p2p]` fix(privval): Ephemeral Port Exhaustion
   ([\#5433](https://github.com/cometbft/cometbft/pull/5433))
 

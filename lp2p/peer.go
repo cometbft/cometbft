@@ -23,6 +23,7 @@ type Peer struct {
 	addrInfo peer.AddrInfo
 	netAddr  *p2p.NetAddress
 
+	// behavioral flags (are not mutually exclusive)
 	isPrivate       bool
 	isPersistent    bool
 	isUnconditional bool

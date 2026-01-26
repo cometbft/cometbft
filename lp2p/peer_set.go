@@ -1,11 +1,11 @@
 package lp2p
 
 import (
-	"math/rand"
 	"sort"
 	"sync"
 
 	"github.com/cometbft/cometbft/libs/log"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/mr-tron/base58/base58"
@@ -171,28 +171,24 @@ func (ps *PeerSet) ForEach(fn func(p2p.Peer)) {
 	}
 }
 
+// Random returns a random peer from the PeerSet (or nil if no peers are present).
+// This method is not expected to be called frequently as it has O(n log n) complexity.
+//
+// Deprecated: use only for backwards compatibility.
 func (ps *PeerSet) Random() p2p.Peer {
-	ps.mu.RLock()
-	defer ps.mu.RUnlock()
-
-	if len(ps.peers) == 0 {
+	peers := ps.Copy()
+	if len(peers) == 0 {
 		return nil
 	}
 
-	v := rand.Intn(len(ps.peers))
-	for _, p := range ps.peers {
-		if v == 0 {
-			return p
-		}
+	idx := cmtrand.Intn(len(peers))
 
-		v--
-	}
-
-	return nil
+	return peers[idx]
 }
 
 // Copy returns a copy of the peers list.
-// This method is barely used and remains only for backwards compatibility.
+//
+// Deprecated: use only for backwards compatibility.
 func (ps *PeerSet) Copy() []p2p.Peer {
 	ps.mu.RLock()
 	defer ps.mu.RUnlock()

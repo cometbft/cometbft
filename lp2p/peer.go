@@ -12,6 +12,9 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 )
 
+// Peer represents a remote node connected via libp2p.
+// It implements p2p.Peer interface and wraps the libp2p connection
+// with CometBFT-specific peer attributes and messaging capabilities.
 type Peer struct {
 	service.BaseService
 

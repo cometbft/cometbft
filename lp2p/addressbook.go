@@ -10,10 +10,13 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 )
 
+// AddressBookConfig represents address book configuration
+// that contains a list of peer configurations for the libp2p host.
 type AddressBookConfig struct {
 	Peers []PeerConfig `mapstructure:"peers" toml:"peers"`
 }
 
+// PeerConfig a peer entry in the address book configuration.
 type PeerConfig struct {
 	// ip:port example: "192.0.2.0:65432"
 	Host string `toml:"host"`
@@ -25,6 +28,7 @@ type PeerConfig struct {
 	Unconditional bool `mapstructure:"unconditional"`
 }
 
+// BootstrapPeer represents a parsed PeerConfig
 type BootstrapPeer struct {
 	PeerConfig
 	AddrInfo peer.AddrInfo

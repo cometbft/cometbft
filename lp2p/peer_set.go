@@ -52,6 +52,8 @@ func (ps *PeerSet) Get(key p2p.ID) p2p.Peer {
 	return peer
 }
 
+// PeerAddOptions options for adding a peer to the PeerSet.
+// It includes behavioral flags and lifecycle callbacks for peer initialization.
 type PeerAddOptions struct {
 	Private       bool
 	Persistent    bool
@@ -106,6 +108,9 @@ func (ps *PeerSet) Add(id peer.ID, opts PeerAddOptions) (*Peer, error) {
 	return p, nil
 }
 
+// PeerRemovalOptions options for removing a peer from the PeerSet.
+// If OnAfterStop is provided, it will be called after the peer is stopped.
+// Note that Reason is any due to backwards compatibility.
 type PeerRemovalOptions struct {
 	Reason      any
 	OnAfterStop func(p *Peer, reason any)

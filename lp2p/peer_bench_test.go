@@ -92,7 +92,7 @@ func testBenchLP2PUnidirectional(t *testing.T, cfg lp2pUnidirectionalConfig) {
 	t.Logf("host1: %+v", host1.AddrInfo().String())
 	t.Logf("host2: %+v", host2.AddrInfo().String())
 
-	ConnectPeers(ctx, host2, host2.ConfigPeers())
+	connectBootstrapPeers(t, ctx, host2, host2.BootstrapPeers())
 	t.Cleanup(func() {
 		host2.Close()
 		host1.Close()
@@ -111,7 +111,7 @@ func testBenchLP2PUnidirectional(t *testing.T, cfg lp2pUnidirectionalConfig) {
 	// Given host1 stream handler
 
 	// Given host1 as peer inside host2
-	host2peer1, err := NewPeer(host2, host1.AddrInfo(), p2p.NopMetrics())
+	host2peer1, err := NewPeer(host2, host1.AddrInfo(), p2p.NopMetrics(), false, false, false)
 	require.NoError(t, err)
 	require.NoError(t, host2peer1.Start())
 

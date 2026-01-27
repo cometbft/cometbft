@@ -550,7 +550,7 @@ func NewNodeWithContext(
 			return nil, fmt.Errorf("unable to create libp2p host: %w", err)
 		}
 
-		sw, err = lp2p.NewSwitch(config.P2P, nodeKey, nodeInfo, host, reactors, p2pMetrics, p2pLogger)
+		sw, err = lp2p.NewSwitch(nodeInfo, host, reactors, p2pMetrics, p2pLogger)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create libp2p switch: %w", err)
 		}

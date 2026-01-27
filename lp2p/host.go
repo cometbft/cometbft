@@ -3,7 +3,6 @@
 package lp2p
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/cometbft/cometbft/config"
@@ -21,8 +20,11 @@ import (
 // as it's Switch's responsibility.
 type Host struct {
 	host.Host
-	logger      log.Logger
-	configPeers []peer.AddrInfo
+
+	// bootstrapPeers are initial peers specified in the address book
+	bootstrapPeers []BootstrapPeer
+
+	logger log.Logger
 }
 
 // TransportQUIC quic transport.
@@ -50,9 +52,9 @@ func NewHost(
 		return nil, fmt.Errorf("failed to convert %q to multiaddr: %w", config.ListenAddress, err)
 	}
 
-	peers, err := addressBook.DecodePeers()
+	bootstrapPeers, err := addressBook.BootstrapPeers()
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode peers from address book: %w", err)
+		return nil, fmt.Errorf("failed to decode bootstrap peers: %w", err)
 	}
 
 	// todo: add support for libp2p.ResourceManager() based on p2p.lp2p toml config
@@ -84,9 +86,9 @@ func NewHost(
 	}
 
 	return &Host{
-		Host:        host,
-		configPeers: peers,
-		logger:      logger,
+		Host:           host,
+		bootstrapPeers: bootstrapPeers,
+		logger:         logger,
 	}, nil
 }
 
@@ -94,31 +96,10 @@ func (h *Host) AddrInfo() peer.AddrInfo {
 	return peer.AddrInfo{ID: h.ID(), Addrs: h.Addrs()}
 }
 
-func (h *Host) ConfigPeers() []peer.AddrInfo {
-	return h.configPeers
+func (h *Host) BootstrapPeers() []BootstrapPeer {
+	return h.bootstrapPeers
 }
 
 func (h *Host) Logger() log.Logger {
 	return h.logger
-}
-
-func ConnectPeers(ctx context.Context, h *Host, peers []peer.AddrInfo) {
-	if len(peers) == 0 {
-		h.logger.Info("No peers to connect to!")
-		return
-	}
-
-	for _, peer := range peers {
-		// dial to self
-		if h.ID().String() == peer.ID.String() {
-			continue
-		}
-
-		h.logger.Info("Connecting to peer", "peer", peer.String())
-
-		if err := h.Connect(ctx, peer); err != nil {
-			h.logger.Error("Failed to connect to peer", "peer", peer.String(), "err", err)
-			continue
-		}
-	}
 }

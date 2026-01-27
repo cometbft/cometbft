@@ -46,7 +46,7 @@ func TestHost(t *testing.T) {
 		},
 	}, true)
 
-	ConnectPeers(ctx, host2, host2.ConfigPeers())
+	connectBootstrapPeers(t, ctx, host2, host2.BootstrapPeers())
 
 	t.Logf("host1: %+v", host1.AddrInfo())
 	t.Logf("host2: %+v", host2.AddrInfo())
@@ -123,11 +123,11 @@ func TestHost(t *testing.T) {
 	host2.SetStreamHandler(protoBar, handler)
 
 	// Given counter peers
-	host1Peer2, err := NewPeer(host1, host2.AddrInfo(), p2p.NopMetrics())
+	host1Peer2, err := NewPeer(host1, host2.AddrInfo(), p2p.NopMetrics(), false, false, false)
 	require.NoError(t, err, "failed to create peer 1->2")
 	require.NoError(t, host1Peer2.Start(), "failed to start peer 1->2")
 
-	host2Peer1, err := NewPeer(host2, host1.AddrInfo(), p2p.NopMetrics())
+	host2Peer1, err := NewPeer(host2, host1.AddrInfo(), p2p.NopMetrics(), false, false, false)
 	require.NoError(t, err, "failed to create peer 2->1")
 	require.NoError(t, host2Peer1.Start(), "failed to start peer 2->1")
 
@@ -223,4 +223,37 @@ func makeTestHost(
 	require.NoError(t, err)
 
 	return host
+}
+
+func connectBootstrapPeers(t *testing.T, ctx context.Context, h *Host, peers []BootstrapPeer) {
+	require.NotEmpty(t, peers, "no peers to connect to")
+
+	for _, peer := range peers {
+		// dial to self
+		if h.ID().String() == peer.AddrInfo.ID.String() {
+			continue
+		}
+
+		h.logger.Info("Connecting to peer", "peer_id", peer.AddrInfo.ID.String())
+
+		err := h.Connect(ctx, peer.AddrInfo)
+		require.NoError(t, err, "failed to connect to peer", "peer_id", peer.AddrInfo.ID.String())
+	}
+}
+
+func makeTestHosts(t *testing.T, numHosts int) []*Host {
+	ports := utils.GetFreePorts(t, numHosts)
+
+	hosts := make([]*Host, len(ports))
+	for i, port := range ports {
+		hosts[i] = makeTestHost(t, port, AddressBookConfig{}, false)
+	}
+
+	t.Cleanup(func() {
+		for _, host := range hosts {
+			host.Close()
+		}
+	})
+
+	return hosts
 }

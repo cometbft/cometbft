@@ -382,7 +382,7 @@ func TestTxsAvailable(t *testing.T) {
 
 	timeoutMS := 500
 
-	// with no txs, it shouldnt fire
+	// with no txs, it shouldn't fire
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 
 	// send a bunch of txs, it should only fire once
@@ -400,12 +400,14 @@ func TestTxsAvailable(t *testing.T) {
 	ensureFire(t, mp.TxsAvailable(), timeoutMS)
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 
-	// send a bunch more txs. we already fired for this height so it shouldnt fire again
+	// send a bunch more txs. we already fired for this height so it shouldn't fire again
 	moreTxs := addRandomTxs(t, mp, 50, UnknownPeerID)
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 
 	// now call update with all the txs. it should not fire as there are no txs left
-	committedTxs = append(remainingTxs, moreTxs...)
+	remainingTxs = append(remainingTxs, moreTxs...)
+	committedTxs = remainingTxs
+
 	if err := mp.Update(2, committedTxs, abciResponses(len(committedTxs), abci.CodeTypeOK), nil, nil); err != nil {
 		t.Error(err)
 	}

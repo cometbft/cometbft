@@ -242,16 +242,15 @@ func BootstrapStateWithGenProvider(ctx context.Context, config *cfg.Config, dbPr
 	}
 	if appHash == nil {
 		logger.Info("warning: cannot verify appHash. Verification will happen when node boots up!")
-	} else {
-		if !bytes.Equal(appHash, state.AppHash) {
-			if err := blockStore.Close(); err != nil {
-				logger.Error("failed to close blockstore: %w", err)
-			}
-			if err := stateStore.Close(); err != nil {
-				logger.Error("failed to close statestore: %w", err)
-			}
-			return fmt.Errorf("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", state.AppHash, appHash)
+	} else if !bytes.Equal(appHash, state.AppHash) {
+		if err := blockStore.Close(); err != nil {
+			logger.Error("failed to close blockstore: %w", err)
 		}
+		if err := stateStore.Close(); err != nil {
+			logger.Error("failed to close statestore: %w", err)
+		}
+		return fmt.Errorf("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", state.AppHash, appHash)
+
 	}
 
 	commit, err := stateProvider.Commit(ctx, height)

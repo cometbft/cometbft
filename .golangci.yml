@@ -3,16 +3,18 @@ linters:
   enable:
     - asciicheck
     - bodyclose
+    - copyloopvar
     - depguard
     - dogsled
     - dupl
     - goconst
+    - gocritic
     - misspell
     - nakedret
     - nolintlint
-    - prealloc
     - staticcheck
     - unconvert
+    - unused
   settings:
     depguard:
       rules:

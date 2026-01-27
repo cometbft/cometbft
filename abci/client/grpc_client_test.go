@@ -1,14 +1,13 @@
 package abcicli_test
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -56,15 +55,6 @@ func TestGRPC(t *testing.T) {
 		if response.Code != 0 {
 			t.Error("CheckTx failed with ret_code", response.Code)
 		}
-		if counter > numCheckTxs {
-			t.Fatal("Too many CheckTx responses")
-		}
 		t.Log("response", counter)
-		if counter == numCheckTxs {
-			go func() {
-				time.Sleep(time.Second * 1) // Wait for a bit to allow counter overflow
-			}()
-		}
-
 	}
 }

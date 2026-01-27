@@ -214,15 +214,30 @@ func (rs *reactorSet) receiveQueued(reactorID int, e pendingEnvelope) {
 		"message_type", e.messageType,
 	}
 
-	rs.switchRef.Logger.Debug(
-		"Receiving envelope",
-		"reactor", reactor.name,
-		"message_type", e.messageType,
-	)
+	// duration between p2p receive and piping inside the consumer queue
+	pendingFor := time.Since(e.addedAt)
+	rs.switchRef.metrics.MessagesReactorPendingDuration.With(labels...).Observe(pendingFor.Seconds())
+
+	// log slow pending envelopes if:
+	// - pending for more than 1s (but only 10% sampled with a "dummy" sampling)
+	// - pending for more than 10s
+	logSlow := (pendingFor > time.Second) &&
+		(pendingFor > 10*time.Second || e.addedAt.UnixMilli()%10 == 0)
+
+	if logSlow {
+		rs.switchRef.Logger.Info(
+			"Slow pending envelope detected",
+			"reactor", reactor.name,
+			"message_type", e.messageType,
+			"pending_for", pendingFor.String(),
+		)
+	}
+
+	now := time.Now()
 
 	reactor.Receive(e.Envelope)
 
-	timeTaken := time.Since(e.addedAt)
+	timeTaken := time.Since(now)
 
 	rs.switchRef.metrics.MessagesReactorInFlight.With(labels...).Add(-1)
 	rs.switchRef.metrics.MessageReactorReceiveDuration.With(labels...).Observe(timeTaken.Seconds())
@@ -264,18 +279,26 @@ func (rs *reactorSet) newReactorPriorityQueue(reactorID int, reactorName string)
 
 func (rs *reactorSet) newReactorScaler(reactorName string) *autopool.ThroughputLatencyScaler {
 	const (
-		minWorkers        = 4
-		defaultMaxWorkers = 32
-		latencyThreshold  = 100 * time.Millisecond
-		latencyPercentile = 90.0 // P90
-		autoScaleInterval = 250 * time.Millisecond
+		defaultMinWorkers       = 4
+		defaultMaxWorkers       = 32
+		defaultLatencyThreshold = 100 * time.Millisecond
+		latencyPercentile       = 90.0 // P90
+
+		// how often to autoscale.
+		autoScaleFrequency = 200 * time.Millisecond
 	)
 
-	maxWorkers := defaultMaxWorkers
+	var (
+		maxWorkers       = defaultMaxWorkers
+		minWorkers       = defaultMinWorkers
+		latencyThreshold = autoScaleFrequency
+	)
 
 	// bump max workers for mempool
 	if reactorName == "MEMPOOL" {
-		maxWorkers = 128
+		minWorkers = 8
+		maxWorkers = 512
+		latencyThreshold = 500 * time.Millisecond
 	}
 
 	return autopool.NewThroughputLatencyScaler(
@@ -283,7 +306,7 @@ func (rs *reactorSet) newReactorScaler(reactorName string) *autopool.ThroughputL
 		maxWorkers,
 		latencyPercentile,
 		latencyThreshold,
-		autoScaleInterval,
+		autoScaleFrequency,
 		rs.switchRef.Logger,
 	)
 }

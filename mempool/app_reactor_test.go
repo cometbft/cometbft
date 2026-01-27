@@ -101,6 +101,7 @@ func TestAppReactor(t *testing.T) {
 
 	// ASSERT #3
 	// Ensure all nodes (including C) have all txs
+	//nolint:gocritic
 	allTxs := append(txs1, txs2...)
 	eventually(func() bool {
 		receivedA := nodeA.getReceivedTxs()

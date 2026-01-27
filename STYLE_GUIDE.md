@@ -38,7 +38,7 @@ scroll down and understand the functionality of it just as well as you do. A loo
 
 ## Comments
 
-* Use a space after comment deliminter (ex. `// your comment`).
+* Use a space after comment delimiter (ex. `// your comment`).
 * Many comments are not sentences. These should begin with a lower case letter and end without a period.
 * Conversely, sentences in comments should be sentenced-cased and end with a period.
 

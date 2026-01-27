@@ -85,7 +85,7 @@ func TestSecp256k1LoadPrivkeyAndSerializeIsIdentity(t *testing.T) {
 }
 
 func TestGenPrivKeySecp256k1(t *testing.T) {
-	// curve oder N
+	// curve order N
 	N := underlyingsecp256k1.S256().N
 	tests := []struct {
 		name   string
@@ -102,7 +102,7 @@ func TestGenPrivKeySecp256k1(t *testing.T) {
 		{"another seed used in cosmos tests #3", []byte("")},
 	}
 	for _, tt := range tests {
-		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
 			gotPrivKey := secp256k1.GenPrivKeySecp256k1(tt.secret)
 			require.NotNil(t, gotPrivKey)

@@ -143,6 +143,11 @@ type Metrics struct {
 	// correspond to earlier heights and rounds than this node is currently
 	// in.
 	LateVotes metrics.Counter `metrics_labels:"vote_type"`
+
+	// PeerHeight is the consensus reactor's view of what height their peers are currently on.
+	// It is reported with a separate tag for every peer we are connected to, and updated when their height updates
+	// in our consensus state.
+	PeerHeight metrics.Gauge `metrics_labels:"peer_id"`
 }
 
 func (m *Metrics) MarkProposalProcessed(accepted bool) {

@@ -111,15 +111,15 @@ func (h *Host) Logger() log.Logger {
 }
 
 func BootstrapPeersFromConfig(config *config.P2PConfig) ([]BootstrapPeer, error) {
-	peers := make([]BootstrapPeer, 0, len(config.LibP2PConfig.AddressBook.Peers))
+	peers := make([]BootstrapPeer, 0, len(config.LibP2PConfig.BootstrapPeers))
 
 	// dedup
 	cache := make(map[peer.ID]struct{})
 
-	for _, peer := range config.LibP2PConfig.AddressBook.Peers {
-		addr, err := AddrInfoFromHostAndID(peer.Host, peer.ID)
+	for _, bp := range config.LibP2PConfig.BootstrapPeers {
+		addr, err := AddrInfoFromHostAndID(bp.Host, bp.ID)
 		if err != nil {
-			return nil, fmt.Errorf("[%s, %s]: %w", peer.Host, peer.ID, err)
+			return nil, fmt.Errorf("[%s, %s]: %w", bp.Host, bp.ID, err)
 		}
 
 		if _, ok := cache[addr.ID]; ok {
@@ -128,9 +128,9 @@ func BootstrapPeersFromConfig(config *config.P2PConfig) ([]BootstrapPeer, error)
 
 		peers = append(peers, BootstrapPeer{
 			AddrInfo:      addr,
-			Private:       peer.Private,
-			Persistent:    peer.Persistent,
-			Unconditional: peer.Unconditional,
+			Private:       bp.Private,
+			Persistent:    bp.Persistent,
+			Unconditional: bp.Unconditional,
 		})
 
 		cache[addr.ID] = struct{}{}

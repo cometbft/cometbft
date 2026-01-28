@@ -36,13 +36,11 @@ func TestHost(t *testing.T) {
 	ports := utils.GetFreePorts(t, 2)
 
 	// Given two hosts that are connected to each other
-	host1 := makeTestHost(t, ports[0], config.LibP2PAddressBookConfig{}, true)
-	host2 := makeTestHost(t, ports[1], config.LibP2PAddressBookConfig{
-		Peers: []config.LibP2PPeerConfig{
-			{
-				Host: fmt.Sprintf("127.0.0.1:%d", ports[0]),
-				ID:   host1.ID().String(),
-			},
+	host1 := makeTestHost(t, ports[0], []config.LibP2PBootstrapPeer{}, true)
+	host2 := makeTestHost(t, ports[1], []config.LibP2PBootstrapPeer{
+		{
+			Host: fmt.Sprintf("127.0.0.1:%d", ports[0]),
+			ID:   host1.ID().String(),
 		},
 	}, true)
 
@@ -194,7 +192,7 @@ func TestHost(t *testing.T) {
 	require.ElementsMatch(t, expectedEnvelopes, envelopes)
 }
 
-func makeTestHost(t *testing.T, port int, addressBook config.LibP2PAddressBookConfig, enableLogging bool) *Host {
+func makeTestHost(t *testing.T, port int, bootstrapPeers []config.LibP2PBootstrapPeer, enableLogging bool) *Host {
 	// config
 	config := config.DefaultP2PConfig()
 	config.RootDir = t.TempDir()
@@ -203,7 +201,7 @@ func makeTestHost(t *testing.T, port int, addressBook config.LibP2PAddressBookCo
 
 	config.LibP2PConfig.Enabled = true
 	config.LibP2PConfig.DisableResourceManager = true
-	config.LibP2PConfig.AddressBook = addressBook
+	config.LibP2PConfig.BootstrapPeers = bootstrapPeers
 
 	// private key
 	pk := ed25519.GenPrivKey()
@@ -240,7 +238,7 @@ func makeTestHosts(t *testing.T, numHosts int) []*Host {
 
 	hosts := make([]*Host, len(ports))
 	for i, port := range ports {
-		hosts[i] = makeTestHost(t, port, config.LibP2PAddressBookConfig{}, false)
+		hosts[i] = makeTestHost(t, port, []config.LibP2PBootstrapPeer{}, false)
 	}
 
 	t.Cleanup(func() {
@@ -267,7 +265,7 @@ func TestBootstrapPeers(t *testing.T) {
 
 		// Given a P2P config with libp2p enabled and address book peers
 		cfg := config.DefaultP2PConfig()
-		cfg.LibP2PConfig.AddressBook.Peers = []config.LibP2PPeerConfig{
+		cfg.LibP2PConfig.BootstrapPeers = []config.LibP2PBootstrapPeer{
 			{Host: "127.0.0.1:26656", ID: pkID(pk1), Private: true, Persistent: false, Unconditional: true},
 			{Host: "127.0.0.1:26657", ID: pkID(pk2), Private: false, Persistent: true, Unconditional: false},
 			// duplicate will be ignored
@@ -299,7 +297,7 @@ func TestBootstrapPeers(t *testing.T) {
 	t.Run("invalid host format", func(t *testing.T) {
 		// ARRANGE
 		cfg := config.DefaultP2PConfig()
-		cfg.LibP2PConfig.AddressBook.Peers = []config.LibP2PPeerConfig{
+		cfg.LibP2PConfig.BootstrapPeers = []config.LibP2PBootstrapPeer{
 			{Host: "invalid-host", ID: "12D3KooWRqqKwyNnjwukrxXTUXLiNK838WN5tc8Nk2DnMVPbpVPV"},
 		}
 
@@ -314,7 +312,7 @@ func TestBootstrapPeers(t *testing.T) {
 	t.Run("invalid peer ID", func(t *testing.T) {
 		// ARRANGE
 		cfg := config.DefaultP2PConfig()
-		cfg.LibP2PConfig.AddressBook.Peers = []config.LibP2PPeerConfig{
+		cfg.LibP2PConfig.BootstrapPeers = []config.LibP2PBootstrapPeer{
 			{Host: "127.0.0.1:26656", ID: "invalid-id"},
 		}
 

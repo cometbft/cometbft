@@ -39,8 +39,8 @@ const (
 	DefaultPrivValKeyName   = "priv_validator_key.json"
 	DefaultPrivValStateName = "priv_validator_state.json"
 
-	DefaultNodeKeyName           = "node_key.json"
-	DefaultAddrBookName          = "addrbook.json"
+	DefaultNodeKeyName  = "node_key.json"
+	DefaultAddrBookName = "addrbook.json"
 
 	MempoolTypeFlood = "flood"
 	MempoolTypeNop   = "nop"
@@ -623,17 +623,11 @@ type LibP2PConfig struct {
 	// DisableResourceManager set true to disable the resource manager
 	DisableResourceManager bool `mapstructure:"disable_resource_manager"`
 
-	// AddressBook address book configuration
-	AddressBook LibP2PAddressBookConfig `mapstructure:"addressbook"`
+	// BootstrapPeers list of peers to bootstrap the libp2p host
+	BootstrapPeers []LibP2PBootstrapPeer `mapstructure:"bootstrap_peers"`
 }
 
-// AddressBookConfig represents address book configuration
-// that contains a list of peer configurations for the libp2p host.
-type LibP2PAddressBookConfig struct {
-	Peers []LibP2PPeerConfig `mapstructure:"peers"`
-}
-
-type LibP2PPeerConfig struct {
+type LibP2PBootstrapPeer struct {
 	// ip:port example: "192.0.2.0:65432"
 	Host string `mapstructure:"host"`
 	// id example: "12D3KooWJx9i35Vx1h6T6nVqQz4YW1r2J1Y2P2nY3N4N5N6N7N8N9N0"
@@ -718,9 +712,7 @@ func DefaultLibP2PConfig() *LibP2PConfig {
 	return &LibP2PConfig{
 		Enabled:                false,
 		DisableResourceManager: false,
-		AddressBook: LibP2PAddressBookConfig{
-			Peers: []LibP2PPeerConfig{},
-		},
+		BootstrapPeers:         []LibP2PBootstrapPeer{},
 	}
 }
 

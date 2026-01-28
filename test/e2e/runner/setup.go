@@ -361,7 +361,7 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 // MakeLibp2pAddressBook creates libp2p address book for a node
 func MakeLibp2pAddressBook(node *e2e.Node) (config.LibP2PAddressBookConfig, error) {
 	var (
-		peers = []config.LibP2PPeerConfig{}
+		peers = []config.LibP2PBootstrapPeer{}
 		cache = make(map[string]struct{})
 	)
 
@@ -389,7 +389,7 @@ func MakeLibp2pAddressBook(node *e2e.Node) (config.LibP2PAddressBookConfig, erro
 			ip = nodeConfig.InternalIP.String()
 		}
 
-		peers = append(peers, config.LibP2PPeerConfig{
+		peers = append(peers, config.LibP2PBootstrapPeer{
 			Host:          fmt.Sprintf("%s:%d", ip, cometPort),
 			ID:            peerID.String(),
 			Private:       false,

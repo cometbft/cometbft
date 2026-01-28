@@ -27,9 +27,9 @@ func TestSwitch(t *testing.T) {
 		// Given 3 hosts: A, B, C
 		// Hosts start with NO bootstrap peers
 		var (
-			hostA = makeTestHost(t, ports[0], config.LibP2PAddressBookConfig{}, true)
-			hostB = makeTestHost(t, ports[1], config.LibP2PAddressBookConfig{}, true)
-			hostC = makeTestHost(t, ports[2], config.LibP2PAddressBookConfig{}, true)
+			hostA = makeTestHost(t, ports[0], []config.LibP2PBootstrapPeer{}, true)
+			hostB = makeTestHost(t, ports[1], []config.LibP2PBootstrapPeer{}, true)
+			hostC = makeTestHost(t, ports[2], []config.LibP2PBootstrapPeer{}, true)
 		)
 
 		t.Cleanup(func() {

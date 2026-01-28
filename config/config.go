@@ -66,8 +66,6 @@ var (
 	defaultNodeKeyPath  = filepath.Join(DefaultConfigDir, DefaultNodeKeyName)
 	defaultAddrBookPath = filepath.Join(DefaultConfigDir, DefaultAddrBookName)
 
-	defaultLibP2PAddressBookPath = filepath.Join(DefaultConfigDir, DefaultLibP2PAddressBookName)
-
 	minSubscriptionBufferSize     = 100
 	defaultSubscriptionBufferSize = 200
 
@@ -626,8 +624,25 @@ type LibP2PConfig struct {
 	// DisableResourceManager set true to disable the resource manager
 	DisableResourceManager bool `mapstructure:"disable_resource_manager"`
 
-	// AddressBook path to the address book file (.toml format)
-	AddressBook string `mapstructure:"address_book_file"`
+	// AddressBook address book configuration
+	AddressBook LibP2PAddressBookConfig `mapstructure:"addressbook"`
+}
+
+// AddressBookConfig represents address book configuration
+// that contains a list of peer configurations for the libp2p host.
+type LibP2PAddressBookConfig struct {
+	Peers []LibP2PPeerConfig `mapstructure:"peers" toml:"peers"`
+}
+
+type LibP2PPeerConfig struct {
+	// ip:port example: "192.0.2.0:65432"
+	Host string `toml:"host"`
+	// id example: "12D3KooWJx9i35Vx1h6T6nVqQz4YW1r2J1Y2P2nY3N4N5N6N7N8N9N0"
+	ID string `toml:"id"`
+
+	Private       bool `mapstructure:"private"`
+	Persistent    bool `mapstructure:"persistent"`
+	Unconditional bool `mapstructure:"unconditional"`
 }
 
 // DefaultP2PConfig returns a default configuration for the peer-to-peer layer
@@ -700,18 +715,13 @@ func (cfg *P2PConfig) LibP2PEnabled() bool {
 	return cfg.LibP2PConfig != nil && cfg.LibP2PConfig.Enabled
 }
 
-func (cfg *P2PConfig) LibP2PAddressBookFile() string {
-	if cfg.LibP2PConfig == nil {
-		return ""
-	}
-
-	return rootify(cfg.LibP2PConfig.AddressBook, cfg.RootDir)
-}
-
 func DefaultLibP2PConfig() *LibP2PConfig {
 	return &LibP2PConfig{
-		Enabled:     false,
-		AddressBook: defaultLibP2PAddressBookPath,
+		Enabled:                false,
+		DisableResourceManager: false,
+		AddressBook: LibP2PAddressBookConfig{
+			Peers: []LibP2PPeerConfig{},
+		},
 	}
 }
 

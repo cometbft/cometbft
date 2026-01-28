@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/test/utils"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -79,9 +80,9 @@ func testBenchLP2PUnidirectional(t *testing.T, cfg lp2pUnidirectionalConfig) {
 	// Given 2 hosts
 	ports := utils.GetFreePorts(t, 2)
 
-	host1 := makeTestHost(t, ports[0], AddressBookConfig{}, false)
-	host2 := makeTestHost(t, ports[1], AddressBookConfig{
-		Peers: []PeerConfig{
+	host1 := makeTestHost(t, ports[0], config.LibP2PAddressBookConfig{}, false)
+	host2 := makeTestHost(t, ports[1], config.LibP2PAddressBookConfig{
+		Peers: []config.LibP2PPeerConfig{
 			{
 				Host: fmt.Sprintf("127.0.0.1:%d", ports[0]),
 				ID:   host1.ID().String(),

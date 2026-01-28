@@ -36,9 +36,9 @@ func TestHost(t *testing.T) {
 	ports := utils.GetFreePorts(t, 2)
 
 	// Given two hosts that are connected to each other
-	host1 := makeTestHost(t, ports[0], AddressBookConfig{}, true)
-	host2 := makeTestHost(t, ports[1], AddressBookConfig{
-		Peers: []PeerConfig{
+	host1 := makeTestHost(t, ports[0], config.LibP2PAddressBookConfig{}, true)
+	host2 := makeTestHost(t, ports[1], config.LibP2PAddressBookConfig{
+		Peers: []config.LibP2PPeerConfig{
 			{
 				Host: fmt.Sprintf("127.0.0.1:%d", ports[0]),
 				ID:   host1.ID().String(),
@@ -194,12 +194,7 @@ func TestHost(t *testing.T) {
 	require.ElementsMatch(t, expectedEnvelopes, envelopes)
 }
 
-func makeTestHost(
-	t *testing.T,
-	port int,
-	addressBook AddressBookConfig,
-	enableLogging bool,
-) *Host {
+func makeTestHost(t *testing.T, port int, addressBook config.LibP2PAddressBookConfig, enableLogging bool) *Host {
 	// config
 	config := config.DefaultP2PConfig()
 	config.RootDir = t.TempDir()
@@ -207,9 +202,8 @@ func makeTestHost(
 	config.ExternalAddress = fmt.Sprintf("127.0.0.1:%d", port)
 
 	config.LibP2PConfig.Enabled = true
-
-	// toggle off to enable default resource manager
 	config.LibP2PConfig.DisableResourceManager = true
+	config.LibP2PConfig.AddressBook = addressBook
 
 	// private key
 	pk := ed25519.GenPrivKey()
@@ -219,7 +213,7 @@ func makeTestHost(
 		logger = log.TestingLogger()
 	}
 
-	host, err := NewHost(config, pk, addressBook, logger)
+	host, err := NewHost(config, pk, logger)
 	require.NoError(t, err)
 
 	return host
@@ -246,7 +240,7 @@ func makeTestHosts(t *testing.T, numHosts int) []*Host {
 
 	hosts := make([]*Host, len(ports))
 	for i, port := range ports {
-		hosts[i] = makeTestHost(t, port, AddressBookConfig{}, false)
+		hosts[i] = makeTestHost(t, port, config.LibP2PAddressBookConfig{}, false)
 	}
 
 	t.Cleanup(func() {
@@ -256,4 +250,77 @@ func makeTestHosts(t *testing.T, numHosts int) []*Host {
 	})
 
 	return hosts
+}
+
+func TestBootstrapPeers(t *testing.T) {
+	t.Run("valid config with peers", func(t *testing.T) {
+		// ARRANGE
+		// Given 2 private keys
+		pk1 := ed25519.GenPrivKey()
+		pk2 := ed25519.GenPrivKey()
+
+		pkID := func(pk ed25519.PrivKey) string {
+			id, err := IDFromPrivateKey(pk)
+			require.NoError(t, err)
+			return id.String()
+		}
+
+		// Given a P2P config with libp2p enabled and address book peers
+		cfg := config.DefaultP2PConfig()
+		cfg.LibP2PConfig.AddressBook.Peers = []config.LibP2PPeerConfig{
+			{Host: "127.0.0.1:26656", ID: pkID(pk1), Private: true, Persistent: false, Unconditional: true},
+			{Host: "127.0.0.1:26657", ID: pkID(pk2), Private: false, Persistent: true, Unconditional: false},
+		}
+
+		// ACT
+		bootstrapPeers, err := BootstrapPeersFromConfig(cfg)
+
+		// ASSERT
+		require.NoError(t, err)
+		require.Len(t, bootstrapPeers, 2)
+
+		// Check first peer
+		require.Equal(t, pkID(pk1), bootstrapPeers[0].AddrInfo.ID.String())
+		require.Len(t, bootstrapPeers[0].AddrInfo.Addrs, 1)
+		require.True(t, bootstrapPeers[0].Private)
+		require.False(t, bootstrapPeers[0].Persistent)
+		require.True(t, bootstrapPeers[0].Unconditional)
+
+		// Check second peer
+		require.Equal(t, pkID(pk2), bootstrapPeers[1].AddrInfo.ID.String())
+		require.Len(t, bootstrapPeers[1].AddrInfo.Addrs, 1)
+		require.False(t, bootstrapPeers[1].Private)
+		require.True(t, bootstrapPeers[1].Persistent)
+		require.False(t, bootstrapPeers[1].Unconditional)
+	})
+
+	t.Run("invalid host format", func(t *testing.T) {
+		// ARRANGE
+		cfg := config.DefaultP2PConfig()
+		cfg.LibP2PConfig.AddressBook.Peers = []config.LibP2PPeerConfig{
+			{Host: "invalid-host", ID: "12D3KooWRqqKwyNnjwukrxXTUXLiNK838WN5tc8Nk2DnMVPbpVPV"},
+		}
+
+		// ACT
+		bootstrapPeers, err := BootstrapPeersFromConfig(cfg)
+
+		// ASSERT
+		require.Error(t, err)
+		require.Nil(t, bootstrapPeers)
+	})
+
+	t.Run("invalid peer ID", func(t *testing.T) {
+		// ARRANGE
+		cfg := config.DefaultP2PConfig()
+		cfg.LibP2PConfig.AddressBook.Peers = []config.LibP2PPeerConfig{
+			{Host: "127.0.0.1:26656", ID: "invalid-id"},
+		}
+
+		// ACT
+		bootstrapPeers, err := BootstrapPeersFromConfig(cfg)
+
+		// ASSERT
+		require.Error(t, err)
+		require.Nil(t, bootstrapPeers)
+	})
 }

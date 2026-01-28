@@ -269,7 +269,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 			return nil, fmt.Errorf("failed to make libp2p address book: %w", err)
 		}
 
-		cfg.P2P.LibP2PConfig.AddressBook = bootstrapPeers
+		cfg.P2P.LibP2PConfig.BootstrapPeers = bootstrapPeers
 	}
 
 	if node.Testnet.LogLevel != "" {
@@ -359,7 +359,7 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 }
 
 // MakeLibp2pAddressBook creates libp2p address book for a node
-func MakeLibp2pAddressBook(node *e2e.Node) (config.LibP2PAddressBookConfig, error) {
+func MakeLibp2pAddressBook(node *e2e.Node) ([]config.LibP2PBootstrapPeer, error) {
 	var (
 		peers = []config.LibP2PBootstrapPeer{}
 		cache = make(map[string]struct{})
@@ -373,7 +373,7 @@ func MakeLibp2pAddressBook(node *e2e.Node) (config.LibP2PAddressBookConfig, erro
 
 		peerID, err := lp2p.IDFromPrivateKey(nodeConfig.NodeKey)
 		if err != nil {
-			return config.LibP2PAddressBookConfig{}, fmt.Errorf("peer id for node %q: %w", nodeConfig.Name, err)
+			return nil, fmt.Errorf("peer id for node %q: %w", nodeConfig.Name, err)
 		}
 
 		// todo: come up with a generic way of determining the host:port to make it work
@@ -400,7 +400,7 @@ func MakeLibp2pAddressBook(node *e2e.Node) (config.LibP2PAddressBookConfig, erro
 		cache[nodeConfig.Name] = struct{}{}
 	}
 
-	return config.LibP2PAddressBookConfig{Peers: peers}, nil
+	return peers, nil
 }
 
 // UpdateConfigStateSync updates the state sync config for a node.

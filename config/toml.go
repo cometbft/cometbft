@@ -340,8 +340,17 @@ enabled = {{ .P2P.LibP2PConfig.Enabled }}
 # Warning! This might consume all of the system's resources.
 disable_resource_manager = {{ .P2P.LibP2PConfig.DisableResourceManager }}
 
-# Path to address book .toml file
-address_book_file = "{{ .P2P.LibP2PConfig.AddressBook }}"
+# Bootstrap peers to connect to
+# format: { host, id, private (opt), persistent (opt), unconditional (opt) }
+{{- $bps := .P2P.LibP2PConfig.BootstrapPeers -}}
+{{- if eq (len $bps) 0 -}}
+bootstrap_peers = []
+{{ else }}
+bootstrap_peers = [{{ range $bps }}
+  {{ .ToTOMLInlineString }},
+{{- end }}
+]
+{{- end }}
 
 #######################################################
 ###          Mempool Configuration Option          ###

@@ -36,17 +36,15 @@ func TestHost(t *testing.T) {
 	ports := utils.GetFreePorts(t, 2)
 
 	// Given two hosts that are connected to each other
-	host1 := makeTestHost(t, ports[0], AddressBookConfig{}, true)
-	host2 := makeTestHost(t, ports[1], AddressBookConfig{
-		Peers: []PeerConfig{
-			{
-				Host: fmt.Sprintf("127.0.0.1:%d", ports[0]),
-				ID:   host1.ID().String(),
-			},
+	host1 := makeTestHost(t, ports[0], []config.LibP2PBootstrapPeer{}, true)
+	host2 := makeTestHost(t, ports[1], []config.LibP2PBootstrapPeer{
+		{
+			Host: fmt.Sprintf("127.0.0.1:%d", ports[0]),
+			ID:   host1.ID().String(),
 		},
 	}, true)
 
-	ConnectPeers(ctx, host2, host2.ConfigPeers())
+	connectBootstrapPeers(t, ctx, host2, host2.BootstrapPeers())
 
 	t.Logf("host1: %+v", host1.AddrInfo())
 	t.Logf("host2: %+v", host2.AddrInfo())
@@ -123,11 +121,11 @@ func TestHost(t *testing.T) {
 	host2.SetStreamHandler(protoBar, handler)
 
 	// Given counter peers
-	host1Peer2, err := NewPeer(host1, host2.AddrInfo(), p2p.NopMetrics())
+	host1Peer2, err := NewPeer(host1, host2.AddrInfo(), p2p.NopMetrics(), false, false, false)
 	require.NoError(t, err, "failed to create peer 1->2")
 	require.NoError(t, host1Peer2.Start(), "failed to start peer 1->2")
 
-	host2Peer1, err := NewPeer(host2, host1.AddrInfo(), p2p.NopMetrics())
+	host2Peer1, err := NewPeer(host2, host1.AddrInfo(), p2p.NopMetrics(), false, false, false)
 	require.NoError(t, err, "failed to create peer 2->1")
 	require.NoError(t, host2Peer1.Start(), "failed to start peer 2->1")
 
@@ -194,12 +192,7 @@ func TestHost(t *testing.T) {
 	require.ElementsMatch(t, expectedEnvelopes, envelopes)
 }
 
-func makeTestHost(
-	t *testing.T,
-	port int,
-	addressBook AddressBookConfig,
-	enableLogging bool,
-) *Host {
+func makeTestHost(t *testing.T, port int, bootstrapPeers []config.LibP2PBootstrapPeer, enableLogging bool) *Host {
 	// config
 	config := config.DefaultP2PConfig()
 	config.RootDir = t.TempDir()
@@ -207,9 +200,8 @@ func makeTestHost(
 	config.ExternalAddress = fmt.Sprintf("127.0.0.1:%d", port)
 
 	config.LibP2PConfig.Enabled = true
-
-	// toggle off to enable default resource manager
 	config.LibP2PConfig.DisableResourceManager = true
+	config.LibP2PConfig.BootstrapPeers = bootstrapPeers
 
 	// private key
 	pk := ed25519.GenPrivKey()
@@ -219,8 +211,116 @@ func makeTestHost(
 		logger = log.TestingLogger()
 	}
 
-	host, err := NewHost(config, pk, addressBook, logger)
+	host, err := NewHost(config, pk, logger)
 	require.NoError(t, err)
 
 	return host
+}
+
+func connectBootstrapPeers(t *testing.T, ctx context.Context, h *Host, peers []BootstrapPeer) {
+	require.NotEmpty(t, peers, "no peers to connect to")
+
+	for _, peer := range peers {
+		// dial to self
+		if h.ID().String() == peer.AddrInfo.ID.String() {
+			continue
+		}
+
+		h.logger.Info("Connecting to peer", "peer_id", peer.AddrInfo.ID.String())
+
+		err := h.Connect(ctx, peer.AddrInfo)
+		require.NoError(t, err, "failed to connect to peer", "peer_id", peer.AddrInfo.ID.String())
+	}
+}
+
+func makeTestHosts(t *testing.T, numHosts int) []*Host {
+	ports := utils.GetFreePorts(t, numHosts)
+
+	hosts := make([]*Host, len(ports))
+	for i, port := range ports {
+		hosts[i] = makeTestHost(t, port, []config.LibP2PBootstrapPeer{}, false)
+	}
+
+	t.Cleanup(func() {
+		for _, host := range hosts {
+			host.Close()
+		}
+	})
+
+	return hosts
+}
+
+func TestBootstrapPeers(t *testing.T) {
+	t.Run("valid config with peers", func(t *testing.T) {
+		// ARRANGE
+		// Given 2 private keys
+		pk1 := ed25519.GenPrivKey()
+		pk2 := ed25519.GenPrivKey()
+
+		pkID := func(pk ed25519.PrivKey) string {
+			id, err := IDFromPrivateKey(pk)
+			require.NoError(t, err)
+			return id.String()
+		}
+
+		// Given a P2P config with libp2p enabled and address book peers
+		cfg := config.DefaultP2PConfig()
+		cfg.LibP2PConfig.BootstrapPeers = []config.LibP2PBootstrapPeer{
+			{Host: "127.0.0.1:26656", ID: pkID(pk1), Private: true, Persistent: false, Unconditional: true},
+			{Host: "127.0.0.1:26657", ID: pkID(pk2), Private: false, Persistent: true, Unconditional: false},
+			// duplicate will be ignored
+			{Host: "127.0.0.1:26657", ID: pkID(pk2), Private: false, Persistent: true, Unconditional: false},
+		}
+
+		// ACT
+		bootstrapPeers, err := BootstrapPeersFromConfig(cfg)
+
+		// ASSERT
+		require.NoError(t, err)
+		require.Len(t, bootstrapPeers, 2)
+
+		// Check first peer
+		require.Equal(t, pkID(pk1), bootstrapPeers[0].AddrInfo.ID.String())
+		require.Len(t, bootstrapPeers[0].AddrInfo.Addrs, 1)
+		require.True(t, bootstrapPeers[0].Private)
+		require.False(t, bootstrapPeers[0].Persistent)
+		require.True(t, bootstrapPeers[0].Unconditional)
+
+		// Check second peer
+		require.Equal(t, pkID(pk2), bootstrapPeers[1].AddrInfo.ID.String())
+		require.Len(t, bootstrapPeers[1].AddrInfo.Addrs, 1)
+		require.False(t, bootstrapPeers[1].Private)
+		require.True(t, bootstrapPeers[1].Persistent)
+		require.False(t, bootstrapPeers[1].Unconditional)
+	})
+
+	t.Run("invalid host format", func(t *testing.T) {
+		// ARRANGE
+		cfg := config.DefaultP2PConfig()
+		cfg.LibP2PConfig.BootstrapPeers = []config.LibP2PBootstrapPeer{
+			{Host: "invalid-host", ID: "12D3KooWRqqKwyNnjwukrxXTUXLiNK838WN5tc8Nk2DnMVPbpVPV"},
+		}
+
+		// ACT
+		bootstrapPeers, err := BootstrapPeersFromConfig(cfg)
+
+		// ASSERT
+		require.Error(t, err)
+		require.Nil(t, bootstrapPeers)
+	})
+
+	t.Run("invalid peer ID", func(t *testing.T) {
+		// ARRANGE
+		cfg := config.DefaultP2PConfig()
+		cfg.LibP2PConfig.BootstrapPeers = []config.LibP2PBootstrapPeer{
+			{Host: "127.0.0.1:26656", ID: "invalid-id"},
+		}
+
+		// ACT
+		bootstrapPeers, err := BootstrapPeersFromConfig(cfg)
+
+		// ASSERT
+		require.Error(t, err)
+		require.Nil(t, bootstrapPeers)
+	})
 }

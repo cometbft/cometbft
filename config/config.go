@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	cmterrors "github.com/cometbft/cometbft/types/errors"
@@ -636,6 +637,26 @@ type LibP2PBootstrapPeer struct {
 	Private       bool `mapstructure:"private"`
 	Persistent    bool `mapstructure:"persistent"`
 	Unconditional bool `mapstructure:"unconditional"`
+}
+
+// ToTOMLInlineString returns a TOML-formatted string representation of the peer
+func (p *LibP2PBootstrapPeer) ToTOMLInlineString() string {
+	parts := make([]string, 0, 5)
+
+	parts = append(parts, `host = "`+p.Host+`"`)
+	parts = append(parts, `id = "`+p.ID+`"`)
+
+	if p.Private {
+		parts = append(parts, "private = true")
+	}
+	if p.Persistent {
+		parts = append(parts, "persistent = true")
+	}
+	if p.Unconditional {
+		parts = append(parts, "unconditional = true")
+	}
+
+	return "{ " + strings.Join(parts, ", ") + " }"
 }
 
 // DefaultP2PConfig returns a default configuration for the peer-to-peer layer

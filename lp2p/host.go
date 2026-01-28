@@ -3,7 +3,6 @@
 package lp2p
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/cometbft/cometbft/config"
@@ -21,8 +20,19 @@ import (
 // as it's Switch's responsibility.
 type Host struct {
 	host.Host
-	logger      log.Logger
-	configPeers []peer.AddrInfo
+
+	// bootstrapPeers are initial peers specified in the address book
+	bootstrapPeers []BootstrapPeer
+
+	logger log.Logger
+}
+
+// BootstrapPeer initial peers to connect to
+type BootstrapPeer struct {
+	AddrInfo      peer.AddrInfo
+	Private       bool
+	Persistent    bool
+	Unconditional bool
 }
 
 // TransportQUIC quic transport.
@@ -30,12 +40,7 @@ type Host struct {
 const TransportQUIC = "quic-v1"
 
 // NewHost Host constructor.
-func NewHost(
-	config *config.P2PConfig,
-	nodeKey cmcrypto.PrivKey,
-	addressBook AddressBookConfig,
-	logger log.Logger,
-) (*Host, error) {
+func NewHost(config *config.P2PConfig, nodeKey cmcrypto.PrivKey, logger log.Logger) (*Host, error) {
 	if !config.LibP2PEnabled() {
 		return nil, fmt.Errorf("libp2p is disabled")
 	}
@@ -50,9 +55,12 @@ func NewHost(
 		return nil, fmt.Errorf("failed to convert %q to multiaddr: %w", config.ListenAddress, err)
 	}
 
-	peers, err := addressBook.DecodePeers()
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode peers from address book: %w", err)
+	bootstrapPeers, err := BootstrapPeersFromConfig(config)
+	switch {
+	case err != nil:
+		return nil, fmt.Errorf("failed to decode bootstrap peers: %w", err)
+	case len(bootstrapPeers) == 0:
+		logger.Info("No bootstrap peers provided in the config")
 	}
 
 	// todo: add support for libp2p.ResourceManager() based on p2p.lp2p toml config
@@ -84,9 +92,9 @@ func NewHost(
 	}
 
 	return &Host{
-		Host:        host,
-		configPeers: peers,
-		logger:      logger,
+		Host:           host,
+		bootstrapPeers: bootstrapPeers,
+		logger:         logger,
 	}, nil
 }
 
@@ -94,31 +102,39 @@ func (h *Host) AddrInfo() peer.AddrInfo {
 	return peer.AddrInfo{ID: h.ID(), Addrs: h.Addrs()}
 }
 
-func (h *Host) ConfigPeers() []peer.AddrInfo {
-	return h.configPeers
+func (h *Host) BootstrapPeers() []BootstrapPeer {
+	return h.bootstrapPeers
 }
 
 func (h *Host) Logger() log.Logger {
 	return h.logger
 }
 
-func ConnectPeers(ctx context.Context, h *Host, peers []peer.AddrInfo) {
-	if len(peers) == 0 {
-		h.logger.Info("No peers to connect to!")
-		return
-	}
+func BootstrapPeersFromConfig(config *config.P2PConfig) ([]BootstrapPeer, error) {
+	peers := make([]BootstrapPeer, 0, len(config.LibP2PConfig.BootstrapPeers))
 
-	for _, peer := range peers {
-		// dial to self
-		if h.ID().String() == peer.ID.String() {
+	// dedup
+	cache := make(map[peer.ID]struct{})
+
+	for _, bp := range config.LibP2PConfig.BootstrapPeers {
+		addr, err := AddrInfoFromHostAndID(bp.Host, bp.ID)
+		if err != nil {
+			return nil, fmt.Errorf("[%s, %s]: %w", bp.Host, bp.ID, err)
+		}
+
+		if _, ok := cache[addr.ID]; ok {
 			continue
 		}
 
-		h.logger.Info("Connecting to peer", "peer", peer.String())
+		peers = append(peers, BootstrapPeer{
+			AddrInfo:      addr,
+			Private:       bp.Private,
+			Persistent:    bp.Persistent,
+			Unconditional: bp.Unconditional,
+		})
 
-		if err := h.Connect(ctx, peer); err != nil {
-			h.logger.Error("Failed to connect to peer", "peer", peer.String(), "err", err)
-			continue
-		}
+		cache[addr.ID] = struct{}{}
 	}
+
+	return peers, nil
 }

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/test/utils"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -79,20 +80,18 @@ func testBenchLP2PUnidirectional(t *testing.T, cfg lp2pUnidirectionalConfig) {
 	// Given 2 hosts
 	ports := utils.GetFreePorts(t, 2)
 
-	host1 := makeTestHost(t, ports[0], AddressBookConfig{}, false)
-	host2 := makeTestHost(t, ports[1], AddressBookConfig{
-		Peers: []PeerConfig{
-			{
-				Host: fmt.Sprintf("127.0.0.1:%d", ports[0]),
-				ID:   host1.ID().String(),
-			},
+	host1 := makeTestHost(t, ports[0], []config.LibP2PBootstrapPeer{}, false)
+	host2 := makeTestHost(t, ports[1], []config.LibP2PBootstrapPeer{
+		{
+			Host: fmt.Sprintf("127.0.0.1:%d", ports[0]),
+			ID:   host1.ID().String(),
 		},
 	}, false)
 
 	t.Logf("host1: %+v", host1.AddrInfo().String())
 	t.Logf("host2: %+v", host2.AddrInfo().String())
 
-	ConnectPeers(ctx, host2, host2.ConfigPeers())
+	connectBootstrapPeers(t, ctx, host2, host2.BootstrapPeers())
 	t.Cleanup(func() {
 		host2.Close()
 		host1.Close()
@@ -111,7 +110,7 @@ func testBenchLP2PUnidirectional(t *testing.T, cfg lp2pUnidirectionalConfig) {
 	// Given host1 stream handler
 
 	// Given host1 as peer inside host2
-	host2peer1, err := NewPeer(host2, host1.AddrInfo(), p2p.NopMetrics())
+	host2peer1, err := NewPeer(host2, host1.AddrInfo(), p2p.NopMetrics(), false, false, false)
 	require.NoError(t, err)
 	require.NoError(t, host2peer1.Start())
 

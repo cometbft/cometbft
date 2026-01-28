@@ -4,18 +4,17 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"sync"
 	"time"
 
-	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/conn"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/mr-tron/base58/base58"
-	"github.com/pkg/errors"
 )
 
+// Peer represents a remote node connected via libp2p.
+// It implements p2p.Peer interface and wraps the libp2p connection
+// with CometBFT-specific peer attributes and messaging capabilities.
 type Peer struct {
 	service.BaseService
 
@@ -23,7 +22,13 @@ type Peer struct {
 
 	addrInfo peer.AddrInfo
 	netAddr  *p2p.NetAddress
-	metrics  *p2p.Metrics
+
+	// behavioral flags (are not mutually exclusive)
+	isPrivate       bool
+	isPersistent    bool
+	isUnconditional bool
+
+	metrics *p2p.Metrics
 }
 
 var _ p2p.Peer = (*Peer)(nil)
@@ -32,6 +37,7 @@ func NewPeer(
 	host *Host,
 	addrInfo peer.AddrInfo,
 	metrics *p2p.Metrics,
+	isPrivate, isPersistent, isUnconditional bool,
 ) (*Peer, error) {
 	netAddr, err := netAddressFromPeer(addrInfo)
 	if err != nil {
@@ -42,7 +48,12 @@ func NewPeer(
 		host:     host,
 		addrInfo: addrInfo,
 		netAddr:  netAddr,
-		metrics:  metrics,
+
+		isPrivate:       isPrivate,
+		isPersistent:    isPersistent,
+		isUnconditional: isUnconditional,
+
+		metrics: metrics,
 	}
 
 	logger := host.Logger().With("peer_id", addrInfo.ID.String())
@@ -65,6 +76,10 @@ func (p *Peer) SocketAddr() *p2p.NetAddress {
 	return p.netAddr
 }
 
+func (p *Peer) AddrInfo() peer.AddrInfo {
+	return p.addrInfo
+}
+
 func (p *Peer) Get(key string) any {
 	v, err := p.host.Peerstore().Get(p.addrInfo.ID, key)
 	if err != nil {
@@ -77,6 +92,19 @@ func (p *Peer) Get(key string) any {
 func (p *Peer) Set(key string, value any) {
 	//nolint:errcheck // always returns err=nil
 	p.host.Peerstore().Put(p.addrInfo.ID, key, value)
+}
+
+func (p *Peer) IsPersistent() bool {
+	return p.isPersistent
+}
+
+func (p *Peer) IsPrivate() bool {
+	// todo: STACK-2089
+	return p.isPrivate
+}
+
+func (p *Peer) IsUnconditional() bool {
+	return p.isUnconditional
 }
 
 // Send implements p2p.Peer.
@@ -161,11 +189,6 @@ func (p *Peer) send(e p2p.Envelope) (err error) {
 	return StreamWriteClose(s, payload)
 }
 
-func (*Peer) IsPersistent() bool {
-	// todo: STACK-1704: currently all lp2p peers are persistent
-	return true
-}
-
 // These methods are not implemented as they're not used by reactors
 // (only by PEX/p2p-transport which is not used with go-libp2p)
 
@@ -177,204 +200,3 @@ func (*Peer) IsOutbound() bool              { return false }
 func (*Peer) FlushStop()                    {}
 func (*Peer) SetRemovalFailed()             {}
 func (*Peer) GetRemovalFailed() bool        { return false }
-
-// PeerSet represents lazy-initialized peer set adapter for go-libp2p.
-type PeerSet struct {
-	host *Host
-
-	peers map[peer.ID]*Peer
-	mu    sync.RWMutex
-
-	metrics *p2p.Metrics
-	logger  log.Logger
-}
-
-var _ p2p.IPeerSet = (*PeerSet)(nil)
-
-func NewPeerSet(host *Host, metrics *p2p.Metrics, logger log.Logger) *PeerSet {
-	return &PeerSet{
-		host:    host,
-		peers:   make(map[peer.ID]*Peer),
-		mu:      sync.RWMutex{},
-		metrics: metrics,
-		logger:  logger,
-	}
-}
-
-func (p *PeerSet) Has(key p2p.ID) bool {
-	id := p.keyToPeerID(key)
-	if id == "" {
-		return false
-	}
-
-	return len(p.host.Peerstore().Addrs(id)) > 0
-}
-
-func (p *PeerSet) GetByID(id peer.ID) p2p.Peer {
-	peer, err := p.getOrAdd(id)
-	if err != nil {
-		p.logger.Error("PeerSet.GetByID failed", "peer_id", id.String(), "err", err)
-		return nil
-	}
-
-	return peer
-}
-
-func (p *PeerSet) Get(key p2p.ID) p2p.Peer {
-	id := p.keyToPeerID(key)
-	if id == "" {
-		return nil
-	}
-
-	return p.GetByID(id)
-}
-
-func (p *PeerSet) getOrAdd(id peer.ID) (*Peer, error) {
-	// use cache
-	if peer, ok := p.cacheGet(id); ok {
-		return peer, nil
-	}
-
-	// we don't want to return self
-	if p.host.ID() == id {
-		return nil, nil
-	}
-
-	addrInfo := p.host.Peerstore().PeerInfo(id)
-	if len(addrInfo.Addrs) == 0 {
-		return nil, errors.New("peer has no addresses in peerstore")
-	}
-
-	peer, err := NewPeer(p.host, addrInfo, p.metrics)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create peer")
-	}
-
-	peer.SetLogger(p.logger.With("peer_id", id.String()))
-
-	return p.cacheSet(peer), nil
-}
-
-func (p *PeerSet) Remove(key p2p.ID) {
-	if id := p.keyToPeerID(key); id != "" {
-		p.remove(id)
-	}
-}
-
-func (p *PeerSet) remove(id peer.ID) {
-	if _, ok := p.cacheGet(id); !ok {
-		// noop
-		return
-	}
-
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	// delete *Peer
-	delete(p.peers, id)
-
-	// drop kv if any
-	p.host.Peerstore().RemovePeer(id)
-}
-
-func (p *PeerSet) Size() int {
-	return len(p.existingPeerIDs())
-}
-
-func (p *PeerSet) Copy() []p2p.Peer {
-	peers := p.existingPeerIDs()
-	results := make([]p2p.Peer, 0, len(peers))
-
-	for _, id := range peers {
-		key := peerIDToKey(id)
-
-		if peer := p.Get(key); peer != nil {
-			results = append(results, peer)
-		}
-	}
-
-	return results
-}
-
-func (p *PeerSet) ForEach(lambda func(p2p.Peer)) {
-	peers := p.existingPeerIDs()
-
-	for _, id := range peers {
-		key := peerIDToKey(id)
-		peer := p.Get(key)
-
-		if peer == nil {
-			continue
-		}
-
-		lambda(peer)
-	}
-}
-
-func (p *PeerSet) Random() p2p.Peer { return nil }
-
-func (p *PeerSet) existingPeerIDs() []peer.ID {
-	hostID := p.host.ID()
-	peers := p.host.Peerstore().PeersWithAddrs()
-
-	// exclude self
-	for i := 0; i < len(peers); i++ {
-		if peers[i] == hostID {
-			peers = append(peers[:i], peers[i+1:]...)
-			break
-		}
-	}
-
-	p.logger.Debug("Existing peer IDs", "host_id", hostID, "peers", peers)
-
-	return peers
-}
-
-func (p *PeerSet) cacheGet(id peer.ID) (*Peer, bool) {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-
-	peer, ok := p.peers[id]
-
-	return peer, ok
-}
-
-func (p *PeerSet) cacheSet(peer *Peer) *Peer {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	// noop
-	if peer, ok := p.peers[peer.addrInfo.ID]; ok {
-		return peer
-	}
-
-	p.peers[peer.addrInfo.ID] = peer
-
-	return peer
-}
-
-func (p *PeerSet) keyToPeerID(key p2p.ID) peer.ID {
-	if key == "" {
-		return ""
-	}
-
-	b, err := base58.Decode(string(key))
-	if err != nil {
-		p.logger.Error("Failed to decode base58 key", "peer_key", key, "err", err)
-		return ""
-	}
-
-	id, err := peer.IDFromBytes(b)
-	if err != nil {
-		p.logger.Error("Failed to convert bytes to peer ID", "peer_key", key, "err", err)
-		return ""
-	}
-
-	return id
-}
-
-// note that peerID.String() is base58 encoded and
-// raw peerID is string([]byte)!
-func peerIDToKey(id peer.ID) p2p.ID {
-	return p2p.ID(id.String())
-}

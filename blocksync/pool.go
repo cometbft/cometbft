@@ -849,16 +849,17 @@ OUTER_LOOP:
 		}
 
 		retryTimer := time.NewTimer(requestRetrySeconds * time.Second)
-		defer retryTimer.Stop()
 
 		for {
 			select {
 			case <-bpr.pool.Quit():
+				retryTimer.Stop()
 				if err := bpr.Stop(); err != nil {
 					bpr.Logger.Error("Error stopped requester", "err", err)
 				}
 				return
 			case <-bpr.Quit():
+				retryTimer.Stop()
 				return
 			case <-retryTimer.C:
 				if !gotBlock {

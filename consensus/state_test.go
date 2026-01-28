@@ -3,6 +3,7 @@ package consensus
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -23,6 +24,7 @@ import (
 	"github.com/cometbft/cometbft/libs/protoio"
 	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/libs/service"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
@@ -2607,4 +2609,154 @@ func findBlockSizeLimit(t *testing.T, height, maxBytes int64, cs *State, partSiz
 	}
 	require.Fail(t, "We shouldn't hit the end of the loop")
 	return nil, nil
+}
+
+// ----------------------------------------------------------------------------
+// AsyncFireEvents tests
+
+func TestAsyncFireEventsConfig(t *testing.T) {
+	t.Run("disabled by default", func(t *testing.T) {
+		cs, _ := randState(1)
+		defer func() {
+			if err := cs.Stop(); err != nil {
+				t.Log("error stopping consensus state:", err)
+			}
+		}()
+
+		// When AsyncFireEvents is disabled (default), taskRunner should be nil
+		require.Nil(t, cs.taskRunner, "taskRunner should be nil when AsyncFireEvents is disabled")
+	})
+
+	t.Run("enabled via config", func(t *testing.T) {
+		cs, _ := randStateWithAsyncFireEvents(1)
+		defer func() {
+			if cs.taskRunner != nil {
+				cs.taskRunner.Stop()
+			}
+		}()
+
+		// When AsyncFireEvents is enabled, taskRunner should be set
+		require.NotNil(t, cs.taskRunner, "taskRunner should be set when AsyncFireEvents is enabled")
+	})
+
+	t.Run("task runner cleaned up on OnStart failure", func(t *testing.T) {
+		// This test verifies that if OnStart fails, the task runner goroutine
+		// spawned in NewState is properly cleaned up to prevent goroutine leaks.
+		cs, _ := randStateWithAsyncFireEvents(1)
+
+		// Verify task runner was created
+		require.NotNil(t, cs.taskRunner, "taskRunner should be set after NewState")
+
+		// Set a failing timeout ticker to cause OnStart to fail
+		cs.SetTimeoutTicker(&failingTimeoutTicker{})
+
+		// Start should fail because the timeout ticker fails
+		err := cs.Start()
+		require.Error(t, err, "Start should fail with failing timeout ticker")
+
+		// The task runner should be cleaned up (set to nil) after OnStart fails
+		require.Nil(t, cs.taskRunner, "taskRunner should be nil after OnStart failure to prevent goroutine leak")
+
+		// Calling Stop() should return ErrNotStarted (not panic or leak goroutines)
+		err = cs.Stop()
+		require.ErrorIs(t, err, service.ErrNotStarted, "Stop should return ErrNotStarted after failed Start")
+	})
+
+	t.Run("task runner recreated on OnStart retry after failure", func(t *testing.T) {
+		// This test verifies that if OnStart fails and is retried, the task runner
+		// is recreated so that events are not silently dropped.
+		cs, _ := randStateWithAsyncFireEvents(1)
+
+		// Verify task runner was created
+		require.NotNil(t, cs.taskRunner, "taskRunner should be set after NewState")
+
+		// Set a failing timeout ticker to cause OnStart to fail on first attempt
+		failingTicker := &failOnceTimeoutTicker{shouldFail: true}
+		cs.SetTimeoutTicker(failingTicker)
+
+		// First Start should fail
+		err := cs.Start()
+		require.Error(t, err, "First Start should fail")
+		require.Nil(t, cs.taskRunner, "taskRunner should be nil after OnStart failure")
+
+		// Retry Start - the ticker will succeed this time (shouldFail was set to false)
+		// This should recreate the task runner
+		err = cs.Start()
+		require.NoError(t, err, "Retry Start should succeed")
+		defer func() {
+			if err := cs.Stop(); err != nil {
+				t.Log("error stopping consensus state:", err)
+			}
+		}()
+
+		// Verify task runner was recreated
+		require.NotNil(t, cs.taskRunner, "taskRunner should be recreated on successful retry")
+	})
+}
+
+// failingTimeoutTicker is a mock TimeoutTicker that always fails on Start.
+type failingTimeoutTicker struct{}
+
+func (f *failingTimeoutTicker) Start() error {
+	return errors.New("simulated timeout ticker failure")
+}
+
+func (f *failingTimeoutTicker) Stop() error {
+	return nil
+}
+
+func (f *failingTimeoutTicker) Chan() <-chan timeoutInfo {
+	return make(chan timeoutInfo)
+}
+
+func (f *failingTimeoutTicker) ScheduleTimeout(timeoutInfo) {}
+
+func (f *failingTimeoutTicker) SetLogger(log.Logger) {}
+
+// failOnceTimeoutTicker is a mock TimeoutTicker that fails on first Start, then succeeds.
+type failOnceTimeoutTicker struct {
+	shouldFail bool
+}
+
+func (f *failOnceTimeoutTicker) Start() error {
+	if f.shouldFail {
+		f.shouldFail = false // Next call will succeed
+		return errors.New("simulated timeout ticker failure (first attempt)")
+	}
+	return nil
+}
+
+func (f *failOnceTimeoutTicker) Stop() error {
+	return nil
+}
+
+func (f *failOnceTimeoutTicker) Chan() <-chan timeoutInfo {
+	return make(chan timeoutInfo)
+}
+
+func (f *failOnceTimeoutTicker) ScheduleTimeout(timeoutInfo) {}
+
+func (f *failOnceTimeoutTicker) SetLogger(log.Logger) {}
+
+func (f *failOnceTimeoutTicker) Reset() {
+	f.shouldFail = true
+}
+
+func randStateWithAsyncFireEvents(nValidators int) (*State, []*validatorStub) {
+	c := test.ConsensusParams()
+	state, privVals := randGenesisState(nValidators, false, 10, c)
+
+	vss := make([]*validatorStub, nValidators)
+
+	thisConfig := test.ResetTestRoot("consensus_async_fire_events_test")
+	thisConfig.Consensus.AsyncFireEvents = true
+
+	cs := newStateWithConfig(thisConfig, state, privVals[0], kvstore.NewInMemoryApplication())
+
+	for i := 0; i < nValidators; i++ {
+		vss[i] = newValidatorStub(privVals[i], int32(i))
+	}
+	incrementHeight(vss[1:]...)
+
+	return cs, vss
 }

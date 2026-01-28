@@ -16,6 +16,7 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/libs/async"
 	cmtevents "github.com/cometbft/cometbft/libs/events"
 	"github.com/cometbft/cometbft/libs/fail"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
@@ -32,7 +33,10 @@ import (
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
-var msgQueueSize = 1000
+var (
+	msgQueueSize  = 1000
+	taskQueueSize = 128
+)
 
 // msgs from the reactor which may update the state
 type msgInfo struct {
@@ -135,6 +139,9 @@ type State struct {
 
 	// offline state sync height indicating to which height the node synced offline
 	offlineStateSyncHeight int64
+
+	// taskRunner executes fireEvents asynchronously when AsyncFireEvents is enabled
+	taskRunner *async.TaskRunner
 }
 
 // StateOption sets an optional parameter on the State.
@@ -166,6 +173,12 @@ func NewState(
 		evsw:             cmtevents.NewEventSwitch(),
 		metrics:          NopMetrics(),
 	}
+	if config.AsyncFireEvents {
+		runner := async.NewTaskRunner(taskQueueSize, func(r any, stack []byte) {
+			cs.Logger.Error("panic in async fireEvents", "err", r, "stack", string(stack))
+		})
+		cs.setTaskRunner(runner)
+	}
 	for _, option := range options {
 		option(cs)
 	}
@@ -195,6 +208,20 @@ func NewState(
 	cs.BaseService = *service.NewBaseService(nil, "State", cs)
 
 	return cs
+}
+
+func (cs *State) setTaskRunner(runner *async.TaskRunner) {
+	cs.taskRunner = runner
+	if runner == nil {
+		cs.blockExec.SetTaskRunner(nil)
+		return
+	}
+
+	cs.blockExec.SetTaskRunner(func(f func()) {
+		if !runner.Enqueue(f) {
+			cs.Logger.Error("failed to enqueue fireEvents task: runner stopped")
+		}
+	})
 }
 
 // SetLogger implements Service.
@@ -313,7 +340,28 @@ func (cs *State) LoadCommit(height int64) *types.Commit {
 // OnStart loads the latest state via the WAL, and starts the timeout and
 // receive routines.
 func (cs *State) OnStart() error {
-	// We may set the WAL in testing before calling Start, so only OpenWAL if it's
+	// Recreate task runner if AsyncFireEvents is enabled but the runner was
+	// previously stopped (e.g., due to a failed OnStart attempt). Without this,
+	// blockExec.asyncRunner would reference a defunct enqueue function whose
+	// done channel is closed, causing events to be silently dropped.
+	if cs.config.AsyncFireEvents && cs.taskRunner == nil {
+		runner := async.NewTaskRunner(taskQueueSize, func(r any, stack []byte) {
+			cs.Logger.Error("panic in async fireEvents", "err", r, "stack", string(stack))
+		})
+		cs.setTaskRunner(runner)
+	}
+
+	// Clean up the task runner goroutine if OnStart fails.
+	succeeded := false
+	defer func() {
+		if !succeeded && cs.taskRunner != nil {
+			runner := cs.taskRunner
+			cs.setTaskRunner(nil)
+			runner.Stop()
+		}
+	}()
+
+	// We may set the WAL in testing before calling Start, so only OpenWAL if its
 	// still the nilWAL.
 	if _, ok := cs.wal.(nilWAL); ok {
 		if err := cs.loadWalFile(); err != nil {
@@ -399,6 +447,7 @@ func (cs *State) OnStart() error {
 	rs := cs.GetRoundState()
 	cs.scheduleRound0(rs)
 
+	succeeded = true
 	return nil
 }
 
@@ -436,6 +485,12 @@ func (cs *State) OnStop() {
 		cs.Logger.Error("failed trying to stop timeoutTicket", "error", err)
 	}
 	// WAL is stopped in receiveRoutine.
+	// Stop the task runner goroutine to prevent goroutine leak.
+	if cs.taskRunner != nil {
+		runner := cs.taskRunner
+		cs.setTaskRunner(nil)
+		runner.Stop()
+	}
 }
 
 // Wait waits for the main routine to return.

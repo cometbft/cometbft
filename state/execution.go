@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/libs/async"
 	"github.com/cometbft/cometbft/libs/fail"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/mempool"
@@ -46,6 +48,8 @@ type BlockExecutor struct {
 	logger log.Logger
 
 	metrics *Metrics
+
+	asyncRunner atomic.Value
 }
 
 type BlockExecutorOption func(executor *BlockExecutor)
@@ -53,6 +57,12 @@ type BlockExecutorOption func(executor *BlockExecutor)
 func BlockExecutorWithMetrics(metrics *Metrics) BlockExecutorOption {
 	return func(blockExec *BlockExecutor) {
 		blockExec.metrics = metrics
+	}
+}
+
+func BlockExecutorWithAsyncRunner(runner async.AsyncRunner) BlockExecutorOption {
+	return func(blockExec *BlockExecutor) {
+		blockExec.SetTaskRunner(runner)
 	}
 }
 
@@ -77,6 +87,7 @@ func NewBlockExecutor(
 		metrics:    NopMetrics(),
 		blockStore: blockStore,
 	}
+	res.asyncRunner.Store(async.AsyncRunner(nil))
 
 	for _, option := range options {
 		option(res)
@@ -93,6 +104,21 @@ func (blockExec *BlockExecutor) Store() Store {
 // If not called, it defaults to types.NopEventBus.
 func (blockExec *BlockExecutor) SetEventBus(eventBus types.BlockEventPublisher) {
 	blockExec.eventBus = eventBus
+}
+
+// SetTaskRunner sets the async task runner for firing events asynchronously.
+// If not called, events are fired synchronously.
+// Must be called before concurrent block execution begins.
+func (blockExec *BlockExecutor) SetTaskRunner(runner async.AsyncRunner) {
+	blockExec.asyncRunner.Store(runner)
+}
+
+func (blockExec *BlockExecutor) getTaskRunner() async.AsyncRunner {
+	runner := blockExec.asyncRunner.Load()
+	if runner == nil {
+		return nil
+	}
+	return runner.(async.AsyncRunner)
 }
 
 // CreateProposalBlock calls state.MakeBlock with evidence from the evpool
@@ -323,9 +349,19 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 		}
 	}
 
-	// Events are fired after everything else.
-	// NOTE: if we crash between Commit and Save, events wont be fired during replay
-	fireEvents(blockExec.logger, blockExec.eventBus, block, blockID, abciResponse, validatorUpdates)
+	if _, ok := blockExec.eventBus.(types.NopEventBus); !ok {
+		// Events are fired after everything else.
+		// NOTE: if we crash between Commit and Save, events wont be fired during replay
+		task := func() {
+			fireEvents(blockExec.logger, blockExec.eventBus, block, blockID, abciResponse, validatorUpdates)
+		}
+
+		if runner := blockExec.getTaskRunner(); runner != nil {
+			runner(task)
+		} else {
+			task()
+		}
+	}
 
 	return state, nil
 }

@@ -163,18 +163,12 @@ func (pb *playback) replayReset(count int, newStepSub types.Subscription) error 
 }
 
 func (cs *State) startForReplay() {
-	cs.Logger.Error("Replay commands are disabled until someone updates them and writes tests")
-	/* TODO:!
-	// since we replay tocks we just ignore ticks
-		go func() {
-			for {
-				select {
-				case <-cs.tickChan:
-				case <-cs.Quit:
-					return
-				}
-			}
-		}()*/
+	// Start timeoutTicker to ensure timeoutRoutine runs and doesn't block on tickChan.
+	// This is needed for replay, similar to OnStart() behavior.
+	// The timeoutRoutine will handle any timeout scheduling requests during replay.
+	if err := cs.timeoutTicker.Start(); err != nil {
+		cs.Logger.Error("failed to start timeout ticker for replay", "err", err)
+	}
 }
 
 // console function for parsing input and running commands

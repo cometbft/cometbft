@@ -27,17 +27,20 @@ type Host struct {
 	logger log.Logger
 }
 
+// BootstrapPeer initial peers to connect to
+type BootstrapPeer struct {
+	AddrInfo      peer.AddrInfo
+	Private       bool
+	Persistent    bool
+	Unconditional bool
+}
+
 // TransportQUIC quic transport.
 // @see https://docs.libp2p.io/concepts/transports/quic
 const TransportQUIC = "quic-v1"
 
 // NewHost Host constructor.
-func NewHost(
-	config *config.P2PConfig,
-	nodeKey cmcrypto.PrivKey,
-	addressBook AddressBookConfig,
-	logger log.Logger,
-) (*Host, error) {
+func NewHost(config *config.P2PConfig, nodeKey cmcrypto.PrivKey, logger log.Logger) (*Host, error) {
 	if !config.LibP2PEnabled() {
 		return nil, fmt.Errorf("libp2p is disabled")
 	}
@@ -52,9 +55,12 @@ func NewHost(
 		return nil, fmt.Errorf("failed to convert %q to multiaddr: %w", config.ListenAddress, err)
 	}
 
-	bootstrapPeers, err := addressBook.BootstrapPeers()
-	if err != nil {
+	bootstrapPeers, err := BootstrapPeersFromConfig(config)
+	switch {
+	case err != nil:
 		return nil, fmt.Errorf("failed to decode bootstrap peers: %w", err)
+	case len(bootstrapPeers) == 0:
+		logger.Info("No bootstrap peers provided in the config")
 	}
 
 	// todo: add support for libp2p.ResourceManager() based on p2p.lp2p toml config
@@ -102,4 +108,33 @@ func (h *Host) BootstrapPeers() []BootstrapPeer {
 
 func (h *Host) Logger() log.Logger {
 	return h.logger
+}
+
+func BootstrapPeersFromConfig(config *config.P2PConfig) ([]BootstrapPeer, error) {
+	peers := make([]BootstrapPeer, 0, len(config.LibP2PConfig.BootstrapPeers))
+
+	// dedup
+	cache := make(map[peer.ID]struct{})
+
+	for _, bp := range config.LibP2PConfig.BootstrapPeers {
+		addr, err := AddrInfoFromHostAndID(bp.Host, bp.ID)
+		if err != nil {
+			return nil, fmt.Errorf("[%s, %s]: %w", bp.Host, bp.ID, err)
+		}
+
+		if _, ok := cache[addr.ID]; ok {
+			continue
+		}
+
+		peers = append(peers, BootstrapPeer{
+			AddrInfo:      addr,
+			Private:       bp.Private,
+			Persistent:    bp.Persistent,
+			Unconditional: bp.Unconditional,
+		})
+
+		cache[addr.ID] = struct{}{}
+	}
+
+	return peers, nil
 }

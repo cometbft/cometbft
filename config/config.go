@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	cmterrors "github.com/cometbft/cometbft/types/errors"
@@ -39,9 +40,8 @@ const (
 	DefaultPrivValKeyName   = "priv_validator_key.json"
 	DefaultPrivValStateName = "priv_validator_state.json"
 
-	DefaultNodeKeyName           = "node_key.json"
-	DefaultAddrBookName          = "addrbook.json"
-	DefaultLibP2PAddressBookName = "addressbook.toml"
+	DefaultNodeKeyName  = "node_key.json"
+	DefaultAddrBookName = "addrbook.json"
 
 	MempoolTypeFlood = "flood"
 	MempoolTypeNop   = "nop"
@@ -65,8 +65,6 @@ var (
 
 	defaultNodeKeyPath  = filepath.Join(DefaultConfigDir, DefaultNodeKeyName)
 	defaultAddrBookPath = filepath.Join(DefaultConfigDir, DefaultAddrBookName)
-
-	defaultLibP2PAddressBookPath = filepath.Join(DefaultConfigDir, DefaultLibP2PAddressBookName)
 
 	minSubscriptionBufferSize     = 100
 	defaultSubscriptionBufferSize = 200
@@ -626,8 +624,39 @@ type LibP2PConfig struct {
 	// DisableResourceManager set true to disable the resource manager
 	DisableResourceManager bool `mapstructure:"disable_resource_manager"`
 
-	// AddressBook path to the address book file (.toml format)
-	AddressBook string `mapstructure:"address_book_file"`
+	// BootstrapPeers list of peers to bootstrap the libp2p host
+	BootstrapPeers []LibP2PBootstrapPeer `mapstructure:"bootstrap_peers"`
+}
+
+type LibP2PBootstrapPeer struct {
+	// ip:port example: "192.0.2.0:65432"
+	Host string `mapstructure:"host"`
+	// id example: "12D3KooWJx9i35Vx1h6T6nVqQz4YW1r2J1Y2P2nY3N4N5N6N7N8N9N0"
+	ID string `mapstructure:"id"`
+
+	Private       bool `mapstructure:"private"`
+	Persistent    bool `mapstructure:"persistent"`
+	Unconditional bool `mapstructure:"unconditional"`
+}
+
+// ToTOMLInlineString returns a TOML-formatted string representation of the peer
+func (p *LibP2PBootstrapPeer) ToTOMLInlineString() string {
+	parts := make([]string, 0, 5)
+
+	parts = append(parts, `host = "`+p.Host+`"`)
+	parts = append(parts, `id = "`+p.ID+`"`)
+
+	if p.Private {
+		parts = append(parts, "private = true")
+	}
+	if p.Persistent {
+		parts = append(parts, "persistent = true")
+	}
+	if p.Unconditional {
+		parts = append(parts, "unconditional = true")
+	}
+
+	return "{ " + strings.Join(parts, ", ") + " }"
 }
 
 // DefaultP2PConfig returns a default configuration for the peer-to-peer layer
@@ -700,18 +729,11 @@ func (cfg *P2PConfig) LibP2PEnabled() bool {
 	return cfg.LibP2PConfig != nil && cfg.LibP2PConfig.Enabled
 }
 
-func (cfg *P2PConfig) LibP2PAddressBookFile() string {
-	if cfg.LibP2PConfig == nil {
-		return ""
-	}
-
-	return rootify(cfg.LibP2PConfig.AddressBook, cfg.RootDir)
-}
-
 func DefaultLibP2PConfig() *LibP2PConfig {
 	return &LibP2PConfig{
-		Enabled:     false,
-		AddressBook: defaultLibP2PAddressBookPath,
+		Enabled:                false,
+		DisableResourceManager: false,
+		BootstrapPeers:         []LibP2PBootstrapPeer{},
 	}
 }
 

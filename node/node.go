@@ -535,17 +535,7 @@ func NewNodeWithContext(
 			reactors = reactors[1:]
 		}
 
-		addressBook, err := lp2p.AddressBookFromConfig(config.P2P)
-		if err != nil {
-			return nil, fmt.Errorf("could not create address book: %w", err)
-		}
-
-		host, err := lp2p.NewHost(
-			config.P2P,
-			nodeKey.PrivKey,
-			addressBook,
-			p2pLogger,
-		)
+		host, err := lp2p.NewHost(config.P2P, nodeKey.PrivKey, p2pLogger)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create libp2p host: %w", err)
 		}

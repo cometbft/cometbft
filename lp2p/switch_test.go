@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/test/utils"
@@ -26,9 +27,9 @@ func TestSwitch(t *testing.T) {
 		// Given 3 hosts: A, B, C
 		// Hosts start with NO bootstrap peers
 		var (
-			hostA = makeTestHost(t, ports[0], AddressBookConfig{}, true)
-			hostB = makeTestHost(t, ports[1], AddressBookConfig{}, true)
-			hostC = makeTestHost(t, ports[2], AddressBookConfig{}, true)
+			hostA = makeTestHost(t, ports[0], []config.LibP2PBootstrapPeer{}, true)
+			hostB = makeTestHost(t, ports[1], []config.LibP2PBootstrapPeer{}, true)
+			hostC = makeTestHost(t, ports[2], []config.LibP2PBootstrapPeer{}, true)
 		)
 
 		t.Cleanup(func() {

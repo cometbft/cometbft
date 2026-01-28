@@ -50,6 +50,20 @@ func AddressToMultiAddr(addr string, transport string) (ma.Multiaddr, error) {
 	return nil, fmt.Errorf("unsupported transport: %s", transport)
 }
 
+func AddrInfoFromHostAndID(host, id string) (peer.AddrInfo, error) {
+	addr, err := AddressToMultiAddr(host, TransportQUIC)
+	if err != nil {
+		return peer.AddrInfo{}, fmt.Errorf("failed to convert host to multiaddr: %w", err)
+	}
+
+	peerID, err := peer.Decode(id)
+	if err != nil {
+		return peer.AddrInfo{}, fmt.Errorf("failed to decode id: %w", err)
+	}
+
+	return peer.AddrInfo{ID: peerID, Addrs: []ma.Multiaddr{addr}}, nil
+}
+
 // addrToQuicMultiaddr converts a given address to a QUIC multiaddr
 // example: "tcp://192.0.2.0:65432" -> "/ip4/192.0.2.0/udp/65432/quic-v1"
 func addrToQuicMultiaddr(parts *url.URL, layer4 string) (ma.Multiaddr, error) {

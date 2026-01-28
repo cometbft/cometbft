@@ -270,6 +270,8 @@ func TestBootstrapPeers(t *testing.T) {
 		cfg.LibP2PConfig.AddressBook.Peers = []config.LibP2PPeerConfig{
 			{Host: "127.0.0.1:26656", ID: pkID(pk1), Private: true, Persistent: false, Unconditional: true},
 			{Host: "127.0.0.1:26657", ID: pkID(pk2), Private: false, Persistent: true, Unconditional: false},
+			// duplicate will be ignored
+			{Host: "127.0.0.1:26657", ID: pkID(pk2), Private: false, Persistent: true, Unconditional: false},
 		}
 
 		// ACT

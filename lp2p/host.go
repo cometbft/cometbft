@@ -113,10 +113,17 @@ func (h *Host) Logger() log.Logger {
 func BootstrapPeersFromConfig(config *config.P2PConfig) ([]BootstrapPeer, error) {
 	peers := make([]BootstrapPeer, 0, len(config.LibP2PConfig.AddressBook.Peers))
 
+	// dedup
+	cache := make(map[peer.ID]struct{})
+
 	for _, peer := range config.LibP2PConfig.AddressBook.Peers {
 		addr, err := AddrInfoFromHostAndID(peer.Host, peer.ID)
 		if err != nil {
 			return nil, fmt.Errorf("[%s, %s]: %w", peer.Host, peer.ID, err)
+		}
+
+		if _, ok := cache[addr.ID]; ok {
+			continue
 		}
 
 		peers = append(peers, BootstrapPeer{
@@ -125,6 +132,8 @@ func BootstrapPeersFromConfig(config *config.P2PConfig) ([]BootstrapPeer, error)
 			Persistent:    peer.Persistent,
 			Unconditional: peer.Unconditional,
 		})
+
+		cache[addr.ID] = struct{}{}
 	}
 
 	return peers, nil

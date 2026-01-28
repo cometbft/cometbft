@@ -41,7 +41,6 @@ const (
 
 	DefaultNodeKeyName           = "node_key.json"
 	DefaultAddrBookName          = "addrbook.json"
-	DefaultLibP2PAddressBookName = "addressbook.toml"
 
 	MempoolTypeFlood = "flood"
 	MempoolTypeNop   = "nop"
@@ -631,14 +630,14 @@ type LibP2PConfig struct {
 // AddressBookConfig represents address book configuration
 // that contains a list of peer configurations for the libp2p host.
 type LibP2PAddressBookConfig struct {
-	Peers []LibP2PPeerConfig `mapstructure:"peers" toml:"peers"`
+	Peers []LibP2PPeerConfig `mapstructure:"peers"`
 }
 
 type LibP2PPeerConfig struct {
 	// ip:port example: "192.0.2.0:65432"
-	Host string `toml:"host"`
+	Host string `mapstructure:"host"`
 	// id example: "12D3KooWJx9i35Vx1h6T6nVqQz4YW1r2J1Y2P2nY3N4N5N6N7N8N9N0"
-	ID string `toml:"id"`
+	ID string `mapstructure:"id"`
 
 	Private       bool `mapstructure:"private"`
 	Persistent    bool `mapstructure:"persistent"`

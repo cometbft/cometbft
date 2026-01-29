@@ -3,16 +3,16 @@ package lp2p
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"runtime/debug"
 	"sync"
 	"time"
 
-	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/libp2p/go-libp2p/core/event"
 	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/pkg/errors"
 )
@@ -23,8 +23,6 @@ import (
 type Switch struct {
 	service.BaseService
 
-	config   *config.P2PConfig
-	nodeKey  *p2p.NodeKey // our node private key
 	nodeInfo p2p.NodeInfo // our node info
 
 	host    *Host
@@ -32,15 +30,7 @@ type Switch struct {
 
 	reactors *reactorSet
 
-	// provisionedPeers represents set of peers that are added by reactors
-	// todo should it live within peerSet?
-	provisionedPeers map[p2p.ID]struct{}
-
-	eventBusSubscription event.Subscription
-
 	metrics *p2p.Metrics
-
-	mu sync.RWMutex
 }
 
 // SwitchReactor is a pair of name and reactor.
@@ -50,14 +40,14 @@ type SwitchReactor struct {
 	Name string
 }
 
+const MaxReconnectBackoff = 5 * time.Minute
+
 var _ p2p.Switcher = (*Switch)(nil)
 
 var ErrUnsupportedPeerFormat = errors.New("unsupported peer format")
 
 // NewSwitch constructs a new Switch.
 func NewSwitch(
-	cfg *config.P2PConfig,
-	nodeKey *p2p.NodeKey,
 	nodeInfo p2p.NodeInfo,
 	host *Host,
 	reactors []SwitchReactor,
@@ -65,13 +55,10 @@ func NewSwitch(
 	logger log.Logger,
 ) (*Switch, error) {
 	s := &Switch{
-		config:   cfg,
 		nodeInfo: nodeInfo,
-		nodeKey:  nodeKey,
 
-		host:             host,
-		peerSet:          NewPeerSet(host, metrics, logger),
-		provisionedPeers: make(map[p2p.ID]struct{}),
+		host:    host,
+		peerSet: NewPeerSet(host, metrics, logger),
 
 		metrics: metrics,
 	}
@@ -87,17 +74,6 @@ func NewSwitch(
 		}
 	}
 
-	eventTypes := []any{
-		&event.EvtPeerConnectednessChanged{},
-	}
-
-	sub, err := s.host.EventBus().Subscribe(eventTypes)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to subscribe to event bus")
-	}
-
-	s.eventBusSubscription = sub
-
 	return s, nil
 }
 
@@ -106,9 +82,7 @@ func NewSwitch(
 //--------------------------------
 
 func (s *Switch) OnStart() error {
-	s.Logger.Info("Starting LibP2PSwitch")
-
-	go s.listenForEvents()
+	s.Logger.Info("Starting lib-p2p switch")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -117,14 +91,30 @@ func (s *Switch) OnStart() error {
 		s.host.SetStreamHandler(protocolID, s.handleStream)
 	}
 
+	// 1. start reactors
 	err := s.reactors.Start(protocolHandler)
 	if err != nil {
 		return fmt.Errorf("failed to start reactors: %w", err)
 	}
 
-	// connection will trigger an event for listenToEvents()
-	initialPeers := s.host.ConfigPeers()
-	ConnectPeers(ctx, s.host, initialPeers)
+	// 2. connect bootstrap peers
+	bootstrapPeers := s.host.BootstrapPeers()
+
+	for _, bp := range bootstrapPeers {
+		err := s.connectPeer(ctx, bp.AddrInfo, PeerAddOptions{
+			Private:       bp.Private,
+			Persistent:    bp.Persistent,
+			Unconditional: bp.Unconditional,
+			OnBeforeStart: s.reactors.InitPeer,
+			OnAfterStart:  s.reactors.AddPeer,
+			OnStartFailed: s.reactors.RemovePeer,
+		})
+
+		if err != nil {
+			s.Logger.Error("Unable to add bootstrap peer", "peer_id", bp.AddrInfo.String(), "err", err)
+			continue
+		}
+	}
 
 	return nil
 }
@@ -133,6 +123,7 @@ func (s *Switch) OnStop() {
 	s.Logger.Info("Stopping LibP2PSwitch")
 
 	s.reactors.Stop()
+	s.peerSet.RemoveAll(PeerRemovalOptions{Reason: "switch stopped"})
 
 	if err := s.host.Network().Close(); err != nil {
 		s.Logger.Error("failed to close network", "err", err)
@@ -141,12 +132,6 @@ func (s *Switch) OnStop() {
 	if err := s.host.Peerstore().Close(); err != nil {
 		s.Logger.Error("failed to close peerstore", "err", err)
 	}
-
-	if err := s.eventBusSubscription.Close(); err != nil {
-		s.Logger.Error("failed to close event bus subscription", "err", err)
-	}
-
-	// todo disconnect from config peers!
 }
 
 func (s *Switch) NodeInfo() p2p.NodeInfo {
@@ -209,23 +194,9 @@ func (s *Switch) MaxNumOutboundPeers() int {
 	return 0
 }
 
-// AddPersistentPeers addrs peers in a format of id@ip:port
-func (s *Switch) AddPersistentPeers(addrs []string) error {
-	// since lib-p2p relies on multiaddr format, we can't use it
-	return ErrUnsupportedPeerFormat
-}
-
-// AddPrivatePeerIDs ids peers in a format of Comet peer id
-func (s *Switch) AddPrivatePeerIDs(ids []string) error {
-	// since lib-p2p relies on multiaddr format, we can't use it
-	return ErrUnsupportedPeerFormat
-}
-
-// AddUnconditionalPeerIDs ids peers in a format of Comet peer id
-func (s *Switch) AddUnconditionalPeerIDs(ids []string) error {
-	// since lib-p2p relies on multiaddr format, we can't use it
-	return ErrUnsupportedPeerFormat
-}
+func (s *Switch) AddPersistentPeers(addrs []string) error    { return ErrUnsupportedPeerFormat }
+func (s *Switch) AddPrivatePeerIDs(ids []string) error       { return ErrUnsupportedPeerFormat }
+func (s *Switch) AddUnconditionalPeerIDs(ids []string) error { return ErrUnsupportedPeerFormat }
 
 func (s *Switch) DialPeerWithAddress(_ *p2p.NetAddress) error {
 	// used only by PEX
@@ -246,17 +217,37 @@ func (s *Switch) StopPeerGracefully(_ p2p.Peer) {
 }
 
 func (s *Switch) StopPeerForError(peer p2p.Peer, reason any) {
-	s.Logger.Info("Stopping peer for error", "peer", peer, "reason", reason)
-
+	// should not happen
 	p, ok := peer.(*Peer)
 	if !ok {
-		s.Logger.Error("Peer is not a lp2p.Peer", "peer", peer, "reason", reason)
 		return
 	}
 
-	if err := s.deprovisionPeer(p, reason); err != nil {
-		s.Logger.Error("Failed to deprovision peer", "peer", peer, "err", err)
+	key := p.ID()
+
+	removalOpts := PeerRemovalOptions{
+		Reason:      reason,
+		OnAfterStop: s.reactors.RemovePeer,
 	}
+
+	if err := s.peerSet.Remove(key, removalOpts); err != nil {
+		s.Logger.Error("Failed to remove peer", "peer_id", key, "err", err)
+		return
+	}
+
+	// reconnect logic
+	if !p.IsPersistent() {
+		return
+	}
+
+	go s.reconnectPeer(p.AddrInfo(), MaxReconnectBackoff, PeerAddOptions{
+		Persistent:    p.IsPersistent(),
+		Unconditional: p.IsUnconditional(),
+		Private:       p.IsPrivate(),
+		OnBeforeStart: s.reactors.InitPeer,
+		OnAfterStart:  s.reactors.AddPeer,
+		OnStartFailed: s.reactors.RemovePeer,
+	})
 }
 
 func (s *Switch) IsDialingOrExistingAddress(addr *p2p.NetAddress) bool {
@@ -264,14 +255,22 @@ func (s *Switch) IsDialingOrExistingAddress(addr *p2p.NetAddress) bool {
 	return false
 }
 
-func (s *Switch) IsPeerPersistent(_ *p2p.NetAddress) bool {
-	s.logUnimplemented("IsPeerPersistent")
-	return false
+func (s *Switch) IsPeerPersistent(netAddr *p2p.NetAddress) bool {
+	p := s.peerSet.Get(netAddr.ID)
+	if p == nil {
+		return false
+	}
+
+	return p.(*Peer).IsPersistent()
 }
 
 func (s *Switch) IsPeerUnconditional(id p2p.ID) bool {
-	// todo: add support for unconditional peers (used by mempool reactor)
-	return false
+	p := s.peerSet.Get(id)
+	if p == nil {
+		return false
+	}
+
+	return p.(*Peer).IsUnconditional()
 }
 
 func (s *Switch) MarkPeerAsGood(_ p2p.Peer) {
@@ -348,11 +347,21 @@ func (s *Switch) handleStream(stream network.Stream) {
 		protocolID = stream.Protocol()
 	)
 
+	if !s.IsRunning() {
+		s.Log().Debug(
+			"Ignoring stream from inactive switch",
+			"peer_id", peerID.String(),
+			"protocol", protocolID,
+		)
+		_ = stream.Reset()
+		return
+	}
+
 	defer func() {
 		if r := recover(); r != nil {
 			s.Logger.Error(
 				"Panic in (*lp2p.Switch).handleStream",
-				"peer", peerID,
+				"peer_id", peerID.String(),
 				"protocol", protocolID,
 				"panic", r,
 				"stack", string(debug.Stack()),
@@ -370,14 +379,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 		return
 	}
 
-	// 2. Retrieve the peer from the peerSet
-	peer := s.peerSet.Get(peerIDToKey(peerID))
-	if peer == nil {
-		s.Logger.Error("Unable to get peer from peerSet", "peer", peerID)
-		return
-	}
-
-	// 3. Read the stream so we can "release" it on another end
+	// 2. Read the stream so we can "release" it on another end
 	payload, err := StreamReadClose(stream)
 	if err != nil {
 		s.Logger.Error("Failed to read payload", "protocol", protocolID, "err", err)
@@ -390,9 +392,10 @@ func (s *Switch) handleStream(stream network.Stream) {
 		return
 	}
 
-	// 4. Ensure peer is provisioned
-	if err := s.ensurePeerProvisioned(peer); err != nil {
-		s.Logger.Error("Failed to ensure peer is provisioned", "peer", peerID, "err", err)
+	// 3. Retrieve the peer from the peerSet (or provision if it's not)
+	peer, err := s.resolvePeer(peerID)
+	if err != nil {
+		s.Logger.Error("Failed to resolve peer", "peer_id", peerID.String(), "err", err)
 		return
 	}
 
@@ -412,7 +415,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 
 	s.Logger.Debug(
 		"Received stream envelope. Submitting to reactor",
-		"peer", peerID,
+		"peer_id", peerID.String(),
 		"protocol", protocolID,
 		"message_type", messageType,
 		"payload_len", payloadLen,
@@ -429,131 +432,107 @@ func (s *Switch) handleStream(stream network.Stream) {
 	s.reactors.Receive(reactor.name, messageType, envelope, priority)
 }
 
-func (s *Switch) ensurePeerProvisioned(peer p2p.Peer) error {
-	s.mu.RLock()
-	_, exists := s.provisionedPeers[peer.ID()]
-	s.mu.RUnlock()
+func (s *Switch) resolvePeer(id peer.ID) (p2p.Peer, error) {
+	key := peerIDToKey(id)
 
-	// noop
-	if exists {
-		return nil
+	// peer exists (99% of the time)
+	if peer := s.peerSet.Get(key); peer != nil {
+		return peer, nil
 	}
 
-	// should not happen
-	p, ok := peer.(*Peer)
-	if !ok {
-		return errors.New("peer is not a lp2p.Peer")
+	// let's try to provision it
+	opts := PeerAddOptions{
+		Private:       false,
+		Persistent:    false,
+		Unconditional: false,
+		OnBeforeStart: s.reactors.InitPeer,
+		OnAfterStart:  s.reactors.AddPeer,
+		OnStartFailed: s.reactors.RemovePeer,
 	}
 
-	return s.provisionPeer(p)
+	peer, err := s.peerSet.Add(id, opts)
+	switch {
+	case errors.Is(err, ErrPeerExists):
+		// tolerate two concurrent peer additions
+		if p := s.peerSet.Get(key); p != nil {
+			return p, nil
+		}
+
+		// should not happen
+		return nil, errors.Wrap(err, "peer exists but not found")
+	case err != nil:
+		return nil, errors.Wrap(err, "unable to add peer")
+	default:
+		return peer, nil
+	}
 }
 
-// effectively called once per peer. note that we don't need to start Peer as with Comet's Peer
-// because it's a thin wrapper and it doesn't handle streams
-func (s *Switch) provisionPeer(peer *Peer) error {
-	// todo filter peers ? we should use ConnGater instead
-
-	// should not happen
-	if !s.IsRunning() {
-		return errors.New("switch is not running")
+// connectPeer connects a peer to the host. should be used only during switch start.
+func (s *Switch) connectPeer(ctx context.Context, addrInfo peer.AddrInfo, opts PeerAddOptions) error {
+	if err := s.host.Connect(ctx, addrInfo); err != nil {
+		return errors.Wrap(err, "unable to connect to peer")
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	// noop - might be the case during init phase.
-	if _, ok := s.provisionedPeers[peer.ID()]; ok {
-		return nil
+	if _, err := s.peerSet.Add(addrInfo.ID, opts); err != nil {
+		return errors.Wrap(err, "unable to add peer")
 	}
-
-	s.Logger.Info("Provisioning peer", "peer_id", peer.ID())
-
-	s.reactors.InitPeer(peer)
-
-	if err := peer.Start(); err != nil {
-		return errors.Wrap(err, "failed to start peer")
-	}
-
-	s.reactors.AddPeer(peer)
-
-	s.provisionedPeers[peer.ID()] = struct{}{}
-
-	s.metrics.Peers.Add(1)
 
 	return nil
 }
 
-func (s *Switch) deprovisionPeer(peer *Peer, reason any) error {
-	key := peer.ID()
-	id := peer.addrInfo.ID
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.peerSet.Remove(key)
-
-	if err := peer.Stop(); err != nil {
-		return errors.Wrap(err, "failed to stop peer")
-	}
-
-	s.reactors.RemovePeer(peer, reason)
-
-	if err := s.host.Network().ClosePeer(id); err != nil {
-		s.Logger.Error("Failed to close peer", "peer", peer, "err", err)
-	}
-
-	delete(s.provisionedPeers, key)
-
-	s.metrics.Peers.Add(-1)
-
-	return nil
-}
-
-func (s *Switch) listenForEvents() {
+// reconnectPeer reconnects persistent peers back to the host.
+// uses exponential backoff to reconnect.
+func (s *Switch) reconnectPeer(addrInfo peer.AddrInfo, backoffMax time.Duration, opts PeerAddOptions) {
 	defer func() {
 		if r := recover(); r != nil {
-			s.Logger.Error("Panic in (*lp2p.Switch).eventListener", "panic", r)
+			s.Logger.Error("Panic in (*lp2p.Switch).reconnectTo", "panic", r)
 		}
 	}()
 
-	s.Logger.Info("Starting event listener")
+	ctx := network.WithDialPeerTimeout(context.Background(), 3*time.Second)
 
-	for msg := range s.eventBusSubscription.Out() {
-		switch tt := msg.(type) {
-		case event.EvtPeerConnectednessChanged:
-			if err := s.onPeerStatusChanged(tt); err != nil {
-				s.Logger.Error(
-					"Failed to handle onPeerConnectednessChanged",
-					"err", err,
-					"peer", tt.Peer.String(),
-					"status", tt.Connectedness.String(),
-				)
-			}
-		default:
-			s.Logger.Error("Unknown event type skipped", "type", fmt.Sprintf("%T", tt))
+	backoff := 1 * time.Second
+	sleep := func() {
+		jitter := time.Duration(rand.Intn(100)) * time.Millisecond
+		time.Sleep(backoff + jitter)
+
+		backoff *= 2
+		if backoffMax > 0 && backoff > backoffMax {
+			backoff = backoffMax
 		}
 	}
-}
 
-// onPeerStatusChanged hooks to lib-p2p event bus and handles peer status changes
-func (s *Switch) onPeerStatusChanged(e event.EvtPeerConnectednessChanged) error {
-	s.Logger.Info("Peer status update", "peer", e.Peer.String(), "status", e.Connectedness.String())
+	for {
+		if !s.IsRunning() {
+			return
+		}
 
-	peer := s.peerSet.GetByID(e.Peer)
-	if peer == nil {
-		s.Logger.Error("Empty peer (onPeerStatusChanged)", "peer", e.Peer.String())
-		return nil
+		// 1. ensure connection (dial or noop if already connected)
+		if err := s.host.Connect(ctx, addrInfo); err != nil {
+			s.Logger.Error(
+				"Failed to reconnect to peer",
+				"peer_id", addrInfo.ID.String(),
+				"err", err,
+				"backoff", backoff.String(),
+			)
+
+			sleep()
+			continue
+		}
+
+		// 2. add peer to the peer set
+		_, err := s.peerSet.Add(addrInfo.ID, opts)
+		if err == nil || errors.Is(err, ErrPeerExists) {
+			s.Logger.Info("Reconnected to peer", "peer_id", addrInfo.ID.String())
+			return
+		}
+
+		s.Logger.Error(
+			"Failed to add peer after reconnection",
+			"peer_id", addrInfo.ID.String(),
+			"err", err,
+			"backoff", backoff.String(),
+		)
+		sleep()
 	}
-
-	// We treat ANY status other than Connected as disconnected
-	// Available statuses: [NotConnected, Connected, CanConnect, CannotConnect, Limited]
-	if e.Connectedness == network.Connected {
-		return s.ensurePeerProvisioned(peer)
-	}
-
-	reason := fmt.Sprintf("peer status changed to %s", e.Connectedness.String())
-
-	s.StopPeerForError(peer, reason)
-
-	return nil
 }

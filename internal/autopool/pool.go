@@ -130,9 +130,9 @@ func (p *Pool[T]) Start() {
 // safe to call multiple times
 func (p *Pool[T]) Stop() {
 	p.mu.Lock()
-	defer p.mu.Unlock()
 
 	if p.stopped() || len(p.workers) == 0 {
+		p.mu.Unlock()
 		return
 	}
 
@@ -146,11 +146,16 @@ func (p *Pool[T]) Stop() {
 		p.removeWorker(id)
 	}
 
+	// close stop chan first (!)
+	close(p.stoppedCh)
+	close(p.inbound)
+
+	// unblock read operations
+	p.mu.Unlock()
+
 	p.logger.Info("Waiting for workers to finish")
 	p.workersWg.Wait()
-
-	close(p.inbound)
-	close(p.stoppedCh)
+	p.logger.Info("Stopped pool")
 }
 
 // Push adds a message directly to the pool FIFO queue.
@@ -211,9 +216,8 @@ func (w *worker[T]) run() {
 			// worker received a close signal
 			return
 		case msg, ok := <-w.pool.inbound:
-			// channel is closed for all workers, stop the whole pool
+			// channel is closed, pool is stopping - just exit
 			if !ok {
-				w.pool.Stop()
 				return
 			}
 

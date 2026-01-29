@@ -135,9 +135,7 @@ func TestSwitch(t *testing.T) {
 		require.NoError(t, err)
 
 		// Connect A to B as a NON-persistent peer
-		err = switchA.connectPeer(ctx, hostB.AddrInfo(), PeerAddOptions{
-			Persistent: false,
-		})
+		err = switchA.connectPeer(ctx, hostB.AddrInfo(), PeerAddOptions{})
 		require.NoError(t, err)
 
 		peerB := switchA.Peers().Get(peerIDToKey(hostB.ID()))
@@ -167,7 +165,7 @@ func TestSwitch(t *testing.T) {
 		validatePeerReconnected := func() bool {
 			return switchA.Peers().Size() == 1
 		}
-		require.Eventually(t, validatePeerReconnected, 10*time.Second, 100*time.Millisecond, "B should be reconnected after transient error")
+		require.Eventually(t, validatePeerReconnected, 10*time.Second, 100*time.Millisecond, "B should be reconnected")
 
 		// Verify the reconnected peer is B
 		reconnectedPeer := switchA.Peers().Get(peerIDToKey(hostB.ID()))

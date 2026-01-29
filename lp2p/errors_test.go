@@ -11,7 +11,7 @@ import (
 func TestErrors(t *testing.T) {
 	t.Run("TransientErrorFromAny", func(t *testing.T) {
 		innerErr := errors.New("connection reset")
-		transientErr := ErrorTransient{Err: innerErr}
+		transientErr := &ErrorTransient{Err: innerErr}
 
 		for _, tt := range []struct {
 			name    string

@@ -10,8 +10,12 @@ type ErrorTransient struct {
 	Err error
 }
 
-func (e ErrorTransient) Error() string {
+func (e *ErrorTransient) Error() string {
 	return fmt.Sprintf("transient error: %s", e.Err.Error())
+}
+
+func (e *ErrorTransient) Unwrap() error {
+	return e.Err
 }
 
 func TransientErrorFromAny(v any) (*ErrorTransient, bool) {
@@ -20,8 +24,8 @@ func TransientErrorFromAny(v any) (*ErrorTransient, bool) {
 		return nil, false
 	}
 
-	te := &ErrorTransient{}
-	if !errors.As(err, te) {
+	var te *ErrorTransient
+	if !errors.As(err, &te) {
 		return nil, false
 	}
 

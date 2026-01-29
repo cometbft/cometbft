@@ -3,6 +3,7 @@ package lp2p
 import (
 	"bytes"
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -100,6 +101,81 @@ func TestSwitch(t *testing.T) {
 
 		// Check for expected log messages
 		require.Contains(t, logBuffer.String(), "Removing peer")
+		require.Contains(t, logBuffer.String(), "Reconnected to peer")
+	})
+
+	t.Run("ErrorTransientReconnect", func(t *testing.T) {
+		// ARRANGE
+		var (
+			ctx       = context.Background()
+			ports     = utils.GetFreePorts(t, 2)
+			logBuffer = &syncBuffer{}
+			logger    = log.NewTMLogger(logBuffer)
+		)
+
+		// Given 2 hosts: A and B
+		var (
+			hostA = makeTestHost(t, ports[0], []config.LibP2PBootstrapPeer{}, true)
+			hostB = makeTestHost(t, ports[1], []config.LibP2PBootstrapPeer{}, true)
+		)
+
+		t.Cleanup(func() {
+			hostB.Close()
+			hostA.Close()
+		})
+
+		// Given switch A
+		switchA, err := NewSwitch(
+			nil,
+			hostA,
+			[]SwitchReactor{},
+			p2p.NopMetrics(),
+			logger.With("switch", "A"),
+		)
+		require.NoError(t, err)
+
+		// Connect A to B as a NON-persistent peer
+		err = switchA.connectPeer(ctx, hostB.AddrInfo(), PeerAddOptions{
+			Persistent: false,
+		})
+		require.NoError(t, err)
+
+		peerB := switchA.Peers().Get(peerIDToKey(hostB.ID()))
+		require.NotNil(t, peerB)
+		require.False(t, peerB.(*Peer).IsPersistent())
+
+		// ACT #1: Start switch A
+		require.NoError(t, switchA.Start())
+		t.Cleanup(func() {
+			_ = switchA.Stop()
+		})
+
+		// ASSERT #1: Switch A has 1 peer
+		require.Equal(t, 1, switchA.Peers().Size())
+
+		// ACT #2: Stop peer B with a TRANSIENT error (should trigger reconnection)
+		transientErr := &ErrorTransient{Err: errors.New("something went wrong")}
+		switchA.StopPeerForError(peerB, transientErr)
+
+		// ASSERT #2: Peer B is removed initially
+		validatePeerRemoved := func() bool {
+			return switchA.Peers().Size() == 0 && peerB.IsRunning() == false
+		}
+		require.Eventually(t, validatePeerRemoved, time.Second, 50*time.Millisecond, "B should be removed")
+
+		// ASSERT #3: Peer B is reconnected (transient error triggers reconnection)
+		validatePeerReconnected := func() bool {
+			return switchA.Peers().Size() == 1
+		}
+		require.Eventually(t, validatePeerReconnected, 10*time.Second, 100*time.Millisecond, "B should be reconnected after transient error")
+
+		// Verify the reconnected peer is B
+		reconnectedPeer := switchA.Peers().Get(peerIDToKey(hostB.ID()))
+		require.NotNil(t, reconnectedPeer)
+
+		// Check for expected log messages
+		require.Contains(t, logBuffer.String(), "Removing peer")
+		require.Contains(t, logBuffer.String(), "Will reconnect to peer after transient error")
 		require.Contains(t, logBuffer.String(), "Reconnected to peer")
 	})
 }

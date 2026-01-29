@@ -235,8 +235,17 @@ func (s *Switch) StopPeerForError(peer p2p.Peer, reason any) {
 		return
 	}
 
-	// reconnect logic
-	if !p.IsPersistent() {
+	shouldReconnect := false
+
+	if p.IsPersistent() {
+		shouldReconnect = true
+		s.Logger.Info("Will reconnect to peer", "peer_id", key, "err", reason)
+	} else if errTransient, ok := TransientErrorFromAny(reason); ok {
+		shouldReconnect = true
+		s.Logger.Info("Will reconnect to peer after transient error", "peer_id", key, "err", errTransient.Err)
+	}
+
+	if !shouldReconnect {
 		return
 	}
 

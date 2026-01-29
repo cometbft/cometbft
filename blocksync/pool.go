@@ -663,7 +663,7 @@ func newBPRequester(pool *BlockPool, height int64) *bpRequester {
 		pool:        pool,
 		height:      height,
 		gotBlockCh:  make(chan struct{}, 1),
-		redoCh:      make(chan p2p.ID, 1),
+		redoCh:      make(chan p2p.ID, 2), // accommodates both primary and secondary peers
 		newHeightCh: make(chan int64, 1),
 
 		peerID:       "",
@@ -838,6 +838,22 @@ func (bpr *bpRequester) newHeight(height int64) {
 // Returns only when a block is found (e.g. AddBlock() is called)
 func (bpr *bpRequester) requestRoutine() {
 	gotBlock := false
+	retryTimer := time.NewTimer(requestRetrySeconds * time.Second)
+	stopTimer := func() {
+		// Reset requires the timer be drained if it already fired. Keep the explicit
+		// drain so stale events don't trigger spurious retries between iterations.
+		if !retryTimer.Stop() {
+			select {
+			case <-retryTimer.C:
+			default:
+			}
+		}
+	}
+	defer stopTimer()
+	resetTimer := func() {
+		stopTimer()
+		retryTimer.Reset(requestRetrySeconds * time.Second)
+	}
 
 OUTER_LOOP:
 	for {
@@ -848,17 +864,18 @@ OUTER_LOOP:
 			bpr.pickSecondPeerAndSendRequest()
 		}
 
-		retryTimer := time.NewTimer(requestRetrySeconds * time.Second)
-		defer retryTimer.Stop()
+		resetTimer()
 
 		for {
 			select {
 			case <-bpr.pool.Quit():
+				stopTimer()
 				if err := bpr.Stop(); err != nil {
 					bpr.Logger.Error("Error stopped requester", "err", err)
 				}
 				return
 			case <-bpr.Quit():
+				stopTimer()
 				return
 			case <-retryTimer.C:
 				if !gotBlock {
@@ -877,7 +894,7 @@ OUTER_LOOP:
 				// If both peers returned NoBlockResponse or bad block, reschedule both
 				// requests. If not, wait for the other peer.
 				if len(bpr.requestedFrom()) == 0 {
-					retryTimer.Stop()
+					stopTimer()
 					continue OUTER_LOOP
 				}
 			case newHeight := <-bpr.newHeightCh:
@@ -887,10 +904,7 @@ OUTER_LOOP:
 					// If the second peer was just set, reset the retryTimer to give the
 					// second peer a chance to respond.
 					if picked := bpr.pickSecondPeerAndSendRequest(); picked {
-						if !retryTimer.Stop() {
-							<-retryTimer.C
-						}
-						retryTimer.Reset(requestRetrySeconds * time.Second)
+						resetTimer()
 					}
 				}
 			case <-bpr.gotBlockCh:

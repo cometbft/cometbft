@@ -48,6 +48,12 @@ func TestSwitch(t *testing.T) {
 		)
 		require.NoError(t, err)
 
+		// Connect host to itself should result in no-op
+		err = switchA.connectPeer(ctx, hostA.AddrInfo(), PeerAddOptions{
+			Persistent: false,
+		})
+		require.NoError(t, err)
+
 		// Connect host A to B (non-persistent) and C (persistent)
 		err = switchA.connectPeer(ctx, hostB.AddrInfo(), PeerAddOptions{
 			Persistent: false,

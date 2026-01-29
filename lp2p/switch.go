@@ -481,6 +481,11 @@ func (s *Switch) resolvePeer(id peer.ID) (p2p.Peer, error) {
 
 // connectPeer connects a peer to the host. should be used only during switch start.
 func (s *Switch) connectPeer(ctx context.Context, addrInfo peer.AddrInfo, opts PeerAddOptions) error {
+	if addrInfo.ID == s.host.ID() {
+		s.Logger.Info("Ignoring connection to self")
+		return nil
+	}
+
 	if err := s.host.Connect(ctx, addrInfo); err != nil {
 		return errors.Wrap(err, "unable to connect to peer")
 	}

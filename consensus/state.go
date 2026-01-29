@@ -768,6 +768,7 @@ func (cs *State) newStep() {
 		}
 
 		cs.evsw.FireEvent(types.EventNewRoundStep, cs.RoundState)
+		cs.evsw.FireEvent(types.EventNewConsensusParams, cs.state.ConsensusParams)
 	}
 }
 

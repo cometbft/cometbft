@@ -50,6 +50,9 @@ type Reactor struct {
 	rs            cstypes.RoundState // copy of consensus state
 	initialHeight atomic.Int64
 
+	cpMtx cmtsync.RWMutex
+	cp    types.ConsensusParams // copy of latest blocks consensus params
+
 	Metrics *Metrics
 }
 
@@ -63,6 +66,7 @@ func NewReactor(consensusState *State, waitSync bool, options ...ReactorOption) 
 		rs:            consensusState.getRoundState(),
 		initialHeight: atomic.Int64{},
 		Metrics:       NopMetrics(),
+		cp:            consensusState.state.ConsensusParams,
 	}
 	conR.initialHeight.Store(consensusState.state.InitialHeight)
 	conR.BaseReactor = *p2p.NewBaseReactor("Consensus", conR)
@@ -328,9 +332,9 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		}
 		switch msg := msg.(type) {
 		case *ProposalMessage:
-			conR.conS.mtx.RLock()
-			maxBytes := conR.conS.state.ConsensusParams.Block.MaxBytes
-			conR.conS.mtx.RUnlock()
+			conR.cpMtx.RLock()
+			maxBytes := conR.cp.Block.MaxBytes
+			conR.cpMtx.RUnlock()
 			if err := msg.Proposal.ValidateBlockSize(maxBytes); err != nil {
 				conR.Logger.Error("Rejecting oversized proposal", "peer", e.Src, "height", msg.Proposal.Height)
 				conR.Switch.StopPeerForError(e.Src, ErrProposalTooManyParts)
@@ -421,7 +425,9 @@ func (conR *Reactor) WaitSync() bool {
 // them to peers upon receiving.
 func (conR *Reactor) subscribeToBroadcastEvents() {
 	const subscriber = "consensus-reactor"
-	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventNewRoundStep,
+	err := conR.conS.evsw.AddListenerForEvent(
+		subscriber,
+		types.EventNewRoundStep,
 		func(data cmtevents.EventData) {
 			rs := data.(cstypes.RoundState)
 
@@ -429,11 +435,15 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 			conR.updateRoundState(&rs)
 
 			conR.broadcastNewRoundStepMessage(&rs)
-		}); err != nil {
-		conR.Logger.Error("Error adding listener for events", "err", err)
+		},
+	)
+	if err != nil {
+		conR.Logger.Error("Error adding listener for NewRoundStep events", "err", err)
 	}
 
-	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventValidBlock,
+	err = conR.conS.evsw.AddListenerForEvent(
+		subscriber,
+		types.EventValidBlock,
 		func(data cmtevents.EventData) {
 			rs := data.(cstypes.RoundState)
 
@@ -441,11 +451,15 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 			conR.updateRoundState(&rs)
 
 			conR.broadcastNewValidBlockMessage(&rs)
-		}); err != nil {
-		conR.Logger.Error("Error adding listener for events", "err", err)
+		},
+	)
+	if err != nil {
+		conR.Logger.Error("Error adding listener for ValidBlock events", "err", err)
 	}
 
-	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventVote,
+	err = conR.conS.evsw.AddListenerForEvent(
+		subscriber,
+		types.EventVote,
 		func(data cmtevents.EventData) {
 			conR.broadcastHasVoteMessage(data.(*types.Vote))
 
@@ -455,9 +469,32 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 			// instead
 			rs := conR.conS.getRoundState()
 			conR.updateRoundState(&rs)
-		}); err != nil {
-		conR.Logger.Error("Error adding listener for events", "err", err)
+		},
+	)
+	if err != nil {
+		conR.Logger.Error("Error adding listener for Vote events", "err", err)
 	}
+
+	err = conR.conS.evsw.AddListenerForEvent(
+		subscriber,
+		types.EventNewConsensusParams,
+		func(data cmtevents.EventData) {
+			cp := data.(types.ConsensusParams)
+
+			// update reactors view of current consensus params
+			conR.updateConsensusParams(cp)
+		},
+	)
+	if err != nil {
+		conR.Logger.Error("Error adding listener for NewConsensusParams event", "err", err)
+	}
+}
+
+// Safely update the reactor's view of most recent consensus params.
+func (conR *Reactor) updateConsensusParams(cp types.ConsensusParams) {
+	conR.cpMtx.Lock()
+	defer conR.cpMtx.Unlock()
+	conR.cp = cp
 }
 
 // Safely update the reactor's view of round state.

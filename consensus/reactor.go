@@ -50,8 +50,8 @@ type Reactor struct {
 	rs            cstypes.RoundState // copy of consensus state
 	initialHeight atomic.Int64
 
-	cpMtx cmtsync.RWMutex
-	cp    types.ConsensusParams // copy of latest blocks consensus params
+	consensusParamsMtx cmtsync.RWMutex
+	consensusParams    types.ConsensusParams // copy of latest blocks consensus params
 
 	Metrics *Metrics
 }
@@ -61,12 +61,12 @@ type ReactorOption func(*Reactor)
 // NewReactor returns a new Reactor with the given consensusState.
 func NewReactor(consensusState *State, waitSync bool, options ...ReactorOption) *Reactor {
 	conR := &Reactor{
-		conS:          consensusState,
-		waitSync:      atomic.Bool{},
-		rs:            consensusState.getRoundState(),
-		initialHeight: atomic.Int64{},
-		Metrics:       NopMetrics(),
-		cp:            consensusState.state.ConsensusParams,
+		conS:            consensusState,
+		waitSync:        atomic.Bool{},
+		rs:              consensusState.getRoundState(),
+		initialHeight:   atomic.Int64{},
+		Metrics:         NopMetrics(),
+		consensusParams: consensusState.state.ConsensusParams,
 	}
 	conR.initialHeight.Store(consensusState.state.InitialHeight)
 	conR.BaseReactor = *p2p.NewBaseReactor("Consensus", conR)
@@ -332,9 +332,9 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		}
 		switch msg := msg.(type) {
 		case *ProposalMessage:
-			conR.cpMtx.RLock()
-			maxBytes := conR.cp.Block.MaxBytes
-			conR.cpMtx.RUnlock()
+			conR.consensusParamsMtx.RLock()
+			maxBytes := conR.consensusParams.Block.MaxBytes
+			conR.consensusParamsMtx.RUnlock()
 			if err := msg.Proposal.ValidateBlockSize(maxBytes); err != nil {
 				conR.Logger.Error("Rejecting oversized proposal", "peer", e.Src, "height", msg.Proposal.Height)
 				conR.Switch.StopPeerForError(e.Src, ErrProposalTooManyParts)
@@ -479,10 +479,10 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 		subscriber,
 		types.EventNewConsensusParams,
 		func(data cmtevents.EventData) {
-			cp := data.(types.ConsensusParams)
+			consensusParams := data.(types.ConsensusParams)
 
 			// update reactors view of current consensus params
-			conR.updateConsensusParams(cp)
+			conR.updateConsensusParams(consensusParams)
 		},
 	)
 	if err != nil {
@@ -491,10 +491,10 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 }
 
 // Safely update the reactor's view of most recent consensus params.
-func (conR *Reactor) updateConsensusParams(cp types.ConsensusParams) {
-	conR.cpMtx.Lock()
-	defer conR.cpMtx.Unlock()
-	conR.cp = cp
+func (conR *Reactor) updateConsensusParams(consensusParams types.ConsensusParams) {
+	conR.consensusParamsMtx.Lock()
+	defer conR.consensusParamsMtx.Unlock()
+	conR.consensusParams = consensusParams
 }
 
 // Safely update the reactor's view of round state.

@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"runtime/debug"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/cometbft/cometbft/libs/log"
@@ -31,6 +32,11 @@ type Switch struct {
 	reactors *reactorSet
 
 	metrics *p2p.Metrics
+
+	// active is used to track if the switch has started
+	// BaseService has similar field, but it triggered BEFORE OnStart().
+	// This leads to concurrent peers provisioning between bootstrapping peers and accepting incoming messages
+	active atomic.Bool
 }
 
 // SwitchReactor is a pair of name and reactor.
@@ -61,6 +67,8 @@ func NewSwitch(
 		peerSet: NewPeerSet(host, metrics, logger),
 
 		metrics: metrics,
+
+		active: atomic.Bool{},
 	}
 
 	base := service.NewBaseService(logger, "LibP2P Switch", s)
@@ -116,6 +124,8 @@ func (s *Switch) OnStart() error {
 		}
 	}
 
+	s.active.Store(true)
+
 	return nil
 }
 
@@ -132,6 +142,8 @@ func (s *Switch) OnStop() {
 	if err := s.host.Peerstore().Close(); err != nil {
 		s.Logger.Error("failed to close peerstore", "err", err)
 	}
+
+	s.active.Store(false)
 }
 
 func (s *Switch) NodeInfo() p2p.NodeInfo {
@@ -347,7 +359,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 		protocolID = stream.Protocol()
 	)
 
-	if !s.IsRunning() {
+	if !s.isActive() {
 		s.Log().Debug(
 			"Ignoring stream from inactive switch",
 			"peer_id", peerID.String(),
@@ -469,6 +481,11 @@ func (s *Switch) resolvePeer(id peer.ID) (p2p.Peer, error) {
 
 // connectPeer connects a peer to the host. should be used only during switch start.
 func (s *Switch) connectPeer(ctx context.Context, addrInfo peer.AddrInfo, opts PeerAddOptions) error {
+	if addrInfo.ID == s.host.ID() {
+		s.Logger.Info("Ignoring connection to self")
+		return nil
+	}
+
 	if err := s.host.Connect(ctx, addrInfo); err != nil {
 		return errors.Wrap(err, "unable to connect to peer")
 	}
@@ -503,7 +520,7 @@ func (s *Switch) reconnectPeer(addrInfo peer.AddrInfo, backoffMax time.Duration,
 	}
 
 	for {
-		if !s.IsRunning() {
+		if !s.isActive() {
 			return
 		}
 
@@ -535,4 +552,8 @@ func (s *Switch) reconnectPeer(addrInfo peer.AddrInfo, backoffMax time.Duration,
 		)
 		sleep()
 	}
+}
+
+func (s *Switch) isActive() bool {
+	return s.active.Load()
 }

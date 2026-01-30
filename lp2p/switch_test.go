@@ -3,11 +3,13 @@ package lp2p
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/test/utils"
@@ -15,6 +17,99 @@ import (
 )
 
 func TestSwitch(t *testing.T) {
+	t.Run("BootstrapPeers", func(t *testing.T) {
+		// ARRANGE
+		var (
+			ctx       = context.Background()
+			ports     = utils.GetFreePorts(t, 2)
+			logBuffer = &syncBuffer{}
+			logger    = log.NewTMLogger(logBuffer)
+		)
+
+		// Given 2 hosts: A and B
+		var (
+			privateKeyA = ed25519.GenPrivKey()
+			privateKeyB = ed25519.GenPrivKey()
+		)
+
+		pkToID := func(pk ed25519.PrivKey) string {
+			id, err := IDFromPrivateKey(pk)
+			require.NoError(t, err)
+			return id.String()
+		}
+
+		// Given bootstrap peers for host A
+		// host A has self as bootstrap peer -> should be ignored
+		bootstrapPeersA := []config.LibP2PBootstrapPeer{
+			{
+				Host: fmt.Sprintf("127.0.0.1:%d", ports[0]),
+				ID:   pkToID(privateKeyA),
+			},
+			{
+				Host: fmt.Sprintf("127.0.0.1:%d", ports[1]),
+				ID:   pkToID(privateKeyB),
+			},
+		}
+
+		var (
+			hostA = makeTestHost(t, ports[0], withLogging(), withPrivateKey(privateKeyA), withBootstrapPeers(bootstrapPeersA))
+			hostB = makeTestHost(t, ports[1], withLogging(), withPrivateKey(privateKeyB))
+		)
+
+		t.Cleanup(func() {
+			hostB.Close()
+			hostA.Close()
+		})
+
+		// Given switch A (NOT started yet)
+		switchA, err := NewSwitch(
+			nil,
+			hostA,
+			[]SwitchReactor{},
+			p2p.NopMetrics(),
+			logger.With("switch", "A"),
+		)
+		require.NoError(t, err)
+
+		// ACT #1: Host B sends a stream to host A BEFORE switch A is started.
+		// This simulates an incoming message arriving BEFORE bootstrap is complete.
+		err = hostB.Connect(ctx, hostA.AddrInfo())
+		require.NoError(t, err)
+
+		// Create a test stream from B to A
+		protoID := ProtocolID(0xBB)
+		hostA.SetStreamHandler(protoID, switchA.handleStream)
+
+		// Give some time for the stream handler to be set
+		time.Sleep(50 * time.Millisecond)
+
+		stream, err := hostB.NewStream(ctx, hostA.ID(), protoID)
+		require.NoError(t, err)
+
+		// If stream was created, write and close (errors expected)
+		_, _ = stream.Write([]byte("test message"))
+		_ = stream.Close()
+
+		// Give some time for the stream to be processed
+		time.Sleep(50 * time.Millisecond)
+
+		// ASSERT #1: No peer should be added since switch is not active
+		require.Equal(t, 0, switchA.Peers().Size())
+		require.Contains(t, logBuffer.String(), "Ignoring stream from inactive switch")
+		require.False(t, switchA.isActive())
+
+		// ACT #2: Start switch A
+		require.NoError(t, switchA.Start())
+		t.Cleanup(func() {
+			_ = switchA.Stop()
+		})
+
+		// ASSERT #2: Still no peer added (no new streams sent yet)
+		require.Contains(t, logBuffer.String(), "Ignoring connection to self")
+		require.Equal(t, 1, switchA.Peers().Size())
+		require.True(t, switchA.isActive())
+	})
+
 	t.Run("PersistentPeers", func(t *testing.T) {
 		// ARRANGE
 		var (
@@ -27,9 +122,9 @@ func TestSwitch(t *testing.T) {
 		// Given 3 hosts: A, B, C
 		// Hosts start with NO bootstrap peers
 		var (
-			hostA = makeTestHost(t, ports[0], []config.LibP2PBootstrapPeer{}, true)
-			hostB = makeTestHost(t, ports[1], []config.LibP2PBootstrapPeer{}, true)
-			hostC = makeTestHost(t, ports[2], []config.LibP2PBootstrapPeer{}, true)
+			hostA = makeTestHost(t, ports[0], withLogging())
+			hostB = makeTestHost(t, ports[1], withLogging())
+			hostC = makeTestHost(t, ports[2], withLogging())
 		)
 
 		t.Cleanup(func() {
@@ -46,6 +141,12 @@ func TestSwitch(t *testing.T) {
 			p2p.NopMetrics(),
 			logger.With("switch", "A"),
 		)
+		require.NoError(t, err)
+
+		// Connect host to itself should result in no-op
+		err = switchA.connectPeer(ctx, hostA.AddrInfo(), PeerAddOptions{
+			Persistent: false,
+		})
 		require.NoError(t, err)
 
 		// Connect host A to B (non-persistent) and C (persistent)

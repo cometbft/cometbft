@@ -872,7 +872,7 @@ func (commit *Commit) Clone() *Commit {
 // GetVote converts the CommitSig for the given valIdx to a Vote. Commits do
 // not contain vote extensions, so the vote extension and vote extension
 // signature will not be present in the returned vote.
-// Returns nil if the precommit at valIdx is nil.
+// Always returns a Vote, even if the precommit at valIdx is absent.
 // Panics if valIdx >= commit.Size().
 func (commit *Commit) GetVote(valIdx int32) *Vote {
 	commitSig := commit.Signatures[valIdx]
@@ -1073,7 +1073,7 @@ func (ec *ExtendedCommit) Clone() *ExtendedCommit {
 	return &ecc
 }
 
-// ToExtendedVoteSet constructs a VoteSet from the Commit and validator set.
+// ToExtendedVoteSet constructs a VoteSet from the ExtendedCommit and validator set.
 // Panics if signatures from the ExtendedCommit can't be added to the voteset.
 // Panics if any of the votes have invalid or absent vote extension data.
 // Inverse of VoteSet.MakeExtendedCommit().
@@ -1148,7 +1148,7 @@ func (ec *ExtendedCommit) ToCommit() *Commit {
 }
 
 // GetExtendedVote converts the ExtendedCommitSig for the given validator
-// index to a Vote with a vote extensions.
+// index to a Vote with vote extension data.
 // It panics if valIndex is out of range.
 func (ec *ExtendedCommit) GetExtendedVote(valIndex int32) *Vote {
 	ecs := ec.ExtendedSignatures[valIndex]

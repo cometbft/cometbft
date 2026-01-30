@@ -48,7 +48,7 @@ func TestErrors(t *testing.T) {
 				}
 
 				require.NotNil(t, got)
-				assert.ErrorIs(t, tt.wantErr, got.Err)
+				assert.ErrorIs(t, got.Err, tt.wantErr)
 			})
 		}
 	})

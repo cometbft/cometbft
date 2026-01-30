@@ -126,8 +126,8 @@ type State struct {
 	// closed when we finish shutting down
 	done chan struct{}
 
-	// synchronous pubsub between consensus state and reactor.
-	// state only emits EventNewRoundStep and EventVote
+	// synchronous pubsub between consensus state and reactor. state emits
+	// EventNewRoundStep, EventVote, and EventNewConsensusParams
 	evsw cmtevents.EventSwitch
 
 	// for reporting metrics

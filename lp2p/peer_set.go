@@ -66,19 +66,21 @@ type PeerAddOptions struct {
 	OnStartFailed func(p *Peer, reason any)
 }
 
-// Add adds a new peer to the peer set.
-// Fails if peer is already present or self.
-func (ps *PeerSet) Add(id peer.ID, opts PeerAddOptions) (*Peer, error) {
-	if id == ps.host.ID() {
+// Add adds a new peer to the peer set. Fails if:
+// - peer is already present
+// - peer is self
+// - peer has no addresses
+func (ps *PeerSet) Add(addrInfo peer.AddrInfo, opts PeerAddOptions) (*Peer, error) {
+	id := addrInfo.ID
+
+	switch {
+	case id == ps.host.ID():
 		return nil, ErrSelfPeer
+	case len(addrInfo.Addrs) == 0:
+		return nil, errors.New("peer has no addresses")
 	}
 
 	ps.logger.Info("Adding peer", "peer_id", id.String())
-
-	addrInfo := ps.host.Peerstore().PeerInfo(id)
-	if len(addrInfo.Addrs) == 0 {
-		return nil, errors.New("peer has no addresses in peerstore")
-	}
 
 	p, err := NewPeer(ps.host, addrInfo, ps.metrics, opts.Private, opts.Persistent, opts.Unconditional)
 	if err != nil {

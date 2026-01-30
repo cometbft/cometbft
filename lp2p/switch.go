@@ -462,6 +462,11 @@ func (s *Switch) resolvePeer(id peer.ID) (p2p.Peer, error) {
 		return peer, nil
 	}
 
+	addrInfo := s.host.Peerstore().PeerInfo(id)
+	if len(addrInfo.Addrs) == 0 {
+		return nil, errors.New("peer has no addresses in peerstore")
+	}
+
 	// let's try to provision it
 	opts := PeerAddOptions{
 		Private:       false,
@@ -472,7 +477,7 @@ func (s *Switch) resolvePeer(id peer.ID) (p2p.Peer, error) {
 		OnStartFailed: s.reactors.RemovePeer,
 	}
 
-	peer, err := s.peerSet.Add(id, opts)
+	peer, err := s.peerSet.Add(addrInfo, opts)
 	switch {
 	case errors.Is(err, ErrPeerExists):
 		// tolerate two concurrent peer additions
@@ -502,7 +507,7 @@ func (s *Switch) connectPeer(ctx context.Context, addrInfo peer.AddrInfo, opts P
 		return errors.Wrap(err, "unable to connect to peer")
 	}
 
-	if _, err := s.peerSet.Add(addrInfo.ID, opts); err != nil {
+	if _, err := s.peerSet.Add(addrInfo, opts); err != nil {
 		return errors.Wrap(err, "unable to add peer")
 	}
 
@@ -552,7 +557,7 @@ func (s *Switch) reconnectPeer(addrInfo peer.AddrInfo, backoffMax time.Duration,
 		}
 
 		// 2. add peer to the peer set
-		_, err := s.peerSet.Add(addrInfo.ID, opts)
+		_, err := s.peerSet.Add(addrInfo, opts)
 		if err == nil || errors.Is(err, ErrPeerExists) {
 			elapsed := time.Since(start)
 			s.Logger.Info("Reconnected to peer", "peer_id", addrInfo.ID.String(), "elapsed", elapsed.String())

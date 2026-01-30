@@ -749,8 +749,9 @@ func (cs *State) updateToState(state sm.State) {
 
 	cs.state = state
 
-	// Finally, broadcast RoundState
+	// Finally fire events, broadcast RoundState and ConsensusParams
 	cs.newStep()
+	cs.newConsensusParams()
 }
 
 func (cs *State) newStep() {
@@ -768,8 +769,13 @@ func (cs *State) newStep() {
 		}
 
 		cs.evsw.FireEvent(types.EventNewRoundStep, cs.RoundState)
-		cs.evsw.FireEvent(types.EventNewConsensusParams, cs.state.ConsensusParams)
 	}
+}
+
+// newConsensusParams notifies event switch subscribers of the current consensus
+// params
+func (cs *State) newConsensusParams() {
+	cs.evsw.FireEvent(types.EventNewConsensusParams, cs.state.ConsensusParams)
 }
 
 //-----------------------------------------

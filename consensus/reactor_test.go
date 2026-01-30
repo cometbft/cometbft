@@ -1216,9 +1216,7 @@ func TestReactorConsensusParamsUpdate(t *testing.T) {
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 
 	// Get initial consensus params from the reactor
-	reactors[0].consensusParamsMtx.RLock()
-	initialParams := reactors[0].consensusParams
-	reactors[0].consensusParamsMtx.RUnlock()
+	initialParams := reactors[0].consensusParams.Load()
 	t.Logf("Initial params: MaxBytes=%d, MaxGas=%d", initialParams.Block.MaxBytes, initialParams.Block.MaxGas)
 
 	// Wait for block 1
@@ -1231,10 +1229,8 @@ func TestReactorConsensusParamsUpdate(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	// Verify initial params haven't changed yet
-	reactors[0].consensusParamsMtx.RLock()
-	paramsAfterBlock1 := reactors[0].consensusParams
-	reactors[0].consensusParamsMtx.RUnlock()
-	assert.Equal(t, initialParams, paramsAfterBlock1, "params should not have changed after block 1")
+	paramsAfterBlock1 := reactors[0].consensusParams.Load()
+	assert.Equal(t, *initialParams, *paramsAfterBlock1, "params should not have changed after block 1")
 
 	// Wait until block where we will update consensus params
 	timeoutWaitGroup(N, func(j int) {
@@ -1253,9 +1249,7 @@ func TestReactorConsensusParamsUpdate(t *testing.T) {
 
 	// Verify that all reactors received and updated their internal consensus params
 	for i := range N {
-		reactors[i].consensusParamsMtx.RLock()
-		reactorParams := reactors[i].consensusParams
-		reactors[i].consensusParamsMtx.RUnlock()
+		reactorParams := reactors[i].consensusParams.Load()
 
 		assert.Equal(t, newMaxBytes, reactorParams.Block.MaxBytes, "reactor %d should have updated consensus params MaxBytes", i)
 		assert.Equal(t, newMaxGas, reactorParams.Block.MaxGas, "reactor %d should have updated consensus params MaxGas", i)
@@ -1272,9 +1266,7 @@ func TestReactorConsensusParamsUpdate(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	// Verify params are still updated after subsequent blocks
-	reactors[0].consensusParamsMtx.RLock()
-	finalParams := reactors[0].consensusParams
-	reactors[0].consensusParamsMtx.RUnlock()
+	finalParams := reactors[0].consensusParams.Load()
 	assert.Equal(t, newMaxBytes, finalParams.Block.MaxBytes, "reactor should maintain updated consensus params after block 4")
 }
 

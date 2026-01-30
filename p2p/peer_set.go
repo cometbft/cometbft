@@ -175,10 +175,12 @@ func (ps *PeerSet) Copy() []Peer {
 // ForEach iterates over the PeerSet and calls the given function for each peer.
 func (ps *PeerSet) ForEach(fn func(peer Peer)) {
 	ps.mtx.Lock()
-	defer ps.mtx.Unlock()
+	peers := make([]Peer, len(ps.list))
+	copy(peers, ps.list)
+	ps.mtx.Unlock()
 
-	for _, item := range ps.lookup {
-		fn(item.peer)
+	for _, peer := range peers {
+		fn(peer)
 	}
 }
 

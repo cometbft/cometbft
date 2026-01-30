@@ -190,3 +190,24 @@ func TestPeerSetGet(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+func TestPeerSetForEachAllowsMutation(t *testing.T) {
+	t.Parallel()
+
+	ps := NewPeerSet()
+	total := 10
+	for i := 0; i < total; i++ {
+		p := newMockPeer(net.IP{127, 0, 0, byte(i)})
+		assert.NoError(t, ps.Add(p))
+	}
+
+	visited := make(map[ID]int)
+
+	ps.ForEach(func(p Peer) {
+		visited[p.ID()]++
+		ps.Remove(p)
+	})
+
+	assert.Equal(t, total, len(visited), "expected to visit all peers once")
+	assert.Equal(t, 0, ps.Size(), "removing peers during iteration should succeed")
+}

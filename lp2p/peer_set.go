@@ -12,7 +12,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// PeerSet represents a single entrypoint for managing Peer's lifecycle
+// PeerSet represents a single entrypoint for managing Peer's lifecycle.
+// Note that PeerSet DOESN'T manage networking (e.g. opening/closing connections).
 type PeerSet struct {
 	host *Host
 
@@ -144,11 +145,6 @@ func (ps *PeerSet) Remove(key p2p.ID, opts PeerRemovalOptions) error {
 
 	if opts.OnAfterStop != nil {
 		opts.OnAfterStop(p, opts.Reason)
-	}
-
-	if err := ps.host.Network().ClosePeer(id); err != nil {
-		ps.logger.Error("Failed to close peer", "peer_id", id, "err", err)
-		// tolerate this error.
 	}
 
 	ps.metrics.Peers.Add(-1)

@@ -496,6 +496,8 @@ func (s *Switch) connectPeer(ctx context.Context, addrInfo peer.AddrInfo, opts P
 		return nil
 	}
 
+	s.Logger.Info("Connecting to peer", "addr_info", addrInfo.String())
+
 	if err := s.host.Connect(ctx, addrInfo); err != nil {
 		return errors.Wrap(err, "unable to connect to peer")
 	}
@@ -529,6 +531,8 @@ func (s *Switch) reconnectPeer(addrInfo peer.AddrInfo, backoffMax time.Duration,
 		}
 	}
 
+	start := time.Now()
+
 	for {
 		if !s.isActive() {
 			return
@@ -550,7 +554,8 @@ func (s *Switch) reconnectPeer(addrInfo peer.AddrInfo, backoffMax time.Duration,
 		// 2. add peer to the peer set
 		_, err := s.peerSet.Add(addrInfo.ID, opts)
 		if err == nil || errors.Is(err, ErrPeerExists) {
-			s.Logger.Info("Reconnected to peer", "peer_id", addrInfo.ID.String())
+			elapsed := time.Since(start)
+			s.Logger.Info("Reconnected to peer", "peer_id", addrInfo.ID.String(), "elapsed", elapsed.String())
 			return
 		}
 

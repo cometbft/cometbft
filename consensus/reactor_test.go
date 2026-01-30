@@ -1237,7 +1237,7 @@ func TestReactorConsensusParamsUpdate(t *testing.T) {
 		for {
 			msg := <-blocksSubs[j].Out()
 			event := msg.Data().(types.EventDataNewBlock)
-			if event.Block.Header.Height == updateAtHeight {
+			if event.Block.Height == updateAtHeight {
 				break
 			}
 		}

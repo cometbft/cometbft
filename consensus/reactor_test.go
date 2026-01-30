@@ -1187,7 +1187,7 @@ func TestReactorConsensusParamsUpdate(t *testing.T) {
 	N := 4
 
 	// Track which block heights should trigger consensus params updates
-	updateAtHeight := int64(2)
+	updateAtHeight := int64(5)
 	newMaxBytes := int64(5000000)
 	newMaxGas := int64(50000000)
 
@@ -1199,6 +1199,7 @@ func TestReactorConsensusParamsUpdate(t *testing.T) {
 			updateAtHeight: updateAtHeight,
 			newMaxBytes:    newMaxBytes,
 			newMaxGas:      newMaxGas,
+			t:              t,
 		}
 	}
 
@@ -1225,16 +1226,30 @@ func TestReactorConsensusParamsUpdate(t *testing.T) {
 		<-blocksSubs[j].Out()
 	})
 
+	// Block notification happens slightly before updating consensus params,
+	// sleep to let the event fire
+	time.Sleep(10 * time.Millisecond)
+
 	// Verify initial params haven't changed yet
 	reactors[0].consensusParamsMtx.RLock()
 	paramsAfterBlock1 := reactors[0].consensusParams
 	reactors[0].consensusParamsMtx.RUnlock()
 	assert.Equal(t, initialParams, paramsAfterBlock1, "params should not have changed after block 1")
 
-	// Wait for block 2 (where consensus params update is returned from FinalizeBlock)
+	// Wait until block where we will update consensus params
 	timeoutWaitGroup(N, func(j int) {
-		<-blocksSubs[j].Out()
+		for {
+			msg := <-blocksSubs[j].Out()
+			event := msg.Data().(types.EventDataNewBlock)
+			if event.Block.Header.Height == updateAtHeight {
+				break
+			}
+		}
 	})
+
+	// Block notification happens slightly before updating consensus params,
+	// sleep to let the event fire
+	time.Sleep(10 * time.Millisecond)
 
 	// Verify that all reactors received and updated their internal consensus params
 	for i := range N {
@@ -1252,6 +1267,10 @@ func TestReactorConsensusParamsUpdate(t *testing.T) {
 		<-blocksSubs[j].Out()
 	})
 
+	// Block notification happens slightly before updating consensus params,
+	// sleep to let the event fire
+	time.Sleep(10 * time.Millisecond)
+
 	// Verify params are still updated after subsequent blocks
 	reactors[0].consensusParamsMtx.RLock()
 	finalParams := reactors[0].consensusParams
@@ -1266,6 +1285,7 @@ type consensusParamsUpdatingApp struct {
 	updateAtHeight int64
 	newMaxBytes    int64
 	newMaxGas      int64
+	t              *testing.T
 }
 
 func (app *consensusParamsUpdatingApp) FinalizeBlock(
@@ -1286,6 +1306,7 @@ func (app *consensusParamsUpdatingApp) FinalizeBlock(
 				MaxGas:   app.newMaxGas,
 			},
 		}
+		app.t.Log("returning updating consensus params", "request", req.Height, "update app height", app.updateAtHeight)
 	}
 
 	return resp, nil

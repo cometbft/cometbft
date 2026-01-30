@@ -126,7 +126,7 @@ func (conR *Reactor) SwitchToConsensus(state sm.State, skipWAL bool) {
 			conR.conS.reconstructLastCommit(state)
 		}
 
-		// NOTE: The line below causes broadcastNewRoundStepRoutine() to broadcast a
+		// NOTE: The line below causes broadcastNewRoundStepMessage() to broadcast a
 		// NewRoundStepMessage.
 		conR.conS.updateToState(state)
 	}()
@@ -1197,7 +1197,7 @@ func (ps *PeerState) SendPartSetHasPart(part *types.Part, prs *cstypes.PeerRound
 		ChannelID: DataChannel,
 		Message: &cmtcons.BlockPart{
 			Height: prs.Height, // Not our height, so it doesn't matter.
-			Round:  prs.Round,  // Not our height, so it doesn't matter.
+			Round:  prs.Round,  // Not our round, so it doesn't matter.
 			Part:   *pp,
 		},
 	}) {
@@ -1259,7 +1259,7 @@ func (ps *PeerState) sendVoteSetHasVote(vote *types.Vote) bool {
 }
 
 // PickVoteToSend picks a vote to send to the peer.
-// Returns true if a vote was picked.
+// Returns the vote if one was picked, or nil otherwise.
 // NOTE: `votes` must be the correct Size() for the Height().
 func (ps *PeerState) PickVoteToSend(votes types.VoteSetReader) *types.Vote {
 	ps.mtx.Lock()
@@ -1459,7 +1459,7 @@ func (ps *PeerState) setHasVote(height int64, round int32, voteType cmtproto.Sig
 	}
 }
 
-// SetHasVote sets the given vote as known by the peer.
+// SetHasVoteFromPeer sets the given vote as known by the peer.
 func (ps *PeerState) SetHasVoteFromPeer(vote *types.Vote, csHeight int64, valSize, lastCommitSize int) {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
@@ -1671,7 +1671,7 @@ func (m *NewRoundStepMessage) ValidateHeight(initialHeight int64) error {
 	if m.Height < initialHeight {
 		return cmterrors.ErrInvalidField{
 			Field:  "Height",
-			Reason: fmt.Sprintf("%v should be lower than initial height %v", m.Height, initialHeight),
+			Reason: fmt.Sprintf("%v must not be lower than initial height %v", m.Height, initialHeight),
 		}
 	}
 

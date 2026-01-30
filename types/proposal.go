@@ -151,7 +151,7 @@ func (p *Proposal) ToProto() *cmtproto.Proposal {
 	return pb
 }
 
-// ProposalFromProto sets a protobuf Proposal to the given pointer.
+// ProposalFromProto creates a Proposal from a protobuf Proposal.
 // It returns an error if the proposal is invalid.
 func ProposalFromProto(pp *cmtproto.Proposal) (*Proposal, error) {
 	if pp == nil {

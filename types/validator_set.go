@@ -1005,8 +1005,8 @@ func ValidatorSetFromProto(vp *cmtproto.ValidatorSet) (*ValidatorSet, error) {
 
 // ValidatorSetFromExistingValidators takes an existing array of validators and
 // rebuilds the exact same validator set that corresponds to it without
-// changing the proposer priority or power if any of the validators fail
-// validate basic then an empty set is returned.
+// changing the proposer priority or power. If any of the validators fail
+// validate basic then an error is returned.
 func ValidatorSetFromExistingValidators(valz []*Validator) (*ValidatorSet, error) {
 	if len(valz) == 0 {
 		return nil, errors.New("validator set is empty")

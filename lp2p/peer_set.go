@@ -25,7 +25,10 @@ type PeerSet struct {
 
 var _ p2p.IPeerSet = (*PeerSet)(nil)
 
-var ErrPeerExists = errors.New("peer already exists")
+var (
+	ErrPeerExists = errors.New("peer already exists")
+	ErrSelfPeer   = errors.New("peer is self")
+)
 
 // NewPeerSet manager peers for a given switch
 func NewPeerSet(host *Host, metrics *p2p.Metrics, logger log.Logger) *PeerSet {
@@ -67,7 +70,7 @@ type PeerAddOptions struct {
 // Fails if peer is already present or self.
 func (ps *PeerSet) Add(id peer.ID, opts PeerAddOptions) (*Peer, error) {
 	if id == ps.host.ID() {
-		return nil, errors.New("peer is self")
+		return nil, ErrSelfPeer
 	}
 
 	ps.logger.Info("Adding peer", "peer_id", id.String())
@@ -123,7 +126,7 @@ func (ps *PeerSet) Remove(key p2p.ID, opts PeerRemovalOptions) error {
 	}
 
 	if id == ps.host.ID() {
-		return errors.New("peer is self")
+		return ErrSelfPeer
 	}
 
 	ps.logger.Info("Removing peer", "peer_id", id.String(), "reason", opts.Reason)

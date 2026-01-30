@@ -36,13 +36,13 @@ func TestHost(t *testing.T) {
 	ports := utils.GetFreePorts(t, 2)
 
 	// Given two hosts that are connected to each other
-	host1 := makeTestHost(t, ports[0], []config.LibP2PBootstrapPeer{}, true)
-	host2 := makeTestHost(t, ports[1], []config.LibP2PBootstrapPeer{
+	host1 := makeTestHost(t, ports[0], withLogging())
+	host2 := makeTestHost(t, ports[1], withLogging(), withBootstrapPeers([]config.LibP2PBootstrapPeer{
 		{
 			Host: fmt.Sprintf("127.0.0.1:%d", ports[0]),
 			ID:   host1.ID().String(),
 		},
-	}, true)
+	}))
 
 	connectBootstrapPeers(t, ctx, host2, host2.BootstrapPeers())
 
@@ -192,7 +192,39 @@ func TestHost(t *testing.T) {
 	require.ElementsMatch(t, expectedEnvelopes, envelopes)
 }
 
-func makeTestHost(t *testing.T, port int, bootstrapPeers []config.LibP2PBootstrapPeer, enableLogging bool) *Host {
+type testOpts struct {
+	pk             ed25519.PrivKey
+	bootstrapPeers []config.LibP2PBootstrapPeer
+	enableLogging  bool
+}
+
+type testOption func(*testOpts)
+
+func withLogging() testOption {
+	return func(opts *testOpts) { opts.enableLogging = true }
+}
+
+func withBootstrapPeers(bootstrapPeers []config.LibP2PBootstrapPeer) testOption {
+	return func(opts *testOpts) { opts.bootstrapPeers = bootstrapPeers }
+}
+
+func withPrivateKey(pk ed25519.PrivKey) testOption {
+	return func(opts *testOpts) { opts.pk = pk }
+}
+
+func makeTestHost(t *testing.T, port int, opts ...testOption) *Host {
+	t.Helper()
+
+	optsVal := &testOpts{
+		pk:             ed25519.GenPrivKey(),
+		bootstrapPeers: []config.LibP2PBootstrapPeer{},
+		enableLogging:  false,
+	}
+
+	for _, opt := range opts {
+		opt(optsVal)
+	}
+
 	// config
 	config := config.DefaultP2PConfig()
 	config.RootDir = t.TempDir()
@@ -201,17 +233,14 @@ func makeTestHost(t *testing.T, port int, bootstrapPeers []config.LibP2PBootstra
 
 	config.LibP2PConfig.Enabled = true
 	config.LibP2PConfig.DisableResourceManager = true
-	config.LibP2PConfig.BootstrapPeers = bootstrapPeers
-
-	// private key
-	pk := ed25519.GenPrivKey()
+	config.LibP2PConfig.BootstrapPeers = optsVal.bootstrapPeers
 
 	logger := log.NewNopLogger()
-	if enableLogging {
+	if optsVal.enableLogging {
 		logger = log.TestingLogger()
 	}
 
-	host, err := NewHost(config, pk, logger)
+	host, err := NewHost(config, optsVal.pk, logger)
 	require.NoError(t, err)
 
 	return host
@@ -233,12 +262,12 @@ func connectBootstrapPeers(t *testing.T, ctx context.Context, h *Host, peers []B
 	}
 }
 
-func makeTestHosts(t *testing.T, numHosts int) []*Host {
+func makeTestHosts(t *testing.T, numHosts int, opts ...testOption) []*Host {
 	ports := utils.GetFreePorts(t, numHosts)
 
 	hosts := make([]*Host, len(ports))
 	for i, port := range ports {
-		hosts[i] = makeTestHost(t, port, []config.LibP2PBootstrapPeer{}, false)
+		hosts[i] = makeTestHost(t, port, opts...)
 	}
 
 	t.Cleanup(func() {

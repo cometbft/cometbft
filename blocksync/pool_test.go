@@ -232,6 +232,31 @@ func TestBlockPoolTimeout(t *testing.T) {
 	}
 }
 
+func TestBPRequesterRedoChannelBuffersBothPeers(t *testing.T) {
+	requester := newBPRequester(nil, 1)
+	requester.redo("peerA")
+	requester.redo("peerB")
+
+	drained := map[p2p.ID]struct{}{}
+	for {
+		select {
+		case peerID := <-requester.redoCh:
+			drained[peerID] = struct{}{}
+		default:
+			goto DONE
+		}
+	}
+
+DONE:
+	require.Equal(t, 2, len(drained), "expected buffered redo signals for both peers")
+	if _, ok := drained["peerA"]; !ok {
+		t.Fatalf("missing redo signal for peerA: %v", drained)
+	}
+	if _, ok := drained["peerB"]; !ok {
+		t.Fatalf("missing redo signal for peerB: %v", drained)
+	}
+}
+
 func TestBlockPoolRemovePeer(t *testing.T) {
 	peers := make(testPeers, 10)
 	for i := 0; i < 10; i++ {

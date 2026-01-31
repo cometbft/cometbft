@@ -16,7 +16,7 @@ func benchmarkRetryTimer(b *testing.B, reuse bool) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		if reuse {
-			timer := time.NewTimer(time.Second)
+			timer := time.NewTimer(time.Nanosecond)
 			for i := 0; i < iterationsPerOp; i++ {
 				if !timer.Stop() {
 					select {

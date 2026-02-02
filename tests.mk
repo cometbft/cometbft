@@ -41,8 +41,8 @@ test_race:
 .PHONY: test_race
 
 test_deadlock:
-	@echo "--> Running go test with deadlock support"
-	@go test -p 1 $(PACKAGES) -tags deadlock,bls12381,secp256k1eth
+	@echo "--> Running go test --deadlock"
+	@go test -p 1 -v  $(PACKAGES) -tags deadlock
 .PHONY: test_deadlock
 
 # Implements test splitting and running. This is pulled directly from

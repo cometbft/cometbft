@@ -79,20 +79,6 @@ func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 		}
 		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
 
-		if node.UseLibp2p {
-			ab, err := MakeLibp2pAddressBook(node)
-			if err != nil {
-				return fmt.Errorf("failed to make libp2p address book: %w", err)
-			}
-
-			filepath := filepath.Join(nodeDir, cfg.P2P.LibP2PConfig.AddressBook)
-			logger.Info("Using go-libp2p! Saving address book", "node", node.Name, "path", filepath)
-
-			if err := ab.Save(filepath); err != nil {
-				return fmt.Errorf("failed to save libp2p address book: %w", err)
-			}
-		}
-
 		appCfg, err := MakeAppConfig(node)
 		if err != nil {
 			return err
@@ -272,9 +258,18 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	}
 
 	if node.UseLibp2p {
+		logger.Info("Using go-libp2p!", "node", node.Name)
+
 		// lib-p2p and PEX are mutually exclusive
 		cfg.P2P.PexReactor = false
 		cfg.P2P.LibP2PConfig.Enabled = true
+
+		bootstrapPeers, err := MakeLibp2pAddressBook(node)
+		if err != nil {
+			return nil, fmt.Errorf("failed to make libp2p address book: %w", err)
+		}
+
+		cfg.P2P.LibP2PConfig.BootstrapPeers = bootstrapPeers
 	}
 
 	if node.Testnet.LogLevel != "" {
@@ -364,9 +359,9 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 }
 
 // MakeLibp2pAddressBook creates libp2p address book for a node
-func MakeLibp2pAddressBook(node *e2e.Node) (*lp2p.AddressBookConfig, error) {
+func MakeLibp2pAddressBook(node *e2e.Node) ([]config.LibP2PBootstrapPeer, error) {
 	var (
-		peers = []lp2p.PeerConfig{}
+		peers = []config.LibP2PBootstrapPeer{}
 		cache = make(map[string]struct{})
 	)
 
@@ -394,15 +389,18 @@ func MakeLibp2pAddressBook(node *e2e.Node) (*lp2p.AddressBookConfig, error) {
 			ip = nodeConfig.InternalIP.String()
 		}
 
-		peers = append(peers, lp2p.PeerConfig{
-			Host: fmt.Sprintf("%s:%d", ip, cometPort),
-			ID:   peerID.String(),
+		peers = append(peers, config.LibP2PBootstrapPeer{
+			Host:          fmt.Sprintf("%s:%d", ip, cometPort),
+			ID:            peerID.String(),
+			Private:       false,
+			Persistent:    false,
+			Unconditional: false,
 		})
 
 		cache[nodeConfig.Name] = struct{}{}
 	}
 
-	return &lp2p.AddressBookConfig{Peers: peers}, nil
+	return peers, nil
 }
 
 // UpdateConfigStateSync updates the state sync config for a node.

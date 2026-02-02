@@ -34,7 +34,7 @@ RUN apk update && \
     addgroup tmuser && \
     adduser -S -G tmuser tmuser -h "$CMTHOME"
 
-# Run the container with tmuser by default. (UID=100, GID=1000)
+# Run the container with tmuser by default. (UID=101, GID=1000)
 USER tmuser
 
 WORKDIR $CMTHOME

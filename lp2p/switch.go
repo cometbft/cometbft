@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"runtime/debug"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/cometbft/cometbft/libs/log"
@@ -31,6 +32,11 @@ type Switch struct {
 	reactors *reactorSet
 
 	metrics *p2p.Metrics
+
+	// active is used to track if the switch has started
+	// BaseService has similar field, but it triggered BEFORE OnStart().
+	// This leads to concurrent peers provisioning between bootstrapping peers and accepting incoming messages
+	active atomic.Bool
 }
 
 // SwitchReactor is a pair of name and reactor.
@@ -61,6 +67,8 @@ func NewSwitch(
 		peerSet: NewPeerSet(host, metrics, logger),
 
 		metrics: metrics,
+
+		active: atomic.Bool{},
 	}
 
 	base := service.NewBaseService(logger, "LibP2P Switch", s)
@@ -116,6 +124,8 @@ func (s *Switch) OnStart() error {
 		}
 	}
 
+	s.active.Store(true)
+
 	return nil
 }
 
@@ -132,6 +142,8 @@ func (s *Switch) OnStop() {
 	if err := s.host.Peerstore().Close(); err != nil {
 		s.Logger.Error("failed to close peerstore", "err", err)
 	}
+
+	s.active.Store(false)
 }
 
 func (s *Switch) NodeInfo() p2p.NodeInfo {
@@ -235,8 +247,25 @@ func (s *Switch) StopPeerForError(peer p2p.Peer, reason any) {
 		return
 	}
 
+	// todo, actually, for persistent peers we can skip this step,
+	// but explicitly closing might cleanup some conns/resources
+	if err := s.host.Network().ClosePeer(p.addrInfo.ID); err != nil {
+		// tolerate this error.
+		s.Logger.Error("Failed to close peer", "peer_id", key, "err", err)
+	}
+
 	// reconnect logic
-	if !p.IsPersistent() {
+	shouldReconnect := false
+
+	if p.IsPersistent() {
+		shouldReconnect = true
+		s.Logger.Info("Will reconnect to peer", "peer_id", key, "err", reason)
+	} else if errTransient, ok := TransientErrorFromAny(reason); ok {
+		shouldReconnect = true
+		s.Logger.Info("Will reconnect to peer after transient error", "peer_id", key, "err", errTransient.Err)
+	}
+
+	if !shouldReconnect {
 		return
 	}
 
@@ -347,7 +376,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 		protocolID = stream.Protocol()
 	)
 
-	if !s.IsRunning() {
+	if !s.isActive() {
 		s.Log().Debug(
 			"Ignoring stream from inactive switch",
 			"peer_id", peerID.String(),
@@ -440,6 +469,11 @@ func (s *Switch) resolvePeer(id peer.ID) (p2p.Peer, error) {
 		return peer, nil
 	}
 
+	addrInfo := s.host.Peerstore().PeerInfo(id)
+	if len(addrInfo.Addrs) == 0 {
+		return nil, errors.New("peer has no addresses in peerstore")
+	}
+
 	// let's try to provision it
 	opts := PeerAddOptions{
 		Private:       false,
@@ -450,7 +484,7 @@ func (s *Switch) resolvePeer(id peer.ID) (p2p.Peer, error) {
 		OnStartFailed: s.reactors.RemovePeer,
 	}
 
-	peer, err := s.peerSet.Add(id, opts)
+	peer, err := s.peerSet.Add(addrInfo, opts)
 	switch {
 	case errors.Is(err, ErrPeerExists):
 		// tolerate two concurrent peer additions
@@ -469,11 +503,18 @@ func (s *Switch) resolvePeer(id peer.ID) (p2p.Peer, error) {
 
 // connectPeer connects a peer to the host. should be used only during switch start.
 func (s *Switch) connectPeer(ctx context.Context, addrInfo peer.AddrInfo, opts PeerAddOptions) error {
+	if addrInfo.ID == s.host.ID() {
+		s.Logger.Info("Ignoring connection to self")
+		return nil
+	}
+
+	s.Logger.Info("Connecting to peer", "addr_info", addrInfo.String())
+
 	if err := s.host.Connect(ctx, addrInfo); err != nil {
 		return errors.Wrap(err, "unable to connect to peer")
 	}
 
-	if _, err := s.peerSet.Add(addrInfo.ID, opts); err != nil {
+	if _, err := s.peerSet.Add(addrInfo, opts); err != nil {
 		return errors.Wrap(err, "unable to add peer")
 	}
 
@@ -502,8 +543,10 @@ func (s *Switch) reconnectPeer(addrInfo peer.AddrInfo, backoffMax time.Duration,
 		}
 	}
 
+	start := time.Now()
+
 	for {
-		if !s.IsRunning() {
+		if !s.isActive() {
 			return
 		}
 
@@ -521,9 +564,10 @@ func (s *Switch) reconnectPeer(addrInfo peer.AddrInfo, backoffMax time.Duration,
 		}
 
 		// 2. add peer to the peer set
-		_, err := s.peerSet.Add(addrInfo.ID, opts)
+		_, err := s.peerSet.Add(addrInfo, opts)
 		if err == nil || errors.Is(err, ErrPeerExists) {
-			s.Logger.Info("Reconnected to peer", "peer_id", addrInfo.ID.String())
+			elapsed := time.Since(start)
+			s.Logger.Info("Reconnected to peer", "peer_id", addrInfo.ID.String(), "elapsed", elapsed.String())
 			return
 		}
 
@@ -535,4 +579,8 @@ func (s *Switch) reconnectPeer(addrInfo peer.AddrInfo, backoffMax time.Duration,
 		)
 		sleep()
 	}
+}
+
+func (s *Switch) isActive() bool {
+	return s.active.Load()
 }

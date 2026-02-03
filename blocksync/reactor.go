@@ -1,6 +1,7 @@
 package blocksync
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"sync"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/lp2p"
 	"github.com/cometbft/cometbft/p2p"
 	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
 	sm "github.com/cometbft/cometbft/state"
@@ -289,7 +291,7 @@ func (r *Reactor) handlePeerResponse(msg *bcproto.BlockResponse, src p2p.Peer) {
 	bi, err := types.BlockFromProto(msg.Block)
 	if err != nil {
 		r.Logger.Error("Peer sent us invalid block", "peer", src, "msg", msg, "err", err)
-		r.Switch.StopPeerForError(src, err)
+		r.stopPeerForError(src, err)
 		return
 	}
 
@@ -298,7 +300,7 @@ func (r *Reactor) handlePeerResponse(msg *bcproto.BlockResponse, src p2p.Peer) {
 		extCommit, err = types.ExtendedCommitFromProto(msg.ExtCommit)
 		if err != nil {
 			r.Logger.Error("Failed to convert extended commit from proto", "peer", src, "err", err)
-			r.Switch.StopPeerForError(src, err)
+			r.stopPeerForError(src, err)
 			return
 		}
 	}
@@ -312,7 +314,7 @@ func (r *Reactor) handlePeerResponse(msg *bcproto.BlockResponse, src p2p.Peer) {
 func (r *Reactor) Receive(e p2p.Envelope) {
 	if err := ValidateMsg(e.Message); err != nil {
 		r.Logger.Error("Peer sent us invalid msg", "peer", e.Src, "msg", e.Message, "err", err)
-		r.Switch.StopPeerForError(e.Src, err)
+		r.stopPeerForError(e.Src, err)
 		return
 	}
 
@@ -552,14 +554,14 @@ FOR_LOOP:
 				if peer != nil {
 					// NOTE: we've already removed the peer's request, but we
 					// still need to clean up the rest.
-					r.Switch.StopPeerForError(peer, ErrReactorValidation{Err: err})
+					r.stopPeerForError(peer, ErrReactorValidation{Err: err})
 				}
 				peerID2 := r.pool.RemovePeerAndRedoAllPeerRequests(second.Height)
 				peer2 := r.Switch.Peers().Get(peerID2)
 				if peer2 != nil && peer2 != peer {
 					// NOTE: we've already removed the peer's request, but we
 					// still need to clean up the rest.
-					r.Switch.StopPeerForError(peer2, ErrReactorValidation{Err: err})
+					r.stopPeerForError(peer2, ErrReactorValidation{Err: err})
 				}
 				continue FOR_LOOP
 			}
@@ -628,11 +630,9 @@ func (r *Reactor) poolEventsRoutine(statusUpdateTicker *time.Ticker) {
 			}
 		case err := <-r.errorsCh:
 			// error is pushed to the errorsCh by the pool internally.
-			peer := r.Switch.Peers().Get(err.peerID)
-			if peer != nil {
-				r.Switch.StopPeerForError(peer, err)
+			if peer := r.Switch.Peers().Get(err.peerID); peer != nil {
+				r.stopPeerForError(peer, err.err)
 			}
-
 		case <-statusUpdateTicker.C:
 			// ask other peers for status updates
 			r.Switch.BroadcastAsync(p2p.Envelope{
@@ -641,4 +641,21 @@ func (r *Reactor) poolEventsRoutine(statusUpdateTicker *time.Ticker) {
 			})
 		}
 	}
+}
+
+func (r *Reactor) stopPeerForError(peer p2p.Peer, err error) {
+	if r.followerMode && shouldBeReconnected(err) {
+		err = &lp2p.ErrorTransient{Err: err}
+	}
+
+	r.Switch.StopPeerForError(peer, err)
+}
+
+// shouldBeReconnected checks whether blocksync error which leads to peer disconnection
+// should be actually causing a reconnect afterwards.
+// context: in "follower mode" some peers might be busy/flaky, so we don't want to kick them forever
+// as they send us blocks!
+func shouldBeReconnected(err error) bool {
+	// more errors can be added here if needed
+	return errors.Is(err, ErrPeerTimeout)
 }

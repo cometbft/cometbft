@@ -182,7 +182,7 @@ func (a *addrBook) FilePath() string {
 
 //-------------------------------------------------------
 
-// AddOurAddress one of our addresses.
+// AddOurAddress adds one of our addresses.
 func (a *addrBook) AddOurAddress(addr *p2p.NetAddress) {
 	a.mtx.Lock()
 	defer a.mtx.Unlock()

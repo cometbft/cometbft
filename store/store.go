@@ -287,7 +287,7 @@ func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
 	return commit.Clone()
 }
 
-// LoadExtendedCommit returns the ExtendedCommit for the given height.
+// LoadBlockExtendedCommit returns the ExtendedCommit for the given height.
 // The extended commit is not guaranteed to contain the same +2/3 precommits data
 // as the commit in the block.
 func (bs *BlockStore) LoadBlockExtendedCommit(height int64) *types.ExtendedCommit {

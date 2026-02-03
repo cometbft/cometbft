@@ -592,13 +592,18 @@ func (s *Switch) pingPeer(addrInfo peer.AddrInfo) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
+	var (
+		peerID   = addrInfo.ID.String()
+		fullAddr = addrInfo.String()
+	)
+
 	rtt, err := s.host.Ping(ctx, addrInfo)
 	if err != nil {
-		s.Logger.Error("Failed to ping peer", "peer_id", addrInfo, "err", err)
+		s.Logger.Error("Failed to ping peer", "peer_id", peerID, "full_addr", fullAddr, "err", err)
 		return
 	}
 
-	s.Logger.Info("Ping", "peer_id", addrInfo, "rtt", rtt.String())
+	s.Logger.Info("Ping", "peer_id", peerID, "full_addr", fullAddr, "rtt", rtt.String())
 }
 
 func (s *Switch) isActive() bool {

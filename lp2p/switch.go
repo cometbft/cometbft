@@ -518,6 +518,8 @@ func (s *Switch) connectPeer(ctx context.Context, addrInfo peer.AddrInfo, opts P
 		return errors.Wrap(err, "unable to add peer")
 	}
 
+	go s.pingPeer(addrInfo)
+
 	return nil
 }
 
@@ -568,6 +570,7 @@ func (s *Switch) reconnectPeer(addrInfo peer.AddrInfo, backoffMax time.Duration,
 		if err == nil || errors.Is(err, ErrPeerExists) {
 			elapsed := time.Since(start)
 			s.Logger.Info("Reconnected to peer", "peer_id", addrInfo.ID.String(), "elapsed", elapsed.String())
+			go s.pingPeer(addrInfo)
 			return
 		}
 
@@ -579,6 +582,28 @@ func (s *Switch) reconnectPeer(addrInfo peer.AddrInfo, backoffMax time.Duration,
 		)
 		sleep()
 	}
+}
+
+// pingPeer pings peers and logs RTT latency (blocking)
+// Keep in might that ping service might be disabled on the counterparty side.
+func (s *Switch) pingPeer(addrInfo peer.AddrInfo) {
+	const timeout = 5 * time.Second
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	var (
+		peerID   = addrInfo.ID.String()
+		fullAddr = addrInfo.String()
+	)
+
+	rtt, err := s.host.Ping(ctx, addrInfo)
+	if err != nil {
+		s.Logger.Error("Failed to ping peer", "peer_id", peerID, "full_addr", fullAddr, "err", err)
+		return
+	}
+
+	s.Logger.Info("Ping", "peer_id", peerID, "full_addr", fullAddr, "rtt", rtt.String())
 }
 
 func (s *Switch) isActive() bool {

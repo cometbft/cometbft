@@ -1107,6 +1107,10 @@ func (cs *State) enterNewRound(height int64, round int32) {
 		"proposer", propAddress,
 	)
 
+	if round > 0 && !cs.replayMode {
+		cs.metrics.MarkRoundIncremented(prevStep)
+	}
+
 	cs.Votes.SetRound(cmtmath.SafeAddInt32(round, 1)) // also track next round (round+1) to allow round-skipping
 	cs.TriggeredTimeoutPrecommit = false
 

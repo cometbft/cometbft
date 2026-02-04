@@ -190,6 +190,21 @@ func TestHost(t *testing.T) {
 	}
 
 	require.ElementsMatch(t, expectedEnvelopes, envelopes)
+
+	t.Run("Ping", func(t *testing.T) {
+		// ARRANGE
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		// ACT
+		rtt, err := host1.Ping(ctx, host2.AddrInfo())
+
+		// ASSERT
+		require.NoError(t, err)
+		require.NotZero(t, rtt)
+
+		t.Logf("host1 -> host2 RTT: %s", rtt.String())
+	})
 }
 
 type testOpts struct {

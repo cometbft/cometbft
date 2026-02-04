@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -109,6 +110,15 @@ func TestSwitch(t *testing.T) {
 		require.Contains(t, logBuffer.String(), "Ignoring connection to self")
 		require.Equal(t, 1, switchA.Peers().Size())
 		require.True(t, switchA.isActive())
+
+		// ASSERT #3: A has pinged B
+		hasPingedB := func() bool {
+			str := logBuffer.String()
+
+			return strings.Contains(str, "Ping") && strings.Contains(str, "rtt")
+		}
+
+		require.Eventually(t, hasPingedB, time.Second, 50*time.Millisecond)
 	})
 
 	t.Run("PersistentPeers", func(t *testing.T) {

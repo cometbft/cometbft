@@ -71,7 +71,7 @@ func WithOnStay[T any](onStay func()) Option[T] {
 // interval to sleep when the priority queue is idle
 // note that this should be fine because most of the time the queue will be busy.
 // I also explored var cond for a more efficient solution, but it's not worth the complexity for now.
-const priorityQueueIdleInterval = 50 * time.Millisecond
+const priorityQueueIdleInterval = 5 * time.Millisecond
 
 // New Pool constructor.
 func New[T any](

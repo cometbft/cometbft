@@ -1107,7 +1107,7 @@ func (cs *State) enterNewRound(height int64, round int32) {
 		"proposer", propAddress,
 	)
 
-	if round > 0 {
+	if round > 0 && !cs.replayMode {
 		cs.metrics.MarkRoundIncremented(prevStep)
 	}
 

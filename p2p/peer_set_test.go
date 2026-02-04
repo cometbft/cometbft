@@ -1,9 +1,12 @@
 package p2p
 
 import (
+	"fmt"
 	"net"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -210,4 +213,153 @@ func TestPeerSetForEachAllowsMutation(t *testing.T) {
 
 	assert.Equal(t, total, len(visited), "expected to visit all peers once")
 	assert.Equal(t, 0, ps.Size(), "removing peers during iteration should succeed")
+}
+
+func TestPeerSetForEachSnapshotUnderChurn(t *testing.T) {
+	t.Parallel()
+
+	ps := NewPeerSet()
+	const basePeers = 32
+	for i := 0; i < basePeers; i++ {
+		assert.NoError(t, ps.Add(newMockPeer(net.IP{10, 0, 0, byte(i + 1)})))
+	}
+
+	errCh := make(chan error, 1)
+	done := make(chan struct{})
+
+	go func() {
+		defer close(done)
+		for i := 0; i < 500; i++ {
+			p := newMockPeer(net.IP{192, 0, 2, byte(i % 250)})
+			if err := ps.Add(p); err != nil {
+				select {
+				case errCh <- fmt.Errorf("add failed: %w", err):
+				default:
+				}
+				return
+			}
+			if removed := ps.Remove(p); !removed {
+				select {
+				case errCh <- fmt.Errorf("remove failed for %s", p.ID()):
+				default:
+				}
+				return
+			}
+			time.Sleep(100 * time.Microsecond)
+		}
+	}()
+
+	for iteration := 0; iteration < 500; iteration++ {
+		select {
+		case err := <-errCh:
+			t.Fatal(err)
+		default:
+		}
+
+		seen := make(map[ID]struct{}, basePeers)
+		ps.ForEach(func(peer Peer) {
+			if peer == nil {
+				select {
+				case errCh <- fmt.Errorf("nil peer observed at iteration %d", iteration):
+				default:
+				}
+				return
+			}
+			if _, ok := seen[peer.ID()]; ok {
+				select {
+				case errCh <- fmt.Errorf("duplicate peer %s observed", peer.ID()):
+				default:
+				}
+				return
+			}
+			seen[peer.ID()] = struct{}{}
+		})
+	}
+
+	<-done
+	select {
+	case err := <-errCh:
+		t.Fatal(err)
+	default:
+	}
+}
+
+func TestPeerSetBroadcastThroughputUnderChurn(t *testing.T) {
+	t.Parallel()
+
+	ps := NewPeerSet()
+	const basePeers = 64
+	for i := 0; i < basePeers; i++ {
+		assert.NoError(t, ps.Add(newMockPeer(net.IP{172, 16, 0, byte(i + 1)})))
+	}
+
+	var (
+		addDurationNS       int64
+		removeDurationNS    int64
+		broadcastDurationNS int64
+		addCount            int64
+		removeCount         int64
+		broadcastCount      int64
+	)
+
+	churnDone := make(chan struct{})
+	go func() {
+		defer close(churnDone)
+		for i := 0; i < 200; i++ {
+			p := newMockPeer(net.IP{198, 51, 100, byte(i % 250)})
+
+			start := time.Now()
+			err := ps.Add(p)
+			atomic.AddInt64(&addDurationNS, time.Since(start).Nanoseconds())
+			if err == nil {
+				atomic.AddInt64(&addCount, 1)
+			}
+
+			start = time.Now()
+			if ps.Remove(p) {
+				atomic.AddInt64(&removeDurationNS, time.Since(start).Nanoseconds())
+				atomic.AddInt64(&removeCount, 1)
+			}
+
+			time.Sleep(50 * time.Microsecond)
+		}
+	}()
+
+	for i := 0; i < 200; i++ {
+		start := time.Now()
+		var visited int
+		ps.ForEach(func(peer Peer) {
+			if peer != nil {
+				visited++
+			}
+		})
+		atomic.AddInt64(&broadcastDurationNS, time.Since(start).Nanoseconds())
+		atomic.AddInt64(&broadcastCount, 1)
+
+		if visited == 0 {
+			t.Fatalf("broadcast iteration %d visited zero peers", i)
+		}
+
+		time.Sleep(50 * time.Microsecond)
+	}
+
+	<-churnDone
+
+	getAvg := func(totalNS, count int64) time.Duration {
+		if count == 0 {
+			return 0
+		}
+		return time.Duration(totalNS / count)
+	}
+
+	t.Logf("avg peer add latency: %s (%d ops)", getAvg(atomic.LoadInt64(&addDurationNS), atomic.LoadInt64(&addCount)), atomic.LoadInt64(&addCount))
+	t.Logf("avg peer remove latency: %s (%d ops)", getAvg(atomic.LoadInt64(&removeDurationNS), atomic.LoadInt64(&removeCount)), atomic.LoadInt64(&removeCount))
+	t.Logf("avg broadcast iteration latency: %s (%d ops)", getAvg(atomic.LoadInt64(&broadcastDurationNS), atomic.LoadInt64(&broadcastCount)), atomic.LoadInt64(&broadcastCount))
+
+	if broadcastCount == 0 {
+		t.Fatal("expected broadcast iterations to run")
+	}
+	if addCount == 0 || removeCount == 0 {
+		t.Fatal("expected churn goroutine to add and remove peers")
+	}
 }

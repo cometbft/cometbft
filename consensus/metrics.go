@@ -155,7 +155,8 @@ type Metrics struct {
 }
 
 func (m *Metrics) MarkRoundIncremented(step cstypes.RoundStepType) {
-	m.RoundIncrementTotal.With("step", step.String()).Add(1)
+	stepName := strings.TrimPrefix(step.String(), "RoundStep")
+	m.RoundIncrementTotal.With("step", stepName).Add(1)
 }
 
 func (m *Metrics) MarkProposalProcessed(accepted bool) {

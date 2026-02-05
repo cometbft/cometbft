@@ -193,34 +193,24 @@ func TestPool(t *testing.T) {
 		assert.Eventually(t, expect, 2*time.Second, 500*time.Millisecond)
 	})
 
-	// TestPriorityQueueWakeup verifies that the pool correctly processes all
-	// items from the priority queue even when multiple items are pushed while
-	// the consumer is blocked.
-	//
-	// This tests a race condition where:
-	// 1. The pipePriorityQueue goroutine is blocked sending to inbound (full)
-	// 2. Multiple items are pushed to the priority queue rapidly
-	// 3. Only one signal is sent (valuesAvailable channel has capacity 1)
-	// 4. Without the fix, the consumer would only process one item per wakeup
-	//    and items would get stuck in the queue
 	t.Run("PriorityQueueWakeup", func(t *testing.T) {
+		// ARRANGE
+		// Given a single-worker pool with small inbound capacity to force blocking
 		scaler := NewThroughputLatencyScaler(
-			1,  // min workers
-			1,  // max workers (single worker to control flow)
+			1,
+			1,
 			90.0,
 			10*time.Millisecond,
-			100*time.Millisecond, // long epoch to prevent scaling during test
-			logger,
+			100*time.Millisecond, logger,
 		)
 
 		var (
-			consumed       atomic.Int64
-			blockConsumer  = make(chan struct{})
+			consumed          atomic.Int64
+			blockConsumer     = make(chan struct{})
 			consumerUnblocked atomic.Bool
 		)
 
 		consumer := func(_ int) {
-			// Block the first message until we signal
 			if !consumerUnblocked.Load() {
 				<-blockConsumer
 				consumerUnblocked.Store(true)
@@ -228,11 +218,10 @@ func TestPool(t *testing.T) {
 			consumed.Add(1)
 		}
 
-		// Small inbound capacity (1) so pipePriorityQueue blocks quickly
 		pool := New(
 			scaler,
 			consumer,
-			1, // capacity of 1 - will block after one item
+			1,
 			WithLogger[int](logger),
 			WithPriorityQueue[int](NewPriorityQueue(10)),
 		)
@@ -240,44 +229,27 @@ func TestPool(t *testing.T) {
 		pool.Start()
 		defer pool.Stop()
 
+		// ACT
+		// Given 100 items pushed rapidly while consumer is blocked
 		const totalItems = 100
-
-		// Push all items rapidly to the priority queue.
-		// The pipePriorityQueue will:
-		// 1. Pop first item, send to inbound (succeeds, inbound now has 1)
-		// 2. Pop second item, block trying to send to inbound (full)
-		// 3. Meanwhile, items 3-100 are pushed, but only ONE signal is sent
-		//    (valuesAvailable channel is already full after item 3's push)
 		for i := 1; i <= totalItems; i++ {
-			err := pool.PushPriority(i, 1)
-			require.NoError(t, err)
+			require.NoError(t, pool.PushPriority(i, 1))
 		}
 
-		// Give pipePriorityQueue time to pop items and get blocked
 		time.Sleep(50 * time.Millisecond)
-
-		// Now unblock the consumer - this allows the worker to process messages
-		// and frees up the inbound channel
 		close(blockConsumer)
 
-		// All items should eventually be processed
+		// ASSERT
 		require.Eventually(t, func() bool {
 			return consumed.Load() == totalItems
 		}, 5*time.Second, 10*time.Millisecond,
 			"expected %d items to be consumed, got %d", totalItems, consumed.Load())
 	})
 
-	// TestPriorityQueueBurstAfterDrain verifies that items pushed after the
-	// queue has been fully drained are still processed correctly.
 	t.Run("PriorityQueueBurstAfterDrain", func(t *testing.T) {
-		scaler := NewThroughputLatencyScaler(
-			2,
-			4,
-			90.0,
-			10*time.Millisecond,
-			50*time.Millisecond,
-			logger,
-		)
+		// ARRANGE
+		// Given pool with priority queue
+		scaler := NewThroughputLatencyScaler(2, 4, 90.0, 10*time.Millisecond, 50*time.Millisecond, logger)
 
 		var consumed atomic.Int64
 
@@ -296,23 +268,22 @@ func TestPool(t *testing.T) {
 		pool.Start()
 		defer pool.Stop()
 
-		// First burst
+		// ACT
+		// Given first burst that drains completely
 		for i := 0; i < 50; i++ {
 			require.NoError(t, pool.PushPriority(i, 1))
 		}
 
-		// Wait for queue to drain completely
 		require.Eventually(t, func() bool {
 			return consumed.Load() == 50
 		}, 2*time.Second, 10*time.Millisecond)
 
-		// Second burst - the pipePriorityQueue should be waiting on
-		// WaitForValues() now and must wake up for these new items
+		// Given second burst after queue is empty
 		for i := 50; i < 100; i++ {
 			require.NoError(t, pool.PushPriority(i, 1))
 		}
 
-		// All items from second burst should also be processed
+		// ASSERT
 		require.Eventually(t, func() bool {
 			return consumed.Load() == 100
 		}, 2*time.Second, 10*time.Millisecond,

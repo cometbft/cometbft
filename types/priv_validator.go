@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/cometbft/cometbft/proto/tendermint/privval"
+
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/protoio"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
@@ -17,6 +20,41 @@ type PrivValidator interface {
 
 	SignVote(chainID string, vote *cmtproto.Vote) error
 	SignProposal(chainID string, proposal *cmtproto.Proposal) error
+	SignRawBytes(chainID, uniqueID string, rawBytes []byte) ([]byte, error)
+}
+
+// RawBytesSignBytesPrefix defines a domain separator prefix added to raw bytes to ensure the resulting
+// signed message can't be confused with a consensus message, which could lead to double signing
+const RawBytesSignBytesPrefix = "COMET::RAW_BYTES::SIGN"
+
+// RawBytesMessageSignBytes returns the canonical bytes for signing raw data messages.
+// It requires non-empty chainID, uniqueID, and rawBytes to prevent security issues.
+// Returns error if any required parameter is empty or if marshaling fails.
+func RawBytesMessageSignBytes(chainID, uniqueID string, rawBytes []byte) ([]byte, error) {
+	if chainID == "" {
+		return nil, errors.New("chainID cannot be empty")
+	}
+
+	if uniqueID == "" {
+		return nil, fmt.Errorf("uniqueID cannot be empty")
+	}
+
+	if len(rawBytes) == 0 {
+		return nil, fmt.Errorf("rawBytes cannot be empty")
+	}
+
+	prefix := []byte(RawBytesSignBytesPrefix)
+
+	signRequest := &privval.SignRawBytesRequest{
+		ChainId:  chainID,
+		RawBytes: rawBytes,
+		UniqueId: uniqueID,
+	}
+	protoBytes, err := protoio.MarshalDelimited(signRequest)
+	if err != nil {
+		return nil, err
+	}
+	return append(prefix, protoBytes...), nil
 }
 
 type PrivValidatorsByAddress []PrivValidator
@@ -52,6 +90,8 @@ type MockPV struct {
 	breakProposalSigning bool
 	breakVoteSigning     bool
 }
+
+var _ PrivValidator = &MockPV{}
 
 func NewMockPV() MockPV {
 	return MockPV{ed25519.GenPrivKey(), false, false}
@@ -96,6 +136,23 @@ func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
 	}
 	vote.ExtensionSignature = extSig
 	return nil
+}
+
+func (pv MockPV) SignRawBytes(chainID, uniqueID string, rawBytes []byte) ([]byte, error) {
+	useChainID := chainID
+	if pv.breakProposalSigning {
+		useChainID = "incorrect-chain-id"
+	}
+
+	signBytes, err := RawBytesMessageSignBytes(useChainID, uniqueID, rawBytes)
+	if err != nil {
+		return nil, err
+	}
+	sig, err := pv.PrivKey.Sign(signBytes)
+	if err != nil {
+		return nil, err
+	}
+	return sig, nil
 }
 
 // Implements PrivValidator.

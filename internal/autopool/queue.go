@@ -99,7 +99,7 @@ func (q *PriorityQueue) Pop() (any, bool) {
 	defer q.mu.Unlock()
 
 	// highest priority first
-	for i := len(q.levels); i >= 0; i-- {
+	for i := len(q.levels) - 1; i >= 0; i-- {
 		if v, ok := q.levels[i].Pop(); ok {
 			return v, ok
 		}

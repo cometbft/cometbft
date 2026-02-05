@@ -107,10 +107,9 @@ func (q *PriorityQueue) Push(value any, priority int) error {
 	return nil
 }
 
+// notifyValuesAvailable notifies callers waiting on the channel returned by
+// WaitForValues that work is values are available to be popped.
 func (q *PriorityQueue) notifyValuesAvailable() {
-	// push a value onto the values available channel to notify any waiters
-	// that there are new values now in the queue that can be popped
-	//
 	// if there is already a value in the channel (valuesAvailable is buffered
 	// with cap 1), then do nothing, since there is already a notification
 	// waiting to be pulled off the channel telling callers that values are
@@ -136,12 +135,6 @@ func (q *PriorityQueue) Pop() (any, bool) {
 	return nil, false
 }
 
-// WaitForValues blocks and waits for the PriorityQueue to signal that there
-// are new values on the queue ready to be popped.
-func (q *PriorityQueue) WaitForValues() <-chan struct{} {
-	return q.valuesAvailable
-}
-
 // updateHighestNonEmpty for empty PriorityQueue it will set highestNonEmptyLevel to -1
 func (q *PriorityQueue) updateHighestNonEmpty(lastLevel int) {
 	// noop
@@ -154,4 +147,10 @@ func (q *PriorityQueue) updateHighestNonEmpty(lastLevel int) {
 	for q.highestNonEmptyLevel >= 0 && q.levels[q.highestNonEmptyLevel].Len() == 0 {
 		q.highestNonEmptyLevel--
 	}
+}
+
+// WaitForValues returns a channel that will have a value in it when new values
+// are ready to be popped from the priority queue.
+func (q *PriorityQueue) WaitForValues() <-chan struct{} {
+	return q.valuesAvailable
 }

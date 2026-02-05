@@ -7,6 +7,11 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 )
 
+type MessageQueue interface {
+	Push(value any, priority int) error
+	Pop() (any, bool)
+}
+
 // Pool primitive auto-scaling pool for concurrent message processing.
 // It accepts a function to process messages and scales the number of workers
 // dynamically based on the message processing time. It also supports priority-based message processing.
@@ -16,7 +21,7 @@ type Pool[T any] struct {
 
 	// a queue on top of Pool for priority-based message processing.
 	// acts as a buffer + priority-based FIFO queue. Routes messages to Pool.inbound
-	priorityQueue *PriorityQueue
+	priorityQueue MessageQueue
 
 	// consumer function that is used to process messages
 	receive func(T)
@@ -52,7 +57,7 @@ func WithLogger[T any](logger log.Logger) Option[T] {
 	return func(p *Pool[T]) { p.logger = logger }
 }
 
-func WithPriorityQueue[T any](pq *PriorityQueue) Option[T] {
+func WithPriorityQueue[T any](pq MessageQueue) Option[T] {
 	return func(p *Pool[T]) { p.priorityQueue = pq }
 }
 
@@ -84,7 +89,7 @@ func New[T any](
 
 	pool := &Pool[T]{
 		inbound:       make(chan T, capacity),
-		priorityQueue: NewPriorityQueue(defaultPriorities),
+		priorityQueue: NewRBPriorityQueue(defaultPriorities),
 
 		receive: receiveFN,
 		scaler:  scaler,

@@ -273,7 +273,7 @@ func (rs *reactorSet) newReactorPriorityQueue(reactorID int, reactorName string)
 		autopool.WithOnShrink[pendingEnvelope](func() {
 			concurrencyCounter.Add(-1)
 		}),
-		autopool.WithPriorityQueue[pendingEnvelope](autopool.NewPriorityQueue(priorities)),
+		autopool.WithPriorityQueue[pendingEnvelope](autopool.NewRBPriorityQueue(priorities)),
 	)
 }
 

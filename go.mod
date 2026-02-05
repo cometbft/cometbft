@@ -5,6 +5,7 @@ go 1.24.6
 require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/Masterminds/semver/v3 v3.4.0
+	github.com/Workiva/go-datastructures v1.1.7
 	github.com/adlio/schema v1.3.9
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cometbft/cometbft-db v0.14.1
@@ -80,7 +81,6 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/flynn/noise v1.1.0 // indirect
-	github.com/francoispqt/gojay v1.2.13 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/getsentry/sentry-go v0.27.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
@@ -93,12 +93,10 @@ require (
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/flatbuffers v1.12.1 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/gopacket v1.1.19 // indirect
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
 	github.com/huin/goupnp v1.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/ipfs/go-cid v0.5.0 // indirect
-	github.com/ipfs/go-log/v2 v2.6.0 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jbenet/go-temp-err-catcher v0.1.0 // indirect
@@ -118,7 +116,6 @@ require (
 	github.com/libp2p/go-yamux/v5 v5.0.1 // indirect
 	github.com/linxGnu/grocksdb v1.8.14 // indirect
 	github.com/marten-seemann/tcp v0.0.0-20210406111302-dfbc87cc63fd // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/miekg/dns v1.1.66 // indirect
 	github.com/mikioh/tcpinfo v0.0.0-20190314235526-30a79bb1804b // indirect
 	github.com/mikioh/tcpopt v0.0.0-20190314235656-172688c1accc // indirect

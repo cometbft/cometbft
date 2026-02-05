@@ -48,6 +48,9 @@ type Metrics struct {
 	MessageReactorReceiveDuration metrics.Histogram `metrics_labels:"message_type,reactor"`
 	// Concurrency of the incoming message queue for a given reactor
 	MessageReactorQueueConcurrency metrics.Gauge `metrics_labels:"reactor"`
+	// PushPriorityDuration measures the time it took to push onto the priority queue.
+	// This duration is included in MessagesReactorPendingDuration since we start our timer before this.
+	PushPriorityDuration metrics.Histogram `metrics_labels:"message_type,reactor"`
 }
 
 type metricsLabelCache struct {

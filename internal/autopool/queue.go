@@ -57,10 +57,9 @@ func (q *Queue) Pop() (any, bool) {
 // Priority is an integer between 1 and the number of priorities (inclusive).
 // Higher priority values are dequeued first.
 type PriorityQueue struct {
-	priorities           int
-	levels               []*Queue
-	highestNonEmptyLevel int
-	mu                   sync.Mutex
+	priorities int
+	levels     []*Queue
+	mu         sync.Mutex
 }
 
 func NewPriorityQueue(priorities int) *PriorityQueue {
@@ -74,10 +73,9 @@ func NewPriorityQueue(priorities int) *PriorityQueue {
 	}
 
 	return &PriorityQueue{
-		priorities:           priorities,
-		levels:               queues,
-		highestNonEmptyLevel: -1,
-		mu:                   sync.Mutex{},
+		priorities: priorities,
+		levels:     queues,
+		mu:         sync.Mutex{},
 	}
 }
 
@@ -93,10 +91,6 @@ func (q *PriorityQueue) Push(value any, priority int) error {
 
 	q.levels[idx].Push(value)
 
-	if idx > q.highestNonEmptyLevel {
-		q.highestNonEmptyLevel = idx
-	}
-
 	return nil
 }
 
@@ -105,26 +99,11 @@ func (q *PriorityQueue) Pop() (any, bool) {
 	defer q.mu.Unlock()
 
 	// highest priority first
-	for i := q.highestNonEmptyLevel; i >= 0; i-- {
+	for i := len(q.levels); i >= 0; i-- {
 		if v, ok := q.levels[i].Pop(); ok {
-			q.updateHighestNonEmpty(i)
 			return v, ok
 		}
 	}
 
 	return nil, false
-}
-
-// updateHighestNonEmpty for empty PriorityQueue it will set highestNonEmptyLevel to -1
-func (q *PriorityQueue) updateHighestNonEmpty(lastLevel int) {
-	// noop
-	if q.levels[lastLevel].Len() > 0 {
-		return
-	}
-
-	// Update highestNonEmpty by scanning downward
-	q.highestNonEmptyLevel = lastLevel - 1
-	for q.highestNonEmptyLevel >= 0 && q.levels[q.highestNonEmptyLevel].Len() == 0 {
-		q.highestNonEmptyLevel--
-	}
 }

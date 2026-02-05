@@ -193,7 +193,9 @@ func (rs *reactorSet) Receive(reactorName, messageType string, envelope p2p.Enve
 		addedAt:     now,
 	}
 
+	pushStart := time.Now()
 	err := reactor.consumerQueue.PushPriority(pq, priority)
+	rs.switchRef.metrics.PushPriorityDuration.With(labels...).Observe(time.Since(pushStart).Seconds())
 	if err != nil {
 		rs.switchRef.metrics.MessagesReactorInFlight.With(labels...).Add(-1)
 		rs.switchRef.Logger.Error("Failed to push envelope to priority queue", "reactor", reactorName, "err", err)

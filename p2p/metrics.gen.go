@@ -86,6 +86,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "message_reactor_queue_concurrency",
 			Help:      "Concurrency of the incoming message queue for a given reactor",
 		}, append(labels, "reactor")).With(labelsAndValues...),
+		PushPriorityDuration: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "push_priority_duration",
+			Help:      "PushPriorityDuration measures the time it took to push onto the priority queue. This duration is included in MessagesReactorPendingDuration since we start our timer before this.",
+		}, append(labels, "message_type", "reactor")).With(labelsAndValues...),
 	}
 }
 
@@ -103,5 +109,6 @@ func NopMetrics() *Metrics {
 		MessagesReactorPendingDuration: discard.NewHistogram(),
 		MessageReactorReceiveDuration:  discard.NewHistogram(),
 		MessageReactorQueueConcurrency: discard.NewGauge(),
+		PushPriorityDuration:           discard.NewHistogram(),
 	}
 }

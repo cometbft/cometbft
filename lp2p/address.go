@@ -107,7 +107,13 @@ func netAddressFromPeer(addrInfo peer.AddrInfo) (*p2p.NetAddress, error) {
 
 	ip := net.ParseIP(parts[0])
 	if ip == nil {
-		return nil, fmt.Errorf("invalid IP address %s", parts[0])
+		// Not a literal IP — try resolving as a DNS hostname.
+		ips, err := net.LookupIP(parts[0])
+		if err != nil || len(ips) == 0 {
+			return nil, fmt.Errorf("unable to resolve address %s", parts[0])
+		}
+		// Prefer IPv4 over IPv6, matching standard dual-stack behavior (RFC 6724).
+		ip = preferIPv4(ips)
 	}
 
 	port, err := strconv.ParseUint(parts[1], 10, 16)
@@ -120,4 +126,13 @@ func netAddressFromPeer(addrInfo peer.AddrInfo) (*p2p.NetAddress, error) {
 		IP:   ip,
 		Port: uint16(port),
 	}, nil
+}
+
+func preferIPv4(ips []net.IP) net.IP {
+	for _, ip := range ips {
+		if ip.To4() != nil {
+			return ip
+		}
+	}
+	return ips[0]
 }

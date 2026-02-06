@@ -109,17 +109,19 @@ func (s *Switch) OnStart() error {
 	bootstrapPeers := s.host.BootstrapPeers()
 
 	for _, bp := range bootstrapPeers {
-		err := s.connectPeer(ctx, bp.AddrInfo, PeerAddOptions{
+		opts := PeerAddOptions{
 			Private:       bp.Private,
 			Persistent:    bp.Persistent,
 			Unconditional: bp.Unconditional,
 			OnBeforeStart: s.reactors.InitPeer,
 			OnAfterStart:  s.reactors.AddPeer,
 			OnStartFailed: s.reactors.RemovePeer,
-		})
+		}
 
+		err := s.connectPeer(ctx, bp.AddrInfo, opts)
 		if err != nil {
 			s.Logger.Error("Unable to add bootstrap peer", "peer_id", bp.AddrInfo.String(), "err", err)
+			go s.reconnectPeer(bp.AddrInfo, MaxReconnectBackoff, opts)
 			continue
 		}
 	}
@@ -517,6 +519,8 @@ func (s *Switch) connectPeer(ctx context.Context, addrInfo peer.AddrInfo, opts P
 	if _, err := s.peerSet.Add(addrInfo, opts); err != nil {
 		return errors.Wrap(err, "unable to add peer")
 	}
+
+	s.Logger.Info("Connected to peer", "addr_info", addrInfo.String())
 
 	go s.pingPeer(addrInfo)
 

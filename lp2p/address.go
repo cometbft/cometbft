@@ -66,8 +66,24 @@ func AddrInfoFromHostAndID(host, id string) (peer.AddrInfo, error) {
 
 // addrToQuicMultiaddr converts a given address to a QUIC multiaddr
 // example: "tcp://192.0.2.0:65432" -> "/ip4/192.0.2.0/udp/65432/quic-v1"
+// example: "tcp://my-host.cluster.local:65432" -> "dns/my-host.cluster.local/udp/65432/quic-v1"
 func addrToQuicMultiaddr(parts *url.URL, layer4 string) (ma.Multiaddr, error) {
-	raw := fmt.Sprintf("/ip4/%s/%s/%s/%s", parts.Hostname(), layer4, parts.Port(), TransportQUIC)
+	hostname := parts.Hostname()
+
+	// Determine the network protocol prefix based on the hostname
+	var networkProto string
+	if ip := net.ParseIP(hostname); ip != nil {
+		if ip.To4() != nil {
+			networkProto = "ip4"
+		} else {
+			networkProto = "ip6"
+		}
+	} else {
+		// Not an IP address, treat as DNS hostname
+		networkProto = "dns"
+	}
+
+	raw := fmt.Sprintf("/%s/%s/%s/%s/%s", networkProto, hostname, layer4, parts.Port(), TransportQUIC)
 
 	return ma.NewMultiaddr(raw)
 }

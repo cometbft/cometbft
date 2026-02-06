@@ -34,6 +34,18 @@ func TestAddressToMultiAddr(t *testing.T) {
 			transport:   TransportQUIC,
 			errContains: "port is empty",
 		},
+		{
+			name:      "hostname",
+			addr:      "my-app-7d9c6f7c9f-2xk8m.default.pod.cluster.local:5678",
+			transport: TransportQUIC,
+			want:      "/dns/my-app-7d9c6f7c9f-2xk8m.default.pod.cluster.local/udp/5678/quic-v1",
+		},
+		{
+			name:      "hostname",
+			addr:      "my-app-7d9c6f7c9f-2xk8m:5678",
+			transport: TransportQUIC,
+			want:      "/dns/my-app-7d9c6f7c9f-2xk8m/udp/5678/quic-v1",
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := AddressToMultiAddr(tt.addr, tt.transport)

@@ -379,6 +379,78 @@ func assertNoPeersAfterTimeout(t *testing.T, sw *Switch, timeout time.Duration) 
 	}
 }
 
+func TestSwitchIsPeerPersistentMatchesIDWhenIPChanges(t *testing.T) {
+	sw := MakeSwitch(cfg, 1, initSwitchFunc)
+
+	peerID := ID("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
+
+	sw.persistentPeersAddrs = []*NetAddress{
+		{
+			ID:       peerID,
+			IP:       net.ParseIP("10.0.0.1"),
+			Port:     26656,
+			Hostname: "my-peer.k8s.local",
+		},
+	}
+
+	assert.True(t, sw.IsPeerPersistent(&NetAddress{
+		ID: peerID, IP: net.ParseIP("10.0.0.2"), Port: 26656,
+	}))
+
+	assert.False(t, sw.IsPeerPersistent(&NetAddress{
+		ID: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", IP: net.ParseIP("10.0.0.3"), Port: 26656,
+	}))
+
+	assert.True(t, sw.IsPeerPersistent(&NetAddress{
+		ID: peerID, IP: net.ParseIP("10.0.0.1"), Port: 26656,
+	}))
+}
+
+func TestSwitchIsPeerPersistentIPOnlyRequiresExactMatch(t *testing.T) {
+	sw := MakeSwitch(cfg, 1, initSwitchFunc)
+
+	peerID := ID("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
+
+	sw.persistentPeersAddrs = []*NetAddress{
+		{
+			ID:   peerID,
+			IP:   net.ParseIP("10.0.0.1"),
+			Port: 26656,
+		},
+	}
+
+	assert.False(t, sw.IsPeerPersistent(&NetAddress{
+		ID: peerID, IP: net.ParseIP("10.0.0.2"), Port: 26656,
+	}))
+
+	assert.True(t, sw.IsPeerPersistent(&NetAddress{
+		ID: peerID, IP: net.ParseIP("10.0.0.1"), Port: 26656,
+	}))
+}
+
+func TestIsDialingOrExistingAddressSkipsIPCheckForHostname(t *testing.T) {
+	swCfg := config.DefaultP2PConfig()
+	swCfg.AllowDuplicateIP = false
+
+	sw := NewSwitch(swCfg, nil)
+
+	peer := newMockPeer(net.ParseIP("10.0.0.1"))
+	err := sw.peers.Add(peer)
+	require.NoError(t, err)
+
+	assert.True(t, sw.IsDialingOrExistingAddress(&NetAddress{
+		ID: "aabbccddee0011223344aabbccddee0011223344", IP: net.ParseIP("10.0.0.1"), Port: 26656,
+	}))
+
+	assert.False(t, sw.IsDialingOrExistingAddress(&NetAddress{
+		ID: "aabbccddee0011223344aabbccddee0011223344", IP: net.ParseIP("10.0.0.1"), Port: 26656, Hostname: "peer.example.com",
+	}))
+
+	assert.True(t, sw.IsDialingOrExistingAddress(&NetAddress{
+		ID: peer.ID(), IP: net.ParseIP("10.0.0.1"), Port: 26656, Hostname: "peer.example.com",
+	}))
+}
+
 func TestSwitchStopsNonPersistentPeerOnError(t *testing.T) {
 	assert, require := assert.New(t), require.New(t)
 

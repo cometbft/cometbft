@@ -608,7 +608,7 @@ func (sw *Switch) randomSleep(interval time.Duration) {
 func (sw *Switch) IsDialingOrExistingAddress(addr *NetAddress) bool {
 	return sw.dialing.Has(string(addr.ID)) ||
 		sw.peers.Has(addr.ID) ||
-		(!sw.config.AllowDuplicateIP && sw.peers.HasIP(addr.IP))
+		(!sw.config.AllowDuplicateIP && addr.Hostname == "" && sw.peers.HasIP(addr.IP))
 }
 
 // AddPersistentPeers allows you to set persistent peers. It ignores
@@ -662,6 +662,10 @@ func (sw *Switch) AddPrivatePeerIDs(ids []string) error {
 func (sw *Switch) IsPeerPersistent(na *NetAddress) bool {
 	for _, pa := range sw.persistentPeersAddrs {
 		if pa.Equals(na) {
+			return true
+		}
+		// Hostname-based persistent peers match by ID because DNS-resolved IPs can change.
+		if pa.Hostname != "" && pa.ID != "" && pa.ID == na.ID {
 			return true
 		}
 	}

@@ -1,9 +1,12 @@
 package p2p
 
 import (
+	"encoding/json"
 	"net"
+	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -189,4 +192,112 @@ func TestNetAddressReachabilityTo(t *testing.T) {
 
 		assert.Equal(t, tc.reachability, addr.ReachabilityTo(other))
 	}
+}
+
+func TestNewNetAddressStringHostname(t *testing.T) {
+	addr, err := NewNetAddressString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@ya.ru:80")
+	require.Nil(t, err)
+	assert.Equal(t, "ya.ru", addr.Hostname)
+	assert.NotNil(t, addr.IP)
+	assert.NotContains(t, addr.String(), "ya.ru")
+	assert.Contains(t, addr.String(), "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@")
+
+	addr, err = NewNetAddressString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@127.0.0.1:8080")
+	require.Nil(t, err)
+	assert.Empty(t, addr.Hostname)
+}
+
+func TestNetAddressEqualsIgnoresHostname(t *testing.T) {
+	addr1 := &NetAddress{
+		ID:       "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+		IP:       net.ParseIP("10.0.0.1"),
+		Port:     26656,
+		Hostname: "host-a.local",
+	}
+	addr2 := &NetAddress{
+		ID:   "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+		IP:   net.ParseIP("10.0.0.1"),
+		Port: 26656,
+	}
+	assert.True(t, addr1.Equals(addr2))
+}
+
+func TestNetAddressHostnameJSON(t *testing.T) {
+	na := &NetAddress{
+		ID:       "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+		IP:       net.ParseIP("10.0.0.1"),
+		Port:     26656,
+		Hostname: "my-host.local",
+	}
+	data, err := json.Marshal(na)
+	require.Nil(t, err)
+	assert.Contains(t, string(data), `"hostname":"my-host.local"`)
+
+	var na2 NetAddress
+	err = json.Unmarshal(data, &na2)
+	require.Nil(t, err)
+	assert.Equal(t, na.Hostname, na2.Hostname)
+	assert.True(t, na.IP.Equal(na2.IP))
+	assert.Equal(t, na.Port, na2.Port)
+
+	na3 := &NetAddress{
+		ID:   "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+		IP:   net.ParseIP("10.0.0.1"),
+		Port: 26656,
+	}
+	data, err = json.Marshal(na3)
+	require.Nil(t, err)
+	assert.NotContains(t, string(data), "hostname")
+
+	oldJSON := `{"id":"deadbeefdeadbeefdeadbeefdeadbeefdeadbeef","ip":"10.0.0.1","port":26656}`
+	var na4 NetAddress
+	err = json.Unmarshal([]byte(oldJSON), &na4)
+	require.Nil(t, err)
+	assert.Empty(t, na4.Hostname)
+	assert.Equal(t, uint16(26656), na4.Port)
+}
+
+func TestPreferIPv4(t *testing.T) {
+	ipv4 := net.ParseIP("10.0.0.1")
+	ipv6 := net.ParseIP("2001:db8::1")
+
+	assert.Equal(t, ipv4, preferIPv4([]net.IP{ipv6, ipv4}))
+	assert.Equal(t, ipv6, preferIPv4([]net.IP{ipv6}))
+	assert.Equal(t, ipv4, preferIPv4([]net.IP{ipv4}))
+}
+
+func TestNetAddressDialTimeout(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.Nil(t, err)
+	defer ln.Close()
+
+	_, portStr, err := net.SplitHostPort(ln.Addr().String())
+	require.Nil(t, err)
+	port, err := strconv.Atoi(portStr)
+	require.Nil(t, err)
+
+	na := &NetAddress{
+		ID:       "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+		IP:       net.ParseIP("127.0.0.1"),
+		Port:     uint16(port),
+		Hostname: "localhost",
+	}
+	conn, err := na.DialTimeout(time.Second)
+	require.Nil(t, err)
+	conn.Close()
+
+	na.Hostname = ""
+	conn, err = na.DialTimeout(time.Second)
+	require.Nil(t, err)
+	conn.Close()
+}
+
+func TestNetAddressDialNil(t *testing.T) {
+	var na *NetAddress
+
+	_, err := na.Dial()
+	require.Error(t, err)
+
+	_, err = na.DialTimeout(time.Second)
+	require.Error(t, err)
 }

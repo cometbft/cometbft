@@ -20,12 +20,17 @@ import (
 // EmptyNetAddress defines the string representation of an empty NetAddress
 const EmptyNetAddress = "<nil-NetAddress>"
 
-// NetAddress defines information about a peer on the network
-// including its ID, IP address, and port.
+// NetAddress defines information about a peer on the network.
+// If created from a hostname, Hostname preserves the DNS name so
+// Dial/DialTimeout can re-resolve it on each connection attempt.
 type NetAddress struct {
 	ID   ID     `json:"id"`
 	IP   net.IP `json:"ip"`
 	Port uint16 `json:"port"`
+
+	// Hostname stores the original DNS name, if any.
+	// Dial and DialTimeout use it to trigger fresh DNS resolution.
+	Hostname string `json:"hostname,omitempty"`
 }
 
 // IDAddressString returns id@hostPort. It strips the leading
@@ -94,12 +99,14 @@ func NewNetAddressString(addr string) (*NetAddress, error) {
 	}
 
 	ip := net.ParseIP(host)
+	var hostname string
 	if ip == nil {
+		hostname = host
 		ips, err := net.LookupIP(host)
-		if err != nil {
+		if err != nil || len(ips) == 0 {
 			return nil, ErrNetAddressLookup{host, err}
 		}
-		ip = ips[0]
+		ip = preferIPv4(ips)
 	}
 
 	port, err := strconv.ParseUint(portStr, 10, 16)
@@ -109,6 +116,7 @@ func NewNetAddressString(addr string) (*NetAddress, error) {
 
 	na := NewNetAddressIPPort(ip, uint16(port))
 	na.ID = id
+	na.Hostname = hostname
 	return na, nil
 }
 
@@ -233,8 +241,16 @@ func (na *NetAddress) DialString() string {
 }
 
 // Dial calls net.Dial on the address.
+// If Hostname is set, it dials the hostname to re-resolve DNS.
 func (na *NetAddress) Dial() (net.Conn, error) {
-	conn, err := net.Dial("tcp", na.DialString())
+	if na == nil {
+		return nil, errors.New("nil address")
+	}
+	dialAddr := na.DialString()
+	if na.Hostname != "" {
+		dialAddr = net.JoinHostPort(na.Hostname, strconv.FormatUint(uint64(na.Port), 10))
+	}
+	conn, err := net.Dial("tcp", dialAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -242,8 +258,16 @@ func (na *NetAddress) Dial() (net.Conn, error) {
 }
 
 // DialTimeout calls net.DialTimeout on the address.
+// If Hostname is set, it dials the hostname to re-resolve DNS.
 func (na *NetAddress) DialTimeout(timeout time.Duration) (net.Conn, error) {
-	conn, err := net.DialTimeout("tcp", na.DialString(), timeout)
+	if na == nil {
+		return nil, errors.New("nil address")
+	}
+	dialAddr := na.DialString()
+	if na.Hostname != "" {
+		dialAddr = net.JoinHostPort(na.Hostname, strconv.FormatUint(uint64(na.Port), 10))
+	}
+	conn, err := net.DialTimeout("tcp", dialAddr, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -397,6 +421,17 @@ func (na *NetAddress) RFC4862() bool     { return rfc4862.Contains(na.IP) }
 func (na *NetAddress) RFC6052() bool     { return rfc6052.Contains(na.IP) }
 func (na *NetAddress) RFC6145() bool     { return rfc6145.Contains(na.IP) }
 func (na *NetAddress) OnionCatTor() bool { return onionCatNet.Contains(na.IP) }
+
+// preferIPv4 returns the first IPv4 address from the slice, or the first
+// address if no IPv4 address is found.
+func preferIPv4(ips []net.IP) net.IP {
+	for _, ip := range ips {
+		if ip.To4() != nil {
+			return ip
+		}
+	}
+	return ips[0]
+}
 
 func removeProtocolIfDefined(addr string) string {
 	if strings.Contains(addr, "://") {

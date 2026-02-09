@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[blocksync]` Prevent banning active peers that send small blocks frequently (e.g., empty blocks) by adding liveness check alongside byte rate check
+  ([\#5135](https://github.com/cometbft/cometbft/issues/5135))
 - `[p2p]` fix(privval): Ephemeral Port Exhaustion
   ([\#5433](https://github.com/cometbft/cometbft/pull/5433))
 

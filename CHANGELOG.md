@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[types]` Fix buffer offset bug in `ProposerPriorityHash` that caused hash collisions when validator priorities differed
+  ([\#5609](https://github.com/cometbft/cometbft/issues/5609))
 - `[p2p]` fix(privval): Ephemeral Port Exhaustion
   ([\#5433](https://github.com/cometbft/cometbft/pull/5433))
 

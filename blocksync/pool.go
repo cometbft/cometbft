@@ -164,13 +164,27 @@ func (pool *BlockPool) removeTimedoutPeers() {
 			curRate := peer.recvMonitor.Status().CurRate
 			// curRate can be 0 on start
 			if curRate != 0 && curRate < minRecvRate {
-				err := errors.New("peer is not sending us data fast enough")
-				pool.sendError(err, peer.id)
-				pool.Logger.Error("SendTimeout", "peer", peer.id,
-					"reason", err,
-					"curRate", fmt.Sprintf("%d KB/s", curRate/1024),
-					"minRate", fmt.Sprintf("%d KB/s", minRecvRate/1024))
-				peer.didTimeout = true
+				// Check if peer has delivered a block recently (liveness check)
+				// This prevents banning peers that send small blocks frequently
+				// (e.g., empty blocks in testnets)
+				timeSinceLastBlock := time.Since(peer.lastBlockTime)
+				if timeSinceLastBlock > peerTimeout {
+					// Peer has both low rate AND hasn't delivered blocks recently
+					err := errors.New("peer is not sending us data fast enough")
+					pool.sendError(err, peer.id)
+					pool.Logger.Error("SendTimeout", "peer", peer.id,
+						"reason", err,
+						"curRate", fmt.Sprintf("%d KB/s", curRate/1024),
+						"minRate", fmt.Sprintf("%d KB/s", minRecvRate/1024),
+						"timeSinceLastBlock", timeSinceLastBlock)
+					peer.didTimeout = true
+				} else {
+					// Peer has low byte rate but is actively delivering blocks - keep it
+					pool.Logger.Debug("Peer has low byte rate but is delivering blocks",
+						"peer", peer.id,
+						"curRate", fmt.Sprintf("%d KB/s", curRate/1024),
+						"timeSinceLastBlock", timeSinceLastBlock)
+				}
 			}
 
 			peer.curRate = curRate
@@ -559,14 +573,15 @@ func (pool *BlockPool) debug() string {
 //-------------------------------------
 
 type bpPeer struct {
-	didTimeout  bool
-	curRate     int64
-	numPending  int32
-	height      int64
-	base        int64
-	pool        *BlockPool
-	id          p2p.ID
-	recvMonitor *flow.Monitor
+	didTimeout    bool
+	curRate       int64
+	numPending    int32
+	height        int64
+	base          int64
+	pool          *BlockPool
+	id            p2p.ID
+	recvMonitor   *flow.Monitor
+	lastBlockTime time.Time // Track when the last block was received
 
 	timeout *time.Timer
 
@@ -575,12 +590,13 @@ type bpPeer struct {
 
 func newBPPeer(pool *BlockPool, peerID p2p.ID, base int64, height int64) *bpPeer {
 	peer := &bpPeer{
-		pool:       pool,
-		id:         peerID,
-		base:       base,
-		height:     height,
-		numPending: 0,
-		logger:     log.NewNopLogger(),
+		pool:          pool,
+		id:            peerID,
+		base:          base,
+		height:        height,
+		numPending:    0,
+		lastBlockTime: time.Now(), // Initialize to avoid false positives on startup
+		logger:        log.NewNopLogger(),
 	}
 	return peer
 }
@@ -613,6 +629,7 @@ func (peer *bpPeer) incrPending() {
 
 func (peer *bpPeer) decrPending(recvSize int) {
 	peer.numPending--
+	peer.lastBlockTime = time.Now() // Update last block receipt time
 	if peer.numPending == 0 {
 		peer.timeout.Stop()
 	} else {

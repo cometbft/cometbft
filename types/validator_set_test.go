@@ -183,6 +183,12 @@ func TestValidatorSet_ProposerPriorityHash(t *testing.T) {
 	vset.IncrementProposerPriority(1)
 	assert.Equal(t, vset.Hash(), vsetCopy.Hash())
 	assert.NotEqual(t, vset.ProposerPriorityHash(), vsetCopy.ProposerPriorityHash())
+
+	// Regression test for #5609: changing a validator's priority must change the hash
+	vsetCopy2 := vset.Copy()
+	vsetCopy2.Validators[1].ProposerPriority = -vset.Validators[1].ProposerPriority * 10
+	assert.NotEqual(t, vsetCopy2.Validators[1].ProposerPriority, vset.Validators[1].ProposerPriority)
+	assert.NotEqual(t, vset.ProposerPriorityHash(), vsetCopy2.ProposerPriorityHash())
 }
 
 // Test that IncrementProposerPriority requires positive times.
@@ -1836,31 +1842,4 @@ func TestValidatorSet_TotalVotingPowerSafe(t *testing.T) {
 			}
 		})
 	}
-}
-// TestValidatorSet_ProposerPriorityHash_Repro reproduces Issue #5609
-// where ProposerPriorityHash produces the same hash for different validator sets
-// because the buffer offset is not updated in the loop.
-func TestValidatorSet_ProposerPriorityHash_Repro(t *testing.T) {
-	vset := &ValidatorSet{
-		Validators: make([]*Validator, 3),
-	}
-	for i := range vset.Validators {
-		pk := randPubKey()
-		vset.Validators[i] = &Validator{
-			Address:          pk.Address(),
-			PubKey:           pk,
-			VotingPower:      int64(10 * (i + 1)),
-			ProposerPriority: int64(i + 1),
-		}
-	}
-
-	vsetCopy := vset.Copy()
-	// Change the middle validator's priority
-	vsetCopy.Validators[1].ProposerPriority = -vset.Validators[1].ProposerPriority * 10
-
-	// Sanity check: priorities are indeed different
-	assert.NotEqual(t, vsetCopy.Validators[1].ProposerPriority, vset.Validators[1].ProposerPriority)
-
-	// The Bug: These hashes SHOULD be different, but currently they are equal
-	assert.NotEqual(t, vset.ProposerPriorityHash(), vsetCopy.ProposerPriorityHash(), "Hashes should differ when priorities differ")
 }

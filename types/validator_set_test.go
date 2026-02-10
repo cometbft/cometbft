@@ -183,6 +183,12 @@ func TestValidatorSet_ProposerPriorityHash(t *testing.T) {
 	vset.IncrementProposerPriority(1)
 	assert.Equal(t, vset.Hash(), vsetCopy.Hash())
 	assert.NotEqual(t, vset.ProposerPriorityHash(), vsetCopy.ProposerPriorityHash())
+
+	// Regression test for #5609: changing a validator's priority must change the hash
+	vsetCopy2 := vset.Copy()
+	vsetCopy2.Validators[1].ProposerPriority = -vset.Validators[1].ProposerPriority * 10
+	assert.NotEqual(t, vsetCopy2.Validators[1].ProposerPriority, vset.Validators[1].ProposerPriority)
+	assert.NotEqual(t, vset.ProposerPriorityHash(), vsetCopy2.ProposerPriorityHash())
 }
 
 // Test that IncrementProposerPriority requires positive times.

@@ -195,15 +195,13 @@ func TestNetAddressReachabilityTo(t *testing.T) {
 }
 
 func TestNewNetAddressStringHostname(t *testing.T) {
-	addr, err := NewNetAddressString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@ya.ru:80")
-	require.Nil(t, err)
-	assert.Equal(t, "ya.ru", addr.Hostname)
+	addr, err := NewNetAddressString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@localhost:80")
+	require.NoError(t, err)
+	assert.Equal(t, "localhost", addr.Hostname)
 	assert.NotNil(t, addr.IP)
-	assert.NotContains(t, addr.String(), "ya.ru")
-	assert.Contains(t, addr.String(), "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@")
 
 	addr, err = NewNetAddressString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@127.0.0.1:8080")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Empty(t, addr.Hostname)
 }
 

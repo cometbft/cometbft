@@ -1,10 +1,12 @@
 package lp2p
 
 import (
+	"net"
 	"testing"
 
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/libp2p/go-libp2p/core/peer"
+	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/require"
 )
 
@@ -33,6 +35,24 @@ func TestAddressToMultiAddr(t *testing.T) {
 			addr:        "1.1.1.1",
 			transport:   TransportQUIC,
 			errContains: "port is empty",
+		},
+		{
+			name:      "hostname",
+			addr:      "my-app-7d9c6f7c9f-2xk8m.default.pod.cluster.local:5678",
+			transport: TransportQUIC,
+			want:      "/dns/my-app-7d9c6f7c9f-2xk8m.default.pod.cluster.local/udp/5678/quic-v1",
+		},
+		{
+			name:      "hostname2",
+			addr:      "my-app-7d9c6f7c9f-2xk8m:5678",
+			transport: TransportQUIC,
+			want:      "/dns/my-app-7d9c6f7c9f-2xk8m/udp/5678/quic-v1",
+		},
+		{
+			name:      "localhost",
+			addr:      "localhost:5678",
+			transport: TransportQUIC,
+			want:      "/dns/localhost/udp/5678/quic-v1",
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -141,4 +161,44 @@ func TestAddrInfoFromHostAndID(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNetAddressFromPeer(t *testing.T) {
+	peerID, err := IDFromPrivateKey(ed25519.GenPrivKey())
+	require.NoError(t, err)
+
+	t.Run("localhost", func(t *testing.T) {
+		// "localhost" is resolvable on all platforms.
+		addr, err := AddressToMultiAddr("localhost:5678", TransportQUIC)
+		require.NoError(t, err)
+		require.Equal(t, "/dns/localhost/udp/5678/quic-v1", addr.String())
+
+		addrInfo := peer.AddrInfo{ID: peerID, Addrs: []ma.Multiaddr{addr}}
+
+		netAddr, err := netAddressFromPeer(addrInfo)
+		require.NoError(t, err)
+		require.NotNil(t, netAddr.IP)
+		require.Equal(t, uint16(5678), netAddr.Port)
+	})
+
+	t.Run("unresolvable", func(t *testing.T) {
+		addr, err := AddressToMultiAddr("this-host-does-not-exist.invalid:5678", TransportQUIC)
+		require.NoError(t, err)
+
+		addrInfo := peer.AddrInfo{ID: peerID, Addrs: []ma.Multiaddr{addr}}
+
+		_, err = netAddressFromPeer(addrInfo)
+		require.Error(t, err)
+		require.ErrorContains(t, err, "unable to resolve address")
+	})
+}
+
+func TestPreferIPv4(t *testing.T) {
+	v4 := net.ParseIP("1.2.3.4")
+	v6 := net.ParseIP("::1")
+
+	require.Equal(t, v4, preferIPv4([]net.IP{v4}), "single v4")
+	require.Equal(t, v6, preferIPv4([]net.IP{v6}), "single v6 falls back")
+	require.Equal(t, v4, preferIPv4([]net.IP{v6, v4}), "v4 preferred over v6")
+	require.Equal(t, v4, preferIPv4([]net.IP{v4, v6}), "v4 first stays first")
 }

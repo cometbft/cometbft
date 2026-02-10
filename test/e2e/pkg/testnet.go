@@ -126,6 +126,7 @@ type Node struct {
 	SendNoLoad          bool
 	Prometheus          bool
 	UseLibp2p           bool
+	MempoolType         string
 	PrometheusProxyPort uint32
 }
 
@@ -249,6 +250,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			Perturbations:    []Perturbation{},
 			SendNoLoad:       nodeManifest.SendNoLoad,
 			UseLibp2p:        nodeManifest.UseLibp2p,
+			MempoolType:      nodeManifest.MempoolType,
 			Prometheus:       testnet.Prometheus,
 		}
 		if node.StartAt == testnet.InitialHeight {

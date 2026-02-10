@@ -51,7 +51,9 @@ func (env *Environment) Status(*rpctypes.Context) (*ctypes.ResultStatus, error) 
 		votingPower = val.VotingPower
 	}
 
-	result := &ctypes.ResultStatus{
+	catchingUp := env.ConsensusReactor.WaitSync() && !env.IsFollowerMode
+
+	return &ctypes.ResultStatus{
 		NodeInfo: env.P2PTransport.NodeInfo().(p2p.DefaultNodeInfo),
 		SyncInfo: ctypes.SyncInfo{
 			LatestBlockHash:     latestBlockHash,
@@ -62,16 +64,14 @@ func (env *Environment) Status(*rpctypes.Context) (*ctypes.ResultStatus, error) 
 			EarliestAppHash:     earliestAppHash,
 			EarliestBlockHeight: earliestBlockHeight,
 			EarliestBlockTime:   time.Unix(0, earliestBlockTimeNano),
-			CatchingUp:          env.ConsensusReactor.WaitSync(),
+			CatchingUp:          catchingUp,
 		},
 		ValidatorInfo: ctypes.ValidatorInfo{
 			Address:     env.PubKey.Address(),
 			PubKey:      env.PubKey,
 			VotingPower: votingPower,
 		},
-	}
-
-	return result, nil
+	}, nil
 }
 
 func (env *Environment) validatorAtHeight(h int64) *types.Validator {

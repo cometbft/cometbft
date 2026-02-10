@@ -39,7 +39,8 @@ func TestHost(t *testing.T) {
 	host1 := makeTestHost(t, ports[0], withLogging())
 	host2 := makeTestHost(t, ports[1], withLogging(), withBootstrapPeers([]config.LibP2PBootstrapPeer{
 		{
-			Host: fmt.Sprintf("127.0.0.1:%d", ports[0]),
+			// resolve host via hostname
+			Host: fmt.Sprintf("localhost:%d", ports[0]),
 			ID:   host1.ID().String(),
 		},
 	}))
@@ -190,6 +191,21 @@ func TestHost(t *testing.T) {
 	}
 
 	require.ElementsMatch(t, expectedEnvelopes, envelopes)
+
+	t.Run("Ping", func(t *testing.T) {
+		// ARRANGE
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		// ACT
+		rtt, err := host1.Ping(ctx, host2.AddrInfo())
+
+		// ASSERT
+		require.NoError(t, err)
+		require.NotZero(t, rtt)
+
+		t.Logf("host1 -> host2 RTT: %s", rtt.String())
+	})
 }
 
 type testOpts struct {

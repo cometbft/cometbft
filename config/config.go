@@ -45,6 +45,7 @@ const (
 
 	MempoolTypeFlood = "flood"
 	MempoolTypeNop   = "nop"
+	MempoolTypeApp   = "app"
 
 	v0 = "v0"
 	v1 = "v1"
@@ -775,6 +776,7 @@ type MempoolConfig struct {
 	//  - "nop"   : nop-mempool (short for no operation; the ABCI app is
 	//  responsible for storing, disseminating and proposing txs).
 	//  "create_empty_blocks=false" is not supported.
+	//  - "app"   : app-side mempool (the ABCI app is responsible for mempool, comet only broadcasts txs).
 	Type string `mapstructure:"type"`
 	// RootDir is the root directory for all data. This should be configured via
 	// the $CMTHOME env variable or --home cmd flag rather than overriding this
@@ -882,7 +884,7 @@ func (cfg *MempoolConfig) WalEnabled() bool {
 // returns an error if any check fails.
 func (cfg *MempoolConfig) ValidateBasic() error {
 	switch cfg.Type {
-	case MempoolTypeFlood, MempoolTypeNop:
+	case MempoolTypeFlood, MempoolTypeApp, MempoolTypeNop:
 	case "": // allow empty string to be backwards compatible
 	default:
 		return fmt.Errorf("unknown mempool type: %q", cfg.Type)
@@ -1007,15 +1009,17 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 //-----------------------------------------------------------------------------
 // BlockSyncConfig
 
-// BlockSyncConfig (formerly known as FastSync) defines the configuration for the CometBFT block sync service
+// BlockSyncConfig defines the configuration for the CometBFT block sync service
 type BlockSyncConfig struct {
-	Version string `mapstructure:"version"`
+	Version      string `mapstructure:"version"`
+	FollowerMode bool   `mapstructure:"follower_mode"`
 }
 
 // DefaultBlockSyncConfig returns a default configuration for the block sync service
 func DefaultBlockSyncConfig() *BlockSyncConfig {
 	return &BlockSyncConfig{
-		Version: "v0",
+		Version:      "v0",
+		FollowerMode: false,
 	}
 }
 

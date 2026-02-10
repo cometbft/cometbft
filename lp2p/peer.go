@@ -20,8 +20,14 @@ type Peer struct {
 
 	host *Host
 
+	// addrInfo lp2p peer representation. Note that lp2p's addressbook CAN contain
+	// different AddrInfo.Addrs for this peer: e.g. peer could announce different addresses in identity protocol.
+	// Imagine peerA has p2p.ExternalAddress=<some_pub_ip>, but in our bootstrap_peers it exists under
+	// <vpc_private_ip>. We want to use <vpc_private_ip> in this case regardless of what peerA tells us.
+	// We might make this configurable and revisit if needed.
 	addrInfo peer.AddrInfo
-	netAddr  *p2p.NetAddress
+
+	netAddr *p2p.NetAddress
 
 	// behavioral flags (are not mutually exclusive)
 	isPrivate       bool

@@ -109,17 +109,19 @@ func (s *Switch) OnStart() error {
 	bootstrapPeers := s.host.BootstrapPeers()
 
 	for _, bp := range bootstrapPeers {
-		err := s.connectPeer(ctx, bp.AddrInfo, PeerAddOptions{
+		opts := PeerAddOptions{
 			Private:       bp.Private,
 			Persistent:    bp.Persistent,
 			Unconditional: bp.Unconditional,
 			OnBeforeStart: s.reactors.InitPeer,
 			OnAfterStart:  s.reactors.AddPeer,
 			OnStartFailed: s.reactors.RemovePeer,
-		})
+		}
 
+		err := s.connectPeer(ctx, bp.AddrInfo, opts)
 		if err != nil {
 			s.Logger.Error("Unable to add bootstrap peer", "peer_id", bp.AddrInfo.String(), "err", err)
+			go s.reconnectPeer(bp.AddrInfo, MaxReconnectBackoff, opts)
 			continue
 		}
 	}
@@ -247,8 +249,25 @@ func (s *Switch) StopPeerForError(peer p2p.Peer, reason any) {
 		return
 	}
 
+	// todo, actually, for persistent peers we can skip this step,
+	// but explicitly closing might cleanup some conns/resources
+	if err := s.host.Network().ClosePeer(p.addrInfo.ID); err != nil {
+		// tolerate this error.
+		s.Logger.Error("Failed to close peer", "peer_id", key, "err", err)
+	}
+
 	// reconnect logic
-	if !p.IsPersistent() {
+	shouldReconnect := false
+
+	if p.IsPersistent() {
+		shouldReconnect = true
+		s.Logger.Info("Will reconnect to peer", "peer_id", key, "err", reason)
+	} else if errTransient, ok := TransientErrorFromAny(reason); ok {
+		shouldReconnect = true
+		s.Logger.Info("Will reconnect to peer after transient error", "peer_id", key, "err", errTransient.Err)
+	}
+
+	if !shouldReconnect {
 		return
 	}
 
@@ -452,6 +471,11 @@ func (s *Switch) resolvePeer(id peer.ID) (p2p.Peer, error) {
 		return peer, nil
 	}
 
+	addrInfo := s.host.Peerstore().PeerInfo(id)
+	if len(addrInfo.Addrs) == 0 {
+		return nil, errors.New("peer has no addresses in peerstore")
+	}
+
 	// let's try to provision it
 	opts := PeerAddOptions{
 		Private:       false,
@@ -462,7 +486,7 @@ func (s *Switch) resolvePeer(id peer.ID) (p2p.Peer, error) {
 		OnStartFailed: s.reactors.RemovePeer,
 	}
 
-	peer, err := s.peerSet.Add(id, opts)
+	peer, err := s.peerSet.Add(addrInfo, opts)
 	switch {
 	case errors.Is(err, ErrPeerExists):
 		// tolerate two concurrent peer additions
@@ -486,13 +510,19 @@ func (s *Switch) connectPeer(ctx context.Context, addrInfo peer.AddrInfo, opts P
 		return nil
 	}
 
+	s.Logger.Info("Connecting to peer", "addr_info", addrInfo.String())
+
 	if err := s.host.Connect(ctx, addrInfo); err != nil {
 		return errors.Wrap(err, "unable to connect to peer")
 	}
 
-	if _, err := s.peerSet.Add(addrInfo.ID, opts); err != nil {
+	if _, err := s.peerSet.Add(addrInfo, opts); err != nil {
 		return errors.Wrap(err, "unable to add peer")
 	}
+
+	s.Logger.Info("Connected to peer", "addr_info", addrInfo.String())
+
+	go s.pingPeer(addrInfo)
 
 	return nil
 }
@@ -519,6 +549,8 @@ func (s *Switch) reconnectPeer(addrInfo peer.AddrInfo, backoffMax time.Duration,
 		}
 	}
 
+	start := time.Now()
+
 	for {
 		if !s.isActive() {
 			return
@@ -538,9 +570,11 @@ func (s *Switch) reconnectPeer(addrInfo peer.AddrInfo, backoffMax time.Duration,
 		}
 
 		// 2. add peer to the peer set
-		_, err := s.peerSet.Add(addrInfo.ID, opts)
+		_, err := s.peerSet.Add(addrInfo, opts)
 		if err == nil || errors.Is(err, ErrPeerExists) {
-			s.Logger.Info("Reconnected to peer", "peer_id", addrInfo.ID.String())
+			elapsed := time.Since(start)
+			s.Logger.Info("Reconnected to peer", "peer_id", addrInfo.ID.String(), "elapsed", elapsed.String())
+			go s.pingPeer(addrInfo)
 			return
 		}
 
@@ -552,6 +586,28 @@ func (s *Switch) reconnectPeer(addrInfo peer.AddrInfo, backoffMax time.Duration,
 		)
 		sleep()
 	}
+}
+
+// pingPeer pings peers and logs RTT latency (blocking)
+// Keep in might that ping service might be disabled on the counterparty side.
+func (s *Switch) pingPeer(addrInfo peer.AddrInfo) {
+	const timeout = 5 * time.Second
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	var (
+		peerID   = addrInfo.ID.String()
+		fullAddr = addrInfo.String()
+	)
+
+	rtt, err := s.host.Ping(ctx, addrInfo)
+	if err != nil {
+		s.Logger.Error("Failed to ping peer", "peer_id", peerID, "full_addr", fullAddr, "err", err)
+		return
+	}
+
+	s.Logger.Info("Ping", "peer_id", peerID, "full_addr", fullAddr, "rtt", rtt.String())
 }
 
 func (s *Switch) isActive() bool {

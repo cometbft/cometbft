@@ -68,11 +68,6 @@ func WithOnStay[T any](onStay func()) Option[T] {
 	return func(p *Pool[T]) { p.onStay = onStay }
 }
 
-// interval to sleep when the priority queue is idle
-// note that this should be fine because most of the time the queue will be busy.
-// I also explored var cond for a more efficient solution, but it's not worth the complexity for now.
-const priorityQueueIdleInterval = 50 * time.Millisecond
-
 // New Pool constructor.
 func New[T any](
 	scaler *ThroughputLatencyScaler,
@@ -331,14 +326,18 @@ func (p *Pool[T]) removeWorker(id int) {
 // pipePriorityQueue pipes messages from the priority queue to the inbound channel
 func (p *Pool[T]) pipePriorityQueue() {
 	for {
-		if p.stopped() {
-			return
-		}
-
 		value, ok := p.priorityQueue.Pop()
 		if !ok {
-			time.Sleep(priorityQueueIdleInterval)
-			continue
+			// the queue is now empty, wait for the queue to signal that new
+			// values are available before trying to pop again (or the pool has
+			// stopped)
+			select {
+			case <-p.stoppedCh:
+				return
+			case <-p.priorityQueue.WaitForValues():
+				// new work available
+				continue
+			}
 		}
 
 		tt, ok := value.(T)

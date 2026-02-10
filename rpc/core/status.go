@@ -51,7 +51,7 @@ func (env *Environment) Status(*rpctypes.Context) (*ctypes.ResultStatus, error) 
 		votingPower = val.VotingPower
 	}
 
-	catchingUp := env.ConsensusReactor.WaitSync() && !env.IsFollowerMode
+	catchingUp := env.ConsensusReactor.WaitSync() && !env.IsCombinedMode
 
 	return &ctypes.ResultStatus{
 		NodeInfo: env.P2PTransport.NodeInfo().(p2p.DefaultNodeInfo),

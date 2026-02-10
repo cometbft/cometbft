@@ -229,7 +229,7 @@ func createMempoolAndMempoolReactor(
 	config *cfg.Config,
 	proxyApp proxy.AppConns,
 	state sm.State,
-	waitSync bool,
+	waitForSync bool,
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
 ) (mempl.Mempool, waitSyncReactor) {
@@ -250,7 +250,7 @@ func createMempoolAndMempoolReactor(
 		reactor := mempl.NewReactor(
 			config.Mempool,
 			mp,
-			waitSync,
+			waitForSync,
 		)
 		if config.Consensus.WaitForTxs() {
 			mp.EnableTxsAvailable()
@@ -269,7 +269,7 @@ func createMempoolAndMempoolReactor(
 			mempl.WithAMLogger(logger),
 			mempl.WithAMMetrics(memplMetrics),
 		)
-		reactor := mempl.NewAppReactor(config.Mempool, mp, waitSync)
+		reactor := mempl.NewAppReactor(config.Mempool, mp, waitForSync)
 		reactor.SetLogger(logger)
 
 		return mp, reactor
@@ -313,7 +313,7 @@ func createBlocksyncReactor(
 
 	bcReactor := blocksync.NewReactor(
 		enabled,
-		config.BlockSync.FollowerMode,
+		config.BlockSync.CombinedMode,
 		state.Copy(),
 		blockExec,
 		blockStore,
@@ -327,7 +327,8 @@ func createBlocksyncReactor(
 	return bcReactor, nil
 }
 
-func createConsensusReactor(config *cfg.Config,
+func createConsensusReactor(
+	config *cfg.Config,
 	state sm.State,
 	blockExec *sm.BlockExecutor,
 	blockStore sm.BlockStore,
@@ -335,9 +336,9 @@ func createConsensusReactor(config *cfg.Config,
 	evidencePool *evidence.Pool,
 	privValidator types.PrivValidator,
 	csMetrics *cs.Metrics,
-	waitSync bool,
+	waitForSync bool,
 	eventBus *types.EventBus,
-	consensusLogger log.Logger,
+	logger log.Logger,
 	offlineStateSyncHeight int64,
 ) (*cs.Reactor, *cs.State) {
 	consensusState := cs.NewState(
@@ -350,15 +351,17 @@ func createConsensusReactor(config *cfg.Config,
 		cs.StateMetrics(csMetrics),
 		cs.OfflineStateSyncHeight(offlineStateSyncHeight),
 	)
-	consensusState.SetLogger(consensusLogger)
+	consensusState.SetLogger(logger)
 	if privValidator != nil {
 		consensusState.SetPrivValidator(privValidator)
 	}
-	consensusReactor := cs.NewReactor(consensusState, waitSync, cs.ReactorMetrics(csMetrics))
-	consensusReactor.SetLogger(consensusLogger)
+
+	consensusReactor := cs.NewReactor(consensusState, waitForSync, cs.ReactorMetrics(csMetrics))
+	consensusReactor.SetLogger(logger)
 	// services which will be publishing and/or subscribing for messages (events)
 	// consensusReactor will set it on consensusState and blockExecutor
 	consensusReactor.SetEventBus(eventBus)
+
 	return consensusReactor, consensusState
 }
 

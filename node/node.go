@@ -390,24 +390,27 @@ func NewNodeWithContext(
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
 
-	// Determine whether we should do block sync. This must happen after the handshake, since the
-	// app may modify the validator set, specifying ourself as the only validator.
-	blockSync := !onlyValidatorIsUs(state, localAddr)
-	waitSync := stateSync || blockSync
+	// these bools might be a bit confusing, but here's the breakdown:
+	var (
+		// comet's spec initializes the node in BLOCKSYNC mode by default
+		// if not a single validator (eg local-only node) and not doing state sync first
+		enableBlockSync = !onlyValidatorIsUs(state, localAddr) && !stateSync
 
-	if config.BlockSync.FollowerMode {
-		if state.Validators.HasAddress(localAddr) {
-			logger.Error("Follower mode is enabled, but the node is a validator. Ignoring follower mode.")
-			config.BlockSync.FollowerMode = false
-		} else {
-			logger.Info("Follower mode is enabled!")
-		}
+		// consensus reactor should NOT be active (should be blocked waiting) unless state sync is finished,
+		// or blocksync is enabled. But in "combined" mode, we instantly UNBLOCK it!
+		consensusWaitForSync = stateSync || (enableBlockSync && !config.BlockSync.CombinedMode)
+
+		// mempool follows the same rules as the consensus reactor.
+		// RPC can accept and gossip mempool txs even if chain is not yet synced.
+		mempoolWaitForSync = stateSync || (enableBlockSync && !config.BlockSync.CombinedMode)
+	)
+
+	if config.BlockSync.CombinedMode {
+		logger.Info("Combined (blocksync + consensus) mode is enabled!")
 	}
 
-	// Make MempoolReactor
-	// note that mempool ignores sync wait if follower mode is enabled
-	mempoolWaitSync := waitSync && !config.BlockSync.FollowerMode
-	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, mempoolWaitSync, memplMetrics, logger)
+	// create mempool with its reactor
+	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, mempoolWaitForSync, memplMetrics, logger)
 
 	evidenceReactor, evidencePool, err := createEvidenceReactor(config, dbProvider, stateStore, blockStore, logger)
 	if err != nil {
@@ -433,9 +436,6 @@ func NewNodeWithContext(
 		}
 	}
 
-	// Don't start block sync if we're doing a state sync first.
-	enableBlockSync := blockSync && !stateSync
-
 	bcReactor, err := createBlocksyncReactor(
 		enableBlockSync,
 		config,
@@ -451,11 +451,9 @@ func NewNodeWithContext(
 		return nil, fmt.Errorf("could not create blocksync reactor: %w", err)
 	}
 
-	// contrary to mempool, consensus reactor is "suspended" in the follower mode
-	consensusWaitSync := waitSync || config.BlockSync.FollowerMode
 	consensusReactor, consensusState := createConsensusReactor(
 		config, state, blockExec, blockStore, mempool, evidencePool,
-		privValidator, csMetrics, consensusWaitSync, eventBus, consensusLogger, offlineStateSyncHeight,
+		privValidator, csMetrics, consensusWaitForSync, eventBus, consensusLogger, offlineStateSyncHeight,
 	)
 
 	err = stateStore.SetOfflineStateSyncHeight(0)
@@ -779,7 +777,7 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 		MempoolReactor:   n.mempoolReactor,
 		EventBus:         n.eventBus,
 		Mempool:          n.mempool,
-		IsFollowerMode:   n.config.BlockSync.FollowerMode,
+		IsCombinedMode:   n.config.BlockSync.CombinedMode,
 
 		Logger: n.Logger.With("module", "rpc"),
 

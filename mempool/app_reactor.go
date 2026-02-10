@@ -28,7 +28,7 @@ type AppReactor struct {
 func NewAppReactor(
 	config *config.MempoolConfig,
 	mempool *AppMempool,
-	waitSync bool,
+	waitForSync bool,
 ) *AppReactor {
 	ctx, cancelCtx := context.WithCancel(context.Background())
 
@@ -43,7 +43,7 @@ func NewAppReactor(
 
 	r.BaseReactor = *p2p.NewBaseReactor("Mempool", r)
 
-	if waitSync {
+	if waitForSync {
 		r.switchedOn.Store(false)
 		r.waitForSwitchingOnCh = make(chan struct{})
 	} else {

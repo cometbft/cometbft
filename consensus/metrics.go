@@ -148,6 +148,15 @@ type Metrics struct {
 	// It is reported with a separate tag for every peer we are connected to, and updated when their height updates
 	// in our consensus state.
 	PeerHeight metrics.Gauge `metrics_labels:"peer_id"`
+
+	// RoundIncrementTotal is the number of times that the consensus reactor
+	// has incremented above the initial round in a step.
+	RoundIncrementTotal metrics.Counter `metrics_labels:"step"`
+}
+
+func (m *Metrics) MarkRoundIncremented(step cstypes.RoundStepType) {
+	stepName := strings.TrimPrefix(step.String(), "RoundStep")
+	m.RoundIncrementTotal.With("step", stepName).Add(1)
 }
 
 func (m *Metrics) MarkProposalProcessed(accepted bool) {

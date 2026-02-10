@@ -6,11 +6,14 @@
 
 ### BUG FIXES
 
+- `[types]` Fix buffer offset bug in `ProposerPriorityHash` that caused hash collisions when validator priorities differed
+  ([\#5613](https://github.com/cometbft/cometbft/pull/5613))
 - `[p2p]` fix(privval): Ephemeral Port Exhaustion
   ([\#5433](https://github.com/cometbft/cometbft/pull/5433))
 
 ### IMPROVEMENTS
 
+- `[mempool]` feat!(mempool): introduce app-mempool & follower-mode. Improve lib-p2p integration (project Krakatoa).
 - `[mempool]` perf(mempool/cache): Optimize LRUTxCache.Remove to reduce lock contention and map access
    ([\#5244](https://github.com/cometbft/cometbft/pull/5244))
 - `[e2e]` add support for testing different keytypes, including BLS

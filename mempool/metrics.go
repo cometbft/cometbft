@@ -36,6 +36,11 @@ type Metrics struct {
 	// metrics:Number of rejected transactions.
 	RejectedTxs metrics.Counter
 
+	// RetryTxs defines the number of txs that we have tried to insert but the
+	// application has told us to retry later. metrics:Number of retryable
+	// transactions.
+	RetryTxs metrics.Counter
+
 	// EvictedTxs defines the number of evicted transactions. These are valid
 	// transactions that passed CheckTx and make it into the mempool but later
 	// became invalid.

@@ -46,6 +46,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "rejected_txs",
 			Help:      "RejectedTxs defines the number of rejected transactions. These are transactions that failed to make it into the mempool due to resource limits, e.g. mempool is full. metrics:Number of rejected transactions.",
 		}, labels).With(labelsAndValues...),
+		RetryTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "retry_txs",
+			Help:      "RetryTxs defines the number of txs that we have tried to insert but the application has told us to retry later. metrics:Number of retryable transactions.",
+		}, labels).With(labelsAndValues...),
 		EvictedTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -94,6 +100,7 @@ func NopMetrics() *Metrics {
 		TxSizeBytes:               discard.NewHistogram(),
 		FailedTxs:                 discard.NewCounter(),
 		RejectedTxs:               discard.NewCounter(),
+		RetryTxs:                  discard.NewCounter(),
 		EvictedTxs:                discard.NewCounter(),
 		RecheckTimes:              discard.NewCounter(),
 		ActiveOutboundConnections: discard.NewGauge(),

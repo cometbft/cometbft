@@ -11,7 +11,7 @@
 - `[p2p]` fix(privval): Ephemeral Port Exhaustion
   ([\#5433](https://github.com/cometbft/cometbft/pull/5433))
 - `[p2p]` Prevent PEX reactor from dialing configured persistent peers
-  ([\#3522](https://github.com/cometbft/cometbft/issues/3522))
+  ([\#3522](https://github.com/cometbft/cometbft/issues/5617))
 
 ### IMPROVEMENTS
 

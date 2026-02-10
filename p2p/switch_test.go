@@ -10,6 +10,8 @@ import (
 	"net/http/httptest"
 	"regexp"
 	"strconv"
+	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -954,4 +956,69 @@ func TestSwitchRemovalErr(t *testing.T) {
 	sw2.StopPeerForError(p, fmt.Errorf("peer should error"))
 
 	assert.Equal(t, sw2.peers.Add(p).Error(), ErrPeerRemoval{}.Error())
+}
+
+func TestSwitchReconnectsPersistentPeerViaHostname(t *testing.T) {
+	var (
+		mu          sync.Mutex
+		dialedAddrs []string
+	)
+
+	origDialTimeout := netDialTimeout
+	netDialTimeout = func(network, address string, timeout time.Duration) (net.Conn, error) {
+		mu.Lock()
+		dialedAddrs = append(dialedAddrs, address)
+		mu.Unlock()
+		return origDialTimeout(network, address, timeout)
+	}
+	t.Cleanup(func() { netDialTimeout = origDialTimeout })
+
+	sw := MakeSwitch(cfg, 1, initSwitchFunc)
+	err := sw.Start()
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		if err := sw.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	rp := &remotePeer{PrivKey: ed25519.GenPrivKey(), Config: cfg}
+	rp.Start()
+	defer rp.Stop()
+
+	// Build an address string using "localhost" so that AddPersistentPeers
+	// parses it with Hostname set, triggering DNS re-resolution on dial.
+	rpAddr := rp.Addr()
+	addrWithHostname := fmt.Sprintf("%s@localhost:%d", rpAddr.ID, rpAddr.Port)
+
+	err = sw.AddPersistentPeers([]string{addrWithHostname})
+	require.NoError(t, err)
+	require.Len(t, sw.persistentPeersAddrs, 1)
+	require.Equal(t, "localhost", sw.persistentPeersAddrs[0].Hostname)
+
+	err = sw.DialPeerWithAddress(sw.persistentPeersAddrs[0])
+	require.NoError(t, err)
+	require.NotNil(t, sw.Peers().Get(rp.ID()))
+
+	// Reset captured addresses, then trigger reconnect.
+	mu.Lock()
+	dialedAddrs = nil
+	mu.Unlock()
+
+	p := sw.Peers().Copy()[0]
+	err = p.(*peer).CloseConn()
+	require.NoError(t, err)
+
+	waitUntilSwitchHasAtLeastNPeers(sw, 1)
+
+	mu.Lock()
+	captured := make([]string, len(dialedAddrs))
+	copy(captured, dialedAddrs)
+	mu.Unlock()
+
+	require.NotEmpty(t, captured, "expected at least one dial after reconnect")
+	for _, addr := range captured {
+		assert.True(t, strings.HasPrefix(addr, "localhost:"),
+			"expected dial to use hostname, got %q", addr)
+	}
 }

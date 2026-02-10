@@ -195,10 +195,16 @@ func TestNetAddressReachabilityTo(t *testing.T) {
 }
 
 func TestNewNetAddressStringHostname(t *testing.T) {
-	addr, err := NewNetAddressString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@localhost:80")
+	origLookupIP := lookupIP
+	lookupIP = func(host string) ([]net.IP, error) {
+		return []net.IP{net.ParseIP("93.184.216.34")}, nil
+	}
+	t.Cleanup(func() { lookupIP = origLookupIP })
+
+	addr, err := NewNetAddressString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@myhost.example.com:80")
 	require.NoError(t, err)
-	assert.Equal(t, "localhost", addr.Hostname)
-	assert.NotNil(t, addr.IP)
+	assert.Equal(t, "myhost.example.com", addr.Hostname)
+	assert.True(t, addr.IP.Equal(net.ParseIP("93.184.216.34")))
 
 	addr, err = NewNetAddressString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@127.0.0.1:8080")
 	require.NoError(t, err)

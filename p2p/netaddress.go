@@ -17,6 +17,12 @@ import (
 	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
 )
 
+var (
+	netDial        = net.Dial
+	netDialTimeout = net.DialTimeout
+	lookupIP       = net.LookupIP
+)
+
 // EmptyNetAddress defines the string representation of an empty NetAddress
 const EmptyNetAddress = "<nil-NetAddress>"
 
@@ -102,7 +108,7 @@ func NewNetAddressString(addr string) (*NetAddress, error) {
 	var hostname string
 	if ip == nil {
 		hostname = host
-		ips, err := net.LookupIP(host)
+		ips, err := lookupIP(host)
 		if err != nil || len(ips) == 0 {
 			return nil, ErrNetAddressLookup{host, err}
 		}
@@ -250,7 +256,7 @@ func (na *NetAddress) Dial() (net.Conn, error) {
 	if na.Hostname != "" {
 		dialAddr = net.JoinHostPort(na.Hostname, strconv.FormatUint(uint64(na.Port), 10))
 	}
-	conn, err := net.Dial("tcp", dialAddr)
+	conn, err := netDial("tcp", dialAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +273,7 @@ func (na *NetAddress) DialTimeout(timeout time.Duration) (net.Conn, error) {
 	if na.Hostname != "" {
 		dialAddr = net.JoinHostPort(na.Hostname, strconv.FormatUint(uint64(na.Port), 10))
 	}
-	conn, err := net.DialTimeout("tcp", dialAddr, timeout)
+	conn, err := netDialTimeout("tcp", dialAddr, timeout)
 	if err != nil {
 		return nil, err
 	}

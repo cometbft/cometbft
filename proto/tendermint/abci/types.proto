@@ -20,6 +20,8 @@ service ABCI {
   rpc Flush(RequestFlush) returns (ResponseFlush);
   rpc Info(RequestInfo) returns (ResponseInfo);
   rpc CheckTx(RequestCheckTx) returns (ResponseCheckTx);
+  rpc InsertTx(RequestInsertTx) returns (ResponseInsertTx);
+  rpc ReapTxs(RequestReapTxs) returns (ResponseReapTxs);
   rpc Query(RequestQuery) returns (ResponseQuery);
   rpc Commit(RequestCommit) returns (ResponseCommit);
   rpc InitChain(RequestInitChain) returns (ResponseInitChain);
@@ -57,6 +59,8 @@ message Request {
     RequestExtendVote          extend_vote           = 18;
     RequestVerifyVoteExtension verify_vote_extension = 19;
     RequestFinalizeBlock       finalize_block        = 20;
+    RequestInsertTx            insert_tx             = 21;
+    RequestReapTxs             reap_txs              = 22;
   }
   reserved 4, 7, 9, 10;  // SetOption, BeginBlock, DeliverTx, EndBlock
 }
@@ -99,6 +103,15 @@ enum CheckTxType {
 message RequestCheckTx {
   bytes       tx   = 1;
   CheckTxType type = 2;
+}
+
+message RequestInsertTx {
+  bytes tx = 1;
+}
+
+message RequestReapTxs {
+  uint64 max_bytes = 1;
+  uint64 max_gas   = 2;
 }
 
 message RequestCommit {}
@@ -215,6 +228,8 @@ message Response {
     ResponseExtendVote          extend_vote           = 19;
     ResponseVerifyVoteExtension verify_vote_extension = 20;
     ResponseFinalizeBlock       finalize_block        = 21;
+    ResponseInsertTx            insert_tx             = 22;
+    ResponseReapTxs             reap_txs              = 23;
   }
   reserved 5, 8, 10, 11;  // SetOption, BeginBlock, DeliverTx, EndBlock
 }
@@ -274,6 +289,14 @@ message ResponseCheckTx {
   // removed).
   reserved 9 to 11;
   reserved "sender", "priority", "mempool_error";
+}
+
+message ResponseInsertTx {
+  uint32 code = 1;
+}
+
+message ResponseReapTxs {
+  repeated bytes txs = 1;
 }
 
 message ResponseCommit {

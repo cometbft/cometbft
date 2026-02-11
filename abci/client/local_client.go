@@ -99,6 +99,16 @@ func (app *localClient) CheckTx(ctx context.Context, req *types.RequestCheckTx) 
 	return app.Application.CheckTx(ctx, req)
 }
 
+func (app *localClient) InsertTx(ctx context.Context, req *types.RequestInsertTx) (*types.ResponseInsertTx, error) {
+	// no lock as this method is thread-safe
+	return app.Application.InsertTx(ctx, req)
+}
+
+func (app *localClient) ReapTxs(ctx context.Context, req *types.RequestReapTxs) (*types.ResponseReapTxs, error) {
+	// no lock as this method is thread-safe
+	return app.Application.ReapTxs(ctx, req)
+}
+
 func (app *localClient) Query(ctx context.Context, req *types.RequestQuery) (*types.ResponseQuery, error) {
 	app.mtx.Lock()
 	defer app.mtx.Unlock()

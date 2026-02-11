@@ -197,6 +197,10 @@ type ManifestNode struct {
 	// It defaults to false so unless the configured, the node will
 	// use the default CometBFT networking layer.
 	UseLibp2p bool `toml:"use_libp2p"`
+
+	// MempoolType determines the type of mempool to use for cometbft
+	// @see MempoolConfig
+	MempoolType string `toml:"mempool_type"`
 }
 
 // Save saves the testnet manifest to a file.

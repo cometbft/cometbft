@@ -90,6 +90,13 @@ type BlockPool struct {
 	errorsCh   chan<- peerError
 }
 
+// BlockRequest stores a block request identified by the block Height and the PeerID
+// responsible for delivering the block
+type BlockRequest struct {
+	Height int64
+	PeerID p2p.ID
+}
+
 // NewBlockPool returns a new BlockPool with the height equal to start. Block
 // requests and errors will be sent to requestsCh and errorsCh accordingly.
 func NewBlockPool(start int64, requestsCh chan<- BlockRequest, errorsCh chan<- peerError) *BlockPool {
@@ -371,13 +378,19 @@ func (pool *BlockPool) SetPeerRange(peerID p2p.ID, base int64, height int64) {
 	peer := pool.peers[peerID]
 	if peer != nil {
 		if base < peer.base || height < peer.height {
-			pool.Logger.Info("Peer is reporting height/base that is lower than what it previously reported",
+			pool.Logger.Info(
+				"Peer is reporting height/base that is lower than what it previously reported",
 				"peer", peerID,
-				"height", height, "base", base,
-				"prevHeight", peer.height, "prevBase", peer.base)
+				"height", height,
+				"base", base,
+				"prevHeight", peer.height,
+				"prevBase", peer.base,
+			)
+
 			// RemovePeer will redo all requesters associated with this peer.
 			pool.removePeer(peerID)
 			pool.banPeer(peerID)
+
 			return
 		}
 		peer.base = base
@@ -625,9 +638,8 @@ func (peer *bpPeer) onTimeout() {
 	peer.pool.mtx.Lock()
 	defer peer.pool.mtx.Unlock()
 
-	err := errors.New("peer did not send us anything")
-	peer.pool.sendError(err, peer.id)
-	peer.logger.Error("SendTimeout", "reason", err, "timeout", peerTimeout)
+	peer.pool.sendError(ErrPeerTimeout, peer.id)
+	peer.logger.Error("SendTimeout", "reason", ErrPeerTimeout, "timeout", peerTimeout)
 	peer.didTimeout = true
 }
 
@@ -933,11 +945,4 @@ OUTER_LOOP:
 			}
 		}
 	}
-}
-
-// BlockRequest stores a block request identified by the block Height and the PeerID responsible for
-// delivering the block
-type BlockRequest struct {
-	Height int64
-	PeerID p2p.ID
 }

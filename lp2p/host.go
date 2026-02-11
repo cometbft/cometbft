@@ -3,7 +3,9 @@
 package lp2p
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/cometbft/cometbft/config"
 	cmcrypto "github.com/cometbft/cometbft/crypto"
@@ -12,6 +14,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
 )
 
@@ -69,6 +72,7 @@ func NewHost(config *config.P2PConfig, nodeKey cmcrypto.PrivKey, logger log.Logg
 		libp2p.Identity(privateKey),
 		libp2p.ListenAddrs(listenAddr),
 		libp2p.UserAgent("cometbft"),
+		libp2p.Ping(true),
 		libp2p.Transport(quic.NewTransport),
 	}
 
@@ -108,6 +112,14 @@ func (h *Host) BootstrapPeers() []BootstrapPeer {
 
 func (h *Host) Logger() log.Logger {
 	return h.logger
+}
+
+// Ping pings peers and logs RTT latency (blocking)
+// Keep in might that ping service might be disabled on the counterparty's side.
+func (h *Host) Ping(ctx context.Context, addrInfo peer.AddrInfo) (time.Duration, error) {
+	res := <-ping.Ping(ctx, h, addrInfo.ID)
+
+	return res.RTT, res.Error
 }
 
 func BootstrapPeersFromConfig(config *config.P2PConfig) ([]BootstrapPeer, error) {

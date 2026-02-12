@@ -5,6 +5,7 @@ package lp2p
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/cometbft/cometbft/config"
@@ -16,6 +17,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
+	ma "github.com/multiformats/go-multiaddr"
 )
 
 // Host is a wrapper around the libp2p host.
@@ -122,6 +124,10 @@ func (h *Host) Ping(ctx context.Context, addrInfo peer.AddrInfo) (time.Duration,
 	return res.RTT, res.Error
 }
 
+func (h *Host) multiAddrStrByID(id peer.ID) string {
+	return multiAddrStr(h.Peerstore().Addrs(id))
+}
+
 func BootstrapPeersFromConfig(config *config.P2PConfig) ([]BootstrapPeer, error) {
 	peers := make([]BootstrapPeer, 0, len(config.LibP2PConfig.BootstrapPeers))
 
@@ -149,4 +155,30 @@ func BootstrapPeersFromConfig(config *config.P2PConfig) ([]BootstrapPeer, error)
 	}
 
 	return peers, nil
+}
+
+// IsDNSAddr checks if the given multiaddr is a DNS address.
+func IsDNSAddr(addr ma.Multiaddr) bool {
+	for _, a := range addr {
+		code := a.Protocol().Code
+
+		if code == ma.P_DNS || code == ma.P_DNS4 || code == ma.P_DNS6 || code == ma.P_DNSADDR {
+			return true
+		}
+	}
+
+	return false
+}
+
+func multiAddrStr(addrs []ma.Multiaddr) string {
+	if len(addrs) == 0 {
+		return "<empty>"
+	}
+
+	parts := make([]string, len(addrs))
+	for i, addr := range addrs {
+		parts[i] = addr.String()
+	}
+
+	return strings.Join(parts, ", ")
 }

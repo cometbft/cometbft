@@ -599,8 +599,12 @@ func (peer *bpPeer) setLogger(l log.Logger) {
 
 func (peer *bpPeer) resetMonitor() {
 	peer.recvMonitor = flow.New(time.Second, time.Second*40)
-	initialValue := float64(peer.pool.minRecvRate) * math.E
-	peer.recvMonitor.SetREMA(initialValue)
+	// Only set initial REMA if minRecvRate is configured (> 0)
+	// Setting REMA to 0 corrupts rate estimation by using weighted average path incorrectly
+	if peer.pool.minRecvRate > 0 {
+		initialValue := float64(peer.pool.minRecvRate) * math.E
+		peer.recvMonitor.SetREMA(initialValue)
+	}
 }
 
 func (peer *bpPeer) resetTimeout() {

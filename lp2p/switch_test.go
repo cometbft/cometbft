@@ -69,6 +69,7 @@ func TestSwitch(t *testing.T) {
 			hostA,
 			[]SwitchReactor{},
 			p2p.NopMetrics(),
+			0, // disable send failure tracking for this test
 			logger.With("switch", "A"),
 		)
 		require.NoError(t, err)
@@ -150,6 +151,7 @@ func TestSwitch(t *testing.T) {
 			hostA,
 			[]SwitchReactor{},
 			p2p.NopMetrics(),
+			0, // disable send failure tracking for this test
 			logger.With("switch", "A"),
 		)
 		require.NoError(t, err)
@@ -241,6 +243,7 @@ func TestSwitch(t *testing.T) {
 			hostA,
 			[]SwitchReactor{},
 			p2p.NopMetrics(),
+			0, // disable send failure tracking for this test
 			logger.With("switch", "A"),
 		)
 		require.NoError(t, err)

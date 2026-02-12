@@ -2,8 +2,11 @@ package lp2p
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
+	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/cometbft/cometbft/libs/service"
@@ -35,6 +38,11 @@ type Peer struct {
 	isUnconditional bool
 
 	metrics *p2p.Metrics
+
+	// Failure tracking for automatic peer removal
+	sendFailures    atomic.Int32       // consecutive send failures
+	maxSendFailures int32              // threshold for removal (0 = disabled)
+	onRemovalError  func(*Peer, error) // callback to trigger removal
 }
 
 var _ p2p.Peer = (*Peer)(nil)
@@ -60,6 +68,11 @@ func NewPeer(
 		isUnconditional: isUnconditional,
 
 		metrics: metrics,
+
+		// Initialize with zero failures, will be configured by Switch
+		sendFailures:    atomic.Int32{},
+		maxSendFailures: 0, // 0 = disabled, will be set by Switch
+		onRemovalError:  nil,
 	}
 
 	logger := host.Logger().With("peer_id", addrInfo.ID.String())
@@ -68,6 +81,13 @@ func NewPeer(
 	p.SetLogger(logger)
 
 	return p, nil
+}
+
+// ConfigureFailureTracking sets up automatic peer removal on send failures.
+// Must be called before the peer starts handling messages.
+func (p *Peer) ConfigureFailureTracking(maxFailures int32, onRemovalError func(*Peer, error)) {
+	p.maxSendFailures = maxFailures
+	p.onRemovalError = onRemovalError
 }
 
 func (p *Peer) String() string {
@@ -113,11 +133,101 @@ func (p *Peer) IsUnconditional() bool {
 	return p.isUnconditional
 }
 
+// isPeerFailure determines if an error represents a peer-related failure
+// (network/connection issues) vs a local resource issue (should not count
+// against the peer).
+func isPeerFailure(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	errMsg := err.Error()
+
+	// Local resource exhaustion - not the peer's fault
+	if strings.Contains(errMsg, "resource limit exceeded") ||
+		strings.Contains(errMsg, "too many open files") ||
+		strings.Contains(errMsg, "cannot allocate memory") {
+		return false
+	}
+
+	// Marshal/validation errors - not a peer connection issue
+	if strings.Contains(errMsg, "failed to marshal") ||
+		strings.Contains(errMsg, "proto") {
+		return false
+	}
+
+	// Context cancellation from our side - not a peer issue
+	if errors.Is(err, context.Canceled) {
+		return false
+	}
+
+	// Peer-related failures (network, connection, stream issues)
+	// These indicate the peer is unreachable or having problems
+	if strings.Contains(errMsg, "failed to open stream") ||
+		strings.Contains(errMsg, "failed to dial") ||
+		strings.Contains(errMsg, "connection refused") ||
+		strings.Contains(errMsg, "no route to host") ||
+		strings.Contains(errMsg, "network is unreachable") ||
+		strings.Contains(errMsg, "protocol not supported") ||
+		strings.Contains(errMsg, "stream reset") ||
+		strings.Contains(errMsg, "connection reset") ||
+		strings.Contains(errMsg, "broken pipe") ||
+		strings.Contains(errMsg, "send failed") ||
+		errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+
+	// Default: treat as peer failure for safety
+	// Better to remove a problematic peer than keep a bad one
+	return true
+}
+
+func (p *Peer) handleSendFailure(err error) {
+	// Only track peer-related failures, not local resource issues
+	if !isPeerFailure(err) {
+		p.Logger.Debug(
+			"send failed with non-peer error, not tracking",
+			"peer_id", p.ID(),
+			"err", err,
+		)
+		return
+	}
+
+	// Track consecutive failures
+	if p.maxSendFailures > 0 {
+		failures := p.sendFailures.Add(1)
+
+		// Check if threshold exceeded
+		if failures >= p.maxSendFailures {
+			p.Logger.Error(
+				"peer exceeded max send failures, triggering removal",
+				"peer_id", p.ID(),
+				"consecutive_failures", failures,
+				"threshold", p.maxSendFailures,
+			)
+
+			// Trigger removal via callback (if configured)
+			if p.onRemovalError != nil {
+				removalErr := fmt.Errorf("exceeded max send failures: %d/%d", failures, p.maxSendFailures)
+				go p.onRemovalError(p, removalErr)
+			}
+		}
+	}
+}
+
 // Send implements p2p.Peer.
 func (p *Peer) Send(e p2p.Envelope) bool {
 	if err := p.send(e); err != nil {
 		p.Logger.Error("failed to send message", "channel", e.ChannelID, "method", "Send", "err", err)
+
+		p.handleSendFailure(err)
+
 		return false
+	}
+
+	// Reset counter on success
+	if p.maxSendFailures > 0 {
+		p.sendFailures.Store(0)
 	}
 
 	return true
@@ -127,13 +237,21 @@ func (p *Peer) TrySend(e p2p.Envelope) bool {
 	// todo same as SEND, but if current queue is full (its cap=1), immediately return FALSE
 	if err := p.send(e); err != nil {
 		p.Logger.Error("failed to send message", "channel", e.ChannelID, "method", "TrySend", "err", err)
+		p.handleSendFailure(err)
 		return false
+	}
+
+	// Reset counter on success
+	if p.maxSendFailures > 0 {
+		p.sendFailures.Store(0)
 	}
 
 	return true
 }
 
 func (p *Peer) CloseConn() error {
+	// Clear cached addresses to force DNS re-resolution on next connection attempt
+	p.host.Peerstore().ClearAddrs(p.addrInfo.ID)
 	return p.host.Network().ClosePeer(p.addrInfo.ID)
 }
 

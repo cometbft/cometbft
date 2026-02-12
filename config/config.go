@@ -627,6 +627,10 @@ type LibP2PConfig struct {
 
 	// BootstrapPeers list of peers to bootstrap the libp2p host
 	BootstrapPeers []LibP2PBootstrapPeer `mapstructure:"bootstrap_peers"`
+
+	// MaxSendFailures is the maximum consecutive send failures before peer removal.
+	// Set to 0 to disable automatic peer removal on send failures.
+	MaxSendFailures int `mapstructure:"max_send_failures"`
 }
 
 type LibP2PBootstrapPeer struct {
@@ -735,6 +739,7 @@ func DefaultLibP2PConfig() *LibP2PConfig {
 		Enabled:                false,
 		DisableResourceManager: false,
 		BootstrapPeers:         []LibP2PBootstrapPeer{},
+		MaxSendFailures:        10,
 	}
 }
 

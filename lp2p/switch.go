@@ -37,6 +37,9 @@ type Switch struct {
 	// BaseService has similar field, but it triggered BEFORE OnStart().
 	// This leads to concurrent peers provisioning between bootstrapping peers and accepting incoming messages
 	active atomic.Bool
+
+	// Configuration
+	maxSendFailures int32 // from config, 0 = disabled
 }
 
 // SwitchReactor is a pair of name and reactor.
@@ -58,6 +61,7 @@ func NewSwitch(
 	host *Host,
 	reactors []SwitchReactor,
 	metrics *p2p.Metrics,
+	maxSendFailures int32,
 	logger log.Logger,
 ) (*Switch, error) {
 	s := &Switch{
@@ -68,7 +72,8 @@ func NewSwitch(
 
 		metrics: metrics,
 
-		active: atomic.Bool{},
+		active:          atomic.Bool{},
+		maxSendFailures: maxSendFailures,
 	}
 
 	base := service.NewBaseService(logger, "LibP2P Switch", s)
@@ -83,6 +88,18 @@ func NewSwitch(
 	}
 
 	return s, nil
+}
+
+// configurePeerFailureTracking sets up automatic removal on send failures.
+func (s *Switch) configurePeerFailureTracking(p *Peer) {
+	if s.maxSendFailures <= 0 {
+		return // Feature disabled
+	}
+
+	p.ConfigureFailureTracking(s.maxSendFailures, func(peer *Peer, err error) {
+		s.Logger.Info("Removing peer due to send failures", "peer_id", peer.ID(), "err", err)
+		s.StopPeerForError(peer, err)
+	})
 }
 
 //--------------------------------
@@ -255,6 +272,9 @@ func (s *Switch) StopPeerForError(peer p2p.Peer, reason any) {
 		// tolerate this error.
 		s.Logger.Error("Failed to close peer", "peer_id", key, "err", err)
 	}
+
+	// flush peerstore entries for peer in order to ensure proper resolution of dns adddrs
+	s.host.Peerstore().ClearAddrs(p.addrInfo.ID)
 
 	// reconnect logic
 	shouldReconnect := false
@@ -499,6 +519,8 @@ func (s *Switch) resolvePeer(id peer.ID) (p2p.Peer, error) {
 	case err != nil:
 		return nil, errors.Wrap(err, "unable to add peer")
 	default:
+		// Configure failure tracking for the newly added peer
+		s.configurePeerFailureTracking(peer)
 		return peer, nil
 	}
 }
@@ -516,9 +538,13 @@ func (s *Switch) connectPeer(ctx context.Context, addrInfo peer.AddrInfo, opts P
 		return errors.Wrap(err, "unable to connect to peer")
 	}
 
-	if _, err := s.peerSet.Add(addrInfo, opts); err != nil {
+	peer, err := s.peerSet.Add(addrInfo, opts)
+	if err != nil {
 		return errors.Wrap(err, "unable to add peer")
 	}
+
+	// Configure failure tracking for the newly added peer
+	s.configurePeerFailureTracking(peer)
 
 	s.Logger.Info("Connected to peer", "addr_info", addrInfo.String())
 
@@ -570,11 +596,14 @@ func (s *Switch) reconnectPeer(addrInfo peer.AddrInfo, backoffMax time.Duration,
 		}
 
 		// 2. add peer to the peer set
-		_, err := s.peerSet.Add(addrInfo, opts)
+		peer, err := s.peerSet.Add(addrInfo, opts)
 		if err == nil || errors.Is(err, ErrPeerExists) {
 			elapsed := time.Since(start)
 			s.Logger.Info("Reconnected to peer", "peer_id", addrInfo.ID.String(), "elapsed", elapsed.String())
 			go s.pingPeer(addrInfo)
+
+			// Configure failure tracking for the newly added peer
+			s.configurePeerFailureTracking(peer)
 			return
 		}
 

@@ -352,6 +352,11 @@ bootstrap_peers = [{{ range $bps }}
 ]
 {{- end }}
 
+# Maximum consecutive send failures before removing peer.
+# Set to 0 to disable automatic peer removal on send failures.
+# Default: 10
+max_send_failures = {{ .P2P.LibP2PConfig.MaxSendFailures }}
+
 #######################################################
 ###          Mempool Configuration Option          ###
 #######################################################

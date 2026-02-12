@@ -37,12 +37,6 @@ const (
 	// Minimum recv rate to ensure we're receiving blocks from a peer fast
 	// enough. If a peer is not sending us data at least that rate, we
 	// consider them to have timedout and we disconnect.
-	//
-	// Based on the experiments with [Osmosis](https://osmosis.zone/), the
-	// minimum rate could be as high as 500 KB/s. However, we're setting it to
-	// 128 KB/s for now to be conservative.
-	minRecvRate = 128 * 1024 // 128 KB/s
-
 	// peerConnWait is the time that must have elapsed since the pool routine
 	// was created before we start making requests. This is to give the peer
 	// routine time to connect to peers.
@@ -575,13 +569,13 @@ func (pool *BlockPool) debug() string {
 //-------------------------------------
 
 type bpPeer struct {
-	didTimeout bool
-	curRate    int64
-	numPending int32
-	height     int64
-	base       int64
-	pool       *BlockPool
-	id         p2p.ID
+	didTimeout  bool
+	curRate     int64
+	numPending  int32
+	height      int64
+	base        int64
+	pool        *BlockPool
+	id          p2p.ID
 	recvMonitor *flow.Monitor
 
 	timeout *time.Timer

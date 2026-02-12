@@ -319,6 +319,7 @@ func createBlocksyncReactor(
 		blockStore,
 		localAddr,
 		offlineStateSyncHeight,
+		config.BlockSync.RecvRate,
 		metrics,
 	)
 

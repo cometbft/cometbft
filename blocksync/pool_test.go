@@ -111,7 +111,7 @@ func TestBlockPoolBasic(t *testing.T) {
 		errorsCh   = make(chan peerError)
 		requestsCh = make(chan BlockRequest)
 	)
-	pool := NewBlockPool(start, requestsCh, errorsCh)
+	pool := NewBlockPool(start, requestsCh, errorsCh, 128*1024)
 	pool.SetLogger(log.TestingLogger())
 
 	err := pool.Start()
@@ -174,7 +174,7 @@ func TestBlockPoolTimeout(t *testing.T) {
 		requestsCh = make(chan BlockRequest)
 	)
 
-	pool := NewBlockPool(start, requestsCh, errorsCh)
+	pool := NewBlockPool(start, requestsCh, errorsCh, 128*1024)
 	pool.SetLogger(log.TestingLogger())
 	err := pool.Start()
 	if err != nil {
@@ -242,7 +242,7 @@ func TestBlockPoolRemovePeer(t *testing.T) {
 	requestsCh := make(chan BlockRequest)
 	errorsCh := make(chan peerError)
 
-	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool := NewBlockPool(1, requestsCh, errorsCh, 128*1024)
 	pool.SetLogger(log.TestingLogger())
 	err := pool.Start()
 	require.NoError(t, err)
@@ -299,7 +299,7 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 	errorsCh := make(chan peerError)
 	requestsCh := make(chan BlockRequest)
 
-	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool := NewBlockPool(1, requestsCh, errorsCh, 128*1024)
 	pool.SetLogger(log.TestingLogger())
 
 	err := pool.Start()
@@ -410,7 +410,7 @@ func TestBlockPoolMaliciousNodeMaxInt64(t *testing.T) {
 	errorsCh := make(chan peerError, 3)
 	requestsCh := make(chan BlockRequest)
 
-	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool := NewBlockPool(1, requestsCh, errorsCh, 128*1024)
 	pool.SetLogger(log.TestingLogger())
 
 	err := pool.Start()

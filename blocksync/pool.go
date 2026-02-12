@@ -86,6 +86,8 @@ type BlockPool struct {
 	// atomic
 	numPending int32 // number of requests pending assignment or block response
 
+	minRecvRate int64 // minimum receive rate from peers in bytes per second
+
 	requestsCh chan<- BlockRequest
 	errorsCh   chan<- peerError
 }
@@ -99,7 +101,7 @@ type BlockRequest struct {
 
 // NewBlockPool returns a new BlockPool with the height equal to start. Block
 // requests and errors will be sent to requestsCh and errorsCh accordingly.
-func NewBlockPool(start int64, requestsCh chan<- BlockRequest, errorsCh chan<- peerError) *BlockPool {
+func NewBlockPool(start int64, requestsCh chan<- BlockRequest, errorsCh chan<- peerError, minRecvRate int64) *BlockPool {
 	bp := &BlockPool{
 		peers:       make(map[p2p.ID]*bpPeer),
 		bannedPeers: make(map[p2p.ID]time.Time),
@@ -107,6 +109,7 @@ func NewBlockPool(start int64, requestsCh chan<- BlockRequest, errorsCh chan<- p
 		height:      start,
 		startHeight: start,
 		numPending:  0,
+		minRecvRate: minRecvRate,
 
 		requestsCh: requestsCh,
 		errorsCh:   errorsCh,
@@ -170,28 +173,14 @@ func (pool *BlockPool) removeTimedoutPeers() {
 		if !peer.didTimeout && peer.numPending > 0 {
 			curRate := peer.recvMonitor.Status().CurRate
 			// curRate can be 0 on start
-			if curRate != 0 && curRate < minRecvRate {
-				// Check if peer has delivered a block recently (liveness check)
-				// This prevents banning peers that send small blocks frequently
-				// (e.g., empty blocks in testnets)
-				timeSinceLastBlock := time.Since(peer.lastBlockTime)
-				if timeSinceLastBlock > peerTimeout {
-					// Peer has both low rate AND hasn't delivered blocks recently
-					err := errors.New("peer is not sending us data fast enough")
-					pool.sendError(err, peer.id)
-					pool.Logger.Error("SendTimeout", "peer", peer.id,
-						"reason", err,
-						"curRate", fmt.Sprintf("%d KB/s", curRate/1024),
-						"minRate", fmt.Sprintf("%d KB/s", minRecvRate/1024),
-						"timeSinceLastBlock", timeSinceLastBlock)
-					peer.didTimeout = true
-				} else {
-					// Peer has low byte rate but is actively delivering blocks - keep it
-					pool.Logger.Debug("Peer has low byte rate but is delivering blocks",
-						"peer", peer.id,
-						"curRate", fmt.Sprintf("%d KB/s", curRate/1024),
-						"timeSinceLastBlock", timeSinceLastBlock)
-				}
+			if curRate != 0 && curRate < pool.minRecvRate {
+				err := errors.New("peer is not sending us data fast enough")
+				pool.sendError(err, peer.id)
+				pool.Logger.Error("SendTimeout", "peer", peer.id,
+					"reason", err,
+					"curRate", fmt.Sprintf("%d KB/s", curRate/1024),
+					"minRate", fmt.Sprintf("%d KB/s", pool.minRecvRate/1024))
+				peer.didTimeout = true
 			}
 
 			peer.curRate = curRate
@@ -586,15 +575,14 @@ func (pool *BlockPool) debug() string {
 //-------------------------------------
 
 type bpPeer struct {
-	didTimeout    bool
-	curRate       int64
-	numPending    int32
-	height        int64
-	base          int64
-	pool          *BlockPool
-	id            p2p.ID
-	recvMonitor   *flow.Monitor
-	lastBlockTime time.Time // Track when the last block was received
+	didTimeout bool
+	curRate    int64
+	numPending int32
+	height     int64
+	base       int64
+	pool       *BlockPool
+	id         p2p.ID
+	recvMonitor *flow.Monitor
 
 	timeout *time.Timer
 
@@ -603,13 +591,12 @@ type bpPeer struct {
 
 func newBPPeer(pool *BlockPool, peerID p2p.ID, base int64, height int64) *bpPeer {
 	peer := &bpPeer{
-		pool:          pool,
-		id:            peerID,
-		base:          base,
-		height:        height,
-		numPending:    0,
-		lastBlockTime: time.Now(), // Initialize to avoid false positives on startup
-		logger:        log.NewNopLogger(),
+		pool:       pool,
+		id:         peerID,
+		base:       base,
+		height:     height,
+		numPending: 0,
+		logger:     log.NewNopLogger(),
 	}
 	return peer
 }
@@ -620,7 +607,7 @@ func (peer *bpPeer) setLogger(l log.Logger) {
 
 func (peer *bpPeer) resetMonitor() {
 	peer.recvMonitor = flow.New(time.Second, time.Second*40)
-	initialValue := float64(minRecvRate) * math.E
+	initialValue := float64(peer.pool.minRecvRate) * math.E
 	peer.recvMonitor.SetREMA(initialValue)
 }
 
@@ -642,7 +629,6 @@ func (peer *bpPeer) incrPending() {
 
 func (peer *bpPeer) decrPending(recvSize int) {
 	peer.numPending--
-	peer.lastBlockTime = time.Now() // Update last block receipt time
 	if peer.numPending == 0 {
 		peer.timeout.Stop()
 	} else {

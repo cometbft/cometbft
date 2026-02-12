@@ -1013,6 +1013,10 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 type BlockSyncConfig struct {
 	Version      string `mapstructure:"version"`
 	FollowerMode bool   `mapstructure:"follower_mode"`
+	// RecvRate is the minimum receive rate from peers in bytes per second.
+	// Peers that consistently send data slower than this rate may be disconnected.
+	// Default is 128 KB/s. For networks with small or empty blocks, consider lowering this value.
+	RecvRate int64 `mapstructure:"recv_rate"`
 }
 
 // DefaultBlockSyncConfig returns a default configuration for the block sync service
@@ -1020,6 +1024,7 @@ func DefaultBlockSyncConfig() *BlockSyncConfig {
 	return &BlockSyncConfig{
 		Version:      "v0",
 		FollowerMode: false,
+		RecvRate:     128 * 1024, // 128 KB/s
 	}
 }
 

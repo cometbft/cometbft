@@ -6,14 +6,15 @@
 
 ### BUG FIXES
 
-- `[blocksync]` Prevent banning active peers that send small blocks frequently (e.g., empty blocks) by adding liveness check alongside byte rate check
-  ([\#5614](https://github.com/cometbft/cometbft/pull/5614))
 - `[types]` Fix buffer offset bug in `ProposerPriorityHash` that caused hash collisions when validator priorities differed
   ([\#5613](https://github.com/cometbft/cometbft/pull/5613))
 - `[p2p]` fix(privval): Ephemeral Port Exhaustion
   ([\#5433](https://github.com/cometbft/cometbft/pull/5433))
 
 ### IMPROVEMENTS
+
+- `[blocksync]` Make minimum receive rate configurable via `recv_rate` in `[blocksync]` config section. Operators can tune this value based on their network's block size and block time characteristics
+  ([\#5614](https://github.com/cometbft/cometbft/pull/5614))
 
 - `[mempool]` feat!(mempool): introduce app-mempool & follower-mode. Improve lib-p2p integration (project Krakatoa).
 - `[mempool]` perf(mempool/cache): Optimize LRUTxCache.Remove to reduce lock contention and map access

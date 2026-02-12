@@ -1035,6 +1035,9 @@ func TestBlockSyncConfig() *BlockSyncConfig {
 
 // ValidateBasic performs basic validation.
 func (cfg *BlockSyncConfig) ValidateBasic() error {
+	if cfg.RecvRate < 0 {
+		return cmterrors.ErrNegativeField{Field: "recv_rate"}
+	}
 	switch cfg.Version {
 	case v0:
 		return nil

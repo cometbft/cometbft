@@ -1080,6 +1080,11 @@ type ConsensusConfig struct {
 	PeerQueryMaj23SleepDuration time.Duration `mapstructure:"peer_query_maj23_sleep_duration"`
 
 	DoubleSignCheckHeight int64 `mapstructure:"double_sign_check_height"`
+
+	// AsyncFireEvents enables asynchronous firing of events during block execution.
+	// When enabled, events are fired in a background goroutine instead of synchronously.
+	// Default is false (synchronous event firing).
+	AsyncFireEvents bool `mapstructure:"async_fire_events"`
 }
 
 // DefaultConsensusConfig returns a default configuration for the consensus service
@@ -1099,6 +1104,7 @@ func DefaultConsensusConfig() *ConsensusConfig {
 		PeerGossipSleepDuration:     100 * time.Millisecond,
 		PeerQueryMaj23SleepDuration: 2000 * time.Millisecond,
 		DoubleSignCheckHeight:       int64(0),
+		AsyncFireEvents:             false,
 	}
 }
 

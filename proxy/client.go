@@ -69,6 +69,34 @@ func (c *connSyncLocalClientCreator) NewABCIClient() (abcicli.Client, error) {
 	return abcicli.NewLocalClient(nil, c.app), nil
 }
 
+//----------------------------------------------------
+// consensus-synchronized local proxy
+// Only the consensus client has synchronization; others are left to the app.
+
+type consensusSyncLocalClientCreator struct {
+	app types.Application
+}
+
+// NewConsensusSyncLocalClientCreator returns a [ClientCreator] with a more
+// advanced concurrency model than that provided by [NewLocalClientCreator] or
+// [NewConnSyncLocalClientCreator].
+//
+// In this model (a "consensus-synchronized" model), only the consensus client
+// has a mutex over it to serialize consensus interactions. With all other
+// clients (mempool, query, snapshot), enforcing synchronization is left up to
+// the app.
+func NewConsensusSyncLocalClientCreator(app types.Application) ClientCreator {
+	return &consensusSyncLocalClientCreator{
+		app: app,
+	}
+}
+
+func (c *consensusSyncLocalClientCreator) NewABCIClient() (abcicli.Client, error) {
+	// A mutex is created by the local client and applied across all
+	// consensus-related calls.
+	return abcicli.NewLocalClient(nil, c.app), nil
+}
+
 //---------------------------------------------------------------
 // remote proxy opens new connections to an external app process
 

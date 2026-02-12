@@ -290,11 +290,11 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 	// * Testing with height 7, the main functionality of banning a malicious peer is tested.
 	//   Testing with height 127, a malicious peer can reconnect and the subsequent banning is also tested.
 	//   This takes a couple of minutes to complete, so we don't run it.
-	
+
 	// Skip this test due to known flakiness - see #4636, #4633
 	// The test has deadlock issues with unbuffered channels under race detector
 	t.Skip("Skipping flaky test - known to deadlock in CI")
-	
+
 	const InitialHeight = 7
 	peers := testPeers{
 		p2p.ID("good"):  &testPeer{p2p.ID("good"), 1, InitialHeight, make(chan inputData), false},

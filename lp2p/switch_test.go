@@ -321,12 +321,12 @@ func (b *syncBuffer) HasMatchingLine(conditions ...string) bool {
 
 	matcher := func(line string) bool {
 		for _, condition := range conditions {
-			if strings.Contains(line, condition) {
-				return true
+			if !strings.Contains(line, condition) {
+				return false
 			}
 		}
 
-		return false
+		return true
 	}
 
 	for _, line := range lines {

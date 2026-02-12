@@ -106,7 +106,14 @@ func (s *Switch) OnStart() error {
 		return fmt.Errorf("failed to start reactors: %w", err)
 	}
 
-	// 2. connect bootstrap peers
+	// 2. register peer failure handler
+	s.host.AddPeerFailureHandler(func(id peer.ID, err error) {
+		key := peerIDToKey(id)
+		peer := s.peerSet.Get(key)
+		s.StopPeerForError(peer, err)
+	})
+
+	// 3. connect bootstrap peers
 	bootstrapPeers := s.host.BootstrapPeers()
 
 	s.Logger.Info("Connecting to bootstrap peers", "count", len(bootstrapPeers))
@@ -254,7 +261,6 @@ func (s *Switch) StopPeerForError(peer p2p.Peer, reason any) {
 
 	// todo, actually, for persistent peers we can skip this step,
 	// but explicitly closing might cleanup some conns/resources
-	// TODO CLEANUP addr book!
 	if err := s.host.Network().ClosePeer(p.addrInfo.ID); err != nil {
 		// tolerate this error.
 		s.Logger.Error("Failed to close peer", "peer_id", pid, "err", err)
@@ -516,7 +522,14 @@ func (s *Switch) bootstrapPeer(ctx context.Context, addrInfo peer.AddrInfo, opts
 
 	pid := addrInfo.ID.String()
 
-	s.Logger.Info("Connecting to peer", "peer_id", pid, "addr_info", addrInfo.String())
+	s.Logger.Info(
+		"Connecting to peer",
+		"peer_id", pid,
+		"addr_info", addrInfo.String(),
+		"persistent", opts.Persistent,
+		"unconditional", opts.Unconditional,
+		"private", opts.Private,
+	)
 
 	if err := s.host.Connect(ctx, addrInfo); err != nil {
 		return errors.Wrap(err, "unable to connect to peer")

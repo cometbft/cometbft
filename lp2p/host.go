@@ -30,6 +30,8 @@ type Host struct {
 	bootstrapPeers []BootstrapPeer
 
 	logger log.Logger
+
+	peerFailureHandlers []func(id peer.ID, err error)
 }
 
 // BootstrapPeer initial peers to connect to
@@ -122,6 +124,18 @@ func (h *Host) Ping(ctx context.Context, addrInfo peer.AddrInfo) (time.Duration,
 	res := <-ping.Ping(ctx, h, addrInfo.ID)
 
 	return res.RTT, res.Error
+}
+
+func (h *Host) AddPeerFailureHandler(handler func(id peer.ID, err error)) {
+	h.peerFailureHandlers = append(h.peerFailureHandlers, handler)
+}
+
+// EmitPeerFailure emits a peer failure event to all registered handlers.
+// This semantic is over host.eventBus for simplicity.
+func (h *Host) EmitPeerFailure(id peer.ID, err error) {
+	for _, handler := range h.peerFailureHandlers {
+		go handler(id, err)
+	}
 }
 
 func (h *Host) multiAddrStrByID(id peer.ID) string {

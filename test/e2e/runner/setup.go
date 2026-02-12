@@ -401,11 +401,9 @@ func MakeLibp2pAddressBook(node *e2e.Node) ([]config.LibP2PBootstrapPeer, error)
 		}
 
 		peers = append(peers, config.LibP2PBootstrapPeer{
-			Host:          fmt.Sprintf("%s:%d", ip, cometPort),
-			ID:            peerID.String(),
-			Private:       false,
-			Persistent:    false,
-			Unconditional: false,
+			Host:       fmt.Sprintf("%s:%d", ip, cometPort),
+			ID:         peerID.String(),
+			Persistent: isPersistent(node, nodeConfig),
 		})
 
 		cache[nodeConfig.Name] = struct{}{}
@@ -427,4 +425,15 @@ func UpdateConfigStateSync(node *e2e.Node, height int64, hash []byte) error {
 	bz = regexp.MustCompile(`(?m)^trust_height =.*`).ReplaceAll(bz, []byte(fmt.Sprintf(`trust_height = %v`, height)))
 	bz = regexp.MustCompile(`(?m)^trust_hash =.*`).ReplaceAll(bz, []byte(fmt.Sprintf(`trust_hash = "%X"`, hash)))
 	return os.WriteFile(cfgPath, bz, 0o644) //nolint:gosec
+}
+
+func isPersistent(host, peer *e2e.Node) bool {
+	for _, p := range peer.PersistentPeers {
+		if p.Name == host.Name {
+			return true
+		}
+	}
+
+	return false
+
 }

@@ -34,9 +34,6 @@ const (
 	maxPendingRequestsPerPeer = 20
 	requestRetrySeconds       = 30
 
-	// Minimum recv rate to ensure we're receiving blocks from a peer fast
-	// enough. If a peer is not sending us data at least that rate, we
-	// consider them to have timedout and we disconnect.
 	// peerConnWait is the time that must have elapsed since the pool routine
 	// was created before we start making requests. This is to give the peer
 	// routine time to connect to peers.

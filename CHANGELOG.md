@@ -13,6 +13,9 @@
 
 ### IMPROVEMENTS
 
+- `[blocksync]` Make minimum receive rate configurable via `recv_rate` in `[blocksync]` config section. Operators can tune this value based on their network's block size and block time characteristics
+  ([\#5614](https://github.com/cometbft/cometbft/pull/5614))
+
 - `[mempool]` feat!(mempool): introduce app-mempool & follower-mode. Improve lib-p2p integration (project Krakatoa).
 - `[mempool]` perf(mempool/cache): Optimize LRUTxCache.Remove to reduce lock contention and map access
    ([\#5244](https://github.com/cometbft/cometbft/pull/5244))

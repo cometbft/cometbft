@@ -1,5 +1,6 @@
 [node.validator01]
 use_libp2p = true
+persistent_peers = ["validator02", "validator04", "validator05"]
 
 [node.validator02]
 use_libp2p = true

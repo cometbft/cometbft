@@ -376,15 +376,15 @@ func MakeLibp2pAddressBook(node *e2e.Node) ([]config.LibP2PBootstrapPeer, error)
 		cache = make(map[string]struct{})
 	)
 
-	for _, nodeConfig := range append(node.Seeds, node.PersistentPeers...) {
+	for _, peer := range append(node.Seeds, node.PersistentPeers...) {
 		// skip if already added
-		if _, ok := cache[nodeConfig.Name]; ok {
+		if _, ok := cache[peer.Name]; ok {
 			continue
 		}
 
-		peerID, err := lp2p.IDFromPrivateKey(nodeConfig.NodeKey)
+		peerID, err := lp2p.IDFromPrivateKey(peer.NodeKey)
 		if err != nil {
-			return nil, fmt.Errorf("peer id for node %q: %w", nodeConfig.Name, err)
+			return nil, fmt.Errorf("peer id for node %q: %w", peer.Name, err)
 		}
 
 		// todo: come up with a generic way of determining the host:port to make it work
@@ -395,20 +395,18 @@ func MakeLibp2pAddressBook(node *e2e.Node) ([]config.LibP2PBootstrapPeer, error)
 		)
 
 		// for docker networks, we need to use network-assigned address (e.g. 10.186.73.5)
-		ip := nodeConfig.ExternalIP.String()
+		ip := peer.ExternalIP.String()
 		if ip == localhost && node.InternalIP.String() != localhost {
-			ip = nodeConfig.InternalIP.String()
+			ip = peer.InternalIP.String()
 		}
 
 		peers = append(peers, config.LibP2PBootstrapPeer{
-			Host:          fmt.Sprintf("%s:%d", ip, cometPort),
-			ID:            peerID.String(),
-			Private:       false,
-			Persistent:    false,
-			Unconditional: false,
+			Host:       fmt.Sprintf("%s:%d", ip, cometPort),
+			ID:         peerID.String(),
+			Persistent: isPersistent(node, peer),
 		})
 
-		cache[nodeConfig.Name] = struct{}{}
+		cache[peer.Name] = struct{}{}
 	}
 
 	return peers, nil
@@ -427,4 +425,15 @@ func UpdateConfigStateSync(node *e2e.Node, height int64, hash []byte) error {
 	bz = regexp.MustCompile(`(?m)^trust_height =.*`).ReplaceAll(bz, []byte(fmt.Sprintf(`trust_height = %v`, height)))
 	bz = regexp.MustCompile(`(?m)^trust_hash =.*`).ReplaceAll(bz, []byte(fmt.Sprintf(`trust_hash = "%X"`, hash)))
 	return os.WriteFile(cfgPath, bz, 0o644) //nolint:gosec
+}
+
+func isPersistent(host, peer *e2e.Node) bool {
+	for _, pp := range host.PersistentPeers {
+		if pp.Name == peer.Name {
+			return true
+		}
+	}
+
+	return false
+
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/conn"
+	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 )
 
@@ -195,14 +196,58 @@ func (p *Peer) send(e p2p.Envelope) (err error) {
 	return StreamWriteClose(s, payload)
 }
 
-// These methods are not implemented as they're not used by reactors
-// (only by PEX/p2p-transport which is not used with go-libp2p)
+// NodeInfo returns a DefaultNodeInfo populated with the peer's ID and address.
+// Since libp2p does not perform a CometBFT-style handshake, only the fields
+// derivable from the connection are filled in (ID, listen address).
+func (p *Peer) NodeInfo() p2p.NodeInfo {
+	info := p2p.DefaultNodeInfo{
+		DefaultNodeID: p.ID(),
+	}
 
+	if p.netAddr != nil {
+		info.ListenAddr = p.netAddr.DialString()
+	}
+
+	return info
+}
+
+// RemoteIP returns the remote IP address of the peer derived from its address info.
+func (p *Peer) RemoteIP() net.IP {
+	if p.netAddr != nil {
+		return p.netAddr.IP
+	}
+
+	return nil
+}
+
+// RemoteAddr returns the remote address of the peer as a net.Addr.
+func (p *Peer) RemoteAddr() net.Addr {
+	if p.netAddr == nil {
+		return nil
+	}
+
+	return &net.TCPAddr{
+		IP:   p.netAddr.IP,
+		Port: int(p.netAddr.Port),
+	}
+}
+
+// IsOutbound returns true if we initiated the connection to this peer.
+func (p *Peer) IsOutbound() bool {
+	conns := p.host.Network().ConnsToPeer(p.addrInfo.ID)
+	for _, c := range conns {
+		if c.Stat().Direction == network.DirOutbound {
+			return true
+		}
+	}
+
+	return false
+}
+
+// Status returns an empty ConnectionStatus. Per-channel send queue
+// statistics are not available with the libp2p transport.
 func (*Peer) Status() conn.ConnectionStatus { return conn.ConnectionStatus{} }
-func (*Peer) NodeInfo() p2p.NodeInfo        { return nil }
-func (*Peer) RemoteIP() net.IP              { return nil }
-func (*Peer) RemoteAddr() net.Addr          { return nil }
-func (*Peer) IsOutbound() bool              { return false }
-func (*Peer) FlushStop()                    {}
-func (*Peer) SetRemovalFailed()             {}
-func (*Peer) GetRemovalFailed() bool        { return false }
+
+func (*Peer) FlushStop()             {}
+func (*Peer) SetRemovalFailed()      {}
+func (*Peer) GetRemovalFailed() bool { return false }

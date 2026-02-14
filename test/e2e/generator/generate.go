@@ -367,9 +367,9 @@ func parseWeightedVersions(s string) (weightedChoice, string, error) {
 	wc := make(weightedChoice)
 	var lastVersion string
 
-	entries := strings.Split(strings.TrimSpace(s), ",")
+	entries := strings.SplitSeq(strings.TrimSpace(s), ",")
 
-	for _, entry := range entries {
+	for entry := range entries {
 		parts := strings.Split(strings.TrimSpace(entry), ":")
 
 		var ver string

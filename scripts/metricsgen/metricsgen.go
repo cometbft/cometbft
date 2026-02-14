@@ -291,7 +291,7 @@ func extractLabels(bl *ast.BasicLit) string {
 		t := reflect.StructTag(strings.Trim(bl.Value, "`"))
 		if v := t.Get(labelsTag); v != "" {
 			var res []string
-			for _, s := range strings.Split(v, ",") {
+			for s := range strings.SplitSeq(v, ",") {
 				res = append(res, strconv.Quote(strings.TrimSpace(s)))
 			}
 			return strings.Join(res, ",")

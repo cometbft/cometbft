@@ -15,6 +15,8 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/test/utils"
+	"github.com/libp2p/go-libp2p/core/peer"
+	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/require"
 )
 
@@ -155,18 +157,18 @@ func TestSwitch(t *testing.T) {
 		require.NoError(t, err)
 
 		// Connect host to itself should result in no-op
-		err = switchA.connectPeer(ctx, hostA.AddrInfo(), PeerAddOptions{
+		err = switchA.bootstrapPeer(ctx, hostA.AddrInfo(), PeerAddOptions{
 			Persistent: false,
 		})
 		require.NoError(t, err)
 
-		// Connect host A to B (non-persistent) and C (persistent)
-		err = switchA.connectPeer(ctx, hostB.AddrInfo(), PeerAddOptions{
+		// Connect host A to B (non-persistent) and C (persistent), and use DNS instead of ip!
+		err = switchA.bootstrapPeer(ctx, patchAddrInfoIPToDNS(t, hostB.AddrInfo()), PeerAddOptions{
 			Persistent: false,
 		})
 		require.NoError(t, err)
 
-		err = switchA.connectPeer(ctx, hostC.AddrInfo(), PeerAddOptions{
+		err = switchA.bootstrapPeer(ctx, patchAddrInfoIPToDNS(t, hostC.AddrInfo()), PeerAddOptions{
 			Persistent: true,
 			// it doesn't influence the test, but let's also
 			// verify that unconditional checks work
@@ -187,6 +189,11 @@ func TestSwitch(t *testing.T) {
 
 		// ASSERT #1: Switch A has 2 peers
 		require.Equal(t, 2, switchA.Peers().Size())
+
+		// peerstore & logs contain both DNS and IP addresses
+		require.True(t, logBuffer.HasMatchingLine("Connected to peer", "/dns/localhost/udp", "/ip4/127.0.0.1/udp"))
+		require.Len(t, hostA.Peerstore().Addrs(hostB.ID()), 2)
+		require.Len(t, hostA.Peerstore().Addrs(hostC.ID()), 2)
 
 		// ACT #2: Stop peer C for error (simulates disconnection)
 		switchA.StopPeerForError(peerC, "simulated error")
@@ -213,6 +220,8 @@ func TestSwitch(t *testing.T) {
 		// Check for expected log messages
 		require.Contains(t, logBuffer.String(), "Removing peer")
 		require.Contains(t, logBuffer.String(), "Reconnected to peer")
+
+		fmt.Println(logBuffer.String())
 	})
 
 	t.Run("ErrorTransientReconnect", func(t *testing.T) {
@@ -246,7 +255,7 @@ func TestSwitch(t *testing.T) {
 		require.NoError(t, err)
 
 		// Connect A to B as a NON-persistent peer
-		err = switchA.connectPeer(ctx, hostB.AddrInfo(), PeerAddOptions{})
+		err = switchA.bootstrapPeer(ctx, hostB.AddrInfo(), PeerAddOptions{})
 		require.NoError(t, err)
 
 		peerB := switchA.Peers().Get(peerIDToKey(hostB.ID()))
@@ -305,4 +314,47 @@ func (b *syncBuffer) String() string {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return b.buf.String()
+}
+
+func (b *syncBuffer) HasMatchingLine(conditions ...string) bool {
+	lines := strings.Split(b.String(), "\n")
+
+	matcher := func(line string) bool {
+		for _, condition := range conditions {
+			if !strings.Contains(line, condition) {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	for _, line := range lines {
+		if matcher(line) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func patchAddrInfoIPToDNS(t *testing.T, addrInfo peer.AddrInfo) peer.AddrInfo {
+	const (
+		expect  = "/ip4/127.0.0.1"
+		replace = "/dns/localhost"
+	)
+
+	require.Len(t, addrInfo.Addrs, 1)
+	addr := addrInfo.Addrs[0]
+
+	require.True(t, strings.HasPrefix(addr.String(), expect))
+
+	addrNewRaw := strings.Replace(addr.String(), expect, replace, 1)
+	addrNew, err := ma.NewMultiaddr(addrNewRaw)
+	require.NoError(t, err)
+
+	return peer.AddrInfo{
+		ID:    addrInfo.ID,
+		Addrs: []ma.Multiaddr{addrNew},
+	}
 }

@@ -22,7 +22,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/informalsystems/tm-load-test v1.3.0
-	github.com/lib/pq v1.11.1
+	github.com/lib/pq v1.11.2
 	github.com/libp2p/go-libp2p v0.46.0
 	github.com/minio/highwayhash v1.0.3
 	github.com/mr-tron/base58 v1.2.0

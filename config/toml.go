@@ -503,7 +503,7 @@ follower_mode = {{ .BlockSync.FollowerMode }}
 # Peers that consistently send data slower than this rate may be disconnected.
 # Default is 128 KB/s. For networks with small or empty blocks, consider lowering this value.
 # Set to 0 to disable rate-based peer disconnection.
-recv_rate = {{ .BlockSync.RecvRate }}
+min_recv_rate = {{ .BlockSync.MinRecvRate }}
 
 #######################################################
 ###         Consensus Configuration Options         ###

@@ -2,6 +2,7 @@ package lp2p
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/cometbft/cometbft/p2p/conn"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/p2p/net/swarm"
 )
 
 // Peer represents a remote node connected via libp2p.
@@ -83,6 +85,8 @@ func (p *Peer) SocketAddr() *p2p.NetAddress {
 	return p.netAddr
 }
 
+// AddrInfo returns original addr info.
+// Note it might differ from host's peerstore
 func (p *Peer) AddrInfo() peer.AddrInfo {
 	return p.addrInfo
 }
@@ -118,6 +122,7 @@ func (p *Peer) IsUnconditional() bool {
 func (p *Peer) Send(e p2p.Envelope) bool {
 	if err := p.send(e); err != nil {
 		p.Logger.Error("failed to send message", "channel", e.ChannelID, "method", "Send", "err", err)
+		p.handleSendErr(err)
 		return false
 	}
 
@@ -128,6 +133,7 @@ func (p *Peer) TrySend(e p2p.Envelope) bool {
 	// todo same as SEND, but if current queue is full (its cap=1), immediately return FALSE
 	if err := p.send(e); err != nil {
 		p.Logger.Error("failed to send message", "channel", e.ChannelID, "method", "TrySend", "err", err)
+		p.handleSendErr(err)
 		return false
 	}
 
@@ -194,6 +200,15 @@ func (p *Peer) send(e p2p.Envelope) (err error) {
 	}
 
 	return StreamWriteClose(s, payload)
+}
+
+func (p *Peer) handleSendErr(err error) {
+	switch {
+	case err == nil:
+		return
+	case errors.Is(err, swarm.ErrAllDialsFailed), errors.Is(err, swarm.ErrNoGoodAddresses):
+		p.host.EmitPeerFailure(p.addrInfo.ID, err)
+	}
 }
 
 // NodeInfo returns a DefaultNodeInfo populated with the peer's ID and address.

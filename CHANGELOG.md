@@ -25,6 +25,7 @@
 
 ### FEATURES
 
+- `[p2p]` feat(lp2p): stop/reconnect peers that failed ([\#5618](https://github.com/cometbft/cometbft/pull/5618))
 - `[p2p]` Add experimental support for lib-p2p networking ([\#5463](https://github.com/cometbft/cometbft/pull/5463))
 - `[crypto]` Add support for BLS12-381 keys. Since the implementation needs
   `cgo` and brings in new dependencies, we use the `bls12381` build flag to

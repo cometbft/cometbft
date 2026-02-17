@@ -22,8 +22,8 @@ import (
 const BlocksyncChannel = byte(0x40)
 
 const (
-	defaultIntervalStatusUpdate  = 10 * time.Second
-	followerIntervalStatusUpdate = 1 * time.Second
+	defaultIntervalStatusUpdate      = 10 * time.Second
+	combinedModeInternalStatusUpdate = 1 * time.Second
 
 	defaultIntervalSwitchToConsensus = 1 * time.Second
 
@@ -62,8 +62,9 @@ type Reactor struct {
 	// eg it can be initially disabled due to state sync being performed
 	enabled *atomic.Bool
 
-	// if enabled, we suppress switching to consensus mode, keeping node perpetually in block sync
-	followerMode bool
+	// if enabled, we suppress switching to consensus mode,
+	// running blocksync along with consensus
+	combinedMode bool
 
 	blockExec     *sm.BlockExecutor
 	store         sm.BlockStore
@@ -86,7 +87,7 @@ type Reactor struct {
 // NewReactorWithAddr returns new Reactor instance with local address
 func NewReactor(
 	enabled bool,
-	followerMode bool,
+	combinedMode bool,
 	state sm.State,
 	blockExec *sm.BlockExecutor,
 	store *store.BlockStore,
@@ -130,8 +131,8 @@ func NewReactor(
 	enabledFlag.Store(enabled)
 
 	intervalStatusUpdate := defaultIntervalStatusUpdate
-	if followerMode {
-		intervalStatusUpdate = followerIntervalStatusUpdate
+	if combinedMode {
+		intervalStatusUpdate = combinedModeInternalStatusUpdate
 	}
 
 	r := &Reactor{
@@ -140,7 +141,7 @@ func NewReactor(
 		store:                     store,
 		pool:                      pool,
 		enabled:                   enabledFlag,
-		followerMode:              followerMode,
+		combinedMode:              combinedMode,
 		localAddr:                 localAddr,
 		requestsCh:                requestsCh,
 		errorsCh:                  errorsCh,
@@ -175,13 +176,37 @@ func (r *Reactor) runPool(stateSynced bool) error {
 		return err
 	}
 
-	r.poolRoutineWg.Add(1)
-	go func() {
-		defer r.poolRoutineWg.Done()
-		r.poolRoutine(stateSynced)
-	}()
+	// run the pool events routine
+	r.runTask(func() {
+		ticker := time.NewTicker(r.intervalStatusUpdate)
+		defer ticker.Stop()
+		r.poolEventsRoutine(ticker)
+	})
+
+	// supply blocks to the consensus machine
+	if r.combinedMode {
+		r.runTask(r.poolCombinedModeRoutine)
+		return nil
+	}
+
+	// default pool routine (exclusive blocksync)
+	r.runTask(func() { r.poolRoutine(stateSynced) })
 
 	return nil
+}
+
+func (r *Reactor) runTask(fn func()) {
+	r.poolRoutineWg.Add(1)
+	go func() {
+		defer func() {
+			if pnk := recover(); pnk != nil {
+				r.Logger.Error("Panic in pool routine", "panic", pnk)
+			}
+			r.poolRoutineWg.Done()
+		}()
+
+		fn()
+	}()
 }
 
 // Enable is called by the state sync reactor when switching to block sync.
@@ -359,19 +384,16 @@ func (r *Reactor) localNodeBlocksTheChain(state sm.State) bool {
 // Handle messages from the poolReactor telling the reactor what to do.
 // NOTE: Don't sleep in the FOR_LOOP or otherwise slow it down!
 func (r *Reactor) poolRoutine(stateSynced bool) {
+	r.Logger.Info("Starting blocksync pool routine", "stateSynced", stateSynced)
+
 	r.metrics.Syncing.Set(1)
 	defer r.metrics.Syncing.Set(0)
 
 	trySyncTicker := time.NewTicker(intervalTrySync)
 	defer trySyncTicker.Stop()
 
-	statusUpdateTicker := time.NewTicker(r.intervalStatusUpdate)
-	defer statusUpdateTicker.Stop()
-
 	switchToConsensusTicker := time.NewTicker(r.intervalSwitchToConsensus)
 	defer switchToConsensusTicker.Stop()
-
-	go r.poolEventsRoutine(statusUpdateTicker)
 
 	var (
 		chainID                    = r.initialState.ChainID
@@ -446,11 +468,6 @@ FOR_LOOP:
 
 			// keep syncing
 			if !r.pool.IsCaughtUp() && !r.localNodeBlocksTheChain(state) {
-				continue FOR_LOOP
-			}
-
-			if r.followerMode {
-				r.Logger.Debug("Follower mode is enabled, continuing to sync", "height", state.LastBlockHeight)
 				continue FOR_LOOP
 			}
 
@@ -644,7 +661,7 @@ func (r *Reactor) poolEventsRoutine(statusUpdateTicker *time.Ticker) {
 }
 
 func (r *Reactor) stopPeerForError(peer p2p.Peer, err error) {
-	if r.followerMode && shouldBeReconnected(err) {
+	if r.combinedMode && shouldBeReconnected(err) {
 		err = &lp2p.ErrorTransient{Err: err}
 	}
 

@@ -51,7 +51,7 @@ func TestPeer_PeerInfo(t *testing.T) {
 	// ACT & ASSERT — inbound peer (hostC dialed us)
 	_, ok = peerC.NodeInfo().(p2p.DefaultNodeInfo)
 	require.True(t, ok)
-	assert.False(t, peerC.IsOutbound())
+	assert.True(t, peerC.IsOutbound(), "all lp2p peers are bi-directional")
 }
 
 func TestPeer_NetInfoIteration(t *testing.T) {

@@ -210,14 +210,36 @@ func (p *Peer) handleSendErr(err error) {
 	}
 }
 
-// These methods are not implemented as they're not used by reactors
-// (only by PEX/p2p-transport which is not used with go-libp2p)
+// NodeInfo returns a DefaultNodeInfo populated with the peer's ID and address.
+// Since libp2p does not perform a CometBFT-style handshake, only the fields
+// derivable from the connection are filled in (ID, listen address).
+func (p *Peer) NodeInfo() p2p.NodeInfo {
+	return p2p.DefaultNodeInfo{
+		DefaultNodeID: p.ID(),
+		ListenAddr:    p.netAddr.DialString(),
+	}
+}
 
+// RemoteIP returns the remote IP address of the peer derived from its address info.
+func (p *Peer) RemoteIP() net.IP {
+	return p.netAddr.IP
+}
+
+// RemoteAddr returns the remote address of the peer as a net.Addr.
+func (p *Peer) RemoteAddr() net.Addr {
+	return &net.TCPAddr{
+		IP:   p.netAddr.IP,
+		Port: int(p.netAddr.Port),
+	}
+}
+
+// IsOutbound returns true because all lp2p peers are bi-directional.
+func (*Peer) IsOutbound() bool { return true }
+
+// Status returns an empty ConnectionStatus. Per-channel send queue
+// statistics are not available with the libp2p transport.
 func (*Peer) Status() conn.ConnectionStatus { return conn.ConnectionStatus{} }
-func (*Peer) NodeInfo() p2p.NodeInfo        { return nil }
-func (*Peer) RemoteIP() net.IP              { return nil }
-func (*Peer) RemoteAddr() net.Addr          { return nil }
-func (*Peer) IsOutbound() bool              { return false }
-func (*Peer) FlushStop()                    {}
-func (*Peer) SetRemovalFailed()             {}
-func (*Peer) GetRemovalFailed() bool        { return false }
+
+func (*Peer) FlushStop()             {}
+func (*Peer) SetRemovalFailed()      {}
+func (*Peer) GetRemovalFailed() bool { return false }

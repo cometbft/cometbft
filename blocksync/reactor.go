@@ -203,14 +203,11 @@ func (r *Reactor) runPool(stateSynced bool) error {
 
 func (r *Reactor) runTask(fn func()) {
 	r.poolRoutineWg.Add(1)
-	go func() {
-		defer func() {
-			if pnk := recover(); pnk != nil {
-				r.Logger.Error("Panic in pool routine", "panic", pnk)
-			}
-			r.poolRoutineWg.Done()
-		}()
 
+	// note this routine should NOT have panic recovery
+	// since invariant violation should abort the node.
+	go func() {
+		defer r.poolRoutineWg.Done()
 		fn()
 	}()
 }

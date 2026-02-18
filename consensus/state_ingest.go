@@ -1,0 +1,76 @@
+package consensus
+
+import (
+	types "github.com/cometbft/cometbft/types"
+	"github.com/pkg/errors"
+)
+
+// IngestVerifiedBlock executed and commits a verified block into the consensus state.
+// If the verifier determined that this block has vote extensions enabled, extCommit is not nil
+// (mutually exclusive with commit)
+func (cs *State) IngestVerifiedBlock(
+	block *types.Block,
+	blockParts *types.PartSet,
+	commit *types.Commit,
+	extCommit *types.ExtendedCommit,
+) error {
+	switch {
+	case block == nil:
+		return errors.Wrap(ErrValidation, "block is nil")
+	case blockParts == nil:
+		return errors.Wrap(ErrValidation, "part set is nil")
+	case commit == nil && extCommit == nil:
+		return errors.Wrap(ErrValidation, "commit and extCommit are both nil")
+	case commit != nil && extCommit != nil:
+		return errors.Wrap(ErrValidation, "commit and extCommit are both not nil")
+	}
+
+	blockID := types.BlockID{
+		Hash:          block.Hash(),
+		PartSetHeader: blockParts.Header(),
+	}
+
+	// todo drop if already ingested
+	// todo height sparsity check
+	// should be exactly the same block!
+
+	cs.mtx.Lock()
+	defer cs.mtx.Unlock()
+
+	var (
+		height            = block.Height
+		stateCopy         = cs.state.Copy()
+		extensionsEnabled = extCommit != nil
+		logger            = cs.Logger.With("height", height)
+	)
+
+	// todo: should we use WAL?
+	if extensionsEnabled {
+		cs.blockStore.SaveBlockWithExtendedCommit(block, blockParts, extCommit)
+	} else {
+		cs.blockStore.SaveBlock(block, blockParts, commit)
+	}
+
+	// the follow flow is similar to finalizeCommit(height)
+	stateCopy, err := cs.blockExec.ApplyVerifiedBlock(stateCopy, blockID, block)
+	if err != nil {
+		// we can't recover from this error, so we panic
+		panic(errors.Wrapf(err, "failed to apply verified block (height: %d, hash: %x)", block.Height, block.Hash()))
+	}
+
+	// must be called before we update state
+	cs.recordMetrics(height, block)
+
+	// NewHeightStep!
+	cs.updateToState(stateCopy)
+
+	// Private validator might have changed it's key pair => refetch pubkey.
+	if err := cs.updatePrivValidatorPubKey(); err != nil {
+		logger.Error("Failed to get private validator pubkey", "err", err)
+	}
+
+	// todo: what would happen if we have 100s of ingested block like this in a row?
+	cs.scheduleRound0(&cs.RoundState)
+
+	return nil
+}

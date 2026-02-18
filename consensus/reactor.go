@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/cometbft/cometbft/blocksync"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 
 	cstypes "github.com/cometbft/cometbft/consensus/types"
@@ -56,6 +57,8 @@ type Reactor struct {
 }
 
 type ReactorOption func(*Reactor)
+
+var _ blocksync.BlockIngestorGetter = (*Reactor)(nil)
 
 // NewReactor returns a new Reactor with the given consensusState.
 func NewReactor(consensusState *State, waitSync bool, options ...ReactorOption) *Reactor {
@@ -194,6 +197,9 @@ func (conR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 		},
 	}
 }
+
+// GetBlockIngestor returns the block ingestor for the consensus state.
+func (conR *Reactor) GetBlockIngestor() blocksync.BlockIngestor { return conR.conS }
 
 // InitPeer implements Reactor by creating a state for the peer.
 func (conR *Reactor) InitPeer(peer p2p.Peer) p2p.Peer {

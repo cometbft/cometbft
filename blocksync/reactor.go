@@ -185,7 +185,13 @@ func (r *Reactor) runPool(stateSynced bool) error {
 
 	// supply blocks to the consensus machine
 	if r.combinedMode {
-		r.runTask(r.poolCombinedModeRoutine)
+		blockIngestor, ok := r.getBlockIngestor()
+		if !ok {
+			return errors.New("consensus reactor does not support combined mode (no BlockIngestor)")
+		}
+
+		r.runTask(func() { r.poolCombinedModeRoutine(blockIngestor) })
+
 		return nil
 	}
 

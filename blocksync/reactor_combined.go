@@ -8,13 +8,17 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+type BlockIngestorGetter interface {
+	GetBlockIngestor() BlockIngestor
+}
+
 // BlockIngestor represents a reactor that can ingest blocks into the consensus state.
 type BlockIngestor interface {
-	// Height returns the current height of the consensus state.
-	Height() int64
+	// Height returns the current COMMITTED height of the consensus state.
+	GetLastHeight() int64
 
-	// State returns the current state of the consensus state.
-	State() sm.State
+	// GetState returns the current consensus state
+	GetState() sm.State
 
 	// IngestVerifiedBlock ingests a verified block into the consensus state.
 	// commit and extCommit are mutually exclusive based on whether vote extensions are enabled at the block height.
@@ -23,14 +27,8 @@ type BlockIngestor interface {
 
 // todo: docs
 // todo: DRY with poolRoutine
-func (r *Reactor) poolCombinedModeRoutine() {
+func (r *Reactor) poolCombinedModeRoutine(blockIngestor BlockIngestor) {
 	r.Logger.Info("Starting blocksync pool routine (combined mode)")
-
-	blockIngestor, ok := r.getBlockIngestor()
-	if !ok {
-		r.Logger.Error("Consensus reactor does not support combined mode. Halting combined mode.")
-		return
-	}
 
 	trySyncTicker := time.NewTicker(intervalTrySync)
 	defer trySyncTicker.Stop()
@@ -62,15 +60,15 @@ FOR_LOOP:
 
 			// this means that CONSENSUS reactor has concurrently processed higher block(s).
 			// simply pop block A and continue
-			currentHeight := blockIngestor.Height()
-			if currentHeight >= blockA.Height {
+			latestHeight := blockIngestor.GetLastHeight()
+			if latestHeight >= blockA.Height {
 				r.pool.PopRequest()
 				r.metrics.AlreadyIncluded.Add(1)
 
 				r.Logger.Debug(
 					"Consensus has already processed block. Skipping",
 					"height", blockA.Height,
-					"current_height", currentHeight,
+					"latest_height", latestHeight,
 				)
 
 				continue FOR_LOOP
@@ -95,11 +93,11 @@ FOR_LOOP:
 				PartSetHeader: partsA.Header(),
 			}
 
-			state := blockIngestor.State()
+			state := blockIngestor.GetState()
 
 			// possible early exit: if the current height is not the last block height,
 			// concurrent consensus reactor may have already processed a higher block during block parts creation
-			if currentHeight != state.LastBlockHeight {
+			if latestHeight != state.LastBlockHeight {
 				continue FOR_LOOP
 			}
 
@@ -159,17 +157,25 @@ FOR_LOOP:
 				r.metrics.IngestedBlocks.Add(1)
 			}
 
+			// todo: ensure that pool is aware of recent CONSENSUS height
+
 			// continue the loop...
 		}
 	}
 }
 
 func (r *Reactor) getBlockIngestor() (BlockIngestor, bool) {
-	if cr, ok := r.Switch.Reactor("CONSENSUS"); ok {
-		blockIngestor, ok := cr.(BlockIngestor)
-
-		return blockIngestor, ok
+	cr, ok := r.Switch.Reactor("CONSENSUS")
+	if !ok {
+		return nil, false
 	}
 
-	return nil, false
+	sg, ok := cr.(BlockIngestorGetter)
+	if !ok {
+		return nil, false
+	}
+
+	ingestor := sg.GetBlockIngestor()
+
+	return ingestor, ingestor != nil
 }

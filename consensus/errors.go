@@ -24,6 +24,11 @@ var (
 	ErrProposalTooManyParts       = errors.New("proposal block has too many parts")
 )
 
+var (
+	ErrAlreadyIncluded = errors.New("block already included")
+	ErrValidation      = errors.New("validation error")
+)
+
 type ErrConsensusMessageNotRecognized struct {
 	Message any
 }

@@ -1,7 +1,6 @@
 package blocksync
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"reflect"
@@ -551,18 +550,8 @@ FOR_LOOP:
 				err = extCommit.EnsureExtensions(true)
 			}
 			if err == nil && extensionsEnabled {
-				// if vote extensions were required at this height, ensure that
-				// the commit in the vote extensions matches the verified
-				// LastCommit in the next block
-				derivedCommit := extCommit.ToCommit()
-				if !bytes.Equal(derivedCommit.Hash(), second.LastCommit.Hash()) {
-					err = fmt.Errorf(
-						"vote extensions Commit hash %X does not match next blocks LastCommit hash %X at height %d",
-						derivedCommit.Hash(),
-						second.LastCommit.Hash(),
-						first.Height,
-					)
-				}
+				// if vote extensions were required at this height, validate the extended commit
+				err = state.Validators.VerifyCommitLight(chainID, firstID, first.Height, extCommit.ToCommit())
 			}
 
 			if err != nil {

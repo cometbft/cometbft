@@ -24,9 +24,11 @@ var (
 	ErrProposalTooManyParts       = errors.New("proposal block has too many parts")
 )
 
+// Ingestion errors
 var (
-	ErrAlreadyIncluded = errors.New("block already included")
 	ErrValidation      = errors.New("validation error")
+	ErrAlreadyIncluded = errors.New("block already included")
+	ErrHeightGap       = errors.New("height gap invariant violated")
 )
 
 type ErrConsensusMessageNotRecognized struct {

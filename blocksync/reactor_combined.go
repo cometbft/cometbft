@@ -1,16 +1,15 @@
 package blocksync
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
+	// "github.com/cometbft/cometbft/consensus"
+	"github.com/cometbft/cometbft/consensus"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 )
-
-type BlockIngestorGetter interface {
-	GetBlockIngestor() BlockIngestor
-}
 
 // BlockIngestor represents a reactor that can ingest blocks into the consensus state.
 type BlockIngestor interface {
@@ -22,7 +21,12 @@ type BlockIngestor interface {
 
 	// IngestVerifiedBlock ingests a verified block into the consensus state.
 	// commit and extCommit are mutually exclusive based on whether vote extensions are enabled at the block height.
-	IngestVerifiedBlock(block *types.Block, ps *types.PartSet, commit *types.Commit, extCommit *types.ExtendedCommit) error
+	IngestVerifiedBlock(
+		block *types.Block,
+		partSet *types.PartSet,
+		commit *types.Commit,
+		extCommit *types.ExtendedCommit,
+	) (err error, malicious bool)
 }
 
 // todo: docs
@@ -61,17 +65,35 @@ FOR_LOOP:
 			// this means that CONSENSUS reactor has concurrently processed higher block(s).
 			// simply pop block A and continue
 			latestHeight := blockIngestor.GetLastHeight()
-			if latestHeight >= blockA.Height {
+
+			// sanity check
+			if blockA.Height+1 != blockB.Height {
+				panic(fmt.Errorf(
+					"heights of first and second block are not consecutive (want %d, got %d)",
+					blockA.Height+1,
+					blockB.Height,
+				))
+			}
+
+			if blockA.Height <= latestHeight {
 				r.pool.PopRequest()
 				r.metrics.AlreadyIncluded.Add(1)
 
 				r.Logger.Debug(
-					"Consensus has already processed block. Skipping",
+					"Consensus already processed this block. Skipping",
 					"height", blockA.Height,
 					"latest_height", latestHeight,
 				)
 
 				continue FOR_LOOP
+			}
+
+			if blockA.Height != latestHeight+1 {
+				panic(fmt.Errorf(
+					"block height gap invariant violated (want %d, got %d)",
+					latestHeight+1,
+					blockA.Height,
+				))
 			}
 
 			if !r.IsRunning() || !r.pool.IsRunning() {
@@ -108,12 +130,6 @@ FOR_LOOP:
 				continue FOR_LOOP
 			}
 
-			// todo: ensure this call is thread-safe!
-			if err = r.blockExec.ValidateBlock(state, blockA); err != nil {
-				r.handleValidationFailure(blockA, blockB, err)
-				continue FOR_LOOP
-			}
-
 			var (
 				presentExtCommit  = extCommitA != nil
 				extensionsEnabled = state.ConsensusParams.ABCI.VoteExtensionsEnabled(blockA.Height)
@@ -137,17 +153,21 @@ FOR_LOOP:
 				}
 			}
 
-			// pop blockA from the pool
+			// pops blockA
 			r.pool.PopRequest()
 
 			// note that between state fetch and ingest, the state may have changed concurrently
 			// by the consensus reactor
-			err = blockIngestor.IngestVerifiedBlock(blockA, partsA, blockB.LastCommit, extCommitA)
+			err, malicious := blockIngestor.IngestVerifiedBlock(blockA, partsA, blockB.LastCommit, extCommitA)
 
 			switch {
-			case err != nil:
-				// todo already ingested -> noop, already processed, failure, etc...
+			case err != nil && malicious:
 				r.metrics.RejectedBlocks.Add(1)
+				r.handleValidationFailure(blockA, blockB, err)
+				continue FOR_LOOP
+			case errors.Is(err, consensus.ErrAlreadyIncluded):
+				r.metrics.AlreadyIncluded.Add(1)
+				continue FOR_LOOP
 			case err != nil:
 				// todo figure out how to handle these errors
 				r.Logger.Error("Failed to ingest verified block. Halting blocksync.", "height", blockA.Height, "err", err)
@@ -158,8 +178,6 @@ FOR_LOOP:
 			}
 
 			// todo: ensure that pool is aware of recent CONSENSUS height
-
-			// continue the loop...
 		}
 	}
 }
@@ -170,12 +188,10 @@ func (r *Reactor) getBlockIngestor() (BlockIngestor, bool) {
 		return nil, false
 	}
 
-	sg, ok := cr.(BlockIngestorGetter)
+	crTyped, ok := cr.(*consensus.Reactor)
 	if !ok {
 		return nil, false
 	}
 
-	ingestor := sg.GetBlockIngestor()
-
-	return ingestor, ingestor != nil
+	return crTyped.GetState(), true
 }

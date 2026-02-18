@@ -25,30 +25,36 @@ func (cs *State) IngestVerifiedBlock(
 		return errors.Wrap(ErrValidation, "commit and extCommit are both not nil")
 	}
 
-	blockID := types.BlockID{
-		Hash:          block.Hash(),
-		PartSetHeader: blockParts.Header(),
-	}
+	var (
+		height            = block.Height
+		extensionsEnabled = extCommit != nil
+		blockID           = types.BlockID{
+			Hash:          block.Hash(),
+			PartSetHeader: blockParts.Header(),
+		}
+	)
 
 	// todo drop if already ingested
 	// todo height sparsity check
-	// should be exactly the same block!
+	// todo should be exactly the same block!
 
 	cs.mtx.Lock()
 	defer cs.mtx.Unlock()
 
 	var (
-		height            = block.Height
-		stateCopy         = cs.state.Copy()
-		extensionsEnabled = extCommit != nil
-		logger            = cs.Logger.With("height", height)
+		stateCopy = cs.state.Copy()
+		logger    = cs.Logger.With("height", height)
 	)
 
-	// todo: should we use WAL?
 	if extensionsEnabled {
 		cs.blockStore.SaveBlockWithExtendedCommit(block, blockParts, extCommit)
 	} else {
 		cs.blockStore.SaveBlock(block, blockParts, commit)
+	}
+
+	// NOTE: fsync
+	if err := cs.wal.WriteSync(EndHeightMessage{height}); err != nil {
+		panic(errors.Wrapf(err, "unable to write end height message to WAL for height %d", height))
 	}
 
 	// the follow flow is similar to finalizeCommit(height)

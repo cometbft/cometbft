@@ -565,21 +565,7 @@ FOR_LOOP:
 				err = extCommit.EnsureExtensions(true)
 			}
 			if err != nil {
-				r.Logger.Error("Error in validation", "err", err)
-				peerID := r.pool.RemovePeerAndRedoAllPeerRequests(first.Height)
-				peer := r.Switch.Peers().Get(peerID)
-				if peer != nil {
-					// NOTE: we've already removed the peer's request, but we
-					// still need to clean up the rest.
-					r.stopPeerForError(peer, ErrReactorValidation{Err: err})
-				}
-				peerID2 := r.pool.RemovePeerAndRedoAllPeerRequests(second.Height)
-				peer2 := r.Switch.Peers().Get(peerID2)
-				if peer2 != nil && peer2 != peer {
-					// NOTE: we've already removed the peer's request, but we
-					// still need to clean up the rest.
-					r.stopPeerForError(peer2, ErrReactorValidation{Err: err})
-				}
+				r.handleValidationFailure(first, second, err)
 				continue FOR_LOOP
 			}
 
@@ -657,6 +643,30 @@ func (r *Reactor) poolEventsRoutine(statusUpdateTicker *time.Ticker) {
 				Message:   &bcproto.StatusRequest{},
 			})
 		}
+	}
+}
+
+func (r *Reactor) handleValidationFailure(blockA, blockB *types.Block, err error) {
+	r.Logger.Error("Error in validation", "height", blockA.Height, "hash", blockA.Hash(), "err", err)
+
+	err = ErrReactorValidation{Err: err}
+
+	ida := r.pool.RemovePeerAndRedoAllPeerRequests(blockA.Height)
+	if peerA := r.Switch.Peers().Get(ida); peerA != nil {
+		// NOTE: we've already removed the peer's request, but we
+		// still need to clean up the rest.
+		r.stopPeerForError(peerA, err)
+	}
+
+	idb := r.pool.RemovePeerAndRedoAllPeerRequests(blockB.Height)
+	if ida == idb {
+		return
+	}
+
+	if peerB := r.Switch.Peers().Get(idb); peerB != nil {
+		// NOTE: we've already removed the peer's request, but we
+		// still need to clean up the rest.
+		r.stopPeerForError(peerB, err)
 	}
 }
 

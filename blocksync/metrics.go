@@ -25,6 +25,15 @@ type Metrics struct {
 	BlockSizeBytes metrics.Gauge
 	// The height of the latest block.
 	LatestBlockHeight metrics.Gauge
+
+	// AlreadyIncluded blocks that were already included in the chain
+	AlreadyIncluded metrics.Counter `metrics_name:"already_included_blocks"`
+
+	// IngestedBlocks blocks that were rejected by the consensus
+	IngestedBlocks metrics.Counter `metrics_name:"ingested_blocks"`
+
+	// RejectedBlocks blocks that were rejected by the consensus
+	RejectedBlocks metrics.Counter `metrics_name:"rejected_blocks"`
 }
 
 func (m *Metrics) recordBlockMetrics(block *types.Block) {

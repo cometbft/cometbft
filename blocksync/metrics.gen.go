@@ -44,6 +44,24 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "latest_block_height",
 			Help:      "The height of the latest block.",
 		}, labels).With(labelsAndValues...),
+		AlreadyIncluded: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "already_included_blocks",
+			Help:      "AlreadyIncluded blocks that were already included in the chain",
+		}, labels).With(labelsAndValues...),
+		IngestedBlocks: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "ingested_blocks",
+			Help:      "IngestedBlocks blocks that were rejected by the consensus",
+		}, labels).With(labelsAndValues...),
+		RejectedBlocks: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "rejected_blocks",
+			Help:      "RejectedBlocks blocks that were rejected by the consensus",
+		}, labels).With(labelsAndValues...),
 	}
 }
 
@@ -54,5 +72,8 @@ func NopMetrics() *Metrics {
 		TotalTxs:          discard.NewGauge(),
 		BlockSizeBytes:    discard.NewGauge(),
 		LatestBlockHeight: discard.NewGauge(),
+		AlreadyIncluded:   discard.NewCounter(),
+		IngestedBlocks:    discard.NewCounter(),
+		RejectedBlocks:    discard.NewCounter(),
 	}
 }

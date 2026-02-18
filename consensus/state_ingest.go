@@ -56,6 +56,8 @@ func (cs *State) IngestVerifiedBlock(
 		return errors.Wrap(err, "failed to validate block"), true
 	}
 
+	// block saving also updates blockStore.Height,
+	// so blocksync responds to peers with the correct height.
 	if extensionsEnabled {
 		cs.blockStore.SaveBlockWithExtendedCommit(block, blockParts, extCommit)
 	} else {

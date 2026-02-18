@@ -7,18 +7,11 @@ import (
 
 	// "github.com/cometbft/cometbft/consensus"
 	"github.com/cometbft/cometbft/consensus"
-	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 )
 
 // BlockIngestor represents a reactor that can ingest blocks into the consensus state.
 type BlockIngestor interface {
-	// Height returns the current COMMITTED height of the consensus state.
-	GetLastHeight() int64
-
-	// GetState returns the current consensus state
-	GetState() sm.State
-
 	// IngestVerifiedBlock ingests a verified block into the consensus state.
 	// commit and extCommit are mutually exclusive based on whether vote extensions are enabled at the block height.
 	IngestVerifiedBlock(
@@ -62,10 +55,6 @@ FOR_LOOP:
 				continue FOR_LOOP
 			}
 
-			// this means that CONSENSUS reactor has concurrently processed higher block(s).
-			// simply pop block A and continue
-			latestHeight := blockIngestor.GetLastHeight()
-
 			// sanity check
 			if blockA.Height+1 != blockB.Height {
 				panic(fmt.Errorf(
@@ -75,6 +64,18 @@ FOR_LOOP:
 				))
 			}
 
+			// note this is a db call. consider caching in mem.
+			// right now it's the safest and the easiest & safest way to fetch the latest state.
+			state, err := r.blockExec.Store().Load()
+			if err != nil {
+				r.Logger.Error("Failed to load latest state. Halting blocksync.", "err", err)
+				return
+			}
+
+			latestHeight := state.LastBlockHeight
+
+			// this means that CONSENSUS reactor has concurrently processed higher block(s).
+			// simply pop block A and continue
 			if blockA.Height <= latestHeight {
 				r.pool.PopRequest()
 				r.metrics.AlreadyIncluded.Add(1)
@@ -113,14 +114,6 @@ FOR_LOOP:
 			ida := types.BlockID{
 				Hash:          blockA.Hash(),
 				PartSetHeader: partsA.Header(),
-			}
-
-			state := blockIngestor.GetState()
-
-			// possible early exit: if the current height is not the last block height,
-			// concurrent consensus reactor may have already processed a higher block during block parts creation
-			if latestHeight != state.LastBlockHeight {
-				continue FOR_LOOP
 			}
 
 			// verify the first block using the second's commit
@@ -166,6 +159,7 @@ FOR_LOOP:
 				r.handleValidationFailure(blockA, blockB, err)
 				continue FOR_LOOP
 			case errors.Is(err, consensus.ErrAlreadyIncluded):
+				r.Logger.Info("Block included concurrently. Skipping", "height", blockA.Height)
 				r.metrics.AlreadyIncluded.Add(1)
 				continue FOR_LOOP
 			case err != nil:
@@ -188,10 +182,7 @@ func (r *Reactor) getBlockIngestor() (BlockIngestor, bool) {
 		return nil, false
 	}
 
-	crTyped, ok := cr.(*consensus.Reactor)
-	if !ok {
-		return nil, false
-	}
+	blockIngestor, ok := cr.(BlockIngestor)
 
-	return crTyped.GetState(), true
+	return blockIngestor, ok
 }

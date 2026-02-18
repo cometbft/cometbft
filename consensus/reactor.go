@@ -195,9 +195,6 @@ func (conR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 	}
 }
 
-// GetBlockIngestor returns the block ingestor for the consensus state.
-func (conR *Reactor) GetState() *State { return conR.conS }
-
 // InitPeer implements Reactor by creating a state for the peer.
 func (conR *Reactor) InitPeer(peer p2p.Peer) p2p.Peer {
 	peerState := NewPeerState(peer).SetLogger(conR.Logger)
@@ -419,6 +416,15 @@ func (conR *Reactor) SetEventBus(b *types.EventBus) {
 // WaitSync returns whether the consensus reactor is waiting for state/block sync.
 func (conR *Reactor) WaitSync() bool {
 	return conR.waitSync.Load()
+}
+
+func (conR *Reactor) IngestVerifiedBlock(
+	block *types.Block,
+	blockParts *types.PartSet,
+	commit *types.Commit,
+	extCommit *types.ExtendedCommit,
+) (err error, malicious bool) {
+	return conR.conS.IngestVerifiedBlock(block, blockParts, commit, extCommit)
 }
 
 //--------------------------------------

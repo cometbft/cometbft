@@ -1,6 +1,7 @@
 package blocksync
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"reflect"
@@ -535,6 +536,8 @@ FOR_LOOP:
 				// validate the block before we persist it
 				err = r.blockExec.ValidateBlock(state, first)
 			}
+
+			// vote extension validations
 			presentExtCommit := extCommit != nil
 			extensionsEnabled := state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height)
 			if presentExtCommit != extensionsEnabled {
@@ -547,6 +550,21 @@ FOR_LOOP:
 				// if vote extensions were required at this height, ensure they exist.
 				err = extCommit.EnsureExtensions(true)
 			}
+			if err == nil && extensionsEnabled {
+				// if vote extensions were required at this height, ensure that
+				// the commit in the vote extensions matches the verified
+				// LastCommit in the next block
+				derivedCommit := extCommit.ToCommit()
+				if !bytes.Equal(derivedCommit.Hash(), second.LastCommit.Hash()) {
+					err = fmt.Errorf(
+						"vote extensions Commit hash %X does not match next blocks LastCommit hash %X at height %d",
+						derivedCommit.Hash(),
+						second.LastCommit.Hash(),
+						first.Height,
+					)
+				}
+			}
+
 			if err != nil {
 				r.Logger.Error("Error in validation", "err", err)
 				peerID := r.pool.RemovePeerAndRedoAllPeerRequests(first.Height)

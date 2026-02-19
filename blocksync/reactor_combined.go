@@ -12,14 +12,7 @@ import (
 
 // BlockIngestor represents a reactor that can ingest blocks into the consensus state.
 type BlockIngestor interface {
-	// IngestVerifiedBlock ingests a verified block into the consensus state.
-	// commit and extCommit are mutually exclusive based on whether vote extensions are enabled at the block height.
-	IngestVerifiedBlock(
-		block *types.Block,
-		partSet *types.PartSet,
-		commit *types.Commit,
-		extCommit *types.ExtendedCommit,
-	) (err error, malicious bool)
+	IngestVerifiedBlock(block consensus.VerifiedBlock) (err error, malicious bool)
 }
 
 // todo: docs
@@ -151,7 +144,12 @@ FOR_LOOP:
 
 			// note that between state fetch and ingest, the state may have changed concurrently
 			// by the consensus reactor
-			err, malicious := blockIngestor.IngestVerifiedBlock(blockA, partsA, blockB.LastCommit, extCommitA)
+			err, malicious := blockIngestor.IngestVerifiedBlock(consensus.VerifiedBlock{
+				Block:      blockA,
+				BlockParts: partsA,
+				Commit:     blockB.LastCommit,
+				ExtCommit:  extCommitA,
+			})
 
 			switch {
 			case err != nil && malicious:

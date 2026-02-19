@@ -1,60 +1,118 @@
 package consensus
 
 import (
+	"time"
+
+	cstypes "github.com/cometbft/cometbft/consensus/types"
 	types "github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/pkg/errors"
 )
 
-// IngestVerifiedBlock executed and commits a verified block into the consensus state.
-// If the verifier determined that this block has vote extensions enabled, extCommit is not nil
-// (mutually exclusive with commit)
-func (cs *State) IngestVerifiedBlock(
-	block *types.Block,
-	blockParts *types.PartSet,
-	commit *types.Commit,
-	extCommit *types.ExtendedCommit,
-) (err error, malicious bool) {
-	switch {
-	case block == nil:
-		return errors.Wrap(ErrValidation, "block is nil"), false
-	case blockParts == nil:
-		return errors.Wrap(ErrValidation, "part set is nil"), false
-	case commit == nil && extCommit == nil:
-		return errors.Wrap(ErrValidation, "commit and extCommit are both nil"), false
-	case commit != nil && extCommit != nil:
-		return errors.Wrap(ErrValidation, "commit and extCommit are both not nil"), false
+// VerifiedBlock is a block that has been verified by blocksync.
+// Commit and ExtCommit are mutually exclusive based on whether vote extensions are enabled at the block height.
+type VerifiedBlock struct {
+	Block      *types.Block
+	BlockParts *types.PartSet
+	Commit     *types.Commit
+	ExtCommit  *types.ExtendedCommit
+}
+
+type ingestVerifiedBlockRequest struct {
+	VerifiedBlock
+	sentAt   time.Time
+	response chan ingestVerifiedBlockResponse
+}
+
+type ingestVerifiedBlockResponse struct {
+	err       error
+	malicious bool
+}
+
+// IngestVerifiedBlock ingests a verified block into the consensus state.
+func (cs *State) IngestVerifiedBlock(vb VerifiedBlock) (err error, malicious bool) {
+	cs.Logger.Info("Received verified block", "height", vb.Block.Height, "hash")
+
+	if err := vb.ValidateBasic(); err != nil {
+		return err, false
 	}
 
-	var (
-		height            = block.Height
-		extensionsEnabled = extCommit != nil
-		blockID           = types.BlockID{
-			Hash:          block.Hash(),
-			PartSetHeader: blockParts.Header(),
-		}
+	req := &ingestVerifiedBlockRequest{
+		VerifiedBlock: vb,
+		sentAt:        time.Now(),
+		response:      make(chan ingestVerifiedBlockResponse, 1),
+	}
+
+	defer close(req.response)
+
+	// use internal queue to ensure we have NO data races with other consensus state machine operations
+	// see handleIngestVerifiedBlockMessage
+	cs.sendInternalMessage(msgInfo{Msg: req})
+
+	res := <-req.response
+
+	return res.err, res.malicious
+}
+
+func (cs *State) handleIngestVerifiedBlockMessage(req *ingestVerifiedBlockRequest) {
+	cs.Logger.Info(
+		"Handling ingested verified block",
+		"height", req.Block.Height,
+		"queue_time", time.Since(req.sentAt).String(),
 	)
 
-	cs.mtx.Lock()
-	defer cs.mtx.Unlock()
+	err, malicious := cs.handleIngestVerifiedBlock(req.VerifiedBlock)
+
+	// todo: what to do with cs.statsMsgQueue?
+
+	req.response <- ingestVerifiedBlockResponse{err: err, malicious: malicious}
+}
+
+// handleIngestVerifiedBlock handles the ingestion of a verified block into the consensus state.
+// note that the MUTEX is held by the caller and VerifiedBlock should be already validated.
+func (cs *State) handleIngestVerifiedBlock(vb VerifiedBlock) (err error, malicious bool) {
+	var (
+		block           = vb.Block
+		height          = vb.Block.Height
+		blockParts      = vb.BlockParts
+		lastBlockHeight = cs.state.LastBlockHeight
+		blockID         = types.BlockID{
+			Hash:          vb.Block.Hash(),
+			PartSetHeader: vb.BlockParts.Header(),
+		}
+
+		commit            = vb.Commit
+		extCommit         = vb.ExtCommit
+		extensionsEnabled = vb.ExtCommit != nil
+	)
+
+	if height <= lastBlockHeight {
+		return ErrAlreadyIncluded, false
+	}
+
+	if height != lastBlockHeight+1 {
+		return errors.Wrapf(ErrHeightGap, "got %d, want %d", height, lastBlockHeight+1), false
+	}
 
 	var (
 		stateCopy = cs.state.Copy()
 		logger    = cs.Logger.With("height", height)
 	)
 
-	if height <= stateCopy.LastBlockHeight {
-		logger.Debug("Block already included")
-		return ErrAlreadyIncluded, false
-	}
-
-	if height != stateCopy.LastBlockHeight+1 {
-		return errors.Wrapf(ErrHeightGap, "got %d, want %d", height, stateCopy.LastBlockHeight+1), false
-	}
-
 	// this is not thread-safe, thus we must exec it under the lock
 	if err := cs.blockExec.ValidateBlock(stateCopy, block); err != nil {
 		return errors.Wrap(err, "failed to validate block"), true
 	}
+
+	// ============ enterCommit(height, commitRound) ============
+	const round = 0
+
+	cs.updateRoundStep(round, cstypes.RoundStepCommit)
+	cs.CommitRound = round
+	cs.CommitTime = cmttime.Now()
+	cs.newStep()
+
+	// ============ finalizeCommit(height) ============
 
 	// block saving also updates blockStore.Height,
 	// so blocksync responds to peers with the correct height.
@@ -91,4 +149,19 @@ func (cs *State) IngestVerifiedBlock(
 	cs.scheduleRound0(&cs.RoundState)
 
 	return nil, false
+}
+
+func (vb *VerifiedBlock) ValidateBasic() error {
+	switch {
+	case vb.Block == nil:
+		return errors.Wrap(ErrValidation, "block is nil")
+	case vb.BlockParts == nil:
+		return errors.Wrap(ErrValidation, "part set is nil")
+	case vb.Commit == nil && vb.ExtCommit == nil:
+		return errors.Wrap(ErrValidation, "commit and extCommit are both nil")
+	case vb.Commit != nil && vb.ExtCommit != nil:
+		return errors.Wrap(ErrValidation, "commit and extCommit are both not nil")
+	default:
+		return nil
+	}
 }

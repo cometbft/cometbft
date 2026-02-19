@@ -418,13 +418,8 @@ func (conR *Reactor) WaitSync() bool {
 	return conR.waitSync.Load()
 }
 
-func (conR *Reactor) IngestVerifiedBlock(
-	block *types.Block,
-	blockParts *types.PartSet,
-	commit *types.Commit,
-	extCommit *types.ExtendedCommit,
-) (err error, malicious bool) {
-	return conR.conS.IngestVerifiedBlock(block, blockParts, commit, extCommit)
+func (conR *Reactor) IngestVerifiedBlock(block VerifiedBlock) (err error, malicious bool) {
+	return conR.conS.IngestVerifiedBlock(block)
 }
 
 //--------------------------------------

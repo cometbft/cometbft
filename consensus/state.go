@@ -970,7 +970,7 @@ func (cs *State) handleMsg(mi msgInfo) {
 
 	case *ingestVerifiedBlockRequest:
 		// process
-		cs.handleIngestVerifiedBlockMessage(msg)
+		cs.handleIngestVerifiedBlockRequest(msg)
 
 	default:
 		cs.Logger.Error("unknown msg type", "type", fmt.Sprintf("%T", msg))

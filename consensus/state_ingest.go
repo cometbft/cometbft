@@ -68,7 +68,7 @@ func (cs *State) IngestVerifiedBlock(vb VerifiedBlock) (err error, malicious boo
 	return res.err, res.malicious
 }
 
-func (cs *State) handleIngestVerifiedBlockMessage(req *ingestVerifiedBlockRequest) {
+func (cs *State) handleIngestVerifiedBlockRequest(req *ingestVerifiedBlockRequest) {
 	err, malicious := cs.handleIngestVerifiedBlock(req.VerifiedBlock)
 
 	// todo: what to do with cs.statsMsgQueue?
@@ -113,7 +113,10 @@ func (cs *State) handleIngestVerifiedBlock(vb VerifiedBlock) (err error, malicio
 	}
 
 	// ============ enterCommit(height, commitRound) ============
-	const round = 0
+	// -1 stands for "N/A". It skips bunch of checks in updateToState()
+	// that are not relevant as we assume the block is already validated
+	// by the light client in blocksync.
+	const round = -1
 
 	cs.updateRoundStep(round, cstypes.RoundStepCommit)
 	cs.CommitRound = round
@@ -122,7 +125,7 @@ func (cs *State) handleIngestVerifiedBlock(vb VerifiedBlock) (err error, malicio
 
 	// ============ finalizeCommit(height) ============
 
-	// block saving also updates blockStore.Height,
+	// this will also update blockStore.Height,
 	// so blocksync responds to peers with the correct height.
 	if extensionsEnabled {
 		cs.blockStore.SaveBlockWithExtendedCommit(block, blockParts, extCommit)
@@ -153,7 +156,6 @@ func (cs *State) handleIngestVerifiedBlock(vb VerifiedBlock) (err error, malicio
 		logger.Error("Failed to get private validator pubkey", "err", err)
 	}
 
-	// todo: what would happen if we have 100s of ingested block like this in a row?
 	cs.scheduleRound0(&cs.RoundState)
 
 	return nil, false

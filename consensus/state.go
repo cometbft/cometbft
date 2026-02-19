@@ -846,12 +846,21 @@ func (cs *State) receiveRoutine(maxSteps int) {
 		case mi = <-cs.internalMsgQueue:
 			cs.Logger.Debug("Received message from cs.internalMsgQueue", "peer_id", mi.PeerID)
 
-			err := cs.wal.WriteSync(mi) // NOTE: fsync
-			if err != nil {
-				panic(fmt.Sprintf(
-					"failed to write %v msg to consensus WAL due to %v; check your file system and restart the node",
-					mi, err,
-				))
+			writeWal := true
+
+			// avoid writing WAL for ingested verified blocks coming from blocksync
+			if _, ok := mi.Msg.(*ingestVerifiedBlockRequest); ok {
+				writeWal = false
+			}
+
+			if writeWal {
+				// NOTE: fsync
+				if err := cs.wal.WriteSync(mi); err != nil {
+					panic(fmt.Errorf(
+						"failed to write %v msg to consensus WAL; check your file system and restart the node: %w",
+						mi, err,
+					))
+				}
 			}
 
 			if _, ok := mi.Msg.(*VoteMessage); ok {

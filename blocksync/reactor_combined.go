@@ -168,8 +168,6 @@ FOR_LOOP:
 				r.metrics.recordBlockMetrics(blockA)
 				r.metrics.IngestedBlocks.Add(1)
 			}
-
-			// todo: ensure that pool is aware of recent CONSENSUS height
 		}
 	}
 }

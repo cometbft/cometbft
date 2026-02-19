@@ -31,7 +31,21 @@ type ingestVerifiedBlockResponse struct {
 
 // IngestVerifiedBlock ingests a verified block into the consensus state.
 func (cs *State) IngestVerifiedBlock(vb VerifiedBlock) (err error, malicious bool) {
-	cs.Logger.Info("Received verified block", "height", vb.Block.Height, "hash")
+	start := time.Now()
+
+	logger := cs.Logger.With("height", vb.Block.Height)
+	logger.Info("ingesting verified block")
+
+	defer func() {
+		elapsed := time.Since(start)
+
+		if err != nil {
+			logger.Info("failed to ingest verified block", "elapsed", elapsed, "err", err, "malicious", malicious)
+			return
+		}
+
+		logger.Info("ingested verified block", "elapsed", elapsed)
+	}()
 
 	if err := vb.ValidateBasic(); err != nil {
 		return err, false
@@ -55,12 +69,6 @@ func (cs *State) IngestVerifiedBlock(vb VerifiedBlock) (err error, malicious boo
 }
 
 func (cs *State) handleIngestVerifiedBlockMessage(req *ingestVerifiedBlockRequest) {
-	cs.Logger.Info(
-		"Handling ingested verified block",
-		"height", req.Block.Height,
-		"queue_time", time.Since(req.sentAt).String(),
-	)
-
 	err, malicious := cs.handleIngestVerifiedBlock(req.VerifiedBlock)
 
 	// todo: what to do with cs.statsMsgQueue?

@@ -29,7 +29,10 @@ type ingestVerifiedBlockResponse struct {
 	malicious bool
 }
 
-// IngestVerifiedBlock ingests a verified block into the consensus state.
+// IngestVerifiedBlock ingests a next valid and VERIFIED block into the consensus state.
+// Verification is the domain responsibility of the caller (otherwise the consensus will panic).
+// It uses the underlying internalQueue instead to ensure SERIAL state-machine processing inside
+// the main receiveRoutine. See handleIngestVerifiedBlock for the actual implementation and error handling.
 func (cs *State) IngestVerifiedBlock(vb VerifiedBlock) (err error, malicious bool) {
 	start := time.Now()
 
@@ -37,30 +40,29 @@ func (cs *State) IngestVerifiedBlock(vb VerifiedBlock) (err error, malicious boo
 	logger.Info("ingesting verified block")
 
 	defer func() {
-		elapsed := time.Since(start)
+		duration := time.Since(start)
 
 		if err != nil {
-			logger.Info("failed to ingest verified block", "elapsed", elapsed, "err", err, "malicious", malicious)
-			return
+			logger.Info("failed to ingest verified block", "dur", duration, "err", err, "malicious", malicious)
+		} else {
+			logger.Info("ingested verified block", "dur", duration)
 		}
-
-		logger.Info("ingested verified block", "elapsed", elapsed)
 	}()
 
 	if err := vb.ValidateBasic(); err != nil {
 		return err, false
 	}
 
+	// register response channel so we can receive from receiveRoutine
+	ch := make(chan ingestVerifiedBlockResponse, 1)
+	defer close(ch)
+
 	req := &ingestVerifiedBlockRequest{
 		VerifiedBlock: vb,
 		sentAt:        time.Now(),
-		response:      make(chan ingestVerifiedBlockResponse, 1),
+		response:      ch,
 	}
 
-	defer close(req.response)
-
-	// use internal queue to ensure we have NO data races with other consensus state machine operations
-	// see handleIngestVerifiedBlockMessage
 	cs.sendInternalMessage(msgInfo{Msg: req})
 
 	res := <-req.response
@@ -68,10 +70,9 @@ func (cs *State) IngestVerifiedBlock(vb VerifiedBlock) (err error, malicious boo
 	return res.err, res.malicious
 }
 
+// note the outcome of this call is NOT relevant to statsMsgQueue
 func (cs *State) handleIngestVerifiedBlockRequest(req *ingestVerifiedBlockRequest) {
 	err, malicious := cs.handleIngestVerifiedBlock(req.VerifiedBlock)
-
-	// todo: what to do with cs.statsMsgQueue?
 
 	req.response <- ingestVerifiedBlockResponse{err: err, malicious: malicious}
 }

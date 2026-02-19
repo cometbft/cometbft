@@ -969,9 +969,7 @@ func (cs *State) handleMsg(mi msgInfo) {
 		// We could make note of this and help filter in broadcastHasVoteMessage().
 
 	case *ingestVerifiedBlockRequest:
-		// process
 		cs.handleIngestVerifiedBlockRequest(msg)
-
 	default:
 		cs.Logger.Error("unknown msg type", "type", fmt.Sprintf("%T", msg))
 		return

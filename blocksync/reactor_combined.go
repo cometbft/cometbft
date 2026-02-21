@@ -35,7 +35,7 @@ func (r *Reactor) getBlockIngestor() (BlockIngestor, error) {
 // Influence on networking and block sharing: as consensus and blocksync reactors both point to the same BlockStore,
 // blocksync req/res always operate on the latest state --> no need to explicitly update blocksync's state
 func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
-	r.Logger.Info("Starting blocksync pool routine (combined mode)")
+	r.Logger.Info("Starting blocksync block ingestor (combined mode)")
 
 	trySyncTicker := time.NewTicker(intervalTrySync)
 	defer trySyncTicker.Stop()
@@ -59,17 +59,17 @@ FOR_LOOP:
 		case <-syncIterationCh:
 			// See if there are any blocks to sync. We need two consecutive blocks
 			// in order to perform blocksync verification.
-			blockA, blockB, extCommitA := r.pool.PeekTwoBlocks()
-			if blockA == nil || blockB == nil {
+			block, nextBlock, extCommit := r.pool.PeekTwoBlocks()
+			if block == nil || nextBlock == nil {
 				continue FOR_LOOP
 			}
 
 			// sanity check
-			if blockA.Height+1 != blockB.Height {
+			if block.Height+1 != nextBlock.Height {
 				panic(fmt.Errorf(
 					"heights of first and second block are not consecutive (want %d, got %d)",
-					blockA.Height+1,
-					blockB.Height,
+					block.Height+1,
+					nextBlock.Height,
 				))
 			}
 
@@ -77,7 +77,7 @@ FOR_LOOP:
 			// right now it's the safest and the easiest & safest way to fetch the latest state.
 			state, err := r.blockExec.Store().Load()
 			if err != nil {
-				r.Logger.Error("Failed to load latest state. Halting blocksync.", "err", err)
+				r.Logger.Error("Failed to load latest state. Halting blocksync", "err", err)
 				return
 			}
 
@@ -85,24 +85,24 @@ FOR_LOOP:
 
 			// this means that CONSENSUS reactor has concurrently processed higher block(s).
 			// simply pop block A and continue
-			if blockA.Height <= latestHeight {
+			if block.Height <= latestHeight {
 				r.pool.PopRequest()
 				r.metrics.AlreadyIncluded.Add(1)
 
 				r.Logger.Debug(
 					"Consensus already processed this block. Skipping",
-					"height", blockA.Height,
+					"height", block.Height,
 					"latest_height", latestHeight,
 				)
 
 				continue FOR_LOOP
 			}
 
-			if blockA.Height != latestHeight+1 {
+			if block.Height != latestHeight+1 {
 				panic(fmt.Errorf(
 					"block height gap invariant violated (want %d, got %d)",
 					latestHeight+1,
-					blockA.Height,
+					block.Height,
 				))
 			}
 
@@ -113,44 +113,44 @@ FOR_LOOP:
 			// try again quickly next loop.
 			syncIterationCh <- struct{}{}
 
-			partsA, err := blockA.MakePartSet(types.BlockPartSizeBytes)
+			blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
 			if err != nil {
 				// should not happen
-				r.Logger.Error("Failed to make part set. Halting blocksync.", "height", blockA.Height, "err", err)
+				r.Logger.Error("Failed to make part set. Halting blocksync", "height", block.Height, "err", err)
 				return
 			}
 
-			ida := types.BlockID{
-				Hash:          blockA.Hash(),
-				PartSetHeader: partsA.Header(),
+			blockID := types.BlockID{
+				Hash:          block.Hash(),
+				PartSetHeader: blockParts.Header(),
 			}
 
 			// verify the first block using the second's commit
-			err = state.Validators.VerifyCommitLight(state.ChainID, ida, blockA.Height, blockB.LastCommit)
+			err = state.Validators.VerifyCommitLight(state.ChainID, blockID, block.Height, nextBlock.LastCommit)
 			if err != nil {
-				r.handleValidationFailure(blockA, blockB, err)
+				r.handleValidationFailure(block, nextBlock, err)
 				continue FOR_LOOP
 			}
 
 			var (
-				presentExtCommit  = extCommitA != nil
-				extensionsEnabled = state.ConsensusParams.ABCI.VoteExtensionsEnabled(blockA.Height)
+				presentExtCommit  = extCommit != nil
+				extensionsEnabled = state.ConsensusParams.ABCI.VoteExtensionsEnabled(block.Height)
 			)
 
 			if presentExtCommit != extensionsEnabled {
 				err = fmt.Errorf(
 					"invalid ext commit state: height %d: presentExtCommit=%t, extensionsEnabled=%t",
-					blockA.Height, presentExtCommit, extensionsEnabled,
+					block.Height, presentExtCommit, extensionsEnabled,
 				)
 
-				r.handleValidationFailure(blockA, blockB, err)
+				r.handleValidationFailure(block, nextBlock, err)
 				continue FOR_LOOP
 			}
 
 			if extensionsEnabled {
 				// if vote extensions were required at this height, ensure they exist.
-				if err = extCommitA.EnsureExtensions(true); err != nil {
-					r.handleValidationFailure(blockA, blockB, err)
+				if err = extCommit.EnsureExtensions(true); err != nil {
+					r.handleValidationFailure(block, nextBlock, err)
 					continue FOR_LOOP
 				}
 			}
@@ -161,29 +161,27 @@ FOR_LOOP:
 			// note that between state fetch and ingest, the state may have changed
 			// concurrently by the consensus.
 			err, malicious := blockIngestor.IngestVerifiedBlock(consensus.VerifiedBlock{
-				Block:      blockA,
-				BlockParts: partsA,
-				Commit:     blockB.LastCommit,
-				ExtCommit:  extCommitA,
+				Block:      block,
+				BlockParts: blockParts,
+				Commit:     nextBlock.LastCommit,
+				ExtCommit:  extCommit,
 			})
 
 			switch {
 			case errors.Is(err, consensus.ErrAlreadyIncluded):
-				r.Logger.Info("Block included concurrently. Skipping", "height", blockA.Height)
+				r.Logger.Info("Block was included concurrently. Skipping", "height", block.Height)
 				r.metrics.AlreadyIncluded.Add(1)
-				continue FOR_LOOP
 			case err != nil && malicious:
+				r.handleValidationFailure(block, nextBlock, err)
 				r.metrics.RejectedBlocks.Add(1)
-				r.handleValidationFailure(blockA, blockB, err)
-				continue FOR_LOOP
 			case err != nil:
 				// one of [consensus.ErrValidation, consensus.ErrHeightGap, or other...]
 				// this is mostly likely an unrecoverable invariant violation that should not happen
 				// or should be considered a bug.
-				r.Logger.Error("Failed to ingest verified block. Halting blocksync.", "height", blockA.Height, "err", err)
+				r.Logger.Error("Failed to ingest verified block. Halting blocksync", "height", block.Height, "err", err)
 				return
 			default:
-				r.metrics.recordBlockMetrics(blockA)
+				r.metrics.recordBlockMetrics(block)
 				r.metrics.IngestedBlocks.Add(1)
 			}
 		}

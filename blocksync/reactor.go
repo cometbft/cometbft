@@ -62,8 +62,9 @@ type Reactor struct {
 	// eg it can be initially disabled due to state sync being performed
 	enabled *atomic.Bool
 
-	// if enabled, we suppress switching to consensus mode,
-	// running blocksync along with consensus
+	// if enabled, pending blocks are forwarded to BlockIngestor for
+	// further commitment. This effectively combines BLOCKSYNC with CONSENSUS,
+	// making them operate simultaneously.
 	combinedMode bool
 
 	blockExec     *sm.BlockExecutor
@@ -183,20 +184,24 @@ func (r *Reactor) runPool(stateSynced bool) error {
 		r.poolEventsRoutine(ticker)
 	})
 
-	// supply blocks to the consensus machine
-	if r.combinedMode {
-		blockIngestor, ok := r.getBlockIngestor()
-		if !ok {
-			return errors.New("consensus reactor does not support combined mode (no BlockIngestor)")
-		}
-
-		r.runTask(func() { r.poolCombinedModeRoutine(blockIngestor) })
+	// default pool routine that performs regular blocksync
+	if !r.combinedMode {
+		r.runTask(func() {
+			r.poolRoutine(stateSynced)
+		})
 
 		return nil
 	}
 
-	// default pool routine (exclusive blocksync)
-	r.runTask(func() { r.poolRoutine(stateSynced) })
+	// supply blocks to the consensus machine
+	blockIngestor, err := r.getBlockIngestor()
+	if err != nil {
+		return err
+	}
+
+	r.runTask(func() {
+		r.blockIngestorRoutine(blockIngestor)
+	})
 
 	return nil
 }

@@ -105,6 +105,7 @@ func (cs *State) handleIngestVerifiedBlock(vb VerifiedBlock) (err error, malicio
 	)
 
 	// this is not thread-safe, thus we must exec it under the lock
+	// also, an invalid block should mark the peer as malicious
 	if err := cs.blockExec.ValidateBlock(stateCopy, block); err != nil {
 		return errors.Wrap(err, "failed to validate block"), true
 	}

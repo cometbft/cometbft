@@ -1,13 +1,13 @@
 package blocksync
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
 	// "github.com/cometbft/cometbft/consensus"
 	"github.com/cometbft/cometbft/consensus"
 	"github.com/cometbft/cometbft/types"
+	"github.com/pkg/errors"
 )
 
 // BlockIngestor represents a reactor that can ingest blocks into the consensus state.
@@ -15,16 +15,33 @@ type BlockIngestor interface {
 	IngestVerifiedBlock(block consensus.VerifiedBlock) (err error, malicious bool)
 }
 
-// todo: docs
-// todo: DRY with poolRoutine
-func (r *Reactor) poolCombinedModeRoutine(blockIngestor BlockIngestor) {
+func (r *Reactor) getBlockIngestor() (BlockIngestor, error) {
+	cr, ok := r.Switch.Reactor("CONSENSUS")
+	if !ok {
+		return nil, errors.New("consensus reactor not found")
+	}
+
+	bi, ok := cr.(BlockIngestor)
+	if !ok {
+		return nil, errors.Errorf("reactor %T does not implement BlockIngestor", cr)
+	}
+
+	return bi, nil
+}
+
+// blockIngestorRoutine is a similar loop to poolRoutine, but for combined mode.
+// It fetches consecutive blocks from the pool, ensures invariants, performs commit validation using
+// the light client and then passes it to BlockIngestor (consensus).
+// Influence on networking and block sharing: as consensus and blocksync reactors both point to the same BlockStore,
+// blocksync req/res always operate on the latest state --> no need to explicitly update blocksync's state
+func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 	r.Logger.Info("Starting blocksync pool routine (combined mode)")
 
 	trySyncTicker := time.NewTicker(intervalTrySync)
 	defer trySyncTicker.Stop()
 
 	syncIterationCh := make(chan struct{}, 1)
-	defer func() { close(syncIterationCh) }()
+	defer close(syncIterationCh)
 
 FOR_LOOP:
 	for {
@@ -40,11 +57,10 @@ FOR_LOOP:
 				// do nothing, non-blocking
 			}
 		case <-syncIterationCh:
-			// See if there are any blocks to sync
+			// See if there are any blocks to sync. We need two consecutive blocks
+			// in order to perform blocksync verification.
 			blockA, blockB, extCommitA := r.pool.PeekTwoBlocks()
 			if blockA == nil || blockB == nil {
-				// we need to have fetched two consecutive blocks in order to
-				// perform blocksync verification
 				continue FOR_LOOP
 			}
 
@@ -99,8 +115,8 @@ FOR_LOOP:
 
 			partsA, err := blockA.MakePartSet(types.BlockPartSizeBytes)
 			if err != nil {
-				// todo should we tolerate this error?
-				r.Logger.Error("Failed to make part set", "height", blockA.Height, "err", err)
+				// should not happen
+				r.Logger.Error("Failed to make part set. Halting blocksync.", "height", blockA.Height, "err", err)
 				return
 			}
 
@@ -142,8 +158,8 @@ FOR_LOOP:
 			// pops blockA
 			r.pool.PopRequest()
 
-			// note that between state fetch and ingest, the state may have changed concurrently
-			// by the consensus reactor
+			// note that between state fetch and ingest, the state may have changed
+			// concurrently by the consensus.
 			err, malicious := blockIngestor.IngestVerifiedBlock(consensus.VerifiedBlock{
 				Block:      blockA,
 				BlockParts: partsA,
@@ -152,16 +168,18 @@ FOR_LOOP:
 			})
 
 			switch {
-			case err != nil && malicious:
-				r.metrics.RejectedBlocks.Add(1)
-				r.handleValidationFailure(blockA, blockB, err)
-				continue FOR_LOOP
 			case errors.Is(err, consensus.ErrAlreadyIncluded):
 				r.Logger.Info("Block included concurrently. Skipping", "height", blockA.Height)
 				r.metrics.AlreadyIncluded.Add(1)
 				continue FOR_LOOP
+			case err != nil && malicious:
+				r.metrics.RejectedBlocks.Add(1)
+				r.handleValidationFailure(blockA, blockB, err)
+				continue FOR_LOOP
 			case err != nil:
-				// todo figure out how to handle these errors
+				// one of [consensus.ErrValidation, consensus.ErrHeightGap, or other...]
+				// this is mostly likely an unrecoverable invariant violation that should not happen
+				// or should be considered a bug.
 				r.Logger.Error("Failed to ingest verified block. Halting blocksync.", "height", blockA.Height, "err", err)
 				return
 			default:
@@ -170,15 +188,4 @@ FOR_LOOP:
 			}
 		}
 	}
-}
-
-func (r *Reactor) getBlockIngestor() (BlockIngestor, bool) {
-	cr, ok := r.Switch.Reactor("CONSENSUS")
-	if !ok {
-		return nil, false
-	}
-
-	blockIngestor, ok := cr.(BlockIngestor)
-
-	return blockIngestor, ok
 }

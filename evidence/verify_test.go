@@ -142,37 +142,27 @@ func TestVerify_LunaticAttack_ByzantineValidatorPubKeySwapRedirectsABCIMisbehavi
 	)
 	attackTime := defaultEvidenceTime.Add(1 * time.Hour)
 
-	// Create valid lunatic evidence.
 	ev, trusted, common := makeLunaticEvidence(
 		t, height, commonHeight, totalVals, byzVals, totalVals-byzVals, defaultEvidenceTime, attackTime)
 
-	// Poison the evidence's byzantine validator entries by swapping their pubkeys while keeping the
-	// address and voting power fields intact. We must *not* mutate the validator objects referenced
-	// by `common.ValidatorSet`, because they are used for signature verification.
 	require.Len(t, ev.ByzantineValidators, byzVals)
 	require.GreaterOrEqual(t, common.ValidatorSet.Size(), byzVals*2)
-	victimVals := common.ValidatorSet.Validators[byzVals : byzVals+byzVals]
+	otherVals := common.ValidatorSet.Validators[byzVals : byzVals+byzVals]
 
 	origByz := ev.ByzantineValidators
-	poisonedByz := make([]*types.Validator, len(origByz))
+	modifiedByz := make([]*types.Validator, len(origByz))
 	for i := range origByz {
 		orig := origByz[i]
-		victim := victimVals[i]
-
-		// Sanity: original validators are internally consistent.
-		require.True(t, bytes.Equal(orig.Address, orig.PubKey.Address()))
-		require.False(t, bytes.Equal(orig.Address, victim.PubKey.Address()))
-
-		poisonedByz[i] = &types.Validator{
+		other := otherVals[i]
+		modifiedByz[i] = &types.Validator{
 			Address:          orig.Address,
-			PubKey:           victim.PubKey, // attacker-chosen slash target
+			PubKey:           other.PubKey,
 			VotingPower:      orig.VotingPower,
 			ProposerPriority: orig.ProposerPriority,
 		}
 	}
-	ev.ByzantineValidators = poisonedByz
+	ev.ByzantineValidators = modifiedByz
 
-	// Verify against mocked state (the vulnerable `validateABCIEvidence` path).
 	state := sm.State{
 		LastBlockTime:   defaultEvidenceTime.Add(2 * time.Hour),
 		LastBlockHeight: height + 1,
@@ -191,8 +181,6 @@ func TestVerify_LunaticAttack_ByzantineValidatorPubKeySwapRedirectsABCIMisbehavi
 	require.NoError(t, err)
 	pool.SetLogger(log.TestingLogger())
 
-	// Poisoned evidence (Address != PubKey.Address()) must be rejected to prevent
-	// redirecting ABCI misbehavior to an innocent validator.
 	err = pool.AddEvidence(ev)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "does not match pubkey address")

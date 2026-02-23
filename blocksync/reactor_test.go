@@ -60,20 +60,40 @@ type ReactorPair struct {
 	app     proxy.AppConns
 }
 
+type reactorOpts struct {
+	corruptedBlock          int64
+	allAbsentExtCommitBlock int64
+}
+
+type reactorOption func(*reactorOpts)
+
+func withCorruptedBlock(height int64) reactorOption {
+	return func(o *reactorOpts) {
+		o.corruptedBlock = height
+	}
+}
+
+func withAllAbsentExtCommitBlock(height int64) reactorOption {
+	return func(o *reactorOpts) {
+		o.allAbsentExtCommitBlock = height
+	}
+}
+
 func newReactor(
 	t *testing.T,
 	logger log.Logger,
 	genDoc *types.GenesisDoc,
 	privVals []types.PrivValidator,
 	maxBlockHeight int64,
-	incorrectData ...int64,
+	opts ...reactorOption,
 ) ReactorPair {
 	if len(privVals) != 1 {
 		panic("only support one validator")
 	}
-	var incorrectBlock int64 = 0
-	if len(incorrectData) > 0 {
-		incorrectBlock = incorrectData[0]
+
+	var options reactorOpts
+	for _, opt := range opts {
+		opt(&options)
 	}
 
 	app := abci.NewBaseApplication()
@@ -171,7 +191,7 @@ func newReactor(
 			panic(fmt.Errorf("error apply block: %w", err))
 		}
 
-		saveCorrectVoteExtensions := blockHeight != incorrectBlock
+		saveCorrectVoteExtensions := blockHeight != options.corruptedBlock
 		if saveCorrectVoteExtensions == voteExtensionIsEnabled {
 			blockStore.SaveBlockWithExtendedCommit(thisBlock, thisParts, seenExtCommit)
 		} else {
@@ -180,7 +200,9 @@ func newReactor(
 	}
 
 	r := NewReactor(blockSync, false, state.Copy(), blockExec, blockStore, nil, 0, NopMetrics())
-	bcReactor := NewByzantineReactor(incorrectBlock, r)
+	bcReactor := NewByzantineReactor(r)
+	bcReactor.corruptedBlock = options.corruptedBlock
+	bcReactor.absentExtCommitBlock = options.allAbsentExtCommitBlock
 	bcReactor.SetLogger(logger.With("module", "blocksync"))
 
 	return ReactorPair{bcReactor, proxyApp}
@@ -389,7 +411,7 @@ func TestCheckSwitchToConsensusLastHeightZero(t *testing.T) {
 	}
 }
 
-func ExtendedCommitNetworkHelper(t *testing.T, maxBlockHeight int64, enableVoteExtensionAt int64, invalidBlockHeightAt int64) {
+func ExtendedCommitNetworkHelper(t *testing.T, maxBlockHeight int64, enableVoteExtensionAt int64, opts ...reactorOption) {
 	config = test.ResetTestRoot("blocksync_reactor_test")
 	defer os.RemoveAll(config.RootDir)
 	genDoc, privVals := randGenesisDoc(1, false, 30)
@@ -407,7 +429,7 @@ func ExtendedCommitNetworkHelper(t *testing.T, maxBlockHeight int64, enableVoteE
 		}
 	}()
 
-	reactorPairs = append(reactorPairs, newReactor(t, log.TestingLogger(), genDoc, privVals, maxBlockHeight, invalidBlockHeightAt))
+	reactorPairs = append(reactorPairs, newReactor(t, log.TestingLogger(), genDoc, privVals, maxBlockHeight, opts...))
 
 	var switches []*p2p.Switch
 	for _, r := range reactorPairs {
@@ -442,7 +464,7 @@ func TestCheckExtendedCommitExtra(t *testing.T) {
 	const enableVoteExtension = 5
 	const invalidBlockHeight = 3
 
-	ExtendedCommitNetworkHelper(t, maxBlockHeight, enableVoteExtension, invalidBlockHeight)
+	ExtendedCommitNetworkHelper(t, maxBlockHeight, enableVoteExtension, withCorruptedBlock(invalidBlockHeight))
 }
 
 // TestCheckExtendedCommitMissing tests when VoteExtension is enabled but the ExtendedVote is missing from the block.
@@ -451,7 +473,17 @@ func TestCheckExtendedCommitMissing(t *testing.T) {
 	const enableVoteExtension = 5
 	const invalidBlockHeight = 8
 
-	ExtendedCommitNetworkHelper(t, maxBlockHeight, enableVoteExtension, invalidBlockHeight)
+	ExtendedCommitNetworkHelper(t, maxBlockHeight, enableVoteExtension, withCorruptedBlock(invalidBlockHeight))
+}
+
+// TestCheckExtendedCommitAllAbsent tests that blocksync rejects an extended
+// commit where all signatures are absent.
+func TestCheckExtendedCommitAllAbsent(t *testing.T) {
+	const maxBlockHeight = 10
+	const enableVoteExtension = 1
+	const allAbsentHeight = 5
+
+	ExtendedCommitNetworkHelper(t, maxBlockHeight, enableVoteExtension, withAllAbsentExtCommitBlock(allAbsentHeight))
 }
 
 // ByzantineReactor is a blockstore reactor implementation where a corrupted block can be sent to a peer.
@@ -460,13 +492,13 @@ func TestCheckExtendedCommitMissing(t *testing.T) {
 // If the corrupted block height is set to 0, the reactor behaves as normal.
 type ByzantineReactor struct {
 	*Reactor
-	corruptedBlock int64
+	corruptedBlock       int64
+	absentExtCommitBlock int64
 }
 
-func NewByzantineReactor(invalidBlock int64, conR *Reactor) *ByzantineReactor {
+func NewByzantineReactor(conR *Reactor) *ByzantineReactor {
 	return &ByzantineReactor{
-		Reactor:        conR,
-		corruptedBlock: invalidBlock,
+		Reactor: conR,
 	}
 }
 
@@ -496,6 +528,19 @@ func (bcR *ByzantineReactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Pe
 		if extCommit == nil {
 			bcR.Logger.Error("found block in store with no extended commit", "block", block)
 			return false
+		}
+	}
+
+	if bcR.absentExtCommitBlock == msg.Height && extCommit != nil {
+		absentSigs := make([]types.ExtendedCommitSig, len(extCommit.ExtendedSignatures))
+		for i := range absentSigs {
+			absentSigs[i] = types.NewExtendedCommitSigAbsent()
+		}
+		extCommit = &types.ExtendedCommit{
+			Height:             extCommit.Height,
+			Round:              extCommit.Round,
+			BlockID:            extCommit.BlockID,
+			ExtendedSignatures: absentSigs,
 		}
 	}
 

@@ -10,7 +10,6 @@ linters:
     - misspell
     - nakedret
     - nolintlint
-    - prealloc
     - staticcheck
     - unconvert
   settings:

@@ -6,15 +6,15 @@
 
 ### BUG FIXES
 
+- `[evidence]` Add validation for Light Client Attack evidence ByzantineValidators
+  ([\#5638](https://github.com/cometbft/cometbft/pull/5638))
+
 ### IMPROVEMENTS
+
 - `[statesync]` Add configurable `max-snapshot-chunks` parameter to validate max amount of chunks in a `SnapshotResponse`.
   ([\#5548](https://github.com/cometbft/cometbft/pull/5548))
 
 ### FEATURES
-
-### BUG-FIXES
-
-### STATE-BREAKING
 
 ### API-BREAKING
 

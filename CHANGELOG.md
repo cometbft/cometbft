@@ -6,6 +6,16 @@
 
 ### BUG FIXES
 
+<<<<<<< HEAD
+=======
+- `[evidence]` Add validation for Light Client Attack evidence ByzantineValidators
+  ([\#5638](https://github.com/cometbft/cometbft/pull/5638))
+- `[types]` Fix buffer offset bug in `ProposerPriorityHash` that caused hash collisions when validator priorities differed
+  ([\#5613](https://github.com/cometbft/cometbft/pull/5613))
+- `[p2p]` fix(privval): Ephemeral Port Exhaustion
+  ([\#5433](https://github.com/cometbft/cometbft/pull/5433))
+
+>>>>>>> 425f8c06 (chore: add additional evidence validation (#5638))
 ### IMPROVEMENTS
 - `[statesync]` Add configurable `max-snapshot-chunks` parameter to validate max amount of chunks in a `SnapshotResponse`.
   ([\#5548](https://github.com/cometbft/cometbft/pull/5548))

@@ -500,6 +500,8 @@ FOR_LOOP:
 				// validate the block before we persist it
 				err = bcR.blockExec.ValidateBlock(state, first)
 			}
+
+			// vote extension validations
 			presentExtCommit := extCommit != nil
 			extensionsEnabled := state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height)
 			if presentExtCommit != extensionsEnabled {
@@ -512,6 +514,11 @@ FOR_LOOP:
 				// if vote extensions were required at this height, ensure they exist.
 				err = extCommit.EnsureExtensions(true)
 			}
+			if err == nil && extensionsEnabled {
+				// if vote extensions were required at this height, validate the extended commit
+				err = state.Validators.VerifyCommitLight(chainID, firstID, first.Height, extCommit.ToCommit())
+			}
+
 			if err != nil {
 				bcR.Logger.Error("Error in validation", "err", err)
 				peerID := bcR.pool.RemovePeerAndRedoAllPeerRequests(first.Height)

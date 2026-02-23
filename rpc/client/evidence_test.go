@@ -165,3 +165,11 @@ func TestBroadcastEmptyEvidence(t *testing.T) {
 		assert.Error(t, err)
 	}
 }
+
+// TestBroadcastEvidence_LightClientAttackEvidence_PubKeySwapRejected would test that
+// BroadcastEvidence rejects Light Client Attack evidence with poisoned ByzantineValidators
+// (Address != PubKey.Address()). However, constructing such evidence against a live node
+// requires the node's privval to sign a conflicting block at a height it already signed,
+// which the privval correctly rejects as "conflicting data" (double-sign protection).
+// The fix is covered by TestVerify_LunaticAttack_ByzantineValidatorPubKeySwapRedirectsABCIMisbehavior
+// in evidence/verify_test.go.

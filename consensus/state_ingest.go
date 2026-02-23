@@ -44,7 +44,7 @@ func (cs *State) IngestVerifiedBlock(vb VerifiedBlock) (err error, malicious boo
 	logger.Info("ingesting verified block")
 
 	defer func() {
-		duration := time.Since(start)
+		duration := time.Since(start).String()
 
 		if err != nil {
 			logger.Info("failed to ingest verified block", "dur", duration, "err", err, "malicious", malicious)

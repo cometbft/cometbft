@@ -17,11 +17,11 @@ concurrency:
 
 jobs:
   e2e-test:
-    # Run two parallel jobs: for `ci.toml`, and for the regression manifests
+    # Run parallel jobs for `ci.toml`, `libp2p-ci.toml`, and regression manifests
     strategy:
       fail-fast: false
       matrix:
-        group: ['networks/ci', 'networks_regressions/*']
+        group: ['networks/ci', 'networks/libp2p-ci', 'networks_regressions/*']
     runs-on: depot-ubuntu-24.04-4
     timeout-minutes: 15
     steps:

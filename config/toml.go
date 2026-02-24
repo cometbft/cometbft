@@ -491,7 +491,7 @@ max_snapshot_chunks = {{ .StateSync.MaxSnapshotChunks }}
 #   1) "v0" - the default block sync implementation
 version = "{{ .BlockSync.Version }}"
 
-# Experimental Combined mode model (bool):
+# Experimental Combined mode (bool):
 #
 # Run both BLOCKSYNC and CONSENSUS for improved liveness, connectivity, and performance.
 combined_mode = {{ .BlockSync.CombinedMode }}

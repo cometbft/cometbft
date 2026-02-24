@@ -74,7 +74,7 @@ FOR_LOOP:
 			}
 
 			// note this is a db call. consider caching in mem.
-			// right now it's the safest and the easiest & safest way to fetch the latest state.
+			// right now it's the safest and the easiest way to fetch the latest state.
 			state, err := r.blockExec.Store().Load()
 			if err != nil {
 				r.Logger.Error("Failed to load latest state. Halting blocksync", "err", err)
@@ -84,7 +84,7 @@ FOR_LOOP:
 			latestHeight := state.LastBlockHeight
 
 			// this means that CONSENSUS reactor has concurrently processed higher block(s).
-			// simply pop block A and continue
+			// simply pop the current block and continue
 			if block.Height <= latestHeight {
 				r.pool.PopRequest()
 				r.metrics.AlreadyIncluded.Add(1)
@@ -100,9 +100,9 @@ FOR_LOOP:
 
 			if block.Height != latestHeight+1 {
 				panic(fmt.Errorf(
-					"block height gap invariant violated (want %d, got %d)",
-					latestHeight+1,
+					"block height gap invariant violated (got %d, want %d)",
 					block.Height,
+					latestHeight+1,
 				))
 			}
 
@@ -125,7 +125,7 @@ FOR_LOOP:
 				PartSetHeader: blockParts.Header(),
 			}
 
-			// verify the first block using the second's commit
+			// verify current block using nextBlock's "last commit"
 			err = state.Validators.VerifyCommitLight(state.ChainID, blockID, block.Height, nextBlock.LastCommit)
 			if err != nil {
 				r.handleValidationFailure(block, nextBlock, err)
@@ -176,7 +176,7 @@ FOR_LOOP:
 				r.metrics.RejectedBlocks.Add(1)
 			case err != nil:
 				// one of [consensus.ErrValidation, consensus.ErrHeightGap, or other...]
-				// this is mostly likely an unrecoverable invariant violation that should not happen
+				// most likely it's an unrecoverable invariant violation that should not happen
 				// or should be considered a bug.
 				r.Logger.Error("Failed to ingest verified block. Halting blocksync", "height", block.Height, "err", err)
 				return

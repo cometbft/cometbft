@@ -33,10 +33,10 @@ type ingestVerifiedBlockResponse struct {
 	malicious bool
 }
 
-// IngestVerifiedBlock ingests a next valid and VERIFIED block into the consensus state.
+// IngestVerifiedBlock ingests a next VERIFIED valid block into the consensus state.
 // Verification is the domain responsibility of the caller (otherwise the consensus will panic).
-// It uses the underlying internalQueue instead to ensure SERIAL state-machine processing inside
-// the main receiveRoutine. See handleIngestVerifiedBlock for the actual implementation and error handling.
+// It uses the underlying internalQueue to ensure SERIAL state-machine processing inside the main receiveRoutine.
+// See handleIngestVerifiedBlock for the actual implementation and error handling.
 func (cs *State) IngestVerifiedBlock(vb VerifiedBlock) (err error, malicious bool) {
 	start := time.Now()
 
@@ -104,8 +104,6 @@ func (cs *State) handleIngestVerifiedBlock(vb VerifiedBlock) (err error, malicio
 		logger    = cs.Logger.With("height", height)
 	)
 
-	// this is not thread-safe, thus we must exec it under the lock
-	// also, an invalid block should mark the peer as malicious
 	if err := cs.blockExec.ValidateBlock(stateCopy, block); err != nil {
 		return errors.Wrap(err, "failed to validate block"), true
 	}
@@ -134,10 +132,10 @@ func (cs *State) handleIngestVerifiedBlock(vb VerifiedBlock) (err error, malicio
 		panic(errors.Wrapf(err, "unable to write end height message to WAL for height %d", height))
 	}
 
-	// the follow flow is similar to finalizeCommit(height)
+	// the following flow is similar to finalizeCommit(height)
 	stateCopy, err = cs.blockExec.ApplyVerifiedBlock(stateCopy, vb.BlockID(), block)
 	if err != nil {
-		// we can't recover from this error, so we panic
+		// we can't recover from this error
 		panic(errors.Wrapf(err, "failed to apply verified block (height: %d, hash: %x)", block.Height, block.Hash()))
 	}
 
@@ -149,7 +147,7 @@ func (cs *State) handleIngestVerifiedBlock(vb VerifiedBlock) (err error, malicio
 	cs.Votes = nil
 	cs.updateToState(stateCopy)
 
-	// Private validator might have changed it's key pair => refetch pubkey.
+	// private validator might have changed its key pair => refetch pubkey.
 	if err := cs.updatePrivValidatorPubKey(); err != nil {
 		logger.Error("Failed to get private validator pubkey", "err", err)
 	}

@@ -80,6 +80,7 @@ FOR_LOOP:
 				return
 			}
 
+			chainID := state.ChainID
 			latestHeight := state.LastBlockHeight
 
 			// this means that CONSENSUS reactor has concurrently processed higher block(s).
@@ -125,7 +126,7 @@ FOR_LOOP:
 			}
 
 			// verify current block using nextBlock's "last commit"
-			err = state.Validators.VerifyCommitLight(state.ChainID, blockID, block.Height, nextBlock.LastCommit)
+			err = state.Validators.VerifyCommitLight(chainID, blockID, block.Height, nextBlock.LastCommit)
 			if err != nil {
 				r.handleValidationFailure(block, nextBlock, err)
 				continue FOR_LOOP
@@ -147,14 +148,23 @@ FOR_LOOP:
 			}
 
 			if extensionsEnabled {
-				// if vote extensions were required at this height, ensure they exist.
+				// if vote extensions were required at this height, ensure they exist...
 				if err = extCommit.EnsureExtensions(true); err != nil {
+					r.handleValidationFailure(block, nextBlock, err)
+					continue FOR_LOOP
+				}
+
+				// ...and verify the extended commit
+				commit := extCommit.ToCommit()
+
+				if err = state.Validators.VerifyCommitLight(chainID, blockID, block.Height, commit); err != nil {
+					err = fmt.Errorf("extended commit: %w", err)
 					r.handleValidationFailure(block, nextBlock, err)
 					continue FOR_LOOP
 				}
 			}
 
-			// pops blockA
+			// pops `block`
 			r.pool.PopRequest()
 
 			// note that between state fetch and ingest, the state may have changed

@@ -6,12 +6,16 @@
 
 ### BUG FIXES
 
+- `[evidence]` Add validation for Light Client Attack evidence ByzantineValidators
+  ([\#5638](https://github.com/cometbft/cometbft/pull/5638))
 - `[types]` Fix buffer offset bug in `ProposerPriorityHash` that caused hash collisions when validator priorities differed
   ([\#5613](https://github.com/cometbft/cometbft/pull/5613))
 - `[p2p]` fix(privval): Ephemeral Port Exhaustion
   ([\#5433](https://github.com/cometbft/cometbft/pull/5433))
 - `[p2p]` Prevent PEX reactor from dialing configured persistent peers
   ([\#3522](https://github.com/cometbft/cometbft/issues/5617))
+- `[blocksync]` fix(blocksync): `ExtendedCommit` verification via next blocks `LastCommit`
+  ([\#5629](https://github.com/cometbft/cometbft/pull/5629))
 
 ### IMPROVEMENTS
 

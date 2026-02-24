@@ -65,7 +65,7 @@ type Reactor struct {
 	// if enabled, pending blocks are forwarded to BlockIngestor for
 	// further commitment. This effectively combines BLOCKSYNC with CONSENSUS,
 	// making them operate simultaneously.
-	combinedMode bool
+	combinedModeEnabled bool
 
 	blockExec     *sm.BlockExecutor
 	store         sm.BlockStore
@@ -142,7 +142,7 @@ func NewReactor(
 		store:                     store,
 		pool:                      pool,
 		enabled:                   enabledFlag,
-		combinedMode:              combinedMode,
+		combinedModeEnabled:       combinedMode,
 		localAddr:                 localAddr,
 		requestsCh:                requestsCh,
 		errorsCh:                  errorsCh,
@@ -185,7 +185,7 @@ func (r *Reactor) runPool(stateSynced bool) error {
 	})
 
 	// default pool routine that performs regular blocksync
-	if !r.combinedMode {
+	if !r.combinedModeEnabled {
 		r.runTask(func() {
 			r.poolRoutine(stateSynced)
 		})
@@ -686,7 +686,7 @@ func (r *Reactor) handleValidationFailure(blockA, blockB *types.Block, err error
 }
 
 func (r *Reactor) stopPeerForError(peer p2p.Peer, err error) {
-	if r.combinedMode && shouldBeReconnected(err) {
+	if r.combinedModeEnabled && shouldBeReconnected(err) {
 		err = &lp2p.ErrorTransient{Err: err}
 	}
 

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	// "github.com/cometbft/cometbft/consensus"
 	"github.com/cometbft/cometbft/consensus"
 	"github.com/cometbft/cometbft/types"
 	"github.com/pkg/errors"
@@ -87,7 +86,7 @@ FOR_LOOP:
 			// simply pop the current block and continue
 			if block.Height <= latestHeight {
 				r.pool.PopRequest()
-				r.metrics.AlreadyIncluded.Add(1)
+				r.metrics.AlreadyIncludedBlocks.Add(1)
 
 				r.Logger.Debug(
 					"Consensus already processed this block. Skipping",
@@ -170,7 +169,7 @@ FOR_LOOP:
 			switch {
 			case errors.Is(err, consensus.ErrAlreadyIncluded):
 				r.Logger.Info("Block was included concurrently. Skipping", "height", block.Height)
-				r.metrics.AlreadyIncluded.Add(1)
+				r.metrics.AlreadyIncludedBlocks.Add(1)
 			case err != nil && malicious:
 				r.handleValidationFailure(block, nextBlock, err)
 				r.metrics.RejectedBlocks.Add(1)

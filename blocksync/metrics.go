@@ -26,8 +26,8 @@ type Metrics struct {
 	// The height of the latest block.
 	LatestBlockHeight metrics.Gauge
 
-	// AlreadyIncluded blocks that were already included in the chain
-	AlreadyIncluded metrics.Counter `metrics_name:"already_included_blocks"`
+	// AlreadyIncludedBlocks blocks that were already included in the chain
+	AlreadyIncludedBlocks metrics.Counter `metrics_name:"already_included_blocks"`
 
 	// IngestedBlocks blocks that were rejected by the consensus
 	IngestedBlocks metrics.Counter `metrics_name:"ingested_blocks"`

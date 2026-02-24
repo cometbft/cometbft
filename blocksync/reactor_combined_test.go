@@ -28,7 +28,7 @@ func TestReactorCombined(t *testing.T) {
 			follower = newReactor(t, ts.logger, ts.genDoc, ts.privVals, 2)
 		)
 
-		follower.reactor.combinedMode = true
+		follower.reactor.combinedModeEnabled = true
 		follower.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
 		provider.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
 
@@ -88,7 +88,7 @@ func TestReactorCombined(t *testing.T) {
 			follower = newReactor(t, ts.logger, ts.genDoc, ts.privVals, 2)
 		)
 
-		follower.reactor.combinedMode = true
+		follower.reactor.combinedModeEnabled = true
 		follower.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
 		provider.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
 

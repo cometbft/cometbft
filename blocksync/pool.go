@@ -34,15 +34,6 @@ const (
 	maxPendingRequestsPerPeer = 20
 	requestRetrySeconds       = 30
 
-	// Minimum recv rate to ensure we're receiving blocks from a peer fast
-	// enough. If a peer is not sending us data at least that rate, we
-	// consider them to have timedout and we disconnect.
-	//
-	// Based on the experiments with [Osmosis](https://osmosis.zone/), the
-	// minimum rate could be as high as 500 KB/s. However, we're setting it to
-	// 128 KB/s for now to be conservative.
-	minRecvRate = 128 * 1024 // 128 KB/s
-
 	// peerConnWait is the time that must have elapsed since the pool routine
 	// was created before we start making requests. This is to give the peer
 	// routine time to connect to peers.
@@ -86,6 +77,8 @@ type BlockPool struct {
 	// atomic
 	numPending int32 // number of requests pending assignment or block response
 
+	minRecvRate int64 // minimum receive rate from peers in bytes per second
+
 	requestsCh chan<- BlockRequest
 	errorsCh   chan<- peerError
 }
@@ -99,7 +92,7 @@ type BlockRequest struct {
 
 // NewBlockPool returns a new BlockPool with the height equal to start. Block
 // requests and errors will be sent to requestsCh and errorsCh accordingly.
-func NewBlockPool(start int64, requestsCh chan<- BlockRequest, errorsCh chan<- peerError) *BlockPool {
+func NewBlockPool(start int64, requestsCh chan<- BlockRequest, errorsCh chan<- peerError, minRecvRate int64) *BlockPool {
 	bp := &BlockPool{
 		peers:       make(map[p2p.ID]*bpPeer),
 		bannedPeers: make(map[p2p.ID]time.Time),
@@ -107,6 +100,7 @@ func NewBlockPool(start int64, requestsCh chan<- BlockRequest, errorsCh chan<- p
 		height:      start,
 		startHeight: start,
 		numPending:  0,
+		minRecvRate: minRecvRate,
 
 		requestsCh: requestsCh,
 		errorsCh:   errorsCh,
@@ -170,13 +164,14 @@ func (pool *BlockPool) removeTimedoutPeers() {
 		if !peer.didTimeout && peer.numPending > 0 {
 			curRate := peer.recvMonitor.Status().CurRate
 			// curRate can be 0 on start
-			if curRate != 0 && curRate < minRecvRate {
+			// Skip rate check if minRecvRate is 0 (disabled)
+			if pool.minRecvRate > 0 && curRate != 0 && curRate < pool.minRecvRate {
 				err := errors.New("peer is not sending us data fast enough")
 				pool.sendError(err, peer.id)
 				pool.Logger.Error("SendTimeout", "peer", peer.id,
 					"reason", err,
 					"curRate", fmt.Sprintf("%d KB/s", curRate/1024),
-					"minRate", fmt.Sprintf("%d KB/s", minRecvRate/1024))
+					"minRate", fmt.Sprintf("%d KB/s", pool.minRecvRate/1024))
 				peer.didTimeout = true
 			}
 
@@ -604,8 +599,12 @@ func (peer *bpPeer) setLogger(l log.Logger) {
 
 func (peer *bpPeer) resetMonitor() {
 	peer.recvMonitor = flow.New(time.Second, time.Second*40)
-	initialValue := float64(minRecvRate) * math.E
-	peer.recvMonitor.SetREMA(initialValue)
+	// Only set initial REMA if minRecvRate is configured (> 0)
+	// Setting REMA to 0 corrupts rate estimation by using weighted average path incorrectly
+	if peer.pool.minRecvRate > 0 {
+		initialValue := float64(peer.pool.minRecvRate) * math.E
+		peer.recvMonitor.SetREMA(initialValue)
+	}
 }
 
 func (peer *bpPeer) resetTimeout() {

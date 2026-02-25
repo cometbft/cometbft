@@ -198,8 +198,7 @@ func newReactor(
 			blockStore.SaveBlock(thisBlock, thisParts, seenExtCommit.ToCommit())
 		}
 	}
-
-	r := NewReactor(blockSync, false, state.Copy(), blockExec, blockStore, nil, 0, NopMetrics())
+	r := NewReactor(blockSync, false, state.Copy(), blockExec, blockStore, nil, 0, 128*1024, NopMetrics())
 	bcReactor := NewByzantineReactor(r)
 	bcReactor.corruptedBlock = options.corruptedBlock
 	bcReactor.absentExtCommitBlock = options.allAbsentExtCommitBlock

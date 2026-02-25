@@ -199,10 +199,10 @@ func newReactor(
 		}
 	}
 	r := NewReactor(blockSync, false, state.Copy(), blockExec, blockStore, nil, 0, 128*1024, NopMetrics())
-  	bcReactor := NewByzantineReactor(r)
-  	bcReactor.corruptedBlock = options.corruptedBlock
-  	bcReactor.absentExtCommitBlock = options.allAbsentExtCommitBlock
-  	bcReactor.SetLogger(logger.With("module", "blocksync"))
+	bcReactor := NewByzantineReactor(r)
+	bcReactor.corruptedBlock = options.corruptedBlock
+	bcReactor.absentExtCommitBlock = options.allAbsentExtCommitBlock
+	bcReactor.SetLogger(logger.With("module", "blocksync"))
 
 	return ReactorPair{bcReactor, proxyApp}
 }

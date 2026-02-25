@@ -1,0 +1,25 @@
+# CI testnet: lib-p2p + app mempool
+
+[node.validator01]
+use_libp2p = true
+mempool_type = "app"
+persistent_peers = ["validator02", "validator04", "validator05"]
+
+[node.validator02]
+use_libp2p = true
+mempool_type = "app"
+perturb = ["kill"]
+
+[node.validator03]
+use_libp2p = true
+mempool_type = "app"
+
+[node.validator04]
+use_libp2p = true
+perturb = ["restart"]
+mempool_type = "app"
+
+[node.validator05]
+use_libp2p = true
+perturb = ["disconnect", "pause"]
+mempool_type = "app"

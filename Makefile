@@ -8,7 +8,7 @@ HTTPS_GIT := https://github.com/cometbft/cometbft.git
 CGO_ENABLED ?= 0
 
 # Process Docker environment variable TARGETPLATFORM
-# in order to build binary with correspondent ARCH
+# in order to build binary with corresponding ARCH
 # by default will always build for linux/amd64
 TARGETPLATFORM ?=
 GOOS ?= linux
@@ -356,6 +356,6 @@ $(BUILDDIR):
 
 #? help: Get more info on make commands.
 help: Makefile
-	@echo " Choose a command run in comebft:"
+	@echo " Choose a command run in cometbft:"
 	@sed -n 's/^#?//p' $< | column -t -s ':' |  sort | sed -e 's/^/ /'
 .PHONY: help

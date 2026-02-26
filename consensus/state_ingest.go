@@ -91,6 +91,7 @@ func (cs *State) handleIngestVerifiedBlock(vb VerifiedBlock) (err error, malicio
 		return ErrAlreadyIncluded, false
 	}
 
+	// we should not panic here - it's up to the caller to handle this error.
 	if height != lastBlockHeight+1 {
 		return errors.Wrapf(ErrHeightGap, "got %d, want %d", height, lastBlockHeight+1), false
 	}

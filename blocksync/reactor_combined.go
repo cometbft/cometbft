@@ -62,7 +62,7 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 				continue
 			}
 
-			// sanity check
+			// sanity check (block pool guarantees sequential heights)
 			if block.Height+1 != nextBlock.Height {
 				panic(fmt.Errorf(
 					"heights of first and second block are not consecutive (want %d, got %d)",
@@ -97,6 +97,8 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 				continue
 			}
 
+			// it should not be possible for blocksync to propose blocks that a too high
+			// example: consensus=95, blocksync[100,101,102,...] --> this should not happen
 			if block.Height != latestHeight+1 {
 				panic(fmt.Errorf(
 					"block height gap invariant violated (got %d, want %d)",

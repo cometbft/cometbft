@@ -17,6 +17,7 @@ import (
 )
 
 func TestReactorCombined(t *testing.T) {
+	const waitTime = 5 * time.Second
 	t.Run("ingestsBlock", func(t *testing.T) {
 		// ARRANGE
 		ts := newCombinedModeTestSuite(t, "blocksync_ingest_block")
@@ -24,8 +25,8 @@ func TestReactorCombined(t *testing.T) {
 		// Given two reactors for two different nodes
 		// Provider has +2 blocks in the state
 		var (
-			provider = newReactor(t, ts.logger, ts.genDoc, ts.privVals, 4)
-			follower = newReactor(t, ts.logger, ts.genDoc, ts.privVals, 2)
+			provider = newReactor(t, ts.logger, ts.genDoc, ts.privVals, 4, withDeterministicVoteTimes())
+			follower = newReactor(t, ts.logger, ts.genDoc, ts.privVals, 2, withDeterministicVoteTimes())
 		)
 
 		follower.reactor.combinedModeEnabled = true
@@ -66,7 +67,7 @@ func TestReactorCombined(t *testing.T) {
 		}
 
 		// ASSERT
-		require.Eventually(t, check, 10*time.Second, 100*time.Millisecond)
+		require.Eventually(t, check, waitTime, 100*time.Millisecond)
 
 		// check block
 		block := ts.blockIngestor.Requests()[0]
@@ -84,8 +85,8 @@ func TestReactorCombined(t *testing.T) {
 		// Given two reactors for two different nodes
 		// Provider has +2 blocks in the state
 		var (
-			provider = newReactor(t, ts.logger, ts.genDoc, ts.privVals, 4)
-			follower = newReactor(t, ts.logger, ts.genDoc, ts.privVals, 2)
+			provider = newReactor(t, ts.logger, ts.genDoc, ts.privVals, 4, withDeterministicVoteTimes())
+			follower = newReactor(t, ts.logger, ts.genDoc, ts.privVals, 2, withDeterministicVoteTimes())
 		)
 
 		follower.reactor.combinedModeEnabled = true
@@ -126,7 +127,7 @@ func TestReactorCombined(t *testing.T) {
 		}
 
 		// ASSERT
-		require.Eventually(t, check, 10*time.Second, 100*time.Millisecond)
+		require.Eventually(t, check, waitTime, 100*time.Millisecond)
 
 		block := ts.blockIngestor.Requests()[0]
 		require.Equal(t, int64(3), block.Height())

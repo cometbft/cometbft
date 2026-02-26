@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -86,6 +87,206 @@ func TestStateIngestVerifiedBlock(t *testing.T) {
 		// ASSERT
 		require.ErrorIs(t, err, ErrValidation)
 		require.ErrorContains(t, err, "unverified ingest candidate")
+	})
+}
+
+func TestIngestCandidate(t *testing.T) {
+	t.Run("ValidateBasic", func(t *testing.T) {
+		ts := newIngestTestSuite(t)
+
+		for _, tt := range []struct {
+			name        string
+			mutate      func(ic *IngestCandidate)
+			errContains string
+		}{
+			{
+				name:   "valid candidate",
+				mutate: nil,
+			},
+			{
+				name: "nil block",
+				mutate: func(ic *IngestCandidate) {
+					ic.block = nil
+				},
+				errContains: "block is nil",
+			},
+			{
+				name: "nil part set",
+				mutate: func(ic *IngestCandidate) {
+					ic.blockParts = nil
+				},
+				errContains: "part set is nil",
+			},
+			{
+				name: "nil commit",
+				mutate: func(ic *IngestCandidate) {
+					ic.commit = nil
+				},
+				errContains: "commit is nil",
+			},
+			{
+				name: "commit height mismatch",
+				mutate: func(ic *IngestCandidate) {
+					ic.extCommit = nil
+					ic.commit.Height = ic.block.Height + 1
+				},
+				errContains: "commit height mismatch",
+			},
+			{
+				name: "commit blockID mismatch",
+				mutate: func(ic *IngestCandidate) {
+					ic.extCommit = nil
+					ic.commit.BlockID = types.BlockID{}
+				},
+				errContains: "commit blockID mismatch",
+			},
+			{
+				name: "extended commit height mismatch",
+				mutate: func(ic *IngestCandidate) {
+					ic.extCommit = &types.ExtendedCommit{
+						Height: ic.block.Height + 1,
+					}
+				},
+				errContains: "extCommit height mismatch",
+			},
+			{
+				name: "extended commit blockID mismatch",
+				mutate: func(ic *IngestCandidate) {
+					ic.extCommit = &types.ExtendedCommit{
+						Height:  ic.block.Height,
+						BlockID: types.BlockID{},
+					}
+				},
+				errContains: "extended commit blockID mismatch",
+			},
+		} {
+			t.Run(tt.name, func(t *testing.T) {
+				// ARRANGE
+				ic := ts.MakeIngestCandidate()
+
+				if tt.mutate != nil {
+					tt.mutate(&ic)
+				}
+
+				// ACT
+				err := ic.ValidateBasic()
+
+				// ASSERT
+				if tt.errContains == "" {
+					require.NoError(t, err)
+					return
+				}
+
+				require.ErrorIs(t, err, ErrValidation)
+				require.ErrorContains(t, err, tt.errContains)
+			})
+		}
+	})
+
+	t.Run("Verify", func(t *testing.T) {
+		for _, tt := range []struct {
+			name           string
+			voteExtensions bool
+			mutate         func(ic *IngestCandidate, st *sm.State)
+			errContains    string
+		}{
+			{
+				name:           "valid candidate",
+				voteExtensions: false,
+				mutate:         nil,
+			},
+			{
+				name:           "valid candidate with vote extensions",
+				voteExtensions: true,
+				mutate:         nil,
+			},
+			{
+				name:           "extensions invariant mismatch",
+				voteExtensions: true,
+				mutate: func(ic *IngestCandidate, st *sm.State) {
+					st.ConsensusParams.ABCI.VoteExtensionsEnableHeight = 0
+				},
+				errContains: "invalid ext commit state",
+			},
+			{
+				name:           "invalid block",
+				voteExtensions: false,
+				mutate: func(ic *IngestCandidate, st *sm.State) {
+					validBlock := ic.block
+					ic.block = &types.Block{
+						Header:     validBlock.Header,
+						Data:       validBlock.Data,
+						Evidence:   validBlock.Evidence,
+						LastCommit: nil,
+					}
+				},
+				errContains: "validate block",
+			},
+			{
+				name:           "commit verification fails",
+				voteExtensions: false,
+				mutate: func(ic *IngestCandidate, st *sm.State) {
+					ic.commit.Signatures[0].Signature = nil
+				},
+				errContains: "verify commit",
+			},
+			{
+				name:           "extended commit missing extension signature",
+				voteExtensions: true,
+				mutate: func(ic *IngestCandidate, st *sm.State) {
+					ic.extCommit.ExtendedSignatures[0].ExtensionSignature = nil
+				},
+				errContains: "ensure extensions",
+			},
+			{
+				name:           "extended commit verification fails",
+				voteExtensions: true,
+				mutate: func(ic *IngestCandidate, st *sm.State) {
+					ic.extCommit.ExtendedSignatures[0].Signature = nil
+				},
+				errContains: "verify extended commit",
+			},
+		} {
+			t.Run(tt.name, func(t *testing.T) {
+				// ARRANGE
+				ts := newIngestTestSuite(t)
+
+				if tt.voteExtensions {
+					ts.cs.state.ConsensusParams.ABCI.VoteExtensionsEnableHeight = 1
+				} else {
+					ts.cs.state.ConsensusParams.ABCI.VoteExtensionsEnableHeight = 0
+				}
+
+				// Given a valid ingest candidate
+				ic := ts.MakeIngestCandidate()
+				if tt.voteExtensions {
+					require.NotNil(t, ic.extCommit)
+				} else {
+					require.Nil(t, ic.extCommit)
+				}
+
+				// with verification disabled
+				ic.verified = false
+				verifyState := ts.cs.state
+
+				if tt.mutate != nil {
+					tt.mutate(&ic, &verifyState)
+				}
+
+				// ACT
+				err := ic.Verify(verifyState)
+
+				// ASSERT
+				if tt.errContains == "" {
+					require.NoError(t, err)
+					require.True(t, ic.verified)
+					return
+				}
+
+				require.ErrorContains(t, err, tt.errContains)
+				require.False(t, ic.verified)
+			})
+		}
 	})
 }
 

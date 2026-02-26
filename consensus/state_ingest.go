@@ -125,7 +125,7 @@ func (ic *IngestCandidate) Verify(state state.State) error {
 	if extensionsPresent != ic.extensionsEnabled() {
 		return fmt.Errorf(
 			"invalid ext commit state: height %d: extensionsPresent=%t, extensionsEnabled=%t",
-			ic.Height(), extensionsPresent, extensionsPresent,
+			ic.Height(), extensionsPresent, ic.extensionsEnabled(),
 		)
 	}
 
@@ -197,9 +197,12 @@ func (cs *State) IngestVerifiedBlock(ic IngestCandidate) (err error) {
 
 	cs.sendInternalMessage(msgInfo{Msg: req})
 
-	res := <-req.response
-
-	return res.err
+	select {
+	case <-cs.Quit():
+		return fmt.Errorf("consensus shutdown")
+	case res := <-req.response:
+		return res.err
+	}
 }
 
 // note the outcome of this call is NOT relevant to statsMsgQueue

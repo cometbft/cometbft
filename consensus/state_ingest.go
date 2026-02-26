@@ -38,18 +38,14 @@ type ingestVerifiedBlockResponse struct {
 // It uses the underlying internalQueue to ensure SERIAL state-machine processing inside the main receiveRoutine.
 // See handleIngestVerifiedBlock for the actual implementation and error handling.
 func (cs *State) IngestVerifiedBlock(vb VerifiedBlock) (err error, malicious bool) {
-	start := time.Now()
-
 	logger := cs.Logger.With("height", vb.Block.Height)
 	logger.Info("ingesting verified block")
 
 	defer func() {
-		duration := time.Since(start).String()
-
 		if err != nil {
-			logger.Info("failed to ingest verified block", "dur", duration, "err", err, "malicious", malicious)
+			logger.Info("failed to ingest verified block", "err", err, "malicious", malicious)
 		} else {
-			logger.Info("ingested verified block", "dur", duration)
+			logger.Info("ingested verified block")
 		}
 	}()
 

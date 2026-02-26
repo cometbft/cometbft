@@ -166,6 +166,8 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 			// pops `block`
 			r.pool.PopRequest()
 
+			start := time.Now()
+
 			// note that between state fetch and ingest, the state may have changed
 			// concurrently by the consensus.
 			err, malicious := blockIngestor.IngestVerifiedBlock(consensus.VerifiedBlock{
@@ -174,6 +176,8 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 				Commit:     nextBlock.LastCommit,
 				ExtCommit:  extCommit,
 			})
+
+			elapsed := time.Since(start)
 
 			switch {
 			case errors.Is(err, consensus.ErrAlreadyIncluded):
@@ -191,6 +195,7 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 			default:
 				r.metrics.recordBlockMetrics(block)
 				r.metrics.IngestedBlocks.Add(1)
+				r.metrics.IngestedBlockDuration.Observe(elapsed.Seconds())
 			}
 		}
 	}

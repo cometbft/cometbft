@@ -29,8 +29,11 @@ type Metrics struct {
 	// AlreadyIncludedBlocks blocks that were already included in the chain
 	AlreadyIncludedBlocks metrics.Counter `metrics_name:"already_included_blocks"`
 
-	// IngestedBlocks blocks that were rejected by the consensus
+	// IngestedBlocks blocks that were ingested by the consensus
 	IngestedBlocks metrics.Counter `metrics_name:"ingested_blocks"`
+
+	// IngestedBlockDuration duration of ingesting a block
+	IngestedBlockDuration metrics.Histogram `metrics_buckettype:"exprange" metrics_bucketsizes:"0.1, 100, 8"`
 
 	// RejectedBlocks blocks that were rejected by the consensus
 	RejectedBlocks metrics.Counter `metrics_name:"rejected_blocks"`

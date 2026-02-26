@@ -54,7 +54,15 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "ingested_blocks",
-			Help:      "IngestedBlocks blocks that were rejected by the consensus",
+			Help:      "IngestedBlocks blocks that were ingested by the consensus",
+		}, labels).With(labelsAndValues...),
+		IngestedBlockDuration: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "ingested_block_duration",
+			Help:      "IngestedBlockDuration duration of ingesting a block",
+
+			Buckets: stdprometheus.ExponentialBucketsRange(0.1, 100, 8),
 		}, labels).With(labelsAndValues...),
 		RejectedBlocks: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
@@ -74,6 +82,7 @@ func NopMetrics() *Metrics {
 		LatestBlockHeight:     discard.NewGauge(),
 		AlreadyIncludedBlocks: discard.NewCounter(),
 		IngestedBlocks:        discard.NewCounter(),
+		IngestedBlockDuration: discard.NewHistogram(),
 		RejectedBlocks:        discard.NewCounter(),
 	}
 }

@@ -662,19 +662,19 @@ func (r *Reactor) handleValidationFailure(blockA, blockB *types.Block, err error
 
 	err = ErrReactorValidation{Err: err}
 
-	ida := r.pool.RemovePeerAndRedoAllPeerRequests(blockA.Height)
-	if peerA := r.Switch.Peers().Get(ida); peerA != nil {
+	idA := r.pool.RemovePeerAndRedoAllPeerRequests(blockA.Height)
+	if peerA := r.Switch.Peers().Get(idA); peerA != nil {
 		// NOTE: we've already removed the peer's request, but we
 		// still need to clean up the rest.
 		r.stopPeerForError(peerA, err)
 	}
 
-	idb := r.pool.RemovePeerAndRedoAllPeerRequests(blockB.Height)
-	if ida == idb {
+	idB := r.pool.RemovePeerAndRedoAllPeerRequests(blockB.Height)
+	if idA == idB {
 		return
 	}
 
-	if peerB := r.Switch.Peers().Get(idb); peerB != nil {
+	if peerB := r.Switch.Peers().Get(idB); peerB != nil {
 		// NOTE: we've already removed the peer's request, but we
 		// still need to clean up the rest.
 		r.stopPeerForError(peerB, err)

@@ -24,8 +24,8 @@ func TestStateIngestVerifiedBlock(t *testing.T) {
 
 		// ASSERT
 		require.NoError(t, err)
-		assert.False(t, malicious)
 
+		assert.False(t, malicious)
 		assert.Equal(t, vb.Block.Height, ts.cs.GetLastHeight())
 		assert.NotNil(t, ts.cs.blockStore.LoadBlock(vb.Block.Height))
 	})
@@ -47,7 +47,7 @@ func TestStateIngestVerifiedBlock(t *testing.T) {
 
 		// ASSERT
 		require.ErrorIs(t, err, ErrAlreadyIncluded)
-		assert.False(t, malicious)
+		require.False(t, malicious)
 	})
 
 	t.Run("heightGap", func(t *testing.T) {
@@ -63,7 +63,7 @@ func TestStateIngestVerifiedBlock(t *testing.T) {
 
 		// ASSERT
 		require.ErrorIs(t, err, ErrHeightGap)
-		assert.False(t, malicious)
+		require.False(t, malicious)
 	})
 
 	t.Run("invalidVerifiedBlock", func(t *testing.T) {
@@ -87,7 +87,7 @@ func TestStateIngestVerifiedBlock(t *testing.T) {
 
 		// ASSERT
 		require.ErrorContains(t, err, "failed to validate block: nil LastCommit")
-		assert.True(t, malicious)
+		require.True(t, malicious)
 	})
 }
 

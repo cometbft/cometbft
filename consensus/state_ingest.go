@@ -41,18 +41,18 @@ func NewIngestCandidate(
 	commit *types.Commit,
 	extCommit *types.ExtendedCommit,
 ) (IngestCandidate, error) {
-	vb := IngestCandidate{
+	ic := IngestCandidate{
 		block:      block,
 		blockParts: blockParts,
 		commit:     commit,
 		extCommit:  extCommit,
 	}
 
-	if err := vb.ValidateBasic(); err != nil {
-		return vb, err
+	if err := ic.ValidateBasic(); err != nil {
+		return ic, err
 	}
 
-	return vb, nil
+	return ic, nil
 }
 
 func (ic *IngestCandidate) Height() int64 {
@@ -208,6 +208,7 @@ func (cs *State) handleIngestVerifiedBlockRequest(req *ingestVerifiedBlockReques
 
 // handleIngestVerifiedBlock handles the ingestion of a verified block candidate into the consensus state.
 // note that the MUTEX is held by the caller and IngestCandidate should be already validated.
+// Might return ErrAlreadyIncluded, ErrHeightGap, or ErrValidation, or other errors.
 func (cs *State) handleIngestVerifiedBlock(ic IngestCandidate) error {
 	if !ic.verified {
 		return errors.Wrap(ErrValidation, "unverified ingest candidate")

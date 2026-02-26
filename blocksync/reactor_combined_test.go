@@ -32,9 +32,9 @@ func TestReactorCombined(t *testing.T) {
 		follower.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
 		provider.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
 
-		ts.blockIngestor.SetOnIngest(func(vb consensus.IngestCandidate) (error, bool) {
-			ts.logger.Info("mock: receive block", "height", vb.Height())
-			return nil, false
+		ts.blockIngestor.SetOnIngest(func(ic consensus.IngestCandidate) error {
+			ts.logger.Info("mock: receive block", "height", ic.Height())
+			return nil
 		})
 
 		// Given two switches
@@ -92,9 +92,9 @@ func TestReactorCombined(t *testing.T) {
 		follower.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
 		provider.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
 
-		ts.blockIngestor.SetOnIngest(func(vb consensus.IngestCandidate) (error, bool) {
-			ts.logger.Info("mock: receive block", "height", vb.Height())
-			return consensus.ErrAlreadyIncluded, false
+		ts.blockIngestor.SetOnIngest(func(ic consensus.IngestCandidate) error {
+			ts.logger.Info("mock: receive block", "height", ic.Height())
+			return consensus.ErrAlreadyIncluded
 		})
 
 		// Given two switches
@@ -168,9 +168,11 @@ type blockIngestorMock struct {
 
 	t           *testing.T
 	mu          sync.Mutex
-	onIngest    func(consensus.IngestCandidate) (error, bool)
+	onIngest    func(consensus.IngestCandidate) error
 	storedCalls []consensus.IngestCandidate
 }
+
+var _ BlockIngestor = (*blockIngestorMock)(nil)
 
 func newBlockIngestorMock(t *testing.T) *blockIngestorMock {
 	m := &blockIngestorMock{
@@ -180,20 +182,20 @@ func newBlockIngestorMock(t *testing.T) *blockIngestorMock {
 	return m
 }
 
-func (m *blockIngestorMock) IngestVerifiedBlock(vb consensus.IngestCandidate) (error, bool) {
+func (m *blockIngestorMock) IngestVerifiedBlock(ic consensus.IngestCandidate) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	m.storedCalls = append(m.storedCalls, vb)
+	m.storedCalls = append(m.storedCalls, ic)
 
 	if m.onIngest == nil {
-		return nil, false
+		return nil
 	}
 
-	return m.onIngest(vb)
+	return m.onIngest(ic)
 }
 
-func (m *blockIngestorMock) SetOnIngest(onIngest func(vb consensus.IngestCandidate) (error, bool)) {
+func (m *blockIngestorMock) SetOnIngest(onIngest func(ic consensus.IngestCandidate) error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

@@ -34,15 +34,15 @@ func TestStateIngestVerifiedBlock(t *testing.T) {
 		ts := newIngestTestSuite(t)
 
 		// Given a verified block
-		vb := ts.MakeIngestCandidate()
+		ic := ts.MakeIngestCandidate()
 
 		// That was already ingested
-		err := ts.IngestVerifiedBlock(vb)
+		err := ts.IngestVerifiedBlock(ic)
 		require.NoError(t, err)
 
 		// ACT
 		// Ingest it again
-		err = ts.IngestVerifiedBlock(vb)
+		err = ts.IngestVerifiedBlock(ic)
 
 		// ASSERT
 		require.ErrorIs(t, err, ErrAlreadyIncluded)
@@ -53,11 +53,11 @@ func TestStateIngestVerifiedBlock(t *testing.T) {
 		ts := newIngestTestSuite(t)
 
 		// Given block that is not the next height
-		vb := ts.MakeIngestCandidate()
-		vb.block.Height++
+		ic := ts.MakeIngestCandidate()
+		ic.block.Height++
 
 		// ACT
-		err := ts.IngestVerifiedBlock(vb)
+		err := ts.IngestVerifiedBlock(ic)
 
 		// ASSERT
 		require.ErrorIs(t, err, ErrHeightGap)
@@ -105,13 +105,13 @@ func newIngestTestSuite(t *testing.T) *ingestTestSuite {
 	}
 }
 
-func (ts *ingestTestSuite) IngestVerifiedBlock(vb IngestCandidate) error {
+func (ts *ingestTestSuite) IngestVerifiedBlock(ic IngestCandidate) error {
 	ts.t.Helper()
 
 	ts.cs.mtx.Lock()
 	defer ts.cs.mtx.Unlock()
 
-	return ts.cs.handleIngestVerifiedBlock(vb)
+	return ts.cs.handleIngestVerifiedBlock(ic)
 }
 
 func (ts *ingestTestSuite) MakeIngestCandidate() IngestCandidate {

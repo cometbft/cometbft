@@ -11,7 +11,7 @@ import (
 
 // BlockIngestor represents a reactor that can ingest blocks into the consensus state.
 type BlockIngestor interface {
-	IngestVerifiedBlock(block consensus.IngestCandidate) (err error, malicious bool)
+	IngestVerifiedBlock(blockCandidate consensus.IngestCandidate) error
 }
 
 func (r *Reactor) getBlockIngestor() (BlockIngestor, error) {
@@ -139,16 +139,13 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 			// note that between state fetch and ingest, the state may have changed
 			// concurrently by the consensus.
 			start := time.Now()
-			err, malicious := blockIngestor.IngestVerifiedBlock(ic)
+			err = blockIngestor.IngestVerifiedBlock(ic)
 			elapsed := time.Since(start)
 
 			switch {
 			case errors.Is(err, consensus.ErrAlreadyIncluded):
 				r.Logger.Info("Block was included concurrently. Skipping", "height", block.Height)
 				r.metrics.AlreadyIncludedBlocks.Add(1)
-			case err != nil && malicious:
-				r.handleValidationFailure(block, nextBlock, err)
-				r.metrics.RejectedBlocks.Add(1)
 			case err != nil:
 				// one of [consensus.ErrValidation, consensus.ErrHeightGap, or other...]
 				// most likely it's an unrecoverable invariant violation that should not happen

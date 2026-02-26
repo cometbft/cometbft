@@ -111,7 +111,7 @@ func (ts *ingestTestSuite) IngestVerifiedBlock(ic IngestCandidate) error {
 	ts.cs.mtx.Lock()
 	defer ts.cs.mtx.Unlock()
 
-	return ts.cs.handleIngestVerifiedBlock(ic)
+	return ts.cs.ingestBlock(ic)
 }
 
 func (ts *ingestTestSuite) MakeIngestCandidate() IngestCandidate {

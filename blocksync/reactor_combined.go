@@ -28,11 +28,10 @@ func (r *Reactor) getBlockIngestor() (BlockIngestor, error) {
 	return bi, nil
 }
 
-// blockIngestorRoutine is a similar loop to poolRoutine, but for combined mode.
-// It fetches consecutive blocks from the pool, ensures invariants, performs commit validation using
-// the light client and then passes it to BlockIngestor (consensus).
+// a similar loop to poolRoutine, but for combined mode. It fetches consecutive blocks from the pool,
+// ensures invariants, performs validation&verification using the light client and then passes it to BlockIngestor.
 // Influence on networking and block sharing: as consensus and blocksync reactors both point to the same BlockStore,
-// blocksync req/res always operate on the latest state --> no need to explicitly update blocksync's state
+// blocksync req/res always operate on the latest state --> no need to explicitly update blocksync's state.
 func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 	r.Logger.Info("Starting blocksync block ingestor (combined mode)")
 

@@ -11,17 +11,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-// IngestCandidate is a block that should be ready to be ingested into
-// the consensus state. Not thread safe.
+// IngestCandidate is a block that *might* be ingested into the consensus state. Not thread safe.
 type IngestCandidate struct {
 	block      *types.Block
 	blockParts *types.PartSet
 	commit     *types.Commit
 	extCommit  *types.ExtendedCommit
 
+	verified bool
+
 	// caches IngestCandidate.BlockID() to avoid recalculating it
 	cachedBlockID types.BlockID
-	verified      bool
 }
 
 type ingestVerifiedBlockRequest struct {
@@ -34,7 +34,7 @@ type ingestVerifiedBlockResponse struct {
 	err error
 }
 
-// NewIngestCandidate constructs IngestCandidate
+// NewIngestCandidate constructs IngestCandidate.
 func NewIngestCandidate(
 	block *types.Block,
 	blockParts *types.PartSet,
@@ -55,10 +55,12 @@ func NewIngestCandidate(
 	return ic, nil
 }
 
+// Height returns the height of the block.
 func (ic *IngestCandidate) Height() int64 {
 	return ic.block.Height
 }
 
+// BlockID returns the block ID
 func (ic *IngestCandidate) BlockID() types.BlockID {
 	if !ic.cachedBlockID.IsZero() {
 		return ic.cachedBlockID
@@ -72,6 +74,7 @@ func (ic *IngestCandidate) BlockID() types.BlockID {
 	return ic.cachedBlockID
 }
 
+// ValidateBasic validates the ingest candidate.
 func (ic *IngestCandidate) ValidateBasic() error {
 	switch {
 	case ic.block == nil:
@@ -109,7 +112,7 @@ func (ic *IngestCandidate) ValidateBasic() error {
 	}
 }
 
-// Verify verifies the block against the state using light client verification.
+// Verify verifies the block against provided state using light client verification.
 func (ic *IngestCandidate) Verify(state state.State) error {
 	var (
 		height            = ic.Height()
@@ -201,15 +204,15 @@ func (cs *State) IngestVerifiedBlock(ic IngestCandidate) (err error) {
 
 // note the outcome of this call is NOT relevant to statsMsgQueue
 func (cs *State) handleIngestVerifiedBlockRequest(req *ingestVerifiedBlockRequest) {
-	err := cs.handleIngestVerifiedBlock(req.IngestCandidate)
+	err := cs.ingestBlock(req.IngestCandidate)
 
 	req.response <- ingestVerifiedBlockResponse{err: err}
 }
 
-// handleIngestVerifiedBlock handles the ingestion of a verified block candidate into the consensus state.
-// note that the MUTEX is held by the caller and IngestCandidate should be already validated.
+// ingestBlock handles the ingestion of IngestCandidate into the consensus.
+// Note that the MUTEX is held by the caller and IngestCandidate should be already validated&verified.
 // Might return ErrAlreadyIncluded, ErrHeightGap, or ErrValidation, or other errors.
-func (cs *State) handleIngestVerifiedBlock(ic IngestCandidate) error {
+func (cs *State) ingestBlock(ic IngestCandidate) error {
 	if !ic.verified {
 		return errors.Wrap(ErrValidation, "unverified ingest candidate")
 	}
@@ -221,22 +224,24 @@ func (cs *State) handleIngestVerifiedBlock(ic IngestCandidate) error {
 		lastBlockHeight = cs.state.LastBlockHeight
 	)
 
+	// olb block or consensus already progressed
+	// between IngestVerifiedBlock() and ingestBlock() calls.
 	if height <= lastBlockHeight {
 		return ErrAlreadyIncluded
 	}
 
-	// we should not panic here - it's up to the caller to handle this error.
+	// a future block submitted eg (state=100, ingestCandidate=105)
+	// it's up to the caller to handle this error.
 	if height != lastBlockHeight+1 {
 		return errors.Wrapf(ErrHeightGap, "got %d, want %d", height, lastBlockHeight+1)
 	}
 
+	// okay, at this point this is definitely the next valid and verified block, because
+	// ingestBlock is called in serial from the main receiveRoutine.
 	var (
 		stateCopy = cs.state.Copy()
 		logger    = cs.Logger.With("height", height)
 	)
-
-	// todo do we need to ensure that the state doesn't change between the time we create
-	// todo the ingest candidate and the time we ingest it?
 
 	// ============ enterCommit(height, commitRound) ============
 	commitRound, commitVoteSet := ic.commitVoting(stateCopy.ChainID, stateCopy.Validators)

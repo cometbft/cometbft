@@ -34,9 +34,6 @@ type Metrics struct {
 
 	// IngestedBlockDuration duration of ingesting a block
 	IngestedBlockDuration metrics.Histogram `metrics_buckettype:"exprange" metrics_bucketsizes:"0.1, 100, 8"`
-
-	// RejectedBlocks blocks that were rejected by the consensus
-	RejectedBlocks metrics.Counter `metrics_name:"rejected_blocks"`
 }
 
 func (m *Metrics) recordBlockMetrics(block *types.Block) {

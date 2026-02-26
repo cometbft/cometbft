@@ -64,12 +64,6 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 
 			Buckets: stdprometheus.ExponentialBucketsRange(0.1, 100, 8),
 		}, labels).With(labelsAndValues...),
-		RejectedBlocks: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
-			Namespace: namespace,
-			Subsystem: MetricsSubsystem,
-			Name:      "rejected_blocks",
-			Help:      "RejectedBlocks blocks that were rejected by the consensus",
-		}, labels).With(labelsAndValues...),
 	}
 }
 
@@ -83,6 +77,5 @@ func NopMetrics() *Metrics {
 		AlreadyIncludedBlocks: discard.NewCounter(),
 		IngestedBlocks:        discard.NewCounter(),
 		IngestedBlockDuration: discard.NewHistogram(),
-		RejectedBlocks:        discard.NewCounter(),
 	}
 }

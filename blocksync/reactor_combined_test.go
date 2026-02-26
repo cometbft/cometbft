@@ -33,7 +33,7 @@ func TestReactorCombined(t *testing.T) {
 		provider.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
 
 		ts.blockIngestor.SetOnIngest(func(vb consensus.VerifiedBlock) (error, bool) {
-			ts.logger.Info("mock: receive block", "height", vb.Block.Height)
+			ts.logger.Info("mock: receive block", "height", vb.Height())
 			return nil, false
 		})
 
@@ -69,8 +69,8 @@ func TestReactorCombined(t *testing.T) {
 		require.Eventually(t, check, 10*time.Second, 100*time.Millisecond)
 
 		// check block
-		block := ts.blockIngestor.Requests()[0].Block
-		require.Equal(t, int64(3), block.Height)
+		block := ts.blockIngestor.Requests()[0]
+		require.Equal(t, int64(3), block.Height())
 
 		// ensure the pool progressed
 		require.Equal(t, int64(4), follower.reactor.pool.Height())
@@ -93,7 +93,7 @@ func TestReactorCombined(t *testing.T) {
 		provider.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
 
 		ts.blockIngestor.SetOnIngest(func(vb consensus.VerifiedBlock) (error, bool) {
-			ts.logger.Info("mock: receive block", "height", vb.Block.Height)
+			ts.logger.Info("mock: receive block", "height", vb.Height())
 			return consensus.ErrAlreadyIncluded, false
 		})
 
@@ -128,8 +128,8 @@ func TestReactorCombined(t *testing.T) {
 		// ASSERT
 		require.Eventually(t, check, 10*time.Second, 100*time.Millisecond)
 
-		block := ts.blockIngestor.Requests()[0].Block
-		require.Equal(t, int64(3), block.Height)
+		block := ts.blockIngestor.Requests()[0]
+		require.Equal(t, int64(3), block.Height())
 
 		// ensure the pool progressed (even being a noop)
 		require.Equal(t, int64(4), follower.reactor.pool.Height())

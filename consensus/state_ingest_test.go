@@ -26,8 +26,8 @@ func TestStateIngestVerifiedBlock(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.False(t, malicious)
-		assert.Equal(t, vb.Block.Height, ts.cs.GetLastHeight())
-		assert.NotNil(t, ts.cs.blockStore.LoadBlock(vb.Block.Height))
+		assert.Equal(t, vb.block.Height, ts.cs.GetLastHeight())
+		assert.NotNil(t, ts.cs.blockStore.LoadBlock(vb.block.Height))
 	})
 
 	t.Run("alreadyIncluded", func(t *testing.T) {
@@ -56,7 +56,7 @@ func TestStateIngestVerifiedBlock(t *testing.T) {
 
 		// Given block that is not the next height
 		vb := ts.MakeVerifiedBlock()
-		vb.Block.Height++
+		vb.block.Height++
 
 		// ACT
 		err, malicious := ts.IngestVerifiedBlock(vb)
@@ -72,10 +72,10 @@ func TestStateIngestVerifiedBlock(t *testing.T) {
 
 		// Given a verified block with an invalid block
 		vb := ts.MakeVerifiedBlock()
-		validBlock := vb.Block
+		validBlock := vb.block
 
 		// copy block to drop hash cache and trigger validation
-		vb.Block = &types.Block{
+		vb.block = &types.Block{
 			Header:     validBlock.Header,
 			Data:       validBlock.Data,
 			Evidence:   validBlock.Evidence,
@@ -146,9 +146,8 @@ func (ts *ingestTestSuite) MakeVerifiedBlock() VerifiedBlock {
 	)
 	require.NoError(ts.t, err)
 
-	return VerifiedBlock{
-		Block:      block,
-		BlockParts: blockParts,
-		Commit:     commit,
-	}
+	vb, err := NewVerifiedBlock(block, blockParts, commit, nil)
+	require.NoError(ts.t, err)
+
+	return vb
 }

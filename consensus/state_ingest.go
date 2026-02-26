@@ -1,9 +1,11 @@
 package consensus
 
 import (
+	"fmt"
 	"time"
 
 	cstypes "github.com/cometbft/cometbft/consensus/types"
+	"github.com/cometbft/cometbft/state"
 	types "github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/pkg/errors"
@@ -12,14 +14,16 @@ import (
 // VerifiedBlock is a block that has been verified by blocksync.
 // Commit and ExtCommit are mutually exclusive based on whether vote extensions are enabled at the block height.
 // Not thread safe.
+// todo rename
 type VerifiedBlock struct {
-	Block      *types.Block
-	BlockParts *types.PartSet
-	Commit     *types.Commit
-	ExtCommit  *types.ExtendedCommit
+	block      *types.Block
+	blockParts *types.PartSet
+	commit     *types.Commit
+	extCommit  *types.ExtendedCommit
 
 	// caches vb.BlockID() to avoid recalculating it
 	cachedBlockID types.BlockID
+	verified      bool
 }
 
 type ingestVerifiedBlockRequest struct {
@@ -33,12 +37,140 @@ type ingestVerifiedBlockResponse struct {
 	malicious bool
 }
 
+func NewVerifiedBlock(
+	block *types.Block,
+	blockParts *types.PartSet,
+	commit *types.Commit,
+	extCommit *types.ExtendedCommit,
+) (VerifiedBlock, error) {
+	vb := VerifiedBlock{
+		block:      block,
+		blockParts: blockParts,
+		commit:     commit,
+		extCommit:  extCommit,
+	}
+
+	if err := vb.ValidateBasic(); err != nil {
+		return vb, err
+	}
+
+	return vb, nil
+}
+
+func (vb *VerifiedBlock) Height() int64 {
+	return vb.block.Height
+}
+
+func (vb *VerifiedBlock) BlockID() types.BlockID {
+	if !vb.cachedBlockID.IsZero() {
+		return vb.cachedBlockID
+	}
+
+	vb.cachedBlockID = types.BlockID{
+		Hash:          vb.block.Hash(),
+		PartSetHeader: vb.blockParts.Header(),
+	}
+
+	return vb.cachedBlockID
+}
+
+func (vb *VerifiedBlock) ExtensionsEnabled() bool {
+	return vb.extCommit != nil
+}
+
+// CommitVoting returns the commit round and vote set for the verified block.
+func (vb *VerifiedBlock) CommitVoting(chainID string, vals *types.ValidatorSet) (round int32, voteSet *types.VoteSet) {
+	if vb.ExtensionsEnabled() {
+		return vb.extCommit.Round, vb.extCommit.ToExtendedVoteSet(chainID, vals)
+	}
+
+	return vb.commit.Round, vb.commit.ToVoteSet(chainID, vals)
+}
+
+func (vb *VerifiedBlock) ValidateBasic() error {
+	switch {
+	case vb.block == nil:
+		return errors.Wrap(ErrValidation, "block is nil")
+	case vb.blockParts == nil:
+		return errors.Wrap(ErrValidation, "part set is nil")
+	case vb.commit == nil && vb.extCommit == nil:
+		return errors.Wrap(ErrValidation, "commit and extCommit are both nil")
+	case vb.commit != nil && vb.extCommit != nil:
+		return errors.Wrap(ErrValidation, "commit and extCommit are both not nil")
+	}
+
+	// validate commit/extCommit
+	var (
+		blockID     = vb.BlockID()
+		blockHeight = vb.block.Height
+	)
+
+	if vb.ExtensionsEnabled() {
+		switch {
+		case vb.extCommit.Height != blockHeight:
+			return errors.Wrapf(ErrValidation, "extCommit height mismatch: got %d, want %d", vb.extCommit.Height, blockHeight)
+		case !vb.extCommit.BlockID.Equals(blockID):
+			return errors.Wrap(ErrValidation, "extended commit blockID mismatch")
+		default:
+			return vb.extCommit.ValidateBasic()
+		}
+	}
+
+	switch {
+	case vb.commit.Height != blockHeight:
+		return errors.Wrapf(ErrValidation, "commit height mismatch: got %d, want %d", vb.commit.Height, blockHeight)
+	case !vb.commit.BlockID.Equals(blockID):
+		return errors.Wrap(ErrValidation, "commit blockID mismatch")
+	default:
+		return vb.commit.ValidateBasic()
+	}
+}
+
+// Verify verifies the block against the state.
+func (vb *VerifiedBlock) Verify(state state.State) error {
+	var (
+		height            = vb.Height()
+		blockID           = vb.BlockID()
+		chainID           = state.ChainID
+		extensionsPresent = state.ConsensusParams.ABCI.VoteExtensionsEnabled(height)
+	)
+
+	// validate invariant
+	if extensionsPresent != vb.ExtensionsEnabled() {
+		return fmt.Errorf(
+			"invalid ext commit state: height %d: extensionsPresent=%t, extensionsEnabled=%t",
+			vb.Height(), extensionsPresent, extensionsPresent,
+		)
+	}
+
+	// verify commit
+	err := state.Validators.VerifyCommitLight(chainID, blockID, height, vb.commit)
+	if err != nil {
+		return fmt.Errorf("verify commit: %w", err)
+	}
+
+	if vb.ExtensionsEnabled() {
+		if err = vb.extCommit.EnsureExtensions(true); err != nil {
+			return fmt.Errorf("ensure extensions: %w", err)
+		}
+
+		err = state.Validators.VerifyCommitLight(chainID, blockID, height, vb.extCommit.ToCommit())
+		if err != nil {
+			return fmt.Errorf("verify extended commit: %w", err)
+		}
+	}
+
+	vb.verified = true
+
+	return nil
+}
+
 // IngestVerifiedBlock ingests a next VERIFIED valid block into the consensus state.
 // Verification is the domain responsibility of the caller (otherwise the consensus will panic).
 // It uses the underlying internalQueue to ensure SERIAL state-machine processing inside the main receiveRoutine.
 // See handleIngestVerifiedBlock for the actual implementation and error handling.
 func (cs *State) IngestVerifiedBlock(vb VerifiedBlock) (err error, malicious bool) {
-	logger := cs.Logger.With("height", vb.Block.Height)
+	logger := cs.Logger.With("height", vb.block.Height)
 	logger.Info("ingesting verified block")
 
 	defer func() {
@@ -81,9 +213,9 @@ func (cs *State) handleIngestVerifiedBlockRequest(req *ingestVerifiedBlockReques
 // note that the MUTEX is held by the caller and VerifiedBlock should be already validated.
 func (cs *State) handleIngestVerifiedBlock(vb VerifiedBlock) (err error, malicious bool) {
 	var (
-		block           = vb.Block
-		blockParts      = vb.BlockParts
-		height          = vb.Block.Height
+		block           = vb.block
+		blockParts      = vb.blockParts
+		height          = vb.block.Height
 		lastBlockHeight = cs.state.LastBlockHeight
 	)
 
@@ -119,9 +251,9 @@ func (cs *State) handleIngestVerifiedBlock(vb VerifiedBlock) (err error, malicio
 	// this will also update blockStore.Height,
 	// so blocksync responds to peers with the correct height.
 	if vb.ExtensionsEnabled() {
-		cs.blockStore.SaveBlockWithExtendedCommit(block, blockParts, vb.ExtCommit)
+		cs.blockStore.SaveBlockWithExtendedCommit(block, blockParts, vb.extCommit)
 	} else {
-		cs.blockStore.SaveBlock(block, blockParts, vb.Commit)
+		cs.blockStore.SaveBlock(block, blockParts, vb.commit)
 	}
 
 	// NOTE: fsync
@@ -152,72 +284,4 @@ func (cs *State) handleIngestVerifiedBlock(vb VerifiedBlock) (err error, malicio
 	cs.scheduleRound0(&cs.RoundState)
 
 	return nil, false
-}
-
-func (vb *VerifiedBlock) ExtensionsEnabled() bool {
-	return vb.ExtCommit != nil
-}
-
-func (vb *VerifiedBlock) BlockID() types.BlockID {
-	if !vb.cachedBlockID.IsZero() {
-		return vb.cachedBlockID
-	}
-
-	vb.cachedBlockID = types.BlockID{
-		Hash:          vb.Block.Hash(),
-		PartSetHeader: vb.BlockParts.Header(),
-	}
-
-	return vb.cachedBlockID
-}
-
-// CommitVoting returns the commit round and vote set for the verified block.
-func (vb *VerifiedBlock) CommitVoting(chainID string, vals *types.ValidatorSet) (round int32, voteSet *types.VoteSet) {
-	if vb.ExtensionsEnabled() {
-		return vb.ExtCommit.Round, vb.ExtCommit.ToExtendedVoteSet(chainID, vals)
-	}
-
-	return vb.Commit.Round, vb.Commit.ToVoteSet(chainID, vals)
-}
-
-func (vb *VerifiedBlock) ValidateBasic() error {
-	switch {
-	case vb.Block == nil:
-		return errors.Wrap(ErrValidation, "block is nil")
-	case vb.BlockParts == nil:
-		return errors.Wrap(ErrValidation, "part set is nil")
-	case vb.Commit == nil && vb.ExtCommit == nil:
-		return errors.Wrap(ErrValidation, "commit and extCommit are both nil")
-	case vb.Commit != nil && vb.ExtCommit != nil:
-		return errors.Wrap(ErrValidation, "commit and extCommit are both not nil")
-	default:
-		return vb.validateCommit()
-	}
-}
-
-func (vb *VerifiedBlock) validateCommit() error {
-	var (
-		blockID     = vb.BlockID()
-		blockHeight = vb.Block.Height
-	)
-
-	if vb.ExtensionsEnabled() {
-		switch {
-		case vb.ExtCommit.Height != blockHeight:
-			return errors.Wrapf(ErrValidation, "extCommit height mismatch: got %d, want %d", vb.ExtCommit.Height, blockHeight)
-		case !vb.ExtCommit.BlockID.Equals(blockID):
-			return errors.Wrap(ErrValidation, "extended commit blockID mismatch")
-		default:
-			return vb.ExtCommit.ValidateBasic()
-		}
-	}
-
-	switch {
-	case vb.Commit.Height != blockHeight:
-		return errors.Wrapf(ErrValidation, "commit height mismatch: got %d, want %d", vb.Commit.Height, blockHeight)
-	case !vb.Commit.BlockID.Equals(blockID):
-		return errors.Wrap(ErrValidation, "commit blockID mismatch")
-	default:
-		return vb.Commit.ValidateBasic()
-	}
 }

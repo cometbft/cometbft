@@ -79,7 +79,6 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 				return
 			}
 
-			chainID := state.ChainID
 			latestHeight := state.LastBlockHeight
 
 			// this means that CONSENSUS reactor has concurrently processed higher block(s).
@@ -121,64 +120,28 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 				return
 			}
 
-			blockID := types.BlockID{
-				Hash:          block.Hash(),
-				PartSetHeader: blockParts.Header(),
-			}
-
-			// verify current block using nextBlock's "last commit"
-			err = state.Validators.VerifyCommitLight(chainID, blockID, block.Height, nextBlock.LastCommit)
+			vb, err := consensus.NewVerifiedBlock(block, blockParts, nextBlock.LastCommit, extCommit)
 			if err != nil {
-				r.handleValidationFailure(block, nextBlock, err)
+				r.handleValidationFailure(block, nextBlock, fmt.Errorf("new verified block: %w", err))
 				continue
 			}
 
-			var (
-				presentExtCommit  = extCommit != nil
-				extensionsEnabled = state.ConsensusParams.ABCI.VoteExtensionsEnabled(block.Height)
-			)
-
-			if presentExtCommit != extensionsEnabled {
-				err = fmt.Errorf(
-					"invalid ext commit state: height %d: presentExtCommit=%t, extensionsEnabled=%t",
-					block.Height, presentExtCommit, extensionsEnabled,
-				)
-
-				r.handleValidationFailure(block, nextBlock, err)
+			if err := vb.Verify(state); err != nil {
+				r.handleValidationFailure(block, nextBlock, fmt.Errorf("verify block: %w", err))
 				continue
-			}
-
-			if extensionsEnabled {
-				// if vote extensions were required at this height, ensure they exist...
-				if err = extCommit.EnsureExtensions(true); err != nil {
-					r.handleValidationFailure(block, nextBlock, err)
-					continue
-				}
-
-				// ...and verify the extended commit
-				commit := extCommit.ToCommit()
-
-				if err = state.Validators.VerifyCommitLight(chainID, blockID, block.Height, commit); err != nil {
-					err = fmt.Errorf("extended commit: %w", err)
-					r.handleValidationFailure(block, nextBlock, err)
-					continue
-				}
 			}
 
 			// pops `block`
 			r.pool.PopRequest()
 
-			start := time.Now()
+			// todo check commit and extCommit inclusion / mutex -> how it works with regular blocksync?
+			// todo: what state exactly should we use?
+			// todo: validate block comment
 
 			// note that between state fetch and ingest, the state may have changed
 			// concurrently by the consensus.
-			err, malicious := blockIngestor.IngestVerifiedBlock(consensus.VerifiedBlock{
-				Block:      block,
-				BlockParts: blockParts,
-				Commit:     nextBlock.LastCommit,
-				ExtCommit:  extCommit,
-			})
-
+			start := time.Now()
+			err, malicious := blockIngestor.IngestVerifiedBlock(vb)
 			elapsed := time.Since(start)
 
 			switch {

@@ -32,7 +32,7 @@ func TestReactorCombined(t *testing.T) {
 		follower.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
 		provider.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
 
-		ts.blockIngestor.SetOnIngest(func(vb consensus.VerifiedBlock) (error, bool) {
+		ts.blockIngestor.SetOnIngest(func(vb consensus.IngestCandidate) (error, bool) {
 			ts.logger.Info("mock: receive block", "height", vb.Height())
 			return nil, false
 		})
@@ -92,7 +92,7 @@ func TestReactorCombined(t *testing.T) {
 		follower.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
 		provider.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
 
-		ts.blockIngestor.SetOnIngest(func(vb consensus.VerifiedBlock) (error, bool) {
+		ts.blockIngestor.SetOnIngest(func(vb consensus.IngestCandidate) (error, bool) {
 			ts.logger.Info("mock: receive block", "height", vb.Height())
 			return consensus.ErrAlreadyIncluded, false
 		})
@@ -168,8 +168,8 @@ type blockIngestorMock struct {
 
 	t           *testing.T
 	mu          sync.Mutex
-	onIngest    func(consensus.VerifiedBlock) (error, bool)
-	storedCalls []consensus.VerifiedBlock
+	onIngest    func(consensus.IngestCandidate) (error, bool)
+	storedCalls []consensus.IngestCandidate
 }
 
 func newBlockIngestorMock(t *testing.T) *blockIngestorMock {
@@ -180,7 +180,7 @@ func newBlockIngestorMock(t *testing.T) *blockIngestorMock {
 	return m
 }
 
-func (m *blockIngestorMock) IngestVerifiedBlock(vb consensus.VerifiedBlock) (error, bool) {
+func (m *blockIngestorMock) IngestVerifiedBlock(vb consensus.IngestCandidate) (error, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -193,18 +193,18 @@ func (m *blockIngestorMock) IngestVerifiedBlock(vb consensus.VerifiedBlock) (err
 	return m.onIngest(vb)
 }
 
-func (m *blockIngestorMock) SetOnIngest(onIngest func(vb consensus.VerifiedBlock) (error, bool)) {
+func (m *blockIngestorMock) SetOnIngest(onIngest func(vb consensus.IngestCandidate) (error, bool)) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	m.onIngest = onIngest
 }
 
-func (m *blockIngestorMock) Requests() []consensus.VerifiedBlock {
+func (m *blockIngestorMock) Requests() []consensus.IngestCandidate {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	out := make([]consensus.VerifiedBlock, len(m.storedCalls))
+	out := make([]consensus.IngestCandidate, len(m.storedCalls))
 	copy(out, m.storedCalls)
 	return out
 }

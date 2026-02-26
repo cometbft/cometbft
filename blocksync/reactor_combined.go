@@ -11,7 +11,7 @@ import (
 
 // BlockIngestor represents a reactor that can ingest blocks into the consensus state.
 type BlockIngestor interface {
-	IngestVerifiedBlock(block consensus.VerifiedBlock) (err error, malicious bool)
+	IngestVerifiedBlock(block consensus.IngestCandidate) (err error, malicious bool)
 }
 
 func (r *Reactor) getBlockIngestor() (BlockIngestor, error) {
@@ -120,28 +120,26 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 				return
 			}
 
-			vb, err := consensus.NewVerifiedBlock(block, blockParts, nextBlock.LastCommit, extCommit)
+			// create ingest candidate block...
+			ic, err := consensus.NewIngestCandidate(block, blockParts, nextBlock.LastCommit, extCommit)
 			if err != nil {
-				r.handleValidationFailure(block, nextBlock, fmt.Errorf("new verified block: %w", err))
+				r.handleValidationFailure(block, nextBlock, fmt.Errorf("new ingest candidate: %w", err))
 				continue
 			}
 
-			if err := vb.Verify(state); err != nil {
-				r.handleValidationFailure(block, nextBlock, fmt.Errorf("verify block: %w", err))
+			// ... and verify it against the state
+			if err := ic.Verify(state); err != nil {
+				r.handleValidationFailure(block, nextBlock, fmt.Errorf("verify ingest candidate: %w", err))
 				continue
 			}
 
 			// pops `block`
 			r.pool.PopRequest()
 
-			// todo check commit and extCommit inclusion / mutex -> how it works with regular blocksync?
-			// todo: what state exactly should we use?
-			// todo: validate block comment
-
 			// note that between state fetch and ingest, the state may have changed
 			// concurrently by the consensus.
 			start := time.Now()
-			err, malicious := blockIngestor.IngestVerifiedBlock(vb)
+			err, malicious := blockIngestor.IngestVerifiedBlock(ic)
 			elapsed := time.Since(start)
 
 			switch {

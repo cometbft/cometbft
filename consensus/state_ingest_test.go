@@ -107,7 +107,7 @@ func newIngestTestSuite(t *testing.T) *ingestTestSuite {
 	}
 }
 
-func (ts *ingestTestSuite) IngestVerifiedBlock(vb VerifiedBlock) (error, bool) {
+func (ts *ingestTestSuite) IngestVerifiedBlock(vb IngestCandidate) (error, bool) {
 	ts.t.Helper()
 
 	ts.cs.mtx.Lock()
@@ -116,7 +116,7 @@ func (ts *ingestTestSuite) IngestVerifiedBlock(vb VerifiedBlock) (error, bool) {
 	return ts.cs.handleIngestVerifiedBlock(vb)
 }
 
-func (ts *ingestTestSuite) MakeVerifiedBlock() VerifiedBlock {
+func (ts *ingestTestSuite) MakeVerifiedBlock() IngestCandidate {
 	ts.t.Helper()
 
 	block, err := ts.cs.createProposalBlock(context.Background())
@@ -146,7 +146,7 @@ func (ts *ingestTestSuite) MakeVerifiedBlock() VerifiedBlock {
 	)
 	require.NoError(ts.t, err)
 
-	vb, err := NewVerifiedBlock(block, blockParts, commit, nil)
+	vb, err := NewIngestCandidate(block, blockParts, commit, nil)
 	require.NoError(ts.t, err)
 
 	return vb

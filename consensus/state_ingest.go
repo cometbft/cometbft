@@ -11,23 +11,21 @@ import (
 	"github.com/pkg/errors"
 )
 
-// VerifiedBlock is a block that has been verified by blocksync.
-// Commit and ExtCommit are mutually exclusive based on whether vote extensions are enabled at the block height.
-// Not thread safe.
-// todo rename
-type VerifiedBlock struct {
+// IngestCandidate is a block that should be ready to be ingested into
+// the consensus state. Not thread safe.
+type IngestCandidate struct {
 	block      *types.Block
 	blockParts *types.PartSet
 	commit     *types.Commit
 	extCommit  *types.ExtendedCommit
 
-	// caches vb.BlockID() to avoid recalculating it
+	// caches IngestCandidate.BlockID() to avoid recalculating it
 	cachedBlockID types.BlockID
 	verified      bool
 }
 
 type ingestVerifiedBlockRequest struct {
-	VerifiedBlock
+	IngestCandidate
 	sentAt   time.Time
 	response chan ingestVerifiedBlockResponse
 }
@@ -37,13 +35,14 @@ type ingestVerifiedBlockResponse struct {
 	malicious bool
 }
 
-func NewVerifiedBlock(
+// NewIngestCandidate constructs IngestCandidate
+func NewIngestCandidate(
 	block *types.Block,
 	blockParts *types.PartSet,
 	commit *types.Commit,
 	extCommit *types.ExtendedCommit,
-) (VerifiedBlock, error) {
-	vb := VerifiedBlock{
+) (IngestCandidate, error) {
+	vb := IngestCandidate{
 		block:      block,
 		blockParts: blockParts,
 		commit:     commit,
@@ -57,120 +56,123 @@ func NewVerifiedBlock(
 	return vb, nil
 }
 
-func (vb *VerifiedBlock) Height() int64 {
-	return vb.block.Height
+func (ic *IngestCandidate) Height() int64 {
+	return ic.block.Height
 }
 
-func (vb *VerifiedBlock) BlockID() types.BlockID {
-	if !vb.cachedBlockID.IsZero() {
-		return vb.cachedBlockID
+func (ic *IngestCandidate) BlockID() types.BlockID {
+	if !ic.cachedBlockID.IsZero() {
+		return ic.cachedBlockID
 	}
 
-	vb.cachedBlockID = types.BlockID{
-		Hash:          vb.block.Hash(),
-		PartSetHeader: vb.blockParts.Header(),
+	ic.cachedBlockID = types.BlockID{
+		Hash:          ic.block.Hash(),
+		PartSetHeader: ic.blockParts.Header(),
 	}
 
-	return vb.cachedBlockID
+	return ic.cachedBlockID
 }
 
-func (vb *VerifiedBlock) ExtensionsEnabled() bool {
-	return vb.extCommit != nil
-}
-
-// CommitVoting returns the commit round and vote set for the verified block.
-func (vb *VerifiedBlock) CommitVoting(chainID string, vals *types.ValidatorSet) (round int32, voteSet *types.VoteSet) {
-	if vb.ExtensionsEnabled() {
-		return vb.extCommit.Round, vb.extCommit.ToExtendedVoteSet(chainID, vals)
-	}
-
-	return vb.commit.Round, vb.commit.ToVoteSet(chainID, vals)
-}
-
-func (vb *VerifiedBlock) ValidateBasic() error {
+func (ic *IngestCandidate) ValidateBasic() error {
 	switch {
-	case vb.block == nil:
+	case ic.block == nil:
 		return errors.Wrap(ErrValidation, "block is nil")
-	case vb.blockParts == nil:
+	case ic.blockParts == nil:
 		return errors.Wrap(ErrValidation, "part set is nil")
-	case vb.commit == nil && vb.extCommit == nil:
-		return errors.Wrap(ErrValidation, "commit and extCommit are both nil")
-	case vb.commit != nil && vb.extCommit != nil:
-		return errors.Wrap(ErrValidation, "commit and extCommit are both not nil")
+	case ic.commit == nil:
+		return errors.Wrap(ErrValidation, "commit is nil")
 	}
 
 	// validate commit/extCommit
 	var (
-		blockID     = vb.BlockID()
-		blockHeight = vb.block.Height
+		blockID     = ic.BlockID()
+		blockHeight = ic.block.Height
 	)
 
-	if vb.ExtensionsEnabled() {
+	if ic.extensionsEnabled() {
 		switch {
-		case vb.extCommit.Height != blockHeight:
-			return errors.Wrapf(ErrValidation, "extCommit height mismatch: got %d, want %d", vb.extCommit.Height, blockHeight)
-		case !vb.extCommit.BlockID.Equals(blockID):
+		case ic.extCommit.Height != blockHeight:
+			return errors.Wrapf(ErrValidation, "extCommit height mismatch: got %d, want %d", ic.extCommit.Height, blockHeight)
+		case !ic.extCommit.BlockID.Equals(blockID):
 			return errors.Wrap(ErrValidation, "extended commit blockID mismatch")
 		default:
-			return vb.extCommit.ValidateBasic()
+			return ic.extCommit.ValidateBasic()
 		}
 	}
 
 	switch {
-	case vb.commit.Height != blockHeight:
-		return errors.Wrapf(ErrValidation, "commit height mismatch: got %d, want %d", vb.commit.Height, blockHeight)
-	case !vb.commit.BlockID.Equals(blockID):
+	case ic.commit.Height != blockHeight:
+		return errors.Wrapf(ErrValidation, "commit height mismatch: got %d, want %d", ic.commit.Height, blockHeight)
+	case !ic.commit.BlockID.Equals(blockID):
 		return errors.Wrap(ErrValidation, "commit blockID mismatch")
 	default:
-		return vb.commit.ValidateBasic()
+		return ic.commit.ValidateBasic()
 	}
 }
 
-// Verify verifies the block against the state.
-func (vb *VerifiedBlock) Verify(state state.State) error {
+// Verify verifies the block against the state using light client verification.
+func (ic *IngestCandidate) Verify(state state.State) error {
 	var (
-		height            = vb.Height()
-		blockID           = vb.BlockID()
+		height            = ic.Height()
+		blockID           = ic.BlockID()
 		chainID           = state.ChainID
 		extensionsPresent = state.ConsensusParams.ABCI.VoteExtensionsEnabled(height)
 	)
 
-	// validate invariant
-	if extensionsPresent != vb.ExtensionsEnabled() {
+	// ensure invariant
+	if extensionsPresent != ic.extensionsEnabled() {
 		return fmt.Errorf(
 			"invalid ext commit state: height %d: extensionsPresent=%t, extensionsEnabled=%t",
-			vb.Height(), extensionsPresent, extensionsPresent,
+			ic.Height(), extensionsPresent, extensionsPresent,
 		)
 	}
 
+	if err := state.ValidateBlock(ic.block); err != nil {
+		return fmt.Errorf("validate block: %w", err)
+	}
+
 	// verify commit
-	err := state.Validators.VerifyCommitLight(chainID, blockID, height, vb.commit)
+	err := state.Validators.VerifyCommitLight(chainID, blockID, height, ic.commit)
 	if err != nil {
 		return fmt.Errorf("verify commit: %w", err)
 	}
 
-	if vb.ExtensionsEnabled() {
-		if err = vb.extCommit.EnsureExtensions(true); err != nil {
+	// verify commit extensions
+	if ic.extensionsEnabled() {
+		if err = ic.extCommit.EnsureExtensions(true); err != nil {
 			return fmt.Errorf("ensure extensions: %w", err)
 		}
 
-		err = state.Validators.VerifyCommitLight(chainID, blockID, height, vb.extCommit.ToCommit())
+		err = state.Validators.VerifyCommitLight(chainID, blockID, height, ic.extCommit.ToCommit())
 		if err != nil {
 			return fmt.Errorf("verify extended commit: %w", err)
 		}
 	}
 
-	vb.verified = true
+	ic.verified = true
 
 	return nil
+}
+
+func (ic *IngestCandidate) extensionsEnabled() bool {
+	return ic.extCommit != nil
+}
+
+// commitVoting returns the commit round and vote set for the verified block.
+func (ic *IngestCandidate) commitVoting(chainID string, vals *types.ValidatorSet) (round int32, voteSet *types.VoteSet) {
+	if ic.extensionsEnabled() {
+		return ic.extCommit.Round, ic.extCommit.ToExtendedVoteSet(chainID, vals)
+	}
+
+	return ic.commit.Round, ic.commit.ToVoteSet(chainID, vals)
 }
 
 // IngestVerifiedBlock ingests a next VERIFIED valid block into the consensus state.
 // Verification is the domain responsibility of the caller (otherwise the consensus will panic).
 // It uses the underlying internalQueue to ensure SERIAL state-machine processing inside the main receiveRoutine.
 // See handleIngestVerifiedBlock for the actual implementation and error handling.
-func (cs *State) IngestVerifiedBlock(vb VerifiedBlock) (err error, malicious bool) {
-	logger := cs.Logger.With("height", vb.block.Height)
+func (cs *State) IngestVerifiedBlock(ic IngestCandidate) (err error, malicious bool) {
+	logger := cs.Logger.With("height", ic.Height())
 	logger.Info("ingesting verified block")
 
 	defer func() {
@@ -181,8 +183,8 @@ func (cs *State) IngestVerifiedBlock(vb VerifiedBlock) (err error, malicious boo
 		}
 	}()
 
-	if err := vb.ValidateBasic(); err != nil {
-		return err, false
+	if !ic.verified {
+		return errors.Wrap(ErrValidation, "unverified ingest candidate"), false
 	}
 
 	// register response channel so we can receive from receiveRoutine
@@ -190,9 +192,9 @@ func (cs *State) IngestVerifiedBlock(vb VerifiedBlock) (err error, malicious boo
 	defer close(ch)
 
 	req := &ingestVerifiedBlockRequest{
-		VerifiedBlock: vb,
-		sentAt:        time.Now(),
-		response:      ch,
+		IngestCandidate: ic,
+		sentAt:          time.Now(),
+		response:        ch,
 	}
 
 	cs.sendInternalMessage(msgInfo{Msg: req})
@@ -204,18 +206,18 @@ func (cs *State) IngestVerifiedBlock(vb VerifiedBlock) (err error, malicious boo
 
 // note the outcome of this call is NOT relevant to statsMsgQueue
 func (cs *State) handleIngestVerifiedBlockRequest(req *ingestVerifiedBlockRequest) {
-	err, malicious := cs.handleIngestVerifiedBlock(req.VerifiedBlock)
+	err, malicious := cs.handleIngestVerifiedBlock(req.IngestCandidate)
 
 	req.response <- ingestVerifiedBlockResponse{err: err, malicious: malicious}
 }
 
 // handleIngestVerifiedBlock handles the ingestion of a verified block into the consensus state.
 // note that the MUTEX is held by the caller and VerifiedBlock should be already validated.
-func (cs *State) handleIngestVerifiedBlock(vb VerifiedBlock) (err error, malicious bool) {
+func (cs *State) handleIngestVerifiedBlock(ic IngestCandidate) (err error, malicious bool) {
 	var (
-		block           = vb.block
-		blockParts      = vb.blockParts
-		height          = vb.block.Height
+		block           = ic.block
+		blockParts      = ic.blockParts
+		height          = ic.block.Height
 		lastBlockHeight = cs.state.LastBlockHeight
 	)
 
@@ -233,12 +235,8 @@ func (cs *State) handleIngestVerifiedBlock(vb VerifiedBlock) (err error, malicio
 		logger    = cs.Logger.With("height", height)
 	)
 
-	if err := cs.blockExec.ValidateBlock(stateCopy, block); err != nil {
-		return errors.Wrap(err, "failed to validate block"), true
-	}
-
 	// ============ enterCommit(height, commitRound) ============
-	commitRound, commitVoteSet := vb.CommitVoting(stateCopy.ChainID, stateCopy.Validators)
+	commitRound, commitVoteSet := ic.commitVoting(stateCopy.ChainID, stateCopy.Validators)
 
 	cs.updateRoundStep(commitRound, cstypes.RoundStepCommit)
 	cs.CommitRound = commitRound
@@ -250,10 +248,10 @@ func (cs *State) handleIngestVerifiedBlock(vb VerifiedBlock) (err error, malicio
 
 	// this will also update blockStore.Height,
 	// so blocksync responds to peers with the correct height.
-	if vb.ExtensionsEnabled() {
-		cs.blockStore.SaveBlockWithExtendedCommit(block, blockParts, vb.extCommit)
+	if ic.extensionsEnabled() {
+		cs.blockStore.SaveBlockWithExtendedCommit(block, blockParts, ic.extCommit)
 	} else {
-		cs.blockStore.SaveBlock(block, blockParts, vb.commit)
+		cs.blockStore.SaveBlock(block, blockParts, ic.commit)
 	}
 
 	// NOTE: fsync
@@ -262,7 +260,7 @@ func (cs *State) handleIngestVerifiedBlock(vb VerifiedBlock) (err error, malicio
 	}
 
 	// the following flow is similar to finalizeCommit(height)
-	stateCopy, err = cs.blockExec.ApplyVerifiedBlock(stateCopy, vb.BlockID(), block)
+	stateCopy, err = cs.blockExec.ApplyVerifiedBlock(stateCopy, ic.BlockID(), block)
 	if err != nil {
 		// we can't recover from this error
 		panic(errors.Wrapf(err, "failed to apply verified block (height: %d, hash: %x)", block.Height, block.Hash()))

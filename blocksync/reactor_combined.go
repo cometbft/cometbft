@@ -1,12 +1,12 @@
 package blocksync
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/cometbft/cometbft/consensus"
 	"github.com/cometbft/cometbft/types"
-	"github.com/pkg/errors"
 )
 
 // BlockIngestor represents a reactor that can ingest blocks into the consensus state.
@@ -17,12 +17,12 @@ type BlockIngestor interface {
 func (r *Reactor) getBlockIngestor() (BlockIngestor, error) {
 	cr, ok := r.Switch.Reactor("CONSENSUS")
 	if !ok {
-		return nil, errors.New("consensus reactor not found")
+		return nil, fmt.Errorf("consensus reactor not found")
 	}
 
 	bi, ok := cr.(BlockIngestor)
 	if !ok {
-		return nil, errors.Errorf("reactor %T does not implement BlockIngestor", cr)
+		return nil, fmt.Errorf("reactor %T does not implement BlockIngestor", cr)
 	}
 
 	return bi, nil
@@ -42,7 +42,6 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 	syncIterationCh := make(chan struct{}, 1)
 	defer close(syncIterationCh)
 
-FOR_LOOP:
 	for {
 		select {
 		case <-r.Quit():
@@ -60,7 +59,7 @@ FOR_LOOP:
 			// in order to perform blocksync verification.
 			block, nextBlock, extCommit := r.pool.PeekTwoBlocks()
 			if block == nil || nextBlock == nil {
-				continue FOR_LOOP
+				continue
 			}
 
 			// sanity check
@@ -95,7 +94,7 @@ FOR_LOOP:
 					"latest_height", latestHeight,
 				)
 
-				continue FOR_LOOP
+				continue
 			}
 
 			if block.Height != latestHeight+1 {
@@ -129,7 +128,7 @@ FOR_LOOP:
 			err = state.Validators.VerifyCommitLight(chainID, blockID, block.Height, nextBlock.LastCommit)
 			if err != nil {
 				r.handleValidationFailure(block, nextBlock, err)
-				continue FOR_LOOP
+				continue
 			}
 
 			var (
@@ -144,14 +143,14 @@ FOR_LOOP:
 				)
 
 				r.handleValidationFailure(block, nextBlock, err)
-				continue FOR_LOOP
+				continue
 			}
 
 			if extensionsEnabled {
 				// if vote extensions were required at this height, ensure they exist...
 				if err = extCommit.EnsureExtensions(true); err != nil {
 					r.handleValidationFailure(block, nextBlock, err)
-					continue FOR_LOOP
+					continue
 				}
 
 				// ...and verify the extended commit
@@ -160,7 +159,7 @@ FOR_LOOP:
 				if err = state.Validators.VerifyCommitLight(chainID, blockID, block.Height, commit); err != nil {
 					err = fmt.Errorf("extended commit: %w", err)
 					r.handleValidationFailure(block, nextBlock, err)
-					continue FOR_LOOP
+					continue
 				}
 			}
 

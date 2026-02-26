@@ -177,44 +177,40 @@ func (r *Reactor) runPool(stateSynced bool) error {
 		return err
 	}
 
+	// todo: use poolRoutineWg.Go() after moving to go 1.25+
+	run := func(fn func()) {
+		r.poolRoutineWg.Add(1)
+		go func() {
+			defer r.poolRoutineWg.Done()
+			fn()
+		}()
+	}
+
 	// run the pool events routine
-	r.runTask(func() {
+	run(func() {
 		ticker := time.NewTicker(r.intervalStatusUpdate)
 		defer ticker.Stop()
 		r.poolEventsRoutine(ticker)
 	})
 
-	// default pool routine that performs regular blocksync
-	if !r.combinedModeEnabled {
-		r.runTask(func() {
-			r.poolRoutine(stateSynced)
+	if r.combinedModeEnabled {
+		// supply blocks to the consensus machine
+		blockIngestor, err := r.getBlockIngestor()
+		if err != nil {
+			return err
+		}
+
+		run(func() {
+			r.blockIngestorRoutine(blockIngestor)
 		})
 
 		return nil
 	}
 
-	// supply blocks to the consensus machine
-	blockIngestor, err := r.getBlockIngestor()
-	if err != nil {
-		return err
-	}
-
-	r.runTask(func() {
-		r.blockIngestorRoutine(blockIngestor)
-	})
+	// default pool routine that performs regular blocksync
+	run(func() { r.poolRoutine(stateSynced) })
 
 	return nil
-}
-
-func (r *Reactor) runTask(fn func()) {
-	r.poolRoutineWg.Add(1)
-
-	// note this routine should NOT have panic recovery
-	// since invariant violation should abort the node.
-	go func() {
-		defer r.poolRoutineWg.Done()
-		fn()
-	}()
 }
 
 // Enable is called by the state sync reactor when switching to block sync.

@@ -159,6 +159,9 @@ type ManifestNode struct {
 	// only "v0", the default value).
 	BlockSyncVersion string `toml:"block_sync_version"`
 
+	// BlockSyncCombinedMode specifies if the node should use combined mode for block sync.
+	BlockSyncCombinedMode bool `toml:"block_sync_combined_mode"`
+
 	// StateSync enables state sync. The runner automatically configures trusted
 	// block hashes and RPC servers. At least one node in the network must have
 	// SnapshotInterval set to non-zero, and the state syncing node must have

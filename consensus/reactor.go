@@ -418,6 +418,11 @@ func (conR *Reactor) WaitSync() bool {
 	return conR.waitSync.Load()
 }
 
+// IngestVerifiedBlock ingests a verified block into the consensus state.
+func (conR *Reactor) IngestVerifiedBlock(block IngestCandidate) error {
+	return conR.conS.IngestVerifiedBlock(block)
+}
+
 //--------------------------------------
 
 // subscribeToBroadcastEvents subscribes for new round steps and votes

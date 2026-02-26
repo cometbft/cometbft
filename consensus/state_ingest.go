@@ -18,8 +18,8 @@ type VerifiedBlock struct {
 	Commit     *types.Commit
 	ExtCommit  *types.ExtendedCommit
 
-	// cache
-	blockID types.BlockID
+	// caches vb.BlockID() to avoid recalculating it
+	cachedBlockID types.BlockID
 }
 
 type ingestVerifiedBlockRequest struct {
@@ -162,14 +162,16 @@ func (vb *VerifiedBlock) ExtensionsEnabled() bool {
 }
 
 func (vb *VerifiedBlock) BlockID() types.BlockID {
-	if vb.blockID.IsZero() {
-		vb.blockID = types.BlockID{
-			Hash:          vb.Block.Hash(),
-			PartSetHeader: vb.BlockParts.Header(),
-		}
+	if !vb.cachedBlockID.IsZero() {
+		return vb.cachedBlockID
 	}
 
-	return vb.blockID
+	vb.cachedBlockID = types.BlockID{
+		Hash:          vb.Block.Hash(),
+		PartSetHeader: vb.BlockParts.Header(),
+	}
+
+	return vb.cachedBlockID
 }
 
 // CommitVoting returns the commit round and vote set for the verified block.

@@ -32,7 +32,7 @@ func TestReactorCombined(t *testing.T) {
 		follower.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
 		provider.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
 
-		ts.blockIngestor.onIngest(func(vb consensus.VerifiedBlock) (error, bool) {
+		ts.blockIngestor.SetOnIngest(func(vb consensus.VerifiedBlock) (error, bool) {
 			ts.logger.Info("mock: receive block", "height", vb.Block.Height)
 			return nil, false
 		})
@@ -62,14 +62,14 @@ func TestReactorCombined(t *testing.T) {
 		// - Due to commit verification, we need N+1 blocks to verify N blocks
 		// - So diff of 2 blocks yields to one block to be ingested
 		check := func() bool {
-			return len(ts.blockIngestor.requests()) == 1
+			return len(ts.blockIngestor.Requests()) == 1
 		}
 
 		// ASSERT
 		require.Eventually(t, check, 10*time.Second, 100*time.Millisecond)
 
 		// check block
-		block := ts.blockIngestor.requests()[0].Block
+		block := ts.blockIngestor.Requests()[0].Block
 		require.Equal(t, int64(3), block.Height)
 
 		// ensure the pool progressed
@@ -92,7 +92,7 @@ func TestReactorCombined(t *testing.T) {
 		follower.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
 		provider.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
 
-		ts.blockIngestor.onIngest(func(vb consensus.VerifiedBlock) (error, bool) {
+		ts.blockIngestor.SetOnIngest(func(vb consensus.VerifiedBlock) (error, bool) {
 			ts.logger.Info("mock: receive block", "height", vb.Block.Height)
 			return consensus.ErrAlreadyIncluded, false
 		})
@@ -122,13 +122,13 @@ func TestReactorCombined(t *testing.T) {
 		// - Due to commit verification, we need N+1 blocks to verify N blocks
 		// - So diff of 2 blocks yields to one block to be ingested
 		check := func() bool {
-			return len(ts.blockIngestor.requests()) == 1
+			return len(ts.blockIngestor.Requests()) == 1
 		}
 
 		// ASSERT
 		require.Eventually(t, check, 10*time.Second, 100*time.Millisecond)
 
-		block := ts.blockIngestor.requests()[0].Block
+		block := ts.blockIngestor.Requests()[0].Block
 		require.Equal(t, int64(3), block.Height)
 
 		// ensure the pool progressed (even being a noop)
@@ -168,8 +168,8 @@ type blockIngestorMock struct {
 
 	t           *testing.T
 	mu          sync.Mutex
-	fn          func(consensus.VerifiedBlock) (error, bool)
-	requestsBag []consensus.VerifiedBlock
+	onIngest    func(consensus.VerifiedBlock) (error, bool)
+	storedCalls []consensus.VerifiedBlock
 }
 
 func newBlockIngestorMock(t *testing.T) *blockIngestorMock {
@@ -184,27 +184,27 @@ func (m *blockIngestorMock) IngestVerifiedBlock(vb consensus.VerifiedBlock) (err
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	m.requestsBag = append(m.requestsBag, vb)
+	m.storedCalls = append(m.storedCalls, vb)
 
-	if m.fn == nil {
+	if m.onIngest == nil {
 		return nil, false
 	}
 
-	return m.fn(vb)
+	return m.onIngest(vb)
 }
 
-func (m *blockIngestorMock) onIngest(onIngest func(vb consensus.VerifiedBlock) (error, bool)) {
+func (m *blockIngestorMock) SetOnIngest(onIngest func(vb consensus.VerifiedBlock) (error, bool)) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	m.fn = onIngest
+	m.onIngest = onIngest
 }
 
-func (m *blockIngestorMock) requests() []consensus.VerifiedBlock {
+func (m *blockIngestorMock) Requests() []consensus.VerifiedBlock {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	out := make([]consensus.VerifiedBlock, len(m.requestsBag))
-	copy(out, m.requestsBag)
+	out := make([]consensus.VerifiedBlock, len(m.storedCalls))
+	copy(out, m.storedCalls)
 	return out
 }

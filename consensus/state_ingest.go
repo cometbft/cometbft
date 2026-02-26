@@ -281,7 +281,10 @@ func (cs *State) ingestBlock(ic IngestCandidate) error {
 	cs.recordMetrics(height, block)
 
 	// NewHeightStep!
-	// drop votes to avoid updateToState() 2/3 majority check (not relevant here)
+	// - The block is already verified using the light client
+	// - cs.LastCommit is set and valid
+	// - cs.Votes contain votes that are NOT relevant to this block
+	// - drop votes to avoid updateToState() 2/3 majority check (`if cs.CommitRound > -1 && cs.Votes != nil {...}`)
 	cs.Votes = nil
 	cs.updateToState(stateCopy)
 

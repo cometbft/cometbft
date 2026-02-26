@@ -31,8 +31,7 @@ type ingestVerifiedBlockRequest struct {
 }
 
 type ingestVerifiedBlockResponse struct {
-	err       error
-	malicious bool
+	err error
 }
 
 // NewIngestCandidate constructs IngestCandidate
@@ -171,21 +170,17 @@ func (ic *IngestCandidate) commitVoting(chainID string, vals *types.ValidatorSet
 // Verification is the domain responsibility of the caller (otherwise the consensus will panic).
 // It uses the underlying internalQueue to ensure SERIAL state-machine processing inside the main receiveRoutine.
 // See handleIngestVerifiedBlock for the actual implementation and error handling.
-func (cs *State) IngestVerifiedBlock(ic IngestCandidate) (err error, malicious bool) {
+func (cs *State) IngestVerifiedBlock(ic IngestCandidate) (err error) {
 	logger := cs.Logger.With("height", ic.Height())
 	logger.Info("ingesting verified block")
 
 	defer func() {
 		if err != nil {
-			logger.Info("failed to ingest verified block", "err", err, "malicious", malicious)
+			logger.Info("failed to ingest verified block", "err", err)
 		} else {
 			logger.Info("ingested verified block")
 		}
 	}()
-
-	if !ic.verified {
-		return errors.Wrap(ErrValidation, "unverified ingest candidate"), false
-	}
 
 	// register response channel so we can receive from receiveRoutine
 	ch := make(chan ingestVerifiedBlockResponse, 1)
@@ -201,19 +196,23 @@ func (cs *State) IngestVerifiedBlock(ic IngestCandidate) (err error, malicious b
 
 	res := <-req.response
 
-	return res.err, res.malicious
+	return res.err
 }
 
 // note the outcome of this call is NOT relevant to statsMsgQueue
 func (cs *State) handleIngestVerifiedBlockRequest(req *ingestVerifiedBlockRequest) {
-	err, malicious := cs.handleIngestVerifiedBlock(req.IngestCandidate)
+	err := cs.handleIngestVerifiedBlock(req.IngestCandidate)
 
-	req.response <- ingestVerifiedBlockResponse{err: err, malicious: malicious}
+	req.response <- ingestVerifiedBlockResponse{err: err}
 }
 
-// handleIngestVerifiedBlock handles the ingestion of a verified block into the consensus state.
-// note that the MUTEX is held by the caller and VerifiedBlock should be already validated.
-func (cs *State) handleIngestVerifiedBlock(ic IngestCandidate) (err error, malicious bool) {
+// handleIngestVerifiedBlock handles the ingestion of a verified block candidate into the consensus state.
+// note that the MUTEX is held by the caller and IngestCandidate should be already validated.
+func (cs *State) handleIngestVerifiedBlock(ic IngestCandidate) error {
+	if !ic.verified {
+		return errors.Wrap(ErrValidation, "unverified ingest candidate")
+	}
+
 	var (
 		block           = ic.block
 		blockParts      = ic.blockParts
@@ -222,18 +221,21 @@ func (cs *State) handleIngestVerifiedBlock(ic IngestCandidate) (err error, malic
 	)
 
 	if height <= lastBlockHeight {
-		return ErrAlreadyIncluded, false
+		return ErrAlreadyIncluded
 	}
 
 	// we should not panic here - it's up to the caller to handle this error.
 	if height != lastBlockHeight+1 {
-		return errors.Wrapf(ErrHeightGap, "got %d, want %d", height, lastBlockHeight+1), false
+		return errors.Wrapf(ErrHeightGap, "got %d, want %d", height, lastBlockHeight+1)
 	}
 
 	var (
 		stateCopy = cs.state.Copy()
 		logger    = cs.Logger.With("height", height)
 	)
+
+	// todo do we need to ensure that the state doesn't change between the time we create
+	// todo the ingest candidate and the time we ingest it?
 
 	// ============ enterCommit(height, commitRound) ============
 	commitRound, commitVoteSet := ic.commitVoting(stateCopy.ChainID, stateCopy.Validators)
@@ -260,7 +262,7 @@ func (cs *State) handleIngestVerifiedBlock(ic IngestCandidate) (err error, malic
 	}
 
 	// the following flow is similar to finalizeCommit(height)
-	stateCopy, err = cs.blockExec.ApplyVerifiedBlock(stateCopy, ic.BlockID(), block)
+	stateCopy, err := cs.blockExec.ApplyVerifiedBlock(stateCopy, ic.BlockID(), block)
 	if err != nil {
 		// we can't recover from this error
 		panic(errors.Wrapf(err, "failed to apply verified block (height: %d, hash: %x)", block.Height, block.Hash()))
@@ -281,5 +283,5 @@ func (cs *State) handleIngestVerifiedBlock(ic IngestCandidate) (err error, malic
 
 	cs.scheduleRound0(&cs.RoundState)
 
-	return nil, false
+	return nil
 }

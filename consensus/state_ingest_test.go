@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	cmtinternaltest "github.com/cometbft/cometbft/internal/test"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -17,17 +17,16 @@ func TestStateIngestVerifiedBlock(t *testing.T) {
 		ts := newIngestTestSuite(t)
 
 		// Given a verified block
-		vb := ts.MakeVerifiedBlock()
+		ic := ts.MakeIngestCandidate()
 
 		// ACT
-		err, malicious := ts.IngestVerifiedBlock(vb)
+		err := ts.IngestVerifiedBlock(ic)
 
 		// ASSERT
 		require.NoError(t, err)
 
-		assert.False(t, malicious)
-		assert.Equal(t, vb.block.Height, ts.cs.GetLastHeight())
-		assert.NotNil(t, ts.cs.blockStore.LoadBlock(vb.block.Height))
+		assert.Equal(t, ic.Height(), ts.cs.GetLastHeight())
+		assert.NotNil(t, ts.cs.blockStore.LoadBlock(ic.Height()))
 	})
 
 	t.Run("alreadyIncluded", func(t *testing.T) {
@@ -35,19 +34,18 @@ func TestStateIngestVerifiedBlock(t *testing.T) {
 		ts := newIngestTestSuite(t)
 
 		// Given a verified block
-		vb := ts.MakeVerifiedBlock()
+		vb := ts.MakeIngestCandidate()
 
 		// That was already ingested
-		err, _ := ts.IngestVerifiedBlock(vb)
+		err := ts.IngestVerifiedBlock(vb)
 		require.NoError(t, err)
 
 		// ACT
 		// Ingest it again
-		err, malicious := ts.IngestVerifiedBlock(vb)
+		err = ts.IngestVerifiedBlock(vb)
 
 		// ASSERT
 		require.ErrorIs(t, err, ErrAlreadyIncluded)
-		require.False(t, malicious)
 	})
 
 	t.Run("heightGap", func(t *testing.T) {
@@ -55,15 +53,14 @@ func TestStateIngestVerifiedBlock(t *testing.T) {
 		ts := newIngestTestSuite(t)
 
 		// Given block that is not the next height
-		vb := ts.MakeVerifiedBlock()
+		vb := ts.MakeIngestCandidate()
 		vb.block.Height++
 
 		// ACT
-		err, malicious := ts.IngestVerifiedBlock(vb)
+		err := ts.IngestVerifiedBlock(vb)
 
 		// ASSERT
 		require.ErrorIs(t, err, ErrHeightGap)
-		require.False(t, malicious)
 	})
 
 	t.Run("invalidVerifiedBlock", func(t *testing.T) {
@@ -71,11 +68,12 @@ func TestStateIngestVerifiedBlock(t *testing.T) {
 		ts := newIngestTestSuite(t)
 
 		// Given a verified block with an invalid block
-		vb := ts.MakeVerifiedBlock()
-		validBlock := vb.block
+		ic := ts.MakeIngestCandidate()
+		validBlock := ic.block
 
 		// copy block to drop hash cache and trigger validation
-		vb.block = &types.Block{
+		ic.verified = false
+		ic.block = &types.Block{
 			Header:     validBlock.Header,
 			Data:       validBlock.Data,
 			Evidence:   validBlock.Evidence,
@@ -83,11 +81,11 @@ func TestStateIngestVerifiedBlock(t *testing.T) {
 		}
 
 		// ACT
-		err, malicious := ts.IngestVerifiedBlock(vb)
+		err := ts.IngestVerifiedBlock(ic)
 
 		// ASSERT
-		require.ErrorContains(t, err, "failed to validate block: nil LastCommit")
-		require.True(t, malicious)
+		require.ErrorIs(t, err, ErrValidation)
+		require.ErrorContains(t, err, "unverified ingest candidate")
 	})
 }
 
@@ -107,7 +105,7 @@ func newIngestTestSuite(t *testing.T) *ingestTestSuite {
 	}
 }
 
-func (ts *ingestTestSuite) IngestVerifiedBlock(vb IngestCandidate) (error, bool) {
+func (ts *ingestTestSuite) IngestVerifiedBlock(vb IngestCandidate) error {
 	ts.t.Helper()
 
 	ts.cs.mtx.Lock()
@@ -116,7 +114,7 @@ func (ts *ingestTestSuite) IngestVerifiedBlock(vb IngestCandidate) (error, bool)
 	return ts.cs.handleIngestVerifiedBlock(vb)
 }
 
-func (ts *ingestTestSuite) MakeVerifiedBlock() IngestCandidate {
+func (ts *ingestTestSuite) MakeIngestCandidate() IngestCandidate {
 	ts.t.Helper()
 
 	block, err := ts.cs.createProposalBlock(context.Background())
@@ -130,24 +128,41 @@ func (ts *ingestTestSuite) MakeVerifiedBlock() IngestCandidate {
 		privVals[i] = vs.PrivValidator
 	}
 
-	blockID := types.BlockID{
-		Hash:          block.Hash(),
-		PartSetHeader: blockParts.Header(),
+	var (
+		extensionsEnabled = ts.cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(block.Height)
+		chainID           = ts.cs.state.ChainID
+		blockHeight       = block.Height
+		blockID           = types.BlockID{
+			Hash:          block.Hash(),
+			PartSetHeader: blockParts.Header(),
+		}
+	)
+
+	var voteSet *types.VoteSet
+	if extensionsEnabled {
+		voteSet = types.NewExtendedVoteSet(chainID, blockHeight, 0, cmtproto.PrecommitType, ts.cs.Validators)
+	} else {
+		voteSet = types.NewVoteSet(chainID, blockHeight, 0, cmtproto.PrecommitType, ts.cs.Validators)
 	}
 
-	commit, err := cmtinternaltest.MakeCommit(
-		blockID,
-		block.Height,
-		0,
-		ts.cs.Validators,
-		privVals,
-		ts.cs.state.ChainID,
-		block.Time,
-	)
-	require.NoError(ts.t, err)
+	for i := 0; i < len(privVals); i++ {
+		ts.validators[i].Height = blockHeight
+		ts.validators[i].Round = 0
+		vote := signVote(ts.validators[i], cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader, extensionsEnabled)
+		added, err := voteSet.AddVote(vote)
+		require.NoError(ts.t, err)
+		require.True(ts.t, added)
+	}
 
-	vb, err := NewIngestCandidate(block, blockParts, commit, nil)
-	require.NoError(ts.t, err)
+	extCommit := voteSet.MakeExtendedCommit(ts.cs.state.ConsensusParams.ABCI)
+	commit := extCommit.ToCommit()
+	if !extensionsEnabled {
+		extCommit = nil
+	}
 
-	return vb
+	ic, err := NewIngestCandidate(block, blockParts, commit, extCommit)
+	require.NoError(ts.t, err, "failed to create ingest candidate")
+	require.NoError(ts.t, ic.Verify(ts.cs.state), "failed to verify ingest candidate")
+
+	return ic
 }

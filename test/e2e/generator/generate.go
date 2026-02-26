@@ -40,13 +40,14 @@ var (
 	nodeDatabases = uniformChoice{"goleveldb", "cleveldb", "rocksdb", "badgerdb"}
 	ipv6          = uniformChoice{false, true}
 	// FIXME: grpc disabled due to https://github.com/tendermint/tendermint/issues/5439
-	nodeABCIProtocols     = uniformChoice{"unix", "tcp", "builtin", "builtin_connsync"} // "grpc"
-	nodePrivvalProtocols  = uniformChoice{"file", "unix", "tcp"}
-	nodeBlockSyncs        = uniformChoice{"v0"} // "v2"
-	nodeStateSyncs        = uniformChoice{false, true}
-	nodePersistIntervals  = uniformChoice{0, 1, 5}
-	nodeSnapshotIntervals = uniformChoice{0, 3}
-	nodeRetainBlocks      = uniformChoice{
+	nodeABCIProtocols         = uniformChoice{"unix", "tcp", "builtin", "builtin_connsync"} // "grpc"
+	nodePrivvalProtocols      = uniformChoice{"file", "unix", "tcp"}
+	nodeBlockSyncs            = uniformChoice{"v0"} // "v2"
+	nodeBlockSyncCombinedMode = uniformChoice{false, true}
+	nodeStateSyncs            = uniformChoice{false, true}
+	nodePersistIntervals      = uniformChoice{0, 1, 5}
+	nodeSnapshotIntervals     = uniformChoice{0, 3}
+	nodeRetainBlocks          = uniformChoice{
 		0,
 		2 * int(e2e.EvidenceAgeHeight),
 		4 * int(e2e.EvidenceAgeHeight),
@@ -297,17 +298,18 @@ func generateNode(
 	r *rand.Rand, mode e2e.Mode, startAt int64, forceArchive bool,
 ) *e2e.ManifestNode {
 	node := e2e.ManifestNode{
-		Version:          nodeVersions.Choose(r).(string),
-		Mode:             string(mode),
-		StartAt:          startAt,
-		Database:         nodeDatabases.Choose(r).(string),
-		PrivvalProtocol:  nodePrivvalProtocols.Choose(r).(string),
-		BlockSyncVersion: nodeBlockSyncs.Choose(r).(string),
-		StateSync:        nodeStateSyncs.Choose(r).(bool) && startAt > 0,
-		PersistInterval:  ptrUint64(uint64(nodePersistIntervals.Choose(r).(int))),
-		SnapshotInterval: uint64(nodeSnapshotIntervals.Choose(r).(int)),
-		RetainBlocks:     uint64(nodeRetainBlocks.Choose(r).(int)),
-		Perturb:          nodePerturbations.Choose(r),
+		Version:               nodeVersions.Choose(r).(string),
+		Mode:                  string(mode),
+		StartAt:               startAt,
+		Database:              nodeDatabases.Choose(r).(string),
+		PrivvalProtocol:       nodePrivvalProtocols.Choose(r).(string),
+		BlockSyncVersion:      nodeBlockSyncs.Choose(r).(string),
+		BlockSyncCombinedMode: nodeBlockSyncCombinedMode.Choose(r).(bool),
+		StateSync:             nodeStateSyncs.Choose(r).(bool) && startAt > 0,
+		PersistInterval:       ptrUint64(uint64(nodePersistIntervals.Choose(r).(int))),
+		SnapshotInterval:      uint64(nodeSnapshotIntervals.Choose(r).(int)),
+		RetainBlocks:          uint64(nodeRetainBlocks.Choose(r).(int)),
+		Perturb:               nodePerturbations.Choose(r),
 	}
 
 	// If this node is forced to be an archive node, retain all blocks and

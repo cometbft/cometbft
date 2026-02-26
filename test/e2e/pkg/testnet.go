@@ -102,32 +102,33 @@ type Testnet struct {
 
 // Node represents a CometBFT node in a testnet.
 type Node struct {
-	Name                string
-	Version             string
-	Testnet             *Testnet
-	Mode                Mode
-	PrivvalKey          crypto.PrivKey
-	NodeKey             crypto.PrivKey
-	InternalIP          net.IP
-	ExternalIP          net.IP
-	ProxyPort           uint32
-	StartAt             int64
-	BlockSyncVersion    string
-	StateSync           bool
-	Database            string
-	ABCIProtocol        Protocol
-	PrivvalProtocol     Protocol
-	PersistInterval     uint64
-	SnapshotInterval    uint64
-	RetainBlocks        uint64
-	Seeds               []*Node
-	PersistentPeers     []*Node
-	Perturbations       []Perturbation
-	SendNoLoad          bool
-	Prometheus          bool
-	UseLibp2p           bool
-	MempoolType         string
-	PrometheusProxyPort uint32
+	Name                  string
+	Version               string
+	Testnet               *Testnet
+	Mode                  Mode
+	PrivvalKey            crypto.PrivKey
+	NodeKey               crypto.PrivKey
+	InternalIP            net.IP
+	ExternalIP            net.IP
+	ProxyPort             uint32
+	StartAt               int64
+	BlockSyncVersion      string
+	BlockSyncCombinedMode bool
+	StateSync             bool
+	Database              string
+	ABCIProtocol          Protocol
+	PrivvalProtocol       Protocol
+	PersistInterval       uint64
+	SnapshotInterval      uint64
+	RetainBlocks          uint64
+	Seeds                 []*Node
+	PersistentPeers       []*Node
+	Perturbations         []Perturbation
+	SendNoLoad            bool
+	Prometheus            bool
+	UseLibp2p             bool
+	MempoolType           string
+	PrometheusProxyPort   uint32
 }
 
 // LoadTestnet loads a testnet from a manifest file, using the filename to
@@ -229,29 +230,30 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		}
 
 		node := &Node{
-			Name:             name,
-			Version:          v,
-			Testnet:          testnet,
-			PrivvalKey:       keyGen.Generate(manifest.KeyType),
-			NodeKey:          keyGen.Generate("ed25519"),
-			InternalIP:       ind.IPAddress,
-			ExternalIP:       extIP,
-			ProxyPort:        ind.Port,
-			Mode:             ModeValidator,
-			Database:         "goleveldb",
-			ABCIProtocol:     Protocol(testnet.ABCIProtocol),
-			PrivvalProtocol:  ProtocolFile,
-			StartAt:          nodeManifest.StartAt,
-			BlockSyncVersion: nodeManifest.BlockSyncVersion,
-			StateSync:        nodeManifest.StateSync,
-			PersistInterval:  1,
-			SnapshotInterval: nodeManifest.SnapshotInterval,
-			RetainBlocks:     nodeManifest.RetainBlocks,
-			Perturbations:    []Perturbation{},
-			SendNoLoad:       nodeManifest.SendNoLoad,
-			UseLibp2p:        nodeManifest.UseLibp2p,
-			MempoolType:      nodeManifest.MempoolType,
-			Prometheus:       testnet.Prometheus,
+			Name:                  name,
+			Version:               v,
+			Testnet:               testnet,
+			PrivvalKey:            keyGen.Generate(manifest.KeyType),
+			NodeKey:               keyGen.Generate("ed25519"),
+			InternalIP:            ind.IPAddress,
+			ExternalIP:            extIP,
+			ProxyPort:             ind.Port,
+			Mode:                  ModeValidator,
+			Database:              "goleveldb",
+			ABCIProtocol:          Protocol(testnet.ABCIProtocol),
+			PrivvalProtocol:       ProtocolFile,
+			StartAt:               nodeManifest.StartAt,
+			BlockSyncVersion:      nodeManifest.BlockSyncVersion,
+			BlockSyncCombinedMode: nodeManifest.BlockSyncCombinedMode,
+			StateSync:             nodeManifest.StateSync,
+			PersistInterval:       1,
+			SnapshotInterval:      nodeManifest.SnapshotInterval,
+			RetainBlocks:          nodeManifest.RetainBlocks,
+			Perturbations:         []Perturbation{},
+			SendNoLoad:            nodeManifest.SendNoLoad,
+			UseLibp2p:             nodeManifest.UseLibp2p,
+			MempoolType:           nodeManifest.MempoolType,
+			Prometheus:            testnet.Prometheus,
 		}
 		if node.StartAt == testnet.InitialHeight {
 			node.StartAt = 0 // normalize to 0 for initial nodes, since code expects this

@@ -31,6 +31,8 @@
   192 bytes ([\#3624](https://github.com/cometbft/cometbft/issues/3624)
 - `[statesync]` Add configurable `max-snapshot-chunks` parameter to validate max amount of chunks in a `SnapshotResponse`.
   ([\#5549](https://github.com/cometbft/cometbft/pull/5549))
+- `[blocksync]` optimize block requester by reusing retry timer
+  ([\#5592](https://github.com/cometbft/cometbft/pull/5592))
 
 ### FEATURES
 

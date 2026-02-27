@@ -14,8 +14,10 @@
   ([\#5433](https://github.com/cometbft/cometbft/pull/5433))
 - `[blocksync]` fix(blocksync): `ExtendedCommit` verification via next blocks `LastCommit`
   ([\#5629](https://github.com/cometbft/cometbft/pull/5629))
+- [p2p] fix(lp2p): enforce stream max size ([\#5647](https://github.com/cometbft/cometbft/pull/5647))
 - `[metrics]` fix(metrics)!: peer_send_queue_size
   ([\#5648](https://github.com/cometbft/cometbft/pull/5648))
+
 
 ### IMPROVEMENTS
 

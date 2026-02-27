@@ -19,6 +19,10 @@ const ProtocolIDPrefix = "/p2p/cometbft/1.0.0"
 // TimeoutStream is the timeout for a stream.
 const TimeoutStream = 10 * time.Second
 
+// MaxStreamSize is the global maximum size of a stream.
+// Protocols should configure their own maximum size.
+const MaxStreamSize = 4 * (1 << 20)
+
 // ProtocolID returns the protocol ID for a given channel
 // Byte is used for compatibility with the original CometBFT implementation.
 func ProtocolID(channelID byte) protocol.ID {
@@ -86,9 +90,14 @@ func StreamRead(s network.Stream) ([]byte, error) {
 
 	reader := bufio.NewReader(s)
 
+	// in bytes
 	payloadSize, err := binary.ReadUvarint(reader)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read payload size")
+	}
+
+	if payloadSize > MaxStreamSize {
+		return nil, errors.Errorf("payload is too large (got %d, max %d)", payloadSize, MaxStreamSize)
 	}
 
 	payload, err := readExactly(reader, payloadSize)

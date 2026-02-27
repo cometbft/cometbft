@@ -373,7 +373,7 @@ func (p *peer) metricsReporter() {
 				sendQueueSize += float64(chStatus.SendQueueSize)
 			}
 
-			p.metrics.PeerPendingSendBytes.With("peer_id", string(p.ID())).Set(sendQueueSize)
+			p.metrics.PeerSendQueueSize.With("peer_id", string(p.ID())).Set(sendQueueSize)
 		case <-p.Quit():
 			return
 		}

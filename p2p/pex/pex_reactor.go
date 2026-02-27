@@ -477,6 +477,11 @@ func (r *Reactor) ensurePeers(ensurePeersPeriodElapsed bool) {
 		if r.Switch.IsDialingOrExistingAddress(try) {
 			continue
 		}
+		// Skip addresses that are configured as persistent peers.
+		// Persistent peers are handled by the persistent peer dialer.
+		if r.Switch.IsPeerPersistent(try) {
+			continue
+		}
 		// TODO: consider moving some checks from toDial into here
 		// so we don't even consider dialing peers that we want to wait
 		// before dialing again, or have dialed too many times already

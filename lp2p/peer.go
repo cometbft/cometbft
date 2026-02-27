@@ -163,11 +163,10 @@ func (p *Peer) send(e p2p.Envelope) (err error) {
 			"chID", fmt.Sprintf("%#x", e.ChannelID),
 		}
 
-		// note metric's name is misleading, it's a counter, not sum(bytes_pending)
-		pendingMessagesCounter = p.metrics.PeerPendingSendBytes.With("peer_id", peerIDStr)
+		peerSendQueueSize = p.metrics.PeerSendQueueSize.With("peer_id", peerIDStr)
 	)
 
-	pendingMessagesCounter.Add(1)
+	peerSendQueueSize.Add(1)
 
 	ctx, cancel := context.WithTimeout(context.Background(), TimeoutStream)
 	defer cancel()
@@ -175,7 +174,7 @@ func (p *Peer) send(e p2p.Envelope) (err error) {
 	start := time.Now()
 
 	defer func() {
-		pendingMessagesCounter.Add(-1)
+		peerSendQueueSize.Add(-1)
 
 		if err != nil {
 			return

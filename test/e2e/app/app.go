@@ -133,6 +133,7 @@ func NewApplication(cfg *Config) (*Application, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	snapshots, err := NewSnapshotStore(filepath.Join(cfg.Dir, "snapshots"))
 	if err != nil {
 		return nil, err
@@ -152,6 +153,7 @@ func NewApplication(cfg *Config) (*Application, error) {
 // Info implements ABCI.
 func (app *Application) Info(context.Context, *abci.RequestInfo) (*abci.ResponseInfo, error) {
 	height, hash := app.state.Info()
+
 	return &abci.ResponseInfo{
 		Version:          version.ABCIVersion,
 		AppVersion:       appVersion,
@@ -162,6 +164,7 @@ func (app *Application) Info(context.Context, *abci.RequestInfo) (*abci.Response
 
 func (app *Application) updateVoteExtensionEnableHeight(currentHeight int64) *cmtproto.ConsensusParams {
 	var params *cmtproto.ConsensusParams
+
 	if app.cfg.VoteExtensionsUpdateHeight == currentHeight {
 		app.logger.Info("enabling vote extensions on the fly",
 			"current_height", currentHeight,
@@ -174,12 +177,14 @@ func (app *Application) updateVoteExtensionEnableHeight(currentHeight int64) *cm
 		app.logger.Info("updating VoteExtensionsHeight in app_state", "height", app.cfg.VoteExtensionsEnableHeight)
 		app.state.Set(prefixReservedKey+suffixVoteExtHeight, strconv.FormatInt(app.cfg.VoteExtensionsEnableHeight, 10))
 	}
+
 	return params
 }
 
 // Info implements ABCI.
 func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 	var err error
+
 	app.state.initialHeight = uint64(req.InitialHeight)
 	if len(req.AppStateBytes) > 0 {
 		err = app.state.Import(0, req.AppStateBytes)
@@ -187,6 +192,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 			return nil, err
 		}
 	}
+
 	app.logger.Info("setting ChainID in app_state", "chainId", req.ChainId)
 	app.state.Set(prefixReservedKey+suffixChainID, req.ChainId)
 	app.logger.Info("setting VoteExtensionsHeight in app_state", "height", req.ConsensusParams.Abci.VoteExtensionsEnableHeight)
@@ -196,7 +202,6 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 	// Get validators from genesis
 	if req.Validators != nil {
 		for _, val := range req.Validators {
-
 			if err := app.storeValidator(&val); err != nil {
 				return nil, err
 			}
@@ -212,6 +217,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 	if resp.Validators, err = app.validatorUpdates(0); err != nil {
 		return nil, err
 	}
+
 	return resp, nil
 }
 
@@ -269,9 +275,11 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.RequestFinali
 		if err != nil {
 			panic(err) // shouldn't happen since we verified it in CheckTx and ProcessProposal
 		}
+
 		if key == prefixReservedKey {
 			panic(fmt.Errorf("detected a transaction with key %q; this key is reserved and should have been filtered out", prefixReservedKey))
 		}
+
 		app.state.Set(key, value)
 
 		txs[i] = &abci.ExecTxResult{Code: kvstore.CodeTypeOK}
@@ -327,21 +335,26 @@ func (app *Application) Commit(_ context.Context, _ *abci.RequestCommit) (*abci.
 	if err != nil {
 		panic(err)
 	}
+
 	if app.cfg.SnapshotInterval > 0 && height%app.cfg.SnapshotInterval == 0 {
 		snapshot, err := app.snapshots.Create(app.state)
 		if err != nil {
 			panic(err)
 		}
+
 		app.logger.Info("created state sync snapshot", "height", snapshot.Height)
+
 		err = app.snapshots.Prune(maxSnapshotCount)
 		if err != nil {
 			app.logger.Error("failed to prune snapshots", "err", err)
 		}
 	}
+
 	retainHeight := int64(0)
 	if app.cfg.RetainBlocks > 0 {
 		retainHeight = int64(height - app.cfg.RetainBlocks + 1)
 	}
+
 	return &abci.ResponseCommit{
 		RetainHeight: retainHeight,
 	}, nil
@@ -350,6 +363,7 @@ func (app *Application) Commit(_ context.Context, _ *abci.RequestCommit) (*abci.
 // Query implements ABCI.
 func (app *Application) Query(_ context.Context, req *abci.RequestQuery) (*abci.ResponseQuery, error) {
 	value, height := app.state.Query(string(req.Data))
+
 	return &abci.ResponseQuery{
 		Height: int64(height),
 		Key:    req.Data,
@@ -363,6 +377,7 @@ func (app *Application) ListSnapshots(context.Context, *abci.RequestListSnapshot
 	if err != nil {
 		panic(err)
 	}
+
 	return &abci.ResponseListSnapshots{Snapshots: snapshots}, nil
 }
 
@@ -372,6 +387,7 @@ func (app *Application) LoadSnapshotChunk(_ context.Context, req *abci.RequestLo
 	if err != nil {
 		panic(err)
 	}
+
 	return &abci.ResponseLoadSnapshotChunk{Chunk: chunk}, nil
 }
 
@@ -380,8 +396,10 @@ func (app *Application) OfferSnapshot(_ context.Context, req *abci.RequestOfferS
 	if app.restoreSnapshot != nil {
 		panic("A snapshot is already being restored")
 	}
+
 	app.restoreSnapshot = req.Snapshot
 	app.restoreChunks = [][]byte{}
+
 	return &abci.ResponseOfferSnapshot{Result: abci.ResponseOfferSnapshot_ACCEPT}, nil
 }
 
@@ -390,19 +408,23 @@ func (app *Application) ApplySnapshotChunk(_ context.Context, req *abci.RequestA
 	if app.restoreSnapshot == nil {
 		panic("No restore in progress")
 	}
+
 	app.restoreChunks = append(app.restoreChunks, req.Chunk)
 	if len(app.restoreChunks) == int(app.restoreSnapshot.Chunks) {
 		bz := []byte{}
 		for _, chunk := range app.restoreChunks {
 			bz = append(bz, chunk...)
 		}
+
 		err := app.state.Import(app.restoreSnapshot.Height, bz)
 		if err != nil {
 			panic(err)
 		}
+
 		app.restoreSnapshot = nil
 		app.restoreChunks = nil
 	}
+
 	return &abci.ResponseApplySnapshotChunk{Result: abci.ResponseApplySnapshotChunk_ACCEPT}, nil
 }
 
@@ -439,45 +461,56 @@ func (app *Application) PrepareProposal(
 	_, areExtensionsEnabled := app.checkHeightAndExtensions(true, req.Height, "PrepareProposal")
 
 	txs := make([][]byte, 0, len(req.Txs)+1)
+
 	var totalBytes int64
+
 	extTxPrefix := fmt.Sprintf("%s=", voteExtensionKey)
+
 	sum, err := app.verifyAndSum(areExtensionsEnabled, req.Height, &req.LocalLastCommit, "prepare_proposal")
 	if err != nil {
 		panic(fmt.Errorf("failed to sum and verify in PrepareProposal; err %w", err))
 	}
+
 	if areExtensionsEnabled {
 		extCommitBytes, err := req.LocalLastCommit.Marshal()
 		if err != nil {
 			panic("unable to marshall extended commit")
 		}
+
 		extCommitHex := hex.EncodeToString(extCommitBytes)
 		extTx := []byte(fmt.Sprintf("%s%d|%s", extTxPrefix, sum, extCommitHex))
 		extTxLen := cmttypes.ComputeProtoSizeForTxs([]cmttypes.Tx{extTx})
 		app.logger.Info("preparing proposal with special transaction from vote extensions", "extTxLen", extTxLen)
+
 		if extTxLen > req.MaxTxBytes {
 			panic(fmt.Errorf("serious problem in the e2e app configuration; "+
 				"the tx conveying the vote extension data does not fit in an empty block(%d > %d); "+
 				"please review the app's configuration",
 				extTxLen, req.MaxTxBytes))
 		}
+
 		txs = append(txs, extTx)
 		// Coherence: No need to call parseTx, as the check is stateless and has been performed by CheckTx
 		totalBytes = extTxLen
 	}
+
 	for _, tx := range req.Txs {
 		if areExtensionsEnabled && strings.HasPrefix(string(tx), extTxPrefix) {
 			// When vote extensions are enabled, our generated transaction takes precedence
 			// over any supplied transaction that attempts to modify the "extensionSum" value.
 			continue
 		}
+
 		if strings.HasPrefix(string(tx), prefixReservedKey) {
 			app.logger.Error("detected tx that should not come from the mempool", "tx", tx)
 			continue
 		}
+
 		txLen := cmttypes.ComputeProtoSizeForTxs([]cmttypes.Tx{tx})
 		if totalBytes+txLen > req.MaxTxBytes {
 			break
 		}
+
 		totalBytes += txLen
 		// Coherence: No need to call parseTx, as the check is stateless and has been performed by CheckTx
 		txs = append(txs, tx)
@@ -503,6 +536,7 @@ func (app *Application) ProcessProposal(_ context.Context, req *abci.RequestProc
 			app.logger.Error("malformed transaction in ProcessProposal", "tx", tx, "err", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
+
 		switch {
 		case areExtensionsEnabled && k == voteExtensionKey:
 			// Additional check for vote extension-related txs
@@ -540,13 +574,17 @@ func (app *Application) ExtendVote(_ context.Context, req *abci.RequestExtendVot
 		time.Sleep(app.cfg.VoteExtensionDelay)
 	}
 
-	var ext []byte
-	var extLen int
+	var (
+		ext    []byte
+		extLen int
+	)
+
 	if app.cfg.VoteExtensionSize != 0 {
 		ext = make([]byte, app.cfg.VoteExtensionSize)
 		if _, err := rand.Read(ext); err != nil {
 			panic(fmt.Errorf("could not extend vote. Len:%d", len(ext)))
 		}
+
 		extLen = len(ext)
 	} else {
 		ext = make([]byte, 8)
@@ -558,6 +596,7 @@ func (app *Application) ExtendVote(_ context.Context, req *abci.RequestExtendVot
 	}
 
 	app.logger.Info("generated vote extension", "height", appHeight, "vote_extension", fmt.Sprintf("%x", ext[:4]), "len", extLen)
+
 	return &abci.ResponseExtendVote{
 		VoteExtension: ext[:extLen],
 	}, nil
@@ -574,6 +613,7 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.Request
 	// We don't allow vote extensions to be optional
 	if len(req.VoteExtension) == 0 {
 		app.logger.Error("received empty vote extension")
+
 		return &abci.ResponseVerifyVoteExtension{
 			Status: abci.ResponseVerifyVoteExtension_REJECT,
 		}, nil
@@ -582,6 +622,7 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.Request
 	num, err := parseVoteExtension(app.cfg, req.VoteExtension)
 	if err != nil {
 		app.logger.Error("failed to parse vote extension", "vote_extension", fmt.Sprintf("%x", req.VoteExtension[:4]), "err", err)
+
 		return &abci.ResponseVerifyVoteExtension{
 			Status: abci.ResponseVerifyVoteExtension_REJECT,
 		}, nil
@@ -592,6 +633,7 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.Request
 	}
 
 	app.logger.Info("verified vote extension value", "height", req.Height, "vote_extension", fmt.Sprintf("%x", req.VoteExtension[:4]), "num", num)
+
 	return &abci.ResponseVerifyVoteExtension{
 		Status: abci.ResponseVerifyVoteExtension_ACCEPT,
 	}, nil
@@ -606,6 +648,7 @@ func (app *Application) getAppHeight() int64 {
 	if len(initialHeightStr) == 0 {
 		panic("initial height not set in database")
 	}
+
 	initialHeight, err := strconv.ParseInt(initialHeightStr, 10, 64)
 	if err != nil {
 		panic(fmt.Errorf("malformed initial height %q in database", initialHeightStr))
@@ -615,6 +658,7 @@ func (app *Application) getAppHeight() int64 {
 	if appHeight == 0 {
 		appHeight = initialHeight - 1
 	}
+
 	return appHeight + 1
 }
 
@@ -631,10 +675,12 @@ func (app *Application) checkHeightAndExtensions(isPrepareProcessProposal bool, 
 	if len(voteExtHeightStr) == 0 {
 		panic("vote extension height not set in database")
 	}
+
 	voteExtHeight, err := strconv.ParseInt(voteExtHeightStr, 10, 64)
 	if err != nil {
 		panic(fmt.Errorf("malformed vote extension height %q in database", voteExtHeightStr))
 	}
+
 	currentHeight := appHeight
 	if isPrepareProcessProposal {
 		currentHeight-- // at exactly voteExtHeight, PrepareProposal still has no extensions, see RFC100
@@ -649,15 +695,19 @@ func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate) error {
 	if err != nil {
 		return err
 	}
+
 	addr := pubKey.Address().String()
+
 	if valUpdate.Power > 0 {
 		pubKeyBytes, err := valUpdate.PubKey.Marshal()
 		if err != nil {
 			return err
 		}
+
 		app.logger.Info("setting validator in app_state", "addr", addr)
 		app.state.Set(prefixReservedKey+addr, hex.EncodeToString(pubKeyBytes))
 	}
+
 	return nil
 }
 
@@ -669,18 +719,21 @@ func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, 
 	}
 
 	valUpdates := abci.ValidatorUpdates{}
-	for keyString, power := range updates {
 
+	for keyString, power := range updates {
 		keyBytes, err := base64.StdEncoding.DecodeString(keyString)
 		if err != nil {
 			return nil, fmt.Errorf("invalid base64 pubkey value %q: %w", keyString, err)
 		}
+
 		valUpdate := abci.UpdateValidator(keyBytes, int64(power), app.cfg.KeyType)
+
 		valUpdates = append(valUpdates, valUpdate)
 		if err := app.storeValidator(&valUpdate); err != nil {
 			return nil, err
 		}
 	}
+
 	return valUpdates, nil
 }
 
@@ -690,9 +743,11 @@ func parseTx(tx []byte) (string, string, error) {
 	if len(parts) != 2 {
 		return "", "", fmt.Errorf("invalid tx format: %q", string(tx))
 	}
+
 	if len(parts[0]) == 0 {
 		return "", "", errors.New("key cannot be empty")
 	}
+
 	return string(parts[0]), string(parts[1]), nil
 }
 
@@ -702,17 +757,22 @@ func (app *Application) verifyAndSum(
 	extCommit *abci.ExtendedCommitInfo,
 	callsite string,
 ) (int64, error) {
-	var sum int64
-	var extCount int
+	var (
+		sum      int64
+		extCount int
+	)
+
 	for _, vote := range extCommit.Votes {
 		if vote.BlockIdFlag == cmtproto.BlockIDFlagUnknown || vote.BlockIdFlag > cmtproto.BlockIDFlagNil {
 			return 0, fmt.Errorf("vote with bad blockID flag value at height %d; blockID flag %d", currentHeight, vote.BlockIdFlag)
 		}
+
 		if vote.BlockIdFlag == cmtproto.BlockIDFlagAbsent || vote.BlockIdFlag == cmtproto.BlockIDFlagNil {
 			if len(vote.VoteExtension) != 0 {
 				return 0, fmt.Errorf("non-empty vote extension at height %d, for a vote with blockID  flag %d",
 					currentHeight, vote.BlockIdFlag)
 			}
+
 			if len(vote.ExtensionSignature) != 0 {
 				return 0, fmt.Errorf("non-empty vote extension signature at height %d, for a vote with blockID flag %d",
 					currentHeight, vote.BlockIdFlag)
@@ -720,17 +780,21 @@ func (app *Application) verifyAndSum(
 			// Only interested in votes that can have extensions
 			continue
 		}
+
 		if !areExtensionsEnabled {
 			if len(vote.VoteExtension) != 0 {
 				return 0, fmt.Errorf("non-empty vote extension at height %d, which has extensions disabled",
 					currentHeight)
 			}
+
 			if len(vote.ExtensionSignature) != 0 {
 				return 0, fmt.Errorf("non-empty vote extension signature at height %d, which has extensions disabled",
 					currentHeight)
 			}
+
 			continue
 		}
+
 		if len(vote.VoteExtension) == 0 {
 			return 0, fmt.Errorf("received empty vote extension from %X at height %d (extensions enabled); "+
 				"e2e app's logic does not allow it", vote.Validator, currentHeight)
@@ -745,12 +809,14 @@ func (app *Application) verifyAndSum(
 		if len(chainID) == 0 {
 			panic("chainID not set in database")
 		}
+
 		cve := cmtproto.CanonicalVoteExtension{
 			Extension: vote.VoteExtension,
 			Height:    currentHeight - 1, // the vote extension was signed in the previous height
 			Round:     int64(extCommit.Round),
 			ChainId:   chainID,
 		}
+
 		extSignBytes, err := protoio.MarshalDelimited(&cve)
 		if err != nil {
 			return 0, fmt.Errorf("error when marshaling signed bytes: %w", err)
@@ -758,23 +824,29 @@ func (app *Application) verifyAndSum(
 
 		// ... and verify
 		valAddr := crypto.Address(vote.Validator.Address).String()
+
 		pubKeyHex := app.state.Get(prefixReservedKey + valAddr)
 		if len(pubKeyHex) == 0 {
 			return 0, fmt.Errorf("received vote from unknown validator with address %q", valAddr)
 		}
+
 		pubKeyBytes, err := hex.DecodeString(pubKeyHex)
 		if err != nil {
 			return 0, fmt.Errorf("could not hex-decode public key for validator address %s, err %w", valAddr, err)
 		}
+
 		var pubKeyProto cryptoproto.PublicKey
+
 		err = pubKeyProto.Unmarshal(pubKeyBytes)
 		if err != nil {
 			return 0, fmt.Errorf("unable to unmarshal public key for validator address %s, err %w", valAddr, err)
 		}
+
 		pubKey, err := cryptoenc.PubKeyFromProto(pubKeyProto)
 		if err != nil {
 			return 0, fmt.Errorf("could not obtain a public key from its proto for validator address %s, err %w", valAddr, err)
 		}
+
 		if !pubKey.VerifySignature(extSignBytes, vote.ExtensionSignature) {
 			return 0, errors.New("received vote with invalid signature")
 		}
@@ -784,6 +856,7 @@ func (app *Application) verifyAndSum(
 		if err != nil {
 			return 0, fmt.Errorf("failed to parse vote extension: %w", err)
 		}
+
 		app.logger.Info(
 			"received and verified vote extension value",
 			"height", currentHeight,
@@ -798,6 +871,7 @@ func (app *Application) verifyAndSum(
 	if areExtensionsEnabled && (extCount == 0) {
 		return 0, errors.New("bad extension data, at least one extended vote should be present when extensions are enabled")
 	}
+
 	return sum, nil
 }
 
@@ -807,6 +881,7 @@ func (app *Application) verifyExtensionTx(height int64, payload string) error {
 	if len(parts) != 2 {
 		return fmt.Errorf("invalid payload format")
 	}
+
 	expSumStr := parts[0]
 	if len(expSumStr) == 0 {
 		return fmt.Errorf("sum cannot be empty in vote extension payload")
@@ -841,6 +916,7 @@ func (app *Application) verifyExtensionTx(height int64, payload string) error {
 	if int64(expSum) != sum {
 		return fmt.Errorf("sum is not consistent with vote extension payload: %d!=%d", expSum, sum)
 	}
+
 	return nil
 }
 
@@ -853,13 +929,17 @@ func parseVoteExtension(cfg *Config, ext []byte) (int64, error) {
 		if errVal == 0 {
 			return 0, errors.New("vote extension is too small to parse")
 		}
+
 		if errVal < 0 {
 			return 0, errors.New("vote extension value is too large")
 		}
+
 		if num >= voteExtensionMaxVal {
 			return 0, fmt.Errorf("vote extension value must be smaller than %d (was %d)", voteExtensionMaxVal, num)
 		}
+
 		return num, nil
 	}
+
 	return int64(len(ext)), nil
 }

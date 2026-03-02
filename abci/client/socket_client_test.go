@@ -26,10 +26,12 @@ func TestCalls(t *testing.T) {
 	_, c := setupClientServer(t, app)
 
 	resp := make(chan error, 1)
+
 	go func() {
 		res, err := c.Echo(ctx, "hello")
 		require.NoError(t, err)
 		require.NotNil(t, res)
+
 		resp <- c.Error()
 	}()
 
@@ -48,6 +50,7 @@ func TestHangingAsyncCalls(t *testing.T) {
 	s, c := setupClientServer(t, app)
 
 	resp := make(chan error, 1)
+
 	go func() {
 		// Call CheckTx
 		reqres, err := c.CheckTxAsync(context.Background(), &types.RequestCheckTx{})
@@ -61,6 +64,7 @@ func TestHangingAsyncCalls(t *testing.T) {
 
 		// wait for the response from CheckTx
 		reqres.Wait()
+
 		resp <- c.Error()
 	}()
 
@@ -78,15 +82,18 @@ func TestBulk(t *testing.T) {
 	// use a socket instead of a port
 	socketFile := fmt.Sprintf("test-%08x.sock", rand.Int31n(1<<30))
 	defer os.Remove(socketFile)
+
 	socket := fmt.Sprintf("unix://%v", socketFile)
 	app := types.NewBaseApplication()
 	// Start the listener
 	server := server.NewSocketServer(socket, app)
+
 	t.Cleanup(func() {
 		if err := server.Stop(); err != nil {
 			t.Log(err)
 		}
 	})
+
 	err := server.Start()
 	require.NoError(t, err)
 
@@ -111,6 +118,7 @@ func TestBulk(t *testing.T) {
 	res, err := client.FinalizeBlock(context.Background(), rfb)
 	require.NoError(t, err)
 	require.Equal(t, numTxs, len(res.TxResults), "Number of txs doesn't match")
+
 	for _, tx := range res.TxResults {
 		require.Equal(t, uint32(0), tx.Code, "Tx failed")
 	}
@@ -186,6 +194,7 @@ func TestCallbackInvokedWhenSetLate(t *testing.T) {
 	<-done
 
 	var called bool
+
 	cb = func(_ *types.Response) {
 		called = true
 	}

@@ -89,6 +89,7 @@ func (r *Reactor) OnStart() error {
 func (r *Reactor) AddPeer(peer p2p.Peer) {
 	r.mtx.RLock()
 	defer r.mtx.RUnlock()
+
 	if r.syncer != nil {
 		r.syncer.AddPeer(peer)
 	}
@@ -98,6 +99,7 @@ func (r *Reactor) AddPeer(peer p2p.Peer) {
 func (r *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 	r.mtx.RLock()
 	defer r.mtx.RUnlock()
+
 	if r.syncer != nil {
 		r.syncer.RemovePeer(peer)
 	}
@@ -114,8 +116,10 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 		if errors.Is(err, ErrExceedsMaxSnapshotChunks) {
 			r.syncer.RejectPeer(e.Src)
 		}
+
 		r.Logger.Error("Invalid message", "peer", e.Src, "msg", e.Message, "err", err)
 		r.Switch.StopPeerForError(e.Src, err)
+
 		return
 	}
 
@@ -128,6 +132,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 				r.Logger.Error("Failed to fetch snapshots", "err", err)
 				return
 			}
+
 			for _, snapshot := range snapshots {
 				r.Logger.Debug("Advertising snapshot", "height", snapshot.Height,
 					"format", snapshot.Format, "peer", e.Src.ID())
@@ -146,10 +151,12 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 		case *ssproto.SnapshotsResponse:
 			r.mtx.RLock()
 			defer r.mtx.RUnlock()
+
 			if r.syncer == nil {
 				r.Logger.Debug("Received unexpected snapshot, no state sync in progress")
 				return
 			}
+
 			r.Logger.Debug("Received snapshot", "height", msg.Height, "format", msg.Format, "peer", e.Src.ID())
 			_, err := r.syncer.AddSnapshot(e.Src, &snapshot{
 				Height:   msg.Height,
@@ -162,6 +169,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 			if err != nil {
 				r.Logger.Error("Failed to add snapshot", "height", msg.Height, "format", msg.Format,
 					"peer", e.Src.ID(), "err", err)
+
 				return
 			}
 
@@ -174,6 +182,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 		case *ssproto.ChunkRequest:
 			r.Logger.Debug("Received chunk request", "height", msg.Height, "format", msg.Format,
 				"chunk", msg.Index, "peer", e.Src.ID())
+
 			resp, err := r.conn.LoadSnapshotChunk(context.TODO(), &abci.RequestLoadSnapshotChunk{
 				Height: msg.Height,
 				Format: msg.Format,
@@ -182,8 +191,10 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 			if err != nil {
 				r.Logger.Error("Failed to load chunk", "height", msg.Height, "format", msg.Format,
 					"chunk", msg.Index, "err", err)
+
 				return
 			}
+
 			r.Logger.Debug("Sending chunk", "height", msg.Height, "format", msg.Format,
 				"chunk", msg.Index, "peer", e.Src.ID())
 			e.Src.Send(p2p.Envelope{
@@ -200,12 +211,15 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 		case *ssproto.ChunkResponse:
 			r.mtx.RLock()
 			defer r.mtx.RUnlock()
+
 			if r.syncer == nil {
 				r.Logger.Debug("Received unexpected chunk, no state sync in progress", "peer", e.Src.ID())
 				return
 			}
+
 			r.Logger.Debug("Received chunk, adding to sync", "height", msg.Height, "format", msg.Format,
 				"chunk", msg.Index, "peer", e.Src.ID())
+
 			_, err := r.syncer.AddChunk(&chunk{
 				Height: msg.Height,
 				Format: msg.Format,
@@ -216,6 +230,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 			if err != nil {
 				r.Logger.Error("Failed to add chunk", "height", msg.Height, "format", msg.Format,
 					"chunk", msg.Index, "err", err)
+
 				return
 			}
 
@@ -234,8 +249,10 @@ func (r *Reactor) recentSnapshots(n uint32) ([]*snapshot, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	sort.Slice(resp.Snapshots, func(i, j int) bool {
 		a := resp.Snapshots[i]
+
 		b := resp.Snapshots[j]
 		switch {
 		case a.Height > b.Height:
@@ -246,11 +263,14 @@ func (r *Reactor) recentSnapshots(n uint32) ([]*snapshot, error) {
 			return false
 		}
 	})
+
 	snapshots := make([]*snapshot, 0, n)
+
 	for i, s := range resp.Snapshots {
 		if i >= recentSnapshots {
 			break
 		}
+
 		snapshots = append(snapshots, &snapshot{
 			Height:   s.Height,
 			Format:   s.Format,
@@ -259,6 +279,7 @@ func (r *Reactor) recentSnapshots(n uint32) ([]*snapshot, error) {
 			Metadata: s.Metadata,
 		})
 	}
+
 	return snapshots, nil
 }
 
@@ -266,10 +287,12 @@ func (r *Reactor) recentSnapshots(n uint32) ([]*snapshot, error) {
 // The caller must store the state and commit in the state database and block store.
 func (r *Reactor) Sync(stateProvider StateProvider, discoveryTime time.Duration) (sm.State, *types.Commit, error) {
 	r.mtx.Lock()
+
 	if r.syncer != nil {
 		r.mtx.Unlock()
 		return sm.State{}, nil, errors.New("a state sync is already in progress")
 	}
+
 	r.metrics.Syncing.Set(1)
 	r.syncer = newSyncer(r.cfg, r.Logger, r.conn, r.connQuery, stateProvider, r.tempDir)
 	r.mtx.Unlock()
@@ -292,5 +315,6 @@ func (r *Reactor) Sync(stateProvider StateProvider, discoveryTime time.Duration)
 	r.syncer = nil
 	r.metrics.Syncing.Set(0)
 	r.mtx.Unlock()
+
 	return state, commit, err
 }

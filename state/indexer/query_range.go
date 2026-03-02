@@ -95,9 +95,11 @@ func (qr QueryRange) UpperBoundValue() any {
 // the provided query conditions.
 func LookForRangesWithHeight(conditions []syntax.Condition) (queryRange QueryRanges, indexes []int, heightRange QueryRange) {
 	queryRange = make(QueryRanges)
+
 	for i, c := range conditions {
 		if IsRangeOperation(c.Op) {
 			heightKey := c.Tag == types.BlockHeightKey || c.Tag == types.TxHeightKey
+
 			r, ok := queryRange[c.Tag]
 			if !ok {
 				r = QueryRange{Key: c.Tag}
@@ -111,11 +113,13 @@ func LookForRangesWithHeight(conditions []syntax.Condition) (queryRange QueryRan
 				if heightKey {
 					heightRange.LowerBound = conditionArg(c)
 				}
+
 				r.LowerBound = conditionArg(c)
 
 			case syntax.TGeq:
 				r.IncludeLowerBound = true
 				r.LowerBound = conditionArg(c)
+
 				if heightKey {
 					heightRange.IncludeLowerBound = true
 					heightRange.LowerBound = conditionArg(c)
@@ -130,6 +134,7 @@ func LookForRangesWithHeight(conditions []syntax.Condition) (queryRange QueryRan
 			case syntax.TLeq:
 				r.IncludeUpperBound = true
 				r.UpperBound = conditionArg(c)
+
 				if heightKey {
 					heightRange.IncludeUpperBound = true
 					heightRange.UpperBound = conditionArg(c)
@@ -137,6 +142,7 @@ func LookForRangesWithHeight(conditions []syntax.Condition) (queryRange QueryRan
 			}
 
 			queryRange[c.Tag] = r
+
 			indexes = append(indexes, i)
 		}
 	}
@@ -147,6 +153,7 @@ func LookForRangesWithHeight(conditions []syntax.Condition) (queryRange QueryRan
 // Deprecated: This function is not used anymore and will be replaced with LookForRangesWithHeight
 func LookForRanges(conditions []syntax.Condition) (ranges QueryRanges, indexes []int) {
 	ranges = make(QueryRanges)
+
 	for i, c := range conditions {
 		if IsRangeOperation(c.Op) {
 			r, ok := ranges[c.Tag]
@@ -171,6 +178,7 @@ func LookForRanges(conditions []syntax.Condition) (ranges QueryRanges, indexes [
 			}
 
 			ranges[c.Tag] = r
+
 			indexes = append(indexes, i)
 		}
 	}
@@ -194,6 +202,7 @@ func conditionArg(c syntax.Condition) any {
 	if c.Arg == nil {
 		return nil
 	}
+
 	switch c.Arg.Type {
 	case syntax.TNumber:
 		return c.Arg.Number()

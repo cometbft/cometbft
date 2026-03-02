@@ -34,6 +34,7 @@ func (se *signerEndpoint) Close() error {
 func (se *signerEndpoint) IsConnected() bool {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()
+
 	return se.isConnected()
 }
 
@@ -48,6 +49,7 @@ func (se *signerEndpoint) GetAvailableConnection(connectionAvailableCh chan net.
 		return true
 	default:
 	}
+
 	return false
 }
 
@@ -67,6 +69,7 @@ func (se *signerEndpoint) WaitConnection(connectionAvailableCh chan net.Conn, ma
 func (se *signerEndpoint) SetConnection(newConnection net.Conn) {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()
+
 	se.conn = newConnection
 }
 
@@ -74,6 +77,7 @@ func (se *signerEndpoint) SetConnection(newConnection net.Conn) {
 func (se *signerEndpoint) DropConnection() {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()
+
 	se.dropConnection()
 }
 
@@ -92,8 +96,11 @@ func (se *signerEndpoint) ReadMessage() (msg privvalproto.Message, err error) {
 	if err != nil {
 		return
 	}
+
 	const maxRemoteSignerMsgSize = 1024 * 10
+
 	protoReader := protoio.NewDelimitedReader(se.conn, maxRemoteSignerMsgSize)
+
 	_, err = protoReader.ReadMsg(&msg)
 	if _, ok := err.(timeoutError); ok {
 		if err != nil {
@@ -122,6 +129,7 @@ func (se *signerEndpoint) WriteMessage(msg privvalproto.Message) (err error) {
 
 	// Reset read deadline
 	deadline := time.Now().Add(se.timeoutReadWrite)
+
 	err = se.conn.SetWriteDeadline(deadline)
 	if err != nil {
 		return
@@ -134,6 +142,7 @@ func (se *signerEndpoint) WriteMessage(msg privvalproto.Message) (err error) {
 		} else {
 			err = fmt.Errorf("empty error: %w", ErrWriteTimeout)
 		}
+
 		se.dropConnection()
 	}
 
@@ -149,6 +158,7 @@ func (se *signerEndpoint) dropConnection() {
 		if err := se.conn.Close(); err != nil {
 			se.Logger.Error("signerEndpoint::dropConnection", "err", err)
 		}
+
 		se.conn = nil
 	}
 }

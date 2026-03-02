@@ -18,6 +18,7 @@ func CommandOutput(ctx context.Context, args ...string) ([]byte, error) {
 	//nolint: gosec
 	// G204: Subprocess launched with a potential tainted input or cmd arguments
 	cmd := osexec.CommandContext(ctx, args[0], args[1:]...)
+
 	out, err := cmd.CombinedOutput()
 	switch err := err.(type) {
 	case nil:
@@ -36,5 +37,6 @@ func CommandVerbose(ctx context.Context, args ...string) error {
 	cmd := osexec.CommandContext(ctx, args[0], args[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
 	return cmd.Run()
 }

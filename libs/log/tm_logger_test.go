@@ -14,6 +14,7 @@ func TestLoggerLogsItsErrors(t *testing.T) {
 
 	logger := log.NewTMLogger(&buf)
 	logger.Info("foo", "baz baz", "bar")
+
 	msg := strings.TrimSpace(buf.String())
 	if !strings.Contains(msg, "foo") {
 		t.Errorf("expected logger msg to contain ErrInvalidKey, got %s", msg)
@@ -99,8 +100,10 @@ func BenchmarkTMLoggerContextual(b *testing.B) {
 
 func benchmarkRunner(b *testing.B, logger log.Logger, f func(log.Logger)) {
 	lc := logger.With("common_key", "common_value")
+
 	b.ReportAllocs()
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		f(lc)
 	}

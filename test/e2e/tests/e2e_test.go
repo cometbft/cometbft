@@ -70,23 +70,30 @@ func loadTestnet(t *testing.T) e2e.Testnet {
 	if manifestFile == "" {
 		t.Skip("E2E_MANIFEST not set, not an end-to-end test run")
 	}
+
 	if !filepath.IsAbs(manifestFile) {
 		manifestFile = filepath.Join("..", manifestFile)
 	}
+
 	ifdType := os.Getenv("INFRASTRUCTURE_TYPE")
+
 	ifdFile := os.Getenv("INFRASTRUCTURE_FILE")
 	if ifdType != "docker" && ifdFile == "" {
 		t.Fatalf("INFRASTRUCTURE_FILE not set and INFRASTRUCTURE_TYPE is not 'docker'")
 	}
+
 	testnetCacheMtx.Lock()
 	defer testnetCacheMtx.Unlock()
+
 	if testnet, ok := testnetCache[manifestFile]; ok {
 		return testnet
 	}
+
 	m, err := e2e.LoadManifest(manifestFile)
 	require.NoError(t, err)
 
 	var ifd e2e.InfrastructureData
+
 	switch ifdType {
 	case "docker":
 		ifd, err = e2e.NewDockerInfrastructureData(m)
@@ -96,11 +103,14 @@ func loadTestnet(t *testing.T) e2e.Testnet {
 		require.NoError(t, err)
 	default:
 	}
+
 	require.NoError(t, err)
 
 	testnet, err := e2e.LoadTestnet(manifestFile, ifd)
 	require.NoError(t, err)
+
 	testnetCache[manifestFile] = *testnet
+
 	return *testnet
 }
 
@@ -116,16 +126,19 @@ func fetchBlockChain(t *testing.T) []*types.Block {
 		client *rpchttp.HTTP
 		status *rpctypes.ResultStatus
 	)
+
 	for _, node := range testnet.ArchiveNodes() {
 		c, err := node.Client()
 		require.NoError(t, err)
 		s, err := c.Status(ctx)
 		require.NoError(t, err)
+
 		if status == nil || s.SyncInfo.LatestBlockHeight > status.SyncInfo.LatestBlockHeight {
 			client = c
 			status = s
 		}
 	}
+
 	require.NotNil(t, client, "couldn't find an archive node")
 
 	// Fetch blocks. Look for existing block history in the block cache, and
@@ -135,10 +148,12 @@ func fetchBlockChain(t *testing.T) []*types.Block {
 
 	from := status.SyncInfo.EarliestBlockHeight
 	to := status.SyncInfo.LatestBlockHeight
+
 	blocks, ok := blocksCache[testnet.Name]
 	if !ok {
 		blocks = make([]*types.Block, 0, to-from+1)
 	}
+
 	if len(blocks) > 0 {
 		from = blocks[len(blocks)-1].Height + 1
 	}
@@ -150,6 +165,7 @@ func fetchBlockChain(t *testing.T) []*types.Block {
 		require.Equal(t, h, resp.Block.Height, "unexpected block height %v", resp.Block.Height)
 		blocks = append(blocks, resp.Block)
 	}
+
 	require.NotEmpty(t, blocks, "blockchain does not contain any blocks")
 	blocksCache[testnet.Name] = blocks
 

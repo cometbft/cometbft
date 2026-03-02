@@ -18,6 +18,7 @@ import (
 
 func TestReactorCombined(t *testing.T) {
 	const waitTime = 5 * time.Second
+
 	t.Run("ingestsBlock", func(t *testing.T) {
 		// ARRANGE
 		ts := newCombinedModeTestSuite(t, "blocksync_ingest_block")
@@ -150,6 +151,7 @@ func newCombinedModeTestSuite(t *testing.T, name string) *combinedModeTestSuite 
 	logger := log.TestingLogger()
 
 	config := test.ResetTestRoot(name)
+
 	t.Cleanup(func() { _ = os.RemoveAll(config.RootDir) })
 
 	genDoc, privVals := randGenesisDoc(1, false, 30)
@@ -180,6 +182,7 @@ func newBlockIngestorMock(t *testing.T) *blockIngestorMock {
 		t: t,
 	}
 	m.BaseReactor = p2p.NewBaseReactor("consensus-ingestor-mock", m)
+
 	return m
 }
 
@@ -209,5 +212,6 @@ func (m *blockIngestorMock) Requests() []consensus.IngestCandidate {
 
 	out := make([]consensus.IngestCandidate, len(m.storedCalls))
 	copy(out, m.storedCalls)
+
 	return out
 }

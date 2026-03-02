@@ -24,6 +24,7 @@ func main() {
 			log.NewSyncWriter(os.Stdout),
 		).With("module", "priv_val")
 	)
+
 	flag.Parse()
 
 	logger.Info(
@@ -37,6 +38,7 @@ func main() {
 	pv := privval.LoadFilePV(*privValKeyPath, *privValStatePath)
 
 	var dialer privval.SocketDialer
+
 	protocol, address := cmtnet.ProtocolAndAddress(*addr)
 	switch protocol {
 	case "unix":

@@ -39,9 +39,11 @@ func WeightedMedian(weightedTimes []*WeightedTime, totalVotingPower int64) (res 
 		if weightedTimes[i] == nil {
 			return false
 		}
+
 		if weightedTimes[j] == nil {
 			return true
 		}
+
 		return weightedTimes[i].Time.UnixNano() < weightedTimes[j].Time.UnixNano()
 	})
 
@@ -51,8 +53,10 @@ func WeightedMedian(weightedTimes []*WeightedTime, totalVotingPower int64) (res 
 				res = weightedTime.Time
 				break
 			}
+
 			median -= weightedTime.Weight
 		}
 	}
+
 	return
 }

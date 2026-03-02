@@ -17,6 +17,7 @@ const (
 func WriteMessage(msg proto.Message, w io.Writer) error {
 	protoWriter := protoio.NewDelimitedWriter(w)
 	_, err := protoWriter.WriteMsg(msg)
+
 	return err
 }
 

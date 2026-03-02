@@ -48,12 +48,14 @@ func NewState(dir string, persistInterval uint64) (*State, error) {
 		persistInterval: persistInterval,
 	}
 	state.hash = hashItems(state.values, state.height)
+
 	err := state.load()
 	switch {
 	case errors.Is(err, os.ErrNotExist):
 	case err != nil:
 		return nil, err
 	}
+
 	return state, nil
 }
 
@@ -73,9 +75,11 @@ func (s *State) load() error {
 			return fmt.Errorf("failed to read state from %q: %w", s.currentFile, err)
 		}
 	}
+
 	if err := json.Unmarshal(bz, s); err != nil {
 		return fmt.Errorf("invalid state data in %q: %w", s.currentFile, err)
 	}
+
 	return nil
 }
 
@@ -89,6 +93,7 @@ func (s *State) save() error {
 	// We write the state to a separate file and move it to the destination, to
 	// make it atomic.
 	newFile := fmt.Sprintf("%v.new", s.currentFile)
+
 	err = os.WriteFile(newFile, bz, 0o644) //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("failed to write state to %q: %w", s.currentFile, err)
@@ -108,8 +113,10 @@ func (s *State) save() error {
 func (s *State) GetHash() []byte {
 	s.RLock()
 	defer s.RUnlock()
+
 	hash := make([]byte, len(s.hash))
 	copy(hash, s.hash)
+
 	return hash
 }
 
@@ -118,9 +125,11 @@ func (s *State) GetHash() []byte {
 func (s *State) Info() (uint64, []byte) {
 	s.RLock()
 	defer s.RUnlock()
+
 	height := s.height
 	hash := make([]byte, len(s.hash))
 	copy(hash, s.hash)
+
 	return height, hash
 }
 
@@ -129,12 +138,15 @@ func (s *State) Info() (uint64, []byte) {
 func (s *State) Export() ([]byte, uint64, []byte, error) {
 	s.RLock()
 	defer s.RUnlock()
+
 	bz, err := json.Marshal(s.values)
 	if err != nil {
 		return nil, 0, nil, err
 	}
+
 	height := s.height
 	stateHash := hashItems(s.values, height)
+
 	return bz, height, stateHash, nil
 }
 
@@ -143,14 +155,18 @@ func (s *State) Export() ([]byte, uint64, []byte, error) {
 func (s *State) Import(height uint64, jsonBytes []byte) error {
 	s.Lock()
 	defer s.Unlock()
+
 	values := map[string]string{}
+
 	err := json.Unmarshal(jsonBytes, &values)
 	if err != nil {
 		return fmt.Errorf("failed to decode imported JSON data: %w", err)
 	}
+
 	s.height = height
 	s.values = values
 	s.hash = hashItems(values, height)
+
 	return s.save()
 }
 
@@ -158,6 +174,7 @@ func (s *State) Import(height uint64, jsonBytes []byte) error {
 func (s *State) Get(key string) string {
 	s.RLock()
 	defer s.RUnlock()
+
 	return s.values[key]
 }
 
@@ -165,6 +182,7 @@ func (s *State) Get(key string) string {
 func (s *State) Set(key, value string) {
 	s.Lock()
 	defer s.Unlock()
+
 	if value == "" {
 		delete(s.values, key)
 	} else {
@@ -177,8 +195,10 @@ func (s *State) Set(key, value string) {
 func (s *State) Query(key string) (string, uint64) {
 	s.RLock()
 	defer s.RUnlock()
+
 	height := s.height
 	value := s.values[key]
+
 	return value, height
 }
 
@@ -186,6 +206,7 @@ func (s *State) Query(key string) (string, uint64) {
 func (s *State) Finalize() []byte {
 	s.Lock()
 	defer s.Unlock()
+
 	switch {
 	case s.height > 0:
 		s.height++
@@ -194,7 +215,9 @@ func (s *State) Finalize() []byte {
 	default:
 		s.height = 1
 	}
+
 	s.hash = hashItems(s.values, s.height)
+
 	return s.hash
 }
 
@@ -202,12 +225,14 @@ func (s *State) Finalize() []byte {
 func (s *State) Commit() (uint64, error) {
 	s.Lock()
 	defer s.Unlock()
+
 	if s.persistInterval > 0 && s.height%s.persistInterval == 0 {
 		err := s.save()
 		if err != nil {
 			return 0, err
 		}
 	}
+
 	return s.height, nil
 }
 
@@ -216,9 +241,11 @@ func (s *State) Rollback() error {
 	if err != nil {
 		return fmt.Errorf("failed to read state from %q: %w", s.previousFile, err)
 	}
+
 	if err := json.Unmarshal(bz, s); err != nil {
 		return fmt.Errorf("invalid state data in %q: %w", s.previousFile, err)
 	}
+
 	return nil
 }
 
@@ -227,9 +254,11 @@ func (s *State) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &ss); err != nil {
 		return err
 	}
+
 	s.height = ss.Height
 	s.values = ss.Values
 	s.hash = ss.Hash
+
 	return nil
 }
 
@@ -239,6 +268,7 @@ func (s *State) MarshalJSON() ([]byte, error) {
 		Values: s.values,
 		Hash:   s.hash,
 	}
+
 	return json.Marshal(ss)
 }
 
@@ -248,11 +278,14 @@ func hashItems(items map[string]string, height uint64) []byte {
 	for key := range items {
 		keys = append(keys, key)
 	}
+
 	sort.Strings(keys)
 
 	hasher := sha256.New()
+
 	var b [8]byte
 	binary.BigEndian.PutUint64(b[:], height)
+
 	_, _ = hasher.Write(b[:])
 	for _, key := range keys {
 		_, _ = hasher.Write([]byte(key))
@@ -260,5 +293,6 @@ func hashItems(items map[string]string, height uint64) []byte {
 		_, _ = hasher.Write([]byte(items[key]))
 		_, _ = hasher.Write([]byte{0})
 	}
+
 	return hasher.Sum(nil)
 }

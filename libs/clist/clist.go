@@ -115,6 +115,7 @@ func (e *CElement) Next() *CElement {
 	e.mtx.RLock()
 	val := e.next
 	e.mtx.RUnlock()
+
 	return val
 }
 
@@ -123,6 +124,7 @@ func (e *CElement) Prev() *CElement {
 	e.mtx.RLock()
 	prev := e.prev
 	e.mtx.RUnlock()
+
 	return prev
 }
 
@@ -130,25 +132,30 @@ func (e *CElement) Removed() bool {
 	e.mtx.RLock()
 	isRemoved := e.removed
 	e.mtx.RUnlock()
+
 	return isRemoved
 }
 
 func (e *CElement) DetachNext() {
 	e.mtx.Lock()
+
 	if !e.removed {
 		e.mtx.Unlock()
 		panic("DetachNext() must be called after Remove(e)")
 	}
+
 	e.next = nil
 	e.mtx.Unlock()
 }
 
 func (e *CElement) DetachPrev() {
 	e.mtx.Lock()
+
 	if !e.removed {
 		e.mtx.Unlock()
 		panic("DetachPrev() must be called after Remove(e)")
 	}
+
 	e.prev = nil
 	e.mtx.Unlock()
 }
@@ -159,6 +166,7 @@ func (e *CElement) SetNext(newNext *CElement) {
 	e.mtx.Lock()
 
 	oldNext := e.next
+
 	e.next = newNext
 	if oldNext != nil && newNext == nil {
 		// See https://golang.org/pkg/sync/:
@@ -169,10 +177,12 @@ func (e *CElement) SetNext(newNext *CElement) {
 		e.nextWg = waitGroup1() // WaitGroups are difficult to re-use.
 		e.nextWaitCh = make(chan struct{})
 	}
+
 	if oldNext == nil && newNext != nil {
 		e.nextWg.Done()
 		close(e.nextWaitCh)
 	}
+
 	e.mtx.Unlock()
 }
 
@@ -182,15 +192,18 @@ func (e *CElement) SetPrev(newPrev *CElement) {
 	e.mtx.Lock()
 
 	oldPrev := e.prev
+
 	e.prev = newPrev
 	if oldPrev != nil && newPrev == nil {
 		e.prevWg = waitGroup1() // WaitGroups are difficult to re-use.
 		e.prevWaitCh = make(chan struct{})
 	}
+
 	if oldPrev == nil && newPrev != nil {
 		e.prevWg.Done()
 		close(e.prevWaitCh)
 	}
+
 	e.mtx.Unlock()
 }
 
@@ -204,10 +217,12 @@ func (e *CElement) SetRemoved() {
 		e.prevWg.Done()
 		close(e.prevWaitCh)
 	}
+
 	if e.next == nil {
 		e.nextWg.Done()
 		close(e.nextWaitCh)
 	}
+
 	e.mtx.Unlock()
 }
 
@@ -236,6 +251,7 @@ func (l *CList) Init() *CList {
 	l.tail = nil
 	l.curLen = 0
 	l.mtx.Unlock()
+
 	return l
 }
 
@@ -247,6 +263,7 @@ func New() *CList { return newWithMax(MaxLength) }
 func newWithMax(maxLength int) *CList {
 	l := new(CList)
 	l.maxLen = maxLength
+
 	return l.Init()
 }
 
@@ -254,6 +271,7 @@ func (l *CList) Len() int {
 	l.mtx.RLock()
 	curLen := l.curLen
 	l.mtx.RUnlock()
+
 	return curLen
 }
 
@@ -261,6 +279,7 @@ func (l *CList) Front() *CElement {
 	l.mtx.RLock()
 	head := l.head
 	l.mtx.RUnlock()
+
 	return head
 }
 
@@ -275,6 +294,7 @@ func (l *CList) FrontWait() *CElement {
 		if head != nil {
 			return head
 		}
+
 		wg.Wait()
 		// NOTE: If you think l.head exists here, think harder.
 	}
@@ -284,6 +304,7 @@ func (l *CList) Back() *CElement {
 	l.mtx.RLock()
 	back := l.tail
 	l.mtx.RUnlock()
+
 	return back
 }
 
@@ -297,6 +318,7 @@ func (l *CList) BackWait() *CElement {
 		if tail != nil {
 			return tail
 		}
+
 		wg.Wait()
 		// l.tail doesn't necessarily exist here.
 		// That's why we need to continue a for-loop.
@@ -333,9 +355,11 @@ func (l *CList) PushBack(v any) *CElement {
 		l.wg.Done()
 		close(l.waitCh)
 	}
+
 	if l.curLen >= l.maxLen {
 		panic(fmt.Sprintf("clist: maximum length list reached %d", l.maxLen))
 	}
+
 	l.curLen++
 
 	// Modify the tail
@@ -347,7 +371,9 @@ func (l *CList) PushBack(v any) *CElement {
 		l.tail.SetNext(e) // This will make e accessible.
 		l.tail = e        // Update the list.
 	}
+
 	l.mtx.Unlock()
+
 	return e
 }
 
@@ -363,10 +389,12 @@ func (l *CList) Remove(e *CElement) any {
 		l.mtx.Unlock()
 		panic("Remove(e) on empty CList")
 	}
+
 	if prev == nil && l.head != e {
 		l.mtx.Unlock()
 		panic("Remove(e) with false head")
 	}
+
 	if next == nil && l.tail != e {
 		l.mtx.Unlock()
 		panic("Remove(e) with false tail")
@@ -387,6 +415,7 @@ func (l *CList) Remove(e *CElement) any {
 	} else {
 		prev.SetNext(next)
 	}
+
 	if next == nil {
 		l.tail = prev
 	} else {
@@ -397,11 +426,13 @@ func (l *CList) Remove(e *CElement) any {
 	e.SetRemoved()
 
 	l.mtx.Unlock()
+
 	return e.Value
 }
 
 func waitGroup1() (wg *sync.WaitGroup) {
 	wg = &sync.WaitGroup{}
 	wg.Add(1)
+
 	return
 }

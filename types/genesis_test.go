@@ -123,6 +123,7 @@ func TestGenesisGood(t *testing.T) {
 func TestGenesisSaveAs(t *testing.T) {
 	tmpfile, err := os.CreateTemp("", "genesis")
 	require.NoError(t, err)
+
 	defer os.Remove(tmpfile.Name())
 
 	genDoc := randomGenesisDoc()
@@ -132,6 +133,7 @@ func TestGenesisSaveAs(t *testing.T) {
 	require.NoError(t, err)
 	stat, err := tmpfile.Stat()
 	require.NoError(t, err)
+
 	if err != nil && stat.Size() <= 0 {
 		t.Fatalf("SaveAs failed to write any bytes to %v", tmpfile.Name())
 	}
@@ -153,6 +155,7 @@ func TestGenesisValidatorHash(t *testing.T) {
 
 func randomGenesisDoc() *GenesisDoc {
 	pubkey := ed25519.GenPrivKey().PubKey()
+
 	return &GenesisDoc{
 		GenesisTime:     cmttime.Now(),
 		ChainID:         "abc",

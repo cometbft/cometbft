@@ -36,6 +36,7 @@ func TestWebsocketManagerHandler(t *testing.T) {
 	require.NoError(t, err)
 
 	var resp types.RPCResponse
+
 	err = c.ReadJSON(&resp)
 	require.NoError(t, err)
 	require.Nil(t, resp.Error)

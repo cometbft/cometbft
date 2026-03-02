@@ -29,10 +29,12 @@ func UpdateValidator(pk []byte, power int64, keyType string) ValidatorUpdate {
 		return Ed25519ValidatorUpdate(pk, power)
 	case secp256k1.KeyType:
 		pke := secp256k1.PubKey(pk)
+
 		pkp, err := cryptoenc.PubKeyToProto(pke)
 		if err != nil {
 			panic(err)
 		}
+
 		return ValidatorUpdate{
 			// Address:
 			PubKey: pkp,

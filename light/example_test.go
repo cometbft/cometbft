@@ -63,6 +63,7 @@ func ExampleClient_Update() {
 	if err != nil {
 		stdlog.Fatal(err)
 	}
+
 	defer func() {
 		if err := c.Cleanup(); err != nil {
 			stdlog.Fatal(err)
@@ -128,6 +129,7 @@ func ExampleClient_VerifyLightBlockAtHeight() {
 	if err != nil {
 		stdlog.Fatal(err)
 	}
+
 	defer func() {
 		if err := c.Cleanup(); err != nil {
 			stdlog.Fatal(err)

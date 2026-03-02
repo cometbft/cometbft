@@ -65,7 +65,6 @@ func unmarshalProto(descriptor *p2p.ChannelDescriptor, payload []byte) (proto.Me
 		msg = proto.Clone(descriptor.MessageType)
 		err = proto.Unmarshal(payload, msg)
 	)
-
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal message")
 	}

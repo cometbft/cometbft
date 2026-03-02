@@ -19,8 +19,10 @@ func TestNetAddress_String(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
+
 		go func() {
 			defer wg.Done()
+
 			_ = netAddr.String()
 		}()
 	}
@@ -160,6 +162,7 @@ func TestNetAddressProperties(t *testing.T) {
 		} else {
 			assert.Error(t, err)
 		}
+
 		assert.Equal(t, tc.local, addr.Local())
 		assert.Equal(t, tc.routable, addr.Routable())
 	}

@@ -64,6 +64,7 @@ func (c *LRUTxCache) Reset() {
 
 func (c *LRUTxCache) Push(tx types.Tx) bool {
 	key := tx.Key()
+
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
@@ -90,6 +91,7 @@ func (c *LRUTxCache) Push(tx types.Tx) bool {
 
 func (c *LRUTxCache) Remove(tx types.Tx) {
 	key := tx.Key()
+
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
@@ -104,6 +106,7 @@ func (c *LRUTxCache) Has(tx types.Tx) bool {
 	defer c.mtx.Unlock()
 
 	_, ok := c.cacheMap[tx.Key()]
+
 	return ok
 }
 

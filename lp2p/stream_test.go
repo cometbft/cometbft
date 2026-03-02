@@ -44,6 +44,7 @@ func TestStreamRead(t *testing.T) {
 		require.NoError(t, host2.Connect(ctx, host1.AddrInfo()))
 
 		readErr := make(chan error, 1)
+
 		host1.SetStreamHandler(protoID, func(stream network.Stream) {
 			defer stream.Close()
 

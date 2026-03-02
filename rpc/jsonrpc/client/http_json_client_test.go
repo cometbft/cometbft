@@ -14,6 +14,7 @@ func TestHTTPClientMakeHTTPDialer(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("Hi!\n"))
 	})
+
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
 

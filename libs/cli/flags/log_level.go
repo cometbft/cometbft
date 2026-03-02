@@ -34,8 +34,11 @@ func ParseLogLevel(lvl string, logger log.Logger, defaultLogLevelValue string) (
 	options := make([]log.Option, 0)
 
 	isDefaultLogLevelSet := false
-	var option log.Option
-	var err error
+
+	var (
+		option log.Option
+		err    error
+	)
 
 	list := strings.Split(l, ",")
 	for _, item := range list {
@@ -53,6 +56,7 @@ func ParseLogLevel(lvl string, logger log.Logger, defaultLogLevelValue string) (
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse default log level (pair %s, list %s): %w", item, l, err)
 			}
+
 			options = append(options, option)
 			isDefaultLogLevelSet = true
 		} else {
@@ -72,8 +76,8 @@ func ParseLogLevel(lvl string, logger log.Logger, defaultLogLevelValue string) (
 						item,
 						list)
 			}
-			options = append(options, option)
 
+			options = append(options, option)
 		}
 	}
 
@@ -83,6 +87,7 @@ func ParseLogLevel(lvl string, logger log.Logger, defaultLogLevelValue string) (
 		if err != nil {
 			return nil, err
 		}
+
 		options = append(options, option)
 	}
 

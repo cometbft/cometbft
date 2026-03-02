@@ -60,6 +60,7 @@ func (env *Environment) Subscribe(ctx *rpctypes.Context, query string) (*ctypes.
 
 	// Capture the current ID, since it can change in the future.
 	subscriptionID := ctx.JSONReq.ID
+
 	go func() {
 		for {
 			select {
@@ -68,8 +69,10 @@ func (env *Environment) Subscribe(ctx *rpctypes.Context, query string) (*ctypes.
 					resultEvent = &ctypes.ResultEvent{Query: query, Data: msg.Data(), Events: msg.Events()}
 					resp        = rpctypes.NewRPCSuccessResponse(subscriptionID, resultEvent)
 				)
+
 				writeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
+
 				if err := ctx.WSConn.WriteRPCResponse(writeCtx, resp); err != nil {
 					env.Logger.Info("Can't write response (slow client)",
 						"to", addr, "subscriptionID", subscriptionID, "err", err)
@@ -83,6 +86,7 @@ func (env *Environment) Subscribe(ctx *rpctypes.Context, query string) (*ctypes.
 							env.Logger.Info("Can't write response (slow client)",
 								"to", addr, "subscriptionID", subscriptionID, "err", err)
 						}
+
 						return
 					}
 				}
@@ -94,6 +98,7 @@ func (env *Environment) Subscribe(ctx *rpctypes.Context, query string) (*ctypes.
 					} else {
 						reason = sub.Err().Error()
 					}
+
 					var (
 						err  = fmt.Errorf("subscription was canceled (reason: %s)", reason)
 						resp = rpctypes.RPCServerError(subscriptionID, err)
@@ -103,6 +108,7 @@ func (env *Environment) Subscribe(ctx *rpctypes.Context, query string) (*ctypes.
 							"to", addr, "subscriptionID", subscriptionID, "err", err)
 					}
 				}
+
 				return
 			}
 		}
@@ -116,14 +122,17 @@ func (env *Environment) Subscribe(ctx *rpctypes.Context, query string) (*ctypes.
 func (env *Environment) Unsubscribe(ctx *rpctypes.Context, query string) (*ctypes.ResultUnsubscribe, error) {
 	addr := ctx.RemoteAddr()
 	env.Logger.Info("Unsubscribe from query", "remote", addr, "query", query)
+
 	q, err := cmtquery.New(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse query: %w", err)
 	}
+
 	err = env.EventBus.Unsubscribe(context.Background(), addr, q)
 	if err != nil {
 		return nil, err
 	}
+
 	return &ctypes.ResultUnsubscribe{}, nil
 }
 
@@ -132,9 +141,11 @@ func (env *Environment) Unsubscribe(ctx *rpctypes.Context, query string) (*ctype
 func (env *Environment) UnsubscribeAll(ctx *rpctypes.Context) (*ctypes.ResultUnsubscribe, error) {
 	addr := ctx.RemoteAddr()
 	env.Logger.Info("Unsubscribe from all", "remote", addr)
+
 	err := env.EventBus.UnsubscribeAll(context.Background(), addr)
 	if err != nil {
 		return nil, err
 	}
+
 	return &ctypes.ResultUnsubscribe{}, nil
 }

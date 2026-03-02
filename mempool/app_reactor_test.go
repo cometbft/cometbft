@@ -103,10 +103,12 @@ func TestAppReactor(t *testing.T) {
 	// Ensure all nodes (including C) have all txs
 	//nolint:gocritic
 	allTxs := append(txs1, txs2...)
+
 	eventually(func() bool {
 		receivedA := nodeA.getReceivedTxs()
 		receivedB := nodeB.getReceivedTxs()
 		receivedC := nodeC.getReceivedTxs()
+
 		return txsContain(receivedA, allTxs) &&
 			txsContain(receivedB, allTxs) &&
 			txsContain(receivedC, allTxs)
@@ -128,6 +130,7 @@ func TestChunkTxs(t *testing.T) {
 		for _, size := range sizes {
 			txs = append(txs, makeTx(size))
 		}
+
 		return txs
 	}
 
@@ -275,6 +278,7 @@ func (ts *appReactorNode) setupAppMock() {
 
 	mockGrpc("InsertTx", func(_ context.Context, req *abci.RequestInsertTx) (*abci.ResponseInsertTx, error) {
 		ts.insertTx(req.Tx)
+
 		return &abci.ResponseInsertTx{
 			Code: abci.CodeTypeOK,
 		}, nil

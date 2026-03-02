@@ -19,8 +19,10 @@ import (
 func TestGRPC(t *testing.T) {
 	app := types.NewBaseApplication()
 	numCheckTxs := 2000
+
 	socketFile := fmt.Sprintf("/tmp/test-%08x.sock", rand.Int31n(1<<30))
 	defer os.Remove(socketFile)
+
 	socket := fmt.Sprintf("unix://%v", socketFile)
 
 	// Start the listener
@@ -52,9 +54,11 @@ func TestGRPC(t *testing.T) {
 		// Send request
 		response, err := client.CheckTx(context.Background(), &types.RequestCheckTx{Tx: []byte("test")})
 		require.NoError(t, err)
+
 		if response.Code != 0 {
 			t.Error("CheckTx failed with ret_code", response.Code)
 		}
+
 		t.Log("response", counter)
 	}
 }

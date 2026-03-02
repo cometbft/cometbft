@@ -61,7 +61,9 @@ type evilConn struct {
 func newEvilConn(shareEphKey, badEphKey, shareAuthSignature, badAuthSignature bool) *evilConn {
 	privKey := ed25519.GenPrivKey()
 	locEphPub, locEphPriv := genEphKeys()
+
 	var rep [32]byte
+
 	c := &evilConn{
 		locEphPub:  locEphPub,
 		locEphPriv: locEphPriv,
@@ -86,10 +88,12 @@ func (c *evilConn) Read(data []byte) (n int, err error) {
 	case 0:
 		if !c.badEphKey {
 			lc := *c.locEphPub
+
 			bz, err := protoio.MarshalDelimited(&gogotypes.BytesValue{Value: lc[:]})
 			if err != nil {
 				panic(err)
 			}
+
 			copy(data, bz[c.readOffset:])
 			n = len(data)
 		} else {
@@ -97,13 +101,16 @@ func (c *evilConn) Read(data []byte) (n int, err error) {
 			if err != nil {
 				panic(err)
 			}
+
 			copy(data, bz)
 			n = len(data)
 		}
+
 		c.readOffset += n
 
 		if n >= 32 {
 			c.readOffset = 0
+
 			c.readStep = 1
 			if !c.shareAuthSignature {
 				c.readStep = 2
@@ -118,33 +125,42 @@ func (c *evilConn) Read(data []byte) (n int, err error) {
 			if err != nil {
 				panic(err)
 			}
+
 			bz, err := protoio.MarshalDelimited(&tmp2p.AuthSigMessage{PubKey: pkpb, Sig: signature})
 			if err != nil {
 				panic(err)
 			}
+
 			n, err = c.secretConn.Write(bz)
 			if err != nil {
 				panic(err)
 			}
+
 			if c.readOffset > len(c.buffer.Bytes()) {
 				return len(data), nil
 			}
+
 			copy(data, c.buffer.Bytes()[c.readOffset:])
 		} else {
 			bz, err := protoio.MarshalDelimited(&gogotypes.BytesValue{Value: []byte("select * from users;")})
 			if err != nil {
 				panic(err)
 			}
+
 			n, err = c.secretConn.Write(bz)
 			if err != nil {
 				panic(err)
 			}
+
 			if c.readOffset > len(c.buffer.Bytes()) {
 				return len(data), nil
 			}
+
 			copy(data, c.buffer.Bytes())
 		}
+
 		c.readOffset += len(data)
+
 		return n, nil
 	default:
 		return 0, io.EOF
@@ -158,16 +174,20 @@ func (c *evilConn) Write(data []byte) (n int, err error) {
 			bytes     gogotypes.BytesValue
 			remEphPub [32]byte
 		)
+
 		err := protoio.UnmarshalDelimited(data, &bytes)
 		if err != nil {
 			panic(err)
 		}
+
 		copy(remEphPub[:], bytes.Value)
 		c.remEphPub = &remEphPub
+
 		c.writeStep = 1
 		if !c.shareAuthSignature {
 			c.writeStep = 2
 		}
+
 		return len(data), nil
 	case 1:
 		// Signature is not needed, therefore skipped.
@@ -208,6 +228,7 @@ func (c *evilConn) signChallenge() []byte {
 	recvSecret, sendSecret := deriveSecrets(dhSecret, locIsLeast)
 
 	const challengeSize = 32
+
 	var challenge [challengeSize]byte
 	transcript.ExtractBytes(challenge[:], labelSecretConnectionMac)
 
@@ -215,6 +236,7 @@ func (c *evilConn) signChallenge() []byte {
 	if err != nil {
 		panic(errors.New("invalid send SecretConnection Key"))
 	}
+
 	recvAead, err := chacha20poly1305.New(recvSecret[:])
 	if err != nil {
 		panic(errors.New("invalid receive SecretConnection Key"))
@@ -263,6 +285,7 @@ func TestMakeSecretConnection(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			privKey := ed25519.GenPrivKey()
+
 			_, err := MakeSecretConnection(tc.conn, privKey)
 			if tc.errMsg != "" {
 				if assert.Error(t, err) {

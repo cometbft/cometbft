@@ -25,6 +25,7 @@ type Config struct {
 func StartGRPCServer(env *core.Environment, ln net.Listener) error {
 	grpcServer := grpc.NewServer()
 	RegisterBroadcastAPIServer(grpcServer, &broadcastAPI{env: env})
+
 	return grpcServer.Serve(ln)
 }
 
@@ -37,6 +38,7 @@ func StartGRPCClient(protoAddr string) BroadcastAPIClient {
 	if err != nil {
 		panic(err)
 	}
+
 	return NewBroadcastAPIClient(conn)
 }
 

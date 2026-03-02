@@ -56,6 +56,7 @@ func (txs Txs) Index(tx Tx) int {
 			return i
 		}
 	}
+
 	return -1
 }
 
@@ -66,6 +67,7 @@ func (txs Txs) IndexByHash(hash []byte) int {
 			return i
 		}
 	}
+
 	return -1
 }
 
@@ -85,6 +87,7 @@ func (txs Txs) hashList() [][]byte {
 	for i := 0; i < len(txs); i++ {
 		hl[i] = txs[i].Hash()
 	}
+
 	return hl
 }
 
@@ -102,6 +105,7 @@ func ToTxs(txl [][]byte) Txs {
 	for _, tx := range txl {
 		txs = append(txs, tx)
 	}
+
 	return txs
 }
 
@@ -113,6 +117,7 @@ func (txs Txs) Validate(maxSizeBytes int64) error {
 			return fmt.Errorf("transaction data size exceeds maximum %d", maxSizeBytes)
 		}
 	}
+
 	return nil
 }
 
@@ -122,6 +127,7 @@ func (txs Txs) ToSliceOfBytes() [][]byte {
 	for i := 0; i < len(txs); i++ {
 		txBzs[i] = txs[i]
 	}
+
 	return txBzs
 }
 
@@ -143,16 +149,20 @@ func (tp TxProof) Validate(dataHash []byte) error {
 	if !bytes.Equal(dataHash, tp.RootHash) {
 		return errors.New("proof matches different data hash")
 	}
+
 	if tp.Proof.Index < 0 {
 		return errors.New("proof index cannot be negative")
 	}
+
 	if tp.Proof.Total <= 0 {
 		return errors.New("proof total must be positive")
 	}
+
 	valid := tp.Proof.Verify(tp.RootHash, tp.Leaf())
 	if valid != nil {
 		return errors.New("proof is not internally consistent")
 	}
+
 	return nil
 }
 
@@ -188,5 +198,6 @@ func TxProofFromProto(pb cmtproto.TxProof) (TxProof, error) {
 func ComputeProtoSizeForTxs(txs []Tx) int64 {
 	data := Data{Txs: txs}
 	pdData := data.ToProto()
+
 	return int64(pdData.Size())
 }

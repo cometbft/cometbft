@@ -234,12 +234,15 @@ LOOP:
 			// send async
 			wg := sync.WaitGroup{}
 			wg.Add(cfg.sendConcurrency)
+
 			for i := 0; i < cfg.sendConcurrency; i++ {
 				go func() {
 					defer wg.Done()
+
 					sendFunc()
 				}()
 			}
+
 			wg.Wait()
 		}
 	}

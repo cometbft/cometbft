@@ -93,14 +93,17 @@ func (BaseApplication) ApplySnapshotChunk(context.Context, *RequestApplySnapshot
 
 func (BaseApplication) PrepareProposal(_ context.Context, req *RequestPrepareProposal) (*ResponsePrepareProposal, error) {
 	txs := make([][]byte, 0, len(req.Txs))
+
 	var totalBytes int64
 	for _, tx := range req.Txs {
 		totalBytes += int64(len(tx))
 		if totalBytes > req.MaxTxBytes {
 			break
 		}
+
 		txs = append(txs, tx)
 	}
+
 	return &ResponsePrepareProposal{Txs: txs}, nil
 }
 
@@ -123,6 +126,7 @@ func (BaseApplication) FinalizeBlock(_ context.Context, req *RequestFinalizeBloc
 	for i := range req.Txs {
 		txs[i] = &ExecTxResult{Code: CodeTypeOK}
 	}
+
 	return &ResponseFinalizeBlock{
 		TxResults: txs,
 	}, nil

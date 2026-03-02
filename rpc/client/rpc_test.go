@@ -32,21 +32,27 @@ var ctx = context.Background()
 
 func getHTTPClient() *rpchttp.HTTP {
 	rpcAddr := rpctest.GetConfig().RPC.ListenAddress
+
 	c, err := rpchttp.New(rpcAddr, "/websocket")
 	if err != nil {
 		panic(err)
 	}
+
 	c.SetLogger(log.TestingLogger())
+
 	return c
 }
 
 func getHTTPClientWithTimeout(timeout uint) *rpchttp.HTTP {
 	rpcAddr := rpctest.GetConfig().RPC.ListenAddress
+
 	c, err := rpchttp.NewWithTimeout(rpcAddr, "/websocket", timeout)
 	if err != nil {
 		panic(err)
 	}
+
 	c.SetLogger(log.TestingLogger())
+
 	return c
 }
 
@@ -87,9 +93,11 @@ func TestCorsEnabled(t *testing.T) {
 	req, err := http.NewRequest("GET", remote, nil)
 	require.Nil(t, err, "%+v", err)
 	req.Header.Set("Origin", origin)
+
 	c := &http.Client{}
 	resp, err := c.Do(req)
 	require.Nil(t, err, "%+v", err)
+
 	defer resp.Body.Close()
 
 	assert.Equal(t, resp.Header.Get("Access-Control-Allow-Origin"), origin)
@@ -122,6 +130,7 @@ func TestNetInfo(t *testing.T) {
 	for i, c := range GetClients() {
 		nc, ok := c.(client.NetworkClient)
 		require.True(t, ok, "%d", i)
+
 		netinfo, err := nc.NetInfo(context.Background())
 		require.Nil(t, err, "%d: %+v", i, err)
 		assert.True(t, netinfo.Listening)
@@ -134,6 +143,7 @@ func TestDumpConsensusState(t *testing.T) {
 		// FIXME: fix server so it doesn't panic on invalid input
 		nc, ok := c.(client.NetworkClient)
 		require.True(t, ok, "%d", i)
+
 		cons, err := nc.DumpConsensusState(context.Background())
 		require.Nil(t, err, "%d: %+v", i, err)
 		assert.NotEmpty(t, cons.RoundState)
@@ -146,6 +156,7 @@ func TestConsensusState(t *testing.T) {
 		// FIXME: fix server so it doesn't panic on invalid input
 		nc, ok := c.(client.NetworkClient)
 		require.True(t, ok, "%d", i)
+
 		cons, err := nc.ConsensusState(context.Background())
 		require.Nil(t, err, "%d: %+v", i, err)
 		assert.NotEmpty(t, cons.RoundState)
@@ -156,6 +167,7 @@ func TestHealth(t *testing.T) {
 	for i, c := range GetClients() {
 		nc, ok := c.(client.NetworkClient)
 		require.True(t, ok, "%d", i)
+
 		_, err := nc.Health(context.Background())
 		require.Nil(t, err, "%d: %+v", i, err)
 	}
@@ -163,7 +175,6 @@ func TestHealth(t *testing.T) {
 
 func TestGenesisAndValidators(t *testing.T) {
 	for i, c := range GetClients() {
-
 		// make sure this is the right genesis file
 		gen, err := c.Genesis(context.Background())
 		require.Nil(t, err, "%d: %+v", i, err)
@@ -199,9 +210,10 @@ func TestGenesisChunked(t *testing.T) {
 			require.NoError(t, err)
 			data, err := base64.StdEncoding.DecodeString(chunk.Data)
 			require.NoError(t, err)
-			decoded = append(decoded, string(data))
 
+			decoded = append(decoded, string(data))
 		}
+
 		doc := []byte(strings.Join(decoded, ""))
 
 		var out types.GenesisDoc
@@ -216,12 +228,14 @@ func TestABCIQuery(t *testing.T) {
 		k, v, tx := MakeTxKV()
 		bres, err := c.BroadcastTxCommit(context.Background(), tx)
 		require.Nil(t, err, "%d: %+v", i, err)
+
 		apph := bres.Height + 1 // this is where the tx will be applied to the state
 
 		// wait before querying
 		err = client.WaitForHeight(c, apph, nil)
 		require.NoError(t, err)
 		res, err := c.ABCIQuery(context.Background(), "/key", k)
+
 		qres := res.Response
 		if assert.Nil(t, err) && assert.True(t, qres.IsOK()) {
 			assert.EqualValues(t, v, qres.Value)
@@ -232,8 +246,8 @@ func TestABCIQuery(t *testing.T) {
 // Make some app checks
 func TestAppCalls(t *testing.T) {
 	assert, require := assert.New(t), require.New(t)
-	for i, c := range GetClients() {
 
+	for i, c := range GetClients() {
 		// get an offset of height to avoid racing and guessing
 		s, err := c.Status(context.Background())
 		require.NoError(err)
@@ -259,6 +273,7 @@ func TestAppCalls(t *testing.T) {
 
 		_qres, err := c.ABCIQueryWithOptions(context.Background(), "/key", k, client.ABCIQueryOptions{Prove: false})
 		require.NoError(err)
+
 		qres := _qres.Response
 		if assert.True(qres.IsOK()) {
 			assert.Equal(k, qres.Key)
@@ -274,6 +289,7 @@ func TestAppCalls(t *testing.T) {
 		// and we can even check the block is added
 		block, err := c.Block(context.Background(), &apph)
 		require.NoError(err)
+
 		appHash := block.Block.AppHash
 		assert.True(len(appHash) > 0)
 		assert.EqualValues(apph, block.Block.Height)
@@ -295,6 +311,7 @@ func TestAppCalls(t *testing.T) {
 		blockResults, err := c.BlockResults(context.Background(), &txh)
 		require.Nil(err, "%d: %+v", i, err)
 		assert.Equal(txh, blockResults.Height)
+
 		if assert.Equal(1, len(blockResults.TxsResults)) {
 			// check success code
 			assert.EqualValues(0, blockResults.TxsResults[0].Code)
@@ -304,9 +321,11 @@ func TestAppCalls(t *testing.T) {
 		info, err := c.BlockchainInfo(context.Background(), apph, apph)
 		require.NoError(err)
 		assert.True(info.LastHeight >= apph)
+
 		if assert.Equal(1, len(info.BlockMetas)) {
 			lastMeta := info.BlockMetas[0]
 			assert.EqualValues(apph, lastMeta.Header.Height)
+
 			blockData := block.Block
 			assert.Equal(blockData.AppHash, lastMeta.Header.AppHash)
 			assert.Equal(block.BlockID, lastMeta.BlockID)
@@ -315,6 +334,7 @@ func TestAppCalls(t *testing.T) {
 		// and get the corresponding commit with the same apphash
 		commit, err := c.Commit(context.Background(), &apph)
 		require.NoError(err)
+
 		cappHash := commit.AppHash
 		assert.Equal(appHash, cappHash)
 		assert.NotNil(commit.Commit)
@@ -328,6 +348,7 @@ func TestAppCalls(t *testing.T) {
 		// and we got a proof that works!
 		_pres, err := c.ABCIQueryWithOptions(context.Background(), "/key", k, client.ABCIQueryOptions{Prove: true})
 		require.NoError(err)
+
 		pres := _pres.Response
 		assert.True(pres.IsOK())
 
@@ -360,6 +381,7 @@ func TestBroadcastTxCommit(t *testing.T) {
 	require := require.New(t)
 
 	mempool := node.Mempool()
+
 	for i, c := range GetClients() {
 		_, _, tx := MakeTxKV()
 		bres, err := c.BroadcastTxCommit(context.Background(), tx)
@@ -417,9 +439,11 @@ func TestNumUnconfirmedTxs(t *testing.T) {
 	}
 
 	mempoolSize := mempool.Size()
+
 	for i, c := range GetClients() {
 		mc, ok := c.(client.MempoolClient)
 		require.True(t, ok, "%d", i)
+
 		res, err := mc.NumUnconfirmedTxs(context.Background())
 		require.Nil(t, err, "%d: %+v", i, err)
 
@@ -525,9 +549,11 @@ func TestBlockSearch(t *testing.T) {
 		_, err := c.BroadcastTxCommit(context.Background(), tx)
 		require.NoError(t, err)
 	}
+
 	require.NoError(t, client.WaitForHeight(c, 5, nil))
 	result, err := c.BlockSearch(context.Background(), "begin_event.foo = 100", nil, nil, "asc")
 	require.NoError(t, err)
+
 	blockCount := len(result.Blocks)
 	// if we generate block events within the test (by uncommenting
 	// the code in line main_test.go:L23) then we expect len(result.Blocks)
@@ -552,6 +578,7 @@ func TestTxSearch(t *testing.T) {
 	// from other tests as well
 	result, err := c.TxSearch(context.Background(), "tx.height >= 0", true, nil, nil, "asc")
 	require.NoError(t, err)
+
 	txCount := len(result.Txs)
 
 	// pick out the last tx to have something to search for in tests
@@ -559,7 +586,6 @@ func TestTxSearch(t *testing.T) {
 	anotherTxHash := types.Tx("a different tx").Hash()
 
 	for _, c := range GetClients() {
-
 		// now we query for the tx.
 		result, err := c.TxSearch(context.Background(), fmt.Sprintf("tx.hash='%v'", find.Hash), true, nil, nil, "asc")
 		require.Nil(t, err)
@@ -618,6 +644,7 @@ func TestTxSearch(t *testing.T) {
 		// check sorting
 		result, err = c.TxSearch(context.Background(), "tx.height >= 1", false, nil, nil, "asc")
 		require.Nil(t, err)
+
 		for k := 0; k < len(result.Txs)-1; k++ {
 			require.LessOrEqual(t, result.Txs[k].Height, result.Txs[k+1].Height)
 			require.LessOrEqual(t, result.Txs[k].Index, result.Txs[k+1].Index)
@@ -625,12 +652,14 @@ func TestTxSearch(t *testing.T) {
 
 		result, err = c.TxSearch(context.Background(), "tx.height >= 1", false, nil, nil, "desc")
 		require.Nil(t, err)
+
 		for k := 0; k < len(result.Txs)-1; k++ {
 			require.GreaterOrEqual(t, result.Txs[k].Height, result.Txs[k+1].Height)
 			require.GreaterOrEqual(t, result.Txs[k].Index, result.Txs[k+1].Index)
 		}
 		// check pagination
 		perPage = 3
+
 		var (
 			seen      = map[int64]bool{}
 			maxHeight int64
@@ -638,15 +667,17 @@ func TestTxSearch(t *testing.T) {
 		)
 
 		totalTx := 0
-		for page := 1; page <= pages; page++ {
 
+		for page := 1; page <= pages; page++ {
 			result, err := c.TxSearch(context.Background(), "tx.height >= 1", true, &page, &perPage, "asc")
 			require.NoError(t, err)
+
 			if page < pages {
 				require.Len(t, result.Txs, perPage)
 			} else {
 				require.LessOrEqual(t, len(result.Txs), perPage)
 			}
+
 			totalTx += len(result.Txs)
 			for _, tx := range result.Txs {
 				require.False(t, seen[tx.Height],
@@ -657,6 +688,7 @@ func TestTxSearch(t *testing.T) {
 				maxHeight = tx.Height
 			}
 		}
+
 		require.Equal(t, txCount, totalTx)
 		require.Len(t, seen, txCount)
 	}
@@ -685,6 +717,7 @@ func testBatchedJSONRPCCalls(t *testing.T, c *rpchttp.HTTP) {
 	bresult1, ok := bresults[0].(*ctypes.ResultBroadcastTxCommit)
 	require.True(t, ok)
 	require.Equal(t, *bresult1, *r1)
+
 	bresult2, ok := bresults[1].(*ctypes.ResultBroadcastTxCommit)
 	require.True(t, ok)
 	require.Equal(t, *bresult2, *r2)
@@ -706,6 +739,7 @@ func testBatchedJSONRPCCalls(t *testing.T, c *rpchttp.HTTP) {
 	qresult1, ok := qresults[0].(*ctypes.ResultABCIQuery)
 	require.True(t, ok)
 	require.Equal(t, *qresult1, *q1)
+
 	qresult2, ok := qresults[1].(*ctypes.ResultABCIQuery)
 	require.True(t, ok)
 	require.Equal(t, *qresult2, *q2)
@@ -749,13 +783,18 @@ func TestClearingEmptyRequestBatch(t *testing.T) {
 
 func TestConcurrentJSONRPCBatching(t *testing.T) {
 	var wg sync.WaitGroup
+
 	c := getHTTPClient()
+
 	for i := 0; i < 50; i++ {
 		wg.Add(1)
+
 		go func() {
 			defer wg.Done()
+
 			testBatchedJSONRPCCalls(t, c)
 		}()
 	}
+
 	wg.Wait()
 }

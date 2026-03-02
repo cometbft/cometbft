@@ -46,6 +46,7 @@ func TestAppConns_Failure(t *testing.T) {
 	ok := make(chan struct{})
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGTERM)
+
 	go func() {
 		for range c {
 			close(ok)
@@ -53,6 +54,7 @@ func TestAppConns_Failure(t *testing.T) {
 	}()
 
 	quitCh := make(chan struct{})
+
 	var recvQuitCh <-chan struct{} = quitCh
 
 	clientCreatorMock := &mocks.ClientCreator{}

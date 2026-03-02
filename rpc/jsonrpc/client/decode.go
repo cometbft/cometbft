@@ -40,13 +40,17 @@ func unmarshalResponseBytes(
 // Separate the unmarshalling actions using different functions to improve readability and maintainability.
 func unmarshalIndividualResponse(responseBytes []byte) (types.RPCResponse, error) {
 	var singleResponse types.RPCResponse
+
 	err := json.Unmarshal(responseBytes, &singleResponse)
+
 	return singleResponse, err
 }
 
 func unmarshalMultipleResponses(responseBytes []byte) ([]types.RPCResponse, error) {
 	var responses []types.RPCResponse
+
 	err := json.Unmarshal(responseBytes, &responses)
+
 	return responses, err
 }
 
@@ -63,7 +67,6 @@ func unmarshalResponseBytesArray(
 	if err == nil {
 		// No response error checking here as there may be a mixture of successful
 		// and unsuccessful responses.
-
 		if len(results) != len(responses) {
 			return nil, fmt.Errorf(
 				"expected %d result objects into which to inject responses, but got %d",
@@ -74,6 +77,7 @@ func unmarshalResponseBytesArray(
 
 		// Intersect IDs from responses with expectedIDs.
 		ids := make([]types.JSONRPCIntID, len(responses))
+
 		var ok bool
 		for i, resp := range responses {
 			ids[i], ok = resp.ID.(types.JSONRPCIntID)
@@ -81,6 +85,7 @@ func unmarshalResponseBytesArray(
 				return nil, fmt.Errorf("expected JSONRPCIntID, got %T", resp.ID)
 			}
 		}
+
 		if err := validateResponseIDs(ids, expectedIDs); err != nil {
 			return nil, fmt.Errorf("wrong IDs: %w", err)
 		}
@@ -100,12 +105,14 @@ func unmarshalResponseBytesArray(
 		// so return the error.
 		return nil, fmt.Errorf("error unmarshalling: %w", err)
 	}
+
 	singleResult := make([]any, 0)
 	if singleResponse.Error != nil {
 		singleResult = append(singleResult, singleResponse.Error)
 	} else {
 		singleResult = append(singleResult, singleResponse.Result)
 	}
+
 	return singleResult, nil
 }
 
@@ -132,9 +139,11 @@ func validateAndVerifyID(res *types.RPCResponse, expectedID types.JSONRPCIntID) 
 	if err := validateResponseID(res.ID); err != nil {
 		return err
 	}
+
 	if expectedID != res.ID.(types.JSONRPCIntID) { // validateResponseID ensured res.ID has the right type
 		return fmt.Errorf("response ID (%d) does not match request ID (%d)", res.ID, expectedID)
 	}
+
 	return nil
 }
 
@@ -142,9 +151,11 @@ func validateResponseID(id any) error {
 	if id == nil {
 		return errors.New("no ID")
 	}
+
 	_, ok := id.(types.JSONRPCIntID)
 	if !ok {
 		return fmt.Errorf("expected JSONRPCIntID, but got: %T", id)
 	}
+
 	return nil
 }

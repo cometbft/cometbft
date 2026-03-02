@@ -55,9 +55,9 @@ func TestVariousLevels(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		t.Run(tc.name, func(t *testing.T) {
 			var buf bytes.Buffer
+
 			logger := log.NewFilter(log.NewTMJSONLoggerNoTS(&buf), tc.allowed)
 
 			logger.Debug("here", "this is", "debug log")
@@ -81,6 +81,7 @@ func TestLevelContext(t *testing.T) {
 	logger.Error("foo", "bar", "baz")
 
 	want := `{"_msg":"foo","bar":"baz","context":"value","level":"error"}`
+
 	have := strings.TrimSpace(buf.String())
 	if want != have {
 		t.Errorf("\nwant '%s'\nhave '%s'", want, have)
@@ -88,6 +89,7 @@ func TestLevelContext(t *testing.T) {
 
 	buf.Reset()
 	logger.Info("foo", "bar", "baz")
+
 	if want, have := ``, strings.TrimSpace(buf.String()); want != have {
 		t.Errorf("\nwant '%s'\nhave '%s'", want, have)
 	}
@@ -102,6 +104,7 @@ func TestVariousAllowWith(t *testing.T) {
 	logger1.With("context", "value").Info("foo", "bar", "baz")
 
 	want := `{"_msg":"foo","bar":"baz","context":"value","level":"info"}`
+
 	have := strings.TrimSpace(buf.String())
 	if want != have {
 		t.Errorf("\nwant '%s'\nhave '%s'", want, have)
@@ -117,6 +120,7 @@ func TestVariousAllowWith(t *testing.T) {
 	)
 
 	logger2.With("context", "value", "user", "Sam").Info("foo", "bar", "baz")
+
 	if want, have := ``, strings.TrimSpace(buf.String()); want != have {
 		t.Errorf("\nwant '%s'\nhave '%s'", want, have)
 	}
@@ -133,6 +137,7 @@ func TestVariousAllowWith(t *testing.T) {
 	logger3.With("user", "Sam").With("context", "value").Info("foo", "bar", "baz")
 
 	want = `{"_msg":"foo","bar":"baz","context":"value","level":"info","user":"Sam"}`
+
 	have = strings.TrimSpace(buf.String())
 	if want != have {
 		t.Errorf("\nwant '%s'\nhave '%s'", want, have)

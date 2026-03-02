@@ -163,12 +163,15 @@ func MarshalTxResults(r []*ExecTxResult) ([][]byte, error) {
 	s := make([][]byte, len(r))
 	for i, e := range r {
 		d := DeterministicExecTxResult(e)
+
 		b, err := d.Marshal()
 		if err != nil {
 			return nil, err
 		}
+
 		s[i] = b
 	}
+
 	return s, nil
 }
 

@@ -41,7 +41,9 @@ func ValueOpDecoder(pop cmtcrypto.ProofOp) (ProofOperator, error) {
 	if pop.Type != ProofOpValue {
 		return nil, fmt.Errorf("unexpected ProofOp.Type; got %v, want %v", pop.Type, ProofOpValue)
 	}
+
 	var pbop cmtcrypto.ValueOp // a bit strange as we'll discard this, but it works.
+
 	err := pbop.Unmarshal(pop.Data)
 	if err != nil {
 		return nil, fmt.Errorf("decoding ProofOp.Data into ValueOp: %w", err)
@@ -51,6 +53,7 @@ func ValueOpDecoder(pop cmtcrypto.ProofOp) (ProofOperator, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return NewValueOp(pop.Key, sp), nil
 }
 
@@ -59,10 +62,12 @@ func (op ValueOp) ProofOp() cmtcrypto.ProofOp {
 		Key:   op.key,
 		Proof: op.Proof.ToProto(),
 	}
+
 	bz, err := pbval.Marshal()
 	if err != nil {
 		panic(err)
 	}
+
 	return cmtcrypto.ProofOp{
 		Type: ProofOpValue,
 		Key:  op.key,
@@ -78,6 +83,7 @@ func (op ValueOp) Run(args [][]byte) ([][]byte, error) {
 	if len(args) != 1 {
 		return nil, fmt.Errorf("expected 1 arg, got %v", len(args))
 	}
+
 	value := args[0]
 	hasher := tmhash.New()
 	hasher.Write(value)
@@ -97,6 +103,7 @@ func (op ValueOp) Run(args [][]byte) ([][]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return [][]byte{
 		rootHash,
 	}, nil

@@ -43,6 +43,7 @@ func MConnConfig(cfg *config.P2PConfig) conn.MConnConfig {
 	mConfig.MaxPacketMsgPayloadSize = cfg.MaxPacketMsgPayloadSize
 	mConfig.TestFuzz = cfg.TestFuzz
 	mConfig.TestFuzzConfig = cfg.TestFuzzConfig
+
 	return mConfig
 }
 
@@ -173,12 +174,15 @@ func (sw *Switch) AddReactor(name string, reactor Reactor) Reactor {
 		if sw.reactorsByCh[chID] != nil {
 			panic(fmt.Sprintf("Channel %X has multiple reactors %v & %v", chID, sw.reactorsByCh[chID], reactor))
 		}
+
 		sw.chDescs = append(sw.chDescs, chDesc)
 		sw.reactorsByCh[chID] = reactor
 		sw.msgTypeByChID[chID] = chDesc.MessageType
 	}
+
 	sw.reactors[name] = reactor
 	reactor.SetSwitch(sw)
+
 	return reactor
 }
 
@@ -193,9 +197,11 @@ func (sw *Switch) RemoveReactor(name string, reactor Reactor) {
 				break
 			}
 		}
+
 		delete(sw.reactorsByCh, chDesc.ID)
 		delete(sw.msgTypeByChID, chDesc.ID)
 	}
+
 	delete(sw.reactors, name)
 	reactor.SetSwitch(nil)
 }
@@ -259,6 +265,7 @@ func (sw *Switch) OnStop() {
 
 	// Stop reactors
 	sw.Logger.Debug("Switch: Stopping reactors")
+
 	for _, reactor := range sw.reactors {
 		if err := reactor.Stop(); err != nil {
 			sw.Logger.Error("error while stopped reactor", "reactor", reactor, "err", err)
@@ -279,12 +286,15 @@ func (sw *Switch) Broadcast(e Envelope) chan bool {
 	sw.Logger.Debug("Broadcast", "channel", e.ChannelID)
 
 	var wg sync.WaitGroup
+
 	successChan := make(chan bool, sw.peers.Size())
 
 	sw.peers.ForEach(func(p Peer) {
 		wg.Add(1) // Incrementing by one is safer.
+
 		go func(peer Peer) {
 			defer wg.Done()
+
 			success := peer.Send(e)
 			// For rare cases where PeerSet changes between a call to `peers.Size()` and `peers.ForEach()`.
 			select {
@@ -343,6 +353,7 @@ func (sw *Switch) NumPeers() (outbound, inbound, dialing int) {
 		}
 	})
 	dialing = sw.dialing.Size()
+
 	return
 }
 
@@ -378,13 +389,16 @@ func (sw *Switch) StopPeerForError(peer Peer, reason any) {
 			addr = peer.SocketAddr()
 		} else { // self-reported address for inbound peers
 			var err error
+
 			addr, err = peer.NodeInfo().NetAddress()
 			if err != nil {
 				sw.Logger.Error("Wanted to reconnect to inbound peer, but self-reported address is wrong",
 					"peer", peer, "err", err)
+
 				return
 			}
 		}
+
 		go sw.reconnectToPeer(addr)
 	}
 }
@@ -405,6 +419,7 @@ func (sw *Switch) stopAndRemovePeer(peer Peer, reason any) {
 	}
 
 	sw.transport.Cleanup(peer)
+
 	for _, reactor := range sw.reactors {
 		reactor.RemovePeer(peer, reason)
 	}
@@ -436,10 +451,12 @@ func (sw *Switch) reconnectToPeer(addr *NetAddress) {
 	if sw.reconnecting.Has(string(addr.ID)) {
 		return
 	}
+
 	sw.reconnecting.Set(string(addr.ID), addr)
 	defer sw.reconnecting.Delete(string(addr.ID))
 
 	start := time.Now()
+
 	sw.Logger.Info("Reconnecting to peer", "addr", addr)
 
 	for i := 0; i < reconnectAttempts; i++ {
@@ -457,11 +474,13 @@ func (sw *Switch) reconnectToPeer(addr *NetAddress) {
 		sw.Logger.Info("Error reconnecting to peer. Trying again", "tries", i, "err", err, "addr", addr)
 		// sleep a set amount
 		sw.randomSleep(reconnectInterval)
+
 		continue
 	}
 
 	sw.Logger.Error("Failed to reconnect to peer. Beginning exponential backoff",
 		"addr", addr, "elapsed", time.Since(start))
+
 	for i := 1; i <= reconnectBackOffAttempts; i++ {
 		if !sw.IsRunning() {
 			return
@@ -477,8 +496,10 @@ func (sw *Switch) reconnectToPeer(addr *NetAddress) {
 		} else if _, ok := err.(ErrCurrentlyDialingOrExistingAddress); ok {
 			return
 		}
+
 		sw.Logger.Info("Error reconnecting to peer. Trying again", "tries", i, "err", err, "addr", addr)
 	}
+
 	sw.Logger.Error("Failed to reconnect to peer. Giving up", "addr", addr, "elapsed", time.Since(start))
 }
 
@@ -523,9 +544,12 @@ func (sw *Switch) DialPeersAsync(peers []string) error {
 		if _, ok := err.(ErrNetAddressLookup); ok {
 			continue
 		}
+
 		return err
 	}
+
 	sw.dialPeersAsync(netAddrs)
+
 	return nil
 }
 
@@ -626,21 +650,27 @@ func (sw *Switch) AddPersistentPeers(addrs []string) error {
 		if _, ok := err.(ErrNetAddressLookup); ok {
 			continue
 		}
+
 		return err
 	}
+
 	sw.persistentPeersAddrs = netAddrs
+
 	return nil
 }
 
 func (sw *Switch) AddUnconditionalPeerIDs(ids []string) error {
 	sw.Logger.Info("Adding unconditional peer ids", "ids", ids)
+
 	for i, id := range ids {
 		err := validateID(ID(id))
 		if err != nil {
 			return fmt.Errorf("wrong ID #%d: %w", i, err)
 		}
+
 		sw.unconditionalPeerIDs[ID(id)] = struct{}{}
 	}
+
 	return nil
 }
 
@@ -651,6 +681,7 @@ func (sw *Switch) AddPrivatePeerIDs(ids []string) error {
 		if err != nil {
 			return fmt.Errorf("wrong ID #%d: %w", i, err)
 		}
+
 		validIDs = append(validIDs, id)
 	}
 
@@ -665,6 +696,7 @@ func (sw *Switch) IsPeerPersistent(na *NetAddress) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -745,14 +777,15 @@ func (sw *Switch) acceptRoutine() {
 
 				continue
 			}
-
 		}
 
 		if err := sw.addPeer(p); err != nil {
 			sw.transport.Cleanup(p)
+
 			if p.IsRunning() {
 				_ = p.Stop()
 			}
+
 			sw.Logger.Info(
 				"Ignoring inbound connection: error while adding peer",
 				"err", err,
@@ -811,9 +844,11 @@ func (sw *Switch) addOutboundPeerWithConfig(
 
 	if err := sw.addPeer(p); err != nil {
 		sw.transport.Cleanup(p)
+
 		if p.IsRunning() {
 			_ = p.Stop()
 		}
+
 		return err
 	}
 
@@ -890,8 +925,10 @@ func (sw *Switch) addPeer(p Peer) error {
 				" err ", "Peer has already errored and removal was attempted.",
 				"peer", p.ID())
 		}
+
 		return err
 	}
+
 	sw.metrics.Peers.Add(float64(1))
 
 	// Start all the reactor protocols on the peer.

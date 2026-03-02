@@ -49,6 +49,7 @@ func TestNodeStartStop(t *testing.T) {
 	// wait for the node to produce a block
 	blocksSub, err := n.EventBus().Subscribe(context.Background(), "node_test", types.EventQueryNewBlock)
 	require.NoError(t, err)
+
 	select {
 	case <-blocksSub.Out():
 	case <-blocksSub.Canceled():
@@ -67,10 +68,12 @@ func TestNodeStartStop(t *testing.T) {
 	case <-n.Quit():
 	case <-time.After(5 * time.Second):
 		pid := os.Getpid()
+
 		p, err := os.FindProcess(pid)
 		if err != nil {
 			panic(err)
 		}
+
 		err = p.Signal(syscall.SIGABRT)
 		fmt.Println(err)
 		t.Fatal("timed out waiting for shutdown")
@@ -99,15 +102,18 @@ func TestSplitAndTrimEmpty(t *testing.T) {
 func TestNodeDelayedStart(t *testing.T) {
 	config := test.ResetTestRoot("node_delayed_start_test")
 	defer os.RemoveAll(config.RootDir)
+
 	now := cmttime.Now()
 
 	// create & start node
 	n, err := DefaultNewNode(config, log.TestingLogger())
 	n.GenesisDoc().GenesisTime = now.Add(2 * time.Second)
+
 	require.NoError(t, err)
 
 	err = n.Start()
 	require.NoError(t, err)
+
 	defer n.Stop() //nolint:errcheck // ignore for tests
 
 	startTime := cmttime.Now()
@@ -137,6 +143,7 @@ func TestNodeSetAppVersion(t *testing.T) {
 func TestPprofServer(t *testing.T) {
 	config := test.ResetTestRoot("node_pprof_test")
 	defer os.RemoveAll(config.RootDir)
+
 	config.RPC.PprofListenAddress = testFreeAddr(t)
 
 	// should not work yet
@@ -146,14 +153,18 @@ func TestPprofServer(t *testing.T) {
 	n, err := DefaultNewNode(config, log.TestingLogger())
 	assert.NoError(t, err)
 	assert.NoError(t, n.Start())
+
 	defer func() {
 		require.NoError(t, n.Stop())
 	}()
+
 	assert.NotNil(t, n.pprofSrv)
 
 	resp, err := http.Get("http://" + config.RPC.PprofListenAddress + "/debug/pprof")
 	assert.NoError(t, err)
+
 	defer resp.Body.Close()
+
 	assert.Equal(t, 200, resp.StatusCode)
 }
 
@@ -162,6 +173,7 @@ func TestNodeSetPrivValTCP(t *testing.T) {
 
 	config := test.ResetTestRoot("node_priv_val_tcp_test")
 	defer os.RemoveAll(config.RootDir)
+
 	config.PrivValidatorListenAddr = addr
 
 	dialer := privval.DialTCPFn(addr, 100*time.Millisecond, ed25519.GenPrivKey())
@@ -183,6 +195,7 @@ func TestNodeSetPrivValTCP(t *testing.T) {
 			panic(err)
 		}
 	}()
+
 	defer signerServer.Stop() //nolint:errcheck // ignore for tests
 
 	n, err := DefaultNewNode(config, log.TestingLogger())
@@ -196,6 +209,7 @@ func TestPrivValidatorListenAddrNoProtocol(t *testing.T) {
 
 	config := test.ResetTestRoot("node_priv_val_tcp_test")
 	defer os.RemoveAll(config.RootDir)
+
 	config.PrivValidatorListenAddr = addrNoPrefix
 
 	_, err := DefaultNewNode(config, log.TestingLogger())
@@ -208,6 +222,7 @@ func TestNodeSetPrivValIPC(t *testing.T) {
 
 	config := test.ResetTestRoot("node_priv_val_tcp_test")
 	defer os.RemoveAll(config.RootDir)
+
 	config.PrivValidatorListenAddr = "unix://" + tmpfile
 
 	dialer := privval.DialUnixFn(tmpfile)
@@ -227,6 +242,7 @@ func TestNodeSetPrivValIPC(t *testing.T) {
 		err := pvsc.Start()
 		require.NoError(t, err)
 	}()
+
 	defer pvsc.Stop() //nolint:errcheck // ignore for tests
 
 	n, err := DefaultNewNode(config, log.TestingLogger())
@@ -238,6 +254,7 @@ func TestNodeSetPrivValIPC(t *testing.T) {
 func testFreeAddr(t *testing.T) string {
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
+
 	defer ln.Close()
 
 	return fmt.Sprintf("127.0.0.1:%d", ln.Addr().(*net.TCPAddr).Port)
@@ -250,23 +267,28 @@ func TestCreateProposalBlock(t *testing.T) {
 
 	config := test.ResetTestRoot("node_create_proposal")
 	defer os.RemoveAll(config.RootDir)
+
 	cc := proxy.NewLocalClientCreator(kvstore.NewInMemoryApplication())
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
 	require.Nil(t, err)
+
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	logger := log.TestingLogger()
 
 	var height int64 = 1
+
 	state, stateDB, privVals := state(1, height)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
+
 	var (
 		partSize uint32 = 256
 		maxBytes int64  = 16384
 	)
+
 	maxEvidenceBytes := maxBytes / 2
 	state.ConsensusParams.Block.MaxBytes = maxBytes
 	state.ConsensusParams.Evidence.MaxBytes = maxEvidenceBytes
@@ -294,6 +316,7 @@ func TestCreateProposalBlock(t *testing.T) {
 	for currentBytes <= maxEvidenceBytes {
 		ev, err := types.NewMockDuplicateVoteEvidenceWithValidator(height, time.Now(), privVals[0], "test-chain")
 		require.NoError(t, err)
+
 		currentBytes += int64(len(ev.Bytes()))
 		evidencePool.ReportConflictingVotes(ev.VoteA, ev.VoteB)
 	}
@@ -342,6 +365,7 @@ func TestCreateProposalBlock(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, added)
 	}
+
 	assert.EqualValues(t, partSetFromHeader.ByteSize(), partSet.ByteSize())
 
 	err = blockExec.ValidateBlock(state, block)
@@ -353,21 +377,28 @@ func TestMaxProposalBlockSize(t *testing.T) {
 
 	config := test.ResetTestRoot("node_create_proposal")
 	defer os.RemoveAll(config.RootDir)
+
 	cc := proxy.NewLocalClientCreator(kvstore.NewInMemoryApplication())
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
 	require.Nil(t, err)
+
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	logger := log.TestingLogger()
 
 	var height int64 = 1
+
 	state, stateDB, _ := state(1, height)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
-	var maxBytes int64 = 16384
-	var partSize uint32 = 256
+
+	var (
+		maxBytes int64  = 16384
+		partSize uint32 = 256
+	)
+
 	state.ConsensusParams.Block.MaxBytes = maxBytes
 	proposerAddr, _ := state.Validators.GetByIndex(0)
 
@@ -449,9 +480,11 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 
 	err = n.Start()
 	require.NoError(t, err)
+
 	defer n.Stop() //nolint:errcheck // ignore for tests
 
 	assert.True(t, cr.IsRunning())
+
 	reactor, ok := n.Switch().Reactor("FOO")
 	assert.True(t, ok)
 	assert.Equal(t, cr, reactor)
@@ -469,6 +502,7 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 
 func state(nVals int, height int64) (sm.State, dbm.DB, []types.PrivValidator) {
 	privVals := make([]types.PrivValidator, nVals)
+
 	vals := make([]types.GenesisValidator, nVals)
 	for i := 0; i < nVals; i++ {
 		privVal := types.NewMockPV()
@@ -480,6 +514,7 @@ func state(nVals int, height int64) (sm.State, dbm.DB, []types.PrivValidator) {
 			Name:    fmt.Sprintf("test%d", i),
 		}
 	}
+
 	s, _ := sm.MakeGenesisState(&types.GenesisDoc{
 		ChainID:    "test-chain",
 		Validators: vals,
@@ -488,6 +523,7 @@ func state(nVals int, height int64) (sm.State, dbm.DB, []types.PrivValidator) {
 
 	// save validators to db for 2 heights
 	stateDB := dbm.NewMemDB()
+
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -497,10 +533,12 @@ func state(nVals int, height int64) (sm.State, dbm.DB, []types.PrivValidator) {
 
 	for i := 1; i < int(height); i++ {
 		s.LastBlockHeight++
+
 		s.LastValidators = s.Validators.Copy()
 		if err := stateStore.Save(s); err != nil {
 			panic(err)
 		}
 	}
+
 	return s, stateDB, privVals
 }

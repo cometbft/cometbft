@@ -79,6 +79,7 @@ func TestPeer_NetInfoIteration(t *testing.T) {
 		// These are the fields /net_info accesses
 		_, ok := peer.NodeInfo().(p2p.DefaultNodeInfo)
 		require.True(t, ok, "NodeInfo must type-assert to p2p.DefaultNodeInfo")
+
 		_ = peer.IsOutbound()
 		_ = peer.RemoteIP().String()
 		_ = peer.Status()

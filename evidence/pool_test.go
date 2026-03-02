@@ -65,6 +65,7 @@ func TestEvidencePoolBasic(t *testing.T) {
 
 	// good evidence
 	evAdded := make(chan struct{})
+
 	go func() {
 		<-pool.EvidenceWaitChan()
 		close(evAdded)
@@ -83,6 +84,7 @@ func TestEvidencePoolBasic(t *testing.T) {
 	assert.Equal(t, ev, next.Value.(types.Evidence))
 
 	const evidenceBytes int64 = 372
+
 	evs, size = pool.PendingEvidence(evidenceBytes)
 	assert.Equal(t, 1, len(evs))
 	assert.Equal(t, evidenceBytes, size) // check that the size of the single evidence in bytes is correct
@@ -109,6 +111,7 @@ func TestAddExpiredEvidence(t *testing.T) {
 		if h == height || h == expiredHeight {
 			return &types.BlockMeta{Header: types.Header{Time: defaultEvidenceTime}}
 		}
+
 		return &types.BlockMeta{Header: types.Header{Time: expiredEvidenceTime}}
 	})
 
@@ -132,10 +135,10 @@ func TestAddExpiredEvidence(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		t.Run(tc.evDescription, func(t *testing.T) {
 			ev, err := types.NewMockDuplicateVoteEvidenceWithValidator(tc.evHeight, tc.evTime, val, evidenceChainID)
 			require.NoError(t, err)
+
 			err = pool.AddEvidence(ev)
 			if tc.expErr {
 				assert.Error(t, err)
@@ -196,6 +199,7 @@ func TestEvidencePoolUpdate(t *testing.T) {
 	ev, err := types.NewMockDuplicateVoteEvidenceWithValidator(height, defaultEvidenceTime.Add(21*time.Minute),
 		val, evidenceChainID)
 	require.NoError(t, err)
+
 	lastExtCommit := makeExtCommit(height, val.PrivKey.PubKey().Address())
 	block := types.MakeBlock(height+1, []types.Tx{}, lastExtCommit.ToCommit(), []types.Evidence{ev})
 	// update state (partially)
@@ -219,6 +223,7 @@ func TestEvidencePoolUpdate(t *testing.T) {
 
 func TestVerifyPendingEvidencePasses(t *testing.T) {
 	var height int64 = 1
+
 	pool, val := defaultTestPool(t, height)
 	ev, err := types.NewMockDuplicateVoteEvidenceWithValidator(height, defaultEvidenceTime.Add(1*time.Minute),
 		val, evidenceChainID)
@@ -232,10 +237,12 @@ func TestVerifyPendingEvidencePasses(t *testing.T) {
 
 func TestVerifyDuplicatedEvidenceFails(t *testing.T) {
 	var height int64 = 1
+
 	pool, val := defaultTestPool(t, height)
 	ev, err := types.NewMockDuplicateVoteEvidenceWithValidator(height, defaultEvidenceTime.Add(1*time.Minute),
 		val, evidenceChainID)
 	require.NoError(t, err)
+
 	err = pool.CheckEvidence(types.EvidenceList{ev, ev})
 	if assert.Error(t, err) {
 		assert.Equal(t, "duplicate evidence", err.(*types.ErrInvalidEvidence).Reason.Error())
@@ -262,6 +269,7 @@ func TestLightClientAttackEvidenceLifecycle(t *testing.T) {
 	stateStore.On("LoadValidators", height).Return(trusted.ValidatorSet, nil)
 	stateStore.On("LoadValidators", commonHeight).Return(common.ValidatorSet, nil)
 	stateStore.On("Load").Return(state, nil)
+
 	blockStore := &mocks.BlockStore{}
 	blockStore.On("LoadBlockMeta", height).Return(&types.BlockMeta{Header: *trusted.Header})
 	blockStore.On("LoadBlockMeta", commonHeight).Return(&types.BlockMeta{Header: *common.Header})
@@ -319,6 +327,7 @@ func TestRecoverPendingEvidence(t *testing.T) {
 	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	require.NoError(t, err)
 	pool.SetLogger(log.TestingLogger())
+
 	goodEvidence, err := types.NewMockDuplicateVoteEvidenceWithValidator(height,
 		defaultEvidenceTime.Add(10*time.Minute), val, evidenceChainID)
 	require.NoError(t, err)
@@ -349,8 +358,10 @@ func TestRecoverPendingEvidence(t *testing.T) {
 	}, nil)
 	newPool, err := evidence.NewPool(evidenceDB, newStateStore, blockStore)
 	assert.NoError(t, err)
+
 	evList, _ := newPool.PendingEvidence(defaultEvidenceMaxBytes)
 	assert.Equal(t, 1, len(evList))
+
 	next := newPool.EvidenceFront()
 	assert.Equal(t, goodEvidence, next.Value.(types.Evidence))
 }
@@ -413,12 +424,15 @@ func initializeBlockStore(db dbm.DB, state sm.State, valAddr []byte) (*store.Blo
 
 	for i := int64(1); i <= state.LastBlockHeight; i++ {
 		lastCommit := makeExtCommit(i-1, valAddr)
+
 		block, err := state.MakeBlock(i, test.MakeNTxs(i, 1), lastCommit.ToCommit(), nil, state.Validators.Proposer.Address)
 		if err != nil {
 			return nil, err
 		}
+
 		block.Time = defaultEvidenceTime.Add(time.Duration(i) * time.Minute)
 		block.Version = cmtversion.Consensus{Block: version.BlockProtocol, App: 1}
+
 		partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
 		if err != nil {
 			return nil, err
@@ -448,6 +462,7 @@ func makeExtCommit(height int64, valAddr []byte) *types.ExtendedCommit {
 
 func defaultTestPool(t *testing.T, height int64) (*evidence.Pool, types.MockPV) {
 	t.Helper()
+
 	val := types.NewMockPV()
 	valAddress := val.PrivKey.PubKey().Address()
 	evidenceDB := dbm.NewMemDB()
@@ -455,11 +470,14 @@ func defaultTestPool(t *testing.T, height int64) (*evidence.Pool, types.MockPV) 
 	state, _ := stateStore.Load()
 	blockStore, err := initializeBlockStore(dbm.NewMemDB(), state, valAddress)
 	require.NoError(t, err)
+
 	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	if err != nil {
 		panic("test evidence pool could not be created")
 	}
+
 	pool.SetLogger(log.TestingLogger())
+
 	return pool, val
 }
 

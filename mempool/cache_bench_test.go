@@ -35,6 +35,7 @@ func BenchmarkCacheRemoveTime(b *testing.B) {
 	b.ResetTimer()
 
 	var idx int64
+
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			currIdx := atomic.AddInt64(&idx, 1) - 1

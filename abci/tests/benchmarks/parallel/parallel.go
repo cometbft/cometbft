@@ -18,12 +18,15 @@ func main() {
 	// Read a bunch of responses
 	go func() {
 		counter := 0
+
 		for {
 			res := &types.Response{}
+
 			err := types.ReadMessage(conn, res)
 			if err != nil {
 				log.Fatal(err.Error())
 			}
+
 			counter++
 			if counter%1000 == 0 {
 				fmt.Println("Read", counter)
@@ -33,6 +36,7 @@ func main() {
 
 	// Write a bunch of requests
 	counter := 0
+
 	for i := 0; ; i++ {
 		bufWriter := bufio.NewWriter(conn)
 		req := types.ToRequestEcho("foobar")
@@ -41,6 +45,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err.Error())
 		}
+
 		err = bufWriter.Flush()
 		if err != nil {
 			log.Fatal(err.Error())

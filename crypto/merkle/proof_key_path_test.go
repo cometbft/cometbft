@@ -12,6 +12,7 @@ import (
 
 func TestKeyPath(t *testing.T) {
 	var path KeyPath
+
 	keys := make([][]byte, 10)
 	alphanum := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -21,6 +22,7 @@ func TestKeyPath(t *testing.T) {
 		for i := range keys {
 			enc := keyEncoding(rand.Intn(int(KeyEncodingMax)))
 			keys[i] = make([]byte, rand.Uint32()%20)
+
 			switch enc {
 			case KeyEncodingURL:
 				for j := range keys[i] {
@@ -31,6 +33,7 @@ func TestKeyPath(t *testing.T) {
 			default:
 				panic("Unexpected encoding")
 			}
+
 			path = path.AppendKey(keys[i], enc)
 		}
 

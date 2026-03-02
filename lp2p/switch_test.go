@@ -39,6 +39,7 @@ func TestSwitch(t *testing.T) {
 		pkToID := func(pk ed25519.PrivKey) string {
 			id, err := IDFromPrivateKey(pk)
 			require.NoError(t, err)
+
 			return id.String()
 		}
 
@@ -307,12 +308,14 @@ type syncBuffer struct {
 func (b *syncBuffer) Write(p []byte) (n int, err error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+
 	return b.buf.Write(p)
 }
 
 func (b *syncBuffer) String() string {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
+
 	return b.buf.String()
 }
 

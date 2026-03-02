@@ -25,6 +25,7 @@ func validateMsg(pb proto.Message, maxSnapshotChunks uint32) error {
 	if pb == nil {
 		return errors.New("message cannot be nil")
 	}
+
 	switch msg := pb.(type) {
 	case *ssproto.ChunkRequest:
 		if msg.Height == 0 {
@@ -34,9 +35,11 @@ func validateMsg(pb proto.Message, maxSnapshotChunks uint32) error {
 		if msg.Height == 0 {
 			return errors.New("height cannot be 0")
 		}
+
 		if msg.Missing && len(msg.Chunk) > 0 {
 			return errors.New("missing chunk cannot have contents")
 		}
+
 		if !msg.Missing && msg.Chunk == nil {
 			return errors.New("chunk cannot be nil")
 		}
@@ -45,17 +48,21 @@ func validateMsg(pb proto.Message, maxSnapshotChunks uint32) error {
 		if msg.Height == 0 {
 			return errors.New("height cannot be 0")
 		}
+
 		if len(msg.Hash) == 0 {
 			return errors.New("snapshot has no hash")
 		}
+
 		if msg.Chunks == 0 {
 			return errors.New("snapshot has no chunks")
 		}
+
 		if msg.Chunks > maxSnapshotChunks {
 			return fmt.Errorf("%w: snapshot response chunk count: %d, maximum chunks: %d", ErrExceedsMaxSnapshotChunks, msg.Chunks, maxSnapshotChunks)
 		}
 	default:
 		return fmt.Errorf("unknown message type %T", msg)
 	}
+
 	return nil
 }

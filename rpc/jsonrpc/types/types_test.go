@@ -31,6 +31,7 @@ var responseTests = []responseTest{
 
 func TestResponses(t *testing.T) {
 	assert := assert.New(t)
+
 	for _, tt := range responseTests {
 		jsonid := tt.id
 		a := NewRPCSuccessResponse(jsonid, &SampleResult{"hello"})
@@ -52,6 +53,7 @@ func TestResponses(t *testing.T) {
 
 func TestUnmarshallResponses(t *testing.T) {
 	assert := assert.New(t)
+
 	for _, tt := range responseTests {
 		response := &RPCResponse{}
 		err := json.Unmarshal(
@@ -59,9 +61,11 @@ func TestUnmarshallResponses(t *testing.T) {
 			response,
 		)
 		assert.Nil(err)
+
 		a := NewRPCSuccessResponse(tt.id, &SampleResult{"hello"})
 		assert.Equal(*response, a)
 	}
+
 	response := &RPCResponse{}
 	err := json.Unmarshal([]byte(`{"jsonrpc":"2.0","id":true,"result":{"Value":"hello"}}`), response)
 	assert.NotNil(err)

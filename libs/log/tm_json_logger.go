@@ -13,6 +13,7 @@ import (
 func NewTMJSONLogger(w io.Writer) Logger {
 	logger := kitlog.NewJSONLogger(w)
 	logger = kitlog.With(logger, "ts", kitlog.DefaultTimestampUTC)
+
 	return &tmLogger{logger}
 }
 

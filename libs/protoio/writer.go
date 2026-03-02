@@ -58,12 +58,16 @@ func (w *varintWriter) WriteMsg(msg proto.Message) (int, error) {
 			if n+binary.MaxVarintLen64 >= len(w.buffer) {
 				w.buffer = make([]byte, n+binary.MaxVarintLen64)
 			}
+
 			lenOff := binary.PutUvarint(w.buffer, uint64(n))
+
 			_, err := m.MarshalTo(w.buffer[lenOff:])
 			if err != nil {
 				return 0, err
 			}
+
 			_, err = w.w.Write(w.buffer[:lenOff+n])
+
 			return lenOff + n, err
 		}
 	}
@@ -72,17 +76,22 @@ func (w *varintWriter) WriteMsg(msg proto.Message) (int, error) {
 	if w.lenBuf == nil {
 		w.lenBuf = make([]byte, binary.MaxVarintLen64)
 	}
+
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		return 0, err
 	}
+
 	length := uint64(len(data))
 	n := binary.PutUvarint(w.lenBuf, length)
+
 	_, err = w.w.Write(w.lenBuf[:n])
 	if err != nil {
 		return 0, err
 	}
+
 	_, err = w.w.Write(data)
+
 	return len(data) + n, err
 }
 
@@ -90,14 +99,17 @@ func (w *varintWriter) Close() error {
 	if closer, ok := w.w.(io.Closer); ok {
 		return closer.Close()
 	}
+
 	return nil
 }
 
 func MarshalDelimited(msg proto.Message) ([]byte, error) {
 	var buf bytes.Buffer
+
 	_, err := NewDelimitedWriter(&buf).WriteMsg(msg)
 	if err != nil {
 		return nil, err
 	}
+
 	return buf.Bytes(), nil
 }

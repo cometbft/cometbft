@@ -55,6 +55,7 @@ func (ps *PeerSet) Add(peer Peer) error {
 	if ps.lookup[peer.ID()] != nil {
 		return ErrSwitchDuplicatePeerID{peer.ID()}
 	}
+
 	if peer.GetRemovalFailed() {
 		return ErrPeerRemoval{}
 	}
@@ -64,6 +65,7 @@ func (ps *PeerSet) Add(peer Peer) error {
 	// iterating over the ps.list slice.
 	ps.list = append(ps.list, peer)
 	ps.lookup[peer.ID()] = &peerSetItem{peer, index}
+
 	return nil
 }
 
@@ -73,6 +75,7 @@ func (ps *PeerSet) Has(peerKey ID) bool {
 	ps.mtx.Lock()
 	_, ok := ps.lookup[peerKey]
 	ps.mtx.Unlock()
+
 	return ok
 }
 
@@ -101,6 +104,7 @@ func (ps *PeerSet) Get(peerKey ID) Peer {
 	if ok {
 		return item.peer
 	}
+
 	return nil
 }
 
@@ -119,6 +123,7 @@ func (ps *PeerSet) Remove(peer Peer) bool {
 		peer.SetRemovalFailed()
 		return false
 	}
+
 	index := item.index
 
 	// Remove from ps.lookup.
@@ -144,6 +149,7 @@ func (ps *PeerSet) Remove(peer Peer) bool {
 func (ps *PeerSet) Size() int {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
+
 	return len(ps.list)
 }
 
@@ -157,6 +163,7 @@ func (ps *PeerSet) Size() int {
 func (ps *PeerSet) List() []Peer {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
+
 	return ps.list
 }
 
@@ -169,6 +176,7 @@ func (ps *PeerSet) Copy() []Peer {
 
 	c := make([]Peer, len(ps.list))
 	copy(c, ps.list)
+
 	return c
 }
 

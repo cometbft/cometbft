@@ -28,6 +28,7 @@ const (
 func TestWALTruncate(t *testing.T) {
 	walDir, err := os.MkdirTemp("", "wal")
 	require.NoError(t, err)
+
 	defer os.RemoveAll(walDir)
 
 	walFile := filepath.Join(walDir, "wal")
@@ -44,6 +45,7 @@ func TestWALTruncate(t *testing.T) {
 	wal.SetLogger(log.TestingLogger())
 	err = wal.Start()
 	require.NoError(t, err)
+
 	defer func() {
 		if err := wal.Stop(); err != nil {
 			t.Error(err)
@@ -69,12 +71,14 @@ func TestWALTruncate(t *testing.T) {
 	gr, found, err := wal.SearchForEndHeight(h, &WALSearchOptions{})
 	assert.NoError(t, err, "expected not to err on height %d", h)
 	assert.True(t, found, "expected to find end height for %d", h)
+
 	assert.NotNil(t, gr)
 	defer gr.Close()
 
 	dec := NewWALDecoder(gr)
 	msg, err := dec.Decode()
 	assert.NoError(t, err, "expected to decode a message")
+
 	rs, ok := msg.Msg.(cmttypes.EventDataRoundState)
 	assert.True(t, ok, "expected message of type EventDataRoundState")
 	assert.Equal(t, rs.Height, h+1, "wrong height")
@@ -91,7 +95,6 @@ func TestWALEncoderDecoder(t *testing.T) {
 	b := new(bytes.Buffer)
 
 	for _, msg := range msgs {
-
 		b.Reset()
 
 		enc := NewWALEncoder(b)
@@ -109,13 +112,16 @@ func TestWALEncoderDecoder(t *testing.T) {
 func TestWALWrite(t *testing.T) {
 	walDir, err := os.MkdirTemp("", "wal")
 	require.NoError(t, err)
+
 	defer os.RemoveAll(walDir)
+
 	walFile := filepath.Join(walDir, "wal")
 
 	wal, err := NewWAL(walFile)
 	require.NoError(t, err)
 	err = wal.Start()
 	require.NoError(t, err)
+
 	defer func() {
 		if err := wal.Stop(); err != nil {
 			t.Error(err)
@@ -153,6 +159,7 @@ func TestWALSearchForEndHeight(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	walFile := tempWALWithData(walBody)
 
 	wal, err := NewWAL(walFile)
@@ -163,12 +170,14 @@ func TestWALSearchForEndHeight(t *testing.T) {
 	gr, found, err := wal.SearchForEndHeight(h, &WALSearchOptions{})
 	assert.NoError(t, err, "expected not to err on height %d", h)
 	assert.True(t, found, "expected to find end height for %d", h)
+
 	assert.NotNil(t, gr)
 	defer gr.Close()
 
 	dec := NewWALDecoder(gr)
 	msg, err := dec.Decode()
 	assert.NoError(t, err, "expected to decode a message")
+
 	rs, ok := msg.Msg.(cmttypes.EventDataRoundState)
 	assert.True(t, ok, "expected message of type EventDataRoundState")
 	assert.Equal(t, rs.Height, h+1, "wrong height")
@@ -177,6 +186,7 @@ func TestWALSearchForEndHeight(t *testing.T) {
 func TestWALPeriodicSync(t *testing.T) {
 	walDir, err := os.MkdirTemp("", "wal")
 	require.NoError(t, err)
+
 	defer os.RemoveAll(walDir)
 
 	walFile := filepath.Join(walDir, "wal")
@@ -194,10 +204,12 @@ func TestWALPeriodicSync(t *testing.T) {
 	assert.NotZero(t, wal.Group().Buffered())
 
 	require.NoError(t, wal.Start())
+
 	defer func() {
 		if err := wal.Stop(); err != nil {
 			t.Error(err)
 		}
+
 		wal.Wait()
 	}()
 
@@ -211,6 +223,7 @@ func TestWALPeriodicSync(t *testing.T) {
 	assert.NoError(t, err, "expected not to err on height %d", h)
 	assert.True(t, found, "expected to find end height for %d", h)
 	assert.NotNil(t, gr)
+
 	if gr != nil {
 		gr.Close()
 	}
@@ -232,12 +245,12 @@ func registerInterfacesOnce() {
 func nBytes(n int) []byte {
 	buf := make([]byte, n)
 	n, _ = rand.Read(buf)
+
 	return buf[:n]
 }
 
 func benchmarkWalDecode(b *testing.B, n int) {
 	// registerInterfacesOnce()
-
 	buf := new(bytes.Buffer)
 	enc := NewWALEncoder(buf)
 
@@ -249,14 +262,17 @@ func benchmarkWalDecode(b *testing.B, n int) {
 	encoded := buf.Bytes()
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		buf.Reset()
 		buf.Write(encoded)
+
 		dec := NewWALDecoder(buf)
 		if _, err := dec.Decode(); err != nil {
 			b.Fatal(err)
 		}
 	}
+
 	b.ReportAllocs()
 }
 

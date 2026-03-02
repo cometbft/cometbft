@@ -29,6 +29,7 @@ func initFilesWithConfig(config *cfg.Config) error {
 	// private validator
 	privValKeyFile := config.PrivValidatorKeyFile()
 	privValStateFile := config.PrivValidatorStateFile()
+
 	var pv *privval.FilePV
 	if cmtos.FileExists(privValKeyFile) {
 		pv = privval.LoadFilePV(privValKeyFile, privValStateFile)
@@ -48,6 +49,7 @@ func initFilesWithConfig(config *cfg.Config) error {
 		if _, err := p2p.LoadOrGenNodeKey(nodeKeyFile); err != nil {
 			return err
 		}
+
 		logger.Info("Generated node key", "path", nodeKeyFile)
 	}
 
@@ -61,10 +63,12 @@ func initFilesWithConfig(config *cfg.Config) error {
 			GenesisTime:     cmttime.Now(),
 			ConsensusParams: types.DefaultConsensusParams(),
 		}
+
 		pubKey, err := pv.GetPubKey()
 		if err != nil {
 			return fmt.Errorf("can't get pubkey: %w", err)
 		}
+
 		genDoc.Validators = []types.GenesisValidator{{
 			Address: pubKey.Address(),
 			PubKey:  pubKey,
@@ -74,6 +78,7 @@ func initFilesWithConfig(config *cfg.Config) error {
 		if err := genDoc.SaveAs(genFile); err != nil {
 			return err
 		}
+
 		logger.Info("Generated genesis file", "path", genFile)
 	}
 

@@ -23,12 +23,14 @@ func TestEventCache_Flush(t *testing.T) {
 	evc.Flush()
 	// Check after reset
 	evc.Flush()
+
 	fail := true
 	pass := false
 	err = evsw.AddListenerForEvent("somethingness", "something", func(data EventData) {
 		if fail {
 			require.FailNow(t, "Shouldn't see a message until flushed")
 		}
+
 		pass = true
 	})
 	require.NoError(t, err)
@@ -36,7 +38,9 @@ func TestEventCache_Flush(t *testing.T) {
 	evc.FireEvent("something", struct{ int }{1})
 	evc.FireEvent("something", struct{ int }{2})
 	evc.FireEvent("something", struct{ int }{3})
+
 	fail = false
+
 	evc.Flush()
 	assert.True(t, pass)
 }

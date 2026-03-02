@@ -46,6 +46,7 @@ func NewGRPCClient(addr string, mustConnect bool) Client {
 		chReqRes: make(chan *ReqRes, 64),
 	}
 	cli.BaseService = *service.NewBaseService(nil, "grpcClient", cli)
+
 	return cli
 }
 
@@ -95,12 +96,15 @@ RETRY_LOOP:
 			if cli.mustConnect {
 				return err
 			}
+
 			cli.Logger.Error(fmt.Sprintf("abci.grpcClient failed to connect to %v.  Retrying...\n", cli.addr), "err", err)
 			time.Sleep(time.Second * dialRetryIntervalSeconds)
+
 			continue RETRY_LOOP
 		}
 
 		cli.Logger.Info("Dialed server. Waiting for echo.", "addr", cli.addr)
+
 		client := types.NewABCIClient(conn)
 		cli.conn = conn
 
@@ -110,11 +114,13 @@ RETRY_LOOP:
 			if err == nil {
 				break ENSURE_CONNECTED
 			}
+
 			cli.Logger.Error("Echo failed", "err", err)
 			time.Sleep(time.Second * echoRetryIntervalSeconds)
 		}
 
 		cli.client = client
+
 		return nil
 	}
 }
@@ -125,6 +131,7 @@ func (cli *grpcClient) OnStop() {
 	if cli.conn != nil {
 		cli.conn.Close()
 	}
+
 	close(cli.chReqRes)
 }
 
@@ -134,12 +141,15 @@ func (cli *grpcClient) StopForError(err error) {
 	}
 
 	cli.mtx.Lock()
+
 	if cli.err == nil {
 		cli.err = err
 	}
+
 	cli.mtx.Unlock()
 
 	cli.Logger.Error(fmt.Sprintf("Stopping abci.grpcClient for error: %v", err.Error()))
+
 	if err := cli.Stop(); err != nil {
 		cli.Logger.Error("Error stopping abci.grpcClient", "err", err)
 	}
@@ -148,6 +158,7 @@ func (cli *grpcClient) StopForError(err error) {
 func (cli *grpcClient) Error() error {
 	cli.mtx.Lock()
 	defer cli.mtx.Unlock()
+
 	return cli.err
 }
 
@@ -167,6 +178,7 @@ func (cli *grpcClient) CheckTxAsync(ctx context.Context, req *types.RequestCheck
 		cli.StopForError(err)
 		return nil, err
 	}
+
 	return cli.finishAsyncCall(types.ToRequestCheckTx(req), &types.Response{Value: &types.Response_CheckTx{CheckTx: res}}), nil
 }
 
@@ -174,8 +186,10 @@ func (cli *grpcClient) CheckTxAsync(ctx context.Context, req *types.RequestCheck
 // with the response. We don't complete it until it's been ordered via the channel.
 func (cli *grpcClient) finishAsyncCall(req *types.Request, res *types.Response) *ReqRes {
 	reqres := NewReqRes(req)
+
 	reqres.Response = res
 	cli.chReqRes <- reqres // use channel for async responses, since they must be ordered
+
 	return reqres
 }
 

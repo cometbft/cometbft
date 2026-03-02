@@ -75,6 +75,7 @@ func resetPrivValidator(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	resetFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile(), logger)
+
 	return nil
 }
 
@@ -98,6 +99,7 @@ func resetAll(dbDir, addrBookFile, privValKeyFile, privValStateFile string, logg
 
 	// recreate the dbDir since the privVal state needs to live there
 	resetFilePV(privValKeyFile, privValStateFile, logger)
+
 	return nil
 }
 
@@ -152,6 +154,7 @@ func resetState(dbDir string, logger log.Logger) error {
 	if err := cmtos.EnsureDir(dbDir, 0o700); err != nil {
 		logger.Error("unable to recreate dbDir", "err", err)
 	}
+
 	return nil
 }
 

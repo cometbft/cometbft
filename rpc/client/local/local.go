@@ -50,6 +50,7 @@ func New(node *nm.Node) *Local {
 	if err != nil {
 		node.Logger.Error("Error configuring RPC", "err", err)
 	}
+
 	return &Local{
 		EventBus: node.EventBus(),
 		Logger:   log.NewNopLogger(),
@@ -234,6 +235,7 @@ func (c *Local) Subscribe(
 	} else {
 		sub, err = c.SubscribeUnbuffered(ctx, subscriber, q)
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to subscribe: %w", err)
 	}
@@ -269,6 +271,7 @@ func (c *Local) eventsRoutine(
 			}
 
 			c.Logger.Error("subscription was canceled, resubscribing...", "err", sub.Err(), "query", q.String())
+
 			sub = c.resubscribe(subscriber, q)
 			if sub == nil { // client was stopped
 				return
@@ -282,6 +285,7 @@ func (c *Local) eventsRoutine(
 // Try to resubscribe with exponential backoff.
 func (c *Local) resubscribe(subscriber string, q cmtpubsub.Query) types.Subscription {
 	attempts := 0
+
 	for {
 		if !c.IsRunning() {
 			return nil
@@ -302,6 +306,7 @@ func (c *Local) Unsubscribe(ctx context.Context, subscriber, query string) error
 	if err != nil {
 		return fmt.Errorf("failed to parse query: %w", err)
 	}
+
 	return c.EventBus.Unsubscribe(ctx, subscriber, q)
 }
 

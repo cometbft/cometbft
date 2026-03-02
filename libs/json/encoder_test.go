@@ -94,7 +94,6 @@ func TestMarshal(t *testing.T) {
 		},
 	}
 	for name, tc := range testcases {
-
 		t.Run(name, func(t *testing.T) {
 			bz, err := json.Marshal(tc.value)
 			require.NoError(t, err)
@@ -109,6 +108,7 @@ func BenchmarkJsonMarshalStruct(b *testing.B) {
 	i64 := int64(64)
 	ti := time.Date(2020, 6, 2, 18, 5, 13, 4346374, time.FixedZone("UTC+2", 2*60*60))
 	car := &Car{Wheels: 4}
+
 	boat := Boat{Sail: true}
 	for i := 0; i < b.N; i++ {
 		_, _ = json.Marshal(Struct{

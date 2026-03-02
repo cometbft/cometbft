@@ -17,6 +17,7 @@ var (
 func (m *Txs) Wrap() proto.Message {
 	mm := &Message{}
 	mm.Sum = &Message_Txs{Txs: m}
+
 	return mm
 }
 

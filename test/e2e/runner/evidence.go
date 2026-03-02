@@ -60,10 +60,12 @@ func InjectEvidence(ctx context.Context, r *rand.Rand, testnet *e2e.Testnet, amo
 	if err != nil {
 		return err
 	}
+
 	evidenceHeight := blockRes.Block.Height
 	waitHeight := blockRes.Block.Height + 3
 
 	nValidators := 100
+
 	valRes, err := client.Validators(ctx, &evidenceHeight, nil, &nValidators)
 	if err != nil {
 		return err
@@ -88,6 +90,7 @@ func InjectEvidence(ctx context.Context, r *rand.Rand, testnet *e2e.Testnet, amo
 	}
 
 	var ev types.Evidence
+
 	for i := 0; i < amount; i++ {
 		validEv := true
 		if i%lightClientEvidenceRatio == 0 {
@@ -97,6 +100,7 @@ func InjectEvidence(ctx context.Context, r *rand.Rand, testnet *e2e.Testnet, amo
 			)
 		} else {
 			var dve *types.DuplicateVoteEvidence
+
 			dve, err = generateDuplicateVoteEvidence(
 				privVals, evidenceHeight, valSet, testnet.Name, blockRes.Block.Time,
 			)
@@ -106,24 +110,30 @@ func InjectEvidence(ctx context.Context, r *rand.Rand, testnet *e2e.Testnet, amo
 				dve.VoteB.Extension = nil
 				dve.VoteB.ExtensionSignature = nil
 			}
+
 			ev = dve
 		}
+
 		if err != nil {
 			return err
 		}
 
 		_, err := client.BroadcastEvidence(ctx, ev)
+
 		if !validEv {
 			// The tests will count committed evidences later on,
 			// and only valid evidences will make it
 			amount++
 		}
+
 		if validEv != (err == nil) {
 			if err == nil {
 				return errors.New("submitting invalid evidence didn't return an error")
 			}
+
 			return err
 		}
+
 		time.Sleep(5 * time.Second / time.Duration(amount))
 	}
 
@@ -145,6 +155,7 @@ func getPrivateValidatorKeys(testnet *e2e.Testnet) ([]types.MockPV, error) {
 	for _, node := range testnet.Nodes {
 		if node.Mode == e2e.ModeValidator {
 			privKeyPath := filepath.Join(testnet.Dir, node.Name, PrivvalKeyFile)
+
 			privKey, err := readPrivKey(privKeyPath)
 			if err != nil {
 				return nil, err
@@ -187,6 +198,7 @@ func generateLightClientAttackEvidence(
 	// create a commit for the forged header
 	blockID := makeBlockID(header.Hash(), 1000, []byte("partshash"))
 	voteSet := types.NewVoteSet(chainID, forgedHeight, 0, cmtproto.SignedMsgType(2), conflictingVals)
+
 	commit, err := test.MakeCommitFromVoteSet(blockID, voteSet, pv, forgedTime)
 	if err != nil {
 		return nil, err
@@ -212,6 +224,7 @@ func generateLightClientAttackEvidence(
 	ev.ByzantineValidators = ev.GetByzantineValidators(vals, &types.SignedHeader{
 		Header: makeHeaderRandom(chainID, forgedHeight),
 	})
+
 	return ev, nil
 }
 
@@ -228,14 +241,17 @@ func generateDuplicateVoteEvidence(
 	if err != nil {
 		return nil, err
 	}
+
 	voteA, err := types.MakeVote(privVal, chainID, valIdx, height, 0, 2, makeRandomBlockID(), time)
 	if err != nil {
 		return nil, err
 	}
+
 	voteB, err := types.MakeVote(privVal, chainID, valIdx, height, 0, 2, makeRandomBlockID(), time)
 	if err != nil {
 		return nil, err
 	}
+
 	ev, err := types.NewDuplicateVoteEvidence(voteA, voteB, time, vals)
 	if err != nil {
 		return nil, fmt.Errorf("could not generate evidence: %w", err)
@@ -249,11 +265,13 @@ func generateDuplicateVoteEvidence(
 func getRandomValidatorIndex(privVals []types.MockPV, vals *types.ValidatorSet) (types.MockPV, int32, error) {
 	for _, idx := range rand.Perm(len(privVals)) {
 		pv := privVals[idx]
+
 		valIdx, _ := vals.GetByAddress(pv.PrivKey.PubKey().Address())
 		if valIdx >= 0 {
 			return pv, valIdx, nil
 		}
 	}
+
 	return types.MockPV{}, -1, errors.New("no private validator found in validator set")
 }
 
@@ -262,7 +280,9 @@ func readPrivKey(keyFilePath string) (crypto.PrivKey, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	pvKey := privval.FilePVKey{}
+
 	err = cmtjson.Unmarshal(keyJSONBytes, &pvKey)
 	if err != nil {
 		return nil, fmt.Errorf("error reading PrivValidator key from %v: %w", keyFilePath, err)
@@ -301,6 +321,7 @@ func makeBlockID(hash []byte, partSetSize uint32, partSetHash []byte) types.Bloc
 	)
 	copy(h, hash)
 	copy(psH, partSetHash)
+
 	return types.BlockID{
 		Hash: h,
 		PartSetHeader: types.PartSetHeader{
@@ -336,13 +357,16 @@ func mutateValidatorSet(
 	pv := make([]types.PrivValidator, newVals.Size())
 	for idx, val := range newVals.Validators {
 		found := false
+
 		for _, p := range append(privVals, newPrivVal.(types.MockPV)) {
 			if bytes.Equal(p.PrivKey.PubKey().Address(), val.Address) {
 				pv[idx] = p
 				found = true
+
 				break
 			}
 		}
+
 		if !found {
 			return nil, nil, fmt.Errorf("missing priv validator for %v", val.Address)
 		}

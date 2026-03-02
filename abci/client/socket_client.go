@@ -60,6 +60,7 @@ func NewSocketClient(addr string, mustConnect bool) Client {
 		resCb:   nil,
 	}
 	cli.BaseService = *service.NewBaseService(nil, "socketClient", cli)
+
 	return cli
 }
 
@@ -77,11 +78,14 @@ func (cli *socketClient) OnStart() error {
 			if cli.mustConnect {
 				return err
 			}
+
 			cli.Logger.Error(fmt.Sprintf("abci.socketClient failed to connect to %v.  Retrying after %vs...",
 				cli.addr, dialRetryIntervalSeconds), "err", err)
 			time.Sleep(time.Second * dialRetryIntervalSeconds)
+
 			continue
 		}
+
 		cli.conn = conn
 
 		go cli.sendRequestsRoutine(conn)
@@ -105,6 +109,7 @@ func (cli *socketClient) OnStop() {
 func (cli *socketClient) Error() error {
 	cli.mtx.Lock()
 	defer cli.mtx.Unlock()
+
 	return cli.err
 }
 
@@ -128,6 +133,7 @@ func (cli *socketClient) CheckTxAsync(ctx context.Context, req *types.RequestChe
 
 func (cli *socketClient) sendRequestsRoutine(conn io.Writer) {
 	w := bufio.NewWriter(conn)
+
 	for {
 		select {
 		case reqres := <-cli.reqQueue:
@@ -164,12 +170,14 @@ func (cli *socketClient) sendRequestsRoutine(conn io.Writer) {
 
 func (cli *socketClient) recvResponseRoutine(conn io.Reader) {
 	r := bufio.NewReader(conn)
+
 	for {
 		if !cli.IsRunning() {
 			return
 		}
 
 		res := &types.Response{}
+
 		err := types.ReadMessage(r, res)
 		if err != nil {
 			cli.stopForError(fmt.Errorf("read message: %w", err))
@@ -200,6 +208,7 @@ func (cli *socketClient) trackRequest(reqres *ReqRes) {
 
 	cli.mtx.Lock()
 	defer cli.mtx.Unlock()
+
 	cli.reqSent.PushBack(reqres)
 }
 
@@ -243,7 +252,9 @@ func (cli *socketClient) Flush(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	reqRes.Wait()
+
 	return nil
 }
 
@@ -252,9 +263,11 @@ func (cli *socketClient) Echo(ctx context.Context, msg string) (*types.ResponseE
 	if err != nil {
 		return nil, err
 	}
+
 	if err := cli.Flush(ctx); err != nil {
 		return nil, err
 	}
+
 	return reqRes.Response.GetEcho(), cli.Error()
 }
 
@@ -263,9 +276,11 @@ func (cli *socketClient) Info(ctx context.Context, req *types.RequestInfo) (*typ
 	if err != nil {
 		return nil, err
 	}
+
 	if err := cli.Flush(ctx); err != nil {
 		return nil, err
 	}
+
 	return reqRes.Response.GetInfo(), cli.Error()
 }
 
@@ -274,9 +289,11 @@ func (cli *socketClient) CheckTx(ctx context.Context, req *types.RequestCheckTx)
 	if err != nil {
 		return nil, err
 	}
+
 	if err := cli.Flush(ctx); err != nil {
 		return nil, err
 	}
+
 	return reqRes.Response.GetCheckTx(), cli.Error()
 }
 
@@ -285,9 +302,11 @@ func (cli *socketClient) InsertTx(ctx context.Context, req *types.RequestInsertT
 	if err != nil {
 		return nil, err
 	}
+
 	if err := cli.Flush(ctx); err != nil {
 		return nil, err
 	}
+
 	return reqRes.Response.GetInsertTx(), cli.Error()
 }
 
@@ -296,9 +315,11 @@ func (cli *socketClient) ReapTxs(ctx context.Context, req *types.RequestReapTxs)
 	if err != nil {
 		return nil, err
 	}
+
 	if err := cli.Flush(ctx); err != nil {
 		return nil, err
 	}
+
 	return reqRes.Response.GetReapTxs(), cli.Error()
 }
 
@@ -307,9 +328,11 @@ func (cli *socketClient) Query(ctx context.Context, req *types.RequestQuery) (*t
 	if err != nil {
 		return nil, err
 	}
+
 	if err := cli.Flush(ctx); err != nil {
 		return nil, err
 	}
+
 	return reqRes.Response.GetQuery(), cli.Error()
 }
 
@@ -318,9 +341,11 @@ func (cli *socketClient) Commit(ctx context.Context, _ *types.RequestCommit) (*t
 	if err != nil {
 		return nil, err
 	}
+
 	if err := cli.Flush(ctx); err != nil {
 		return nil, err
 	}
+
 	return reqRes.Response.GetCommit(), cli.Error()
 }
 
@@ -329,9 +354,11 @@ func (cli *socketClient) InitChain(ctx context.Context, req *types.RequestInitCh
 	if err != nil {
 		return nil, err
 	}
+
 	if err := cli.Flush(ctx); err != nil {
 		return nil, err
 	}
+
 	return reqRes.Response.GetInitChain(), cli.Error()
 }
 
@@ -340,9 +367,11 @@ func (cli *socketClient) ListSnapshots(ctx context.Context, req *types.RequestLi
 	if err != nil {
 		return nil, err
 	}
+
 	if err := cli.Flush(ctx); err != nil {
 		return nil, err
 	}
+
 	return reqRes.Response.GetListSnapshots(), cli.Error()
 }
 
@@ -351,9 +380,11 @@ func (cli *socketClient) OfferSnapshot(ctx context.Context, req *types.RequestOf
 	if err != nil {
 		return nil, err
 	}
+
 	if err := cli.Flush(ctx); err != nil {
 		return nil, err
 	}
+
 	return reqRes.Response.GetOfferSnapshot(), cli.Error()
 }
 
@@ -362,9 +393,11 @@ func (cli *socketClient) LoadSnapshotChunk(ctx context.Context, req *types.Reque
 	if err != nil {
 		return nil, err
 	}
+
 	if err := cli.Flush(ctx); err != nil {
 		return nil, err
 	}
+
 	return reqRes.Response.GetLoadSnapshotChunk(), cli.Error()
 }
 
@@ -373,9 +406,11 @@ func (cli *socketClient) ApplySnapshotChunk(ctx context.Context, req *types.Requ
 	if err != nil {
 		return nil, err
 	}
+
 	if err := cli.Flush(ctx); err != nil {
 		return nil, err
 	}
+
 	return reqRes.Response.GetApplySnapshotChunk(), cli.Error()
 }
 
@@ -384,9 +419,11 @@ func (cli *socketClient) PrepareProposal(ctx context.Context, req *types.Request
 	if err != nil {
 		return nil, err
 	}
+
 	if err := cli.Flush(ctx); err != nil {
 		return nil, err
 	}
+
 	return reqRes.Response.GetPrepareProposal(), cli.Error()
 }
 
@@ -395,9 +432,11 @@ func (cli *socketClient) ProcessProposal(ctx context.Context, req *types.Request
 	if err != nil {
 		return nil, err
 	}
+
 	if err := cli.Flush(ctx); err != nil {
 		return nil, err
 	}
+
 	return reqRes.Response.GetProcessProposal(), cli.Error()
 }
 
@@ -406,9 +445,11 @@ func (cli *socketClient) ExtendVote(ctx context.Context, req *types.RequestExten
 	if err != nil {
 		return nil, err
 	}
+
 	if err := cli.Flush(ctx); err != nil {
 		return nil, err
 	}
+
 	return reqRes.Response.GetExtendVote(), cli.Error()
 }
 
@@ -417,9 +458,11 @@ func (cli *socketClient) VerifyVoteExtension(ctx context.Context, req *types.Req
 	if err != nil {
 		return nil, err
 	}
+
 	if err := cli.Flush(ctx); err != nil {
 		return nil, err
 	}
+
 	return reqRes.Response.GetVerifyVoteExtension(), cli.Error()
 }
 
@@ -428,9 +471,11 @@ func (cli *socketClient) FinalizeBlock(ctx context.Context, req *types.RequestFi
 	if err != nil {
 		return nil, err
 	}
+
 	if err := cli.Flush(ctx); err != nil {
 		return nil, err
 	}
+
 	return reqRes.Response.GetFinalizeBlock(), cli.Error()
 }
 
@@ -516,6 +561,7 @@ func resMatchesReq(req *types.Request, res *types.Response) (ok bool) {
 	case *types.Request_FinalizeBlock:
 		_, ok = res.Value.(*types.Response_FinalizeBlock)
 	}
+
 	return ok
 }
 
@@ -525,12 +571,15 @@ func (cli *socketClient) stopForError(err error) {
 	}
 
 	cli.mtx.Lock()
+
 	if cli.err == nil {
 		cli.err = err
 	}
+
 	cli.mtx.Unlock()
 
 	cli.Logger.Error(fmt.Sprintf("Stopping abci.socketClient for error: %v", err.Error()))
+
 	if err := cli.Stop(); err != nil {
 		cli.Logger.Error("Error stopping abci.socketClient", "err", err)
 	}

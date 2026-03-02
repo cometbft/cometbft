@@ -111,10 +111,12 @@ func loadEventSinks(cfg *cmtcfg.Config, chainID string) (indexer.BlockIndexer, t
 		if conn == "" {
 			return nil, nil, errors.New("the psql connection settings cannot be empty")
 		}
+
 		es, err := psql.NewEventSink(conn, chainID)
 		if err != nil {
 			return nil, nil, err
 		}
+
 		return es.BlockIndexer(), es.TxIndexer(), nil
 	case "kv":
 		store, err := dbm.NewDB("tx_index", dbm.BackendType(cfg.DBBackend), cfg.DBDir())
@@ -124,6 +126,7 @@ func loadEventSinks(cfg *cmtcfg.Config, chainID string) (indexer.BlockIndexer, t
 
 		txIndexer := kv.NewTxIndex(store)
 		blockIndexer := blockidxkv.New(dbm.NewPrefixDB(store, []byte("block_events")))
+
 		return blockIndexer, txIndexer, nil
 	default:
 		return nil, nil, fmt.Errorf("unsupported event sink type: %s", cfg.TxIndex.Indexer)
@@ -144,7 +147,9 @@ func eventReIndex(cmd *cobra.Command, args eventReIndexArgs) error {
 	bar.NewOption(args.startHeight-1, args.endHeight)
 
 	fmt.Println("start re-indexing events:")
+
 	defer bar.Finish()
+
 	for height := args.startHeight; height <= args.endHeight; height++ {
 		select {
 		case <-cmd.Context().Done():

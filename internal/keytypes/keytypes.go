@@ -28,6 +28,7 @@ func GenPrivKey(keyType string) (crypto.PrivKey, error) {
 	if !ok {
 		return nil, fmt.Errorf("unsupported key type: %q", keyType)
 	}
+
 	return genF()
 }
 
@@ -36,6 +37,7 @@ func SupportedKeyTypesStr() string {
 	for k := range keyTypes {
 		keyTypesSlice = append(keyTypesSlice, fmt.Sprintf("%q", k))
 	}
+
 	return strings.Join(keyTypesSlice, ", ")
 }
 
@@ -44,5 +46,6 @@ func ListSupportedKeyTypes() []string {
 	for k := range keyTypes {
 		keyTypesSlice = append(keyTypesSlice, k)
 	}
+
 	return keyTypesSlice
 }

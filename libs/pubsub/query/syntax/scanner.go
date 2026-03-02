@@ -54,6 +54,7 @@ func (t Token) String() string {
 	if v > len(tString) {
 		return "unknown token type"
 	}
+
 	return tString[v]
 }
 
@@ -93,15 +94,18 @@ func (s *Scanner) Next() error {
 		if err != nil {
 			return s.fail(err)
 		}
+
 		if unicode.IsSpace(ch) {
 			s.pos = s.end
 			continue // skip whitespace
 		}
+
 		if '0' <= ch && ch <= '9' {
 			return s.scanNumber(ch)
 		} else if isFirstTagRune(ch) {
 			return s.scanTagLike(ch)
 		}
+
 		switch ch {
 		case '\'':
 			return s.scanString(ch)
@@ -129,6 +133,7 @@ func (s *Scanner) Err() error { return s.err }
 // Examples: 0, 1, 3.14
 func (s *Scanner) scanNumber(first rune) error {
 	s.buf.WriteRune(first)
+
 	if err := s.scanWhile(isDigit); err != nil {
 		return err
 	}
@@ -137,15 +142,19 @@ func (s *Scanner) scanNumber(first rune) error {
 	if err != nil && err != io.EOF {
 		return err
 	}
+
 	if ch == '.' {
 		s.buf.WriteRune(ch)
+
 		if err := s.scanWhile(isDigit); err != nil {
 			return err
 		}
 	} else {
 		s.unrune()
 	}
+
 	s.tok = TNumber
+
 	return nil
 }
 
@@ -160,12 +169,14 @@ func (s *Scanner) scanString(first rune) error {
 			s.tok = TString
 			return nil
 		}
+
 		s.buf.WriteRune(ch)
 	}
 }
 
 func (s *Scanner) scanCompare(first rune) error {
 	s.buf.WriteRune(first)
+
 	switch first {
 	case '=':
 		s.tok = TEq
@@ -184,18 +195,24 @@ func (s *Scanner) scanCompare(first rune) error {
 	} else if err != nil {
 		return s.fail(err)
 	}
+
 	if ch == '=' {
 		s.buf.WriteRune(ch)
 		s.tok++ // depends on token order
+
 		return nil
 	}
+
 	s.unrune()
+
 	return nil
 }
 
 func (s *Scanner) scanTagLike(first rune) error {
 	s.buf.WriteRune(first)
+
 	var hasSpace bool
+
 	for {
 		ch, err := s.rune()
 		if err == io.EOF {
@@ -203,10 +220,12 @@ func (s *Scanner) scanTagLike(first rune) error {
 		} else if err != nil {
 			return s.fail(err)
 		}
+
 		if !isTagRune(ch) {
 			hasSpace = ch == ' ' // to check for TIME, DATE
 			break
 		}
+
 		s.buf.WriteRune(ch)
 	}
 
@@ -216,11 +235,13 @@ func (s *Scanner) scanTagLike(first rune) error {
 		if hasSpace {
 			return s.scanTimestamp()
 		}
+
 		s.tok = TTag
 	case "DATE":
 		if hasSpace {
 			return s.scanDatestamp()
 		}
+
 		s.tok = TTag
 	case "AND":
 		s.tok = TAnd
@@ -231,35 +252,45 @@ func (s *Scanner) scanTagLike(first rune) error {
 	default:
 		s.tok = TTag
 	}
+
 	s.unrune()
+
 	return nil
 }
 
 func (s *Scanner) scanTimestamp() error {
 	s.buf.Reset() // discard "TIME" label
+
 	if err := s.scanWhile(isTimeRune); err != nil {
 		return err
 	}
+
 	if ts, err := time.Parse(TimeFormat, s.buf.String()); err != nil {
 		return s.fail(fmt.Errorf("invalid TIME value: %w", err))
 	} else if y := ts.Year(); y < 1900 || y > 2999 {
 		return s.fail(fmt.Errorf("timestamp year %d out of range", ts.Year()))
 	}
+
 	s.tok = TTime
+
 	return nil
 }
 
 func (s *Scanner) scanDatestamp() error {
 	s.buf.Reset() // discard "DATE" label
+
 	if err := s.scanWhile(isDateRune); err != nil {
 		return err
 	}
+
 	if ts, err := time.Parse(DateFormat, s.buf.String()); err != nil {
 		return s.fail(fmt.Errorf("invalid DATE value: %w", err))
 	} else if y := ts.Year(); y < 1900 || y > 2999 {
 		return s.fail(fmt.Errorf("datestamp year %d out of range", ts.Year()))
 	}
+
 	s.tok = TDate
+
 	return nil
 }
 
@@ -285,6 +316,7 @@ func (s *Scanner) rune() (rune, error) {
 	ch, nb, err := s.r.ReadRune()
 	s.last = nb
 	s.end += nb
+
 	return ch, err
 }
 

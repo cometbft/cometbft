@@ -38,9 +38,12 @@ import (
 func TestByzantinePrevoteEquivocation(t *testing.T) {
 	ctx := t.Context()
 
-	const nValidators = 4
-	const byzantineNode = 0
-	const prevoteHeight = int64(2)
+	const (
+		nValidators   = 4
+		byzantineNode = 0
+		prevoteHeight = int64(2)
+	)
+
 	testName := "consensus_byzantine_test"
 	tickerFunc := newMockTickerFunc(true)
 	appFunc := newKVStore
@@ -55,9 +58,12 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 			DiscardABCIResponses: false,
 		})
 		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
+
 		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
 		defer os.RemoveAll(thisConfig.RootDir)
+
 		ensureDir(path.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
+
 		app := appFunc()
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
 		_, err := app.InitChain(context.Background(), &abci.RequestInitChain{Validators: vals})
@@ -111,6 +117,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	// initialize the reactors for each of the validators
 	reactors := make([]*Reactor, nValidators)
 	blocksSubs := make([]types.Subscription, 0)
+
 	eventBuses := make([]*types.EventBus, nValidators)
 	for i := 0; i < nValidators; i++ {
 		reactors[i] = NewReactor(css[i], true) // so we dont start the consensus states
@@ -122,6 +129,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 
 		blocksSub, err := eventBuses[i].Subscribe(context.Background(), testSubscriber, types.EventQueryNewBlock, 100)
 		require.NoError(t, err)
+
 		blocksSubs = append(blocksSubs, blocksSub)
 
 		if css[i].state.LastBlockHeight == 0 { // simulate handle initChain in handshake
@@ -133,6 +141,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	p2p.MakeConnectedSwitches(config.P2P, nValidators, func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("CONSENSUS", reactors[i])
 		s.SetLogger(reactors[i].conS.Logger.With("module", "p2p"))
+
 		return s
 	}, p2p.Connect2Switches)
 
@@ -148,6 +157,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 			require.NoError(t, err)
 			prevote2, err := bcs.signVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
 			require.NoError(t, err)
+
 			peerList := reactors[byzantineNode].Switch.Peers().Copy()
 			bcs.Logger.Info("Getting peer list", "peers", peerList)
 			// send two votes to all peers (1st to one half, 2nd to another half)
@@ -179,11 +189,13 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 
 	lazyProposer.decideProposal = func(height int64, round int32) {
 		lazyProposer.Logger.Info("Lazy Proposer proposing condensed commit")
+
 		if lazyProposer.privValidator == nil {
 			panic("entered createProposalBlock with privValidator being nil")
 		}
 
 		var extCommit *types.ExtendedCommit
+
 		switch {
 		case lazyProposer.Height == lazyProposer.state.InitialHeight:
 			// We're creating a proposal for the first block.
@@ -207,6 +219,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 			lazyProposer.Logger.Error(fmt.Sprintf("enterPropose: %v", ErrPubKeyIsNotSet))
 			return
 		}
+
 		proposerAddr := lazyProposer.privValidatorPubKey.Address()
 
 		block, err := lazyProposer.blockExec.CreateProposalBlock(
@@ -224,16 +237,19 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		// Make proposal
 		propBlockID := types.BlockID{Hash: block.Hash(), PartSetHeader: blockParts.Header()}
 		proposal := types.NewProposal(height, round, lazyProposer.ValidRound, propBlockID)
+
 		p := proposal.ToProto()
 		if err := lazyProposer.privValidator.SignProposal(lazyProposer.state.ChainID, p); err == nil {
 			proposal.Signature = p.Signature
 
 			// send proposal and block parts on internal msg queue
 			lazyProposer.sendInternalMessage(msgInfo{&ProposalMessage{proposal}, ""})
+
 			for i := 0; i < int(blockParts.Total()); i++ {
 				part := blockParts.GetPart(i)
 				lazyProposer.sendInternalMessage(msgInfo{&BlockPartMessage{lazyProposer.Height, lazyProposer.Round, part}, ""})
 			}
+
 			lazyProposer.Logger.Info("Signed proposal", "height", height, "round", round, "proposal", proposal)
 			lazyProposer.Logger.Debug(fmt.Sprintf("Signed proposal block: %v", block))
 		} else if !lazyProposer.replayMode {
@@ -246,6 +262,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		s := reactors[i].conS.GetState()
 		reactors[i].SwitchToConsensus(s, false)
 	}
+
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 
 	// Evidence should be submitted and committed at the third height but
@@ -255,8 +272,10 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	wg := new(sync.WaitGroup)
 	for i := 0; i < nValidators; i++ {
 		wg.Add(1)
+
 		go func(i int) {
 			defer wg.Done()
+
 			for msg := range blocksSubs[i].Out() {
 				block := msg.Data().(types.EventDataNewBlock).Block
 				if len(block.Evidence.Evidence) != 0 {
@@ -268,6 +287,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	}
 
 	done := make(chan struct{})
+
 	go func() {
 		wg.Wait()
 		close(done)
@@ -303,6 +323,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 	ctx := t.Context()
 
 	app := newKVStore
+
 	css, cleanup := randConsensusNet(t, N, "consensus_byzantine_test", newMockTickerFunc(false), app)
 	defer cleanup()
 
@@ -313,6 +334,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 
 	switches := make([]*p2p.Switch, N)
 	p2pLogger := logger.With("module", "p2p")
+
 	for i := 0; i < N; i++ {
 		switches[i] = p2p.MakeSwitch(
 			config.P2P,
@@ -324,9 +346,9 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 	}
 
 	blocksSubs := make([]types.Subscription, N)
+
 	reactors := make([]p2p.Reactor, N)
 	for i := 0; i < N; i++ {
-
 		// enable txs so we can create different proposals
 		assertMempool(css[i].txNotifier).EnableTxsAvailable()
 		// make first val byzantine
@@ -347,6 +369,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 		eventBus.SetLogger(logger.With("module", "events", "validator", i))
 
 		var err error
+
 		blocksSubs[i], err = eventBus.Subscribe(context.Background(), testSubscriber, types.EventQueryNewBlock)
 		require.NoError(t, err)
 
@@ -387,6 +410,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 		if i != 0 {
 			return
 		}
+
 		p2p.Connect2Switches(sws, i, j)
 	})
 
@@ -427,6 +451,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 	wg := new(sync.WaitGroup)
 	for i := 1; i < N-1; i++ {
 		wg.Add(1)
+
 		go func(j int) {
 			<-blocksSubs[j].Out()
 			wg.Done()
@@ -434,6 +459,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 	}
 
 	done := make(chan struct{})
+
 	go func() {
 		wg.Wait()
 		close(done)
@@ -447,6 +473,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 			t.Logf("Consensus Reactor %v", i)
 			t.Logf("%v", reactor)
 		}
+
 		t.Fatalf("Timed out waiting for all validators to commit first block")
 	}
 }
@@ -463,8 +490,10 @@ func byzantineDecideProposalFunc(ctx context.Context, t *testing.T, height int64
 	require.NoError(t, err)
 	blockParts1, err := block1.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
+
 	polRound, propBlockID := cs.ValidRound, types.BlockID{Hash: block1.Hash(), PartSetHeader: blockParts1.Header()}
 	proposal1 := types.NewProposal(height, round, polRound, propBlockID)
+
 	p1 := proposal1.ToProto()
 	if err := cs.privValidator.SignProposal(cs.state.ChainID, p1); err != nil {
 		t.Error(err)
@@ -480,8 +509,10 @@ func byzantineDecideProposalFunc(ctx context.Context, t *testing.T, height int64
 	require.NoError(t, err)
 	blockParts2, err := block2.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
+
 	polRound, propBlockID = cs.ValidRound, types.BlockID{Hash: block2.Hash(), PartSetHeader: blockParts2.Header()}
 	proposal2 := types.NewProposal(height, round, polRound, propBlockID)
+
 	p2 := proposal2.ToProto()
 	if err := cs.privValidator.SignProposal(cs.state.ChainID, p2); err != nil {
 		t.Error(err)
@@ -495,6 +526,7 @@ func byzantineDecideProposalFunc(ctx context.Context, t *testing.T, height int64
 	// broadcast conflicting proposals/block parts to peers
 	peers := sw.Peers().Copy()
 	t.Logf("Byzantine: broadcasting conflicting proposals to %d peers", len(peers))
+
 	for i, peer := range peers {
 		if i < len(peers)/2 {
 			go sendProposalAndParts(height, round, cs, peer, proposal1, block1Hash, blockParts1)
@@ -522,10 +554,12 @@ func sendProposalAndParts(
 	// parts
 	for i := 0; i < int(parts.Total()); i++ {
 		part := parts.GetPart(i)
+
 		pp, err := part.ToProto()
 		if err != nil {
 			panic(err) // TODO: wbanfield better error handling
 		}
+
 		peer.Send(p2p.Envelope{
 			ChannelID: DataChannel,
 			Message: &cmtcons.BlockPart{
@@ -599,11 +633,13 @@ func TestRejectOversizedProposals(t *testing.T) {
 	ctx := t.Context()
 
 	n := 2
+
 	css, cleanup := randConsensusNet(t, n, "consensus_reactor_test", newMockTickerFunc(false), newKVStore)
 	defer cleanup()
 
 	switches := make([]*p2p.Switch, n)
 	p2pLogger := consensusLogger().With("module", "p2p")
+
 	for i := 0; i < n; i++ {
 		switches[i] = p2p.MakeSwitch(
 			config.P2P,
@@ -617,6 +653,7 @@ func TestRejectOversizedProposals(t *testing.T) {
 	reactors := make([]p2p.Reactor, n)
 	for i := 0; i < n; i++ {
 		conR := NewReactor(css[i], false)
+
 		defer func() { require.NoError(t, conR.Stop()) }()
 
 		conR.SetLogger(consensusLogger().With("validator", i))
@@ -646,10 +683,12 @@ func TestRejectOversizedProposals(t *testing.T) {
 	propBlockID.PartSetHeader.Total = 4294967295
 
 	proposal := types.NewProposal(height, round, -1, propBlockID)
+
 	p := proposal.ToProto()
 	if err := cs.privValidator.SignProposal(cs.state.ChainID, p); err != nil {
 		t.Error(err)
 	}
+
 	proposal.Signature = p.Signature
 
 	success := targetPeer.Send(p2p.Envelope{

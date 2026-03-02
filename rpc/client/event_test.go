@@ -23,6 +23,7 @@ var waitForEventTimeout = 8 * time.Second
 func MakeTxKV() ([]byte, []byte, []byte) {
 	k := []byte(cmtrand.Str(8))
 	v := []byte(cmtrand.Str(8))
+
 	return k, v, append(k, append([]byte("="), v...)...)
 }
 
@@ -44,6 +45,7 @@ func TestHeaderEvents(t *testing.T) {
 			evtTyp := types.EventNewBlockHeader
 			evt, err := client.WaitForOneEvent(c, evtTyp, waitForEventTimeout)
 			require.Nil(t, err, "%d: %+v", i, err)
+
 			_, ok := evt.(types.EventDataNewBlockHeader)
 			require.True(t, ok, "%d: %#v", i, evt)
 			// TODO: more checks...
@@ -54,7 +56,6 @@ func TestHeaderEvents(t *testing.T) {
 // subscribe to new blocks and make sure height increments by 1
 func TestBlockEvents(t *testing.T) {
 	for _, c := range GetClients() {
-
 		t.Run(reflect.TypeOf(c).String(), func(t *testing.T) {
 			// start for this test it if it wasn't already running
 			if !c.IsRunning() {
@@ -79,6 +80,7 @@ func TestBlockEvents(t *testing.T) {
 			})
 
 			var firstBlockHeight int64
+
 			for i := int64(0); i < 3; i++ {
 				event := <-eventCh
 				blockEvent, ok := event.Data.(types.EventDataNewBlock)
@@ -101,7 +103,6 @@ func TestTxEventsSentWithBroadcastTxSync(t *testing.T)  { testTxEventsSent(t, "s
 
 func testTxEventsSent(t *testing.T, broadcastMethod string) {
 	for _, c := range GetClients() {
-
 		t.Run(reflect.TypeOf(c).String(), func(t *testing.T) {
 			// start for this test it if it wasn't already running
 			if !c.IsRunning() {
@@ -125,6 +126,7 @@ func testTxEventsSent(t *testing.T, broadcastMethod string) {
 					err   error
 					ctx   = context.Background()
 				)
+
 				switch broadcastMethod {
 				case "async":
 					txres, err = c.BroadcastTxAsync(ctx, tx)
@@ -133,6 +135,7 @@ func testTxEventsSent(t *testing.T, broadcastMethod string) {
 				default:
 					panic(fmt.Sprintf("Unknown broadcastMethod %s", broadcastMethod))
 				}
+
 				if assert.NoError(t, err) {
 					assert.Equal(t, txres.Code, abci.CodeTypeOK)
 				}

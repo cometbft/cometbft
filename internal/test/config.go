@@ -31,6 +31,7 @@ func ResetTestRootWithChainID(testName string, chainID string) *config.Config {
 		if chainID == "" {
 			chainID = DefaultTestChainID
 		}
+
 		testGenesis := fmt.Sprintf(testGenesisFmt, chainID)
 		cmtos.MustWriteFile(genesisFilePath, []byte(testGenesis), 0o644)
 	}
@@ -39,6 +40,7 @@ func ResetTestRootWithChainID(testName string, chainID string) *config.Config {
 	cmtos.MustWriteFile(privStateFilePath, []byte(testPrivValidatorState), 0o644)
 
 	config := config.TestConfig().SetRoot(rootDir)
+
 	return config
 }
 

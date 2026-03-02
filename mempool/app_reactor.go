@@ -160,6 +160,7 @@ func (r *AppReactor) insertTx(peerID p2p.ID, tx types.Tx) {
 	}
 
 	txHash := txHash(tx)
+
 	switch {
 	case errors.Is(err, ErrSeenTx):
 		r.Logger.Debug("Tx already seen", "tx", txHash, "peer", peerID)
@@ -218,6 +219,7 @@ func txsFromEnvelope(e p2p.Envelope) ([]types.Tx, error) {
 		for i, tx := range txsRaw {
 			txs[i] = types.Tx(tx)
 		}
+
 		return txs, nil
 	}
 }

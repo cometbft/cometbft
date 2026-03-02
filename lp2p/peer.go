@@ -122,6 +122,7 @@ func (p *Peer) Send(e p2p.Envelope) bool {
 	if err := p.send(e); err != nil {
 		p.Logger.Error("failed to send message", "channel", e.ChannelID, "method", "Send", "err", err)
 		p.handleSendErr(err)
+
 		return false
 	}
 
@@ -133,6 +134,7 @@ func (p *Peer) TrySend(e p2p.Envelope) bool {
 	if err := p.send(e); err != nil {
 		p.Logger.Error("failed to send message", "channel", e.ChannelID, "method", "TrySend", "err", err)
 		p.handleSendErr(err)
+
 		return false
 	}
 

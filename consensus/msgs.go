@@ -22,6 +22,7 @@ func MsgToProto(msg Message) (proto.Message, error) {
 	if msg == nil {
 		return nil, ErrNilMessage
 	}
+
 	var pb proto.Message
 
 	switch msg := msg.(type) {
@@ -64,6 +65,7 @@ func MsgToProto(msg Message) (proto.Message, error) {
 		if err != nil {
 			return nil, cmterrors.ErrMsgToProto{MessageName: "Part", Err: err}
 		}
+
 		pb = &cmtcons.BlockPart{
 			Height: msg.Height,
 			Round:  msg.Round,
@@ -122,6 +124,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	if p == nil {
 		return nil, ErrNilMessage
 	}
+
 	var pb Message
 
 	switch msg := p.(type) {
@@ -131,6 +134,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 		if err != nil {
 			return nil, ErrDenyMessageOverflow{err}
 		}
+
 		pb = &NewRoundStepMessage{
 			Height:                msg.Height,
 			Round:                 msg.Round,
@@ -176,6 +180,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 		if err != nil {
 			return nil, cmterrors.ErrMsgToProto{MessageName: "Part", Err: err}
 		}
+
 		pb = &BlockPartMessage{
 			Height: msg.Height,
 			Round:  msg.Round,
@@ -204,6 +209,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 		if err != nil {
 			return nil, cmterrors.ErrMsgToProto{MessageName: "VoteSetMaj23", Err: err}
 		}
+
 		pb = &VoteSetMaj23Message{
 			Height:  msg.Height,
 			Round:   msg.Round,
@@ -215,6 +221,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 		if err != nil {
 			return nil, cmterrors.ErrMsgToProto{MessageName: "VoteSetBits", Err: err}
 		}
+
 		bits := new(bits.BitArray)
 		bits.FromProto(&msg.Votes)
 
@@ -256,9 +263,11 @@ func WALToProto(msg WALMessage) (*cmtcons.WALMessage, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		if w, ok := consMsg.(p2p.Wrapper); ok {
 			consMsg = w.Wrap()
 		}
+
 		cm := consMsg.(*cmtcons.Message)
 		pb = cmtcons.WALMessage{
 			Sum: &cmtcons.WALMessage_MsgInfo{
@@ -299,6 +308,7 @@ func WALFromProto(msg *cmtcons.WALMessage) (WALMessage, error) {
 	if msg == nil {
 		return nil, ErrNilMessage
 	}
+
 	var pb WALMessage
 
 	switch msg := msg.Sum.(type) {
@@ -313,10 +323,12 @@ func WALFromProto(msg *cmtcons.WALMessage) (WALMessage, error) {
 		if err != nil {
 			return nil, fmt.Errorf("unwrap message: %w", err)
 		}
+
 		walMsg, err := MsgFromProto(um)
 		if err != nil {
 			return nil, cmterrors.ErrMsgFromProto{MessageName: "MsgInfo", Err: err}
 		}
+
 		pb = msgInfo{
 			Msg:    walMsg,
 			PeerID: p2p.ID(msg.MsgInfo.PeerID),
@@ -328,20 +340,24 @@ func WALFromProto(msg *cmtcons.WALMessage) (WALMessage, error) {
 		if err != nil {
 			return nil, ErrDenyMessageOverflow{err}
 		}
+
 		pb = timeoutInfo{
 			Duration: msg.TimeoutInfo.Duration,
 			Height:   msg.TimeoutInfo.Height,
 			Round:    msg.TimeoutInfo.Round,
 			Step:     cstypes.RoundStepType(tis),
 		}
+
 		return pb, nil
 	case *cmtcons.WALMessage_EndHeight:
 		pb := EndHeightMessage{
 			Height: msg.EndHeight.Height,
 		}
+
 		return pb, nil
 	default:
 		return nil, fmt.Errorf("from proto: wal message not recognized: %T", msg)
 	}
+
 	return pb, nil
 }

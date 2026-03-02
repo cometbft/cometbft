@@ -132,5 +132,4 @@ func TestThroughputLatencyScaler(t *testing.T) {
 		require.Equal(t, tt.expectedDecision, decision, "expected decision at step %d", index)
 		require.Equal(t, tt.expectedNumWorkers, numWorkers, "expected number of workers at step %d", index)
 	}
-
 }

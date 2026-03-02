@@ -39,6 +39,7 @@ func TestEventBusPublishEventTx(t *testing.T) {
 	require.NoError(t, err)
 
 	done := make(chan struct{})
+
 	go func() {
 		msg := <-txsSub.Out()
 		edt := msg.Data().(EventDataTx)
@@ -87,6 +88,7 @@ func TestEventBusPublishEventNewBlock(t *testing.T) {
 	require.NoError(t, err)
 
 	done := make(chan struct{})
+
 	go func() {
 		msg := <-blocksSub.Out()
 		edt := msg.Data().(EventDataNewBlock)
@@ -96,6 +98,7 @@ func TestEventBusPublishEventNewBlock(t *testing.T) {
 	}()
 
 	var ps *PartSet
+
 	ps, err = block.MakePartSet(BlockPartSizeBytes)
 	require.NoError(t, err)
 
@@ -241,6 +244,7 @@ func TestEventBusPublishEventNewBlockHeader(t *testing.T) {
 	require.NoError(t, err)
 
 	done := make(chan struct{})
+
 	go func() {
 		msg := <-headersSub.Out()
 		edt := msg.Data().(EventDataNewBlockHeader)
@@ -276,6 +280,7 @@ func TestEventBusPublishEventNewBlockEvents(t *testing.T) {
 	require.NoError(t, err)
 
 	done := make(chan struct{})
+
 	go func() {
 		msg := <-headersSub.Out()
 		edt := msg.Data().(EventDataNewBlockEvents)
@@ -320,6 +325,7 @@ func TestEventBusPublishEventNewEvidence(t *testing.T) {
 	require.NoError(t, err)
 
 	done := make(chan struct{})
+
 	go func() {
 		msg := <-evSub.Out()
 		edt := msg.Data().(EventDataNewEvidence)
@@ -357,6 +363,7 @@ func TestEventBusPublish(t *testing.T) {
 	require.NoError(t, err)
 
 	done := make(chan struct{})
+
 	go func() {
 		numEvents := 0
 		for range sub.Out() {
@@ -442,10 +449,12 @@ func benchmarkEventBus(numClients int, randQueries bool, randEvents bool, b *tes
 	rnd := rand.New(rand.NewSource(time.Now().Unix()))
 
 	eventBus := NewEventBusWithBufferCapacity(0) // set buffer capacity to 0 so we are not testing cache
+
 	err := eventBus.Start()
 	if err != nil {
 		b.Error(err)
 	}
+
 	b.Cleanup(func() {
 		if err := eventBus.Stop(); err != nil {
 			b.Error(err)
@@ -459,10 +468,12 @@ func benchmarkEventBus(numClients int, randQueries bool, randEvents bool, b *tes
 		if randQueries {
 			q = randQuery(rnd)
 		}
+
 		sub, err := eventBus.Subscribe(ctx, fmt.Sprintf("client-%d", i), q)
 		if err != nil {
 			b.Fatal(err)
 		}
+
 		go func() {
 			for {
 				select {
@@ -478,6 +489,7 @@ func benchmarkEventBus(numClients int, randQueries bool, randEvents bool, b *tes
 
 	b.ReportAllocs()
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		if randEvents {
 			eventType = randEvent(rnd)

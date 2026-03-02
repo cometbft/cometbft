@@ -85,6 +85,7 @@ func Test_LightBlockBefore(t *testing.T) {
 
 	h, err := dbStore.LightBlockBefore(3)
 	require.NoError(t, err)
+
 	if assert.NotNil(t, h) {
 		assert.EqualValues(t, 2, h.Height)
 	}
@@ -133,6 +134,7 @@ func Test_Concurrency(t *testing.T) {
 	var wg sync.WaitGroup
 	for i := 1; i <= 100; i++ {
 		wg.Add(1)
+
 		go func(i int64) {
 			defer wg.Done()
 
@@ -148,6 +150,7 @@ func Test_Concurrency(t *testing.T) {
 			if err != nil {
 				t.Log(err)
 			}
+
 			_, err = dbStore.FirstLightBlockHeight()
 			if err != nil {
 				t.Log(err)
@@ -157,6 +160,7 @@ func Test_Concurrency(t *testing.T) {
 			if err != nil {
 				t.Log(err)
 			}
+
 			_ = dbStore.Size()
 
 			err = dbStore.DeleteLightBlock(1)
@@ -171,6 +175,7 @@ func Test_Concurrency(t *testing.T) {
 
 func randLightBlock(height int64) *types.LightBlock {
 	vals, _ := types.RandValidatorSet(2, 1)
+
 	return &types.LightBlock{
 		SignedHeader: &types.SignedHeader{
 			Header: &types.Header{

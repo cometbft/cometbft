@@ -57,6 +57,7 @@ func TestBlockchainInfo(t *testing.T) {
 
 	for i, c := range cases {
 		caseString := fmt.Sprintf("test %d failed", i)
+
 		min, max, err := filterMinMax(c.base, c.height, c.min, c.max, c.limit)
 		if c.wantErr {
 			require.Error(t, err, caseString)
@@ -83,6 +84,7 @@ func TestBlockResults(t *testing.T) {
 	})
 	err := env.StateStore.SaveFinalizeBlockResponse(100, results)
 	require.NoError(t, err)
+
 	mockstore := &mocks.BlockStore{}
 	mockstore.On("Height").Return(int64(100))
 	mockstore.On("Base").Return(int64(1))

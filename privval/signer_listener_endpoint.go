@@ -85,6 +85,7 @@ func (sl *SignerListenerEndpoint) OnStart() error {
 func (sl *SignerListenerEndpoint) OnStop() {
 	sl.instanceMtx.Lock()
 	defer sl.instanceMtx.Unlock()
+
 	_ = sl.Close()
 
 	// Stop listening
@@ -102,6 +103,7 @@ func (sl *SignerListenerEndpoint) OnStop() {
 func (sl *SignerListenerEndpoint) WaitForConnection(maxWait time.Duration) error {
 	sl.instanceMtx.Lock()
 	defer sl.instanceMtx.Unlock()
+
 	return sl.ensureConnection(maxWait)
 }
 
@@ -144,6 +146,7 @@ func (sl *SignerListenerEndpoint) ensureConnection(maxWait time.Duration) error 
 	// block until connected or timeout
 	sl.Logger.Info("SignerListener: Blocking for connection")
 	sl.triggerConnect()
+
 	err := sl.WaitConnection(sl.connectionAvailableCh, maxWait)
 	if err != nil {
 		return err
@@ -159,6 +162,7 @@ func (sl *SignerListenerEndpoint) acceptNewConnection() (net.Conn, error) {
 
 	// wait for a new conn
 	sl.Logger.Info("SignerListener: Listening for new connection")
+
 	conn, err := sl.listener.Accept()
 	if err != nil {
 		sl.acceptFailCount.Add(1)
@@ -166,6 +170,7 @@ func (sl *SignerListenerEndpoint) acceptNewConnection() (net.Conn, error) {
 	}
 
 	sl.acceptFailCount.Store(0)
+
 	return conn, nil
 }
 
@@ -197,11 +202,13 @@ func (sl *SignerListenerEndpoint) serviceLoop() {
 			if err != nil {
 				sl.Logger.Error("SignerListener: Error accepting connection", "err", err, "failures", sl.acceptFailCount.Load())
 				sl.triggerConnect()
+
 				continue
 			}
 
 			// We have a good connection, wait for someone that needs one otherwise cancellation
 			sl.Logger.Info("SignerListener: Connected")
+
 			select {
 			case sl.connectionAvailableCh <- conn:
 			case <-sl.Quit():

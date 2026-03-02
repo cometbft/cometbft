@@ -57,24 +57,29 @@ type metricsList []parsedMetric
 
 func main() {
 	flag.Parse()
+
 	if flag.NArg() != 2 {
 		log.Fatalf("Usage is '%s <path1> <path2>', got %d arguments",
 			filepath.Base(os.Args[0]), flag.NArg())
 	}
+
 	fa, err := os.Open(flag.Arg(0))
 	if err != nil {
 		log.Fatalf("Open: %v", err)
 	}
 	defer fa.Close()
+
 	fb, err := os.Open(flag.Arg(1))
 	if err != nil {
 		log.Fatalf("Open: %v", err) //nolint:gocritic
 	}
 	defer fb.Close()
+
 	md, err := DiffFromReaders(fa, fb)
 	if err != nil {
 		log.Fatalf("Generating diff: %v", err)
 	}
+
 	fmt.Print(md)
 }
 
@@ -82,10 +87,12 @@ func main() {
 // determines which metrics were added and removed in b.
 func DiffFromReaders(a, b io.Reader) (Diff, error) {
 	parser := expfmt.NewTextParser(model.LegacyValidation)
+
 	amf, err := parser.TextToMetricFamilies(a)
 	if err != nil {
 		return Diff{}, err
 	}
+
 	bmf, err := parser.TextToMetricFamilies(b)
 	if err != nil {
 		return Diff{}, err
@@ -101,6 +108,7 @@ func DiffFromReaders(a, b io.Reader) (Diff, error) {
 			md.Adds = append(md.Adds, bList[j].name)
 			j++
 		}
+
 		for i < len(aList) && j < len(bList) && aList[i].name == bList[j].name {
 			adds, removes := listDiff(aList[i].labels, bList[j].labels)
 			if len(adds) > 0 || len(removes) > 0 {
@@ -110,19 +118,23 @@ func DiffFromReaders(a, b io.Reader) (Diff, error) {
 					Removes: removes,
 				})
 			}
+
 			i++
 			j++
 		}
+
 		for i < len(aList) && (j >= len(bList) || aList[i].name < bList[j].name) {
 			md.Removes = append(md.Removes, aList[i].name)
 			i++
 		}
 	}
+
 	return md, nil
 }
 
 func toList(l map[string]*dto.MetricFamily) metricsList {
 	r := make([]parsedMetric, len(l))
+
 	var idx int
 	for name, family := range l {
 		r[idx] = parsedMetric{
@@ -131,7 +143,9 @@ func toList(l map[string]*dto.MetricFamily) metricsList {
 		}
 		idx++
 	}
+
 	sort.Sort(metricsList(r))
+
 	return r
 }
 
@@ -140,26 +154,31 @@ func labelsToStringList(ls []*dto.LabelPair) []string {
 	for i, l := range ls {
 		r[i] = l.GetName()
 	}
+
 	return sort.StringSlice(r)
 }
 
 func listDiff(a, b []string) ([]string, []string) {
 	adds, removes := []string{}, []string{}
+
 	i, j := 0, 0
 	for i < len(a) || j < len(b) {
 		for j < len(b) && (i >= len(a) || b[j] < a[i]) {
 			adds = append(adds, b[j])
 			j++
 		}
+
 		for i < len(a) && j < len(b) && a[i] == b[j] {
 			i++
 			j++
 		}
+
 		for i < len(a) && (j >= len(b) || a[i] < b[j]) {
 			removes = append(removes, a[i])
 			i++
 		}
 	}
+
 	return adds, removes
 }
 
@@ -172,27 +191,34 @@ func (m Diff) String() string {
 	if len(m.Adds) > 0 || len(m.Removes) > 0 {
 		fmt.Fprintln(&s, "Metric changes:")
 	}
+
 	if len(m.Adds) > 0 {
 		for _, add := range m.Adds {
 			fmt.Fprintf(&s, "+++ %s\n", add)
 		}
 	}
+
 	if len(m.Removes) > 0 {
 		for _, rem := range m.Removes {
 			fmt.Fprintf(&s, "--- %s\n", rem)
 		}
 	}
+
 	if len(m.Changes) > 0 {
 		fmt.Fprintln(&s, "Label changes:")
+
 		for _, ld := range m.Changes {
 			fmt.Fprintf(&s, "Metric: %s\n", ld.Metric)
+
 			for _, add := range ld.Adds {
 				fmt.Fprintf(&s, "+++ %s\n", add)
 			}
+
 			for _, rem := range ld.Removes {
 				fmt.Fprintf(&s, "--- %s\n", rem)
 			}
 		}
 	}
+
 	return s.String()
 }

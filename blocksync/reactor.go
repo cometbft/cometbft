@@ -119,13 +119,15 @@ func NewReactor(
 	// (bpRequester#requestRoutine; 1 per each peer).
 	requestsCh := make(chan BlockRequest)
 
-	const capacity = 1000                      // must be bigger than peers count
+	const capacity = 1000 // must be bigger than peers count
+
 	errorsCh := make(chan peerError, capacity) // so we don't block in #Receive#pool.AddBlock
 
 	startHeight := storeHeight + 1
 	if startHeight == 1 {
 		startHeight = state.InitialHeight
 	}
+
 	pool := NewBlockPool(startHeight, requestsCh, errorsCh)
 
 	enabledFlag := &atomic.Bool{}
@@ -180,8 +182,10 @@ func (r *Reactor) runPool(stateSynced bool) error {
 	// todo: use poolRoutineWg.Go() after moving to go 1.25+
 	run := func(fn func()) {
 		r.poolRoutineWg.Add(1)
+
 		go func() {
 			defer r.poolRoutineWg.Done()
+
 			fn()
 		}()
 	}
@@ -190,6 +194,7 @@ func (r *Reactor) runPool(stateSynced bool) error {
 	run(func() {
 		ticker := time.NewTicker(r.intervalStatusUpdate)
 		defer ticker.Stop()
+
 		r.poolEventsRoutine(ticker)
 	})
 
@@ -321,6 +326,7 @@ func (r *Reactor) handlePeerResponse(msg *bcproto.BlockResponse, src p2p.Peer) {
 	if err != nil {
 		r.Logger.Error("Peer sent us invalid block", "peer", src, "msg", msg, "err", err)
 		r.stopPeerForError(src, err)
+
 		return
 	}
 
@@ -330,6 +336,7 @@ func (r *Reactor) handlePeerResponse(msg *bcproto.BlockResponse, src p2p.Peer) {
 		if err != nil {
 			r.Logger.Error("Failed to convert extended commit from proto", "peer", src, "err", err)
 			r.stopPeerForError(src, err)
+
 			return
 		}
 	}
@@ -344,6 +351,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 	if err := ValidateMsg(e.Message); err != nil {
 		r.Logger.Error("Peer sent us invalid msg", "peer", e.Src, "msg", e.Message, "err", err)
 		r.stopPeerForError(e.Src, err)
+
 		return
 	}
 
@@ -381,7 +389,9 @@ func (r *Reactor) localNodeBlocksTheChain(state sm.State) bool {
 	if val == nil {
 		return false
 	}
+
 	total := state.Validators.TotalVotingPower()
+
 	return val.VotingPower >= total/3
 }
 
@@ -467,6 +477,7 @@ FOR_LOOP:
 					"initial_height", state.InitialHeight,
 					"max_peer_height", r.pool.MaxPeerHeight(),
 				)
+
 				continue FOR_LOOP
 			}
 
@@ -476,6 +487,7 @@ FOR_LOOP:
 			}
 
 			r.Logger.Info("Time to switch to consensus mode!", "height", height)
+
 			if err := r.pool.Stop(); err != nil {
 				r.Logger.Error("Error stopping pool", "err", err)
 			}
@@ -508,7 +520,6 @@ FOR_LOOP:
 			// Consequently, it is better to split these routines rather than
 			// coupling them as it's written here.  TODO uncouple from request
 			// routine.
-
 			// See if there are any blocks to sync.
 			first, second, extCommit := r.pool.PeekTwoBlocks()
 			if first == nil || second == nil {
@@ -521,6 +532,7 @@ FOR_LOOP:
 				// Panicking because the block pool's height  MUST keep consistent with the state; the block pool is totally under our control
 				panic(fmt.Errorf("peeked first block has unexpected height; expected %d, got %d", state.LastBlockHeight+1, first.Height))
 			}
+
 			if first.Height+1 != second.Height {
 				// Panicking because this is an obvious bug in the block pool, which is totally under our control
 				panic(fmt.Errorf("heights of first and second block are not consecutive; expected %d, got %d", state.LastBlockHeight, first.Height))
@@ -551,7 +563,6 @@ FOR_LOOP:
 			// currently necessary.
 			// TODO(sergio): Should we also validate against the extended commit?
 			err = state.Validators.VerifyCommitLight(chainID, firstID, first.Height, second.LastCommit)
-
 			if err == nil {
 				// validate the block before we persist it
 				err = r.blockExec.ValidateBlock(state, first)
@@ -559,6 +570,7 @@ FOR_LOOP:
 
 			// vote extension validations
 			presentExtCommit := extCommit != nil
+
 			extensionsEnabled := state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height)
 			if presentExtCommit != extensionsEnabled {
 				err = fmt.Errorf("non-nil extended commit must be received iff vote extensions are enabled for its height "+
@@ -566,10 +578,12 @@ FOR_LOOP:
 					first.Height, presentExtCommit, extensionsEnabled,
 				)
 			}
+
 			if err == nil && extensionsEnabled {
 				// if vote extensions were required at this height, ensure they exist.
 				err = extCommit.EnsureExtensions(true)
 			}
+
 			if err == nil && extensionsEnabled {
 				// if vote extensions were required at this height, validate the extended commit
 				err = state.Validators.VerifyCommitLight(chainID, firstID, first.Height, extCommit.ToCommit())
@@ -602,11 +616,13 @@ FOR_LOOP:
 			}
 
 			r.metrics.recordBlockMetrics(first)
+
 			blocksSynced++
 
 			if blocksSynced%100 == 0 {
 				lastRate = 0.9*lastRate + 0.1*(100/time.Since(lastHundred).Seconds())
 				lastHundred = time.Now()
+
 				r.Logger.Info(
 					"Block Sync Rate",
 					"height", r.pool.height,

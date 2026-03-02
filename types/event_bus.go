@@ -46,6 +46,7 @@ func NewEventBusWithBufferCapacity(cap int) *EventBus {
 	pubsub := cmtpubsub.NewServer(cmtpubsub.BufferCapacity(cap))
 	b := &EventBus{pubsub: pubsub}
 	b.BaseService = *service.NewBaseService(nil, "EventBus", b)
+
 	return b
 }
 
@@ -111,10 +112,12 @@ func (b *EventBus) Publish(eventType string, eventData TMEventData) error {
 // "{event.Type}.{attribute.Key}" and the value is each attribute's value.
 func (*EventBus) validateAndStringifyEvents(events []types.Event) map[string][]string {
 	result := make(map[string][]string)
+
 	for _, event := range events {
 		if len(event.Type) == 0 {
 			continue
 		}
+
 		prefix := event.Type + "."
 		for _, attr := range event.Attributes {
 			if len(attr.Key) == 0 {

@@ -34,6 +34,7 @@ func setupOfferSyncer() (*syncer, *proxymocks.AppConnSnapshot) {
 	connSnapshot := &proxymocks.AppConnSnapshot{}
 	stateProvider := &mocks.StateProvider{}
 	stateProvider.On("AppHash", mock.Anything, mock.Anything).Return([]byte("app_hash"), nil)
+
 	cfg := config.DefaultStateSyncConfig()
 	syncer := newSyncer(*cfg, log.NewNopLogger(), connSnapshot, connQuery, stateProvider, "")
 
@@ -44,6 +45,7 @@ func setupOfferSyncer() (*syncer, *proxymocks.AppConnSnapshot) {
 func simplePeer(id string) *p2pmocks.Peer {
 	peer := &p2pmocks.Peer{}
 	peer.On("ID").Return(p2p.ID(id))
+
 	return peer
 }
 
@@ -85,6 +87,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 	stateProvider.On("AppHash", mock.Anything, uint64(2)).Return([]byte("app_hash_2"), nil)
 	stateProvider.On("Commit", mock.Anything, uint64(1)).Return(commit, nil)
 	stateProvider.On("State", mock.Anything, uint64(1)).Return(state, nil)
+
 	connSnapshot := &proxymocks.AppConnSnapshot{}
 	connQuery := &proxymocks.AppConnQuery{}
 
@@ -103,7 +106,9 @@ func TestSyncer_SyncAny(t *testing.T) {
 		if !ok {
 			return false
 		}
+
 		req, ok := e.Message.(*ssproto.SnapshotsRequest)
+
 		return ok && e.ChannelID == SnapshotChannel && req != nil
 	})).Return(true)
 	syncer.AddPeer(peerA)
@@ -116,7 +121,9 @@ func TestSyncer_SyncAny(t *testing.T) {
 		if !ok {
 			return false
 		}
+
 		req, ok := e.Message.(*ssproto.SnapshotsRequest)
+
 		return ok && e.ChannelID == SnapshotChannel && req != nil
 	})).Return(true)
 	syncer.AddPeer(peerB)
@@ -163,6 +170,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 	onChunkRequest := func(args mock.Arguments) {
 		e, ok := args[0].(p2p.Envelope)
 		require.True(t, ok)
+
 		msg := e.Message.(*ssproto.ChunkRequest)
 		require.EqualValues(t, 1, msg.Height)
 		require.EqualValues(t, 1, msg.Format)
@@ -173,7 +181,9 @@ func TestSyncer_SyncAny(t *testing.T) {
 		assert.True(t, added)
 
 		chunkRequestsMtx.Lock()
+
 		chunkRequests[msg.Index]++
+
 		chunkRequestsMtx.Unlock()
 	}
 	peerA.On("Send", mock.MatchedBy(func(i any) bool {
@@ -383,7 +393,6 @@ func TestSyncer_offerSnapshot(t *testing.T) {
 		"unknown non-zero": {9, nil, unknownErr},
 	}
 	for name, tc := range testcases {
-
 		t.Run(name, func(t *testing.T) {
 			syncer, connSnapshot := setupOfferSyncer()
 			s := &snapshot{Height: 1, Format: 1, Chunks: 3, Hash: []byte{1, 2, 3}, trustedAppHash: []byte("app_hash")}
@@ -391,6 +400,7 @@ func TestSyncer_offerSnapshot(t *testing.T) {
 				Snapshot: toABCI(s),
 				AppHash:  []byte("app_hash"),
 			}).Return(&abci.ResponseOfferSnapshot{Result: tc.result}, tc.err)
+
 			err := syncer.offerSnapshot(s)
 			if tc.expectErr == unknownErr {
 				require.Error(t, err)
@@ -399,6 +409,7 @@ func TestSyncer_offerSnapshot(t *testing.T) {
 				if unwrapped != nil {
 					err = unwrapped
 				}
+
 				assert.Equal(t, tc.expectErr, err)
 			}
 		})
@@ -424,7 +435,6 @@ func TestSyncer_applyChunks_Results(t *testing.T) {
 		"unknown non-zero": {9, nil, unknownErr},
 	}
 	for name, tc := range testcases {
-
 		t.Run(name, func(t *testing.T) {
 			connQuery := &proxymocks.AppConnQuery{}
 			connSnapshot := &proxymocks.AppConnSnapshot{}
@@ -443,6 +453,7 @@ func TestSyncer_applyChunks_Results(t *testing.T) {
 			connSnapshot.On("ApplySnapshotChunk", mock.Anything, &abci.RequestApplySnapshotChunk{
 				Index: 0, Chunk: body,
 			}).Once().Return(&abci.ResponseApplySnapshotChunk{Result: tc.result}, tc.err)
+
 			if tc.result == abci.ResponseApplySnapshotChunk_RETRY {
 				connSnapshot.On("ApplySnapshotChunk", mock.Anything, &abci.RequestApplySnapshotChunk{
 					Index: 0, Chunk: body,
@@ -459,8 +470,10 @@ func TestSyncer_applyChunks_Results(t *testing.T) {
 				if unwrapped != nil {
 					err = unwrapped
 				}
+
 				assert.Equal(t, tc.expectErr, err)
 			}
+
 			connSnapshot.AssertExpectations(t)
 		})
 	}
@@ -478,7 +491,6 @@ func TestSyncer_applyChunks_RefetchChunks(t *testing.T) {
 		"reject_snapshot": {abci.ResponseApplySnapshotChunk_REJECT_SNAPSHOT},
 	}
 	for name, tc := range testcases {
-
 		t.Run(name, func(t *testing.T) {
 			connQuery := &proxymocks.AppConnQuery{}
 			connSnapshot := &proxymocks.AppConnSnapshot{}
@@ -543,7 +555,6 @@ func TestSyncer_applyChunks_RejectSenders(t *testing.T) {
 		"reject_snapshot": {abci.ResponseApplySnapshotChunk_REJECT_SNAPSHOT},
 	}
 	for name, tc := range testcases {
-
 		t.Run(name, func(t *testing.T) {
 			connQuery := &proxymocks.AppConnQuery{}
 			connSnapshot := &proxymocks.AppConnSnapshot{}
@@ -634,7 +645,9 @@ func TestSyncer_applyChunks_RejectSenders(t *testing.T) {
 
 func TestSyncer_verifyApp(t *testing.T) {
 	boom := errors.New("boom")
+
 	const appVersion = 9
+
 	appVersionMismatchErr := errors.New("app version mismatch. Expected: 9, got: 2")
 	s := &snapshot{Height: 3, Format: 1, Chunks: 5, Hash: []byte{1, 2, 3}, trustedAppHash: []byte("app_hash")}
 
@@ -666,7 +679,6 @@ func TestSyncer_verifyApp(t *testing.T) {
 		"error": {nil, boom, boom},
 	}
 	for name, tc := range testcases {
-
 		t.Run(name, func(t *testing.T) {
 			connQuery := &proxymocks.AppConnQuery{}
 			connSnapshot := &proxymocks.AppConnSnapshot{}
@@ -677,10 +689,12 @@ func TestSyncer_verifyApp(t *testing.T) {
 
 			connQuery.On("Info", mock.Anything, proxy.RequestInfo).Return(tc.response, tc.err)
 			err := syncer.verifyApp(s, appVersion)
+
 			unwrapped := errors.Unwrap(err)
 			if unwrapped != nil {
 				err = unwrapped
 			}
+
 			require.Equal(t, tc.expectErr, err)
 		})
 	}

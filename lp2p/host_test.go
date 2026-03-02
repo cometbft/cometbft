@@ -164,6 +164,7 @@ func TestHost(t *testing.T) {
 	wait := func() bool {
 		mu.Lock()
 		defer mu.Unlock()
+
 		return len(envelopes) == 3
 	}
 
@@ -306,6 +307,7 @@ func TestBootstrapPeers(t *testing.T) {
 		pkID := func(pk ed25519.PrivKey) string {
 			id, err := IDFromPrivateKey(pk)
 			require.NoError(t, err)
+
 			return id.String()
 		}
 

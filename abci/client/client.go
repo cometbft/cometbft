@@ -53,6 +53,7 @@ func NewClient(addr, transport string, mustConnect bool) (client Client, err err
 	default:
 		err = ErrUnknownAbciTransport{Transport: transport}
 	}
+
 	return
 }
 
@@ -94,6 +95,7 @@ func (r *ReqRes) SetCallback(cb func(res *types.Response)) {
 	if r.callbackInvoked {
 		r.mtx.Unlock()
 		cb(r.Response)
+
 		return
 	}
 
@@ -110,6 +112,7 @@ func (r *ReqRes) InvokeCallback() {
 	if r.cb != nil {
 		r.cb(r.Response)
 	}
+
 	r.callbackInvoked = true
 }
 
@@ -122,11 +125,13 @@ func (r *ReqRes) InvokeCallback() {
 func (r *ReqRes) GetCallback() func(*types.Response) {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
+
 	return r.cb
 }
 
 func waitGroup1() (wg *sync.WaitGroup) {
 	wg = &sync.WaitGroup{}
 	wg.Add(1)
+
 	return
 }

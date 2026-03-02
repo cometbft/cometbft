@@ -16,25 +16,31 @@ import (
 func TestRandom(t *testing.T) {
 	// Some random tests to verify Open(Seal) == Plaintext
 	for i := 0; i < 256; i++ {
-		var nonce [24]byte
-		var key [32]byte
+		var (
+			nonce [24]byte
+			key   [32]byte
+		)
 
 		al := mr.Intn(128)
 		pl := mr.Intn(16384)
 		ad := make([]byte, al)
 		plaintext := make([]byte, pl)
+
 		_, err := cr.Read(key[:])
 		if err != nil {
 			t.Errorf("error on read: %v", err)
 		}
+
 		_, err = cr.Read(nonce[:])
 		if err != nil {
 			t.Errorf("error on read: %v", err)
 		}
+
 		_, err = cr.Read(ad)
 		if err != nil {
 			t.Errorf("error on read: %v", err)
 		}
+
 		_, err = cr.Read(plaintext)
 		if err != nil {
 			t.Errorf("error on read: %v", err)
@@ -60,25 +66,31 @@ func TestRandom(t *testing.T) {
 
 		if len(ad) > 0 {
 			alterAdIdx := mr.Intn(len(ad))
+
 			ad[alterAdIdx] ^= 0x80
 			if _, err := aead.Open(nil, nonce[:], ct, ad); err == nil {
 				t.Errorf("random #%d: Open was successful after altering additional data", i)
 			}
+
 			ad[alterAdIdx] ^= 0x80
 		}
 
 		alterNonceIdx := mr.Intn(aead.NonceSize())
+
 		nonce[alterNonceIdx] ^= 0x80
 		if _, err := aead.Open(nil, nonce[:], ct, ad); err == nil {
 			t.Errorf("random #%d: Open was successful after altering nonce", i)
 		}
+
 		nonce[alterNonceIdx] ^= 0x80
 
 		alterCtIdx := mr.Intn(len(ct))
+
 		ct[alterCtIdx] ^= 0x80
 		if _, err := aead.Open(nil, nonce[:], ct, ad); err == nil {
 			t.Errorf("random #%d: Open was successful after altering ciphertext", i)
 		}
+
 		ct[alterCtIdx] ^= 0x80
 	}
 }

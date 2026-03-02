@@ -126,6 +126,7 @@ func TestPeerSet(t *testing.T) {
 	t.Run("ForEach", func(t *testing.T) {
 		// ARRANGE
 		ctx := context.Background()
+
 		const peers = 6
 
 		hosts := makeTestHosts(t, peers)
@@ -146,6 +147,7 @@ func TestPeerSet(t *testing.T) {
 		// ACT
 		// collect ids
 		collectedIDs := make(map[p2p.ID]struct{})
+
 		ps.ForEach(func(p p2p.Peer) {
 			collectedIDs[p.ID()] = struct{}{}
 		})

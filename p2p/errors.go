@@ -44,6 +44,7 @@ func (e ErrRejected) Error() string {
 				e.conn.RemoteAddr().String(),
 			)
 		}
+
 		if e.id != "" {
 			return fmt.Sprintf("duplicate ID<%v>", e.id)
 		}

@@ -32,6 +32,7 @@ func BenchmarkInnerHash(b *testing.B) {
 			if g, w := len(got), sha256.Size; g != w {
 				b.Fatalf("size discrepancy: got %d, want %d", g, w)
 			}
+
 			sink = got
 		}
 	}
@@ -46,15 +47,18 @@ func BenchmarkInnerHash(b *testing.B) {
 // This helps determine whether its worth parallelizing this hash for the proposer.
 func BenchmarkLeafHash64kb(b *testing.B) {
 	b.ReportAllocs()
+
 	leaf := make([]byte, 64*1024)
 	hash := sha256.New()
 
 	for i := 0; i < b.N; i++ {
 		leaf[0] = byte(i)
+
 		got := leafHashOpt(hash, leaf)
 		if g, w := len(got), sha256.Size; g != w {
 			b.Fatalf("size discrepancy: got %d, want %d", g, w)
 		}
+
 		sink = got
 	}
 

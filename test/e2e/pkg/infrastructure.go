@@ -50,7 +50,9 @@ func sortNodeNames(m Manifest) []string {
 	for name := range m.Nodes {
 		nodeNames = append(nodeNames, name)
 	}
+
 	sort.Strings(nodeNames)
+
 	return nodeNames
 }
 
@@ -59,6 +61,7 @@ func NewDockerInfrastructureData(m Manifest) (InfrastructureData, error) {
 	if m.IPv6 {
 		netAddress = dockerIPv6CIDR
 	}
+
 	_, ipNet, err := net.ParseCIDR(netAddress)
 	if err != nil {
 		return InfrastructureData{}, fmt.Errorf("invalid IP network address %q: %w", netAddress, err)
@@ -71,6 +74,7 @@ func NewDockerInfrastructureData(m Manifest) (InfrastructureData, error) {
 		Instances: make(map[string]InstanceData),
 		Network:   netAddress,
 	}
+
 	localHostIP := net.ParseIP("127.0.0.1")
 	for _, name := range sortNodeNames(m) {
 		ifd.Instances[name] = InstanceData{
@@ -79,22 +83,28 @@ func NewDockerInfrastructureData(m Manifest) (InfrastructureData, error) {
 			Port:         portGen.Next(),
 		}
 	}
+
 	return ifd, nil
 }
 
 func InfrastructureDataFromFile(p string) (InfrastructureData, error) {
 	ifd := InfrastructureData{}
+
 	b, err := os.ReadFile(p)
 	if err != nil {
 		return InfrastructureData{}, err
 	}
+
 	err = json.Unmarshal(b, &ifd)
 	if err != nil {
 		return InfrastructureData{}, err
 	}
+
 	if ifd.Network == "" {
 		ifd.Network = globalIPv4CIDR
 	}
+
 	ifd.Path = p
+
 	return ifd, nil
 }

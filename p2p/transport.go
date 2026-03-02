@@ -281,6 +281,7 @@ func (mt *MultiplexTransport) AddChannel(chID byte) {
 		if !ni.HasChannel(chID) {
 			ni.Channels = append(ni.Channels, chID)
 		}
+
 		mt.nodeInfo = ni
 	}
 }
@@ -300,6 +301,7 @@ func (mt *MultiplexTransport) acceptPeers() {
 			}
 
 			mt.acceptc <- accept{err: err}
+
 			return
 		}
 
@@ -505,6 +507,7 @@ func (mt *MultiplexTransport) wrapPeer(
 	socketAddr *NetAddress,
 ) Peer {
 	persistent := false
+
 	if cfg.isPersistent != nil {
 		if cfg.outbound {
 			persistent = cfg.isPersistent(socketAddr)
@@ -561,6 +564,7 @@ func handshake(
 	}(errc, c)
 	go func(errc chan<- error, c net.Conn) {
 		protoReader := protoio.NewDelimitedReader(c, MaxNodeInfoSize())
+
 		_, err := protoReader.ReadMsg(&pbpeerNodeInfo)
 		errc <- err
 	}(errc, c)

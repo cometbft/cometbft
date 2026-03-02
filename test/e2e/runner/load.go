@@ -23,10 +23,12 @@ func Load(ctx context.Context, testnet *e2e.Testnet) error {
 	initialTimeout := 1 * time.Minute
 	stallTimeout := 30 * time.Second
 	chSuccess := make(chan struct{})
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	logger.Info("load", "msg", log.NewLazySprintf("Starting transaction load (%v workers)...", workerPoolSize))
+
 	started := time.Now()
 	u := [16]byte(uuid.New()) // generate run ID on startup
 
@@ -46,6 +48,7 @@ func Load(ctx context.Context, testnet *e2e.Testnet) error {
 	// Monitor successful transactions, and abort on stalls.
 	success := 0
 	timeout := initialTimeout
+
 	for {
 		select {
 		case <-chSuccess:
@@ -53,8 +56,10 @@ func Load(ctx context.Context, testnet *e2e.Testnet) error {
 			if testnet.LoadMaxTxs > 0 && success >= testnet.LoadMaxTxs {
 				logger.Info("load", "msg", log.NewLazySprintf("Ending transaction load after reaching %v txs (%.1f tx/s)...",
 					success, float64(success)/time.Since(started).Seconds()))
+
 				return nil
 			}
+
 			timeout = stallTimeout
 		case <-time.After(timeout):
 			return fmt.Errorf("unable to submit transactions for %v", timeout)
@@ -62,8 +67,10 @@ func Load(ctx context.Context, testnet *e2e.Testnet) error {
 			if success == 0 {
 				return errors.New("failed to submit any transactions")
 			}
+
 			logger.Info("load", "msg", log.NewLazySprintf("Ending transaction load after %v txs (%.1f tx/s)...",
 				success, float64(success)/time.Since(started).Seconds()))
+
 			return nil
 		}
 	}
@@ -73,6 +80,7 @@ func Load(ctx context.Context, testnet *e2e.Testnet) error {
 func loadGenerate(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testnet, id []byte) {
 	t := time.NewTimer(0)
 	defer t.Stop()
+
 	for {
 		select {
 		case <-t.C:
@@ -80,6 +88,7 @@ func loadGenerate(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testne
 			close(txCh)
 			return
 		}
+
 		t.Reset(time.Second)
 
 		// A context with a timeout is created here to time the createTxBatch
@@ -98,10 +107,13 @@ func loadGenerate(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testne
 func createTxBatch(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testnet, id []byte) {
 	wg := &sync.WaitGroup{}
 	genCh := make(chan struct{})
+
 	for i := 0; i < workerPoolSize; i++ {
 		wg.Add(1)
+
 		go func() {
 			defer wg.Done()
+
 			for range genCh {
 				tx, err := payload.NewBytes(&payload.Payload{
 					Id:          id,
@@ -121,6 +133,7 @@ func createTxBatch(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testn
 			}
 		}()
 	}
+
 	for i := 0; i < testnet.LoadTxBatchSize; i++ {
 		select {
 		case genCh <- struct{}{}:
@@ -128,6 +141,7 @@ func createTxBatch(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testn
 			break
 		}
 	}
+
 	close(genCh)
 	wg.Wait()
 }
@@ -135,9 +149,13 @@ func createTxBatch(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testn
 // loadProcess processes transactions by sending transactions received on the txCh
 // to the client.
 func loadProcess(ctx context.Context, txCh <-chan types.Tx, chSuccess chan<- struct{}, n *e2e.Node) {
-	var client *rpchttp.HTTP
-	var err error
+	var (
+		client *rpchttp.HTTP
+		err    error
+	)
+
 	s := struct{}{}
+
 	for tx := range txCh {
 		if client == nil {
 			client, err = n.Client()
@@ -146,9 +164,11 @@ func loadProcess(ctx context.Context, txCh <-chan types.Tx, chSuccess chan<- str
 				continue
 			}
 		}
+
 		if _, err = client.BroadcastTxSync(ctx, tx); err != nil {
 			continue
 		}
+
 		chSuccess <- s
 	}
 }

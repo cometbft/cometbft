@@ -27,6 +27,7 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 			if wErr := WriteRPCResponseHTTPError(w, http.StatusBadRequest, res); wErr != nil {
 				logger.Error("failed to write response", "err", wErr)
 			}
+
 			return
 		}
 
@@ -50,8 +51,10 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 				if wErr := WriteRPCResponseHTTPError(w, http.StatusInternalServerError, res); wErr != nil {
 					logger.Error("failed to write response", "err", wErr)
 				}
+
 				return
 			}
+
 			requests = []types.RPCRequest{request}
 		}
 
@@ -60,8 +63,8 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 		// 2. Any RPC request doesn't allow to be cached.
 		// 3. Any RPC request has the height argument and the value is 0 (the default).
 		cache := true
-		for _, request := range requests {
 
+		for _, request := range requests {
 			// A Notification is a Request object without an "id" member.
 			// The Server MUST NOT reply to a Notification, including those that are within a batch request.
 			if request.ID == nil {
@@ -69,24 +72,31 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 					"HTTPJSONRPC received a notification, skipping... (please send a non-empty ID if you want to call a method)",
 					"req", request,
 				)
+
 				continue
 			}
+
 			if len(r.URL.Path) > 1 {
 				responses = append(
 					responses,
 					types.RPCInvalidRequestError(request.ID, fmt.Errorf("path %s is invalid", r.URL.Path)),
 				)
 				cache = false
+
 				continue
 			}
+
 			rpcFunc, ok := funcMap[request.Method]
 			if !ok || (rpcFunc.ws) {
 				responses = append(responses, types.RPCMethodNotFoundError(request.ID))
 				cache = false
+
 				continue
 			}
+
 			ctx := &types.Context{JSONReq: &request, HTTPReq: r}
 			args := []reflect.Value{reflect.ValueOf(ctx)}
+
 			if len(request.Params) > 0 {
 				fnArgs, err := jsonParamsToArgs(rpcFunc, request.Params)
 				if err != nil {
@@ -95,8 +105,10 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 						types.RPCInvalidParamsError(request.ID, fmt.Errorf("error converting json params to arguments: %w", err)),
 					)
 					cache = false
+
 					continue
 				}
+
 				args = append(args, fnArgs...)
 			}
 
@@ -105,11 +117,13 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 			}
 
 			returns := rpcFunc.f.Call(args)
+
 			result, err := unreflectResult(returns)
 			if err != nil {
 				responses = append(responses, types.RPCInternalError(request.ID, err))
 				continue
 			}
+
 			responses = append(responses, types.NewRPCSuccessResponse(request.ID, result))
 		}
 
@@ -120,6 +134,7 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 			} else {
 				wErr = WriteRPCResponseHTTP(w, responses...)
 			}
+
 			if wErr != nil {
 				logger.Error("failed to write responses", "err", wErr)
 			}
@@ -151,10 +166,12 @@ func mapParamsToArgs(
 
 		if p, ok := params[argName]; ok && p != nil && len(p) > 0 {
 			val := reflect.New(argType)
+
 			err := cmtjson.Unmarshal(p, val.Interface())
 			if err != nil {
 				return nil, err
 			}
+
 			values[i] = val.Elem()
 		} else { // use default for that type
 			values[i] = reflect.Zero(argType)
@@ -178,12 +195,15 @@ func arrayParamsToArgs(
 	for i, p := range params {
 		argType := rpcFunc.args[i+argsOffset]
 		val := reflect.New(argType)
+
 		err := cmtjson.Unmarshal(p, val.Interface())
 		if err != nil {
 			return nil, err
 		}
+
 		values[i] = val.Elem()
 	}
+
 	return values, nil
 }
 
@@ -200,6 +220,7 @@ func jsonParamsToArgs(rpcFunc *RPCFunc, raw []byte) ([]reflect.Value, error) {
 	// TODO: Make more efficient, perhaps by checking the first character for '{' or '['?
 	// First, try to get the map.
 	var m map[string]json.RawMessage
+
 	err := json.Unmarshal(raw, &m)
 	if err == nil {
 		return mapParamsToArgs(rpcFunc, m, argsOffset)
@@ -207,6 +228,7 @@ func jsonParamsToArgs(rpcFunc *RPCFunc, raw []byte) ([]reflect.Value, error) {
 
 	// Otherwise, try an array.
 	var a []json.RawMessage
+
 	err = json.Unmarshal(raw, &a)
 	if err == nil {
 		return arrayParamsToArgs(rpcFunc, a, argsOffset)
@@ -220,6 +242,7 @@ func jsonParamsToArgs(rpcFunc *RPCFunc, raw []byte) ([]reflect.Value, error) {
 func writeListOfEndpoints(w http.ResponseWriter, r *http.Request, funcMap map[string]*RPCFunc) {
 	noArgNames := []string{}
 	argNames := []string{}
+
 	for name, funcData := range funcMap {
 		if len(funcData.args) == 0 {
 			noArgNames = append(noArgNames, name)
@@ -227,8 +250,10 @@ func writeListOfEndpoints(w http.ResponseWriter, r *http.Request, funcMap map[st
 			argNames = append(argNames, name)
 		}
 	}
+
 	sort.Strings(noArgNames)
 	sort.Strings(argNames)
+
 	buf := new(bytes.Buffer)
 	buf.WriteString("<html><body>")
 	buf.WriteString("<br>Available endpoints:<br>")
@@ -239,8 +264,10 @@ func writeListOfEndpoints(w http.ResponseWriter, r *http.Request, funcMap map[st
 	}
 
 	buf.WriteString("<br>Endpoints that require arguments:<br>")
+
 	for _, name := range argNames {
 		link := fmt.Sprintf("//%s/%s?", r.Host, name)
+
 		funcData := funcMap[name]
 		for i, argName := range funcData.argNames {
 			link += argName + "=_"
@@ -248,8 +275,10 @@ func writeListOfEndpoints(w http.ResponseWriter, r *http.Request, funcMap map[st
 				link += "&"
 			}
 		}
+
 		fmt.Fprintf(buf, "<a href=\"%s\">%s</a></br>", link, link)
 	}
+
 	buf.WriteString("</body></html>")
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(200)

@@ -32,6 +32,7 @@ func (p *Provider) Setup() error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -40,6 +41,7 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	for i, n := range nodes {
 		nodeNames[i] = n.Name
 	}
+
 	return ExecCompose(ctx, p.Testnet.Dir, append([]string{"up", "-d"}, nodeNames...)...)
 }
 
@@ -123,11 +125,14 @@ services:
 	if err != nil {
 		return nil, err
 	}
+
 	var buf bytes.Buffer
+
 	err = tmpl.Execute(&buf, testnet)
 	if err != nil {
 		return nil, err
 	}
+
 	return buf.Bytes(), nil
 }
 

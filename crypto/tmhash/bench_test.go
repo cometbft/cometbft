@@ -40,6 +40,7 @@ func BenchmarkSHA256Many(b *testing.B) {
 			if !bytes.Equal(got, tt.want[:]) {
 				b.Fatalf("Outward checksum mismatch for %q\n\tGot:  %x\n\tWant: %x", tt.name, got, tt.want)
 			}
+
 			sink = got
 		}
 	}

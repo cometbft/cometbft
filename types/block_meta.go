@@ -37,6 +37,7 @@ func (bm *BlockMeta) ToProto() *cmtproto.BlockMeta {
 		Header:    *bm.Header.ToProto(),
 		NumTxs:    int64(bm.NumTxs),
 	}
+
 	return pb
 }
 
@@ -45,6 +46,7 @@ func BlockMetaFromProto(pb *cmtproto.BlockMeta) (*BlockMeta, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return bm, bm.ValidateBasic()
 }
 
@@ -78,9 +80,11 @@ func (bm *BlockMeta) ValidateBasic() error {
 	if err := bm.BlockID.ValidateBasic(); err != nil {
 		return err
 	}
+
 	if !bytes.Equal(bm.BlockID.Hash, bm.Header.Hash()) {
 		return fmt.Errorf("expected BlockID#Hash and Header#Hash to be the same, got %X != %X",
 			bm.BlockID.Hash, bm.Header.Hash())
 	}
+
 	return nil
 }

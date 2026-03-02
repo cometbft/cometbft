@@ -22,6 +22,7 @@ func (lb LightBlock) ValidateBasic(chainID string) error {
 	if lb.SignedHeader == nil {
 		return errors.New("missing signed header")
 	}
+
 	if lb.ValidatorSet == nil {
 		return errors.New("missing validator set")
 	}
@@ -29,6 +30,7 @@ func (lb LightBlock) ValidateBasic(chainID string) error {
 	if err := lb.SignedHeader.ValidateBasic(chainID); err != nil {
 		return fmt.Errorf("invalid signed header: %w", err)
 	}
+
 	if err := lb.ValidatorSet.ValidateBasic(); err != nil {
 		return fmt.Errorf("invalid validator set: %w", err)
 	}
@@ -69,10 +71,13 @@ func (lb *LightBlock) ToProto() (*cmtproto.LightBlock, error) {
 	}
 
 	lbp := new(cmtproto.LightBlock)
+
 	var err error
+
 	if lb.SignedHeader != nil {
 		lbp.SignedHeader = lb.SignedHeader.ToProto()
 	}
+
 	if lb.ValidatorSet != nil {
 		lbp.ValidatorSet, err = lb.ValidatorSet.ToProto()
 		if err != nil {
@@ -97,6 +102,7 @@ func LightBlockFromProto(pb *cmtproto.LightBlock) (*LightBlock, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		lb.SignedHeader = sh
 	}
 
@@ -105,6 +111,7 @@ func LightBlockFromProto(pb *cmtproto.LightBlock) (*LightBlock, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		lb.ValidatorSet = vals
 	}
 
@@ -135,6 +142,7 @@ func (sh SignedHeader) ValidateBasic(chainID string) error {
 	if sh.Header == nil {
 		return errors.New("missing header")
 	}
+
 	if sh.Commit == nil {
 		return errors.New("missing commit")
 	}
@@ -142,6 +150,7 @@ func (sh SignedHeader) ValidateBasic(chainID string) error {
 	if err := sh.Header.ValidateBasic(); err != nil {
 		return fmt.Errorf("invalid header: %w", err)
 	}
+
 	if err := sh.Commit.ValidateBasic(); err != nil {
 		return fmt.Errorf("invalid commit: %w", err)
 	}
@@ -154,6 +163,7 @@ func (sh SignedHeader) ValidateBasic(chainID string) error {
 	if sh.Commit.Height != sh.Height {
 		return fmt.Errorf("header and commit height mismatch: %d vs %d", sh.Height, sh.Commit.Height)
 	}
+
 	if hhash, chash := sh.Hash(), sh.Commit.BlockID.Hash; !bytes.Equal(hhash, chash) {
 		return fmt.Errorf("commit signs block %X, header is block %X", chash, hhash)
 	}
@@ -190,6 +200,7 @@ func (sh *SignedHeader) ToProto() *cmtproto.SignedHeader {
 	if sh.Header != nil {
 		psh.Header = sh.Header.ToProto()
 	}
+
 	if sh.Commit != nil {
 		psh.Commit = sh.Commit.ToProto()
 	}
@@ -211,6 +222,7 @@ func SignedHeaderFromProto(shp *cmtproto.SignedHeader) (*SignedHeader, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		sh.Header = &h
 	}
 
@@ -219,6 +231,7 @@ func SignedHeaderFromProto(shp *cmtproto.SignedHeader) (*SignedHeader, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		sh.Commit = c
 	}
 

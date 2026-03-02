@@ -98,6 +98,7 @@ func (vs *validatorStub) signVote(
 	if err != nil {
 		return nil, fmt.Errorf("can't get pubkey: %w", err)
 	}
+
 	vote := &types.Vote{
 		Type:             voteType,
 		Height:           vs.Height,
@@ -108,6 +109,7 @@ func (vs *validatorStub) signVote(
 		ValidatorIndex:   vs.Index,
 		Extension:        voteExtension,
 	}
+
 	v := vote.ToProto()
 	if err = vs.SignVote(test.DefaultTestChainID, v); err != nil {
 		return nil, fmt.Errorf("sign vote failed: %w", err)
@@ -139,10 +141,12 @@ func signVote(vs *validatorStub, voteType cmtproto.SignedMsgType, hash []byte, h
 		if voteType != cmtproto.PrecommitType {
 			panic(fmt.Errorf("vote type is not precommit but extensions enabled"))
 		}
+
 		if len(hash) != 0 || !header.IsZero() {
 			ext = []byte("extension")
 		}
 	}
+
 	v, err := vs.signVote(voteType, hash, header, ext, extEnabled)
 	if err != nil {
 		panic(fmt.Errorf("failed to sign vote: %v", err))
@@ -164,6 +168,7 @@ func signVotes(
 	for i, vs := range vss {
 		votes[i] = signVote(vs, voteType, hash, header, extEnabled)
 	}
+
 	return votes
 }
 
@@ -190,6 +195,7 @@ func (vss ValidatorStubsByPower) Less(i, j int) bool {
 	if err != nil {
 		panic(err)
 	}
+
 	vssj, err := vss[j].GetPubKey()
 	if err != nil {
 		panic(err)
@@ -198,6 +204,7 @@ func (vss ValidatorStubsByPower) Less(i, j int) bool {
 	if vss[i].VotingPower == vss[j].VotingPower {
 		return bytes.Compare(vssi.Address(), vssj.Address()) == -1
 	}
+
 	return vss[i].VotingPower > vss[j].VotingPower
 }
 
@@ -231,9 +238,11 @@ func decideProposal(
 	require.NoError(t, err)
 	blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
+
 	validRound := cs1.ValidRound
 	chainID := cs1.state.ChainID
 	cs1.mtx.Unlock()
+
 	if block == nil {
 		panic("Failed to createProposalBlock. Did you forget to add commit for previous block?")
 	}
@@ -241,6 +250,7 @@ func decideProposal(
 	// Make proposal
 	polRound, propBlockID := validRound, types.BlockID{Hash: block.Hash(), PartSetHeader: blockParts.Header()}
 	proposal := types.NewProposal(height, round, polRound, propBlockID)
+
 	p := proposal.ToProto()
 	if err := vs.SignProposal(chainID, p); err != nil {
 		panic(err)
@@ -273,11 +283,14 @@ func validatePrevote(t *testing.T, cs *State, round int32, privVal *validatorStu
 	prevotes := cs.Votes.Prevotes(round)
 	pubKey, err := privVal.GetPubKey()
 	require.NoError(t, err)
+
 	address := pubKey.Address()
+
 	var vote *types.Vote
 	if vote = prevotes.GetByAddress(address); vote == nil {
 		panic("Failed to find prevote from validator")
 	}
+
 	if blockHash == nil {
 		if vote.BlockID.Hash != nil {
 			panic(fmt.Sprintf("Expected prevote to be for nil, got %X", vote.BlockID.Hash))
@@ -293,11 +306,14 @@ func validateLastPrecommit(t *testing.T, cs *State, privVal *validatorStub, bloc
 	votes := cs.LastCommit
 	pv, err := privVal.GetPubKey()
 	require.NoError(t, err)
+
 	address := pv.Address()
+
 	var vote *types.Vote
 	if vote = votes.GetByAddress(address); vote == nil {
 		panic("Failed to find precommit from validator")
 	}
+
 	if !bytes.Equal(vote.BlockID.Hash, blockHash) {
 		panic(fmt.Sprintf("Expected precommit to be for %X, got %X", blockHash, vote.BlockID.Hash))
 	}
@@ -315,7 +331,9 @@ func validatePrecommit(
 	precommits := cs.Votes.Precommits(thisRound)
 	pv, err := privVal.GetPubKey()
 	require.NoError(t, err)
+
 	address := pv.Address()
+
 	var vote *types.Vote
 	if vote = precommits.GetByAddress(address); vote == nil {
 		panic("Failed to find precommit from validator")
@@ -357,7 +375,9 @@ func subscribeToVoter(cs *State, addr []byte) <-chan cmtpubsub.Message {
 	if err != nil {
 		panic(fmt.Sprintf("failed to subscribe %s to %v", testSubscriber, types.EventQueryVote))
 	}
+
 	ch := make(chan cmtpubsub.Message)
+
 	go func() {
 		for msg := range votesSub.Out() {
 			vote := msg.Data().(types.EventDataVote)
@@ -367,6 +387,7 @@ func subscribeToVoter(cs *State, addr []byte) <-chan cmtpubsub.Message {
 			}
 		}
 	}()
+
 	return ch
 }
 
@@ -437,20 +458,25 @@ func newStateWithConfigAndBlockStore(
 
 	eventBus := types.NewEventBus()
 	eventBus.SetLogger(log.TestingLogger().With("module", "events"))
+
 	err := eventBus.Start()
 	if err != nil {
 		panic(err)
 	}
+
 	cs.SetEventBus(eventBus)
+
 	return cs
 }
 
 func loadPrivValidator(config *cfg.Config) *privval.FilePV {
 	privValidatorKeyFile := config.PrivValidatorKeyFile()
 	ensureDir(filepath.Dir(privValidatorKeyFile), 0o700)
+
 	privValidatorStateFile := config.PrivValidatorStateFile()
 	privValidator := privval.LoadOrGenFilePV(privValidatorKeyFile, privValidatorStateFile)
 	privValidator.Reset()
+
 	return privValidator
 }
 
@@ -465,6 +491,7 @@ func randStateWithAppWithHeight(
 ) (*State, []*validatorStub) {
 	c := test.ConsensusParams()
 	c.ABCI.VoteExtensionsEnableHeight = height
+
 	return randStateWithAppImpl(nValidators, app, c)
 }
 
@@ -546,9 +573,11 @@ func ensureNewEvent(ch <-chan cmtpubsub.Message, height int64, round int32, time
 			panic(fmt.Sprintf("expected a EventDataRoundState, got %T. Wrong subscription channel?",
 				msg.Data()))
 		}
+
 		if roundStateEvent.Height != height {
 			panic(fmt.Sprintf("expected height %v, got %v", height, roundStateEvent.Height))
 		}
+
 		if roundStateEvent.Round != round {
 			panic(fmt.Sprintf("expected round %v, got %v", round, roundStateEvent.Round))
 		}
@@ -566,9 +595,11 @@ func ensureNewRound(roundCh <-chan cmtpubsub.Message, height int64, round int32)
 			panic(fmt.Sprintf("expected a EventDataNewRound, got %T. Wrong subscription channel?",
 				msg.Data()))
 		}
+
 		if newRoundEvent.Height != height {
 			panic(fmt.Sprintf("expected height %v, got %v", height, newRoundEvent.Height))
 		}
+
 		if newRoundEvent.Round != round {
 			panic(fmt.Sprintf("expected round %v, got %v", round, newRoundEvent.Round))
 		}
@@ -591,9 +622,11 @@ func ensureNewProposal(proposalCh <-chan cmtpubsub.Message, height int64, round 
 			panic(fmt.Sprintf("expected a EventDataCompleteProposal, got %T. Wrong subscription channel?",
 				msg.Data()))
 		}
+
 		if proposalEvent.Height != height {
 			panic(fmt.Sprintf("expected height %v, got %v", height, proposalEvent.Height))
 		}
+
 		if proposalEvent.Round != round {
 			panic(fmt.Sprintf("expected round %v, got %v", round, proposalEvent.Round))
 		}
@@ -615,6 +648,7 @@ func ensureNewBlock(blockCh <-chan cmtpubsub.Message, height int64) {
 			panic(fmt.Sprintf("expected a EventDataNewBlock, got %T. Wrong subscription channel?",
 				msg.Data()))
 		}
+
 		if blockEvent.Block.Height != height {
 			panic(fmt.Sprintf("expected height %v, got %v", height, blockEvent.Block.Height))
 		}
@@ -631,9 +665,11 @@ func ensureNewBlockHeader(blockCh <-chan cmtpubsub.Message, height int64, blockH
 			panic(fmt.Sprintf("expected a EventDataNewBlockHeader, got %T. Wrong subscription channel?",
 				msg.Data()))
 		}
+
 		if blockHeaderEvent.Header.Height != height {
 			panic(fmt.Sprintf("expected height %v, got %v", height, blockHeaderEvent.Header.Height))
 		}
+
 		if !bytes.Equal(blockHeaderEvent.Header.Hash(), blockHash) {
 			panic(fmt.Sprintf("expected header %X, got %X", blockHash, blockHeaderEvent.Header.Hash()))
 		}
@@ -655,12 +691,15 @@ func ensureProposal(proposalCh <-chan cmtpubsub.Message, height int64, round int
 			panic(fmt.Sprintf("expected a EventDataCompleteProposal, got %T. Wrong subscription channel?",
 				msg.Data()))
 		}
+
 		if proposalEvent.Height != height {
 			panic(fmt.Sprintf("expected height %v, got %v", height, proposalEvent.Height))
 		}
+
 		if proposalEvent.Round != round {
 			panic(fmt.Sprintf("expected round %v, got %v", round, proposalEvent.Round))
 		}
+
 		if !proposalEvent.BlockID.Equals(propID) {
 			panic(fmt.Sprintf("Proposed block does not match expected block (%v != %v)", proposalEvent.BlockID, propID))
 		}
@@ -687,13 +726,16 @@ func ensureVote(voteCh <-chan cmtpubsub.Message, height int64, round int32,
 			panic(fmt.Sprintf("expected a EventDataVote, got %T. Wrong subscription channel?",
 				msg.Data()))
 		}
+
 		vote := voteEvent.Vote
 		if vote.Height != height {
 			panic(fmt.Sprintf("expected height %v, got %v", height, vote.Height))
 		}
+
 		if vote.Round != round {
 			panic(fmt.Sprintf("expected round %v, got %v", round, vote.Round))
 		}
+
 		if vote.Type != voteType {
 			panic(fmt.Sprintf("expected type %v, got %v", voteType, vote.Type))
 		}
@@ -712,6 +754,7 @@ func ensurePrecommitMatch(t *testing.T, voteCh <-chan cmtpubsub.Message, height 
 
 func ensureVoteMatch(t *testing.T, voteCh <-chan cmtpubsub.Message, height int64, round int32, hash []byte, voteType cmtproto.SignedMsgType) {
 	t.Helper()
+
 	select {
 	case <-time.After(ensureTimeout):
 		t.Fatal("Timeout expired while waiting for NewVote event")
@@ -724,6 +767,7 @@ func ensureVoteMatch(t *testing.T, voteCh <-chan cmtpubsub.Message, height int64
 		assert.Equal(t, height, vote.Height, "expected height %d, but got %d", height, vote.Height)
 		assert.Equal(t, round, vote.Round, "expected round %d, but got %d", round, vote.Round)
 		assert.Equal(t, voteType, vote.Type, "expected type %s, but got %s", voteType, vote.Type)
+
 		if hash == nil {
 			require.Nil(t, vote.BlockID.Hash, "Expected prevote to be for nil, got %X", vote.BlockID.Hash)
 		} else {
@@ -760,6 +804,7 @@ func consensusLogger() log.Logger {
 				return term.FgBgColor{Fg: term.Color(uint8(keyvals[i+1].(int) + 1))}
 			}
 		}
+
 		return term.FgBgColor{}
 	}).With("module", "consensus")
 }
@@ -768,9 +813,11 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 	appFunc func() abci.Application, configOpts ...func(*cfg.Config),
 ) ([]*State, cleanupFunc) {
 	t.Helper()
+
 	genDoc, privVals := randGenesisDoc(nValidators, false, 30, nil)
 	css := make([]*State, nValidators)
 	logger := consensusLogger()
+
 	configRootDirs := make([]string, 0, nValidators)
 	for i := 0; i < nValidators; i++ {
 		stateDB := dbm.NewMemDB() // each state needs its own db
@@ -779,11 +826,14 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 		})
 		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
 		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
+
 		configRootDirs = append(configRootDirs, thisConfig.RootDir)
 		for _, opt := range configOpts {
 			opt(thisConfig)
 		}
+
 		ensureDir(filepath.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
+
 		app := appFunc()
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
 		_, err := app.InitChain(context.Background(), &abci.RequestInitChain{Validators: vals})
@@ -793,6 +843,7 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 		css[i].SetTimeoutTicker(tickerFunc())
 		css[i].SetLogger(logger.With("validator", i, "module", "consensus"))
 	}
+
 	return css, func() {
 		for _, dir := range configRootDirs {
 			os.RemoveAll(dir)
@@ -813,21 +864,27 @@ func randConsensusNetWithPeers(
 	genDoc, privVals := randGenesisDoc(nValidators, false, testMinPower, c)
 	css := make([]*State, nPeers)
 	logger := consensusLogger()
+
 	var peer0Config *cfg.Config
+
 	configRootDirs := make([]string, 0, nPeers)
 	for i := 0; i < nPeers; i++ {
 		stateDB := dbm.NewMemDB() // each state needs its own db
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
 		})
+
 		t.Cleanup(func() { _ = stateStore.Close() })
+
 		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
 		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
 		configRootDirs = append(configRootDirs, thisConfig.RootDir)
 		ensureDir(filepath.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
+
 		if i == 0 {
 			peer0Config = thisConfig
 		}
+
 		var privVal types.PrivValidator
 		if i < nValidators {
 			privVal = privVals[i]
@@ -836,6 +893,7 @@ func randConsensusNetWithPeers(
 			if err != nil {
 				panic(err)
 			}
+
 			tempStateFile, err := os.CreateTemp("", "priv_validator_state_")
 			if err != nil {
 				panic(err)
@@ -845,11 +903,13 @@ func randConsensusNetWithPeers(
 		}
 
 		app := appFunc(path.Join(config.DBDir(), fmt.Sprintf("%s_%d", testName, i)))
+
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
 		if _, ok := app.(*kvstore.Application); ok {
 			// simulate handshake, receive app version. If don't do this, replay test will fail
 			state.Version.Consensus.App = kvstore.AppVersion
 		}
+
 		_, err := app.InitChain(context.Background(), &abci.RequestInitChain{Validators: vals})
 		require.NoError(t, err)
 
@@ -857,6 +917,7 @@ func randConsensusNetWithPeers(
 		css[i].SetTimeoutTicker(tickerFunc())
 		css[i].SetLogger(logger.With("validator", i, "module", "consensus"))
 	}
+
 	return css, genDoc, peer0Config, func() {
 		for _, dir := range configRootDirs {
 			os.RemoveAll(dir)
@@ -870,6 +931,7 @@ func getSwitchIndex(switches []*p2p.Switch, peer p2p.Peer) int {
 			return i
 		}
 	}
+
 	panic("didn't find peer in switches")
 }
 
@@ -882,6 +944,7 @@ func randGenesisDoc(numValidators int,
 	consensusParams *types.ConsensusParams,
 ) (*types.GenesisDoc, []types.PrivValidator) {
 	validators := make([]types.GenesisValidator, numValidators)
+
 	privValidators := make([]types.PrivValidator, numValidators)
 	for i := 0; i < numValidators; i++ {
 		val, privVal := types.RandValidator(randPower, minPower)
@@ -891,6 +954,7 @@ func randGenesisDoc(numValidators int,
 		}
 		privValidators[i] = privVal
 	}
+
 	sort.Sort(types.PrivValidatorsByAddress(privValidators))
 
 	return &types.GenesisDoc{
@@ -910,6 +974,7 @@ func randGenesisState(
 ) (sm.State, []types.PrivValidator) {
 	genDoc, privValidators := randGenesisDoc(numValidators, randPower, minPower, consensusParams)
 	s0, _ := sm.MakeGenesisState(genDoc)
+
 	return s0, privValidators
 }
 
@@ -946,11 +1011,14 @@ func (m *mockTicker) Stop() error {
 func (m *mockTicker) ScheduleTimeout(ti timeoutInfo) {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
+
 	if m.onlyOnce && m.fired {
 		return
 	}
+
 	if ti.Step == cstypes.RoundStepNewHeight {
 		m.c <- ti
+
 		m.fired = true
 	}
 }
@@ -966,6 +1034,7 @@ func newPersistentKVStore() abci.Application {
 	if err != nil {
 		panic(err)
 	}
+
 	return kvstore.NewPersistentApplication(dir)
 }
 

@@ -117,6 +117,7 @@ func (rs *reactorSet) Stop() {
 		reactor.consumerQueue.Stop()
 
 		rs.switchRef.Logger.Info("Stopping reactor", "reactor", reactor.name)
+
 		if err := reactor.Stop(); err != nil {
 			rs.switchRef.Logger.Error("Failed to stop reactor", "name", reactor.name, "err", err)
 		}
@@ -185,6 +186,7 @@ func (rs *reactorSet) Receive(reactorName, messageType string, envelope p2p.Enve
 	// lp2p metrics
 	rs.switchRef.metrics.MessagesReceived.With(labels...).Add(1)
 	rs.switchRef.metrics.MessagesReactorInFlight.With(labels...).Add(1)
+
 	now := time.Now()
 
 	pq := pendingEnvelope{

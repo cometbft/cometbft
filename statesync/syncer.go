@@ -90,13 +90,16 @@ func newSyncer(
 func (s *syncer) AddChunk(chunk *chunk) (bool, error) {
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
+
 	if s.chunks == nil {
 		return false, errors.New("no state sync in progress")
 	}
+
 	added, err := s.chunks.Add(chunk)
 	if err != nil {
 		return false, err
 	}
+
 	if added {
 		s.logger.Debug("Added chunk to queue", "height", chunk.Height, "format", chunk.Format,
 			"chunk", chunk.Index)
@@ -104,6 +107,7 @@ func (s *syncer) AddChunk(chunk *chunk) (bool, error) {
 		s.logger.Debug("Ignoring duplicate chunk in queue", "height", chunk.Height, "format", chunk.Format,
 			"chunk", chunk.Index)
 	}
+
 	return added, nil
 }
 
@@ -114,10 +118,12 @@ func (s *syncer) AddSnapshot(peer p2p.Peer, snapshot *snapshot) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	if added {
 		s.logger.Info("Discovered new snapshot", "height", snapshot.Height, "format", snapshot.Format,
 			"hash", log.NewLazySprintf("%X", snapshot.Hash))
 	}
+
 	return added, nil
 }
 
@@ -125,6 +131,7 @@ func (s *syncer) AddSnapshot(peer p2p.Peer, snapshot *snapshot) (bool, error) {
 // to discover snapshots, later we may want to do retries and stuff.
 func (s *syncer) AddPeer(peer p2p.Peer) {
 	s.logger.Debug("Requesting snapshots from peer", "peer", peer.ID())
+
 	e := p2p.Envelope{
 		ChannelID: SnapshotChannel,
 		Message:   &ssproto.SnapshotsRequest{},
@@ -170,15 +177,19 @@ func (s *syncer) SyncAny(discoveryTime time.Duration, retryHook func()) (sm.Stat
 			snapshot = s.snapshots.Best()
 			chunks = nil
 		}
+
 		if snapshot == nil {
 			if discoveryTime == 0 {
 				return sm.State{}, nil, errNoSnapshots
 			}
+
 			retryHook()
 			s.logger.Info("sync any", "msg", log.NewLazySprintf("Discovering snapshots for %v", discoveryTime))
 			time.Sleep(discoveryTime)
+
 			continue
 		}
+
 		if chunks == nil {
 			chunks, err = newChunkQueue(snapshot, s.tempDir)
 			if err != nil {
@@ -199,6 +210,7 @@ func (s *syncer) SyncAny(discoveryTime time.Duration, retryHook func()) (sm.Stat
 			chunks.RetryAll()
 			s.logger.Info("Retrying snapshot", "height", snapshot.Height, "format", snapshot.Format,
 				"hash", log.NewLazySprintf("%X", snapshot.Hash))
+
 			continue
 
 		case errors.Is(err, errTimeout):
@@ -218,6 +230,7 @@ func (s *syncer) SyncAny(discoveryTime time.Duration, retryHook func()) (sm.Stat
 		case errors.Is(err, errRejectSender):
 			s.logger.Info("Snapshot senders rejected", "height", snapshot.Height, "format", snapshot.Format,
 				"hash", log.NewLazySprintf("%X", snapshot.Hash))
+
 			for _, peer := range s.snapshots.GetPeers(snapshot) {
 				s.snapshots.RejectPeer(peer.ID())
 				s.logger.Info("Snapshot sender rejected", "peer", peer.ID())
@@ -236,6 +249,7 @@ func (s *syncer) SyncAny(discoveryTime time.Duration, retryHook func()) (sm.Stat
 		if err != nil {
 			s.logger.Error("Failed to clean up chunk queue", "err", err)
 		}
+
 		snapshot = nil
 		chunks = nil
 	}
@@ -245,12 +259,15 @@ func (s *syncer) SyncAny(discoveryTime time.Duration, retryHook func()) (sm.Stat
 // the caller must use to bootstrap the node.
 func (s *syncer) Sync(snapshot *snapshot, chunks *chunkQueue) (sm.State, *types.Commit, error) {
 	s.mtx.Lock()
+
 	if s.chunks != nil {
 		s.mtx.Unlock()
 		return sm.State{}, nil, errors.New("a state sync is already in progress")
 	}
+
 	s.chunks = chunks
 	s.mtx.Unlock()
+
 	defer func() {
 		s.mtx.Lock()
 		s.chunks = nil
@@ -263,11 +280,14 @@ func (s *syncer) Sync(snapshot *snapshot, chunks *chunkQueue) (sm.State, *types.
 	appHash, err := s.stateProvider.AppHash(hctx, snapshot.Height)
 	if err != nil {
 		s.logger.Info("failed to fetch and verify app hash", "err", err)
+
 		if errors.Is(err, light.ErrNoWitnesses) {
 			return sm.State{}, nil, err
 		}
+
 		return sm.State{}, nil, errRejectSnapshot
 	}
+
 	snapshot.trustedAppHash = appHash
 
 	// Offer snapshot to ABCI app.
@@ -279,6 +299,7 @@ func (s *syncer) Sync(snapshot *snapshot, chunks *chunkQueue) (sm.State, *types.
 	// Spawn chunk fetchers. They will terminate when the chunk queue is closed or context canceled.
 	fetchCtx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
+
 	for i := int32(0); i < s.chunkFetchers; i++ {
 		go s.fetchChunks(fetchCtx, snapshot, chunks)
 	}
@@ -290,17 +311,22 @@ func (s *syncer) Sync(snapshot *snapshot, chunks *chunkQueue) (sm.State, *types.
 	state, err := s.stateProvider.State(pctx, snapshot.Height)
 	if err != nil {
 		s.logger.Info("failed to fetch and verify CometBFT state", "err", err)
+
 		if errors.Is(err, light.ErrNoWitnesses) {
 			return sm.State{}, nil, err
 		}
+
 		return sm.State{}, nil, errRejectSnapshot
 	}
+
 	commit, err := s.stateProvider.Commit(pctx, snapshot.Height)
 	if err != nil {
 		s.logger.Info("failed to fetch and verify commit", "err", err)
+
 		if errors.Is(err, light.ErrNoWitnesses) {
 			return sm.State{}, nil, err
 		}
+
 		return sm.State{}, nil, errRejectSnapshot
 	}
 
@@ -327,6 +353,7 @@ func (s *syncer) Sync(snapshot *snapshot, chunks *chunkQueue) (sm.State, *types.
 func (s *syncer) offerSnapshot(snapshot *snapshot) error {
 	s.logger.Info("Offering snapshot to ABCI app", "height", snapshot.Height,
 		"format", snapshot.Format, "hash", log.NewLazySprintf("%X", snapshot.Hash))
+
 	resp, err := s.conn.OfferSnapshot(context.TODO(), &abci.RequestOfferSnapshot{
 		Snapshot: &abci.Snapshot{
 			Height:   snapshot.Height,
@@ -340,10 +367,12 @@ func (s *syncer) offerSnapshot(snapshot *snapshot) error {
 	if err != nil {
 		return fmt.Errorf("failed to offer snapshot: %w", err)
 	}
+
 	switch resp.Result {
 	case abci.ResponseOfferSnapshot_ACCEPT:
 		s.logger.Info("Snapshot accepted, restoring", "height", snapshot.Height,
 			"format", snapshot.Format, "hash", log.NewLazySprintf("%X", snapshot.Hash))
+
 		return nil
 	case abci.ResponseOfferSnapshot_ABORT:
 		return errAbort
@@ -377,6 +406,7 @@ func (s *syncer) applyChunks(chunks *chunkQueue) error {
 		if err != nil {
 			return fmt.Errorf("failed to apply chunk %v: %w", chunk.Index, err)
 		}
+
 		s.logger.Info("Applied snapshot chunk to ABCI app", "height", chunk.Height,
 			"format", chunk.Format, "chunk", chunk.Index, "total", chunks.Size())
 
@@ -392,6 +422,7 @@ func (s *syncer) applyChunks(chunks *chunkQueue) error {
 		for _, sender := range resp.RejectSenders {
 			if sender != "" {
 				s.snapshots.RejectPeer(p2p.ID(sender))
+
 				err := chunks.DiscardSender(p2p.ID(sender))
 				if err != nil {
 					return fmt.Errorf("failed to reject sender: %w", err)
@@ -435,14 +466,18 @@ func (s *syncer) fetchChunks(ctx context.Context, snapshot *snapshot, chunks *ch
 					return
 				default:
 				}
+
 				time.Sleep(2 * time.Second)
+
 				continue
 			}
+
 			if err != nil {
 				s.logger.Error("Failed to allocate chunk from queue", "err", err)
 				return
 			}
 		}
+
 		s.logger.Info("Fetching snapshot chunk", "height", snapshot.Height,
 			"format", snapshot.Format, "chunk", index, "total", chunks.Size())
 
@@ -472,8 +507,10 @@ func (s *syncer) requestChunk(snapshot *snapshot, chunk uint32) {
 	if peer == nil {
 		s.logger.Error("No valid peers found for snapshot", "height", snapshot.Height,
 			"format", snapshot.Format, "hash", log.NewLazySprintf("%X", snapshot.Hash))
+
 		return
 	}
+
 	s.logger.Debug("Requesting snapshot chunk", "height", snapshot.Height,
 		"format", snapshot.Format, "chunk", chunk, "peer", peer.ID())
 	peer.Send(p2p.Envelope{
@@ -501,21 +538,26 @@ func (s *syncer) verifyApp(snapshot *snapshot, appVersion uint64) error {
 		return fmt.Errorf("app version mismatch. Expected: %d, got: %d",
 			appVersion, resp.AppVersion)
 	}
+
 	if !bytes.Equal(snapshot.trustedAppHash, resp.LastBlockAppHash) {
 		s.logger.Error("appHash verification failed",
 			"expected", fmt.Sprintf("%X", snapshot.trustedAppHash),
 			"actual", fmt.Sprintf("%X", resp.LastBlockAppHash))
+
 		return errVerifyFailed
 	}
+
 	if uint64(resp.LastBlockHeight) != snapshot.Height {
 		s.logger.Error(
 			"ABCI app reported unexpected last block height",
 			"expected", snapshot.Height,
 			"actual", resp.LastBlockHeight,
 		)
+
 		return errVerifyFailed
 	}
 
 	s.logger.Info("Verified ABCI app", "height", snapshot.Height, "appHash", log.NewLazySprintf("%X", snapshot.trustedAppHash))
+
 	return nil
 }

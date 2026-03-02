@@ -33,6 +33,7 @@ func (env *Environment) Tx(_ *rpctypes.Context, hash []byte, prove bool) (*ctype
 	}
 
 	var proof types.TxProof
+
 	if prove {
 		block := env.BlockStore.LoadBlock(r.Height)
 		if block != nil {
@@ -84,6 +85,7 @@ func (env *Environment) TxSearch(
 			if results[i].Height == results[j].Height {
 				return results[i].Index > results[j].Index
 			}
+
 			return results[i].Height > results[j].Height
 		})
 	case "asc", "":
@@ -91,6 +93,7 @@ func (env *Environment) TxSearch(
 			if results[i].Height == results[j].Height {
 				return results[i].Index < results[j].Index
 			}
+
 			return results[i].Height < results[j].Height
 		})
 	default:
@@ -114,6 +117,7 @@ func (env *Environment) TxSearch(
 		r := results[i]
 
 		var proof types.TxProof
+
 		if prove {
 			block := env.BlockStore.LoadBlock(r.Height)
 			if block != nil {

@@ -47,6 +47,7 @@ func NewTimeoutTicker() TimeoutTicker {
 	}
 	tt.BaseService = *service.NewBaseService(nil, "TimeoutTicker", tt)
 	tt.stopTimer() // don't want to fire until the first scheduled timeout
+
 	return tt
 }
 
@@ -85,6 +86,7 @@ func (t *timeoutTicker) stopTimer() {
 	if !t.timer.Stop() {
 		<-t.timer.C
 	}
+
 	t.timerActive = false
 }
 
@@ -95,7 +97,9 @@ func (t *timeoutTicker) stopTimer() {
 // making it single-threaded access.
 func (t *timeoutTicker) timeoutRoutine() {
 	t.Logger.Debug("Starting timeout routine")
+
 	var ti timeoutInfo
+
 	for {
 		select {
 		case newti := <-t.tickChan:

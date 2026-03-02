@@ -49,10 +49,12 @@ func NewTMFmtLogger(w io.Writer) kitlog.Logger {
 
 func (l tmfmtLogger) Log(keyvals ...any) error {
 	enc := tmfmtEncoderPool.Get().(*tmfmtEncoder)
+
 	enc.Reset()
 	defer tmfmtEncoderPool.Put(enc)
 
 	const unknown = "unknown"
+
 	lvl := "none"
 	msg := unknown
 	module := unknown
@@ -92,7 +94,6 @@ func (l tmfmtLogger) Log(keyvals ...any) error {
 		if s, ok := keyvals[i+1].(fmt.Stringer); ok {
 			keyvals[i+1] = s.String()
 		}
-
 	}
 
 	// Form a custom CometBFT line
@@ -137,5 +138,6 @@ KeyvalueLoop:
 	if _, err := l.w.Write(enc.buf.Bytes()); err != nil {
 		return err
 	}
+
 	return nil
 }

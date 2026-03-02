@@ -18,6 +18,7 @@ func makeTxs(cnt, size int) Txs {
 	for i := 0; i < cnt; i++ {
 		txs[i] = cmtrand.Bytes(size)
 	}
+
 	return txs
 }
 
@@ -29,6 +30,7 @@ func TestTxIndex(t *testing.T) {
 			idx := txs.Index(tx)
 			assert.Equal(t, j, idx)
 		}
+
 		assert.Equal(t, -1, txs.Index(nil))
 		assert.Equal(t, -1, txs.Index(Tx("foodnwkf")))
 	}
@@ -42,6 +44,7 @@ func TestTxIndexByHash(t *testing.T) {
 			idx := txs.IndexByHash(tx.Hash())
 			assert.Equal(t, j, idx)
 		}
+
 		assert.Equal(t, -1, txs.IndexByHash(nil))
 		assert.Equal(t, -1, txs.IndexByHash(Tx("foodnwkf").Hash()))
 	}
@@ -79,6 +82,7 @@ func TestValidTxProof(t *testing.T) {
 				p2  TxProof
 				pb2 cmtproto.TxProof
 			)
+
 			pbProof := proof.ToProto()
 			bin, err := pbProof.Marshal()
 			require.NoError(t, err)
@@ -129,6 +133,7 @@ func assertBadProof(t *testing.T, root []byte, bad []byte, good TxProof) {
 		proof   TxProof
 		pbProof cmtproto.TxProof
 	)
+
 	err := pbProof.Unmarshal(bad)
 	if err == nil {
 		proof, err = TxProofFromProto(pbProof)

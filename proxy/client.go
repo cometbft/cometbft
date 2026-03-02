@@ -122,12 +122,14 @@ func DefaultClientCreator(addr, transport, dbDir string) ClientCreator {
 		if err != nil {
 			panic(err)
 		}
+
 		return NewLocalClientCreator(app)
 	case "e2e_connsync":
 		app, err := e2e.NewApplication(e2e.DefaultConfig(dbDir))
 		if err != nil {
 			panic(err)
 		}
+
 		return NewConnSyncLocalClientCreator(app)
 	case "noop":
 		return NewLocalClientCreator(types.NewBaseApplication())

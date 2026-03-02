@@ -29,6 +29,7 @@ func TestRFC6962Hasher(t *testing.T) {
 	_, leafHashTrail = trailsFromByteSlices([][]byte{{}})
 	emptyLeafHash := leafHashTrail.Hash
 	_, emptyHashTrail := trailsFromByteSlices([][]byte{})
+
 	emptyTreeHash := emptyHashTrail.Hash
 	for _, tc := range []struct {
 		desc string
@@ -63,12 +64,12 @@ func TestRFC6962Hasher(t *testing.T) {
 			got:  innerHash([]byte("N123"), []byte("N456")),
 		},
 	} {
-
 		t.Run(tc.desc, func(t *testing.T) {
 			wantBytes, err := hex.DecodeString(tc.want)
 			if err != nil {
 				t.Fatalf("hex.DecodeString(%x): %v", tc.want, err)
 			}
+
 			if got, want := tc.got, wantBytes; !bytes.Equal(got, want) {
 				t.Errorf("got %x, want %x", got, want)
 			}
@@ -82,6 +83,7 @@ func TestRFC6962HasherCollisions(t *testing.T) {
 	_, leafHashTrail := trailsFromByteSlices([][]byte{leaf1})
 	hash1 := leafHashTrail.Hash
 	_, leafHashTrail = trailsFromByteSlices([][]byte{leaf2})
+
 	hash2 := leafHashTrail.Hash
 	if bytes.Equal(hash1, hash2) {
 		t.Errorf("leaf hashes should differ, but both are %x", hash1)
@@ -92,12 +94,14 @@ func TestRFC6962HasherCollisions(t *testing.T) {
 	// Check that this is not the same as a leaf hash of their concatenation.
 	preimage := bytes.Join([][]byte{hash1, hash2}, nil)
 	_, forgedHashTrail := trailsFromByteSlices([][]byte{preimage})
+
 	forgedHash := forgedHashTrail.Hash
 	if bytes.Equal(subHash1, forgedHash) {
 		t.Errorf("hasher is not second-preimage resistant")
 	}
 	// Swap the order of nodes and check that the hash is different.
 	_, subHash2Trail := trailsFromByteSlices([][]byte{hash2, hash1})
+
 	subHash2 := subHash2Trail.Hash
 	if bytes.Equal(subHash1, subHash2) {
 		t.Errorf("subtree hash does not depend on the order of leaves")

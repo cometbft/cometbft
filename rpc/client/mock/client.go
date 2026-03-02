@@ -70,6 +70,7 @@ func (c Call) GetResponse(args any) (any, error) {
 		if c.Error == nil {
 			panic("Misconfigured call, you must set either Response or Error")
 		}
+
 		return nil, c.Error
 	}
 	// response without error
@@ -80,6 +81,7 @@ func (c Call) GetResponse(args any) (any, error) {
 	if reflect.DeepEqual(args, c.Args) {
 		return c.Response, nil
 	}
+
 	return nil, c.Error
 }
 

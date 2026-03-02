@@ -195,6 +195,7 @@ func TestMsgToProto(t *testing.T) {
 				assert.Equal(t, err != nil, tt.wantErr)
 				return
 			}
+
 			assert.EqualValues(t, tt.want, pb, tt.testName)
 
 			msg, err := MsgFromProto(pb)
@@ -299,6 +300,7 @@ func TestWALMsgProto(t *testing.T) {
 				assert.Equal(t, err != nil, tt.wantErr)
 				return
 			}
+
 			assert.EqualValues(t, tt.want, pb, tt.testName)
 
 			msg, err := WALFromProto(pb)

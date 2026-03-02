@@ -17,7 +17,9 @@ func WriteConfigVals(dir string, vals map[string]string) error {
 	for k, v := range vals {
 		data += fmt.Sprintf("%s = \"%s\"\n", k, v)
 	}
+
 	cfile := filepath.Join(dir, "config.toml")
+
 	return os.WriteFile(cfile, []byte(data), 0o600)
 }
 
@@ -29,6 +31,7 @@ func RunWithArgs(cmd Executable, args []string, env map[string]string) error {
 	// defer returns the environment back to normal
 	defer func() {
 		os.Args = oargs
+
 		for k, v := range oenv {
 			os.Setenv(k, v)
 		}
@@ -36,9 +39,11 @@ func RunWithArgs(cmd Executable, args []string, env map[string]string) error {
 
 	// set the args and env how we want them
 	os.Args = args
+
 	for k, v := range env {
 		// backup old value if there, to restore at end
 		oenv[k] = os.Getenv(k)
+
 		err := os.Setenv(k, v)
 		if err != nil {
 			return err
@@ -58,6 +63,7 @@ func RunCaptureWithArgs(cmd Executable, args []string, env map[string]string) (s
 	rOut, wOut, _ := os.Pipe()
 	rErr, wErr, _ := os.Pipe()
 	os.Stdout, os.Stderr = wOut, wErr
+
 	defer func() {
 		os.Stdout, os.Stderr = oldout, olderr // restoring the real stdout
 	}()
@@ -65,12 +71,15 @@ func RunCaptureWithArgs(cmd Executable, args []string, env map[string]string) (s
 	// copy the output in a separate goroutine so printing can't block indefinitely
 	copyStd := func(reader *os.File) *(chan string) {
 		stdC := make(chan string)
+
 		go func() {
 			var buf bytes.Buffer
 			// io.Copy will end when we call reader.Close() below
 			io.Copy(&buf, reader) //nolint:errcheck //ignore error
+
 			stdC <- buf.String()
 		}()
+
 		return &stdC
 	}
 	outC := copyStd(rOut)
@@ -82,8 +91,10 @@ func RunCaptureWithArgs(cmd Executable, args []string, env map[string]string) (s
 	// and grab the stdout to return
 	wOut.Close()
 	wErr.Close()
+
 	stdout = <-*outC
 	stderr = <-*errC
+
 	return stdout, stderr, err
 }
 
@@ -112,9 +123,11 @@ your $HOME/.bashrc or $HOME/.profile the following instruction:
 			if err != nil {
 				return err
 			}
+
 			if zsh {
 				return rootCmd.GenZshCompletion(cmd.OutOrStdout())
 			}
+
 			return rootCmd.GenBashCompletion(cmd.OutOrStdout())
 		},
 		Hidden: hidden,

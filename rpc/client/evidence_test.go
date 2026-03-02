@@ -48,6 +48,7 @@ func newEvidence(t *testing.T, val *privval.FilePV,
 
 	ev, err := types.NewDuplicateVoteEvidence(vote, vote2, defaultTestTime, valSet)
 	require.NoError(t, err)
+
 	return ev
 }
 
@@ -139,10 +140,12 @@ func TestBroadcastEvidence_DuplicateVoteEvidence(t *testing.T) {
 		rawpub := ed25519pub.Bytes()
 		result2, err := c.ABCIQuery(context.Background(), "/val", rawpub)
 		require.NoError(t, err)
+
 		qres := result2.Response
 		require.True(t, qres.IsOK())
 
 		var v abci.ValidatorUpdate
+
 		err = abci.ReadMessage(bytes.NewReader(qres.Value), &v)
 		require.NoError(t, err, "Error reading query result, value %v", qres.Value)
 

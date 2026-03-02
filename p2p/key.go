@@ -53,6 +53,7 @@ func LoadOrGenNodeKey(filePath string) (*NodeKey, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		return nodeKey, nil
 	}
 
@@ -74,11 +75,14 @@ func LoadNodeKey(filePath string) (*NodeKey, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	nodeKey := new(NodeKey)
+
 	err = cmtjson.Unmarshal(jsonBytes, nodeKey)
 	if err != nil {
 		return nil, err
 	}
+
 	return nodeKey, nil
 }
 
@@ -88,10 +92,12 @@ func (nodeKey *NodeKey) SaveAs(filePath string) error {
 	if err != nil {
 		return err
 	}
+
 	err = os.WriteFile(filePath, jsonBytes, 0o600)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -104,17 +110,22 @@ func MakePoWTarget(difficulty, targetBits uint) []byte {
 	if targetBits%8 != 0 {
 		panic(fmt.Sprintf("targetBits (%d) not a multiple of 8", targetBits))
 	}
+
 	if difficulty >= targetBits {
 		panic(fmt.Sprintf("difficulty (%d) >= targetBits (%d)", difficulty, targetBits))
 	}
+
 	targetBytes := targetBits / 8
 	zeroPrefixLen := (int(difficulty) / 8)
 	prefix := bytes.Repeat([]byte{0}, zeroPrefixLen)
+
 	mod := (difficulty % 8)
 	if mod > 0 {
 		nonZeroPrefix := byte(1<<(8-mod) - 1)
 		prefix = append(prefix, nonZeroPrefix)
 	}
+
 	tailLen := int(targetBytes) - len(prefix)
+
 	return append(prefix, bytes.Repeat([]byte{0xFF}, tailLen)...)
 }

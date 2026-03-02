@@ -22,6 +22,7 @@ func (m *StatusMock) Status(context.Context) (*ctypes.ResultStatus, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return res.(*ctypes.ResultStatus), nil
 }
 
@@ -50,5 +51,6 @@ func (r *StatusRecorder) Status(ctx context.Context) (*ctypes.ResultStatus, erro
 		Response: res,
 		Error:    err,
 	})
+
 	return res, err
 }

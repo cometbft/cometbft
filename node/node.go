@@ -112,6 +112,7 @@ func CustomReactors(reactors map[string]p2p.Reactor) Option {
 					"name", name, "existing", existingReactor, "custom", reactor)
 				n.sw.RemoveReactor(name, existingReactor)
 			}
+
 			n.sw.AddReactor(name, reactor)
 
 			// register the new channels to the nodeInfo
@@ -169,18 +170,21 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 // If the block store is not empty, the function returns an error.
 func BootstrapStateWithGenProvider(ctx context.Context, config *cfg.Config, dbProvider cfg.DBProvider, genProvider GenesisDocProvider, height uint64, appHash []byte) (err error) {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
 	if config == nil {
 		logger.Info("no config provided, using default configuration")
+
 		config = cfg.DefaultConfig()
 	}
 
 	if dbProvider == nil {
 		dbProvider = cfg.DefaultDBProvider
 	}
+
 	blockStore, stateDB, err := initDBs(config, dbProvider)
 
 	defer func() {
@@ -210,6 +214,7 @@ func BootstrapStateWithGenProvider(ctx context.Context, config *cfg.Config, dbPr
 			err = derr
 		}
 	}()
+
 	state, err := stateStore.Load()
 	if err != nil {
 		return err
@@ -240,17 +245,19 @@ func BootstrapStateWithGenProvider(ctx context.Context, config *cfg.Config, dbPr
 	if err != nil {
 		return err
 	}
+
 	if appHash == nil {
 		logger.Info("warning: cannot verify appHash. Verification will happen when node boots up!")
 	} else if !bytes.Equal(appHash, state.AppHash) {
 		if err := blockStore.Close(); err != nil {
 			logger.Error("failed to close blockstore: %w", err)
 		}
+
 		if err := stateStore.Close(); err != nil {
 			logger.Error("failed to close statestore: %w", err)
 		}
-		return fmt.Errorf("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", state.AppHash, appHash)
 
+		return fmt.Errorf("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", state.AppHash, appHash)
 	}
 
 	commit, err := stateProvider.Commit(ctx, height)
@@ -362,12 +369,14 @@ func NewNodeWithContext(
 	if err != nil {
 		return nil, fmt.Errorf("can't get pubkey: %w", err)
 	}
+
 	localAddr := pubKey.Address()
 
 	// Determine whether we should attempt state sync.
 	stateSync := config.StateSync.Enable && !onlyValidatorIsUs(state, localAddr)
 	if stateSync && state.LastBlockHeight > 0 {
 		logger.Info("Found local state with non-zero height, skipping state sync")
+
 		stateSync = false
 	}
 
@@ -477,6 +486,7 @@ func NewNodeWithContext(
 
 	if config.P2P.PexReactor && !useCometNetworking {
 		config.P2P.PexReactor = false
+
 		logger.Info("PEX reactor is disabled when using go-libp2p transport")
 	}
 
@@ -611,6 +621,7 @@ func NewNodeWithContext(
 // OnStart starts the Node. It implements service.Service.
 func (n *Node) OnStart() error {
 	now := cmttime.Now()
+
 	genTime := n.genesisDoc.GenesisTime
 	if genTime.After(now) {
 		n.Logger.Info("Genesis time is in the future. Sleeping until then...", "genTime", genTime)
@@ -634,6 +645,7 @@ func (n *Node) OnStart() error {
 		if err != nil {
 			return err
 		}
+
 		n.rpcListeners = listeners
 	}
 
@@ -669,6 +681,7 @@ func (n *Node) OnStart() error {
 		if !ok {
 			return fmt.Errorf("this blocksync reactor does not support switching from state sync")
 		}
+
 		err := startStateSync(n.stateSyncReactor, bcR, n.stateSyncProvider,
 			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncGenesis)
 		if err != nil {
@@ -689,6 +702,7 @@ func (n *Node) OnStop() {
 	if err := n.eventBus.Stop(); err != nil {
 		n.Logger.Error("Error closing eventBus", "err", err)
 	}
+
 	if n.indexerService != nil {
 		if err := n.indexerService.Stop(); err != nil {
 			n.Logger.Error("Error closing indexerService", "err", err)
@@ -710,6 +724,7 @@ func (n *Node) OnStop() {
 	// finally stop the listeners / external services
 	for _, l := range n.rpcListeners {
 		n.Logger.Info("Closing rpc listener", "listener", l)
+
 		if err := l.Close(); err != nil {
 			n.Logger.Error("Error closing listener", "listener", l, "err", err)
 		}
@@ -727,25 +742,32 @@ func (n *Node) OnStop() {
 			n.Logger.Error("Prometheus HTTP server Shutdown", "err", err)
 		}
 	}
+
 	if n.pprofSrv != nil {
 		if err := n.pprofSrv.Shutdown(context.Background()); err != nil {
 			n.Logger.Error("Pprof HTTP server Shutdown", "err", err)
 		}
 	}
+
 	if n.blockStore != nil {
 		n.Logger.Info("Closing blockstore")
+
 		if err := n.blockStore.Close(); err != nil {
 			n.Logger.Error("problem closing blockstore", "err", err)
 		}
 	}
+
 	if n.stateStore != nil {
 		n.Logger.Info("Closing statestore")
+
 		if err := n.stateStore.Close(); err != nil {
 			n.Logger.Error("problem closing statestore", "err", err)
 		}
 	}
+
 	if n.evidencePool != nil {
 		n.Logger.Info("Closing evidencestore")
+
 		if err := n.EvidencePool().Close(); err != nil {
 			n.Logger.Error("problem closing evidencestore", "err", err)
 		}
@@ -758,6 +780,7 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 	if pubKey == nil || err != nil {
 		return nil, fmt.Errorf("can't get pubkey: %w", err)
 	}
+
 	rpcCoreEnv := rpccore.Environment{
 		ProxyAppQuery:   n.proxyApp.Query(),
 		ProxyAppMempool: n.proxyApp.Mempool(),
@@ -786,6 +809,7 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 	if err := rpcCoreEnv.InitGenesisChunks(); err != nil {
 		return nil, err
 	}
+
 	return &rpcCoreEnv, nil
 }
 
@@ -833,6 +857,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 		wm.SetLogger(wmLogger)
 		mux.HandleFunc("/websocket", wm.WebsocketHandler)
 		rpcserver.RegisterRPCFuncs(mux, routes, rpcLogger)
+
 		listener, err := rpcserver.Listen(
 			listenAddr,
 			config.MaxOpenConnections,
@@ -842,6 +867,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 		}
 
 		var rootHandler http.Handler = mux
+
 		if n.config.RPC.IsCorsEnabled() {
 			corsMiddleware := cors.New(cors.Options{
 				AllowedOrigins: n.config.RPC.CORSAllowedOrigins,
@@ -850,6 +876,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 			})
 			rootHandler = corsMiddleware.Handler(mux)
 		}
+
 		if n.config.RPC.IsTLSEnabled() {
 			go func() {
 				if err := rpcserver.ServeTLS(
@@ -893,18 +920,20 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 		if config.WriteTimeout <= n.config.RPC.TimeoutBroadcastTxCommit {
 			config.WriteTimeout = n.config.RPC.TimeoutBroadcastTxCommit + 1*time.Second
 		}
+
 		listener, err := rpcserver.Listen(grpcListenAddr, config.MaxOpenConnections)
 		if err != nil {
 			return nil, err
 		}
+
 		go func() {
 			//nolint:staticcheck // SA1019: core_grpc.StartGRPCClient is deprecated: A new gRPC API will be introduced after v0.38.
 			if err := grpccore.StartGRPCServer(env, listener); err != nil {
 				n.Logger.Error("Error starting gRPC server", "err", err)
 			}
 		}()
-		listeners = append(listeners, listener)
 
+		listeners = append(listeners, listener)
 	}
 
 	return listeners, nil
@@ -923,12 +952,14 @@ func (n *Node) startPrometheusServer() *http.Server {
 		),
 		ReadHeaderTimeout: readHeaderTimeout,
 	}
+
 	go func() {
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 			// Error starting or closing listener:
 			n.Logger.Error("Prometheus HTTP server ListenAndServe", "err", err)
 		}
 	}()
+
 	return srv
 }
 
@@ -939,12 +970,14 @@ func (n *Node) startPprofServer() *http.Server {
 		Handler:           nil,
 		ReadHeaderTimeout: readHeaderTimeout,
 	}
+
 	go func() {
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 			// Error starting or closing listener:
 			n.Logger.Error("pprof HTTP server ListenAndServe", "err", err)
 		}
 	}()
+
 	return srv
 }
 
@@ -1069,5 +1102,6 @@ func makeNodeInfo(
 	nodeInfo.ListenAddr = lAddr
 
 	err := nodeInfo.Validate()
+
 	return nodeInfo, err
 }

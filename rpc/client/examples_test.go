@@ -17,11 +17,13 @@ import (
 func ExampleHTTP_simple() {
 	// Start a CometBFT node (and kvstore) in the background to test against
 	app := kvstore.NewInMemoryApplication()
+
 	node := rpctest.StartTendermint(app, rpctest.SuppressStdout, rpctest.RecreateConfig)
 	defer rpctest.StopTendermint(node)
 
 	// Create our RPC client
 	rpcAddr := rpctest.GetConfig().RPC.ListenAddress
+
 	c, err := rpchttp.New(rpcAddr, "/websocket")
 	if err != nil {
 		log.Fatal(err) //nolint:gocritic
@@ -42,6 +44,7 @@ func ExampleHTTP_simple() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	if bres.CheckTx.IsErr() || bres.TxResult.IsErr() {
 		log.Fatal("BroadcastTxCommit transaction failed")
 	}
@@ -51,12 +54,15 @@ func ExampleHTTP_simple() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	if qres.Response.IsErr() {
 		log.Fatal("ABCIQuery failed")
 	}
+
 	if !bytes.Equal(qres.Response.Key, k) {
 		log.Fatal("returned key does not match queried key")
 	}
+
 	if !bytes.Equal(qres.Response.Value, v) {
 		log.Fatal("returned value does not match sent value")
 	}
@@ -78,6 +84,7 @@ func ExampleHTTP_batching() {
 
 	// Create our RPC client
 	rpcAddr := rpctest.GetConfig().RPC.ListenAddress
+
 	c, err := rpchttp.New(rpcAddr, "/websocket")
 	if err != nil {
 		log.Fatal(err)
@@ -134,6 +141,7 @@ func ExampleHTTP_batching() {
 		if !ok {
 			log.Fatal("invalid result type from ABCIQuery request")
 		}
+
 		fmt.Println(string(qr.Response.Key), "=", string(qr.Response.Value))
 	}
 
@@ -153,6 +161,7 @@ func ExampleHTTP_maxBatchSize() {
 
 	// Create our RPC client
 	rpcAddr := rpctest.GetConfig().RPC.ListenAddress
+
 	c, err := rpchttp.New(rpcAddr, "/websocket")
 	if err != nil {
 		log.Fatal(err)
@@ -182,6 +191,7 @@ func ExampleHTTP_maxBatchSize() {
 		if !ok {
 			log.Fatal("invalid result type")
 		}
+
 		if !strings.Contains(rpcError.Data, "batch request exceeds maximum") {
 			fmt.Println("Error message does not contain 'Max Request Batch Exceeded'")
 		} else {

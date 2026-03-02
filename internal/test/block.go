@@ -44,42 +44,55 @@ func MakeBlockIDWithHash(hash []byte) types.BlockID {
 // validate basic
 func MakeHeader(t *testing.T, h *types.Header) *types.Header {
 	t.Helper()
+
 	if h.Version.Block == 0 {
 		h.Version.Block = version.BlockProtocol
 	}
+
 	if h.Height == 0 {
 		h.Height = 1
 	}
+
 	if h.LastBlockID.IsZero() {
 		h.LastBlockID = MakeBlockID()
 	}
+
 	if h.ChainID == "" {
 		h.ChainID = DefaultTestChainID
 	}
+
 	if len(h.LastCommitHash) == 0 {
 		h.LastCommitHash = RandomHash()
 	}
+
 	if len(h.DataHash) == 0 {
 		h.DataHash = RandomHash()
 	}
+
 	if len(h.ValidatorsHash) == 0 {
 		h.ValidatorsHash = RandomHash()
 	}
+
 	if len(h.NextValidatorsHash) == 0 {
 		h.NextValidatorsHash = RandomHash()
 	}
+
 	if len(h.ConsensusHash) == 0 {
 		h.ConsensusHash = RandomHash()
 	}
+
 	if len(h.AppHash) == 0 {
 		h.AppHash = RandomHash()
 	}
+
 	if len(h.LastResultsHash) == 0 {
 		h.LastResultsHash = RandomHash()
 	}
+
 	if len(h.EvidenceHash) == 0 {
 		h.EvidenceHash = RandomHash()
 	}
+
 	if len(h.ProposerAddress) == 0 {
 		h.ProposerAddress = RandomAddress()
 	}

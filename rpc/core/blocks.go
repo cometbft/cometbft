@@ -29,7 +29,9 @@ func (env *Environment) BlockchainInfo(
 	minHeight, maxHeight int64,
 ) (*ctypes.ResultBlockchainInfo, error) {
 	const limit int64 = 20
+
 	var err error
+
 	minHeight, maxHeight, err = filterMinMax(
 		env.BlockStore.Base(),
 		env.BlockStore.Height(),
@@ -39,9 +41,11 @@ func (env *Environment) BlockchainInfo(
 	if err != nil {
 		return nil, err
 	}
+
 	env.Logger.Debug("BlockchainInfoHandler", "maxHeight", maxHeight, "minHeight", minHeight)
 
 	blockMetas := []*types.BlockMeta{}
+
 	for height := maxHeight; height >= minHeight; height-- {
 		blockMeta := env.BlockStore.LoadBlockMeta(height)
 		blockMetas = append(blockMetas, blockMeta)
@@ -66,6 +70,7 @@ func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
 	if min == 0 {
 		min = 1
 	}
+
 	if max == 0 {
 		max = height
 	}
@@ -83,6 +88,7 @@ func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
 	if min > max {
 		return min, max, fmt.Errorf("min height %d can't be greater than max height %d", min, max)
 	}
+
 	return min, max, nil
 }
 
@@ -109,7 +115,6 @@ func (env *Environment) HeaderByHash(_ *rpctypes.Context, hash bytes.HexBytes) (
 	// N.B. The hash parameter is HexBytes so that the reflective parameter
 	// decoding logic in the HTTP service will correctly translate from JSON.
 	// See https://github.com/tendermint/tendermint/issues/6802 for context.
-
 	blockMeta := env.BlockStore.LoadBlockMetaByHash(hash)
 	if blockMeta == nil {
 		return &ctypes.ResultHeader{}, nil
@@ -128,10 +133,12 @@ func (env *Environment) Block(_ *rpctypes.Context, heightPtr *int64) (*ctypes.Re
 	}
 
 	block := env.BlockStore.LoadBlock(height)
+
 	blockMeta := env.BlockStore.LoadBlockMeta(height)
 	if blockMeta == nil {
 		return &ctypes.ResultBlock{BlockID: types.BlockID{}, Block: block}, nil
 	}
+
 	return &ctypes.ResultBlock{BlockID: blockMeta.BlockID, Block: block}, nil
 }
 
@@ -144,6 +151,7 @@ func (env *Environment) BlockByHash(_ *rpctypes.Context, hash []byte) (*ctypes.R
 	}
 	// If block is not nil, then blockMeta can't be nil.
 	blockMeta := env.BlockStore.LoadBlockMeta(block.Height)
+
 	return &ctypes.ResultBlock{BlockID: blockMeta.BlockID, Block: block}, nil
 }
 
@@ -160,6 +168,7 @@ func (env *Environment) Commit(_ *rpctypes.Context, heightPtr *int64) (*ctypes.R
 	if blockMeta == nil {
 		return nil, nil
 	}
+
 	header := blockMeta.Header
 
 	// If the next block has not been committed yet,
@@ -171,6 +180,7 @@ func (env *Environment) Commit(_ *rpctypes.Context, heightPtr *int64) (*ctypes.R
 
 	// Return the canonical commit (comes from the block at height+1)
 	commit := env.BlockStore.LoadBlockCommit(height)
+
 	return ctypes.NewResultCommit(&header, commit, true), nil
 }
 

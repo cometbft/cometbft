@@ -40,7 +40,9 @@ func newMockPeer(ip net.IP) *mockPeer {
 	if ip == nil {
 		ip = net.IP{127, 0, 0, 1}
 	}
+
 	nodeKey := NodeKey{PrivKey: ed25519.GenPrivKey()}
+
 	return &mockPeer{
 		ip: ip,
 		id: nodeKey.ID(),
@@ -53,11 +55,13 @@ func TestPeerSetAddRemoveOne(t *testing.T) {
 	peerSet := NewPeerSet()
 
 	var peerList []Peer
+
 	for i := 0; i < 5; i++ {
 		p := newMockPeer(net.IP{127, 0, 0, byte(i)})
 		if err := peerSet.Add(p); err != nil {
 			t.Error(err)
 		}
+
 		peerList = append(peerList, p)
 	}
 
@@ -66,6 +70,7 @@ func TestPeerSetAddRemoveOne(t *testing.T) {
 	for i, peerAtFront := range peerList {
 		removed := peerSet.Remove(peerAtFront)
 		assert.True(t, removed)
+
 		wantSize := n - i - 1
 		for j := 0; j < 2; j++ {
 			assert.Equal(t, false, peerSet.Has(peerAtFront.ID()), "#%d Run #%d: failed to remove peer", i, j)
@@ -96,27 +101,33 @@ func TestPeerSetAddRemoveOne(t *testing.T) {
 
 func TestPeerSetAddRemoveMany(t *testing.T) {
 	t.Parallel()
+
 	peerSet := NewPeerSet()
 
 	peers := []Peer{}
+
 	N := 100
 	for i := 0; i < N; i++ {
 		peer := newMockPeer(net.IP{127, 0, 0, byte(i)})
 		if err := peerSet.Add(peer); err != nil {
 			t.Errorf("failed to add new peer")
 		}
+
 		if peerSet.Size() != i+1 {
 			t.Errorf("failed to add new peer and increment size")
 		}
+
 		peers = append(peers, peer)
 	}
 
 	for i, peer := range peers {
 		removed := peerSet.Remove(peer)
 		assert.True(t, removed)
+
 		if peerSet.Has(peer.ID()) {
 			t.Errorf("failed to remove peer")
 		}
+
 		if peerSet.Size() != len(peers)-i-1 {
 			t.Errorf("failed to remove peer and decrement size")
 		}
@@ -125,6 +136,7 @@ func TestPeerSetAddRemoveMany(t *testing.T) {
 
 func TestPeerSetAddDuplicate(t *testing.T) {
 	t.Parallel()
+
 	peerSet := NewPeerSet()
 	peer := newMockPeer(nil)
 
@@ -143,6 +155,7 @@ func TestPeerSetAddDuplicate(t *testing.T) {
 
 	// Now collect and tally the results
 	errsTally := make(map[string]int)
+
 	for i := 0; i < n; i++ {
 		err := <-errsChan
 
@@ -182,11 +195,14 @@ func TestPeerSetGet(t *testing.T) {
 		// Add them asynchronously to test the
 		// concurrent guarantees of our APIs.
 		wg.Add(1)
+
 		go func(i int) {
 			defer wg.Done()
+
 			have, want := peerSet.Get(peer.ID()), peer
 			assert.Equal(t, have, want, "%d: have %v, want %v", i, have, want)
 		}(i)
 	}
+
 	wg.Wait()
 }

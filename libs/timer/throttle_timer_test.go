@@ -27,6 +27,7 @@ func (c *thCounter) Count() int {
 	c.mtx.Lock()
 	val := c.count
 	c.mtx.Unlock()
+
 	return val
 }
 
@@ -49,6 +50,7 @@ func TestThrottle(test *testing.T) {
 	// start at 0
 	c := &thCounter{input: t.Ch}
 	assert.Equal(0, c.Count())
+
 	go c.Read()
 
 	// waiting does nothing
@@ -64,6 +66,7 @@ func TestThrottle(test *testing.T) {
 	for i := 0; i < 5; i++ {
 		t.Set()
 	}
+
 	time.Sleep(longwait)
 	assert.Equal(2, c.Count())
 
@@ -71,10 +74,12 @@ func TestThrottle(test *testing.T) {
 	// is possible for more to be added if the overhead
 	// in executing the loop is large
 	short := time.Duration(ms/5) * time.Millisecond
+
 	for i := 0; i < 13; i++ {
 		t.Set()
 		time.Sleep(short)
 	}
+
 	time.Sleep(longwait)
 	assert.LessOrEqual(5, c.Count())
 

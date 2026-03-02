@@ -84,13 +84,16 @@ func (rs *Reports) addDataPoint(id uuid.UUID, l time.Duration, bt time.Time, has
 		}
 		rs.s[id] = r
 	}
+
 	r.All = append(r.All, DataPoint{Duration: l, BlockTime: bt, Hash: hash})
 	if l > r.Max {
 		r.Max = l
 	}
+
 	if l < r.Min {
 		r.Min = l
 	}
+
 	if int64(l) < 0 {
 		r.NegativeCount++
 	}
@@ -107,16 +110,20 @@ func (rs *Reports) calculateAll() {
 		if len(r.All) == 0 {
 			r.Min = 0
 			rs.l = append(rs.l, r)
+
 			continue
 		}
+
 		r.Avg = time.Duration(r.sum / int64(len(r.All)))
 		r.StdDev = time.Duration(int64(stat.StdDev(toFloat(r.All), nil)))
 		rs.l = append(rs.l, r)
 	}
+
 	sort.Slice(rs.l, func(i, j int) bool {
 		if rs.l[i].Connections == rs.l[j].Connections {
 			return rs.l[i].Rate < rs.l[j].Rate
 		}
+
 		return rs.l[i].Connections < rs.l[j].Connections
 	})
 }
@@ -136,10 +143,12 @@ func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 		connections, rate, size uint64
 		err                     error
 	}
+
 	type txData struct {
 		tx types.Tx
 		bt time.Time
 	}
+
 	reports := &Reports{
 		s: make(map[uuid.UUID]Report),
 	}
@@ -156,9 +165,11 @@ func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 
 	wg := &sync.WaitGroup{}
 	wg.Add(poolSize)
+
 	for i := 0; i < poolSize; i++ {
 		go func() {
 			defer wg.Done()
+
 			for b := range txc {
 				p, err := payload.FromBytes(b.tx)
 				if err != nil {
@@ -167,6 +178,7 @@ func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 				}
 
 				l := b.bt.Sub(p.Time.AsTime())
+
 				idb := (*[16]byte)(p.Id)
 				pdc <- payloadData{
 					l:           l,
@@ -180,6 +192,7 @@ func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 			}
 		}()
 	}
+
 	go func() {
 		wg.Wait()
 		close(pdc)
@@ -187,6 +200,7 @@ func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 
 	go func() {
 		base, height := s.Base(), s.Height()
+
 		prev := s.LoadBlock(base)
 		for i := base + 1; i < height; i++ {
 			// Data from two adjacent block are used here simultaneously,
@@ -204,18 +218,24 @@ func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 			for _, tx := range prev.Txs {
 				txc <- txData{tx: tx, bt: cur.Time}
 			}
+
 			prev = cur
 		}
+
 		close(txc)
 	}()
+
 	for pd := range pdc {
 		if pd.err != nil {
 			reports.addError()
 			continue
 		}
+
 		reports.addDataPoint(pd.id, pd.l, pd.bt, pd.hash, pd.connections, pd.rate, pd.size)
 	}
+
 	reports.calculateAll()
+
 	return reports, nil
 }
 
@@ -224,5 +244,6 @@ func toFloat(in []DataPoint) []float64 {
 	for i, v := range in {
 		r[i] = float64(int64(v.Duration))
 	}
+
 	return r
 }

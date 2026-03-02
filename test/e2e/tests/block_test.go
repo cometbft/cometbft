@@ -24,6 +24,7 @@ func TestBlock_Header(t *testing.T) {
 
 		first := status.SyncInfo.EarliestBlockHeight
 		last := status.SyncInfo.LatestBlockHeight
+
 		if node.RetainBlocks > 0 {
 			first++ // avoid race conditions with block pruning
 		}
@@ -32,9 +33,11 @@ func TestBlock_Header(t *testing.T) {
 			if block.Height < first {
 				continue
 			}
+
 			if block.Height > last {
 				break
 			}
+
 			resp, err := client.Block(ctx, &block.Height)
 			require.NoError(t, err)
 
@@ -83,6 +86,7 @@ func TestBlock_Range(t *testing.T) {
 				// Ignore errors in first block if node is pruning blocks due to race conditions.
 				continue
 			}
+
 			require.NoError(t, err)
 			assert.Equal(t, h, resp.Block.Height)
 		}

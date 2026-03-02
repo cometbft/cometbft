@@ -15,6 +15,7 @@ func MakeCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, valida
 		if err != nil {
 			return nil, err
 		}
+
 		vote := &types.Vote{
 			ValidatorAddress: pubKey.Address(),
 			ValidatorIndex:   int32(i),
@@ -30,6 +31,7 @@ func MakeCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, valida
 		if err := validators[i].SignVote(voteSet.ChainID(), v); err != nil {
 			return nil, err
 		}
+
 		vote.Signature = v.Signature
 		if _, err := voteSet.AddVote(vote); err != nil {
 			return nil, err
@@ -50,6 +52,7 @@ func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.
 		if err != nil {
 			return nil, err
 		}
+
 		addr := pk.Address()
 
 		idx, _ := valSet.GetByAddressMut(addr)

@@ -18,6 +18,7 @@ func Test_genPrivKey(t *testing.T) {
 	t.Logf("one padded: %v, len=%v", onePadded, len(onePadded))
 
 	validOne := bytes.Join([][]byte{empty, onePadded}, nil)
+
 	tests := []struct {
 		name        string
 		notSoRand   []byte
@@ -28,14 +29,15 @@ func Test_genPrivKey(t *testing.T) {
 		{"valid because 0 < 1 < N", validOne, false},
 	}
 	for _, tt := range tests {
-
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.shouldPanic {
 				require.Panics(t, func() {
 					genPrivKey(bytes.NewReader(tt.notSoRand))
 				})
+
 				return
 			}
+
 			got := genPrivKey(bytes.NewReader(tt.notSoRand))
 			fe := new(big.Int).SetBytes(got[:])
 			require.True(t, fe.Cmp(secp256k1.S256().N) < 0)
@@ -49,12 +51,15 @@ func Test_genPrivKey(t *testing.T) {
 // Note: run with CGO_ENABLED=0 or go test -tags !cgo.
 func TestSignatureVerificationAndRejectUpperS(t *testing.T) {
 	msg := []byte("We have lingered long enough on the shores of the cosmic ocean.")
+
 	for i := 0; i < 500; i++ {
 		priv := GenPrivKey()
 		sigStr, err := priv.Sign(msg)
 		require.NoError(t, err)
+
 		var r secp256k1.ModNScalar
 		r.SetByteSlice(sigStr[:32])
+
 		var s secp256k1.ModNScalar
 		s.SetByteSlice(sigStr[32:64])
 		require.False(t, s.IsOverHalfOrder())

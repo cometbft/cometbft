@@ -28,10 +28,13 @@ func TestAddListenerForEventFireOnce(t *testing.T) {
 		func(data EventData) {
 			// test there's no deadlock if we remove the listener inside a callback
 			evsw.RemoveListener("listener")
+
 			messages <- data
 		})
 	require.NoError(t, err)
+
 	go evsw.FireEvent("event", "data")
+
 	received := <-messages
 	if received != "data" {
 		t.Errorf("message received does not match: %v", received)
@@ -63,8 +66,11 @@ func TestAddListenerForEventFireMany(t *testing.T) {
 	go sumReceivedNumbers(numbers, doneSum)
 	// go fire events
 	go fireEvents(evsw, "event", doneSending, uint64(1))
+
 	checkSum := <-doneSending
+
 	close(numbers)
+
 	eventSum := <-doneSum
 	if checkSum != eventSum {
 		t.Errorf("not all messages sent were received.\n")
@@ -111,11 +117,15 @@ func TestAddListenerForDifferentEvents(t *testing.T) {
 	go fireEvents(evsw, "event1", doneSending1, uint64(1))
 	go fireEvents(evsw, "event2", doneSending2, uint64(1))
 	go fireEvents(evsw, "event3", doneSending3, uint64(1))
+
 	var checkSum uint64
+
 	checkSum += <-doneSending1
 	checkSum += <-doneSending2
 	checkSum += <-doneSending3
+
 	close(numbers)
+
 	eventSum := <-doneSum
 	if checkSum != eventSum {
 		t.Errorf("not all messages sent were received.\n")
@@ -178,14 +188,18 @@ func TestAddDifferentListenerForDifferentEvents(t *testing.T) {
 	go fireEvents(evsw, "event1", doneSending1, uint64(1))
 	go fireEvents(evsw, "event2", doneSending2, uint64(1001))
 	go fireEvents(evsw, "event3", doneSending3, uint64(2001))
+
 	checkSumEvent1 := <-doneSending1
 	checkSumEvent2 := <-doneSending2
 	checkSumEvent3 := <-doneSending3
 	checkSum1 := checkSumEvent1 + checkSumEvent2 + checkSumEvent3
 	checkSum2 := checkSumEvent2 + checkSumEvent3
+
 	close(numbers1)
 	close(numbers2)
+
 	eventSum1 := <-doneSum1
+
 	eventSum2 := <-doneSum2
 	if checkSum1 != eventSum1 ||
 		checkSum2 != eventSum2 {
@@ -215,6 +229,7 @@ func TestAddAndRemoveListenerConcurrency(t *testing.T) {
 	// 1. RemoveListener
 	go func() {
 		defer close(done1)
+
 		for i := 0; i < roundCount; i++ {
 			evsw.RemoveListener("listener")
 		}
@@ -223,6 +238,7 @@ func TestAddAndRemoveListenerConcurrency(t *testing.T) {
 	// 2. AddListenerForEvent
 	go func() {
 		defer close(done2)
+
 		for i := 0; i < roundCount; i++ {
 			index := i
 			// we explicitly ignore errors here, since the listener will sometimes be removed
@@ -230,6 +246,7 @@ func TestAddAndRemoveListenerConcurrency(t *testing.T) {
 			_ = evsw.AddListenerForEvent("listener", fmt.Sprintf("event%d", index),
 				func(data EventData) {
 					t.Errorf("should not run callback for %d.\n", index)
+
 					stopInputEvent = true
 				})
 		}
@@ -281,14 +298,20 @@ func TestAddAndRemoveListener(t *testing.T) {
 	go sumReceivedNumbers(numbers2, doneSum2)
 	// go fire events
 	go fireEvents(evsw, "event1", doneSending1, uint64(1))
+
 	checkSumEvent1 := <-doneSending1
 	// after sending all event1, unsubscribe for all events
 	evsw.RemoveListener("listener")
+
 	go fireEvents(evsw, "event2", doneSending2, uint64(1001))
+
 	checkSumEvent2 := <-doneSending2
+
 	close(numbers1)
 	close(numbers2)
+
 	eventSum1 := <-doneSum1
+
 	eventSum2 := <-doneSum2
 	if checkSumEvent1 != eventSum1 ||
 		// correct value asserted by preceding tests, suffices to be non-zero
@@ -328,24 +351,29 @@ func TestRemoveListener(t *testing.T) {
 		evsw.FireEvent("event1", true)
 		evsw.FireEvent("event2", true)
 	}
+
 	assert.Equal(t, count, sum1)
 	assert.Equal(t, count, sum2)
 
 	// remove one by event and make sure it is gone
 	evsw.RemoveListenerForEvent("event2", "listener")
+
 	for i := 0; i < count; i++ {
 		evsw.FireEvent("event1", true)
 		evsw.FireEvent("event2", true)
 	}
+
 	assert.Equal(t, count*2, sum1)
 	assert.Equal(t, count, sum2)
 
 	// remove the listener entirely and make sure both gone
 	evsw.RemoveListener("listener")
+
 	for i := 0; i < count; i++ {
 		evsw.FireEvent("event1", true)
 		evsw.FireEvent("event2", true)
 	}
+
 	assert.Equal(t, count*2, sum1)
 	assert.Equal(t, count, sum2)
 }
@@ -412,11 +440,14 @@ func TestRemoveListenersAsync(t *testing.T) {
 	go sumReceivedNumbers(numbers1, doneSum1)
 	// collect received events for event2
 	go sumReceivedNumbers(numbers2, doneSum2)
+
 	addListenersStress := func() {
 		r1 := rand.NewRand()
 		r1.Seed(time.Now().UnixNano())
+
 		for k := uint16(0); k < 400; k++ {
 			listenerNumber := r1.Intn(100) + 3
+
 			eventNumber := r1.Intn(3) + 1
 			go evsw.AddListenerForEvent(fmt.Sprintf("listener%v", listenerNumber), //nolint:errcheck // ignore for tests
 				fmt.Sprintf("event%v", eventNumber),
@@ -426,24 +457,32 @@ func TestRemoveListenersAsync(t *testing.T) {
 	removeListenersStress := func() {
 		r2 := rand.NewRand()
 		r2.Seed(time.Now().UnixNano())
+
 		for k := uint16(0); k < 80; k++ {
 			listenerNumber := r2.Intn(100) + 3
 			go evsw.RemoveListener(fmt.Sprintf("listener%v", listenerNumber))
 		}
 	}
+
 	addListenersStress()
 	// go fire events
 	go fireEvents(evsw, "event1", doneSending1, uint64(1))
+
 	removeListenersStress()
+
 	go fireEvents(evsw, "event2", doneSending2, uint64(1001))
 	go fireEvents(evsw, "event3", doneSending3, uint64(2001))
+
 	checkSumEvent1 := <-doneSending1
 	checkSumEvent2 := <-doneSending2
 	checkSumEvent3 := <-doneSending3
 	checkSum := checkSumEvent1 + checkSumEvent2 + checkSumEvent3
+
 	close(numbers1)
 	close(numbers2)
+
 	eventSum1 := <-doneSum1
+
 	eventSum2 := <-doneSum2
 	if checkSum != eventSum1 ||
 		checkSum != eventSum2 {
@@ -459,12 +498,16 @@ func TestRemoveListenersAsync(t *testing.T) {
 // on `doneSum` and closes that channel.  Expected to be run in a go-routine.
 func sumReceivedNumbers(numbers, doneSum chan uint64) {
 	var sum uint64
+
 	for {
 		j, more := <-numbers
+
 		sum += j
 		if !more {
 			doneSum <- sum
+
 			close(doneSum)
+
 			return
 		}
 	}
@@ -483,6 +526,8 @@ func fireEvents(evsw Fireable, event string, doneChan chan uint64,
 		sentSum += i
 		evsw.FireEvent(event, i)
 	}
+
 	doneChan <- sentSum
+
 	close(doneChan)
 }

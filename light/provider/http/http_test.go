@@ -40,9 +40,11 @@ func TestProvider(t *testing.T) {
 
 	cfg := rpctest.GetConfig()
 	defer os.RemoveAll(cfg.RootDir)
+
 	rpcAddr := cfg.RPC.ListenAddress
 	genDoc, err := types.GenesisDocFromFile(cfg.GenesisFile())
 	require.NoError(t, err)
+
 	chainID := genDoc.ChainID
 
 	c, err := rpchttp.New(rpcAddr, "/websocket")
@@ -84,6 +86,7 @@ func TestProvider(t *testing.T) {
 	// stop the full node and check that a no response error is returned
 	rpctest.StopTendermint(node)
 	time.Sleep(10 * time.Second)
+
 	lb, err = p.LightBlock(context.Background(), lower+2)
 	// we should see a connection refused
 	require.Error(t, err)

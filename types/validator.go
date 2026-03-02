@@ -39,6 +39,7 @@ func (v *Validator) ValidateBasic() error {
 	if v == nil {
 		return errors.New("nil validator")
 	}
+
 	if v.PubKey == nil {
 		return errors.New("validator does not have a public key")
 	}
@@ -67,6 +68,7 @@ func (v *Validator) CompareProposerPriority(other *Validator) *Validator {
 	if v == nil {
 		return other
 	}
+
 	switch {
 	case v.ProposerPriority > other.ProposerPriority:
 		return v
@@ -95,6 +97,7 @@ func (v *Validator) String() string {
 	if v == nil {
 		return "nil-Validator"
 	}
+
 	return fmt.Sprintf("Validator{%v %v VP:%v A:%v}",
 		v.Address,
 		v.PubKey,
@@ -105,14 +108,17 @@ func (v *Validator) String() string {
 // ValidatorListString returns a prettified validator list for logging purposes.
 func ValidatorListString(vals []*Validator) string {
 	var sb strings.Builder
+
 	for i, val := range vals {
 		if i > 0 {
 			sb.WriteString(",")
 		}
+
 		sb.WriteString(val.Address.String())
 		sb.WriteString(":")
 		sb.WriteString(strconv.FormatInt(val.VotingPower, 10))
 	}
+
 	return sb.String()
 }
 
@@ -135,6 +141,7 @@ func (v *Validator) Bytes() []byte {
 	if err != nil {
 		panic(err)
 	}
+
 	return bz
 }
 
@@ -170,6 +177,7 @@ func ValidatorFromProto(vp *cmtproto.Validator) (*Validator, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	v := new(Validator)
 	v.Address = vp.GetAddress()
 	v.PubKey = pk
@@ -186,14 +194,18 @@ func ValidatorFromProto(vp *cmtproto.Validator) (*Validator, error) {
 // UNSTABLE
 func RandValidator(randPower bool, minPower int64) (*Validator, PrivValidator) {
 	privVal := NewMockPV()
+
 	votePower := minPower
 	if randPower {
 		votePower += int64(cmtrand.Uint32())
 	}
+
 	pubKey, err := privVal.GetPubKey()
 	if err != nil {
 		panic(fmt.Errorf("could not retrieve pubkey %w", err))
 	}
+
 	val := NewValidator(pubKey, votePower)
+
 	return val, privVal
 }

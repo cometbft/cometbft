@@ -28,6 +28,7 @@ func (evpool *Pool) verify(evidence types.Evidence) error {
 	if blockMeta == nil {
 		return fmt.Errorf("don't have header #%d", evidence.Height())
 	}
+
 	evTime := blockMeta.Header.Time
 	if evidence.Time() != evTime {
 		return fmt.Errorf("evidence has a different time to the block it is associated with (%v != %v)",
@@ -52,6 +53,7 @@ func (evpool *Pool) verify(evidence types.Evidence) error {
 		if err != nil {
 			return err
 		}
+
 		return VerifyDuplicateVote(ev, state.ChainID, valSet)
 
 	case *types.LightClientAttackEvidence:
@@ -59,10 +61,12 @@ func (evpool *Pool) verify(evidence types.Evidence) error {
 		if err != nil {
 			return err
 		}
+
 		commonVals, err := evpool.stateDB.LoadValidators(evidence.Height())
 		if err != nil {
 			return err
 		}
+
 		trustedHeader := commonHeader
 		// in the case of lunatic the trusted header is different to the common header
 		if evidence.Height() != ev.ConflictingBlock.Height {
@@ -74,10 +78,12 @@ func (evpool *Pool) verify(evidence types.Evidence) error {
 				// If the node doesn't have a block at the height of the conflicting block, then this could be
 				// a forward lunatic attack. Thus the node must get the latest height it has
 				latestHeight := evpool.blockStore.Height()
+
 				trustedHeader, err = getSignedHeader(evpool.blockStore, latestHeight)
 				if err != nil {
 					return err
 				}
+
 				if trustedHeader.Time.Before(ev.ConflictingBlock.Time) {
 					return fmt.Errorf("latest block time (%v) is before conflicting block time (%v)",
 						trustedHeader.Time, ev.ConflictingBlock.Time,
@@ -91,6 +97,7 @@ func (evpool *Pool) verify(evidence types.Evidence) error {
 		if err != nil {
 			return err
 		}
+
 		return nil
 	default:
 		return fmt.Errorf("unrecognized evidence type: %T", evidence)
@@ -170,6 +177,7 @@ func VerifyDuplicateVote(e *types.DuplicateVoteEvidence, chainID string, valSet 
 	if val == nil {
 		return fmt.Errorf("address %X was not a validator at height %d", e.VoteA.ValidatorAddress, e.Height())
 	}
+
 	pubKey := val.PubKey
 
 	// H/R/S must be the same
@@ -209,6 +217,7 @@ func VerifyDuplicateVote(e *types.DuplicateVoteEvidence, chainID string, valSet 
 		return fmt.Errorf("validator power from evidence and our validator set does not match (%d != %d)",
 			e.ValidatorPower, val.VotingPower)
 	}
+
 	if valSet.TotalVotingPower() != e.TotalVotingPower {
 		return fmt.Errorf("total voting power from the evidence and our validator set does not match (%d != %d)",
 			e.TotalVotingPower, valSet.TotalVotingPower())
@@ -220,6 +229,7 @@ func VerifyDuplicateVote(e *types.DuplicateVoteEvidence, chainID string, valSet 
 	if !pubKey.VerifySignature(types.VoteSignBytes(chainID, va), e.VoteA.Signature) {
 		return fmt.Errorf("verifying VoteA: %w", types.ErrVoteInvalidSignature)
 	}
+
 	if !pubKey.VerifySignature(types.VoteSignBytes(chainID, vb), e.VoteB.Signature) {
 		return fmt.Errorf("verifying VoteB: %w", types.ErrVoteInvalidSignature)
 	}
@@ -279,6 +289,7 @@ func validateABCIEvidence(
 		if evByz.PubKey == nil {
 			return fmt.Errorf("byzantine validator at index %d has nil pubkey", idx)
 		}
+
 		if !bytes.Equal(evByz.Address, evByz.PubKey.Address()) {
 			return fmt.Errorf(
 				"byzantine validator at index %d has address %X that does not match pubkey address %X",
@@ -295,10 +306,12 @@ func getSignedHeader(blockStore BlockStore, height int64) (*types.SignedHeader, 
 	if blockMeta == nil {
 		return nil, fmt.Errorf("don't have header at height #%d", height)
 	}
+
 	commit := blockStore.LoadBlockCommit(height)
 	if commit == nil {
 		return nil, fmt.Errorf("don't have commit at height #%d", height)
 	}
+
 	return &types.SignedHeader{
 		Header: &blockMeta.Header,
 		Commit: commit,
@@ -313,5 +326,6 @@ func IsEvidenceExpired(heightNow int64, timeNow time.Time, heightEv int64, timeE
 	if ageDuration > evidenceParams.MaxAgeDuration && ageNumBlocks > evidenceParams.MaxAgeNumBlocks {
 		return true
 	}
+
 	return false
 }

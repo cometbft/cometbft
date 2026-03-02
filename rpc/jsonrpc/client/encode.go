@@ -29,10 +29,12 @@ func argsToURLValues(args map[string]any) (url.Values, error) {
 func argsToJSON(args map[string]any) error {
 	for k, v := range args {
 		rt := reflect.TypeOf(v)
+
 		isByteSlice := rt.Kind() == reflect.Slice && rt.Elem().Kind() == reflect.Uint8
 		if isByteSlice {
 			bytes := reflect.ValueOf(v).Bytes()
 			args[k] = fmt.Sprintf("0x%X", bytes)
+
 			continue
 		}
 
@@ -40,7 +42,9 @@ func argsToJSON(args map[string]any) error {
 		if err != nil {
 			return err
 		}
+
 		args[k] = string(data)
 	}
+
 	return nil
 }

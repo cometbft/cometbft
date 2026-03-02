@@ -16,9 +16,11 @@ import (
 func BenchmarkRepeatedLoadSeenCommitSameBlock(b *testing.B) {
 	state, bs, cleanup := makeStateAndBlockStore()
 	defer cleanup()
+
 	h := bs.Height() + 1
 	block, err := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
 	require.NoError(b, err)
+
 	seenCommit := makeTestExtCommitWithNumSigs(block.Header.Height, cmttime.Now(), 100).ToCommit()
 	ps, err := block.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(b, err)
@@ -29,6 +31,7 @@ func BenchmarkRepeatedLoadSeenCommitSameBlock(b *testing.B) {
 	require.Equal(b, seenCommit, res)
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		res := bs.LoadSeenCommit(block.Height)
 		require.NotNil(b, res)

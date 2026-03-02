@@ -19,6 +19,7 @@ func SafeAddInt32(a, b int32) int32 {
 	} else if b < 0 && (a < math.MinInt32-b) {
 		panic(ErrOverflowInt32)
 	}
+
 	return a + b
 }
 
@@ -30,6 +31,7 @@ func SafeSubInt32(a, b int32) int32 {
 	} else if b < 0 && (a > math.MaxInt32+b) {
 		panic(ErrOverflowInt32)
 	}
+
 	return a - b
 }
 
@@ -41,6 +43,7 @@ func SafeConvertInt32(a int64) int32 {
 	} else if a < math.MinInt32 {
 		panic(ErrOverflowInt32)
 	}
+
 	return int32(a)
 }
 
@@ -52,6 +55,7 @@ func SafeConvertUint8(a int64) (uint8, error) {
 	} else if a < 0 {
 		return 0, ErrOverflowUint8
 	}
+
 	return uint8(a), nil
 }
 
@@ -63,5 +67,6 @@ func SafeConvertInt8(a int64) (int8, error) {
 	} else if a < math.MinInt8 {
 		return 0, ErrOverflowInt8
 	}
+
 	return int8(a), nil
 }

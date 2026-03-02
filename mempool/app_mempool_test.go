@@ -33,6 +33,7 @@ func TestAppMempool(t *testing.T) {
 				}
 
 				added.Add(1)
+
 				return &abci.ResponseInsertTx{Code: abci.CodeTypeOK}, nil
 			})
 
@@ -127,8 +128,10 @@ func TestAppMempool(t *testing.T) {
 
 	t.Run("TxStream", func(t *testing.T) {
 		// ARRANGE
-		const amount = 100
-		const callsToCancel = 4
+		const (
+			amount        = 100
+			callsToCancel = 4
+		)
 
 		// Given context
 		ctx, cancel := context.WithCancel(context.Background())
@@ -149,6 +152,7 @@ func TestAppMempool(t *testing.T) {
 				allMempoolTxs = append(allMempoolTxs, txs...)
 
 				calls.Add(1)
+
 				if calls.Load() == callsToCancel {
 					cancel()
 				}

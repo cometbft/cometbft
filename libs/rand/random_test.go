@@ -65,6 +65,7 @@ func testThemAll() string {
 	fmt.Fprintf(out, "randInt64: %d\n", Int64())
 	fmt.Fprintf(out, "randUint32: %d\n", Uint32())
 	fmt.Fprintf(out, "randUint64: %d\n", Uint64())
+
 	return out.String()
 }
 
@@ -72,14 +73,18 @@ func TestRngConcurrencySafety(_ *testing.T) {
 	var wg sync.WaitGroup
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
+
 		go func() {
 			defer wg.Done()
 
 			_ = Uint64()
+
 			<-time.After(time.Millisecond * time.Duration(Intn(100)))
+
 			_ = Perm(3)
 		}()
 	}
+
 	wg.Wait()
 }
 
@@ -111,5 +116,6 @@ func benchmarkRandBytes(b *testing.B, n int) {
 	for i := 0; i < b.N; i++ {
 		_ = Bytes(n)
 	}
+
 	b.ReportAllocs()
 }

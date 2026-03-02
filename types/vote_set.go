@@ -83,6 +83,7 @@ func NewVoteSet(chainID string, height int64, round int32,
 	if height == 0 {
 		panic("Cannot make VoteSet for height == 0, doesn't make sense.")
 	}
+
 	return &VoteSet{
 		chainID:       chainID,
 		height:        height,
@@ -106,6 +107,7 @@ func NewExtendedVoteSet(chainID string, height int64, round int32,
 ) *VoteSet {
 	vs := NewVoteSet(chainID, height, round, signedMsgType, valSet)
 	vs.extensionsEnabled = true
+
 	return vs
 }
 
@@ -118,6 +120,7 @@ func (voteSet *VoteSet) GetHeight() int64 {
 	if voteSet == nil {
 		return 0
 	}
+
 	return voteSet.height
 }
 
@@ -126,6 +129,7 @@ func (voteSet *VoteSet) GetRound() int32 {
 	if voteSet == nil {
 		return -1
 	}
+
 	return voteSet.round
 }
 
@@ -134,6 +138,7 @@ func (voteSet *VoteSet) Type() byte {
 	if voteSet == nil {
 		return 0x00
 	}
+
 	return byte(voteSet.signedMsgType)
 }
 
@@ -142,6 +147,7 @@ func (voteSet *VoteSet) Size() int {
 	if voteSet == nil {
 		return 0
 	}
+
 	return voteSet.valSet.Size()
 }
 
@@ -160,6 +166,7 @@ func (voteSet *VoteSet) AddVote(vote *Vote) (added bool, err error) {
 	if voteSet == nil {
 		panic("AddVote() on nil VoteSet")
 	}
+
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
 
@@ -171,6 +178,7 @@ func (voteSet *VoteSet) addVote(vote *Vote) (added bool, err error) {
 	if vote == nil {
 		return false, ErrVoteNil
 	}
+
 	valIndex := vote.ValidatorIndex
 	valAddr := vote.ValidatorAddress
 	blockKey := vote.BlockID.Key()
@@ -212,6 +220,7 @@ func (voteSet *VoteSet) addVote(vote *Vote) (added bool, err error) {
 		if bytes.Equal(existing.Signature, vote.Signature) {
 			return false, nil // duplicate
 		}
+
 		return false, fmt.Errorf("existing vote: %v; new vote: %v: %w", existing, vote, ErrVoteNonDeterministicSignature)
 	}
 
@@ -224,6 +233,7 @@ func (voteSet *VoteSet) addVote(vote *Vote) (added bool, err error) {
 		if err := vote.Verify(voteSet.chainID, val.PubKey); err != nil {
 			return false, fmt.Errorf("failed to verify vote with ChainID %s and PubKey %s: %w", voteSet.chainID, val.PubKey, err)
 		}
+
 		if len(vote.ExtensionSignature) > 0 || len(vote.Extension) > 0 {
 			return false, fmt.Errorf("unexpected vote extension data present in vote; ext_len %d, sig_len %d",
 				len(vote.Extension),
@@ -237,9 +247,11 @@ func (voteSet *VoteSet) addVote(vote *Vote) (added bool, err error) {
 	if conflicting != nil {
 		return added, NewConflictingVoteError(conflicting, vote)
 	}
+
 	if !added {
 		panic("Expected to add non-conflicting vote")
 	}
+
 	return added, nil
 }
 
@@ -248,9 +260,11 @@ func (voteSet *VoteSet) getVote(valIndex int32, blockKey string, blockID *BlockI
 	if existing := voteSet.votes[valIndex]; existing != nil && blockID.Equals(existing.BlockID) {
 		return existing, true
 	}
+
 	if existing := voteSet.votesByBlock[blockKey].getByIndex(valIndex); existing != nil {
 		return existing, true
 	}
+
 	return nil, false
 }
 
@@ -268,6 +282,7 @@ func (voteSet *VoteSet) addVerifiedVote(
 		if existing.BlockID.Equals(vote.BlockID) {
 			panic("addVerifiedVote does not expect duplicate votes")
 		}
+
 		conflicting = existing
 		// Replace vote if blockKey matches voteSet.maj23.
 		if voteSet.maj23 != nil && voteSet.maj23.Equals(vote.BlockID) {
@@ -337,6 +352,7 @@ func (voteSet *VoteSet) SetPeerMaj23(peerID P2PID, blockID BlockID) error {
 	if voteSet == nil {
 		panic("SetPeerMaj23() on nil VoteSet")
 	}
+
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
 
@@ -346,9 +362,11 @@ func (voteSet *VoteSet) SetPeerMaj23(peerID P2PID, blockID BlockID) error {
 		if existing.Equals(blockID) {
 			return nil // Nothing to do
 		}
+
 		return fmt.Errorf("setPeerMaj23: Received conflicting blockID from peer %v. Got %v, expected %v",
 			peerID, blockID, existing)
 	}
+
 	voteSet.peerMaj23s[peerID] = blockID
 
 	// Create .votesByBlock entry if needed.
@@ -357,6 +375,7 @@ func (voteSet *VoteSet) SetPeerMaj23(peerID P2PID, blockID BlockID) error {
 		if votesByBlock.peerMaj23 {
 			return nil // Nothing to do
 		}
+
 		votesByBlock.peerMaj23 = true
 		// No need to copy votes, already there.
 	} else {
@@ -364,6 +383,7 @@ func (voteSet *VoteSet) SetPeerMaj23(peerID P2PID, blockID BlockID) error {
 		voteSet.votesByBlock[blockKey] = votesByBlock
 		// No need to copy votes, no votes to copy over.
 	}
+
 	return nil
 }
 
@@ -372,8 +392,10 @@ func (voteSet *VoteSet) BitArray() *bits.BitArray {
 	if voteSet == nil {
 		return nil
 	}
+
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
+
 	return voteSet.votesBitArray.Copy()
 }
 
@@ -381,12 +403,15 @@ func (voteSet *VoteSet) BitArrayByBlockID(blockID BlockID) *bits.BitArray {
 	if voteSet == nil {
 		return nil
 	}
+
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
+
 	votesByBlock, ok := voteSet.votesByBlock[blockID.Key()]
 	if ok {
 		return votesByBlock.bitArray.Copy()
 	}
+
 	return nil
 }
 
@@ -396,8 +421,10 @@ func (voteSet *VoteSet) GetByIndex(valIndex int32) *Vote {
 	if voteSet == nil {
 		return nil
 	}
+
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
+
 	return voteSet.votes[valIndex]
 }
 
@@ -406,12 +433,14 @@ func (voteSet *VoteSet) List() []Vote {
 	if voteSet == nil || voteSet.votes == nil {
 		return nil
 	}
+
 	votes := make([]Vote, 0, len(voteSet.votes))
 	for i := range voteSet.votes {
 		if voteSet.votes[i] != nil {
 			votes = append(votes, *voteSet.votes[i])
 		}
 	}
+
 	return votes
 }
 
@@ -419,12 +448,15 @@ func (voteSet *VoteSet) GetByAddress(address []byte) *Vote {
 	if voteSet == nil {
 		return nil
 	}
+
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
+
 	valIndex, val := voteSet.valSet.GetByAddressMut(address)
 	if val == nil {
 		panic("GetByAddress(address) returned nil")
 	}
+
 	return voteSet.votes[valIndex]
 }
 
@@ -432,8 +464,10 @@ func (voteSet *VoteSet) HasTwoThirdsMajority() bool {
 	if voteSet == nil {
 		return false
 	}
+
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
+
 	return voteSet.maj23 != nil
 }
 
@@ -442,11 +476,14 @@ func (voteSet *VoteSet) IsCommit() bool {
 	if voteSet == nil {
 		return false
 	}
+
 	if voteSet.signedMsgType != cmtproto.PrecommitType {
 		return false
 	}
+
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
+
 	return voteSet.maj23 != nil
 }
 
@@ -454,8 +491,10 @@ func (voteSet *VoteSet) HasTwoThirdsAny() bool {
 	if voteSet == nil {
 		return false
 	}
+
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
+
 	return voteSet.sum > voteSet.valSet.TotalVotingPower()*2/3
 }
 
@@ -463,8 +502,10 @@ func (voteSet *VoteSet) HasAll() bool {
 	if voteSet == nil {
 		return false
 	}
+
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
+
 	return voteSet.sum == voteSet.valSet.TotalVotingPower()
 }
 
@@ -474,11 +515,14 @@ func (voteSet *VoteSet) TwoThirdsMajority() (blockID BlockID, ok bool) {
 	if voteSet == nil {
 		return BlockID{}, false
 	}
+
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
+
 	if voteSet.maj23 != nil {
 		return *voteSet.maj23, true
 	}
+
 	return BlockID{}, false
 }
 
@@ -494,6 +538,7 @@ func (voteSet *VoteSet) String() string {
 	if voteSet == nil {
 		return nilVoteSetString
 	}
+
 	return voteSet.StringIndented("")
 }
 
@@ -517,6 +562,7 @@ func (voteSet *VoteSet) StringIndented(indent string) string {
 			voteStrings[i] = vote.String()
 		}
 	}
+
 	return fmt.Sprintf(`VoteSet{
 %s  H:%v R:%v T:%v
 %s  %v
@@ -535,6 +581,7 @@ func (voteSet *VoteSet) StringIndented(indent string) string {
 func (voteSet *VoteSet) MarshalJSON() ([]byte, error) {
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
+
 	return cmtjson.Marshal(VoteSetJSON{
 		voteSet.voteStrings(),
 		voteSet.bitArrayString(),
@@ -557,12 +604,14 @@ type VoteSetJSON struct {
 func (voteSet *VoteSet) BitArrayString() string {
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
+
 	return voteSet.bitArrayString()
 }
 
 func (voteSet *VoteSet) bitArrayString() string {
 	bAString := voteSet.votesBitArray.String()
 	voted, total, fracVoted := voteSet.sumTotalFrac()
+
 	return fmt.Sprintf("%s %d/%d = %.2f", bAString, voted, total, fracVoted)
 }
 
@@ -570,6 +619,7 @@ func (voteSet *VoteSet) bitArrayString() string {
 func (voteSet *VoteSet) VoteStrings() []string {
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
+
 	return voteSet.voteStrings()
 }
 
@@ -582,6 +632,7 @@ func (voteSet *VoteSet) voteStrings() []string {
 			voteStrings[i] = vote.String()
 		}
 	}
+
 	return voteStrings
 }
 
@@ -598,9 +649,12 @@ func (voteSet *VoteSet) StringShort() string {
 	if voteSet == nil {
 		return nilVoteSetString
 	}
+
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
+
 	_, _, frac := voteSet.sumTotalFrac()
+
 	return fmt.Sprintf(`VoteSet{H:%v R:%v T:%v +2/3:%v(%v) %v %v}`,
 		voteSet.height, voteSet.round, voteSet.signedMsgType, voteSet.maj23, frac, voteSet.votesBitArray, voteSet.peerMaj23s)
 }
@@ -611,8 +665,10 @@ func (voteSet *VoteSet) LogString() string {
 	if voteSet == nil {
 		return nilVoteSetString
 	}
+
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
+
 	voted, total, frac := voteSet.sumTotalFrac()
 
 	return fmt.Sprintf("Votes:%d/%d(%.3f)", voted, total, frac)
@@ -622,6 +678,7 @@ func (voteSet *VoteSet) LogString() string {
 func (voteSet *VoteSet) sumTotalFrac() (int64, int64, float64) {
 	voted, total := voteSet.sum, voteSet.valSet.TotalVotingPower()
 	fracVoted := float64(voted) / float64(total)
+
 	return voted, total, fracVoted
 }
 
@@ -668,6 +725,7 @@ func (voteSet *VoteSet) MakeExtendedCommit(ap ABCIParams) *ExtendedCommit {
 		panic(fmt.Errorf("problem with vote extension data when making extended commit of height %d; %w",
 			ec.Height, err))
 	}
+
 	return ec
 }
 
@@ -708,6 +766,7 @@ func (vs *blockVotes) getByIndex(index int32) *Vote {
 	if vs == nil {
 		return nil
 	}
+
 	return vs.votes[index]
 }
 

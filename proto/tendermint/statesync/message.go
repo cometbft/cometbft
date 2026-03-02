@@ -18,24 +18,28 @@ var (
 func (m *SnapshotsResponse) Wrap() proto.Message {
 	sm := &Message{}
 	sm.Sum = &Message_SnapshotsResponse{SnapshotsResponse: m}
+
 	return sm
 }
 
 func (m *SnapshotsRequest) Wrap() proto.Message {
 	sm := &Message{}
 	sm.Sum = &Message_SnapshotsRequest{SnapshotsRequest: m}
+
 	return sm
 }
 
 func (m *ChunkResponse) Wrap() proto.Message {
 	sm := &Message{}
 	sm.Sum = &Message_ChunkResponse{ChunkResponse: m}
+
 	return sm
 }
 
 func (m *ChunkRequest) Wrap() proto.Message {
 	sm := &Message{}
 	sm.Sum = &Message_ChunkRequest{ChunkRequest: m}
+
 	return sm
 }
 

@@ -25,6 +25,7 @@ func waitForHeight(ctx context.Context, testnet *e2e.Testnet, height int64) (*ty
 
 	timer := time.NewTimer(0)
 	defer timer.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -41,6 +42,7 @@ func waitForHeight(ctx context.Context, testnet *e2e.Testnet, height int64) (*ty
 					if err != nil {
 						continue
 					}
+
 					clients[node.Name] = client
 				}
 
@@ -51,13 +53,16 @@ func waitForHeight(ctx context.Context, testnet *e2e.Testnet, height int64) (*ty
 				if err == context.DeadlineExceeded || err == context.Canceled {
 					return nil, nil, ctx.Err()
 				}
+
 				if err != nil {
 					continue
 				}
+
 				if result.Block != nil && (maxResult == nil || result.Block.Height > maxResult.Block.Height) {
 					maxResult = result
 					lastIncrease = time.Now()
 				}
+
 				if maxResult != nil && maxResult.Block.Height >= height {
 					return maxResult.Block, &maxResult.BlockID, nil
 				}
@@ -66,12 +71,15 @@ func waitForHeight(ctx context.Context, testnet *e2e.Testnet, height int64) (*ty
 			if len(clients) == 0 {
 				return nil, nil, errors.New("unable to connect to any network nodes")
 			}
+
 			if time.Since(lastIncrease) >= 20*time.Second {
 				if maxResult == nil {
 					return nil, nil, errors.New("chain stalled at unknown height")
 				}
+
 				return nil, nil, fmt.Errorf("chain stalled at height %v", maxResult.Block.Height)
 			}
+
 			timer.Reset(1 * time.Second)
 		}
 	}
@@ -86,8 +94,11 @@ func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time
 
 	timer := time.NewTimer(0)
 	defer timer.Stop()
+
 	var curHeight int64
+
 	lastChanged := time.Now()
+
 	for {
 		select {
 		case <-ctx.Done():

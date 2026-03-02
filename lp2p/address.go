@@ -72,6 +72,7 @@ func addrToQuicMultiaddr(parts *url.URL, layer4 string) (ma.Multiaddr, error) {
 
 	// Determine the network protocol prefix based on the hostname
 	var networkProto string
+
 	if ip := net.ParseIP(hostname); ip != nil {
 		if ip.To4() != nil {
 			networkProto = "ip4"
@@ -134,5 +135,6 @@ func preferIPv4(ips []net.IP) net.IP {
 			return ip
 		}
 	}
+
 	return ips[0]
 }

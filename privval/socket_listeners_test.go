@@ -32,9 +32,11 @@ func testUnixAddr() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	addr := f.Name()
 	f.Close()
 	os.Remove(addr)
+
 	return addr, nil
 }
 
@@ -47,6 +49,7 @@ func tcpListenerTestCase(t *testing.T, timeoutAccept, timeoutReadWrite time.Dura
 	tcpLn := NewTCPListener(ln, newPrivKey())
 	TCPListenerTimeoutAccept(timeoutAccept)(tcpLn)
 	TCPListenerTimeoutReadWrite(timeoutReadWrite)(tcpLn)
+
 	return listenerTestCase{
 		description: "TCP",
 		listener:    tcpLn,
@@ -59,6 +62,7 @@ func unixListenerTestCase(t *testing.T, timeoutAccept, timeoutReadWrite time.Dur
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	ln, err := net.Listen("unix", addr)
 	if err != nil {
 		t.Fatal(err)
@@ -67,6 +71,7 @@ func unixListenerTestCase(t *testing.T, timeoutAccept, timeoutReadWrite time.Dur
 	unixLn := NewUnixListener(ln)
 	UnixListenerTimeoutAccept(timeoutAccept)(unixLn)
 	UnixListenerTimeoutReadWrite(timeoutReadWrite)(unixLn)
+
 	return listenerTestCase{
 		description: "Unix",
 		listener:    unixLn,
@@ -84,6 +89,7 @@ func listenerTestCases(t *testing.T, timeoutAccept, timeoutReadWrite time.Durati
 func TestListenerTimeoutAccept(t *testing.T) {
 	for _, tc := range listenerTestCases(t, time.Millisecond, time.Second) {
 		_, err := tc.listener.Accept()
+
 		opErr, ok := err.(*net.OpError)
 		if !ok {
 			t.Fatalf("for %s listener, have %v, want *net.OpError", tc.description, err)
@@ -124,6 +130,7 @@ func TestListenerTimeoutReadWrite(t *testing.T) {
 		// this will timeout because we don't write anything:
 		msg := make([]byte, 200)
 		_, err = c.Read(msg)
+
 		opErr, ok := err.(*net.OpError)
 		if !ok {
 			t.Fatalf("for %s listener, have %v, want *net.OpError", tc.description, err)

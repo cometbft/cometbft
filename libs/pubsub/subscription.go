@@ -60,6 +60,7 @@ func (s *Subscription) Canceled() <-chan struct{} {
 func (s *Subscription) Err() error {
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
+
 	return s.err
 }
 

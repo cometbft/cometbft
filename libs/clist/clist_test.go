@@ -19,6 +19,7 @@ func TestPanicOnMaxLength(t *testing.T) {
 	for i := 0; i < maxLength; i++ {
 		l.PushBack(1)
 	}
+
 	assert.Panics(t, func() {
 		l.PushBack(1)
 	})
@@ -28,6 +29,7 @@ func TestSmall(t *testing.T) {
 	l := New()
 	el1 := l.PushBack(1)
 	el2 := l.PushBack(2)
+
 	el3 := l.PushBack(3)
 	if l.Len() != 3 {
 		t.Error("Expected len 3, got ", l.Len())
@@ -54,12 +56,15 @@ func TestSmall(t *testing.T) {
 	if r1 != 1 {
 		t.Error("Expected 1, got ", r1)
 	}
+
 	if r2 != 2 {
 		t.Error("Expected 2, got ", r2)
 	}
+
 	if r3 != 3 {
 		t.Error("Expected 3, got ", r3)
 	}
+
 	if l.Len() != 0 {
 		t.Error("Expected len 0, got ", l.Len())
 	}
@@ -75,6 +80,7 @@ func _TestGCFifo(t *testing.T) {
 	}
 
 	const numElements = 1000000
+
 	l := New()
 	gcCount := new(uint64)
 
@@ -84,6 +90,7 @@ func _TestGCFifo(t *testing.T) {
 	type value struct {
 		Int int
 	}
+
 	done := make(chan struct{})
 
 	for i := 0; i < numElements; i++ {
@@ -107,6 +114,7 @@ func _TestGCFifo(t *testing.T) {
 	time.Sleep(time.Second * 3)
 	runtime.GC()
 	time.Sleep(time.Second * 3)
+
 	_ = done
 
 	if *gcCount != numElements {
@@ -125,6 +133,7 @@ func _TestGCRandom(t *testing.T) {
 	}
 
 	const numElements = 1000000
+
 	l := New()
 	gcCount := 0
 
@@ -165,9 +174,11 @@ func _TestGCRandom(t *testing.T) {
 }
 
 func TestScanRightDeleteRandom(t *testing.T) {
-	const numElements = 1000
-	const numTimes = 100
-	const numScanners = 10
+	const (
+		numElements = 1000
+		numTimes    = 100
+		numScanners = 10
+	)
 
 	l := New()
 	stop := make(chan struct{})
@@ -182,8 +193,10 @@ func TestScanRightDeleteRandom(t *testing.T) {
 	for i := 0; i < numScanners; i++ {
 		go func(scannerID int) {
 			var el *CElement
+
 			restartCounter := 0
 			counter := 0
+
 		FOR_LOOP:
 			for {
 				select {
@@ -192,13 +205,16 @@ func TestScanRightDeleteRandom(t *testing.T) {
 					break FOR_LOOP
 				default:
 				}
+
 				if el == nil {
 					el = l.FrontWait()
 					restartCounter++
 				}
+
 				el = el.Next()
 				counter++
 			}
+
 			fmt.Printf("Scanner %v restartCounter: %v counter: %v\n", scannerID, restartCounter, counter)
 		}(i)
 	}
@@ -220,7 +236,6 @@ func TestScanRightDeleteRandom(t *testing.T) {
 		if i%100000 == 0 {
 			fmt.Printf("Pushed %vK elements so far...\n", i/1000)
 		}
-
 	}
 
 	// Stop scanners
@@ -231,6 +246,7 @@ func TestScanRightDeleteRandom(t *testing.T) {
 	for el := l.Front(); el != nil; el = el.Next() {
 		l.Remove(el)
 	}
+
 	if l.Len() != 0 {
 		t.Fatal("Failed to remove all elements from CList")
 	}
@@ -242,10 +258,12 @@ func TestWaitChan(t *testing.T) {
 
 	// 1) add one element to an empty list
 	go l.PushBack(1)
+
 	<-ch
 
 	// 2) and remove it
 	el := l.Front()
+
 	v := l.Remove(el)
 	if v != 1 {
 		t.Fatal("where is 1 coming from?")
@@ -256,10 +274,13 @@ func TestWaitChan(t *testing.T) {
 
 	done := make(chan struct{})
 	pushed := 0
+
 	go func() {
 		for i := 1; i < 100; i++ {
 			l.PushBack(i)
+
 			pushed++
+
 			time.Sleep(time.Duration(cmtrand.Intn(25)) * time.Millisecond)
 		}
 		// apply a deterministic pause so the counter has time to catch up
@@ -269,12 +290,14 @@ func TestWaitChan(t *testing.T) {
 
 	next := el
 	seen := 0
+
 FOR_LOOP:
 	for {
 		select {
 		case <-next.NextWaitChan():
 			next = next.Next()
 			seen++
+
 			if next == nil {
 				t.Fatal("Next should not be nil when waiting on NextWaitChan")
 			}
@@ -292,12 +315,14 @@ FOR_LOOP:
 	// 4) test iterating backwards (PrevWaitChan and Prev)
 	prev := next
 	seen = 0
+
 FOR_LOOP2:
 	for {
 		select {
 		case <-prev.PrevWaitChan():
 			prev = prev.Prev()
 			seen++
+
 			if prev == nil {
 				t.Fatal("expected PrevWaitChan to block forever on nil when reached first elem")
 			}

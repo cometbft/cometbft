@@ -33,6 +33,7 @@ func New(chainID string, headers map[int64]*types.SignedHeader, vals map[int64]*
 			height = h
 		}
 	}
+
 	return &Mock{
 		chainID:          chainID,
 		headers:          headers,
@@ -90,15 +91,19 @@ func (p *Mock) LightBlock(ctx context.Context, height int64) (*types.LightBlock,
 			ValidatorSet: vals,
 		}
 	}
+
 	if lb == nil {
 		return nil, provider.ErrLightBlockNotFound
 	}
+
 	if lb.SignedHeader == nil || lb.ValidatorSet == nil {
 		return nil, provider.ErrBadLightBlock{Reason: errors.New("nil header or vals")}
 	}
+
 	if err := lb.ValidateBasic(lb.ChainID); err != nil {
 		return nil, provider.ErrBadLightBlock{Reason: err}
 	}
+
 	return lb, nil
 }
 
@@ -119,7 +124,9 @@ func (p *Mock) AddLightBlock(lb *types.LightBlock) {
 	if err := lb.ValidateBasic(lb.ChainID); err != nil {
 		panic(fmt.Sprintf("unable to add light block, err: %v", err))
 	}
+
 	p.headers[lb.Height] = lb.SignedHeader
+
 	p.vals[lb.Height] = lb.ValidatorSet
 	if lb.Height > p.latestHeight {
 		p.latestHeight = lb.Height

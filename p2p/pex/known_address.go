@@ -73,23 +73,29 @@ func (ka *knownAddress) addBucketRef(bucketIdx int) int {
 			return -1
 		}
 	}
+
 	ka.Buckets = append(ka.Buckets, bucketIdx)
+
 	return len(ka.Buckets)
 }
 
 func (ka *knownAddress) removeBucketRef(bucketIdx int) int {
 	buckets := []int{}
+
 	for _, bucket := range ka.Buckets {
 		if bucket != bucketIdx {
 			buckets = append(buckets, bucket)
 		}
 	}
+
 	if len(buckets) != len(ka.Buckets)-1 {
 		// TODO refactor to return error?
 		// log.Warn(Fmt("bucketIdx not found in ka.Buckets: %v", ka))
 		return -1
 	}
+
 	ka.Buckets = buckets
+
 	return len(ka.Buckets)
 }
 

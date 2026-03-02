@@ -49,6 +49,7 @@ func makeTestExtCommitWithNumSigs(height int64, timestamp time.Time, numSigs int
 			ExtensionSignature: []byte("ExtensionSignature"),
 		})
 	}
+
 	return &types.ExtendedCommit{
 		Height: height,
 		BlockID: types.BlockID{
@@ -68,10 +69,12 @@ func makeStateAndBlockStore() (sm.State, *BlockStore, cleanupFunc) {
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
+
 	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
 	if err != nil {
 		panic(fmt.Errorf("error constructing state from genesis file: %w", err))
 	}
+
 	return state, NewBlockStore(blockDB), func() { os.RemoveAll(config.RootDir) }
 }
 
@@ -97,8 +100,10 @@ func TestLoadBlockStoreState(t *testing.T) {
 		SaveBlockStoreStateBatch(tc.bss, batch)
 		err := batch.WriteSync()
 		require.NoError(t, err)
+
 		retrBSJ := LoadBlockStoreState(db)
 		assert.Equal(t, tc.want, retrBSJ, "expected the retrieved DBs to match: %s", tc.testName)
+
 		err = batch.Close()
 		require.NoError(t, err)
 	}
@@ -110,6 +115,7 @@ func TestNewBlockStore(t *testing.T) {
 	bz, _ := proto.Marshal(&bss)
 	err := db.Set(blockStoreKey, bz)
 	require.NoError(t, err)
+
 	bs := NewBlockStore(db)
 	require.Equal(t, int64(100), bs.Base(), "failed to properly parse blockstore")
 	require.Equal(t, int64(10000), bs.Height(), "failed to properly parse blockstore")
@@ -123,12 +129,13 @@ func TestNewBlockStore(t *testing.T) {
 	}
 
 	for i, tt := range panicCausers {
-
 		// Expecting a panic here on trying to parse an invalid blockStore
 		_, _, panicErr := doFn(func() (any, error) {
 			err := db.Set(blockStoreKey, tt.data)
 			require.NoError(t, err)
+
 			_ = NewBlockStore(db)
+
 			return nil, nil
 		})
 		require.NotNil(t, panicErr, "#%d panicCauser: %q expected a panic", i, tt.data)
@@ -137,6 +144,7 @@ func TestNewBlockStore(t *testing.T) {
 
 	err = db.Set(blockStoreKey, []byte{})
 	require.NoError(t, err)
+
 	bs = NewBlockStore(db)
 	assert.Equal(t, bs.Height(), int64(0), "expecting empty bytes to be unmarshaled alright")
 }
@@ -151,6 +159,7 @@ func newInMemoryBlockStore() (*BlockStore, dbm.DB) {
 func TestBlockStoreSaveLoadBlock(t *testing.T) {
 	state, bs, cleanup := makeStateAndBlockStore()
 	defer cleanup()
+
 	require.Equal(t, bs.Base(), int64(0), "initially the base should be zero")
 	require.Equal(t, bs.Height(), int64(0), "initially the height should be zero")
 
@@ -291,11 +300,11 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 	}
 
 	for i, tuple := range tuples {
-
 		bs, db := newInMemoryBlockStore()
 		// SaveBlock
 		res, err, panicErr := doFn(func() (any, error) {
 			bs.SaveBlockWithExtendedCommit(tuple.block, tuple.parts, tuple.seenCommit)
+
 			if tuple.block == nil {
 				return nil, nil
 			}
@@ -304,6 +313,7 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 				err := db.Set(calcBlockMetaKey(tuple.block.Height), []byte("block-bogus"))
 				require.NoError(t, err)
 			}
+
 			bBlock := bs.LoadBlock(tuple.block.Height)
 			bBlockMeta := bs.LoadBlockMeta(tuple.block.Height)
 
@@ -311,10 +321,12 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 				err := db.Delete(calcSeenCommitKey(tuple.block.Height))
 				require.NoError(t, err)
 			}
+
 			if tuple.corruptSeenCommitInDB {
 				err := db.Set(calcSeenCommitKey(tuple.block.Height), []byte("bogus-seen-commit"))
 				require.NoError(t, err)
 			}
+
 			bSeenCommit := bs.LoadSeenCommit(tuple.block.Height)
 
 			commitHeight := tuple.block.Height - 1
@@ -322,11 +334,14 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 				err := db.Delete(calcBlockCommitKey(commitHeight))
 				require.NoError(t, err)
 			}
+
 			if tuple.corruptCommitInDB {
 				err := db.Set(calcBlockCommitKey(commitHeight), []byte("foo-bogus"))
 				require.NoError(t, err)
 			}
+
 			bCommit := bs.LoadBlockCommit(commitHeight)
+
 			return &quad{
 				block: bBlock, seenCommit: bSeenCommit, commit: bCommit,
 				meta: bBlockMeta,
@@ -339,6 +354,7 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 			} else if got := fmt.Sprintf("%#v", panicErr); !strings.Contains(got, subStr) {
 				t.Errorf("#%d:\n\tgotErr: %q\nwant substring: %q", i, got, subStr)
 			}
+
 			continue
 		}
 
@@ -346,20 +362,24 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 			if err == nil {
 				t.Errorf("#%d: got nil error", i)
 			}
+
 			continue
 		}
 
 		assert.Nil(t, panicErr, "#%d: unexpected panic", i)
 		assert.Nil(t, err, "#%d: expecting a non-nil error", i)
+
 		qua, ok := res.(*quad)
 		if !ok || qua == nil {
 			t.Errorf("#%d: got nil quad back; gotType=%T", i, res)
 			continue
 		}
+
 		if tuple.eraseSeenCommitInDB {
 			assert.Nil(t, qua.seenCommit,
 				"erased the seenCommit in the DB hence we should get back a nil seenCommit")
 		}
+
 		if tuple.eraseCommitInDB {
 			assert.Nil(t, qua.commit,
 				"erased the commit in the DB hence we should get back a nil commit")
@@ -372,13 +392,16 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 // expected to be absent.
 func stripExtensions(ec *types.ExtendedCommit) bool {
 	stripped := false
+
 	for idx := range ec.ExtendedSignatures {
 		if len(ec.ExtendedSignatures[idx].Extension) > 0 || len(ec.ExtendedSignatures[idx].ExtensionSignature) > 0 {
 			stripped = true
 		}
+
 		ec.ExtendedSignatures[idx].Extension = nil
 		ec.ExtendedSignatures[idx].ExtensionSignature = nil
 	}
+
 	return stripped
 }
 
@@ -406,6 +429,7 @@ func TestSaveBlockWithExtendedCommitPanicOnAbsentExtension(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			state, bs, cleanup := makeStateAndBlockStore()
 			defer cleanup()
+
 			h := bs.Height() + 1
 			block, err := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
 			require.NoError(t, err)
@@ -414,6 +438,7 @@ func TestSaveBlockWithExtendedCommitPanicOnAbsentExtension(t *testing.T) {
 			ps, err := block.MakePartSet(types.BlockPartSizeBytes)
 			require.NoError(t, err)
 			testCase.malleateCommit(seenCommit)
+
 			if testCase.shouldPanic {
 				require.Panics(t, func() {
 					bs.SaveBlockWithExtendedCommit(block, ps, seenCommit)
@@ -448,17 +473,21 @@ func TestLoadBlockExtendedCommit(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			state, bs, cleanup := makeStateAndBlockStore()
 			defer cleanup()
+
 			h := bs.Height() + 1
 			block, err := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
 			require.NoError(t, err)
+
 			seenCommit := makeTestExtCommit(block.Height, cmttime.Now())
 			ps, err := block.MakePartSet(types.BlockPartSizeBytes)
 			require.NoError(t, err)
+
 			if testCase.saveExtended {
 				bs.SaveBlockWithExtendedCommit(block, ps, seenCommit)
 			} else {
 				bs.SaveBlock(block, ps, seenCommit.ToCommit())
 			}
+
 			res := bs.LoadBlockExtendedCommit(block.Height)
 			if testCase.expectResult {
 				require.Equal(t, seenCommit, res)
@@ -472,11 +501,13 @@ func TestLoadBlockExtendedCommit(t *testing.T) {
 func TestLoadBaseMeta(t *testing.T) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
 	defer os.RemoveAll(config.RootDir)
+
 	stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
 	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
 	require.NoError(t, err)
+
 	bs := NewBlockStore(dbm.NewMemDB())
 
 	for h := int64(1); h <= 10; h++ {
@@ -484,6 +515,7 @@ func TestLoadBaseMeta(t *testing.T) {
 		require.NoError(t, err)
 		partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
 		require.NoError(t, err)
+
 		seenCommit := makeTestExtCommit(h, cmttime.Now())
 		bs.SaveBlockWithExtendedCommit(block, partSet, seenCommit)
 	}
@@ -503,7 +535,9 @@ func TestLoadBlockPart(t *testing.T) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
 
 	bs, db := newInMemoryBlockStore()
+
 	const height, index = 10, 1
+
 	loadPart := func() (any, error) {
 		part := bs.LoadBlockPart(height, index)
 		return part, nil
@@ -521,6 +555,7 @@ func TestLoadBlockPart(t *testing.T) {
 	// 2. Next save a corrupted block then try to load it
 	err = db.Set(calcBlockPartKey(height, index), []byte("CometBFT"))
 	require.NoError(t, err)
+
 	res, _, panicErr = doFn(loadPart)
 	require.NotNil(t, panicErr, "expecting a non-nil panic")
 	require.Contains(t, panicErr.Error(), "unmarshal to cmtproto.Part failed")
@@ -530,12 +565,14 @@ func TestLoadBlockPart(t *testing.T) {
 	require.NoError(t, err)
 	partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
+
 	part1 := partSet.GetPart(0)
 
 	pb1, err := part1.ToProto()
 	require.NoError(t, err)
 	err = db.Set(calcBlockPartKey(height, index), mustEncode(pb1))
 	require.NoError(t, err)
+
 	gotPart, _, panicErr := doFn(loadPart)
 	require.Nil(t, panicErr, "an existent and proper block should not panic")
 	require.Nil(t, res, "a properly saved block should return a proper block")
@@ -552,11 +589,13 @@ func TestLoadBlockPart(t *testing.T) {
 func TestPruneBlocks(t *testing.T) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
 	defer os.RemoveAll(config.RootDir)
+
 	stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
 	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
 	require.NoError(t, err)
+
 	db := dbm.NewMemDB()
 	bs := NewBlockStore(db)
 	assert.EqualValues(t, 0, bs.Base())
@@ -576,6 +615,7 @@ func TestPruneBlocks(t *testing.T) {
 		require.NoError(t, err)
 		partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
 		require.NoError(t, err)
+
 		seenCommit := makeTestExtCommit(h, cmttime.Now())
 		bs.SaveBlockWithExtendedCommit(block, partSet, seenCommit)
 	}
@@ -615,6 +655,7 @@ func TestPruneBlocks(t *testing.T) {
 	for i := int64(1); i < 1200; i++ {
 		require.Nil(t, bs.LoadBlock(i))
 	}
+
 	for i := int64(1200); i <= 1500; i++ {
 		require.NotNil(t, bs.LoadBlock(i))
 	}
@@ -674,6 +715,7 @@ func TestLoadBlockMeta(t *testing.T) {
 	// 2. Next save a corrupted blockMeta then try to load it
 	err := db.Set(calcBlockMetaKey(height), []byte("CometBFT-Meta"))
 	require.NoError(t, err)
+
 	res, _, panicErr = doFn(loadMeta)
 	require.NotNil(t, panicErr, "expecting a non-nil panic")
 	require.Contains(t, panicErr.Error(), "unmarshal to cmtproto.BlockMeta")
@@ -687,9 +729,11 @@ func TestLoadBlockMeta(t *testing.T) {
 	pbm := meta.ToProto()
 	err = db.Set(calcBlockMetaKey(height), mustEncode(pbm))
 	require.NoError(t, err)
+
 	gotMeta, _, panicErr := doFn(loadMeta)
 	require.Nil(t, panicErr, "an existent and proper block should not panic")
 	require.Nil(t, res, "a properly saved blockMeta should return a proper blockMeta ")
+
 	pbmeta := meta.ToProto()
 	if gmeta, ok := gotMeta.(*types.BlockMeta); ok {
 		pbgotMeta := gmeta.ToProto()
@@ -701,17 +745,20 @@ func TestLoadBlockMeta(t *testing.T) {
 func TestLoadBlockMetaByHash(t *testing.T) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
 	defer os.RemoveAll(config.RootDir)
+
 	stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
 	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
 	require.NoError(t, err)
+
 	bs := NewBlockStore(dbm.NewMemDB())
 
 	b1, err := state.MakeBlock(state.LastBlockHeight+1, test.MakeNTxs(state.LastBlockHeight+1, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
 	require.NoError(t, err)
 	partSet, err := b1.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
+
 	seenCommit := makeTestExtCommit(1, cmttime.Now())
 	bs.SaveBlock(b1, partSet, seenCommit.ToCommit())
 
@@ -724,12 +771,14 @@ func TestLoadBlockMetaByHash(t *testing.T) {
 func TestBlockFetchAtHeight(t *testing.T) {
 	state, bs, cleanup := makeStateAndBlockStore()
 	defer cleanup()
+
 	require.Equal(t, bs.Height(), int64(0), "initially the height should be zero")
 	block, err := state.MakeBlock(bs.Height()+1, nil, new(types.Commit), nil, state.Validators.GetProposer().Address)
 	require.NoError(t, err)
 
 	partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
+
 	seenCommit := makeTestExtCommit(block.Height, cmttime.Now())
 	bs.SaveBlockWithExtendedCommit(block, partSet, seenCommit)
 	require.Equal(t, bs.Height(), block.Height, "expecting the new height to be changed")
@@ -739,6 +788,7 @@ func TestBlockFetchAtHeight(t *testing.T) {
 	require.NoError(t, err)
 	b2, err := blockAtHeight.ToProto()
 	require.NoError(t, err)
+
 	bz1 := mustEncode(b1)
 	bz2 := mustEncode(b2)
 	require.Equal(t, bz1, bz2)
@@ -747,6 +797,7 @@ func TestBlockFetchAtHeight(t *testing.T) {
 
 	blockAtHeightPlus1 := bs.LoadBlock(bs.Height() + 1)
 	require.Nil(t, blockAtHeightPlus1, "expecting an unsuccessful load of Height()+1")
+
 	blockAtHeightPlus2 := bs.LoadBlock(bs.Height() + 2)
 	require.Nil(t, blockAtHeightPlus2, "expecting an unsuccessful load of Height()+2")
 }
@@ -770,6 +821,7 @@ func doFn(fn func() (any, error)) (res any, err error, panicErr error) {
 	}()
 
 	res, err = fn()
+
 	return res, err, panicErr
 }
 

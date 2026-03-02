@@ -61,6 +61,7 @@ func TestIndexerServiceIndexesBlocks(t *testing.T) {
 		NumTxs: int64(2),
 	})
 	require.NoError(t, err)
+
 	txResult1 := &abci.TxResult{
 		Height: 1,
 		Index:  uint32(0),
@@ -69,6 +70,7 @@ func TestIndexerServiceIndexesBlocks(t *testing.T) {
 	}
 	err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult1})
 	require.NoError(t, err)
+
 	txResult2 := &abci.TxResult{
 		Height: 1,
 		Index:  uint32(1),

@@ -14,6 +14,7 @@ func envSet() int {
 	}
 
 	var err error
+
 	callIndexToFail, err := strconv.Atoi(callIndexToFailS)
 	if err != nil {
 		return -1

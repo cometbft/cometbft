@@ -148,9 +148,11 @@ func (s *ThroughputLatencyScaler) Decide(currentNumWorkers, queueLen, queueCap i
 	switch {
 	case epochThroughput > s.ewmaThroughput*(1+tolerance):
 		decision = ShouldScale
+
 		reasoning = append(reasoning, "scaling")
 	case epochThroughput < s.ewmaThroughput*(1-tolerance):
 		decision = ShouldShrink
+
 		reasoning = append(reasoning, "shrinking")
 	default:
 		reasoning = append(reasoning, "staying")
@@ -162,6 +164,7 @@ func (s *ThroughputLatencyScaler) Decide(currentNumWorkers, queueLen, queueCap i
 
 		if queuePressure >= queuePressureThreshold && decision != ShouldScale {
 			decision = ShouldScale
+
 			reasoning = append(reasoning, "scaling: queue pressure is high")
 		}
 	}

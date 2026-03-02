@@ -45,6 +45,7 @@ func TestApplyBlock(t *testing.T) {
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
 	require.Nil(t, err)
+
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	state, stateDB, _ := makeState(1, 1)
@@ -71,6 +72,7 @@ func TestApplyBlock(t *testing.T) {
 	require.NoError(t, err)
 	bps, err := block.MakePartSet(testPartSize)
 	require.NoError(t, err)
+
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 
 	state, err = blockExec.ApplyBlock(state, blockID, block)
@@ -91,6 +93,7 @@ func TestFinalizeBlockDecidedLastCommit(t *testing.T) {
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
 	require.NoError(t, err)
+
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	state, stateDB, privVals := makeState(7, 1)
@@ -115,6 +118,7 @@ func TestFinalizeBlockDecidedLastCommit(t *testing.T) {
 			evpool.On("PendingEvidence", mock.Anything).Return([]types.Evidence{}, 0)
 			evpool.On("Update", mock.Anything, mock.Anything).Return()
 			evpool.On("CheckEvidence", mock.Anything).Return(nil)
+
 			mp := &mpmocks.Mempool{}
 			mp.On("Lock").Return()
 			mp.On("Unlock").Return()
@@ -146,6 +150,7 @@ func TestFinalizeBlockDecidedLastCommit(t *testing.T) {
 			require.NoError(t, err)
 			bps, err := block.MakePartSet(testPartSize)
 			require.NoError(t, err)
+
 			blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 			_, err = blockExec.ApplyBlock(state, blockID, block)
 			require.NoError(t, err)
@@ -167,6 +172,7 @@ func TestFinalizeBlockValidators(t *testing.T) {
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
 	require.NoError(t, err)
+
 	defer proxyApp.Stop() //nolint:errcheck // no need to check error again
 
 	state, stateDB, _ := makeState(2, 2)
@@ -239,8 +245,8 @@ func TestFinalizeBlockValidators(t *testing.T) {
 		for i, v := range app.CommitVotes {
 			if ctr < len(tc.expectedAbsentValidators) &&
 				tc.expectedAbsentValidators[ctr] == i {
-
 				assert.Equal(t, v.BlockIdFlag, cmtproto.BlockIDFlagAbsent)
+
 				ctr++
 			} else {
 				assert.NotEqual(t, v.BlockIdFlag, cmtproto.BlockIDFlagAbsent)
@@ -256,6 +262,7 @@ func TestFinalizeBlockMisbehavior(t *testing.T) {
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
 	require.NoError(t, err)
+
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	state, stateDB, privVals := makeState(1, 1)
@@ -286,6 +293,7 @@ func TestFinalizeBlockMisbehavior(t *testing.T) {
 	// we don't need to worry about validating the evidence as long as they pass validate basic
 	dve, err := types.NewMockDuplicateVoteEvidenceWithValidator(3, defaultEvidenceTime, privVal, state.ChainID)
 	require.NoError(t, err)
+
 	dve.ValidatorPower = 1000
 	lcae := &types.LightClientAttackEvidence{
 		ConflictingBlock: &types.LightBlock{
@@ -333,6 +341,7 @@ func TestFinalizeBlockMisbehavior(t *testing.T) {
 	evpool.On("PendingEvidence", mock.AnythingOfType("int64")).Return(ev, int64(100))
 	evpool.On("Update", mock.AnythingOfType("state.State"), mock.AnythingOfType("types.EvidenceList")).Return()
 	evpool.On("CheckEvidence", mock.AnythingOfType("types.EvidenceList")).Return(nil)
+
 	mp := &mpmocks.Mempool{}
 	mp.On("Lock").Return()
 	mp.On("Unlock").Return()
@@ -352,6 +361,7 @@ func TestFinalizeBlockMisbehavior(t *testing.T) {
 
 	block, err := makeBlock(state, 1, new(types.Commit))
 	require.NoError(t, err)
+
 	block.Evidence = types.EvidenceData{Evidence: ev}
 	block.EvidenceHash = block.Evidence.Hash()
 	bps, err := block.MakePartSet(testPartSize)
@@ -368,6 +378,7 @@ func TestFinalizeBlockMisbehavior(t *testing.T) {
 
 func TestProcessProposal(t *testing.T) {
 	const height = 2
+
 	txs := test.MakeNTxs(height, 10)
 
 	logger := log.NewNopLogger()
@@ -378,6 +389,7 @@ func TestProcessProposal(t *testing.T) {
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
 	require.NoError(t, err)
+
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	state, stateDB, privVals := makeState(1, height)
@@ -400,14 +412,18 @@ func TestProcessProposal(t *testing.T) {
 
 	block0, err := makeBlock(state, height-1, new(types.Commit))
 	require.NoError(t, err)
+
 	lastCommitSig := []types.CommitSig{}
 	partSet, err := block0.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
+
 	blockID := types.BlockID{Hash: block0.Hash(), PartSetHeader: partSet.Header()}
 	voteInfos := []abci.VoteInfo{}
+
 	for _, privVal := range privVals {
 		pk, err := privVal.GetPubKey()
 		require.NoError(t, err)
+
 		idx, _ := state.Validators.GetByAddress(pk.Address())
 		vote := types.MakeVoteNoError(t, privVal, block0.ChainID, idx, height-1, 0, 2, blockID, time.Now())
 		addr := pk.Address()
@@ -496,7 +512,6 @@ func TestValidateValidatorUpdates(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		t.Run(tc.name, func(t *testing.T) {
 			err := sm.ValidateValidatorUpdates(tc.abciUpdates, tc.validatorParams)
 			if tc.shouldErr {
@@ -559,10 +574,10 @@ func TestUpdateValidators(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		t.Run(tc.name, func(t *testing.T) {
 			updates, err := types.PB2TM.ValidatorUpdates(tc.abciUpdates)
 			assert.NoError(t, err)
+
 			err = tc.currentSet.UpdateWithChangeSet(updates)
 			if tc.shouldErr {
 				assert.Error(t, err)
@@ -573,6 +588,7 @@ func TestUpdateValidators(t *testing.T) {
 				assert.Equal(t, tc.resultingSet.TotalVotingPower(), tc.currentSet.TotalVotingPower())
 
 				assert.Equal(t, tc.resultingSet.Validators[0].Address, tc.currentSet.Validators[0].Address)
+
 				if tc.resultingSet.Size() > 1 {
 					assert.Equal(t, tc.resultingSet.Validators[1].Address, tc.currentSet.Validators[1].Address)
 				}
@@ -588,6 +604,7 @@ func TestFinalizeBlockValidatorUpdates(t *testing.T) {
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
 	require.NoError(t, err)
+
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	state, stateDB, _ := makeState(1, 1)
@@ -620,6 +637,7 @@ func TestFinalizeBlockValidatorUpdates(t *testing.T) {
 	eventBus := types.NewEventBus()
 	err = eventBus.Start()
 	require.NoError(t, err)
+
 	defer eventBus.Stop() //nolint:errcheck // ignore for tests
 
 	blockExec.SetEventBus(eventBus)
@@ -635,11 +653,13 @@ func TestFinalizeBlockValidatorUpdates(t *testing.T) {
 	require.NoError(t, err)
 	bps, err := block.MakePartSet(testPartSize)
 	require.NoError(t, err)
+
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 
 	pubkey := ed25519.GenPrivKey().PubKey()
 	pk, err := cryptoenc.PubKeyToProto(pubkey)
 	require.NoError(t, err)
+
 	app.ValidatorUpdates = []abci.ValidatorUpdate{
 		{PubKey: pk, Power: 10},
 	}
@@ -659,6 +679,7 @@ func TestFinalizeBlockValidatorUpdates(t *testing.T) {
 	case msg := <-updatesSub.Out():
 		event, ok := msg.Data().(types.EventDataValidatorSetUpdates)
 		require.True(t, ok, "Expected event of type EventDataValidatorSetUpdates, got %T", msg.Data())
+
 		if assert.NotEmpty(t, event.ValidatorUpdates) {
 			assert.Equal(t, pubkey, event.ValidatorUpdates[0].PubKey)
 			assert.EqualValues(t, 10, event.ValidatorUpdates[0].VotingPower)
@@ -678,6 +699,7 @@ func TestFinalizeBlockValidatorUpdatesResultingInEmptySet(t *testing.T) {
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
 	require.NoError(t, err)
+
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	state, stateDB, _ := makeState(1, 1)
@@ -698,6 +720,7 @@ func TestFinalizeBlockValidatorUpdatesResultingInEmptySet(t *testing.T) {
 	require.NoError(t, err)
 	bps, err := block.MakePartSet(testPartSize)
 	require.NoError(t, err)
+
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 
 	vp, err := cryptoenc.PubKeyToProto(state.Validators.Validators[0].PubKey)
@@ -714,6 +737,7 @@ func TestFinalizeBlockValidatorUpdatesResultingInEmptySet(t *testing.T) {
 
 func TestEmptyPrepareProposal(t *testing.T) {
 	const height = 2
+
 	ctx := t.Context()
 
 	app := &abci.BaseApplication{}
@@ -721,6 +745,7 @@ func TestEmptyPrepareProposal(t *testing.T) {
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
 	require.NoError(t, err)
+
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	state, stateDB, privVals := makeState(1, height)
@@ -760,6 +785,7 @@ func TestEmptyPrepareProposal(t *testing.T) {
 // the prepare proposal response are included in the block.
 func TestPrepareProposalTxsAllIncluded(t *testing.T) {
 	const height = 2
+
 	ctx := t.Context()
 
 	state, stateDB, privVals := makeState(1, height)
@@ -782,6 +808,7 @@ func TestPrepareProposalTxsAllIncluded(t *testing.T) {
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
 	require.NoError(t, err)
+
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
@@ -810,6 +837,7 @@ func TestPrepareProposalTxsAllIncluded(t *testing.T) {
 // in the order matching the order they are returned from PrepareProposal.
 func TestPrepareProposalReorderTxs(t *testing.T) {
 	const height = 2
+
 	ctx := t.Context()
 
 	state, stateDB, privVals := makeState(1, height)
@@ -836,6 +864,7 @@ func TestPrepareProposalReorderTxs(t *testing.T) {
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
 	require.NoError(t, err)
+
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
@@ -852,6 +881,7 @@ func TestPrepareProposalReorderTxs(t *testing.T) {
 	require.NoError(t, err)
 	block, err := blockExec.CreateProposalBlock(ctx, height, state, commit, pa)
 	require.NoError(t, err)
+
 	for i, tx := range block.Txs {
 		require.Equal(t, txs[i], tx)
 	}
@@ -863,6 +893,7 @@ func TestPrepareProposalReorderTxs(t *testing.T) {
 // an error if the ResponsePrepareProposal returned from the application is invalid.
 func TestPrepareProposalErrorOnTooManyTxs(t *testing.T) {
 	const height = 2
+
 	ctx := t.Context()
 
 	state, stateDB, privVals := makeState(1, height)
@@ -876,7 +907,9 @@ func TestPrepareProposalErrorOnTooManyTxs(t *testing.T) {
 	evpool.On("PendingEvidence", mock.Anything).Return([]types.Evidence{}, int64(0))
 
 	const nValidators = 1
+
 	var bytesPerTx int64 = 3
+
 	maxDataBytes := types.MaxDataBytes(state.ConsensusParams.Block.MaxBytes, 0, nValidators)
 	txs := test.MakeNTxs(height, maxDataBytes/bytesPerTx+2) // +2 so that tx don't fit
 	mp := &mpmocks.Mempool{}
@@ -891,6 +924,7 @@ func TestPrepareProposalErrorOnTooManyTxs(t *testing.T) {
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
 	require.NoError(t, err)
+
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
@@ -917,12 +951,15 @@ func TestPrepareProposalErrorOnTooManyTxs(t *testing.T) {
 // its size and will go beyond the limit upon serialization.
 func TestPrepareProposalCountSerializationOverhead(t *testing.T) {
 	const height = 2
+
 	ctx := t.Context()
 
 	state, stateDB, privVals := makeState(1, height)
 	// limit max block size
 	var bytesPerTx int64 = 4
+
 	const nValidators = 1
+
 	nonDataSize := 5000 - types.MaxDataBytes(5000, 0, nValidators)
 	state.ConsensusParams.Block.MaxBytes = bytesPerTx*1024 + nonDataSize
 	maxDataBytes := types.MaxDataBytes(state.ConsensusParams.Block.MaxBytes, 0, nValidators)
@@ -947,6 +984,7 @@ func TestPrepareProposalCountSerializationOverhead(t *testing.T) {
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
 	require.NoError(t, err)
+
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
@@ -972,6 +1010,7 @@ func TestPrepareProposalCountSerializationOverhead(t *testing.T) {
 // upon calling PrepareProposal on it.
 func TestPrepareProposalErrorOnPrepareProposalError(t *testing.T) {
 	const height = 2
+
 	ctx := t.Context()
 
 	state, stateDB, privVals := makeState(1, height)
@@ -992,11 +1031,13 @@ func TestPrepareProposalErrorOnPrepareProposalError(t *testing.T) {
 	cm.On("Quit").Return(nil)
 	cm.On("PrepareProposal", mock.Anything, mock.Anything).Return(nil, errors.New("an injected error")).Once()
 	cm.On("Stop").Return(nil)
+
 	cc := &pmocks.ClientCreator{}
 	cc.On("NewABCIClient").Return(cm, nil)
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
 	require.NoError(t, err)
+
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
@@ -1064,6 +1105,7 @@ func TestCreateProposalAbsentVoteExtensions(t *testing.T) {
 			if !testCase.expectPanic {
 				app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{}, nil)
 			}
+
 			cc := proxy.NewLocalClientCreator(app)
 			proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 			err := proxyApp.Start()
@@ -1101,10 +1143,12 @@ func TestCreateProposalAbsentVoteExtensions(t *testing.T) {
 
 			bps, err := block.MakePartSet(testPartSize)
 			require.NoError(t, err)
+
 			blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 			pa, _ := state.Validators.GetByIndex(0)
 			lastCommit, _, _ := makeValidCommit(testCase.height-1, blockID, state.Validators, privVals)
 			stripSignatures(lastCommit)
+
 			if testCase.expectPanic {
 				require.Panics(t, func() {
 					_, err := blockExec.CreateProposalBlock(ctx, testCase.height, state, lastCommit, pa)
@@ -1133,6 +1177,7 @@ func makeBlockID(hash []byte, partSetSize uint32, partSetHash []byte) types.Bloc
 	)
 	copy(h, hash)
 	copy(psH, partSetHash)
+
 	return types.BlockID{
 		Hash: h,
 		PartSetHeader: types.PartSetHeader{

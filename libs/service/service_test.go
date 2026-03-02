@@ -22,8 +22,10 @@ func TestBaseServiceWait(t *testing.T) {
 	require.NoError(t, err)
 
 	waitFinished := make(chan struct{})
+
 	go func() {
 		ts.Wait()
+
 		waitFinished <- struct{}{}
 	}()
 

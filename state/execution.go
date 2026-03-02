@@ -109,6 +109,7 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	proposerAddr []byte,
 ) (*types.Block, error) {
 	maxBytes := state.ConsensusParams.Block.MaxBytes
+
 	emptyMaxBytes := maxBytes == -1
 	if emptyMaxBytes {
 		maxBytes = int64(types.MaxBlockSizeBytes)
@@ -120,6 +121,7 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 
 	// Fetch a limited amount of valid txs
 	maxDataBytes := types.MaxDataBytes(maxBytes, evSize, state.Validators.Size())
+
 	maxReapBytes := maxDataBytes
 	if emptyMaxBytes {
 		maxReapBytes = -1
@@ -127,10 +129,12 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 
 	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
 	commit := lastExtCommit.ToCommit()
+
 	block, err := state.MakeBlock(height, txs, commit, evidence, proposerAddr)
 	if err != nil {
 		return nil, err
 	}
+
 	rpp, err := blockExec.proxyApp.PrepareProposal(
 		ctx,
 		&abci.RequestPrepareProposal{
@@ -181,6 +185,7 @@ func (blockExec *BlockExecutor) ProcessProposal(
 	if err != nil {
 		return false, err
 	}
+
 	if resp.IsStatusUnknown() {
 		panic(fmt.Sprintf("ProcessProposal responded with status %s", resp.Status.String()))
 	}
@@ -197,8 +202,10 @@ func (blockExec *BlockExecutor) ValidateBlock(state State, block *types.Block) e
 		if err := validateBlock(state, block); err != nil {
 			return err
 		}
+
 		blockExec.lastValidatedBlock = block
 	}
+
 	return blockExec.evpool.CheckEvidence(block.Evidence.Evidence)
 }
 
@@ -222,8 +229,10 @@ func (blockExec *BlockExecutor) ApplyBlock(
 		if err := validateBlock(state, block); err != nil {
 			return state, ErrInvalidBlock(err)
 		}
+
 		blockExec.lastValidatedBlock = block
 	}
+
 	return blockExec.applyBlock(state, blockID, block)
 }
 
@@ -241,6 +250,7 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 	})
 	endTime := time.Now().UnixNano()
 	blockExec.metrics.BlockProcessingTime.Observe(float64(endTime-startTime) / 1000000)
+
 	if err != nil {
 		blockExec.logger.Error("error in proxyAppConn.FinalizeBlock", "err", err)
 		return state, err
@@ -280,10 +290,12 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 	if err != nil {
 		return state, err
 	}
+
 	if len(validatorUpdates) > 0 {
 		blockExec.logger.Info("updates to validators", "updates", types.ValidatorListString(validatorUpdates))
 		blockExec.metrics.ValidatorSetUpdates.Add(1)
 	}
+
 	if abciResponse.ConsensusParamUpdates != nil {
 		blockExec.metrics.ConsensusParamUpdates.Add(1)
 	}
@@ -339,6 +351,7 @@ func (blockExec *BlockExecutor) ExtendVote(
 	if !block.HashesTo(vote.BlockID.Hash) {
 		panic(fmt.Sprintf("vote's hash does not match the block it is referring to %X!=%X", block.Hash(), vote.BlockID.Hash))
 	}
+
 	if vote.Height != block.Height {
 		panic(fmt.Sprintf("vote's and block's heights do not match %d!=%d", block.Height, vote.Height))
 	}
@@ -358,6 +371,7 @@ func (blockExec *BlockExecutor) ExtendVote(
 	if err != nil {
 		panic(fmt.Errorf("ExtendVote call failed: %w", err))
 	}
+
 	return resp.VoteExtension, nil
 }
 
@@ -373,6 +387,7 @@ func (blockExec *BlockExecutor) VerifyVoteExtension(ctx context.Context, vote *t
 	if err != nil {
 		panic(fmt.Errorf("VerifyVoteExtension call failed: %w", err))
 	}
+
 	if resp.IsStatusUnknown() {
 		panic(fmt.Sprintf("VerifyVoteExtension responded with status %s", resp.Status.String()))
 	}
@@ -380,6 +395,7 @@ func (blockExec *BlockExecutor) VerifyVoteExtension(ctx context.Context, vote *t
 	if !resp.IsAccepted() {
 		return types.ErrInvalidVoteExtension
 	}
+
 	return nil
 }
 
@@ -400,6 +416,7 @@ func (blockExec *BlockExecutor) Commit(
 	abciResponse *abci.ResponseFinalizeBlock,
 ) (int64, error) {
 	blockExec.mempool.Lock()
+
 	unlockMempool := func() { blockExec.mempool.Unlock() }
 
 	// while mempool is Locked, flush to ensure all async requests have completed
@@ -408,6 +425,7 @@ func (blockExec *BlockExecutor) Commit(
 	if err != nil {
 		unlockMempool()
 		blockExec.logger.Error("client error during mempool.FlushAppConn, flushing mempool", "err", err)
+
 		return 0, err
 	}
 
@@ -416,6 +434,7 @@ func (blockExec *BlockExecutor) Commit(
 	if err != nil {
 		unlockMempool()
 		blockExec.logger.Error("client error during proxyAppConn.CommitSync", "err", err)
+
 		return 0, err
 	}
 
@@ -563,6 +582,7 @@ func BuildExtendedCommitInfo(ec *types.ExtendedCommit, valSet *types.ValidatorSe
 	}
 
 	votes := make([]abci.ExtendedVoteInfo, ecSize)
+
 	for i, val := range valSet.Validators {
 		ecs := ec.ExtendedSignatures[i]
 
@@ -620,6 +640,7 @@ func validateValidatorUpdates(abciUpdates []abci.ValidatorUpdate,
 				valUpdate, pk.Type())
 		}
 	}
+
 	return nil
 }
 
@@ -637,6 +658,7 @@ func updateState(
 
 	// Update the validator set with the latest abciResponse.
 	lastHeightValsChanged := state.LastHeightValidatorsChanged
+
 	if len(validatorUpdates) > 0 {
 		err := nValSet.UpdateWithChangeSet(validatorUpdates)
 		if err != nil {
@@ -651,10 +673,12 @@ func updateState(
 
 	// Update the params with the latest abciResponse.
 	nextParams := state.ConsensusParams
+
 	lastHeightParamsChanged := state.LastHeightConsensusParamsChanged
 	if abciResponse.ConsensusParamUpdates != nil {
 		// NOTE: must not mutate state.ConsensusParams
 		nextParams = state.ConsensusParams.Update(abciResponse.ConsensusParamUpdates)
+
 		err := nextParams.ValidateBasic()
 		if err != nil {
 			return state, fmt.Errorf("validating new consensus params: %w", err)
@@ -818,5 +842,6 @@ func (blockExec *BlockExecutor) pruneBlocks(retainHeight int64, state State) (ui
 	if err != nil {
 		return 0, fmt.Errorf("failed to prune state store: %w", err)
 	}
+
 	return amountPruned, nil
 }

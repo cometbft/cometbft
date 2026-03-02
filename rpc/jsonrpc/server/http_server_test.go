@@ -29,30 +29,42 @@ func TestMaxOpenConnections(t *testing.T) {
 
 	// Start the server.
 	var open int32
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if n := atomic.AddInt32(&open, 1); n > int32(max) {
 			t.Errorf("%d open connections, want <= %d", n, max)
 		}
 		defer atomic.AddInt32(&open, -1)
+
 		time.Sleep(10 * time.Millisecond)
 		fmt.Fprint(w, "some body")
 	})
+
 	config := DefaultConfig()
 	l, err := Listen("tcp://127.0.0.1:0", max)
 	require.NoError(t, err)
+
 	defer l.Close()
+
 	go Serve(l, mux, log.TestingLogger(), config) //nolint:errcheck // ignore for tests
 
 	// Make N GET calls to the server.
 	attempts := max * 2
-	var wg sync.WaitGroup
-	var failed int32
+
+	var (
+		wg     sync.WaitGroup
+		failed int32
+	)
+
 	for i := 0; i < attempts; i++ {
 		wg.Add(1)
+
 		go func() {
 			defer wg.Done()
+
 			c := http.Client{Timeout: 3 * time.Second}
+
 			r, err := c.Get("http://" + l.Addr().String())
 			if err != nil {
 				atomic.AddInt32(&failed, 1)
@@ -61,6 +73,7 @@ func TestMaxOpenConnections(t *testing.T) {
 			defer r.Body.Close()
 		}()
 	}
+
 	wg.Wait()
 
 	// We expect some Gets to fail as the server's accept queue is filled,
@@ -73,6 +86,7 @@ func TestMaxOpenConnections(t *testing.T) {
 func TestServeTLS(t *testing.T) {
 	ln, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err)
+
 	defer ln.Close()
 
 	mux := http.NewServeMux()
@@ -81,6 +95,7 @@ func TestServeTLS(t *testing.T) {
 	})
 
 	chErr := make(chan error, 1)
+
 	go func() {
 		// FIXME This goroutine leaks
 		chErr <- ServeTLS(ln, mux, "test.crt", "test.key", log.TestingLogger(), DefaultConfig())
@@ -98,7 +113,9 @@ func TestServeTLS(t *testing.T) {
 	c := &http.Client{Transport: tr}
 	res, err := c.Get("https://" + ln.Addr().String())
 	require.NoError(t, err)
+
 	defer res.Body.Close()
+
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 
 	body, err := io.ReadAll(res.Body)
@@ -113,9 +130,11 @@ func TestWriteRPCResponseHTTP(t *testing.T) {
 	w := httptest.NewRecorder()
 	err := WriteCacheableRPCResponseHTTP(w, types.NewRPCSuccessResponse(id, &sampleResult{"hello"}))
 	require.NoError(t, err)
+
 	resp := w.Result()
 	body, err := io.ReadAll(resp.Body)
 	_ = resp.Body.Close()
+
 	require.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode)
 	assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
@@ -128,9 +147,11 @@ func TestWriteRPCResponseHTTP(t *testing.T) {
 		types.NewRPCSuccessResponse(id, &sampleResult{"hello"}),
 		types.NewRPCSuccessResponse(id, &sampleResult{"world"}))
 	require.NoError(t, err)
+
 	resp = w.Result()
 	body, err = io.ReadAll(resp.Body)
 	_ = resp.Body.Close()
+
 	require.NoError(t, err)
 
 	assert.Equal(t, 200, resp.StatusCode)
@@ -145,9 +166,11 @@ func TestWriteRPCResponseHTTPError(t *testing.T) {
 		http.StatusInternalServerError,
 		types.RPCInternalError(types.JSONRPCIntID(-1), errors.New("foo")))
 	require.NoError(t, err)
+
 	resp := w.Result()
 	body, err := io.ReadAll(resp.Body)
 	_ = resp.Body.Close()
+
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 	assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))

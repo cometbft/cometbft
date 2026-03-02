@@ -18,6 +18,7 @@ func RandVal() types.ValidatorUpdate {
 	pubkey := cmtrand.Bytes(32)
 	power := cmtrand.Uint16() + 1
 	v := types.UpdateValidator(pubkey, int64(power), "")
+
 	return v
 }
 
@@ -30,6 +31,7 @@ func RandVals(cnt int) []types.ValidatorUpdate {
 	for i := 0; i < cnt; i++ {
 		res[i] = RandVal()
 	}
+
 	return res
 }
 
@@ -40,6 +42,7 @@ func InitKVStore(ctx context.Context, app *Application) error {
 	_, err := app.InitChain(ctx, &types.RequestInitChain{
 		Validators: RandVals(1),
 	})
+
 	return err
 }
 
@@ -52,6 +55,7 @@ func NewRandomTx(size int) []byte {
 	if size < 4 {
 		panic("random tx size must be greater than 3")
 	}
+
 	return NewTx(cmtrand.Str(2), cmtrand.Str(size-3))
 }
 
@@ -60,6 +64,7 @@ func NewRandomTxs(n int) [][]byte {
 	for i := 0; i < n; i++ {
 		txs[i] = NewRandomTx(10)
 	}
+
 	return txs
 }
 
@@ -74,7 +79,9 @@ func MakeValSetChangeTx(pubkey crypto.PublicKey, power int64) []byte {
 	if err != nil {
 		panic(err)
 	}
+
 	pubStr := base64.StdEncoding.EncodeToString(pk.Bytes())
 	pubTypeStr := pk.Type()
+
 	return []byte(fmt.Sprintf("%s%s!%s!%d", ValidatorPrefix, pubTypeStr, pubStr, power))
 }

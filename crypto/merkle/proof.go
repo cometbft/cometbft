@@ -36,6 +36,7 @@ type Proof struct {
 func ProofsFromByteSlices(items [][]byte) (rootHash []byte, proofs []*Proof) {
 	trails, rootSPN := trailsFromByteSlices(items)
 	rootHash = rootSPN.Hash
+
 	proofs = make([]*Proof, len(items))
 	for i, trail := range trails {
 		proofs[i] = &Proof{
@@ -45,6 +46,7 @@ func ProofsFromByteSlices(items [][]byte) (rootHash []byte, proofs []*Proof) {
 			Aunts:    trail.FlattenAunts(),
 		}
 	}
+
 	return
 }
 
@@ -54,24 +56,31 @@ func (sp *Proof) Verify(rootHash []byte, leaf []byte) error {
 	if rootHash == nil {
 		return fmt.Errorf("invalid root hash: cannot be nil")
 	}
+
 	if sp.Total < 0 {
 		return errors.New("proof total must be positive")
 	}
+
 	if sp.Index < 0 {
 		return errors.New("proof index cannot be negative")
 	}
+
 	hash := tmhash.New()
+
 	leafHash := leafHashOpt(hash, leaf)
 	if !bytes.Equal(sp.LeafHash, leafHash) {
 		return fmt.Errorf("invalid leaf hash: wanted %X got %X", leafHash, sp.LeafHash)
 	}
+
 	computedHash, err := sp.computeRootHash(hash)
 	if err != nil {
 		return fmt.Errorf("compute root hash: %w", err)
 	}
+
 	if !bytes.Equal(computedHash, rootHash) {
 		return fmt.Errorf("invalid root hash: wanted %X got %X", rootHash, computedHash)
 	}
+
 	return nil
 }
 
@@ -108,20 +117,25 @@ func (sp *Proof) ValidateBasic() error {
 	if sp.Total < 0 {
 		return errors.New("negative Total")
 	}
+
 	if sp.Index < 0 {
 		return errors.New("negative Index")
 	}
+
 	if len(sp.LeafHash) != tmhash.Size {
 		return fmt.Errorf("expected LeafHash size to be %d, got %d", tmhash.Size, len(sp.LeafHash))
 	}
+
 	if len(sp.Aunts) > MaxAunts {
 		return fmt.Errorf("expected no more than %d aunts, got %d", MaxAunts, len(sp.Aunts))
 	}
+
 	for i, auntHash := range sp.Aunts {
 		if len(auntHash) != tmhash.Size {
 			return fmt.Errorf("expected Aunts#%d size to be %d, got %d", i, tmhash.Size, len(auntHash))
 		}
 	}
+
 	return nil
 }
 
@@ -129,6 +143,7 @@ func (sp *Proof) ToProto() *cmtcrypto.Proof {
 	if sp == nil {
 		return nil
 	}
+
 	pb := new(cmtcrypto.Proof)
 
 	pb.Total = sp.Total
@@ -161,6 +176,7 @@ func computeHashFromAunts(hash hash.Hash, index, total int64, leafHash []byte, i
 	if index >= total || index < 0 || total <= 0 {
 		return nil, fmt.Errorf("invalid index %d and/or total %d", index, total)
 	}
+
 	switch total {
 	case 0:
 		panic("Cannot call computeHashFromAunts() with 0 total")
@@ -168,11 +184,13 @@ func computeHashFromAunts(hash hash.Hash, index, total int64, leafHash []byte, i
 		if len(innerHashes) != 0 {
 			return nil, fmt.Errorf("unexpected inner hashes")
 		}
+
 		return leafHash, nil
 	default:
 		if len(innerHashes) == 0 {
 			return nil, fmt.Errorf("expected at least one inner hash")
 		}
+
 		numLeft := getSplitPoint(total)
 		if index < numLeft {
 			leftHash, err := computeHashFromAunts(hash, index, numLeft, leafHash, innerHashes[:len(innerHashes)-1])
@@ -182,10 +200,12 @@ func computeHashFromAunts(hash hash.Hash, index, total int64, leafHash []byte, i
 
 			return innerHashOpt(hash, leftHash, innerHashes[len(innerHashes)-1]), nil
 		}
+
 		rightHash, err := computeHashFromAunts(hash, index-numLeft, total-numLeft, leafHash, innerHashes[:len(innerHashes)-1])
 		if err != nil {
 			return nil, err
 		}
+
 		return innerHashOpt(hash, innerHashes[len(innerHashes)-1], rightHash), nil
 	}
 }
@@ -207,6 +227,7 @@ type ProofNode struct {
 func (spn *ProofNode) FlattenAunts() [][]byte {
 	// Nonrecursive impl.
 	innerHashes := [][]byte{}
+
 	for spn != nil {
 		switch {
 		case spn.Left != nil:
@@ -216,8 +237,10 @@ func (spn *ProofNode) FlattenAunts() [][]byte {
 		default:
 			break
 		}
+
 		spn = spn.Parent
 	}
+
 	return innerHashes
 }
 
@@ -245,6 +268,7 @@ func trailsFromByteSlicesInternal(hash hash.Hash, items [][]byte) (trails []*Pro
 		leftRoot.Right = rightRoot
 		rightRoot.Parent = root
 		rightRoot.Left = leftRoot
+
 		return append(lefts, rights...), root
 	}
 }

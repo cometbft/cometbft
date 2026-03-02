@@ -25,6 +25,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
 	testProposal = &Proposal{
 		Height: 12345,
 		Round:  23456,
@@ -50,6 +51,7 @@ func TestProposalSignable(t *testing.T) {
 
 func TestProposalString(t *testing.T) {
 	str := testProposal.String()
+
 	expected := `Proposal{12345/23456 (2D2D4A756E655F31355F323032305F616D696E6F5F7761735F72656D6F766564:111:2D2D4A756E65, -1) 000000000000 @ 2018-02-11T07:09:22.765Z}` //nolint:lll // ignore line length for tests
 	if str != expected {
 		t.Errorf("got unexpected string for Proposal. Expected:\n%v\nGot:\n%v", expected, str)
@@ -70,6 +72,7 @@ func TestProposalVerifySignature(t *testing.T) {
 	// sign it
 	err = privVal.SignProposal("test_chain_id", p)
 	require.NoError(t, err)
+
 	prop.Signature = p.Signature
 
 	// verify the same proposal
@@ -156,6 +159,7 @@ func TestProposalValidateBasic(t *testing.T) {
 			p := prop.ToProto()
 			err := privVal.SignProposal("test_chain_id", p)
 			prop.Signature = p.Signature
+
 			require.NoError(t, err)
 			tc.malleateProposal(prop)
 			assert.Equal(t, tc.expectErr, prop.ValidateBasic() != nil, "Validate Basic had an unexpected result")

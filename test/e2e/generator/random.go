@@ -27,7 +27,9 @@ func combinations(items map[string][]any) []map[string]any {
 	for key := range items {
 		keys = append(keys, key)
 	}
+
 	sort.Strings(keys)
+
 	return combiner(map[string]any{}, keys, items)
 }
 
@@ -36,15 +38,18 @@ func combiner(head map[string]any, pending []string, items map[string][]any) []m
 	if len(pending) == 0 {
 		return []map[string]any{head}
 	}
+
 	key, pending := pending[0], pending[1:]
 
 	var result []map[string]any
+
 	for _, value := range items[key] {
 		path := map[string]any{}
 		maps.Copy(path, head)
 		path[key] = value
 		result = append(result, combiner(path, pending, items)...)
 	}
+
 	return result
 }
 
@@ -60,11 +65,13 @@ type probSetChoice map[string]float64
 
 func (pc probSetChoice) Choose(r *rand.Rand) []string {
 	choices := []string{}
+
 	for item, prob := range pc {
 		if r.Float64() <= prob {
 			choices = append(choices, item)
 		}
 	}
+
 	return choices
 }
 
@@ -73,13 +80,16 @@ type uniformSetChoice []string
 
 func (usc uniformSetChoice) Choose(r *rand.Rand) []string {
 	var choices []string //nolint:prealloc
+
 	indexes := r.Perm(len(usc))
 	if len(indexes) > 1 {
 		indexes = indexes[:1+r.Intn(len(indexes)-1)]
 	}
+
 	for _, i := range indexes {
 		choices = append(choices, usc[i])
 	}
+
 	return choices
 }
 
@@ -88,9 +98,11 @@ type weightedChoice map[any]uint
 
 func (wc weightedChoice) Choose(r *rand.Rand) any {
 	total := 0
+
 	choices := make([]any, 0, len(wc))
 	for choice, weight := range wc {
 		total += int(weight)
+
 		choices = append(choices, choice)
 	}
 

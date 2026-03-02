@@ -27,12 +27,14 @@ func newStructInfoCache() *structInfoCache {
 func (c *structInfoCache) get(rt reflect.Type) *structInfo {
 	c.RLock()
 	defer c.RUnlock()
+
 	return c.structInfos[rt]
 }
 
 func (c *structInfoCache) set(rt reflect.Type, sInfo *structInfo) {
 	c.Lock()
 	defer c.Unlock()
+
 	c.structInfos[rt] = sInfo
 }
 
@@ -53,9 +55,11 @@ func makeStructInfo(rt reflect.Type) *structInfo {
 	if rt.Kind() != reflect.Struct {
 		panic(fmt.Sprintf("can't make struct info for non-struct value %v", rt))
 	}
+
 	if sInfo := cache.get(rt); sInfo != nil {
 		return sInfo
 	}
+
 	fields := make([]*fieldInfo, 0, rt.NumField())
 	for i := 0; i < cap(fields); i++ {
 		frt := rt.Field(i)
@@ -64,6 +68,7 @@ func makeStructInfo(rt reflect.Type) *structInfo {
 			omitEmpty: false,
 			hidden:    frt.Name == "" || !unicode.IsUpper(rune(frt.Name[0])),
 		}
+
 		o := frt.Tag.Get("json")
 		if o == "-" {
 			fInfo.hidden = true
@@ -72,15 +77,19 @@ func makeStructInfo(rt reflect.Type) *structInfo {
 			if opts[0] != "" {
 				fInfo.jsonName = opts[0]
 			}
+
 			for _, o := range opts[1:] {
 				if o == "omitempty" {
 					fInfo.omitEmpty = true
 				}
 			}
 		}
+
 		fields = append(fields, fInfo)
 	}
+
 	sInfo := &structInfo{fields: fields}
 	cache.set(rt, sInfo)
+
 	return sInfo
 }

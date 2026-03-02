@@ -88,6 +88,7 @@ func (privKey PrivKey) PubKey() crypto.PubKey {
 	// If the latter 32 bytes of the privkey are all zero, privkey is not
 	// initialized.
 	initialized := false
+
 	for _, v := range privKey[32:] {
 		if v != 0 {
 			initialized = true
@@ -101,6 +102,7 @@ func (privKey PrivKey) PubKey() crypto.PubKey {
 
 	pubkeyBytes := make([]byte, PubKeySize)
 	copy(pubkeyBytes, privKey[32:])
+
 	return PubKey(pubkeyBytes)
 }
 
@@ -157,6 +159,7 @@ func (pubKey PubKey) Address() crypto.Address {
 	if len(pubKey) != PubKeySize {
 		panic("pubkey is incorrect size")
 	}
+
 	return crypto.Address(tmhash.SumTruncated(pubKey))
 }
 

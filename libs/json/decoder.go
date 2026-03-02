@@ -23,6 +23,7 @@ func decode(bz []byte, v any) error {
 	if rv.Kind() != reflect.Ptr {
 		return errors.New("must decode into a pointer")
 	}
+
 	rv = rv.Elem()
 
 	// If this is a registered type, defer to interface decoder regardless of whether the input is
@@ -52,6 +53,7 @@ func decodeReflect(bz []byte, rv reflect.Value) error {
 		if rv.IsNil() {
 			rv.Set(reflect.New(rv.Type().Elem()))
 		}
+
 		rv = rv.Elem()
 	}
 
@@ -89,7 +91,9 @@ func decodeReflect(bz []byte, rv reflect.Value) error {
 		if bz[0] != '"' || bz[len(bz)-1] != '"' {
 			return fmt.Errorf("invalid 64-bit integer encoding %q, expected string", string(bz))
 		}
+
 		bz = bz[1 : len(bz)-1]
+
 		fallthrough
 
 	// Anything else we defer to the stdlib.
@@ -111,11 +115,12 @@ func decodeReflectList(bz []byte, rv reflect.Value) error {
 			if err := json.Unmarshal(bz, &buf); err != nil {
 				return err
 			}
+
 			if len(buf) != rv.Len() {
 				return fmt.Errorf("got %v bytes, expected %v", len(buf), rv.Len())
 			}
-			reflect.Copy(rv, reflect.ValueOf(buf))
 
+			reflect.Copy(rv, reflect.ValueOf(buf))
 		} else if err := decodeStdlib(bz, rv); err != nil {
 			return err
 		}
@@ -126,12 +131,15 @@ func decodeReflectList(bz []byte, rv reflect.Value) error {
 		if err := json.Unmarshal(bz, &rawSlice); err != nil {
 			return err
 		}
+
 		if rv.Type().Kind() == reflect.Slice {
 			rv.Set(reflect.MakeSlice(reflect.SliceOf(rv.Type().Elem()), len(rawSlice), len(rawSlice)))
 		}
+
 		if rv.Len() != len(rawSlice) { // arrays of wrong size
 			return fmt.Errorf("got list of %v elements, expected %v", len(rawSlice), rv.Len())
 		}
+
 		for i, bz := range rawSlice {
 			if err := decodeReflect(bz, rv.Index(i)); err != nil {
 				return err
@@ -157,19 +165,23 @@ func decodeReflectMap(bz []byte, rv reflect.Value) error {
 	if err := json.Unmarshal(bz, &rawMap); err != nil {
 		return err
 	}
+
 	if rv.Type().Key().Kind() != reflect.String {
 		return fmt.Errorf("map keys must be strings, got %v", rv.Type().Key().String())
 	}
 
 	// Recursively decode values.
 	rv.Set(reflect.MakeMapWithSize(rv.Type(), len(rawMap)))
+
 	for key, bz := range rawMap {
 		value := reflect.New(rv.Type().Elem()).Elem()
 		if err := decodeReflect(bz, value); err != nil {
 			return err
 		}
+
 		rv.SetMapIndex(reflect.ValueOf(key), value)
 	}
+
 	return nil
 }
 
@@ -177,6 +189,7 @@ func decodeReflectStruct(bz []byte, rv reflect.Value) error {
 	if !rv.CanAddr() {
 		return errors.New("struct value is not addressable")
 	}
+
 	sInfo := makeStructInfo(rv.Type())
 
 	// Decode raw JSON values into a string-keyed map.
@@ -184,9 +197,11 @@ func decodeReflectStruct(bz []byte, rv reflect.Value) error {
 	if err := json.Unmarshal(bz, &rawMap); err != nil {
 		return err
 	}
+
 	for i, fInfo := range sInfo.fields {
 		if !fInfo.hidden {
 			frv := rv.Field(i)
+
 			bz := rawMap[fInfo.jsonName]
 			if len(bz) > 0 {
 				if err := decodeReflect(bz, frv); err != nil {
@@ -211,9 +226,11 @@ func decodeReflectInterface(bz []byte, rv reflect.Value) error {
 	if err := json.Unmarshal(bz, &wrapper); err != nil {
 		return err
 	}
+
 	if wrapper.Type == "" {
 		return errors.New("interface type cannot be empty")
 	}
+
 	if len(wrapper.Value) == 0 {
 		return errors.New("interface value cannot be empty")
 	}
@@ -223,6 +240,7 @@ func decodeReflectInterface(bz []byte, rv reflect.Value) error {
 		if rv.IsNil() {
 			rv.Set(reflect.New(rv.Type().Elem()))
 		}
+
 		rv = rv.Elem()
 	}
 
@@ -233,6 +251,7 @@ func decodeReflectInterface(bz []byte, rv reflect.Value) error {
 	}
 
 	cptr := reflect.New(rt)
+
 	crv := cptr.Elem()
 	if err := decodeReflect(wrapper.Value, crv); err != nil {
 		return err
@@ -245,13 +264,16 @@ func decodeReflectInterface(bz []byte, rv reflect.Value) error {
 		if !cptr.Type().AssignableTo(rv.Type()) {
 			return fmt.Errorf("invalid type %q for this value", wrapper.Type)
 		}
+
 		rv.Set(cptr)
 	} else {
 		if !crv.Type().AssignableTo(rv.Type()) {
 			return fmt.Errorf("invalid type %q for this value", wrapper.Type)
 		}
+
 		rv.Set(crv)
 	}
+
 	return nil
 }
 
@@ -265,10 +287,13 @@ func decodeStdlib(bz []byte, rv reflect.Value) error {
 	if rv.Kind() != reflect.Ptr {
 		target = reflect.New(rv.Type())
 	}
+
 	if err := json.Unmarshal(bz, target.Interface()); err != nil {
 		return err
 	}
+
 	rv.Set(target.Elem())
+
 	return nil
 }
 

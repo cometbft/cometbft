@@ -43,6 +43,7 @@ func TestCacheRemove(t *testing.T) {
 func TestCacheAfterUpdate(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
+
 	mp, cleanup := newMempoolWithApp(cc)
 	defer cleanup()
 
@@ -70,10 +71,12 @@ func TestCacheAfterUpdate(t *testing.T) {
 		}
 
 		updateTxs := []types.Tx{}
+
 		for _, v := range tc.updateIndices {
 			tx := kvstore.NewTx(fmt.Sprintf("%d", v), "value")
 			updateTxs = append(updateTxs, tx)
 		}
+
 		err := mp.Update(int64(tcIndex), updateTxs, abciResponses(len(updateTxs), abci.CodeTypeOK), nil, nil)
 		require.NoError(t, err)
 
@@ -86,6 +89,7 @@ func TestCacheAfterUpdate(t *testing.T) {
 
 		cache := mp.cache.(*LRUTxCache)
 		node := cache.GetList().Front()
+
 		counter := 0
 		for node != nil {
 			require.NotEqual(t, len(tc.txsInCache), counter,
@@ -106,6 +110,7 @@ func TestCacheAfterUpdate(t *testing.T) {
 			counter++
 			node = node.Next()
 		}
+
 		require.Equal(t, len(tc.txsInCache), counter,
 			"cache smaller than expected on testcase %d", tcIndex)
 		mp.Flush()

@@ -27,6 +27,7 @@ type paramsChangeTestCase struct {
 func newTestApp() proxy.AppConns {
 	app := &testApp{}
 	cc := proxy.NewLocalClientCreator(app)
+
 	return proxy.NewAppConns(cc, proxy.NopMetrics())
 }
 
@@ -50,6 +51,7 @@ func makeAndCommitGoodBlock(
 	if err != nil {
 		return state, types.BlockID{}, nil, err
 	}
+
 	return state, blockID, commit, nil
 }
 
@@ -60,6 +62,7 @@ func makeAndApplyGoodBlock(state sm.State, height int64, lastCommit *types.Commi
 	if err != nil {
 		return state, types.BlockID{}, nil
 	}
+
 	partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
 	if err != nil {
 		return state, types.BlockID{}, err
@@ -68,14 +71,17 @@ func makeAndApplyGoodBlock(state sm.State, height int64, lastCommit *types.Commi
 	if err := blockExec.ValidateBlock(state, block); err != nil {
 		return state, types.BlockID{}, err
 	}
+
 	blockID := types.BlockID{
 		Hash:          block.Hash(),
 		PartSetHeader: partSet.Header(),
 	}
+
 	state, err = blockExec.ApplyBlock(state, blockID, block)
 	if err != nil {
 		return state, types.BlockID{}, err
 	}
+
 	return state, blockID, nil
 }
 
@@ -96,9 +102,11 @@ func makeValidCommit(
 	privVals map[string]types.PrivValidator,
 ) (*types.ExtendedCommit, []*types.Vote, error) {
 	sigs := make([]types.ExtendedCommitSig, vals.Size())
+
 	votes := make([]*types.Vote, vals.Size())
 	for i := 0; i < vals.Size(); i++ {
 		_, val := vals.GetByIndex(int32(i))
+
 		vote, err := types.MakeVote(
 			privVals[val.Address.String()],
 			chainID,
@@ -112,9 +120,11 @@ func makeValidCommit(
 		if err != nil {
 			return nil, nil, err
 		}
+
 		sigs[i] = vote.ExtendedCommitSig()
 		votes[i] = vote
 	}
+
 	return &types.ExtendedCommit{
 		Height:             height,
 		BlockID:            blockID,
@@ -124,6 +134,7 @@ func makeValidCommit(
 
 func makeState(nVals, height int) (sm.State, dbm.DB, map[string]types.PrivValidator) {
 	vals := make([]types.GenesisValidator, nVals)
+
 	privVals := make(map[string]types.PrivValidator, nVals)
 	for i := 0; i < nVals; i++ {
 		secret := []byte(fmt.Sprintf("test%d", i))
@@ -137,6 +148,7 @@ func makeState(nVals, height int) (sm.State, dbm.DB, map[string]types.PrivValida
 		}
 		privVals[valAddr.String()] = types.NewMockPVWithParams(pk, false, false)
 	}
+
 	s, _ := sm.MakeGenesisState(&types.GenesisDoc{
 		ChainID:    chainID,
 		Validators: vals,
@@ -144,6 +156,7 @@ func makeState(nVals, height int) (sm.State, dbm.DB, map[string]types.PrivValida
 	})
 
 	stateDB := dbm.NewMemDB()
+
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -153,6 +166,7 @@ func makeState(nVals, height int) (sm.State, dbm.DB, map[string]types.PrivValida
 
 	for i := 1; i < height; i++ {
 		s.LastBlockHeight++
+
 		s.LastValidators = s.Validators.Copy()
 		if err := stateStore.Save(s); err != nil {
 			panic(err)
@@ -167,6 +181,7 @@ func genValSet(size int) *types.ValidatorSet {
 	for i := 0; i < size; i++ {
 		vals[i] = types.NewValidator(ed25519.GenPrivKey().PubKey(), 10)
 	}
+
 	return types.NewValidatorSet(vals)
 }
 
@@ -178,6 +193,7 @@ func makeHeaderPartsResponsesValPubKeyChange(
 	if err != nil {
 		return types.Header{}, types.BlockID{}, nil
 	}
+
 	abciResponses := &abci.ResponseFinalizeBlock{}
 	// If the pubkey is new, remove the old and add the new.
 	_, val := state.NextValidators.GetByIndex(0)
@@ -199,6 +215,7 @@ func makeHeaderPartsResponsesValPowerChange(
 	if err != nil {
 		return types.Header{}, types.BlockID{}, nil
 	}
+
 	abciResponses := &abci.ResponseFinalizeBlock{}
 
 	// If the pubkey is new, remove the old and add the new.
@@ -220,14 +237,17 @@ func makeHeaderPartsResponsesParams(
 	if err != nil {
 		return types.Header{}, types.BlockID{}, nil
 	}
+
 	abciResponses := &abci.ResponseFinalizeBlock{
 		ConsensusParamUpdates: &params,
 	}
+
 	return block.Header, types.BlockID{Hash: block.Hash(), PartSetHeader: types.PartSetHeader{}}, abciResponses
 }
 
 func randomGenesisDoc() *types.GenesisDoc {
 	pubkey := ed25519.GenPrivKey().PubKey()
+
 	return &types.GenesisDoc{
 		GenesisTime: cmttime.Now(),
 		ChainID:     "abc",
@@ -261,6 +281,7 @@ func (app *testApp) FinalizeBlock(_ context.Context, req *abci.RequestFinalizeBl
 	app.CommitVotes = req.DecidedLastCommit.Votes
 	app.Misbehavior = req.Misbehavior
 	app.LastTime = req.Time
+
 	txResults := make([]*abci.ExecTxResult, len(req.Txs))
 	for idx := range req.Txs {
 		txResults[idx] = &abci.ExecTxResult{
@@ -289,17 +310,22 @@ func (app *testApp) PrepareProposal(
 	req *abci.RequestPrepareProposal,
 ) (*abci.ResponsePrepareProposal, error) {
 	txs := make([][]byte, 0, len(req.Txs))
+
 	var totalBytes int64
+
 	for _, tx := range req.Txs {
 		if len(tx) == 0 {
 			continue
 		}
+
 		totalBytes += int64(len(tx))
 		if totalBytes > req.MaxTxBytes {
 			break
 		}
+
 		txs = append(txs, tx)
 	}
+
 	return &abci.ResponsePrepareProposal{Txs: txs}, nil
 }
 
@@ -312,5 +338,6 @@ func (app *testApp) ProcessProposal(
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 	}
+
 	return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
 }

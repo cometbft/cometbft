@@ -31,6 +31,7 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	for i, n := range nodes {
 		nodeIPs[i] = n.ExternalIP.String()
 	}
+
 	if err := p.writePlaybook(ymlSystemd, true); err != nil {
 		return err
 	}
@@ -47,6 +48,7 @@ func (p Provider) StopTestnet(ctx context.Context) error {
 	if err := p.writePlaybook(ymlSystemd, false); err != nil {
 		return err
 	}
+
 	return execAnsible(ctx, p.Testnet.Dir, ymlSystemd, nodeIPs)
 }
 
@@ -58,6 +60,7 @@ func (p Provider) writePlaybook(yaml string, starting bool) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -68,6 +71,7 @@ func ansibleSystemdBytes(starting bool) string {
 	if starting {
 		startStop = "started"
 	}
+
 	playbook := fmt.Sprintf(`- name: start/stop testapp
   hosts: all
   gather_facts: yes
@@ -80,12 +84,14 @@ func ansibleSystemdBytes(starting bool) string {
       name: testappd
       state: %s
       enabled: yes`, startStop)
+
 	return playbook
 }
 
 // ExecCompose runs a Docker Compose command for a testnet.
 func execAnsible(ctx context.Context, dir, playbook string, nodeIPs []string, args ...string) error {
 	playbook = filepath.Join(dir, playbook)
+
 	return exec.CommandVerbose(ctx, append(
 		[]string{"ansible-playbook", playbook, "-f", "50", "-u", "root", "--inventory", strings.Join(nodeIPs, ",") + ","},
 		args...)...)

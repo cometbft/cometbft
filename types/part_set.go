@@ -50,12 +50,15 @@ func (part *Part) ValidateBasic() error {
 	if int64(part.Index) < part.Proof.Total-1 && len(part.Bytes) != int(BlockPartSizeBytes) {
 		return ErrPartInvalidSize
 	}
+
 	if int64(part.Index) != part.Proof.Index {
 		return ErrInvalidPart{Reason: fmt.Errorf("part index %d != proof index %d", part.Index, part.Proof.Index)}
 	}
+
 	if err := part.Proof.ValidateBasic(); err != nil {
 		return ErrInvalidPart{Reason: fmt.Errorf("wrong Proof: %w", err)}
 	}
+
 	return nil
 }
 
@@ -84,6 +87,7 @@ func (part *Part) ToProto() (*cmtproto.Part, error) {
 	if part == nil {
 		return nil, errors.New("nil part")
 	}
+
 	pb := new(cmtproto.Part)
 	proof := part.Proof.ToProto()
 
@@ -100,10 +104,12 @@ func PartFromProto(pb *cmtproto.Part) (*Part, error) {
 	}
 
 	part := new(Part)
+
 	proof, err := merkle.ProofFromProto(&pb.Proof)
 	if err != nil {
 		return nil, err
 	}
+
 	part.Index = pb.Index
 	part.Bytes = pb.Bytes
 	part.Proof = *proof
@@ -140,6 +146,7 @@ func (psh PartSetHeader) ValidateBasic() error {
 	if err := ValidateHash(psh.Hash); err != nil {
 		return fmt.Errorf("wrong Hash: %w", err)
 	}
+
 	return nil
 }
 
@@ -160,6 +167,7 @@ func PartSetHeaderFromProto(ppsh *cmtproto.PartSetHeader) (*PartSetHeader, error
 	if ppsh == nil {
 		return nil, errors.New("nil PartSetHeader")
 	}
+
 	psh := new(PartSetHeader)
 	psh.Total = ppsh.Total
 	psh.Hash = ppsh.Hash
@@ -195,6 +203,7 @@ func NewPartSetFromData(data []byte, partSize uint32) *PartSet {
 	// divide data into parts of size `partSize`
 	total := (uint32(len(data)) + partSize - 1) / partSize
 	parts := make([]*Part, total)
+
 	partsBytes := make([][]byte, total)
 	for i := uint32(0); i < total; i++ {
 		part := &Part{
@@ -209,7 +218,9 @@ func NewPartSetFromData(data []byte, partSize uint32) *PartSet {
 	for i := uint32(0); i < total; i++ {
 		parts[i].Proof = *proofs[i]
 	}
+
 	partsBitArray := bits.NewBitArrayFromFn(int(total), func(int) bool { return true })
+
 	return &PartSet{
 		total:         total,
 		hash:          root,
@@ -236,6 +247,7 @@ func (ps *PartSet) Header() PartSetHeader {
 	if ps == nil {
 		return PartSetHeader{}
 	}
+
 	return PartSetHeader{
 		Total: ps.total,
 		Hash:  ps.hash,
@@ -246,12 +258,14 @@ func (ps *PartSet) HasHeader(header PartSetHeader) bool {
 	if ps == nil {
 		return false
 	}
+
 	return ps.Header().Equals(header)
 }
 
 func (ps *PartSet) BitArray() *bits.BitArray {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
+
 	return ps.partsBitArray.Copy()
 }
 
@@ -259,6 +273,7 @@ func (ps *PartSet) Hash() []byte {
 	if ps == nil {
 		return merkle.HashFromByteSlices(nil)
 	}
+
 	return ps.hash
 }
 
@@ -266,6 +281,7 @@ func (ps *PartSet) HashesTo(hash []byte) bool {
 	if ps == nil {
 		return false
 	}
+
 	return bytes.Equal(ps.hash, hash)
 }
 
@@ -273,6 +289,7 @@ func (ps *PartSet) Count() uint32 {
 	if ps == nil {
 		return 0
 	}
+
 	return ps.count
 }
 
@@ -280,6 +297,7 @@ func (ps *PartSet) ByteSize() int64 {
 	if ps == nil {
 		return 0
 	}
+
 	return ps.byteSize
 }
 
@@ -287,6 +305,7 @@ func (ps *PartSet) Total() uint32 {
 	if ps == nil {
 		return 0
 	}
+
 	return ps.total
 }
 
@@ -326,12 +345,14 @@ func (ps *PartSet) AddPart(part *Part) (bool, error) {
 	ps.partsBitArray.SetIndex(int(part.Index), true)
 	ps.count++
 	ps.byteSize += int64(len(part.Bytes))
+
 	return true, nil
 }
 
 func (ps *PartSet) GetPart(index int) *Part {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
+
 	return ps.parts[index]
 }
 
@@ -343,6 +364,7 @@ func (ps *PartSet) GetReader() io.Reader {
 	if !ps.IsComplete() {
 		panic("Cannot GetReader() on incomplete PartSet")
 	}
+
 	return NewPartSetReader(ps.parts)
 }
 
@@ -369,7 +391,9 @@ func (psr *PartSetReader) Read(p []byte) (n int, err error) {
 		if err != nil {
 			return n1, err
 		}
+
 		n2, err := psr.Read(p[readerLen:])
+
 		return n1 + n2, err
 	}
 
@@ -377,7 +401,9 @@ func (psr *PartSetReader) Read(p []byte) (n int, err error) {
 	if psr.i >= len(psr.parts) {
 		return 0, io.EOF
 	}
+
 	psr.reader = bytes.NewReader(psr.parts[psr.i].Bytes)
+
 	return psr.Read(p)
 }
 
@@ -388,8 +414,10 @@ func (ps *PartSet) StringShort() string {
 	if ps == nil {
 		return "nil-PartSet"
 	}
+
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
+
 	return fmt.Sprintf("(%v of %v)", ps.Count(), ps.Total())
 }
 

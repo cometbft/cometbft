@@ -57,6 +57,7 @@ func RollbackState(config *cfg.Config, removeBlock bool) (int64, []byte, error) 
 	if err != nil {
 		return -1, nil, err
 	}
+
 	defer func() {
 		_ = blockStore.Close()
 		_ = stateStore.Close()
@@ -78,6 +79,7 @@ func loadStateAndBlockStore(config *cfg.Config) (*store.BlockStore, state.Store,
 	if err != nil {
 		return nil, nil, err
 	}
+
 	blockStore := store.NewBlockStore(blockStoreDB)
 
 	if !os.FileExists(filepath.Join(config.DBDir(), "state.db")) {
@@ -89,6 +91,7 @@ func loadStateAndBlockStore(config *cfg.Config) (*store.BlockStore, state.Store,
 	if err != nil {
 		return nil, nil, err
 	}
+
 	stateStore := state.NewStore(stateDB, state.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
 	})

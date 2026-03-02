@@ -28,7 +28,9 @@ func main() {
 			fmt.Printf("%s Has been skipped\n", t.Name)
 		}
 	})
+
 	server.Serve()
 	defer server.Listener.Close()
+
 	fmt.Print("FINE")
 }

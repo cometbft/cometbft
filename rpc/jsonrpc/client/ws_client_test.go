@@ -35,6 +35,7 @@ func (h *myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	defer conn.Close()
+
 	for {
 		messageType, in, err := conn.ReadMessage()
 		if err != nil {
@@ -42,20 +43,24 @@ func (h *myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var req types.RPCRequest
+
 		err = json.Unmarshal(in, &req)
 		if err != nil {
 			panic(err)
 		}
 
 		h.mtx.RLock()
+
 		if h.closeConnAfterRead {
 			if err := conn.Close(); err != nil {
 				panic(err)
 			}
 		}
+
 		h.mtx.RUnlock()
 
 		res := json.RawMessage(`{}`)
+
 		emptyRespBytes, _ := json.Marshal(types.RPCResponse{Result: res, ID: req.ID})
 		if err := conn.WriteMessage(messageType, emptyRespBytes); err != nil {
 			return
@@ -68,6 +73,7 @@ func TestWSClientReconnectsAfterReadFailure(t *testing.T) {
 
 	// start server
 	h := &myHandler{}
+
 	s := httptest.NewServer(h)
 	defer s.Close()
 
@@ -75,6 +81,7 @@ func TestWSClientReconnectsAfterReadFailure(t *testing.T) {
 	defer c.Stop() //nolint:errcheck // ignore for tests
 
 	wg.Add(1)
+
 	go callWgDoneOnResult(t, c, &wg)
 
 	h.mtx.Lock()
@@ -107,6 +114,7 @@ func TestWSClientReconnectsAfterWriteFailure(t *testing.T) {
 	defer c.Stop() //nolint:errcheck // ignore for tests
 
 	wg.Add(2)
+
 	go callWgDoneOnResult(t, c, &wg)
 
 	// hacky way to abort the connection before write
@@ -148,12 +156,14 @@ func TestWSClientReconnectFailure(t *testing.T) {
 	if err := c.conn.Close(); err != nil {
 		t.Error(err)
 	}
+
 	s.Close()
 
 	// results in WS write error
 	// provide timeout to avoid blocking
 	ctx, cancel := context.WithTimeout(context.Background(), wsCallTimeout)
 	defer cancel()
+
 	if err := c.Call(ctx, "a", make(map[string]any)); err != nil {
 		t.Error(err)
 	}
@@ -162,6 +172,7 @@ func TestWSClientReconnectFailure(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	done := make(chan struct{})
+
 	go func() {
 		// client should block on this
 		call(t, "b", c)
@@ -184,14 +195,18 @@ func TestNotBlockingOnStop(t *testing.T) {
 	c.Call(context.Background(), "a", make(map[string]any)) //nolint:errcheck // ignore for tests
 	// Let the readRoutine get around to blocking
 	time.Sleep(time.Second)
+
 	passCh := make(chan struct{})
+
 	go func() {
 		// Unless we have a non-blocking write to ResponsesCh from readRoutine
 		// this blocks forever ont the waitgroup
 		err := c.Stop()
 		require.NoError(t, err)
+
 		passCh <- struct{}{}
 	}()
+
 	select {
 	case <-passCh:
 		// Pass
@@ -207,6 +222,7 @@ func startClient(t *testing.T, addr string) *WSClient {
 	err = c.Start()
 	require.Nil(t, err)
 	c.SetLogger(log.TestingLogger())
+
 	return c
 }
 
@@ -223,6 +239,7 @@ func callWgDoneOnResult(t *testing.T, c *WSClient, wg *sync.WaitGroup) {
 				t.Errorf("unexpected error: %v", resp.Error)
 				return
 			}
+
 			if resp.Result != nil {
 				wg.Done()
 			}

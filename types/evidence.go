@@ -51,12 +51,15 @@ var _ Evidence = &DuplicateVoteEvidence{}
 func NewDuplicateVoteEvidence(vote1, vote2 *Vote, blockTime time.Time, valSet *ValidatorSet,
 ) (*DuplicateVoteEvidence, error) {
 	var voteA, voteB *Vote
+
 	if vote1 == nil || vote2 == nil {
 		return nil, errors.New("missing vote")
 	}
+
 	if valSet == nil {
 		return nil, errors.New("missing validator set")
 	}
+
 	idx, val := valSet.GetByAddress(vote1.ValidatorAddress)
 	if idx == -1 {
 		return nil, fmt.Errorf("validator %s not in validator set", vote1.ValidatorAddress.String())
@@ -69,6 +72,7 @@ func NewDuplicateVoteEvidence(vote1, vote2 *Vote, blockTime time.Time, valSet *V
 		voteA = vote2
 		voteB = vote1
 	}
+
 	return &DuplicateVoteEvidence{
 		VoteA:            voteA,
 		VoteB:            voteB,
@@ -95,6 +99,7 @@ func (dve *DuplicateVoteEvidence) ABCI() []abci.Misbehavior {
 // Bytes returns the proto-encoded evidence as a byte array.
 func (dve *DuplicateVoteEvidence) Bytes() []byte {
 	pbe := dve.ToProto()
+
 	bz, err := pbe.Marshal()
 	if err != nil {
 		panic(err)
@@ -132,9 +137,11 @@ func (dve *DuplicateVoteEvidence) ValidateBasic() error {
 	if dve.VoteA == nil || dve.VoteB == nil {
 		return fmt.Errorf("one or both of the votes are empty %v, %v", dve.VoteA, dve.VoteB)
 	}
+
 	if err := dve.VoteA.ValidateBasic(); err != nil {
 		return fmt.Errorf("invalid VoteA: %w", err)
 	}
+
 	if err := dve.VoteB.ValidateBasic(); err != nil {
 		return fmt.Errorf("invalid VoteB: %w", err)
 	}
@@ -142,6 +149,7 @@ func (dve *DuplicateVoteEvidence) ValidateBasic() error {
 	if strings.Compare(dve.VoteA.BlockID.Key(), dve.VoteB.BlockID.Key()) >= 0 {
 		return errors.New("duplicate votes in invalid order")
 	}
+
 	return nil
 }
 
@@ -156,6 +164,7 @@ func (dve *DuplicateVoteEvidence) ToProto() *cmtproto.DuplicateVoteEvidence {
 		ValidatorPower:   dve.ValidatorPower,
 		Timestamp:        dve.Timestamp,
 	}
+
 	return &tp
 }
 
@@ -166,24 +175,30 @@ func DuplicateVoteEvidenceFromProto(pb *cmtproto.DuplicateVoteEvidence) (*Duplic
 	}
 
 	var vA *Vote
+
 	if pb.VoteA != nil {
 		var err error
+
 		vA, err = VoteFromProto(pb.VoteA)
 		if err != nil {
 			return nil, err
 		}
+
 		if err = vA.ValidateBasic(); err != nil {
 			return nil, err
 		}
 	}
 
 	var vB *Vote
+
 	if pb.VoteB != nil {
 		var err error
+
 		vB, err = VoteFromProto(pb.VoteB)
 		if err != nil {
 			return nil, err
 		}
+
 		if err = vB.ValidateBasic(); err != nil {
 			return nil, err
 		}
@@ -231,6 +246,7 @@ func (l *LightClientAttackEvidence) ABCI() []abci.Misbehavior {
 			TotalVotingPower: l.TotalVotingPower,
 		}
 	}
+
 	return abciEv
 }
 
@@ -240,10 +256,12 @@ func (l *LightClientAttackEvidence) Bytes() []byte {
 	if err != nil {
 		panic(err)
 	}
+
 	bz, err := pbe.Marshal()
 	if err != nil {
 		panic(err)
 	}
+
 	return bz
 }
 
@@ -267,9 +285,12 @@ func (l *LightClientAttackEvidence) GetByzantineValidators(commonVals *Validator
 				// validator wasn't in the common validator set
 				continue
 			}
+
 			validators = append(validators, val)
 		}
+
 		sort.Sort(ValidatorsByVotingPower(validators))
+
 		return validators
 	} else if trusted.Commit.Round == l.ConflictingBlock.Commit.Round {
 		// This is an equivocation attack as both commits are in the same round. We then find the validators
@@ -290,7 +311,9 @@ func (l *LightClientAttackEvidence) GetByzantineValidators(commonVals *Validator
 			_, val := l.ConflictingBlock.ValidatorSet.GetByAddress(sigA.ValidatorAddress)
 			validators = append(validators, val)
 		}
+
 		sort.Sort(ValidatorsByVotingPower(validators))
+
 		return validators
 	}
 	// if the rounds are different then this is an amnesia attack. Unfortunately, given the nature of the attack,
@@ -325,6 +348,7 @@ func (l *LightClientAttackEvidence) Hash() []byte {
 	bz := make([]byte, tmhash.Size+n)
 	copy(bz[:tmhash.Size-1], l.ConflictingBlock.Hash().Bytes())
 	copy(bz[tmhash.Size:], buf)
+
 	return tmhash.Sum(bz)
 }
 
@@ -399,6 +423,7 @@ func (l *LightClientAttackEvidence) ToProto() (*cmtproto.LightClientAttackEviden
 		if err != nil {
 			return nil, err
 		}
+
 		byzVals[idx] = valpb
 	}
 
@@ -428,6 +453,7 @@ func LightClientAttackEvidenceFromProto(lpb *cmtproto.LightClientAttackEvidence)
 		if err != nil {
 			return nil, err
 		}
+
 		byzVals[idx] = val
 	}
 
@@ -458,6 +484,7 @@ func (evl EvidenceList) Hash() []byte {
 		// may cause different hashes
 		evidenceBzs[i] = evl[i].Bytes()
 	}
+
 	return merkle.HashFromByteSlices(evidenceBzs)
 }
 
@@ -466,6 +493,7 @@ func (evl EvidenceList) String() string {
 	for _, e := range evl {
 		s += fmt.Sprintf("%s\t\t", e)
 	}
+
 	return s
 }
 
@@ -476,6 +504,7 @@ func (evl EvidenceList) Has(evidence Evidence) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -486,6 +515,7 @@ func (evl EvidenceList) ToABCI() []abci.Misbehavior {
 	for _, e := range evl {
 		el = append(el, e.ABCI()...)
 	}
+
 	return el
 }
 
@@ -501,6 +531,7 @@ func EvidenceToProto(evidence Evidence) (*cmtproto.Evidence, error) {
 	switch evi := evidence.(type) {
 	case *DuplicateVoteEvidence:
 		pbev := evi.ToProto()
+
 		return &cmtproto.Evidence{
 			Sum: &cmtproto.Evidence_DuplicateVoteEvidence{
 				DuplicateVoteEvidence: pbev,
@@ -512,6 +543,7 @@ func EvidenceToProto(evidence Evidence) (*cmtproto.Evidence, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		return &cmtproto.Evidence{
 			Sum: &cmtproto.Evidence_LightClientAttackEvidence{
 				LightClientAttackEvidence: pbev,
@@ -599,21 +631,27 @@ func NewMockDuplicateVoteEvidenceWithValidator(height int64, time time.Time,
 	if err != nil {
 		return nil, err
 	}
+
 	val := NewValidator(pubKey, 10)
 	voteA := makeMockVote(height, 0, 0, pubKey.Address(), randBlockID(), time)
 	vA := voteA.ToProto()
+
 	err = pv.SignVote(chainID, vA)
 	if err != nil {
 		return nil, err
 	}
+
 	voteA.Signature = vA.Signature
 	voteB := makeMockVote(height, 0, 0, pubKey.Address(), randBlockID(), time)
 	vB := voteB.ToProto()
+
 	err = pv.SignVote(chainID, vB)
 	if err != nil {
 		return nil, err
 	}
+
 	voteB.Signature = vB.Signature
+
 	return NewDuplicateVoteEvidence(voteA, voteB, time, NewValidatorSet([]*Validator{val}))
 }
 

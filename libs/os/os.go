@@ -20,12 +20,15 @@ type logger interface {
 func TrapSignal(logger logger, cb func()) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
 	go func() {
 		for sig := range c {
 			logger.Info("signal trapped", "msg", log.NewLazySprintf("captured %v, exiting...", sig))
+
 			if cb != nil {
 				cb()
 			}
+
 			os.Exit(0)
 		}
 	}()
@@ -37,6 +40,7 @@ func Kill() error {
 	if err != nil {
 		return err
 	}
+
 	return p.Signal(syscall.SIGTERM)
 }
 
@@ -52,6 +56,7 @@ func EnsureDir(dir string, mode os.FileMode) error {
 	if err != nil {
 		return fmt.Errorf("could not create directory %q: %w", dir, err)
 	}
+
 	return nil
 }
 
@@ -70,6 +75,7 @@ func MustReadFile(filePath string) []byte {
 		Exit(fmt.Sprintf("MustReadFile failed: %v", err))
 		return nil
 	}
+
 	return fileBytes
 }
 
@@ -96,6 +102,7 @@ func CopyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
+
 	if info.IsDir() {
 		return errors.New("cannot read from directories")
 	}
@@ -108,5 +115,6 @@ func CopyFile(src, dst string) error {
 	defer dstfile.Close()
 
 	_, err = io.Copy(dstfile, srcfile)
+
 	return err
 }

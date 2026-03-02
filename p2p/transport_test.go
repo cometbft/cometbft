@@ -115,6 +115,7 @@ func TestTransportMultiplexConnFilterTimeout(t *testing.T) {
 	}
 
 	errc := make(chan error)
+
 	go func() {
 		addr := NewNetAddress(id, mt.listener.Addr())
 
@@ -155,8 +156,10 @@ func TestTransportMultiplexMaxIncomingConnections(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	const maxIncomingConns = 2
 	MultiplexTransportMaxIncomingConnections(maxIncomingConns)(mt)
+
 	if err := mt.Listen(*addr); err != nil {
 		t.Fatal(err)
 	}
@@ -173,6 +176,7 @@ func TestTransportMultiplexMaxIncomingConnections(t *testing.T) {
 			if err != nil {
 				t.Errorf("dialer connection failed: %v", err)
 			}
+
 			_, err = mt.Accept(peerConfig{})
 			if err != nil {
 				t.Errorf("connection failed: %v", err)
@@ -284,6 +288,7 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 		}
 
 		close(slowc)
+
 		defer func() {
 			close(slowdonec)
 		}()
@@ -451,6 +456,7 @@ func TestTransportMultiplexDialRejectWrongID(t *testing.T) {
 	_, err := dialer.Dial(*addr, peerConfig{})
 	if err != nil {
 		t.Logf("connection failed: %v", err)
+
 		if e, ok := err.(ErrRejected); ok {
 			if !e.IsAuthFailure() {
 				t.Errorf("expected auth failure, got %v", e)
@@ -476,6 +482,7 @@ func TestTransportMultiplexRejectIncompatible(t *testing.T) {
 				},
 			)
 		)
+
 		addr := NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
 
 		_, err := dialer.Dial(*addr, peerConfig{})
@@ -586,11 +593,11 @@ func TestTransportHandshake(t *testing.T) {
 			}
 		}(c)
 		go func(c net.Conn) {
-
 			// ni   DefaultNodeInfo
 			var pbni tmp2p.DefaultNodeInfo
 
 			protoReader := protoio.NewDelimitedReader(c, MaxNodeInfoSize())
+
 			_, err := protoReader.ReadMsg(&pbni)
 			if err != nil {
 				t.Error(err)
@@ -628,6 +635,7 @@ func TestTransportAddChannel(t *testing.T) {
 	testChannel := byte(0x01)
 
 	mt.AddChannel(testChannel)
+
 	if !mt.nodeInfo.(DefaultNodeInfo).HasChannel(testChannel) {
 		t.Errorf("missing added channel %v. Got %v", testChannel, mt.nodeInfo.(DefaultNodeInfo).Channels)
 	}

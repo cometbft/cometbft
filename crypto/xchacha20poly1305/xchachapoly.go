@@ -42,8 +42,10 @@ func New(key []byte) (cipher.AEAD, error) {
 	if len(key) != KeySize {
 		return nil, errors.New("xchacha20poly1305: bad key length")
 	}
+
 	ret := new(xchacha20poly1305)
 	copy(ret.key[:], key)
+
 	return ret, nil
 }
 
@@ -64,9 +66,12 @@ func (c *xchacha20poly1305) Seal(dst, nonce, plaintext, additionalData []byte) [
 		panic("xchacha20poly1305: plaintext too large")
 	}
 
-	var subKey [KeySize]byte
-	var hNonce [16]byte
-	var subNonce [chacha20poly1305.NonceSize]byte
+	var (
+		subKey   [KeySize]byte
+		hNonce   [16]byte
+		subNonce [chacha20poly1305.NonceSize]byte
+	)
+
 	copy(hNonce[:], nonce[:16])
 
 	HChaCha20(&subKey, &hNonce, &c.key)
@@ -83,12 +88,17 @@ func (c *xchacha20poly1305) Open(dst, nonce, ciphertext, additionalData []byte) 
 	if len(nonce) != NonceSize {
 		return nil, fmt.Errorf("xchacha20poly1305: bad nonce length passed to Open")
 	}
+
 	if uint64(len(ciphertext)) > MaxCiphertextSize {
 		return nil, fmt.Errorf("xchacha20poly1305: ciphertext too large")
 	}
-	var subKey [KeySize]byte
-	var hNonce [16]byte
-	var subNonce [chacha20poly1305.NonceSize]byte
+
+	var (
+		subKey   [KeySize]byte
+		hNonce   [16]byte
+		subNonce [chacha20poly1305.NonceSize]byte
+	)
+
 	copy(hNonce[:], nonce[:16])
 
 	HChaCha20(&subKey, &hNonce, &c.key)

@@ -34,9 +34,11 @@ func NewSnapshotStore(dir string) (*SnapshotStore, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, err
 	}
+
 	if err := store.loadMetadata(); err != nil {
 		return nil, err
 	}
+
 	return store, nil
 }
 
@@ -52,13 +54,16 @@ func (s *SnapshotStore) loadMetadata() error {
 	case err != nil:
 		return fmt.Errorf("failed to load snapshot metadata from %q: %w", file, err)
 	}
+
 	if len(bz) != 0 {
 		err = json.Unmarshal(bz, &metadata)
 		if err != nil {
 			return fmt.Errorf("invalid snapshot data in %q: %w", file, err)
 		}
 	}
+
 	s.metadata = metadata
+
 	return nil
 }
 
@@ -73,10 +78,12 @@ func (s *SnapshotStore) saveMetadata() error {
 	// save the file to a new file and move it to make saving atomic.
 	newFile := filepath.Join(s.dir, "metadata.json.new")
 	file := filepath.Join(s.dir, "metadata.json")
+
 	err = os.WriteFile(newFile, bz, 0o644) //nolint: gosec
 	if err != nil {
 		return err
 	}
+
 	return os.Rename(newFile, file)
 }
 
@@ -84,25 +91,31 @@ func (s *SnapshotStore) saveMetadata() error {
 func (s *SnapshotStore) Create(state *State) (abci.Snapshot, error) {
 	s.Lock()
 	defer s.Unlock()
+
 	bz, height, stateHash, err := state.Export()
 	if err != nil {
 		return abci.Snapshot{}, err
 	}
+
 	snapshot := abci.Snapshot{
 		Height: height,
 		Format: 1,
 		Hash:   stateHash,
 		Chunks: byteChunks(bz),
 	}
+
 	err = os.WriteFile(filepath.Join(s.dir, fmt.Sprintf("%v.json", height)), bz, 0o644) //nolint:gosec
 	if err != nil {
 		return abci.Snapshot{}, err
 	}
+
 	s.metadata = append(s.metadata, snapshot)
+
 	err = s.saveMetadata()
 	if err != nil {
 		return abci.Snapshot{}, err
 	}
+
 	return snapshot, nil
 }
 
@@ -124,6 +137,7 @@ func (s *SnapshotStore) Prune(n int) error {
 	pruned := make([]abci.Snapshot, len(s.metadata[i:]))
 	copy(pruned, s.metadata[i:])
 	s.metadata = pruned
+
 	return nil
 }
 
@@ -131,10 +145,12 @@ func (s *SnapshotStore) Prune(n int) error {
 func (s *SnapshotStore) List() ([]*abci.Snapshot, error) {
 	s.RLock()
 	defer s.RUnlock()
+
 	snapshots := make([]*abci.Snapshot, len(s.metadata))
 	for idx := range s.metadata {
 		snapshots[idx] = &s.metadata[idx]
 	}
+
 	return snapshots, nil
 }
 
@@ -142,21 +158,25 @@ func (s *SnapshotStore) List() ([]*abci.Snapshot, error) {
 func (s *SnapshotStore) LoadChunk(height uint64, format uint32, chunk uint32) ([]byte, error) {
 	s.RLock()
 	defer s.RUnlock()
+
 	for _, snapshot := range s.metadata {
 		if snapshot.Height == height && snapshot.Format == format {
 			bz, err := os.ReadFile(filepath.Join(s.dir, fmt.Sprintf("%v.json", height)))
 			if err != nil {
 				return nil, err
 			}
+
 			return byteChunk(bz, chunk), nil
 		}
 	}
+
 	return nil, nil
 }
 
 // byteChunk returns the chunk at a given index from the full byte slice.
 func byteChunk(bz []byte, index uint32) []byte {
 	start := int(index * snapshotChunkSize)
+
 	end := int((index + 1) * snapshotChunkSize)
 	switch {
 	case start >= len(bz):

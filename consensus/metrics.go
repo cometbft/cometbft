@@ -164,6 +164,7 @@ func (m *Metrics) MarkProposalProcessed(accepted bool) {
 	if !accepted {
 		status = "rejected"
 	}
+
 	m.ProposalReceiveCount.With("status", status).Add(1)
 }
 
@@ -172,6 +173,7 @@ func (m *Metrics) MarkVoteExtensionReceived(accepted bool) {
 	if !accepted {
 		status = "rejected"
 	}
+
 	m.VoteExtensionReceiveCount.With("status", status).Add(1)
 }
 
@@ -183,6 +185,7 @@ func (m *Metrics) MarkVoteReceived(vt cmtproto.SignedMsgType, power, totalPower 
 
 func (m *Metrics) MarkRound(r int32, st time.Time) {
 	m.Rounds.Set(float64(r))
+
 	roundTime := time.Since(st).Seconds()
 	m.RoundDurationSeconds.Observe(roundTime)
 
@@ -204,5 +207,6 @@ func (m *Metrics) MarkStep(s cstypes.RoundStepType) {
 		stepName := strings.TrimPrefix(s.String(), "RoundStep")
 		m.StepDurationSeconds.With("step", stepName).Observe(stepTime)
 	}
+
 	m.stepStart = time.Now()
 }

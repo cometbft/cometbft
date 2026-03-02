@@ -68,6 +68,7 @@ func (p testPeer) simulateInput(input inputData) {
 			}
 		}
 	}
+
 	err := input.pool.AddBlock(input.request.PeerID, block, extCommit, 123)
 	require.NoError(input.t, err)
 	// TODO: uncommenting this creates a race which is detected by:
@@ -95,12 +96,15 @@ func makePeers(numPeers int, minHeight, maxHeight int64) testPeers {
 	for i := 0; i < numPeers; i++ {
 		peerID := p2p.ID(cmtrand.Str(12))
 		height := minHeight + cmtrand.Int63n(maxHeight-minHeight)
+
 		base := minHeight + int64(i)
 		if base > height {
 			base = height
 		}
+
 		peers[peerID] = &testPeer{peerID, base, height, make(chan inputData, 10), false}
 	}
+
 	return peers
 }
 
@@ -111,6 +115,7 @@ func TestBlockPoolBasic(t *testing.T) {
 		errorsCh   = make(chan peerError)
 		requestsCh = make(chan BlockRequest)
 	)
+
 	pool := NewBlockPool(start, requestsCh, errorsCh)
 	pool.SetLogger(log.TestingLogger())
 
@@ -141,6 +146,7 @@ func TestBlockPoolBasic(t *testing.T) {
 			if !pool.IsRunning() {
 				return
 			}
+
 			first, second, _ := pool.PeekTwoBlocks()
 			if first != nil && second != nil {
 				pool.PopRequest()
@@ -157,6 +163,7 @@ func TestBlockPoolBasic(t *testing.T) {
 			t.Error(err)
 		case request := <-requestsCh:
 			t.Logf("Pulled new BlockRequest %v", request)
+
 			if request.Height == 300 {
 				return // Done!
 			}
@@ -176,10 +183,12 @@ func TestBlockPoolTimeout(t *testing.T) {
 
 	pool := NewBlockPool(start, requestsCh, errorsCh)
 	pool.SetLogger(log.TestingLogger())
+
 	err := pool.Start()
 	if err != nil {
 		t.Error(err)
 	}
+
 	t.Cleanup(func() {
 		if err := pool.Stop(); err != nil {
 			t.Error(err)
@@ -203,6 +212,7 @@ func TestBlockPoolTimeout(t *testing.T) {
 			if !pool.IsRunning() {
 				return
 			}
+
 			first, second, _ := pool.PeekTwoBlocks()
 			if first != nil && second != nil {
 				pool.PopRequest()
@@ -215,6 +225,7 @@ func TestBlockPoolTimeout(t *testing.T) {
 	// Pull from channels
 	counter := 0
 	timedOut := map[p2p.ID]struct{}{}
+
 	for {
 		select {
 		case err := <-errorsCh:
@@ -234,11 +245,13 @@ func TestBlockPoolTimeout(t *testing.T) {
 
 func TestBlockPoolRemovePeer(t *testing.T) {
 	peers := make(testPeers, 10)
+
 	for i := 0; i < 10; i++ {
 		peerID := p2p.ID(fmt.Sprintf("%d", i+1))
 		height := int64(i + 1)
 		peers[peerID] = &testPeer{peerID, 0, height, make(chan inputData), false}
 	}
+
 	requestsCh := make(chan BlockRequest)
 	errorsCh := make(chan peerError)
 
@@ -256,6 +269,7 @@ func TestBlockPoolRemovePeer(t *testing.T) {
 	for peerID, peer := range peers {
 		pool.SetPeerRange(peerID, peer.base, peer.height)
 	}
+
 	assert.EqualValues(t, 10, pool.MaxPeerHeight())
 
 	// remove not-existing peer
@@ -291,6 +305,7 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 	//   Testing with height 127, a malicious peer can reconnect and the subsequent banning is also tested.
 	//   This takes a couple of minutes to complete, so we don't run it.
 	const InitialHeight = 7
+
 	peers := testPeers{
 		p2p.ID("good"):  &testPeer{p2p.ID("good"), 1, InitialHeight, make(chan inputData), false},
 		p2p.ID("bad"):   &testPeer{p2p.ID("bad"), 1, InitialHeight + MaliciousLie, make(chan inputData), true},
@@ -325,6 +340,7 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 
 		ticker := time.NewTicker(1 * time.Second) // Speed of new block creation
 		defer ticker.Stop()
+
 		for {
 			select {
 			case <-pool.Quit():
@@ -342,6 +358,7 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 	go func() {
 		ticker := time.NewTicker(500 * time.Millisecond) // Speed of new block creation
 		defer ticker.Stop()
+
 		for {
 			select {
 			case <-pool.Quit():
@@ -361,6 +378,7 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 	}()
 
 	testTicker := time.NewTicker(200 * time.Millisecond) // speed of test execution
+
 	t.Cleanup(func() { testTicker.Stop() })
 
 	bannedOnce := false // true when the malicious peer was banned at least once
@@ -402,6 +420,7 @@ func TestBlockPoolMaliciousNodeMaxInt64(t *testing.T) {
 	// height. The aforementioned scenario where peer reports its height twice
 	// lowering the height was not accounted for.
 	const initialHeight = 7
+
 	peers := testPeers{
 		p2p.ID("good"):  &testPeer{p2p.ID("good"), 1, initialHeight, make(chan inputData), false},
 		p2p.ID("bad"):   &testPeer{p2p.ID("bad"), 1, math.MaxInt64, make(chan inputData), true},
@@ -440,6 +459,7 @@ func TestBlockPoolMaliciousNodeMaxInt64(t *testing.T) {
 
 		ticker := time.NewTicker(1 * time.Second) // Speed of new block creation
 		defer ticker.Stop()
+
 		for {
 			select {
 			case <-pool.Quit():
@@ -457,6 +477,7 @@ func TestBlockPoolMaliciousNodeMaxInt64(t *testing.T) {
 	go func() {
 		ticker := time.NewTicker(500 * time.Millisecond) // Speed of new block creation
 		defer ticker.Stop()
+
 		for {
 			select {
 			case <-pool.Quit():
@@ -476,6 +497,7 @@ func TestBlockPoolMaliciousNodeMaxInt64(t *testing.T) {
 	}()
 
 	testTicker := time.NewTicker(200 * time.Millisecond) // speed of test execution
+
 	t.Cleanup(func() { testTicker.Stop() })
 
 	bannedOnce := false // true when the malicious peer was banned at least once

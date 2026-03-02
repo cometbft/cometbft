@@ -63,10 +63,12 @@ func NewApplication(db dbm.DB) *Application {
 // NewPersistentApplication creates a new application using the goleveldb database engine
 func NewPersistentApplication(dbDir string) *Application {
 	name := "kvstore"
+
 	db, err := dbm.NewGoLevelDB(name, dbDir)
 	if err != nil {
 		panic(fmt.Errorf("failed to create persistent app at %s: %w", dbDir, err))
 	}
+
 	return NewApplication(db)
 }
 
@@ -93,6 +95,7 @@ func (app *Application) Info(context.Context, *types.RequestInfo) (*types.Respon
 			if err != nil {
 				panic(fmt.Errorf("can't decode public key: %w", err))
 			}
+
 			app.valAddrToPubKeyMap[string(pubkey.Address())] = v.PubKey
 		}
 	}
@@ -113,8 +116,10 @@ func (app *Application) InitChain(_ context.Context, req *types.RequestInitChain
 	for _, v := range req.Validators {
 		app.updateValidator(v)
 	}
+
 	appHash := make([]byte, 8)
 	binary.PutVarint(appHash, app.state.Size)
+
 	return &types.ResponseInitChain{
 		AppHash: appHash,
 	}, nil
@@ -154,6 +159,7 @@ func isValidTx(tx []byte) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -174,6 +180,7 @@ func (app *Application) formatTxs(ctx context.Context, blockData [][]byte) [][]b
 			txs = append(txs, bytes.Replace(tx, []byte(":"), []byte("="), 1))
 		}
 	}
+
 	return txs
 }
 
@@ -186,6 +193,7 @@ func (app *Application) ProcessProposal(ctx context.Context, req *types.RequestP
 			return &types.ResponseProcessProposal{Status: types.ResponseProcessProposal_REJECT}, nil
 		}
 	}
+
 	return &types.ResponseProcessProposal{Status: types.ResponseProcessProposal_ACCEPT}, nil
 }
 
@@ -222,18 +230,21 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.RequestFinal
 			if err != nil {
 				panic(err)
 			}
+
 			app.valUpdates = append(app.valUpdates, types.UpdateValidator(pubKey, power, keyType))
 		} else {
 			app.stagedTxs = append(app.stagedTxs, tx)
 		}
 
 		var key, value string
+
 		parts := bytes.Split(tx, []byte("="))
 		if len(parts) == 2 {
 			key, value = string(parts[0]), string(parts[1])
 		} else {
 			key, value = string(tx), string(tx)
 		}
+
 		respTxs[i] = &types.ExecTxResult{
 			Code: CodeTypeOK,
 			// With every transaction we can emit a series of events. To make it simple, we just emit the same events.
@@ -267,6 +278,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.RequestFinal
 	if !app.genBlockEvents {
 		return response, nil
 	}
+
 	if app.state.Height%2 == 0 {
 		response.Events = []types.Event{
 			{
@@ -319,6 +331,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.RequestFinal
 			},
 		}
 	}
+
 	return response, nil
 }
 
@@ -337,7 +350,9 @@ func (app *Application) Commit(context.Context, *types.RequestCommit) (*types.Re
 		if len(parts) != 2 {
 			panic(fmt.Sprintf("unexpected tx format. Expected 2 got %d: %s", len(parts), parts))
 		}
+
 		key, value := string(parts[0]), string(parts[1])
+
 		err := app.state.db.Set(prefixKey([]byte(key)), []byte(value))
 		if err != nil {
 			panic(err)
@@ -351,6 +366,7 @@ func (app *Application) Commit(context.Context, *types.RequestCommit) (*types.Re
 	if app.RetainBlocks > 0 && app.state.Height >= app.RetainBlocks {
 		resp.RetainHeight = app.state.Height - app.RetainBlocks + 1
 	}
+
 	return resp, nil
 }
 
@@ -360,6 +376,7 @@ func (app *Application) Query(_ context.Context, reqQuery *types.RequestQuery) (
 
 	if reqQuery.Path == "/val" {
 		key := []byte(ValidatorPrefix + string(reqQuery.Data))
+
 		value, err := app.state.db.Get(key)
 		if err != nil {
 			panic(err)
@@ -382,6 +399,7 @@ func (app *Application) Query(_ context.Context, reqQuery *types.RequestQuery) (
 		} else {
 			resQuery.Log = "exists"
 		}
+
 		resQuery.Index = -1 // TODO make Proof return index
 		resQuery.Key = reqQuery.Data
 		resQuery.Value = value
@@ -391,15 +409,18 @@ func (app *Application) Query(_ context.Context, reqQuery *types.RequestQuery) (
 	}
 
 	resQuery.Key = reqQuery.Data
+
 	value, err := app.state.db.Get(prefixKey(reqQuery.Data))
 	if err != nil {
 		panic(err)
 	}
+
 	if value == nil {
 		resQuery.Log = "does not exist"
 	} else {
 		resQuery.Log = "exists"
 	}
+
 	resQuery.Value = value
 	resQuery.Height = app.state.Height
 
@@ -422,6 +443,7 @@ func parseValidatorTx(tx []byte) (string, []byte, int64, error) {
 	if len(typePubKeyAndPower) != 3 {
 		return "", nil, 0, fmt.Errorf("expected 'pubkeytype!pubkey!power'. Got %v", typePubKeyAndPower)
 	}
+
 	keyType, pubkeyS, powerS := typePubKeyAndPower[0], typePubKeyAndPower[1], typePubKeyAndPower[2]
 
 	// decode the pubkey
@@ -449,6 +471,7 @@ func (app *Application) updateValidator(v types.ValidatorUpdate) {
 	if err != nil {
 		panic(fmt.Errorf("can't decode public key: %w", err))
 	}
+
 	key := []byte(ValidatorPrefix + string(pubkey.Bytes()))
 
 	if v.Power == 0 {
@@ -457,13 +480,16 @@ func (app *Application) updateValidator(v types.ValidatorUpdate) {
 		if err != nil {
 			panic(err)
 		}
+
 		if !hasKey {
 			pubStr := base64.StdEncoding.EncodeToString(pubkey.Bytes())
 			app.logger.Info("tried to remove non existent validator. Skipping...", "pubKey", pubStr)
 		}
+
 		if err = app.state.db.Delete(key); err != nil {
 			panic(err)
 		}
+
 		delete(app.valAddrToPubKeyMap, string(pubkey.Address()))
 	} else {
 		// add or update validator
@@ -471,9 +497,11 @@ func (app *Application) updateValidator(v types.ValidatorUpdate) {
 		if err := types.WriteMessage(&v, value); err != nil {
 			panic(err)
 		}
+
 		if err = app.state.db.Set(key, value.Bytes()); err != nil {
 			panic(err)
 		}
+
 		app.valAddrToPubKeyMap[string(pubkey.Address())] = v.PubKey
 	}
 }
@@ -483,19 +511,24 @@ func (app *Application) getValidators() (validators []types.ValidatorUpdate) {
 	if err != nil {
 		panic(err)
 	}
+
 	for ; itr.Valid(); itr.Next() {
 		if isValidatorTx(itr.Key()) {
 			validator := new(types.ValidatorUpdate)
+
 			err := types.ReadMessage(bytes.NewBuffer(itr.Value()), validator)
 			if err != nil {
 				panic(err)
 			}
+
 			validators = append(validators, *validator)
 		}
 	}
+
 	if err = itr.Error(); err != nil {
 		panic(err)
 	}
+
 	return
 }
 
@@ -511,18 +544,23 @@ type State struct {
 
 func loadState(db dbm.DB) State {
 	var state State
+
 	state.db = db
+
 	stateBytes, err := db.Get(stateKey)
 	if err != nil {
 		panic(err)
 	}
+
 	if len(stateBytes) == 0 {
 		return state
 	}
+
 	err = json.Unmarshal(stateBytes, &state)
 	if err != nil {
 		panic(err)
 	}
+
 	return state
 }
 
@@ -531,6 +569,7 @@ func saveState(state State) {
 	if err != nil {
 		panic(err)
 	}
+
 	err = state.db.Set(stateKey, stateBytes)
 	if err != nil {
 		panic(err)
@@ -545,6 +584,7 @@ func saveState(state State) {
 func (s State) Hash() []byte {
 	appHash := make([]byte, 8)
 	binary.PutVarint(appHash, s.Size)
+
 	return appHash
 }
 

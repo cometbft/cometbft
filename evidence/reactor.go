@@ -40,6 +40,7 @@ func NewReactor(evpool *Pool) *Reactor {
 		evpool: evpool,
 	}
 	evR.BaseReactor = *p2p.NewBaseReactor("Evidence", evR)
+
 	return evR
 }
 
@@ -74,6 +75,7 @@ func (evR *Reactor) Receive(e p2p.Envelope) {
 	if err != nil {
 		evR.Logger.Error("Error decoding message", "src", e.Src, "chId", e.ChannelID, "err", err)
 		evR.Switch.StopPeerForError(e.Src, err)
+
 		return
 	}
 
@@ -84,6 +86,7 @@ func (evR *Reactor) Receive(e p2p.Envelope) {
 			evR.Logger.Error(err.Error())
 			// punish peer
 			evR.Switch.StopPeerForError(e.Src, err)
+
 			return
 		case nil:
 		default:
@@ -126,9 +129,11 @@ func (evR *Reactor) broadcastEvidenceRoutine(peer p2p.Peer) {
 		}
 
 		ev := next.Value.(types.Evidence)
+
 		evis := evR.prepareEvidenceMessage(peer, ev)
 		if len(evis) > 0 {
 			evR.Logger.Debug("Gossiping evidence to peer", "ev", ev, "peer", peer)
+
 			evp, err := evidenceListToProto(evis)
 			if err != nil {
 				panic(err)
@@ -169,6 +174,7 @@ func (evR Reactor) prepareEvidenceMessage(
 ) (evis []types.Evidence) {
 	// make sure the peer is up to date
 	evHeight := ev.Height()
+
 	peerState, ok := peer.Get(types.PeerStateKey).(PeerState)
 	if !ok {
 		// Peer does not have a state yet. We set it in the consensus reactor, but
@@ -190,7 +196,6 @@ func (evR Reactor) prepareEvidenceMessage(
 	if peerHeight <= evHeight { // peer is behind. sleep while he catches up
 		return nil
 	} else if ageNumBlocks > params.MaxAgeNumBlocks { // evidence is too old relative to the peer, skip
-
 		// NOTE: if evidence is too old for an honest peer, then we're behind and
 		// either it already got committed or it never will!
 		evR.Logger.Info("Not sending peer old evidence",
@@ -223,11 +228,14 @@ func evidenceListToProto(evis []types.Evidence) (*cmtproto.EvidenceList, error) 
 		if err != nil {
 			return nil, err
 		}
+
 		evi[i] = *ev
 	}
+
 	epl := cmtproto.EvidenceList{
 		Evidence: evi,
 	}
+
 	return &epl, nil
 }
 
@@ -240,6 +248,7 @@ func evidenceListFromProto(m proto.Message) ([]types.Evidence, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		evis[i] = ev
 	}
 

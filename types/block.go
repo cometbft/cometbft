@@ -69,6 +69,7 @@ func (b *Block) ValidateBasic() error {
 	if b.LastCommit == nil {
 		return errors.New("nil LastCommit")
 	}
+
 	if err := b.LastCommit.ValidateBasic(); err != nil {
 		return fmt.Errorf("wrong LastCommit: %v", err)
 	}
@@ -111,9 +112,11 @@ func (b *Block) fillHeader() {
 	if b.LastCommitHash == nil {
 		b.LastCommitHash = b.LastCommit.Hash()
 	}
+
 	if b.DataHash == nil {
 		b.DataHash = b.Data.Hash()
 	}
+
 	if b.EvidenceHash == nil {
 		b.EvidenceHash = b.Evidence.Hash()
 	}
@@ -125,18 +128,22 @@ func (b *Block) Hash() cmtbytes.HexBytes {
 	if b == nil {
 		return nil
 	}
+
 	b.mtx.Lock()
 	defer b.mtx.Unlock()
 
 	if b.LastCommit == nil {
 		return nil
 	}
+
 	if b.verifiedHash != nil {
 		return b.verifiedHash
 	}
+
 	b.fillHeader()
 	hash := b.Header.Hash()
 	b.verifiedHash = hash
+
 	return hash
 }
 
@@ -147,6 +154,7 @@ func (b *Block) MakePartSet(partSize uint32) (*PartSet, error) {
 	if b == nil {
 		return nil, errors.New("nil block")
 	}
+
 	b.mtx.Lock()
 	defer b.mtx.Unlock()
 
@@ -154,10 +162,12 @@ func (b *Block) MakePartSet(partSize uint32) (*PartSet, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	bz, err := proto.Marshal(pbb)
 	if err != nil {
 		return nil, err
 	}
+
 	return NewPartSetFromData(bz, partSize), nil
 }
 
@@ -167,9 +177,11 @@ func (b *Block) HashesTo(hash []byte) bool {
 	if len(hash) == 0 {
 		return false
 	}
+
 	if b == nil {
 		return false
 	}
+
 	return bytes.Equal(b.Hash(), hash)
 }
 
@@ -201,6 +213,7 @@ func (b *Block) StringIndented(indent string) string {
 	if b == nil {
 		return "nil-Block"
 	}
+
 	return fmt.Sprintf(`Block{
 %s  %v
 %s  %v
@@ -219,6 +232,7 @@ func (b *Block) StringShort() string {
 	if b == nil {
 		return "nil-Block"
 	}
+
 	return fmt.Sprintf("Block#%X", b.Hash())
 }
 
@@ -238,6 +252,7 @@ func (b *Block) ToProto() (*cmtproto.Block, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	pb.Evidence = *protoEvidence
 
 	return pb, nil
@@ -251,15 +266,19 @@ func BlockFromProto(bp *cmtproto.Block) (*Block, error) {
 	}
 
 	b := new(Block)
+
 	h, err := HeaderFromProto(&bp.Header)
 	if err != nil {
 		return nil, err
 	}
+
 	b.Header = h
+
 	data, err := DataFromProto(&bp.Data)
 	if err != nil {
 		return nil, err
 	}
+
 	b.Data = data
 	if err := b.Evidence.FromProto(&bp.Evidence); err != nil {
 		return nil, err
@@ -270,6 +289,7 @@ func BlockFromProto(bp *cmtproto.Block) (*Block, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		b.LastCommit = lc
 	}
 
@@ -384,6 +404,7 @@ func (h Header) ValidateBasic() error {
 	if h.Version.Block != version.BlockProtocol {
 		return fmt.Errorf("block protocol is incorrect: got: %d, want: %d ", h.Version.Block, version.BlockProtocol)
 	}
+
 	if len(h.ChainID) > MaxChainIDLen {
 		return fmt.Errorf("chainID is too long; got: %d, max: %d", len(h.ChainID), MaxChainIDLen)
 	}
@@ -422,9 +443,11 @@ func (h Header) ValidateBasic() error {
 	if err := ValidateHash(h.ValidatorsHash); err != nil {
 		return fmt.Errorf("wrong ValidatorsHash: %v", err)
 	}
+
 	if err := ValidateHash(h.NextValidatorsHash); err != nil {
 		return fmt.Errorf("wrong NextValidatorsHash: %v", err)
 	}
+
 	if err := ValidateHash(h.ConsensusHash); err != nil {
 		return fmt.Errorf("wrong ConsensusHash: %v", err)
 	}
@@ -446,6 +469,7 @@ func (h *Header) Hash() cmtbytes.HexBytes {
 	if h == nil || len(h.ValidatorsHash) == 0 {
 		return nil
 	}
+
 	hbz, err := h.Version.Marshal()
 	if err != nil {
 		return nil
@@ -457,10 +481,12 @@ func (h *Header) Hash() cmtbytes.HexBytes {
 	}
 
 	pbbi := h.LastBlockID.ToProto()
+
 	bzbi, err := pbbi.Marshal()
 	if err != nil {
 		return nil
 	}
+
 	return merkle.HashFromByteSlices([][]byte{
 		hbz,
 		cdcEncode(h.ChainID),
@@ -484,6 +510,7 @@ func (h *Header) StringIndented(indent string) string {
 	if h == nil {
 		return "nil-Header"
 	}
+
 	return fmt.Sprintf(`Header{
 %s  Version:        %v
 %s  ChainID:        %v
@@ -642,6 +669,7 @@ func (cs CommitSig) String() string {
 // otherwise - empty BlockID.
 func (cs CommitSig) BlockID(commitBlockID BlockID) BlockID {
 	var blockID BlockID
+
 	switch cs.BlockIDFlag {
 	case BlockIDFlagAbsent:
 		blockID = BlockID{}
@@ -652,6 +680,7 @@ func (cs CommitSig) BlockID(commitBlockID BlockID) BlockID {
 	default:
 		panic(fmt.Sprintf("Unknown BlockIDFlag: %v", cs.BlockIDFlag))
 	}
+
 	return blockID
 }
 
@@ -670,9 +699,11 @@ func (cs CommitSig) ValidateBasic() error {
 		if len(cs.ValidatorAddress) != 0 {
 			return errors.New("validator address is present")
 		}
+
 		if !cs.Timestamp.IsZero() {
 			return errors.New("time is present")
 		}
+
 		if len(cs.Signature) != 0 {
 			return errors.New("signature is present")
 		}
@@ -687,6 +718,7 @@ func (cs CommitSig) ValidateBasic() error {
 		if len(cs.Signature) == 0 {
 			return errors.New("signature is missing")
 		}
+
 		if len(cs.Signature) > MaxSignatureSize {
 			return fmt.Errorf("signature is too big (max: %d)", MaxSignatureSize)
 		}
@@ -759,15 +791,18 @@ func (ecs ExtendedCommitSig) ValidateBasic() error {
 		if len(ecs.Extension) > MaxVoteExtensionSize {
 			return fmt.Errorf("vote extension is too big (max: %d)", MaxVoteExtensionSize)
 		}
+
 		if len(ecs.ExtensionSignature) > MaxSignatureSize {
 			return fmt.Errorf("vote extension signature is too big (max: %d)", MaxSignatureSize)
 		}
+
 		return nil
 	}
 
 	if len(ecs.ExtensionSignature) == 0 && len(ecs.Extension) != 0 {
 		return errors.New("vote extension signature absent on vote with extension")
 	}
+
 	return nil
 }
 
@@ -781,12 +816,14 @@ func (ecs ExtendedCommitSig) EnsureExtension(extEnabled bool) error {
 				ecs.Timestamp,
 			)
 		}
+
 		if ecs.BlockIDFlag != BlockIDFlagCommit && len(ecs.Extension) != 0 {
 			return fmt.Errorf("non-commit vote extension present; validator addr %s, timestamp %v",
 				ecs.ValidatorAddress.String(),
 				ecs.Timestamp,
 			)
 		}
+
 		if ecs.BlockIDFlag != BlockIDFlagCommit && len(ecs.ExtensionSignature) != 0 {
 			return fmt.Errorf("non-commit vote extension signature present; validator addr %s, timestamp %v",
 				ecs.ValidatorAddress.String(),
@@ -800,6 +837,7 @@ func (ecs ExtendedCommitSig) EnsureExtension(extEnabled bool) error {
 				ecs.Timestamp,
 			)
 		}
+
 		if len(ecs.ExtensionSignature) != 0 {
 			return fmt.Errorf("vote extension signature present but extensions disabled; validator addr %s, timestamp %v",
 				ecs.ValidatorAddress.String(),
@@ -807,6 +845,7 @@ func (ecs ExtendedCommitSig) EnsureExtension(extEnabled bool) error {
 			)
 		}
 	}
+
 	return nil
 }
 
@@ -866,6 +905,7 @@ func (commit *Commit) Clone() *Commit {
 	copy(sigs, commit.Signatures)
 	commCopy := *commit
 	commCopy.Signatures = sigs
+
 	return &commCopy
 }
 
@@ -876,6 +916,7 @@ func (commit *Commit) Clone() *Commit {
 // Panics if valIdx >= commit.Size().
 func (commit *Commit) GetVote(valIdx int32) *Vote {
 	commitSig := commit.Signatures[valIdx]
+
 	return &Vote{
 		Type:             cmtproto.PrecommitType,
 		Height:           commit.Height,
@@ -907,6 +948,7 @@ func (commit *Commit) Size() int {
 	if commit == nil {
 		return 0
 	}
+
 	return len(commit.Signatures)
 }
 
@@ -916,6 +958,7 @@ func (commit *Commit) ValidateBasic() error {
 	if commit.Height < 0 {
 		return errors.New("negative Height")
 	}
+
 	if commit.Round < 0 {
 		return errors.New("negative Round")
 	}
@@ -928,12 +971,14 @@ func (commit *Commit) ValidateBasic() error {
 		if len(commit.Signatures) == 0 {
 			return errors.New("no signatures in commit")
 		}
+
 		for i, commitSig := range commit.Signatures {
 			if err := commitSig.ValidateBasic(); err != nil {
 				return fmt.Errorf("wrong CommitSig #%d: %v", i, err)
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -942,10 +987,12 @@ func (commit *Commit) Hash() cmtbytes.HexBytes {
 	if commit == nil {
 		return nil
 	}
+
 	if commit.hash == nil {
 		bs := make([][]byte, len(commit.Signatures))
 		for i, commitSig := range commit.Signatures {
 			pbcs := commitSig.ToProto()
+
 			bz, err := pbcs.Marshal()
 			if err != nil {
 				panic(err)
@@ -953,8 +1000,10 @@ func (commit *Commit) Hash() cmtbytes.HexBytes {
 
 			bs[i] = bz
 		}
+
 		commit.hash = merkle.HashFromByteSlices(bs)
 	}
+
 	return commit.hash
 }
 
@@ -970,6 +1019,7 @@ func (commit *Commit) WrappedExtendedCommit() *ExtendedCommit {
 			CommitSig: s,
 		}
 	}
+
 	return &ExtendedCommit{
 		Height:             commit.Height,
 		Round:              commit.Round,
@@ -983,10 +1033,12 @@ func (commit *Commit) StringIndented(indent string) string {
 	if commit == nil {
 		return "nil-Commit"
 	}
+
 	commitSigStrings := make([]string, len(commit.Signatures))
 	for i, commitSig := range commit.Signatures {
 		commitSigStrings[i] = commitSig.String()
 	}
+
 	return fmt.Sprintf(`Commit{
 %s  Height:     %d
 %s  Round:      %d
@@ -1009,10 +1061,12 @@ func (commit *Commit) ToProto() *cmtproto.Commit {
 	}
 
 	c := new(cmtproto.Commit)
+
 	sigs := make([]cmtproto.CommitSig, len(commit.Signatures))
 	for i := range commit.Signatures {
 		sigs[i] = *commit.Signatures[i].ToProto()
 	}
+
 	c.Signatures = sigs
 
 	c.Height = commit.Height
@@ -1042,6 +1096,7 @@ func CommitFromProto(cp *cmtproto.Commit) (*Commit, error) {
 			return nil, err
 		}
 	}
+
 	commit.Signatures = sigs
 
 	commit.Height = cp.Height
@@ -1070,6 +1125,7 @@ func (ec *ExtendedCommit) Clone() *ExtendedCommit {
 	copy(sigs, ec.ExtendedSignatures)
 	ecc := *ec
 	ecc.ExtendedSignatures = sigs
+
 	return &ecc
 }
 
@@ -1080,6 +1136,7 @@ func (ec *ExtendedCommit) Clone() *ExtendedCommit {
 func (ec *ExtendedCommit) ToExtendedVoteSet(chainID string, vals *ValidatorSet) *VoteSet {
 	voteSet := NewExtendedVoteSet(chainID, ec.Height, ec.Round, cmtproto.PrecommitType, vals)
 	ec.addSigsToVoteSet(voteSet)
+
 	return voteSet
 }
 
@@ -1089,10 +1146,12 @@ func (ec *ExtendedCommit) addSigsToVoteSet(voteSet *VoteSet) {
 		if ecs.BlockIDFlag == BlockIDFlagAbsent {
 			continue // OK, some precommits can be missing.
 		}
+
 		vote := ec.GetExtendedVote(int32(idx))
 		if err := vote.ValidateBasic(); err != nil {
 			panic(fmt.Errorf("failed to validate vote reconstructed from LastCommit: %w", err))
 		}
+
 		added, err := voteSet.AddVote(vote)
 		if !added || err != nil {
 			panic(fmt.Errorf("failed to reconstruct vote set from extended commit: %w", err))
@@ -1109,15 +1168,18 @@ func (commit *Commit) ToVoteSet(chainID string, vals *ValidatorSet) *VoteSet {
 		if cs.BlockIDFlag == BlockIDFlagAbsent {
 			continue // OK, some precommits can be missing.
 		}
+
 		vote := commit.GetVote(int32(idx))
 		if err := vote.ValidateBasic(); err != nil {
 			panic(fmt.Errorf("failed to validate vote reconstructed from commit: %w", err))
 		}
+
 		added, err := voteSet.AddVote(vote)
 		if !added || err != nil {
 			panic(fmt.Errorf("failed to reconstruct vote set from commit: %w", err))
 		}
 	}
+
 	return voteSet
 }
 
@@ -1129,6 +1191,7 @@ func (ec *ExtendedCommit) EnsureExtensions(extEnabled bool) error {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -1139,6 +1202,7 @@ func (ec *ExtendedCommit) ToCommit() *Commit {
 	for idx, ecs := range ec.ExtendedSignatures {
 		cs[idx] = ecs.CommitSig
 	}
+
 	return &Commit{
 		Height:     ec.Height,
 		Round:      ec.Round,
@@ -1152,6 +1216,7 @@ func (ec *ExtendedCommit) ToCommit() *Commit {
 // It panics if valIndex is out of range.
 func (ec *ExtendedCommit) GetExtendedVote(valIndex int32) *Vote {
 	ecs := ec.ExtendedSignatures[valIndex]
+
 	return &Vote{
 		Type:               cmtproto.PrecommitType,
 		Height:             ec.Height,
@@ -1185,6 +1250,7 @@ func (ec *ExtendedCommit) Size() int {
 	if ec == nil {
 		return 0
 	}
+
 	return len(ec.ExtendedSignatures)
 }
 
@@ -1200,6 +1266,7 @@ func (ec *ExtendedCommit) BitArray() *bits.BitArray {
 		}
 		ec.bitArray = bits.NewBitArrayFromFn(len(ec.ExtendedSignatures), initialBitFn)
 	}
+
 	return ec.bitArray
 }
 
@@ -1222,6 +1289,7 @@ func (ec *ExtendedCommit) ValidateBasic() error {
 	if ec.Height < 0 {
 		return errors.New("negative Height")
 	}
+
 	if ec.Round < 0 {
 		return errors.New("negative Round")
 	}
@@ -1234,12 +1302,14 @@ func (ec *ExtendedCommit) ValidateBasic() error {
 		if len(ec.ExtendedSignatures) == 0 {
 			return errors.New("no signatures in commit")
 		}
+
 		for i, extCommitSig := range ec.ExtendedSignatures {
 			if err := extCommitSig.ValidateBasic(); err != nil {
 				return fmt.Errorf("wrong ExtendedCommitSig #%d: %v", i, err)
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -1250,10 +1320,12 @@ func (ec *ExtendedCommit) ToProto() *cmtproto.ExtendedCommit {
 	}
 
 	c := new(cmtproto.ExtendedCommit)
+
 	sigs := make([]cmtproto.ExtendedCommitSig, len(ec.ExtendedSignatures))
 	for i := range ec.ExtendedSignatures {
 		sigs[i] = *ec.ExtendedSignatures[i].ToProto()
 	}
+
 	c.ExtendedSignatures = sigs
 
 	c.Height = ec.Height
@@ -1283,6 +1355,7 @@ func ExtendedCommitFromProto(ecp *cmtproto.ExtendedCommit) (*ExtendedCommit, err
 			return nil, err
 		}
 	}
+
 	extCommit.ExtendedSignatures = sigs
 	extCommit.Height = ecp.Height
 	extCommit.Round = ecp.Round
@@ -1309,9 +1382,11 @@ func (data *Data) Hash() cmtbytes.HexBytes {
 	if data == nil {
 		return (Txs{}).Hash()
 	}
+
 	if data.hash == nil {
 		data.hash = data.Txs.Hash() // NOTE: leaves of merkle tree are TxIDs
 	}
+
 	return data.hash
 }
 
@@ -1320,14 +1395,17 @@ func (data *Data) StringIndented(indent string) string {
 	if data == nil {
 		return "nil-Data"
 	}
+
 	txStrings := make([]string, cmtmath.MinInt(len(data.Txs), 21))
 	for i, tx := range data.Txs {
 		if i == 20 {
 			txStrings[i] = fmt.Sprintf("... (%v total)", len(data.Txs))
 			break
 		}
+
 		txStrings[i] = fmt.Sprintf("%X (%d bytes)", tx.Hash(), len(tx))
 	}
+
 	return fmt.Sprintf(`Data{
 %s  %v
 %s}#%v`,
@@ -1344,6 +1422,7 @@ func (data *Data) ToProto() cmtproto.Data {
 		for i := range data.Txs {
 			txBzs[i] = data.Txs[i]
 		}
+
 		tp.Txs = txBzs
 	}
 
@@ -1356,6 +1435,7 @@ func DataFromProto(dp *cmtproto.Data) (Data, error) {
 	if dp == nil {
 		return Data{}, errors.New("nil data")
 	}
+
 	data := new(Data)
 
 	if len(dp.Txs) > 0 {
@@ -1363,6 +1443,7 @@ func DataFromProto(dp *cmtproto.Data) (Data, error) {
 		for i := range dp.Txs {
 			txBzs[i] = Tx(dp.Txs[i])
 		}
+
 		data.Txs = txBzs
 	} else {
 		data.Txs = Txs{}
@@ -1387,6 +1468,7 @@ func (data *EvidenceData) Hash() cmtbytes.HexBytes {
 	if data.hash == nil {
 		data.hash = data.Evidence.Hash()
 	}
+
 	return data.hash
 }
 
@@ -1397,8 +1479,10 @@ func (data *EvidenceData) ByteSize() int64 {
 		if err != nil {
 			panic(err)
 		}
+
 		data.byteSize = int64(pb.Size())
 	}
+
 	return data.byteSize
 }
 
@@ -1407,14 +1491,17 @@ func (data *EvidenceData) StringIndented(indent string) string {
 	if data == nil {
 		return "nil-Evidence"
 	}
+
 	evStrings := make([]string, cmtmath.MinInt(len(data.Evidence), 21))
 	for i, ev := range data.Evidence {
 		if i == 20 {
 			evStrings[i] = fmt.Sprintf("... (%v total)", len(data.Evidence))
 			break
 		}
+
 		evStrings[i] = "Evidence:" + ev.String()
 	}
+
 	return fmt.Sprintf(`EvidenceData{
 %s  %v
 %s}#%v`,
@@ -1429,14 +1516,17 @@ func (data *EvidenceData) ToProto() (*cmtproto.EvidenceList, error) {
 	}
 
 	evi := new(cmtproto.EvidenceList)
+
 	eviBzs := make([]cmtproto.Evidence, len(data.Evidence))
 	for i := range data.Evidence {
 		protoEvi, err := EvidenceToProto(data.Evidence[i])
 		if err != nil {
 			return nil, err
 		}
+
 		eviBzs[i] = *protoEvi
 	}
+
 	evi.Evidence = eviBzs
 
 	return evi, nil
@@ -1454,8 +1544,10 @@ func (data *EvidenceData) FromProto(eviData *cmtproto.EvidenceList) error {
 		if err != nil {
 			return err
 		}
+
 		eviBzs[i] = evi
 	}
+
 	data.Evidence = eviBzs
 	data.byteSize = int64(eviData.Size())
 
@@ -1479,6 +1571,7 @@ func (blockID BlockID) Equals(other BlockID) bool {
 // Key returns a machine-readable string representation of the BlockID
 func (blockID BlockID) Key() string {
 	pbph := blockID.PartSetHeader.ToProto()
+
 	bz, err := pbph.Marshal()
 	if err != nil {
 		panic(err)
@@ -1493,9 +1586,11 @@ func (blockID BlockID) ValidateBasic() error {
 	if err := ValidateHash(blockID.Hash); err != nil {
 		return fmt.Errorf("wrong Hash")
 	}
+
 	if err := blockID.PartSetHeader.ValidateBasic(); err != nil {
 		return fmt.Errorf("wrong PartSetHeader: %v", err)
 	}
+
 	return nil
 }
 
@@ -1542,6 +1637,7 @@ func BlockIDFromProto(bID *cmtproto.BlockID) (*BlockID, error) {
 	}
 
 	blockID := new(BlockID)
+
 	ph, err := PartSetHeaderFromProto(&bID.PartSetHeader)
 	if err != nil {
 		return nil, err

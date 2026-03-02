@@ -64,6 +64,7 @@ func NewTCPListener(ln net.Listener, secretConnKey ed25519.PrivKey) *TCPListener
 // Accept implements net.Listener.
 func (ln *TCPListener) Accept() (net.Conn, error) {
 	deadline := time.Now().Add(ln.timeoutAccept)
+
 	err := ln.SetDeadline(deadline)
 	if err != nil {
 		return nil, err
@@ -76,6 +77,7 @@ func (ln *TCPListener) Accept() (net.Conn, error) {
 
 	// Wrap the conn in our timeout and encryption wrappers
 	timeoutConn := newTimeoutConn(tc, ln.timeoutReadWrite)
+
 	secretConn, err := p2pconn.MakeSecretConnection(timeoutConn, ln.secretConnKey)
 	if err != nil {
 		_ = timeoutConn.Close()
@@ -127,6 +129,7 @@ func NewUnixListener(ln net.Listener) *UnixListener {
 // Accept implements net.Listener.
 func (ln *UnixListener) Accept() (net.Conn, error) {
 	deadline := time.Now().Add(ln.timeoutAccept)
+
 	err := ln.SetDeadline(deadline)
 	if err != nil {
 		return nil, err
@@ -170,6 +173,7 @@ func newTimeoutConn(conn net.Conn, timeout time.Duration) *timeoutConn {
 func (c timeoutConn) Read(b []byte) (n int, err error) {
 	// Reset deadline
 	deadline := time.Now().Add(c.timeout)
+
 	err = c.SetReadDeadline(deadline)
 	if err != nil {
 		return
@@ -182,6 +186,7 @@ func (c timeoutConn) Read(b []byte) (n int, err error) {
 func (c timeoutConn) Write(b []byte) (n int, err error) {
 	// Reset deadline
 	deadline := time.Now().Add(c.timeout)
+
 	err = c.SetWriteDeadline(deadline)
 	if err != nil {
 		return

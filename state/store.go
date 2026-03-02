@@ -107,6 +107,7 @@ func IsEmpty(store dbStore) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	return state.IsEmpty(), nil
 }
 
@@ -122,8 +123,10 @@ func (store dbStore) LoadFromDBOrGenesisFile(genesisFilePath string) (State, err
 	if err != nil {
 		return State{}, err
 	}
+
 	if state.IsEmpty() {
 		var err error
+
 		state, err = MakeGenesisStateFromFile(genesisFilePath)
 		if err != nil {
 			return state, err
@@ -143,6 +146,7 @@ func (store dbStore) LoadFromDBOrGenesisDoc(genesisDoc *types.GenesisDoc) (State
 
 	if state.IsEmpty() {
 		var err error
+
 		state, err = MakeGenesisState(genesisDoc)
 		if err != nil {
 			return state, err
@@ -162,6 +166,7 @@ func (store dbStore) loadState(key []byte) (state State, err error) {
 	if err != nil {
 		return state, err
 	}
+
 	if len(buf) == 0 {
 		return state, nil
 	}
@@ -179,6 +184,7 @@ func (store dbStore) loadState(key []byte) (state State, err error) {
 	if err != nil {
 		return state, err
 	}
+
 	return *sm, nil
 }
 
@@ -196,6 +202,7 @@ func (store dbStore) save(state State, key []byte) error {
 			panic(err)
 		}
 	}(batch)
+
 	nextHeight := state.LastBlockHeight + 1
 	// If first block, save validators for the block.
 	if nextHeight == 1 {
@@ -215,12 +222,15 @@ func (store dbStore) save(state State, key []byte) error {
 		state.LastHeightConsensusParamsChanged, state.ConsensusParams, batch); err != nil {
 		return err
 	}
+
 	if err := batch.Set(key, state.Bytes()); err != nil {
 		return err
 	}
+
 	if err := batch.WriteSync(); err != nil {
 		panic(err)
 	}
+
 	return nil
 }
 
@@ -233,6 +243,7 @@ func (store dbStore) Bootstrap(state State) error {
 			panic(err)
 		}
 	}(batch)
+
 	height := state.LastBlockHeight + 1
 	if height == 1 {
 		height = state.InitialHeight
@@ -280,6 +291,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 	if from <= 0 || to <= 0 {
 		return fmt.Errorf("from height %v and to height %v must be greater than 0", from, to)
 	}
+
 	if from >= to {
 		return fmt.Errorf("from height %v must be lower than to height %v", from, to)
 	}
@@ -288,6 +300,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 	if err != nil {
 		return fmt.Errorf("validators at height %v not found: %w", to, err)
 	}
+
 	paramsInfo, err := store.loadConsensusParamsInfo(to)
 	if err != nil {
 		return fmt.Errorf("consensus params at height %v not found: %w", to, err)
@@ -298,6 +311,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 		keepVals[valInfo.LastHeightChanged] = true
 		keepVals[lastStoredHeightFor(to, valInfo.LastHeightChanged)] = true // keep last checkpoint too
 	}
+
 	keepParams := make(map[int64]bool)
 	if paramsInfo.ConsensusParams.Equal(&cmtproto.ConsensusParams{}) {
 		keepParams[paramsInfo.LastHeightChanged] = true
@@ -305,6 +319,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 
 	batch := store.db.NewBatch()
 	defer batch.Close()
+
 	pruned := uint64(0)
 
 	// We have to delete in reverse order, to avoid deleting previous heights that have validator
@@ -333,6 +348,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 				if err != nil {
 					return err
 				}
+
 				err = batch.Set(calcValidatorsKey(h), bz)
 				if err != nil {
 					return err
@@ -358,9 +374,11 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 				if err != nil {
 					return err
 				}
+
 				p.ConsensusParams = params.ToProto()
 
 				p.LastHeightChanged = h
+
 				bz, err := p.Marshal()
 				if err != nil {
 					return err
@@ -382,6 +400,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 		if err != nil {
 			return err
 		}
+
 		pruned++
 
 		// avoid batches growing too large by flushing to database regularly
@@ -390,7 +409,9 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 			if err != nil {
 				return err
 			}
+
 			batch.Close()
+
 			batch = store.db.NewBatch()
 			defer batch.Close()
 		}
@@ -426,6 +447,7 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.ResponseFina
 	if err != nil {
 		return nil, err
 	}
+
 	if len(buf) == 0 {
 		return nil, ErrNoABCIResponsesForHeight{height}
 	}
@@ -476,6 +498,7 @@ func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.Response
 	}
 
 	info := new(cmtstate.ABCIResponsesInfo)
+
 	err = info.Unmarshal(bz)
 	if err != nil {
 		cmtos.Exit(fmt.Sprintf(`LoadLastFinalizeBlockResponse: Data has been corrupted or its spec has
@@ -495,6 +518,7 @@ func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.Response
 		if info.LegacyAbciResponses == nil {
 			panic("state store contains last abci response but it is empty")
 		}
+
 		return responseFinalizeBlockFromLegacy(info.LegacyAbciResponses), nil
 	}
 
@@ -515,6 +539,7 @@ func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.Response
 			dtxs = append(dtxs, tx)
 		}
 	}
+
 	resp.TxResults = dtxs
 
 	// If the flag is false then we save the ABCIResponse. This can be used for the /BlockResults
@@ -524,6 +549,7 @@ func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.Response
 		if err != nil {
 			return err
 		}
+
 		if err := store.db.Set(calcABCIResponsesKey(height), bz); err != nil {
 			return err
 		}
@@ -535,6 +561,7 @@ func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.Response
 		ResponseFinalizeBlock: resp,
 		Height:                height,
 	}
+
 	bz, err := response.Marshal()
 	if err != nil {
 		return err
@@ -552,8 +579,10 @@ func (store dbStore) LoadValidators(height int64) (*types.ValidatorSet, error) {
 	if err != nil {
 		return nil, ErrNoValSetForHeight{height}
 	}
+
 	if valInfo.ValidatorSet == nil {
 		lastStoredHeight := lastStoredHeightFor(height, valInfo.LastHeightChanged)
+
 		valInfo2, err := loadValidatorsInfo(store.db, lastStoredHeight)
 		if err != nil || valInfo2.ValidatorSet == nil {
 			return nil,
@@ -570,6 +599,7 @@ func (store dbStore) LoadValidators(height int64) (*types.ValidatorSet, error) {
 		}
 
 		vs.IncrementProposerPriority(cmtmath.SafeConvertInt32(height - lastStoredHeight)) // mutate
+
 		vi2, err := vs.ToProto()
 		if err != nil {
 			return nil, err
@@ -604,6 +634,7 @@ func loadValidatorsInfo(db dbm.DB, height int64) (*cmtstate.ValidatorsInfo, erro
 	}
 
 	v := new(cmtstate.ValidatorsInfo)
+
 	err = v.Unmarshal(buf)
 	if err != nil {
 		// DATA HAS BEEN CORRUPTED OR THE SPEC HAS CHANGED
@@ -624,6 +655,7 @@ func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet 
 	if lastHeightChanged > height {
 		return errors.New("lastHeightChanged cannot be greater than ValidatorsInfo height")
 	}
+
 	valInfo := &cmtstate.ValidatorsInfo{
 		LastHeightChanged: lastHeightChanged,
 	}
@@ -634,6 +666,7 @@ func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet 
 		if err != nil {
 			return err
 		}
+
 		valInfo.ValidatorSet = pv
 	}
 
@@ -660,6 +693,7 @@ func (store dbStore) LoadConsensusParams(height int64) (types.ConsensusParams, e
 		empty   = types.ConsensusParams{}
 		emptypb = cmtproto.ConsensusParams{}
 	)
+
 	paramsInfo, err := store.loadConsensusParamsInfo(height)
 	if err != nil {
 		return empty, fmt.Errorf("could not find consensus params for height #%d: %w", height, err)
@@ -687,6 +721,7 @@ func (store dbStore) loadConsensusParamsInfo(height int64) (*cmtstate.ConsensusP
 	if err != nil {
 		return nil, err
 	}
+
 	if len(buf) == 0 {
 		return nil, errors.New("value retrieved from db is empty")
 	}
@@ -714,6 +749,7 @@ func (store dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, par
 	if changeHeight == nextHeight {
 		paramsInfo.ConsensusParams = params.ToProto()
 	}
+
 	bz, err := paramsInfo.Marshal()
 	if err != nil {
 		return err
@@ -732,6 +768,7 @@ func (store dbStore) SetOfflineStateSyncHeight(height int64) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -750,6 +787,7 @@ func (store dbStore) GetOfflineStateSyncHeight() (int64, error) {
 	if height < 0 {
 		return 0, errors.New("invalid value for height: height cannot be negative")
 	}
+
 	return height, nil
 }
 
@@ -761,6 +799,7 @@ func (store dbStore) Close() error {
 // it to the finalize block response. Note that the app hash is missing
 func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *abci.ResponseFinalizeBlock {
 	var response abci.ResponseFinalizeBlock
+
 	events := make([]abci.Event, 0)
 
 	if legacyResp.DeliverTxs != nil {
@@ -778,16 +817,20 @@ func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *
 					Index: false,
 				})
 			}
+
 			events = append(events, legacyResp.BeginBlock.Events...)
 		}
 	}
+
 	if legacyResp.EndBlock != nil {
 		if legacyResp.EndBlock.ValidatorUpdates != nil {
 			response.ValidatorUpdates = legacyResp.EndBlock.ValidatorUpdates
 		}
+
 		if legacyResp.EndBlock.ConsensusParamUpdates != nil {
 			response.ConsensusParamUpdates = legacyResp.EndBlock.ConsensusParamUpdates
 		}
+
 		if legacyResp.EndBlock.Events != nil {
 			// Add EndBlock attribute to BeginBlock events
 			for idx := range legacyResp.EndBlock.Events {
@@ -797,6 +840,7 @@ func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *
 					Index: false,
 				})
 			}
+
 			events = append(events, legacyResp.EndBlock.Events...)
 		}
 	}
@@ -816,5 +860,6 @@ func int64FromBytes(bz []byte) int64 {
 func int64ToBytes(i int64) []byte {
 	buf := make([]byte, binary.MaxVarintLen64)
 	n := binary.PutVarint(buf, i)
+
 	return buf[:n]
 }

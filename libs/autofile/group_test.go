@@ -52,6 +52,7 @@ func TestCheckHeadSizeLimit(t *testing.T) {
 		err := g.WriteLine(cmtrand.Str(999))
 		require.NoError(t, err, "Error appending to head")
 	}
+
 	err := g.FlushAndSync()
 	require.NoError(t, err)
 	assertGroupInfo(t, g.ReadGroupInfo(), 0, 0, 999000, 999000)
@@ -85,6 +86,7 @@ func TestCheckHeadSizeLimit(t *testing.T) {
 		err = g.WriteLine(cmtrand.Str(999))
 		require.NoError(t, err, "Error appending to head")
 	}
+
 	err = g.FlushAndSync()
 	require.NoError(t, err)
 	assertGroupInfo(t, g.ReadGroupInfo(), 0, 1, 2000000, 1000000)
@@ -115,6 +117,7 @@ func TestRotateFile(t *testing.T) {
 	// relative paths are resolved at Group creation
 	origDir, err := os.Getwd()
 	require.NoError(t, err)
+
 	defer func() {
 		if err := os.Chdir(origDir); err != nil {
 			t.Error(err)
@@ -123,7 +126,9 @@ func TestRotateFile(t *testing.T) {
 
 	dir, err := os.MkdirTemp("", "rotate_test")
 	require.NoError(t, err)
+
 	defer os.RemoveAll(dir)
+
 	err = os.Chdir(dir)
 	require.NoError(t, err)
 
@@ -152,6 +157,7 @@ func TestRotateFile(t *testing.T) {
 	// Read g.Head.Path+"000"
 	body1, err := os.ReadFile(g.Head.Path + ".000")
 	assert.NoError(t, err, "Failed to read first rolled file")
+
 	if string(body1) != "Line 1\nLine 2\nLine 3\n" {
 		t.Errorf("got unexpected contents: [%v]", string(body1))
 	}
@@ -159,6 +165,7 @@ func TestRotateFile(t *testing.T) {
 	// Read g.Head.Path
 	body2, err := os.ReadFile(g.Head.Path)
 	assert.NoError(t, err, "Failed to read first rolled file")
+
 	if string(body2) != "Line 4\nLine 5\nLine 6\n" {
 		t.Errorf("got unexpected contents: [%v]", string(body2))
 	}
@@ -204,6 +211,7 @@ func TestGroupReaderRead(t *testing.T) {
 	err = g.FlushAndSync()
 	require.NoError(t, err)
 	g.RotateFile()
+
 	frankenstein := []byte("Frankenstein's Monster")
 	_, err = g.Write(frankenstein)
 	require.NoError(t, err)
@@ -218,6 +226,7 @@ func TestGroupReaderRead(t *testing.T) {
 	n, err := gr.Read(read)
 	assert.NoError(t, err, "failed to read data")
 	assert.Equal(t, totalWrittenLength, n, "not enough bytes read")
+
 	professorPlusFrankenstein := professor
 	professorPlusFrankenstein = append(professorPlusFrankenstein, frankenstein...)
 	assert.Equal(t, professorPlusFrankenstein, read)
@@ -237,6 +246,7 @@ func TestGroupReaderRead2(t *testing.T) {
 	err = g.FlushAndSync()
 	require.NoError(t, err)
 	g.RotateFile()
+
 	frankenstein := []byte("Frankenstein's Monster")
 	frankensteinPart := []byte("Frankenstein")
 	_, err = g.Write(frankensteinPart) // note writing only a part

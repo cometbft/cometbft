@@ -31,12 +31,14 @@ func NewThrottleTimer(name string, dur time.Duration) *ThrottleTimer {
 	t.timer = time.AfterFunc(dur, t.fireRoutine)
 	t.mtx.Unlock()
 	t.timer.Stop()
+
 	return t
 }
 
 func (t *ThrottleTimer) fireRoutine() {
 	t.mtx.Lock()
 	defer t.mtx.Unlock()
+
 	select {
 	case t.Ch <- struct{}{}:
 		t.isSet = false
@@ -50,6 +52,7 @@ func (t *ThrottleTimer) fireRoutine() {
 func (t *ThrottleTimer) Set() {
 	t.mtx.Lock()
 	defer t.mtx.Unlock()
+
 	if !t.isSet {
 		t.isSet = true
 		t.timer.Reset(t.dur)
@@ -59,6 +62,7 @@ func (t *ThrottleTimer) Set() {
 func (t *ThrottleTimer) Unset() {
 	t.mtx.Lock()
 	defer t.mtx.Unlock()
+
 	t.isSet = false
 	t.timer.Stop()
 }
@@ -69,8 +73,11 @@ func (t *ThrottleTimer) Stop() bool {
 	if t == nil {
 		return false
 	}
+
 	close(t.quit)
+
 	t.mtx.Lock()
 	defer t.mtx.Unlock()
+
 	return t.timer.Stop()
 }

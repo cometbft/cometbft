@@ -24,5 +24,6 @@ func SignedMsgTypeToShortString(t cmtproto.SignedMsgType) string {
 	if shortName, ok := signedMsgTypeToShortName[t]; ok {
 		return shortName
 	}
+
 	return "unknown"
 }

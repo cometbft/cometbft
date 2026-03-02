@@ -48,6 +48,7 @@ func (cs *State) readReplayMessage(msg *TimedWALMessage, newStepSub types.Subscr
 		cs.Logger.Info("Replay: New Step", "height", m.Height, "round", m.Round, "step", m.Step)
 		// these are playback checks
 		ticker := time.After(time.Second * 2)
+
 		if newStepSub != nil {
 			select {
 			case stepMsg := <-newStepSub.Out():
@@ -66,6 +67,7 @@ func (cs *State) readReplayMessage(msg *TimedWALMessage, newStepSub types.Subscr
 		if peerID == "" {
 			peerID = "local"
 		}
+
 		switch msg := m.Msg.(type) {
 		case *ProposalMessage:
 			p := msg.Proposal
@@ -86,6 +88,7 @@ func (cs *State) readReplayMessage(msg *TimedWALMessage, newStepSub types.Subscr
 	default:
 		return fmt.Errorf("replay: Unknown TimedWALMessage type: %v", reflect.TypeOf(msg.Msg))
 	}
+
 	return nil
 }
 
@@ -94,6 +97,7 @@ func (cs *State) readReplayMessage(msg *TimedWALMessage, newStepSub types.Subscr
 func (cs *State) catchupReplay(csHeight int64) error {
 	// Set replayMode to true so we don't log signing errors.
 	cs.replayMode = true
+
 	defer func() { cs.replayMode = false }()
 
 	// Ensure that #ENDHEIGHT for this height doesn't exist.
@@ -106,11 +110,13 @@ func (cs *State) catchupReplay(csHeight int64) error {
 	if err != nil {
 		return err
 	}
+
 	if gr != nil {
 		if err := gr.Close(); err != nil {
 			return err
 		}
 	}
+
 	if found {
 		return fmt.Errorf("wal should not contain #ENDHEIGHT %d", csHeight)
 	}
@@ -121,24 +127,29 @@ func (cs *State) catchupReplay(csHeight int64) error {
 	if csHeight < cs.state.InitialHeight {
 		return fmt.Errorf("cannot replay height %v, below initial height %v", csHeight, cs.state.InitialHeight)
 	}
+
 	endHeight := csHeight - 1
 	if csHeight == cs.state.InitialHeight {
 		endHeight = 0
 	}
+
 	gr, found, err = cs.wal.SearchForEndHeight(endHeight, &WALSearchOptions{IgnoreDataCorruptionErrors: true})
 	if err == io.EOF {
 		cs.Logger.Error("Replay: wal.group.Search returned EOF", "#ENDHEIGHT", endHeight)
 	} else if err != nil {
 		return err
 	}
+
 	if !found {
 		return fmt.Errorf("cannot replay height %d. WAL does not contain #ENDHEIGHT for %d", csHeight, endHeight)
 	}
+
 	defer gr.Close()
 
 	cs.Logger.Info("Catchup by replaying consensus messages", "height", csHeight)
 
 	var msg *TimedWALMessage
+
 	dec := WALDecoder{gr}
 
 LOOP:
@@ -161,7 +172,9 @@ LOOP:
 			return err
 		}
 	}
+
 	cs.Logger.Info("Replay: Done")
+
 	return nil
 }
 
@@ -254,6 +267,7 @@ func (h *Handshaker) HandshakeWithContext(ctx context.Context, proxyApp proxy.Ap
 	if blockHeight < 0 {
 		return fmt.Errorf("got a negative last block height (%d) from the app", blockHeight)
 	}
+
 	appHash := res.LastBlockAppHash
 
 	h.logger.Info("ABCI Handshake App Info",
@@ -320,6 +334,7 @@ func (h *Handshaker) ReplayBlocksWithContext(
 		for i, val := range h.genDoc.Validators {
 			validators[i] = types.NewValidator(val.PubKey, val.Power)
 		}
+
 		validatorSet := types.NewValidatorSet(validators)
 		nextVals := types.TM2PB.ValidatorUpdates(validatorSet)
 		pbparams := h.genDoc.ConsensusParams.ToProto()
@@ -331,6 +346,7 @@ func (h *Handshaker) ReplayBlocksWithContext(
 			Validators:      nextVals,
 			AppStateBytes:   h.genDoc.AppState,
 		}
+
 		res, err := proxyApp.Consensus().InitChain(context.TODO(), req)
 		if err != nil {
 			return nil, err
@@ -351,6 +367,7 @@ func (h *Handshaker) ReplayBlocksWithContext(
 				if err != nil {
 					return nil, err
 				}
+
 				state.Validators = types.NewValidatorSet(vals)
 				state.NextValidators = types.NewValidatorSet(vals).CopyIncrementProposerPriority(1)
 			} else if len(h.genDoc.Validators) == 0 {
@@ -429,6 +446,7 @@ func (h *Handshaker) ReplayBlocksWithContext(
 			// but we'd have to allow the WAL to replay a block that wrote it's #ENDHEIGHT
 			h.logger.Info("Replay last block using real app")
 			state, err = h.replayBlock(state, storeBlockHeight, proxyApp.Consensus())
+
 			return state.AppHash, err
 
 		case appBlockHeight == storeBlockHeight:
@@ -444,9 +462,12 @@ func (h *Handshaker) ReplayBlocksWithContext(
 			if len(finalizeBlockResponse.AppHash) == 0 {
 				finalizeBlockResponse.AppHash = appHash
 			}
+
 			mockApp := newMockProxyApp(finalizeBlockResponse)
+
 			h.logger.Info("Replay last block using mock app")
 			state, err = h.replayBlock(state, storeBlockHeight, mockApp)
+
 			return state.AppHash, err
 		}
 
@@ -473,17 +494,21 @@ func (h *Handshaker) replayBlocks(
 	// TODO: Load the historical information to fix this and just use state.ApplyBlock
 	//
 	// If mutateState == true, the final block is replayed with h.replayBlock()
+	var (
+		appHash []byte
+		err     error
+	)
 
-	var appHash []byte
-	var err error
 	finalBlock := storeBlockHeight
 	if mutateState {
 		finalBlock--
 	}
+
 	firstBlock := appBlockHeight + 1
 	if firstBlock == 1 {
 		firstBlock = state.InitialHeight
 	}
+
 	for i := firstBlock; i <= finalBlock; i++ {
 		select {
 		case <-ctx.Done():
@@ -512,10 +537,12 @@ func (h *Handshaker) replayBlocks(
 		if err != nil {
 			return nil, err
 		}
+
 		appHash = state.AppHash
 	}
 
 	assertAppHashEqualsOneFromState(appHash, state)
+
 	return appHash, nil
 }
 
@@ -530,6 +557,7 @@ func (h *Handshaker) replayBlock(state sm.State, height int64, proxyApp proxy.Ap
 	blockExec.SetEventBus(h.eventBus)
 
 	var err error
+
 	state, err = blockExec.ApplyBlock(state, meta.BlockID, block)
 	if err != nil {
 		return sm.State{}, err

@@ -67,6 +67,7 @@ func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 			if node.Mode == e2e.ModeLight && strings.Contains(dir, "app") {
 				continue
 			}
+
 			err := os.MkdirAll(dir, 0o755)
 			if err != nil {
 				return err
@@ -77,12 +78,14 @@ func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 		if err != nil {
 			return err
 		}
+
 		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
 
 		appCfg, err := MakeAppConfig(node)
 		if err != nil {
 			return err
 		}
+
 		err = os.WriteFile(filepath.Join(nodeDir, "config", "app.toml"), appCfg, 0o644) //nolint:gosec
 		if err != nil {
 			return err
@@ -137,13 +140,16 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	genesis.ConsensusParams.Version.App = 1
 	genesis.ConsensusParams.Evidence.MaxAgeNumBlocks = e2e.EvidenceAgeHeight
 	genesis.ConsensusParams.Evidence.MaxAgeDuration = e2e.EvidenceAgeTime
+
 	genesis.ConsensusParams.Validator.PubKeyTypes = []string{testnet.KeyType}
 	if testnet.BlockMaxBytes != 0 {
 		genesis.ConsensusParams.Block.MaxBytes = testnet.BlockMaxBytes
 	}
+
 	if testnet.VoteExtensionsUpdateHeight == -1 {
 		genesis.ConsensusParams.ABCI.VoteExtensionsEnableHeight = testnet.VoteExtensionsEnableHeight
 	}
+
 	for validator, power := range testnet.Validators {
 		genesis.Validators = append(genesis.Validators, types.GenesisValidator{
 			Name:    validator.Name,
@@ -157,13 +163,16 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	sort.Slice(genesis.Validators, func(i, j int) bool {
 		return strings.Compare(genesis.Validators[i].Name, genesis.Validators[j].Name) == -1
 	})
+
 	if len(testnet.InitialState) > 0 {
 		appState, err := json.Marshal(testnet.InitialState)
 		if err != nil {
 			return genesis, err
 		}
+
 		genesis.AppState = appState
 	}
+
 	return genesis, genesis.ValidateAndComplete()
 }
 
@@ -240,12 +249,15 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	if node.StateSync {
 		cfg.StateSync.Enable = true
 		cfg.StateSync.RPCServers = []string{}
+
 		for _, peer := range node.Testnet.ArchiveNodes() {
 			if peer.Name == node.Name {
 				continue
 			}
+
 			cfg.StateSync.RPCServers = append(cfg.StateSync.RPCServers, peer.AddressRPC())
 		}
+
 		if len(cfg.StateSync.RPCServers) < 2 {
 			return nil, errors.New("unable to find 2 suitable state sync RPC servers")
 		}
@@ -256,6 +268,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		if len(cfg.P2P.Seeds) > 0 {
 			cfg.P2P.Seeds += ","
 		}
+
 		cfg.P2P.Seeds += seed.AddressP2P(true)
 	}
 
@@ -264,6 +277,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		if len(cfg.P2P.PersistentPeers) > 0 {
 			cfg.P2P.PersistentPeers += ","
 		}
+
 		cfg.P2P.PersistentPeers += peer.AddressP2P(true)
 	}
 
@@ -334,6 +348,7 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 	default:
 		return nil, fmt.Errorf("unexpected ABCI protocol setting %q", node.ABCIProtocol)
 	}
+
 	if node.Mode == e2e.ModeValidator {
 		switch node.PrivvalProtocol {
 		case e2e.ProtocolFile:
@@ -352,21 +367,26 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 
 	if len(node.Testnet.ValidatorUpdates) > 0 {
 		validatorUpdates := map[string]map[string]int64{}
+
 		for height, validators := range node.Testnet.ValidatorUpdates {
 			updateVals := map[string]int64{}
 			for node, power := range validators {
 				updateVals[base64.StdEncoding.EncodeToString(node.PrivvalKey.PubKey().Bytes())] = power
 			}
+
 			validatorUpdates[fmt.Sprintf("%v", height)] = updateVals
 		}
+
 		cfg["validator_update"] = validatorUpdates
 	}
 
 	var buf bytes.Buffer
+
 	err := toml.NewEncoder(&buf).Encode(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate app config: %w", err)
 	}
+
 	return buf.Bytes(), nil
 }
 
@@ -423,8 +443,10 @@ func UpdateConfigStateSync(node *e2e.Node, height int64, hash []byte) error {
 	if err != nil {
 		return err
 	}
+
 	bz = regexp.MustCompile(`(?m)^trust_height =.*`).ReplaceAll(bz, []byte(fmt.Sprintf(`trust_height = %v`, height)))
 	bz = regexp.MustCompile(`(?m)^trust_hash =.*`).ReplaceAll(bz, []byte(fmt.Sprintf(`trust_hash = "%X"`, hash)))
+
 	return os.WriteFile(cfgPath, bz, 0o644) //nolint:gosec
 }
 
@@ -436,5 +458,4 @@ func isPersistent(host, peer *e2e.Node) bool {
 	}
 
 	return false
-
 }

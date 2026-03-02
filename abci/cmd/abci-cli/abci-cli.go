@@ -61,19 +61,25 @@ var RootCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
+
 			logger = log.NewFilter(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), allowLevel)
 		}
+
 		if client == nil {
 			var err error
+
 			client, err = abcicli.NewClient(flagAddress, flagAbci, false)
 			if err != nil {
 				return err
 			}
+
 			client.SetLogger(logger.With("module", "abci-client"))
+
 			if err := client.Start(); err != nil {
 				return err
 			}
 		}
+
 		return nil
 	},
 }

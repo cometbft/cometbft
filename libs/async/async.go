@@ -69,6 +69,7 @@ func (trs *TaskResultSet) Reap() *TaskResultSet {
 			// else {
 			// We already wrote it.
 			// }
+
 		default:
 			// Do nothing.
 		}

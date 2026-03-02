@@ -73,6 +73,7 @@ func (wm *WebsocketManager) SetLogger(l log.Logger) {
 // the wsConnection.
 func (wm *WebsocketManager) WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 	wsConn, err := wm.Upgrade(w, r, nil)
+
 	if err != nil {
 		// TODO - return http error
 		wm.logger.Error("Failed to upgrade connection", "err", err)

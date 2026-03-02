@@ -27,6 +27,7 @@ func (l *tmfmtEncoder) Reset() {
 var tmfmtEncoderPool = sync.Pool{
 	New: func() any {
 		var enc tmfmtEncoder
+
 		enc.Encoder = logfmt.NewEncoder(&enc.buf)
 		return &enc
 	},
@@ -76,10 +77,12 @@ func (l tmfmtLogger) Log(keyvals ...any) error {
 				panic(fmt.Sprintf("level value of unknown type %T", keyvals[i+1]))
 			}
 			// and message
+
 		case msgKey:
 			excludeIndexes = append(excludeIndexes, i)
 			msg = keyvals[i+1].(string)
 			// and module (could be multiple keyvals; if such case last keyvalue wins)
+
 		case moduleKey:
 			excludeIndexes = append(excludeIndexes, i)
 			module = keyvals[i+1].(string)
@@ -105,7 +108,7 @@ func (l tmfmtLogger) Log(keyvals ...any) error {
 	//     D										- first character of the level, uppercase (ASCII only)
 	//     [2016-05-02|11:06:44.322]    - our time format (see https://golang.org/src/time/format.go)
 	//     Stopping ...					- message
-	enc.buf.WriteString(fmt.Sprintf("%c[%s] %-44s ", lvl[0]-32, time.Now().Format("2006-01-02|15:04:05.000"), msg))
+	fmt.Fprintf(&enc.buf, "%c[%s] %-44s ", lvl[0]-32, time.Now().Format("2006-01-02|15:04:05.000"), msg)
 
 	if module != unknown {
 		enc.buf.WriteString("module=" + module + " ")

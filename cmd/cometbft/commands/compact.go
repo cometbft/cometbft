@@ -31,6 +31,7 @@ Currently, only GoLevelDB is supported.
 		}
 
 		compactGoLevelDBs(config.RootDir, logger)
+
 		return nil
 	},
 }

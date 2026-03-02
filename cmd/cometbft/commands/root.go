@@ -106,6 +106,7 @@ var RootCmd = &cobra.Command{
 		}
 
 		logger = logger.With("module", "main")
+
 		return nil
 	},
 }

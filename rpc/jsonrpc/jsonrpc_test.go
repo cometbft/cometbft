@@ -118,6 +118,7 @@ var colorFn = func(keyvals ...any) term.FgBgColor {
 			}
 		}
 	}
+
 	return term.FgBgColor{}
 }
 

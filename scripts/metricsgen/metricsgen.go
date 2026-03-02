@@ -8,11 +8,9 @@ import (
 	"fmt"
 	"go/ast"
 	"go/format"
-	"go/parser"
 	"go/token"
 	"go/types"
 	"io"
-	"io/fs"
 	"log"
 	"os"
 	"path"
@@ -22,6 +20,8 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+
+	"golang.org/x/tools/go/packages"
 )
 
 func init() {
@@ -133,7 +133,8 @@ func main() {
 		log.Fatal("You must specify a non-empty -struct")
 	}
 
-	td, err := ParseMetricsDir(".", *strct)
+	// Parse the package in -dir (instead of hardcoding ".")
+	td, err := ParseMetricsDir(*dir, *strct)
 	if err != nil {
 		log.Fatalf("Parsing file: %v", err)
 	}
@@ -151,42 +152,47 @@ func main() {
 	}
 }
 
-func ignoreTestFiles(f fs.FileInfo) bool {
-	return !strings.Contains(f.Name(), "_test.go")
-}
-
-// ParseMetricsDir parses the dir and scans for a struct matching structName,
-// ignoring all test files. ParseMetricsDir iterates the fields of the metrics
-// struct and builds a TemplateData using the data obtained from the abstract syntax tree.
+// ParseMetricsDir parses the dir and scans for a struct matching structName.
+// It iterates the fields of the metrics struct and builds a TemplateData using
+// the data obtained from the abstract syntax tree.
+//
+// Uses golang.org/x/tools/go/packages to respect build tags / build constraints.
 func ParseMetricsDir(dir, structName string) (TemplateData, error) {
-	fs := token.NewFileSet()
+	fset := token.NewFileSet()
 
-	d, err := parser.ParseDir(fs, dir, ignoreTestFiles, parser.ParseComments)
+	cfg := &packages.Config{
+		Dir:   dir,
+		Fset:  fset,
+		Tests: false, // exclude test packages
+		Mode: packages.NeedName |
+			packages.NeedFiles |
+			packages.NeedCompiledGoFiles |
+			packages.NeedSyntax,
+		// BuildFlags: []string{"-tags=foo,bar"}, // optionally allow custom tags
+	}
+
+	// Load the package located at dir (non-recursive).
+	pkgs, err := packages.Load(cfg, ".")
 	if err != nil {
 		return TemplateData{}, err
 	}
 
-	if len(d) > 1 {
-		return TemplateData{}, fmt.Errorf("multiple packages found in %s", dir)
+	if packages.PrintErrors(pkgs) > 0 {
+		return TemplateData{}, fmt.Errorf("package load had errors")
 	}
 
-	if len(d) == 0 {
-		return TemplateData{}, fmt.Errorf("no go packages found in %s", dir)
+	if len(pkgs) != 1 {
+		return TemplateData{}, fmt.Errorf("expected 1 package in %s, got %d", dir, len(pkgs))
 	}
 
-	// Grab the package name.
-	var (
-		pkgName string
-		pkg     *ast.Package //nolint:staticcheck // TODO migrate later
-	)
-	for pkgName, pkg = range d {
-	}
+	p := pkgs[0]
 
 	td := TemplateData{
-		Package: pkgName,
+		Package: p.Name,
 	}
+
 	// Grab the metrics struct
-	m, mPkgName, err := findMetricsStruct(pkg.Files, structName)
+	m, mPkgName, err := findMetricsStruct(p.Syntax, structName)
 	if err != nil {
 		return TemplateData{}, err
 	}
@@ -200,7 +206,7 @@ func ParseMetricsDir(dir, structName string) (TemplateData, error) {
 		td.ParsedMetrics = append(td.ParsedMetrics, pmf)
 	}
 
-	return td, err
+	return td, nil
 }
 
 // GenerateMetricsFile executes the metrics file template, writing the result
@@ -227,8 +233,9 @@ func GenerateMetricsFile(w io.Writer, td TemplateData) error {
 	return nil
 }
 
-func findMetricsStruct(files map[string]*ast.File, structName string) (*ast.StructType, string, error) {
+func findMetricsStruct(files []*ast.File, structName string) (*ast.StructType, string, error) {
 	var st *ast.StructType
+
 	for _, file := range files {
 		mPkgName, err := extractMetricsPackageName(file.Imports)
 		if err != nil {
@@ -241,6 +248,7 @@ func findMetricsStruct(files map[string]*ast.File, structName string) (*ast.Stru
 			continue
 		}
 
+		var foundErr error
 		ast.Inspect(file, func(n ast.Node) bool {
 			switch f := n.(type) {
 			case *ast.TypeSpec:
@@ -249,19 +257,21 @@ func findMetricsStruct(files map[string]*ast.File, structName string) (*ast.Stru
 
 					st, ok = f.Type.(*ast.StructType)
 					if !ok {
-						err = fmt.Errorf("found identifier for %q of wrong type", structName)
+						foundErr = fmt.Errorf("found identifier for %q of wrong type", structName)
 					}
+
+					return false
 				}
 
-				return false
+				return true
 
 			default:
 				return true
 			}
 		})
 
-		if err != nil {
-			return nil, "", err
+		if foundErr != nil {
+			return nil, "", foundErr
 		}
 
 		if st != nil {

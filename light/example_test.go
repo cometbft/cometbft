@@ -60,6 +60,7 @@ func ExampleClient_Update() {
 		dbs.New(db, chainID),
 		light.Logger(log.TestingLogger()),
 	)
+
 	if err != nil {
 		stdlog.Fatal(err)
 	}
@@ -125,6 +126,7 @@ func ExampleClient_VerifyLightBlockAtHeight() {
 		dbs.New(db, chainID),
 		light.Logger(log.TestingLogger()),
 	)
+
 	if err != nil {
 		stdlog.Fatal(err)
 	}

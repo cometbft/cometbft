@@ -65,6 +65,7 @@ linters:
             - github.com/libp2p/go-libp2p
             - github.com/multiformats/go-multiaddr
             - github.com/mr-tron/base58/base58
+            - golang.org/x/tools/go/packages
         test:
           files:
             - $test

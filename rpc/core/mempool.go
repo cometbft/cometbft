@@ -90,7 +90,6 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 	q := types.EventQueryTxFor(tx)
 
 	txSub, err := env.EventBus.Subscribe(subCtx, subscriber, q)
-
 	if err != nil {
 		err = fmt.Errorf("failed to subscribe to tx: %w", err)
 		env.Logger.Error("Error on broadcast_tx_commit", "err", err)

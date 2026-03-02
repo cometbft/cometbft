@@ -7,14 +7,19 @@ linters:
     - depguard
     - dogsled
     - dupl
+    - goheader
+    - govet
     - goconst
     - gocritic
+    - importas
     - misspell
     - nakedret
     - nolintlint
+ #   - perfsprint
     - staticcheck
     - unconvert
     - unused
+    - unparam
   settings:
     depguard:
       rules:

@@ -95,6 +95,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 		env.Logger.Error("Error on broadcast_tx_commit", "err", err)
 		return nil, err
 	}
+
 	defer func() {
 		if err := env.EventBus.Unsubscribe(context.Background(), subscriber, q); err != nil {
 			env.Logger.Error("Error unsubscribing from eventBus", "err", err)

@@ -78,6 +78,7 @@ func (wm *WebsocketManager) WebsocketHandler(w http.ResponseWriter, r *http.Requ
 		wm.logger.Error("Failed to upgrade connection", "err", err)
 		return
 	}
+
 	defer func() {
 		if err := wsConn.Close(); err != nil {
 			wm.logger.Error("Failed to close connection", "err", err)

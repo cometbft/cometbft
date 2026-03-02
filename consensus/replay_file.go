@@ -58,6 +58,7 @@ func (cs *State) ReplayFile(file string, console bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to subscribe %s to %v", subscriber, types.EventQueryNewRoundStep)
 	}
+
 	defer func() {
 		if err := cs.eventBus.Unsubscribe(ctx, subscriber, types.EventQueryNewRoundStep); err != nil {
 			cs.Logger.Error("Error unsubscribing to event bus", "err", err)
@@ -235,6 +236,7 @@ func (pb *playback) replayConsoleLoop() int {
 			if err != nil {
 				cmtos.Exit(fmt.Sprintf("failed to subscribe %s to %v", subscriber, types.EventQueryNewRoundStep))
 			}
+
 			defer func() {
 				if err := pb.cs.eventBus.Unsubscribe(ctx, subscriber, types.EventQueryNewRoundStep); err != nil {
 					pb.cs.Logger.Error("Error unsubscribing from eventBus", "err", err)

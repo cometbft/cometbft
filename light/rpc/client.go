@@ -77,11 +77,13 @@ func DefaultMerkleKeyPathFn() KeyPathFunc {
 		if len(matches) != 2 {
 			return nil, fmt.Errorf("can't find store name in %s using %s", path, storeNameRegexp)
 		}
+
 		storeName := matches[1]
 
 		kp := merkle.KeyPath{}
 		kp = kp.AppendKey([]byte(storeName), merkle.KeyEncodingURL)
 		kp = kp.AppendKey(key, merkle.KeyEncodingURL)
+
 		return kp, nil
 	}
 }
@@ -93,10 +95,12 @@ func NewClient(next rpcclient.Client, lc LightClient, opts ...Option) *Client {
 		lc:   lc,
 		prt:  merkle.DefaultProofRuntime(),
 	}
+
 	c.BaseService = *service.NewBaseService(nil, "Client", c)
 	for _, o := range opts {
 		o(c)
 	}
+
 	return c
 }
 
@@ -139,18 +143,22 @@ func (c *Client) ABCIQueryWithOptions(ctx context.Context, path string, data cmt
 	if err != nil {
 		return nil, err
 	}
+
 	resp := res.Response
 
 	// Validate the response.
 	if resp.IsErr() {
 		return nil, fmt.Errorf("err response code: %v", resp.Code)
 	}
+
 	if len(resp.Key) == 0 {
 		return nil, cmterrors.ErrRequiredField{Field: "key"}
 	}
+
 	if resp.ProofOps == nil || len(resp.ProofOps.Ops) == 0 {
 		return nil, errors.New("no proof ops")
 	}
+
 	if resp.Height <= 0 {
 		return nil, errNegOrZeroHeight
 	}
@@ -158,6 +166,7 @@ func (c *Client) ABCIQueryWithOptions(ctx context.Context, path string, data cmt
 	// Update the light client if we're behind.
 	// NOTE: AppHash for height H is in header H+1.
 	nextHeight := resp.Height + 1
+
 	l, err := c.updateLightClientIfNeededTo(ctx, &nextHeight)
 	if err != nil {
 		return nil, err
@@ -236,6 +245,7 @@ func (c *Client) ConsensusParams(ctx context.Context, height *int64) (*ctypes.Re
 	if err := res.ConsensusParams.ValidateBasic(); err != nil {
 		return nil, err
 	}
+
 	if res.BlockHeight <= 0 {
 		return nil, errNegOrZeroHeight
 	}
@@ -272,6 +282,7 @@ func (c *Client) BlockchainInfo(ctx context.Context, minHeight, maxHeight int64)
 		if meta == nil {
 			return nil, fmt.Errorf("nil block meta %d", i)
 		}
+
 		if err := meta.ValidateBasic(); err != nil {
 			return nil, fmt.Errorf("invalid block meta %d: %w", i, err)
 		}
@@ -291,6 +302,7 @@ func (c *Client) BlockchainInfo(ctx context.Context, minHeight, maxHeight int64)
 		if err != nil {
 			return nil, fmt.Errorf("trusted header %d: %w", meta.Header.Height, err)
 		}
+
 		if bmH, tH := meta.Header.Hash(), h.Hash(); !bytes.Equal(bmH, tH) {
 			return nil, fmt.Errorf("block meta header %X does not match with trusted header %X",
 				bmH, tH)
@@ -319,9 +331,11 @@ func (c *Client) Block(ctx context.Context, height *int64) (*ctypes.ResultBlock,
 	if err := res.BlockID.ValidateBasic(); err != nil {
 		return nil, err
 	}
+
 	if err := res.Block.ValidateBasic(); err != nil {
 		return nil, err
 	}
+
 	if bmH, bH := res.BlockID.Hash, res.Block.Hash(); !bytes.Equal(bmH, bH) {
 		return nil, fmt.Errorf("blockID %X does not match with block %X",
 			bmH, bH)
@@ -353,9 +367,11 @@ func (c *Client) BlockByHash(ctx context.Context, hash []byte) (*ctypes.ResultBl
 	if err := res.BlockID.ValidateBasic(); err != nil {
 		return nil, err
 	}
+
 	if err := res.Block.ValidateBasic(); err != nil {
 		return nil, err
 	}
+
 	if bmH, bH := res.BlockID.Hash, res.Block.Hash(); !bytes.Equal(bmH, bH) {
 		return nil, fmt.Errorf("blockID %X does not match with block %X",
 			bmH, bH)
@@ -405,6 +421,7 @@ func (c *Client) BlockResults(ctx context.Context, height *int64) (*ctypes.Resul
 
 	// Update the light client if we're behind.
 	nextHeight := h + 1
+
 	trustedBlock, err := c.updateLightClientIfNeededTo(ctx, &nextHeight)
 	if err != nil {
 		return nil, err
@@ -527,6 +544,7 @@ func (c *Client) Validators(
 
 	totalCount := len(l.ValidatorSet.Validators)
 	perPage := validatePerPage(perPagePtr)
+
 	page, err := validatePage(pagePtr, perPage, totalCount)
 	if err != nil {
 		return nil, err
@@ -571,9 +589,11 @@ func (c *Client) updateLightClientIfNeededTo(ctx context.Context, height *int64)
 	} else {
 		l, err = c.lc.VerifyLightBlockAtHeight(ctx, *height, time.Now())
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to update light client to %d: %w", *height, err)
 	}
+
 	return l, nil
 }
 
@@ -601,6 +621,7 @@ func (c *Client) SubscribeWS(ctx *rpctypes.Context, query string) (*ctypes.Resul
 						rpctypes.JSONRPCStringID(fmt.Sprintf("%v#event", ctx.JSONReq.ID)),
 						resultEvent,
 					))
+
 			case <-c.Quit():
 				return
 			}
@@ -617,6 +638,7 @@ func (c *Client) UnsubscribeWS(ctx *rpctypes.Context, query string) (*ctypes.Res
 	if err != nil {
 		return nil, err
 	}
+
 	return &ctypes.ResultUnsubscribe{}, nil
 }
 
@@ -627,6 +649,7 @@ func (c *Client) UnsubscribeAllWS(ctx *rpctypes.Context) (*ctypes.ResultUnsubscr
 	if err != nil {
 		return nil, err
 	}
+
 	return &ctypes.ResultUnsubscribe{}, nil
 }
 
@@ -650,6 +673,7 @@ func validatePage(pagePtr *int, perPage, totalCount int) (int, error) {
 	if pages == 0 {
 		pages = 1 // one page (even if it's empty)
 	}
+
 	page := *pagePtr
 	if page <= 0 || page > pages {
 		return 1, fmt.Errorf("page should be within [1, %d] range, given %d", pages, page)
@@ -669,6 +693,7 @@ func validatePerPage(perPagePtr *int) int {
 	} else if perPage > maxPerPage {
 		return maxPerPage
 	}
+
 	return perPage
 }
 

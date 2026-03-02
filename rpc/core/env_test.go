@@ -70,6 +70,7 @@ func TestPaginationPerPage(t *testing.T) {
 		{5, maxPerPage, maxPerPage},
 		{5, maxPerPage + 1, maxPerPage},
 	}
+
 	env := &Environment{}
 	for _, c := range cases {
 		p := env.validatePerPage(&c.perPage)

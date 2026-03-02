@@ -31,6 +31,7 @@ func TestSimpleTemplate(t *testing.T) {
 		ParsedMetrics: []metricsgen.ParsedMetricField{m},
 	}
 	b := bytes.NewBuffer([]byte{})
+
 	err := metricsgen.GenerateMetricsFile(b, td)
 	if err != nil {
 		t.Fatalf("unable to parse template %v", err)
@@ -42,40 +43,51 @@ func TestFromData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to open file %v", err)
 	}
+
 	for _, dir := range infos {
 		t.Run(dir.Name(), func(t *testing.T) {
 			if !dir.IsDir() {
 				t.Fatalf("expected file %s to be directory", dir.Name())
 			}
+
 			dirName := path.Join(testDataDir, dir.Name())
+
 			pt, err := metricsgen.ParseMetricsDir(dirName, "Metrics")
 			if err != nil {
 				t.Fatalf("unable to parse from dir %q: %v", dir, err)
 			}
+
 			outFile := path.Join(dirName, "out.go")
 			if err != nil {
 				t.Fatalf("unable to open file %s: %v", outFile, err)
 			}
+
 			of, err := os.Create(outFile)
 			if err != nil {
 				t.Fatalf("unable to open file %s: %v", outFile, err)
 			}
 			defer os.Remove(outFile)
+
 			if err := metricsgen.GenerateMetricsFile(of, pt); err != nil {
 				t.Fatalf("unable to generate metrics file %s: %v", outFile, err)
 			}
+
 			if _, err := parser.ParseFile(token.NewFileSet(), outFile, nil, parser.AllErrors); err != nil {
 				t.Fatalf("unable to parse generated file %s: %v", outFile, err)
 			}
+
 			bNew, err := os.ReadFile(outFile)
 			if err != nil {
 				t.Fatalf("unable to read generated file %s: %v", outFile, err)
 			}
+
 			goldenFile := path.Join(dirName, "metrics.gen.go")
+
 			bOld, err := os.ReadFile(goldenFile)
 			if err != nil {
 				t.Fatalf("unable to read file %s: %v", goldenFile, err)
 			}
+
 			if !bytes.Equal(bNew, bOld) {
 				t.Fatalf("newly generated code in file %s does not match golden file %s\n"+
 					"if the output of the metricsgen tool is expected to change run the following make target: \n"+
@@ -87,6 +99,7 @@ func TestFromData(t *testing.T) {
 
 func TestParseMetricsStruct(t *testing.T) {
 	const pkgName = "mypkg"
+
 	metricsTests := []struct {
 		name          string
 		shouldError   bool
@@ -188,10 +201,12 @@ func TestParseMetricsStruct(t *testing.T) {
 				t.Fatalf("unable to create directory: %v", err)
 			}
 			defer os.Remove(dir)
+
 			f, err := os.Create(filepath.Join(dir, "metrics.go"))
 			if err != nil {
 				t.Fatalf("unable to open file: %v", err)
 			}
+
 			pkgLine := fmt.Sprintf("package %s\n", pkgName)
 			importClause := `
 			import(
@@ -228,19 +243,23 @@ func TestParseAliasedMetric(t *testing.T) {
 				m mymetrics.Gauge
 			}
 			`
+
 	dir, err := os.MkdirTemp(os.TempDir(), "metricsdir")
 	if err != nil {
 		t.Fatalf("unable to create directory: %v", err)
 	}
 	defer os.Remove(dir)
+
 	f, err := os.Create(filepath.Join(dir, "metrics.go"))
 	if err != nil {
 		t.Fatalf("unable to open file: %v", err)
 	}
+
 	_, err = io.WriteString(f, aliasedData)
 	if err != nil {
 		t.Fatalf("unable to write to file: %v", err)
 	}
+
 	td, err := metricsgen.ParseMetricsDir(dir, "Metrics")
 	require.NoError(t, err)
 

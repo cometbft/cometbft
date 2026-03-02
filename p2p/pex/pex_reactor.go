@@ -139,6 +139,7 @@ func NewReactor(b AddrBook, config *ReactorConfig) *Reactor {
 		crawlPeerInfos:       make(map[p2p.ID]crawlPeerInfo),
 	}
 	r.BaseReactor = *p2p.NewBaseReactor("PEX", r)
+
 	return r
 }
 
@@ -165,6 +166,7 @@ func (r *Reactor) OnStart() error {
 	} else {
 		go r.ensurePeersRoutine()
 	}
+
 	return nil
 }
 
@@ -241,32 +243,32 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 
 	switch msg := e.Message.(type) {
 	case *tmp2p.PexRequest:
-
 		// NOTE: this is a prime candidate for amplification attacks,
 		// so it's important we
 		// 1) restrict how frequently peers can request
 		// 2) limit the output size
-
 		// If we're a seed and this is an inbound peer,
 		// respond once and disconnect.
 		if r.config.SeedMode && !e.Src.IsOutbound() {
 			id := string(e.Src.ID())
+
 			v := r.lastReceivedRequests.Get(id)
 			if v != nil {
 				// FlushStop/StopPeer are already
 				// running in a go-routine.
 				return
 			}
+
 			r.lastReceivedRequests.Set(id, time.Now())
 
 			// Send addrs and disconnect
 			r.SendAddrs(e.Src, r.book.GetSelectionWithBias(biasToSelectNewPeers))
+
 			go func() {
 				// In a go-routine so it doesn't block .Receive.
 				e.Src.FlushStop()
 				r.Switch.StopPeerGracefully(e.Src)
 			}()
-
 		} else {
 			// Check we're not receiving requests too frequently.
 			if err := r.receiveRequest(e.Src); err != nil {
@@ -274,6 +276,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 				r.book.MarkBad(e.Src.SocketAddr(), defaultBanTime)
 				return
 			}
+
 			r.SendAddrs(e.Src, r.book.GetSelection())
 		}
 
@@ -285,12 +288,15 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 			r.book.MarkBad(e.Src.SocketAddr(), defaultBanTime)
 			return
 		}
+
 		err = r.ReceiveAddrs(addrs, e.Src)
 		if err != nil {
 			r.Switch.StopPeerForError(e.Src, err)
+
 			if err == ErrUnsolicitedList {
 				r.book.MarkBad(e.Src.SocketAddr(), defaultBanTime)
 			}
+
 			return
 		}
 
@@ -302,6 +308,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 // enforces a minimum amount of time between requests
 func (r *Reactor) receiveRequest(src Peer) error {
 	id := string(src.ID())
+
 	v := r.lastReceivedRequests.Get(id)
 	if v == nil {
 		// initialize with empty time
@@ -319,6 +326,7 @@ func (r *Reactor) receiveRequest(src Peer) error {
 	}
 
 	now := time.Now()
+
 	minInterval := r.minReceiveRequestInterval()
 	if now.Sub(lastReceived) < minInterval {
 		return fmt.Errorf(
@@ -329,7 +337,9 @@ func (r *Reactor) receiveRequest(src Peer) error {
 			minInterval,
 		)
 	}
+
 	r.lastReceivedRequests.Set(id, now)
+
 	return nil
 }
 
@@ -340,6 +350,7 @@ func (r *Reactor) RequestAddrs(p Peer) {
 	if r.requestsSent.Has(id) {
 		return
 	}
+
 	r.Logger.Debug("Request addrs", "from", p)
 	r.requestsSent.Set(id, struct{}{})
 	p.Send(p2p.Envelope{
@@ -356,6 +367,7 @@ func (r *Reactor) ReceiveAddrs(addrs []*p2p.NetAddress, src Peer) error {
 	if !r.requestsSent.Has(id) {
 		return ErrUnsolicitedList
 	}
+
 	r.requestsSent.Delete(id)
 
 	srcAddr, err := src.NodeInfo().NetAddress()
@@ -381,6 +393,7 @@ func (r *Reactor) ReceiveAddrs(addrs []*p2p.NetAddress, src Peer) error {
 			case r.ensurePeersCh <- struct{}{}:
 			default:
 			}
+
 			break
 		}
 	}
@@ -471,9 +484,11 @@ func (r *Reactor) ensurePeers(ensurePeersPeriodElapsed bool) {
 		if try == nil {
 			continue
 		}
+
 		if _, selected := toDial[try.ID]; selected {
 			continue
 		}
+
 		if r.Switch.IsDialingOrExistingAddress(try) {
 			continue
 		}
@@ -504,7 +519,6 @@ func (r *Reactor) ensurePeers(ensurePeersPeriodElapsed bool) {
 	}
 
 	if r.book.NeedMoreAddrs() {
-
 		// 1) Pick a random peer and ask for more.
 		peer := r.Switch.Peers().Random()
 		if peer != nil {
@@ -527,7 +541,9 @@ func (r *Reactor) dialAttemptsInfo(addr *p2p.NetAddress) (attempts int, lastDial
 	if !ok {
 		return
 	}
+
 	atd := _attempts.(_attemptsToDial)
+
 	return atd.number, atd.lastDialed
 }
 
@@ -543,6 +559,7 @@ func (r *Reactor) dialPeer(addr *p2p.NetAddress) error {
 		jitter := time.Duration(cmtrand.Float64() * float64(time.Second)) // 1s == (1e9 ns)
 		backoffDuration := jitter + ((1 << uint(attempts)) * time.Second)
 		backoffDuration = r.maxBackoffDurationForPeer(addr, backoffDuration)
+
 		sinceLastDialed := time.Since(lastDialed)
 		if sinceLastDialed < backoffDuration {
 			return errTooEarlyToDial{backoffDuration, lastDialed}
@@ -556,6 +573,7 @@ func (r *Reactor) dialPeer(addr *p2p.NetAddress) error {
 		}
 
 		markAddrInBookBasedOnErr(addr, r.book, err)
+
 		switch err.(type) {
 		case p2p.ErrSwitchAuthenticationFailure:
 			// NOTE: addr is removed from addrbook in markAddrInBookBasedOnErr
@@ -563,11 +581,13 @@ func (r *Reactor) dialPeer(addr *p2p.NetAddress) error {
 		default:
 			r.attemptsToDial.Store(addr.DialString(), _attemptsToDial{attempts + 1, time.Now()})
 		}
+
 		return fmt.Errorf("dialing failed (attempts: %d): %w", attempts+1, err)
 	}
 
 	// cleanup any history
 	r.attemptsToDial.Delete(addr.DialString())
+
 	return nil
 }
 
@@ -578,6 +598,7 @@ func (r *Reactor) maxBackoffDurationForPeer(addr *p2p.NetAddress, planned time.D
 		r.Switch.IsPeerPersistent(addr) {
 		return r.config.PersistentPeersMaxDialPeriod
 	}
+
 	return planned
 }
 
@@ -591,7 +612,9 @@ func (r *Reactor) checkSeeds() (numOnline int, netAddrs []*p2p.NetAddress, err e
 	if lSeeds == 0 {
 		return -1, nil, nil
 	}
+
 	netAddrs, errs := p2p.NewNetAddressStrings(r.config.Seeds)
+
 	numOnline = lSeeds - len(errs)
 	for _, err := range errs {
 		switch e := err.(type) {
@@ -601,6 +624,7 @@ func (r *Reactor) checkSeeds() (numOnline int, netAddrs []*p2p.NetAddress, err e
 			return 0, nil, fmt.Errorf("seed node configuration has error: %w", e)
 		}
 	}
+
 	return numOnline, netAddrs, nil
 }
 
@@ -617,6 +641,7 @@ func (r *Reactor) dialSeeds() {
 		case nil, p2p.ErrCurrentlyDialingOrExistingAddress:
 			return
 		}
+
 		r.Logger.Error("Error dialing seed", "err", err, "seed", seedAddr)
 	}
 	// do not write error message if there were no seeds specified in config
@@ -632,6 +657,7 @@ func (r *Reactor) AttemptsToDial(addr *p2p.NetAddress) int {
 	if attempted {
 		return lAttempts.(_attemptsToDial).number
 	}
+
 	return 0
 }
 
@@ -658,6 +684,7 @@ func (r *Reactor) crawlPeersRoutine() {
 			r.attemptDisconnects()
 			r.crawlPeers(r.book.GetSelection())
 			r.cleanupCrawlPeerInfos()
+
 		case <-r.Quit():
 			return
 		}
@@ -705,6 +732,7 @@ func (r *Reactor) crawlPeers(addrs []*p2p.NetAddress) {
 			default:
 				r.Logger.Debug(err.Error(), "addr", addr)
 			}
+
 			continue
 		}
 
@@ -735,9 +763,11 @@ func (r *Reactor) attemptDisconnects() {
 		if peer.Status().Duration < r.config.SeedDisconnectWaitPeriod {
 			continue
 		}
+
 		if peer.IsPersistent() {
 			continue
 		}
+
 		r.Switch.StopPeerGracefully(peer)
 	}
 }

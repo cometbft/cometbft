@@ -53,6 +53,7 @@ func NewClient(addr, transport string, mustConnect bool) (client Client, err err
 	default:
 		err = ErrUnknownAbciTransport{Transport: transport}
 	}
+
 	return
 }
 
@@ -110,6 +111,7 @@ func (r *ReqRes) InvokeCallback() {
 	if r.cb != nil {
 		r.cb(r.Response)
 	}
+
 	r.callbackInvoked = true
 }
 

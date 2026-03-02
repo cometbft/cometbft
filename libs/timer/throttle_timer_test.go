@@ -49,6 +49,7 @@ func TestThrottle(test *testing.T) {
 	// start at 0
 	c := &thCounter{input: t.Ch}
 	assert.Equal(0, c.Count())
+
 	go c.Read()
 
 	// waiting does nothing
@@ -64,6 +65,7 @@ func TestThrottle(test *testing.T) {
 	for i := 0; i < 5; i++ {
 		t.Set()
 	}
+
 	time.Sleep(longwait)
 	assert.Equal(2, c.Count())
 
@@ -75,6 +77,7 @@ func TestThrottle(test *testing.T) {
 		t.Set()
 		time.Sleep(short)
 	}
+
 	time.Sleep(longwait)
 	assert.LessOrEqual(5, c.Count())
 

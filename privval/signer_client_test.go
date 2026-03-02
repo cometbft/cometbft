@@ -37,6 +37,7 @@ func getSignerTestCases(t *testing.T) []signerTestCase {
 		sl, sd := getMockEndpoints(t, dtc.addr, dtc.dialer)
 		sc, err := NewSignerClient(sl, chainID)
 		require.NoError(t, err)
+
 		ss := NewSignerServer(sd, chainID, mockPV)
 
 		err = ss.Start()
@@ -67,7 +68,6 @@ func TestSignerClose(t *testing.T) {
 
 func TestSignerPing(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
-
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -86,7 +86,6 @@ func TestSignerPing(t *testing.T) {
 
 func TestSignerGetPubKey(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
-
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -109,6 +108,7 @@ func TestSignerGetPubKey(t *testing.T) {
 		require.NoError(t, err)
 		expectedpk, err := tc.mockPV.GetPubKey()
 		require.NoError(t, err)
+
 		expectedAddr := expectedpk.Address()
 
 		assert.Equal(t, expectedAddr, pubKey.Address())
@@ -385,8 +385,10 @@ func TestSignerSignVoteErrors(t *testing.T) {
 }
 
 func brokenHandler(_ types.PrivValidator, request privvalproto.Message, _ string) (privvalproto.Message, error) {
-	var res privvalproto.Message
-	var err error
+	var (
+		res privvalproto.Message
+		err error
+	)
 
 	switch r := request.Sum.(type) {
 	// This is broken and will answer most requests with a pubkey response

@@ -28,11 +28,13 @@ func assertMempool(txn txNotifier) mempl.Mempool {
 func TestMempoolNoProgressUntilTxsAvailable(t *testing.T) {
 	config := ResetConfig("consensus_mempool_txs_available_test")
 	defer os.RemoveAll(config.RootDir)
+
 	config.Consensus.CreateEmptyBlocks = false
 	state, privVals := randGenesisState(1, false, 10, nil)
 	app := kvstore.NewInMemoryApplication()
 	resp, err := app.Info(context.Background(), proxy.RequestInfo)
 	require.NoError(t, err)
+
 	state.AppHash = resp.LastBlockAppHash
 	cs := newStateWithConfig(config, state, privVals[0], app)
 	assertMempool(cs.txNotifier).EnableTxsAvailable()
@@ -57,6 +59,7 @@ func TestMempoolProgressAfterCreateEmptyBlocksInterval(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	resp, err := app.Info(context.Background(), proxy.RequestInfo)
 	require.NoError(t, err)
+
 	state.AppHash = resp.LastBlockAppHash
 	cs := newStateWithConfig(config, state, privVals[0], app)
 
@@ -73,6 +76,7 @@ func TestMempoolProgressAfterCreateEmptyBlocksInterval(t *testing.T) {
 func TestMempoolProgressInHigherRound(t *testing.T) {
 	config := ResetConfig("consensus_mempool_txs_available_test")
 	defer os.RemoveAll(config.RootDir)
+
 	config.Consensus.CreateEmptyBlocks = false
 	state, privVals := randGenesisState(1, false, 10, nil)
 	cs := newStateWithConfig(config, state, privVals[0], kvstore.NewInMemoryApplication())
@@ -88,6 +92,7 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 			cs.Logger.Info("Ignoring set proposal at height 2, round 0")
 			return nil
 		}
+
 		return cs.defaultSetProposal(proposal)
 	}
 	startTestRound(cs, height, round)
@@ -122,18 +127,21 @@ func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 	cs := newStateWithConfigAndBlockStore(config, state, privVals[0], kvstore.NewInMemoryApplication(), blockDB)
 	err := stateStore.Save(state)
 	require.NoError(t, err)
+
 	newBlockEventsCh := subscribe(cs.eventBus, types.EventQueryNewBlockEvents)
 
 	const numTxs int64 = 3000
 	go deliverTxsRange(t, cs, 0, int(numTxs))
 
 	startTestRound(cs, cs.Height, cs.Round)
+
 	for n := int64(0); n < numTxs; {
 		select {
 		case msg := <-newBlockEventsCh:
 			event := msg.Data().(types.EventDataNewBlockEvents)
 			n += event.NumTxs
 			t.Log("new transactions", "nTxs", event.NumTxs, "total", n)
+
 		case <-time.After(30 * time.Second):
 			t.Fatal("Timed out waiting 30s to commit blocks with transactions")
 		}
@@ -160,17 +168,20 @@ func TestMempoolRmBadTx(t *testing.T) {
 	require.NoError(t, err)
 
 	emptyMempoolCh := make(chan struct{})
+
 	checkTxRespCh := make(chan struct{})
 	go func() {
 		// Try to send the tx through the mempool.
 		// CheckTx should not err, but the app should return a bad abci code
 		// and the tx should get removed from the pool
 		invalidTx := []byte("invalidTx")
+
 		err := assertMempool(cs.txNotifier).CheckTx(invalidTx, func(r *abci.ResponseCheckTx) {
 			if r.Code != kvstore.CodeTypeInvalidTxFormat {
 				t.Errorf("expected checktx to return invalid format, got %v", r)
 				return
 			}
+
 			checkTxRespCh <- struct{}{}
 		}, mempl.TxInfo{})
 		if err != nil {
@@ -185,6 +196,7 @@ func TestMempoolRmBadTx(t *testing.T) {
 				emptyMempoolCh <- struct{}{}
 				return
 			}
+
 			time.Sleep(10 * time.Millisecond)
 		}
 	}()

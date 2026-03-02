@@ -73,11 +73,14 @@ func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore) (*Pool,
 	// if pending evidence already in db, in event of prior failure, then check for expiration,
 	// update the size and load it back to the evidenceList
 	pool.pruningHeight, pool.pruningTime = pool.removeExpiredPendingEvidence()
+
 	evList, _, err := pool.listEvidence(baseKeyPending, -1)
 	if err != nil {
 		return nil, err
 	}
+
 	atomic.StoreUint32(&pool.evidenceSize, uint32(len(evList)))
+
 	for _, ev := range evList {
 		pool.evidenceList.PushBack(ev)
 	}
@@ -90,10 +93,12 @@ func (evpool *Pool) PendingEvidence(maxBytes int64) ([]types.Evidence, int64) {
 	if evpool.Size() == 0 {
 		return []types.Evidence{}, 0
 	}
+
 	evidence, size, err := evpool.listEvidence(baseKeyPending, maxBytes)
 	if err != nil {
 		evpool.logger.Error("Unable to retrieve pending evidence", "err", err)
 	}
+
 	return evidence, size
 }
 
@@ -113,6 +118,7 @@ func (evpool *Pool) Update(state sm.State, ev types.EvidenceList) {
 			evpool.state.LastBlockHeight,
 		))
 	}
+
 	evpool.logger.Debug("Updating evidence pool", "last_block_height", state.LastBlockHeight,
 		"last_block_time", state.LastBlockTime)
 
@@ -181,6 +187,7 @@ func (evpool *Pool) AddEvidence(ev types.Evidence) error {
 func (evpool *Pool) ReportConflictingVotes(voteA, voteB *types.Vote) {
 	evpool.mtx.Lock()
 	defer evpool.mtx.Unlock()
+
 	evpool.consensusBuffer = append(evpool.consensusBuffer, duplicateVoteSet{
 		VoteA: voteA,
 		VoteB: voteB,
@@ -194,7 +201,6 @@ func (evpool *Pool) ReportConflictingVotes(voteA, voteB *types.Vote) {
 func (evpool *Pool) CheckEvidence(evList types.EvidenceList) error {
 	hashes := make([][]byte, len(evList))
 	for idx, ev := range evList {
-
 		_, isLightEv := ev.(*types.LightClientAttackEvidence)
 
 		// We must verify light client attack evidence regardless because there could be a
@@ -270,6 +276,7 @@ func (evpool *Pool) isExpired(height int64, time time.Time) bool {
 		ageDuration  = evpool.State().LastBlockTime.Sub(time)
 		ageNumBlocks = evpool.State().LastBlockHeight - height
 	)
+
 	return ageNumBlocks > params.MaxAgeNumBlocks &&
 		ageDuration > params.MaxAgeDuration
 }
@@ -277,20 +284,24 @@ func (evpool *Pool) isExpired(height int64, time time.Time) bool {
 // IsCommitted returns true if we have already seen this exact evidence and it is already marked as committed.
 func (evpool *Pool) isCommitted(evidence types.Evidence) bool {
 	key := keyCommitted(evidence)
+
 	ok, err := evpool.evidenceStore.Has(key)
 	if err != nil {
 		evpool.logger.Error("Unable to find committed evidence", "err", err)
 	}
+
 	return ok
 }
 
 // IsPending checks whether the evidence is already pending. DB errors are passed to the logger.
 func (evpool *Pool) isPending(evidence types.Evidence) bool {
 	key := keyPending(evidence)
+
 	ok, err := evpool.evidenceStore.Has(key)
 	if err != nil {
 		evpool.logger.Error("Unable to find pending evidence", "err", err)
 	}
+
 	return ok
 }
 
@@ -311,7 +322,9 @@ func (evpool *Pool) addPendingEvidence(ev types.Evidence) error {
 	if err != nil {
 		return fmt.Errorf("can't persist evidence: %w", err)
 	}
+
 	atomic.AddUint32(&evpool.evidenceSize, 1)
+
 	return nil
 }
 
@@ -340,6 +353,7 @@ func (evpool *Pool) markEvidenceAsCommitted(evidence types.EvidenceList) {
 		key := keyCommitted(ev)
 
 		h := gogotypes.Int64Value{Value: ev.Height()}
+
 		evBytes, err := proto.Marshal(&h)
 		if err != nil {
 			evpool.logger.Error("failed to marshal committed evidence", "err", err, "key(height/hash)", key)
@@ -372,13 +386,17 @@ func (evpool *Pool) listEvidence(prefixKey byte, maxBytes int64) ([]types.Eviden
 		return nil, totalSize, fmt.Errorf("database error: %v", err)
 	}
 	defer iter.Close()
+
 	for ; iter.Valid(); iter.Next() {
 		var evpb cmtproto.Evidence
+
 		err := evpb.Unmarshal(iter.Value())
 		if err != nil {
 			return evidence, totalSize, err
 		}
+
 		evList.Evidence = append(evList.Evidence, evpb)
+
 		evSize = int64(evList.Size())
 		if maxBytes != -1 && evSize > maxBytes {
 			if err := iter.Error(); err != nil {
@@ -393,12 +411,14 @@ func (evpool *Pool) listEvidence(prefixKey byte, maxBytes int64) ([]types.Eviden
 		}
 
 		totalSize = evSize
+
 		evidence = append(evidence, ev)
 	}
 
 	if err := iter.Error(); err != nil {
 		return evidence, totalSize, err
 	}
+
 	return evidence, totalSize, nil
 }
 
@@ -409,6 +429,7 @@ func (evpool *Pool) removeExpiredPendingEvidence() (int64, time.Time) {
 		return evpool.State().LastBlockHeight, evpool.State().LastBlockTime
 	}
 	defer iter.Close()
+
 	blockEvidenceMap := make(map[string]struct{})
 	for ; iter.Valid(); iter.Next() {
 		ev, err := bytesToEv(iter.Value())
@@ -416,6 +437,7 @@ func (evpool *Pool) removeExpiredPendingEvidence() (int64, time.Time) {
 			evpool.logger.Error("Error in transition evidence from protobuf", "err", err)
 			continue
 		}
+
 		if !evpool.isExpired(ev.Height(), ev.Time()) {
 			if len(blockEvidenceMap) != 0 {
 				evpool.removeEvidenceFromList(blockEvidenceMap)
@@ -425,6 +447,7 @@ func (evpool *Pool) removeExpiredPendingEvidence() (int64, time.Time) {
 			return ev.Height() + evpool.State().ConsensusParams.Evidence.MaxAgeNumBlocks + 1,
 				ev.Time().Add(evpool.State().ConsensusParams.Evidence.MaxAgeDuration).Add(time.Second)
 		}
+
 		evpool.removePendingEvidence(ev)
 		blockEvidenceMap[evMapKey(ev)] = struct{}{}
 	}
@@ -432,6 +455,7 @@ func (evpool *Pool) removeExpiredPendingEvidence() (int64, time.Time) {
 	if len(blockEvidenceMap) != 0 {
 		evpool.removeEvidenceFromList(blockEvidenceMap)
 	}
+
 	return evpool.State().LastBlockHeight, evpool.State().LastBlockTime
 }
 
@@ -451,6 +475,7 @@ func (evpool *Pool) removeEvidenceFromList(
 func (evpool *Pool) updateState(state sm.State) {
 	evpool.mtx.Lock()
 	defer evpool.mtx.Unlock()
+
 	evpool.state = state
 }
 
@@ -461,8 +486,8 @@ func (evpool *Pool) updateState(state sm.State) {
 func (evpool *Pool) processConsensusBuffer(state sm.State) {
 	evpool.mtx.Lock()
 	defer evpool.mtx.Unlock()
-	for _, voteSet := range evpool.consensusBuffer {
 
+	for _, voteSet := range evpool.consensusBuffer {
 		// Check the height of the conflicting votes and fetch the corresponding time and validator set
 		// to produce the valid evidence
 		var (
@@ -480,6 +505,7 @@ func (evpool *Pool) processConsensusBuffer(state sm.State) {
 
 		case voteSet.VoteA.Height < state.LastBlockHeight:
 			var valSet *types.ValidatorSet
+
 			valSet, err = evpool.stateDB.LoadValidators(voteSet.VoteA.Height)
 			if err != nil {
 				evpool.logger.Error("failed to load validator set for conflicting votes", "height",
@@ -487,11 +513,13 @@ func (evpool *Pool) processConsensusBuffer(state sm.State) {
 				)
 				continue
 			}
+
 			blockMeta := evpool.blockStore.LoadBlockMeta(voteSet.VoteA.Height)
 			if blockMeta == nil {
 				evpool.logger.Error("failed to load block time for conflicting votes", "height", voteSet.VoteA.Height)
 				continue
 			}
+
 			dve, err = types.NewDuplicateVoteEvidence(
 				voteSet.VoteA,
 				voteSet.VoteB,
@@ -508,6 +536,7 @@ func (evpool *Pool) processConsensusBuffer(state sm.State) {
 				"state.LastBlockHeight", state.LastBlockHeight)
 			continue
 		}
+
 		if err != nil {
 			evpool.logger.Error("error in generating evidence from votes", "err", err)
 			continue
@@ -545,6 +574,7 @@ type duplicateVoteSet struct {
 
 func bytesToEv(evBytes []byte) (types.Evidence, error) {
 	var evpb cmtproto.Evidence
+
 	err := evpb.Unmarshal(evBytes)
 	if err != nil {
 		return &types.DuplicateVoteEvidence{}, err

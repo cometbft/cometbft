@@ -28,6 +28,7 @@ func genPrivKeys(n int) privKeys {
 	for i := range res {
 		res[i] = ed25519.GenPrivKey()
 	}
+
 	return res
 }
 
@@ -69,6 +70,7 @@ func (pkz privKeys) ToValidators(init, inc int64) *types.ValidatorSet {
 	for i, k := range pkz {
 		res[i] = types.NewValidator(k.PubKey(), init+int64(i)*inc)
 	}
+
 	return types.NewValidatorSet(res)
 }
 
@@ -116,17 +118,21 @@ func makeVote(header *types.Header, valset *types.ValidatorSet,
 	v := vote.ToProto()
 	// Sign it
 	signBytes := types.VoteSignBytes(header.ChainID, v)
+
 	sig, err := key.Sign(signBytes)
 	if err != nil {
 		panic(err)
 	}
+
 	vote.Signature = sig
 
 	extSignBytes := types.VoteExtensionSignBytes(header.ChainID, v)
+
 	extSig, err := key.Sign(extSignBytes)
 	if err != nil {
 		panic(err)
 	}
+
 	vote.ExtensionSignature = extSig
 
 	return vote
@@ -157,6 +163,7 @@ func (pkz privKeys) GenSignedHeader(chainID string, height int64, bTime time.Tim
 	valset, nextValset *types.ValidatorSet, appHash, consHash, resHash []byte, first, last int,
 ) *types.SignedHeader {
 	header := genHeader(chainID, height, bTime, txs, valset, nextValset, appHash, consHash, resHash)
+
 	return &types.SignedHeader{
 		Header: header,
 		Commit: pkz.signHeader(header, valset, first, last),
@@ -170,6 +177,7 @@ func (pkz privKeys) GenSignedHeaderLastBlockID(chainID string, height int64, bTi
 ) *types.SignedHeader {
 	header := genHeader(chainID, height, bTime, txs, valset, nextValset, appHash, consHash, resHash)
 	header.LastBlockID = lastBlockID
+
 	return &types.SignedHeader{
 		Header: header,
 		Commit: pkz.signHeader(header, valset, first, last),

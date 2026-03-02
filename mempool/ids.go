@@ -37,8 +37,10 @@ func (ids *mempoolIDs) nextPeerID() uint16 {
 		ids.nextID++
 		_, idExists = ids.activeIDs[ids.nextID]
 	}
+
 	curID := ids.nextID
 	ids.nextID++
+
 	return curID
 }
 

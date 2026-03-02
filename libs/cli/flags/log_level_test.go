@@ -15,6 +15,7 @@ const (
 
 func TestParseLogLevel(t *testing.T) {
 	var buf bytes.Buffer
+
 	jsonLogger := log.NewTMJSONLoggerNoTS(&buf)
 
 	correctLogLevels := []struct {
@@ -55,6 +56,7 @@ func TestParseLogLevel(t *testing.T) {
 		buf.Reset()
 
 		logger.With("module", "mempool").With("module", "wire").Debug("Kingpin")
+
 		if have := strings.TrimSpace(buf.String()); c.expectedLogLines[0] != have {
 			t.Errorf("\nwant '%s'\nhave '%s'\nlevel '%s'", c.expectedLogLines[0], have, c.lvl)
 		}
@@ -62,6 +64,7 @@ func TestParseLogLevel(t *testing.T) {
 		buf.Reset()
 
 		logger.With("module", "mempool").Info("Kitty Pryde")
+
 		if have := strings.TrimSpace(buf.String()); c.expectedLogLines[1] != have {
 			t.Errorf("\nwant '%s'\nhave '%s'\nlevel '%s'", c.expectedLogLines[1], have, c.lvl)
 		}
@@ -69,6 +72,7 @@ func TestParseLogLevel(t *testing.T) {
 		buf.Reset()
 
 		logger.With("module", "mempool").Error("Mesmero")
+
 		if have := strings.TrimSpace(buf.String()); c.expectedLogLines[2] != have {
 			t.Errorf("\nwant '%s'\nhave '%s'\nlevel '%s'", c.expectedLogLines[2], have, c.lvl)
 		}
@@ -76,6 +80,7 @@ func TestParseLogLevel(t *testing.T) {
 		buf.Reset()
 
 		logger.With("module", "state").Info("Mind")
+
 		if have := strings.TrimSpace(buf.String()); c.expectedLogLines[3] != have {
 			t.Errorf("\nwant '%s'\nhave '%s'\nlevel '%s'", c.expectedLogLines[3], have, c.lvl)
 		}
@@ -83,6 +88,7 @@ func TestParseLogLevel(t *testing.T) {
 		buf.Reset()
 
 		logger.Debug("Gideon")
+
 		if have := strings.TrimSpace(buf.String()); c.expectedLogLines[4] != have {
 			t.Errorf("\nwant '%s'\nhave '%s'\nlevel '%s'", c.expectedLogLines[4], have, c.lvl)
 		}

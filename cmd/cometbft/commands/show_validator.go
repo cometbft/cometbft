@@ -37,5 +37,6 @@ func showValidator(*cobra.Command, []string) error {
 	}
 
 	fmt.Println(string(bz))
+
 	return nil
 }

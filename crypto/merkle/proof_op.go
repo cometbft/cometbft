@@ -39,7 +39,7 @@ func (poz ProofOperators) VerifyValue(root []byte, keypath string, value []byte)
 func (poz ProofOperators) Verify(root []byte, keypath string, args [][]byte) (err error) {
 	keys, err := KeyPathToKeys(keypath)
 	if err != nil {
-		return
+		return err
 	}
 
 	for i, op := range poz {
@@ -48,23 +48,29 @@ func (poz ProofOperators) Verify(root []byte, keypath string, args [][]byte) (er
 			if len(keys) == 0 {
 				return fmt.Errorf("key path has insufficient # of parts: expected no more keys but got %+v", string(key))
 			}
+
 			lastKey := keys[len(keys)-1]
 			if !bytes.Equal(lastKey, key) {
 				return fmt.Errorf("key mismatch on operation #%d: expected %+v but got %+v", i, string(lastKey), string(key))
 			}
+
 			keys = keys[:len(keys)-1]
 		}
+
 		args, err = op.Run(args)
 		if err != nil {
-			return
+			return err
 		}
 	}
+
 	if !bytes.Equal(root, args[0]) {
 		return fmt.Errorf("calculated root hash is invalid: expected %X but got %X", root, args[0])
 	}
+
 	if len(keys) != 0 {
 		return errors.New("keypath not consumed all")
 	}
+
 	return nil
 }
 
@@ -88,6 +94,7 @@ func (prt *ProofRuntime) RegisterOpDecoder(typ string, dec OpDecoder) {
 	if ok {
 		panic("already registered for type " + typ)
 	}
+
 	prt.decoders[typ] = dec
 }
 
@@ -96,6 +103,7 @@ func (prt *ProofRuntime) Decode(pop cmtcrypto.ProofOp) (ProofOperator, error) {
 	if decoder == nil {
 		return nil, fmt.Errorf("unrecognized proof type %v", pop.Type)
 	}
+
 	return decoder(pop)
 }
 
@@ -106,8 +114,10 @@ func (prt *ProofRuntime) DecodeProof(proof *cmtcrypto.ProofOps) (ProofOperators,
 		if err != nil {
 			return nil, fmt.Errorf("decoding a proof operator: %w", err)
 		}
+
 		poz = append(poz, operator)
 	}
+
 	return poz, nil
 }
 
@@ -126,6 +136,7 @@ func (prt *ProofRuntime) Verify(proof *cmtcrypto.ProofOps, root []byte, keypath 
 	if err != nil {
 		return fmt.Errorf("decoding proof: %w", err)
 	}
+
 	return poz.Verify(root, keypath, args)
 }
 

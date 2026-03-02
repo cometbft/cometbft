@@ -31,6 +31,7 @@ func TestNet_Peers(t *testing.T) {
 		for _, n := range node.Testnet.Nodes {
 			seen[n.Name] = (n.Name == node.Name) // we've clearly seen ourself
 		}
+
 		for _, peerInfo := range netInfo.Peers {
 			peer := node.Testnet.LookupNode(peerInfo.NodeInfo.Moniker)
 			require.NotNil(t, peer, "unknown node %v", peerInfo.NodeInfo.Moniker)

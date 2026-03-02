@@ -37,6 +37,7 @@ func compareInt(op1 *big.Int, op2 any) (int, bool, error) {
 		vF := new(big.Float)
 		vF.SetInt(op1)
 		return vF.Cmp(opVal), true, nil
+
 	default:
 		return -1, false, fmt.Errorf("unable to parse arguments, unexpected type: %T", op2)
 	}
@@ -77,15 +78,18 @@ func CheckBounds(ranges indexer.QueryRange, v any) (bool, error) {
 			if err != nil {
 				return false, err
 			}
+
 			if cmp == -1 || (isFloat && cmp == 0 && !ranges.IncludeLowerBound) {
 				return false, nil
 			}
 		}
+
 		if upperBound != nil {
 			cmp, isFloat, err := compareInt(vVal, upperBound)
 			if err != nil {
 				return false, err
 			}
+
 			if cmp == 1 || (isFloat && cmp == 0 && !ranges.IncludeUpperBound) {
 				return false, nil
 			}
@@ -97,15 +101,18 @@ func CheckBounds(ranges indexer.QueryRange, v any) (bool, error) {
 			if err != nil {
 				return false, err
 			}
+
 			if cmp == -1 || (cmp == 0 && isFloat && !ranges.IncludeLowerBound) {
 				return false, nil
 			}
 		}
+
 		if upperBound != nil {
 			cmp, isFloat, err := compareFloat(vVal, upperBound)
 			if err != nil {
 				return false, err
 			}
+
 			if cmp == 1 || (cmp == 0 && isFloat && !ranges.IncludeUpperBound) {
 				return false, nil
 			}
@@ -114,5 +121,6 @@ func CheckBounds(ranges indexer.QueryRange, v any) (bool, error) {
 	default:
 		return false, fmt.Errorf("invalid argument type in query: %T", v)
 	}
+
 	return true, nil
 }

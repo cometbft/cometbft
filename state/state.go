@@ -117,10 +117,12 @@ func (state State) Bytes() []byte {
 	if err != nil {
 		panic(err)
 	}
+
 	bz, err := proto.Marshal(sm)
 	if err != nil {
 		panic(err)
 	}
+
 	return bz
 }
 
@@ -144,16 +146,19 @@ func (state *State) ToProto() (*cmtstate.State, error) {
 
 	sm.LastBlockID = state.LastBlockID.ToProto()
 	sm.LastBlockTime = state.LastBlockTime
+
 	vals, err := state.Validators.ToProto()
 	if err != nil {
 		return nil, err
 	}
+
 	sm.Validators = vals
 
 	nVals, err := state.NextValidators.ToProto()
 	if err != nil {
 		return nil, err
 	}
+
 	sm.NextValidators = nVals
 
 	if state.LastBlockHeight >= 1 { // At Block 1 LastValidators is nil
@@ -161,6 +166,7 @@ func (state *State) ToProto() (*cmtstate.State, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		sm.LastValidators = lVals
 	}
 
@@ -174,7 +180,7 @@ func (state *State) ToProto() (*cmtstate.State, error) {
 }
 
 // FromProto takes a state proto message & returns the local state type
-func FromProto(pb *cmtstate.State) (*State, error) { //nolint:golint
+func FromProto(pb *cmtstate.State) (*State, error) {
 	if pb == nil {
 		return nil, errors.New("nil State")
 	}
@@ -189,6 +195,7 @@ func FromProto(pb *cmtstate.State) (*State, error) { //nolint:golint
 	if err != nil {
 		return nil, err
 	}
+
 	state.LastBlockID = *bi
 	state.LastBlockHeight = pb.LastBlockHeight
 	state.LastBlockTime = pb.LastBlockTime
@@ -197,12 +204,14 @@ func FromProto(pb *cmtstate.State) (*State, error) { //nolint:golint
 	if err != nil {
 		return nil, err
 	}
+
 	state.Validators = vals
 
 	nVals, err := types.ValidatorSetFromProto(pb.NextValidators)
 	if err != nil {
 		return nil, err
 	}
+
 	state.NextValidators = nVals
 
 	if state.LastBlockHeight >= 1 { // At Block 1 LastValidators is nil
@@ -210,6 +219,7 @@ func FromProto(pb *cmtstate.State) (*State, error) { //nolint:golint
 		if err != nil {
 			return nil, err
 		}
+
 		state.LastValidators = lVals
 	} else {
 		state.LastValidators = types.NewValidatorSet(nil)
@@ -237,7 +247,6 @@ func (state State) MakeBlock(
 	evidence []types.Evidence,
 	proposerAddress []byte,
 ) (*types.Block, error) {
-
 	// Build base block with block data.
 	block := types.MakeBlock(height, txs, lastCommit, evidence)
 
@@ -250,6 +259,7 @@ func (state State) MakeBlock(
 		if err != nil {
 			return nil, fmt.Errorf("error making block while calculating median time: %w", err)
 		}
+
 		timestamp = ts
 	}
 
@@ -282,12 +292,14 @@ func MedianTime(commit *types.Commit, validators *types.ValidatorSet) (time.Time
 		if commitSig.BlockIDFlag == types.BlockIDFlagAbsent {
 			continue
 		}
+
 		_, validator := validators.GetByAddress(commitSig.ValidatorAddress)
 		// If there's no condition, TestValidateBlockCommit panics; not needed normally.
 		if validator == nil {
 			return time.Time{}, fmt.Errorf("commit validator not found in validator set: %X",
 				commitSig.ValidatorAddress)
 		}
+
 		totalVotingPower += validator.VotingPower
 		weightedTimes[i] = cmttime.NewWeightedTime(commitSig.Timestamp, validator.VotingPower)
 	}
@@ -307,6 +319,7 @@ func MakeGenesisStateFromFile(genDocFile string) (State, error) {
 	if err != nil {
 		return State{}, err
 	}
+
 	return MakeGenesisState(genDoc)
 }
 
@@ -316,10 +329,12 @@ func MakeGenesisDocFromFile(genDocFile string) (*types.GenesisDoc, error) {
 	if err != nil {
 		return nil, fmt.Errorf("couldn't read GenesisDoc file: %v", err)
 	}
+
 	genDoc, err := types.GenesisDocFromJSON(genDocJSON)
 	if err != nil {
 		return nil, fmt.Errorf("error reading GenesisDoc: %v", err)
 	}
+
 	return genDoc, nil
 }
 
@@ -339,6 +354,7 @@ func MakeGenesisState(genDoc *types.GenesisDoc) (State, error) {
 		for i, val := range genDoc.Validators {
 			validators[i] = types.NewValidator(val.PubKey, val.Power)
 		}
+
 		validatorSet = types.NewValidatorSet(validators)
 		nextValidatorSet = types.NewValidatorSet(validators).CopyIncrementProposerPriority(1)
 	}

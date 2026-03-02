@@ -50,12 +50,15 @@ func BenchmarkLoadValidators(b *testing.B) {
 
 	config := test.ResetTestRoot("state_")
 	defer os.RemoveAll(config.RootDir)
+
 	dbType := dbm.BackendType(config.DBBackend)
 	stateDB, err := dbm.NewDB("state", dbType, config.DBDir())
 	require.NoError(b, err)
+
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
+
 	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
 	if err != nil {
 		b.Fatal(err)
@@ -67,7 +70,6 @@ func BenchmarkLoadValidators(b *testing.B) {
 	require.NoError(b, err)
 
 	for i := 10; i < 10000000000; i *= 10 { // 10, 100, 1000, ...
-
 		if err := sm.SaveValidatorsInfo(stateDB,
 			int64(i), state.LastHeightValidatorsChanged, state.NextValidators); err != nil {
 			b.Fatal(err)
@@ -115,7 +117,6 @@ func TestPruneStates(t *testing.T) {
 		"prune when evidence height < height": {20, 1, 18, 17, false, []int64{13, 17, 18, 19, 20}, []int64{15, 18, 19, 20}, []int64{18, 19, 20}},
 	}
 	for name, tc := range testcases {
-
 		t.Run(name, func(t *testing.T) {
 			db := dbm.NewMemDB()
 			stateStore := sm.NewStore(db, sm.StoreOptions{
@@ -137,6 +138,7 @@ func TestPruneStates(t *testing.T) {
 				if valsChanged == 0 || h%10 == 2 {
 					valsChanged = h + 1 // Have to add 1, since NextValidators is what's stored
 				}
+
 				if paramsChanged == 0 || h%10 == 5 {
 					paramsChanged = h
 				}
@@ -177,6 +179,7 @@ func TestPruneStates(t *testing.T) {
 				require.Error(t, err)
 				return
 			}
+
 			require.NoError(t, err)
 
 			expectVals := sliceToMap(tc.expectVals)
@@ -238,6 +241,7 @@ func sliceToMap(s []int64) map[int64]bool {
 	for _, i := range s {
 		m[i] = true
 	}
+
 	return m
 }
 
@@ -339,6 +343,7 @@ func TestFinalizeBlockRecoveryUsingLegacyABCIResponses(t *testing.T) {
 			Height: height,
 		}
 	)
+
 	bz, err := legacyResp.Marshal()
 	require.NoError(t, err)
 	// should keep this in parity with state/store.go

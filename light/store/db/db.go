@@ -29,6 +29,7 @@ type dbs struct {
 // want to use one DB with many light clients).
 func New(db dbm.DB, prefix string) store.Store {
 	size := uint16(0)
+
 	bz, err := db.Get(sizeKey)
 	if err == nil && len(bz) > 0 {
 		size = unmarshalSize(bz)
@@ -60,15 +61,19 @@ func (s *dbs) SaveLightBlock(lb *types.LightBlock) error {
 
 	b := s.db.NewBatch()
 	defer b.Close()
+
 	if err = b.Set(s.lbKey(lb.Height), lbBz); err != nil {
 		return err
 	}
+
 	if err = b.Set(sizeKey, marshalSize(s.size+1)); err != nil {
 		return err
 	}
+
 	if err = b.WriteSync(); err != nil {
 		return err
 	}
+
 	s.size++
 
 	return nil
@@ -88,15 +93,19 @@ func (s *dbs) DeleteLightBlock(height int64) error {
 
 	b := s.db.NewBatch()
 	defer b.Close()
+
 	if err := b.Delete(s.lbKey(height)); err != nil {
 		return err
 	}
+
 	if err := b.Set(sizeKey, marshalSize(s.size-1)); err != nil {
 		return err
 	}
+
 	if err := b.WriteSync(); err != nil {
 		return err
 	}
+
 	s.size--
 
 	return nil
@@ -114,11 +123,13 @@ func (s *dbs) LightBlock(height int64) (*types.LightBlock, error) {
 	if err != nil {
 		panic(err)
 	}
+
 	if len(bz) == 0 {
 		return nil, store.ErrLightBlockNotFound
 	}
 
 	var lbpb cmtproto.LightBlock
+
 	err = lbpb.Unmarshal(bz)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal error: %w", err)
@@ -147,10 +158,12 @@ func (s *dbs) LastLightBlockHeight() (int64, error) {
 
 	for itr.Valid() {
 		key := itr.Key()
+
 		_, height, ok := parseLbKey(key)
 		if ok {
 			return height, nil
 		}
+
 		itr.Next()
 	}
 
@@ -172,10 +185,12 @@ func (s *dbs) FirstLightBlockHeight() (int64, error) {
 
 	for itr.Valid() {
 		key := itr.Key()
+
 		_, height, ok := parseLbKey(key)
 		if ok {
 			return height, nil
 		}
+
 		itr.Next()
 	}
 
@@ -202,12 +217,15 @@ func (s *dbs) LightBlockBefore(height int64) (*types.LightBlock, error) {
 
 	for itr.Valid() {
 		key := itr.Key()
+
 		_, existingHeight, ok := parseLbKey(key)
 		if ok {
 			return s.LightBlock(existingHeight)
 		}
+
 		itr.Next()
 	}
+
 	if err = itr.Error(); err != nil {
 		return nil, err
 	}
@@ -228,6 +246,7 @@ func (s *dbs) Prune(size uint16) error {
 	if sSize <= size { // nothing to prune
 		return nil
 	}
+
 	numToPrune := sSize - size
 
 	// 2) Iterate over headers and perform a batch operation.
@@ -246,16 +265,20 @@ func (s *dbs) Prune(size uint16) error {
 	pruned := 0
 	for itr.Valid() && numToPrune > 0 {
 		key := itr.Key()
+
 		_, height, ok := parseLbKey(key)
 		if ok {
 			if err = b.Delete(s.lbKey(height)); err != nil {
 				return err
 			}
 		}
+
 		itr.Next()
+
 		numToPrune--
 		pruned++
 	}
+
 	if err = itr.Error(); err != nil {
 		return err
 	}
@@ -298,22 +321,28 @@ func parseKey(key []byte) (part string, prefix string, height int64, ok bool) {
 	if submatch == nil {
 		return "", "", 0, false
 	}
+
 	part = string(submatch[1])
 	prefix = string(submatch[2])
+
 	height, err := strconv.ParseInt(string(submatch[3]), 10, 64)
 	if err != nil {
 		return "", "", 0, false
 	}
+
 	ok = true // good!
+
 	return
 }
 
 func parseLbKey(key []byte) (prefix string, height int64, ok bool) {
 	var part string
+
 	part, prefix, height, ok = parseKey(key)
 	if part != "lb" {
 		return "", 0, false
 	}
+
 	return
 }
 

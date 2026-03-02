@@ -66,6 +66,7 @@ func Serve(listener net.Listener, handler http.Handler, logger log.Logger, confi
 	}
 	err := s.Serve(listener)
 	logger.Info("RPC HTTP server stopped", "err", err)
+
 	return err
 }
 
@@ -93,6 +94,7 @@ func ServeTLS(
 	err := s.ServeTLS(listener, certFile, keyFile)
 
 	logger.Error("RPC HTTPS server stopped", "err", err)
+
 	return err
 }
 
@@ -117,6 +119,7 @@ func WriteRPCResponseHTTPError(
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpCode)
 	_, err = w.Write(jsonBytes)
+
 	return err
 }
 
@@ -149,12 +152,16 @@ func writeRPCResponseHTTP(w http.ResponseWriter, headers []httpHeader, res ...ty
 	if err != nil {
 		return fmt.Errorf("json marshal: %w", err)
 	}
+
 	w.Header().Set("Content-Type", "application/json")
+
 	for _, header := range headers {
 		w.Header().Set(header.name, header.value)
 	}
+
 	w.WriteHeader(200)
 	_, err = w.Write(jsonBytes)
+
 	return err
 }
 
@@ -219,9 +226,11 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 
 			// Finally, log.
 			durationMS := time.Since(begin).Nanoseconds() / 1000000
+
 			if rww.Status == -1 {
 				rww.Status = 200
 			}
+
 			logger.Debug("served RPC HTTP response",
 				"method", r.Method,
 				"url", r.URL,
@@ -269,11 +278,14 @@ func Listen(addr string, maxOpenConnections int) (listener net.Listener, err err
 			addr,
 		)
 	}
+
 	proto, addr := parts[0], parts[1]
+
 	listener, err = net.Listen(proto, addr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to listen on %v: %v", addr, err)
 	}
+
 	if maxOpenConnections > 0 {
 		listener = netutil.LimitListener(listener, maxOpenConnections)
 	}
@@ -295,9 +307,11 @@ func PreChecksHandler(next http.Handler, config *Config) http.Handler {
 		// It cannot be negative because the config.toml validation requires it to be
 		// greater than or equal to 0
 		if config.MaxRequestBatchSize > 0 {
-			var requests []types.RPCRequest
-			var responses []types.RPCResponse
-			var err error
+			var (
+				requests  []types.RPCRequest
+				responses []types.RPCResponse
+				err       error
+			)
 
 			data, err := io.ReadAll(r.Body)
 			if err != nil {

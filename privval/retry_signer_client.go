@@ -58,8 +58,10 @@ func (sc *RetrySignerClient) GetPubKey() (crypto.PubKey, error) {
 		if _, ok := err.(*RemoteSignerError); ok {
 			return nil, err
 		}
+
 		time.Sleep(sc.timeout)
 	}
+
 	return nil, fmt.Errorf("exhausted all attempts to get pubkey: %w", err)
 }
 
@@ -74,8 +76,10 @@ func (sc *RetrySignerClient) SignVote(chainID string, vote *cmtproto.Vote) error
 		if _, ok := err.(*RemoteSignerError); ok {
 			return err
 		}
+
 		time.Sleep(sc.timeout)
 	}
+
 	return fmt.Errorf("exhausted all attempts to sign vote: %w", err)
 }
 
@@ -90,7 +94,9 @@ func (sc *RetrySignerClient) SignProposal(chainID string, proposal *cmtproto.Pro
 		if _, ok := err.(*RemoteSignerError); ok {
 			return err
 		}
+
 		time.Sleep(sc.timeout)
 	}
+
 	return fmt.Errorf("exhausted all attempts to sign proposal: %w", err)
 }

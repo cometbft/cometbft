@@ -23,6 +23,7 @@ func (q Query) String() string {
 	for i, cond := range q {
 		ss[i] = cond.String()
 	}
+
 	return strings.Join(ss, " AND ")
 }
 
@@ -42,6 +43,7 @@ func (c Condition) String() string {
 	if c.Arg != nil {
 		return s + " " + c.Arg.String()
 	}
+
 	return s
 }
 
@@ -55,6 +57,7 @@ func (a *Arg) String() string {
 	if a == nil {
 		return ""
 	}
+
 	switch a.Type {
 	case TString:
 		return "'" + a.text + "'"
@@ -73,27 +76,35 @@ func (a *Arg) Number() *big.Float {
 	if a == nil {
 		return nil
 	}
+
 	intVal := new(big.Int)
 	if _, ok := intVal.SetString(a.text, 10); !ok {
 		f, _, err := big.ParseFloat(a.text, 10, 125, big.ToNearestEven)
 		if err != nil {
 			return nil
 		}
+
 		return f
 	}
 	// If it is indeed a big integer, we make sure to convert it to a float with enough precision
 	// to represent all the bits
 	bitLen := uint(intVal.BitLen())
-	var f *big.Float
-	var err error
+
+	var (
+		f   *big.Float
+		err error
+	)
+
 	if bitLen <= 64 {
 		f, _, err = big.ParseFloat(a.text, 10, 0, big.ToNearestEven)
 	} else {
 		f, _, err = big.ParseFloat(a.text, 10, bitLen, big.ToNearestEven)
 	}
+
 	if err != nil {
 		return nil
 	}
+
 	return f
 }
 
@@ -104,6 +115,7 @@ func (a *Arg) Time() time.Time {
 	if a == nil {
 		return ts
 	}
+
 	var err error
 	switch a.Type {
 	case TDate:
@@ -111,9 +123,11 @@ func (a *Arg) Time() time.Time {
 	case TTime:
 		ts, err = ParseTime(a.text)
 	}
+
 	if err == nil {
 		return ts
 	}
+
 	return time.Time{}
 }
 
@@ -142,17 +156,21 @@ func (p *Parser) Parse() (Query, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	conds := []Condition{cond}
 	for p.scanner.Next() != io.EOF {
 		if tok := p.scanner.Token(); tok != TAnd {
 			return nil, fmt.Errorf("offset %d: got %v, want %v", p.scanner.Pos(), tok, TAnd)
 		}
+
 		cond, err := p.parseCond()
 		if err != nil {
 			return nil, err
 		}
+
 		conds = append(conds, cond)
 	}
+
 	return conds, nil
 }
 
@@ -162,10 +180,12 @@ func (p *Parser) parseCond() (Condition, error) {
 	if err := p.require(TTag); err != nil {
 		return cond, err
 	}
+
 	cond.Tag = p.scanner.Text()
 	if err := p.require(TLeq, TGeq, TLt, TGt, TEq, TContains, TExists); err != nil {
 		return cond, err
 	}
+
 	cond.Op = p.scanner.Token()
 	cond.opText = p.scanner.Text()
 
@@ -183,10 +203,13 @@ func (p *Parser) parseCond() (Condition, error) {
 	default:
 		return cond, fmt.Errorf("offset %d: unexpected operator %v", p.scanner.Pos(), cond.Op)
 	}
+
 	if err != nil {
 		return cond, err
 	}
+
 	cond.Arg = &Arg{Type: p.scanner.Token(), text: p.scanner.Text()}
+
 	return cond, nil
 }
 
@@ -196,12 +219,14 @@ func (p *Parser) require(tokens ...Token) error {
 	if err := p.scanner.Next(); err != nil {
 		return fmt.Errorf("offset %d: %w", p.scanner.Pos(), err)
 	}
+
 	got := p.scanner.Token()
 	for _, tok := range tokens {
 		if tok == got {
 			return nil
 		}
 	}
+
 	return fmt.Errorf("offset %d: got %v, wanted %s", p.scanner.Pos(), got, tokLabel(tokens))
 }
 
@@ -210,11 +235,14 @@ func tokLabel(tokens []Token) string {
 	if len(tokens) == 1 {
 		return tokens[0].String()
 	}
+
 	last := len(tokens) - 1
+
 	ss := make([]string, len(tokens)-1)
 	for i, tok := range tokens[:last] {
 		ss[i] = tok.String()
 	}
+
 	return strings.Join(ss, ", ") + " or " + tokens[last].String()
 }
 

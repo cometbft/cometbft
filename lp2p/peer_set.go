@@ -99,9 +99,11 @@ func (ps *PeerSet) Add(addrInfo peer.AddrInfo, opts PeerAddOptions) (*Peer, erro
 
 	if err := p.Start(); err != nil {
 		ps.unset(id)
+
 		if opts.OnStartFailed != nil {
 			opts.OnStartFailed(p, err)
 		}
+
 		return nil, errors.Wrap(err, "unable to start peer")
 	}
 

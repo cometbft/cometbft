@@ -44,6 +44,7 @@ func TestBlockAddEvidence(t *testing.T) {
 
 	ev, err := NewMockDuplicateVoteEvidenceWithValidator(h, time.Now(), vals[0], "block-test-chain")
 	require.NoError(t, err)
+
 	evList := []Evidence{ev}
 
 	block := MakeBlock(h, txs, extCommit.ToCommit(), evList)
@@ -62,10 +63,12 @@ func TestBlockValidateBasic(t *testing.T) {
 	voteSet, valSet, vals := randVoteSet(h-1, 1, cmtproto.PrecommitType, 10, 1, false)
 	extCommit, err := MakeExtCommit(lastID, h-1, 1, voteSet, vals, time.Now(), false)
 	require.NoError(t, err)
+
 	commit := extCommit.ToCommit()
 
 	ev, err := NewMockDuplicateVoteEvidenceWithValidator(h, time.Now(), vals[0], "block-test-chain")
 	require.NoError(t, err)
+
 	evList := []Evidence{ev}
 
 	testCases := []struct {
@@ -136,6 +139,7 @@ func TestBlockMakePartSetWithEvidence(t *testing.T) {
 
 	ev, err := NewMockDuplicateVoteEvidenceWithValidator(h, time.Now(), vals[0], "block-test-chain")
 	require.NoError(t, err)
+
 	evList := []Evidence{ev}
 
 	partSet, err := MakeBlock(h, []Tx{Tx("Hello World")}, extCommit.ToCommit(), evList).MakePartSet(512)
@@ -156,6 +160,7 @@ func TestBlockHashesTo(t *testing.T) {
 
 	ev, err := NewMockDuplicateVoteEvidenceWithValidator(h, time.Now(), vals[0], "block-test-chain")
 	require.NoError(t, err)
+
 	evList := []Evidence{ev}
 
 	block := MakeBlock(h, []Tx{Tx("Hello World")}, extCommit.ToCommit(), evList)
@@ -190,6 +195,7 @@ func makeBlockIDRandom() BlockID {
 	)
 	rand.Read(blockHash)   //nolint: errcheck // ignore errcheck for read
 	rand.Read(partSetHash) //nolint: errcheck // ignore errcheck for read
+
 	return BlockID{blockHash, PartSetHeader{123, partSetHash}}
 }
 
@@ -200,6 +206,7 @@ func makeBlockID(hash []byte, partSetSize uint32, partSetHash []byte) BlockID {
 	)
 	copy(h, hash)
 	copy(psH, partSetHash)
+
 	return BlockID{
 		Hash: h,
 		PartSetHeader: PartSetHeader{
@@ -238,6 +245,7 @@ func TestCommit(t *testing.T) {
 	assert.Equal(t, h-1, extCommit.Height)
 	assert.EqualValues(t, 1, extCommit.Round)
 	assert.Equal(t, cmtproto.PrecommitType, cmtproto.SignedMsgType(extCommit.Type()))
+
 	if extCommit.Size() <= 0 {
 		t.Fatalf("commit %v has a zero or negative size: %d", extCommit, extCommit.Size())
 	}
@@ -375,20 +383,27 @@ func TestHeaderHash(t *testing.T) {
 					case time.Time:
 						bz, err := gogotypes.StdTimeMarshal(f)
 						require.NoError(t, err)
+
 						byteSlices = append(byteSlices, bz)
+
 					case cmtversion.Consensus:
 						bz, err := f.Marshal()
 						require.NoError(t, err)
+
 						byteSlices = append(byteSlices, bz)
+
 					case BlockID:
 						pbbi := f.ToProto()
 						bz, err := pbbi.Marshal()
 						require.NoError(t, err)
+
 						byteSlices = append(byteSlices, bz)
+
 					default:
 						t.Errorf("unknown type %T", f)
 					}
 				}
+
 				assert.Equal(t,
 					bytes.HexBytes(merkle.HashFromByteSlices(byteSlices)), tc.header.Hash())
 			}
@@ -437,10 +452,12 @@ func randCommit(now time.Time) *Commit {
 	lastID := makeBlockIDRandom()
 	h := int64(3)
 	voteSet, _, vals := randVoteSet(h-1, 1, cmtproto.PrecommitType, 10, 1, false)
+
 	extCommit, err := MakeExtCommit(lastID, h-1, 1, voteSet, vals, now, false)
 	if err != nil {
 		panic(err)
 	}
+
 	return extCommit.ToCommit()
 }
 
@@ -449,6 +466,7 @@ func hexBytesFromString(s string) bytes.HexBytes {
 	if err != nil {
 		panic(err)
 	}
+
 	return bytes.HexBytes(b)
 }
 
@@ -532,15 +550,18 @@ func TestVoteSetToExtendedCommit(t *testing.T) {
 			blockID := makeBlockIDRandom()
 
 			valSet, vals := RandValidatorSet(10, 1)
+
 			var voteSet *VoteSet
 			if testCase.includeExtension {
 				voteSet = NewExtendedVoteSet("test_chain_id", 3, 1, cmtproto.PrecommitType, valSet)
 			} else {
 				voteSet = NewVoteSet("test_chain_id", 3, 1, cmtproto.PrecommitType, valSet)
 			}
+
 			for i := 0; i < len(vals); i++ {
 				pubKey, err := vals[i].GetPubKey()
 				require.NoError(t, err)
+
 				vote := &Vote{
 					ValidatorAddress: pubKey.Address(),
 					ValidatorIndex:   int32(i),
@@ -553,18 +574,22 @@ func TestVoteSetToExtendedCommit(t *testing.T) {
 				v := vote.ToProto()
 				err = vals[i].SignVote(voteSet.ChainID(), v)
 				require.NoError(t, err)
+
 				vote.Signature = v.Signature
 				if testCase.includeExtension {
 					vote.ExtensionSignature = v.ExtensionSignature
 				}
+
 				added, err := voteSet.AddVote(vote)
 				require.NoError(t, err)
 				require.True(t, added)
 			}
+
 			var veHeight int64
 			if testCase.includeExtension {
 				veHeight = 1
 			}
+
 			ec := voteSet.MakeExtendedCommit(ABCIParams{VoteExtensionsEnableHeight: veHeight})
 
 			for i := int32(0); int(i) < len(vals); i++ {
@@ -627,6 +652,7 @@ func TestExtendedCommitToVoteSet(t *testing.T) {
 			}
 
 			chainID := voteSet.ChainID()
+
 			var voteSet2 *VoteSet
 			if testCase.includeExtension {
 				voteSet2 = extCommit.ToExtendedVoteSet(chainID, valSet)
@@ -679,6 +705,7 @@ func TestCommitToVoteSetWithVotesForNilBlock(t *testing.T) {
 			for i := 0; i < tc.numVotes[n]; i++ {
 				pubKey, err := vals[vi].GetPubKey()
 				require.NoError(t, err)
+
 				vote := &Vote{
 					ValidatorAddress: pubKey.Address(),
 					ValidatorIndex:   vi,
@@ -759,11 +786,13 @@ func TestBlockProtoBuf(t *testing.T) {
 	evidenceTime := time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC)
 	evi, err := NewMockDuplicateVoteEvidence(h, evidenceTime, "block-test-chain")
 	require.NoError(t, err)
+
 	b2.Evidence = EvidenceData{Evidence: EvidenceList{evi}}
 	b2.EvidenceHash = b2.Evidence.Hash()
 
 	b3 := MakeBlock(h, []Tx{}, c1, []Evidence{})
 	b3.ProposerAddress = cmtrand.Bytes(crypto.AddressSize)
+
 	testCases := []struct {
 		msg      string
 		b1       *Block
@@ -799,6 +828,7 @@ func TestBlockProtoBuf(t *testing.T) {
 func TestDataProtoBuf(t *testing.T) {
 	data := &Data{Txs: Txs{Tx([]byte{1}), Tx([]byte{2}), Tx([]byte{3})}}
 	data2 := &Data{Txs: Txs{}}
+
 	testCases := []struct {
 		msg     string
 		data1   *Data
@@ -809,6 +839,7 @@ func TestDataProtoBuf(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		protoData := tc.data1.ToProto()
+
 		d, err := DataFromProto(&protoData)
 		if tc.expPass {
 			require.NoError(t, err, tc.msg)
@@ -822,8 +853,10 @@ func TestDataProtoBuf(t *testing.T) {
 // TestEvidenceDataProtoBuf ensures parity in converting to and from proto.
 func TestEvidenceDataProtoBuf(t *testing.T) {
 	const chainID = "mychain"
+
 	ev, err := NewMockDuplicateVoteEvidence(math.MaxInt64, time.Now(), chainID)
 	require.NoError(t, err)
+
 	data := &EvidenceData{Evidence: EvidenceList{ev}}
 	_ = data.ByteSize()
 	testCases := []struct {
@@ -846,6 +879,7 @@ func TestEvidenceDataProtoBuf(t *testing.T) {
 		}
 
 		eviD := new(EvidenceData)
+
 		err = eviD.FromProto(protoData)
 		if tc.expPass2 {
 			require.NoError(t, err, tc.msg)
@@ -898,6 +932,7 @@ func TestHeaderProto(t *testing.T) {
 	for _, tt := range tc {
 		t.Run(tt.msg, func(t *testing.T) {
 			pb := tt.h1.ToProto()
+
 			h, err := HeaderFromProto(pb)
 			if tt.expPass {
 				require.NoError(t, err, tt.msg)
@@ -911,6 +946,7 @@ func TestHeaderProto(t *testing.T) {
 
 func TestBlockIDProtoBuf(t *testing.T) {
 	blockID := makeBlockID([]byte("hash"), 2, []byte("part_set_hash"))
+
 	testCases := []struct {
 		msg     string
 		bid1    *BlockID

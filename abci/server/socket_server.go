@@ -51,6 +51,7 @@ func NewSocketServer(protoAddr string, app types.Application) service.Service {
 		conns:    make(map[int]net.Conn),
 	}
 	s.BaseService = *service.NewBaseService(nil, "ABCIServer", s)
+
 	return s
 }
 
@@ -78,8 +79,10 @@ func (s *SocketServer) OnStop() {
 
 	s.connsMtx.Lock()
 	defer s.connsMtx.Unlock()
+
 	for id, conn := range s.conns {
 		delete(s.conns, id)
+
 		if err := conn.Close(); err != nil {
 			s.Logger.Error("Error closing connection", "id", id, "conn", conn, "err", err)
 		}
@@ -108,6 +111,7 @@ func (s *SocketServer) rmConn(connID int) error {
 	}
 
 	delete(s.conns, connID)
+
 	return conn.Close()
 }
 
@@ -115,12 +119,15 @@ func (s *SocketServer) acceptConnectionsRoutine() {
 	for {
 		// Accept a connection
 		s.Logger.Info("Waiting for new connection...")
+
 		conn, err := s.listener.Accept()
 		if err != nil {
 			if !s.IsRunning() {
 				return // Ignore error from listener closing.
 			}
+
 			s.Logger.Error("Failed to accept connection", "err", err)
+
 			continue
 		}
 
@@ -170,20 +177,24 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 		r := recover()
 		if r != nil {
 			const size = 64 << 10
+
 			buf := make([]byte, size)
 			buf = buf[:runtime.Stack(buf, false)]
+
 			err := fmt.Errorf("recovered from panic: %v\n%s", r, buf)
 			if !s.isLoggerSet {
 				fmt.Fprintln(os.Stderr, err)
 			}
+
 			closeConn <- err
+
 			s.appMtx.Unlock()
 		}
 	}()
 
 	for {
-
 		req := &types.Request{}
+
 		err := types.ReadMessage(bufReader, req)
 		if err != nil {
 			if err == io.EOF {
@@ -191,9 +202,12 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 			} else {
 				closeConn <- fmt.Errorf("error reading message: %w", err)
 			}
+
 			return
 		}
+
 		s.appMtx.Lock()
+
 		resp, err := s.handleRequest(context.TODO(), req)
 		if err != nil {
 			// any error either from the application or because of an unknown request
@@ -203,6 +217,7 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 		} else {
 			responses <- resp
 		}
+
 		s.appMtx.Unlock()
 	}
 }
@@ -219,85 +234,113 @@ func (s *SocketServer) handleRequest(ctx context.Context, req *types.Request) (*
 		if err != nil {
 			return nil, err
 		}
+
 		return types.ToResponseInfo(res), nil
+
 	case *types.Request_CheckTx:
 		res, err := s.app.CheckTx(ctx, r.CheckTx)
 		if err != nil {
 			return nil, err
 		}
+
 		return types.ToResponseCheckTx(res), nil
+
 	case *types.Request_Commit:
 		res, err := s.app.Commit(ctx, r.Commit)
 		if err != nil {
 			return nil, err
 		}
+
 		return types.ToResponseCommit(res), nil
+
 	case *types.Request_Query:
 		res, err := s.app.Query(ctx, r.Query)
 		if err != nil {
 			return nil, err
 		}
+
 		return types.ToResponseQuery(res), nil
+
 	case *types.Request_InitChain:
 		res, err := s.app.InitChain(ctx, r.InitChain)
 		if err != nil {
 			return nil, err
 		}
+
 		return types.ToResponseInitChain(res), nil
+
 	case *types.Request_FinalizeBlock:
 		res, err := s.app.FinalizeBlock(ctx, r.FinalizeBlock)
 		if err != nil {
 			return nil, err
 		}
+
 		return types.ToResponseFinalizeBlock(res), nil
+
 	case *types.Request_ListSnapshots:
 		res, err := s.app.ListSnapshots(ctx, r.ListSnapshots)
 		if err != nil {
 			return nil, err
 		}
+
 		return types.ToResponseListSnapshots(res), nil
+
 	case *types.Request_OfferSnapshot:
 		res, err := s.app.OfferSnapshot(ctx, r.OfferSnapshot)
 		if err != nil {
 			return nil, err
 		}
+
 		return types.ToResponseOfferSnapshot(res), nil
+
 	case *types.Request_PrepareProposal:
 		res, err := s.app.PrepareProposal(ctx, r.PrepareProposal)
 		if err != nil {
 			return nil, err
 		}
+
 		return types.ToResponsePrepareProposal(res), nil
+
 	case *types.Request_ProcessProposal:
 		res, err := s.app.ProcessProposal(ctx, r.ProcessProposal)
 		if err != nil {
 			return nil, err
 		}
+
 		return types.ToResponseProcessProposal(res), nil
+
 	case *types.Request_LoadSnapshotChunk:
 		res, err := s.app.LoadSnapshotChunk(ctx, r.LoadSnapshotChunk)
 		if err != nil {
 			return nil, err
 		}
+
 		return types.ToResponseLoadSnapshotChunk(res), nil
+
 	case *types.Request_ApplySnapshotChunk:
 		res, err := s.app.ApplySnapshotChunk(ctx, r.ApplySnapshotChunk)
 		if err != nil {
 			return nil, err
 		}
+
 		return types.ToResponseApplySnapshotChunk(res), nil
+
 	case *types.Request_ExtendVote:
 		res, err := s.app.ExtendVote(ctx, r.ExtendVote)
 		if err != nil {
 			return nil, err
 		}
+
 		return types.ToResponseExtendVote(res), nil
+
 	case *types.Request_VerifyVoteExtension:
 		res, err := s.app.VerifyVoteExtension(ctx, r.VerifyVoteExtension)
 		if err != nil {
 			return nil, err
 		}
+
 		return types.ToResponseVerifyVoteExtension(res), nil
+
 	default:
 		return nil, ErrUnknownRequest{Request: *req}
 	}
@@ -308,11 +351,13 @@ func (s *SocketServer) handleResponses(closeConn chan error, conn io.Writer, res
 	bufWriter := bufio.NewWriter(conn)
 	for {
 		res := <-responses
+
 		err := types.WriteMessage(res, bufWriter)
 		if err != nil {
 			closeConn <- fmt.Errorf("error writing message: %w", err)
 			return
 		}
+
 		if _, ok := res.Value.(*types.Response_Flush); ok {
 			err = bufWriter.Flush()
 			if err != nil {

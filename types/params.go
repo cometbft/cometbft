@@ -84,9 +84,11 @@ func (a ABCIParams) VoteExtensionsEnabled(h int64) bool {
 	if h < 1 {
 		panic(fmt.Errorf("cannot check if vote extensions enabled for height %d (< 1)", h))
 	}
+
 	if a.VoteExtensionsEnableHeight == 0 {
 		return false
 	}
+
 	return a.VoteExtensionsEnableHeight <= h
 }
 
@@ -145,6 +147,7 @@ func IsValidPubkeyType(params ValidatorParams, pubkeyType string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -154,11 +157,13 @@ func (params ConsensusParams) ValidateBasic() error {
 	if params.Block.MaxBytes == 0 {
 		return fmt.Errorf("block.MaxBytes cannot be 0")
 	}
+
 	if params.Block.MaxBytes < -1 {
 		return fmt.Errorf("block.MaxBytes must be -1 or greater than 0. Got %d",
 
 			params.Block.MaxBytes)
 	}
+
 	if params.Block.MaxBytes > MaxBlockSizeBytes {
 		return fmt.Errorf("block.MaxBytes is too big. %d > %d",
 			params.Block.MaxBytes, MaxBlockSizeBytes)
@@ -183,6 +188,7 @@ func (params ConsensusParams) ValidateBasic() error {
 	if maxBytes == -1 {
 		maxBytes = int64(MaxBlockSizeBytes)
 	}
+
 	if params.Evidence.MaxBytes > maxBytes {
 		return fmt.Errorf("evidence.MaxBytesEvidence is greater than upper bound, %d > %d",
 			params.Evidence.MaxBytes, maxBytes)
@@ -294,6 +300,7 @@ func (params ConsensusParams) Hash() []byte {
 	if err != nil {
 		panic(err)
 	}
+
 	return hasher.Sum(nil)
 }
 
@@ -311,22 +318,27 @@ func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) Consensu
 		res.Block.MaxBytes = params2.Block.MaxBytes
 		res.Block.MaxGas = params2.Block.MaxGas
 	}
+
 	if params2.Evidence != nil {
 		res.Evidence.MaxAgeNumBlocks = params2.Evidence.MaxAgeNumBlocks
 		res.Evidence.MaxAgeDuration = params2.Evidence.MaxAgeDuration
 		res.Evidence.MaxBytes = params2.Evidence.MaxBytes
 	}
+
 	if params2.Validator != nil {
 		// Copy params2.Validator.PubkeyTypes, and set result's value to the copy.
 		// This avoids having to initialize the slice to 0 values, and then write to it again.
 		res.Validator.PubKeyTypes = append([]string{}, params2.Validator.PubKeyTypes...)
 	}
+
 	if params2.Version != nil {
 		res.Version.App = params2.Version.App
 	}
+
 	if params2.Abci != nil {
 		res.ABCI.VoteExtensionsEnableHeight = params2.Abci.GetVoteExtensionsEnableHeight()
 	}
+
 	return res
 }
 
@@ -374,5 +386,6 @@ func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams
 	if pbParams.Abci != nil {
 		c.ABCI.VoteExtensionsEnableHeight = pbParams.Abci.GetVoteExtensionsEnableHeight()
 	}
+
 	return c
 }

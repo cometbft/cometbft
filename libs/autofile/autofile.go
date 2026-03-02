@@ -59,10 +59,12 @@ type AutoFile struct {
 // permissions got changed (should be 0600)).
 func OpenAutoFile(path string) (*AutoFile, error) {
 	var err error
+
 	path, err = filepath.Abs(path)
 	if err != nil {
 		return nil, err
 	}
+
 	af := &AutoFile{
 		ID:               cmtrand.Str(12) + ":" + path,
 		Path:             path,
@@ -77,6 +79,7 @@ func OpenAutoFile(path string) (*AutoFile, error) {
 	// Close file on SIGHUP.
 	af.hupc = make(chan os.Signal, 1)
 	signal.Notify(af.hupc, syscall.SIGHUP)
+
 	go func() {
 		for range af.hupc {
 			_ = af.closeFile()
@@ -93,9 +96,11 @@ func OpenAutoFile(path string) (*AutoFile, error) {
 func (af *AutoFile) Close() error {
 	af.closeTicker.Stop()
 	close(af.closeTickerStopc)
+
 	if af.hupc != nil {
 		close(af.hupc)
 	}
+
 	return af.closeFile()
 }
 
@@ -120,6 +125,7 @@ func (af *AutoFile) closeFile() (err error) {
 	}
 
 	af.file = nil
+
 	return file.Close()
 }
 
@@ -138,6 +144,7 @@ func (af *AutoFile) Write(b []byte) (n int, err error) {
 	}
 
 	n, err = af.file.Write(b)
+
 	return
 }
 
@@ -154,6 +161,7 @@ func (af *AutoFile) Sync() error {
 			return err
 		}
 	}
+
 	return af.file.Sync()
 }
 
@@ -170,6 +178,7 @@ func (af *AutoFile) openFile() error {
 	// 	return errors.NewErrPermissionsChanged(file.Name(), fileInfo.Mode(), autoFilePerms)
 	// }
 	af.file = file
+
 	return nil
 }
 
@@ -190,5 +199,6 @@ func (af *AutoFile) Size() (int64, error) {
 	if err != nil {
 		return -1, err
 	}
+
 	return stat.Size(), nil
 }

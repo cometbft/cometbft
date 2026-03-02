@@ -34,6 +34,7 @@ func New(query string) (*Query, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return Compile(ast)
 }
 
@@ -47,6 +48,7 @@ func MustCompile(query string) *Query {
 	if err != nil {
 		panic(err)
 	}
+
 	return q
 }
 
@@ -58,8 +60,10 @@ func Compile(ast syntax.Query) (*Query, error) {
 		if err != nil {
 			return nil, fmt.Errorf("compile %s: %w", q, err)
 		}
+
 		conds[i] = cond
 	}
+
 	return &Query{ast: ast, conds: conds}, nil
 }
 
@@ -118,6 +122,7 @@ func (q *Query) matchesEvents(events []types.Event) bool {
 			return false
 		}
 	}
+
 	return len(events) != 0
 }
 
@@ -138,6 +143,7 @@ func (c condition) findAttr(event types.Event) ([]string, bool) {
 	} else if len(c.tag) == len(event.Type) {
 		return nil, true // type == tag
 	}
+
 	var vals []string
 	for _, attr := range event.Attributes {
 		fullName := event.Type + "." + attr.Key
@@ -145,6 +151,7 @@ func (c condition) findAttr(event types.Event) ([]string, bool) {
 			vals = append(vals, attr.Value)
 		}
 	}
+
 	return vals, false
 }
 
@@ -155,6 +162,7 @@ func (c condition) matchesAny(events []types.Event) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -177,6 +185,7 @@ func (c condition) matchesEvent(event types.Event) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -197,6 +206,7 @@ func compileCondition(cond syntax.Condition) (condition, error) {
 
 	// Precompile the argument value matcher.
 	argType := cond.Arg.Type
+
 	var argValue any
 
 	switch argType {
@@ -214,7 +224,9 @@ func compileCondition(cond syntax.Condition) (condition, error) {
 	if mcons == nil {
 		return condition{}, fmt.Errorf("invalid op/arg combination (%v, %v)", cond.Op, argType)
 	}
+
 	out.match = mcons(argValue)
+
 	return out, nil
 }
 
@@ -230,9 +242,12 @@ func parseNumber(s string) (*big.Float, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		return f, err
 	}
+
 	f, _, err := big.ParseFloat(extractNum.FindString(s), 10, uint(intVal.BitLen()), big.ToNearestEven)
+
 	return f, err
 }
 

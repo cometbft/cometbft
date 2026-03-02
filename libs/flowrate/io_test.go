@@ -25,8 +25,10 @@ func nextStatus(m *Monitor) Status {
 		if s := m.Status(); s.Samples != samples {
 			return s
 		}
+
 		time.Sleep(5 * time.Millisecond)
 	}
+
 	return m.Status()
 }
 
@@ -35,6 +37,7 @@ func TestReader(t *testing.T) {
 	for i := range in {
 		in[i] = byte(i)
 	}
+
 	b := make([]byte, 100)
 	r := NewReader(bytes.NewReader(in), 100)
 	start := time.Now()
@@ -51,6 +54,7 @@ func TestReader(t *testing.T) {
 
 	// No new Reads allowed in the current sample
 	r.SetBlocking(false)
+
 	if n, err := r.Read(b); n != 0 || err != nil {
 		t.Fatalf("r.Read(b) expected 0 (<nil>); got %v (%v)", n, err)
 	} else if rt := time.Since(start); rt > _50ms {
@@ -61,6 +65,7 @@ func TestReader(t *testing.T) {
 
 	// 2nd read of 10 bytes blocks until the next sample
 	r.SetBlocking(true)
+
 	if n, err := r.Read(b[10:]); n != 10 || err != nil {
 		t.Fatalf("r.Read(b[10:]) expected 10 (<nil>); got %v (%v)", n, err)
 	} else if rt := time.Since(start); rt < _100ms {
@@ -89,11 +94,11 @@ func TestReader(t *testing.T) {
 		{start, 20, 3, 0, 0, 67, 100, 0, _300ms, 0, 0, 0, false},
 	}
 	for i, s := range status {
-
 		if !statusesAreEqual(&s, &want[i]) {
 			t.Errorf("r.Status(%v)\nexpected: %v\ngot     : %v", i, want[i], s)
 		}
 	}
+
 	if !bytes.Equal(b[:20], in[:20]) {
 		t.Errorf("r.Read() input doesn't match output")
 	}
@@ -104,6 +109,7 @@ func TestWriter(t *testing.T) {
 	for i := range b {
 		b[i] = byte(i)
 	}
+
 	w := NewWriter(&bytes.Buffer{}, 200)
 	start := time.Now()
 
@@ -112,6 +118,7 @@ func TestWriter(t *testing.T) {
 
 	// Non-blocking 20-byte write for the first sample returns ErrLimit
 	w.SetBlocking(false)
+
 	if n, err := w.Write(b); n != 20 || err != ErrLimit {
 		t.Fatalf("w.Write(b) expected 20 (ErrLimit); got %v (%v)", n, err)
 	} else if rt := time.Since(start); rt > _50ms {
@@ -120,6 +127,7 @@ func TestWriter(t *testing.T) {
 
 	// Blocking 80-byte write
 	w.SetBlocking(true)
+
 	if n, err := w.Write(b[20:]); n != 80 || err != nil {
 		t.Fatalf("w.Write(b[20:]) expected 80 (<nil>); got %v (%v)", n, err)
 	} else if rt := time.Since(start); rt < _300ms {
@@ -145,11 +153,11 @@ func TestWriter(t *testing.T) {
 	}
 
 	for i, s := range status {
-
 		if !statusesAreEqual(&s, &want[i]) {
 			t.Errorf("w.Status(%v)\nexpected: %v\ngot     : %v\n", i, want[i], s)
 		}
 	}
+
 	if !bytes.Equal(b, w.Writer.(*bytes.Buffer).Bytes()) {
 		t.Errorf("w.Write() input doesn't match output")
 	}
@@ -180,6 +188,7 @@ func statusesAreEqual(s1 *Status, s2 *Status) bool {
 		s1.Progress == s2.Progress {
 		return true
 	}
+
 	return false
 }
 
@@ -192,8 +201,10 @@ func ratesAreEqual(r1 int64, r2 int64, maxDeviation int64) bool {
 	if sub < 0 {
 		sub = -sub
 	}
+
 	if sub <= maxDeviation {
 		return true
 	}
+
 	return false
 }

@@ -76,10 +76,12 @@ func (req *RPCRequest) UnmarshalJSON(data []byte) error {
 	req.JSONRPC = unsafeReq.JSONRPC
 	req.Method = unsafeReq.Method
 	req.Params = unsafeReq.Params
+
 	id, err := idFromInterface(unsafeReq.ID)
 	if err != nil {
 		return err
 	}
+
 	req.ID = id
 
 	return nil
@@ -105,6 +107,7 @@ func MapToRequest(id jsonrpcid, method string, params map[string]any) (RPCReques
 		if err != nil {
 			return RPCRequest{}, err
 		}
+
 		paramsMap[name] = valueJSON
 	}
 
@@ -123,6 +126,7 @@ func ArrayToRequest(id jsonrpcid, method string, params []any) (RPCRequest, erro
 		if err != nil {
 			return RPCRequest{}, err
 		}
+
 		paramsMap[i] = valueJSON
 	}
 
@@ -148,6 +152,7 @@ func (err RPCError) Error() string {
 	if err.Data != "" {
 		return fmt.Sprintf(baseFormat+": %s", err.Code, err.Message, err.Data)
 	}
+
 	return fmt.Sprintf(baseFormat, err.Code, err.Message)
 }
 
@@ -166,21 +171,27 @@ func (resp *RPCResponse) UnmarshalJSON(data []byte) error {
 		Result  json.RawMessage `json:"result,omitempty"`
 		Error   *RPCError       `json:"error,omitempty"`
 	}{}
+
 	err := json.Unmarshal(data, &unsafeResp)
 	if err != nil {
 		return err
 	}
+
 	resp.JSONRPC = unsafeResp.JSONRPC
 	resp.Error = unsafeResp.Error
+
 	resp.Result = unsafeResp.Result
 	if unsafeResp.ID == nil {
 		return nil
 	}
+
 	id, err := idFromInterface(unsafeResp.ID)
 	if err != nil {
 		return err
 	}
+
 	resp.ID = id
+
 	return nil
 }
 
@@ -189,10 +200,12 @@ func NewRPCSuccessResponse(id jsonrpcid, res any) RPCResponse {
 
 	if res != nil {
 		var js []byte
+
 		js, err := cmtjson.Marshal(res)
 		if err != nil {
 			return RPCInternalError(id, fmt.Errorf("error marshaling response: %w", err))
 		}
+
 		rawMsg = json.RawMessage(js)
 	}
 
@@ -290,6 +303,7 @@ func (ctx *Context) RemoteAddr() string {
 	} else if ctx.WSConn != nil {
 		return ctx.WSConn.GetRemoteAddr()
 	}
+
 	return ""
 }
 
@@ -309,6 +323,7 @@ func (ctx *Context) Context() context.Context {
 	} else if ctx.WSConn != nil {
 		return ctx.WSConn.Context()
 	}
+
 	return context.Background()
 }
 
@@ -323,5 +338,6 @@ func SocketType(listenAddr string) string {
 	if len(strings.Split(listenAddr, ":")) >= 2 {
 		socketType = "tcp"
 	}
+
 	return socketType
 }

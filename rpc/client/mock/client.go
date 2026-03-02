@@ -80,6 +80,7 @@ func (c Call) GetResponse(args any) (any, error) {
 	if reflect.DeepEqual(args, c.Args) {
 		return c.Response, nil
 	}
+
 	return nil, c.Error
 }
 

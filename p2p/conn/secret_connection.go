@@ -140,6 +140,7 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 	recvSecret, sendSecret := deriveSecrets(dhSecret, locIsLeast)
 
 	const challengeSize = 32
+
 	var challenge [challengeSize]byte
 	transcript.ExtractBytes(challenge[:], labelSecretConnectionMac)
 
@@ -147,6 +148,7 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 	if err != nil {
 		return nil, errors.New("invalid send SecretConnection Key")
 	}
+
 	recvAead, err := chacha20poly1305.New(recvSecret[:])
 	if err != nil {
 		return nil, errors.New("invalid receive SecretConnection Key")
@@ -183,12 +185,14 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 	if _, ok := remPubKey.(ed25519.PubKey); !ok {
 		return nil, fmt.Errorf("expected ed25519 pubkey, got %T", remPubKey)
 	}
+
 	if !remPubKey.VerifySignature(challenge[:], remSignature) {
 		return nil, errors.New("challenge verification failed")
 	}
 
 	// We've authorized.
 	sc.remPubKey = remPubKey
+
 	return sc, nil
 }
 
@@ -202,6 +206,7 @@ func (sc *SecretConnection) RemotePubKey() crypto.PubKey {
 func (sc *SecretConnection) Write(data []byte) (n int, err error) {
 	sc.sendMtx.Lock()
 	defer sc.sendMtx.Unlock()
+
 	sealedFrame, frame := sc.sendSealedFrame, sc.sendFrame
 
 	for 0 < len(data) {
@@ -233,7 +238,9 @@ func (sc *SecretConnection) Write(data []byte) (n int, err error) {
 			return n, err
 		}
 	}
+
 	sc.connWriter.Flush()
+
 	return n, err
 }
 
@@ -251,6 +258,7 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 
 	// read off the conn
 	sealedFrame := sc.recvSealedFrame
+
 	_, err = io.ReadFull(sc.connReader, sealedFrame)
 	if err != nil {
 		return n, err
@@ -259,10 +267,12 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 	// decrypt the frame.
 	// reads and updates the sc.recvNonce
 	frame := sc.recvFrame
+
 	_, err = sc.recvAead.Open(frame[:0], sc.recvNonce[:], sealedFrame, nil)
 	if err != nil {
 		return n, fmt.Errorf("failed to decrypt SecretConnection: %w", err)
 	}
+
 	incrNonce(sc.recvNonce)
 	// end decryption
 
@@ -272,12 +282,15 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 	if chunkLength > dataMaxSize {
 		return 0, errors.New("chunkLength is greater than dataMaxSize")
 	}
+
 	chunk := frame[dataLenSize : dataLenSize+chunkLength]
+
 	n = copy(data, chunk)
 	if n < len(chunk) {
 		sc.recvBuffer = make([]byte, len(chunk)-n)
 		copy(sc.recvBuffer, chunk[n:])
 	}
+
 	return n, err
 }
 
@@ -303,6 +316,7 @@ func genEphKeys() (ephPub, ephPriv *[32]byte) {
 	if err != nil {
 		panic("Could not generate ephemeral key-pair")
 	}
+
 	return
 }
 
@@ -311,14 +325,17 @@ func shareEphPubKey(conn io.ReadWriter, locEphPub *[32]byte) (remEphPub *[32]byt
 	trs, _ := async.Parallel(
 		func(_ int) (val any, abort bool, err error) {
 			lc := *locEphPub
+
 			_, err = protoio.NewDelimitedWriter(conn).WriteMsg(&gogotypes.BytesValue{Value: lc[:]})
 			if err != nil {
 				return nil, true, err // abort
 			}
+
 			return nil, false, nil
 		},
 		func(_ int) (val any, abort bool, err error) {
 			var bytes gogotypes.BytesValue
+
 			_, err = protoio.NewDelimitedReader(conn, 1024*1024).ReadMsg(&bytes)
 			if err != nil {
 				return nil, true, err // abort
@@ -326,6 +343,7 @@ func shareEphPubKey(conn io.ReadWriter, locEphPub *[32]byte) (remEphPub *[32]byt
 
 			var _remEphPub [32]byte
 			copy(_remEphPub[:], bytes.Value)
+
 			return _remEphPub, false, nil
 		},
 	)
@@ -338,6 +356,7 @@ func shareEphPubKey(conn io.ReadWriter, locEphPub *[32]byte) (remEphPub *[32]byt
 
 	// Otherwise:
 	_remEphPub := trs.FirstValue().([32]byte)
+
 	return &_remEphPub, nil
 }
 
@@ -349,6 +368,7 @@ func deriveSecrets(
 	hkdf := hkdf.New(hash, dhSecret[:], nil, secretConnKeyAndChallengeGen)
 	// get enough data for 2 aead keys, and a 32 byte challenge
 	res := new([2*aeadKeySize + 32]byte)
+
 	_, err := io.ReadFull(hkdf, res[:])
 	if err != nil {
 		panic(err)
@@ -379,8 +399,10 @@ func computeDHSecret(remPubKey, locPrivKey *[32]byte) (*[32]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	var shrKeyArray [32]byte
 	copy(shrKeyArray[:], shrKey)
+
 	return &shrKeyArray, nil
 }
 
@@ -392,6 +414,7 @@ func sort32(foo, bar *[32]byte) (lo, hi *[32]byte) {
 		lo = bar
 		hi = foo
 	}
+
 	return
 }
 
@@ -400,6 +423,7 @@ func signChallenge(challenge *[32]byte, locPrivKey crypto.PrivKey) ([]byte, erro
 	if err != nil {
 		return nil, err
 	}
+
 	return signature, nil
 }
 
@@ -416,14 +440,17 @@ func shareAuthSignature(sc io.ReadWriter, pubKey crypto.PubKey, signature []byte
 			if err != nil {
 				return nil, true, err
 			}
+
 			_, err = protoio.NewDelimitedWriter(sc).WriteMsg(&tmp2p.AuthSigMessage{PubKey: pbpk, Sig: signature})
 			if err != nil {
 				return nil, true, err // abort
 			}
+
 			return nil, false, nil
 		},
 		func(_ int) (val any, abort bool, err error) {
 			var pba tmp2p.AuthSigMessage
+
 			_, err = protoio.NewDelimitedReader(sc, 1024*1024).ReadMsg(&pba)
 			if err != nil {
 				return nil, true, err // abort
@@ -438,6 +465,7 @@ func shareAuthSignature(sc io.ReadWriter, pubKey crypto.PubKey, signature []byte
 				Key: pk,
 				Sig: pba.Sig,
 			}
+
 			return _recvMsg, false, nil
 		},
 	)
@@ -449,6 +477,7 @@ func shareAuthSignature(sc io.ReadWriter, pubKey crypto.PubKey, signature []byte
 	}
 
 	_recvMsg := trs.FirstValue().(authSigMessage)
+
 	return _recvMsg, nil
 }
 
@@ -465,6 +494,7 @@ func incrNonce(nonce *[aeadNonceSize]byte) {
 		// See https://github.com/tendermint/tendermint/issues/3531
 		panic("can't increase nonce without overflow")
 	}
+
 	counter++
 	binary.LittleEndian.PutUint64(nonce[4:], counter)
 }

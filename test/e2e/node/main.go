@@ -39,6 +39,7 @@ func main() {
 		fmt.Printf("Usage: %v <configfile>", os.Args[0])
 		return
 	}
+
 	configFile := ""
 	if len(os.Args) == 2 {
 		configFile = os.Args[1]
@@ -62,6 +63,7 @@ func run(configFile string) error {
 		if err = startSigner(cfg); err != nil {
 			return err
 		}
+
 		if cfg.Protocol == string(e2e.ProtocolBuiltin) || cfg.Protocol == string(e2e.ProtocolBuiltinConnSync) {
 			time.Sleep(1 * time.Second)
 		}
@@ -77,9 +79,11 @@ func run(configFile string) error {
 		} else {
 			err = startNode(cfg)
 		}
+
 	default:
 		err = fmt.Errorf("invalid protocol %q", cfg.Protocol)
 	}
+
 	if err != nil {
 		return err
 	}
@@ -96,15 +100,19 @@ func startApp(cfg *Config) error {
 	if err != nil {
 		return err
 	}
+
 	server, err := server.NewServer(cfg.Listen, cfg.Protocol, app)
 	if err != nil {
 		return err
 	}
+
 	err = server.Start()
 	if err != nil {
 		return err
 	}
+
 	logger.Info("start app", "msg", log.NewLazySprintf("Server listening on %v (%v protocol)", cfg.Listen, cfg.Protocol))
+
 	return nil
 }
 
@@ -126,9 +134,11 @@ func startNode(cfg *Config) error {
 	var clientCreator proxy.ClientCreator
 	if cfg.Protocol == string(e2e.ProtocolBuiltinConnSync) {
 		clientCreator = proxy.NewConnSyncLocalClientCreator(app)
+
 		nodeLogger.Info("Using connection-synchronized local client creator")
 	} else {
 		clientCreator = proxy.NewLocalClientCreator(app)
+
 		nodeLogger.Info("Using default (synchronized) local client creator")
 	}
 
@@ -144,6 +154,7 @@ func startNode(cfg *Config) error {
 	if err != nil {
 		return err
 	}
+
 	return n.Start()
 }
 
@@ -154,6 +165,7 @@ func startLightClient(cfg *Config) error {
 	}
 
 	dbContext := &config.DBContext{ID: "light", Config: cmtcfg}
+
 	lightDB, err := config.DefaultDBProvider(dbContext)
 	if err != nil {
 		return err
@@ -196,6 +208,7 @@ func startLightClient(cfg *Config) error {
 	}
 
 	logger.Info("Starting proxy...", "laddr", cmtcfg.RPC.ListenAddress)
+
 	if err := p.ListenAndServe(); err != http.ErrServerClosed {
 		// Error starting or closing listener:
 		logger.Error("proxy ListenAndServe", "err", err)
@@ -209,6 +222,7 @@ func startSigner(cfg *Config) error {
 	filePV := privval.LoadFilePV(cfg.PrivValKey, cfg.PrivValState)
 
 	protocol, address := cmtnet.ProtocolAndAddress(cfg.PrivValServer)
+
 	var dialFn privval.SocketDialer
 	switch protocol {
 	case "tcp":
@@ -222,11 +236,14 @@ func startSigner(cfg *Config) error {
 	endpoint := privval.NewSignerDialerEndpoint(logger, dialFn,
 		privval.SignerDialerEndpointRetryWaitInterval(1*time.Second),
 		privval.SignerDialerEndpointConnRetries(100))
+
 	err := privval.NewSignerServer(endpoint, cfg.ChainID, filePV).Start()
 	if err != nil {
 		return err
 	}
+
 	logger.Info("start signer", "msg", log.NewLazySprintf("Remote signer connecting to %v", cfg.PrivValServer))
+
 	return nil
 }
 
@@ -280,6 +297,7 @@ func setupNode() (*config.Config, log.Logger, *p2p.NodeKey, error) {
 // using 26657 as the port number
 func rpcEndpoints(peers string) []string {
 	arr := strings.Split(peers, ",")
+
 	endpoints := make([]string, len(arr))
 	for i, v := range arr {
 		urlString := strings.SplitAfter(v, "@")[1]
@@ -289,5 +307,6 @@ func rpcEndpoints(peers string) []string {
 		rpcEndpoint := "http://" + hostName + ":" + fmt.Sprint(port)
 		endpoints[i] = rpcEndpoint
 	}
+
 	return endpoints
 }

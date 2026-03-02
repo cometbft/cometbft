@@ -107,6 +107,7 @@ func TestAppReactor(t *testing.T) {
 		receivedA := nodeA.getReceivedTxs()
 		receivedB := nodeB.getReceivedTxs()
 		receivedC := nodeC.getReceivedTxs()
+
 		return txsContain(receivedA, allTxs) &&
 			txsContain(receivedB, allTxs) &&
 			txsContain(receivedC, allTxs)
@@ -128,6 +129,7 @@ func TestChunkTxs(t *testing.T) {
 		for _, size := range sizes {
 			txs = append(txs, makeTx(size))
 		}
+
 		return txs
 	}
 

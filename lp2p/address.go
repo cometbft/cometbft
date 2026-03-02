@@ -134,5 +134,6 @@ func preferIPv4(ips []net.IP) net.IP {
 			return ip
 		}
 	}
+
 	return ips[0]
 }

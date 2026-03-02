@@ -27,9 +27,11 @@ func Sum(bz []byte) []byte {
 func SumMany(data []byte, rest ...[]byte) []byte {
 	h := sha256.New()
 	h.Write(data)
+
 	for _, data := range rest {
 		h.Write(data)
 	}
+
 	return h.Sum(nil)
 }
 

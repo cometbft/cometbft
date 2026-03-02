@@ -26,6 +26,7 @@ func TestEnsureRoot(t *testing.T) {
 	// setup temp dir for test
 	tmpDir, err := os.MkdirTemp("", "config-test")
 	require.Nil(err)
+
 	defer os.RemoveAll(tmpDir)
 
 	// create root dir
@@ -46,6 +47,7 @@ func TestEnsureTestRoot(t *testing.T) {
 	// create root dir
 	cfg := test.ResetTestRoot("ensureTestRoot")
 	defer os.RemoveAll(cfg.RootDir)
+
 	rootDir := cfg.RootDir
 
 	// make sure config is set properly

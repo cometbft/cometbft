@@ -43,11 +43,13 @@ func compactGoLevelDBs(rootDir string, logger log.Logger) {
 	wg := sync.WaitGroup{}
 
 	for _, dbName := range dbNames {
-
 		wg.Add(1)
+
 		go func() {
 			defer wg.Done()
+
 			dbPath := filepath.Join(rootDir, "data", dbName+".db")
+
 			store, err := leveldb.OpenFile(dbPath, o)
 			if err != nil {
 				logger.Error("failed to initialize cometbft db", "path", dbPath, "err", err)
@@ -63,5 +65,6 @@ func compactGoLevelDBs(rootDir string, logger log.Logger) {
 			}
 		}()
 	}
+
 	wg.Wait()
 }

@@ -130,6 +130,7 @@ func (cfg *Config) SetRoot(root string) *Config {
 	cfg.P2P.RootDir = root
 	cfg.Mempool.RootDir = root
 	cfg.Consensus.RootDir = root
+
 	return cfg
 }
 
@@ -139,30 +140,39 @@ func (cfg *Config) ValidateBasic() error {
 	if err := cfg.BaseConfig.ValidateBasic(); err != nil {
 		return err
 	}
+
 	if err := cfg.RPC.ValidateBasic(); err != nil {
 		return ErrInSection{Section: "rpc", Err: err}
 	}
+
 	if err := cfg.P2P.ValidateBasic(); err != nil {
 		return ErrInSection{Section: "p2p", Err: err}
 	}
+
 	if err := cfg.Mempool.ValidateBasic(); err != nil {
 		return ErrInSection{Section: "mempool", Err: err}
 	}
+
 	if err := cfg.StateSync.ValidateBasic(); err != nil {
 		return ErrInSection{Section: "statesync", Err: err}
 	}
+
 	if err := cfg.BlockSync.ValidateBasic(); err != nil {
 		return ErrInSection{Section: "blocksync", Err: err}
 	}
+
 	if err := cfg.Consensus.ValidateBasic(); err != nil {
 		return ErrInSection{Section: "consensus", Err: err}
 	}
+
 	if err := cfg.Instrumentation.ValidateBasic(); err != nil {
 		return ErrInSection{Section: "instrumentation", Err: err}
 	}
+
 	if !cfg.Consensus.CreateEmptyBlocks && cfg.Mempool.Type == MempoolTypeNop {
 		return fmt.Errorf("`nop` mempool does not support create_empty_blocks = false")
 	}
+
 	return nil
 }
 
@@ -309,6 +319,7 @@ func (cfg BaseConfig) ValidateBasic() error {
 	default:
 		return errors.New("unknown log_format (must be 'plain' or 'json')")
 	}
+
 	return nil
 }
 
@@ -463,6 +474,7 @@ func TestRPCConfig() *RPCConfig {
 	cfg.ListenAddress = "tcp://127.0.0.1:36657"
 	cfg.GRPCListenAddress = "tcp://127.0.0.1:36658"
 	cfg.Unsafe = true
+
 	return cfg
 }
 
@@ -472,37 +484,46 @@ func (cfg *RPCConfig) ValidateBasic() error {
 	if cfg.GRPCMaxOpenConnections < 0 {
 		return errors.New("grpc_max_open_connections can't be negative")
 	}
+
 	if cfg.MaxOpenConnections < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_open_connections"}
 	}
+
 	if cfg.MaxSubscriptionClients < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_subscription_clients"}
-
 	}
+
 	if cfg.MaxSubscriptionsPerClient < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_subscriptions_per_client"}
 	}
+
 	if cfg.SubscriptionBufferSize < minSubscriptionBufferSize {
 		return ErrSubscriptionBufferSizeInvalid
 	}
+
 	if cfg.WebSocketWriteBufferSize < cfg.SubscriptionBufferSize {
 		return fmt.Errorf(
 			"experimental_websocket_write_buffer_size must be >= experimental_subscription_buffer_size (%d)",
 			cfg.SubscriptionBufferSize,
 		)
 	}
+
 	if cfg.TimeoutBroadcastTxCommit < 0 {
 		return cmterrors.ErrNegativeField{Field: "timeout_broadcast_tx_commit"}
 	}
+
 	if cfg.MaxRequestBatchSize < 0 {
 		return errors.New("max_request_batch_size can't be negative")
 	}
+
 	if cfg.MaxBodyBytes < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_body_bytes"}
 	}
+
 	if cfg.MaxHeaderBytes < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_header_bytes"}
 	}
+
 	return nil
 }
 
@@ -520,6 +541,7 @@ func (cfg RPCConfig) KeyFile() string {
 	if filepath.IsAbs(path) {
 		return path
 	}
+
 	return rootify(filepath.Join(DefaultConfigDir, path), cfg.RootDir)
 }
 
@@ -528,6 +550,7 @@ func (cfg RPCConfig) CertFile() string {
 	if filepath.IsAbs(path) {
 		return path
 	}
+
 	return rootify(filepath.Join(DefaultConfigDir, path), cfg.RootDir)
 }
 
@@ -650,9 +673,11 @@ func (p *LibP2PBootstrapPeer) ToTOMLInlineString() string {
 	if p.Private {
 		parts = append(parts, "private = true")
 	}
+
 	if p.Persistent {
 		parts = append(parts, "persistent = true")
 	}
+
 	if p.Unconditional {
 		parts = append(parts, "unconditional = true")
 	}
@@ -705,24 +730,31 @@ func (cfg *P2PConfig) ValidateBasic() error {
 	if cfg.MaxNumInboundPeers < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_num_inbound_peers"}
 	}
+
 	if cfg.MaxNumOutboundPeers < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_num_outbound_peers"}
 	}
+
 	if cfg.FlushThrottleTimeout < 0 {
 		return cmterrors.ErrNegativeField{Field: "flush_throttle_timeout"}
 	}
+
 	if cfg.PersistentPeersMaxDialPeriod < 0 {
 		return cmterrors.ErrNegativeField{Field: "persistent_peers_max_dial_period"}
 	}
+
 	if cfg.MaxPacketMsgPayloadSize < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_packet_msg_payload_size"}
 	}
+
 	if cfg.SendRate < 0 {
 		return cmterrors.ErrNegativeField{Field: "send_rate"}
 	}
+
 	if cfg.RecvRate < 0 {
 		return cmterrors.ErrNegativeField{Field: "recv_rate"}
 	}
+
 	return nil
 }
 
@@ -889,24 +921,31 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 	default:
 		return fmt.Errorf("unknown mempool type: %q", cfg.Type)
 	}
+
 	if cfg.Size < 0 {
 		return cmterrors.ErrNegativeField{Field: "size"}
 	}
+
 	if cfg.MaxTxsBytes < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_txs_bytes"}
 	}
+
 	if cfg.CacheSize < 0 {
 		return cmterrors.ErrNegativeField{Field: "cache_size"}
 	}
+
 	if cfg.MaxTxBytes < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_tx_bytes"}
 	}
+
 	if cfg.ExperimentalMaxGossipConnectionsToPersistentPeers < 0 {
 		return errors.New("experimental_max_gossip_connections_to_persistent_peers can't be negative")
 	}
+
 	if cfg.ExperimentalMaxGossipConnectionsToNonPersistentPeers < 0 {
 		return errors.New("experimental_max_gossip_connections_to_non_persistent_peers can't be negative")
 	}
+
 	return nil
 }
 
@@ -933,6 +972,7 @@ func (cfg *StateSyncConfig) TrustHashBytes() []byte {
 	if err != nil {
 		panic(err)
 	}
+
 	return bytes
 }
 
@@ -1117,6 +1157,7 @@ func TestConsensusConfig() *ConsensusConfig {
 	cfg.PeerGossipSleepDuration = 5 * time.Millisecond
 	cfg.PeerQueryMaj23SleepDuration = 250 * time.Millisecond
 	cfg.DoubleSignCheckHeight = int64(0)
+
 	return cfg
 }
 
@@ -1171,36 +1212,47 @@ func (cfg *ConsensusConfig) ValidateBasic() error {
 	if cfg.TimeoutPropose < 0 {
 		return cmterrors.ErrNegativeField{Field: "timeout_propose"}
 	}
+
 	if cfg.TimeoutProposeDelta < 0 {
 		return cmterrors.ErrNegativeField{Field: "timeout_propose_delta"}
 	}
+
 	if cfg.TimeoutPrevote < 0 {
 		return cmterrors.ErrNegativeField{Field: "timeout_prevote"}
 	}
+
 	if cfg.TimeoutPrevoteDelta < 0 {
 		return cmterrors.ErrNegativeField{Field: "timeout_prevote_delta"}
 	}
+
 	if cfg.TimeoutPrecommit < 0 {
 		return cmterrors.ErrNegativeField{Field: "timeout_precommit"}
 	}
+
 	if cfg.TimeoutPrecommitDelta < 0 {
 		return cmterrors.ErrNegativeField{Field: "timeout_precommit_delta"}
 	}
+
 	if cfg.TimeoutCommit < 0 {
 		return cmterrors.ErrNegativeField{Field: "timeout_commit"}
 	}
+
 	if cfg.CreateEmptyBlocksInterval < 0 {
 		return cmterrors.ErrNegativeField{Field: "create_empty_blocks_interval"}
 	}
+
 	if cfg.PeerGossipSleepDuration < 0 {
 		return cmterrors.ErrNegativeField{Field: "peer_gossip_sleep_duration"}
 	}
+
 	if cfg.PeerQueryMaj23SleepDuration < 0 {
 		return cmterrors.ErrNegativeField{Field: "peer_query_maj23_sleep_duration"}
 	}
+
 	if cfg.DoubleSignCheckHeight < 0 {
 		return cmterrors.ErrNegativeField{Field: "double_sign_check_height"}
 	}
+
 	return nil
 }
 
@@ -1348,5 +1400,6 @@ func getDefaultMoniker() string {
 	if err != nil {
 		moniker = "anonymous"
 	}
+
 	return moniker
 }

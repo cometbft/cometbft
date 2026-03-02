@@ -18,12 +18,14 @@ func TestParseJSONMap(t *testing.T) {
 
 	// naive is float,string
 	var p1 map[string]any
+
 	err := json.Unmarshal(input, &p1)
 	if assert.Nil(t, err) {
 		h, ok := p1["height"].(float64)
 		if assert.True(t, ok, "%#v", p1["height"]) {
 			assert.EqualValues(t, 22, h)
 		}
+
 		v, ok := p1["value"].(string)
 		if assert.True(t, ok, "%#v", p1["value"]) {
 			assert.EqualValues(t, "1234", v)
@@ -36,12 +38,14 @@ func TestParseJSONMap(t *testing.T) {
 		"value":  &bytes.HexBytes{},
 		"height": &tmp,
 	}
+
 	err = json.Unmarshal(input, &p2)
 	if assert.Nil(t, err) {
 		h, ok := p2["height"].(float64)
 		if assert.True(t, ok, "%#v", p2["height"]) {
 			assert.EqualValues(t, 22, h)
 		}
+
 		v, ok := p2["value"].(string)
 		if assert.True(t, ok, "%#v", p2["value"]) {
 			assert.EqualValues(t, "1234", v)
@@ -58,12 +62,14 @@ func TestParseJSONMap(t *testing.T) {
 		Height: &tmp,
 		Value:  &bytes.HexBytes{},
 	}
+
 	err = json.Unmarshal(input, &p3)
 	if assert.Nil(t, err) {
 		h, ok := p3.Height.(*int)
 		if assert.True(t, ok, "%#v", p3.Height) {
 			assert.Equal(t, 22, *h)
 		}
+
 		v, ok := p3.Value.(*bytes.HexBytes)
 		if assert.True(t, ok, "%#v", p3.Value) {
 			assert.EqualValues(t, []byte{0x12, 0x34}, *v)
@@ -75,6 +81,7 @@ func TestParseJSONMap(t *testing.T) {
 		Value  bytes.HexBytes `json:"value"`
 		Height int            `json:"height"`
 	}{}
+
 	err = json.Unmarshal(input, &p4)
 	if assert.Nil(t, err) {
 		assert.EqualValues(t, 22, p4.Height)
@@ -84,15 +91,18 @@ func TestParseJSONMap(t *testing.T) {
 	// so, let's use this trick...
 	// dynamic keys on map, and we can deserialize to the desired types
 	var p5 map[string]*json.RawMessage
+
 	err = json.Unmarshal(input, &p5)
 	if assert.Nil(t, err) {
 		var h int
+
 		err = json.Unmarshal(*p5["height"], &h)
 		if assert.Nil(t, err) {
 			assert.Equal(t, 22, h)
 		}
 
 		var v bytes.HexBytes
+
 		err = json.Unmarshal(*p5["value"], &v)
 		if assert.Nil(t, err) {
 			assert.Equal(t, bytes.HexBytes{0x12, 0x34}, v)
@@ -105,12 +115,14 @@ func TestParseJSONArray(t *testing.T) {
 
 	// naive is float,string
 	var p1 []any
+
 	err := json.Unmarshal(input, &p1)
 	if assert.Nil(t, err) {
 		v, ok := p1[0].(string)
 		if assert.True(t, ok, "%#v", p1[0]) {
 			assert.EqualValues(t, "1234", v)
 		}
+
 		h, ok := p1[1].(float64)
 		if assert.True(t, ok, "%#v", p1[1]) {
 			assert.EqualValues(t, 22, h)
@@ -120,12 +132,14 @@ func TestParseJSONArray(t *testing.T) {
 	// preloading map with values helps here (unlike map - p2 above)
 	tmp := 0
 	p2 := []any{&bytes.HexBytes{}, &tmp}
+
 	err = json.Unmarshal(input, &p2)
 	if assert.Nil(t, err) {
 		v, ok := p2[0].(*bytes.HexBytes)
 		if assert.True(t, ok, "%#v", p2[0]) {
 			assert.EqualValues(t, []byte{0x12, 0x34}, *v)
 		}
+
 		h, ok := p2[1].(*int)
 		if assert.True(t, ok, "%#v", p2[1]) {
 			assert.EqualValues(t, 22, *h)
@@ -156,17 +170,18 @@ func TestParseJSONRPC(t *testing.T) {
 	for idx, tc := range cases {
 		i := strconv.Itoa(idx)
 		data := []byte(tc.raw)
+
 		vals, err := jsonParamsToArgs(call, data)
 		if tc.fail {
 			assert.NotNil(t, err, i)
 		} else {
 			assert.Nil(t, err, "%s: %+v", i, err)
+
 			if assert.Equal(t, 2, len(vals), i) {
 				assert.Equal(t, tc.height, vals[0].Int(), i)
 				assert.Equal(t, tc.name, vals[1].String(), i)
 			}
 		}
-
 	}
 }
 
@@ -198,16 +213,17 @@ func TestParseURI(t *testing.T) {
 			tc.raw[0], tc.raw[1])
 		req, err := http.NewRequest("GET", url, nil)
 		assert.NoError(t, err)
+
 		vals, err := httpParamsToArgs(call, req)
 		if tc.fail {
 			assert.NotNil(t, err, i)
 		} else {
 			assert.Nil(t, err, "%s: %+v", i, err)
+
 			if assert.Equal(t, 2, len(vals), i) {
 				assert.Equal(t, tc.height, vals[0].Int(), i)
 				assert.Equal(t, tc.name, vals[1].String(), i)
 			}
 		}
-
 	}
 }

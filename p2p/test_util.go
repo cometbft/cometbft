@@ -44,26 +44,31 @@ func CreateRandomPeer(outbound bool) Peer {
 		metrics:  NopMetrics(),
 	}
 	p.SetLogger(log.TestingLogger().With("peer", addr))
+
 	return p
 }
 
 func CreateRoutableAddr() (addr string, netAddr *NetAddress) {
 	for {
 		var err error
+
 		addr = fmt.Sprintf("%X@%v.%v.%v.%v:26656",
 			cmtrand.Bytes(20),
 			cmtrand.Int()%256,
 			cmtrand.Int()%256,
 			cmtrand.Int()%256,
 			cmtrand.Int()%256)
+
 		netAddr, err = NewNetAddressString(addr)
 		if err != nil {
 			panic(err)
 		}
+
 		if netAddr.Routable() {
 			break
 		}
 	}
+
 	return
 }
 
@@ -114,6 +119,7 @@ func Connect2Switches(switches []*Switch, i, j int) {
 		if err != nil {
 			panic(err)
 		}
+
 		doneCh <- struct{}{}
 	}()
 	go func() {
@@ -121,8 +127,10 @@ func Connect2Switches(switches []*Switch, i, j int) {
 		if err != nil {
 			panic(err)
 		}
+
 		doneCh <- struct{}{}
 	}()
+
 	<-doneCh
 	<-doneCh
 }
@@ -172,6 +180,7 @@ func StartSwitches(switches []*Switch) error {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -185,6 +194,7 @@ func MakeSwitch(
 		PrivKey: ed25519.GenPrivKey(),
 	}
 	nodeInfo := testNodeInfo(nodeKey.ID(), fmt.Sprintf("node%d", i))
+
 	addr, err := NewNetAddressString(
 		IDAddressString(nodeKey.ID(), nodeInfo.(DefaultNodeInfo).ListenAddr),
 	)
@@ -207,6 +217,7 @@ func MakeSwitch(
 	for ch := range sw.reactorsByCh {
 		ni.Channels = append(ni.Channels, ch)
 	}
+
 	nodeInfo = ni
 
 	// TODO: We need to setup reactors ahead of time so the NodeInfo is properly
@@ -278,6 +289,7 @@ func getFreePort() int {
 	if err != nil {
 		panic(err)
 	}
+
 	return port
 }
 

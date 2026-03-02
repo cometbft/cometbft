@@ -45,9 +45,11 @@ func newChunkQueue(snapshot *snapshot, tempDir string) (*chunkQueue, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to create temp dir for state sync chunks: %w", err)
 	}
+
 	if snapshot.Chunks == 0 {
 		return nil, errors.New("snapshot has no chunks")
 	}
+
 	return &chunkQueue{
 		snapshot:       snapshot,
 		dir:            dir,
@@ -64,37 +66,47 @@ func (q *chunkQueue) Add(chunk *chunk) (bool, error) {
 	if chunk == nil || chunk.Chunk == nil {
 		return false, errors.New("cannot add nil chunk")
 	}
+
 	q.Lock()
 	defer q.Unlock()
+
 	if q.snapshot == nil {
 		return false, nil // queue is closed
 	}
+
 	if chunk.Height != q.snapshot.Height {
 		return false, fmt.Errorf("invalid chunk height %v, expected %v", chunk.Height, q.snapshot.Height)
 	}
+
 	if chunk.Format != q.snapshot.Format {
 		return false, fmt.Errorf("invalid chunk format %v, expected %v", chunk.Format, q.snapshot.Format)
 	}
+
 	if chunk.Index >= q.snapshot.Chunks {
 		return false, fmt.Errorf("received unexpected chunk %v", chunk.Index)
 	}
+
 	if q.chunkFiles[chunk.Index] != "" {
 		return false, nil
 	}
 
 	path := filepath.Join(q.dir, strconv.FormatUint(uint64(chunk.Index), 10))
+
 	err := os.WriteFile(path, chunk.Chunk, 0o600)
 	if err != nil {
 		return false, fmt.Errorf("failed to save chunk %v to file %v: %w", chunk.Index, path, err)
 	}
+
 	q.chunkFiles[chunk.Index] = path
 	q.chunkSenders[chunk.Index] = chunk.Sender
 
 	// Signal any waiters that the chunk has arrived.
 	for _, waiter := range q.waiters[chunk.Index] {
 		waiter <- chunk.Index
+
 		close(waiter)
 	}
+
 	delete(q.waiters, chunk.Index)
 
 	return true, nil
@@ -105,18 +117,22 @@ func (q *chunkQueue) Add(chunk *chunk) (bool, error) {
 func (q *chunkQueue) Allocate() (uint32, error) {
 	q.Lock()
 	defer q.Unlock()
+
 	if q.snapshot == nil {
 		return 0, errDone
 	}
+
 	if uint32(len(q.chunkAllocated)) >= q.snapshot.Chunks {
 		return 0, errDone
 	}
+
 	for i := uint32(0); i < q.snapshot.Chunks; i++ {
 		if !q.chunkAllocated[i] {
 			q.chunkAllocated[i] = true
 			return i, nil
 		}
 	}
+
 	return 0, errDone
 }
 
@@ -124,20 +140,25 @@ func (q *chunkQueue) Allocate() (uint32, error) {
 func (q *chunkQueue) Close() error {
 	q.Lock()
 	defer q.Unlock()
+
 	if q.snapshot == nil {
 		return nil
 	}
+
 	for _, waiters := range q.waiters {
 		for _, waiter := range waiters {
 			close(waiter)
 		}
 	}
+
 	q.waiters = nil
 	q.snapshot = nil
+
 	err := os.RemoveAll(q.dir)
 	if err != nil {
 		return fmt.Errorf("failed to clean up state sync tempdir %v: %w", q.dir, err)
 	}
+
 	return nil
 }
 
@@ -155,17 +176,21 @@ func (q *chunkQueue) discard(index uint32) error {
 	if q.snapshot == nil {
 		return nil
 	}
+
 	path := q.chunkFiles[index]
 	if path == "" {
 		return nil
 	}
+
 	err := os.Remove(path)
 	if err != nil {
 		return fmt.Errorf("failed to remove chunk %v: %w", index, err)
 	}
+
 	delete(q.chunkFiles, index)
 	delete(q.chunkReturned, index)
 	delete(q.chunkAllocated, index)
+
 	return nil
 }
 
@@ -181,9 +206,11 @@ func (q *chunkQueue) DiscardSender(peerID p2p.ID) error {
 			if err != nil {
 				return err
 			}
+
 			delete(q.chunkSenders, index)
 		}
 	}
+
 	return nil
 }
 
@@ -208,10 +235,12 @@ func (q *chunkQueue) load(index uint32) (*chunk, error) {
 	if !ok {
 		return nil, nil
 	}
+
 	body, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load chunk %v: %w", index, err)
 	}
+
 	return &chunk{
 		Height: q.snapshot.Height,
 		Format: q.snapshot.Format,
@@ -225,7 +254,9 @@ func (q *chunkQueue) load(index uint32) (*chunk, error) {
 // blocks until the chunk is available. Concurrent Next() calls may return the same chunk.
 func (q *chunkQueue) Next() (*chunk, error) {
 	q.Lock()
+
 	var chunk *chunk
+
 	index, err := q.nextUp()
 	if err == nil {
 		chunk, err = q.load(index)
@@ -233,7 +264,9 @@ func (q *chunkQueue) Next() (*chunk, error) {
 			q.chunkReturned[index] = true
 		}
 	}
+
 	q.Unlock()
+
 	if chunk != nil || err != nil {
 		return chunk, err
 	}
@@ -243,17 +276,21 @@ func (q *chunkQueue) Next() (*chunk, error) {
 		if !ok {
 			return nil, errDone // queue closed
 		}
+
 	case <-time.After(chunkTimeout):
 		return nil, errTimeout
 	}
 
 	q.Lock()
 	defer q.Unlock()
+
 	chunk, err = q.load(index)
 	if err != nil {
 		return nil, err
 	}
+
 	q.chunkReturned[index] = true
+
 	return chunk, nil
 }
 
@@ -263,11 +300,13 @@ func (q *chunkQueue) nextUp() (uint32, error) {
 	if q.snapshot == nil {
 		return 0, errDone
 	}
+
 	for i := uint32(0); i < q.snapshot.Chunks; i++ {
 		if !q.chunkReturned[i] {
 			return i, nil
 		}
 	}
+
 	return 0, errDone
 }
 
@@ -275,6 +314,7 @@ func (q *chunkQueue) nextUp() (uint32, error) {
 func (q *chunkQueue) Retry(index uint32) {
 	q.Lock()
 	defer q.Unlock()
+
 	delete(q.chunkReturned, index)
 }
 
@@ -282,6 +322,7 @@ func (q *chunkQueue) Retry(index uint32) {
 func (q *chunkQueue) RetryAll() {
 	q.Lock()
 	defer q.Unlock()
+
 	q.chunkReturned = make(map[uint32]bool)
 }
 
@@ -289,9 +330,11 @@ func (q *chunkQueue) RetryAll() {
 func (q *chunkQueue) Size() uint32 {
 	q.Lock()
 	defer q.Unlock()
+
 	if q.snapshot == nil {
 		return 0
 	}
+
 	return q.snapshot.Chunks
 }
 
@@ -301,6 +344,7 @@ func (q *chunkQueue) Size() uint32 {
 func (q *chunkQueue) WaitFor(index uint32) <-chan uint32 {
 	q.Lock()
 	defer q.Unlock()
+
 	ch := make(chan uint32, 1)
 	switch {
 	case q.snapshot == nil:
@@ -309,12 +353,16 @@ func (q *chunkQueue) WaitFor(index uint32) <-chan uint32 {
 		close(ch)
 	case q.chunkFiles[index] != "":
 		ch <- index
+
 		close(ch)
+
 	default:
 		if q.waiters[index] == nil {
 			q.waiters[index] = make([]chan<- uint32, 0)
 		}
+
 		q.waiters[index] = append(q.waiters[index], ch)
 	}
+
 	return ch
 }

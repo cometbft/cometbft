@@ -108,16 +108,19 @@ func TestPersistentKVStoreInfo(t *testing.T) {
 
 	kvstore := NewPersistentApplication(t.TempDir())
 	require.NoError(t, InitKVStore(ctx, kvstore))
+
 	height := int64(0)
 
 	resInfo, err := kvstore.Info(ctx, &types.RequestInfo{})
 	require.NoError(t, err)
+
 	if resInfo.LastBlockHeight != height {
 		t.Fatalf("expected height of %d, got %d", height, resInfo.LastBlockHeight)
 	}
 
 	// make and apply block
 	height = int64(1)
+
 	hash := []byte("foo")
 	if _, err := kvstore.FinalizeBlock(ctx, &types.RequestFinalizeBlock{Hash: hash, Height: height}); err != nil {
 		t.Fatal(err)
@@ -186,6 +189,7 @@ func TestValUpdates(t *testing.T) {
 	} else {
 		v1.Power = 5
 	}
+
 	diff = []types.ValidatorUpdate{v1}
 	tx1 = MakeValSetChangeTx(v1.PubKey, v1.Power)
 
@@ -267,11 +271,14 @@ func makeApplyBlock(
 // order doesn't matter
 func valsEqual(t *testing.T, vals1, vals2 []types.ValidatorUpdate) {
 	t.Helper()
+
 	if len(vals1) != len(vals2) {
 		t.Fatalf("vals dont match in len. got %d, expected %d", len(vals2), len(vals1))
 	}
+
 	sort.Sort(types.ValidatorUpdates(vals1))
 	sort.Sort(types.ValidatorUpdates(vals2))
+
 	for i, v1 := range vals1 {
 		v2 := vals2[i]
 		if !v1.PubKey.Equal(v2.PubKey) ||
@@ -289,6 +296,7 @@ func makeClientServer(t *testing.T, app types.Application, name, transport strin
 	server, err := abciserver.NewServer(addr, transport, app)
 	require.NoError(t, err)
 	server.SetLogger(logger.With("module", "abci-server"))
+
 	if err := server.Start(); err != nil {
 		return nil, nil, err
 	}
@@ -303,6 +311,7 @@ func makeClientServer(t *testing.T, app types.Application, name, transport strin
 	client, err := abcicli.NewClient(addr, transport, false)
 	require.NoError(t, err)
 	client.SetLogger(logger.With("module", "abci-client"))
+
 	if err := client.Start(); err != nil {
 		return nil, nil, err
 	}

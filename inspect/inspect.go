@@ -58,6 +58,7 @@ func New(
 	routes := rpc.Routes(*cfg, ss, bs, txidx, blkidx, logger)
 	eb := types.NewEventBus()
 	eb.SetLogger(logger.With("module", "events"))
+
 	return &Inspector{
 		routes: routes,
 		config: cfg,
@@ -73,20 +74,26 @@ func NewFromConfig(cfg *config.Config) (*Inspector, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	bs := store.NewBlockStore(bsDB)
+
 	sDB, err := config.DefaultDBProvider(&config.DBContext{ID: "state", Config: cfg})
 	if err != nil {
 		return nil, err
 	}
+
 	genDoc, err := types.GenesisDocFromFile(cfg.GenesisFile())
 	if err != nil {
 		return nil, err
 	}
+
 	txidx, blkidx, err := block.IndexerFromConfig(cfg, config.DefaultDBProvider, genDoc.ChainID)
 	if err != nil {
 		return nil, err
 	}
+
 	ss := state.NewStore(sDB, state.StoreOptions{})
+
 	return New(cfg.RPC, bs, ss, txidx, blkidx), nil
 }
 
@@ -102,6 +109,7 @@ func (ins *Inspector) Run(ctx context.Context) error {
 func startRPCServers(ctx context.Context, cfg *config.RPCConfig, logger log.Logger, routes rpccore.RoutesMap) error {
 	g, tctx := errgroup.WithContext(ctx)
 	listenAddrs := cmtstrings.SplitAndTrimEmpty(cfg.ListenAddress, ",", " ")
+
 	rh := rpc.Handler(cfg, routes, logger)
 	for _, listenerAddr := range listenAddrs {
 		server := rpc.Server{
@@ -117,25 +125,32 @@ func startRPCServers(ctx context.Context, cfg *config.RPCConfig, logger log.Logg
 			g.Go(func() error {
 				logger.Info("RPC HTTPS server starting", "address", listenerAddr,
 					"certfile", certFile, "keyfile", keyFile)
+
 				err := server.ListenAndServeTLS(tctx, certFile, keyFile)
 				if !errors.Is(err, net.ErrClosed) {
 					return err
 				}
+
 				logger.Info("RPC HTTPS server stopped", "address", listenerAddr)
+
 				return nil
 			})
 		} else {
 			listenerAddr := listenerAddr
 			g.Go(func() error {
 				logger.Info("RPC HTTP server starting", "address", listenerAddr)
+
 				err := server.ListenAndServe(tctx)
 				if !errors.Is(err, net.ErrClosed) {
 					return err
 				}
+
 				logger.Info("RPC HTTP server stopped", "address", listenerAddr)
+
 				return nil
 			})
 		}
 	}
+
 	return g.Wait()
 }

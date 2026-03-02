@@ -79,6 +79,7 @@ func TestParseFraction(t *testing.T) {
 		} else {
 			assert.NoError(t, err, idx)
 		}
+
 		assert.Equal(t, tc.exp, output, idx)
 	}
 }

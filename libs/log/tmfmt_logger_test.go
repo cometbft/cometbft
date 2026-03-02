@@ -16,48 +16,62 @@ import (
 
 func TestTMFmtLogger(t *testing.T) {
 	t.Parallel()
+
 	buf := &bytes.Buffer{}
 	logger := log.NewTMFmtLogger(buf)
 
 	if err := logger.Log("hello", "world"); err != nil {
 		t.Fatal(err)
 	}
+
 	assert.Regexp(t, regexp.MustCompile(`N\[.+\] unknown \s+ hello=world\n$`), buf.String())
 
 	buf.Reset()
+
 	if err := logger.Log("a", 1, "err", errors.New("error")); err != nil {
 		t.Fatal(err)
 	}
+
 	assert.Regexp(t, regexp.MustCompile(`N\[.+\] unknown \s+ a=1 err=error\n$`), buf.String())
 
 	buf.Reset()
+
 	if err := logger.Log("std_map", map[int]int{1: 2}, "my_map", mymap{0: 0}); err != nil {
 		t.Fatal(err)
 	}
+
 	assert.Regexp(t, regexp.MustCompile(`N\[.+\] unknown \s+ std_map=map\[1:2\] my_map=special_behavior\n$`), buf.String())
 
 	buf.Reset()
+
 	if err := logger.Log("level", "error"); err != nil {
 		t.Fatal(err)
 	}
+
 	assert.Regexp(t, regexp.MustCompile(`E\[.+\] unknown \s+\n$`), buf.String())
 
 	buf.Reset()
+
 	if err := logger.Log("_msg", "Hello"); err != nil {
 		t.Fatal(err)
 	}
+
 	assert.Regexp(t, regexp.MustCompile(`N\[.+\] Hello \s+\n$`), buf.String())
 
 	buf.Reset()
+
 	if err := logger.Log("module", "main", "module", "crypto", "module", "wire"); err != nil {
 		t.Fatal(err)
 	}
+
 	assert.Regexp(t, regexp.MustCompile(`N\[.+\] unknown \s+module=wire\s+\n$`), buf.String())
 
 	buf.Reset()
+
 	if err := logger.Log("hash", []byte("test me")); err != nil {
 		t.Fatal(err)
 	}
+
 	assert.Regexp(t, regexp.MustCompile(`N\[.+\] unknown \s+ hash=74657374206D65\n$`), buf.String())
 }
 
@@ -76,8 +90,10 @@ func TestTMFmtLoggerConcurrency(t *testing.T) {
 
 func benchmarkRunnerKitlog(b *testing.B, logger kitlog.Logger, f func(kitlog.Logger)) {
 	lc := kitlog.With(logger, "common_key", "common_value")
+
 	b.ReportAllocs()
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		f(lc)
 	}
@@ -117,6 +133,7 @@ func spam(logger kitlog.Logger, count int) error {
 			return err
 		}
 	}
+
 	return nil
 }
 

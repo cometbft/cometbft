@@ -63,6 +63,7 @@ func (multi MultiStore) SaveABCIResponses(height int64, abciResponses *cmtstate.
 			dtxs = append(dtxs, tx)
 		}
 	}
+
 	abciResponses.DeliverTxs = dtxs
 
 	// If the flag is false then we save the ABCIResponse. This can be used for the /block_results
@@ -72,6 +73,7 @@ func (multi MultiStore) SaveABCIResponses(height int64, abciResponses *cmtstate.
 		if err != nil {
 			return err
 		}
+
 		if err := multi.db.Set(calcABCIResponsesKey(height), bz); err != nil {
 			return err
 		}
@@ -83,6 +85,7 @@ func (multi MultiStore) SaveABCIResponses(height int64, abciResponses *cmtstate.
 		LegacyAbciResponses: abciResponses,
 		Height:              height,
 	}
+
 	bz, err := response.Marshal()
 	if err != nil {
 		return err
@@ -98,6 +101,7 @@ func (multi MultiStore) SaveABCIResponses(height int64, abciResponses *cmtstate.
 func TestLegacySaveAndLoadFinalizeBlock(t *testing.T) {
 	tearDown, stateDB, _, store := setupTestCaseWithStore(t)
 	defer tearDown(t)
+
 	options := sm.StoreOptions{
 		DiscardABCIResponses: false,
 	}
@@ -243,6 +247,7 @@ func newLegacyABCIResponses() cmtstate.LegacyABCIResponses {
 			Events: []abci.Event{beginBlockEvent},
 		},
 	}
+
 	return legacyABCIResponses
 }
 
@@ -277,5 +282,6 @@ func newLegacyABCIResponsesWithNullFields() cmtstate.LegacyABCIResponses {
 			Events: []abci.Event{beginBlockEvent},
 		},
 	}
+
 	return legacyABCIResponses
 }

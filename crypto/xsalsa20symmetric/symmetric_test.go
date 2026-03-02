@@ -24,10 +24,12 @@ func TestSimple(t *testing.T) {
 func TestSimpleWithKDF(t *testing.T) {
 	plaintext := []byte("sometext")
 	secretPass := []byte("somesecret")
+
 	secret, err := bcrypt.GenerateFromPassword(secretPass, 12)
 	if err != nil {
 		t.Error(err)
 	}
+
 	secret = crypto.Sha256(secret)
 
 	ciphertext := EncryptSymmetric(plaintext, secret)

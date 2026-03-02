@@ -18,7 +18,9 @@ func main() {
 		fmt.Println("Must enter a transaction to send (hex)")
 		os.Exit(1)
 	}
+
 	tx := args[1]
+
 	txBytes, err := hex.DecodeString(tx)
 	if err != nil {
 		fmt.Println("Invalid hex", err)
@@ -27,6 +29,7 @@ func main() {
 
 	//nolint:staticcheck // SA1019: core_grpc.StartGRPCClient is deprecated: A new gRPC API will be introduced after v0.38.
 	clientGRPC := coregrpc.StartGRPCClient(grpcAddr)
+
 	res, err := clientGRPC.BroadcastTx(context.Background(), &coregrpc.RequestBroadcastTx{Tx: txBytes})
 	if err != nil {
 		fmt.Println(err)
@@ -38,5 +41,6 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
 	fmt.Println(string(bz))
 }

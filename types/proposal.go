@@ -50,15 +50,19 @@ func (p *Proposal) ValidateBasic() error {
 	if p.Type != cmtproto.ProposalType {
 		return errors.New("invalid Type")
 	}
+
 	if p.Height < 0 {
 		return errors.New("negative Height")
 	}
+
 	if p.Round < 0 {
 		return errors.New("negative Round")
 	}
+
 	if p.POLRound < -1 {
 		return errors.New("negative POLRound (exception: -1)")
 	}
+
 	if err := p.BlockID.ValidateBasic(); err != nil {
 		return fmt.Errorf("wrong BlockID: %v", err)
 	}
@@ -76,6 +80,7 @@ func (p *Proposal) ValidateBasic() error {
 	if len(p.Signature) > MaxSignatureSize {
 		return fmt.Errorf("signature is too big (max: %d)", MaxSignatureSize)
 	}
+
 	return nil
 }
 
@@ -87,11 +92,14 @@ func (p *Proposal) ValidateBlockSize(maxBlockSizeBytes int64) error {
 	if maxBlockSizeBytes == -1 {
 		maxBlockSizeBytes = int64(MaxBlockSizeBytes)
 	}
+
 	totalParts := int64(p.BlockID.PartSetHeader.Total)
+
 	maxParts := (maxBlockSizeBytes-1)/int64(BlockPartSizeBytes) + 1
 	if totalParts > maxParts {
 		return fmt.Errorf("proposal has too many parts %d (max: %d)", totalParts, maxParts)
 	}
+
 	return nil
 }
 
@@ -125,6 +133,7 @@ func (p *Proposal) String() string {
 // See CanonicalizeProposal
 func ProposalSignBytes(chainID string, p *cmtproto.Proposal) []byte {
 	pb := CanonicalizeProposal(chainID, p)
+
 	bz, err := protoio.MarshalDelimited(&pb)
 	if err != nil {
 		panic(err)
@@ -138,6 +147,7 @@ func (p *Proposal) ToProto() *cmtproto.Proposal {
 	if p == nil {
 		return &cmtproto.Proposal{}
 	}
+
 	pb := new(cmtproto.Proposal)
 
 	pb.BlockID = p.BlockID.ToProto()

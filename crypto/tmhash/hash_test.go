@@ -15,6 +15,7 @@ func TestHash(t *testing.T) {
 	hasher := tmhash.New()
 	_, err := hasher.Write(testVector)
 	require.NoError(t, err)
+
 	bz := hasher.Sum(nil)
 
 	bz2 := tmhash.Sum(testVector)
@@ -22,6 +23,7 @@ func TestHash(t *testing.T) {
 	hasher = sha256.New()
 	_, err = hasher.Write(testVector)
 	require.NoError(t, err)
+
 	bz3 := hasher.Sum(nil)
 
 	assert.Equal(t, bz, bz2)
@@ -33,6 +35,7 @@ func TestHashTruncated(t *testing.T) {
 	hasher := tmhash.NewTruncated()
 	_, err := hasher.Write(testVector)
 	require.NoError(t, err)
+
 	bz := hasher.Sum(nil)
 
 	bz2 := tmhash.SumTruncated(testVector)
@@ -40,6 +43,7 @@ func TestHashTruncated(t *testing.T) {
 	hasher = sha256.New()
 	_, err = hasher.Write(testVector)
 	require.NoError(t, err)
+
 	bz3 := hasher.Sum(nil)
 	bz3 = bz3[:tmhash.TruncatedSize]
 

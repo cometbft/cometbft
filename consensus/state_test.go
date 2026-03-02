@@ -78,6 +78,7 @@ func TestStateProposerSelection0(t *testing.T) {
 	prop := cs1.GetRoundState().Validators.GetProposer()
 	pv, err := cs1.privValidator.GetPubKey()
 	require.NoError(t, err)
+
 	address := pv.Address()
 	if !bytes.Equal(prop.Address, address) {
 		t.Fatalf("expected proposer to be validator %d. Got %X", 0, prop.Address)
@@ -95,6 +96,7 @@ func TestStateProposerSelection0(t *testing.T) {
 	prop = cs1.GetRoundState().Validators.GetProposer()
 	pv1, err := vss[1].GetPubKey()
 	require.NoError(t, err)
+
 	addr := pv1.Address()
 	if !bytes.Equal(prop.Address, addr) {
 		panic(fmt.Sprintf("expected proposer to be validator %d. Got %X", 1, prop.Address))
@@ -121,7 +123,9 @@ func TestStateProposerSelection2(t *testing.T) {
 		prop := cs1.GetRoundState().Validators.GetProposer()
 		pvk, err := vss[int(i+round)%len(vss)].GetPubKey()
 		require.NoError(t, err)
+
 		addr := pvk.Address()
+
 		correctProposer := addr
 		if !bytes.Equal(prop.Address, correctProposer) {
 			panic(fmt.Sprintf(
@@ -176,9 +180,11 @@ func TestStateEnterProposeYesPrivValidator(t *testing.T) {
 	if rs.Proposal == nil {
 		t.Error("rs.Proposal should be set")
 	}
+
 	if rs.ProposalBlock == nil {
 		t.Error("rs.ProposalBlock should be set")
 	}
+
 	if rs.ProposalBlockParts.Total() == 0 {
 		t.Error("rs.ProposalBlockParts should be set")
 	}
@@ -204,6 +210,7 @@ func TestStateBadProposal(t *testing.T) {
 
 	// make the second validator the proposer by incrementing round
 	round++
+
 	incrementRound(vss[1:]...)
 
 	// make the block bad by tampering with statehash
@@ -211,12 +218,15 @@ func TestStateBadProposal(t *testing.T) {
 	if len(stateHash) == 0 {
 		stateHash = make([]byte, 32)
 	}
+
 	stateHash[0] = (stateHash[0] + 1) % 255
 	propBlock.AppHash = stateHash
 	propBlockParts, err := propBlock.MakePartSet(partSize)
 	require.NoError(t, err)
+
 	blockID := types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
 	proposal := types.NewProposal(vs2.Height, round, -1, blockID)
+
 	p := proposal.ToProto()
 	if err := vs2.SignProposal(cs1.state.ChainID, p); err != nil {
 		t.Fatal("failed to sign bad proposal", err)
@@ -286,14 +296,17 @@ func TestStateOversizedBlock(t *testing.T) {
 
 			// make the second validator the proposer by incrementing round
 			round++
+
 			incrementRound(vss[1:]...)
 
 			blockID := types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
 			proposal := types.NewProposal(height, round, -1, blockID)
+
 			p := proposal.ToProto()
 			if err := vs2.SignProposal(cs1.state.ChainID, p); err != nil {
 				t.Fatal("failed to sign bad proposal", err)
 			}
+
 			proposal.Signature = p.Signature
 
 			totalBytes := 0
@@ -306,6 +319,7 @@ func TestStateOversizedBlock(t *testing.T) {
 			if maxBytes > maxBlockParts*int64(types.BlockPartSizeBytes) {
 				maxBlockParts++
 			}
+
 			numBlockParts := int64(propBlockParts.Total())
 
 			if err := cs1.SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"); err != nil {
@@ -319,6 +333,7 @@ func TestStateOversizedBlock(t *testing.T) {
 			t.Log("Proposal Parts;", "Maximum", maxBlockParts, "Current", numBlockParts)
 
 			validateHash := propBlock.Hash()
+
 			lockedRound := int32(1)
 			if testCase.oversized {
 				validateHash = nil
@@ -329,6 +344,7 @@ func TestStateOversizedBlock(t *testing.T) {
 				// and then should send nil prevote and precommit regardless of whether other validators prevote and
 				// precommit on it
 			}
+
 			ensurePrevote(voteCh, height, round)
 			validatePrevote(t, cs1, round, vss[0], validateHash)
 
@@ -365,9 +381,11 @@ func TestStateFullRound1(t *testing.T) {
 	if err := cs.eventBus.Stop(); err != nil {
 		t.Error(err)
 	}
+
 	eventBus := types.NewEventBusWithBufferCapacity(0)
 	eventBus.SetLogger(log.TestingLogger().With("module", "events"))
 	cs.SetEventBus(eventBus)
+
 	if err := eventBus.Start(); err != nil {
 		t.Error(err)
 	}
@@ -382,6 +400,7 @@ func TestStateFullRound1(t *testing.T) {
 	ensureNewRound(newRoundCh, height, round)
 
 	ensureNewProposal(propCh, height, round)
+
 	propBlockHash := cs.GetRoundState().ProposalBlock.Hash()
 
 	ensurePrevote(voteCh, height, round) // wait for prevote
@@ -477,6 +496,7 @@ func TestStateLockNoPOL(t *testing.T) {
 	ensureNewRound(newRoundCh, height, round)
 
 	ensureNewProposal(proposalCh, height, round)
+
 	roundState := cs1.GetRoundState()
 	theBlockHash := roundState.ProposalBlock.Hash()
 	thePartSetHeader := roundState.ProposalBlockParts.Header()
@@ -563,6 +583,7 @@ func TestStateLockNoPOL(t *testing.T) {
 	incrementRound(vs2)
 
 	ensureNewProposal(proposalCh, height, round)
+
 	rs = cs1.GetRoundState()
 
 	// now we're on a new round and are the proposer
@@ -619,6 +640,7 @@ func TestStateLockNoPOL(t *testing.T) {
 	// so set the proposal block
 	bps3, err := propBlock.MakePartSet(partSize)
 	require.NoError(t, err)
+
 	if err := cs1.SetProposalAndBlock(prop, propBlock, bps3, ""); err != nil {
 		t.Fatal(err)
 	}
@@ -668,6 +690,7 @@ func TestStateLockPOLRelock(t *testing.T) {
 	proposalCh := subscribe(cs1.eventBus, types.EventQueryCompleteProposal)
 	pv1, err := cs1.privValidator.GetPubKey()
 	require.NoError(t, err)
+
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 	newRoundCh := subscribe(cs1.eventBus, types.EventQueryNewRound)
@@ -686,6 +709,7 @@ func TestStateLockPOLRelock(t *testing.T) {
 
 	ensureNewRound(newRoundCh, height, round)
 	ensureNewProposal(proposalCh, height, round)
+
 	rs := cs1.GetRoundState()
 	theBlockHash := rs.ProposalBlock.Hash()
 	theBlockParts := rs.ProposalBlockParts.Header()
@@ -703,10 +727,12 @@ func TestStateLockPOLRelock(t *testing.T) {
 
 	// before we timeout to the new round set the new proposal
 	cs2 := newState(cs1.state, vs2, kvstore.NewInMemoryApplication())
+
 	prop, propBlock := decideProposal(ctx, t, cs2, vs2, vs2.Height, vs2.Round+1)
 	if prop == nil || propBlock == nil {
 		t.Fatal("Failed to create proposal block with vs2")
 	}
+
 	propBlockParts, err := propBlock.MakePartSet(partSize)
 	require.NoError(t, err)
 
@@ -771,6 +797,7 @@ func TestStateLockPOLUnlock(t *testing.T) {
 	unlockCh := subscribe(cs1.eventBus, types.EventQueryUnlock)
 	pv1, err := cs1.privValidator.GetPubKey()
 	require.NoError(t, err)
+
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 
@@ -786,6 +813,7 @@ func TestStateLockPOLUnlock(t *testing.T) {
 	ensureNewRound(newRoundCh, height, round)
 
 	ensureNewProposal(proposalCh, height, round)
+
 	rs := cs1.GetRoundState()
 	theBlockHash := rs.ProposalBlock.Hash()
 	theBlockParts := rs.ProposalBlockParts.Header()
@@ -814,6 +842,7 @@ func TestStateLockPOLUnlock(t *testing.T) {
 	lockedBlockHash := rs.LockedBlock.Hash()
 
 	incrementRound(vs2, vs3, vs4)
+
 	round++ // moving to the next round
 
 	ensureNewRound(newRoundCh, height, round)
@@ -864,6 +893,7 @@ func TestStateLockPOLUnlockOnUnknownBlock(t *testing.T) {
 	proposalCh := subscribe(cs1.eventBus, types.EventQueryCompleteProposal)
 	pv1, err := cs1.privValidator.GetPubKey()
 	require.NoError(t, err)
+
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 	newRoundCh := subscribe(cs1.eventBus, types.EventQueryNewRound)
@@ -878,6 +908,7 @@ func TestStateLockPOLUnlockOnUnknownBlock(t *testing.T) {
 
 	ensureNewRound(newRoundCh, height, round)
 	ensureNewProposal(proposalCh, height, round)
+
 	rs := cs1.GetRoundState()
 	firstBlockHash := rs.ProposalBlock.Hash()
 	firstBlockParts := rs.ProposalBlockParts.Header()
@@ -895,10 +926,12 @@ func TestStateLockPOLUnlockOnUnknownBlock(t *testing.T) {
 
 	// before we timeout to the new round set the new proposal
 	cs2 := newState(cs1.state, vs2, kvstore.NewInMemoryApplication())
+
 	prop, propBlock := decideProposal(ctx, t, cs2, vs2, vs2.Height, vs2.Round+1)
 	if prop == nil || propBlock == nil {
 		t.Fatal("Failed to create proposal block with vs2")
 	}
+
 	secondBlockParts, err := propBlock.MakePartSet(partSize)
 	require.NoError(t, err)
 
@@ -941,12 +974,15 @@ func TestStateLockPOLUnlockOnUnknownBlock(t *testing.T) {
 
 	// before we timeout to the new round set the new proposal
 	cs3 := newState(cs1.state, vs3, kvstore.NewInMemoryApplication())
+
 	prop, propBlock = decideProposal(ctx, t, cs3, vs3, vs3.Height, vs3.Round+1)
 	if prop == nil || propBlock == nil {
 		t.Fatal("Failed to create proposal block with vs2")
 	}
+
 	thirdPropBlockParts, err := propBlock.MakePartSet(partSize)
 	require.NoError(t, err)
+
 	thirdPropBlockHash := propBlock.Hash()
 	require.NotEqual(t, secondBlockHash, thirdPropBlockHash)
 
@@ -997,6 +1033,7 @@ func TestStateLockPOLSafety1(t *testing.T) {
 	newRoundCh := subscribe(cs1.eventBus, types.EventQueryNewRound)
 	pv1, err := cs1.privValidator.GetPubKey()
 	require.NoError(t, err)
+
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 
@@ -1005,6 +1042,7 @@ func TestStateLockPOLSafety1(t *testing.T) {
 	ensureNewRound(newRoundCh, height, round)
 
 	ensureNewProposal(proposalCh, height, round)
+
 	rs := cs1.GetRoundState()
 	propBlock := rs.ProposalBlock
 
@@ -1054,6 +1092,7 @@ func TestStateLockPOLSafety1(t *testing.T) {
 	if rs.LockedBlock != nil {
 		panic("we should not be locked!")
 	}
+
 	t.Logf("new prop hash %v", fmt.Sprintf("%X", propBlockHash))
 
 	// go to prevote, prevote for proposal block
@@ -1072,6 +1111,7 @@ func TestStateLockPOLSafety1(t *testing.T) {
 	ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Precommit(round).Nanoseconds())
 
 	incrementRound(vs2, vs3, vs4)
+
 	round++ // moving to the next round
 
 	ensureNewRound(newRoundCh, height, round)
@@ -1122,6 +1162,7 @@ func TestStateLockPOLSafety2(t *testing.T) {
 	unlockCh := subscribe(cs1.eventBus, types.EventQueryUnlock)
 	pv1, err := cs1.privValidator.GetPubKey()
 	require.NoError(t, err)
+
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 
@@ -1131,6 +1172,7 @@ func TestStateLockPOLSafety2(t *testing.T) {
 	propBlockHash0 := propBlock0.Hash()
 	propBlockParts0, err := propBlock0.MakePartSet(partSize)
 	require.NoError(t, err)
+
 	propBlockID0 := types.BlockID{Hash: propBlockHash0, PartSetHeader: propBlockParts0.Header()}
 
 	// the others sign a polka but we don't see it
@@ -1145,6 +1187,7 @@ func TestStateLockPOLSafety2(t *testing.T) {
 	incrementRound(vs2, vs3, vs4)
 
 	round++ // moving to the next round
+
 	t.Log("### ONTO Round 1")
 	// jump in at round 1
 	startTestRound(cs1, height, round)
@@ -1153,6 +1196,7 @@ func TestStateLockPOLSafety2(t *testing.T) {
 	if err := cs1.SetProposalAndBlock(prop1, propBlock1, propBlockParts1, "some peer"); err != nil {
 		t.Fatal(err)
 	}
+
 	ensureNewProposal(proposalCh, height, round)
 
 	ensurePrevote(voteCh, height, round)
@@ -1176,6 +1220,7 @@ func TestStateLockPOLSafety2(t *testing.T) {
 	round++ // moving to the next round
 	// in round 2 we see the polkad block from round 0
 	newProp := types.NewProposal(height, round, 0, propBlockID0)
+
 	p := newProp.ToProto()
 	if err := vs3.SignProposal(cs1.state.ChainID, p); err != nil {
 		t.Fatal(err)
@@ -1221,6 +1266,7 @@ func TestProposeValidBlock(t *testing.T) {
 	unlockCh := subscribe(cs1.eventBus, types.EventQueryUnlock)
 	pv1, err := cs1.privValidator.GetPubKey()
 	require.NoError(t, err)
+
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 
@@ -1229,6 +1275,7 @@ func TestProposeValidBlock(t *testing.T) {
 	ensureNewRound(newRoundCh, height, round)
 
 	ensureNewProposal(proposalCh, height, round)
+
 	rs := cs1.GetRoundState()
 	propBlock := rs.ProposalBlock
 	propBlockHash := propBlock.Hash()
@@ -1250,6 +1297,7 @@ func TestProposeValidBlock(t *testing.T) {
 	ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Precommit(round).Nanoseconds())
 
 	incrementRound(vs2, vs3, vs4)
+
 	round++ // moving to the next round
 
 	ensureNewRound(newRoundCh, height, round)
@@ -1312,6 +1360,7 @@ func TestSetValidBlockOnDelayedPrevote(t *testing.T) {
 	validBlockCh := subscribe(cs1.eventBus, types.EventQueryValidBlock)
 	pv1, err := cs1.privValidator.GetPubKey()
 	require.NoError(t, err)
+
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 
@@ -1320,6 +1369,7 @@ func TestSetValidBlockOnDelayedPrevote(t *testing.T) {
 	ensureNewRound(newRoundCh, height, round)
 
 	ensureNewProposal(proposalCh, height, round)
+
 	rs := cs1.GetRoundState()
 	propBlock := rs.ProposalBlock
 	propBlockHash := propBlock.Hash()
@@ -1377,11 +1427,13 @@ func TestSetValidBlockOnDelayedProposal(t *testing.T) {
 	validBlockCh := subscribe(cs1.eventBus, types.EventQueryValidBlock)
 	pv1, err := cs1.privValidator.GetPubKey()
 	require.NoError(t, err)
+
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 	proposalCh := subscribe(cs1.eventBus, types.EventQueryCompleteProposal)
 
 	round++ // move to round in which P0 is not proposer
+
 	incrementRound(vs2, vs3, vs4)
 
 	startTestRound(cs1, cs1.Height, round)
@@ -1411,6 +1463,7 @@ func TestSetValidBlockOnDelayedProposal(t *testing.T) {
 	}
 
 	ensureNewProposal(proposalCh, height, round)
+
 	rs := cs1.GetRoundState()
 
 	assert.True(t, bytes.Equal(rs.ValidBlock.Hash(), propBlockHash))
@@ -1437,10 +1490,12 @@ func TestProcessProposalAccept(t *testing.T) {
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			m := abcimocks.NewApplication(t)
+
 			status := abci.ResponseProcessProposal_REJECT
 			if testCase.accept {
 				status = abci.ResponseProcessProposal_ACCEPT
 			}
+
 			m.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ResponseProcessProposal{Status: status}, nil)
 			m.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{}, nil).Maybe()
 			cs1, _ := randStateWithApp(4, m)
@@ -1450,6 +1505,7 @@ func TestProcessProposalAccept(t *testing.T) {
 			newRoundCh := subscribe(cs1.eventBus, types.EventQueryNewRound)
 			pv1, err := cs1.privValidator.GetPubKey()
 			require.NoError(t, err)
+
 			addr := pv1.Address()
 			voteCh := subscribeToVoter(cs1, addr)
 
@@ -1457,11 +1513,14 @@ func TestProcessProposalAccept(t *testing.T) {
 			ensureNewRound(newRoundCh, height, round)
 
 			ensureNewProposal(proposalCh, height, round)
+
 			rs := cs1.GetRoundState()
+
 			var prevoteHash cmtbytes.HexBytes
 			if !testCase.expectedNilPrevote {
 				prevoteHash = rs.ProposalBlock.Hash()
 			}
+
 			ensurePrevoteMatch(t, voteCh, height, round, prevoteHash)
 		})
 	}
@@ -1487,6 +1546,7 @@ func TestExtendVoteCalledWhenEnabled(t *testing.T) {
 			m := abcimocks.NewApplication(t)
 			m.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{}, nil)
 			m.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil)
+
 			if testCase.enabled {
 				m.On("ExtendVote", mock.Anything, mock.Anything).Return(&abci.ResponseExtendVote{
 					VoteExtension: []byte("extension"),
@@ -1495,12 +1555,15 @@ func TestExtendVoteCalledWhenEnabled(t *testing.T) {
 					Status: abci.ResponseVerifyVoteExtension_ACCEPT,
 				}, nil)
 			}
+
 			m.On("Commit", mock.Anything, mock.Anything).Return(&abci.ResponseCommit{}, nil).Maybe()
 			m.On("FinalizeBlock", mock.Anything, mock.Anything).Return(&abci.ResponseFinalizeBlock{}, nil).Maybe()
+
 			height := int64(1)
 			if !testCase.enabled {
 				height = 0
 			}
+
 			cs1, vss := randStateWithAppWithHeight(4, m, height)
 
 			height, round := cs1.Height, cs1.Round
@@ -1509,6 +1572,7 @@ func TestExtendVoteCalledWhenEnabled(t *testing.T) {
 			newRoundCh := subscribe(cs1.eventBus, types.EventQueryNewRound)
 			pv1, err := cs1.privValidator.GetPubKey()
 			require.NoError(t, err)
+
 			addr := pv1.Address()
 			voteCh := subscribeToVoter(cs1, addr)
 
@@ -1553,6 +1617,7 @@ func TestExtendVoteCalledWhenEnabled(t *testing.T) {
 			for _, pv := range vss[1:3] {
 				pv, err := pv.GetPubKey()
 				require.NoError(t, err)
+
 				addr := pv.Address()
 				if testCase.enabled {
 					m.AssertCalled(t, "VerifyVoteExtension", context.TODO(), &abci.RequestVerifyVoteExtension{
@@ -1591,12 +1656,14 @@ func TestVerifyVoteExtensionNotCalledOnAbsentPrecommit(t *testing.T) {
 	newRoundCh := subscribe(cs1.eventBus, types.EventQueryNewRound)
 	pv1, err := cs1.privValidator.GetPubKey()
 	require.NoError(t, err)
+
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 
 	startTestRound(cs1, cs1.Height, round)
 	ensureNewRound(newRoundCh, height, round)
 	ensureNewProposal(proposalCh, height, round)
+
 	rs := cs1.GetRoundState()
 
 	blockID := types.BlockID{
@@ -1627,6 +1694,7 @@ func TestVerifyVoteExtensionNotCalledOnAbsentPrecommit(t *testing.T) {
 	// for its address was not sent to the application.
 	pv, err := vss[1].GetPubKey()
 	require.NoError(t, err)
+
 	addr = pv.Address()
 
 	m.AssertNotCalled(t, "VerifyVoteExtension", context.TODO(), &abci.RequestVerifyVoteExtension{
@@ -1676,6 +1744,7 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 	proposalCh := subscribe(cs1.eventBus, types.EventQueryCompleteProposal)
 	pv1, err := cs1.privValidator.GetPubKey()
 	require.NoError(t, err)
+
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 
@@ -1707,6 +1776,7 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 	incrementRound(vss[1:]...)
 	incrementRound(vss[1:]...)
 	incrementRound(vss[1:]...)
+
 	round = 3
 
 	blockID2 := types.BlockID{}
@@ -1717,6 +1787,7 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 	// ensure that the proposer received the list of vote extensions from the
 	// previous height.
 	require.Len(t, rpp.LocalLastCommit.Votes, len(vss))
+
 	for i := range vss {
 		vote := &rpp.LocalLastCommit.Votes[i]
 		require.Equal(t, vote.VoteExtension, voteExtensions[i])
@@ -1767,6 +1838,7 @@ func TestFinalizeBlockCalled(t *testing.T) {
 					Status: abci.ResponseVerifyVoteExtension_ACCEPT,
 				}, nil)
 			}
+
 			r := &abci.ResponseFinalizeBlock{AppHash: []byte("the_hash")}
 			m.On("FinalizeBlock", mock.Anything, mock.Anything).Return(r, nil).Maybe()
 			m.On("Commit", mock.Anything, mock.Anything).Return(&abci.ResponseCommit{}, nil).Maybe()
@@ -1778,16 +1850,19 @@ func TestFinalizeBlockCalled(t *testing.T) {
 			newRoundCh := subscribe(cs1.eventBus, types.EventQueryNewRound)
 			pv1, err := cs1.privValidator.GetPubKey()
 			require.NoError(t, err)
+
 			addr := pv1.Address()
 			voteCh := subscribeToVoter(cs1, addr)
 
 			startTestRound(cs1, cs1.Height, round)
 			ensureNewRound(newRoundCh, height, round)
 			ensureNewProposal(proposalCh, height, round)
+
 			rs := cs1.GetRoundState()
 
 			blockID := types.BlockID{}
 			nextRound := round + 1
+
 			nextHeight := height
 			if !testCase.voteNil {
 				nextRound = 0
@@ -1876,14 +1951,17 @@ func TestVoteExtensionEnableHeight(t *testing.T) {
 				Status: abci.ResponseProcessProposal_ACCEPT,
 			}, nil)
 			m.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{}, nil)
+
 			if testCase.expectExtendCalled {
 				m.On("ExtendVote", mock.Anything, mock.Anything).Return(&abci.ResponseExtendVote{}, nil)
 			}
+
 			if testCase.expectVerifyCalled {
 				m.On("VerifyVoteExtension", mock.Anything, mock.Anything).Return(&abci.ResponseVerifyVoteExtension{
 					Status: abci.ResponseVerifyVoteExtension_ACCEPT,
 				}, nil).Times(numValidators - 1)
 			}
+
 			m.On("FinalizeBlock", mock.Anything, mock.Anything).Return(&abci.ResponseFinalizeBlock{}, nil).Maybe()
 			m.On("Commit", mock.Anything, mock.Anything).Return(&abci.ResponseCommit{}, nil).Maybe()
 			cs1, vss := randStateWithAppWithHeight(numValidators, m, testCase.enableHeight)
@@ -1895,12 +1973,14 @@ func TestVoteExtensionEnableHeight(t *testing.T) {
 			newRoundCh := subscribe(cs1.eventBus, types.EventQueryNewRound)
 			pv1, err := cs1.privValidator.GetPubKey()
 			require.NoError(t, err)
+
 			addr := pv1.Address()
 			voteCh := subscribeToVoter(cs1, addr)
 
 			startTestRound(cs1, cs1.Height, round)
 			ensureNewRound(newRoundCh, height, round)
 			ensureNewProposal(proposalCh, height, round)
+
 			rs := cs1.GetRoundState()
 
 			// sign all of the votes
@@ -1917,6 +1997,7 @@ func TestVoteExtensionEnableHeight(t *testing.T) {
 				require.NoError(t, err)
 				addVotes(cs1, vote)
 			}
+
 			if testCase.expectSuccessfulRound {
 				ensurePrecommit(voteCh, height, round)
 				height++
@@ -1995,6 +2076,7 @@ func TestWaitingTimeoutProposeOnNewRound(t *testing.T) {
 	newRoundCh := subscribe(cs1.eventBus, types.EventQueryNewRound)
 	pv1, err := cs1.privValidator.GetPubKey()
 	require.NoError(t, err)
+
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 
@@ -2031,6 +2113,7 @@ func TestRoundSkipOnNilPolkaFromHigherRound(t *testing.T) {
 	newRoundCh := subscribe(cs1.eventBus, types.EventQueryNewRound)
 	pv1, err := cs1.privValidator.GetPubKey()
 	require.NoError(t, err)
+
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 
@@ -2067,6 +2150,7 @@ func TestWaitTimeoutProposeOnNilPolkaForTheCurrentRound(t *testing.T) {
 	newRoundCh := subscribe(cs1.eventBus, types.EventQueryNewRound)
 	pv1, err := cs1.privValidator.GetPubKey()
 	require.NoError(t, err)
+
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 
@@ -2193,6 +2277,7 @@ func TestStartNextHeightCorrectlyAfterTimeout(t *testing.T) {
 	newBlockHeader := subscribe(cs1.eventBus, types.EventQueryNewBlockHeader)
 	pv1, err := cs1.privValidator.GetPubKey()
 	require.NoError(t, err)
+
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 
@@ -2201,6 +2286,7 @@ func TestStartNextHeightCorrectlyAfterTimeout(t *testing.T) {
 	ensureNewRound(newRoundCh, height, round)
 
 	ensureNewProposal(proposalCh, height, round)
+
 	rs := cs1.GetRoundState()
 	theBlockHash := rs.ProposalBlock.Hash()
 	theBlockParts := rs.ProposalBlockParts.Header()
@@ -2255,6 +2341,7 @@ func TestResetTimeoutPrecommitUponNewHeight(t *testing.T) {
 	newBlockHeader := subscribe(cs1.eventBus, types.EventQueryNewBlockHeader)
 	pv1, err := cs1.privValidator.GetPubKey()
 	require.NoError(t, err)
+
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 
@@ -2263,6 +2350,7 @@ func TestResetTimeoutPrecommitUponNewHeight(t *testing.T) {
 	ensureNewRound(newRoundCh, height, round)
 
 	ensureNewProposal(proposalCh, height, round)
+
 	rs := cs1.GetRoundState()
 	theBlockHash := rs.ProposalBlock.Hash()
 	theBlockParts := rs.ProposalBlockParts.Header()
@@ -2289,6 +2377,7 @@ func TestResetTimeoutPrecommitUponNewHeight(t *testing.T) {
 	if err := cs1.SetProposalAndBlock(prop, propBlock, propBlockParts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
+
 	ensureNewProposal(proposalCh, height+1, 0)
 
 	rs = cs1.GetRoundState()
@@ -2395,6 +2484,7 @@ func TestStateHalt1(t *testing.T) {
 	newBlockCh := subscribe(cs1.eventBus, types.EventQueryNewBlock)
 	pv1, err := cs1.privValidator.GetPubKey()
 	require.NoError(t, err)
+
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 
@@ -2403,6 +2493,7 @@ func TestStateHalt1(t *testing.T) {
 	ensureNewRound(newRoundCh, height, round)
 
 	ensureNewProposal(proposalCh, height, round)
+
 	rs := cs1.GetRoundState()
 	propBlock := rs.ProposalBlock
 	propBlockParts, err := propBlock.MakePartSet(partSize)
@@ -2430,6 +2521,7 @@ func TestStateHalt1(t *testing.T) {
 	round++ // moving to the next round
 
 	ensureNewRound(newRoundCh, height, round)
+
 	rs = cs1.GetRoundState()
 
 	t.Log("### ONTO ROUND 1")
@@ -2553,6 +2645,7 @@ func subscribe(eventBus *types.EventBus, q cmtpubsub.Query) <-chan cmtpubsub.Mes
 	if err != nil {
 		panic(fmt.Sprintf("failed to subscribe %s to %v", testSubscriber, q))
 	}
+
 	return sub.Out()
 }
 
@@ -2562,6 +2655,7 @@ func subscribeUnBuffered(eventBus *types.EventBus, q cmtpubsub.Query) <-chan cmt
 	if err != nil {
 		panic(fmt.Sprintf("failed to subscribe %s to %v", testSubscriber, q))
 	}
+
 	return sub.Out()
 }
 
@@ -2583,6 +2677,7 @@ func findBlockSizeLimit(t *testing.T, height, maxBytes int64, cs *State, partSiz
 	if !oversized {
 		offset = -2
 	}
+
 	softMaxDataBytes := int(types.MaxDataBytes(maxBytes, 0, 0))
 	for i := softMaxDataBytes; i < softMaxDataBytes*2; i++ {
 		propBlock, err := cs.state.MakeBlock(
@@ -2596,15 +2691,20 @@ func findBlockSizeLimit(t *testing.T, height, maxBytes int64, cs *State, partSiz
 
 		propBlockParts, err := propBlock.MakePartSet(partSize)
 		require.NoError(t, err)
+
 		if propBlockParts.ByteSize() > maxBytes+offset {
 			s := "real max"
 			if oversized {
 				s = "off-by-1"
 			}
+
 			t.Log("Detected "+s+" data size for block;", "size", i, "softMaxDataBytes", softMaxDataBytes)
+
 			return propBlock, propBlockParts
 		}
 	}
+
 	require.Fail(t, "We shouldn't hit the end of the loop")
+
 	return nil, nil
 }

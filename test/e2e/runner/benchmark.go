@@ -28,15 +28,18 @@ func Benchmark(ctx context.Context, testnet *e2e.Testnet, benchmarkLength int64)
 	}
 
 	logger.Info("Beginning benchmark period...", "height", block.Height)
+
 	startAt := time.Now()
 
 	// wait for the length of the benchmark period in blocks to pass. We allow 5 seconds for each block
 	// which should be sufficient.
 	waitingTime := time.Duration(benchmarkLength*5) * time.Second
+
 	endHeight, err := waitForAllNodes(ctx, testnet, block.Height+benchmarkLength, waitingTime)
 	if err != nil {
 		return err
 	}
+
 	dur := time.Since(startAt)
 
 	logger.Info("Ending benchmark period", "height", endHeight)
@@ -57,6 +60,7 @@ func Benchmark(ctx context.Context, testnet *e2e.Testnet, benchmarkLength int64)
 
 	// print and return
 	logger.Info(testnetStats.OutputJSON(testnet))
+
 	return nil
 }
 
@@ -127,6 +131,7 @@ func fetchBlockChainSample(ctx context.Context, testnet *e2e.Testnet, benchmarkL
 
 	// Find the first archive node
 	archiveNode := testnet.ArchiveNodes()[0]
+
 	c, err := archiveNode.Client()
 	if err != nil {
 		return nil, err
@@ -139,6 +144,7 @@ func fetchBlockChainSample(ctx context.Context, testnet *e2e.Testnet, benchmarkL
 	}
 
 	to := s.SyncInfo.LatestBlockHeight
+
 	from := to - benchmarkLength + 1
 	if from <= testnet.InitialHeight {
 		return nil, fmt.Errorf("tesnet was unable to reach required height for benchmarking (latest height %d)", to)
@@ -161,7 +167,9 @@ func fetchBlockChainSample(ctx context.Context, testnet *e2e.Testnet, benchmarkL
 					blockMetas[i].Header.Height,
 				)
 			}
+
 			from++
+
 			blocks = append(blocks, blockMetas[i])
 		}
 	}
@@ -171,6 +179,7 @@ func fetchBlockChainSample(ctx context.Context, testnet *e2e.Testnet, benchmarkL
 
 func splitIntoBlockIntervals(blocks []*types.BlockMeta) []time.Duration {
 	intervals := make([]time.Duration, len(blocks)-1)
+
 	lastTime := blocks[0].Header.Time
 	for i, block := range blocks {
 		// skip the first block
@@ -181,6 +190,7 @@ func splitIntoBlockIntervals(blocks []*types.BlockMeta) []time.Duration {
 		intervals[i-1] = block.Header.Time.Sub(lastTime)
 		lastTime = block.Header.Time
 	}
+
 	return intervals
 }
 
@@ -203,12 +213,14 @@ func extractTestnetStats(intervals []time.Duration) testnetStats {
 			min = interval
 		}
 	}
+
 	mean = sum / time.Duration(len(intervals))
 
 	for _, interval := range intervals {
 		diff := (interval - mean).Seconds()
 		std += diff * diff
 	}
+
 	std = math.Sqrt(std / float64(len(intervals)))
 
 	return testnetStats{

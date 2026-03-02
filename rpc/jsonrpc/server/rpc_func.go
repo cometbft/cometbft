@@ -34,6 +34,7 @@ type Option func(*RPCFunc)
 func Cacheable(noCacheDefArgs ...string) Option {
 	return func(r *RPCFunc) {
 		r.cacheable = true
+
 		r.noCacheDefArgs = make(map[string]any)
 		for _, arg := range noCacheDefArgs {
 			r.noCacheDefArgs[arg] = nil
@@ -92,6 +93,7 @@ func (f *RPCFunc) cacheableWithArgs(args []reflect.Value) bool {
 			}
 		}
 	}
+
 	return true
 }
 
@@ -119,10 +121,12 @@ func newRPCFunc(f any, args string, options ...Option) *RPCFunc {
 func funcArgTypes(f any) []reflect.Type {
 	t := reflect.TypeOf(f)
 	n := t.NumIn()
+
 	typez := make([]reflect.Type, n)
 	for i := 0; i < n; i++ {
 		typez[i] = t.In(i)
 	}
+
 	return typez
 }
 
@@ -130,10 +134,12 @@ func funcArgTypes(f any) []reflect.Type {
 func funcReturnTypes(f any) []reflect.Type {
 	t := reflect.TypeOf(f)
 	n := t.NumOut()
+
 	typez := make([]reflect.Type, n)
 	for i := 0; i < n; i++ {
 		typez[i] = t.Out(i)
 	}
+
 	return typez
 }
 
@@ -145,10 +151,12 @@ func unreflectResult(returns []reflect.Value) (any, error) {
 	if errV.Interface() != nil {
 		return nil, fmt.Errorf("%v", errV.Interface())
 	}
+
 	rv := returns[0]
 	// the result is a registered interface,
 	// we need a pointer to it so we can marshal with type byte
 	rvp := reflect.New(rv.Type())
 	rvp.Elem().Set(rv)
+
 	return rvp.Interface(), nil
 }

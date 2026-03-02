@@ -72,9 +72,11 @@ func TestAddrInfoFromHostAndID(t *testing.T) {
 	// Generate valid peer IDs for test cases
 	genPeerID := func(t *testing.T) string {
 		t.Helper()
+
 		pk := ed25519.GenPrivKey()
 		id, err := IDFromPrivateKey(pk)
 		require.NoError(t, err)
+
 		return id.String()
 	}
 
@@ -156,6 +158,7 @@ func TestAddrInfoFromHostAndID(t *testing.T) {
 			}
 
 			require.NoError(t, err)
+
 			if tt.assert != nil {
 				tt.assert(t, addrInfo)
 			}

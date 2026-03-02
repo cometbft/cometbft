@@ -157,6 +157,7 @@ func (s *Server) Subscribe(
 		if outCapacity[0] <= 0 {
 			panic("Negative or zero capacity. Use SubscribeUnbuffered if you want an unbuffered channel")
 		}
+
 		outCap = outCapacity[0]
 	}
 
@@ -172,11 +173,14 @@ func (s *Server) SubscribeUnbuffered(ctx context.Context, clientID string, query
 
 func (s *Server) subscribe(ctx context.Context, clientID string, query Query, outCapacity int) (*Subscription, error) {
 	s.mtx.RLock()
+
 	clientSubscriptions, ok := s.subscriptions[clientID]
 	if ok {
 		_, ok = clientSubscriptions[query.String()]
 	}
+
 	s.mtx.RUnlock()
+
 	if ok {
 		return nil, ErrAlreadySubscribed
 	}
@@ -185,12 +189,16 @@ func (s *Server) subscribe(ctx context.Context, clientID string, query Query, ou
 	select {
 	case s.cmds <- cmd{op: sub, clientID: clientID, query: query, subscription: subscription}:
 		s.mtx.Lock()
+
 		if _, ok = s.subscriptions[clientID]; !ok {
 			s.subscriptions[clientID] = make(map[string]struct{})
 		}
+
 		s.subscriptions[clientID][query.String()] = struct{}{}
 		s.mtx.Unlock()
+
 		return subscription, nil
+
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	case <-s.Quit():
@@ -203,11 +211,14 @@ func (s *Server) subscribe(ctx context.Context, clientID string, query Query, ou
 // not exist.
 func (s *Server) Unsubscribe(ctx context.Context, clientID string, query Query) error {
 	s.mtx.RLock()
+
 	clientSubscriptions, ok := s.subscriptions[clientID]
 	if ok {
 		_, ok = clientSubscriptions[query.String()]
 	}
+
 	s.mtx.RUnlock()
+
 	if !ok {
 		return ErrSubscriptionNotFound
 	}
@@ -216,11 +227,15 @@ func (s *Server) Unsubscribe(ctx context.Context, clientID string, query Query) 
 	case s.cmds <- cmd{op: unsub, clientID: clientID, query: query}:
 		s.mtx.Lock()
 		delete(clientSubscriptions, query.String())
+
 		if len(clientSubscriptions) == 0 {
 			delete(s.subscriptions, clientID)
 		}
+
 		s.mtx.Unlock()
+
 		return nil
+
 	case <-ctx.Done():
 		return ctx.Err()
 	case <-s.Quit():
@@ -234,6 +249,7 @@ func (s *Server) UnsubscribeAll(ctx context.Context, clientID string) error {
 	s.mtx.RLock()
 	_, ok := s.subscriptions[clientID]
 	s.mtx.RUnlock()
+
 	if !ok {
 		return ErrSubscriptionNotFound
 	}
@@ -244,6 +260,7 @@ func (s *Server) UnsubscribeAll(ctx context.Context, clientID string) error {
 		delete(s.subscriptions, clientID)
 		s.mtx.Unlock()
 		return nil
+
 	case <-ctx.Done():
 		return ctx.Err()
 	case <-s.Quit():
@@ -311,6 +328,7 @@ func (s *Server) OnStart() error {
 		subscriptions: make(map[string]map[string]*Subscription),
 		queries:       make(map[string]*queryPlusRefCount),
 	})
+
 	return nil
 }
 
@@ -329,9 +347,11 @@ loop:
 			} else {
 				state.removeClient(cmd.clientID, ErrUnsubscribed)
 			}
+
 		case shutdown:
 			state.removeAll(nil)
 			break loop
+
 		case sub:
 			state.add(cmd.clientID, cmd.query, cmd.subscription)
 		case pub:
@@ -376,6 +396,7 @@ func (state *state) remove(clientID string, qStr string, reason error) {
 	// remove client from query map.
 	// if query has no other clients subscribed, remove it.
 	delete(state.subscriptions[qStr], clientID)
+
 	if len(state.subscriptions[qStr]) == 0 {
 		delete(state.subscriptions, qStr)
 	}

@@ -46,6 +46,7 @@ func (r *Reader) Read(p []byte) (n int, err error) {
 	if len(p) > 0 {
 		n, err = r.IO(r.Reader.Read(p))
 	}
+
 	return
 }
 
@@ -67,9 +68,11 @@ func (r *Reader) SetBlocking(new bool) (old bool) {
 // Close closes the underlying reader if it implements the io.Closer interface.
 func (r *Reader) Close() error {
 	defer r.Done()
+
 	if c, ok := r.Reader.(io.Closer); ok {
 		return c.Close()
 	}
+
 	return nil
 }
 
@@ -102,9 +105,11 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 		} else {
 			return n, ErrLimit
 		}
+
 		p = p[c:]
 		n += c
 	}
+
 	return
 }
 
@@ -126,8 +131,10 @@ func (w *Writer) SetBlocking(new bool) (old bool) {
 // Close closes the underlying writer if it implements the io.Closer interface.
 func (w *Writer) Close() error {
 	defer w.Done()
+
 	if c, ok := w.Writer.(io.Closer); ok {
 		return c.Close()
 	}
+
 	return nil
 }

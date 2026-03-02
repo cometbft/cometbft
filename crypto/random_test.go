@@ -16,6 +16,7 @@ func TestRandomConsistency(t *testing.T) {
 	x3 := crypto.CRandBytes(256)
 	x4 := crypto.CRandBytes(256)
 	x5 := crypto.CRandBytes(256)
+
 	require.NotEqual(t, x1, x2)
 	require.NotEqual(t, x3, x4)
 	require.NotEqual(t, x4, x5)

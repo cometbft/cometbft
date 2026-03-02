@@ -74,6 +74,7 @@ func (idx *BlockerIndexer) Index(bh types.EventDataNewBlockEvents) error {
 	if err != nil {
 		return fmt.Errorf("failed to create block height index key: %w", err)
 	}
+
 	if err := batch.Set(key, int64ToBytes(height)); err != nil {
 		return err
 	}
@@ -137,7 +138,9 @@ func (idx *BlockerIndexer) Search(ctx context.Context, q *query.Query) ([]int64,
 	}
 
 	var heightsInitialized bool
+
 	filteredHeights := make(map[string][]byte)
+
 	if heightInfo.heightEqIdx != -1 {
 		skipIndexes = append(skipIndexes, heightInfo.heightEqIdx)
 	}
@@ -155,9 +158,9 @@ func (idx *BlockerIndexer) Search(ctx context.Context, q *query.Query) ([]int64,
 				// range when querying the conditions of the other range.
 				// Otherwise we can just return all the blocks within the height range (as there is no
 				// additional constraint on events)
-
 				continue
 			}
+
 			prefix, err := orderedcode.Append(nil, qr.Key)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create prefix key: %w", err)
@@ -229,6 +232,7 @@ FOR_LOOP:
 		if err != nil {
 			return nil, err
 		}
+
 		if ok {
 			if _, ok := resultMap[h]; !ok {
 				resultMap[h] = struct{}{}
@@ -297,6 +301,7 @@ LOOP:
 		if _, ok := qr.AnyBound().(*big.Float); ok {
 			v := new(big.Int)
 			v, ok := v.SetString(eventValue, 10)
+
 			var vF *big.Float
 			if !ok {
 				// The precision here is 125. For numbers bigger than this, the value
@@ -313,23 +318,29 @@ LOOP:
 					idx.log.Error("failure to parse height from key:", err)
 					continue LOOP
 				}
+
 				withinHeight, err := checkHeightConditions(heightInfo, keyHeight)
 				if err != nil {
 					idx.log.Error("failure checking for height bounds:", err)
 					continue LOOP
 				}
+
 				if !withinHeight {
 					continue LOOP
 				}
 			}
 
-			var withinBounds bool
-			var err error
+			var (
+				withinBounds bool
+				err          error
+			)
+
 			if !ok {
 				withinBounds, err = idxutil.CheckBounds(qr, vF)
 			} else {
 				withinBounds, err = idxutil.CheckBounds(qr, v)
 			}
+
 			if err != nil {
 				idx.log.Error("failed to parse bounds:", err)
 			} else if withinBounds {
@@ -424,17 +435,18 @@ func (idx *BlockerIndexer) match(
 		defer it.Close()
 
 		for ; it.Valid(); it.Next() {
-
 			keyHeight, err := parseHeightFromEventKey(it.Key())
 			if err != nil {
 				idx.log.Error("failure to parse height from key:", err)
 				continue
 			}
+
 			withinHeight, err := checkHeightConditions(heightInfo, keyHeight)
 			if err != nil {
 				idx.log.Error("failure checking for height bounds:", err)
 				continue
 			}
+
 			if !withinHeight {
 				continue
 			}
@@ -464,17 +476,18 @@ func (idx *BlockerIndexer) match(
 
 	LOOP_EXISTS:
 		for ; it.Valid(); it.Next() {
-
 			keyHeight, err := parseHeightFromEventKey(it.Key())
 			if err != nil {
 				idx.log.Error("failure to parse height from key:", err)
 				continue
 			}
+
 			withinHeight, err := checkHeightConditions(heightInfo, keyHeight)
 			if err != nil {
 				idx.log.Error("failure checking for height bounds:", err)
 				continue
 			}
+
 			if !withinHeight {
 				continue
 			}
@@ -518,14 +531,17 @@ func (idx *BlockerIndexer) match(
 					idx.log.Error("failure to parse height from key:", err)
 					continue
 				}
+
 				withinHeight, err := checkHeightConditions(heightInfo, keyHeight)
 				if err != nil {
 					idx.log.Error("failure checking for height bounds:", err)
 					continue
 				}
+
 				if !withinHeight {
 					continue
 				}
+
 				idx.setTmpHeights(tmpHeights, it)
 			}
 
@@ -536,6 +552,7 @@ func (idx *BlockerIndexer) match(
 			default:
 			}
 		}
+
 		if err := it.Error(); err != nil {
 			return nil, err
 		}

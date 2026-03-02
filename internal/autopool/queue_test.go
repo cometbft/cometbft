@@ -115,8 +115,10 @@ func TestPriorityQueue(t *testing.T) {
 
 		go func() {
 			defer wg.Done()
+
 			for _, item := range inputs {
 				now := time.Now()
+
 				err := queue.Push(item.value, int(item.priority))
 				if err != nil {
 					// should not happen
@@ -137,6 +139,7 @@ func TestPriorityQueue(t *testing.T) {
 				value, ok := queue.Pop()
 				if !ok {
 					time.Sleep(10 * time.Millisecond)
+
 					lastConsumed = time.Now()
 					continue
 				}

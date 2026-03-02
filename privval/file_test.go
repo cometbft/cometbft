@@ -68,6 +68,7 @@ func TestLoadOrGenValidator(t *testing.T) {
 	if err := os.Remove(tempKeyFilePath); err != nil {
 		t.Error(err)
 	}
+
 	tempStateFilePath := tempStateFile.Name()
 	if err := os.Remove(tempStateFilePath); err != nil {
 		t.Error(err)
@@ -262,6 +263,7 @@ func TestDifferByTimestamp(t *testing.T) {
 		pb := proposal.ToProto()
 		err := privVal.SignProposal(chainID, pb)
 		assert.NoError(t, err, "expected no error signing proposal")
+
 		signBytes := types.ProposalSignBytes(chainID, pb)
 
 		sig := proposal.Signature
@@ -269,7 +271,9 @@ func TestDifferByTimestamp(t *testing.T) {
 
 		// manipulate the timestamp. should get changed back
 		pb.Timestamp = pb.Timestamp.Add(time.Millisecond)
+
 		var emptySig []byte
+
 		proposal.Signature = emptySig
 		err = privVal.SignProposal("mychainid", pb)
 		assert.NoError(t, err, "expected no error on signing same proposal")
@@ -295,7 +299,9 @@ func TestDifferByTimestamp(t *testing.T) {
 
 		// manipulate the timestamp. should get changed back
 		v.Timestamp = v.Timestamp.Add(time.Millisecond)
+
 		var emptySig []byte
+
 		v.Signature = emptySig
 		v.ExtensionSignature = emptySig
 		err = privVal.SignVote("mychainid", v)

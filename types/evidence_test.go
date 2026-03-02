@@ -31,7 +31,9 @@ func randomDuplicateVoteEvidence(t *testing.T) *DuplicateVoteEvidence {
 	val := NewMockPV()
 	blockID := makeBlockID([]byte("blockhash"), 1000, []byte("partshash"))
 	blockID2 := makeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))
+
 	const chainID = "mychain"
+
 	return &DuplicateVoteEvidence{
 		VoteA:            MakeVoteNoError(t, val, chainID, 0, 10, 2, 1, blockID, defaultVoteTime),
 		VoteB:            MakeVoteNoError(t, val, chainID, 0, 10, 2, 1, blockID2, defaultVoteTime.Add(1*time.Minute)),
@@ -43,6 +45,7 @@ func randomDuplicateVoteEvidence(t *testing.T) *DuplicateVoteEvidence {
 
 func TestDuplicateVoteEvidence(t *testing.T) {
 	const height = int64(13)
+
 	ev, err := NewMockDuplicateVoteEvidence(height, time.Now(), "mock-chain-id")
 	require.NoError(t, err)
 	assert.Equal(t, ev.Hash(), tmhash.Sum(ev.Bytes()))
@@ -54,6 +57,7 @@ func TestDuplicateVoteEvidenceValidation(t *testing.T) {
 	val := NewMockPV()
 	blockID := makeBlockID(tmhash.Sum([]byte("blockhash")), math.MaxInt32, tmhash.Sum([]byte("partshash")))
 	blockID2 := makeBlockID(tmhash.Sum([]byte("blockhash2")), math.MaxInt32, tmhash.Sum([]byte("partshash")))
+
 	const chainID = "mychain"
 
 	testCases := []struct {
@@ -100,6 +104,7 @@ func TestLightClientAttackEvidenceBasic(t *testing.T) {
 	blockID := makeBlockID(tmhash.Sum([]byte("blockhash")), math.MaxInt32, tmhash.Sum([]byte("partshash")))
 	extCommit, err := MakeExtCommit(blockID, height, 1, voteSet, privVals, defaultVoteTime, false)
 	require.NoError(t, err)
+
 	commit := extCommit.ToCommit()
 
 	lcae := &LightClientAttackEvidence{
@@ -162,6 +167,7 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 	blockID := makeBlockID(header.Hash(), math.MaxInt32, tmhash.Sum([]byte("partshash")))
 	extCommit, err := MakeExtCommit(blockID, height, 1, voteSet, privVals, time.Now(), false)
 	require.NoError(t, err)
+
 	commit := extCommit.ToCommit()
 
 	lcae := &LightClientAttackEvidence{
@@ -217,6 +223,7 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 				ByzantineValidators: valSet.Validators[:nValidators/2],
 			}
 			tc.malleateEvidence(lcae)
+
 			if tc.expectErr {
 				assert.Error(t, lcae.ValidateBasic(), tc.testName)
 			} else {
@@ -256,7 +263,9 @@ func TestEvidenceProto(t *testing.T) {
 	val := NewMockPV()
 	blockID := makeBlockID(tmhash.Sum([]byte("blockhash")), math.MaxInt32, tmhash.Sum([]byte("partshash")))
 	blockID2 := makeBlockID(tmhash.Sum([]byte("blockhash2")), math.MaxInt32, tmhash.Sum([]byte("partshash")))
+
 	const chainID = "mychain"
+
 	v := MakeVoteNoError(t, val, chainID, math.MaxInt32, math.MaxInt64, 1, 0x01, blockID, defaultVoteTime)
 	v2 := MakeVoteNoError(t, val, chainID, math.MaxInt32, math.MaxInt64, 2, 0x01, blockID2, defaultVoteTime)
 
@@ -295,6 +304,7 @@ func TestEvidenceProto(t *testing.T) {
 				assert.Error(t, err, tt.testName)
 				return
 			}
+
 			assert.NoError(t, err, tt.testName)
 
 			evi, err := EvidenceFromProto(pb)
@@ -302,6 +312,7 @@ func TestEvidenceProto(t *testing.T) {
 				assert.Error(t, err, tt.testName)
 				return
 			}
+
 			require.Equal(t, tt.evidence, evi, tt.testName)
 		})
 	}

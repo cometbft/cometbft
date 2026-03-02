@@ -88,12 +88,15 @@ func createOutboundPeerAndPerformHandshake(
 		testCh: &p2p.Message{},
 	}
 	pk := ed25519.GenPrivKey()
+
 	pc, err := testOutboundPeerConn(addr, config, false, pk)
 	if err != nil {
 		return nil, err
 	}
+
 	timeout := 1 * time.Second
 	ourNodeInfo := testNodeInfo(addr.ID, "host_peer")
+
 	peerNodeInfo, err := handshake(pc.conn, timeout, ourNodeInfo)
 	if err != nil {
 		return nil, err
@@ -101,6 +104,7 @@ func createOutboundPeerAndPerformHandshake(
 
 	p := newPeer(pc, mConfig, peerNodeInfo, reactorsByCh, msgTypeByChID, chDescs, func(p Peer, r any) {}, newMetricsLabelCache())
 	p.SetLogger(log.TestingLogger().With("peer", addr))
+
 	return p, nil
 }
 
@@ -113,6 +117,7 @@ func testDial(addr *NetAddress, cfg *config.P2PConfig) (net.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return conn, nil
 }
 
@@ -123,6 +128,7 @@ func testOutboundPeerConn(
 	ourNodePrivKey crypto.PrivKey,
 ) (peerConn, error) {
 	var pc peerConn
+
 	conn, err := testDial(addr, config)
 	if err != nil {
 		return pc, fmt.Errorf("error creating peer: %w", err)
@@ -173,11 +179,14 @@ func (rp *remotePeer) Start() {
 	if e != nil {
 		golog.Fatalf("net.Listen tcp :0: %+v", e)
 	}
+
 	rp.listener = l
+
 	rp.addr = NewNetAddress(PubKeyToID(rp.PrivKey.PubKey()), l.Addr())
 	if rp.channels == nil {
 		rp.channels = []byte{testCh}
 	}
+
 	go rp.accept()
 }
 
@@ -190,14 +199,17 @@ func (rp *remotePeer) Dial(addr *NetAddress) (net.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	pc, err := testInboundPeerConn(conn, rp.Config, rp.PrivKey)
 	if err != nil {
 		return nil, err
 	}
+
 	_, err = handshake(pc.conn, time.Second, rp.nodeInfo())
 	if err != nil {
 		return nil, err
 	}
+
 	return conn, err
 }
 
@@ -208,9 +220,11 @@ func (rp *remotePeer) accept() {
 		conn, err := rp.listener.Accept()
 		if err != nil {
 			golog.Printf("Failed to accept conn: %+v", err)
+
 			for _, conn := range conns {
 				_ = conn.Close()
 			}
+
 			return
 		}
 

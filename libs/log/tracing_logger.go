@@ -49,11 +49,13 @@ func (l *tracingLogger) With(keyvals ...any) Logger {
 func formatErrors(keyvals []any) []any {
 	newKeyvals := make([]any, len(keyvals))
 	copy(newKeyvals, keyvals)
+
 	for i := 0; i < len(newKeyvals)-1; i += 2 {
 		if err, ok := newKeyvals[i+1].(stackTracer); ok {
 			newKeyvals[i+1] = tracedError{err}
 		}
 	}
+
 	return newKeyvals
 }
 

@@ -100,6 +100,7 @@ func TestAddrBookLookup(t *testing.T) {
 
 	book := NewAddrBook(fname, true)
 	book.SetLogger(log.TestingLogger())
+
 	for _, addrSrc := range randAddrs {
 		addr := addrSrc.addr
 		src := addrSrc.src
@@ -119,6 +120,7 @@ func TestAddrBookPromoteToOld(t *testing.T) {
 
 	book := NewAddrBook(fname, true)
 	book.SetLogger(log.TestingLogger())
+
 	for _, addrSrc := range randAddrs {
 		err := book.AddAddress(addrSrc.addr, addrSrc.src)
 		require.NoError(t, err)
@@ -187,6 +189,7 @@ func randNetAddressPairs(t *testing.T, n int) []netAddressPair {
 	for i := 0; i < n; i++ {
 		randAddrs[i] = netAddressPair{addr: randIPv4Address(t), src: randIPv4Address(t)}
 	}
+
 	return randAddrs
 }
 
@@ -203,6 +206,7 @@ func randIPv4Address(t *testing.T) *p2p.NetAddress {
 		idAddr := p2p.IDAddressString(id, fmt.Sprintf("%v:%v", ip, port))
 		addr, err := p2p.NewNetAddressString(idAddr)
 		assert.Nil(t, err, "error generating rand network address")
+
 		if addr.Routable() {
 			return addr
 		}
@@ -284,11 +288,13 @@ func TestAddrBookGetSelection(t *testing.T) {
 
 	// check there is no duplicates
 	addrs := make(map[string]*p2p.NetAddress)
+
 	selection := book.GetSelection()
 	for _, addr := range selection {
 		if dup, ok := addrs[addr.String()]; ok {
 			t.Fatalf("selection %v contains duplicates %v", selection, dup)
 		}
+
 		addrs[addr.String()] = addr
 	}
 
@@ -328,11 +334,13 @@ func TestAddrBookGetSelectionWithBias(t *testing.T) {
 
 	// check there is no duplicates
 	addrs := make(map[string]*p2p.NetAddress)
+
 	selection = book.GetSelectionWithBias(biasTowardsNewAddrs)
 	for _, addr := range selection {
 		if dup, ok := addrs[addr.String()]; ok {
 			t.Fatalf("selection %v contains duplicates %v", selection, dup)
 		}
+
 		addrs[addr.String()] = addr
 	}
 
@@ -371,6 +379,7 @@ func TestAddrBookGetSelectionWithBias(t *testing.T) {
 			len(selection),
 		)
 	}
+
 	if got < expected-slack {
 		t.Fatalf(
 			"got fewer good peers (%% got: %d, %% expected: %d, number of good addrs: %d, total: %d)",
@@ -388,6 +397,7 @@ func TestAddrBookHasAddress(t *testing.T) {
 
 	book := NewAddrBook(fname, true)
 	book.SetLogger(log.TestingLogger())
+
 	addr := randIPv4Address(t)
 	err := book.AddAddress(addr, addr)
 	require.NoError(t, err)
@@ -409,6 +419,7 @@ func testCreatePrivateAddrs(t *testing.T, numAddrs int) ([]*p2p.NetAddress, []st
 	for i, addr := range addrs {
 		private[i] = string(addr.ID)
 	}
+
 	return addrs, private
 }
 
@@ -497,6 +508,7 @@ func testAddrBookAddressSelection(t *testing.T, bookSize int) {
 		// create book and get selection
 		book, fname := createAddrBookWithMOldAndNNewAddrs(t, nBookOld, nBookNew)
 		defer deleteTempFile(fname)
+
 		addrs := book.GetSelectionWithBias(biasToSelectNewPeers)
 		assert.NotNil(t, addrs, "%s - expected a non-nil selection", dbgStr)
 		nAddrs := len(addrs)
@@ -533,6 +545,7 @@ func testAddrBookAddressSelection(t *testing.T, bookSize int) {
 		if nNew != expNew {
 			t.Fatalf("%s - expected new addrs %d, got %d", dbgStr, expNew, nNew)
 		}
+
 		if nOld != expOld {
 			t.Fatalf("%s - expected old addrs %d, got %d", dbgStr, expOld, nOld)
 		}
@@ -545,16 +558,20 @@ func testAddrBookAddressSelection(t *testing.T, bookSize int) {
 		// Build a list with the expected lengths of partitions and another with the expected types, e.g.:
 		// expSeqLens = [10, 22], expSeqTypes = [1, 2]
 		// means we expect 10 new (type 1) addresses followed by 22 old (type 2) addresses.
-		var expSeqLens []int
-		var expSeqTypes []int
+		var (
+			expSeqLens  []int
+			expSeqTypes []int
+		)
 
 		switch {
 		case expOld == 0: // all new addresses
 			expSeqLens = []int{nAddrs}
 			expSeqTypes = []int{1}
+
 		case expNew == 0: // all old addresses
 			expSeqLens = []int{nAddrs}
 			expSeqTypes = []int{2}
+
 		case nAddrs-expNew-expOld == 0: // new addresses, old addresses
 			expSeqLens = []int{expNew, expOld}
 			expSeqTypes = []int{1, 2}
@@ -578,11 +595,14 @@ func TestMultipleAddrBookAddressSelection(t *testing.T) {
 
 	// Test for two books with sizes from following ranges
 	ranges := [...][]int{{33, 100}, {100, 175}}
+
 	bookSizes := make([]int, 0, len(ranges))
 	for _, r := range ranges {
 		bookSizes = append(bookSizes, cmtrand.Intn(r[1]-r[0])+r[0])
 	}
+
 	t.Logf("Testing address selection for the following book sizes %v\n", bookSizes)
+
 	for _, bookSize := range bookSizes {
 		testAddrBookAddressSelection(t, bookSize)
 	}
@@ -721,11 +741,14 @@ func createTempFileName(prefix string) string {
 	if err != nil {
 		panic(err)
 	}
+
 	fname := f.Name()
+
 	err = f.Close()
 	if err != nil {
 		panic(err)
 	}
+
 	return fname
 }
 
@@ -767,6 +790,7 @@ func countOldAndNewAddrsInSelection(addrs []*p2p.NetAddress, book *addrBook) (nO
 			nNew++
 		}
 	}
+
 	return
 }
 
@@ -788,11 +812,13 @@ func analyseSelectionLayout(book *addrBook, addrs []*p2p.NetAddress) (seqLens, s
 		} else {
 			addrType = 1
 		}
+
 		if addrType != prevType && prevType != 0 {
 			seqLens = append(seqLens, currentSeqLen)
 			seqTypes = append(seqTypes, prevType)
 			currentSeqLen = 0
 		}
+
 		currentSeqLen++
 		prevType = addrType
 	}

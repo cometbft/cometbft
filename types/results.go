@@ -15,6 +15,7 @@ func NewResults(responses []*abci.ExecTxResult) ABCIResults {
 	for i, d := range responses {
 		res[i] = abci.DeterministicExecTxResult(d)
 	}
+
 	return res
 }
 
@@ -31,13 +32,16 @@ func (a ABCIResults) ProveResult(i int) merkle.Proof {
 
 func (a ABCIResults) toByteSlices() [][]byte {
 	l := len(a)
+
 	bzs := make([][]byte, l)
 	for i := 0; i < l; i++ {
 		bz, err := a[i].Marshal()
 		if err != nil {
 			panic(err)
 		}
+
 		bzs[i] = bz
 	}
+
 	return bzs
 }

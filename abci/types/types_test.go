@@ -32,6 +32,7 @@ func TestHashAndProveResults(t *testing.T) {
 	// Make sure that we can get a root hash from results and verify proofs.
 	rs, err := abci.MarshalTxResults(trs)
 	require.NoError(t, err)
+
 	root := merkle.HashFromByteSlices(rs)
 	assert.NotEmpty(t, root)
 

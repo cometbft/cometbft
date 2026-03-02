@@ -61,20 +61,25 @@ type metricsLabelCache struct {
 // to be produced once to prevent expensive string operations.
 func (m *metricsLabelCache) ValueToMetricLabel(i any) string {
 	t := reflect.TypeOf(i)
+
 	m.mtx.RLock()
 
 	if s, ok := m.messageLabelNames[t]; ok {
 		m.mtx.RUnlock()
 		return s
 	}
+
 	m.mtx.RUnlock()
 
 	s := t.String()
 	ss := valueToLabelRegexp.FindStringSubmatch(s)
 	l := fmt.Sprintf("%s_%s", ss[1], ss[2])
+
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
+
 	m.messageLabelNames[t] = l
+
 	return l
 }
 

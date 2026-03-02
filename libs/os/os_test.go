@@ -16,6 +16,7 @@ func TestCopyFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.Remove(tmpfile.Name())
+
 	content := []byte("hello world")
 	if _, err := tmpfile.Write(content); err != nil {
 		t.Fatal(err)
@@ -25,22 +26,27 @@ func TestCopyFile(t *testing.T) {
 	if err := CopyFile(tmpfile.Name(), copyfile); err != nil {
 		t.Fatal(err)
 	}
+
 	if _, err := os.Stat(copyfile); os.IsNotExist(err) {
 		t.Fatal("copy should exist")
 	}
+
 	data, err := os.ReadFile(copyfile)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !bytes.Equal(data, content) {
 		t.Fatalf("copy file content differs: expected %v, got %v", content, data)
 	}
+
 	os.Remove(copyfile)
 }
 
 func TestEnsureDir(t *testing.T) {
 	tmp, err := os.MkdirTemp("", "ensure-dir")
 	require.NoError(t, err)
+
 	defer os.RemoveAll(tmp)
 
 	// Should be possible to create a new directory.
@@ -82,6 +88,7 @@ func TestTrickedTruncation(t *testing.T) {
 	defer os.Remove(tmpDir)
 
 	originalWALPath := filepath.Join(tmpDir, "wal")
+
 	originalWALContent := []byte("I AM BECOME DEATH, DESTROYER OF ALL WORLDS!")
 	if err := os.WriteFile(originalWALPath, originalWALContent, 0o755); err != nil {
 		t.Fatal(err)
@@ -92,6 +99,7 @@ func TestTrickedTruncation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !bytes.Equal(readWAL, originalWALContent) {
 		t.Fatalf("Cannot proceed as the content does not match\nGot:  %q\nWant: %q", readWAL, originalWALContent)
 	}
@@ -107,6 +115,7 @@ func TestTrickedTruncation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !bytes.Equal(reReadWAL, originalWALContent) {
 		t.Fatalf("Oops, the WAL's content was changed :(\nGot:  %q\nWant: %q", reReadWAL, originalWALContent)
 	}

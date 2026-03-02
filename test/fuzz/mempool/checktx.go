@@ -13,6 +13,7 @@ func init() {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
 	appConnMem, _ := cc.NewABCIClient()
+
 	err := appConnMem.Start()
 	if err != nil {
 		panic(err)

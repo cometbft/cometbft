@@ -18,6 +18,7 @@ func TestMarshal(t *testing.T) {
 	assert.Equal(t, bz, bz2)
 
 	var dataB2 HexBytes
+
 	err = (&dataB2).Unmarshal(bz)
 	assert.Nil(t, err)
 	assert.Equal(t, dataB, dataB2)
@@ -40,7 +41,6 @@ func TestJSONMarshal(t *testing.T) {
 	}
 
 	for i, tc := range cases {
-
 		t.Run(fmt.Sprintf("Case %d", i), func(t *testing.T) {
 			ts := TestStruct{B1: tc.input, B2: tc.input}
 
@@ -49,16 +49,19 @@ func TestJSONMarshal(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			assert.Equal(t, string(jsonBytes), tc.expected)
 
 			// TODO do fuzz testing to ensure that unmarshal fails
 
 			// Test that unmarshaling works correctly.
 			ts2 := TestStruct{}
+
 			err = json.Unmarshal(jsonBytes, &ts2)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			assert.Equal(t, ts2.B1, tc.input)
 			assert.Equal(t, ts2.B2, HexBytes(tc.input))
 		})

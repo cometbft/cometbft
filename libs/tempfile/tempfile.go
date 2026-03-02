@@ -51,6 +51,7 @@ func writeFileRandReseed() uint64 {
 // If it was a negative int, the leading number is a 0.
 func randWriteFileSuffix() string {
 	atomicWriteFileRandMu.Lock()
+
 	r := atomicWriteFileRand
 	if r == 0 {
 		r = writeFileRandReseed()
@@ -60,6 +61,7 @@ func randWriteFileSuffix() string {
 	r = r*lcgA + lcgC
 
 	atomicWriteFileRand = r
+
 	atomicWriteFileRandMu.Unlock()
 	// Can have a negative name, replace this in the following
 	suffix := strconv.Itoa(int(r))
@@ -68,6 +70,7 @@ func randWriteFileSuffix() string {
 		// as otherwise there would be two `-` in a row.
 		suffix = strings.Replace(suffix, "-", "0", 1)
 	}
+
 	return suffix
 }
 
@@ -99,15 +102,20 @@ func WriteFileAtomic(filename string, data []byte, perm os.FileMode) (err error)
 			// likely hit another instances seed.
 			if nconflict++; nconflict > atomicWriteFileMaxNumConflicts {
 				atomicWriteFileRandMu.Lock()
+
 				atomicWriteFileRand = writeFileRandReseed()
+
 				atomicWriteFileRandMu.Unlock()
 			}
+
 			continue
 		} else if err != nil {
 			return err
 		}
+
 		break
 	}
+
 	if i == atomicWriteFileMaxNumWriteAttempts {
 		return fmt.Errorf("could not create atomic write file after %d attempts", i)
 	}

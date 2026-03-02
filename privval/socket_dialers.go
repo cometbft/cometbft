@@ -27,9 +27,11 @@ func DialTCPFn(addr string, timeoutReadWrite time.Duration, privKey crypto.PrivK
 			deadline := time.Now().Add(timeoutReadWrite)
 			err = conn.SetDeadline(deadline)
 		}
+
 		if err == nil {
 			conn, err = p2pconn.MakeSecretConnection(conn, privKey)
 		}
+
 		return conn, err
 	}
 }

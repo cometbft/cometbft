@@ -20,6 +20,7 @@ func TestVoteSet_AddVote_Good(t *testing.T) {
 
 	val0p, err := val0.GetPubKey()
 	require.NoError(t, err)
+
 	val0Addr := val0p.Address()
 
 	assert.Nil(t, voteSet.GetByAddress(val0Addr))
@@ -63,8 +64,10 @@ func TestVoteSet_AddVote_Bad(t *testing.T) {
 	{
 		pubKey, err := privValidators[0].GetPubKey()
 		require.NoError(t, err)
+
 		addr := pubKey.Address()
 		vote := withValidator(voteProto, addr, 0)
+
 		added, err := signAddVote(privValidators[0], vote, voteSet)
 		if !added || err != nil {
 			t.Errorf("expected VoteSet.Add to succeed")
@@ -75,8 +78,10 @@ func TestVoteSet_AddVote_Bad(t *testing.T) {
 	{
 		pubKey, err := privValidators[0].GetPubKey()
 		require.NoError(t, err)
+
 		addr := pubKey.Address()
 		vote := withValidator(voteProto, addr, 0)
+
 		added, err := signAddVote(privValidators[0], withBlockHash(vote, cmtrand.Bytes(32)), voteSet)
 		if added || err == nil {
 			t.Errorf("expected VoteSet.Add to fail, conflicting vote.")
@@ -87,8 +92,10 @@ func TestVoteSet_AddVote_Bad(t *testing.T) {
 	{
 		pubKey, err := privValidators[1].GetPubKey()
 		require.NoError(t, err)
+
 		addr := pubKey.Address()
 		vote := withValidator(voteProto, addr, 1)
+
 		added, err := signAddVote(privValidators[1], withHeight(vote, height+1), voteSet)
 		if added || err == nil {
 			t.Errorf("expected VoteSet.Add to fail, wrong height")
@@ -99,8 +106,10 @@ func TestVoteSet_AddVote_Bad(t *testing.T) {
 	{
 		pubKey, err := privValidators[2].GetPubKey()
 		require.NoError(t, err)
+
 		addr := pubKey.Address()
 		vote := withValidator(voteProto, addr, 2)
+
 		added, err := signAddVote(privValidators[2], withRound(vote, round+1), voteSet)
 		if added || err == nil {
 			t.Errorf("expected VoteSet.Add to fail, wrong round")
@@ -111,8 +120,10 @@ func TestVoteSet_AddVote_Bad(t *testing.T) {
 	{
 		pubKey, err := privValidators[3].GetPubKey()
 		require.NoError(t, err)
+
 		addr := pubKey.Address()
 		vote := withValidator(voteProto, addr, 3)
+
 		added, err := signAddVote(privValidators[3], withType(vote, byte(cmtproto.PrecommitType)), voteSet)
 		if added || err == nil {
 			t.Errorf("expected VoteSet.Add to fail, wrong type")
@@ -133,6 +144,7 @@ func Benchmark_2_3_Maj(b *testing.B) {
 		BlockID:          BlockID{nil, PartSetHeader{}},
 	}
 	blockPartsTotal := uint32(123)
+
 	blockPartSetHeader := PartSetHeader{blockPartsTotal, crypto.CRandBytes(32)}
 	for b.Loop() {
 		voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 100, 1, false)
@@ -142,6 +154,7 @@ func Benchmark_2_3_Maj(b *testing.B) {
 			vote := withValidator(voteProto, adrr, i)
 			_, err := signAddVote(privValidators[i], withBlockHash(vote, nil), voteSet)
 			require.NoError(b, err)
+
 			_, _ = voteSet.TwoThirdsMajority()
 
 			pubKey, _ = privValidators[i+1].GetPubKey()
@@ -149,6 +162,7 @@ func Benchmark_2_3_Maj(b *testing.B) {
 			vote = withValidator(voteProto, adrr, i+1)
 			_, err = signAddVote(privValidators[i+1], vote, voteSet)
 			require.NoError(b, err)
+
 			_, _ = voteSet.TwoThirdsMajority()
 
 			pubKey, _ = privValidators[i+2].GetPubKey()
@@ -157,6 +171,7 @@ func Benchmark_2_3_Maj(b *testing.B) {
 			blockPartsHeader := PartSetHeader{blockPartsTotal, crypto.CRandBytes(32)}
 			_, err = signAddVote(privValidators[i+2], withBlockPartSetHeader(vote, blockPartsHeader), voteSet)
 			require.NoError(b, err)
+
 			_, _ = voteSet.TwoThirdsMajority()
 
 			pubKey, _ = privValidators[i+3].GetPubKey()
@@ -165,6 +180,7 @@ func Benchmark_2_3_Maj(b *testing.B) {
 			blockPartsHeader = PartSetHeader{blockPartsTotal + 1, blockPartSetHeader.Hash}
 			_, err = signAddVote(privValidators[i+3], withBlockPartSetHeader(vote, blockPartsHeader), voteSet)
 			require.NoError(b, err)
+
 			_, _ = voteSet.TwoThirdsMajority()
 		}
 	}
@@ -187,11 +203,13 @@ func TestVoteSet_2_3Majority(t *testing.T) {
 	for i := int32(0); i < 6; i++ {
 		pubKey, err := privValidators[i].GetPubKey()
 		require.NoError(t, err)
+
 		addr := pubKey.Address()
 		vote := withValidator(voteProto, addr, i)
 		_, err = signAddVote(privValidators[i], vote, voteSet)
 		require.NoError(t, err)
 	}
+
 	blockID, ok := voteSet.TwoThirdsMajority()
 	assert.False(t, ok || !blockID.IsZero(), "there should be no 2/3 majority")
 
@@ -199,10 +217,12 @@ func TestVoteSet_2_3Majority(t *testing.T) {
 	{
 		pubKey, err := privValidators[6].GetPubKey()
 		require.NoError(t, err)
+
 		addr := pubKey.Address()
 		vote := withValidator(voteProto, addr, 6)
 		_, err = signAddVote(privValidators[6], withBlockHash(vote, cmtrand.Bytes(32)), voteSet)
 		require.NoError(t, err)
+
 		blockID, ok = voteSet.TwoThirdsMajority()
 		assert.False(t, ok || !blockID.IsZero(), "there should be no 2/3 majority")
 	}
@@ -211,10 +231,12 @@ func TestVoteSet_2_3Majority(t *testing.T) {
 	{
 		pubKey, err := privValidators[7].GetPubKey()
 		require.NoError(t, err)
+
 		addr := pubKey.Address()
 		vote := withValidator(voteProto, addr, 7)
 		_, err = signAddVote(privValidators[7], vote, voteSet)
 		require.NoError(t, err)
+
 		blockID, ok = voteSet.TwoThirdsMajority()
 		assert.True(t, ok || blockID.IsZero(), "there should be 2/3 majority for nil")
 	}
@@ -242,11 +264,13 @@ func TestVoteSet_2_3MajorityRedux(t *testing.T) {
 	for i := int32(0); i < 66; i++ {
 		pubKey, err := privValidators[i].GetPubKey()
 		require.NoError(t, err)
+
 		addr := pubKey.Address()
 		vote := withValidator(voteProto, addr, i)
 		_, err = signAddVote(privValidators[i], vote, voteSet)
 		require.NoError(t, err)
 	}
+
 	blockID, ok := voteSet.TwoThirdsMajority()
 	assert.False(t, ok || !blockID.IsZero(),
 		"there should be no 2/3 majority")
@@ -255,10 +279,12 @@ func TestVoteSet_2_3MajorityRedux(t *testing.T) {
 	{
 		pubKey, err := privValidators[66].GetPubKey()
 		require.NoError(t, err)
+
 		adrr := pubKey.Address()
 		vote := withValidator(voteProto, adrr, 66)
 		_, err = signAddVote(privValidators[66], withBlockHash(vote, nil), voteSet)
 		require.NoError(t, err)
+
 		blockID, ok = voteSet.TwoThirdsMajority()
 		assert.False(t, ok || !blockID.IsZero(),
 			"there should be no 2/3 majority: last vote added was nil")
@@ -268,11 +294,13 @@ func TestVoteSet_2_3MajorityRedux(t *testing.T) {
 	{
 		pubKey, err := privValidators[67].GetPubKey()
 		require.NoError(t, err)
+
 		addr := pubKey.Address()
 		vote := withValidator(voteProto, addr, 67)
 		blockPartsHeader := PartSetHeader{blockPartsTotal, crypto.CRandBytes(32)}
 		_, err = signAddVote(privValidators[67], withBlockPartSetHeader(vote, blockPartsHeader), voteSet)
 		require.NoError(t, err)
+
 		blockID, ok = voteSet.TwoThirdsMajority()
 		assert.False(t, ok || !blockID.IsZero(),
 			"there should be no 2/3 majority: last vote added had different PartSetHeader Hash")
@@ -282,11 +310,13 @@ func TestVoteSet_2_3MajorityRedux(t *testing.T) {
 	{
 		pubKey, err := privValidators[68].GetPubKey()
 		require.NoError(t, err)
+
 		addr := pubKey.Address()
 		vote := withValidator(voteProto, addr, 68)
 		blockPartsHeader := PartSetHeader{blockPartsTotal + 1, blockPartSetHeader.Hash}
 		_, err = signAddVote(privValidators[68], withBlockPartSetHeader(vote, blockPartsHeader), voteSet)
 		require.NoError(t, err)
+
 		blockID, ok = voteSet.TwoThirdsMajority()
 		assert.False(t, ok || !blockID.IsZero(),
 			"there should be no 2/3 majority: last vote added had different PartSetHeader Total")
@@ -296,10 +326,12 @@ func TestVoteSet_2_3MajorityRedux(t *testing.T) {
 	{
 		pubKey, err := privValidators[69].GetPubKey()
 		require.NoError(t, err)
+
 		addr := pubKey.Address()
 		vote := withValidator(voteProto, addr, 69)
 		_, err = signAddVote(privValidators[69], withBlockHash(vote, cmtrand.Bytes(32)), voteSet)
 		require.NoError(t, err)
+
 		blockID, ok = voteSet.TwoThirdsMajority()
 		assert.False(t, ok || !blockID.IsZero(),
 			"there should be no 2/3 majority: last vote added had different BlockHash")
@@ -309,10 +341,12 @@ func TestVoteSet_2_3MajorityRedux(t *testing.T) {
 	{
 		pubKey, err := privValidators[70].GetPubKey()
 		require.NoError(t, err)
+
 		addr := pubKey.Address()
 		vote := withValidator(voteProto, addr, 70)
 		_, err = signAddVote(privValidators[70], vote, voteSet)
 		require.NoError(t, err)
+
 		blockID, ok = voteSet.TwoThirdsMajority()
 		assert.True(t, ok && blockID.Equals(BlockID{blockHash, blockPartSetHeader}),
 			"there should be 2/3 majority")
@@ -337,11 +371,13 @@ func TestVoteSet_Conflicts(t *testing.T) {
 
 	val0, err := privValidators[0].GetPubKey()
 	require.NoError(t, err)
+
 	val0Addr := val0.Address()
 
 	// val0 votes for nil.
 	{
 		vote := withValidator(voteProto, val0Addr, 0)
+
 		added, err := signAddVote(privValidators[0], vote, voteSet)
 		if !added || err != nil {
 			t.Errorf("expected VoteSet.Add to succeed")
@@ -384,8 +420,10 @@ func TestVoteSet_Conflicts(t *testing.T) {
 	{
 		pv, err := privValidators[1].GetPubKey()
 		assert.NoError(t, err)
+
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, 1)
+
 		added, err := signAddVote(privValidators[1], withBlockHash(vote, blockHash1), voteSet)
 		if !added || err != nil {
 			t.Errorf("expected VoteSet.Add to succeed")
@@ -396,6 +434,7 @@ func TestVoteSet_Conflicts(t *testing.T) {
 	if voteSet.HasTwoThirdsMajority() {
 		t.Errorf("we shouldn't have 2/3 majority yet")
 	}
+
 	if voteSet.HasTwoThirdsAny() {
 		t.Errorf("we shouldn't have 2/3 if any votes yet")
 	}
@@ -404,8 +443,10 @@ func TestVoteSet_Conflicts(t *testing.T) {
 	{
 		pv, err := privValidators[2].GetPubKey()
 		assert.NoError(t, err)
+
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, 2)
+
 		added, err := signAddVote(privValidators[2], withBlockHash(vote, blockHash2), voteSet)
 		if !added || err != nil {
 			t.Errorf("expected VoteSet.Add to succeed")
@@ -416,6 +457,7 @@ func TestVoteSet_Conflicts(t *testing.T) {
 	if voteSet.HasTwoThirdsMajority() {
 		t.Errorf("we shouldn't have 2/3 majority yet")
 	}
+
 	if !voteSet.HasTwoThirdsAny() {
 		t.Errorf("we should have 2/3 if any votes")
 	}
@@ -428,6 +470,7 @@ func TestVoteSet_Conflicts(t *testing.T) {
 	{
 		pv, err := privValidators[2].GetPubKey()
 		assert.NoError(t, err)
+
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, 2)
 		added, err := signAddVote(privValidators[2], withBlockHash(vote, blockHash1), voteSet)
@@ -439,10 +482,12 @@ func TestVoteSet_Conflicts(t *testing.T) {
 	if !voteSet.HasTwoThirdsMajority() {
 		t.Errorf("we should have 2/3 majority for blockHash1")
 	}
+
 	blockIDMaj23, _ := voteSet.TwoThirdsMajority()
 	if !bytes.Equal(blockIDMaj23.Hash, blockHash1) {
 		t.Errorf("got the wrong 2/3 majority blockhash")
 	}
+
 	if !voteSet.HasTwoThirdsAny() {
 		t.Errorf("we should have 2/3 if any votes")
 	}
@@ -467,8 +512,10 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 	for i := int32(0); i < 6; i++ {
 		pv, err := privValidators[i].GetPubKey()
 		assert.NoError(t, err)
+
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, i)
+
 		_, err = signAddVote(privValidators[i], vote, voteSet)
 		if err != nil {
 			t.Error(err)
@@ -483,6 +530,7 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 	{
 		pv, err := privValidators[6].GetPubKey()
 		assert.NoError(t, err)
+
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, 6)
 		vote = withBlockHash(vote, cmtrand.Bytes(32))
@@ -496,6 +544,7 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 	{
 		pv, err := privValidators[7].GetPubKey()
 		assert.NoError(t, err)
+
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, 7)
 		_, err = signAddVote(privValidators[7], vote, voteSet)
@@ -506,6 +555,7 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 	{
 		pv, err := privValidators[8].GetPubKey()
 		assert.NoError(t, err)
+
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, 8)
 		vote.BlockID = BlockID{}
@@ -562,6 +612,7 @@ func TestVoteSet_VoteExtensionsEnabled(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			height, round := int64(1), int32(0)
 			valSet, privValidators := RandValidatorSet(5, 10)
+
 			var voteSet *VoteSet
 			if tc.requireExtensions {
 				voteSet = NewExtendedVoteSet("test_chain_id", height, round, cmtproto.PrecommitType, valSet)
@@ -573,6 +624,7 @@ func TestVoteSet_VoteExtensionsEnabled(t *testing.T) {
 
 			val0p, err := val0.GetPubKey()
 			require.NoError(t, err)
+
 			val0Addr := val0p.Address()
 			blockHash := crypto.CRandBytes(32)
 			blockPartsTotal := uint32(123)
@@ -590,6 +642,7 @@ func TestVoteSet_VoteExtensionsEnabled(t *testing.T) {
 			v := vote.ToProto()
 			err = val0.SignVote(voteSet.ChainID(), v)
 			require.NoError(t, err)
+
 			vote.Signature = v.Signature
 
 			if tc.addExtension {
@@ -624,6 +677,7 @@ func randVoteSet(
 		}
 		return NewExtendedVoteSet("test_chain_id", height, round, signedMsgType, valSet), valSet, privValidators
 	}
+
 	return NewVoteSet("test_chain_id", height, round, signedMsgType, valSet), valSet, privValidators
 }
 

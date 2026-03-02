@@ -26,5 +26,6 @@ func (env *Environment) BroadcastEvidence(
 	if err := env.EvidencePool.AddEvidence(ev); err != nil {
 		return nil, fmt.Errorf("failed to add evidence: %w", err)
 	}
+
 	return &ctypes.ResultBroadcastEvidence{Hash: ev.Hash()}, nil
 }

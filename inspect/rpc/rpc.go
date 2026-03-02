@@ -35,6 +35,7 @@ func Routes(cfg config.RPCConfig, s state.Store, bs state.BlockStore, txidx txin
 		ConsensusReactor: waitSyncCheckerImpl{},
 		Logger:           logger,
 	}
+
 	return core.RoutesMap{
 		"blockchain":       server.NewRPCFunc(env.BlockchainInfo, "minHeight,maxHeight"),
 		"consensus_params": server.NewRPCFunc(env.ConsensusParams, "height"),
@@ -63,10 +64,12 @@ func Handler(rpcConfig *config.RPCConfig, routes core.RoutesMap, logger log.Logg
 	mux.HandleFunc("/websocket", wm.WebsocketHandler)
 
 	server.RegisterRPCFuncs(mux, routes, logger)
+
 	var rootHandler http.Handler = mux
 	if rpcConfig.IsCorsEnabled() {
 		rootHandler = addCORSHandler(rpcConfig, mux)
 	}
+
 	return rootHandler
 }
 
@@ -77,6 +80,7 @@ func addCORSHandler(rpcConfig *config.RPCConfig, h http.Handler) http.Handler {
 		AllowedHeaders: rpcConfig.CORSAllowedHeaders,
 	})
 	h = corsMiddleware.Handler(h)
+
 	return h
 }
 
@@ -93,10 +97,12 @@ func (srv *Server) ListenAndServe(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	go func() {
 		<-ctx.Done()
 		listener.Close()
 	}()
+
 	return server.Serve(listener, srv.Handler, srv.Logger, serverRPCConfig(srv.Config))
 }
 
@@ -107,10 +113,12 @@ func (srv *Server) ListenAndServeTLS(ctx context.Context, certFile, keyFile stri
 	if err != nil {
 		return err
 	}
+
 	go func() {
 		<-ctx.Done()
 		listener.Close()
 	}()
+
 	return server.ServeTLS(listener, srv.Handler, certFile, keyFile, srv.Logger, serverRPCConfig(srv.Config))
 }
 
@@ -124,5 +132,6 @@ func serverRPCConfig(r *config.RPCConfig) *server.Config {
 	if cfg.WriteTimeout <= r.TimeoutBroadcastTxCommit {
 		cfg.WriteTimeout = r.TimeoutBroadcastTxCommit + 1*time.Second
 	}
+
 	return cfg
 }

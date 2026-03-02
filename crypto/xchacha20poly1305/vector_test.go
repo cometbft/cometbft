@@ -15,17 +15,22 @@ func fromHex(bits string) []byte {
 	if err != nil {
 		panic(err)
 	}
+
 	return b
 }
 
 func TestHChaCha20(t *testing.T) {
 	for i, v := range hChaCha20Vectors {
-		var key [32]byte
-		var nonce [16]byte
+		var (
+			key   [32]byte
+			nonce [16]byte
+		)
+
 		copy(key[:], v.key)
 		copy(nonce[:], v.nonce)
 
 		HChaCha20(&key, &nonce, &key)
+
 		if !bytes.Equal(key[:], v.keystream) {
 			t.Errorf("test %d: keystream mismatch:\n \t got:  %s\n \t want: %s", i, toHex(key[:]), toHex(v.keystream))
 		}
@@ -80,10 +85,12 @@ func TestVectors(t *testing.T) {
 		if !bytes.Equal(dst, v.ciphertext) {
 			t.Errorf("test %d: ciphertext mismatch:\n \t got:  %s\n \t want: %s", i, toHex(dst), toHex(v.ciphertext))
 		}
+
 		open, err := aead.Open(nil, nonce[:], dst, v.ad)
 		if err != nil {
 			t.Error(err)
 		}
+
 		if !bytes.Equal(open, v.plaintext) {
 			t.Errorf("test %d: plaintext mismatch:\n \t got:  %s\n \t want: %s", i, string(open), string(v.plaintext))
 		}

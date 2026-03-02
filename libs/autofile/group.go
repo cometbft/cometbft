@@ -84,6 +84,7 @@ func OpenGroup(headPath string, groupOptions ...func(*Group)) (*Group, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	head, err := OpenAutoFile(headPath)
 	if err != nil {
 		return nil, err
@@ -110,6 +111,7 @@ func OpenGroup(headPath string, groupOptions ...func(*Group)) (*Group, error) {
 
 	gInfo := g.readGroupInfo()
 	g.minIndex, g.maxIndex = gInfo.MinIndex, gInfo.MaxIndex
+
 	return g, nil
 }
 
@@ -146,6 +148,7 @@ func (g *Group) OnStart() error {
 // NOTE: g.Head must be closed separately using Close.
 func (g *Group) OnStop() {
 	g.ticker.Stop()
+
 	if err := g.FlushAndSync(); err != nil {
 		g.Logger.Error("Error flushing to disk", "err", err)
 	}
@@ -214,7 +217,9 @@ func (g *Group) Write(p []byte) (nn int, err error) {
 func (g *Group) WriteLine(line string) error {
 	g.mtx.Lock()
 	defer g.mtx.Unlock()
+
 	_, err := g.headBuf.Write([]byte(line + "\n"))
+
 	return err
 }
 
@@ -230,20 +235,24 @@ func (g *Group) Buffered() int {
 func (g *Group) FlushAndSync() error {
 	g.mtx.Lock()
 	defer g.mtx.Unlock()
+
 	err := g.headBuf.Flush()
 	if err == nil {
 		err = g.Head.Sync()
 	}
+
 	return err
 }
 
 func (g *Group) processTicks() {
 	defer close(g.doneProcessTicks)
+
 	for {
 		select {
 		case <-g.ticker.C:
 			g.checkHeadSizeLimit()
 			g.checkTotalSizeLimit()
+
 		case <-g.Quit():
 			return
 		}
@@ -256,11 +265,13 @@ func (g *Group) checkHeadSizeLimit() {
 	if limit == 0 {
 		return
 	}
+
 	size, err := g.Head.Size()
 	if err != nil {
 		g.Logger.Error("Group's head may grow without bound", "head", g.Head.Path, "err", err)
 		return
 	}
+
 	if size >= limit {
 		g.RotateFile()
 	}
@@ -273,28 +284,35 @@ func (g *Group) checkTotalSizeLimit() {
 	}
 
 	gInfo := g.readGroupInfo()
+
 	totalSize := gInfo.TotalSize
 	for i := 0; i < maxFilesToRemove; i++ {
 		index := gInfo.MinIndex + i
+
 		if totalSize < limit {
 			return
 		}
+
 		if index == gInfo.MaxIndex {
 			// Special degenerate case, just do nothing.
 			g.Logger.Error("Group's head may grow without bound", "head", g.Head.Path)
 			return
 		}
+
 		pathToRemove := filePathForIndex(g.Head.Path, index, gInfo.MaxIndex)
+
 		fInfo, err := os.Stat(pathToRemove)
 		if err != nil {
 			g.Logger.Error("Failed to fetch info for file", "file", pathToRemove)
 			continue
 		}
+
 		err = os.Remove(pathToRemove)
 		if err != nil {
 			g.Logger.Error("Failed to remove path", "path", pathToRemove)
 			return
 		}
+
 		totalSize -= fInfo.Size()
 	}
 }
@@ -334,6 +352,7 @@ func (g *Group) NewReader(index int) (*GroupReader, error) {
 	if err := r.SetIndex(index); err != nil {
 		return nil, err
 	}
+
 	return r, nil
 }
 
@@ -358,6 +377,7 @@ func (g *Group) readGroupInfo() GroupInfo {
 	groupDir := filepath.Dir(g.Head.Path)
 	headBase := filepath.Base(g.Head.Path)
 	minIndex, maxIndex := -1, -1
+
 	var totalSize, headSize int64 = 0, 0
 
 	dir, err := os.Open(groupDir)
@@ -365,6 +385,7 @@ func (g *Group) readGroupInfo() GroupInfo {
 		panic(err)
 	}
 	defer dir.Close()
+
 	fiz, err := dir.Readdir(0)
 	if err != nil {
 		panic(err)
@@ -391,9 +412,11 @@ func (g *Group) readGroupInfo() GroupInfo {
 			if err != nil {
 				panic(err)
 			}
+
 			if fileIndex > maxIndex {
 				maxIndex = fileIndex
 			}
+
 			if minIndex == -1 || fileIndex < minIndex {
 				minIndex = fileIndex
 			}
@@ -408,6 +431,7 @@ func (g *Group) readGroupInfo() GroupInfo {
 		// Otherwise, the head file is 1 greater
 		maxIndex++
 	}
+
 	return GroupInfo{minIndex, maxIndex, totalSize, headSize}
 }
 
@@ -451,8 +475,10 @@ func (gr *GroupReader) Close() error {
 		gr.curReader = nil
 		gr.curFile = nil
 		gr.curLine = nil
+
 		return err
 	}
+
 	return nil
 }
 
@@ -478,6 +504,7 @@ func (gr *GroupReader) Read(p []byte) (n int, err error) {
 	var nn int
 	for {
 		nn, err = gr.curReader.Read(p[n:])
+
 		n += nn
 		switch {
 		case err == io.EOF:
@@ -488,6 +515,7 @@ func (gr *GroupReader) Read(p []byte) (n int, err error) {
 			if err1 := gr.openFile(gr.curIndex + 1); err1 != nil {
 				return n, err1
 			}
+
 		case err != nil:
 			return n, err
 		case nn == 0: // empty file
@@ -508,20 +536,24 @@ func (gr *GroupReader) openFile(index int) error {
 	}
 
 	curFilePath := filePathForIndex(gr.Head.Path, index, gr.maxIndex)
+
 	curFile, err := os.OpenFile(curFilePath, os.O_RDONLY|os.O_CREATE, autoFilePerms)
 	if err != nil {
 		return err
 	}
+
 	curReader := bufio.NewReader(curFile)
 
 	// Update gr.cur*
 	if gr.curFile != nil {
 		gr.curFile.Close() // TODO return error?
 	}
+
 	gr.curIndex = index
 	gr.curFile = curFile
 	gr.curReader = curReader
 	gr.curLine = nil
+
 	return nil
 }
 

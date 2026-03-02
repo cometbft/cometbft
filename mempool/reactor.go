@@ -51,6 +51,7 @@ func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool, waitSync bool)
 		memR.waitSync.Store(true)
 		memR.waitSyncCh = make(chan struct{})
 	}
+
 	return memR
 }
 
@@ -71,9 +72,11 @@ func (memR *Reactor) OnStart() error {
 	if memR.WaitSync() {
 		memR.Logger.Info("Starting reactor in sync mode: tx propagation will start once sync completes")
 	}
+
 	if !memR.config.Broadcast {
 		memR.Logger.Info("Tx broadcasting is disabled")
 	}
+
 	return nil
 }
 
@@ -120,6 +123,7 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 						// Block sending transactions to peer until one of the connections become
 						// available in the semaphore.
 						err := peerSemaphore.Acquire(ctxTimeout, 1)
+
 						cancel()
 
 						if err != nil {
@@ -128,6 +132,7 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 
 						// Release semaphore to allow other peer to start sending transactions.
 						defer peerSemaphore.Release(1)
+
 						break
 					}
 				}
@@ -135,6 +140,7 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 
 			memR.mempool.metrics.ActiveOutboundConnections.Add(1)
 			defer memR.mempool.metrics.ActiveOutboundConnections.Add(-1)
+
 			memR.broadcastTxRoutine(peer)
 		}()
 	}
@@ -150,6 +156,7 @@ func (memR *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 // It adds any received transactions to the mempool.
 func (memR *Reactor) Receive(e p2p.Envelope) {
 	memR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
+
 	switch msg := e.Message.(type) {
 	case *protomem.Txs:
 		if memR.WaitSync() {
@@ -162,6 +169,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 			memR.Logger.Error("received empty txs from peer", "src", e.Src)
 			return
 		}
+
 		txInfo := TxInfo{SenderID: memR.ids.GetForPeer(e.Src)}
 		if e.Src != nil {
 			txInfo.SenderP2PID = e.Src.ID()
@@ -170,6 +178,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 		var err error
 		for _, tx := range protoTxs {
 			ntx := types.Tx(tx)
+
 			err = memR.mempool.CheckTx(ntx, nil, txInfo)
 			if err != nil {
 				switch {
@@ -183,6 +192,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 				}
 			}
 		}
+
 	default:
 		memR.Logger.Error("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 		memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message of type: %T", e.Message))
@@ -194,6 +204,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 
 func (memR *Reactor) EnableInOutTxs() {
 	memR.Logger.Info("enabling inbound and outbound transactions")
+
 	if !memR.waitSync.CompareAndSwap(true, false) {
 		return
 	}
@@ -241,6 +252,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 	}
 
 	peerID := memR.ids.GetForPeer(peer)
+
 	var next *clist.CElement
 	for {
 		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time
@@ -257,6 +269,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 				if next = memR.mempool.TxsFront(); next == nil {
 					continue
 				}
+
 			case <-peer.Quit():
 				return
 			case <-memR.Quit():

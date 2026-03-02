@@ -56,6 +56,7 @@ func main() {
 		}
 
 		var msg cs.TimedWALMessage
+
 		err = cmtjson.Unmarshal(msgJSON, &msg)
 		if err != nil {
 			panic(fmt.Errorf("failed to unmarshal json: %v", err))

@@ -41,10 +41,12 @@ var (
 
 func waitForRPC() {
 	laddr := GetConfig().RPC.ListenAddress
+
 	client, err := rpcclient.New(laddr)
 	if err != nil {
 		panic(err)
 	}
+
 	result := new(ctypes.ResultStatus)
 	for {
 		_, err := client.Call(context.Background(), "status", map[string]any{}, result)
@@ -76,6 +78,7 @@ func makePathname() string {
 	}
 	// fmt.Println(p)
 	sep := string(filepath.Separator)
+
 	return strings.ReplaceAll(p, sep, "_")
 }
 
@@ -84,6 +87,7 @@ func randPort() int {
 	if err != nil {
 		panic(err)
 	}
+
 	return port
 }
 
@@ -103,6 +107,7 @@ func createConfig() *cfg.Config {
 	c.RPC.ListenAddress = rpc
 	c.RPC.CORSAllowedOrigins = []string{"https://cometbft.com/"}
 	c.RPC.GRPCListenAddress = grpc
+
 	return c
 }
 
@@ -126,7 +131,9 @@ func StartTendermint(app abci.Application, opts ...func(*Options)) *nm.Node {
 	for _, opt := range opts {
 		opt(&nodeOpts)
 	}
+
 	node := NewTendermint(app, &nodeOpts)
+
 	err := node.Start()
 	if err != nil {
 		panic(err)
@@ -149,6 +156,7 @@ func StopTendermint(node *nm.Node) {
 	if err := node.Stop(); err != nil {
 		node.Logger.Error("Error when trying to stop node", "err", err)
 	}
+
 	node.Wait()
 	os.RemoveAll(node.Config().RootDir)
 }
@@ -157,6 +165,7 @@ func StopTendermint(node *nm.Node) {
 func NewTendermint(app abci.Application, opts *Options) *nm.Node {
 	// Create & start node
 	config := GetConfig(opts.recreateConfig)
+
 	var logger log.Logger
 	if opts.suppressStdout {
 		logger = log.NewNopLogger()
@@ -164,17 +173,21 @@ func NewTendermint(app abci.Application, opts *Options) *nm.Node {
 		logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 		logger = log.NewFilter(logger, log.AllowError())
 	}
+
 	if opts.maxReqBatchSize > 0 {
 		config.RPC.MaxRequestBatchSize = opts.maxReqBatchSize
 	}
+
 	pvKeyFile := config.PrivValidatorKeyFile()
 	pvKeyStateFile := config.PrivValidatorStateFile()
 	pv := privval.LoadOrGenFilePV(pvKeyFile, pvKeyStateFile)
 	papp := proxy.NewLocalClientCreator(app)
+
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	if err != nil {
 		panic(err)
 	}
+
 	node, err := nm.NewNode(config, pv, nodeKey, papp,
 		nm.DefaultGenesisDocProviderFunc(config),
 		cfg.DefaultDBProvider,
@@ -183,6 +196,7 @@ func NewTendermint(app abci.Application, opts *Options) *nm.Node {
 	if err != nil {
 		panic(err)
 	}
+
 	return node
 }
 

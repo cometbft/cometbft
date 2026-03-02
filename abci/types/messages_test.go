@@ -17,6 +17,7 @@ func TestMarshalJSON(t *testing.T) {
 	assert.NoError(t, err)
 	// include empty fields.
 	assert.True(t, strings.Contains(string(b), "code"))
+
 	r1 := ResponseCheckTx{
 		Code:      1,
 		Data:      []byte("hello"),
@@ -34,6 +35,7 @@ func TestMarshalJSON(t *testing.T) {
 	assert.Nil(t, err)
 
 	var r2 ResponseCheckTx
+
 	err = json.Unmarshal(b, &r2)
 	assert.Nil(t, err)
 	assert.Equal(t, r1, r2)

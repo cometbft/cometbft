@@ -54,6 +54,7 @@ func NewHeightVoteSet(chainID string, height int64, valSet *types.ValidatorSet) 
 		extensionsEnabled: false,
 	}
 	hvs.Reset(height, valSet)
+
 	return hvs
 }
 
@@ -63,6 +64,7 @@ func NewExtendedHeightVoteSet(chainID string, height int64, valSet *types.Valida
 		extensionsEnabled: true,
 	}
 	hvs.Reset(height, valSet)
+
 	return hvs
 }
 
@@ -95,16 +97,20 @@ func (hvs *HeightVoteSet) Round() int32 {
 func (hvs *HeightVoteSet) SetRound(round int32) {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
+
 	newRound := cmtmath.SafeSubInt32(hvs.round, 1)
 	if hvs.round != 0 && (round < newRound) {
 		panic("SetRound() must increment hvs.round")
 	}
+
 	for r := newRound; r <= round; r++ {
 		if _, ok := hvs.roundVoteSets[r]; ok {
 			continue // Already exists because peerCatchupRounds.
 		}
+
 		hvs.addRound(r)
 	}
+
 	hvs.round = round
 }
 
@@ -114,12 +120,14 @@ func (hvs *HeightVoteSet) addRound(round int32) {
 	}
 	// log.Debug("addRound(round)", "round", round)
 	prevotes := types.NewVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrevoteType, hvs.valSet)
+
 	var precommits *types.VoteSet
 	if hvs.extensionsEnabled {
 		precommits = types.NewExtendedVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrecommitType, hvs.valSet)
 	} else {
 		precommits = types.NewVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrecommitType, hvs.valSet)
 	}
+
 	hvs.roundVoteSets[round] = RoundVoteSet{
 		Prevotes:   prevotes,
 		Precommits: precommits,
@@ -131,12 +139,15 @@ func (hvs *HeightVoteSet) addRound(round int32) {
 func (hvs *HeightVoteSet) AddVote(vote *types.Vote, peerID p2p.ID, extEnabled bool) (added bool, err error) {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
+
 	if hvs.extensionsEnabled != extEnabled {
 		panic(fmt.Errorf("extensions enabled general param does not match the one in HeightVoteSet %t!=%t", hvs.extensionsEnabled, extEnabled))
 	}
+
 	if !types.IsVoteTypeValid(vote.Type) {
 		return
 	}
+
 	voteSet := hvs.getVoteSet(vote.Round, vote.Type)
 	if voteSet == nil {
 		if rndz := hvs.peerCatchupRounds[peerID]; len(rndz) < 2 {
@@ -149,7 +160,9 @@ func (hvs *HeightVoteSet) AddVote(vote *types.Vote, peerID p2p.ID, extEnabled bo
 			return
 		}
 	}
+
 	added, err = voteSet.AddVote(vote)
+
 	return
 }
 
@@ -170,13 +183,16 @@ func (hvs *HeightVoteSet) Precommits(round int32) *types.VoteSet {
 func (hvs *HeightVoteSet) POLInfo() (polRound int32, polBlockID types.BlockID) {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
+
 	for r := hvs.round; r >= 0; r-- {
 		rvs := hvs.getVoteSet(r, cmtproto.PrevoteType)
+
 		polBlockID, ok := rvs.TwoThirdsMajority()
 		if ok {
 			return r, polBlockID
 		}
 	}
+
 	return -1, types.BlockID{}
 }
 
@@ -185,6 +201,7 @@ func (hvs *HeightVoteSet) getVoteSet(round int32, voteType cmtproto.SignedMsgTyp
 	if !ok {
 		return nil
 	}
+
 	switch voteType {
 	case cmtproto.PrevoteType:
 		return rvs.Prevotes
@@ -207,13 +224,16 @@ func (hvs *HeightVoteSet) SetPeerMaj23(
 ) error {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
+
 	if !types.IsVoteTypeValid(voteType) {
 		return fmt.Errorf("setPeerMaj23: Invalid vote type %X", voteType)
 	}
+
 	voteSet := hvs.getVoteSet(round, voteType)
 	if voteSet == nil {
 		return nil // something we don't know about yet
 	}
+
 	return voteSet.SetPeerMaj23(types.P2PID(peerID), blockID)
 }
 
@@ -227,6 +247,7 @@ func (hvs *HeightVoteSet) String() string {
 func (hvs *HeightVoteSet) StringIndented(indent string) string {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
+
 	vsStrings := make([]string, 0, (len(hvs.roundVoteSets)+1)*2)
 	// rounds 0 ~ hvs.round inclusive
 	for round := int32(0); round <= hvs.round; round++ {
@@ -240,11 +261,13 @@ func (hvs *HeightVoteSet) StringIndented(indent string) string {
 		if round <= hvs.round {
 			continue
 		}
+
 		voteSetString := roundVoteSet.Prevotes.StringShort()
 		vsStrings = append(vsStrings, voteSetString)
 		voteSetString = roundVoteSet.Precommits.StringShort()
 		vsStrings = append(vsStrings, voteSetString)
 	}
+
 	return fmt.Sprintf(`HeightVoteSet{H:%v R:0~%v
 %s  %v
 %s}`,

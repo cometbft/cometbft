@@ -13,12 +13,14 @@ import (
 
 func InitChain(ctx context.Context, client abcicli.Client) error {
 	total := 10
+
 	vals := make([]types.ValidatorUpdate, total)
 	for i := 0; i < total; i++ {
 		pubkey := cmtrand.Bytes(33)
 		power := cmtrand.Int()
 		vals[i] = types.UpdateValidator(pubkey, int64(power), "")
 	}
+
 	_, err := client.InitChain(ctx, &types.RequestInitChain{
 		Validators: vals,
 	})
@@ -26,7 +28,9 @@ func InitChain(ctx context.Context, client abcicli.Client) error {
 		fmt.Printf("Failed test: InitChain - %v\n", err)
 		return err
 	}
+
 	fmt.Println("Passed test: InitChain")
+
 	return nil
 }
 
@@ -37,12 +41,15 @@ func Commit(ctx context.Context, client abcicli.Client) error {
 		fmt.Printf("error while committing: %v\n", err)
 		return err
 	}
+
 	fmt.Println("Passed test: Commit")
+
 	return nil
 }
 
 func FinalizeBlock(ctx context.Context, client abcicli.Client, txBytes [][]byte, codeExp []uint32, dataExp []byte, hashExp []byte) error {
 	res, _ := client.FinalizeBlock(ctx, &types.RequestFinalizeBlock{Txs: txBytes})
+
 	appHash := res.AppHash
 	for i, tx := range res.TxResults {
 		code, data, log := tx.Code, tx.Data, tx.Log
@@ -52,6 +59,7 @@ func FinalizeBlock(ctx context.Context, client abcicli.Client, txBytes [][]byte,
 				code, codeExp, log)
 			return errors.New("FinalizeBlock error")
 		}
+
 		if !bytes.Equal(data, dataExp) {
 			fmt.Println("Failed test:  FinalizeBlock")
 			fmt.Printf("FinalizeBlock response data was unexpected. Got %X expected %X\n",
@@ -59,12 +67,15 @@ func FinalizeBlock(ctx context.Context, client abcicli.Client, txBytes [][]byte,
 			return errors.New("FinalizeBlock  error")
 		}
 	}
+
 	if !bytes.Equal(appHash, hashExp) {
 		fmt.Println("Failed test: FinalizeBlock")
 		fmt.Printf("Application hash was unexpected. Got %X expected %X\n", appHash, hashExp)
 		return errors.New("FinalizeBlock  error")
 	}
+
 	fmt.Println("Passed test: FinalizeBlock")
+
 	return nil
 }
 
@@ -78,7 +89,9 @@ func PrepareProposal(ctx context.Context, client abcicli.Client, txBytes [][]byt
 			return errors.New("PrepareProposal error")
 		}
 	}
+
 	fmt.Println("Passed test: PrepareProposal")
+
 	return nil
 }
 
@@ -90,12 +103,15 @@ func ProcessProposal(ctx context.Context, client abcicli.Client, txBytes [][]byt
 			res.Status, statusExp)
 		return errors.New("ProcessProposal error")
 	}
+
 	fmt.Println("Passed test: ProcessProposal")
+
 	return nil
 }
 
 func CheckTx(ctx context.Context, client abcicli.Client, txBytes []byte, codeExp uint32, dataExp []byte) error {
 	res, _ := client.CheckTx(ctx, &types.RequestCheckTx{Tx: txBytes})
+
 	code, data, log := res.Code, res.Data, res.Log
 	if code != codeExp {
 		fmt.Println("Failed test: CheckTx")
@@ -103,12 +119,15 @@ func CheckTx(ctx context.Context, client abcicli.Client, txBytes []byte, codeExp
 			code, codeExp, log)
 		return errors.New("checkTx")
 	}
+
 	if !bytes.Equal(data, dataExp) {
 		fmt.Println("Failed test: CheckTx")
 		fmt.Printf("CheckTx response data was unexpected. Got %X expected %X\n",
 			data, dataExp)
 		return errors.New("checkTx")
 	}
+
 	fmt.Println("Passed test: CheckTx")
+
 	return nil
 }

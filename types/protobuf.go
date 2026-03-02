@@ -65,6 +65,7 @@ func (tm2pb) ValidatorUpdate(val *Validator) abci.ValidatorUpdate {
 	if err != nil {
 		panic(err)
 	}
+
 	return abci.ValidatorUpdate{
 		PubKey: pk,
 		Power:  val.VotingPower,
@@ -77,6 +78,7 @@ func (tm2pb) ValidatorUpdates(vals *ValidatorSet) []abci.ValidatorUpdate {
 	for i, val := range vals.Validators {
 		validators[i] = TM2PB.ValidatorUpdate(val)
 	}
+
 	return validators
 }
 
@@ -86,6 +88,7 @@ func (tm2pb) NewValidatorUpdate(pubkey crypto.PubKey, power int64) abci.Validato
 	if err != nil {
 		panic(err)
 	}
+
 	return abci.ValidatorUpdate{
 		PubKey: pubkeyABCI,
 		Power:  power,
@@ -107,7 +110,9 @@ func (pb2tm) ValidatorUpdates(vals []abci.ValidatorUpdate) ([]*Validator, error)
 		if err != nil {
 			return nil, err
 		}
+
 		cmtVals[i] = NewValidator(pub, v.Power)
 	}
+
 	return cmtVals, nil
 }

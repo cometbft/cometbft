@@ -46,7 +46,9 @@ func (trs *TaskResultSet) LatestResult(index int) (TaskResult, bool) {
 	if len(trs.results) <= index {
 		return TaskResult{}, false
 	}
+
 	resultOK := trs.results[index]
+
 	return resultOK.TaskResult, resultOK.OK
 }
 
@@ -71,6 +73,7 @@ func (trs *TaskResultSet) Reap() *TaskResultSet {
 			// Do nothing.
 		}
 	}
+
 	return trs
 }
 
@@ -79,6 +82,7 @@ func (trs *TaskResultSet) Reap() *TaskResultSet {
 func (trs *TaskResultSet) Wait() *TaskResultSet {
 	for i := 0; i < len(trs.results); i++ {
 		trch := trs.chz[i]
+
 		result, ok := <-trch
 		if ok {
 			// Write result.
@@ -91,6 +95,7 @@ func (trs *TaskResultSet) Wait() *TaskResultSet {
 		// We already wrote it.
 		// }
 	}
+
 	return trs
 }
 
@@ -102,6 +107,7 @@ func (trs *TaskResultSet) FirstValue() any {
 			return result.Value
 		}
 	}
+
 	return nil
 }
 
@@ -113,6 +119,7 @@ func (trs *TaskResultSet) FirstError() error {
 			return result.Error
 		}
 	}
+
 	return nil
 }
 
@@ -137,6 +144,7 @@ func Parallel(tasks ...Task) (trs *TaskResultSet, ok bool) {
 	// respective taskResultCh (associated by task index).
 	for i, task := range tasks {
 		taskResultCh := make(chan TaskResult, 1) // Capacity for 1 result.
+
 		taskResultChz[i] = taskResultCh
 		go func(i int, task Task, taskResultCh chan TaskResult) {
 			// Recovery
@@ -145,7 +153,9 @@ func Parallel(tasks ...Task) (trs *TaskResultSet, ok bool) {
 					atomic.AddInt32(numPanics, 1)
 					// Send panic to taskResultCh.
 					const size = 64 << 10
+
 					buf := make([]byte, size)
+
 					buf = buf[:runtime.Stack(buf, false)]
 					taskResultCh <- TaskResult{nil, fmt.Errorf("panic in task %v : %s", pnk, buf)}
 					// Closing taskResultCh lets trs.Wait() work.

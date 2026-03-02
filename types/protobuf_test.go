@@ -24,6 +24,7 @@ func testABCIPubKey(t *testing.T, pk crypto.PubKey) error {
 	pk2, err := cryptoenc.PubKeyFromProto(abciPubKey)
 	require.NoError(t, err)
 	require.Equal(t, pk, pk2)
+
 	return nil
 }
 

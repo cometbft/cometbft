@@ -155,6 +155,7 @@ func (mem *CListMempool) Lock() {
 	if mem.recheck.setRecheckFull() {
 		mem.logger.Debug("the state of recheckFull has flipped")
 	}
+
 	mem.updateMtx.Lock()
 }
 
@@ -266,6 +267,7 @@ func (mem *CListMempool) CheckTx(
 			// its non-trivial since invalid txs can become valid,
 			// but they can spam the same tx with little cost to them atm.
 		}
+
 		return ErrTxInCache
 	}
 
@@ -273,6 +275,7 @@ func (mem *CListMempool) CheckTx(
 	if err != nil {
 		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))
 	}
+
 	reqRes.SetCallback(mem.reqResCb(tx, txInfo, cb))
 
 	return nil
@@ -294,6 +297,7 @@ func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
 		if r.CheckTx.Type != abci.CheckTxType_Recheck {
 			return
 		}
+
 	default:
 		// ignore other type of requests
 		return
@@ -307,6 +311,7 @@ func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
 				"tx", log.NewLazySprintf("%v", tx.Key()))
 			return
 		}
+
 		mem.metrics.RecheckTimes.Add(1)
 		mem.resCbRecheck(tx, r.CheckTx)
 
@@ -369,15 +374,19 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 		mem.txs.Remove(elem)
 		elem.DetachPrev()
 		mem.txsMap.Delete(txKey)
+
 		tx := elem.Value.(*mempoolTx).tx
 		mem.txsBytes.Add(int64(-len(tx)))
+
 		return nil
 	}
+
 	return ErrTxNotFound
 }
 
 func (mem *CListMempool) isFull(txSize int) error {
 	memSize := mem.Size()
+
 	txsBytes := mem.SizeBytes()
 	if memSize >= mem.config.Size || int64(txSize)+txsBytes > mem.config.MaxTxsBytes {
 		return ErrMempoolIsFull{
@@ -410,6 +419,7 @@ func (mem *CListMempool) resCbFirstTime(
 		if mem.postCheck != nil {
 			postCheckErr = mem.postCheck(tx, r.CheckTx)
 		}
+
 		if (r.CheckTx.Code == abci.CodeTypeOK) && postCheckErr == nil {
 			// Check mempool isn't full again to reduce the chance of exceeding the
 			// limits.
@@ -419,6 +429,7 @@ func (mem *CListMempool) resCbFirstTime(
 				// use debug level to avoid spamming logs when traffic is high
 				mem.logger.Debug(err.Error())
 				mem.metrics.RejectedTxs.Add(1)
+
 				return
 			}
 
@@ -434,6 +445,7 @@ func (mem *CListMempool) resCbFirstTime(
 					"total", mem.Size(),
 				)
 				mem.metrics.RejectedTxs.Add(1)
+
 				return
 			}
 
@@ -493,9 +505,11 @@ func (mem *CListMempool) resCbRecheck(tx types.Tx, res *abci.ResponseCheckTx) {
 	if (res.Code != abci.CodeTypeOK) || postCheckErr != nil {
 		// Tx became invalidated due to newly committed block.
 		mem.logger.Debug("tx is no longer valid", "tx", tx.Hash(), "res", res, "postCheckErr", postCheckErr)
+
 		if err := mem.RemoveTxByKey(tx.Key()); err != nil {
 			mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
 		}
+
 		if !mem.config.KeepInvalidTxsInCache {
 			mem.cache.Remove(tx)
 			mem.metrics.EvictedTxs.Add(1)
@@ -512,6 +526,7 @@ func (mem *CListMempool) notifyTxsAvailable() {
 	if mem.Size() == 0 {
 		panic("notified txs available but mempool is empty!")
 	}
+
 	if mem.txsAvailable != nil && mem.notifiedTxsAvailable.CompareAndSwap(false, true) {
 		// channel cap is 1, so this will send once
 		select {
@@ -557,8 +572,10 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 		if maxGas > -1 && newTotalGas > maxGas {
 			return txs[:len(txs)-1]
 		}
+
 		totalGas = newTotalGas
 	}
+
 	return txs
 }
 
@@ -576,6 +593,7 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 		memTx := e.Value.(*mempoolTx)
 		txs = append(txs, memTx.tx)
 	}
+
 	return txs
 }
 
@@ -596,6 +614,7 @@ func (mem *CListMempool) Update(
 	if preCheck != nil {
 		mem.preCheck = preCheck
 	}
+
 	if postCheck != nil {
 		mem.postCheck = postCheck
 	}
@@ -658,6 +677,7 @@ func (mem *CListMempool) recheckTxs() {
 	// because this function has the lock (via Update and Lock).
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
 		tx := e.Value.(*mempoolTx).tx
+
 		mem.recheck.numPendingTxs.Add(1)
 
 		// Send a CheckTx request to the app. If we're using a sync client, the resCbRecheck
@@ -680,12 +700,14 @@ func (mem *CListMempool) recheckTxs() {
 	case <-time.After(mem.config.RecheckTimeout):
 		mem.recheck.setDone()
 		mem.logger.Error("timed out waiting for recheck responses")
+
 	case <-mem.recheck.doneRechecking():
 	}
 
 	if n := mem.recheck.numPendingTxs.Load(); n > 0 {
 		mem.logger.Error("not all txs were rechecked", "not-rechecked", n)
 	}
+
 	mem.logger.Debug("done rechecking txs", "height", mem.height.Load(), "num-txs", mem.Size())
 }
 
@@ -714,6 +736,7 @@ func (rc *recheck) init(first, last *clist.CElement) {
 	if !rc.done() {
 		panic("Having more than one rechecking process at a time is not possible.")
 	}
+
 	rc.cursor = first
 	rc.end = last
 	rc.numPendingTxs.Store(0)
@@ -745,14 +768,17 @@ func (rc *recheck) tryFinish() bool {
 		// Reached end of the list without finding a matching tx.
 		rc.setDone()
 	}
+
 	if rc.done() {
 		// Notify that recheck has finished.
 		select {
 		case rc.doneCh <- struct{}{}:
 		default:
 		}
+
 		return true
 	}
+
 	return false
 }
 
@@ -770,6 +796,7 @@ func (rc *recheck) findNextEntryMatching(tx *types.Tx) bool {
 		if bytes.Equal(*tx, expectedTx) {
 			// Found an entry in the list of txs to recheck that matches tx.
 			found = true
+
 			rc.numPendingTxs.Add(-1)
 			break
 		}
@@ -779,6 +806,7 @@ func (rc *recheck) findNextEntryMatching(tx *types.Tx) bool {
 		// Not finished yet; set the cursor for processing the next recheck response.
 		rc.setNextEntry()
 	}
+
 	return found
 }
 

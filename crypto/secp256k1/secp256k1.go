@@ -72,10 +72,12 @@ func GenPrivKey() PrivKey {
 // genPrivKey generates a new secp256k1 private key using the provided reader.
 func genPrivKey(rand io.Reader) PrivKey {
 	var privKeyBytes [PrivKeySize]byte
+
 	d := new(big.Int)
 
 	for {
 		privKeyBytes = [PrivKeySize]byte{}
+
 		_, err := io.ReadFull(rand, privKeyBytes[:])
 		if err != nil {
 			panic(err)
@@ -155,6 +157,7 @@ func (pubKey PubKey) Address() crypto.Address {
 	if len(pubKey) != PubKeySize {
 		panic("length of pubkey is incorrect")
 	}
+
 	hasherSHA256 := sha256.New()
 	_, _ = hasherSHA256.Write(pubKey) // does not error
 	sha := hasherSHA256.Sum(nil)
@@ -207,6 +210,7 @@ func (pubKey PubKey) VerifySignature(msg []byte, sigStr []byte) bool {
 	if parseErr != nil {
 		return false
 	}
+
 	if !signature.IsEqual(modifiedSignature) {
 		return false
 	}
@@ -219,7 +223,9 @@ func (pubKey PubKey) VerifySignature(msg []byte, sigStr []byte) bool {
 func signatureFromBytes(sigStr []byte) *ecdsa.Signature {
 	var r secp256k1.ModNScalar
 	r.SetByteSlice(sigStr[:32])
+
 	var s secp256k1.ModNScalar
 	s.SetByteSlice(sigStr[32:64])
+
 	return ecdsa.NewSignature(&r, &s)
 }

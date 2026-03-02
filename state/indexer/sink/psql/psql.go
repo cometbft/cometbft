@@ -43,6 +43,7 @@ func NewEventSink(connStr, chainID string) (*EventSink, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &EventSink{
 		store:   db,
 		chainID: chainID,
@@ -62,10 +63,12 @@ func runInTransaction(db *sql.DB, query func(*sql.Tx) error) error {
 	if err != nil {
 		return err
 	}
+
 	if err := query(dbtx); err != nil {
 		_ = dbtx.Rollback() // report the initial error, not the rollback
 		return err
 	}
+
 	return dbtx.Commit()
 }
 
@@ -76,14 +79,17 @@ func runBulkInsert(db *sql.DB, tableName string, columns []string, inserts [][]a
 			return fmt.Errorf("preparing bulk insert statement: %w", err)
 		}
 		defer stmt.Close()
+
 		for _, insert := range inserts {
 			if _, err := stmt.Exec(insert...); err != nil {
 				return fmt.Errorf("executing insert statement: %w", err)
 			}
 		}
+
 		if _, err := stmt.Exec(); err != nil {
 			return fmt.Errorf("flushing bulk insert: %w", err)
 		}
+
 		return nil
 	})
 }
@@ -104,21 +110,26 @@ func bulkInsertEvents(blockID, txID int64, events []abci.Event) (eventInserts, a
 	if txID > 0 {
 		txIDArg = txID
 	}
+
 	for _, event := range events {
 		// Skip events with an empty type.
 		if event.Type == "" {
 			continue
 		}
+
 		eventID := randomBigserial()
+
 		eventInserts = append(eventInserts, []any{eventID, blockID, txIDArg, event.Type})
 		for _, attr := range event.Attributes {
 			if !attr.Index {
 				continue
 			}
+
 			compositeKey := event.Type + "." + attr.Key
 			attrInserts = append(attrInserts, []any{eventID, attr.Key, compositeKey, attr.Value})
 		}
 	}
+
 	return eventInserts, attrInserts
 }
 
@@ -131,6 +142,7 @@ func makeIndexedEvent(compositeKey, value string) abci.Event {
 	if i < 0 {
 		return abci.Event{Type: compositeKey}
 	}
+
 	return abci.Event{Type: compositeKey[:i], Attributes: []abci.EventAttribute{
 		{Key: compositeKey[i+1:], Value: value, Index: true},
 	}}
@@ -144,7 +156,7 @@ func (es *EventSink) IndexBlockEvents(h types.EventDataNewBlockEvents) error {
 	// Add the block to the blocks table and report back its row ID for use
 	// in indexing the events for the block.
 	var blockID int64
-	//nolint:execinquery
+
 	err := es.store.QueryRow(`
 INSERT INTO `+tableBlocks+` (height, chain_id, created_at)
   VALUES ($1, $2, $3)
@@ -164,9 +176,11 @@ INSERT INTO `+tableBlocks+` (height, chain_id, created_at)
 	if err := runBulkInsert(es.store, tableEvents, eventInsertColumns, eventInserts); err != nil {
 		return fmt.Errorf("failed bulk insert of events: %w", err)
 	}
+
 	if err := runBulkInsert(es.store, tableAttributes, attrInsertColumns, attrInserts); err != nil {
 		return fmt.Errorf("failed bulk insert of attributes: %w", err)
 	}
+
 	return nil
 }
 
@@ -180,6 +194,7 @@ SELECT array_agg((
 		es.chainID, pq.Array(heights)).Scan(&blockIDs); err != nil {
 		return nil, fmt.Errorf("getting block ids for txs from sql: %w", err)
 	}
+
 	return blockIDs, nil
 }
 
@@ -192,12 +207,14 @@ SELECT array_agg((
 		pq.Array(blockIDs), pq.Array(indexes)).Scan((*pq.BoolArray)(&existence)); err != nil {
 		return nil, fmt.Errorf("fetching already indexed txrs: %w", err)
 	}
+
 	return existence, nil
 }
 
 func (es *EventSink) IndexTxEvents(txrs []*abci.TxResult) error {
 	ts := time.Now().UTC()
 	heights := make([]int64, len(txrs))
+
 	indexes := make([]uint32, len(txrs))
 	for i, txr := range txrs {
 		heights[i] = txr.Height
@@ -209,10 +226,12 @@ func (es *EventSink) IndexTxEvents(txrs []*abci.TxResult) error {
 	if err != nil {
 		return fmt.Errorf("getting block ids for txs: %w", err)
 	}
+
 	alreadyIndexed, err := prefetchTxrExistence(es.store, blockIDs, indexes)
 	if err != nil {
 		return fmt.Errorf("failed to prefetch which txrs were already indexed: %w", err)
 	}
+
 	txrInserts, attrInserts, eventInserts := make([][]any, 0, len(txrs)), make([][]any, 0, len(txrs)), make([][]any, 0, len(txrs))
 	for i, txr := range txrs {
 		if alreadyIndexed[i] {
@@ -239,15 +258,19 @@ func (es *EventSink) IndexTxEvents(txrs []*abci.TxResult) error {
 		eventInserts = append(eventInserts, newEventInserts...)
 		attrInserts = append(attrInserts, newAttrInserts...)
 	}
+
 	if err := runBulkInsert(es.store, tableTxResults, txrInsertColumns, txrInserts); err != nil {
 		return fmt.Errorf("bulk inserting txrs: %w", err)
 	}
+
 	if err := runBulkInsert(es.store, tableEvents, eventInsertColumns, eventInserts); err != nil {
 		return fmt.Errorf("bulk inserting events: %w", err)
 	}
+
 	if err := runBulkInsert(es.store, tableAttributes, attrInsertColumns, attrInserts); err != nil {
 		return fmt.Errorf("bulk inserting attributes: %w", err)
 	}
+
 	return nil
 }
 

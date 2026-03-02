@@ -81,6 +81,7 @@ func (qr QueryRange) UpperBoundValue() any {
 	case *big.Int:
 		tmp := new(big.Int)
 		return tmp.Sub(t, big.NewInt(1))
+
 	case *big.Float:
 		return t
 	case time.Time:
@@ -98,6 +99,7 @@ func LookForRangesWithHeight(conditions []syntax.Condition) (queryRange QueryRan
 	for i, c := range conditions {
 		if IsRangeOperation(c.Op) {
 			heightKey := c.Tag == types.BlockHeightKey || c.Tag == types.TxHeightKey
+
 			r, ok := queryRange[c.Tag]
 			if !ok {
 				r = QueryRange{Key: c.Tag}
@@ -111,10 +113,12 @@ func LookForRangesWithHeight(conditions []syntax.Condition) (queryRange QueryRan
 				if heightKey {
 					heightRange.LowerBound = conditionArg(c)
 				}
+
 				r.LowerBound = conditionArg(c)
 
 			case syntax.TGeq:
 				r.IncludeLowerBound = true
+
 				r.LowerBound = conditionArg(c)
 				if heightKey {
 					heightRange.IncludeLowerBound = true
@@ -129,6 +133,7 @@ func LookForRangesWithHeight(conditions []syntax.Condition) (queryRange QueryRan
 
 			case syntax.TLeq:
 				r.IncludeUpperBound = true
+
 				r.UpperBound = conditionArg(c)
 				if heightKey {
 					heightRange.IncludeUpperBound = true
@@ -137,6 +142,7 @@ func LookForRangesWithHeight(conditions []syntax.Condition) (queryRange QueryRan
 			}
 
 			queryRange[c.Tag] = r
+
 			indexes = append(indexes, i)
 		}
 	}
@@ -171,6 +177,7 @@ func LookForRanges(conditions []syntax.Condition) (ranges QueryRanges, indexes [
 			}
 
 			ranges[c.Tag] = r
+
 			indexes = append(indexes, i)
 		}
 	}
@@ -194,6 +201,7 @@ func conditionArg(c syntax.Condition) any {
 	if c.Arg == nil {
 		return nil
 	}
+
 	switch c.Arg.Type {
 	case syntax.TNumber:
 		return c.Arg.Number()

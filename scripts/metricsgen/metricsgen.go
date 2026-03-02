@@ -128,18 +128,23 @@ type TemplateData struct {
 
 func main() {
 	flag.Parse()
+
 	if *strct == "" {
 		log.Fatal("You must specify a non-empty -struct")
 	}
+
 	td, err := ParseMetricsDir(".", *strct)
 	if err != nil {
 		log.Fatalf("Parsing file: %v", err)
 	}
+
 	out := filepath.Join(*dir, "metrics.gen.go")
+
 	f, err := os.Create(out)
 	if err != nil {
 		log.Fatalf("Opening file: %v", err)
 	}
+
 	err = GenerateMetricsFile(f, td)
 	if err != nil {
 		log.Fatalf("Generating code: %v", err)
@@ -155,13 +160,16 @@ func ignoreTestFiles(f fs.FileInfo) bool {
 // struct and builds a TemplateData using the data obtained from the abstract syntax tree.
 func ParseMetricsDir(dir, structName string) (TemplateData, error) {
 	fs := token.NewFileSet()
+
 	d, err := parser.ParseDir(fs, dir, ignoreTestFiles, parser.ParseComments)
 	if err != nil {
 		return TemplateData{}, err
 	}
+
 	if len(d) > 1 {
 		return TemplateData{}, fmt.Errorf("multiple packages found in %s", dir)
 	}
+
 	if len(d) == 0 {
 		return TemplateData{}, fmt.Errorf("no go packages found in %s", dir)
 	}
@@ -173,6 +181,7 @@ func ParseMetricsDir(dir, structName string) (TemplateData, error) {
 	)
 	for pkgName, pkg = range d {
 	}
+
 	td := TemplateData{
 		Package: pkgName,
 	}
@@ -181,10 +190,12 @@ func ParseMetricsDir(dir, structName string) (TemplateData, error) {
 	if err != nil {
 		return TemplateData{}, err
 	}
+
 	for _, f := range m.Fields.List {
 		if !isMetric(f.Type, mPkgName) {
 			continue
 		}
+
 		pmf := parseMetricField(f)
 		td.ParsedMetrics = append(td.ParsedMetrics, pmf)
 	}
@@ -197,18 +208,22 @@ func ParseMetricsDir(dir, structName string) (TemplateData, error) {
 func GenerateMetricsFile(w io.Writer, td TemplateData) error {
 	b := []byte{}
 	buf := bytes.NewBuffer(b)
+
 	err := tmpl.Execute(buf, td)
 	if err != nil {
 		return err
 	}
+
 	b, err = format.Source(buf.Bytes())
 	if err != nil {
 		return err
 	}
+
 	_, err = io.Copy(w, bytes.NewBuffer(b))
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -219,33 +234,41 @@ func findMetricsStruct(files map[string]*ast.File, structName string) (*ast.Stru
 		if err != nil {
 			return nil, "", fmt.Errorf("unable to determine metrics package name: %v", err)
 		}
+
 		if !ast.FilterFile(file, func(name string) bool {
 			return name == structName
 		}) {
 			continue
 		}
+
 		ast.Inspect(file, func(n ast.Node) bool {
 			switch f := n.(type) {
 			case *ast.TypeSpec:
 				if f.Name.Name == structName {
 					var ok bool
+
 					st, ok = f.Type.(*ast.StructType)
 					if !ok {
 						err = fmt.Errorf("found identifier for %q of wrong type", structName)
 					}
 				}
+
 				return false
+
 			default:
 				return true
 			}
 		})
+
 		if err != nil {
 			return nil, "", err
 		}
+
 		if st != nil {
 			return st, mPkgName, nil
 		}
 	}
+
 	return nil, "", fmt.Errorf("target struct %q not found in dir", structName)
 }
 
@@ -260,6 +283,7 @@ func parseMetricField(f *ast.Field) ParsedMetricField {
 	if pmf.TypeName == "Histogram" {
 		pmf.HistogramOptions = extractHistogramOptions(f.Tag)
 	}
+
 	return pmf
 }
 
@@ -271,14 +295,17 @@ func extractHelpMessage(cg *ast.CommentGroup) string {
 	if cg == nil {
 		return ""
 	}
+
 	var help []string
 	for _, c := range cg.List {
 		mt := strings.TrimPrefix(c.Text, "//metrics:")
 		if mt != c.Text {
 			return strings.TrimSpace(mt)
 		}
+
 		help = append(help, strings.TrimSpace(strings.TrimPrefix(c.Text, "//")))
 	}
+
 	return strings.Join(help, " ")
 }
 
@@ -294,9 +321,11 @@ func extractLabels(bl *ast.BasicLit) string {
 			for _, s := range strings.Split(v, ",") {
 				res = append(res, strconv.Quote(strings.TrimSpace(s)))
 			}
+
 			return strings.Join(res, ",")
 		}
 	}
+
 	return ""
 }
 
@@ -307,6 +336,7 @@ func extractFieldName(name string, tag *ast.BasicLit) string {
 			return v
 		}
 	}
+
 	return toSnakeCase(name)
 }
 
@@ -317,10 +347,12 @@ func extractHistogramOptions(tag *ast.BasicLit) HistogramOpts {
 		if v := t.Get(bucketTypeTag); v != "" {
 			h.BucketType = bucketType[v]
 		}
+
 		if v := t.Get(bucketSizeTag); v != "" {
 			h.BucketSizes = v
 		}
 	}
+
 	return h
 }
 
@@ -330,6 +362,7 @@ func extractMetricsPackageName(imports []*ast.ImportSpec) (string, error) {
 		if err != nil {
 			return "", err
 		}
+
 		if u == metricsPackageName {
 			if i.Name != nil {
 				return i.Name.Name, nil
@@ -337,6 +370,7 @@ func extractMetricsPackageName(imports []*ast.ImportSpec) (string, error) {
 			return path.Base(u), nil
 		}
 	}
+
 	return "", nil
 }
 

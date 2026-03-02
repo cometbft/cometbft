@@ -42,6 +42,7 @@ func TestErrors(t *testing.T) {
 
 				// ASSERT
 				require.Equal(t, tt.wantOK, ok)
+
 				if !tt.wantOK {
 					assert.Nil(t, got)
 					return

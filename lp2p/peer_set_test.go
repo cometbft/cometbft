@@ -126,6 +126,7 @@ func TestPeerSet(t *testing.T) {
 	t.Run("ForEach", func(t *testing.T) {
 		// ARRANGE
 		ctx := context.Background()
+
 		const peers = 6
 
 		hosts := makeTestHosts(t, peers)

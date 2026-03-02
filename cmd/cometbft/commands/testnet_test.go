@@ -13,10 +13,12 @@ func TestIncrementIP(t *testing.T) {
 		assert.NotNil(t, ip)
 
 		incrementIP(ip)
+
 		expected := net.ParseIP("192.168.1.11")
 		assert.True(t, ip.Equal(expected), "Expected %s to be equal to %s", ip, expected)
 
 		incrementIP(ip)
+
 		expected = net.ParseIP("192.168.1.12")
 		assert.True(t, ip.Equal(expected), "Expected %s to be equal to %s", ip, expected)
 
@@ -24,6 +26,7 @@ func TestIncrementIP(t *testing.T) {
 		for range 255 {
 			incrementIP(ip)
 		}
+
 		expected = net.ParseIP("192.168.2.11")
 		assert.True(t, ip.Equal(expected), "Expected %s to be equal to %s", ip, expected)
 	}
@@ -34,6 +37,7 @@ func TestIncrementIP(t *testing.T) {
 		assert.NotNil(t, ip)
 
 		incrementIP(ip)
+
 		expected := net.ParseIP("11.0.0.0")
 		assert.True(t, ip.Equal(expected), "Expected %s to be equal to %s", ip, expected)
 	}
@@ -44,6 +48,7 @@ func TestIncrementIP(t *testing.T) {
 		assert.NotNil(t, ip)
 
 		incrementIP(ip)
+
 		expected := net.ParseIP("2a00:1450:400a:1009::66")
 		assert.True(t, ip.Equal(expected), "Expected %s to be equal to %s", ip, expected)
 
@@ -51,6 +56,7 @@ func TestIncrementIP(t *testing.T) {
 		for range 0xFFFF {
 			incrementIP(ip)
 		}
+
 		expected = net.ParseIP("2a00:1450:400a:1009::1:65")
 		assert.True(t, ip.Equal(expected), "Expected %s to be equal to %s", ip, expected)
 	}

@@ -115,6 +115,7 @@ func (*EventBus) validateAndStringifyEvents(events []types.Event) map[string][]s
 		if len(event.Type) == 0 {
 			continue
 		}
+
 		prefix := event.Type + "."
 		for _, attr := range event.Attributes {
 			if len(attr.Key) == 0 {

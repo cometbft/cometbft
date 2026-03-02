@@ -25,6 +25,7 @@ func TestRollback(t *testing.T) {
 		height     int64 = 100
 		nextHeight int64 = 101
 	)
+
 	blockStore := &mocks.BlockStore{}
 	stateStore := setupStateStore(t, height)
 	initialState, err := stateStore.Load()
@@ -88,6 +89,7 @@ func TestRollback(t *testing.T) {
 
 func TestRollbackHard(t *testing.T) {
 	const height int64 = 100
+
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
 	stateStore := state.NewStore(dbm.NewMemDB(), state.StoreOptions{DiscardABCIResponses: false})
 
@@ -216,6 +218,7 @@ func TestRollbackNoState(t *testing.T) {
 
 func TestRollbackNoBlocks(t *testing.T) {
 	const height = int64(100)
+
 	stateStore := setupStateStore(t, height)
 	blockStore := &mocks.BlockStore{}
 	blockStore.On("Height").Return(height)
@@ -229,6 +232,7 @@ func TestRollbackNoBlocks(t *testing.T) {
 
 func TestRollbackDifferentStateHeight(t *testing.T) {
 	const height = int64(100)
+
 	stateStore := setupStateStore(t, height)
 	blockStore := &mocks.BlockStore{}
 	blockStore.On("Height").Return(height + 2)
@@ -268,6 +272,7 @@ func setupStateStore(t *testing.T, height int64) state.Store {
 		LastHeightConsensusParamsChanged: height + 1,
 	}
 	require.NoError(t, stateStore.Bootstrap(initialState))
+
 	return stateStore
 }
 
@@ -278,6 +283,7 @@ func makeBlockIDRandom() types.BlockID {
 	)
 	rand.Read(blockHash)   //nolint: errcheck // ignore errcheck for read
 	rand.Read(partSetHash) //nolint: errcheck // ignore errcheck for read
+
 	return types.BlockID{
 		Hash: blockHash,
 		PartSetHeader: types.PartSetHeader{

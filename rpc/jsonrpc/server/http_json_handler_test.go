@@ -63,10 +63,12 @@ func TestRPCParams(t *testing.T) {
 		req, _ := http.NewRequest("POST", "http://localhost/", strings.NewReader(tt.payload))
 		rec := httptest.NewRecorder()
 		mux.ServeHTTP(rec, req)
+
 		res := rec.Result()
 		defer res.Body.Close()
 		// Always expecting back a JSONRPCResponse
 		assert.NotZero(t, res.StatusCode, "#%d: should always return code", i)
+
 		blob, err := io.ReadAll(res.Body)
 		if err != nil {
 			t.Errorf("#%d: err reading body: %v", i, err)
@@ -77,6 +79,7 @@ func TestRPCParams(t *testing.T) {
 		assert.Nil(t, json.Unmarshal(blob, recv), "#%d: expecting successful parsing of an RPCResponse:\nblob: %s", i, blob)
 		assert.NotEqual(t, recv, new(types.RPCResponse), "#%d: not expecting a blank RPCResponse", i)
 		assert.Equal(t, tt.expectedID, recv.ID, "#%d: expected ID not matched in RPCResponse", i)
+
 		if tt.wantErr == "" {
 			assert.Nil(t, recv.Error, "#%d: not expecting an error", i)
 		} else {
@@ -114,16 +117,19 @@ func TestJSONRPCID(t *testing.T) {
 		res := rec.Result()
 		// Always expecting back a JSONRPCResponse
 		assert.NotZero(t, res.StatusCode, "#%d: should always return code", i)
+
 		blob, err := io.ReadAll(res.Body)
 		if err != nil {
 			t.Errorf("#%d: err reading body: %v", i, err)
 			continue
 		}
+
 		res.Body.Close()
 
 		recv := new(types.RPCResponse)
 		err = json.Unmarshal(blob, recv)
 		assert.Nil(t, err, "#%d: expecting successful parsing of an RPCResponse:\nblob: %s", i, blob)
+
 		if !tt.wantErr {
 			assert.NotEqual(t, recv, new(types.RPCResponse), "#%d: not expecting a blank RPCResponse", i)
 			assert.Equal(t, tt.expectedID, recv.ID, "#%d: expected ID not matched in RPCResponse", i)
@@ -152,6 +158,7 @@ func TestRPCNotification(t *testing.T) {
 
 func TestRPCNotificationInBatch(t *testing.T) {
 	mux := testMux()
+
 	tests := []struct {
 		payload     string
 		expectCount int
@@ -180,11 +187,13 @@ func TestRPCNotificationInBatch(t *testing.T) {
 		res := rec.Result()
 		// Always expecting back a JSONRPCResponse
 		assert.True(t, statusOK(res.StatusCode), "#%d: should always return 2XX", i)
+
 		blob, err := io.ReadAll(res.Body)
 		if err != nil {
 			t.Errorf("#%d: err reading body: %v", i, err)
 			continue
 		}
+
 		res.Body.Close()
 
 		var responses []types.RPCResponse
@@ -198,6 +207,7 @@ func TestRPCNotificationInBatch(t *testing.T) {
 			}
 			// we were expecting an error here, so let's unmarshal a single response
 			var response types.RPCResponse
+
 			err = json.Unmarshal(blob, &response)
 			if err != nil {
 				t.Errorf("#%d: expected successful parsing of an RPCResponse\nblob: %s", i, blob)
@@ -206,10 +216,12 @@ func TestRPCNotificationInBatch(t *testing.T) {
 			// have a single-element result
 			responses = []types.RPCResponse{response}
 		}
+
 		if tt.expectCount != len(responses) {
 			t.Errorf("#%d: expected %d response(s), but got %d\nblob: %s", i, tt.expectCount, len(responses), blob)
 			continue
 		}
+
 		for _, response := range responses {
 			assert.NotEqual(t, response, new(types.RPCResponse), "#%d: not expecting a blank RPCResponse", i)
 		}

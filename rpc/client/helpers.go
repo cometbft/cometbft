@@ -24,6 +24,7 @@ func DefaultWaitStrategy(delta int64) (abort error) {
 		delay := time.Duration(delta-1)*time.Second + 500*time.Millisecond
 		time.Sleep(delay)
 	}
+
 	return nil
 }
 
@@ -36,12 +37,14 @@ func WaitForHeight(c StatusClient, h int64, waiter Waiter) error {
 	if waiter == nil {
 		waiter = DefaultWaitStrategy
 	}
+
 	delta := int64(1)
 	for delta > 0 {
 		s, err := c.Status(context.Background())
 		if err != nil {
 			return err
 		}
+
 		delta = h - s.SyncInfo.LatestBlockHeight
 		// wait for the time, or abort early
 		if err := waiter(delta); err != nil {
@@ -59,6 +62,7 @@ func WaitForHeight(c StatusClient, h int64, waiter Waiter) error {
 // This handles subscribing and unsubscribing under the hood
 func WaitForOneEvent(c EventsClient, evtTyp string, timeout time.Duration) (types.TMEventData, error) {
 	const subscriber = "helpers"
+
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 

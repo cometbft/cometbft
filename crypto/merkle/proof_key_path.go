@@ -79,6 +79,7 @@ func (pth KeyPath) String() string {
 			panic("unexpected key encoding type")
 		}
 	}
+
 	return res
 }
 
@@ -97,23 +98,29 @@ func KeyPathToKeys(path string) (keys [][]byte, err error) {
 	if path == "" || path[0] != '/' {
 		return nil, errors.New("key path string must start with a forward slash '/'")
 	}
+
 	parts := strings.Split(path[1:], "/")
+
 	keys = make([][]byte, len(parts))
 	for i, part := range parts {
 		if strings.HasPrefix(part, "x:") {
 			hexPart := part[2:]
+
 			key, err := hex.DecodeString(hexPart)
 			if err != nil {
 				return nil, fmt.Errorf("decoding hex-encoded part #%d: /%s: %w", i, part, err)
 			}
+
 			keys[i] = key
 		} else {
 			key, err := url.PathUnescape(part)
 			if err != nil {
 				return nil, fmt.Errorf("decoding url-encoded part #%d: /%s: %w", i, part, err)
 			}
+
 			keys[i] = []byte(key) // TODO Test this with random bytes, I'm not sure that it works for arbitrary bytes...
 		}
 	}
+
 	return keys, nil
 }

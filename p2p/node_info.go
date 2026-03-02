@@ -133,7 +133,6 @@ func (info DefaultNodeInfo) Validate() error {
 	// Validate Version
 	if len(info.Version) > 0 &&
 		(!cmtstrings.IsASCIIText(info.Version) || cmtstrings.ASCIITrim(info.Version) == "") {
-
 		return fmt.Errorf("info.Version must be valid ASCII text without tabs, but got %v", info.Version)
 	}
 
@@ -141,12 +140,14 @@ func (info DefaultNodeInfo) Validate() error {
 	if len(info.Channels) > maxNumChannels {
 		return fmt.Errorf("info.Channels is too long (%v). Max is %v", len(info.Channels), maxNumChannels)
 	}
+
 	channels := make(map[byte]struct{})
 	for _, ch := range info.Channels {
 		_, ok := channels[ch]
 		if ok {
 			return fmt.Errorf("info.Channels contains duplicate channel id %v", ch)
 		}
+
 		channels[ch] = struct{}{}
 	}
 
@@ -157,6 +158,7 @@ func (info DefaultNodeInfo) Validate() error {
 
 	// Validate Other.
 	other := info.Other
+
 	txIndex := other.TxIndex
 	switch txIndex {
 	case "", "on", "off":
@@ -198,6 +200,7 @@ func (info DefaultNodeInfo) CompatibleWith(otherInfo NodeInfo) error {
 
 	// for each of our channels, check if they have it
 	found := false
+
 OUTER_LOOP:
 	for _, ch1 := range info.Channels {
 		for _, ch2 := range other.Channels {
@@ -207,9 +210,11 @@ OUTER_LOOP:
 			}
 		}
 	}
+
 	if !found {
 		return fmt.Errorf("peer has no common channels. Our channels: %v ; Peer channels: %v", info.Channels, other.Channels)
 	}
+
 	return nil
 }
 
@@ -252,6 +257,7 @@ func DefaultNodeInfoFromToProto(pb *tmp2p.DefaultNodeInfo) (DefaultNodeInfo, err
 	if pb == nil {
 		return DefaultNodeInfo{}, errors.New("nil node info")
 	}
+
 	dni := DefaultNodeInfo{
 		ProtocolVersion: ProtocolVersion{
 			P2P:   pb.ProtocolVersion.P2P,

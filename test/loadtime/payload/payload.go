@@ -24,13 +24,16 @@ func NewBytes(p *Payload) ([]byte, error) {
 	if p.Time == nil {
 		p.Time = timestamppb.Now()
 	}
+
 	us, err := CalculateUnpaddedSize(p)
 	if err != nil {
 		return nil, err
 	}
+
 	if p.Size > maxPayloadSize {
 		return nil, fmt.Errorf("configured size %d is too large (>%d)", p.Size, maxPayloadSize)
 	}
+
 	pSize := int(p.Size) // #nosec -- The "if" above makes this cast safe
 	if pSize < us {
 		return nil, fmt.Errorf("configured size %d not large enough to fit unpadded transaction of size %d", pSize, us)
@@ -38,14 +41,17 @@ func NewBytes(p *Payload) ([]byte, error) {
 
 	// We halve the padding size because we transform the TX to hex
 	p.Padding = make([]byte, (pSize-us)/2)
+
 	_, err = rand.Read(p.Padding)
 	if err != nil {
 		return nil, err
 	}
+
 	b, err := proto.Marshal(p)
 	if err != nil {
 		return nil, err
 	}
+
 	h := []byte(hex.EncodeToString(b))
 
 	// prepend a single key so that the kv store only ever stores a single
@@ -61,16 +67,19 @@ func FromBytes(b []byte) (*Payload, error) {
 	if bytes.Equal(b, trH) {
 		return nil, fmt.Errorf("payload bytes missing key prefix '%s'", keyPrefix)
 	}
+
 	trB, err := hex.DecodeString(string(trH))
 	if err != nil {
 		return nil, err
 	}
 
 	p := &Payload{}
+
 	err = proto.Unmarshal(trB, p)
 	if err != nil {
 		return nil, err
 	}
+
 	return p, nil
 }
 
@@ -84,6 +93,7 @@ func MaxUnpaddedSize() (int, error) {
 		Size:        math.MaxUint64,
 		Padding:     make([]byte, 1),
 	}
+
 	return CalculateUnpaddedSize(p)
 }
 
@@ -94,10 +104,13 @@ func CalculateUnpaddedSize(p *Payload) (int, error) {
 	if len(p.Padding) != 1 {
 		return 0, fmt.Errorf("expected length of padding to be 1, received %d", len(p.Padding))
 	}
+
 	b, err := proto.Marshal(p)
 	if err != nil {
 		return 0, err
 	}
+
 	h := []byte(hex.EncodeToString(b))
+
 	return len(h) + len(keyPrefix), nil
 }

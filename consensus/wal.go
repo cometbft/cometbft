@@ -99,12 +99,14 @@ func NewWAL(walFile string, groupOptions ...func(*auto.Group)) (*BaseWAL, error)
 	if err != nil {
 		return nil, err
 	}
+
 	wal := &BaseWAL{
 		group:         group,
 		enc:           NewWALEncoder(group),
 		flushInterval: walDefaultFlushInterval,
 	}
 	wal.BaseService = *service.NewBaseService(nil, "baseWAL", wal)
+
 	return wal, nil
 }
 
@@ -131,12 +133,15 @@ func (wal *BaseWAL) OnStart() error {
 			return err
 		}
 	}
+
 	err = wal.group.Start()
 	if err != nil {
 		return err
 	}
+
 	wal.flushTicker = time.NewTicker(wal.flushInterval)
 	go wal.processFlushTicks()
+
 	return nil
 }
 
@@ -147,6 +152,7 @@ func (wal *BaseWAL) processFlushTicks() {
 			if err := wal.FlushAndSync(); err != nil {
 				wal.Logger.Error("Periodic WAL flush failed", "err", err)
 			}
+
 		case <-wal.Quit():
 			return
 		}
@@ -164,12 +170,15 @@ func (wal *BaseWAL) FlushAndSync() error {
 // before cleaning up files.
 func (wal *BaseWAL) OnStop() {
 	wal.flushTicker.Stop()
+
 	if err := wal.FlushAndSync(); err != nil {
 		wal.Logger.Error("error on flush data to disk", "error", err)
 	}
+
 	if err := wal.group.Stop(); err != nil {
 		wal.Logger.Error("error trying to stop wal", "error", err)
 	}
+
 	wal.group.Close()
 }
 
@@ -237,12 +246,14 @@ func (wal *BaseWAL) SearchForEndHeight(
 		msg *TimedWALMessage
 		gr  *auto.GroupReader
 	)
+
 	lastHeightFound := int64(-1)
 
 	// NOTE: starting from the last file in the group because we're usually
 	// searching for the last height. See replay.go
 	min, max := wal.group.MinIndex(), wal.group.MaxIndex()
 	wal.Logger.Info("Searching for height", "height", height, "min", min, "max", max)
+
 	for index := max; index >= min; index-- {
 		gr, err = wal.group.NewReader(index)
 		if err != nil {
@@ -261,6 +272,7 @@ func (wal *BaseWAL) SearchForEndHeight(
 				// check next file
 				break
 			}
+
 			if options.IgnoreDataCorruptionErrors && IsDataCorruptionError(err) {
 				wal.Logger.Error("Corrupted entry. Skipping...", "err", err)
 				// do nothing
@@ -278,6 +290,7 @@ func (wal *BaseWAL) SearchForEndHeight(
 				}
 			}
 		}
+
 		gr.Close()
 	}
 
@@ -304,6 +317,7 @@ func (enc *WALEncoder) Encode(v *TimedWALMessage) error {
 	if err != nil {
 		return err
 	}
+
 	pv := cmtcons.TimedWALMessage{
 		Time: v.Time,
 		Msg:  pbMsg,
@@ -315,10 +329,12 @@ func (enc *WALEncoder) Encode(v *TimedWALMessage) error {
 	}
 
 	crc := crc32.Checksum(data, crc32c)
+
 	length := uint32(len(data))
 	if length > maxMsgSizeBytes {
 		return fmt.Errorf("msg is too big: %d bytes, max: %d bytes", length, maxMsgSizeBytes)
 	}
+
 	totalLength := 8 + int(length)
 
 	msg := make([]byte, totalLength)
@@ -327,6 +343,7 @@ func (enc *WALEncoder) Encode(v *TimedWALMessage) error {
 	copy(msg[8:], data)
 
 	_, err = enc.wr.Write(msg)
+
 	return err
 }
 
@@ -371,16 +388,20 @@ func (dec *WALDecoder) Decode() (*TimedWALMessage, error) {
 	if errors.Is(err, io.EOF) {
 		return nil, err
 	}
+
 	if err != nil {
 		return nil, DataCorruptionError{fmt.Errorf("failed to read checksum: %v", err)}
 	}
+
 	crc := binary.BigEndian.Uint32(b)
 
 	b = make([]byte, 4)
+
 	_, err = dec.rd.Read(b)
 	if err != nil {
 		return nil, DataCorruptionError{fmt.Errorf("failed to read length: %v", err)}
 	}
+
 	length := binary.BigEndian.Uint32(b)
 
 	if length > maxMsgSizeBytes {
@@ -391,6 +412,7 @@ func (dec *WALDecoder) Decode() (*TimedWALMessage, error) {
 	}
 
 	data := make([]byte, length)
+
 	n, err := dec.rd.Read(data)
 	if err != nil {
 		return nil, DataCorruptionError{fmt.Errorf("failed to read data: %v (read: %d, wanted: %d)", err, n, length)}
@@ -403,6 +425,7 @@ func (dec *WALDecoder) Decode() (*TimedWALMessage, error) {
 	}
 
 	res := new(cmtcons.TimedWALMessage)
+
 	err = proto.Unmarshal(data, res)
 	if err != nil {
 		return nil, DataCorruptionError{fmt.Errorf("failed to decode data: %v", err)}
@@ -412,6 +435,7 @@ func (dec *WALDecoder) Decode() (*TimedWALMessage, error) {
 	if err != nil {
 		return nil, DataCorruptionError{cmterrors.ErrMsgFromProto{MessageName: "WALMessage", Err: err}}
 	}
+
 	tMsgWal := &TimedWALMessage{
 		Time: res.Time,
 		Msg:  walMsg,

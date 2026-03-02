@@ -68,6 +68,7 @@ func getSize(v any) (int, bool) {
 	}); ok {
 		return sz.ProtoSize(), true
 	}
+
 	return 0, false
 }
 
@@ -91,9 +92,11 @@ func newByteReader(r io.Reader) *byteReader {
 func (r *byteReader) ReadByte() (byte, error) {
 	n, err := r.reader.Read(r.buf)
 	r.bytesRead += n
+
 	if err != nil {
 		return 0x00, err
 	}
+
 	return r.buf[0], nil
 }
 

@@ -107,12 +107,15 @@ func testnetFiles(*cobra.Command, []string) error {
 	// overwrite default config if set and valid
 	if configFile != "" {
 		viper.SetConfigFile(configFile)
+
 		if err := viper.ReadInConfig(); err != nil {
 			return err
 		}
+
 		if err := viper.Unmarshal(config); err != nil {
 			return err
 		}
+
 		if err := config.ValidateBasic(); err != nil {
 			return err
 		}
@@ -130,6 +133,7 @@ func testnetFiles(*cobra.Command, []string) error {
 			_ = os.RemoveAll(outputDir)
 			return err
 		}
+
 		err = os.MkdirAll(filepath.Join(nodeDir, "data"), nodeDirPerm)
 		if err != nil {
 			_ = os.RemoveAll(outputDir)
@@ -148,6 +152,7 @@ func testnetFiles(*cobra.Command, []string) error {
 		if err != nil {
 			return fmt.Errorf("can't get pubkey: %w", err)
 		}
+
 		genVals[i] = types.GenesisValidator{
 			Address: pubKey.Address(),
 			PubKey:  pubKey,
@@ -213,16 +218,19 @@ func testnetFiles(*cobra.Command, []string) error {
 		nodeDir := filepath.Join(outputDir, fmt.Sprintf("%s%d", nodeDirPrefix, i))
 		config.SetRoot(nodeDir)
 		config.P2P.AddrBookStrict = false
+
 		config.P2P.AllowDuplicateIP = true
 		if populatePersistentPeers {
 			config.P2P.PersistentPeers = persistentPeers
 		}
+
 		config.Moniker = moniker(i)
 
 		cfg.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), config)
 	}
 
 	fmt.Printf("Successfully initialized %v node directories\n", nValidators+nNonValidators)
+
 	return nil
 }
 
@@ -230,10 +238,13 @@ func hostnameOrIP(i int) string {
 	if len(hostnames) > 0 && i < len(hostnames) {
 		return hostnames[i]
 	}
+
 	if startingIPAddress == "" {
 		return fmt.Sprintf("%s%d%s", hostnamePrefix, i, hostnameSuffix)
 	}
+
 	ip := net.ParseIP(startingIPAddress)
+
 	ip = ip.To4()
 	if ip == nil {
 		fmt.Printf("%v: non ipv4 address\n", startingIPAddress)
@@ -243,6 +254,7 @@ func hostnameOrIP(i int) string {
 	for range i {
 		incrementIP(ip)
 	}
+
 	return ip.String()
 }
 
@@ -263,12 +275,15 @@ func persistentPeersString(config *cfg.Config) (string, error) {
 	for i := 0; i < nValidators+nNonValidators; i++ {
 		nodeDir := filepath.Join(outputDir, fmt.Sprintf("%s%d", nodeDirPrefix, i))
 		config.SetRoot(nodeDir)
+
 		nodeKey, err := p2p.LoadNodeKey(config.NodeKeyFile())
 		if err != nil {
 			return "", err
 		}
+
 		persistentPeers[i] = p2p.IDAddressString(nodeKey.ID(), fmt.Sprintf("%s:%d", hostnameOrIP(i), p2pPort))
 	}
+
 	return strings.Join(persistentPeers, ","), nil
 }
 
@@ -276,12 +291,15 @@ func moniker(i int) string {
 	if randomMonikers {
 		return randomMoniker()
 	}
+
 	if len(hostnames) > 0 && i < len(hostnames) {
 		return hostnames[i]
 	}
+
 	if startingIPAddress == "" {
 		return fmt.Sprintf("%s%d%s", hostnamePrefix, i, hostnameSuffix)
 	}
+
 	return randomMoniker()
 }
 

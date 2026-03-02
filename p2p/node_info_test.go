@@ -17,6 +17,7 @@ func TestNodeInfoValidate(t *testing.T) {
 	for i := 0; i < maxNumChannels; i++ {
 		channels[i] = byte(i)
 	}
+
 	dupChannels := make([]byte, 5)
 	copy(dupChannels, channels[:5])
 	dupChannels = append(dupChannels, testCh)
@@ -77,6 +78,7 @@ func TestNodeInfoValidate(t *testing.T) {
 		ni := testNodeInfo(nodeKey.ID(), name).(DefaultNodeInfo)
 		ni.Channels = channels
 		tc.malleateNodeInfo(&ni)
+
 		err := ni.Validate()
 		if tc.expectErr {
 			assert.Error(t, err, tc.testName)

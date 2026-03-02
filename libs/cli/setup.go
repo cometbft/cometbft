@@ -30,6 +30,7 @@ func PrepareBaseCmd(cmd *cobra.Command, envPrefix, defaultHome string) Executor 
 	cmd.PersistentFlags().StringP(HomeFlag, "", defaultHome, "directory for config and data")
 	cmd.PersistentFlags().Bool(TraceFlag, false, "print out full stack trace on errors")
 	cmd.PersistentPreRunE = concatCobraCmdFuncs(bindFlagsLoadViper, cmd.PersistentPreRunE)
+
 	return Executor{cmd, os.Exit}
 }
 
@@ -58,6 +59,7 @@ func initEnv(prefix string) {
 // so we can support both formats for the user
 func copyEnvVars(prefix string) {
 	prefix = strings.ToUpper(prefix)
+
 	ps := prefix + "_"
 	for _, e := range os.Environ() {
 		kv := strings.SplitN(e, "=", 2)
@@ -86,10 +88,12 @@ type ExitCoder interface {
 func (e Executor) Execute() error {
 	e.SilenceUsage = true
 	e.SilenceErrors = true
+
 	err := e.Command.Execute()
 	if err != nil {
 		if viper.GetBool(TraceFlag) {
 			const size = 64 << 10
+
 			buf := make([]byte, size)
 			buf = buf[:runtime.Stack(buf, false)]
 			fmt.Fprintf(os.Stderr, "ERROR: %v\n%s\n", err, buf)
@@ -102,8 +106,10 @@ func (e Executor) Execute() error {
 		if ec, ok := err.(ExitCoder); ok {
 			exitCode = ec.ExitCode()
 		}
+
 		e.Exit(exitCode)
 	}
+
 	return err
 }
 
@@ -120,6 +126,7 @@ func concatCobraCmdFuncs(fs ...cobraCmdFunc) cobraCmdFunc {
 				}
 			}
 		}
+
 		return nil
 	}
 }
@@ -143,6 +150,7 @@ func bindFlagsLoadViper(cmd *cobra.Command, _ []string) error {
 		// ignore not found error, return other errors
 		return err
 	}
+
 	return nil
 }
 
@@ -154,5 +162,6 @@ func validateOutput(_ *cobra.Command, _ []string) error {
 	default:
 		return fmt.Errorf("unsupported output format: %s", output)
 	}
+
 	return nil
 }

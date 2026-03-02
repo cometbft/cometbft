@@ -31,6 +31,7 @@ func TestABCIResults(t *testing.T) {
 	// Make sure each result serializes differently
 	last := []byte{}
 	assert.Equal(t, last, bzA) // first one is empty
+
 	for i, res := range results[1:] {
 		bz, err := res.Marshal()
 		require.NoError(t, err)

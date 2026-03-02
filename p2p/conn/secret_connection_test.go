@@ -36,9 +36,11 @@ type kvstoreConn struct {
 func (drw kvstoreConn) Close() (err error) {
 	err2 := drw.PipeWriter.CloseWithError(io.EOF)
 	err1 := drw.PipeReader.Close()
+
 	if err2 != nil {
 		return err
 	}
+
 	return err1
 }
 
@@ -57,6 +59,7 @@ func TestSecretConnectionHandshake(t *testing.T) {
 	if err := fooSecConn.Close(); err != nil {
 		t.Error(err)
 	}
+
 	if err := barSecConn.Close(); err != nil {
 		t.Error(err)
 	}
@@ -72,6 +75,7 @@ func TestConcurrentWrite(t *testing.T) {
 	n := 100
 	wg := new(sync.WaitGroup)
 	wg.Add(3)
+
 	go writeLots(t, wg, fooSecConn, fooWriteText, n)
 	go writeLots(t, wg, fooSecConn, fooWriteText, n)
 
@@ -94,6 +98,7 @@ func TestConcurrentRead(t *testing.T) {
 	// https://golang.org/pkg/net/#Conn
 	wg := new(sync.WaitGroup)
 	wg.Add(3)
+
 	go readLots(t, wg, fooSecConn, n/2)
 	go readLots(t, wg, fooSecConn, n/2)
 
@@ -122,6 +127,7 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 		return func(_ int) (any, bool, error) {
 			// Initiate cryptographic private key and secret connection through nodeConn.
 			nodePrvKey := ed25519.GenPrivKey()
+
 			nodeSecretConn, err := MakeSecretConnection(nodeConn, nodePrvKey)
 			if err != nil {
 				t.Errorf("failed to establish SecretConnection for node: %v", err)
@@ -137,16 +143,19 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 							t.Errorf("failed to write to nodeSecretConn: %v", err)
 							return nil, true, err
 						}
+
 						if n != len(nodeWrite) {
 							err = fmt.Errorf("failed to write all bytes. Expected %v, wrote %v", len(nodeWrite), n)
 							t.Error(err)
 							return nil, true, err
 						}
 					}
+
 					if err := nodeConn.PipeWriter.Close(); err != nil {
 						t.Error(err)
 						return nil, true, err
 					}
+
 					return nil, false, nil
 				},
 				func(_ int) (any, bool, error) {
@@ -159,11 +168,13 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 								t.Error(err)
 								return nil, true, err
 							}
+
 							return nil, false, nil
 						} else if err != nil {
 							t.Errorf("failed to read from nodeSecretConn: %v", err)
 							return nil, true, err
 						}
+
 						*nodeReads = append(*nodeReads, string(readBuffer[:n]))
 					}
 				},
@@ -195,13 +206,16 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 			// Pop next write & corresponding reads
 			read := ""
 			write := writes[0]
+
 			readCount := 0
 			for _, readChunk := range reads {
 				read += readChunk
 				readCount++
+
 				if len(write) <= len(read) {
 					break
 				}
+
 				if len(write) <= dataMaxSize {
 					break // atomicity of small writes
 				}
@@ -213,6 +227,7 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 			// Iterate
 			writes = writes[1:]
 			reads = reads[readCount:]
+
 			if len(writes) == 0 {
 				break
 			}
@@ -231,19 +246,23 @@ func TestDeriveSecretsAndChallengeGolden(t *testing.T) {
 		err := cmtos.WriteFile(goldenFilepath, []byte(data), 0o644)
 		require.NoError(t, err)
 	}
+
 	f, err := os.Open(goldenFilepath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer f.Close()
+
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
 		params := strings.Split(line, ",")
 		randSecretVector, err := hex.DecodeString(params[0])
 		require.Nil(t, err)
+
 		randSecret := new([32]byte)
 		copy((*randSecret)[:], randSecretVector)
+
 		locIsLeast, err := strconv.ParseBool(params[1])
 		require.Nil(t, err)
 		expectedRecvSecret, err := hex.DecodeString(params[2])
@@ -261,6 +280,7 @@ func TestNilPubkey(t *testing.T) {
 	fooConn, barConn := makeKVStoreConnPair()
 	defer fooConn.Close()
 	defer barConn.Close()
+
 	fooPrvKey := ed25519.GenPrivKey()
 	barPrvKey := privKeyWithNilPubKey{ed25519.GenPrivKey()}
 
@@ -273,6 +293,7 @@ func TestNilPubkey(t *testing.T) {
 
 func writeLots(t *testing.T, wg *sync.WaitGroup, conn io.Writer, txt string, n int) {
 	defer wg.Done()
+
 	for i := 0; i < n; i++ {
 		_, err := conn.Write([]byte(txt))
 		if err != nil {
@@ -288,6 +309,7 @@ func readLots(t *testing.T, wg *sync.WaitGroup, conn io.Reader, n int) {
 		_, err := conn.Read(readBuffer)
 		assert.NoError(t, err)
 	}
+
 	wg.Done()
 }
 
@@ -309,6 +331,7 @@ func createGoldenTestVectors(t *testing.T) string {
 		data += hex.EncodeToString((*recvSecret)[:]) + ","
 		data += hex.EncodeToString((*sendSecret)[:]) + ","
 	}
+
 	return data
 }
 
@@ -336,6 +359,7 @@ func makeSecretConnPair(tb testing.TB) (fooSecConn, barSecConn *SecretConnection
 				tb.Errorf("failed to establish SecretConnection for foo: %v", err)
 				return nil, true, err
 			}
+
 			remotePubBytes := fooSecConn.RemotePubKey()
 			if !remotePubBytes.Equals(barPubKey) {
 				err = fmt.Errorf("unexpected fooSecConn.RemotePubKey.  Expected %v, got %v",
@@ -343,6 +367,7 @@ func makeSecretConnPair(tb testing.TB) (fooSecConn, barSecConn *SecretConnection
 				tb.Error(err)
 				return nil, true, err
 			}
+
 			return nil, false, nil
 		},
 		func(_ int) (val any, abort bool, err error) {
@@ -351,6 +376,7 @@ func makeSecretConnPair(tb testing.TB) (fooSecConn, barSecConn *SecretConnection
 				tb.Errorf("failed to establish SecretConnection for bar: %v", err)
 				return nil, true, err
 			}
+
 			remotePubBytes := barSecConn.RemotePubKey()
 			if !remotePubBytes.Equals(fooPubKey) {
 				err = fmt.Errorf("unexpected barSecConn.RemotePubKey.  Expected %v, got %v",
@@ -358,6 +384,7 @@ func makeSecretConnPair(tb testing.TB) (fooSecConn, barSecConn *SecretConnection
 				tb.Error(err)
 				return nil, true, err
 			}
+
 			return nil, false, nil
 		},
 	)
@@ -383,6 +410,7 @@ func BenchmarkWriteSecretConnection(b *testing.B) {
 		dataMaxSize * 2,
 		dataMaxSize * 7 / 2,
 	}
+
 	fooWriteBytes := make([][]byte, 0, len(randomMsgSizes))
 	for _, size := range randomMsgSizes {
 		fooWriteBytes = append(fooWriteBytes, cmtrand.Bytes(size))
@@ -402,14 +430,17 @@ func BenchmarkWriteSecretConnection(b *testing.B) {
 	}()
 
 	b.StartTimer()
+
 	for i := 0; i < b.N; i++ {
 		idx := cmtrand.Intn(len(fooWriteBytes))
+
 		_, err := fooSecConn.Write(fooWriteBytes[idx])
 		if err != nil {
 			b.Errorf("failed to write to fooSecConn: %v", err)
 			return
 		}
 	}
+
 	b.StopTimer()
 
 	if err := fooSecConn.Close(); err != nil {
@@ -431,13 +462,16 @@ func BenchmarkReadSecretConnection(b *testing.B) {
 		dataMaxSize * 2,
 		dataMaxSize * 7 / 2,
 	}
+
 	fooWriteBytes := make([][]byte, 0, len(randomMsgSizes))
 	for _, size := range randomMsgSizes {
 		fooWriteBytes = append(fooWriteBytes, cmtrand.Bytes(size))
 	}
+
 	go func() {
 		for i := 0; i < b.N; i++ {
 			idx := cmtrand.Intn(len(fooWriteBytes))
+
 			_, err := fooSecConn.Write(fooWriteBytes[idx])
 			if err != nil {
 				b.Errorf("failed to write to fooSecConn: %v, %v,%v", err, i, b.N)
@@ -447,6 +481,7 @@ func BenchmarkReadSecretConnection(b *testing.B) {
 	}()
 
 	b.StartTimer()
+
 	for i := 0; i < b.N; i++ {
 		readBuffer := make([]byte, dataMaxSize)
 		_, err := barSecConn.Read(readBuffer)
@@ -457,5 +492,6 @@ func BenchmarkReadSecretConnection(b *testing.B) {
 			b.Fatalf("Failed to read from barSecConn: %v", err)
 		}
 	}
+
 	b.StopTimer()
 }

@@ -50,10 +50,13 @@ func New(sampleRate, windowSize time.Duration) *Monitor {
 	if sampleRate = clockRound(sampleRate); sampleRate <= 0 {
 		sampleRate = 5 * clockRate
 	}
+
 	if windowSize <= 0 {
 		windowSize = 1 * time.Second
 	}
+
 	now := clock()
+
 	return &Monitor{
 		active:  true,
 		start:   now,
@@ -92,13 +95,16 @@ func (m *Monitor) IO(n int, err error) (int, error) {
 // Limit methods become NOOPs. It returns the total number of bytes transferred.
 func (m *Monitor) Done() int64 {
 	m.mu.Lock()
+
 	if now := m.update(0); m.sBytes > 0 {
 		m.reset(now)
 	}
+
 	m.active = false
 	m.tLast = 0
 	n := m.bytes
 	m.mu.Unlock()
+
 	return n
 }
 
@@ -128,6 +134,7 @@ type Status struct {
 func (m *Monitor) Status() Status {
 	m.mu.Lock()
 	now := m.update(0)
+
 	s := Status{
 		Active:   m.active,
 		Start:    clockToTime(m.start),
@@ -142,11 +149,14 @@ func (m *Monitor) Status() Status {
 	if s.BytesRem < 0 {
 		s.BytesRem = 0
 	}
+
 	if s.Duration > 0 {
 		rAvg := float64(s.Bytes) / s.Duration.Seconds()
+
 		s.AvgRate = round(rAvg)
 		if s.Active {
 			s.InstRate = round(m.rSample)
+
 			s.CurRate = round(m.rEMA)
 			if s.BytesRem > 0 {
 				if tRate := 0.8*m.rEMA + 0.2*rAvg; tRate > 0 {
@@ -154,12 +164,15 @@ func (m *Monitor) Status() Status {
 					if ns > float64(timeRemLimit) {
 						ns = float64(timeRemLimit)
 					}
+
 					s.TimeRem = clockRound(time.Duration(ns))
 				}
 			}
 		}
 	}
+
 	m.mu.Unlock()
+
 	return s
 }
 
@@ -178,6 +191,7 @@ func (m *Monitor) Limit(want int, rate int64, block bool) (n int) {
 	if want < 1 || rate < 1 {
 		return want
 	}
+
 	m.mu.Lock()
 
 	// Determine the maximum number of bytes that can be sent in one sample
@@ -197,11 +211,13 @@ func (m *Monitor) Limit(want int, rate int64, block bool) (n int) {
 	if limit -= m.sBytes; limit > int64(want) || !m.active {
 		limit = int64(want)
 	}
+
 	m.mu.Unlock()
 
 	if limit < 0 {
 		limit = 0
 	}
+
 	return int(limit)
 }
 
@@ -211,6 +227,7 @@ func (m *Monitor) SetTransferSize(bytes int64) {
 	if bytes < 0 {
 		bytes = 0
 	}
+
 	m.mu.Lock()
 	m.tBytes = bytes
 	m.mu.Unlock()
@@ -223,9 +240,11 @@ func (m *Monitor) update(n int) (now time.Duration) {
 	if !m.active {
 		return
 	}
+
 	if now = clock(); n > 0 {
 		m.tLast = now
 	}
+
 	m.sBytes += int64(n)
 	if sTime := now - m.sLast; sTime >= m.sRate {
 		t := sTime.Seconds()
@@ -241,8 +260,10 @@ func (m *Monitor) update(n int) (now time.Duration) {
 		} else {
 			m.rEMA = m.rSample
 		}
+
 		m.reset(now)
 	}
+
 	return
 }
 
@@ -259,18 +280,22 @@ func (m *Monitor) reset(sampleTime time.Duration) {
 // the transfer to be inactive when this method returns.
 func (m *Monitor) waitNextSample(now time.Duration) time.Duration {
 	const minWait = 5 * time.Millisecond
+
 	current := m.sLast
 
 	// sleep until the last sample time changes (ideally, just one iteration)
 	for m.sLast == current && m.active {
 		d := current + m.sRate - now
 		m.mu.Unlock()
+
 		if d < minWait {
 			d = minWait
 		}
+
 		time.Sleep(d)
 		m.mu.Lock()
 		now = m.update(0)
 	}
+
 	return now
 }

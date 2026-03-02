@@ -32,7 +32,6 @@ func NewIndexerService(
 	eventBus *types.EventBus,
 	terminateOnError bool,
 ) *IndexerService {
-
 	is := &IndexerService{txIdxr: txIdxr, blockIdxr: blockIdxr, eventBus: eventBus, terminateOnError: terminateOnError}
 	is.BaseService = *service.NewBaseService(nil, "IndexerService", is)
 	return is
@@ -92,6 +91,7 @@ func (is *IndexerService) OnStart() error {
 
 				if err := is.blockIdxr.Index(eventNewBlockEvents); err != nil {
 					is.Logger.Error("failed to index block", "height", height, "err", err)
+
 					if is.terminateOnError {
 						if err := is.Stop(); err != nil {
 							is.Logger.Error("failed to stop", "err", err)
@@ -104,6 +104,7 @@ func (is *IndexerService) OnStart() error {
 
 				if err = is.txIdxr.AddBatch(batch); err != nil {
 					is.Logger.Error("failed to index block txs", "height", height, "err", err)
+
 					if is.terminateOnError {
 						if err := is.Stop(); err != nil {
 							is.Logger.Error("failed to stop", "err", err)
@@ -116,6 +117,7 @@ func (is *IndexerService) OnStart() error {
 			}
 		}
 	}()
+
 	return nil
 }
 

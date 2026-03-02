@@ -65,6 +65,7 @@ func zipDir(src, dest string) error {
 		defer file.Close()
 
 		_, err = io.Copy(headerWriter, file)
+
 		return err
 	})
 }

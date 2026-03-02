@@ -33,8 +33,10 @@ func (s *snapshot) Key() snapshotKey {
 	fmt.Fprintf(hasher, "%v:%v:%v", s.Height, s.Format, s.Chunks)
 	hasher.Write(s.Hash)
 	hasher.Write(s.Metadata)
+
 	var key snapshotKey
 	copy(key[:], hasher.Sum(nil))
+
 	return key
 }
 
@@ -92,26 +94,31 @@ func (p *snapshotPool) Add(peer p2p.Peer, snapshot *snapshot) (bool, error) {
 	if p.snapshotPeers[key] == nil {
 		p.snapshotPeers[key] = make(map[p2p.ID]p2p.Peer)
 	}
+
 	p.snapshotPeers[key][peer.ID()] = peer
 
 	if p.peerIndex[peer.ID()] == nil {
 		p.peerIndex[peer.ID()] = make(map[snapshotKey]bool)
 	}
+
 	p.peerIndex[peer.ID()][key] = true
 
 	if p.snapshots[key] != nil {
 		return false, nil
 	}
+
 	p.snapshots[key] = snapshot
 
 	if p.formatIndex[snapshot.Format] == nil {
 		p.formatIndex[snapshot.Format] = make(map[snapshotKey]bool)
 	}
+
 	p.formatIndex[snapshot.Format][key] = true
 
 	if p.heightIndex[snapshot.Height] == nil {
 		p.heightIndex[snapshot.Height] = make(map[snapshotKey]bool)
 	}
+
 	p.heightIndex[snapshot.Height][key] = true
 
 	return true, nil
@@ -123,6 +130,7 @@ func (p *snapshotPool) Best() *snapshot {
 	if len(ranked) == 0 {
 		return nil
 	}
+
 	return ranked[0]
 }
 
@@ -132,12 +140,14 @@ func (p *snapshotPool) GetPeer(snapshot *snapshot) p2p.Peer {
 	if len(peers) == 0 {
 		return nil
 	}
+
 	return peers[rand.Intn(len(peers))] //nolint:gosec // G404: Use of weak random number generator
 }
 
 // GetPeers returns the peers for a snapshot.
 func (p *snapshotPool) GetPeers(snapshot *snapshot) []p2p.Peer {
 	key := snapshot.Key()
+
 	p.Lock()
 	defer p.Unlock()
 
@@ -149,6 +159,7 @@ func (p *snapshotPool) GetPeers(snapshot *snapshot) []p2p.Peer {
 	sort.Slice(peers, func(a int, b int) bool {
 		return peers[a].ID() < peers[b].ID()
 	})
+
 	return peers
 }
 
@@ -190,6 +201,7 @@ func (p *snapshotPool) Ranked() []*snapshot {
 // Reject rejects a snapshot. Rejected snapshots will never be used again.
 func (p *snapshotPool) Reject(snapshot *snapshot) {
 	key := snapshot.Key()
+
 	p.Lock()
 	defer p.Unlock()
 
@@ -213,6 +225,7 @@ func (p *snapshotPool) RejectPeer(peerID p2p.ID) {
 	if peerID == "" {
 		return
 	}
+
 	p.Lock()
 	defer p.Unlock()
 
@@ -224,6 +237,7 @@ func (p *snapshotPool) RejectPeer(peerID p2p.ID) {
 func (p *snapshotPool) RemovePeer(peerID p2p.ID) {
 	p.Lock()
 	defer p.Unlock()
+
 	p.removePeer(peerID)
 }
 
@@ -231,10 +245,12 @@ func (p *snapshotPool) RemovePeer(peerID p2p.ID) {
 func (p *snapshotPool) removePeer(peerID p2p.ID) {
 	for key := range p.peerIndex[peerID] {
 		delete(p.snapshotPeers[key], peerID)
+
 		if len(p.snapshotPeers[key]) == 0 {
 			p.removeSnapshot(key)
 		}
 	}
+
 	delete(p.peerIndex, peerID)
 }
 
@@ -248,8 +264,10 @@ func (p *snapshotPool) removeSnapshot(key snapshotKey) {
 	delete(p.snapshots, key)
 	delete(p.formatIndex[snapshot.Format], key)
 	delete(p.heightIndex[snapshot.Height], key)
+
 	for peerID := range p.snapshotPeers[key] {
 		delete(p.peerIndex[peerID], key)
 	}
+
 	delete(p.snapshotPeers, key)
 }

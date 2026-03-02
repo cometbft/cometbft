@@ -32,6 +32,7 @@ func NewGRPCServer(protoAddr string, app types.Application) service.Service {
 		app:      app,
 	}
 	s.BaseService = *service.NewBaseService(nil, "ABCIServer", s)
+
 	return s
 }
 
@@ -47,11 +48,13 @@ func (s *GRPCServer) OnStart() error {
 	types.RegisterABCIServer(s.server, &gRPCApplication{s.app})
 
 	s.Logger.Info("Listening", "proto", s.proto, "addr", s.addr)
+
 	go func() {
 		if err := s.server.Serve(s.listener); err != nil {
 			s.Logger.Error("Error serving gRPC server", "err", err)
 		}
 	}()
+
 	return nil
 }
 

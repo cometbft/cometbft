@@ -129,7 +129,9 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 	if len(remaining) == 0 { // The event was not properly indexed
 		return 0, fmt.Errorf("failed to parse event sequence, invalid event format")
 	}
+
 	var typ string
+
 	remaining2, err := orderedcode.Parse(remaining, &typ) // Check if we have scenarios 2. or 3. (described above).
 	if err != nil {                                       // If it cannot parse the event function type, it could be 1.
 		remaining, err2 := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &eventSeq)
@@ -144,6 +146,7 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 			return 0, fmt.Errorf("failed to parse event sequence: %w", err2)
 		}
 	}
+
 	return eventSeq, nil
 }
 
@@ -154,8 +157,11 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 func dedupHeight(conditions []syntax.Condition) (dedupConditions []syntax.Condition, heightInfo HeightInfo, found bool) {
 	heightInfo.heightEqIdx = -1
 	heightRangeExists := false
+
 	var heightCondition []syntax.Condition
+
 	heightInfo.onlyHeightEq = true
+
 	heightInfo.onlyHeightRange = true
 	for _, c := range conditions {
 		if c.Tag == types.BlockHeightKey {
@@ -163,27 +169,33 @@ func dedupHeight(conditions []syntax.Condition) (dedupConditions []syntax.Condit
 				if found || heightRangeExists {
 					continue
 				}
+
 				hFloat := c.Arg.Number()
 				if hFloat != nil {
 					h, _ := hFloat.Int64()
 					heightInfo.height = h
+
 					heightCondition = append(heightCondition, c)
 					found = true
 				}
 			} else {
 				heightInfo.onlyHeightEq = false
 				heightRangeExists = true
+
 				dedupConditions = append(dedupConditions, c)
 			}
 		} else {
 			heightInfo.onlyHeightRange = false
 			heightInfo.onlyHeightEq = false
+
 			dedupConditions = append(dedupConditions, c)
 		}
 	}
+
 	if !heightRangeExists && len(heightCondition) != 0 {
 		heightInfo.heightEqIdx = len(dedupConditions)
 		heightInfo.onlyHeightRange = false
+
 		dedupConditions = append(dedupConditions, heightCondition...)
 	} else {
 		// If we found a range make sure we set the height idx to -1 as the height equality
@@ -193,6 +205,7 @@ func dedupHeight(conditions []syntax.Condition) (dedupConditions []syntax.Condit
 		heightInfo.onlyHeightEq = false
 		found = false
 	}
+
 	return dedupConditions, heightInfo, found
 }
 

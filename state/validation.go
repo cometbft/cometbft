@@ -26,16 +26,19 @@ func validateBlock(state State, block *types.Block) error {
 			block.Version,
 		)
 	}
+
 	if block.ChainID != state.ChainID {
 		return fmt.Errorf("wrong Block.Header.ChainID. Expected %v, got %v",
 			state.ChainID,
 			block.ChainID,
 		)
 	}
+
 	if state.LastBlockHeight == 0 && block.Height != state.InitialHeight {
 		return fmt.Errorf("wrong Block.Header.Height. Expected %v for initial block, got %v",
 			block.Height, state.InitialHeight)
 	}
+
 	if state.LastBlockHeight > 0 && block.Height != state.LastBlockHeight+1 {
 		return fmt.Errorf("wrong Block.Header.Height. Expected %v, got %v",
 			state.LastBlockHeight+1,
@@ -57,24 +60,28 @@ func validateBlock(state State, block *types.Block) error {
 			block.AppHash,
 		)
 	}
+
 	if !bytes.Equal(block.ConsensusHash, state.ConsensusParams.Hash()) {
 		return fmt.Errorf("wrong Block.Header.ConsensusHash.  Expected %X, got %v",
 			state.ConsensusParams.Hash(),
 			block.ConsensusHash,
 		)
 	}
+
 	if !bytes.Equal(block.LastResultsHash, state.LastResultsHash) {
 		return fmt.Errorf("wrong Block.Header.LastResultsHash.  Expected %X, got %v",
 			state.LastResultsHash,
 			block.LastResultsHash,
 		)
 	}
+
 	if !bytes.Equal(block.ValidatorsHash, state.Validators.Hash()) {
 		return fmt.Errorf("wrong Block.Header.ValidatorsHash.  Expected %X, got %v",
 			state.Validators.Hash(),
 			block.ValidatorsHash,
 		)
 	}
+
 	if !bytes.Equal(block.NextValidatorsHash, state.NextValidators.Hash()) {
 		return fmt.Errorf("wrong Block.Header.NextValidatorsHash.  Expected %X, got %v",
 			state.NextValidators.Hash(),
@@ -104,6 +111,7 @@ func validateBlock(state State, block *types.Block) error {
 			len(block.ProposerAddress),
 		)
 	}
+
 	if !state.Validators.HasAddress(block.ProposerAddress) {
 		return fmt.Errorf("block.Header.ProposerAddress %X is not a validator",
 			block.ProposerAddress,
@@ -124,6 +132,7 @@ func validateBlock(state State, block *types.Block) error {
 		if err != nil {
 			return fmt.Errorf("error validating block while calculating median time: %w", err)
 		}
+
 		if !block.Time.Equal(medianTime) {
 			return fmt.Errorf("invalid block time. Expected %v, got %v",
 				medianTime,

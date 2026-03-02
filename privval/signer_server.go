@@ -55,6 +55,7 @@ func (ss *SignerServer) OnStop() {
 func (ss *SignerServer) SetRequestHandler(validationRequestHandler ValidationRequestHandlerFunc) {
 	ss.handlerMtx.Lock()
 	defer ss.handlerMtx.Unlock()
+
 	ss.validationRequestHandler = validationRequestHandler
 }
 
@@ -76,6 +77,7 @@ func (ss *SignerServer) servicePendingRequest() {
 		// limit the scope of the lock
 		ss.handlerMtx.Lock()
 		defer ss.handlerMtx.Unlock()
+
 		res, err = ss.validationRequestHandler(ss.privVal, req, ss.chainID)
 		if err != nil {
 			// only log the error; we'll reply with an error in res
@@ -97,6 +99,7 @@ func (ss *SignerServer) serviceLoop() {
 			if err != nil {
 				return
 			}
+
 			ss.servicePendingRequest()
 
 		case <-ss.Quit():

@@ -29,6 +29,7 @@ func ValidateMsg(pb proto.Message) error {
 		if msg.Height < 0 {
 			return ErrInvalidHeight{Height: msg.Height, Reason: "negative height"}
 		}
+
 	case *bcproto.BlockResponse:
 		// Avoid double-calling `types.BlockFromProto` for performance reasons.
 		// See https://github.com/cometbft/cometbft/issues/1964
@@ -38,20 +39,25 @@ func ValidateMsg(pb proto.Message) error {
 		if msg.Height < 0 {
 			return ErrInvalidHeight{Height: msg.Height, Reason: "negative height"}
 		}
+
 	case *bcproto.StatusRequest:
 		return nil
 	case *bcproto.StatusResponse:
 		if msg.Base < 0 {
 			return ErrInvalidBase{Base: msg.Base, Reason: "negative base"}
 		}
+
 		if msg.Height < 0 {
 			return ErrInvalidHeight{Height: msg.Height, Reason: "negative height"}
 		}
+
 		if msg.Base > msg.Height {
 			return ErrInvalidHeight{Height: msg.Height, Reason: fmt.Sprintf("base %v cannot be greater than height", msg.Base)}
 		}
+
 	default:
 		return ErrUnknownMessageType{Msg: msg}
 	}
+
 	return nil
 }

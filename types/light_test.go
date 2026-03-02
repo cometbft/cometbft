@@ -47,6 +47,7 @@ func TestLightBlockValidateBasic(t *testing.T) {
 			SignedHeader: tc.sh,
 			ValidatorSet: tc.vals,
 		}
+
 		err := lightBlock.ValidateBasic(header.ChainID)
 		if tc.expectErr {
 			assert.Error(t, err, tc.name)
@@ -91,6 +92,7 @@ func TestLightBlockProtobuf(t *testing.T) {
 			SignedHeader: tc.sh,
 			ValidatorSet: tc.vals,
 		}
+
 		lbp, err := lightBlock.ToProto()
 		if tc.toProtoErr {
 			assert.Error(t, err, tc.name)

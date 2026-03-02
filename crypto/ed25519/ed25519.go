@@ -101,6 +101,7 @@ func (privKey PrivKey) PubKey() crypto.PubKey {
 
 	pubkeyBytes := make([]byte, PubKeySize)
 	copy(pubkeyBytes, privKey[32:])
+
 	return PubKey(pubkeyBytes)
 }
 

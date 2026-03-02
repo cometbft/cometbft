@@ -205,9 +205,11 @@ func verifyCommitLightTrustingInternal(
 	if vals == nil {
 		return errors.New("nil validator set")
 	}
+
 	if trustLevel.Denominator == 0 {
 		return errors.New("trustLevel has zero Denominator")
 	}
+
 	if commit == nil {
 		return errors.New("nil commit")
 	}
@@ -217,6 +219,7 @@ func verifyCommitLightTrustingInternal(
 	if overflow {
 		return errors.New("int64 overflow while calculating voting power needed. please provide smaller trustLevel numerator")
 	}
+
 	votingPowerNeeded := totalVotingPowerMulByNumerator / int64(trustLevel.Denominator)
 
 	// ignore all commit signatures that are not for the block
@@ -247,6 +250,7 @@ func ValidateHash(h []byte) error {
 			len(h),
 		)
 	}
+
 	return nil
 }
 
@@ -317,6 +321,7 @@ func verifyCommitBatch(
 				secondIndex := idx
 				return fmt.Errorf("double vote from %v (%d and %d)", val, firstIndex, secondIndex)
 			}
+
 			seenVals[valIdx] = idx
 		}
 
@@ -334,6 +339,7 @@ func verifyCommitBatch(
 			if err := bv.Add(val.PubKey, voteSignBytes, commitSig.Signature); err != nil {
 				return err
 			}
+
 			batchSigIdxs = append(batchSigIdxs, idx)
 		}
 
@@ -384,10 +390,12 @@ func verifyCommitBatch(
 	for i, ok := range validSigs {
 		// go back from the batch index to the commit.Signatures index
 		idx := batchSigIdxs[i]
+
 		sig := commit.Signatures[idx]
 		if !ok {
 			return fmt.Errorf("wrong signature (#%d): %X", idx, sig)
 		}
+
 		if verifiedSignatureCache != nil {
 			verifiedSignatureCache.Add(string(sig.Signature), SignatureCacheValue{
 				ValidatorAddress: sig.ValidatorAddress,
@@ -460,6 +468,7 @@ func verifyCommitSingle(
 				secondIndex := idx
 				return fmt.Errorf("double vote from %v (%d and %d)", val, firstIndex, secondIndex)
 			}
+
 			seenVals[valIdx] = idx
 		}
 
@@ -480,6 +489,7 @@ func verifyCommitSingle(
 			if !val.PubKey.VerifySignature(voteSignBytes, commitSig.Signature) {
 				return fmt.Errorf("wrong signature (#%d): %X", idx, commitSig.Signature)
 			}
+
 			if verifiedSignatureCache != nil {
 				verifiedSignatureCache.Add(cacheKey, SignatureCacheValue{
 					ValidatorAddress: val.PubKey.Address(),
@@ -524,6 +534,7 @@ func verifyBasicValsAndCommit(vals *ValidatorSet, commit *Commit, height int64, 
 	if height != commit.Height {
 		return cmterrors.NewErrInvalidCommitHeight(height, commit.Height)
 	}
+
 	if !blockID.Equals(commit.BlockID) {
 		return fmt.Errorf("invalid commit -- wrong block ID: want %v, got %v",
 			blockID, commit.BlockID)

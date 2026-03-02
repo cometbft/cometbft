@@ -50,6 +50,7 @@ func percentOf(x, total float64) Percent {
 	} else if p := round(x / total * 1e5); p <= math.MaxUint32 {
 		return Percent(p)
 	}
+
 	return Percent(math.MaxUint32)
 }
 
@@ -59,9 +60,11 @@ func (p Percent) Float() float64 {
 
 func (p Percent) String() string {
 	var buf [12]byte
+
 	b := strconv.AppendUint(buf[:0], uint64(p)/1000, 10)
 	n := len(b)
 	b = strconv.AppendUint(b, 1000+uint64(p)%1000, 10)
 	b[n] = '.'
+
 	return string(append(b, '%'))
 }

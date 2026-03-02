@@ -106,6 +106,7 @@ func (u parsedURL) GetDialAddress() string {
 				return u.Host + `:443`
 			}
 		}
+
 		return u.Host
 	}
 	// otherwise we return the path of the unix socket, ex /tmp/socket
@@ -165,6 +166,7 @@ func New(remote string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return NewWithHTTPClient(remote, httpClient)
 }
 
@@ -218,6 +220,7 @@ func (c *Client) Call(
 	}
 
 	requestBuf := bytes.NewBuffer(requestBytes)
+
 	httpRequest, err := http.NewRequestWithContext(ctx, http.MethodPost, c.address, requestBuf)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
@@ -244,6 +247,7 @@ func (c *Client) Call(
 	if err != nil {
 		return nil, fmt.Errorf("%s. %w", getHTTPRespErrPrefix(httpResponse), err)
 	}
+
 	return res, nil
 }
 
@@ -265,6 +269,7 @@ func (c *Client) NewRequestBatch() *RequestBatch {
 
 func (c *Client) sendBatch(ctx context.Context, requests []*jsonRPCBufferedRequest) ([]any, error) {
 	reqs := make([]types.RPCRequest, 0, len(requests))
+
 	results := make([]any, 0, len(requests))
 	for _, req := range requests {
 		reqs = append(reqs, req.request)
@@ -314,6 +319,7 @@ func (c *Client) nextRequestID() types.JSONRPCIntID {
 	id := c.nextReqID
 	c.nextReqID++
 	c.mtx.Unlock()
+
 	return types.JSONRPCIntID(id)
 }
 
@@ -346,6 +352,7 @@ func (b *RequestBatch) Count() int {
 func (b *RequestBatch) enqueue(req *jsonRPCBufferedRequest) {
 	b.mtx.Lock()
 	defer b.mtx.Unlock()
+
 	b.requests = append(b.requests, req)
 }
 
@@ -371,6 +378,7 @@ func (b *RequestBatch) Send(ctx context.Context) ([]any, error) {
 		b.clear()
 		b.mtx.Unlock()
 	}()
+
 	return b.client.sendBatch(ctx, b.requests)
 }
 
@@ -383,11 +391,14 @@ func (b *RequestBatch) Call(
 	result any,
 ) (any, error) {
 	id := b.client.nextRequestID()
+
 	request, err := types.MapToRequest(id, method, params)
 	if err != nil {
 		return nil, err
 	}
+
 	b.enqueue(&jsonRPCBufferedRequest{request: request, result: result})
+
 	return result, nil
 }
 

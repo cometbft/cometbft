@@ -65,6 +65,7 @@ func NewMultiAppConn(clientCreator ClientCreator, metrics *Metrics) AppConns {
 		clientCreator: clientCreator,
 	}
 	multiAppConn.BaseService = *service.NewBaseService(nil, "multiAppConn", multiAppConn)
+
 	return multiAppConn
 }
 
@@ -89,6 +90,7 @@ func (app *multiAppConn) OnStart() error {
 	if err != nil {
 		return err
 	}
+
 	app.queryConnClient = c
 	app.queryConn = NewAppConnQuery(c, app.metrics)
 
@@ -97,6 +99,7 @@ func (app *multiAppConn) OnStart() error {
 		app.stopAllClients()
 		return err
 	}
+
 	app.snapshotConnClient = c
 	app.snapshotConn = NewAppConnSnapshot(c, app.metrics)
 
@@ -105,6 +108,7 @@ func (app *multiAppConn) OnStart() error {
 		app.stopAllClients()
 		return err
 	}
+
 	app.mempoolConnClient = c
 	app.mempoolConn = NewAppConnMempool(c, app.metrics)
 
@@ -113,6 +117,7 @@ func (app *multiAppConn) OnStart() error {
 		app.stopAllClients()
 		return err
 	}
+
 	app.consensusConnClient = c
 	app.consensusConn = NewAppConnConsensus(c, app.metrics)
 
@@ -131,6 +136,7 @@ func (app *multiAppConn) killTMOnClientError() {
 		logger.Error(
 			fmt.Sprintf("%s connection terminated. Did the application crash? Please restart CometBFT", conn),
 			"err", err)
+
 		killErr := cmtos.Kill()
 		if killErr != nil {
 			logger.Error("Failed to kill this process - please do so manually", "err", killErr)
@@ -142,14 +148,17 @@ func (app *multiAppConn) killTMOnClientError() {
 		if err := app.consensusConnClient.Error(); err != nil {
 			killFn(connConsensus, err, app.Logger)
 		}
+
 	case <-app.mempoolConnClient.Quit():
 		if err := app.mempoolConnClient.Error(); err != nil {
 			killFn(connMempool, err, app.Logger)
 		}
+
 	case <-app.queryConnClient.Quit():
 		if err := app.queryConnClient.Error(); err != nil {
 			killFn(connQuery, err, app.Logger)
 		}
+
 	case <-app.snapshotConnClient.Quit():
 		if err := app.snapshotConnClient.Error(); err != nil {
 			killFn(connSnapshot, err, app.Logger)
@@ -163,16 +172,19 @@ func (app *multiAppConn) stopAllClients() {
 			app.Logger.Error("error while stopping consensus client", "error", err)
 		}
 	}
+
 	if app.mempoolConnClient != nil {
 		if err := app.mempoolConnClient.Stop(); err != nil {
 			app.Logger.Error("error while stopping mempool client", "error", err)
 		}
 	}
+
 	if app.queryConnClient != nil {
 		if err := app.queryConnClient.Stop(); err != nil {
 			app.Logger.Error("error while stopping query client", "error", err)
 		}
 	}
+
 	if app.snapshotConnClient != nil {
 		if err := app.snapshotConnClient.Stop(); err != nil {
 			app.Logger.Error("error while stopping snapshot client", "error", err)
@@ -185,9 +197,12 @@ func (app *multiAppConn) abciClientFor(conn string) (abcicli.Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error creating ABCI client (%s connection): %w", conn, err)
 	}
+
 	c.SetLogger(app.Logger.With("module", "abci-client", "connection", conn))
+
 	if err := c.Start(); err != nil {
 		return nil, fmt.Errorf("error starting ABCI client (%s connection): %w", conn, err)
 	}
+
 	return c, nil
 }

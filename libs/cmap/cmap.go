@@ -62,16 +62,21 @@ func (cm *CMap) Keys() []string {
 	for k := range cm.m {
 		keys = append(keys, k)
 	}
+
 	cm.l.Unlock()
+
 	return keys
 }
 
 func (cm *CMap) Values() []any {
 	cm.l.Lock()
+
 	items := make([]any, 0, len(cm.m))
 	for _, v := range cm.m {
 		items = append(items, v)
 	}
+
 	cm.l.Unlock()
+
 	return items
 }

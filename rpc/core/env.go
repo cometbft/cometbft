@@ -115,6 +115,7 @@ func validatePage(pagePtr *int, perPage, totalCount int) (int, error) {
 	if pages == 0 {
 		pages = 1 // one page (even if it's empty)
 	}
+
 	page := *pagePtr
 	if page <= 0 || page > pages {
 		return 1, fmt.Errorf("page should be within [1, %d] range, given %d", pages, page)
@@ -134,6 +135,7 @@ func (env *Environment) validatePerPage(perPagePtr *int) int {
 	} else if perPage > maxPerPage {
 		return maxPerPage
 	}
+
 	return perPage
 }
 
@@ -182,17 +184,21 @@ func (env *Environment) getHeight(latestHeight int64, heightPtr *int64) (int64, 
 		if height <= 0 {
 			return 0, fmt.Errorf("height must be greater than 0, but got %d", height)
 		}
+
 		if height > latestHeight {
 			return 0, fmt.Errorf("height %d must be less than or equal to the current blockchain height %d",
 				height, latestHeight)
 		}
+
 		base := env.BlockStore.Base()
 		if height < base {
 			return 0, fmt.Errorf("height %d is not available, lowest height is %d",
 				height, base)
 		}
+
 		return height, nil
 	}
+
 	return latestHeight, nil
 }
 
@@ -201,5 +207,6 @@ func (env *Environment) latestUncommittedHeight() int64 {
 	if nodeIsSyncing {
 		return env.BlockStore.Height()
 	}
+
 	return env.BlockStore.Height() + 1
 }

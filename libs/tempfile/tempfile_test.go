@@ -68,6 +68,7 @@ func TestWriteFileAtomicDuplicateFile(t *testing.T) {
 	firstFileRand := randWriteFileSuffix()
 	atomicWriteFileRand = defaultSeed
 	fname := "/tmp/" + atomicWriteFilePrefix + firstFileRand
+
 	f, err := os.OpenFile(fname, atomicWriteFileFlag, 0o777)
 	defer os.Remove(fname)
 	// Defer here, in case there is a panic in WriteFileAtomic.
@@ -109,6 +110,7 @@ func TestWriteFileAtomicManyDuplicates(t *testing.T) {
 	)
 	// Initialize all of the atomic write files
 	atomicWriteFileRand = defaultSeed
+
 	for i := 0; i < atomicWriteFileMaxNumConflicts+2; i++ {
 		fileRand := randWriteFileSuffix()
 		fname := "/tmp/" + atomicWriteFilePrefix + fileRand
@@ -116,6 +118,7 @@ func TestWriteFileAtomicManyDuplicates(t *testing.T) {
 		require.Nil(t, err)
 		_, err = fmt.Fprintf(f, testString, i)
 		require.NoError(t, err)
+
 		defer os.Remove(fname)
 	}
 
@@ -127,6 +130,7 @@ func TestWriteFileAtomicManyDuplicates(t *testing.T) {
 	require.NoError(t, err)
 	// Check that all intermittent atomic file were untouched
 	atomicWriteFileRand = defaultSeed
+
 	for i := 0; i < atomicWriteFileMaxNumConflicts+2; i++ {
 		fileRand := randWriteFileSuffix()
 		fname := "/tmp/" + atomicWriteFilePrefix + fileRand

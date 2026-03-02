@@ -12,6 +12,7 @@ func StringInSlice(a string, list []string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -29,6 +30,7 @@ func SplitAndTrim(s, sep, cutset string) []string {
 	for i := 0; i < len(spl); i++ {
 		spl[i] = strings.Trim(spl[i], cutset)
 	}
+
 	return spl
 }
 
@@ -43,6 +45,7 @@ func SplitAndTrimEmpty(s, sep, cutset string) []string {
 	}
 
 	spl := strings.Split(s, sep)
+
 	nonEmptyStrings := make([]string, 0, len(spl))
 	for i := 0; i < len(spl); i++ {
 		element := strings.Trim(spl[i], cutset)
@@ -50,6 +53,7 @@ func SplitAndTrimEmpty(s, sep, cutset string) []string {
 			nonEmptyStrings = append(nonEmptyStrings, element)
 		}
 	}
+
 	return nonEmptyStrings
 }
 
@@ -58,11 +62,13 @@ func IsASCIIText(s string) bool {
 	if len(s) == 0 {
 		return false
 	}
+
 	for _, b := range []byte(s) {
 		if b < 32 || b > 126 {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -79,6 +85,7 @@ func ASCIITrim(s string) string {
 			panic(fmt.Sprintf("non-ASCII (non-tab) char 0x%X", b))
 		}
 	}
+
 	return string(r)
 }
 
@@ -87,10 +94,12 @@ func StringSliceEqual(a, b []string) bool {
 	if len(a) != len(b) {
 		return false
 	}
+
 	for i := 0; i < len(a); i++ {
 		if a[i] != b[i] {
 			return false
 		}
 	}
+
 	return true
 }

@@ -17,25 +17,30 @@ func Test(testnet *e2e.Testnet, ifd *e2e.InfrastructureData) error {
 	if err != nil {
 		return err
 	}
+
 	if p := ifd.Path; p != "" {
 		err = os.Setenv("INFRASTRUCTURE_FILE", p)
 		if err != nil {
 			return err
 		}
 	}
+
 	err = os.Setenv("INFRASTRUCTURE_TYPE", ifd.Provider)
 	if err != nil {
 		return err
 	}
 
 	cmd := []string{"go", "test", "-tags", "bls12381", "-count", "1"}
+
 	verbose := os.Getenv("VERBOSE")
 	if verbose == "1" {
 		cmd = append(cmd, "-v")
 	}
+
 	cmd = append(cmd, "./tests/...")
 
 	tests := "all tests"
+
 	runTest := os.Getenv("RUN_TEST")
 	if len(runTest) != 0 {
 		cmd = append(cmd, "-run", runTest)

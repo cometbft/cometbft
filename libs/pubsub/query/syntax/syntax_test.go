@@ -52,10 +52,12 @@ func TestScanner(t *testing.T) {
 
 	for _, test := range tests {
 		s := syntax.NewScanner(strings.NewReader(test.input))
+
 		var got []syntax.Token
 		for s.Next() == nil {
 			got = append(got, s.Token())
 		}
+
 		if err := s.Err(); err != io.EOF {
 			t.Errorf("Next: unexpected error: %v", err)
 		}
@@ -182,10 +184,12 @@ func TestParseValid(t *testing.T) {
 		// For valid queries, check that the query round-trips.
 		if test.valid {
 			qstr := q.String()
+
 			r, err := syntax.Parse(qstr)
 			if err != nil {
 				t.Errorf("Reparse %#q failed: %v", qstr, err)
 			}
+
 			if rstr := r.String(); rstr != qstr {
 				t.Errorf("Reparse diff\nold: %#q\nnew: %#q", qstr, rstr)
 			}

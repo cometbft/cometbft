@@ -49,6 +49,7 @@ func iotest(writer protoio.WriteCloser, reader protoio.ReadCloser) error {
 	size := 1000
 	msgs := make([]*test.NinOptNative, size)
 	lens := make([]int, size)
+
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for i := range msgs {
 		msgs[i] = test.NewPopulatedNinOptNative(r, true)
@@ -65,19 +66,25 @@ func iotest(writer protoio.WriteCloser, reader protoio.ReadCloser) error {
 		if err != nil {
 			return err
 		}
+
 		visize := binary.PutUvarint(varint, uint64(len(bz)))
+
 		n, err := writer.WriteMsg(msgs[i])
 		if err != nil {
 			return err
 		}
+
 		if n != len(bz)+visize {
 			return fmt.Errorf("WriteMsg() wrote %v bytes, expected %v", n, len(bz)+visize)
 		}
+
 		lens[i] = n
 	}
+
 	if err := writer.Close(); err != nil {
 		return err
 	}
+
 	i := 0
 	for {
 		msg := &test.NinOptNative{}
@@ -89,14 +96,18 @@ func iotest(writer protoio.WriteCloser, reader protoio.ReadCloser) error {
 		} else if n != lens[i] {
 			return fmt.Errorf("read %v bytes, expected %v", n, lens[i])
 		}
+
 		if err := msg.VerboseEqual(msgs[i]); err != nil {
 			return err
 		}
+
 		i++
 	}
+
 	if i != size {
 		panic("not enough messages read")
 	}
+
 	return reader.Close()
 }
 
@@ -173,7 +184,9 @@ func TestShort(t *testing.T) {
 	buf.Write(bz)
 
 	reader := protoio.NewDelimitedReader(buf, 1024*1024)
+
 	require.NoError(t, err)
+
 	msg := &test.NinOptNative{}
 	n, err := reader.ReadMsg(msg)
 	require.Error(t, err)

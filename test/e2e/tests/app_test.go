@@ -24,6 +24,7 @@ func TestApp_InitialState(t *testing.T) {
 
 		client, err := node.Client()
 		require.NoError(t, err)
+
 		for k, v := range node.Testnet.InitialState {
 			resp, err := client.ABCIQuery(ctx, "", []byte(k))
 			require.NoError(t, err)
@@ -119,7 +120,6 @@ func TestApp_VoteExtensions(t *testing.T) {
 		// the app to have any extension value set (via a normal tx).
 		if node.Testnet.VoteExtensionsEnableHeight != 0 &&
 			info.Response.LastBlockHeight > node.Testnet.VoteExtensionsEnableHeight {
-
 			parts := bytes.Split(resp.Response.Value, []byte("|"))
 			require.Len(t, parts, 2)
 			extSum, err := strconv.Atoi(string(parts[0]))

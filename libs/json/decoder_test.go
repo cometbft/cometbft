@@ -131,16 +131,17 @@ func TestUnmarshal(t *testing.T) {
 		"invalid type":     {`"foo"`, Struct{}, true},
 	}
 	for name, tc := range testcases {
-
 		t.Run(name, func(t *testing.T) {
 			// Create a target variable as a pointer to the zero value of the tc.value type,
 			// and wrap it in an empty interface. Decode into that interface.
 			target := reflect.New(reflect.TypeOf(tc.value)).Interface()
+
 			err := json.Unmarshal([]byte(tc.json), target)
 			if tc.err {
 				require.Error(t, err)
 				return
 			}
+
 			require.NoError(t, err)
 
 			// Unwrap the target pointer and get the value behind the interface.

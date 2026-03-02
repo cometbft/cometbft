@@ -17,6 +17,10 @@ linters:
     - unused
     - wsl_v5
   settings:
+    wsl_v5:
+      allow-whole-block: true
+      branch-max-lines: 4
+      case-max-lines: 2
     depguard:
       rules:
         main:

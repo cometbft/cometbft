@@ -123,10 +123,12 @@ func (lss *FilePVLastSignState) CheckHRS(height int64, round int32, step int8) (
 					}
 					return true, nil
 				}
+
 				return false, errors.New("no SignBytes found")
 			}
 		}
 	}
+
 	return false, nil
 }
 
@@ -136,10 +138,12 @@ func (lss *FilePVLastSignState) Save() {
 	if outFile == "" {
 		panic("cannot save FilePVLastSignState: filePath not set")
 	}
+
 	jsonBytes, err := cmtjson.MarshalIndent(lss, "", "  ")
 	if err != nil {
 		panic(err)
 	}
+
 	err = tempfile.WriteFileAtomic(outFile, jsonBytes, 0o600)
 	if err != nil {
 		panic(err)
@@ -199,7 +203,9 @@ func loadFilePV(keyFilePath, stateFilePath string, loadState bool) *FilePV {
 	if err != nil {
 		cmtos.Exit(err.Error())
 	}
+
 	pvKey := FilePVKey{}
+
 	err = cmtjson.Unmarshal(keyJSONBytes, &pvKey)
 	if err != nil {
 		cmtos.Exit(fmt.Sprintf("Error reading PrivValidator key from %v: %v\n", keyFilePath, err))
@@ -217,6 +223,7 @@ func loadFilePV(keyFilePath, stateFilePath string, loadState bool) *FilePV {
 		if err != nil {
 			cmtos.Exit(err.Error())
 		}
+
 		err = cmtjson.Unmarshal(stateJSONBytes, &pvState)
 		if err != nil {
 			cmtos.Exit(fmt.Sprintf("Error reading PrivValidator state from %v: %v\n", stateFilePath, err))
@@ -241,6 +248,7 @@ func LoadOrGenFilePV(keyFilePath, stateFilePath string) *FilePV {
 		pv = GenFilePV(keyFilePath, stateFilePath)
 		pv.Save()
 	}
+
 	return pv
 }
 
@@ -324,6 +332,7 @@ func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote) error {
 	var extSig []byte
 	if vote.Type == cmtproto.PrecommitType && !types.ProtoBlockIDIsNil(&vote.BlockID) {
 		extSignBytes := types.VoteExtensionSignBytes(chainID, vote)
+
 		extSig, err = pv.Key.PrivKey.Sign(extSignBytes)
 		if err != nil {
 			return err
@@ -359,6 +368,7 @@ func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote) error {
 	if err != nil {
 		return err
 	}
+
 	pv.saveSigned(height, round, step, signBytes, sig)
 	vote.Signature = sig
 	vote.ExtensionSignature = extSig
@@ -395,6 +405,7 @@ func (pv *FilePV) signProposal(chainID string, proposal *cmtproto.Proposal) erro
 		} else {
 			err = fmt.Errorf("conflicting data")
 		}
+
 		return err
 	}
 
@@ -403,8 +414,10 @@ func (pv *FilePV) signProposal(chainID string, proposal *cmtproto.Proposal) erro
 	if err != nil {
 		return err
 	}
+
 	pv.saveSigned(height, round, step, signBytes, sig)
 	proposal.Signature = sig
+
 	return nil
 }
 
@@ -431,6 +444,7 @@ func checkVotesOnlyDifferByTimestamp(lastSignBytes, newSignBytes []byte) (time.T
 	if err := protoio.UnmarshalDelimited(lastSignBytes, &lastVote); err != nil {
 		panic(fmt.Sprintf("LastSignBytes cannot be unmarshalled into vote: %v", err))
 	}
+
 	if err := protoio.UnmarshalDelimited(newSignBytes, &newVote); err != nil {
 		panic(fmt.Sprintf("signBytes cannot be unmarshalled into vote: %v", err))
 	}
@@ -451,6 +465,7 @@ func checkProposalsOnlyDifferByTimestamp(lastSignBytes, newSignBytes []byte) (ti
 	if err := protoio.UnmarshalDelimited(lastSignBytes, &lastProposal); err != nil {
 		panic(fmt.Sprintf("LastSignBytes cannot be unmarshalled into proposal: %v", err))
 	}
+
 	if err := protoio.UnmarshalDelimited(newSignBytes, &newProposal); err != nil {
 		panic(fmt.Sprintf("signBytes cannot be unmarshalled into proposal: %v", err))
 	}

@@ -44,6 +44,7 @@ func BenchmarkSequence(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
+
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
@@ -71,6 +72,7 @@ func BenchmarkBisection(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
+
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
@@ -83,6 +85,7 @@ func BenchmarkBisection(b *testing.B) {
 
 func BenchmarkBackwards(b *testing.B) {
 	trustedBlock, _ := benchmarkFullNode.LightBlock(context.Background(), 0)
+
 	c, err := light.NewClient(
 		context.Background(),
 		chainID,
@@ -99,6 +102,7 @@ func BenchmarkBackwards(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
+
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {

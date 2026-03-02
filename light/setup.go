@@ -74,7 +74,9 @@ func providersFromAddresses(addrs []string, chainID string) ([]provider.Provider
 		if err != nil {
 			return nil, err
 		}
+
 		providers[idx] = p
 	}
+
 	return providers, nil
 }

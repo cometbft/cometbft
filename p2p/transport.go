@@ -205,6 +205,7 @@ func (mt *MultiplexTransport) Accept(cfg peerConfig) (Peer, error) {
 		cfg.outbound = false
 
 		return mt.wrapPeer(a.conn, a.nodeInfo, cfg, a.netAddr), nil
+
 	case <-mt.closec:
 		return nil, ErrTransportClosed{}
 	}
@@ -281,6 +282,7 @@ func (mt *MultiplexTransport) AddChannel(chID byte) {
 		if !ni.HasChannel(chID) {
 			ni.Channels = append(ni.Channels, chID)
 		}
+
 		mt.nodeInfo = ni
 	}
 }
@@ -295,11 +297,13 @@ func (mt *MultiplexTransport) acceptPeers() {
 				if !ok {
 					return
 				}
+
 			default:
 				// Transport is not closed
 			}
 
 			mt.acceptc <- accept{err: err}
+
 			return
 		}
 
@@ -399,6 +403,7 @@ func (mt *MultiplexTransport) filterConn(c net.Conn) (err error) {
 			if err != nil {
 				return ErrRejected{conn: c, err: err, isFiltered: true}
 			}
+
 		case <-time.After(mt.filterTimeout):
 			return ErrFilterTimeout{}
 		}
@@ -561,6 +566,7 @@ func handshake(
 	}(errc, c)
 	go func(errc chan<- error, c net.Conn) {
 		protoReader := protoio.NewDelimitedReader(c, MaxNodeInfoSize())
+
 		_, err := protoReader.ReadMsg(&pbpeerNodeInfo)
 		errc <- err
 	}(errc, c)

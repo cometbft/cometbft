@@ -117,6 +117,7 @@ func TestReactorsGossipNoCommittedEvidence(t *testing.T) {
 	config := cfg.TestConfig()
 
 	val := types.NewMockPV()
+
 	var height int64 = 10
 
 	// DB1 is ahead of DB2
@@ -124,6 +125,7 @@ func TestReactorsGossipNoCommittedEvidence(t *testing.T) {
 	stateDB2 := initializeValidatorState(val, height-2)
 	state, err := stateDB1.Load()
 	require.NoError(t, err)
+
 	state.LastBlockHeight++
 
 	// make reactors from statedb
@@ -157,6 +159,7 @@ func TestReactorsGossipNoCommittedEvidence(t *testing.T) {
 		require.NoError(t, err)
 		err = pools[0].AddEvidence(ev)
 		require.NoError(t, err)
+
 		evList[i] = ev
 	}
 
@@ -177,6 +180,7 @@ func TestReactorsGossipNoCommittedEvidence(t *testing.T) {
 
 	// now update the state of the second reactor
 	pools[1].Update(state, types.EvidenceList{})
+
 	peer = reactors[0].Switch.Peers().Copy()[0]
 	ps = peerState{height}
 	peer.Set(types.PeerStateKey, ps)
@@ -195,6 +199,7 @@ func TestReactorBroadcastEvidenceMemoryLeak(t *testing.T) {
 	blockStore.On("LoadBlockMeta", mock.AnythingOfType("int64")).Return(
 		&types.BlockMeta{Header: types.Header{Time: evidenceTime}},
 	)
+
 	val := types.NewMockPV()
 	stateStore := initializeValidatorState(val, 1)
 	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
@@ -212,8 +217,10 @@ func TestReactorBroadcastEvidenceMemoryLeak(t *testing.T) {
 		e, ok := i.(p2p.Envelope)
 		return ok && e.ChannelID == evidence.EvidenceChannel
 	})).Return(false)
+
 	quitChan := make(<-chan struct{})
 	p.On("Quit").Return(quitChan)
+
 	ps := peerState{2}
 	p.On("Get", types.PeerStateKey).Return(ps)
 	p.On("ID").Return("ABC")
@@ -235,6 +242,7 @@ func evidenceLogger() log.Logger {
 				return term.FgBgColor{Fg: term.Color(uint8(keyvals[i+1].(int) + 1))}
 			}
 		}
+
 		return term.FgBgColor{}
 	})
 }
@@ -256,10 +264,12 @@ func makeAndConnectReactorsAndPools(config *cfg.Config, stateStores []sm.Store) 
 		blockStore.On("LoadBlockMeta", mock.AnythingOfType("int64")).Return(
 			&types.BlockMeta{Header: types.Header{Time: evidenceTime}},
 		)
+
 		pool, err := evidence.NewPool(evidenceDB, stateStores[i], blockStore)
 		if err != nil {
 			panic(err)
 		}
+
 		pools[i] = pool
 		reactors[i] = evidence.NewReactor(pool)
 		reactors[i].SetLogger(logger.With("validator", i))
@@ -279,6 +289,7 @@ func waitForEvidence(t *testing.T, evs types.EvidenceList, pools []*evidence.Poo
 	wg := new(sync.WaitGroup)
 	for i := 0; i < len(pools); i++ {
 		wg.Add(1)
+
 		go _waitForEvidence(t, wg, evs, i, pools)
 	}
 
@@ -305,11 +316,14 @@ func _waitForEvidence(
 	pools []*evidence.Pool,
 ) {
 	evpool := pools[poolIdx]
+
 	var evList []types.Evidence
+
 	currentPoolSize := 0
 	for currentPoolSize != len(evs) {
 		evList, _ = evpool.PendingEvidence(int64(len(evs) * 500)) // each evidence should not be more than 500 bytes
 		currentPoolSize = len(evList)
+
 		time.Sleep(time.Millisecond * 100)
 	}
 
@@ -318,6 +332,7 @@ func _waitForEvidence(
 	for _, e := range evList {
 		evMap[string(e.Hash())] = e
 	}
+
 	for i, expectedEv := range evs {
 		gotEv := evMap[string(expectedEv.Hash())]
 		assert.Equal(t, expectedEv, gotEv,
@@ -336,8 +351,10 @@ func sendEvidence(t *testing.T, evpool *evidence.Pool, val types.PrivValidator, 
 		require.NoError(t, err)
 		err = evpool.AddEvidence(ev)
 		require.NoError(t, err)
+
 		evList[i] = ev
 	}
+
 	return evList
 }
 
@@ -398,11 +415,11 @@ func TestEvidenceVectors(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		evi := make([]cmtproto.Evidence, len(tc.evidenceList))
 		for i := 0; i < len(tc.evidenceList); i++ {
 			ev, err := types.EvidenceToProto(tc.evidenceList[i])
 			require.NoError(t, err, tc.testName)
+
 			evi[i] = *ev
 		}
 
@@ -414,6 +431,5 @@ func TestEvidenceVectors(t *testing.T) {
 		require.NoError(t, err, tc.testName)
 
 		require.Equal(t, tc.expBytes, hex.EncodeToString(bz), tc.testName)
-
 	}
 }

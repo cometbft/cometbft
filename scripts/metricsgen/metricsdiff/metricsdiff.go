@@ -55,26 +55,33 @@ type parsedMetric struct {
 type metricsList []parsedMetric
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalf("%v", err)
+	}
+}
+
+func run() error {
 	flag.Parse()
 	if flag.NArg() != 2 {
-		log.Fatalf("Usage is '%s <path1> <path2>', got %d arguments",
+		return fmt.Errorf("usage is '%s <path1> <path2>', got %d arguments",
 			filepath.Base(os.Args[0]), flag.NArg())
 	}
 	fa, err := os.Open(flag.Arg(0))
 	if err != nil {
-		log.Fatalf("Open: %v", err)
+		return fmt.Errorf("open: %w", err)
 	}
 	defer fa.Close()
 	fb, err := os.Open(flag.Arg(1))
 	if err != nil {
-		log.Fatalf("Open: %v", err)
+		return fmt.Errorf("open: %w", err)
 	}
 	defer fb.Close()
 	md, err := DiffFromReaders(fa, fb)
 	if err != nil {
-		log.Fatalf("Generating diff: %v", err)
+		return fmt.Errorf("generating diff: %w", err)
 	}
 	fmt.Print(md)
+	return nil
 }
 
 // DiffFromReaders parses the metrics present in the readers a and b and

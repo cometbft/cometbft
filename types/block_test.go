@@ -96,8 +96,7 @@ func TestBlockValidateBasic(t *testing.T) {
 		}, true},
 	}
 	for i, tc := range testCases {
-		tc := tc
-		i := i
+
 		t.Run(tc.testName, func(t *testing.T) {
 			block := MakeBlock(h, txs, commit, evList)
 			block.ProposerAddress = valSet.GetProposer().Address
@@ -261,7 +260,7 @@ func TestCommitValidateBasic(t *testing.T) {
 		{"Incorrect round", func(com *Commit) { com.Round = -100 }, true},
 	}
 	for _, tc := range testCases {
-		tc := tc
+
 		t.Run(tc.testName, func(t *testing.T) {
 			com := randCommit(time.Now())
 			tc.malleateCommit(com)
@@ -356,7 +355,7 @@ func TestHeaderHash(t *testing.T) {
 		}, nil},
 	}
 	for _, tc := range testCases {
-		tc := tc
+
 		t.Run(tc.desc, func(t *testing.T) {
 			assert.Equal(t, tc.expectHash, tc.header.Hash())
 
@@ -473,7 +472,7 @@ func TestBlockMaxDataBytes(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		tc := tc
+
 		if tc.panics {
 			assert.Panics(t, func() {
 				MaxDataBytes(tc.maxBytes, tc.evidenceBytes, tc.valsCount)
@@ -502,7 +501,7 @@ func TestBlockMaxDataBytesNoEvidence(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		tc := tc
+
 		if tc.panics {
 			assert.Panics(t, func() {
 				MaxDataBytesNoEvidence(tc.maxBytes, tc.valsCount)
@@ -745,7 +744,7 @@ func TestBlockIDValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
+
 		t.Run(tc.testName, func(t *testing.T) {
 			blockID := BlockID{
 				Hash:          tc.blockIDHash,
@@ -904,7 +903,7 @@ func TestHeaderProto(t *testing.T) {
 	}
 
 	for _, tt := range tc {
-		tt := tt
+
 		t.Run(tt.msg, func(t *testing.T) {
 			pb := tt.h1.ToProto()
 			h, err := HeaderFromProto(pb)
@@ -983,6 +982,7 @@ func TestBlockIDEquals(t *testing.T) {
 	assert.True(t, blockID.Equals(blockIDDuplicate))
 	assert.False(t, blockID.Equals(blockIDDifferent))
 	assert.False(t, blockID.Equals(blockIDEmpty))
-	assert.True(t, blockIDEmpty.Equals(blockIDEmpty))
+	blockIDEmptyCopy := blockIDEmpty
+	assert.True(t, blockIDEmpty.Equals(blockIDEmptyCopy))
 	assert.False(t, blockIDEmpty.Equals(blockIDDifferent))
 }

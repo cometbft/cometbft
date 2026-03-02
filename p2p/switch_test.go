@@ -582,7 +582,7 @@ func TestSwitchFullConnectivity(t *testing.T) {
 	switches := MakeConnectedSwitches(cfg, 3, initSwitchFunc, Connect2Switches)
 	defer func() {
 		for _, sw := range switches {
-			sw := sw
+
 			t.Cleanup(func() {
 				if err := sw.Stop(); err != nil {
 					t.Error(err)
@@ -859,9 +859,7 @@ func BenchmarkSwitchBroadcast(b *testing.B) {
 }
 
 func TestSwitchRemovalErr(t *testing.T) {
-	sw1, sw2 := MakeSwitchPair(func(i int, sw *Switch) *Switch {
-		return initSwitchFunc(i, sw)
-	})
+	sw1, sw2 := MakeSwitchPair(initSwitchFunc)
 	assert.Equal(t, len(sw1.Peers().List()), 1)
 	p := sw1.Peers().List()[0]
 

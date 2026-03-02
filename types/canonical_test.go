@@ -29,7 +29,7 @@ func TestCanonicalizeBlockID(t *testing.T) {
 		{"second", block2, &cblock2},
 	}
 	for _, tt := range tests {
-		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
 			if got := CanonicalizeBlockID(tt.args); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("CanonicalizeBlockID() = %v, want %v", got, tt.want)

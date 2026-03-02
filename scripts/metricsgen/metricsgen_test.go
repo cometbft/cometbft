@@ -18,6 +18,10 @@ import (
 
 const testDataDir = "./testdata"
 
+func writeGoMod(dir string) error {
+	return os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\ngo 1.21\nrequire github.com/go-kit/kit v0.13.0\n"), 0o600)
+}
+
 func TestSimpleTemplate(t *testing.T) {
 	m := metricsgen.ParsedMetricField{
 		TypeName:    "Histogram",
@@ -196,11 +200,7 @@ func TestParseMetricsStruct(t *testing.T) {
 	}
 	for _, testCase := range metricsTests {
 		t.Run(testCase.name, func(t *testing.T) {
-			dir, err := os.MkdirTemp(os.TempDir(), "metricsdir")
-			if err != nil {
-				t.Fatalf("unable to create directory: %v", err)
-			}
-			defer os.Remove(dir)
+			dir := t.TempDir()
 
 			f, err := os.Create(filepath.Join(dir, "metrics.go"))
 			if err != nil {
@@ -220,6 +220,8 @@ func TestParseMetricsStruct(t *testing.T) {
 			require.NoError(t, err)
 			_, err = io.WriteString(f, testCase.metricsStruct)
 			require.NoError(t, err)
+
+			require.NoError(t, writeGoMod(dir))
 
 			td, err := metricsgen.ParseMetricsDir(dir, "Metrics")
 			if testCase.shouldError {
@@ -244,11 +246,7 @@ func TestParseAliasedMetric(t *testing.T) {
 			}
 			`
 
-	dir, err := os.MkdirTemp(os.TempDir(), "metricsdir")
-	if err != nil {
-		t.Fatalf("unable to create directory: %v", err)
-	}
-	defer os.Remove(dir)
+	dir := t.TempDir()
 
 	f, err := os.Create(filepath.Join(dir, "metrics.go"))
 	if err != nil {
@@ -260,6 +258,7 @@ func TestParseAliasedMetric(t *testing.T) {
 		t.Fatalf("unable to write to file: %v", err)
 	}
 
+	require.NoError(t, writeGoMod(dir))
 	td, err := metricsgen.ParseMetricsDir(dir, "Metrics")
 	require.NoError(t, err)
 

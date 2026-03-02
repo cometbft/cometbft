@@ -15,6 +15,7 @@ linters:
     - staticcheck
     - unconvert
     - unused
+    - wsl_v5
   settings:
     depguard:
       rules:

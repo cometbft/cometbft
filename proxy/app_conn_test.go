@@ -21,9 +21,11 @@ func TestEcho(t *testing.T) {
 	// Start server
 	s := server.NewSocketServer(sockPath, kvstore.NewInMemoryApplication())
 	s.SetLogger(log.TestingLogger().With("module", "abci-server"))
+
 	if err := s.Start(); err != nil {
 		t.Fatalf("Error starting socket server: %v", err.Error())
 	}
+
 	t.Cleanup(func() {
 		if err := s.Stop(); err != nil {
 			t.Error(err)
@@ -35,12 +37,15 @@ func TestEcho(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error creating ABCI client: %v", err.Error())
 	}
+
 	cli.SetLogger(log.TestingLogger().With("module", "abci-client"))
+
 	if err := cli.Start(); err != nil {
 		t.Fatalf("Error starting ABCI client: %v", err.Error())
 	}
 
 	proxy := NewAppConnMempool(cli, NopMetrics())
+
 	t.Log("Connected")
 
 	for i := 0; i < 1000; i++ {
@@ -49,6 +54,7 @@ func TestEcho(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+
 	if err := proxy.Flush(context.Background()); err != nil {
 		t.Error(err)
 	}
@@ -56,15 +62,18 @@ func TestEcho(t *testing.T) {
 
 func BenchmarkEcho(b *testing.B) {
 	b.StopTimer() // Initialize
+
 	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
 	clientCreator := NewRemoteClientCreator(sockPath, SOCKET, true)
 
 	// Start server
 	s := server.NewSocketServer(sockPath, kvstore.NewInMemoryApplication())
 	s.SetLogger(log.TestingLogger().With("module", "abci-server"))
+
 	if err := s.Start(); err != nil {
 		b.Fatalf("Error starting socket server: %v", err.Error())
 	}
+
 	b.Cleanup(func() {
 		if err := s.Stop(); err != nil {
 			b.Error(err)
@@ -76,12 +85,15 @@ func BenchmarkEcho(b *testing.B) {
 	if err != nil {
 		b.Fatalf("Error creating ABCI client: %v", err.Error())
 	}
+
 	cli.SetLogger(log.TestingLogger().With("module", "abci-client"))
+
 	if err := cli.Start(); err != nil {
 		b.Fatalf("Error starting ABCI client: %v", err.Error())
 	}
 
 	proxy := NewAppConnMempool(cli, NopMetrics())
+
 	b.Log("Connected")
 	b.StartTimer() // Start benchmarking tests
 
@@ -91,6 +103,7 @@ func BenchmarkEcho(b *testing.B) {
 			b.Error(err)
 		}
 	}
+
 	if err := proxy.Flush(context.Background()); err != nil {
 		b.Error(err)
 	}

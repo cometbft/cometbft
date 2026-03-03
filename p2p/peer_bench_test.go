@@ -106,6 +106,7 @@ func testBenchP2PUnidirectional(t *testing.T, cfg p2pUnidirectionalConfig) {
 
 	// With relevant switch ...
 	recipientSwitch := createSwitchWithReactor(t, p2pCfg, muxConnConfig, "recipient", recipientReactor, logger)
+
 	require.NoError(t, recipientSwitch.Start())
 	defer func() { require.NoError(t, recipientSwitch.Stop()) }()
 
@@ -117,6 +118,7 @@ func testBenchP2PUnidirectional(t *testing.T, cfg p2pUnidirectionalConfig) {
 	stubReactor.SetLogger(logger)
 
 	senderSwitch := createSwitchWithReactor(t, p2pCfg, muxConnConfig, "sender", stubReactor, logger)
+
 	require.NoError(t, senderSwitch.Start())
 	defer func() { require.NoError(t, senderSwitch.Stop()) }()
 
@@ -206,6 +208,7 @@ LOOP:
 		case <-ctx.Done():
 			finish()
 			break LOOP
+
 		default:
 			// send sync
 			if cfg.sendConcurrency < 2 {
@@ -216,12 +219,15 @@ LOOP:
 			// send async
 			wg := sync.WaitGroup{}
 			wg.Add(cfg.sendConcurrency)
+
 			for i := 0; i < cfg.sendConcurrency; i++ {
 				go func() {
 					defer wg.Done()
+
 					sendFunc()
 				}()
 			}
+
 			wg.Wait()
 		}
 	}

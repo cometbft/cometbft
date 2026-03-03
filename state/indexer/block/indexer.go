@@ -45,10 +45,12 @@ func IndexerFromConfigWithDisabledIndexers(cfg *config.Config, dbProvider config
 		if conn == "" {
 			return nil, nil, false, errors.New("the psql connection settings cannot be empty")
 		}
+
 		es, err := psql.NewEventSink(cfg.TxIndex.PsqlConn, chainID)
 		if err != nil {
 			return nil, nil, false, fmt.Errorf("creating psql indexer: %w", err)
 		}
+
 		return es.TxIndexer(), es.BlockIndexer(), false, nil
 
 	default:

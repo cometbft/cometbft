@@ -356,6 +356,7 @@ func (ts *ingestTestSuite) MakeIngestCandidate() IngestCandidate {
 	}
 
 	extCommit := voteSet.MakeExtendedCommit(ts.cs.state.ConsensusParams.ABCI)
+
 	commit := extCommit.ToCommit()
 	if !extensionsEnabled {
 		extCommit = nil

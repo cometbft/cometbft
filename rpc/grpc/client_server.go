@@ -37,6 +37,7 @@ func StartGRPCClient(protoAddr string) BroadcastAPIClient {
 	if err != nil {
 		panic(err)
 	}
+
 	return NewBroadcastAPIClient(conn)
 }
 

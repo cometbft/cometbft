@@ -20,10 +20,12 @@ func main() {
 		counter := 0
 		for {
 			res := &types.Response{}
+
 			err := types.ReadMessage(conn, res)
 			if err != nil {
 				log.Fatal(err.Error())
 			}
+
 			counter++
 			if counter%1000 == 0 {
 				fmt.Println("Read", counter)
@@ -41,6 +43,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err.Error())
 		}
+
 		err = bufWriter.Flush()
 		if err != nil {
 			log.Fatal(err.Error())

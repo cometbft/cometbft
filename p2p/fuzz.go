@@ -125,13 +125,16 @@ func (fc *FuzzedConnection) fuzz() bool {
 			// XXX: do we need an error?
 			fc.Close()
 			return true
+
 		case r < fc.config.ProbDropRW+fc.config.ProbDropConn+fc.config.ProbSleep:
 			time.Sleep(fc.randomDuration())
 		}
+
 	case config.FuzzModeDelay:
 		// sleep a bit
 		time.Sleep(fc.randomDuration())
 	}
+
 	return false
 }
 
@@ -147,6 +150,7 @@ func (fc *FuzzedConnection) shouldFuzz() bool {
 	case <-fc.start:
 		fc.active = true
 		return true
+
 	default:
 		return false
 	}

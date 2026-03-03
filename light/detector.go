@@ -29,6 +29,7 @@ func (c *Client) detectDivergence(ctx context.Context, primaryTrace []*types.Lig
 	if len(primaryTrace) < 2 {
 		return errors.New("nil or single block primary trace")
 	}
+
 	var (
 		headerMatched      bool
 		lastVerifiedBlock  = primaryTrace[len(primaryTrace)-1]
@@ -80,16 +81,19 @@ func (c *Client) detectDivergence(ctx context.Context, primaryTrace []*types.Lig
 			c.logger.Info("witness returned an error during header comparison, removing...",
 				"witness", c.witnesses[e.WitnessIndex], "err", err)
 			witnessesToRemove = append(witnessesToRemove, e.WitnessIndex)
+
 		case ErrProposerPrioritiesDiverge:
 			c.logger.Info("witness reported validator set with different proposer priorities",
 				"witness", c.witnesses[e.WitnessIndex], "err", err)
 			return e
+
 		default:
 			// Benign errors which can be ignored unless there was a context
 			// canceled
 			if errors.Is(e, context.Canceled) || errors.Is(e, context.DeadlineExceeded) {
 				return e
 			}
+
 			c.logger.Info("error in light block request to witness", "err", err)
 		}
 	}
@@ -142,6 +146,7 @@ func (c *Client) compareNewLightBlockWithWitness(ctx context.Context, errc chan 
 	case provider.ErrHeightTooHigh:
 		// The light client now asks for the latest header that the witness has
 		var isTargetHeight bool
+
 		isTargetHeight, lightBlock, err = c.getTargetBlockOrLatest(ctx, h.Height, witness)
 		if err != nil {
 			errc <- err
@@ -166,6 +171,7 @@ func (c *Client) compareNewLightBlockWithWitness(ctx context.Context, errc chan 
 		// of consensus to produce a block that has a time that is after the primary's
 		// block time. If not the witness is too far behind and the light client removes it
 		time.Sleep(2*c.maxClockDrift + c.maxBlockLag)
+
 		isTargetHeight, lightBlock, err = c.getTargetBlockOrLatest(ctx, h.Height, witness)
 		if err != nil {
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
@@ -173,8 +179,10 @@ func (c *Client) compareNewLightBlockWithWitness(ctx context.Context, errc chan 
 			} else {
 				errc <- errBadWitness{Reason: err, WitnessIndex: witnessIndex}
 			}
+
 			return
 		}
+
 		if isTargetHeight {
 			break
 		}
@@ -194,6 +202,7 @@ func (c *Client) compareNewLightBlockWithWitness(ctx context.Context, errc chan 
 		// drifted too far ahead for any witness to be able provide a comparable block and thus may allow
 		// for a malicious primary to attack it
 		errc <- provider.ErrNoResponse
+
 		return
 
 	default:
@@ -214,6 +223,7 @@ func (c *Client) compareNewLightBlockWithWitness(ctx context.Context, errc chan 
 	}
 
 	c.logger.Debug("Matching header received by witness", "height", h.Height, "witness", witnessIndex)
+
 	errc <- nil
 }
 
@@ -235,6 +245,7 @@ func (c *Client) handleConflictingHeaders(
 	now time.Time,
 ) error {
 	supportingWitness := c.witnesses[witnessIndex]
+
 	witnessTrace, primaryBlock, err := c.examineConflictingHeaderAgainstTrace(
 		ctx,
 		primaryTrace,
@@ -338,6 +349,7 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 					return nil, nil, fmt.Errorf("verifySkipping of conflicting header failed: %w", err)
 				}
 			}
+
 			return sourceTrace, traceBlock, nil
 		}
 
@@ -358,7 +370,9 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 				return nil, nil, fmt.Errorf("trusted block is different to the source's first block (%X = %X)",
 					thash, shash)
 			}
+
 			previouslyVerifiedBlock = sourceBlock
+
 			continue
 		}
 
@@ -430,6 +444,8 @@ func newLightClientAttackEvidence(conflicted, trusted, common *types.LightBlock)
 		ev.Timestamp = trusted.Time
 		ev.TotalVotingPower = trusted.ValidatorSet.TotalVotingPower()
 	}
+
 	ev.ByzantineValidators = ev.GetByzantineValidators(common.ValidatorSet, trusted.SignedHeader)
+
 	return ev
 }

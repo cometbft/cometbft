@@ -40,19 +40,23 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int, config *cfg.C
 	privValidatorKeyFile := config.PrivValidatorKeyFile()
 	privValidatorStateFile := config.PrivValidatorStateFile()
 	privValidator := privval.LoadOrGenFilePV(privValidatorKeyFile, privValidatorStateFile)
+
 	genDoc, err := types.GenesisDocFromFile(config.GenesisFile())
 	if err != nil {
 		return fmt.Errorf("failed to read genesis file: %w", err)
 	}
+
 	blockStoreDB := db.NewMemDB()
 	stateDB := blockStoreDB
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
+
 	state, err := sm.MakeGenesisState(genDoc)
 	if err != nil {
 		return fmt.Errorf("failed to make genesis state: %w", err)
 	}
+
 	state.Version.Consensus.App = kvstore.AppVersion
 	if err = stateStore.Save(state); err != nil {
 		t.Error(err)
@@ -62,9 +66,11 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int, config *cfg.C
 
 	proxyApp := proxy.NewAppConns(proxy.NewLocalClientCreator(app), proxy.NopMetrics())
 	proxyApp.SetLogger(logger.With("module", "proxy"))
+
 	if err := proxyApp.Start(); err != nil {
 		return fmt.Errorf("failed to start proxy app connections: %w", err)
 	}
+
 	t.Cleanup(func() {
 		if err := proxyApp.Stop(); err != nil {
 			t.Error(err)
@@ -73,20 +79,24 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int, config *cfg.C
 
 	eventBus := types.NewEventBus()
 	eventBus.SetLogger(logger.With("module", "events"))
+
 	if err := eventBus.Start(); err != nil {
 		return fmt.Errorf("failed to start event bus: %w", err)
 	}
+
 	t.Cleanup(func() {
 		if err := eventBus.Stop(); err != nil {
 			t.Error(err)
 		}
 	})
+
 	mempool := emptyMempool{}
 	evpool := sm.EmptyEvidencePool{}
 	blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyApp.Consensus(), mempool, evpool, blockStore)
 	consensusState := NewState(config.Consensus, state.Copy(), blockExec, blockStore, mempool, evpool)
 	consensusState.SetLogger(logger)
 	consensusState.SetEventBus(eventBus)
+
 	if privValidator != nil {
 		consensusState.SetPrivValidator(privValidator)
 	}
@@ -112,6 +122,7 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int, config *cfg.C
 			t.Error(err)
 		}
 		return nil
+
 	case <-time.After(1 * time.Minute):
 		if err := consensusState.Stop(); err != nil {
 			t.Error(err)
@@ -123,6 +134,7 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int, config *cfg.C
 // WALWithNBlocks returns a WAL content with numBlocks.
 func WALWithNBlocks(t *testing.T, numBlocks int, config *cfg.Config) (data []byte, err error) {
 	var b bytes.Buffer
+
 	wr := bufio.NewWriter(&b)
 
 	if err := WALGenerateNBlocks(t, wr, numBlocks, config); err != nil {
@@ -130,6 +142,7 @@ func WALWithNBlocks(t *testing.T, numBlocks int, config *cfg.Config) (data []byt
 	}
 
 	wr.Flush()
+
 	return b.Bytes(), nil
 }
 
@@ -155,6 +168,7 @@ func getConfig(t *testing.T) *cfg.Config {
 	c.P2P.ListenAddress = cmt
 	c.RPC.ListenAddress = rpc
 	c.RPC.GRPCListenAddress = grpc
+
 	return c
 }
 
@@ -193,15 +207,20 @@ func (w *byteBufferWAL) Write(m WALMessage) error {
 
 	if endMsg, ok := m.(EndHeightMessage); ok {
 		w.logger.Debug("WAL write end height message", "height", endMsg.Height, "stopHeight", w.heightToStop)
+
 		if endMsg.Height == w.heightToStop {
 			w.logger.Debug("Stopping WAL at height", "height", endMsg.Height)
+
 			w.signalWhenStopsTo <- struct{}{}
+
 			w.stopped = true
+
 			return nil
 		}
 	}
 
 	w.logger.Debug("WAL Write Message", "msg", m)
+
 	err := w.enc.Encode(&TimedWALMessage{fixedTime, m})
 	if err != nil {
 		panic(fmt.Sprintf("failed to encode the msg %v", m))

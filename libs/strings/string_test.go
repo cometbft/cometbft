@@ -22,6 +22,7 @@ func TestIsASCIIText(t *testing.T) {
 	for _, v := range notASCIIText {
 		assert.False(t, IsASCIIText(v), "%q is not ascii-text", v)
 	}
+
 	asciiText := []string{
 		" ", ".", "x", "$", "_", "abcdefg;", "-", "0x00", "0", "123",
 	}

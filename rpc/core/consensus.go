@@ -36,6 +36,7 @@ func (env *Environment) Validators(
 
 	totalCount := len(validators.Validators)
 	perPage := env.validatePerPage(perPagePtr)
+
 	page, err := validatePage(pagePtr, perPage, totalCount)
 	if err != nil {
 		return nil, err
@@ -59,17 +60,20 @@ func (env *Environment) Validators(
 func (env *Environment) DumpConsensusState(*rpctypes.Context) (*ctypes.ResultDumpConsensusState, error) {
 	// Get Peer consensus states.
 	peerStates := make([]ctypes.PeerStateInfo, 0, env.P2PPeers.Peers().Size())
+
 	var err error
 	env.P2PPeers.Peers().ForEach(func(peer p2p.Peer) {
 		peerState, ok := peer.Get(types.PeerStateKey).(*cm.PeerState)
 		if !ok { // peer does not have a state yet
 			return
 		}
+
 		peerStateJSON, marshalErr := peerState.MarshalJSON()
 		if marshalErr != nil {
 			err = fmt.Errorf("failed to marshal peer %v state: %w", peer.ID(), marshalErr)
 			return
 		}
+
 		peerStates = append(peerStates, ctypes.PeerStateInfo{
 			// Peer basic info.
 			NodeAddress: peer.SocketAddr().String(),
@@ -77,6 +81,7 @@ func (env *Environment) DumpConsensusState(*rpctypes.Context) (*ctypes.ResultDum
 			PeerState: peerStateJSON,
 		})
 	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -86,6 +91,7 @@ func (env *Environment) DumpConsensusState(*rpctypes.Context) (*ctypes.ResultDum
 	if err != nil {
 		return nil, err
 	}
+
 	return &ctypes.ResultDumpConsensusState{
 		RoundState: roundState,
 		Peers:      peerStates,
@@ -119,6 +125,7 @@ func (env *Environment) ConsensusParams(
 	if err != nil {
 		return nil, err
 	}
+
 	return &ctypes.ResultConsensusParams{
 		BlockHeight:     height,
 		ConsensusParams: consensusParams,

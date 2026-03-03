@@ -38,10 +38,12 @@ func TestLightClientAttackEvidence_Lunatic(t *testing.T) {
 			primaryValidators[height] = witnessValidators[height]
 			continue
 		}
+
 		primaryHeaders[height] = forgedKeys.GenSignedHeader(chainID, height, bTime.Add(time.Duration(height)*time.Minute),
 			nil, forgedVals, forgedVals, hash("app_hash"), hash("cons_hash"), hash("results_hash"), 0, len(forgedKeys))
 		primaryValidators[height] = forgedVals
 	}
+
 	primary := mockp.New(chainID, primaryHeaders, primaryValidators)
 
 	c, err := light.NewClient(
@@ -124,6 +126,7 @@ func TestLightClientAttackEvidence_Equivocation(t *testing.T) {
 				hash("cons_hash"), hash("results_hash"), 0, len(chainKeys[height])-1)
 			primaryValidators[height] = witnessValidators[height]
 		}
+
 		primary := mockp.New(chainID, primaryHeaders, primaryValidators)
 
 		c, err := light.NewClient(
@@ -192,6 +195,7 @@ func TestLightClientAttackEvidence_ForwardLunatic(t *testing.T) {
 		primaryHeaders[h] = witnessHeaders[h]
 		primaryValidators[h] = witnessValidators[h]
 	}
+
 	forgedKeys := chainKeys[latestHeight].ChangeKeys(3) // we change 3 out of the 5 validators (still 2/5 remain)
 	primaryValidators[forgedHeight] = forgedKeys.ToValidators(2, 0)
 	primaryHeaders[forgedHeight] = forgedKeys.GenSignedHeader(
@@ -236,6 +240,7 @@ func TestLightClientAttackEvidence_ForwardLunatic(t *testing.T) {
 	// two seconds later, the supporting withness should receive the header that can be used
 	// to prove that there was an attack
 	vals := chainKeys[latestHeight].ToValidators(2, 0)
+
 	newLb := &types.LightBlock{
 		SignedHeader: chainKeys[latestHeight].GenSignedHeader(
 			chainID,
@@ -279,6 +284,7 @@ func TestLightClientAttackEvidence_ForwardLunatic(t *testing.T) {
 	if assert.Error(t, err) {
 		assert.Equal(t, light.ErrLightClientAttack, err)
 	}
+
 	assert.True(t, witness.HasEvidence(evAgainstPrimary))
 
 	// Lastly we test the unfortunate case where the light clients supporting witness doesn't update
@@ -311,6 +317,7 @@ func TestClientDivergentTraces1(t *testing.T) {
 	primary := mockp.New(genMockNode(chainID, 10, 5, 2, bTime))
 	firstBlock, err := primary.LightBlock(ctx, 1)
 	require.NoError(t, err)
+
 	witness := mockp.New(genMockNode(chainID, 10, 5, 2, bTime))
 
 	_, err = light.NewClient(

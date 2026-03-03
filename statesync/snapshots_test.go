@@ -21,7 +21,6 @@ func TestSnapshot_Key(t *testing.T) {
 		"no metadata":     {func(s *snapshot) { s.Metadata = nil }},
 	}
 	for name, tc := range testcases {
-
 		t.Run(name, func(t *testing.T) {
 			s := snapshot{
 				Height:   3,
@@ -56,6 +55,7 @@ func TestSnapshotPool_Add(t *testing.T) {
 	// Adding again from a different peer should return false
 	otherPeer := &p2pmocks.Peer{}
 	otherPeer.On("ID").Return(p2p.ID("other"))
+
 	added, err = pool.Add(peer, &snapshot{
 		Height: 1,
 		Format: 1,
@@ -76,6 +76,7 @@ func TestSnapshotPool_GetPeer(t *testing.T) {
 	s := &snapshot{Height: 1, Format: 1, Chunks: 1, Hash: []byte{1}}
 	peerA := &p2pmocks.Peer{}
 	peerA.On("ID").Return(p2p.ID("a"))
+
 	peerB := &p2pmocks.Peer{}
 	peerB.On("ID").Return(p2p.ID("b"))
 
@@ -88,6 +89,7 @@ func TestSnapshotPool_GetPeer(t *testing.T) {
 
 	// GetPeer currently picks a random peer, so lets run it until we've seen both.
 	seenA := false
+
 	seenB := false
 	for !seenA || !seenB {
 		peer := pool.GetPeer(s)
@@ -110,6 +112,7 @@ func TestSnapshotPool_GetPeers(t *testing.T) {
 	s := &snapshot{Height: 1, Format: 1, Chunks: 1, Hash: []byte{1}}
 	peerA := &p2pmocks.Peer{}
 	peerA.On("ID").Return(p2p.ID("a"))
+
 	peerB := &p2pmocks.Peer{}
 	peerB.On("ID").Return(p2p.ID("b"))
 
@@ -156,6 +159,7 @@ func TestSnapshotPool_Ranked_Best(t *testing.T) {
 	// Ranked should return the snapshots in the same order
 	ranked := pool.Ranked()
 	assert.Len(t, ranked, len(expectSnapshots))
+
 	for i := range ranked {
 		assert.Equal(t, expectSnapshots[i].snapshot, ranked[i])
 	}
@@ -166,6 +170,7 @@ func TestSnapshotPool_Ranked_Best(t *testing.T) {
 		require.Equal(t, snapshot, pool.Best())
 		pool.Reject(snapshot)
 	}
+
 	assert.Nil(t, pool.Best())
 }
 
@@ -231,6 +236,7 @@ func TestSnapshotPool_RejectPeer(t *testing.T) {
 
 	peerA := &p2pmocks.Peer{}
 	peerA.On("ID").Return(p2p.ID("a"))
+
 	peerB := &p2pmocks.Peer{}
 	peerB.On("ID").Return(p2p.ID("b"))
 
@@ -271,6 +277,7 @@ func TestSnapshotPool_RemovePeer(t *testing.T) {
 
 	peerA := &p2pmocks.Peer{}
 	peerA.On("ID").Return(p2p.ID("a"))
+
 	peerB := &p2pmocks.Peer{}
 	peerB.On("ID").Return(p2p.ID("b"))
 
@@ -296,6 +303,7 @@ func TestSnapshotPool_RemovePeer(t *testing.T) {
 	// it should still be possible to add the peer back
 	_, err = pool.Add(peerA, s1)
 	require.NoError(t, err)
+
 	peers1 = pool.GetPeers(s1)
 	assert.Len(t, peers1, 2)
 	assert.EqualValues(t, "a", peers1[0].ID())

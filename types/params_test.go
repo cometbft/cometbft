@@ -99,6 +99,7 @@ func TestConsensusParamsHash(t *testing.T) {
 	sort.Slice(hashes, func(i, j int) bool {
 		return bytes.Compare(hashes[i], hashes[j]) < 0
 	})
+
 	for i := 0; i < len(hashes)-1; i++ {
 		assert.NotEqual(t, hashes[i], hashes[i+1])
 	}
@@ -155,6 +156,7 @@ func TestConsensusParamsUpdate_AppVersion(t *testing.T) {
 
 func TestConsensusParamsUpdate_VoteExtensionsEnableHeight(t *testing.T) {
 	const nilTest = -10000000
+
 	testCases := []struct {
 		name        string
 		current     int64
@@ -211,6 +213,7 @@ func TestConsensusParamsUpdate_VoteExtensionsEnableHeight(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(*testing.T) {
 			initialParams := makeParams(1, 0, 2, 0, valEd25519, tc.from)
+
 			update := &cmtproto.ConsensusParams{}
 			if tc.to == nilTest {
 				update.Abci = nil
@@ -219,6 +222,7 @@ func TestConsensusParamsUpdate_VoteExtensionsEnableHeight(t *testing.T) {
 					VoteExtensionsEnableHeight: tc.to,
 				}
 			}
+
 			if tc.expectedErr {
 				require.Error(t, initialParams.ValidateUpdate(update, tc.current))
 			} else {
@@ -246,6 +250,5 @@ func TestProto(t *testing.T) {
 		oriParams := ConsensusParamsFromProto(pbParams)
 
 		assert.Equal(t, params[i], oriParams)
-
 	}
 }

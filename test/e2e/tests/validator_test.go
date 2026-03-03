@@ -36,15 +36,18 @@ func TestValidator_Sets(t *testing.T) {
 
 		for h := first; h <= last; h++ {
 			validators := []*types.Validator{}
+
 			perPage := 100
 			for page := 1; ; page++ {
 				resp, err := client.Validators(ctx, &(h), &(page), &perPage)
 				require.NoError(t, err)
+
 				validators = append(validators, resp.Validators...)
 				if len(validators) == resp.Total {
 					break
 				}
 			}
+
 			require.Equal(t, valSchedule.Set.Validators, validators,
 				"incorrect validator set at height %v", h)
 			valSchedule.Increment(1)
@@ -60,23 +63,28 @@ func TestValidator_Propose(t *testing.T) {
 		if node.Mode != e2e.ModeValidator {
 			return
 		}
+
 		address := node.PrivvalKey.PubKey().Address()
 		valSchedule := newValidatorSchedule(*node.Testnet)
 
 		expectCount := 0
+
 		proposeCount := 0
 		for _, block := range blocks {
 			if bytes.Equal(valSchedule.Set.Proposer.Address, address) {
 				expectCount++
+
 				if bytes.Equal(block.ProposerAddress, address) {
 					proposeCount++
 				}
 			}
+
 			valSchedule.Increment(1)
 		}
 
 		require.False(t, proposeCount == 0 && expectCount > 0,
 			"node did not propose any blocks (expected %v)", expectCount)
+
 		if expectCount > 5 {
 			require.GreaterOrEqual(t, proposeCount, 3, "validator didn't propose even 3 blocks")
 		}
@@ -91,10 +99,12 @@ func TestValidator_Sign(t *testing.T) {
 		if node.Mode != e2e.ModeValidator {
 			return
 		}
+
 		address := node.PrivvalKey.PubKey().Address()
 		valSchedule := newValidatorSchedule(*node.Testnet)
 
 		expectCount := 0
+
 		signCount := 0
 		for _, block := range blocks[1:] { // Skip first block, since it has no signatures
 			signed := false
@@ -104,19 +114,23 @@ func TestValidator_Sign(t *testing.T) {
 					break
 				}
 			}
+
 			if valSchedule.Set.HasAddress(address) {
 				expectCount++
+
 				if signed {
 					signCount++
 				}
 			} else {
 				require.False(t, signed, "unexpected signature for block %v", block.LastCommit.Height)
 			}
+
 			valSchedule.Increment(1)
 		}
 
 		require.False(t, signCount == 0 && expectCount > 0,
 			"validator did not sign any blocks (expected %v)", expectCount)
+
 		if expectCount > 7 {
 			require.GreaterOrEqual(t, signCount, 3, "validator didn't sign even 3 blocks (expected %v)", expectCount)
 		}
@@ -136,6 +150,7 @@ func newValidatorSchedule(testnet e2e.Testnet) *validatorSchedule {
 	if v, ok := testnet.ValidatorUpdates[0]; ok { // InitChain validators
 		valMap = v
 	}
+
 	return &validatorSchedule{
 		height:  testnet.InitialHeight,
 		Set:     types.NewValidatorSet(makeVals(valMap)),
@@ -155,6 +170,7 @@ func (s *validatorSchedule) Increment(heights int64) {
 				}
 			}
 		}
+
 		s.Set.IncrementProposerPriority(1)
 	}
 }
@@ -164,5 +180,6 @@ func makeVals(valMap map[*e2e.Node]int64) []*types.Validator {
 	for node, power := range valMap {
 		vals = append(vals, types.NewValidator(node.PrivvalKey.PubKey(), power))
 	}
+
 	return vals
 }

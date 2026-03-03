@@ -47,13 +47,16 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 			if wErr := WriteRPCResponseHTTPError(w, http.StatusInternalServerError, res); wErr != nil {
 				logger.Error("failed to write response", "err", wErr)
 			}
+
 			return
 		}
+
 		args = append(args, fnArgs...)
 
 		returns := rpcFunc.f.Call(args)
 
 		logger.Debug("HTTPRestRPC", "method", r.URL.Path, "args", args, "returns", returns)
+
 		result, err := unreflectResult(returns)
 		if err != nil {
 			if err := WriteRPCResponseHTTPError(w, http.StatusInternalServerError,
@@ -61,6 +64,7 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 				logger.Error("failed to write response", "err", err)
 				return
 			}
+
 			return
 		}
 
@@ -70,6 +74,7 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 		} else {
 			err = WriteRPCResponseHTTP(w, resp)
 		}
+
 		if err != nil {
 			logger.Error("failed to write response", "err", err)
 			return
@@ -101,6 +106,7 @@ func httpParamsToArgs(rpcFunc *RPCFunc, r *http.Request) ([]reflect.Value, error
 		if err != nil {
 			return nil, err
 		}
+
 		if ok {
 			values[i] = v
 			continue
@@ -117,11 +123,14 @@ func httpParamsToArgs(rpcFunc *RPCFunc, r *http.Request) ([]reflect.Value, error
 
 func jsonStringToArg(rt reflect.Type, arg string) (reflect.Value, error) {
 	rv := reflect.New(rt)
+
 	err := cmtjson.Unmarshal([]byte(arg), rv.Interface())
 	if err != nil {
 		return rv, err
 	}
+
 	rv = rv.Elem()
+
 	return rv, nil
 }
 
@@ -135,6 +144,7 @@ func nonJSONStringToArg(rt reflect.Type, arg string) (reflect.Value, bool, error
 			rv := reflect.New(rt.Elem())
 			rv.Elem().Set(rv1)
 			return rv, true, nil
+
 		default:
 			return reflect.Value{}, false, nil
 		}
@@ -170,6 +180,7 @@ func _nonJSONStringToArg(rt reflect.Type, arg string) (reflect.Value, bool, erro
 
 	if isIntString && expectingInt {
 		qarg := `"` + arg + `"`
+
 		rv, err := jsonStringToArg(rt, qarg)
 		if err != nil {
 			return rv, false, err
@@ -186,23 +197,29 @@ func _nonJSONStringToArg(rt reflect.Type, arg string) (reflect.Value, bool, erro
 		}
 
 		var value []byte
+
 		value, err := hex.DecodeString(arg[2:])
 		if err != nil {
 			return reflect.ValueOf(nil), false, err
 		}
+
 		if rt.Kind() == reflect.String {
 			return reflect.ValueOf(string(value)), true, nil
 		}
+
 		return reflect.ValueOf(value), true, nil
 	}
 
 	if isQuotedString && expectingByteSlice {
 		v := reflect.New(reflect.TypeOf(""))
+
 		err := cmtjson.Unmarshal([]byte(arg), v.Interface())
 		if err != nil {
 			return reflect.ValueOf(nil), false, err
 		}
+
 		v = v.Elem()
+
 		return reflect.ValueOf([]byte(v.String())), true, nil
 	}
 
@@ -214,5 +231,6 @@ func getParam(r *http.Request, param string) string {
 	if s == "" {
 		s = r.FormValue(param)
 	}
+
 	return s
 }

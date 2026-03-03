@@ -103,12 +103,14 @@ func init() {
 func runProxy(_ *cobra.Command, args []string) error {
 	// Initialize logger.
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+
 	var option log.Option
 	if verbose {
 		option, _ = log.AllowLevel("debug")
 	} else {
 		option, _ = log.AllowLevel("info")
 	}
+
 	logger = log.NewFilter(logger, option)
 
 	chainID = args[0]
@@ -126,10 +128,12 @@ func runProxy(_ *cobra.Command, args []string) error {
 
 	if primaryAddr == "" { // check to see if we can start from an existing state
 		var err error
+
 		primaryAddr, witnessesAddrs, err = checkForExistingProviders(db)
 		if err != nil {
 			return fmt.Errorf("failed to retrieve primary or witness from db: %w", err)
 		}
+
 		if primaryAddr == "" {
 			return errors.New("no primary address was provided nor found. Please provide a primary (using -p)." +
 				" Run the command: cometbft light --help for more information")
@@ -150,9 +154,11 @@ func runProxy(_ *cobra.Command, args []string) error {
 		light.Logger(logger),
 		light.ConfirmationFunction(func(action string) bool {
 			fmt.Println(action)
+
 			scanner := bufio.NewScanner(os.Stdin)
 			for {
 				scanner.Scan()
+
 				response := scanner.Text()
 				switch response {
 				case "y", "Y":
@@ -197,6 +203,7 @@ func runProxy(_ *cobra.Command, args []string) error {
 			options...,
 		)
 	}
+
 	if err != nil {
 		return err
 	}
@@ -223,6 +230,7 @@ func runProxy(_ *cobra.Command, args []string) error {
 	})
 
 	logger.Info("Starting proxy...", "laddr", listenAddr)
+
 	if err := p.ListenAndServe(); err != http.ErrServerClosed {
 		// Error starting or closing listener:
 		logger.Error("proxy ListenAndServe", "err", err)
@@ -236,11 +244,14 @@ func checkForExistingProviders(db dbm.DB) (string, []string, error) {
 	if err != nil {
 		return "", []string{""}, err
 	}
+
 	witnessesBytes, err := db.Get(witnessesKey)
 	if err != nil {
 		return "", []string{""}, err
 	}
+
 	witnessesAddrs := strings.Split(string(witnessesBytes), ",")
+
 	return string(primaryBytes), witnessesAddrs, nil
 }
 
@@ -249,9 +260,11 @@ func saveProviders(db dbm.DB, primaryAddr, witnessesAddrs string) error {
 	if err != nil {
 		return fmt.Errorf("failed to save primary provider: %w", err)
 	}
+
 	err = db.Set(witnessesKey, []byte(witnessesAddrs))
 	if err != nil {
 		return fmt.Errorf("failed to save witness providers: %w", err)
 	}
+
 	return nil
 }

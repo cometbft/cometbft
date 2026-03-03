@@ -12,6 +12,7 @@ import (
 func BenchmarkReap(b *testing.B) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
+
 	mp, cleanup := newMempoolWithApp(cc)
 	defer cleanup()
 
@@ -19,6 +20,7 @@ func BenchmarkReap(b *testing.B) {
 	addTxs(b, mp, 0, 10000)
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		mp.ReapMaxBytesMaxGas(100_000_000, -1)
 	}
@@ -27,15 +29,19 @@ func BenchmarkReap(b *testing.B) {
 func BenchmarkCheckTx(b *testing.B) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
+
 	mp, cleanup := newMempoolWithApp(cc)
 	defer cleanup()
 
 	mp.config.Size = 100_000_000
+
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
+
 		tx := kvstore.NewTxFromID(i)
+
 		b.StartTimer()
 
 		err := mp.CheckTx(tx, nil, TxInfo{})
@@ -46,11 +52,14 @@ func BenchmarkCheckTx(b *testing.B) {
 func BenchmarkParallelCheckTx(b *testing.B) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
+
 	mp, cleanup := newMempoolWithApp(cc)
 	defer cleanup()
 
 	mp.config.Size = 100_000_000
+
 	var txcnt uint64
+
 	next := func() uint64 {
 		return atomic.AddUint64(&txcnt, 1)
 	}
@@ -68,6 +77,7 @@ func BenchmarkParallelCheckTx(b *testing.B) {
 func BenchmarkCheckDuplicateTx(b *testing.B) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
+
 	mp, cleanup := newMempoolWithApp(cc)
 	defer cleanup()
 
@@ -77,10 +87,12 @@ func BenchmarkCheckDuplicateTx(b *testing.B) {
 	if err := mp.CheckTx(tx, nil, TxInfo{}); err != nil {
 		b.Fatal(err)
 	}
+
 	err := mp.FlushAppConn()
 	require.NoError(b, err)
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		err := mp.CheckTx(tx, nil, TxInfo{})
 		require.ErrorAs(b, err, &ErrTxInCache, "tx should be duplicate")
@@ -90,11 +102,14 @@ func BenchmarkCheckDuplicateTx(b *testing.B) {
 func BenchmarkUpdate(b *testing.B) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
+
 	mp, cleanup := newMempoolWithApp(cc)
 	defer cleanup()
 
 	numTxs := 1000
+
 	b.ResetTimer()
+
 	for i := 1; i <= b.N; i++ {
 		b.StopTimer()
 		txs := addTxs(b, mp, i*numTxs, numTxs)
@@ -109,11 +124,14 @@ func BenchmarkUpdate(b *testing.B) {
 func BenchmarkUpdateAndRecheck(b *testing.B) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
+
 	mp, cleanup := newMempoolWithApp(cc)
 	defer cleanup()
 
 	numTxs := 1000
+
 	b.ResetTimer()
+
 	for i := 1; i <= b.N; i++ {
 		b.StopTimer()
 		mp.Flush()
@@ -131,8 +149,10 @@ func BenchmarkUpdateRemoteClient(b *testing.B) {
 	defer cleanup()
 
 	b.ResetTimer()
+
 	for i := 1; i <= b.N; i++ {
 		b.StopTimer()
+
 		tx := kvstore.NewTxFromID(i)
 		err := mp.CheckTx(tx, nil, TxInfo{})
 		require.NoError(b, err)

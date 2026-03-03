@@ -111,10 +111,12 @@ type addrBook struct {
 
 func mustNewHasher() hash.Hash64 {
 	key := crypto.CRandBytes(highwayhash.Size)
+
 	hasher, err := highwayhash.New64(key)
 	if err != nil {
 		panic(err)
 	}
+
 	return hasher
 }
 
@@ -132,6 +134,7 @@ func NewAddrBook(filePath string, routabilityStrict bool) AddrBook {
 	}
 	am.init()
 	am.BaseService = *service.NewBaseService(nil, "AddrBook", am)
+
 	return am
 }
 
@@ -149,6 +152,7 @@ func (a *addrBook) init() {
 	for i := range a.bucketsOld {
 		a.bucketsOld[i] = make(map[string]*knownAddress)
 	}
+
 	a.hasher = mustNewHasher()
 }
 
@@ -157,11 +161,13 @@ func (a *addrBook) OnStart() error {
 	if err := a.BaseService.OnStart(); err != nil {
 		return err
 	}
+
 	a.loadFromFile(a.filePath)
 
 	// wg.Add to ensure that any invocation of .Wait()
 	// later on will wait for saveRoutine to terminate.
 	a.wg.Add(1)
+
 	go a.saveRoutine()
 
 	return nil
@@ -197,6 +203,7 @@ func (a *addrBook) OurAddress(addr *p2p.NetAddress) bool {
 	defer a.mtx.Unlock()
 
 	_, ok := a.ourAddrs[addr.String()]
+
 	return ok
 }
 
@@ -252,6 +259,7 @@ func (a *addrBook) HasAddress(addr *p2p.NetAddress) bool {
 	defer a.mtx.Unlock()
 
 	ka := a.addrLookup[addr.ID]
+
 	return ka != nil
 }
 
@@ -283,9 +291,11 @@ func (a *addrBook) PickAddress(biasTowardsNewAddrs int) *p2p.NetAddress {
 		}
 		return nil
 	}
+
 	if biasTowardsNewAddrs > 100 {
 		biasTowardsNewAddrs = 100
 	}
+
 	if biasTowardsNewAddrs < 0 {
 		biasTowardsNewAddrs = 0
 	}
@@ -296,6 +306,7 @@ func (a *addrBook) PickAddress(biasTowardsNewAddrs int) *p2p.NetAddress {
 
 	// pick a random peer from a random bucket
 	var bucket map[string]*knownAddress
+
 	pickFromOldBucket := (newCorrelation+oldCorrelation)*a.rand.Float64() < oldCorrelation
 	if (pickFromOldBucket && a.nOld == 0) ||
 		(!pickFromOldBucket && a.nNew == 0) {
@@ -315,8 +326,10 @@ func (a *addrBook) PickAddress(biasTowardsNewAddrs int) *p2p.NetAddress {
 		if randIndex == 0 {
 			return ka.Addr
 		}
+
 		randIndex--
 	}
+
 	return nil
 }
 
@@ -330,7 +343,9 @@ func (a *addrBook) MarkGood(id p2p.ID) {
 	if ka == nil {
 		return
 	}
+
 	ka.markGood()
+
 	if ka.isNew() {
 		if err := a.moveToOld(ka); err != nil {
 			a.Logger.Error("Error moving address to old", "err", err)
@@ -347,6 +362,7 @@ func (a *addrBook) MarkAttempt(addr *p2p.NetAddress) {
 	if ka == nil {
 		return
 	}
+
 	ka.markAttempt()
 }
 
@@ -382,6 +398,7 @@ func (a *addrBook) ReinstateBadPeers() {
 		if err := a.addToNewBucket(ka, bucket); err != nil {
 			a.Logger.Error("Error adding peer to new bucket", "err", err)
 		}
+
 		delete(a.badPeers, ka.ID())
 
 		a.Logger.Info("Reinstated address", "addr", ka.Addr)
@@ -411,6 +428,7 @@ func (a *addrBook) GetSelection() []*p2p.NetAddress {
 	// XXX: instead of making a list of all addresses, shuffling, and slicing a random chunk,
 	// could we just select a random numAddresses of indexes?
 	allAddr := make([]*p2p.NetAddress, bookSize)
+
 	i := 0
 	for _, ka := range a.addrLookup {
 		allAddr[i] = ka.Addr
@@ -456,6 +474,7 @@ func (a *addrBook) GetSelectionWithBias(biasTowardsNewAddrs int) []*p2p.NetAddre
 	if biasTowardsNewAddrs > 100 {
 		biasTowardsNewAddrs = 100
 	}
+
 	if biasTowardsNewAddrs < 0 {
 		biasTowardsNewAddrs = 0
 	}
@@ -470,6 +489,7 @@ func (a *addrBook) GetSelectionWithBias(biasTowardsNewAddrs int) []*p2p.NetAddre
 	numRequiredNewAdd := cmtmath.MaxInt(percentageOfNum(biasTowardsNewAddrs, numAddresses), numAddresses-a.nOld)
 	selection := a.randomPickAddresses(bucketTypeNew, numRequiredNewAdd)
 	selection = append(selection, a.randomPickAddresses(bucketTypeOld, numAddresses-len(selection))...)
+
 	return selection
 }
 
@@ -498,6 +518,7 @@ func (a *addrBook) saveRoutine() {
 	defer a.wg.Done()
 
 	saveFileTicker := time.NewTicker(dumpAddressInterval)
+
 out:
 	for {
 		select {
@@ -507,6 +528,7 @@ out:
 			break out
 		}
 	}
+
 	saveFileTicker.Stop()
 	a.saveToFile(a.filePath)
 }
@@ -555,6 +577,7 @@ func (a *addrBook) addToNewBucket(ka *knownAddress, bucketIdx int) error {
 
 	// Add it to addrLookup
 	a.addrLookup[ka.ID()] = ka
+
 	return nil
 }
 
@@ -565,6 +588,7 @@ func (a *addrBook) addToOldBucket(ka *knownAddress, bucketIdx int) bool {
 		a.Logger.Error(fmt.Sprintf("Cannot add new address to old bucket: %v", ka))
 		return false
 	}
+
 	if len(ka.Buckets) != 0 {
 		a.Logger.Error(fmt.Sprintf("Cannot add already old address to another old bucket: %v", ka))
 		return false
@@ -600,14 +624,17 @@ func (a *addrBook) removeFromBucket(ka *knownAddress, bucketType byte, bucketIdx
 		a.Logger.Error(fmt.Sprintf("Bucket type mismatch: %v", ka))
 		return
 	}
+
 	bucket := a.getBucket(bucketType, bucketIdx)
 	delete(bucket, ka.Addr.String())
+
 	if ka.removeBucketRef(bucketIdx) == 0 {
 		if bucketType == bucketTypeNew {
 			a.nNew--
 		} else {
 			a.nOld--
 		}
+
 		delete(a.addrLookup, ka.ID())
 	}
 }
@@ -617,12 +644,14 @@ func (a *addrBook) removeFromAllBuckets(ka *knownAddress) {
 		bucket := a.getBucket(ka.BucketType, bucketIdx)
 		delete(bucket, ka.Addr.String())
 	}
+
 	ka.Buckets = nil
 	if ka.BucketType == bucketTypeNew {
 		a.nNew--
 	} else {
 		a.nOld--
 	}
+
 	delete(a.addrLookup, ka.ID())
 }
 
@@ -630,12 +659,14 @@ func (a *addrBook) removeFromAllBuckets(ka *knownAddress) {
 
 func (a *addrBook) pickOldest(bucketType byte, bucketIdx int) *knownAddress {
 	bucket := a.getBucket(bucketType, bucketIdx)
+
 	var oldest *knownAddress
 	for _, ka := range bucket {
 		if oldest == nil || ka.LastAttempt.Before(oldest.LastAttempt) {
 			oldest = ka
 		}
 	}
+
 	return oldest
 }
 
@@ -696,6 +727,7 @@ func (a *addrBook) addAddress(addr, src *p2p.NetAddress) error {
 	if err != nil {
 		return err
 	}
+
 	return a.addToNewBucket(ka, bucket)
 }
 
@@ -709,31 +741,39 @@ func (a *addrBook) randomPickAddresses(bucketType byte, num int) []*p2p.NetAddre
 	default:
 		panic("unexpected bucketType")
 	}
+
 	total := 0
 	for _, bucket := range buckets {
 		total += len(bucket)
 	}
+
 	addresses := make([]*knownAddress, 0, total)
 	for _, bucket := range buckets {
 		for _, ka := range bucket {
 			addresses = append(addresses, ka)
 		}
 	}
+
 	selection := make([]*p2p.NetAddress, 0, num)
 	chosenSet := make(map[string]bool, num)
+
 	rand.Shuffle(total, func(i, j int) {
 		addresses[i], addresses[j] = addresses[j], addresses[i]
 	})
+
 	for _, addr := range addresses {
 		if chosenSet[addr.Addr.String()] {
 			continue
 		}
+
 		chosenSet[addr.Addr.String()] = true
+
 		selection = append(selection, addr.Addr)
 		if len(selection) >= num {
 			return selection
 		}
 	}
+
 	return selection
 }
 
@@ -763,6 +803,7 @@ func (a *addrBook) moveToOld(ka *knownAddress) error {
 		a.Logger.Error(fmt.Sprintf("Cannot promote address that is already old %v", ka))
 		return nil
 	}
+
 	if len(ka.Buckets) == 0 {
 		a.Logger.Error(fmt.Sprintf("Cannot promote address that isn't in any new buckets %v", ka))
 		return nil
@@ -778,15 +819,18 @@ func (a *addrBook) moveToOld(ka *knownAddress) error {
 	if err != nil {
 		return err
 	}
+
 	added := a.addToOldBucket(ka, oldBucketIdx)
 	if !added {
 		// No room; move the oldest to a new bucket
 		oldest := a.pickOldest(bucketTypeOld, oldBucketIdx)
 		a.removeFromBucket(oldest, bucketTypeOld, oldBucketIdx)
+
 		newBucketIdx, err := a.calcNewBucket(oldest.Addr, oldest.Src)
 		if err != nil {
 			return err
 		}
+
 		if err := a.addToNewBucket(oldest, newBucketIdx); err != nil {
 			a.Logger.Error("Error adding peer to old bucket", "err", err)
 		}
@@ -797,6 +841,7 @@ func (a *addrBook) moveToOld(ka *knownAddress) error {
 			a.Logger.Error(fmt.Sprintf("Could not re-add ka %v to oldBucketIdx %v", ka, oldBucketIdx))
 		}
 	}
+
 	return nil
 }
 
@@ -805,6 +850,7 @@ func (a *addrBook) removeAddress(addr *p2p.NetAddress) {
 	if ka == nil {
 		return
 	}
+
 	a.Logger.Info("Remove address from book", "addr", addr)
 	a.removeFromAllBuckets(ka)
 }
@@ -823,6 +869,7 @@ func (a *addrBook) addBadPeer(addr *p2p.NetAddress, banTime time.Duration) bool 
 		a.badPeers[addr.ID] = ka
 		a.Logger.Info("Add address to denylist", "addr", addr)
 	}
+
 	return true
 }
 
@@ -835,14 +882,18 @@ func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) (int, error) {
 	data1 = append(data1, []byte(a.key)...)
 	data1 = append(data1, []byte(a.groupKey(addr))...)
 	data1 = append(data1, []byte(a.groupKey(src))...)
+
 	hash1, err := a.hash(data1)
 	if err != nil {
 		return 0, err
 	}
+
 	hash64 := binary.BigEndian.Uint64(hash1)
 	hash64 %= newBucketsPerGroup
+
 	var hashbuf [8]byte
 	binary.BigEndian.PutUint64(hashbuf[:], hash64)
+
 	data2 := []byte{}
 	data2 = append(data2, []byte(a.key)...)
 	data2 = append(data2, a.groupKey(src)...)
@@ -852,7 +903,9 @@ func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	result := int(binary.BigEndian.Uint64(hash2) % newBucketCount)
+
 	return result, nil
 }
 
@@ -861,14 +914,18 @@ func (a *addrBook) calcOldBucket(addr *p2p.NetAddress) (int, error) {
 	data1 := []byte{}
 	data1 = append(data1, []byte(a.key)...)
 	data1 = append(data1, []byte(addr.String())...)
+
 	hash1, err := a.hash(data1)
 	if err != nil {
 		return 0, err
 	}
+
 	hash64 := binary.BigEndian.Uint64(hash1)
 	hash64 %= oldBucketsPerGroup
+
 	var hashbuf [8]byte
 	binary.BigEndian.PutUint64(hashbuf[:], hash64)
+
 	data2 := []byte{}
 	data2 = append(data2, []byte(a.key)...)
 	data2 = append(data2, a.groupKey(addr)...)
@@ -878,7 +935,9 @@ func (a *addrBook) calcOldBucket(addr *p2p.NetAddress) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	result := int(binary.BigEndian.Uint64(hash2) % oldBucketCount)
+
 	return result, nil
 }
 
@@ -894,6 +953,7 @@ func groupKeyFor(na *p2p.NetAddress, routabilityStrict bool) string {
 	if routabilityStrict && na.Local() {
 		return "local"
 	}
+
 	if routabilityStrict && !na.Routable() {
 		return "unroutable"
 	}
@@ -920,6 +980,7 @@ func groupKeyFor(na *p2p.NetAddress, routabilityStrict bool) string {
 		for i, byte := range na.IP[12:16] {
 			ip[i] = byte ^ 0xff
 		}
+
 		return ip.Mask(net.CIDRMask(16, 32)).String()
 	}
 
@@ -932,11 +993,14 @@ func groupKeyFor(na *p2p.NetAddress, routabilityStrict bool) string {
 	// bitcoind uses /32 for everything, except for Hurricane Electric's
 	// (he.net) IP range, which it uses /36 for.
 	bits := 32
+
 	heNet := &net.IPNet{IP: net.ParseIP("2001:470::"), Mask: net.CIDRMask(32, 128)}
 	if heNet.Contains(na.IP) {
 		bits = 36
 	}
+
 	ipv6Mask := net.CIDRMask(bits, 128)
+
 	return na.IP.Mask(ipv6Mask).String()
 }
 

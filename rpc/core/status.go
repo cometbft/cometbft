@@ -79,7 +79,9 @@ func (env *Environment) validatorAtHeight(h int64) *types.Validator {
 	if err != nil {
 		return nil
 	}
+
 	privValAddress := env.PubKey.Address()
 	_, val := valsWithH.GetByAddress(privValAddress)
+
 	return val
 }

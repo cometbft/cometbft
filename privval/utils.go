@@ -30,10 +30,12 @@ func NewSignerListener(listenAddr string, logger log.Logger) (*SignerListenerEnd
 	var listener net.Listener
 
 	protocol, address := cmtnet.ProtocolAndAddress(listenAddr)
+
 	ln, err := net.Listen(protocol, address)
 	if err != nil {
 		return nil, err
 	}
+
 	switch protocol {
 	case "unix":
 		listener = NewUnixListener(ln)
@@ -58,5 +60,6 @@ func GetFreeLocalhostAddrPort() string {
 	if err != nil {
 		panic(err)
 	}
+
 	return fmt.Sprintf("127.0.0.1:%d", port)
 }

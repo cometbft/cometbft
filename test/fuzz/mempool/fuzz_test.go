@@ -24,6 +24,7 @@ func TestMempoolTestdataCases(t *testing.T) {
 				r := recover()
 				require.Nilf(t, r, "testdata/cases test panic")
 			}()
+
 			f, err := os.Open(filepath.Join(testdataCasesDir, entry.Name()))
 			require.NoError(t, err)
 			input, err := io.ReadAll(f)

@@ -40,18 +40,22 @@ func NewCLI() *CLI {
 			if err != nil {
 				return err
 			}
+
 			groups, err := cmd.Flags().GetInt("groups")
 			if err != nil {
 				return err
 			}
+
 			multiVersion, err := cmd.Flags().GetString("multi-version")
 			if err != nil {
 				return err
 			}
+
 			prometheus, err := cmd.Flags().GetBool("prometheus")
 			if err != nil {
 				return err
 			}
+
 			return cli.generate(dir, groups, multiVersion, prometheus)
 		},
 	}
@@ -78,10 +82,12 @@ func (cli *CLI) generate(dir string, groups int, multiVersion string, prometheus
 		multiVersion: multiVersion,
 		prometheus:   prometheus,
 	}
+
 	manifests, err := Generate(cfg)
 	if err != nil {
 		return err
 	}
+
 	if groups <= 0 {
 		for i, manifest := range manifests {
 			err = manifest.Save(filepath.Join(dir, fmt.Sprintf("gen-%04d.toml", i)))
@@ -94,6 +100,7 @@ func (cli *CLI) generate(dir string, groups int, multiVersion string, prometheus
 		for g := 0; g < groups; g++ {
 			for i := 0; i < groupSize && g*groupSize+i < len(manifests); i++ {
 				manifest := manifests[g*groupSize+i]
+
 				err = manifest.Save(filepath.Join(dir, fmt.Sprintf("gen-group%02d-%04d.toml", g, i)))
 				if err != nil {
 					return err
@@ -101,6 +108,7 @@ func (cli *CLI) generate(dir string, groups int, multiVersion string, prometheus
 			}
 		}
 	}
+
 	return nil
 }
 

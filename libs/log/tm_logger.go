@@ -30,6 +30,7 @@ func NewTMLogger(w io.Writer) Logger {
 		if keyvals[0] != kitlevel.Key() {
 			panic(fmt.Sprintf("expected level key to be first, got %v", keyvals[0]))
 		}
+
 		switch keyvals[1].(kitlevel.Value).String() {
 		case "debug":
 			return term.FgBgColor{Fg: term.DarkGray}

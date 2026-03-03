@@ -9,10 +9,12 @@ import (
 // This only uses the OS's randomness
 func randBytes(numBytes int) []byte {
 	b := make([]byte, numBytes)
+
 	_, err := crand.Read(b)
 	if err != nil {
 		panic(err)
 	}
+
 	return b
 }
 

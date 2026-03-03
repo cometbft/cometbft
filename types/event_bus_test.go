@@ -96,6 +96,7 @@ func TestEventBusPublishEventNewBlock(t *testing.T) {
 	}()
 
 	var ps *PartSet
+
 	ps, err = block.MakePartSet(BlockPartSizeBytes)
 	require.NoError(t, err)
 
@@ -198,6 +199,7 @@ func TestEventBusPublishEventTxDuplicateKeys(t *testing.T) {
 				assert.EqualValues(t, tx, data.Tx)
 				assert.Equal(t, result, data.Result)
 				close(done)
+
 			case <-time.After(1 * time.Second):
 				return
 			}
@@ -216,6 +218,7 @@ func TestEventBusPublishEventTxDuplicateKeys(t *testing.T) {
 			if !tc.expectResults {
 				require.Fail(t, "unexpected transaction result(s) from subscription")
 			}
+
 		case <-time.After(1 * time.Second):
 			if tc.expectResults {
 				require.Fail(t, "failed to receive a transaction after 1 second")
@@ -442,10 +445,12 @@ func benchmarkEventBus(numClients int, randQueries bool, randEvents bool, b *tes
 	rnd := rand.New(rand.NewSource(time.Now().Unix()))
 
 	eventBus := NewEventBusWithBufferCapacity(0) // set buffer capacity to 0 so we are not testing cache
+
 	err := eventBus.Start()
 	if err != nil {
 		b.Error(err)
 	}
+
 	b.Cleanup(func() {
 		if err := eventBus.Stop(); err != nil {
 			b.Error(err)
@@ -459,10 +464,12 @@ func benchmarkEventBus(numClients int, randQueries bool, randEvents bool, b *tes
 		if randQueries {
 			q = randQuery(rnd)
 		}
+
 		sub, err := eventBus.Subscribe(ctx, fmt.Sprintf("client-%d", i), q)
 		if err != nil {
 			b.Fatal(err)
 		}
+
 		go func() {
 			for {
 				select {
@@ -478,6 +485,7 @@ func benchmarkEventBus(numClients int, randQueries bool, randEvents bool, b *tes
 
 	b.ReportAllocs()
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		if randEvents {
 			eventType = randEvent(rnd)

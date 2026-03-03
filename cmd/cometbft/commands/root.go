@@ -30,6 +30,7 @@ func registerFlagsRootCmd(cmd *cobra.Command) {
 // sets up the CometBFT root and ensures that the root exists
 func ParseConfig(cmd *cobra.Command) (*cfg.Config, error) {
 	conf := cfg.DefaultConfig()
+
 	err := viper.Unmarshal(conf)
 	if err != nil {
 		return nil, err
@@ -47,10 +48,12 @@ func ParseConfig(cmd *cobra.Command) (*cfg.Config, error) {
 	case tmHome != "":
 		// XXX: Deprecated.
 		home = tmHome
+
 		logger.Error("Deprecated environment variable TMHOME identified. CMTHOME should be used instead.")
 
 	default:
 		var err error
+
 		home, err = cmd.Flags().GetString(cli.HomeFlag)
 		if err != nil {
 			return nil, err
@@ -61,14 +64,17 @@ func ParseConfig(cmd *cobra.Command) (*cfg.Config, error) {
 
 	conf.SetRoot(conf.RootDir)
 	cfg.EnsureRoot(conf.RootDir)
+
 	if err := conf.ValidateBasic(); err != nil {
 		return nil, fmt.Errorf("error in config file: %v", err)
 	}
+
 	if warnings := conf.CheckDeprecated(); len(warnings) > 0 {
 		for _, warning := range warnings {
 			logger.Info("deprecated usage found in configuration file", "usage", warning)
 		}
 	}
+
 	return conf, nil
 }
 
@@ -100,6 +106,7 @@ var RootCmd = &cobra.Command{
 		}
 
 		logger = logger.With("module", "main")
+
 		return nil
 	},
 }

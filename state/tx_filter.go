@@ -12,10 +12,12 @@ func TxPreCheck(state State) mempl.PreCheckFunc {
 	if maxBytes == -1 {
 		maxBytes = int64(types.MaxBlockSizeBytes)
 	}
+
 	maxDataBytes := types.MaxDataBytesNoEvidence(
 		maxBytes,
 		state.Validators.Size(),
 	)
+
 	return mempl.PreCheckMaxBytes(maxDataBytes)
 }
 

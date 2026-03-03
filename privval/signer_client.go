@@ -80,6 +80,7 @@ func (sc *SignerClient) GetPubKey() (crypto.PubKey, error) {
 	if resp == nil {
 		return nil, cmterrors.ErrRequiredField{Field: "response"}
 	}
+
 	if resp.Error != nil {
 		return nil, &RemoteSignerError{Code: int(resp.Error.Code), Description: resp.Error.Description}
 	}
@@ -103,6 +104,7 @@ func (sc *SignerClient) SignVote(chainID string, vote *cmtproto.Vote) error {
 	if resp == nil {
 		return cmterrors.ErrRequiredField{Field: "response"}
 	}
+
 	if resp.Error != nil {
 		return &RemoteSignerError{Code: int(resp.Error.Code), Description: resp.Error.Description}
 	}
@@ -125,6 +127,7 @@ func (sc *SignerClient) SignProposal(chainID string, proposal *cmtproto.Proposal
 	if resp == nil {
 		return cmterrors.ErrRequiredField{Field: "response"}
 	}
+
 	if resp.Error != nil {
 		return &RemoteSignerError{Code: int(resp.Error.Code), Description: resp.Error.Description}
 	}

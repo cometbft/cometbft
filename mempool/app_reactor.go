@@ -218,6 +218,7 @@ func txsFromEnvelope(e p2p.Envelope) ([]types.Tx, error) {
 		for i, tx := range txsRaw {
 			txs[i] = types.Tx(tx)
 		}
+
 		return txs, nil
 	}
 }

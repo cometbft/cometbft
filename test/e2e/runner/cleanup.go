@@ -19,10 +19,12 @@ func Cleanup(testnet *e2e.Testnet) error {
 	if err != nil {
 		return err
 	}
+
 	err = cleanupDir(testnet.Dir)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -72,6 +74,7 @@ func cleanupDir(dir string) error {
 	if err != nil {
 		return err
 	}
+
 	err = docker.Exec(context.Background(), "run", "--rm", "--entrypoint", "", "-v", fmt.Sprintf("%v:/network", absDir),
 		"cometbft/e2e-node", "sh", "-c", "rm -rf /network/*/")
 	if err != nil {

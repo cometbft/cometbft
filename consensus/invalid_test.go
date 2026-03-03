@@ -21,6 +21,7 @@ import (
 // Ensure a testnet makes blocks
 func TestReactorInvalidPrecommit(t *testing.T) {
 	N := 4
+
 	css, cleanup := randConsensusNet(t, N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore,
 		func(c *cfg.Config) {
 			c.Consensus.TimeoutPropose = 3000 * time.Millisecond
@@ -33,7 +34,6 @@ func TestReactorInvalidPrecommit(t *testing.T) {
 		ticker := NewTimeoutTicker()
 		ticker.SetLogger(css[i].Logger)
 		css[i].SetTimeoutTicker(ticker)
-
 	}
 
 	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, N)
@@ -70,11 +70,14 @@ func invalidDoPrevoteFunc(t *testing.T, cs *State, sw p2p.Switcher, pv types.Pri
 	go func() {
 		cs.mtx.Lock()
 		defer cs.mtx.Unlock()
+
 		cs.privValidator = pv
+
 		pubKey, err := cs.privValidator.GetPubKey()
 		if err != nil {
 			panic(err)
 		}
+
 		addr := pubKey.Address()
 		valIndex, _ := cs.Validators.GetByAddress(addr)
 
@@ -93,10 +96,12 @@ func invalidDoPrevoteFunc(t *testing.T, cs *State, sw p2p.Switcher, pv types.Pri
 			},
 		}
 		p := precommit.ToProto()
+
 		err = cs.privValidator.SignVote(cs.state.ChainID, p)
 		if err != nil {
 			t.Error(err)
 		}
+
 		precommit.Signature = p.Signature
 		precommit.ExtensionSignature = p.ExtensionSignature
 		cs.privValidator = nil // disable priv val so we don't do normal votes

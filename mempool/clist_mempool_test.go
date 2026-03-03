@@ -48,6 +48,7 @@ func newMempoolWithAppAndConfigMock(
 ) (*CListMempool, cleanupFunc) {
 	appConnMem := client
 	appConnMem.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "mempool"))
+
 	err := appConnMem.Start()
 	if err != nil {
 		panic(err)
@@ -69,6 +70,7 @@ func newMempoolWithApp(cc proxy.ClientCreator) (*CListMempool, cleanupFunc) {
 func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CListMempool, cleanupFunc) {
 	appConnMem, _ := cc.NewABCIClient()
 	appConnMem.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "mempool"))
+
 	err := appConnMem.Start()
 	if err != nil {
 		panic(err)
@@ -108,6 +110,7 @@ func callCheckTx(t *testing.T, mp Mempool, txs types.Txs, peerID uint16) {
 			if IsPreCheckError(err) {
 				continue
 			}
+
 			t.Fatalf("CheckTx failed: %v while checking #%d tx", err, i)
 		}
 	}
@@ -120,6 +123,7 @@ func NewRandomTxs(numTxs int, txLen int) types.Txs {
 		txBytes := kvstore.NewRandomTx(txLen)
 		txs[i] = txBytes
 	}
+
 	return txs
 }
 
@@ -127,26 +131,32 @@ func NewRandomTxs(numTxs int, txLen int) types.Txs {
 // each of them.
 func addRandomTxs(t *testing.T, mp Mempool, count int, peerID uint16) []types.Tx {
 	t.Helper()
+
 	txs := NewRandomTxs(count, 20)
 	callCheckTx(t, mp, txs, peerID)
+
 	return txs
 }
 
 func addTxs(tb testing.TB, mp Mempool, first, num int) []types.Tx {
 	tb.Helper()
+
 	txs := make([]types.Tx, 0, num)
 	for i := first; i < num; i++ {
 		tx := kvstore.NewTxFromID(i)
 		err := mp.CheckTx(tx, nil, TxInfo{})
 		require.NoError(tb, err)
+
 		txs = append(txs, tx)
 	}
+
 	return txs
 }
 
 func TestReapMaxBytesMaxGas(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
+
 	mp, cleanup := newMempoolWithApp(cc)
 	defer cleanup()
 
@@ -194,8 +204,10 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 func TestMempoolFilters(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
+
 	mp, cleanup := newMempoolWithApp(cc)
 	defer cleanup()
+
 	emptyTxArr := []types.Tx{[]byte{}}
 
 	nopPreFilter := func(tx types.Tx) error { return nil }
@@ -233,6 +245,7 @@ func TestMempoolFilters(t *testing.T) {
 func TestMempoolUpdate(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
+
 	mp, cleanup := newMempoolWithApp(cc)
 	defer cleanup()
 
@@ -241,6 +254,7 @@ func TestMempoolUpdate(t *testing.T) {
 		tx1 := kvstore.NewTxFromID(1)
 		err := mp.Update(1, []types.Tx{tx1}, abciResponses(1, abci.CodeTypeOK), nil, nil)
 		require.NoError(t, err)
+
 		err = mp.CheckTx(tx1, nil, TxInfo{})
 		if assert.Error(t, err) {
 			assert.Equal(t, ErrTxInCache, err)
@@ -273,6 +287,7 @@ func TestMempoolUpdate(t *testing.T) {
 
 func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	var callback abciclient.Callback
+
 	mockClient := new(abciclimocks.Client)
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
@@ -283,6 +298,7 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 
 	mp, cleanup, err := newMempoolWithAppMock(mockClient)
 	require.NoError(t, err)
+
 	defer cleanup()
 
 	// Add 4 transactions to the mempool by calling the mempool's `CheckTx` on each of them.
@@ -290,12 +306,14 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	for _, tx := range txs {
 		reqRes := newReqRes(tx, abci.CodeTypeOK, abci.CheckTxType_New)
 		mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil)
+
 		err := mp.CheckTx(tx, nil, TxInfo{})
 		require.NoError(t, err)
 
 		// ensure that the callback that the mempool sets on the ReqRes is run.
 		reqRes.InvokeCallback()
 	}
+
 	require.Len(t, txs, mp.Size())
 	require.True(t, mp.recheck.done())
 
@@ -324,6 +342,7 @@ func TestMempool_KeepInvalidTxsInCache(t *testing.T) {
 	cc := proxy.NewLocalClientCreator(app)
 	wcfg := config.DefaultConfig()
 	wcfg.Mempool.KeepInvalidTxsInCache = true
+
 	mp, cleanup := newMempoolWithAppAndConfig(cc, wcfg)
 	defer cleanup()
 
@@ -376,8 +395,10 @@ func TestMempool_KeepInvalidTxsInCache(t *testing.T) {
 func TestTxsAvailable(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
+
 	mp, cleanup := newMempoolWithApp(cc)
 	defer cleanup()
+
 	mp.EnableTxsAvailable()
 
 	timeoutMS := 500
@@ -397,6 +418,7 @@ func TestTxsAvailable(t *testing.T) {
 	if err := mp.Update(1, committedTxs, abciResponses(len(committedTxs), abci.CodeTypeOK), nil, nil); err != nil {
 		t.Error(err)
 	}
+
 	ensureFire(t, mp.TxsAvailable(), timeoutMS)
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 
@@ -411,6 +433,7 @@ func TestTxsAvailable(t *testing.T) {
 	if err := mp.Update(2, committedTxs, abciResponses(len(committedTxs), abci.CodeTypeOK), nil, nil); err != nil {
 		t.Error(err)
 	}
+
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 
 	// send a bunch more txs, it should only fire once
@@ -437,12 +460,14 @@ func TestSerialReap(t *testing.T) {
 		for i := start; i < end; i++ {
 			txBytes := kvstore.NewTx(fmt.Sprintf("%d", i), "true")
 			err := mp.CheckTx(txBytes, nil, TxInfo{})
+
 			_, cached := cacheMap[string(txBytes)]
 			if cached {
 				require.NotNil(t, err, "expected error for cached tx")
 			} else {
 				require.Nil(t, err, "expected no err for uncached tx")
 			}
+
 			cacheMap[string(txBytes)] = struct{}{}
 
 			// Duplicates are cached and should return error
@@ -461,6 +486,7 @@ func TestSerialReap(t *testing.T) {
 		for i := start; i < end; i++ {
 			txs[i-start] = kvstore.NewTx(fmt.Sprintf("%d", i), "true")
 		}
+
 		if err := mp.Update(0, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil); err != nil {
 			t.Error(err)
 		}
@@ -477,12 +503,14 @@ func TestSerialReap(t *testing.T) {
 		if err != nil {
 			t.Errorf("client error committing tx: %v", err)
 		}
+
 		for _, txResult := range res.TxResults {
 			if txResult.IsErr() {
 				t.Errorf("error committing tx. Code:%v result:%X log:%v",
 					txResult.Code, txResult.Data, txResult.Log)
 			}
 		}
+
 		if len(res.AppHash) != 8 {
 			t.Errorf("error committing. Hash:%X", res.AppHash)
 		}
@@ -581,6 +609,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 	cfg := test.ResetTestRoot("mempool_test")
 
 	cfg.Mempool.MaxTxsBytes = 100
+
 	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
 	defer cleanup()
 
@@ -613,6 +642,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 	require.NoError(t, err)
 
 	tx4 := kvstore.NewRandomTx(10)
+
 	err = mp.CheckTx(tx4, nil, TxInfo{})
 	if assert.Error(t, err) {
 		assert.IsType(t, ErrMempoolIsFull{}, err)
@@ -680,6 +710,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 		err = mp.CheckTx(kvstore.NewTxFromID(i), nil, TxInfo{})
 		require.NoError(t, err)
 	}
+
 	err = mp.FlushAppConn()
 	require.NoError(t, err)
 	assert.False(t, mp.cache.Has(kvstore.NewTxFromID(0)))
@@ -697,6 +728,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 			found++
 		}
 	}
+
 	assert.True(t, found == 1)
 }
 
@@ -711,6 +743,7 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 	// generate small number of txs
 	nTxs := 10
 	txLen := 200
+
 	txs := make([]types.Tx, nTxs)
 	for i := 0; i < nTxs; i++ {
 		txs[i] = kvstore.NewRandomTx(txLen)
@@ -718,6 +751,7 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 
 	// simulate a group of peers sending them over and over
 	n := mp.config.Size
+
 	maxPeers := 5
 	for i := 0; i < n; i++ {
 		peerID := mrand.Intn(maxPeers)
@@ -736,6 +770,7 @@ func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 	cc := proxy.NewLocalClientCreator(app)
 
 	cfg := test.ResetTestRoot("mempool_test")
+
 	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
 	defer cleanup()
 
@@ -769,6 +804,7 @@ func TestMempoolNotifyTxsAvailable(t *testing.T) {
 	cc := proxy.NewLocalClientCreator(app)
 
 	cfg := test.ResetTestRoot("mempool_test")
+
 	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
 	defer cleanup()
 
@@ -806,10 +842,12 @@ func TestMempoolSyncCheckTxReturnError(t *testing.T) {
 
 	mp, cleanup, err := newMempoolWithAppMock(mockClient)
 	require.NoError(t, err)
+
 	defer cleanup()
 
 	// The app will return an error on a CheckTx request.
 	tx := []byte{0x01}
+
 	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, errors.New("")).Once()
 
 	// Adding the transaction should panic when the call to the app returns an error.
@@ -818,6 +856,7 @@ func TestMempoolSyncCheckTxReturnError(t *testing.T) {
 			t.Errorf("CheckTx did not panic")
 		}
 	}()
+
 	err = mp.CheckTx(tx, nil, TxInfo{})
 	require.NoError(t, err)
 }
@@ -832,6 +871,7 @@ func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
 
 	mp, cleanup, err := newMempoolWithAppMock(mockClient)
 	require.NoError(t, err)
+
 	defer cleanup()
 
 	// First we add a two transactions to the mempool.
@@ -839,12 +879,14 @@ func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
 	for _, tx := range txs {
 		reqRes := newReqRes(tx, abci.CodeTypeOK, abci.CheckTxType_New)
 		mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil).Once()
+
 		err := mp.CheckTx(tx, nil, TxInfo{})
 		require.NoError(t, err)
 
 		// ensure that the callback that the mempool sets on the ReqRes is run.
 		reqRes.InvokeCallback()
 	}
+
 	require.Len(t, txs, mp.Size())
 
 	// The first tx is valid when rechecking and the client will call the callback right after the
@@ -861,6 +903,7 @@ func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
 			t.Errorf("recheckTxs did not panic")
 		}
 	}()
+
 	mp.recheckTxs()
 }
 
@@ -868,6 +911,7 @@ func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
 // async ABCI client.
 func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	var callback abciclient.Callback
+
 	mockClient := new(abciclimocks.Client)
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
@@ -876,6 +920,7 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 
 	mp, cleanup, err := newMempoolWithAppMock(mockClient)
 	require.NoError(t, err)
+
 	defer cleanup()
 
 	// Add 4 txs to the mempool.
@@ -883,6 +928,7 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	for _, tx := range txs {
 		reqRes := newReqRes(tx, abci.CodeTypeOK, abci.CheckTxType_New)
 		mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil).Once()
+
 		err := mp.CheckTx(tx, nil, TxInfo{})
 		require.NoError(t, err)
 
@@ -936,6 +982,7 @@ func TestMempoolRecheckRace(t *testing.T) {
 
 	// Add a bunch of transactions to the mempool.
 	var err error
+
 	txs := newUniqueTxs(10)
 	for _, tx := range txs {
 		err = mp.CheckTx(tx, nil, TxInfo{})
@@ -963,6 +1010,7 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 	defer cleanup()
 
 	maxHeight := 100
+
 	var wg sync.WaitGroup
 	wg.Add(1)
 
@@ -972,10 +1020,12 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 		defer wg.Done()
 
 		time.Sleep(50 * time.Millisecond) // wait a bit to have some txs in mempool before starting updating
+
 		for h := 1; h <= maxHeight; h++ {
 			if mp.Size() == 0 {
 				break
 			}
+
 			txs := mp.ReapMaxBytesMaxGas(100, -1)
 			doUpdate(t, mp, int64(h), txs)
 		}
@@ -995,6 +1045,7 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 
 func newMempoolWithAsyncConnection(tb testing.TB) (*CListMempool, cleanupFunc) {
 	tb.Helper()
+
 	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
 	app := kvstore.NewInMemoryApplication()
 	_, server := newRemoteApp(tb, sockPath, app)
@@ -1003,19 +1054,23 @@ func newMempoolWithAsyncConnection(tb testing.TB) (*CListMempool, cleanupFunc) {
 			tb.Error(err)
 		}
 	})
+
 	cfg := test.ResetTestRoot("mempool_test")
+
 	return newMempoolWithAppAndConfig(proxy.NewRemoteClientCreator(sockPath, "socket", true), cfg)
 }
 
 // caller must close server.
 func newRemoteApp(tb testing.TB, addr string, app abci.Application) (abciclient.Client, service.Service) {
 	tb.Helper()
+
 	clientCreator, err := abciclient.NewClient(addr, "socket", true)
 	require.NoError(tb, err)
 
 	// Start server
 	server := abciserver.NewSocketServer(addr, app)
 	server.SetLogger(log.TestingLogger().With("module", "abci-server"))
+
 	if err := server.Start(); err != nil {
 		tb.Fatalf("Error starting socket server: %v", err.Error())
 	}
@@ -1034,6 +1089,7 @@ func abciResponses(n int, code uint32) []*abci.ExecTxResult {
 	for i := 0; i < n; i++ {
 		responses = append(responses, &abci.ExecTxResult{Code: code})
 	}
+
 	return responses
 }
 

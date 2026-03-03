@@ -34,6 +34,7 @@ func TestBasicPartSet(t *testing.T) {
 	partSet2 := NewPartSetFromHeader(partSet.Header())
 
 	assert.True(t, partSet2.HasHeader(partSet.Header()))
+
 	for i := 0; i < int(partSet.Total()); i++ {
 		part := partSet.GetPart(i)
 		// t.Logf("\n%v", part)
@@ -75,6 +76,7 @@ func TestWrongProof(t *testing.T) {
 	// Test adding a part with wrong trail.
 	part := partSet.GetPart(0)
 	part.Proof.Aunts[0][0] += byte(0x01)
+
 	added, err := partSet2.AddPart(part)
 	if added || err == nil {
 		t.Errorf("expected to fail adding a part with bad trail.")
@@ -83,6 +85,7 @@ func TestWrongProof(t *testing.T) {
 	// Test adding a part with wrong bytes.
 	part = partSet.GetPart(1)
 	part.Bytes[0] += byte(0x01)
+
 	added, err = partSet2.AddPart(part)
 	if added || err == nil {
 		t.Errorf("expected to fail adding a part with bad bytes.")
@@ -91,6 +94,7 @@ func TestWrongProof(t *testing.T) {
 	// Test adding a part with wrong proof index.
 	part = partSet.GetPart(2)
 	part.Proof.Index = 1
+
 	added, err = partSet2.AddPart(part)
 	if added || err == nil {
 		t.Errorf("expected to fail adding a part with bad proof index.")
@@ -99,6 +103,7 @@ func TestWrongProof(t *testing.T) {
 	// Test adding a part with wrong proof total.
 	part = partSet.GetPart(3)
 	part.Proof.Total = int64(partSet.Total() - 1)
+
 	added, err = partSet2.AddPart(part)
 	if added || err == nil {
 		t.Errorf("expected to fail adding a part with bad proof total.")
@@ -231,7 +236,9 @@ func BenchmarkMakePartSet(b *testing.B) {
 	for nParts := 1; nParts <= 5; nParts++ {
 		b.Run(fmt.Sprintf("nParts=%d", nParts), func(b *testing.B) {
 			data := cmtrand.Bytes(testPartSize * nParts)
+
 			b.ResetTimer()
+
 			for i := 0; i < b.N; i++ {
 				NewPartSetFromData(data, testPartSize)
 			}

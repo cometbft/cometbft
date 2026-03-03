@@ -158,6 +158,7 @@ func newPeer(
 		onPeerError,
 		mConfig,
 	)
+
 	p.BaseService = *service.NewBaseService(nil, "Peer", p)
 	for _, option := range options {
 		option(p)
@@ -195,6 +196,7 @@ func (p *peer) OnStart() error {
 	}
 
 	go p.metricsReporter()
+
 	return nil
 }
 
@@ -271,15 +273,18 @@ func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bo
 	} else if !p.hasChannel(chID) {
 		return false
 	}
+
 	metricLabelValue := p.mlc.ValueToMetricLabel(msg)
 	if w, ok := msg.(Wrapper); ok {
 		msg = w.Wrap()
 	}
+
 	msgBytes, err := proto.Marshal(msg)
 	if err != nil {
 		p.Logger.Error("marshaling message to send", "error", err)
 		return false
 	}
+
 	res := sendFunc(chID, msgBytes)
 	if res {
 		labels := []string{
@@ -289,6 +294,7 @@ func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bo
 		p.metrics.PeerSendBytesTotal.With(labels...).Add(float64(len(msgBytes)))
 		p.metrics.MessageSendBytesTotal.With("message_type", metricLabelValue).Add(float64(len(msgBytes)))
 	}
+
 	return res
 }
 
@@ -314,6 +320,7 @@ func (p *peer) hasChannel(chID byte) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -368,12 +375,14 @@ func (p *peer) metricsReporter() {
 		select {
 		case <-metricsTicker.C:
 			status := p.mconn.Status()
+
 			var sendQueueSize float64
 			for _, chStatus := range status.Channels {
 				sendQueueSize += float64(chStatus.SendQueueSize)
 			}
 
 			p.metrics.PeerSendQueueSize.With("peer_id", string(p.ID())).Set(sendQueueSize)
+
 		case <-p.Quit():
 			return
 		}
@@ -399,22 +408,27 @@ func createMConnection(
 			// which does onPeerError.
 			panic(fmt.Sprintf("Unknown channel %X", chID))
 		}
+
 		mt := msgTypeByChID[chID]
 		msg := proto.Clone(mt)
+
 		err := proto.Unmarshal(msgBytes, msg)
 		if err != nil {
 			panic(fmt.Errorf("unmarshaling message: %s into type: %s", err, reflect.TypeOf(mt)))
 		}
+
 		labels := []string{
 			"peer_id", string(p.ID()),
 			"chID", fmt.Sprintf("%#x", chID),
 		}
+
 		if w, ok := msg.(Unwrapper); ok {
 			msg, err = w.Unwrap()
 			if err != nil {
 				panic(fmt.Errorf("unwrapping message: %s", err))
 			}
 		}
+
 		p.metrics.PeerReceiveBytesTotal.With(labels...).Add(float64(len(msgBytes)))
 		p.metrics.MessageReceiveBytesTotal.With("message_type", p.mlc.ValueToMetricLabel(msg)).Add(float64(len(msgBytes)))
 		reactor.Receive(Envelope{

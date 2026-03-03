@@ -96,11 +96,13 @@ func EchoWithDefault(_ *types.Context, v *int) (*ResultEchoWithDefault, error) {
 	if v != nil {
 		val = *v
 	}
+
 	return &ResultEchoWithDefault{val}, nil
 }
 
 func TestMain(m *testing.M) {
 	setup()
+
 	code := m.Run()
 	os.Exit(code)
 }
@@ -116,6 +118,7 @@ var colorFn = func(keyvals ...any) term.FgBgColor {
 			}
 		}
 	}
+
 	return term.FgBgColor{}
 }
 
@@ -124,10 +127,12 @@ func setup() {
 	logger := log.NewTMLoggerWithColorFn(log.NewSyncWriter(os.Stdout), colorFn)
 
 	cmd := exec.Command("rm", "-f", unixSocket)
+
 	err := cmd.Start()
 	if err != nil {
 		panic(err)
 	}
+
 	if err = cmd.Wait(); err != nil {
 		panic(err)
 	}
@@ -138,11 +143,14 @@ func setup() {
 	wm := server.NewWebsocketManager(Routes, server.ReadWait(5*time.Second), server.PingPeriod(1*time.Second))
 	wm.SetLogger(tcpLogger)
 	mux.HandleFunc(websocketEndpoint, wm.WebsocketHandler)
+
 	config := server.DefaultConfig()
+
 	listener1, err := server.Listen(tcpAddr, config.MaxOpenConnections)
 	if err != nil {
 		panic(err)
 	}
+
 	go func() {
 		if err := server.Serve(listener1, mux, tcpLogger, config); err != nil {
 			panic(err)
@@ -155,10 +163,12 @@ func setup() {
 	wm = server.NewWebsocketManager(Routes)
 	wm.SetLogger(unixLogger)
 	mux2.HandleFunc(websocketEndpoint, wm.WebsocketHandler)
+
 	listener2, err := server.Listen(unixAddr, config.MaxOpenConnections)
 	if err != nil {
 		panic(err)
 	}
+
 	go func() {
 		if err := server.Serve(listener2, mux2, unixLogger, config); err != nil {
 			panic(err)
@@ -173,10 +183,12 @@ func echoViaHTTP(cl client.Caller, val string) (string, error) {
 	params := map[string]any{
 		"arg": val,
 	}
+
 	result := new(ResultEcho)
 	if _, err := cl.Call(ctx, "echo", params, result); err != nil {
 		return "", err
 	}
+
 	return result.Value, nil
 }
 
@@ -184,10 +196,12 @@ func echoIntViaHTTP(cl client.Caller, val int) (int, error) {
 	params := map[string]any{
 		"arg": val,
 	}
+
 	result := new(ResultEchoInt)
 	if _, err := cl.Call(ctx, "echo_int", params, result); err != nil {
 		return 0, err
 	}
+
 	return result.Value, nil
 }
 
@@ -195,10 +209,12 @@ func echoBytesViaHTTP(cl client.Caller, bytes []byte) ([]byte, error) {
 	params := map[string]any{
 		"arg": bytes,
 	}
+
 	result := new(ResultEchoBytes)
 	if _, err := cl.Call(ctx, "echo_bytes", params, result); err != nil {
 		return []byte{}, err
 	}
+
 	return result.Value, nil
 }
 
@@ -206,10 +222,12 @@ func echoDataBytesViaHTTP(cl client.Caller, bytes cmtbytes.HexBytes) (cmtbytes.H
 	params := map[string]any{
 		"arg": bytes,
 	}
+
 	result := new(ResultEchoDataBytes)
 	if _, err := cl.Call(ctx, "echo_data_bytes", params, result); err != nil {
 		return []byte{}, err
 	}
+
 	return result.Value, nil
 }
 
@@ -218,10 +236,12 @@ func echoWithDefaultViaHTTP(cl client.Caller, v *int) (int, error) {
 	if v != nil {
 		params["arg"] = *v
 	}
+
 	result := new(ResultEchoWithDefault)
 	if _, err := cl.Call(ctx, "echo_default", params, result); err != nil {
 		return 0, err
 	}
+
 	return result.Value, nil
 }
 
@@ -260,6 +280,7 @@ func echoViaWS(cl *client.WSClient, val string) (string, error) {
 	params := map[string]any{
 		"arg": val,
 	}
+
 	err := cl.Call(context.Background(), "echo", params)
 	if err != nil {
 		return "", err
@@ -269,11 +290,14 @@ func echoViaWS(cl *client.WSClient, val string) (string, error) {
 	if msg.Error != nil {
 		return "", err
 	}
+
 	result := new(ResultEcho)
+
 	err = json.Unmarshal(msg.Result, result)
 	if err != nil {
 		return "", nil
 	}
+
 	return result.Value, nil
 }
 
@@ -281,6 +305,7 @@ func echoBytesViaWS(cl *client.WSClient, bytes []byte) ([]byte, error) {
 	params := map[string]any{
 		"arg": bytes,
 	}
+
 	err := cl.Call(context.Background(), "echo_bytes", params)
 	if err != nil {
 		return []byte{}, err
@@ -290,11 +315,14 @@ func echoBytesViaWS(cl *client.WSClient, bytes []byte) ([]byte, error) {
 	if msg.Error != nil {
 		return []byte{}, msg.Error
 	}
+
 	result := new(ResultEchoBytes)
+
 	err = json.Unmarshal(msg.Result, result)
 	if err != nil {
 		return []byte{}, nil
 	}
+
 	return result.Value, nil
 }
 
@@ -380,9 +408,11 @@ func TestWSNewWSRPCFunc(t *testing.T) {
 	if msg.Error != nil {
 		t.Fatal(err)
 	}
+
 	result := new(ResultEcho)
 	err = json.Unmarshal(msg.Result, result)
 	require.Nil(t, err)
+
 	got := result.Value
 	assert.Equal(t, got, val)
 }
@@ -408,9 +438,11 @@ func TestWSHandlesArrayParams(t *testing.T) {
 	if msg.Error != nil {
 		t.Fatalf("%+v", err)
 	}
+
 	result := new(ResultEcho)
 	err = json.Unmarshal(msg.Result, result)
 	require.Nil(t, err)
+
 	got := result.Value
 	assert.Equal(t, got, val)
 }
@@ -444,6 +476,7 @@ func TestJSONRPCCaching(t *testing.T) {
 
 	res1, err := rawJSONRPCRequest(t, cl, httpAddr, req)
 	defer func() { _ = res1.Body.Close() }()
+
 	require.NoError(t, err)
 	assert.Equal(t, "", res1.Header.Get("Cache-control"))
 
@@ -454,6 +487,7 @@ func TestJSONRPCCaching(t *testing.T) {
 
 	res2, err := rawJSONRPCRequest(t, cl, httpAddr, req)
 	defer func() { _ = res2.Body.Close() }()
+
 	require.NoError(t, err)
 	assert.Equal(t, "public, max-age=86400", res2.Header.Get("Cache-control"))
 }
@@ -478,15 +512,19 @@ func TestURICaching(t *testing.T) {
 
 	// Not supplying the arg should result in not caching
 	args := url.Values{}
+
 	res1, err := rawURIRequest(t, cl, httpAddr+"/echo_default", args)
 	defer func() { _ = res1.Body.Close() }()
+
 	require.NoError(t, err)
 	assert.Equal(t, "", res1.Header.Get("Cache-control"))
 
 	// Supplying the arg should result in caching
 	args.Set("arg", fmt.Sprintf("%d", cmtrand.Intn(10000)))
+
 	res2, err := rawURIRequest(t, cl, httpAddr+"/echo_default", args)
 	defer func() { _ = res2.Body.Close() }()
+
 	require.NoError(t, err)
 	assert.Equal(t, "public, max-age=86400", res2.Header.Get("Cache-control"))
 }
@@ -505,5 +543,6 @@ func randBytes(t *testing.T) []byte {
 	buf := make([]byte, n)
 	_, err := crand.Read(buf)
 	require.Nil(t, err)
+
 	return bytes.ReplaceAll(buf, []byte("="), []byte{100})
 }

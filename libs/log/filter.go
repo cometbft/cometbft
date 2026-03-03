@@ -34,7 +34,9 @@ func NewFilter(next Logger, options ...Option) Logger {
 	for _, option := range options {
 		option(l)
 	}
+
 	l.initiallyAllowed = l.allowed
+
 	return l
 }
 
@@ -43,6 +45,7 @@ func (l *filter) Info(msg string, keyvals ...any) {
 	if !levelAllowed {
 		return
 	}
+
 	l.next.Info(msg, keyvals...)
 }
 
@@ -52,6 +55,7 @@ func (l *filter) Debug(msg string, keyvals ...any) {
 		if !levelAllowed {
 			return
 		}
+
 		l.next.Debug(msg, keyvals...)
 	}
 }
@@ -61,6 +65,7 @@ func (l *filter) Error(msg string, keyvals ...any) {
 	if !levelAllowed {
 		return
 	}
+
 	l.next.Error(msg, keyvals...)
 }
 

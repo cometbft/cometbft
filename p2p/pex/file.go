@@ -25,6 +25,7 @@ func (a *addrBook) saveToFile(filePath string) {
 	for _, ka := range a.addrLookup {
 		addrs = append(addrs, ka)
 	}
+
 	aJSON := &addrBookJSON{
 		Key:   a.key,
 		Addrs: addrs,
@@ -35,6 +36,7 @@ func (a *addrBook) saveToFile(filePath string) {
 		a.Logger.Error("Failed to save AddrBook to file", "err", err)
 		return
 	}
+
 	err = tempfile.WriteFileAtomic(filePath, jsonBytes, 0o644)
 	if err != nil {
 		a.Logger.Error("Failed to save AddrBook to file", "file", filePath, "err", err)
@@ -56,8 +58,10 @@ func (a *addrBook) loadFromFile(filePath string) bool {
 		panic(fmt.Sprintf("Error opening file %s: %v", filePath, err))
 	}
 	defer r.Close()
+
 	aJSON := &addrBookJSON{}
 	dec := json.NewDecoder(r)
+
 	err = dec.Decode(aJSON)
 	if err != nil {
 		panic(fmt.Sprintf("Error reading file %s: %v", filePath, err))
@@ -72,6 +76,7 @@ func (a *addrBook) loadFromFile(filePath string) bool {
 			bucket := a.getBucket(ka.BucketType, bucketIndex)
 			bucket[ka.Addr.String()] = ka
 		}
+
 		a.addrLookup[ka.ID()] = ka
 		if ka.BucketType == bucketTypeNew {
 			a.nNew++
@@ -79,5 +84,6 @@ func (a *addrBook) loadFromFile(filePath string) bool {
 			a.nOld++
 		}
 	}
+
 	return true
 }

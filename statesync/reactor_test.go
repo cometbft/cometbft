@@ -41,7 +41,6 @@ func TestReactor_Receive_ChunkRequest(t *testing.T) {
 	}
 
 	for name, tc := range testcases {
-
 		t.Run(name, func(t *testing.T) {
 			// Mock ABCI connection to return local snapshots
 			conn := &proxymocks.AppConnSnapshot{}
@@ -54,6 +53,7 @@ func TestReactor_Receive_ChunkRequest(t *testing.T) {
 			// Mock peer to store response, if found
 			peer := &p2pmocks.Peer{}
 			peer.On("ID").Return(p2p.ID("id"))
+
 			var response *ssproto.ChunkResponse
 			if tc.expectResponse != nil {
 				peer.On("Send", mock.MatchedBy(func(i any) bool {
@@ -67,6 +67,7 @@ func TestReactor_Receive_ChunkRequest(t *testing.T) {
 					require.NoError(t, err)
 					err = proto.Unmarshal(bz, e.Message)
 					require.NoError(t, err)
+
 					response = e.Message.(*ssproto.ChunkResponse)
 				}).Return(true)
 			}
@@ -133,7 +134,6 @@ func TestReactor_Receive_SnapshotsRequest(t *testing.T) {
 	}
 
 	for name, tc := range testcases {
-
 		t.Run(name, func(t *testing.T) {
 			// Mock ABCI connection to return local snapshots
 			conn := &proxymocks.AppConnSnapshot{}
@@ -143,6 +143,7 @@ func TestReactor_Receive_SnapshotsRequest(t *testing.T) {
 
 			// Mock peer to catch responses and store them in a slice
 			responses := []*ssproto.SnapshotsResponse{}
+
 			peer := &p2pmocks.Peer{}
 			if len(tc.expectResponses) > 0 {
 				peer.On("ID").Return(p2p.ID("id"))
@@ -157,6 +158,7 @@ func TestReactor_Receive_SnapshotsRequest(t *testing.T) {
 					require.NoError(t, err)
 					err = proto.Unmarshal(bz, e.Message)
 					require.NoError(t, err)
+
 					responses = append(responses, e.Message.(*ssproto.SnapshotsResponse))
 				}).Return(true)
 			}

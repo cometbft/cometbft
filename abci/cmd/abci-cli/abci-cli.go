@@ -61,19 +61,25 @@ var RootCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
+
 			logger = log.NewFilter(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), allowLevel)
 		}
+
 		if client == nil {
 			var err error
+
 			client, err = abcicli.NewClient(flagAddress, flagAbci, false)
 			if err != nil {
 				return err
 			}
+
 			client.SetLogger(logger.With("module", "abci-client"))
+
 			if err := client.Start(); err != nil {
 				return err
 			}
 		}
+
 		return nil
 	},
 }
@@ -289,6 +295,7 @@ func persistentArgs(line []byte) []string {
 	if len(line) > 0 { // prevents introduction of extra space leading to argument parse errors
 		args = append(args, strings.Split(string(line), " ")...)
 	}
+
 	return args
 }
 
@@ -309,6 +316,7 @@ func compose(fs []func() error) error {
 
 func cmdTest(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
+
 	return compose(
 		[]func() error{
 			func() error { return servertest.InitChain(ctx, client) },
@@ -362,9 +370,9 @@ func cmdTest(cmd *cobra.Command, _ []string) error {
 
 func cmdBatch(cmd *cobra.Command, _ []string) error {
 	bufReader := bufio.NewReader(os.Stdin)
+
 LOOP:
 	for {
-
 		line, more, err := bufReader.ReadLine()
 		switch {
 		case more:
@@ -381,15 +389,19 @@ LOOP:
 		if err := muxOnCommands(cmd, cmdArgs); err != nil {
 			return err
 		}
+
 		fmt.Println()
 	}
+
 	return nil
 }
 
 func cmdConsole(cmd *cobra.Command, _ []string) error {
 	for {
 		fmt.Printf("> ")
+
 		bufReader := bufio.NewReader(os.Stdin)
+
 		line, more, err := bufReader.ReadLine()
 		if more {
 			return errors.New("input is too long")
@@ -428,20 +440,27 @@ func muxOnCommands(cmd *cobra.Command, pArgs []string) error {
 
 			// otherwise, we need to skip the next one too
 			i++
+
 			continue
 		}
 
 		// append the actual arg
 		args = append(args, arg)
 	}
-	var subCommand string
-	var actualArgs []string
+
+	var (
+		subCommand string
+		actualArgs []string
+	)
+
 	if len(args) > 1 {
 		subCommand = args[1]
 	}
+
 	if len(args) > 2 {
 		actualArgs = args[2:]
 	}
+
 	cmd.Use = subCommand // for later print statements ...
 
 	switch strings.ToLower(subCommand) {
@@ -472,6 +491,7 @@ func cmdUnimplemented(cmd *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		msg += fmt.Sprintf(" args: [%s]", strings.Join(args, " "))
 	}
+
 	printResponse(cmd, args, response{
 		Code: codeBad,
 		Log:  msg,
@@ -498,6 +518,7 @@ func cmdEcho(cmd *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		msg = args[0]
 	}
+
 	res, err := client.Echo(cmd.Context(), msg)
 	if err != nil {
 		return err
@@ -516,13 +537,16 @@ func cmdInfo(cmd *cobra.Command, args []string) error {
 	if len(args) == 1 {
 		version = args[0]
 	}
+
 	res, err := client.Info(cmd.Context(), &types.RequestInfo{Version: version})
 	if err != nil {
 		return err
 	}
+
 	printResponse(cmd, args, response{
 		Data: []byte(res.Data),
 	})
+
 	return nil
 }
 
@@ -535,20 +559,25 @@ func cmdFinalizeBlock(cmd *cobra.Command, args []string) error {
 			Code: codeBad,
 			Log:  "Must provide at least one transaction",
 		})
+
 		return nil
 	}
+
 	txs := make([][]byte, len(args))
 	for i, arg := range args {
 		txBytes, err := stringOrHexToBytes(arg)
 		if err != nil {
 			return err
 		}
+
 		txs[i] = txBytes
 	}
+
 	res, err := client.FinalizeBlock(cmd.Context(), &types.RequestFinalizeBlock{Txs: txs})
 	if err != nil {
 		return err
 	}
+
 	resps := make([]response, 0, len(res.TxResults)+1)
 	for _, tx := range res.TxResults {
 		resps = append(resps, response{
@@ -558,10 +587,12 @@ func cmdFinalizeBlock(cmd *cobra.Command, args []string) error {
 			Log:  tx.Log,
 		})
 	}
+
 	resps = append(resps, response{
 		Data: res.AppHash,
 	})
 	printResponse(cmd, args, resps...)
+
 	return nil
 }
 
@@ -572,22 +603,27 @@ func cmdCheckTx(cmd *cobra.Command, args []string) error {
 			Code: codeBad,
 			Info: "want the tx",
 		})
+
 		return nil
 	}
+
 	txBytes, err := stringOrHexToBytes(args[0])
 	if err != nil {
 		return err
 	}
+
 	res, err := client.CheckTx(cmd.Context(), &types.RequestCheckTx{Tx: txBytes})
 	if err != nil {
 		return err
 	}
+
 	printResponse(cmd, args, response{
 		Code: res.Code,
 		Data: res.Data,
 		Info: res.Info,
 		Log:  res.Log,
 	})
+
 	return nil
 }
 
@@ -597,7 +633,9 @@ func cmdCommit(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
 	printResponse(cmd, args, response{})
+
 	return nil
 }
 
@@ -609,8 +647,10 @@ func cmdQuery(cmd *cobra.Command, args []string) error {
 			Info: "want the query",
 			Log:  "",
 		})
+
 		return nil
 	}
+
 	queryBytes, err := stringOrHexToBytes(args[0])
 	if err != nil {
 		return err
@@ -625,6 +665,7 @@ func cmdQuery(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
 	printResponse(cmd, args, response{
 		Code: resQuery.Code,
 		Info: resQuery.Info,
@@ -636,6 +677,7 @@ func cmdQuery(cmd *cobra.Command, args []string) error {
 			ProofOps: resQuery.ProofOps,
 		},
 	})
+
 	return nil
 }
 
@@ -647,6 +689,7 @@ func cmdPrepareProposal(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
+
 		txsBytesArray[i] = txBytes
 	}
 
@@ -658,6 +701,7 @@ func cmdPrepareProposal(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
 	resps := make([]response, 0, len(res.Txs))
 	for _, tx := range res.Txs {
 		resps = append(resps, response{
@@ -667,6 +711,7 @@ func cmdPrepareProposal(cmd *cobra.Command, args []string) error {
 	}
 
 	printResponse(cmd, args, resps...)
+
 	return nil
 }
 
@@ -678,6 +723,7 @@ func cmdProcessProposal(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
+
 		txsBytesArray[i] = txBytes
 	}
 
@@ -691,6 +737,7 @@ func cmdProcessProposal(cmd *cobra.Command, args []string) error {
 	printResponse(cmd, args, response{
 		Status: int32(res.Status),
 	})
+
 	return nil
 }
 
@@ -699,13 +746,16 @@ func cmdKVStore(*cobra.Command, []string) error {
 
 	// Create the application - in memory or persisted to disk
 	var app types.Application
+
 	if flagPersist == "" {
 		var err error
+
 		flagPersist, err = os.MkdirTemp("", "persistent_kvstore_tmp")
 		if err != nil {
 			return err
 		}
 	}
+
 	app = kvstore.NewPersistentApplication(flagPersist)
 
 	// Start the listener
@@ -713,7 +763,9 @@ func cmdKVStore(*cobra.Command, []string) error {
 	if err != nil {
 		return err
 	}
+
 	srv.SetLogger(logger.With("module", "abci-server"))
+
 	if err := srv.Start(); err != nil {
 		return err
 	}
@@ -751,25 +803,31 @@ func printResponse(cmd *cobra.Command, args []string, rsps ...response) {
 			if cmd.Use != "finalize_block" {
 				fmt.Printf("-> data: %s\n", rsp.Data)
 			}
+
 			fmt.Printf("-> data.hex: 0x%X\n", rsp.Data)
 		}
+
 		if rsp.Log != "" {
 			fmt.Printf("-> log: %s\n", rsp.Log)
 		}
+
 		if cmd.Use == "process_proposal" {
 			fmt.Printf("-> status: %s\n", types.ResponseProcessProposal_ProposalStatus_name[rsp.Status])
 		}
 
 		if rsp.Query != nil {
 			fmt.Printf("-> height: %d\n", rsp.Query.Height)
+
 			if rsp.Query.Key != nil {
 				fmt.Printf("-> key: %s\n", rsp.Query.Key)
 				fmt.Printf("-> key.hex: %X\n", rsp.Query.Key)
 			}
+
 			if rsp.Query.Value != nil {
 				fmt.Printf("-> value: %s\n", rsp.Query.Value)
 				fmt.Printf("-> value.hex: %X\n", rsp.Query.Value)
 			}
+
 			if rsp.Query.ProofOps != nil {
 				fmt.Printf("-> proof: %#v\n", rsp.Query.ProofOps)
 			}
@@ -785,6 +843,7 @@ func stringOrHexToBytes(s string) ([]byte, error) {
 			err = fmt.Errorf("error decoding hex argument: %s", err.Error())
 			return nil, err
 		}
+
 		return b, nil
 	}
 

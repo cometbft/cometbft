@@ -68,6 +68,7 @@ func hashFromByteSlices(sha hash.Hash, items [][]byte) []byte {
 func HashFromByteSlicesIterative(input [][]byte) []byte {
 	items := make([][]byte, len(input))
 	sha := sha256.New()
+
 	for i, leaf := range input {
 		items[i] = leafHash(leaf)
 	}
@@ -81,6 +82,7 @@ func HashFromByteSlicesIterative(input [][]byte) []byte {
 			return items[0]
 		default:
 			rp := 0 // read position
+
 			wp := 0 // write position
 			for rp < size {
 				if rp+1 < size {
@@ -90,8 +92,10 @@ func HashFromByteSlicesIterative(input [][]byte) []byte {
 					items[wp] = items[rp]
 					rp++
 				}
+
 				wp++
 			}
+
 			size = wp
 		}
 	}
@@ -102,11 +106,14 @@ func getSplitPoint(length int64) int64 {
 	if length < 1 {
 		panic("Trying to split a tree with size < 1")
 	}
+
 	uLength := uint(length)
 	bitlen := bits.Len(uLength)
+
 	k := int64(1 << uint(bitlen-1))
 	if k == length {
 		k >>= 1
 	}
+
 	return k
 }

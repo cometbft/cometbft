@@ -118,6 +118,7 @@ func TestRetryConnToRemoteSigner(t *testing.T) {
 		require.NoError(t, signerServer.Start())
 		assert.True(t, signerServer.IsRunning())
 		<-endpointIsOpenCh
+
 		if err := signerServer.Stop(); err != nil {
 			t.Error(err)
 		}
@@ -156,6 +157,7 @@ func TestDuplicateListenReject(t *testing.T) {
 			thisConnTimeout  = testTimeoutReadWrite
 			listenerEndpoint = newSignerListenerEndpoint(logger, tc.addr, thisConnTimeout)
 		)
+
 		listenerEndpoint.timeoutAccept = defaultTimeoutAcceptSeconds / 2 * time.Second
 
 		dialerEndpoint := NewSignerDialerEndpoint(
@@ -178,6 +180,7 @@ func TestDuplicateListenReject(t *testing.T) {
 		assert.True(t, signerServer.IsRunning())
 
 		<-endpointIsOpenCh
+
 		if err := signerServer.Stop(); err != nil {
 			t.Error(err)
 		}
@@ -231,6 +234,7 @@ func newSignerListenerEndpoint(logger log.Logger, addr string, timeoutReadWrite 
 
 	ln, err := net.Listen(proto, address)
 	logger.Info("SignerListener: Listening", "proto", proto, "address", address)
+
 	if err != nil {
 		panic(err)
 	}

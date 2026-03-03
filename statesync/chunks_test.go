@@ -20,10 +20,12 @@ func setupChunkQueue(t *testing.T) (*chunkQueue, func()) {
 	}
 	queue, err := newChunkQueue(snapshot, "")
 	require.NoError(t, err)
+
 	teardown := func() {
 		err := queue.Close()
 		require.NoError(t, err)
 	}
+
 	return queue, teardown
 }
 
@@ -37,7 +39,9 @@ func TestNewChunkQueue_TempDir(t *testing.T) {
 	}
 	dir, err := os.MkdirTemp("", "newchunkqueue")
 	require.NoError(t, err)
+
 	defer os.RemoveAll(dir)
+
 	queue, err := newChunkQueue(snapshot, dir)
 	require.NoError(t, err)
 
@@ -95,6 +99,7 @@ func TestChunkQueue(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, &chunk{Height: 3, Format: 1, Index: uint32(i), Chunk: []byte{3, 1, byte(i)}}, c)
 	}
+
 	_, err = queue.Next()
 	require.Error(t, err)
 	assert.Equal(t, errDone, err)
@@ -127,10 +132,10 @@ func TestChunkQueue_Add_ChunkErrors(t *testing.T) {
 		"invalid index": {&chunk{Height: 3, Format: 1, Index: 5, Chunk: []byte{3, 1, 0}}},
 	}
 	for name, tc := range testcases {
-
 		t.Run(name, func(t *testing.T) {
 			queue, teardown := setupChunkQueue(t)
 			defer teardown()
+
 			_, err := queue.Add(tc.chunk)
 			require.Error(t, err)
 		})
@@ -163,6 +168,7 @@ func TestChunkQueue_Allocate(t *testing.T) {
 	index, err := queue.Allocate()
 	require.NoError(t, err)
 	assert.EqualValues(t, 2, index)
+
 	_, err = queue.Allocate()
 	require.Error(t, err)
 	assert.Equal(t, errDone, err)
@@ -203,6 +209,7 @@ func TestChunkQueue_Discard(t *testing.T) {
 	added, err := queue.Add(&chunk{Height: 3, Format: 1, Index: 0, Chunk: []byte{byte(0)}})
 	require.NoError(t, err)
 	assert.True(t, added)
+
 	c, err = queue.Next()
 	require.NoError(t, err)
 	assert.EqualValues(t, 0, c.Index)
@@ -215,6 +222,7 @@ func TestChunkQueue_Discard(t *testing.T) {
 		err := queue.Discard(i)
 		require.NoError(t, err)
 	}
+
 	for i := uint32(0); i < queue.Size(); i++ {
 		_, err := queue.Allocate()
 		require.NoError(t, err)
@@ -306,6 +314,7 @@ func TestChunkQueue_DiscardSender(t *testing.T) {
 	index, err := queue.Allocate()
 	require.NoError(t, err)
 	assert.EqualValues(t, 4, index)
+
 	_, err = queue.Allocate()
 	assert.Equal(t, errDone, err)
 }
@@ -344,14 +353,18 @@ func TestChunkQueue_Next(t *testing.T) {
 				close(chNext)
 				break
 			}
+
 			require.NoError(t, err)
+
 			chNext <- c
 		}
 	}()
 
 	assert.Empty(t, chNext)
+
 	_, err := queue.Add(&chunk{Height: 3, Format: 1, Index: 1, Chunk: []byte{3, 1, 1}, Sender: p2p.ID("b")})
 	require.NoError(t, err)
+
 	select {
 	case <-chNext:
 		assert.Fail(t, "channel should be empty")
@@ -370,6 +383,7 @@ func TestChunkQueue_Next(t *testing.T) {
 
 	_, err = queue.Add(&chunk{Height: 3, Format: 1, Index: 4, Chunk: []byte{3, 1, 4}, Sender: p2p.ID("e")})
 	require.NoError(t, err)
+
 	select {
 	case <-chNext:
 		assert.Fail(t, "channel should be empty")
@@ -501,6 +515,7 @@ func TestChunkQueue_WaitFor(t *testing.T) {
 	require.NoError(t, err)
 	_, err = queue.Add(&chunk{Height: 3, Format: 1, Index: 2, Chunk: []byte{3, 1, 2}})
 	require.NoError(t, err)
+
 	select {
 	case <-waitFor1:
 		require.Fail(t, "WaitFor(1) should not trigger on 0 or 2")
@@ -515,6 +530,7 @@ func TestChunkQueue_WaitFor(t *testing.T) {
 	assert.EqualValues(t, 1, <-waitFor1)
 	_, ok := <-waitFor1
 	assert.False(t, ok)
+
 	select {
 	case <-waitFor4:
 		require.Fail(t, "WaitFor(4) should not trigger on 0 or 2")
@@ -541,6 +557,7 @@ func TestChunkQueue_WaitFor(t *testing.T) {
 	// waiters to get closed channels.
 	err = queue.Close()
 	require.NoError(t, err)
+
 	_, ok = <-waitFor4
 	assert.False(t, ok)
 

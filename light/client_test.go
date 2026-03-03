@@ -218,7 +218,6 @@ func TestClient_SequentialVerification(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		t.Run(tc.name, func(t *testing.T) {
 			c, err := light.NewClient(
 				ctx,
@@ -343,7 +342,6 @@ func TestClient_SkippingVerification(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		t.Run(tc.name, func(t *testing.T) {
 			c, err := light.NewClient(
 				ctx,
@@ -520,6 +518,7 @@ func TestClientRestoresTrustedHeaderAfterStartup1(t *testing.T) {
 
 		l, err := c.TrustedLightBlock(1)
 		assert.NoError(t, err)
+
 		if assert.NotNil(t, l) {
 			assert.Equal(t, l.Hash(), header1.Hash())
 			assert.NoError(t, l.ValidateBasic(chainID))
@@ -714,6 +713,7 @@ func TestClient_Update(t *testing.T) {
 	// should result in downloading & verifying header #3
 	l, err := c.Update(ctx, bTime.Add(2*time.Hour))
 	assert.NoError(t, err)
+
 	if assert.NotNil(t, l) {
 		assert.EqualValues(t, 3, l.Height)
 		assert.NoError(t, l.ValidateBasic(chainID))
@@ -738,6 +738,7 @@ func TestClient_Concurrency(t *testing.T) {
 	var wg sync.WaitGroup
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
+
 		go func() {
 			defer wg.Done()
 
@@ -802,6 +803,7 @@ func TestClient_BackwardsVerification(t *testing.T) {
 		// 1) verify before the trusted header using backwards => expect no error
 		h, err := c.VerifyLightBlockAtHeight(ctx, 5, bTime.Add(6*time.Minute))
 		require.NoError(t, err)
+
 		if assert.NotNil(t, h) {
 			assert.EqualValues(t, 5, h.Height)
 		}
@@ -831,7 +833,6 @@ func TestClient_BackwardsVerification(t *testing.T) {
 		// so expect error
 		_, err = c.VerifyLightBlockAtHeight(ctx, 8, bTime.Add(12*time.Minute))
 		assert.Error(t, err)
-
 	}
 	{
 		testCases := []struct {
@@ -1109,6 +1110,7 @@ func TestClientHandlesContexts(t *testing.T) {
 	// instantiate the light client with a timeout
 	ctxTimeOut, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
 	defer cancel()
+
 	_, err = light.NewClient(
 		ctxTimeOut,
 		chainID,
@@ -1143,6 +1145,7 @@ func TestClientHandlesContexts(t *testing.T) {
 	// verify a block with a timeout
 	ctxTimeOutBlock, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
 	defer cancel()
+
 	_, err = c.VerifyLightBlockAtHeight(ctxTimeOutBlock, 100, bTime.Add(100*time.Minute))
 	require.Error(t, ctxTimeOutBlock.Err())
 	require.Error(t, err)
@@ -1151,7 +1154,9 @@ func TestClientHandlesContexts(t *testing.T) {
 	// verify a block with a cancel
 	ctxCancel, cancel := context.WithCancel(ctx)
 	defer cancel()
+
 	time.AfterFunc(10*time.Millisecond, cancel)
+
 	_, err = c.VerifyLightBlockAtHeight(ctxCancel, 100, bTime.Add(100*time.Minute))
 	require.Error(t, ctxCancel.Err())
 	require.Error(t, err)

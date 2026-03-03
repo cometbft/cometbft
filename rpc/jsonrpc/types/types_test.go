@@ -59,9 +59,11 @@ func TestUnmarshallResponses(t *testing.T) {
 			response,
 		)
 		assert.Nil(err)
+
 		a := NewRPCSuccessResponse(tt.id, &SampleResult{"hello"})
 		assert.Equal(*response, a)
 	}
+
 	response := &RPCResponse{}
 	err := json.Unmarshal([]byte(`{"jsonrpc":"2.0","id":true,"result":{"Value":"hello"}}`), response)
 	assert.NotNil(err)

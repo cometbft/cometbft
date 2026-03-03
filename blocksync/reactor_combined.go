@@ -53,6 +53,7 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 			default:
 				// do nothing, non-blocking
 			}
+
 		case <-syncIterationCh:
 			// See if there are any blocks to sync. We need two consecutive blocks
 			// in order to perform blocksync verification.
@@ -145,12 +146,14 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 			case errors.Is(err, consensus.ErrAlreadyIncluded):
 				r.Logger.Info("Block was included concurrently. Skipping", "height", block.Height)
 				r.metrics.AlreadyIncludedBlocks.Add(1)
+
 			case err != nil:
 				// one of [consensus.ErrValidation, consensus.ErrHeightGap, or other...]
 				// most likely it's an unrecoverable invariant violation that should not happen
 				// or should be considered a bug.
 				r.Logger.Error("Failed to ingest verified block. Halting blocksync", "height", block.Height, "err", err)
 				return
+
 			default:
 				r.metrics.recordBlockMetrics(block)
 				r.metrics.IngestedBlocks.Add(1)

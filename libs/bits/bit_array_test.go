@@ -24,6 +24,7 @@ func randBitArray(bits int) *BitArray {
 	srcIndexToBit := func(i int) bool {
 		return src[i/8]&(1<<uint(i%8)) > 0
 	}
+
 	return NewBitArrayFromFn(bits, srcIndexToBit)
 }
 
@@ -40,9 +41,11 @@ func TestAnd(t *testing.T) {
 	if bA3.Bits != 31 {
 		t.Error("Expected min bits", bA3.Bits)
 	}
+
 	if len(bA3.Elems) != len(bA2.Elems) {
 		t.Error("Expected min elems length")
 	}
+
 	for i := 0; i < bA3.Bits; i++ {
 		expected := bA1.GetIndex(i) && bA2.GetIndex(i)
 		if bA3.GetIndex(i) != expected {
@@ -64,15 +67,18 @@ func TestOr(t *testing.T) {
 	if bA3.Bits != 57 {
 		t.Error("Expected max bits")
 	}
+
 	if len(bA3.Elems) != len(bA1.Elems) {
 		t.Error("Expected max elems length")
 	}
+
 	for i := 0; i < bA3.Bits; i++ {
 		expected := bA1.GetIndex(i) || bA2.GetIndex(i)
 		if bA3.GetIndex(i) != expected {
 			t.Error("Wrong bit from bA3", i, bA1.GetIndex(i), bA2.GetIndex(i), bA3.GetIndex(i))
 		}
 	}
+
 	if bA3.getNumTrueIndices() == 0 {
 		t.Error("Expected at least one true bit. " +
 			"This has a false positive rate that is less than 1 in 2^80 (cryptographically improbable).")
@@ -98,10 +104,12 @@ func TestSub(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		var bA *BitArray
+
 		err := json.Unmarshal([]byte(tc.initBA), &bA)
 		require.Nil(t, err)
 
 		var o *BitArray
+
 		err = json.Unmarshal([]byte(tc.subtractingBA), &o)
 		require.Nil(t, err)
 
@@ -137,8 +145,10 @@ func TestPickRandom(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		var bitArr *BitArray
+
 		err := json.Unmarshal([]byte(tc.bA), &bitArr)
 		require.NoError(t, err)
+
 		_, ok := bitArr.PickRandom()
 		require.Equal(t, tc.ok, ok, "PickRandom got an unexpected result on input %s", tc.bA)
 	}
@@ -149,12 +159,14 @@ func TestGetNumTrueIndices(t *testing.T) {
 		Input          string
 		ExpectedResult int
 	}
+
 	testCases := []testcase{
 		{"x_x_x_", 3},
 		{"______", 0},
 		{"xxxxxx", 6},
 		{"x_x_x_x_x_x_x_x_x_", 9},
 	}
+
 	numOriginalTestCases := len(testCases)
 	for i := 0; i < numOriginalTestCases; i++ {
 		testCases = append(testCases, testcase{testCases[i].Input + "x", testCases[i].ExpectedResult + 1})
@@ -164,8 +176,10 @@ func TestGetNumTrueIndices(t *testing.T) {
 
 	for _, tc := range testCases {
 		var bitArr *BitArray
+
 		err := json.Unmarshal([]byte(`"`+tc.Input+`"`), &bitArr)
 		require.NoError(t, err)
+
 		result := bitArr.getNumTrueIndices()
 		require.Equal(t, tc.ExpectedResult, result, "for input %s, expected %d, got %d", tc.Input, tc.ExpectedResult, result)
 		result = bitArr.Not().getNumTrueIndices()
@@ -201,6 +215,7 @@ func TestGetNthTrueIndex(t *testing.T) {
 		N              int
 		ExpectedResult int
 	}
+
 	testCases := []testcase{
 		// Basic cases
 		{"x_x_x_", 0, 0},
@@ -233,11 +248,13 @@ func TestGetNthTrueIndex(t *testing.T) {
 		if expectedResult != -1 {
 			expectedResult += 64
 		}
+
 		testCases = append(testCases, testcase{empty64Bits + testCases[i].Input, testCases[i].N, expectedResult})
 	}
 
 	for _, tc := range testCases {
 		var bitArr *BitArray
+
 		err := json.Unmarshal([]byte(`"`+tc.Input+`"`), &bitArr)
 		require.NoError(t, err)
 
@@ -288,9 +305,11 @@ func TestEmptyFull(t *testing.T) {
 		if !bA.IsEmpty() {
 			t.Fatal("Expected bit array to be empty")
 		}
+
 		for i := 0; i < n; i++ {
 			bA.SetIndex(i, true)
 		}
+
 		if !bA.IsFull() {
 			t.Fatal("Expected bit array to be full")
 		}
@@ -350,7 +369,6 @@ func TestJSONMarshalUnmarshal(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		t.Run(tc.bA.String(), func(t *testing.T) {
 			bz, err := json.Marshal(tc.bA)
 			require.NoError(t, err)
@@ -358,6 +376,7 @@ func TestJSONMarshalUnmarshal(t *testing.T) {
 			assert.Equal(t, tc.marshalledBA, string(bz))
 
 			var unmarshalledBA *BitArray
+
 			err = json.Unmarshal(bz, &unmarshalledBA)
 			require.NoError(t, err)
 
@@ -366,6 +385,7 @@ func TestJSONMarshalUnmarshal(t *testing.T) {
 			} else {
 				require.NotNil(t, unmarshalledBA)
 				assert.EqualValues(t, tc.bA.Bits, unmarshalledBA.Bits)
+
 				if assert.EqualValues(t, tc.bA.String(), unmarshalledBA.String()) {
 					assert.EqualValues(t, tc.bA.Elems, unmarshalledBA.Elems)
 				}
@@ -389,6 +409,7 @@ func TestBitArrayProtoBuf(t *testing.T) {
 		protoBA := tc.bA1.ToProto()
 		ba := new(BitArray)
 		ba.FromProto(protoBA)
+
 		if tc.expPass {
 			require.Equal(t, tc.bA1, ba, tc.msg)
 		} else {
@@ -437,10 +458,13 @@ func TestUnmarshalJSONDoesntCrashOnZeroBits(t *testing.T) {
 func BenchmarkPickRandomBitArray(b *testing.B) {
 	// A random 150 bit string to use as the benchmark bit array
 	benchmarkBitArrayStr := "_______xx__xxx_xx__x_xx_x_x_x__x_x_x_xx__xx__xxx__xx_x_xxx_x__xx____x____xx__xx____x_x__x_____xx_xx_xxxxxxx__xx_x_xxxx_x___x_xxxxx_xx__xxxx_xx_x___x_x"
+
 	var bitArr *BitArray
+
 	err := json.Unmarshal([]byte(`"`+benchmarkBitArrayStr+`"`), &bitArr)
 	require.NoError(b, err)
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_, _ = bitArr.PickRandom()
 	}

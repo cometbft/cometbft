@@ -33,7 +33,9 @@ func main() {
 	cmtos.TrapSignal(logger, func() {})
 
 	rpcserver.RegisterRPCFuncs(mux, routes, logger)
+
 	config := rpcserver.DefaultConfig()
+
 	listener, err := rpcserver.Listen("tcp://127.0.0.1:8008", config.MaxOpenConnections)
 	if err != nil {
 		cmtos.Exit(err.Error())

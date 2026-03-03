@@ -39,11 +39,13 @@ func NewRand() *Rand {
 
 func (r *Rand) init() {
 	bz := cRandBytes(8)
+
 	var seed uint64
 	for i := 0; i < 8; i++ {
 		seed |= uint64(bz[i])
 		seed <<= 8
 	}
+
 	r.reset(int64(seed))
 }
 
@@ -156,6 +158,7 @@ func (r *Rand) Str(length int) string {
 	}
 
 	chars := []byte{}
+
 MAIN_LOOP:
 	for {
 		val := r.Int63()
@@ -165,10 +168,12 @@ MAIN_LOOP:
 				val >>= 6
 				continue
 			}
+
 			chars = append(chars, strChars[v])
 			if len(chars) == length {
 				break MAIN_LOOP
 			}
+
 			val >>= 6
 		}
 	}
@@ -272,6 +277,7 @@ func (r *Rand) Bytes(n int) []byte {
 	for i := 0; i < len(bs); i++ {
 		bs[i] = byte(r.Int() & 0xFF)
 	}
+
 	return bs
 }
 
@@ -304,9 +310,11 @@ func (r *Rand) Perm(n int) []int {
 // See github.com/cometbft/cometbft/crypto for a more secure reader.
 func cRandBytes(numBytes int) []byte {
 	b := make([]byte, numBytes)
+
 	_, err := crand.Read(b)
 	if err != nil {
 		panic(err)
 	}
+
 	return b
 }

@@ -40,5 +40,6 @@ func innerHashOpt(s hash.Hash, left []byte, right []byte) []byte {
 	s.Write(innerPrefix)
 	s.Write(left)
 	s.Write(right)
+
 	return s.Sum(nil)
 }

@@ -29,6 +29,7 @@ func ParseFraction(f string) (Fraction, error) {
 	if len(o) != 2 {
 		return Fraction{}, errors.New("incorrect formatting: should have a single slash i.e. \"1/3\"")
 	}
+
 	numerator, err := strconv.ParseUint(o[0], 10, 64)
 	if err != nil {
 		return Fraction{}, fmt.Errorf("incorrect formatting, err: %w", err)
@@ -38,11 +39,14 @@ func ParseFraction(f string) (Fraction, error) {
 	if err != nil {
 		return Fraction{}, fmt.Errorf("incorrect formatting, err: %w", err)
 	}
+
 	if denominator == 0 {
 		return Fraction{}, errors.New("denominator can't be 0")
 	}
+
 	if numerator > math.MaxInt64 || denominator > math.MaxInt64 {
 		return Fraction{}, fmt.Errorf("value overflow, numerator and denominator must be less than %d", int64(math.MaxInt64))
 	}
+
 	return Fraction{Numerator: numerator, Denominator: denominator}, nil
 }

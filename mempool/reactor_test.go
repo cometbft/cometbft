@@ -44,6 +44,7 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 	// replace Connect2Switches (full mesh) with a func, which connects first
 	// reactor to others and nothing else, this test should also pass with >2 reactors.
 	const N = 2
+
 	reactors, _ := makeAndConnectReactors(config, N)
 	defer func() {
 		for _, r := range reactors {
@@ -52,6 +53,7 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 			}
 		}
 	}()
+
 	for _, r := range reactors {
 		for _, peer := range r.Switch.Peers().Copy() {
 			peer.Set(types.PeerStateKey, peerState{1})
@@ -65,7 +67,9 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 // regression test for https://github.com/cometbft/cometbft/issues/5408
 func TestReactorConcurrency(t *testing.T) {
 	config := cfg.TestConfig()
+
 	const N = 2
+
 	reactors, _ := makeAndConnectReactors(config, N)
 	defer func() {
 		for _, r := range reactors {
@@ -74,11 +78,13 @@ func TestReactorConcurrency(t *testing.T) {
 			}
 		}
 	}()
+
 	for _, r := range reactors {
 		for _, peer := range r.Switch.Peers().Copy() {
 			peer.Set(types.PeerStateKey, peerState{1})
 		}
 	}
+
 	var wg sync.WaitGroup
 
 	const numTxs = 5
@@ -99,6 +105,7 @@ func TestReactorConcurrency(t *testing.T) {
 			for i := range txs {
 				txResponses[i] = &abci.ExecTxResult{Code: 0}
 			}
+
 			err := reactors[0].mempool.Update(1, txs, txResponses, nil, nil)
 			assert.NoError(t, err)
 		}()
@@ -111,6 +118,7 @@ func TestReactorConcurrency(t *testing.T) {
 
 			reactors[1].mempool.Lock()
 			defer reactors[1].mempool.Unlock()
+
 			err := reactors[1].mempool.Update(1, []types.Tx{}, make([]*abci.ExecTxResult, 0), nil, nil)
 			assert.NoError(t, err)
 		}()
@@ -126,7 +134,9 @@ func TestReactorConcurrency(t *testing.T) {
 // ensure peer gets no txs.
 func TestReactorNoBroadcastToSender(t *testing.T) {
 	config := cfg.TestConfig()
+
 	const N = 2
+
 	reactors, _ := makeAndConnectReactors(config, N)
 	defer func() {
 		for _, r := range reactors {
@@ -135,6 +145,7 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 			}
 		}
 	}()
+
 	for _, r := range reactors {
 		for _, peer := range r.Switch.Peers().Copy() {
 			peer.Set(types.PeerStateKey, peerState{1})
@@ -150,6 +161,7 @@ func TestMempoolReactorMaxTxBytes(t *testing.T) {
 	config := cfg.TestConfig()
 
 	const N = 2
+
 	reactors, _ := makeAndConnectReactors(config, N)
 	defer func() {
 		for _, r := range reactors {
@@ -158,6 +170,7 @@ func TestMempoolReactorMaxTxBytes(t *testing.T) {
 			}
 		}
 	}()
+
 	for _, r := range reactors {
 		for _, peer := range r.Switch.Peers().Copy() {
 			peer.Set(types.PeerStateKey, peerState{1})
@@ -191,7 +204,9 @@ func TestBroadcastTxForPeerStopsWhenPeerStops(t *testing.T) {
 	}
 
 	config := cfg.TestConfig()
+
 	const N = 2
+
 	reactors, _ := makeAndConnectReactors(config, N)
 	defer func() {
 		for _, r := range reactors {
@@ -216,7 +231,9 @@ func TestBroadcastTxForPeerStopsWhenReactorStops(t *testing.T) {
 	}
 
 	config := cfg.TestConfig()
+
 	const N = 2
+
 	_, switches := makeAndConnectReactors(config, N)
 
 	// stop reactors
@@ -238,6 +255,7 @@ func mempoolLogger() log.Logger {
 				return term.FgBgColor{Fg: term.Color(uint8(keyvals[i+1].(int) + 1))}
 			}
 		}
+
 		return term.FgBgColor{}
 	})
 }
@@ -245,10 +263,12 @@ func mempoolLogger() log.Logger {
 // connect N mempool reactors through N switches
 func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switch) {
 	reactors := make([]*Reactor, n)
+
 	logger := mempoolLogger()
 	for i := 0; i < n; i++ {
 		app := kvstore.NewInMemoryApplication()
 		cc := proxy.NewLocalClientCreator(app)
+
 		mempool, cleanup := newMempoolWithApp(cc)
 		defer cleanup()
 
@@ -260,6 +280,7 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 		s.AddReactor("MEMPOOL", reactors[i])
 		return s
 	}, p2p.Connect2Switches)
+
 	return reactors, switches
 }
 
@@ -268,6 +289,7 @@ func newUniqueTxs(n int) types.Txs {
 	for i := 0; i < n; i++ {
 		txs[i] = kvstore.NewTxFromID(i)
 	}
+
 	return txs
 }
 
@@ -276,8 +298,10 @@ func waitForTxsOnReactors(t *testing.T, txs types.Txs, reactors []*Reactor) {
 	wg := new(sync.WaitGroup)
 	for i, reactor := range reactors {
 		wg.Add(1)
+
 		go func(r *Reactor, reactorIndex int) {
 			defer wg.Done()
+
 			checkTxsInOrder(t, txs, r, reactorIndex)
 		}(reactor, i)
 	}
@@ -344,7 +368,6 @@ func TestMempoolVectors(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		msg := memproto.Message{
 			Sum: &memproto.Message_Txs{
 				Txs: &memproto.Txs{Txs: [][]byte{tc.tx}},

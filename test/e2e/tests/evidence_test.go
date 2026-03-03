@@ -11,12 +11,14 @@ import (
 func TestEvidence_Misbehavior(t *testing.T) {
 	blocks := fetchBlockChain(t)
 	testnet := loadTestnet(t)
+
 	seenEvidence := 0
 	for _, block := range blocks {
 		if len(block.Evidence.Evidence) != 0 {
 			seenEvidence += len(block.Evidence.Evidence)
 		}
 	}
+
 	require.Equal(t, testnet.Evidence, seenEvidence,
 		"difference between the amount of evidence produced and committed")
 }

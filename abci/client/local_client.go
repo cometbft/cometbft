@@ -30,11 +30,13 @@ func NewLocalClient(mtx *cmtsync.Mutex, app types.Application) Client {
 	if mtx == nil {
 		mtx = new(cmtsync.Mutex)
 	}
+
 	cli := &localClient{
 		mtx:         mtx,
 		Application: app,
 	}
 	cli.BaseService = *service.NewBaseService(nil, "localClient", cli)
+
 	return cli
 }
 
@@ -52,6 +54,7 @@ func (app *localClient) CheckTxAsync(ctx context.Context, req *types.RequestChec
 	if err != nil {
 		return nil, err
 	}
+
 	return app.callback(
 		types.ToRequestCheckTx(req),
 		types.ToResponseCheckTx(res),

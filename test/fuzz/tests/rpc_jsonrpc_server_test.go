@@ -20,6 +20,7 @@ func FuzzRPCJSONRPCServer(f *testing.F) {
 		S string `json:"s"`
 		I int    `json:"i"`
 	}
+
 	rpcFuncMap := map[string]*rpcserver.RPCFunc{
 		"c": rpcserver.NewRPCFunc(func(ctx *rpctypes.Context, args *args, options ...rpcserver.Option) (string, error) {
 			return "foo", nil
@@ -37,16 +38,20 @@ func FuzzRPCJSONRPCServer(f *testing.F) {
 		if err != nil {
 			panic(err)
 		}
+
 		rec := httptest.NewRecorder()
 		mux.ServeHTTP(rec, req)
 		res := rec.Result()
+
 		blob, err := io.ReadAll(res.Body)
 		if err != nil {
 			panic(err)
 		}
+
 		if err := res.Body.Close(); err != nil {
 			panic(err)
 		}
+
 		if len(blob) == 0 {
 			return
 		}
@@ -56,8 +61,10 @@ func FuzzRPCJSONRPCServer(f *testing.F) {
 			if err := json.Unmarshal(blob, &recv); err != nil {
 				panic(err)
 			}
+
 			return
 		}
+
 		var recv rpctypes.RPCResponse
 		if err := json.Unmarshal(blob, &recv); err != nil {
 			panic(err)

@@ -57,6 +57,5 @@ func main() {
 			fmt.Println("Failed to write message", err)
 			os.Exit(1) //nolint:gocritic
 		}
-
 	}
 }

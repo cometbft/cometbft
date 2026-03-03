@@ -62,36 +62,43 @@ func killCmdHandler(_ *cobra.Command, args []string) error {
 	defer os.RemoveAll(tmpDir)
 
 	logger.Info("getting node status...")
+
 	if err := dumpStatus(rpc, tmpDir, "status.json"); err != nil {
 		return err
 	}
 
 	logger.Info("getting node network info...")
+
 	if err := dumpNetInfo(rpc, tmpDir, "net_info.json"); err != nil {
 		return err
 	}
 
 	logger.Info("getting node consensus state...")
+
 	if err := dumpConsensusState(rpc, tmpDir, "consensus_state.json"); err != nil {
 		return err
 	}
 
 	logger.Info("copying node WAL...")
+
 	if err := copyWAL(conf, tmpDir); err != nil {
 		return err
 	}
 
 	logger.Info("copying node configuration...")
+
 	if err := copyConfig(home, tmpDir); err != nil {
 		return err
 	}
 
 	logger.Info("killing CometBFT process")
+
 	if err := killProc(pid, tmpDir); err != nil {
 		return err
 	}
 
 	logger.Info("archiving and compressing debug directory...")
+
 	return zipDir(tmpDir, outFile)
 }
 

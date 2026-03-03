@@ -29,14 +29,17 @@ func DefaultValidationRequestHandler(
 					Code: 0, Description: "unable to provide pubkey",
 				},
 			})
+
 			return res, fmt.Errorf("want chainID: %s, got chainID: %s", r.PubKeyRequest.GetChainId(), chainID)
 		}
 
 		var pubKey crypto.PubKey
+
 		pubKey, err = privVal.GetPubKey()
 		if err != nil {
 			return res, err
 		}
+
 		pk, err := cryptoenc.PubKeyToProto(pubKey)
 		if err != nil {
 			res = mustWrapMsg(&privvalproto.PubKeyResponse{
@@ -53,6 +56,7 @@ func DefaultValidationRequestHandler(
 					Code: 0, Description: "unable to sign vote",
 				},
 			})
+
 			return res, fmt.Errorf("want chainID: %s, got chainID: %s", r.SignVoteRequest.GetChainId(), chainID)
 		}
 
@@ -75,6 +79,7 @@ func DefaultValidationRequestHandler(
 					Description: "unable to sign proposal",
 				},
 			})
+
 			return res, fmt.Errorf("want chainID: %s, got chainID: %s", r.SignProposalRequest.GetChainId(), chainID)
 		}
 
@@ -88,6 +93,7 @@ func DefaultValidationRequestHandler(
 		} else {
 			res = mustWrapMsg(&privvalproto.SignedProposalResponse{Proposal: *proposal, Error: nil})
 		}
+
 	case *privvalproto.Message_PingRequest:
 		err, res = nil, mustWrapMsg(&privvalproto.PingResponse{})
 

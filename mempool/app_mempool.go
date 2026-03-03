@@ -105,13 +105,16 @@ func (m *AppMempool) InsertTx(tx types.Tx) error {
 	case err != nil:
 		m.metrics.FailedTxs.Add(1)
 		return wrapErrCode("unable to insert tx", code, err)
+
 	case codeRetry(code):
 		// drop tx from seen cache (to retry later), but still return the error
 		m.seen.Remove(tx)
 		fallthrough
+
 	case code != abci.CodeTypeOK:
 		m.metrics.RejectedTxs.Add(1)
 		return wrapErrCode("invalid code", code, err)
+
 	default:
 		m.metrics.TxSizeBytes.Observe(float64(len(tx)))
 		return nil
@@ -187,6 +190,7 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Txs) {
 		case <-ctx.Done():
 			m.logger.Debug("AppMempool.reapTxs: context is done")
 			return
+
 		case <-time.After(reapInterval):
 			// note that time.After GC mem leak was fixed in go 1.23
 			res, err := m.app.ReapTxs(ctx, req)
@@ -194,9 +198,11 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Txs) {
 			case isErrCtx(err):
 				m.logger.Debug("AppMempool.reapTxs: context done while reaping txs")
 				return
+
 			case err != nil:
 				m.logger.Error("AppMempool.reapTxs: error reaping txs", "error", err)
 				continue
+
 			case len(res.Txs) == 0:
 				// no txs to send
 				continue
@@ -209,6 +215,7 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Txs) {
 			case <-ctx.Done():
 				m.logger.Debug("AppMempool.reapTxs: context done while streaming txs")
 				return
+
 			case channel <- txs:
 				// all good
 			}

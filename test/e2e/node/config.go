@@ -52,10 +52,12 @@ func LoadConfig(file string) (*Config, error) {
 		Protocol:        "socket",
 		PersistInterval: 1,
 	}
+
 	_, err := toml.DecodeFile(file, &cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config from %q: %w", file, err)
 	}
+
 	return cfg, cfg.Validate()
 }
 

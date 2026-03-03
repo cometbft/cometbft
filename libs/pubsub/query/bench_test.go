@@ -34,7 +34,9 @@ func BenchmarkMatchCustom(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
+
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		ok, err := q.Matches(testEvents)
 		if err != nil {

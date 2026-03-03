@@ -30,6 +30,7 @@ const validationTestsStopHeight int64 = 10
 
 func TestValidateBlockHeader(t *testing.T) {
 	proxyApp := newTestApp()
+
 	require.NoError(t, proxyApp.Start())
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
@@ -60,6 +61,7 @@ func TestValidateBlockHeader(t *testing.T) {
 		blockStore,
 	)
 	lastCommit := &types.Commit{}
+
 	var lastExtCommit *types.ExtendedCommit
 
 	// some bad values
@@ -112,15 +114,18 @@ func TestValidateBlockHeader(t *testing.T) {
 			A good block passes
 		*/
 		var err error
+
 		state, _, lastExtCommit, err = makeAndCommitGoodBlock(
 			state, height, lastCommit, state.Validators.GetProposer().Address, blockExec, privVals, nil)
 		require.NoError(t, err, "height %d", height)
+
 		lastCommit = lastExtCommit.ToCommit()
 	}
 
 	nextHeight := validationTestsStopHeight
 	block, err := makeBlock(state, nextHeight, lastCommit)
 	require.NoError(t, err)
+
 	state.InitialHeight = nextHeight + 1
 	err = blockExec.ValidateBlock(state, block)
 	require.Error(t, err, "expected an error when state is ahead of block")
@@ -129,6 +134,7 @@ func TestValidateBlockHeader(t *testing.T) {
 
 func TestValidateBlockCommit(t *testing.T) {
 	proxyApp := newTestApp()
+
 	require.NoError(t, proxyApp.Start())
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
@@ -159,7 +165,9 @@ func TestValidateBlockCommit(t *testing.T) {
 		blockStore,
 	)
 	lastCommit := &types.Commit{}
+
 	var lastExtCommit *types.ExtendedCommit
+
 	wrongSigsCommit := &types.Commit{Height: 1}
 	badPrivVal := types.NewMockPV()
 
@@ -205,8 +213,11 @@ func TestValidateBlockCommit(t *testing.T) {
 		/*
 			A good block passes
 		*/
-		var err error
-		var blockID types.BlockID
+		var (
+			err     error
+			blockID types.BlockID
+		)
+
 		state, blockID, lastExtCommit, err = makeAndCommitGoodBlock(
 			state,
 			height,
@@ -217,6 +228,7 @@ func TestValidateBlockCommit(t *testing.T) {
 			nil,
 		)
 		require.NoError(t, err, "height %d", height)
+
 		lastCommit = lastExtCommit.ToCommit()
 
 		/*
@@ -269,6 +281,7 @@ func TestValidateBlockCommit(t *testing.T) {
 
 func TestValidateBlockEvidence(t *testing.T) {
 	proxyApp := newTestApp()
+
 	require.NoError(t, proxyApp.Start())
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
@@ -295,6 +308,7 @@ func TestValidateBlockEvidence(t *testing.T) {
 		mock.Anything,
 		mock.Anything,
 		mock.Anything).Return(nil)
+
 	state.ConsensusParams.Evidence.MaxBytes = 1000
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
 
@@ -307,25 +321,30 @@ func TestValidateBlockEvidence(t *testing.T) {
 		blockStore,
 	)
 	lastCommit := &types.Commit{}
+
 	var lastExtCommit *types.ExtendedCommit
 
 	for height := int64(1); height < validationTestsStopHeight; height++ {
 		proposerAddr := state.Validators.GetProposer().Address
+
 		maxBytesEvidence := state.ConsensusParams.Evidence.MaxBytes
 		if height > 1 {
 			/*
 				A block with too much evidence fails
 			*/
 			evidence := make([]types.Evidence, 0)
+
 			var currentBytes int64
 			// more bytes than the maximum allowed for evidence
 			for currentBytes <= maxBytesEvidence {
 				newEv, err := types.NewMockDuplicateVoteEvidenceWithValidator(height, time.Now(),
 					privVals[proposerAddr.String()], chainID)
 				require.NoError(t, err)
+
 				evidence = append(evidence, newEv)
 				currentBytes += int64(len(newEv.Bytes()))
 			}
+
 			block, err := state.MakeBlock(height, test.MakeNTxs(height, 10), lastCommit, evidence, proposerAddr)
 			require.NoError(t, err)
 
@@ -340,20 +359,24 @@ func TestValidateBlockEvidence(t *testing.T) {
 			A good block with several pieces of good evidence passes
 		*/
 		evidence := make([]types.Evidence, 0)
+
 		var currentBytes int64
 		// precisely the amount of allowed evidence
 		for {
 			newEv, err := types.NewMockDuplicateVoteEvidenceWithValidator(height, defaultEvidenceTime,
 				privVals[proposerAddr.String()], chainID)
 			require.NoError(t, err)
+
 			currentBytes += int64(len(newEv.Bytes()))
 			if currentBytes >= maxBytesEvidence {
 				break
 			}
+
 			evidence = append(evidence, newEv)
 		}
 
 		var err error
+
 		state, _, lastExtCommit, err = makeAndCommitGoodBlock(
 			state,
 			height,
@@ -364,13 +387,14 @@ func TestValidateBlockEvidence(t *testing.T) {
 			evidence,
 		)
 		require.NoError(t, err, "height %d", height)
-		lastCommit = lastExtCommit.ToCommit()
 
+		lastCommit = lastExtCommit.ToCommit()
 	}
 }
 
 func TestValidateBlockTime(t *testing.T) {
 	proxyApp := newTestApp()
+
 	require.NoError(t, proxyApp.Start())
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
@@ -401,14 +425,17 @@ func TestValidateBlockTime(t *testing.T) {
 		blockStore,
 	)
 	lastCommit := &types.Commit{}
+
 	var lastExtCommit *types.ExtendedCommit
 
 	// Build up state for test
 	for height := int64(1); height < 3; height++ {
 		var err error
+
 		state, _, lastExtCommit, err = makeAndCommitGoodBlock(
 			state, height, lastCommit, state.Validators.GetProposer().Address, blockExec, privVals, nil)
 		require.NoError(t, err, "height %d", height)
+
 		lastCommit = lastExtCommit.ToCommit()
 	}
 
@@ -446,6 +473,7 @@ func TestValidateBlockTime(t *testing.T) {
 
 func TestValidateBlockInvalidCommit(t *testing.T) {
 	proxyApp := newTestApp()
+
 	require.NoError(t, proxyApp.Start())
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
@@ -476,14 +504,17 @@ func TestValidateBlockInvalidCommit(t *testing.T) {
 		blockStore,
 	)
 	lastCommit := &types.Commit{}
+
 	var lastExtCommit *types.ExtendedCommit
 
 	// Build up state for test
 	for height := int64(1); height < 3; height++ {
 		var err error
+
 		state, _, lastExtCommit, err = makeAndCommitGoodBlock(
 			state, height, lastCommit, state.Validators.GetProposer().Address, blockExec, privVals, nil)
 		require.NoError(t, err, "height %d", height)
+
 		lastCommit = lastExtCommit.ToCommit()
 	}
 

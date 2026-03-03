@@ -29,6 +29,7 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 		case a.Mode == e2e.ModeValidator && b.Mode == e2e.ModeFull:
 			return true
 		}
+
 		return false
 	})
 
@@ -42,19 +43,23 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 
 	// Start initial nodes (StartAt: 0)
 	logger.Info("Starting initial network nodes...")
+
 	nodesAtZero := make([]*e2e.Node, 0)
 	for len(nodeQueue) > 0 && nodeQueue[0].StartAt == 0 {
 		nodesAtZero = append(nodesAtZero, nodeQueue[0])
 		nodeQueue = nodeQueue[1:]
 	}
+
 	err := p.StartNodes(context.Background(), nodesAtZero...)
 	if err != nil {
 		return err
 	}
+
 	for _, node := range nodesAtZero {
 		if _, err := waitForNode(ctx, node, 0, 15*time.Second); err != nil {
 			return err
 		}
+
 		if node.PrometheusProxyPort > 0 {
 			logger.Info("start", "msg",
 				log.NewLazySprintf("Node %v up on http://%s:%v; with Prometheus on http://%s:%v/metrics",
@@ -105,7 +110,6 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 			// network has reached at least the height
 			// that this node will start at before we
 			// start the node.
-
 			networkHeight = node.StartAt
 
 			logger.Info("Waiting for network to advance before starting catch up node",
@@ -123,10 +127,12 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 		if err != nil {
 			return err
 		}
+
 		status, err := waitForNode(ctx, node, node.StartAt, 3*time.Minute)
 		if err != nil {
 			return err
 		}
+
 		logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v at height %v",
 			node.Name, node.ExternalIP, node.ProxyPort, status.SyncInfo.LatestBlockHeight))
 	}

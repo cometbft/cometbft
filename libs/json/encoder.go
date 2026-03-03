@@ -21,10 +21,12 @@ var (
 // 64-bit numbers, and type wrappers for registered types).
 func Marshal(v any) ([]byte, error) {
 	buf := new(bytes.Buffer)
+
 	err := encode(buf, v)
 	if err != nil {
 		return nil, err
 	}
+
 	return buf.Bytes(), nil
 }
 
@@ -34,11 +36,14 @@ func MarshalIndent(v any, prefix, indent string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	buf := new(bytes.Buffer)
+
 	err = json.Indent(buf, bz, prefix, indent)
 	if err != nil {
 		return nil, err
 	}
+
 	return buf.Bytes(), nil
 }
 
@@ -47,6 +52,7 @@ func encode(w *bytes.Buffer, v any) error {
 	if v == nil {
 		return writeStr(w, "null")
 	}
+
 	rv := reflect.ValueOf(v)
 
 	// If this is a registered type, defer to interface encoder regardless of whether the input is
@@ -70,6 +76,7 @@ func encodeReflect(w *bytes.Buffer, rv reflect.Value) error {
 		if rv.IsNil() {
 			return writeStr(w, "null")
 		}
+
 		rv = rv.Elem()
 	}
 
@@ -129,24 +136,29 @@ func encodeReflectList(w *bytes.Buffer, rv reflect.Value) error {
 			reflect.Copy(slice, rv)
 			rv = slice
 		}
+
 		return encodeStdlib(w, rv.Interface())
 	}
 
 	// Anything else we recursively encode ourselves.
 	length := rv.Len()
+
 	if err := writeStr(w, "["); err != nil {
 		return err
 	}
+
 	for i := 0; i < length; i++ {
 		if err := encodeReflect(w, rv.Index(i)); err != nil {
 			return err
 		}
+
 		if i < length-1 {
 			if err := writeStr(w, ","); err != nil {
 				return err
 			}
 		}
 	}
+
 	return writeStr(w, "]")
 }
 
@@ -160,6 +172,7 @@ func encodeReflectMap(w *bytes.Buffer, rv reflect.Value) error {
 	if err := writeStr(w, "{"); err != nil {
 		return err
 	}
+
 	writeComma := false
 	for _, keyrv := range rv.MapKeys() {
 		if writeComma {
@@ -167,25 +180,32 @@ func encodeReflectMap(w *bytes.Buffer, rv reflect.Value) error {
 				return err
 			}
 		}
+
 		if err := encodeStdlib(w, keyrv.Interface()); err != nil {
 			return err
 		}
+
 		if err := writeStr(w, ":"); err != nil {
 			return err
 		}
+
 		if err := encodeReflect(w, rv.MapIndex(keyrv)); err != nil {
 			return err
 		}
+
 		writeComma = true
 	}
+
 	return writeStr(w, "}")
 }
 
 func encodeReflectStruct(w *bytes.Buffer, rv reflect.Value) error {
 	sInfo := makeStructInfo(rv.Type())
+
 	if err := writeStr(w, "{"); err != nil {
 		return err
 	}
+
 	writeComma := false
 	for i, fInfo := range sInfo.fields {
 		frv := rv.Field(i)
@@ -198,17 +218,22 @@ func encodeReflectStruct(w *bytes.Buffer, rv reflect.Value) error {
 				return err
 			}
 		}
+
 		if err := encodeStdlib(w, fInfo.jsonName); err != nil {
 			return err
 		}
+
 		if err := writeStr(w, ":"); err != nil {
 			return err
 		}
+
 		if err := encodeReflect(w, frv); err != nil {
 			return err
 		}
+
 		writeComma = true
 	}
+
 	return writeStr(w, "}")
 }
 
@@ -218,6 +243,7 @@ func encodeReflectInterface(w *bytes.Buffer, rv reflect.Value) error {
 		if rv.IsNil() {
 			return writeStr(w, "null")
 		}
+
 		rv = rv.Elem()
 	}
 
@@ -231,9 +257,11 @@ func encodeReflectInterface(w *bytes.Buffer, rv reflect.Value) error {
 	if err := writeStr(w, fmt.Sprintf(`{"type":%q,"value":`, name)); err != nil {
 		return err
 	}
+
 	if err := encodeReflect(w, rv); err != nil {
 		return err
 	}
+
 	return writeStr(w, "}")
 }
 
@@ -242,12 +270,14 @@ func encodeStdlib(w *bytes.Buffer, v any) error {
 	// The stdlib encoder will write a newline, so we must truncate it,
 	// which is why we pass in a bytes.Buffer throughout, not io.Writer.
 	enc := json.NewEncoder(w)
+
 	err := enc.Encode(v)
 	if err != nil {
 		return err
 	}
 	// Remove the last byte from the buffer
 	w.Truncate(w.Len() - 1)
+
 	return err
 }
 

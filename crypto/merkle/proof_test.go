@@ -37,6 +37,7 @@ func (dop DominoOp) ProofOp() cmtcrypto.ProofOp {
 		Input:  dop.Input,
 		Output: dop.Output,
 	}
+
 	bz, err := dopb.Marshal()
 	if err != nil {
 		panic(err)
@@ -53,10 +54,12 @@ func (dop DominoOp) Run(input [][]byte) (output [][]byte, err error) {
 	if len(input) != 1 {
 		return nil, errors.New("expected input of length 1")
 	}
+
 	if string(input[0]) != dop.Input {
 		return nil, fmt.Errorf("expected input %v, got %v",
 			dop.Input, string(input[0]))
 	}
+
 	return [][]byte{[]byte(dop.Output)}, nil
 }
 
@@ -163,7 +166,6 @@ func TestProofValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		t.Run(tc.testName, func(t *testing.T) {
 			_, proofs := ProofsFromByteSlices([][]byte{
 				[]byte("apple"),
@@ -171,6 +173,7 @@ func TestProofValidateBasic(t *testing.T) {
 				[]byte("kiwi"),
 			})
 			tc.malleateProof(proofs[0])
+
 			err := proofs[0].ValidateBasic()
 			if tc.errStr != "" {
 				assert.Contains(t, err.Error(), tc.errStr)

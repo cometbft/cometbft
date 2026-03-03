@@ -200,6 +200,7 @@ func (w *worker[T]) run() {
 
 	defer func() {
 		w.pool.workersWg.Done()
+
 		if r := recover(); r != nil {
 			w.pool.logger.Error("Panic in pool worker", "panic", r)
 		}
@@ -223,7 +224,9 @@ func (w *worker[T]) run() {
 
 func (p *Pool[T]) handleMessage(msg T) {
 	now := time.Now()
+
 	p.receive(msg)
+
 	timeTaken := time.Since(now)
 
 	// record metrics

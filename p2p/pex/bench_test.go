@@ -16,8 +16,11 @@ func BenchmarkAddrBook_hash(b *testing.B) {
 		routabilityStrict: true,
 	}
 	book.init()
+
 	msg := []byte(`foobar`)
+
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_, _ = book.hash(msg)
 	}

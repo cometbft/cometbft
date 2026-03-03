@@ -18,10 +18,12 @@ func Connect(protoAddr string) (net.Conn, error) {
 // If the address has no protocol prefix, the default is "tcp".
 func ProtocolAndAddress(listenAddr string) (string, string) {
 	protocol, address := "tcp", listenAddr
+
 	parts := strings.SplitN(address, "://", 2)
 	if len(parts) == 2 {
 		protocol, address = parts[0], parts[1]
 	}
+
 	return protocol, address
 }
 
@@ -39,5 +41,6 @@ func GetFreePort() (int, error) {
 		return 0, err
 	}
 	defer l.Close()
+
 	return l.Addr().(*net.TCPAddr).Port, nil
 }

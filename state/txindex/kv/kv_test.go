@@ -38,6 +38,7 @@ func TestTxIndex(t *testing.T) {
 	if err := batch.Add(txResult); err != nil {
 		t.Error(err)
 	}
+
 	err := indexer.AddBatch(batch)
 	require.NoError(t, err)
 
@@ -139,12 +140,12 @@ func TestTxSearch(t *testing.T) {
 	ctx := context.Background()
 
 	for _, tc := range testCases {
-
 		t.Run(tc.q, func(t *testing.T) {
 			results, err := indexer.Search(ctx, query.MustCompile(tc.q))
 			assert.NoError(t, err)
 
 			assert.Len(t, results, tc.resultsLength)
+
 			if tc.resultsLength > 0 {
 				for _, txr := range results {
 					assert.True(t, proto.Equal(txResult, txr))
@@ -232,12 +233,12 @@ func TestTxSearchEventMatch(t *testing.T) {
 	ctx := context.Background()
 
 	for _, tc := range testCases {
-
 		t.Run(tc.q, func(t *testing.T) {
 			results, err := indexer.Search(ctx, query.MustCompile(tc.q))
 			assert.NoError(t, err)
 
 			assert.Len(t, results, tc.resultsLength)
+
 			if tc.resultsLength > 0 {
 				for _, txr := range results {
 					assert.True(t, proto.Equal(txResult, txr))
@@ -248,7 +249,6 @@ func TestTxSearchEventMatch(t *testing.T) {
 }
 
 func TestTxSearchEventMatchByHeight(t *testing.T) {
-
 	indexer := NewTxIndex(db.NewMemDB())
 
 	txResult := txResultWithEvents([]abci.Event{
@@ -308,12 +308,12 @@ func TestTxSearchEventMatchByHeight(t *testing.T) {
 	ctx := context.Background()
 
 	for _, tc := range testCases {
-
 		t.Run(tc.q, func(t *testing.T) {
 			results, err := indexer.Search(ctx, query.MustCompile(tc.q))
 			assert.NoError(t, err)
 
 			assert.Len(t, results, tc.resultsLength)
+
 			if tc.resultsLength > 0 {
 				for _, txr := range results {
 					switch txr.Height {
@@ -343,6 +343,7 @@ func TestTxSearchWithCancelation(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
+
 	results, err := indexer.Search(ctx, query.MustCompile(`account.number = 1`))
 	assert.NoError(t, err)
 	assert.Empty(t, results)
@@ -414,10 +415,10 @@ func TestTxSearchDeprecatedIndexing(t *testing.T) {
 	ctx := context.Background()
 
 	for _, tc := range testCases {
-
 		t.Run(tc.q, func(t *testing.T) {
 			results, err := indexer.Search(ctx, query.MustCompile(tc.q))
 			require.NoError(t, err)
+
 			for _, txr := range results {
 				for _, tr := range tc.results {
 					assert.True(t, proto.Equal(tr, txr))
@@ -501,13 +502,14 @@ func TestTxSearchOneTxWithMultipleSameTagsButDifferentValues(t *testing.T) {
 	for _, tc := range testCases {
 		results, err := indexer.Search(ctx, query.MustCompile(tc.q))
 		assert.NoError(t, err)
+
 		n := 0
 		if tc.found {
 			n = 1
 		}
+
 		assert.Len(t, results, n)
 		assert.True(t, !tc.found || proto.Equal(txResult, results[0]))
-
 	}
 }
 
@@ -664,6 +666,7 @@ func TestTxSearchMultipleTxs(t *testing.T) {
 
 func txResultWithEvents(events []abci.Event) *abci.TxResult {
 	tx := types.Tx("HELLO WORLD")
+
 	return &abci.TxResult{
 		Height: 1,
 		Index:  0,
@@ -680,16 +683,20 @@ func txResultWithEvents(events []abci.Event) *abci.TxResult {
 func benchmarkTxIndex(txsCount int64, b *testing.B) {
 	dir, err := os.MkdirTemp("", "tx_index_db")
 	require.NoError(b, err)
+
 	defer os.RemoveAll(dir)
 
 	store, err := db.NewDB("tx_index", "goleveldb", dir)
 	require.NoError(b, err)
+
 	indexer := NewTxIndex(store)
 
 	batch := txindex.NewBatch(txsCount)
+
 	txIndex := uint32(0)
 	for i := int64(0); i < txsCount; i++ {
 		tx := cmtrand.Bytes(250)
+
 		txResult := &abci.TxResult{
 			Height: 1,
 			Index:  txIndex,
@@ -704,6 +711,7 @@ func benchmarkTxIndex(txsCount int64, b *testing.B) {
 		if err := batch.Add(txResult); err != nil {
 			b.Fatal(err)
 		}
+
 		txIndex++
 	}
 
@@ -712,6 +720,7 @@ func benchmarkTxIndex(txsCount int64, b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		err = indexer.AddBatch(batch)
 	}
+
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -755,6 +764,7 @@ func TestBigInt(t *testing.T) {
 
 	err = indexer.Index(txResult2)
 	require.NoError(t, err)
+
 	testCases := []struct {
 		q             string
 		txRes         *abci.TxResult
@@ -783,11 +793,11 @@ func TestBigInt(t *testing.T) {
 	ctx := context.Background()
 
 	for _, tc := range testCases {
-
 		t.Run(tc.q, func(t *testing.T) {
 			results, err := indexer.Search(ctx, query.MustCompile(tc.q))
 			assert.NoError(t, err)
 			assert.Len(t, results, tc.resultsLength)
+
 			if tc.resultsLength > 0 && tc.txRes != nil {
 				assert.True(t, proto.Equal(results[0], tc.txRes))
 			}

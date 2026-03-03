@@ -30,6 +30,7 @@ func (pvs PrivValidatorsByAddress) Less(i, j int) bool {
 	if err != nil {
 		panic(err)
 	}
+
 	pvj, err := pvs[j].GetPubKey()
 	if err != nil {
 		panic(err)
@@ -77,16 +78,19 @@ func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
 	}
 
 	signBytes := VoteSignBytes(useChainID, vote)
+
 	sig, err := pv.PrivKey.Sign(signBytes)
 	if err != nil {
 		return err
 	}
+
 	vote.Signature = sig
 
 	var extSig []byte
 	// We only sign vote extensions for non-nil precommits
 	if vote.Type == cmtproto.PrecommitType && !ProtoBlockIDIsNil(&vote.BlockID) {
 		extSignBytes := VoteExtensionSignBytes(useChainID, vote)
+
 		extSig, err = pv.PrivKey.Sign(extSignBytes)
 		if err != nil {
 			return err
@@ -94,7 +98,9 @@ func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
 	} else if len(vote.Extension) > 0 {
 		return errors.New("unexpected vote extension - vote extensions are only allowed in non-nil precommits")
 	}
+
 	vote.ExtensionSignature = extSig
+
 	return nil
 }
 
@@ -106,16 +112,20 @@ func (pv MockPV) SignProposal(chainID string, proposal *cmtproto.Proposal) error
 	}
 
 	signBytes := ProposalSignBytes(useChainID, proposal)
+
 	sig, err := pv.PrivKey.Sign(signBytes)
 	if err != nil {
 		return err
 	}
+
 	proposal.Signature = sig
+
 	return nil
 }
 
 func (pv MockPV) ExtractIntoValidator(votingPower int64) *Validator {
 	pubKey, _ := pv.GetPubKey()
+
 	return &Validator{
 		Address:     pubKey.Address(),
 		PubKey:      pubKey,

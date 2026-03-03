@@ -20,6 +20,7 @@ func MakeExtCommit(blockID BlockID, height int64, round int32,
 		if err != nil {
 			return nil, fmt.Errorf("can't get pubkey: %w", err)
 		}
+
 		vote := &Vote{
 			ValidatorAddress: pubKey.Address(),
 			ValidatorIndex:   int32(i),
@@ -48,9 +49,11 @@ func signAddVote(privVal PrivValidator, vote *Vote, voteSet *VoteSet) (bool, err
 	if vote.Type != voteSet.signedMsgType {
 		return false, fmt.Errorf("vote and voteset are of different types; %d != %d", vote.Type, voteSet.signedMsgType)
 	}
+
 	if _, err := SignAndCheckVote(vote, privVal, voteSet.ChainID(), voteSet.extensionsEnabled); err != nil {
 		return false, err
 	}
+
 	return voteSet.AddVote(vote)
 }
 
@@ -119,5 +122,6 @@ func MakeBlock(height int64, txs []Tx, lastCommit *Commit, evidence []Evidence) 
 		LastCommit: lastCommit,
 	}
 	block.fillHeader()
+
 	return block
 }

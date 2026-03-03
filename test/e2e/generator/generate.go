@@ -84,30 +84,38 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 
 	if cfg.multiVersion != "" {
 		var err error
+
 		nodeVersions, upgradeVersion, err = parseWeightedVersions(cfg.multiVersion)
 		if err != nil {
 			return nil, err
 		}
+
 		if _, ok := nodeVersions["local"]; ok {
 			nodeVersions[""] = nodeVersions["local"]
 			delete(nodeVersions, "local")
+
 			if upgradeVersion == "local" {
 				upgradeVersion = ""
 			}
 		}
+
 		if _, ok := nodeVersions["latest"]; ok {
 			latestVersion, err := gitRepoLatestReleaseVersion(cfg.outputDir)
 			if err != nil {
 				return nil, err
 			}
+
 			nodeVersions[latestVersion] = nodeVersions["latest"]
 			delete(nodeVersions, "latest")
+
 			if upgradeVersion == "latest" {
 				upgradeVersion = latestVersion
 			}
 		}
 	}
+
 	fmt.Println("Generating testnet with weighted versions:")
+
 	for ver, wt := range nodeVersions {
 		if ver == "" {
 			fmt.Printf("- local: %d\n", wt)
@@ -122,8 +130,10 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		manifests = append(manifests, manifest)
 	}
+
 	return manifests, nil
 }
 
@@ -150,6 +160,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 		manifest.ProcessProposalDelay = 100 * time.Millisecond
 		manifest.VoteExtensionDelay = 20 * time.Millisecond
 		manifest.FinalizeBlockDelay = 200 * time.Millisecond
+
 	case "large":
 		manifest.PrepareProposalDelay = 200 * time.Millisecond
 		manifest.ProcessProposalDelay = 200 * time.Millisecond
@@ -157,10 +168,12 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 		manifest.VoteExtensionDelay = 100 * time.Millisecond
 		manifest.FinalizeBlockDelay = 500 * time.Millisecond
 	}
+
 	manifest.VoteExtensionsUpdateHeight = voteExtensionUpdateHeight.Choose(r).(int64)
 	if manifest.VoteExtensionsUpdateHeight == 1 {
 		manifest.VoteExtensionsUpdateHeight = manifest.InitialHeight + voteExtensionHeightOffset.Choose(r).(int64)
 	}
+
 	if voteExtensionEnabled.Choose(r).(bool) {
 		baseHeight := max(manifest.VoteExtensionsUpdateHeight+1, manifest.InitialHeight)
 		manifest.VoteExtensionsEnableHeight = baseHeight + voteExtensionHeightOffset.Choose(r).(int64)
@@ -180,6 +193,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 		numLightClients = r.Intn(3)
 		numValidators = 4 + r.Intn(4)
 		numFulls = r.Intn(4)
+
 	default:
 		return manifest, fmt.Errorf("unknown topology %q", opt["topology"])
 	}
@@ -194,6 +208,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 	// at the initial height, and that we have two archive nodes. We also set up
 	// the initial validator set, and validator set updates for delayed nodes.
 	nextStartAt := manifest.InitialHeight + 5
+
 	quorum := numValidators*2/3 + 1
 	for i := 1; i <= numValidators; i++ {
 		startAt := int64(0)
@@ -201,6 +216,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 			startAt = nextStartAt
 			nextStartAt += 5
 		}
+
 		name := fmt.Sprintf("validator%02d", i)
 		manifest.Nodes[name] = generateNode(
 			r, e2e.ModeValidator, startAt, i <= 2)
@@ -220,6 +236,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 	case "initchain":
 		manifest.ValidatorUpdates["0"] = *manifest.Validators
 		manifest.Validators = &map[string]int64{}
+
 	default:
 		return manifest, fmt.Errorf("invalid validators option %q", opt["validators"])
 	}
@@ -231,6 +248,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 			startAt = nextStartAt
 			nextStartAt += 5
 		}
+
 		manifest.Nodes[fmt.Sprintf("full%02d", i)] = generateNode(
 			r, e2e.ModeFull, startAt, false)
 	}
@@ -248,6 +266,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 			if (node.StartAt == 0 || node.StartAt == manifest.InitialHeight) && node.RetainBlocks == 0 {
 				lightProviders = append(lightProviders, name)
 			}
+
 			peerNames = append(peerNames, name)
 		}
 	}
@@ -271,6 +290,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 			return strings.Compare(iName, jName) == -1
 		}
 	})
+
 	for i, name := range peerNames {
 		if len(seedNames) > 0 && (i == 0 || r.Float64() >= 0.5) {
 			manifest.Nodes[name].Seeds = uniformSetChoice(seedNames).Choose(r)
@@ -335,6 +355,7 @@ func generateNode(
 		if node.PersistInterval != nil && node.RetainBlocks < *node.PersistInterval {
 			node.RetainBlocks = *node.PersistInterval
 		}
+
 		if node.RetainBlocks < node.SnapshotInterval {
 			node.RetainBlocks = node.SnapshotInterval
 		}
@@ -367,6 +388,7 @@ func ptrUint64(i uint64) *uint64 {
 // Also returns the last version in the list, which will be used for updates.
 func parseWeightedVersions(s string) (weightedChoice, string, error) {
 	wc := make(weightedChoice)
+
 	var lastVersion string
 
 	entries := strings.Split(strings.TrimSpace(s), ",")
@@ -381,11 +403,13 @@ func parseWeightedVersions(s string) (weightedChoice, string, error) {
 			ver = strings.TrimSpace(
 				strings.Join([]string{"cometbft/e2e-node", parts[0]}, ":"),
 			)
+
 		case 3:
 			// image:tag:weight
 			ver = strings.TrimSpace(
 				strings.Join([]string{parts[0], parts[1]}, ":"),
 			)
+
 		default:
 			return nil, "", fmt.Errorf(
 				"unexpected weight:version combination: %s",
@@ -394,6 +418,7 @@ func parseWeightedVersions(s string) (weightedChoice, string, error) {
 		}
 
 		weightStr := strings.TrimSpace(parts[len(parts)-1])
+
 		weight, err := strconv.Atoi(weightStr)
 		if err != nil {
 			return nil, "", fmt.Errorf("unexpected weight %q: %w", weightStr, err)
@@ -417,15 +442,19 @@ func gitRepoLatestReleaseVersion(gitRepoDir string) (string, error) {
 	opts := &git.PlainOpenOptions{
 		DetectDotGit: true,
 	}
+
 	r, err := git.PlainOpenWithOptions(gitRepoDir, opts)
 	if err != nil {
 		return "", err
 	}
+
 	tags := make([]string, 0)
+
 	tagObjs, err := r.TagObjects()
 	if err != nil {
 		return "", err
 	}
+
 	err = tagObjs.ForEach(func(tagObj *object.Tag) error {
 		tags = append(tags, tagObj.Name)
 		return nil
@@ -433,6 +462,7 @@ func gitRepoLatestReleaseVersion(gitRepoDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return findLatestReleaseTag(version.TMCoreSemVer, tags)
 }
 
@@ -441,19 +471,23 @@ func findLatestReleaseTag(baseVer string, tags []string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to parse base version \"%s\": %w", baseVer, err)
 	}
+
 	compVer := fmt.Sprintf("%d.%d", baseSemVer.Major(), baseSemVer.Minor())
 	// Build our version comparison string
 	// See https://github.com/Masterminds/semver#caret-range-comparisons-major for details
 	compStr := "^ " + compVer
+
 	verCon, err := semver.NewConstraint(compStr)
 	if err != nil {
 		return "", err
 	}
+
 	var latestVer *semver.Version
 	for _, tag := range tags {
 		if !strings.HasPrefix(tag, "v") {
 			continue
 		}
+
 		curVer, err := semver.NewVersion(tag)
 		// Skip tags that are not valid semantic versions
 		if err != nil {
@@ -467,6 +501,7 @@ func findLatestReleaseTag(baseVer string, tags []string) (string, error) {
 		if !verCon.Check(curVer) {
 			continue
 		}
+
 		if latestVer == nil || curVer.GreaterThan(latestVer) {
 			latestVer = curVer
 		}
@@ -482,5 +517,6 @@ func findLatestReleaseTag(baseVer string, tags []string) (string, error) {
 	if !strings.HasPrefix(vs, "v") {
 		return "v" + vs, nil
 	}
+
 	return vs, nil
 }

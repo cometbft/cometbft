@@ -60,6 +60,7 @@ func TestSubscribe(t *testing.T) {
 	case <-published:
 		assertReceive(t, "Quicksilver", subscription.Out())
 		assertCancelled(t, subscription, pubsub.ErrOutOfCapacity)
+
 	case <-time.After(3 * time.Second):
 		t.Fatal("Expected Publish(Asylum) not to block")
 	}
@@ -85,6 +86,7 @@ func TestSubscribeWithCapacity(t *testing.T) {
 		_, err = s.Subscribe(ctx, clientID, query.All, 0)
 		require.NoError(t, err)
 	})
+
 	subscription, err := s.Subscribe(ctx, clientID, query.All, 1)
 	require.NoError(t, err)
 	err = s.Publish(ctx, "Aggamon")
@@ -391,6 +393,7 @@ func TestBufferCapacity(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
 	defer cancel()
+
 	err = s.Publish(ctx, "Ironclad")
 	if assert.Error(t, err) {
 		assert.Equal(t, context.DeadlineExceeded, err)
@@ -426,6 +429,7 @@ func benchmarkNClients(n int, b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
+
 		go func() {
 			for {
 				select {
@@ -440,6 +444,7 @@ func benchmarkNClients(n int, b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		err = s.PublishWithEvents(
 			ctx,
@@ -461,12 +466,14 @@ func benchmarkNClientsOneQuery(n int, b *testing.B) {
 	})
 
 	ctx := context.Background()
+
 	q := query.MustCompile("abci.Account.Owner = 'Ivan' AND abci.Invoices.Number = 1")
 	for i := 0; i < n; i++ {
 		subscription, err := s.Subscribe(ctx, clientID, q)
 		if err != nil {
 			b.Fatal(err)
 		}
+
 		go func() {
 			for {
 				select {
@@ -481,6 +488,7 @@ func benchmarkNClientsOneQuery(n int, b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		err = s.PublishWithEvents(ctx, "Gamora", map[string][]string{
 			"abci.Account.Owner":   {"Ivan"},

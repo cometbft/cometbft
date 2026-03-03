@@ -27,8 +27,11 @@ import (
 
 func TestInspectConstructor(t *testing.T) {
 	cfg := test.ResetTestRoot("test")
+
 	t.Cleanup(leaktest.Check(t))
+
 	defer func() { _ = os.RemoveAll(cfg.RootDir) }()
+
 	t.Run("from config", func(t *testing.T) {
 		d, err := inspect.NewFromConfig(cfg)
 		require.NoError(t, err)
@@ -38,18 +41,24 @@ func TestInspectConstructor(t *testing.T) {
 
 func TestInspectRun(t *testing.T) {
 	cfg := test.ResetTestRoot("test")
+
 	t.Cleanup(leaktest.Check(t))
+
 	defer func() { _ = os.RemoveAll(cfg.RootDir) }()
+
 	t.Run("from config", func(t *testing.T) {
 		d, err := inspect.NewFromConfig(cfg)
 		require.NoError(t, err)
+
 		ctx, cancel := context.WithCancel(context.Background())
 		stoppedWG := &sync.WaitGroup{}
 		stoppedWG.Add(1)
+
 		go func() {
 			require.NoError(t, d.Run(ctx))
 			stoppedWG.Done()
 		}()
+
 		cancel()
 		stoppedWG.Wait()
 	})
@@ -81,9 +90,11 @@ func TestBlock(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+
 	go func() {
 		startedWG.Done()
 		defer wg.Done()
+
 		require.NoError(t, d.Run(ctx))
 	}()
 	// FIXME: used to induce context switch.
@@ -115,10 +126,13 @@ func TestTxSearch(t *testing.T) {
 
 	stateStoreMock := &statemocks.Store{}
 	stateStoreMock.On("Close").Return(nil)
+
 	blockStoreMock := &statemocks.BlockStore{}
 	blockStoreMock.On("Close").Return(nil)
+
 	txIndexerMock := &txindexmocks.TxIndexer{}
 	blkIdxMock := &indexermocks.BlockIndexer{}
+
 	txIndexerMock.On("Search", mock.Anything,
 		mock.MatchedBy(func(q *query.Query) bool {
 			return testQuery == strings.ReplaceAll(q.String(), " ", "")
@@ -133,9 +147,11 @@ func TestTxSearch(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+
 	go func() {
 		startedWG.Done()
 		defer wg.Done()
+
 		require.NoError(t, d.Run(ctx))
 	}()
 	// FIXME: used to induce context switch.
@@ -165,8 +181,10 @@ func TestTx(t *testing.T) {
 
 	stateStoreMock := &statemocks.Store{}
 	stateStoreMock.On("Close").Return(nil)
+
 	blockStoreMock := &statemocks.BlockStore{}
 	blockStoreMock.On("Close").Return(nil)
+
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	txIndexerMock := &txindexmocks.TxIndexer{}
 	txIndexerMock.On("Get", testHash).Return(&abcitypes.TxResult{
@@ -181,9 +199,11 @@ func TestTx(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+
 	go func() {
 		startedWG.Done()
 		defer wg.Done()
+
 		require.NoError(t, d.Run(ctx))
 	}()
 	// FIXME: used to induce context switch.
@@ -210,6 +230,7 @@ func TestConsensusParams(t *testing.T) {
 	testMaxGas := int64(55)
 	stateStoreMock := &statemocks.Store{}
 	stateStoreMock.On("Close").Return(nil)
+
 	blockStoreMock := &statemocks.BlockStore{}
 	blockStoreMock.On("Close").Return(nil)
 	blockStoreMock.On("Height").Return(testHeight)
@@ -219,6 +240,7 @@ func TestConsensusParams(t *testing.T) {
 			MaxGas: testMaxGas,
 		},
 	}, nil)
+
 	txIndexerMock := &txindexmocks.TxIndexer{}
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
@@ -230,9 +252,11 @@ func TestConsensusParams(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+
 	go func() {
 		startedWG.Done()
 		defer wg.Done()
+
 		require.NoError(t, d.Run(ctx))
 	}()
 	// FIXME: used to induce context switch.
@@ -265,10 +289,12 @@ func TestBlockResults(t *testing.T) {
 			},
 		},
 	}, nil)
+
 	blockStoreMock := &statemocks.BlockStore{}
 	blockStoreMock.On("Close").Return(nil)
 	blockStoreMock.On("Base").Return(int64(0))
 	blockStoreMock.On("Height").Return(testHeight)
+
 	txIndexerMock := &txindexmocks.TxIndexer{}
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
@@ -280,9 +306,11 @@ func TestBlockResults(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+
 	go func() {
 		startedWG.Done()
 		defer wg.Done()
+
 		require.NoError(t, d.Run(ctx))
 	}()
 	// FIXME: used to induce context switch.
@@ -307,6 +335,7 @@ func TestCommit(t *testing.T) {
 	testRound := int32(101)
 	stateStoreMock := &statemocks.Store{}
 	stateStoreMock.On("Close").Return(nil)
+
 	blockStoreMock := &statemocks.BlockStore{}
 	blockStoreMock.On("Close").Return(nil)
 	blockStoreMock.On("Base").Return(int64(0))
@@ -316,6 +345,7 @@ func TestCommit(t *testing.T) {
 		Height: testHeight,
 		Round:  testRound,
 	}, nil)
+
 	txIndexerMock := &txindexmocks.TxIndexer{}
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
@@ -327,9 +357,11 @@ func TestCommit(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+
 	go func() {
 		startedWG.Done()
 		defer wg.Done()
+
 		require.NoError(t, d.Run(ctx))
 	}()
 	// FIXME: used to induce context switch.
@@ -358,6 +390,7 @@ func TestBlockByHash(t *testing.T) {
 	testBlock.LastCommitHash = testHash
 	stateStoreMock := &statemocks.Store{}
 	stateStoreMock.On("Close").Return(nil)
+
 	blockStoreMock := &statemocks.BlockStore{}
 	blockStoreMock.On("Close").Return(nil)
 	blockStoreMock.On("LoadBlockMeta", testHeight).Return(&types.BlockMeta{
@@ -369,6 +402,7 @@ func TestBlockByHash(t *testing.T) {
 		},
 	}, nil)
 	blockStoreMock.On("LoadBlockByHash", testHash).Return(testBlock, nil)
+
 	txIndexerMock := &txindexmocks.TxIndexer{}
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
@@ -380,9 +414,11 @@ func TestBlockByHash(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+
 	go func() {
 		startedWG.Done()
 		defer wg.Done()
+
 		require.NoError(t, d.Run(ctx))
 	}()
 	// FIXME: used to induce context switch.
@@ -421,6 +457,7 @@ func TestBlockchain(t *testing.T) {
 			Hash: testBlockHash,
 		},
 	})
+
 	txIndexerMock := &txindexmocks.TxIndexer{}
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
@@ -432,9 +469,11 @@ func TestBlockchain(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+
 	go func() {
 		startedWG.Done()
 		defer wg.Done()
+
 		require.NoError(t, d.Run(ctx))
 	}()
 	// FIXME: used to induce context switch.
@@ -473,6 +512,7 @@ func TestValidators(t *testing.T) {
 	blockStoreMock.On("Close").Return(nil)
 	blockStoreMock.On("Height").Return(testHeight)
 	blockStoreMock.On("Base").Return(int64(0))
+
 	txIndexerMock := &txindexmocks.TxIndexer{}
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
@@ -484,9 +524,11 @@ func TestValidators(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+
 	go func() {
 		startedWG.Done()
 		defer wg.Done()
+
 		require.NoError(t, d.Run(ctx))
 	}()
 	// FIXME: used to induce context switch.
@@ -522,6 +564,7 @@ func TestBlockSearch(t *testing.T) {
 
 	txIndexerMock := &txindexmocks.TxIndexer{}
 	blkIdxMock := &indexermocks.BlockIndexer{}
+
 	blockStoreMock.On("LoadBlock", testHeight).Return(&types.Block{
 		Header: types.Header{
 			Height: testHeight,
@@ -535,6 +578,7 @@ func TestBlockSearch(t *testing.T) {
 	blkIdxMock.On("Search", mock.Anything,
 		mock.MatchedBy(func(q *query.Query) bool { return testQuery == q.String() })).
 		Return([]int64{testHeight}, nil)
+
 	rpcConfig := config.TestRPCConfig()
 	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock)
 
@@ -544,9 +588,11 @@ func TestBlockSearch(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+
 	go func() {
 		startedWG.Done()
 		defer wg.Done()
+
 		require.NoError(t, d.Run(ctx))
 	}()
 	// FIXME: used to induce context switch.
@@ -576,9 +622,11 @@ func requireConnect(t testing.TB, addr string, retries int) {
 	if len(parts) != 2 {
 		t.Fatalf("malformed address to dial: %s", addr)
 	}
+
 	var err error
 	for i := 0; i < retries; i++ {
 		var conn net.Conn
+
 		conn, err = net.Dial(parts[0], parts[1])
 		if err == nil {
 			conn.Close()
@@ -587,5 +635,6 @@ func requireConnect(t testing.TB, addr string, retries int) {
 		// FIXME attempt to yield and let the other goroutine continue execution.
 		time.Sleep(time.Microsecond * 100)
 	}
+
 	t.Fatalf("unable to connect to server %s after %d tries: %s", addr, retries, err)
 }

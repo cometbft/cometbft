@@ -76,7 +76,6 @@ func (sd *SignerDialerEndpoint) ensureConnection() error {
 	retries := 0
 	for retries < sd.maxConnRetries {
 		conn, err := sd.dialer()
-
 		if err != nil {
 			retries++
 			sd.Logger.Debug("SignerDialer: Reconnection failed", "retries", retries, "max", sd.maxConnRetries, "err", err)

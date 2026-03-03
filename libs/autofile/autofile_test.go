@@ -28,6 +28,7 @@ func TestSIGHUP(t *testing.T) {
 	t.Cleanup(func() {
 		os.RemoveAll(dir)
 	})
+
 	err = os.Chdir(dir)
 	require.NoError(t, err)
 
@@ -50,7 +51,9 @@ func TestSIGHUP(t *testing.T) {
 	// Move into a different temporary directory
 	otherDir, err := os.MkdirTemp("", "sighup_test_other")
 	require.NoError(t, err)
+
 	defer os.RemoveAll(otherDir)
+
 	err = os.Chdir(otherDir)
 	require.NoError(t, err)
 
@@ -73,6 +76,7 @@ func TestSIGHUP(t *testing.T) {
 	if body := cmtos.MustReadFile(filepath.Join(dir, name+"_old")); string(body) != "Line 1\nLine 2\n" {
 		t.Errorf("unexpected body %s", body)
 	}
+
 	if body := cmtos.MustReadFile(filepath.Join(dir, name)); string(body) != "Line 3\nLine 4\n" {
 		t.Errorf("unexpected body %s", body)
 	}

@@ -38,6 +38,7 @@ func TestSetupEnv(t *testing.T) {
 		i := strconv.Itoa(idx)
 		// test command that store value of foobar in local variable
 		var foo string
+
 		demo := &cobra.Command{
 			Use: "demo",
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -50,6 +51,7 @@ func TestSetupEnv(t *testing.T) {
 		cmd.Exit = func(int) {}
 
 		viper.Reset()
+
 		args := append([]string{cmd.Use}, tc.args...)
 		err := RunWithArgs(cmd, args, tc.env)
 		require.Nil(t, err, i)
@@ -62,6 +64,7 @@ func tempDir() string {
 	if err != nil {
 		panic(err)
 	}
+
 	return cdir
 }
 
@@ -96,6 +99,7 @@ func TestSetupConfig(t *testing.T) {
 		i := strconv.Itoa(idx)
 		// test command that store value of foobar in local variable
 		var foo, two string
+
 		boo := &cobra.Command{
 			Use: "reader",
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -110,6 +114,7 @@ func TestSetupConfig(t *testing.T) {
 		cmd.Exit = func(int) {}
 
 		viper.Reset()
+
 		args := append([]string{cmd.Use}, tc.args...)
 		err := RunWithArgs(cmd, args, tc.env)
 		require.Nil(t, err, i)
@@ -150,9 +155,11 @@ func TestSetupUnmarshal(t *testing.T) {
 		if name != "" {
 			r.Name = name
 		}
+
 		if age != 0 {
 			r.Age = age
 		}
+
 		return r
 	}
 
@@ -189,6 +196,7 @@ func TestSetupUnmarshal(t *testing.T) {
 		cmd.Exit = func(int) {}
 
 		viper.Reset()
+
 		args := append([]string{cmd.Use}, tc.args...)
 		err := RunWithArgs(cmd, args, tc.env)
 		require.Nil(t, err, i)
@@ -222,6 +230,7 @@ func TestSetupTrace(t *testing.T) {
 		cmd.Exit = func(int) {}
 
 		viper.Reset()
+
 		args := append([]string{cmd.Use}, tc.args...)
 		stdout, stderr, err := RunCaptureWithArgs(cmd, args, tc.env)
 		require.NotNil(t, err, i)
@@ -231,6 +240,7 @@ func TestSetupTrace(t *testing.T) {
 		desired := fmt.Sprintf("ERROR: %s", tc.expected)
 		assert.Equal(t, desired, msg[0], i)
 		t.Log(msg)
+
 		if tc.long && assert.True(t, len(msg) > 2, i) {
 			// the next line starts the stack trace...
 			assert.Contains(t, stderr, "TestSetupTrace", i)

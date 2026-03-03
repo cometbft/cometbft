@@ -133,6 +133,7 @@ OUTER_LOOP:
 							height, page, perPage),
 					}
 				}
+
 				if res.Total <= 0 {
 					return nil, provider.ErrBadLightBlock{
 						Reason: fmt.Errorf("total number of vals is <= 0: %d (height: %d, page: %d, per_page: %d)",
@@ -143,6 +144,7 @@ OUTER_LOOP:
 				total = res.Total
 				vals = append(vals, res.Validators...)
 				page++
+
 				continue OUTER_LOOP
 
 			case regexpTooHigh.MatchString(err.Error()):
@@ -164,7 +166,6 @@ OUTER_LOOP:
 			default:
 				return nil, err
 			}
-
 		}
 	}
 
@@ -172,6 +173,7 @@ OUTER_LOOP:
 	if err != nil {
 		return nil, provider.ErrBadLightBlock{Reason: err}
 	}
+
 	return valSet, nil
 }
 
@@ -189,6 +191,7 @@ func (p *http) signedHeader(ctx context.Context, height *int64) (*types.SignedHe
 				// catch up.
 				return nil, provider.ErrHeightTooHigh
 			}
+
 			return &commit.SignedHeader, nil
 
 		case regexpTooHigh.MatchString(err.Error()):
@@ -207,6 +210,7 @@ func (p *http) signedHeader(ctx context.Context, height *int64) (*types.SignedHe
 			return nil, err
 		}
 	}
+
 	return nil, provider.ErrNoResponse
 }
 
@@ -219,6 +223,7 @@ func validateHeight(height int64) (*int64, error) {
 	if height == 0 {
 		h = nil
 	}
+
 	return h, nil
 }
 

@@ -20,10 +20,12 @@ import (
 // clearConfig clears env vars, the given root dir, and resets viper.
 func clearConfig(t *testing.T, dir string) {
 	os.Clearenv()
+
 	err := os.RemoveAll(dir)
 	require.NoError(t, err)
 
 	viper.Reset()
+
 	config = cfg.DefaultConfig()
 }
 
@@ -35,8 +37,10 @@ func testRootCmd() *cobra.Command {
 		Run:               func(cmd *cobra.Command, args []string) {},
 	}
 	registerFlagsRootCmd(rootCmd)
+
 	var l string
 	rootCmd.PersistentFlags().String("log", l, "Log")
+
 	return rootCmd
 }
 
@@ -48,6 +52,7 @@ func testSetup(t *testing.T, root string, args []string, env map[string]string) 
 
 	// run with the args and env
 	args = append([]string{rootCmd.Use}, args...)
+
 	return cli.RunWithArgs(cmd, args, env)
 }
 
@@ -55,6 +60,7 @@ func TestRootHome(t *testing.T) {
 	tmpDir := os.TempDir()
 	root := filepath.Join(tmpDir, "adir")
 	newRoot := filepath.Join(tmpDir, "something-else")
+
 	defer clearConfig(t, root)
 	defer clearConfig(t, newRoot)
 
@@ -106,7 +112,9 @@ func TestRootFlagsEnv(t *testing.T) {
 		idxString := strconv.Itoa(i)
 		root := filepath.Join(os.TempDir(), "adir2_"+idxString)
 		idxString = "idx: " + idxString
+
 		defer clearConfig(t, root)
+
 		err := testSetup(t, root, tc.args, tc.env)
 		require.Nil(t, err, idxString)
 
@@ -137,6 +145,7 @@ func TestRootConfig(t *testing.T) {
 		idxString := strconv.Itoa(i)
 		root := filepath.Join(os.TempDir(), "adir3_"+idxString)
 		idxString = "idx: " + idxString
+
 		defer clearConfig(t, root)
 		// XXX: path must match cfg.defaultConfigPath
 		configFilePath := filepath.Join(root, "config")
@@ -167,6 +176,8 @@ func WriteConfigVals(dir string, vals map[string]string) error {
 	for k, v := range vals {
 		data += fmt.Sprintf("%s = \"%s\"\n", k, v)
 	}
+
 	cfile := filepath.Join(dir, "config.toml")
+
 	return os.WriteFile(cfile, []byte(data), 0o600)
 }

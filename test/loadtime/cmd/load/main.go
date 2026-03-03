@@ -35,6 +35,7 @@ func main() {
 	if err := loadtest.RegisterClientFactory("loadtime-client", &ClientFactory{ID: u[:]}); err != nil {
 		panic(err)
 	}
+
 	loadtest.Run(&loadtest.CLIConfig{
 		AppName:              "loadtime",
 		AppShortDesc:         "Generate timestamped transaction load.",
@@ -48,9 +49,11 @@ func (f *ClientFactory) ValidateConfig(cfg loadtest.Config) error {
 	if err != nil {
 		return err
 	}
+
 	if psb > cfg.Size {
 		return fmt.Errorf("payload size exceeds configured size")
 	}
+
 	return nil
 }
 

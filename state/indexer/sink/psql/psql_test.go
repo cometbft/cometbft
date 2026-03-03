@@ -81,6 +81,7 @@ func TestMain(m *testing.M) {
 		log.Print("Pause at exit is enabled, containers will not expire")
 	} else {
 		const expireSeconds = 60
+
 		_ = resource.Expire(expireSeconds)
 		log.Printf("Container expiration set to %d seconds", expireSeconds)
 	}
@@ -88,6 +89,7 @@ func TestMain(m *testing.M) {
 	// Connect to the database, clear any leftover data, and install the
 	// indexing schema.
 	conn := fmt.Sprintf(dsn, user, password, resource.GetPort(port+"/tcp"), dbName)
+
 	var db *sql.DB
 
 	if err := pool.Retry(func() error {
@@ -95,7 +97,9 @@ func TestMain(m *testing.M) {
 		if err != nil {
 			return err
 		}
+
 		db = sink.DB() // set global for test use
+
 		return db.Ping()
 	}); err != nil {
 		log.Fatalf("Connecting to database: %v", err)
@@ -109,6 +113,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("Reading schema: %v", err)
 	}
+
 	migrator := schema.NewMigrator()
 	if err := migrator.Apply(db, sm); err != nil {
 		log.Fatalf("Applying schema: %v", err)
@@ -126,10 +131,13 @@ func TestMain(m *testing.M) {
 		waitForInterrupt()
 		log.Print("(resuming)")
 	}
+
 	log.Print("Shutting down database")
+
 	if err := pool.Purge(resource); err != nil {
 		log.Printf("WARNING: Purging pool failed: %v", err)
 	}
+
 	if err := db.Close(); err != nil {
 		log.Printf("WARNING: Closing database failed: %v", err)
 	}
@@ -227,6 +235,7 @@ func TestIndexing(t *testing.T) {
 			NumTxs: 2,
 		})
 		require.NoError(t, err)
+
 		txResult1 := &abci.TxResult{
 			Height: 1,
 			Index:  uint32(0),
@@ -235,6 +244,7 @@ func TestIndexing(t *testing.T) {
 		}
 		err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult1})
 		require.NoError(t, err)
+
 		txResult2 := &abci.TxResult{
 			Height: 1,
 			Index:  uint32(1),
@@ -271,6 +281,7 @@ func newTestBlockEvents() types.EventDataNewBlockEvents {
 // readSchema loads the indexing database schema file
 func readSchema() ([]*schema.Migration, error) {
 	const filename = "schema.sql"
+
 	contents, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read sql file from '%s': %w", filename, err)
@@ -288,10 +299,12 @@ func resetDatabase(db *sql.DB) error {
 	if err != nil {
 		return fmt.Errorf("dropping tables: %v", err)
 	}
+
 	_, err = db.Exec(`DROP VIEW IF EXISTS event_attributes,block_events,tx_events CASCADE;`)
 	if err != nil {
 		return fmt.Errorf("dropping views: %v", err)
 	}
+
 	return nil
 }
 
@@ -313,6 +326,7 @@ func txResultWithEvents(events []abci.Event) *abci.TxResult {
 
 func loadTxResult(hash []byte) (*abci.TxResult, error) {
 	hashString := fmt.Sprintf("%X", hash)
+
 	var resultData []byte
 	if err := testDB().QueryRow(`
 SELECT tx_result FROM `+tableTxResults+` WHERE tx_hash = $1;

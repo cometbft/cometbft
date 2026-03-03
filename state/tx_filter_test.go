@@ -33,6 +33,7 @@ func TestTxFilter(t *testing.T) {
 	for i, tc := range testCases {
 		stateDB, err := dbm.NewDB("state", "memdb", os.TempDir())
 		require.NoError(t, err)
+
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
 		})

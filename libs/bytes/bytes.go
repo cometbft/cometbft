@@ -27,6 +27,7 @@ func (bz HexBytes) MarshalJSON() ([]byte, error) {
 	jbz[0] = '"'
 	copy(jbz[1:], s)
 	jbz[len(jbz)-1] = '"'
+
 	return jbz, nil
 }
 
@@ -35,11 +36,14 @@ func (bz *HexBytes) UnmarshalJSON(data []byte) error {
 	if len(data) < 2 || data[0] != '"' || data[len(data)-1] != '"' {
 		return fmt.Errorf("invalid hex string: %s", data)
 	}
+
 	bz2, err := hex.DecodeString(string(data[1 : len(data)-1]))
 	if err != nil {
 		return err
 	}
+
 	*bz = bz2
+
 	return nil
 }
 

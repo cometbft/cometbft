@@ -263,6 +263,7 @@ func TestBigNumbers(t *testing.T) {
 				t.Errorf("Query: %#q\nInput: %+v\nMatches: got error %v",
 					tc.s, tc.events, err)
 			}
+
 			if got != tc.matches {
 				t.Errorf("Query: %#q\nInput: %+v\nMatches: got %v, want %v",
 					tc.s, tc.events, got, tc.matches)
@@ -507,6 +508,7 @@ func TestCompiledMatches(t *testing.T) {
 				t.Errorf("Query: %#q\nInput: %+v\nMatches: got error %v",
 					tc.s, tc.events, err)
 			}
+
 			if got != tc.matches {
 				t.Errorf("Query: %#q\nInput: %+v\nMatches: got %v, want %v",
 					tc.s, tc.events, got, tc.matches)
@@ -522,6 +524,7 @@ func sortEvents(events []types.Event) []types.Event {
 		}
 		return events[i].Type < events[j].Type
 	})
+
 	return events
 }
 
@@ -531,6 +534,7 @@ func TestExpandEvents(t *testing.T) {
 	require.NoError(t, err)
 	bz2, err := json.Marshal(sortEvents(apiTypeEvents))
 	require.NoError(t, err)
+
 	if string(bz) != string(bz2) {
 		t.Errorf("got %s, want %v", string(bz), string(bz2))
 	}
@@ -543,12 +547,15 @@ func TestAllMatchesAll(t *testing.T) {
 		`Route|66=`,
 		`Rilly|Blue=`,
 	)
+
 	keys := make([]string, 0)
 	for k := range events {
 		keys = append(keys, k)
 	}
+
 	for _, key := range keys {
 		delete(events, key)
+
 		match, err := query.All.Matches(events)
 		if err != nil {
 			t.Errorf("Matches failed: %v", err)
@@ -562,6 +569,7 @@ func TestAllMatchesAll(t *testing.T) {
 // The format is "type|attr1=val1|attr2=val2|...".
 func addNewTestEvent(events map[string][]string, s string) {
 	parts := strings.Split(s, "|")
+
 	key := parts[0]
 	for _, kv := range parts[1:] {
 		k, v := splitKV(kv)
@@ -577,6 +585,7 @@ func newTestEvents(ss ...string) map[string][]string {
 	for _, s := range ss {
 		addNewTestEvent(events, s)
 	}
+
 	return events
 }
 

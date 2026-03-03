@@ -155,6 +155,7 @@ func TestPool(t *testing.T) {
 		consumer := func(msg string) {
 			mu.Lock()
 			defer mu.Unlock()
+
 			results = append(results, msg)
 		}
 
@@ -215,6 +216,7 @@ func TestPool(t *testing.T) {
 				<-blockConsumer
 				consumerUnblocked.Store(true)
 			}
+
 			consumed.Add(1)
 		}
 
@@ -289,5 +291,4 @@ func TestPool(t *testing.T) {
 		}, 2*time.Second, 10*time.Millisecond,
 			"expected 100 items consumed after second burst, got %d", consumed.Load())
 	})
-
 }

@@ -35,7 +35,9 @@ func BenchmarkKeyGeneration(b *testing.B, generateKey func(reader io.Reader) cry
 // the provided privkey.
 func BenchmarkSigning(b *testing.B, priv crypto.PrivKey) {
 	message := []byte("Hello, world!")
+
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_, err := priv.Sign(message)
 		if err != nil {
@@ -50,11 +52,14 @@ func BenchmarkVerification(b *testing.B, priv crypto.PrivKey) {
 	pub := priv.PubKey()
 	// use a short message, so this time doesn't get dominated by hashing.
 	message := []byte("Hello, world!")
+
 	signature, err := priv.Sign(message)
 	if err != nil {
 		b.Fatal(err)
 	}
+
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		pub.VerifySignature(message, signature)
 	}

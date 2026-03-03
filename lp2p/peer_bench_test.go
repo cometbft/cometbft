@@ -224,6 +224,7 @@ LOOP:
 		case <-ctx.Done():
 			finish()
 			break LOOP
+
 		default:
 			// send sync
 			if cfg.sendConcurrency < 2 {
@@ -234,12 +235,15 @@ LOOP:
 			// send async
 			wg := sync.WaitGroup{}
 			wg.Add(cfg.sendConcurrency)
+
 			for i := 0; i < cfg.sendConcurrency; i++ {
 				go func() {
 					defer wg.Done()
+
 					sendFunc()
 				}()
 			}
+
 			wg.Wait()
 		}
 	}

@@ -15,7 +15,12 @@ linters:
     - staticcheck
     - unconvert
     - unused
+    - wsl_v5
   settings:
+    wsl_v5:
+      allow-whole-block: true
+      branch-max-lines: 4
+      case-max-lines: 2
     depguard:
       rules:
         main:
@@ -60,6 +65,7 @@ linters:
             - github.com/libp2p/go-libp2p
             - github.com/multiformats/go-multiaddr
             - github.com/mr-tron/base58/base58
+            - golang.org/x/tools/go/packages
         test:
           files:
             - $test

@@ -147,6 +147,7 @@ func (vote *Vote) ExtendedCommitSig() ExtendedCommitSig {
 // See CanonicalizeVote
 func VoteSignBytes(chainID string, vote *cmtproto.Vote) []byte {
 	pb := CanonicalizeVote(chainID, vote)
+
 	bz, err := protoio.MarshalDelimited(&pb)
 	if err != nil {
 		panic(err)
@@ -162,6 +163,7 @@ func VoteSignBytes(chainID string, vote *cmtproto.Vote) []byte {
 // length-prefixed for backwards-compatibility with the Amino encoding.
 func VoteExtensionSignBytes(chainID string, vote *cmtproto.Vote) []byte {
 	pb := CanonicalizeVoteExtension(chainID, vote)
+
 	bz, err := protoio.MarshalDelimited(&pb)
 	if err != nil {
 		panic(err)
@@ -220,10 +222,12 @@ func (vote *Vote) verifyAndReturnProto(chainID string, pubKey crypto.PubKey) (*c
 	if !bytes.Equal(pubKey.Address(), vote.ValidatorAddress) {
 		return nil, ErrVoteInvalidValidatorAddress
 	}
+
 	v := vote.ToProto()
 	if !pubKey.VerifySignature(VoteSignBytes(chainID, v), vote.Signature) {
 		return nil, ErrVoteInvalidSignature
 	}
+
 	return v, nil
 }
 
@@ -255,6 +259,7 @@ func (vote *Vote) VerifyVoteAndExtension(chainID string, pubKey crypto.PubKey) e
 			return ErrVoteInvalidSignature
 		}
 	}
+
 	return nil
 }
 
@@ -264,11 +269,14 @@ func (vote *Vote) VerifyExtension(chainID string, pubKey crypto.PubKey) error {
 	if vote.Type != cmtproto.PrecommitType || vote.BlockID.IsZero() {
 		return nil
 	}
+
 	v := vote.ToProto()
+
 	extSignBytes := VoteExtensionSignBytes(chainID, v)
 	if !pubKey.VerifySignature(extSignBytes, vote.ExtensionSignature) {
 		return ErrVoteInvalidSignature
 	}
+
 	return nil
 }
 
@@ -306,9 +314,11 @@ func (vote *Vote) ValidateBasic() error {
 			len(vote.ValidatorAddress),
 		)
 	}
+
 	if vote.ValidatorIndex < 0 {
 		return errors.New("negative ValidatorIndex")
 	}
+
 	if len(vote.Signature) == 0 {
 		return errors.New("signature is missing")
 	}
@@ -327,6 +337,7 @@ func (vote *Vote) ValidateBasic() error {
 				vote.Type, vote.BlockID.IsZero(),
 			)
 		}
+
 		if len(vote.ExtensionSignature) > 0 {
 			return errors.New("unexpected vote extension signature")
 		}
@@ -359,12 +370,15 @@ func (vote *Vote) EnsureExtension() error {
 	if vote.Type != cmtproto.PrecommitType {
 		return nil
 	}
+
 	if vote.BlockID.IsZero() {
 		return nil
 	}
+
 	if len(vote.ExtensionSignature) > 0 {
 		return nil
 	}
+
 	return ErrVoteExtensionAbsent
 }
 
@@ -402,6 +416,7 @@ func VotesToProto(votes []*Vote) []*cmtproto.Vote {
 			res = append(res, v)
 		}
 	}
+
 	return res
 }
 
@@ -420,6 +435,7 @@ func SignAndCheckVote(
 		// function keeps it that way.
 		return true, err
 	}
+
 	vote.Signature = v.Signature
 
 	isPrecommit := vote.Type == cmtproto.PrecommitType

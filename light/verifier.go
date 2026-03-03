@@ -118,6 +118,7 @@ func VerifyAdjacent(
 			trustedHeader.NextValidatorsHash,
 			untrustedHeader.ValidatorsHash,
 		)
+
 		return err
 	}
 
@@ -199,6 +200,7 @@ func ValidateTrustLevel(lvl cmtmath.Fraction) error {
 		lvl.Denominator == 0 {
 		return fmt.Errorf("trustLevel must be within [1/3, 1], given %v", lvl)
 	}
+
 	return nil
 }
 

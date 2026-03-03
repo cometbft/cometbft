@@ -40,7 +40,9 @@ func TestPubKeyToFromProto(t *testing.T) {
 	if bls12381.Enabled {
 		privKey, err := bls12381.GenPrivKey()
 		require.NoError(t, err)
+
 		defer privKey.Zeroize()
+
 		pk = privKey.PubKey()
 		proto, err := PubKeyToProto(pk)
 		require.NoError(t, err)
@@ -88,6 +90,7 @@ func TestPubKeyFromTypeAndBytes(t *testing.T) {
 	if bls12381.Enabled {
 		privKey, err := bls12381.GenPrivKey()
 		require.NoError(t, err)
+
 		pk := privKey.PubKey()
 		pubkey, err = PubKeyFromTypeAndBytes(pk.Type(), pk.Bytes())
 		assert.NoError(t, err)

@@ -50,6 +50,7 @@ func New(node *nm.Node) *Local {
 	if err != nil {
 		node.Logger.Error("Error configuring RPC", "err", err)
 	}
+
 	return &Local{
 		EventBus: node.EventBus(),
 		Logger:   log.NewNopLogger(),
@@ -234,6 +235,7 @@ func (c *Local) Subscribe(
 	} else {
 		sub, err = c.SubscribeUnbuffered(ctx, subscriber, q)
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to subscribe: %w", err)
 	}
@@ -263,16 +265,19 @@ func (c *Local) eventsRoutine(
 					c.Logger.Error("wanted to publish ResultEvent, but out channel is full", "result", result, "query", result.Query)
 				}
 			}
+
 		case <-sub.Canceled():
 			if sub.Err() == cmtpubsub.ErrUnsubscribed {
 				return
 			}
 
 			c.Logger.Error("subscription was canceled, resubscribing...", "err", sub.Err(), "query", q.String())
+
 			sub = c.resubscribe(subscriber, q)
 			if sub == nil { // client was stopped
 				return
 			}
+
 		case <-c.Quit():
 			return
 		}
@@ -302,6 +307,7 @@ func (c *Local) Unsubscribe(ctx context.Context, subscriber, query string) error
 	if err != nil {
 		return fmt.Errorf("failed to parse query: %w", err)
 	}
+
 	return c.EventBus.Unsubscribe(ctx, subscriber, q)
 }
 

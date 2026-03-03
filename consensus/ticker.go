@@ -47,6 +47,7 @@ func NewTimeoutTicker() TimeoutTicker {
 	}
 	tt.BaseService = *service.NewBaseService(nil, "TimeoutTicker", tt)
 	tt.stopTimer() // don't want to fire until the first scheduled timeout
+
 	return tt
 }
 
@@ -85,6 +86,7 @@ func (t *timeoutTicker) stopTimer() {
 	if !t.timer.Stop() {
 		<-t.timer.C
 	}
+
 	t.timerActive = false
 }
 
@@ -95,6 +97,7 @@ func (t *timeoutTicker) stopTimer() {
 // making it single-threaded access.
 func (t *timeoutTicker) timeoutRoutine() {
 	t.Logger.Debug("Starting timeout routine")
+
 	var ti timeoutInfo
 	for {
 		select {
@@ -124,6 +127,7 @@ func (t *timeoutTicker) timeoutRoutine() {
 			t.timerActive = true
 
 			t.Logger.Debug("Scheduled timeout", "dur", ti.Duration, "height", ti.Height, "round", ti.Round, "step", ti.Step)
+
 		case <-t.timer.C:
 			t.timerActive = false
 			t.Logger.Info("Timed out", "dur", ti.Duration, "height", ti.Height, "round", ti.Round, "step", ti.Step)
@@ -132,6 +136,7 @@ func (t *timeoutTicker) timeoutRoutine() {
 			// We can eliminate it by merging the timeoutRoutine into receiveRoutine
 			//  and managing the timeouts ourselves with a millisecond ticker
 			go func(toi timeoutInfo) { t.tockChan <- toi }(ti)
+
 		case <-t.Quit():
 			t.stopTimer()
 			return

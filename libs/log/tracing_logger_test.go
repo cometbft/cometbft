@@ -31,6 +31,7 @@ func TestTracingLogger(t *testing.T) {
 				`","level":"info"}`,
 			"\t", "",
 		), "\n", "")
+
 	have := strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(buf.String()), "\\n", ""), "\\t", "")
 	if want != have {
 		t.Errorf("\nwant '%s'\nhave '%s'", want, have)
@@ -48,6 +49,7 @@ func TestTracingLogger(t *testing.T) {
 		`"err1":"opportunities don't happen. You create them",` +
 		`"err2":"once you choose hope, anything's possible",` +
 		`"level":"info"}`
+
 	have = strings.TrimSpace(buf.String())
 	if want != have {
 		t.Errorf("\nwant '%s'\nhave '%s'", want, have)
@@ -58,6 +60,7 @@ func TestTracingLogger(t *testing.T) {
 	logger.With("user", "Sam").With("context", "value").Info("foo", "bar", "baz")
 
 	want = `{"_msg":"foo","bar":"baz","context":"value","level":"info","user":"Sam"}`
+
 	have = strings.TrimSpace(buf.String())
 	if want != have {
 		t.Errorf("\nwant '%s'\nhave '%s'", want, have)

@@ -50,6 +50,7 @@ func runInspect(cmd *cobra.Command, _ []string) error {
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT)
+
 	go func() {
 		<-c
 		cancel()
@@ -59,6 +60,7 @@ func runInspect(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+
 	blockStore := store.NewBlockStore(blockStoreDB)
 	defer blockStore.Close()
 
@@ -66,6 +68,7 @@ func runInspect(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+
 	stateStore := state.NewStore(stateDB, state.StoreOptions{DiscardABCIResponses: false})
 	defer stateStore.Close()
 
@@ -73,12 +76,15 @@ func runInspect(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+
 	txIndexer, blockIndexer, err := block.IndexerFromConfig(config, cfg.DefaultDBProvider, genDoc.ChainID)
 	if err != nil {
 		return err
 	}
+
 	ins := inspect.New(config.RPC, blockStore, stateStore, txIndexer, blockIndexer)
 
 	logger.Info("starting inspect server")
+
 	return ins.Run(ctx)
 }

@@ -24,6 +24,7 @@ func main() {
 			log.NewSyncWriter(os.Stdout),
 		).With("module", "priv_val")
 	)
+
 	flag.Parse()
 
 	logger.Info(
@@ -37,6 +38,7 @@ func main() {
 	pv := privval.LoadFilePV(*privValKeyPath, *privValStatePath)
 
 	var dialer privval.SocketDialer
+
 	protocol, address := cmtnet.ProtocolAndAddress(*addr)
 	switch protocol {
 	case "unix":
@@ -44,6 +46,7 @@ func main() {
 	case "tcp":
 		connTimeout := 3 * time.Second // TODO
 		dialer = privval.DialTCPFn(address, connTimeout, ed25519.GenPrivKey())
+
 	default:
 		logger.Error("Unknown protocol", "protocol", protocol)
 		os.Exit(1)

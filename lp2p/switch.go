@@ -131,6 +131,7 @@ func (s *Switch) OnStart() error {
 		err := s.bootstrapPeer(ctx, bp.AddrInfo, opts)
 		if err != nil {
 			s.Logger.Error("Unable to add bootstrap peer", "peer_id", bp.AddrInfo.String(), "err", err)
+
 			go s.reconnectPeer(bp.AddrInfo, MaxReconnectBackoff, opts)
 			continue
 		}
@@ -271,9 +272,11 @@ func (s *Switch) StopPeerForError(peer p2p.Peer, reason any) {
 
 	if p.IsPersistent() {
 		shouldReconnect = true
+
 		s.Logger.Debug("Will reconnect to peer", "peer_id", pid, "err", reason)
 	} else if errTransient, ok := TransientErrorFromAny(reason); ok {
 		shouldReconnect = true
+
 		s.Logger.Debug("Will reconnect to peer after transient error", "peer_id", pid, "err", errTransient.Err)
 	}
 
@@ -329,6 +332,7 @@ func (s *Switch) Broadcast(e p2p.Envelope) chan bool {
 	e.Message = newPreMarshaledMessage(e.Message)
 
 	var wg sync.WaitGroup
+
 	successChan := make(chan bool, s.peerSet.Size())
 
 	s.peerSet.ForEach(func(p p2p.Peer) {
@@ -394,7 +398,9 @@ func (s *Switch) handleStream(stream network.Stream) {
 			"peer_id", peerID.String(),
 			"protocol", protocolID,
 		)
+
 		_ = stream.Reset()
+
 		return
 	}
 
@@ -407,6 +413,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 				"panic", r,
 				"stack", string(debug.Stack()),
 			)
+
 			_ = stream.Reset()
 		}
 	}()
@@ -416,6 +423,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 	if err != nil {
 		// should not happen
 		s.Logger.Error("Unknown protocol descriptor", "protocol", protocolID)
+
 		_ = stream.Reset()
 		return
 	}
@@ -506,6 +514,7 @@ func (s *Switch) resolvePeer(id peer.ID) (p2p.Peer, error) {
 
 		// should not happen
 		return nil, errors.Wrap(err, "peer exists but not found")
+
 	case err != nil:
 		return nil, errors.Wrap(err, "unable to add peer")
 	default:
@@ -607,6 +616,7 @@ func (s *Switch) reconnectPeer(addrInfo peer.AddrInfo, backoffMax time.Duration,
 			)
 
 			sleep()
+
 			continue
 		}
 
@@ -620,6 +630,7 @@ func (s *Switch) reconnectPeer(addrInfo peer.AddrInfo, backoffMax time.Duration,
 				"backoff", backoff.String(),
 			)
 			sleep()
+
 			continue
 		}
 

@@ -65,6 +65,7 @@ func NewEventSwitch() EventSwitch {
 		listeners:  make(map[string]*eventListener),
 	}
 	evsw.BaseService = *service.NewBaseService(nil, "EventSwitch", evsw)
+
 	return evsw
 }
 
@@ -77,22 +78,26 @@ func (evsw *eventSwitch) OnStop() {}
 func (evsw *eventSwitch) AddListenerForEvent(listenerID, event string, cb EventCallback) error {
 	// Get/Create eventCell and listener.
 	evsw.mtx.Lock()
+
 	eventCell := evsw.eventCells[event]
 	if eventCell == nil {
 		eventCell = newEventCell()
 		evsw.eventCells[event] = eventCell
 	}
+
 	listener := evsw.listeners[listenerID]
 	if listener == nil {
 		listener = newEventListener(listenerID)
 		evsw.listeners[listenerID] = listener
 	}
+
 	evsw.mtx.Unlock()
 
 	// Add event and listener.
 	if err := listener.AddEvent(event); err != nil {
 		return err
 	}
+
 	eventCell.AddListener(listenerID, cb)
 
 	return nil
@@ -103,6 +108,7 @@ func (evsw *eventSwitch) RemoveListener(listenerID string) {
 	evsw.mtx.RLock()
 	listener := evsw.listeners[listenerID]
 	evsw.mtx.RUnlock()
+
 	if listener == nil {
 		return
 	}
@@ -113,6 +119,7 @@ func (evsw *eventSwitch) RemoveListener(listenerID string) {
 
 	// Remove callback for each event.
 	listener.SetRemoved()
+
 	for _, event := range listener.GetEvents() {
 		evsw.RemoveListenerForEvent(event, listenerID)
 	}
@@ -136,9 +143,11 @@ func (evsw *eventSwitch) RemoveListenerForEvent(event string, listenerID string)
 		// Lock again and double check.
 		evsw.mtx.Lock()      // OUTER LOCK
 		eventCell.mtx.Lock() // INNER LOCK
+
 		if len(eventCell.listeners) == 0 {
 			delete(evsw.eventCells, event)
 		}
+
 		eventCell.mtx.Unlock() // INNER LOCK
 		evsw.mtx.Unlock()      // OUTER LOCK
 	}
@@ -183,15 +192,18 @@ func (cell *eventCell) RemoveListener(listenerID string) int {
 	delete(cell.listeners, listenerID)
 	numListeners := len(cell.listeners)
 	cell.mtx.Unlock()
+
 	return numListeners
 }
 
 func (cell *eventCell) FireEvent(data EventData) {
 	cell.mtx.RLock()
+
 	eventCallbacks := make([]EventCallback, 0, len(cell.listeners))
 	for _, cb := range cell.listeners {
 		eventCallbacks = append(eventCallbacks, cb)
 	}
+
 	cell.mtx.RUnlock()
 
 	for _, cb := range eventCallbacks {
@@ -229,6 +241,7 @@ func (evl *eventListener) AddEvent(event string) error {
 
 	evl.events = append(evl.events, event)
 	evl.mtx.Unlock()
+
 	return nil
 }
 
@@ -237,6 +250,7 @@ func (evl *eventListener) GetEvents() []string {
 	events := make([]string, len(evl.events))
 	copy(events, evl.events)
 	evl.mtx.RUnlock()
+
 	return events
 }
 

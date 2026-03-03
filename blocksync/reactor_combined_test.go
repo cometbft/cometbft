@@ -180,6 +180,7 @@ func newBlockIngestorMock(t *testing.T) *blockIngestorMock {
 		t: t,
 	}
 	m.BaseReactor = p2p.NewBaseReactor("consensus-ingestor-mock", m)
+
 	return m
 }
 
@@ -209,5 +210,6 @@ func (m *blockIngestorMock) Requests() []consensus.IngestCandidate {
 
 	out := make([]consensus.IngestCandidate, len(m.storedCalls))
 	copy(out, m.storedCalls)
+
 	return out
 }

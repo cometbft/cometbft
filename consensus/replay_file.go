@@ -43,6 +43,7 @@ func (cs *State) ReplayFile(file string, console bool) error {
 	if cs.IsRunning() {
 		return errors.New("cs is already running, cannot replay")
 	}
+
 	if cs.wal != nil {
 		return errors.New("cs wal is open, cannot replay")
 	}
@@ -52,10 +53,12 @@ func (cs *State) ReplayFile(file string, console bool) error {
 	// ensure all new step events are regenerated as expected
 
 	ctx := context.Background()
+
 	newStepSub, err := cs.eventBus.Subscribe(ctx, subscriber, types.EventQueryNewRoundStep)
 	if err != nil {
 		return fmt.Errorf("failed to subscribe %s to %v", subscriber, types.EventQueryNewRoundStep)
 	}
+
 	defer func() {
 		if err := cs.eventBus.Unsubscribe(ctx, subscriber, types.EventQueryNewRoundStep); err != nil {
 			cs.Logger.Error("Error unsubscribing to event bus", "err", err)
@@ -72,6 +75,7 @@ func (cs *State) ReplayFile(file string, console bool) error {
 	defer pb.fp.Close()
 
 	var nextN int // apply N msgs in a row
+
 	var msg *TimedWALMessage
 	for {
 		if nextN == 0 && console {
@@ -92,6 +96,7 @@ func (cs *State) ReplayFile(file string, console bool) error {
 		if nextN > 0 {
 			nextN--
 		}
+
 		pb.count++
 	}
 }
@@ -126,6 +131,7 @@ func (pb *playback) replayReset(count int, newStepSub types.Subscription) error 
 	if err := pb.cs.Stop(); err != nil {
 		return err
 	}
+
 	pb.cs.Wait()
 
 	newCS := NewState(pb.cs.config, pb.genesisState.Copy(), pb.cs.blockExec,
@@ -136,16 +142,19 @@ func (pb *playback) replayReset(count int, newStepSub types.Subscription) error 
 	if err := pb.fp.Close(); err != nil {
 		return err
 	}
+
 	fp, err := os.OpenFile(pb.fileName, os.O_RDONLY, 0o600)
 	if err != nil {
 		return err
 	}
+
 	pb.fp = fp
 	pb.dec = NewWALDecoder(fp)
 	count = pb.count - count
 	fmt.Printf("Resetting from %d to %d\n", pb.count, count)
 	pb.count = 0
 	pb.cs = newCS
+
 	var msg *TimedWALMessage
 	for i := 0; i < count; i++ {
 		msg, err = pb.dec.Decode()
@@ -154,11 +163,14 @@ func (pb *playback) replayReset(count int, newStepSub types.Subscription) error 
 		} else if err != nil {
 			return err
 		}
+
 		if err := pb.cs.readReplayMessage(msg, newStepSub); err != nil {
 			return err
 		}
+
 		pb.count++
 	}
+
 	return nil
 }
 
@@ -181,7 +193,9 @@ func (cs *State) startForReplay() {
 func (pb *playback) replayConsoleLoop() int {
 	for {
 		fmt.Printf("> ")
+
 		bufReader := bufio.NewReader(os.Stdin)
+
 		line, more, err := bufReader.ReadLine()
 		if more {
 			cmtos.Exit("input is too long")
@@ -198,10 +212,10 @@ func (pb *playback) replayConsoleLoop() int {
 		case "next":
 			// "next" -> replay next message
 			// "next N" -> replay next N messages
-
 			if len(tokens) == 1 {
 				return 0
 			}
+
 			i, err := strconv.Atoi(tokens[1])
 			if err != nil {
 				fmt.Println("next takes an integer argument")
@@ -215,7 +229,6 @@ func (pb *playback) replayConsoleLoop() int {
 
 			// NOTE: "back" is not supported in the state machine design,
 			// so we restart and replay up to
-
 			ctx := context.Background()
 			// ensure all new step events are regenerated as expected
 
@@ -223,6 +236,7 @@ func (pb *playback) replayConsoleLoop() int {
 			if err != nil {
 				cmtos.Exit(fmt.Sprintf("failed to subscribe %s to %v", subscriber, types.EventQueryNewRoundStep))
 			}
+
 			defer func() {
 				if err := pb.cs.eventBus.Unsubscribe(ctx, subscriber, types.EventQueryNewRoundStep); err != nil {
 					pb.cs.Logger.Error("Error unsubscribing from eventBus", "err", err)
@@ -248,7 +262,6 @@ func (pb *playback) replayConsoleLoop() int {
 			// "rs" -> print entire round state
 			// "rs short" -> print height/round/step
 			// "rs <field>" -> print another field of the round state
-
 			rs := pb.cs.RoundState
 			if len(tokens) == 1 {
 				fmt.Println(rs)
@@ -273,6 +286,7 @@ func (pb *playback) replayConsoleLoop() int {
 					fmt.Println("Unknown option", tokens[1])
 				}
 			}
+
 		case "n":
 			fmt.Println(pb.count)
 		}
@@ -289,6 +303,7 @@ func newConsensusStateForReplay(config cfg.BaseConfig, csConfig *cfg.ConsensusCo
 	if err != nil {
 		cmtos.Exit(err.Error())
 	}
+
 	blockStore := store.NewBlockStore(blockStoreDB)
 
 	// Get State
@@ -296,13 +311,16 @@ func newConsensusStateForReplay(config cfg.BaseConfig, csConfig *cfg.ConsensusCo
 	if err != nil {
 		cmtos.Exit(err.Error())
 	}
+
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
+
 	gdoc, err := sm.MakeGenesisDocFromFile(config.GenesisFile())
 	if err != nil {
 		cmtos.Exit(err.Error())
 	}
+
 	state, err := sm.MakeGenesisState(gdoc)
 	if err != nil {
 		cmtos.Exit(err.Error())
@@ -311,6 +329,7 @@ func newConsensusStateForReplay(config cfg.BaseConfig, csConfig *cfg.ConsensusCo
 	// Create proxyAppConn connection (consensus, mempool, query)
 	clientCreator := proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir())
 	proxyApp := proxy.NewAppConns(clientCreator, proxy.NopMetrics())
+
 	err = proxyApp.Start()
 	if err != nil {
 		cmtos.Exit(fmt.Sprintf("Error starting proxy app conns: %v", err))
@@ -323,6 +342,7 @@ func newConsensusStateForReplay(config cfg.BaseConfig, csConfig *cfg.ConsensusCo
 
 	handshaker := NewHandshaker(stateStore, state, blockStore, gdoc)
 	handshaker.SetEventBus(eventBus)
+
 	err = handshaker.Handshake(proxyApp)
 	if err != nil {
 		cmtos.Exit(fmt.Sprintf("Error on handshake: %v", err))
@@ -335,5 +355,6 @@ func newConsensusStateForReplay(config cfg.BaseConfig, csConfig *cfg.ConsensusCo
 		blockStore, mempool, evpool)
 
 	consensusState.SetEventBus(eventBus)
+
 	return consensusState
 }

@@ -86,6 +86,7 @@ func (env *Environment) TxSearch(
 			}
 			return results[i].Height > results[j].Height
 		})
+
 	case "asc", "":
 		sort.Slice(results, func(i, j int) bool {
 			if results[i].Height == results[j].Height {
@@ -93,6 +94,7 @@ func (env *Environment) TxSearch(
 			}
 			return results[i].Height < results[j].Height
 		})
+
 	default:
 		return nil, errors.New("expected order_by to be either `asc` or `desc` or empty")
 	}

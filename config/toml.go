@@ -16,6 +16,7 @@ var configTemplate *template.Template
 
 func init() {
 	var err error
+
 	tmpl := template.New("configFileTemplate").Funcs(template.FuncMap{
 		"StringsJoin": strings.Join,
 	})
@@ -32,9 +33,11 @@ func EnsureRoot(rootDir string) {
 	if err := cmtos.EnsureDir(rootDir, DefaultDirPerm); err != nil {
 		panic(err.Error())
 	}
+
 	if err := cmtos.EnsureDir(filepath.Join(rootDir, DefaultConfigDir), DefaultDirPerm); err != nil {
 		panic(err.Error())
 	}
+
 	if err := cmtos.EnsureDir(filepath.Join(rootDir, DefaultDataDir), DefaultDirPerm); err != nil {
 		panic(err.Error())
 	}

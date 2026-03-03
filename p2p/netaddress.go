@@ -49,6 +49,7 @@ func NewNetAddress(id ID, addr net.Addr) *NetAddress {
 		// in testing
 		netAddr := NewNetAddressIPPort(net.IP("127.0.0.1"), 0)
 		netAddr.ID = id
+
 		return netAddr
 	}
 
@@ -60,6 +61,7 @@ func NewNetAddress(id ID, addr net.Addr) *NetAddress {
 	port := uint16(tcpAddr.Port)
 	na := NewNetAddressIPPort(ip, port)
 	na.ID = id
+
 	return na
 }
 
@@ -69,6 +71,7 @@ func NewNetAddress(id ID, addr net.Addr) *NetAddress {
 // Errors are of type ErrNetAddressXxx where Xxx is in (NoID, Invalid, Lookup)
 func NewNetAddressString(addr string) (*NetAddress, error) {
 	addrWithoutProtocol := removeProtocolIfDefined(addr)
+
 	spl := strings.Split(addrWithoutProtocol, "@")
 	if len(spl) != 2 {
 		return nil, ErrNetAddressNoID{addr}
@@ -78,7 +81,9 @@ func NewNetAddressString(addr string) (*NetAddress, error) {
 	if err := validateID(ID(spl[0])); err != nil {
 		return nil, ErrNetAddressInvalid{addrWithoutProtocol, err}
 	}
+
 	var id ID
+
 	id, addrWithoutProtocol = ID(spl[0]), spl[1]
 
 	// get host and port
@@ -86,6 +91,7 @@ func NewNetAddressString(addr string) (*NetAddress, error) {
 	if err != nil {
 		return nil, ErrNetAddressInvalid{addrWithoutProtocol, err}
 	}
+
 	if len(host) == 0 {
 		return nil, ErrNetAddressInvalid{
 			addrWithoutProtocol,
@@ -99,6 +105,7 @@ func NewNetAddressString(addr string) (*NetAddress, error) {
 		if err != nil {
 			return nil, ErrNetAddressLookup{host, err}
 		}
+
 		ip = ips[0]
 	}
 
@@ -109,6 +116,7 @@ func NewNetAddressString(addr string) (*NetAddress, error) {
 
 	na := NewNetAddressIPPort(ip, uint16(port))
 	na.ID = id
+
 	return na, nil
 }
 
@@ -116,6 +124,7 @@ func NewNetAddressString(addr string) (*NetAddress, error) {
 // the provided strings.
 func NewNetAddressStrings(addrs []string) ([]*NetAddress, []error) {
 	netAddrs := make([]*NetAddress, 0)
+
 	errs := make([]error, 0)
 	for _, addr := range addrs {
 		netAddr, err := NewNetAddressString(addr)
@@ -125,6 +134,7 @@ func NewNetAddressStrings(addrs []string) ([]*NetAddress, []error) {
 			netAddrs = append(netAddrs, netAddr)
 		}
 	}
+
 	return netAddrs, errs
 }
 
@@ -143,9 +153,11 @@ func NetAddressFromProto(pb tmp2p.NetAddress) (*NetAddress, error) {
 	if ip == nil {
 		return nil, fmt.Errorf("invalid IP address %v", pb.IP)
 	}
+
 	if pb.Port >= 1<<16 {
 		return nil, fmt.Errorf("invalid port number %v", pb.Port)
 	}
+
 	return &NetAddress{
 		ID:   ID(pb.ID),
 		IP:   ip,
@@ -161,8 +173,10 @@ func NetAddressesFromProto(pbs []tmp2p.NetAddress) ([]*NetAddress, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		nas = append(nas, na)
 	}
+
 	return nas, nil
 }
 
@@ -174,6 +188,7 @@ func NetAddressesToProto(nas []*NetAddress) []tmp2p.NetAddress {
 			pbs = append(pbs, na.ToProto())
 		}
 	}
+
 	return pbs
 }
 
@@ -201,10 +216,12 @@ func (na *NetAddress) Same(other any) bool {
 		if na.DialString() == o.DialString() {
 			return true
 		}
+
 		if na.ID != "" && na.ID == o.ID {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -226,6 +243,7 @@ func (na *NetAddress) DialString() string {
 	if na == nil {
 		return "<nil-NetAddress>"
 	}
+
 	return net.JoinHostPort(
 		na.IP.String(),
 		strconv.FormatUint(uint64(na.Port), 10),
@@ -238,6 +256,7 @@ func (na *NetAddress) Dial() (net.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return conn, nil
 }
 
@@ -247,6 +266,7 @@ func (na *NetAddress) DialTimeout(timeout time.Duration) (net.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return conn, nil
 }
 
@@ -269,9 +289,11 @@ func (na *NetAddress) Valid() error {
 	if na.IP == nil {
 		return errors.New("no IP")
 	}
+
 	if na.IP.IsUnspecified() || na.RFC3849() || na.IP.Equal(net.IPv4bcast) {
 		return errors.New("invalid IP")
 	}
+
 	return nil
 }
 
@@ -310,17 +332,20 @@ func (na *NetAddress) ReachabilityTo(o *NetAddress) int {
 		default: // ipv6
 			return Ipv6Weak
 		}
+
 	case na.IP.To4() != nil:
 		if o.Routable() && o.IP.To4() != nil {
 			return Ipv4
 		}
 		return Default
+
 	default: /* ipv6 */
 		var tunneled bool
 		// Is our v6 is tunneled?
 		if o.RFC3964() || o.RFC6052() || o.RFC6145() {
 			tunneled = true
 		}
+
 		switch {
 		case !o.Routable():
 			return Default
@@ -332,6 +357,7 @@ func (na *NetAddress) ReachabilityTo(o *NetAddress) int {
 			// only prioritize ipv6 if we aren't tunneling it.
 			return Ipv6Weak
 		}
+
 		return Ipv6Strong
 	}
 }
@@ -409,12 +435,15 @@ func validateID(id ID) error {
 	if len(id) == 0 {
 		return errors.New("no ID")
 	}
+
 	idBytes, err := hex.DecodeString(string(id))
 	if err != nil {
 		return err
 	}
+
 	if len(idBytes) != IDByteLength {
 		return fmt.Errorf("invalid hex length - got %d, expected %d", len(idBytes), IDByteLength)
 	}
+
 	return nil
 }

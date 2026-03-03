@@ -22,6 +22,7 @@ func TestProgressBar(t *testing.T) {
 	require.Equal(t, "", bar.rate)
 
 	defer bar.Finish()
+
 	for i := zero; i <= hundred; i++ {
 		time.Sleep(1 * time.Millisecond)
 		bar.Play(i)

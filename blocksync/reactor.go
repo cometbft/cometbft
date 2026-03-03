@@ -119,13 +119,15 @@ func NewReactor(
 	// (bpRequester#requestRoutine; 1 per each peer).
 	requestsCh := make(chan BlockRequest)
 
-	const capacity = 1000                      // must be bigger than peers count
+	const capacity = 1000 // must be bigger than peers count
+
 	errorsCh := make(chan peerError, capacity) // so we don't block in #Receive#pool.AddBlock
 
 	startHeight := storeHeight + 1
 	if startHeight == 1 {
 		startHeight = state.InitialHeight
 	}
+
 	pool := NewBlockPool(startHeight, requestsCh, errorsCh)
 
 	enabledFlag := &atomic.Bool{}
@@ -180,8 +182,10 @@ func (r *Reactor) runPool(stateSynced bool) error {
 	// todo: use poolRoutineWg.Go() after moving to go 1.25+
 	run := func(fn func()) {
 		r.poolRoutineWg.Add(1)
+
 		go func() {
 			defer r.poolRoutineWg.Done()
+
 			fn()
 		}()
 	}
@@ -190,6 +194,7 @@ func (r *Reactor) runPool(stateSynced bool) error {
 	run(func() {
 		ticker := time.NewTicker(r.intervalStatusUpdate)
 		defer ticker.Stop()
+
 		r.poolEventsRoutine(ticker)
 	})
 
@@ -365,12 +370,14 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 				Base:   r.store.Base(),
 			},
 		})
+
 	case *bcproto.StatusResponse:
 		// Got a peer status. Unverified.
 		r.pool.SetPeerRange(e.Src.ID(), msg.Base, msg.Height)
 	case *bcproto.NoBlockResponse:
 		r.Logger.Debug("Peer does not have requested block", "peer", e.Src, "height", msg.Height)
 		r.pool.RedoRequestFrom(msg.Height, e.Src.ID())
+
 	default:
 		r.Logger.Error(fmt.Sprintf("Unknown message type %v", reflect.TypeOf(msg)))
 	}
@@ -381,7 +388,9 @@ func (r *Reactor) localNodeBlocksTheChain(state sm.State) bool {
 	if val == nil {
 		return false
 	}
+
 	total := state.Validators.TotalVotingPower()
+
 	return val.VotingPower >= total/3
 }
 
@@ -467,6 +476,7 @@ FOR_LOOP:
 					"initial_height", state.InitialHeight,
 					"max_peer_height", r.pool.MaxPeerHeight(),
 				)
+
 				continue FOR_LOOP
 			}
 
@@ -476,6 +486,7 @@ FOR_LOOP:
 			}
 
 			r.Logger.Info("Time to switch to consensus mode!", "height", height)
+
 			if err := r.pool.Stop(); err != nil {
 				r.Logger.Error("Error stopping pool", "err", err)
 			}
@@ -495,11 +506,13 @@ FOR_LOOP:
 			}
 
 			break FOR_LOOP
+
 		case <-trySyncTicker.C:
 			select {
 			case didProcessCh <- struct{}{}:
 			default:
 			}
+
 		case <-didProcessCh:
 			// NOTE: It is a subtle mistake to process more than a single block
 			// at a time (e.g. 10) here, because we only TrySend 1 request per
@@ -521,6 +534,7 @@ FOR_LOOP:
 				// Panicking because the block pool's height  MUST keep consistent with the state; the block pool is totally under our control
 				panic(fmt.Errorf("peeked first block has unexpected height; expected %d, got %d", state.LastBlockHeight+1, first.Height))
 			}
+
 			if first.Height+1 != second.Height {
 				// Panicking because this is an obvious bug in the block pool, which is totally under our control
 				panic(fmt.Errorf("heights of first and second block are not consecutive; expected %d, got %d", state.LastBlockHeight, first.Height))
@@ -551,7 +565,6 @@ FOR_LOOP:
 			// currently necessary.
 			// TODO(sergio): Should we also validate against the extended commit?
 			err = state.Validators.VerifyCommitLight(chainID, firstID, first.Height, second.LastCommit)
-
 			if err == nil {
 				// validate the block before we persist it
 				err = r.blockExec.ValidateBlock(state, first)
@@ -559,6 +572,7 @@ FOR_LOOP:
 
 			// vote extension validations
 			presentExtCommit := extCommit != nil
+
 			extensionsEnabled := state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height)
 			if presentExtCommit != extensionsEnabled {
 				err = fmt.Errorf("non-nil extended commit must be received iff vote extensions are enabled for its height "+
@@ -566,10 +580,12 @@ FOR_LOOP:
 					first.Height, presentExtCommit, extensionsEnabled,
 				)
 			}
+
 			if err == nil && extensionsEnabled {
 				// if vote extensions were required at this height, ensure they exist.
 				err = extCommit.EnsureExtensions(true)
 			}
+
 			if err == nil && extensionsEnabled {
 				// if vote extensions were required at this height, validate the extended commit
 				err = state.Validators.VerifyCommitLight(chainID, firstID, first.Height, extCommit.ToCommit())
@@ -602,11 +618,13 @@ FOR_LOOP:
 			}
 
 			r.metrics.recordBlockMetrics(first)
+
 			blocksSynced++
 
 			if blocksSynced%100 == 0 {
 				lastRate = 0.9*lastRate + 0.1*(100/time.Since(lastHundred).Seconds())
 				lastHundred = time.Now()
+
 				r.Logger.Info(
 					"Block Sync Rate",
 					"height", r.pool.height,
@@ -642,11 +660,13 @@ func (r *Reactor) poolEventsRoutine(statusUpdateTicker *time.Ticker) {
 			if !queued {
 				r.Logger.Debug("Send queue is full, drop block request", "peer", peer.ID(), "height", request.Height)
 			}
+
 		case err := <-r.errorsCh:
 			// error is pushed to the errorsCh by the pool internally.
 			if peer := r.Switch.Peers().Get(err.peerID); peer != nil {
 				r.stopPeerForError(peer, err.err)
 			}
+
 		case <-statusUpdateTicker.C:
 			// ask other peers for status updates
 			r.Switch.BroadcastAsync(p2p.Envelope{

@@ -27,6 +27,7 @@ func NewPeer(ip net.IP) *Peer {
 	} else {
 		netAddr = p2p.NewNetAddressIPPort(ip, 26656)
 	}
+
 	nodeKey := p2p.NodeKey{PrivKey: ed25519.GenPrivKey()}
 	netAddr.ID = nodeKey.ID()
 	mp := &Peer{
@@ -35,10 +36,12 @@ func NewPeer(ip net.IP) *Peer {
 		addr: netAddr,
 		kv:   make(map[string]any),
 	}
+
 	mp.BaseService = service.NewBaseService(nil, "MockPeer", mp)
 	if err := mp.Start(); err != nil {
 		panic(err)
 	}
+
 	return mp
 }
 

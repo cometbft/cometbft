@@ -94,6 +94,7 @@ func DefaultMetricsProvider(config *cfg.InstrumentationConfig) MetricsProvider {
 				blocksync.PrometheusMetrics(config.Namespace, "chain_id", chainID),
 				statesync.PrometheusMetrics(config.Namespace, "chain_id", chainID)
 		}
+
 		return cs.NopMetrics(), p2p.NopMetrics(), mempl.NopMetrics(), sm.NopMetrics(), proxy.NopMetrics(), blocksync.NopMetrics(), statesync.NopMetrics()
 	}
 }
@@ -106,10 +107,12 @@ type blockSyncReactor interface {
 
 func initDBs(config *cfg.Config, dbProvider cfg.DBProvider) (blockStore *store.BlockStore, stateDB dbm.DB, err error) {
 	var blockStoreDB dbm.DB
+
 	blockStoreDB, err = dbProvider(&cfg.DBContext{ID: "blockstore", Config: config})
 	if err != nil {
 		return
 	}
+
 	blockStore = store.NewBlockStore(blockStoreDB)
 
 	stateDB, err = dbProvider(&cfg.DBContext{ID: "state", Config: config})
@@ -123,18 +126,22 @@ func initDBs(config *cfg.Config, dbProvider cfg.DBProvider) (blockStore *store.B
 func createAndStartProxyAppConns(clientCreator proxy.ClientCreator, logger log.Logger, metrics *proxy.Metrics) (proxy.AppConns, error) {
 	proxyApp := proxy.NewAppConns(clientCreator, metrics)
 	proxyApp.SetLogger(logger.With("module", "proxy"))
+
 	if err := proxyApp.Start(); err != nil {
 		return nil, fmt.Errorf("error starting proxy app connections: %v", err)
 	}
+
 	return proxyApp, nil
 }
 
 func createAndStartEventBus(logger log.Logger) (*types.EventBus, error) {
 	eventBus := types.NewEventBus()
 	eventBus.SetLogger(logger.With("module", "events"))
+
 	if err := eventBus.Start(); err != nil {
 		return nil, err
 	}
+
 	return eventBus, nil
 }
 
@@ -154,6 +161,7 @@ func createAndStartIndexerService(
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
 	if allIndexersDisabled {
 		return nil, txIndexer, blockIndexer, nil
 	}
@@ -163,6 +171,7 @@ func createAndStartIndexerService(
 
 	indexerService := txindex.NewIndexerService(txIndexer, blockIndexer, eventBus, false)
 	indexerService.SetLogger(logger.With("module", "txindex"))
+
 	if err := indexerService.Start(); err != nil {
 		return nil, nil, nil, err
 	}
@@ -183,9 +192,11 @@ func doHandshake(
 	handshaker := cs.NewHandshaker(stateStore, state, blockStore, genDoc)
 	handshaker.SetLogger(consensusLogger)
 	handshaker.SetEventBus(eventBus)
+
 	if err := handshaker.HandshakeWithContext(ctx, proxyApp); err != nil {
 		return fmt.Errorf("error during handshake: %v", err)
 	}
+
 	return nil
 }
 
@@ -220,7 +231,9 @@ func onlyValidatorIsUs(state sm.State, localAddr crypto.Address) bool {
 	if state.Validators.Size() > 1 {
 		return false
 	}
+
 	valAddr, _ := state.Validators.GetByIndex(0)
+
 	return bytes.Equal(localAddr, valAddr)
 }
 
@@ -247,6 +260,7 @@ func createMempoolAndMempoolReactor(
 			mempl.WithPostCheck(sm.TxPostCheck(state)),
 		)
 		mp.SetLogger(logger)
+
 		reactor := mempl.NewReactor(
 			config.Mempool,
 			mp,
@@ -255,9 +269,11 @@ func createMempoolAndMempoolReactor(
 		if config.Consensus.WaitForTxs() {
 			mp.EnableTxsAvailable()
 		}
+
 		reactor.SetLogger(logger)
 
 		return mp, reactor
+
 	case cfg.MempoolTypeNop:
 		// Strictly speaking, there's no need to have a `mempl.NopMempoolReactor`, but
 		// adding it leads to a cleaner code.
@@ -273,6 +289,7 @@ func createMempoolAndMempoolReactor(
 		reactor.SetLogger(logger)
 
 		return mp, reactor
+
 	default:
 		panic(fmt.Sprintf("unknown mempool type: %q", config.Mempool.Type))
 	}
@@ -285,13 +302,17 @@ func createEvidenceReactor(config *cfg.Config, dbProvider cfg.DBProvider,
 	if err != nil {
 		return nil, nil, err
 	}
+
 	evidenceLogger := logger.With("module", "evidence")
+
 	evidencePool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	evidenceReactor := evidence.NewReactor(evidencePool)
 	evidenceReactor.SetLogger(evidenceLogger)
+
 	return evidenceReactor, evidencePool, nil
 }
 
@@ -352,6 +373,7 @@ func createConsensusReactor(
 		cs.OfflineStateSyncHeight(offlineStateSyncHeight),
 	)
 	consensusState.SetLogger(logger)
+
 	if privValidator != nil {
 		consensusState.SetPrivValidator(privValidator)
 	}
@@ -431,6 +453,7 @@ func createCometTransport(
 				if err != nil {
 					return err
 				}
+
 				if res.IsErr() {
 					return fmt.Errorf("error querying abci app: %v", res)
 				}
@@ -449,6 +472,7 @@ func createCometTransport(
 				if err != nil {
 					return err
 				}
+
 				if res.IsErr() {
 					return fmt.Errorf("error querying abci app: %v", res)
 				}
@@ -488,9 +512,11 @@ func createCometSwitch(
 		p2p.SwitchPeerFilters(peerFilters...),
 	)
 	sw.SetLogger(p2pLogger)
+
 	if config.Mempool.Type != cfg.MempoolTypeNop {
 		sw.AddReactor("MEMPOOL", mempoolReactor)
 	}
+
 	sw.AddReactor("BLOCKSYNC", bcReactor)
 	sw.AddReactor("CONSENSUS", consensusReactor)
 	sw.AddReactor("EVIDENCE", evidenceReactor)
@@ -500,6 +526,7 @@ func createCometSwitch(
 	sw.SetNodeKey(nodeKey)
 
 	p2pLogger.Info("P2P Node ID", "ID", nodeKey.ID(), "file", config.NodeKeyFile())
+
 	return sw
 }
 
@@ -518,13 +545,16 @@ func createAddrBookAndSetOnSwitch(
 		if err != nil {
 			return nil, fmt.Errorf("p2p.external_address is incorrect: %w", err)
 		}
+
 		addrBook.AddOurAddress(addr)
 	}
+
 	if config.P2P.ListenAddress != "" {
 		addr, err := p2p.NewNetAddressString(p2p.IDAddressString(nodeKey.ID(), config.P2P.ListenAddress))
 		if err != nil {
 			return nil, fmt.Errorf("p2p.laddr is incorrect: %w", err)
 		}
+
 		addrBook.AddOurAddress(addr)
 	}
 
@@ -574,8 +604,10 @@ func startStateSync(
 
 	if stateProvider == nil {
 		var err error
+
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
+
 		stateProvider, err = statesync.NewLightClientStateProvider(
 			ctx,
 			state.ChainID, state.Version, state.InitialHeight,
@@ -595,11 +627,13 @@ func startStateSync(
 			ssR.Logger.Error("State sync failed", "err", err)
 			return
 		}
+
 		err = stateStore.Bootstrap(state)
 		if err != nil {
 			ssR.Logger.Error("Failed to bootstrap node with new state", "err", err)
 			return
 		}
+
 		err = blockStore.SaveSeenCommit(state.LastBlockHeight, commit)
 		if err != nil {
 			ssR.Logger.Error("Failed to store last seen commit", "err", err)
@@ -611,6 +645,7 @@ func startStateSync(
 			return
 		}
 	}()
+
 	return nil
 }
 
@@ -643,13 +678,16 @@ func LoadStateFromDBOrGenesisDocProvider(
 			return sm.State{}, nil, err
 		}
 	}
+
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
+
 	state, err := stateStore.LoadFromDBOrGenesisDoc(genDoc)
 	if err != nil {
 		return sm.State{}, nil, err
 	}
+
 	return state, genDoc, nil
 }
 
@@ -659,14 +697,18 @@ func loadGenesisDoc(db dbm.DB) (*types.GenesisDoc, error) {
 	if err != nil {
 		panic(err)
 	}
+
 	if len(b) == 0 {
 		return nil, errors.New("genesis doc not found")
 	}
+
 	var genDoc *types.GenesisDoc
+
 	err = cmtjson.Unmarshal(b, &genDoc)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to load genesis doc due to unmarshaling error: %v (bytes: %X)", err, b))
 	}
+
 	return genDoc, nil
 }
 
@@ -676,6 +718,7 @@ func saveGenesisDoc(db dbm.DB, genDoc *types.GenesisDoc) error {
 	if err != nil {
 		return fmt.Errorf("failed to save genesis doc due to marshaling error: %w", err)
 	}
+
 	return db.SetSync(genesisDocKey, b)
 }
 
@@ -704,6 +747,7 @@ func createAndStartPrivValidatorSocketClient(
 		retries = 50 // 50 * 100ms = 5s total
 		timeout = 100 * time.Millisecond
 	)
+
 	pvscWithRetries := privval.NewRetrySignerClient(pvsc, retries, timeout)
 
 	return pvscWithRetries, nil
@@ -720,6 +764,7 @@ func splitAndTrimEmpty(s, sep, cutset string) []string {
 	}
 
 	spl := strings.Split(s, sep)
+
 	nonEmptyStrings := make([]string, 0, len(spl))
 	for i := 0; i < len(spl); i++ {
 		element := strings.Trim(spl[i], cutset)
@@ -727,5 +772,6 @@ func splitAndTrimEmpty(s, sep, cutset string) []string {
 			nonEmptyStrings = append(nonEmptyStrings, element)
 		}
 	}
+
 	return nonEmptyStrings
 }

@@ -102,6 +102,7 @@ func NewWS(remoteAddr, endpoint string, options ...func(*WSClient)) (*WSClient, 
 
 	// extract username and password from URL if any
 	username := ""
+
 	password := ""
 	if parsedURL.User.String() != "" {
 		username = parsedURL.User.Username()
@@ -128,10 +129,12 @@ func NewWS(remoteAddr, endpoint string, options ...func(*WSClient)) (*WSClient, 
 
 		// sentIDs: make(map[types.JSONRPCIntID]bool),
 	}
+
 	c.BaseService = *service.NewBaseService(nil, "WSClient", c)
 	for _, option := range options {
 		option(c)
 	}
+
 	return c, nil
 }
 
@@ -200,6 +203,7 @@ func (c *WSClient) OnStart() error {
 	c.backlog = make(chan types.RPCRequest, 1)
 
 	c.startReadWriteRoutines()
+
 	go c.reconnectRoutine()
 
 	return nil
@@ -241,6 +245,7 @@ func (c *WSClient) Send(ctx context.Context, request types.RPCRequest) error {
 		// c.sentIDs[request.ID.(types.JSONRPCIntID)] = true
 		// c.mtx.Unlock()
 		return nil
+
 	case <-ctx.Done():
 		return ctx.Err()
 	}
@@ -252,6 +257,7 @@ func (c *WSClient) Call(ctx context.Context, method string, params map[string]an
 	if err != nil {
 		return err
 	}
+
 	return c.Send(ctx, request)
 }
 
@@ -262,6 +268,7 @@ func (c *WSClient) CallWithArrayParams(ctx context.Context, method string, param
 	if err != nil {
 		return err
 	}
+
 	return c.Send(ctx, request)
 }
 
@@ -272,6 +279,7 @@ func (c *WSClient) nextRequestID() types.JSONRPCIntID {
 	id := c.nextReqID
 	c.nextReqID++
 	c.mtx.Unlock()
+
 	return types.JSONRPCIntID(id)
 }
 
@@ -291,7 +299,9 @@ func (c *WSClient) dial() error {
 	if err != nil {
 		return err
 	}
+
 	c.conn = conn
+
 	return nil
 }
 
@@ -302,6 +312,7 @@ func (c *WSClient) reconnect() error {
 
 	c.mtx.Lock()
 	c.reconnecting = true
+
 	c.mtx.Unlock()
 	defer func() {
 		c.mtx.Lock()
@@ -321,9 +332,11 @@ func (c *WSClient) reconnect() error {
 			c.Logger.Error("failed to redial", "err", err)
 		} else {
 			c.Logger.Info("reconnected")
+
 			if c.onReconnect != nil {
 				go c.onReconnect()
 			}
+
 			return nil
 		}
 
@@ -337,6 +350,7 @@ func (c *WSClient) reconnect() error {
 
 func (c *WSClient) startReadWriteRoutines() {
 	c.wg.Add(2)
+
 	c.readRoutineQuit = make(chan struct{})
 	go c.readRoutine()
 	go c.writeRoutine()
@@ -350,16 +364,22 @@ func (c *WSClient) processBacklog() error {
 				c.Logger.Error("failed to set write deadline", "err", err)
 			}
 		}
+
 		if err := c.conn.WriteJSON(request); err != nil {
 			c.Logger.Error("failed to resend request", "err", err)
+
 			c.reconnectAfter <- err
 			// requeue request
 			c.backlog <- request
+
 			return err
 		}
+
 		c.Logger.Info("resend a request", "req", request)
+
 	default:
 	}
+
 	return nil
 }
 
@@ -369,8 +389,10 @@ func (c *WSClient) reconnectRoutine() {
 		case originalError := <-c.reconnectAfter:
 			// wait until writeRoutine and readRoutine finish
 			c.wg.Wait()
+
 			if err := c.reconnect(); err != nil {
 				c.Logger.Error("failed to reconnect", "err", err, "original_err", originalError)
+
 				if err = c.Stop(); err != nil {
 					c.Logger.Error("failed to stop conn", "error", err)
 				}
@@ -386,6 +408,7 @@ func (c *WSClient) reconnectRoutine() {
 					break LOOP
 				}
 			}
+
 			err := c.processBacklog()
 			if err == nil {
 				c.startReadWriteRoutines()
@@ -427,28 +450,36 @@ func (c *WSClient) writeRoutine() {
 					c.Logger.Error("failed to set write deadline", "err", err)
 				}
 			}
+
 			if err := c.conn.WriteJSON(request); err != nil {
 				c.Logger.Error("failed to send request", "err", err)
+
 				c.reconnectAfter <- err
 				// add request to the backlog, so we don't lose it
 				c.backlog <- request
+
 				return
 			}
+
 		case <-ticker.C:
 			if c.writeWait > 0 {
 				if err := c.conn.SetWriteDeadline(time.Now().Add(c.writeWait)); err != nil {
 					c.Logger.Error("failed to set write deadline", "err", err)
 				}
 			}
+
 			if err := c.conn.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
 				c.Logger.Error("failed to write ping", "err", err)
+
 				c.reconnectAfter <- err
 				return
 			}
+
 			c.mtx.Lock()
 			c.sentLastPingAt = time.Now()
 			c.mtx.Unlock()
 			c.Logger.Debug("sent ping")
+
 		case <-c.readRoutineQuit:
 			return
 		case <-c.Quit():
@@ -458,6 +489,7 @@ func (c *WSClient) writeRoutine() {
 			); err != nil {
 				c.Logger.Error("failed to write message", "err", err)
 			}
+
 			return
 		}
 	}
@@ -484,6 +516,7 @@ func (c *WSClient) readRoutine() {
 		c.PingPongLatencyTimer.UpdateSince(t)
 
 		c.Logger.Debug("got pong")
+
 		return nil
 	})
 
@@ -494,6 +527,7 @@ func (c *WSClient) readRoutine() {
 				c.Logger.Error("failed to set read deadline", "err", err)
 			}
 		}
+
 		_, data, err := c.conn.ReadMessage()
 		if err != nil {
 			if !websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure) {
@@ -502,11 +536,14 @@ func (c *WSClient) readRoutine() {
 
 			c.Logger.Error("failed to read response", "err", err)
 			close(c.readRoutineQuit)
+
 			c.reconnectAfter <- err
+
 			return
 		}
 
 		var response types.RPCResponse
+
 		err = json.Unmarshal(data, &response)
 		if err != nil {
 			c.Logger.Error("failed to parse response", "err", err, "data", string(data))

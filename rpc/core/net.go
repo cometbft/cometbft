@@ -14,6 +14,7 @@ import (
 // More: https://docs.cometbft.com/v0.38/spec/rpc/#netinfo
 func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error) {
 	peers := make([]ctypes.Peer, 0, env.P2PPeers.Peers().Size())
+
 	var err error
 	env.P2PPeers.Peers().ForEach(func(peer p2p.Peer) {
 		nodeInfo, ok := peer.NodeInfo().(p2p.DefaultNodeInfo)
@@ -21,6 +22,7 @@ func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error
 			err = fmt.Errorf("peer %v has the invalid node info type: %T ", peer.ID(), peer.NodeInfo())
 			return
 		}
+
 		peers = append(peers, ctypes.Peer{
 			NodeInfo:         nodeInfo,
 			IsOutbound:       peer.IsOutbound(),
@@ -28,6 +30,7 @@ func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error
 			RemoteIP:         peer.RemoteIP().String(),
 		})
 	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -47,10 +50,13 @@ func (env *Environment) UnsafeDialSeeds(_ *rpctypes.Context, seeds []string) (*c
 	if len(seeds) == 0 {
 		return &ctypes.ResultDialSeeds{}, errors.New("no seeds provided")
 	}
+
 	env.Logger.Info("DialSeeds", "seeds", seeds)
+
 	if err := env.P2PPeers.DialPeersAsync(seeds); err != nil {
 		return &ctypes.ResultDialSeeds{}, err
 	}
+
 	return &ctypes.ResultDialSeeds{Log: "Dialing seeds in progress. See /net_info for details"}, nil
 }
 
@@ -134,13 +140,13 @@ func getIDs(peers []string) ([]string, error) {
 	ids := make([]string, 0, len(peers))
 
 	for _, peer := range peers {
-
 		spl := strings.Split(peer, "@")
 		if len(spl) != 2 {
 			return nil, p2p.ErrNetAddressNoID{Addr: peer}
 		}
-		ids = append(ids, spl[0])
 
+		ids = append(ids, spl[0])
 	}
+
 	return ids, nil
 }

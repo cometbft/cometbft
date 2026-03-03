@@ -141,6 +141,7 @@ func LoadTestnet(file string, ifd InfrastructureData) (*Testnet, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return NewTestnetFromManifest(manifest, file, ifd)
 }
 
@@ -150,6 +151,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 
 	keyGen := newKeyGenerator(randomSeed)
 	prometheusProxyPortGen := newPortGenerator(prometheusProxyPortFirst)
+
 	_, ipNet, err := net.ParseCIDR(ifd.Network)
 	if err != nil {
 		return nil, fmt.Errorf("invalid IP network address %q: %w", ifd.Network, err)
@@ -192,38 +194,48 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
 	}
+
 	if manifest.InitialHeight > 0 {
 		testnet.InitialHeight = manifest.InitialHeight
 	}
+
 	if testnet.KeyType == "" {
 		testnet.KeyType = ed25519.KeyType
 	}
+
 	if testnet.ABCIProtocol == "" {
 		testnet.ABCIProtocol = string(ProtocolBuiltin)
 	}
+
 	if testnet.UpgradeVersion == "" {
 		testnet.UpgradeVersion = localVersion
 	}
+
 	if testnet.LoadTxConnections == 0 {
 		testnet.LoadTxConnections = defaultConnections
 	}
+
 	if testnet.LoadTxBatchSize == 0 {
 		testnet.LoadTxBatchSize = defaultBatchSize
 	}
+
 	if testnet.LoadTxSizeBytes == 0 {
 		testnet.LoadTxSizeBytes = defaultTxSizeBytes
 	}
 
 	for _, name := range sortNodeNames(manifest) {
 		nodeManifest := manifest.Nodes[name]
+
 		ind, ok := ifd.Instances[name]
 		if !ok {
 			return nil, fmt.Errorf("information for node '%s' missing from infrastructure data", name)
 		}
+
 		extIP := ind.ExtIPAddress
 		if len(extIP) == 0 {
 			extIP = ind.IPAddress
 		}
+
 		v := nodeManifest.Version
 		if v == "" {
 			v = localVersion
@@ -258,30 +270,39 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		if node.StartAt == testnet.InitialHeight {
 			node.StartAt = 0 // normalize to 0 for initial nodes, since code expects this
 		}
+
 		if node.BlockSyncVersion == "" {
 			node.BlockSyncVersion = "v0"
 		}
+
 		if nodeManifest.Mode != "" {
 			node.Mode = Mode(nodeManifest.Mode)
 		}
+
 		if node.Mode == ModeLight {
 			node.ABCIProtocol = ProtocolBuiltin
 		}
+
 		if nodeManifest.Database != "" {
 			node.Database = nodeManifest.Database
 		}
+
 		if nodeManifest.PrivvalProtocol != "" {
 			node.PrivvalProtocol = Protocol(nodeManifest.PrivvalProtocol)
 		}
+
 		if nodeManifest.PersistInterval != nil {
 			node.PersistInterval = *nodeManifest.PersistInterval
 		}
+
 		if node.Prometheus {
 			node.PrometheusProxyPort = prometheusProxyPortGen.Next()
 		}
+
 		for _, p := range nodeManifest.Perturb {
 			node.Perturbations = append(node.Perturbations, Perturbation(p))
 		}
+
 		testnet.Nodes = append(testnet.Nodes, node)
 	}
 
@@ -291,18 +312,22 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		if !ok {
 			return nil, fmt.Errorf("failed to look up manifest for node %q", node.Name)
 		}
+
 		for _, seedName := range nodeManifest.Seeds {
 			seed := testnet.LookupNode(seedName)
 			if seed == nil {
 				return nil, fmt.Errorf("unknown seed %q for node %q", seedName, node.Name)
 			}
+
 			node.Seeds = append(node.Seeds, seed)
 		}
+
 		for _, peerName := range nodeManifest.PersistentPeers {
 			peer := testnet.LookupNode(peerName)
 			if peer == nil {
 				return nil, fmt.Errorf("unknown persistent peer %q for node %q", peerName, node.Name)
 			}
+
 			node.PersistentPeers = append(node.PersistentPeers, peer)
 		}
 
@@ -313,6 +338,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 				if peer.Name == node.Name {
 					continue
 				}
+
 				node.PersistentPeers = append(node.PersistentPeers, peer)
 			}
 		}
@@ -325,6 +351,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			if validator == nil {
 				return nil, fmt.Errorf("unknown validator %q", validatorName)
 			}
+
 			testnet.Validators[validator] = power
 		}
 	} else {
@@ -341,14 +368,17 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		if err != nil {
 			return nil, fmt.Errorf("invalid validator update height %q: %w", height, err)
 		}
+
 		valUpdate := map[*Node]int64{}
 		for name, power := range validators {
 			node := testnet.LookupNode(name)
 			if node == nil {
 				return nil, fmt.Errorf("unknown validator %q for update at height %v", name, height)
 			}
+
 			valUpdate[node] = power
 		}
+
 		testnet.ValidatorUpdates[int64(height)] = valUpdate
 	}
 
@@ -360,23 +390,29 @@ func (t Testnet) Validate() error {
 	if t.Name == "" {
 		return errors.New("network has no name")
 	}
+
 	if t.IP == nil {
 		return errors.New("network has no IP")
 	}
+
 	if len(t.Nodes) == 0 {
 		return errors.New("network has no nodes")
 	}
+
 	if t.BlockMaxBytes > types.MaxBlockSizeBytes {
 		return fmt.Errorf("value of BlockMaxBytes cannot be higher than %d", types.MaxBlockSizeBytes)
 	}
+
 	if t.VoteExtensionsUpdateHeight < -1 {
 		return fmt.Errorf("value of VoteExtensionsUpdateHeight must be positive, 0 (InitChain), "+
 			"or -1 (Genesis); update height %d", t.VoteExtensionsUpdateHeight)
 	}
+
 	if t.VoteExtensionsEnableHeight < 0 {
 		return fmt.Errorf("value of VoteExtensionsEnableHeight must be positive, or 0 (disable); "+
 			"enable height %d", t.VoteExtensionsEnableHeight)
 	}
+
 	if t.VoteExtensionsUpdateHeight > 0 && t.VoteExtensionsUpdateHeight < t.InitialHeight {
 		return fmt.Errorf("a value of VoteExtensionsUpdateHeight greater than 0 "+
 			"must not be less than InitialHeight; "+
@@ -384,6 +420,7 @@ func (t Testnet) Validate() error {
 			t.VoteExtensionsUpdateHeight, t.InitialHeight,
 		)
 	}
+
 	if t.VoteExtensionsEnableHeight > 0 {
 		if t.VoteExtensionsEnableHeight < t.InitialHeight {
 			return fmt.Errorf("a value of VoteExtensionsEnableHeight greater than 0 "+
@@ -392,6 +429,7 @@ func (t Testnet) Validate() error {
 				t.VoteExtensionsEnableHeight, t.InitialHeight,
 			)
 		}
+
 		if t.VoteExtensionsEnableHeight <= t.VoteExtensionsUpdateHeight {
 			return fmt.Errorf("a value of VoteExtensionsEnableHeight greater than 0 "+
 				"must be greater than VoteExtensionsUpdateHeight; "+
@@ -400,11 +438,13 @@ func (t Testnet) Validate() error {
 			)
 		}
 	}
+
 	for _, node := range t.Nodes {
 		if err := node.Validate(t); err != nil {
 			return fmt.Errorf("invalid node %q: %w", node.Name, err)
 		}
 	}
+
 	return nil
 }
 
@@ -413,49 +453,61 @@ func (n Node) Validate(testnet Testnet) error {
 	if n.Name == "" {
 		return errors.New("node has no name")
 	}
+
 	if n.InternalIP == nil {
 		return errors.New("node has no IP address")
 	}
+
 	if !testnet.IP.Contains(n.InternalIP) {
 		return fmt.Errorf("node IP %v is not in testnet network %v", n.InternalIP, testnet.IP)
 	}
+
 	if n.ProxyPort == n.PrometheusProxyPort {
 		return fmt.Errorf("node local port %v used also for Prometheus local port", n.ProxyPort)
 	}
+
 	if n.ProxyPort > 0 && n.ProxyPort <= 1024 {
 		return fmt.Errorf("local port %v must be >1024", n.ProxyPort)
 	}
+
 	if n.PrometheusProxyPort > 0 && n.PrometheusProxyPort <= 1024 {
 		return fmt.Errorf("local port %v must be >1024", n.PrometheusProxyPort)
 	}
+
 	for _, peer := range testnet.Nodes {
 		if peer.Name != n.Name && peer.ProxyPort == n.ProxyPort && peer.ExternalIP.Equal(n.ExternalIP) {
 			return fmt.Errorf("peer %q also has local port %v", peer.Name, n.ProxyPort)
 		}
+
 		if n.PrometheusProxyPort > 0 {
 			if peer.Name != n.Name && peer.PrometheusProxyPort == n.PrometheusProxyPort {
 				return fmt.Errorf("peer %q also has local port %v", peer.Name, n.PrometheusProxyPort)
 			}
 		}
 	}
+
 	switch n.BlockSyncVersion {
 	case "v0":
 	default:
 		return fmt.Errorf("invalid block sync setting %q", n.BlockSyncVersion)
 	}
+
 	switch n.Database {
 	case "goleveldb", "cleveldb", "rocksdb", "badgerdb":
 	default:
 		return fmt.Errorf("invalid database setting %q", n.Database)
 	}
+
 	switch n.ABCIProtocol {
 	case ProtocolBuiltin, ProtocolBuiltinConnSync, ProtocolUNIX, ProtocolTCP, ProtocolGRPC:
 	default:
 		return fmt.Errorf("invalid ABCI protocol setting %q", n.ABCIProtocol)
 	}
+
 	if n.Mode == ModeLight && n.ABCIProtocol != ProtocolBuiltin && n.ABCIProtocol != ProtocolBuiltinConnSync {
 		return errors.New("light client must use builtin protocol")
 	}
+
 	switch n.PrivvalProtocol {
 	case ProtocolFile, ProtocolUNIX, ProtocolTCP:
 	default:
@@ -466,19 +518,24 @@ func (n Node) Validate(testnet Testnet) error {
 		return fmt.Errorf("cannot start at height %v lower than initial height %v",
 			n.StartAt, n.Testnet.InitialHeight)
 	}
+
 	if n.StateSync && n.StartAt == 0 {
 		return errors.New("state synced nodes cannot start at the initial height")
 	}
+
 	if n.RetainBlocks != 0 && n.RetainBlocks < uint64(EvidenceAgeHeight) {
 		return fmt.Errorf("retain_blocks must be 0 or be greater or equal to max evidence age (%d)",
 			EvidenceAgeHeight)
 	}
+
 	if n.PersistInterval == 0 && n.RetainBlocks > 0 {
 		return errors.New("persist_interval=0 requires retain_blocks=0")
 	}
+
 	if n.PersistInterval > 1 && n.RetainBlocks > 0 && n.RetainBlocks < n.PersistInterval {
 		return errors.New("persist_interval must be less than or equal to retain_blocks")
 	}
+
 	if n.SnapshotInterval > 0 && n.RetainBlocks > 0 && n.RetainBlocks < n.SnapshotInterval {
 		return errors.New("snapshot_interval must be less than er equal to retain_blocks")
 	}
@@ -490,7 +547,9 @@ func (n Node) Validate(testnet Testnet) error {
 			if upgradeFound {
 				return fmt.Errorf("'upgrade' perturbation can appear at most once per node")
 			}
+
 			upgradeFound = true
+
 		case PerturbationDisconnect, PerturbationKill, PerturbationPause, PerturbationRestart:
 		default:
 			return fmt.Errorf("invalid perturbation %q", perturbation)
@@ -507,6 +566,7 @@ func (t Testnet) LookupNode(name string) *Node {
 			return node
 		}
 	}
+
 	return nil
 }
 
@@ -520,6 +580,7 @@ func (t Testnet) ArchiveNodes() []*Node {
 			nodes = append(nodes, node)
 		}
 	}
+
 	return nodes
 }
 
@@ -545,6 +606,7 @@ func (t Testnet) HasPerturbations() bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -556,11 +618,14 @@ func (t Testnet) prometheusConfigBytes() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	var buf bytes.Buffer
+
 	err = tmpl.Execute(&buf, t)
 	if err != nil {
 		return nil, err
 	}
+
 	return buf.Bytes(), nil
 }
 
@@ -569,10 +634,12 @@ func (t Testnet) WritePrometheusConfig() error {
 	if err != nil {
 		return err
 	}
+
 	err = os.WriteFile(filepath.Join(t.Dir, "prometheus.yaml"), bytes, 0o644) //nolint:gosec
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -583,10 +650,12 @@ func (n Node) AddressP2P(withID bool) string {
 		// IPv6 addresses must be wrapped in [] to avoid conflict with : port separator
 		ip = fmt.Sprintf("[%v]", ip)
 	}
+
 	addr := fmt.Sprintf("%v:26656", ip)
 	if withID {
 		addr = fmt.Sprintf("%x@%v", n.NodeKey.PubKey().Address().Bytes(), addr)
 	}
+
 	return addr
 }
 
@@ -597,6 +666,7 @@ func (n Node) AddressRPC() string {
 		// IPv6 addresses must be wrapped in [] to avoid conflict with : port separator
 		ip = fmt.Sprintf("[%v]", ip)
 	}
+
 	return fmt.Sprintf("%v:26657", ip)
 }
 
@@ -628,6 +698,7 @@ func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
 	if err != nil {
 		panic(err) // this shouldn't happen
 	}
+
 	switch keyType {
 	case secp256k1.KeyType:
 		return secp256k1.GenPrivKeySecp256k1(seed)
@@ -636,7 +707,9 @@ func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
 		if err != nil {
 			panic(fmt.Sprintf("unrecoverable error when generating key; key type %s, err %v", bls12381.KeyType, err))
 		}
+
 		return pk
+
 	case ed25519.KeyType:
 		return ed25519.GenPrivKeyFromSecret(seed)
 	default:
@@ -655,10 +728,12 @@ func newPortGenerator(firstPort uint32) *portGenerator {
 
 func (g *portGenerator) Next() uint32 {
 	port := g.nextPort
+
 	g.nextPort++
 	if g.nextPort == 0 {
 		panic("port overflow")
 	}
+
 	return port
 }
 
@@ -676,6 +751,7 @@ func newIPGenerator(network *net.IPNet) *ipGenerator {
 	// Skip network and gateway addresses
 	gen.Next()
 	gen.Next()
+
 	return gen
 }
 
@@ -686,17 +762,20 @@ func (g *ipGenerator) Network() *net.IPNet {
 	}
 	copy(n.IP, g.network.IP)
 	copy(n.Mask, g.network.Mask)
+
 	return n
 }
 
 func (g *ipGenerator) Next() net.IP {
 	ip := make([]byte, len(g.nextIP))
 	copy(ip, g.nextIP)
+
 	for i := len(g.nextIP) - 1; i >= 0; i-- {
 		g.nextIP[i]++
 		if g.nextIP[i] != 0 {
 			break
 		}
 	}
+
 	return ip
 }

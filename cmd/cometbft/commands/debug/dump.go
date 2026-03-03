@@ -89,24 +89,28 @@ func dumpDebugData(outDir string, conf *cfg.Config, rpc *rpchttp.HTTP) {
 	defer os.RemoveAll(tmpDir)
 
 	logger.Info("getting node status...")
+
 	if err := dumpStatus(rpc, tmpDir, "status.json"); err != nil {
 		logger.Error("failed to dump node status", "error", err)
 		return
 	}
 
 	logger.Info("getting node network info...")
+
 	if err := dumpNetInfo(rpc, tmpDir, "net_info.json"); err != nil {
 		logger.Error("failed to dump node network info", "error", err)
 		return
 	}
 
 	logger.Info("getting node consensus state...")
+
 	if err := dumpConsensusState(rpc, tmpDir, "consensus_state.json"); err != nil {
 		logger.Error("failed to dump node consensus state", "error", err)
 		return
 	}
 
 	logger.Info("copying node WAL...")
+
 	if err := copyWAL(conf, tmpDir); err != nil {
 		logger.Error("failed to copy node WAL", "error", err)
 		return
@@ -114,12 +118,14 @@ func dumpDebugData(outDir string, conf *cfg.Config, rpc *rpchttp.HTTP) {
 
 	if profAddr != "" {
 		logger.Info("getting node goroutine profile...")
+
 		if err := dumpProfile(tmpDir, profAddr, "goroutine", 2); err != nil {
 			logger.Error("failed to dump goroutine profile", "error", err)
 			return
 		}
 
 		logger.Info("getting node heap profile...")
+
 		if err := dumpProfile(tmpDir, profAddr, "heap", 2); err != nil {
 			logger.Error("failed to dump heap profile", "error", err)
 			return

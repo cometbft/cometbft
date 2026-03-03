@@ -13,6 +13,7 @@ import (
 func TestParallel(t *testing.T) {
 	// Create tasks.
 	counter := new(int32)
+
 	tasks := make([]Task, 100*1000)
 	for i := 0; i < len(tasks); i++ {
 		tasks[i] = func(i int) (res any, abort bool, err error) {
@@ -27,24 +28,31 @@ func TestParallel(t *testing.T) {
 
 	// Verify.
 	assert.Equal(t, int(*counter), len(tasks), "Each task should have incremented the counter already")
+
 	var failedTasks int
 	for i := 0; i < len(tasks); i++ {
 		taskResult, ok := trs.LatestResult(i)
 		switch {
 		case !ok:
 			assert.Fail(t, "Task #%v did not complete.", i)
+
 			failedTasks++
+
 		case taskResult.Error != nil:
 			assert.Fail(t, "Task should not have errored but got %v", taskResult.Error)
+
 			failedTasks++
+
 		case !assert.Equal(t, -1*i, taskResult.Value.(int)):
 			assert.Fail(t, "Task should have returned %v but got %v", -1*i, taskResult.Value.(int))
+
 			failedTasks++
 		}
 		// else {
 		// Good!
 		// }
 	}
+
 	assert.Equal(t, failedTasks, 0, "No task should have failed")
 	assert.Nil(t, trs.FirstError(), "There should be no errors")
 	assert.Equal(t, 0, trs.FirstValue(), "First value should be 0")
@@ -60,16 +68,19 @@ func TestParallelAbort(t *testing.T) {
 	tasks := []Task{
 		func(i int) (res any, abort bool, err error) {
 			assert.Equal(t, i, 0)
+
 			flow1 <- struct{}{}
 			return 0, false, nil
 		},
 		func(i int) (res any, abort bool, err error) {
 			assert.Equal(t, i, 1)
+
 			flow2 <- <-flow1
 			return 1, false, errors.New("some error")
 		},
 		func(i int) (res any, abort bool, err error) {
 			assert.Equal(t, i, 2)
+
 			flow3 <- <-flow2
 			return 2, true, nil
 		},
@@ -133,6 +144,7 @@ func checkResult(t *testing.T, taskResultSet *TaskResultSet, index int,
 	taskName := fmt.Sprintf("Task #%v", index)
 	assert.True(t, ok, "TaskResultCh unexpectedly closed for %v", taskName)
 	assert.Equal(t, val, taskResult.Value, taskName)
+
 	switch {
 	case err != nil:
 		assert.Equal(t, err.Error(), taskResult.Error.Error(), taskName)
@@ -152,6 +164,7 @@ func waitTimeout(t *testing.T, taskResultCh TaskResultCh, taskName string) {
 		} else {
 			assert.Fail(t, "TaskResultCh unexpectedly returned for %v", taskName)
 		}
+
 	case <-time.After(1 * time.Second): // TODO use deterministic time?
 		// Good!
 	}

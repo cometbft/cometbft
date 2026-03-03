@@ -54,6 +54,7 @@ func (p *Proxy) ListenAndServe() error {
 	if err != nil {
 		return err
 	}
+
 	p.Listener = listener
 
 	return rpcserver.Serve(
@@ -72,6 +73,7 @@ func (p *Proxy) ListenAndServeTLS(certFile, keyFile string) error {
 	if err != nil {
 		return err
 	}
+
 	p.Listener = listener
 
 	return rpcserver.ServeTLS(

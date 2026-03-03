@@ -25,10 +25,12 @@ func (env *Environment) BroadcastTxAsync(_ *rpctypes.Context, tx types.Tx) (*cty
 	if env.MempoolReactor.WaitSync() {
 		return nil, ErrEndpointClosedCatchingUp
 	}
+
 	err := env.Mempool.CheckTx(tx, nil, mempl.TxInfo{})
 	if err != nil {
 		return nil, err
 	}
+
 	return &ctypes.ResultBroadcastTx{Hash: tx.Hash()}, nil
 }
 
@@ -41,6 +43,7 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 	}
 
 	resCh := make(chan *abci.ResponseCheckTx, 1)
+
 	err := env.Mempool.CheckTx(tx, func(res *abci.ResponseCheckTx) {
 		select {
 		case <-ctx.Context().Done():
@@ -83,13 +86,16 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 	// Subscribe to tx being committed in block.
 	subCtx, cancel := context.WithTimeout(ctx.Context(), SubscribeTimeout)
 	defer cancel()
+
 	q := types.EventQueryTxFor(tx)
+
 	txSub, err := env.EventBus.Subscribe(subCtx, subscriber, q)
 	if err != nil {
 		err = fmt.Errorf("failed to subscribe to tx: %w", err)
 		env.Logger.Error("Error on broadcast_tx_commit", "err", err)
 		return nil, err
 	}
+
 	defer func() {
 		if err := env.EventBus.Unsubscribe(context.Background(), subscriber, q); err != nil {
 			env.Logger.Error("Error unsubscribing from eventBus", "err", err)
@@ -98,6 +104,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 
 	// Broadcast tx and wait for CheckTx result
 	checkTxResCh := make(chan *abci.ResponseCheckTx, 1)
+
 	err = env.Mempool.CheckTx(tx, func(res *abci.ResponseCheckTx) {
 		select {
 		case <-ctx.Context().Done():
@@ -108,6 +115,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 		env.Logger.Error("Error on broadcastTxCommit", "err", err)
 		return nil, fmt.Errorf("error on broadcastTxCommit: %v", err)
 	}
+
 	select {
 	case <-ctx.Context().Done():
 		return nil, fmt.Errorf("broadcast confirmation not received: %w", ctx.Context().Err())
@@ -124,12 +132,14 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 		select {
 		case msg := <-txSub.Out(): // The tx was included in a block.
 			txResultEvent := msg.Data().(types.EventDataTx)
+
 			return &ctypes.ResultBroadcastTxCommit{
 				CheckTx:  *checkTxRes,
 				TxResult: txResultEvent.Result,
 				Hash:     tx.Hash(),
 				Height:   txResultEvent.Height,
 			}, nil
+
 		case <-txSub.Canceled():
 			var reason string
 			if txSub.Err() == nil {
@@ -137,16 +147,20 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 			} else {
 				reason = txSub.Err().Error()
 			}
+
 			err = fmt.Errorf("txSub was canceled (reason: %s)", reason)
 			env.Logger.Error("Error on broadcastTxCommit", "err", err)
+
 			return &ctypes.ResultBroadcastTxCommit{
 				CheckTx:  *checkTxRes,
 				TxResult: abci.ExecTxResult{},
 				Hash:     tx.Hash(),
 			}, err
+
 		case <-time.After(env.Config.TimeoutBroadcastTxCommit):
 			err = errors.New("timed out waiting for tx to be included in a block")
 			env.Logger.Error("Error on broadcastTxCommit", "err", err)
+
 			return &ctypes.ResultBroadcastTxCommit{
 				CheckTx:  *checkTxRes,
 				TxResult: abci.ExecTxResult{},
@@ -164,6 +178,7 @@ func (env *Environment) UnconfirmedTxs(_ *rpctypes.Context, limitPtr *int) (*cty
 	limit := env.validatePerPage(limitPtr)
 
 	txs := env.Mempool.ReapMaxTxs(limit)
+
 	return &ctypes.ResultUnconfirmedTxs{
 		Count:      len(txs),
 		Total:      env.Mempool.Size(),
@@ -190,5 +205,6 @@ func (env *Environment) CheckTx(_ *rpctypes.Context, tx types.Tx) (*ctypes.Resul
 	if err != nil {
 		return nil, err
 	}
+
 	return &ctypes.ResultCheckTx{ResponseCheckTx: *res}, nil
 }

@@ -22,6 +22,7 @@ func RegisterType(_type any, name string) {
 	if _type == nil {
 		panic("cannot register nil type")
 	}
+
 	err := typeRegistry.register(name, reflect.ValueOf(_type).Type())
 	if err != nil {
 		panic(err)
@@ -62,6 +63,7 @@ func (t *types) register(name string, rt reflect.Type) error {
 		returnPtr = true
 		rt = rt.Elem()
 	}
+
 	tInfo := &typeInfo{
 		name:      name,
 		rt:        rt,
@@ -70,14 +72,18 @@ func (t *types) register(name string, rt reflect.Type) error {
 
 	t.Lock()
 	defer t.Unlock()
+
 	if _, ok := t.byName[tInfo.name]; ok {
 		return fmt.Errorf("a type with name %q is already registered", name)
 	}
+
 	if _, ok := t.byType[tInfo.rt]; ok {
 		return fmt.Errorf("the type %v is already registered", rt)
 	}
+
 	t.byName[name] = tInfo
 	t.byType[rt] = tInfo
+
 	return nil
 }
 
@@ -85,10 +91,12 @@ func (t *types) register(name string, rt reflect.Type) error {
 func (t *types) lookup(name string) (reflect.Type, bool) {
 	t.RLock()
 	defer t.RUnlock()
+
 	tInfo := t.byName[name]
 	if tInfo == nil {
 		return nil, false
 	}
+
 	return tInfo.rt, tInfo.returnPtr
 }
 
@@ -97,11 +105,14 @@ func (t *types) name(rt reflect.Type) string {
 	for rt.Kind() == reflect.Ptr {
 		rt = rt.Elem()
 	}
+
 	t.RLock()
 	defer t.RUnlock()
+
 	tInfo := t.byType[rt]
 	if tInfo == nil {
 		return ""
 	}
+
 	return tInfo.name
 }

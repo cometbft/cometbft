@@ -87,7 +87,6 @@ func TestPrivvalVectors(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		pm := mustWrapMsg(tc.msg)
 		bz, err := pm.Marshal()
 		require.NoError(t, err, tc.testName)

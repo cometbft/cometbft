@@ -192,7 +192,7 @@ func TestAppMempool(t *testing.T) {
 					require.NoError(t, err, "tx should not be seen after error removal")
 					<-retryDone
 				} else {
-					// Non-error cases: callback is called after any removal
+					// no error cases: callback is called after any removal
 					<-callbackDone
 					if tt.shouldRemove {
 						require.False(t, m.seen.Has(tt.tx), "tx should be removed from seen cache")

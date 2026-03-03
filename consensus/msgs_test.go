@@ -173,7 +173,7 @@ func TestMsgToProto(t *testing.T) {
 		{"failure", nil, &cmtcons.Message{}, true},
 	}
 	for _, tt := range testsCases {
-		tt := tt
+
 		t.Run(tt.testName, func(t *testing.T) {
 			pb, err := MsgToProto(tt.msg)
 			if tt.wantErr == true {
@@ -279,7 +279,7 @@ func TestWALMsgProto(t *testing.T) {
 		{"failure", nil, &cmtcons.WALMessage{}, true},
 	}
 	for _, tt := range testsCases {
-		tt := tt
+
 		t.Run(tt.testName, func(t *testing.T) {
 			pb, err := WALToProto(tt.msg)
 			if tt.wantErr == true {
@@ -407,7 +407,7 @@ func TestConsMsgsVectors(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
+
 		t.Run(tc.testName, func(t *testing.T) {
 			bz, err := proto.Marshal(tc.cMsg)
 			require.NoError(t, err)

@@ -30,7 +30,7 @@ func ExampleHTTP_simple() {
 	// Create a transaction
 	k := []byte("name")
 	v := []byte("satoshi")
-	tx := append(k, append([]byte("="), v...)...)
+	tx := append(k, append([]byte("="), v...)...) //nolint:gocritic // appendAssign
 
 	// Broadcast the transaction and wait for it to commit (rather use
 	// c.BroadcastTxSync though in production).
@@ -84,11 +84,11 @@ func ExampleHTTP_batching() {
 	// Create our two transactions
 	k1 := []byte("firstName")
 	v1 := []byte("satoshi")
-	tx1 := append(k1, append([]byte("="), v1...)...)
+	tx1 := append(k1, append([]byte("="), v1...)...) //nolint:gocritic // appendAssign
 
 	k2 := []byte("lastName")
 	v2 := []byte("nakamoto")
-	tx2 := append(k2, append([]byte("="), v2...)...)
+	tx2 := append(k2, append([]byte("="), v2...)...) //nolint:gocritic // appendAssign
 
 	txs := [][]byte{tx1, tx2}
 
@@ -140,9 +140,19 @@ func ExampleHTTP_batching() {
 
 // Test the maximum batch request size middleware.
 func ExampleHTTP_maxBatchSize() {
+	if err := exampleHTTPMaxBatchSize(); err != nil {
+		log.Fatal(err)
+	}
+
+	// Output:
+	// Max Request Batch Exceeded
+}
+
+func exampleHTTPMaxBatchSize() error {
 	// Start a CometBFT node (and kvstore) in the background to test against
 	app := kvstore.NewInMemoryApplication()
 	node := rpctest.StartTendermint(app, rpctest.RecreateConfig, rpctest.SuppressStdout, rpctest.MaxReqBatchSize)
+	defer rpctest.StopTendermint(node)
 
 	// Change the max_request_batch_size
 	node.Config().RPC.MaxRequestBatchSize = 2
@@ -151,24 +161,22 @@ func ExampleHTTP_maxBatchSize() {
 	rpcAddr := rpctest.GetConfig().RPC.ListenAddress
 	c, err := rpchttp.New(rpcAddr, "/websocket")
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-
-	defer rpctest.StopTendermint(node)
 
 	// Create a new batch
 	batch := c.NewBatch()
 
 	for i := 1; i <= 5; i++ {
 		if _, err := batch.Health(context.Background()); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 
 	// Send the requests
 	results, err := batch.Send(context.Background())
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	// Each result in the returned list is the deserialized result of each
@@ -176,7 +184,7 @@ func ExampleHTTP_maxBatchSize() {
 	for _, result := range results {
 		rpcError, ok := result.(*types.RPCError)
 		if !ok {
-			log.Fatal("invalid result type")
+			return fmt.Errorf("invalid result type")
 		}
 		if !strings.Contains(rpcError.Data, "batch request exceeds maximum") {
 			fmt.Println("Error message does not contain 'Max Request Batch Exceeded'")
@@ -185,7 +193,5 @@ func ExampleHTTP_maxBatchSize() {
 			fmt.Println("Max Request Batch Exceeded")
 		}
 	}
-
-	// Output:
-	// Max Request Batch Exceeded
+	return nil
 }

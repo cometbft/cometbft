@@ -148,7 +148,7 @@ func TestProposalValidateBasic(t *testing.T) {
 	blockID := makeBlockID(tmhash.Sum([]byte("blockhash")), math.MaxInt32, tmhash.Sum([]byte("partshash")))
 
 	for _, tc := range testCases {
-		tc := tc
+
 		t.Run(tc.testName, func(t *testing.T) {
 			prop := NewProposal(
 				4, 2, 2,
@@ -206,7 +206,7 @@ func TestProposalValidateBlockSize(t *testing.T) {
 		{"total parts equals chunk max, success", -1, NewProposal(0, 0, 0, BlockID{PartSetHeader: PartSetHeader{Total: 1600}}), true},
 	}
 	for _, tc := range testCases {
-		tc := tc
+
 		t.Run(tc.testName, func(t *testing.T) {
 			err := tc.proposal.ValidateBlockSize(tc.maxBlockSize)
 			if tc.expectPass {

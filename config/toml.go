@@ -371,6 +371,10 @@ threshold_latency = "{{ .P2P.LibP2PConfig.Scaler.ThresholdLatency }}"
 # min_workers = 2
 # max_workers = 16
 # threshold_latency = "250ms"
+#
+# By default, MEMPOOL reactor is overridden to have increased throughput
+# If you want to disable this, explicitly set override to an empty list:
+# overrides = []
 {{- range .P2P.LibP2PConfig.Scaler.Overrides }}
 [[p2p.libp2p.scaler.overrides]]
 reactor = "{{ .Reactor }}"

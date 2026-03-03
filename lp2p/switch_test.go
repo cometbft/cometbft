@@ -14,6 +14,8 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/conn"
+	p2pmock "github.com/cometbft/cometbft/p2p/mock"
 	"github.com/cometbft/cometbft/test/utils"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
@@ -295,6 +297,73 @@ func TestSwitch(t *testing.T) {
 		require.Contains(t, logBuffer.String(), "Removing peer")
 		require.Contains(t, logBuffer.String(), "Will reconnect to peer after transient error")
 		require.Contains(t, logBuffer.String(), "Reconnected to peer")
+	})
+
+	t.Run("EnsureScalers", func(t *testing.T) {
+		// ARRANGE
+		var (
+			port      = utils.GetFreePorts(t, 1)[0]
+			logBuffer = &syncBuffer{}
+			logger    = log.NewTMLogger(logBuffer)
+		)
+
+		// Given default P2P config with lp2p enabled
+		cfg := config.DefaultP2PConfig()
+		cfg.RootDir = t.TempDir()
+		cfg.ListenAddress = fmt.Sprintf("127.0.0.1:%d", port)
+		cfg.ExternalAddress = fmt.Sprintf("127.0.0.1:%d", port)
+		cfg.LibP2PConfig.Enabled = true
+
+		// Given a new host
+		host, err := NewHost(cfg, ed25519.GenPrivKey(), logger)
+		require.NoError(t, err)
+
+		t.Cleanup(func() { _ = host.Close() })
+
+		// Given two dummy reactors
+		consensusReactor := p2pmock.NewReactor()
+		consensusReactor.Channels = []*conn.ChannelDescriptor{
+			{ID: 0x01, Priority: 1},
+		}
+
+		mempoolReactor := p2pmock.NewReactor()
+		mempoolReactor.Channels = []*conn.ChannelDescriptor{
+			{ID: 0x02, Priority: 1},
+		}
+
+		// ACT
+		// Create switch which should add reactors with scalers
+		sw, err := NewSwitch(
+			nil,
+			host,
+			[]SwitchReactor{
+				{Name: "CONSENSUS", Reactor: consensusReactor},
+				{Name: "MEMPOOL", Reactor: mempoolReactor},
+			},
+			p2p.NopMetrics(),
+			logger,
+		)
+
+		// ASSERT
+		require.NoError(t, err)
+
+		r1 := sw.reactors.reactors[0]
+		require.Equal(t, "CONSENSUS", r1.name)
+
+		r2 := sw.reactors.reactors[1]
+		require.Equal(t, "MEMPOOL", r2.name)
+
+		// Check logs
+		// see config.DefaultLibP2PConfig()
+		require.True(t, logBuffer.HasMatchingLine(
+			"Added reactor", "reactor=CONSENSUS",
+			"Workers[min:4, max:32]",
+			"Threshold=100ms",
+		))
+		require.True(t, logBuffer.HasMatchingLine(
+			"Added reactor", "reactor=MEMPOOL",
+			"Workers[min:8, max:512]", "Threshold=500ms",
+		))
 	})
 }
 

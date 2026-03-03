@@ -17,8 +17,6 @@
 - [p2p] fix(lp2p): enforce stream max size ([\#5647](https://github.com/cometbft/cometbft/pull/5647))
 - `[metrics]` fix(metrics)!: peer_send_queue_size
   ([\#5648](https://github.com/cometbft/cometbft/pull/5648))
-- `[p2p]` feat(lp2p): make reactor queue configurable
-  ([\#5662](https://github.com/cometbft/cometbft/pull/5662))
 
 ### IMPROVEMENTS
 
@@ -32,6 +30,8 @@
   192 bytes ([\#3624](https://github.com/cometbft/cometbft/issues/3624)
 - `[statesync]` Add configurable `max-snapshot-chunks` parameter to validate max amount of chunks in a `SnapshotResponse`.
   ([\#5549](https://github.com/cometbft/cometbft/pull/5549))
+- `[p2p]` feat(lp2p): make reactor queue configurable
+  ([\#5662](https://github.com/cometbft/cometbft/pull/5662))
 
 ### FEATURES
 

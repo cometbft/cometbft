@@ -32,6 +32,9 @@ type AppMempoolClient interface {
 	// InsertTx inserts a tx into app-side mempool
 	InsertTx(ctx context.Context, req *abci.RequestInsertTx) (*abci.ResponseInsertTx, error)
 
+	// CheckTx checks a tx by running it through the application's ante handlers, and inserts the tx into the mempool if it passes.
+	CheckTx(ctx context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error)
+
 	// ReapTxs reaps txs from app-side mempool
 	ReapTxs(ctx context.Context, req *abci.RequestReapTxs) (*abci.ResponseReapTxs, error)
 
@@ -250,27 +253,22 @@ func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckT
 			}
 		}()
 
-		code, err := m.insertTx(tx)
+		res, err := m.app.CheckTx(m.ctx, &abci.RequestCheckTx{Tx: tx})
 		if err != nil {
+			m.seen.Remove(tx)
 			// note that other ABCI methods panic if err is not nil
 			m.logger.Error("AppMempool.CheckTx: error inserting tx", "error", err, "tx", txHash(tx))
 			return
+		}
+		if res.Code != abci.CodeTypeOK {
+			m.seen.Remove(tx)
 		}
 
 		// App mempool doesn't execute the tx, so we ALWAYS return an empty response here.
 		// This will most likely break many clients. Clients should rely on app-specific
 		// broadcasting endpoints (think of eth_sendRawTransaction, etc...).
 		if callback != nil {
-			callback(&abci.ResponseCheckTx{
-				Code:      code,
-				Data:      []byte{},
-				Log:       "",
-				Info:      "",
-				GasWanted: 0,
-				GasUsed:   0,
-				Events:    []abci.Event{},
-				Codespace: "",
-			})
+			callback(res)
 		}
 	}()
 

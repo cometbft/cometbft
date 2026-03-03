@@ -26,6 +26,8 @@ import (
 type Host struct {
 	host.Host
 
+	config *config.LibP2PConfig
+
 	// bootstrapPeers are initial peers specified in the address book
 	bootstrapPeers []BootstrapPeer
 
@@ -101,6 +103,7 @@ func NewHost(config *config.P2PConfig, nodeKey cmcrypto.PrivKey, logger log.Logg
 
 	return &Host{
 		Host:           host,
+		config:         config.LibP2PConfig,
 		bootstrapPeers: bootstrapPeers,
 		logger:         logger,
 	}, nil

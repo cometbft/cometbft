@@ -907,7 +907,7 @@ func pickVoteToSend(
 	// Catchup logic
 	// If peer is lagging by more than 1, send Commit.
 	blockStoreBase := conS.blockStore.Base()
-	if blockStoreBase > 0 && prs.Height != 0 && rs.Height >= prs.Height+2 && prs.Height >= blockStoreBase {
+	if blockStoreBase > 0 && prs.Height > 0 && prs.Height <= rs.Height-2 && prs.Height >= blockStoreBase {
 		// Load the block's extended commit for prs.Height,
 		// which contains precommit signatures for prs.Height.
 		var ec *types.ExtendedCommit

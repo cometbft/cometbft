@@ -21,7 +21,7 @@ type mockAppMempoolClient struct {
 }
 
 func (m *mockAppMempoolClient) CheckTxUnlocked(ctx context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
-	return m.Client.CheckTx(ctx, req)
+	return m.CheckTx(ctx, req)
 }
 
 func newMockAppMempoolClient(t *testing.T) *mockAppMempoolClient {

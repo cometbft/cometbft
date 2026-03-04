@@ -93,9 +93,6 @@ func NewSwitch(
 func (s *Switch) OnStart() error {
 	s.Logger.Info("Starting lib-p2p switch")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	protocolHandler := func(protocolID protocol.ID) {
 		s.host.SetStreamHandler(protocolID, s.handleStream)
 	}
@@ -117,6 +114,10 @@ func (s *Switch) OnStart() error {
 	bootstrapPeers := s.host.BootstrapPeers()
 
 	s.Logger.Info("Connecting to bootstrap peers", "count", len(bootstrapPeers))
+
+	// todo!
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
 	for _, bp := range bootstrapPeers {
 		opts := PeerAddOptions{

@@ -118,8 +118,16 @@ func TestP2PConfigValidateBasic(t *testing.T) {
 			errContains string
 		}{
 			{
-				name:   "allowsNilLibp2pConfig",
-				mutate: func(cfg *config.P2PConfig) { cfg.LibP2PConfig = nil },
+				name: "disabled",
+				mutate: func(cfg *config.P2PConfig) {
+					cfg.LibP2PConfig.Enabled = false
+				},
+			},
+			{
+				name: "enabled-default",
+				mutate: func(cfg *config.P2PConfig) {
+					cfg.LibP2PConfig.Enabled = true
+				},
 			},
 			{
 				name: "allowsEnabledConfigWithEmptyScaler",

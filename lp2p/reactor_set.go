@@ -297,6 +297,7 @@ func (rs *reactorSet) newReactorScaler(reactorName string) (*autopool.Throughput
 	)
 
 	var (
+		// we expect the config to be valid
 		scalerConfig     = rs.switchRef.host.config.Scaler
 		minWorkers       = scalerConfig.MinWorkers
 		maxWorkers       = scalerConfig.MaxWorkers
@@ -310,17 +311,6 @@ func (rs *reactorSet) newReactorScaler(reactorName string) (*autopool.Throughput
 			latencyThreshold = override.ThresholdLatency
 			break
 		}
-	}
-
-	switch {
-	case minWorkers < 0:
-		return nil, fmt.Errorf("minWorkers must be greater than 0")
-	case maxWorkers < 0:
-		return nil, fmt.Errorf("maxWorkers must be greater than 0")
-	case minWorkers > maxWorkers:
-		return nil, fmt.Errorf("minWorkers must be less than maxWorkers")
-	case latencyThreshold < 0:
-		return nil, fmt.Errorf("latencyThreshold must be greater than 0")
 	}
 
 	return autopool.NewThroughputLatencyScaler(

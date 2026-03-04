@@ -26,7 +26,7 @@ import (
 type Host struct {
 	host.Host
 
-	config *config.LibP2PConfig
+	config config.LibP2PConfig
 
 	// bootstrapPeers are initial peers specified in the address book
 	bootstrapPeers []BootstrapPeer
@@ -68,7 +68,7 @@ func NewHost(config *config.P2PConfig, nodeKey cmcrypto.PrivKey, logger log.Logg
 		return nil, fmt.Errorf("failed to convert %q to multiaddr: %w", config.ListenAddress, err)
 	}
 
-	bootstrapPeers, err := BootstrapPeersFromConfig(config)
+	bootstrapPeers, err := BootstrapPeersFromConfig(config.LibP2PConfig)
 	switch {
 	case err != nil:
 		return nil, fmt.Errorf("failed to decode bootstrap peers: %w", err)
@@ -149,13 +149,13 @@ func (h *Host) multiAddrStrByID(id peer.ID) string {
 	return multiAddrStr(h.Peerstore().Addrs(id))
 }
 
-func BootstrapPeersFromConfig(config *config.P2PConfig) ([]BootstrapPeer, error) {
-	peers := make([]BootstrapPeer, 0, len(config.LibP2PConfig.BootstrapPeers))
+func BootstrapPeersFromConfig(config config.LibP2PConfig) ([]BootstrapPeer, error) {
+	peers := make([]BootstrapPeer, 0, len(config.BootstrapPeers))
 
 	// dedup
 	cache := make(map[peer.ID]struct{})
 
-	for _, bp := range config.LibP2PConfig.BootstrapPeers {
+	for _, bp := range config.BootstrapPeers {
 		addr, err := AddrInfoFromHostAndID(bp.Host, bp.ID)
 		if err != nil {
 			return nil, fmt.Errorf("[%s, %s]: %w", bp.Host, bp.ID, err)

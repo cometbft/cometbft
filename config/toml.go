@@ -365,7 +365,7 @@ max_workers = {{ .P2P.LibP2PConfig.Scaler.MaxWorkers }}
 # scale up when observed latency is below this value, scale down when above it.
 threshold_latency = "{{ .P2P.LibP2PConfig.Scaler.ThresholdLatency }}"
 
-# Override a specific reactor, for example:
+# Override a specific reactor (case-insensitive), for example:
 # [[p2p.libp2p.scaler.overrides]]
 # reactor = "BLOCKSYNC"
 # min_workers = 2

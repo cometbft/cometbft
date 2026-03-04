@@ -590,7 +590,7 @@ type P2PConfig struct {
 	PexReactor bool `mapstructure:"pex"`
 
 	// LibP2PConfig (experimental) configuration for go-libp2p
-	LibP2PConfig *LibP2PConfig `mapstructure:"libp2p"`
+	LibP2PConfig LibP2PConfig `mapstructure:"libp2p"`
 
 	// Seed mode, in which node constantly crawls the network and looks for
 	// peers. If another node asks it for addresses, it responds and disconnects.
@@ -751,25 +751,29 @@ func (cfg *P2PConfig) ValidateBasic() error {
 }
 
 func (cfg *P2PConfig) LibP2PEnabled() bool {
-	return cfg.LibP2PConfig != nil && cfg.LibP2PConfig.Enabled
+	return cfg.LibP2PConfig.Enabled
 }
 
-func DefaultLibP2PConfig() *LibP2PConfig {
-	return &LibP2PConfig{
+func DefaultLibP2PConfig() LibP2PConfig {
+	return LibP2PConfig{
 		Enabled:                false,
 		DisableResourceManager: false,
 		BootstrapPeers:         []LibP2PBootstrapPeer{},
-		Scaler: LibP2PScaler{
-			MinWorkers:       4,
-			MaxWorkers:       32,
-			ThresholdLatency: 100 * time.Millisecond,
-			Overrides: []LibP2PScalerOverride{
-				{
-					Reactor:          "MEMPOOL",
-					MinWorkers:       8,
-					MaxWorkers:       512,
-					ThresholdLatency: 500 * time.Millisecond,
-				},
+		Scaler:                 DefaultLibP2PScaler(),
+	}
+}
+
+func DefaultLibP2PScaler() LibP2PScaler {
+	return LibP2PScaler{
+		MinWorkers:       4,
+		MaxWorkers:       32,
+		ThresholdLatency: 100 * time.Millisecond,
+		Overrides: []LibP2PScalerOverride{
+			{
+				Reactor:          "MEMPOOL",
+				MinWorkers:       8,
+				MaxWorkers:       512,
+				ThresholdLatency: 500 * time.Millisecond,
 			},
 		},
 	}

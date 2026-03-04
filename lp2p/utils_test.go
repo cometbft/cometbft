@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/cometbft/cometbft/abci/types"
+	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/require"
 )
 
@@ -46,4 +47,29 @@ func TestNewPreMarshalledMessage(t *testing.T) {
 	// ASSERT 2
 	// messages should be different because bzCached.payload is persisted
 	require.NotEqual(t, bzOriginal, bzCached)
+}
+
+func TestProtoTypeName(t *testing.T) {
+	var (
+		echoReq       = &types.RequestEcho{Message: "foo"}
+		echoReqCached = newPreMarshaledMessage(echoReq)
+	)
+
+	// ensure that pre-marshaled message returns the same name as the original message
+	for _, tt := range []struct {
+		msg  proto.Message
+		want string
+	}{
+		{
+			msg:  echoReq,
+			want: "RequestEcho",
+		},
+		{
+			msg:  echoReqCached,
+			want: "RequestEcho",
+		},
+	} {
+		got := protoTypeName(tt.msg)
+		require.Equal(t, tt.want, got)
+	}
 }

@@ -82,10 +82,6 @@ func unmarshalProto(descriptor *p2p.ChannelDescriptor, payload []byte) (proto.Me
 	return msg, nil
 }
 
-func protoTypeName(msg proto.Message) string {
-	return reflect.TypeOf(msg).Elem().Name()
-}
-
 // preMarshaledMessage is a wrapper with the pre-marshaled bytes.
 // use case: avoid repeated marshaling across multiple peers when broadcasting
 type preMarshaledMessage struct {
@@ -98,4 +94,12 @@ func newPreMarshaledMessage(msg proto.Message) *preMarshaledMessage {
 	bz, _ := marshalProto(msg)
 
 	return &preMarshaledMessage{Message: msg, payload: bz}
+}
+
+func protoTypeName(msg proto.Message) string {
+	if pm, ok := msg.(*preMarshaledMessage); ok {
+		return reflect.TypeOf(pm.Message).Elem().Name()
+	}
+
+	return reflect.TypeOf(msg).Elem().Name()
 }

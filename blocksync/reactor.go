@@ -22,8 +22,8 @@ import (
 const BlocksyncChannel = byte(0x40)
 
 const (
-	defaultIntervalStatusUpdate  = 10 * time.Second
-	followerIntervalStatusUpdate = 1 * time.Second
+	defaultIntervalStatusUpdate      = 10 * time.Second
+	combinedModeInternalStatusUpdate = 1 * time.Second
 
 	defaultIntervalSwitchToConsensus = 1 * time.Second
 
@@ -62,8 +62,10 @@ type Reactor struct {
 	// eg it can be initially disabled due to state sync being performed
 	enabled *atomic.Bool
 
-	// if enabled, we suppress switching to consensus mode, keeping node perpetually in block sync
-	followerMode bool
+	// if enabled, pending blocks are forwarded to BlockIngestor for
+	// further commitment. This effectively combines BLOCKSYNC with CONSENSUS,
+	// making them operate simultaneously.
+	combinedModeEnabled bool
 
 	blockExec     *sm.BlockExecutor
 	store         sm.BlockStore
@@ -86,7 +88,7 @@ type Reactor struct {
 // NewReactorWithAddr returns new Reactor instance with local address
 func NewReactor(
 	enabled bool,
-	followerMode bool,
+	combinedMode bool,
 	state sm.State,
 	blockExec *sm.BlockExecutor,
 	store *store.BlockStore,
@@ -130,8 +132,8 @@ func NewReactor(
 	enabledFlag.Store(enabled)
 
 	intervalStatusUpdate := defaultIntervalStatusUpdate
-	if followerMode {
-		intervalStatusUpdate = followerIntervalStatusUpdate
+	if combinedMode {
+		intervalStatusUpdate = combinedModeInternalStatusUpdate
 	}
 
 	r := &Reactor{
@@ -140,7 +142,7 @@ func NewReactor(
 		store:                     store,
 		pool:                      pool,
 		enabled:                   enabledFlag,
-		followerMode:              followerMode,
+		combinedModeEnabled:       combinedMode,
 		localAddr:                 localAddr,
 		requestsCh:                requestsCh,
 		errorsCh:                  errorsCh,
@@ -175,11 +177,38 @@ func (r *Reactor) runPool(stateSynced bool) error {
 		return err
 	}
 
-	r.poolRoutineWg.Add(1)
-	go func() {
-		defer r.poolRoutineWg.Done()
-		r.poolRoutine(stateSynced)
-	}()
+	// todo: use poolRoutineWg.Go() after moving to go 1.25+
+	run := func(fn func()) {
+		r.poolRoutineWg.Add(1)
+		go func() {
+			defer r.poolRoutineWg.Done()
+			fn()
+		}()
+	}
+
+	// run the pool events routine
+	run(func() {
+		ticker := time.NewTicker(r.intervalStatusUpdate)
+		defer ticker.Stop()
+		r.poolEventsRoutine(ticker)
+	})
+
+	if r.combinedModeEnabled {
+		// supply blocks to the consensus machine
+		blockIngestor, err := r.getBlockIngestor()
+		if err != nil {
+			return err
+		}
+
+		run(func() {
+			r.blockIngestorRoutine(blockIngestor)
+		})
+
+		return nil
+	}
+
+	// default pool routine that performs regular blocksync
+	run(func() { r.poolRoutine(stateSynced) })
 
 	return nil
 }
@@ -359,19 +388,16 @@ func (r *Reactor) localNodeBlocksTheChain(state sm.State) bool {
 // Handle messages from the poolReactor telling the reactor what to do.
 // NOTE: Don't sleep in the FOR_LOOP or otherwise slow it down!
 func (r *Reactor) poolRoutine(stateSynced bool) {
+	r.Logger.Info("Starting blocksync pool routine", "stateSynced", stateSynced)
+
 	r.metrics.Syncing.Set(1)
 	defer r.metrics.Syncing.Set(0)
 
 	trySyncTicker := time.NewTicker(intervalTrySync)
 	defer trySyncTicker.Stop()
 
-	statusUpdateTicker := time.NewTicker(r.intervalStatusUpdate)
-	defer statusUpdateTicker.Stop()
-
 	switchToConsensusTicker := time.NewTicker(r.intervalSwitchToConsensus)
 	defer switchToConsensusTicker.Stop()
-
-	go r.poolEventsRoutine(statusUpdateTicker)
 
 	var (
 		chainID                    = r.initialState.ChainID
@@ -446,11 +472,6 @@ FOR_LOOP:
 
 			// keep syncing
 			if !r.pool.IsCaughtUp() && !r.localNodeBlocksTheChain(state) {
-				continue FOR_LOOP
-			}
-
-			if r.followerMode {
-				r.Logger.Debug("Follower mode is enabled, continuing to sync", "height", state.LastBlockHeight)
 				continue FOR_LOOP
 			}
 
@@ -555,21 +576,7 @@ FOR_LOOP:
 			}
 
 			if err != nil {
-				r.Logger.Error("Error in validation", "err", err)
-				peerID := r.pool.RemovePeerAndRedoAllPeerRequests(first.Height)
-				peer := r.Switch.Peers().Get(peerID)
-				if peer != nil {
-					// NOTE: we've already removed the peer's request, but we
-					// still need to clean up the rest.
-					r.stopPeerForError(peer, ErrReactorValidation{Err: err})
-				}
-				peerID2 := r.pool.RemovePeerAndRedoAllPeerRequests(second.Height)
-				peer2 := r.Switch.Peers().Get(peerID2)
-				if peer2 != nil && peer2 != peer {
-					// NOTE: we've already removed the peer's request, but we
-					// still need to clean up the rest.
-					r.stopPeerForError(peer2, ErrReactorValidation{Err: err})
-				}
+				r.handleValidationFailure(first, second, err)
 				continue FOR_LOOP
 			}
 
@@ -650,8 +657,32 @@ func (r *Reactor) poolEventsRoutine(statusUpdateTicker *time.Ticker) {
 	}
 }
 
+func (r *Reactor) handleValidationFailure(blockA, blockB *types.Block, err error) {
+	r.Logger.Error("Error in validation", "height", blockA.Height, "hash", blockA.Hash(), "err", err)
+
+	err = ErrReactorValidation{Err: err}
+
+	idA := r.pool.RemovePeerAndRedoAllPeerRequests(blockA.Height)
+	if peerA := r.Switch.Peers().Get(idA); peerA != nil {
+		// NOTE: we've already removed the peer's request, but we
+		// still need to clean up the rest.
+		r.stopPeerForError(peerA, err)
+	}
+
+	idB := r.pool.RemovePeerAndRedoAllPeerRequests(blockB.Height)
+	if idA == idB {
+		return
+	}
+
+	if peerB := r.Switch.Peers().Get(idB); peerB != nil {
+		// NOTE: we've already removed the peer's request, but we
+		// still need to clean up the rest.
+		r.stopPeerForError(peerB, err)
+	}
+}
+
 func (r *Reactor) stopPeerForError(peer p2p.Peer, err error) {
-	if r.followerMode && shouldBeReconnected(err) {
+	if r.combinedModeEnabled && shouldBeReconnected(err) {
 		err = &lp2p.ErrorTransient{Err: err}
 	}
 

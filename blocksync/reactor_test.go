@@ -63,6 +63,7 @@ type ReactorPair struct {
 type reactorOpts struct {
 	corruptedBlock          int64
 	allAbsentExtCommitBlock int64
+	deterministicVoteTimes  bool
 }
 
 type reactorOption func(*reactorOpts)
@@ -76,6 +77,12 @@ func withCorruptedBlock(height int64) reactorOption {
 func withAllAbsentExtCommitBlock(height int64) reactorOption {
 	return func(o *reactorOpts) {
 		o.allAbsentExtCommitBlock = height
+	}
+}
+
+func withDeterministicVoteTimes() reactorOption {
+	return func(o *reactorOpts) {
+		o.deterministicVoteTimes = true
 	}
 }
 
@@ -165,6 +172,13 @@ func newReactor(
 		require.NoError(t, err)
 		blockID := types.BlockID{Hash: thisBlock.Hash(), PartSetHeader: thisParts.Header()}
 
+		voteTime := time.Now()
+		if options.deterministicVoteTimes {
+			// use deterministic vote times so independently constructed test chains
+			// with the same genesis produce identical block IDs and LastBlockID links.
+			voteTime = genDoc.GenesisTime.Add(time.Duration(blockHeight) * time.Second)
+		}
+
 		// Simulate a commit for the current height
 		vote, err := types.MakeVote(
 			privVals[0],
@@ -174,7 +188,7 @@ func newReactor(
 			0,
 			cmtproto.PrecommitType,
 			blockID,
-			time.Now(),
+			voteTime,
 		)
 		if err != nil {
 			panic(err)

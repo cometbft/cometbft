@@ -2,6 +2,7 @@ package lp2p
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/cometbft/cometbft/internal/autopool"
@@ -61,6 +62,12 @@ func (rs *reactorSet) Add(reactor p2p.Reactor, name string) error {
 		return fmt.Errorf("reactor %q is already registered", name)
 	}
 
+	// ensure reactor queue config
+	scaler, err := rs.newReactorScaler(name)
+	if err != nil {
+		return fmt.Errorf("failed to create reactor scaler: %w", err)
+	}
+
 	// register channel descriptor to reactor & protocolID mapping
 	for i := range reactor.GetChannels() {
 		var (
@@ -81,13 +88,13 @@ func (rs *reactorSet) Add(reactor p2p.Reactor, name string) error {
 	rs.reactors = append(rs.reactors, reactorItem{
 		Reactor:       reactor,
 		name:          name,
-		consumerQueue: rs.newReactorPriorityQueue(nextID, name),
+		consumerQueue: rs.newReactorPriorityQueue(nextID, name, scaler),
 	})
 
 	// add name to mapping
 	rs.reactorNames[name] = nextID
 
-	rs.switchRef.Logger.Info("Added reactor", "reactor", name)
+	rs.switchRef.Logger.Info("Added reactor", "reactor", name, "scaler", scaler)
 
 	return nil
 }
@@ -246,7 +253,11 @@ func (rs *reactorSet) receiveQueued(reactorID int, e pendingEnvelope) {
 // newReactorPriorityQueue creates a consumer pool for reactor.Receive()
 // It allows to dynamically adjust consumption concurrency based on the load,
 // while maintaining the priority, order, and latency of messages.
-func (rs *reactorSet) newReactorPriorityQueue(reactorID int, reactorName string) *autopool.Pool[pendingEnvelope] {
+func (rs *reactorSet) newReactorPriorityQueue(
+	reactorID int,
+	reactorName string,
+	scaler *autopool.ThroughputLatencyScaler,
+) *autopool.Pool[pendingEnvelope] {
 	const (
 		// variety of priorities (cometbft has up to 10)
 		priorities = 10
@@ -261,7 +272,7 @@ func (rs *reactorSet) newReactorPriorityQueue(reactorID int, reactorName string)
 		With("reactor", reactorName)
 
 	return autopool.New(
-		rs.newReactorScaler(reactorName),
+		scaler,
 		func(e pendingEnvelope) {
 			rs.receiveQueued(reactorID, e)
 		},
@@ -277,28 +288,29 @@ func (rs *reactorSet) newReactorPriorityQueue(reactorID int, reactorName string)
 	)
 }
 
-func (rs *reactorSet) newReactorScaler(reactorName string) *autopool.ThroughputLatencyScaler {
+func (rs *reactorSet) newReactorScaler(reactorName string) (*autopool.ThroughputLatencyScaler, error) {
 	const (
-		defaultMinWorkers       = 4
-		defaultMaxWorkers       = 32
-		defaultLatencyThreshold = 100 * time.Millisecond
-		latencyPercentile       = 90.0 // P90
-
-		// how often to autoscale.
-		autoScaleFrequency = 200 * time.Millisecond
+		// how frequently to decide on scaling action
+		scalerFrequency = 200 * time.Millisecond
+		// use P90 for latency measurement
+		latencyPercentile = 90.0
 	)
 
 	var (
-		maxWorkers       = defaultMaxWorkers
-		minWorkers       = defaultMinWorkers
-		latencyThreshold = autoScaleFrequency
+		// we expect the config to be valid
+		scalerConfig     = rs.switchRef.host.config.Scaler
+		minWorkers       = scalerConfig.MinWorkers
+		maxWorkers       = scalerConfig.MaxWorkers
+		latencyThreshold = scalerConfig.ThresholdLatency
 	)
 
-	// bump max workers for mempool
-	if reactorName == "MEMPOOL" {
-		minWorkers = 8
-		maxWorkers = 512
-		latencyThreshold = 500 * time.Millisecond
+	for _, override := range scalerConfig.Overrides {
+		if strings.EqualFold(override.Reactor, reactorName) {
+			minWorkers = override.MinWorkers
+			maxWorkers = override.MaxWorkers
+			latencyThreshold = override.ThresholdLatency
+			break
+		}
 	}
 
 	return autopool.NewThroughputLatencyScaler(
@@ -306,7 +318,7 @@ func (rs *reactorSet) newReactorScaler(reactorName string) *autopool.ThroughputL
 		maxWorkers,
 		latencyPercentile,
 		latencyThreshold,
-		autoScaleFrequency,
+		scalerFrequency,
 		rs.switchRef.Logger,
-	)
+	), nil
 }

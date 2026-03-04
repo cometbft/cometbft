@@ -179,6 +179,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.DBBackend = node.Database
 	cfg.StateSync.DiscoveryTime = 5 * time.Second
 	cfg.BlockSync.Version = node.BlockSyncVersion
+	cfg.BlockSync.CombinedMode = node.BlockSyncCombinedMode
 	cfg.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToNonPersistentPeers)
 	cfg.Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToPersistentPeers)
 

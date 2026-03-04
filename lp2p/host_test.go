@@ -319,7 +319,7 @@ func TestBootstrapPeers(t *testing.T) {
 		}
 
 		// ACT
-		bootstrapPeers, err := BootstrapPeersFromConfig(cfg)
+		bootstrapPeers, err := BootstrapPeersFromConfig(cfg.LibP2PConfig)
 
 		// ASSERT
 		require.NoError(t, err)
@@ -348,7 +348,7 @@ func TestBootstrapPeers(t *testing.T) {
 		}
 
 		// ACT
-		bootstrapPeers, err := BootstrapPeersFromConfig(cfg)
+		bootstrapPeers, err := BootstrapPeersFromConfig(cfg.LibP2PConfig)
 
 		// ASSERT
 		require.Error(t, err)
@@ -363,7 +363,7 @@ func TestBootstrapPeers(t *testing.T) {
 		}
 
 		// ACT
-		bootstrapPeers, err := BootstrapPeersFromConfig(cfg)
+		bootstrapPeers, err := BootstrapPeersFromConfig(cfg.LibP2PConfig)
 
 		// ASSERT
 		require.Error(t, err)

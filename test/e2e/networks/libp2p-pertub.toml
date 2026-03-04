@@ -1,18 +1,23 @@
 [node.validator01]
 use_libp2p = true
 persistent_peers = ["validator02", "validator04", "validator05"]
+block_sync_combined_mode = true
 
 [node.validator02]
 use_libp2p = true
 perturb = ["kill"]
+block_sync_combined_mode = true
 
 [node.validator03]
 use_libp2p = true
+block_sync_combined_mode = true
 
 [node.validator04]
 use_libp2p = true
 perturb = ["restart"]
+block_sync_combined_mode = true
 
 [node.validator05]
 use_libp2p = true
-perturb = ["disconnect"]
+perturb = ["disconnect", "pause"]
+block_sync_combined_mode = true

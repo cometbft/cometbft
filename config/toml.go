@@ -352,6 +352,37 @@ bootstrap_peers = [{{ range $bps }}
 ]
 {{- end }}
 
+# Options for scaling concurrent p2p message queues.
+# Tune workers to keep the system near the ideal operating point:
+# enough concurrency for throughput while keeping processing latency low.
+[p2p.libp2p.scaler]
+
+# Min and max concurrent worker range.
+min_workers = {{ .P2P.LibP2PConfig.Scaler.MinWorkers }}
+max_workers = {{ .P2P.LibP2PConfig.Scaler.MaxWorkers }}
+
+# Target latency threshold:
+# scale up when observed latency is below this value, scale down when above it.
+threshold_latency = "{{ .P2P.LibP2PConfig.Scaler.ThresholdLatency }}"
+
+# Override a specific reactor (case-insensitive), for example:
+# [[p2p.libp2p.scaler.overrides]]
+# reactor = "BLOCKSYNC"
+# min_workers = 2
+# max_workers = 16
+# threshold_latency = "250ms"
+#
+# By default, MEMPOOL reactor is overridden to have increased throughput
+# If you want to disable this, explicitly set override to an empty list:
+# overrides = []
+{{- range .P2P.LibP2PConfig.Scaler.Overrides }}
+[[p2p.libp2p.scaler.overrides]]
+reactor = "{{ .Reactor }}"
+min_workers = {{ .MinWorkers }}
+max_workers = {{ .MaxWorkers }}
+threshold_latency = "{{ .ThresholdLatency }}"
+{{- end }}
+
 #######################################################
 ###          Mempool Configuration Option          ###
 #######################################################
@@ -491,13 +522,10 @@ max_snapshot_chunks = {{ .StateSync.MaxSnapshotChunks }}
 #   1) "v0" - the default block sync implementation
 version = "{{ .BlockSync.Version }}"
 
-# Experimental Follower model (bool):
+# Experimental Combined mode (bool):
 #
-# If enabled, the node will perpetually rely on block-sync to catch up.
-# This is useful for RPC-only nodes that don't need to participate in consensus.
-#
-# This will be ignored if the node is a validator.
-follower_mode = {{ .BlockSync.FollowerMode }}
+# Run both BLOCKSYNC and CONSENSUS for improved liveness, connectivity, and performance.
+combined_mode = {{ .BlockSync.CombinedMode }}
 
 # Minimum receive rate from peers in bytes per second.
 # Peers that consistently send data slower than this rate may be disconnected.

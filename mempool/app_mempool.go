@@ -238,9 +238,7 @@ func (m *AppMempool) FlushAppConn() error {
 	return nil
 }
 
-// CheckTx mimics the behavior of the CListMempool's CheckTx method,
-// but actually only calls the app's InsertTx method. This is required for RPC compatibility.
-// @see: BroadcastTxSync, BroadcastTxAsync, and BroadcastTxCommit.
+// CheckTx calls the appliction's CheckTx method.
 func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckTx), _ TxInfo) error {
 	if err := m.guardTx(tx); err != nil {
 		return err
@@ -255,13 +253,9 @@ func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckT
 
 		res, err := m.app.CheckTx(m.ctx, &abci.RequestCheckTx{Tx: tx})
 		if err != nil {
-			m.seen.Remove(tx)
 			// note that other ABCI methods panic if err is not nil
 			m.logger.Error("AppMempool.CheckTx: error inserting tx", "error", err, "tx", txHash(tx))
 			return
-		}
-		if res.Code != abci.CodeTypeOK {
-			m.seen.Remove(tx)
 		}
 
 		// App mempool doesn't execute the tx, so we ALWAYS return an empty response here.

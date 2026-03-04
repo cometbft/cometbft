@@ -58,7 +58,7 @@ func NewHost(config *config.P2PConfig, nodeKey cmcrypto.PrivKey, logger log.Logg
 		return nil, fmt.Errorf("invalid libp2p config: %w", err)
 	}
 
-	privateKey, err := privateKeyFromCosmosKey(nodeKey)
+	privateKey, err := PrivateKeyFromCosmosKey(nodeKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert private key to libp2p: %w", err)
 	}

@@ -16,7 +16,6 @@ import (
 	"github.com/cometbft/cometbft/test/utils"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
-	corepeer "github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/require"
@@ -60,8 +59,8 @@ func TestHost(t *testing.T) {
 	// Given sample envelope
 	type envelope struct {
 		protocol protocol.ID
-		sender   corepeer.ID
-		receiver corepeer.ID
+		sender   peer.ID
+		receiver peer.ID
 		message  string
 	}
 

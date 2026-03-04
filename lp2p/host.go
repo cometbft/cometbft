@@ -121,6 +121,11 @@ func (h *Host) BootstrapPeers() map[peer.ID]BootstrapPeer {
 	return h.bootstrapPeers
 }
 
+func (h *Host) BootstrapPeer(id peer.ID) (BootstrapPeer, bool) {
+	bp, ok := h.bootstrapPeers[id]
+	return bp, ok
+}
+
 func (h *Host) Logger() log.Logger {
 	return h.logger
 }

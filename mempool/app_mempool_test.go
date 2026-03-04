@@ -15,19 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// mockAppMempoolClient wraps abcimock.Client to implement AppMempoolClient
-type mockAppMempoolClient struct {
-	*abcimock.Client
-}
-
-func (m *mockAppMempoolClient) CheckTxUnlocked(ctx context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
-	return m.CheckTx(ctx, req)
-}
-
-func newMockAppMempoolClient(t *testing.T) *mockAppMempoolClient {
-	return &mockAppMempoolClient{Client: abcimock.NewClient(t)}
-}
-
 func TestAppMempool(t *testing.T) {
 	tx := func(v string) types.Tx { return types.Tx(v) }
 
@@ -191,4 +178,17 @@ func TestAppMempool(t *testing.T) {
 
 		require.Subset(t, allMempoolTxs, sink)
 	})
+}
+
+// mockAppMempoolClient wraps abcimock.Client to implement AppMempoolClient
+type mockAppMempoolClient struct {
+	*abcimock.Client
+}
+
+func (m *mockAppMempoolClient) CheckTxUnlocked(ctx context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
+	return m.CheckTx(ctx, req)
+}
+
+func newMockAppMempoolClient(t *testing.T) *mockAppMempoolClient {
+	return &mockAppMempoolClient{Client: abcimock.NewClient(t)}
 }

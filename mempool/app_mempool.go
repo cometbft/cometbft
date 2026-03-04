@@ -32,11 +32,8 @@ type AppMempoolClient interface {
 	// InsertTx inserts a tx into app-side mempool
 	InsertTx(ctx context.Context, req *abci.RequestInsertTx) (*abci.ResponseInsertTx, error)
 
-	// CheckTx checks a tx by running it through the application's ante handlers, and inserts the tx into the mempool if it passes.
-	CheckTx(ctx context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error)
-
-	// CheckTxUnlocked is like CheckTx but without acquiring the ABCI client mutex.
-	// This allows AppMempool to handle concurrency itself.
+	// CheckTxUnlocked expects the application to check the transaction, inserting if successful.
+	// NOTE: Comet will not lock this method; it is expected the application side will acquire all necessary locks for successful checking.
 	CheckTxUnlocked(ctx context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error)
 
 	// ReapTxs reaps txs from app-side mempool

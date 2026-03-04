@@ -15,7 +15,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func privateKeyFromCosmosKey(key cmcrypto.PrivKey) (crypto.PrivKey, error) {
+// PrivateKeyFromCosmosKey converts a Cosmos private key to a libp2p private key.
+func PrivateKeyFromCosmosKey(key cmcrypto.PrivKey) (crypto.PrivKey, error) {
 	keyType := key.Type()
 
 	switch keyType {

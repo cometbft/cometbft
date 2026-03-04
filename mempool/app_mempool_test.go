@@ -15,6 +15,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// mockAppMempoolClient wraps abcimock.Client to implement AppMempoolClient
+type mockAppMempoolClient struct {
+	*abcimock.Client
+}
+
+func (m *mockAppMempoolClient) CheckTxUnlocked(ctx context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
+	return m.Client.CheckTx(ctx, req)
+}
+
+func newMockAppMempoolClient(t *testing.T) *mockAppMempoolClient {
+	return &mockAppMempoolClient{Client: abcimock.NewClient(t)}
+}
+
 func TestAppMempool(t *testing.T) {
 	tx := func(v string) types.Tx { return types.Tx(v) }
 
@@ -23,7 +36,7 @@ func TestAppMempool(t *testing.T) {
 		added := atomic.Uint64{}
 
 		// Given app
-		app := abcimock.NewClient(t)
+		app := newMockAppMempoolClient(t)
 		app.
 			On("InsertTx", mock.Anything, mock.Anything).
 			Return(func(_ context.Context, req *abci.RequestInsertTx) (*abci.ResponseInsertTx, error) {
@@ -164,7 +177,7 @@ func TestAppMempool(t *testing.T) {
 				mockDone := make(chan struct{})
 				callbackDone := make(chan struct{})
 
-				app := abcimock.NewClient(t)
+				app := newMockAppMempoolClient(t)
 				app.On("CheckTx", mock.Anything, mock.Anything).
 					Return(func(context.Context, *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
 						defer close(mockDone)
@@ -216,7 +229,7 @@ func TestAppMempool(t *testing.T) {
 		// Given app
 		allMempoolTxs := [][]byte{}
 
-		app := abcimock.NewClient(t)
+		app := newMockAppMempoolClient(t)
 		app.
 			On("ReapTxs", mock.Anything, mock.Anything).
 			Return(func(_ context.Context, _ *abci.RequestReapTxs) (*abci.ResponseReapTxs, error) {

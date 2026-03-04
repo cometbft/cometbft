@@ -35,6 +35,10 @@ type AppMempoolClient interface {
 	// CheckTx checks a tx by running it through the application's ante handlers, and inserts the tx into the mempool if it passes.
 	CheckTx(ctx context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error)
 
+	// CheckTxUnlocked is like CheckTx but without acquiring the ABCI client mutex.
+	// This allows AppMempool to handle concurrency itself.
+	CheckTxUnlocked(ctx context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error)
+
 	// ReapTxs reaps txs from app-side mempool
 	ReapTxs(ctx context.Context, req *abci.RequestReapTxs) (*abci.ResponseReapTxs, error)
 
@@ -251,7 +255,7 @@ func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckT
 			}
 		}()
 
-		res, err := m.app.CheckTx(m.ctx, &abci.RequestCheckTx{Tx: tx})
+		res, err := m.app.CheckTxUnlocked(m.ctx, &abci.RequestCheckTx{Tx: tx})
 		if err != nil {
 			// note that other ABCI methods panic if err is not nil
 			m.logger.Error("AppMempool.CheckTx: error inserting tx", "error", err, "tx", txHash(tx))

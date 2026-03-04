@@ -32,6 +32,8 @@
   ([\#5549](https://github.com/cometbft/cometbft/pull/5549))
 - `[p2p]` feat(lp2p): make reactor queue configurable
   ([\#5662](https://github.com/cometbft/cometbft/pull/5662))
+- `[cli]` print lib-p2p peer id
+  ([\#5667](https://github.com/cometbft/cometbft/pull/5667))
 
 ### FEATURES
 

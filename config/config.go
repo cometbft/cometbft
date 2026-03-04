@@ -590,7 +590,7 @@ type P2PConfig struct {
 	PexReactor bool `mapstructure:"pex"`
 
 	// LibP2PConfig (experimental) configuration for go-libp2p
-	LibP2PConfig *LibP2PConfig `mapstructure:"libp2p"`
+	LibP2PConfig LibP2PConfig `mapstructure:"libp2p"`
 
 	// Seed mode, in which node constantly crawls the network and looks for
 	// peers. If another node asks it for addresses, it responds and disconnects.
@@ -627,8 +627,12 @@ type LibP2PConfig struct {
 
 	// BootstrapPeers list of peers to bootstrap the libp2p host
 	BootstrapPeers []LibP2PBootstrapPeer `mapstructure:"bootstrap_peers"`
+
+	// Scaler optional configuration for reactor queue auto scaling
+	Scaler LibP2PScaler `mapstructure:"scaler"`
 }
 
+// LibP2PBootstrapPeer is a bootstrap peer for this node
 type LibP2PBootstrapPeer struct {
 	// ip:port example: "192.0.2.0:65432"
 	Host string `mapstructure:"host"`
@@ -658,6 +662,22 @@ func (p *LibP2PBootstrapPeer) ToTOMLInlineString() string {
 	}
 
 	return "{ " + strings.Join(parts, ", ") + " }"
+}
+
+// LibP2PScaler is global scaler configuration for all reactors
+type LibP2PScaler struct {
+	MinWorkers       int                    `mapstructure:"min_workers"`
+	MaxWorkers       int                    `mapstructure:"max_workers"`
+	ThresholdLatency time.Duration          `mapstructure:"threshold_latency"`
+	Overrides        []LibP2PScalerOverride `mapstructure:"overrides"`
+}
+
+// LibP2PScalerOverride is a scaler override for a specific reactor
+type LibP2PScalerOverride struct {
+	Reactor          string        `mapstructure:"reactor"`
+	MinWorkers       int           `mapstructure:"min_workers"`
+	MaxWorkers       int           `mapstructure:"max_workers"`
+	ThresholdLatency time.Duration `mapstructure:"threshold_latency"`
 }
 
 // DefaultP2PConfig returns a default configuration for the peer-to-peer layer
@@ -723,19 +743,93 @@ func (cfg *P2PConfig) ValidateBasic() error {
 	if cfg.RecvRate < 0 {
 		return cmterrors.ErrNegativeField{Field: "recv_rate"}
 	}
+	if cfg.LibP2PEnabled() {
+		return cfg.LibP2PConfig.ValidateBasic()
+	}
+
 	return nil
 }
 
 func (cfg *P2PConfig) LibP2PEnabled() bool {
-	return cfg.LibP2PConfig != nil && cfg.LibP2PConfig.Enabled
+	return cfg.LibP2PConfig.Enabled
 }
 
-func DefaultLibP2PConfig() *LibP2PConfig {
-	return &LibP2PConfig{
+func DefaultLibP2PConfig() LibP2PConfig {
+	return LibP2PConfig{
 		Enabled:                false,
 		DisableResourceManager: false,
 		BootstrapPeers:         []LibP2PBootstrapPeer{},
+		Scaler:                 DefaultLibP2PScaler(),
 	}
+}
+
+func DefaultLibP2PScaler() LibP2PScaler {
+	return LibP2PScaler{
+		MinWorkers:       4,
+		MaxWorkers:       32,
+		ThresholdLatency: 100 * time.Millisecond,
+		Overrides: []LibP2PScalerOverride{
+			{
+				Reactor:          "MEMPOOL",
+				MinWorkers:       8,
+				MaxWorkers:       512,
+				ThresholdLatency: 500 * time.Millisecond,
+			},
+		},
+	}
+}
+
+func (cfg *LibP2PConfig) ValidateBasic() error {
+	key := func(msg string, args ...any) string {
+		return fmt.Sprintf("p2p.libp2p.%s", fmt.Sprintf(msg, args...))
+	}
+
+	// 1. validate bootstrap peers
+	for i, bp := range cfg.BootstrapPeers {
+		if bp.Host == "" {
+			return cmterrors.ErrRequiredField{Field: key("bootstrap_peers.%d.host", i)}
+		}
+		if bp.ID == "" {
+			return cmterrors.ErrRequiredField{Field: key("bootstrap_peers.%d.id", i)}
+		}
+	}
+
+	// 2. validate scaler
+	s := cfg.Scaler
+	switch {
+	case s.MinWorkers < 0:
+		return cmterrors.ErrNegativeField{Field: key("scaler.min_workers")}
+	case s.MaxWorkers < 0:
+		return cmterrors.ErrNegativeField{Field: key("scaler.max_workers")}
+	case s.MinWorkers > s.MaxWorkers:
+		return cmterrors.ErrInvalidField{
+			Field:  key("scaler.min_workers"),
+			Reason: "must be less than max_workers",
+		}
+	case s.ThresholdLatency < 0:
+		return cmterrors.ErrNegativeField{Field: key("scaler.threshold_latency")}
+	case len(s.Overrides) > 0:
+		// 3. validate scaler overrides
+		for i, item := range s.Overrides {
+			switch {
+			case item.Reactor == "":
+				return cmterrors.ErrRequiredField{Field: key("scaler.overrides.%d.reactor", i)}
+			case item.MinWorkers < 0:
+				return cmterrors.ErrNegativeField{Field: key("scaler.overrides.%d.min_workers", i)}
+			case item.MaxWorkers < 0:
+				return cmterrors.ErrNegativeField{Field: key("scaler.overrides.%d.max_workers", i)}
+			case item.MinWorkers > item.MaxWorkers:
+				return cmterrors.ErrInvalidField{
+					Field:  key("scaler.overrides.%d.min_workers", i),
+					Reason: "must be less than max_workers",
+				}
+			case item.ThresholdLatency < 0:
+				return cmterrors.ErrNegativeField{Field: key("scaler.overrides.%d.threshold_latency", i)}
+			}
+		}
+	}
+
+	return nil
 }
 
 // FuzzConnConfig is a FuzzedConnection configuration.

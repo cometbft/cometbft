@@ -352,6 +352,37 @@ bootstrap_peers = [{{ range $bps }}
 ]
 {{- end }}
 
+# Options for scaling concurrent p2p message queues.
+# Tune workers to keep the system near the ideal operating point:
+# enough concurrency for throughput while keeping processing latency low.
+[p2p.libp2p.scaler]
+
+# Min and max concurrent worker range.
+min_workers = {{ .P2P.LibP2PConfig.Scaler.MinWorkers }}
+max_workers = {{ .P2P.LibP2PConfig.Scaler.MaxWorkers }}
+
+# Target latency threshold:
+# scale up when observed latency is below this value, scale down when above it.
+threshold_latency = "{{ .P2P.LibP2PConfig.Scaler.ThresholdLatency }}"
+
+# Override a specific reactor (case-insensitive), for example:
+# [[p2p.libp2p.scaler.overrides]]
+# reactor = "BLOCKSYNC"
+# min_workers = 2
+# max_workers = 16
+# threshold_latency = "250ms"
+#
+# By default, MEMPOOL reactor is overridden to have increased throughput
+# If you want to disable this, explicitly set override to an empty list:
+# overrides = []
+{{- range .P2P.LibP2PConfig.Scaler.Overrides }}
+[[p2p.libp2p.scaler.overrides]]
+reactor = "{{ .Reactor }}"
+min_workers = {{ .MinWorkers }}
+max_workers = {{ .MaxWorkers }}
+threshold_latency = "{{ .ThresholdLatency }}"
+{{- end }}
+
 #######################################################
 ###          Mempool Configuration Option          ###
 #######################################################

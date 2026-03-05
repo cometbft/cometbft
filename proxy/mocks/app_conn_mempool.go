@@ -77,6 +77,36 @@ func (_m *AppConnMempool) CheckTxAsync(_a0 context.Context, _a1 *types.RequestCh
 	return r0, r1
 }
 
+// CheckTxUnlocked provides a mock function with given fields: _a0, _a1
+func (_m *AppConnMempool) CheckTxUnlocked(_a0 context.Context, _a1 *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
+	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CheckTxUnlocked")
+	}
+
+	var r0 *types.ResponseCheckTx
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestCheckTx) (*types.ResponseCheckTx, error)); ok {
+		return rf(_a0, _a1)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestCheckTx) *types.ResponseCheckTx); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.ResponseCheckTx)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestCheckTx) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Error provides a mock function with no fields
 func (_m *AppConnMempool) Error() error {
 	ret := _m.Called()

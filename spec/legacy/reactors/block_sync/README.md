@@ -232,7 +232,7 @@ createRequesters(pool):
       sleep requestIntervalMS
       pool.mtx.Lock()
       for each peer in pool.peers do
-        if !peer.didTimeout && peer.numPending > 0 && peer.curRate < minRecvRate then
+        if !peer.didTimeout && peer.numPending > 0 && pool.minRecvRate > 0 && peer.curRate < pool.minRecvRate then
           send error on pool error channel
           peer.didTimeout = true
         if peer.didTimeout then

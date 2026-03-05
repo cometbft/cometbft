@@ -23,7 +23,7 @@ func TestAppMempool(t *testing.T) {
 		added := atomic.Uint64{}
 
 		// Given app
-		app := abcimock.NewClient(t)
+		app := newMockAppMempoolClient(t)
 		app.
 			On("InsertTx", mock.Anything, mock.Anything).
 			Return(func(_ context.Context, req *abci.RequestInsertTx) (*abci.ResponseInsertTx, error) {
@@ -34,6 +34,14 @@ func TestAppMempool(t *testing.T) {
 
 				added.Add(1)
 				return &abci.ResponseInsertTx{Code: abci.CodeTypeOK}, nil
+			})
+		app.
+			On("CheckTx", mock.Anything, mock.Anything).
+			Return(func(_ context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
+				if string(req.Tx) == "fail" {
+					return &abci.ResponseCheckTx{Code: abci.CodeTypeRetry}, nil
+				}
+				return &abci.ResponseCheckTx{Code: abci.CodeTypeOK}, nil
 			})
 
 		// Given mempool
@@ -137,7 +145,7 @@ func TestAppMempool(t *testing.T) {
 		// Given app
 		allMempoolTxs := [][]byte{}
 
-		app := abcimock.NewClient(t)
+		app := newMockAppMempoolClient(t)
 		app.
 			On("ReapTxs", mock.Anything, mock.Anything).
 			Return(func(_ context.Context, _ *abci.RequestReapTxs) (*abci.ResponseReapTxs, error) {
@@ -170,4 +178,17 @@ func TestAppMempool(t *testing.T) {
 
 		require.Subset(t, allMempoolTxs, sink)
 	})
+}
+
+// mockAppMempoolClient wraps abcimock.Client to implement AppMempoolClient
+type mockAppMempoolClient struct {
+	*abcimock.Client
+}
+
+func (m *mockAppMempoolClient) CheckTxUnlocked(ctx context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
+	return m.CheckTx(ctx, req)
+}
+
+func newMockAppMempoolClient(t *testing.T) *mockAppMempoolClient {
+	return &mockAppMempoolClient{Client: abcimock.NewClient(t)}
 }

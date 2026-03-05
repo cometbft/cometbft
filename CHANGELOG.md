@@ -6,6 +6,10 @@
 
 ### BUG FIXES
 
+- `[consensus]` Fix `double_sign_check_height = 1` performing no double-sign
+  checks due to off-by-one error in loop condition (`i < N` should be
+  `i <= N`). The value `1` now correctly checks the previous block as intended.
+  ([\#5668](https://github.com/cometbft/cometbft/pull/5668))
 - `[evidence]` Add validation for Light Client Attack evidence ByzantineValidators
   ([\#5638](https://github.com/cometbft/cometbft/pull/5638))
 - `[types]` Fix buffer offset bug in `ProposerPriorityHash` that caused hash collisions when validator priorities differed

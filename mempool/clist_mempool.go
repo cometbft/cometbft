@@ -20,7 +20,7 @@ import (
 
 // CListMempool is an ordered in-memory pool for transactions before they are
 // proposed in a consensus round. Transaction validity is checked using the
-// CheckTx abci message before the transaction is added to the pool. The
+// CheckTx ABCI message before the transaction is added to the pool. The
 // mempool uses a concurrent list structure for storing transactions that can
 // be efficiently accessed by multiple concurrent readers.
 type CListMempool struct {

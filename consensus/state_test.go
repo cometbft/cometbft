@@ -25,6 +25,7 @@ import (
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	smmocks "github.com/cometbft/cometbft/state/mocks"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -2607,4 +2608,155 @@ func findBlockSizeLimit(t *testing.T, height, maxBytes int64, cs *State, partSiz
 	}
 	require.Fail(t, "We shouldn't hit the end of the loop")
 	return nil, nil
+}
+
+// newStateForDoubleSignTest creates a minimal State configured for testing
+// checkDoubleSigningRisk. It wires up a real privValidator (MockPV) and a
+// mocked blockStore, avoiding the heavy full-consensus setup that is
+// unnecessary for unit-testing this single method.
+func newStateForDoubleSignTest(t *testing.T, doubleSignCheckHeight int64) (*State, *smmocks.BlockStore) {
+	t.Helper()
+
+	consConfig := config.Consensus
+	consConfig.DoubleSignCheckHeight = doubleSignCheckHeight
+
+	mockBS := &smmocks.BlockStore{}
+
+	cs := &State{
+		config:     consConfig,
+		blockStore: mockBS,
+	}
+	// Set logger directly on the embedded BaseService to avoid nil-dereference
+	// on timeoutTicker which is not needed for this unit test.
+	cs.Logger = log.TestingLogger()
+
+	// Wire a real private validator so privValidatorPubKey can be set.
+	pv := types.NewMockPV()
+	pubKey, err := pv.GetPubKey()
+	require.NoError(t, err)
+
+	cs.privValidator = pv
+	cs.privValidatorPubKey = pubKey
+
+	return cs, mockBS
+}
+
+// makeCommitWithValidator builds a *types.Commit whose single signature carries
+// the provided validator address with BlockIDFlagCommit – the exact condition
+// checkDoubleSigningRisk looks for.
+func makeCommitWithValidator(height int64, validatorAddr types.Address) *types.Commit {
+	return &types.Commit{
+		Height: height,
+		Signatures: []types.CommitSig{
+			{
+				BlockIDFlag:      types.BlockIDFlagCommit,
+				ValidatorAddress: validatorAddr,
+				Timestamp:        time.Now(),
+			},
+		},
+	}
+}
+
+// makeCommitWithDifferentValidator builds a *types.Commit containing a single
+// signature that belongs to a *different* validator, so checkDoubleSigningRisk
+// should NOT trigger.
+func makeCommitWithDifferentValidator(height int64) *types.Commit {
+	otherPV := types.NewMockPV()
+	otherPub, _ := otherPV.GetPubKey()
+	return &types.Commit{
+		Height: height,
+		Signatures: []types.CommitSig{
+			{
+				BlockIDFlag:      types.BlockIDFlagCommit,
+				ValidatorAddress: otherPub.Address(),
+				Timestamp:        time.Now(),
+			},
+		},
+	}
+}
+
+// TestDoubleSigning tests the checkDoubleSigningRisk method across a range of
+// double_sign_check_height configurations.
+func TestDoubleSigning(t *testing.T) {
+	// core regression: doubleSignCheckHeight=1 must check height-1.
+	// With the original loop (i < N), i<1 never runs so a signature at height-1
+	// was silently ignored. After the fix (i <= N) it is correctly detected.
+	t.Run("height-one-checks-one-previous-block", func(t *testing.T) {
+		const targetHeight = int64(10)
+
+		cs, mockBS := newStateForDoubleSignTest(t, 1)
+		commit := makeCommitWithValidator(targetHeight-1, cs.privValidatorPubKey.Address())
+		mockBS.On("LoadSeenCommit", targetHeight-int64(1)).Return(commit)
+
+		err := cs.checkDoubleSigningRisk(targetHeight)
+
+		require.ErrorIs(t, err, ErrSignatureFoundInPastBlocks,
+			"expected ErrSignatureFoundInPastBlocks when doubleSignCheckHeight=1 "+
+				"and a matching signature exists at height-1")
+		mockBS.AssertExpectations(t)
+	})
+
+	// doubleSignCheckHeight=0 must remain fully disabled (no regression).
+	t.Run("height-zero-disabled", func(t *testing.T) {
+		const targetHeight = int64(10)
+
+		cs, mockBS := newStateForDoubleSignTest(t, 0)
+
+		err := cs.checkDoubleSigningRisk(targetHeight)
+
+		require.NoError(t, err, "expected nil when doubleSignCheckHeight=0 (feature disabled)")
+		mockBS.AssertNotCalled(t, "LoadSeenCommit")
+	})
+
+	// doubleSignCheckHeight=2 must check both height-1 and height-2.
+	// A clean commit at height-1 followed by a match at height-2 must
+	// still produce ErrSignatureFoundInPastBlocks.
+	t.Run("height-two-checks-two-blocks", func(t *testing.T) {
+		const targetHeight = int64(10)
+
+		cs, mockBS := newStateForDoubleSignTest(t, 2)
+		valAddr := cs.privValidatorPubKey.Address()
+
+		mockBS.On("LoadSeenCommit", targetHeight-int64(1)).Return(makeCommitWithDifferentValidator(targetHeight - 1))
+		mockBS.On("LoadSeenCommit", targetHeight-int64(2)).Return(makeCommitWithValidator(targetHeight-2, valAddr))
+
+		err := cs.checkDoubleSigningRisk(targetHeight)
+
+		require.ErrorIs(t, err, ErrSignatureFoundInPastBlocks,
+			"expected ErrSignatureFoundInPastBlocks when matching signature is at height-2 "+
+				"with doubleSignCheckHeight=2")
+		mockBS.AssertExpectations(t)
+	})
+
+	// No false positives: when no commit contains the local validator's address,
+	// the function must return nil.
+	t.Run("height-two-no-signature-found", func(t *testing.T) {
+		const targetHeight = int64(10)
+
+		cs, mockBS := newStateForDoubleSignTest(t, 2)
+
+		mockBS.On("LoadSeenCommit", targetHeight-int64(1)).Return(makeCommitWithDifferentValidator(targetHeight - 1))
+		mockBS.On("LoadSeenCommit", targetHeight-int64(2)).Return(makeCommitWithDifferentValidator(targetHeight - 2))
+
+		err := cs.checkDoubleSigningRisk(targetHeight)
+
+		require.NoError(t, err, "expected nil when no matching signature found with doubleSignCheckHeight=2")
+		mockBS.AssertExpectations(t)
+	})
+
+	// Edge case: when the chain is shorter than doubleSignCheckHeight the clamp
+	//   if doubleSignCheckHeight > height { doubleSignCheckHeight = height }
+	// must prevent access below block 0 without panicking.
+	t.Run("small-chain-height", func(t *testing.T) {
+		const targetHeight = int64(1)
+
+		cs, mockBS := newStateForDoubleSignTest(t, 10)
+		mockBS.On("LoadSeenCommit", int64(0)).Return((*types.Commit)(nil))
+
+		require.NotPanics(t, func() {
+			err := cs.checkDoubleSigningRisk(targetHeight)
+			require.NoError(t, err, "expected nil when chain is shorter than doubleSignCheckHeight")
+		})
+		mockBS.AssertExpectations(t)
+	})
 }

@@ -665,13 +665,7 @@ func (n *Node) OnStart() error {
 
 	// Run state sync
 	if n.stateSync {
-		bcR, ok := n.bcReactor.(blockSyncReactor)
-		if !ok {
-			return fmt.Errorf("this blocksync reactor does not support switching from state sync")
-		}
-		err := startStateSync(n.stateSyncReactor, bcR, n.stateSyncProvider,
-			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncGenesis)
-		if err != nil {
+		if err := n.performStateSync(); err != nil {
 			return fmt.Errorf("failed to start state sync: %w", err)
 		}
 	}

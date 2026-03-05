@@ -19,6 +19,8 @@
 - [p2p] fix(lp2p): enforce stream max size ([\#5647](https://github.com/cometbft/cometbft/pull/5647))
 - `[metrics]` fix(metrics)!: peer_send_queue_size
   ([\#5648](https://github.com/cometbft/cometbft/pull/5648))
+- `[statesync]` fix combined_mode and streamline stateSync logic
+  ([\#5663](https://github.com/cometbft/cometbft/pull/5663))
 
 ### IMPROVEMENTS
 
@@ -34,6 +36,8 @@
   ([\#5549](https://github.com/cometbft/cometbft/pull/5549))
 - `[p2p]` feat(lp2p): make reactor queue configurable
   ([\#5662](https://github.com/cometbft/cometbft/pull/5662))
+- `[cli]` print lib-p2p peer id
+  ([\#5667](https://github.com/cometbft/cometbft/pull/5667))
 
 ### FEATURES
 

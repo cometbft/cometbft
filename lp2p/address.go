@@ -19,7 +19,7 @@ const (
 )
 
 func IDFromPrivateKey(cosmosPK cmcrypto.PrivKey) (peer.ID, error) {
-	pk, err := privateKeyFromCosmosKey(cosmosPK)
+	pk, err := PrivateKeyFromCosmosKey(cosmosPK)
 	if err != nil {
 		return "", fmt.Errorf("failed to convert private key to libp2p: %w", err)
 	}

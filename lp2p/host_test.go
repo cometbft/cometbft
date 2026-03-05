@@ -15,7 +15,7 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/test/utils"
 	"github.com/libp2p/go-libp2p/core/network"
-	corepeer "github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/require"
@@ -59,8 +59,8 @@ func TestHost(t *testing.T) {
 	// Given sample envelope
 	type envelope struct {
 		protocol protocol.ID
-		sender   corepeer.ID
-		receiver corepeer.ID
+		sender   peer.ID
+		receiver peer.ID
 		message  string
 	}
 
@@ -263,7 +263,7 @@ func makeTestHost(t *testing.T, port int, opts ...testOption) *Host {
 	return host
 }
 
-func connectBootstrapPeers(t *testing.T, ctx context.Context, h *Host, peers []BootstrapPeer) {
+func connectBootstrapPeers(t *testing.T, ctx context.Context, h *Host, peers map[peer.ID]BootstrapPeer) {
 	require.NotEmpty(t, peers, "no peers to connect to")
 
 	for _, peer := range peers {
@@ -299,23 +299,25 @@ func makeTestHosts(t *testing.T, numHosts int, opts ...testOption) []*Host {
 func TestBootstrapPeers(t *testing.T) {
 	t.Run("valid config with peers", func(t *testing.T) {
 		// ARRANGE
+		pkID := func(pk ed25519.PrivKey) peer.ID {
+			id, err := IDFromPrivateKey(pk)
+			require.NoError(t, err)
+			return id
+		}
+
 		// Given 2 private keys
 		pk1 := ed25519.GenPrivKey()
 		pk2 := ed25519.GenPrivKey()
-
-		pkID := func(pk ed25519.PrivKey) string {
-			id, err := IDFromPrivateKey(pk)
-			require.NoError(t, err)
-			return id.String()
-		}
+		pkID1 := pkID(pk1)
+		pkID2 := pkID(pk2)
 
 		// Given a P2P config with libp2p enabled and address book peers
 		cfg := config.DefaultP2PConfig()
 		cfg.LibP2PConfig.BootstrapPeers = []config.LibP2PBootstrapPeer{
-			{Host: "127.0.0.1:26656", ID: pkID(pk1), Private: true, Persistent: false, Unconditional: true},
-			{Host: "127.0.0.1:26657", ID: pkID(pk2), Private: false, Persistent: true, Unconditional: false},
+			{Host: "127.0.0.1:26656", ID: pkID1.String(), Private: true, Persistent: false, Unconditional: true},
+			{Host: "127.0.0.1:26657", ID: pkID2.String(), Private: false, Persistent: true, Unconditional: false},
 			// duplicate will be ignored
-			{Host: "127.0.0.1:26657", ID: pkID(pk2), Private: false, Persistent: true, Unconditional: false},
+			{Host: "127.0.0.1:26657", ID: pkID2.String(), Private: false, Persistent: true, Unconditional: false},
 		}
 
 		// ACT
@@ -326,18 +328,22 @@ func TestBootstrapPeers(t *testing.T) {
 		require.Len(t, bootstrapPeers, 2)
 
 		// Check first peer
-		require.Equal(t, pkID(pk1), bootstrapPeers[0].AddrInfo.ID.String())
-		require.Len(t, bootstrapPeers[0].AddrInfo.Addrs, 1)
-		require.True(t, bootstrapPeers[0].Private)
-		require.False(t, bootstrapPeers[0].Persistent)
-		require.True(t, bootstrapPeers[0].Unconditional)
+		bp1, ok := bootstrapPeers[pkID1]
+		require.True(t, ok)
+		require.Equal(t, pkID1, bp1.AddrInfo.ID)
+		require.Len(t, bp1.AddrInfo.Addrs, 1)
+		require.True(t, bp1.Private)
+		require.False(t, bp1.Persistent)
+		require.True(t, bp1.Unconditional)
 
 		// Check second peer
-		require.Equal(t, pkID(pk2), bootstrapPeers[1].AddrInfo.ID.String())
-		require.Len(t, bootstrapPeers[1].AddrInfo.Addrs, 1)
-		require.False(t, bootstrapPeers[1].Private)
-		require.True(t, bootstrapPeers[1].Persistent)
-		require.False(t, bootstrapPeers[1].Unconditional)
+		bp2, ok := bootstrapPeers[pkID2]
+		require.True(t, ok)
+		require.Equal(t, pkID2, bp2.AddrInfo.ID)
+		require.Len(t, bp2.AddrInfo.Addrs, 1)
+		require.False(t, bp2.Private)
+		require.True(t, bp2.Persistent)
+		require.False(t, bp2.Unconditional)
 	})
 
 	t.Run("invalid host format", func(t *testing.T) {

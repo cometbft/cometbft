@@ -6,6 +6,11 @@
 
 ### BUG FIXES
 
+- `[mempool]` Fix excessive ERROR logging in `addSender` when
+  `ErrTxNotFound` is returned for transactions evicted from the mempool.
+  Promote `ErrTxAlreadyReceivedFromSender` to ERROR level as it indicates
+  cache overflow.
+  ([\#5669](https://github.com/cometbft/cometbft/pull/5569))
 - `[types]` Fix buffer offset bug in `ProposerPriorityHash` that caused hash collisions when validator priorities differed
   ([\#5613](https://github.com/cometbft/cometbft/pull/5613))
 - `[p2p]` fix(privval): Ephemeral Port Exhaustion

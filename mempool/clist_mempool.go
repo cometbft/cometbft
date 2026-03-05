@@ -260,11 +260,17 @@ func (mem *CListMempool) CheckTx(
 		// Note it's possible a tx is still in the cache but no longer in the mempool
 		// (eg. after committing a block, txs are removed from mempool but not cache),
 		// so we only record the sender for txs still in the mempool.
-		if memTx := mem.getMemTx(tx.Key()); memTx != nil {
-			memTx.addSender(txInfo.SenderID)
-			// TODO: consider punishing peer for dups,
-			// its non-trivial since invalid txs can become valid,
-			// but they can spam the same tx with little cost to them atm.
+		if err := mem.addSender(tx.Key(), txInfo.SenderID); err != nil {
+			switch err { //nolint:errorlint
+			case ErrTxAlreadyReceivedFromSender:
+				// Receiving the same tx from the same sender again most likely
+				// indicates that the cache is too small (see #890).
+				mem.logger.Error("Could not add sender to tx",
+					"tx", tx.Hash(), "sender", txInfo.SenderID, "err", err)
+			default:
+				mem.logger.Error("Could not add sender to tx",
+					"tx", tx.Hash(), "sender", txInfo.SenderID, "err", err)
+			}
 		}
 		return ErrTxInCache
 	}
@@ -360,6 +366,24 @@ func (mem *CListMempool) addTx(memTx *mempoolTx) {
 	mem.metrics.TxSizeBytes.Observe(float64(len(memTx.tx)))
 }
 
+// addSender records senderID as a known sender of the transaction identified
+// by txKey. It returns nil if the transaction is not in the mempool (it may
+// have been evicted or committed), since that is expected behaviour and not an
+// error. It returns ErrTxAlreadyReceivedFromSender if the senderID has already
+// been recorded for this transaction, which typically indicates a small cache.
+func (mem *CListMempool) addSender(txKey types.TxKey, senderID uint16) error {
+	memTx := mem.getMemTx(txKey)
+	if memTx == nil {
+		// tx was removed from mempool (evicted or committed) but may still be
+		// in the cache — this is expected, not an error.
+		return nil
+	}
+	if alreadyRecorded := memTx.addSender(senderID); alreadyRecorded {
+		return ErrTxAlreadyReceivedFromSender
+	}
+	return nil
+}
+
 // RemoveTxByKey removes a transaction from the mempool by its TxKey index.
 // Called from:
 //   - Update (lock held) if tx was committed
@@ -423,10 +447,13 @@ func (mem *CListMempool) resCbFirstTime(
 			}
 
 			// Check transaction not already in the mempool
-			if e, ok := mem.txsMap.Load(types.Tx(tx).Key()); ok {
-				memTx := e.(*clist.CElement).Value.(*mempoolTx)
-				memTx.addSender(txInfo.SenderID)
-				mem.logger.Debug(
+			if _, ok := mem.txsMap.Load(types.Tx(tx).Key()); ok {
+				_ = mem.addSender(types.Tx(tx).Key(), txInfo.SenderID)
+				// Log at Error because this indicates a cache overflow: a transaction
+				// passed through the cache check (it was not in cache) yet is already
+				// present in the mempool. This typically means the cache is too small
+				// relative to the mempool size (see #890).
+				mem.logger.Error(
 					"transaction already there, not adding it again",
 					"tx", types.Tx(tx).Hash(),
 					"res", r,

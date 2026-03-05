@@ -1,6 +1,7 @@
 package mempool
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -1045,4 +1046,83 @@ func doUpdate(tb testing.TB, mp Mempool, height int64, txs []types.Tx) {
 	err = mp.Update(height, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
 	require.NoError(tb, err)
 	mp.Unlock()
+}
+
+// TestAddSenderErrTxNotFoundNotLogged verifies that when a transaction is in
+// the cache but no longer in the mempool (e.g. after being committed in a
+// block), calling CheckTx does NOT emit an ERROR-level log. The transaction
+// may have been evicted or removed after a block commit — this is expected
+// and should not pollute the error log.
+func TestAddSenderErrTxNotFoundNotLogged(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+	mp, cleanup := newMempoolWithApp(cc)
+	defer cleanup()
+
+	tx := kvstore.NewTxFromID(1)
+
+	// Commit the tx via Update so it enters the cache but not the mempool.
+	err := mp.Update(1, []types.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)
+	require.NoError(t, err)
+	require.Zero(t, mp.Size(), "tx should not be in mempool after Update")
+
+	// Capture log output.
+	var buf bytes.Buffer
+	mp.SetLogger(log.NewTMJSONLoggerNoTS(&buf))
+
+	// CheckTx hits the cache (tx is known), addSender is called for a tx that
+	// is no longer in the mempool — this should NOT produce an ERROR log.
+	err = mp.CheckTx(tx, nil, TxInfo{SenderID: 1})
+	require.ErrorIs(t, err, ErrTxInCache)
+
+	require.NotContains(t, buf.String(), `"level":"error"`,
+		"no ERROR log should be emitted when tx is in cache but not in mempool")
+}
+
+// TestAddSenderErrAlreadyReceivedIsLogged verifies that when a transaction is
+// in the cache AND in the mempool and the same sender submits it again, an
+// ERROR-level log IS emitted. This situation indicates the mempool cache may
+// be too small (see issue #890) and is a signal operators should not miss.
+func TestAddSenderErrAlreadyReceivedIsLogged(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+	mp, cleanup := newMempoolWithApp(cc)
+	defer cleanup()
+
+	tx := kvstore.NewTxFromID(1)
+
+	// Add tx to mempool with senderID=1.
+	err := mp.CheckTx(tx, nil, TxInfo{SenderID: 1})
+	require.NoError(t, err)
+	require.Equal(t, 1, mp.Size(), "tx should be in mempool")
+
+	// Capture log output after the first CheckTx.
+	var buf bytes.Buffer
+	mp.SetLogger(log.NewTMJSONLoggerNoTS(&buf))
+
+	// Same sender submits the same tx again — tx is in cache, in mempool,
+	// and senderID=1 is already recorded → ErrTxAlreadyReceivedFromSender.
+	err = mp.CheckTx(tx, nil, TxInfo{SenderID: 1})
+	require.ErrorIs(t, err, ErrTxInCache)
+
+	require.Contains(t, buf.String(), `"level":"error"`,
+		"ERROR log must be emitted for ErrTxAlreadyReceivedFromSender")
+}
+
+// TestAddSenderReturnsNilForMissingTx verifies that addSender returns nil
+// (not ErrTxNotFound) when the transaction key is not present in the mempool.
+// A missing mempool entry for a cached transaction is expected behaviour
+// (tx was evicted or committed) and should not propagate as an error.
+func TestAddSenderReturnsNilForMissingTx(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+	mp, cleanup := newMempoolWithApp(cc)
+	defer cleanup()
+
+	// Use a key for a transaction that was never added to the mempool.
+	tx := kvstore.NewTxFromID(999)
+	txKey := types.Tx(tx).Key()
+
+	err := mp.addSender(txKey, 1)
+	require.NoError(t, err, "addSender should return nil for a tx not in the mempool")
 }

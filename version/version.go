@@ -3,7 +3,7 @@ package version
 const (
 	// TMCoreSemVer is the used as the fallback version of CometBFT
 	// when not using git describe. It is formatted with semantic versioning.
-	TMCoreSemVer = "0.38.19"
+	TMCoreSemVer = "0.39.0"
 	// ABCISemVer is the semantic version of the ABCI protocol
 	ABCISemVer  = "2.0.0"
 	ABCIVersion = ABCISemVer

@@ -11,13 +11,23 @@
   Promote `ErrTxAlreadyReceivedFromSender` to ERROR level as it indicates
   cache overflow.
   ([\#5669](https://github.com/cometbft/cometbft/pull/5569))
+- `[evidence]` Add validation for Light Client Attack evidence ByzantineValidators
+  ([\#5638](https://github.com/cometbft/cometbft/pull/5638))
 - `[types]` Fix buffer offset bug in `ProposerPriorityHash` that caused hash collisions when validator priorities differed
   ([\#5613](https://github.com/cometbft/cometbft/pull/5613))
 - `[p2p]` fix(privval): Ephemeral Port Exhaustion
   ([\#5433](https://github.com/cometbft/cometbft/pull/5433))
+- `[blocksync]` fix(blocksync): `ExtendedCommit` verification via next blocks `LastCommit`
+  ([\#5629](https://github.com/cometbft/cometbft/pull/5629))
+- [p2p] fix(lp2p): enforce stream max size ([\#5647](https://github.com/cometbft/cometbft/pull/5647))
+- `[metrics]` fix(metrics)!: peer_send_queue_size
+  ([\#5648](https://github.com/cometbft/cometbft/pull/5648))
+- `[statesync]` fix combined_mode and streamline stateSync logic
+  ([\#5663](https://github.com/cometbft/cometbft/pull/5663))
 
 ### IMPROVEMENTS
 
+- `[ci]`: add lp2p testnet ([\#5643](https://github.com/cometbft/cometbft/pull/5643))
 - `[mempool]` feat!(mempool): introduce app-mempool & follower-mode. Improve lib-p2p integration (project Krakatoa).
 - `[mempool]` perf(mempool/cache): Optimize LRUTxCache.Remove to reduce lock contention and map access
    ([\#5244](https://github.com/cometbft/cometbft/pull/5244))
@@ -27,9 +37,17 @@
   192 bytes ([\#3624](https://github.com/cometbft/cometbft/issues/3624)
 - `[statesync]` Add configurable `max-snapshot-chunks` parameter to validate max amount of chunks in a `SnapshotResponse`.
   ([\#5549](https://github.com/cometbft/cometbft/pull/5549))
+- `[p2p]` feat(lp2p): make reactor queue configurable
+  ([\#5662](https://github.com/cometbft/cometbft/pull/5662))
+- `[cli]` print lib-p2p peer id
+  ([\#5667](https://github.com/cometbft/cometbft/pull/5667))
 
 ### FEATURES
 
+- `[p2p]` feat(consensus): add combined blocksync-to-consensus ingestion ([\#5633](https://github.com/cometbft/cometbft/pull/5633))
+- `[p2p]` feat(lp2p): implement Peer info methods (`NodeInfo`, `RemoteIP`, `RemoteAddr`, `IsOutbound`)
+  for `/net_info` RPC compatibility with libp2p transport ([\#5619](https://github.com/cometbft/cometbft/pull/5619))
+- `[p2p]` feat(lp2p): stop/reconnect peers that failed ([\#5618](https://github.com/cometbft/cometbft/pull/5618))
 - `[p2p]` Add experimental support for lib-p2p networking ([\#5463](https://github.com/cometbft/cometbft/pull/5463))
 - `[crypto]` Add support for BLS12-381 keys. Since the implementation needs
   `cgo` and brings in new dependencies, we use the `bls12381` build flag to

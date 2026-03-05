@@ -258,17 +258,31 @@ func validateABCIEvidence(
 	}
 
 	for idx, val := range validators {
-		if !bytes.Equal(ev.ByzantineValidators[idx].Address, val.Address) {
+		evByz := ev.ByzantineValidators[idx]
+		if !bytes.Equal(evByz.Address, val.Address) {
 			return fmt.Errorf(
 				"evidence contained an unexpected byzantine validator address; expected: %v, got: %v",
-				val.Address, ev.ByzantineValidators[idx].Address,
+				val.Address, evByz.Address,
 			)
 		}
 
-		if ev.ByzantineValidators[idx].VotingPower != val.VotingPower {
+		if evByz.VotingPower != val.VotingPower {
 			return fmt.Errorf(
 				"evidence contained unexpected byzantine validator power; expected %d, got %d",
-				val.VotingPower, ev.ByzantineValidators[idx].VotingPower,
+				val.VotingPower, evByz.VotingPower,
+			)
+		}
+
+		// Ensure Address is derived from PubKey to prevent pubkey-swap attacks that
+		// would redirect ABCI misbehavior to an innocent validator (ABCI uses
+		// PubKey.Address(), not the Address field).
+		if evByz.PubKey == nil {
+			return fmt.Errorf("byzantine validator at index %d has nil pubkey", idx)
+		}
+		if !bytes.Equal(evByz.Address, evByz.PubKey.Address()) {
+			return fmt.Errorf(
+				"byzantine validator at index %d has address %X that does not match pubkey address %X",
+				idx, evByz.Address, evByz.PubKey.Address(),
 			)
 		}
 	}

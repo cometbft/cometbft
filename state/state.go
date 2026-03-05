@@ -265,6 +265,11 @@ func (state State) MakeBlock(
 	return block, nil
 }
 
+// ValidateBlock validates a block against the state.
+func (state State) ValidateBlock(block *types.Block) error {
+	return validateBlock(state, block)
+}
+
 // MedianTime computes a median time for a given Commit (based on Timestamp field of votes messages) and the
 // corresponding validator set. The computed time is always between timestamps of
 // the votes sent by honest processes, i.e., a faulty processes can not arbitrarily increase or decrease the

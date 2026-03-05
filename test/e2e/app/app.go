@@ -229,6 +229,8 @@ func (app *Application) CheckTx(_ context.Context, req *abci.RequestCheckTx) (*a
 		time.Sleep(app.cfg.CheckTxDelay)
 	}
 
+	app.appMempool.InsertTx(req.Tx)
+
 	return &abci.ResponseCheckTx{Code: kvstore.CodeTypeOK, GasWanted: 1}, nil
 }
 

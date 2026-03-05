@@ -99,6 +99,12 @@ func (app *localClient) CheckTx(ctx context.Context, req *types.RequestCheckTx) 
 	return app.Application.CheckTx(ctx, req)
 }
 
+// CheckTxUnlocked calls CheckTx without acquiring the mutex lock.
+// This is used by AppMempool which handles its own concurrency.
+func (app *localClient) CheckTxUnlocked(ctx context.Context, req *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
+	return app.Application.CheckTx(ctx, req)
+}
+
 func (app *localClient) InsertTx(ctx context.Context, req *types.RequestInsertTx) (*types.ResponseInsertTx, error) {
 	// no lock as this method is thread-safe
 	return app.Application.InsertTx(ctx, req)

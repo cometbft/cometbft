@@ -110,6 +110,112 @@ func TestP2PConfigValidateBasic(t *testing.T) {
 		assert.Error(t, cfg.ValidateBasic())
 		reflect.ValueOf(cfg).Elem().FieldByName(fieldName).SetInt(0)
 	}
+
+	t.Run("libp2p", func(t *testing.T) {
+		for _, tt := range []struct {
+			name        string
+			mutate      func(*config.P2PConfig)
+			errContains string
+		}{
+			{
+				name: "disabled",
+				mutate: func(cfg *config.P2PConfig) {
+					cfg.LibP2PConfig.Enabled = false
+				},
+			},
+			{
+				name: "enabled-default",
+				mutate: func(cfg *config.P2PConfig) {
+					cfg.LibP2PConfig.Enabled = true
+				},
+			},
+			{
+				name: "allowsEnabledConfigWithEmptyScaler",
+				mutate: func(cfg *config.P2PConfig) {
+					cfg.LibP2PConfig.Enabled = true
+					cfg.LibP2PConfig.Scaler = config.LibP2PScaler{}
+				},
+			},
+			{
+				name: "requiresBootstrapPeerHost",
+				mutate: func(cfg *config.P2PConfig) {
+					cfg.LibP2PConfig.Enabled = true
+					cfg.LibP2PConfig.BootstrapPeers = []config.LibP2PBootstrapPeer{
+						{ID: "peer-id"},
+					}
+				},
+				errContains: "p2p.libp2p.bootstrap_peers.0.host is required",
+			},
+			{
+				name: "requiresBootstrapPeerID",
+				mutate: func(cfg *config.P2PConfig) {
+					cfg.LibP2PConfig.Enabled = true
+					cfg.LibP2PConfig.BootstrapPeers = []config.LibP2PBootstrapPeer{
+						{Host: "192.0.2.1:26656"},
+					}
+				},
+				errContains: "p2p.libp2p.bootstrap_peers.0.id is required",
+			},
+			{
+				name: "rejectsNegativeScalerMinWorkers",
+				mutate: func(cfg *config.P2PConfig) {
+					cfg.LibP2PConfig.Enabled = true
+					cfg.LibP2PConfig.Scaler.MinWorkers = -1
+				},
+				errContains: "p2p.libp2p.scaler.min_workers can't be negative",
+			},
+			{
+				name: "rejectsScalerMinWorkersGreaterThanMax",
+				mutate: func(cfg *config.P2PConfig) {
+					cfg.LibP2PConfig.Enabled = true
+					cfg.LibP2PConfig.Scaler.MinWorkers = 10
+					cfg.LibP2PConfig.Scaler.MaxWorkers = 1
+				},
+				errContains: "invalid field p2p.libp2p.scaler.min_workers must be less than max_workers",
+			},
+			{
+				name: "requiresOverrideReactor",
+				mutate: func(cfg *config.P2PConfig) {
+					cfg.LibP2PConfig.Enabled = true
+					cfg.LibP2PConfig.Scaler.Overrides = []config.LibP2PScalerOverride{
+						{MinWorkers: 1, MaxWorkers: 2},
+					}
+				},
+				errContains: "p2p.libp2p.scaler.overrides.0.reactor is required",
+			},
+			{
+				name: "rejectsNegativeOverrideThresholdLatency",
+				mutate: func(cfg *config.P2PConfig) {
+					cfg.LibP2PConfig.Enabled = true
+					cfg.LibP2PConfig.Scaler.Overrides = []config.LibP2PScalerOverride{
+						{
+							Reactor:          "MEMPOOL",
+							MinWorkers:       1,
+							MaxWorkers:       2,
+							ThresholdLatency: -1,
+						},
+					}
+				},
+				errContains: "p2p.libp2p.scaler.overrides.0.threshold_latency can't be negative",
+			},
+		} {
+			t.Run(tt.name, func(t *testing.T) {
+				// ARRANGE
+				cfg := config.TestP2PConfig()
+				tt.mutate(cfg)
+
+				// ACT
+				err := cfg.ValidateBasic()
+
+				// ASSERT
+				if tt.errContains != "" {
+					require.ErrorContains(t, err, tt.errContains)
+					return
+				}
+				require.NoError(t, err)
+			})
+		}
+	})
 }
 
 func TestMempoolConfigValidateBasic(t *testing.T) {

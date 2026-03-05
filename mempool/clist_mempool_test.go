@@ -1111,7 +1111,7 @@ func TestAddSenderErrAlreadyReceivedIsLogged(t *testing.T) {
 
 // TestAddSenderReturnsNilForMissingTx verifies that addSender returns nil
 // (not ErrTxNotFound) when the transaction key is not present in the mempool.
-// A missing mempool entry for a cached transaction is expected behaviour
+// A missing mempool entry for a cached transaction is expected behavior
 // (tx was evicted or committed) and should not propagate as an error.
 func TestAddSenderReturnsNilForMissingTx(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()

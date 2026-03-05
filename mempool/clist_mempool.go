@@ -368,7 +368,7 @@ func (mem *CListMempool) addTx(memTx *mempoolTx) {
 
 // addSender records senderID as a known sender of the transaction identified
 // by txKey. It returns nil if the transaction is not in the mempool (it may
-// have been evicted or committed), since that is expected behaviour and not an
+// have been evicted or committed), since that is expected behavior and not an
 // error. It returns ErrTxAlreadyReceivedFromSender if the senderID has already
 // been recorded for this transaction, which typically indicates a small cache.
 func (mem *CListMempool) addSender(txKey types.TxKey, senderID uint16) error {

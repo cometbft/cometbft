@@ -32,6 +32,10 @@ type AppMempoolClient interface {
 	// InsertTx inserts a tx into app-side mempool
 	InsertTx(ctx context.Context, req *abci.RequestInsertTx) (*abci.ResponseInsertTx, error)
 
+	// CheckTxUnlocked expects the application to check the transaction, inserting if successful.
+	// NOTE: Comet will not lock this method; it is expected the application side will acquire all necessary locks for successful checking.
+	CheckTxUnlocked(ctx context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error)
+
 	// ReapTxs reaps txs from app-side mempool
 	ReapTxs(ctx context.Context, req *abci.RequestReapTxs) (*abci.ResponseReapTxs, error)
 
@@ -235,9 +239,7 @@ func (m *AppMempool) FlushAppConn() error {
 	return nil
 }
 
-// CheckTx mimics the behavior of the CListMempool's CheckTx method,
-// but actually only calls the app's InsertTx method. This is required for RPC compatibility.
-// @see: BroadcastTxSync, BroadcastTxAsync, and BroadcastTxCommit.
+// CheckTx calls the appliction's CheckTx method.
 func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckTx), _ TxInfo) error {
 	if err := m.guardTx(tx); err != nil {
 		return err
@@ -250,7 +252,7 @@ func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckT
 			}
 		}()
 
-		code, err := m.insertTx(tx)
+		res, err := m.app.CheckTxUnlocked(m.ctx, &abci.RequestCheckTx{Tx: tx})
 		if err != nil {
 			// note that other ABCI methods panic if err is not nil
 			m.logger.Error("AppMempool.CheckTx: error inserting tx", "error", err, "tx", txHash(tx))
@@ -261,16 +263,7 @@ func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckT
 		// This will most likely break many clients. Clients should rely on app-specific
 		// broadcasting endpoints (think of eth_sendRawTransaction, etc...).
 		if callback != nil {
-			callback(&abci.ResponseCheckTx{
-				Code:      code,
-				Data:      []byte{},
-				Log:       "",
-				Info:      "",
-				GasWanted: 0,
-				GasUsed:   0,
-				Events:    []abci.Event{},
-				Codespace: "",
-			})
+			callback(res)
 		}
 	}()
 

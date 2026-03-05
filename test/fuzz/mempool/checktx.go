@@ -12,14 +12,15 @@ var mempool mempl.Mempool
 func init() {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
-	appConnMem, _ := cc.NewABCIClient()
-	err := appConnMem.Start()
+	client, _ := cc.NewABCIClient()
+	err := client.Start()
 	if err != nil {
 		panic(err)
 	}
 
 	cfg := config.DefaultMempoolConfig()
 	cfg.Broadcast = false
+	appConnMem := proxy.NewAppConnMempool(client, proxy.NopMetrics())
 	mempool = mempl.NewCListMempool(cfg, appConnMem, 0)
 }
 

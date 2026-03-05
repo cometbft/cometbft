@@ -93,9 +93,6 @@ func NewSwitch(
 func (s *Switch) OnStart() error {
 	s.Logger.Info("Starting lib-p2p switch")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	protocolHandler := func(protocolID protocol.ID) {
 		s.host.SetStreamHandler(protocolID, s.handleStream)
 	}
@@ -113,30 +110,41 @@ func (s *Switch) OnStart() error {
 		s.StopPeerForError(peer, err)
 	})
 
+	// at this point the switch is considered active.
+	// in case we receive a message from a bootstrap peer,
+	// it will be provisioned in the background via resolvePeer()
+	s.active.Store(true)
+
 	// 3. connect bootstrap peers
 	bootstrapPeers := s.host.BootstrapPeers()
-
 	s.Logger.Info("Connecting to bootstrap peers", "count", len(bootstrapPeers))
 
-	for _, bp := range bootstrapPeers {
-		opts := PeerAddOptions{
-			Private:       bp.Private,
-			Persistent:    bp.Persistent,
-			Unconditional: bp.Unconditional,
-			OnBeforeStart: s.reactors.InitPeer,
-			OnAfterStart:  s.reactors.AddPeer,
-			OnStartFailed: s.reactors.RemovePeer,
-		}
+	var wg sync.WaitGroup
 
-		err := s.bootstrapPeer(ctx, bp.AddrInfo, opts)
-		if err != nil {
-			s.Logger.Error("Unable to add bootstrap peer", "peer_id", bp.AddrInfo.String(), "err", err)
-			go s.reconnectPeer(bp.AddrInfo, MaxReconnectBackoff, opts)
-			continue
-		}
+	for _, bp := range bootstrapPeers {
+		wg.Add(1)
+
+		go func(bp BootstrapPeer) {
+			defer wg.Done()
+
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			opts := s.bootstrapPeerOpts(bp)
+
+			if err := s.bootstrapPeer(ctx, bp.AddrInfo, opts); err != nil {
+				s.Logger.Error(
+					"Unable to add bootstrap peer",
+					"peer_id", bp.AddrInfo.String(),
+					"err", err,
+				)
+
+				go s.reconnectPeer(bp.AddrInfo, MaxReconnectBackoff, opts)
+			}
+		}(bp)
 	}
 
-	s.active.Store(true)
+	wg.Wait()
 
 	return nil
 }
@@ -486,11 +494,21 @@ func (s *Switch) resolvePeer(id peer.ID) (p2p.Peer, error) {
 		return nil, errors.New("peer has no addresses in peerstore")
 	}
 
+	var isPrivate, isPersistent, isUnconditional bool
+
+	// check if this is a bootstrap peer
+	bp, ok := s.host.BootstrapPeer(id)
+	if ok {
+		isPrivate = bp.Private
+		isPersistent = bp.Persistent
+		isUnconditional = bp.Unconditional
+	}
+
 	// let's try to provision it
 	opts := PeerAddOptions{
-		Private:       false,
-		Persistent:    false,
-		Unconditional: false,
+		Private:       isPrivate,
+		Persistent:    isPersistent,
+		Unconditional: isUnconditional,
 		OnBeforeStart: s.reactors.InitPeer,
 		OnAfterStart:  s.reactors.AddPeer,
 		OnStartFailed: s.reactors.RemovePeer,
@@ -510,6 +528,17 @@ func (s *Switch) resolvePeer(id peer.ID) (p2p.Peer, error) {
 		return nil, errors.Wrap(err, "unable to add peer")
 	default:
 		return peer, nil
+	}
+}
+
+func (s *Switch) bootstrapPeerOpts(bp BootstrapPeer) PeerAddOptions {
+	return PeerAddOptions{
+		Private:       bp.Private,
+		Persistent:    bp.Persistent,
+		Unconditional: bp.Unconditional,
+		OnBeforeStart: s.reactors.InitPeer,
+		OnAfterStart:  s.reactors.AddPeer,
+		OnStartFailed: s.reactors.RemovePeer,
 	}
 }
 

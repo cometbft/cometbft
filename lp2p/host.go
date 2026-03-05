@@ -29,7 +29,7 @@ type Host struct {
 	config config.LibP2PConfig
 
 	// bootstrapPeers are initial peers specified in the address book
-	bootstrapPeers []BootstrapPeer
+	bootstrapPeers map[peer.ID]BootstrapPeer
 
 	logger log.Logger
 
@@ -117,8 +117,13 @@ func (h *Host) AddrInfo() peer.AddrInfo {
 	return peer.AddrInfo{ID: h.ID(), Addrs: h.Addrs()}
 }
 
-func (h *Host) BootstrapPeers() []BootstrapPeer {
+func (h *Host) BootstrapPeers() map[peer.ID]BootstrapPeer {
 	return h.bootstrapPeers
+}
+
+func (h *Host) BootstrapPeer(id peer.ID) (BootstrapPeer, bool) {
+	bp, ok := h.bootstrapPeers[id]
+	return bp, ok
 }
 
 func (h *Host) Logger() log.Logger {
@@ -149,11 +154,8 @@ func (h *Host) multiAddrStrByID(id peer.ID) string {
 	return multiAddrStr(h.Peerstore().Addrs(id))
 }
 
-func BootstrapPeersFromConfig(config config.LibP2PConfig) ([]BootstrapPeer, error) {
-	peers := make([]BootstrapPeer, 0, len(config.BootstrapPeers))
-
-	// dedup
-	cache := make(map[peer.ID]struct{})
+func BootstrapPeersFromConfig(config config.LibP2PConfig) (map[peer.ID]BootstrapPeer, error) {
+	peers := make(map[peer.ID]BootstrapPeer, len(config.BootstrapPeers))
 
 	for _, bp := range config.BootstrapPeers {
 		addr, err := AddrInfoFromHostAndID(bp.Host, bp.ID)
@@ -161,18 +163,16 @@ func BootstrapPeersFromConfig(config config.LibP2PConfig) ([]BootstrapPeer, erro
 			return nil, fmt.Errorf("[%s, %s]: %w", bp.Host, bp.ID, err)
 		}
 
-		if _, ok := cache[addr.ID]; ok {
+		if _, ok := peers[addr.ID]; ok {
 			continue
 		}
 
-		peers = append(peers, BootstrapPeer{
+		peers[addr.ID] = BootstrapPeer{
 			AddrInfo:      addr,
 			Private:       bp.Private,
 			Persistent:    bp.Persistent,
 			Unconditional: bp.Unconditional,
-		})
-
-		cache[addr.ID] = struct{}{}
+		}
 	}
 
 	return peers, nil

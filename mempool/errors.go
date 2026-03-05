@@ -11,6 +11,12 @@ var ErrTxNotFound = errors.New("transaction not found in mempool")
 // ErrTxInCache is returned to the client if we saw tx earlier
 var ErrTxInCache = errors.New("tx already exists in cache")
 
+// ErrTxAlreadyReceivedFromSender is returned when a sender attempts to add a
+// transaction that the mempool has already received from that same sender.
+// This typically indicates that the cache size is too small relative to
+// mempool size (cache overflow scenario, see #890).
+var ErrTxAlreadyReceivedFromSender = errors.New("transaction already received from this sender")
+
 // ErrRecheckFull is returned when checking if the mempool is full and
 // rechecking is still in progress after a new block was committed.
 var ErrRecheckFull = errors.New("mempool is still rechecking after a new committed block, so it is considered as full")

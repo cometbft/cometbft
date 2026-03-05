@@ -98,10 +98,6 @@ func DefaultMetricsProvider(config *cfg.InstrumentationConfig) MetricsProvider {
 	}
 }
 
-type blockSyncReactor interface {
-	Enable(sm.State) error
-}
-
 //------------------------------------------------------------------------------
 
 func initDBs(config *cfg.Config, dbProvider cfg.DBProvider) (blockStore *store.BlockStore, stateDB dbm.DB, err error) {
@@ -561,56 +557,97 @@ func createPEXReactorAndAddToSwitch(
 }
 
 // startStateSync starts an asynchronous state sync process, then switches to block sync mode.
-func startStateSync(
-	ssR *statesync.Reactor,
-	bcR blockSyncReactor,
-	stateProvider statesync.StateProvider,
-	config *cfg.StateSyncConfig,
-	stateStore sm.Store,
-	blockStore *store.BlockStore,
-	state sm.State,
-) error {
-	ssR.Logger.Info("Starting state sync")
+func (n *Node) performStateSync() error {
+	type blocksyncEnabler interface {
+		Enable(sm.State) error
+	}
 
-	if stateProvider == nil {
-		var err error
+	type mempoolEnabler interface {
+		EnableInOutTxs()
+	}
+
+	var (
+		state  = n.stateSyncGenesis
+		config = n.config.StateSync
+		logger = n.stateSyncReactor.Logger
+
+		mempoolReactor   mempoolEnabler
+		blockSyncReactor blocksyncEnabler
+	)
+
+	logger.Info("Starting state sync")
+
+	// validate all reactors
+	blockSyncReactor, ok := n.bcReactor.(blocksyncEnabler)
+	if !ok {
+		return fmt.Errorf("invalid block sync reactor")
+	}
+
+	if n.mempoolReactor != nil {
+		mempoolReactor, ok = n.mempoolReactor.(mempoolEnabler)
+		if !ok {
+			return fmt.Errorf("invalid mempool reactor")
+		}
+	}
+
+	if n.stateSyncProvider == nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		stateProvider, err = statesync.NewLightClientStateProvider(
+
+		var err error
+		n.stateSyncProvider, err = statesync.NewLightClientStateProvider(
 			ctx,
-			state.ChainID, state.Version, state.InitialHeight,
-			config.RPCServers, light.TrustOptions{
+			state.ChainID,
+			state.Version,
+			state.InitialHeight,
+			config.RPCServers,
+			light.TrustOptions{
 				Period: config.TrustPeriod,
 				Height: config.TrustHeight,
 				Hash:   config.TrustHashBytes(),
-			}, ssR.Logger.With("module", "light"))
+			},
+			logger.With("module", "light"),
+		)
+
 		if err != nil {
 			return fmt.Errorf("failed to set up light client state provider: %w", err)
 		}
 	}
 
 	go func() {
-		state, commit, err := ssR.Sync(stateProvider, config.DiscoveryTime)
+		state, commit, err := n.stateSyncReactor.Sync(n.stateSyncProvider, config.DiscoveryTime)
 		if err != nil {
-			ssR.Logger.Error("State sync failed", "err", err)
-			return
-		}
-		err = stateStore.Bootstrap(state)
-		if err != nil {
-			ssR.Logger.Error("Failed to bootstrap node with new state", "err", err)
-			return
-		}
-		err = blockStore.SaveSeenCommit(state.LastBlockHeight, commit)
-		if err != nil {
-			ssR.Logger.Error("Failed to store last seen commit", "err", err)
+			logger.Error("State sync failed", "err", err)
 			return
 		}
 
-		if err := bcR.Enable(state); err != nil {
-			ssR.Logger.Error("Failed to switch to block sync", "err", err)
+		err = n.stateStore.Bootstrap(state)
+		if err != nil {
+			logger.Error("Failed to bootstrap node with new state", "err", err)
+			return
+		}
+
+		err = n.blockStore.SaveSeenCommit(state.LastBlockHeight, commit)
+		if err != nil {
+			logger.Error("Failed to store last seen commit", "err", err)
+			return
+		}
+
+		// Combined mode ingests blocks through consensus internals, so consensus
+		// must be switched out of wait-sync mode before blocksync is enabled.
+		if n.config.BlockSync.CombinedMode {
+			n.consensusReactor.SwitchToConsensus(state, true)
+			if mempoolReactor != nil {
+				mempoolReactor.EnableInOutTxs()
+			}
+		}
+
+		if err := blockSyncReactor.Enable(state); err != nil {
+			logger.Error("Failed to switch to block sync", "err", err)
 			return
 		}
 	}()
+
 	return nil
 }
 

@@ -124,22 +124,18 @@ func TestP2PConfigValidateBasic(t *testing.T) {
 				},
 			},
 			{
-				name: "enabled-default",
-				mutate: func(cfg *config.P2PConfig) {
-					cfg.LibP2PConfig.Enabled = true
-				},
+				name:   "enabled-default",
+				mutate: func(cfg *config.P2PConfig) {},
 			},
 			{
 				name: "allowsEnabledConfigWithEmptyScaler",
 				mutate: func(cfg *config.P2PConfig) {
-					cfg.LibP2PConfig.Enabled = true
 					cfg.LibP2PConfig.Scaler = config.LibP2PScaler{}
 				},
 			},
 			{
 				name: "requiresBootstrapPeerHost",
 				mutate: func(cfg *config.P2PConfig) {
-					cfg.LibP2PConfig.Enabled = true
 					cfg.LibP2PConfig.BootstrapPeers = []config.LibP2PBootstrapPeer{
 						{ID: "peer-id"},
 					}
@@ -149,7 +145,6 @@ func TestP2PConfigValidateBasic(t *testing.T) {
 			{
 				name: "requiresBootstrapPeerID",
 				mutate: func(cfg *config.P2PConfig) {
-					cfg.LibP2PConfig.Enabled = true
 					cfg.LibP2PConfig.BootstrapPeers = []config.LibP2PBootstrapPeer{
 						{Host: "192.0.2.1:26656"},
 					}
@@ -159,7 +154,6 @@ func TestP2PConfigValidateBasic(t *testing.T) {
 			{
 				name: "rejectsNegativeScalerMinWorkers",
 				mutate: func(cfg *config.P2PConfig) {
-					cfg.LibP2PConfig.Enabled = true
 					cfg.LibP2PConfig.Scaler.MinWorkers = -1
 				},
 				errContains: "p2p.libp2p.scaler.min_workers can't be negative",
@@ -167,7 +161,6 @@ func TestP2PConfigValidateBasic(t *testing.T) {
 			{
 				name: "rejectsScalerMinWorkersGreaterThanMax",
 				mutate: func(cfg *config.P2PConfig) {
-					cfg.LibP2PConfig.Enabled = true
 					cfg.LibP2PConfig.Scaler.MinWorkers = 10
 					cfg.LibP2PConfig.Scaler.MaxWorkers = 1
 				},
@@ -176,7 +169,6 @@ func TestP2PConfigValidateBasic(t *testing.T) {
 			{
 				name: "requiresOverrideReactor",
 				mutate: func(cfg *config.P2PConfig) {
-					cfg.LibP2PConfig.Enabled = true
 					cfg.LibP2PConfig.Scaler.Overrides = []config.LibP2PScalerOverride{
 						{MinWorkers: 1, MaxWorkers: 2},
 					}
@@ -186,7 +178,6 @@ func TestP2PConfigValidateBasic(t *testing.T) {
 			{
 				name: "rejectsNegativeOverrideThresholdLatency",
 				mutate: func(cfg *config.P2PConfig) {
-					cfg.LibP2PConfig.Enabled = true
 					cfg.LibP2PConfig.Scaler.Overrides = []config.LibP2PScalerOverride{
 						{
 							Reactor:          "MEMPOOL",
@@ -198,10 +189,44 @@ func TestP2PConfigValidateBasic(t *testing.T) {
 				},
 				errContains: "p2p.libp2p.scaler.overrides.0.threshold_latency can't be negative",
 			},
+			{
+				name: "disabledLimits",
+				mutate: func(cfg *config.P2PConfig) {
+					cfg.LibP2PConfig.Limits.Mode = config.LibP2PLimitsModeDisabled
+				},
+			},
+			{
+				name: "customLimits",
+				mutate: func(cfg *config.P2PConfig) {
+					cfg.LibP2PConfig.Limits.Mode = config.LibP2PLimitsModeCustom
+					cfg.LibP2PConfig.Limits.MaxPeers = 128
+					cfg.LibP2PConfig.Limits.MaxPeerStreams = 32
+				},
+			},
+			{
+				name: "rejectsCustomLimitsWithZeroMaxPeers",
+				mutate: func(cfg *config.P2PConfig) {
+					cfg.LibP2PConfig.Limits.Mode = config.LibP2PLimitsModeCustom
+					cfg.LibP2PConfig.Limits.MaxPeers = 0
+					cfg.LibP2PConfig.Limits.MaxPeerStreams = 1
+				},
+				errContains: "p2p.libp2p.limits.max_peers is required",
+			},
+			{
+				name: "rejectsCustomLimitsWithZeroMaxPeerStreams",
+				mutate: func(cfg *config.P2PConfig) {
+					cfg.LibP2PConfig.Limits.Mode = config.LibP2PLimitsModeCustom
+					cfg.LibP2PConfig.Limits.MaxPeers = 1
+					cfg.LibP2PConfig.Limits.MaxPeerStreams = 0
+				},
+				errContains: "p2p.libp2p.limits.max_peer_streams is required",
+			},
 		} {
 			t.Run(tt.name, func(t *testing.T) {
 				// ARRANGE
 				cfg := config.TestP2PConfig()
+				cfg.LibP2PConfig.Enabled = true
+
 				tt.mutate(cfg)
 
 				// ACT

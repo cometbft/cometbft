@@ -5,18 +5,20 @@ package lp2p
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/cometbft/cometbft/config"
 	cmcrypto "github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p/core/control"
 	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
-	ma "github.com/multiformats/go-multiaddr"
+	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
 // Host is a wrapper around the libp2p host.
@@ -75,7 +77,14 @@ func NewHost(config *config.P2PConfig, nodeKey cmcrypto.PrivKey, logger log.Logg
 		logger.Info("No bootstrap peers provided in the config")
 	}
 
-	// todo: add support for libp2p.ResourceManager() based on p2p.lp2p toml config
+	resourceManager, err := ResourceManagerFromConfig(config.LibP2PConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create resource manager: %w", err)
+	}
+
+	// host will be set later
+	connGater, connGaterEnabled := ConnectionGaterFromConfig(config.LibP2PConfig, nil)
+
 	// todo: add support for libp2p.BandwidthReporter()
 	opts := []libp2p.Option{
 		libp2p.Identity(privateKey),
@@ -83,6 +92,11 @@ func NewHost(config *config.P2PConfig, nodeKey cmcrypto.PrivKey, logger log.Logg
 		libp2p.UserAgent("cometbft"),
 		libp2p.Ping(true),
 		libp2p.Transport(quic.NewTransport),
+		libp2p.ResourceManager(resourceManager),
+	}
+
+	if connGaterEnabled {
+		opts = append(opts, libp2p.ConnectionGater(connGater))
 	}
 
 	// We listen on `listenAddr` but advertise `externalAddr` to peers
@@ -98,6 +112,10 @@ func NewHost(config *config.P2PConfig, nodeKey cmcrypto.PrivKey, logger log.Logg
 	host, err := libp2p.New(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create libp2p host: %w", err)
+	}
+
+	if connGaterEnabled {
+		connGater.SetHost(host)
 	}
 
 	return &Host{
@@ -145,10 +163,6 @@ func (h *Host) EmitPeerFailure(id peer.ID, err error) {
 	}
 }
 
-func (h *Host) multiAddrStrByID(id peer.ID) string {
-	return multiAddrStr(h.Peerstore().Addrs(id))
-}
-
 func BootstrapPeersFromConfig(config config.LibP2PConfig) (map[peer.ID]BootstrapPeer, error) {
 	peers := make(map[peer.ID]BootstrapPeer, len(config.BootstrapPeers))
 
@@ -173,28 +187,102 @@ func BootstrapPeersFromConfig(config config.LibP2PConfig) (map[peer.ID]Bootstrap
 	return peers, nil
 }
 
-// IsDNSAddr checks if the given multiaddr is a DNS address.
-func IsDNSAddr(addr ma.Multiaddr) bool {
-	for _, a := range addr {
-		code := a.Protocol().Code
-
-		if code == ma.P_DNS || code == ma.P_DNS4 || code == ma.P_DNS6 || code == ma.P_DNSADDR {
-			return true
-		}
+// ResourceManagerFromConfig creates a resource manager from the given config.
+func ResourceManagerFromConfig(cfg config.LibP2PConfig) (network.ResourceManager, error) {
+	if cfg.Limits.Mode == config.LibP2PLimitsModeDisabled {
+		return &network.NullResourceManager{}, nil
 	}
 
-	return false
+	// this is what lib-p2p does by default:
+	// mem limit: 1/8th of total memory, max 128MB, min 1GB (see defaults.AutoScale())
+	defaults := rcmgr.DefaultLimits
+
+	// cap limits for default lib-p2p protocols (identity, ping, ...)
+	libp2p.SetDefaultServiceLimits(&defaults)
+
+	if cfg.Limits.Mode == config.LibP2PLimitsModeDefault {
+		limiter := rcmgr.NewFixedLimiter(defaults.AutoScale())
+
+		return rcmgr.NewResourceManager(limiter)
+	}
+
+	if cfg.Limits.Mode == config.LibP2PLimitsModeCustom {
+		var (
+			partialDefaults = defaults.AutoScale().ToPartialLimitConfig()
+			limits          = rcmgr.InfiniteLimits.ToPartialLimitConfig()
+			maxPeerStreams  = rcmgr.LimitVal(cfg.Limits.MaxPeerStreams)
+		)
+
+		// 1. copy defaults for built-in services/protocols
+		limits.Service = partialDefaults.Service
+		limits.ServicePeer = partialDefaults.ServicePeer
+		limits.Protocol = partialDefaults.Protocol
+		limits.ProtocolPeer = partialDefaults.ProtocolPeer
+
+		// 2. also copy sane default conns for peers
+		limits.PeerDefault.Conns = partialDefaults.PeerDefault.Conns
+		limits.PeerDefault.ConnsInbound = partialDefaults.PeerDefault.ConnsInbound
+		limits.PeerDefault.ConnsOutbound = partialDefaults.PeerDefault.ConnsOutbound
+
+		// 2.1 limit max system connections to (max conns per peer * max peers)
+		limits.System.Conns = partialDefaults.PeerDefault.Conns * maxPeerStreams
+
+		// 3. set max streams
+		// https://github.com/libp2p/go-libp2p/blob/da810a1/p2p/host/resource-manager/scope.go#L168
+		limits.PeerDefault.Streams = maxPeerStreams
+		limits.PeerDefault.StreamsInbound = maxPeerStreams
+		limits.PeerDefault.StreamsOutbound = maxPeerStreams
+
+		limiter := rcmgr.NewFixedLimiter(limits.Build(rcmgr.InfiniteLimits))
+
+		return rcmgr.NewResourceManager(limiter)
+	}
+
+	return nil, fmt.Errorf("unknown limits mode: %q", cfg.Limits.Mode)
 }
 
-func multiAddrStr(addrs []ma.Multiaddr) string {
-	if len(addrs) == 0 {
-		return "<empty>"
+type ConnGater struct {
+	host     host.Host
+	maxPeers int
+}
+
+func ConnectionGaterFromConfig(cfg config.LibP2PConfig, host host.Host) (*ConnGater, bool) {
+	if cfg.Limits.Mode != config.LibP2PLimitsModeCustom {
+		return nil, false
 	}
 
-	parts := make([]string, len(addrs))
-	for i, addr := range addrs {
-		parts[i] = addr.String()
+	return &ConnGater{
+		host:     host,
+		maxPeers: cfg.Limits.MaxPeerStreams,
+	}, true
+}
+
+func (c *ConnGater) SetHost(host host.Host) { c.host = host }
+
+func (c *ConnGater) InterceptAccept(network.ConnMultiaddrs) bool {
+	return c.allowMorePeers()
+}
+
+func (c *ConnGater) InterceptAddrDial(peer.ID, multiaddr.Multiaddr) bool {
+	return c.allowMorePeers()
+}
+
+func (c *ConnGater) InterceptPeerDial(p peer.ID) bool {
+	return c.allowMorePeers()
+}
+
+func (c *ConnGater) InterceptSecured(network.Direction, peer.ID, network.ConnMultiaddrs) bool {
+	return true
+}
+
+func (c *ConnGater) InterceptUpgraded(network.Conn) (allow bool, reason control.DisconnectReason) {
+	return true, 0
+}
+
+func (c *ConnGater) allowMorePeers() bool {
+	if c.host == nil {
+		return false
 	}
 
-	return strings.Join(parts, ", ")
+	return len(c.host.Network().Peers()) < c.maxPeers
 }

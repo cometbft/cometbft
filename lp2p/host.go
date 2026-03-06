@@ -77,13 +77,13 @@ func NewHost(config *config.P2PConfig, nodeKey cmcrypto.PrivKey, logger log.Logg
 		logger.Info("No bootstrap peers provided in the config")
 	}
 
-	resourceManager, err := ResourceManagerFromConfig(config.LibP2PConfig)
+	// host will be set later
+	connGater, connGaterEnabled := ConnectionGaterFromConfig(config.LibP2PConfig, nil)
+
+	resourceManager, _, err := ResourceManagerFromConfig(config.LibP2PConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create resource manager: %w", err)
 	}
-
-	// host will be set later
-	connGater, connGaterEnabled := ConnectionGaterFromConfig(config.LibP2PConfig, nil)
 
 	// todo: add support for libp2p.BandwidthReporter()
 	opts := []libp2p.Option{
@@ -190,9 +190,9 @@ func BootstrapPeersFromConfig(config config.LibP2PConfig) (map[peer.ID]Bootstrap
 }
 
 // ResourceManagerFromConfig creates a resource manager from the given config.
-func ResourceManagerFromConfig(cfg config.LibP2PConfig) (network.ResourceManager, error) {
+func ResourceManagerFromConfig(cfg config.LibP2PConfig) (network.ResourceManager, rcmgr.Limiter, error) {
 	if cfg.Limits.Mode == config.LibP2PLimitsModeDisabled {
-		return &network.NullResourceManager{}, nil
+		return &network.NullResourceManager{}, nil, nil
 	}
 
 	// this is what lib-p2p does by default:
@@ -204,8 +204,9 @@ func ResourceManagerFromConfig(cfg config.LibP2PConfig) (network.ResourceManager
 
 	if cfg.Limits.Mode == config.LibP2PLimitsModeDefault {
 		limiter := rcmgr.NewFixedLimiter(defaults.AutoScale())
+		mgr, err := rcmgr.NewResourceManager(limiter)
 
-		return rcmgr.NewResourceManager(limiter)
+		return mgr, limiter, err
 	}
 
 	if cfg.Limits.Mode == config.LibP2PLimitsModeCustom {
@@ -236,11 +237,12 @@ func ResourceManagerFromConfig(cfg config.LibP2PConfig) (network.ResourceManager
 		limits.PeerDefault.StreamsOutbound = maxPeerStreams
 
 		limiter := rcmgr.NewFixedLimiter(limits.Build(rcmgr.InfiniteLimits))
+		mgr, err := rcmgr.NewResourceManager(limiter)
 
-		return rcmgr.NewResourceManager(limiter)
+		return mgr, limiter, err
 	}
 
-	return nil, fmt.Errorf("unknown limits mode: %q", cfg.Limits.Mode)
+	return nil, nil, fmt.Errorf("unknown limits mode: %q", cfg.Limits.Mode)
 }
 
 // ConnGater limits the number of simultaneously connected peers.

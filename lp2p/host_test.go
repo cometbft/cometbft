@@ -3,6 +3,7 @@ package lp2p
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
 	"sync"
 	"testing"
@@ -17,6 +18,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	"github.com/libp2p/go-libp2p/p2p/protocol/identify"
 	"github.com/stretchr/testify/require"
 )
 
@@ -249,6 +251,81 @@ func TestHostConnGater(t *testing.T) {
 
 		require.Eventually(t, checkNotConnected, waitTimeout, waitInterval)
 		require.ElementsMatch(t, []peer.ID{host2.ID(), host3.ID()}, host1.Network().Peers())
+	})
+}
+
+func TestResourceManager(t *testing.T) {
+	t.Run("disabled", func(t *testing.T) {
+		// ARRANGE
+		cfg := config.DefaultP2PConfig().LibP2PConfig
+		cfg.Limits.Mode = config.LibP2PLimitsModeDisabled
+
+		// ACT
+		rm, _, err := ResourceManagerFromConfig(cfg)
+
+		// ASSERT
+		require.NoError(t, err)
+		_, ok := rm.(*network.NullResourceManager)
+		require.True(t, ok)
+	})
+
+	t.Run("default", func(t *testing.T) {
+		// ARRANGE
+		cfg := config.DefaultP2PConfig().LibP2PConfig
+		cfg.Limits.Mode = config.LibP2PLimitsModeDefault
+
+		// ACT
+		rm, limiter, err := ResourceManagerFromConfig(cfg)
+		require.NoError(t, err)
+		t.Cleanup(func() { require.NoError(t, rm.Close()) })
+
+		// ASSERT
+		require.NotNil(t, rm)
+		_, isNull := rm.(*network.NullResourceManager)
+		require.False(t, isNull)
+
+		// there should be some limits base on defaults and some params related to the current machine
+		systemLimits := limiter.GetSystemLimits()
+		t.Logf("systemLimits: %T: %+v", systemLimits, systemLimits)
+
+		require.Less(t, systemLimits.GetStreamTotalLimit(), 1_000_000)
+	})
+
+	t.Run("custom", func(t *testing.T) {
+		// ARRANGE
+		cfg := config.DefaultP2PConfig().LibP2PConfig
+		cfg.Limits.Mode = config.LibP2PLimitsModeCustom
+		cfg.Limits.MaxPeerStreams = 50
+		cfg.Limits.MaxPeers = 10
+
+		// ACT
+		rm, limiter, err := ResourceManagerFromConfig(cfg)
+		require.NoError(t, err)
+		t.Cleanup(func() { require.NoError(t, rm.Close()) })
+
+		// ASSERT
+		require.NotNil(t, rm)
+		_, isNull := rm.(*network.NullResourceManager)
+		require.False(t, isNull)
+
+		var (
+			systemLimits  = limiter.GetSystemLimits()
+			peerLimits    = limiter.GetPeerLimits("")
+			serviceLimits = limiter.GetServiceLimits(identify.ServiceName)
+		)
+
+		t.Logf("systemLimits: %T: %+v", systemLimits, systemLimits)
+		t.Logf("peerLimits: %T: %+v", peerLimits, peerLimits)
+		t.Logf("serviceLimits(identify): %T: %+v", serviceLimits, serviceLimits)
+
+		// no limits on "system" scope...
+		require.Equal(t, math.MaxInt64, systemLimits.GetStreamTotalLimit())
+
+		// ...but strict limits on "peer" scope
+		require.Equal(t, cfg.Limits.MaxPeerStreams, peerLimits.GetStreamTotalLimit())
+
+		// and also default limits on built-in "service" scope
+		require.NotEqual(t, math.MaxInt64, serviceLimits.GetStreamTotalLimit())
 	})
 }
 

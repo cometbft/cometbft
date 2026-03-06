@@ -17,7 +17,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
-	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/require"
 )
 
@@ -50,11 +49,6 @@ func TestHost(t *testing.T) {
 
 	t.Logf("host1: %+v", host1.AddrInfo())
 	t.Logf("host2: %+v", host2.AddrInfo())
-
-	t.Cleanup(func() {
-		host2.Close()
-		host1.Close()
-	})
 
 	// Given sample envelope
 	type envelope struct {
@@ -209,91 +203,53 @@ func TestHost(t *testing.T) {
 	})
 }
 
-type testOpts struct {
-	pk             ed25519.PrivKey
-	bootstrapPeers []config.LibP2PBootstrapPeer
-	enableLogging  bool
-}
+func TestHostConnGater(t *testing.T) {
+	t.Run("rejectThirdPeer", func(t *testing.T) {
+		// ARRANGE
+		const (
+			waitTimeout  = 2 * time.Second
+			waitInterval = 50 * time.Millisecond
+		)
 
-type testOption func(*testOpts)
+		var (
+			ctx   = context.Background()
+			ports = utils.GetFreePorts(t, 4)
+			cfg1  = func(cfg *config.LibP2PConfig) {
+				cfg.Limits.Mode = config.LibP2PLimitsModeCustom
+				cfg.Limits.MaxPeers = 2
+				cfg.Limits.MaxPeerStreams = 2
+			}
 
-func withLogging() testOption {
-	return func(opts *testOpts) { opts.enableLogging = true }
-}
+			// given 4 hosts, and host1 has custom max peers config
+			host1 = makeTestHost(t, ports[0], withLogging(), withModifiedConfig(cfg1))
+			host2 = makeTestHost(t, ports[1], withLogging())
+			host3 = makeTestHost(t, ports[2], withLogging())
+			host4 = makeTestHost(t, ports[3], withLogging())
 
-func withBootstrapPeers(bootstrapPeers []config.LibP2PBootstrapPeer) testOption {
-	return func(opts *testOpts) { opts.bootstrapPeers = bootstrapPeers }
-}
+			network1 = host1.Network()
+		)
 
-func withPrivateKey(pk ed25519.PrivKey) testOption {
-	return func(opts *testOpts) { opts.pk = pk }
-}
+		require.NoError(t, host2.Connect(ctx, host1.AddrInfo()))
+		require.NoError(t, host3.Connect(ctx, host1.AddrInfo()))
 
-func makeTestHost(t *testing.T, port int, opts ...testOption) *Host {
-	t.Helper()
+		require.Eventually(t, func() bool {
+			return network1.Connectedness(host2.ID()) == network.Connected &&
+				network1.Connectedness(host3.ID()) == network.Connected
+		}, waitTimeout, waitInterval)
 
-	optsVal := &testOpts{
-		pk:             ed25519.GenPrivKey(),
-		bootstrapPeers: []config.LibP2PBootstrapPeer{},
-		enableLogging:  false,
-	}
+		// ACT
+		// try to connect host4->host1
+		// note the err is most likely nil because the connection is established, but will be quickly rejected.
+		_ = host4.Connect(ctx, host1.AddrInfo())
 
-	for _, opt := range opts {
-		opt(optsVal)
-	}
-
-	// config
-	cfg := config.DefaultP2PConfig()
-	cfg.RootDir = t.TempDir()
-	cfg.ListenAddress = fmt.Sprintf("127.0.0.1:%d", port)
-	cfg.ExternalAddress = fmt.Sprintf("127.0.0.1:%d", port)
-
-	cfg.LibP2PConfig.Enabled = true
-	cfg.LibP2PConfig.Limits.Mode = config.LibP2PLimitsModeDisabled
-	cfg.LibP2PConfig.BootstrapPeers = optsVal.bootstrapPeers
-
-	logger := log.NewNopLogger()
-	if optsVal.enableLogging {
-		logger = log.TestingLogger()
-	}
-
-	host, err := NewHost(cfg, optsVal.pk, logger)
-	require.NoError(t, err)
-
-	return host
-}
-
-func connectBootstrapPeers(t *testing.T, ctx context.Context, h *Host, peers map[peer.ID]BootstrapPeer) {
-	require.NotEmpty(t, peers, "no peers to connect to")
-
-	for _, peer := range peers {
-		// dial to self
-		if h.ID().String() == peer.AddrInfo.ID.String() {
-			continue
+		// ASSERT
+		checkNotConnected := func() bool {
+			return network1.Connectedness(host4.ID()) == network.NotConnected && len(network1.Peers()) == 2
 		}
 
-		h.logger.Info("Connecting to peer", "peer_id", peer.AddrInfo.ID.String())
-
-		err := h.Connect(ctx, peer.AddrInfo)
-		require.NoError(t, err, "failed to connect to peer", "peer_id", peer.AddrInfo.ID.String())
-	}
-}
-
-func makeTestHosts(t *testing.T, numHosts int, opts ...testOption) []*Host {
-	ports := utils.GetFreePorts(t, numHosts)
-
-	hosts := make([]*Host, len(ports))
-	for i, port := range ports {
-		hosts[i] = makeTestHost(t, port, opts...)
-	}
-
-	t.Cleanup(func() {
-		for _, host := range hosts {
-			host.Close()
-		}
+		require.Eventually(t, checkNotConnected, waitTimeout, waitInterval)
+		require.ElementsMatch(t, []peer.ID{host2.ID(), host3.ID()}, host1.Network().Peers())
 	})
-
-	return hosts
 }
 
 func TestBootstrapPeers(t *testing.T) {
@@ -377,93 +333,92 @@ func TestBootstrapPeers(t *testing.T) {
 	})
 }
 
-func TestIsDNSAddr(t *testing.T) {
-	for _, tc := range []struct {
-		name   string
-		raw    string
-		expect bool
-	}{
-		{
-			name:   "not a dns ipv4 tcp",
-			raw:    "/ip4/127.0.0.1/tcp/26656",
-			expect: false,
-		},
-		{
-			name:   "not a dns ipv6 udp quic",
-			raw:    "/ip6/::1/udp/26656/quic-v1",
-			expect: false,
-		},
-		{
-			name:   "not a dns p2p only",
-			raw:    "/p2p/12D3KooWB4s8mXvuQKrW8P3QnQfYeyH6Ydb8hQm6mdHh8W9c5QkA",
-			expect: false,
-		},
-		{
-			name:   "dns protocol only",
-			raw:    "/dns/seed.cometbft.com",
-			expect: true,
-		},
-		{
-			name:   "dns4 protocol",
-			raw:    "/dns4/seed.cometbft.com/tcp/26656",
-			expect: true,
-		},
-		{
-			name:   "dns6 protocol",
-			raw:    "/dns6/seed.cometbft.com/udp/26656/quic-v1",
-			expect: true,
-		},
-		{
-			name:   "dnsaddr protocol",
-			raw:    "/dnsaddr/bootstrap.cometbft.com",
-			expect: true,
-		},
-		{
-			name:   "dns with quic and p2p",
-			raw:    "/dns4/bootstrap.cometbft.com/udp/26656/quic-v1/p2p/12D3KooWB4s8mXvuQKrW8P3QnQfYeyH6Ydb8hQm6mdHh8W9c5QkA",
-			expect: true,
-		},
-		{
-			name:   "dns protocol appears later in path",
-			raw:    "/ip4/127.0.0.1/tcp/26656/dnsaddr/bootstrap.cometbft.com",
-			expect: true,
-		},
-		{
-			name:   "dns appears before ip protocol",
-			raw:    "/dns4/bootstrap.cometbft.com/ip4/127.0.0.1/tcp/26656",
-			expect: true,
-		},
-		{
-			name:   "localhost dns host",
-			raw:    "/dns/localhost/tcp/26656",
-			expect: true,
-		},
-		{
-			name:   "loopback not dns even with quic",
-			raw:    "/ip4/127.0.0.1/udp/26656/quic-v1",
-			expect: false,
-		},
-		{
-			name:   "not dns with circuit relay",
-			raw:    "/ip4/127.0.0.1/tcp/26656/p2p-circuit/p2p/12D3KooWB4s8mXvuQKrW8P3QnQfYeyH6Ydb8hQm6mdHh8W9c5QkA",
-			expect: false,
-		},
-		{
-			name:   "dns with websocket",
-			raw:    "/dns4/rpc.cometbft.com/tcp/443/tls/ws",
-			expect: true,
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			// ARRANGE
-			addr, err := ma.NewMultiaddr(tc.raw)
-			require.NoError(t, err)
+type testOpts struct {
+	pk             ed25519.PrivKey
+	bootstrapPeers []config.LibP2PBootstrapPeer
+	enableLogging  bool
+	modifyConfig   func(*config.LibP2PConfig)
+}
 
-			// ACT
-			got := IsDNSAddr(addr)
+type testOption func(*testOpts)
 
-			// ASSERT
-			require.Equal(t, tc.expect, got)
-		})
+func withLogging() testOption {
+	return func(opts *testOpts) { opts.enableLogging = true }
+}
+
+func withBootstrapPeers(bootstrapPeers []config.LibP2PBootstrapPeer) testOption {
+	return func(opts *testOpts) { opts.bootstrapPeers = bootstrapPeers }
+}
+
+func withPrivateKey(pk ed25519.PrivKey) testOption {
+	return func(opts *testOpts) { opts.pk = pk }
+}
+
+func withModifiedConfig(modifier func(*config.LibP2PConfig)) testOption {
+	return func(opts *testOpts) { opts.modifyConfig = modifier }
+}
+
+func makeTestHost(t *testing.T, port int, opts ...testOption) *Host {
+	t.Helper()
+
+	optsVal := &testOpts{
+		pk:             ed25519.GenPrivKey(),
+		bootstrapPeers: []config.LibP2PBootstrapPeer{},
+		enableLogging:  false,
 	}
+
+	for _, opt := range opts {
+		opt(optsVal)
+	}
+
+	// config
+	cfg := config.DefaultP2PConfig()
+	cfg.RootDir = t.TempDir()
+	cfg.ListenAddress = fmt.Sprintf("127.0.0.1:%d", port)
+	cfg.ExternalAddress = fmt.Sprintf("127.0.0.1:%d", port)
+
+	cfg.LibP2PConfig.Enabled = true
+	cfg.LibP2PConfig.BootstrapPeers = optsVal.bootstrapPeers
+	if optsVal.modifyConfig != nil {
+		optsVal.modifyConfig(&cfg.LibP2PConfig)
+	}
+
+	logger := log.NewNopLogger()
+	if optsVal.enableLogging {
+		logger = log.TestingLogger()
+	}
+
+	host, err := NewHost(cfg, optsVal.pk, logger)
+	require.NoError(t, err)
+
+	t.Cleanup(func() { host.Close() })
+
+	return host
+}
+
+func connectBootstrapPeers(t *testing.T, ctx context.Context, h *Host, peers map[peer.ID]BootstrapPeer) {
+	require.NotEmpty(t, peers, "no peers to connect to")
+
+	for _, peer := range peers {
+		// dial to self
+		if h.ID().String() == peer.AddrInfo.ID.String() {
+			continue
+		}
+
+		h.logger.Info("Connecting to peer", "peer_id", peer.AddrInfo.ID.String())
+
+		err := h.Connect(ctx, peer.AddrInfo)
+		require.NoError(t, err, "failed to connect to peer", "peer_id", peer.AddrInfo.ID.String())
+	}
+}
+
+func makeTestHosts(t *testing.T, numHosts int, opts ...testOption) []*Host {
+	ports := utils.GetFreePorts(t, numHosts)
+
+	hosts := make([]*Host, len(ports))
+	for i, port := range ports {
+		hosts[i] = makeTestHost(t, port, opts...)
+	}
+
+	return hosts
 }

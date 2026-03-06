@@ -37,12 +37,6 @@ func TestStreamReadSizedClose(t *testing.T) {
 			host2   = makeTestHost(t, ports[1], withLogging())
 		)
 
-
-		t.Cleanup(func() {
-			host2.Close()
-			host1.Close()
-		})
-
 		// connect hosts
 		require.NoError(t, host2.Connect(ctx, host1.AddrInfo()))
 

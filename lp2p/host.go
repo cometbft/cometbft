@@ -114,16 +114,18 @@ func NewHost(config *config.P2PConfig, nodeKey cmcrypto.PrivKey, logger log.Logg
 		return nil, fmt.Errorf("failed to create libp2p host: %w", err)
 	}
 
-	if connGaterEnabled {
-		connGater.SetHost(host)
-	}
-
-	return &Host{
+	h := &Host{
 		Host:           host,
 		config:         config.LibP2PConfig,
 		bootstrapPeers: bootstrapPeers,
 		logger:         logger,
-	}, nil
+	}
+
+	if connGaterEnabled {
+		connGater.SetHost(h)
+	}
+
+	return h, nil
 }
 
 func (h *Host) AddrInfo() peer.AddrInfo {
@@ -241,34 +243,42 @@ func ResourceManagerFromConfig(cfg config.LibP2PConfig) (network.ResourceManager
 	return nil, fmt.Errorf("unknown limits mode: %q", cfg.Limits.Mode)
 }
 
+// ConnGater limits the number of simultaneously connected peers.
+// It is only enabled when `lp2p.limits.mode = "custom"` and uses
+// `lp2p.limits.max_peers` as the cap.
+//
+// The host is injected after host creation because libp2p requires the
+// connection gater option during `libp2p.New(...)`, before the host exists.
 type ConnGater struct {
-	host     host.Host
+	host     *Host
 	maxPeers int
 }
 
-func ConnectionGaterFromConfig(cfg config.LibP2PConfig, host host.Host) (*ConnGater, bool) {
+// ConnectionGaterFromConfig creates a connection gater from the given config or returns false if disabled.
+func ConnectionGaterFromConfig(cfg config.LibP2PConfig, host *Host) (*ConnGater, bool) {
 	if cfg.Limits.Mode != config.LibP2PLimitsModeCustom {
 		return nil, false
 	}
 
 	return &ConnGater{
 		host:     host,
-		maxPeers: cfg.Limits.MaxPeerStreams,
+		maxPeers: cfg.Limits.MaxPeers,
 	}, true
 }
 
-func (c *ConnGater) SetHost(host host.Host) { c.host = host }
+// SetHost sets the host for the connection gater.
+func (c *ConnGater) SetHost(host *Host) { c.host = host }
 
 func (c *ConnGater) InterceptAccept(network.ConnMultiaddrs) bool {
-	return c.allowMorePeers()
+	return c.allowMorePeers("caller", "InterceptAccept")
 }
 
-func (c *ConnGater) InterceptAddrDial(peer.ID, multiaddr.Multiaddr) bool {
-	return c.allowMorePeers()
+func (c *ConnGater) InterceptAddrDial(pid peer.ID, _ multiaddr.Multiaddr) bool {
+	return c.allowMorePeers("caller", "InterceptAddrDial", "peer_id", pid.String())
 }
 
-func (c *ConnGater) InterceptPeerDial(p peer.ID) bool {
-	return c.allowMorePeers()
+func (c *ConnGater) InterceptPeerDial(pid peer.ID) bool {
+	return c.allowMorePeers("caller", "InterceptPeerDial", "peer_id", pid.String())
 }
 
 func (c *ConnGater) InterceptSecured(network.Direction, peer.ID, network.ConnMultiaddrs) bool {
@@ -279,10 +289,20 @@ func (c *ConnGater) InterceptUpgraded(network.Conn) (allow bool, reason control.
 	return true, 0
 }
 
-func (c *ConnGater) allowMorePeers() bool {
+func (c *ConnGater) allowMorePeers(labels ...any) bool {
 	if c.host == nil {
 		return false
 	}
 
-	return len(c.host.Network().Peers()) < c.maxPeers
+	current := len(c.host.Network().Peers())
+
+	if current < c.maxPeers {
+		return true
+	}
+
+	labels = append(labels, "current_peers", current, "max_peers", c.maxPeers)
+
+	c.host.logger.Info("Rejecting peer due to max peers limit", labels...)
+
+	return false
 }

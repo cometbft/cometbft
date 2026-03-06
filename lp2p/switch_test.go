@@ -62,11 +62,6 @@ func TestSwitch(t *testing.T) {
 			hostB = makeTestHost(t, ports[1], withLogging(), withPrivateKey(privateKeyB))
 		)
 
-		t.Cleanup(func() {
-			hostB.Close()
-			hostA.Close()
-		})
-
 		// Given switch A (NOT started yet)
 		switchA, err := NewSwitch(
 			nil,
@@ -141,12 +136,6 @@ func TestSwitch(t *testing.T) {
 			hostB = makeTestHost(t, ports[1], withLogging())
 			hostC = makeTestHost(t, ports[2], withLogging())
 		)
-
-		t.Cleanup(func() {
-			hostC.Close()
-			hostB.Close()
-			hostA.Close()
-		})
 
 		// Given switch A with hosts B and C as bootstrap peers
 		switchA, err := NewSwitch(
@@ -240,11 +229,6 @@ func TestSwitch(t *testing.T) {
 			hostA = makeTestHost(t, ports[0], withLogging())
 			hostB = makeTestHost(t, ports[1], withLogging())
 		)
-
-		t.Cleanup(func() {
-			hostB.Close()
-			hostA.Close()
-		})
 
 		// Given switch A
 		switchA, err := NewSwitch(

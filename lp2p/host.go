@@ -13,7 +13,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/host"
-	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
@@ -84,10 +83,6 @@ func NewHost(config *config.P2PConfig, nodeKey cmcrypto.PrivKey, logger log.Logg
 		libp2p.UserAgent("cometbft"),
 		libp2p.Ping(true),
 		libp2p.Transport(quic.NewTransport),
-	}
-
-	if config.LibP2PConfig.DisableResourceManager {
-		opts = append(opts, libp2p.ResourceManager(&network.NullResourceManager{}))
 	}
 
 	// We listen on `listenAddr` but advertise `externalAddr` to peers

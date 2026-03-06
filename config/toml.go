@@ -336,10 +336,6 @@ dial_timeout = "{{ .P2P.DialTimeout }}"
 # Enabled set true to use go-libp2p for networking instead of CometBFT's p2p.
 enabled = {{ .P2P.LibP2PConfig.Enabled }}
 
-# Disables resource manager.
-# Warning! This might consume all of the system's resources.
-disable_resource_manager = {{ .P2P.LibP2PConfig.DisableResourceManager }}
-
 # Bootstrap peers to connect to
 # format: { host, id, private (opt), persistent (opt), unconditional (opt) }
 {{- $bps := .P2P.LibP2PConfig.BootstrapPeers -}}
@@ -382,6 +378,21 @@ min_workers = {{ .MinWorkers }}
 max_workers = {{ .MaxWorkers }}
 threshold_latency = "{{ .ThresholdLatency }}"
 {{- end }}
+
+# Configuration for resource limits
+[p2p.libp2p.limits]
+
+# Resource management modes:
+# - disabled: no resource limits
+# - default: use default resource limits
+# - custom: use custom resource limits (see below)
+mode = "{{ .P2P.LibP2PConfig.Limits.Mode }}"
+
+# Maximum number of peers
+max_peers = {{ .P2P.LibP2PConfig.Limits.MaxPeers }}
+
+# Maximum number of concurrent streams per peer
+max_peer_streams = {{ .P2P.LibP2PConfig.Limits.MaxPeerStreams }}
 
 #######################################################
 ###          Mempool Configuration Option          ###

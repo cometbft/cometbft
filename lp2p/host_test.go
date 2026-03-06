@@ -243,21 +243,21 @@ func makeTestHost(t *testing.T, port int, opts ...testOption) *Host {
 	}
 
 	// config
-	config := config.DefaultP2PConfig()
-	config.RootDir = t.TempDir()
-	config.ListenAddress = fmt.Sprintf("127.0.0.1:%d", port)
-	config.ExternalAddress = fmt.Sprintf("127.0.0.1:%d", port)
+	cfg := config.DefaultP2PConfig()
+	cfg.RootDir = t.TempDir()
+	cfg.ListenAddress = fmt.Sprintf("127.0.0.1:%d", port)
+	cfg.ExternalAddress = fmt.Sprintf("127.0.0.1:%d", port)
 
-	config.LibP2PConfig.Enabled = true
-	config.LibP2PConfig.DisableResourceManager = true
-	config.LibP2PConfig.BootstrapPeers = optsVal.bootstrapPeers
+	cfg.LibP2PConfig.Enabled = true
+	cfg.LibP2PConfig.Limits.Mode = config.LibP2PLimitsModeDisabled
+	cfg.LibP2PConfig.BootstrapPeers = optsVal.bootstrapPeers
 
 	logger := log.NewNopLogger()
 	if optsVal.enableLogging {
 		logger = log.TestingLogger()
 	}
 
-	host, err := NewHost(config, optsVal.pk, logger)
+	host, err := NewHost(cfg, optsVal.pk, logger)
 	require.NoError(t, err)
 
 	return host

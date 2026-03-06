@@ -24,9 +24,11 @@ func TestProtocolID(t *testing.T) {
 	}
 }
 
-func TestStreamRead(t *testing.T) {
+func TestStreamReadSizedClose(t *testing.T) {
 	t.Run("ReadTooLargePayload", func(t *testing.T) {
 		// ARRANGE
+		const maxSize = 100
+
 		var (
 			ctx     = context.Background()
 			protoID = ProtocolID(0xAA)
@@ -34,6 +36,7 @@ func TestStreamRead(t *testing.T) {
 			host1   = makeTestHost(t, ports[0], withLogging())
 			host2   = makeTestHost(t, ports[1], withLogging())
 		)
+
 
 		t.Cleanup(func() {
 			host2.Close()
@@ -47,7 +50,7 @@ func TestStreamRead(t *testing.T) {
 		host1.SetStreamHandler(protoID, func(stream network.Stream) {
 			defer stream.Close()
 
-			_, err := StreamRead(stream)
+			_, err := StreamReadSizedClose(stream, maxSize)
 			readErr <- err
 		})
 
@@ -56,7 +59,7 @@ func TestStreamRead(t *testing.T) {
 		require.NoError(t, err)
 		t.Cleanup(func() { _ = stream.Close() })
 
-		tooLargeHeader := uint64ToUvarint(MaxStreamSize + 1)
+		tooLargeHeader := uint64ToUvarint(maxSize + 1)
 
 		// ACT
 		_, err = stream.Write(tooLargeHeader)

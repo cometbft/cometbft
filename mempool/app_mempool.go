@@ -174,8 +174,8 @@ func (m *AppMempool) TxStream(ctx context.Context) <-chan types.Txs {
 
 func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Txs) {
 	req := &abci.RequestReapTxs{
-		MaxBytes: uint64(m.config.ReapMaxBytes),
-		MaxGas:   uint64(m.config.ReapMaxGas),
+		MaxBytes: m.config.ReapMaxBytes,
+		MaxGas:   m.config.ReapMaxGas,
 	}
 
 	for {

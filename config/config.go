@@ -1000,9 +1000,9 @@ type MempoolConfig struct {
 	// App mempool only: size of LRU cache for seen transactions (deduplication).
 	SeenCacheSize int `mapstructure:"seen_cache_size"`
 	// App mempool only: max bytes passed to ReapTxs (0 = no limit).
-	ReapMaxBytes int64 `mapstructure:"reap_max_bytes"`
+	ReapMaxBytes uint64 `mapstructure:"reap_max_bytes"`
 	// App mempool only: max gas passed to ReapTxs (0 = no limit).
-	ReapMaxGas int64 `mapstructure:"reap_max_gas"`
+	ReapMaxGas uint64 `mapstructure:"reap_max_gas"`
 	// App mempool only: interval between ReapTxs calls when streaming txs from app.
 	ReapInterval time.Duration `mapstructure:"reap_interval"`
 }
@@ -1079,12 +1079,6 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 	// App mempool validation
 	if cfg.SeenCacheSize < 0 {
 		return cmterrors.ErrNegativeField{Field: "seen_cache_size"}
-	}
-	if cfg.ReapMaxBytes < 0 {
-		return cmterrors.ErrNegativeField{Field: "reap_max_bytes"}
-	}
-	if cfg.ReapMaxGas < 0 {
-		return cmterrors.ErrNegativeField{Field: "reap_max_gas"}
 	}
 	if cfg.Type == MempoolTypeApp && cfg.ReapInterval <= 0 {
 		return errors.New("reap_interval must be positive when mempool type is \"app\"")

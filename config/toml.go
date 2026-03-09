@@ -484,10 +484,11 @@ max_batch_bytes = {{ .Mempool.MaxBatchBytes }}
 experimental_max_gossip_connections_to_persistent_peers = {{ .Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers }}
 experimental_max_gossip_connections_to_non_persistent_peers = {{ .Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers }}
 
-# App mempool only: size of LRU cache for seen txs (deduplication).
+# App mempool only: size of LRU cache for seen transactions (deduplication).
 seen_cache_size = {{ .Mempool.SeenCacheSize }}
-# App mempool only: max bytes/gas passed to ReapTxs (0 = no limit).
+# App mempool only: max bytes passed to ReapTxs (0 = no limit).
 reap_max_bytes = {{ .Mempool.ReapMaxBytes }}
+# App mempool only: max gas passed to ReapTxs (0 = no limit).
 reap_max_gas = {{ .Mempool.ReapMaxGas }}
 # App mempool only: interval between ReapTxs calls when streaming txs from app.
 reap_interval = "{{ .Mempool.ReapInterval }}"

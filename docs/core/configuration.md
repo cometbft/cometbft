@@ -334,10 +334,11 @@ max_txs_bytes = 1073741824
 # Size of the cache (used to filter transactions we saw earlier) in transactions
 cache_size = 10000
 
-# App mempool only: size of LRU cache for seen txs (deduplication).
+# App mempool only: size of LRU cache for seen transactions (deduplication).
 seen_cache_size = 100000
-# App mempool only: max bytes/gas passed to ReapTxs (0 = no limit).
+# App mempool only: max bytes passed to ReapTxs (0 = no limit).
 reap_max_bytes = 0
+# App mempool only: max gas passed to ReapTxs (0 = no limit).
 reap_max_gas = 0
 # App mempool only: interval between ReapTxs calls when streaming txs from app.
 reap_interval = "500ms"

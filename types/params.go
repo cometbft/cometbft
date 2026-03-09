@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cometbft/cometbft/crypto"
-
 	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
@@ -147,9 +145,13 @@ func DefaultABCIParams() ABCIParams {
 	}
 }
 
+// DefaultAuthorityParams returns a default AuthorityParams.
+// Authority is left empty; it is the application's responsibility to set it
+// (e.g. via InitChain or a governance proposal) using an address format it
+// understands. CometBFT treats this field as opaque.
 func DefaultAuthorityParams() AuthorityParams {
 	return AuthorityParams{
-		Authority: crypto.AddressHash([]byte("gov")).String(),
+		Authority: "",
 	}
 }
 

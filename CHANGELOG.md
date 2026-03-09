@@ -17,7 +17,7 @@
 - [p2p] fix(lp2p): enforce stream max size ([\#5647](https://github.com/cometbft/cometbft/pull/5647))
 - `[metrics]` fix(metrics)!: peer_send_queue_size
   ([\#5648](https://github.com/cometbft/cometbft/pull/5648))
-- `[statesync]` fix combined_mode and streamline stateSync logic
+- `[statesync]` fix adaptive_sync and streamline stateSync logic
   ([\#5663](https://github.com/cometbft/cometbft/pull/5663))
 
 ### IMPROVEMENTS
@@ -40,7 +40,7 @@
 ### FEATURES
 
 - `[p2p]` feat(lp2p): implemented resource limiter ([\#5671](https://github.com/cometbft/cometbft/pull/5671))
-- `[p2p]` feat(consensus): add combined blocksync-to-consensus ingestion ([\#5633](https://github.com/cometbft/cometbft/pull/5633))
+- `[p2p]` feat(consensus): add adaptive sync blocksync-to-consensus ingestion ([\#5633](https://github.com/cometbft/cometbft/pull/5633))
 - `[p2p]` feat(lp2p): implement Peer info methods (`NodeInfo`, `RemoteIP`, `RemoteAddr`, `IsOutbound`)
   for `/net_info` RPC compatibility with libp2p transport ([\#5619](https://github.com/cometbft/cometbft/pull/5619))
 - `[p2p]` feat(lp2p): stop/reconnect peers that failed ([\#5618](https://github.com/cometbft/cometbft/pull/5618))

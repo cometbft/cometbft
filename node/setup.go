@@ -309,7 +309,7 @@ func createBlocksyncReactor(
 
 	bcReactor := blocksync.NewReactor(
 		enabled,
-		config.BlockSync.CombinedMode,
+		config.BlockSync.AdaptiveSync,
 		state.Copy(),
 		blockExec,
 		blockStore,
@@ -633,9 +633,9 @@ func (n *Node) performStateSync() error {
 			return
 		}
 
-		// Combined mode ingests blocks through consensus internals, so consensus
+		// Adaptive sync ingests blocks through consensus internals, so consensus
 		// must be switched out of wait-sync mode before blocksync is enabled.
-		if n.config.BlockSync.CombinedMode {
+		if n.config.BlockSync.AdaptiveSync {
 			n.consensusReactor.SwitchToConsensus(state, true)
 			if mempoolReactor != nil {
 				mempoolReactor.EnableInOutTxs()

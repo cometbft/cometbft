@@ -46,14 +46,6 @@ type AppMempoolClient interface {
 // AppMempoolOpt is the option for AppMempool
 type AppMempoolOpt func(*AppMempool)
 
-// todo STACK-1851: move to config
-const (
-	seenCacheSize = 100_000
-	reapMaxBytes  = 0
-	reapMaxGas    = 0
-	reapInterval  = 500 * time.Millisecond
-)
-
 var _ Mempool = &AppMempool{}
 
 var (
@@ -77,7 +69,7 @@ func NewAppMempool(
 ) *AppMempool {
 	// cache to avoid receiving the same txs from other peers.
 	// we should add TTL w/ eviction policy.
-	seen := NewLRUTxCache(seenCacheSize)
+	seen := NewLRUTxCache(config.SeenCacheSize)
 
 	m := &AppMempool{
 		ctx:     context.Background(),
@@ -182,8 +174,8 @@ func (m *AppMempool) TxStream(ctx context.Context) <-chan types.Txs {
 
 func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Txs) {
 	req := &abci.RequestReapTxs{
-		MaxBytes: reapMaxBytes,
-		MaxGas:   reapMaxGas,
+		MaxBytes: m.config.ReapMaxBytes,
+		MaxGas:   m.config.ReapMaxGas,
 	}
 
 	for {
@@ -191,7 +183,7 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Txs) {
 		case <-ctx.Done():
 			m.logger.Debug("AppMempool.reapTxs: context is done")
 			return
-		case <-time.After(reapInterval):
+		case <-time.After(m.config.ReapInterval):
 			// note that time.After GC mem leak was fixed in go 1.23
 			res, err := m.app.ReapTxs(ctx, req)
 			switch {

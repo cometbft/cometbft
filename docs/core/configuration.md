@@ -400,6 +400,11 @@ max_snapshot_chunks = 100000
 #   1) "v0" - the default block sync implementation
 version = "v0"
 
+# Experimental Adaptive sync (bool):
+#
+# Run both BLOCKSYNC and CONSENSUS for improved liveness, connectivity, and performance.
+adaptive_sync = false
+
 #######################################################
 ###         Consensus Configuration Options         ###
 #######################################################

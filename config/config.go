@@ -1077,11 +1077,13 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 		return errors.New("experimental_max_gossip_connections_to_non_persistent_peers can't be negative")
 	}
 	// App mempool validation
-	if cfg.SeenCacheSize < 0 {
-		return cmterrors.ErrNegativeField{Field: "seen_cache_size"}
-	}
-	if cfg.Type == MempoolTypeApp && cfg.ReapInterval <= 0 {
-		return errors.New("reap_interval must be positive when mempool type is \"app\"")
+	if cfg.Type == MempoolTypeApp {
+		if cfg.SeenCacheSize < 0 {
+			return cmterrors.ErrNegativeField{Field: "seen_cache_size"}
+		}
+		if cfg.ReapInterval <= 0 {
+			return errors.New("reap_interval must be positive when mempool type is \"app\"")
+		}
 	}
 	return nil
 }

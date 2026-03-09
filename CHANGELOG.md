@@ -39,6 +39,7 @@
 
 ### FEATURES
 
+- `[p2p]` feat(lp2p): implemented resource limiter ([\#5671](https://github.com/cometbft/cometbft/pull/5671))
 - `[p2p]` feat(consensus): add combined blocksync-to-consensus ingestion ([\#5633](https://github.com/cometbft/cometbft/pull/5633))
 - `[p2p]` feat(lp2p): implement Peer info methods (`NodeInfo`, `RemoteIP`, `RemoteAddr`, `IsOutbound`)
   for `/net_info` RPC compatibility with libp2p transport ([\#5619](https://github.com/cometbft/cometbft/pull/5619))

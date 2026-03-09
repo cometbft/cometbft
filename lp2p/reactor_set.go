@@ -322,3 +322,7 @@ func (rs *reactorSet) newReactorScaler(reactorName string) (*autopool.Throughput
 		rs.switchRef.Logger,
 	), nil
 }
+
+func (rp *reactorProtocol) maxMessageSize() uint64 {
+	return uint64(rp.descriptor.RecvMessageCapacity)
+}

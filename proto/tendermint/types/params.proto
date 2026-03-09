@@ -92,6 +92,9 @@ message ABCIParams {
   int64 vote_extensions_enable_height = 1;
 }
 
+// AuthorityParams holds an opaque authority string to be configured and
+// interpreted by the application for authorizing parameter changes outside of
+// governance. CometBFT only enforces a maximum length.
 message AuthorityParams {
   string authority = 1;
 }

@@ -91,6 +91,9 @@ func (a ABCIParams) VoteExtensionsEnabled(h int64) bool {
 	return a.VoteExtensionsEnableHeight <= h
 }
 
+// AuthorityParams holds an opaque authority string to be configured and
+// interpreted by the application for authorizing parameter changes outside of
+// governance. CometBFT only enforces a maximum length.
 type AuthorityParams struct {
 	Authority string `json:"authority"`
 }
@@ -145,10 +148,9 @@ func DefaultABCIParams() ABCIParams {
 	}
 }
 
-// DefaultAuthorityParams returns a default AuthorityParams.
-// Authority is left empty; it is the application's responsibility to set it
-// (e.g. via InitChain or a governance proposal) using an address format it
-// understands. CometBFT treats this field as opaque.
+// DefaultAuthorityParams returns a default AuthorityParams with an empty
+// authority. The application is responsible for setting it via InitChain
+// or a parameter update.
 func DefaultAuthorityParams() AuthorityParams {
 	return AuthorityParams{
 		Authority: "",

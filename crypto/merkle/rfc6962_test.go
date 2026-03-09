@@ -63,7 +63,7 @@ func TestRFC6962Hasher(t *testing.T) {
 			got:  innerHash([]byte("N123"), []byte("N456")),
 		},
 	} {
-		tc := tc
+
 		t.Run(tc.desc, func(t *testing.T) {
 			wantBytes, err := hex.DecodeString(tc.want)
 			if err != nil {
@@ -90,7 +90,7 @@ func TestRFC6962HasherCollisions(t *testing.T) {
 	_, subHash1Trail := trailsFromByteSlices([][]byte{hash1, hash2})
 	subHash1 := subHash1Trail.Hash
 	// Check that this is not the same as a leaf hash of their concatenation.
-	preimage := append(hash1, hash2...)
+	preimage := bytes.Join([][]byte{hash1, hash2}, nil)
 	_, forgedHashTrail := trailsFromByteSlices([][]byte{preimage})
 	forgedHash := forgedHashTrail.Hash
 	if bytes.Equal(subHash1, forgedHash) {

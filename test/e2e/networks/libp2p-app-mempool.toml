@@ -1,0 +1,19 @@
+[node.validator01]
+mempool_type = "app"
+use_libp2p = true
+
+[node.validator02]
+mempool_type = "app"
+use_libp2p = true
+
+[node.validator03]
+mempool_type = "app"
+use_libp2p = true
+
+[node.validator04]
+mempool_type = "app"
+use_libp2p = true
+
+[node.validator05]
+mempool_type = "app"
+use_libp2p = true

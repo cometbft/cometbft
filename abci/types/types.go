@@ -9,6 +9,10 @@ import (
 
 const (
 	CodeTypeOK uint32 = 0
+
+	// CodeTypeRetry is a code that indicates a transaction should be retried later.
+	// Any code >= CodeTypeRetry is considered retryable.
+	CodeTypeRetry uint32 = 32_000
 )
 
 // IsOK returns true if Code is OK.
@@ -151,7 +155,7 @@ func DeterministicExecTxResult(response *ExecTxResult) *ExecTxResult {
 	}
 }
 
-// MarshalTxResults encodes the the TxResults as a list of byte
+// MarshalTxResults encodes the TxResults as a list of byte
 // slices. It strips off the non-deterministic pieces of the TxResults
 // so that the resulting data can be used for hash comparisons and used
 // in Merkle proofs.

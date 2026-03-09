@@ -133,7 +133,7 @@ func TestBlockIndexer(t *testing.T) {
 	}
 
 	for name, tc := range testCases {
-		tc := tc
+
 		t.Run(name, func(t *testing.T) {
 			results, err := indexer.Search(context.Background(), tc.q)
 			require.NoError(t, err)
@@ -291,7 +291,7 @@ func TestBlockIndexerMulti(t *testing.T) {
 	}
 
 	for name, tc := range testCases {
-		tc := tc
+
 		t.Run(name, func(t *testing.T) {
 			results, err := indexer.Search(context.Background(), tc.q)
 			require.NoError(t, err)
@@ -426,7 +426,7 @@ func TestBigInt(t *testing.T) {
 		},
 	}
 	for name, tc := range testCases {
-		tc := tc
+
 		t.Run(name, func(t *testing.T) {
 			results, err := indexer.Search(context.Background(), tc.q)
 			require.NoError(t, err)

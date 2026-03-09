@@ -1,6 +1,6 @@
 # Use a build arg to ensure that both stages use the same,
 # hopefully current, go version.
-ARG GOLANG_BASE_IMAGE=golang:1.24-alpine3.22
+ARG GOLANG_BASE_IMAGE=golang:1.25-alpine3.22
 
 # stage 1 Generate CometBFT Binary
 FROM --platform=$BUILDPLATFORM $GOLANG_BASE_IMAGE AS builder
@@ -14,7 +14,6 @@ RUN TARGETPLATFORM=$TARGETPLATFORM make build-linux
 
 # stage 2
 FROM $GOLANG_BASE_IMAGE
-LABEL maintainer="hello@informal.systems"
 
 # CometBFT will be looking for the genesis file in /cometbft/config/genesis.json
 # (unless you change `genesis_file` in config.toml). You can put your config.toml and

@@ -67,7 +67,7 @@ func BenchmarkLoadValidators(b *testing.B) {
 	require.NoError(b, err)
 
 	for i := 10; i < 10000000000; i *= 10 { // 10, 100, 1000, ...
-		i := i
+
 		if err := sm.SaveValidatorsInfo(stateDB,
 			int64(i), state.LastHeightValidatorsChanged, state.NextValidators); err != nil {
 			b.Fatal(err)
@@ -115,7 +115,7 @@ func TestPruneStates(t *testing.T) {
 		"prune when evidence height < height": {20, 1, 18, 17, false, []int64{13, 17, 18, 19, 20}, []int64{15, 18, 19, 20}, []int64{18, 19, 20}},
 	}
 	for name, tc := range testcases {
-		tc := tc
+
 		t.Run(name, func(t *testing.T) {
 			db := dbm.NewMemDB()
 			stateStore := sm.NewStore(db, sm.StoreOptions{

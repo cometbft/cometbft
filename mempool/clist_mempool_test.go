@@ -46,13 +46,13 @@ func newMempoolWithAppAndConfigMock(
 	cfg *config.Config,
 	client abciclient.Client,
 ) (*CListMempool, cleanupFunc) {
-	appConnMem := client
-	appConnMem.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "mempool"))
-	err := appConnMem.Start()
+	client.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "mempool"))
+	err := client.Start()
 	if err != nil {
 		panic(err)
 	}
 
+	appConnMem := proxy.NewAppConnMempool(client, proxy.NopMetrics())
 	mp := NewCListMempool(cfg.Mempool, appConnMem, 0)
 	mp.SetLogger(log.TestingLogger())
 
@@ -67,13 +67,14 @@ func newMempoolWithApp(cc proxy.ClientCreator) (*CListMempool, cleanupFunc) {
 }
 
 func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CListMempool, cleanupFunc) {
-	appConnMem, _ := cc.NewABCIClient()
-	appConnMem.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "mempool"))
-	err := appConnMem.Start()
+	client, _ := cc.NewABCIClient()
+	client.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "mempool"))
+	err := client.Start()
 	if err != nil {
 		panic(err)
 	}
 
+	appConnMem := proxy.NewAppConnMempool(client, proxy.NopMetrics())
 	mp := NewCListMempool(cfg.Mempool, appConnMem, 0)
 	mp.SetLogger(log.TestingLogger())
 
@@ -382,7 +383,7 @@ func TestTxsAvailable(t *testing.T) {
 
 	timeoutMS := 500
 
-	// with no txs, it shouldnt fire
+	// with no txs, it shouldn't fire
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 
 	// send a bunch of txs, it should only fire once
@@ -400,12 +401,14 @@ func TestTxsAvailable(t *testing.T) {
 	ensureFire(t, mp.TxsAvailable(), timeoutMS)
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 
-	// send a bunch more txs. we already fired for this height so it shouldnt fire again
+	// send a bunch more txs. we already fired for this height so it shouldn't fire again
 	moreTxs := addRandomTxs(t, mp, 50, UnknownPeerID)
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 
 	// now call update with all the txs. it should not fire as there are no txs left
-	committedTxs = append(remainingTxs, moreTxs...)
+	remainingTxs = append(remainingTxs, moreTxs...)
+	committedTxs = remainingTxs
+
 	if err := mp.Update(2, committedTxs, abciResponses(len(committedTxs), abci.CodeTypeOK), nil, nil); err != nil {
 		t.Error(err)
 	}

@@ -68,7 +68,7 @@ func main() {
 	defer fa.Close()
 	fb, err := os.Open(flag.Arg(1))
 	if err != nil {
-		log.Fatalf("Open: %v", err)
+		log.Fatalf("Open: %v", err) //nolint:gocritic
 	}
 	defer fb.Close()
 	md, err := DiffFromReaders(fa, fb)

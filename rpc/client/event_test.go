@@ -28,7 +28,6 @@ func MakeTxKV() ([]byte, []byte, []byte) {
 
 func TestHeaderEvents(t *testing.T) {
 	for i, c := range GetClients() {
-		i, c := i, c
 		t.Run(reflect.TypeOf(c).String(), func(t *testing.T) {
 			// start for this test it if it wasn't already running
 			if !c.IsRunning() {
@@ -55,7 +54,7 @@ func TestHeaderEvents(t *testing.T) {
 // subscribe to new blocks and make sure height increments by 1
 func TestBlockEvents(t *testing.T) {
 	for _, c := range GetClients() {
-		c := c
+
 		t.Run(reflect.TypeOf(c).String(), func(t *testing.T) {
 			// start for this test it if it wasn't already running
 			if !c.IsRunning() {
@@ -102,7 +101,7 @@ func TestTxEventsSentWithBroadcastTxSync(t *testing.T)  { testTxEventsSent(t, "s
 
 func testTxEventsSent(t *testing.T, broadcastMethod string) {
 	for _, c := range GetClients() {
-		c := c
+
 		t.Run(reflect.TypeOf(c).String(), func(t *testing.T) {
 			// start for this test it if it wasn't already running
 			if !c.IsRunning() {

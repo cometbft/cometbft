@@ -44,15 +44,38 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "latest_block_height",
 			Help:      "The height of the latest block.",
 		}, labels).With(labelsAndValues...),
+		AlreadyIncludedBlocks: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "already_included_blocks",
+			Help:      "AlreadyIncludedBlocks blocks that were already included in the chain",
+		}, labels).With(labelsAndValues...),
+		IngestedBlocks: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "ingested_blocks",
+			Help:      "IngestedBlocks blocks that were ingested by the consensus",
+		}, labels).With(labelsAndValues...),
+		IngestedBlockDuration: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "ingested_block_duration",
+			Help:      "IngestedBlockDuration duration of ingesting a block",
+
+			Buckets: stdprometheus.ExponentialBucketsRange(0.1, 100, 8),
+		}, labels).With(labelsAndValues...),
 	}
 }
 
 func NopMetrics() *Metrics {
 	return &Metrics{
-		Syncing:           discard.NewGauge(),
-		NumTxs:            discard.NewGauge(),
-		TotalTxs:          discard.NewGauge(),
-		BlockSizeBytes:    discard.NewGauge(),
-		LatestBlockHeight: discard.NewGauge(),
+		Syncing:               discard.NewGauge(),
+		NumTxs:                discard.NewGauge(),
+		TotalTxs:              discard.NewGauge(),
+		BlockSizeBytes:        discard.NewGauge(),
+		LatestBlockHeight:     discard.NewGauge(),
+		AlreadyIncludedBlocks: discard.NewCounter(),
+		IngestedBlocks:        discard.NewCounter(),
+		IngestedBlockDuration: discard.NewHistogram(),
 	}
 }

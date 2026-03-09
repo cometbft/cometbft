@@ -340,8 +340,48 @@ enabled = {{ .P2P.LibP2PConfig.Enabled }}
 # Warning! This might consume all of the system's resources.
 disable_resource_manager = {{ .P2P.LibP2PConfig.DisableResourceManager }}
 
-# Path to address book .toml file
-address_book_file = "{{ .P2P.LibP2PConfig.AddressBook }}"
+# Bootstrap peers to connect to
+# format: { host, id, private (opt), persistent (opt), unconditional (opt) }
+{{- $bps := .P2P.LibP2PConfig.BootstrapPeers -}}
+{{- if eq (len $bps) 0 -}}
+bootstrap_peers = []
+{{ else }}
+bootstrap_peers = [{{ range $bps }}
+  {{ .ToTOMLInlineString }},
+{{- end }}
+]
+{{- end }}
+
+# Options for scaling concurrent p2p message queues.
+# Tune workers to keep the system near the ideal operating point:
+# enough concurrency for throughput while keeping processing latency low.
+[p2p.libp2p.scaler]
+
+# Min and max concurrent worker range.
+min_workers = {{ .P2P.LibP2PConfig.Scaler.MinWorkers }}
+max_workers = {{ .P2P.LibP2PConfig.Scaler.MaxWorkers }}
+
+# Target latency threshold:
+# scale up when observed latency is below this value, scale down when above it.
+threshold_latency = "{{ .P2P.LibP2PConfig.Scaler.ThresholdLatency }}"
+
+# Override a specific reactor (case-insensitive), for example:
+# [[p2p.libp2p.scaler.overrides]]
+# reactor = "BLOCKSYNC"
+# min_workers = 2
+# max_workers = 16
+# threshold_latency = "250ms"
+#
+# By default, MEMPOOL reactor is overridden to have increased throughput
+# If you want to disable this, explicitly set override to an empty list:
+# overrides = []
+{{- range .P2P.LibP2PConfig.Scaler.Overrides }}
+[[p2p.libp2p.scaler.overrides]]
+reactor = "{{ .Reactor }}"
+min_workers = {{ .MinWorkers }}
+max_workers = {{ .MaxWorkers }}
+threshold_latency = "{{ .ThresholdLatency }}"
+{{- end }}
 
 #######################################################
 ###          Mempool Configuration Option          ###
@@ -356,7 +396,8 @@ address_book_file = "{{ .P2P.LibP2PConfig.AddressBook }}"
 #  - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
 #  for storing, disseminating and proposing txs). "create_empty_blocks=false" is
 #  not supported.
-type = "flood"
+# - "app"    : app-side mempool (the ABCI app is responsible for mempool, comet only broadcasts txs).
+type = "{{ .Mempool.Type }}"
 
 # Recheck (default: true) defines whether CometBFT should recheck the
 # validity for all remaining transaction in the mempool after a block.
@@ -465,6 +506,9 @@ chunk_request_timeout = "{{ .StateSync.ChunkRequestTimeout }}"
 # The number of concurrent chunk fetchers to run (default: 1).
 chunk_fetchers = "{{ .StateSync.ChunkFetchers }}"
 
+# Maximum number of chunks allowed in a snapshot (default: 100000).
+max_snapshot_chunks = {{ .StateSync.MaxSnapshotChunks }}
+
 #######################################################
 ###       Block Sync Configuration Options          ###
 #######################################################
@@ -477,6 +521,11 @@ chunk_fetchers = "{{ .StateSync.ChunkFetchers }}"
 #
 #   1) "v0" - the default block sync implementation
 version = "{{ .BlockSync.Version }}"
+
+# Experimental Combined mode (bool):
+#
+# Run both BLOCKSYNC and CONSENSUS for improved liveness, connectivity, and performance.
+combined_mode = {{ .BlockSync.CombinedMode }}
 
 #######################################################
 ###         Consensus Configuration Options         ###

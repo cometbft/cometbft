@@ -266,15 +266,18 @@ func (s *Scanner) scanDatestamp() error {
 func (s *Scanner) scanWhile(ok func(rune) bool) error {
 	for {
 		ch, err := s.rune()
-		if err == io.EOF {
+
+		switch {
+		case err == io.EOF:
 			return nil
-		} else if err != nil {
+		case err != nil:
 			return s.fail(err)
-		} else if !ok(ch) {
+		case !ok(ch):
 			s.unrune()
 			return nil
+		default:
+			s.buf.WriteRune(ch)
 		}
-		s.buf.WriteRune(ch)
 	}
 }
 

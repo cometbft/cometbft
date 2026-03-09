@@ -17,7 +17,7 @@ func Test_genPrivKey(t *testing.T) {
 	copy(onePadded[32-len(oneB):32], oneB)
 	t.Logf("one padded: %v, len=%v", onePadded, len(onePadded))
 
-	validOne := append(empty, onePadded...)
+	validOne := bytes.Join([][]byte{empty, onePadded}, nil)
 	tests := []struct {
 		name        string
 		notSoRand   []byte
@@ -28,7 +28,7 @@ func Test_genPrivKey(t *testing.T) {
 		{"valid because 0 < 1 < N", validOne, false},
 	}
 	for _, tt := range tests {
-		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.shouldPanic {
 				require.Panics(t, func() {

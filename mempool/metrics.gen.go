@@ -70,6 +70,20 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "already_received_txs",
 			Help:      "Number of duplicate transaction reception.",
 		}, labels).With(labelsAndValues...),
+		BatchSize: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "batch_size",
+			Help:      "BatchSize size of an inbound/outbound batch of mempool txs (in txs num, not bytes)",
+
+			Buckets: []float64{1, 2, 5, 10, 30, 50, 100, 200, 300},
+		}, append(labels, "dir")).With(labelsAndValues...),
+		ReapedTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "reaped_txs",
+			Help:      "ReapedTxs is the number of transactions reaped from the mempool",
+		}, labels).With(labelsAndValues...),
 	}
 }
 
@@ -84,5 +98,7 @@ func NopMetrics() *Metrics {
 		RecheckTimes:              discard.NewCounter(),
 		ActiveOutboundConnections: discard.NewGauge(),
 		AlreadyReceivedTxs:        discard.NewCounter(),
+		BatchSize:                 discard.NewHistogram(),
+		ReapedTxs:                 discard.NewCounter(),
 	}
 }

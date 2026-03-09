@@ -506,9 +506,9 @@ PostgreSQL).
 [rfc-003]: ../rfc/tendermint-core/rfc-003-performance-questions.md
 [rfc-006]: ../rfc/tendermint-core/rfc-006-event-subscription.md
 [adr-075]: tendermint-core/adr-075-rpc-subscription.md
-[websocket-api]: https://docs.cometbft.com/v0.34/rpc/#/Websocket
-[`/tx_search`]: https://docs.cometbft.com/v0.34/rpc/#/Info/tx_search
-[`/block_search`]: https://docs.cometbft.com/v0.34/rpc/#/Info/block_search
-[`/broadcast_tx_commit`]: https://docs.cometbft.com/v0.34/rpc/#/Tx/broadcast_tx_commit
-[`/block_results`]: https://docs.cometbft.com/v0.34/rpc/#/Info/block_results
+[websocket-api]: https://docs.cometbft.com/v0.38/rpc/#/Websocket
+[`/tx_search`]: https://docs.cometbft.com/v0.38/rpc/#/Info/tx_search
+[`/block_search`]: https://docs.cometbft.com/v0.38/rpc/#/Info/block_search
+[`/broadcast_tx_commit`]: https://docs.cometbft.com/v0.38/rpc/#/Tx/broadcast_tx_commit
+[`/block_results`]: https://docs.cometbft.com/v0.38/rpc/#/Info/block_results
 [adr-101]: https://github.com/cometbft/tendermint/pull/82

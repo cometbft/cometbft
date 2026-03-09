@@ -26,7 +26,7 @@ func TestBcBlockRequestMessageValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
+
 		t.Run(tc.testName, func(t *testing.T) {
 			request := bcproto.BlockRequest{Height: tc.requestHeight}
 			assert.Equal(t, tc.expectErr, blocksync.ValidateMsg(&request) != nil, "Validate Basic had an unexpected result")
@@ -46,7 +46,7 @@ func TestBcNoBlockResponseMessageValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
+
 		t.Run(tc.testName, func(t *testing.T) {
 			nonResponse := bcproto.NoBlockResponse{Height: tc.nonResponseHeight}
 			assert.Equal(t, tc.expectErr, blocksync.ValidateMsg(&nonResponse) != nil, "Validate Basic had an unexpected result")
@@ -71,7 +71,7 @@ func TestBcStatusResponseMessageValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
+
 		t.Run(tc.testName, func(t *testing.T) {
 			response := bcproto.StatusResponse{Height: tc.responseHeight}
 			assert.Equal(t, tc.expectErr, blocksync.ValidateMsg(&response) != nil, "Validate Basic had an unexpected result")
@@ -134,7 +134,7 @@ func TestBlocksyncMessageVectors(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
+
 		t.Run(tc.testName, func(t *testing.T) {
 			bz, _ := proto.Marshal(tc.bmsg)
 

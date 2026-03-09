@@ -67,7 +67,7 @@ func TestSignerClose(t *testing.T) {
 
 func TestSignerPing(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
-		tc := tc
+
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -86,7 +86,7 @@ func TestSignerPing(t *testing.T) {
 
 func TestSignerGetPubKey(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
-		tc := tc
+
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -136,7 +136,6 @@ func TestSignerProposal(t *testing.T) {
 			Timestamp: ts,
 		}
 
-		tc := tc
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -180,7 +179,6 @@ func TestSignerVote(t *testing.T) {
 			ValidatorIndex:   1,
 		}
 
-		tc := tc
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -224,7 +222,6 @@ func TestSignerVoteResetDeadline(t *testing.T) {
 			ValidatorIndex:   1,
 		}
 
-		tc := tc
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -278,7 +275,6 @@ func TestSignerVoteKeepAlive(t *testing.T) {
 			ValidatorIndex:   1,
 		}
 
-		tc := tc
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -312,7 +308,6 @@ func TestSignerSignProposalErrors(t *testing.T) {
 		tc.signerServer.privVal = types.NewErroringMockPV()
 		tc.mockPV = types.NewErroringMockPV()
 
-		tc := tc
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -367,7 +362,6 @@ func TestSignerSignVoteErrors(t *testing.T) {
 		tc.signerServer.privVal = types.NewErroringMockPV()
 		tc.mockPV = types.NewErroringMockPV()
 
-		tc := tc
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -418,7 +412,6 @@ func TestSignerUnexpectedResponse(t *testing.T) {
 
 		tc.signerServer.SetRequestHandler(brokenHandler)
 
-		tc := tc
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)

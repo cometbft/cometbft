@@ -50,6 +50,7 @@ type Application struct {
 	cfg             *Config
 	restoreSnapshot *abci.Snapshot
 	restoreChunks   [][]byte
+	appMempool      *AppMempool
 }
 
 // Config allows for the setting of high level parameters for running the e2e Application
@@ -75,6 +76,9 @@ type Config struct {
 	// will persist state to disk. Defaults to 1 (every height), setting this to
 	// 0 disables state persistence.
 	PersistInterval uint64 `toml:"persist_interval"`
+
+	// AppSideMempool specifies whether to use the app-side mempool (mock)
+	AppSideMempool bool `toml:"app_side_mempool"`
 
 	// ValidatorUpdates is a map of heights to validator names and their power,
 	// and will be returned by the ABCI application. For example, the following
@@ -133,11 +137,15 @@ func NewApplication(cfg *Config) (*Application, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+
 	return &Application{
-		logger:    log.NewTMLogger(log.NewSyncWriter(os.Stdout)),
-		state:     state,
-		snapshots: snapshots,
-		cfg:       cfg,
+		logger:     logger,
+		state:      state,
+		snapshots:  snapshots,
+		cfg:        cfg,
+		appMempool: NewAppMempool(logger),
 	}, nil
 }
 
@@ -188,7 +196,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 	// Get validators from genesis
 	if req.Validators != nil {
 		for _, val := range req.Validators {
-			val := val
+
 			if err := app.storeValidator(&val); err != nil {
 				return nil, err
 			}
@@ -221,7 +229,37 @@ func (app *Application) CheckTx(_ context.Context, req *abci.RequestCheckTx) (*a
 		time.Sleep(app.cfg.CheckTxDelay)
 	}
 
+	app.appMempool.InsertTx(req.Tx)
+
 	return &abci.ResponseCheckTx{Code: kvstore.CodeTypeOK, GasWanted: 1}, nil
+}
+
+func (app *Application) InsertTx(ctx context.Context, req *abci.RequestInsertTx) (*abci.ResponseInsertTx, error) {
+	if !app.cfg.AppSideMempool {
+		return nil, errors.New("app-side mempool is not enabled")
+	}
+
+	// same as CheckTx
+	key, _, err := parseTx(req.Tx)
+	if err != nil || key == prefixReservedKey {
+		return &abci.ResponseInsertTx{
+			Code: kvstore.CodeTypeEncodingError,
+		}, nil
+	}
+
+	app.appMempool.InsertTx(req.Tx)
+
+	return &abci.ResponseInsertTx{Code: kvstore.CodeTypeOK}, nil
+}
+
+func (app *Application) ReapTxs(ctx context.Context, req *abci.RequestReapTxs) (*abci.ResponseReapTxs, error) {
+	if !app.cfg.AppSideMempool {
+		return nil, errors.New("app-side mempool is not enabled")
+	}
+
+	txs := app.appMempool.ReapTxs(false)
+
+	return &abci.ResponseReapTxs{Txs: txs.ToSliceOfBytes()}, nil
 }
 
 // FinalizeBlock implements ABCI.
@@ -390,9 +428,16 @@ func (app *Application) ApplySnapshotChunk(_ context.Context, req *abci.RequestA
 //
 // The special vote extension-generated transaction must fit within an empty block
 // and takes precedence over all other transactions coming from the mempool.
+//
+// It also simulates app-side mempool block-building behavior by reaping transactions from the mempool (if enabled)
 func (app *Application) PrepareProposal(
 	_ context.Context, req *abci.RequestPrepareProposal,
 ) (*abci.ResponsePrepareProposal, error) {
+	// simulate app-side mempool block-building behavior
+	if app.cfg.AppSideMempool {
+		req.Txs = app.appMempool.ReapTxs(true).ToSliceOfBytes()
+	}
+
 	_, areExtensionsEnabled := app.checkHeightAndExtensions(true, req.Height, "PrepareProposal")
 
 	txs := make([][]byte, 0, len(req.Txs)+1)
@@ -713,7 +758,7 @@ func (app *Application) verifyAndSum(
 			return 0, fmt.Errorf("error when marshaling signed bytes: %w", err)
 		}
 
-		//... and verify
+		// ... and verify
 		valAddr := crypto.Address(vote.Validator.Address).String()
 		pubKeyHex := app.state.Get(prefixReservedKey + valAddr)
 		if len(pubKeyHex) == 0 {

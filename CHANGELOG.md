@@ -6,11 +6,24 @@
 
 ### BUG FIXES
 
+- `[evidence]` Add validation for Light Client Attack evidence ByzantineValidators
+  ([\#5638](https://github.com/cometbft/cometbft/pull/5638))
+- `[types]` Fix buffer offset bug in `ProposerPriorityHash` that caused hash collisions when validator priorities differed
+  ([\#5613](https://github.com/cometbft/cometbft/pull/5613))
 - `[p2p]` fix(privval): Ephemeral Port Exhaustion
   ([\#5433](https://github.com/cometbft/cometbft/pull/5433))
+- `[blocksync]` fix(blocksync): `ExtendedCommit` verification via next blocks `LastCommit`
+  ([\#5629](https://github.com/cometbft/cometbft/pull/5629))
+- [p2p] fix(lp2p): enforce stream max size ([\#5647](https://github.com/cometbft/cometbft/pull/5647))
+- `[metrics]` fix(metrics)!: peer_send_queue_size
+  ([\#5648](https://github.com/cometbft/cometbft/pull/5648))
+- `[statesync]` fix combined_mode and streamline stateSync logic
+  ([\#5663](https://github.com/cometbft/cometbft/pull/5663))
 
 ### IMPROVEMENTS
 
+- `[ci]`: add lp2p testnet ([\#5643](https://github.com/cometbft/cometbft/pull/5643))
+- `[mempool]` feat!(mempool): introduce app-mempool & follower-mode. Improve lib-p2p integraap access
 - `[types]` Add validation for `AuthorityParams.Authority` field in consensus params, enforcing a maximum length of 256 characters ([#5511](https://github.com/cometbft/cometbft/pull/5511))
 - `[mempool]` perf(mempool/cache): Optimize LRUTxCache.Remove to reduce lock contention and map access
    ([\#5244](https://github.com/cometbft/cometbft/pull/5244))
@@ -18,9 +31,19 @@
   ([\#3513](https://github.com/cometbft/cometbft/pull/3513))
 - `[crypto]` Reduce BLS signature size to 48 bytes by increasing pubkey size to
   192 bytes ([\#3624](https://github.com/cometbft/cometbft/issues/3624)
+- `[statesync]` Add configurable `max-snapshot-chunks` parameter to validate max amount of chunks in a `SnapshotResponse`.
+  ([\#5549](https://github.com/cometbft/cometbft/pull/5549))
+- `[p2p]` feat(lp2p): make reactor queue configurable
+  ([\#5662](https://github.com/cometbft/cometbft/pull/5662))
+- `[cli]` print lib-p2p peer id
+  ([\#5667](https://github.com/cometbft/cometbft/pull/5667))
 
 ### FEATURES
 
+- `[p2p]` feat(consensus): add combined blocksync-to-consensus ingestion ([\#5633](https://github.com/cometbft/cometbft/pull/5633))
+- `[p2p]` feat(lp2p): implement Peer info methods (`NodeInfo`, `RemoteIP`, `RemoteAddr`, `IsOutbound`)
+  for `/net_info` RPC compatibility with libp2p transport ([\#5619](https://github.com/cometbft/cometbft/pull/5619))
+- `[p2p]` feat(lp2p): stop/reconnect peers that failed ([\#5618](https://github.com/cometbft/cometbft/pull/5618))
 - `[p2p]` Add experimental support for lib-p2p networking ([\#5463](https://github.com/cometbft/cometbft/pull/5463))
 - `[crypto]` Add support for BLS12-381 keys. Since the implementation needs
   `cgo` and brings in new dependencies, we use the `bls12381` build flag to
@@ -64,7 +87,7 @@
   ([\#2988](https://github.com/cometbft/cometbft/issues/2988))
 - `[types]` Significantly speedup types.MakePartSet and types.AddPart, which are used in creating a block proposal
   ([\#3117](https://github.com/cometbft/cometbft/issues/3117))
-- `[types] Make a new method `GetByAddressMut` for `ValSet`, which does not copy the returned validator.
+- `[types] Make a new method`GetByAddressMut` for `ValSet`, which does not copy the returned validator.
   ([\#3119](https://github.com/cometbft/cometbft/issues/3119))
 - `[consensus]` Make Vote messages only take one peerstate mutex
   ([\#3156](https://github.com/cometbft/cometbft/issues/3156))
@@ -83,6 +106,8 @@
 - `[consensus]` Make mempool updates asynchronous from consensus Commit's,
   reducing latency for reaching consensus timeouts.
   ([#3008](https://github.com/cometbft/cometbft/pull/3008))
+- [consensus] Add peer height metric publication to the consensus reactor's peer state.
+  ([#5517](https://github.com/cometbft/cometbft/pull/5517))
 
 ### BUG-FIXES
 
@@ -100,6 +125,8 @@
   ([\#4783](https://github.com/cometbft/cometbft/issues/4783))
 - `[bits]` Validate BitArray mismatched Bits and Elems length
   ([ASA-2025-003](https://github.com/cometbft/cometbft/security/advisories/GHSA-hrhf-2vcr-ghch))
+- `[cli]` Prevent inadvertent rollover of IPs in `cometbft testnet` config generator
+  ([\#5541](https://github.com/cometbft/cometbft/pull/5541))
 
 ### STATE-BREAKING
 
@@ -149,6 +176,7 @@ encouraged to upgrade as soon as possible.
 *December 20 2024*
 
 This release:
+
 - fixes a bug that caused a node produce errors caused by the sending of next PEX requests too soon.
 As a consequence of this incorrect behavior a node would be marked as BAD.
 - Adds a proper description of `ExtendedVoteInfo` and `VoteInfo` in the spec.
@@ -605,7 +633,7 @@ gossip.
 This release includes the second part of ABCI++, called ABCI 2.0.
 ABCI 2.0 introduces ABCI methods `ExtendVote` and `VerifyVoteExtension`.
 These new methods allow the application to add data (opaque to CometBFT),
-called _vote extensions_ to precommit votes sent by validators.
+called *vote extensions* to precommit votes sent by validators.
 These vote extensions are made available to the proposer(s) of the next height.
 Additionally, ABCI 2.0 coalesces `BeginBlock`, `DeliverTx`, and `EndBlock`
 into one method, `FinalizeBlock`, whose `Request*` and `Response*`
@@ -689,7 +717,7 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
 - `[light]` Fixed an edge case where a light client would panic when attempting
   to query a node that (1) has started from a non-zero height and (2) does
   not yet have any data. The light client will now, correctly, not panic
-  _and_ keep the node in its list of providers in the same way it would if
+  *and* keep the node in its list of providers in the same way it would if
   it queried a node starting from height zero that does not yet have data
   ([\#575](https://github.com/cometbft/cometbft/issues/575))
 - `[abci]` Restore the snake_case naming in JSON serialization of
@@ -854,7 +882,7 @@ See below for more details.
   [\#77](https://github.com/cometbft/cometbft/pull/77). @jmalicevic
   ([\#382](https://github.com/cometbft/cometbft/pull/382))
 - `[consensus]` ([\#386](https://github.com/cometbft/cometbft/pull/386)) Short-term fix for the case when `needProofBlock` cannot find previous block meta by defaulting to the creation of a new proof block. (@adizere)
-  - Special thanks to the [Vega.xyz](https://vega.xyz/) team, and in particular to Zohar (@ze97286), for reporting the problem and working with us to get to a fix.
+    - Special thanks to the [Vega.xyz](https://vega.xyz/) team, and in particular to Zohar (@ze97286), for reporting the problem and working with us to get to a fix.
 - `[docker]` enable cross platform build using docker buildx
   ([\#9073](https://github.com/tendermint/tendermint/pull/9073))
 - `[consensus]` fix round number of `enterPropose`
@@ -943,7 +971,7 @@ to this release!
 - `[consensus]` Short-term fix for the case when `needProofBlock` cannot find
   previous block meta by defaulting to the creation of a new proof block.
   ([\#386](https://github.com/cometbft/cometbft/pull/386): @adizere)
-  - Special thanks to the [Vega.xyz](https://vega.xyz/) team, and in particular
+    - Special thanks to the [Vega.xyz](https://vega.xyz/) team, and in particular
     to Zohar (@ze97286), for reporting the problem and working with us to get to
     a fix.
 - `[p2p]` Correctly use non-blocking `TrySendEnvelope` method when attempting to
@@ -966,7 +994,7 @@ to this release!
 ### FEATURES
 
 - `[rpc]` Add `match_event` query parameter to indicate to the RPC that it
-  should match events _within_ attributes, not only within a height
+  should match events *within* attributes, not only within a height
   ([tendermint/tendermint\#9759](https://github.com/tendermint/tendermint/pull/9759))
 
 ### IMPROVEMENTS

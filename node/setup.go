@@ -98,10 +98,6 @@ func DefaultMetricsProvider(config *cfg.InstrumentationConfig) MetricsProvider {
 	}
 }
 
-type blockSyncReactor interface {
-	SwitchToBlockSync(sm.State) error
-}
-
 //------------------------------------------------------------------------------
 
 func initDBs(config *cfg.Config, dbProvider cfg.DBProvider) (blockStore *store.BlockStore, stateDB dbm.DB, err error) {
@@ -229,14 +225,15 @@ func createMempoolAndMempoolReactor(
 	config *cfg.Config,
 	proxyApp proxy.AppConns,
 	state sm.State,
-	waitSync bool,
+	waitForSync bool,
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
 ) (mempl.Mempool, waitSyncReactor) {
+	logger = logger.With("module", "mempool")
+
 	switch config.Mempool.Type {
 	// allow empty string for backward compatibility
 	case cfg.MempoolTypeFlood, "":
-		logger = logger.With("module", "mempool")
 		mp := mempl.NewCListMempool(
 			config.Mempool,
 			proxyApp.Mempool(),
@@ -249,7 +246,7 @@ func createMempoolAndMempoolReactor(
 		reactor := mempl.NewReactor(
 			config.Mempool,
 			mp,
-			waitSync,
+			waitForSync,
 		)
 		if config.Consensus.WaitForTxs() {
 			mp.EnableTxsAvailable()
@@ -261,6 +258,17 @@ func createMempoolAndMempoolReactor(
 		// Strictly speaking, there's no need to have a `mempl.NopMempoolReactor`, but
 		// adding it leads to a cleaner code.
 		return &mempl.NopMempool{}, mempl.NewNopMempoolReactor()
+	case cfg.MempoolTypeApp:
+		mp := mempl.NewAppMempool(
+			config.Mempool,
+			proxyApp.Mempool(),
+			mempl.WithAMLogger(logger),
+			mempl.WithAMMetrics(memplMetrics),
+		)
+		reactor := mempl.NewAppReactor(config.Mempool, mp, waitForSync)
+		reactor.SetLogger(logger)
+
+		return mp, reactor
 	default:
 		panic(fmt.Sprintf("unknown mempool type: %q", config.Mempool.Type))
 	}
@@ -283,30 +291,40 @@ func createEvidenceReactor(config *cfg.Config, dbProvider cfg.DBProvider,
 	return evidenceReactor, evidencePool, nil
 }
 
-func createBlocksyncReactor(config *cfg.Config,
+func createBlocksyncReactor(
+	enabled bool,
+	config *cfg.Config,
 	state sm.State,
 	blockExec *sm.BlockExecutor,
 	blockStore *store.BlockStore,
-	blockSync bool,
 	localAddr crypto.Address,
+	offlineStateSyncHeight int64,
 	logger log.Logger,
 	metrics *blocksync.Metrics,
-	offlineStateSyncHeight int64,
-) (bcReactor p2p.Reactor, err error) {
-	switch config.BlockSync.Version {
-	case "v0":
-		bcReactor = blocksync.NewReactorWithAddr(state.Copy(), blockExec, blockStore, blockSync, localAddr, metrics, offlineStateSyncHeight)
-	case "v1", "v2":
-		return nil, fmt.Errorf("block sync version %s has been deprecated. Please use v0", config.BlockSync.Version)
-	default:
-		return nil, fmt.Errorf("unknown block sync version %s", config.BlockSync.Version)
+) (p2p.Reactor, error) {
+	version := config.BlockSync.Version
+	if version != "v0" {
+		return nil, fmt.Errorf("invalid blocksync version %q. v1, v2 are deprecated. Use v0", version)
 	}
 
+	bcReactor := blocksync.NewReactor(
+		enabled,
+		config.BlockSync.CombinedMode,
+		state.Copy(),
+		blockExec,
+		blockStore,
+		localAddr,
+		offlineStateSyncHeight,
+		metrics,
+	)
+
 	bcReactor.SetLogger(logger.With("module", "blocksync"))
+
 	return bcReactor, nil
 }
 
-func createConsensusReactor(config *cfg.Config,
+func createConsensusReactor(
+	config *cfg.Config,
 	state sm.State,
 	blockExec *sm.BlockExecutor,
 	blockStore sm.BlockStore,
@@ -314,9 +332,9 @@ func createConsensusReactor(config *cfg.Config,
 	evidencePool *evidence.Pool,
 	privValidator types.PrivValidator,
 	csMetrics *cs.Metrics,
-	waitSync bool,
+	waitForSync bool,
 	eventBus *types.EventBus,
-	consensusLogger log.Logger,
+	logger log.Logger,
 	offlineStateSyncHeight int64,
 ) (*cs.Reactor, *cs.State) {
 	consensusState := cs.NewState(
@@ -329,15 +347,17 @@ func createConsensusReactor(config *cfg.Config,
 		cs.StateMetrics(csMetrics),
 		cs.OfflineStateSyncHeight(offlineStateSyncHeight),
 	)
-	consensusState.SetLogger(consensusLogger)
+	consensusState.SetLogger(logger)
 	if privValidator != nil {
 		consensusState.SetPrivValidator(privValidator)
 	}
-	consensusReactor := cs.NewReactor(consensusState, waitSync, cs.ReactorMetrics(csMetrics))
-	consensusReactor.SetLogger(consensusLogger)
+
+	consensusReactor := cs.NewReactor(consensusState, waitForSync, cs.ReactorMetrics(csMetrics))
+	consensusReactor.SetLogger(logger)
 	// services which will be publishing and/or subscribing for messages (events)
 	// consensusReactor will set it on consensusState and blockExecutor
 	consensusReactor.SetEventBus(eventBus)
+
 	return consensusReactor, consensusState
 }
 
@@ -537,57 +557,97 @@ func createPEXReactorAndAddToSwitch(
 }
 
 // startStateSync starts an asynchronous state sync process, then switches to block sync mode.
-func startStateSync(
-	ssR *statesync.Reactor,
-	bcR blockSyncReactor,
-	stateProvider statesync.StateProvider,
-	config *cfg.StateSyncConfig,
-	stateStore sm.Store,
-	blockStore *store.BlockStore,
-	state sm.State,
-) error {
-	ssR.Logger.Info("Starting state sync")
+func (n *Node) performStateSync() error {
+	type blocksyncEnabler interface {
+		Enable(sm.State) error
+	}
 
-	if stateProvider == nil {
-		var err error
+	type mempoolEnabler interface {
+		EnableInOutTxs()
+	}
+
+	var (
+		state  = n.stateSyncGenesis
+		config = n.config.StateSync
+		logger = n.stateSyncReactor.Logger
+
+		mempoolReactor   mempoolEnabler
+		blockSyncReactor blocksyncEnabler
+	)
+
+	logger.Info("Starting state sync")
+
+	// validate all reactors
+	blockSyncReactor, ok := n.bcReactor.(blocksyncEnabler)
+	if !ok {
+		return fmt.Errorf("invalid block sync reactor")
+	}
+
+	if n.mempoolReactor != nil {
+		mempoolReactor, ok = n.mempoolReactor.(mempoolEnabler)
+		if !ok {
+			return fmt.Errorf("invalid mempool reactor")
+		}
+	}
+
+	if n.stateSyncProvider == nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		stateProvider, err = statesync.NewLightClientStateProvider(
+
+		var err error
+		n.stateSyncProvider, err = statesync.NewLightClientStateProvider(
 			ctx,
-			state.ChainID, state.Version, state.InitialHeight,
-			config.RPCServers, light.TrustOptions{
+			state.ChainID,
+			state.Version,
+			state.InitialHeight,
+			config.RPCServers,
+			light.TrustOptions{
 				Period: config.TrustPeriod,
 				Height: config.TrustHeight,
 				Hash:   config.TrustHashBytes(),
-			}, ssR.Logger.With("module", "light"))
+			},
+			logger.With("module", "light"),
+		)
+
 		if err != nil {
 			return fmt.Errorf("failed to set up light client state provider: %w", err)
 		}
 	}
 
 	go func() {
-		state, commit, err := ssR.Sync(stateProvider, config.DiscoveryTime)
+		state, commit, err := n.stateSyncReactor.Sync(n.stateSyncProvider, config.DiscoveryTime)
 		if err != nil {
-			ssR.Logger.Error("State sync failed", "err", err)
-			return
-		}
-		err = stateStore.Bootstrap(state)
-		if err != nil {
-			ssR.Logger.Error("Failed to bootstrap node with new state", "err", err)
-			return
-		}
-		err = blockStore.SaveSeenCommit(state.LastBlockHeight, commit)
-		if err != nil {
-			ssR.Logger.Error("Failed to store last seen commit", "err", err)
+			logger.Error("State sync failed", "err", err)
 			return
 		}
 
-		err = bcR.SwitchToBlockSync(state)
+		err = n.stateStore.Bootstrap(state)
 		if err != nil {
-			ssR.Logger.Error("Failed to switch to block sync", "err", err)
+			logger.Error("Failed to bootstrap node with new state", "err", err)
+			return
+		}
+
+		err = n.blockStore.SaveSeenCommit(state.LastBlockHeight, commit)
+		if err != nil {
+			logger.Error("Failed to store last seen commit", "err", err)
+			return
+		}
+
+		// Combined mode ingests blocks through consensus internals, so consensus
+		// must be switched out of wait-sync mode before blocksync is enabled.
+		if n.config.BlockSync.CombinedMode {
+			n.consensusReactor.SwitchToConsensus(state, true)
+			if mempoolReactor != nil {
+				mempoolReactor.EnableInOutTxs()
+			}
+		}
+
+		if err := blockSyncReactor.Enable(state); err != nil {
+			logger.Error("Failed to switch to block sync", "err", err)
 			return
 		}
 	}()
+
 	return nil
 }
 

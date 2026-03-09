@@ -24,7 +24,7 @@ jobs:
         goos: ["linux"]
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - id: filter
         uses: dorny/paths-filter@v3

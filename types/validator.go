@@ -85,7 +85,7 @@ func (v *Validator) CompareProposerPriority(other *Validator) *Validator {
 	}
 }
 
-// String returns a string representation of String.
+// String returns a string representation of Validator.
 //
 // 1. address
 // 2. public key

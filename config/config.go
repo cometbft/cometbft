@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	cmterrors "github.com/cometbft/cometbft/types/errors"
@@ -39,12 +40,12 @@ const (
 	DefaultPrivValKeyName   = "priv_validator_key.json"
 	DefaultPrivValStateName = "priv_validator_state.json"
 
-	DefaultNodeKeyName           = "node_key.json"
-	DefaultAddrBookName          = "addrbook.json"
-	DefaultLibP2PAddressBookName = "addressbook.toml"
+	DefaultNodeKeyName  = "node_key.json"
+	DefaultAddrBookName = "addrbook.json"
 
 	MempoolTypeFlood = "flood"
 	MempoolTypeNop   = "nop"
+	MempoolTypeApp   = "app"
 
 	v0 = "v0"
 	v1 = "v1"
@@ -65,8 +66,6 @@ var (
 
 	defaultNodeKeyPath  = filepath.Join(DefaultConfigDir, DefaultNodeKeyName)
 	defaultAddrBookPath = filepath.Join(DefaultConfigDir, DefaultAddrBookName)
-
-	defaultLibP2PAddressBookPath = filepath.Join(DefaultConfigDir, DefaultLibP2PAddressBookName)
 
 	minSubscriptionBufferSize     = 100
 	defaultSubscriptionBufferSize = 200
@@ -177,7 +176,7 @@ func (cfg *Config) CheckDeprecated() []string {
 // BaseConfig
 
 // BaseConfig defines the base configuration for a CometBFT node
-type BaseConfig struct { //nolint: maligned
+type BaseConfig struct {
 
 	// The version of the CometBFT binary that created
 	// or last modified the config file
@@ -540,7 +539,7 @@ func (cfg RPCConfig) IsTLSEnabled() bool {
 // P2PConfig
 
 // P2PConfig defines the configuration options for the CometBFT peer-to-peer networking layer
-type P2PConfig struct { //nolint: maligned
+type P2PConfig struct {
 	RootDir string `mapstructure:"home"`
 
 	// Address to listen for incoming connections
@@ -591,7 +590,7 @@ type P2PConfig struct { //nolint: maligned
 	PexReactor bool `mapstructure:"pex"`
 
 	// LibP2PConfig (experimental) configuration for go-libp2p
-	LibP2PConfig *LibP2PConfig `mapstructure:"libp2p"`
+	LibP2PConfig LibP2PConfig `mapstructure:"libp2p"`
 
 	// Seed mode, in which node constantly crawls the network and looks for
 	// peers. If another node asks it for addresses, it responds and disconnects.
@@ -626,8 +625,59 @@ type LibP2PConfig struct {
 	// DisableResourceManager set true to disable the resource manager
 	DisableResourceManager bool `mapstructure:"disable_resource_manager"`
 
-	// AddressBook path to the address book file (.toml format)
-	AddressBook string `mapstructure:"address_book_file"`
+	// BootstrapPeers list of peers to bootstrap the libp2p host
+	BootstrapPeers []LibP2PBootstrapPeer `mapstructure:"bootstrap_peers"`
+
+	// Scaler optional configuration for reactor queue auto scaling
+	Scaler LibP2PScaler `mapstructure:"scaler"`
+}
+
+// LibP2PBootstrapPeer is a bootstrap peer for this node
+type LibP2PBootstrapPeer struct {
+	// ip:port example: "192.0.2.0:65432"
+	Host string `mapstructure:"host"`
+	// id example: "12D3KooWJx9i35Vx1h6T6nVqQz4YW1r2J1Y2P2nY3N4N5N6N7N8N9N0"
+	ID string `mapstructure:"id"`
+
+	Private       bool `mapstructure:"private"`
+	Persistent    bool `mapstructure:"persistent"`
+	Unconditional bool `mapstructure:"unconditional"`
+}
+
+// ToTOMLInlineString returns a TOML-formatted string representation of the peer
+func (p *LibP2PBootstrapPeer) ToTOMLInlineString() string {
+	parts := make([]string, 0, 5)
+
+	parts = append(parts, `host = "`+p.Host+`"`)
+	parts = append(parts, `id = "`+p.ID+`"`)
+
+	if p.Private {
+		parts = append(parts, "private = true")
+	}
+	if p.Persistent {
+		parts = append(parts, "persistent = true")
+	}
+	if p.Unconditional {
+		parts = append(parts, "unconditional = true")
+	}
+
+	return "{ " + strings.Join(parts, ", ") + " }"
+}
+
+// LibP2PScaler is global scaler configuration for all reactors
+type LibP2PScaler struct {
+	MinWorkers       int                    `mapstructure:"min_workers"`
+	MaxWorkers       int                    `mapstructure:"max_workers"`
+	ThresholdLatency time.Duration          `mapstructure:"threshold_latency"`
+	Overrides        []LibP2PScalerOverride `mapstructure:"overrides"`
+}
+
+// LibP2PScalerOverride is a scaler override for a specific reactor
+type LibP2PScalerOverride struct {
+	Reactor          string        `mapstructure:"reactor"`
+	MinWorkers       int           `mapstructure:"min_workers"`
+	MaxWorkers       int           `mapstructure:"max_workers"`
+	ThresholdLatency time.Duration `mapstructure:"threshold_latency"`
 }
 
 // DefaultP2PConfig returns a default configuration for the peer-to-peer layer
@@ -693,26 +743,93 @@ func (cfg *P2PConfig) ValidateBasic() error {
 	if cfg.RecvRate < 0 {
 		return cmterrors.ErrNegativeField{Field: "recv_rate"}
 	}
+	if cfg.LibP2PEnabled() {
+		return cfg.LibP2PConfig.ValidateBasic()
+	}
+
 	return nil
 }
 
 func (cfg *P2PConfig) LibP2PEnabled() bool {
-	return cfg.LibP2PConfig != nil && cfg.LibP2PConfig.Enabled
+	return cfg.LibP2PConfig.Enabled
 }
 
-func (cfg *P2PConfig) LibP2PAddressBookFile() string {
-	if cfg.LibP2PConfig == nil {
-		return ""
+func DefaultLibP2PConfig() LibP2PConfig {
+	return LibP2PConfig{
+		Enabled:                false,
+		DisableResourceManager: false,
+		BootstrapPeers:         []LibP2PBootstrapPeer{},
+		Scaler:                 DefaultLibP2PScaler(),
 	}
-
-	return rootify(cfg.LibP2PConfig.AddressBook, cfg.RootDir)
 }
 
-func DefaultLibP2PConfig() *LibP2PConfig {
-	return &LibP2PConfig{
-		Enabled:     false,
-		AddressBook: defaultLibP2PAddressBookPath,
+func DefaultLibP2PScaler() LibP2PScaler {
+	return LibP2PScaler{
+		MinWorkers:       4,
+		MaxWorkers:       32,
+		ThresholdLatency: 100 * time.Millisecond,
+		Overrides: []LibP2PScalerOverride{
+			{
+				Reactor:          "MEMPOOL",
+				MinWorkers:       8,
+				MaxWorkers:       512,
+				ThresholdLatency: 500 * time.Millisecond,
+			},
+		},
 	}
+}
+
+func (cfg *LibP2PConfig) ValidateBasic() error {
+	key := func(msg string, args ...any) string {
+		return fmt.Sprintf("p2p.libp2p.%s", fmt.Sprintf(msg, args...))
+	}
+
+	// 1. validate bootstrap peers
+	for i, bp := range cfg.BootstrapPeers {
+		if bp.Host == "" {
+			return cmterrors.ErrRequiredField{Field: key("bootstrap_peers.%d.host", i)}
+		}
+		if bp.ID == "" {
+			return cmterrors.ErrRequiredField{Field: key("bootstrap_peers.%d.id", i)}
+		}
+	}
+
+	// 2. validate scaler
+	s := cfg.Scaler
+	switch {
+	case s.MinWorkers < 0:
+		return cmterrors.ErrNegativeField{Field: key("scaler.min_workers")}
+	case s.MaxWorkers < 0:
+		return cmterrors.ErrNegativeField{Field: key("scaler.max_workers")}
+	case s.MinWorkers > s.MaxWorkers:
+		return cmterrors.ErrInvalidField{
+			Field:  key("scaler.min_workers"),
+			Reason: "must be less than max_workers",
+		}
+	case s.ThresholdLatency < 0:
+		return cmterrors.ErrNegativeField{Field: key("scaler.threshold_latency")}
+	case len(s.Overrides) > 0:
+		// 3. validate scaler overrides
+		for i, item := range s.Overrides {
+			switch {
+			case item.Reactor == "":
+				return cmterrors.ErrRequiredField{Field: key("scaler.overrides.%d.reactor", i)}
+			case item.MinWorkers < 0:
+				return cmterrors.ErrNegativeField{Field: key("scaler.overrides.%d.min_workers", i)}
+			case item.MaxWorkers < 0:
+				return cmterrors.ErrNegativeField{Field: key("scaler.overrides.%d.max_workers", i)}
+			case item.MinWorkers > item.MaxWorkers:
+				return cmterrors.ErrInvalidField{
+					Field:  key("scaler.overrides.%d.min_workers", i),
+					Reason: "must be less than max_workers",
+				}
+			case item.ThresholdLatency < 0:
+				return cmterrors.ErrNegativeField{Field: key("scaler.overrides.%d.threshold_latency", i)}
+			}
+		}
+	}
+
+	return nil
 }
 
 // FuzzConnConfig is a FuzzedConnection configuration.
@@ -753,6 +870,7 @@ type MempoolConfig struct {
 	//  - "nop"   : nop-mempool (short for no operation; the ABCI app is
 	//  responsible for storing, disseminating and proposing txs).
 	//  "create_empty_blocks=false" is not supported.
+	//  - "app"   : app-side mempool (the ABCI app is responsible for mempool, comet only broadcasts txs).
 	Type string `mapstructure:"type"`
 	// RootDir is the root directory for all data. This should be configured via
 	// the $CMTHOME env variable or --home cmd flag rather than overriding this
@@ -860,7 +978,7 @@ func (cfg *MempoolConfig) WalEnabled() bool {
 // returns an error if any check fails.
 func (cfg *MempoolConfig) ValidateBasic() error {
 	switch cfg.Type {
-	case MempoolTypeFlood, MempoolTypeNop:
+	case MempoolTypeFlood, MempoolTypeApp, MempoolTypeNop:
 	case "": // allow empty string to be backwards compatible
 	default:
 		return fmt.Errorf("unknown mempool type: %q", cfg.Type)
@@ -900,6 +1018,7 @@ type StateSyncConfig struct {
 	DiscoveryTime       time.Duration `mapstructure:"discovery_time"`
 	ChunkRequestTimeout time.Duration `mapstructure:"chunk_request_timeout"`
 	ChunkFetchers       int32         `mapstructure:"chunk_fetchers"`
+	MaxSnapshotChunks   uint32        `mapstructure:"max_snapshot_chunks"`
 }
 
 func (cfg *StateSyncConfig) TrustHashBytes() []byte {
@@ -918,6 +1037,7 @@ func DefaultStateSyncConfig() *StateSyncConfig {
 		DiscoveryTime:       15 * time.Second,
 		ChunkRequestTimeout: 10 * time.Second,
 		ChunkFetchers:       4,
+		MaxSnapshotChunks:   100000,
 	}
 }
 
@@ -971,6 +1091,10 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 		if cfg.ChunkFetchers <= 0 {
 			return cmterrors.ErrRequiredField{Field: "chunk_fetchers"}
 		}
+
+		if cfg.MaxSnapshotChunks == 0 {
+			return cmterrors.ErrRequiredField{Field: "max_snapshot_chunks"}
+		}
 	}
 
 	return nil
@@ -979,15 +1103,17 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 //-----------------------------------------------------------------------------
 // BlockSyncConfig
 
-// BlockSyncConfig (formerly known as FastSync) defines the configuration for the CometBFT block sync service
+// BlockSyncConfig defines the configuration for the CometBFT block sync service
 type BlockSyncConfig struct {
-	Version string `mapstructure:"version"`
+	Version      string `mapstructure:"version"`
+	CombinedMode bool   `mapstructure:"combined_mode"`
 }
 
 // DefaultBlockSyncConfig returns a default configuration for the block sync service
 func DefaultBlockSyncConfig() *BlockSyncConfig {
 	return &BlockSyncConfig{
-		Version: "v0",
+		Version:      "v0",
+		CombinedMode: false,
 	}
 }
 

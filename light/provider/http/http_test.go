@@ -49,7 +49,6 @@ func TestProvider(t *testing.T) {
 	require.Nil(t, err)
 
 	p := lighthttp.NewWithClient(chainID, c)
-	require.NoError(t, err)
 	require.NotNil(t, p)
 
 	// let it produce some blocks

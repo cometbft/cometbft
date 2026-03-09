@@ -80,6 +80,10 @@ type Environment struct {
 	P2PPeers         peers
 	P2PTransport     transport
 
+	// see config/config.go
+	// (run blocksync + consensus simultaneously)
+	IsCombinedMode bool
+
 	// objects
 	PubKey       crypto.PubKey
 	GenDoc       *types.GenesisDoc // cache the genesis structure

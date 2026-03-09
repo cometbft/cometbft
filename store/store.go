@@ -96,7 +96,7 @@ func (bs *BlockStore) addCaches() {
 func (bs *BlockStore) IsEmpty() bool {
 	bs.mtx.RLock()
 	defer bs.mtx.RUnlock()
-	return bs.base == bs.height && bs.base == 0
+	return bs.base == 0 && bs.height == 0
 }
 
 // Base returns the first known contiguous block height, or 0 for empty block stores.
@@ -123,7 +123,7 @@ func (bs *BlockStore) Size() int64 {
 	return bs.height - bs.base + 1
 }
 
-// LoadBase atomically loads the base block meta, or returns nil if no base is found.
+// LoadBaseMeta atomically loads the base block meta, or returns nil if no base is found.
 func (bs *BlockStore) LoadBaseMeta() *types.BlockMeta {
 	bs.mtx.RLock()
 	defer bs.mtx.RUnlock()
@@ -659,7 +659,8 @@ func calcBlockHashKey(hash []byte) []byte {
 var blockStoreKey = []byte("blockStore")
 
 // SaveBlockStoreState persists the blockStore state to the database.
-// deprecated: still present in this version for API compatibility
+//
+// Deprecated: still present in this version for API compatibility
 func SaveBlockStoreState(bsj *cmtstore.BlockStoreState, db dbm.DB) {
 	saveBlockStoreStateBatchInternal(bsj, db, nil)
 }

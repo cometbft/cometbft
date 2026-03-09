@@ -15,8 +15,9 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/test/utils"
 	"github.com/libp2p/go-libp2p/core/network"
-	corepeer "github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/require"
 )
 
@@ -36,17 +37,16 @@ func TestHost(t *testing.T) {
 	ports := utils.GetFreePorts(t, 2)
 
 	// Given two hosts that are connected to each other
-	host1 := makeTestHost(t, ports[0], AddressBookConfig{}, true)
-	host2 := makeTestHost(t, ports[1], AddressBookConfig{
-		Peers: []PeerConfig{
-			{
-				Host: fmt.Sprintf("127.0.0.1:%d", ports[0]),
-				ID:   host1.ID().String(),
-			},
+	host1 := makeTestHost(t, ports[0], withLogging())
+	host2 := makeTestHost(t, ports[1], withLogging(), withBootstrapPeers([]config.LibP2PBootstrapPeer{
+		{
+			// resolve host via hostname
+			Host: fmt.Sprintf("localhost:%d", ports[0]),
+			ID:   host1.ID().String(),
 		},
-	}, true)
+	}))
 
-	ConnectPeers(ctx, host2, host2.ConfigPeers())
+	connectBootstrapPeers(t, ctx, host2, host2.BootstrapPeers())
 
 	t.Logf("host1: %+v", host1.AddrInfo())
 	t.Logf("host2: %+v", host2.AddrInfo())
@@ -59,8 +59,8 @@ func TestHost(t *testing.T) {
 	// Given sample envelope
 	type envelope struct {
 		protocol protocol.ID
-		sender   corepeer.ID
-		receiver corepeer.ID
+		sender   peer.ID
+		receiver peer.ID
 		message  string
 	}
 
@@ -123,11 +123,11 @@ func TestHost(t *testing.T) {
 	host2.SetStreamHandler(protoBar, handler)
 
 	// Given counter peers
-	host1Peer2, err := NewPeer(host1, host2.AddrInfo(), p2p.NopMetrics())
+	host1Peer2, err := NewPeer(host1, host2.AddrInfo(), p2p.NopMetrics(), false, false, false)
 	require.NoError(t, err, "failed to create peer 1->2")
 	require.NoError(t, host1Peer2.Start(), "failed to start peer 1->2")
 
-	host2Peer1, err := NewPeer(host2, host1.AddrInfo(), p2p.NopMetrics())
+	host2Peer1, err := NewPeer(host2, host1.AddrInfo(), p2p.NopMetrics(), false, false, false)
 	require.NoError(t, err, "failed to create peer 2->1")
 	require.NoError(t, host2Peer1.Start(), "failed to start peer 2->1")
 
@@ -192,14 +192,56 @@ func TestHost(t *testing.T) {
 	}
 
 	require.ElementsMatch(t, expectedEnvelopes, envelopes)
+
+	t.Run("Ping", func(t *testing.T) {
+		// ARRANGE
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		// ACT
+		rtt, err := host1.Ping(ctx, host2.AddrInfo())
+
+		// ASSERT
+		require.NoError(t, err)
+		require.NotZero(t, rtt)
+
+		t.Logf("host1 -> host2 RTT: %s", rtt.String())
+	})
 }
 
-func makeTestHost(
-	t *testing.T,
-	port int,
-	addressBook AddressBookConfig,
-	enableLogging bool,
-) *Host {
+type testOpts struct {
+	pk             ed25519.PrivKey
+	bootstrapPeers []config.LibP2PBootstrapPeer
+	enableLogging  bool
+}
+
+type testOption func(*testOpts)
+
+func withLogging() testOption {
+	return func(opts *testOpts) { opts.enableLogging = true }
+}
+
+func withBootstrapPeers(bootstrapPeers []config.LibP2PBootstrapPeer) testOption {
+	return func(opts *testOpts) { opts.bootstrapPeers = bootstrapPeers }
+}
+
+func withPrivateKey(pk ed25519.PrivKey) testOption {
+	return func(opts *testOpts) { opts.pk = pk }
+}
+
+func makeTestHost(t *testing.T, port int, opts ...testOption) *Host {
+	t.Helper()
+
+	optsVal := &testOpts{
+		pk:             ed25519.GenPrivKey(),
+		bootstrapPeers: []config.LibP2PBootstrapPeer{},
+		enableLogging:  false,
+	}
+
+	for _, opt := range opts {
+		opt(optsVal)
+	}
+
 	// config
 	config := config.DefaultP2PConfig()
 	config.RootDir = t.TempDir()
@@ -207,20 +249,221 @@ func makeTestHost(
 	config.ExternalAddress = fmt.Sprintf("127.0.0.1:%d", port)
 
 	config.LibP2PConfig.Enabled = true
-
-	// toggle off to enable default resource manager
 	config.LibP2PConfig.DisableResourceManager = true
-
-	// private key
-	pk := ed25519.GenPrivKey()
+	config.LibP2PConfig.BootstrapPeers = optsVal.bootstrapPeers
 
 	logger := log.NewNopLogger()
-	if enableLogging {
+	if optsVal.enableLogging {
 		logger = log.TestingLogger()
 	}
 
-	host, err := NewHost(config, pk, addressBook, logger)
+	host, err := NewHost(config, optsVal.pk, logger)
 	require.NoError(t, err)
 
 	return host
+}
+
+func connectBootstrapPeers(t *testing.T, ctx context.Context, h *Host, peers map[peer.ID]BootstrapPeer) {
+	require.NotEmpty(t, peers, "no peers to connect to")
+
+	for _, peer := range peers {
+		// dial to self
+		if h.ID().String() == peer.AddrInfo.ID.String() {
+			continue
+		}
+
+		h.logger.Info("Connecting to peer", "peer_id", peer.AddrInfo.ID.String())
+
+		err := h.Connect(ctx, peer.AddrInfo)
+		require.NoError(t, err, "failed to connect to peer", "peer_id", peer.AddrInfo.ID.String())
+	}
+}
+
+func makeTestHosts(t *testing.T, numHosts int, opts ...testOption) []*Host {
+	ports := utils.GetFreePorts(t, numHosts)
+
+	hosts := make([]*Host, len(ports))
+	for i, port := range ports {
+		hosts[i] = makeTestHost(t, port, opts...)
+	}
+
+	t.Cleanup(func() {
+		for _, host := range hosts {
+			host.Close()
+		}
+	})
+
+	return hosts
+}
+
+func TestBootstrapPeers(t *testing.T) {
+	t.Run("valid config with peers", func(t *testing.T) {
+		// ARRANGE
+		pkID := func(pk ed25519.PrivKey) peer.ID {
+			id, err := IDFromPrivateKey(pk)
+			require.NoError(t, err)
+			return id
+		}
+
+		// Given 2 private keys
+		pk1 := ed25519.GenPrivKey()
+		pk2 := ed25519.GenPrivKey()
+		pkID1 := pkID(pk1)
+		pkID2 := pkID(pk2)
+
+		// Given a P2P config with libp2p enabled and address book peers
+		cfg := config.DefaultP2PConfig()
+		cfg.LibP2PConfig.BootstrapPeers = []config.LibP2PBootstrapPeer{
+			{Host: "127.0.0.1:26656", ID: pkID1.String(), Private: true, Persistent: false, Unconditional: true},
+			{Host: "127.0.0.1:26657", ID: pkID2.String(), Private: false, Persistent: true, Unconditional: false},
+			// duplicate will be ignored
+			{Host: "127.0.0.1:26657", ID: pkID2.String(), Private: false, Persistent: true, Unconditional: false},
+		}
+
+		// ACT
+		bootstrapPeers, err := BootstrapPeersFromConfig(cfg.LibP2PConfig)
+
+		// ASSERT
+		require.NoError(t, err)
+		require.Len(t, bootstrapPeers, 2)
+
+		// Check first peer
+		bp1, ok := bootstrapPeers[pkID1]
+		require.True(t, ok)
+		require.Equal(t, pkID1, bp1.AddrInfo.ID)
+		require.Len(t, bp1.AddrInfo.Addrs, 1)
+		require.True(t, bp1.Private)
+		require.False(t, bp1.Persistent)
+		require.True(t, bp1.Unconditional)
+
+		// Check second peer
+		bp2, ok := bootstrapPeers[pkID2]
+		require.True(t, ok)
+		require.Equal(t, pkID2, bp2.AddrInfo.ID)
+		require.Len(t, bp2.AddrInfo.Addrs, 1)
+		require.False(t, bp2.Private)
+		require.True(t, bp2.Persistent)
+		require.False(t, bp2.Unconditional)
+	})
+
+	t.Run("invalid host format", func(t *testing.T) {
+		// ARRANGE
+		cfg := config.DefaultP2PConfig()
+		cfg.LibP2PConfig.BootstrapPeers = []config.LibP2PBootstrapPeer{
+			{Host: "invalid-host", ID: "12D3KooWRqqKwyNnjwukrxXTUXLiNK838WN5tc8Nk2DnMVPbpVPV"},
+		}
+
+		// ACT
+		bootstrapPeers, err := BootstrapPeersFromConfig(cfg.LibP2PConfig)
+
+		// ASSERT
+		require.Error(t, err)
+		require.Nil(t, bootstrapPeers)
+	})
+
+	t.Run("invalid peer ID", func(t *testing.T) {
+		// ARRANGE
+		cfg := config.DefaultP2PConfig()
+		cfg.LibP2PConfig.BootstrapPeers = []config.LibP2PBootstrapPeer{
+			{Host: "127.0.0.1:26656", ID: "invalid-id"},
+		}
+
+		// ACT
+		bootstrapPeers, err := BootstrapPeersFromConfig(cfg.LibP2PConfig)
+
+		// ASSERT
+		require.Error(t, err)
+		require.Nil(t, bootstrapPeers)
+	})
+}
+
+func TestIsDNSAddr(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		raw    string
+		expect bool
+	}{
+		{
+			name:   "not a dns ipv4 tcp",
+			raw:    "/ip4/127.0.0.1/tcp/26656",
+			expect: false,
+		},
+		{
+			name:   "not a dns ipv6 udp quic",
+			raw:    "/ip6/::1/udp/26656/quic-v1",
+			expect: false,
+		},
+		{
+			name:   "not a dns p2p only",
+			raw:    "/p2p/12D3KooWB4s8mXvuQKrW8P3QnQfYeyH6Ydb8hQm6mdHh8W9c5QkA",
+			expect: false,
+		},
+		{
+			name:   "dns protocol only",
+			raw:    "/dns/seed.cometbft.com",
+			expect: true,
+		},
+		{
+			name:   "dns4 protocol",
+			raw:    "/dns4/seed.cometbft.com/tcp/26656",
+			expect: true,
+		},
+		{
+			name:   "dns6 protocol",
+			raw:    "/dns6/seed.cometbft.com/udp/26656/quic-v1",
+			expect: true,
+		},
+		{
+			name:   "dnsaddr protocol",
+			raw:    "/dnsaddr/bootstrap.cometbft.com",
+			expect: true,
+		},
+		{
+			name:   "dns with quic and p2p",
+			raw:    "/dns4/bootstrap.cometbft.com/udp/26656/quic-v1/p2p/12D3KooWB4s8mXvuQKrW8P3QnQfYeyH6Ydb8hQm6mdHh8W9c5QkA",
+			expect: true,
+		},
+		{
+			name:   "dns protocol appears later in path",
+			raw:    "/ip4/127.0.0.1/tcp/26656/dnsaddr/bootstrap.cometbft.com",
+			expect: true,
+		},
+		{
+			name:   "dns appears before ip protocol",
+			raw:    "/dns4/bootstrap.cometbft.com/ip4/127.0.0.1/tcp/26656",
+			expect: true,
+		},
+		{
+			name:   "localhost dns host",
+			raw:    "/dns/localhost/tcp/26656",
+			expect: true,
+		},
+		{
+			name:   "loopback not dns even with quic",
+			raw:    "/ip4/127.0.0.1/udp/26656/quic-v1",
+			expect: false,
+		},
+		{
+			name:   "not dns with circuit relay",
+			raw:    "/ip4/127.0.0.1/tcp/26656/p2p-circuit/p2p/12D3KooWB4s8mXvuQKrW8P3QnQfYeyH6Ydb8hQm6mdHh8W9c5QkA",
+			expect: false,
+		},
+		{
+			name:   "dns with websocket",
+			raw:    "/dns4/rpc.cometbft.com/tcp/443/tls/ws",
+			expect: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// ARRANGE
+			addr, err := ma.NewMultiaddr(tc.raw)
+			require.NoError(t, err)
+
+			// ACT
+			got := IsDNSAddr(addr)
+
+			// ASSERT
+			require.Equal(t, tc.expect, got)
+		})
+	}
 }

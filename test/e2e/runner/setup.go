@@ -79,20 +79,6 @@ func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 		}
 		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
 
-		if node.UseLibp2p {
-			ab, err := MakeLibp2pAddressBook(node)
-			if err != nil {
-				return fmt.Errorf("failed to make libp2p address book: %w", err)
-			}
-
-			filepath := filepath.Join(nodeDir, cfg.P2P.LibP2PConfig.AddressBook)
-			logger.Info("Using go-libp2p! Saving address book", "node", node.Name, "path", filepath)
-
-			if err := ab.Save(filepath); err != nil {
-				return fmt.Errorf("failed to save libp2p address book: %w", err)
-			}
-		}
-
 		appCfg, err := MakeAppConfig(node)
 		if err != nil {
 			return err
@@ -193,8 +179,18 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.DBBackend = node.Database
 	cfg.StateSync.DiscoveryTime = 5 * time.Second
 	cfg.BlockSync.Version = node.BlockSyncVersion
+	cfg.BlockSync.CombinedMode = node.BlockSyncCombinedMode
 	cfg.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToNonPersistentPeers)
 	cfg.Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToPersistentPeers)
+
+	switch node.MempoolType {
+	case config.MempoolTypeFlood, config.MempoolTypeApp, config.MempoolTypeNop:
+		cfg.Mempool.Type = node.MempoolType
+	case "":
+		cfg.Mempool.Type = config.MempoolTypeFlood
+	default:
+		return nil, fmt.Errorf("unexpected mempool type %q", node.MempoolType)
+	}
 
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:
@@ -272,9 +268,18 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	}
 
 	if node.UseLibp2p {
+		logger.Info("Using go-libp2p!", "node", node.Name)
+
 		// lib-p2p and PEX are mutually exclusive
 		cfg.P2P.PexReactor = false
 		cfg.P2P.LibP2PConfig.Enabled = true
+
+		bootstrapPeers, err := MakeLibp2pAddressBook(node)
+		if err != nil {
+			return nil, fmt.Errorf("failed to make libp2p address book: %w", err)
+		}
+
+		cfg.P2P.LibP2PConfig.BootstrapPeers = bootstrapPeers
 	}
 
 	if node.Testnet.LogLevel != "" {
@@ -312,7 +317,9 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		"vote_extensions_enable_height": node.Testnet.VoteExtensionsEnableHeight,
 		"vote_extensions_update_height": node.Testnet.VoteExtensionsUpdateHeight,
 		"vote_extension_size":           node.Testnet.VoteExtensionSize,
+		"app_side_mempool":              node.MempoolType == config.MempoolTypeApp,
 	}
+
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:
 		cfg["listen"] = AppAddressUNIX
@@ -364,21 +371,21 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 }
 
 // MakeLibp2pAddressBook creates libp2p address book for a node
-func MakeLibp2pAddressBook(node *e2e.Node) (*lp2p.AddressBookConfig, error) {
+func MakeLibp2pAddressBook(node *e2e.Node) ([]config.LibP2PBootstrapPeer, error) {
 	var (
-		peers = []lp2p.PeerConfig{}
+		peers = []config.LibP2PBootstrapPeer{}
 		cache = make(map[string]struct{})
 	)
 
-	for _, nodeConfig := range append(node.Seeds, node.PersistentPeers...) {
+	for _, peer := range append(node.Seeds, node.PersistentPeers...) {
 		// skip if already added
-		if _, ok := cache[nodeConfig.Name]; ok {
+		if _, ok := cache[peer.Name]; ok {
 			continue
 		}
 
-		peerID, err := lp2p.IDFromPrivateKey(nodeConfig.NodeKey)
+		peerID, err := lp2p.IDFromPrivateKey(peer.NodeKey)
 		if err != nil {
-			return nil, fmt.Errorf("peer id for node %q: %w", nodeConfig.Name, err)
+			return nil, fmt.Errorf("peer id for node %q: %w", peer.Name, err)
 		}
 
 		// todo: come up with a generic way of determining the host:port to make it work
@@ -389,20 +396,21 @@ func MakeLibp2pAddressBook(node *e2e.Node) (*lp2p.AddressBookConfig, error) {
 		)
 
 		// for docker networks, we need to use network-assigned address (e.g. 10.186.73.5)
-		ip := nodeConfig.ExternalIP.String()
+		ip := peer.ExternalIP.String()
 		if ip == localhost && node.InternalIP.String() != localhost {
-			ip = nodeConfig.InternalIP.String()
+			ip = peer.InternalIP.String()
 		}
 
-		peers = append(peers, lp2p.PeerConfig{
-			Host: fmt.Sprintf("%s:%d", ip, cometPort),
-			ID:   peerID.String(),
+		peers = append(peers, config.LibP2PBootstrapPeer{
+			Host:       fmt.Sprintf("%s:%d", ip, cometPort),
+			ID:         peerID.String(),
+			Persistent: isPersistent(node, peer),
 		})
 
-		cache[nodeConfig.Name] = struct{}{}
+		cache[peer.Name] = struct{}{}
 	}
 
-	return &lp2p.AddressBookConfig{Peers: peers}, nil
+	return peers, nil
 }
 
 // UpdateConfigStateSync updates the state sync config for a node.
@@ -418,4 +426,15 @@ func UpdateConfigStateSync(node *e2e.Node, height int64, hash []byte) error {
 	bz = regexp.MustCompile(`(?m)^trust_height =.*`).ReplaceAll(bz, []byte(fmt.Sprintf(`trust_height = %v`, height)))
 	bz = regexp.MustCompile(`(?m)^trust_hash =.*`).ReplaceAll(bz, []byte(fmt.Sprintf(`trust_hash = "%X"`, hash)))
 	return os.WriteFile(cfgPath, bz, 0o644) //nolint:gosec
+}
+
+func isPersistent(host, peer *e2e.Node) bool {
+	for _, pp := range host.PersistentPeers {
+		if pp.Name == peer.Name {
+			return true
+		}
+	}
+
+	return false
+
 }

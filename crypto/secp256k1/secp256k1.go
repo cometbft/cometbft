@@ -111,7 +111,7 @@ func GenPrivKeySecp256k1(secret []byte) PrivKey {
 	// https://apps.nsa.gov/iaarchive/library/ia-guidance/ia-solutions-for-classified/algorithm-guidance/suite-b-implementers-guide-to-fips-186-3-ecdsa.cfm
 	// see also https://github.com/golang/go/blob/0380c9ad38843d523d9c9804fe300cb7edd7cd3c/src/crypto/ecdsa/ecdsa.go#L89-L101
 	fe := new(big.Int).SetBytes(secHash[:])
-	n := new(big.Int).Sub(secp256k1.S256().N, one)  //nolint:staticcheck // TODO update to new call
+	n := new(big.Int).Sub(secp256k1.S256().N, one) //nolint:staticcheck // TODO update to new call
 	fe.Mod(fe, n)
 	fe.Add(fe, one)
 

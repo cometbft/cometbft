@@ -44,7 +44,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	golang.org/x/crypto v0.48.0
 	golang.org/x/net v0.51.0
-	golang.org/x/sync v0.19.0
+	golang.org/x/sync v0.20.0
 	gonum.org/v1/gonum v0.17.0
 	google.golang.org/grpc v1.79.1
 	google.golang.org/protobuf v1.36.11

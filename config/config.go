@@ -1166,14 +1166,14 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 // BlockSyncConfig defines the configuration for the CometBFT block sync service
 type BlockSyncConfig struct {
 	Version      string `mapstructure:"version"`
-	CombinedMode bool   `mapstructure:"combined_mode"`
+	AdaptiveSync bool   `mapstructure:"adaptive_sync"`
 }
 
 // DefaultBlockSyncConfig returns a default configuration for the block sync service
 func DefaultBlockSyncConfig() *BlockSyncConfig {
 	return &BlockSyncConfig{
 		Version:      "v0",
-		CombinedMode: false,
+		AdaptiveSync: false,
 	}
 }
 

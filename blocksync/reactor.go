@@ -23,7 +23,7 @@ const BlocksyncChannel = byte(0x40)
 
 const (
 	defaultIntervalStatusUpdate      = 10 * time.Second
-	combinedModeInternalStatusUpdate = 1 * time.Second
+	adaptiveSyncInternalStatusUpdate = 1 * time.Second
 
 	defaultIntervalSwitchToConsensus = 1 * time.Second
 
@@ -63,9 +63,9 @@ type Reactor struct {
 	enabled *atomic.Bool
 
 	// if enabled, pending blocks are forwarded to BlockIngestor for
-	// further commitment. This effectively combines BLOCKSYNC with CONSENSUS,
-	// making them operate simultaneously.
-	combinedModeEnabled bool
+	// further commitment. This effectively runs BLOCKSYNC and CONSENSUS
+	// simultaneously (adaptive sync).
+	adaptiveSyncEnabled bool
 
 	blockExec     *sm.BlockExecutor
 	store         sm.BlockStore
@@ -88,7 +88,7 @@ type Reactor struct {
 // NewReactorWithAddr returns new Reactor instance with local address
 func NewReactor(
 	enabled bool,
-	combinedMode bool,
+	adaptiveSync bool,
 	state sm.State,
 	blockExec *sm.BlockExecutor,
 	store *store.BlockStore,
@@ -132,8 +132,8 @@ func NewReactor(
 	enabledFlag.Store(enabled)
 
 	intervalStatusUpdate := defaultIntervalStatusUpdate
-	if combinedMode {
-		intervalStatusUpdate = combinedModeInternalStatusUpdate
+	if adaptiveSync {
+		intervalStatusUpdate = adaptiveSyncInternalStatusUpdate
 	}
 
 	r := &Reactor{
@@ -142,7 +142,7 @@ func NewReactor(
 		store:                     store,
 		pool:                      pool,
 		enabled:                   enabledFlag,
-		combinedModeEnabled:       combinedMode,
+		adaptiveSyncEnabled:       adaptiveSync,
 		localAddr:                 localAddr,
 		requestsCh:                requestsCh,
 		errorsCh:                  errorsCh,
@@ -193,7 +193,7 @@ func (r *Reactor) runPool(stateSynced bool) error {
 		r.poolEventsRoutine(ticker)
 	})
 
-	if r.combinedModeEnabled {
+	if r.adaptiveSyncEnabled {
 		// supply blocks to the consensus machine
 		blockIngestor, err := r.getBlockIngestor()
 		if err != nil {
@@ -684,7 +684,7 @@ func (r *Reactor) handleValidationFailure(blockA, blockB *types.Block, err error
 }
 
 func (r *Reactor) stopPeerForError(peer p2p.Peer, err error) {
-	if r.combinedModeEnabled && shouldBeReconnected(err) {
+	if r.adaptiveSyncEnabled && shouldBeReconnected(err) {
 		err = &lp2p.ErrorTransient{Err: err}
 	}
 

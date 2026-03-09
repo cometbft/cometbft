@@ -43,7 +43,14 @@ other than v0 have been deprecated in favor of the simplest and most well unders
 #
 #   1) "v0" - the default block sync implementation
 version = "v0"
+
+# Experimental: run blocksync and consensus simultaneously
+adaptive_sync = false
 ```
+
+## Adaptive Sync
+
+When `adaptive_sync` is enabled, the node runs BLOCKSYNC and CONSENSUS simultaneously instead of the traditional flow where blocksync runs first and then hands off to consensus. This can improve liveness, connectivity, and performance during catch-up. Blocks are ingested through consensus internals as they are received.
 
 If we're lagging sufficiently, we should go back to block syncing, but
 this is an [open issue](https://github.com/tendermint/tendermint/issues/129).

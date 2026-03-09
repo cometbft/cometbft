@@ -50,6 +50,10 @@ const (
 	LibP2PLimitsModeDefault  = "default"
 	LibP2PLimitsModeCustom   = "custom"
 
+	LibP2PLimitsModeDisabled = "disabled"
+	LibP2PLimitsModeDefault  = "default"
+	LibP2PLimitsModeCustom   = "custom"
+
 	v0 = "v0"
 	v1 = "v1"
 	v2 = "v2"

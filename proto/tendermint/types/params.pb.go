@@ -443,6 +443,9 @@ func (m *ABCIParams) GetVoteExtensionsEnableHeight() int64 {
 	return 0
 }
 
+// AuthorityParams holds an opaque authority string to be configured and
+// interpreted by the application for authorizing parameter changes outside of
+// governance. CometBFT only enforces a maximum length.
 type AuthorityParams struct {
 	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
 }

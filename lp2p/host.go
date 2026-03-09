@@ -11,6 +11,7 @@ import (
 	cmcrypto "github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p/core/connmgr"
 	"github.com/libp2p/go-libp2p/core/control"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -256,6 +257,8 @@ type ConnGater struct {
 	maxPeers int
 }
 
+var _ connmgr.ConnectionGater = (*ConnGater)(nil)
+
 // ConnectionGaterFromConfig creates a connection gater from the given config or returns false if disabled.
 func ConnectionGaterFromConfig(cfg config.LibP2PConfig, host *Host) (*ConnGater, bool) {
 	if cfg.Limits.Mode != config.LibP2PLimitsModeCustom {
@@ -268,9 +271,12 @@ func ConnectionGaterFromConfig(cfg config.LibP2PConfig, host *Host) (*ConnGater,
 	}, true
 }
 
-// SetHost sets the host for the connection gater.
+// SetHost sets the host for the connection gater. The host is injected after creation
+// because libp2p requires the connection gater option during libp2p.New, before the host exists.
 func (c *ConnGater) SetHost(host *Host) { c.host = host }
 
+// InterceptAccept is called when a peer attempts to connect. It returns false to reject the connection
+// if the peer count has reached max_peers.
 func (c *ConnGater) InterceptAccept(network.ConnMultiaddrs) bool {
 	return c.allowMorePeers("caller", "InterceptAccept")
 }

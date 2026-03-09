@@ -1,10 +1,15 @@
 package lp2p
 
 import (
+	"fmt"
 	"net"
 	"testing"
+	"time"
 
+	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/test/utils"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/require"
@@ -201,6 +206,80 @@ func TestPreferIPv4(t *testing.T) {
 	require.Equal(t, v6, preferIPv4([]net.IP{v6}), "single v6 falls back")
 	require.Equal(t, v4, preferIPv4([]net.IP{v6, v4}), "v4 preferred over v6")
 	require.Equal(t, v4, preferIPv4([]net.IP{v4, v6}), "v4 first stays first")
+}
+
+func TestMultiAddrStr(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		addrs []ma.Multiaddr
+		want  string
+	}{
+		{
+			name:  "empty",
+			addrs: nil,
+			want:  "<empty>",
+		},
+		{
+			name:  "single",
+			addrs: mustMultiaddrs(t, "/ip4/127.0.0.1/udp/26656/quic-v1"),
+			want:  "/ip4/127.0.0.1/udp/26656/quic-v1",
+		},
+		{
+			name:  "multiple",
+			addrs: mustMultiaddrs(t, "/ip4/127.0.0.1/udp/26656/quic-v1", "/ip6/::1/udp/26656/quic-v1"),
+			want:  "/ip4/127.0.0.1/udp/26656/quic-v1, /ip6/::1/udp/26656/quic-v1",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := multiAddrStr(tc.addrs)
+			require.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func mustMultiaddrs(t *testing.T, raw ...string) []ma.Multiaddr {
+	t.Helper()
+	addrs := make([]ma.Multiaddr, len(raw))
+	for i, r := range raw {
+		a, err := ma.NewMultiaddr(r)
+		require.NoError(t, err)
+		addrs[i] = a
+	}
+	return addrs
+}
+
+func TestMultiAddrStrByID(t *testing.T) {
+	// Create a host and add a peer with addresses to the peerstore
+	ports := utils.GetFreePorts(t, 1)
+	host := makeTestHostForAddress(t, ports[0])
+	peerID, err := IDFromPrivateKey(ed25519.GenPrivKey())
+	require.NoError(t, err)
+
+	addr, err := ma.NewMultiaddr("/ip4/192.0.2.1/udp/26656/quic-v1")
+	require.NoError(t, err)
+	host.Peerstore().AddAddrs(peerID, []ma.Multiaddr{addr}, 24*time.Hour)
+
+	got := host.multiAddrStrByID(peerID)
+	require.Equal(t, "/ip4/192.0.2.1/udp/26656/quic-v1", got)
+
+	// Unknown peer returns empty
+	unknownID, _ := IDFromPrivateKey(ed25519.GenPrivKey())
+	gotUnknown := host.multiAddrStrByID(unknownID)
+	require.Equal(t, "<empty>", gotUnknown)
+}
+
+func makeTestHostForAddress(t *testing.T, port int) *Host {
+	t.Helper()
+	cfg := config.DefaultP2PConfig()
+	cfg.RootDir = t.TempDir()
+	cfg.ListenAddress = fmt.Sprintf("127.0.0.1:%d", port)
+	cfg.ExternalAddress = cfg.ListenAddress
+	cfg.LibP2PConfig.Enabled = true
+
+	host, err := NewHost(cfg, ed25519.GenPrivKey(), log.NewNopLogger())
+	require.NoError(t, err)
+	t.Cleanup(func() { host.Close() })
+	return host
 }
 
 func TestIsDNSAddr(t *testing.T) {

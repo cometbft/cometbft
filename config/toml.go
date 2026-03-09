@@ -383,15 +383,18 @@ threshold_latency = "{{ .ThresholdLatency }}"
 [p2p.libp2p.limits]
 
 # Resource management modes:
-# - disabled: no resource limits
-# - default: use default resource limits
-# - custom: use custom resource limits (see below)
+# - disabled: no resource limits. Use only in trusted environments (e.g. local dev, testing).
+#   Disabling limits can expose the node to resource exhaustion from malicious peers.
+# - default: libp2p's built-in limits. Memory is 1/8th of total system RAM, capped at 128MB min
+#   and 1GB max. Suitable for most production deployments.
+# - custom: disable limits for app protocols but enforce max_peers and max_peer_streams.
+#   Use when you need tighter control over peer count and stream concurrency.
 mode = "{{ .P2P.LibP2PConfig.Limits.Mode }}"
 
-# Maximum number of peers
+# Maximum number of peers (custom mode only)
 max_peers = {{ .P2P.LibP2PConfig.Limits.MaxPeers }}
 
-# Maximum number of concurrent streams per peer
+# Maximum number of concurrent streams per peer (custom mode only)
 max_peer_streams = {{ .P2P.LibP2PConfig.Limits.MaxPeerStreams }}
 
 #######################################################

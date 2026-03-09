@@ -19,8 +19,16 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/libp2p/go-libp2p/p2p/protocol/identify"
+	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/require"
 )
+
+type connMultiaddrsMock struct {
+	local, remote ma.Multiaddr
+}
+
+func (c *connMultiaddrsMock) LocalMultiaddr() ma.Multiaddr  { return c.local }
+func (c *connMultiaddrsMock) RemoteMultiaddr() ma.Multiaddr { return c.remote }
 
 func TestHost(t *testing.T) {
 	// ARRANGE
@@ -251,6 +259,17 @@ func TestHostConnGater(t *testing.T) {
 
 		require.Eventually(t, checkNotConnected, waitTimeout, waitInterval)
 		require.ElementsMatch(t, []peer.ID{host2.ID(), host3.ID()}, host1.Network().Peers())
+	})
+
+	t.Run("rejectWhenHostNil", func(t *testing.T) {
+		// ConnGater rejects all connections when host is not yet set (allowMorePeers returns false)
+		cg := &ConnGater{host: nil, maxPeers: 10}
+		addr, err := ma.NewMultiaddr("/ip4/127.0.0.1/udp/26656/quic-v1")
+		require.NoError(t, err)
+		cm := &connMultiaddrsMock{local: addr, remote: addr}
+		require.False(t, cg.InterceptAccept(cm))
+		require.False(t, cg.InterceptAddrDial(peer.ID(""), addr))
+		require.False(t, cg.InterceptPeerDial(peer.ID("")))
 	})
 }
 

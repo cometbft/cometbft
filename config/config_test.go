@@ -124,6 +124,16 @@ func TestP2PConfigValidateBasic(t *testing.T) {
 				},
 			},
 			{
+				name: "disabledWithInvalidLimitsStillPasses",
+				mutate: func(cfg *config.P2PConfig) {
+					cfg.LibP2PConfig.Enabled = false
+					// When LibP2P is disabled, limits validation is skipped
+					cfg.LibP2PConfig.Limits.Mode = config.LibP2PLimitsModeCustom
+					cfg.LibP2PConfig.Limits.MaxPeers = 0
+					cfg.LibP2PConfig.Limits.MaxPeerStreams = 0
+				},
+			},
+			{
 				name:   "enabled-default",
 				mutate: func(cfg *config.P2PConfig) {},
 			},

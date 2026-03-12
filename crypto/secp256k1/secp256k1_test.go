@@ -86,7 +86,7 @@ func TestSecp256k1LoadPrivkeyAndSerializeIsIdentity(t *testing.T) {
 
 func TestGenPrivKeySecp256k1(t *testing.T) {
 	// curve order N
-	N := underlyingsecp256k1.S256().N
+	N := underlyingsecp256k1.S256().N //nolint:staticcheck // TODO update to new call
 	tests := []struct {
 		name   string
 		secret []byte

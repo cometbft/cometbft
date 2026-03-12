@@ -24,7 +24,7 @@ func Test_genPrivKey(t *testing.T) {
 		shouldPanic bool
 	}{
 		{"empty bytes (panics because 1st 32 bytes are zero and 0 is not a valid field element)", empty, true},
-		{"curve order: N", secp256k1.S256().N.Bytes(), true},
+		{"curve order: N", secp256k1.S256().N.Bytes(), true}, //nolint:staticcheck // TODO update to new call
 		{"valid because 0 < 1 < N", validOne, false},
 	}
 	for _, tt := range tests {
@@ -38,7 +38,7 @@ func Test_genPrivKey(t *testing.T) {
 			}
 			got := genPrivKey(bytes.NewReader(tt.notSoRand))
 			fe := new(big.Int).SetBytes(got[:])
-			require.True(t, fe.Cmp(secp256k1.S256().N) < 0)
+			require.True(t, fe.Cmp(secp256k1.S256().N) < 0) //nolint:staticcheck // TODO update to new call
 			require.True(t, fe.Sign() > 0)
 		})
 	}
@@ -64,7 +64,7 @@ func TestSignatureVerificationAndRejectUpperS(t *testing.T) {
 
 		// malleate:
 		var S256 secp256k1.ModNScalar
-		S256.SetByteSlice(secp256k1.S256().N.Bytes())
+		S256.SetByteSlice(secp256k1.S256().N.Bytes()) //nolint:staticcheck // TODO update to new call
 		s.Negate().Add(&S256)
 		require.True(t, s.IsOverHalfOrder())
 

@@ -180,6 +180,68 @@ func TestAppMempool(t *testing.T) {
 	})
 }
 
+func TestAppMempool_UsesConfigValues(t *testing.T) {
+	t.Run("ReapTxs receives MaxBytes and MaxGas from config", func(t *testing.T) {
+		cfg := config.TestMempoolConfig()
+		cfg.Type = config.MempoolTypeApp
+		cfg.ReapMaxBytes = 12345
+		cfg.ReapMaxGas = 67890
+		cfg.ReapInterval = 10 * time.Millisecond // short for fast test
+
+		var receivedReq *abci.RequestReapTxs
+		app := newMockAppMempoolClient(t)
+		app.On("ReapTxs", mock.Anything, mock.MatchedBy(func(req *abci.RequestReapTxs) bool {
+			receivedReq = req
+			return true
+		})).Return(&abci.ResponseReapTxs{Txs: [][]byte{[]byte("tx1")}}, nil).Once()
+
+		m := NewAppMempool(cfg, app)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		ch := m.TxStream(ctx)
+		// Consume one batch to trigger ReapTxs call
+		batch := <-ch
+		require.Len(t, batch, 1)
+		cancel()
+
+		require.NotNil(t, receivedReq)
+		require.Equal(t, uint64(12345), receivedReq.MaxBytes)
+		require.Equal(t, uint64(67890), receivedReq.MaxGas)
+	})
+
+	t.Run("SeenCacheSize limits LRU cache", func(t *testing.T) {
+		cfg := config.TestMempoolConfig()
+		cfg.Type = config.MempoolTypeApp
+		cfg.SeenCacheSize = 3 // small cache to test eviction
+
+		app := newMockAppMempoolClient(t)
+		app.On("InsertTx", mock.Anything, mock.Anything).
+			Return(&abci.ResponseInsertTx{Code: abci.CodeTypeOK}, nil)
+		app.On("CheckTx", mock.Anything, mock.Anything).
+			Return(&abci.ResponseCheckTx{Code: abci.CodeTypeOK}, nil).Maybe() // not called by InsertTx
+
+		m := NewAppMempool(cfg, app)
+
+		// Fill cache with 3 txs
+		require.NoError(t, m.InsertTx(types.Tx("tx1")))
+		require.NoError(t, m.InsertTx(types.Tx("tx2")))
+		require.NoError(t, m.InsertTx(types.Tx("tx3")))
+
+		// tx1 is seen - reject
+		require.ErrorIs(t, m.InsertTx(types.Tx("tx1")), ErrSeenTx)
+
+		// Insert 3 more to evict tx1, tx2, tx3 from LRU
+		require.NoError(t, m.InsertTx(types.Tx("tx4")))
+		require.NoError(t, m.InsertTx(types.Tx("tx5")))
+		require.NoError(t, m.InsertTx(types.Tx("tx6")))
+
+		// tx1 was evicted - should succeed now
+		require.NoError(t, m.InsertTx(types.Tx("tx1")))
+	})
+}
+
 // mockAppMempoolClient wraps abcimock.Client to implement AppMempoolClient
 type mockAppMempoolClient struct {
 	*abcimock.Client

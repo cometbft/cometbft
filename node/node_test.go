@@ -193,8 +193,9 @@ func TestNodeSetPrivValTCP(t *testing.T) {
 
 // TestLibp2pExperimentalWarningVisual runs the same setup as TestLibp2pExperimentalWarning
 // but logs to stdout so you can see the warning.
-// 
+//
 // Run with:
+//
 //	go test -v -run TestLibp2pExperimentalWarningVisual ./node
 func TestLibp2pExperimentalWarningVisual(t *testing.T) {
 	if testing.Short() {

@@ -62,9 +62,10 @@ func TestMain(m *testing.M) {
 //------------------------------------------------------------------------------------------
 // WAL Tests
 
-// TODO: It would be better to verify explicitly which states we can recover from without the wal
-// and which ones we need the wal for - then we'd also be able to only flush the
-// wal writer when we need to, instead of with every message.
+// NOTE: The WAL now uses selective fsync: only signed messages (votes, proposals) are
+// fsynced via WriteSync for double-signing prevention. Unsigned messages (block parts)
+// use buffered Write, relying on periodic 2s flush, the next WriteSync, or pre-sign
+// FlushAndSync to reach disk.
 
 func startNewStateAndWaitForBlock(
 	t *testing.T,

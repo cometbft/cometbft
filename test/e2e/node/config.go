@@ -40,7 +40,6 @@ func (cfg *Config) App() *app.Config {
 		VoteExtensionsEnableHeight: cfg.VoteExtensionsEnableHeight,
 		VoteExtensionsUpdateHeight: cfg.VoteExtensionsUpdateHeight,
 		VoteExtensionSize:          cfg.VoteExtensionSize,
-		AppSideMempool:             cfg.AppSideMempool,
 	}
 }
 

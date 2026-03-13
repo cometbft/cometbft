@@ -45,7 +45,6 @@ const (
 
 	MempoolTypeFlood = "flood"
 	MempoolTypeNop   = "nop"
-	MempoolTypeApp   = "app"
 
 	LibP2PLimitsModeDisabled = "disabled"
 	LibP2PLimitsModeDefault  = "default"
@@ -996,15 +995,6 @@ type MempoolConfig struct {
 	// performance results using the default P2P configuration.
 	ExperimentalMaxGossipConnectionsToPersistentPeers    int `mapstructure:"experimental_max_gossip_connections_to_persistent_peers"`
 	ExperimentalMaxGossipConnectionsToNonPersistentPeers int `mapstructure:"experimental_max_gossip_connections_to_non_persistent_peers"`
-
-	// App mempool only: size of LRU cache for seen transactions (deduplication).
-	SeenCacheSize int `mapstructure:"seen_cache_size"`
-	// App mempool only: max bytes passed to ReapTxs (0 = no limit).
-	ReapMaxBytes uint64 `mapstructure:"reap_max_bytes"`
-	// App mempool only: max gas passed to ReapTxs (0 = no limit).
-	ReapMaxGas uint64 `mapstructure:"reap_max_gas"`
-	// App mempool only: interval between ReapTxs calls when streaming txs from app.
-	ReapInterval time.Duration `mapstructure:"reap_interval"`
 }
 
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool
@@ -1023,11 +1013,6 @@ func DefaultMempoolConfig() *MempoolConfig {
 		MaxTxBytes:  1024 * 1024, // 1MB
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: 0,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    0,
-		// App mempool defaults
-		SeenCacheSize: 100_000,
-		ReapMaxBytes:  0,
-		ReapMaxGas:    0,
-		ReapInterval:  500 * time.Millisecond,
 	}
 }
 
@@ -1035,7 +1020,6 @@ func DefaultMempoolConfig() *MempoolConfig {
 func TestMempoolConfig() *MempoolConfig {
 	cfg := DefaultMempoolConfig()
 	cfg.CacheSize = 1000
-	cfg.SeenCacheSize = 1000
 	return cfg
 }
 
@@ -1053,7 +1037,7 @@ func (cfg *MempoolConfig) WalEnabled() bool {
 // returns an error if any check fails.
 func (cfg *MempoolConfig) ValidateBasic() error {
 	switch cfg.Type {
-	case MempoolTypeFlood, MempoolTypeApp, MempoolTypeNop:
+	case MempoolTypeFlood, MempoolTypeNop:
 	case "": // allow empty string to be backwards compatible
 	default:
 		return fmt.Errorf("unknown mempool type: %q", cfg.Type)
@@ -1075,15 +1059,6 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 	}
 	if cfg.ExperimentalMaxGossipConnectionsToNonPersistentPeers < 0 {
 		return errors.New("experimental_max_gossip_connections_to_non_persistent_peers can't be negative")
-	}
-	// App mempool validation
-	if cfg.Type == MempoolTypeApp {
-		if cfg.SeenCacheSize < 0 {
-			return cmterrors.ErrNegativeField{Field: "seen_cache_size"}
-		}
-		if cfg.ReapInterval <= 0 {
-			return errors.New("reap_interval must be positive when mempool type is \"app\"")
-		}
 	}
 	return nil
 }

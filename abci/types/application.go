@@ -53,14 +53,6 @@ func (BaseApplication) CheckTx(context.Context, *RequestCheckTx) (*ResponseCheck
 	return &ResponseCheckTx{Code: CodeTypeOK}, nil
 }
 
-func (BaseApplication) InsertTx(context.Context, *RequestInsertTx) (*ResponseInsertTx, error) {
-	return &ResponseInsertTx{Code: CodeTypeOK}, nil
-}
-
-func (BaseApplication) ReapTxs(context.Context, *RequestReapTxs) (*ResponseReapTxs, error) {
-	return &ResponseReapTxs{}, nil
-}
-
 func (BaseApplication) Commit(context.Context, *RequestCommit) (*ResponseCommit, error) {
 	return &ResponseCommit{}, nil
 }

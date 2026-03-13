@@ -357,11 +357,17 @@ func BenchmarkWALRoundSimulation(b *testing.B) {
 		wal := setupBenchmarkWAL(b)
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			_ = wal.WriteSync(proposal)
-			for j := 0; j < numBlockParts; j++ {
-				_ = wal.WriteSync(blockPart)
+			if err := wal.WriteSync(proposal); err != nil {
+				b.Fatal(err)
 			}
-			_ = wal.WriteSync(vote)
+			for j := 0; j < numBlockParts; j++ {
+				if err := wal.WriteSync(blockPart); err != nil {
+					b.Fatal(err)
+				}
+			}
+			if err := wal.WriteSync(vote); err != nil {
+				b.Fatal(err)
+			}
 		}
 	})
 
@@ -369,11 +375,17 @@ func BenchmarkWALRoundSimulation(b *testing.B) {
 		wal := setupBenchmarkWAL(b)
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			_ = wal.WriteSync(proposal)
-			for j := 0; j < numBlockParts; j++ {
-				_ = wal.Write(blockPart)
+			if err := wal.WriteSync(proposal); err != nil {
+				b.Fatal(err)
 			}
-			_ = wal.WriteSync(vote)
+			for j := 0; j < numBlockParts; j++ {
+				if err := wal.Write(blockPart); err != nil {
+					b.Fatal(err)
+				}
+			}
+			if err := wal.WriteSync(vote); err != nil {
+				b.Fatal(err)
+			}
 		}
 	})
 }

@@ -2629,10 +2629,13 @@ func (w *countingWAL) WriteSync(msg WALMessage) error {
 // TestWALSelectiveFsync verifies that the receiveRoutine dispatches messages
 // to the correct WAL method: WriteSync for signed messages (votes, proposals),
 // Write for unsigned messages (block parts), and neither for ingestVerifiedBlockRequest.
+//
+// NOTE: This test mirrors the type-switch in receiveRoutine's internalMsgQueue
+// handler. If you add or change cases there, update this test to match.
 func TestWALSelectiveFsync(t *testing.T) {
 	cwal := &countingWAL{}
 
-	// Simulate the type-switch logic from receiveRoutine's internalMsgQueue handler.
+	// Reproduce the type-switch logic from receiveRoutine's internalMsgQueue handler.
 	messages := []msgInfo{
 		{Msg: &VoteMessage{Vote: &types.Vote{}}},
 		{Msg: &ProposalMessage{Proposal: &types.Proposal{}}},
@@ -2647,9 +2650,11 @@ func TestWALSelectiveFsync(t *testing.T) {
 			require.NoError(t, err)
 		case *ingestVerifiedBlockRequest:
 			// skip
-		default:
+		case *BlockPartMessage:
 			err := cwal.Write(mi)
 			require.NoError(t, err)
+		default:
+			t.Fatalf("unexpected internal message type: %T", mi.Msg)
 		}
 	}
 

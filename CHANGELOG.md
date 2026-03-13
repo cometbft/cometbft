@@ -6,6 +6,11 @@
 
 ### BUG FIXES
 
+- `[mempool]` Fix excessive ERROR logging in `addSender` when
+  `ErrTxNotFound` is returned for transactions evicted from the mempool.
+  Promote `ErrTxAlreadyReceivedFromSender` to ERROR level as it indicates
+  cache overflow.
+  ([\#5669](https://github.com/cometbft/cometbft/pull/5569))
 - `[evidence]` Add validation for Light Client Attack evidence ByzantineValidators
   ([\#5638](https://github.com/cometbft/cometbft/pull/5638))
 - `[types]` Fix buffer offset bug in `ProposerPriorityHash` that caused hash collisions when validator priorities differed

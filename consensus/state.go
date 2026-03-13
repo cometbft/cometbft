@@ -846,20 +846,24 @@ func (cs *State) receiveRoutine(maxSteps int) {
 		case mi = <-cs.internalMsgQueue:
 			cs.Logger.Debug("Received message from cs.internalMsgQueue", "peer_id", mi.PeerID)
 
-			writeWal := true
-
-			// avoid writing WAL for ingested verified blocks coming from blocksync
-			if _, ok := mi.Msg.(*ingestVerifiedBlockRequest); ok {
-				writeWal = false
-			}
-
-			if writeWal {
-				// NOTE: fsync
+			switch mi.Msg.(type) {
+			case *VoteMessage, *ProposalMessage:
+				// Safety-critical: signed messages must be fsynced before
+				// processing to prevent double-signing on crash recovery.
 				if err := cs.wal.WriteSync(mi); err != nil {
 					panic(fmt.Errorf(
 						"failed to write %v msg to consensus WAL; check your file system and restart the node: %w",
 						mi, err,
 					))
+				}
+			case *ingestVerifiedBlockRequest:
+				// Skip WAL for ingested verified blocks from blocksync.
+			default:
+				// Unsigned messages (e.g., block parts): write to WAL buffer
+				// without fsync. Flushed by periodic 2s tick, next WriteSync,
+				// or next pre-sign FlushAndSync.
+				if err := cs.wal.Write(mi); err != nil {
+					cs.Logger.Error("failed writing to WAL", "err", err)
 				}
 			}
 

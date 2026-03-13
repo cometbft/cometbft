@@ -148,3 +148,38 @@ func assertBadProof(t *testing.T, root []byte, bad []byte, good TxProof) {
 func randInt(low, high int) int {
 	return rand.Intn(high-low) + low
 }
+
+func TestComputeProtoSizeForTx(t *testing.T) {
+	// computeProtoSizeForTxs using the old protobuf-based method
+	oldComputeProtoSize := func(txs []Tx) int64 {
+		data := Data{Txs: txs}
+		pdData := data.ToProto()
+		return int64(pdData.Size())
+	}
+
+	tests := []struct {
+		name string
+		size int
+	}{
+		{"empty", 0},
+		{"1 byte", 1},
+		{"127 bytes (1-byte varint boundary)", 127},
+		{"128 bytes (2-byte varint boundary)", 128},
+		{"16383 bytes (2-byte varint boundary)", 16383},
+		{"16384 bytes (3-byte varint boundary)", 16384},
+		{"large tx (100KB)", 100_000},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tx := Tx(make([]byte, tc.size))
+			got := ComputeProtoSizeForTxs([]Tx{tx})
+			want := oldComputeProtoSize([]Tx{tx})
+			require.Equal(t, want, got, "mismatch for tx size %d", tc.size)
+		})
+	}
+
+	// Also verify multi-tx batches match.
+	txs := makeTxs(50, 200)
+	require.Equal(t, oldComputeProtoSize(txs), ComputeProtoSizeForTxs(txs))
+}

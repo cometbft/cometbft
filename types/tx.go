@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"math/bits"
 
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/tmhash"
@@ -183,10 +184,26 @@ func TxProofFromProto(pb cmtproto.TxProof) (TxProof, error) {
 	return pbtp, nil
 }
 
-// ComputeProtoSizeForTxs wraps the transactions in cmtproto.Data{} and calculates the size.
+// ComputeProtoSizeForTxs returns the protobuf wire size that the given
+// transactions would occupy inside a cmtproto.Data message.
 // https://developers.google.com/protocol-buffers/docs/encoding
 func ComputeProtoSizeForTxs(txs []Tx) int64 {
-	data := Data{Txs: txs}
-	pdData := data.ToProto()
-	return int64(pdData.Size())
+	var size int64
+	for _, tx := range txs {
+		size += computeProtoSizeForTx(tx)
+	}
+	return size
+}
+
+// computeProtoSizeForTx returns the protobuf wire size of a single tx
+// in a Data.Txs repeated bytes field: tag (1 byte) + varint(len) + data.
+func computeProtoSizeForTx(tx Tx) int64 {
+	l := len(tx)
+	return 1 + int64(protoVarintSize(uint64(l))) + int64(l)
+}
+
+// protoVarintSize returns the number of bytes needed to encode x as a
+// protobuf unsigned varint.
+func protoVarintSize(x uint64) int {
+	return (bits.Len64(x|1) + 6) / 7
 }

@@ -12,9 +12,7 @@ type Application interface {
 	Query(context.Context, *RequestQuery) (*ResponseQuery, error) // Query for state
 
 	// Mempool Connection
-	CheckTx(context.Context, *RequestCheckTx) (*ResponseCheckTx, error)    // Validate a tx for the mempool
-	InsertTx(context.Context, *RequestInsertTx) (*ResponseInsertTx, error) // Insert a tx into the mempool
-	ReapTxs(context.Context, *RequestReapTxs) (*ResponseReapTxs, error)    // Reap valid txs from the mempool
+	CheckTx(context.Context, *RequestCheckTx) (*ResponseCheckTx, error) // Validate a tx for the mempool
 
 	// Consensus Connection
 	InitChain(context.Context, *RequestInitChain) (*ResponseInitChain, error) // Initialize blockchain w validators/other info from CometBFT

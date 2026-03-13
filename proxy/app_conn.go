@@ -31,16 +31,8 @@ type AppConnMempool interface {
 	Error() error
 
 	CheckTx(context.Context, *types.RequestCheckTx) (*types.ResponseCheckTx, error)
-	CheckTxUnlocked(context.Context, *types.RequestCheckTx) (*types.ResponseCheckTx, error)
 	CheckTxAsync(context.Context, *types.RequestCheckTx) (*abcicli.ReqRes, error)
 	Flush(context.Context) error
-}
-
-// checkTxUnlocker is an optional interface that clients can implement to
-// support unlocked CheckTx calls. This is used by localClient to bypass
-// the mutex lock when AppMempool handles its own concurrency.
-type checkTxUnlocker interface {
-	CheckTxUnlocked(context.Context, *types.RequestCheckTx) (*types.ResponseCheckTx, error)
 }
 
 type AppConnQuery interface {

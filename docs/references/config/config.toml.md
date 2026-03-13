@@ -173,6 +173,7 @@ log_level = "info"
 |                | `"*"`           | All modules                            |
 | **Log levels** | `"debug"`       |                                        |
 |                | `"info"`        |                                        |
+|                | `"warn"`        |                                        |
 |                | `"error"`       |                                        |
 |                | `"none"`        |                                        |
 

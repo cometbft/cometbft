@@ -143,14 +143,6 @@ func (app *appConnMempool) CheckTx(ctx context.Context, req *types.RequestCheckT
 	return app.appConn.CheckTx(ctx, req)
 }
 
-func (app *appConnMempool) CheckTxUnlocked(ctx context.Context, req *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "check_tx", "type", "sync"))()
-	if unlocker, ok := app.appConn.(checkTxUnlocker); ok {
-		return unlocker.CheckTxUnlocked(ctx, req)
-	}
-	return app.appConn.CheckTx(ctx, req)
-}
-
 func (app *appConnMempool) CheckTxAsync(ctx context.Context, req *types.RequestCheckTx) (*abcicli.ReqRes, error) {
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "check_tx", "type", "async"))()
 	return app.appConn.CheckTxAsync(ctx, req)

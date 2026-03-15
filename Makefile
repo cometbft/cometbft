@@ -251,13 +251,13 @@ format:
 #? lint: Run latest golangci-lint linter
 lint:
 	@echo "--> Running linter"
-	@go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.2 run
+	@go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.3 run
 .PHONY: lint
 
 #? lint: Run latest golangci-lint linter and apply fixes
 lint-fix:
 	@echo "--> Running linter"
-	@go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.2 run --fix
+	@go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.3 run --fix
 .PHONY: lint-fix
 
 #? lint-typo: Run codespell to check typos

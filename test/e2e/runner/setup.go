@@ -184,7 +184,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToPersistentPeers)
 
 	switch node.MempoolType {
-	case config.MempoolTypeFlood, config.MempoolTypeApp, config.MempoolTypeNop:
+	case config.MempoolTypeFlood, config.MempoolTypeNop:
 		cfg.Mempool.Type = node.MempoolType
 	case "":
 		cfg.Mempool.Type = config.MempoolTypeFlood
@@ -317,7 +317,6 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		"vote_extensions_enable_height": node.Testnet.VoteExtensionsEnableHeight,
 		"vote_extensions_update_height": node.Testnet.VoteExtensionsUpdateHeight,
 		"vote_extension_size":           node.Testnet.VoteExtensionSize,
-		"app_side_mempool":              node.MempoolType == config.MempoolTypeApp,
 	}
 
 	switch node.ABCIProtocol {

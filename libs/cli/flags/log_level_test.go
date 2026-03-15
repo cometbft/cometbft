@@ -95,3 +95,33 @@ func TestParseLogLevel(t *testing.T) {
 		}
 	}
 }
+
+func TestParseLogLevelWarn(t *testing.T) {
+	var buf bytes.Buffer
+	jsonLogger := log.NewTMJSONLoggerNoTS(&buf)
+
+	// *:warn should allow warn and error, but not info or debug
+	logger, err := cmtflags.ParseLogLevel("*:warn", jsonLogger, defaultLogLevelValue)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	buf.Reset()
+	logger.Info("should be filtered")
+	if have := strings.TrimSpace(buf.String()); have != "" {
+		t.Errorf("expected info to be filtered with *:warn, got %q", have)
+	}
+
+	buf.Reset()
+	logger.Warn("should pass", "key", "value")
+	want := `{"_msg":"should pass","key":"value","level":"warn"}`
+	if have := strings.TrimSpace(buf.String()); have != want {
+		t.Errorf("expected warn to pass with *:warn\nwant %q\nhave %q", want, have)
+	}
+
+	buf.Reset()
+	logger.Error("should also pass")
+	if have := strings.TrimSpace(buf.String()); !strings.Contains(have, "should also pass") {
+		t.Errorf("expected error to pass with *:warn, got %q", have)
+	}
+}

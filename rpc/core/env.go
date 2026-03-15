@@ -82,7 +82,7 @@ type Environment struct {
 
 	// see config/config.go
 	// (run blocksync + consensus simultaneously)
-	IsCombinedMode bool
+	IsAdaptiveSync bool
 
 	// objects
 	PubKey       crypto.PubKey

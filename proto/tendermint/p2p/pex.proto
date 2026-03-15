@@ -1,10 +1,10 @@
 syntax = "proto3";
 package tendermint.p2p;
 
-option go_package = "github.com/cometbft/cometbft/proto/tendermint/p2p";
-
-import "tendermint/p2p/types.proto";
 import "gogoproto/gogo.proto";
+import "tendermint/p2p/types.proto";
+
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/p2p";
 
 message PexRequest {}
 
@@ -15,6 +15,6 @@ message PexAddrs {
 message Message {
   oneof sum {
     PexRequest pex_request = 1;
-    PexAddrs   pex_addrs   = 2;
+    PexAddrs pex_addrs = 2;
   }
 }

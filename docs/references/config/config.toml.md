@@ -173,6 +173,7 @@ log_level = "info"
 |                | `"*"`           | All modules                            |
 | **Log levels** | `"debug"`       |                                        |
 |                | `"info"`        |                                        |
+|                | `"warn"`        |                                        |
 |                | `"error"`       |                                        |
 |                | `"none"`        |                                        |
 
@@ -1603,7 +1604,7 @@ The number of concurrent chunk fetchers to run.
 `0` is only allowed when state synchronization is disabled.
 
 ## Block synchronization
-Block synchronization configuration is limited to defining a version of block synchronization to use.
+Block synchronization configuration defines the version of block synchronization to use and optional adaptive sync.
 
 ### blocksync.version
 Block Sync version to use.
@@ -1616,6 +1617,16 @@ version = "v0"
 | **Possible values** | `"v0"`  |
 
 All other versions are deprecated. Further versions may be added in future releases.
+
+### blocksync.adaptive_sync
+When enabled, runs BLOCKSYNC and CONSENSUS simultaneously for improved liveness, connectivity, and performance. Blocks are ingested through consensus internals rather than switching from blocksync to consensus after catch-up.
+```toml
+adaptive_sync = false
+```
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Default**         | `false` |
 
 ## Consensus
 

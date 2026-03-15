@@ -61,12 +61,12 @@ jobs:
           echo "tags=${TAGS}" >> $GITHUB_OUTPUT
 
       - uses: actions/checkout@v6
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
         id: build
         with:
           platforms: linux/${{ matrix.arch }}
@@ -84,7 +84,7 @@ jobs:
       - vars
       - build-images
     steps:
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}

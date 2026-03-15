@@ -336,10 +336,6 @@ dial_timeout = "{{ .P2P.DialTimeout }}"
 # Enabled set true to use go-libp2p for networking instead of CometBFT's p2p.
 enabled = {{ .P2P.LibP2PConfig.Enabled }}
 
-# Disables resource manager.
-# Warning! This might consume all of the system's resources.
-disable_resource_manager = {{ .P2P.LibP2PConfig.DisableResourceManager }}
-
 # Bootstrap peers to connect to
 # format: { host, id, private (opt), persistent (opt), unconditional (opt) }
 {{- $bps := .P2P.LibP2PConfig.BootstrapPeers -}}
@@ -383,6 +379,24 @@ max_workers = {{ .MaxWorkers }}
 threshold_latency = "{{ .ThresholdLatency }}"
 {{- end }}
 
+# Configuration for resource limits
+[p2p.libp2p.limits]
+
+# Resource management modes:
+# - disabled: no resource limits. Use only in trusted environments (e.g. local dev, testing).
+#   Disabling limits can expose the node to resource exhaustion from malicious peers.
+# - default: libp2p's built-in limits. Memory is 1/8th of total system RAM, capped at 128MB min
+#   and 1GB max. Suitable for most production deployments.
+# - custom: disable limits for app protocols but enforce max_peers and max_peer_streams.
+#   Use when you need tighter control over peer count and stream concurrency.
+mode = "{{ .P2P.LibP2PConfig.Limits.Mode }}"
+
+# Maximum number of peers (custom mode only)
+max_peers = {{ .P2P.LibP2PConfig.Limits.MaxPeers }}
+
+# Maximum number of concurrent streams per peer (custom mode only)
+max_peer_streams = {{ .P2P.LibP2PConfig.Limits.MaxPeerStreams }}
+
 #######################################################
 ###          Mempool Configuration Option          ###
 #######################################################
@@ -396,7 +410,6 @@ threshold_latency = "{{ .ThresholdLatency }}"
 #  - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
 #  for storing, disseminating and proposing txs). "create_empty_blocks=false" is
 #  not supported.
-# - "app"    : app-side mempool (the ABCI app is responsible for mempool, comet only broadcasts txs).
 type = "{{ .Mempool.Type }}"
 
 # Recheck (default: true) defines whether CometBFT should recheck the
@@ -522,10 +535,10 @@ max_snapshot_chunks = {{ .StateSync.MaxSnapshotChunks }}
 #   1) "v0" - the default block sync implementation
 version = "{{ .BlockSync.Version }}"
 
-# Experimental Combined mode (bool):
+# Experimental Adaptive sync (bool):
 #
 # Run both BLOCKSYNC and CONSENSUS for improved liveness, connectivity, and performance.
-combined_mode = {{ .BlockSync.CombinedMode }}
+adaptive_sync = {{ .BlockSync.AdaptiveSync }}
 
 # Minimum receive rate from peers in bytes per second.
 # Peers that consistently send data slower than this rate may be disconnected.

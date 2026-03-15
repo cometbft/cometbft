@@ -258,17 +258,6 @@ func createMempoolAndMempoolReactor(
 		// Strictly speaking, there's no need to have a `mempl.NopMempoolReactor`, but
 		// adding it leads to a cleaner code.
 		return &mempl.NopMempool{}, mempl.NewNopMempoolReactor()
-	case cfg.MempoolTypeApp:
-		mp := mempl.NewAppMempool(
-			config.Mempool,
-			proxyApp.Mempool(),
-			mempl.WithAMLogger(logger),
-			mempl.WithAMMetrics(memplMetrics),
-		)
-		reactor := mempl.NewAppReactor(config.Mempool, mp, waitForSync)
-		reactor.SetLogger(logger)
-
-		return mp, reactor
 	default:
 		panic(fmt.Sprintf("unknown mempool type: %q", config.Mempool.Type))
 	}
@@ -309,7 +298,7 @@ func createBlocksyncReactor(
 
 	bcReactor := blocksync.NewReactor(
 		enabled,
-		config.BlockSync.CombinedMode,
+		config.BlockSync.AdaptiveSync,
 		state.Copy(),
 		blockExec,
 		blockStore,
@@ -634,9 +623,9 @@ func (n *Node) performStateSync() error {
 			return
 		}
 
-		// Combined mode ingests blocks through consensus internals, so consensus
+		// Adaptive sync ingests blocks through consensus internals, so consensus
 		// must be switched out of wait-sync mode before blocksync is enabled.
-		if n.config.BlockSync.CombinedMode {
+		if n.config.BlockSync.AdaptiveSync {
 			n.consensusReactor.SwitchToConsensus(state, true)
 			if mempoolReactor != nil {
 				mempoolReactor.EnableInOutTxs()

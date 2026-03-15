@@ -37,7 +37,7 @@ type PrivKey []byte
 
 // Bytes marshals the private key using amino encoding.
 func (privKey PrivKey) Bytes() []byte {
-	return []byte(privKey)
+	return privKey
 }
 
 // PubKey performs the point-scalar multiplication from the privKey on the
@@ -83,13 +83,13 @@ func genPrivKey(rand io.Reader) PrivKey {
 
 		d.SetBytes(privKeyBytes[:])
 		// break if we found a valid point (i.e. > 0 and < N == curverOrder)
-		isValidFieldElement := 0 < d.Sign() && d.Cmp(secp256k1.S256().N) < 0
+		isValidFieldElement := 0 < d.Sign() && d.Cmp(secp256k1.Params().N) < 0
 		if isValidFieldElement {
 			break
 		}
 	}
 
-	return PrivKey(privKeyBytes[:])
+	return privKeyBytes[:]
 }
 
 var one = new(big.Int).SetInt64(1)
@@ -111,7 +111,7 @@ func GenPrivKeySecp256k1(secret []byte) PrivKey {
 	// https://apps.nsa.gov/iaarchive/library/ia-guidance/ia-solutions-for-classified/algorithm-guidance/suite-b-implementers-guide-to-fips-186-3-ecdsa.cfm
 	// see also https://github.com/golang/go/blob/0380c9ad38843d523d9c9804fe300cb7edd7cd3c/src/crypto/ecdsa/ecdsa.go#L89-L101
 	fe := new(big.Int).SetBytes(secHash[:])
-	n := new(big.Int).Sub(secp256k1.S256().N, one)
+	n := new(big.Int).Sub(secp256k1.Params().N, one)
 	fe.Mod(fe, n)
 	fe.Add(fe, one)
 
@@ -120,7 +120,7 @@ func GenPrivKeySecp256k1(secret []byte) PrivKey {
 	// copy feB over to fixed 32 byte privKey32 and pad (if necessary)
 	copy(privKey32[32-len(feB):32], feB)
 
-	return PrivKey(privKey32)
+	return privKey32
 }
 
 // Sign creates an ECDSA signature on curve Secp256k1, using SHA256 on the msg.
@@ -162,12 +162,12 @@ func (pubKey PubKey) Address() crypto.Address {
 	hasherRIPEMD160 := ripemd160.New()
 	_, _ = hasherRIPEMD160.Write(sha) // does not error
 
-	return crypto.Address(hasherRIPEMD160.Sum(nil))
+	return hasherRIPEMD160.Sum(nil)
 }
 
 // Bytes returns the pubkey marshaled with amino encoding.
 func (pubKey PubKey) Bytes() []byte {
-	return []byte(pubKey)
+	return pubKey
 }
 
 func (pubKey PubKey) String() string {

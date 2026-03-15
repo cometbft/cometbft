@@ -397,16 +397,16 @@ func NewNodeWithContext(
 		enableBlockSync = !onlyValidatorIsUs(state, localAddr) && !stateSync
 
 		// consensus reactor should NOT be active (should be blocked waiting) unless state sync is finished,
-		// or blocksync is enabled. But in "combined" mode, we instantly UNBLOCK it!
-		consensusWaitForSync = stateSync || (enableBlockSync && !config.BlockSync.CombinedMode)
+		// or blocksync is enabled. But in adaptive sync mode, we instantly UNBLOCK it!
+		consensusWaitForSync = stateSync || (enableBlockSync && !config.BlockSync.AdaptiveSync)
 
 		// mempool follows the same rules as the consensus reactor.
 		// RPC can accept and gossip mempool txs even if chain is not yet synced.
-		mempoolWaitForSync = stateSync || (enableBlockSync && !config.BlockSync.CombinedMode)
+		mempoolWaitForSync = stateSync || (enableBlockSync && !config.BlockSync.AdaptiveSync)
 	)
 
-	if config.BlockSync.CombinedMode {
-		logger.Info("Combined (blocksync + consensus) mode is enabled!")
+	if config.BlockSync.AdaptiveSync {
+		logger.Info("Adaptive sync (blocksync + consensus) is enabled!")
 	}
 
 	// create mempool with its reactor
@@ -545,6 +545,7 @@ func NewNodeWithContext(
 		sw = switcher
 	} else {
 		p2pLogger.Info("Using go-libp2p transport!")
+		p2pLogger.Warn("EXPERIMENTAL: go-libp2p transport is enabled. Only enable this setting if it can be activated simultaneously for all validators on the network and peer IDs have been predetermined and exchanged.")
 
 		reactors := []lp2p.SwitchReactor{
 			{Name: "MEMPOOL", Reactor: mempoolReactor},
@@ -771,7 +772,7 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 		MempoolReactor:   n.mempoolReactor,
 		EventBus:         n.eventBus,
 		Mempool:          n.mempool,
-		IsCombinedMode:   n.config.BlockSync.CombinedMode,
+		IsAdaptiveSync:   n.config.BlockSync.AdaptiveSync,
 
 		Logger: n.Logger.With("module", "rpc"),
 

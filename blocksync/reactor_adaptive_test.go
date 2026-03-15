@@ -16,11 +16,11 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-func TestReactorCombined(t *testing.T) {
+func TestReactorAdaptive(t *testing.T) {
 	const waitTime = 5 * time.Second
 	t.Run("ingestsBlock", func(t *testing.T) {
 		// ARRANGE
-		ts := newCombinedModeTestSuite(t, "blocksync_ingest_block")
+		ts := newAdaptiveSyncTestSuite(t, "blocksync_ingest_block")
 
 		// Given two reactors for two different nodes
 		// Provider has +2 blocks in the state
@@ -29,9 +29,9 @@ func TestReactorCombined(t *testing.T) {
 			follower = newReactor(t, ts.logger, ts.genDoc, ts.privVals, 2, withDeterministicVoteTimes())
 		)
 
-		follower.reactor.combinedModeEnabled = true
-		follower.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
-		provider.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
+		follower.reactor.adaptiveSyncEnabled = true
+		follower.reactor.intervalStatusUpdate = adaptiveSyncInternalStatusUpdate
+		provider.reactor.intervalStatusUpdate = adaptiveSyncInternalStatusUpdate
 
 		ts.blockIngestor.SetOnIngest(func(ic consensus.IngestCandidate) error {
 			ts.logger.Info("mock: receive block", "height", ic.Height())
@@ -80,7 +80,7 @@ func TestReactorCombined(t *testing.T) {
 	t.Run("alreadyIngested", func(t *testing.T) {
 		t.Skip()
 		// ARRANGE
-		ts := newCombinedModeTestSuite(t, "blocksync_ingest_block")
+		ts := newAdaptiveSyncTestSuite(t, "blocksync_ingest_block")
 
 		// Given two reactors for two different nodes
 		// Provider has +2 blocks in the state
@@ -89,9 +89,9 @@ func TestReactorCombined(t *testing.T) {
 			follower = newReactor(t, ts.logger, ts.genDoc, ts.privVals, 2, withDeterministicVoteTimes())
 		)
 
-		follower.reactor.combinedModeEnabled = true
-		follower.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
-		provider.reactor.intervalStatusUpdate = combinedModeInternalStatusUpdate
+		follower.reactor.adaptiveSyncEnabled = true
+		follower.reactor.intervalStatusUpdate = adaptiveSyncInternalStatusUpdate
+		provider.reactor.intervalStatusUpdate = adaptiveSyncInternalStatusUpdate
 
 		ts.blockIngestor.SetOnIngest(func(ic consensus.IngestCandidate) error {
 			ts.logger.Info("mock: receive block", "height", ic.Height())
@@ -137,7 +137,7 @@ func TestReactorCombined(t *testing.T) {
 	})
 }
 
-type combinedModeTestSuite struct {
+type adaptiveSyncTestSuite struct {
 	t             *testing.T
 	blockIngestor *blockIngestorMock
 	config        *cfg.Config
@@ -146,7 +146,7 @@ type combinedModeTestSuite struct {
 	logger        log.Logger
 }
 
-func newCombinedModeTestSuite(t *testing.T, name string) *combinedModeTestSuite {
+func newAdaptiveSyncTestSuite(t *testing.T, name string) *adaptiveSyncTestSuite {
 	logger := log.TestingLogger()
 
 	config := test.ResetTestRoot(name)
@@ -154,7 +154,7 @@ func newCombinedModeTestSuite(t *testing.T, name string) *combinedModeTestSuite 
 
 	genDoc, privVals := randGenesisDoc(1, false, 30)
 
-	return &combinedModeTestSuite{
+	return &adaptiveSyncTestSuite{
 		t:             t,
 		blockIngestor: newBlockIngestorMock(t),
 		config:        config,

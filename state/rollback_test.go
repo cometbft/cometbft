@@ -276,8 +276,8 @@ func makeBlockIDRandom() types.BlockID {
 		blockHash   = make([]byte, tmhash.Size)
 		partSetHash = make([]byte, tmhash.Size)
 	)
-	rand.Read(blockHash)   //nolint: errcheck // ignore errcheck for read
-	rand.Read(partSetHash) //nolint: errcheck // ignore errcheck for read
+	rand.Read(blockHash)
+	rand.Read(partSetHash)
 	return types.BlockID{
 		Hash: blockHash,
 		PartSetHeader: types.PartSetHeader{

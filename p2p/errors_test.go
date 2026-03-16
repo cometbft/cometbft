@@ -1,4 +1,4 @@
-package lp2p
+package p2p
 
 import (
 	"errors"

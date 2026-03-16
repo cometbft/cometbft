@@ -555,6 +555,44 @@ func TestSwitchReconnectsToInboundPersistentPeer(t *testing.T) {
 	assert.Equal(t, 1, sw.Peers().Size())
 }
 
+func TestSwitchReconnectsAfterTransientError(t *testing.T) {
+	// ARRANGE
+	// Given a switch
+	sw := MakeSwitch(cfg, 1, initSwitchFunc)
+	err := sw.Start()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = sw.Stop() })
+
+	// Given a non-persistent peer
+	rp := &remotePeer{PrivKey: ed25519.GenPrivKey(), Config: cfg}
+	rp.Start()
+	defer rp.Stop()
+
+	err = sw.DialPeerWithAddress(rp.Addr())
+	require.NoError(t, err)
+
+	waitUntilSwitchHasAtLeastNPeers(sw, 1)
+
+	p := sw.Peers().Get(rp.ID())
+	require.NotNil(t, p)
+	require.False(t, p.IsPersistent())
+
+	// ACT
+	sw.StopPeerForError(p, &ErrorTransient{Err: errors.New("transient reactor error")})
+
+	// ASSERT
+	waitUntilSwitchHasAtLeastNPeers(sw, 1)
+
+	// old peer instance is stopped
+	require.False(t, p.IsRunning())
+
+	// but new peer instance is running
+	pNew := sw.Peers().Get(rp.ID())
+	require.NotNil(t, pNew)
+	require.NotEqual(t, p, pNew)
+	require.True(t, pNew.IsRunning())
+}
+
 func TestSwitchDialPeersAsync(t *testing.T) {
 	if testing.Short() {
 		return

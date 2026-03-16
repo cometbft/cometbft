@@ -10,7 +10,6 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/lp2p"
 	"github.com/cometbft/cometbft/p2p"
 	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
 	sm "github.com/cometbft/cometbft/state"
@@ -685,7 +684,7 @@ func (r *Reactor) handleValidationFailure(blockA, blockB *types.Block, err error
 
 func (r *Reactor) stopPeerForError(peer p2p.Peer, err error) {
 	if r.adaptiveSyncEnabled && shouldBeReconnected(err) {
-		err = &lp2p.ErrorTransient{Err: err}
+		err = &p2p.ErrorTransient{Err: err}
 	}
 
 	r.Switch.StopPeerForError(peer, err)

@@ -258,7 +258,7 @@ func TestSwitch(t *testing.T) {
 		require.Equal(t, 1, switchA.Peers().Size())
 
 		// ACT #2: Stop peer B with a TRANSIENT error (should trigger reconnection)
-		transientErr := &ErrorTransient{Err: errors.New("something went wrong")}
+		transientErr := &p2p.ErrorTransient{Err: errors.New("something went wrong")}
 		switchA.StopPeerForError(peerB, transientErr)
 
 		// ASSERT #2: Peer B is removed initially

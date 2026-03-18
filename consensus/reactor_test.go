@@ -305,6 +305,36 @@ func TestReactorReceivePanicsIfInitPeerHasntBeenCalledYet(t *testing.T) {
 	})
 }
 
+func TestReactorIgnoreMessageByHeight(t *testing.T) {
+	// ARRANGE
+	cs, _ := randState(1)
+	reactor := NewReactor(cs, true)
+	reactor.SetLogger(log.TestingLogger())
+	reactor.Metrics = NopMetrics()
+
+	reactor.updateRoundState(&cstypes.RoundState{Height: 101, Step: cstypes.RoundStepNewHeight})
+
+	for _, tt := range []struct {
+		name     string
+		height   int64
+		expected bool
+	}{
+		{name: "ignoresOldHeight", height: 99, expected: true},
+		{name: "acceptsLatestCommittedHeight", height: 100, expected: false},
+		{name: "acceptsCurrentUncommittedHeight", height: 101, expected: false},
+		{name: "acceptsHeightWithinFutureWindow", height: 104, expected: false},
+		{name: "ignoresHeightBeyondFutureWindow", height: 105, expected: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			// ACT
+			ignored := reactor.ignoreMessageByHeight(tt.height, "VoteMessage")
+
+			// ASSERT
+			assert.Equal(t, tt.expected, ignored)
+		})
+	}
+}
+
 // TestSwitchToConsensusVoteExtensions tests that the SwitchToConsensus correctly
 // checks for vote extension data when required.
 func TestSwitchToConsensusVoteExtensions(t *testing.T) {

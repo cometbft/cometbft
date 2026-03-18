@@ -333,6 +333,10 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		}
 		switch msg := msg.(type) {
 		case *ProposalMessage:
+			if conR.ignoreMessageByHeight(msg.Proposal.Height, "ProposalMessage") {
+				return
+			}
+
 			params := conR.consensusParams.Load()
 			maxBytes := params.Block.MaxBytes
 			if err := msg.Proposal.ValidateBlockSize(maxBytes); err != nil {
@@ -346,6 +350,10 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		case *ProposalPOLMessage:
 			ps.ApplyProposalPOLMessage(msg)
 		case *BlockPartMessage:
+			if conR.ignoreMessageByHeight(msg.Height, "BlockPartMessage") {
+				return
+			}
+
 			ps.SetHasProposalBlockPart(msg.Height, msg.Round, int(msg.Part.Index))
 			conR.Metrics.BlockParts.With("peer_id", string(e.Src.ID())).Add(1)
 			conR.conS.peerMsgQueue <- msgInfo{msg, e.Src.ID()}
@@ -360,6 +368,10 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		}
 		switch msg := msg.(type) {
 		case *VoteMessage:
+			if conR.ignoreMessageByHeight(msg.Vote.Height, "VoteMessage") {
+				return
+			}
+
 			rs := conR.getRoundState()
 
 			height, valSize, lastCommitSize := rs.Height, rs.Validators.Size(), rs.LastCommit.Size()
@@ -603,6 +615,39 @@ func (conR *Reactor) getRoundState() cstypes.RoundState {
 	conR.rsMtx.RLock()
 	defer conR.rsMtx.RUnlock()
 	return conR.rs
+}
+
+func (conR *Reactor) getUncommittedHeight() int64 {
+	conR.rsMtx.RLock()
+	defer conR.rsMtx.RUnlock()
+	return conR.rs.Height
+}
+
+// Fast ingress height filter.
+// Messages are queued and processed later, so *slightly future* heights may become valid by
+// the time State.handleMsg() runs. We allow a small future window to preserve liveness and
+// drop distant heights to limit spam/load. State is still the source of truth for full validation.
+func (conR *Reactor) ignoreMessageByHeight(height int64, messageType string) bool {
+	const futureWindow = 4
+
+	latestHeight := conR.getUncommittedHeight() - 1
+
+	// valid range [H, H+window]
+	// eg. we're "working" on height 101, so we want to receive messages for [100, *101*, 102, 103]
+	if height >= latestHeight && height <= latestHeight+futureWindow {
+		return false
+	}
+
+	conR.Logger.Info(
+		"Ignoring message by height",
+		"latest_height", latestHeight,
+		"message_height", height,
+		"message_type", messageType,
+	)
+
+	conR.Metrics.IgnoredMessages.With("message_type", messageType).Add(1)
+
+	return true
 }
 
 // -----------------------------------------------------------------------------

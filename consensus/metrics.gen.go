@@ -228,6 +228,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "round_increment_total",
 			Help:      "RoundIncrementTotal is the number of times that the consensus reactor has incremented above the initial round in a step.",
 		}, append(labels, "step")).With(labelsAndValues...),
+		IgnoredMessages: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "ignored_messages",
+			Help:      "IgnoredMessages is the number of messages ignored by the consensus reactor due to invalid height range.",
+		}, append(labels, "message_type")).With(labelsAndValues...),
 	}
 }
 
@@ -268,5 +274,6 @@ func NopMetrics() *Metrics {
 		LateVotes:                   discard.NewCounter(),
 		PeerHeight:                  discard.NewGauge(),
 		RoundIncrementTotal:         discard.NewCounter(),
+		IgnoredMessages:             discard.NewCounter(),
 	}
 }

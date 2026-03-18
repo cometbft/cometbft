@@ -152,6 +152,9 @@ type Metrics struct {
 	// RoundIncrementTotal is the number of times that the consensus reactor
 	// has incremented above the initial round in a step.
 	RoundIncrementTotal metrics.Counter `metrics_labels:"step"`
+
+	// IgnoredMessages is the number of messages ignored by the consensus reactor due to invalid height range.
+	IgnoredMessages metrics.Counter `metrics_labels:"message_type"`
 }
 
 func (m *Metrics) MarkRoundIncremented(step cstypes.RoundStepType) {

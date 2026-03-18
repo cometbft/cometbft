@@ -638,7 +638,7 @@ func (conR *Reactor) ignoreMessageByHeight(height int64, messageType string) boo
 		return false
 	}
 
-	conR.Logger.Info(
+	conR.Logger.Debug(
 		"Ignoring message by height",
 		"latest_height", latestHeight,
 		"message_height", height,

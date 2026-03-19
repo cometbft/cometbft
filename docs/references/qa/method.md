@@ -18,7 +18,7 @@ See [RELEASES.md][releases] for a description of the tests that we run on the QA
 Out of the testnet-based test cases described in [the releases document][releases] we focused on two of them:
 _200 Node Test_, and _Rotating Nodes Test_.
 
-[releases]: https://github.com/cometbft/cometbft/blob/main/RELEASES.md#large-scale-testnets
+[releases]: https://github.com/cometbft/cometbft/blob/v0.39.x/RELEASES.md#large-scale-testnets
 
 ## Table of Contents
 - [Method](#method)
@@ -177,7 +177,7 @@ For generating images on latency, run from the `qa-infra` repository:
 ```sh
 ./script/reports/latencies-gen-images.sh <experiments-blockstore-dir>
 ```
-As above, `<experiments-blockstore-dir>` should contain the file `blockstore.db.zip`. 
+As above, `<experiments-blockstore-dir>` should contain the file `blockstore.db.zip`.
 The script will automatically:
 1. Unzip `blockstore.db.zip`, if not already.
 2. Generate a file with raw results `results/raw.csv` using the tool `test/loadtime/cmd/report`.

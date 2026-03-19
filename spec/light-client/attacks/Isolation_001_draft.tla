@@ -7,7 +7,7 @@
  *
  * It follows the English specification:
  *
- * https://github.com/cometbft/cometbft/blob/main/spec/light-client/attacks/isolate-attackers_001_draft.md
+ * https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/attacks/isolate-attackers_001_draft.md
  *
  * The assumptions made in this specification:
  *
@@ -37,7 +37,7 @@ CONSTANTS
     (* a pair <<a, b>> that limits that ratio of faulty validator in the blockchain
        from above (exclusive). Cosmos security model prescribes 1 / 3. *)
 
-VARIABLES  
+VARIABLES
   blockchain,           (* the chain at the full node *)
   refClock,             (* the reference clock at the full node *)
   Faulty,               (* the set of faulty validators *)
@@ -45,10 +45,10 @@ VARIABLES
   state,                (* the state of the attack isolation machine at the full node *)
   attackers             (* the set of the identified attackers *)
 
-vars == <<blockchain, refClock, Faulty, conflictingBlock, state>>  
- 
+vars == <<blockchain, refClock, Faulty, conflictingBlock, state>>
+
 \* instantiate the chain at the full node
-ULTIMATE_HEIGHT == CONFLICT_HEIGHT + 1 
+ULTIMATE_HEIGHT == CONFLICT_HEIGHT + 1
 BC == INSTANCE Blockchain_003_draft
 
 \* use the light client API
@@ -92,7 +92,7 @@ Init ==
                   VS |-> VS,
                   NextVS |-> NextVS,
                   lastCommit |-> lastCommit] ]
-          IN  
+          IN
           LET refBlock == [ header |-> blockchain[COMMON_HEIGHT],
                            Commits |-> blockchain[COMMON_HEIGHT + 1].lastCommit ]
           IN
@@ -106,7 +106,7 @@ Init ==
               => conflicting.Commits \subseteq Faulty
           /\ conflictingBlock := conflicting
 
-    
+
 \* This is a specification of isolateMisbehavingProcesses.
 \*
 \* [LCAI-FUNC-MAIN.1::TLA.1]

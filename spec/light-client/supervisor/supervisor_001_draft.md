@@ -307,7 +307,7 @@ type LCInitData struct {
 
 where only one of the components must be provided. `GenesisDoc` is
 defined in the [CometBFT
-Types](https://github.com/cometbft/cometbft/blob/main/types/genesis.go).
+Types](https://github.com/cometbft/cometbft/blob/v0.39.x/types/genesis.go).
 
 #### **[LC-DATA-GENESIS.1]**
 
@@ -420,9 +420,9 @@ func Sequential-Supervisor (initdata LCInitData) (Error) {
     loop {
         // get the next height
         nextHeight := input();
-  
+
         lightStore,result := VerifyAndDetect(lightStore, nextHeight);
-  
+
         if result == OK {
             output(LightStore.Get(targetHeight));
    // we only output a trusted lightblock
@@ -506,7 +506,7 @@ func InitLightClient (initData LCInitData) (LightStore, Error) {
                 result = ResultSuccess
             }
         }
-  
+
         // cross-check
   auxLS := new LightStore
   auxLS.Add(current)
@@ -558,16 +558,16 @@ func VerifyAndDetect (lightStore LightStore, targetHeight Height)
             return (lightStore, ResultSuccess)
   }
   else {
-            // We have a lightblock in the store, but it has not been 
+            // We have a lightblock in the store, but it has not been
             // cross-checked by now. We do that now.
             root_of_trust, auxLS := lightstore.TraceTo(b1);
-   
+
             // Cross-check
             Evidences := AttackDetector(root_of_trust, auxLS);
             if Evidences.Empty {
                 // no attack detected, we trust the new lightblock
-                lightStore.Update(auxLS.Latest(), 
-                                  StateTrusted, 
+                lightStore.Update(auxLS.Latest(),
+                                  StateTrusted,
                                   verfiedLS.Latest().verification-root);
                 return (lightStore, OK);
             }
@@ -610,8 +610,8 @@ func VerifyAndDetect (lightStore LightStore, targetHeight Height)
         Evidences := AttackDetector(root_of_trust, verifiedLS);
         if Evidences.Empty {
             // no attack detected, we trust the new lightblock
-            verifiedLS.Update(verfiedLS.Latest(), 
-                              StateTrusted, 
+            verifiedLS.Update(verfiedLS.Latest(),
+                              StateTrusted,
                               verfiedLS.Latest().verification-root);
             lightStore.store_chain(verifidLS);
             return (lightStore, OK);

@@ -32,29 +32,6 @@ import (
 
 var config *cfg.Config
 
-func randGenesisDoc(numValidators int, randPower bool, minPower int64) (*types.GenesisDoc, []types.PrivValidator) {
-	validators := make([]types.GenesisValidator, numValidators)
-	privValidators := make([]types.PrivValidator, numValidators)
-	for i := 0; i < numValidators; i++ {
-		val, privVal := types.RandValidator(randPower, minPower)
-		validators[i] = types.GenesisValidator{
-			PubKey: val.PubKey,
-			Power:  val.VotingPower,
-		}
-		privValidators[i] = privVal
-	}
-	sort.Sort(types.PrivValidatorsByAddress(privValidators))
-
-	consPar := types.DefaultConsensusParams()
-	consPar.ABCI.VoteExtensionsEnableHeight = 1
-	return &types.GenesisDoc{
-		GenesisTime:     cmttime.Now(),
-		ChainID:         test.DefaultTestChainID,
-		Validators:      validators,
-		ConsensusParams: consPar,
-	}, privValidators
-}
-
 func genesisDocWithValsPowers(powers []int64) (*types.GenesisDoc, []types.PrivValidator) {
 	if len(powers) == 0 {
 		panic("must have atleast 1 validator")
@@ -251,7 +228,7 @@ func newReactor(
 func TestNoBlockResponse(t *testing.T) {
 	config = test.ResetTestRoot("blocksync_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	genDoc, privVals := randGenesisDoc(1, false, 30)
+	genDoc, privVals := genesisDocWithValsPowers([]int64{30})
 
 	maxBlockHeight := int64(65)
 
@@ -308,12 +285,12 @@ func TestNoBlockResponse(t *testing.T) {
 func TestBadBlockStopsPeer(t *testing.T) {
 	config = test.ResetTestRoot("blocksync_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	genDoc, privVals := randGenesisDoc(1, false, 30)
+	genDoc, privVals := genesisDocWithValsPowers([]int64{30})
 
 	maxBlockHeight := int64(148)
 
 	// Other chain needs a different validator set
-	otherGenDoc, otherPrivVals := randGenesisDoc(1, false, 30)
+	otherGenDoc, otherPrivVals := genesisDocWithValsPowers([]int64{30})
 	otherChain := newReactor(t, log.TestingLogger(), otherGenDoc, otherPrivVals, maxBlockHeight)
 
 	defer func() {
@@ -389,7 +366,7 @@ func TestCheckSwitchToConsensusLastHeightZero(t *testing.T) {
 
 	config = test.ResetTestRoot("blocksync_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	genDoc, privVals := randGenesisDoc(1, false, 30)
+	genDoc, privVals := genesisDocWithValsPowers([]int64{30})
 
 	reactorPairs := make([]ReactorPair, 1, 2)
 	reactorPairs[0] = newReactor(t, log.TestingLogger(), genDoc, privVals, 0)

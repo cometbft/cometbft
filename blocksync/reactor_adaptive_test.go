@@ -152,7 +152,7 @@ func newAdaptiveSyncTestSuite(t *testing.T, name string) *adaptiveSyncTestSuite 
 	config := test.ResetTestRoot(name)
 	t.Cleanup(func() { _ = os.RemoveAll(config.RootDir) })
 
-	genDoc, privVals := randGenesisDoc(1, false, 30)
+	genDoc, privVals := genesisDocWithValsPowers([]int64{30})
 
 	return &adaptiveSyncTestSuite{
 		t:             t,

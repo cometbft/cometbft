@@ -174,39 +174,45 @@ func (ic *IngestCandidate) commitVoting(chainID string, vals *types.ValidatorSet
 // It uses the underlying internalQueue to ensure SERIAL state-machine processing inside the main receiveRoutine.
 // See handleIngestVerifiedBlock for the actual implementation and error handling.
 func (cs *State) IngestVerifiedBlock(ic IngestCandidate) (err error) {
-	logger := cs.Logger.With("height", ic.Height())
-	logger.Info("ingesting verified block")
+	height := ic.Height()
 
 	defer func() {
 		if err != nil {
-			logger.Info("failed to ingest verified block", "err", err)
+			cs.Logger.Info("Failed to ingest verified block", "height", height, "err", err)
 		} else {
-			logger.Info("ingested verified block")
+			cs.Logger.Info("Ingested verified block", "height", height)
 		}
 	}()
 
-	// register response channel so we can receive from receiveRoutine
-	ch := make(chan ingestVerifiedBlockResponse, 1)
-	defer close(ch)
+	// create a chan, so we can receive from receiveRoutine
+	responseCh := make(chan ingestVerifiedBlockResponse, 1)
+	defer close(responseCh)
 
-	req := &ingestVerifiedBlockRequest{
+	cs.ingestBlockQueue <- &ingestVerifiedBlockRequest{
 		IngestCandidate: ic,
 		sentAt:          time.Now(),
-		response:        ch,
+		response:        responseCh,
 	}
 
-	cs.sendInternalMessage(msgInfo{Msg: req})
-
 	select {
+	case res := <-responseCh:
+		return res.err
 	case <-cs.Quit():
 		return fmt.Errorf("consensus shutdown")
-	case res := <-req.response:
-		return res.err
 	}
 }
 
 // note the outcome of this call is NOT relevant to statsMsgQueue
 func (cs *State) handleIngestVerifiedBlockRequest(req *ingestVerifiedBlockRequest) {
+	cs.mtx.Lock()
+	defer cs.mtx.Unlock()
+
+	cs.Logger.Info(
+		"Ingesting verified block",
+		"height", req.Height(),
+		"queue_dur", time.Since(req.sentAt).String(),
+	)
+
 	err := cs.ingestBlock(req.IngestCandidate)
 
 	req.response <- ingestVerifiedBlockResponse{err: err}

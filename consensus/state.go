@@ -99,6 +99,7 @@ type State struct {
 	// msgs from ourself, or by timeouts
 	peerMsgQueue     chan msgInfo
 	internalMsgQueue chan msgInfo
+	ingestBlockQueue chan *ingestVerifiedBlockRequest
 	timeoutTicker    TimeoutTicker
 
 	// information about about added votes and block parts are written on this channel
@@ -157,6 +158,7 @@ func NewState(
 		txNotifier:       txNotifier,
 		peerMsgQueue:     make(chan msgInfo, msgQueueSize),
 		internalMsgQueue: make(chan msgInfo, msgQueueSize),
+		ingestBlockQueue: make(chan *ingestVerifiedBlockRequest, 1),
 		timeoutTicker:    NewTimeoutTicker(),
 		statsMsgQueue:    make(chan msgInfo, msgQueueSize),
 		done:             make(chan struct{}),
@@ -825,6 +827,20 @@ func (cs *State) receiveRoutine(maxSteps int) {
 			}
 		}
 
+		// potential verified blocks have priority over consensus messages
+		// todo: we might want to skip a verified block if all pre-commits are almost received
+		// (means the node lags by <=1 block)
+		select {
+		case req := <-cs.ingestBlockQueue:
+			cs.handleIngestVerifiedBlockRequest(req)
+			continue
+		case <-cs.Quit():
+			onExit(cs)
+			return
+		default:
+			// don't block && go to another select{}
+		}
+
 		rs := cs.RoundState
 		var mi msgInfo
 
@@ -842,25 +858,15 @@ func (cs *State) receiveRoutine(maxSteps int) {
 			// handles proposals, block parts, votes
 			// may generate internal events (votes, complete proposals, 2/3 majorities)
 			cs.handleMsg(mi)
-
 		case mi = <-cs.internalMsgQueue:
 			cs.Logger.Debug("Received message from cs.internalMsgQueue", "peer_id", mi.PeerID)
 
-			writeWal := true
-
-			// avoid writing WAL for ingested verified blocks coming from blocksync
-			if _, ok := mi.Msg.(*ingestVerifiedBlockRequest); ok {
-				writeWal = false
-			}
-
-			if writeWal {
-				// NOTE: fsync
-				if err := cs.wal.WriteSync(mi); err != nil {
-					panic(fmt.Errorf(
-						"failed to write %v msg to consensus WAL; check your file system and restart the node: %w",
-						mi, err,
-					))
-				}
+			// NOTE: fsync
+			if err := cs.wal.WriteSync(mi); err != nil {
+				panic(fmt.Errorf(
+					"failed to write %v msg to consensus WAL; check your file system and restart the node: %w",
+					mi, err,
+				))
 			}
 
 			if _, ok := mi.Msg.(*VoteMessage); ok {
@@ -873,7 +879,6 @@ func (cs *State) receiveRoutine(maxSteps int) {
 
 			// handles proposals, block parts, votes
 			cs.handleMsg(mi)
-
 		case ti := <-cs.timeoutTicker.Chan(): // tockChan:
 			if err := cs.wal.Write(ti); err != nil {
 				cs.Logger.Error("failed writing to WAL", "err", err)
@@ -882,7 +887,6 @@ func (cs *State) receiveRoutine(maxSteps int) {
 			// if the timeout is relevant to the rs
 			// go to the next step
 			cs.handleTimeout(ti, rs)
-
 		case <-cs.Quit():
 			onExit(cs)
 			return
@@ -967,9 +971,6 @@ func (cs *State) handleMsg(mi msgInfo) {
 		// TODO: If rs.Height == vote.Height && rs.Round < vote.Round,
 		// the peer is sending us CatchupCommit precommits.
 		// We could make note of this and help filter in broadcastHasVoteMessage().
-
-	case *ingestVerifiedBlockRequest:
-		cs.handleIngestVerifiedBlockRequest(msg)
 	default:
 		cs.Logger.Error("unknown msg type", "type", fmt.Sprintf("%T", msg))
 		return

@@ -134,7 +134,7 @@ func (ic *IngestCandidate) Verify(state state.State) error {
 	}
 
 	// verify commit
-	err := state.Validators.VerifyCommitLight(chainID, blockID, height, ic.commit)
+	err := state.Validators.VerifyCommit(chainID, blockID, height, ic.commit)
 	if err != nil {
 		return fmt.Errorf("verify commit: %w", err)
 	}
@@ -145,7 +145,7 @@ func (ic *IngestCandidate) Verify(state state.State) error {
 			return fmt.Errorf("ensure extensions: %w", err)
 		}
 
-		err = state.Validators.VerifyCommitLight(chainID, blockID, height, ic.extCommit.ToCommit())
+		err = state.Validators.VerifyCommit(chainID, blockID, height, ic.extCommit.ToCommit())
 		if err != nil {
 			return fmt.Errorf("verify extended commit: %w", err)
 		}

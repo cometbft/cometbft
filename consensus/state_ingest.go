@@ -174,7 +174,15 @@ func (ic *IngestCandidate) commitVoting(chainID string, vals *types.ValidatorSet
 // It uses the underlying internalQueue to ensure SERIAL state-machine processing inside the main receiveRoutine.
 // See handleIngestVerifiedBlock for the actual implementation and error handling.
 func (cs *State) IngestVerifiedBlock(ic IngestCandidate) (err error) {
-	height := ic.Height()
+	var (
+		height = ic.Height()
+		quit   = cs.Quit()
+		req    = &ingestVerifiedBlockRequest{
+			IngestCandidate: ic,
+			sentAt:          time.Now(),
+			response:        make(chan ingestVerifiedBlockResponse, 1),
+		}
+	)
 
 	defer func() {
 		if err != nil {
@@ -184,21 +192,22 @@ func (cs *State) IngestVerifiedBlock(ic IngestCandidate) (err error) {
 		}
 	}()
 
-	// create a chan, so we can receive from receiveRoutine
-	responseCh := make(chan ingestVerifiedBlockResponse, 1)
-	defer close(responseCh)
-
-	cs.ingestBlockQueue <- &ingestVerifiedBlockRequest{
-		IngestCandidate: ic,
-		sentAt:          time.Now(),
-		response:        responseCh,
+	// send to the main routine
+	select {
+	case cs.ingestBlockQueue <- req:
+		// ok, move on
+	case <-quit:
+		return ErrConsensusShutdown
 	}
 
+	// wait
 	select {
-	case res := <-responseCh:
+	case res := <-req.response:
+		// let the chan leak in other cases (that's fine for shutdown)
+		close(req.response)
 		return res.err
-	case <-cs.Quit():
-		return fmt.Errorf("consensus shutdown")
+	case <-quit:
+		return ErrConsensusShutdown
 	}
 }
 

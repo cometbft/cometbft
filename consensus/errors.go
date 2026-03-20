@@ -26,9 +26,10 @@ var (
 
 // Ingestion errors
 var (
-	ErrValidation      = errors.New("validation error")
-	ErrAlreadyIncluded = errors.New("block already included")
-	ErrHeightGap       = errors.New("height gap invariant violated")
+	ErrValidation        = errors.New("validation error")
+	ErrAlreadyIncluded   = errors.New("block already included")
+	ErrHeightGap         = errors.New("height gap invariant violated")
+	ErrConsensusShutdown = errors.New("consensus shutdown")
 )
 
 type ErrConsensusMessageNotRecognized struct {

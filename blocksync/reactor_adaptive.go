@@ -35,11 +35,8 @@ func (r *Reactor) getBlockIngestor() (BlockIngestor, error) {
 func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 	r.Logger.Info("Starting blocksync block ingestor (adaptive sync)")
 
-	trySyncTicker := time.NewTicker(intervalTrySync)
-	defer trySyncTicker.Stop()
-
-	syncIterationCh := make(chan struct{}, 1)
-	defer close(syncIterationCh)
+	ticker := time.NewTicker(intervalAdaptiveSync)
+	defer ticker.Stop()
 
 	for {
 		select {
@@ -47,13 +44,7 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 			return
 		case <-r.pool.Quit():
 			return
-		case <-trySyncTicker.C:
-			select {
-			case syncIterationCh <- struct{}{}:
-			default:
-				// do nothing, non-blocking
-			}
-		case <-syncIterationCh:
+		case <-ticker.C:
 			// See if there are any blocks to sync. We need two consecutive blocks
 			// in order to perform blocksync verification.
 			block, nextBlock, extCommit := r.pool.PeekTwoBlocks()
@@ -108,9 +99,6 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 			if !r.IsRunning() || !r.pool.IsRunning() {
 				return
 			}
-
-			// try again quickly next loop.
-			syncIterationCh <- struct{}{}
 
 			blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
 			if err != nil {

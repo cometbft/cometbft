@@ -19,6 +19,8 @@
   ([\#5648](https://github.com/cometbft/cometbft/pull/5648))
 - `[statesync]` fix adaptive_sync and streamline stateSync logic
   ([\#5663](https://github.com/cometbft/cometbft/pull/5663))
+- `[blocksync]` Modify blocksync to use full commit verification instead of light
+  ([\#5663](https://github.com/cometbft/cometbft/pull/5663))
 
 ### IMPROVEMENTS
 

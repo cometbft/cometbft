@@ -129,14 +129,20 @@ func (ic *IngestCandidate) Verify(state state.State) error {
 		)
 	}
 
-	if err := state.ValidateBlock(ic.block); err != nil {
-		return fmt.Errorf("validate block: %w", err)
-	}
-
-	// verify commit
+	// verify commit from the next block (ic.commit) using light verification to
+	// quickly ensure that 2/3+ have precommitted for this IngestCandidate.
+	//
+	// light verification is sufficient here since we are simply checking did
+	// enough voting power commit to this block? We check for the full validity
+	// of the IngestCandidates commit (ic.block.LastCommit) within
+	// ValidateBlock below.
 	err := state.Validators.VerifyCommitLight(chainID, blockID, height, ic.commit)
 	if err != nil {
 		return fmt.Errorf("verify commit: %w", err)
+	}
+
+	if err := state.ValidateBlock(ic.block); err != nil {
+		return fmt.Errorf("validate block: %w", err)
 	}
 
 	// verify commit extensions
@@ -145,7 +151,10 @@ func (ic *IngestCandidate) Verify(state state.State) error {
 			return fmt.Errorf("ensure extensions: %w", err)
 		}
 
-		err = state.Validators.VerifyCommitLight(chainID, blockID, height, ic.extCommit.ToCommit())
+		// if extensions are enabled, we must fully verify the commit since it
+		// is not validated within ValidateBlock but it will be written to the
+		// store.
+		err = state.Validators.VerifyCommit(chainID, blockID, height, ic.extCommit.ToCommit())
 		if err != nil {
 			return fmt.Errorf("verify extended commit: %w", err)
 		}

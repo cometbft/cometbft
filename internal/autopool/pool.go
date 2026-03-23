@@ -153,6 +153,10 @@ func (p *Pool[T]) Stop() {
 	p.logger.Info("Stopped pool")
 }
 
+func (p *Pool[T]) Scaler() *ThroughputLatencyScaler {
+	return p.scaler
+}
+
 // Push adds a message directly to the pool FIFO queue.
 // Blocks if the queue is full.
 func (p *Pool[T]) Push(msg T) {

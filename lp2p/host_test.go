@@ -214,6 +214,32 @@ func TestHost(t *testing.T) {
 }
 
 func TestHostConnGater(t *testing.T) {
+	t.Run("default", func(t *testing.T) {
+		// ARRANGE
+		cfg := config.DefaultP2PConfig().LibP2PConfig
+		cfg.Limits.Mode = config.LibP2PLimitsModeDefault
+
+		// ACT
+		connGater, enabled := ConnectionGaterFromConfig(cfg, nil)
+
+		// ASSERT
+		require.Nil(t, connGater)
+		require.False(t, enabled)
+	})
+
+	t.Run("disabled", func(t *testing.T) {
+		// ARRANGE
+		cfg := config.DefaultP2PConfig().LibP2PConfig
+		cfg.Limits.Mode = config.LibP2PLimitsModeDisabled
+
+		// ACT
+		connGater, enabled := ConnectionGaterFromConfig(cfg, nil)
+
+		// ASSERT
+		require.Nil(t, connGater)
+		require.False(t, enabled)
+	})
+
 	t.Run("rejectThirdPeer", func(t *testing.T) {
 		// ARRANGE
 		const (

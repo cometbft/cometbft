@@ -331,9 +331,12 @@ func TestResourceManager(t *testing.T) {
 
 		// there should be some limits base on defaults and some params related to the current machine
 		systemLimits := limiter.GetSystemLimits()
+		peerLimits := limiter.GetPeerLimits("")
 		t.Logf("systemLimits: %T: %+v", systemLimits, systemLimits)
+		t.Logf("peerLimits: %T: %+v", peerLimits, peerLimits)
 
 		require.Less(t, systemLimits.GetStreamTotalLimit(), 1_000_000)
+		require.Less(t, peerLimits.GetStreamTotalLimit(), systemLimits.GetStreamTotalLimit())
 	})
 
 	t.Run("custom", func(t *testing.T) {
@@ -371,6 +374,7 @@ func TestResourceManager(t *testing.T) {
 
 		// and also default limits on built-in "service" scope
 		require.NotEqual(t, math.MaxInt64, serviceLimits.GetStreamTotalLimit())
+		require.Less(t, peerLimits.GetStreamTotalLimit(), systemLimits.GetStreamTotalLimit())
 	})
 }
 

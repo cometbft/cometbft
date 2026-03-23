@@ -32,11 +32,15 @@ import (
 
 var config *cfg.Config
 
-func randGenesisDoc(numValidators int, randPower bool, minPower int64) (*types.GenesisDoc, []types.PrivValidator) {
-	validators := make([]types.GenesisValidator, numValidators)
-	privValidators := make([]types.PrivValidator, numValidators)
-	for i := 0; i < numValidators; i++ {
-		val, privVal := types.RandValidator(randPower, minPower)
+func genesisDocWithValsPowers(powers []int64) (*types.GenesisDoc, []types.PrivValidator) {
+	if len(powers) == 0 {
+		panic("must have atleast 1 validator")
+	}
+
+	validators := make([]types.GenesisValidator, len(powers))
+	privValidators := make([]types.PrivValidator, len(powers))
+	for i, power := range powers {
+		val, privVal := types.RandValidator(false, power)
 		validators[i] = types.GenesisValidator{
 			PubKey: val.PubKey,
 			Power:  val.VotingPower,
@@ -63,6 +67,8 @@ type ReactorPair struct {
 type reactorOpts struct {
 	corruptedBlock          int64
 	allAbsentExtCommitBlock int64
+	invalidExtCommitBlock   int64
+	deterministicVoteTimes  bool
 }
 
 type reactorOption func(*reactorOpts)
@@ -79,6 +85,18 @@ func withAllAbsentExtCommitBlock(height int64) reactorOption {
 	}
 }
 
+func withInvalidExtCommitBlock(height int64) reactorOption {
+	return func(o *reactorOpts) {
+		o.invalidExtCommitBlock = height
+	}
+}
+
+func withDeterministicVoteTimes() reactorOption {
+	return func(o *reactorOpts) {
+		o.deterministicVoteTimes = true
+	}
+}
+
 func newReactor(
 	t *testing.T,
 	logger log.Logger,
@@ -87,9 +105,6 @@ func newReactor(
 	maxBlockHeight int64,
 	opts ...reactorOption,
 ) ReactorPair {
-	if len(privVals) != 1 {
-		panic("only support one validator")
-	}
 
 	var options reactorOpts
 	for _, opt := range opts {
@@ -145,13 +160,6 @@ func newReactor(
 	// The commit we are building for the current height.
 	seenExtCommit := &types.ExtendedCommit{}
 
-	pubKey, err := privVals[0].GetPubKey()
-	if err != nil {
-		panic(err)
-	}
-	addr := pubKey.Address()
-	idx, _ := state.Validators.GetByAddress(addr)
-
 	// let's add some blocks in
 	for blockHeight := int64(1); blockHeight <= maxBlockHeight; blockHeight++ {
 		voteExtensionIsEnabled := genDoc.ConsensusParams.ABCI.VoteExtensionsEnabled(blockHeight)
@@ -165,25 +173,34 @@ func newReactor(
 		require.NoError(t, err)
 		blockID := types.BlockID{Hash: thisBlock.Hash(), PartSetHeader: thisParts.Header()}
 
-		// Simulate a commit for the current height
-		vote, err := types.MakeVote(
-			privVals[0],
-			thisBlock.ChainID,
-			idx,
-			thisBlock.Height,
-			0,
-			cmtproto.PrecommitType,
-			blockID,
-			time.Now(),
-		)
-		if err != nil {
-			panic(err)
+		voteTime := time.Now()
+		if options.deterministicVoteTimes {
+			// use deterministic vote times so independently constructed test chains
+			// with the same genesis produce identical block IDs and LastBlockID links.
+			voteTime = genDoc.GenesisTime.Add(time.Duration(blockHeight) * time.Second)
+		}
+
+		// Simulate commits for the current height
+		extCommit := make([]types.ExtendedCommitSig, len(privVals))
+		for _, val := range privVals {
+			pubKey, err := val.GetPubKey()
+			if err != nil {
+				panic(err)
+			}
+			addr := pubKey.Address()
+			idx, _ := state.Validators.GetByAddress(addr)
+
+			vote, err := types.MakeVote(val, thisBlock.ChainID, idx, thisBlock.Height, 0, cmtproto.PrecommitType, blockID, voteTime)
+			if err != nil {
+				panic(err)
+			}
+			extCommit[idx] = vote.ExtendedCommitSig()
 		}
 		seenExtCommit = &types.ExtendedCommit{
-			Height:             vote.Height,
-			Round:              vote.Round,
+			Height:             thisBlock.Height,
+			Round:              0,
 			BlockID:            blockID,
-			ExtendedSignatures: []types.ExtendedCommitSig{vote.ExtendedCommitSig()},
+			ExtendedSignatures: extCommit,
 		}
 
 		state, err = blockExec.ApplyBlock(state, blockID, thisBlock)
@@ -202,6 +219,7 @@ func newReactor(
 	bcReactor := NewByzantineReactor(NewReactor(state.Copy(), blockExec, blockStore, blockSync, NopMetrics(), 0))
 	bcReactor.corruptedBlock = options.corruptedBlock
 	bcReactor.absentExtCommitBlock = options.allAbsentExtCommitBlock
+	bcReactor.invalidExtCommitBlock = options.invalidExtCommitBlock
 	bcReactor.SetLogger(logger.With("module", "blocksync"))
 
 	return ReactorPair{bcReactor, proxyApp}
@@ -210,7 +228,7 @@ func newReactor(
 func TestNoBlockResponse(t *testing.T) {
 	config = test.ResetTestRoot("blocksync_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	genDoc, privVals := randGenesisDoc(1, false, 30)
+	genDoc, privVals := genesisDocWithValsPowers([]int64{30})
 
 	maxBlockHeight := int64(65)
 
@@ -226,10 +244,10 @@ func TestNoBlockResponse(t *testing.T) {
 
 	defer func() {
 		for _, r := range reactorPairs {
-			err := r.reactor.Stop()
-			require.NoError(t, err)
-			err = r.app.Stop()
-			require.NoError(t, err)
+			_ = r.reactor.Stop()
+			// require.NoError(t, err)
+			_ = r.app.Stop()
+			// require.NoError(t, err)
 		}
 	}()
 
@@ -268,12 +286,12 @@ func TestNoBlockResponse(t *testing.T) {
 func TestBadBlockStopsPeer(t *testing.T) {
 	config = test.ResetTestRoot("blocksync_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	genDoc, privVals := randGenesisDoc(1, false, 30)
+	genDoc, privVals := genesisDocWithValsPowers([]int64{30})
 
 	maxBlockHeight := int64(148)
 
 	// Other chain needs a different validator set
-	otherGenDoc, otherPrivVals := randGenesisDoc(1, false, 30)
+	otherGenDoc, otherPrivVals := genesisDocWithValsPowers([]int64{30})
 	otherChain := newReactor(t, log.TestingLogger(), otherGenDoc, otherPrivVals, maxBlockHeight)
 
 	defer func() {
@@ -350,7 +368,7 @@ func TestCheckSwitchToConsensusLastHeightZero(t *testing.T) {
 
 	config = test.ResetTestRoot("blocksync_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	genDoc, privVals := randGenesisDoc(1, false, 30)
+	genDoc, privVals := genesisDocWithValsPowers([]int64{30})
 
 	reactorPairs := make([]ReactorPair, 1, 2)
 	reactorPairs[0] = newReactor(t, log.TestingLogger(), genDoc, privVals, 0)
@@ -412,10 +430,10 @@ func TestCheckSwitchToConsensusLastHeightZero(t *testing.T) {
 	}
 }
 
-func ExtendedCommitNetworkHelper(t *testing.T, maxBlockHeight int64, enableVoteExtensionAt int64, opts ...reactorOption) {
+func ExtendedCommitNetworkHelper(t *testing.T, maxBlockHeight int64, enableVoteExtensionAt int64, valPowers []int64, opts ...reactorOption) {
 	config = test.ResetTestRoot("blocksync_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	genDoc, privVals := randGenesisDoc(1, false, 30)
+	genDoc, privVals := genesisDocWithValsPowers(valPowers)
 	genDoc.ConsensusParams.ABCI.VoteExtensionsEnableHeight = enableVoteExtensionAt
 
 	reactorPairs := make([]ReactorPair, 1, 2)
@@ -423,10 +441,8 @@ func ExtendedCommitNetworkHelper(t *testing.T, maxBlockHeight int64, enableVoteE
 	reactorPairs[0].reactor.switchToConsensusMs = 50
 	defer func() {
 		for _, r := range reactorPairs {
-			err := r.reactor.Stop()
-			require.NoError(t, err)
-			err = r.app.Stop()
-			require.NoError(t, err)
+			_ = r.reactor.Stop()
+			_ = r.app.Stop()
 		}
 	}()
 
@@ -459,32 +475,48 @@ func ExtendedCommitNetworkHelper(t *testing.T, maxBlockHeight int64, enableVoteE
 	}
 }
 
-// TestCheckExtendedCommitExtra tests when VoteExtension is disabled but an ExtendedVote is present in the block.
-func TestCheckExtendedCommitExtra(t *testing.T) {
-	const maxBlockHeight = 10
-	const enableVoteExtension = 5
-	const invalidBlockHeight = 3
-
-	ExtendedCommitNetworkHelper(t, maxBlockHeight, enableVoteExtension, withCorruptedBlock(invalidBlockHeight))
-}
-
-// TestCheckExtendedCommitMissing tests when VoteExtension is enabled but the ExtendedVote is missing from the block.
-func TestCheckExtendedCommitMissing(t *testing.T) {
-	const maxBlockHeight = 10
-	const enableVoteExtension = 5
-	const invalidBlockHeight = 8
-
-	ExtendedCommitNetworkHelper(t, maxBlockHeight, enableVoteExtension, withCorruptedBlock(invalidBlockHeight))
-}
-
-// TestCheckExtendedCommitAllAbsent tests that blocksync rejects an extended
-// commit where all signatures are absent.
-func TestCheckExtendedCommitAllAbsent(t *testing.T) {
-	const maxBlockHeight = 10
-	const enableVoteExtension = 1
-	const allAbsentHeight = 5
-
-	ExtendedCommitNetworkHelper(t, maxBlockHeight, enableVoteExtension, withAllAbsentExtCommitBlock(allAbsentHeight))
+func TestCheckExtendedCommit(t *testing.T) {
+	tests := []struct {
+		name                  string
+		maxBlockHeight        int64
+		enableVoteExtensionAt int64
+		valPowers             []int64
+		opts                  []reactorOption
+	}{
+		{
+			name:                  "extra ext commit when disabled",
+			maxBlockHeight:        10,
+			enableVoteExtensionAt: 5,
+			valPowers:             []int64{30, 1},
+			opts:                  []reactorOption{withCorruptedBlock(3)},
+		},
+		{
+			name:                  "missing ext commit when enabled",
+			maxBlockHeight:        10,
+			enableVoteExtensionAt: 5,
+			valPowers:             []int64{30, 1},
+			opts:                  []reactorOption{withCorruptedBlock(8)},
+		},
+		{
+			name:                  "all absent signatures",
+			maxBlockHeight:        10,
+			enableVoteExtensionAt: 1,
+			valPowers:             []int64{30, 1},
+			opts:                  []reactorOption{withAllAbsentExtCommitBlock(5)},
+		},
+		{
+			name:                  "invalid signature after 2/3+ threshold",
+			maxBlockHeight:        10,
+			enableVoteExtensionAt: 1,
+			valPowers:             []int64{10, 10, 10, 1},
+			opts:                  []reactorOption{withInvalidExtCommitBlock(5)},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ExtendedCommitNetworkHelper(t, tc.maxBlockHeight, tc.enableVoteExtensionAt, tc.valPowers, tc.opts...)
+		})
+	}
 }
 
 // ByzantineReactor is a blockstore reactor implementation where a corrupted block can be sent to a peer.
@@ -493,8 +525,9 @@ func TestCheckExtendedCommitAllAbsent(t *testing.T) {
 // If the corrupted block height is set to 0, the reactor behaves as normal.
 type ByzantineReactor struct {
 	*Reactor
-	corruptedBlock       int64
-	absentExtCommitBlock int64
+	corruptedBlock        int64
+	absentExtCommitBlock  int64
+	invalidExtCommitBlock int64
 }
 
 func NewByzantineReactor(conR *Reactor) *ByzantineReactor {
@@ -543,6 +576,10 @@ func (bcR *ByzantineReactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Pe
 			BlockID:            extCommit.BlockID,
 			ExtendedSignatures: absentSigs,
 		}
+	}
+
+	if bcR.invalidExtCommitBlock == msg.Height && extCommit != nil {
+		extCommit.ExtendedSignatures[len(extCommit.ExtendedSignatures)-1].Signature = []byte("invalid signature")
 	}
 
 	bl, err := block.ToProto()

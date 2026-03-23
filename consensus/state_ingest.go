@@ -18,6 +18,8 @@ type IngestCandidate struct {
 	commit     *types.Commit
 	extCommit  *types.ExtendedCommit
 
+	blockValidator func(state.State, *types.Block) error
+
 	verified bool
 
 	// caches IngestCandidate.BlockID() to avoid recalculating it
@@ -40,12 +42,14 @@ func NewIngestCandidate(
 	blockParts *types.PartSet,
 	commit *types.Commit,
 	extCommit *types.ExtendedCommit,
+	blockValidator func(state.State, *types.Block) error,
 ) (IngestCandidate, error) {
 	ic := IngestCandidate{
-		block:      block,
-		blockParts: blockParts,
-		commit:     commit,
-		extCommit:  extCommit,
+		block:          block,
+		blockParts:     blockParts,
+		commit:         commit,
+		extCommit:      extCommit,
+		blockValidator: blockValidator,
 	}
 
 	if err := ic.ValidateBasic(); err != nil {
@@ -83,6 +87,8 @@ func (ic *IngestCandidate) ValidateBasic() error {
 		return errors.Wrap(ErrValidation, "part set is nil")
 	case ic.commit == nil:
 		return errors.Wrap(ErrValidation, "commit is nil")
+	case ic.blockValidator == nil:
+		return errors.Wrap(ErrValidation, "block validator is nil")
 	}
 
 	// validate commit/extCommit
@@ -113,7 +119,7 @@ func (ic *IngestCandidate) ValidateBasic() error {
 }
 
 // Verify verifies the block against provided state using light client verification.
-func (ic *IngestCandidate) Verify(state state.State, evidenceChecker func(types.EvidenceList) error) error {
+func (ic *IngestCandidate) Verify(state state.State) error {
 	var (
 		height            = ic.Height()
 		blockID           = ic.BlockID()
@@ -129,10 +135,6 @@ func (ic *IngestCandidate) Verify(state state.State, evidenceChecker func(types.
 		)
 	}
 
-	if evidenceChecker == nil {
-		return fmt.Errorf("evidence checker is nil")
-	}
-
 	// verify commit from the next block (ic.commit) using light verification to
 	// quickly ensure that 2/3+ have precommitted for this IngestCandidate.
 	//
@@ -145,7 +147,8 @@ func (ic *IngestCandidate) Verify(state state.State, evidenceChecker func(types.
 		return fmt.Errorf("verify commit: %w", err)
 	}
 
-	if err := state.ValidateBlock(ic.block); err != nil {
+	// validate block
+	if err := ic.blockValidator(state, ic.block); err != nil {
 		return fmt.Errorf("validate block: %w", err)
 	}
 
@@ -162,11 +165,6 @@ func (ic *IngestCandidate) Verify(state state.State, evidenceChecker func(types.
 		if err != nil {
 			return fmt.Errorf("verify extended commit: %w", err)
 		}
-	}
-
-	// check evidence
-	if err := evidenceChecker(ic.block.Evidence.Evidence); err != nil {
-		return fmt.Errorf("check evidence: %w", err)
 	}
 
 	ic.verified = true

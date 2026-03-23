@@ -2,7 +2,6 @@ package consensus
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -248,14 +247,6 @@ func TestIngestCandidate(t *testing.T) {
 				},
 				errContains: "verify extended commit",
 			},
-			{
-				name:           "invalid evidence",
-				voteExtensions: false,
-				evidenceChecker: func(evidence types.EvidenceList) error {
-					return fmt.Errorf("oops")
-				},
-				errContains: "check evidence: oops",
-			},
 		} {
 			t.Run(tt.name, func(t *testing.T) {
 				// ARRANGE
@@ -283,13 +274,8 @@ func TestIngestCandidate(t *testing.T) {
 					tt.mutate(&ic, &verifyState)
 				}
 
-				evidenceChecker := ts.cs.blockExec.CheckEvidence
-				if tt.evidenceChecker != nil {
-					evidenceChecker = tt.evidenceChecker
-				}
-
 				// ACT
-				err := ic.Verify(verifyState, evidenceChecker)
+				err := ic.Verify(verifyState)
 
 				// ASSERT
 				if tt.errContains == "" {
@@ -376,9 +362,11 @@ func (ts *ingestTestSuite) MakeIngestCandidate() IngestCandidate {
 		extCommit = nil
 	}
 
-	ic, err := NewIngestCandidate(block, blockParts, commit, extCommit)
+	blockValidator := ts.cs.blockExec.ValidateBlock
+
+	ic, err := NewIngestCandidate(block, blockParts, commit, extCommit, blockValidator)
 	require.NoError(ts.t, err, "failed to create ingest candidate")
-	require.NoError(ts.t, ic.Verify(ts.cs.state, ts.cs.blockExec.CheckEvidence), "failed to verify ingest candidate")
+	require.NoError(ts.t, ic.Verify(ts.cs.state), "failed to verify ingest candidate")
 
 	return ic
 }

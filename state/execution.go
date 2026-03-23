@@ -202,10 +202,6 @@ func (blockExec *BlockExecutor) ValidateBlock(state State, block *types.Block) e
 	return blockExec.evpool.CheckEvidence(block.Evidence.Evidence)
 }
 
-func (blockExec *BlockExecutor) CheckEvidence(evidence types.EvidenceList) error {
-	return blockExec.evpool.CheckEvidence(evidence)
-}
-
 // ApplyVerifiedBlock does the same as `ApplyBlock`, but skips verification.
 func (blockExec *BlockExecutor) ApplyVerifiedBlock(
 	state State, blockID types.BlockID, block *types.Block,

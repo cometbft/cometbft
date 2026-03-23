@@ -108,14 +108,21 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 			}
 
 			// create ingest candidate block...
-			ic, err := consensus.NewIngestCandidate(block, blockParts, nextBlock.LastCommit, extCommit)
+			ic, err := consensus.NewIngestCandidate(
+				block,
+				blockParts,
+				nextBlock.LastCommit,
+				extCommit,
+				r.blockExec.ValidateBlock,
+			)
+
 			if err != nil {
 				r.handleValidationFailure(block, nextBlock, fmt.Errorf("new ingest candidate: %w", err))
 				continue
 			}
 
 			// ... and verify it against the state
-			if err := ic.Verify(state, r.blockExec.CheckEvidence); err != nil {
+			if err := ic.Verify(state); err != nil {
 				r.handleValidationFailure(block, nextBlock, fmt.Errorf("verify ingest candidate: %w", err))
 				continue
 			}

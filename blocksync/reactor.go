@@ -546,39 +546,55 @@ FOR_LOOP:
 			firstPartSetHeader := firstParts.Header()
 			firstID := types.BlockID{Hash: first.Hash(), PartSetHeader: firstPartSetHeader}
 
-			// Finally, verify the first block using the second's commit
-			// NOTE: we can probably make this more efficient, but note that calling
-			// first.Hash() doesn't verify the tx contents, so MakePartSet() is
-			// currently necessary.
-			// TODO(sergio): Should we also validate against the extended commit?
-			err = state.Validators.VerifyCommitLight(chainID, firstID, first.Height, second.LastCommit)
-
-			if err == nil {
-				// validate the block before we persist it
-				err = r.blockExec.ValidateBlock(state, first)
-			}
-
 			// vote extension validations
 			presentExtCommit := extCommit != nil
 			extensionsEnabled := state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height)
+
 			if presentExtCommit != extensionsEnabled {
 				err = fmt.Errorf("non-nil extended commit must be received iff vote extensions are enabled for its height "+
 					"(height %d, non-nil extended commit %t, extensions enabled %t)",
 					first.Height, presentExtCommit, extensionsEnabled,
 				)
-			}
-			if err == nil && extensionsEnabled {
-				// if vote extensions were required at this height, ensure they exist.
-				err = extCommit.EnsureExtensions(true)
-			}
-			if err == nil && extensionsEnabled {
-				// if vote extensions were required at this height, validate the extended commit
-				err = state.Validators.VerifyCommitLight(chainID, firstID, first.Height, extCommit.ToCommit())
+				r.handleValidationFailure(first, second, err)
+				continue FOR_LOOP
 			}
 
+			// verify the first block using the second's commit.
+			//
+			// light verification suffices here because ValidateBlock (below) will
+			// fully verify second.LastCommit when second is processed as first in
+			// the next iteration.
+			//
+			// we are simply checking if 2/3+ of power has precomitted for
+			// first as a fast check. During ValidateBlock, we will check for
+			// the full validity of first's commit.
+			err = state.Validators.VerifyCommitLight(chainID, firstID, first.Height, second.LastCommit)
 			if err != nil {
 				r.handleValidationFailure(first, second, err)
 				continue FOR_LOOP
+			}
+
+			// validate the block before we persist it, we willfully verify
+			// first's commit within.
+			if err = r.blockExec.ValidateBlock(state, first); err != nil {
+				r.handleValidationFailure(first, second, err)
+				continue FOR_LOOP
+			}
+
+			if extensionsEnabled {
+				// if vote extensions were required at this height, ensure they exist.
+				if err = extCommit.EnsureExtensions(true); err != nil {
+					r.handleValidationFailure(first, second, err)
+					continue FOR_LOOP
+				}
+
+				// if vote extensions were required at this height, verify all
+				// signatures in the extended commit since it is persisted to
+				// the store.
+				if err = state.Validators.VerifyCommit(chainID, firstID, first.Height, extCommit.ToCommit()); err != nil {
+					r.handleValidationFailure(first, second, err)
+					continue FOR_LOOP
+				}
 			}
 
 			r.pool.PopRequest()

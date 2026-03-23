@@ -115,7 +115,7 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 			}
 
 			// ... and verify it against the state
-			if err := ic.Verify(state); err != nil {
+			if err := ic.Verify(state, r.blockExec.CheckEvidence); err != nil {
 				r.handleValidationFailure(block, nextBlock, fmt.Errorf("verify ingest candidate: %w", err))
 				continue
 			}

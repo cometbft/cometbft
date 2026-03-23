@@ -113,7 +113,7 @@ func (ic *IngestCandidate) ValidateBasic() error {
 }
 
 // Verify verifies the block against provided state using light client verification.
-func (ic *IngestCandidate) Verify(state state.State) error {
+func (ic *IngestCandidate) Verify(state state.State, evidenceChecker func(types.EvidenceList) error) error {
 	var (
 		height            = ic.Height()
 		blockID           = ic.BlockID()
@@ -127,6 +127,10 @@ func (ic *IngestCandidate) Verify(state state.State) error {
 			"invalid ext commit state: height %d: extensionsPresent=%t, extensionsEnabled=%t",
 			ic.Height(), extensionsPresent, ic.extensionsEnabled(),
 		)
+	}
+
+	if evidenceChecker == nil {
+		return fmt.Errorf("evidence checker is nil")
 	}
 
 	// verify commit from the next block (ic.commit) using light verification to
@@ -158,6 +162,11 @@ func (ic *IngestCandidate) Verify(state state.State) error {
 		if err != nil {
 			return fmt.Errorf("verify extended commit: %w", err)
 		}
+	}
+
+	// check evidence
+	if err := evidenceChecker(ic.block.Evidence.Evidence); err != nil {
+		return fmt.Errorf("check evidence: %w", err)
 	}
 
 	ic.verified = true

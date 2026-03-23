@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -185,10 +186,11 @@ func TestIngestCandidate(t *testing.T) {
 
 	t.Run("Verify", func(t *testing.T) {
 		for _, tt := range []struct {
-			name           string
-			voteExtensions bool
-			mutate         func(ic *IngestCandidate, st *sm.State)
-			errContains    string
+			name            string
+			voteExtensions  bool
+			mutate          func(ic *IngestCandidate, st *sm.State)
+			evidenceChecker func(types.EvidenceList) error
+			errContains     string
 		}{
 			{
 				name:           "valid candidate",
@@ -246,6 +248,14 @@ func TestIngestCandidate(t *testing.T) {
 				},
 				errContains: "verify extended commit",
 			},
+			{
+				name:           "invalid evidence",
+				voteExtensions: false,
+				evidenceChecker: func(evidence types.EvidenceList) error {
+					return fmt.Errorf("oops")
+				},
+				errContains: "check evidence: oops",
+			},
 		} {
 			t.Run(tt.name, func(t *testing.T) {
 				// ARRANGE
@@ -273,8 +283,13 @@ func TestIngestCandidate(t *testing.T) {
 					tt.mutate(&ic, &verifyState)
 				}
 
+				evidenceChecker := ts.cs.blockExec.CheckEvidence
+				if tt.evidenceChecker != nil {
+					evidenceChecker = tt.evidenceChecker
+				}
+
 				// ACT
-				err := ic.Verify(verifyState)
+				err := ic.Verify(verifyState, evidenceChecker)
 
 				// ASSERT
 				if tt.errContains == "" {
@@ -363,7 +378,7 @@ func (ts *ingestTestSuite) MakeIngestCandidate() IngestCandidate {
 
 	ic, err := NewIngestCandidate(block, blockParts, commit, extCommit)
 	require.NoError(ts.t, err, "failed to create ingest candidate")
-	require.NoError(ts.t, ic.Verify(ts.cs.state), "failed to verify ingest candidate")
+	require.NoError(ts.t, ic.Verify(ts.cs.state, ts.cs.blockExec.CheckEvidence), "failed to verify ingest candidate")
 
 	return ic
 }

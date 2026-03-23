@@ -134,7 +134,7 @@ func (ic *IngestCandidate) Verify(state state.State) error {
 	}
 
 	// verify commit
-	err := state.Validators.VerifyCommit(chainID, blockID, height, ic.commit)
+	err := state.Validators.VerifyCommitLight(chainID, blockID, height, ic.commit)
 	if err != nil {
 		return fmt.Errorf("verify commit: %w", err)
 	}

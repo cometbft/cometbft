@@ -362,7 +362,7 @@ func (sw *Switch) Peers() IPeerSet {
 }
 
 // StopPeerForError disconnects from a peer due to external error.
-// If the peer is persistent, it will attempt to reconnect.
+// If the peer is persistent, or the error is transient, it will attempt to reconnect.
 // TODO: make record depending on reason.
 func (sw *Switch) StopPeerForError(peer Peer, reason any) {
 	if !peer.IsRunning() {
@@ -372,21 +372,41 @@ func (sw *Switch) StopPeerForError(peer Peer, reason any) {
 	sw.Logger.Error("Stopping peer for error", "peer", peer, "err", reason)
 	sw.stopAndRemovePeer(peer, reason)
 
+	shouldReconnect := false
+
 	if peer.IsPersistent() {
-		var addr *NetAddress
-		if peer.IsOutbound() { // socket address for outbound peers
-			addr = peer.SocketAddr()
-		} else { // self-reported address for inbound peers
-			var err error
-			addr, err = peer.NodeInfo().NetAddress()
-			if err != nil {
-				sw.Logger.Error("Wanted to reconnect to inbound peer, but self-reported address is wrong",
-					"peer", peer, "err", err)
-				return
-			}
-		}
-		go sw.reconnectToPeer(addr)
+		shouldReconnect = true
+		sw.Logger.Debug("Will reconnect to persistent peer", "peer", peer, "err", reason)
+	} else if errTransient, ok := TransientErrorFromAny(reason); ok {
+		shouldReconnect = true
+		sw.Logger.Debug("Will reconnect to peer after transient error", "peer", peer, "err", errTransient.Err)
 	}
+
+	// guard reconnect logic
+	if !shouldReconnect {
+		return
+	}
+
+	var addr *NetAddress
+
+	// socket address for outbound peers
+	if peer.IsOutbound() {
+		addr = peer.SocketAddr()
+	} else {
+		// self-reported address for inbound peers
+		var err error
+		addr, err = peer.NodeInfo().NetAddress()
+		if err != nil {
+			sw.Logger.Error(
+				"Wanted to reconnect to inbound peer, but self-reported address is wrong",
+				"peer", peer,
+				"err", err,
+			)
+			return
+		}
+	}
+
+	go sw.reconnectToPeer(addr)
 }
 
 // StopPeerGracefully disconnects from a peer gracefully.

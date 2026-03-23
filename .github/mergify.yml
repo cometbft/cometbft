@@ -22,17 +22,16 @@ pull_request_rules:
       merge:
         method: squash
 
-  - name: merge PR (v1.x)
-    description: merge PR if it passes tests and there are no conflicts (v1.x)
+  - name: merge PR (v0.39.x)
+    description: merge PR if it passes tests and there are no conflicts (v0.39.x)
     conditions:
       - "-label = manual-backport"
       - author = mergify[bot]
       - head ~= ^mergify/bp/
-      - base = v1.x
+      - base = v0.39.x
       - "check-success = Build (arm, linux)"
       - "check-success = check"
-      - "check-success = check-mocks-metrics"
-      - "check-success = lint"
+      - "check-success = golangci-lint"
       - "check-success = e2e-test"
       - "check-success = tests (00)"
       - "check-success = tests (01)"
@@ -42,7 +41,6 @@ pull_request_rules:
       - "check-success = tests (05)"
       - "check-success = test_abci_cli"
       - "check-success = test_apps"
-      - "check-success = check-proto"
     actions:
       merge:
         method: squash
@@ -73,14 +71,14 @@ pull_request_rules:
     actions:
       update:
 
-  - name: backport patches to v1.x branch
+  - name: backport patches to v0.39.x branch
     conditions:
       - base = main
-      - label = backport-to-v1.x
+      - label = backport-to-v0.39.x
     actions:
       backport:
         branches:
-          - v1.x
+          - v0.39.x
         assignees:
           - "{{ author }}"
 

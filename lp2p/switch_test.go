@@ -62,11 +62,6 @@ func TestSwitch(t *testing.T) {
 			hostB = makeTestHost(t, ports[1], withLogging(), withPrivateKey(privateKeyB))
 		)
 
-		t.Cleanup(func() {
-			hostB.Close()
-			hostA.Close()
-		})
-
 		// Given switch A (NOT started yet)
 		switchA, err := NewSwitch(
 			nil,
@@ -141,12 +136,6 @@ func TestSwitch(t *testing.T) {
 			hostB = makeTestHost(t, ports[1], withLogging())
 			hostC = makeTestHost(t, ports[2], withLogging())
 		)
-
-		t.Cleanup(func() {
-			hostC.Close()
-			hostB.Close()
-			hostA.Close()
-		})
 
 		// Given switch A with hosts B and C as bootstrap peers
 		switchA, err := NewSwitch(
@@ -241,11 +230,6 @@ func TestSwitch(t *testing.T) {
 			hostB = makeTestHost(t, ports[1], withLogging())
 		)
 
-		t.Cleanup(func() {
-			hostB.Close()
-			hostA.Close()
-		})
-
 		// Given switch A
 		switchA, err := NewSwitch(
 			nil,
@@ -274,7 +258,7 @@ func TestSwitch(t *testing.T) {
 		require.Equal(t, 1, switchA.Peers().Size())
 
 		// ACT #2: Stop peer B with a TRANSIENT error (should trigger reconnection)
-		transientErr := &ErrorTransient{Err: errors.New("something went wrong")}
+		transientErr := &p2p.ErrorTransient{Err: errors.New("something went wrong")}
 		switchA.StopPeerForError(peerB, transientErr)
 
 		// ASSERT #2: Peer B is removed initially

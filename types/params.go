@@ -46,6 +46,7 @@ type ConsensusParams struct {
 	Validator ValidatorParams `json:"validator"`
 	Version   VersionParams   `json:"version"`
 	ABCI      ABCIParams      `json:"abci"`
+	Authority AuthorityParams `json:"authority"`
 }
 
 // BlockParams define limits on the block size and gas plus minimum time
@@ -90,6 +91,13 @@ func (a ABCIParams) VoteExtensionsEnabled(h int64) bool {
 	return a.VoteExtensionsEnableHeight <= h
 }
 
+// AuthorityParams holds an opaque authority string to be configured and
+// interpreted by the application for authorizing parameter changes outside of
+// governance. CometBFT only enforces a maximum length.
+type AuthorityParams struct {
+	Authority string `json:"authority"`
+}
+
 // DefaultConsensusParams returns a default ConsensusParams.
 func DefaultConsensusParams() *ConsensusParams {
 	return &ConsensusParams{
@@ -98,6 +106,7 @@ func DefaultConsensusParams() *ConsensusParams {
 		Validator: DefaultValidatorParams(),
 		Version:   DefaultVersionParams(),
 		ABCI:      DefaultABCIParams(),
+		Authority: DefaultAuthorityParams(),
 	}
 }
 
@@ -136,6 +145,15 @@ func DefaultABCIParams() ABCIParams {
 	return ABCIParams{
 		// When set to 0, vote extensions are not required.
 		VoteExtensionsEnableHeight: 0,
+	}
+}
+
+// DefaultAuthorityParams returns a default AuthorityParams with an empty
+// authority. The application is responsible for setting it via InitChain
+// or a parameter update.
+func DefaultAuthorityParams() AuthorityParams {
+	return AuthorityParams{
+		Authority: "",
 	}
 }
 
@@ -208,6 +226,13 @@ func (params ConsensusParams) ValidateBasic() error {
 			return fmt.Errorf("params.Validator.PubKeyTypes[%d], %s, is an unknown pubkey type",
 				i, keyType)
 		}
+	}
+
+	// Validate Authority params
+	const maxAuthorityLength = 256
+	if len(params.Authority.Authority) > maxAuthorityLength {
+		return fmt.Errorf("authority exceeds maximum length of %d characters (got %d)",
+			maxAuthorityLength, len(params.Authority.Authority))
 	}
 
 	return nil
@@ -327,6 +352,9 @@ func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) Consensu
 	if params2.Abci != nil {
 		res.ABCI.VoteExtensionsEnableHeight = params2.Abci.GetVoteExtensionsEnableHeight()
 	}
+	if params2.Authority != nil {
+		res.Authority.Authority = params2.Authority.Authority
+	}
 	return res
 }
 
@@ -349,6 +377,9 @@ func (params *ConsensusParams) ToProto() cmtproto.ConsensusParams {
 		},
 		Abci: &cmtproto.ABCIParams{
 			VoteExtensionsEnableHeight: params.ABCI.VoteExtensionsEnableHeight,
+		},
+		Authority: &cmtproto.AuthorityParams{
+			Authority: params.Authority.Authority,
 		},
 	}
 }
@@ -373,6 +404,9 @@ func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams
 	}
 	if pbParams.Abci != nil {
 		c.ABCI.VoteExtensionsEnableHeight = pbParams.Abci.GetVoteExtensionsEnableHeight()
+	}
+	if pbParams.Authority != nil {
+		c.Authority.Authority = pbParams.Authority.Authority
 	}
 	return c
 }

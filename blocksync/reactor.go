@@ -10,7 +10,6 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/lp2p"
 	"github.com/cometbft/cometbft/p2p"
 	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
 	sm "github.com/cometbft/cometbft/state"
@@ -23,7 +22,7 @@ const BlocksyncChannel = byte(0x40)
 
 const (
 	defaultIntervalStatusUpdate      = 10 * time.Second
-	combinedModeInternalStatusUpdate = 1 * time.Second
+	adaptiveSyncInternalStatusUpdate = 1 * time.Second
 
 	defaultIntervalSwitchToConsensus = 1 * time.Second
 
@@ -63,9 +62,9 @@ type Reactor struct {
 	enabled *atomic.Bool
 
 	// if enabled, pending blocks are forwarded to BlockIngestor for
-	// further commitment. This effectively combines BLOCKSYNC with CONSENSUS,
-	// making them operate simultaneously.
-	combinedModeEnabled bool
+	// further commitment. This effectively runs BLOCKSYNC and CONSENSUS
+	// simultaneously (adaptive sync).
+	adaptiveSyncEnabled bool
 
 	blockExec     *sm.BlockExecutor
 	store         sm.BlockStore
@@ -88,7 +87,7 @@ type Reactor struct {
 // NewReactorWithAddr returns new Reactor instance with local address
 func NewReactor(
 	enabled bool,
-	combinedMode bool,
+	adaptiveSync bool,
 	state sm.State,
 	blockExec *sm.BlockExecutor,
 	store *store.BlockStore,
@@ -132,8 +131,8 @@ func NewReactor(
 	enabledFlag.Store(enabled)
 
 	intervalStatusUpdate := defaultIntervalStatusUpdate
-	if combinedMode {
-		intervalStatusUpdate = combinedModeInternalStatusUpdate
+	if adaptiveSync {
+		intervalStatusUpdate = adaptiveSyncInternalStatusUpdate
 	}
 
 	r := &Reactor{
@@ -142,7 +141,7 @@ func NewReactor(
 		store:                     store,
 		pool:                      pool,
 		enabled:                   enabledFlag,
-		combinedModeEnabled:       combinedMode,
+		adaptiveSyncEnabled:       adaptiveSync,
 		localAddr:                 localAddr,
 		requestsCh:                requestsCh,
 		errorsCh:                  errorsCh,
@@ -193,7 +192,7 @@ func (r *Reactor) runPool(stateSynced bool) error {
 		r.poolEventsRoutine(ticker)
 	})
 
-	if r.combinedModeEnabled {
+	if r.adaptiveSyncEnabled {
 		// supply blocks to the consensus machine
 		blockIngestor, err := r.getBlockIngestor()
 		if err != nil {
@@ -547,39 +546,55 @@ FOR_LOOP:
 			firstPartSetHeader := firstParts.Header()
 			firstID := types.BlockID{Hash: first.Hash(), PartSetHeader: firstPartSetHeader}
 
-			// Finally, verify the first block using the second's commit
-			// NOTE: we can probably make this more efficient, but note that calling
-			// first.Hash() doesn't verify the tx contents, so MakePartSet() is
-			// currently necessary.
-			// TODO(sergio): Should we also validate against the extended commit?
-			err = state.Validators.VerifyCommitLight(chainID, firstID, first.Height, second.LastCommit)
-
-			if err == nil {
-				// validate the block before we persist it
-				err = r.blockExec.ValidateBlock(state, first)
-			}
-
 			// vote extension validations
 			presentExtCommit := extCommit != nil
 			extensionsEnabled := state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height)
+
 			if presentExtCommit != extensionsEnabled {
 				err = fmt.Errorf("non-nil extended commit must be received iff vote extensions are enabled for its height "+
 					"(height %d, non-nil extended commit %t, extensions enabled %t)",
 					first.Height, presentExtCommit, extensionsEnabled,
 				)
-			}
-			if err == nil && extensionsEnabled {
-				// if vote extensions were required at this height, ensure they exist.
-				err = extCommit.EnsureExtensions(true)
-			}
-			if err == nil && extensionsEnabled {
-				// if vote extensions were required at this height, validate the extended commit
-				err = state.Validators.VerifyCommitLight(chainID, firstID, first.Height, extCommit.ToCommit())
+				r.handleValidationFailure(first, second, err)
+				continue FOR_LOOP
 			}
 
+			// verify the first block using the second's commit.
+			//
+			// light verification suffices here because ValidateBlock (below) will
+			// fully verify second.LastCommit when second is processed as first in
+			// the next iteration.
+			//
+			// we are simply checking if 2/3+ of power has precomitted for
+			// first as a fast check. During ValidateBlock, we will check for
+			// the full validity of first's commit.
+			err = state.Validators.VerifyCommitLight(chainID, firstID, first.Height, second.LastCommit)
 			if err != nil {
 				r.handleValidationFailure(first, second, err)
 				continue FOR_LOOP
+			}
+
+			// validate the block before we persist it, we willfully verify
+			// first's commit within.
+			if err = r.blockExec.ValidateBlock(state, first); err != nil {
+				r.handleValidationFailure(first, second, err)
+				continue FOR_LOOP
+			}
+
+			if extensionsEnabled {
+				// if vote extensions were required at this height, ensure they exist.
+				if err = extCommit.EnsureExtensions(true); err != nil {
+					r.handleValidationFailure(first, second, err)
+					continue FOR_LOOP
+				}
+
+				// if vote extensions were required at this height, verify all
+				// signatures in the extended commit since it is persisted to
+				// the store.
+				if err = state.Validators.VerifyCommit(chainID, firstID, first.Height, extCommit.ToCommit()); err != nil {
+					r.handleValidationFailure(first, second, err)
+					continue FOR_LOOP
+				}
 			}
 
 			r.pool.PopRequest()
@@ -684,8 +699,8 @@ func (r *Reactor) handleValidationFailure(blockA, blockB *types.Block, err error
 }
 
 func (r *Reactor) stopPeerForError(peer p2p.Peer, err error) {
-	if r.combinedModeEnabled && shouldBeReconnected(err) {
-		err = &lp2p.ErrorTransient{Err: err}
+	if r.adaptiveSyncEnabled && shouldBeReconnected(err) {
+		err = &p2p.ErrorTransient{Err: err}
 	}
 
 	r.Switch.StopPeerForError(peer, err)

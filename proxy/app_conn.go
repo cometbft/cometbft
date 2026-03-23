@@ -31,18 +31,8 @@ type AppConnMempool interface {
 	Error() error
 
 	CheckTx(context.Context, *types.RequestCheckTx) (*types.ResponseCheckTx, error)
-	CheckTxUnlocked(context.Context, *types.RequestCheckTx) (*types.ResponseCheckTx, error)
 	CheckTxAsync(context.Context, *types.RequestCheckTx) (*abcicli.ReqRes, error)
-	InsertTx(context.Context, *types.RequestInsertTx) (*types.ResponseInsertTx, error)
-	ReapTxs(context.Context, *types.RequestReapTxs) (*types.ResponseReapTxs, error)
 	Flush(context.Context) error
-}
-
-// checkTxUnlocker is an optional interface that clients can implement to
-// support unlocked CheckTx calls. This is used by localClient to bypass
-// the mutex lock when AppMempool handles its own concurrency.
-type checkTxUnlocker interface {
-	CheckTxUnlocked(context.Context, *types.RequestCheckTx) (*types.ResponseCheckTx, error)
 }
 
 type AppConnQuery interface {
@@ -153,27 +143,9 @@ func (app *appConnMempool) CheckTx(ctx context.Context, req *types.RequestCheckT
 	return app.appConn.CheckTx(ctx, req)
 }
 
-func (app *appConnMempool) CheckTxUnlocked(ctx context.Context, req *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "check_tx", "type", "sync"))()
-	if unlocker, ok := app.appConn.(checkTxUnlocker); ok {
-		return unlocker.CheckTxUnlocked(ctx, req)
-	}
-	return app.appConn.CheckTx(ctx, req)
-}
-
 func (app *appConnMempool) CheckTxAsync(ctx context.Context, req *types.RequestCheckTx) (*abcicli.ReqRes, error) {
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "check_tx", "type", "async"))()
 	return app.appConn.CheckTxAsync(ctx, req)
-}
-
-func (app *appConnMempool) InsertTx(ctx context.Context, req *types.RequestInsertTx) (*types.ResponseInsertTx, error) {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "insert_tx", "type", "sync"))()
-	return app.appConn.InsertTx(ctx, req)
-}
-
-func (app *appConnMempool) ReapTxs(ctx context.Context, req *types.RequestReapTxs) (*types.ResponseReapTxs, error) {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "reap_txs", "type", "sync"))()
-	return app.appConn.ReapTxs(ctx, req)
 }
 
 //------------------------------------------------

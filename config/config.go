@@ -1174,6 +1174,9 @@ type ConsensusConfig struct {
 	PeerQueryMaj23SleepDuration time.Duration `mapstructure:"peer_query_maj23_sleep_duration"`
 
 	DoubleSignCheckHeight int64 `mapstructure:"double_sign_check_height"`
+
+	// BlockTimeTolerance is the maximum allowed difference between the proposed block time and wall-clock time.
+	BlockTimeTolerance time.Duration `mapstructure:"block_time_tolerance"`
 }
 
 // DefaultConsensusConfig returns a default configuration for the consensus service
@@ -1193,6 +1196,7 @@ func DefaultConsensusConfig() *ConsensusConfig {
 		PeerGossipSleepDuration:     100 * time.Millisecond,
 		PeerQueryMaj23SleepDuration: 2000 * time.Millisecond,
 		DoubleSignCheckHeight:       int64(0),
+		BlockTimeTolerance:          60 * time.Second,
 	}
 }
 
@@ -1294,6 +1298,9 @@ func (cfg *ConsensusConfig) ValidateBasic() error {
 	}
 	if cfg.DoubleSignCheckHeight < 0 {
 		return cmterrors.ErrNegativeField{Field: "double_sign_check_height"}
+	}
+	if cfg.BlockTimeTolerance <= 0 {
+		return errors.New("block_time_tolerance must be positive")
 	}
 	return nil
 }

@@ -442,6 +442,41 @@ func TestValidateBlockTime(t *testing.T) {
 		err = blockExec.ValidateBlock(state, block)
 		require.NoError(t, err)
 	})
+
+	t.Run("block time exceeds wall clock tolerance", func(t *testing.T) {
+		blockExecWithTol := sm.NewBlockExecutor(
+			stateStore,
+			log.TestingLogger(),
+			proxyApp.Consensus(),
+			mp,
+			sm.EmptyEvidencePool{},
+			blockStore,
+			sm.BlockExecutorWithBlockTimeTolerance(30*time.Second),
+		)
+		height := int64(3)
+		block, err := makeBlock(state, height, lastCommit)
+		require.NoError(t, err)
+		block.Time = time.Now().Add(1000 * time.Hour)
+		err = blockExecWithTol.ValidateBlock(state, block)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "too far in the future")
+	})
+
+	t.Run("tolerance not set still allows valid blocks", func(t *testing.T) {
+		blockExecNoTol := sm.NewBlockExecutor(
+			stateStore,
+			log.TestingLogger(),
+			proxyApp.Consensus(),
+			mp,
+			sm.EmptyEvidencePool{},
+			blockStore,
+		)
+		height := int64(3)
+		block, err := makeBlock(state, height, lastCommit)
+		require.NoError(t, err)
+		err = blockExecNoTol.ValidateBlock(state, block)
+		require.NoError(t, err)
+	})
 }
 
 func TestValidateBlockInvalidCommit(t *testing.T) {

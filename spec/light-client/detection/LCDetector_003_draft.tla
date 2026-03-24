@@ -3,7 +3,7 @@
  * This is a specification of the light client detector module.
  * It follows the English specification:
  *
- * https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md
+ * https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/detection/detection_003_reviewed.md
  *
  * The assumptions made in this specification:
  *
@@ -62,9 +62,9 @@ vars == <<state, blockchain, localClock, refClock, Faulty,
 \* (old) type annotations in Apalache
 a <: b == a
 
- 
+
 \* instantiate a reference chain
-ULTIMATE_HEIGHT == TARGET_HEIGHT + 1 
+ULTIMATE_HEIGHT == TARGET_HEIGHT + 1
 BC == INSTANCE Blockchain_003_draft
     WITH ULTIMATE_HEIGHT <- (TARGET_HEIGHT + 1)
 
@@ -146,9 +146,9 @@ CopyLightBlockFromChain(block, height) ==
           THEN blockchain[height + 1].lastCommit
             \* for the ultimate block, which we never use,
             \* as ULTIMATE_HEIGHT = TARGET_HEIGHT + 1
-          ELSE blockchain[height].VS 
+          ELSE blockchain[height].VS
     IN
-    block = [header |-> ref, Commits |-> lastCommit]      
+    block = [header |-> ref, Commits |-> lastCommit]
 
 \* Either the primary is correct and the block comes from the reference chain,
 \* or the block is produced by a faulty primary.
@@ -243,7 +243,7 @@ CreateEvidence(peer, isPeerCorrect, refBlocks, targetBlocks) ==
                        /\ state' = IF nextHeightToTry' >= 0
                                    THEN state
                                    ELSE <<"NoEvidence", peer>>
-                       /\ UNCHANGED evidences  
+                       /\ UNCHANGED evidences
 
 SwitchToPrimary ==
     /\ state = <<"FoundEvidence", "SECONDARY">>
@@ -280,7 +280,7 @@ AdvanceClocks ==
         /\ tm >= localClock
         /\ LC!IsLocalClockWithinDrift(tm, refClock')
         /\ localClock' = tm
-   
+
 (**
  Execute AttackDetector for one secondary.
 
@@ -290,7 +290,7 @@ Next ==
     /\ AdvanceClocks
     /\ \/ CompareLast
        \/ CreateEvidenceForSecondary
-       \/ SwitchToPrimary 
+       \/ SwitchToPrimary
        \/ CreateEvidenceForPrimary
 
 

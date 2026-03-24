@@ -17,7 +17,7 @@ type LCInitData struct {
 
 where only one of the components must be provided. `GenesisDoc` is
 defined in the [CometBFT
-Types](https://github.com/cometbft/cometbft/blob/main/types/genesis.go).
+Types](https://github.com/cometbft/cometbft/blob/v0.39.x/types/genesis.go).
 
 
 ### Initialization
@@ -45,8 +45,8 @@ able to verify anything.
 Cross-checking this trusted block with providers upon initialization is helpful
 for ensuring that the node is responsive and correctly configured but does not
 increase trust since proving a conflicting block is a
-[light client attack](https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md#cmbc-lc-attack1)
-and not just a [bogus](https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md#cmbc-bogus1) block could result in
+[light client attack](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/detection/detection_003_reviewed.md#cmbc-lc-attack1)
+and not just a [bogus](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/detection/detection_003_reviewed.md#cmbc-bogus1) block could result in
 performing backwards verification beyond the trusted period, thus a fruitless
 endeavour.
 
@@ -68,18 +68,18 @@ func InitLightClient(initData LCInitData) (LightStore, Error) {
 
     case LCInitData.TrustedHash != nil:
         untrustedBlock := FetchLightBlock(PeerList.Primary(), LCInitData.TrustedHeight)
-        
+
 
         // verify that the hashes match
         if untrustedBlock.Hash() != LCInitData.TrustedHash {
             return nil, Error("Primary returned block with different hash")
         }
         // after checking the hash we now trust the block
-        initialBlock = untrustedBlock        
+        initialBlock = untrustedBlock
     }
     case LCInitData.Genesis != nil:
         untrustedBlock := FetchLightBlock(PeerList.Primary(), LCInitData.Genesis.InitialHeight)
-        
+
         // verify that 2/3+ of the validator set signed the untrustedBlock
         if err := VerifyCommitFull(untrustedBlock.Commit, LCInitData.Genesis.Validators); err != nil {
             return nil, err

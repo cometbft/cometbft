@@ -39,7 +39,7 @@ limitations of a particular language binding.
   prost-build.
 * [Notes](https://docs.google.com/document/d/1DoxKiYtUx44xZv5my-bkfWZKY6TklvxpSUrdX9yOpNw/edit?usp=sharing) on the discussion during a 13 Apr 2023 meeting, detailing the
   considerations specific to CometBFT versioning.
-* [ADR 103](https://github.com/cometbft/cometbft/blob/main/docs/references/architecture/adr-103-proto-versioning.md) details the versioning approach as currently
+* [ADR 103](https://github.com/cometbft/cometbft/blob/v0.39.x/docs/references/architecture/adr-103-proto-versioning.md) details the versioning approach as currently
   accepted.
 
 ## Discussion
@@ -54,7 +54,7 @@ which (in absence of customizations) makes the generated type ugly and
 sub-optimal to work with if some of the fields shall always be set to a
 non-degenerate value. So use of the proto-generated types should be
 dedicated to decoding and encoding protobuf, and possibly for deriving some
-utility trait impls like serde that can reuse the simple structures. 
+utility trait impls like serde that can reuse the simple structures.
 
 However, this allows Rust code consuming a message-derived struct type to use
 struct initializer or matching syntax where all defined struct fields must be

@@ -91,12 +91,6 @@ func withInvalidExtCommitBlock(height int64) reactorOption {
 	}
 }
 
-func withDeterministicVoteTimes() reactorOption {
-	return func(o *reactorOpts) {
-		o.deterministicVoteTimes = true
-	}
-}
-
 func newReactor(
 	t *testing.T,
 	logger log.Logger,

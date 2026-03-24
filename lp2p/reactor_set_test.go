@@ -210,14 +210,18 @@ func newReactorSetTestSuite(t *testing.T, opts ...testOption) *reactorSetTestSui
 	}
 }
 
-func (ts *reactorSetTestSuite) newReactor(channels []*conn.ChannelDescriptor) *reactorMock {
+func newReactorMock(channels []*conn.ChannelDescriptor, logger log.Logger) *reactorMock {
 	r := &reactorMock{
 		channels: channels,
 	}
 	r.BaseReactor = *p2p.NewBaseReactor("ReactorMock", r)
-	r.SetLogger(ts.sw.Logger)
+	r.SetLogger(logger)
 
 	return r
+}
+
+func (ts *reactorSetTestSuite) newReactor(channels []*conn.ChannelDescriptor) *reactorMock {
+	return newReactorMock(channels, ts.sw.Logger)
 }
 
 func (r *reactorMock) GetChannels() []*conn.ChannelDescriptor {

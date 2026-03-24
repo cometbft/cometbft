@@ -60,7 +60,7 @@ of the problem addressed by the Lightclient Verification protocol.
 
     - [Incentives](#incentives): how faulty full nodes may benefit from
     misbehaving and how correct full nodes benefit from cooperating.
-  
+
     - [Computational Model](#computational-model):
       timing and correctness assumptions.
 
@@ -152,7 +152,7 @@ Given a full node, a
 - *peerID* is the PeerID (public key) of a full node,
 - *voting_power* is an integer (representing the full node's
   voting power in a certain consensus instance).
-  
+
 > In the Golang implementation the data type for *validator
 pair* is called `Validator`
 
@@ -264,7 +264,7 @@ If for a block *b*,  a commit *c*
 - contains at least one validator pair *(v,p)* such that *v* is a
     **correct** validator node, and
 - is contained in *PossibleCommit(b)*
-  
+
 then the block *b* is on the blockchain.
 
 ## Context of this document
@@ -400,15 +400,15 @@ Each instance must eventually terminate.
     - the  *primary* is correct (and locally has the block of
        *targetHeight*), and
     - *LightStore* always contains a verified header whose age is less than the
-        trusting period,  
+        trusting period,
     then *Core Verification* adds a verified header *hd* with height
     *targetHeight* to *LightStore* and it **terminates successfully**
 
 > These definitions imply that if the primary is faulty, a header may or
 > may not be added to *LightStore*. In any case,
-> [**[LCV-DIST-SAFE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) must hold.
-> The invariant [**[LCV-DIST-SAFE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) and the liveness
-> requirement [**[LCV-DIST-LIVE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-life1)
+> [**[LCV-DIST-SAFE.1]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) must hold.
+> The invariant [**[LCV-DIST-SAFE.1]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) and the liveness
+> requirement [**[LCV-DIST-LIVE.1]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-dist-life1)
 > allow that verified headers are added to *LightStore* whose
 > height was not passed
 > to the verifier (e.g., intermediate headers used in bisection; see below).
@@ -425,16 +425,16 @@ Each instance must eventually terminate.
 This specification provides a partial solution to the sequential specification.
 The *Verifier* solves the invariant of the sequential part
 
-[**[LCV-DIST-SAFE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) => [**[LCV-SEQ-SAFE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-seq-inv)
+[**[LCV-DIST-SAFE.1]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) => [**[LCV-SEQ-SAFE.1]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-seq-inv)
 
 In the case the primary is correct, and there is a recent header in *LightStore*, the verifier satisfies the liveness requirements.
 
-⋀ *primary is correct*  
-⋀ always ∃ verified header in LightStore. *header.Time* > *now* - *trustingPeriod*  
-⋀ [**[LCV-A-Comm.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-a-comm) ⋀ (
+⋀ *primary is correct*
+⋀ always ∃ verified header in LightStore. *header.Time* > *now* - *trustingPeriod*
+⋀ [**[LCV-A-Comm.1]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-a-comm) ⋀ (
        ( [**[CMBC-CorrFull.1]**][CMBC-CorrFull-link] ⋀
-         [**[LCV-DIST-LIVE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-live1) )
-       ⟹ [**[LCV-SEQ-LIVE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-seq-live1)
+         [**[LCV-DIST-LIVE.1]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-dist-live1) )
+       ⟹ [**[LCV-SEQ-LIVE.1]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-seq-live1)
 )
 
 # Part IV - Light Client Verification Protocol
@@ -455,7 +455,7 @@ independently:
   underspecified as different implementations (currently in Goland and
   Rust) may implement different optimizations here. We just provide
   necessary conditions on how the height may evolve.
-  
+
 <!-- > `ValidAndVerified` is the function that is sometimes called "Light -->
 <!-- > Client" in the IBC context. -->
 
@@ -528,7 +528,7 @@ func (ls LightStore) LatestVerified() LightBlock
 #### **[LCV-FUNC-UPDATE.2]**
 
 ```go
-func (ls LightStore) Update(lightBlock LightBlock, 
+func (ls LightStore) Update(lightBlock LightBlock,
                             verifiedState VerifiedState
        verifiedBy Height)
 ```
@@ -767,8 +767,8 @@ func VerifyToTarget(primary PeerID, lightStore LightStore,
 - Error conditions
     - if the precondition is violated
     - if `ValidAndVerified` or `FetchLightBlock` report an error
-    - if [**[LCV-INV-TP.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-inv-tp1) is violated
-  
+    - if [**[LCV-INV-TP.1]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-inv-tp1) is violated
+
 ### Details of the Functions
 
 #### **[LCV-FUNC-VALID.1]**
@@ -833,12 +833,12 @@ func Schedule(lightStore, nextHeight, targetHeight) Height
 - Expected postcondition: **[LCV-SCHEDULE-POST.1]**
    Return *H* s.t.
    1. if *lightStore.LatestVerified.Height = nextHeight* and
-      *lightStore.LatestVerified < targetHeight* then  
+      *lightStore.LatestVerified < targetHeight* then
    *nextHeight < H <= targetHeight*
    2. if *lightStore.LatestVerified.Height < nextHeight* and
-      *lightStore.LatestVerified.Height < targetHeight* then  
+      *lightStore.LatestVerified.Height < targetHeight* then
    *lightStore.LatestVerified.Height < H < nextHeight*
-   3. if *lightStore.LatestVerified.Height = targetHeight* then  
+   3. if *lightStore.LatestVerified.Height = targetHeight* then
      *H =  targetHeight*
 
 > Case i. captures the case where the light block at height *nextHeight*
@@ -854,7 +854,7 @@ func Schedule(lightStore, nextHeight, targetHeight) Height
 *trustedStore* is implemented by the light blocks in lightStore that
 have the state *StateVerified*.
 
-#### Argument for [**[LCV-DIST-SAFE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe)
+#### Argument for [**[LCV-DIST-SAFE.1]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe)
 
 - `ValidAndVerified` implements the soundness checks and the checks
   [**[CMBC-VAL-CONTAINS-CORR.1]**][CMBC-VAL-CONTAINS-CORR-link] and
@@ -863,7 +863,7 @@ have the state *StateVerified*.
 - Only if `ValidAndVerified` returns with `SUCCESS`, the state of a light block is
   set to *StateVerified*.
 
-#### Argument for [**[LCV-DIST-LIVE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-life)
+#### Argument for [**[LCV-DIST-LIVE.1]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-dist-life)
 
 - If *primary* is correct,
     - `FetchLightBlock` will always return a light block consistent
@@ -871,7 +871,7 @@ have the state *StateVerified*.
     - `ValidAndVerified` either verifies the header using the trusting
       period or falls back to sequential
       verification
-    - If [**[LCV-INV-TP.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-inv-tp1) holds, eventually every
+    - If [**[LCV-INV-TP.1]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-inv-tp1) holds, eventually every
    header will be verified and core verification **terminates successfully**.
     - successful termination depends on the age of *lightStore.LatestVerified*
       (for instance, initially on the age of  *trustedHeader*) and the
@@ -887,7 +887,7 @@ have the state *StateVerified*.
 
 ## Liveness Scenarios
 
-The liveness argument above assumes [**[LCV-INV-TP.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-inv-tp1)
+The liveness argument above assumes [**[LCV-INV-TP.1]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-inv-tp1)
 
 which requires that there is a header that does not expire before the
 target height is reached. Here we discuss scenarios to ensure this.
@@ -929,7 +929,7 @@ header of height *startHeader.Height + 1* is added to *LightStore*.
   expired, that is only the case if
     - startHeader.Time > startTime + WCG * (Comp + 2 Delta) -
       trustingPeriod,
-    - that is, if core verification is started at  
+    - that is, if core verification is started at
    startTime < startHeader.Time + trustingPeriod -  WCG * (Comp + 2 Delta)
 
 - one may then do an inductive argument from this point on, depending
@@ -993,7 +993,7 @@ the following cases:
     - otherwise. In this case we need to do "backwards verification"
      using the hash of the previous block in the `LastBlockID` field
      of a header.
-  
+
 **Open Question:** what are the security assumptions for backward
 verification. Should we check that the light block we verify from
 (and/or the checked light block) is within the trusting period?
@@ -1041,7 +1041,7 @@ following function:
 ```go
 func Backwards (primary PeerID, lightStore LightStore, targetHeight Height)
                (LightStore, Result) {
-  
+
     lb,res = lightStore.MinVerified()
     if res = false {
         return (lightStore, ResultFailure)
@@ -1130,7 +1130,7 @@ func Main (primary PeerID, lightStore LightStore, targetHeight Height)
 <!--          return Backwards(primary, lightStore, targetHeight) -->
 <!-- 	 - if b2 exists -->
 <!--           - make auxiliary light store auxLS containing only b2 -->
-  
+
 <!-- 	       VerifyToTarget(primary, auxLS, targetHeight) -->
 <!--      - if b2  -->
 
@@ -1150,7 +1150,7 @@ func Main (primary PeerID, lightStore LightStore, targetHeight Height)
 
 [RPC]: https://docs.cometbft.com/v0.38/rpc/
 
-[block]: https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md
+[block]: https://github.com/cometbft/cometbft/blob/v0.39.x/spec/core/data_structures.md
 
 [CMBC-SEQ-link]: #cmbc-seq1
 [CMBC-CorrFull-link]: #cmbc-corr-full1
@@ -1162,7 +1162,7 @@ func Main (primary PeerID, lightStore LightStore, targetHeight Height)
 
 [lightclient]: https://github.com/interchainio/tendermint-rs/blob/e2cb9aca0b95430fca2eac154edddc9588038982/docs/architecture/adr-002-lite-client.md
 [fork-detector]: https://github.com/cometbft/cometbft/tree/main/spec/light-client/detection
-[fullnode]: https://github.com/cometbft/cometbft/blob/main/spec/blockchain
+[fullnode]: https://github.com/cometbft/cometbft/blob/v0.39.x/spec/blockchain
 
 [ibc-rs]:https://github.com/informalsystems/ibc-rs
 

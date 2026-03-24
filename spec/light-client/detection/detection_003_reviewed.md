@@ -74,12 +74,12 @@ the secondaries using this specification.
 
 - [Part II](#part-ii---problem-statement): Problem statement of
   lightclient attack detection
-  
+
     - [Informal Problem Statement](#informal-problem-statement)
     - [Assumptions](#Assumptions)
     - [Definitions](#definitions)
     - [Distributed Problem statement](#Distributed-Problem-statement)
-  
+
 - [Part III](#part-iii---protocol): The protocol
 
     - [Functions and Data defined in other Specifications](#Functions-and-Data-defined-in-other-Specifications)
@@ -280,7 +280,7 @@ operational.
 
 > They might be relevant for a closer analysis of fork scenarios on the
 > chain, which is out of the scope of this specification.
-  
+
 #### **[CMBC-SIGN-UNIQUE.1]**
 
 Let *b* and *c* be  light blocks, we define the predicate
@@ -332,9 +332,9 @@ Let *b* be a light block and *t* a time. We define *bogus(b,t)* iff
 
 - *sequ-rooted(b) = false* and
 - for all *a*, *sequ-rooted(a)* implies *skip-trace(a,b,t) = false*
-  
+
 # Part II - Problem Statement
-  
+
 ## Informal Problem statement
 
 There is no sequential specification: the detector only makes sense
@@ -393,7 +393,7 @@ corresponding header of the same height provided by the secondary. If
 there is a deviation, the detector should
 try to replay the verification trace `verifiedLS` with the
 secondary
-  
+
 - in case replaying leads to detection of a light client attack
   (one of the lightblocks differ from the one in verifiedLS with
   the same height), we should return evidence
@@ -426,7 +426,7 @@ node among the primary and the secondaries.
 > `root-of-trust` is always the one from the blockchain, and we can
 > use it as starting point for the evidence computation. Moreover, it
 > allows us to establish the invariant at the supervisor that any
-> lightblock in the (top-level) lightstore is from the blockchain.  
+> lightblock in the (top-level) lightstore is from the blockchain.
 > In the future we might design a lightclient based on the assumption
 > that at least in regular intervals the lightclient is connected to a
 > correct full node. This will require the detector to reconsider
@@ -612,7 +612,7 @@ a conflicting header is downloaded from a secondary, it calls
 indeed an attack is confirmed. It could be that the secondary reports
 a bogus block, which means that there need not be an attack, and the
 secondary is replaced.
-  
+
 ## Details of the functions
 
 #### **[LCD-FUNC-DETECTOR.2]:**
@@ -629,7 +629,7 @@ func AttackDetector(root LightBlock, primary_trace []LightBlock)
             Replace_Secondary(root);
         }
         else if lb.Header != primary_trace.Latest().Header {
-  
+
             // we replay the primary trace with the secondary, in
             // order to generate evidence that we can submit to the
             // secondary. We return the evidence + the trace the
@@ -690,7 +690,7 @@ func CreateEvidenceForPeer(peer PeerID, root LightBlock, trace LightStore)
 
     for i in 1 .. len(trace) {
         auxLS, result := VerifyToTarget(peer, common, trace[i].Header.Height)
-  
+
         if result != ResultSuccess {
             // something went wrong; peer did not provide a verifiable block
             return (nil, nil, nil, FaultyPeer)
@@ -704,7 +704,7 @@ func CreateEvidenceForPeer(peer PeerID, root LightBlock, trace LightStore)
                 ev := new InternalEvidence;
                 ev.Evidence.ConflictingBlock := trace[i];
                 // CommonHeight is used to indicate the type of attack
-                // if the CommonHeight != ConflictingBlock.Height this 
+                // if the CommonHeight != ConflictingBlock.Height this
                 // is by definition a lunatic attack else it is an
                 // equivocation attack
                 ev.Evidence.CommonHeight := common.Height;
@@ -741,7 +741,7 @@ func CreateEvidenceForPeer(peer PeerID, root LightBlock, trace LightStore)
 
 **Proposition.** In the case of attack,
 evidence [[CMBC-LC-ATTACK-EVIDENCE.1]](#CMBC-LC-ATTACK-EVIDENCE1)
- exists.  
+ exists.
 *Proof.* First observe that
 
 - (A). (NOT E2(i)) implies E1(i+1)
@@ -803,37 +803,37 @@ Once a bogus block is recognized as such the secondary is removed.
 
 [[supervisor]] The specification of the light client supervisor.
 
-[verification]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md
+[verification]: https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_002_draft.md
 
-[supervisor]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/supervisor/supervisor_001_draft.md
+[supervisor]: https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/supervisor/supervisor_001_draft.md
 
 
-[CMBC-FM-2THIRDS-link]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#cmbc-fm-2thirds1
+[CMBC-FM-2THIRDS-link]: https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_002_draft.md#cmbc-fm-2thirds1
 
-[CMBC-SOUND-DISTR-POSS-COMMIT-link]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#cmbc-sound-distr-poss-commit1
+[CMBC-SOUND-DISTR-POSS-COMMIT-link]: https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_002_draft.md#cmbc-sound-distr-poss-commit1
 
-[LCV-SEQ-SAFE-link]:https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#lcv-seq-safe1
+[LCV-SEQ-SAFE-link]:https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_002_draft.md#lcv-seq-safe1
 
 [CMBC-VAL-CONTAINS-CORR-link]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#cmbc-val-contains-corr1
+https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_002_draft.md#cmbc-val-contains-corr1
 
 [fetch]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#lcv-func-fetch1
+https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_002_draft.md#lcv-func-fetch1
 
 [LCV-INV-TP1-link]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#lcv-inv-tp1
+https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_002_draft.md#lcv-inv-tp1
 
 [LCV-LB-link]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#lcv-data-lightblock1
+https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_002_draft.md#lcv-data-lightblock1
 
 [LCV-LS-link]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#lcv-data-lightstore2
+https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_002_draft.md#lcv-data-lightstore2
 
 [LVC-HD-link]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#cmbc-header-fields2
+https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_002_draft.md#cmbc-header-fields2
 
 [repl]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/supervisor/supervisor_001_draft.md#lc-func-replace-secondary1
+https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/supervisor/supervisor_001_draft.md#lc-func-replace-secondary1
 
 [vtt]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#lcv-func-main2
+https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_002_draft.md#lcv-func-v0.39.x2

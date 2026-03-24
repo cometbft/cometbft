@@ -200,8 +200,6 @@ func (p *Pool[T]) Cap() int {
 }
 
 func (w *worker[T]) run() {
-	w.pool.workersWg.Add(1)
-
 	defer func() {
 		w.pool.workersWg.Done()
 		if r := recover(); r != nil {
@@ -287,6 +285,7 @@ func (p *Pool[T]) scale() {
 
 	p.workers[p.seqNum] = w
 
+	p.workersWg.Add(1)
 	go w.run()
 
 	if p.onScale != nil {

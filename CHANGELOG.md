@@ -21,6 +21,8 @@
   ([\#5663](https://github.com/cometbft/cometbft/pull/5663))
 - `[blocksync]` Modify blocksync to use full commit verification instead of light
   ([\#5663](https://github.com/cometbft/cometbft/pull/5663))
+- `[adaptivesync]` Simplify loop, reuse blockExec.ValidateBlock
+  ([\#5717](https://github.com/cometbft/cometbft/pull/5717))
 
 ### IMPROVEMENTS
 

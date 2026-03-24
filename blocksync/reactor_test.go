@@ -199,14 +199,9 @@ func newReactor(
 		}
 	}
 
-<<<<<<< HEAD
-	bcReactor := NewByzantineReactor(incorrectBlock, NewReactor(state.Copy(), blockExec, blockStore, blockSync, NopMetrics(), 0))
-=======
-	r := NewReactor(blockSync, false, state.Copy(), blockExec, blockStore, nil, 0, NopMetrics())
-	bcReactor := NewByzantineReactor(r)
+	bcReactor := NewByzantineReactor(NewReactor(state.Copy(), blockExec, blockStore, blockSync, NopMetrics(), 0))
 	bcReactor.corruptedBlock = options.corruptedBlock
 	bcReactor.absentExtCommitBlock = options.allAbsentExtCommitBlock
->>>>>>> 5a15a212 (fix(blocksync): `ExtendedCommit` verification via verified next blocks last commit (#5629))
 	bcReactor.SetLogger(logger.With("module", "blocksync"))
 
 	return ReactorPair{bcReactor, proxyApp}

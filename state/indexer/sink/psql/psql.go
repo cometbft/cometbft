@@ -67,6 +67,7 @@ func runInTransaction(db *sql.DB, query func(*sql.Tx) error) error {
 	return dbtx.Commit()
 }
 
+<<<<<<< HEAD
 // queryWithID executes the specified SQL query with the given arguments,
 // expecting a single-row, single-column result containing an ID. If the query
 // succeeds, the ID from the result is returned.
@@ -76,6 +77,27 @@ func queryWithID(tx *sql.Tx, query string, args ...interface{}) (uint32, error) 
 		return 0, err
 	}
 	return id, nil
+=======
+func runBulkInsert(db *sql.DB, tableName string, columns []string, inserts [][]any) error {
+	return runInTransaction(db, func(tx *sql.Tx) error {
+		// TODO: replace pq.CopyIn with explicit COPY ... FROM STDIN (pq.CopyIn is deprecated in lib/pq).
+		//nolint:staticcheck // SA1019
+		stmt, err := tx.Prepare(pq.CopyIn(tableName, columns...))
+		if err != nil {
+			return fmt.Errorf("preparing bulk insert statement: %w", err)
+		}
+		defer stmt.Close()
+		for _, insert := range inserts {
+			if _, err := stmt.Exec(insert...); err != nil {
+				return fmt.Errorf("executing insert statement: %w", err)
+			}
+		}
+		if _, err := stmt.Exec(); err != nil {
+			return fmt.Errorf("flushing bulk insert: %w", err)
+		}
+		return nil
+	})
+>>>>>>> 625420b2 (build(deps): Bump github.com/lib/pq from 1.11.2 to 1.12.0 (#5713))
 }
 
 // insertEvents inserts a slice of events and any indexed attributes of those

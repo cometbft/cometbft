@@ -23,7 +23,12 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/informalsystems/tm-load-test v1.3.0
+<<<<<<< HEAD
 	github.com/lib/pq v1.10.9
+=======
+	github.com/lib/pq v1.12.0
+	github.com/libp2p/go-libp2p v0.47.0
+>>>>>>> 625420b2 (build(deps): Bump github.com/lib/pq from 1.11.2 to 1.12.0 (#5713))
 	github.com/minio/highwayhash v1.0.3
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
 	github.com/ory/dockertest v3.3.5+incompatible

@@ -33,7 +33,11 @@ require (
 	github.com/prometheus/common v0.62.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/cors v1.11.1
+<<<<<<< HEAD
 	github.com/sasha-s/go-deadlock v0.3.5
+=======
+	github.com/sasha-s/go-deadlock v0.3.9
+>>>>>>> c8dc9226 (build(deps): Bump github.com/sasha-s/go-deadlock from 0.3.7 to 0.3.9 (#5712))
 	github.com/snikch/goodman v0.0.0-20171125024755-10e37e294daa
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.19.0

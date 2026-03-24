@@ -316,6 +316,9 @@ func TestConsensusConfig_ValidateBasic(t *testing.T) {
 		"PeerQueryMaj23SleepDuration":          {func(c *config.ConsensusConfig) { c.PeerQueryMaj23SleepDuration = time.Second }, false},
 		"PeerQueryMaj23SleepDuration negative": {func(c *config.ConsensusConfig) { c.PeerQueryMaj23SleepDuration = -1 }, true},
 		"DoubleSignCheckHeight negative":       {func(c *config.ConsensusConfig) { c.DoubleSignCheckHeight = -1 }, true},
+		"BlockTimeTolerance":                   {func(c *config.ConsensusConfig) { c.BlockTimeTolerance = time.Second }, false},
+		"BlockTimeTolerance zero":              {func(c *config.ConsensusConfig) { c.BlockTimeTolerance = 0 }, true},
+		"BlockTimeTolerance negative":          {func(c *config.ConsensusConfig) { c.BlockTimeTolerance = -1 }, true},
 	}
 	for desc, tc := range testcases {
 		// appease linter

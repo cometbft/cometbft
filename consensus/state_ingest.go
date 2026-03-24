@@ -18,6 +18,8 @@ type IngestCandidate struct {
 	commit     *types.Commit
 	extCommit  *types.ExtendedCommit
 
+	blockValidator func(state.State, *types.Block) error
+
 	verified bool
 
 	// caches IngestCandidate.BlockID() to avoid recalculating it
@@ -40,12 +42,14 @@ func NewIngestCandidate(
 	blockParts *types.PartSet,
 	commit *types.Commit,
 	extCommit *types.ExtendedCommit,
+	blockValidator func(state.State, *types.Block) error,
 ) (IngestCandidate, error) {
 	ic := IngestCandidate{
-		block:      block,
-		blockParts: blockParts,
-		commit:     commit,
-		extCommit:  extCommit,
+		block:          block,
+		blockParts:     blockParts,
+		commit:         commit,
+		extCommit:      extCommit,
+		blockValidator: blockValidator,
 	}
 
 	if err := ic.ValidateBasic(); err != nil {
@@ -83,6 +87,8 @@ func (ic *IngestCandidate) ValidateBasic() error {
 		return errors.Wrap(ErrValidation, "part set is nil")
 	case ic.commit == nil:
 		return errors.Wrap(ErrValidation, "commit is nil")
+	case ic.blockValidator == nil:
+		return errors.Wrap(ErrValidation, "block validator is nil")
 	}
 
 	// validate commit/extCommit
@@ -141,7 +147,8 @@ func (ic *IngestCandidate) Verify(state state.State) error {
 		return fmt.Errorf("verify commit: %w", err)
 	}
 
-	if err := state.ValidateBlock(ic.block); err != nil {
+	// validate block
+	if err := ic.blockValidator(state, ic.block); err != nil {
 		return fmt.Errorf("validate block: %w", err)
 	}
 

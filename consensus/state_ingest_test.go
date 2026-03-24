@@ -185,10 +185,11 @@ func TestIngestCandidate(t *testing.T) {
 
 	t.Run("Verify", func(t *testing.T) {
 		for _, tt := range []struct {
-			name           string
-			voteExtensions bool
-			mutate         func(ic *IngestCandidate, st *sm.State)
-			errContains    string
+			name            string
+			voteExtensions  bool
+			mutate          func(ic *IngestCandidate, st *sm.State)
+			evidenceChecker func(types.EvidenceList) error
+			errContains     string
 		}{
 			{
 				name:           "valid candidate",
@@ -361,7 +362,9 @@ func (ts *ingestTestSuite) MakeIngestCandidate() IngestCandidate {
 		extCommit = nil
 	}
 
-	ic, err := NewIngestCandidate(block, blockParts, commit, extCommit)
+	blockValidator := ts.cs.blockExec.ValidateBlock
+
+	ic, err := NewIngestCandidate(block, blockParts, commit, extCommit, blockValidator)
 	require.NoError(ts.t, err, "failed to create ingest candidate")
 	require.NoError(ts.t, ic.Verify(ts.cs.state), "failed to verify ingest candidate")
 

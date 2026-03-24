@@ -35,11 +35,8 @@ func (r *Reactor) getBlockIngestor() (BlockIngestor, error) {
 func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 	r.Logger.Info("Starting blocksync block ingestor (adaptive sync)")
 
-	trySyncTicker := time.NewTicker(intervalTrySync)
-	defer trySyncTicker.Stop()
-
-	syncIterationCh := make(chan struct{}, 1)
-	defer close(syncIterationCh)
+	ticker := time.NewTicker(intervalAdaptiveSync)
+	defer ticker.Stop()
 
 	for {
 		select {
@@ -47,13 +44,7 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 			return
 		case <-r.pool.Quit():
 			return
-		case <-trySyncTicker.C:
-			select {
-			case syncIterationCh <- struct{}{}:
-			default:
-				// do nothing, non-blocking
-			}
-		case <-syncIterationCh:
+		case <-ticker.C:
 			// See if there are any blocks to sync. We need two consecutive blocks
 			// in order to perform blocksync verification.
 			block, nextBlock, extCommit := r.pool.PeekTwoBlocks()
@@ -109,9 +100,6 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 				return
 			}
 
-			// try again quickly next loop.
-			syncIterationCh <- struct{}{}
-
 			blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
 			if err != nil {
 				// should not happen
@@ -120,7 +108,14 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 			}
 
 			// create ingest candidate block...
-			ic, err := consensus.NewIngestCandidate(block, blockParts, nextBlock.LastCommit, extCommit)
+			ic, err := consensus.NewIngestCandidate(
+				block,
+				blockParts,
+				nextBlock.LastCommit,
+				extCommit,
+				r.blockExec.ValidateBlock,
+			)
+
 			if err != nil {
 				r.handleValidationFailure(block, nextBlock, fmt.Errorf("new ingest candidate: %w", err))
 				continue

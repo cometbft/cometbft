@@ -28,6 +28,9 @@ const (
 
 	// interval for trying to apply a block
 	intervalTrySync = 10 * time.Millisecond
+
+	// adaptiveSync ticker. Still quick, just bursts fewer cpu cycles
+	intervalAdaptiveSync = 5 * intervalTrySync
 )
 
 type consensusReactor interface {

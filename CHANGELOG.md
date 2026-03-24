@@ -10,6 +10,8 @@
   ([\#5638](https://github.com/cometbft/cometbft/pull/5638))
 - `[blocksync]` fix(blocksync): `ExtendedCommit` verification via next blocks `LastCommit`
   ([\#5629](https://github.com/cometbft/cometbft/pull/5629))
+- `[blocksync]` Modify blocksync to use full commit verification instead of light
+  ([\#5663](https://github.com/cometbft/cometbft/pull/5663))
 
 ### IMPROVEMENTS
 

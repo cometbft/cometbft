@@ -43,6 +43,9 @@ type BlockExecutor struct {
 	logger log.Logger
 
 	metrics *Metrics
+
+	// blockTimeTolerance is the maximum allowed difference between proposed block time and wall clock.
+	blockTimeTolerance time.Duration
 }
 
 type BlockExecutorOption func(executor *BlockExecutor)
@@ -50,6 +53,12 @@ type BlockExecutorOption func(executor *BlockExecutor)
 func BlockExecutorWithMetrics(metrics *Metrics) BlockExecutorOption {
 	return func(blockExec *BlockExecutor) {
 		blockExec.metrics = metrics
+	}
+}
+
+func BlockExecutorWithBlockTimeTolerance(d time.Duration) BlockExecutorOption {
+	return func(blockExec *BlockExecutor) {
+		blockExec.blockTimeTolerance = d
 	}
 }
 
@@ -191,11 +200,15 @@ func (blockExec *BlockExecutor) ProcessProposal(
 // Validation does not mutate state, but does require historical information from the stateDB,
 // ie. to verify evidence from a validator at an old height.
 func (blockExec *BlockExecutor) ValidateBlock(state State, block *types.Block) error {
-	err := validateBlock(state, block)
+	err := validateBlock(state, block, blockExec.withBlockTimeTolerance)
 	if err != nil {
 		return err
 	}
 	return blockExec.evpool.CheckEvidence(block.Evidence.Evidence)
+}
+
+func (blockExec *BlockExecutor) withBlockTimeTolerance(opts *blockValidationOptions) {
+	opts.blockTimeTolerance = blockExec.blockTimeTolerance
 }
 
 // ApplyVerifiedBlock does the same as `ApplyBlock`, but skips verification.
@@ -215,7 +228,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	state State, blockID types.BlockID, block *types.Block,
 ) (State, error) {
 
-	if err := validateBlock(state, block); err != nil {
+	if err := validateBlock(state, block, blockExec.withBlockTimeTolerance); err != nil {
 		return state, ErrInvalidBlock(err)
 	}
 

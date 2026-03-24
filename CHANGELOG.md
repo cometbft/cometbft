@@ -41,12 +41,15 @@
   ([\#5662](https://github.com/cometbft/cometbft/pull/5662))
 - `[cli]` print lib-p2p peer id
   ([\#5667](https://github.com/cometbft/cometbft/pull/5667))
+<<<<<<< HEAD
 - `[p2p]` Add warning when go-libp2p transport is enabled, conveying that the setting
   should only be activated if it can be enabled simultaneously for all validators
   and peer IDs have been predetermined and exchanged
   ([\#5692](https://github.com/cometbft/cometbft/pull/5692))
 - `[p2p]` feat(p2p): add adaptive sync for comet-p2p
   ([\#5705](https://github.com/cometbft/cometbft/pull/5705))
+=======
+>>>>>>> c3c2dfd7 (feat(cli): print lib-p2p peer id (#5667))
 
 ### FEATURES
 

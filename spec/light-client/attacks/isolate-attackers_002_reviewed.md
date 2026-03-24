@@ -26,7 +26,7 @@ After providing the [problem statement](#Part-I---Basics-and-Definition-of-the-P
 
 # Part I - Basics and Definition of the Problem
 
-For definitions of data structures used here, in particular LightBlocks [[LCV-DATA-LIGHTBLOCK.1]](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#lcv-data-lightblock1), we refer to the specification of [Light Client Verification][verification].
+For definitions of data structures used here, in particular LightBlocks [[LCV-DATA-LIGHTBLOCK.1]](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_002_draft.md#lcv-data-lightblock1), we refer to the specification of [Light Client Verification][verification].
 
 The specification of the [detection mechanism][detection] describes
 
@@ -135,12 +135,12 @@ func violatesTMValidity(ref Header, ev Header) boolean
 - Expected precondition
     - `ref.Height == ev.Height`
 - Expected postcondition
-    - returns evaluation of the following disjunction  
-    **[LCAI-NONVALID-OUTPUT.1]** ==  
-    `ref.ValidatorsHash != ev.ValidatorsHash` or  
-    `ref.NextValidatorsHash != ev.NextValidatorsHash` or  
-    `ref.ConsensusHash != ev.ConsensusHash` or  
-    `ref.AppHash != ev.AppHash` or  
+    - returns evaluation of the following disjunction
+    **[LCAI-NONVALID-OUTPUT.1]** ==
+    `ref.ValidatorsHash != ev.ValidatorsHash` or
+    `ref.NextValidatorsHash != ev.NextValidatorsHash` or
+    `ref.ConsensusHash != ev.ConsensusHash` or
+    `ref.AppHash != ev.AppHash` or
     `ref.LastResultsHash != ev.LastResultsHash`
 
 ```go
@@ -204,22 +204,22 @@ For this fixed group membership, we have analyzed the attacks using the TLA+ spe
 https://github.com/cometbft/cometbft/tree/main/spec/light-client/accountability
 
 [supervisor]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/supervisor/supervisor_001_draft.md
+https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/supervisor/supervisor_001_draft.md
 
-[verification]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md
+[verification]: https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_002_draft.md
 
 [detection]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md
+https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/detection/detection_003_reviewed.md
 
 [LC-DATA-EVIDENCE-link]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md#lc-data-evidence1
+https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/detection/detection_003_reviewed.md#lc-data-evidence1
 
 [CMBC-LC-EVIDENCE-DATA-link]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md#cmbc-lc-evidence-data1
+https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/detection/detection_003_reviewed.md#cmbc-lc-evidence-data1
 
 [node-based-attack-characterization]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md#block-based-characterization-of-attacks
+https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/detection/detection_003_reviewed.md#block-based-characterization-of-attacks
 
-[CMBC-FM-2THIRDS-link]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#cmbc-fm-2thirds1
+[CMBC-FM-2THIRDS-link]: https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_002_draft.md#cmbc-fm-2thirds1
 
-[LCV-FUNC-VALID.link]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#lcv-func-valid2
+[LCV-FUNC-VALID.link]: https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_002_draft.md#lcv-func-valid2

@@ -42,7 +42,7 @@ client. As a result of the work on
 - light client
   [supervisor](https://github.com/tendermint/spec/pull/159) (also in
   [Rust proposal](https://github.com/informalsystems/tendermint-rs/pull/509))
-  
+
 adaptations to the semantics and functions exposed by the LightStore
 needed to be made. In contrast to [version
 001](./verification_001_published.md) we specify the following:
@@ -53,7 +53,7 @@ needed to be made. In contrast to [version
 - During verification, we record for each lightblock which other
   lightblock can be used to verify it in one step. This is needed to
   generate verification traces that are needed for IBC.
-  
+
 # Outline
 
 - [Part I](#part-i---cosmos-blockchain): Introduction of
@@ -77,7 +77,7 @@ of the problem addressed by the Lightclient Verification protocol.
 
     - [Incentives](#incentives): how faulty full nodes may benefit from
     misbehaving and how correct full nodes benefit from cooperating.
-  
+
     - [Computational Model](#computational-model):
       timing and correctness assumptions.
 
@@ -169,7 +169,7 @@ Given a full node, a
 - *peerID* is the PeerID (public key) of a full node,
 - *voting_power* is an integer (representing the full node's
   voting power in a certain consensus instance).
-  
+
 > In the Golang implementation the data type for *validator
 pair* is called `Validator`
 
@@ -281,7 +281,7 @@ If for a block *b*,  a commit *c*
 - contains at least one validator pair *(v,p)* such that *v* is a
     **correct** validator node, and
 - is contained in *PossibleCommit(b)*
-  
+
 then the block *b* is on the blockchain.
 
 ## Context of this document
@@ -414,15 +414,15 @@ must eventually terminate.
 - If
     - the  *primary* is correct (and locally has the block of
        *targetHeight*), and
-    - the age of root is always less than the trusting period,  
+    - the age of root is always less than the trusting period,
     then *Core Verification* adds a verified header *hd* with height
     *targetHeight* to *LightStore* and it **terminates successfully**
 
 > These definitions imply that if the primary is faulty, a header may or
 > may not be added to *LightStore*. In any case,
-> [**[LCV-DIST-SAFE.2]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe2) must hold.
-> The invariant [**[LCV-DIST-SAFE.2]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe2) and the liveness
-> requirement [**[LCV-DIST-LIVE.2]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-life)
+> [**[LCV-DIST-SAFE.2]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe2) must hold.
+> The invariant [**[LCV-DIST-SAFE.2]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe2) and the liveness
+> requirement [**[LCV-DIST-LIVE.2]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-dist-life)
 > allow that verified headers are added to *LightStore* whose
 > height was not passed
 > to the verifier (e.g., intermediate headers used in bisection; see below).
@@ -439,16 +439,16 @@ must eventually terminate.
 This specification provides a partial solution to the sequential specification.
 The *Verifier* solves the invariant of the sequential part
 
-[**[LCV-DIST-SAFE.2]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe2) => [**[LCV-SEQ-SAFE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1)
+[**[LCV-DIST-SAFE.2]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe2) => [**[LCV-SEQ-SAFE.1]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1)
 
 In the case the primary is correct, and *root*  is a recent header in *LightStore*, the verifier satisfies the liveness requirements.
 
-⋀ *primary is correct*  
-⋀ *root.header.Time* > *now* - *trustingPeriod*  
-⋀ [**[LCV-A-Comm.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-a-comm) ⋀ (
+⋀ *primary is correct*
+⋀ *root.header.Time* > *now* - *trustingPeriod*
+⋀ [**[LCV-A-Comm.1]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-a-comm) ⋀ (
        ( [**[CMBC-CorrFull.1]**][CMBC-CorrFull-link] ⋀
-         [**[LCV-DIST-LIVE.2]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-live2) )
-       ⟹ [**[LCV-SEQ-LIVE.1]**](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-live1)
+         [**[LCV-DIST-LIVE.2]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-dist-live2) )
+       ⟹ [**[LCV-SEQ-LIVE.1]**](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/verification/verification_001_published.md#lcv-dist-live1)
 )
 
 # Part IV - Light Client Verification Protocol
@@ -469,7 +469,7 @@ independently:
   underspecified as different implementations (currently in Goland and
   Rust) may implement different optimizations here. We just provide
   necessary conditions on how the height may evolve.
-  
+
 <!-- > `ValidAndVerified` is the function that is sometimes called "Light -->
 <!-- > Client" in the IBC context. -->
 
@@ -649,7 +649,7 @@ It is always the case that *LightStore.LatestTrusted.Header.Time > now - trustin
 
 > If the invariant is violated, the light client does not have a
 > header it can trust. A trusted header must be obtained externally,
-> its trust can only be based on social consensus.  
+> its trust can only be based on social consensus.
 > We use the convention that root is assumed to be verified.
 
 ### Used Remote Functions
@@ -824,7 +824,7 @@ func VerifyToTarget(primary PeerID, root LightBlock,
     - if the precondition is violated
     - if `ValidAndVerified` or `FetchLightBlock` report an error
     - if [**[LCV-INV-TP.1]**](#lcv-inv-tp1) is violated
-  
+
 ### Details of the Functions
 
 #### **[LCV-FUNC-VALID.2]**
@@ -886,12 +886,12 @@ func Schedule(lightStore, nextHeight, targetHeight) Height
 - Expected postcondition: **[LCV-SCHEDULE-POST.1]**
    Return *H* s.t.
    1. if *lightStore.LatestVerified.Height = nextHeight* and
-      *lightStore.LatestVerified < targetHeight* then  
+      *lightStore.LatestVerified < targetHeight* then
    *nextHeight < H <= targetHeight*
    2. if *lightStore.LatestVerified.Height < nextHeight* and
-      *lightStore.LatestVerified.Height < targetHeight* then  
+      *lightStore.LatestVerified.Height < targetHeight* then
    *lightStore.LatestVerified.Height < H < nextHeight*
-   3. if *lightStore.LatestVerified.Height = targetHeight* then  
+   3. if *lightStore.LatestVerified.Height = targetHeight* then
      *H =  targetHeight*
 
 > Case i. captures the case where the light block at height *nextHeight*
@@ -991,7 +991,7 @@ following function:
 ```go
 func Backwards (primary PeerID, root LightBlock, targetHeight Height)
                (LightStore, Result) {
-  
+
     lb := root;
     lightStore := new LightStore;
     lightStore.Update(lb, StateTrusted, lb.verifiedBy)
@@ -1035,7 +1035,7 @@ func Backwards (primary PeerID, root LightBlock, targetHeight Height)
 
 [RPC]: https://docs.cometbft.com/v0.38/rpc/
 
-[block]: https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md
+[block]: https://github.com/cometbft/cometbft/blob/v0.39.x/spec/core/data_structures.md
 
 [CMBC-HEADER-link]: #cmbc-header1
 [CMBC-SEQ-link]: #cmbc-seq1
@@ -1047,7 +1047,7 @@ func Backwards (primary PeerID, root LightBlock, targetHeight Height)
 [CMBC-VAL-COMMIT-link]: #cmbc-val-commit1
 
 [lightclient]: https://github.com/interchainio/tendermint-rs/blob/e2cb9aca0b95430fca2eac154edddc9588038982/docs/architecture/adr-002-lite-client.md
-[attack-detector]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_001_reviewed.md
+[attack-detector]: https://github.com/cometbft/cometbft/blob/v0.39.x/spec/light-client/detection/detection_001_reviewed.md
 [fullnode]: https://github.com/cometbft/cometbft/tree/main/spec/core
 
 [ibc-rs]:https://github.com/informalsystems/ibc-rs

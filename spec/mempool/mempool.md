@@ -41,7 +41,7 @@ Some of the specificities of the current implementation (`CListMempool`) are als
 To add a new transaction to the mempool, a client submits it through an appropriate RPC endpoint.
 This endpoint is offered by some of the system nodes (but not necessarily all of them).
 
-**Gossip protocol** 
+**Gossip protocol**
 Transactions can also be received from other nodes, through a gossiping mechanism.
 
 **ABCI application**
@@ -95,15 +95,15 @@ By extension, $p.submitted$ are all the transaction submitted by $p$.
 A transaction is committed when it appears in one of the entries of the ledger.
 We denote by $p.committed$ the committed transactions at $p$.
 
-As standard, the ledger ensures that:  
-* _(Gap-freedom)_ There is no gap between two entries at a correct process:  
-$\forall i \in 	\mathbb{N}. \forall p \in Correct. \square(p.ledger[i] \neq \bot \implies (i=0 \vee p.ledger[i-1] \neq \bot))$;  
-* _(Agreement)_ No two correct processes have different ledger entries; formally:  
-$\forall i \in 	\mathbb{N}. \forall p,q \in Correct. \square((p.ledger[i] = \bot) \vee (q.ledger[i] = \bot) \vee (p.ledger[i] = q.ledger[i]))$;  
-* _(Validity)_ If some transaction appears at an index $i$ at a correct process, then a process submitted it at that index:  
+As standard, the ledger ensures that:
+* _(Gap-freedom)_ There is no gap between two entries at a correct process:
+$\forall i \in 	\mathbb{N}. \forall p \in Correct. \square(p.ledger[i] \neq \bot \implies (i=0 \vee p.ledger[i-1] \neq \bot))$;
+* _(Agreement)_ No two correct processes have different ledger entries; formally:
+$\forall i \in 	\mathbb{N}. \forall p,q \in Correct. \square((p.ledger[i] = \bot) \vee (q.ledger[i] = \bot) \vee (p.ledger[i] = q.ledger[i]))$;
+* _(Validity)_ If some transaction appears at an index $i$ at a correct process, then a process submitted it at that index:
 $\forall p \in Correct. \exists q \in Processes. \forall i \in 	\mathbb{N}. \square(tx \in p.ledger[i] \implies tx \in \bigcup_q q.submitted[i]$).
-* _(Termination)_ If a correct process submits a block at its current height, eventually its height get incremented:  
-$\forall p \in Correct. \square((h=p.height \wedge p.submitted[h] \neq \varnothing) \implies \lozenge(p.height>h))$  
+* _(Termination)_ If a correct process submits a block at its current height, eventually its height get incremented:
+$\forall p \in Correct. \square((h=p.height \wedge p.submitted[h] \neq \varnothing) \implies \lozenge(p.height>h))$
 
 **Mempool.**
 A mempool is a replicated set of transactions.
@@ -111,27 +111,27 @@ At a process $p$, we write it $p.mempool$.
 We also define $p.hmempool$, the (history) variable that tracks all the transactions ever added to the mempool by process $p$.
 Below, we list the invariants of the mempool (at a correct process).
 
-Only the mempool is used as an input for the ledger:  
+Only the mempool is used as an input for the ledger:
 **INV1.** $\forall tx. \forall p \in Correct. \square(tx \in p.submitted \implies tx \in p.hmempool)$
 
-Committed transactions are not in the mempool:  
+Committed transactions are not in the mempool:
 **INV2.** $\forall tx. \forall p \in Correct. \square(tx \in p.committed \implies tx \notin p.mempool)$
 
 In blockchain, a transaction is (or not) valid in a given state.
 That is, a transaction can be valid (or not) at a given height of the ledger.
 To model this, consider a transaction $tx$.
 Let $p.ledger.valid(tx)$ be such a check at the current height of the ledger at process $p$ (ABCI call).
-Our third invariant is that only valid transactions are present in the mempool:  
+Our third invariant is that only valid transactions are present in the mempool:
 **INV3.** $\forall tx, \forall p \in Correct. \square(tx \in p.mempool \implies p.ledger.valid(tx))$
 
 Finally, we require some progress from the mempool.
-Namely, if a transaction appears at a correct process then eventually it is committed or forever invalid.  
+Namely, if a transaction appears at a correct process then eventually it is committed or forever invalid.
 **INV4** $\forall tx. \forall p \in Correct. \square(tx \in p.mempool \implies \lozenge\square(tx \in p.committed \vee \neg p.ledger.valid(tx)))$
 
 The above invariant ensures that if a transaction enters the mempool (at a correct process), then it eventually leaves it at a later time.
 For this to be true, the client application must ensure that the validity of a transaction converges toward some value.
 This means that there exists a height after which $valid(tx)$ always returns the same value.
-Such a requirement is termed _eventual non-oscillation_ in the [ABCI](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_app_requirements.md#mempool-connection-requirements) documentation.
+Such a requirement is termed _eventual non-oscillation_ in the [ABCI](https://github.com/cometbft/cometbft/blob/v0.39.x/spec/abci/abci%2B%2B_app_requirements.md#mempool-connection-requirements) documentation.
 It also appears in [Ethereum](https://github.com/ethereum/go-ethereum/blob/5c51ef8527c47268628fe9be61522816a7f1b395/light/txpool.go#L401) as a transaction is always valid until a transaction from the same address executes with the same or higher nonce.
 A simple way to satisfy this for the programmer is by having $valid(tx)$ deterministic and stateless (e.g., a syntactic check).
 
@@ -142,7 +142,7 @@ To maintain such invariants in an implementation, standard thread-safe mechanism
 Another practical concern is that INV2 requires to traverse the whole ledger, which might be too expensive.
 Instead, we would like to maintain this only over the last $\alpha$ committed transactions, for some parameter $\alpha$.
 Given a process $p$, we write $p.lcommitted$ the last $\alpha$ committed transactions at $p$.
-Invariant INV2 is replaced with:  
+Invariant INV2 is replaced with:
 **INV2a.** $\forall tx. \forall p \in Correct. \square(tx \in p.lcommitted \implies tx \notin p.mempool)$
 
 INV3 requires to have a green light from the client application before adding a transaction to the mempool.
@@ -150,7 +150,7 @@ For efficiency, such a validation needs to be made at most $\beta$ times per tra
 Ideally, $\beta$ equals $1$.
 In practice, $\beta = f(T)$ for some function $f$ of the maximal number of transactions $T$ submitted between two heights.
 Given some transaction $tx$, variable $p.valid[tx]$ tracks the number of times the application was asked at the current height.
-A weaker version of INV3 is as follows:  
+A weaker version of INV3 is as follows:
 **INV3a.** $\forall tx. \forall p \in Correct. \square(tx \in p.hmempool \implies p.valid[tx] \in [1, \beta])$
 
 > For further information regarding the current implementation of the mempool in CometBFT, the reader may consult [this](https://github.com/cometbft/knowledge-base/blob/main/protocols/mempool/v0/mempool-v0.md) document in the knowledge base.

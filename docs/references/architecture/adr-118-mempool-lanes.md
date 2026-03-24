@@ -61,7 +61,7 @@ the current implementation of the mempool. Then we state what properties the new
 offer to guarantee the desired QoS. The following definitions are common to all properties.
 
 When attempting to add an incoming transaction to the mempool, the node first checks that it is not
-already in the cache before checking its validity with the application. 
+already in the cache before checking its validity with the application.
 
 :memo: _Definition_: We say that a node receives a transaction `tx` _for the first time_ when the
 node receives `tx` and `tx` is not in the cache.
@@ -460,7 +460,7 @@ configuration will continue to apply to the mempool, which now is a union of lan
 of the mempool will be the sum of the sizes of all lanes. Therefore, the mempool capacities as
 currently defined in the configuration will put an upper limit on the union of all lanes. These
 configurations are:
-- `Size`, the total number of transactions allowed in the mempool, 
+- `Size`, the total number of transactions allowed in the mempool,
 - `MaxTxsBytes`, the maximum total number of bytes of the mempool, and
 - `MaxTxBytes`, the maximum size in bytes of a single transaction accepted into the mempool.
 
@@ -565,7 +565,7 @@ For transaction dissemination and for reaping transactions for creating blocks w
 algorithm that satisfies the properties "Priorities between classes" and "FIFO ordering per class".
 This means that it must support selection by _weight_, ensuring each lane gets a fraction of the P2P
 channel capacity proportional to its priority. Additionally, we want the algorithm to be _fair_ to
-prevent starvation of low-priority lanes. 
+prevent starvation of low-priority lanes.
 
 A first option that meets these criteria is the current prioritization algorithm on the P2P reactor,
 which we could easily reimplement in the mempool. It works as follows:
@@ -656,7 +656,7 @@ We have considered two alternative approaches for _where_ to configure lanes and
    be needed for upgrading the lanes via `ConsensusParams`. While it is true that SDK applications
    could pass a governance proposal with both elements together, it would be something to _always_
    do, and it is not clear what the situation would be for non-SDK applications.
-  
+
    Also, it is not clear in which order the proposals should apply. The community should be careful
    not to break performance between the passing of both proposals. The `gov` module could be
    modified to allow the two changes to be shipped in the same gov proposal, but this does not seem
@@ -676,7 +676,7 @@ late, possibly having lane definitions that do not match with those of nodes at 
   current implementation. This MVP will serve as a base to further extend QoS in future iterations
   of lanes.
 - Applications that are unaware of this feature, and therefore not classifying transactions in
-  `CheckTx`, will observe the same behavior from the mempool as the current implementation.  
+  `CheckTx`, will observe the same behavior from the mempool as the current implementation.
 
 ### Negative
 
@@ -711,7 +711,7 @@ late, possibly having lane definitions that do not match with those of nodes at 
 - [Cosmovisor][cosmovisor]
 - [Mempool's cache][cache]
 
-[cache]: https://github.com/cometbft/cometbft/blob/main/spec/mempool/cache.md
+[cache]: https://github.com/cometbft/cometbft/blob/v0.39.x/spec/mempool/cache.md
 [adr067]: ./tendermint-core/adr-067-mempool-refactor.md
 [reapmaxbytesmaxgas]: https://github.com/cometbft/cometbft/blob/v0.37.6/mempool/v1/mempool.go#L315-L324
 [gulf-stream]: https://medium.com/solana-labs/gulf-stream-solanas-mempool-less-transaction-forwarding-protocol-d342e72186ad

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/types"
@@ -12,7 +13,15 @@ import (
 //-----------------------------------------------------
 // Validate block
 
-func validateBlock(state State, block *types.Block) error {
+type blockValidationOptions struct {
+	blockTimeTolerance time.Duration
+}
+
+func validateBlock(state State, block *types.Block, opts ...func(*blockValidationOptions)) error {
+	var vopts blockValidationOptions
+	for _, o := range opts {
+		o(&vopts)
+	}
 	// Validate internal consistency.
 	if err := block.ValidateBasic(); err != nil {
 		return err
@@ -111,6 +120,12 @@ func validateBlock(state State, block *types.Block) error {
 	}
 
 	// Validate block Time
+	if tol := vopts.blockTimeTolerance; tol > 0 && !block.Time.Before(time.Now().Add(tol)) {
+		return fmt.Errorf(
+			"block time %v is too far in the future (wall clock %v + tolerance %v)",
+			block.Time, time.Now(), tol,
+		)
+	}
 	switch {
 	case block.Height > state.InitialHeight:
 		if !block.Time.After(state.LastBlockTime) {

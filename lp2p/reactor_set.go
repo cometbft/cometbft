@@ -149,12 +149,20 @@ func (rs *reactorSet) RemovePeer(peer *Peer, reason any) {
 }
 
 func (rs *reactorSet) GetByName(name string) (p2p.Reactor, bool) {
-	idx, ok := rs.reactorNames[name]
+	reactor, ok := rs.getByName(name)
 	if !ok {
 		return nil, false
 	}
+	return reactor.Reactor, true
+}
 
-	return rs.reactors[idx].Reactor, true
+func (rs *reactorSet) getByName(name string) (reactorItem, bool) {
+	idx, ok := rs.reactorNames[name]
+	if !ok {
+		return reactorItem{}, false
+	}
+
+	return rs.reactors[idx], true
 }
 
 func (rs *reactorSet) getReactorWithProtocol(id protocol.ID) (reactorProtocol, reactorItem, error) {

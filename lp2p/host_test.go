@@ -19,6 +19,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/libp2p/go-libp2p/p2p/protocol/identify"
+	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/require"
 )
@@ -332,11 +333,14 @@ func TestResourceManager(t *testing.T) {
 		// there should be some limits base on defaults and some params related to the current machine
 		systemLimits := limiter.GetSystemLimits()
 		peerLimits := limiter.GetPeerLimits("")
+		peerPingLimits := limiter.GetProtocolPeerLimits(ping.ID)
 		t.Logf("systemLimits: %T: %+v", systemLimits, systemLimits)
 		t.Logf("peerLimits: %T: %+v", peerLimits, peerLimits)
+		t.Logf("peerPingLimits: %T: %+v", peerPingLimits, peerPingLimits)
 
 		require.Less(t, systemLimits.GetStreamTotalLimit(), 1_000_000)
 		require.Less(t, peerLimits.GetStreamTotalLimit(), systemLimits.GetStreamTotalLimit())
+		require.Equal(t, 2, peerPingLimits.GetStreamLimit(network.DirInbound))
 	})
 
 	t.Run("custom", func(t *testing.T) {
@@ -357,14 +361,16 @@ func TestResourceManager(t *testing.T) {
 		require.False(t, isNull)
 
 		var (
-			systemLimits  = limiter.GetSystemLimits()
-			peerLimits    = limiter.GetPeerLimits("")
-			serviceLimits = limiter.GetServiceLimits(identify.ServiceName)
+			systemLimits   = limiter.GetSystemLimits()
+			peerLimits     = limiter.GetPeerLimits("")
+			serviceLimits  = limiter.GetServiceLimits(identify.ServiceName)
+			peerPingLimits = limiter.GetProtocolPeerLimits(ping.ID)
 		)
 
 		t.Logf("systemLimits: %T: %+v", systemLimits, systemLimits)
 		t.Logf("peerLimits: %T: %+v", peerLimits, peerLimits)
 		t.Logf("serviceLimits(identify): %T: %+v", serviceLimits, serviceLimits)
+		t.Logf("peerPingLimits: %T: %+v", peerPingLimits, peerPingLimits)
 
 		// no limits on "system" scope...
 		require.Equal(t, math.MaxInt64, systemLimits.GetStreamTotalLimit())
@@ -375,6 +381,7 @@ func TestResourceManager(t *testing.T) {
 		// and also default limits on built-in "service" scope
 		require.NotEqual(t, math.MaxInt64, serviceLimits.GetStreamTotalLimit())
 		require.Less(t, peerLimits.GetStreamTotalLimit(), systemLimits.GetStreamTotalLimit())
+		require.Equal(t, 2, peerPingLimits.GetStreamLimit(network.DirInbound))
 	})
 }
 

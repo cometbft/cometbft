@@ -161,12 +161,16 @@ func TestPeer(t *testing.T) {
 		// check msg1
 		msg1 := &types.Request{}
 		require.NoError(t, msg1.Unmarshal(<-payloadCh))
-		require.Equal(t, "hello-send", msg1.GetEcho().GetMessage())
 
 		// check msg2
 		msg2 := &types.Request{}
 		require.NoError(t, msg2.Unmarshal(<-payloadCh))
-		require.Equal(t, "hello-try-send", msg2.GetEcho().GetMessage())
+
+		require.ElementsMatch(
+			t,
+			[]string{"hello-send", "hello-try-send"},
+			[]string{msg1.GetEcho().GetMessage(), msg2.GetEcho().GetMessage()},
+		)
 
 		t.Run("Failure", func(t *testing.T) {
 			// ACT

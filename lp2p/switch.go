@@ -331,38 +331,6 @@ func (s *Switch) MarkPeerAsGood(_ p2p.Peer) {
 // Broadcaster methods
 //--------------------------------
 
-func (s *Switch) Broadcast(e p2p.Envelope) chan bool {
-	s.Logger.Debug("Broadcast", "channel", e.ChannelID)
-
-	e.Message = newPreMarshaledMessage(e.Message)
-
-	var wg sync.WaitGroup
-	successChan := make(chan bool, s.peerSet.Size())
-
-	s.peerSet.ForEach(func(p p2p.Peer) {
-		wg.Add(1)
-
-		go func(p p2p.Peer) {
-			defer wg.Done()
-
-			success := p.Send(e)
-			select {
-			case successChan <- success:
-			default:
-				// Skip. This means peer set changed
-				// between Size() and ForEach() calls.
-			}
-		}(p)
-	})
-
-	go func() {
-		wg.Wait()
-		close(successChan)
-	}()
-
-	return successChan
-}
-
 func (s *Switch) BroadcastAsync(e p2p.Envelope) {
 	s.Logger.Debug("BroadcastAsync", "channel", e.ChannelID)
 

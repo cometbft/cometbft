@@ -20,8 +20,6 @@ import (
 func TestReactorAdaptive(t *testing.T) {
 	const waitTime = 5 * time.Second
 	t.Run("ingestsBlock", func(t *testing.T) {
-		t.Parallel()
-
 		// ARRANGE
 		ts := newAdaptiveSyncTestSuite(t, "blocksync_ingest_block")
 
@@ -81,8 +79,6 @@ func TestReactorAdaptive(t *testing.T) {
 	})
 
 	t.Run("alreadyIngested", func(t *testing.T) {
-		t.Parallel()
-
 		// ARRANGE
 		ts := newAdaptiveSyncTestSuite(t, "blocksync_ingest_block")
 
@@ -141,8 +137,6 @@ func TestReactorAdaptive(t *testing.T) {
 	})
 
 	t.Run("peekTwoBlocksFailure", func(t *testing.T) {
-		t.Parallel()
-
 		// ARRANGE
 		ts := newAdaptiveSyncTestSuite(t, "blocksync_peek_two_blocks_failure")
 

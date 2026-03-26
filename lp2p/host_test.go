@@ -214,6 +214,32 @@ func TestHost(t *testing.T) {
 }
 
 func TestHostConnGater(t *testing.T) {
+	t.Run("default", func(t *testing.T) {
+		// ARRANGE
+		cfg := config.DefaultP2PConfig().LibP2PConfig
+		cfg.Limits.Mode = config.LibP2PLimitsModeDefault
+
+		// ACT
+		connGater, enabled := ConnectionGaterFromConfig(cfg, nil)
+
+		// ASSERT
+		require.Nil(t, connGater)
+		require.False(t, enabled)
+	})
+
+	t.Run("disabled", func(t *testing.T) {
+		// ARRANGE
+		cfg := config.DefaultP2PConfig().LibP2PConfig
+		cfg.Limits.Mode = config.LibP2PLimitsModeDisabled
+
+		// ACT
+		connGater, enabled := ConnectionGaterFromConfig(cfg, nil)
+
+		// ASSERT
+		require.Nil(t, connGater)
+		require.False(t, enabled)
+	})
+
 	t.Run("rejectThirdPeer", func(t *testing.T) {
 		// ARRANGE
 		const (
@@ -305,9 +331,12 @@ func TestResourceManager(t *testing.T) {
 
 		// there should be some limits base on defaults and some params related to the current machine
 		systemLimits := limiter.GetSystemLimits()
+		peerLimits := limiter.GetPeerLimits("")
 		t.Logf("systemLimits: %T: %+v", systemLimits, systemLimits)
+		t.Logf("peerLimits: %T: %+v", peerLimits, peerLimits)
 
 		require.Less(t, systemLimits.GetStreamTotalLimit(), 1_000_000)
+		require.Less(t, peerLimits.GetStreamTotalLimit(), systemLimits.GetStreamTotalLimit())
 	})
 
 	t.Run("custom", func(t *testing.T) {
@@ -345,6 +374,7 @@ func TestResourceManager(t *testing.T) {
 
 		// and also default limits on built-in "service" scope
 		require.NotEqual(t, math.MaxInt64, serviceLimits.GetStreamTotalLimit())
+		require.Less(t, peerLimits.GetStreamTotalLimit(), systemLimits.GetStreamTotalLimit())
 	})
 }
 

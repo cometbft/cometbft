@@ -25,7 +25,7 @@ require (
 	github.com/informalsystems/tm-load-test v1.3.0
 	github.com/lib/pq v1.12.0
 	github.com/minio/highwayhash v1.0.4
-	github.com/oasisprotocol/curve25519-voi v0.0.0-20251114093237-2ab5a27a1729
+	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
 	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.21.0

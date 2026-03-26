@@ -267,8 +267,8 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
-github.com/oasisprotocol/curve25519-voi v0.0.0-20251114093237-2ab5a27a1729 h1:yfQ2sO9WJXUAIUR+g7NUkxJSKCAFJcR5sUDu+ZmjTZI=
-github.com/oasisprotocol/curve25519-voi v0.0.0-20251114093237-2ab5a27a1729/go.mod h1:hVoHR2EVESiICEMbg137etN/Lx+lSrHPTD39Z/uE+2s=
+github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae h1:FatpGJD2jmJfhZiFDElaC0QhZUDQnxUeAwTGkfAHN3I=
+github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae/go.mod h1:hVoHR2EVESiICEMbg137etN/Lx+lSrHPTD39Z/uE+2s=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.7.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.12.1/go.mod h1:zj2OWP4+oCPe1qIXoGWkgMRwljMUYCdkwsT2108oapk=

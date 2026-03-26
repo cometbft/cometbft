@@ -23,18 +23,9 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/informalsystems/tm-load-test v1.3.0
-<<<<<<< HEAD
-	github.com/lib/pq v1.10.9
-	github.com/minio/highwayhash v1.0.3
-	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
-=======
 	github.com/lib/pq v1.12.0
-	github.com/libp2p/go-libp2p v0.47.0
 	github.com/minio/highwayhash v1.0.4
-	github.com/mr-tron/base58 v1.2.0
-	github.com/multiformats/go-multiaddr v0.16.1
-	github.com/oasisprotocol/curve25519-voi v0.0.0-20230904125328-1f23a7beb09a
->>>>>>> 52d4b0cd (build(deps): Bump github.com/minio/highwayhash from 1.0.3 to 1.0.4 (#5714))
+	github.com/oasisprotocol/curve25519-voi v0.0.0-20251114093237-2ab5a27a1729
 	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.21.0

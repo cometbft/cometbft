@@ -203,7 +203,7 @@ func (blockExec *BlockExecutor) ProcessProposal(
 // Validation does not mutate state, but does require historical information from the stateDB,
 // ie. to verify evidence from a validator at an old height.
 func (blockExec *BlockExecutor) ValidateBlock(state State, block *types.Block) error {
-	lastValidated := blockExec.getLastValidatedBlock()
+	lastValidated := blockExec.GetLastValidatedBlock()
 
 	// safe to call with nil
 	if !lastValidated.HashesTo(block.Hash()) {
@@ -236,7 +236,7 @@ func (blockExec *BlockExecutor) ApplyVerifiedBlock(
 func (blockExec *BlockExecutor) ApplyBlock(
 	state State, blockID types.BlockID, block *types.Block,
 ) (State, error) {
-	lastValidated := blockExec.getLastValidatedBlock()
+	lastValidated := blockExec.GetLastValidatedBlock()
 
 	// safe to call with nil
 	if !lastValidated.HashesTo(block.Hash()) {
@@ -481,7 +481,7 @@ func (blockExec *BlockExecutor) asyncUpdateMempool(
 	}
 }
 
-func (blockExec *BlockExecutor) getLastValidatedBlock() *types.Block {
+func (blockExec *BlockExecutor) GetLastValidatedBlock() *types.Block {
 	return blockExec.lastValidatedBlock.Load()
 }
 

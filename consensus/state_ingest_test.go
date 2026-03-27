@@ -30,6 +30,28 @@ func TestStateIngestVerifiedBlock(t *testing.T) {
 		assert.NotNil(t, ts.cs.blockStore.LoadBlock(ic.Height()))
 	})
 
+	t.Run("ingestedBlockWithVoteExtensions", func(t *testing.T) {
+		// ARRANGE
+		ts := newIngestTestSuite(t)
+		ts.cs.state.ConsensusParams.ABCI.VoteExtensionsEnableHeight = 1
+
+		// Given a verified block with extended commit
+		ic := ts.MakeIngestCandidate()
+		require.NotNil(t, ic.extCommit)
+
+		icHeight := ic.Height()
+
+		// ACT
+		err := ts.IngestVerifiedBlock(ic)
+
+		// ASSERT
+		require.NoError(t, err)
+		require.Equal(t, icHeight, ts.cs.GetLastHeight())
+		require.NotNil(t, ts.cs.blockStore.LoadBlock(icHeight))
+		require.Equal(t, ic.commit, ts.cs.blockStore.LoadSeenCommit(icHeight))
+		require.Equal(t, ic.extCommit, ts.cs.blockStore.LoadBlockExtendedCommit(icHeight))
+	})
+
 	t.Run("alreadyIncluded", func(t *testing.T) {
 		// ARRANGE
 		ts := newIngestTestSuite(t)
@@ -158,6 +180,13 @@ func TestIngestCandidate(t *testing.T) {
 					}
 				},
 				errContains: "extended commit blockID mismatch",
+			},
+			{
+				name: "block validator is nil",
+				mutate: func(ic *IngestCandidate) {
+					ic.blockValidator = nil
+				},
+				errContains: "block validator is nil",
 			},
 		} {
 			t.Run(tt.name, func(t *testing.T) {

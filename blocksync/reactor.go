@@ -96,6 +96,7 @@ func NewReactor(
 	store *store.BlockStore,
 	localAddr crypto.Address,
 	offlineStateSyncHeight int64,
+	minRecvRate int64,
 	metrics *Metrics,
 ) *Reactor {
 	storeHeight := store.Height()
@@ -128,7 +129,7 @@ func NewReactor(
 	if startHeight == 1 {
 		startHeight = state.InitialHeight
 	}
-	pool := NewBlockPool(startHeight, requestsCh, errorsCh)
+	pool := NewBlockPool(startHeight, requestsCh, errorsCh, minRecvRate)
 
 	enabledFlag := &atomic.Bool{}
 	enabledFlag.Store(enabled)

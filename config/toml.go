@@ -540,6 +540,12 @@ version = "{{ .BlockSync.Version }}"
 # Run both BLOCKSYNC and CONSENSUS for improved liveness, connectivity, and performance.
 adaptive_sync = {{ .BlockSync.AdaptiveSync }}
 
+# Minimum receive rate from peers in bytes per second.
+# Peers that consistently send data slower than this rate may be disconnected.
+# Default is 128 KB/s. For networks with small or empty blocks, consider lowering this value.
+# Set to 0 to disable rate-based peer disconnection.
+min_recv_rate = {{ .BlockSync.MinRecvRate }}
+
 #######################################################
 ###         Consensus Configuration Options         ###
 #######################################################

@@ -190,39 +190,54 @@ func (ic *IngestCandidate) commitVoting(chainID string, vals *types.ValidatorSet
 // It uses the underlying internalQueue to ensure SERIAL state-machine processing inside the main receiveRoutine.
 // See handleIngestVerifiedBlock for the actual implementation and error handling.
 func (cs *State) IngestVerifiedBlock(ic IngestCandidate) (err error) {
-	logger := cs.Logger.With("height", ic.Height())
-	logger.Info("ingesting verified block")
+	var (
+		height = ic.Height()
+		quit   = cs.Quit()
+		req    = &ingestVerifiedBlockRequest{
+			IngestCandidate: ic,
+			sentAt:          time.Now(),
+			response:        make(chan ingestVerifiedBlockResponse, 1),
+		}
+	)
 
 	defer func() {
 		if err != nil {
-			logger.Info("failed to ingest verified block", "err", err)
+			cs.Logger.Info("Failed to ingest verified block", "height", height, "err", err)
 		} else {
-			logger.Info("ingested verified block")
+			cs.Logger.Info("Ingested verified block", "height", height)
 		}
 	}()
 
-	// register response channel so we can receive from receiveRoutine
-	ch := make(chan ingestVerifiedBlockResponse, 1)
-	defer close(ch)
-
-	req := &ingestVerifiedBlockRequest{
-		IngestCandidate: ic,
-		sentAt:          time.Now(),
-		response:        ch,
+	// send to the main routine
+	select {
+	case cs.ingestBlockQueue <- req:
+		// ok, move on
+	case <-quit:
+		return ErrConsensusShutdown
 	}
 
-	cs.sendInternalMessage(msgInfo{Msg: req})
-
+	// wait
 	select {
-	case <-cs.Quit():
-		return fmt.Errorf("consensus shutdown")
 	case res := <-req.response:
+		// let the chan leak in other cases (that's fine for shutdown)
+		close(req.response)
 		return res.err
+	case <-quit:
+		return ErrConsensusShutdown
 	}
 }
 
 // note the outcome of this call is NOT relevant to statsMsgQueue
 func (cs *State) handleIngestVerifiedBlockRequest(req *ingestVerifiedBlockRequest) {
+	cs.mtx.Lock()
+	defer cs.mtx.Unlock()
+
+	cs.Logger.Info(
+		"Ingesting verified block",
+		"height", req.Height(),
+		"queue_dur", time.Since(req.sentAt).String(),
+	)
+
 	err := cs.ingestBlock(req.IngestCandidate)
 
 	req.response <- ingestVerifiedBlockResponse{err: err}

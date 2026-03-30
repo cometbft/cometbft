@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"math"
 	"os"
 	"sort"
@@ -34,6 +35,30 @@ func LogDurationStats(t *testing.T, title string, durations []time.Duration) {
 		percentile(durations, 99).String(),
 		durations[len(durations)-1].String(),
 	)
+}
+
+func LogBytesThroughputStats(t *testing.T, title string, bytes uint64, duration time.Duration) {
+	require.NotEmpty(t, bytes)
+	require.Greater(t, duration, time.Duration(0))
+
+	bytesPerSec := float64(bytes) / duration.Seconds()
+	t.Logf("%s: %s", title, formatBytesPerSecond(bytesPerSec))
+}
+
+func formatBytesPerSecond(bps float64) string {
+	const unit = 1024
+
+	if bps < unit {
+		return fmt.Sprintf("%.2f B/s", bps)
+	}
+
+	div, exp := float64(unit), 0
+	for n := bps / unit; n >= unit && exp < len("KMG")-1; n /= unit {
+		div *= unit
+		exp++
+	}
+
+	return fmt.Sprintf("%.2f %ciB/s", bps/div, "KMG"[exp])
 }
 
 func percentile(durations []time.Duration, p float64) time.Duration {

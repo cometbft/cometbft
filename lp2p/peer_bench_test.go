@@ -75,14 +75,12 @@ func generatePerfBenchmarkMatrix() []perfBench {
 
 	processingDelays := []time.Duration{
 		0,
-		10 * time.Millisecond,
-		50 * time.Millisecond,
+		20 * time.Millisecond,
 		100 * time.Millisecond,
 		250 * time.Millisecond,
 	}
 
 	msgSizes := []int{
-		1024 / 2,   // 512b
 		1024 * 1,   // 1kb
 		1024 * 8,   // 8kb
 		1024 * 64,  // 64kb

@@ -64,6 +64,7 @@ func LogPerformanceStatsSendTimeframe(
 	inFlight := sendSuccess - receivedSuccess
 	inFlightPercentage := 100 * float64(inFlight) / float64(sendSuccess+sendFailed)
 
+	t.Logf("Time taken: %s", timeTaken.String())
 	t.Logf("Sent messages: %d", sendSuccess+sendFailed)
 	t.Logf("  success: %d, failure %d", sendSuccess, sendFailed)
 	t.Logf("  send RPS: %.0f", float64(sendSuccess)/timeTaken.Seconds())

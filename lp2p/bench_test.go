@@ -483,6 +483,7 @@ LOOP:
 	<-onSinkClosed
 
 	// log perf stats
+	time.Sleep(100 * time.Millisecond)
 	utils.LogPerformanceStatsSend(
 		t,
 		start,
@@ -634,6 +635,7 @@ func benchRunSendDrain(t *testing.T, cfg perfBench, peer2 p2p.Peer, reactor2 *pe
 	}
 
 	// log perf stats
+	time.Sleep(100 * time.Millisecond)
 	utils.LogPerformanceStatsSend(
 		t,
 		start,
@@ -763,6 +765,7 @@ func benchRunBroadcast(t *testing.T, cfg perfBench, switches []p2p.Switcher, rea
 
 	wg.Wait()
 
+	time.Sleep(100 * time.Millisecond)
 	utils.LogPerformanceStatsBroadcast(
 		t,
 		start,

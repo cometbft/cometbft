@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cometbft/cometbft/abci/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -43,6 +45,36 @@ func LogBytesThroughputStats(t *testing.T, title string, bytes uint64, duration 
 
 	bytesPerSec := float64(bytes) / duration.Seconds()
 	t.Logf("%s: %s", title, formatBytesPerSecond(bytesPerSec))
+}
+
+func LogPerformanceStats(
+	t *testing.T,
+	start time.Time,
+	sendSuccess, sendFailed, receivedSuccess uint64,
+	sendBytesTotal, receiveBytesTotal uint64,
+	receiveLatencies, processLatencies []time.Duration,
+) {
+	timeTaken := time.Since(start)
+
+	// if sendFailed is low, then this diff indicates that messages are QUEUED in the priority queue
+	// and NOT lost. Since we're benchmarking a concrete time frame, we don't wait for
+	// all messages to be processed, so they'll lower the "throughput" value.
+	inFlight := sendSuccess - receivedSuccess
+	inFlightPercentage := 100 * float64(inFlight) / float64(sendSuccess+sendFailed)
+
+	t.Logf("Sent messages: %d", sendSuccess+sendFailed)
+	t.Logf("  success: %d, failure %d", sendSuccess, sendFailed)
+	t.Logf("  send RPS: %.0f", float64(sendSuccess)/timeTaken.Seconds())
+
+	t.Logf("Received messages: %d", receivedSuccess)
+	t.Logf("  success: %d, in-flight: %d", receivedSuccess, inFlight)
+	t.Logf("  receive RPS: %.0f", float64(receivedSuccess)/timeTaken.Seconds())
+	t.Logf("  still in-flight: %d (%.3f%%)", int64(inFlight), inFlightPercentage)
+
+	LogBytesThroughputStats(t, "Send throughput:", sendBytesTotal, timeTaken)
+	LogBytesThroughputStats(t, "Receive throughput:", receiveBytesTotal, timeTaken)
+	LogDurationStats(t, "Receive latency:", receiveLatencies)
+	LogDurationStats(t, "Process latency:", processLatencies)
 }
 
 func formatBytesPerSecond(bps float64) string {
@@ -85,4 +117,33 @@ func percentile(durations []time.Duration, p float64) time.Duration {
 	dHigh := float64(durations[high])
 
 	return time.Duration(dLow + (dHigh-dLow)*weight)
+}
+
+// PerfRecord dummy payload just to measure various performance metrics in benchmarks.
+type PerfRecord struct {
+	Payload     []byte
+	SentAt      time.Time
+	ReceivedAt  time.Time
+	ProcessedAt time.Time
+}
+
+func (r *PerfRecord) AsEcho() *types.RequestEcho {
+	msg := make([]byte, 8+len(r.Payload))
+	binary.BigEndian.PutUint64(msg[:8], uint64(r.SentAt.UnixMicro()))
+	copy(msg[8:], r.Payload)
+
+	return &types.RequestEcho{Message: string(msg)}
+}
+
+func (r *PerfRecord) FromEcho(echo *types.RequestEcho) error {
+	raw := []byte(echo.Message)
+	if len(raw) < 8 {
+		return fmt.Errorf("invalid perf record: got %d bytes", len(raw))
+	}
+
+	tsMicros := int64(binary.BigEndian.Uint64(raw[:8]))
+	r.SentAt = time.UnixMicro(tsMicros)
+	r.Payload = append(make([]byte, 0, len(raw)-8), raw[8:]...)
+
+	return nil
 }

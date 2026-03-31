@@ -47,12 +47,12 @@ func LogBytesThroughputStats(t *testing.T, title string, bytes uint64, duration 
 	t.Logf("%s: %s", title, formatBytesPerSecond(bytesPerSec))
 }
 
-func LogPerformanceStats(
+func LogPerformanceStatsOneWay(
 	t *testing.T,
 	start time.Time,
 	sendSuccess, sendFailed, receivedSuccess uint64,
 	sendBytesTotal, receiveBytesTotal uint64,
-	receiveLatencies, processLatencies []time.Duration,
+	receiveLatencies []time.Duration,
 ) {
 	timeTaken := time.Since(start)
 
@@ -71,10 +71,9 @@ func LogPerformanceStats(
 	t.Logf("  receive RPS: %.0f", float64(receivedSuccess)/timeTaken.Seconds())
 	t.Logf("  still in-flight: %d (%.3f%%)", int64(inFlight), inFlightPercentage)
 
-	LogBytesThroughputStats(t, "Send throughput:", sendBytesTotal, timeTaken)
-	LogBytesThroughputStats(t, "Receive throughput:", receiveBytesTotal, timeTaken)
+	LogBytesThroughputStats(t, "Send throughput", sendBytesTotal, timeTaken)
+	LogBytesThroughputStats(t, "Receive throughput", receiveBytesTotal, timeTaken)
 	LogDurationStats(t, "Receive latency:", receiveLatencies)
-	LogDurationStats(t, "Process latency:", processLatencies)
 }
 
 func formatBytesPerSecond(bps float64) string {

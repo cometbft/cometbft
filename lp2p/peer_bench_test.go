@@ -405,12 +405,12 @@ func benchRunSendTimeframe(t *testing.T, cfg perfBench, peer2 p2p.Peer, reactor2
 
 		record.ReceivedAt = time.Now()
 
+		// send non-blocking to the sink
+		sink <- record
+
 		if cfg.ProcessingDelay > 0 {
 			time.Sleep(cfg.ProcessingDelay)
 		}
-
-		// send non-blocking to the sink
-		sink <- record
 	})
 
 	// 2. run sink routine to receive messages from recipient
@@ -539,12 +539,12 @@ func benchRunSendDrain(t *testing.T, cfg perfBench, peer2 p2p.Peer, reactor2 *pe
 
 		record.ReceivedAt = time.Now()
 
+		// send non-blocking to the sink
+		sink <- record
+
 		if cfg.ProcessingDelay > 0 {
 			time.Sleep(cfg.ProcessingDelay)
 		}
-
-		// send non-blocking to the sink
-		sink <- record
 	})
 
 	// 2. run sink routine to receive messages from recipient
@@ -753,9 +753,11 @@ func benchRunBroadcast(t *testing.T, cfg perfBench, switches []p2p.Switcher, rea
 
 			if !utils.WaitForProcessing(t, ctx, name, &expected, &receiveSuccess[idx]) {
 				actual := receiveSuccess[idx].Load()
-				t.Logf("%s: Processing not completed. Expected: %d, Actual: %d", name, numPeers, actual)
+				t.Logf("%s: Processing not completed. Expected: %d, Actual: %d", name, numMessages, actual)
 			}
+
 			timeTaken[idx] = time.Since(start)
+			close(sinks[idx])
 		}(idx)
 	}
 

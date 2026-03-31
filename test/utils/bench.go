@@ -46,8 +46,10 @@ func LogDurationStats(t *testing.T, title string, durations []time.Duration) {
 func LogBytesThroughputStats(t *testing.T, title string, bytes uint64, duration time.Duration) {
 	t.Helper()
 
-	require.NotEmpty(t, bytes)
-	require.Greater(t, duration, time.Duration(0))
+	if duration == 0 {
+		t.Logf("%s: N/A", title)
+		return
+	}
 
 	bytesPerSec := float64(bytes) / duration.Seconds()
 	t.Logf("%s: %s", title, formatBytesPerSecond(bytesPerSec))

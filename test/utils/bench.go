@@ -1,11 +1,13 @@
 package utils
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 	"math"
 	"os"
 	"sort"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -47,7 +49,7 @@ func LogBytesThroughputStats(t *testing.T, title string, bytes uint64, duration 
 	t.Logf("%s: %s", title, formatBytesPerSecond(bytesPerSec))
 }
 
-func LogPerformanceStatsOneWay(
+func LogPerformanceStatsSendTimeframe(
 	t *testing.T,
 	start time.Time,
 	sendSuccess, sendFailed, receivedSuccess uint64,
@@ -74,6 +76,52 @@ func LogPerformanceStatsOneWay(
 	LogBytesThroughputStats(t, "Send throughput", sendBytesTotal, timeTaken)
 	LogBytesThroughputStats(t, "Receive throughput", receiveBytesTotal, timeTaken)
 	LogDurationStats(t, "Receive latency:", receiveLatencies)
+}
+
+func WaitForProcessing(t *testing.T, ctx context.Context, expected, actual *atomic.Uint64) (completed bool) {
+	t.Helper()
+
+	const (
+		interval    = 50 * time.Millisecond
+		maxIdleWait = 1 * time.Second
+	)
+
+	var (
+		lastValue        = actual.Load()
+		lastProgressedAt = time.Now()
+	)
+
+	for {
+		// load values once per loop
+		expectedValue := expected.Load()
+		actualValue := actual.Load()
+
+		// check if we've completed
+		if actualValue >= expectedValue {
+			return true
+		}
+
+		// check if the context is done
+		if ctx.Err() != nil {
+			t.Logf("Context canceled. Expected: %d, Actual: %d", expected.Load(), actual.Load())
+			return false
+		}
+
+		// update last value and time if we've made progress
+		if actualValue > lastValue {
+			lastValue = actualValue
+			lastProgressedAt = time.Now()
+		}
+
+		// idle for too long
+		if time.Since(lastProgressedAt) > maxIdleWait {
+			t.Logf("Idle for too long. Expected: %d, Actual: %d", expectedValue, actualValue)
+			return false
+		}
+
+		time.Sleep(interval)
+	}
+
 }
 
 func formatBytesPerSecond(bps float64) string {

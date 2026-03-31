@@ -42,6 +42,9 @@ type perfBench struct {
 
 	// drain tests: total bandwidth of the benchmark
 	BenchBandwidthBytes int
+
+	// broadcast tests: number of peers in the network
+	BroadcastPeers int
 }
 
 const (
@@ -61,9 +64,11 @@ const (
 	// and then cut.
 	perfBenchTimeframe = 10 * time.Second
 
-	// todo: for drain tests: divide 1GB by msgs size to get the number of messages to send,
+	// for drain tests: divide 1GB by msgs size to get the number of messages to send,
 	// eg: for 64kb msgs: 1GB / 64kb = 15625 messages
 	perfBenchDrainBandwidthBytes = 1 << 30
+
+	perfBenchBroadcastPeers = 8
 
 	testChannelID = byte(0xaa)
 )
@@ -99,15 +104,24 @@ func generatePerfBenchmarkMatrix() []perfBench {
 			for _, procDelay := range processingDelays {
 				for _, msgSize := range msgSizes {
 					for _, sendConcurrency := range sendRoutines {
-						cases = append(cases, perfBench{
-							TestType:            testType,
-							NetworkType:         networkType,
-							ProcessingDelay:     procDelay,
-							MessageSize:         msgSize,
-							SendConcurrency:     sendConcurrency,
+						perfBench := perfBench{
+							TestType:        testType,
+							NetworkType:     networkType,
+							ProcessingDelay: procDelay,
+							MessageSize:     msgSize,
+							SendConcurrency: sendConcurrency,
+
 							BenchDuration:       perfBenchTimeframe,
 							BenchBandwidthBytes: perfBenchDrainBandwidthBytes,
-						})
+							BroadcastPeers:      perfBenchBroadcastPeers,
+						}
+
+						// broadcast has no concurrency
+						if testType == perfBenchTypeBroadcast && sendConcurrency > 1 {
+							continue
+						}
+
+						cases = append(cases, perfBench)
 					}
 				}
 			}
@@ -128,15 +142,25 @@ func (b *perfBench) String() string {
 		delay = b.ProcessingDelay.String()
 	}
 
+	var suffix string
+	switch b.TestType {
+	case perfBenchTypeSendTimeframe:
+		suffix = fmt.Sprintf("dur-%s", b.BenchDuration.String())
+	case perfBenchTypeSendDrain:
+		suffix = fmt.Sprintf("bw-%dmb", b.BenchBandwidthBytes/(1024*1024))
+	case perfBenchTypeBroadcast:
+		suffix = fmt.Sprintf("peers-%d", b.BroadcastPeers)
+	}
+
 	// e.g. one-way-comet-p2p.msg-1kb.cc-8.delay-10ms.dur-10s
 	return fmt.Sprintf(
-		"%s-%s.msg-%s.cc-%d.delay-%s.dur-%s",
+		"%s-%s.msg-%s.cc-%d.delay-%s.%s",
 		b.TestType,
 		b.NetworkType,
 		msgSize,
 		b.SendConcurrency,
 		delay,
-		b.BenchDuration.String(),
+		suffix,
 	)
 }
 
@@ -178,6 +202,8 @@ func (b *perfBench) ConfigLP2PModifier(c *config.LibP2PConfig) {
 // CometP2PConfig "maxed out" config for comet-p2p
 func (b *perfBench) CometP2PConfig() *config.P2PConfig {
 	p2pConfig := config.DefaultP2PConfig()
+	p2pConfig.AllowDuplicateIP = true
+
 	// 4MB, bigger than all perf. msgs
 	p2pConfig.MaxPacketMsgPayloadSize = 4 * (1 << 20) // 4MB
 
@@ -208,31 +234,43 @@ func testPerformanceBenchmark(t *testing.T, config perfBench) {
 	case perfBenchNetworkLP2P:
 		switch config.TestType {
 		case perfBenchTypeSendTimeframe:
-			benchSetupAndRunSendTimeframeLP2P(t, config)
+			// type1: lp2p x send-timeframe
+			peer2, reactor2 := benchSetupSendLP2P(t, config)
+			benchRunSendTimeframe(t, config, peer2, reactor2)
 		case perfBenchTypeSendDrain:
-			benchSetupAndRunSendDrainLP2P(t, config)
+			// type2: lp2p x send-drain
+			peer2, reactor2 := benchSetupSendLP2P(t, config)
+			benchRunSendDrain(t, config, peer2, reactor2)
+		case perfBenchTypeBroadcast:
+			// type3: lp2p x broadcast
+			switches, reactors := benchSetupBroadcastLP2P(t, config)
+			benchRunBroadcast(t, config, switches, reactors)
 		default:
-			t.Skip("test type not yet supported")
+			t.Fatalf("Invalid test config: %s", config.String())
 		}
 	case perfBenchNetworkCometP2P:
 		switch config.TestType {
 		case perfBenchTypeSendTimeframe:
-			benchSetupAndRunSendTimeframeCometP2P(t, config)
+			// type4: comet-p2p x send-timeframe
+			peer2, reactor2 := benchSetupSendCometP2P(t, config)
+			benchRunSendTimeframe(t, config, peer2, reactor2)
 		case perfBenchTypeSendDrain:
-			benchSetupAndRunSendDrainCometP2P(t, config)
+			// type5: comet-p2p x send-drain
+			peer2, reactor2 := benchSetupSendCometP2P(t, config)
+			benchRunSendDrain(t, config, peer2, reactor2)
+		case perfBenchTypeBroadcast:
+			// type6: comet-p2p x broadcast
+			switches, reactors := benchSetupBroadcastCometP2P(t, config)
+			benchRunBroadcast(t, config, switches, reactors)
 		default:
-			t.Skip("test type not yet supported")
+			t.Fatalf("Invalid test config: %s", config.String())
 		}
 	default:
 		t.Fatalf("Invalid test config: %+v", config)
 	}
-
-	// todo lp2p x broadcast
-	// todo comet-p2p x broadcast
 }
 
-// type1: lp2p x send-timeframe
-func benchSetupAndRunSendTimeframeLP2P(t *testing.T, cfg perfBench) {
+func benchSetupSendLP2P(t *testing.T, cfg perfBench) (p2p.Peer, *perfReactor) {
 	// ARRANGE
 	// Given 2 hosts without limits
 	ports := utils.GetFreePorts(t, 2)
@@ -255,38 +293,10 @@ func benchSetupAndRunSendTimeframeLP2P(t *testing.T, cfg perfBench) {
 	peer2 := switch1.Peers().Get(peerIDToKey(host2.ID()))
 	require.NotNil(t, peer2)
 
-	benchRunSendTimeframe(t, cfg, peer2, reactor2)
+	return peer2, reactor2
 }
 
-// type2: lp2p x send-drain
-func benchSetupAndRunSendDrainLP2P(t *testing.T, cfg perfBench) {
-	// ARRANGE
-	// Given 2 hosts without limits
-	ports := utils.GetFreePorts(t, 2)
-	host1 := makeTestHost(t, ports[0], withModifiedConfig(cfg.ConfigLP2PModifier))
-	host2 := makeTestHost(t, ports[1], withModifiedConfig(cfg.ConfigLP2PModifier), withBootstrapPeers([]config.LibP2PBootstrapPeer{
-		{
-			Host: fmt.Sprintf("127.0.0.1:%d", ports[0]),
-			ID:   host1.ID().String(),
-		},
-	}))
-
-	// Given 2 connected p2p switches
-	switch1, _ := newPerfSwitchLP2P(t, host1, cfg)
-	switch2, reactor2 := newPerfSwitchLP2P(t, host2, cfg)
-
-	// connect & start two switches to each other
-	connectSwitches(t, []*Switch{switch1, switch2})
-
-	// given peer2 inside peer1
-	peer2 := switch1.Peers().Get(peerIDToKey(host2.ID()))
-	require.NotNil(t, peer2)
-
-	benchRunSendDrain(t, cfg, peer2, reactor2)
-}
-
-// type3: comet-p2p x send-timeframe
-func benchSetupAndRunSendTimeframeCometP2P(t *testing.T, cfg perfBench) {
+func benchSetupSendCometP2P(t *testing.T, cfg perfBench) (p2p.Peer, *perfReactor) {
 	// ARRANGE
 	// Given 2 connected comet-p2p switches
 	switch1, _ := newPerfSwitchCometP2P(t, "sender", cfg)
@@ -300,30 +310,61 @@ func benchSetupAndRunSendTimeframeCometP2P(t *testing.T, cfg perfBench) {
 	peer2 := switch1.Peers().Get(switch2.NodeInfo().ID())
 	require.NotNil(t, peer2)
 
-	benchRunSendDrain(t, cfg, peer2, reactor2)
+	return peer2, reactor2
 }
 
-// type4: comet-p2p x send-drain
-func benchSetupAndRunSendDrainCometP2P(t *testing.T, cfg perfBench) {
+func benchSetupBroadcastLP2P(t *testing.T, cfg perfBench) ([]p2p.Switcher, []*perfReactor) {
 	// ARRANGE
-	// Given 2 connected comet-p2p switches
-	switch1, _ := newPerfSwitchCometP2P(t, "sender", cfg)
-	switch2, reactor2 := newPerfSwitchCometP2P(t, "recipient", cfg)
+	// Given N hosts with switches and reactors
+	var (
+		hosts    = makeTestHosts(t, cfg.BroadcastPeers, withModifiedConfig(cfg.ConfigLP2PModifier))
+		switches = make([]*Switch, cfg.BroadcastPeers)
+		reactors = make([]*perfReactor, cfg.BroadcastPeers)
+	)
 
-	// connect sender -> recipient
-	require.NoError(t, switch1.DialPeerWithAddress(switch2.NetAddress()))
+	for i, host := range hosts {
+		switches[i], reactors[i] = newPerfSwitchLP2P(t, host, cfg)
+	}
+
+	// connect switches to each other
+	connectSwitches(t, switches)
+
+	typed := make([]p2p.Switcher, 0, cfg.BroadcastPeers)
+	for _, sw := range switches {
+		typed = append(typed, sw)
+	}
+
+	return typed, reactors
+}
+
+func benchSetupBroadcastCometP2P(t *testing.T, cfg perfBench) ([]p2p.Switcher, []*perfReactor) {
+	var (
+		switches = make([]*p2p.Switch, cfg.BroadcastPeers)
+		reactors = make([]*perfReactor, cfg.BroadcastPeers)
+	)
+
+	for i := 0; i < cfg.BroadcastPeers; i++ {
+		switches[i], reactors[i] = newPerfSwitchCometP2P(t, fmt.Sprintf("peer-%d", i+1), cfg)
+		if i > 0 {
+			errDial := switches[0].DialPeerWithAddress(switches[i].NetAddress())
+			require.NoError(t, errDial, "failed to dial peer #%d", i+1)
+		}
+	}
+
+	// wait for switches to be connected
 	time.Sleep(100 * time.Millisecond)
 
-	// given recipient peer inside sender
-	peer2 := switch1.Peers().Get(switch2.NodeInfo().ID())
-	require.NotNil(t, peer2)
+	typed := make([]p2p.Switcher, 0, cfg.BroadcastPeers)
+	for _, sw := range switches {
+		typed = append(typed, sw)
+	}
 
-	benchRunSendDrain(t, cfg, peer2, reactor2)
+	return typed, reactors
 }
 
 // send messages from peer1 to peer2 for cfg.BenchDuration.
 // Doesn't wait for ALL messages to be received, just cut after the deadline
-func benchRunSendTimeframe(t *testing.T, cfg perfBench, peer2 p2p.Peer, reactor2 *PerfReactor) {
+func benchRunSendTimeframe(t *testing.T, cfg perfBench, peer2 p2p.Peer, reactor2 *perfReactor) {
 	// ARRANGE
 	// Given node1.peer2
 	require.NotNil(t, peer2)
@@ -348,8 +389,6 @@ func benchRunSendTimeframe(t *testing.T, cfg perfBench, peer2 p2p.Peer, reactor2
 	defer cancel()
 
 	// ACT
-	start := time.Now()
-
 	// 1. receive messages on recipient (async)
 	reactor2.OnReceive(func(e p2p.Envelope) {
 		// drop
@@ -410,6 +449,7 @@ func benchRunSendTimeframe(t *testing.T, cfg perfBench, peer2 p2p.Peer, reactor2
 			sendFailures.Add(1)
 		}
 	}
+	start := time.Now()
 
 LOOP:
 	for {
@@ -443,7 +483,7 @@ LOOP:
 	<-onSinkClosed
 
 	// log perf stats
-	utils.LogPerformanceStatsSendTimeframe(
+	utils.LogPerformanceStatsSend(
 		t,
 		start,
 		sendSuccess.Load(), sendFailures.Load(), receiveSuccess.Load(),
@@ -454,7 +494,7 @@ LOOP:
 
 // send messages N from peer1 to peer2 and wait for peer2 to receive them.
 // N is determined as cfg.BenchBandwidthBytes / cfg.MessageSize
-func benchRunSendDrain(t *testing.T, cfg perfBench, peer2 p2p.Peer, reactor2 *PerfReactor) {
+func benchRunSendDrain(t *testing.T, cfg perfBench, peer2 p2p.Peer, reactor2 *perfReactor) {
 	// ARRANGE
 	// Given node1.peer2
 	require.NotNil(t, peer2)
@@ -483,8 +523,6 @@ func benchRunSendDrain(t *testing.T, cfg perfBench, peer2 p2p.Peer, reactor2 *Pe
 	defer cancel()
 
 	// ACT
-	start := time.Now()
-
 	// 1. receive messages on recipient (async)
 	reactor2.OnReceive(func(e p2p.Envelope) {
 		// drop
@@ -525,7 +563,6 @@ func benchRunSendDrain(t *testing.T, cfg perfBench, peer2 p2p.Peer, reactor2 *Pe
 
 	// 3. send messages from sender->recipient based on concurrency
 	samplePayload := cfg.SamplePayload()
-
 	sendFunc := func() {
 		perfRecord := utils.PerfRecord{
 			SentAt:  time.Now(),
@@ -544,6 +581,7 @@ func benchRunSendDrain(t *testing.T, cfg perfBench, peer2 p2p.Peer, reactor2 *Pe
 			sendFailures.Add(1)
 		}
 	}
+	start := time.Now()
 
 	var sendIterations int
 	for sendIterations < numMessages {
@@ -587,7 +625,7 @@ func benchRunSendDrain(t *testing.T, cfg perfBench, peer2 p2p.Peer, reactor2 *Pe
 
 	// ASSERT
 	// Wait for processing to complete or ctx.timeout or some idle state
-	completed := utils.WaitForProcessing(t, ctx, &sendSuccess, &receiveSuccess)
+	completed := utils.WaitForProcessing(t, ctx, "send", &sendSuccess, &receiveSuccess)
 	cancel()
 	close(sink)
 
@@ -596,7 +634,7 @@ func benchRunSendDrain(t *testing.T, cfg perfBench, peer2 p2p.Peer, reactor2 *Pe
 	}
 
 	// log perf stats
-	utils.LogPerformanceStatsSendTimeframe(
+	utils.LogPerformanceStatsSend(
 		t,
 		start,
 		sendSuccess.Load(), sendFailures.Load(), receiveSuccess.Load(),
@@ -605,10 +643,139 @@ func benchRunSendDrain(t *testing.T, cfg perfBench, peer2 p2p.Peer, reactor2 *Pe
 	)
 }
 
-func newPerfSwitchLP2P(t *testing.T, host *Host, cfg perfBench) (*Switch, *PerfReactor) {
+func benchRunBroadcast(t *testing.T, cfg perfBench, switches []p2p.Switcher, reactors []*perfReactor) {
+	// ARRANGE
+	// Given sender and receivers
+	sender := switches[0]
+	switches = switches[1:]
+	reactors = reactors[1:]
+
+	// Given N of messages that is cfg / message size / N of peers
+	numPeers := len(switches)
+	numMessages := cfg.BenchBandwidthBytes / cfg.MessageSize / numPeers
+	t.Logf("Sending %d messages to %d receivers", numMessages, numPeers)
+
+	// Given some metrics for processing
+	var (
+		receiveSuccess   = make([]atomic.Uint64, numPeers)
+		receiveBytes     = make([]atomic.Uint64, numPeers)
+		receiveLatencies = make([][]time.Duration, numPeers)
+		timeTaken        = make([]time.Duration, numPeers)
+		sinks            = make([]chan utils.PerfRecord, numPeers)
+	)
+
+	for i := range numPeers {
+		receiveLatencies[i] = make([]time.Duration, 0, 10_000)
+		sinks[i] = make(chan utils.PerfRecord, 1_000_000)
+	}
+
+	// Given a timeout deadline for the benchmark
+	ctx, cancel := context.WithTimeout(context.Background(), 3*cfg.BenchDuration)
+	defer cancel()
+
+	// ACT
+	for idx, reactor := range reactors {
+		sink := sinks[idx]
+
+		// 1. receive messages on recipient (async)
+		reactor.OnReceive(func(e p2p.Envelope) {
+			// drop
+			if ctx.Err() != nil {
+				return
+			}
+
+			var record utils.PerfRecord
+			err := record.FromEcho(e.Message.(*types.RequestEcho))
+			if err != nil {
+				// should not fail
+				panic(err)
+			}
+
+			record.ReceivedAt = time.Now()
+
+			if cfg.ProcessingDelay > 0 {
+				time.Sleep(cfg.ProcessingDelay)
+			}
+
+			// send non-blocking to the sink
+			sink <- record
+		})
+
+		// 2. run sink routine to receive messages from recipient
+		go func() {
+			for record := range sink {
+				receiveSuccess[idx].Add(1)
+				receiveBytes[idx].Add(uint64(len(record.Payload)))
+
+				// no need for a mutex here, we're not sharing this slice
+				sentAt := record.SentAt
+				receiveLatencies[idx] = append(receiveLatencies[idx], record.ReceivedAt.Sub(sentAt))
+			}
+
+			t.Logf("Finished receiver goroutine (%d)", idx)
+		}()
+	}
+
+	// 3. send messages from sender->receivers
+	samplePayload := cfg.SamplePayload()
+	start := time.Now()
+
+	for i := 0; i < numMessages; i++ {
+		if ctx.Err() != nil {
+			t.Logf("Broadcast: Timed out")
+			break
+		}
+
+		perfRecord := utils.PerfRecord{
+			SentAt:  time.Now(),
+			Payload: samplePayload,
+		}
+
+		sender.TryBroadcast(p2p.Envelope{
+			ChannelID: testChannelID,
+			Message:   perfRecord.AsEcho(),
+		})
+	}
+
+	// ASSERT
+	// Wait for processing to complete or ctx.timeout or some idle state
+	var wg sync.WaitGroup
+	var expected atomic.Uint64
+
+	wg.Add(numPeers)
+	expected.Store(uint64(numMessages))
+
+	for idx := range numPeers {
+		name := fmt.Sprintf("peer-%d", idx+1)
+
+		go func(idx int) {
+			defer wg.Done()
+
+			if !utils.WaitForProcessing(t, ctx, name, &expected, &receiveSuccess[idx]) {
+				actual := receiveSuccess[idx].Load()
+				t.Logf("%s: Processing not completed. Expected: %d, Actual: %d", name, numPeers, actual)
+			}
+			timeTaken[idx] = time.Since(start)
+		}(idx)
+	}
+
+	wg.Wait()
+
+	utils.LogPerformanceStatsBroadcast(
+		t,
+		start,
+		numMessages,
+		receiveSuccess,
+		receiveBytes,
+		receiveLatencies,
+		timeTaken,
+	)
+}
+
+func newPerfSwitchLP2P(t *testing.T, host *Host, cfg perfBench) (*Switch, *perfReactor) {
 	t.Helper()
 
-	reactor := NewPerfReactor(t, cfg.ChannelDescriptor())
+	reactor := newPerfReactor(t, cfg.ChannelDescriptor())
 	sw, err := NewSwitch(
 		nil,
 		host,
@@ -623,7 +790,7 @@ func newPerfSwitchLP2P(t *testing.T, host *Host, cfg perfBench) (*Switch, *PerfR
 	return sw, reactor
 }
 
-func newPerfSwitchCometP2P(t *testing.T, name string, cfg perfBench) (*p2p.Switch, *PerfReactor) {
+func newPerfSwitchCometP2P(t *testing.T, name string, cfg perfBench) (*p2p.Switch, *perfReactor) {
 	t.Helper()
 
 	p2pConfig := cfg.CometP2PConfig()
@@ -652,7 +819,7 @@ func newPerfSwitchCometP2P(t *testing.T, name string, cfg perfBench) (*p2p.Switc
 	transport := p2p.NewMultiplexTransport(nodeInfo, nodeKey, p2p.MConnConfig(p2pConfig))
 	require.NoError(t, transport.Listen(*addr))
 
-	reactor := NewPerfReactor(t, chanDesc)
+	reactor := newPerfReactor(t, chanDesc)
 	reactor.SetLogger(log.NewNopLogger().With("reactor", "PerfReactor", "switch", name))
 
 	sw := p2p.NewSwitch(p2pConfig, transport)
@@ -667,8 +834,8 @@ func newPerfSwitchCometP2P(t *testing.T, name string, cfg perfBench) (*p2p.Switc
 	return sw, reactor
 }
 
-// PerfReactor is a reactor that measures various performance metrics.
-type PerfReactor struct {
+// perfReactor is a reactor that measures various performance metrics.
+type perfReactor struct {
 	p2p.BaseReactor
 
 	t         *testing.T
@@ -676,10 +843,10 @@ type PerfReactor struct {
 	onReceive func(p2p.Envelope)
 }
 
-var _ p2p.Reactor = &PerfReactor{}
+var _ p2p.Reactor = &perfReactor{}
 
-func NewPerfReactor(t *testing.T, desc *conn.ChannelDescriptor) *PerfReactor {
-	r := &PerfReactor{
+func newPerfReactor(t *testing.T, desc *conn.ChannelDescriptor) *perfReactor {
+	r := &perfReactor{
 		t:    t,
 		desc: desc,
 	}
@@ -688,13 +855,13 @@ func NewPerfReactor(t *testing.T, desc *conn.ChannelDescriptor) *PerfReactor {
 	return r
 }
 
-func (p *PerfReactor) GetChannels() []*conn.ChannelDescriptor {
+func (p *perfReactor) GetChannels() []*conn.ChannelDescriptor {
 	return []*conn.ChannelDescriptor{p.desc}
 }
 
-func (p *PerfReactor) OnReceive(handler func(p2p.Envelope)) { p.onReceive = handler }
+func (p *perfReactor) OnReceive(handler func(p2p.Envelope)) { p.onReceive = handler }
 
-func (p *PerfReactor) Receive(e p2p.Envelope) {
+func (p *perfReactor) Receive(e p2p.Envelope) {
 	if p.onReceive == nil {
 		p.t.Fatalf("onReceive is not set")
 	}

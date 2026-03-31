@@ -24,6 +24,8 @@ func GuardP2PBenchTest(t *testing.T) {
 }
 
 func LogDurationStats(t *testing.T, title string, durations []time.Duration) {
+	t.Helper()
+
 	require.NotEmpty(t, durations)
 	sort.Slice(durations, func(i, j int) bool {
 		return durations[i] < durations[j]
@@ -42,6 +44,8 @@ func LogDurationStats(t *testing.T, title string, durations []time.Duration) {
 }
 
 func LogBytesThroughputStats(t *testing.T, title string, bytes uint64, duration time.Duration) {
+	t.Helper()
+
 	require.NotEmpty(t, bytes)
 	require.Greater(t, duration, time.Duration(0))
 
@@ -49,13 +53,15 @@ func LogBytesThroughputStats(t *testing.T, title string, bytes uint64, duration 
 	t.Logf("%s: %s", title, formatBytesPerSecond(bytesPerSec))
 }
 
-func LogPerformanceStatsSendTimeframe(
+func LogPerformanceStatsSend(
 	t *testing.T,
 	start time.Time,
 	sendSuccess, sendFailed, receivedSuccess uint64,
 	sendBytesTotal, receiveBytesTotal uint64,
 	receiveLatencies []time.Duration,
 ) {
+	t.Helper()
+
 	timeTaken := time.Since(start)
 
 	// if sendFailed is low, then this diff indicates that messages are QUEUED in the priority queue
@@ -72,14 +78,60 @@ func LogPerformanceStatsSendTimeframe(
 	t.Logf("Received messages: %d", receivedSuccess)
 	t.Logf("  success: %d, in-flight: %d", receivedSuccess, inFlight)
 	t.Logf("  receive RPS: %.0f", float64(receivedSuccess)/timeTaken.Seconds())
-	t.Logf("  still in-flight: %d (%.3f%%)", int64(inFlight), inFlightPercentage)
+	t.Logf("  still in-flight: %d (%.2f%%)", int64(inFlight), inFlightPercentage)
 
 	LogBytesThroughputStats(t, "Send throughput", sendBytesTotal, timeTaken)
 	LogBytesThroughputStats(t, "Receive throughput", receiveBytesTotal, timeTaken)
 	LogDurationStats(t, "Receive latency:", receiveLatencies)
 }
 
-func WaitForProcessing(t *testing.T, ctx context.Context, expected, actual *atomic.Uint64) (completed bool) {
+func LogPerformanceStatsBroadcast(
+	t *testing.T,
+	start time.Time,
+	sentMessages int,
+	receiveSuccess []atomic.Uint64,
+	receiveBytes []atomic.Uint64,
+	receiveLatencies [][]time.Duration,
+	timeTaken []time.Duration,
+) {
+	t.Helper()
+
+	require.Equal(t, len(receiveSuccess), len(receiveBytes))
+	require.Equal(t, len(receiveSuccess), len(receiveLatencies))
+	require.Equal(t, len(receiveSuccess), len(timeTaken))
+
+	var (
+		totalReceived    uint64
+		totalBytesPerSec float64
+	)
+
+	for idx := range receiveSuccess {
+		name := fmt.Sprintf("peer-%d", idx+1)
+
+		peerReceived := receiveSuccess[idx].Load()
+		peerBytes := receiveBytes[idx].Load()
+		peerTimeTaken := timeTaken[idx]
+
+		totalReceived += peerReceived
+		totalBytesPerSec += float64(peerBytes) / peerTimeTaken.Seconds()
+
+		inFlight := uint64(sentMessages) - peerReceived
+		inFlightPercentage := 100 * float64(inFlight) / float64(sentMessages)
+
+		t.Logf("%s:", name)
+		t.Logf("  received messages: %d", peerReceived)
+		t.Logf("  receive RPS: %.0f", float64(peerReceived)/peerTimeTaken.Seconds())
+		t.Logf("  still in-flight: %d (%.2f%%)", int64(inFlight), inFlightPercentage)
+		t.Logf("  time taken: %s", peerTimeTaken.String())
+		LogBytesThroughputStats(t, "  receive throughput", peerBytes, peerTimeTaken)
+		LogDurationStats(t, "  receive latency", receiveLatencies[idx])
+	}
+
+	t.Logf("Total received messages: %d", totalReceived)
+	t.Logf("Total receive throughput: %s", formatBytesPerSecond(totalBytesPerSec))
+}
+
+func WaitForProcessing(t *testing.T, ctx context.Context, name string, expected, actual *atomic.Uint64) (completed bool) {
 	t.Helper()
 
 	const (
@@ -104,7 +156,7 @@ func WaitForProcessing(t *testing.T, ctx context.Context, expected, actual *atom
 
 		// check if the context is done
 		if ctx.Err() != nil {
-			t.Logf("Context canceled. Expected: %d, Actual: %d", expected.Load(), actual.Load())
+			t.Logf("%s: Context canceled. Expected: %d, Actual: %d", name, expected.Load(), actual.Load())
 			return false
 		}
 
@@ -116,7 +168,7 @@ func WaitForProcessing(t *testing.T, ctx context.Context, expected, actual *atom
 
 		// idle for too long
 		if time.Since(lastProgressedAt) > maxIdleWait {
-			t.Logf("Idle for too long. Expected: %d, Actual: %d", expectedValue, actualValue)
+			t.Logf("%s: Idle for too long. Expected: %d, Actual: %d", name, expectedValue, actualValue)
 			return false
 		}
 
@@ -169,29 +221,34 @@ func percentile(durations []time.Duration, p float64) time.Duration {
 
 // PerfRecord dummy payload just to measure various performance metrics in benchmarks.
 type PerfRecord struct {
-	Payload     []byte
+	Payload []byte
+	ID      uint64
+
 	SentAt      time.Time
 	ReceivedAt  time.Time
 	ProcessedAt time.Time
 }
 
+// message: [id | sent_at | payload]
 func (r *PerfRecord) AsEcho() *types.RequestEcho {
-	msg := make([]byte, 8+len(r.Payload))
-	binary.BigEndian.PutUint64(msg[:8], uint64(r.SentAt.UnixMicro()))
-	copy(msg[8:], r.Payload)
+	msg := make([]byte, 16+len(r.Payload))
+	binary.BigEndian.PutUint64(msg[:8], r.ID)
+	binary.BigEndian.PutUint64(msg[8:16], uint64(r.SentAt.UnixMicro()))
+	copy(msg[16:], r.Payload)
 
 	return &types.RequestEcho{Message: string(msg)}
 }
 
 func (r *PerfRecord) FromEcho(echo *types.RequestEcho) error {
 	raw := []byte(echo.Message)
-	if len(raw) < 8 {
+	if len(raw) < 16 {
 		return fmt.Errorf("invalid perf record: got %d bytes", len(raw))
 	}
 
-	tsMicros := int64(binary.BigEndian.Uint64(raw[:8]))
+	r.ID = binary.BigEndian.Uint64(raw[:8])
+	tsMicros := int64(binary.BigEndian.Uint64(raw[8:16]))
 	r.SentAt = time.UnixMicro(tsMicros)
-	r.Payload = append(make([]byte, 0, len(raw)-8), raw[8:]...)
+	r.Payload = append(make([]byte, 0, len(raw)-16), raw[16:]...)
 
 	return nil
 }

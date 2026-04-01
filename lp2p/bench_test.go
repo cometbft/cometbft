@@ -215,12 +215,22 @@ func (b *perfBench) CometP2PConfig() *config.P2PConfig {
 	return p2pConfig
 }
 
+// TestBench runs the performance benchmark for all test cases.
+// `P2P_BENCH_TEST=matrix-only go test -run TestBench ./lp2p/... -v` - list available test cases
+// `P2P_BENCH_TEST=1 go test TestBench/send-drain-lp2p.msg-64kb.cc-1.delay-20ms.dur-10` - run a specific test case
+//
+// @see scripts/bench/p2p_bench.py for a complete suite.
 func TestBench(t *testing.T) {
 	utils.GuardP2PBenchTest(t)
 
 	matrix := generatePerfBenchmarkMatrix()
 
-	t.Logf("Total test cases: %d", len(matrix))
+	if utils.PrintMatrixOnly() {
+		for _, testCase := range matrix {
+			fmt.Println("testCase:", testCase.String())
+		}
+		return
+	}
 
 	for _, testCase := range matrix {
 		t.Run(testCase.String(), func(t *testing.T) {

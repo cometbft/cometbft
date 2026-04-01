@@ -23,6 +23,10 @@ func GuardP2PBenchTest(t *testing.T) {
 	}
 }
 
+func PrintMatrixOnly() bool {
+	return os.Getenv(EnvP2PBench) == "matrix-only"
+}
+
 func LogDurationStats(t *testing.T, title string, durations []time.Duration) map[string]any {
 	t.Helper()
 

@@ -10,7 +10,6 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/lp2p"
 	"github.com/cometbft/cometbft/p2p"
 	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
 	sm "github.com/cometbft/cometbft/state"
@@ -22,13 +21,16 @@ import (
 const BlocksyncChannel = byte(0x40)
 
 const (
-	defaultIntervalStatusUpdate  = 10 * time.Second
-	followerIntervalStatusUpdate = 1 * time.Second
+	defaultIntervalStatusUpdate      = 10 * time.Second
+	adaptiveSyncInternalStatusUpdate = 1 * time.Second
 
 	defaultIntervalSwitchToConsensus = 1 * time.Second
 
 	// interval for trying to apply a block
 	intervalTrySync = 10 * time.Millisecond
+
+	// adaptiveSync ticker. Still quick, just bursts fewer cpu cycles
+	intervalAdaptiveSync = 5 * intervalTrySync
 )
 
 type consensusReactor interface {
@@ -62,8 +64,10 @@ type Reactor struct {
 	// eg it can be initially disabled due to state sync being performed
 	enabled *atomic.Bool
 
-	// if enabled, we suppress switching to consensus mode, keeping node perpetually in block sync
-	followerMode bool
+	// if enabled, pending blocks are forwarded to BlockIngestor for
+	// further commitment. This effectively runs BLOCKSYNC and CONSENSUS
+	// simultaneously (adaptive sync).
+	adaptiveSyncEnabled bool
 
 	blockExec     *sm.BlockExecutor
 	store         sm.BlockStore
@@ -86,7 +90,7 @@ type Reactor struct {
 // NewReactorWithAddr returns new Reactor instance with local address
 func NewReactor(
 	enabled bool,
-	followerMode bool,
+	adaptiveSync bool,
 	state sm.State,
 	blockExec *sm.BlockExecutor,
 	store *store.BlockStore,
@@ -130,8 +134,8 @@ func NewReactor(
 	enabledFlag.Store(enabled)
 
 	intervalStatusUpdate := defaultIntervalStatusUpdate
-	if followerMode {
-		intervalStatusUpdate = followerIntervalStatusUpdate
+	if adaptiveSync {
+		intervalStatusUpdate = adaptiveSyncInternalStatusUpdate
 	}
 
 	r := &Reactor{
@@ -140,7 +144,7 @@ func NewReactor(
 		store:                     store,
 		pool:                      pool,
 		enabled:                   enabledFlag,
-		followerMode:              followerMode,
+		adaptiveSyncEnabled:       adaptiveSync,
 		localAddr:                 localAddr,
 		requestsCh:                requestsCh,
 		errorsCh:                  errorsCh,
@@ -175,11 +179,38 @@ func (r *Reactor) runPool(stateSynced bool) error {
 		return err
 	}
 
-	r.poolRoutineWg.Add(1)
-	go func() {
-		defer r.poolRoutineWg.Done()
-		r.poolRoutine(stateSynced)
-	}()
+	// todo: use poolRoutineWg.Go() after moving to go 1.25+
+	run := func(fn func()) {
+		r.poolRoutineWg.Add(1)
+		go func() {
+			defer r.poolRoutineWg.Done()
+			fn()
+		}()
+	}
+
+	// run the pool events routine
+	run(func() {
+		ticker := time.NewTicker(r.intervalStatusUpdate)
+		defer ticker.Stop()
+		r.poolEventsRoutine(ticker)
+	})
+
+	if r.adaptiveSyncEnabled {
+		// supply blocks to the consensus machine
+		blockIngestor, err := r.getBlockIngestor()
+		if err != nil {
+			return err
+		}
+
+		run(func() {
+			r.blockIngestorRoutine(blockIngestor)
+		})
+
+		return nil
+	}
+
+	// default pool routine that performs regular blocksync
+	run(func() { r.poolRoutine(stateSynced) })
 
 	return nil
 }
@@ -189,6 +220,8 @@ func (r *Reactor) Enable(state sm.State) error {
 	if !r.enabled.CompareAndSwap(false, true) {
 		return ErrAlreadyEnabled
 	}
+
+	r.Logger.Info("Enabling blocksync reactor")
 
 	r.initialState = state
 	r.pool.height = state.LastBlockHeight + 1
@@ -359,19 +392,16 @@ func (r *Reactor) localNodeBlocksTheChain(state sm.State) bool {
 // Handle messages from the poolReactor telling the reactor what to do.
 // NOTE: Don't sleep in the FOR_LOOP or otherwise slow it down!
 func (r *Reactor) poolRoutine(stateSynced bool) {
+	r.Logger.Info("Starting blocksync pool routine", "stateSynced", stateSynced)
+
 	r.metrics.Syncing.Set(1)
 	defer r.metrics.Syncing.Set(0)
 
 	trySyncTicker := time.NewTicker(intervalTrySync)
 	defer trySyncTicker.Stop()
 
-	statusUpdateTicker := time.NewTicker(r.intervalStatusUpdate)
-	defer statusUpdateTicker.Stop()
-
 	switchToConsensusTicker := time.NewTicker(r.intervalSwitchToConsensus)
 	defer switchToConsensusTicker.Stop()
-
-	go r.poolEventsRoutine(statusUpdateTicker)
 
 	var (
 		chainID                    = r.initialState.ChainID
@@ -449,11 +479,6 @@ FOR_LOOP:
 				continue FOR_LOOP
 			}
 
-			if r.followerMode {
-				r.Logger.Debug("Follower mode is enabled, continuing to sync", "height", state.LastBlockHeight)
-				continue FOR_LOOP
-			}
-
 			r.Logger.Info("Time to switch to consensus mode!", "height", height)
 			if err := r.pool.Stop(); err != nil {
 				r.Logger.Error("Error stopping pool", "err", err)
@@ -524,46 +549,55 @@ FOR_LOOP:
 			firstPartSetHeader := firstParts.Header()
 			firstID := types.BlockID{Hash: first.Hash(), PartSetHeader: firstPartSetHeader}
 
-			// Finally, verify the first block using the second's commit
-			// NOTE: we can probably make this more efficient, but note that calling
-			// first.Hash() doesn't verify the tx contents, so MakePartSet() is
-			// currently necessary.
-			// TODO(sergio): Should we also validate against the extended commit?
-			err = state.Validators.VerifyCommitLight(chainID, firstID, first.Height, second.LastCommit)
-
-			if err == nil {
-				// validate the block before we persist it
-				err = r.blockExec.ValidateBlock(state, first)
-			}
+			// vote extension validations
 			presentExtCommit := extCommit != nil
 			extensionsEnabled := state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height)
+
 			if presentExtCommit != extensionsEnabled {
 				err = fmt.Errorf("non-nil extended commit must be received iff vote extensions are enabled for its height "+
 					"(height %d, non-nil extended commit %t, extensions enabled %t)",
 					first.Height, presentExtCommit, extensionsEnabled,
 				)
-			}
-			if err == nil && extensionsEnabled {
-				// if vote extensions were required at this height, ensure they exist.
-				err = extCommit.EnsureExtensions(true)
-			}
-			if err != nil {
-				r.Logger.Error("Error in validation", "err", err)
-				peerID := r.pool.RemovePeerAndRedoAllPeerRequests(first.Height)
-				peer := r.Switch.Peers().Get(peerID)
-				if peer != nil {
-					// NOTE: we've already removed the peer's request, but we
-					// still need to clean up the rest.
-					r.stopPeerForError(peer, ErrReactorValidation{Err: err})
-				}
-				peerID2 := r.pool.RemovePeerAndRedoAllPeerRequests(second.Height)
-				peer2 := r.Switch.Peers().Get(peerID2)
-				if peer2 != nil && peer2 != peer {
-					// NOTE: we've already removed the peer's request, but we
-					// still need to clean up the rest.
-					r.stopPeerForError(peer2, ErrReactorValidation{Err: err})
-				}
+				r.handleValidationFailure(first, second, err)
 				continue FOR_LOOP
+			}
+
+			// verify the first block using the second's commit.
+			//
+			// light verification suffices here because ValidateBlock (below) will
+			// fully verify second.LastCommit when second is processed as first in
+			// the next iteration.
+			//
+			// we are simply checking if 2/3+ of power has precomitted for
+			// first as a fast check. During ValidateBlock, we will check for
+			// the full validity of first's commit.
+			err = state.Validators.VerifyCommitLight(chainID, firstID, first.Height, second.LastCommit)
+			if err != nil {
+				r.handleValidationFailure(first, second, err)
+				continue FOR_LOOP
+			}
+
+			// validate the block before we persist it, we willfully verify
+			// first's commit within.
+			if err = r.blockExec.ValidateBlock(state, first); err != nil {
+				r.handleValidationFailure(first, second, err)
+				continue FOR_LOOP
+			}
+
+			if extensionsEnabled {
+				// if vote extensions were required at this height, ensure they exist.
+				if err = extCommit.EnsureExtensions(true); err != nil {
+					r.handleValidationFailure(first, second, err)
+					continue FOR_LOOP
+				}
+
+				// if vote extensions were required at this height, verify all
+				// signatures in the extended commit since it is persisted to
+				// the store.
+				if err = state.Validators.VerifyCommit(chainID, firstID, first.Height, extCommit.ToCommit()); err != nil {
+					r.handleValidationFailure(first, second, err)
+					continue FOR_LOOP
+				}
 			}
 
 			r.pool.PopRequest()
@@ -643,9 +677,33 @@ func (r *Reactor) poolEventsRoutine(statusUpdateTicker *time.Ticker) {
 	}
 }
 
+func (r *Reactor) handleValidationFailure(blockA, blockB *types.Block, err error) {
+	r.Logger.Error("Error in validation", "height", blockA.Height, "hash", blockA.Hash(), "err", err)
+
+	err = ErrReactorValidation{Err: err}
+
+	idA := r.pool.RemovePeerAndRedoAllPeerRequests(blockA.Height)
+	if peerA := r.Switch.Peers().Get(idA); peerA != nil {
+		// NOTE: we've already removed the peer's request, but we
+		// still need to clean up the rest.
+		r.stopPeerForError(peerA, err)
+	}
+
+	idB := r.pool.RemovePeerAndRedoAllPeerRequests(blockB.Height)
+	if idA == idB {
+		return
+	}
+
+	if peerB := r.Switch.Peers().Get(idB); peerB != nil {
+		// NOTE: we've already removed the peer's request, but we
+		// still need to clean up the rest.
+		r.stopPeerForError(peerB, err)
+	}
+}
+
 func (r *Reactor) stopPeerForError(peer p2p.Peer, err error) {
-	if r.followerMode && shouldBeReconnected(err) {
-		err = &lp2p.ErrorTransient{Err: err}
+	if r.adaptiveSyncEnabled && shouldBeReconnected(err) {
+		err = &p2p.ErrorTransient{Err: err}
 	}
 
 	r.Switch.StopPeerForError(peer, err)

@@ -45,7 +45,10 @@ const (
 
 	MempoolTypeFlood = "flood"
 	MempoolTypeNop   = "nop"
-	MempoolTypeApp   = "app"
+
+	LibP2PLimitsModeDisabled = "disabled"
+	LibP2PLimitsModeDefault  = "default"
+	LibP2PLimitsModeCustom   = "custom"
 
 	v0 = "v0"
 	v1 = "v1"
@@ -590,7 +593,7 @@ type P2PConfig struct {
 	PexReactor bool `mapstructure:"pex"`
 
 	// LibP2PConfig (experimental) configuration for go-libp2p
-	LibP2PConfig *LibP2PConfig `mapstructure:"libp2p"`
+	LibP2PConfig LibP2PConfig `mapstructure:"libp2p"`
 
 	// Seed mode, in which node constantly crawls the network and looks for
 	// peers. If another node asks it for addresses, it responds and disconnects.
@@ -622,13 +625,17 @@ type LibP2PConfig struct {
 	// Enabled set true to use go-libp2p for networking
 	Enabled bool `mapstructure:"enabled"`
 
-	// DisableResourceManager set true to disable the resource manager
-	DisableResourceManager bool `mapstructure:"disable_resource_manager"`
-
 	// BootstrapPeers list of peers to bootstrap the libp2p host
 	BootstrapPeers []LibP2PBootstrapPeer `mapstructure:"bootstrap_peers"`
+
+	// Scaler optional configuration for reactor queue auto scaling
+	Scaler LibP2PScaler `mapstructure:"scaler"`
+
+	// Limits configuration for libp2p resource manager.
+	Limits LibP2PLimits `mapstructure:"limits"`
 }
 
+// LibP2PBootstrapPeer is a bootstrap peer for this node
 type LibP2PBootstrapPeer struct {
 	// ip:port example: "192.0.2.0:65432"
 	Host string `mapstructure:"host"`
@@ -658,6 +665,32 @@ func (p *LibP2PBootstrapPeer) ToTOMLInlineString() string {
 	}
 
 	return "{ " + strings.Join(parts, ", ") + " }"
+}
+
+// LibP2PScaler is global scaler configuration for all reactors
+type LibP2PScaler struct {
+	MinWorkers       int                    `mapstructure:"min_workers"`
+	MaxWorkers       int                    `mapstructure:"max_workers"`
+	ThresholdLatency time.Duration          `mapstructure:"threshold_latency"`
+	Overrides        []LibP2PScalerOverride `mapstructure:"overrides"`
+}
+
+// LibP2PScalerOverride is a scaler override for a specific reactor
+type LibP2PScalerOverride struct {
+	Reactor          string        `mapstructure:"reactor"`
+	MinWorkers       int           `mapstructure:"min_workers"`
+	MaxWorkers       int           `mapstructure:"max_workers"`
+	ThresholdLatency time.Duration `mapstructure:"threshold_latency"`
+}
+
+// LibP2PLimits parameters for lib-p2p resource manager.
+type LibP2PLimits struct {
+	// Mode controls how limits are configured: disabled, default or custom (see below).
+	Mode string `mapstructure:"mode"`
+	// MaxPeers caps the number of simultaneously connected peers. Only used when mode is custom.
+	MaxPeers int `mapstructure:"max_peers"`
+	// MaxPeerStreams caps the number of concurrent streams per peer. Only used when mode is custom.
+	MaxPeerStreams int `mapstructure:"max_peer_streams"`
 }
 
 // DefaultP2PConfig returns a default configuration for the peer-to-peer layer
@@ -723,19 +756,139 @@ func (cfg *P2PConfig) ValidateBasic() error {
 	if cfg.RecvRate < 0 {
 		return cmterrors.ErrNegativeField{Field: "recv_rate"}
 	}
+	if cfg.LibP2PEnabled() {
+		return cfg.LibP2PConfig.ValidateBasic()
+	}
+
 	return nil
 }
 
 func (cfg *P2PConfig) LibP2PEnabled() bool {
-	return cfg.LibP2PConfig != nil && cfg.LibP2PConfig.Enabled
+	return cfg.LibP2PConfig.Enabled
 }
 
-func DefaultLibP2PConfig() *LibP2PConfig {
-	return &LibP2PConfig{
-		Enabled:                false,
-		DisableResourceManager: false,
-		BootstrapPeers:         []LibP2PBootstrapPeer{},
+func DefaultLibP2PConfig() LibP2PConfig {
+	return LibP2PConfig{
+		Enabled:        false,
+		BootstrapPeers: []LibP2PBootstrapPeer{},
+		Scaler:         DefaultLibP2PScaler(),
+		Limits:         DefaultLibP2PLimits(),
 	}
+}
+
+func (cfg *LibP2PConfig) ValidateBasic() error {
+	key := func(msg string, args ...any) string {
+		return fmt.Sprintf("p2p.libp2p.%s", fmt.Sprintf(msg, args...))
+	}
+
+	// 1. validate bootstrap peers
+	for i, bp := range cfg.BootstrapPeers {
+		if bp.Host == "" {
+			return cmterrors.ErrRequiredField{Field: key("bootstrap_peers.%d.host", i)}
+		}
+		if bp.ID == "" {
+			return cmterrors.ErrRequiredField{Field: key("bootstrap_peers.%d.id", i)}
+		}
+	}
+
+	// 2. validate scaler
+	if err := cfg.Scaler.ValidateBasic(); err != nil {
+		return err
+	}
+
+	// 3. validate limits
+	if err := cfg.Limits.ValidateBasic(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DefaultLibP2PScaler() LibP2PScaler {
+	return LibP2PScaler{
+		MinWorkers:       4,
+		MaxWorkers:       32,
+		ThresholdLatency: 100 * time.Millisecond,
+		Overrides: []LibP2PScalerOverride{
+			{
+				Reactor:          "MEMPOOL",
+				MinWorkers:       8,
+				MaxWorkers:       512,
+				ThresholdLatency: 500 * time.Millisecond,
+			},
+		},
+	}
+}
+
+func (s *LibP2PScaler) ValidateBasic() error {
+	key := func(msg string, args ...any) string {
+		return fmt.Sprintf("p2p.libp2p.scaler.%s", fmt.Sprintf(msg, args...))
+	}
+
+	switch {
+	case s.MinWorkers < 0:
+		return cmterrors.ErrNegativeField{Field: key("min_workers")}
+	case s.MaxWorkers < 0:
+		return cmterrors.ErrNegativeField{Field: key("max_workers")}
+	case s.MinWorkers > s.MaxWorkers:
+		return cmterrors.ErrInvalidField{
+			Field:  key("min_workers"),
+			Reason: "must be less than max_workers",
+		}
+	case s.ThresholdLatency < 0:
+		return cmterrors.ErrNegativeField{Field: key("threshold_latency")}
+	case len(s.Overrides) > 0:
+		for i, item := range s.Overrides {
+			switch {
+			case item.Reactor == "":
+				return cmterrors.ErrRequiredField{Field: key("overrides.%d.reactor", i)}
+			case item.MinWorkers < 0:
+				return cmterrors.ErrNegativeField{Field: key("overrides.%d.min_workers", i)}
+			case item.MaxWorkers < 0:
+				return cmterrors.ErrNegativeField{Field: key("overrides.%d.max_workers", i)}
+			case item.MinWorkers > item.MaxWorkers:
+				return cmterrors.ErrInvalidField{
+					Field:  key("overrides.%d.min_workers", i),
+					Reason: "must be less than max_workers",
+				}
+			case item.ThresholdLatency < 0:
+				return cmterrors.ErrNegativeField{Field: key("overrides.%d.threshold_latency", i)}
+			}
+		}
+	}
+
+	return nil
+}
+
+func DefaultLibP2PLimits() LibP2PLimits {
+	return LibP2PLimits{
+		Mode:           LibP2PLimitsModeDefault,
+		MaxPeerStreams: 0,
+		MaxPeers:       0,
+	}
+}
+
+func (l *LibP2PLimits) ValidateBasic() error {
+	key := func(msg string, args ...any) string {
+		return fmt.Sprintf("p2p.libp2p.limits.%s", fmt.Sprintf(msg, args...))
+	}
+
+	switch {
+	case l.Mode == "":
+		return cmterrors.ErrRequiredField{Field: key("mode")}
+	case l.Mode != LibP2PLimitsModeDisabled && l.Mode != LibP2PLimitsModeDefault && l.Mode != LibP2PLimitsModeCustom:
+		return cmterrors.ErrInvalidField{Field: key("mode"), Reason: "must be one of: disabled, default, custom"}
+	case l.MaxPeers < 0:
+		return cmterrors.ErrNegativeField{Field: key("max_peers")}
+	case l.MaxPeerStreams < 0:
+		return cmterrors.ErrNegativeField{Field: key("max_peer_streams")}
+	case l.Mode == LibP2PLimitsModeCustom && l.MaxPeers == 0:
+		return cmterrors.ErrRequiredField{Field: key("max_peers")}
+	case l.Mode == LibP2PLimitsModeCustom && l.MaxPeerStreams == 0:
+		return cmterrors.ErrRequiredField{Field: key("max_peer_streams")}
+	}
+
+	return nil
 }
 
 // FuzzConnConfig is a FuzzedConnection configuration.
@@ -776,7 +929,6 @@ type MempoolConfig struct {
 	//  - "nop"   : nop-mempool (short for no operation; the ABCI app is
 	//  responsible for storing, disseminating and proposing txs).
 	//  "create_empty_blocks=false" is not supported.
-	//  - "app"   : app-side mempool (the ABCI app is responsible for mempool, comet only broadcasts txs).
 	Type string `mapstructure:"type"`
 	// RootDir is the root directory for all data. This should be configured via
 	// the $CMTHOME env variable or --home cmd flag rather than overriding this
@@ -884,7 +1036,7 @@ func (cfg *MempoolConfig) WalEnabled() bool {
 // returns an error if any check fails.
 func (cfg *MempoolConfig) ValidateBasic() error {
 	switch cfg.Type {
-	case MempoolTypeFlood, MempoolTypeApp, MempoolTypeNop:
+	case MempoolTypeFlood, MempoolTypeNop:
 	case "": // allow empty string to be backwards compatible
 	default:
 		return fmt.Errorf("unknown mempool type: %q", cfg.Type)
@@ -1012,14 +1164,14 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 // BlockSyncConfig defines the configuration for the CometBFT block sync service
 type BlockSyncConfig struct {
 	Version      string `mapstructure:"version"`
-	FollowerMode bool   `mapstructure:"follower_mode"`
+	AdaptiveSync bool   `mapstructure:"adaptive_sync"`
 }
 
 // DefaultBlockSyncConfig returns a default configuration for the block sync service
 func DefaultBlockSyncConfig() *BlockSyncConfig {
 	return &BlockSyncConfig{
 		Version:      "v0",
-		FollowerMode: false,
+		AdaptiveSync: false,
 	}
 }
 
@@ -1080,6 +1232,9 @@ type ConsensusConfig struct {
 	PeerQueryMaj23SleepDuration time.Duration `mapstructure:"peer_query_maj23_sleep_duration"`
 
 	DoubleSignCheckHeight int64 `mapstructure:"double_sign_check_height"`
+
+	// BlockTimeTolerance is the maximum allowed difference between the proposed block time and wall-clock time.
+	BlockTimeTolerance time.Duration `mapstructure:"block_time_tolerance"`
 }
 
 // DefaultConsensusConfig returns a default configuration for the consensus service
@@ -1099,6 +1254,7 @@ func DefaultConsensusConfig() *ConsensusConfig {
 		PeerGossipSleepDuration:     100 * time.Millisecond,
 		PeerQueryMaj23SleepDuration: 2000 * time.Millisecond,
 		DoubleSignCheckHeight:       int64(0),
+		BlockTimeTolerance:          60 * time.Second,
 	}
 }
 
@@ -1200,6 +1356,9 @@ func (cfg *ConsensusConfig) ValidateBasic() error {
 	}
 	if cfg.DoubleSignCheckHeight < 0 {
 		return cmterrors.ErrNegativeField{Field: "double_sign_check_height"}
+	}
+	if cfg.BlockTimeTolerance <= 0 {
+		return errors.New("block_time_tolerance must be positive")
 	}
 	return nil
 }

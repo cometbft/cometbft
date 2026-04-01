@@ -133,6 +133,59 @@ func TestVerify_LunaticAttackAgainstState(t *testing.T) {
 	ev.TotalVotingPower = common.ValidatorSet.TotalVotingPower()
 }
 
+func TestVerify_LunaticAttack_ByzantineValidatorPubKeySwapRedirectsABCIMisbehavior(t *testing.T) {
+	const (
+		height       int64 = 10
+		commonHeight int64 = 4
+		totalVals          = 10
+		byzVals            = 4
+	)
+	attackTime := defaultEvidenceTime.Add(1 * time.Hour)
+
+	ev, trusted, common := makeLunaticEvidence(
+		t, height, commonHeight, totalVals, byzVals, totalVals-byzVals, defaultEvidenceTime, attackTime)
+
+	require.Len(t, ev.ByzantineValidators, byzVals)
+	require.GreaterOrEqual(t, common.ValidatorSet.Size(), byzVals*2)
+	otherVals := common.ValidatorSet.Validators[byzVals : byzVals+byzVals]
+
+	origByz := ev.ByzantineValidators
+	modifiedByz := make([]*types.Validator, len(origByz))
+	for i := range origByz {
+		orig := origByz[i]
+		other := otherVals[i]
+		modifiedByz[i] = &types.Validator{
+			Address:          orig.Address,
+			PubKey:           other.PubKey,
+			VotingPower:      orig.VotingPower,
+			ProposerPriority: orig.ProposerPriority,
+		}
+	}
+	ev.ByzantineValidators = modifiedByz
+
+	state := sm.State{
+		LastBlockTime:   defaultEvidenceTime.Add(2 * time.Hour),
+		LastBlockHeight: height + 1,
+		ConsensusParams: *types.DefaultConsensusParams(),
+	}
+	stateStore := &smmocks.Store{}
+	stateStore.On("LoadValidators", commonHeight).Return(common.ValidatorSet, nil)
+	stateStore.On("Load").Return(state, nil)
+	blockStore := &mocks.BlockStore{}
+	blockStore.On("LoadBlockMeta", commonHeight).Return(&types.BlockMeta{Header: *common.Header})
+	blockStore.On("LoadBlockMeta", height).Return(&types.BlockMeta{Header: *trusted.Header})
+	blockStore.On("LoadBlockCommit", commonHeight).Return(common.Commit)
+	blockStore.On("LoadBlockCommit", height).Return(trusted.Commit)
+
+	pool, err := evidence.NewPool(dbm.NewMemDB(), stateStore, blockStore)
+	require.NoError(t, err)
+	pool.SetLogger(log.TestingLogger())
+
+	err = pool.AddEvidence(ev)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "does not match pubkey address")
+}
+
 func TestVerify_ForwardLunaticAttack(t *testing.T) {
 	const (
 		nodeHeight   int64 = 8

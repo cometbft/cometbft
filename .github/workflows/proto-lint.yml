@@ -9,13 +9,17 @@ on:
     paths:
       - 'proto/**'
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
-      - uses: bufbuild/buf-setup-action@v1.50.0
-      - uses: bufbuild/buf-lint-action@v1
+      - uses: bufbuild/buf-action@v1
         with:
           input: 'proto'
+          version: '1.66.0'

@@ -10,10 +10,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/conn"
+	p2pmock "github.com/cometbft/cometbft/p2p/mock"
 	"github.com/cometbft/cometbft/test/utils"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
@@ -59,11 +62,6 @@ func TestSwitch(t *testing.T) {
 			hostA = makeTestHost(t, ports[0], withLogging(), withPrivateKey(privateKeyA), withBootstrapPeers(bootstrapPeersA))
 			hostB = makeTestHost(t, ports[1], withLogging(), withPrivateKey(privateKeyB))
 		)
-
-		t.Cleanup(func() {
-			hostB.Close()
-			hostA.Close()
-		})
 
 		// Given switch A (NOT started yet)
 		switchA, err := NewSwitch(
@@ -139,12 +137,6 @@ func TestSwitch(t *testing.T) {
 			hostB = makeTestHost(t, ports[1], withLogging())
 			hostC = makeTestHost(t, ports[2], withLogging())
 		)
-
-		t.Cleanup(func() {
-			hostC.Close()
-			hostB.Close()
-			hostA.Close()
-		})
 
 		// Given switch A with hosts B and C as bootstrap peers
 		switchA, err := NewSwitch(
@@ -239,11 +231,6 @@ func TestSwitch(t *testing.T) {
 			hostB = makeTestHost(t, ports[1], withLogging())
 		)
 
-		t.Cleanup(func() {
-			hostB.Close()
-			hostA.Close()
-		})
-
 		// Given switch A
 		switchA, err := NewSwitch(
 			nil,
@@ -272,7 +259,7 @@ func TestSwitch(t *testing.T) {
 		require.Equal(t, 1, switchA.Peers().Size())
 
 		// ACT #2: Stop peer B with a TRANSIENT error (should trigger reconnection)
-		transientErr := &ErrorTransient{Err: errors.New("something went wrong")}
+		transientErr := &p2p.ErrorTransient{Err: errors.New("something went wrong")}
 		switchA.StopPeerForError(peerB, transientErr)
 
 		// ASSERT #2: Peer B is removed initially
@@ -295,6 +282,146 @@ func TestSwitch(t *testing.T) {
 		require.Contains(t, logBuffer.String(), "Removing peer")
 		require.Contains(t, logBuffer.String(), "Will reconnect to peer after transient error")
 		require.Contains(t, logBuffer.String(), "Reconnected to peer")
+	})
+
+	t.Run("EnsureScalers", func(t *testing.T) {
+		// ARRANGE
+		var (
+			port      = utils.GetFreePorts(t, 1)[0]
+			logBuffer = &syncBuffer{}
+			logger    = log.NewTMLogger(logBuffer)
+		)
+
+		// Given default P2P config with lp2p enabled
+		cfg := config.DefaultP2PConfig()
+		cfg.RootDir = t.TempDir()
+		cfg.ListenAddress = fmt.Sprintf("127.0.0.1:%d", port)
+		cfg.ExternalAddress = fmt.Sprintf("127.0.0.1:%d", port)
+		cfg.LibP2PConfig.Enabled = true
+
+		// Given a new host
+		host, err := NewHost(cfg, ed25519.GenPrivKey(), logger)
+		require.NoError(t, err)
+
+		t.Cleanup(func() { _ = host.Close() })
+
+		// Given two dummy reactors
+		consensusReactor := p2pmock.NewReactor()
+		consensusReactor.Channels = []*conn.ChannelDescriptor{
+			{ID: 0x01, Priority: 1},
+		}
+
+		mempoolReactor := p2pmock.NewReactor()
+		mempoolReactor.Channels = []*conn.ChannelDescriptor{
+			{ID: 0x02, Priority: 1},
+		}
+
+		// ACT
+		// Create switch which should add reactors with scalers
+		sw, err := NewSwitch(
+			nil,
+			host,
+			[]SwitchReactor{
+				{Name: "CONSENSUS", Reactor: consensusReactor},
+				{Name: "MEMPOOL", Reactor: mempoolReactor},
+			},
+			p2p.NopMetrics(),
+			logger,
+		)
+
+		// ASSERT
+		require.NoError(t, err)
+
+		r1 := sw.reactors.reactors[0]
+		require.Equal(t, "CONSENSUS", r1.name)
+
+		r2 := sw.reactors.reactors[1]
+		require.Equal(t, "MEMPOOL", r2.name)
+
+		// Check logs
+		// see config.DefaultLibP2PConfig()
+		require.True(t, logBuffer.HasMatchingLine(
+			"Added reactor", "reactor=CONSENSUS",
+			"Workers[min:4, max:32]",
+			"Threshold=100ms",
+		))
+		require.True(t, logBuffer.HasMatchingLine(
+			"Added reactor", "reactor=MEMPOOL",
+			"Workers[min:8, max:512]", "Threshold=500ms",
+		))
+	})
+
+	t.Run("EndToEndFlow", func(t *testing.T) {
+		// ARRANGE
+		const channelID = 0xF1
+
+		// Given 4 hosts
+		hosts := makeTestHosts(t, 4, withLogging())
+		hostA, hostB, hostC, hostD := hosts[0], hosts[1], hosts[2], hosts[3]
+
+		// Given a common channel descriptor
+		channelDescriptor := &conn.ChannelDescriptor{
+			ID:                  channelID,
+			Priority:            1,
+			RecvMessageCapacity: 1024,
+			MessageType:         &types.RequestEcho{},
+		}
+
+		switchMaker := func(host *Host) (*Switch, *reactorMock) {
+			reactor := newReactorMock([]*conn.ChannelDescriptor{channelDescriptor}, host.Logger())
+			sw, err := NewSwitch(
+				nil,
+				host,
+				[]SwitchReactor{
+					{Name: "echoReactor", Reactor: reactor},
+				},
+				p2p.NopMetrics(),
+				host.Logger(),
+			)
+			require.NoError(t, err)
+
+			return sw, reactor
+		}
+
+		// Given 4 switches
+		switchA, reactorA := switchMaker(hostA)
+		switchB, reactorB := switchMaker(hostB)
+		switchC, reactorC := switchMaker(hostC)
+		switchD, reactorD := switchMaker(hostD)
+
+		// Connect all switches to each other.
+		connectSwitches(t, []*Switch{switchA, switchB, switchC, switchD})
+
+		// Given D is disconnected from A.
+		peerDInA := switchA.Peers().Get(peerIDToKey(hostD.ID()))
+		require.NotNil(t, peerDInA)
+		switchA.StopPeerForError(peerDInA, "disconnect D from A")
+		require.Eventually(t, func() bool {
+			return switchA.Peers().Get(peerIDToKey(hostD.ID())) == nil
+		}, time.Second, 20*time.Millisecond)
+
+		// ACT
+		// Broadcast message from A to everyone.
+		switchA.BroadcastAsync(p2p.Envelope{
+			ChannelID: channelID,
+			Message:   &types.RequestEcho{Message: "to infinity and beyond"},
+		})
+
+		// ASSERT
+		// All switches use the same protocol derived from channelID.
+		msgsChecker := func(reactor *reactorMock) func() bool {
+			return func() bool {
+				msgs := reactor.receivedEnvelopes()
+				return len(msgs) == 1 && msgs[0].Message.(*types.RequestEcho).Message == "to infinity and beyond"
+			}
+		}
+
+		require.Eventually(t, msgsChecker(reactorB), time.Second, 20*time.Millisecond)
+		require.Eventually(t, msgsChecker(reactorC), time.Second, 20*time.Millisecond)
+
+		// A should not receive own broadcast and D is disconnected from A.
+		require.Len(t, reactorA.receivedEnvelopes(), 0)
+		require.Len(t, reactorD.receivedEnvelopes(), 0)
 	})
 }
 
@@ -356,5 +483,26 @@ func patchAddrInfoIPToDNS(t *testing.T, addrInfo peer.AddrInfo) peer.AddrInfo {
 	return peer.AddrInfo{
 		ID:    addrInfo.ID,
 		Addrs: []ma.Multiaddr{addrNew},
+	}
+}
+
+func connectSwitches(t *testing.T, switches []*Switch) {
+	t.Helper()
+
+	ctx := context.Background()
+
+	for i, sw1 := range switches {
+		for j := i + 1; j < len(switches); j++ {
+			sw2 := switches[j]
+
+			err := sw1.bootstrapPeer(ctx, sw2.host.AddrInfo(), PeerAddOptions{
+				Persistent: true,
+			})
+
+			require.NoError(t, err)
+		}
+
+		require.NoError(t, sw1.Start())
+		t.Cleanup(func() { _ = sw1.Stop() })
 	}
 }

@@ -208,13 +208,16 @@ func LogPerformanceStatsBroadcast(
 	}
 }
 
-func WaitForProcessing(t *testing.T, ctx context.Context, name string, expected, actual *atomic.Uint64) (completed bool) {
+func WaitForProcessing(
+	t *testing.T,
+	ctx context.Context,
+	name string,
+	expected, actual *atomic.Uint64,
+	maxIdleWait time.Duration,
+) (completed bool) {
 	t.Helper()
 
-	const (
-		interval    = 50 * time.Millisecond
-		maxIdleWait = 1 * time.Second
-	)
+	const interval = 50 * time.Millisecond
 
 	var (
 		lastValue        = actual.Load()
@@ -251,7 +254,6 @@ func WaitForProcessing(t *testing.T, ctx context.Context, name string, expected,
 
 		time.Sleep(interval)
 	}
-
 }
 
 func formatBytesPerSecond(bps float64) string {

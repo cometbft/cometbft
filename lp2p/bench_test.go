@@ -643,7 +643,8 @@ func benchRunSendDrain(t *testing.T, cfg perfBench, peer2 p2p.Peer, reactor2 *pe
 
 	// ASSERT
 	// Wait for processing to complete or ctx.timeout or some idle state
-	completed := utils.WaitForProcessing(t, ctx, "send", &sendSuccess, &receiveSuccess)
+	const maxIdleWait = 2 * time.Second
+	completed := utils.WaitForProcessing(t, ctx, "send", &sendSuccess, &receiveSuccess, maxIdleWait)
 	cancel()
 	close(sink)
 
@@ -668,6 +669,8 @@ func benchRunBroadcast(t *testing.T, cfg perfBench, switches []p2p.Switcher, rea
 	sender := switches[0]
 	switches = switches[1:]
 	reactors = reactors[1:]
+
+	require.Equal(t, sender.Peers().Size(), len(switches))
 
 	// Given N of messages that is cfg / message size / N of peers
 	numPeers := len(switches)
@@ -712,12 +715,12 @@ func benchRunBroadcast(t *testing.T, cfg perfBench, switches []p2p.Switcher, rea
 
 			record.ReceivedAt = time.Now()
 
+			// send non-blocking to the sink
+			sink <- record
+
 			if cfg.ProcessingDelay > 0 {
 				time.Sleep(cfg.ProcessingDelay)
 			}
-
-			// send non-blocking to the sink
-			sink <- record
 		})
 
 		// 2. run sink routine to receive messages from recipient
@@ -770,7 +773,9 @@ func benchRunBroadcast(t *testing.T, cfg perfBench, switches []p2p.Switcher, rea
 		go func(idx int) {
 			defer wg.Done()
 
-			if !utils.WaitForProcessing(t, ctx, name, &expected, &receiveSuccess[idx]) {
+			const maxIdleWait = 5 * time.Second
+
+			if !utils.WaitForProcessing(t, ctx, name, &expected, &receiveSuccess[idx], maxIdleWait) {
 				actual := receiveSuccess[idx].Load()
 				t.Logf("%s: Processing not completed. Expected: %d, Actual: %d", name, numMessages, actual)
 			}

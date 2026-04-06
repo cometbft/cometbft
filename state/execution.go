@@ -220,8 +220,7 @@ func (blockExec *BlockExecutor) validateBlockAndCheckEvidence(state State, block
 	// safe to call with nil
 	if !lastValidated.HashesTo(block.Hash()) {
 		// always use blocktime tolerance set on the struct
-		allOpts := append(opts, blockExec.withBlockTimeTolerance)
-		if err := validateBlock(state, block, allOpts...); err != nil {
+		if err := validateBlock(state, block, append(opts, blockExec.withBlockTimeTolerance)...); err != nil {
 			return err
 		}
 		blockExec.setLastValidatedBlock(lastValidated, block)

@@ -135,14 +135,9 @@ func (ic *IngestCandidate) Verify(state state.State) error {
 		)
 	}
 
-	// verify commit from the next block (ic.commit) using light verification to
-	// quickly ensure that 2/3+ have precommitted for this IngestCandidate.
-	//
-	// light verification is sufficient here since we are simply checking did
-	// enough voting power commit to this block? We check for the full validity
-	// of the IngestCandidates commit (ic.block.LastCommit) within
-	// ValidateBlock below.
-	err := state.Validators.VerifyCommitLight(chainID, blockID, height, ic.commit)
+	// Fully verify ic.commit (the next block's LastCommit) to ensure all
+	// signatures are valid.
+	err := state.Validators.VerifyCommit(chainID, blockID, height, ic.commit)
 	if err != nil {
 		return fmt.Errorf("verify commit: %w", err)
 	}

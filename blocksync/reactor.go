@@ -562,24 +562,26 @@ FOR_LOOP:
 				continue FOR_LOOP
 			}
 
-			// verify the first block using the second's commit.
-			//
-			// light verification suffices here because ValidateBlock (below) will
-			// fully verify second.LastCommit when second is processed as first in
-			// the next iteration.
-			//
-			// we are simply checking if 2/3+ of power has precomitted for
-			// first as a fast check. During ValidateBlock, we will check for
-			// the full validity of first's commit.
-			err = state.Validators.VerifyCommitLight(chainID, firstID, first.Height, second.LastCommit)
+			// Fully verify second.LastCommit to ensure all signatures are valid.
+			err = state.Validators.VerifyCommit(chainID, firstID, first.Height, second.LastCommit)
 			if err != nil {
 				r.handleValidationFailure(first, second, err)
 				continue FOR_LOOP
 			}
 
-			// validate the block before we persist it, we willfully verify
-			// first's commit within.
-			if err = r.blockExec.ValidateBlock(state, first); err != nil {
+			// Validate the block before we persist it.
+			//
+			// For the first block synced, we must fully verify first.LastCommit
+			// since it was not verified as a prior second.LastCommit.
+			// For subsequent blocks, first.LastCommit was already fully verified
+			// in the previous iteration (as second.LastCommit), so we skip the
+			// redundant VerifyCommit inside ValidateBlock.
+			if blocksSynced == 0 {
+				err = r.blockExec.ValidateBlock(state, first)
+			} else {
+				err = r.blockExec.ValidateBlockSkipLastCommit(state, first)
+			}
+			if err != nil {
 				r.handleValidationFailure(first, second, err)
 				continue FOR_LOOP
 			}

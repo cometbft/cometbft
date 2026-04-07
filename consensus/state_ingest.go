@@ -20,7 +20,10 @@ type IngestCandidate struct {
 
 	blockValidator func(state.State, *types.Block) error
 
-	verified bool
+	// fields that are set only after successful verification
+	verified      bool
+	commitRound   int32
+	commitVoteSet *types.VoteSet
 
 	// caches IngestCandidate.BlockID() to avoid recalculating it
 	cachedBlockID types.BlockID
@@ -162,6 +165,14 @@ func (ic *IngestCandidate) Verify(state state.State) error {
 		}
 	}
 
+	// build commit vote set
+	round, voteSet, err := buildCommitVoteSet(state, ic)
+	if err != nil {
+		return fmt.Errorf("commit voting: %w", err)
+	}
+
+	ic.commitRound = round
+	ic.commitVoteSet = voteSet
 	ic.verified = true
 
 	return nil
@@ -169,15 +180,6 @@ func (ic *IngestCandidate) Verify(state state.State) error {
 
 func (ic *IngestCandidate) extensionsEnabled() bool {
 	return ic.extCommit != nil
-}
-
-// commitVoting returns the commit round and vote set for the verified block.
-func (ic *IngestCandidate) commitVoting(chainID string, vals *types.ValidatorSet) (round int32, voteSet *types.VoteSet) {
-	if ic.extensionsEnabled() {
-		return ic.extCommit.Round, ic.extCommit.ToExtendedVoteSet(chainID, vals)
-	}
-
-	return ic.commit.Round, ic.commit.ToVoteSet(chainID, vals)
 }
 
 // IngestVerifiedBlock ingests a next VERIFIED valid block into the consensus state.
@@ -258,7 +260,10 @@ func (cs *State) ingestBlock(ic IngestCandidate) error {
 	)
 
 	// ============ enterCommit(height, commitRound) ============
-	commitRound, commitVoteSet := ic.commitVoting(stateCopy.ChainID, stateCopy.Validators)
+	var (
+		commitRound   = ic.commitRound
+		commitVoteSet = ic.commitVoteSet
+	)
 
 	cs.updateRoundStep(commitRound, cstypes.RoundStepCommit)
 	cs.CommitRound = commitRound
@@ -307,4 +312,25 @@ func (cs *State) ingestBlock(ic IngestCandidate) error {
 	cs.scheduleRound0(&cs.RoundState)
 
 	return nil
+}
+
+// buildCommitVoteSet returns the commit round and vote set for the verified block.
+func buildCommitVoteSet(state state.State, ic *IngestCandidate) (round int32, voteSet *types.VoteSet, err error) {
+	var (
+		chainID = state.ChainID
+		vals    = state.Validators
+	)
+
+	// internal checks might panic; we don't want to propagate that to the caller.
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic in vote set: %v", r)
+		}
+	}()
+
+	if ic.extensionsEnabled() {
+		return ic.extCommit.Round, ic.extCommit.ToExtendedVoteSet(chainID, vals), nil
+	}
+
+	return ic.commit.Round, ic.commit.ToVoteSet(chainID, vals), nil
 }

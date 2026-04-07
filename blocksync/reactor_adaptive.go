@@ -38,8 +38,6 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 	ticker := time.NewTicker(intervalAdaptiveSync)
 	defer ticker.Stop()
 
-	var firstBlockIngested bool
-
 	for {
 		select {
 		case <-r.Quit():
@@ -109,23 +107,13 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 				return
 			}
 
-			// For the first block ingested, we must fully verify block.LastCommit
-			// since it was not verified as a prior nextBlock.LastCommit.
-			// For subsequent blocks, block.LastCommit was already fully verified
-			// in the previous iteration (as nextBlock.LastCommit via VerifyCommit
-			// inside ic.Verify), so we skip the redundant verification.
-			blockValidator := r.blockExec.ValidateBlock
-			if firstBlockIngested {
-				blockValidator = r.blockExec.ValidateBlockSkipLastCommit
-			}
-
 			// create ingest candidate block...
 			ic, err := consensus.NewIngestCandidate(
 				block,
 				blockParts,
 				nextBlock.LastCommit,
 				extCommit,
-				blockValidator,
+				r.blockExec.ValidateBlock,
 			)
 
 			if err != nil {
@@ -159,7 +147,6 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 				r.Logger.Error("Failed to ingest verified block. Halting blocksync", "height", block.Height, "err", err)
 				return
 			default:
-				firstBlockIngested = true
 				r.metrics.recordBlockMetrics(block)
 				r.metrics.IngestedBlocks.Add(1)
 				r.metrics.IngestedBlockDuration.Observe(elapsed.Seconds())

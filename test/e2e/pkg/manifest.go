@@ -159,6 +159,9 @@ type ManifestNode struct {
 	// only "v0", the default value).
 	BlockSyncVersion string `toml:"block_sync_version"`
 
+	// BlockSyncAdaptiveSync specifies if the node should use adaptive sync for block sync.
+	BlockSyncAdaptiveSync bool `toml:"block_sync_adaptive_sync"`
+
 	// StateSync enables state sync. The runner automatically configures trusted
 	// block hashes and RPC servers. At least one node in the network must have
 	// SnapshotInterval set to non-zero, and the state syncing node must have

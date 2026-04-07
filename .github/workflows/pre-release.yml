@@ -44,7 +44,7 @@ jobs:
           echo "See the [CHANGELOG](${CHANGELOG_URL}) for changes available in this pre-release, but not yet officially released." > ../release_notes.md
 
       - name: Release
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@v7
         with:
           version: latest
           args: release --clean --release-notes ../release_notes.md
@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack upon pre-release
-        uses: slackapi/slack-github-action@v2.1.1
+        uses: slackapi/slack-github-action@v3.0.1
         env:
           RELEASE_URL: "${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
         with:

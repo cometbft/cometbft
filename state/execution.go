@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -41,11 +42,14 @@ type BlockExecutor struct {
 	evpool  EvidencePool
 
 	// 1-element cache of validated blocks
-	lastValidatedBlock *types.Block
+	lastValidatedBlock atomic.Pointer[types.Block]
 
 	logger log.Logger
 
 	metrics *Metrics
+
+	// blockTimeTolerance is the maximum allowed difference between proposed block time and wall clock.
+	blockTimeTolerance time.Duration
 }
 
 type BlockExecutorOption func(executor *BlockExecutor)
@@ -53,6 +57,12 @@ type BlockExecutorOption func(executor *BlockExecutor)
 func BlockExecutorWithMetrics(metrics *Metrics) BlockExecutorOption {
 	return func(blockExec *BlockExecutor) {
 		blockExec.metrics = metrics
+	}
+}
+
+func BlockExecutorWithBlockTimeTolerance(d time.Duration) BlockExecutorOption {
+	return func(blockExec *BlockExecutor) {
+		blockExec.blockTimeTolerance = d
 	}
 }
 
@@ -193,13 +203,21 @@ func (blockExec *BlockExecutor) ProcessProposal(
 // Validation does not mutate state, but does require historical information from the stateDB,
 // ie. to verify evidence from a validator at an old height.
 func (blockExec *BlockExecutor) ValidateBlock(state State, block *types.Block) error {
-	if !blockExec.lastValidatedBlock.HashesTo(block.Hash()) {
-		if err := validateBlock(state, block); err != nil {
+	lastValidated := blockExec.GetLastValidatedBlock()
+
+	// safe to call with nil
+	if !lastValidated.HashesTo(block.Hash()) {
+		if err := validateBlock(state, block, blockExec.withBlockTimeTolerance); err != nil {
 			return err
 		}
-		blockExec.lastValidatedBlock = block
+		blockExec.setLastValidatedBlock(lastValidated, block)
 	}
+
 	return blockExec.evpool.CheckEvidence(block.Evidence.Evidence)
+}
+
+func (blockExec *BlockExecutor) withBlockTimeTolerance(opts *blockValidationOptions) {
+	opts.blockTimeTolerance = blockExec.blockTimeTolerance
 }
 
 // ApplyVerifiedBlock does the same as `ApplyBlock`, but skips verification.
@@ -218,12 +236,16 @@ func (blockExec *BlockExecutor) ApplyVerifiedBlock(
 func (blockExec *BlockExecutor) ApplyBlock(
 	state State, blockID types.BlockID, block *types.Block,
 ) (State, error) {
-	if !blockExec.lastValidatedBlock.HashesTo(block.Hash()) {
-		if err := validateBlock(state, block); err != nil {
+	lastValidated := blockExec.GetLastValidatedBlock()
+
+	// safe to call with nil
+	if !lastValidated.HashesTo(block.Hash()) {
+		if err := validateBlock(state, block, blockExec.withBlockTimeTolerance); err != nil {
 			return state, ErrInvalidBlock(err)
 		}
-		blockExec.lastValidatedBlock = block
+		blockExec.setLastValidatedBlock(lastValidated, block)
 	}
+
 	return blockExec.applyBlock(state, blockID, block)
 }
 
@@ -456,6 +478,24 @@ func (blockExec *BlockExecutor) asyncUpdateMempool(
 		// need to panic if the mempool update failed. The most severe thing we
 		// would need to do is dump the mempool and restart it.
 		panic(fmt.Sprintf("client error during mempool.Update; error %v", err))
+	}
+}
+
+func (blockExec *BlockExecutor) GetLastValidatedBlock() *types.Block {
+	return blockExec.lastValidatedBlock.Load()
+}
+
+func (blockExec *BlockExecutor) setLastValidatedBlock(old, new *types.Block) {
+	switch {
+	case old == nil:
+		// first validation
+		blockExec.lastValidatedBlock.Store(new)
+	case new.Height <= old.Height:
+		// already validated. this might happen if adaptiveSync is enabled
+		// and consensus tries to validate an older block. worst case we would do an extra validation.
+		return
+	default:
+		blockExec.lastValidatedBlock.Store(new)
 	}
 }
 

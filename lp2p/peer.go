@@ -128,8 +128,8 @@ func (p *Peer) Send(e p2p.Envelope) bool {
 	return true
 }
 
+// TrySend has no difference from Send in lib-p2p. Implements p2p.Peer.
 func (p *Peer) TrySend(e p2p.Envelope) bool {
-	// todo same as SEND, but if current queue is full (its cap=1), immediately return FALSE
 	if err := p.send(e); err != nil {
 		p.Logger.Error("failed to send message", "channel", e.ChannelID, "method", "TrySend", "err", err)
 		p.handleSendErr(err)
@@ -163,11 +163,10 @@ func (p *Peer) send(e p2p.Envelope) (err error) {
 			"chID", fmt.Sprintf("%#x", e.ChannelID),
 		}
 
-		// note metric's name is misleading, it's a counter, not sum(bytes_pending)
-		pendingMessagesCounter = p.metrics.PeerPendingSendBytes.With("peer_id", peerIDStr)
+		peerSendQueueSize = p.metrics.PeerSendQueueSize.With("peer_id", peerIDStr)
 	)
 
-	pendingMessagesCounter.Add(1)
+	peerSendQueueSize.Add(1)
 
 	ctx, cancel := context.WithTimeout(context.Background(), TimeoutStream)
 	defer cancel()
@@ -175,7 +174,7 @@ func (p *Peer) send(e p2p.Envelope) (err error) {
 	start := time.Now()
 
 	defer func() {
-		pendingMessagesCounter.Add(-1)
+		peerSendQueueSize.Add(-1)
 
 		if err != nil {
 			return

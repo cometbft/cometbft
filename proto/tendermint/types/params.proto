@@ -1,21 +1,21 @@
 syntax = "proto3";
 package tendermint.types;
 
-option go_package = "github.com/cometbft/cometbft/proto/tendermint/types";
-
 import "gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
 
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/types";
 option (gogoproto.equal_all) = true;
 
 // ConsensusParams contains consensus critical parameters that determine the
 // validity of blocks.
 message ConsensusParams {
-  BlockParams     block     = 1;
-  EvidenceParams  evidence  = 2;
+  BlockParams block = 1;
+  EvidenceParams evidence = 2;
   ValidatorParams validator = 3;
-  VersionParams   version   = 4;
-  ABCIParams      abci      = 5;
+  VersionParams version = 4;
+  ABCIParams abci = 5;
+  AuthorityParams authority = 6;
 }
 
 // BlockParams contains limits on the block size.
@@ -27,7 +27,7 @@ message BlockParams {
   // Note: must be greater or equal to -1
   int64 max_gas = 2;
 
-  reserved 3;  // was TimeIotaMs see https://github.com/tendermint/tendermint/pull/5792
+  reserved 3; // was TimeIotaMs see https://github.com/tendermint/tendermint/pull/5792
 }
 
 // EvidenceParams determine how we handle evidence of malfeasance.
@@ -43,8 +43,10 @@ message EvidenceParams {
   // It should correspond with an app's "unbonding period" or other similar
   // mechanism for handling [Nothing-At-Stake
   // attacks](https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed).
-  google.protobuf.Duration max_age_duration = 2
-      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+  google.protobuf.Duration max_age_duration = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdduration) = true
+  ];
 
   // This sets the maximum size of total evidence in bytes that can be committed in a single block.
   // and should fall comfortably under the max block bytes.
@@ -56,7 +58,7 @@ message EvidenceParams {
 // NOTE: uses ABCI pubkey naming, not Amino names.
 message ValidatorParams {
   option (gogoproto.populate) = true;
-  option (gogoproto.equal)    = true;
+  option (gogoproto.equal) = true;
 
   repeated string pub_key_types = 1;
 }
@@ -64,7 +66,7 @@ message ValidatorParams {
 // VersionParams contains the ABCI application version.
 message VersionParams {
   option (gogoproto.populate) = true;
-  option (gogoproto.equal)    = true;
+  option (gogoproto.equal) = true;
 
   uint64 app = 1;
 }
@@ -74,7 +76,7 @@ message VersionParams {
 // It is hashed into the Header.ConsensusHash.
 message HashedParams {
   int64 block_max_bytes = 1;
-  int64 block_max_gas   = 2;
+  int64 block_max_gas = 2;
 }
 
 // ABCIParams configure functionality specific to the Application Blockchain Interface.
@@ -89,4 +91,11 @@ message ABCIParams {
   // passed to the application for validation in VerifyVoteExtension and given
   // to the application to use when proposing a block during PrepareProposal.
   int64 vote_extensions_enable_height = 1;
+}
+
+// AuthorityParams holds an opaque authority string to be configured and
+// interpreted by the application for authorizing parameter changes outside of
+// governance. CometBFT only enforces a maximum length.
+message AuthorityParams {
+  string authority = 1;
 }

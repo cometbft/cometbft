@@ -19,7 +19,7 @@ const (
 )
 
 func IDFromPrivateKey(cosmosPK cmcrypto.PrivKey) (peer.ID, error) {
-	pk, err := privateKeyFromCosmosKey(cosmosPK)
+	pk, err := PrivateKeyFromCosmosKey(cosmosPK)
 	if err != nil {
 		return "", fmt.Errorf("failed to convert private key to libp2p: %w", err)
 	}
@@ -62,6 +62,36 @@ func AddrInfoFromHostAndID(host, id string) (peer.AddrInfo, error) {
 	}
 
 	return peer.AddrInfo{ID: peerID, Addrs: []ma.Multiaddr{addr}}, nil
+}
+
+// IsDNSAddr checks if the given multiaddr is a DNS address.
+func IsDNSAddr(addr ma.Multiaddr) bool {
+	for _, a := range addr {
+		code := a.Protocol().Code
+
+		if code == ma.P_DNS || code == ma.P_DNS4 || code == ma.P_DNS6 || code == ma.P_DNSADDR {
+			return true
+		}
+	}
+
+	return false
+}
+
+func multiAddrStr(addrs []ma.Multiaddr) string {
+	if len(addrs) == 0 {
+		return "<empty>"
+	}
+
+	parts := make([]string, len(addrs))
+	for i, addr := range addrs {
+		parts[i] = addr.String()
+	}
+
+	return strings.Join(parts, ", ")
+}
+
+func (h *Host) multiAddrStrByID(id peer.ID) string {
+	return multiAddrStr(h.Peerstore().Addrs(id))
 }
 
 // addrToQuicMultiaddr converts a given address to a QUIC multiaddr

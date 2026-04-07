@@ -569,23 +569,7 @@ FOR_LOOP:
 				continue FOR_LOOP
 			}
 
-			// Validate the block before we persist it.
-			//
-			// For the first block synced, we must fully verify first.LastCommit
-			// since it was not verified as a prior second.LastCommit.
-			// For subsequent blocks, first.LastCommit was already fully verified
-			// in the previous iteration (as second.LastCommit), so we skip the
-			// redundant VerifyCommit inside ValidateBlock.
-			if blocksSynced == 0 {
-				err = r.blockExec.ValidateBlock(state, first)
-			} else {
-				err = r.blockExec.ValidateBlockSkipLastCommit(state, first)
-			}
-			if err != nil {
-				r.handleValidationFailure(first, second, err)
-				continue FOR_LOOP
-			}
-
+			// Fully verify extended commit if present
 			if extensionsEnabled {
 				// if vote extensions were required at this height, ensure they exist.
 				if err = extCommit.EnsureExtensions(true); err != nil {
@@ -600,6 +584,24 @@ FOR_LOOP:
 					r.handleValidationFailure(first, second, err)
 					continue FOR_LOOP
 				}
+			}
+
+			// Validate the block before we persist it.
+			//
+			// For the first block synced, we must fully verify first.LastCommit
+			// since it was not verified as a prior second.LastCommit.
+			//
+			// For subsequent blocks, first.LastCommit was already fully verified
+			// in the previous iteration (as second.LastCommit), so we skip the
+			// redundant VerifyCommit() inside ValidateBlock.
+			blockValidator := r.blockExec.ValidateBlockSkipLastCommit
+			if blocksSynced == 0 {
+				blockValidator = r.blockExec.ValidateBlock
+			}
+
+			if err = blockValidator(state, first); err != nil {
+				r.handleValidationFailure(first, second, err)
+				continue FOR_LOOP
 			}
 
 			r.pool.PopRequest()

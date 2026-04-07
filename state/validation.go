@@ -14,7 +14,8 @@ import (
 // Validate block
 
 type blockValidationOptions struct {
-	blockTimeTolerance time.Duration
+	blockTimeTolerance         time.Duration
+	skipLastCommitVerification bool
 }
 
 func validateBlock(state State, block *types.Block, opts ...func(*blockValidationOptions)) error {
@@ -96,7 +97,7 @@ func validateBlock(state State, block *types.Block, opts ...func(*blockValidatio
 		if len(block.LastCommit.Signatures) != 0 {
 			return errors.New("initial block can't have LastCommit signatures")
 		}
-	} else {
+	} else if !vopts.skipLastCommitVerification {
 		// LastCommit.Signatures length is checked in VerifyCommit.
 		if err := state.LastValidators.VerifyCommit(
 			state.ChainID, state.LastBlockID, block.Height-1, block.LastCommit); err != nil {

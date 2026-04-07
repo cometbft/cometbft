@@ -200,15 +200,43 @@ func (blockExec *BlockExecutor) ProcessProposal(
 // Validation does not mutate state, but does require historical information from the stateDB,
 // ie. to verify evidence from a validator at an old height.
 func (blockExec *BlockExecutor) ValidateBlock(state State, block *types.Block) error {
+<<<<<<< HEAD
 	err := validateBlock(state, block, blockExec.withBlockTimeTolerance)
 	if err != nil {
 		return err
+=======
+	return blockExec.validateBlockAndCheckEvidence(state, block)
+}
+
+// ValidateBlockSkipLastCommit validates the same as blockexec.ValidateBlock
+// however it performs no validation of the block's LastCommit.
+//
+// This should only be used if you know that the LastCommit has already been validated elsewhere.
+func (blockExec *BlockExecutor) ValidateBlockSkipLastCommit(state State, block *types.Block) error {
+	return blockExec.validateBlockAndCheckEvidence(state, block, withSkipLastCommit)
+}
+
+func (blockExec *BlockExecutor) validateBlockAndCheckEvidence(state State, block *types.Block, opts ...func(*blockValidationOptions)) error {
+	lastValidated := blockExec.GetLastValidatedBlock()
+
+	// safe to call with nil
+	if !lastValidated.HashesTo(block.Hash()) {
+		// always use blocktime tolerance set on the struct
+		if err := validateBlock(state, block, append(opts, blockExec.withBlockTimeTolerance)...); err != nil {
+			return err
+		}
+		blockExec.setLastValidatedBlock(lastValidated, block)
+>>>>>>> d0de3f1c (fix(blocksync): ensure full verification of `second.LastCommit` during sync (#5753))
 	}
 	return blockExec.evpool.CheckEvidence(block.Evidence.Evidence)
 }
 
 func (blockExec *BlockExecutor) withBlockTimeTolerance(opts *blockValidationOptions) {
 	opts.blockTimeTolerance = blockExec.blockTimeTolerance
+}
+
+func withSkipLastCommit(opts *blockValidationOptions) {
+	opts.skipLastCommitVerification = true
 }
 
 // ApplyVerifiedBlock does the same as `ApplyBlock`, but skips verification.

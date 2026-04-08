@@ -23,6 +23,9 @@
   ([\#5663](https://github.com/cometbft/cometbft/pull/5663))
 - `[adaptivesync]` Simplify loop, reuse blockExec.ValidateBlock
   ([\#5717](https://github.com/cometbft/cometbft/pull/5717))
+- `[types]` Add signed header validation to light client attack evidence
+  ([\#5757](https://github.com/cometbft/cometbft/pull/5757))
+
 
 ### IMPROVEMENTS
 

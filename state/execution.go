@@ -200,11 +200,6 @@ func (blockExec *BlockExecutor) ProcessProposal(
 // Validation does not mutate state, but does require historical information from the stateDB,
 // ie. to verify evidence from a validator at an old height.
 func (blockExec *BlockExecutor) ValidateBlock(state State, block *types.Block) error {
-<<<<<<< HEAD
-	err := validateBlock(state, block, blockExec.withBlockTimeTolerance)
-	if err != nil {
-		return err
-=======
 	return blockExec.validateBlockAndCheckEvidence(state, block)
 }
 
@@ -217,16 +212,8 @@ func (blockExec *BlockExecutor) ValidateBlockSkipLastCommit(state State, block *
 }
 
 func (blockExec *BlockExecutor) validateBlockAndCheckEvidence(state State, block *types.Block, opts ...func(*blockValidationOptions)) error {
-	lastValidated := blockExec.GetLastValidatedBlock()
-
-	// safe to call with nil
-	if !lastValidated.HashesTo(block.Hash()) {
-		// always use blocktime tolerance set on the struct
-		if err := validateBlock(state, block, append(opts, blockExec.withBlockTimeTolerance)...); err != nil {
-			return err
-		}
-		blockExec.setLastValidatedBlock(lastValidated, block)
->>>>>>> d0de3f1c (fix(blocksync): ensure full verification of `second.LastCommit` during sync (#5753))
+	if err := validateBlock(state, block, append(opts, blockExec.withBlockTimeTolerance)...); err != nil {
+		return err
 	}
 	return blockExec.evpool.CheckEvidence(block.Evidence.Evidence)
 }

@@ -194,7 +194,12 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 			ev.CommonHeight = height
 		}, false},
 		{"Nil conflicting header", func(ev *LightClientAttackEvidence) { ev.ConflictingBlock.Header = nil }, true},
+<<<<<<< HEAD
 		{"Nil conflicting blocl", func(ev *LightClientAttackEvidence) { ev.ConflictingBlock = nil }, true},
+=======
+		{"Nil conflicting block", func(ev *LightClientAttackEvidence) { ev.ConflictingBlock = nil }, true},
+		{"Nil signed header", func(ev *LightClientAttackEvidence) { ev.ConflictingBlock.SignedHeader = nil }, true},
+>>>>>>> 336b47cf (fix(types): add signed header validation to light client attack evidence (#5757))
 		{"Nil validator set", func(ev *LightClientAttackEvidence) {
 			ev.ConflictingBlock.ValidatorSet = &ValidatorSet{}
 		}, true},

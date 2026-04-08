@@ -12,14 +12,8 @@
   ([\#5629](https://github.com/cometbft/cometbft/pull/5629))
 - `[blocksync]` Modify blocksync to use full commit verification instead of light
   ([\#5663](https://github.com/cometbft/cometbft/pull/5663))
-<<<<<<< HEAD
-=======
-- `[adaptivesync]` Simplify loop, reuse blockExec.ValidateBlock
-  ([\#5717](https://github.com/cometbft/cometbft/pull/5717))
 - `[types]` Add signed header validation to light client attack evidence
   ([\#5757](https://github.com/cometbft/cometbft/pull/5757))
-
->>>>>>> 336b47cf (fix(types): add signed header validation to light client attack evidence (#5757))
 
 ### IMPROVEMENTS
 

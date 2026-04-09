@@ -34,7 +34,7 @@
 - `[e2e]` add support for testing different keytypes, including BLS
   ([\#3513](https://github.com/cometbft/cometbft/pull/3513))
 - `[crypto]` Reduce BLS signature size to 48 bytes by increasing pubkey size to
-  192 bytes ([\#3624](https://github.com/cometbft/cometbft/issues/3624)
+  192 bytes ([\#3624](https://github.com/cometbft/cometbft/issues/3624))
 - `[p2p]` feat(lp2p): make reactor queue configurable
   ([\#5662](https://github.com/cometbft/cometbft/pull/5662))
 - `[cli]` print lib-p2p peer id

@@ -23,9 +23,6 @@
   ([\#5663](https://github.com/cometbft/cometbft/pull/5663))
 - `[adaptivesync]` Simplify loop, reuse blockExec.ValidateBlock
   ([\#5717](https://github.com/cometbft/cometbft/pull/5717))
-- `[types]` Add signed header validation to light client attack evidence
-  ([\#5757](https://github.com/cometbft/cometbft/pull/5757))
-
 
 ### IMPROVEMENTS
 
@@ -37,9 +34,7 @@
 - `[e2e]` add support for testing different keytypes, including BLS
   ([\#3513](https://github.com/cometbft/cometbft/pull/3513))
 - `[crypto]` Reduce BLS signature size to 48 bytes by increasing pubkey size to
-  192 bytes ([\#3624](https://github.com/cometbft/cometbft/issues/3624)
-- `[statesync]` Add configurable `max-snapshot-chunks` parameter to validate max amount of chunks in a `SnapshotResponse`.
-  ([\#5549](https://github.com/cometbft/cometbft/pull/5549))
+  192 bytes ([\#3624](https://github.com/cometbft/cometbft/issues/3624))
 - `[p2p]` feat(lp2p): make reactor queue configurable
   ([\#5662](https://github.com/cometbft/cometbft/pull/5662))
 - `[cli]` print lib-p2p peer id
@@ -127,18 +122,12 @@
 
 - `[evidence]` Use structured logging for consensus buffer flush error
   ([\#5465](https://github.com/cometbft/cometbft/pull/5465))
-- `[consensus]` Reject oversized proposals
-  ([\#5324](https://github.com/cometbft/cometbft/pull/5324))
-- `[store]` Prune extended commits properly
-  ([5275](https://github.com/cometbft/cometbft/issues/5275))
 - `[mempool]` Fix mutex in `CListMempool.Flush` method, by changing it from read-lock to write-lock
   ([\#2443](https://github.com/cometbft/cometbft/issues/2443)).
 - `[crypto/bls12381]` Fix JSON marshal of private key
   ([\#4772](https://github.com/cometbft/cometbft/pull/4772))
 - `[crypto/bls12381]` Modify `Sign`, `Verify` to use `dstMinPk`
   ([\#4783](https://github.com/cometbft/cometbft/issues/4783))
-- `[bits]` Validate BitArray mismatched Bits and Elems length
-  ([ASA-2025-003](https://github.com/cometbft/cometbft/security/advisories/GHSA-hrhf-2vcr-ghch))
 - `[cli]` Prevent inadvertent rollover of IPs in `cometbft testnet` config generator
   ([\#5541](https://github.com/cometbft/cometbft/pull/5541))
 
@@ -154,6 +143,38 @@
 - `[rpc]` The endpoints `broadcast_tx_*` now return an error when the node is
   performing block sync or state sync.
   ([\#785](https://github.com/cometbft/cometbft/issues/785))
+
+## v0.38.21
+
+*January 23, 2026*
+
+### IMPROVEMENTS
+
+- `[statesync]` Add configurable `max-snapshot-chunks` parameter to validate max amount of chunks in a `SnapshotResponse`.
+  ([\#5549](https://github.com/cometbft/cometbft/pull/5549))
+
+## v0.38.20
+
+*December 12, 2025*
+
+## v0.38.19
+
+*October 14, 2025*
+
+This release fixes two security issues, including ([ASA-2025-003](https://github.com/cometbft/cometbft/security/advisories/GHSA-hrhf-2vcr-ghch)).
+Users are encouraged to upgrade as soon as possible.
+
+Additionally included is a bug fix to properly prune extended commits (with
+vote extensions).
+
+### BUG-FIXES
+
+- `[consensus]` Reject oversized proposals
+  ([\#5324](https://github.com/cometbft/cometbft/pull/5324))
+- `[store]` Prune extended commits properly
+  ([5275](https://github.com/cometbft/cometbft/issues/5275))
+- `[bits]` Validate BitArray mismatched Bits and Elems length
+  ([ASA-2025-003](https://github.com/cometbft/cometbft/security/advisories/GHSA-hrhf-2vcr-ghch))
 
 ## v0.38.18
 

@@ -133,9 +133,9 @@ func (bs *BlockStore) LoadBaseMeta() *types.BlockMeta {
 	return bs.LoadBlockMeta(bs.base)
 }
 
-// LoadBlock returns the block with the given height.
-// If no block is found for that height, it returns nil.
-func (bs *BlockStore) LoadBlock(height int64) *types.Block {
+// LoadBlockProto returns the block at the given height in its proto representation,
+// without deserializing into a [types.Block]. Returns nil if no block is found.
+func (bs *BlockStore) LoadBlockProto(height int64) *cmtproto.Block {
 	blockMeta := bs.LoadBlockMeta(height)
 	if blockMeta == nil {
 		return nil
@@ -157,6 +157,17 @@ func (bs *BlockStore) LoadBlock(height int64) *types.Block {
 		// NOTE: The existence of meta should imply the existence of the
 		// block. So, make sure meta is only saved after blocks are saved.
 		panic(fmt.Sprintf("Error reading block: %v", err))
+	}
+
+	return pbb
+}
+
+// LoadBlock returns the block with the given height.
+// If no block is found for that height, it returns nil.
+func (bs *BlockStore) LoadBlock(height int64) *types.Block {
+	pbb := bs.LoadBlockProto(height)
+	if pbb == nil {
+		return nil
 	}
 
 	block, err := types.BlockFromProto(pbb)

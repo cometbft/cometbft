@@ -12,6 +12,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
@@ -279,8 +280,23 @@ func (r *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 // respondToPeer loads a block and sends it to the requesting peer,
 // if we have it. Otherwise, we'll respond saying we don't have it.
 func (r *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) {
-	block := r.store.LoadBlock(msg.Height)
-	if block == nil {
+	// Use LoadBlockProto when available to skip the BlockFromProto+ToProto round-trip.
+	var bl *cmtproto.Block
+	if bs, ok := r.store.(*store.BlockStore); ok {
+		bl = bs.LoadBlockProto(msg.Height)
+	} else {
+		block := r.store.LoadBlock(msg.Height)
+		if block != nil {
+			var err error
+			bl, err = block.ToProto()
+			if err != nil {
+				r.Logger.Error("Unable to convert the block to protobuf", "err", err)
+				return
+			}
+		}
+	}
+
+	if bl == nil {
 		r.Logger.Info("Peer asking for a block we don't have", "src", src, "height", msg.Height)
 		src.TrySend(p2p.Envelope{
 			ChannelID: BlocksyncChannel,
@@ -300,15 +316,9 @@ func (r *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) {
 	if state.ConsensusParams.ABCI.VoteExtensionsEnabled(msg.Height) {
 		extCommit = r.store.LoadBlockExtendedCommit(msg.Height)
 		if extCommit == nil {
-			r.Logger.Error("Found block in store with no extended commit", "block", block)
+			r.Logger.Error("Found block in store with no extended commit", "height", msg.Height)
 			return
 		}
-	}
-
-	bl, err := block.ToProto()
-	if err != nil {
-		r.Logger.Error("Unable to convert the block to protobuf", "err", err)
-		return
 	}
 
 	src.TrySend(p2p.Envelope{

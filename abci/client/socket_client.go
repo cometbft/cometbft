@@ -280,6 +280,28 @@ func (cli *socketClient) CheckTx(ctx context.Context, req *types.RequestCheckTx)
 	return reqRes.Response.GetCheckTx(), cli.Error()
 }
 
+func (cli *socketClient) InsertTx(ctx context.Context, req *types.RequestInsertTx) (*types.ResponseInsertTx, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestInsertTx(req))
+	if err != nil {
+		return nil, err
+	}
+	if err := cli.Flush(ctx); err != nil {
+		return nil, err
+	}
+	return reqRes.Response.GetInsertTx(), cli.Error()
+}
+
+func (cli *socketClient) ReapTxs(ctx context.Context, req *types.RequestReapTxs) (*types.ResponseReapTxs, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestReapTxs(req))
+	if err != nil {
+		return nil, err
+	}
+	if err := cli.Flush(ctx); err != nil {
+		return nil, err
+	}
+	return reqRes.Response.GetReapTxs(), cli.Error()
+}
+
 func (cli *socketClient) Query(ctx context.Context, req *types.RequestQuery) (*types.ResponseQuery, error) {
 	reqRes, err := cli.queueRequest(ctx, types.ToRequestQuery(req))
 	if err != nil {

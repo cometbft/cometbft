@@ -26,8 +26,9 @@ type Pool[T any] struct {
 
 	scaler *ThroughputLatencyScaler
 
-	workers   map[int]*worker[T]
-	workersWg sync.WaitGroup
+	workers    map[int]*worker[T]
+	workersWg  sync.WaitGroup
+	routinesWg sync.WaitGroup
 
 	// callbacks to be called when the pool is scaled or shrunk
 	onScale  func()
@@ -117,8 +118,17 @@ func (p *Pool[T]) Start() {
 		p.scale()
 	}
 
-	go p.monitor()
-	go p.pipePriorityQueue()
+	p.routinesWg.Add(2)
+
+	go func() {
+		defer p.routinesWg.Done()
+		p.monitorRoutine()
+	}()
+
+	go func() {
+		defer p.routinesWg.Done()
+		p.pipePriorityQueueRoutine()
+	}()
 }
 
 // Stop stops the pool and all workers
@@ -141,16 +151,18 @@ func (p *Pool[T]) Stop() {
 		p.removeWorker(id)
 	}
 
-	// close stop chan first (!)
+	// close stop chan first, this leads to p.stopped() returning true
 	close(p.stoppedCh)
-	close(p.inbound)
 
 	// unblock read operations
 	p.mu.Unlock()
 
-	p.logger.Info("Waiting for workers to finish")
+	// wait for routines to finish (stopped: true) and then close the inbound chan
+	p.routinesWg.Wait()
+	close(p.inbound)
+
+	// wait for workers to finish
 	p.workersWg.Wait()
-	p.logger.Info("Stopped pool")
 }
 
 func (p *Pool[T]) Scaler() *ThroughputLatencyScaler {
@@ -232,8 +244,8 @@ func (p *Pool[T]) handleMessage(msg T) {
 	p.scaler.Track(timeTaken)
 }
 
-// monitor the pool and autoscale it based on the load
-func (p *Pool[T]) monitor() {
+// monitorRoutine the pool and autoscale it based on the load
+func (p *Pool[T]) monitorRoutine() {
 	ticker := time.NewTicker(p.scaler.EpochDuration())
 	defer ticker.Stop()
 
@@ -326,8 +338,8 @@ func (p *Pool[T]) removeWorker(id int) {
 	delete(p.workers, id)
 }
 
-// pipePriorityQueue pipes messages from the priority queue to the inbound channel
-func (p *Pool[T]) pipePriorityQueue() {
+// pipePriorityQueueRoutine pipes messages from the priority queue to the inbound channel
+func (p *Pool[T]) pipePriorityQueueRoutine() {
 	for {
 		value, ok := p.priorityQueue.Pop()
 		if !ok {

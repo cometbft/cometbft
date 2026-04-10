@@ -6,18 +6,24 @@
 
 ### BUG FIXES
 
+### IMPROVEMENTS
+
+### FEATURES
+
+### API-BREAKING
+
+## v0.38.22
+
+*April 10, 2026*
+
+### BUG FIXES
+
 - `[evidence]` Add validation for Light Client Attack evidence ByzantineValidators
   ([\#5638](https://github.com/cometbft/cometbft/pull/5638))
 - `[blocksync]` fix(blocksync): `ExtendedCommit` verification via next blocks `LastCommit`
   ([\#5629](https://github.com/cometbft/cometbft/pull/5629))
 - `[blocksync]` Modify blocksync to use full commit verification instead of light
   ([\#5663](https://github.com/cometbft/cometbft/pull/5663))
-
-### IMPROVEMENTS
-
-### FEATURES
-
-### API-BREAKING
 
 ## v0.38.21
 

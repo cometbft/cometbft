@@ -546,7 +546,9 @@ func NewNodeWithContext(
 		sw = switcher
 	} else {
 		p2pLogger.Info("Using go-libp2p transport!")
-		p2pLogger.Warn("EXPERIMENTAL: go-libp2p transport is enabled. Only enable this setting if it can be activated simultaneously for all validators on the network and peer IDs have been predetermined and exchanged.")
+		if state.LastBlockHeight != 0 {
+			p2pLogger.Warn("EXPERIMENTAL: go-libp2p transport is enabled. Only enable this setting if it can be activated simultaneously for all validators on the network and peer IDs have been predetermined and exchanged.")
+		}
 
 		reactors := []lp2p.SwitchReactor{
 			{Name: "MEMPOOL", Reactor: mempoolReactor},

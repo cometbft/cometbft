@@ -10,7 +10,7 @@
 [![License][license-badge]][license-url]
 [![Sourcegraph][sg-badge]][sg-url]
 
-CometBFT is the most widely-adopted, battle-tested consensus engine in blockchain today. It is a [Byzantine Fault Tolerant (BFT)](https://en.wikipedia.org/wiki/Byzantine_fault) middleware that takes a state transition machine - written in any programming language - and securely replicates it  many machines.
+CometBFT is the most widely-adopted, battle-tested consensus engine in blockchain today. It is a [Byzantine Fault Tolerant (BFT)](https://en.wikipedia.org/wiki/Byzantine_fault) middleware that takes a state transition machine - written in any programming language - and securely replicates it on many machines.
 
 CometBFT is highly performant and achieves speeds of up to 10k transactions per second (TPS). Its flagship feature, ABCI++ enables developers to add programmability and customization to every step of the consensus engine.
 

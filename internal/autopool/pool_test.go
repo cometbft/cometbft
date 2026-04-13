@@ -277,19 +277,11 @@ func TestPool(t *testing.T) {
 
 		// ACT
 
-		// continuously push panicing messages so every worker (including
-		// ones the autoscaler spins up) hits a panic. Interleave with
-		// normal messages to keep queue pressure above the 0.6 threshold
-		// and force the scaler to keep adding workers until maxWorkers
-		// are all zombies.
+		// push enough messages to panic all workers
 		for i := 0; i < maxWorkers; i++ {
 			pool.Push(-1)
 			pool.Push(-1) // extra to catch scaled-up workers
 		}
-
-		// after processing all of the above messages, if we do not properly
-		// handle recovery in the workers, all workers will be dead and we have
-		// maxed out the scaler, leaving no workers to process messages
 
 		for i := 1; i <= normalMessages; i++ {
 			pool.Push(i)

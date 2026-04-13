@@ -6,6 +6,9 @@
 
 ### BUG FIXES
 
+- `[types]` Fix nil vote handling
+  ([\#5777](https://github.com/cometbft/cometbft/pull/5777))
+
 ### IMPROVEMENTS
 
 ### FEATURES

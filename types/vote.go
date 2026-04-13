@@ -80,7 +80,7 @@ type Vote struct {
 // ValidateWithExtension.
 func VoteFromProto(pv *cmtproto.Vote) (*Vote, error) {
 	if pv == nil {
-		return nil, fmt.Errorf("nil vote")
+		return nil, ErrVoteNil
 	}
 
 	blockID, err := BlockIDFromProto(&pv.BlockID)

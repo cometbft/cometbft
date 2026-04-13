@@ -6,6 +6,20 @@
 
 ### BUG FIXES
 
+### IMPROVEMENTS
+
+### FEATURES
+
+### STATE-BREAKING
+
+### API-BREAKING
+
+## v0.39.0
+
+*April 10, 2026*
+
+### BUG FIXES
+
 - `[evidence]` Add validation for Light Client Attack evidence ByzantineValidators
   ([\#5638](https://github.com/cometbft/cometbft/pull/5638))
 - `[types]` Fix buffer offset bug in `ProposerPriorityHash` that caused hash collisions when validator priorities differed
@@ -130,8 +144,6 @@
   ([\#4783](https://github.com/cometbft/cometbft/issues/4783))
 - `[cli]` Prevent inadvertent rollover of IPs in `cometbft testnet` config generator
   ([\#5541](https://github.com/cometbft/cometbft/pull/5541))
-
-### STATE-BREAKING
 
 ### API-BREAKING
 

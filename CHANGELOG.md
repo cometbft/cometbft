@@ -6,6 +6,20 @@
 
 ### BUG FIXES
 
+### IMPROVEMENTS
+
+### FEATURES
+
+### STATE-BREAKING
+
+### API-BREAKING
+
+## v0.39.1
+
+*April 14, 2026*
+
+### BUG FIXES
+
 - `[autopool]` Fix autopool worker message handling recovery
   ([\#5775](https://github.com/cometbft/cometbft/pull/5775))
 - `[types]` Fix nil vote handling
@@ -15,12 +29,6 @@
 
 - `[node]` do not log experimental warning for libp2p if starting node at height 0
   ([\#5776](https://github.com/cometbft/cometbft/pull/5776))
-
-### FEATURES
-
-### STATE-BREAKING
-
-### API-BREAKING
 
 ## v0.39.0
 

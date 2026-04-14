@@ -212,13 +212,7 @@ func (p *Pool[T]) Cap() int {
 }
 
 func (w *worker[T]) run() {
-	defer func() {
-		w.pool.workersWg.Done()
-		if r := recover(); r != nil {
-			w.pool.logger.Error("Panic in pool worker", "panic", r)
-		}
-	}()
-
+	defer w.pool.workersWg.Done()
 	for {
 		select {
 		case <-w.closeCh:
@@ -236,6 +230,14 @@ func (w *worker[T]) run() {
 }
 
 func (p *Pool[T]) handleMessage(msg T) {
+	defer func() {
+		// if we panic processing a message, simply log an error and let the
+		// caller decide if we should continue processing more
+		if r := recover(); r != nil {
+			p.logger.Error("Panic handling message", "panic", r)
+		}
+	}()
+
 	now := time.Now()
 	p.receive(msg)
 	timeTaken := time.Since(now)

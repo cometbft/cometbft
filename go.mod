@@ -11,7 +11,7 @@ require (
 	github.com/cosmos/gogoproto v1.7.2
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.1
 	github.com/fortytw2/leaktest v1.3.0
-	github.com/go-git/go-git/v5 v5.17.0
+	github.com/go-git/go-git/v5 v5.17.2
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
 	github.com/go-logfmt/logfmt v0.6.1
@@ -22,10 +22,10 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/informalsystems/tm-load-test v1.3.0
-	github.com/lib/pq v1.12.0
+	github.com/lib/pq v1.12.3
 	github.com/libp2p/go-libp2p v0.47.0
 	github.com/minio/highwayhash v1.0.4
-	github.com/mr-tron/base58 v1.2.0
+	github.com/mr-tron/base58 v1.3.0
 	github.com/multiformats/go-multiaddr v0.16.1
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20230904125328-1f23a7beb09a
 	github.com/ory/dockertest v3.3.5+incompatible
@@ -46,7 +46,7 @@ require (
 	golang.org/x/net v0.52.0
 	golang.org/x/sync v0.20.0
 	gonum.org/v1/gonum v0.17.0
-	google.golang.org/grpc v1.79.3
+	google.golang.org/grpc v1.80.0
 	google.golang.org/protobuf v1.36.11
 )
 
@@ -193,7 +193,7 @@ require (
 	golang.org/x/text v0.35.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	golang.org/x/tools v0.42.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260120221211-b8f7ae30c516 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools v2.2.0+incompatible // indirect

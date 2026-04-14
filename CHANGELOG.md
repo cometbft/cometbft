@@ -8,6 +8,9 @@
 
 ### IMPROVEMENTS
 
+- `[node]` do not log experimental warning for libp2p if starting node at height 0
+  ([\#5776](https://github.com/cometbft/cometbft/pull/5776))
+
 ### FEATURES
 
 ### STATE-BREAKING

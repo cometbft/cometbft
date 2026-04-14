@@ -6,14 +6,11 @@
 
 ### BUG FIXES
 
-<<<<<<< HEAD
-=======
 - `[autopool]` Fix autopool worker message handling recovery
   ([\#5775](https://github.com/cometbft/cometbft/pull/5775))
 - `[types]` Fix nil vote handling
   ([\#5777](https://github.com/cometbft/cometbft/pull/5777))
 
->>>>>>> e784b3e0 (fix(types): properly handle nil votes (#5777))
 ### IMPROVEMENTS
 
 ### FEATURES

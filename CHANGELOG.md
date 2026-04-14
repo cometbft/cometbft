@@ -6,6 +6,9 @@
 
 ### BUG FIXES
 
+- `[autopool]` Fix autopool worker message handling recovery
+  ([\#5775](https://github.com/cometbft/cometbft/pull/5775))
+
 ### IMPROVEMENTS
 
 - `[node]` do not log experimental warning for libp2p if starting node at height 0

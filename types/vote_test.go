@@ -469,6 +469,7 @@ func TestVoteProtobuf(t *testing.T) {
 		passesValidateBasic bool
 	}{
 		{"success", vote, true, true},
+		{"nil vote", nil, false, false},
 		{"fail vote validate basic", &Vote{}, true, false},
 	}
 	for _, tc := range testCases {
@@ -479,6 +480,7 @@ func TestVoteProtobuf(t *testing.T) {
 			require.NoError(t, err)
 		} else {
 			require.Error(t, err)
+			continue
 		}
 
 		err = v.ValidateBasic()

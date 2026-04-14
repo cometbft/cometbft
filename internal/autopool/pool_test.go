@@ -246,6 +246,58 @@ func TestPool(t *testing.T) {
 			"expected %d items to be consumed, got %d", totalItems, consumed.Load())
 	})
 
+	t.Run("SurvivesPanicInHandler", func(t *testing.T) {
+		const (
+			minWorkers     = 2
+			maxWorkers     = 4
+			normalMessages = 10
+		)
+
+		// ARRANGE
+		scaler := NewThroughputLatencyScaler(
+			minWorkers, maxWorkers,
+			90.0,
+			10*time.Millisecond,
+			50*time.Millisecond, // short epoch so autoscaler has a chance to react
+			logger,
+		)
+
+		var processed atomic.Int64
+
+		consumer := func(msg int) {
+			if msg < 0 {
+				panic("error")
+			}
+			processed.Add(1)
+		}
+
+		pool := New(scaler, consumer, 16, WithLogger[int](logger))
+		pool.Start()
+		defer pool.Stop()
+
+		// ACT
+
+		// push enough messages to panic all workers
+		for i := 0; i < maxWorkers; i++ {
+			pool.Push(-1)
+			pool.Push(-1) // extra to catch scaled-up workers
+		}
+
+		for i := 1; i <= normalMessages; i++ {
+			pool.Push(i)
+		}
+
+		// give the autoscaler time to scale up and exhaust all worker slots
+		time.Sleep(1 * time.Second)
+
+		// ASSERT
+		require.Eventually(t, func() bool {
+			return processed.Load() == normalMessages
+		}, 3*time.Second, 50*time.Millisecond,
+			"expected all %d messages to be processed but instead got %d",
+			normalMessages, processed.Load())
+	})
+
 	t.Run("PriorityQueueBurstAfterDrain", func(t *testing.T) {
 		// ARRANGE
 		// Given pool with priority queue

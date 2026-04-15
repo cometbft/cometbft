@@ -2626,16 +2626,11 @@ func (w *countingWAL) WriteSync(msg WALMessage) error {
 	return nil
 }
 
-// TestWALSelectiveFsync verifies that the receiveRoutine dispatches messages
-// to the correct WAL method: WriteSync for signed messages (votes, proposals),
-// Write for unsigned messages (block parts), and neither for ingestVerifiedBlockRequest.
-//
-// NOTE: This test mirrors the type-switch in receiveRoutine's internalMsgQueue
-// handler. If you add or change cases there, update this test to match.
+// TestWALSelectiveFsync checks WAL dispatch for internal message types.
 func TestWALSelectiveFsync(t *testing.T) {
 	cwal := &countingWAL{}
+	cs := &State{wal: cwal}
 
-	// Reproduce the type-switch logic from receiveRoutine's internalMsgQueue handler.
 	messages := []msgInfo{
 		{Msg: &VoteMessage{Vote: &types.Vote{}}},
 		{Msg: &ProposalMessage{Proposal: &types.Proposal{}}},
@@ -2644,18 +2639,9 @@ func TestWALSelectiveFsync(t *testing.T) {
 	}
 
 	for _, mi := range messages {
-		switch mi.Msg.(type) {
-		case *VoteMessage, *ProposalMessage:
-			err := cwal.WriteSync(mi)
-			require.NoError(t, err)
-		case *ingestVerifiedBlockRequest:
-			// skip
-		case *BlockPartMessage:
-			err := cwal.Write(mi)
-			require.NoError(t, err)
-		default:
-			t.Fatalf("unexpected internal message type: %T", mi.Msg)
-		}
+		require.NotPanics(t, func() {
+			cs.writeInternalMsgToWAL(mi)
+		})
 	}
 
 	// VoteMessage and ProposalMessage should have used WriteSync
@@ -2666,4 +2652,13 @@ func TestWALSelectiveFsync(t *testing.T) {
 	// BlockPartMessage should have used Write (no fsync)
 	require.Len(t, cwal.writes, 1)
 	assert.IsType(t, &BlockPartMessage{}, cwal.writes[0].(msgInfo).Msg)
+}
+
+func TestWALSelectiveFsyncUnexpectedTypePanics(t *testing.T) {
+	cs := &State{wal: &countingWAL{}}
+	unknown := msgInfo{Msg: &HasVoteMessage{}}
+
+	require.Panics(t, func() {
+		cs.writeInternalMsgToWAL(unknown)
+	})
 }

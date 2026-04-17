@@ -132,8 +132,11 @@ func NewRunNodeCmd(nodeProvider nm.Provider) *cobra.Command {
 }
 
 func checkGenesisHash(config *cfg.Config) error {
-	if len(genesisHash) == 0 || config.Genesis == "" {
+	if len(genesisHash) == 0 {
 		return nil
+	}
+	if config.Genesis == "" {
+		return fmt.Errorf("--genesis_hash was provided but no genesis file is configured")
 	}
 
 	// Calculate SHA-256 hash of the genesis file.

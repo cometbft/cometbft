@@ -23,7 +23,7 @@ func TestAppMempool(t *testing.T) {
 		added := atomic.Uint64{}
 
 		// Given app
-		app := newMockAppMempoolClient(t)
+		app := abcimock.NewClient(t)
 		app.
 			On("InsertTx", mock.Anything, mock.Anything).
 			Return(func(_ context.Context, req *abci.RequestInsertTx) (*abci.ResponseInsertTx, error) {
@@ -145,7 +145,7 @@ func TestAppMempool(t *testing.T) {
 		// Given app
 		allMempoolTxs := [][]byte{}
 
-		app := newMockAppMempoolClient(t)
+		app := abcimock.NewClient(t)
 		app.
 			On("ReapTxs", mock.Anything, mock.Anything).
 			Return(func(_ context.Context, _ *abci.RequestReapTxs) (*abci.ResponseReapTxs, error) {
@@ -189,7 +189,7 @@ func TestAppMempool_UsesConfigValues(t *testing.T) {
 		cfg.ReapInterval = 10 * time.Millisecond // short for fast test
 
 		var receivedReq *abci.RequestReapTxs
-		app := newMockAppMempoolClient(t)
+		app := abcimock.NewClient(t)
 		app.On("ReapTxs", mock.Anything, mock.MatchedBy(func(req *abci.RequestReapTxs) bool {
 			receivedReq = req
 			return true
@@ -216,7 +216,7 @@ func TestAppMempool_UsesConfigValues(t *testing.T) {
 		cfg.Type = config.MempoolTypeApp
 		cfg.SeenCacheSize = 3 // small cache to test eviction
 
-		app := newMockAppMempoolClient(t)
+		app := abcimock.NewClient(t)
 		app.On("InsertTx", mock.Anything, mock.Anything).
 			Return(&abci.ResponseInsertTx{Code: abci.CodeTypeOK}, nil)
 		app.On("CheckTx", mock.Anything, mock.Anything).
@@ -240,17 +240,4 @@ func TestAppMempool_UsesConfigValues(t *testing.T) {
 		// tx1 was evicted - should succeed now
 		require.NoError(t, m.InsertTx(types.Tx("tx1")))
 	})
-}
-
-// mockAppMempoolClient wraps abcimock.Client to implement AppMempoolClient
-type mockAppMempoolClient struct {
-	*abcimock.Client
-}
-
-func (m *mockAppMempoolClient) CheckTxUnlocked(ctx context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
-	return m.CheckTx(ctx, req)
-}
-
-func newMockAppMempoolClient(t *testing.T) *mockAppMempoolClient {
-	return &mockAppMempoolClient{Client: abcimock.NewClient(t)}
 }

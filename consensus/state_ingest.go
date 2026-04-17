@@ -200,7 +200,6 @@ func (cs *State) IngestVerifiedBlock(ic IngestCandidate) (err error) {
 
 	// register response channel so we can receive from receiveRoutine
 	ch := make(chan ingestVerifiedBlockResponse, 1)
-	defer close(ch)
 
 	req := &ingestVerifiedBlockRequest{
 		IngestCandidate: ic,

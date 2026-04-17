@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	abcimock "github.com/cometbft/cometbft/abci/client/mocks"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
@@ -215,7 +216,7 @@ type appReactorNode struct {
 	t    *testing.T
 	name string
 
-	app     *mockAppMempoolClient
+	app     *abcimock.Client
 	mempool *AppMempool
 	reactor *AppReactor
 	sw      *p2p.Switch
@@ -230,7 +231,7 @@ type appReactorNode struct {
 func newAppReactorNode(t *testing.T, name string) *appReactorNode {
 	config := config.TestConfig()
 	logger := log.TestingLogger().With("name", name)
-	app := newMockAppMempoolClient(t)
+	app := abcimock.NewClient(t)
 
 	mempool := NewAppMempool(
 		config.Mempool,

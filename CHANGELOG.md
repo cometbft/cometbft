@@ -38,7 +38,7 @@
 ### IMPROVEMENTS
 
 - `[abci,mempool]` Add Krakatoa app-mempool flow, including ABCI app-connection methods and app mempool/reactor wiring.
-  ([`f4a9ba936`](https://github.com/cometbft/cometbft/commit/f4a9ba936))
+  ([`f4a9ba936`](https://github.com/cometbft/cometbft/commit/f4a9ba936), [\#5791](https://github.com/cometbft/cometbft/pull/5791))
 - `[e2e]` Introduce app-mempool e2e network fixtures for simple, perturbed, and libp2p scenarios.
   ([`f4a9ba936`](https://github.com/cometbft/cometbft/commit/f4a9ba936))
 - `[execution,state]` Add height validation in state execution and consensus paths

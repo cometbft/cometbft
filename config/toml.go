@@ -410,6 +410,7 @@ max_peer_streams = {{ .P2P.LibP2PConfig.Limits.MaxPeerStreams }}
 #  - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
 #  for storing, disseminating and proposing txs). "create_empty_blocks=false" is
 #  not supported.
+# - "app"    : app-side mempool (the ABCI app is responsible for mempool, comet only broadcasts txs).
 type = "{{ .Mempool.Type }}"
 
 # Recheck (default: true) defines whether CometBFT should recheck the
@@ -482,6 +483,15 @@ max_batch_bytes = {{ .Mempool.MaxBatchBytes }}
 # performance results using the default P2P configuration.
 experimental_max_gossip_connections_to_persistent_peers = {{ .Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers }}
 experimental_max_gossip_connections_to_non_persistent_peers = {{ .Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers }}
+
+# App mempool only: size of LRU cache for seen transactions (deduplication).
+seen_cache_size = {{ .Mempool.SeenCacheSize }}
+# App mempool only: max bytes passed to ReapTxs (0 = no limit).
+reap_max_bytes = {{ .Mempool.ReapMaxBytes }}
+# App mempool only: max gas passed to ReapTxs (0 = no limit).
+reap_max_gas = {{ .Mempool.ReapMaxGas }}
+# App mempool only: interval between ReapTxs calls when streaming txs from app.
+reap_interval = "{{ .Mempool.ReapInterval }}"
 
 #######################################################
 ###         State Sync Configuration Options        ###

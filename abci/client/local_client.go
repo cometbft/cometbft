@@ -93,15 +93,11 @@ func (app *localClient) Info(ctx context.Context, req *types.RequestInfo) (*type
 }
 
 func (app *localClient) CheckTx(ctx context.Context, req *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
-	app.mtx.Lock()
-	defer app.mtx.Unlock()
+	if !IsLockFreeContext(ctx) {
+		app.mtx.Lock()
+		defer app.mtx.Unlock()
+	}
 
-	return app.Application.CheckTx(ctx, req)
-}
-
-// CheckTxUnlocked calls CheckTx without acquiring the mutex lock.
-// This is used by AppMempool which handles its own concurrency.
-func (app *localClient) CheckTxUnlocked(ctx context.Context, req *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
 	return app.Application.CheckTx(ctx, req)
 }
 

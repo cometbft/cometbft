@@ -14,6 +14,22 @@
 
 ### API-BREAKING
 
+## v0.39.1
+
+*April 14, 2026*
+
+### BUG FIXES
+
+- `[autopool]` Fix autopool worker message handling recovery
+  ([\#5775](https://github.com/cometbft/cometbft/pull/5775))
+- `[types]` Fix nil vote handling
+  ([\#5777](https://github.com/cometbft/cometbft/pull/5777))
+
+### IMPROVEMENTS
+
+- `[node]` do not log experimental warning for libp2p if starting node at height 0
+  ([\#5776](https://github.com/cometbft/cometbft/pull/5776))
+
 ## v0.39.0
 
 *April 10, 2026*
@@ -154,6 +170,38 @@
   ([\#3646](https://github.com/cometbft/cometbft/pull/3646))
 - `[rpc]` The endpoints `broadcast_tx_*` now return an error when the node is
   performing block sync or state sync.
+
+## v0.38.21
+
+*January 23, 2026*
+
+### IMPROVEMENTS
+
+- `[statesync]` Add configurable `max-snapshot-chunks` parameter to validate max amount of chunks in a `SnapshotResponse`.
+  ([\#5549](https://github.com/cometbft/cometbft/pull/5549))
+
+## v0.38.20
+
+*December 12, 2025*
+
+## v0.38.19
+
+*October 14, 2025*
+
+This release fixes two security issues, including ([ASA-2025-003](https://github.com/cometbft/cometbft/security/advisories/GHSA-hrhf-2vcr-ghch)).
+Users are encouraged to upgrade as soon as possible.
+
+Additionally included is a bug fix to properly prune extended commits (with
+vote extensions).
+
+### BUG-FIXES
+
+- `[consensus]` Reject oversized proposals
+  ([\#5324](https://github.com/cometbft/cometbft/pull/5324))
+- `[store]` Prune extended commits properly
+  ([5275](https://github.com/cometbft/cometbft/issues/5275))
+- `[bits]` Validate BitArray mismatched Bits and Elems length
+  ([ASA-2025-003](https://github.com/cometbft/cometbft/security/advisories/GHSA-hrhf-2vcr-ghch))
 
 ## v0.38.21
 

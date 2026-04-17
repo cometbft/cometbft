@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	client "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
@@ -230,11 +231,18 @@ func (m *AppMempool) FlushAppConn() error {
 	return nil
 }
 
-// CheckTx calls the appliction's CheckTx method.
+// CheckTx calls ABCI.CheckTx
+// This type of mempool assumes ABCI.CheckTx is safe to call LOCK-FREE.
+// It's a responsibility of application to handle concurrency safely.
 func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckTx), _ TxInfo) error {
 	if err := m.guardTx(tx); err != nil {
 		return err
 	}
+
+	var (
+		ctx = client.LockFreeContext(m.ctx)
+		req = &abci.RequestCheckTx{Tx: tx}
+	)
 
 	go func() {
 		defer func() {
@@ -243,8 +251,7 @@ func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckT
 			}
 		}()
 
-		// todo ctx unlocking
-		res, err := m.app.CheckTx(m.ctx, &abci.RequestCheckTx{Tx: tx})
+		res, err := m.app.CheckTx(ctx, req)
 		if err != nil {
 			// note that other ABCI methods panic if err is not nil
 			m.logger.Error("AppMempool.CheckTx: error inserting tx", "error", err, "tx", txHash(tx))

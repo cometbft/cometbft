@@ -32,9 +32,8 @@ type AppMempoolClient interface {
 	// InsertTx inserts a tx into app-side mempool
 	InsertTx(ctx context.Context, req *abci.RequestInsertTx) (*abci.ResponseInsertTx, error)
 
-	// CheckTxUnlocked expects the application to check the transaction, inserting if successful.
-	// NOTE: Comet will not lock this method; it is expected the application side will acquire all necessary locks for successful checking.
-	CheckTxUnlocked(ctx context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error)
+	// CheckTx checks a tx against the application
+	CheckTx(ctx context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error)
 
 	// ReapTxs reaps txs from app-side mempool
 	ReapTxs(ctx context.Context, req *abci.RequestReapTxs) (*abci.ResponseReapTxs, error)
@@ -244,7 +243,8 @@ func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckT
 			}
 		}()
 
-		res, err := m.app.CheckTxUnlocked(m.ctx, &abci.RequestCheckTx{Tx: tx})
+		// todo ctx unlocking
+		res, err := m.app.CheckTx(m.ctx, &abci.RequestCheckTx{Tx: tx})
 		if err != nil {
 			// note that other ABCI methods panic if err is not nil
 			m.logger.Error("AppMempool.CheckTx: error inserting tx", "error", err, "tx", txHash(tx))

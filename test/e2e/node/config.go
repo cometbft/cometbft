@@ -26,6 +26,7 @@ type Config struct {
 	VoteExtensionsEnableHeight int64                       `toml:"vote_extensions_enable_height"`
 	VoteExtensionsUpdateHeight int64                       `toml:"vote_extensions_update_height"`
 	VoteExtensionSize          uint                        `toml:"vote_extension_size"`
+	AppSideMempool             bool                        `toml:"app_side_mempool"`
 }
 
 // App extracts out the application specific configuration parameters
@@ -40,6 +41,7 @@ func (cfg *Config) App() *app.Config {
 		VoteExtensionsEnableHeight: cfg.VoteExtensionsEnableHeight,
 		VoteExtensionsUpdateHeight: cfg.VoteExtensionsUpdateHeight,
 		VoteExtensionSize:          cfg.VoteExtensionSize,
+		AppSideMempool:             cfg.AppSideMempool,
 	}
 }
 

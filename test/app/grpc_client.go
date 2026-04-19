@@ -32,6 +32,10 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+	if res == nil {
+		fmt.Println("Error: received nil response from BroadcastTx")
+		os.Exit(1)
+	}
 
 	bz, err := cmtjson.Marshal(res)
 	if err != nil {

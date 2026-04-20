@@ -78,6 +78,14 @@ func (r *AppReactor) OnStart() error {
 			maxBatchSizeBytes = r.config.MaxBatchBytes
 		}
 
+		if !r.switchedOn.Load() {
+			select {
+			case <-r.waitForSwitchingOnCh:
+			case <-r.ctx.Done():
+				return
+			}
+		}
+
 		r.broadcastTransactionsBatch(r.ctx, maxBatchSizeBytes)
 
 		r.Logger.Info("Broadcast routine stopped")

@@ -99,7 +99,7 @@ If you are interested in working on an issue, please comment on it, and take a l
 ## Documentation and Resources
 
 ### Documentation
-- [CometBFT Documentation](https://docs.cometbft.com/v0.38/)
+- [CometBFT Documentation](https://docs.cosmos.network/cometbft/latest/docs/README)
 - [CometBFT Specification](./spec/README.md)
 - [Documentation](./docs/)
 

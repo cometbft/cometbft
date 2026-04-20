@@ -95,11 +95,7 @@ func (r *AppReactor) OnStart() error {
 }
 
 func (r *AppReactor) OnStop() {
-	if !r.enabled() {
-		return
-	}
-
-	// will close the context and cancel broadcast
+	// cancel broadcast loop or unblock the pre-start wait on waitForSwitchingOnCh
 	r.cancelCtx()
 }
 

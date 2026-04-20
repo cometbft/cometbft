@@ -202,14 +202,16 @@ func runProxy(_ *cobra.Command, args []string) error {
 	}
 
 	cfg := rpcserver.DefaultConfig()
-	cfg.MaxBodyBytes = config.RPC.MaxBodyBytes
-	cfg.MaxHeaderBytes = config.RPC.MaxHeaderBytes
 	cfg.MaxOpenConnections = maxOpenConnections
-	// If necessary adjust global WriteTimeout to ensure it's greater than
-	// TimeoutBroadcastTxCommit.
-	// See https://github.com/tendermint/tendermint/issues/3435
-	if cfg.WriteTimeout <= config.RPC.TimeoutBroadcastTxCommit {
-		cfg.WriteTimeout = config.RPC.TimeoutBroadcastTxCommit + 1*time.Second
+	if config != nil && config.RPC != nil {
+		cfg.MaxBodyBytes = config.RPC.MaxBodyBytes
+		cfg.MaxHeaderBytes = config.RPC.MaxHeaderBytes
+		// If necessary adjust global WriteTimeout to ensure it's greater than
+		// TimeoutBroadcastTxCommit.
+		// See https://github.com/tendermint/tendermint/issues/3435
+		if cfg.WriteTimeout <= config.RPC.TimeoutBroadcastTxCommit {
+			cfg.WriteTimeout = config.RPC.TimeoutBroadcastTxCommit + 1*time.Second
+		}
 	}
 
 	p, err := lproxy.NewProxy(c, listenAddr, primaryAddr, cfg, logger, lrpc.KeyPathFn(lrpc.DefaultMerkleKeyPathFn()))

@@ -78,6 +78,14 @@ func (r *AppReactor) OnStart() error {
 			maxBatchSizeBytes = r.config.MaxBatchBytes
 		}
 
+		if !r.switchedOn.Load() {
+			select {
+			case <-r.waitForSwitchingOnCh:
+			case <-r.ctx.Done():
+				return
+			}
+		}
+
 		r.broadcastTransactionsBatch(r.ctx, maxBatchSizeBytes)
 
 		r.Logger.Info("Broadcast routine stopped")
@@ -87,11 +95,7 @@ func (r *AppReactor) OnStart() error {
 }
 
 func (r *AppReactor) OnStop() {
-	if !r.enabled() {
-		return
-	}
-
-	// will close the context and cancel broadcast
+	// cancel broadcast loop or unblock the pre-start wait on waitForSwitchingOnCh
 	r.cancelCtx()
 }
 

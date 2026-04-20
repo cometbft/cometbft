@@ -46,7 +46,6 @@ func TestAppReactor(t *testing.T) {
 
 	for i, node := range nodes {
 		node.sw = switches[i]
-		node.reactor.EnableInOutTxs()
 	}
 
 	defer func() {
@@ -56,6 +55,29 @@ func TestAppReactor(t *testing.T) {
 			}
 		}
 	}()
+
+	// ACT #0
+	// Enable B and C but keep A gated on waitForSync.
+	// A tx inserted into A must not reach peers until A is enabled.
+	nodeB.reactor.EnableInOutTxs()
+	nodeC.reactor.EnableInOutTxs()
+
+	gatedTx := types.Tx("gated_until_sync")
+	require.NoError(t, nodeA.mempool.InsertTx(gatedTx))
+
+	// ASSERT #0
+	// Broadcast from A stays blocked — B and C must not receive gatedTx.
+	require.Never(t, func() bool {
+		return txsContain(nodeB.getReceivedTxs(), types.Txs{gatedTx}) ||
+			txsContain(nodeC.getReceivedTxs(), types.Txs{gatedTx})
+	}, 500*time.Millisecond, 100*time.Millisecond)
+
+	// Enable A; gatedTx should now propagate.
+	nodeA.reactor.EnableInOutTxs()
+	eventually(func() bool {
+		return txsContain(nodeB.getReceivedTxs(), types.Txs{gatedTx}) &&
+			txsContain(nodeC.getReceivedTxs(), types.Txs{gatedTx})
+	})
 
 	// ACT #1
 	// Insert several txs into A

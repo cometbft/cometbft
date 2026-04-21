@@ -18,6 +18,8 @@ import (
 func TestAppMempool(t *testing.T) {
 	tx := func(v string) types.Tx { return types.Tx(v) }
 
+	const codeFail = uint32(123)
+
 	t.Run("InsertTx", func(t *testing.T) {
 		// ARRANGE
 		added := atomic.Uint64{}
@@ -27,9 +29,11 @@ func TestAppMempool(t *testing.T) {
 		app.
 			On("InsertTx", mock.Anything, mock.Anything).
 			Return(func(_ context.Context, req *abci.RequestInsertTx) (*abci.ResponseInsertTx, error) {
-				if string(req.Tx) == "fail" {
-					t.Logf("returning retryable error")
+				if string(req.Tx) == "fail-retryable" {
 					return &abci.ResponseInsertTx{Code: abci.CodeTypeRetry}, nil
+				}
+				if string(req.Tx) == "fail" {
+					return &abci.ResponseInsertTx{Code: codeFail}, nil
 				}
 
 				added.Add(1)
@@ -38,8 +42,11 @@ func TestAppMempool(t *testing.T) {
 		app.
 			On("CheckTx", mock.Anything, mock.Anything).
 			Return(func(_ context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
-				if string(req.Tx) == "fail" {
+				if string(req.Tx) == "fail-retryable" {
 					return &abci.ResponseCheckTx{Code: abci.CodeTypeRetry}, nil
+				}
+				if string(req.Tx) == "fail" {
+					return &abci.ResponseCheckTx{Code: codeFail}, nil
 				}
 				return &abci.ResponseCheckTx{Code: abci.CodeTypeOK}, nil
 			})
@@ -48,7 +55,7 @@ func TestAppMempool(t *testing.T) {
 		m := NewAppMempool(config.DefaultMempoolConfig(), app)
 
 		// Given txs
-		txs := []types.Tx{tx("tx1"), tx("tx2"), tx(""), tx("fail")}
+		txs := []types.Tx{tx("tx1"), tx("tx2"), tx(""), tx("fail-retryable")}
 
 		// ACT
 		err1 := m.InsertTx(txs[0])
@@ -86,7 +93,22 @@ func TestAppMempool(t *testing.T) {
 					name: "fail",
 					tx:   tx("fail"),
 					assert: func(t *testing.T, res *abci.ResponseCheckTx) {
+						require.Equal(t, codeFail, res.Code)
+					},
+				},
+				{
+					name: "fail-retryable",
+					tx:   tx("fail-retryable"),
+					assert: func(t *testing.T, res *abci.ResponseCheckTx) {
 						require.Equal(t, abci.CodeTypeRetry, res.Code)
+						require.True(t, m.seen.Has(tx("fail-retryable")))
+
+						// eventually the tx should be forgotten
+						check := func() bool {
+							return !m.seen.Has(tx("fail-retryable"))
+						}
+
+						require.Eventually(t, check, CheckTxRetryDelay, time.Millisecond*50)
 					},
 				},
 				{

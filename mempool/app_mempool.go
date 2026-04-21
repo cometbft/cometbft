@@ -46,6 +46,9 @@ type AppMempoolClient interface {
 // AppMempoolOpt is the option for AppMempool
 type AppMempoolOpt func(*AppMempool)
 
+// CheckTxRetryDelay is the delay after which a tx is forgotten if it returns a non-retryable error code
+const CheckTxRetryDelay = 5 * time.Second
+
 var _ Mempool = &AppMempool{}
 
 var (
@@ -136,6 +139,19 @@ func (m *AppMempool) guardTx(tx types.Tx) error {
 	}
 
 	return nil
+}
+
+// forgetTx forgets a tx after a delay (blocking)
+func (m *AppMempool) forgetTx(tx types.Tx, retryable bool) {
+	delay := CheckTxRetryDelay
+	if retryable {
+		delay /= 10
+	}
+
+	time.Sleep(delay)
+	m.seen.Remove(tx)
+
+	m.logger.Debug("Deleted tx from seen cache", "tx", txHash(tx), "retryable", retryable)
 }
 
 func (m *AppMempool) insertTx(tx types.Tx) (uint32, error) {
@@ -234,6 +250,7 @@ func (m *AppMempool) FlushAppConn() error {
 // CheckTx calls ABCI.CheckTx
 // This type of mempool assumes ABCI.CheckTx is safe to call LOCK-FREE.
 // It's a responsibility of application to handle concurrency safely.
+// Used only by RPC.BroadcastTxAsync and RPC.BroadcastTxSync.
 func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckTx), _ TxInfo) error {
 	if err := m.guardTx(tx); err != nil {
 		return err
@@ -258,11 +275,21 @@ func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckT
 			return
 		}
 
-		// App mempool doesn't execute the tx, so we ALWAYS return an empty response here.
+		// app mempool doesn't execute the tx, so we ALWAYS return an empty response here.
 		// This will most likely break many clients. Clients should rely on app-specific
 		// broadcasting endpoints (think of eth_sendRawTransaction, etc...).
 		if callback != nil {
 			callback(res)
+		}
+
+		// handle (non)retryable errors:
+		// allow RPC requests to be retryable while keeping DDoS vector small.
+		//
+		// - if app returns a retryable error code -> forget after a small delay
+		// - if app returns a non-retryable error code -> forget after a bigger delay
+		// - if a tx comes from other peers via m.InsertTx() -> it won't be cleaned (guardTx).
+		if res.Code != abci.CodeTypeOK {
+			m.forgetTx(tx, codeRetry(res.Code))
 		}
 	}()
 

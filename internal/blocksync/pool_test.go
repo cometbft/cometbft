@@ -191,7 +191,8 @@ func TestBlockPoolTimeout(t *testing.T) {
 	})
 
 	for _, peer := range peers {
-		pool.SetPeerRange(peer.id, peer.base, peer.height)
+		// Force uniform base so every peer contributes to maxPeerHeight at pool startup.
+		pool.SetPeerRange(peer.id, start, peer.height)
 	}
 
 	// Start a goroutine to pull blocks
@@ -512,4 +513,24 @@ func TestBlockPoolMaliciousNodeMaxInt64(t *testing.T) {
 			require.True(t, time.Since(startTime) < MaliciousTestMaximumLength, "Network ran too long, stopping test.")
 		}
 	}
+}
+
+// TestBlockPoolIgnoresPeersWithInflatedBase covers cometbft/cometbft#5801 where peer whose base is
+// ahead of pool.height must not contribute to maxPeerHeight, otherwise a malicious peer could
+// inflate the sync target  with a value no peer can serve and deadlock blocksync.
+func TestBlockPoolIgnoresPeersWithInflatedBase(t *testing.T) {
+	requestsCh := make(chan BlockRequest, 10)
+	errorsCh := make(chan peerError, 10)
+
+	pool := NewBlockPool(151, requestsCh, errorsCh)
+	pool.SetLogger(log.TestingLogger())
+
+	pool.SetPeerRange(p2p.ID("honest"), 1, 300)
+	require.EqualValues(t, 300, pool.MaxPeerHeight())
+
+	// Malicious peer advertises base far beyond pool.height.
+	pool.SetPeerRange(p2p.ID("malicious"), 1_000_000, 1_000_100)
+
+	require.EqualValues(t, 300, pool.MaxPeerHeight(),
+		"peer with base > pool.height must not raise maxPeerHeight")
 }

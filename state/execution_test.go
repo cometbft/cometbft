@@ -1118,45 +1118,40 @@ func TestCreateProposalAbsentVoteExtensions(t *testing.T) {
 	}
 }
 
+func newCachedBlockExec(t *testing.T, stateDB dbm.DB) *sm.BlockExecutor {
+	t.Helper()
+	app := &testApp{}
+	cc := proxy.NewLocalClientCreator(app)
+
+	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
+	require.NoError(t, proxyApp.Start())
+	t.Cleanup(func() { _ = proxyApp.Stop() })
+
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{DiscardABCIResponses: false})
+
+	mp := &mpmocks.Mempool{}
+	mp.On("Lock").Return()
+	mp.On("Unlock").Return()
+	mp.On("FlushAppConn", mock.Anything).Return(nil)
+	mp.On("Update",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+	).Return(nil)
+
+	return sm.NewBlockExecutor(
+		stateStore,
+		log.TestingLogger(),
+		proxyApp.Consensus(),
+		mp,
+		sm.EmptyEvidencePool{},
+		store.NewBlockStore(dbm.NewMemDB()),
+	)
+}
+
 func TestLastValidatedBlockCache(t *testing.T) {
-	makeBlockExec := func(t *testing.T, stateDB dbm.DB) *sm.BlockExecutor {
-		app := &testApp{}
-		cc := proxy.NewLocalClientCreator(app)
-
-		proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
-		require.NoError(t, proxyApp.Start())
-		t.Cleanup(func() { _ = proxyApp.Stop() })
-
-		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
-			DiscardABCIResponses: false,
-		})
-
-		mp := &mpmocks.Mempool{}
-		mp.On("Lock").Return()
-		mp.On("Unlock").Return()
-		mp.On("FlushAppConn", mock.Anything).Return(nil)
-		mp.On("Update",
-			mock.Anything,
-			mock.Anything,
-			mock.Anything,
-			mock.Anything,
-			mock.Anything,
-		).Return(nil)
-
-		return sm.NewBlockExecutor(
-			stateStore,
-			log.TestingLogger(),
-			proxyApp.Consensus(),
-			mp,
-			sm.EmptyEvidencePool{},
-			store.NewBlockStore(dbm.NewMemDB()),
-		)
-	}
-
 	// ARRANGE
 	// Given the state
 	state, stateDB, privVals := makeState(1, 1)
-	exec := makeBlockExec(t, stateDB)
+	exec := newCachedBlockExec(t, stateDB)
 
 	// And nil last validated block
 	require.Nil(t, exec.GetLastValidatedBlock())
@@ -1205,36 +1200,8 @@ func TestLastValidatedBlockCache(t *testing.T) {
 }
 
 func TestValidateBlockCacheHeightAware(t *testing.T) {
-	makeBlockExec := func(t *testing.T, stateDB dbm.DB) *sm.BlockExecutor {
-		app := &testApp{}
-		cc := proxy.NewLocalClientCreator(app)
-
-		proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
-		require.NoError(t, proxyApp.Start())
-		t.Cleanup(func() { _ = proxyApp.Stop() })
-
-		stateStore := sm.NewStore(stateDB, sm.StoreOptions{DiscardABCIResponses: false})
-
-		mp := &mpmocks.Mempool{}
-		mp.On("Lock").Return()
-		mp.On("Unlock").Return()
-		mp.On("FlushAppConn", mock.Anything).Return(nil)
-		mp.On("Update",
-			mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-		).Return(nil)
-
-		return sm.NewBlockExecutor(
-			stateStore,
-			log.TestingLogger(),
-			proxyApp.Consensus(),
-			mp,
-			sm.EmptyEvidencePool{},
-			store.NewBlockStore(dbm.NewMemDB()),
-		)
-	}
-
 	state, stateDB, _ := makeState(1, 1)
-	exec := makeBlockExec(t, stateDB)
+	exec := newCachedBlockExec(t, stateDB)
 
 	block1, err := makeBlock(state, 1, new(types.Commit))
 	require.NoError(t, err)

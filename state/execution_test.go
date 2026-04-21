@@ -1204,6 +1204,53 @@ func TestLastValidatedBlockCache(t *testing.T) {
 	require.Equal(t, block2, exec.GetLastValidatedBlock())
 }
 
+func TestValidateBlockCacheHeightAware(t *testing.T) {
+	makeBlockExec := func(t *testing.T, stateDB dbm.DB) *sm.BlockExecutor {
+		app := &testApp{}
+		cc := proxy.NewLocalClientCreator(app)
+
+		proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
+		require.NoError(t, proxyApp.Start())
+		t.Cleanup(func() { _ = proxyApp.Stop() })
+
+		stateStore := sm.NewStore(stateDB, sm.StoreOptions{DiscardABCIResponses: false})
+
+		mp := &mpmocks.Mempool{}
+		mp.On("Lock").Return()
+		mp.On("Unlock").Return()
+		mp.On("FlushAppConn", mock.Anything).Return(nil)
+		mp.On("Update",
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		).Return(nil)
+
+		return sm.NewBlockExecutor(
+			stateStore,
+			log.TestingLogger(),
+			proxyApp.Consensus(),
+			mp,
+			sm.EmptyEvidencePool{},
+			store.NewBlockStore(dbm.NewMemDB()),
+		)
+	}
+
+	state, stateDB, _ := makeState(1, 1)
+	exec := makeBlockExec(t, stateDB)
+
+	block1, err := makeBlock(state, 1, new(types.Commit))
+	require.NoError(t, err)
+
+	require.NoError(t, exec.ValidateBlock(state, block1))
+	require.Equal(t, block1, exec.GetLastValidatedBlock())
+
+	// Advance state past block1 without touching the cache.
+	staleState := state
+	staleState.LastBlockHeight = 1
+
+	// block1's hash is cached but its height is no longer valid for staleState.
+	err = exec.ValidateBlock(staleState, block1)
+	require.Error(t, err)
+}
+
 func stripSignatures(ec *types.ExtendedCommit) {
 	for i, commitSig := range ec.ExtendedSignatures {
 		commitSig.Extension = nil

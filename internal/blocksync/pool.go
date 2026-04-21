@@ -245,9 +245,6 @@ func (pool *BlockPool) PopRequest() {
 	delete(pool.requesters, pool.height)
 	pool.height++
 
-	// Re-evaluate maxPeerHeight: peers whose pruned base was just beyond the previous pool.height may now be able to contribute
-	pool.updateMaxPeerHeight()
-
 	// Notify the next minBlocksForSingleRequest requesters about new height, so
 	// they can potentially request a block from the second peer.
 	for i := int64(0); i < minBlocksForSingleRequest && i < int64(len(pool.requesters)); i++ {
@@ -355,16 +352,6 @@ func (pool *BlockPool) MaxPeerHeight() int64 {
 func (pool *BlockPool) SetPeerRange(peerID p2p.ID, base int64, height int64) {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
-
-	// A peer whose own reported base exceeds its own height is structurally impossible and treated as malicious.
-	if base > height {
-		pool.Logger.Info("Peer reporting base greater than height", "peer", peerID, "base", base, "height", height)
-		if _, exists := pool.peers[peerID]; exists {
-			pool.removePeer(peerID)
-		}
-		pool.banPeer(peerID)
-		return
-	}
 
 	peer := pool.peers[peerID]
 	if peer != nil {

@@ -515,52 +515,22 @@ func TestBlockPoolMaliciousNodeMaxInt64(t *testing.T) {
 	}
 }
 
-// TestBlockPoolBansPeerWithBaseGreaterThanHeight verifies that a peer whose self-reported base
-// exceeds its own height (a structurally impossible state) is banned.
-func TestBlockPoolBansPeerWithBaseGreaterThanHeight(t *testing.T) {
+// TestBlockPoolIgnoresPeersWithInflatedBase covers cometbft/cometbft#5801 where peer whose base is
+// ahead of pool.height must not contribute to maxPeerHeight, otherwise a malicious peer could
+// inflate the sync target  with a value no peer can serve and deadlock blocksync.
+func TestBlockPoolIgnoresPeersWithInflatedBase(t *testing.T) {
 	requestsCh := make(chan BlockRequest, 10)
 	errorsCh := make(chan peerError, 10)
 
-	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool := NewBlockPool(151, requestsCh, errorsCh)
 	pool.SetLogger(log.TestingLogger())
 
-	badID := p2p.ID("bad")
-	pool.SetPeerRange(badID, 500, 100)
+	pool.SetPeerRange(p2p.ID("honest"), 1, 300)
+	require.EqualValues(t, 300, pool.MaxPeerHeight())
 
-	require.True(t, pool.IsPeerBanned(badID), "peer reporting base > height must be banned")
-	require.EqualValues(t, 0, pool.MaxPeerHeight(), "banned peer must not raise maxPeerHeight")
-}
+	// Malicious peer advertises base far beyond pool.height.
+	pool.SetPeerRange(p2p.ID("malicious"), 1_000_000, 1_000_100)
 
-// TestBlockPoolMaxPeerHeightRefreshesOnPopRequest covers:
-//  1. A peer whose base is ahead of pool.height must not contribute to maxPeerHeight
-//  2. When pool.height advances past a pruned peer's base, maxPeerHeight is re-evaluated.
-func TestBlockPoolMaxPeerHeightRefreshesOnPopRequest(t *testing.T) {
-	requestsCh := make(chan BlockRequest, 10)
-	errorsCh := make(chan peerError, 10)
-
-	pool := NewBlockPool(10, requestsCh, errorsCh)
-	pool.SetLogger(log.TestingLogger())
-
-	// Peer A's range covers pool.height, so it contributes to maxPeerHeight.
-	pool.SetPeerRange(p2p.ID("A"), 1, 20)
-	// Peer B is pruned ahead of pool.height and must be excluded until the
-	// pool advances past its base.
-	pool.SetPeerRange(p2p.ID("B"), 15, 100)
-	require.EqualValues(t, 20, pool.MaxPeerHeight(),
-		"peer B is pruned ahead of pool.height and must not contribute yet")
-
-	// Advance pool.height from 10 to 15 via PopRequest. Install a dummy
-	// requester at each height so PopRequest has something to pop; the
-	// requester is never started, so Stop() is a logged no-op.
-	for h := int64(10); h < 15; h++ {
-		pool.mtx.Lock()
-		pool.requesters[h] = newBPRequester(pool, h)
-		pool.mtx.Unlock()
-		pool.PopRequest()
-	}
-
-	// pool.height is now 15, so B (base=15) becomes eligible and must lift
-	// maxPeerHeight to its advertised height without B re-sending status.
-	require.EqualValues(t, 100, pool.MaxPeerHeight(),
-		"peer B must contribute to maxPeerHeight once pool.height reaches its base")
+	require.EqualValues(t, 300, pool.MaxPeerHeight(),
+		"peer with base > pool.height must not raise maxPeerHeight")
 }

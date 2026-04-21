@@ -46,7 +46,8 @@ type AppMempoolClient interface {
 // AppMempoolOpt is the option for AppMempool
 type AppMempoolOpt func(*AppMempool)
 
-// CheckTxRetryDelay is the delay after which a tx is forgotten if it returns a non-retryable error code
+// CheckTxRetryDelay is the base delay before a failed tx is evicted from the seen cache.
+// Retryable errors use CheckTxRetryDelay/10; non-retryable errors use the full value.
 const CheckTxRetryDelay = 5 * time.Second
 
 var _ Mempool = &AppMempool{}

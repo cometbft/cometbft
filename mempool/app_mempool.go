@@ -106,7 +106,7 @@ func (m *AppMempool) InsertTx(tx types.Tx) error {
 		return wrapErrCode("unable to insert tx", code, err)
 	case codeRetry(code):
 		// drop tx from seen cache (to retry later), but still return the error
-		m.guard.Forget(tx.Key())
+		m.forgetTx(tx, true)
 		fallthrough
 	case code != abci.CodeTypeOK:
 		m.metrics.RejectedTxs.Add(1)

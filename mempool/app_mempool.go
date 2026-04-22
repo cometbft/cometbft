@@ -8,6 +8,7 @@ import (
 	client "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/internal/guard"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
 	"github.com/pkg/errors"
@@ -24,8 +25,13 @@ type AppMempool struct {
 	config  *config.MempoolConfig
 	metrics *Metrics
 	app     AppMempoolClient
-	seen    TxCache
-	logger  log.Logger
+
+	// cache to avoid receiving the same txs from other peers.
+	// supports TTL eviction policy.
+	guard             *guard.Guard[types.TxKey]
+	checkTxRetryDelay time.Duration
+
+	logger log.Logger
 }
 
 // AppMempoolClient is the interface for the app-side mempool.
@@ -62,26 +68,23 @@ func WithAMLogger(logger log.Logger) AppMempoolOpt {
 	return func(m *AppMempool) { m.logger = logger }
 }
 
-func NewAppMempool(
-	config *config.MempoolConfig,
-	app AppMempoolClient,
-	opts ...AppMempoolOpt,
-) *AppMempool {
-	// cache to avoid receiving the same txs from other peers.
-	// we should add TTL w/ eviction policy.
-	seen := NewLRUTxCache(config.SeenCacheSize)
-
+func NewAppMempool(config *config.MempoolConfig, app AppMempoolClient, opts ...AppMempoolOpt) *AppMempool {
 	m := &AppMempool{
-		ctx:     context.Background(),
-		config:  config,
-		app:     app,
-		seen:    seen,
-		metrics: NopMetrics(),
-		logger:  log.NewNopLogger(),
+		ctx:               context.Background(),
+		config:            config,
+		app:               app,
+		guard:             guard.New[types.TxKey](config.SeenCacheSize),
+		checkTxRetryDelay: config.CheckTxRetryDelay,
+		metrics:           NopMetrics(),
+		logger:            log.NewNopLogger(),
 	}
 
 	for _, opt := range opts {
 		opt(m)
+	}
+
+	if m.checkTxRetryDelay <= 0 {
+		panic("mempool.CheckTxRetryDelay must be positive")
 	}
 
 	return m
@@ -103,7 +106,7 @@ func (m *AppMempool) InsertTx(tx types.Tx) error {
 		return wrapErrCode("unable to insert tx", code, err)
 	case codeRetry(code):
 		// drop tx from seen cache (to retry later), but still return the error
-		m.seen.Remove(tx)
+		m.forgetTx(tx, true)
 		fallthrough
 	case code != abci.CodeTypeOK:
 		m.metrics.RejectedTxs.Add(1)
@@ -129,13 +132,22 @@ func (m *AppMempool) guardTx(tx types.Tx) error {
 		}
 	}
 
-	pushed := m.seen.Push(tx)
-	if !pushed {
+	if !m.guard.Guard(tx.Key()) {
 		m.metrics.AlreadyReceivedTxs.Add(1)
 		return ErrSeenTx
 	}
 
 	return nil
+}
+
+// forgetTx forgets a tx after a delay (blocking)
+func (m *AppMempool) forgetTx(tx types.Tx, retryable bool) {
+	delay := m.checkTxRetryDelay
+	if retryable {
+		delay /= 10
+	}
+
+	m.guard.ForgetAfter(tx.Key(), delay)
 }
 
 func (m *AppMempool) insertTx(tx types.Tx) (uint32, error) {
@@ -211,11 +223,7 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Txs) {
 
 			// avoid receiving these txs again from other peers.
 			for _, tx := range txs {
-				if m.seen.Has(tx) {
-					continue
-				}
-
-				m.seen.Push(tx)
+				m.guard.Guard(tx.Key())
 			}
 		}
 	}
@@ -234,6 +242,7 @@ func (m *AppMempool) FlushAppConn() error {
 // CheckTx calls ABCI.CheckTx
 // This type of mempool assumes ABCI.CheckTx is safe to call LOCK-FREE.
 // It's a responsibility of application to handle concurrency safely.
+// Used only by RPC.BroadcastTxAsync and RPC.BroadcastTxSync.
 func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckTx), _ TxInfo) error {
 	if err := m.guardTx(tx); err != nil {
 		return err
@@ -258,11 +267,21 @@ func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckT
 			return
 		}
 
-		// App mempool doesn't execute the tx, so we ALWAYS return an empty response here.
+		// app mempool doesn't execute the tx, so we ALWAYS return an empty response here.
 		// This will most likely break many clients. Clients should rely on app-specific
 		// broadcasting endpoints (think of eth_sendRawTransaction, etc...).
 		if callback != nil {
 			callback(res)
+		}
+
+		// handle (non)retryable errors:
+		// allow RPC requests to be retryable while keeping DDoS vector small.
+		//
+		// - if app returns a retryable error code -> forget after a small delay
+		// - if app returns a non-retryable error code -> forget after a bigger delay
+		// - if a tx comes from other peers via m.InsertTx() -> it won't be cleaned (guardTx).
+		if res.Code != abci.CodeTypeOK {
+			m.forgetTx(tx, codeRetry(res.Code))
 		}
 	}()
 

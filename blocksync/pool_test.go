@@ -193,7 +193,8 @@ func TestBlockPoolTimeout(t *testing.T) {
 	// Introduce each peer.
 	go func() {
 		for _, peer := range peers {
-			pool.SetPeerRange(peer.id, peer.base, peer.height)
+			// Force uniform base so every peer contributes to maxPeerHeight at pool startup.
+			pool.SetPeerRange(peer.id, start, peer.height)
 		}
 	}()
 
@@ -508,4 +509,54 @@ func TestBlockPoolMaliciousNodeMaxInt64(t *testing.T) {
 			require.True(t, time.Since(startTime) < MaliciousTestMaximumLength, "Network ran too long, stopping test.")
 		}
 	}
+}
+
+// TestBlockPoolBansPeerWithBaseGreaterThanHeight verifies that a peer whose self-reported base
+// exceeds its own height (a structurally impossible state) is banned.
+func TestBlockPoolBansPeerWithBaseGreaterThanHeight(t *testing.T) {
+	requestsCh := make(chan BlockRequest, 10)
+	errorsCh := make(chan peerError, 10)
+
+	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool.SetLogger(log.TestingLogger())
+
+	badID := p2p.ID("bad")
+	pool.SetPeerRange(badID, 500, 100)
+
+	require.True(t, pool.IsPeerBanned(badID), "peer reporting base > height must be banned")
+	require.EqualValues(t, 0, pool.MaxPeerHeight(), "banned peer must not raise maxPeerHeight")
+}
+
+// TestBlockPoolMaxPeerHeightRefreshesOnPopRequest covers:
+//  1. A peer whose base is ahead of pool.height must not contribute to maxPeerHeight
+//  2. When pool.height advances past a pruned peer's base, maxPeerHeight is re-evaluated.
+func TestBlockPoolMaxPeerHeightRefreshesOnPopRequest(t *testing.T) {
+	requestsCh := make(chan BlockRequest, 10)
+	errorsCh := make(chan peerError, 10)
+
+	pool := NewBlockPool(10, requestsCh, errorsCh)
+	pool.SetLogger(log.TestingLogger())
+
+	// Peer A's range covers pool.height, so it contributes to maxPeerHeight.
+	pool.SetPeerRange(p2p.ID("A"), 1, 20)
+	// Peer B is pruned ahead of pool.height and must be excluded until the
+	// pool advances past its base.
+	pool.SetPeerRange(p2p.ID("B"), 15, 100)
+	require.EqualValues(t, 20, pool.MaxPeerHeight(),
+		"peer B is pruned ahead of pool.height and must not contribute yet")
+
+	// Advance pool.height from 10 to 15 via PopRequest. Install a dummy
+	// requester at each height so PopRequest has something to pop; the
+	// requester is never started, so Stop() is a logged no-op.
+	for h := int64(10); h < 15; h++ {
+		pool.mtx.Lock()
+		pool.requesters[h] = newBPRequester(pool, h)
+		pool.mtx.Unlock()
+		pool.PopRequest()
+	}
+
+	// pool.height is now 15, so B (base=15) becomes eligible and must lift
+	// maxPeerHeight to its advertised height without B re-sending status.
+	require.EqualValues(t, 100, pool.MaxPeerHeight(),
+		"peer B must contribute to maxPeerHeight once pool.height reaches its base")
 }

@@ -121,14 +121,6 @@ func (g *Guard[K]) Has(key K) bool {
 	return true
 }
 
-// Forget removes the key from the guard.
-func (g *Guard[K]) Forget(key K) (present bool) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-
-	return g.lru.Remove(key)
-}
-
 // ForgetAfter removes the key from the guard after a duration.
 func (g *Guard[K]) ForgetAfter(key K, duration time.Duration) {
 	g.mu.Lock()
@@ -144,14 +136,6 @@ func (g *Guard[K]) ForgetAfter(key K, duration time.Duration) {
 		e.expiresAt = time.Now().Add(duration)
 		g.ttlRemovals[key] = struct{}{}
 	}
-}
-
-// Purge purges the guard.
-func (g *Guard[K]) Purge() {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-
-	g.lru.Purge()
 }
 
 func (g *Guard[K]) removeExpired() {

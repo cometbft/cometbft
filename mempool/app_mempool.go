@@ -223,10 +223,6 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Txs) {
 
 			// avoid receiving these txs again from other peers.
 			for _, tx := range txs {
-				if m.guard.Has(tx.Key()) {
-					continue
-				}
-
 				m.guard.Guard(tx.Key())
 			}
 		}

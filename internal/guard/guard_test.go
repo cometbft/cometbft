@@ -1,7 +1,6 @@
 package guard
 
 import (
-	"strconv"
 	"testing"
 	"time"
 
@@ -103,33 +102,6 @@ func TestGuard(t *testing.T) {
 		})
 	})
 
-	t.Run("Forget", func(t *testing.T) {
-		t.Run("happyPath", func(t *testing.T) {
-			// ARRANGE
-			g := makeGuard(t, 10)
-			item := "item"
-			g.Guard(item)
-
-			// ACT
-			present := g.Forget(item)
-
-			// ASSERT
-			require.True(t, present)
-			require.False(t, g.Has(item))
-		})
-
-		t.Run("notPresent", func(t *testing.T) {
-			// ARRANGE
-			g := makeGuard(t, 10)
-
-			// ACT
-			present := g.Forget("missing")
-
-			// ASSERT
-			require.False(t, present)
-		})
-	})
-
 	t.Run("ForgetAfter", func(t *testing.T) {
 		t.Run("zeroDuration", func(t *testing.T) {
 			// ARRANGE
@@ -200,32 +172,6 @@ func TestGuard(t *testing.T) {
 			g.mu.Unlock()
 
 			require.False(t, ok)
-		})
-	})
-
-	t.Run("Purge", func(t *testing.T) {
-		t.Run("happyPath", func(t *testing.T) {
-			// ARRANGE
-			g := makeGuard(t, 10)
-			for i := 0; i < 5; i++ {
-				g.Guard("item-" + strconv.Itoa(i))
-			}
-
-			// ACT
-			g.Purge()
-
-			// ASSERT
-			for i := 0; i < 5; i++ {
-				require.False(t, g.Has("item-"+strconv.Itoa(i)))
-			}
-		})
-
-		t.Run("noop", func(t *testing.T) {
-			// ARRANGE
-			g := makeGuard(t, 10)
-
-			// ACT + ASSERT
-			require.NotPanics(t, func() { g.Purge() })
 		})
 	})
 }

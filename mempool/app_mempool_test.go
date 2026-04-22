@@ -22,7 +22,7 @@ func TestAppMempool(t *testing.T) {
 
 	t.Run("InsertTx", func(t *testing.T) {
 		// ARRANGE
-		added := atomic.Uint64{}
+		wasInserted := atomic.Uint64{}
 
 		// Given app
 		app := abcimock.NewClient(t)
@@ -36,7 +36,7 @@ func TestAppMempool(t *testing.T) {
 					return &abci.ResponseInsertTx{Code: codeFail}, nil
 				}
 
-				added.Add(1)
+				wasInserted.Add(1)
 				return &abci.ResponseInsertTx{Code: abci.CodeTypeOK}, nil
 			})
 		app.
@@ -72,9 +72,14 @@ func TestAppMempool(t *testing.T) {
 		require.ErrorIs(t, err4, ErrEmptyTx)
 
 		require.ErrorContains(t, err5, "invalid code: (code=32000)")
-		require.False(t, m.guard.Has(txs[3].Key()), "should be removed from seen cache")
+		require.Equal(t, uint64(2), wasInserted.Load())
 
-		require.Equal(t, uint64(2), added.Load())
+		// retryable txs are forgotten asynchronously via guard.ForgetAfter(),
+		// so the seen-cache entry clears shortly after the call returns.
+		retryableForgotten := func() bool {
+			return !m.guard.Has(txs[3].Key())
+		}
+		require.Eventually(t, retryableForgotten, m.checkTxRetryDelay, 50*time.Millisecond)
 
 		t.Run("CheckTx", func(t *testing.T) {
 			for _, tt := range []struct {

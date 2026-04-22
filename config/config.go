@@ -1005,6 +1005,8 @@ type MempoolConfig struct {
 	ReapMaxGas uint64 `mapstructure:"reap_max_gas"`
 	// App mempool only: interval between ReapTxs calls when streaming txs from app.
 	ReapInterval time.Duration `mapstructure:"reap_interval"`
+	// App mempool only: delay after which a tx is forgotten for ABCI.CheckTx
+	CheckTxRetryDelay time.Duration `mapstructure:"check_tx_retry_delay"`
 }
 
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool
@@ -1024,10 +1026,11 @@ func DefaultMempoolConfig() *MempoolConfig {
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: 0,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    0,
 		// App mempool defaults
-		SeenCacheSize: 100_000,
-		ReapMaxBytes:  0,
-		ReapMaxGas:    0,
-		ReapInterval:  500 * time.Millisecond,
+		SeenCacheSize:     100_000,
+		ReapMaxBytes:      0,
+		ReapMaxGas:        0,
+		ReapInterval:      500 * time.Millisecond,
+		CheckTxRetryDelay: 5 * time.Second,
 	}
 }
 

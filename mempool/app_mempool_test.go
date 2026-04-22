@@ -72,7 +72,7 @@ func TestAppMempool(t *testing.T) {
 		require.ErrorIs(t, err4, ErrEmptyTx)
 
 		require.ErrorContains(t, err5, "invalid code: (code=32000)")
-		require.False(t, m.seen.Has(txs[3]), "should be removed from seen cache")
+		require.False(t, m.guard.Has(txs[3].Key()), "should be removed from seen cache")
 
 		require.Equal(t, uint64(2), added.Load())
 
@@ -101,14 +101,14 @@ func TestAppMempool(t *testing.T) {
 					tx:   tx("fail-retryable"),
 					assert: func(t *testing.T, res *abci.ResponseCheckTx) {
 						require.Equal(t, abci.CodeTypeRetry, res.Code)
-						require.True(t, m.seen.Has(tx("fail-retryable")))
+						require.True(t, m.guard.Has(tx("fail-retryable").Key()))
 
 						// eventually the tx should be forgotten
 						check := func() bool {
-							return !m.seen.Has(tx("fail-retryable"))
+							return !m.guard.Has(tx("fail-retryable").Key())
 						}
 
-						require.Eventually(t, check, CheckTxRetryDelay, time.Millisecond*50)
+						require.Eventually(t, check, m.checkTxRetryDelay, time.Millisecond*50)
 					},
 				},
 				{

@@ -8,6 +8,7 @@ import (
 	client "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/internal/guard"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
 	"github.com/pkg/errors"
@@ -24,8 +25,13 @@ type AppMempool struct {
 	config  *config.MempoolConfig
 	metrics *Metrics
 	app     AppMempoolClient
-	seen    TxCache
-	logger  log.Logger
+
+	// cache to avoid receiving the same txs from other peers.
+	// supports TTL eviction policy.
+	guard             *guard.Guard[types.TxKey]
+	checkTxRetryDelay time.Duration
+
+	logger log.Logger
 }
 
 // AppMempoolClient is the interface for the app-side mempool.
@@ -46,9 +52,6 @@ type AppMempoolClient interface {
 // AppMempoolOpt is the option for AppMempool
 type AppMempoolOpt func(*AppMempool)
 
-// CheckTxRetryDelay is the delay after which a tx is forgotten if it returns a non-retryable error code
-const CheckTxRetryDelay = 5 * time.Second
-
 var _ Mempool = &AppMempool{}
 
 var (
@@ -65,26 +68,23 @@ func WithAMLogger(logger log.Logger) AppMempoolOpt {
 	return func(m *AppMempool) { m.logger = logger }
 }
 
-func NewAppMempool(
-	config *config.MempoolConfig,
-	app AppMempoolClient,
-	opts ...AppMempoolOpt,
-) *AppMempool {
-	// cache to avoid receiving the same txs from other peers.
-	// we should add TTL w/ eviction policy.
-	seen := NewLRUTxCache(config.SeenCacheSize)
-
+func NewAppMempool(config *config.MempoolConfig, app AppMempoolClient, opts ...AppMempoolOpt) *AppMempool {
 	m := &AppMempool{
-		ctx:     context.Background(),
-		config:  config,
-		app:     app,
-		seen:    seen,
-		metrics: NopMetrics(),
-		logger:  log.NewNopLogger(),
+		ctx:               context.Background(),
+		config:            config,
+		app:               app,
+		guard:             guard.New[types.TxKey](config.SeenCacheSize),
+		checkTxRetryDelay: config.CheckTxRetryDelay,
+		metrics:           NopMetrics(),
+		logger:            log.NewNopLogger(),
 	}
 
 	for _, opt := range opts {
 		opt(m)
+	}
+
+	if m.checkTxRetryDelay <= 0 {
+		panic("mempool.CheckTxRetryDelay must be positive")
 	}
 
 	return m
@@ -106,7 +106,7 @@ func (m *AppMempool) InsertTx(tx types.Tx) error {
 		return wrapErrCode("unable to insert tx", code, err)
 	case codeRetry(code):
 		// drop tx from seen cache (to retry later), but still return the error
-		m.seen.Remove(tx)
+		m.guard.Forget(tx.Key())
 		fallthrough
 	case code != abci.CodeTypeOK:
 		m.metrics.RejectedTxs.Add(1)
@@ -132,8 +132,7 @@ func (m *AppMempool) guardTx(tx types.Tx) error {
 		}
 	}
 
-	pushed := m.seen.Push(tx)
-	if !pushed {
+	if !m.guard.Guard(tx.Key()) {
 		m.metrics.AlreadyReceivedTxs.Add(1)
 		return ErrSeenTx
 	}
@@ -143,15 +142,12 @@ func (m *AppMempool) guardTx(tx types.Tx) error {
 
 // forgetTx forgets a tx after a delay (blocking)
 func (m *AppMempool) forgetTx(tx types.Tx, retryable bool) {
-	delay := CheckTxRetryDelay
+	delay := m.checkTxRetryDelay
 	if retryable {
 		delay /= 10
 	}
 
-	time.Sleep(delay)
-	m.seen.Remove(tx)
-
-	m.logger.Debug("Deleted tx from seen cache", "tx", txHash(tx), "retryable", retryable)
+	m.guard.ForgetAfter(tx.Key(), delay)
 }
 
 func (m *AppMempool) insertTx(tx types.Tx) (uint32, error) {
@@ -227,11 +223,11 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Txs) {
 
 			// avoid receiving these txs again from other peers.
 			for _, tx := range txs {
-				if m.seen.Has(tx) {
+				if m.guard.Has(tx.Key()) {
 					continue
 				}
 
-				m.seen.Push(tx)
+				m.guard.Guard(tx.Key())
 			}
 		}
 	}

@@ -260,8 +260,13 @@ func (blockExec *BlockExecutor) ApplyBlock(
 ) (State, error) {
 	lastValidated := blockExec.GetLastValidatedBlock()
 
+	expectedHeight := state.LastBlockHeight + 1
+	if state.LastBlockHeight == 0 {
+		expectedHeight = state.InitialHeight
+	}
+
 	// safe to call with nil
-	if !lastValidated.HashesTo(block.Hash()) {
+	if !lastValidated.HashesTo(block.Hash()) || block.Height != expectedHeight {
 		if err := validateBlock(state, block, blockExec.withBlockTimeTolerance); err != nil {
 			return state, ErrInvalidBlock(err)
 		}

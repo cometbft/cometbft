@@ -2046,6 +2046,19 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 			return added, err
 		}
 
+		if block.Height != cs.Height {
+			return added, fmt.Errorf(
+				"proposal block height mismatch: block.Height=%d, cs.Height=%d",
+				block.Height, cs.Height,
+			)
+		}
+		if cs.Proposal != nil && block.Height != cs.Proposal.Height {
+			return added, fmt.Errorf(
+				"proposal block height mismatch: block.Height=%d, proposal.Height=%d",
+				block.Height, cs.Proposal.Height,
+			)
+		}
+
 		cs.ProposalBlock = block
 
 		// NOTE: it's possible to receive complete proposal blocks for future rounds without having the proposal

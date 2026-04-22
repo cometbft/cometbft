@@ -14,6 +14,8 @@
 
 - `[mempool]` Add app mempool & related ABCI methods, InsertTx and ReapTxs.
   ([\#5790](https://github.com/cometbft/cometbft/pull/5790))
+- `[mempool]` Allow CheckTx retries for BroadcastTxSync
+  ([\#5802](https://github.com/cometbft/cometbft/pull/5802))
 
 ### STATE-BREAKING
 

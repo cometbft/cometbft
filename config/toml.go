@@ -492,6 +492,8 @@ reap_max_bytes = {{ .Mempool.ReapMaxBytes }}
 reap_max_gas = {{ .Mempool.ReapMaxGas }}
 # App mempool only: interval between ReapTxs calls when streaming txs from app.
 reap_interval = "{{ .Mempool.ReapInterval }}"
+# App mempool only: delay after which a tx is forgotten for ABCI.CheckTx
+check_tx_retry_delay = "{{ .Mempool.CheckTxRetryDelay }}"
 
 #######################################################
 ###         State Sync Configuration Options        ###

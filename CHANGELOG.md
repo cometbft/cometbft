@@ -63,6 +63,9 @@
 
 ### IMPROVEMENTS
 
+- `[blocksync]` Make minimum receive rate configurable via `min_recv_rate` in `[blocksync]` config section. Operators can tune this value based on their network's block size and block time characteristics
+  ([\#5614](https://github.com/cometbft/cometbft/pull/5614))
+
 - `[ci]`: add lp2p testnet ([\#5643](https://github.com/cometbft/cometbft/pull/5643))
 - `[mempool]` feat!(p2p): introduce follower-mode. Improve lib-p2p integraap access
 - `[types]` Add validation for `AuthorityParams.Authority` field in consensus params, enforcing a maximum length of 256 characters ([#5511](https://github.com/cometbft/cometbft/pull/5511))

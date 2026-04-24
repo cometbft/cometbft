@@ -2493,6 +2493,40 @@ func TestStateOutputsBlockPartsStats(t *testing.T) {
 	}
 }
 
+func TestProposalBlockPartsHeightConsistency(t *testing.T) {
+	cs, _ := randState(1)
+
+	block, err := cs.state.MakeBlock(
+		cs.Height+1,
+		nil,
+		&types.Commit{},
+		nil,
+		cs.privValidatorPubKey.Address(),
+	)
+	require.NoError(t, err)
+
+	parts, err := block.MakePartSet(types.BlockPartSizeBytes)
+	require.NoError(t, err)
+
+	cs.ProposalBlockParts = types.NewPartSetFromHeader(parts.Header())
+
+	var lastErr error
+	for i := 0; i < int(parts.Total()); i++ {
+		_, err := cs.addProposalBlockPart(&BlockPartMessage{
+			Height: cs.Height,
+			Round:  cs.Round,
+			Part:   parts.GetPart(i),
+		}, "")
+		if err != nil {
+			lastErr = err
+		}
+	}
+
+	require.Error(t, lastErr)
+	require.Contains(t, lastErr.Error(), "height mismatch")
+	require.Nil(t, cs.ProposalBlock)
+}
+
 func TestStateOutputVoteStats(t *testing.T) {
 	cs, vss := randState(2)
 	// create dummy peer

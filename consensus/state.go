@@ -126,8 +126,8 @@ type State struct {
 	// closed when we finish shutting down
 	done chan struct{}
 
-	// synchronous pubsub between consensus state and reactor.
-	// state only emits EventNewRoundStep and EventVote
+	// synchronous pubsub between consensus state and reactor. state emits
+	// EventNewRoundStep, EventVote, and EventNewConsensusParams
 	evsw cmtevents.EventSwitch
 
 	// for reporting metrics
@@ -749,8 +749,9 @@ func (cs *State) updateToState(state sm.State) {
 
 	cs.state = state
 
-	// Finally, broadcast RoundState
+	// Finally fire events, broadcast RoundState and ConsensusParams
 	cs.newStep()
+	cs.newConsensusParams()
 }
 
 func (cs *State) newStep() {
@@ -769,6 +770,12 @@ func (cs *State) newStep() {
 
 		cs.evsw.FireEvent(types.EventNewRoundStep, cs.RoundState)
 	}
+}
+
+// newConsensusParams notifies event switch subscribers of the current consensus
+// params
+func (cs *State) newConsensusParams() {
+	cs.evsw.FireEvent(types.EventNewConsensusParams, cs.state.ConsensusParams)
 }
 
 //-----------------------------------------
@@ -828,6 +835,8 @@ func (cs *State) receiveRoutine(maxSteps int) {
 		case mi = <-cs.peerMsgQueue:
 			cs.Logger.Debug("Received message from cs.peerMsgQueue", "peer", mi.PeerID)
 
+			// Peer messages are buffered; signed self-messages are handled via
+			// internalMsgQueue with WriteSync.
 			if err := cs.wal.Write(mi); err != nil {
 				cs.Logger.Error("failed writing to WAL", "err", err)
 			}
@@ -839,13 +848,7 @@ func (cs *State) receiveRoutine(maxSteps int) {
 		case mi = <-cs.internalMsgQueue:
 			cs.Logger.Debug("Received message from cs.internalMsgQueue", "peer_id", mi.PeerID)
 
-			err := cs.wal.WriteSync(mi) // NOTE: fsync
-			if err != nil {
-				panic(fmt.Sprintf(
-					"failed to write %v msg to consensus WAL due to %v; check your file system and restart the node",
-					mi, err,
-				))
-			}
+			cs.writeInternalMsgToWAL(mi)
 
 			if _, ok := mi.Msg.(*VoteMessage); ok {
 				// we actually want to simulate failing during
@@ -871,6 +874,33 @@ func (cs *State) receiveRoutine(maxSteps int) {
 			onExit(cs)
 			return
 		}
+	}
+}
+
+// writeInternalMsgToWAL persists local messages with per-type durability.
+func (cs *State) writeInternalMsgToWAL(mi msgInfo) {
+	switch mi.Msg.(type) {
+	case *VoteMessage, *ProposalMessage:
+		// Signed messages must hit disk before processing.
+		if err := cs.wal.WriteSync(mi); err != nil {
+			panic(fmt.Errorf(
+				"failed to write %v msg to consensus WAL; check your file system and restart the node: %w",
+				mi, err,
+			))
+		}
+	case *ingestVerifiedBlockRequest:
+		// Not replayed via WAL.
+	case *BlockPartMessage:
+		// Unsigned block parts use buffered WAL writes.
+		if err := cs.wal.Write(mi); err != nil {
+			panic(fmt.Errorf(
+				"failed to write %v msg to consensus WAL; check your file system and restart the node: %w",
+				mi, err,
+			))
+		}
+	default:
+		// New internal message types must be handled explicitly.
+		panic(fmt.Errorf("unexpected internal message type: %T", mi.Msg))
 	}
 }
 
@@ -952,6 +982,8 @@ func (cs *State) handleMsg(mi msgInfo) {
 		// the peer is sending us CatchupCommit precommits.
 		// We could make note of this and help filter in broadcastHasVoteMessage().
 
+	case *ingestVerifiedBlockRequest:
+		cs.handleIngestVerifiedBlockRequest(msg)
 	default:
 		cs.Logger.Error("unknown msg type", "type", fmt.Sprintf("%T", msg))
 		return
@@ -1099,6 +1131,10 @@ func (cs *State) enterNewRound(height int64, round int32) {
 		"previous", log.NewLazySprintf("%v/%v/%v", prevHeight, prevRound, prevStep),
 		"proposer", propAddress,
 	)
+
+	if round > 0 && !cs.replayMode {
+		cs.metrics.MarkRoundIncremented(prevStep)
+	}
 
 	cs.Votes.SetRound(cmtmath.SafeAddInt32(round, 1)) // also track next round (round+1) to allow round-skipping
 	cs.TriggeredTimeoutPrecommit = false
@@ -2022,6 +2058,19 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 		block, err := types.BlockFromProto(pbb)
 		if err != nil {
 			return added, err
+		}
+
+		if block.Height != cs.Height {
+			return added, fmt.Errorf(
+				"proposal block height mismatch: block.Height=%d, cs.Height=%d",
+				block.Height, cs.Height,
+			)
+		}
+		if cs.Proposal != nil && block.Height != cs.Proposal.Height {
+			return added, fmt.Errorf(
+				"proposal block height mismatch: block.Height=%d, proposal.Height=%d",
+				block.Height, cs.Proposal.Height,
+			)
 		}
 
 		cs.ProposalBlock = block

@@ -19,6 +19,10 @@ const ProtocolIDPrefix = "/p2p/cometbft/1.0.0"
 // TimeoutStream is the timeout for a stream.
 const TimeoutStream = 10 * time.Second
 
+// MaxStreamSize is the global maximum size of a stream.
+// Protocols should configure their own maximum size.
+const MaxStreamSize = 4 * (1 << 20)
+
 // ProtocolID returns the protocol ID for a given channel
 // Byte is used for compatibility with the original CometBFT implementation.
 func ProtocolID(channelID byte) protocol.ID {
@@ -79,16 +83,30 @@ func StreamWriteClose(s network.Stream, data []byte) (err error) {
 
 // StreamRead reads payload from a stream.
 // It doesn't control stream's lifecycle, so it's up to the caller to close the stream.
+// Note: this method doesn't enforce any size limits! Use StreamReadSized instead.
 func StreamRead(s network.Stream) ([]byte, error) {
+	return StreamReadSized(s, MaxStreamSize)
+}
+
+// StreamReadSized reads payload from a stream with a maximum size.
+// It doesn't control stream's lifecycle, so it's up to the caller to close the stream.
+func StreamReadSized(s network.Stream, maxSize uint64) ([]byte, error) {
 	if s.Conn().IsClosed() {
 		return nil, fmt.Errorf("stream is closed")
 	}
 
 	reader := bufio.NewReader(s)
 
+	// in bytes
 	payloadSize, err := binary.ReadUvarint(reader)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read payload size")
+	}
+
+	payloadLimit := min(maxSize, MaxStreamSize)
+
+	if payloadSize > payloadLimit {
+		return nil, errors.Errorf("payload is too large (got %d, max %d)", payloadSize, payloadLimit)
 	}
 
 	payload, err := readExactly(reader, payloadSize)
@@ -102,6 +120,12 @@ func StreamRead(s network.Stream) ([]byte, error) {
 // StreamReadClose reads payload from a stream and closes it right after.
 // Also, resets the stream on both ends in case of error.
 func StreamReadClose(s network.Stream) (payload []byte, err error) {
+	return StreamReadSizedClose(s, MaxStreamSize)
+}
+
+// StreamReadSizedClose reads payload from a stream and closes it right after with a maximum size.
+// Also, resets the stream on both ends in case of error.
+func StreamReadSizedClose(s network.Stream, maxSize uint64) (payload []byte, err error) {
 	defer func() {
 		if err != nil {
 			// nukes broken stream on both ends
@@ -109,7 +133,7 @@ func StreamReadClose(s network.Stream) (payload []byte, err error) {
 		}
 	}()
 
-	payload, err = StreamRead(s)
+	payload, err = StreamReadSized(s, maxSize)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read payload")
 	}

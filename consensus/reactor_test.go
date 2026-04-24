@@ -1179,3 +1179,129 @@ func TestVoteMessageValidateBasic(t *testing.T) {
 		})
 	}
 }
+
+// TestReactorConsensusParamsUpdate tests that when consensus params are updated
+// after FinalizeBlock, the consensus reactor receives the update event and
+// updates its internal copy of consensus params.
+func TestReactorConsensusParamsUpdate(t *testing.T) {
+	N := 4
+
+	// Track which block heights should trigger consensus params updates
+	updateAtHeight := int64(5)
+	newMaxBytes := int64(5000000)
+	newMaxGas := int64(50000000)
+
+	// Create an app factory that wraps kvstore and returns consensus params updates
+	appFunc := func() abci.Application {
+		kvApp := kvstore.NewInMemoryApplication()
+		return &consensusParamsUpdatingApp{
+			Application:    kvApp,
+			updateAtHeight: updateAtHeight,
+			newMaxBytes:    newMaxBytes,
+			newMaxGas:      newMaxGas,
+			t:              t,
+		}
+	}
+
+	css, cleanup := randConsensusNet(
+		t,
+		N,
+		"consensus_reactor_consensus_params_update_test",
+		newMockTickerFunc(true),
+		appFunc,
+	)
+	defer cleanup()
+
+	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, N)
+	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
+
+	// Get initial consensus params from the reactor
+	initialParams := reactors[0].consensusParams.Load()
+	t.Logf("Initial params: MaxBytes=%d, MaxGas=%d", initialParams.Block.MaxBytes, initialParams.Block.MaxGas)
+
+	// Wait for block 1
+	timeoutWaitGroup(N, func(j int) {
+		<-blocksSubs[j].Out()
+	})
+
+	// Block notification happens slightly before updating consensus params,
+	// sleep to let the event fire
+	time.Sleep(10 * time.Millisecond)
+
+	// Verify initial params haven't changed yet
+	paramsAfterBlock1 := reactors[0].consensusParams.Load()
+	assert.Equal(t, *initialParams, *paramsAfterBlock1, "params should not have changed after block 1")
+
+	// Wait until block where we will update consensus params
+	timeoutWaitGroup(N, func(j int) {
+		for {
+			msg := <-blocksSubs[j].Out()
+			event := msg.Data().(types.EventDataNewBlock)
+			if event.Block.Height == updateAtHeight {
+				break
+			}
+		}
+	})
+
+	// Block notification happens slightly before updating consensus params,
+	// sleep to let the event fire
+	time.Sleep(10 * time.Millisecond)
+
+	// Verify that all reactors received and updated their internal consensus params
+	for i := range N {
+		reactorParams := reactors[i].consensusParams.Load()
+
+		assert.Equal(t, newMaxBytes, reactorParams.Block.MaxBytes, "reactor %d should have updated consensus params MaxBytes", i)
+		assert.Equal(t, newMaxGas, reactorParams.Block.MaxGas, "reactor %d should have updated consensus params MaxGas", i)
+		assert.NotEqual(t, initialParams.Block.MaxBytes, reactorParams.Block.MaxBytes, "reactor %d consensus params should have changed", i)
+	}
+
+	// Wait for a new block to ensure updates persist
+	timeoutWaitGroup(N, func(j int) {
+		<-blocksSubs[j].Out()
+	})
+
+	// Block notification happens slightly before updating consensus params,
+	// sleep to let the event fire
+	time.Sleep(10 * time.Millisecond)
+
+	// Verify params are still updated after subsequent blocks
+	finalParams := reactors[0].consensusParams.Load()
+	assert.Equal(t, newMaxBytes, finalParams.Block.MaxBytes, "reactor should maintain updated consensus params after block 4")
+}
+
+// consensusParamsUpdatingApp wraps an ABCI application and returns consensus params
+// updates at a specific height to test the reactor's handling of param updates.
+type consensusParamsUpdatingApp struct {
+	abci.Application
+	updateAtHeight int64
+	newMaxBytes    int64
+	newMaxGas      int64
+	t              *testing.T
+}
+
+func (app *consensusParamsUpdatingApp) FinalizeBlock(
+	ctx context.Context,
+	req *abci.RequestFinalizeBlock,
+) (*abci.ResponseFinalizeBlock, error) {
+	// Call the underlying app's FinalizeBlock
+	resp, err := app.Application.FinalizeBlock(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	// If we're at the target height, add consensus params updates
+	if req.Height == app.updateAtHeight {
+		resp.ConsensusParamUpdates = &cmtproto.ConsensusParams{
+			Block: &cmtproto.BlockParams{
+				MaxBytes: app.newMaxBytes,
+				MaxGas:   app.newMaxGas,
+			},
+		}
+		app.t.Log("returning updating consensus params", "request", req.Height, "update app height", app.updateAtHeight)
+	}
+
+	return resp, nil
+}
+
+//

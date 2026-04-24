@@ -26,8 +26,9 @@ type Pool[T any] struct {
 
 	scaler *ThroughputLatencyScaler
 
-	workers   map[int]*worker[T]
-	workersWg sync.WaitGroup
+	workers    map[int]*worker[T]
+	workersWg  sync.WaitGroup
+	routinesWg sync.WaitGroup
 
 	// callbacks to be called when the pool is scaled or shrunk
 	onScale  func()
@@ -67,11 +68,6 @@ func WithOnShrink[T any](onShrink func()) Option[T] {
 func WithOnStay[T any](onStay func()) Option[T] {
 	return func(p *Pool[T]) { p.onStay = onStay }
 }
-
-// interval to sleep when the priority queue is idle
-// note that this should be fine because most of the time the queue will be busy.
-// I also explored var cond for a more efficient solution, but it's not worth the complexity for now.
-const priorityQueueIdleInterval = 50 * time.Millisecond
 
 // New Pool constructor.
 func New[T any](
@@ -122,8 +118,17 @@ func (p *Pool[T]) Start() {
 		p.scale()
 	}
 
-	go p.monitor()
-	go p.pipePriorityQueue()
+	p.routinesWg.Add(2)
+
+	go func() {
+		defer p.routinesWg.Done()
+		p.monitorRoutine()
+	}()
+
+	go func() {
+		defer p.routinesWg.Done()
+		p.pipePriorityQueueRoutine()
+	}()
 }
 
 // Stop stops the pool and all workers
@@ -146,16 +151,22 @@ func (p *Pool[T]) Stop() {
 		p.removeWorker(id)
 	}
 
-	// close stop chan first (!)
+	// close stop chan first, this leads to p.stopped() returning true
 	close(p.stoppedCh)
-	close(p.inbound)
 
 	// unblock read operations
 	p.mu.Unlock()
 
-	p.logger.Info("Waiting for workers to finish")
+	// wait for routines to finish (stopped: true) and then close the inbound chan
+	p.routinesWg.Wait()
+	close(p.inbound)
+
+	// wait for workers to finish
 	p.workersWg.Wait()
-	p.logger.Info("Stopped pool")
+}
+
+func (p *Pool[T]) Scaler() *ThroughputLatencyScaler {
+	return p.scaler
 }
 
 // Push adds a message directly to the pool FIFO queue.
@@ -201,15 +212,7 @@ func (p *Pool[T]) Cap() int {
 }
 
 func (w *worker[T]) run() {
-	w.pool.workersWg.Add(1)
-
-	defer func() {
-		w.pool.workersWg.Done()
-		if r := recover(); r != nil {
-			w.pool.logger.Error("Panic in pool worker", "panic", r)
-		}
-	}()
-
+	defer w.pool.workersWg.Done()
 	for {
 		select {
 		case <-w.closeCh:
@@ -227,6 +230,14 @@ func (w *worker[T]) run() {
 }
 
 func (p *Pool[T]) handleMessage(msg T) {
+	defer func() {
+		// if we panic processing a message, simply log an error and let the
+		// caller decide if we should continue processing more
+		if r := recover(); r != nil {
+			p.logger.Error("Panic handling message", "panic", r)
+		}
+	}()
+
 	now := time.Now()
 	p.receive(msg)
 	timeTaken := time.Since(now)
@@ -235,8 +246,8 @@ func (p *Pool[T]) handleMessage(msg T) {
 	p.scaler.Track(timeTaken)
 }
 
-// monitor the pool and autoscale it based on the load
-func (p *Pool[T]) monitor() {
+// monitorRoutine the pool and autoscale it based on the load
+func (p *Pool[T]) monitorRoutine() {
 	ticker := time.NewTicker(p.scaler.EpochDuration())
 	defer ticker.Stop()
 
@@ -288,6 +299,7 @@ func (p *Pool[T]) scale() {
 
 	p.workers[p.seqNum] = w
 
+	p.workersWg.Add(1)
 	go w.run()
 
 	if p.onScale != nil {
@@ -328,17 +340,21 @@ func (p *Pool[T]) removeWorker(id int) {
 	delete(p.workers, id)
 }
 
-// pipePriorityQueue pipes messages from the priority queue to the inbound channel
-func (p *Pool[T]) pipePriorityQueue() {
+// pipePriorityQueueRoutine pipes messages from the priority queue to the inbound channel
+func (p *Pool[T]) pipePriorityQueueRoutine() {
 	for {
-		if p.stopped() {
-			return
-		}
-
 		value, ok := p.priorityQueue.Pop()
 		if !ok {
-			time.Sleep(priorityQueueIdleInterval)
-			continue
+			// the queue is now empty, wait for the queue to signal that new
+			// values are available before trying to pop again (or the pool has
+			// stopped)
+			select {
+			case <-p.stoppedCh:
+				return
+			case <-p.priorityQueue.WaitForValues():
+				// new work available
+				continue
+			}
 		}
 
 		tt, ok := value.(T)

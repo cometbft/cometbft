@@ -30,8 +30,8 @@ type Metrics struct {
 	PeerReceiveBytesTotal metrics.Counter `metrics_labels:"peer_id,chID"`
 	// Number of bytes sent to a given peer.
 	PeerSendBytesTotal metrics.Counter `metrics_labels:"peer_id,chID"`
-	// Pending bytes to be sent to a given peer.
-	PeerPendingSendBytes metrics.Gauge `metrics_labels:"peer_id"`
+	// Number of messages that are currently being sent to a given peer.
+	PeerSendQueueSize metrics.Gauge `metrics_labels:"peer_id"`
 	// Number of transactions submitted by each peer.
 	NumTxs metrics.Gauge `metrics_labels:"peer_id"`
 	// Number of bytes of each message type received.
@@ -42,6 +42,8 @@ type Metrics struct {
 	MessagesReceived metrics.Counter `metrics_labels:"message_type,reactor"`
 	// Number of messages in flight (wip by reactor)
 	MessagesReactorInFlight metrics.Gauge `metrics_labels:"message_type,reactor"`
+	// Duration between receiving a message and submitting it to the reactor
+	MessagesReactorPendingDuration metrics.Histogram `metrics_labels:"message_type,reactor"`
 	// Duration of the message receive operation by reactor
 	MessageReactorReceiveDuration metrics.Histogram `metrics_labels:"message_type,reactor"`
 	// Concurrency of the incoming message queue for a given reactor

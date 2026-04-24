@@ -388,15 +388,29 @@ func NewNodeWithContext(
 		}
 	}
 
-	// Determine whether we should do block sync. This must happen after the handshake, since the
-	// app may modify the validator set, specifying ourself as the only validator.
-	blockSync := !onlyValidatorIsUs(state, localAddr)
-	waitSync := stateSync || blockSync
-
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
 
-	// Make MempoolReactor
-	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, waitSync, memplMetrics, logger)
+	// these bools might be a bit confusing, but here's the breakdown:
+	var (
+		// comet's spec initializes the node in BLOCKSYNC mode by default
+		// if not a single validator (eg local-only node) and not doing state sync first
+		enableBlockSync = !onlyValidatorIsUs(state, localAddr) && !stateSync
+
+		// consensus reactor should NOT be active (should be blocked waiting) unless state sync is finished,
+		// or blocksync is enabled. But in adaptive sync mode, we instantly UNBLOCK it!
+		consensusWaitForSync = stateSync || (enableBlockSync && !config.BlockSync.AdaptiveSync)
+
+		// mempool follows the same rules as the consensus reactor.
+		// RPC can accept and gossip mempool txs even if chain is not yet synced.
+		mempoolWaitForSync = stateSync || (enableBlockSync && !config.BlockSync.AdaptiveSync)
+	)
+
+	if config.BlockSync.AdaptiveSync {
+		logger.Info("Adaptive sync (blocksync + consensus) is enabled!")
+	}
+
+	// create mempool with its reactor
+	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, mempoolWaitForSync, memplMetrics, logger)
 
 	evidenceReactor, evidencePool, err := createEvidenceReactor(config, dbProvider, stateStore, blockStore, logger)
 	if err != nil {
@@ -412,6 +426,7 @@ func NewNodeWithContext(
 		evidencePool,
 		blockStore,
 		sm.BlockExecutorWithMetrics(smMetrics),
+		sm.BlockExecutorWithBlockTimeTolerance(config.Consensus.BlockTimeTolerance),
 	)
 
 	offlineStateSyncHeight := int64(0)
@@ -421,15 +436,25 @@ func NewNodeWithContext(
 			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s; expected state store height to be %v", err, state.LastBlockHeight))
 		}
 	}
-	// Don't start block sync if we're doing a state sync first.
-	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, localAddr, logger, bsMetrics, offlineStateSyncHeight)
+
+	bcReactor, err := createBlocksyncReactor(
+		enableBlockSync,
+		config,
+		state,
+		blockExec,
+		blockStore,
+		localAddr,
+		offlineStateSyncHeight,
+		logger,
+		bsMetrics,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("could not create blocksync reactor: %w", err)
 	}
 
 	consensusReactor, consensusState := createConsensusReactor(
 		config, state, blockExec, blockStore, mempool, evidencePool,
-		privValidator, csMetrics, waitSync, eventBus, consensusLogger, offlineStateSyncHeight,
+		privValidator, csMetrics, consensusWaitForSync, eventBus, consensusLogger, offlineStateSyncHeight,
 	)
 
 	err = stateStore.SetOfflineStateSyncHeight(0)
@@ -521,6 +546,9 @@ func NewNodeWithContext(
 		sw = switcher
 	} else {
 		p2pLogger.Info("Using go-libp2p transport!")
+		if state.LastBlockHeight != 0 {
+			p2pLogger.Warn("EXPERIMENTAL: go-libp2p transport is enabled. Only enable this setting if it can be activated simultaneously for all validators on the network and peer IDs have been predetermined and exchanged.")
+		}
 
 		reactors := []lp2p.SwitchReactor{
 			{Name: "MEMPOOL", Reactor: mempoolReactor},
@@ -641,13 +669,7 @@ func (n *Node) OnStart() error {
 
 	// Run state sync
 	if n.stateSync {
-		bcR, ok := n.bcReactor.(blockSyncReactor)
-		if !ok {
-			return fmt.Errorf("this blocksync reactor does not support switching from state sync")
-		}
-		err := startStateSync(n.stateSyncReactor, bcR, n.stateSyncProvider,
-			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncGenesis)
-		if err != nil {
+		if err := n.performStateSync(); err != nil {
 			return fmt.Errorf("failed to start state sync: %w", err)
 		}
 	}
@@ -753,6 +775,7 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 		MempoolReactor:   n.mempoolReactor,
 		EventBus:         n.eventBus,
 		Mempool:          n.mempool,
+		IsAdaptiveSync:   n.config.BlockSync.AdaptiveSync,
 
 		Logger: n.Logger.With("module", "rpc"),
 

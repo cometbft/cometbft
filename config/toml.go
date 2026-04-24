@@ -336,10 +336,6 @@ dial_timeout = "{{ .P2P.DialTimeout }}"
 # Enabled set true to use go-libp2p for networking instead of CometBFT's p2p.
 enabled = {{ .P2P.LibP2PConfig.Enabled }}
 
-# Disables resource manager.
-# Warning! This might consume all of the system's resources.
-disable_resource_manager = {{ .P2P.LibP2PConfig.DisableResourceManager }}
-
 # Bootstrap peers to connect to
 # format: { host, id, private (opt), persistent (opt), unconditional (opt) }
 {{- $bps := .P2P.LibP2PConfig.BootstrapPeers -}}
@@ -351,6 +347,55 @@ bootstrap_peers = [{{ range $bps }}
 {{- end }}
 ]
 {{- end }}
+
+# Options for scaling concurrent p2p message queues.
+# Tune workers to keep the system near the ideal operating point:
+# enough concurrency for throughput while keeping processing latency low.
+[p2p.libp2p.scaler]
+
+# Min and max concurrent worker range.
+min_workers = {{ .P2P.LibP2PConfig.Scaler.MinWorkers }}
+max_workers = {{ .P2P.LibP2PConfig.Scaler.MaxWorkers }}
+
+# Target latency threshold:
+# scale up when observed latency is below this value, scale down when above it.
+threshold_latency = "{{ .P2P.LibP2PConfig.Scaler.ThresholdLatency }}"
+
+# Override a specific reactor (case-insensitive), for example:
+# [[p2p.libp2p.scaler.overrides]]
+# reactor = "BLOCKSYNC"
+# min_workers = 2
+# max_workers = 16
+# threshold_latency = "250ms"
+#
+# By default, MEMPOOL reactor is overridden to have increased throughput
+# If you want to disable this, explicitly set override to an empty list:
+# overrides = []
+{{- range .P2P.LibP2PConfig.Scaler.Overrides }}
+[[p2p.libp2p.scaler.overrides]]
+reactor = "{{ .Reactor }}"
+min_workers = {{ .MinWorkers }}
+max_workers = {{ .MaxWorkers }}
+threshold_latency = "{{ .ThresholdLatency }}"
+{{- end }}
+
+# Configuration for resource limits
+[p2p.libp2p.limits]
+
+# Resource management modes:
+# - disabled: no resource limits. Use only in trusted environments (e.g. local dev, testing).
+#   Disabling limits can expose the node to resource exhaustion from malicious peers.
+# - default: libp2p's built-in limits. Memory is 1/8th of total system RAM, capped at 128MB min
+#   and 1GB max. Suitable for most production deployments.
+# - custom: disable limits for app protocols but enforce max_peers and max_peer_streams.
+#   Use when you need tighter control over peer count and stream concurrency.
+mode = "{{ .P2P.LibP2PConfig.Limits.Mode }}"
+
+# Maximum number of peers (custom mode only)
+max_peers = {{ .P2P.LibP2PConfig.Limits.MaxPeers }}
+
+# Maximum number of concurrent streams per peer (custom mode only)
+max_peer_streams = {{ .P2P.LibP2PConfig.Limits.MaxPeerStreams }}
 
 #######################################################
 ###          Mempool Configuration Option          ###
@@ -365,7 +410,8 @@ bootstrap_peers = [{{ range $bps }}
 #  - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
 #  for storing, disseminating and proposing txs). "create_empty_blocks=false" is
 #  not supported.
-type = "flood"
+# - "app"    : app-side mempool (the ABCI app is responsible for mempool, comet only broadcasts txs).
+type = "{{ .Mempool.Type }}"
 
 # Recheck (default: true) defines whether CometBFT should recheck the
 # validity for all remaining transaction in the mempool after a block.
@@ -438,6 +484,17 @@ max_batch_bytes = {{ .Mempool.MaxBatchBytes }}
 experimental_max_gossip_connections_to_persistent_peers = {{ .Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers }}
 experimental_max_gossip_connections_to_non_persistent_peers = {{ .Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers }}
 
+# App mempool only: size of LRU cache for seen transactions (deduplication).
+seen_cache_size = {{ .Mempool.SeenCacheSize }}
+# App mempool only: max bytes passed to ReapTxs (0 = no limit).
+reap_max_bytes = {{ .Mempool.ReapMaxBytes }}
+# App mempool only: max gas passed to ReapTxs (0 = no limit).
+reap_max_gas = {{ .Mempool.ReapMaxGas }}
+# App mempool only: interval between ReapTxs calls when streaming txs from app.
+reap_interval = "{{ .Mempool.ReapInterval }}"
+# App mempool only: delay after which a tx is forgotten for ABCI.CheckTx
+check_tx_retry_delay = "{{ .Mempool.CheckTxRetryDelay }}"
+
 #######################################################
 ###         State Sync Configuration Options        ###
 #######################################################
@@ -490,6 +547,11 @@ max_snapshot_chunks = {{ .StateSync.MaxSnapshotChunks }}
 #   1) "v0" - the default block sync implementation
 version = "{{ .BlockSync.Version }}"
 
+# Experimental Adaptive sync (bool):
+#
+# Run both BLOCKSYNC and CONSENSUS for improved liveness, connectivity, and performance.
+adaptive_sync = {{ .BlockSync.AdaptiveSync }}
+
 #######################################################
 ###         Consensus Configuration Options         ###
 #######################################################
@@ -530,6 +592,9 @@ create_empty_blocks_interval = "{{ .Consensus.CreateEmptyBlocksInterval }}"
 # Reactor sleep duration parameters
 peer_gossip_sleep_duration = "{{ .Consensus.PeerGossipSleepDuration }}"
 peer_query_maj23_sleep_duration = "{{ .Consensus.PeerQueryMaj23SleepDuration }}"
+
+# Maximum allowed difference between proposed block time and wall-clock time.
+block_time_tolerance = "{{ .Consensus.BlockTimeTolerance }}"
 
 #######################################################
 ###         Storage Configuration Options           ###

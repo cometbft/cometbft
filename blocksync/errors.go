@@ -7,8 +7,16 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 )
 
-// ErrNilMessage is returned when provided message is empty
-var ErrNilMessage = errors.New("message cannot be nil")
+var (
+	// ErrNilMessage is returned when provided message is empty
+	ErrNilMessage = errors.New("message cannot be nil")
+
+	// ErrAlreadyEnabled is returned when block sync is already enabled
+	ErrAlreadyEnabled = errors.New("block sync is already enabled")
+
+	// ErrPeerTimeout is returned when a peer does not send us anything
+	ErrPeerTimeout = errors.New("peer did not send us anything")
+)
 
 // ErrInvalidHeight is returned when peer informs of a status with invalid height
 type ErrInvalidHeight struct {

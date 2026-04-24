@@ -66,6 +66,25 @@ func TestDebug(t *testing.T) {
 	}
 }
 
+func TestWarn(t *testing.T) {
+	var bufWarn bytes.Buffer
+
+	lw := log.NewTMLogger(&bufWarn)
+	lw.Warn("test warn message", "key", "value")
+
+	msg := strings.TrimSpace(bufWarn.String())
+	if !strings.Contains(msg, "test warn message") {
+		t.Errorf("expected logger msg to contain 'test warn message', got %s", msg)
+	}
+	if !strings.Contains(msg, "key=value") {
+		t.Errorf("expected logger msg to contain 'key=value', got %s", msg)
+	}
+	// Warn level should produce "W" prefix (from "warn"[0]-32)
+	if !strings.Contains(msg, "W[") && !strings.Contains(msg, "warn") {
+		t.Errorf("expected warn level in output, got %s", msg)
+	}
+}
+
 func TestError(t *testing.T) {
 	var bufErr bytes.Buffer
 

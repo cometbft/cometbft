@@ -35,7 +35,7 @@ func TestPeerSet(t *testing.T) {
 		assert.Nil(t, gotPeer)
 
 		// ACT & ASSERT #2: add -> get(ok) -> has(ok)
-		peerB, err := ps.Add(hostB.ID(), PeerAddOptions{
+		peerB, err := ps.Add(hostB.AddrInfo(), PeerAddOptions{
 			Private:       true,
 			Persistent:    true,
 			Unconditional: true,
@@ -69,7 +69,7 @@ func TestPeerSet(t *testing.T) {
 	})
 
 	t.Run("Safeguards", func(t *testing.T) {
-		t.Run("Not exists in addr book", func(t *testing.T) {
+		t.Run("Peer has no addresses", func(t *testing.T) {
 			// ARRANGE
 			hosts := makeTestHosts(t, 2)
 			hostA := hosts[0]
@@ -78,7 +78,7 @@ func TestPeerSet(t *testing.T) {
 			ps := NewPeerSet(hostA, p2p.NopMetrics(), log.NewNopLogger())
 
 			// ACT
-			_, err := ps.Add(hostB.ID(), PeerAddOptions{})
+			_, err := ps.Add(peer.AddrInfo{ID: hostB.ID()}, PeerAddOptions{})
 
 			// ASSERT
 			require.Error(t, err)
@@ -98,8 +98,8 @@ func TestPeerSet(t *testing.T) {
 			ps := NewPeerSet(hostA, p2p.NopMetrics(), log.NewNopLogger())
 
 			// ACT
-			_, err1 := ps.Add(hostB.ID(), PeerAddOptions{})
-			_, err2 := ps.Add(hostB.ID(), PeerAddOptions{})
+			_, err1 := ps.Add(hostB.AddrInfo(), PeerAddOptions{})
+			_, err2 := ps.Add(hostB.AddrInfo(), PeerAddOptions{})
 
 			// ASSERT
 			require.NoError(t, err1)
@@ -139,7 +139,7 @@ func TestPeerSet(t *testing.T) {
 			err := hostA.Connect(ctx, hosts[i].AddrInfo())
 			require.NoError(t, err)
 
-			_, err = ps.Add(hosts[i].ID(), PeerAddOptions{})
+			_, err = ps.Add(hosts[i].AddrInfo(), PeerAddOptions{})
 			require.NoError(t, err)
 		}
 
@@ -173,7 +173,7 @@ func TestPeerSet(t *testing.T) {
 				err := hostA.Connect(ctx, hosts[i].AddrInfo())
 				require.NoError(t, err)
 
-				_, err = ps.Add(hosts[i].ID(), PeerAddOptions{})
+				_, err = ps.Add(hosts[i].AddrInfo(), PeerAddOptions{})
 				require.NoError(t, err)
 			}
 
@@ -201,7 +201,7 @@ func TestPeerSet(t *testing.T) {
 				err := hostA.Connect(ctx, hosts[i].AddrInfo())
 				require.NoError(t, err)
 
-				_, err = ps.Add(hosts[i].ID(), PeerAddOptions{})
+				_, err = ps.Add(hosts[i].AddrInfo(), PeerAddOptions{})
 				require.NoError(t, err)
 
 				expectedIDs = append(expectedIDs, peerIDToKey(hosts[i].ID()))

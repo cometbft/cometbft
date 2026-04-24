@@ -222,6 +222,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "peer_height",
 			Help:      "PeerHeight is the consensus reactor's view of what height their peers are currently on. It is reported with a separate tag for every peer we are connected to, and updated when their height updates in our consensus state.",
 		}, append(labels, "peer_id")).With(labelsAndValues...),
+		RoundIncrementTotal: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "round_increment_total",
+			Help:      "RoundIncrementTotal is the number of times that the consensus reactor has incremented above the initial round in a step.",
+		}, append(labels, "step")).With(labelsAndValues...),
 	}
 }
 
@@ -261,5 +267,6 @@ func NopMetrics() *Metrics {
 		RoundVotingPowerPercent:     discard.NewGauge(),
 		LateVotes:                   discard.NewCounter(),
 		PeerHeight:                  discard.NewGauge(),
+		RoundIncrementTotal:         discard.NewCounter(),
 	}
 }

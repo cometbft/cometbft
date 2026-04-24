@@ -9,6 +9,10 @@ import (
 
 const (
 	CodeTypeOK uint32 = 0
+
+	// CodeTypeRetry is a code that indicates a transaction should be retried later.
+	// Any code >= CodeTypeRetry is considered retryable.
+	CodeTypeRetry uint32 = 32_000
 )
 
 // IsOK returns true if Code is OK.

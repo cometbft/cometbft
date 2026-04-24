@@ -61,6 +61,10 @@ type PriorityQueue struct {
 	levels               []*Queue
 	highestNonEmptyLevel int
 	mu                   sync.Mutex
+
+	// valuesAvailable signals that there are values available in one of the
+	// queues that can be popped
+	valuesAvailable chan struct{}
 }
 
 func NewPriorityQueue(priorities int) *PriorityQueue {
@@ -78,6 +82,7 @@ func NewPriorityQueue(priorities int) *PriorityQueue {
 		levels:               queues,
 		highestNonEmptyLevel: -1,
 		mu:                   sync.Mutex{},
+		valuesAvailable:      make(chan struct{}, 1),
 	}
 }
 
@@ -97,7 +102,22 @@ func (q *PriorityQueue) Push(value any, priority int) error {
 		q.highestNonEmptyLevel = idx
 	}
 
+	q.notifyValuesAvailable()
+
 	return nil
+}
+
+// notifyValuesAvailable notifies callers waiting on the channel returned by
+// WaitForValues that work is values are available to be popped.
+func (q *PriorityQueue) notifyValuesAvailable() {
+	// if there is already a value in the channel (valuesAvailable is buffered
+	// with cap 1), then do nothing, since there is already a notification
+	// waiting to be pulled off the channel telling callers that values are
+	// available
+	select {
+	case q.valuesAvailable <- struct{}{}:
+	default:
+	}
 }
 
 func (q *PriorityQueue) Pop() (any, bool) {
@@ -127,4 +147,10 @@ func (q *PriorityQueue) updateHighestNonEmpty(lastLevel int) {
 	for q.highestNonEmptyLevel >= 0 && q.levels[q.highestNonEmptyLevel].Len() == 0 {
 		q.highestNonEmptyLevel--
 	}
+}
+
+// WaitForValues returns a channel that will have a value in it when new values
+// are ready to be popped from the priority queue.
+func (q *PriorityQueue) WaitForValues() <-chan struct{} {
+	return q.valuesAvailable
 }

@@ -193,4 +193,153 @@ func TestPool(t *testing.T) {
 		assert.Eventually(t, expect, 2*time.Second, 500*time.Millisecond)
 	})
 
+	t.Run("PriorityQueueWakeup", func(t *testing.T) {
+		// ARRANGE
+		// Given a single-worker pool with small inbound capacity to force blocking
+		scaler := NewThroughputLatencyScaler(
+			1,
+			1,
+			90.0,
+			10*time.Millisecond,
+			100*time.Millisecond, logger,
+		)
+
+		var (
+			consumed          atomic.Int64
+			blockConsumer     = make(chan struct{})
+			consumerUnblocked atomic.Bool
+		)
+
+		consumer := func(_ int) {
+			if !consumerUnblocked.Load() {
+				<-blockConsumer
+				consumerUnblocked.Store(true)
+			}
+			consumed.Add(1)
+		}
+
+		pool := New(
+			scaler,
+			consumer,
+			1,
+			WithLogger[int](logger),
+			WithPriorityQueue[int](NewPriorityQueue(10)),
+		)
+
+		pool.Start()
+		defer pool.Stop()
+
+		// ACT
+		// Given 100 items pushed rapidly while consumer is blocked
+		const totalItems = 100
+		for i := 1; i <= totalItems; i++ {
+			require.NoError(t, pool.PushPriority(i, 1))
+		}
+
+		time.Sleep(50 * time.Millisecond)
+		close(blockConsumer)
+
+		// ASSERT
+		require.Eventually(t, func() bool {
+			return consumed.Load() == totalItems
+		}, 5*time.Second, 10*time.Millisecond,
+			"expected %d items to be consumed, got %d", totalItems, consumed.Load())
+	})
+
+	t.Run("SurvivesPanicInHandler", func(t *testing.T) {
+		const (
+			minWorkers     = 2
+			maxWorkers     = 4
+			normalMessages = 10
+		)
+
+		// ARRANGE
+		scaler := NewThroughputLatencyScaler(
+			minWorkers, maxWorkers,
+			90.0,
+			10*time.Millisecond,
+			50*time.Millisecond, // short epoch so autoscaler has a chance to react
+			logger,
+		)
+
+		var processed atomic.Int64
+
+		consumer := func(msg int) {
+			if msg < 0 {
+				panic("error")
+			}
+			processed.Add(1)
+		}
+
+		pool := New(scaler, consumer, 16, WithLogger[int](logger))
+		pool.Start()
+		defer pool.Stop()
+
+		// ACT
+
+		// push enough messages to panic all workers
+		for i := 0; i < maxWorkers; i++ {
+			pool.Push(-1)
+			pool.Push(-1) // extra to catch scaled-up workers
+		}
+
+		for i := 1; i <= normalMessages; i++ {
+			pool.Push(i)
+		}
+
+		// give the autoscaler time to scale up and exhaust all worker slots
+		time.Sleep(1 * time.Second)
+
+		// ASSERT
+		require.Eventually(t, func() bool {
+			return processed.Load() == normalMessages
+		}, 3*time.Second, 50*time.Millisecond,
+			"expected all %d messages to be processed but instead got %d",
+			normalMessages, processed.Load())
+	})
+
+	t.Run("PriorityQueueBurstAfterDrain", func(t *testing.T) {
+		// ARRANGE
+		// Given pool with priority queue
+		scaler := NewThroughputLatencyScaler(2, 4, 90.0, 10*time.Millisecond, 50*time.Millisecond, logger)
+
+		var consumed atomic.Int64
+
+		consumer := func(_ int) {
+			consumed.Add(1)
+		}
+
+		pool := New(
+			scaler,
+			consumer,
+			10,
+			WithLogger[int](logger),
+			WithPriorityQueue[int](NewPriorityQueue(10)),
+		)
+
+		pool.Start()
+		defer pool.Stop()
+
+		// ACT
+		// Given first burst that drains completely
+		for i := 0; i < 50; i++ {
+			require.NoError(t, pool.PushPriority(i, 1))
+		}
+
+		require.Eventually(t, func() bool {
+			return consumed.Load() == 50
+		}, 2*time.Second, 10*time.Millisecond)
+
+		// Given second burst after queue is empty
+		for i := 50; i < 100; i++ {
+			require.NoError(t, pool.PushPriority(i, 1))
+		}
+
+		// ASSERT
+		require.Eventually(t, func() bool {
+			return consumed.Load() == 100
+		}, 2*time.Second, 10*time.Millisecond,
+			"expected 100 items consumed after second burst, got %d", consumed.Load())
+	})
+
 }

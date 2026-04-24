@@ -1,6 +1,7 @@
 package mempool
 
 import (
+	"fmt"
 	"sync/atomic"
 	"testing"
 
@@ -21,6 +22,26 @@ func BenchmarkReap(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		mp.ReapMaxBytesMaxGas(100_000_000, -1)
+	}
+}
+
+func BenchmarkReapMaxBytesMaxGas(b *testing.B) {
+	for _, numTxs := range []int{100, 1000, 10000} {
+		b.Run(fmt.Sprintf("txs=%d", numTxs), func(b *testing.B) {
+			app := kvstore.NewInMemoryApplication()
+			cc := proxy.NewLocalClientCreator(app)
+			mp, cleanup := newMempoolWithApp(cc)
+			defer cleanup()
+
+			mp.config.Size = 100_000_000
+			addTxs(b, mp, 0, numTxs)
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				mp.ReapMaxBytesMaxGas(100_000_000, -1)
+			}
+		})
 	}
 }
 

@@ -382,6 +382,33 @@ func stripExtensions(ec *types.ExtendedCommit) bool {
 	return stripped
 }
 
+func TestLoadBlockProto(t *testing.T) {
+	state, bs, cleanup := makeStateAndBlockStore()
+	defer cleanup()
+
+	// missing block returns nil
+	require.Nil(t, bs.LoadBlockProto(1))
+
+	block, err := state.MakeBlock(1, nil, new(types.Commit), nil, state.Validators.GetProposer().Address)
+	require.NoError(t, err)
+	partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
+	require.NoError(t, err)
+	seenCommit := makeTestExtCommit(1, cmttime.Now()).ToCommit()
+	bs.SaveBlock(block, partSet, seenCommit)
+
+	pbb := bs.LoadBlockProto(1)
+	require.NotNil(t, pbb)
+
+	// proto representation must round-trip back to the same block
+	loaded, err := types.BlockFromProto(pbb)
+	require.NoError(t, err)
+	require.Equal(t, block.Hash(), loaded.Hash())
+
+	// LoadBlock and LoadBlockProto must agree
+	direct := bs.LoadBlock(1)
+	require.Equal(t, direct.Hash(), loaded.Hash())
+}
+
 // TestSaveBlockWithExtendedCommitPanicOnAbsentExtension tests that saving a
 // block with an extended commit panics when the extension data is absent.
 func TestSaveBlockWithExtendedCommitPanicOnAbsentExtension(t *testing.T) {

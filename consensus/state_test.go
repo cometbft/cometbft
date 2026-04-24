@@ -2690,35 +2690,35 @@ func makeCommitWithValidator(height int64, validatorAddr types.Address) *types.C
 // double_sign_check_height configurations.
 func TestDoubleSigning(t *testing.T) {
 	testCases := []struct {
-		name                string
+		name                  string
 		doubleSignCheckHeight int64
-		height              int64
-		seenCommits         []struct {
-			height                int64
+		height                int64
+		seenCommits           []struct {
+			height                 int64
 			signedByLocalValidator bool
-			missing               bool
+			missing                bool
 		}
-		wantErr                  error
-		assertNoLoadSeenCommit   bool
-		assertNotPanics          bool
+		wantErr                error
+		assertNoLoadSeenCommit bool
+		assertNotPanics        bool
 	}{
 		{
 			name:                  "height-one-checks-one-previous-block",
 			doubleSignCheckHeight: 1,
 			height:                10,
 			seenCommits: []struct {
-				height                int64
+				height                 int64
 				signedByLocalValidator bool
-				missing               bool
+				missing                bool
 			}{
 				{height: 9, signedByLocalValidator: true},
 			},
 			wantErr: ErrSignatureFoundInPastBlocks,
 		},
 		{
-			name:                  "height-zero-disabled",
-			doubleSignCheckHeight: 0,
-			height:                10,
+			name:                   "height-zero-disabled",
+			doubleSignCheckHeight:  0,
+			height:                 10,
 			assertNoLoadSeenCommit: true,
 		},
 		{
@@ -2726,9 +2726,9 @@ func TestDoubleSigning(t *testing.T) {
 			doubleSignCheckHeight: 2,
 			height:                10,
 			seenCommits: []struct {
-				height                int64
+				height                 int64
 				signedByLocalValidator bool
-				missing               bool
+				missing                bool
 			}{
 				{height: 9},
 				{height: 8, signedByLocalValidator: true},
@@ -2740,9 +2740,9 @@ func TestDoubleSigning(t *testing.T) {
 			doubleSignCheckHeight: 2,
 			height:                10,
 			seenCommits: []struct {
-				height                int64
+				height                 int64
 				signedByLocalValidator bool
-				missing               bool
+				missing                bool
 			}{
 				{height: 9},
 				{height: 8},
@@ -2753,9 +2753,9 @@ func TestDoubleSigning(t *testing.T) {
 			doubleSignCheckHeight: 10,
 			height:                1,
 			seenCommits: []struct {
-				height                int64
+				height                 int64
 				signedByLocalValidator bool
-				missing               bool
+				missing                bool
 			}{
 				{height: 0, missing: true},
 			},

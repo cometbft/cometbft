@@ -5,6 +5,43 @@
 ### DEPENDENCIES
 
 ### BUG FIXES
+- `[mempool]` App mempool waits before broadcasting.
+  ([\#5800](https://github.com/cometbft/cometbft/pull/5800))
+
+### IMPROVEMENTS
+
+### FEATURES
+
+- `[mempool]` Add app mempool & related ABCI methods, InsertTx and ReapTxs.
+  ([\#5790](https://github.com/cometbft/cometbft/pull/5790))
+- `[mempool]` Allow CheckTx retries for BroadcastTxSync
+  ([\#5802](https://github.com/cometbft/cometbft/pull/5802))
+
+### STATE-BREAKING
+
+### API-BREAKING
+
+## v0.39.1
+
+*April 14, 2026*
+
+### BUG FIXES
+
+- `[autopool]` Fix autopool worker message handling recovery
+  ([\#5775](https://github.com/cometbft/cometbft/pull/5775))
+- `[types]` Fix nil vote handling
+  ([\#5777](https://github.com/cometbft/cometbft/pull/5777))
+
+### IMPROVEMENTS
+
+- `[node]` do not log experimental warning for libp2p if starting node at height 0
+  ([\#5776](https://github.com/cometbft/cometbft/pull/5776))
+
+## v0.39.0
+
+*April 10, 2026*
+
+### BUG FIXES
 
 - `[evidence]` Add validation for Light Client Attack evidence ByzantineValidators
   ([\#5638](https://github.com/cometbft/cometbft/pull/5638))
@@ -23,12 +60,9 @@
   ([\#5663](https://github.com/cometbft/cometbft/pull/5663))
 - `[adaptivesync]` Simplify loop, reuse blockExec.ValidateBlock
   ([\#5717](https://github.com/cometbft/cometbft/pull/5717))
-- `[types]` Add signed header validation to light client attack evidence
-  ([\#5757](https://github.com/cometbft/cometbft/pull/5757))
-
 
 ### IMPROVEMENTS
-
+- `[consensus]` perf(consensus): skip fsync for unsigned internal messages (block parts) ([\#5695](https://github.com/cometbft/cometbft/pull/5695))
 - `[ci]`: add lp2p testnet ([\#5643](https://github.com/cometbft/cometbft/pull/5643))
 - `[mempool]` feat!(p2p): introduce follower-mode. Improve lib-p2p integraap access
 - `[types]` Add validation for `AuthorityParams.Authority` field in consensus params, enforcing a maximum length of 256 characters ([#5511](https://github.com/cometbft/cometbft/pull/5511))
@@ -37,9 +71,7 @@
 - `[e2e]` add support for testing different keytypes, including BLS
   ([\#3513](https://github.com/cometbft/cometbft/pull/3513))
 - `[crypto]` Reduce BLS signature size to 48 bytes by increasing pubkey size to
-  192 bytes ([\#3624](https://github.com/cometbft/cometbft/issues/3624)
-- `[statesync]` Add configurable `max-snapshot-chunks` parameter to validate max amount of chunks in a `SnapshotResponse`.
-  ([\#5549](https://github.com/cometbft/cometbft/pull/5549))
+  192 bytes ([\#3624](https://github.com/cometbft/cometbft/issues/3624))
 - `[p2p]` feat(lp2p): make reactor queue configurable
   ([\#5662](https://github.com/cometbft/cometbft/pull/5662))
 - `[cli]` print lib-p2p peer id
@@ -127,22 +159,16 @@
 
 - `[evidence]` Use structured logging for consensus buffer flush error
   ([\#5465](https://github.com/cometbft/cometbft/pull/5465))
-- `[consensus]` Reject oversized proposals
-  ([\#5324](https://github.com/cometbft/cometbft/pull/5324))
-- `[store]` Prune extended commits properly
-  ([5275](https://github.com/cometbft/cometbft/issues/5275))
 - `[mempool]` Fix mutex in `CListMempool.Flush` method, by changing it from read-lock to write-lock
   ([\#2443](https://github.com/cometbft/cometbft/issues/2443)).
 - `[crypto/bls12381]` Fix JSON marshal of private key
   ([\#4772](https://github.com/cometbft/cometbft/pull/4772))
 - `[crypto/bls12381]` Modify `Sign`, `Verify` to use `dstMinPk`
   ([\#4783](https://github.com/cometbft/cometbft/issues/4783))
-- `[bits]` Validate BitArray mismatched Bits and Elems length
-  ([ASA-2025-003](https://github.com/cometbft/cometbft/security/advisories/GHSA-hrhf-2vcr-ghch))
 - `[cli]` Prevent inadvertent rollover of IPs in `cometbft testnet` config generator
   ([\#5541](https://github.com/cometbft/cometbft/pull/5541))
-
-### STATE-BREAKING
+- `[abci]` fix(abci): prevent panic on unlock in socket server panic recovery
+  ([\#5593](https://github.com/cometbft/cometbft/pull/5593))
 
 ### API-BREAKING
 
@@ -154,6 +180,38 @@
 - `[rpc]` The endpoints `broadcast_tx_*` now return an error when the node is
   performing block sync or state sync.
   ([\#785](https://github.com/cometbft/cometbft/issues/785))
+
+## v0.38.21
+
+*January 23, 2026*
+
+### IMPROVEMENTS
+
+- `[statesync]` Add configurable `max-snapshot-chunks` parameter to validate max amount of chunks in a `SnapshotResponse`.
+  ([\#5549](https://github.com/cometbft/cometbft/pull/5549))
+
+## v0.38.20
+
+*December 12, 2025*
+
+## v0.38.19
+
+*October 14, 2025*
+
+This release fixes two security issues, including ([ASA-2025-003](https://github.com/cometbft/cometbft/security/advisories/GHSA-hrhf-2vcr-ghch)).
+Users are encouraged to upgrade as soon as possible.
+
+Additionally included is a bug fix to properly prune extended commits (with
+vote extensions).
+
+### BUG-FIXES
+
+- `[consensus]` Reject oversized proposals
+  ([\#5324](https://github.com/cometbft/cometbft/pull/5324))
+- `[store]` Prune extended commits properly
+  ([5275](https://github.com/cometbft/cometbft/issues/5275))
+- `[bits]` Validate BitArray mismatched Bits and Elems length
+  ([ASA-2025-003](https://github.com/cometbft/cometbft/security/advisories/GHSA-hrhf-2vcr-ghch))
 
 ## v0.38.18
 

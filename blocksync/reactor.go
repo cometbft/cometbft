@@ -10,7 +10,6 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/lp2p"
 	"github.com/cometbft/cometbft/p2p"
 	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
 	sm "github.com/cometbft/cometbft/state"
@@ -29,6 +28,9 @@ const (
 
 	// interval for trying to apply a block
 	intervalTrySync = 10 * time.Millisecond
+
+	// adaptiveSync ticker. Still quick, just bursts fewer cpu cycles
+	intervalAdaptiveSync = 5 * intervalTrySync
 )
 
 type consensusReactor interface {
@@ -547,37 +549,57 @@ FOR_LOOP:
 			firstPartSetHeader := firstParts.Header()
 			firstID := types.BlockID{Hash: first.Hash(), PartSetHeader: firstPartSetHeader}
 
-			// Finally, verify the first block using the second's commit
-			// NOTE: we can probably make this more efficient, but note that calling
-			// first.Hash() doesn't verify the tx contents, so MakePartSet() is
-			// currently necessary.
-			// TODO(sergio): Should we also validate against the extended commit?
-			err = state.Validators.VerifyCommitLight(chainID, firstID, first.Height, second.LastCommit)
-
-			if err == nil {
-				// validate the block before we persist it
-				err = r.blockExec.ValidateBlock(state, first)
-			}
-
 			// vote extension validations
 			presentExtCommit := extCommit != nil
 			extensionsEnabled := state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height)
+
 			if presentExtCommit != extensionsEnabled {
 				err = fmt.Errorf("non-nil extended commit must be received iff vote extensions are enabled for its height "+
 					"(height %d, non-nil extended commit %t, extensions enabled %t)",
 					first.Height, presentExtCommit, extensionsEnabled,
 				)
-			}
-			if err == nil && extensionsEnabled {
-				// if vote extensions were required at this height, ensure they exist.
-				err = extCommit.EnsureExtensions(true)
-			}
-			if err == nil && extensionsEnabled {
-				// if vote extensions were required at this height, validate the extended commit
-				err = state.Validators.VerifyCommitLight(chainID, firstID, first.Height, extCommit.ToCommit())
+				r.handleValidationFailure(first, second, err)
+				continue FOR_LOOP
 			}
 
+			// Fully verify second.LastCommit to ensure all signatures are valid.
+			err = state.Validators.VerifyCommit(chainID, firstID, first.Height, second.LastCommit)
 			if err != nil {
+				r.handleValidationFailure(first, second, err)
+				continue FOR_LOOP
+			}
+
+			// Fully verify extended commit if present
+			if extensionsEnabled {
+				// if vote extensions were required at this height, ensure they exist.
+				if err = extCommit.EnsureExtensions(true); err != nil {
+					r.handleValidationFailure(first, second, err)
+					continue FOR_LOOP
+				}
+
+				// if vote extensions were required at this height, verify all
+				// signatures in the extended commit since it is persisted to
+				// the store.
+				if err = state.Validators.VerifyCommit(chainID, firstID, first.Height, extCommit.ToCommit()); err != nil {
+					r.handleValidationFailure(first, second, err)
+					continue FOR_LOOP
+				}
+			}
+
+			// Validate the block before we persist it.
+			//
+			// For the first block synced, we must fully verify first.LastCommit
+			// since it was not verified as a prior second.LastCommit.
+			//
+			// For subsequent blocks, first.LastCommit was already fully verified
+			// in the previous iteration (as second.LastCommit), so we skip the
+			// redundant VerifyCommit() inside ValidateBlock.
+			blockValidator := r.blockExec.ValidateBlockSkipLastCommit
+			if blocksSynced == 0 {
+				blockValidator = r.blockExec.ValidateBlock
+			}
+
+			if err = blockValidator(state, first); err != nil {
 				r.handleValidationFailure(first, second, err)
 				continue FOR_LOOP
 			}
@@ -685,7 +707,7 @@ func (r *Reactor) handleValidationFailure(blockA, blockB *types.Block, err error
 
 func (r *Reactor) stopPeerForError(peer p2p.Peer, err error) {
 	if r.adaptiveSyncEnabled && shouldBeReconnected(err) {
-		err = &lp2p.ErrorTransient{Err: err}
+		err = &p2p.ErrorTransient{Err: err}
 	}
 
 	r.Switch.StopPeerForError(peer, err)

@@ -274,6 +274,41 @@ func TestMempoolConfigValidateBasic(t *testing.T) {
 	assert.Error(t, cfg.ValidateBasic())
 }
 
+func TestMempoolConfigValidateBasic_AppMempool(t *testing.T) {
+	// App mempool validation only runs when type is "app"
+	cfg := config.TestMempoolConfig()
+	cfg.Type = config.MempoolTypeApp
+	cfg.SeenCacheSize = 100
+	cfg.ReapInterval = 500 * time.Millisecond
+	assert.NoError(t, cfg.ValidateBasic())
+
+	// SeenCacheSize < 0 fails when type is app
+	cfg.SeenCacheSize = -1
+	assert.Error(t, cfg.ValidateBasic())
+	cfg.SeenCacheSize = 100
+
+	// ReapInterval <= 0 fails when type is app
+	cfg.ReapInterval = 0
+	assert.Error(t, cfg.ValidateBasic())
+	cfg.ReapInterval = -1
+	assert.Error(t, cfg.ValidateBasic())
+	cfg.ReapInterval = 500 * time.Millisecond
+	assert.NoError(t, cfg.ValidateBasic())
+}
+
+func TestMempoolConfigValidateBasic_AppMempoolValidationSkippedForOtherTypes(t *testing.T) {
+	// When type is flood or nop, app mempool fields are not validated
+	cfg := config.TestMempoolConfig()
+	cfg.Type = config.MempoolTypeFlood
+	cfg.SeenCacheSize = -1 // invalid for app, but we skip validation
+	assert.NoError(t, cfg.ValidateBasic())
+
+	cfg.Type = config.MempoolTypeNop
+	cfg.SeenCacheSize = -1
+	cfg.ReapInterval = 0
+	assert.NoError(t, cfg.ValidateBasic())
+}
+
 func TestStateSyncConfigValidateBasic(t *testing.T) {
 	cfg := config.TestStateSyncConfig()
 	require.NoError(t, cfg.ValidateBasic())
@@ -316,6 +351,9 @@ func TestConsensusConfig_ValidateBasic(t *testing.T) {
 		"PeerQueryMaj23SleepDuration":          {func(c *config.ConsensusConfig) { c.PeerQueryMaj23SleepDuration = time.Second }, false},
 		"PeerQueryMaj23SleepDuration negative": {func(c *config.ConsensusConfig) { c.PeerQueryMaj23SleepDuration = -1 }, true},
 		"DoubleSignCheckHeight negative":       {func(c *config.ConsensusConfig) { c.DoubleSignCheckHeight = -1 }, true},
+		"BlockTimeTolerance":                   {func(c *config.ConsensusConfig) { c.BlockTimeTolerance = time.Second }, false},
+		"BlockTimeTolerance zero":              {func(c *config.ConsensusConfig) { c.BlockTimeTolerance = 0 }, true},
+		"BlockTimeTolerance negative":          {func(c *config.ConsensusConfig) { c.BlockTimeTolerance = -1 }, true},
 	}
 	for desc, tc := range testcases {
 		// appease linter

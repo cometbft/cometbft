@@ -25,6 +25,7 @@ import (
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	smmocks "github.com/cometbft/cometbft/state/mocks"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -2641,6 +2642,172 @@ func findBlockSizeLimit(t *testing.T, height, maxBytes int64, cs *State, partSiz
 	}
 	require.Fail(t, "We shouldn't hit the end of the loop")
 	return nil, nil
+}
+
+// newStateForDoubleSignTest builds the minimal State needed by checkDoubleSigningRisk.
+func newStateForDoubleSignTest(t *testing.T, doubleSignCheckHeight int64) (*State, *smmocks.BlockStore) {
+	t.Helper()
+
+	consConfig := config.Consensus
+	consConfig.DoubleSignCheckHeight = doubleSignCheckHeight
+
+	mockBS := &smmocks.BlockStore{}
+
+	cs := &State{
+		config:     consConfig,
+		blockStore: mockBS,
+	}
+	// Set logger directly on the embedded BaseService to avoid nil-dereference
+	// on timeoutTicker which is not needed for this unit test.
+	cs.Logger = log.TestingLogger()
+
+	// Wire a real private validator so privValidatorPubKey can be set.
+	pv := types.NewMockPV()
+	pubKey, err := pv.GetPubKey()
+	require.NoError(t, err)
+
+	cs.privValidator = pv
+	cs.privValidatorPubKey = pubKey
+
+	return cs, mockBS
+}
+
+// makeCommitWithValidator builds a commit with a single commit signature.
+func makeCommitWithValidator(height int64, validatorAddr types.Address) *types.Commit {
+	return &types.Commit{
+		Height: height,
+		Signatures: []types.CommitSig{
+			{
+				BlockIDFlag:      types.BlockIDFlagCommit,
+				ValidatorAddress: validatorAddr,
+				Timestamp:        time.Now(),
+			},
+		},
+	}
+}
+
+// TestDoubleSigning tests the checkDoubleSigningRisk method across a range of
+// double_sign_check_height configurations.
+func TestDoubleSigning(t *testing.T) {
+	testCases := []struct {
+		name                  string
+		doubleSignCheckHeight int64
+		height                int64
+		seenCommits           []struct {
+			height                 int64
+			signedByLocalValidator bool
+			missing                bool
+		}
+		wantErr                error
+		assertNoLoadSeenCommit bool
+		assertNotPanics        bool
+	}{
+		{
+			name:                  "height-one-checks-one-previous-block",
+			doubleSignCheckHeight: 1,
+			height:                10,
+			seenCommits: []struct {
+				height                 int64
+				signedByLocalValidator bool
+				missing                bool
+			}{
+				{height: 9, signedByLocalValidator: true},
+			},
+			wantErr: ErrSignatureFoundInPastBlocks,
+		},
+		{
+			name:                   "height-zero-disabled",
+			doubleSignCheckHeight:  0,
+			height:                 10,
+			assertNoLoadSeenCommit: true,
+		},
+		{
+			name:                  "height-two-checks-two-blocks",
+			doubleSignCheckHeight: 2,
+			height:                10,
+			seenCommits: []struct {
+				height                 int64
+				signedByLocalValidator bool
+				missing                bool
+			}{
+				{height: 9},
+				{height: 8, signedByLocalValidator: true},
+			},
+			wantErr: ErrSignatureFoundInPastBlocks,
+		},
+		{
+			name:                  "height-two-no-signature-found",
+			doubleSignCheckHeight: 2,
+			height:                10,
+			seenCommits: []struct {
+				height                 int64
+				signedByLocalValidator bool
+				missing                bool
+			}{
+				{height: 9},
+				{height: 8},
+			},
+		},
+		{
+			name:                  "small-chain-height",
+			doubleSignCheckHeight: 10,
+			height:                1,
+			seenCommits: []struct {
+				height                 int64
+				signedByLocalValidator bool
+				missing                bool
+			}{
+				{height: 0, missing: true},
+			},
+			assertNotPanics: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cs, mockBS := newStateForDoubleSignTest(t, tc.doubleSignCheckHeight)
+			localAddr := cs.privValidatorPubKey.Address()
+			otherAddr := append(types.Address(nil), localAddr...)
+			require.NotEmpty(t, otherAddr)
+			otherAddr[len(otherAddr)-1] ^= 0x01
+
+			for _, seenCommit := range tc.seenCommits {
+				var commit *types.Commit
+				switch {
+				case seenCommit.missing:
+					commit = nil
+				case seenCommit.signedByLocalValidator:
+					commit = makeCommitWithValidator(seenCommit.height, localAddr)
+				default:
+					commit = makeCommitWithValidator(seenCommit.height, otherAddr)
+				}
+
+				mockBS.On("LoadSeenCommit", seenCommit.height).Return(commit)
+			}
+
+			var err error
+			if tc.assertNotPanics {
+				require.NotPanics(t, func() {
+					err = cs.checkDoubleSigningRisk(tc.height)
+				})
+			} else {
+				err = cs.checkDoubleSigningRisk(tc.height)
+			}
+
+			if tc.wantErr != nil {
+				require.ErrorIs(t, err, tc.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+
+			if tc.assertNoLoadSeenCommit {
+				mockBS.AssertNotCalled(t, "LoadSeenCommit")
+				return
+			}
+
+			mockBS.AssertExpectations(t)
+		})
+	}
 }
 
 // countingWAL is a WAL spy that records which messages triggered Write vs WriteSync.

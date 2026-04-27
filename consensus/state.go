@@ -934,19 +934,11 @@ func (cs *State) handleMsg(mi msgInfo) {
 		// This prevented the reactor from being able to retrieve the most updated
 		// version of the RoundState. The reactor needs the updated RoundState to
 		// gossip the now completed block.
-		//
-		// This code can be further improved by either always operating on a copy
-		// of RoundState and only locking when switching out State's copy of
-		// RoundState with the updated copy or by emitting RoundState events in
-		// more places for routines depending on it to listen for.
 		cs.mtx.Unlock()
 
 		cs.mtx.Lock()
 		if added && cs.ProposalBlockParts.IsComplete() {
 			cs.handleCompleteProposal(msg.Height)
-		}
-		if added {
-			cs.statsMsgQueue <- mi
 		}
 
 		if err != nil && msg.Round != cs.Round {
@@ -963,9 +955,6 @@ func (cs *State) handleMsg(mi msgInfo) {
 		// attempt to add the vote and dupeout the validator if it's a duplicate signature
 		// if the vote gives us a 2/3-any or 2/3-one, we transition
 		added, err = cs.tryAddVote(msg.Vote, peerID)
-		if added {
-			cs.statsMsgQueue <- mi
-		}
 
 		// if err == ErrAddingVote {
 		// TODO: punish peer
@@ -987,6 +976,12 @@ func (cs *State) handleMsg(mi msgInfo) {
 	default:
 		cs.Logger.Error("unknown msg type", "type", fmt.Sprintf("%T", msg))
 		return
+	}
+
+	if added {
+		cs.mtx.Unlock()
+		cs.statsMsgQueue <- mi
+		cs.mtx.Lock()
 	}
 
 	if err != nil {

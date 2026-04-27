@@ -153,3 +153,11 @@ whitepapers which CometBFT will continue to build on.
 [lint-url-v037x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml?query=branch%3Av0.37.x
 [lint-url-v038x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml?query=branch%3Av0.38.x
 [tm-core]: https://github.com/tendermint/tendermint
+
+## 💰 Bounty Contribution
+
+- **Task:** Malicious Peer Can Disrupt Blocksync Synchronization
+- **Reward:** $8
+- **Source:** GitHub-Bounty
+- **Date:** 2026-04-27
+

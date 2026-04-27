@@ -680,7 +680,7 @@ type bpRequester struct {
 	pool        *BlockPool
 	height      int64
 	gotBlockCh  chan struct{}
-	redoCh      chan p2p.ID // redo may got multiple messages, add peerId to identify repeat
+	redoCh      chan p2p.ID // buffered so redo signals from both peers are not dropped
 	newHeightCh chan int64
 
 	mtx          cmtsync.Mutex
@@ -696,7 +696,7 @@ func newBPRequester(pool *BlockPool, height int64) *bpRequester {
 		pool:        pool,
 		height:      height,
 		gotBlockCh:  make(chan struct{}, 1),
-		redoCh:      make(chan p2p.ID, 1),
+		redoCh:      make(chan p2p.ID, 2), // both removePeer() and requester.redo() can enqueue before draining
 		newHeightCh: make(chan int64, 1),
 
 		peerID:       "",
@@ -867,10 +867,48 @@ func (bpr *bpRequester) newHeight(height int64) {
 	}
 }
 
+// requestRetryTimer wraps time.Timer with helpers that safely drain pending
+// events before reuse so bpRequester can reset a single timer across retries.
+type requestRetryTimer struct {
+	timer    *time.Timer
+	duration time.Duration
+}
+
+func newRequestRetryTimer(duration time.Duration) *requestRetryTimer {
+	t := time.NewTimer(duration)
+	if !t.Stop() {
+		<-t.C
+	}
+	return &requestRetryTimer{
+		timer:    t,
+		duration: duration,
+	}
+}
+
+func (rt *requestRetryTimer) Stop() {
+	if !rt.timer.Stop() {
+		select {
+		case <-rt.timer.C:
+		default:
+		}
+	}
+}
+
+func (rt *requestRetryTimer) Reset() {
+	rt.Stop()
+	rt.timer.Reset(rt.duration)
+}
+
+func (rt *requestRetryTimer) C() <-chan time.Time {
+	return rt.timer.C
+}
+
 // Responsible for making more requests as necessary
 // Returns only when a block is found (e.g. AddBlock() is called)
 func (bpr *bpRequester) requestRoutine() {
 	gotBlock := false
+	retryTimer := newRequestRetryTimer(requestRetrySeconds * time.Second)
+	defer retryTimer.Stop()
 
 OUTER_LOOP:
 	for {
@@ -881,8 +919,7 @@ OUTER_LOOP:
 			bpr.pickSecondPeerAndSendRequest()
 		}
 
-		retryTimer := time.NewTimer(requestRetrySeconds * time.Second)
-		defer retryTimer.Stop()
+		retryTimer.Reset()
 
 		for {
 			select {
@@ -893,7 +930,7 @@ OUTER_LOOP:
 				return
 			case <-bpr.Quit():
 				return
-			case <-retryTimer.C:
+			case <-retryTimer.C():
 				if !gotBlock {
 					bpr.Logger.Debug("Retrying block request(s) after timeout", "height", bpr.height, "peer", bpr.peerID, "secondPeerID", bpr.secondPeerID)
 					bpr.reset(bpr.peerID)
@@ -910,7 +947,6 @@ OUTER_LOOP:
 				// If both peers returned NoBlockResponse or bad block, reschedule both
 				// requests. If not, wait for the other peer.
 				if len(bpr.requestedFrom()) == 0 {
-					retryTimer.Stop()
 					continue OUTER_LOOP
 				}
 			case newHeight := <-bpr.newHeightCh:
@@ -920,10 +956,7 @@ OUTER_LOOP:
 					// If the second peer was just set, reset the retryTimer to give the
 					// second peer a chance to respond.
 					if picked := bpr.pickSecondPeerAndSendRequest(); picked {
-						if !retryTimer.Stop() {
-							<-retryTimer.C
-						}
-						retryTimer.Reset(requestRetrySeconds * time.Second)
+						retryTimer.Reset()
 					}
 				}
 			case <-bpr.gotBlockCh:

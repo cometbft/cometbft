@@ -875,16 +875,17 @@ type requestRetryTimer struct {
 }
 
 func newRequestRetryTimer(duration time.Duration) *requestRetryTimer {
+	t := time.NewTimer(duration)
+	if !t.Stop() {
+		<-t.C
+	}
 	return &requestRetryTimer{
-		timer:    time.NewTimer(duration),
+		timer:    t,
 		duration: duration,
 	}
 }
 
 func (rt *requestRetryTimer) Stop() {
-	if rt == nil || rt.timer == nil {
-		return
-	}
 	if !rt.timer.Stop() {
 		select {
 		case <-rt.timer.C:
@@ -946,7 +947,6 @@ OUTER_LOOP:
 				// If both peers returned NoBlockResponse or bad block, reschedule both
 				// requests. If not, wait for the other peer.
 				if len(bpr.requestedFrom()) == 0 {
-					retryTimer.Stop()
 					continue OUTER_LOOP
 				}
 			case newHeight := <-bpr.newHeightCh:

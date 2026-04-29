@@ -173,17 +173,64 @@ func TestReactorSet(t *testing.T) {
 		assert.Len(t, reactorA.receivedEnvelopes(), 1)
 		assert.Len(t, reactorB.receivedEnvelopes(), 0)
 	})
+
+	t.Run("recover", func(t *testing.T) {
+		// ARRANGE
+		ts := newReactorSetTestSuite(t)
+		rs := newReactorSet(ts.sw)
+
+		reactorA := ts.newReactor([]*conn.ChannelDescriptor{{ID: 0xE1}})
+
+		require.NoError(t, rs.Add(reactorA, "A"))
+		require.NoError(t, rs.Start(func(protocol.ID) {}))
+		t.Cleanup(rs.Stop)
+
+		// Given a reactor panic during receive
+		reactorA.OnReceive(func(e p2p.Envelope) {
+			panic("oops")
+		})
+
+		// ACT: receive for known reactor A
+		// It should panic
+		envelopeA := p2p.Envelope{
+			ChannelID: 0xE1,
+			Message:   &tmp2p.PexRequest{},
+		}
+
+		rs.Receive("A", "PexRequest", envelopeA, 5)
+
+		// ASSERT
+		// No panic the in the background workers
+		checkCalled := func() bool {
+			return len(reactorA.receivedEnvelopes()) == 1
+		}
+
+		require.Eventually(t, checkCalled, 2*time.Second, 10*time.Millisecond)
+
+		checkLogContainsPanic := func() bool {
+			if len(reactorA.receivedEnvelopes()) != 1 {
+				return false
+			}
+
+			return ts.logBuffer.HasMatchingLine("Panic during receive", "reactor=A", `err="panic: oops"`)
+		}
+
+		require.Eventually(t, checkLogContainsPanic, 2*time.Second, 10*time.Millisecond)
+	})
 }
 
 type reactorSetTestSuite struct {
-	t  *testing.T
-	sw *Switch
+	t         *testing.T
+	sw        *Switch
+	logBuffer *syncBuffer
 }
 
 type reactorMock struct {
 	p2p.BaseReactor
 
 	mu sync.Mutex
+
+	onReceive func(e p2p.Envelope)
 
 	channels     []*conn.ChannelDescriptor
 	addPeers     []p2p.Peer
@@ -205,8 +252,9 @@ func newReactorSetTestSuite(t *testing.T, opts ...testOption) *reactorSetTestSui
 	require.NoError(t, err)
 
 	return &reactorSetTestSuite{
-		t:  t,
-		sw: sw,
+		t:         t,
+		sw:        sw,
+		logBuffer: logBuffer,
 	}
 }
 
@@ -252,9 +300,19 @@ func (r *reactorMock) RemovePeer(peer p2p.Peer, _ any) {
 
 func (r *reactorMock) Receive(e p2p.Envelope) {
 	r.mu.Lock()
+	r.received = append(r.received, e)
+	r.mu.Unlock()
+
+	if r.onReceive != nil {
+		r.onReceive(e)
+	}
+}
+
+func (r *reactorMock) OnReceive(handler func(e p2p.Envelope)) {
+	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	r.received = append(r.received, e)
+	r.onReceive = handler
 }
 
 func (r *reactorMock) receivedEnvelopes() []p2p.Envelope {

@@ -7,6 +7,8 @@
 ### BUG FIXES
 - `[mempool]` App mempool waits before broadcasting.
   ([\#5800](https://github.com/cometbft/cometbft/pull/5800))
+- `[p2p]` Add lp2p reactor panic recovery
+  ([\#5816](https://github.com/cometbft/cometbft/pull/5816))
 
 ### IMPROVEMENTS
 

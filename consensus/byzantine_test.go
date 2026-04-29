@@ -120,7 +120,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		eventBuses[i] = css[i].eventBus
 		reactors[i].SetEventBus(eventBuses[i])
 
-		blocksSub, err := eventBuses[i].Subscribe(ctx, testSubscriber, types.EventQueryNewBlock, 100)
+		blocksSub, err := eventBuses[i].Subscribe(context.Background(), testSubscriber, types.EventQueryNewBlock, 100)
 		require.NoError(t, err)
 		blocksSubs = append(blocksSubs, blocksSub)
 
@@ -267,8 +267,9 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 						return
 					}
 				case <-sub.Canceled():
-					return
-				case <-ctx.Done():
+					if err := sub.Err(); err != nil {
+						t.Errorf("subscription canceled unexpectedly: %v", err)
+					}
 					return
 				}
 			}

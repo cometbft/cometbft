@@ -251,6 +251,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	// Evidence should be submitted and committed at the third height but
 	// we will check the first six just in case
 	evidenceFromEachValidator := make([]types.Evidence, nValidators)
+	subErrCh := make(chan error, nValidators)
 
 	wg := new(sync.WaitGroup)
 	for i := 0; i < nValidators; i++ {
@@ -268,7 +269,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 					}
 				case <-sub.Canceled():
 					if err := sub.Err(); err != nil {
-						t.Errorf("subscription canceled unexpectedly: %v", err)
+						subErrCh <- err
 					}
 					return
 				}
@@ -295,6 +296,8 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 				assert.Equal(t, prevoteHeight, ev.Height())
 			}
 		}
+	case err := <-subErrCh:
+		t.Fatalf("subscription unexpectedly canceled: %v", err)
 	case <-time.After(20 * time.Second):
 		t.Fatalf("Timed out waiting for validators to commit evidence")
 	}

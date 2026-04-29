@@ -288,6 +288,11 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 
 	select {
 	case <-done:
+		select {
+		case err := <-subErrCh:
+			t.Fatalf("subscription unexpectedly canceled: %v", err)
+		default:
+		}
 		for idx, ev := range evidenceFromEachValidator {
 			if assert.NotNil(t, ev, idx) {
 				ev, ok := ev.(*types.DuplicateVoteEvidence)
@@ -296,8 +301,6 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 				assert.Equal(t, prevoteHeight, ev.Height())
 			}
 		}
-	case err := <-subErrCh:
-		t.Fatalf("subscription unexpectedly canceled: %v", err)
 	case <-time.After(20 * time.Second):
 		t.Fatalf("Timed out waiting for validators to commit evidence")
 	}

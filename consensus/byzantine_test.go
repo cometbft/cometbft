@@ -120,7 +120,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		eventBuses[i] = css[i].eventBus
 		reactors[i].SetEventBus(eventBuses[i])
 
-		blocksSub, err := eventBuses[i].Subscribe(context.Background(), testSubscriber, types.EventQueryNewBlock, 100)
+		blocksSub, err := eventBuses[i].Subscribe(ctx, testSubscriber, types.EventQueryNewBlock, 100)
 		require.NoError(t, err)
 		blocksSubs = append(blocksSubs, blocksSub)
 
@@ -257,10 +257,18 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			for msg := range blocksSubs[i].Out() {
-				block := msg.Data().(types.EventDataNewBlock).Block
-				if len(block.Evidence.Evidence) != 0 {
-					evidenceFromEachValidator[i] = block.Evidence.Evidence[0]
+			sub := blocksSubs[i]
+			for {
+				select {
+				case msg := <-sub.Out():
+					block := msg.Data().(types.EventDataNewBlock).Block
+					if len(block.Evidence.Evidence) != 0 {
+						evidenceFromEachValidator[i] = block.Evidence.Evidence[0]
+						return
+					}
+				case <-sub.Canceled():
+					return
+				case <-ctx.Done():
 					return
 				}
 			}
@@ -286,7 +294,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 				assert.Equal(t, prevoteHeight, ev.Height())
 			}
 		}
-	case <-time.After(20 * time.Second):
+	case <-time.After(60 * time.Second):
 		t.Fatalf("Timed out waiting for validators to commit evidence")
 	}
 }

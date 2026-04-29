@@ -36,8 +36,7 @@ import (
 
 // Byzantine node sends two different prevotes (nil and blockID) to the same validator
 func TestByzantinePrevoteEquivocation(t *testing.T) {
-	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
-	defer cancel()
+	ctx := t.Context()
 
 	const nValidators = 4
 	const byzantineNode = 0
@@ -295,7 +294,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 				assert.Equal(t, prevoteHeight, ev.Height())
 			}
 		}
-	case <-ctx.Done():
+	case <-time.After(20 * time.Second):
 		t.Fatalf("Timed out waiting for validators to commit evidence")
 	}
 }

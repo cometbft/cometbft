@@ -390,6 +390,88 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 	}
 }
 
+func TestSetPeerRange_RejectsImplausiblyHighHeight(t *testing.T) {
+	requestsCh := make(chan BlockRequest, 10)
+	errorsCh := make(chan peerError, 10)
+
+	pool := NewBlockPool(100, requestsCh, errorsCh)
+	pool.SetLogger(log.TestingLogger())
+	err := pool.Start()
+	require.NoError(t, err)
+	t.Cleanup(func() { pool.Stop() })
+
+	// Height just at the limit should be accepted.
+	pool.SetPeerRange("legit", 1, 100+1_000_000)
+	assert.EqualValues(t, 100+1_000_000, pool.MaxPeerHeight())
+	assert.False(t, pool.IsPeerBanned("legit"))
+
+	// Height one over the limit should be rejected and peer banned.
+	pool.SetPeerRange("malicious", 1, 100+1_000_001)
+	assert.True(t, pool.IsPeerBanned("malicious"))
+	// maxPeerHeight must not be inflated by the rejected peer.
+	assert.EqualValues(t, 100+1_000_000, pool.MaxPeerHeight())
+
+	// Extreme height (math.MaxInt64) should be rejected.
+	pool.SetPeerRange("extreme", 1, math.MaxInt64)
+	assert.True(t, pool.IsPeerBanned("extreme"))
+	assert.EqualValues(t, 100+1_000_000, pool.MaxPeerHeight())
+}
+
+func TestRemovePeer_AlwaysRecalculatesMaxPeerHeight(t *testing.T) {
+	requestsCh := make(chan BlockRequest, 10)
+	errorsCh := make(chan peerError, 10)
+
+	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool.SetLogger(log.TestingLogger())
+	err := pool.Start()
+	require.NoError(t, err)
+	t.Cleanup(func() { pool.Stop() })
+
+	pool.SetPeerRange("A", 1, 100)
+	pool.SetPeerRange("B", 1, 200)
+	pool.SetPeerRange("C", 1, 300)
+	assert.EqualValues(t, 300, pool.MaxPeerHeight())
+
+	// Remove the max-height peer: maxPeerHeight must drop.
+	pool.RemovePeer("C")
+	assert.EqualValues(t, 200, pool.MaxPeerHeight())
+
+	// Remove a non-max peer: maxPeerHeight must remain correct.
+	pool.RemovePeer("A")
+	assert.EqualValues(t, 200, pool.MaxPeerHeight())
+
+	// Remove last peer: maxPeerHeight must be 0.
+	pool.RemovePeer("B")
+	assert.EqualValues(t, 0, pool.MaxPeerHeight())
+}
+
+func TestHeightInflationDoS_SingleStatusResponse(t *testing.T) {
+	requestsCh := make(chan BlockRequest, 10)
+	errorsCh := make(chan peerError, 10)
+
+	pool := NewBlockPool(100, requestsCh, errorsCh)
+	pool.SetLogger(log.TestingLogger())
+	err := pool.Start()
+	require.NoError(t, err)
+	t.Cleanup(func() { pool.Stop() })
+
+	// Legitimate peer at pool height (node is synced).
+	pool.SetPeerRange("good", 1, 100)
+
+	// Malicious peer tries to inflate height — should be rejected.
+	pool.SetPeerRange("attacker", 1, 999_999_999_999)
+	assert.True(t, pool.IsPeerBanned("attacker"))
+	assert.EqualValues(t, 100, pool.MaxPeerHeight(), "maxPeerHeight must not be inflated by rejected peer")
+
+	// Removing the attacker must not affect maxPeerHeight.
+	pool.RemovePeer("attacker")
+	assert.EqualValues(t, 100, pool.MaxPeerHeight())
+
+	// Pool should consider itself caught up — not stuck chasing an unreachable height.
+	time.Sleep(peerConnWait + 1*time.Second)
+	assert.True(t, pool.IsCaughtUp(), "pool must not be stuck after malicious peer is rejected")
+}
+
 func TestBlockPoolMaliciousNodeMaxInt64(t *testing.T) {
 	// Setup:
 	// * each peer has blocks 1..N but the malicious peer reports 1..max(int64) (blocks N+1... do not exist)

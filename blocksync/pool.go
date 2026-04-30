@@ -382,6 +382,20 @@ func (pool *BlockPool) SetPeerRange(peerID p2p.ID, base int64, height int64) {
 		return
 	}
 
+	// Reject implausibly high heights to prevent a malicious peer from inflating
+	// maxPeerHeight via a single StatusResponse and stalling blocksync (#5801).
+	// 1M blocks (~69 days at 6s/block) is generous for legitimate syncing nodes.
+	const maxHeightDrift = 1_000_000
+	if height > pool.height+maxHeightDrift {
+		pool.Logger.Error("Peer reported implausibly high height; banning",
+			"peer", peerID, "reportedHeight", height, "poolHeight", pool.height)
+		if _, exists := pool.peers[peerID]; exists {
+			pool.removePeer(peerID)
+		}
+		pool.banPeer(peerID)
+		return
+	}
+
 	peer := pool.peers[peerID]
 	if peer != nil {
 		if base < peer.base || height < peer.height {
@@ -443,11 +457,7 @@ func (pool *BlockPool) removePeer(peerID p2p.ID) {
 			}
 		}
 
-		// Find a new peer with the biggest height and update maxPeerHeight if the
-		// peer's height was the biggest.
-		if peer.height == pool.maxPeerHeight {
-			pool.updateMaxPeerHeight()
-		}
+		pool.updateMaxPeerHeight()
 	}
 }
 

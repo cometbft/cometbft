@@ -11,7 +11,7 @@
   ([\#5816](https://github.com/cometbft/cometbft/pull/5816))
 
 - `[light]`: stop witness comparison after divergence checks
-([\#5820](https://github.com/cometbft/cometbft/pull/5820))
+  ([\#5820](https://github.com/cometbft/cometbft/pull/5820))
 
 ### IMPROVEMENTS
 

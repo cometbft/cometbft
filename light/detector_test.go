@@ -1,6 +1,7 @@
 package light_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -427,4 +428,58 @@ func TestClientDivergentTraces4(t *testing.T) {
 	_, err = c.VerifyLightBlockAtHeight(ctx, 10, bTime.Add(1*time.Hour))
 	assert.Error(t, err)
 	assert.Equal(t, 1, len(c.Witnesses()))
+}
+
+func TestClientDivergentProposerPriorities(t *testing.T) {
+	const (
+		latestHeight = int64(10)
+		valSize      = 5
+	)
+
+	primaryHeaders, primaryValidators, _ := genMockNodeWithKeys(chainID, latestHeight, valSize, 2, bTime)
+	primary := mockp.New(chainID, primaryHeaders, primaryValidators)
+
+	witnessHeaders := make(map[int64]*types.SignedHeader, len(primaryHeaders))
+	witnessValidators := make(map[int64]*types.ValidatorSet, len(primaryValidators))
+	for height, header := range primaryHeaders {
+		witnessHeaders[height] = header
+	}
+	for height, valSet := range primaryValidators {
+		witnessValidators[height] = valSet
+	}
+
+	// Keep header hash identical while changing only proposer priorities in the validator set.
+	witnessValidators[latestHeight] = primaryValidators[latestHeight].CopyIncrementProposerPriority(1)
+	require.Equal(t, primaryHeaders[latestHeight].Hash(), witnessHeaders[latestHeight].Hash())
+	require.Equal(t, primaryValidators[latestHeight].Hash(), witnessValidators[latestHeight].Hash())
+	require.NotEqual(t,
+		primaryValidators[latestHeight].ProposerPriorityHash(),
+		witnessValidators[latestHeight].ProposerPriorityHash(),
+	)
+
+	witness := mockp.New(chainID, witnessHeaders, witnessValidators)
+	c, err := light.NewClient(
+		ctx,
+		chainID,
+		light.TrustOptions{
+			Period: 4 * time.Hour,
+			Height: 1,
+			Hash:   primaryHeaders[1].Hash(),
+		},
+		primary,
+		[]provider.Provider{witness},
+		dbs.New(dbm.NewMemDB(), chainID),
+		light.Logger(log.TestingLogger()),
+		light.MaxRetryAttempts(1),
+	)
+	require.NoError(t, err)
+
+	_, err = c.VerifyLightBlockAtHeight(ctx, latestHeight, bTime.Add(1*time.Hour))
+	require.Error(t, err)
+
+	var divergeErr light.ErrProposerPrioritiesDiverge
+	require.True(t, errors.As(err, &divergeErr), "expected ErrProposerPrioritiesDiverge, got %T: %v", err, err)
+	assert.Equal(t, 0, divergeErr.WitnessIndex)
+	assert.Equal(t, primaryValidators[latestHeight].ProposerPriorityHash(), divergeErr.PrimaryHash)
+	assert.Equal(t, witnessValidators[latestHeight].ProposerPriorityHash(), divergeErr.WitnessHash)
 }

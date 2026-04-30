@@ -17,6 +17,7 @@ import (
 
 func init() {
 	peerTimeout = 2 * time.Second
+	noBlockTimeout = 1 * time.Second
 }
 
 type testPeer struct {
@@ -317,6 +318,8 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 	peers.start()
 	t.Cleanup(func() { peers.stop() })
 
+	stopProducing := make(chan struct{})
+
 	// Simulate blocks created on each peer regularly and update pool max height.
 	go func() {
 		// Introduce each peer
@@ -329,6 +332,8 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 		for {
 			select {
 			case <-pool.Quit():
+				return
+			case <-stopProducing:
 				return
 			case <-ticker.C:
 				for _, peer := range peers {
@@ -377,7 +382,12 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 			peers[request.PeerID].inputChan <- inputData{t, pool, request}
 		case <-testTicker.C:
 			banned := pool.IsPeerBanned("bad")
-			bannedOnce = bannedOnce || banned // Keep bannedOnce true, even if the malicious peer gets unbanned
+			if banned && !bannedOnce {
+				bannedOnce = true
+				// Stop producing new blocks so the pool can declare itself caught up
+				// via the no-progress timeout.
+				close(stopProducing)
+			}
 			caughtUp := pool.IsCaughtUp()
 			// Success: pool caught up and malicious peer was banned at least once
 			if caughtUp && bannedOnce {
@@ -428,6 +438,8 @@ func TestBlockPoolMaliciousNodeMaxInt64(t *testing.T) {
 	peers.start()
 	t.Cleanup(func() { peers.stop() })
 
+	stopProducing := make(chan struct{})
+
 	// Simulate blocks created on each peer regularly and update pool max height.
 	go func() {
 		// Introduce each peer
@@ -444,6 +456,8 @@ func TestBlockPoolMaliciousNodeMaxInt64(t *testing.T) {
 		for {
 			select {
 			case <-pool.Quit():
+				return
+			case <-stopProducing:
 				return
 			case <-ticker.C:
 				for _, peer := range peers {
@@ -496,7 +510,12 @@ func TestBlockPoolMaliciousNodeMaxInt64(t *testing.T) {
 			peers[request.PeerID].inputChan <- inputData{t, pool, request}
 		case <-testTicker.C:
 			banned := pool.IsPeerBanned("bad")
-			bannedOnce = bannedOnce || banned // Keep bannedOnce true, even if the malicious peer gets unbanned
+			if banned && !bannedOnce {
+				bannedOnce = true
+				// Stop producing new blocks so the pool can declare itself caught up
+				// via the no-progress timeout.
+				close(stopProducing)
+			}
 			caughtUp := pool.IsCaughtUp()
 			// Success: pool caught up and malicious peer was banned at least once
 			if caughtUp && bannedOnce {

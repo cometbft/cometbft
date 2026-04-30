@@ -56,6 +56,9 @@ const (
 
 var peerTimeout = 15 * time.Second // not const so we can override with tests
 
+// not const so we can override with tests
+var noBlockTimeout = 30 * time.Second
+
 /*
 	Peers self report their heights when we join the block pool.
 	Starting from our latest pool.height, we request blocks
@@ -70,8 +73,9 @@ var peerTimeout = 15 * time.Second // not const so we can override with tests
 // BlockPool keeps track of the block sync peers, block requests and block responses.
 type BlockPool struct {
 	service.BaseService
-	startTime   time.Time
-	startHeight int64
+	startTime     time.Time
+	startHeight   int64
+	lastBlockTime time.Time // time of the last successfully popped block
 
 	mtx cmtsync.Mutex
 	// block requests
@@ -101,12 +105,13 @@ type BlockRequest struct {
 // requests and errors will be sent to requestsCh and errorsCh accordingly.
 func NewBlockPool(start int64, requestsCh chan<- BlockRequest, errorsCh chan<- peerError) *BlockPool {
 	bp := &BlockPool{
-		peers:       make(map[p2p.ID]*bpPeer),
-		bannedPeers: make(map[p2p.ID]time.Time),
-		requesters:  make(map[int64]*bpRequester),
-		height:      start,
-		startHeight: start,
-		numPending:  0,
+		peers:         make(map[p2p.ID]*bpPeer),
+		bannedPeers:   make(map[p2p.ID]time.Time),
+		requesters:    make(map[int64]*bpRequester),
+		height:        start,
+		startHeight:   start,
+		numPending:    0,
+		lastBlockTime: time.Now(),
 
 		requestsCh: requestsCh,
 		errorsCh:   errorsCh,
@@ -226,7 +231,15 @@ func (pool *BlockPool) IsCaughtUp() bool {
 	receivedBlockOrTimedOut := pool.height > 0 || time.Since(pool.startTime) > 5*time.Second
 	ourChainIsLongestAmongPeers := pool.maxPeerHeight == 0 || pool.height >= (pool.maxPeerHeight-1)
 	isCaughtUp := receivedBlockOrTimedOut && ourChainIsLongestAmongPeers
-	return isCaughtUp
+	if isCaughtUp {
+		return true
+	}
+
+	// Check the no-progress timeout.
+	// This is the eventual exit condition against malicious peers
+	// that report inflated heights they cannot deliver, because the timeout
+	// only depends on whether blocks are actually being received.
+	return time.Since(pool.lastBlockTime) >= noBlockTimeout
 }
 
 // PeekTwoBlocks returns blocks at pool.height and pool.height+1. We need to
@@ -265,6 +278,7 @@ func (pool *BlockPool) PopRequest() {
 	}
 	delete(pool.requesters, pool.height)
 	pool.height++
+	pool.lastBlockTime = time.Now()
 
 	// Re-evaluate maxPeerHeight: peers whose pruned base was just beyond the previous pool.height may now be able to contribute
 	pool.updateMaxPeerHeight()

@@ -5,6 +5,10 @@
 ### DEPENDENCIES
 
 ### BUG FIXES
+- `[mempool]` App mempool waits before broadcasting.
+  ([\#5800](https://github.com/cometbft/cometbft/pull/5800))
+- `[p2p]` Add lp2p reactor panic recovery
+  ([\#5816](https://github.com/cometbft/cometbft/pull/5816))
 
 - `[light]`: stop witness comparison after divergence checks
 ([\#5820](https://github.com/cometbft/cometbft/pull/5820))
@@ -12,6 +16,11 @@
 ### IMPROVEMENTS
 
 ### FEATURES
+
+- `[mempool]` Add app mempool & related ABCI methods, InsertTx and ReapTxs.
+  ([\#5790](https://github.com/cometbft/cometbft/pull/5790))
+- `[mempool]` Allow CheckTx retries for BroadcastTxSync
+  ([\#5802](https://github.com/cometbft/cometbft/pull/5802))
 
 ### STATE-BREAKING
 
@@ -58,7 +67,7 @@
   ([\#5717](https://github.com/cometbft/cometbft/pull/5717))
 
 ### IMPROVEMENTS
-
+- `[consensus]` perf(consensus): skip fsync for unsigned internal messages (block parts) ([\#5695](https://github.com/cometbft/cometbft/pull/5695))
 - `[ci]`: add lp2p testnet ([\#5643](https://github.com/cometbft/cometbft/pull/5643))
 - `[mempool]` feat!(p2p): introduce follower-mode. Improve lib-p2p integraap access
 - `[types]` Add validation for `AuthorityParams.Authority` field in consensus params, enforcing a maximum length of 256 characters ([#5511](https://github.com/cometbft/cometbft/pull/5511))
@@ -163,6 +172,8 @@
   ([\#4783](https://github.com/cometbft/cometbft/issues/4783))
 - `[cli]` Prevent inadvertent rollover of IPs in `cometbft testnet` config generator
   ([\#5541](https://github.com/cometbft/cometbft/pull/5541))
+- `[abci]` fix(abci): prevent panic on unlock in socket server panic recovery
+  ([\#5593](https://github.com/cometbft/cometbft/pull/5593))
 
 ### API-BREAKING
 

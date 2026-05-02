@@ -70,7 +70,7 @@ type Reactor struct {
 	adaptiveSyncEnabled bool
 
 	blockExec     *sm.BlockExecutor
-	store         sm.BlockStore
+	store         *store.BlockStore
 	pool          *BlockPool
 	localAddr     crypto.Address
 	poolRoutineWg sync.WaitGroup
@@ -279,8 +279,9 @@ func (r *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 // respondToPeer loads a block and sends it to the requesting peer,
 // if we have it. Otherwise, we'll respond saying we don't have it.
 func (r *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) {
-	block := r.store.LoadBlock(msg.Height)
-	if block == nil {
+	// Load the block directly in proto form to skip the BlockFromProto+ToProto round-trip.
+	bl := r.store.LoadBlockProto(msg.Height)
+	if bl == nil {
 		r.Logger.Info("Peer asking for a block we don't have", "src", src, "height", msg.Height)
 		src.TrySend(p2p.Envelope{
 			ChannelID: BlocksyncChannel,
@@ -300,15 +301,9 @@ func (r *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) {
 	if state.ConsensusParams.ABCI.VoteExtensionsEnabled(msg.Height) {
 		extCommit = r.store.LoadBlockExtendedCommit(msg.Height)
 		if extCommit == nil {
-			r.Logger.Error("Found block in store with no extended commit", "block", block)
+			r.Logger.Error("Found block in store with no extended commit", "height", msg.Height)
 			return
 		}
-	}
-
-	bl, err := block.ToProto()
-	if err != nil {
-		r.Logger.Error("Unable to convert the block to protobuf", "err", err)
-		return
 	}
 
 	src.TrySend(p2p.Envelope{

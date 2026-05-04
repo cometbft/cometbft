@@ -5,18 +5,17 @@
 ### DEPENDENCIES
 
 ### BUG FIXES
-<<<<<<< HEAD
-=======
 - `[mempool]` App mempool waits before broadcasting.
   ([\#5800](https://github.com/cometbft/cometbft/pull/5800))
 - `[p2p]` Add lp2p reactor panic recovery
   ([\#5816](https://github.com/cometbft/cometbft/pull/5816))
->>>>>>> 6bf6b898 (fix(lp2p): reactor panic recovery (#5816))
-
 - `[light]`: stop witness comparison after divergence checks
   ([\#5820](https://github.com/cometbft/cometbft/pull/5820))
 
 ### IMPROVEMENTS
+
+- `[consensus]` perf(consensus): skip fsync for unsigned internal messages (block parts)
+([\#5695](https://github.com/cometbft/cometbft/pull/5695))
 
 ### FEATURES
 
@@ -65,7 +64,6 @@
   ([\#5717](https://github.com/cometbft/cometbft/pull/5717))
 
 ### IMPROVEMENTS
-
 - `[ci]`: add lp2p testnet ([\#5643](https://github.com/cometbft/cometbft/pull/5643))
 - `[mempool]` feat!(p2p): introduce follower-mode. Improve lib-p2p integraap access
 - `[types]` Add validation for `AuthorityParams.Authority` field in consensus params, enforcing a maximum length of 256 characters ([#5511](https://github.com/cometbft/cometbft/pull/5511))

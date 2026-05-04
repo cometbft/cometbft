@@ -6,14 +6,16 @@
 
 ### BUG FIXES
 
-- `[autopool]` Fix autopool worker message handling recovery
-  ([\#5775](https://github.com/cometbft/cometbft/pull/5775))
 - `[types]` Fix nil vote handling
   ([\#5777](https://github.com/cometbft/cometbft/pull/5777))
+- `[light]`: stop witness comparison after divergence checks
+  ([\#5820](https://github.com/cometbft/cometbft/pull/5820))
 
 ### IMPROVEMENTS
 
 ### FEATURES
+
+### STATE-BREAKING
 
 ### API-BREAKING
 

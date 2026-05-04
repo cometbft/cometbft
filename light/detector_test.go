@@ -430,6 +430,71 @@ func TestClientDivergentTraces4(t *testing.T) {
 	assert.Equal(t, 1, len(c.Witnesses()))
 }
 
+func TestClientDivergentHeadersNoTraces(t *testing.T) {
+	primaryHeaders, primaryVals, primaryKeys := genMockNodeWithKeys(chainID, 10, 5, 2, bTime)
+	primary := mockp.New(chainID, primaryHeaders, primaryVals)
+
+	firstBlock, err := primary.LightBlock(ctx, 1)
+	require.NoError(t, err)
+
+	keysAtH10 := primaryKeys[10]
+	valsAtH10 := primaryVals[10]
+	nextValsAtH11 := primaryKeys[11].ToValidators(2, 0)
+
+	// generate a header with an app hash that diverges from the primary
+	makeDivergentHeader := func(appHashSeed string) *types.SignedHeader {
+		return keysAtH10.GenSignedHeader(
+			chainID, 10,
+			primaryHeaders[10].Time, nil,
+			valsAtH10, nextValsAtH11,
+			hash(appHashSeed), hash("cons_hash"), hash("results_hash"),
+			0, len(keysAtH10),
+		)
+	}
+	divergentHeader1 := makeDivergentHeader("divergent_app_1")
+	divergentHeader2 := makeDivergentHeader("divergent_app_2")
+	require.NotEqual(t, primaryHeaders[10].Hash(), divergentHeader1.Hash())
+	require.NotEqual(t, primaryHeaders[10].Hash(), divergentHeader2.Hash())
+
+	// generate a witness that has this divergent app hash but the same
+	// proposer priority hash
+	makeSparseWitness := func(divergent *types.SignedHeader) *mockp.Mock {
+		return mockp.New(
+			chainID,
+			map[int64]*types.SignedHeader{1: primaryHeaders[1], 10: divergent},
+			map[int64]*types.ValidatorSet{1: primaryVals[1], 10: valsAtH10},
+		)
+	}
+
+	// run for multiple iterations since this is exercising a race, 100
+	// typically causes it
+	const iterations = 100
+	for i := 0; i < iterations; i++ {
+		witness1 := makeSparseWitness(divergentHeader1)
+		witness2 := makeSparseWitness(divergentHeader2)
+
+		c, err := light.NewClient(
+			ctx,
+			chainID,
+			light.TrustOptions{
+				Height: 1,
+				Hash:   firstBlock.Hash(),
+				Period: 4 * time.Hour,
+			},
+			primary,
+			[]provider.Provider{witness1, witness2},
+			dbs.New(dbm.NewMemDB(), chainID),
+			light.Logger(log.TestingLogger()),
+		)
+		require.NoError(t, err)
+
+		// try and validate the block using our two witnesses that have
+		// diverged from the primary, this should error
+		_, err = c.VerifyLightBlockAtHeight(ctx, 10, bTime.Add(1*time.Hour))
+		require.Error(t, err)
+	}
+}
+
 func TestClientDivergentProposerPriorities(t *testing.T) {
 	const (
 		latestHeight = int64(10)

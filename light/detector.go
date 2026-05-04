@@ -205,12 +205,14 @@ func (c *Client) compareNewLightBlockWithWitness(ctx context.Context, errc chan 
 
 	if !bytes.Equal(h.Hash(), lightBlock.Hash()) {
 		errc <- ErrConflictingHeaders{Block: lightBlock, WitnessIndex: witnessIndex}
+		return
 	}
 
 	// ProposerPriorityHash is not part of the header hash, so we need to check it separately.
 	wanted, got := l.ValidatorSet.ProposerPriorityHash(), lightBlock.ValidatorSet.ProposerPriorityHash()
 	if !bytes.Equal(wanted, got) {
 		errc <- ErrProposerPrioritiesDiverge{WitnessHash: got, WitnessIndex: witnessIndex, PrimaryHash: wanted}
+		return
 	}
 
 	c.logger.Debug("Matching header received by witness", "height", h.Height, "witness", witnessIndex)

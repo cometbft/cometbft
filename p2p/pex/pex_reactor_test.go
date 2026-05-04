@@ -388,6 +388,59 @@ func TestPEXReactorDoesNotDisconnectFromPersistentPeerInSeedMode(t *testing.T) {
 	assert.Equal(t, 1, sw.Peers().Size())
 }
 
+// TestPEXReactor_DoesNotDialPersistentPeers verifies that the PEX reactor does not
+// attempt to dial peers that are configured as persistent peers, since the persistent
+// peer dialer handles those connections.
+func TestPEXReactor_DoesNotDialPersistentPeers(t *testing.T) {
+	// Setup
+	dir, err := os.MkdirTemp("", "pex_reactor")
+	require.NoError(t, err)
+	defer os.RemoveAll(dir)
+
+	// Create address book with routabilityStrict=false for local testing
+	book := NewAddrBook(filepath.Join(dir, "addrbook.json"), false)
+	book.SetLogger(log.TestingLogger())
+
+	pexR := NewReactor(book, &ReactorConfig{})
+	pexR.SetLogger(log.TestingLogger())
+	defer teardownReactor(book)
+
+	sw := createSwitchAndAddReactors(pexR)
+	sw.SetAddrBook(book)
+
+	// Create a peer address that will be both in the address book and configured as persistent
+	peerSwitch := testCreateDefaultPeer(dir, 1)
+	peerAddr := peerSwitch.NetAddress()
+
+	// Add the peer to the address book
+	err = book.AddAddress(peerAddr, peerAddr)
+	require.NoError(t, err)
+	book.MarkGood(peerAddr.ID)
+
+	// Configure the peer as persistent
+	err = sw.AddPersistentPeers([]string{peerAddr.String()})
+	require.NoError(t, err)
+
+	// Start the switch (but not the peer switch, so dialing will fail if attempted)
+	err = sw.Start()
+	require.NoError(t, err)
+	defer sw.Stop() //nolint:errcheck // ignore for tests
+
+	// Trigger ensurePeers which should pick addresses from the address book
+	// Since the only peer in the address book is a persistent peer, the reactor should NOT dial it
+	pexR.ensurePeers(true)
+
+	// Give some time for any dial attempts to happen
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify that no dial attempt was made to the persistent peer
+	// Since we didn't start peerSwitch, if a dial was attempted, it would be in the dialing state
+	out, in, dial := sw.NumPeers()
+	assert.Equal(t, 0, out, "Should not have any outbound peers")
+	assert.Equal(t, 0, in, "Should not have any inbound peers")
+	assert.Equal(t, 0, dial, "Should not be dialing the persistent peer")
+}
+
 func TestPEXReactorDialsPeerUpToMaxAttemptsInSeedMode(t *testing.T) {
 	// directory to store address books
 	dir, err := os.MkdirTemp("", "pex_reactor")

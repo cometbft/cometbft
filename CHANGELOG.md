@@ -11,6 +11,8 @@
   ([\#5816](https://github.com/cometbft/cometbft/pull/5816))
 - `[light]`: stop witness comparison after divergence checks
   ([\#5820](https://github.com/cometbft/cometbft/pull/5820))
+- `[abci]` fix(abci): prevent panic on unlock in socket server panic recovery
+  ([\#5593](https://github.com/cometbft/cometbft/pull/5593))
 
 ### IMPROVEMENTS
 

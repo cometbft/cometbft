@@ -5,13 +5,9 @@
 ### DEPENDENCIES
 
 ### BUG FIXES
-<<<<<<< HEAD
-=======
-- `[mempool]` App mempool waits before broadcasting.
-  ([\#5800](https://github.com/cometbft/cometbft/pull/5800))
-- `[p2p]` Add lp2p reactor panic recovery
-  ([\#5816](https://github.com/cometbft/cometbft/pull/5816))
 
+- `[types]` Fix nil vote handling
+  ([\#5777](https://github.com/cometbft/cometbft/pull/5777))
 - `[light]`: stop witness comparison after divergence checks
   ([\#5820](https://github.com/cometbft/cometbft/pull/5820))
 
@@ -19,30 +15,7 @@
 
 ### FEATURES
 
-- `[mempool]` Add app mempool & related ABCI methods, InsertTx and ReapTxs.
-  ([\#5790](https://github.com/cometbft/cometbft/pull/5790))
-- `[mempool]` Allow CheckTx retries for BroadcastTxSync
-  ([\#5802](https://github.com/cometbft/cometbft/pull/5802))
-
 ### STATE-BREAKING
-
-### API-BREAKING
-
-## v0.39.1
-
-*April 14, 2026*
-
-### BUG FIXES
->>>>>>> 24e5aeb1 (fix(light): stop witness comparison after divergence checks (#5820))
-
-- `[autopool]` Fix autopool worker message handling recovery
-  ([\#5775](https://github.com/cometbft/cometbft/pull/5775))
-- `[types]` Fix nil vote handling
-  ([\#5777](https://github.com/cometbft/cometbft/pull/5777))
-
-### IMPROVEMENTS
-
-### FEATURES
 
 ### API-BREAKING
 

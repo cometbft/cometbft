@@ -12,6 +12,9 @@
 
 ### IMPROVEMENTS
 
+- `[consensus]` perf(consensus): send stats message outside state lock.
+  ([\#5813](https://github.com/cometbft/cometbft/pull/5813))
+
 ### FEATURES
 
 - `[mempool]` Add app mempool & related ABCI methods, InsertTx and ReapTxs.

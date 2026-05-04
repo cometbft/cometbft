@@ -161,8 +161,9 @@ func (s *SocketServer) waitForClose(closeConn chan error, connID int) {
 
 // Read requests from conn and deal with them
 func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, responses chan<- *types.Response) {
-	var count int
 	var bufReader = bufio.NewReader(conn)
+
+	locked := false // true only while appMtx is held inside the loop
 
 	defer func() {
 		// make sure to recover from any app-related panics to allow proper socket cleanup.
@@ -178,6 +179,8 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 				fmt.Fprintln(os.Stderr, err)
 			}
 			closeConn <- err
+		}
+		if locked {
 			s.appMtx.Unlock()
 		}
 	}()
@@ -195,7 +198,7 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 			return
 		}
 		s.appMtx.Lock()
-		count++
+		locked = true
 		resp, err := s.handleRequest(context.TODO(), req)
 		if err != nil {
 			// any error either from the application or because of an unknown request
@@ -206,6 +209,7 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 			responses <- resp
 		}
 		s.appMtx.Unlock()
+		locked = false
 	}
 }
 
@@ -307,7 +311,6 @@ func (s *SocketServer) handleRequest(ctx context.Context, req *types.Request) (*
 
 // Pull responses from 'responses' and write them to conn.
 func (s *SocketServer) handleResponses(closeConn chan error, conn io.Writer, responses <-chan *types.Response) {
-	var count int
 	var bufWriter = bufio.NewWriter(conn)
 	for {
 		var res = <-responses
@@ -330,6 +333,5 @@ func (s *SocketServer) handleResponses(closeConn chan error, conn io.Writer, res
 		if e, ok := res.Value.(*types.Response_Exception); ok {
 			closeConn <- errors.New(e.Exception.Error)
 		}
-		count++
 	}
 }

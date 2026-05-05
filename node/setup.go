@@ -258,6 +258,17 @@ func createMempoolAndMempoolReactor(
 		// Strictly speaking, there's no need to have a `mempl.NopMempoolReactor`, but
 		// adding it leads to a cleaner code.
 		return &mempl.NopMempool{}, mempl.NewNopMempoolReactor()
+	case cfg.MempoolTypeApp:
+		mp := mempl.NewAppMempool(
+			config.Mempool,
+			proxyApp.Mempool(),
+			mempl.WithAMLogger(logger),
+			mempl.WithAMMetrics(memplMetrics),
+		)
+		reactor := mempl.NewAppReactor(config.Mempool, mp, waitForSync)
+		reactor.SetLogger(logger)
+
+		return mp, reactor
 	default:
 		panic(fmt.Sprintf("unknown mempool type: %q", config.Mempool.Type))
 	}

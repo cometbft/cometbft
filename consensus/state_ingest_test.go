@@ -3,6 +3,7 @@ package consensus
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,6 +29,28 @@ func TestStateIngestVerifiedBlock(t *testing.T) {
 
 		assert.Equal(t, ic.Height(), ts.cs.GetLastHeight())
 		assert.NotNil(t, ts.cs.blockStore.LoadBlock(ic.Height()))
+	})
+
+	t.Run("ingestedBlockWithVoteExtensions", func(t *testing.T) {
+		// ARRANGE
+		ts := newIngestTestSuite(t)
+		ts.cs.state.ConsensusParams.ABCI.VoteExtensionsEnableHeight = 1
+
+		// Given a verified block with extended commit
+		ic := ts.MakeIngestCandidate()
+		require.NotNil(t, ic.extCommit)
+
+		icHeight := ic.Height()
+
+		// ACT
+		err := ts.IngestVerifiedBlock(ic)
+
+		// ASSERT
+		require.NoError(t, err)
+		require.Equal(t, icHeight, ts.cs.GetLastHeight())
+		require.NotNil(t, ts.cs.blockStore.LoadBlock(icHeight))
+		require.Equal(t, ic.commit, ts.cs.blockStore.LoadSeenCommit(icHeight))
+		require.Equal(t, ic.extCommit, ts.cs.blockStore.LoadBlockExtendedCommit(icHeight))
 	})
 
 	t.Run("alreadyIncluded", func(t *testing.T) {
@@ -88,6 +111,7 @@ func TestStateIngestVerifiedBlock(t *testing.T) {
 		require.ErrorIs(t, err, ErrValidation)
 		require.ErrorContains(t, err, "unverified ingest candidate")
 	})
+
 }
 
 func TestIngestCandidate(t *testing.T) {
@@ -159,6 +183,13 @@ func TestIngestCandidate(t *testing.T) {
 				},
 				errContains: "extended commit blockID mismatch",
 			},
+			{
+				name: "block validator is nil",
+				mutate: func(ic *IngestCandidate) {
+					ic.blockValidator = nil
+				},
+				errContains: "block validator is nil",
+			},
 		} {
 			t.Run(tt.name, func(t *testing.T) {
 				// ARRANGE
@@ -185,10 +216,12 @@ func TestIngestCandidate(t *testing.T) {
 
 	t.Run("Verify", func(t *testing.T) {
 		for _, tt := range []struct {
-			name           string
-			voteExtensions bool
-			mutate         func(ic *IngestCandidate, st *sm.State)
-			errContains    string
+			name            string
+			voteExtensions  bool
+			arrange         func(ts *ingestTestSuite)
+			mutate          func(t *testing.T, ic *IngestCandidate, st *sm.State)
+			evidenceChecker func(types.EvidenceList) error
+			errContains     string
 		}{
 			{
 				name:           "valid candidate",
@@ -203,7 +236,7 @@ func TestIngestCandidate(t *testing.T) {
 			{
 				name:           "extensions invariant mismatch",
 				voteExtensions: true,
-				mutate: func(ic *IngestCandidate, st *sm.State) {
+				mutate: func(t *testing.T, ic *IngestCandidate, st *sm.State) {
 					st.ConsensusParams.ABCI.VoteExtensionsEnableHeight = 0
 				},
 				errContains: "invalid ext commit state",
@@ -211,7 +244,7 @@ func TestIngestCandidate(t *testing.T) {
 			{
 				name:           "invalid block",
 				voteExtensions: false,
-				mutate: func(ic *IngestCandidate, st *sm.State) {
+				mutate: func(t *testing.T, ic *IngestCandidate, st *sm.State) {
 					validBlock := ic.block
 					ic.block = &types.Block{
 						Header:     validBlock.Header,
@@ -225,15 +258,42 @@ func TestIngestCandidate(t *testing.T) {
 			{
 				name:           "commit verification fails",
 				voteExtensions: false,
-				mutate: func(ic *IngestCandidate, st *sm.State) {
+				mutate: func(t *testing.T, ic *IngestCandidate, st *sm.State) {
 					ic.commit.Signatures[0].Signature = nil
+				},
+				errContains: "verify commit",
+			},
+			{
+				name:           "commit signature is forged",
+				voteExtensions: false,
+				arrange: func(ts *ingestTestSuite) {
+					// given 4 blocks already ingested
+					for range 4 {
+						ic := ts.MakeIngestCandidate()
+						err := ts.IngestVerifiedBlock(ic)
+						require.NoError(ts.t, err)
+					}
+				},
+				mutate: func(t *testing.T, ic *IngestCandidate, st *sm.State) {
+					require.Equal(t, int64(5), ic.Height())
+
+					lastIdx := int32(len(ic.commit.Signatures) - 1)
+					_, lastVal := st.Validators.GetByIndex(lastIdx)
+					require.NotNil(t, lastVal)
+
+					ic.commit.Signatures[lastIdx] = types.CommitSig{
+						BlockIDFlag:      types.BlockIDFlagCommit,
+						ValidatorAddress: lastVal.Address,
+						Timestamp:        st.LastBlockTime.Add(2 * time.Second),
+						Signature:        []byte("forged trailing signature"),
+					}
 				},
 				errContains: "verify commit",
 			},
 			{
 				name:           "extended commit missing extension signature",
 				voteExtensions: true,
-				mutate: func(ic *IngestCandidate, st *sm.State) {
+				mutate: func(t *testing.T, ic *IngestCandidate, st *sm.State) {
 					ic.extCommit.ExtendedSignatures[0].ExtensionSignature = nil
 				},
 				errContains: "ensure extensions",
@@ -241,8 +301,33 @@ func TestIngestCandidate(t *testing.T) {
 			{
 				name:           "extended commit verification fails",
 				voteExtensions: true,
-				mutate: func(ic *IngestCandidate, st *sm.State) {
+				mutate: func(t *testing.T, ic *IngestCandidate, st *sm.State) {
 					ic.extCommit.ExtendedSignatures[0].Signature = nil
+				},
+				errContains: "verify extended commit",
+			},
+			{
+				name:           "extended commit signature is forged",
+				voteExtensions: true,
+				arrange: func(ts *ingestTestSuite) {
+					for range 4 {
+						ic := ts.MakeIngestCandidate()
+						err := ts.IngestVerifiedBlock(ic)
+						require.NoError(ts.t, err)
+					}
+				},
+				mutate: func(t *testing.T, ic *IngestCandidate, st *sm.State) {
+					require.Equal(t, int64(5), ic.Height())
+
+					lastIdx := int32(len(ic.extCommit.ExtendedSignatures) - 1)
+					_, lastVal := st.Validators.GetByIndex(lastIdx)
+					require.NotNil(t, lastVal)
+
+					extSig := ic.extCommit.ExtendedSignatures[lastIdx]
+					extSig.ValidatorAddress = lastVal.Address
+					extSig.Timestamp = st.LastBlockTime.Add(2 * time.Second)
+					extSig.Signature = []byte("forged trailing signature")
+					ic.extCommit.ExtendedSignatures[lastIdx] = extSig
 				},
 				errContains: "verify extended commit",
 			},
@@ -257,8 +342,14 @@ func TestIngestCandidate(t *testing.T) {
 					ts.cs.state.ConsensusParams.ABCI.VoteExtensionsEnableHeight = 0
 				}
 
+				if tt.arrange != nil {
+					tt.arrange(ts)
+				}
+
 				// Given a valid ingest candidate
-				ic := ts.MakeIngestCandidate()
+				ic := ts.MakeIngestCandidateUnverified()
+				require.False(t, ic.verified)
+
 				if tt.voteExtensions {
 					require.NotNil(t, ic.extCommit)
 				} else {
@@ -266,11 +357,10 @@ func TestIngestCandidate(t *testing.T) {
 				}
 
 				// with verification disabled
-				ic.verified = false
 				verifyState := ts.cs.state
 
 				if tt.mutate != nil {
-					tt.mutate(&ic, &verifyState)
+					tt.mutate(t, &ic, &verifyState)
 				}
 
 				// ACT
@@ -318,6 +408,15 @@ func (ts *ingestTestSuite) IngestVerifiedBlock(ic IngestCandidate) error {
 func (ts *ingestTestSuite) MakeIngestCandidate() IngestCandidate {
 	ts.t.Helper()
 
+	ic := ts.MakeIngestCandidateUnverified()
+	require.NoError(ts.t, ic.Verify(ts.cs.state))
+
+	return ic
+}
+
+func (ts *ingestTestSuite) MakeIngestCandidateUnverified() IngestCandidate {
+	ts.t.Helper()
+
 	block, err := ts.cs.createProposalBlock(context.Background())
 	require.NoError(ts.t, err)
 
@@ -361,9 +460,10 @@ func (ts *ingestTestSuite) MakeIngestCandidate() IngestCandidate {
 		extCommit = nil
 	}
 
-	ic, err := NewIngestCandidate(block, blockParts, commit, extCommit)
+	blockValidator := ts.cs.blockExec.ValidateBlock
+
+	ic, err := NewIngestCandidate(block, blockParts, commit, extCommit, blockValidator)
 	require.NoError(ts.t, err, "failed to create ingest candidate")
-	require.NoError(ts.t, ic.Verify(ts.cs.state), "failed to verify ingest candidate")
 
 	return ic
 }

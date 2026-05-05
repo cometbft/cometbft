@@ -1,6 +1,7 @@
 package blocksync
 
 import (
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -78,7 +79,6 @@ func TestReactorAdaptive(t *testing.T) {
 	})
 
 	t.Run("alreadyIngested", func(t *testing.T) {
-		t.Skip()
 		// ARRANGE
 		ts := newAdaptiveSyncTestSuite(t, "blocksync_ingest_block")
 
@@ -135,6 +135,35 @@ func TestReactorAdaptive(t *testing.T) {
 		// ensure the pool progressed (even being a noop)
 		require.Equal(t, int64(4), follower.reactor.pool.Height())
 	})
+
+	t.Run("peekTwoBlocksFailure", func(t *testing.T) {
+		// ARRANGE
+		ts := newAdaptiveSyncTestSuite(t, "blocksync_peek_two_blocks_failure")
+
+		follower := newReactor(t, ts.logger, ts.genDoc, ts.privVals, 2, withDeterministicVoteTimes())
+		t.Cleanup(func() { require.NoError(t, follower.app.Stop()) })
+
+		// Force an invalid internal pool state where PeekTwoBlocks returns
+		// non-consecutive heights.
+		h := follower.reactor.pool.Height()
+		follower.reactor.pool.requesters[h] = &bpRequester{
+			height: h,
+			block:  &types.Block{Header: types.Header{Height: h}},
+		}
+		follower.reactor.pool.requesters[h+1] = &bpRequester{
+			height: h + 1,
+			block:  &types.Block{Header: types.Header{Height: h + 2}},
+		}
+
+		// ACT
+		call := func() {
+			follower.reactor.blockIngestorRoutine(ts.blockIngestor)
+		}
+
+		// ASSERT
+		errExpected := fmt.Sprintf("heights of first and second block are not consecutive (want %d, got %d)", h+1, h+2)
+		require.PanicsWithError(t, errExpected, call)
+	})
 }
 
 type adaptiveSyncTestSuite struct {
@@ -152,7 +181,7 @@ func newAdaptiveSyncTestSuite(t *testing.T, name string) *adaptiveSyncTestSuite 
 	config := test.ResetTestRoot(name)
 	t.Cleanup(func() { _ = os.RemoveAll(config.RootDir) })
 
-	genDoc, privVals := randGenesisDoc(1, false, 30)
+	genDoc, privVals := genesisDocWithValsPowers([]int64{30})
 
 	return &adaptiveSyncTestSuite{
 		t:             t,

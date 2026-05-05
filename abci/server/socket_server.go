@@ -163,6 +163,8 @@ func (s *SocketServer) waitForClose(closeConn chan error, connID int) {
 func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, responses chan<- *types.Response) {
 	bufReader := bufio.NewReader(conn)
 
+	locked := false // true only while appMtx is held inside the loop
+
 	defer func() {
 		// make sure to recover from any app-related panics to allow proper socket cleanup.
 		// In the case of a panic, we do not notify the client by passing an exception so
@@ -177,6 +179,8 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 				fmt.Fprintln(os.Stderr, err)
 			}
 			closeConn <- err
+		}
+		if locked {
 			s.appMtx.Unlock()
 		}
 	}()
@@ -194,6 +198,7 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 			return
 		}
 		s.appMtx.Lock()
+		locked = true
 		resp, err := s.handleRequest(context.TODO(), req)
 		if err != nil {
 			// any error either from the application or because of an unknown request
@@ -204,6 +209,7 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 			responses <- resp
 		}
 		s.appMtx.Unlock()
+		locked = false
 	}
 }
 

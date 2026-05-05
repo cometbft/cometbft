@@ -49,7 +49,6 @@ type PeerManager interface {
 }
 
 type Broadcaster interface {
-	Broadcast(e Envelope) (successChan chan bool)
 	BroadcastAsync(e Envelope)
 	TryBroadcast(e Envelope)
 }

@@ -224,6 +224,36 @@ func (_m *Application) InitChain(_a0 context.Context, _a1 *types.RequestInitChai
 	return r0, r1
 }
 
+// InsertTx provides a mock function with given fields: _a0, _a1
+func (_m *Application) InsertTx(_a0 context.Context, _a1 *types.RequestInsertTx) (*types.ResponseInsertTx, error) {
+	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for InsertTx")
+	}
+
+	var r0 *types.ResponseInsertTx
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestInsertTx) (*types.ResponseInsertTx, error)); ok {
+		return rf(_a0, _a1)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestInsertTx) *types.ResponseInsertTx); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.ResponseInsertTx)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestInsertTx) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ListSnapshots provides a mock function with given fields: _a0, _a1
 func (_m *Application) ListSnapshots(_a0 context.Context, _a1 *types.RequestListSnapshots) (*types.ResponseListSnapshots, error) {
 	ret := _m.Called(_a0, _a1)
@@ -396,6 +426,36 @@ func (_m *Application) Query(_a0 context.Context, _a1 *types.RequestQuery) (*typ
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestQuery) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ReapTxs provides a mock function with given fields: _a0, _a1
+func (_m *Application) ReapTxs(_a0 context.Context, _a1 *types.RequestReapTxs) (*types.ResponseReapTxs, error) {
+	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ReapTxs")
+	}
+
+	var r0 *types.ResponseReapTxs
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestReapTxs) (*types.ResponseReapTxs, error)); ok {
+		return rf(_a0, _a1)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestReapTxs) *types.ResponseReapTxs); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.ResponseReapTxs)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestReapTxs) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)

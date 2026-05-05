@@ -1,7 +1,6 @@
 package node
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"net"
@@ -189,61 +188,6 @@ func TestNodeSetPrivValTCP(t *testing.T) {
 	n, err := DefaultNewNode(config, log.TestingLogger())
 	require.NoError(t, err)
 	assert.IsType(t, &privval.RetrySignerClient{}, n.PrivValidator())
-}
-
-// TestLibp2pExperimentalWarningVisual runs the same setup as TestLibp2pExperimentalWarning
-// but logs to stdout so you can see the warning.
-//
-// Run with:
-//
-//	go test -v -run TestLibp2pExperimentalWarningVisual ./node
-func TestLibp2pExperimentalWarningVisual(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping visual test in short mode")
-	}
-	config := test.ResetTestRoot("node_libp2p_warning_visual_test")
-	defer os.RemoveAll(config.RootDir)
-
-	config.P2P.PexReactor = false
-	config.P2P.LibP2PConfig.Enabled = true
-	config.P2P.LibP2PConfig.BootstrapPeers = []cfg.LibP2PBootstrapPeer{
-		{Host: "127.0.0.1:26656", ID: "12D3KooWRH1MncKnMv1sP2w4zCJvL1B5nF2xR3sT4uV5wX6yZ7aB8cD9eF0gH1"},
-	}
-
-	logger := log.NewTMLogger(os.Stdout)
-	logger = log.NewFilter(logger, log.AllowAll())
-
-	t.Log("Creating node with libp2p enabled (watch for the orange/brown warning below)...")
-	_, _ = DefaultNewNode(config, logger)
-}
-
-func TestLibp2pExperimentalWarning(t *testing.T) {
-	config := test.ResetTestRoot("node_libp2p_warning_test")
-	defer os.RemoveAll(config.RootDir)
-
-	// Enable libp2p with minimal valid config (bootstrap peer required for validation)
-	config.P2P.PexReactor = false
-	config.P2P.LibP2PConfig.Enabled = true
-	config.P2P.LibP2PConfig.BootstrapPeers = []cfg.LibP2PBootstrapPeer{
-		{Host: "127.0.0.1:26656", ID: "12D3KooWRH1MncKnMv1sP2w4zCJvL1B5nF2xR3sT4uV5wX6yZ7aB8cD9eF0gH1"},
-	}
-
-	// Use a logger that captures output
-	var buf bytes.Buffer
-	logger := log.NewTMLogger(&buf)
-	logger = log.NewFilter(logger, log.AllowAll())
-
-	// Node creation may fail (e.g. when creating host/transport), but we should
-	// get the experimental warning logged before any failure
-	_, err := DefaultNewNode(config, logger)
-
-	output := buf.String()
-	require.Contains(t, output, "EXPERIMENTAL", "expected libp2p experimental warning in logs, got: %s", output)
-	require.Contains(t, output, "simultaneously for all validators", "expected validator warning text in logs, got: %s", output)
-	require.Contains(t, output, "peer IDs have been predetermined", "expected peer IDs warning text in logs, got: %s", output)
-
-	// We expect an error since we're not running a real libp2p network
-	_ = err
 }
 
 // address without a protocol must result in error

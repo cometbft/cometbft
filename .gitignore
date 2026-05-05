@@ -33,6 +33,8 @@ remote_dump
 rpc/test/.cometbft
 scripts/cutWALUntil/cutWALUntil
 scripts/wal2json/wal2json
+scripts/bench/p2p_bench.sqlite
+scripts/bench/__pycache__/
 shunit2
 terraform.tfstate
 terraform.tfstate.backup

@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/BurntSushi/toml v1.6.0
-	github.com/Masterminds/semver/v3 v3.4.0
+	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/adlio/schema v1.4.0
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cometbft/cometbft-db v0.14.1
@@ -24,7 +24,7 @@ require (
 	github.com/informalsystems/tm-load-test v1.3.0
 	github.com/lib/pq v1.12.0
 	github.com/libp2p/go-libp2p v0.47.0
-	github.com/minio/highwayhash v1.0.3
+	github.com/minio/highwayhash v1.0.4
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.16.1
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20230904125328-1f23a7beb09a

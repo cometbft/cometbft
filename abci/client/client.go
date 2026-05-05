@@ -14,6 +14,8 @@ const (
 	echoRetryIntervalSeconds = 1
 )
 
+type lockFreeCallCtxKey struct{}
+
 //go:generate ../../scripts/mockery_generate.sh Client
 
 // Client defines the interface for an ABCI client.
@@ -129,4 +131,14 @@ func waitGroup1() (wg *sync.WaitGroup) {
 	wg = &sync.WaitGroup{}
 	wg.Add(1)
 	return
+}
+
+// LockFreeContext indicates that the caller expects the call NOT to acquire the lock.
+func LockFreeContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, lockFreeCallCtxKey{}, true)
+}
+
+// IsLockFreeContext checks for LockFreeContext.
+func IsLockFreeContext(ctx context.Context) bool {
+	return ctx.Value(lockFreeCallCtxKey{}) != nil
 }

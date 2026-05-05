@@ -1,0 +1,37 @@
+[node.validator01]
+mempool_type = "app"
+use_libp2p = true
+block_sync_adaptive_sync = true
+snapshot_interval = 2
+persistent_peers = ["validator02", "validator04", "validator05"]
+
+[node.validator02]
+mempool_type = "app"
+use_libp2p = true
+block_sync_adaptive_sync = true
+perturb = ["kill"]
+
+[node.validator03]
+mempool_type = "app"
+use_libp2p = true
+block_sync_adaptive_sync = true
+
+[node.validator04]
+mempool_type = "app"
+use_libp2p = true
+block_sync_adaptive_sync = true
+perturb = ["restart"]
+
+[node.validator05]
+mempool_type = "app"
+use_libp2p = true
+block_sync_adaptive_sync = true
+perturb = ["disconnect", "pause"]
+
+[node.validator06]
+mempool_type = "app"
+use_libp2p = true
+block_sync_adaptive_sync = true
+# sync from validator01
+state_sync = true
+start_at = 5

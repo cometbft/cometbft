@@ -62,9 +62,7 @@ func TestMain(m *testing.M) {
 //------------------------------------------------------------------------------------------
 // WAL Tests
 
-// TODO: It would be better to verify explicitly which states we can recover from without the wal
-// and which ones we need the wal for - then we'd also be able to only flush the
-// wal writer when we need to, instead of with every message.
+// WAL uses selective fsync: signed messages use WriteSync, block parts use Write.
 
 func startNewStateAndWaitForBlock(
 	t *testing.T,
@@ -158,6 +156,55 @@ func TestWALCrash(t *testing.T) {
 	}
 }
 
+// TestWALCrashOnInternalBlockPartWrite checks liveness after a crash on
+// internal BlockPartMessage Write.
+func TestWALCrashOnInternalBlockPartWrite(t *testing.T) {
+	consensusReplayConfig := ResetConfig(t.Name())
+	walPanicked := make(chan error, 1)
+
+	logger := log.NewNopLogger()
+	blockDB := dbm.NewMemDB()
+	stateDB := blockDB
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
+	state, err := sm.MakeGenesisStateFromFile(consensusReplayConfig.GenesisFile())
+	require.NoError(t, err)
+
+	privValidator := loadPrivValidator(consensusReplayConfig)
+	cs := newStateWithConfigAndBlockStore(
+		consensusReplayConfig,
+		state,
+		privValidator,
+		kvstore.NewInMemoryApplication(),
+		blockDB,
+	)
+	cs.SetLogger(logger)
+
+	walFile := cs.config.WalFile()
+	_ = os.Remove(walFile)
+
+	csWal, err := cs.OpenWAL(walFile)
+	require.NoError(t, err)
+	cs.wal = &crashOnInternalBlockPartWriteWAL{
+		next:    csWal,
+		panicCh: walPanicked,
+	}
+
+	err = cs.Start()
+	require.NoError(t, err)
+
+	select {
+	case err := <-walPanicked:
+		t.Logf("WAL panicked: %v", err)
+	case <-time.After(10 * time.Second):
+		t.Fatal("WAL did not panic on internal block part write")
+	}
+
+	_ = cs.Stop()
+	startNewStateAndWaitForBlock(t, consensusReplayConfig, blockDB, stateStore)
+}
+
 func crashWALandCheckLiveness(t *testing.T, consensusReplayConfig *cfg.Config,
 	initFn func(dbm.DB, *State, context.Context), heightToStop int64,
 ) {
@@ -246,6 +293,15 @@ type crashingWAL struct {
 
 var _ WAL = &crashingWAL{}
 
+// crashOnInternalBlockPartWriteWAL crashes on the first internal BlockPart Write.
+type crashOnInternalBlockPartWriteWAL struct {
+	next    WAL
+	panicCh chan error
+	crashed bool
+}
+
+var _ WAL = &crashOnInternalBlockPartWriteWAL{}
+
 // WALWriteError indicates a WAL crash.
 type WALWriteError struct {
 	msg string
@@ -306,6 +362,37 @@ func (w *crashingWAL) SearchForEndHeight(
 func (w *crashingWAL) Start() error { return w.next.Start() }
 func (w *crashingWAL) Stop() error  { return w.next.Stop() }
 func (w *crashingWAL) Wait()        { w.next.Wait() }
+
+func (w *crashOnInternalBlockPartWriteWAL) Write(m WALMessage) error {
+	if !w.crashed {
+		if mi, ok := m.(msgInfo); ok && mi.PeerID == "" {
+			if _, ok := mi.Msg.(*BlockPartMessage); ok {
+				w.crashed = true
+				w.panicCh <- WALWriteError{msg: "failed to write internal BlockPartMessage to WAL"}
+				runtime.Goexit()
+				return nil
+			}
+		}
+	}
+	return w.next.Write(m)
+}
+
+func (w *crashOnInternalBlockPartWriteWAL) WriteSync(m WALMessage) error {
+	return w.next.WriteSync(m)
+}
+
+func (w *crashOnInternalBlockPartWriteWAL) FlushAndSync() error { return w.next.FlushAndSync() }
+
+func (w *crashOnInternalBlockPartWriteWAL) SearchForEndHeight(
+	height int64,
+	options *WALSearchOptions,
+) (rd io.ReadCloser, found bool, err error) {
+	return w.next.SearchForEndHeight(height, options)
+}
+
+func (w *crashOnInternalBlockPartWriteWAL) Start() error { return w.next.Start() }
+func (w *crashOnInternalBlockPartWriteWAL) Stop() error  { return w.next.Stop() }
+func (w *crashOnInternalBlockPartWriteWAL) Wait()        { w.next.Wait() }
 
 // ------------------------------------------------------------------------------------------
 

@@ -1367,6 +1367,54 @@ The mempool cache is an internal store for transactions that the local node has 
 transactions: we can compare incoming transactions to already seen transactions and filter them out without going
 through the process of validating the incoming transaction.
 
+### mempool.seen_cache_size
+> App mempool only (`mempool.type = "app"`).
+
+Size of the LRU cache for seen transactions (deduplication when streaming txs from the app).
+```toml
+seen_cache_size = 100000
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
+### mempool.reap_max_bytes
+> App mempool only (`mempool.type = "app"`).
+
+Maximum bytes to request from the app when calling ReapTxs. Set to `0` for no limit.
+```toml
+reap_max_bytes = 0
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
+### mempool.reap_max_gas
+> App mempool only (`mempool.type = "app"`).
+
+Maximum gas to request from the app when calling ReapTxs. Set to `0` for no limit.
+```toml
+reap_max_gas = 0
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
+### mempool.reap_interval
+> App mempool only (`mempool.type = "app"`).
+
+Interval between ReapTxs calls when streaming transactions from the app to broadcast to peers.
+```toml
+reap_interval = "500ms"
+```
+
+| Value type          | duration |
+|:--------------------|:--------|
+| **Possible values** | &gt; 0   |
+
 ### mempool.keep-invalid-txs-in-cache
 Invalid transactions might become valid in the future, hence they are not added to the mempool cache by default.
 Turning this setting on will add an incoming transaction to the cache even if it is deemed invalid by the application (via `CheckTx`).

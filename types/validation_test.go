@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmttime "github.com/cometbft/cometbft/types/time"
@@ -293,6 +295,77 @@ func TestValidatorSet_VerifyCommitLightTrusting(t *testing.T) {
 			require.NoError(t, err)
 		}
 	}
+}
+
+// TestValidatorSet_VerifyCommit_AggregatedCommitAddressMismatch is a regression
+// test for an issue where verifyAggregatedCommit accepted commits whose
+// CommitSig.ValidatorAddress did not match the validator at the corresponding
+// index in the validator set. Canonical vote sign bytes do not bind
+// ValidatorAddress, so an attacker could observe valid precommits, aggregate
+// the BLS signatures, rotate CommitSig.ValidatorAddress fields between
+// indexes, and produce a CommitMessage that VerifyCommit accepts. The
+// downstream BuildExtendedCommitInfo path then panics on the same
+// address/index mismatch and stops the consensus state machine.
+//
+// The non-aggregate paths (verifyCommitSingle, verifyCommitBatch) already
+// reject this; the aggregate path must too.
+func TestValidatorSet_VerifyCommit_AggregatedCommitAddressMismatch(t *testing.T) {
+	const (
+		chainID = "test_chain_id"
+		height  = int64(1)
+		round   = int32(0)
+	)
+
+	voteSet, valSet, privValidators := randVoteSet(height, round, PrecommitType, 4, 1, true, bls12381.KeyType)
+	blockID := BlockID{
+		Hash:          crypto.CRandBytes(32),
+		PartSetHeader: PartSetHeader{Total: 1, Hash: crypto.CRandBytes(32)},
+	}
+
+	// All 4 validators sign the block.
+	for i, pv := range privValidators {
+		pubKey, err := pv.GetPubKey()
+		require.NoError(t, err)
+
+		vote := &Vote{
+			ValidatorAddress: pubKey.Address(),
+			ValidatorIndex:   int32(i),
+			Height:           height,
+			Round:            round,
+			Type:             PrecommitType,
+			BlockID:          blockID,
+		}
+		_, err = signAddVote(pv, vote, voteSet)
+		require.NoError(t, err)
+	}
+
+	// Build the BLS aggregated commit. Sanity check that the unmodified
+	// commit verifies.
+	extCommit := voteSet.MakeBLSCommit()
+	commit := extCommit.ToCommit()
+	require.NoError(t, valSet.VerifyCommit(chainID, blockID, height, commit),
+		"unmodified aggregated commit should verify")
+
+	// Rotate ValidatorAddress fields between indexes 0 and 1 without
+	// touching the (already aggregated) BLS signatures. The aggregate
+	// signature remains cryptographically valid for the validator set by
+	// index because canonical vote sign bytes exclude ValidatorAddress.
+	require.NotEqual(t, commit.Signatures[0].ValidatorAddress, commit.Signatures[1].ValidatorAddress)
+	commit.Signatures[0].ValidatorAddress, commit.Signatures[1].ValidatorAddress = commit.Signatures[1].ValidatorAddress, commit.Signatures[0].ValidatorAddress
+
+	err := valSet.VerifyCommit(chainID, blockID, height, commit)
+	require.Error(t, err, "aggregated commit with rotated validator addresses must be rejected")
+	assert.Contains(t, err.Error(), "validator address mismatch")
+
+	// The same poisoned commit must also be rejected by the light-client
+	// verification paths, which dispatch to verifyAggregatedCommit too.
+	err = valSet.VerifyCommitLight(chainID, blockID, height, commit)
+	require.Error(t, err, "VerifyCommitLight must reject aggregated commit with rotated addresses")
+	assert.Contains(t, err.Error(), "validator address mismatch")
+
+	err = valSet.VerifyCommitLightAllSignatures(chainID, blockID, height, commit)
+	require.Error(t, err, "VerifyCommitLightAllSignatures must reject aggregated commit with rotated addresses")
+	assert.Contains(t, err.Error(), "validator address mismatch")
 }
 
 func TestValidatorSet_VerifyCommitLightTrustingErrorsOnOverflow(t *testing.T) {

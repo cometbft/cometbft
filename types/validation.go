@@ -528,6 +528,10 @@ func verifyAggregatedCommit(
 		// them by index else we need to retrieve them by address
 		if lookUpByIndex {
 			val = vals.Validators[idx]
+			if !bytes.Equal(val.Address, commitSig.ValidatorAddress) {
+				return fmt.Errorf("validator address mismatch at index %d: expected %X, got %X",
+					idx, val.Address, commitSig.ValidatorAddress)
+			}
 		} else {
 			valIdx, val = vals.GetByAddressMut(commitSig.ValidatorAddress)
 

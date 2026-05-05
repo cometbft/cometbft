@@ -1,54 +1,59 @@
 package guard
 
 import (
-	"strconv"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGuard(t *testing.T) {
+	makeGuard := func(t *testing.T, capacity int) *Guard[string] {
+		t.Helper()
+
+		g := New[string](capacity)
+		t.Cleanup(g.Close)
+
+		return g
+	}
+
 	t.Run("New", func(t *testing.T) {
 		t.Run("construct", func(t *testing.T) {
-			g := New[string](10)
+			g := makeGuard(t, 10)
 			require.NotNil(t, g)
-			assert.NotNil(t, g.lru)
-		})
 
-		t.Run("zeroCapacity", func(t *testing.T) {
-			assert.PanicsWithValue(t, "capacity must be greater than 0", func() { New[string](0) })
-		})
-
-		t.Run("negativeCapacity", func(t *testing.T) {
-			assert.PanicsWithValue(t, "capacity must be greater than 0", func() { New[string](-1) })
+			require.PanicsWithValue(t, "capacity must be greater than 0", func() {
+				makeGuard(t, 0)
+			})
+			require.PanicsWithValue(t, "capacity must be greater than 0", func() {
+				makeGuard(t, -1)
+			})
 		})
 	})
 
 	t.Run("Guard", func(t *testing.T) {
 		t.Run("happyPath", func(t *testing.T) {
 			// ARRANGE
-			g := New[string](10)
+			g := makeGuard(t, 10)
 			item := "item-1"
 
 			// ACT #1
 			added := g.Guard(item)
 
 			// ASSERT #1
-			assert.True(t, added)
-			assert.True(t, g.Has(item))
+			require.True(t, added)
+			require.True(t, g.Has(item))
 
 			// ACT #2
 			added2 := g.Guard(item)
 
 			// ASSERT #2
-			assert.False(t, added2, "item should exist on second call")
+			require.False(t, added2, "item should exist on second call")
 		})
 
 		t.Run("differentItems", func(t *testing.T) {
 			// ARRANGE
-			g := New[string](10)
+			g := makeGuard(t, 10)
 
 			// ACT
 			firstA := g.Guard("a")
@@ -56,14 +61,14 @@ func TestGuard(t *testing.T) {
 			secondA := g.Guard("a")
 
 			// ASSERT
-			assert.True(t, firstA)
-			assert.True(t, firstB)
-			assert.False(t, secondA)
+			require.True(t, firstA)
+			require.True(t, firstB)
+			require.False(t, secondA)
 		})
 
 		t.Run("eviction", func(t *testing.T) {
 			// ARRANGE
-			g := New[string](2)
+			g := makeGuard(t, 2)
 
 			// ACT
 			g.Guard("a")
@@ -71,63 +76,36 @@ func TestGuard(t *testing.T) {
 			g.Guard("c")
 
 			// ASSERT
-			assert.False(t, g.Has("a"))
-			assert.True(t, g.Has("b"))
-			assert.True(t, g.Has("c"))
+			require.False(t, g.Has("a"))
+			require.True(t, g.Has("b"))
+			require.True(t, g.Has("c"))
 		})
 	})
 
 	t.Run("Has", func(t *testing.T) {
 		t.Run("notPresent", func(t *testing.T) {
 			// ARRANGE
-			g := New[string](10)
+			g := makeGuard(t, 10)
 
 			// ACT + ASSERT
-			assert.False(t, g.Has("missing"))
+			require.False(t, g.Has("missing"))
 		})
 
 		t.Run("present", func(t *testing.T) {
 			// ARRANGE
-			g := New[string](10)
+			g := makeGuard(t, 10)
 			item := "present"
 			g.Guard(item)
 
 			// ACT + ASSERT
-			assert.True(t, g.Has(item))
+			require.True(t, g.Has(item))
 		})
 	})
 
-	t.Run("Remove", func(t *testing.T) {
-		t.Run("happyPath", func(t *testing.T) {
-			// ARRANGE
-			g := New[string](10)
-			item := "item"
-			g.Guard(item)
-
-			// ACT
-			present := g.Forget(item)
-
-			// ASSERT
-			assert.True(t, present)
-			assert.False(t, g.Has(item))
-		})
-
-		t.Run("notPresent", func(t *testing.T) {
-			// ARRANGE
-			g := New[string](10)
-
-			// ACT
-			present := g.Forget("missing")
-
-			// ASSERT
-			assert.False(t, present)
-		})
-	})
-
-	t.Run("RemoveAfter", func(t *testing.T) {
+	t.Run("ForgetAfter", func(t *testing.T) {
 		t.Run("zeroDuration", func(t *testing.T) {
 			// ARRANGE
-			g := New[string](10)
+			g := makeGuard(t, 10)
 			item := "now"
 			g.Guard(item)
 
@@ -135,12 +113,12 @@ func TestGuard(t *testing.T) {
 			g.ForgetAfter(item, 0)
 
 			// ASSERT
-			assert.False(t, g.Has(item))
+			require.False(t, g.Has(item))
 		})
 
 		t.Run("negativeDuration", func(t *testing.T) {
 			// ARRANGE
-			g := New[string](10)
+			g := makeGuard(t, 10)
 			item := "negative"
 			g.Guard(item)
 
@@ -148,20 +126,20 @@ func TestGuard(t *testing.T) {
 			g.ForgetAfter(item, -time.Second)
 
 			// ASSERT
-			assert.False(t, g.Has(item))
+			require.False(t, g.Has(item))
 		})
 
-		t.Run("asyncRemoval", func(t *testing.T) {
+		t.Run("delayedRemovalAccess", func(t *testing.T) {
 			// ARRANGE
-			g := New[string](10)
+			g := makeGuard(t, 10)
 			item := "later"
 			g.Guard(item)
 
 			// ACT
-			g.ForgetAfter(item, 50*time.Millisecond)
+			g.ForgetAfter(item, 100*time.Millisecond)
 
 			// ASSERT #1: still present immediately after the call
-			assert.True(t, g.Has(item))
+			require.True(t, g.Has(item))
 
 			// ASSERT #2: removed after the duration elapses
 			check := func() bool {
@@ -170,31 +148,30 @@ func TestGuard(t *testing.T) {
 
 			require.Eventually(t, check, time.Second, 10*time.Millisecond)
 		})
-	})
 
-	t.Run("Reset", func(t *testing.T) {
-		t.Run("happyPath", func(t *testing.T) {
+		t.Run("delayedRemovalAsync", func(t *testing.T) {
 			// ARRANGE
-			g := New[string](10)
-			for i := 0; i < 5; i++ {
-				g.Guard("item-" + strconv.Itoa(i))
-			}
+			g := NewWithInterval[string](10, 50*time.Millisecond)
+			t.Cleanup(g.Close)
+
+			item := "later"
+			g.Guard(item)
 
 			// ACT
-			g.Purge()
+			g.ForgetAfter(item, 10*time.Millisecond)
 
-			// ASSERT
-			for i := 0; i < 5; i++ {
-				assert.False(t, g.Has("item-"+strconv.Itoa(i)))
-			}
-		})
+			// ASSERT #1: still present immediately after the call
+			require.False(t, g.Guard(item))
+			require.True(t, g.Has(item))
 
-		t.Run("noop", func(t *testing.T) {
-			// ARRANGE
-			g := New[string](10)
+			// ASSERT #2: removed in a goroutine after the duration elapses
+			time.Sleep(100 * time.Millisecond)
 
-			// ACT + ASSERT
-			assert.NotPanics(t, func() { g.Purge() })
+			g.mu.Lock()
+			_, ok := g.lru.Peek(item)
+			g.mu.Unlock()
+
+			require.False(t, ok)
 		})
 	})
 }

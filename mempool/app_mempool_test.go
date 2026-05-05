@@ -18,28 +18,35 @@ import (
 func TestAppMempool(t *testing.T) {
 	tx := func(v string) types.Tx { return types.Tx(v) }
 
+	const codeFail = uint32(123)
+
 	t.Run("InsertTx", func(t *testing.T) {
 		// ARRANGE
-		added := atomic.Uint64{}
+		wasInserted := atomic.Uint64{}
 
 		// Given app
 		app := abcimock.NewClient(t)
 		app.
 			On("InsertTx", mock.Anything, mock.Anything).
 			Return(func(_ context.Context, req *abci.RequestInsertTx) (*abci.ResponseInsertTx, error) {
-				if string(req.Tx) == "fail" {
-					t.Logf("returning retryable error")
+				if string(req.Tx) == "fail-retryable" {
 					return &abci.ResponseInsertTx{Code: abci.CodeTypeRetry}, nil
 				}
+				if string(req.Tx) == "fail" {
+					return &abci.ResponseInsertTx{Code: codeFail}, nil
+				}
 
-				added.Add(1)
+				wasInserted.Add(1)
 				return &abci.ResponseInsertTx{Code: abci.CodeTypeOK}, nil
 			})
 		app.
 			On("CheckTx", mock.Anything, mock.Anything).
 			Return(func(_ context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
-				if string(req.Tx) == "fail" {
+				if string(req.Tx) == "fail-retryable" {
 					return &abci.ResponseCheckTx{Code: abci.CodeTypeRetry}, nil
+				}
+				if string(req.Tx) == "fail" {
+					return &abci.ResponseCheckTx{Code: codeFail}, nil
 				}
 				return &abci.ResponseCheckTx{Code: abci.CodeTypeOK}, nil
 			})
@@ -48,7 +55,7 @@ func TestAppMempool(t *testing.T) {
 		m := NewAppMempool(config.DefaultMempoolConfig(), app)
 
 		// Given txs
-		txs := []types.Tx{tx("tx1"), tx("tx2"), tx(""), tx("fail")}
+		txs := []types.Tx{tx("tx1"), tx("tx2"), tx(""), tx("fail-retryable")}
 
 		// ACT
 		err1 := m.InsertTx(txs[0])
@@ -65,9 +72,14 @@ func TestAppMempool(t *testing.T) {
 		require.ErrorIs(t, err4, ErrEmptyTx)
 
 		require.ErrorContains(t, err5, "invalid code: (code=32000)")
-		require.False(t, m.seen.Has(txs[3]), "should be removed from seen cache")
+		require.Equal(t, uint64(2), wasInserted.Load())
 
-		require.Equal(t, uint64(2), added.Load())
+		// retryable txs are forgotten asynchronously via guard.ForgetAfter(),
+		// so the seen-cache entry clears shortly after the call returns.
+		retryableForgotten := func() bool {
+			return !m.guard.Has(txs[3].Key())
+		}
+		require.Eventually(t, retryableForgotten, m.checkTxRetryDelay, 50*time.Millisecond)
 
 		t.Run("CheckTx", func(t *testing.T) {
 			for _, tt := range []struct {
@@ -86,7 +98,22 @@ func TestAppMempool(t *testing.T) {
 					name: "fail",
 					tx:   tx("fail"),
 					assert: func(t *testing.T, res *abci.ResponseCheckTx) {
+						require.Equal(t, codeFail, res.Code)
+					},
+				},
+				{
+					name: "fail-retryable",
+					tx:   tx("fail-retryable"),
+					assert: func(t *testing.T, res *abci.ResponseCheckTx) {
 						require.Equal(t, abci.CodeTypeRetry, res.Code)
+						require.True(t, m.guard.Has(tx("fail-retryable").Key()))
+
+						// eventually the tx should be forgotten
+						check := func() bool {
+							return !m.guard.Has(tx("fail-retryable").Key())
+						}
+
+						require.Eventually(t, check, m.checkTxRetryDelay, time.Millisecond*50)
 					},
 				},
 				{

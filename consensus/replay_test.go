@@ -442,9 +442,8 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	startTestRound(css[0], height, round)
 	incrementHeight(vss...)
 	ensureNewRound(newRoundCh, height, 0)
-	ensureNewProposal(proposalCh, height, round)
-	rs := css[0].GetRoundState()
-	signAddVotes(css[0], cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
+	blockID1 := ensureNewProposal(proposalCh, height, round)
+	signAddVotes(css[0], cmtproto.PrecommitType, blockID1.Hash, blockID1.PartSetHeader, true, vss[1:nVals]...)
 	ensureNewRound(newRoundCh, height+1, 0)
 
 	// HEIGHT 2
@@ -474,9 +473,8 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	if err := css[0].SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
-	ensureNewProposal(proposalCh, height, round)
-	rs = css[0].GetRoundState()
-	signAddVotes(css[0], cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
+	blockID2 := ensureNewProposal(proposalCh, height, round)
+	signAddVotes(css[0], cmtproto.PrecommitType, blockID2.Hash, blockID2.PartSetHeader, true, vss[1:nVals]...)
 	ensureNewRound(newRoundCh, height+1, 0)
 
 	// HEIGHT 3
@@ -506,9 +504,8 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	if err := css[0].SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
-	ensureNewProposal(proposalCh, height, round)
-	rs = css[0].GetRoundState()
-	signAddVotes(css[0], cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
+	blockID3 := ensureNewProposal(proposalCh, height, round)
+	signAddVotes(css[0], cmtproto.PrecommitType, blockID3.Hash, blockID3.PartSetHeader, true, vss[1:nVals]...)
 	ensureNewRound(newRoundCh, height+1, 0)
 
 	// HEIGHT 4
@@ -565,18 +562,17 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	if err := css[0].SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
-	ensureNewProposal(proposalCh, height, round)
+	blockID4 := ensureNewProposal(proposalCh, height, round)
 
 	removeValidatorTx2 := kvstore.MakeValSetChangeTx(newVal2ABCI, 0)
 	err = assertMempool(css[0].txNotifier).CheckTx(removeValidatorTx2, nil, mempool.TxInfo{})
 	assert.Nil(t, err)
 
-	rs = css[0].GetRoundState()
 	for i := 0; i < nVals+1; i++ {
 		if i == selfIndex {
 			continue
 		}
-		signAddVotes(css[0], cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
+		signAddVotes(css[0], cmtproto.PrecommitType, blockID4.Hash, blockID4.PartSetHeader, true, newVss[i])
 	}
 
 	ensureNewRound(newRoundCh, height+1, 0)
@@ -589,13 +585,12 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	newVss[newVssIdx].VotingPower = 25
 	sort.Sort(ValidatorStubsByPower(newVss))
 	selfIndex = valIndexFn(0)
-	ensureNewProposal(proposalCh, height, round)
-	rs = css[0].GetRoundState()
+	blockID5 := ensureNewProposal(proposalCh, height, round)
 	for i := 0; i < nVals+1; i++ {
 		if i == selfIndex {
 			continue
 		}
-		signAddVotes(css[0], cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
+		signAddVotes(css[0], cmtproto.PrecommitType, blockID5.Hash, blockID5.PartSetHeader, true, newVss[i])
 	}
 	ensureNewRound(newRoundCh, height+1, 0)
 
@@ -626,13 +621,12 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	if err := css[0].SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
-	ensureNewProposal(proposalCh, height, round)
-	rs = css[0].GetRoundState()
+	blockID6 := ensureNewProposal(proposalCh, height, round)
 	for i := 0; i < nVals+3; i++ {
 		if i == selfIndex {
 			continue
 		}
-		signAddVotes(css[0], cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
+		signAddVotes(css[0], cmtproto.PrecommitType, blockID6.Hash, blockID6.PartSetHeader, true, newVss[i])
 	}
 	ensureNewRound(newRoundCh, height+1, 0)
 

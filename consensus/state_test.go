@@ -1450,11 +1450,10 @@ func TestProcessProposalAccept(t *testing.T) {
 			startTestRound(cs1, cs1.Height, round)
 			ensureNewRound(newRoundCh, height, round)
 
-			ensureNewProposal(proposalCh, height, round)
-			rs := cs1.GetRoundState()
+			blockID := ensureNewProposal(proposalCh, height, round)
 			var prevoteHash cmtbytes.HexBytes
 			if !testCase.expectedNilPrevote {
-				prevoteHash = rs.ProposalBlock.Hash()
+				prevoteHash = blockID.Hash
 			}
 			ensurePrevoteMatch(t, voteCh, height, round, prevoteHash)
 		})
@@ -1508,20 +1507,20 @@ func TestExtendVoteCalledWhenEnabled(t *testing.T) {
 
 			startTestRound(cs1, cs1.Height, round)
 			ensureNewRound(newRoundCh, height, round)
-			ensureNewProposal(proposalCh, height, round)
+			proposalBlockID := ensureNewProposal(proposalCh, height, round)
 
 			m.AssertNotCalled(t, "ExtendVote", mock.Anything, mock.Anything)
 
-			rs := cs1.GetRoundState()
-
 			blockID := types.BlockID{
-				Hash:          rs.ProposalBlock.Hash(),
-				PartSetHeader: rs.ProposalBlockParts.Header(),
+				Hash:          proposalBlockID.Hash,
+				PartSetHeader: proposalBlockID.PartSetHeader,
 			}
 			signAddVotes(cs1, cmtproto.PrevoteType, blockID.Hash, blockID.PartSetHeader, false, vss[1:]...)
 			ensurePrevoteMatch(t, voteCh, height, round, blockID.Hash)
 
 			ensurePrecommit(voteCh, height, round)
+
+			rs := cs1.GetRoundState()
 
 			if testCase.enabled {
 				m.AssertCalled(t, "ExtendVote", context.TODO(), &abci.RequestExtendVote{
@@ -1590,17 +1589,18 @@ func TestVerifyVoteExtensionNotCalledOnAbsentPrecommit(t *testing.T) {
 
 	startTestRound(cs1, cs1.Height, round)
 	ensureNewRound(newRoundCh, height, round)
-	ensureNewProposal(proposalCh, height, round)
-	rs := cs1.GetRoundState()
+	proposalBlockID := ensureNewProposal(proposalCh, height, round)
 
 	blockID := types.BlockID{
-		Hash:          rs.ProposalBlock.Hash(),
-		PartSetHeader: rs.ProposalBlockParts.Header(),
+		Hash:          proposalBlockID.Hash,
+		PartSetHeader: proposalBlockID.PartSetHeader,
 	}
 	signAddVotes(cs1, cmtproto.PrevoteType, blockID.Hash, blockID.PartSetHeader, false, vss...)
 	ensurePrevoteMatch(t, voteCh, height, round, blockID.Hash)
 
 	ensurePrecommit(voteCh, height, round)
+
+	rs := cs1.GetRoundState()
 
 	m.AssertCalled(t, "ExtendVote", context.TODO(), &abci.RequestExtendVote{
 		Height:             height,
@@ -1675,12 +1675,10 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 
 	startTestRound(cs1, height, round)
 	ensureNewRound(newRoundCh, height, round)
-	ensureNewProposal(proposalCh, height, round)
-
-	rs := cs1.GetRoundState()
+	proposalBlockID := ensureNewProposal(proposalCh, height, round)
 	blockID := types.BlockID{
-		Hash:          rs.ProposalBlock.Hash(),
-		PartSetHeader: rs.ProposalBlockParts.Header(),
+		Hash:          proposalBlockID.Hash,
+		PartSetHeader: proposalBlockID.PartSetHeader,
 	}
 	signAddVotes(cs1, cmtproto.PrevoteType, blockID.Hash, blockID.PartSetHeader, false, vss[1:]...)
 
@@ -1777,8 +1775,7 @@ func TestFinalizeBlockCalled(t *testing.T) {
 
 			startTestRound(cs1, cs1.Height, round)
 			ensureNewRound(newRoundCh, height, round)
-			ensureNewProposal(proposalCh, height, round)
-			rs := cs1.GetRoundState()
+			proposalBlockID := ensureNewProposal(proposalCh, height, round)
 
 			blockID := types.BlockID{}
 			nextRound := round + 1
@@ -1787,13 +1784,13 @@ func TestFinalizeBlockCalled(t *testing.T) {
 				nextRound = 0
 				nextHeight = height + 1
 				blockID = types.BlockID{
-					Hash:          rs.ProposalBlock.Hash(),
-					PartSetHeader: rs.ProposalBlockParts.Header(),
+					Hash:          proposalBlockID.Hash,
+					PartSetHeader: proposalBlockID.PartSetHeader,
 				}
 			}
 
 			signAddVotes(cs1, cmtproto.PrevoteType, blockID.Hash, blockID.PartSetHeader, false, vss[1:]...)
-			ensurePrevoteMatch(t, voteCh, height, round, rs.ProposalBlock.Hash())
+			ensurePrevoteMatch(t, voteCh, height, round, proposalBlockID.Hash)
 
 			signAddVotes(cs1, cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader, true, vss[1:]...)
 			ensurePrecommit(voteCh, height, round)
@@ -1894,12 +1891,11 @@ func TestVoteExtensionEnableHeight(t *testing.T) {
 
 			startTestRound(cs1, cs1.Height, round)
 			ensureNewRound(newRoundCh, height, round)
-			ensureNewProposal(proposalCh, height, round)
-			rs := cs1.GetRoundState()
+			proposalBlockID := ensureNewProposal(proposalCh, height, round)
 
 			// sign all of the votes
-			signAddVotes(cs1, cmtproto.PrevoteType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), false, vss[1:]...)
-			ensurePrevoteMatch(t, voteCh, height, round, rs.ProposalBlock.Hash())
+			signAddVotes(cs1, cmtproto.PrevoteType, proposalBlockID.Hash, proposalBlockID.PartSetHeader, false, vss[1:]...)
+			ensurePrevoteMatch(t, voteCh, height, round, proposalBlockID.Hash)
 
 			var ext []byte
 			if testCase.hasExtension {
@@ -1907,7 +1903,7 @@ func TestVoteExtensionEnableHeight(t *testing.T) {
 			}
 
 			for _, vs := range vss[1:] {
-				vote, err := vs.signVote(cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), ext, testCase.hasExtension)
+				vote, err := vs.signVote(cmtproto.PrecommitType, proposalBlockID.Hash, proposalBlockID.PartSetHeader, ext, testCase.hasExtension)
 				require.NoError(t, err)
 				addVotes(cs1, vote)
 			}
@@ -2194,10 +2190,9 @@ func TestStartNextHeightCorrectlyAfterTimeout(t *testing.T) {
 	startTestRound(cs1, height, round)
 	ensureNewRound(newRoundCh, height, round)
 
-	ensureNewProposal(proposalCh, height, round)
-	rs := cs1.GetRoundState()
-	theBlockHash := rs.ProposalBlock.Hash()
-	theBlockParts := rs.ProposalBlockParts.Header()
+	blockID := ensureNewProposal(proposalCh, height, round)
+	theBlockHash := blockID.Hash
+	theBlockParts := blockID.PartSetHeader
 
 	ensurePrevote(voteCh, height, round)
 	validatePrevote(t, cs1, round, vss[0], theBlockHash)
@@ -2225,7 +2220,7 @@ func TestStartNextHeightCorrectlyAfterTimeout(t *testing.T) {
 	cs1.txNotifier.(*fakeTxNotifier).Notify()
 
 	ensureNewTimeout(timeoutProposeCh, height+1, round, cs1.config.Propose(round).Nanoseconds())
-	rs = cs1.GetRoundState()
+	rs := cs1.GetRoundState()
 	assert.False(
 		t,
 		rs.TriggeredTimeoutPrecommit,
@@ -2256,10 +2251,9 @@ func TestResetTimeoutPrecommitUponNewHeight(t *testing.T) {
 	startTestRound(cs1, height, round)
 	ensureNewRound(newRoundCh, height, round)
 
-	ensureNewProposal(proposalCh, height, round)
-	rs := cs1.GetRoundState()
-	theBlockHash := rs.ProposalBlock.Hash()
-	theBlockParts := rs.ProposalBlockParts.Header()
+	blockID := ensureNewProposal(proposalCh, height, round)
+	theBlockHash := blockID.Hash
+	theBlockParts := blockID.PartSetHeader
 
 	ensurePrevote(voteCh, height, round)
 	validatePrevote(t, cs1, round, vss[0], theBlockHash)
@@ -2285,7 +2279,7 @@ func TestResetTimeoutPrecommitUponNewHeight(t *testing.T) {
 	}
 	ensureNewProposal(proposalCh, height+1, 0)
 
-	rs = cs1.GetRoundState()
+	rs := cs1.GetRoundState()
 	assert.False(
 		t,
 		rs.TriggeredTimeoutPrecommit,

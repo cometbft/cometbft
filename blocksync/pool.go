@@ -687,9 +687,17 @@ type bpRequester struct {
 	peerID       p2p.ID
 	secondPeerID p2p.ID // alternative peer to request from (if close to pool's height)
 	gotBlockFrom p2p.ID
-	redoPeers    []p2p.ID // peers that need to be re-requested; protected by mtx
+	generation   uint64      // incremented each outer loop; protects against stale redo events; protected by mtx
+	redoPeers    []redoEvent // peers that need to be re-requested; protected by mtx
 	block        *types.Block
 	extCommit    *types.ExtendedCommit
+}
+
+// redoEvent pairs a peer ID with the generation in which the redo was requested,
+// so stale events from a previous outer-loop iteration can be discarded.
+type redoEvent struct {
+	peerID p2p.ID
+	gen    uint64
 }
 
 func newBPRequester(pool *BlockPool, height int64) *bpRequester {
@@ -804,7 +812,7 @@ func (bpr *bpRequester) reset(peerID p2p.ID) (removedBlock bool) {
 // Nonblocking: state is stored under mtx; the channel is a coalesced wake-up.
 func (bpr *bpRequester) redo(peerID p2p.ID) {
 	bpr.mtx.Lock()
-	bpr.redoPeers = append(bpr.redoPeers, peerID)
+	bpr.redoPeers = append(bpr.redoPeers, redoEvent{peerID, bpr.generation})
 	bpr.mtx.Unlock()
 	select {
 	case bpr.redoCh <- struct{}{}:
@@ -915,6 +923,11 @@ func (bpr *bpRequester) requestRoutine() {
 
 OUTER_LOOP:
 	for {
+		bpr.mtx.Lock()
+		bpr.generation++
+		currentGen := bpr.generation
+		bpr.mtx.Unlock()
+
 		bpr.pickPeerAndSendRequest()
 
 		poolHeight := bpr.pool.Height()
@@ -942,12 +955,15 @@ OUTER_LOOP:
 				}
 			case <-bpr.redoCh:
 				bpr.mtx.Lock()
-				peers := bpr.redoPeers
+				events := bpr.redoPeers
 				bpr.redoPeers = nil
 				bpr.mtx.Unlock()
-				for _, peerID := range peers {
-					if bpr.didRequestFrom(peerID) {
-						removedBlock := bpr.reset(peerID)
+				for _, ev := range events {
+					if ev.gen != currentGen {
+						continue // stale event from a previous iteration
+					}
+					if bpr.didRequestFrom(ev.peerID) {
+						removedBlock := bpr.reset(ev.peerID)
 						if removedBlock {
 							gotBlock = false
 						}

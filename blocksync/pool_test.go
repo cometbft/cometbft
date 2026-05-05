@@ -242,12 +242,12 @@ func TestBPRequesterRedoPreservesBothPeers(t *testing.T) {
 	require.Equal(t, 1, len(requester.redoCh))
 
 	requester.mtx.Lock()
-	peers := requester.redoPeers
+	events := requester.redoPeers
 	requester.mtx.Unlock()
 
 	peerSet := map[p2p.ID]struct{}{}
-	for _, p := range peers {
-		peerSet[p] = struct{}{}
+	for _, ev := range events {
+		peerSet[ev.peerID] = struct{}{}
 	}
 	require.Contains(t, peerSet, p2p.ID("peerA"))
 	require.Contains(t, peerSet, p2p.ID("peerB"))
@@ -269,12 +269,12 @@ func TestBPRequesterRedoNeverDropsEvent(t *testing.T) {
 	require.Equal(t, 1, len(requester.redoCh))
 
 	requester.mtx.Lock()
-	peers := requester.redoPeers
+	events := requester.redoPeers
 	requester.mtx.Unlock()
 
 	counts := map[p2p.ID]int{}
-	for _, p := range peers {
-		counts[p]++
+	for _, ev := range events {
+		counts[ev.peerID]++
 	}
 	require.Equal(t, 2, counts["peerA"])
 	require.Equal(t, 1, counts["peerB"], "peerB redo must not be dropped")

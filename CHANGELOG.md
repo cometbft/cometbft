@@ -14,6 +14,13 @@
 
 ### API-BREAKING
 
+## v0.39.3
+
+### FEATURES
+
+- `[mempool]` Allow CheckTx retries for BroadcastTxSync
+  ([\#5802](https://github.com/cometbft/cometbft/pull/5802))
+
 ## v0.39.2
 
 *May 4, 2026*

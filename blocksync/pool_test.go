@@ -233,29 +233,51 @@ func TestBlockPoolTimeout(t *testing.T) {
 	}
 }
 
-func TestBPRequesterRedoChannelBuffersBothPeers(t *testing.T) {
+func TestBPRequesterRedoPreservesBothPeers(t *testing.T) {
 	requester := newBPRequester(nil, 1)
 	requester.redo("peerA")
 	requester.redo("peerB")
 
-	drained := map[p2p.ID]struct{}{}
-	for {
-		select {
-		case peerID := <-requester.redoCh:
-			drained[peerID] = struct{}{}
-		default:
-			goto DONE
-		}
-	}
+	// Exactly one coalesced wake-up signal.
+	require.Equal(t, 1, len(requester.redoCh))
 
-DONE:
-	require.Equal(t, 2, len(drained), "expected buffered redo signals for both peers")
-	if _, ok := drained["peerA"]; !ok {
-		t.Fatalf("missing redo signal for peerA: %v", drained)
+	requester.mtx.Lock()
+	peers := requester.redoPeers
+	requester.mtx.Unlock()
+
+	peerSet := map[p2p.ID]struct{}{}
+	for _, p := range peers {
+		peerSet[p] = struct{}{}
 	}
-	if _, ok := drained["peerB"]; !ok {
-		t.Fatalf("missing redo signal for peerB: %v", drained)
+	require.Contains(t, peerSet, p2p.ID("peerA"))
+	require.Contains(t, peerSet, p2p.ID("peerB"))
+}
+
+// Regression test: with the old chan p2p.ID capacity-2 design, calling redo for
+// the same peer twice would fill both slots, causing a subsequent redo for the
+// second peer to be silently dropped. Verify that no redo event is ever lost.
+func TestBPRequesterRedoNeverDropsEvent(t *testing.T) {
+	requester := newBPRequester(nil, 1)
+
+	// Two redo calls for peerA fill the old capacity-2 channel, then peerB's
+	// redo would have been dropped with the previous implementation.
+	requester.redo("peerA")
+	requester.redo("peerA")
+	requester.redo("peerB")
+
+	// Still exactly one wake-up signal (coalesced).
+	require.Equal(t, 1, len(requester.redoCh))
+
+	requester.mtx.Lock()
+	peers := requester.redoPeers
+	requester.mtx.Unlock()
+
+	counts := map[p2p.ID]int{}
+	for _, p := range peers {
+		counts[p]++
 	}
+	require.Equal(t, 2, counts["peerA"])
+	require.Equal(t, 1, counts["peerB"], "peerB redo must not be dropped")
 }
 
 func TestBlockPoolRemovePeer(t *testing.T) {

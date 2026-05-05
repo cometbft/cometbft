@@ -680,13 +680,14 @@ type bpRequester struct {
 	pool        *BlockPool
 	height      int64
 	gotBlockCh  chan struct{}
-	redoCh      chan p2p.ID // buffered so redo signals from both peers are not dropped
+	redoCh      chan struct{} // coalesced wake-up: capacity 1, signals that redoPeers has entries
 	newHeightCh chan int64
 
 	mtx          cmtsync.Mutex
 	peerID       p2p.ID
 	secondPeerID p2p.ID // alternative peer to request from (if close to pool's height)
 	gotBlockFrom p2p.ID
+	redoPeers    []p2p.ID // peers that need to be re-requested; protected by mtx
 	block        *types.Block
 	extCommit    *types.ExtendedCommit
 }
@@ -696,7 +697,7 @@ func newBPRequester(pool *BlockPool, height int64) *bpRequester {
 		pool:        pool,
 		height:      height,
 		gotBlockCh:  make(chan struct{}, 1),
-		redoCh:      make(chan p2p.ID, 2), // both removePeer() and requester.redo() can enqueue before draining
+		redoCh:      make(chan struct{}, 1),
 		newHeightCh: make(chan int64, 1),
 
 		peerID:       "",
@@ -800,11 +801,13 @@ func (bpr *bpRequester) reset(peerID p2p.ID) (removedBlock bool) {
 }
 
 // Tells bpRequester to pick another peer and try again.
-// NOTE: Nonblocking, and does nothing if another redo
-// was already requested.
+// Nonblocking: state is stored under mtx; the channel is a coalesced wake-up.
 func (bpr *bpRequester) redo(peerID p2p.ID) {
+	bpr.mtx.Lock()
+	bpr.redoPeers = append(bpr.redoPeers, peerID)
+	bpr.mtx.Unlock()
 	select {
-	case bpr.redoCh <- peerID:
+	case bpr.redoCh <- struct{}{}:
 	default:
 	}
 }
@@ -937,11 +940,17 @@ OUTER_LOOP:
 					bpr.reset(bpr.secondPeerID)
 					continue OUTER_LOOP
 				}
-			case peerID := <-bpr.redoCh:
-				if bpr.didRequestFrom(peerID) {
-					removedBlock := bpr.reset(peerID)
-					if removedBlock {
-						gotBlock = false
+			case <-bpr.redoCh:
+				bpr.mtx.Lock()
+				peers := bpr.redoPeers
+				bpr.redoPeers = nil
+				bpr.mtx.Unlock()
+				for _, peerID := range peers {
+					if bpr.didRequestFrom(peerID) {
+						removedBlock := bpr.reset(peerID)
+						if removedBlock {
+							gotBlock = false
+						}
 					}
 				}
 				// If both peers returned NoBlockResponse or bad block, reschedule both

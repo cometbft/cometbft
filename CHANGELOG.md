@@ -16,6 +16,13 @@
 
 ## v0.39.3
 
+*May 5, 2026*
+
+### DEPENDENCIES
+
+- Bump pq version to 1.12.0
+  ([\#5713](https://github.com/cometbft/cometbft/pull/5713))
+
 ### FEATURES
 
 - `[mempool]` Allow CheckTx retries for BroadcastTxSync

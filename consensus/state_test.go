@@ -84,10 +84,9 @@ func TestStateProposerSelection0(t *testing.T) {
 	}
 
 	// Wait for complete proposal.
-	ensureNewProposal(proposalCh, height, round)
+	blockID := ensureNewProposal(proposalCh, height, round)
 
-	rs := cs1.GetRoundState()
-	signAddVotes(cs1, cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:]...)
+	signAddVotes(cs1, cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader, true, vss[1:]...)
 
 	// Wait for new round so next validator is set.
 	ensureNewRound(newRoundCh, height+1, 0)
@@ -475,10 +474,9 @@ func TestStateLockNoPOL(t *testing.T) {
 
 	ensureNewRound(newRoundCh, height, round)
 
-	ensureNewProposal(proposalCh, height, round)
-	roundState := cs1.GetRoundState()
-	theBlockHash := roundState.ProposalBlock.Hash()
-	thePartSetHeader := roundState.ProposalBlockParts.Header()
+	blockID := ensureNewProposal(proposalCh, height, round)
+	theBlockHash := blockID.Hash
+	thePartSetHeader := blockID.PartSetHeader
 
 	ensurePrevote(voteCh, height, round) // prevote
 
@@ -684,10 +682,9 @@ func TestStateLockPOLRelock(t *testing.T) {
 	startTestRound(cs1, height, round)
 
 	ensureNewRound(newRoundCh, height, round)
-	ensureNewProposal(proposalCh, height, round)
-	rs := cs1.GetRoundState()
-	theBlockHash := rs.ProposalBlock.Hash()
-	theBlockParts := rs.ProposalBlockParts.Header()
+	blockID := ensureNewProposal(proposalCh, height, round)
+	theBlockHash := blockID.Hash
+	theBlockParts := blockID.PartSetHeader
 
 	ensurePrevote(voteCh, height, round) // prevote
 
@@ -784,10 +781,9 @@ func TestStateLockPOLUnlock(t *testing.T) {
 	startTestRound(cs1, height, round)
 	ensureNewRound(newRoundCh, height, round)
 
-	ensureNewProposal(proposalCh, height, round)
-	rs := cs1.GetRoundState()
-	theBlockHash := rs.ProposalBlock.Hash()
-	theBlockParts := rs.ProposalBlockParts.Header()
+	blockID := ensureNewProposal(proposalCh, height, round)
+	theBlockHash := blockID.Hash
+	theBlockParts := blockID.PartSetHeader
 
 	ensurePrevote(voteCh, height, round)
 	validatePrevote(t, cs1, round, vss[0], theBlockHash)
@@ -809,7 +805,7 @@ func TestStateLockPOLUnlock(t *testing.T) {
 
 	// timeout to new round
 	ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Precommit(round).Nanoseconds())
-	rs = cs1.GetRoundState()
+	rs := cs1.GetRoundState()
 	lockedBlockHash := rs.LockedBlock.Hash()
 
 	incrementRound(vs2, vs3, vs4)
@@ -876,10 +872,9 @@ func TestStateLockPOLUnlockOnUnknownBlock(t *testing.T) {
 	startTestRound(cs1, height, round)
 
 	ensureNewRound(newRoundCh, height, round)
-	ensureNewProposal(proposalCh, height, round)
-	rs := cs1.GetRoundState()
-	firstBlockHash := rs.ProposalBlock.Hash()
-	firstBlockParts := rs.ProposalBlockParts.Header()
+	blockID := ensureNewProposal(proposalCh, height, round)
+	firstBlockHash := blockID.Hash
+	firstBlockParts := blockID.PartSetHeader
 
 	ensurePrevote(voteCh, height, round) // prevote
 

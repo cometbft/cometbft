@@ -171,11 +171,10 @@ func (m *AppMempool) TxStream(ctx context.Context) <-chan types.Txs {
 
 	go func() {
 		defer func() {
-			close(ch)
-
 			if p := recover(); p != nil {
 				m.logger.Error("panic in AppMempool.reapTxs", "panic", p)
 			}
+			close(ch)
 		}()
 
 		m.reapTxs(ctx, ch)

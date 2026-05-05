@@ -253,9 +253,9 @@ func TestBPRequesterRedoPreservesBothPeers(t *testing.T) {
 	require.Contains(t, peerSet, p2p.ID("peerB"))
 }
 
-// Regression test: with the old chan p2p.ID capacity-2 design, calling redo for
-// the same peer twice would fill both slots, causing a subsequent redo for the
-// second peer to be silently dropped. Verify that no redo event is ever lost.
+// Regression test: with the old chan p2p.ID capacity-1 design, if a redo signal
+// was already pending in the channel, a concurrent redo for the second peer would
+// be silently dropped. Verify that no redo event is ever lost.
 func TestBPRequesterRedoNeverDropsEvent(t *testing.T) {
 	requester := newBPRequester(nil, 1)
 

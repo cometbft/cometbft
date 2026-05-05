@@ -949,6 +949,9 @@ OUTER_LOOP:
 			case <-retryTimer.C():
 				if !gotBlock {
 					bpr.Logger.Debug("Retrying block request(s) after timeout", "height", bpr.height, "peer", bpr.peerID, "secondPeerID", bpr.secondPeerID)
+					bpr.mtx.Lock()
+					bpr.redoPeers = nil
+					bpr.mtx.Unlock()
 					bpr.reset(bpr.peerID)
 					bpr.reset(bpr.secondPeerID)
 					continue OUTER_LOOP

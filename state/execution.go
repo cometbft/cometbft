@@ -625,29 +625,6 @@ func BuildLastCommitInfo(block *types.Block, lastValSet *types.ValidatorSet, ini
 	}
 }
 
-// buildExtendedCommitInfoFromStore populates an ABCI extended commit from the
-// corresponding CometBFT extended commit ec, using the stored validator set
-// from ec.  It requires ec to include the original precommit votes along with
-// the vote extensions from the last commit.
-//
-// For heights below the initial height, for which we do not have the required
-// data, it returns an empty record.
-//
-// Assumes that the commit signatures are sorted according to validator index.
-func buildExtendedCommitInfoFromStore(ec *types.ExtendedCommit, store Store, initialHeight int64, ap types.ABCIParams) abci.ExtendedCommitInfo {
-	if ec.Height < initialHeight {
-		// There are no extended commits for heights below the initial height.
-		return abci.ExtendedCommitInfo{}
-	}
-
-	valSet, err := store.LoadValidators(ec.Height)
-	if err != nil {
-		panic(fmt.Errorf("failed to load validator set at height %d, initial height %d: %w", ec.Height, initialHeight, err))
-	}
-
-	return BuildExtendedCommitInfo(ec, valSet, initialHeight, ap)
-}
-
 // BuildExtendedCommitInfo builds an ExtendedCommitInfo from the given block and validator set.
 // If you want to load the validator set from the store instead of providing it,
 // use buildExtendedCommitInfoFromStore.

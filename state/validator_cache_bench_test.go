@@ -12,7 +12,6 @@ import (
 // unmarshals per block cycle.
 func BenchmarkLoadValidators_PerBlockCycle_NoCache(b *testing.B) {
 	for _, nVals := range []int{10, 100} {
-		nVals := nVals
 		b.Run(benchName(nVals), func(b *testing.B) {
 			state, stateDB, _ := makeState(nVals, 10)
 			stateStore := sm.NewStore(stateDB, sm.StoreOptions{})
@@ -44,7 +43,6 @@ func BenchmarkLoadValidators_PerBlockCycle_NoCache(b *testing.B) {
 // hit is effectively free compared with a DB round-trip.
 func BenchmarkLoadValidators_PerBlockCycle_WithCache(b *testing.B) {
 	for _, nVals := range []int{10, 100} {
-		nVals := nVals
 		b.Run(benchName(nVals), func(b *testing.B) {
 			state, stateDB, _ := makeState(nVals, 10)
 			stateStore := sm.NewStore(stateDB, sm.StoreOptions{})

@@ -152,6 +152,9 @@ func WithMetrics(metrics *Metrics) CListMempoolOption {
 
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) Lock() {
+	if mem.recheck.setRecheckFull() {
+		mem.logger.Debug("the state of recheckFull has flipped")
+	}
 	mem.updateMtx.Lock()
 }
 
@@ -585,9 +588,6 @@ func (mem *CListMempool) Update(
 	postCheck PostCheckFunc,
 ) error {
 	mem.logger.Debug("Update", "height", height, "len(txs)", len(txs))
-	if mem.recheck.setRecheckFull() {
-		mem.logger.Debug("the state of recheckFull has flipped")
-	}
 
 	// Set height
 	mem.height.Store(height)

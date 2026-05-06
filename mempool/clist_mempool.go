@@ -152,9 +152,6 @@ func WithMetrics(metrics *Metrics) CListMempoolOption {
 
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) Lock() {
-	if mem.recheck.setRecheckFull() {
-		mem.logger.Debug("the state of recheckFull has flipped")
-	}
 	mem.updateMtx.Lock()
 }
 
@@ -588,6 +585,9 @@ func (mem *CListMempool) Update(
 	postCheck PostCheckFunc,
 ) error {
 	mem.logger.Debug("Update", "height", height, "len(txs)", len(txs))
+	if mem.recheck.setRecheckFull() {
+		mem.logger.Debug("the state of recheckFull has flipped")
+	}
 
 	// Set height
 	mem.height.Store(height)
@@ -690,6 +690,15 @@ func (mem *CListMempool) recheckTxs() {
 }
 
 // The cursor and end pointers define a dynamic list of transactions that could be rechecked. The
+// recheckStateEnum represents the state of the mempool rechecking process.
+type recheckStateEnum int32
+
+const (
+	recheckStateIdle   recheckStateEnum = 0 // not rechecking
+	recheckStateActive recheckStateEnum = 1 // rechecking in progress
+	recheckStateFull   recheckStateEnum = 2 // rechecking was in progress when a new block arrived
+)
+
 // end pointer is fixed. When a recheck response for a transaction is received, cursor will point to
 // the entry in the mempool corresponding to that transaction, thus narrowing the list. Transactions
 // corresponding to entries between the old and current positions of cursor will be ignored for
@@ -700,8 +709,7 @@ type recheck struct {
 	end           *clist.CElement // last entry in the mempool to recheck
 	doneCh        chan struct{}   // to signal that rechecking has finished successfully (for async app connections)
 	numPendingTxs atomic.Int32    // number of transactions still pending to recheck
-	isRechecking  atomic.Bool     // true iff the rechecking process has begun and is not yet finished
-	recheckFull   atomic.Bool     // whether rechecking TXs cannot be completed before a new block is decided
+	state         atomic.Int32    // recheckStateEnum: idle, active, or full
 }
 
 func newRecheck() *recheck {
@@ -717,20 +725,19 @@ func (rc *recheck) init(first, last *clist.CElement) {
 	rc.cursor = first
 	rc.end = last
 	rc.numPendingTxs.Store(0)
-	rc.isRechecking.Store(true)
+	rc.state.Store(int32(recheckStateActive))
 }
 
 // done returns true when there is no recheck response to process.
 // Safe for concurrent use by multiple goroutines.
 func (rc *recheck) done() bool {
-	return !rc.isRechecking.Load()
+	return recheckStateEnum(rc.state.Load()) == recheckStateIdle
 }
 
 // setDone registers that rechecking has finished.
 func (rc *recheck) setDone() {
 	rc.cursor = nil
-	rc.recheckFull.Store(false)
-	rc.isRechecking.Store(false)
+	rc.state.Store(int32(recheckStateIdle))
 }
 
 // setNextEntry sets cursor to the next entry in the list. If there is no next, cursor will be nil.
@@ -787,16 +794,14 @@ func (rc *recheck) doneRechecking() <-chan struct{} {
 	return rc.doneCh
 }
 
-// setRecheckFull sets recheckFull to true if rechecking is still in progress. It returns true iff
-// the value of recheckFull has changed.
+// setRecheckFull atomically transitions active → full. Returns true iff the state changed.
+// Must be called under the write lock (from Update) to avoid racing with setDone.
 func (rc *recheck) setRecheckFull() bool {
-	rechecking := !rc.done()
-	recheckFull := rc.recheckFull.Swap(rechecking)
-	return rechecking != recheckFull
+	return rc.state.CompareAndSwap(int32(recheckStateActive), int32(recheckStateFull))
 }
 
 // consideredFull returns true iff the mempool should be considered as full while rechecking is in
 // progress.
 func (rc *recheck) consideredFull() bool {
-	return rc.recheckFull.Load()
+	return recheckStateEnum(rc.state.Load()) == recheckStateFull
 }

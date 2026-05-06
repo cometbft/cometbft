@@ -15,6 +15,9 @@
 
 ### IMPROVEMENTS
 
+- `[execution]` perf(execution): cache validator set within a block cycle.
+  ([\#5834](https://github.com/cometbft/cometbft/pull/5834))
+
 ### FEATURES
 
 - `[mempool]` Add app mempool & related ABCI methods, InsertTx and ReapTxs.

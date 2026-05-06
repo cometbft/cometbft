@@ -10,6 +10,9 @@
 - `[p2p]` Add lp2p reactor panic recovery
   ([\#5816](https://github.com/cometbft/cometbft/pull/5816))
 
+- `[light]`: stop witness comparison after divergence checks
+  ([\#5820](https://github.com/cometbft/cometbft/pull/5820))
+
 ### IMPROVEMENTS
 
 ### FEATURES

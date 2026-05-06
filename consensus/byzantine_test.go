@@ -251,16 +251,26 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	// Evidence should be submitted and committed at the third height but
 	// we will check the first six just in case
 	evidenceFromEachValidator := make([]types.Evidence, nValidators)
+	subErrCh := make(chan error, nValidators)
 
 	wg := new(sync.WaitGroup)
 	for i := 0; i < nValidators; i++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			for msg := range blocksSubs[i].Out() {
-				block := msg.Data().(types.EventDataNewBlock).Block
-				if len(block.Evidence.Evidence) != 0 {
-					evidenceFromEachValidator[i] = block.Evidence.Evidence[0]
+			sub := blocksSubs[i]
+			for {
+				select {
+				case msg := <-sub.Out():
+					block := msg.Data().(types.EventDataNewBlock).Block
+					if len(block.Evidence.Evidence) != 0 {
+						evidenceFromEachValidator[i] = block.Evidence.Evidence[0]
+						return
+					}
+				case <-sub.Canceled():
+					if err := sub.Err(); err != nil {
+						subErrCh <- err
+					}
 					return
 				}
 			}
@@ -278,6 +288,11 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 
 	select {
 	case <-done:
+		select {
+		case err := <-subErrCh:
+			t.Fatalf("subscription unexpectedly canceled: %v", err)
+		default:
+		}
 		for idx, ev := range evidenceFromEachValidator {
 			if assert.NotNil(t, ev, idx) {
 				ev, ok := ev.(*types.DuplicateVoteEvidence)

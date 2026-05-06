@@ -794,8 +794,10 @@ func (rc *recheck) doneRechecking() <-chan struct{} {
 	return rc.doneCh
 }
 
-// setRecheckFull atomically transitions active → full. Returns true iff the state changed.
-// Must be called under the write lock (from Update) to avoid racing with setDone.
+// setRecheckFull atomically transitions active → full using CAS, so it is
+// safe to call from Lock() outside the write lock. If rechecking has already
+// finished (state is idle), the CAS fails and the state is left unchanged,
+// preventing a spurious full signal. Returns true iff the state changed.
 func (rc *recheck) setRecheckFull() bool {
 	return rc.state.CompareAndSwap(int32(recheckStateActive), int32(recheckStateFull))
 }

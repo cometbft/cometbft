@@ -693,6 +693,10 @@ func (mem *CListMempool) recheckTxs() {
 // recheckStateEnum represents the state of the mempool rechecking process.
 type recheckStateEnum int32
 
+// Valid transitions: idle→active (init), active→full (setRecheckFull),
+// active→idle (setDone), full→idle (setDone). full→active is intentionally
+// not a valid transition: once a block arrives during rechecking, the state
+// stays full until rechecking completes.
 const (
 	recheckStateIdle   recheckStateEnum = 0 // not rechecking
 	recheckStateActive recheckStateEnum = 1 // rechecking in progress

@@ -62,7 +62,7 @@ func run(configFile string) error {
 		if err = startSigner(cfg); err != nil {
 			return err
 		}
-		if cfg.Protocol == "builtin" || cfg.Protocol == "builtin_connsync" {
+		if cfg.Protocol == string(e2e.ProtocolBuiltin) || cfg.Protocol == string(e2e.ProtocolBuiltinConnSync) {
 			time.Sleep(1 * time.Second)
 		}
 	}
@@ -71,7 +71,7 @@ func run(configFile string) error {
 	switch cfg.Protocol {
 	case "socket", "grpc":
 		err = startApp(cfg)
-	case "builtin", "builtin_connsync":
+	case string(e2e.ProtocolBuiltin), string(e2e.ProtocolBuiltinConnSync):
 		if cfg.Mode == string(e2e.ModeLight) {
 			err = startLightClient(cfg)
 		} else {

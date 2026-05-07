@@ -232,7 +232,7 @@ func (c *Local) Subscribe(
 	if outCap > 0 {
 		sub, err = c.EventBus.Subscribe(ctx, subscriber, q, outCap)
 	} else {
-		sub, err = c.EventBus.SubscribeUnbuffered(ctx, subscriber, q)
+		sub, err = c.SubscribeUnbuffered(ctx, subscriber, q)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to subscribe: %w", err)

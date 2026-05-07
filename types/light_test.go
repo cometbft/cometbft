@@ -147,13 +147,13 @@ func TestSignedHeaderValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
+
 		t.Run(tc.testName, func(t *testing.T) {
 			sh := SignedHeader{
 				Header: tc.shHeader,
 				Commit: tc.shCommit,
 			}
-			err := sh.ValidateBasic(validSignedHeader.Header.ChainID)
+			err := sh.ValidateBasic(validSignedHeader.ChainID)
 			assert.Equalf(
 				t,
 				tc.expectErr,

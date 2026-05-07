@@ -148,20 +148,11 @@ If you are a VS Code user, you may want to add the following to your `.vscode/se
 
 ## Changelog
 
-To manage and generate our changelog, we currently use [unclog](https://github.com/informalsystems/unclog).
+Every PR with types `fix`, `feat`, `deps`, and `refactor` should include an entry in `CHANGELOG.md`. Commits on the
+`main` branch should be placed under `UNRELEASED` within the correct category.
+The categories include `DEPENDENCIES`, `IMPROVEMENTS`, `FEATURES`, `BUG-FIXES`, `STATE-BREAKING`, `API-BREAKING`.
 
-Every fix, improvement, feature, or breaking change should be made in a
-pull-request that includes a file
-`.changelog/unreleased/${category}/${issue-or-pr-number}-${description}.md`,
-where:
-- `category` is one of `improvements`, `breaking-changes`, `bug-fixes`,
-  `features` and if multiple apply, create multiple files;
-- `description` is a short (4 to 6 word), hyphen separated description of the
-  fix, starting the component changed; and,
-- `issue or PR number` is the CometBFT issue number, if one exists, or the PR
-  number, otherwise.
-
-For examples, see the [.changelog](.changelog) folder.
+For examples, see the [CHANGELOG.md](CHANGELOG.md) file.
 
 A feature can also be worked on a feature branch, if its size and/or risk
 justifies it (see [below](#branching-model-and-release)).

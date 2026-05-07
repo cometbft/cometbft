@@ -58,8 +58,8 @@ func TestInspectRun(t *testing.T) {
 func TestBlock(t *testing.T) {
 	testHeight := int64(1)
 	testBlock := new(types.Block)
-	testBlock.Header.Height = testHeight
-	testBlock.Header.LastCommitHash = []byte("test hash")
+	testBlock.Height = testHeight
+	testBlock.LastCommitHash = []byte("test hash")
 	stateStoreMock := &statemocks.Store{}
 	stateStoreMock.On("Close").Return(nil)
 
@@ -341,7 +341,7 @@ func TestCommit(t *testing.T) {
 	res, err := cli.Commit(context.Background(), &testHeight)
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	require.Equal(t, res.SignedHeader.Commit.Round, testRound)
+	require.Equal(t, res.Commit.Round, testRound)
 
 	cancel()
 	wg.Wait()
@@ -354,8 +354,8 @@ func TestBlockByHash(t *testing.T) {
 	testHeight := int64(1)
 	testHash := []byte("test hash")
 	testBlock := new(types.Block)
-	testBlock.Header.Height = testHeight
-	testBlock.Header.LastCommitHash = testHash
+	testBlock.Height = testHeight
+	testBlock.LastCommitHash = testHash
 	stateStoreMock := &statemocks.Store{}
 	stateStoreMock.On("Close").Return(nil)
 	blockStoreMock := &statemocks.BlockStore{}
@@ -407,8 +407,8 @@ func TestBlockchain(t *testing.T) {
 	testHeight := int64(1)
 	testBlock := new(types.Block)
 	testBlockHash := []byte("test hash")
-	testBlock.Header.Height = testHeight
-	testBlock.Header.LastCommitHash = testBlockHash
+	testBlock.Height = testHeight
+	testBlock.LastCommitHash = testBlockHash
 	stateStoreMock := &statemocks.Store{}
 	stateStoreMock.On("Close").Return(nil)
 

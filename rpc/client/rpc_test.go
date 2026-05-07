@@ -277,9 +277,9 @@ func TestAppCalls(t *testing.T) {
 		// and we can even check the block is added
 		block, err := c.Block(context.Background(), &apph)
 		require.NoError(err)
-		appHash := block.Block.Header.AppHash
+		appHash := block.Block.AppHash
 		assert.True(len(appHash) > 0)
-		assert.EqualValues(apph, block.Block.Header.Height)
+		assert.EqualValues(apph, block.Block.Height)
 
 		blockByHash, err := c.BlockByHash(context.Background(), block.BlockID.Hash)
 		require.NoError(err)
@@ -311,14 +311,14 @@ func TestAppCalls(t *testing.T) {
 			lastMeta := info.BlockMetas[0]
 			assert.EqualValues(apph, lastMeta.Header.Height)
 			blockData := block.Block
-			assert.Equal(blockData.Header.AppHash, lastMeta.Header.AppHash)
+			assert.Equal(blockData.AppHash, lastMeta.Header.AppHash)
 			assert.Equal(block.BlockID, lastMeta.BlockID)
 		}
 
 		// and get the corresponding commit with the same apphash
 		commit, err := c.Commit(context.Background(), &apph)
 		require.NoError(err)
-		cappHash := commit.Header.AppHash
+		cappHash := commit.AppHash
 		assert.Equal(appHash, cappHash)
 		assert.NotNil(commit.Commit)
 
@@ -642,7 +642,7 @@ func TestTxSearch(t *testing.T) {
 
 		totalTx := 0
 		for page := 1; page <= pages; page++ {
-			page := page
+
 			result, err := c.TxSearch(context.Background(), "tx.height >= 1", true, &page, &perPage, "asc")
 			require.NoError(t, err)
 			if page < pages {
@@ -650,7 +650,7 @@ func TestTxSearch(t *testing.T) {
 			} else {
 				require.LessOrEqual(t, len(result.Txs), perPage)
 			}
-			totalTx = totalTx + len(result.Txs)
+			totalTx += len(result.Txs)
 			for _, tx := range result.Txs {
 				require.False(t, seen[tx.Height],
 					"Found duplicate height %v in page %v", tx.Height, page)

@@ -37,10 +37,6 @@ func DefaultValidationRequestHandler(
 		}
 		pk, err := cryptoenc.PubKeyToProto(pubKey)
 		if err != nil {
-			return res, err
-		}
-
-		if err != nil {
 			res = mustWrapMsg(&privvalproto.PubKeyResponse{
 				PubKey: cryptoproto.PublicKey{}, Error: &privvalproto.RemoteSignerError{Code: 0, Description: err.Error()}})
 		} else {

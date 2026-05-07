@@ -99,9 +99,10 @@ func (u parsedURL) GetDialAddress() string {
 			// http and ws default to port 80, https and wss default to port 443
 			// https://www.rfc-editor.org/rfc/rfc9110#section-4.2
 			// https://www.rfc-editor.org/rfc/rfc6455.html#section-3
-			if u.Scheme == protoHTTP || u.Scheme == protoWS {
+			switch u.Scheme {
+			case protoHTTP, protoWS:
 				return u.Host + `:80`
-			} else if u.Scheme == protoHTTPS || u.Scheme == protoWSS {
+			case protoHTTPS, protoWSS:
 				return u.Host + `:443`
 			}
 		}

@@ -29,20 +29,20 @@ func TestBlock_Header(t *testing.T) {
 		}
 
 		for _, block := range blocks {
-			if block.Header.Height < first {
+			if block.Height < first {
 				continue
 			}
-			if block.Header.Height > last {
+			if block.Height > last {
 				break
 			}
-			resp, err := client.Block(ctx, &block.Header.Height)
+			resp, err := client.Block(ctx, &block.Height)
 			require.NoError(t, err)
 
 			require.Equal(t, block, resp.Block,
-				"block mismatch for height %d", block.Header.Height)
+				"block mismatch for height %d", block.Height)
 
 			require.NoError(t, resp.Block.ValidateBasic(),
-				"block at height %d is invalid", block.Header.Height)
+				"block at height %d is invalid", block.Height)
 		}
 	})
 }

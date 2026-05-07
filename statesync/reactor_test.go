@@ -41,7 +41,7 @@ func TestReactor_Receive_ChunkRequest(t *testing.T) {
 	}
 
 	for name, tc := range testcases {
-		tc := tc
+
 		t.Run(name, func(t *testing.T) {
 			// Mock ABCI connection to return local snapshots
 			conn := &proxymocks.AppConnSnapshot{}
@@ -133,7 +133,7 @@ func TestReactor_Receive_SnapshotsRequest(t *testing.T) {
 	}
 
 	for name, tc := range testcases {
-		tc := tc
+
 		t.Run(name, func(t *testing.T) {
 			// Mock ABCI connection to return local snapshots
 			conn := &proxymocks.AppConnSnapshot{}

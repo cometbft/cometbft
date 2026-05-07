@@ -36,7 +36,7 @@ func PerturbNode(ctx context.Context, node *e2e.Node, perturbation e2e.Perturbat
 	name := node.Name
 	upgraded := false
 	if len(out) == 0 {
-		name = name + "_u"
+		name += "_u"
 		upgraded = true
 		logger.Info("perturb node", "msg",
 			log.NewLazySprintf("Node %v already upgraded, operating on alternate container %v",

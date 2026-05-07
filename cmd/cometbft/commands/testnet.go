@@ -140,8 +140,8 @@ func testnetFiles(*cobra.Command, []string) error {
 			return err
 		}
 
-		pvKeyFile := filepath.Join(nodeDir, config.BaseConfig.PrivValidatorKey)
-		pvStateFile := filepath.Join(nodeDir, config.BaseConfig.PrivValidatorState)
+		pvKeyFile := filepath.Join(nodeDir, config.PrivValidatorKey)
+		pvStateFile := filepath.Join(nodeDir, config.PrivValidatorState)
 		pv := privval.LoadFilePV(pvKeyFile, pvStateFile)
 
 		pubKey, err := pv.GetPubKey()
@@ -189,7 +189,7 @@ func testnetFiles(*cobra.Command, []string) error {
 	// Write genesis file.
 	for i := 0; i < nValidators+nNonValidators; i++ {
 		nodeDir := filepath.Join(outputDir, fmt.Sprintf("%s%d", nodeDirPrefix, i))
-		if err := genDoc.SaveAs(filepath.Join(nodeDir, config.BaseConfig.Genesis)); err != nil {
+		if err := genDoc.SaveAs(filepath.Join(nodeDir, config.Genesis)); err != nil {
 			_ = os.RemoveAll(outputDir)
 			return err
 		}

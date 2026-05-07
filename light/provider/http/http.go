@@ -184,7 +184,7 @@ func (p *http) signedHeader(ctx context.Context, height *int64) (*types.SignedHe
 			// If the node is starting at a non-zero height, but does not yet
 			// have any blocks, it can return an empty signed header without
 			// returning an error.
-			if commit.SignedHeader.IsEmpty() {
+			if commit.IsEmpty() {
 				// Technically this means that the provider still needs to
 				// catch up.
 				return nil, provider.ErrHeightTooHigh

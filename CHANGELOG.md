@@ -7,16 +7,36 @@
 ### BUG FIXES
 
 ### IMPROVEMENTS
-- `[statesync]` Add configurable `max-snapshot-chunks` parameter to validate max amount of chunks in a `SnapshotResponse`.
-  ([\#5548](https://github.com/cometbft/cometbft/pull/5548))
 
 ### FEATURES
 
-### BUG-FIXES
-
-### STATE-BREAKING
-
 ### API-BREAKING
+
+## v0.38.22
+
+*April 10, 2026*
+
+### BUG FIXES
+
+- `[evidence]` Add validation for Light Client Attack evidence ByzantineValidators
+  ([\#5638](https://github.com/cometbft/cometbft/pull/5638))
+- `[blocksync]` fix(blocksync): `ExtendedCommit` verification via next blocks `LastCommit`
+  ([\#5629](https://github.com/cometbft/cometbft/pull/5629))
+- `[blocksync]` Modify blocksync to use full commit verification instead of light
+  ([\#5663](https://github.com/cometbft/cometbft/pull/5663))
+
+## v0.38.21
+
+*January 23, 2026*
+
+### IMPROVEMENTS
+
+- `[statesync]` Add configurable `max-snapshot-chunks` parameter to validate max amount of chunks in a `SnapshotResponse`.
+  ([\#5549](https://github.com/cometbft/cometbft/pull/5549))
+
+## v0.38.20
+
+*December 12, 2025*
 
 ## v0.38.19
 
@@ -174,6 +194,9 @@ for all users.
   `btcec/v2` latest release, while avoiding breaking changes to
   local CometBFT functions
   ([\#3728](https://github.com/cometbft/cometbft/pull/3728))
+- pinned mockery's version to v2.49.2 to prevent potential
+  changes in mocks after each new release of mockery
+  ([\#4605](https://github.com/cometbft/cometbft/pull/4605))
 
 ### IMPROVEMENTS
 

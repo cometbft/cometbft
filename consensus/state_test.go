@@ -1738,7 +1738,7 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 		}
 		extSignBytes, err := protoio.MarshalDelimited(&cve)
 		require.NoError(t, err)
-		pubKey, err := vss[i].PrivValidator.GetPubKey()
+		pubKey, err := vss[i].GetPubKey()
 		require.NoError(t, err)
 		require.True(t, pubKey.VerifySignature(extSignBytes, vote.ExtensionSignature))
 	}
@@ -1949,7 +1949,12 @@ func TestStateDoesntCrashOnInvalidVote(t *testing.T) {
 
 	startTestRound(cs, height, round)
 
-	vote := signVote(vss[1], cmtproto.PrecommitType, nil, types.PartSetHeader{}, true)
+	_, propBlock := decideProposal(context.Background(), t, cs, vss[0], height, round)
+	propBlockParts, err := propBlock.MakePartSet(types.BlockPartSizeBytes)
+	assert.NoError(t, err)
+
+	vote := signVote(vss[1], cmtproto.PrecommitType, propBlock.Hash(), propBlockParts.Header(), true)
+
 	// Non-existent validator index
 	vote.ValidatorIndex = int32(len(vss))
 

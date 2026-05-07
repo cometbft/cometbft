@@ -89,7 +89,7 @@ func TestReader(t *testing.T) {
 		{start, 20, 3, 0, 0, 67, 100, 0, _300ms, 0, 0, 0, false},
 	}
 	for i, s := range status {
-		s := s
+
 		if !statusesAreEqual(&s, &want[i]) {
 			t.Errorf("r.Status(%v)\nexpected: %v\ngot     : %v", i, want[i], s)
 		}
@@ -145,7 +145,7 @@ func TestWriter(t *testing.T) {
 	}
 
 	for i, s := range status {
-		s := s
+
 		if !statusesAreEqual(&s, &want[i]) {
 			t.Errorf("w.Status(%v)\nexpected: %v\ngot     : %v\n", i, want[i], s)
 		}
@@ -164,7 +164,7 @@ const maxDeviationForRate int64 = 50
 // `time.Sleep` has ended).
 func statusesAreEqual(s1 *Status, s2 *Status) bool {
 	if s1.Active == s2.Active &&
-		s1.Start == s2.Start &&
+		s1.Start.Equal(s2.Start) &&
 		durationsAreEqual(s1.Duration, s2.Duration, maxDeviationForDuration) &&
 		s1.Idle == s2.Idle &&
 		s1.Bytes == s2.Bytes &&

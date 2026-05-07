@@ -193,10 +193,8 @@ func TestDuplicateListenReject(t *testing.T) {
 		assert.True(t, signerServer2.IsRunning())
 
 		// wait for successful connection
-		for {
-			if listenerEndpoint.IsConnected() {
-				break
-			}
+		for !listenerEndpoint.IsConnected() {
+
 		}
 
 		// simulate ensureConnection, bypass triggerConnect default drop with multiple messages

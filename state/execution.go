@@ -45,6 +45,9 @@ type BlockExecutor struct {
 	metrics *Metrics
 
 	asyncRunner func(func())
+
+	// blockTimeTolerance is the maximum allowed difference between proposed block time and wall clock.
+	blockTimeTolerance time.Duration
 }
 
 type BlockExecutorOption func(executor *BlockExecutor)
@@ -58,6 +61,12 @@ func BlockExecutorWithMetrics(metrics *Metrics) BlockExecutorOption {
 func BlockExecutorWithAsyncRunner(runner func(func())) BlockExecutorOption {
 	return func(blockExec *BlockExecutor) {
 		blockExec.asyncRunner = runner
+	}
+}
+
+func BlockExecutorWithBlockTimeTolerance(d time.Duration) BlockExecutorOption {
+	return func(blockExec *BlockExecutor) {
+		blockExec.blockTimeTolerance = d
 	}
 }
 
@@ -180,9 +189,9 @@ func (blockExec *BlockExecutor) ProcessProposal(
 ) (bool, error) {
 	resp, err := blockExec.proxyApp.ProcessProposal(context.TODO(), &abci.RequestProcessProposal{
 		Hash:               block.Header.Hash(),
-		Height:             block.Header.Height,
-		Time:               block.Header.Time,
-		Txs:                block.Data.Txs.ToSliceOfBytes(),
+		Height:             block.Height,
+		Time:               block.Time,
+		Txs:                block.Txs.ToSliceOfBytes(),
 		ProposedLastCommit: buildLastCommitInfoFromStore(block, blockExec.store, state.InitialHeight),
 		Misbehavior:        block.Evidence.Evidence.ToABCI(),
 		ProposerAddress:    block.ProposerAddress,
@@ -203,11 +212,30 @@ func (blockExec *BlockExecutor) ProcessProposal(
 // Validation does not mutate state, but does require historical information from the stateDB,
 // ie. to verify evidence from a validator at an old height.
 func (blockExec *BlockExecutor) ValidateBlock(state State, block *types.Block) error {
-	err := validateBlock(state, block)
-	if err != nil {
+	return blockExec.validateBlockAndCheckEvidence(state, block)
+}
+
+// ValidateBlockSkipLastCommit validates the same as blockexec.ValidateBlock
+// however it performs no validation of the block's LastCommit.
+//
+// This should only be used if you know that the LastCommit has already been validated elsewhere.
+func (blockExec *BlockExecutor) ValidateBlockSkipLastCommit(state State, block *types.Block) error {
+	return blockExec.validateBlockAndCheckEvidence(state, block, withSkipLastCommit)
+}
+
+func (blockExec *BlockExecutor) validateBlockAndCheckEvidence(state State, block *types.Block, opts ...func(*blockValidationOptions)) error {
+	if err := validateBlock(state, block, append(opts, blockExec.withBlockTimeTolerance)...); err != nil {
 		return err
 	}
 	return blockExec.evpool.CheckEvidence(block.Evidence.Evidence)
+}
+
+func (blockExec *BlockExecutor) withBlockTimeTolerance(opts *blockValidationOptions) {
+	opts.blockTimeTolerance = blockExec.blockTimeTolerance
+}
+
+func withSkipLastCommit(opts *blockValidationOptions) {
+	opts.skipLastCommitVerification = true
 }
 
 // ApplyVerifiedBlock does the same as `ApplyBlock`, but skips verification.
@@ -227,7 +255,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	state State, blockID types.BlockID, block *types.Block,
 ) (State, error) {
 
-	if err := validateBlock(state, block); err != nil {
+	if err := validateBlock(state, block, blockExec.withBlockTimeTolerance); err != nil {
 		return state, ErrInvalidBlock(err)
 	}
 
@@ -262,8 +290,8 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 	)
 
 	// Assert that the application correctly returned tx results for each of the transactions provided in the block
-	if len(block.Data.Txs) != len(abciResponse.TxResults) {
-		return state, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Data.Txs), len(abciResponse.TxResults))
+	if len(block.Txs) != len(abciResponse.TxResults) {
+		return state, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Txs), len(abciResponse.TxResults))
 	}
 
 	blockExec.logger.Info("executed block", "height", block.Height, "app_hash", fmt.Sprintf("%X", abciResponse.AppHash))
@@ -754,7 +782,7 @@ func fireEvents(
 		}
 	}
 
-	for i, tx := range block.Data.Txs {
+	for i, tx := range block.Txs {
 		if err := eventBus.PublishEventTx(types.EventDataTx{TxResult: abci.TxResult{
 			Height: block.Height,
 			Index:  uint32(i),
@@ -803,8 +831,8 @@ func ExecCommitBlock(
 	}
 
 	// Assert that the application correctly returned tx results for each of the transactions provided in the block
-	if len(block.Data.Txs) != len(resp.TxResults) {
-		return nil, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Data.Txs), len(resp.TxResults))
+	if len(block.Txs) != len(resp.TxResults) {
+		return nil, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Txs), len(resp.TxResults))
 	}
 
 	logger.Info("executed block", "height", block.Height, "app_hash", fmt.Sprintf("%X", resp.AppHash))

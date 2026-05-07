@@ -58,8 +58,8 @@ func (bz HexBytes) String() string {
 func (bz HexBytes) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'p':
-		s.Write([]byte(fmt.Sprintf("%p", bz))) //nolint: errcheck
+		fmt.Fprintf(s, "%p", bz)
 	default:
-		s.Write([]byte(fmt.Sprintf("%X", []byte(bz)))) //nolint: errcheck
+		fmt.Fprintf(s, "%X", []byte(bz))
 	}
 }

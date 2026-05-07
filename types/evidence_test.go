@@ -78,7 +78,7 @@ func TestDuplicateVoteEvidenceValidation(t *testing.T) {
 		}, true},
 	}
 	for _, tc := range testCases {
-		tc := tc
+
 		t.Run(tc.testName, func(t *testing.T) {
 			vote1 := MakeVoteNoError(t, val, chainID, math.MaxInt32, math.MaxInt64, math.MaxInt32, 0x02, blockID, defaultVoteTime)
 			vote2 := MakeVoteNoError(t, val, chainID, math.MaxInt32, math.MaxInt64, math.MaxInt32, 0x02, blockID2, defaultVoteTime)
@@ -194,7 +194,8 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 			ev.CommonHeight = height
 		}, false},
 		{"Nil conflicting header", func(ev *LightClientAttackEvidence) { ev.ConflictingBlock.Header = nil }, true},
-		{"Nil conflicting blocl", func(ev *LightClientAttackEvidence) { ev.ConflictingBlock = nil }, true},
+		{"Nil conflicting block", func(ev *LightClientAttackEvidence) { ev.ConflictingBlock = nil }, true},
+		{"Nil signed header", func(ev *LightClientAttackEvidence) { ev.ConflictingBlock.SignedHeader = nil }, true},
 		{"Nil validator set", func(ev *LightClientAttackEvidence) {
 			ev.ConflictingBlock.ValidatorSet = &ValidatorSet{}
 		}, true},
@@ -203,7 +204,7 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 		}, true},
 	}
 	for _, tc := range testCases {
-		tc := tc
+
 		t.Run(tc.testName, func(t *testing.T) {
 			lcae := &LightClientAttackEvidence{
 				ConflictingBlock: &LightBlock{
@@ -292,7 +293,7 @@ func TestEvidenceProto(t *testing.T) {
 		{"DuplicateVoteEvidence success", &DuplicateVoteEvidence{VoteA: v2, VoteB: v}, false, false},
 	}
 	for _, tt := range tests {
-		tt := tt
+
 		t.Run(tt.testName, func(t *testing.T) {
 			pb, err := EvidenceToProto(tt.evidence)
 			if tt.toProtoErr {

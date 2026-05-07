@@ -6,12 +6,17 @@
 
 ### BUG FIXES
 
+<<<<<<< HEAD
 - `[types]` Fix nil vote handling
   ([\#5777](https://github.com/cometbft/cometbft/pull/5777))
 - `[light]`: stop witness comparison after divergence checks
   ([\#5820](https://github.com/cometbft/cometbft/pull/5820))
 - `[abci]` fix(abci): prevent panic on unlock in socket server panic recovery
   ([\#5593](https://github.com/cometbft/cometbft/pull/5593))
+=======
+- `[mempool]` fix setRecheckFull/setDone race causing spurious ErrRecheckFull.
+  ([\#5837](https://github.com/cometbft/cometbft/pull/5837))
+>>>>>>> 3b0311fc (fix(mempool): fix setRecheckFull/setDone race causing spurious ErrRecheckFull (#5837))
 
 ### IMPROVEMENTS
 

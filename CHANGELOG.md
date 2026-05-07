@@ -5,26 +5,61 @@
 ### DEPENDENCIES
 
 ### BUG FIXES
-- `[mempool]` App mempool waits before broadcasting.
-  ([\#5800](https://github.com/cometbft/cometbft/pull/5800))
-- `[p2p]` Add lp2p reactor panic recovery
-  ([\#5816](https://github.com/cometbft/cometbft/pull/5816))
-
-- `[light]`: stop witness comparison after divergence checks
-  ([\#5820](https://github.com/cometbft/cometbft/pull/5820))
 
 ### IMPROVEMENTS
 
 ### FEATURES
 
-- `[mempool]` Add app mempool & related ABCI methods, InsertTx and ReapTxs.
-  ([\#5790](https://github.com/cometbft/cometbft/pull/5790))
-- `[mempool]` Allow CheckTx retries for BroadcastTxSync
-  ([\#5802](https://github.com/cometbft/cometbft/pull/5802))
-
 ### STATE-BREAKING
 
 ### API-BREAKING
+
+## v0.39.3
+
+*May 5, 2026*
+
+### DEPENDENCIES
+
+- Bump pq version to 1.12.0
+  ([\#5713](https://github.com/cometbft/cometbft/pull/5713))
+
+### FEATURES
+
+- `[mempool]` Allow CheckTx retries for BroadcastTxSync
+  ([\#5802](https://github.com/cometbft/cometbft/pull/5802))
+
+## v0.39.2
+
+*May 4, 2026*
+
+### DEPENDENCIES
+
+- `[build]` Bump `github.com/Masterminds/semver/v3` from `3.4.0` to `3.5.0`
+  ([\#5823](https://github.com/cometbft/cometbft/pull/5823))
+
+### BUG FIXES
+
+- `[mempool]` App mempool waits before broadcasting.
+  ([\#5800](https://github.com/cometbft/cometbft/pull/5800))
+- `[blocksync]` Prevent maxPeerHeight poisoning
+  ([\#5803](https://github.com/cometbft/cometbft/pull/5803))
+- `[p2p]` Add lp2p reactor panic recovery
+  ([\#5816](https://github.com/cometbft/cometbft/pull/5816))
+- `[light]` Stop witness comparison after divergence checks
+  ([\#5820](https://github.com/cometbft/cometbft/pull/5820))
+- `[abci]` fix(abci): prevent panic on unlock in socket server panic recovery
+  ([\#5593](https://github.com/cometbft/cometbft/pull/5593))
+
+### IMPROVEMENTS
+
+- `[abci,mempool]` Add Krakatoa app-mempool flow, including ABCI app-connection methods and app mempool/reactor wiring.
+  ([`f4a9ba936`](https://github.com/cometbft/cometbft/commit/f4a9ba936), [\#5791](https://github.com/cometbft/cometbft/pull/5791))
+- `[e2e]` Introduce app-mempool e2e network fixtures for simple, perturbed, and libp2p scenarios.
+  ([`f4a9ba936`](https://github.com/cometbft/cometbft/commit/f4a9ba936))
+- `[execution,state]` Add height validation in state execution and consensus paths
+  ([\#5804](https://github.com/cometbft/cometbft/pull/5804))
+- `[consensus]` perf(consensus): skip fsync for unsigned internal messages (block parts)
+  ([\#5695](https://github.com/cometbft/cometbft/pull/5695))
 
 ## v0.39.1
 

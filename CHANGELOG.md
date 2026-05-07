@@ -6,6 +6,9 @@
 
 ### BUG FIXES
 
+- `[mempool]` fix setRecheckFull/setDone race causing spurious ErrRecheckFull.
+  ([\#5837](https://github.com/cometbft/cometbft/pull/5837))
+
 ### IMPROVEMENTS
 
 ### FEATURES

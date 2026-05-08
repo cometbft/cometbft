@@ -245,6 +245,10 @@ type BaseConfig struct {
 	// If true, query the ABCI app on connecting to a new peer
 	// so the app can decide if we should keep the connection or not
 	FilterPeers bool `mapstructure:"filter_peers"` // false
+
+	// The capacity of the internal buffer used by the EventBus. A value of 0
+	// means unbuffered (publishers block until subscribers receive).
+	EventBusBufferCapacity int `mapstructure:"event_bus_buffer_capacity"`
 }
 
 // DefaultBaseConfig returns a default base configuration for a CometBFT node
@@ -263,6 +267,7 @@ func DefaultBaseConfig() BaseConfig {
 		FilterPeers:        false,
 		DBBackend:          "goleveldb",
 		DBPath:             DefaultDataDir,
+		EventBusBufferCapacity: 0,
 	}
 }
 

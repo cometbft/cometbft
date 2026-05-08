@@ -20,6 +20,11 @@ import (
 // BlocksyncChannel is a channel for blocks and status updates (`BlockStore` height)
 const BlocksyncChannel = byte(0x40)
 
+// blockResponseWireTag is the first byte of a wire-encoded bcproto.Message
+// whose oneof case is BlockResponse (field 3, wiretype 2 LEN). Used to peek
+// the message type before paying the proto.Unmarshal cost.
+const blockResponseWireTag = byte(3<<3 | 2)
+
 const (
 	defaultIntervalStatusUpdate      = 10 * time.Second
 	adaptiveSyncInternalStatusUpdate = 1 * time.Second
@@ -341,6 +346,29 @@ func (r *Reactor) handlePeerResponse(msg *bcproto.BlockResponse, src p2p.Peer) {
 	if err := r.pool.AddBlock(src.ID(), bi, extCommit, msg.Block.Size()); err != nil {
 		r.Logger.Error("Failed to add block", "peer", src, "err", err)
 	}
+}
+
+// FilterMsgBytes implements p2p.MsgBytesFilter and rejects messages from
+// unexpected peers before unmarshalling the request.
+func (r *Reactor) FilterMsgBytes(chID byte, src p2p.Peer, msgBytes []byte) error {
+	// do not check invalid messages, will fail unmarshalling
+	if chID != BlocksyncChannel || len(msgBytes) == 0 {
+		return nil
+	}
+	if msgBytes[0] != blockResponseWireTag {
+		return nil
+	}
+
+	// blocksync not running
+	if !r.enabled.Load() || !r.pool.IsRunning() {
+		return errors.New("unsolicited BlockResponse: blocksync not active")
+	}
+
+	// not waiting on an outstanding request to this peer
+	if !r.pool.HasPendingRequestFrom(src.ID()) {
+		return fmt.Errorf("unsolicited BlockResponse from peer %s", src.ID())
+	}
+	return nil
 }
 
 // Receive implements Reactor by handling 4 types of messages (look below).

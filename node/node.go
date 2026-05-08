@@ -337,7 +337,7 @@ func NewNodeWithContext(
 	// we might need to index the txs of the replayed block as this might not have happened
 	// when the node stopped last time (i.e. the node stopped after it saved the block
 	// but before it indexed the txs)
-	eventBus, err := createAndStartEventBus(logger)
+	eventBus, err := createAndStartEventBus(logger, config.BaseConfig.EventBusBufferCapacity)
 	if err != nil {
 		return nil, err
 	}

@@ -43,6 +43,17 @@ type Reactor interface {
 	Receive(Envelope)
 }
 
+// MsgBytesFilter is an optional interface a Reactor may implement to inspect
+// raw message bytes on a channel before they are protobuf-unmarshalled. If
+// FilterMsgBytes returns a non-nil error, the message is dropped and the peer
+// is disconnected — without paying the unmarshal cost.
+//
+// This exists so reactors can reject unsolicited messages whose decoded form
+// would be expensive (e.g. blocksync BlockResponse with millions of CommitSigs).
+type MsgBytesFilter interface {
+	FilterMsgBytes(chID byte, src Peer, msgBytes []byte) error
+}
+
 //--------------------------------------
 
 type BaseReactor struct {

@@ -6,6 +6,9 @@
 
 ### BUG FIXES
 
+- `[abci]` fix(abci): fire didRecvResponse callbacks outside cli.mtx.
+  ([\#5850](https://github.com/cometbft/cometbft/pull/5850))
+
 ### IMPROVEMENTS
 
 ### FEATURES

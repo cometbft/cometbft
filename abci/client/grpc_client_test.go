@@ -5,16 +5,52 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	abcicli "github.com/cometbft/cometbft/abci/client"
 	abciserver "github.com/cometbft/cometbft/abci/server"
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
 )
+
+// TestGRPCResponseCallbackNoDeadlock verifies that a response callback can
+// call back into the client without deadlocking.
+func TestGRPCResponseCallbackNoDeadlock(t *testing.T) {
+	socketFile := fmt.Sprintf("/tmp/test-%08x.sock", rand.Int31n(1<<30))
+	defer os.Remove(socketFile)
+	socket := fmt.Sprintf("unix://%v", socketFile)
+
+	server := abciserver.NewGRPCServer(socket, types.NewBaseApplication())
+	server.SetLogger(log.TestingLogger().With("module", "abci-server"))
+	require.NoError(t, server.Start())
+	t.Cleanup(func() { _ = server.Stop() })
+
+	c := abcicli.NewGRPCClient(socket, true)
+	require.NoError(t, c.Start())
+	t.Cleanup(func() { _ = c.Stop() })
+
+	var once sync.Once
+	done := make(chan struct{})
+	c.SetResponseCallback(func(_ *types.Request, _ *types.Response) {
+		_ = c.Error() // re-enters cli.mtx; deadlocks without the fix
+		once.Do(func() { close(done) })
+	})
+
+	_, err := c.CheckTxAsync(context.Background(), &types.RequestCheckTx{})
+	require.NoError(t, err)
+
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("deadlock: response callback did not complete")
+	}
+}
 
 func TestGRPC(t *testing.T) {
 	app := types.NewBaseApplication()

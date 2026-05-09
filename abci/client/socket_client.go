@@ -205,26 +205,29 @@ func (cli *socketClient) trackRequest(reqres *ReqRes) {
 
 func (cli *socketClient) didRecvResponse(res *types.Response) error {
 	cli.mtx.Lock()
-	defer cli.mtx.Unlock()
 
 	// Get the first ReqRes.
 	next := cli.reqSent.Front()
 	if next == nil {
+		cli.mtx.Unlock()
 		return ErrUnexpectedResponse{Response: *res, Reason: "no call was made"}
 	}
 
 	reqres := next.Value.(*ReqRes)
 	if !resMatchesReq(reqres.Request, res) {
+		cli.mtx.Unlock()
 		return ErrUnexpectedResponse{Response: *res, Reason: fmt.Sprintf("unexpected response to the request %T", reqres.Request.Value)}
 	}
 
 	reqres.Response = res
 	reqres.Done()            // release waiters
 	cli.reqSent.Remove(next) // pop first item from linked list
+	resCb := cli.resCb
+	cli.mtx.Unlock()
 
 	// Notify client listener if set (global callback).
-	if cli.resCb != nil {
-		cli.resCb(reqres.Request, res)
+	if resCb != nil {
+		resCb(reqres.Request, res)
 	}
 
 	// Notify reqRes listener if set (request specific callback).

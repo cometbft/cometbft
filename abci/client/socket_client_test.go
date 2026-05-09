@@ -203,6 +203,29 @@ func (b blockedABCIApplication) CheckTxAsync(ctx context.Context, r *types.Reque
 	return b.CheckTx(ctx, r)
 }
 
+// TestResponseCallbackNoDeadlock verifies that a response callback can call
+// back into the client without deadlocking.
+func TestResponseCallbackNoDeadlock(t *testing.T) {
+	ctx := t.Context()
+	_, c := setupClientServer(t, types.BaseApplication{})
+
+	var once sync.Once
+	done := make(chan struct{})
+	c.SetResponseCallback(func(_ *types.Request, _ *types.Response) {
+		_ = c.Error() // re-enters cli.mtx; deadlocks without the fix
+		once.Do(func() { close(done) })
+	})
+
+	_, err := c.CheckTxAsync(ctx, &types.RequestCheckTx{})
+	require.NoError(t, err)
+
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("deadlock: response callback did not complete")
+	}
+}
+
 // TestCallbackInvokedWhenSetEarly ensures that the callback is invoked when
 // set before the client completes the call into the app.
 func TestCallbackInvokedWhenSetEarly(t *testing.T) {

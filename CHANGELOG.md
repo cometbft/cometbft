@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[mempool]` fix setRecheckFull/setDone race causing spurious ErrRecheckFull.
+  ([\#5837](https://github.com/cometbft/cometbft/pull/5837))
 - `[abci]` fix(abci): fire didRecvResponse callbacks outside cli.mtx.
   ([\#5850](https://github.com/cometbft/cometbft/pull/5850))
 

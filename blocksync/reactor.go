@@ -377,7 +377,7 @@ func (r *Reactor) FilterMsgBytes(chID byte, src p2p.Peer, msgBytes []byte) error
 	}
 
 	// validate the commit count in the response
-	if err := r.validateMaxVotes(stub.BlockResponse); err != nil {
+	if err := validateMaxVotes(stub.BlockResponse); err != nil {
 		return fmt.Errorf("validating max votes in BlockResponse from peer %s: %w", src.ID(), err)
 	}
 
@@ -387,7 +387,7 @@ func (r *Reactor) FilterMsgBytes(chID byte, src p2p.Peer, msgBytes []byte) error
 // validateMaxVotes validates that the number of commit signatures and extended
 // commit signatures are both less than the MaxVotesCount, returns an error if
 // not.
-func (r *Reactor) validateMaxVotes(br *bcproto.SigCountBlockResponse) error {
+func validateMaxVotes(br *bcproto.SigCountBlockResponse) error {
 	commitSigs, extSigs := 0, 0
 	if br != nil {
 		if br.Block != nil && br.Block.LastCommit != nil {

@@ -375,7 +375,7 @@ func (r *Reactor) FilterMsgBytes(chID byte, src p2p.Peer, msgBytes []byte) error
 
 	// validate the commit count in the response
 	if err := r.validateMaxVotes(stub.BlockResponse); err != nil {
-		return fmt.Errorf("validating max votes in BlockResponse from peer %s: %w", src.ID())
+		return fmt.Errorf("validating max votes in BlockResponse from peer %s: %w", src.ID(), err)
 	}
 
 	return nil

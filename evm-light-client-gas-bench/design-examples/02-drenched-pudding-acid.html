@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Drenched × Pudding (warm acid) — direction probe</title>
+<style>
+  :root {
+    /* Drench surface: the surface IS the color */
+    --drench: oklch(78% 0.16 110);
+    --drench-deep: oklch(58% 0.16 110);
+    --drench-ink: oklch(20% 0.04 110);
+
+    /* Calm break-section: where charts breathe */
+    --calm: oklch(96% 0.012 90);
+    --calm-ink: oklch(22% 0.02 90);
+    --calm-rule: oklch(88% 0.015 90);
+
+    /* Scheme palette (data-essay color coding) */
+    --secp: oklch(48% 0.18 30);
+    --bls-a: oklch(50% 0.14 220);
+    --bls-b: oklch(48% 0.18 290);
+    --bls-c: oklch(52% 0.14 165);
+    --bls-d: oklch(45% 0.18 25);
+    --ics: oklch(55% 0.04 90);
+
+    --display: "Iowan Old Style", Charter, Georgia, serif;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", sans-serif;
+    --mono: ui-monospace, "JetBrains Mono", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font: 16px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
+
+  /* ---------- SLIDE 01 — DRENCHED COVER ---------- */
+  .cover {
+    background: var(--drench);
+    color: var(--drench-ink);
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding: 48px clamp(24px, 5vw, 80px) 64px;
+    position: relative;
+    overflow: hidden;
+  }
+  /* A faint chalkboard-grain texture, abstract */
+  .cover::before {
+    content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(1200px 600px at 110% -10%, oklch(85% 0.16 110 / 0.55), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, oklch(60% 0.18 110 / 0.4), transparent 60%);
+    mix-blend-mode: overlay;
+    pointer-events: none;
+  }
+  .top-rail {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em;
+    color: var(--drench-ink); opacity: 0.7;
+    position: relative; z-index: 1;
+  }
+
+  .cover-body { position: relative; z-index: 1; align-self: center; max-width: 1100px; }
+  .verdict-line {
+    display: flex; align-items: baseline; gap: 14px;
+    font-family: var(--mono); font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+  .verdict-line::before {
+    content: ""; width: 36px; height: 2px; background: var(--drench-ink);
+    transform-origin: left;
+    animation: stretch 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    transform: scaleX(0);
+  }
+  @keyframes stretch { to { transform: scaleX(1); } }
+
+  h1.headline {
+    font-family: var(--display);
+    font-size: clamp(64px, 13vw, 184px);
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+    font-weight: 500;
+    margin: 0 0 36px;
+  }
+  h1.headline em { font-style: italic; }
+  .undertext {
+    font-size: clamp(20px, 2.2vw, 28px);
+    line-height: 1.4;
+    max-width: 56ch;
+    color: var(--drench-ink);
+    font-weight: 450;
+  }
+  .undertext .pull {
+    background: oklch(20% 0.04 110); color: var(--drench);
+    padding: 0 6px; font-style: italic; font-family: var(--display);
+  }
+
+  .cover-foot {
+    position: relative; z-index: 1;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--mono); font-size: 12px; opacity: 0.8;
+  }
+  .arrow-down { display: inline-flex; gap: 6px; align-items: center; }
+  .arrow-down::after {
+    content: ""; width: 10px; height: 10px;
+    border: solid var(--drench-ink); border-width: 0 2px 2px 0;
+    transform: rotate(45deg); margin-left: 4px;
+    animation: bob 1.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+  @keyframes bob {
+    0%, 100% { transform: rotate(45deg) translate(0, 0); }
+    50% { transform: rotate(45deg) translate(3px, 3px); }
+  }
+
+  /* ---------- SLIDE 07 — COMPARISON ON CALM ---------- */
+  .calm-section {
+    background: var(--calm);
+    color: var(--calm-ink);
+    padding: clamp(64px, 10vh, 120px) clamp(24px, 5vw, 80px);
+    min-height: 100vh;
+    display: grid; grid-template-rows: auto 1fr auto;
+  }
+  .calm-section .step-label {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--secp);
+  }
+  .calm-section h2 {
+    font-family: var(--display); font-size: clamp(40px, 5.5vw, 72px); line-height: 1.05;
+    letter-spacing: -0.02em; font-weight: 500; margin: 12px 0 24px; max-width: 18ch;
+  }
+  .calm-section .sub {
+    font-size: 18px; line-height: 1.55; color: oklch(40% 0.02 90); max-width: 60ch;
+    margin-bottom: 56px;
+  }
+
+  .race {
+    display: grid; gap: 18px; max-width: 980px; margin: 0 auto; width: 100%;
+  }
+  .race-row {
+    display: grid; grid-template-columns: 180px 1fr 130px;
+    align-items: center; gap: 20px;
+  }
+  .race-label {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--mono); font-size: 13px; letter-spacing: 0.04em;
+  }
+  .race-label .swatch { width: 14px; height: 14px; border-radius: 3px; flex: 0 0 auto; }
+  .race-label .badge {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 2px 6px; border-radius: 999px; background: oklch(85% 0.02 90); color: oklch(40% 0.02 90);
+    margin-left: 6px;
+  }
+  .race-label .badge.rec { background: var(--secp); color: oklch(98% 0.012 90); }
+
+  .race-bar {
+    height: 28px; background: oklch(92% 0.012 90); border-radius: 4px; position: relative;
+    overflow: hidden;
+  }
+  .race-bar > span {
+    position: absolute; inset: 0 auto 0 0;
+    border-radius: 4px;
+    transform-origin: left; transform: scaleX(0);
+    animation: race 1100ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  @keyframes race { to { transform: scaleX(1); } }
+
+  .race-num {
+    font-family: var(--mono); font-size: 14px; text-align: right; color: var(--calm-ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .footer-note { padding: 32px 0; text-align: center; font-family: var(--mono); font-size: 12px; color: oklch(45% 0.02 90); }
+
+  /* ---------- SLIDE 02 — GAP ON CALM ---------- */
+  .calm-gap {
+    background: var(--calm); color: var(--calm-ink);
+    padding: clamp(64px, 10vh, 120px) clamp(24px, 5vw, 80px);
+    min-height: 100vh; display: grid; grid-template-rows: auto 1fr; gap: 32px;
+  }
+  .calm-gap .step {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--secp);
+  }
+  .calm-gap h2 {
+    font-family: var(--display); font-size: clamp(36px, 5vw, 64px); line-height: 1.05;
+    letter-spacing: -0.02em; font-weight: 500; margin: 12px 0 24px; max-width: 22ch;
+  }
+  .calm-gap h2 em { font-style: italic; }
+  .calm-gap .grid {
+    display: grid; grid-template-columns: minmax(0, 5fr) 6fr; gap: clamp(40px, 5vw, 72px);
+    align-items: center;
+  }
+  .calm-gap .grid p {
+    font-size: 18px; line-height: 1.6; color: oklch(34% 0.02 90);
+    margin: 0 0 18px; max-width: 36ch;
+  }
+  .calm-gap .grid p strong { color: var(--calm-ink); font-weight: 600; }
+  .calm-gap .grid p em { font-style: italic; color: var(--secp); font-weight: 600; }
+
+  .pudding-flow {
+    display: grid; gap: 16px; padding: 28px; background: oklch(99% 0.012 90);
+    border-radius: 12px; box-shadow: 0 1px 0 oklch(85% 0.012 90);
+  }
+  .pudding-row {
+    display: grid; grid-template-columns: 130px 1fr;
+    gap: 16px; align-items: center;
+    font-family: var(--mono); font-size: 12px;
+  }
+  .pudding-row .label { color: oklch(40% 0.02 90); letter-spacing: 0.06em; text-transform: uppercase; font-size: 10px; }
+  .pudding-row .glyph {
+    height: 28px; border-radius: 4px; position: relative; overflow: hidden;
+    display: grid; place-items: center;
+    font-size: 11px; letter-spacing: 0.08em; color: oklch(99% 0.01 25); font-weight: 500;
+  }
+  .pudding-row.signed .glyph { background: var(--bls-d); }
+  .pudding-row.evm .glyph { background: var(--bls-d); }
+  .pudding-row.shape .glyph { background: var(--bls-d); }
+  .pudding-row .glyph::after {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 100%;
+    background: repeating-linear-gradient(45deg, transparent, transparent 6px, oklch(99% 0.01 25 / 0.18) 6px, oklch(99% 0.01 25 / 0.18) 8px);
+    transform-origin: left; transform: scaleX(0);
+    animation: race 1100ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .pudding-row.signed .glyph::after { animation-delay: 100ms; }
+  .pudding-row.evm .glyph::after { animation-delay: 220ms; }
+  .pudding-row.shape .glyph::after { animation-delay: 340ms; }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 20px;
+    font-family: var(--mono); font-size: 11px; color: oklch(40% 0.02 90);
+    letter-spacing: 0.04em; margin-top: 8px;
+  }
+  .legend .swatch { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .swatch i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+  /* ---------- SLIDE 03 — RECOMMENDATION ON CALM ---------- */
+  .calm-rec {
+    background: var(--calm); color: var(--calm-ink);
+    padding: clamp(64px, 10vh, 120px) clamp(24px, 5vw, 80px);
+    min-height: 100vh; display: grid; align-content: center; gap: 24px;
+    position: relative;
+  }
+  .calm-rec::before {
+    content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 8px;
+    background: var(--secp); opacity: 0.85;
+  }
+  .calm-rec .step {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--secp);
+  }
+  .calm-rec h2 {
+    font-family: var(--display); font-style: italic;
+    font-size: clamp(28px, 3.6vw, 44px); line-height: 1.18;
+    margin: 12px 0 32px; font-weight: 500; max-width: 26ch;
+  }
+  .calm-rec h2 .pull { font-style: italic; color: var(--secp); }
+  .rec-grid-pud {
+    display: grid; grid-template-columns: auto 1fr; gap: clamp(40px, 5vw, 80px);
+    align-items: end;
+  }
+  .rec-num {
+    font-family: var(--display); font-style: italic;
+    font-feature-settings: "tnum"; font-variant-numeric: tabular-nums;
+    font-size: clamp(96px, 14vw, 200px); line-height: 0.92; letter-spacing: -0.04em;
+    color: var(--secp); font-weight: 500;
+  }
+  .rec-decomp-pud {
+    display: grid; gap: 0; max-width: 380px; padding-bottom: 16px;
+    border-top: 1px solid var(--calm-rule);
+  }
+  .rec-decomp-pud > div {
+    display: grid; grid-template-columns: 1fr auto; padding: 12px 0;
+    border-bottom: 1px solid var(--calm-rule);
+    font-family: var(--mono); font-size: 13px; color: oklch(40% 0.02 90);
+  }
+  .rec-decomp-pud > div span:last-child { color: var(--calm-ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .rec-decomp-pud .total span:last-child { color: var(--secp); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .verdict-line::before, .race-bar > span, .arrow-down::after { animation: none; transform: scaleX(1) rotate(45deg); }
+    .race-bar > span { transform: scaleX(1); }
+    .pudding-row .glyph::after { animation: none; transform: scaleX(1); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ SLIDE 01: DRENCHED COVER ============ -->
+<section class="cover">
+  <div class="top-rail">
+    <div>EVM LIGHT CLIENT · GAS · 2026-05</div>
+    <div>01 / 10</div>
+  </div>
+
+  <div class="cover-body">
+    <div class="verdict-line">The recommendation</div>
+    <h1 class="headline"><em>secp</em><br/>over BLS,<br/>today.</h1>
+    <p class="undertext">CometBFT signs <span class="pull">per-signer</span> canonical-vote bytes. BLS aggregation needs <span class="pull">one shared precommit</span>. That's a protocol change CometBFT hasn't made, and isn't planning. So we work with what's real: <strong>secp256k1eth</strong>, <strong>ecrecover</strong>, native EVM cost.</p>
+  </div>
+
+  <div class="cover-foot">
+    <div>Read time · 9 min</div>
+    <div class="arrow-down">scroll</div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 02: THE GAP ON CALM ============ -->
+<section class="calm-gap">
+  <div>
+    <div class="step">Slide 02 · The gap</div>
+    <h2>The cost lives in <em>signatures</em>, not Merkle proofs.</h2>
+  </div>
+  <div class="grid">
+    <div>
+      <p>CometBFT signs <strong>ed25519</strong> over <em>per-signer canonical-vote bytes</em>. Each signer's message includes its own timestamp.</p>
+      <p>Solidity has no ed25519 precompile, and per-signer messages defeat BLS aggregation. The light client either keeps the message shape and pays linearly, or asks CometBFT to change protocol.</p>
+      <div class="legend">
+        <span class="swatch"><i style="background: var(--bls-d);"></i> EVM constraint</span>
+        <span class="swatch"><i style="background: var(--secp);"></i> Recommended path</span>
+      </div>
+    </div>
+    <div class="pudding-flow" aria-hidden="true">
+      <div class="pudding-row signed"><span class="label">CometBFT</span><span class="glyph">ed25519 · per-signer bytes</span></div>
+      <div class="pudding-row evm"><span class="label">EVM curve</span><span class="glyph">no ed25519 precompile</span></div>
+      <div class="pudding-row shape"><span class="label">Message shape</span><span class="glyph">per-signer ⊥ aggregation</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 03: THE RECOMMENDATION ============ -->
+<section class="calm-rec">
+  <div class="step">Slide 03 · The recommendation</div>
+  <h2>Switch the curve. Keep per-signer. The verify cost stays <span class="pull">native to the EVM.</span></h2>
+  <div class="rec-grid-pud">
+    <div class="rec-num">295,855</div>
+    <div class="rec-decomp-pud">
+      <div><span>Execution · 51 × ecrecover</span><span>210,755</span></div>
+      <div><span>L1 calldata · EIP-7623</span><span>85,100</span></div>
+      <div class="total"><span>Total at N = 50</span><span>295,855</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 07: COMPARISON ON CALM SURFACE ============ -->
+<section class="calm-section">
+  <div>
+    <div class="step-label">Slide 07 · Side by side at N=50</div>
+    <h2>secp loses on raw gas. It wins on what's shippable.</h2>
+    <p class="sub">All four BLS variants beat secp on per-verify gas. Three of them assume CometBFT signs one shared precommit message per committed block. That assumption isn't on the table. The fourth (BLS-D) keeps per-signer and pays the price.</p>
+  </div>
+
+  <div class="race">
+    <div class="race-row">
+      <div class="race-label">
+        <span class="swatch" style="background: var(--bls-a);"></span>
+        BLS-A <span class="badge">conditional</span>
+      </div>
+      <div class="race-bar"><span style="width: 12%; background: var(--bls-a); animation-delay: 0ms;"></span></div>
+      <div class="race-num">36,800 gas</div>
+    </div>
+    <div class="race-row">
+      <div class="race-label">
+        <span class="swatch" style="background: var(--bls-b);"></span>
+        BLS-B <span class="badge">conditional</span>
+      </div>
+      <div class="race-bar"><span style="width: 17%; background: var(--bls-b); animation-delay: 80ms;"></span></div>
+      <div class="race-num">52,400 gas</div>
+    </div>
+    <div class="race-row">
+      <div class="race-label">
+        <span class="swatch" style="background: var(--bls-c);"></span>
+        BLS-C <span class="badge">conditional</span>
+      </div>
+      <div class="race-bar"><span style="width: 38%; background: var(--bls-c); animation-delay: 160ms;"></span></div>
+      <div class="race-num">114,200 gas</div>
+    </div>
+    <div class="race-row">
+      <div class="race-label">
+        <span class="swatch" style="background: var(--secp);"></span>
+        secp256k1eth <span class="badge rec">recommended</span>
+      </div>
+      <div class="race-bar"><span style="width: 100%; background: var(--secp); animation-delay: 280ms;"></span></div>
+      <div class="race-num">295,855 gas</div>
+    </div>
+    <div class="race-row">
+      <div class="race-label">
+        <span class="swatch" style="background: var(--bls-d);"></span>
+        BLS-D
+      </div>
+      <div class="race-bar"><span style="width: 580%; background: var(--bls-d); transform-origin: left; animation-delay: 380ms;"></span></div>
+      <div class="race-num">1,714,446 gas</div>
+    </div>
+  </div>
+
+  <p class="footer-note">Direction probe · Drenched cover (warm acid green) + calm comparison · Pudding/data-essay color coding</p>
+</section>
+
+</body>
+</html>

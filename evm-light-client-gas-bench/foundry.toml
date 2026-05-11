@@ -1,0 +1,15 @@
+[profile.default]
+src = "src"
+test = "test"
+out = "out"
+libs = []
+# Multiple benchmark components intentionally use different pinned compiler
+# versions: EvmLightClientBench/test are =0.8.30; the vendored ed25519
+# component is =0.6.12. Foundry must auto-detect those exact pragmas.
+auto_detect_solc = true
+evm_version = "prague"
+optimizer = true
+optimizer_runs = 200
+via_ir = true
+gas_reports = ["EvmLightClientBench", "Ed25519VerifierBench"]
+fs_permissions = [{ access = "read", path = "./test/fixtures" }]

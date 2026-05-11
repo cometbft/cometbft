@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Committed × Mathigon (warm coral) — direction probe</title>
+<style>
+  :root {
+    --surface: oklch(98% 0.008 60);
+    --surface-2: oklch(95% 0.012 60);
+    --ink: oklch(22% 0.02 60);
+    --ink-2: oklch(42% 0.02 60);
+    --ink-3: oklch(60% 0.02 60);
+    --rule: oklch(88% 0.012 60);
+    --rule-soft: oklch(93% 0.01 60);
+
+    --accent: oklch(64% 0.18 32);
+    --accent-deep: oklch(48% 0.16 30);
+    --accent-soft: oklch(94% 0.04 35);
+    --bls-tone: oklch(58% 0.07 230);
+    --bls-soft: oklch(94% 0.025 230);
+
+    --serif: Iowan Old Style, Charter, Georgia, serif;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", sans-serif;
+    --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--surface);
+    color: var(--ink);
+    font: 16px/1.55 var(--sans);
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .deck { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+
+  /* ---------- SLIDE 01 — COVER ---------- */
+  .cover {
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding: 48px 0 64px;
+  }
+  .top-rail {
+    display: flex; align-items: baseline; justify-content: space-between;
+    font-family: var(--mono); font-size: 12px; color: var(--ink-3);
+    letter-spacing: 0.04em;
+  }
+  .top-rail .dot {
+    width: 8px; height: 8px; border-radius: 999px; background: var(--accent);
+    display: inline-block; margin-right: 8px;
+    animation: pulse 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.55; transform: scale(0.86); }
+  }
+
+  .cover-body { align-self: center; max-width: 880px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent-deep); margin-bottom: 24px;
+  }
+  h1.headline {
+    font-family: var(--serif);
+    font-size: clamp(56px, 9vw, 112px);
+    line-height: 1;
+    letter-spacing: -0.025em;
+    font-weight: 500;
+    margin: 0 0 32px;
+  }
+  h1.headline em {
+    font-style: italic; color: var(--accent);
+  }
+  .lede {
+    font-size: 22px; line-height: 1.5; color: var(--ink-2);
+    max-width: 60ch; font-weight: 400;
+  }
+  .lede strong { color: var(--ink); font-weight: 600; }
+
+  /* The reading-meter at the bottom */
+  .meter {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 24px;
+    padding-top: 32px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 12px; color: var(--ink-3);
+    letter-spacing: 0.04em;
+  }
+  .meter-bar {
+    height: 4px; background: var(--rule-soft); border-radius: 2px;
+    position: relative; overflow: hidden;
+  }
+  .meter-bar::before {
+    content: ""; position: absolute; inset: 0;
+    background: var(--accent);
+    transform: scaleX(0.08); transform-origin: left;
+    transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* ---------- SLIDE 02 — BLS-D WALL ---------- */
+  .wall {
+    min-height: 100vh;
+    display: grid; grid-template-columns: 5fr 7fr; gap: 64px;
+    align-items: center; padding: 80px 0;
+  }
+  .wall .lede2 { font-family: var(--serif); font-size: 36px; line-height: 1.2; color: var(--ink); margin: 0 0 18px; letter-spacing: -0.01em; font-weight: 500; }
+  .wall p { color: var(--ink-2); font-size: 17px; line-height: 1.6; max-width: 38ch; }
+  .wall-tag { display: inline-block; padding: 4px 10px; background: var(--accent-soft); color: var(--accent-deep); font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 3px; margin-bottom: 18px; }
+
+  /* The animated chart, in pure CSS */
+  .chart {
+    position: relative;
+    aspect-ratio: 5 / 4;
+    background: var(--surface-2);
+    border-radius: 14px;
+    padding: 32px;
+    overflow: hidden;
+  }
+  .chart .y-label, .chart .x-label {
+    position: absolute; font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+    letter-spacing: 0.04em;
+  }
+  .chart .y-label { top: 16px; left: 16px; }
+  .chart .x-label { bottom: 12px; right: 16px; }
+  .chart .axis {
+    position: absolute; left: 56px; right: 24px;
+    bottom: 32px; top: 56px;
+  }
+  .chart .grid-line {
+    position: absolute; left: 0; right: 0; height: 1px; background: var(--rule);
+  }
+  .chart .budget-line {
+    position: absolute; left: 0; right: 0; height: 1px; background: var(--ink-2);
+    border-top: 1px dashed var(--ink-2);
+    background: transparent;
+  }
+  .chart .budget-label {
+    position: absolute; right: 0; top: -18px;
+    font-family: var(--mono); font-size: 11px; color: var(--ink-2);
+  }
+  .chart svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .formula-line { stroke: var(--bls-tone); stroke-width: 2; fill: none; stroke-dasharray: 600; stroke-dashoffset: 600; animation: draw 1500ms cubic-bezier(0.22, 1, 0.36, 1) 200ms forwards; }
+  .measured-dot { fill: var(--accent); stroke: var(--surface); stroke-width: 3; opacity: 0; animation: pop 360ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .measured-dot:nth-child(1) { animation-delay: 800ms; }
+  .measured-dot:nth-child(2) { animation-delay: 950ms; }
+  .measured-dot:nth-child(3) { animation-delay: 1100ms; }
+  .measured-dot:nth-child(4) { animation-delay: 1250ms; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  @keyframes pop { to { opacity: 1; } }
+
+  .formula-row {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+    font-family: var(--mono); font-size: 18px; color: var(--ink-2);
+    margin-top: 24px; padding: 18px 22px;
+    background: var(--accent-soft); border-radius: 10px;
+  }
+  .formula-row .tok-n { color: var(--accent-deep); font-weight: 700; padding: 0 4px; transition: transform 200ms ease-out; }
+  .formula-row .tok-n.bump { transform: translateY(-2px) scale(1.08); }
+  .formula-row .tok-result { margin-left: auto; color: var(--ink); font-weight: 700; }
+
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 4px; background: var(--rule); border-radius: 2px;
+    margin-top: 14px;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent); border: 3px solid var(--surface);
+    box-shadow: 0 1px 6px oklch(50% 0.16 30 / 0.3);
+    cursor: grab;
+  }
+
+  .footer-note { padding: 32px 0 48px; font-family: var(--mono); font-size: 12px; color: var(--ink-3); text-align: center; }
+
+  /* ---------- SLIDE 02 — THE GAP ---------- */
+  .gap { min-height: 100vh; padding: 80px 0; display: grid; align-content: center; }
+  .gap-title {
+    font-family: var(--serif); font-size: clamp(34px, 4.6vw, 52px);
+    line-height: 1.1; letter-spacing: -0.015em; font-weight: 500;
+    margin: 14px 0 36px; max-width: 22ch;
+  }
+  .gap-title em { font-style: italic; color: var(--accent); }
+  .gap-grid {
+    display: grid; grid-template-columns: 5fr 6fr; gap: clamp(40px, 5vw, 80px);
+    align-items: center;
+  }
+  .gap p {
+    font-size: 18px; line-height: 1.65; color: var(--ink-2); max-width: 38ch;
+    margin: 0 0 24px;
+  }
+  .gap p strong { color: var(--ink); font-weight: 600; }
+  .gap p em { font-style: italic; color: var(--accent-deep); font-weight: 600; }
+  .gap-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+  .gap-list li {
+    display: grid; grid-template-columns: 28px 1fr; align-items: start; gap: 12px;
+    font-family: var(--mono); font-size: 13px; line-height: 1.55; color: var(--ink);
+  }
+  .gap-list .x { color: var(--accent); font-weight: 700; }
+  .gap-list .check { color: var(--accent-deep); }
+
+  .gap-diagram {
+    background: var(--surface-2); border-radius: 14px; padding: 36px;
+    display: grid; gap: 24px; align-content: center;
+    aspect-ratio: 5 / 4;
+  }
+  .flow {
+    display: grid; grid-template-columns: 1fr auto 1fr auto 1fr;
+    gap: 8px; align-items: center;
+  }
+  .flow .node {
+    background: var(--surface); padding: 12px 8px; border-radius: 10px;
+    font-family: var(--mono); font-size: 11px; color: var(--ink); text-align: center;
+    border: 1px solid var(--rule); line-height: 1.35;
+  }
+  .flow .node.broken { border-color: var(--accent); color: var(--accent-deep); }
+  .flow .arrow {
+    color: var(--ink-3); font-family: var(--mono); font-size: 12px;
+    text-align: center; padding: 0 4px;
+  }
+  .annot {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    font-family: var(--mono); font-size: 11px; line-height: 1.5;
+    color: var(--ink-2);
+  }
+  .annot .pin { border-top: 1px dashed var(--accent); padding-top: 8px; }
+  .annot .pin strong {
+    color: var(--accent); font-weight: 600; display: block; margin-bottom: 2px;
+  }
+
+  /* ---------- SLIDE 03 — THE NUMBER ---------- */
+  .rec { min-height: 100vh; padding: 80px 0; display: grid; align-content: center; }
+  .rec-title {
+    font-family: var(--serif); font-size: clamp(30px, 4vw, 44px);
+    line-height: 1.15; letter-spacing: -0.012em; font-weight: 500;
+    margin: 14px 0 40px; max-width: 30ch;
+  }
+  .rec-title em { font-style: italic; color: var(--accent); font-weight: 500; }
+  .rec-grid {
+    display: grid; grid-template-columns: auto 1fr; gap: clamp(40px, 5vw, 80px);
+    align-items: end;
+  }
+  .big-num {
+    font-family: var(--serif); font-style: italic;
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(96px, 14vw, 196px); line-height: 0.92; letter-spacing: -0.035em;
+    color: var(--accent);
+  }
+  .rec-decomp {
+    display: grid; gap: 0; max-width: 360px; padding-bottom: 16px;
+    border-top: 1px solid var(--rule);
+  }
+  .rec-decomp > div {
+    display: grid; grid-template-columns: 1fr auto; padding: 12px 0;
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 13px; color: var(--ink-2);
+  }
+  .rec-decomp > div span:last-child {
+    color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums;
+  }
+  .rec-decomp .total span:last-child { color: var(--accent); }
+  .rec-decomp .footnote-row {
+    border: none; padding: 14px 0 0; grid-template-columns: 1fr;
+    font-style: italic; color: var(--ink-3);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .top-rail .dot, .formula-line, .measured-dot { animation: none; }
+    .formula-line { stroke-dashoffset: 0; }
+    .measured-dot { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <!-- ============ SLIDE 01: COVER ============ -->
+  <section class="cover">
+    <div class="top-rail">
+      <div><span class="dot"></span>EVM Light Client · Gas Benchmark · 2026-05</div>
+      <div>01 / 10</div>
+    </div>
+
+    <div class="cover-body">
+      <div class="eyebrow">The recommendation</div>
+      <h1 class="headline">Use <em>secp256k1eth</em>.<br />Today, that's the answer.</h1>
+      <p class="lede">CometBFT validators sign <strong>ed25519</strong> over <strong>per-signer</strong> canonical-vote bytes. Solidity has no ed25519 precompile, so verifying current commits on Ethereum L1 is not viable at quorum scale. Switch the signing curve to <strong>secp256k1</strong>, run <strong>ecrecover</strong> per signer, and the verify cost stays native to the EVM.</p>
+    </div>
+
+    <div class="meter">
+      <span>Slide 01</span>
+      <div class="meter-bar"></div>
+      <span>The recommendation</span>
+    </div>
+  </section>
+
+  <!-- ============ SLIDE 02: THE GAP ============ -->
+  <section class="gap">
+    <span class="wall-tag">Slide 02 · The gap</span>
+    <h2 class="gap-title">A signature scheme is not a verification <em>cost</em>.</h2>
+    <div class="gap-grid">
+      <div>
+        <p>CometBFT signs <strong>ed25519</strong> over per-signer canonical-vote bytes. Solidity has no ed25519 precompile. The bytes are also per-signer, defeating BLS aggregation. <em>Both halves of the gap are real.</em></p>
+        <ul class="gap-list">
+          <li><span class="x">✗</span><span>ed25519 has no native EVM verification path.</span></li>
+          <li><span class="x">✗</span><span>Per-signer messages cannot be aggregated.</span></li>
+          <li><span class="check">→</span><span>Switch the curve. Or change the protocol.</span></li>
+        </ul>
+      </div>
+      <div class="gap-diagram" aria-hidden="true">
+        <div class="flow">
+          <div class="node">validator<br/>signs vote</div>
+          <div class="arrow">─ ed25519 ─→</div>
+          <div class="node broken">bytes<br/>on EVM</div>
+          <div class="arrow">─ verify ─→</div>
+          <div class="node broken">commit<br/>verified</div>
+        </div>
+        <div class="annot">
+          <div class="pin"><strong>✗ no precompile</strong>solidity has no ed25519 verifier</div>
+          <div class="pin"><strong>✗ per-signer</strong>messages cannot be aggregated</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SLIDE 03: THE NUMBER ============ -->
+  <section class="rec">
+    <span class="wall-tag">Slide 03 · The number</span>
+    <h2 class="rec-title">At <em>N = 50</em>, secp256k1eth verifies a commit in <em>295,855 gas</em>.</h2>
+    <div class="rec-grid">
+      <div class="big-num">295,855</div>
+      <div class="rec-decomp">
+        <div><span>Execution · 51 × ecrecover</span><span>210,755</span></div>
+        <div><span>L1 calldata · EIP-7623</span><span>85,100</span></div>
+        <div class="total"><span>Total per verify</span><span>295,855</span></div>
+        <div class="footnote-row"><span>~0.99% of one Geth block (30M ceiling).</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SLIDE 06: BLS-D WALL ============ -->
+  <section class="wall">
+    <div>
+      <span class="wall-tag">Slide 06 · The wall</span>
+      <h2 class="lede2">If you keep per-signer messages, BLS-D pays N+1 pairings.</h2>
+      <p>Each signer's message gets its own EIP-2537 pairing check at ~32,600 gas. The line is straight; the slope is steep. By N=175 you're at 5.8M gas for verification alone. Every Geth block has a 30M ceiling.</p>
+      <div class="formula-row">
+        <span>cost</span><span>=</span><span>37,700</span><span>+</span><span>32,600</span><span>×</span><span>(<span class="tok-n" id="nTok">50</span>+1)</span><span>=</span><span class="tok-result" id="resultTok">1,700,300</span><span style="color: var(--ink-3); font-size: 14px;">gas</span>
+      </div>
+      <input type="range" id="nSlider" min="1" max="200" value="50" />
+    </div>
+    <div class="chart" aria-hidden="true">
+      <span class="y-label">Gas (M)</span>
+      <span class="x-label">Validators (N)</span>
+      <div class="axis">
+        <div class="grid-line" style="top: 16%;"></div>
+        <div class="grid-line" style="top: 50%;"></div>
+        <div class="grid-line" style="top: 84%;"></div>
+        <div class="budget-line" style="top: 16%;">
+          <span class="budget-label">Geth block · 30M</span>
+        </div>
+        <svg viewBox="0 0 400 320" preserveAspectRatio="none">
+          <path class="formula-line" d="M 0 312 L 80 245 L 160 168 L 280 65 L 400 -10" />
+          <circle class="measured-dot" cx="20" cy="305" r="6" />
+          <circle class="measured-dot" cx="100" cy="244" r="6" />
+          <circle class="measured-dot" cx="200" cy="167" r="6" />
+          <circle class="measured-dot" cx="350" cy="62" r="6" />
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <p class="footer-note">Direction probe · Committed strategy on tinted-cream surface · Mathigon-style explainable</p>
+</div>
+
+<script>
+  const slider = document.getElementById('nSlider');
+  const nTok = document.getElementById('nTok');
+  const resultTok = document.getElementById('resultTok');
+  slider.addEventListener('input', e => {
+    const n = parseInt(e.target.value, 10);
+    const result = 37700 + 32600 * (n + 1);
+    nTok.textContent = n;
+    nTok.classList.add('bump');
+    setTimeout(() => nTok.classList.remove('bump'), 220);
+    resultTok.textContent = result.toLocaleString();
+  });
+</script>
+</body>
+</html>

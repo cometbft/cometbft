@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Restrained × Stripe Press — direction probe</title>
+<style>
+  :root {
+    --paper: oklch(97% 0.012 70);
+    --paper-2: oklch(94% 0.014 70);
+    --ink: oklch(18% 0.012 70);
+    --ink-2: oklch(38% 0.012 70);
+    --ink-3: oklch(58% 0.012 70);
+    --rule: oklch(86% 0.014 70);
+    --accent: oklch(46% 0.13 28);
+    --accent-soft: oklch(94% 0.04 28);
+
+    --serif: "Iowan Old Style", "Charter", "Lyon Text", Georgia, serif;
+    --sans: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --mono: ui-monospace, "JetBrains Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); }
+  body {
+    font: 18px/1.65 var(--serif);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "kern", "liga";
+  }
+
+  .page {
+    max-width: 880px; margin: 0 auto;
+    padding: clamp(40px, 6vh, 72px) clamp(28px, 6vw, 88px);
+    min-height: 100vh;
+    display: grid; grid-template-rows: auto 1fr auto;
+    gap: clamp(40px, 6vh, 72px);
+    position: relative;
+  }
+  .page-body { align-self: center; position: relative; }
+
+  .top-rail, .bottom-rail {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .bottom-rail {
+    border-top: 1px solid var(--rule); padding-top: 18px;
+    text-transform: none; letter-spacing: 0.04em;
+  }
+  .marginal-num {
+    position: absolute; top: -22px; left: clamp(-44px, -3vw, -14px);
+    font-family: var(--serif); font-style: italic;
+    font-size: clamp(36px, 3.6vw, 52px); color: var(--ink-3); font-weight: 400;
+    line-height: 1;
+  }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; color: var(--accent);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    margin-bottom: 28px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .eyebrow::after {
+    content: ""; flex: 1; height: 1px; background: var(--rule);
+    transform: scaleX(0); transform-origin: left;
+    animation: stretch 1100ms cubic-bezier(0.22, 1, 0.36, 1) 200ms forwards;
+  }
+  @keyframes stretch { to { transform: scaleX(1); } }
+
+  /* ---- COVER (I) ---- */
+  .cover h1 {
+    font-family: var(--serif);
+    font-size: clamp(36px, 5vw, 60px);
+    line-height: 1.18;
+    letter-spacing: -0.012em;
+    font-weight: 400;
+    margin: 0 0 36px;
+    max-width: 22ch;
+  }
+  .cover h1 em { font-style: italic; color: var(--accent); }
+  .cover .lede {
+    font-size: 19px; line-height: 1.6; max-width: 56ch; color: var(--ink-2);
+  }
+  .cover .lede strong { color: var(--ink); font-weight: 600; }
+  .cover .lede em { font-style: italic; color: var(--ink); }
+
+  /* ---- ESSAY (II) ---- */
+  .essay h2 {
+    font-family: var(--serif); font-style: italic;
+    font-size: clamp(28px, 3.4vw, 40px);
+    line-height: 1.2; letter-spacing: -0.005em; margin: 0 0 32px;
+    font-weight: 400; max-width: 26ch;
+  }
+  .essay-grid {
+    display: grid; grid-template-columns: minmax(0, 1fr) clamp(180px, 22vw, 240px);
+    gap: clamp(32px, 5vw, 64px);
+    align-items: start;
+  }
+  @media (max-width: 760px) {
+    .essay-grid { grid-template-columns: 1fr; }
+  }
+  .essay-grid p { font-size: 19px; line-height: 1.65; max-width: 56ch; color: var(--ink); margin: 0 0 18px; }
+  .essay-grid p .term {
+    font-family: var(--mono); font-size: 15px; padding: 0 4px;
+    background: var(--paper-2); border-radius: 2px;
+  }
+  .essay-grid p .accent { color: var(--accent); font-style: italic; }
+  .marginal-note {
+    font-family: var(--mono); font-size: 11px; line-height: 1.6;
+    color: var(--ink-3); border-left: 1px solid var(--rule);
+    padding: 4px 0 4px 16px;
+  }
+  .marginal-note em { font-style: italic; color: var(--ink); }
+  .marginal-note code {
+    font-family: var(--mono); color: var(--ink);
+    background: var(--paper-2); padding: 0 4px; border-radius: 2px;
+  }
+  .drop-cap {
+    float: left; font-family: var(--serif);
+    font-size: clamp(64px, 7vw, 88px);
+    line-height: 0.86;
+    margin: 6px 14px -6px 0;
+    color: var(--ink);
+    font-weight: 400;
+  }
+  .footnote-mark {
+    font-family: var(--mono); font-size: 10px; vertical-align: super;
+    color: var(--accent); margin-left: 1px;
+  }
+  .essay .footnote {
+    margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 12px; color: var(--ink-3);
+    line-height: 1.6; max-width: 56ch;
+  }
+
+  /* ---- HERO NUMBER (III) ---- */
+  .number-slide h2 {
+    font-family: var(--serif); font-style: italic;
+    font-size: clamp(26px, 3.2vw, 38px);
+    line-height: 1.25; margin: 0 0 28px;
+    font-weight: 400; max-width: 28ch;
+  }
+  .number-slide h2 em { font-style: italic; color: var(--accent); }
+  .big-number {
+    font-family: var(--serif);
+    font-feature-settings: "tnum", "lnum";
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(96px, 13vw, 184px);
+    line-height: 0.92; letter-spacing: -0.04em;
+    color: var(--ink); margin: 0 0 16px;
+    font-weight: 400;
+  }
+  .big-number-unit {
+    font-family: var(--serif); font-style: italic; font-size: clamp(20px, 2vw, 26px);
+    color: var(--ink-2); margin-bottom: 36px; max-width: 30ch;
+  }
+  .big-number-unit strong { color: var(--ink); font-style: normal; font-weight: 600; }
+  .breakdown {
+    display: grid; gap: 0; max-width: 540px;
+    border-top: 1px solid var(--rule);
+  }
+  .breakdown .row {
+    display: grid; grid-template-columns: 1fr auto;
+    align-items: baseline;
+    padding: 14px 0; border-bottom: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 13px; color: var(--ink-2);
+  }
+  .breakdown .row strong {
+    color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums;
+  }
+  .breakdown .row.total strong { color: var(--accent); }
+
+  /* ---- COMPARISON (IV) ---- */
+  .compare h2 {
+    font-family: var(--serif); font-style: italic;
+    font-size: clamp(28px, 3.4vw, 40px);
+    line-height: 1.2; margin: 0 0 36px;
+    font-weight: 400; max-width: 28ch;
+  }
+  .compare h2 em { color: var(--accent); }
+  .ledger {
+    width: 100%; border-collapse: collapse;
+    font-family: var(--serif);
+    font-feature-settings: "tnum", "lnum";
+    font-variant-numeric: tabular-nums;
+  }
+  .ledger thead th {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-3); font-weight: 500;
+    padding: 12px 10px; text-align: left;
+    border-bottom: 1px solid var(--ink);
+  }
+  .ledger thead th.num, .ledger tbody td.num { text-align: right; }
+  .ledger tbody td {
+    padding: 16px 10px; border-bottom: 1px solid var(--rule);
+    font-size: 17px;
+  }
+  .ledger tbody tr.recommended td { background: var(--accent-soft); color: var(--ink); }
+  .ledger tbody tr.recommended td.scheme { color: var(--accent); font-weight: 600; font-style: italic; }
+  .ledger .note {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em;
+    color: var(--ink-3); text-transform: uppercase;
+  }
+  .ledger tr.recommended .note { color: var(--accent); }
+
+  .footer-note {
+    padding: 24px 0 48px; text-align: center;
+    font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .eyebrow::after { animation: none; transform: scaleX(1); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ I — COVER ============ -->
+<section class="page cover">
+  <div class="top-rail">
+    <div>EVM Light Client · Gas Benchmark</div>
+    <div>2026 — I / IV</div>
+  </div>
+  <div class="page-body">
+    <div class="marginal-num">I.</div>
+    <div class="eyebrow">The recommendation</div>
+    <h1>On verifying a CometBFT commit inside Solidity, the answer, today, is <em>secp256k1eth</em>.</h1>
+    <p class="lede">CometBFT validators sign <strong>ed25519</strong> over per-signer canonical-vote bytes. Solidity has no native ed25519. Aggregation schemes (BLS) want one shared precommit message per committed block; that protocol change is not on the table. So we work with what's real: switch to <em>secp256k1eth</em> and let <strong>ecrecover</strong> do the work.</p>
+  </div>
+  <div class="bottom-rail">
+    <div>Read · 9 min</div>
+    <div>↓ scroll</div>
+  </div>
+</section>
+
+<!-- ============ II — THE EVM GAP ============ -->
+<section class="page essay">
+  <div class="top-rail">
+    <div>II — The gap</div>
+    <div>Restrained · Stripe Press</div>
+  </div>
+  <div class="page-body">
+    <div class="marginal-num">II.</div>
+    <div class="eyebrow">The gap</div>
+    <h2>A signature scheme is not a verification cost.</h2>
+    <div class="essay-grid">
+      <div>
+        <p>
+          <span class="drop-cap">A</span> light client on Ethereum L1 must verify two things: that <span class="term">2/3+1</span> of the validator set signed a commit, and that the commit attests the state root it claims. The second piece — Merkle membership against an <span class="term">IAVL</span> tree — is comparable across schemes. The first piece is where the bill lands.<sup class="footnote-mark">¹</sup>
+        </p>
+        <p>
+          CometBFT signs <span class="term">ed25519</span> over <em class="accent">per-signer canonical-vote bytes</em>: each signer's message includes its own timestamp. There is no ed25519 precompile in the EVM, and per-signer messages defeat aggregation. Both halves of the gap are real, and either alone forces a choice.
+        </p>
+        <p class="footnote">¹ Canonical commit format defined in <span class="term">types/canonical.go</span>: height, round, block ID, chain ID, plus the per-signer timestamp.</p>
+      </div>
+      <aside class="marginal-note">
+        A <em>precompile</em> is a contract address the EVM intercepts and runs in native code, priced in gas like an opcode. <code>ecrecover</code> at <code>0x01</code> is the canonical example; there is no equivalent for ed25519.
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ============ III — THE NUMBER ============ -->
+<section class="page number-slide">
+  <div class="top-rail">
+    <div>III — The recommendation</div>
+    <div>secp256k1eth · N = 50</div>
+  </div>
+  <div class="page-body">
+    <div class="marginal-num">III.</div>
+    <div class="eyebrow">The number</div>
+    <h2>At fifty validators, verifying a commit on <em>secp256k1eth</em> costs:</h2>
+    <div class="big-number">295,855</div>
+    <div class="big-number-unit">gas, per verify, at <strong>N = 50</strong>.</div>
+    <div class="breakdown">
+      <div class="row"><span>Execution · 51 × ecrecover</span><strong>210,755</strong></div>
+      <div class="row"><span>L1 calldata · post-EIP-7623</span><strong>85,100</strong></div>
+      <div class="row total"><span>Total per verify</span><strong>295,855</strong></div>
+      <div class="row"><span>Share of one Geth block</span><strong>0.99%</strong></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ IV — THE FIELD ============ -->
+<section class="page compare">
+  <div class="top-rail">
+    <div>IV — The field</div>
+    <div>Forge-measured · N = 50</div>
+  </div>
+  <div class="page-body">
+    <div class="marginal-num">IV.</div>
+    <div class="eyebrow">Field</div>
+    <h2>Four BLS variants beat secp on raw gas. Three want a protocol change. One hits <em>the wall</em>.</h2>
+    <table class="ledger">
+      <thead>
+        <tr>
+          <th>Scheme</th>
+          <th class="num">Gas</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="scheme">BLS-A</td>
+          <td class="num">36,800</td>
+          <td><span class="note">Conditional · shared message</span></td>
+        </tr>
+        <tr>
+          <td class="scheme">BLS-B</td>
+          <td class="num">52,400</td>
+          <td><span class="note">Conditional · validator set on-chain</span></td>
+        </tr>
+        <tr>
+          <td class="scheme">BLS-C</td>
+          <td class="num">114,200</td>
+          <td><span class="note">Conditional · validator set in calldata</span></td>
+        </tr>
+        <tr class="recommended">
+          <td class="scheme">secp256k1eth</td>
+          <td class="num">295,855</td>
+          <td><span class="note">Recommended · no protocol change</span></td>
+        </tr>
+        <tr>
+          <td class="scheme">BLS-D</td>
+          <td class="num">1,714,446</td>
+          <td><span class="note">Per-signer BLS · the wall</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<p class="footer-note">Direction probe · Restrained (one muted brick accent ≤8% of surface) · Stripe Press cadence</p>
+
+</body>
+</html>

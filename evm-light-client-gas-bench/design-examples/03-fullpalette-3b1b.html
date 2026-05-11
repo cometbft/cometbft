@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Full palette × 3Blue1Brown — direction probe</title>
+<style>
+  :root {
+    --paper: oklch(97% 0.006 250);
+    --paper-2: oklch(94% 0.008 250);
+    --ink: oklch(18% 0.02 250);
+    --ink-2: oklch(40% 0.02 250);
+    --ink-3: oklch(58% 0.02 250);
+    --rule: oklch(86% 0.012 250);
+
+    /* The four named scheme colors. Each has a presence on every slide it appears. */
+    --secp:   oklch(60% 0.16 35);
+    --bls-a:  oklch(58% 0.13 200);
+    --bls-b:  oklch(50% 0.16 285);
+    --bls-c:  oklch(60% 0.13 145);
+    --bls-d:  oklch(50% 0.18 20);
+    --ics:    oklch(55% 0.05 250);
+
+    /* Each scheme also has a tint for backgrounds */
+    --secp-tint:  oklch(95% 0.025 35);
+    --bls-d-tint: oklch(94% 0.04 20);
+
+    --display: ui-rounded, "SF Pro Rounded", "Hiragino Sans", system-ui, sans-serif;
+    --sans: ui-sans-serif, system-ui, sans-serif;
+    --mono: ui-monospace, "JetBrains Mono", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); }
+  body { font: 16px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
+
+  /* ---------- SLIDE 01: PALETTE-AS-COVER ---------- */
+  .cover {
+    min-height: 100vh;
+    padding: clamp(40px, 6vh, 80px) clamp(28px, 6vw, 96px);
+    display: grid; grid-template-rows: auto 1fr auto; gap: 48px;
+  }
+  .top-rail {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-family: var(--mono); font-size: 12px; color: var(--ink-3); letter-spacing: 0.04em;
+  }
+
+  .hero {
+    display: grid; grid-template-columns: 1.2fr 1fr; gap: clamp(40px, 5vw, 96px);
+    align-items: center;
+  }
+  .hero-left h1 {
+    font-family: var(--display);
+    font-size: clamp(48px, 6.4vw, 96px); line-height: 1.02;
+    letter-spacing: -0.02em; font-weight: 700; margin: 0 0 24px;
+  }
+  .hero-left h1 .ink-secp { color: var(--secp); }
+  .hero-left .lede {
+    font-size: clamp(17px, 1.4vw, 20px); line-height: 1.55; color: var(--ink-2);
+    max-width: 48ch;
+  }
+  .hero-left .lede em { font-style: normal; color: var(--ink); font-weight: 600; }
+
+  /* The five schemes as introduced characters */
+  .cast { display: grid; gap: 14px; }
+  .character {
+    display: grid; grid-template-columns: 56px 1fr auto; align-items: center; gap: 18px;
+    padding: 14px 18px; border-radius: 14px; background: var(--paper-2);
+    transform: translateY(8px); opacity: 0;
+    animation: drift 720ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .character:nth-child(1) { animation-delay: 100ms; }
+  .character:nth-child(2) { animation-delay: 200ms; }
+  .character:nth-child(3) { animation-delay: 300ms; }
+  .character:nth-child(4) { animation-delay: 400ms; }
+  .character:nth-child(5) { animation-delay: 500ms; }
+  @keyframes drift { to { opacity: 1; transform: translateY(0); } }
+
+  .character .glyph {
+    width: 56px; height: 56px; border-radius: 14px;
+    display: grid; place-items: center;
+    font-family: var(--display); font-weight: 800; font-size: 22px; color: var(--paper);
+    letter-spacing: -0.02em;
+  }
+  .character.secp .glyph  { background: var(--secp);  }
+  .character.bls-a .glyph { background: var(--bls-a); }
+  .character.bls-b .glyph { background: var(--bls-b); }
+  .character.bls-c .glyph { background: var(--bls-c); }
+  .character.bls-d .glyph { background: var(--bls-d); }
+
+  .character .meta { display: flex; flex-direction: column; }
+  .character .name {
+    font-family: var(--mono); font-size: 14px; font-weight: 600;
+  }
+  .character.secp .name { color: var(--secp); }
+  .character.bls-a .name { color: var(--bls-a); }
+  .character.bls-b .name { color: var(--bls-b); }
+  .character.bls-c .name { color: var(--bls-c); }
+  .character.bls-d .name { color: var(--bls-d); }
+  .character .tag { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+
+  .character .pill {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 4px 10px; border-radius: 999px;
+    background: var(--paper); color: var(--ink-3); border: 1px solid var(--rule);
+  }
+  .character.secp .pill { background: var(--secp); color: var(--paper); border-color: transparent; }
+  .character.bls-d .pill { background: var(--bls-d-tint); color: var(--bls-d); border-color: transparent; }
+
+  .cover-foot {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--mono); font-size: 12px; color: var(--ink-3);
+    border-top: 1px solid var(--rule); padding-top: 24px;
+  }
+
+  /* ---------- SLIDE 04: HERO NUMBER FOR SECP ---------- */
+  .hero-num {
+    background: var(--secp-tint); padding: clamp(64px, 10vh, 120px) clamp(28px, 6vw, 96px);
+    min-height: 100vh; display: grid; align-content: center; gap: 48px;
+  }
+  .hero-num .step {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--secp);
+  }
+  .hero-num h2 {
+    font-family: var(--display); font-size: clamp(36px, 4vw, 56px); line-height: 1.1;
+    margin: 0; max-width: 22ch; font-weight: 700; letter-spacing: -0.015em;
+  }
+  .hero-num h2 em { font-style: normal; color: var(--secp); }
+
+  .number-row {
+    display: grid; grid-template-columns: auto 1fr; gap: clamp(32px, 4vw, 64px); align-items: end;
+  }
+  .number {
+    font-family: var(--display); font-weight: 700; font-variant-numeric: tabular-nums;
+    font-size: clamp(96px, 14vw, 220px); line-height: 0.9; letter-spacing: -0.04em;
+    color: var(--secp);
+  }
+  .number-decomp { font-family: var(--mono); font-size: 14px; color: var(--ink-2); display: grid; gap: 8px; max-width: 32ch; padding-bottom: 16px; }
+  .number-decomp .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed var(--rule); }
+  .number-decomp .row strong { color: var(--ink); font-weight: 600; }
+
+  .footer-note {
+    padding: 32px 0; text-align: center;
+    font-family: var(--mono); font-size: 12px; color: var(--ink-3);
+    background: var(--paper);
+  }
+
+  /* ---------- SLIDE 02 — THE GAP ---------- */
+  .gap {
+    padding: clamp(64px, 10vh, 120px) clamp(28px, 6vw, 96px);
+    min-height: 100vh; display: grid; align-content: center; gap: 32px;
+  }
+  .gap .step {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--bls-d);
+  }
+  .gap h2 {
+    font-family: var(--display); font-size: clamp(36px, 5vw, 64px); line-height: 1.05;
+    letter-spacing: -0.018em; font-weight: 700; margin: 0; max-width: 22ch;
+  }
+  .gap h2 em { font-style: normal; color: var(--bls-d); }
+  .gap-grid {
+    display: grid; grid-template-columns: 5fr 6fr; gap: clamp(32px, 5vw, 64px);
+    align-items: center; margin-top: 8px;
+  }
+  .gap-grid p { font-size: 18px; line-height: 1.6; color: var(--ink-2); max-width: 38ch; margin: 0 0 16px; }
+  .gap-grid p strong { color: var(--ink); font-weight: 600; }
+  .gap-grid p em { font-style: normal; color: var(--bls-d); font-weight: 600; }
+
+  .scheme-wall {
+    position: relative;
+    display: grid; gap: 14px; padding: 28px 44px 28px 28px;
+    background: var(--paper-2);
+    border-radius: 16px; overflow: hidden;
+  }
+  .scheme-wall::after {
+    content: ""; position: absolute; right: 14px; top: 14px; bottom: 14px; width: 6px;
+    background: repeating-linear-gradient(45deg, var(--bls-d), var(--bls-d) 4px, transparent 4px, transparent 8px);
+    border-radius: 3px; opacity: 0.55;
+  }
+  .runner {
+    display: grid; grid-template-columns: 44px 1fr 110px; gap: 14px;
+    align-items: center; padding: 10px 14px; border-radius: 10px;
+    background: var(--paper);
+    opacity: 0;
+    animation: runner-arrive 1100ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  @keyframes runner-arrive {
+    from { opacity: 0; transform: translateX(-24px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .runner:nth-child(1) { animation-delay: 200ms; }
+  .runner:nth-child(2) { animation-delay: 320ms; }
+  .runner:nth-child(3) { animation-delay: 440ms; }
+  .runner:nth-child(4) { animation-delay: 560ms; }
+  .runner:nth-child(5) { animation-delay: 680ms; }
+  .runner .glyph-sm {
+    width: 36px; height: 36px; border-radius: 10px; color: var(--paper);
+    display: grid; place-items: center; font-family: var(--display); font-weight: 800; font-size: 16px;
+  }
+  .runner.s .glyph-sm { background: var(--secp); }
+  .runner.a .glyph-sm { background: var(--bls-a); }
+  .runner.b .glyph-sm { background: var(--bls-b); }
+  .runner.c .glyph-sm { background: var(--bls-c); }
+  .runner.d .glyph-sm { background: var(--bls-d); }
+  .runner .name { font-family: var(--mono); font-size: 13px; font-weight: 600; }
+  .runner.s .name { color: var(--secp); }
+  .runner.a .name { color: var(--bls-a); }
+  .runner.b .name { color: var(--bls-b); }
+  .runner.c .name { color: var(--bls-c); }
+  .runner.d .name { color: var(--bls-d); }
+  .runner .verdict {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    text-align: right;
+  }
+  .runner.s .verdict { color: var(--secp); }
+  .runner.a .verdict, .runner.b .verdict, .runner.c .verdict { color: var(--ink-3); }
+  .runner.d .verdict { color: var(--bls-d); }
+
+  /* ---------- SLIDE 05 — THE FIELD ---------- */
+  .field {
+    padding: clamp(64px, 10vh, 120px) clamp(28px, 6vw, 96px);
+    min-height: 100vh; display: grid; align-content: center; gap: 32px;
+  }
+  .field .step { font-family: var(--mono); font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-2); }
+  .field h2 {
+    font-family: var(--display); font-size: clamp(36px, 5vw, 64px); line-height: 1.05;
+    letter-spacing: -0.018em; font-weight: 700; margin: 0; max-width: 22ch;
+  }
+  .field h2 em { font-style: normal; color: var(--secp); }
+  .field-race { display: grid; gap: 16px; max-width: 1000px; margin-top: 12px; }
+  .field-row {
+    display: grid; grid-template-columns: 200px 1fr 140px;
+    align-items: center; gap: 18px;
+  }
+  .field-label {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+  }
+  .field-label .glyph-mini {
+    width: 24px; height: 24px; border-radius: 6px; color: var(--paper);
+    display: grid; place-items: center; font-family: var(--display); font-weight: 800; font-size: 12px;
+  }
+  .field-row.s .glyph-mini { background: var(--secp); }
+  .field-row.s .field-label { color: var(--secp); }
+  .field-row.a .glyph-mini { background: var(--bls-a); }
+  .field-row.a .field-label { color: var(--bls-a); }
+  .field-row.b .glyph-mini { background: var(--bls-b); }
+  .field-row.b .field-label { color: var(--bls-b); }
+  .field-row.c .glyph-mini { background: var(--bls-c); }
+  .field-row.c .field-label { color: var(--bls-c); }
+  .field-row.d .glyph-mini { background: var(--bls-d); }
+  .field-row.d .field-label { color: var(--bls-d); }
+  .field-bar {
+    height: 28px; background: var(--paper-2); border-radius: 6px;
+    position: relative; overflow: hidden;
+  }
+  .field-bar > span {
+    position: absolute; inset: 0 auto 0 0;
+    border-radius: 6px;
+    transform-origin: left; transform: scaleX(0);
+    animation: race 1200ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  @keyframes race { to { transform: scaleX(1); } }
+  .field-row.s .field-bar > span { background: var(--secp); }
+  .field-row.a .field-bar > span { background: var(--bls-a); }
+  .field-row.b .field-bar > span { background: var(--bls-b); }
+  .field-row.c .field-bar > span { background: var(--bls-c); }
+  .field-row.d .field-bar > span { background: var(--bls-d); }
+  .field-num {
+    font-family: var(--mono); font-size: 14px; text-align: right; color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .field-row.recommended {
+    background: var(--secp-tint); border-radius: 8px;
+    padding: 8px 10px; margin-left: -10px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .character, .runner, .field-bar > span { animation: none; opacity: 1; transform: none; }
+    .field-bar > span { transform: scaleX(1); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ SLIDE 01: PALETTE-AS-COVER ============ -->
+<section class="cover">
+  <div class="top-rail">
+    <div>EVM LIGHT CLIENT · GAS BENCHMARK</div>
+    <div>01 / 10 · Read 9 min</div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-left">
+      <h1>Five schemes.<br/>One <span class="ink-secp">answer</span>.</h1>
+      <p class="lede">Verifying a CometBFT light-client commit on Ethereum L1 is a five-way choice. Four of them want CometBFT to change how validators sign. <em>One of them works today.</em></p>
+    </div>
+
+    <div class="cast" aria-label="Cast of schemes">
+      <div class="character secp">
+        <div class="glyph">S</div>
+        <div class="meta">
+          <span class="name">secp256k1eth</span>
+          <span class="tag">Per-signer ecrecover. Native EVM cost.</span>
+        </div>
+        <span class="pill">recommended</span>
+      </div>
+      <div class="character bls-a">
+        <div class="glyph">A</div>
+        <div class="meta">
+          <span class="name">BLS-A</span>
+          <span class="tag">Off-chain aggregate. Cheapest verify.</span>
+        </div>
+        <span class="pill">conditional</span>
+      </div>
+      <div class="character bls-b">
+        <div class="glyph">B</div>
+        <div class="meta">
+          <span class="name">BLS-B</span>
+          <span class="tag">Validator set stored on-chain.</span>
+        </div>
+        <span class="pill">conditional</span>
+      </div>
+      <div class="character bls-c">
+        <div class="glyph">C</div>
+        <div class="meta">
+          <span class="name">BLS-C</span>
+          <span class="tag">Validator set in calldata.</span>
+        </div>
+        <span class="pill">conditional</span>
+      </div>
+      <div class="character bls-d">
+        <div class="glyph">D</div>
+        <div class="meta">
+          <span class="name">BLS-D</span>
+          <span class="tag">Per-signer BLS. N+1 pairings, hits the wall.</span>
+        </div>
+        <span class="pill">non-viable</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="cover-foot">
+    <div>CometBFT light-client design choices · Forge-measured</div>
+    <div>↓ scroll</div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 02: THE GAP ============ -->
+<section class="gap">
+  <div class="step">Slide 02 · The gap</div>
+  <h2>Five schemes line up against <em>one wall</em>: the EVM doesn't speak ed25519.</h2>
+  <div class="gap-grid">
+    <div>
+      <p>CometBFT signs <strong>ed25519</strong> over <em>per-signer canonical-vote bytes</em>. Solidity has no ed25519 precompile, and per-signer messages defeat aggregation.</p>
+      <p>Each scheme answers the same wall differently. Four cost less than secp on raw gas — three of those four require CometBFT to start signing one shared precommit message per committed block.</p>
+    </div>
+    <div class="scheme-wall" aria-label="Schemes lined up against the EVM constraint">
+      <div class="runner s"><div class="glyph-sm">S</div><div class="name">secp256k1eth</div><div class="verdict">recommended</div></div>
+      <div class="runner a"><div class="glyph-sm">A</div><div class="name">BLS-A</div><div class="verdict">conditional</div></div>
+      <div class="runner b"><div class="glyph-sm">B</div><div class="name">BLS-B</div><div class="verdict">conditional</div></div>
+      <div class="runner c"><div class="glyph-sm">C</div><div class="name">BLS-C</div><div class="verdict">conditional</div></div>
+      <div class="runner d"><div class="glyph-sm">D</div><div class="name">BLS-D</div><div class="verdict">non-viable</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 04: HERO NUMBER FOR SECP ============ -->
+<section class="hero-num">
+  <div class="step">Slide 04 · The recommended path</div>
+  <h2>At N=50, verifying a commit on <em>secp256k1eth compact</em> costs:</h2>
+
+  <div class="number-row">
+    <div class="number">295,855</div>
+    <div class="number-decomp">
+      <div class="row"><span>Execution gas</span><strong>210,755</strong></div>
+      <div class="row"><span>L1 calldata gas</span><strong>85,100</strong></div>
+      <div class="row"><span>Total per verify</span><strong>295,855 gas</strong></div>
+      <div class="row"><span>~0.99% of one Geth block</span><strong>30M ceiling</strong></div>
+    </div>
+  </div>
+
+  <div style="font-family: var(--mono); font-size: 13px; color: var(--ink-2); max-width: 60ch;">
+    No aggregate-commit redesign. Ethereum-style secp256k1 signatures use ecrecover at ~3,000 gas per signer, native to the EVM. Linear in N, but priced at native opcode cost.
+  </div>
+</section>
+
+<!-- ============ SLIDE 05: THE FIELD ============ -->
+<section class="field">
+  <div class="step">Slide 05 · Side by side at N = 50</div>
+  <h2>secp256k1eth loses on raw gas. It wins on what's <em>shippable</em>.</h2>
+  <div class="field-race">
+    <div class="field-row a">
+      <div class="field-label"><div class="glyph-mini">A</div>BLS-A</div>
+      <div class="field-bar"><span style="width: 12%;"></span></div>
+      <div class="field-num">36,800</div>
+    </div>
+    <div class="field-row b">
+      <div class="field-label"><div class="glyph-mini">B</div>BLS-B</div>
+      <div class="field-bar"><span style="width: 18%; animation-delay: 80ms;"></span></div>
+      <div class="field-num">52,400</div>
+    </div>
+    <div class="field-row c">
+      <div class="field-label"><div class="glyph-mini">C</div>BLS-C</div>
+      <div class="field-bar"><span style="width: 39%; animation-delay: 160ms;"></span></div>
+      <div class="field-num">114,200</div>
+    </div>
+    <div class="field-row s recommended">
+      <div class="field-label"><div class="glyph-mini">S</div>secp256k1eth</div>
+      <div class="field-bar"><span style="width: 100%; animation-delay: 240ms;"></span></div>
+      <div class="field-num">295,855</div>
+    </div>
+    <div class="field-row d">
+      <div class="field-label"><div class="glyph-mini">D</div>BLS-D</div>
+      <div class="field-bar"><span style="width: 580%; animation-delay: 320ms;"></span></div>
+      <div class="field-num">1,714,446</div>
+    </div>
+  </div>
+</section>
+
+<p class="footer-note">Direction probe · Full palette (5 named scheme colors) · 3Blue1Brown explainable cadence</p>
+
+</body>
+</html>

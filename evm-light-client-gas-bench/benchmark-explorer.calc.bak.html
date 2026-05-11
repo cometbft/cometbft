@@ -1,0 +1,3334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>EVM Light Client Gas Benchmark Explorer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"
+  integrity="sha384-DhxhYObIMeMNGyAG7iK11OHzBIKyEIeRL0ad1iFPAOwZB8iirUlTT0O/WJJUk8+o"
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer"></script>
+<style>
+  /*
+    Surface model: tinted near-black, single accent (sky), neutral pills.
+    Dark by physical scene, not category reflex: protocol engineer reading
+    long stretches of dense numeric tables at a desk monitor during normal
+    review work. Lower surface luminance reduces glare across 2-5 minute
+    cell-by-cell reads.
+    Color strategy: restrained. Tinted neutrals plus one accent at <=10%.
+    Scheme palette is a separate data-viz role with one lightness/chroma,
+    only the hue varies. No raw #fff or #000 anywhere.
+  */
+  :root {
+    /* Tinted neutrals (cool tilt, hue 250). Chroma low, lower at extremes. */
+    --bg:          oklch(14% 0.008 250);
+    --bg-2:        oklch(19% 0.010 250);
+    --bg-3:        oklch(25% 0.012 250);
+    --fg:          oklch(96% 0.005 250);
+    --fg-2:        oklch(78% 0.012 250);
+    --fg-3:        oklch(64% 0.018 250); /* lifted for AA on 11-12px text */
+    --border:      oklch(28% 0.012 250);
+    --border-soft: oklch(23% 0.010 250);
+
+    /* The accent. Active state, focus, primary emphasis. Used sparingly. */
+    --accent:      oklch(80% 0.13 230);
+    --accent-soft: oklch(80% 0.13 230 / 0.16);
+    --accent-line: oklch(80% 0.13 230 / 0.40);
+
+    /* Scheme palette (data viz). Same lightness, same chroma, hue varies. */
+    --s-secp:  oklch(78% 0.13 230);
+    --s-blsa:  oklch(78% 0.13  25);
+    --s-blsb:  oklch(78% 0.13 145);
+    --s-blsc:  oklch(78% 0.13  85);
+    --s-blsd:  oklch(78% 0.13 290);
+    --s-ics23: oklch(78% 0.13 340);
+    --s-canon: oklch(72% 0.020 250);
+
+    /* Cross-scheme chart series roles (don't reuse scheme tokens for these). */
+    --series-exec:    oklch(72% 0.020 250);
+    --series-cd:      oklch(56% 0.014 250);
+    --series-floor:   oklch(80% 0.13 230 / 0.55);
+    --series-formula: oklch(64% 0.018 250);
+
+    --good: oklch(78% 0.16 145);
+    --warn: oklch(80% 0.14  85);
+    --bad:  oklch(68% 0.18  25);
+
+    /* Spacing scale - varies by content density */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 18px;
+    --sp-5: 28px;
+    --sp-6: 44px;
+    --sp-7: 64px;
+
+    /* Type scale - 1.286 step body->h3, 1.333 thereafter (>=1.25 minimum) */
+    --t-body: 14px;
+    --t-h3:   18px;
+    --t-h2:   24px;
+    --t-h1:   32px;
+
+    --hit: 44px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: ui-sans-serif, -apple-system, system-ui, "Segoe UI", sans-serif;
+    font-size: var(--t-body);
+    line-height: 1.55;
+  }
+  code, pre, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Header */
+  header {
+    padding: var(--sp-5) var(--sp-6) var(--sp-3);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  header h1 {
+    margin: 0 0 var(--sp-2);
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  header .sub {
+    color: var(--fg-2);
+    font-size: 14px;
+    line-height: 1.55;
+    max-width: 70ch;
+  }
+
+  /* Tabs (ARIA tablist) */
+  nav.tabs {
+    display: flex; flex-wrap: wrap;
+    gap: var(--sp-1);
+    padding: var(--sp-2) var(--sp-5);
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 5;
+  }
+  nav.tabs button {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--fg-2);
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    min-height: var(--hit);
+    font-family: inherit;
+  }
+  @media (pointer: fine) {
+    nav.tabs button { min-height: 36px; padding: 8px 12px; }
+  }
+  nav.tabs button:hover { color: var(--fg); background: var(--bg-3); }
+  nav.tabs button[aria-selected="true"] {
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  /* Subnav inside Reference data tab */
+  nav.subnav {
+    display: inline-flex; gap: 2px;
+    margin: var(--sp-3) 0 var(--sp-5);
+    padding: 3px;
+    border-radius: 8px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-soft);
+  }
+  nav.subnav button {
+    background: transparent;
+    border: 0;
+    color: var(--fg-3);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 0.15s, background 0.15s;
+  }
+  nav.subnav button:hover { color: var(--fg-2); }
+  nav.subnav button[aria-selected="true"] {
+    color: var(--fg);
+    background: var(--bg-3);
+  }
+  .ref-panel[hidden] { display: none; }
+
+  /* Main */
+  main {
+    padding: var(--sp-5) var(--sp-6) var(--sp-7);
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  section[role="tabpanel"] { display: none; }
+  section[role="tabpanel"].active { display: block; }
+  section[role="tabpanel"]:focus { outline: none; }
+
+  h2 {
+    font-size: 24px;
+    margin: 0 0 var(--sp-2);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+  }
+  h3 {
+    font-size: 18px;
+    margin: var(--sp-6) 0 var(--sp-3);
+    font-weight: 600;
+    color: var(--fg);
+    letter-spacing: -0.01em;
+  }
+  p.lead {
+    color: var(--fg-2);
+    margin: 0 0 var(--sp-5);
+    font-size: 14px;
+    max-width: 70ch;
+    line-height: 1.6;
+  }
+
+  /* Cards: only when grouping disparate elements that need bounding. */
+  .card {
+    background: var(--bg-2);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: var(--sp-5);
+    margin-bottom: var(--sp-5);
+  }
+  .card.tight { padding: var(--sp-4); }
+
+  /* Verdict block - the single committed visual on overview */
+  .verdict {
+    margin: var(--sp-3) 0 var(--sp-6);
+    padding: var(--sp-3) 0 var(--sp-5);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .verdict .headline {
+    font-size: clamp(22px, 3.4vw, 36px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    color: var(--fg);
+    max-width: 32ch;
+  }
+  .verdict .headline em {
+    color: var(--accent);
+    font-style: normal;
+    font-weight: 700;
+  }
+
+  /* Quick-compare bars */
+  .quick-compare { margin-top: var(--sp-3); }
+  .scheme-row {
+    display: grid;
+    grid-template-columns: 180px 1fr 130px;
+    gap: var(--sp-3);
+    padding: var(--sp-3) 0;
+    border-bottom: 1px solid var(--border-soft);
+    align-items: center;
+  }
+  .scheme-row:last-child { border-bottom: 0; }
+  .scheme-row .bar {
+    height: 28px;
+    background: var(--bg-3);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .scheme-row .bar .track {
+    display: flex;
+    height: 100%;
+    transform-origin: left center;
+    transform: scaleX(0);
+    transition: transform 0.7s cubic-bezier(.22,1,.36,1);
+    will-change: transform;
+  }
+  .scheme-row .bar .seg {
+    height: 100%;
+    transition: filter 0.18s;
+  }
+  .scheme-row .bar .seg-cd { opacity: 0.42; }
+  .scheme-row:hover .bar .seg { filter: brightness(1.12); }
+  .scheme-row .total {
+    font-family: ui-monospace, monospace;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .scheme-row .total .total-num {
+    font-size: 14px; font-weight: 600; color: var(--fg);
+  }
+  .scheme-row .total .total-sub {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--fg-3);
+    font-weight: 400;
+  }
+  .scheme-row.is-ghost { opacity: 0.55; }
+  .scheme-row.is-ghost:hover { opacity: 0.85; }
+  .scheme-row.is-ghost .bar .seg { filter: saturate(0.4); }
+  .scheme-row .ghost-note {
+    display: inline-block;
+    margin-left: var(--sp-2);
+    font-size: 12px;
+    color: var(--fg-3);
+    font-style: italic;
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-6); }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-4); }
+
+  /* Section break: visible whitespace between major topics inside a tab */
+  h3.section-break { margin-top: var(--sp-7); }
+  h3.section-break::before {
+    content: '';
+    display: block;
+    width: 32px; height: 2px;
+    background: var(--accent-line);
+    border-radius: 2px;
+    margin-bottom: var(--sp-3);
+  }
+
+  /* Key takeaways block under the comparison chart */
+  .takeaways {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-4);
+    margin: var(--sp-3) 0 var(--sp-5);
+    padding: 0;
+    list-style: none;
+  }
+  .takeaways .item {
+    display: flex; flex-direction: column; gap: 4px;
+    padding-top: var(--sp-3);
+    border-top: 1px solid var(--accent-line);
+  }
+  .takeaways .item .head {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .takeaways .item .num {
+    font-family: ui-monospace, monospace;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+  }
+  .takeaways .item .body { color: var(--fg-2); font-size: 12px; line-height: 1.5; }
+  @media (max-width: 760px) {
+    .takeaways { grid-template-columns: 1fr; gap: var(--sp-3); }
+  }
+
+  @media (max-width: 1080px) {
+    .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 760px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; gap: var(--sp-5); }
+    main { padding: var(--sp-4) var(--sp-4) var(--sp-6); }
+    header { padding: var(--sp-4) var(--sp-4) var(--sp-3); }
+    nav.tabs { padding: var(--sp-2) var(--sp-3); }
+    .scheme-row { grid-template-columns: 1fr; gap: var(--sp-1); }
+    .scheme-row .total { text-align: left; }
+  }
+
+  /* Pills - neutral chip with a colored leading dot per scheme */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--bg-3);
+    color: var(--fg-2);
+    border: 1px solid var(--border-soft);
+    font-family: ui-monospace, monospace;
+    line-height: 1.5;
+  }
+  .pill::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.9;
+  }
+  .pill.secp  { color: var(--s-secp); }
+  .pill.blsa  { color: var(--s-blsa); }
+  .pill.blsb  { color: var(--s-blsb); }
+  .pill.blsc  { color: var(--s-blsc); }
+  .pill.blsd  { color: var(--s-blsd); }
+  .pill.ics23 { color: var(--s-ics23); }
+  .pill.canon { color: var(--s-canon); }
+
+  /* Tables */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+    border: 1px solid var(--border-soft);
+  }
+  table {
+    width: 100%;
+    min-width: 560px;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-soft);
+    text-align: left;
+    vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  th {
+    color: var(--fg-2);
+    font-weight: 600;
+    font-size: 12px;
+    background: var(--bg-2);
+  }
+  th abbr[title] {
+    text-decoration: underline dotted var(--border);
+    text-underline-offset: 3px;
+    cursor: help;
+  }
+  td.num, th.num {
+    text-align: right;
+    font-family: ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  td.tag { font-family: ui-monospace, monospace; color: var(--fg-2); font-size: 12px; }
+  tbody tr:hover td { background: oklch(96% 0.005 250 / 0.025); }
+
+  /* Controls */
+  .controls {
+    display: flex; flex-wrap: wrap; gap: var(--sp-4);
+    align-items: start;
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--bg-2);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    margin-bottom: var(--sp-4);
+  }
+  .controls .group {
+    display: flex; flex-direction: column; gap: 6px;
+    min-width: 0;
+    flex: 0 1 auto;
+  }
+  .controls label,
+  .controls .group > label {
+    font-size: 12px;
+    color: var(--fg-2);
+    font-weight: 500;
+  }
+  .controls .hint {
+    font-size: 12px;
+    color: var(--fg-2);
+    line-height: 1.45;
+    max-width: 32ch;
+  }
+  .controls select,
+  .controls input[type=number],
+  .controls input[type=text] {
+    background: var(--bg-3);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 12px;
+    font-size: 14px;
+    font-family: ui-monospace, monospace;
+    min-width: 140px;
+    max-width: 320px;
+    min-height: var(--hit);
+  }
+  .controls input[type=number] { max-width: 160px; }
+  @media (pointer: fine) {
+    .controls select,
+    .controls input[type=number],
+    .controls input[type=text] { min-height: 36px; padding: 7px 10px; }
+  }
+  .controls input[type=text] { font-family: inherit; }
+
+  .toggle-row {
+    display: flex; gap: var(--sp-1); flex-wrap: wrap;
+  }
+  .toggle-row button {
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    color: var(--fg-2);
+    padding: 9px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    min-height: var(--hit);
+    font-family: inherit;
+  }
+  @media (pointer: fine) {
+    .toggle-row button { min-height: 32px; padding: 6px 12px; }
+  }
+  .toggle-row button[aria-pressed="true"] {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  .row-jump {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px;
+    padding: 0;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--fg-3);
+    font-size: 14px; font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .row-jump:hover, .row-jump:focus-visible {
+    border-color: var(--accent-line);
+    color: var(--accent);
+    background: var(--accent-soft);
+    outline: none;
+  }
+
+  .controls .group.is-inert input,
+  .controls .group.is-inert select { opacity: 0.42; }
+  .controls .group.is-inert label,
+  .controls .group.is-inert .hint { opacity: 0.6; }
+
+  /* Calculator: flat row, no nested boxes */
+  .calc-result {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--sp-5);
+    margin-top: var(--sp-4);
+    padding-top: var(--sp-4);
+    border-top: 1px solid var(--border-soft);
+  }
+  .calc-result .stat { display: flex; flex-direction: column; gap: 4px; }
+  .calc-result .stat .label { color: var(--fg-2); font-size: 12px; font-weight: 500; }
+  .calc-result .stat .value {
+    font-size: 22px;
+    font-weight: 600;
+    font-family: ui-monospace, monospace;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .calc-result .stat .desc { color: var(--fg-2); font-size: 12px; }
+  @media (max-width: 760px) {
+    .calc-result { grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+  }
+  .calc-warn {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-2);
+    color: var(--fg-2);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  /* Small text helpers, factored from former inline styles. */
+  .body-note { margin-top: 6px; color: var(--fg-3); font-size: 12px; line-height: 1.5; }
+  .gas-unit { color: var(--fg-3); font-size: 0.85em; }
+  .fn-happy { margin-top: 2px; color: var(--fg-3); font-size: 12px; }
+  .aside-note { color: var(--fg-2); font-size: 14px; margin-top: var(--sp-3); max-width: 70ch; }
+  .card > h3.flush-top { margin-top: 0; }
+  #calcDescription { color: var(--fg-2); font-size: 14px; }
+
+  /* Charts */
+  .chart-region {
+    position: relative;
+    margin: var(--sp-3) 0 var(--sp-5);
+  }
+  .chart-wrap { position: relative; height: 360px; }
+  .chart-wrap.tall { height: 440px; }
+  .chart-region canvas { display: block; }
+  .chart-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: var(--sp-4);
+    color: var(--fg-2);
+    font-size: 14px;
+    text-align: center;
+    background: var(--bg-2);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    border: 0;
+  }
+
+  /* Details (raw) */
+  details { border-bottom: 1px solid var(--border-soft); }
+  details:last-child { border-bottom: 0; }
+  tr.cat-row td {
+    background: var(--bg-3);
+    color: var(--fg-2);
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 8px 12px;
+    border-top: 1px solid var(--border);
+  }
+  tr.cat-row + tr td { border-top: 0; }
+
+  details summary {
+    cursor: pointer;
+    color: var(--fg-2);
+    font-size: 14px;
+    font-weight: 500;
+    padding: var(--sp-3) 0;
+    min-height: var(--hit);
+    display: flex; align-items: center;
+  }
+  details[open] summary { color: var(--fg); }
+
+  pre.json {
+    background: var(--bg-3);
+    padding: var(--sp-4);
+    border-radius: 6px;
+    overflow: auto;
+    max-height: 360px;
+    font-size: 12px;
+    line-height: 1.5;
+    border: 1px solid var(--border-soft);
+    color: var(--fg-2);
+  }
+
+  /* Footer */
+  .footer-note {
+    margin-top: var(--sp-7);
+    padding-top: var(--sp-4);
+    border-top: 1px solid var(--border-soft);
+    font-size: 12px;
+    color: var(--fg-2);
+    line-height: 1.6;
+  }
+  .footer-note pre {
+    margin: var(--sp-2) 0 0;
+    background: var(--bg-2);
+    padding: var(--sp-3) var(--sp-4);
+    border-radius: 6px;
+    border: 1px solid var(--border-soft);
+    color: var(--fg);
+    font-size: 12px;
+    overflow-x: auto;
+  }
+
+  /* Pick-a-scheme wizard (interactive + pedagogic) */
+  .picker {
+    margin: var(--sp-3) 0 var(--sp-6);
+    padding: var(--sp-5);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-2);
+  }
+  .picker-head {
+    display: flex; align-items: baseline; gap: var(--sp-3);
+    margin-bottom: var(--sp-4);
+    flex-wrap: wrap;
+  }
+  .picker-title {
+    font-size: 18px; font-weight: 600;
+    color: var(--fg);
+    letter-spacing: -0.01em;
+  }
+  .picker-step { padding: var(--sp-2) 0; }
+  .picker-step + .picker-step { margin-top: var(--sp-3); }
+  .picker .q {
+    font-size: 14px; font-weight: 500;
+    color: var(--fg);
+    margin-bottom: var(--sp-3);
+    line-height: 1.5;
+  }
+  .picker .q .step-tag {
+    display: inline-block;
+    color: var(--fg-3);
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+    font-weight: 500;
+    margin-right: var(--sp-2);
+    letter-spacing: 0.04em;
+  }
+  .picker .answers { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  .picker .answers button {
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    color: var(--fg-2);
+    padding: 9px 16px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    min-height: var(--hit);
+    font-family: inherit;
+    transition: background 0.18s, color 0.18s, border-color 0.18s, transform 0.2s cubic-bezier(.22,1,.36,1);
+  }
+  @media (pointer: fine) {
+    .picker .answers button { min-height: 36px; padding: 7px 14px; }
+  }
+  .picker .answers button:hover {
+    color: var(--fg);
+    border-color: var(--accent-line);
+    transform: translateY(-1px);
+  }
+  .picker .answers button[aria-pressed="true"] {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .picker .hint {
+    margin-top: var(--sp-2);
+    font-size: 12px;
+    color: var(--fg-3);
+    max-width: 60ch;
+    line-height: 1.5;
+  }
+  .picker-result {
+    margin-top: var(--sp-4);
+    padding-top: var(--sp-4);
+    border-top: 1px solid var(--border-soft);
+  }
+  .picker-result-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-3);
+  }
+  .picker-result .verdict-pill {
+    display: inline-flex; align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 14px; font-weight: 600;
+    font-family: ui-monospace, monospace;
+    margin-bottom: 0;
+  }
+  .picker-total {
+    display: flex; flex-direction: column; align-items: flex-end;
+    gap: 2px;
+  }
+  .picker-total .number {
+    font-family: ui-monospace, monospace;
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+  .picker-total .anchor {
+    font-size: 14px;
+    color: var(--fg-2);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+  .picker-total .caption {
+    font-size: 12px;
+    color: var(--fg-2);
+  }
+  @media (max-width: 760px) {
+    .picker-result-head { justify-content: flex-start; }
+    .picker-total { align-items: flex-start; }
+  }
+  .picker-result .verdict-pill::before {
+    content: "→"; font-weight: 700;
+  }
+  .picker-result p {
+    margin: 0;
+    color: var(--fg-2);
+    font-size: 14px;
+    line-height: 1.6;
+    max-width: 64ch;
+  }
+  .picker-result p code {
+    color: var(--fg);
+    background: var(--bg-3);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12px;
+  }
+  .picker-actions {
+    display: flex; gap: var(--sp-2); flex-wrap: wrap;
+    margin-top: var(--sp-4);
+  }
+  .picker-actions button {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--fg-2);
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    min-height: 36px;
+    transition: background 0.18s, color 0.18s, border-color 0.18s;
+  }
+  .picker-actions button:hover {
+    color: var(--accent);
+    border-color: var(--accent-line);
+    background: var(--accent-soft);
+  }
+  @keyframes def-pop-pulse {
+    0%   { background: var(--accent-soft); }
+    100% { background: transparent; }
+  }
+  .picker-step.is-reset { animation: def-pop-pulse 1.2s cubic-bezier(.22,1,.36,1); border-radius: 8px; }
+
+  /* N segmented control + compare legend (overview) */
+  .n-control {
+    display: flex; align-items: center; gap: var(--sp-3);
+    flex-wrap: wrap;
+    margin: var(--sp-3) 0;
+  }
+  .n-control .label {
+    font-size: 14px;
+    color: var(--fg-2);
+    font-weight: 500;
+  }
+  .n-segmented {
+    display: inline-flex;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .n-segmented button {
+    background: transparent;
+    border: 0;
+    color: var(--fg-2);
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-family: ui-monospace, monospace;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    min-width: 56px;
+    min-height: 32px;
+    transition: background 0.18s cubic-bezier(.22,1,.36,1), color 0.18s;
+  }
+  @media (pointer: coarse) {
+    .n-segmented button { min-height: var(--hit); }
+  }
+  .n-segmented button:hover { color: var(--fg); }
+  .n-segmented button[aria-pressed="true"] {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .n-control .note {
+    margin-left: auto;
+    font-size: 12px; color: var(--fg-3);
+    max-width: 36ch;
+    text-align: right;
+  }
+  .compare-legend {
+    display: inline-flex; gap: var(--sp-3);
+    font-size: 12px; color: var(--fg-2);
+    margin: 0 0 var(--sp-2);
+  }
+  .compare-legend span {
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .compare-legend span::before {
+    content: "";
+    width: 14px; height: 8px;
+    border-radius: 2px;
+    background: var(--accent);
+  }
+  .compare-legend .leg-cd::before { opacity: 0.42; }
+
+  /* BLS-D formula playground */
+  .formula-play {
+    margin: var(--sp-3) 0 var(--sp-5);
+    padding: var(--sp-5);
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .formula-play .formula {
+    font-family: ui-monospace, monospace;
+    font-size: clamp(14px, 1.6vw, 17px);
+    line-height: 2;
+    margin: 0 0 var(--sp-4);
+    color: var(--fg-2);
+  }
+  .formula-play .tok {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    margin: 0 1px;
+    transition: filter 0.2s;
+  }
+  .formula-play .tok.fixed { color: var(--s-blsa); background: oklch(78% 0.13 25 / 0.14); }
+  .formula-play .tok.per   { color: var(--s-blsd); background: oklch(78% 0.13 290 / 0.14); }
+  .formula-play .tok.n     { color: var(--accent); background: var(--accent-soft); }
+  .formula-play .tok.eq    { color: var(--fg); background: var(--bg-3); }
+  .formula-play .slider-row {
+    display: flex; align-items: center; gap: var(--sp-3);
+    flex-wrap: wrap;
+  }
+  .formula-play input[type=range] {
+    flex: 1; min-width: 200px;
+    accent-color: var(--accent);
+    height: 28px;
+  }
+  .formula-play .out {
+    font-family: ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 14px;
+    min-width: 3ch;
+    text-align: right;
+  }
+  .formula-play .pair-readout {
+    color: var(--fg-2);
+    font-size: 14px;
+    font-family: ui-monospace, monospace;
+  }
+  .formula-play .pair-readout strong { color: var(--fg); font-variant-numeric: tabular-nums; }
+  .formula-play .marks {
+    margin-top: var(--sp-3);
+    font-size: 12px;
+    color: var(--fg-3);
+  }
+  .formula-play .marks code {
+    color: var(--fg-2);
+    background: var(--bg-3);
+    padding: 1px 6px;
+    border-radius: 3px;
+  }
+
+  /* Inline info popover (schemes + concepts, single source of truth) */
+  .info-wrap { position: relative; display: inline-block; margin-left: 6px; vertical-align: middle; }
+  .info {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--accent-line);
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 12px; font-weight: 700;
+    font-family: ui-monospace, monospace;
+    line-height: 1;
+    cursor: help;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .info:hover, .info:focus-visible {
+    border-color: var(--accent);
+    color: var(--bg);
+    background: var(--accent);
+    outline: none;
+  }
+  .info-pop {
+    position: absolute;
+    top: calc(100% + 6px); left: 0;
+    width: 320px; max-width: 80vw;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: var(--sp-3) var(--sp-4);
+    font-size: 14px;
+    line-height: 1.6;
+    box-shadow: 0 8px 28px oklch(8% 0.005 250 / 0.55);
+    color: var(--fg-2);
+    text-align: left;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.15s, transform 0.18s cubic-bezier(.22,1,.36,1);
+    z-index: 30;
+    font-weight: 400;
+    white-space: normal;
+  }
+  .info-pop.info-pop--end { left: auto; right: 0; }
+  .info-wrap.is-open .info-pop::after {
+    content: 'Press Esc to close';
+    display: block;
+    margin-top: var(--sp-2);
+    padding-top: var(--sp-2);
+    border-top: 1px dashed var(--border-soft);
+    font-size: 11px;
+    color: var(--fg-3);
+    font-style: italic;
+  }
+  .info-pop .term {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .info-wrap:hover .info-pop,
+  .info-wrap:focus-within .info-pop,
+  .info-wrap.is-open .info-pop {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="liveRegion" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<header>
+  <h1>EVM Light Client Gas Benchmark Explorer</h1>
+  <div class="sub">What it costs to verify a CometBFT light-client commit on Ethereum L1, why today’s <code>ed25519</code> + per-signer vote-byte signing makes that impractical, and which alternative is actually viable.</div>
+</header>
+
+<nav class="tabs" id="tabs" role="tablist" aria-label="Benchmark sections">
+  <button role="tab" id="tab-overview"   data-tab="overview"   aria-selected="true"  aria-controls="overview"   tabindex="0">Overview</button>
+  <button role="tab" id="tab-comparison" data-tab="comparison" aria-selected="false" aria-controls="comparison" tabindex="-1">Scheme comparison</button>
+  <button role="tab" id="tab-blsd"       data-tab="blsd"       aria-selected="false" aria-controls="blsd"       tabindex="-1">BLS-D multi-message</button>
+  <button role="tab" id="tab-calculator" data-tab="calculator" aria-selected="false" aria-controls="calculator" tabindex="-1">Cost calculator</button>
+  <button role="tab" id="tab-reference"  data-tab="reference"  aria-selected="false" aria-controls="reference"  tabindex="-1">Reference data</button>
+</nav>
+
+<main>
+
+<!-- ============== OVERVIEW ============== -->
+<section id="overview" class="active" role="tabpanel" aria-labelledby="tab-overview" tabindex="0">
+  <h2>Overview</h2>
+  <p class="lead">CometBFT validators sign <code>ed25519</code> over per-signer canonical-vote bytes (each carries the signer’s own timestamp). Solidity has no <code>ed25519</code> precompile<span data-info="precompile"></span>, so verifying current commits on Ethereum L1 is not viable at quorum scale. The recommended path is <em>secp256k1eth</em><span data-info="secp"></span>: validators sign <code>secp256k1</code> instead, and the verifier runs the EVM-native <code>ecrecover</code><span data-info="ecrecover"></span> precompile per signer. No protocol change needed beyond the signing curve.</p>
+  <p class="lead">BLS aggregation (<em>BLS-A</em><span data-info="blsa"></span>, <em>B</em><span data-info="blsb"></span>, <em>C</em><span data-info="blsc"></span>) is cheaper per verify but requires one shared precommit message for the committed block, a CometBFT protocol change that isn’t on the table. Keeping per-signer messages with BLS (<em>BLS-D</em><span data-info="blsd"></span>) costs <code>N+1</code> EIP-2537<span data-info="eip2537"></span> pairings: gas grows linearly with validator count and reaches block-budget scale fast. Membership proofs (<em>ICS23/IAVL</em><span data-info="ics23"></span>) are priced separately under Reference.</p>
+
+  <div class="verdict">
+    <div class="headline" id="verdictNum">Loading verdict.</div>
+  </div>
+
+  <div class="picker" id="schemePicker" aria-label="Pick a scheme wizard">
+    <div class="picker-head">
+      <span class="picker-title">Pick a scheme</span>
+    </div>
+    <div class="picker-step" data-step="1">
+      <div class="q"><span class="step-tag">Q1</span>Can your protocol commit to <strong>one shared precommit message</strong> per committed block?</div>
+      <div class="answers" role="group" aria-label="Question 1: shared message">
+        <button type="button" data-q="shared" data-v="yes" aria-pressed="false">Yes, shared message</button>
+        <button type="button" data-q="shared" data-v="no" aria-pressed="false">No, per-signer (CometBFT default)</button>
+      </div>
+      <div class="hint">CometBFT signs per-signer canonical-vote bytes today (each carries the signer’s own timestamp). One shared message per height would unlock BLS aggregation, but it’s a protocol change that hasn’t been made.</div>
+    </div>
+    <div class="picker-step" data-step="2" hidden>
+      <div class="q"><span class="step-tag">Q2</span>How many validators do you verify?</div>
+      <div class="answers" role="group" aria-label="Question 2: validator count">
+        <button type="button" data-q="n" data-v="small" aria-pressed="false">Up to 50</button>
+        <button type="button" data-q="n" data-v="medium" aria-pressed="false">51 to 100</button>
+        <button type="button" data-q="n" data-v="large" aria-pressed="false">More than 100</button>
+      </div>
+    </div>
+    <div class="picker-step" data-step="3" hidden>
+      <div class="q"><span class="step-tag">Q3</span>Can you store the validator set on-chain once and reuse it for every verify?</div>
+      <div class="answers" role="group" aria-label="Question 3: on-chain storage">
+        <button type="button" data-q="store" data-v="yes" aria-pressed="false">Yes, store and amortize</button>
+        <button type="button" data-q="store" data-v="no" aria-pressed="false">No, calldata only</button>
+      </div>
+    </div>
+    <div class="picker-result" id="pickerResult" hidden>
+      <div class="picker-result-head">
+        <span class="verdict-pill" id="pickerPill"></span>
+        <div class="picker-total" id="pickerTotal" aria-live="polite"></div>
+      </div>
+      <p id="pickerWhy"></p>
+      <div class="picker-actions">
+        <button type="button" id="pickerJump">Open in cost calculator</button>
+        <button type="button" id="pickerReset">Start over</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="n-control">
+    <span class="label">Compare at <code>N</code> =</span>
+    <div class="n-segmented" id="nSeg" role="group" aria-label="Validator count for comparison">
+      <button type="button" data-n="10" aria-pressed="false">10</button>
+      <button type="button" data-n="50" aria-pressed="true">50</button>
+      <button type="button" data-n="100" aria-pressed="false">100</button>
+      <button type="button" data-n="175" aria-pressed="false">175</button>
+    </div>
+    <span class="note">BLS-A/B/C are measured at N=50 only and appear dimmed at other counts. Their on-chain cost is constant in <code>N</code>, so a single measurement is enough.</span>
+  </div>
+  <div class="compare-legend" aria-hidden="true">
+    <span class="leg-exec">execution</span>
+    <span class="leg-cd">L1 calldata</span>
+  </div>
+
+  <div class="quick-compare" id="quickCompare" role="img" aria-label="Combined gas per verification scheme, ranked from lowest to highest at the selected validator count"></div>
+</section>
+
+<!-- ============== SCHEME COMPARISON ============== -->
+<section id="comparison" role="tabpanel" aria-labelledby="tab-comparison" tabindex="0" hidden>
+  <h2>Scheme comparison</h2>
+  <p class="lead">Side-by-side gas cost for every scheme at <code>N=50</code>, including the BLS variants that depend on the shared-message protocol change. Each verify pays both execution gas and L1 calldata<span data-info="calldata"></span> gas; the EIP-7623 floor<span data-info="eip7623"></span> column shows the calldata-floor cost when execution is small relative to calldata. BLS-B’s one-time storage row is excluded here; it’s priced separately on the calculator.</p>
+
+  <div class="controls">
+    <div class="group">
+      <label id="cmpSeriesLabel">Series</label>
+      <div class="toggle-row" role="group" aria-labelledby="cmpSeriesLabel">
+        <button type="button" data-show="exec"  aria-pressed="true">Execution gas</button>
+        <button type="button" data-show="cd"    aria-pressed="true">L1 calldata gas</button>
+        <button type="button" data-show="floor" aria-pressed="false">EIP-7623 floor</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-region" role="img" aria-labelledby="comparisonChartLabel" aria-describedby="comparisonChartDesc">
+    <span id="comparisonChartLabel" class="sr-only">Bar chart comparing execution gas, L1 standard calldata gas, and EIP-7623 floor for each verification scheme at N=50.</span>
+    <span id="comparisonChartDesc" class="sr-only"></span>
+    <div class="chart-wrap tall"><canvas id="comparisonChart" aria-hidden="true"></canvas></div>
+  </div>
+
+  <aside class="takeaways" id="comparisonTakeaways" aria-label="Key takeaways at N=50"></aside>
+
+  <h3>Detailed table</h3>
+  <div class="table-scroll">
+    <table id="comparisonTable">
+      <thead><tr>
+        <th>Scheme</th><th><abbr title="Forge benchmark function (Solidity signature). See Reference tab for source.">Benchmark function</abbr></th><th class="num">Exec gas</th>
+        <th class="num">L1 std gas</th><th class="num">EIP-7623 floor</th>
+        <th class="num">Total (exec + L1 std)</th>
+        <th><span class="sr-only">Open in calculator</span></th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <h3 class="section-break">Scaling with <code>N</code></h3>
+  <p class="lead">Compact-commit<span data-info="compactCommit"></span> calldata is measured at 10, 50, 100, 175. <em>BLS-D</em><span data-info="blsd"></span> execution gas tracks the EIP-2537<span data-info="eip2537"></span> pairing<span data-info="pairing"></span> formula. <em>BLS-A/B</em> are constant in <code>N</code> on-chain (the heavy lifting is off-chain or one-time).</p>
+  <div class="grid-2">
+    <div>
+      <h4>Calldata L1 standard gas vs <code>N</code></h4>
+      <div class="chart-region" role="img" aria-label="Line chart of compact-commit L1 standard calldata gas and EIP-7623 floor against validator count">
+        <div class="chart-wrap"><canvas id="calldataScalingChart" aria-hidden="true"></canvas></div>
+      </div>
+    </div>
+    <div>
+      <h4>BLS-D execution gas vs <code>N</code></h4>
+      <div class="chart-region" role="img" aria-label="Line chart of measured BLS-D execution gas overlaid with the EIP-2537 formula across N=10, 50, 100, 175">
+        <div class="chart-wrap"><canvas id="blsdScalingChart" aria-hidden="true"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="section-break">Compact-commit calldata table</h3>
+  <div class="table-scroll">
+    <table id="compactCalldataTable">
+      <thead><tr><th class="num">N</th><th class="num">Bytes</th><th class="num">Zero</th><th class="num">Non-zero</th><th class="num">L1 std gas</th><th class="num">EIP-7623 floor</th><th class="num">Blob bytes</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============== BLS-D ============== -->
+<section id="blsd" role="tabpanel" aria-labelledby="tab-blsd" tabindex="0" hidden>
+  <h2>BLS-D multi-message: measured vs formula<span data-info="blsd"></span></h2>
+  <p class="lead">This is what BLS costs <em>without</em> the shared-message protocol change: each signer’s message keeps its own timestamp, so verification needs <code>N+1</code> EIP-2537<span data-info="eip2537"></span> pairing<span data-info="pairing"></span> checks. Gas grows linearly with validator count and crosses the block-budget threshold quickly. Drag the slider to recompute.</p>
+
+  <div class="formula-play" aria-label="BLS-D formula playground">
+    <div class="formula" id="bdFormulaText">
+      cost
+      <span class="tok eq" aria-hidden="true">=</span>
+      <span class="tok fixed">37,700</span>
+      +
+      <span class="tok per">32,600</span>
+      ×
+      (<span class="tok n" id="bdNTok">50</span> + 1)
+      <span class="tok eq" aria-hidden="true">=</span>
+      <span class="tok eq" id="bdResult">…</span>
+      <span class="gas-unit">gas</span>
+    </div>
+    <div class="slider-row">
+      <label for="bdN" class="label">N =</label>
+      <span class="out" id="bdNValue">50</span>
+      <input type="range" id="bdN" min="1" max="200" step="1" value="50" aria-label="Validator count for the BLS-D formula" />
+      <span class="pair-readout"><strong id="bdPairings">51</strong> pairings</span>
+    </div>
+    <div class="marks">Measured points: <code>N=10</code>, <code>50</code>, <code>100</code>, <code>175</code> match the formula within ~1% overhead.</div>
+  </div>
+
+  <div class="chart-region" role="img" aria-labelledby="blsdChartLabel">
+    <span id="blsdChartLabel" class="sr-only">Bar chart of measured BLS-D execution gas next to the EIP-2537 formula for N=10, 50, 100, 175.</span>
+    <div class="chart-wrap"><canvas id="blsdChart" aria-hidden="true"></canvas></div>
+  </div>
+
+  <div class="table-scroll">
+    <table id="blsdTable">
+      <thead><tr><th class="num">Signers (N)</th><th class="num">Pairings (N+1)</th><th class="num">Measured gas</th><th class="num">Formula gas</th><th class="num">Overhead</th><th class="num">Overhead %</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <p class="aside-note">
+    Overhead above the formula (~1.3% at N=10, ~0.8% at N=175) is fixed setup beyond the precompile.
+  </p>
+</section>
+
+<!-- ============== COST CALCULATOR ============== -->
+<section id="calculator" role="tabpanel" aria-labelledby="tab-calculator" tabindex="0" hidden>
+  <h2>Cost calculator</h2>
+  <p class="lead">Convert any scheme’s measured gas into ETH and USD at your current prices. The default is the recommended <em>secp256k1eth compact</em> at <code>N=50</code>; the BLS rows price the alternatives if CometBFT moved to one shared precommit message per committed block.</p>
+
+  <div class="controls">
+    <div class="group">
+      <label for="calcScheme">Scheme</label>
+      <select id="calcScheme">
+        <optgroup label="secp256k1eth compact (per-signer)">
+          <option value="compact-commit-10">N=10</option>
+          <option value="compact-commit-50" selected>N=50 (production median)</option>
+          <option value="compact-commit-100">N=100</option>
+          <option value="compact-commit-175">N=175</option>
+        </optgroup>
+        <optgroup label="BLS aggregate (shared message)">
+          <option value="bls-a-50">BLS-A supplied aggregate (N=50)</option>
+          <option value="bls-b-50">BLS-B stored set, verify only (N=50)</option>
+          <option value="bls-b-50-store">BLS-B store set, one-time (N=50)</option>
+          <option value="bls-c-50">BLS-C calldata set (N=50)</option>
+        </optgroup>
+        <optgroup label="BLS-D multi-message (per-signer)">
+          <option value="bls-d-10">N=10</option>
+          <option value="bls-d-50">N=50</option>
+          <option value="bls-d-100">N=100</option>
+          <option value="bls-d-175">N=175</option>
+        </optgroup>
+        <optgroup label="ICS23 / IAVL membership proof">
+          <option value="ics23-verify-d8">depth 8</option>
+          <option value="ics23-verify-d16">depth 16</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="group">
+      <label for="calcGwei">Gas price (gwei)</label>
+      <input type="number" id="calcGwei" value="5" min="0" step="0.1" />
+      <span class="hint">Typical L1 mainnet: 1 to 30 gwei.</span>
+    </div>
+    <div class="group">
+      <label for="calcEth">ETH price (USD)</label>
+      <input type="number" id="calcEth" value="3000" min="0" step="50" />
+    </div>
+    <div class="group" id="calcAmortizeGroup">
+      <label for="calcAmortize">Amortize over (verifies)</label>
+      <input type="number" id="calcAmortize" value="1" min="1" step="1" />
+      <span class="hint" id="calcAmortizeHint">Divides one-time costs (e.g. BLS-B store).</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="flush-top">Result</h3>
+    <div id="calcDescription"></div>
+    <div class="calc-result" id="calcResult"></div>
+  </div>
+</section>
+
+<!-- ============== REFERENCE DATA (calldata + components + raw, with subnav) ============== -->
+<section id="reference" role="tabpanel" aria-labelledby="tab-reference" tabindex="0" hidden>
+  <h2>Reference data</h2>
+  <p class="lead">Underlying measurements: every calldata row, every per-function execution-gas row, and the raw <code>benchmarks.json</code>.</p>
+
+  <nav class="subnav" id="refSubnav" role="tablist" aria-label="Reference data sections">
+    <button role="tab" id="ref-tab-calldata"   data-sub="calldata"   aria-selected="true"  aria-controls="ref-calldata"   tabindex="0">Calldata</button>
+    <button role="tab" id="ref-tab-components" data-sub="components" aria-selected="false" aria-controls="ref-components" tabindex="-1">Components</button>
+    <button role="tab" id="ref-tab-raw"        data-sub="raw"        aria-selected="false" aria-controls="ref-raw"        tabindex="-1">Raw JSON</button>
+  </nav>
+
+  <div class="ref-panel" id="ref-calldata" role="tabpanel" aria-labelledby="ref-tab-calldata" tabindex="0">
+    <div class="controls">
+      <div class="group">
+        <label for="calldataFilter">Filter</label>
+        <select id="calldataFilter">
+          <option value="all">All groups</option>
+          <option value="commit">Commit (compact / prebuilt)</option>
+          <option value="update">Update / misbehaviour</option>
+          <option value="bls">BLS</option>
+          <option value="ics23">ICS23 / IAVL</option>
+          <option value="canon">Canonical vote</option>
+        </select>
+      </div>
+      <div class="group">
+        <label for="calldataSort">Sort by</label>
+        <select id="calldataSort">
+          <option value="gas_l1_standard">L1 std gas</option>
+          <option value="byte_length">Byte length</option>
+          <option value="gas_l1_floor_eip_7623">EIP-7623 floor</option>
+          <option value="name">Name</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="chart-region" role="img" aria-label="Horizontal bar chart of the top 12 calldata rows by L1 standard gas, with EIP-7623 floor overlaid">
+      <div class="chart-wrap tall"><canvas id="calldataChart" aria-hidden="true"></canvas></div>
+    </div>
+
+    <div class="table-scroll">
+      <table id="calldataTable">
+        <thead><tr>
+          <th>Row</th>
+          <th class="num">Bytes</th>
+          <th class="num">Zero</th>
+          <th class="num">Non-zero</th>
+          <th class="num">L1 std gas</th>
+          <th class="num">EIP-7623 floor</th>
+          <th class="num">Blob bytes</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ref-panel" id="ref-components" role="tabpanel" aria-labelledby="ref-tab-components" tabindex="0" hidden>
+    <div class="controls">
+      <div class="group">
+        <label for="compSearch">Search</label>
+        <input type="text" id="compSearch" placeholder="filter by function name" autocomplete="off" />
+      </div>
+      <div class="group">
+        <label for="compSort">Sort by</label>
+        <select id="compSort">
+          <option value="median">Median gas</option>
+          <option value="max">Max gas</option>
+          <option value="min">Min gas</option>
+          <option value="avg">Avg gas</option>
+          <option value="calls">Calls</option>
+          <option value="function">Function</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-scroll">
+      <table id="compTable">
+        <thead><tr>
+          <th>Function</th>
+          <th class="num">Min</th>
+          <th class="num">Avg</th>
+          <th class="num">Median</th>
+          <th class="num">Max</th>
+          <th class="num">Calls</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ref-panel" id="ref-raw" role="tabpanel" aria-labelledby="ref-tab-raw" tabindex="0" hidden>
+    <div class="card tight">
+      <details>
+        <summary>Toolchain and assumptions</summary>
+        <pre class="json" id="rawToolchain"></pre>
+      </details>
+      <details>
+        <summary>Benchmark definitions (questions, models, assumptions)</summary>
+        <pre class="json" id="rawBenchmarks"></pre>
+      </details>
+      <details>
+        <summary>Execution gas</summary>
+        <pre class="json" id="rawExec"></pre>
+      </details>
+      <details>
+        <summary>Calldata</summary>
+        <pre class="json" id="rawCalldata"></pre>
+      </details>
+      <details>
+        <summary>BLS-D multi-message</summary>
+        <pre class="json" id="rawBlsd"></pre>
+      </details>
+      <details>
+        <summary>ICS23 happy path gas</summary>
+        <pre class="json" id="rawIcs23"></pre>
+      </details>
+    </div>
+  </div>
+</section>
+
+<div class="footer-note">
+  Regenerate the data:
+<pre aria-label="Regeneration command sequence"><code>cd evm-light-client-gas-bench
+go run -tags bls12381 ./script
+./scripts/update-report-data.sh
+forge fmt --check</code></pre>
+  This page reads the snapshot embedded at build time. Re-run the commands above and re-embed <code>benchmarks.json</code> to refresh.
+</div>
+
+</main>
+
+<script id="benchmarks-data" type="application/json">
+{
+  "generated_at": "2026-05-06T13:44:08Z",
+  "toolchain": {
+    "forge": "forge Version: 1.5.0-stable\nCommit SHA: 1c57854462289b2e71ee7654cd6666217ed86ffd\nBuild Timestamp: 2025-11-26T09:16:58.269730000Z (1764148618)\nBuild Profile: maxperf",
+    "solc": [
+      "0.8.30",
+      "0.6.12"
+    ],
+    "go": "go version go1.25.0 darwin/arm64",
+    "git_commit": "62a15e75371982c4cfe42298bcbaf24439bb758d",
+    "git_status": "M ../.gitignore\n M ../go.mod\n M ../go.sum\n?? ./\n?? ../evm-light-client-gas-benchmark-report.md\n?? ../evm-tendermint-light-client-poc-plan.md\n?? ../signature-light-client-evm-report.md",
+    "evm_version": "prague",
+    "optimizer": true,
+    "optimizer_runs": 200,
+    "via_ir": true,
+    "auto_detect_solc": true,
+    "compiler_pinning_note": "Source files use exact pragmas =0.8.30 and =0.6.12; foundry.toml uses auto_detect_solc=true because the benchmark intentionally compiles both pinned versions."
+  },
+  "commands": [
+    "go run -tags bls12381 ./script",
+    "scripts/update-report-data.sh",
+    "forge test --summary",
+    "forge test --gas-report --summary",
+    "forge test --match-test testCalldataGasEstimates -vvvv",
+    "forge fmt --check"
+  ],
+  "fixture_hashes": {
+    "test/fixtures/misbehaviour_10_equal.json": "1fbc2f758be530f828a1bd94fd31b7bed511220a2f117ac422d3fdbc5052eedb",
+    "test/fixtures/misbehaviour_50_equal.json": "aec5d81baf4b33398248f6c29c27e686c0363b13578da62c6a650f93876b5393",
+    "test/fixtures/update_100_equal.json": "69dd4374e416e8ac84111c2c8c9fcee57f5aea3eccd30278d27b8835139edad1",
+    "test/fixtures/update_10_equal.json": "a47cf0e8cf5dbf898c4c6ce4e802cabb69dcd461fb68818705423b011b9d0633",
+    "test/fixtures/update_175_equal.json": "a038cf0a3ccf59a367e5377c823bda41cc24aa3b2657957703d6acf0752cbec0",
+    "test/fixtures/update_50_equal.json": "545516367b0da510099741d67b65ec16179daf9efb0566f6fffb0fc239d9d803",
+    "test/fixtures/update_50_mixed.json": "d6ac1fb365a54c60a8322dfa344da20dbea4e4b777af33b4b01f9e09afda491b"
+  },
+  "benchmarks": [
+    {
+      "id": "compact-commit-50",
+      "group": "secp256k1eth",
+      "question": "What does the production-shape compact secp256k1eth commit verifier cost for a 50-validator quorum?",
+      "model": "EVM-native validator addresses, typed compact vote reconstruction, ecrecover per signer, \u003e2/3 voting power.",
+      "assumptions": [
+        "validators \u003c= 256",
+        "validator address = keccak256(uncompressed_pubkey[1:])[12:]",
+        "signature digest = keccak256(compact vote bytes)",
+        "recoverable signatures for ecrecover, not CometBFT's existing crypto/secp256k1 mode"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "verifyCommitCompact returns true and consumes every bitmap-selected signature.",
+      "execution_row": "verifyCommitCompact",
+      "calldata_row": "commit-compact-50"
+    },
+    {
+      "id": "canonical-vote-reconstruct",
+      "group": "canonical-vote",
+      "question": "What is the cost of reconstructing CometBFT CanonicalVote sign bytes from typed inputs?",
+      "model": "Solidity reconstructs the exact canonical vote protobuf bytes for a shared typed vote shape.",
+      "assumptions": [
+        "vote type is PrecommitType",
+        "block ID contains one PartSetHeader",
+        "timestamp encoded as seconds+nanos protobuf Timestamp"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "keccak256(reconstructed) equals keccak256(fixture canonical.vote.signBytes[i]) for every signer.",
+      "execution_row": "reconstructCanonicalVoteSignBytes",
+      "calldata_row": "canonical-vote-reconstruct"
+    },
+    {
+      "id": "canonical-vote-reconstruct-hash",
+      "group": "canonical-vote",
+      "question": "What is the cost of reconstructing and hashing CometBFT CanonicalVote sign bytes?",
+      "model": "Solidity reconstructs canonical vote protobuf bytes and returns keccak256 of the reconstructed bytes.",
+      "assumptions": [
+        "same typed vote shape as canonical-vote-reconstruct",
+        "hash is keccak256 for the EVM secp256k1eth verifier path"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "hashCanonicalVoteSignBytes equals keccak256(fixture canonical.vote.signBytes[i]).",
+      "execution_row": "hashCanonicalVoteSignBytes",
+      "calldata_row": "canonical-vote-reconstruct-hash"
+    },
+    {
+      "id": "canonical-vote-reconstruct-secp256k1",
+      "group": "canonical-vote",
+      "question": "What is the cost of reconstructing canonical vote bytes, hashing them, and verifying one secp256k1eth signature?",
+      "model": "Solidity reconstructs canonical vote protobuf bytes, hashes them with keccak256, and verifies the fixture secp256k1eth signature with ecrecover.",
+      "assumptions": [
+        "signature uses the EVM secp256k1eth fixture, not ed25519",
+        "component row verifies one signer"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "verifyCanonicalVoteSecp256k1 returns true for the fixture signer and signature.",
+      "execution_row": "verifyCanonicalVoteSecp256k1",
+      "calldata_row": "canonical-vote-reconstruct-secp256k1"
+    },
+    {
+      "id": "ics23-wire-existence-decode-depth8",
+      "group": "ICS23/IAVL",
+      "question": "What does decoding raw cosmos.ics23.v1.ExistenceProof calldata cost before verification?",
+      "model": "Wire-format IAVL existence proof known-field decoder for ExistenceProof, LeafOp, and repeated InnerOp.",
+      "assumptions": [
+        "existence proof only",
+        "unknown protobuf fields are skipped under proof-size and proof-depth caps",
+        "happy-path-only gas is in ics23_happy_path_gas"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "decoded proof depth and key hash equal the Go iavl/ics23 reference fixture.",
+      "execution_row": "decodeIcs23IavlExistenceProof",
+      "calldata_row": "ics23-iavl-existence-decode-depth8"
+    },
+    {
+      "id": "ics23-wire-existence-verify-depth8",
+      "group": "ICS23/IAVL",
+      "question": "What does raw cosmos.ics23.v1.ExistenceProof calldata decoding plus IAVL verification cost?",
+      "model": "Wire-format IAVL existence proof known-field decoder; validates SHA256 hash op, NO_HASH key prehash, SHA256 value prehash, VAR_PROTO length op, IAVL leaf prefix marker, and inner hash/suffix markers.",
+      "assumptions": [
+        "existence proof only",
+        "non-existence proof out of scope",
+        "CommitmentProof wrapper reported separately only if added",
+        "unknown protobuf fields are skipped under proof-size and proof-depth caps",
+        "aggregate Forge rows include negative tests; happy-path-only gas is in ics23_happy_path_gas"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "decoded proof root equals the Go iavl/ics23 reference root; wrong key/value/prefix/hash/length reject.",
+      "execution_row": "verifyIcs23IavlExistenceProof(bytes32,bytes,bytes,bytes)",
+      "calldata_row": "ics23-iavl-existence-verify-depth8"
+    },
+    {
+      "id": "ics23-wire-existence-verify-depth16",
+      "group": "ICS23/IAVL",
+      "question": "What does the maximum supported raw IAVL ExistenceProof depth fixture cost?",
+      "model": "Same wire-format IAVL existence proof known-field decoder and verifier as depth8, using the generated max-depth fixture.",
+      "assumptions": [
+        "current generated maximum depth is 16",
+        "contract cap is ICS23_MAX_DEPTH = 32",
+        "non-existence proof out of scope"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "decoded proof root equals the Go iavl/ics23 reference root for the max-depth fixture.",
+      "execution_row": "verifyIcs23IavlExistenceProof(bytes32,bytes,bytes,bytes)",
+      "calldata_row": "ics23-iavl-existence-verify-depth16"
+    },
+    {
+      "id": "bls-a-supplied-aggregate",
+      "group": "BLS-A",
+      "question": "What does the smallest real EIP-2537 BLS aggregate verification cost when the aggregate pubkey, aggregate signature, and H(m) are supplied?",
+      "model": "Off-chain aggregate pubkey, off-chain aggregate signature, supplied H(m), one shared precommit message for the committed block.",
+      "assumptions": [
+        "same-message BLS aggregation over one shared precommit message",
+        "H(m) precomputed off-chain",
+        "protocol changes CometBFT per-signer timestamped vote bytes into one shared precommit message",
+        "production protocol needs BLS rogue-key mitigation such as proof-of-possession"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "pairing equation e(-G1, sig) * e(aggPubKey, H(m)) == 1 returns true; wrong message/missing signer reject.",
+      "execution_row": "verifyBlsAggregate",
+      "calldata_row": "bls-a-aggregate-verify-supplied-aggregate-pubkey"
+    },
+    {
+      "id": "bls-b-stored-set",
+      "group": "BLS-B",
+      "question": "What does verifying a BLS aggregate cost when pubkeys and powers are stored on-chain by the canonical CometBFT BLS validator-set hash?",
+      "model": "Registration validates canonical 96-byte BLS pubkeys and powers against the fixture's canonical CometBFT BLS validator-set hash, then stores matching EIP-2537 G1 pubkeys and powers under that hash; verify calldata carries set hash, bitmap, threshold, aggregate signature, and H(m).",
+      "assumptions": [
+        "one-time storage cost excluded from normal verify row",
+        "storeBlsValidatorSet has its own execution and calldata row",
+        "same-message BLS aggregation over one shared precommit message",
+        "bitmap bits above the validator-set length reject",
+        "production protocol needs BLS rogue-key mitigation such as proof-of-possession"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "computed aggregate pubkey from stored signers verifies the aggregate signature and meets threshold power.",
+      "execution_row": "verifyBlsAggregateStoredValidatorSet",
+      "calldata_row": "bls-b-stored-validator-set-bitmap-50"
+    },
+    {
+      "id": "bls-b-store-validator-set",
+      "group": "BLS-B",
+      "question": "What is the one-time gas and calldata cost to store a 50-validator BLS validator set?",
+      "model": "Verify canonical 96-byte BLS pubkeys and powers against the supplied canonical CometBFT validator-set hash, then store matching EIP-2537 G1 pubkeys and powers under that hash.",
+      "assumptions": [
+        "one-time setup/update cost, excluded from the normal verify row",
+        "canonical and EIP-2537 pubkey arrays are the same validator order from the fixture",
+        "production validator registration should verify or otherwise enforce BLS proof-of-possession"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "storeBlsValidatorSet records the set under the supplied canonical hash, rejects a mismatched hash, and returns the canonical hash.",
+      "execution_row": "storeBlsValidatorSet",
+      "calldata_row": "bls-b-store-validator-set-50"
+    },
+    {
+      "id": "bls-c-calldata-set",
+      "group": "BLS-C",
+      "question": "What is the cost when BLS validator pubkeys and powers are supplied in calldata and aggregated on-chain?",
+      "model": "Calldata validator pubkeys and powers, signer bitmap, on-chain aggregate pubkey, supplied aggregate signature and H(m).",
+      "assumptions": [
+        "same-message BLS aggregation over one shared precommit message",
+        "all pubkeys supplied as EIP-2537 G1 bytes",
+        "calldata row matches the same ABI call as execution",
+        "bitmap bits above the validator-set length reject",
+        "production protocol needs BLS rogue-key mitigation such as proof-of-possession"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "computed aggregate pubkey verifies the aggregate signature and threshold power.",
+      "execution_row": "verifyBlsAggregateCalldataValidatorSet",
+      "calldata_row": "bls-c-calldata-validator-set-50"
+    },
+    {
+      "id": "bls-d-multi-message",
+      "group": "BLS-D",
+      "question": "Is per-signer multi-message BLS aggregate verification viable under EIP-2537 without collapsing votes to one shared precommit message?",
+      "model": "N signer-message pairings plus one aggregate-signature pairing, measured for N=10,50,100,175 and compared with the EIP-2537 formula.",
+      "assumptions": [
+        "synthetic valid G1/G2 generator pairs measure precompile cost",
+        "formula = 37,700 + 32,600 * pairCount with pairCount = N + 1",
+        "does not prove signature validity; it prices the required N-pairing shape",
+        "helper calldata rows encode only signerCount and are not production multi-message calldata"
+      ],
+      "fixture": "synthetic EIP-2537 generator pairs",
+      "expected_output": "benchmark returns false for N\u003e1 but charges the N+1-pair precompile cost, proving non-viability by measured slope and formula.",
+      "execution_row": "benchBlsMultiMessagePairing"
+    }
+  ],
+  "execution_gas": [
+    {
+      "function": "verify",
+      "min": 902866,
+      "avg": 906311,
+      "median": 906311,
+      "max": 909757,
+      "calls": 2
+    },
+    {
+      "function": "benchBlsAggregateApprox",
+      "min": 162127,
+      "avg": 325114,
+      "median": 304519,
+      "max": 529293,
+      "calls": 4
+    },
+    {
+      "function": "benchBlsG1AddSignerAggregation",
+      "min": 10011,
+      "avg": 79666,
+      "median": 71242,
+      "max": 166171,
+      "calls": 4
+    },
+    {
+      "function": "benchBlsG2AddSignatureAggregation",
+      "min": 12860,
+      "avg": 103873,
+      "median": 92555,
+      "max": 217524,
+      "calls": 4
+    },
+    {
+      "function": "benchBlsMapFp2ToG2",
+      "min": 36931,
+      "avg": 36931,
+      "median": 36931,
+      "max": 36931,
+      "calls": 1
+    },
+    {
+      "function": "benchBlsMultiMessagePairing",
+      "min": 401618,
+      "avg": 2823911,
+      "median": 2535596,
+      "max": 5822835,
+      "calls": 4
+    },
+    {
+      "function": "benchBlsPairingCheck",
+      "min": 105956,
+      "avg": 105956,
+      "median": 105956,
+      "max": 105956,
+      "calls": 1
+    },
+    {
+      "function": "clientState",
+      "min": 8002,
+      "avg": 8002,
+      "median": 8002,
+      "max": 8002,
+      "calls": 2
+    },
+    {
+      "function": "consensusStates",
+      "min": 9759,
+      "avg": 9759,
+      "median": 9759,
+      "max": 9759,
+      "calls": 1
+    },
+    {
+      "function": "decodeIcs23IavlExistenceProof",
+      "min": 864,
+      "avg": 26620,
+      "median": 22601,
+      "max": 64303,
+      "calls": 5
+    },
+    {
+      "function": "hashCanonicalVoteSignBytes",
+      "min": 11642,
+      "avg": 11642,
+      "median": 11642,
+      "max": 11642,
+      "calls": 1
+    },
+    {
+      "function": "hashHeader",
+      "min": 4159,
+      "avg": 4169,
+      "median": 4169,
+      "max": 4180,
+      "calls": 2
+    },
+    {
+      "function": "hashSimpleValidatorSetBls12381",
+      "min": 165093,
+      "avg": 165093,
+      "median": 165093,
+      "max": 165093,
+      "calls": 1
+    },
+    {
+      "function": "hashSimpleValidatorSetEd25519",
+      "min": 139606,
+      "avg": 139606,
+      "median": 139606,
+      "max": 139606,
+      "calls": 2
+    },
+    {
+      "function": "hashSimpleValidatorSetSecp256k1",
+      "min": 161711,
+      "avg": 161711,
+      "median": 161711,
+      "max": 161711,
+      "calls": 1
+    },
+    {
+      "function": "hashValidatorLeaves",
+      "min": 104009,
+      "avg": 104758,
+      "median": 105133,
+      "max": 105133,
+      "calls": 3
+    },
+    {
+      "function": "hashValidatorSetNative",
+      "min": 1010,
+      "avg": 55591,
+      "median": 55591,
+      "max": 110173,
+      "calls": 2
+    },
+    {
+      "function": "initializeClient",
+      "min": 250884,
+      "avg": 250888,
+      "median": 250884,
+      "max": 250896,
+      "calls": 36
+    },
+    {
+      "function": "pruneConsensusState",
+      "min": 34113,
+      "avg": 34113,
+      "median": 34113,
+      "max": 34113,
+      "calls": 1
+    },
+    {
+      "function": "pruneExpiredConsensusStatesBounded",
+      "min": 91064,
+      "avg": 91064,
+      "median": 91064,
+      "max": 91064,
+      "calls": 1
+    },
+    {
+      "function": "pruneOldestExpiredConsensusState",
+      "min": 39059,
+      "avg": 39059,
+      "median": 39059,
+      "max": 39059,
+      "calls": 1
+    },
+    {
+      "function": "reconstructCanonicalVoteSignBytes",
+      "min": 12140,
+      "avg": 15026,
+      "median": 15145,
+      "max": 15145,
+      "calls": 34
+    },
+    {
+      "function": "seedConsensusStates",
+      "min": 1599169,
+      "avg": 1599169,
+      "median": 1599169,
+      "max": 1599169,
+      "calls": 2
+    },
+    {
+      "function": "storeBlsValidatorSet",
+      "min": 513660,
+      "avg": 5416357,
+      "median": 6396897,
+      "max": 6396897,
+      "calls": 6
+    },
+    {
+      "function": "storeConsensusStateForTest",
+      "min": 123790,
+      "avg": 123790,
+      "median": 123790,
+      "max": 123790,
+      "calls": 1
+    },
+    {
+      "function": "storeValidatorSet",
+      "min": 2253030,
+      "avg": 2253030,
+      "median": 2253030,
+      "max": 2253030,
+      "calls": 1
+    },
+    {
+      "function": "submitMisbehaviour",
+      "min": 369951,
+      "avg": 2574799,
+      "median": 3372706,
+      "max": 4352531,
+      "calls": 9
+    },
+    {
+      "function": "updateAdjacentCalldata",
+      "min": 304281,
+      "avg": 1485212,
+      "median": 1805710,
+      "max": 1805726,
+      "calls": 5
+    },
+    {
+      "function": "updateAdjacentStoredValidatorSet",
+      "min": 555919,
+      "avg": 555919,
+      "median": 555919,
+      "max": 555919,
+      "calls": 1
+    },
+    {
+      "function": "updateNonAdjacentCalldata",
+      "min": 2294401,
+      "avg": 2294401,
+      "median": 2294401,
+      "max": 2294401,
+      "calls": 1
+    },
+    {
+      "function": "verifyAdjacentUpdateCalldata",
+      "min": 6182,
+      "avg": 363175,
+      "median": 16421,
+      "max": 1565413,
+      "calls": 8
+    },
+    {
+      "function": "verifyBlsAggregate",
+      "min": 106536,
+      "avg": 118622,
+      "median": 106536,
+      "max": 203230,
+      "calls": 8
+    },
+    {
+      "function": "verifyBlsAggregateCalldataValidatorSet",
+      "min": 1681,
+      "avg": 97348,
+      "median": 97348,
+      "max": 193016,
+      "calls": 2
+    },
+    {
+      "function": "verifyBlsAggregateStoredValidatorSet",
+      "min": 5334,
+      "avg": 394601,
+      "median": 588235,
+      "max": 590235,
+      "calls": 3
+    },
+    {
+      "function": "verifyCanonicalVoteSecp256k1",
+      "min": 15760,
+      "avg": 15760,
+      "median": 15760,
+      "max": 15760,
+      "calls": 1
+    },
+    {
+      "function": "verifyCommitCompact",
+      "min": 46526,
+      "avg": 287837,
+      "median": 210755,
+      "max": 716478,
+      "calls": 7
+    },
+    {
+      "function": "verifyCommitPrebuiltVoteBytes",
+      "min": 190571,
+      "avg": 190571,
+      "median": 190571,
+      "max": 190571,
+      "calls": 1
+    },
+    {
+      "function": "verifyIavlExistenceProof",
+      "min": 11883,
+      "avg": 17436,
+      "median": 21138,
+      "max": 21138,
+      "calls": 5
+    },
+    {
+      "function": "verifyIcs23IavlExistenceProof(bytes32,bytes)",
+      "min": 73120,
+      "avg": 73120,
+      "median": 73120,
+      "max": 73120,
+      "calls": 1
+    },
+    {
+      "function": "verifyIcs23IavlExistenceProof(bytes32,bytes,bytes,bytes)",
+      "min": 65704,
+      "avg": 69028,
+      "median": 66166,
+      "max": 75215,
+      "calls": 3
+    },
+    {
+      "function": "verifyMembershipProof",
+      "min": 4739,
+      "avg": 4739,
+      "median": 4739,
+      "max": 4739,
+      "calls": 1
+    },
+    {
+      "function": "verifyNonAdjacentUpdateCalldata",
+      "min": 1462190,
+      "avg": 1465199,
+      "median": 1465199,
+      "max": 1468209,
+      "calls": 2
+    }
+  ],
+  "calldata": [
+    {
+      "name": "commit-compact-10",
+      "byte_length": 2500,
+      "zero_bytes": 1682,
+      "nonzero_bytes": 818,
+      "gas_l1_standard": 19816,
+      "gas_l1_floor_eip_7623": 49540,
+      "blob_bytes": 2592
+    },
+    {
+      "name": "commit-compact-50",
+      "byte_length": 10244,
+      "zero_bytes": 6567,
+      "nonzero_bytes": 3677,
+      "gas_l1_standard": 85100,
+      "gas_l1_floor_eip_7623": 212750,
+      "blob_bytes": 10592
+    },
+    {
+      "name": "commit-compact-100",
+      "byte_length": 19780,
+      "zero_bytes": 12573,
+      "nonzero_bytes": 7207,
+      "gas_l1_standard": 165604,
+      "gas_l1_floor_eip_7623": 414010,
+      "blob_bytes": 20448
+    },
+    {
+      "name": "commit-compact-175",
+      "byte_length": 34180,
+      "zero_bytes": 21652,
+      "nonzero_bytes": 12528,
+      "gas_l1_standard": 287056,
+      "gas_l1_floor_eip_7623": 717640,
+      "blob_bytes": 35296
+    },
+    {
+      "name": "commit-prebuilt-vote-bytes-50",
+      "byte_length": 15684,
+      "zero_bytes": 9053,
+      "nonzero_bytes": 6631,
+      "gas_l1_standard": 142308,
+      "gas_l1_floor_eip_7623": 355770,
+      "blob_bytes": 16192
+    },
+    {
+      "name": "adjacent-update-calldata-10",
+      "byte_length": 3652,
+      "zero_bytes": 2410,
+      "nonzero_bytes": 1242,
+      "gas_l1_standard": 29512,
+      "gas_l1_floor_eip_7623": 73780,
+      "blob_bytes": 3776
+    },
+    {
+      "name": "adjacent-update-calldata-50",
+      "byte_length": 13956,
+      "zero_bytes": 9019,
+      "nonzero_bytes": 4937,
+      "gas_l1_standard": 115068,
+      "gas_l1_floor_eip_7623": 287670,
+      "blob_bytes": 14432
+    },
+    {
+      "name": "adjacent-update-mixed-power-50",
+      "byte_length": 13956,
+      "zero_bytes": 9013,
+      "nonzero_bytes": 4943,
+      "gas_l1_standard": 115140,
+      "gas_l1_floor_eip_7623": 287850,
+      "blob_bytes": 14432
+    },
+    {
+      "name": "non-adjacent-update-changed-valset-50",
+      "byte_length": 13956,
+      "zero_bytes": 9016,
+      "nonzero_bytes": 4940,
+      "gas_l1_standard": 115104,
+      "gas_l1_floor_eip_7623": 287760,
+      "blob_bytes": 14432
+    },
+    {
+      "name": "misbehaviour-10",
+      "byte_length": 7332,
+      "zero_bytes": 4859,
+      "nonzero_bytes": 2473,
+      "gas_l1_standard": 59004,
+      "gas_l1_floor_eip_7623": 147510,
+      "blob_bytes": 7584
+    },
+    {
+      "name": "changed-valset-misbehaviour-10",
+      "byte_length": 7332,
+      "zero_bytes": 4858,
+      "nonzero_bytes": 2474,
+      "gas_l1_standard": 59016,
+      "gas_l1_floor_eip_7623": 147540,
+      "blob_bytes": 7584
+    },
+    {
+      "name": "changed-valset-misbehaviour-50",
+      "byte_length": 27940,
+      "zero_bytes": 18072,
+      "nonzero_bytes": 9868,
+      "gas_l1_standard": 230176,
+      "gas_l1_floor_eip_7623": 575440,
+      "blob_bytes": 28864
+    },
+    {
+      "name": "adjacent-update-stored-valset-50",
+      "byte_length": 7332,
+      "zero_bytes": 4494,
+      "nonzero_bytes": 2838,
+      "gas_l1_standard": 63384,
+      "gas_l1_floor_eip_7623": 158460,
+      "blob_bytes": 7584
+    },
+    {
+      "name": "membership-proof-baseline",
+      "byte_length": 548,
+      "zero_bytes": 382,
+      "nonzero_bytes": 166,
+      "gas_l1_standard": 4184,
+      "gas_l1_floor_eip_7623": 10460,
+      "blob_bytes": 576
+    },
+    {
+      "name": "iavl-existence-proof-depth8",
+      "byte_length": 2020,
+      "zero_bytes": 1597,
+      "nonzero_bytes": 423,
+      "gas_l1_standard": 13156,
+      "gas_l1_floor_eip_7623": 32890,
+      "blob_bytes": 2112
+    },
+    {
+      "name": "iavl-existence-proof-depth16",
+      "byte_length": 3812,
+      "zero_bytes": 3037,
+      "nonzero_bytes": 775,
+      "gas_l1_standard": 24548,
+      "gas_l1_floor_eip_7623": 61370,
+      "blob_bytes": 3936
+    },
+    {
+      "name": "ics23-iavl-existence-decode-depth8",
+      "byte_length": 484,
+      "zero_bytes": 73,
+      "nonzero_bytes": 411,
+      "gas_l1_standard": 6868,
+      "gas_l1_floor_eip_7623": 17170,
+      "blob_bytes": 512
+    },
+    {
+      "name": "ics23-iavl-existence-verify-depth8",
+      "byte_length": 708,
+      "zero_bytes": 224,
+      "nonzero_bytes": 484,
+      "gas_l1_standard": 8640,
+      "gas_l1_floor_eip_7623": 21600,
+      "blob_bytes": 736
+    },
+    {
+      "name": "ics23-iavl-existence-verify-depth16",
+      "byte_length": 1092,
+      "zero_bytes": 238,
+      "nonzero_bytes": 854,
+      "gas_l1_standard": 14616,
+      "gas_l1_floor_eip_7623": 36540,
+      "blob_bytes": 1152
+    },
+    {
+      "name": "canonical-vote-reconstruct",
+      "byte_length": 292,
+      "zero_bytes": 195,
+      "nonzero_bytes": 97,
+      "gas_l1_standard": 2332,
+      "gas_l1_floor_eip_7623": 5830,
+      "blob_bytes": 320
+    },
+    {
+      "name": "canonical-vote-reconstruct-hash",
+      "byte_length": 292,
+      "zero_bytes": 195,
+      "nonzero_bytes": 97,
+      "gas_l1_standard": 2332,
+      "gas_l1_floor_eip_7623": 5830,
+      "blob_bytes": 320
+    },
+    {
+      "name": "canonical-vote-reconstruct-secp256k1",
+      "byte_length": 484,
+      "zero_bytes": 298,
+      "nonzero_bytes": 186,
+      "gas_l1_standard": 4168,
+      "gas_l1_floor_eip_7623": 10420,
+      "blob_bytes": 512
+    },
+    {
+      "name": "canonical-validator-set-ed25519-50",
+      "byte_length": 3332,
+      "zero_bytes": 1679,
+      "nonzero_bytes": 1653,
+      "gas_l1_standard": 33164,
+      "gas_l1_floor_eip_7623": 82910,
+      "blob_bytes": 3456
+    },
+    {
+      "name": "canonical-validator-set-secp256k1-50",
+      "byte_length": 8132,
+      "zero_bytes": 6289,
+      "nonzero_bytes": 1843,
+      "gas_l1_standard": 54644,
+      "gas_l1_floor_eip_7623": 136610,
+      "blob_bytes": 8416
+    },
+    {
+      "name": "bls-a-aggregate-verify-supplied-aggregate-pubkey",
+      "byte_length": 836,
+      "zero_bytes": 348,
+      "nonzero_bytes": 488,
+      "gas_l1_standard": 9200,
+      "gas_l1_floor_eip_7623": 23000,
+      "blob_bytes": 864
+    },
+    {
+      "name": "bls-b-store-validator-set-50",
+      "byte_length": 19428,
+      "zero_bytes": 9482,
+      "nonzero_bytes": 9946,
+      "gas_l1_standard": 197064,
+      "gas_l1_floor_eip_7623": 492660,
+      "blob_bytes": 20064
+    },
+    {
+      "name": "bls-b-stored-validator-set-bitmap-50",
+      "byte_length": 740,
+      "zero_bytes": 311,
+      "nonzero_bytes": 429,
+      "gas_l1_standard": 8108,
+      "gas_l1_floor_eip_7623": 20270,
+      "blob_bytes": 768
+    },
+    {
+      "name": "bls-c-calldata-validator-set-50",
+      "byte_length": 12036,
+      "zero_bytes": 6660,
+      "nonzero_bytes": 5376,
+      "gas_l1_standard": 112656,
+      "gas_l1_floor_eip_7623": 281640,
+      "blob_bytes": 12448
+    },
+    {
+      "name": "bls-d-synthetic-helper-pairing-10",
+      "byte_length": 36,
+      "zero_bytes": 31,
+      "nonzero_bytes": 5,
+      "gas_l1_standard": 204,
+      "gas_l1_floor_eip_7623": 510,
+      "blob_bytes": 64
+    },
+    {
+      "name": "bls-d-synthetic-helper-pairing-50",
+      "byte_length": 36,
+      "zero_bytes": 31,
+      "nonzero_bytes": 5,
+      "gas_l1_standard": 204,
+      "gas_l1_floor_eip_7623": 510,
+      "blob_bytes": 64
+    },
+    {
+      "name": "bls-d-synthetic-helper-pairing-100",
+      "byte_length": 36,
+      "zero_bytes": 31,
+      "nonzero_bytes": 5,
+      "gas_l1_standard": 204,
+      "gas_l1_floor_eip_7623": 510,
+      "blob_bytes": 64
+    },
+    {
+      "name": "bls-d-synthetic-helper-pairing-175",
+      "byte_length": 36,
+      "zero_bytes": 31,
+      "nonzero_bytes": 5,
+      "gas_l1_standard": 204,
+      "gas_l1_floor_eip_7623": 510,
+      "blob_bytes": 64
+    }
+  ],
+  "bls_d_multi_message": [
+    {
+      "signers": 10,
+      "pairings": 11,
+      "measured_gas": 401618,
+      "formula_gas": 396300,
+      "overhead_gas": 5318,
+      "formula": "37_700 + 32_600 * (N + 1)",
+      "source": "generated/bls-d-10.txt",
+      "foundry_stable": true
+    },
+    {
+      "signers": 50,
+      "pairings": 51,
+      "measured_gas": 1714446,
+      "formula_gas": 1700300,
+      "overhead_gas": 14146,
+      "formula": "37_700 + 32_600 * (N + 1)",
+      "source": "generated/bls-d-50.txt",
+      "foundry_stable": true
+    },
+    {
+      "signers": 100,
+      "pairings": 101,
+      "measured_gas": 3356747,
+      "formula_gas": 3330300,
+      "overhead_gas": 26447,
+      "formula": "37_700 + 32_600 * (N + 1)",
+      "source": "generated/bls-d-100.txt",
+      "foundry_stable": true
+    },
+    {
+      "signers": 175,
+      "pairings": 176,
+      "measured_gas": 5822835,
+      "formula_gas": 5775300,
+      "overhead_gas": 47535,
+      "formula": "37_700 + 32_600 * (N + 1)",
+      "source": "generated/bls-d-175.txt",
+      "foundry_stable": true
+    }
+  ],
+  "ics23_happy_path_gas": [
+    {
+      "function": "decodeIcs23IavlExistenceProof",
+      "min": 64303,
+      "avg": 64303,
+      "median": 64303,
+      "max": 64303,
+      "calls": 1
+    },
+    {
+      "function": "verifyIcs23IavlExistenceProof",
+      "min": 75215,
+      "avg": 75215,
+      "median": 75215,
+      "max": 75215,
+      "calls": 1
+    }
+  ]
+}
+
+</script>
+
+<script>
+(function () {
+  const DATA = JSON.parse(document.getElementById('benchmarks-data').textContent);
+  window.__DATA = DATA;
+
+  const GETH_BLOCK_GAS_LIMIT = 30_000_000;
+  const fmt = n => Number(n).toLocaleString();
+  const fmtGwei = n => {
+    if (!isFinite(n) || n <= 0) return '0';
+    if (n < 1) return n.toFixed(3);
+    if (n < 10) return n.toFixed(2);
+    return n.toFixed(1);
+  };
+  const byName = (arr, key) => Object.fromEntries(arr.map(r => [r[key], r]));
+  const execByFn = byName(DATA.execution_gas, 'function');
+  const calldataByName = byName(DATA.calldata, 'name');
+
+  // Read tokens once - charts and JS share one source of truth.
+  const css = getComputedStyle(document.documentElement);
+  const tok = name => css.getPropertyValue(name).trim();
+  const SCHEME_COLORS = {
+    secp:  tok('--s-secp'),
+    blsa:  tok('--s-blsa'),
+    blsb:  tok('--s-blsb'),
+    blsc:  tok('--s-blsc'),
+    blsd:  tok('--s-blsd'),
+    ics23: tok('--s-ics23'),
+    canon: tok('--s-canon'),
+  };
+  const SERIES_COLORS = {
+    exec:    tok('--series-exec'),
+    cd:      tok('--series-cd'),
+    floor:   tok('--series-floor'),
+    formula: tok('--series-formula'),
+  };
+  const FG_2 = tok('--fg-2');
+  const BORDER_SOFT = tok('--border-soft');
+  // Build a translucent companion of an oklch color: insert " / alpha)" before the closing paren.
+  const fade = (oklch, a) => oklch.replace(/\)\s*$/, ` / ${a})`);
+
+  // Replace a chart canvas with a textual fallback when Chart.js fails to load or initialize.
+  function chartFallback(canvasEl, msg) {
+    if (!canvasEl) return;
+    const wrap = canvasEl.closest('.chart-wrap');
+    if (!wrap) return;
+    wrap.innerHTML = '<div class="chart-fallback">' + (msg || 'Chart unavailable. The full data is in the table below.') + '</div>';
+  }
+  const CHART_AVAILABLE = typeof Chart !== 'undefined';
+  function safeChart(canvasEl, config) {
+    if (!canvasEl) return null;
+    if (!CHART_AVAILABLE) {
+      chartFallback(canvasEl, 'Chart library failed to load. Numbers are in the table below.');
+      return null;
+    }
+    try {
+      return new Chart(canvasEl.getContext ? canvasEl.getContext('2d') : canvasEl, config);
+    } catch (err) {
+      console.error('Chart init failed', err);
+      chartFallback(canvasEl, 'Chart failed to render. Numbers are in the table below.');
+      return null;
+    }
+  }
+
+  // ---------- ARIA tabs ----------
+  const tabs = Array.from(document.querySelectorAll('nav.tabs [role="tab"]'));
+  const panels = tabs.map(t => document.getElementById(t.getAttribute('aria-controls')));
+  const initialized = new Set();
+  const lazyInit = {}; // populated below
+
+  function activate(tab, opts) {
+    const focus = !!(opts && opts.focus);
+    const panelId = tab.getAttribute('aria-controls');
+    tabs.forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.setAttribute('tabindex', on ? '0' : '-1');
+    });
+    panels.forEach(p => {
+      const on = p.id === panelId;
+      p.classList.toggle('active', on);
+      if (on) p.removeAttribute('hidden'); else p.setAttribute('hidden', '');
+    });
+    if (focus) tab.focus();
+    if (!initialized.has(panelId) && lazyInit[panelId]) {
+      initialized.add(panelId);
+      lazyInit[panelId]();
+    }
+    requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+  }
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => { activate(tab); syncUrlState(); });
+    tab.addEventListener('keydown', e => {
+      const i = tabs.indexOf(tab);
+      let next = null;
+      if (e.key === 'ArrowRight') next = tabs[(i + 1) % tabs.length];
+      else if (e.key === 'ArrowLeft') next = tabs[(i - 1 + tabs.length) % tabs.length];
+      else if (e.key === 'Home') next = tabs[0];
+      else if (e.key === 'End') next = tabs[tabs.length - 1];
+      if (next) {
+        e.preventDefault();
+        activate(next, { focus: true });
+        syncUrlState();
+      }
+    });
+  });
+
+  // ---------- scheme catalog ----------
+  function blsdMeasured(n) {
+    return DATA.bls_d_multi_message.find(r => r.signers === n).measured_gas;
+  }
+  const SCHEMES = [
+    { key: 'compact-commit-10',  label: 'secp256k1eth compact (N=10)',  short: 'secp256k1eth N=10',  group: 'secp',  execFn: 'verifyCommitCompact', execGas: execByFn.verifyCommitCompact.min,    cdRow: 'commit-compact-10',  n: 10, note: 'min execution-gas reading approximates the smaller validator set' },
+    { key: 'compact-commit-50',  label: 'secp256k1eth compact (N=50)',  short: 'secp256k1eth',       group: 'secp',  execFn: 'verifyCommitCompact', execGas: execByFn.verifyCommitCompact.median, cdRow: 'commit-compact-50',  n: 50, note: 'median execution gas; dominant production case' },
+    { key: 'compact-commit-100', label: 'secp256k1eth compact (N=100)', short: 'secp256k1eth N=100', group: 'secp',  execFn: 'verifyCommitCompact', execGas: execByFn.verifyCommitCompact.avg,    cdRow: 'commit-compact-100', n: 100 },
+    { key: 'compact-commit-175', label: 'secp256k1eth compact (N=175)', short: 'secp256k1eth N=175', group: 'secp',  execFn: 'verifyCommitCompact', execGas: execByFn.verifyCommitCompact.max,    cdRow: 'commit-compact-175', n: 175, note: 'max execution-gas reading approximates the largest validator set' },
+    { key: 'bls-a-50',           label: 'BLS-A supplied aggregate',     short: 'BLS-A',              group: 'blsa',  execFn: 'verifyBlsAggregate', execGas: execByFn.verifyBlsAggregate.median,  cdRow: 'bls-a-aggregate-verify-supplied-aggregate-pubkey', n: 50 },
+    { key: 'bls-b-50',           label: 'BLS-B stored set verify',      short: 'BLS-B',              group: 'blsb',  execFn: 'verifyBlsAggregateStoredValidatorSet', execGas: execByFn.verifyBlsAggregateStoredValidatorSet.median, cdRow: 'bls-b-stored-validator-set-bitmap-50', n: 50, note: 'excludes one-time storage cost' },
+    { key: 'bls-b-50-store',     label: 'BLS-B store validator set (one-time)', short: 'BLS-B store', group: 'blsb', execFn: 'storeBlsValidatorSet', execGas: execByFn.storeBlsValidatorSet.max, cdRow: 'bls-b-store-validator-set-50', n: 50, note: 'one-time setup; amortize across many verifies', oneTime: true },
+    { key: 'bls-c-50',           label: 'BLS-C calldata validator set', short: 'BLS-C',              group: 'blsc',  execFn: 'verifyBlsAggregateCalldataValidatorSet', execGas: execByFn.verifyBlsAggregateCalldataValidatorSet.max, cdRow: 'bls-c-calldata-validator-set-50', n: 50 },
+    { key: 'bls-d-10',           label: 'BLS-D multi-message (N=10)',   short: 'BLS-D N=10',         group: 'blsd',  execFn: 'benchBlsMultiMessagePairing', execGas: blsdMeasured(10),  cdRow: 'bls-d-synthetic-helper-pairing-10',  n: 10, note: 'helper calldata only; per-signer messages' },
+    { key: 'bls-d-50',           label: 'BLS-D multi-message (N=50)',   short: 'BLS-D',              group: 'blsd',  execFn: 'benchBlsMultiMessagePairing', execGas: blsdMeasured(50),  cdRow: 'bls-d-synthetic-helper-pairing-50',  n: 50 },
+    { key: 'bls-d-100',          label: 'BLS-D multi-message (N=100)',  short: 'BLS-D N=100',        group: 'blsd',  execFn: 'benchBlsMultiMessagePairing', execGas: blsdMeasured(100), cdRow: 'bls-d-synthetic-helper-pairing-100', n: 100 },
+    { key: 'bls-d-175',          label: 'BLS-D multi-message (N=175)',  short: 'BLS-D N=175',        group: 'blsd',  execFn: 'benchBlsMultiMessagePairing', execGas: blsdMeasured(175), cdRow: 'bls-d-synthetic-helper-pairing-175', n: 175 },
+    { key: 'ics23-verify-d8',    label: 'ICS23 IAVL existence verify (depth 8)',  short: 'ICS23 d=8',  group: 'ics23', execFn: 'verifyIcs23IavlExistenceProof(bytes32,bytes,bytes,bytes)', execGas: 75215, cdRow: 'ics23-iavl-existence-verify-depth8',  n: 50, note: 'happy-path-only gas from ics23_happy_path_gas' },
+    { key: 'ics23-verify-d16',   label: 'ICS23 IAVL existence verify (depth 16)', short: 'ICS23 d=16', group: 'ics23', execFn: 'verifyIcs23IavlExistenceProof(bytes32,bytes,bytes,bytes)', execGas: 75215, cdRow: 'ics23-iavl-existence-verify-depth16', n: 50, note: 'depth-16 calldata; happy-path verify gas' },
+  ];
+  const schemesByKey = byName(SCHEMES, 'key');
+
+  function schemeTotalGas(s, amortize = 1) {
+    const cd = calldataByName[s.cdRow];
+    const cdGas = cd ? cd.gas_l1_standard : 0;
+    const missingCd = !cd;
+    const eg = s.execGas;
+    if (s.oneTime) return { exec: eg / amortize, cd: cdGas / amortize, total: (eg + cdGas) / amortize, missingCd };
+    return { exec: eg, cd: cdGas, total: eg + cdGas, missingCd };
+  }
+
+  // ---------- Unified info popovers (hover / focus / tap) ----------
+  // One source of truth for every "?" chip on the page: schemes, concepts, EIPs, and the build-provenance breakdown.
+  const INFO = {
+    // Schemes
+    secp: {
+      term: 'secp256k1eth compact',
+      body: '<strong>The recommended path today.</strong> Each validator signs canonical-vote bytes with <code>secp256k1</code> (Ethereum-style signing); the verifier runs the EVM-native <code>ecrecover</code> precompile per signer to recover the validator’s EVM address. No protocol change required beyond the signing curve. Cost is linear in <code>N</code>, but native EVM cost.',
+    },
+    blsa: {
+      term: 'BLS-A: supplied aggregate',
+      body: '<strong>Conditional on a CometBFT protocol change to one shared precommit message for the committed block.</strong> Aggregate BLS verify with everything precomputed off-chain: aggregate public key, aggregate signature, and message hash <code>H(m)</code> all arrive in calldata. Cheapest per-verify, but trusts an off-chain aggregator and needs BLS rogue-key mitigation.',
+    },
+    blsb: {
+      term: 'BLS-B: stored validator set',
+      body: '<strong>Conditional on a CometBFT protocol change to one shared precommit message for the committed block.</strong> Validator set stored on-chain once, keyed by canonical hash. Each verify ships a bitmap of who signed and runs one pairing check, regardless of <code>N</code>. Pay storage gas once at validator-set updates, then a flat per-verify cost.',
+    },
+    blsc: {
+      term: 'BLS-C: calldata validator set',
+      body: '<strong>Conditional on a CometBFT protocol change to one shared precommit message for the committed block.</strong> Validator set passed in calldata on every verify. No on-chain storage, but every verify pays the calldata cost of the full validator set.',
+    },
+    blsd: {
+      term: 'BLS-D: per-signer multi-message',
+      body: 'What BLS costs <em>without</em> the protocol change. Each validator signs their own message (with their own per-signer timestamp), so verification needs <code>N+1</code> pairings: cost is linear in <code>N</code> at ~32.6k gas per pairing. Included as a measurement; reaches block-budget scale fast and is not viable in production for non-trivial <code>N</code>.',
+    },
+    ics23: {
+      term: 'ICS23 / IAVL existence proof',
+      body: 'Cosmos SDK’s Merkle proof format over its IAVL versioned tree. An existence proof verifies that a <code>(key, value)</code> sits under a known root using one leaf op plus a chain of inner ops. Priced separately from signature verification.',
+    },
+    // EVM concepts (defined for CometBFT/IBC readers)
+    precompile: {
+      term: 'EVM precompile',
+      body: 'A built-in contract at a fixed address that runs native (non-EVM) code. Much cheaper than equivalent Solidity. <code>ecrecover</code> (secp256k1) and the EIP-2537 BLS12-381 ops exist as precompiles; <code>ed25519</code> does not.',
+    },
+    ecrecover: {
+      term: 'ecrecover',
+      body: 'EVM precompile that recovers an Ethereum address from a <code>secp256k1</code> signature plus message hash. ~3,000 gas per call. The cheap signature-verification primitive native to the EVM, and the reason <em>secp256k1eth</em> is viable where <em>ed25519</em> isn’t.',
+    },
+    calldata: {
+      term: 'Calldata',
+      body: 'The transaction’s input bytes on Ethereum. Charged per byte regardless of execution: 4 gas per zero byte and 16 per non-zero byte under the standard model, or the EIP-7623 floor (10 gas per byte) if execution is small relative to size. Distinct from execution gas; both are paid every transaction.',
+    },
+    eip7623: {
+      term: 'EIP-7623 calldata floor',
+      body: 'Minimum gas per byte (10) for transactions whose execution is small relative to calldata. If <code>execution_gas &lt; bytes &times; 10</code>, the transaction is charged the floor instead of the standard 4 / 16 per zero / non-zero byte. Punishes calldata-heavy verifies, e.g. shipping a large validator set in calldata.',
+    },
+    eip2537: {
+      term: 'EIP-2537',
+      body: 'BLS12-381 precompile group for the EVM (Prague hard fork). Without it, BLS aggregate verification on Ethereum L1 was infeasible. With it, one pairing check costs ~32,600 gas on top of a 37,700 gas constant.',
+    },
+    pairing: {
+      term: 'Pairing check',
+      body: 'A bilinear map on BLS12-381 (~32.6k gas via the EIP-2537 precompile). Aggregate BLS verification with one shared precommit message needs at least one pairing; per-signer multi-message verification needs <code>N+1</code>.',
+    },
+    compactCommit: {
+      term: 'Compact commit',
+      body: 'CometBFT’s commit envelope optimised for on-chain verification: fixed-layout canonical-vote bytes per signer plus a small constant header. The verify shape used by the recommended <em>secp256k1eth compact</em> path.',
+    },
+  };
+  function infoIcon(key) {
+    const info = INFO[key];
+    if (!info) return '';
+    return '<span class="info-wrap">'
+      + '<button class="info" type="button" aria-label="About ' + info.term + '" tabindex="0">?</button>'
+      + '<span class="info-pop" role="tooltip">'
+      +   '<span class="term">' + info.term + '</span>'
+      +   info.body
+      + '</span>'
+      + '</span>';
+  }
+  // Replace static <span data-info="key"></span> placeholders with the live info icon.
+  function hydrateInfoPlaceholders(root) {
+    (root || document).querySelectorAll('[data-info]').forEach(el => {
+      el.outerHTML = infoIcon(el.dataset.info);
+    });
+  }
+  hydrateInfoPlaceholders();
+
+  // ---------- Chart.js defaults (token-driven) ----------
+  Chart.defaults.color = FG_2;
+  Chart.defaults.borderColor = BORDER_SOFT;
+  Chart.defaults.font.family = 'ui-sans-serif, system-ui, sans-serif';
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reducedMotion) {
+    Chart.defaults.animation = false;
+  } else {
+    Chart.defaults.animation.duration = 600;
+    Chart.defaults.animation.easing = 'easeOutQuart';
+  }
+
+  // ---------- OVERVIEW (N-driven, stacked exec/cd bars) ----------
+  let overviewN = 50;
+  const fmtAbbr = n => {
+    if (n >= 1e6) return (n / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M';
+    if (n >= 1e3) return Math.round(n / 1e3) + 'k';
+    return '' + Math.round(n);
+  };
+  function ovKeysForN(n) {
+    const out = [];
+    if (schemesByKey['compact-commit-' + n]) out.push({ key: 'compact-commit-' + n, ghost: false });
+    if (n === 50) {
+      out.push({ key: 'bls-a-50', ghost: false });
+      out.push({ key: 'bls-b-50', ghost: false });
+      out.push({ key: 'bls-c-50', ghost: false });
+    } else {
+      out.push({ key: 'bls-a-50', ghost: true });
+      out.push({ key: 'bls-b-50', ghost: true });
+      out.push({ key: 'bls-c-50', ghost: true });
+    }
+    if (schemesByKey['bls-d-' + n]) out.push({ key: 'bls-d-' + n, ghost: false });
+    return out;
+  }
+
+  function renderQuickCompare() {
+    const items = ovKeysForN(overviewN);
+    const rows = items.map(it => ({ s: schemesByKey[it.key], ghost: it.ghost, ...schemeTotalGas(schemesByKey[it.key]) }));
+    rows.sort((a, b) => a.total - b.total);
+    const max = Math.max(...rows.map(r => r.total));
+    const qc = document.getElementById('quickCompare');
+    qc.innerHTML = rows.map(r => {
+      const totalFrac = (r.total / max).toFixed(4);
+      const execPct = (r.exec / r.total * 100).toFixed(2);
+      const cdPct   = (r.cd   / r.total * 100).toFixed(2);
+      const color = SCHEME_COLORS[r.s.group];
+      const ghostText = r.ghost
+        ? (r.s.group === 'blsa' ? 'N=50 only · constant in N (off-chain aggregates)'
+          : r.s.group === 'blsb' ? 'N=50 only · constant in N (set is stored)'
+          : r.s.group === 'blsc' ? 'N=50 only · grows with N (set ships in calldata)'
+          : 'measured at N=50 only')
+        : '';
+      const ghostNote = r.ghost ? ' <span class="ghost-note">' + ghostText + '</span>' : '';
+      return '<div class="scheme-row' + (r.ghost ? ' is-ghost' : '') + '"' + (r.ghost ? ' aria-label="' + r.s.short + ' ' + ghostText + '"' : '') + '>'
+        + '<div><span class="pill ' + r.s.group + '">' + r.s.short + '</span>' + infoIcon(r.s.group) + ghostNote + '</div>'
+        + '<div class="bar">'
+        +   '<div class="track" data-scale="' + totalFrac + '">'
+        +     '<div class="seg seg-exec" style="width:' + execPct + '%; background:' + color + '" title="Execution gas: ' + fmt(r.exec) + '"></div>'
+        +     '<div class="seg seg-cd"   style="width:' + cdPct   + '%; background:' + color + '" title="L1 calldata gas: ' + fmt(r.cd) + '"></div>'
+        +   '</div>'
+        + '</div>'
+        + '<div class="total">'
+        +   '<div class="total-num">' + fmt(r.total) + '</div>'
+        +   '<div class="total-sub">' + fmtAbbr(r.exec) + ' exec + ' + fmtAbbr(r.cd) + ' cd</div>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+    requestAnimationFrame(() => {
+      qc.querySelectorAll('.bar .track').forEach(el => {
+        el.style.transform = 'scaleX(' + el.dataset.scale + ')';
+      });
+    });
+  }
+
+  function renderVerdict() {
+    const compact = schemeTotalGas(schemesByKey['compact-commit-' + overviewN]);
+    const blsd    = schemeTotalGas(schemesByKey['bls-d-' + overviewN]);
+    const blsb50  = schemeTotalGas(schemesByKey['bls-b-50']);
+    const blsdRatio = (blsd.total / compact.total).toFixed(1);
+    let lead;
+    if (overviewN <= 50) {
+      lead = '<strong>Recommended:</strong> <em>secp256k1eth compact</em>' + infoIcon('secp') + '. Verifying a ' + overviewN + '-validator commit costs <strong>' + fmt(compact.total) + ' gas</strong> on the EVM-native path (per-signer <code>ecrecover</code>' + infoIcon('ecrecover') + ', no protocol change beyond the signing curve). Keeping per-signer messages but switching to BLS (<em>BLS-D</em>' + infoIcon('blsd') + ') costs ~' + blsdRatio + '× more (' + fmt(blsd.total) + ' gas) and grows linearly with <code>N</code>.';
+    } else if (overviewN === 100) {
+      lead = '<strong>Recommended:</strong> <em>secp256k1eth compact</em>' + infoIcon('secp') + '. Verifying a 100-validator commit costs <strong>' + fmt(compact.total) + ' gas</strong>. <em>BLS-B</em>' + infoIcon('blsb') + ' would be cheaper at ' + fmt(blsb50.total) + ' gas (one stored validator set, one pairing, regardless of <code>N</code>), but only with a CometBFT protocol change to one shared precommit message per committed block.';
+    } else {
+      const blsbRatio = (compact.total / blsb50.total).toFixed(1);
+      lead = '<strong>Recommended:</strong> <em>secp256k1eth compact</em>' + infoIcon('secp') + '. Verifying a 175-validator commit costs <strong>' + fmt(compact.total) + ' gas</strong>. <em>BLS-B</em>' + infoIcon('blsb') + ' would be ~' + blsbRatio + '× cheaper at ' + fmt(blsb50.total) + ' gas, but only with a CometBFT protocol change to one shared precommit message per committed block.';
+    }
+    document.getElementById('verdictNum').innerHTML = lead;
+  }
+
+  function renderOverview() {
+    renderVerdict();
+    renderQuickCompare();
+  }
+
+  // N segmented control
+  document.querySelectorAll('#nSeg button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      overviewN = parseInt(btn.dataset.n, 10);
+      document.querySelectorAll('#nSeg button').forEach(b => {
+        b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+      });
+      renderOverview();
+      syncUrlState();
+    });
+  });
+
+  // ---------- PICK-A-SCHEME WIZARD ----------
+  const pkState = { shared: null, n: null, store: null };
+  const pkShow = (sel, on) => {
+    const el = document.querySelector(sel);
+    if (el) el.toggleAttribute('hidden', !on);
+  };
+  function pkRecommend() {
+    const s = pkState;
+    if (s.shared === 'no') {
+      if (s.n === 'small') return {
+        key: 'compact-commit-50',
+        title: 'secp256k1eth compact, N=50',
+        why: '<strong>This is the recommended path.</strong> CometBFT keeps signing per-signer canonical-vote bytes; the verifier just runs <code>ecrecover</code> over typed compact-vote bytes per signer. At N&le;50 that stays around <code>' + fmt(schemeTotalGas(schemesByKey['compact-commit-50']).total) + '</code> gas total. Multi-message BLS would be linear in N at ~33k gas per pairing, so it loses on this protocol shape.',
+      };
+      if (s.n === 'medium') return {
+        key: 'compact-commit-100',
+        title: 'secp256k1eth compact, N=100',
+        why: '<strong>Still secp.</strong> The per-signer protocol shape rules out BLS aggregation; <code>BLS-D</code> at N=100 burns <code>' + fmt(schemeTotalGas(schemesByKey['bls-d-100']).total) + '</code> gas just on pairings. Compact secp at N=100 is <code>' + fmt(schemeTotalGas(schemesByKey['compact-commit-100']).total) + '</code> gas.',
+      };
+      return {
+        key: 'compact-commit-175',
+        title: 'secp256k1eth compact, N=175',
+        why: '<strong>Still secp, even here.</strong> Per-signer secp at N=175 beats <code>BLS-D</code> (<code>' + fmt(schemeTotalGas(schemesByKey['bls-d-175']).total) + '</code> gas, linear in N). To use BLS at this scale, change the protocol to one shared precommit message first, then revisit.',
+      };
+    }
+    if (s.store === 'yes') return {
+      key: 'bls-b-50-store',
+      amortize: 100,
+      title: 'BLS-B stored validator set',
+      why: '<strong>Conditional: requires the shared-message protocol change.</strong> One pairing check per verify, regardless of N. Pay <code>' + fmt(schemeTotalGas(schemesByKey['bls-b-50-store']).total) + '</code> gas once to store the validator set, then <code>' + fmt(schemeTotalGas(schemesByKey['bls-b-50']).total) + '</code> gas per verify forever after. The calculator opens at <em>amortize = 100</em> so you can watch per-verify cost converge on the verify-only row.',
+    };
+    if (s.n === 'large') return {
+      key: 'bls-c-50',
+      title: 'BLS-C calldata validator set',
+      why: '<strong>Conditional: requires the shared-message protocol change.</strong> No on-chain storage, but every verify ships the validator set as calldata. <code>' + fmt(schemeTotalGas(schemesByKey['bls-c-50']).total) + '</code> gas at N=50, growing with the set size. <code>BLS-A</code> is cheaper if your off-chain side can pre-aggregate.',
+    };
+    return {
+      key: 'bls-a-50',
+      title: 'BLS-A supplied aggregate',
+      why: '<strong>Conditional: requires the shared-message protocol change.</strong> Smallest aggregate-verify path: aggregate pubkey, signature, and H(m) all supplied in calldata. <code>' + fmt(schemeTotalGas(schemesByKey['bls-a-50']).total) + '</code> gas per verify. Trust assumption: an honest off-chain aggregator does the heavy lifting.',
+    };
+  }
+  function pkUpdate() {
+    pkShow('[data-step="2"]', pkState.shared !== null);
+    pkShow('[data-step="3"]', pkState.shared === 'yes' && pkState.n !== null);
+    const ready = (pkState.shared === 'no' && pkState.n !== null)
+      || (pkState.shared === 'yes' && pkState.n !== null && pkState.store !== null);
+    pkShow('#pickerResult', ready);
+    if (ready) {
+      const r = pkRecommend();
+      const recScheme = schemesByKey[r.key];
+      const group = recScheme ? recScheme.group : null;
+      const titleEl = document.getElementById('pickerPill');
+      titleEl.innerHTML = r.title + (group ? infoIcon(group) : '');
+      document.getElementById('pickerWhy').innerHTML = r.why;
+      document.getElementById('pickerJump').dataset.key = r.key;
+      document.getElementById('pickerJump').dataset.amortize = r.amortize || '';
+      const am = parseInt(r.amortize || '1', 10) || 1;
+      const totals = recScheme ? schemeTotalGas(recScheme, am) : null;
+      const totalEl = document.getElementById('pickerTotal');
+      if (totalEl) {
+        if (totals) {
+          const caption = recScheme.oneTime
+            ? 'gas per verify, amortized over ' + am
+            : 'gas per verify (exec + L1 std calldata)';
+          const blockPct = (totals.total / GETH_BLOCK_GAS_LIMIT) * 100;
+          const anchor = blockPct < 0.1
+            ? '<1% of one Geth block (' + fmt(GETH_BLOCK_GAS_LIMIT / 1e6) + 'M gas)'
+            : '~' + blockPct.toFixed(blockPct < 1 ? 2 : 1) + '% of one Geth block (' + fmt(GETH_BLOCK_GAS_LIMIT / 1e6) + 'M gas)';
+          totalEl.innerHTML = '<div class="number">' + fmt(Math.round(totals.total)) + '</div>'
+            + '<div class="anchor">' + anchor + '</div>'
+            + '<div class="caption">' + caption + '</div>';
+        } else {
+          totalEl.textContent = '';
+        }
+      }
+    }
+    syncUrlState();
+  }
+  function pkSetAnswer(q, v) {
+    const hadStore = pkState.store !== null;
+    pkState[q] = v;
+    document.querySelectorAll('.picker [data-q="' + q + '"]').forEach(b => {
+      b.setAttribute('aria-pressed', b.dataset.v === v ? 'true' : 'false');
+    });
+    if (q === 'shared') {
+      pkState.store = null;
+      document.querySelectorAll('.picker [data-q="store"]').forEach(b => b.setAttribute('aria-pressed', 'false'));
+      if (hadStore) {
+        const live = document.getElementById('liveRegion');
+        if (live) live.textContent = 'Question 3 cleared because the shared-message answer changed.';
+        const q3 = document.querySelector('.picker-step[data-step="3"]');
+        if (q3) {
+          q3.classList.remove('is-reset');
+          q3.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          requestAnimationFrame(() => q3.classList.add('is-reset'));
+        }
+      }
+    }
+    pkUpdate();
+  }
+  function pkReset() {
+    pkState.shared = pkState.n = pkState.store = null;
+    document.querySelectorAll('.picker [aria-pressed]').forEach(b => b.setAttribute('aria-pressed', 'false'));
+    pkUpdate();
+  }
+  document.querySelectorAll('.picker .answers button').forEach(btn => {
+    btn.addEventListener('click', () => pkSetAnswer(btn.dataset.q, btn.dataset.v));
+  });
+  document.getElementById('pickerReset').addEventListener('click', pkReset);
+  function jumpToCalculator(key, amortize, label) {
+    if (!key) return;
+    const calcSel = document.getElementById('calcScheme');
+    if (calcSel) calcSel.value = key;
+    const amInput = document.getElementById('calcAmortize');
+    if (amInput) amInput.value = amortize || '1';
+    const calcTab = document.getElementById('tab-calculator');
+    if (!calcTab) return;
+    activate(calcTab, { focus: false });
+    renderCalc();
+    const live = document.getElementById('liveRegion');
+    if (live && label) live.textContent = 'Opened cost calculator with ' + label + '.';
+    requestAnimationFrame(() => {
+      if (calcSel) calcSel.focus({ preventScroll: true });
+      const el = document.getElementById('calcResult');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
+  document.getElementById('pickerJump').addEventListener('click', () => {
+    const btn = document.getElementById('pickerJump');
+    const r = pkRecommend();
+    jumpToCalculator(btn.dataset.key, btn.dataset.amortize, r.title);
+  });
+  // Comparison row-jump (delegated; rows are re-rendered)
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.row-jump');
+    if (!btn) return;
+    const key = btn.dataset.key;
+    const s = schemesByKey[key];
+    jumpToCalculator(key, '', s ? s.label : '');
+  });
+
+  // ---------- BLS-D FORMULA PLAYGROUND ----------
+  function renderFormulaPlay() {
+    const slider = document.getElementById('bdN');
+    if (!slider) return;
+    const n = parseInt(slider.value, 10);
+    const result = 37700 + 32600 * (n + 1);
+    document.getElementById('bdNValue').textContent = n;
+    document.getElementById('bdNTok').textContent = n;
+    document.getElementById('bdPairings').textContent = (n + 1).toLocaleString();
+    document.getElementById('bdResult').textContent = result.toLocaleString();
+  }
+  const bdSlider = document.getElementById('bdN');
+  if (bdSlider) {
+    bdSlider.addEventListener('input', renderFormulaPlay);
+    renderFormulaPlay();
+  }
+
+  // ---------- GLOSSARY POPOVERS ----------
+  // Info popovers: tap to toggle (touch / no-hover); also flip alignment if it would clip the viewport.
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.info');
+    if (btn) {
+      e.stopPropagation();
+      const wrap = btn.closest('.info-wrap');
+      const pop = wrap.querySelector('.info-pop');
+      const isOpen = wrap.classList.contains('is-open');
+      document.querySelectorAll('.info-wrap.is-open').forEach(w => {
+        if (w !== wrap) w.classList.remove('is-open');
+      });
+      pop.classList.remove('info-pop--end');
+      wrap.classList.toggle('is-open', !isOpen);
+      if (!isOpen) {
+        const rect = pop.getBoundingClientRect();
+        if (rect.right > window.innerWidth - 8) pop.classList.add('info-pop--end');
+      }
+      return;
+    }
+    if (!e.target.closest('.info-wrap')) {
+      document.querySelectorAll('.info-wrap.is-open').forEach(w => w.classList.remove('is-open'));
+    }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    document.querySelectorAll('.info-wrap.is-open').forEach(w => {
+      w.classList.remove('is-open');
+      const b = w.querySelector('.info');
+      if (b) b.focus();
+    });
+  });
+
+  // ---------- COMPARISON ----------
+  let cmpChart = null;
+  const cmpToggles = { exec: true, cd: true, floor: false };
+  const CMP_KEYS = ['compact-commit-50', 'bls-a-50', 'bls-b-50', 'bls-c-50', 'bls-d-50', 'ics23-verify-d8'];
+
+  function buildCmpData() {
+    const labels = CMP_KEYS.map(k => schemesByKey[k].short);
+    const execs = CMP_KEYS.map(k => schemesByKey[k].execGas);
+    const cds = CMP_KEYS.map(k => calldataByName[schemesByKey[k].cdRow].gas_l1_standard);
+    const floors = CMP_KEYS.map(k => calldataByName[schemesByKey[k].cdRow].gas_l1_floor_eip_7623);
+    return { labels, execs, cds, floors };
+  }
+
+  function renderComparisonTakeaways() {
+    const compact = schemeTotalGas(schemesByKey['compact-commit-50']);
+    const blsa    = schemeTotalGas(schemesByKey['bls-a-50']);
+    const blsb    = schemeTotalGas(schemesByKey['bls-b-50']);
+    const blsbStore = schemeTotalGas(schemesByKey['bls-b-50-store']);
+    const cheapest = [
+      { label: 'secp256k1eth', total: compact.total },
+      { label: 'BLS-A', total: blsa.total },
+      { label: 'BLS-B verify', total: blsb.total },
+    ].sort((a, b) => a.total - b.total)[0];
+    const blsbBreakeven = Math.max(1, Math.ceil(blsbStore.total / Math.max(1, compact.total - blsb.total)));
+    const cheapestRatio = (compact.total / cheapest.total).toFixed(1);
+    const items = [
+      { head: 'Recommended today', num: 'secp256k1eth', body: 'No CometBFT protocol change required. <strong>' + fmt(compact.total) + ' gas</strong> per verify at N=50 (per-signer <code>ecrecover</code>).' },
+      { head: 'Cheapest if shared precommit', num: fmt(cheapest.total) + ' gas', body: '<strong>' + cheapest.label + '</strong> wins on raw gas (~' + cheapestRatio + '× under secp), but only if CometBFT signs one shared precommit message per committed block. Today it signs per-signer.' },
+      { head: 'BLS-B breakeven', num: '~' + fmt(blsbBreakeven) + ' verifies', body: 'After this many verifies, BLS-B amortizes its <code>' + fmt(blsbStore.total) + '</code> gas one-time storage and beats secp per verify. Still requires the shared-message protocol.' },
+    ];
+    const html = items.map(it =>
+      '<div class="item">'
+      + '<div class="head">' + it.head + '</div>'
+      + '<div class="num">' + it.num + '</div>'
+      + '<div class="body">' + it.body + '</div>'
+      + '</div>'
+    ).join('');
+    document.getElementById('comparisonTakeaways').innerHTML = html;
+  }
+
+  function renderComparison() {
+    const { labels, execs, cds, floors } = buildCmpData();
+    const datasets = [];
+    if (cmpToggles.exec)  datasets.push({ label: 'Execution gas',     data: execs,  backgroundColor: SERIES_COLORS.exec });
+    if (cmpToggles.cd)    datasets.push({ label: 'L1 std calldata gas', data: cds,    backgroundColor: SERIES_COLORS.cd });
+    if (cmpToggles.floor) datasets.push({ label: 'EIP-7623 floor',    data: floors, backgroundColor: SERIES_COLORS.floor });
+
+    const canvas = document.getElementById('comparisonChart');
+    if (!cmpChart) {
+      cmpChart = safeChart(canvas, {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: { y: { beginAtZero: true, title: { display: true, text: 'Gas' }, ticks: { callback: v => v.toLocaleString() } } },
+          plugins: { tooltip: { callbacks: { label: c => c.dataset.label + ': ' + c.parsed.y.toLocaleString() + ' gas' } } },
+        },
+      });
+    } else if (cmpChart) {
+      cmpChart.data.labels = labels;
+      cmpChart.data.datasets = datasets;
+      cmpChart.update();
+    }
+
+    document.getElementById('comparisonChartDesc').textContent =
+      'At N=50, ' + labels.map((l, i) => l + ' uses ' + execs[i].toLocaleString() + ' execution gas and ' + cds[i].toLocaleString() + ' L1 standard calldata gas').join('; ') + '.';
+
+    renderComparisonTakeaways();
+
+    const tb = document.querySelector('#comparisonTable tbody');
+    tb.innerHTML = CMP_KEYS.map(k => {
+      const s = schemesByKey[k];
+      const cd = calldataByName[s.cdRow];
+      return '<tr>'
+        + '<td><span class="pill ' + s.group + '">' + s.short + '</span>' + infoIcon(s.group) + '</td>'
+        + '<td class="tag">' + s.execFn + '</td>'
+        + '<td class="num">' + fmt(s.execGas) + '</td>'
+        + '<td class="num">' + fmt(cd.gas_l1_standard) + '</td>'
+        + '<td class="num">' + fmt(cd.gas_l1_floor_eip_7623) + '</td>'
+        + '<td class="num"><strong>' + fmt(s.execGas + cd.gas_l1_standard) + '</strong></td>'
+        + '<td class="num"><button class="row-jump" data-key="' + s.key + '" type="button" aria-label="Open ' + s.short + ' in cost calculator" title="Open in cost calculator">&rarr;</button></td>'
+        + '</tr>';
+    }).join('');
+  }
+  document.querySelectorAll('#comparison .toggle-row button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const k = btn.dataset.show;
+      cmpToggles[k] = !cmpToggles[k];
+      btn.setAttribute('aria-pressed', cmpToggles[k] ? 'true' : 'false');
+      renderComparison();
+    });
+  });
+
+  // ---------- SCALING ----------
+  let calldataScalingChart = null;
+  let blsdScalingChart = null;
+  function renderScaling() {
+    if (!calldataScalingChart) {
+      const Ns = [10, 50, 100, 175];
+      const compactL1 = Ns.map(n => calldataByName['commit-compact-' + n].gas_l1_standard);
+      const compactFloor = Ns.map(n => calldataByName['commit-compact-' + n].gas_l1_floor_eip_7623);
+      calldataScalingChart = safeChart(document.getElementById('calldataScalingChart'), {
+        type: 'line',
+        data: {
+          labels: Ns,
+          datasets: [
+            { label: 'L1 std gas',       data: compactL1,    borderColor: SERIES_COLORS.cd,    backgroundColor: fade(SERIES_COLORS.cd, 0.18), tension: 0.2, fill: true,  borderWidth: 2 },
+            { label: 'EIP-7623 floor',   data: compactFloor, borderColor: SERIES_COLORS.floor, backgroundColor: 'transparent',                tension: 0.2, fill: false, borderDash: [4, 4], borderWidth: 2 },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: {
+            x: { title: { display: true, text: 'Validator count (N)' } },
+            y: { beginAtZero: true, title: { display: true, text: 'Calldata gas' }, ticks: { callback: v => v.toLocaleString() } },
+          },
+        },
+      });
+      const tb = document.querySelector('#compactCalldataTable tbody');
+      tb.innerHTML = Ns.map(n => {
+        const cd = calldataByName['commit-compact-' + n];
+        return '<tr><td class="num">' + n + '</td><td class="num">' + fmt(cd.byte_length) + '</td><td class="num">' + fmt(cd.zero_bytes) + '</td><td class="num">' + fmt(cd.nonzero_bytes) + '</td><td class="num">' + fmt(cd.gas_l1_standard) + '</td><td class="num">' + fmt(cd.gas_l1_floor_eip_7623) + '</td><td class="num">' + fmt(cd.blob_bytes) + '</td></tr>';
+      }).join('');
+    }
+    if (!blsdScalingChart) {
+      const rows = DATA.bls_d_multi_message;
+      const Ns = rows.map(r => r.signers);
+      blsdScalingChart = safeChart(document.getElementById('blsdScalingChart'), {
+        type: 'line',
+        data: {
+          labels: Ns,
+          datasets: [
+            { label: 'Measured',                       data: rows.map(r => r.measured_gas), borderColor: SCHEME_COLORS.blsd,    backgroundColor: fade(SCHEME_COLORS.blsd, 0.18), tension: 0.2, fill: true,  borderWidth: 2 },
+            { label: 'Formula 37.7k + 32.6k×(N+1)', data: rows.map(r => r.formula_gas),  borderColor: SERIES_COLORS.formula, backgroundColor: 'transparent',                  tension: 0.2, fill: false, borderDash: [5, 5], borderWidth: 2 },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: {
+            x: { title: { display: true, text: 'Signers (N)' } },
+            y: { beginAtZero: true, title: { display: true, text: 'Execution gas' }, ticks: { callback: v => v.toLocaleString() } },
+          },
+        },
+      });
+    }
+  }
+
+  // ---------- CALLDATA ----------
+  let cdChart = null;
+  function calldataMatchesFilter(name, filter) {
+    if (filter === 'all') return true;
+    if (filter === 'commit') return /^commit-/.test(name);
+    if (filter === 'update') return /(update|misbehaviour|stored-valset|seed)/i.test(name);
+    if (filter === 'bls') return /^bls-/.test(name);
+    if (filter === 'ics23') return /(ics23|iavl|membership)/.test(name);
+    if (filter === 'canon') return /canonical-/.test(name);
+    return true;
+  }
+  function renderCalldata() {
+    const filter = document.getElementById('calldataFilter').value;
+    const sortKey = document.getElementById('calldataSort').value;
+    let rows = DATA.calldata.filter(r => calldataMatchesFilter(r.name, filter));
+    if (sortKey === 'name') rows.sort((a, b) => a.name.localeCompare(b.name));
+    else rows.sort((a, b) => b[sortKey] - a[sortKey]);
+
+    const tb = document.querySelector('#calldataTable tbody');
+    tb.innerHTML = rows.map(r =>
+      '<tr><td class="tag">' + r.name + '</td>'
+      + '<td class="num">' + fmt(r.byte_length) + '</td>'
+      + '<td class="num">' + fmt(r.zero_bytes) + '</td>'
+      + '<td class="num">' + fmt(r.nonzero_bytes) + '</td>'
+      + '<td class="num">' + fmt(r.gas_l1_standard) + '</td>'
+      + '<td class="num">' + fmt(r.gas_l1_floor_eip_7623) + '</td>'
+      + '<td class="num">' + fmt(r.blob_bytes) + '</td></tr>'
+    ).join('');
+
+    const top = rows.slice(0, 12);
+    const labels = top.map(r => r.name);
+    const stdData = top.map(r => r.gas_l1_standard);
+    const floorData = top.map(r => r.gas_l1_floor_eip_7623);
+    const canvas = document.getElementById('calldataChart');
+    if (!cdChart) {
+      cdChart = safeChart(canvas, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'L1 std gas',      data: stdData,   backgroundColor: SERIES_COLORS.cd },
+            { label: 'EIP-7623 floor', data: floorData, backgroundColor: SERIES_COLORS.floor },
+          ],
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true, maintainAspectRatio: false,
+          scales: { x: { ticks: { callback: v => v.toLocaleString() } } },
+          plugins: { tooltip: { callbacks: { label: c => c.dataset.label + ': ' + c.parsed.x.toLocaleString() } } },
+        },
+      });
+    } else if (cdChart) {
+      const labelsChanged = cdChart.data.labels.length !== labels.length
+        || cdChart.data.labels.some((l, i) => l !== labels[i]);
+      cdChart.data.labels = labels;
+      cdChart.data.datasets[0].data = stdData;
+      cdChart.data.datasets[1].data = floorData;
+      cdChart.update(labelsChanged ? 'none' : undefined);
+    }
+  }
+  document.getElementById('calldataFilter').addEventListener('change', renderCalldata);
+  document.getElementById('calldataSort').addEventListener('change', renderCalldata);
+
+  // ---------- BLS-D ----------
+  let blsdChart = null;
+  function renderBlsd() {
+    if (blsdChart) return;
+    const rows = DATA.bls_d_multi_message;
+    blsdChart = safeChart(document.getElementById('blsdChart'), {
+      type: 'bar',
+      data: {
+        labels: rows.map(r => 'N=' + r.signers),
+        datasets: [
+          { label: 'Measured', data: rows.map(r => r.measured_gas), backgroundColor: SCHEME_COLORS.blsd },
+          { label: 'Formula',  data: rows.map(r => r.formula_gas),  backgroundColor: SERIES_COLORS.formula },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() } } },
+      },
+    });
+    const tb = document.querySelector('#blsdTable tbody');
+    tb.innerHTML = rows.map(r => {
+      const pct = ((r.overhead_gas / r.formula_gas) * 100).toFixed(2);
+      return '<tr><td class="num">' + r.signers + '</td><td class="num">' + r.pairings + '</td><td class="num">' + fmt(r.measured_gas) + '</td><td class="num">' + fmt(r.formula_gas) + '</td><td class="num">' + fmt(r.overhead_gas) + '</td><td class="num">' + pct + ' %</td></tr>';
+    }).join('');
+  }
+
+  // ---------- COMPONENTS ----------
+  const COMP_CATEGORIES = [
+    { key: 'commit', label: 'Compact commit (secp256k1eth)', test: fn => /commit|^update/i.test(fn) && !/Bls|Ics23|Iavl/.test(fn) },
+    { key: 'canon',  label: 'Canonical vote',                test: fn => /canonical/i.test(fn) },
+    { key: 'bls',    label: 'BLS (verify, store, helpers)',  test: fn => /Bls|bls/.test(fn) },
+    { key: 'ics23',  label: 'ICS23 / IAVL',                  test: fn => /Ics23|Iavl|ics23|iavl/.test(fn) },
+    { key: 'ed',     label: 'ed25519 (vendored)',            test: fn => /Ed25519|ed25519/.test(fn) },
+    { key: 'misc',   label: 'Other helpers',                 test: () => true },
+  ];
+  function compCategory(fn) {
+    for (const c of COMP_CATEGORIES) if (c.test(fn)) return c;
+    return COMP_CATEGORIES[COMP_CATEGORIES.length - 1];
+  }
+  let searchTimer = null;
+  function renderComponents() {
+    const q = document.getElementById('compSearch').value.toLowerCase();
+    const sortKey = document.getElementById('compSort').value;
+    let rows = DATA.execution_gas.filter(r => r.function.toLowerCase().includes(q));
+    if (sortKey === 'function') rows.sort((a, b) => a.function.localeCompare(b.function));
+    else rows.sort((a, b) => b[sortKey] - a[sortKey]);
+    const tb = document.querySelector('#compTable tbody');
+    const happyByFn = Object.fromEntries((DATA.ics23_happy_path_gas || []).map(r => [r.function, r]));
+    const renderRow = r => {
+      const bareName = r.function.replace(/\(.*\)$/, '');
+      const happy = happyByFn[bareName];
+      const happyNote = happy
+        ? '<div class="fn-happy">happy-path: ' + fmt(happy.median) + ' gas (range above includes negative tests)</div>'
+        : '';
+      return '<tr><td class="tag">' + r.function + happyNote + '</td>'
+        + '<td class="num">' + fmt(r.min) + '</td>'
+        + '<td class="num">' + fmt(r.avg) + '</td>'
+        + '<td class="num"><strong>' + fmt(r.median) + '</strong></td>'
+        + '<td class="num">' + fmt(r.max) + '</td>'
+        + '<td class="num">' + r.calls + '</td></tr>';
+    };
+    if (q) {
+      tb.innerHTML = rows.map(renderRow).join('');
+      return;
+    }
+    const buckets = new Map();
+    for (const r of rows) {
+      const c = compCategory(r.function);
+      if (!buckets.has(c.key)) buckets.set(c.key, { label: c.label, items: [] });
+      buckets.get(c.key).items.push(r);
+    }
+    const order = COMP_CATEGORIES.map(c => c.key).filter(k => buckets.has(k));
+    tb.innerHTML = order.map(k => {
+      const b = buckets.get(k);
+      return '<tr class="cat-row"><td colspan="6">' + b.label + ' &middot; ' + b.items.length + '</td></tr>'
+        + b.items.map(renderRow).join('');
+    }).join('');
+  }
+  document.getElementById('compSearch').addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(renderComponents, 80);
+  });
+  document.getElementById('compSort').addEventListener('change', renderComponents);
+
+  // ---------- URL STATE ----------
+  let urlStateReady = false;
+  function syncUrlState() {
+    if (!urlStateReady) return;
+    const params = new URLSearchParams();
+    const calcSel = document.getElementById('calcScheme');
+    const gweiInput = document.getElementById('calcGwei');
+    const ethInput = document.getElementById('calcEth');
+    const amInput = document.getElementById('calcAmortize');
+    if (calcSel && calcSel.value) params.set('scheme', calcSel.value);
+    if (gweiInput && gweiInput.value !== '') params.set('gwei', gweiInput.value);
+    if (ethInput && ethInput.value !== '') params.set('eth', ethInput.value);
+    if (amInput && amInput.value !== '' && amInput.value !== '1') params.set('n', amInput.value);
+    if (overviewN && overviewN !== 50) params.set('ovN', String(overviewN));
+    if (pkState.shared !== null) params.set('pkS', pkState.shared === 'yes' ? '1' : '0');
+    if (pkState.n !== null) params.set('pkN', pkState.n);
+    if (pkState.store !== null) params.set('pkX', pkState.store === 'yes' ? '1' : '0');
+    const activeTab = document.querySelector('nav.tabs [role="tab"][aria-selected="true"]');
+    if (activeTab && activeTab.dataset.tab && activeTab.dataset.tab !== 'overview') {
+      params.set('tab', activeTab.dataset.tab);
+    }
+    const hash = params.toString();
+    const next = hash ? '#' + hash : window.location.pathname + window.location.search;
+    if (window.location.hash !== (hash ? '#' + hash : '')) {
+      try { history.replaceState(null, '', next); } catch (_) { /* file:// */ }
+    }
+  }
+  function applyUrlState() {
+    const raw = window.location.hash.replace(/^#/, '');
+    if (!raw) return null;
+    const params = new URLSearchParams(raw);
+    const out = {};
+    const scheme = params.get('scheme');
+    if (scheme && schemesByKey[scheme]) {
+      const calcSel = document.getElementById('calcScheme');
+      if (calcSel) calcSel.value = scheme;
+      out.scheme = scheme;
+    }
+    const gwei = params.get('gwei');
+    if (gwei !== null && isFinite(parseFloat(gwei))) {
+      const el = document.getElementById('calcGwei');
+      if (el) el.value = gwei;
+    }
+    const eth = params.get('eth');
+    if (eth !== null && isFinite(parseFloat(eth))) {
+      const el = document.getElementById('calcEth');
+      if (el) el.value = eth;
+    }
+    const n = params.get('n');
+    if (n !== null && isFinite(parseFloat(n))) {
+      const el = document.getElementById('calcAmortize');
+      if (el) el.value = String(Math.max(1, Math.floor(parseFloat(n))));
+    }
+    const ovN = parseInt(params.get('ovN') || '', 10);
+    if ([10, 50, 100, 175].includes(ovN)) {
+      overviewN = ovN;
+      document.querySelectorAll('#nSeg button').forEach(b => {
+        b.setAttribute('aria-pressed', parseInt(b.dataset.n, 10) === ovN ? 'true' : 'false');
+      });
+    }
+    const pkS = params.get('pkS');
+    const pkN = params.get('pkN');
+    const pkX = params.get('pkX');
+    if (pkS === '0' || pkS === '1') pkSetAnswer('shared', pkS === '1' ? 'yes' : 'no');
+    if (pkN && ['small', 'medium', 'large'].includes(pkN)) pkSetAnswer('n', pkN);
+    if ((pkX === '0' || pkX === '1') && pkState.shared === 'yes') pkSetAnswer('store', pkX === '1' ? 'yes' : 'no');
+    const tab = params.get('tab');
+    if (tab) out.tab = tab;
+    return out;
+  }
+
+  // ---------- COST CALCULATOR ----------
+  function safeNumber(raw, fallback, { min, max } = {}) {
+    const n = parseFloat(raw);
+    if (!isFinite(n)) return fallback;
+    if (typeof min === 'number' && n < min) return min;
+    if (typeof max === 'number' && n > max) return max;
+    return n;
+  }
+  function renderCalc() {
+    const key = document.getElementById('calcScheme').value;
+    const gweiInput = document.getElementById('calcGwei');
+    const ethInput = document.getElementById('calcEth');
+    const amInput = document.getElementById('calcAmortize');
+    const gwei = safeNumber(gweiInput.value, 0, { min: 0 });
+    const ethUsd = safeNumber(ethInput.value, 0, { min: 0 });
+    const amortize = Math.max(1, Math.floor(safeNumber(amInput.value, 1, { min: 1 })));
+
+    const s = schemesByKey[key];
+    const cd = calldataByName[s.cdRow];
+    const amGroup = document.getElementById('calcAmortizeGroup');
+    const amHint = document.getElementById('calcAmortizeHint');
+    if (amGroup && amHint) {
+      amGroup.classList.toggle('is-inert', !s.oneTime);
+      amInput.disabled = !s.oneTime;
+      amHint.textContent = s.oneTime
+        ? 'Spreads this scheme’s one-time setup cost across this many verifies.'
+        : 'Only relevant for one-time storage schemes (e.g. BLS-B store). Per-verify schemes have no setup cost to spread.';
+    }
+    const eg = s.oneTime ? s.execGas / amortize : s.execGas;
+    const cdGas = cd ? (s.oneTime ? cd.gas_l1_standard / amortize : cd.gas_l1_standard) : 0;
+    const totalGas = eg + cdGas;
+    const eth = totalGas * gwei * 1e-9;
+    const usd = eth * ethUsd;
+
+    const warns = [];
+    if (!cd) warns.push('Calldata row <code>' + s.cdRow + '</code> not found in benchmarks.json. Total below excludes calldata gas.');
+    if (gwei <= 0 || ethUsd <= 0) {
+      const missing = [];
+      if (gwei <= 0) missing.push('gas price');
+      if (ethUsd <= 0) missing.push('ETH price');
+      warns.push('Set ' + missing.join(' and ') + ' above to see USD cost. Gas totals are unaffected.');
+    }
+    if (gwei > 1000) warns.push('Gas price above 1,000 gwei is well outside L1 mainnet ranges; check the input.');
+    if (ethUsd > 100000) warns.push('ETH price above $100,000 is outside historical ranges; check the input.');
+    if (s.oneTime && amortize > 10000) warns.push('Amortizing over more than 10,000 verifies is unusual; verify the input.');
+
+    const desc = '<div><strong>' + s.label + '</strong>' + infoIcon(s.group) + ', <code>' + s.execFn + '</code>'
+      + (cd ? ' + <code>' + s.cdRow + '</code>' : '') + '</div>'
+      + (s.note ? '<div class="body-note">' + s.note + '</div>' : '')
+      + warns.map(w => '<div class="calc-warn" role="note">' + w + '</div>').join('');
+    document.getElementById('calcDescription').innerHTML = desc;
+
+    document.getElementById('calcResult').innerHTML = [
+      { label: 'Execution gas',       value: fmt(Math.round(eg)),       desc: s.oneTime ? 'amortized over ' + amortize : '' },
+      { label: 'L1 std calldata gas', value: fmt(Math.round(cdGas)),    desc: cd ? cd.byte_length + ' bytes' : '' },
+      { label: 'Total gas',           value: fmt(Math.round(totalGas)), desc: 'exec + L1 std calldata' },
+      { label: 'Cost',                value: '$' + usd.toFixed(usd < 1 ? 4 : 2), desc: eth.toFixed(6) + ' ETH at ' + fmtGwei(gwei) + ' gwei' },
+    ].map(stat =>
+      '<div class="stat"><div class="label">' + stat.label + '</div><div class="value">' + stat.value + '</div>'
+      + (stat.desc ? '<div class="desc">' + stat.desc + '</div>' : '') + '</div>'
+    ).join('');
+
+    syncUrlState();
+  }
+  document.getElementById('calcScheme').addEventListener('change', e => {
+    const am = document.getElementById('calcAmortize');
+    if (e.target.value === 'bls-b-50-store' && (am.value === '' || parseInt(am.value, 10) <= 1)) {
+      am.value = '100';
+    }
+  });
+  ['calcScheme', 'calcGwei', 'calcEth', 'calcAmortize'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', renderCalc);
+    el.addEventListener('change', renderCalc);
+  });
+
+  // ---------- RAW (lazy) ----------
+  function renderRaw() {
+    document.getElementById('rawToolchain').textContent =
+      JSON.stringify(DATA.toolchain, null, 2) + '\n\nfixture_hashes:\n' + JSON.stringify(DATA.fixture_hashes, null, 2);
+    document.getElementById('rawBenchmarks').textContent = JSON.stringify(DATA.benchmarks, null, 2);
+    document.getElementById('rawExec').textContent = JSON.stringify(DATA.execution_gas, null, 2);
+    document.getElementById('rawCalldata').textContent = JSON.stringify(DATA.calldata, null, 2);
+    document.getElementById('rawBlsd').textContent = JSON.stringify(DATA.bls_d_multi_message, null, 2);
+    document.getElementById('rawIcs23').textContent = JSON.stringify(DATA.ics23_happy_path_gas, null, 2);
+  }
+
+  // Tab -> initializer. Reference tab renders the visible sub-panel; the others lazy-init when their subnav button is clicked.
+  Object.assign(lazyInit, {
+    overview: renderOverview,
+    comparison: () => { renderComparison(); renderScaling(); },
+    blsd: renderBlsd,
+    calculator: renderCalc,
+    reference: () => { renderCalldata(); /* default visible sub */ },
+  });
+
+  // ---------- Reference subnav ----------
+  const refSubInitialized = new Set(['calldata']);
+  const refSubRender = { calldata: renderCalldata, components: renderComponents, raw: renderRaw };
+  const refSubButtons = Array.from(document.querySelectorAll('#refSubnav [role="tab"]'));
+  function activateRefSub(btn) {
+    const sub = btn.dataset.sub;
+    refSubButtons.forEach(b => {
+      const on = b === btn;
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+      b.setAttribute('tabindex', on ? '0' : '-1');
+    });
+    ['calldata', 'components', 'raw'].forEach(name => {
+      const panel = document.getElementById('ref-' + name);
+      if (!panel) return;
+      if (name === sub) panel.removeAttribute('hidden'); else panel.setAttribute('hidden', '');
+    });
+    if (!refSubInitialized.has(sub) && refSubRender[sub]) {
+      refSubInitialized.add(sub);
+      refSubRender[sub]();
+    }
+    requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+  }
+  refSubButtons.forEach(btn => {
+    btn.addEventListener('click', () => activateRefSub(btn));
+    btn.addEventListener('keydown', e => {
+      const i = refSubButtons.indexOf(btn);
+      let next = null;
+      if (e.key === 'ArrowRight') next = refSubButtons[(i + 1) % refSubButtons.length];
+      else if (e.key === 'ArrowLeft') next = refSubButtons[(i - 1 + refSubButtons.length) % refSubButtons.length];
+      else if (e.key === 'Home') next = refSubButtons[0];
+      else if (e.key === 'End') next = refSubButtons[refSubButtons.length - 1];
+      if (next) {
+        e.preventDefault();
+        activateRefSub(next);
+        next.focus();
+      }
+    });
+  });
+
+  const urlState = applyUrlState() || {};
+  const initialTab =
+    (urlState.tab && tabs.find(t => t.dataset.tab === urlState.tab))
+    || tabs.find(t => t.getAttribute('aria-selected') === 'true')
+    || tabs[0];
+  activate(initialTab);
+  urlStateReady = true;
+  syncUrlState();
+})();
+</script>
+</body>
+</html>

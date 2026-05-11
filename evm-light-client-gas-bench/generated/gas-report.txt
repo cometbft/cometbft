@@ -1,0 +1,223 @@
+No files changed, compilation skipped
+
+Ran 103 tests for test/EvmLightClientBench.t.sol:EvmLightClientBenchTest
+[PASS] testAdjacentMixedPowerUpdateGas() (gas: 10221918)
+[PASS] testAdjacentUpdate10ValidatorsGas() (gas: 6158954)
+[PASS] testAdjacentUpdateWithStorageGas() (gas: 10231807)
+[PASS] testAdjacentUpdateWithoutStorageGas() (gas: 9980719)
+[PASS] testBenchBlsAggregateApprox100Gas() (gas: 5337202)
+[PASS] testBenchBlsAggregateApprox10Gas() (gas: 5139558)
+[PASS] testBenchBlsAggregateApprox175Gas() (gas: 5508022)
+[PASS] testBenchBlsAggregateApprox50Gas() (gas: 5226720)
+[PASS] testBenchBlsG1AddSignerAggregation100Gas() (gas: 5073898)
+[PASS] testBenchBlsG1AddSignerAggregation10Gas() (gas: 4989489)
+[PASS] testBenchBlsG1AddSignerAggregation175Gas() (gas: 5145385)
+[PASS] testBenchBlsG1AddSignerAggregation50Gas() (gas: 5026002)
+[PASS] testBenchBlsG2AddSignatureAggregation100Gas() (gas: 5101565)
+[PASS] testBenchBlsG2AddSignatureAggregation10Gas() (gas: 4990910)
+[PASS] testBenchBlsG2AddSignatureAggregation175Gas() (gas: 5196410)
+[PASS] testBenchBlsG2AddSignatureAggregation50Gas() (gas: 5041054)
+[PASS] testBenchBlsMapFp2ToG2Gas() (gas: 5016521)
+[PASS] testBenchBlsMultiMessagePairing100Gas() (gas: 8335781)
+[PASS] testBenchBlsMultiMessagePairing10Gas() (gas: 5379134)
+[PASS] testBenchBlsMultiMessagePairing175Gas() (gas: 10801891)
+[PASS] testBenchBlsMultiMessagePairing50Gas() (gas: 6693216)
+[PASS] testBenchBlsPairingCheckGas() (gas: 5083394)
+[PASS] testBftTimeViolationMisbehaviour10ValidatorsGas() (gas: 6461665)
+[PASS] testBftTimeViolationMisbehaviourGas() (gas: 13013637)
+[PASS] testBftTimeViolationMisbehaviourReversedOrderGas() (gas: 13012980)
+[PASS] testBlsAggregateCalldataValidatorSet50Gas() (gas: 7515217)
+[PASS] testBlsAggregateCalldataValidatorSetRejectsTrailingBitmapBits() (gas: 7324057)
+[PASS] testBlsAggregateRejectsMissingSignerFixture() (gas: 7400122)
+[PASS] testBlsAggregateRejectsWrongMessageFixture() (gas: 7400254)
+[PASS] testBlsAggregateStoredValidatorSet50Gas() (gas: 14320506)
+[PASS] testBlsAggregateStoredValidatorSetRejectsTrailingBitmapBits() (gas: 13738510)
+[PASS] testBlsAggregateStoredValidatorSetRejectsWrongBitmap() (gas: 14323160)
+[PASS] testCalldataGasEstimates() (gas: 571018557)
+[PASS] testCanonicalAndCompactValidatorHashesAreDistinct() (gas: 7210825)
+[PASS] testCanonicalBlsAggregateRejectsMalformedInputBounded() (gas: 7496228)
+[PASS] testCanonicalBlsAggregateVerify() (gas: 7401145)
+[PASS] testCanonicalBlsAggregateVerify100Gas() (gas: 12444382)
+[PASS] testCanonicalBlsAggregateVerify10Gas() (gas: 5393452)
+[PASS] testCanonicalBlsAggregateVerify175Gas() (gas: 25262069)
+[PASS] testCanonicalBlsAggregateVerifyValidButWrongRejected() (gas: 18434424)
+[PASS] testCanonicalBlsValidatorSetHashParity() (gas: 7476501)
+[PASS] testCanonicalEd25519PrebuiltLeavesParity() (gas: 6922676)
+[PASS] testCanonicalHeaderHashRecorded() (gas: 6847428)
+[PASS] testCanonicalSecp256k1PrebuiltLeavesParity() (gas: 6994064)
+[PASS] testCanonicalVoteHashGas() (gas: 6895933)
+[PASS] testCanonicalVoteSecp256k1VerifyGas() (gas: 7154912)
+[PASS] testCanonicalVoteSignBytesDistinctFromCompact() (gas: 2313881)
+[PASS] testCanonicalVoteSignBytesReconstructionParity() (gas: 7533681)
+[PASS] testChangedValidatorSetMisbehaviour10ValidatorsGas() (gas: 6545512)
+[PASS] testChangedValidatorSetMisbehaviourGas() (gas: 13769422)
+[PASS] testCommitBlockHashMismatchReverts() (gas: 8431706)
+[PASS] testCommitCompact100Gas() (gas: 13224251)
+[PASS] testCommitCompact10Gas() (gas: 5714760)
+[PASS] testCommitCompact175Gas() (gas: 25757746)
+[PASS] testCommitCompact50Gas() (gas: 8034960)
+[PASS] testCommitHeightMismatchReverts() (gas: 8431401)
+[PASS] testCommitPrebuiltVoteBytes50Gas() (gas: 7389898)
+[PASS] testCommitTrailingGarbageReverts() (gas: 8062148)
+[PASS] testDuplicateConsensusStateUpdateReverts() (gas: 11987735)
+[PASS] testDuplicateValidatorAtEndReverts() (gas: 8453862)
+[PASS] testDuplicateValidatorReverts() (gas: 8433877)
+[PASS] testEd25519AnalyticalGasBaseline() (gas: 19964)
+[PASS] testEd25519PureSolidityRejectsWrongMessage() (gas: 3175655)
+[PASS] testEd25519PureSolidityVerifyGas() (gas: 3182451)
+[PASS] testExpiredTrustedStateReverts() (gas: 8411547)
+[PASS] testExplicitPruneGas() (gas: 7478890)
+[PASS] testFullBitmapWithBogusLastSignatureReverts() (gas: 8031378)
+[PASS] testHeaderHashGas() (gas: 7506301)
+[PASS] testIavlExistenceProofGas() (gas: 6777318)
+[PASS] testIavlExistenceProofRejectsWrongValue() (gas: 6777602)
+[PASS] testIavlMaxDepthProofGas() (gas: 6819463)
+[PASS] testIavlMaxDepthProofRejectsTamperedSuffix() (gas: 6820592)
+[PASS] testIavlMaxDepthProofRejectsWrongRoot() (gas: 6819369)
+[PASS] testIcs23IavlExistenceProofDecodeOnlyGas() (gas: 6824744)
+[PASS] testIcs23IavlExistenceProofRejectsOversizedProofBeforeHashing() (gas: 4987714)
+[PASS] testIcs23IavlExistenceProofRejectsTamperedProof() (gas: 6833564)
+[PASS] testIcs23IavlExistenceProofRejectsUnsupportedHashOp() (gas: 6793527)
+[PASS] testIcs23IavlExistenceProofRejectsUnsupportedLeafPrefix() (gas: 6797795)
+[PASS] testIcs23IavlExistenceProofRejectsUnsupportedLengthOp() (gas: 6796375)
+[PASS] testIcs23IavlExistenceProofRejectsWrongKey() (gas: 6826959)
+[PASS] testIcs23IavlExistenceProofRejectsWrongValue() (gas: 6826805)
+[PASS] testIcs23IavlExistenceProofVerifyGas() (gas: 6836366)
+[PASS] testIdenticalSameHeightMisbehaviourReverts() (gas: 11858871)
+[PASS] testInsufficientCommitPowerReturnsFalse() (gas: 7988015)
+[PASS] testMembershipProofGas() (gas: 6647836)
+[PASS] testMisbehaviourWithUntrustedValidatorSetReverts() (gas: 15384172)
+[PASS] testMissingTrustedConsensusStateReverts() (gas: 8376393)
+[PASS] testNonAdjacentChangedValidatorSetGas() (gas: 10969401)
+[PASS] testNonAdjacentFailsInsufficientTrustPower() (gas: 10076936)
+[PASS] testNonAdjacentFailsInsufficientUntrustedCommitPower() (gas: 10085816)
+[PASS] testPrebuiltValidatorLeavesHashGas() (gas: 6863041)
+[PASS] testPruneBoundedExpiredConsensusStatesGas() (gas: 9112416)
+[PASS] testPruneOldestExpiredConsensusStateGas() (gas: 9074111)
+[PASS] testReconstructedEd25519SimpleValidatorHashGas() (gas: 6954449)
+[PASS] testReconstructedSecp256k1SimpleValidatorHashGas() (gas: 7057232)
+[PASS] testSameHeightMisbehaviour10ValidatorsGas() (gas: 6447444)
+[PASS] testSameHeightMisbehaviourFreezesClientGas() (gas: 12536885)
+[PASS] testStoreBlsValidatorSet50Gas() (gas: 13720984)
+[PASS] testStoreBlsValidatorSetRejectsWrongCanonicalHash() (gas: 7837502)
+[PASS] testStoredValidatorSetAdjacentUpdateGas() (gas: 11215729)
+[PASS] testTooManyValidatorsReverts() (gas: 5106198)
+[PASS] testValidatorHashMismatchReverts() (gas: 9635937)
+[PASS] testValidatorSetNativeHash50Gas() (gas: 6868782)
+Suite result: ok. 103 passed; 0 failed; 0 skipped; finished in 393.79ms (2.94s CPU time)
+
+╭------------------------------------------------------------+-----------------+--------+--------+--------+---------╮
+| src/Ed25519VerifierBench.sol:Ed25519VerifierBench Contract |                 |        |        |        |         |
++===================================================================================================================+
+| Deployment Cost                                            | Deployment Size |        |        |        |         |
+|------------------------------------------------------------+-----------------+--------+--------+--------+---------|
+| 0                                                          | 12866           |        |        |        |         |
+|------------------------------------------------------------+-----------------+--------+--------+--------+---------|
+|                                                            |                 |        |        |        |         |
+|------------------------------------------------------------+-----------------+--------+--------+--------+---------|
+| Function Name                                              | Min             | Avg    | Median | Max    | # Calls |
+|------------------------------------------------------------+-----------------+--------+--------+--------+---------|
+| verify                                                     | 902866          | 906311 | 906311 | 909757 | 2       |
+╰------------------------------------------------------------+-----------------+--------+--------+--------+---------╯
+
+╭----------------------------------------------------------+-----------------+---------+---------+---------+---------╮
+| src/EvmLightClientBench.sol:EvmLightClientBench Contract |                 |         |         |         |         |
++====================================================================================================================+
+| Deployment Cost                                          | Deployment Size |         |         |         |         |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| 4937711                                                  | 22611           |         |         |         |         |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+|                                                          |                 |         |         |         |         |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| Function Name                                            | Min             | Avg     | Median  | Max     | # Calls |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| benchBlsAggregateApprox                                  | 162127          | 325114  | 304519  | 529293  | 4       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| benchBlsG1AddSignerAggregation                           | 10011           | 79666   | 71242   | 166171  | 4       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| benchBlsG2AddSignatureAggregation                        | 12860           | 103873  | 92555   | 217524  | 4       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| benchBlsMapFp2ToG2                                       | 36931           | 36931   | 36931   | 36931   | 1       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| benchBlsMultiMessagePairing                              | 401618          | 2823911 | 2535596 | 5822835 | 4       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| benchBlsPairingCheck                                     | 105956          | 105956  | 105956  | 105956  | 1       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| clientState                                              | 8002            | 8002    | 8002    | 8002    | 2       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| consensusStates                                          | 9759            | 9759    | 9759    | 9759    | 1       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| decodeIcs23IavlExistenceProof                            | 864             | 26620   | 22601   | 64303   | 5       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| hashCanonicalVoteSignBytes                               | 11642           | 11642   | 11642   | 11642   | 1       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| hashHeader                                               | 4159            | 4169    | 4169    | 4180    | 2       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| hashSimpleValidatorSetBls12381                           | 165093          | 165093  | 165093  | 165093  | 1       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| hashSimpleValidatorSetEd25519                            | 139606          | 139606  | 139606  | 139606  | 2       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| hashSimpleValidatorSetSecp256k1                          | 161711          | 161711  | 161711  | 161711  | 1       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| hashValidatorLeaves                                      | 104009          | 104758  | 105133  | 105133  | 3       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| hashValidatorSetNative                                   | 1010            | 55591   | 55591   | 110173  | 2       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| initializeClient                                         | 250884          | 250888  | 250884  | 250896  | 36      |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| pruneConsensusState                                      | 34113           | 34113   | 34113   | 34113   | 1       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| pruneExpiredConsensusStatesBounded                       | 91064           | 91064   | 91064   | 91064   | 1       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| pruneOldestExpiredConsensusState                         | 39059           | 39059   | 39059   | 39059   | 1       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| reconstructCanonicalVoteSignBytes                        | 12140           | 15026   | 15145   | 15145   | 34      |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| seedConsensusStates                                      | 1599169         | 1599169 | 1599169 | 1599169 | 2       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| storeBlsValidatorSet                                     | 513660          | 5416357 | 6396897 | 6396897 | 6       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| storeConsensusStateForTest                               | 123790          | 123790  | 123790  | 123790  | 1       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| storeValidatorSet                                        | 2253030         | 2253030 | 2253030 | 2253030 | 1       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| submitMisbehaviour                                       | 369951          | 2574799 | 3372706 | 4352531 | 9       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| updateAdjacentCalldata                                   | 304281          | 1485212 | 1805710 | 1805726 | 5       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| updateAdjacentStoredValidatorSet                         | 555919          | 555919  | 555919  | 555919  | 1       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| updateNonAdjacentCalldata                                | 2294401         | 2294401 | 2294401 | 2294401 | 1       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| verifyAdjacentUpdateCalldata                             | 6182            | 363175  | 16421   | 1565413 | 8       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| verifyBlsAggregate                                       | 106536          | 118622  | 106536  | 203230  | 8       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| verifyBlsAggregateCalldataValidatorSet                   | 1681            | 97348   | 97348   | 193016  | 2       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| verifyBlsAggregateStoredValidatorSet                     | 5334            | 394601  | 588235  | 590235  | 3       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| verifyCanonicalVoteSecp256k1                             | 15760           | 15760   | 15760   | 15760   | 1       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| verifyCommitCompact                                      | 46526           | 287837  | 210755  | 716478  | 7       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| verifyCommitPrebuiltVoteBytes                            | 190571          | 190571  | 190571  | 190571  | 1       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| verifyIavlExistenceProof                                 | 11883           | 17436   | 21138   | 21138   | 5       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| verifyIcs23IavlExistenceProof(bytes32,bytes)             | 73120           | 73120   | 73120   | 73120   | 1       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| verifyIcs23IavlExistenceProof(bytes32,bytes,bytes,bytes) | 65704           | 69028   | 66166   | 75215   | 3       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| verifyMembershipProof                                    | 4739            | 4739    | 4739    | 4739    | 1       |
+|----------------------------------------------------------+-----------------+---------+---------+---------+---------|
+| verifyNonAdjacentUpdateCalldata                          | 1462190         | 1465199 | 1465199 | 1468209 | 2       |
+╰----------------------------------------------------------+-----------------+---------+---------+---------+---------╯
+
+
+╭-------------------------+--------+--------+---------╮
+| Test Suite              | Passed | Failed | Skipped |
++=====================================================+
+| EvmLightClientBenchTest | 103    | 0      | 0       |
+╰-------------------------+--------+--------+---------╯
+

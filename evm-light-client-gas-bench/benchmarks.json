@@ -1,0 +1,912 @@
+{
+  "generated_at": "2026-05-07T11:30:45Z",
+  "toolchain": {
+    "forge": "forge Version: 1.5.0-stable\nCommit SHA: 1c57854462289b2e71ee7654cd6666217ed86ffd\nBuild Timestamp: 2025-11-26T09:16:58.269730000Z (1764148618)\nBuild Profile: maxperf",
+    "solc": [
+      "0.8.30",
+      "0.6.12"
+    ],
+    "go": "go version go1.25.0 darwin/arm64",
+    "git_commit": "62a15e75371982c4cfe42298bcbaf24439bb758d",
+    "git_status": "M ../.gitignore\n M ../go.mod\n M ../go.sum\n?? ../.deepsec/\n?? ./\n?? ../evm-light-client-gas-benchmark-report.md\n?? ../evm-tendermint-light-client-poc-plan.md\n?? ../signature-light-client-evm-report.md",
+    "evm_version": "prague",
+    "optimizer": true,
+    "optimizer_runs": 200,
+    "via_ir": true,
+    "auto_detect_solc": true,
+    "compiler_pinning_note": "Source files use exact pragmas =0.8.30 and =0.6.12; foundry.toml uses auto_detect_solc=true because the benchmark intentionally compiles both pinned versions."
+  },
+  "commands": [
+    "go run -tags bls12381 ./script",
+    "scripts/update-report-data.sh",
+    "forge test --summary",
+    "forge test --gas-report --summary",
+    "forge test --match-test testCalldataGasEstimates -vvvv",
+    "forge fmt --check"
+  ],
+  "fixture_hashes": {
+    "test/fixtures/misbehaviour_10_equal.json": "1fbc2f758be530f828a1bd94fd31b7bed511220a2f117ac422d3fdbc5052eedb",
+    "test/fixtures/misbehaviour_50_equal.json": "aec5d81baf4b33398248f6c29c27e686c0363b13578da62c6a650f93876b5393",
+    "test/fixtures/update_100_equal.json": "69dd4374e416e8ac84111c2c8c9fcee57f5aea3eccd30278d27b8835139edad1",
+    "test/fixtures/update_10_equal.json": "a47cf0e8cf5dbf898c4c6ce4e802cabb69dcd461fb68818705423b011b9d0633",
+    "test/fixtures/update_175_equal.json": "a038cf0a3ccf59a367e5377c823bda41cc24aa3b2657957703d6acf0752cbec0",
+    "test/fixtures/update_50_equal.json": "545516367b0da510099741d67b65ec16179daf9efb0566f6fffb0fc239d9d803",
+    "test/fixtures/update_50_mixed.json": "d6ac1fb365a54c60a8322dfa344da20dbea4e4b777af33b4b01f9e09afda491b"
+  },
+  "benchmarks": [
+    {
+      "id": "compact-commit-50",
+      "group": "secp256k1eth",
+      "question": "What does the production-shape compact secp256k1eth commit verifier cost for a 50-validator quorum?",
+      "model": "EVM-native validator addresses, typed compact vote reconstruction, ecrecover per signer, \u003e2/3 voting power.",
+      "assumptions": [
+        "validators \u003c= 256",
+        "validator address = keccak256(uncompressed_pubkey[1:])[12:]",
+        "signature digest = keccak256(compact vote bytes)",
+        "recoverable signatures for ecrecover, not CometBFT's existing crypto/secp256k1 mode"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "verifyCommitCompact returns true and consumes every bitmap-selected signature.",
+      "execution_row": "verifyCommitCompact",
+      "calldata_row": "commit-compact-50"
+    },
+    {
+      "id": "canonical-vote-reconstruct",
+      "group": "canonical-vote",
+      "question": "What is the cost of reconstructing CometBFT CanonicalVote sign bytes from typed inputs?",
+      "model": "Solidity reconstructs the exact canonical vote protobuf bytes for a shared typed vote shape.",
+      "assumptions": [
+        "vote type is PrecommitType",
+        "block ID contains one PartSetHeader",
+        "timestamp encoded as seconds+nanos protobuf Timestamp"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "keccak256(reconstructed) equals keccak256(fixture canonical.vote.signBytes[i]) for every signer.",
+      "execution_row": "reconstructCanonicalVoteSignBytes",
+      "calldata_row": "canonical-vote-reconstruct"
+    },
+    {
+      "id": "canonical-vote-reconstruct-hash",
+      "group": "canonical-vote",
+      "question": "What is the cost of reconstructing and hashing CometBFT CanonicalVote sign bytes?",
+      "model": "Solidity reconstructs canonical vote protobuf bytes and returns keccak256 of the reconstructed bytes.",
+      "assumptions": [
+        "same typed vote shape as canonical-vote-reconstruct",
+        "hash is keccak256 for the EVM secp256k1eth verifier path"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "hashCanonicalVoteSignBytes equals keccak256(fixture canonical.vote.signBytes[i]).",
+      "execution_row": "hashCanonicalVoteSignBytes",
+      "calldata_row": "canonical-vote-reconstruct-hash"
+    },
+    {
+      "id": "canonical-vote-reconstruct-secp256k1",
+      "group": "canonical-vote",
+      "question": "What is the cost of reconstructing canonical vote bytes, hashing them, and verifying one secp256k1eth signature?",
+      "model": "Solidity reconstructs canonical vote protobuf bytes, hashes them with keccak256, and verifies the fixture secp256k1eth signature with ecrecover.",
+      "assumptions": [
+        "signature uses the EVM secp256k1eth fixture, not ed25519",
+        "component row verifies one signer"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "verifyCanonicalVoteSecp256k1 returns true for the fixture signer and signature.",
+      "execution_row": "verifyCanonicalVoteSecp256k1",
+      "calldata_row": "canonical-vote-reconstruct-secp256k1"
+    },
+    {
+      "id": "ics23-wire-existence-decode-depth8",
+      "group": "ICS23/IAVL",
+      "question": "What does decoding raw cosmos.ics23.v1.ExistenceProof calldata cost before verification?",
+      "model": "Wire-format IAVL existence proof known-field decoder for ExistenceProof, LeafOp, and repeated InnerOp.",
+      "assumptions": [
+        "existence proof only",
+        "unknown protobuf fields are skipped under proof-size and proof-depth caps",
+        "happy-path-only gas is in ics23_happy_path_gas"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "decoded proof depth and key hash equal the Go iavl/ics23 reference fixture.",
+      "execution_row": "decodeIcs23IavlExistenceProof",
+      "calldata_row": "ics23-iavl-existence-decode-depth8"
+    },
+    {
+      "id": "ics23-wire-existence-verify-depth8",
+      "group": "ICS23/IAVL",
+      "question": "What does raw cosmos.ics23.v1.ExistenceProof calldata decoding plus IAVL verification cost?",
+      "model": "Wire-format IAVL existence proof known-field decoder; validates SHA256 hash op, NO_HASH key prehash, SHA256 value prehash, VAR_PROTO length op, IAVL leaf prefix marker, and inner hash/suffix markers.",
+      "assumptions": [
+        "existence proof only",
+        "non-existence proof out of scope",
+        "CommitmentProof wrapper reported separately only if added",
+        "unknown protobuf fields are skipped under proof-size and proof-depth caps",
+        "aggregate Forge rows include negative tests; happy-path-only gas is in ics23_happy_path_gas"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "decoded proof root equals the Go iavl/ics23 reference root; wrong key/value/prefix/hash/length reject.",
+      "execution_row": "verifyIcs23IavlExistenceProof(bytes32,bytes,bytes,bytes)",
+      "calldata_row": "ics23-iavl-existence-verify-depth8"
+    },
+    {
+      "id": "ics23-wire-existence-verify-depth16",
+      "group": "ICS23/IAVL",
+      "question": "What does the maximum supported raw IAVL ExistenceProof depth fixture cost?",
+      "model": "Same wire-format IAVL existence proof known-field decoder and verifier as depth8, using the generated max-depth fixture.",
+      "assumptions": [
+        "current generated maximum depth is 16",
+        "contract cap is ICS23_MAX_DEPTH = 32",
+        "non-existence proof out of scope"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "decoded proof root equals the Go iavl/ics23 reference root for the max-depth fixture.",
+      "execution_row": "verifyIcs23IavlExistenceProof(bytes32,bytes,bytes,bytes)",
+      "calldata_row": "ics23-iavl-existence-verify-depth16"
+    },
+    {
+      "id": "bls-a-supplied-aggregate",
+      "group": "BLS-A",
+      "question": "What does the smallest real EIP-2537 BLS aggregate verification cost when the aggregate pubkey, aggregate signature, and H(m) are supplied?",
+      "model": "Off-chain aggregate pubkey, off-chain aggregate signature, supplied H(m), one shared precommit message for the committed block.",
+      "assumptions": [
+        "same-message BLS aggregation over one shared precommit message",
+        "H(m) precomputed off-chain",
+        "protocol changes CometBFT per-signer timestamped vote bytes into one shared precommit message",
+        "production protocol needs BLS rogue-key mitigation such as proof-of-possession"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "pairing equation e(-G1, sig) * e(aggPubKey, H(m)) == 1 returns true; wrong message/missing signer reject.",
+      "execution_row": "verifyBlsAggregate",
+      "calldata_row": "bls-a-aggregate-verify-supplied-aggregate-pubkey"
+    },
+    {
+      "id": "bls-b-stored-set",
+      "group": "BLS-B",
+      "question": "What does verifying a BLS aggregate cost when pubkeys and powers are stored on-chain by the canonical CometBFT BLS validator-set hash?",
+      "model": "Registration validates canonical 96-byte BLS pubkeys and powers against the fixture's canonical CometBFT BLS validator-set hash, then stores matching EIP-2537 G1 pubkeys and powers under that hash; verify calldata carries set hash, bitmap, threshold, aggregate signature, and H(m).",
+      "assumptions": [
+        "one-time storage cost excluded from normal verify row",
+        "storeBlsValidatorSet has its own execution and calldata row",
+        "same-message BLS aggregation over one shared precommit message",
+        "bitmap bits above the validator-set length reject",
+        "production protocol needs BLS rogue-key mitigation such as proof-of-possession"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "computed aggregate pubkey from stored signers verifies the aggregate signature and meets threshold power.",
+      "execution_row": "verifyBlsAggregateStoredValidatorSet",
+      "calldata_row": "bls-b-stored-validator-set-bitmap-50"
+    },
+    {
+      "id": "bls-b-store-validator-set",
+      "group": "BLS-B",
+      "question": "What is the one-time gas and calldata cost to store a 50-validator BLS validator set?",
+      "model": "Verify canonical 96-byte BLS pubkeys and powers against the supplied canonical CometBFT validator-set hash, then store matching EIP-2537 G1 pubkeys and powers under that hash.",
+      "assumptions": [
+        "one-time setup/update cost, excluded from the normal verify row",
+        "canonical and EIP-2537 pubkey arrays are the same validator order from the fixture",
+        "production validator registration should verify or otherwise enforce BLS proof-of-possession"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "storeBlsValidatorSet records the set under the supplied canonical hash, rejects a mismatched hash, and returns the canonical hash.",
+      "execution_row": "storeBlsValidatorSet",
+      "calldata_row": "bls-b-store-validator-set-50"
+    },
+    {
+      "id": "bls-c-calldata-set",
+      "group": "BLS-C",
+      "question": "What is the cost when BLS validator pubkeys and powers are supplied in calldata and aggregated on-chain?",
+      "model": "Calldata validator pubkeys and powers, signer bitmap, on-chain aggregate pubkey, supplied aggregate signature and H(m).",
+      "assumptions": [
+        "same-message BLS aggregation over one shared precommit message",
+        "all pubkeys supplied as EIP-2537 G1 bytes",
+        "calldata row matches the same ABI call as execution",
+        "bitmap bits above the validator-set length reject",
+        "production protocol needs BLS rogue-key mitigation such as proof-of-possession"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "computed aggregate pubkey verifies the aggregate signature and threshold power.",
+      "execution_row": "verifyBlsAggregateCalldataValidatorSet",
+      "calldata_row": "bls-c-calldata-validator-set-50"
+    },
+    {
+      "id": "bls-d-multi-message",
+      "group": "BLS-D",
+      "question": "Is per-signer multi-message BLS aggregate verification viable under EIP-2537 without collapsing votes to one shared precommit message?",
+      "model": "N signer-message pairings plus one aggregate-signature pairing, measured for N=10,50,100,175 and compared with the EIP-2537 formula.",
+      "assumptions": [
+        "synthetic valid G1/G2 generator pairs measure precompile cost",
+        "formula = 37,700 + 32,600 * pairCount with pairCount = N + 1",
+        "does not prove signature validity; it prices the required N-pairing shape",
+        "helper calldata rows encode only signerCount and are not production multi-message calldata"
+      ],
+      "fixture": "synthetic EIP-2537 generator pairs",
+      "expected_output": "benchmark returns false for N\u003e1 but charges the N+1-pair precompile cost, proving non-viability by measured slope and formula.",
+      "execution_row": "benchBlsMultiMessagePairing"
+    }
+  ],
+  "execution_gas": [
+    {
+      "function": "verify",
+      "min": 902866,
+      "avg": 906311,
+      "median": 906311,
+      "max": 909757,
+      "calls": 2
+    },
+    {
+      "function": "benchBlsAggregateApprox",
+      "min": 162127,
+      "avg": 325114,
+      "median": 304519,
+      "max": 529293,
+      "calls": 4
+    },
+    {
+      "function": "benchBlsG1AddSignerAggregation",
+      "min": 10011,
+      "avg": 79666,
+      "median": 71242,
+      "max": 166171,
+      "calls": 4
+    },
+    {
+      "function": "benchBlsG2AddSignatureAggregation",
+      "min": 12860,
+      "avg": 103873,
+      "median": 92555,
+      "max": 217524,
+      "calls": 4
+    },
+    {
+      "function": "benchBlsMapFp2ToG2",
+      "min": 36931,
+      "avg": 36931,
+      "median": 36931,
+      "max": 36931,
+      "calls": 1
+    },
+    {
+      "function": "benchBlsMultiMessagePairing",
+      "min": 401618,
+      "avg": 2823911,
+      "median": 2535596,
+      "max": 5822835,
+      "calls": 4
+    },
+    {
+      "function": "benchBlsPairingCheck",
+      "min": 105956,
+      "avg": 105956,
+      "median": 105956,
+      "max": 105956,
+      "calls": 1
+    },
+    {
+      "function": "clientState",
+      "min": 8002,
+      "avg": 8002,
+      "median": 8002,
+      "max": 8002,
+      "calls": 2
+    },
+    {
+      "function": "consensusStates",
+      "min": 9759,
+      "avg": 9759,
+      "median": 9759,
+      "max": 9759,
+      "calls": 1
+    },
+    {
+      "function": "decodeIcs23IavlExistenceProof",
+      "min": 864,
+      "avg": 26620,
+      "median": 22601,
+      "max": 64303,
+      "calls": 5
+    },
+    {
+      "function": "hashCanonicalVoteSignBytes",
+      "min": 11642,
+      "avg": 11642,
+      "median": 11642,
+      "max": 11642,
+      "calls": 1
+    },
+    {
+      "function": "hashHeader",
+      "min": 4159,
+      "avg": 4169,
+      "median": 4169,
+      "max": 4180,
+      "calls": 2
+    },
+    {
+      "function": "hashSimpleValidatorSetBls12381",
+      "min": 165093,
+      "avg": 165093,
+      "median": 165093,
+      "max": 165093,
+      "calls": 1
+    },
+    {
+      "function": "hashSimpleValidatorSetEd25519",
+      "min": 139606,
+      "avg": 139606,
+      "median": 139606,
+      "max": 139606,
+      "calls": 2
+    },
+    {
+      "function": "hashSimpleValidatorSetSecp256k1",
+      "min": 161711,
+      "avg": 161711,
+      "median": 161711,
+      "max": 161711,
+      "calls": 1
+    },
+    {
+      "function": "hashValidatorLeaves",
+      "min": 104009,
+      "avg": 104758,
+      "median": 105133,
+      "max": 105133,
+      "calls": 3
+    },
+    {
+      "function": "hashValidatorSetNative",
+      "min": 1010,
+      "avg": 55591,
+      "median": 55591,
+      "max": 110173,
+      "calls": 2
+    },
+    {
+      "function": "initializeClient",
+      "min": 250884,
+      "avg": 250888,
+      "median": 250884,
+      "max": 250896,
+      "calls": 36
+    },
+    {
+      "function": "pruneConsensusState",
+      "min": 34113,
+      "avg": 34113,
+      "median": 34113,
+      "max": 34113,
+      "calls": 1
+    },
+    {
+      "function": "pruneExpiredConsensusStatesBounded",
+      "min": 91064,
+      "avg": 91064,
+      "median": 91064,
+      "max": 91064,
+      "calls": 1
+    },
+    {
+      "function": "pruneOldestExpiredConsensusState",
+      "min": 39059,
+      "avg": 39059,
+      "median": 39059,
+      "max": 39059,
+      "calls": 1
+    },
+    {
+      "function": "reconstructCanonicalVoteSignBytes",
+      "min": 12140,
+      "avg": 15026,
+      "median": 15145,
+      "max": 15145,
+      "calls": 34
+    },
+    {
+      "function": "seedConsensusStates",
+      "min": 1599169,
+      "avg": 1599169,
+      "median": 1599169,
+      "max": 1599169,
+      "calls": 2
+    },
+    {
+      "function": "storeBlsValidatorSet",
+      "min": 513660,
+      "avg": 5416357,
+      "median": 6396897,
+      "max": 6396897,
+      "calls": 6
+    },
+    {
+      "function": "storeConsensusStateForTest",
+      "min": 123790,
+      "avg": 123790,
+      "median": 123790,
+      "max": 123790,
+      "calls": 1
+    },
+    {
+      "function": "storeValidatorSet",
+      "min": 2253030,
+      "avg": 2253030,
+      "median": 2253030,
+      "max": 2253030,
+      "calls": 1
+    },
+    {
+      "function": "submitMisbehaviour",
+      "min": 369951,
+      "avg": 2574799,
+      "median": 3372706,
+      "max": 4352531,
+      "calls": 9
+    },
+    {
+      "function": "updateAdjacentCalldata",
+      "min": 304281,
+      "avg": 1485212,
+      "median": 1805710,
+      "max": 1805726,
+      "calls": 5
+    },
+    {
+      "function": "updateAdjacentStoredValidatorSet",
+      "min": 555919,
+      "avg": 555919,
+      "median": 555919,
+      "max": 555919,
+      "calls": 1
+    },
+    {
+      "function": "updateNonAdjacentCalldata",
+      "min": 2294401,
+      "avg": 2294401,
+      "median": 2294401,
+      "max": 2294401,
+      "calls": 1
+    },
+    {
+      "function": "verifyAdjacentUpdateCalldata",
+      "min": 6182,
+      "avg": 363175,
+      "median": 16421,
+      "max": 1565413,
+      "calls": 8
+    },
+    {
+      "function": "verifyBlsAggregate",
+      "min": 106536,
+      "avg": 118622,
+      "median": 106536,
+      "max": 203230,
+      "calls": 8
+    },
+    {
+      "function": "verifyBlsAggregateCalldataValidatorSet",
+      "min": 1681,
+      "avg": 97348,
+      "median": 97348,
+      "max": 193016,
+      "calls": 2
+    },
+    {
+      "function": "verifyBlsAggregateStoredValidatorSet",
+      "min": 5334,
+      "avg": 394601,
+      "median": 588235,
+      "max": 590235,
+      "calls": 3
+    },
+    {
+      "function": "verifyCanonicalVoteSecp256k1",
+      "min": 15760,
+      "avg": 15760,
+      "median": 15760,
+      "max": 15760,
+      "calls": 1
+    },
+    {
+      "function": "verifyCommitCompact",
+      "min": 46526,
+      "avg": 287837,
+      "median": 210755,
+      "max": 716478,
+      "calls": 7
+    },
+    {
+      "function": "verifyCommitPrebuiltVoteBytes",
+      "min": 190571,
+      "avg": 190571,
+      "median": 190571,
+      "max": 190571,
+      "calls": 1
+    },
+    {
+      "function": "verifyIavlExistenceProof",
+      "min": 11883,
+      "avg": 17436,
+      "median": 21138,
+      "max": 21138,
+      "calls": 5
+    },
+    {
+      "function": "verifyIcs23IavlExistenceProof(bytes32,bytes)",
+      "min": 73120,
+      "avg": 73120,
+      "median": 73120,
+      "max": 73120,
+      "calls": 1
+    },
+    {
+      "function": "verifyIcs23IavlExistenceProof(bytes32,bytes,bytes,bytes)",
+      "min": 65704,
+      "avg": 69028,
+      "median": 66166,
+      "max": 75215,
+      "calls": 3
+    },
+    {
+      "function": "verifyMembershipProof",
+      "min": 4739,
+      "avg": 4739,
+      "median": 4739,
+      "max": 4739,
+      "calls": 1
+    },
+    {
+      "function": "verifyNonAdjacentUpdateCalldata",
+      "min": 1462190,
+      "avg": 1465199,
+      "median": 1465199,
+      "max": 1468209,
+      "calls": 2
+    }
+  ],
+  "calldata": [
+    {
+      "name": "commit-compact-10",
+      "byte_length": 2500,
+      "zero_bytes": 1682,
+      "nonzero_bytes": 818,
+      "gas_l1_standard": 19816,
+      "gas_l1_floor_eip_7623": 49540,
+      "blob_bytes": 2592
+    },
+    {
+      "name": "commit-compact-50",
+      "byte_length": 10244,
+      "zero_bytes": 6567,
+      "nonzero_bytes": 3677,
+      "gas_l1_standard": 85100,
+      "gas_l1_floor_eip_7623": 212750,
+      "blob_bytes": 10592
+    },
+    {
+      "name": "commit-compact-100",
+      "byte_length": 19780,
+      "zero_bytes": 12573,
+      "nonzero_bytes": 7207,
+      "gas_l1_standard": 165604,
+      "gas_l1_floor_eip_7623": 414010,
+      "blob_bytes": 20448
+    },
+    {
+      "name": "commit-compact-175",
+      "byte_length": 34180,
+      "zero_bytes": 21652,
+      "nonzero_bytes": 12528,
+      "gas_l1_standard": 287056,
+      "gas_l1_floor_eip_7623": 717640,
+      "blob_bytes": 35296
+    },
+    {
+      "name": "commit-prebuilt-vote-bytes-50",
+      "byte_length": 15684,
+      "zero_bytes": 9053,
+      "nonzero_bytes": 6631,
+      "gas_l1_standard": 142308,
+      "gas_l1_floor_eip_7623": 355770,
+      "blob_bytes": 16192
+    },
+    {
+      "name": "adjacent-update-calldata-10",
+      "byte_length": 3652,
+      "zero_bytes": 2410,
+      "nonzero_bytes": 1242,
+      "gas_l1_standard": 29512,
+      "gas_l1_floor_eip_7623": 73780,
+      "blob_bytes": 3776
+    },
+    {
+      "name": "adjacent-update-calldata-50",
+      "byte_length": 13956,
+      "zero_bytes": 9019,
+      "nonzero_bytes": 4937,
+      "gas_l1_standard": 115068,
+      "gas_l1_floor_eip_7623": 287670,
+      "blob_bytes": 14432
+    },
+    {
+      "name": "adjacent-update-mixed-power-50",
+      "byte_length": 13956,
+      "zero_bytes": 9013,
+      "nonzero_bytes": 4943,
+      "gas_l1_standard": 115140,
+      "gas_l1_floor_eip_7623": 287850,
+      "blob_bytes": 14432
+    },
+    {
+      "name": "non-adjacent-update-changed-valset-50",
+      "byte_length": 13956,
+      "zero_bytes": 9016,
+      "nonzero_bytes": 4940,
+      "gas_l1_standard": 115104,
+      "gas_l1_floor_eip_7623": 287760,
+      "blob_bytes": 14432
+    },
+    {
+      "name": "misbehaviour-10",
+      "byte_length": 7332,
+      "zero_bytes": 4859,
+      "nonzero_bytes": 2473,
+      "gas_l1_standard": 59004,
+      "gas_l1_floor_eip_7623": 147510,
+      "blob_bytes": 7584
+    },
+    {
+      "name": "changed-valset-misbehaviour-10",
+      "byte_length": 7332,
+      "zero_bytes": 4858,
+      "nonzero_bytes": 2474,
+      "gas_l1_standard": 59016,
+      "gas_l1_floor_eip_7623": 147540,
+      "blob_bytes": 7584
+    },
+    {
+      "name": "changed-valset-misbehaviour-50",
+      "byte_length": 27940,
+      "zero_bytes": 18072,
+      "nonzero_bytes": 9868,
+      "gas_l1_standard": 230176,
+      "gas_l1_floor_eip_7623": 575440,
+      "blob_bytes": 28864
+    },
+    {
+      "name": "adjacent-update-stored-valset-50",
+      "byte_length": 7332,
+      "zero_bytes": 4494,
+      "nonzero_bytes": 2838,
+      "gas_l1_standard": 63384,
+      "gas_l1_floor_eip_7623": 158460,
+      "blob_bytes": 7584
+    },
+    {
+      "name": "membership-proof-baseline",
+      "byte_length": 548,
+      "zero_bytes": 382,
+      "nonzero_bytes": 166,
+      "gas_l1_standard": 4184,
+      "gas_l1_floor_eip_7623": 10460,
+      "blob_bytes": 576
+    },
+    {
+      "name": "iavl-existence-proof-depth8",
+      "byte_length": 2020,
+      "zero_bytes": 1597,
+      "nonzero_bytes": 423,
+      "gas_l1_standard": 13156,
+      "gas_l1_floor_eip_7623": 32890,
+      "blob_bytes": 2112
+    },
+    {
+      "name": "iavl-existence-proof-depth16",
+      "byte_length": 3812,
+      "zero_bytes": 3037,
+      "nonzero_bytes": 775,
+      "gas_l1_standard": 24548,
+      "gas_l1_floor_eip_7623": 61370,
+      "blob_bytes": 3936
+    },
+    {
+      "name": "ics23-iavl-existence-decode-depth8",
+      "byte_length": 484,
+      "zero_bytes": 73,
+      "nonzero_bytes": 411,
+      "gas_l1_standard": 6868,
+      "gas_l1_floor_eip_7623": 17170,
+      "blob_bytes": 512
+    },
+    {
+      "name": "ics23-iavl-existence-verify-depth8",
+      "byte_length": 708,
+      "zero_bytes": 224,
+      "nonzero_bytes": 484,
+      "gas_l1_standard": 8640,
+      "gas_l1_floor_eip_7623": 21600,
+      "blob_bytes": 736
+    },
+    {
+      "name": "ics23-iavl-existence-verify-depth16",
+      "byte_length": 1092,
+      "zero_bytes": 238,
+      "nonzero_bytes": 854,
+      "gas_l1_standard": 14616,
+      "gas_l1_floor_eip_7623": 36540,
+      "blob_bytes": 1152
+    },
+    {
+      "name": "canonical-vote-reconstruct",
+      "byte_length": 292,
+      "zero_bytes": 195,
+      "nonzero_bytes": 97,
+      "gas_l1_standard": 2332,
+      "gas_l1_floor_eip_7623": 5830,
+      "blob_bytes": 320
+    },
+    {
+      "name": "canonical-vote-reconstruct-hash",
+      "byte_length": 292,
+      "zero_bytes": 195,
+      "nonzero_bytes": 97,
+      "gas_l1_standard": 2332,
+      "gas_l1_floor_eip_7623": 5830,
+      "blob_bytes": 320
+    },
+    {
+      "name": "canonical-vote-reconstruct-secp256k1",
+      "byte_length": 484,
+      "zero_bytes": 298,
+      "nonzero_bytes": 186,
+      "gas_l1_standard": 4168,
+      "gas_l1_floor_eip_7623": 10420,
+      "blob_bytes": 512
+    },
+    {
+      "name": "canonical-validator-set-ed25519-50",
+      "byte_length": 3332,
+      "zero_bytes": 1679,
+      "nonzero_bytes": 1653,
+      "gas_l1_standard": 33164,
+      "gas_l1_floor_eip_7623": 82910,
+      "blob_bytes": 3456
+    },
+    {
+      "name": "canonical-validator-set-secp256k1-50",
+      "byte_length": 8132,
+      "zero_bytes": 6289,
+      "nonzero_bytes": 1843,
+      "gas_l1_standard": 54644,
+      "gas_l1_floor_eip_7623": 136610,
+      "blob_bytes": 8416
+    },
+    {
+      "name": "bls-a-aggregate-verify-supplied-aggregate-pubkey",
+      "byte_length": 836,
+      "zero_bytes": 348,
+      "nonzero_bytes": 488,
+      "gas_l1_standard": 9200,
+      "gas_l1_floor_eip_7623": 23000,
+      "blob_bytes": 864
+    },
+    {
+      "name": "bls-b-store-validator-set-50",
+      "byte_length": 19428,
+      "zero_bytes": 9482,
+      "nonzero_bytes": 9946,
+      "gas_l1_standard": 197064,
+      "gas_l1_floor_eip_7623": 492660,
+      "blob_bytes": 20064
+    },
+    {
+      "name": "bls-b-stored-validator-set-bitmap-50",
+      "byte_length": 740,
+      "zero_bytes": 311,
+      "nonzero_bytes": 429,
+      "gas_l1_standard": 8108,
+      "gas_l1_floor_eip_7623": 20270,
+      "blob_bytes": 768
+    },
+    {
+      "name": "bls-c-calldata-validator-set-50",
+      "byte_length": 12036,
+      "zero_bytes": 6660,
+      "nonzero_bytes": 5376,
+      "gas_l1_standard": 112656,
+      "gas_l1_floor_eip_7623": 281640,
+      "blob_bytes": 12448
+    },
+    {
+      "name": "bls-d-synthetic-helper-pairing-10",
+      "byte_length": 36,
+      "zero_bytes": 31,
+      "nonzero_bytes": 5,
+      "gas_l1_standard": 204,
+      "gas_l1_floor_eip_7623": 510,
+      "blob_bytes": 64
+    },
+    {
+      "name": "bls-d-synthetic-helper-pairing-50",
+      "byte_length": 36,
+      "zero_bytes": 31,
+      "nonzero_bytes": 5,
+      "gas_l1_standard": 204,
+      "gas_l1_floor_eip_7623": 510,
+      "blob_bytes": 64
+    },
+    {
+      "name": "bls-d-synthetic-helper-pairing-100",
+      "byte_length": 36,
+      "zero_bytes": 31,
+      "nonzero_bytes": 5,
+      "gas_l1_standard": 204,
+      "gas_l1_floor_eip_7623": 510,
+      "blob_bytes": 64
+    },
+    {
+      "name": "bls-d-synthetic-helper-pairing-175",
+      "byte_length": 36,
+      "zero_bytes": 31,
+      "nonzero_bytes": 5,
+      "gas_l1_standard": 204,
+      "gas_l1_floor_eip_7623": 510,
+      "blob_bytes": 64
+    }
+  ],
+  "bls_d_multi_message": [
+    {
+      "signers": 10,
+      "pairings": 11,
+      "measured_gas": 401618,
+      "formula_gas": 396300,
+      "overhead_gas": 5318,
+      "formula": "37_700 + 32_600 * (N + 1)",
+      "source": "generated/bls-d-10.txt",
+      "foundry_stable": true
+    },
+    {
+      "signers": 50,
+      "pairings": 51,
+      "measured_gas": 1714446,
+      "formula_gas": 1700300,
+      "overhead_gas": 14146,
+      "formula": "37_700 + 32_600 * (N + 1)",
+      "source": "generated/bls-d-50.txt",
+      "foundry_stable": true
+    },
+    {
+      "signers": 100,
+      "pairings": 101,
+      "measured_gas": 3356747,
+      "formula_gas": 3330300,
+      "overhead_gas": 26447,
+      "formula": "37_700 + 32_600 * (N + 1)",
+      "source": "generated/bls-d-100.txt",
+      "foundry_stable": true
+    },
+    {
+      "signers": 175,
+      "pairings": 176,
+      "measured_gas": 5822835,
+      "formula_gas": 5775300,
+      "overhead_gas": 47535,
+      "formula": "37_700 + 32_600 * (N + 1)",
+      "source": "generated/bls-d-175.txt",
+      "foundry_stable": true
+    }
+  ],
+  "ics23_happy_path_gas": [
+    {
+      "function": "decodeIcs23IavlExistenceProof",
+      "min": 64303,
+      "avg": 64303,
+      "median": 64303,
+      "max": 64303,
+      "calls": 1
+    },
+    {
+      "function": "verifyIcs23IavlExistenceProof",
+      "min": 75215,
+      "avg": 75215,
+      "median": 75215,
+      "max": 75215,
+      "calls": 1
+    }
+  ]
+}

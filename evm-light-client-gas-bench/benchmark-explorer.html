@@ -1,0 +1,3731 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>An EVM light client for CometBFT</title>
+<meta name="description" content="An EVM light client for CometBFT needs a CometBFT-side change. Measured: secp256k1eth compact is the smallest path that fits Ethereum's single-transaction gas cap.">
+<style>
+  /* ============================================================
+     Tokens — Committed × Mathigon. Tinted cream surface, deep ink,
+     one warm coral accent that only appears where the argument lands.
+     ============================================================ */
+  :root {
+    color-scheme: light;
+    --bg:        oklch(96% 0.012 70);
+    --bg-2:      oklch(98.5% 0.008 70);
+    --bg-3:      oklch(94% 0.014 70);
+    --ink:       oklch(22% 0.025 30);
+    --ink-2:     oklch(38% 0.030 30);
+    --ink-3:     oklch(56% 0.030 30);
+    --rule:      oklch(86% 0.012 50);
+    --rule-2:    oklch(80% 0.018 45);
+
+    --coral:     oklch(64% 0.18 32);
+    --coral-2:   oklch(56% 0.20 30);
+    --coral-soft:oklch(82% 0.10 32);
+    --coral-tint:oklch(95.5% 0.045 32);
+
+    --s-secp:    var(--coral);
+    --s-blsa:    oklch(58% 0.07 210);
+    --s-blsb:    oklch(45% 0.10 265);
+    --s-blsc:    oklch(56% 0.10 155);
+    --s-blsd:    oklch(50% 0.15 25);
+    --s-ics23:   oklch(58% 0.06 90);
+    --s-canon:   oklch(50% 0.03 0);
+
+    --shadow:    0 1px 0 oklch(86% 0.012 50), 0 0.5px 0 oklch(99% 0.005 70) inset;
+
+    --t-eyebrow: 0.78rem;
+    --t-mono-s:  0.86rem;
+    --t-body:    1.05rem;
+    --t-lead:    1.22rem;
+    --t-h3:      1.6rem;
+    --t-h2:      2.4rem;
+    --t-h1:      4.2rem;
+    --t-display: clamp(5rem, 12vw, 9.5rem);
+
+    --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, "URW Palladio L", Georgia, serif;
+    --font-body:    "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, "URW Palladio L", Georgia, serif;
+    --font-mono:    "JetBrains Mono", "Fira Code", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --font-sans:    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+    --slide-pad-y: clamp(7vh, 11vh, 13vh);
+    --slide-pad-x: clamp(1.25rem, 5vw, 4rem);
+    --col-w:       min(64rem, 100%);
+    --essay-w:     65ch;
+    --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* ============================================================
+     Reset + base
+     ============================================================ */
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: var(--t-body);
+    line-height: 1.55;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, oklch(94% 0.05 32 / 0.4), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, oklch(94% 0.03 70 / 0.5), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  a { color: inherit; }
+  a:focus-visible { outline: 2px solid var(--coral); outline-offset: 3px; border-radius: 2px; }
+  button { font: inherit; color: inherit; }
+
+  ::selection { background: var(--coral-tint); color: var(--ink); }
+
+  /* ============================================================
+     Reading meter — top edge fills with scroll
+     ============================================================ */
+  .reading-meter {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 3px;
+    background: transparent;
+    z-index: 50;
+    pointer-events: none;
+  }
+  .reading-meter > i {
+    display: block; height: 100%;
+    width: 0;
+    background: var(--coral);
+    transform-origin: left;
+    transition: width 80ms linear;
+  }
+
+  /* ============================================================
+     Meta rail (top-left) and slide nav (right edge)
+     ============================================================ */
+  .meta-rail {
+    position: fixed;
+    top: 1.4rem; left: 1.4rem;
+    z-index: 40;
+    display: flex; flex-direction: column; gap: 0.15rem;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    color: var(--ink-3);
+    letter-spacing: 0.03em;
+  }
+  .meta-rail .brand {
+    color: var(--ink-2);
+    font-weight: 600;
+  }
+  .meta-rail .git { font-feature-settings: "tnum"; }
+
+  .slide-nav {
+    position: fixed;
+    top: 50%; right: 1.5rem;
+    transform: translateY(-50%);
+    z-index: 40;
+  }
+  .slide-nav ol {
+    list-style: none; padding: 0; margin: 0;
+    display: flex; flex-direction: column; gap: 0.55rem;
+  }
+  .slide-nav a {
+    display: grid; grid-template-columns: 1.5rem auto;
+    align-items: center; gap: 0.7rem;
+    text-decoration: none;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-3);
+    padding: 0.15rem 0;
+    transition: color 200ms var(--ease-out);
+  }
+  .slide-nav a .num {
+    color: var(--ink-3);
+    opacity: 0.55;
+    font-feature-settings: "tnum";
+  }
+  .slide-nav a .label {
+    opacity: 0;
+    transform: translateX(-3px);
+    transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out);
+    white-space: nowrap;
+    margin-left: 0.55rem;
+  }
+  .slide-nav:hover a .label,
+  .slide-nav a:focus-visible .label { opacity: 1; transform: translateX(0); }
+  .slide-nav a[aria-current="true"] { color: var(--coral); }
+  .slide-nav a[aria-current="true"] .num { opacity: 1; color: var(--coral); }
+  .slide-nav a[aria-current="true"]::before {
+    content: ""; position: absolute;
+    width: 3px; height: 1.1rem;
+    background: var(--coral);
+    transform: translate(-1.6rem, 0.05rem);
+    border-radius: 2px;
+  }
+  .slide-nav a { position: relative; }
+  @media (max-width: 900px) {
+    .meta-rail, .slide-nav { display: none; }
+  }
+
+  .skip-link {
+    position: absolute; top: -40px; left: 1rem;
+    background: var(--ink); color: var(--bg);
+    padding: 0.4rem 0.8rem; border-radius: 4px;
+    z-index: 60;
+  }
+  .skip-link:focus { top: 1rem; }
+
+  /* ============================================================
+     Slide layout
+     ============================================================ */
+  main.deck { position: relative; z-index: 1; }
+  section.slide {
+    min-height: 100vh;
+    padding: var(--slide-pad-y) var(--slide-pad-x);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  @media (min-width: 900px) {
+    /* Reserve right gutter for the fixed slide-nav rail so wide content
+       (sliders, charts, race-bars) can't reach into it. Top padding is
+       lifted so eyebrows can never sit under the fixed meta-rail. */
+    section.slide {
+      padding-right: calc(var(--slide-pad-x) + 9rem);
+      padding-top: max(var(--slide-pad-y), 6rem);
+    }
+  }
+  section.slide > .slide-inner {
+    width: var(--col-w);
+    position: relative;
+  }
+  section.slide + section.slide::before {
+    content: ""; position: absolute;
+    top: 0; left: 50%; transform: translateX(-50%);
+    width: 12rem; height: 1px;
+    background: var(--rule);
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--t-eyebrow);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    display: inline-flex; align-items: center; gap: 0.7rem;
+  }
+  .eyebrow .dot { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: var(--coral); display: inline-block; }
+  h1, h2, h3 { font-weight: 500; line-height: 1.05; letter-spacing: -0.015em; margin: 0; font-family: var(--font-display); }
+  h1 { font-size: var(--t-h1); }
+  h2 { font-size: var(--t-h2); }
+  h3 { font-size: var(--t-h3); }
+  em { font-style: italic; }
+  code, kbd { font-family: var(--font-mono); font-size: 0.92em; padding: 0.05em 0.32em; background: var(--bg-3); border-radius: 3px; color: var(--ink-2); }
+  p { margin: 0; }
+  p + p { margin-top: 0.85em; }
+  .lead { font-size: var(--t-lead); color: var(--ink-2); max-width: var(--essay-w); }
+  .muted { color: var(--ink-3); }
+  .caption { font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-3); letter-spacing: 0.04em; }
+  .accent { color: var(--coral); }
+
+  /* ============================================================
+     Info popovers — preserved from the calculator. Inline definitions.
+     ============================================================ */
+  .info-wrap { position: relative; display: inline-flex; align-items: center; }
+  button.info {
+    appearance: none; border: 1px solid var(--rule-2); background: var(--bg-2);
+    width: 1.05rem; height: 1.05rem;
+    line-height: 1;
+    border-radius: 50%;
+    font-family: var(--font-mono);
+    font-size: 0.7rem; font-weight: 600;
+    color: var(--ink-3);
+    margin-left: 0.3rem;
+    cursor: help;
+    padding: 0;
+    transition: border-color 150ms var(--ease-out), color 150ms var(--ease-out);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  button.info:hover, button.info:focus-visible { border-color: var(--coral); color: var(--coral); outline: none; }
+  .info-pop {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 0.4rem); left: 50%; transform: translate(-50%, 4px);
+    width: min(22rem, 80vw);
+    background: var(--bg-2);
+    border: 1px solid var(--rule-2);
+    box-shadow: 0 12px 24px -16px oklch(20% 0.04 30 / 0.4);
+    padding: 0.7rem 0.85rem;
+    border-radius: 6px;
+    font-size: 0.85rem; line-height: 1.5;
+    color: var(--ink-2);
+    opacity: 0; visibility: hidden;
+    transition: opacity 140ms var(--ease-out), transform 140ms var(--ease-out);
+    z-index: 30;
+  }
+  .info-pop .term {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--coral);
+    margin-bottom: 0.35rem;
+  }
+  .info-pop code { background: var(--bg-3); }
+  .info-wrap:hover .info-pop,
+  .info-wrap:focus-within .info-pop { display: block; opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+  .info-pop em { color: var(--ink); }
+
+  /* ============================================================
+     Slide 01 — Cover (verdict)
+     ============================================================ */
+  .cover {
+    text-align: left;
+  }
+  .cover h1 {
+    font-size: clamp(2.4rem, 5.6vw, 4.8rem);
+    font-weight: 400;
+    line-height: 1.0;
+    margin-top: 0;
+    margin-bottom: 1rem;
+    letter-spacing: -0.025em;
+    max-width: 18ch;
+  }
+  .cover h1 em { color: var(--coral); }
+  .cover .verdict-rule {
+    display: block;
+    width: 5rem; height: 2px;
+    background: var(--coral);
+    margin: 1rem 0;
+  }
+  .cover .lede { max-width: 54ch; }
+  .cover .cover-foot {
+    margin-top: 2rem;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, auto));
+    gap: 2.4rem;
+    align-items: end;
+  }
+  .cover .cover-foot .stat .num { font-family: var(--font-display); font-size: 2.1rem; line-height: 1; font-feature-settings: "tnum"; }
+  .cover .cover-foot .stat .lbl { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 0.4rem; }
+  .cover .cover-foot .stat .num em { color: var(--coral); font-style: italic; }
+  @media (max-width: 560px) {
+    .cover .cover-foot {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.85rem;
+    }
+    .cover .cover-foot .stat .num { font-size: 1.55rem; }
+    .cover .cover-foot .stat .lbl { font-size: 0.62rem; letter-spacing: 0.04em; }
+  }
+
+  .cover .scroll-hint {
+    position: absolute;
+    bottom: 2.5rem; left: 50%; transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    color: var(--ink-3);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+  }
+  .cover .scroll-hint::after {
+    content: "";
+    width: 1px; height: 1.6rem;
+    background: var(--rule-2);
+    animation: scrollHint 1.8s var(--ease-out) infinite;
+  }
+  @keyframes scrollHint {
+    0%, 100% { transform: scaleY(0.3); transform-origin: top; opacity: 0.5; }
+    50%      { transform: scaleY(1); transform-origin: top; opacity: 1; }
+  }
+
+  /* ============================================================
+     Slide 02 — The gap (essay + animated diagram)
+     ============================================================ */
+  .gap-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: clamp(2rem, 5vw, 4.5rem);
+    align-items: center;
+  }
+  @media (max-width: 920px) { .gap-grid { grid-template-columns: minmax(0, 1fr); } }
+  .gap-essay h2 { margin-bottom: 0.7rem; max-width: 18ch; }
+  .gap-essay p { color: var(--ink-2); max-width: 38ch; }
+  .gap-essay p + p { margin-top: 0.7em; }
+  .gap-essay em { color: var(--coral); font-style: italic; }
+
+  .gap-flow {
+    position: relative;
+    background: var(--bg-2);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 1.4rem 1.2rem;
+    box-shadow: var(--shadow);
+  }
+  .gap-flow .flow-title {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+  .gap-flow .flow-row {
+    display: grid;
+    grid-template-columns: 7.4rem 1fr 7.4rem;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.7rem 0;
+  }
+  .gap-flow .flow-row + .flow-row { border-top: 1px dashed var(--rule); }
+  .gap-flow .node {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    border: 1px solid var(--rule-2);
+    background: var(--bg);
+    padding: 0.5rem 0.6rem;
+    border-radius: 4px;
+    text-align: center;
+    color: var(--ink-2);
+  }
+  .gap-flow .node.curve { font-weight: 600; }
+  .gap-flow .arrow {
+    position: relative;
+    height: 1.4rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gap-flow .arrow svg { width: 100%; height: 100%; overflow: visible; }
+  .gap-flow .arrow path { stroke: var(--ink-3); stroke-width: 1.2; fill: none; }
+  .gap-flow .arrow .head { fill: var(--ink-3); }
+  .gap-flow .verdict {
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink-2);
+    padding: 0.4rem 0.6rem;
+    border-radius: 3px;
+    background: var(--bg-3);
+  }
+  .gap-flow .row-bad .verdict { color: var(--s-blsd); background: oklch(95% 0.04 25); }
+  .gap-flow .row-good .verdict { color: var(--coral-2); background: var(--coral-tint); }
+  .gap-flow .row-good .arrow path { stroke: var(--coral); }
+  .gap-flow .row-good .arrow .head { fill: var(--coral); }
+  .gap-flow .row-bad .arrow path { stroke-dasharray: 3 3; }
+  .gap-flow .row-bad .arrow .strike {
+    stroke: var(--s-blsd);
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+  .gap-flow .row-good .node.curve { color: var(--coral); border-color: var(--coral-soft); background: var(--coral-tint); }
+  .gap-flow .row-cond .verdict { color: var(--ink-2); background: var(--bg-3); }
+  .gap-flow .row-cond .arrow path { stroke: var(--ink-3); stroke-dasharray: 1 3; }
+  .gap-flow .flow-foot {
+    grid-column: 1 / -1;
+    margin-top: 0.6rem;
+    padding-top: 0.6rem;
+    border-top: 1px dashed var(--rule);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink-3);
+  }
+  .gap-flow .flow-foot sup { color: var(--coral); font-weight: 600; }
+
+  /* ============================================================
+     Slide 02 — Quorum math panel (right of essay)
+     ============================================================ */
+  .quorum-math {
+    background: var(--bg-2);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 1.4rem 1.6rem 1.2rem;
+    font-family: var(--font-mono);
+    font-size: 0.86rem;
+    color: var(--ink-2);
+    align-self: start;
+  }
+  .quorum-math .qm-title {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--ink);
+    margin-bottom: 1rem;
+    letter-spacing: -0.005em;
+  }
+  .quorum-math .qm-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.4rem 0;
+    font-feature-settings: "tnum";
+  }
+  .quorum-math .qm-row em {
+    color: var(--ink);
+    font-style: italic;
+    font-family: var(--font-display);
+    font-weight: 500;
+  }
+  .quorum-math .qm-lbl { color: var(--ink-3); }
+  .quorum-math .qm-val { color: var(--ink); }
+  .quorum-math .qm-rule {
+    border-top: 1px solid var(--ink-3);
+    margin: 0.5rem 0 0.4rem;
+  }
+  .quorum-math .qm-total .qm-val {
+    color: var(--coral);
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.15rem;
+    letter-spacing: -0.01em;
+  }
+  .quorum-math .qm-block .qm-val { color: var(--ink-2); }
+  .quorum-math .qm-foot {
+    margin-top: 0.9rem;
+    padding-top: 0.7rem;
+    border-top: 1px dashed var(--rule);
+    font-size: 0.78rem;
+    color: var(--ink-2);
+  }
+  .quorum-math .qm-foot em { color: var(--coral); font-style: italic; font-weight: 600; }
+
+  /* ============================================================
+     Slide 04 — Two candidates (secp simple vs BLS obvious)
+     ============================================================ */
+  .candidates h2 { max-width: 22ch; margin-bottom: 0.7rem; }
+  .candidates .lead { max-width: 70ch; margin-bottom: 1.8rem; }
+  .cand-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.4rem;
+    margin-top: 0.6rem;
+  }
+  @media (max-width: 920px) { .cand-grid { grid-template-columns: minmax(0, 1fr); } }
+  .cand {
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 1.5rem 1.6rem 1.4rem;
+    background: var(--bg-2);
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 0.9rem;
+    min-width: 0;
+  }
+  .cand.simple { border-color: var(--coral-soft); background: var(--coral-tint); }
+  .cand-tag {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .cand.simple .cand-tag { color: var(--coral-2); }
+  .cand-name {
+    font-family: var(--font-display);
+    font-size: 1.7rem;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .cand.simple .cand-name em { color: var(--coral); font-style: italic; }
+  .cand-mech {
+    color: var(--ink-2);
+    font-size: 0.95rem;
+    line-height: 1.55;
+    max-width: 50ch;
+    overflow-wrap: anywhere;
+  }
+  .cand-mech em { color: var(--coral); font-style: italic; font-weight: 600; }
+  .cand-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem 1.4rem;
+    margin: 0.5rem 0 0;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--rule);
+  }
+  .cand-stats > div { display: flex; flex-direction: column; gap: 0.25rem; }
+  .cand-stats dt {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-3);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .cand-stats dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    color: var(--ink);
+    font-feature-settings: "tnum";
+  }
+  .cand-stats dt em { color: var(--coral); font-style: italic; }
+  .cand-takeaway {
+    margin-top: 1.6rem;
+    padding: 1rem 1.3rem;
+    border-left: none;
+    background: var(--bg-3);
+    border-radius: 6px;
+    border: 1px solid var(--rule);
+  }
+  .cand-takeaway p {
+    margin: 0;
+    color: var(--ink-2);
+    max-width: 70ch;
+    font-size: 0.95rem;
+  }
+  .cand-takeaway em { color: var(--coral); font-style: italic; font-weight: 600; }
+
+  /* ============================================================
+     Widgets: N slider, dollar knobs, toggle pill
+     ============================================================ */
+  .widget {
+    margin-top: 2rem;
+    padding: 1.1rem 1.3rem;
+    background: var(--bg-2);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 1.1rem 1.5rem;
+    box-shadow: var(--shadow);
+  }
+  .widget .w-label {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+  }
+  .widget .w-value {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-feature-settings: "tnum";
+    color: var(--coral);
+    font-style: italic;
+    min-width: 4ch;
+    display: inline-block;
+  }
+  .nseg {
+    display: inline-flex;
+    border: 1px solid var(--rule-2);
+    border-radius: 999px;
+    padding: 2px;
+    background: var(--bg);
+  }
+  .nseg button {
+    border: 0; background: transparent;
+    padding: 0.32rem 0.85rem;
+    font-family: var(--font-mono); font-size: 0.82rem;
+    color: var(--ink-2);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 200ms var(--ease-out), color 200ms var(--ease-out);
+  }
+  .nseg button[aria-checked="true"],
+  .nseg button[aria-pressed="true"] {
+    background: var(--coral); color: var(--bg-2);
+  }
+  .nseg button:hover:not([aria-checked="true"]):not([aria-pressed="true"]) { background: var(--bg-3); }
+
+  .slider-row {
+    display: flex; align-items: center; gap: 1rem;
+    flex: 1 1 18rem; min-width: 16rem;
+  }
+  input[type="range"].n-range {
+    -webkit-appearance: none; appearance: none;
+    background: transparent;
+    width: 100%;
+    height: 1.4rem;
+  }
+  input[type="range"].n-range::-webkit-slider-runnable-track {
+    height: 3px;
+    background: linear-gradient(to right, var(--coral) 0 var(--n-pct, 25%), var(--rule) var(--n-pct, 25%) 100%);
+    border-radius: 999px;
+  }
+  input[type="range"].n-range::-moz-range-track {
+    height: 3px;
+    background: var(--rule);
+    border-radius: 999px;
+  }
+  input[type="range"].n-range::-moz-range-progress {
+    height: 3px;
+    background: var(--coral);
+    border-radius: 999px;
+  }
+  input[type="range"].n-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 1rem; height: 1rem;
+    border-radius: 50%;
+    background: var(--coral);
+    border: 2px solid var(--bg-2);
+    box-shadow: 0 0 0 1px var(--coral);
+    margin-top: -7px;
+    cursor: pointer;
+    transition: transform 120ms var(--ease-out);
+  }
+  input[type="range"].n-range::-moz-range-thumb {
+    width: 1rem; height: 1rem;
+    border-radius: 50%;
+    background: var(--coral);
+    border: 2px solid var(--bg-2);
+    box-shadow: 0 0 0 1px var(--coral);
+    cursor: pointer;
+  }
+  input[type="range"].n-range:active::-webkit-slider-thumb { transform: scale(1.18); }
+
+  .toggle {
+    display: inline-flex; align-items: center; gap: 0.6rem;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--ink-2);
+  }
+  .toggle input { position: absolute; opacity: 0; pointer-events: none; }
+  .toggle .track {
+    width: 2.2rem; height: 1.15rem;
+    border-radius: 999px;
+    background: var(--rule);
+    position: relative;
+    transition: background 200ms var(--ease-out);
+  }
+  .toggle .track::before {
+    content: "";
+    width: 0.9rem; height: 0.9rem;
+    border-radius: 50%;
+    background: var(--bg);
+    position: absolute;
+    top: 0.125rem; left: 0.125rem;
+    transition: transform 220ms var(--ease-out);
+    box-shadow: 0 1px 2px oklch(20% 0.04 30 / 0.25);
+  }
+  .toggle input:checked + .track { background: var(--coral); }
+  .toggle input:checked + .track::before { transform: translateX(1.05rem); }
+  .toggle input:focus-visible + .track { outline: 2px solid var(--coral); outline-offset: 2px; }
+
+  /* ============================================================
+     Slide 04 — Wall (BLS-D formula + line chart)
+     ============================================================ */
+  .wall { }
+  .wall .head {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: 2.4rem;
+    align-items: end;
+    margin-bottom: 1.6rem;
+  }
+  @media (max-width: 920px) { .wall .head { grid-template-columns: minmax(0, 1fr); } }
+  .wall h2 { margin-bottom: 0.7rem; max-width: 22ch; }
+  .wall .formula {
+    font-family: var(--font-mono);
+    font-size: clamp(1.05rem, 2.2vw, 1.4rem);
+    color: var(--ink-2);
+    letter-spacing: -0.005em;
+    background: var(--bg-2);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 0.95rem 1.1rem;
+    box-shadow: var(--shadow);
+  }
+  .wall .formula .tk { display: inline-block; transition: opacity 380ms var(--ease-out), transform 380ms var(--ease-out); }
+  .wall .formula .tk.coral { color: var(--coral); font-weight: 600; }
+  .wall .formula.in .tk { opacity: 1; transform: translateY(0); }
+  .wall .formula:not(.in) .tk { opacity: 0; transform: translateY(6px); }
+
+  .chart {
+    margin-top: 0.8rem;
+    background: var(--bg-2);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 1.4rem 1.4rem 1.6rem;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+  .chart svg { width: 100%; height: clamp(280px, 42vh, 420px); display: block; overflow: visible; }
+  .chart .axis text { font-family: var(--font-mono); font-size: 11px; fill: var(--ink-3); }
+  .chart .axis .tick line { stroke: var(--rule); stroke-width: 1; }
+  .chart .axis .domain { stroke: var(--rule-2); }
+  .chart .grid line { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 2 4; }
+  .chart .series-blsd-line { stroke: var(--s-blsd); stroke-width: 1.6; fill: none; stroke-dasharray: 4 3; opacity: 0.85; }
+  .chart .series-blsd-dots circle { fill: var(--s-blsd); }
+  .chart .series-secp-line { stroke: var(--coral); stroke-width: 2.2; fill: none; }
+  .chart .series-secp-dots circle { fill: var(--coral); stroke: var(--bg-2); stroke-width: 1.5; }
+  .chart .series-ed-line { stroke: var(--ink); stroke-width: 2.2; fill: none; }
+  .chart .series-ed-line-dashed { stroke: var(--ink-2); stroke-dasharray: 5 4; opacity: 0.85; }
+  .chart .cap-band rect { fill: var(--coral-tint); opacity: 0.85; }
+  .chart .cap-line { stroke: var(--coral); stroke-width: 1; stroke-dasharray: 4 3; opacity: 0.9; }
+  .chart .cap-label { font-family: var(--font-mono); font-size: 10px; fill: var(--coral-2); letter-spacing: 0.02em; }
+  .chart .cross-line { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 2 2; opacity: 0.7; }
+  .chart .cross-label { font-family: var(--font-mono); font-size: 10px; fill: var(--ink-2); letter-spacing: 0.02em; }
+  .chart .block-line { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 2 3; opacity: 0.5; }
+  .chart .block-label { font-family: var(--font-mono); font-size: 10px; fill: var(--ink-3); }
+  .chart .play-line { stroke: var(--ink-2); stroke-width: 1; opacity: 0.45; }
+  .chart .play-dot { fill: var(--coral); stroke: var(--bg-2); stroke-width: 2; }
+  .chart .play-dot-ed { fill: var(--ink); stroke: var(--bg-2); stroke-width: 2; }
+  .chart .legend {
+    position: absolute; top: 1.1rem; right: 1.4rem;
+    display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; justify-content: flex-end;
+    font-family: var(--font-mono); font-size: 0.74rem; color: var(--ink-2);
+    max-width: 70%;
+  }
+  .chart .legend i { display: inline-block; width: 0.85rem; height: 2px; vertical-align: middle; margin-right: 0.4rem; }
+  .chart .legend i.secp { background: var(--coral); }
+  .chart .legend i.blsd { background: var(--s-blsd); }
+  .chart .legend i.ed   { background: var(--ink); }
+  .chart .legend i.block { background: var(--ink-3); opacity: 0.75; }
+  .chart .legend i.cap  {
+    height: 0.7rem; border: 1px solid var(--coral); border-radius: 1px;
+    background:
+      repeating-linear-gradient(135deg, var(--coral-soft) 0 2px, transparent 2px 4px),
+      var(--coral-tint);
+  }
+  .chart .annot {
+    position: absolute;
+    background: var(--bg);
+    border: 1px solid var(--rule-2);
+    border-radius: 4px;
+    padding: 0.5rem 0.7rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink);
+    box-shadow: 0 6px 14px -10px oklch(20% 0.04 30 / 0.5);
+    pointer-events: none;
+    transition: opacity 200ms var(--ease-out), transform 240ms var(--ease-out);
+  }
+  .chart .annot strong { color: var(--coral); font-weight: 600; }
+
+  .wall .ratio {
+    margin-top: 1.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.92rem;
+    color: var(--ink-2);
+    display: flex; flex-wrap: wrap; gap: 0.4rem 1.3rem;
+  }
+  .wall .ratio .num { color: var(--coral); font-weight: 600; }
+
+  /* ============================================================
+     Dismiss-ed25519 toggle (ends slide 03, body class drives the rest)
+     ============================================================ */
+  .dismiss-block {
+    margin-top: 1.6rem;
+    padding-top: 1.2rem;
+    border-top: 1px dashed var(--rule);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .dismiss-prompt {
+    margin: 0;
+    color: var(--ink-2);
+    max-width: 56ch;
+    font-size: 0.92rem;
+  }
+  .dismiss-prompt em { color: var(--coral); font-style: italic; }
+  .dismiss-btn {
+    appearance: none;
+    border: 1px solid var(--coral);
+    background: var(--coral);
+    color: var(--bg);
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    padding: 0.7rem 1.1rem;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 180ms var(--ease-out), color 180ms var(--ease-out), transform 180ms var(--ease-out);
+    white-space: nowrap;
+  }
+  .dismiss-btn:hover { transform: translateY(-1px); }
+  .dismiss-btn:focus-visible { outline: 2px solid var(--coral); outline-offset: 3px; }
+  body.ed25519-dismissed .dismiss-btn {
+    background: transparent;
+    color: var(--coral);
+  }
+
+  /* Default: show "present" state, hide "dismissed" state. */
+  [data-wall-when="dismissed"],
+  [data-dismiss-state="dismissed"] { display: none; }
+
+  /* When ed25519 is dismissed, swap which copy and which series show. */
+  body.ed25519-dismissed [data-wall-when="present"],
+  body.ed25519-dismissed [data-dismiss-state="present"] { display: none; }
+  body.ed25519-dismissed [data-wall-when="dismissed"],
+  body.ed25519-dismissed [data-dismiss-state="dismissed"] { display: inline; }
+  body.ed25519-dismissed p[data-wall-when="dismissed"],
+  body.ed25519-dismissed p[data-dismiss-state="dismissed"] { display: block; }
+
+  /* Hide ed25519 chart elements + budget references (they explain the ed25519 wall). */
+  body.ed25519-dismissed .chart .series-ed-line,
+  body.ed25519-dismissed .chart .play-dot-ed,
+  body.ed25519-dismissed .chart .cap-band,
+  body.ed25519-dismissed .chart .block-ref,
+  body.ed25519-dismissed .chart .cross-line,
+  body.ed25519-dismissed .chart .cross-label,
+  body.ed25519-dismissed [data-wall-legend="ed"],
+  body.ed25519-dismissed [data-wall-legend="cap"],
+  body.ed25519-dismissed [data-wall-legend="block"] { display: none; }
+
+  /* Hide the wall slide formula card after dismiss (it described ed25519). */
+  body.ed25519-dismissed .wall .formula { opacity: 0.25; pointer-events: none; }
+
+  /* Hide ed25519 entries in race bars / cost matrix / cards (added downstream). */
+  body.ed25519-dismissed [data-ed-row] { display: none; }
+
+  /* ============================================================
+     Slide 05 — The catch (vote-byte anatomy + BLS change list)
+     ============================================================ */
+  .catch h2 { max-width: 30ch; margin-bottom: 0.7rem; }
+  .catch .lead { max-width: 78ch; margin-bottom: 1.8rem; }
+  .catch .lead em { color: var(--coral); font-style: italic; font-weight: 600; }
+  .catch-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 1.6rem;
+  }
+  @media (max-width: 1020px) { .catch-grid { grid-template-columns: minmax(0, 1fr); } }
+  .vote-anatomy {
+    background: var(--bg-2);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 1.4rem 1.5rem 1.3rem;
+    min-width: 0;
+  }
+  .va-title {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--ink);
+    margin-bottom: 1.1rem;
+  }
+  .va-stack { display: flex; flex-direction: column; gap: 0.7rem; }
+  .va-validator {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr;
+    gap: 0.9rem;
+    align-items: center;
+  }
+  .va-vlbl {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    color: var(--ink-3);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .va-bytes {
+    display: flex; flex-wrap: wrap; gap: 0.3rem 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-2);
+  }
+  .va-field {
+    padding: 0.18rem 0.45rem;
+    border-radius: 3px;
+    background: var(--bg-3);
+    border: 1px solid var(--rule);
+    font-feature-settings: "tnum";
+  }
+  .va-field em { color: var(--ink); font-style: italic; }
+  .va-field.unique {
+    background: var(--coral-tint);
+    border-color: var(--coral-soft);
+    color: var(--coral-2);
+  }
+  .va-field.unique em { color: var(--coral); font-weight: 600; }
+  .va-field sub { font-size: 0.78em; color: var(--coral); }
+  .va-foot {
+    margin-top: 1.2rem;
+    padding-top: 0.9rem;
+    border-top: 1px dashed var(--rule);
+    font-size: 0.86rem;
+    color: var(--ink-2);
+    line-height: 1.55;
+  }
+  .va-foot em { color: var(--coral); font-style: italic; font-weight: 600; }
+
+  .bls-fork {
+    background: var(--bg-2);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 1.4rem 1.5rem 1.3rem;
+    min-width: 0;
+  }
+  .bf-title {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--ink);
+    margin-bottom: 0.9rem;
+  }
+  .bf-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  .bf-list li {
+    display: grid;
+    grid-template-columns: 2.4rem 1fr;
+    gap: 0.8rem;
+    align-items: baseline;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px dashed var(--rule);
+  }
+  .bf-list li:last-child { border-bottom: none; padding-bottom: 0; }
+  .bf-step {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--coral);
+    font-feature-settings: "tnum";
+    letter-spacing: 0.05em;
+  }
+  .bf-h {
+    font-family: var(--font-display);
+    color: var(--ink);
+    font-size: 1rem;
+    margin-bottom: 0.2rem;
+  }
+  .bf-d {
+    font-size: 0.86rem;
+    color: var(--ink-2);
+    line-height: 1.5;
+    max-width: 50ch;
+  }
+  .bf-d code { background: var(--bg-3); }
+  .bf-foot {
+    margin-top: 1rem;
+    padding-top: 0.8rem;
+    border-top: 1px dashed var(--rule);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink-3);
+    font-style: italic;
+  }
+
+  /* ============================================================
+     Slide 06 — No shortcut (BLS-D priced)
+     ============================================================ */
+  .noshortcut .head {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 2rem;
+    align-items: end;
+    margin-bottom: 1.6rem;
+  }
+  @media (max-width: 920px) { .noshortcut .head { grid-template-columns: minmax(0, 1fr); } }
+  .noshortcut h2 { max-width: 22ch; margin-bottom: 0.6rem; }
+  .noshortcut .lead { max-width: 64ch; }
+  .bls-d-formula {
+    background: var(--bg-2);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 1rem 1.2rem;
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    color: var(--ink);
+    display: flex; flex-wrap: wrap; gap: 0.4rem;
+    align-items: baseline;
+    font-feature-settings: "tnum";
+  }
+  .bls-d-formula .tk { display: inline-block; }
+  .bls-d-formula .tk.coral { color: var(--coral); font-weight: 600; }
+
+  .blsd-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 1.6rem;
+  }
+  @media (max-width: 920px) { .blsd-grid { grid-template-columns: minmax(0, 1fr); } }
+
+  .blsd-table {
+    background: var(--bg-2);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 0.6rem 1rem 0.8rem;
+    font-family: var(--font-mono);
+    font-size: 0.92rem;
+  }
+  .bt-row {
+    display: grid;
+    grid-template-columns: 0.6fr 0.6fr 1fr 1fr;
+    gap: 0.7rem;
+    padding: 0.7rem 0.2rem;
+    border-bottom: 1px dashed var(--rule);
+    align-items: baseline;
+    font-feature-settings: "tnum";
+  }
+  .bt-row:last-child { border-bottom: none; }
+  .bt-row.bt-head {
+    color: var(--ink-3);
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .bt-row em { color: var(--coral); font-style: italic; }
+  .bt-row .bt-gas { color: var(--ink); font-weight: 500; }
+  .bt-row .bt-ratio { color: var(--ink-2); }
+
+  .blsd-takeaway {
+    align-self: start;
+  }
+  .blsd-takeaway p {
+    margin: 0 0 0.9rem;
+    color: var(--ink-2);
+    font-size: 0.95rem;
+    max-width: 46ch;
+    line-height: 1.55;
+  }
+  .blsd-takeaway p:last-child { margin-bottom: 0; }
+  .blsd-takeaway em { color: var(--coral); font-style: italic; font-weight: 600; }
+
+  /* ============================================================
+     Slide 07 — The simple option (secp changes + race-bars)
+     ============================================================ */
+  .simple-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: 1.8rem;
+  }
+  @media (max-width: 1020px) { .simple-grid { grid-template-columns: minmax(0, 1fr); } }
+  .secp-changes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  .secp-changes li {
+    display: grid;
+    grid-template-columns: 4.3rem 1fr;
+    gap: 0.9rem;
+    align-items: baseline;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px dashed var(--rule);
+  }
+  .secp-changes li:last-child { border-bottom: none; }
+  .secp-changes .sc-tag {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.18rem 0.4rem;
+    border-radius: 3px;
+    text-align: center;
+  }
+  .secp-changes .sc-tag.changes {
+    color: var(--coral-2);
+    background: var(--coral-tint);
+    border: 1px solid var(--coral-soft);
+  }
+  .secp-changes .sc-tag.stays {
+    color: var(--ink-3);
+    background: var(--bg-3);
+    border: 1px solid var(--rule);
+  }
+  .secp-changes strong {
+    font-family: var(--font-display);
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 1rem;
+    margin-right: 0.4rem;
+  }
+  .secp-changes li > div {
+    color: var(--ink-2);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+  .secp-changes code { background: var(--bg-3); }
+
+  /* ============================================================
+     Slide 07 — Comparison race bars (existing styles, kept)
+     ============================================================ */
+  .compare { }
+  .compare h2 { margin-bottom: 0.5rem; }
+  .compare .lead { margin-bottom: 1.6rem; }
+  .race {
+    display: flex; flex-direction: column; gap: 0.85rem;
+    margin-top: 1rem;
+  }
+  .race-row {
+    display: grid;
+    grid-template-columns: 11.5rem 1fr 9rem;
+    align-items: center; gap: 1rem;
+    transition: opacity 220ms var(--ease-out), filter 220ms var(--ease-out);
+  }
+  .race-row .nm {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    color: var(--ink);
+  }
+  .race-row .nm em { font-style: italic; color: var(--coral); }
+  .race-row .nm .badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    color: var(--ink-3);
+    border: 1px solid var(--rule-2);
+    border-radius: 3px;
+    padding: 0 0.35rem;
+    margin-left: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+  .race-row .bar-wrap {
+    height: 1.35rem;
+    background: var(--bg-3);
+    border-radius: 4px;
+    position: relative; overflow: hidden;
+  }
+  .race-row .bar {
+    height: 100%;
+    border-radius: 4px;
+    transform-origin: left;
+    transform: scaleX(0);
+    transition: transform 700ms var(--ease-out), background 200ms var(--ease-out);
+  }
+  .race-row .num {
+    font-family: var(--font-mono);
+    font-size: 0.92rem;
+    color: var(--ink);
+    text-align: right;
+    font-feature-settings: "tnum";
+  }
+  .race-row .num em { color: var(--coral); font-style: italic; font-family: var(--font-display); font-size: 1.1rem; }
+  .race-row.is-conditional { opacity: 0.45; filter: saturate(0.6); }
+  .race-row.is-conditional .num { text-decoration: line-through; }
+  .race-row.recommended { }
+  .race-row.recommended .nm { font-weight: 500; }
+  .race-row.recommended::before {
+    content: "★";
+    color: var(--coral);
+    font-size: 1rem;
+    position: absolute;
+    transform: translate(-1.2rem, 0.05rem);
+  }
+  .race-row { position: relative; }
+  @media (max-width: 560px) {
+    .race-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.35rem 0.75rem;
+    }
+    .race-row .nm { min-width: 0; overflow-wrap: anywhere; }
+    .race-row .bar-wrap { grid-column: 1 / -1; grid-row: 2; }
+    .race-row.recommended::before { transform: translate(-0.9rem, 0.05rem); }
+  }
+  .compare .legend {
+    margin-top: 1.2rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink-3);
+  }
+
+  /* ============================================================
+     Slide 06 — Cost in dollars
+     ============================================================ */
+  .cost h2 { margin-bottom: 1rem; }
+  .cost .dollarHero {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: clamp(3.5rem, 9vw, 7rem);
+    line-height: 1;
+    color: var(--ink);
+    font-feature-settings: "tnum";
+    letter-spacing: -0.025em;
+  }
+  .cost .dollarHero .sym { color: var(--coral); font-style: normal; margin-right: 0.05em; }
+  .cost .dollarSub {
+    margin-top: 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.92rem;
+    color: var(--ink-2);
+  }
+  .cost .knobs {
+    margin-top: 2rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.4rem;
+  }
+  @media (max-width: 720px) { .cost .knobs { grid-template-columns: minmax(0, 1fr); } }
+  .knob {
+    background: var(--bg-2);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    box-shadow: var(--shadow);
+  }
+  .knob .top {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 0.7rem;
+  }
+  .knob .lbl {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+  }
+  .knob .val {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.4rem;
+    color: var(--coral);
+    font-feature-settings: "tnum";
+  }
+  .knob input[type="range"] { width: 100%; }
+  .knob .ticks {
+    display: flex; justify-content: space-between;
+    font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-3);
+    margin-top: 0.3rem;
+  }
+  .cost .matrix {
+    margin-top: 2rem;
+    display: grid;
+    grid-template-columns: 11rem 1fr 7rem;
+    gap: 0.6rem 1rem;
+    align-items: center;
+  }
+  .cost .matrix .cell {
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    color: var(--ink-2);
+    font-feature-settings: "tnum";
+  }
+  .cost .matrix .cell .nm em { color: var(--coral); font-style: italic; font-family: var(--font-display); }
+  .cost .matrix .bar {
+    height: 0.6rem; border-radius: 3px; background: var(--bg-3); position: relative; overflow: hidden;
+  }
+  .cost .matrix .bar > i {
+    display: block; height: 100%; transform-origin: left; transform: scaleX(0);
+    transition: transform 700ms var(--ease-out);
+  }
+  .cost .matrix .num { text-align: right; }
+  .cost .matrix .num em { color: var(--coral); font-style: italic; font-family: var(--font-display); font-size: 1.05rem; }
+
+  /* ============================================================
+     Slide 07 — ICS23 aside
+     ============================================================ */
+  .ics23 .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: 2.4rem;
+    align-items: center;
+  }
+  @media (max-width: 920px) { .ics23 .layout { grid-template-columns: minmax(0, 1fr); } }
+  .ics23 .panels {
+    background: var(--bg-2);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 1.2rem;
+    box-shadow: var(--shadow);
+  }
+  .ics23 .depth-row {
+    display: grid;
+    grid-template-columns: 4.4rem 1fr 6rem;
+    gap: 0.7rem;
+    align-items: center;
+    padding: 0.85rem 0;
+  }
+  .ics23 .depth-row + .depth-row { border-top: 1px solid var(--rule); }
+  .ics23 .depth {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    color: var(--ink);
+    font-feature-settings: "tnum";
+  }
+  .ics23 .bar { height: 0.6rem; border-radius: 3px; background: var(--bg-3); position: relative; overflow: hidden; }
+  .ics23 .bar > i { display: block; height: 100%; background: var(--s-ics23); transform-origin: left; transform: scaleX(0); transition: transform 700ms var(--ease-out); }
+  .ics23 .totalcell {
+    text-align: right;
+    font-family: var(--font-mono);
+    font-feature-settings: "tnum";
+    font-size: 0.92rem;
+    color: var(--ink);
+  }
+  .ics23 .breakdown {
+    margin-top: 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink-3);
+    display: none;
+  }
+  .ics23.show-breakdown .breakdown { display: block; }
+
+  /* ============================================================
+     Slide 10 — Receipts (methodology)
+     ============================================================ */
+  .receipts { }
+  .receipts .grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.4rem;
+    margin-top: 1.4rem;
+  }
+  @media (max-width: 980px) { .receipts .grid { grid-template-columns: minmax(0, 1fr); } }
+  .receipts .card {
+    background: var(--bg-2);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    box-shadow: var(--shadow);
+  }
+  .receipts .card h3 {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+    margin-bottom: 0.7rem;
+    font-weight: 500;
+  }
+  .receipts dl {
+    display: grid;
+    grid-template-columns: 8.5rem 1fr;
+    gap: 0.4rem 0.9rem;
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+  }
+  .receipts dt { color: var(--ink-3); }
+  .receipts dd { margin: 0; color: var(--ink); word-break: break-all; }
+  .receipts dd em { color: var(--coral); font-style: italic; }
+  .receipts pre {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--ink-2);
+    white-space: pre-wrap;
+  }
+  .receipts pre code { background: transparent; padding: 0; }
+  details.fixtures { margin-top: 0.7rem; }
+  details.fixtures > summary {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--coral);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+  }
+  details.fixtures > summary::-webkit-details-marker { display: none; }
+  details.fixtures > summary::after {
+    content: "+";
+    margin-left: 0.4rem;
+    font-weight: 600;
+    color: var(--coral);
+  }
+  details.fixtures[open] > summary::after { content: "−"; }
+  details.fixtures dl {
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+    margin-top: 0.7rem;
+  }
+  details.fixtures dt { color: var(--ink); font-size: 0.78rem; }
+  details.fixtures dd { color: var(--ink-3); font-size: 0.74rem; }
+
+  /* ============================================================
+     Slide 11 — Closer
+     ============================================================ */
+  .closer { text-align: left; }
+  .closer h2 {
+    font-size: clamp(2rem, 4.8vw, 3.6rem);
+    line-height: 1.05;
+    max-width: 22ch;
+    margin-bottom: 1.6rem;
+  }
+  .closer h2 em { color: var(--coral); }
+
+  .closer-recap {
+    list-style: none;
+    margin: 0 0 1.8rem 0;
+    padding: 0;
+    display: grid;
+    gap: 0;
+    border-top: 1px solid var(--rule);
+  }
+  .closer-recap li {
+    display: grid;
+    grid-template-columns: 12rem 1fr;
+    gap: 1.4rem;
+    align-items: baseline;
+    padding: 1.1rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  @media (max-width: 760px) {
+    .closer-recap li { grid-template-columns: 1fr; gap: 0.4rem; padding: 0.9rem 0; }
+  }
+  .cr-tag {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-3);
+  }
+  .closer-recap li:nth-child(4) .cr-tag { color: var(--coral); }
+  .cr-line {
+    color: var(--ink-2);
+    font-size: 1.02rem;
+    line-height: 1.55;
+    max-width: 64ch;
+  }
+  .cr-line em {
+    color: var(--coral);
+    font-style: italic;
+    font-family: var(--font-display);
+    font-feature-settings: "tnum";
+  }
+  .cr-line code {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+    color: var(--ink-2);
+  }
+  .closer-foot {
+    color: var(--ink-2);
+    font-size: 1rem;
+    line-height: 1.55;
+    max-width: 60ch;
+    margin: 0 0 0.4rem 0;
+  }
+  .closer-foot em { color: var(--coral); font-style: italic; }
+
+  .closer .also {
+    margin-top: 2rem;
+    font-family: var(--font-mono);
+    font-size: 0.86rem;
+    color: var(--ink-3);
+  }
+  .closer .also a { color: var(--coral); text-decoration: none; border-bottom: 1px dashed var(--coral-soft); }
+  .closer .also a:hover { border-bottom-color: var(--coral); }
+
+  /* ============================================================
+     Print
+     ============================================================ */
+  @media print {
+    .meta-rail, .slide-nav, .reading-meter { display: none; }
+    section.slide { min-height: auto; page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#cover">Skip to content</a>
+<div class="reading-meter" aria-hidden="true"><i></i></div>
+
+<header class="meta-rail" aria-label="Document metadata">
+  <div class="brand">EVM light-client gas</div>
+  <div class="git">git <span data-git="commit">…</span></div>
+  <div data-git="date">…</div>
+</header>
+
+<nav class="slide-nav" aria-label="Slides">
+  <ol>
+    <li><a href="#cover"      data-nav="cover"><span class="num">01</span><span class="label">Goal</span></a></li>
+    <li><a href="#setup"      data-nav="setup"><span class="num">02</span><span class="label">What we verify</span></a></li>
+    <li><a href="#wall"       data-nav="wall"><span class="num">03</span><span class="label">The wall</span></a></li>
+    <li><a href="#candidates" data-nav="candidates"><span class="num">04</span><span class="label">Two candidates</span></a></li>
+    <li><a href="#catch"      data-nav="catch"><span class="num">05</span><span class="label">The catch</span></a></li>
+    <li><a href="#noshortcut" data-nav="noshortcut"><span class="num">06</span><span class="label">No shortcut</span></a></li>
+    <li><a href="#simple"     data-nav="simple"><span class="num">07</span><span class="label">The simple option</span></a></li>
+    <li><a href="#cost"       data-nav="cost"><span class="num">08</span><span class="label">In dollars</span></a></li>
+    <li><a href="#ics23"      data-nav="ics23"><span class="num">09</span><span class="label">Membership</span></a></li>
+    <li><a href="#receipts"   data-nav="receipts"><span class="num">10</span><span class="label">Receipts</span></a></li>
+    <li><a href="#closer"     data-nav="closer"><span class="num">11</span><span class="label">The smaller change</span></a></li>
+  </ol>
+</nav>
+
+<main class="deck">
+
+<!-- ====================================================================
+     SLIDE 01 — Cover (goal-led, the wall in three numbers)
+     ==================================================================== -->
+<section id="cover" class="slide cover" data-nav-target="cover">
+  <div class="slide-inner">
+    <h1>Verify a CometBFT commit inside <em>Solidity</em>.</h1>
+    <span class="verdict-rule" aria-hidden="true"></span>
+    <p class="lede lead">
+      A Solidity light client reads CometBFT consensus from inside an Ethereum contract: trust-minimised bridges, IBC-style state proofs, on-chain reads of Cosmos chains. The cost lives in the signature scheme. CometBFT signs <code>ed25519</code> today, and the EVM has no <code>ed25519</code> precompile<span data-info="precompile"></span>: each signature has to re-implement the curve in Solidity. We measured one verify, walked it up to a real quorum, and watched it leave Ethereum&rsquo;s single-transaction budget.
+    </p>
+    <div class="cover-foot">
+      <div class="stat">
+        <div class="num" data-cover="edPerSig">…</div>
+        <div class="lbl">gas per <em>ed25519</em> verify (Solidity)</div>
+      </div>
+      <div class="stat">
+        <div class="num" data-cover="ed25519q50">…</div>
+        <div class="lbl"><em>quorum</em> gas at <em>N=50</em> (34 signers)</div>
+      </div>
+      <div class="stat">
+        <div class="num"><em data-cover="edCapRatio">…</em></div>
+        <div class="lbl">vs. Ethereum&rsquo;s <em>single-tx cap</em> (16.78M gas)</div>
+      </div>
+    </div>
+    <div class="scroll-hint" aria-hidden="true">scroll</div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     SLIDE 02 — What we verify (ed25519 setup, quorum math panel)
+     ==================================================================== -->
+<section id="setup" class="slide" data-nav-target="setup">
+  <div class="slide-inner">
+    <div class="gap-grid">
+      <div class="gap-essay">
+        <span class="eyebrow"><span class="dot"></span>02 &middot; What we verify</span>
+        <h2>One signature check per signer. Then ⅔ of them.</h2>
+        <p>To trust a CometBFT read inside Solidity, the contract has to verify a commit at the queried height: more than ⅔ of the validator set, each over their own canonical-vote bytes<span data-info="canonical"></span>. The expensive part is the signature loop. Membership proofs<span data-info="ics23"></span> are priced separately and are the same regardless.</p>
+        <p>CometBFT signs <code>ed25519</code> today. The EVM has no <code>ed25519</code> precompile<span data-info="precompile"></span>, so each signature has to re-implement the curve in Solidity. We measured one verify against a real CometBFT canonical vote: <em data-setup="edPerSig">…</em> gas. There is no headroom in that number to optimise around: it&rsquo;s the curve, in pure Solidity, against a real signature.</p>
+        <p>Quorum is <code>⌊2N/3⌋+1</code> signers, each at the per-verify cost above. At <em>N=50</em>, that&rsquo;s 34 signers. Ethereum&rsquo;s single-transaction gas cap is 16,777,216 gas; the block gas limit is a separate moving budget. The arithmetic is the next slide.</p>
+      </div>
+      <aside class="quorum-math" aria-label="Quorum gas calculation">
+        <div class="qm-title">The quorum, in gas</div>
+        <div class="qm-row">
+          <div class="qm-lbl">per <em>ed25519</em> verify</div>
+          <div class="qm-val" data-setup="edPerSigPanel">…</div>
+        </div>
+        <div class="qm-row">
+          <div class="qm-lbl">× signers at <em>N=50</em></div>
+          <div class="qm-val">× 34</div>
+        </div>
+        <div class="qm-rule"></div>
+        <div class="qm-row qm-total">
+          <div class="qm-lbl">quorum total</div>
+          <div class="qm-val" data-setup="edQuorumPanel">…</div>
+        </div>
+        <div class="qm-row qm-block">
+          <div class="qm-lbl">single-tx cap</div>
+          <div class="qm-val">16,777,216</div>
+        </div>
+        <div class="qm-foot" data-setup="edFootPanel">…</div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     SLIDE 03 — The wall (ed25519 fails, dismiss toggle at the bottom)
+     ==================================================================== -->
+<section id="wall" class="slide wall" data-nav-target="wall">
+  <div class="slide-inner">
+    <div class="head">
+      <div>
+        <span class="eyebrow"><span class="dot"></span>03 &middot; The wall</span>
+        <h2>The quorum doesn&rsquo;t fit.</h2>
+        <p class="lead" data-wall-when="present"><em>ed25519</em> in pure Solidity crosses Ethereum&rsquo;s single-transaction cap at about <em>N&nbsp;=&nbsp;27</em>. At <em>N=50</em>, a 34-signer quorum costs <em>30.81M gas</em>, or <em>1.84×</em> the cap. The line keeps climbing past <em>N=175</em>. Drag the slider to feel the gap. There is no slope-flattening trick: it&rsquo;s the curve, multiplied by signers.</p>
+        <p class="lead" data-wall-when="dismissed">ed25519 hidden. <em>BLS-D</em><span data-info="blsd"></span> and <em>secp256k1eth</em><span data-info="secp"></span> are what&rsquo;s left, both presupposing CometBFT changes the signing scheme. The rest of this page works out which change is the smaller one.</p>
+      </div>
+      <div class="formula" id="formula" aria-label="Gas formulas">
+        <span class="tk">ed25519 quorum</span>
+        <span class="tk">≈</span>
+        <span class="tk coral">906k</span>
+        <span class="tk">×</span>
+        <span class="tk coral">⌊2N/3⌋+1</span>
+      </div>
+    </div>
+
+    <div class="chart" id="wallChart">
+      <div class="legend">
+        <span data-wall-legend="ed"><i class="ed"></i><em>ed25519 quorum</em></span>
+        <span data-wall-legend="cap"><i class="cap"></i>single-tx cap (16.78M)</span>
+        <span data-wall-legend="block"><i class="block"></i>L1 block ref (60M)</span>
+        <span><i class="blsd"></i><em>BLS-D</em></span>
+        <span><i class="secp"></i><em>secp256k1eth</em></span>
+      </div>
+      <svg viewBox="0 0 800 360" preserveAspectRatio="none" aria-label="Gas vs N chart"></svg>
+      <div class="annot" role="status" aria-live="polite"></div>
+    </div>
+
+    <div class="widget" role="group" aria-label="Validator count slider">
+      <span class="w-label">N</span>
+      <div class="slider-row">
+        <input type="range" class="n-range" id="wallSlider" min="10" max="175" step="1" value="50" aria-label="Validator count">
+        <span class="w-value" id="wallSliderVal">50</span>
+      </div>
+      <div class="ratio" id="wallRatio">
+        <span data-wall-legend="ed"><em>ed25519</em>: <span class="num" data-wall="ed">…</span></span>
+        <span><em>BLS-D</em>: <span class="num" data-wall="blsd">…</span></span>
+        <span><em>secp</em>: <span class="num" data-wall="secp">…</span></span>
+        <span data-wall="ratioLine">…</span>
+      </div>
+    </div>
+
+    <div class="dismiss-block">
+      <p class="dismiss-prompt" data-dismiss-state="present">Convinced ed25519 doesn&rsquo;t fit on the EVM? Drop it from every chart on the rest of the page.</p>
+      <p class="dismiss-prompt" data-dismiss-state="dismissed">ed25519 is dropped. The remaining schemes are CometBFT-side changes; the rest of the page works out which change is smaller.</p>
+      <button id="dismissEd" type="button" class="dismiss-btn" aria-pressed="false">
+        <span class="dismiss-label" data-dismiss-state="present">I&rsquo;m convinced. Drop ed25519.</span>
+        <span class="dismiss-label" data-dismiss-state="dismissed">Bring ed25519 back</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     SLIDE 04 — Two candidates (secp simple + BLS obvious-sounding)
+     ==================================================================== -->
+<section id="candidates" class="slide candidates" data-nav-target="candidates">
+  <div class="slide-inner">
+    <span class="eyebrow"><span class="dot"></span>04 &middot; Two candidates</span>
+    <h2>Two ways to make CometBFT fit Ethereum.</h2>
+    <p class="lead">Two paths from here, both CometBFT-side changes. The simple one swaps the signing curve so each signer hits a native EVM precompile<span data-info="precompile"></span>. The obvious-sounding one aggregates every signer&rsquo;s signature into <em>one</em>, so the verifier checks a single thing instead of <code>N</code>.</p>
+
+    <div class="cand-grid">
+      <article class="cand simple" aria-label="Candidate A: secp256k1eth">
+        <div class="cand-tag">simple option</div>
+        <div class="cand-name"><em>secp256k1eth</em></div>
+        <div class="cand-mech">Change CometBFT&rsquo;s signing curve. Each signer is verified on-chain by <code>ecrecover</code><span data-info="ecrecover"></span>: <em>~3,000 gas</em>. The verifier loops over signers, one precompile call each.</div>
+        <dl class="cand-stats">
+          <div><dt>per signer</dt><dd>~3k gas</dd></div>
+          <div><dt>shape in <code>N</code></dt><dd>linear</dd></div>
+          <div><dt>at <em>N=50</em></dt><dd data-cand="secp50">…</dd></div>
+          <div><dt>at <em>N=175</em></dt><dd data-cand="secp175">…</dd></div>
+        </dl>
+      </article>
+
+      <article class="cand aggregate" aria-label="Candidate B: BLS aggregate">
+        <div class="cand-tag">obvious-sounding option</div>
+        <div class="cand-name">BLS aggregate</div>
+        <div class="cand-mech">Aggregate every signer&rsquo;s signature into one. The verifier checks <em>one pairing-check call</em><span data-info="pairing"></span> on the EIP-2537<span data-info="eip2537"></span> precompile, no matter how many signers contributed.</div>
+        <dl class="cand-stats">
+          <div><dt>per verify</dt><dd>1 pairing-check call</dd></div>
+          <div><dt>shape in <code>N</code></dt><dd>constant</dd></div>
+          <div><dt>at <em>N=50</em></dt><dd data-cand="blsa50">…</dd></div>
+          <div><dt>at <em>N=175</em></dt><dd data-cand="blsa175">…</dd></div>
+        </dl>
+      </article>
+    </div>
+
+    <div class="cand-takeaway">
+      <p>On paper, BLS wins past <em data-cand="crossover">…</em> validators: a single pairing-check call eventually beats <code>N</code> ecrecovers. <em>The next slide is the catch.</em></p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     SLIDE 05 — The catch (vote-byte anatomy + the BLS change list)
+     ==================================================================== -->
+<section id="catch" class="slide catch" data-nav-target="catch">
+  <div class="slide-inner">
+    <span class="eyebrow"><span class="dot"></span>05 &middot; The catch</span>
+    <h2>Aggregation needs a shared message. CometBFT doesn&rsquo;t share one.</h2>
+    <p class="lead">Cheap BLS aggregation, the only kind that lands at one pairing-check call on EIP-2537, is <em>FastAggregateVerify</em><span data-info="fastAggregate"></span>: every signer signs the <em>same bytes</em>, the verifier checks <em>one</em> aggregate signature against the aggregate pubkey. CometBFT doesn&rsquo;t sign the same bytes today. Each validator stamps its own <code>Timestamp</code> into its canonical vote.</p>
+
+    <div class="catch-grid">
+      <div class="vote-anatomy" aria-label="Canonical vote bytes anatomy">
+        <div class="va-title">Canonical vote bytes<span data-info="canonical"></span></div>
+        <div class="va-stack">
+          <div class="va-validator">
+            <div class="va-vlbl">validator A</div>
+            <div class="va-bytes">
+              <span class="va-field shared">type=<em>precommit</em></span>
+              <span class="va-field shared">height=<em>H</em></span>
+              <span class="va-field shared">round=<em>R</em></span>
+              <span class="va-field shared">block_id=<em>H(block)</em></span>
+              <span class="va-field shared">chain_id=<em>x</em></span>
+              <span class="va-field unique">timestamp=<em>T<sub>A</sub></em></span>
+            </div>
+          </div>
+          <div class="va-validator">
+            <div class="va-vlbl">validator B</div>
+            <div class="va-bytes">
+              <span class="va-field shared">type=<em>precommit</em></span>
+              <span class="va-field shared">height=<em>H</em></span>
+              <span class="va-field shared">round=<em>R</em></span>
+              <span class="va-field shared">block_id=<em>H(block)</em></span>
+              <span class="va-field shared">chain_id=<em>x</em></span>
+              <span class="va-field unique">timestamp=<em>T<sub>B</sub></em></span>
+            </div>
+          </div>
+          <div class="va-validator">
+            <div class="va-vlbl">validator C</div>
+            <div class="va-bytes">
+              <span class="va-field shared">type=<em>precommit</em></span>
+              <span class="va-field shared">height=<em>H</em></span>
+              <span class="va-field shared">round=<em>R</em></span>
+              <span class="va-field shared">block_id=<em>H(block)</em></span>
+              <span class="va-field shared">chain_id=<em>x</em></span>
+              <span class="va-field unique">timestamp=<em>T<sub>C</sub></em></span>
+            </div>
+          </div>
+        </div>
+        <div class="va-foot">
+          Five fields agree across signers. The <em>timestamp</em> is set locally at signing time<span data-info="adr112"></span>: each validator&rsquo;s bytes differ. Aggregate verification can&rsquo;t treat these as one message; they aren&rsquo;t.
+        </div>
+      </div>
+
+      <aside class="bls-fork" aria-label="What BLS aggregation would demand from CometBFT">
+        <div class="bf-title">What aggregation demands</div>
+        <ol class="bf-list">
+          <li>
+            <span class="bf-step">01</span>
+            <div>
+              <div class="bf-h">Drop the signed timestamp.</div>
+              <div class="bf-d">Replace per-signer <code>Timestamp</code> with a deterministic value (proposer-set, ADR-112<span data-info="adr112"></span>) so every validator&rsquo;s precommit bytes match.</div>
+            </div>
+          </li>
+          <li>
+            <span class="bf-step">02</span>
+            <div>
+              <div class="bf-h">Add an aggregate commit format.</div>
+              <div class="bf-d">Signer bitmap, aggregate signature, absent/nil bitmaps. New block-format field; light-client and IBC headers change.</div>
+            </div>
+          </li>
+          <li>
+            <span class="bf-step">03</span>
+            <div>
+              <div class="bf-h">Require BLS proof-of-possession<span data-info="pop"></span>.</div>
+              <div class="bf-d">Validators submit a PoP at registration; the protocol rejects without one. Mitigates rogue-key attacks under same-message aggregation.</div>
+            </div>
+          </li>
+          <li>
+            <span class="bf-step">04</span>
+            <div>
+              <div class="bf-h">Aggregate at proposer time, not gossip.</div>
+              <div class="bf-d">Keep individual vote gossip for consensus latency; aggregate when building the commit. CometBFT&rsquo;s own RFC-018 reaches the same conclusion.</div>
+            </div>
+          </li>
+          <li>
+            <span class="bf-step">05</span>
+            <div>
+              <div class="bf-h">Rewrite the BLS code path.</div>
+              <div class="bf-d">Today: cgo-gated, default-disabled, 96-byte pubkeys/sigs, no aggregate verifier API, non-PoP DST. None of that is production for same-message aggregation.</div>
+            </div>
+          </li>
+          <li>
+            <span class="bf-step">06</span>
+            <div>
+              <div class="bf-h">Re-derive evidence, vote extensions, mixed key types.</div>
+              <div class="bf-d">Every consensus surface that touches a signature gets re-thought. Slashing evidence presumes per-signer signatures; vote extensions presume per-signer payloads.</div>
+            </div>
+          </li>
+        </ol>
+        <div class="bf-foot">A real protocol fork. Coordinated with the chain operators, validators, IBC counterparties, and every downstream light client.</div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     SLIDE 06 — No shortcut (BLS-D priced)
+     ==================================================================== -->
+<section id="noshortcut" class="slide noshortcut" data-nav-target="noshortcut">
+  <div class="slide-inner">
+    <div class="head">
+      <div>
+        <span class="eyebrow"><span class="dot"></span>06 &middot; No shortcut</span>
+        <h2>Multi-message BLS loses the aggregation advantage.</h2>
+        <p class="lead">If CometBFT can&rsquo;t share one message, can BLS still help? Yes, technically: each validator signs their own bytes, the verifier checks <code>N+1</code> pairs against <code>N</code> different messages. EIP-2537<span data-info="eip2537"></span> prices a pairing check as <em>37,700 + 32,600 × pairs</em>.</p>
+      </div>
+      <div class="bls-d-formula" aria-label="BLS-D gas formula">
+        <span class="tk">BLS-D verify</span>
+        <span class="tk">=</span>
+        <span class="tk">37,700</span>
+        <span class="tk">+</span>
+        <span class="tk coral">32,600</span>
+        <span class="tk">×</span>
+        <span class="tk coral">(N+1)</span>
+      </div>
+    </div>
+
+    <div class="blsd-grid">
+      <div class="blsd-table" role="table" aria-label="Measured BLS-D gas at each anchor">
+        <div class="bt-row bt-head" role="row">
+          <div role="columnheader"><em>N</em></div>
+          <div role="columnheader">pairings</div>
+          <div role="columnheader">measured</div>
+          <div role="columnheader">vs <em>secp</em></div>
+        </div>
+        <div class="bt-row" data-blsd-row="10"  role="row"></div>
+        <div class="bt-row" data-blsd-row="50"  role="row"></div>
+        <div class="bt-row" data-blsd-row="100" role="row"></div>
+        <div class="bt-row" data-blsd-row="175" role="row"></div>
+      </div>
+
+      <div class="blsd-takeaway">
+        <p>
+          <em>BLS-D is linear in N</em>, like secp, but it is <em data-blsd="ratio-range">…</em> heavier than secp across the measured anchors. At <em>N=175</em>, BLS-D burns <em data-blsd="175-gas">…</em>; secp compact burns <em data-blsd="175-secp">…</em>.
+        </p>
+        <p>BLS-D is a synthetic precompile-cost bound, not a production multi-message calldata format. It still needs the BLS code path rewrite (PoP, aggregate API, smaller encoding). The protocol-fork question doesn&rsquo;t go away; only one item drops off the list.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     SLIDE 07 — The simple option (race-bars + secp's small change)
+     ==================================================================== -->
+<section id="simple" class="slide compare" data-nav-target="simple">
+  <div class="slide-inner">
+    <span class="eyebrow"><span class="dot"></span>07 &middot; The simple option</span>
+    <h2>What <em>secp256k1eth</em> asks of CometBFT.</h2>
+    <p class="lead">The headline path is <em>secp256k1eth compact</em>: 65-byte recoverable signatures, Ethereum-style addresses, and Keccak-256 over compact vote fields that preserve today&rsquo;s per-signer vote semantics. The exact canonical-protobuf path is measured separately as a compatibility component.</p>
+
+    <div class="simple-grid">
+      <ul class="secp-changes" aria-label="What secp256k1eth changes in CometBFT">
+        <li><span class="sc-tag changes">changes</span><div><strong>Signing curve.</strong> secp256k1 with Ethereum-style key derivation, Keccak-256 digest, and recoverable (R, S, V) output (the missing recovery byte today).</div></li>
+        <li><span class="sc-tag changes">changes</span><div><strong>Validator addresses.</strong> Last-20-bytes-of-Keccak (Ethereum convention) instead of <code>SHA-256[:20]</code>. The light client compares addresses, not pubkeys.</div></li>
+        <li><span class="sc-tag changes">changes</span><div><strong>Headline signing bytes.</strong> Compact fixed-layout vote fields for the measured verifier path; exact CometBFT canonical protobuf bytes remain a separate compatibility row. Per-signer timestamp semantics stay intact.</div></li>
+        <li><span class="sc-tag stays">stays</span><div><strong>Vote gossip and quorum logic.</strong> Per-signer signatures, per-signer verification, ⅔+ quorum. Nothing in the consensus reactor changes shape.</div></li>
+        <li><span class="sc-tag stays">stays</span><div><strong>Evidence, vote extensions, IBC, mixed key sets.</strong> Untouched. secp256k1 is already on CometBFT&rsquo;s validator-key allow-list.</div></li>
+      </ul>
+
+      <div class="simple-chart">
+        <div class="widget" role="group" aria-label="Comparison controls">
+          <span class="w-label">N</span>
+          <div class="nseg" id="cmpSeg" role="radiogroup" aria-label="Validator count">
+            <button data-n="10"  role="radio" aria-checked="false">10</button>
+            <button data-n="50"  role="radio" aria-checked="true">50</button>
+            <button data-n="100" role="radio" aria-checked="false">100</button>
+            <button data-n="175" role="radio" aria-checked="false">175</button>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="cmpProto" />
+            <span class="track" aria-hidden="true"></span>
+            <span>assume the BLS protocol fork shipped</span>
+          </label>
+        </div>
+
+        <div class="race" id="raceBars" aria-live="polite"></div>
+        <p class="legend" id="cmpLegend">…</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     SLIDE 08 — Cost in dollars
+     ==================================================================== -->
+<section id="cost" class="slide cost" data-nav-target="cost">
+  <div class="slide-inner">
+    <span class="eyebrow"><span class="dot"></span>08 &middot; In dollars</span>
+    <h2>What it costs to verify.</h2>
+    <div class="dollarHero" aria-live="polite"><span class="sym">$</span><span data-cost="hero">…</span></div>
+    <div class="dollarSub" data-cost="sub">…</div>
+
+    <div class="knobs">
+      <div class="knob">
+        <div class="top">
+          <span class="lbl">gas price</span>
+          <span class="val"><span data-cost="gasGwei">…</span> gwei</span>
+        </div>
+        <input type="range" class="n-range" id="gasGweiInput" min="0.1" max="100" step="0.1" value="0.55" aria-label="Gas price (gwei)">
+        <div class="ticks"><span>0.1</span><span>1</span><span>10</span><span>100</span></div>
+      </div>
+      <div class="knob">
+        <div class="top">
+          <span class="lbl">ETH price</span>
+          <span class="val">$<span data-cost="ethUsd">…</span></span>
+        </div>
+        <input type="range" class="n-range" id="ethUsdInput" min="500" max="10000" step="50" value="3000" aria-label="ETH price (USD)">
+        <div class="ticks"><span>$500</span><span>$3k</span><span>$6k</span><span>$10k</span></div>
+      </div>
+    </div>
+
+    <div class="matrix" id="costMatrix" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     SLIDE 09 — Membership (ICS23)
+     ==================================================================== -->
+<section id="ics23" class="slide ics23" data-nav-target="ics23">
+  <div class="slide-inner">
+    <div class="layout">
+      <div>
+        <span class="eyebrow"><span class="dot"></span>09 &middot; Membership</span>
+        <h2>Membership proofs are priced separately.</h2>
+        <p class="lead"><em>ICS23 / IAVL existence proofs</em><span data-info="ics23"></span> verify a key/value under a known root. Orthogonal to which signature scheme the commit uses; pay both.</p>
+        <p class="lead">An existence verify costs <em data-ics23-copy="exec">…</em> execution gas. Depth 16 increases calldata from <em data-ics23-copy="d8cd">…</em> to <em data-ics23-copy="d16cd">…</em> gas; verify gas is the same.</p>
+        <label class="toggle" style="margin-top:1.5rem;">
+          <input type="checkbox" id="ics23Detail">
+          <span class="track" aria-hidden="true"></span>
+          <span>show breakdown</span>
+        </label>
+      </div>
+      <div class="panels">
+        <div class="depth-row">
+          <div class="depth">d=8</div>
+          <div class="bar"><i data-ics23="d8-bar"></i></div>
+          <div class="totalcell" data-ics23="d8-total">…</div>
+          <div class="breakdown" data-ics23="d8-detail" style="grid-column: 1 / -1;">…</div>
+        </div>
+        <div class="depth-row">
+          <div class="depth">d=16</div>
+          <div class="bar"><i data-ics23="d16-bar"></i></div>
+          <div class="totalcell" data-ics23="d16-total">…</div>
+          <div class="breakdown" data-ics23="d16-detail" style="grid-column: 1 / -1;">…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     SLIDE 10 — Receipts (methodology)
+     ==================================================================== -->
+<section id="receipts" class="slide receipts" data-nav-target="receipts">
+  <div class="slide-inner">
+    <span class="eyebrow"><span class="dot"></span>10 &middot; Receipts</span>
+    <h2>Where the numbers come from.</h2>
+    <p class="lead">Measured figures on this page trace to the forge run on the commit listed below. Derived figures are computed in-page from the embedded JSON. The fixtures are content-hashed; you can reproduce these numbers locally.</p>
+
+    <div class="grid">
+      <div class="card">
+        <h3>toolchain</h3>
+        <dl id="toolchainDL"></dl>
+      </div>
+      <div class="card">
+        <h3>reproduce</h3>
+        <pre><code id="reproCmds"></code></pre>
+        <details class="fixtures">
+          <summary>fixture content hashes</summary>
+          <dl id="fixturesDL"></dl>
+        </details>
+      </div>
+      <div class="card">
+        <h3>derived references</h3>
+        <dl id="derivedDL"></dl>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     SLIDE 11 — The smaller change (closer)
+     ==================================================================== -->
+<section id="closer" class="slide closer" data-nav-target="closer">
+  <div class="slide-inner">
+    <span class="eyebrow"><span class="dot"></span>11 &middot; The smaller change</span>
+    <h2>Two CometBFT changes. One is much smaller.</h2>
+
+    <ul class="closer-recap" aria-label="What the page measured">
+      <li><span class="cr-tag">ed25519</span><span class="cr-line">Pure-Solidity verify is <em data-closer="edPerSig">…</em>. A 34-signer quorum at <em>N=50</em> is <em data-closer="edQuorum">…</em>, <em data-closer="edRatio">…</em> the single-tx cap.</span></li>
+      <li><span class="cr-tag">BLS aggregate</span><span class="cr-line">One EIP-2537 pairing-check call lands at <em data-closer="blsa">…</em> at <em>N=50</em>. Conditional on dropping the per-signer signed timestamp, an aggregate commit format, BLS PoP, and a ground-up rewrite of the BLS code path.</span></li>
+      <li><span class="cr-tag">BLS-D</span><span class="cr-line">Without the shared-message fork, verification is <code>N+1</code> pairings: <em data-closer="blsd175">…</em> at <em>N=175</em> before production multi-message calldata.</span></li>
+      <li><span class="cr-tag">secp256k1eth</span><span class="cr-line">A signing-curve swap plus compact EVM signing bytes. Verifier loops <code>ecrecover</code> over signer votes. <em data-closer="secp50">…</em> at <em>N=50</em>; <em data-closer="secp175">…</em> at <em>N=175</em>. No aggregate commit format, no PoP.</span></li>
+    </ul>
+
+    <p class="closer-foot">Both viable paths cost CometBFT a change. The page is the comparison; the slope of each bar is the size of the change. <em>The smaller bar is the smaller change.</em></p>
+
+    <p class="also">
+      Want the raw numbers? The calculator UI lives at
+      <a href="benchmark-explorer.calc.bak.html">benchmark-explorer.calc.bak.html</a>.
+      Same JSON as this page.
+    </p>
+  </div>
+</section>
+
+</main>
+
+<!-- =================== JSON DATA (preserved verbatim) =================== -->
+<script id="benchmarks-data" type="application/json">
+{
+  "generated_at": "2026-05-07T11:30:45Z",
+  "toolchain": {
+    "forge": "forge Version: 1.5.0-stable\nCommit SHA: 1c57854462289b2e71ee7654cd6666217ed86ffd\nBuild Timestamp: 2025-11-26T09:16:58.269730000Z (1764148618)\nBuild Profile: maxperf",
+    "solc": [
+      "0.8.30",
+      "0.6.12"
+    ],
+    "go": "go version go1.25.0 darwin/arm64",
+    "git_commit": "62a15e75371982c4cfe42298bcbaf24439bb758d",
+    "git_status": "M ../.gitignore\n M ../go.mod\n M ../go.sum\n?? ../.deepsec/\n?? ./\n?? ../evm-light-client-gas-benchmark-report.md\n?? ../evm-tendermint-light-client-poc-plan.md\n?? ../signature-light-client-evm-report.md",
+    "evm_version": "prague",
+    "optimizer": true,
+    "optimizer_runs": 200,
+    "via_ir": true,
+    "auto_detect_solc": true,
+    "compiler_pinning_note": "Source files use exact pragmas =0.8.30 and =0.6.12; foundry.toml uses auto_detect_solc=true because the benchmark intentionally compiles both pinned versions."
+  },
+  "commands": [
+    "go run -tags bls12381 ./script",
+    "scripts/update-report-data.sh",
+    "forge test --summary",
+    "forge test --gas-report --summary",
+    "forge test --match-test testCalldataGasEstimates -vvvv",
+    "forge fmt --check"
+  ],
+  "fixture_hashes": {
+    "test/fixtures/misbehaviour_10_equal.json": "1fbc2f758be530f828a1bd94fd31b7bed511220a2f117ac422d3fdbc5052eedb",
+    "test/fixtures/misbehaviour_50_equal.json": "aec5d81baf4b33398248f6c29c27e686c0363b13578da62c6a650f93876b5393",
+    "test/fixtures/update_100_equal.json": "69dd4374e416e8ac84111c2c8c9fcee57f5aea3eccd30278d27b8835139edad1",
+    "test/fixtures/update_10_equal.json": "a47cf0e8cf5dbf898c4c6ce4e802cabb69dcd461fb68818705423b011b9d0633",
+    "test/fixtures/update_175_equal.json": "a038cf0a3ccf59a367e5377c823bda41cc24aa3b2657957703d6acf0752cbec0",
+    "test/fixtures/update_50_equal.json": "545516367b0da510099741d67b65ec16179daf9efb0566f6fffb0fc239d9d803",
+    "test/fixtures/update_50_mixed.json": "d6ac1fb365a54c60a8322dfa344da20dbea4e4b777af33b4b01f9e09afda491b"
+  },
+  "benchmarks": [
+    {
+      "id": "compact-commit-50",
+      "group": "secp256k1eth",
+      "question": "What does the production-shape compact secp256k1eth commit verifier cost for a 50-validator quorum?",
+      "model": "EVM-native validator addresses, typed compact vote reconstruction, ecrecover per signer, \u003e2/3 voting power.",
+      "assumptions": [
+        "validators \u003c= 256",
+        "validator address = keccak256(uncompressed_pubkey[1:])[12:]",
+        "signature digest = keccak256(compact vote bytes)",
+        "recoverable signatures for ecrecover, not CometBFT's existing crypto/secp256k1 mode"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "verifyCommitCompact returns true and consumes every bitmap-selected signature.",
+      "execution_row": "verifyCommitCompact",
+      "calldata_row": "commit-compact-50"
+    },
+    {
+      "id": "canonical-vote-reconstruct",
+      "group": "canonical-vote",
+      "question": "What is the cost of reconstructing CometBFT CanonicalVote sign bytes from typed inputs?",
+      "model": "Solidity reconstructs the exact canonical vote protobuf bytes for a shared typed vote shape.",
+      "assumptions": [
+        "vote type is PrecommitType",
+        "block ID contains one PartSetHeader",
+        "timestamp encoded as seconds+nanos protobuf Timestamp"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "keccak256(reconstructed) equals keccak256(fixture canonical.vote.signBytes[i]) for every signer.",
+      "execution_row": "reconstructCanonicalVoteSignBytes",
+      "calldata_row": "canonical-vote-reconstruct"
+    },
+    {
+      "id": "canonical-vote-reconstruct-hash",
+      "group": "canonical-vote",
+      "question": "What is the cost of reconstructing and hashing CometBFT CanonicalVote sign bytes?",
+      "model": "Solidity reconstructs canonical vote protobuf bytes and returns keccak256 of the reconstructed bytes.",
+      "assumptions": [
+        "same typed vote shape as canonical-vote-reconstruct",
+        "hash is keccak256 for the EVM secp256k1eth verifier path"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "hashCanonicalVoteSignBytes equals keccak256(fixture canonical.vote.signBytes[i]).",
+      "execution_row": "hashCanonicalVoteSignBytes",
+      "calldata_row": "canonical-vote-reconstruct-hash"
+    },
+    {
+      "id": "canonical-vote-reconstruct-secp256k1",
+      "group": "canonical-vote",
+      "question": "What is the cost of reconstructing canonical vote bytes, hashing them, and verifying one secp256k1eth signature?",
+      "model": "Solidity reconstructs canonical vote protobuf bytes, hashes them with keccak256, and verifies the fixture secp256k1eth signature with ecrecover.",
+      "assumptions": [
+        "signature uses the EVM secp256k1eth fixture, not ed25519",
+        "component row verifies one signer"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "verifyCanonicalVoteSecp256k1 returns true for the fixture signer and signature.",
+      "execution_row": "verifyCanonicalVoteSecp256k1",
+      "calldata_row": "canonical-vote-reconstruct-secp256k1"
+    },
+    {
+      "id": "ics23-wire-existence-decode-depth8",
+      "group": "ICS23/IAVL",
+      "question": "What does decoding raw cosmos.ics23.v1.ExistenceProof calldata cost before verification?",
+      "model": "Wire-format IAVL existence proof known-field decoder for ExistenceProof, LeafOp, and repeated InnerOp.",
+      "assumptions": [
+        "existence proof only",
+        "unknown protobuf fields are skipped under proof-size and proof-depth caps",
+        "happy-path-only gas is in ics23_happy_path_gas"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "decoded proof depth and key hash equal the Go iavl/ics23 reference fixture.",
+      "execution_row": "decodeIcs23IavlExistenceProof",
+      "calldata_row": "ics23-iavl-existence-decode-depth8"
+    },
+    {
+      "id": "ics23-wire-existence-verify-depth8",
+      "group": "ICS23/IAVL",
+      "question": "What does raw cosmos.ics23.v1.ExistenceProof calldata decoding plus IAVL verification cost?",
+      "model": "Wire-format IAVL existence proof known-field decoder; validates SHA256 hash op, NO_HASH key prehash, SHA256 value prehash, VAR_PROTO length op, IAVL leaf prefix marker, and inner hash/suffix markers.",
+      "assumptions": [
+        "existence proof only",
+        "non-existence proof out of scope",
+        "CommitmentProof wrapper reported separately only if added",
+        "unknown protobuf fields are skipped under proof-size and proof-depth caps",
+        "aggregate Forge rows include negative tests; happy-path-only gas is in ics23_happy_path_gas"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "decoded proof root equals the Go iavl/ics23 reference root; wrong key/value/prefix/hash/length reject.",
+      "execution_row": "verifyIcs23IavlExistenceProof(bytes32,bytes,bytes,bytes)",
+      "calldata_row": "ics23-iavl-existence-verify-depth8"
+    },
+    {
+      "id": "ics23-wire-existence-verify-depth16",
+      "group": "ICS23/IAVL",
+      "question": "What does the maximum supported raw IAVL ExistenceProof depth fixture cost?",
+      "model": "Same wire-format IAVL existence proof known-field decoder and verifier as depth8, using the generated max-depth fixture.",
+      "assumptions": [
+        "current generated maximum depth is 16",
+        "contract cap is ICS23_MAX_DEPTH = 32",
+        "non-existence proof out of scope"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "decoded proof root equals the Go iavl/ics23 reference root for the max-depth fixture.",
+      "execution_row": "verifyIcs23IavlExistenceProof(bytes32,bytes,bytes,bytes)",
+      "calldata_row": "ics23-iavl-existence-verify-depth16"
+    },
+    {
+      "id": "bls-a-supplied-aggregate",
+      "group": "BLS-A",
+      "question": "What does the smallest real EIP-2537 BLS aggregate verification cost when the aggregate pubkey, aggregate signature, and H(m) are supplied?",
+      "model": "Off-chain aggregate pubkey, off-chain aggregate signature, supplied H(m), one shared precommit message for the committed block.",
+      "assumptions": [
+        "same-message BLS aggregation over one shared precommit message",
+        "H(m) precomputed off-chain",
+        "protocol changes CometBFT per-signer timestamped vote bytes into one shared precommit message",
+        "production protocol needs BLS rogue-key mitigation such as proof-of-possession"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "pairing equation e(-G1, sig) * e(aggPubKey, H(m)) == 1 returns true; wrong message/missing signer reject.",
+      "execution_row": "verifyBlsAggregate",
+      "calldata_row": "bls-a-aggregate-verify-supplied-aggregate-pubkey"
+    },
+    {
+      "id": "bls-b-stored-set",
+      "group": "BLS-B",
+      "question": "What does verifying a BLS aggregate cost when pubkeys and powers are stored on-chain by the canonical CometBFT BLS validator-set hash?",
+      "model": "Registration validates canonical 96-byte BLS pubkeys and powers against the fixture's canonical CometBFT BLS validator-set hash, then stores matching EIP-2537 G1 pubkeys and powers under that hash; verify calldata carries set hash, bitmap, threshold, aggregate signature, and H(m).",
+      "assumptions": [
+        "one-time storage cost excluded from normal verify row",
+        "storeBlsValidatorSet has its own execution and calldata row",
+        "same-message BLS aggregation over one shared precommit message",
+        "bitmap bits above the validator-set length reject",
+        "production protocol needs BLS rogue-key mitigation such as proof-of-possession"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "computed aggregate pubkey from stored signers verifies the aggregate signature and meets threshold power.",
+      "execution_row": "verifyBlsAggregateStoredValidatorSet",
+      "calldata_row": "bls-b-stored-validator-set-bitmap-50"
+    },
+    {
+      "id": "bls-b-store-validator-set",
+      "group": "BLS-B",
+      "question": "What is the one-time gas and calldata cost to store a 50-validator BLS validator set?",
+      "model": "Verify canonical 96-byte BLS pubkeys and powers against the supplied canonical CometBFT validator-set hash, then store matching EIP-2537 G1 pubkeys and powers under that hash.",
+      "assumptions": [
+        "one-time setup/update cost, excluded from the normal verify row",
+        "canonical and EIP-2537 pubkey arrays are the same validator order from the fixture",
+        "production validator registration should verify or otherwise enforce BLS proof-of-possession"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "storeBlsValidatorSet records the set under the supplied canonical hash, rejects a mismatched hash, and returns the canonical hash.",
+      "execution_row": "storeBlsValidatorSet",
+      "calldata_row": "bls-b-store-validator-set-50"
+    },
+    {
+      "id": "bls-c-calldata-set",
+      "group": "BLS-C",
+      "question": "What is the cost when BLS validator pubkeys and powers are supplied in calldata and aggregated on-chain?",
+      "model": "Calldata validator pubkeys and powers, signer bitmap, on-chain aggregate pubkey, supplied aggregate signature and H(m).",
+      "assumptions": [
+        "same-message BLS aggregation over one shared precommit message",
+        "all pubkeys supplied as EIP-2537 G1 bytes",
+        "calldata row matches the same ABI call as execution",
+        "bitmap bits above the validator-set length reject",
+        "production protocol needs BLS rogue-key mitigation such as proof-of-possession"
+      ],
+      "fixture": "test/fixtures/update_50_equal.json",
+      "expected_output": "computed aggregate pubkey verifies the aggregate signature and threshold power.",
+      "execution_row": "verifyBlsAggregateCalldataValidatorSet",
+      "calldata_row": "bls-c-calldata-validator-set-50"
+    },
+    {
+      "id": "bls-d-multi-message",
+      "group": "BLS-D",
+      "question": "Is per-signer multi-message BLS aggregate verification viable under EIP-2537 without collapsing votes to one shared precommit message?",
+      "model": "N signer-message pairings plus one aggregate-signature pairing, measured for N=10,50,100,175 and compared with the EIP-2537 formula.",
+      "assumptions": [
+        "synthetic valid G1/G2 generator pairs measure precompile cost",
+        "formula = 37,700 + 32,600 * pairCount with pairCount = N + 1",
+        "does not prove signature validity; it prices the required N-pairing shape",
+        "helper calldata rows encode only signerCount and are not production multi-message calldata"
+      ],
+      "fixture": "synthetic EIP-2537 generator pairs",
+      "expected_output": "benchmark returns false for N\u003e1 but charges the N+1-pair precompile cost, exposing the measured multi-message slope and formula.",
+      "execution_row": "benchBlsMultiMessagePairing"
+    }
+  ],
+  "execution_gas": [
+    {
+      "function": "verify",
+      "min": 902866,
+      "avg": 906311,
+      "median": 906311,
+      "max": 909757,
+      "calls": 2
+    },
+    {
+      "function": "benchBlsAggregateApprox",
+      "min": 162127,
+      "avg": 325114,
+      "median": 304519,
+      "max": 529293,
+      "calls": 4
+    },
+    {
+      "function": "benchBlsG1AddSignerAggregation",
+      "min": 10011,
+      "avg": 79666,
+      "median": 71242,
+      "max": 166171,
+      "calls": 4
+    },
+    {
+      "function": "benchBlsG2AddSignatureAggregation",
+      "min": 12860,
+      "avg": 103873,
+      "median": 92555,
+      "max": 217524,
+      "calls": 4
+    },
+    {
+      "function": "benchBlsMapFp2ToG2",
+      "min": 36931,
+      "avg": 36931,
+      "median": 36931,
+      "max": 36931,
+      "calls": 1
+    },
+    {
+      "function": "benchBlsMultiMessagePairing",
+      "min": 401618,
+      "avg": 2823911,
+      "median": 2535596,
+      "max": 5822835,
+      "calls": 4
+    },
+    {
+      "function": "benchBlsPairingCheck",
+      "min": 105956,
+      "avg": 105956,
+      "median": 105956,
+      "max": 105956,
+      "calls": 1
+    },
+    {
+      "function": "clientState",
+      "min": 8002,
+      "avg": 8002,
+      "median": 8002,
+      "max": 8002,
+      "calls": 2
+    },
+    {
+      "function": "consensusStates",
+      "min": 9759,
+      "avg": 9759,
+      "median": 9759,
+      "max": 9759,
+      "calls": 1
+    },
+    {
+      "function": "decodeIcs23IavlExistenceProof",
+      "min": 864,
+      "avg": 26620,
+      "median": 22601,
+      "max": 64303,
+      "calls": 5
+    },
+    {
+      "function": "hashCanonicalVoteSignBytes",
+      "min": 11642,
+      "avg": 11642,
+      "median": 11642,
+      "max": 11642,
+      "calls": 1
+    },
+    {
+      "function": "hashHeader",
+      "min": 4159,
+      "avg": 4169,
+      "median": 4169,
+      "max": 4180,
+      "calls": 2
+    },
+    {
+      "function": "hashSimpleValidatorSetBls12381",
+      "min": 165093,
+      "avg": 165093,
+      "median": 165093,
+      "max": 165093,
+      "calls": 1
+    },
+    {
+      "function": "hashSimpleValidatorSetEd25519",
+      "min": 139606,
+      "avg": 139606,
+      "median": 139606,
+      "max": 139606,
+      "calls": 2
+    },
+    {
+      "function": "hashSimpleValidatorSetSecp256k1",
+      "min": 161711,
+      "avg": 161711,
+      "median": 161711,
+      "max": 161711,
+      "calls": 1
+    },
+    {
+      "function": "hashValidatorLeaves",
+      "min": 104009,
+      "avg": 104758,
+      "median": 105133,
+      "max": 105133,
+      "calls": 3
+    },
+    {
+      "function": "hashValidatorSetNative",
+      "min": 1010,
+      "avg": 55591,
+      "median": 55591,
+      "max": 110173,
+      "calls": 2
+    },
+    {
+      "function": "initializeClient",
+      "min": 250884,
+      "avg": 250888,
+      "median": 250884,
+      "max": 250896,
+      "calls": 36
+    },
+    {
+      "function": "pruneConsensusState",
+      "min": 34113,
+      "avg": 34113,
+      "median": 34113,
+      "max": 34113,
+      "calls": 1
+    },
+    {
+      "function": "pruneExpiredConsensusStatesBounded",
+      "min": 91064,
+      "avg": 91064,
+      "median": 91064,
+      "max": 91064,
+      "calls": 1
+    },
+    {
+      "function": "pruneOldestExpiredConsensusState",
+      "min": 39059,
+      "avg": 39059,
+      "median": 39059,
+      "max": 39059,
+      "calls": 1
+    },
+    {
+      "function": "reconstructCanonicalVoteSignBytes",
+      "min": 12140,
+      "avg": 15026,
+      "median": 15145,
+      "max": 15145,
+      "calls": 34
+    },
+    {
+      "function": "seedConsensusStates",
+      "min": 1599169,
+      "avg": 1599169,
+      "median": 1599169,
+      "max": 1599169,
+      "calls": 2
+    },
+    {
+      "function": "storeBlsValidatorSet",
+      "min": 513660,
+      "avg": 5416357,
+      "median": 6396897,
+      "max": 6396897,
+      "calls": 6
+    },
+    {
+      "function": "storeConsensusStateForTest",
+      "min": 123790,
+      "avg": 123790,
+      "median": 123790,
+      "max": 123790,
+      "calls": 1
+    },
+    {
+      "function": "storeValidatorSet",
+      "min": 2253030,
+      "avg": 2253030,
+      "median": 2253030,
+      "max": 2253030,
+      "calls": 1
+    },
+    {
+      "function": "submitMisbehaviour",
+      "min": 369951,
+      "avg": 2574799,
+      "median": 3372706,
+      "max": 4352531,
+      "calls": 9
+    },
+    {
+      "function": "updateAdjacentCalldata",
+      "min": 304281,
+      "avg": 1485212,
+      "median": 1805710,
+      "max": 1805726,
+      "calls": 5
+    },
+    {
+      "function": "updateAdjacentStoredValidatorSet",
+      "min": 555919,
+      "avg": 555919,
+      "median": 555919,
+      "max": 555919,
+      "calls": 1
+    },
+    {
+      "function": "updateNonAdjacentCalldata",
+      "min": 2294401,
+      "avg": 2294401,
+      "median": 2294401,
+      "max": 2294401,
+      "calls": 1
+    },
+    {
+      "function": "verifyAdjacentUpdateCalldata",
+      "min": 6182,
+      "avg": 363175,
+      "median": 16421,
+      "max": 1565413,
+      "calls": 8
+    },
+    {
+      "function": "verifyBlsAggregate",
+      "min": 106536,
+      "avg": 118622,
+      "median": 106536,
+      "max": 203230,
+      "calls": 8
+    },
+    {
+      "function": "verifyBlsAggregateCalldataValidatorSet",
+      "min": 1681,
+      "avg": 97348,
+      "median": 97348,
+      "max": 193016,
+      "calls": 2
+    },
+    {
+      "function": "verifyBlsAggregateStoredValidatorSet",
+      "min": 5334,
+      "avg": 394601,
+      "median": 588235,
+      "max": 590235,
+      "calls": 3
+    },
+    {
+      "function": "verifyCanonicalVoteSecp256k1",
+      "min": 15760,
+      "avg": 15760,
+      "median": 15760,
+      "max": 15760,
+      "calls": 1
+    },
+    {
+      "function": "verifyCommitCompact",
+      "min": 46526,
+      "avg": 287837,
+      "median": 210755,
+      "max": 716478,
+      "calls": 7
+    },
+    {
+      "function": "verifyCommitPrebuiltVoteBytes",
+      "min": 190571,
+      "avg": 190571,
+      "median": 190571,
+      "max": 190571,
+      "calls": 1
+    },
+    {
+      "function": "verifyIavlExistenceProof",
+      "min": 11883,
+      "avg": 17436,
+      "median": 21138,
+      "max": 21138,
+      "calls": 5
+    },
+    {
+      "function": "verifyIcs23IavlExistenceProof(bytes32,bytes)",
+      "min": 73120,
+      "avg": 73120,
+      "median": 73120,
+      "max": 73120,
+      "calls": 1
+    },
+    {
+      "function": "verifyIcs23IavlExistenceProof(bytes32,bytes,bytes,bytes)",
+      "min": 65704,
+      "avg": 69028,
+      "median": 66166,
+      "max": 75215,
+      "calls": 3
+    },
+    {
+      "function": "verifyMembershipProof",
+      "min": 4739,
+      "avg": 4739,
+      "median": 4739,
+      "max": 4739,
+      "calls": 1
+    },
+    {
+      "function": "verifyNonAdjacentUpdateCalldata",
+      "min": 1462190,
+      "avg": 1465199,
+      "median": 1465199,
+      "max": 1468209,
+      "calls": 2
+    }
+  ],
+  "calldata": [
+    {
+      "name": "commit-compact-10",
+      "byte_length": 2500,
+      "zero_bytes": 1682,
+      "nonzero_bytes": 818,
+      "gas_l1_standard": 19816,
+      "gas_l1_floor_eip_7623": 49540,
+      "blob_bytes": 2592
+    },
+    {
+      "name": "commit-compact-50",
+      "byte_length": 10244,
+      "zero_bytes": 6567,
+      "nonzero_bytes": 3677,
+      "gas_l1_standard": 85100,
+      "gas_l1_floor_eip_7623": 212750,
+      "blob_bytes": 10592
+    },
+    {
+      "name": "commit-compact-100",
+      "byte_length": 19780,
+      "zero_bytes": 12573,
+      "nonzero_bytes": 7207,
+      "gas_l1_standard": 165604,
+      "gas_l1_floor_eip_7623": 414010,
+      "blob_bytes": 20448
+    },
+    {
+      "name": "commit-compact-175",
+      "byte_length": 34180,
+      "zero_bytes": 21652,
+      "nonzero_bytes": 12528,
+      "gas_l1_standard": 287056,
+      "gas_l1_floor_eip_7623": 717640,
+      "blob_bytes": 35296
+    },
+    {
+      "name": "commit-prebuilt-vote-bytes-50",
+      "byte_length": 15684,
+      "zero_bytes": 9053,
+      "nonzero_bytes": 6631,
+      "gas_l1_standard": 142308,
+      "gas_l1_floor_eip_7623": 355770,
+      "blob_bytes": 16192
+    },
+    {
+      "name": "adjacent-update-calldata-10",
+      "byte_length": 3652,
+      "zero_bytes": 2410,
+      "nonzero_bytes": 1242,
+      "gas_l1_standard": 29512,
+      "gas_l1_floor_eip_7623": 73780,
+      "blob_bytes": 3776
+    },
+    {
+      "name": "adjacent-update-calldata-50",
+      "byte_length": 13956,
+      "zero_bytes": 9019,
+      "nonzero_bytes": 4937,
+      "gas_l1_standard": 115068,
+      "gas_l1_floor_eip_7623": 287670,
+      "blob_bytes": 14432
+    },
+    {
+      "name": "adjacent-update-mixed-power-50",
+      "byte_length": 13956,
+      "zero_bytes": 9013,
+      "nonzero_bytes": 4943,
+      "gas_l1_standard": 115140,
+      "gas_l1_floor_eip_7623": 287850,
+      "blob_bytes": 14432
+    },
+    {
+      "name": "non-adjacent-update-changed-valset-50",
+      "byte_length": 13956,
+      "zero_bytes": 9016,
+      "nonzero_bytes": 4940,
+      "gas_l1_standard": 115104,
+      "gas_l1_floor_eip_7623": 287760,
+      "blob_bytes": 14432
+    },
+    {
+      "name": "misbehaviour-10",
+      "byte_length": 7332,
+      "zero_bytes": 4859,
+      "nonzero_bytes": 2473,
+      "gas_l1_standard": 59004,
+      "gas_l1_floor_eip_7623": 147510,
+      "blob_bytes": 7584
+    },
+    {
+      "name": "changed-valset-misbehaviour-10",
+      "byte_length": 7332,
+      "zero_bytes": 4858,
+      "nonzero_bytes": 2474,
+      "gas_l1_standard": 59016,
+      "gas_l1_floor_eip_7623": 147540,
+      "blob_bytes": 7584
+    },
+    {
+      "name": "changed-valset-misbehaviour-50",
+      "byte_length": 27940,
+      "zero_bytes": 18072,
+      "nonzero_bytes": 9868,
+      "gas_l1_standard": 230176,
+      "gas_l1_floor_eip_7623": 575440,
+      "blob_bytes": 28864
+    },
+    {
+      "name": "adjacent-update-stored-valset-50",
+      "byte_length": 7332,
+      "zero_bytes": 4494,
+      "nonzero_bytes": 2838,
+      "gas_l1_standard": 63384,
+      "gas_l1_floor_eip_7623": 158460,
+      "blob_bytes": 7584
+    },
+    {
+      "name": "membership-proof-baseline",
+      "byte_length": 548,
+      "zero_bytes": 382,
+      "nonzero_bytes": 166,
+      "gas_l1_standard": 4184,
+      "gas_l1_floor_eip_7623": 10460,
+      "blob_bytes": 576
+    },
+    {
+      "name": "iavl-existence-proof-depth8",
+      "byte_length": 2020,
+      "zero_bytes": 1597,
+      "nonzero_bytes": 423,
+      "gas_l1_standard": 13156,
+      "gas_l1_floor_eip_7623": 32890,
+      "blob_bytes": 2112
+    },
+    {
+      "name": "iavl-existence-proof-depth16",
+      "byte_length": 3812,
+      "zero_bytes": 3037,
+      "nonzero_bytes": 775,
+      "gas_l1_standard": 24548,
+      "gas_l1_floor_eip_7623": 61370,
+      "blob_bytes": 3936
+    },
+    {
+      "name": "ics23-iavl-existence-decode-depth8",
+      "byte_length": 484,
+      "zero_bytes": 73,
+      "nonzero_bytes": 411,
+      "gas_l1_standard": 6868,
+      "gas_l1_floor_eip_7623": 17170,
+      "blob_bytes": 512
+    },
+    {
+      "name": "ics23-iavl-existence-verify-depth8",
+      "byte_length": 708,
+      "zero_bytes": 224,
+      "nonzero_bytes": 484,
+      "gas_l1_standard": 8640,
+      "gas_l1_floor_eip_7623": 21600,
+      "blob_bytes": 736
+    },
+    {
+      "name": "ics23-iavl-existence-verify-depth16",
+      "byte_length": 1092,
+      "zero_bytes": 238,
+      "nonzero_bytes": 854,
+      "gas_l1_standard": 14616,
+      "gas_l1_floor_eip_7623": 36540,
+      "blob_bytes": 1152
+    },
+    {
+      "name": "canonical-vote-reconstruct",
+      "byte_length": 292,
+      "zero_bytes": 195,
+      "nonzero_bytes": 97,
+      "gas_l1_standard": 2332,
+      "gas_l1_floor_eip_7623": 5830,
+      "blob_bytes": 320
+    },
+    {
+      "name": "canonical-vote-reconstruct-hash",
+      "byte_length": 292,
+      "zero_bytes": 195,
+      "nonzero_bytes": 97,
+      "gas_l1_standard": 2332,
+      "gas_l1_floor_eip_7623": 5830,
+      "blob_bytes": 320
+    },
+    {
+      "name": "canonical-vote-reconstruct-secp256k1",
+      "byte_length": 484,
+      "zero_bytes": 298,
+      "nonzero_bytes": 186,
+      "gas_l1_standard": 4168,
+      "gas_l1_floor_eip_7623": 10420,
+      "blob_bytes": 512
+    },
+    {
+      "name": "canonical-validator-set-ed25519-50",
+      "byte_length": 3332,
+      "zero_bytes": 1679,
+      "nonzero_bytes": 1653,
+      "gas_l1_standard": 33164,
+      "gas_l1_floor_eip_7623": 82910,
+      "blob_bytes": 3456
+    },
+    {
+      "name": "canonical-validator-set-secp256k1-50",
+      "byte_length": 8132,
+      "zero_bytes": 6289,
+      "nonzero_bytes": 1843,
+      "gas_l1_standard": 54644,
+      "gas_l1_floor_eip_7623": 136610,
+      "blob_bytes": 8416
+    },
+    {
+      "name": "bls-a-aggregate-verify-supplied-aggregate-pubkey",
+      "byte_length": 836,
+      "zero_bytes": 348,
+      "nonzero_bytes": 488,
+      "gas_l1_standard": 9200,
+      "gas_l1_floor_eip_7623": 23000,
+      "blob_bytes": 864
+    },
+    {
+      "name": "bls-b-store-validator-set-50",
+      "byte_length": 19428,
+      "zero_bytes": 9482,
+      "nonzero_bytes": 9946,
+      "gas_l1_standard": 197064,
+      "gas_l1_floor_eip_7623": 492660,
+      "blob_bytes": 20064
+    },
+    {
+      "name": "bls-b-stored-validator-set-bitmap-50",
+      "byte_length": 740,
+      "zero_bytes": 311,
+      "nonzero_bytes": 429,
+      "gas_l1_standard": 8108,
+      "gas_l1_floor_eip_7623": 20270,
+      "blob_bytes": 768
+    },
+    {
+      "name": "bls-c-calldata-validator-set-50",
+      "byte_length": 12036,
+      "zero_bytes": 6660,
+      "nonzero_bytes": 5376,
+      "gas_l1_standard": 112656,
+      "gas_l1_floor_eip_7623": 281640,
+      "blob_bytes": 12448
+    },
+    {
+      "name": "bls-d-synthetic-helper-pairing-10",
+      "byte_length": 36,
+      "zero_bytes": 31,
+      "nonzero_bytes": 5,
+      "gas_l1_standard": 204,
+      "gas_l1_floor_eip_7623": 510,
+      "blob_bytes": 64
+    },
+    {
+      "name": "bls-d-synthetic-helper-pairing-50",
+      "byte_length": 36,
+      "zero_bytes": 31,
+      "nonzero_bytes": 5,
+      "gas_l1_standard": 204,
+      "gas_l1_floor_eip_7623": 510,
+      "blob_bytes": 64
+    },
+    {
+      "name": "bls-d-synthetic-helper-pairing-100",
+      "byte_length": 36,
+      "zero_bytes": 31,
+      "nonzero_bytes": 5,
+      "gas_l1_standard": 204,
+      "gas_l1_floor_eip_7623": 510,
+      "blob_bytes": 64
+    },
+    {
+      "name": "bls-d-synthetic-helper-pairing-175",
+      "byte_length": 36,
+      "zero_bytes": 31,
+      "nonzero_bytes": 5,
+      "gas_l1_standard": 204,
+      "gas_l1_floor_eip_7623": 510,
+      "blob_bytes": 64
+    }
+  ],
+  "bls_d_multi_message": [
+    {
+      "signers": 10,
+      "pairings": 11,
+      "measured_gas": 401618,
+      "formula_gas": 396300,
+      "overhead_gas": 5318,
+      "formula": "37_700 + 32_600 * (N + 1)",
+      "source": "generated/bls-d-10.txt",
+      "foundry_stable": true
+    },
+    {
+      "signers": 50,
+      "pairings": 51,
+      "measured_gas": 1714446,
+      "formula_gas": 1700300,
+      "overhead_gas": 14146,
+      "formula": "37_700 + 32_600 * (N + 1)",
+      "source": "generated/bls-d-50.txt",
+      "foundry_stable": true
+    },
+    {
+      "signers": 100,
+      "pairings": 101,
+      "measured_gas": 3356747,
+      "formula_gas": 3330300,
+      "overhead_gas": 26447,
+      "formula": "37_700 + 32_600 * (N + 1)",
+      "source": "generated/bls-d-100.txt",
+      "foundry_stable": true
+    },
+    {
+      "signers": 175,
+      "pairings": 176,
+      "measured_gas": 5822835,
+      "formula_gas": 5775300,
+      "overhead_gas": 47535,
+      "formula": "37_700 + 32_600 * (N + 1)",
+      "source": "generated/bls-d-175.txt",
+      "foundry_stable": true
+    }
+  ],
+  "ics23_happy_path_gas": [
+    {
+      "function": "decodeIcs23IavlExistenceProof",
+      "min": 64303,
+      "avg": 64303,
+      "median": 64303,
+      "max": 64303,
+      "calls": 1
+    },
+    {
+      "function": "verifyIcs23IavlExistenceProof",
+      "min": 75215,
+      "avg": 75215,
+      "median": 75215,
+      "max": 75215,
+      "calls": 1
+    }
+  ]
+}
+
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  // ============================================================
+  // Data + helpers
+  // ============================================================
+  const DATA = JSON.parse(document.getElementById('benchmarks-data').textContent);
+
+  const TX_GAS_CAP = 16_777_216;
+  const BLOCK_GAS_REFERENCE = 60_000_000;
+  const fmt    = n => Math.round(n).toLocaleString();
+  const fmt0   = n => Math.round(n).toLocaleString();
+  const fmt1   = n => (Math.round(n * 10) / 10).toLocaleString();
+  const fmt2   = n => (Math.round(n * 100) / 100).toLocaleString();
+  const fmtPct = (x, d = 1) => (x < 0.01 ? '<0.01' : (Math.round(x * Math.pow(10, d)) / Math.pow(10, d))) + '%';
+  const fmtAbbr = n => {
+    if (n >= 1e6) return (n / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M';
+    if (n >= 1e3) return Math.round(n / 1e3) + 'k';
+    return '' + Math.round(n);
+  };
+  const fmtUsd = n => {
+    if (!isFinite(n)) return '—';
+    if (n < 0.01)  return n.toFixed(4);
+    if (n < 1)     return n.toFixed(3);
+    if (n < 100)   return n.toFixed(2);
+    return Math.round(n).toLocaleString();
+  };
+  const byName = (arr, key) => Object.fromEntries(arr.map(r => [r[key], r]));
+  const execByFn = byName(DATA.execution_gas, 'function');
+  const calldataByName = byName(DATA.calldata, 'name');
+  const blsdByN  = byName(DATA.bls_d_multi_message, 'signers');
+
+  // BLS-D measured gas at N (interpolated linearly between fixed measurement points).
+  function blsdMeasuredAtN(n) {
+    const ns = [10, 50, 100, 175];
+    if (blsdByN[n]) return blsdByN[n].measured_gas;
+    // Linear interp between flanking measurements (for hover/slider only).
+    let lo = ns[0], hi = ns[ns.length - 1];
+    for (let i = 0; i < ns.length - 1; i++) {
+      if (n >= ns[i] && n <= ns[i + 1]) { lo = ns[i]; hi = ns[i + 1]; break; }
+    }
+    if (n < ns[0]) { lo = ns[0]; hi = ns[1]; }
+    if (n > ns[ns.length - 1]) { lo = ns[ns.length - 2]; hi = ns[ns.length - 1]; }
+    const a = blsdByN[lo].measured_gas, b = blsdByN[hi].measured_gas;
+    const t = (n - lo) / (hi - lo);
+    return a + (b - a) * t;
+  }
+  // BLS-D formula (truth, not measurement).
+  const blsdFormula = n => 37_700 + 32_600 * (n + 1);
+
+  // secp256k1eth at every measured N: exec from execByFn.verifyCommitCompact, calldata by name.
+  const SECP_N = {
+    10:  { exec: execByFn.verifyCommitCompact.min,    cdRow: 'commit-compact-10' },
+    50:  { exec: execByFn.verifyCommitCompact.median, cdRow: 'commit-compact-50' },
+    100: { exec: execByFn.verifyCommitCompact.avg,    cdRow: 'commit-compact-100' },
+    175: { exec: execByFn.verifyCommitCompact.max,    cdRow: 'commit-compact-175' },
+  };
+  // Linearly interpolate between measured anchors so the slider can land on any N.
+  const SECP_NS = [10, 50, 100, 175];
+  const interpAt = (n, picker) => {
+    if (SECP_N[n]) return picker(SECP_N[n]);
+    const clamped = Math.min(SECP_NS[SECP_NS.length - 1], Math.max(SECP_NS[0], n));
+    let lo = SECP_NS[0], hi = SECP_NS[SECP_NS.length - 1];
+    for (let i = 0; i < SECP_NS.length - 1; i++) {
+      if (clamped >= SECP_NS[i] && clamped <= SECP_NS[i + 1]) { lo = SECP_NS[i]; hi = SECP_NS[i + 1]; break; }
+    }
+    const a = picker(SECP_N[lo]), b = picker(SECP_N[hi]);
+    const t = (clamped - lo) / (hi - lo);
+    return a + (b - a) * t;
+  };
+  const secpExecAtN  = n => interpAt(n, r => r.exec);
+  const secpCdAtN    = n => interpAt(n, r => calldataByName[r.cdRow].gas_l1_standard);
+  const secpTotalAtN = n => secpExecAtN(n) + secpCdAtN(n);
+
+  // ed25519 in pure Solidity. Per-signature gas measured in execByFn.verify
+  // (Ed25519VerifierBench.verify against a real CometBFT canonical vote sig).
+  // Quorum gas = ceil(2/3 N) + 1 signers each at the measured per-sig cost.
+  const ED25519_PER_SIG = execByFn.verify.median;            // ~906,311
+  const ED25519_PER_SIG_MAX = execByFn.verify.max;           // ~909,757
+  const quorumSigners = n => Math.floor((2 * n) / 3) + 1;
+  const ed25519QuorumAtN = n => quorumSigners(n) * ED25519_PER_SIG;
+
+  // Other schemes at N=50 (only validated at this anchor).
+  const BLS_A_50 = { exec: execByFn.verifyBlsAggregate.median,                       cd: calldataByName['bls-a-aggregate-verify-supplied-aggregate-pubkey'].gas_l1_standard };
+  const BLS_B_50 = { exec: execByFn.verifyBlsAggregateStoredValidatorSet.median,     cd: calldataByName['bls-b-stored-validator-set-bitmap-50'].gas_l1_standard };
+  const BLS_C_50 = { exec: execByFn.verifyBlsAggregateCalldataValidatorSet.max,      cd: calldataByName['bls-c-calldata-validator-set-50'].gas_l1_standard };
+  const ICS23 = {
+    d8:  { exec: 75215, cd: calldataByName['ics23-iavl-existence-verify-depth8'].gas_l1_standard },
+    d16: { exec: 75215, cd: calldataByName['ics23-iavl-existence-verify-depth16'].gas_l1_standard },
+  };
+
+  // ============================================================
+  // INFO popovers — preserved from original
+  // ============================================================
+  const INFO = {
+    secp: {
+      term: 'secp256k1eth compact',
+      body: '<strong>The recommended path today.</strong> Validators use Ethereum-style addresses, compact EVM signing bytes, Keccak digests, and recoverable signatures; the verifier runs the EVM-native <code>ecrecover</code> precompile per signer. Exact canonical-protobuf verification is measured separately as a compatibility component.',
+    },
+    blsa: {
+      term: 'BLS-A: supplied aggregate',
+      body: '<strong>Conditional on a CometBFT protocol change to one shared precommit message for the committed block.</strong> Aggregate pubkey, signature and <code>H(m)</code> arrive in calldata. Cheapest per-verify; trusts an off-chain aggregator and still needs BLS rogue-key mitigation.',
+    },
+    blsb: {
+      term: 'BLS-B: stored validator set',
+      body: '<strong>Conditional on a shared-precommit protocol change.</strong> Validator set stored on-chain once. Each verify ships a bitmap and runs one pairing-check call, constant in <code>N</code>. One-time storage gas at validator-set updates; production registration needs BLS rogue-key mitigation.',
+    },
+    blsc: {
+      term: 'BLS-C: calldata validator set',
+      body: '<strong>Conditional on a shared-precommit protocol change.</strong> Validator set passed in calldata on every verify. No on-chain storage; every verify pays the calldata cost of the full set.',
+    },
+    blsd: {
+      term: 'BLS-D: per-signer multi-message',
+      body: 'BLS <em>without</em> the shared-message protocol change. Each validator signs their own message; verification needs <code>N+1</code> pairings. This row is a synthetic precompile-cost bound, so production multi-message calldata is not included.',
+    },
+    ics23: {
+      term: 'ICS23 / IAVL existence proof',
+      body: 'Cosmos SDK Merkle proof format. Verifies a <code>(key, value)</code> sits under a known root using one leaf op plus inner ops. Priced separately from signature verification.',
+    },
+    precompile: {
+      term: 'EVM precompile',
+      body: 'Built-in contract at a fixed address that runs native (non-EVM) code. Much cheaper than equivalent Solidity. <code>ecrecover</code> and the EIP-2537 BLS12-381 ops exist; <code>ed25519</code> does not.',
+    },
+    ecrecover: {
+      term: 'ecrecover',
+      body: 'EVM precompile that recovers an Ethereum address from a <code>secp256k1</code> signature plus message hash. ~3,000 gas per call. The cheap signature primitive native to the EVM, the reason <em>secp256k1eth</em> works where <em>ed25519</em> doesn&rsquo;t.',
+    },
+    calldata: {
+      term: 'Calldata',
+      body: 'A transaction&rsquo;s input bytes. Intrinsic calldata costs 4 gas per zero byte and 16 gas per non-zero byte. EIP-7623 adds a floor of 10 gas per calldata token, where zero bytes count as 1 token and non-zero bytes count as 4 tokens.',
+    },
+    eip7623: {
+      term: 'EIP-7623 calldata floor',
+      body: 'Minimum 10 gas per calldata token for transactions whose execution is small relative to calldata. Zero bytes count as 1 token; non-zero bytes count as 4 tokens.',
+    },
+    eip2537: {
+      term: 'EIP-2537',
+      body: 'BLS12-381 precompile group on Ethereum. A pairing check costs <code>37,700 + 32,600 × k</code>, where <code>k</code> is the number of pairs. A 2-pair aggregate check is 102,900 gas before Solidity overhead.',
+    },
+    pairing: {
+      term: 'Pairing check',
+      body: 'A BLS12-381 precompile call that checks one or more G1/G2 pairs. Aggregate BLS verification with one shared precommit message can use one 2-pair check; per-signer multi-message needs <code>N+1</code> pairs.',
+    },
+    compactCommit: {
+      term: 'Compact commit',
+      body: 'Benchmark compact commit envelope optimised for on-chain verification: fixed-layout vote fields per signer, plus a small constant header. It preserves per-signer vote semantics but is not the exact canonical protobuf encoding.',
+    },
+    canonical: {
+      term: 'Canonical vote bytes',
+      body: 'The protobuf message a CometBFT validator signs for a precommit: chain ID, height, round, block ID, type tag, and a per-signer <code>Timestamp</code>. Each validator&rsquo;s timestamp is set locally at signing time, so different validators sign different bytes for the same block.',
+    },
+    adr112: {
+      term: 'ADR-112: proposer-based timestamps',
+      body: 'CometBFT design proposal that drops per-signer signed timestamps in favour of a proposer-set timestamp. Makes precommit bytes for the same height/round/block-ID identical across signers, the prerequisite for cheap BLS aggregation.',
+    },
+    pop: {
+      term: 'BLS proof-of-possession (PoP)',
+      body: 'A BLS signature each validator produces over their own pubkey at registration. Required by the CFRG BLS PoP scheme to use FastAggregateVerify (one shared message). Without it, aggregation is rogue-key vulnerable.',
+    },
+    fastAggregate: {
+      term: 'FastAggregateVerify',
+      body: 'CFRG BLS verification mode that takes one signed message, an aggregate signature, and a list of pubkeys, and runs in one pairing-check call. Requires every signer signed the same message and registered a valid PoP. The cheap path on EIP-2537.',
+    },
+  };
+  function infoIcon(key) {
+    const info = INFO[key];
+    if (!info) return '';
+    return '<span class="info-wrap">'
+      + '<button class="info" type="button" aria-label="About ' + info.term + '" tabindex="0">?</button>'
+      + '<span class="info-pop" role="tooltip">'
+      +   '<span class="term">' + info.term + '</span>'
+      +   info.body
+      + '</span>'
+      + '</span>';
+  }
+  function hydrateInfoPlaceholders(root) {
+    (root || document).querySelectorAll('[data-info]').forEach(el => {
+      el.outerHTML = infoIcon(el.dataset.info);
+    });
+  }
+  hydrateInfoPlaceholders();
+
+  // ============================================================
+  // Slide 01 — Cover: the wall in three numbers
+  // ============================================================
+  function paintCover() {
+    const ed50 = ed25519QuorumAtN(50);
+    const ratio = ed50 / TX_GAS_CAP;
+    document.querySelector('[data-cover="edPerSig"]').textContent = fmtAbbr(ED25519_PER_SIG);
+    document.querySelector('[data-cover="ed25519q50"]').textContent = fmtAbbr(ed50);
+    document.querySelector('[data-cover="edCapRatio"]').textContent = ratio.toFixed(2) + '×';
+  }
+  paintCover();
+
+  // ============================================================
+  // Slide 02 — What we verify: quorum math panel + inline number
+  // ============================================================
+  function paintSetup() {
+    const ed50 = ed25519QuorumAtN(50);
+    const ratio = ed50 / TX_GAS_CAP;
+    document.querySelectorAll('[data-setup="edPerSig"]').forEach(el => { el.textContent = '~' + fmtAbbr(ED25519_PER_SIG); });
+    document.querySelector('[data-setup="edPerSigPanel"]').textContent = fmt(ED25519_PER_SIG);
+    document.querySelector('[data-setup="edQuorumPanel"]').textContent = fmt(ed50);
+    const overshoot = (ratio * 100).toFixed(1) + '%';
+    document.querySelector('[data-setup="edFootPanel"]').innerHTML =
+      '<em>' + overshoot + '</em> of Ethereum&rsquo;s single-tx cap. ed25519 alone leaves no room for calldata, decoding, or ICS23.';
+  }
+  paintSetup();
+
+  // Meta-rail: git
+  document.querySelector('[data-git="commit"]').textContent = (DATA.toolchain.git_commit || '').slice(0, 9);
+  document.querySelector('[data-git="date"]').textContent = (DATA.generated_at || '').slice(0, 10);
+
+  // ============================================================
+  // Slide 04 — Two candidates: per-N stats + the crossover where
+  // BLS-A's flat verify cost overtakes secp's linear loop.
+  // ============================================================
+  function paintCandidates() {
+    const blsa = BLS_A_50.exec + BLS_A_50.cd;
+    document.querySelector('[data-cand="secp50"]').textContent  = fmt(secpTotalAtN(50)) + ' gas';
+    document.querySelector('[data-cand="secp175"]').textContent = fmt(secpTotalAtN(175)) + ' gas';
+    document.querySelector('[data-cand="blsa50"]').textContent  = fmt(blsa) + ' gas';
+    document.querySelector('[data-cand="blsa175"]').textContent = fmt(blsa) + ' gas';
+    let cross = null;
+    for (let n = 10; n <= 175; n++) {
+      if (secpTotalAtN(n) >= blsa) { cross = n; break; }
+    }
+    document.querySelector('[data-cand="crossover"]').textContent = cross ? ('~' + cross) : 'every N measured';
+  }
+  paintCandidates();
+
+  // ============================================================
+  // Slide 06 — No shortcut: BLS-D table (N | pairings | measured | vs secp)
+  // ============================================================
+  function paintBlsd() {
+    const ratios = [];
+    [10, 50, 100, 175].forEach(n => {
+      const row = document.querySelector('[data-blsd-row="' + n + '"]');
+      if (!row) return;
+      const measured = blsdByN[n].measured_gas;
+      const ratio = measured / secpTotalAtN(n);
+      ratios.push(ratio);
+      row.innerHTML =
+          '<div role="cell"><em>' + n + '</em></div>'
+        + '<div role="cell">' + (n + 1) + '</div>'
+        + '<div role="cell">' + fmtAbbr(measured) + '</div>'
+        + '<div role="cell"><em>' + ratio.toFixed(1) + '×</em></div>';
+    });
+    const blsd175 = blsdByN[175].measured_gas;
+    const secp175 = secpTotalAtN(175);
+    const minRatio = Math.min(...ratios);
+    const maxRatio = Math.max(...ratios);
+    document.querySelector('[data-blsd="ratio-range"]').textContent = minRatio.toFixed(1) + '×-' + maxRatio.toFixed(1) + '×';
+    document.querySelector('[data-blsd="175-gas"]').textContent  = fmtAbbr(blsd175) + ' gas';
+    document.querySelector('[data-blsd="175-secp"]').textContent = fmtAbbr(secp175) + ' gas';
+  }
+  paintBlsd();
+
+  // ============================================================
+  // Slide 03 — The walls (ed25519 quorum vs BLS-D vs secp, with tx cap and block reference)
+  // ============================================================
+  const wallEl = document.getElementById('wallChart');
+  const wallSvg = wallEl.querySelector('svg');
+  const annotEl = wallEl.querySelector('.annot');
+
+  const CHART_W = 800, CHART_H = 360;
+  const PAD = { l: 64, r: 24, t: 28, b: 40 };
+  const X_MIN = 10, X_MAX = 175;
+  const Y_MIN = 0;
+  const Y_MAX_FULL = 65_000_000;
+  const Y_MAX_DISMISSED = 7_000_000;
+  let Y_MAX = Y_MAX_FULL;
+
+  const sx = n => PAD.l + (n - X_MIN) / (X_MAX - X_MIN) * (CHART_W - PAD.l - PAD.r);
+  const sy = g => CHART_H - PAD.b - (Math.min(g, Y_MAX) - Y_MIN) / (Y_MAX - Y_MIN) * (CHART_H - PAD.t - PAD.b);
+
+  // "Nice" axis ticks that adapt when the chart rescales after ed25519 dismiss.
+  function niceTicks(max, target = 6) {
+    const raw = max / target;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const norm = raw / mag;
+    let step;
+    if (norm < 1.5)      step = 1 * mag;
+    else if (norm < 3.5) step = 2 * mag;
+    else if (norm < 7.5) step = 5 * mag;
+    else                 step = 10 * mag;
+    const ticks = [];
+    for (let v = 0; v <= max + step / 2; v += step) ticks.push(v);
+    return ticks;
+  }
+  const isEdDismissed = () => document.body.classList.contains('ed25519-dismissed');
+  const ed25519CrossesTxCapAtN = (() => {
+    for (let n = X_MIN; n <= X_MAX; n++) if (ed25519QuorumAtN(n) >= TX_GAS_CAP) return n;
+    return null;
+  })();
+
+  function buildWallChart() {
+    Y_MAX = isEdDismissed() ? Y_MAX_DISMISSED : Y_MAX_FULL;
+    const xs = [10, 25, 50, 75, 100, 125, 150, 175];
+    const blsdPath  = xs.map((x,i) => (i === 0 ? 'M' : 'L') + sx(x) + ' ' + sy(blsdMeasuredAtN(x))).join(' ');
+    const blsdMeas  = [10, 50, 100, 175];
+    const secpMeas  = [10, 50, 100, 175];
+    const secpPath  = secpMeas.map((x,i) => (i === 0 ? 'M' : 'L') + sx(x) + ' ' + sy(secpTotalAtN(x))).join(' ');
+
+    // ed25519 quorum line: split at single-transaction cap crossing.
+    // Solid up to crossing N, dashed after, both clamped to chart top.
+    const edXs = [];
+    for (let n = X_MIN; n <= X_MAX; n += 1) edXs.push(n);
+    const edSolid = edXs.filter(n => n <= (ed25519CrossesTxCapAtN || X_MAX));
+    const edDashed = edXs.filter(n => n >= (ed25519CrossesTxCapAtN || X_MAX));
+    const edPath = arr => arr.map((x,i) => (i === 0 ? 'M' : 'L') + sx(x) + ' ' + sy(ed25519QuorumAtN(x))).join(' ');
+
+    const yTicks = niceTicks(Y_MAX, 6);
+    const xTicks = [10, 50, 100, 175];
+
+    const ns = 'http://www.w3.org/2000/svg';
+    const C = (tag, attrs, children) => {
+      const el = document.createElementNS(ns, tag);
+      for (const k in attrs) el.setAttribute(k, attrs[k]);
+      if (children) (Array.isArray(children) ? children : [children]).forEach(c => c && el.appendChild(c));
+      return el;
+    };
+    const T = txt => document.createTextNode(txt);
+
+    wallSvg.innerHTML = '';
+
+    // Grid
+    const gridG = C('g', { class: 'grid' });
+    yTicks.forEach(y => gridG.appendChild(C('line', { x1: sx(X_MIN), x2: sx(X_MAX), y1: sy(y), y2: sy(y) })));
+    wallSvg.appendChild(gridG);
+
+    // Y axis labels
+    const yAxisG = C('g', { class: 'axis' });
+    yTicks.forEach(y => {
+      const t = C('text', { x: sx(X_MIN) - 10, y: sy(y) + 4, 'text-anchor': 'end' });
+      t.appendChild(T(fmtAbbr(y)));
+      yAxisG.appendChild(t);
+    });
+    wallSvg.appendChild(yAxisG);
+
+    // X axis labels
+    const xAxisG = C('g', { class: 'axis' });
+    xTicks.forEach(x => {
+      const t = C('text', { x: sx(x), y: CHART_H - PAD.b + 18, 'text-anchor': 'middle' });
+      t.appendChild(T('N=' + x));
+      xAxisG.appendChild(t);
+    });
+    xAxisG.appendChild(C('line', { class: 'domain', x1: sx(X_MIN), x2: sx(X_MAX), y1: CHART_H - PAD.b, y2: CHART_H - PAD.b, stroke: 'currentColor' }));
+    wallSvg.appendChild(xAxisG);
+
+    // Single-transaction cap: only relevant when ed25519 is on the chart.
+    if (TX_GAS_CAP <= Y_MAX) {
+      const capG = C('g', { class: 'cap-band' });
+      capG.appendChild(C('rect', {
+        x: sx(X_MIN),
+        y: sy(Y_MAX),
+        width: sx(X_MAX) - sx(X_MIN),
+        height: sy(TX_GAS_CAP) - sy(Y_MAX),
+      }));
+      capG.appendChild(C('line', { class: 'cap-line', x1: sx(X_MIN), x2: sx(X_MAX), y1: sy(TX_GAS_CAP), y2: sy(TX_GAS_CAP) }));
+      const capLabel = C('text', { class: 'cap-label', x: sx(X_MAX) - 8, y: sy(TX_GAS_CAP) - 8, 'text-anchor': 'end' });
+      capLabel.appendChild(T('single-tx cap · 16.78M gas'));
+      capG.appendChild(capLabel);
+      wallSvg.appendChild(capG);
+    }
+    if (BLOCK_GAS_REFERENCE <= Y_MAX) {
+      const blockG = C('g', { class: 'block-ref' });
+      blockG.appendChild(C('line', { class: 'block-line', x1: sx(X_MIN), x2: sx(X_MAX), y1: sy(BLOCK_GAS_REFERENCE), y2: sy(BLOCK_GAS_REFERENCE) }));
+      const blockLabel = C('text', { class: 'block-label', x: sx(X_MAX) - 8, y: sy(BLOCK_GAS_REFERENCE) - 8, 'text-anchor': 'end' });
+      blockLabel.appendChild(T('L1 block ref · 60M gas'));
+      blockG.appendChild(blockLabel);
+      wallSvg.appendChild(blockG);
+    }
+
+    // ed25519 quorum: solid below ceiling, dashed above (and capped to chart top).
+    // Only paint when ed25519 is part of the active visualisation.
+    if (!isEdDismissed()) {
+      if (edSolid.length > 1) {
+        wallSvg.appendChild(C('path', { class: 'series-ed-line', d: edPath(edSolid) }));
+      }
+      if (edDashed.length > 1) {
+        wallSvg.appendChild(C('path', { class: 'series-ed-line series-ed-line-dashed', d: edPath(edDashed) }));
+      }
+      if (ed25519CrossesTxCapAtN) {
+        const cx = sx(ed25519CrossesTxCapAtN);
+        wallSvg.appendChild(C('line', { class: 'cross-line', x1: cx, x2: cx, y1: sy(TX_GAS_CAP), y2: sy(TX_GAS_CAP) + 18 }));
+        const ct = C('text', { class: 'cross-label', x: cx, y: sy(TX_GAS_CAP) + 30, 'text-anchor': 'middle' });
+        ct.appendChild(T('crosses at N=' + ed25519CrossesTxCapAtN));
+        wallSvg.appendChild(ct);
+      }
+    }
+
+    // BLS-D dashed line + dots
+    wallSvg.appendChild(C('path', { class: 'series-blsd-line', d: blsdPath }));
+    const blsdDotsG = C('g', { class: 'series-blsd-dots' });
+    blsdMeas.forEach(x => blsdDotsG.appendChild(C('circle', { cx: sx(x), cy: sy(blsdByN[x].measured_gas), r: 4 })));
+    wallSvg.appendChild(blsdDotsG);
+
+    // secp solid line + dots
+    wallSvg.appendChild(C('path', { class: 'series-secp-line', d: secpPath }));
+    const secpDotsG = C('g', { class: 'series-secp-dots' });
+    secpMeas.forEach(x => secpDotsG.appendChild(C('circle', { cx: sx(x), cy: sy(secpTotalAtN(x)), r: 5 })));
+    wallSvg.appendChild(secpDotsG);
+
+    // Playhead: vertical scrub line + dot per series
+    const playG = C('g', { id: 'wallPlay' });
+    playG.appendChild(C('line', { class: 'play-line', id: 'playLine', x1: sx(50), x2: sx(50), y1: sy(0), y2: sy(Y_MAX) }));
+    if (!isEdDismissed()) {
+      playG.appendChild(C('circle', { class: 'play-dot play-dot-ed', id: 'playDotEd', cx: sx(50), cy: sy(ed25519QuorumAtN(50)), r: 5.5 }));
+    }
+    playG.appendChild(C('circle', { class: 'play-dot', id: 'playDotBlsd', cx: sx(50), cy: sy(blsdByN[50].measured_gas), r: 5.5 }));
+    playG.appendChild(C('circle', { class: 'play-dot', id: 'playDotSecp', cx: sx(50), cy: sy(secpTotalAtN(50)), r: 5.5, fill: 'var(--coral)' }));
+    wallSvg.appendChild(playG);
+  }
+
+  function paintWallSlider(n) {
+    const blsd = blsdMeasuredAtN(n);
+    const secp = secpTotalAtN(Math.min(175, Math.max(10, n)));
+    const ed   = ed25519QuorumAtN(n);
+    const xPos = sx(n);
+    const dismissed = isEdDismissed();
+    document.getElementById('playLine').setAttribute('x1', xPos);
+    document.getElementById('playLine').setAttribute('x2', xPos);
+    document.getElementById('playDotBlsd').setAttribute('cx', xPos);
+    document.getElementById('playDotBlsd').setAttribute('cy', sy(blsd));
+    document.getElementById('playDotSecp').setAttribute('cx', xPos);
+    document.getElementById('playDotSecp').setAttribute('cy', sy(secp));
+    const playDotEd = document.getElementById('playDotEd');
+    if (playDotEd) {
+      playDotEd.setAttribute('cx', xPos);
+      playDotEd.setAttribute('cy', sy(ed));
+    }
+
+    document.getElementById('wallSliderVal').textContent = n;
+    document.querySelector('[data-wall="ed"]').textContent   = fmtAbbr(ed) + ' gas';
+    document.querySelector('[data-wall="blsd"]').textContent = fmtAbbr(blsd) + ' gas';
+    document.querySelector('[data-wall="secp"]').textContent = fmt(secp) + ' gas';
+    const overTxCap = ed / TX_GAS_CAP;
+    const blockShare = ed / BLOCK_GAS_REFERENCE;
+    const ratioBlsdOverSecp = blsd / secp;
+    let line;
+    if (dismissed) {
+      line = '<em>BLS-D / secp</em>: <span class="num">' + ratioBlsdOverSecp.toFixed(1) + '×</span> &middot; <em>BLS-D</em> share of tx cap: <span class="num">' + fmtPct(blsd / TX_GAS_CAP * 100, 1) + '</span>';
+    } else if (ed >= TX_GAS_CAP) {
+      line = '<em>ed25519 quorum</em>: <span class="num">' + overTxCap.toFixed(2) + '×</span> the single-tx cap &middot; <span class="num">' + fmtPct(blockShare * 100, 1) + '</span> of 60M block ref &middot; <em>BLS-D / secp</em>: <span class="num">' + ratioBlsdOverSecp.toFixed(1) + '×</span>';
+    } else {
+      line = '<em>ed25519 quorum</em>: <span class="num">' + fmtPct(overTxCap * 100, 0) + '</span> of the single-tx cap &middot; <em>BLS-D / secp</em>: <span class="num">' + ratioBlsdOverSecp.toFixed(1) + '×</span>';
+    }
+    document.querySelector('[data-wall="ratioLine"]').innerHTML = line;
+
+    // Slider track gradient
+    const slider = document.getElementById('wallSlider');
+    const pct = (n - 10) / (175 - 10) * 100;
+    slider.style.setProperty('--n-pct', pct + '%');
+
+    // Annotation hugs the highest visible point so it never overlaps a series.
+    const rect = wallEl.getBoundingClientRect();
+    const svgRect = wallSvg.getBoundingClientRect();
+    const visibleMax = dismissed ? Math.max(blsd, secp) : Math.max(blsd, secp, ed);
+    const yTop = sy(Math.min(Y_MAX, visibleMax));
+    const px = (xPos / CHART_W) * svgRect.width + (svgRect.left - rect.left);
+    const py = (yTop / CHART_H) * svgRect.height + (svgRect.top - rect.top);
+
+    const annotW = 260;
+    // When the playhead sits in the right half, anchor the annotation to its LEFT
+    // so it doesn't collide with the legend in the top-right.
+    const onRight = px > rect.width * 0.55;
+    const rawLeft = onRight ? (px - annotW - 12) : (px + 12);
+    annotEl.style.left = Math.max(10, Math.min(rect.width - annotW - 10, rawLeft)) + 'px';
+    annotEl.style.top  = Math.max(60, Math.min(rect.height - 60, py - 24)) + 'px';
+    annotEl.style.opacity = 1;
+    if (dismissed) {
+      annotEl.innerHTML =
+        '<strong>BLS-D at N=' + n + ':</strong> ' + fmtAbbr(blsd) + ' gas &middot; '
+        + ratioBlsdOverSecp.toFixed(1) + '× <em>secp</em>';
+    } else if (ed >= TX_GAS_CAP) {
+      annotEl.innerHTML =
+        '<strong>ed25519 quorum at N=' + n + ':</strong> ' + fmtAbbr(ed) + ' gas &middot; <em>' + overTxCap.toFixed(2) + '×</em> tx cap';
+    } else {
+      annotEl.innerHTML =
+        '<strong>BLS-D at N=' + n + ':</strong> ' + fmtAbbr(blsd) + ' gas &middot; ' + fmtPct(blsd / TX_GAS_CAP * 100, 1) + ' of tx cap';
+    }
+  }
+
+  // Restore the dismiss state from sessionStorage before first paint, so a
+  // mid-deck refresh doesn't snap ed25519 back into every chart.
+  if (sessionStorage.getItem('ed25519-dismissed') === '1') {
+    document.body.classList.add('ed25519-dismissed');
+  }
+
+  buildWallChart();
+  const wallSlider = document.getElementById('wallSlider');
+  wallSlider.addEventListener('input', e => paintWallSlider(parseInt(e.target.value, 10)));
+  paintWallSlider(parseInt(wallSlider.value, 10));
+
+  // Dismiss-ed25519 toggle: rebuilds the wall chart and any downstream chart
+  // that listens to the body class. Dispatches a CustomEvent for race / cost /
+  // schemes painters to re-render with the new active scheme set.
+  const dismissBtn = document.getElementById('dismissEd');
+  function applyEdDismissedState() {
+    const dismissed = isEdDismissed();
+    dismissBtn.setAttribute('aria-pressed', dismissed ? 'true' : 'false');
+    buildWallChart();
+    paintWallSlider(parseInt(wallSlider.value, 10));
+    document.dispatchEvent(new CustomEvent('ed25519-dismiss-changed', { detail: { dismissed } }));
+  }
+  dismissBtn.addEventListener('click', () => {
+    const next = !isEdDismissed();
+    document.body.classList.toggle('ed25519-dismissed', next);
+    sessionStorage.setItem('ed25519-dismissed', next ? '1' : '0');
+    applyEdDismissedState();
+  });
+  // Initial sync (covers the sessionStorage-restored case).
+  applyEdDismissedState();
+
+  // Reveal formula tokens once the slide enters view.
+  const formulaEl = document.getElementById('formula');
+  const formulaObs = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (en.isIntersecting) {
+        // Stagger the in class via CSS transition delays
+        const tks = formulaEl.querySelectorAll('.tk');
+        tks.forEach((tk, i) => { tk.style.transitionDelay = (i * 70) + 'ms'; });
+        formulaEl.classList.add('in');
+        formulaObs.disconnect();
+      }
+    });
+  }, { threshold: 0.4 });
+  formulaObs.observe(formulaEl);
+
+  // ============================================================
+  // Slide 05 — Comparison race bars
+  // ============================================================
+  let cmpN = 50, cmpProto = false;
+  function buildRaceRows() {
+    const rows = [];
+    const secpExec = secpExecAtN(cmpN), secpCd = secpCdAtN(cmpN);
+    rows.push({ key: 'secp', name: 'secp256k1eth', exec: secpExec, cd: secpCd, color: 'var(--s-secp)', conditional: false, recommended: true, badge: null });
+
+    rows.push({ key: 'blsd', name: 'BLS-D synthetic', exec: blsdMeasuredAtN(cmpN), cd: 0, color: 'var(--s-blsd)', conditional: false, recommended: false, badge: 'synthetic' });
+
+    rows.push({ key: 'blsa', name: 'BLS-A', exec: BLS_A_50.exec, cd: BLS_A_50.cd, color: 'var(--s-blsa)', conditional: !cmpProto, recommended: false, badge: cmpN === 50 ? null : 'N=50 only' });
+    rows.push({ key: 'blsb', name: 'BLS-B', exec: BLS_B_50.exec, cd: BLS_B_50.cd, color: 'var(--s-blsb)', conditional: !cmpProto, recommended: false, badge: cmpN === 50 ? null : 'N=50 only' });
+    rows.push({ key: 'blsc', name: 'BLS-C', exec: BLS_C_50.exec, cd: BLS_C_50.cd, color: 'var(--s-blsc)', conditional: !cmpProto, recommended: false, badge: cmpN === 50 ? null : 'N=50 only' });
+
+    return rows.map(r => ({ ...r, total: r.exec + r.cd }));
+  }
+  function paintRace() {
+    let rows = buildRaceRows();
+    rows.sort((a, b) => a.total - b.total);
+    const max = Math.max(...rows.map(r => r.total));
+    const target = document.getElementById('raceBars');
+    target.innerHTML = rows.map(r => {
+      const pct = (r.total / max * 100).toFixed(2);
+      const cls = (r.conditional ? 'is-conditional ' : '') + (r.recommended ? 'recommended' : '');
+      const badge = r.badge ? '<span class="badge">' + r.badge + '</span>' : '';
+      const condLbl = r.conditional ? '<span class="badge">conditional</span>' : '';
+      return '<div class="race-row ' + cls + '" data-key="' + r.key + '">'
+        + '<div class="nm">' + (r.recommended ? '<em>' + r.name + '</em>' : r.name) + badge + condLbl + '</div>'
+        + '<div class="bar-wrap"><div class="bar" data-pct="' + pct + '" style="background:' + r.color + ';"></div></div>'
+        + '<div class="num">' + (r.recommended ? '<em>' + fmt(r.total) + '</em>' : fmt(r.total)) + '</div>'
+        + '</div>';
+    }).join('');
+    requestAnimationFrame(() => {
+      target.querySelectorAll('.bar').forEach(b => {
+        const p = parseFloat(b.dataset.pct);
+        b.style.transform = 'scaleX(' + (p / 100) + ')';
+      });
+    });
+    const lg = document.getElementById('cmpLegend');
+    if (cmpProto) {
+      lg.innerHTML = '<em>Toggle ON.</em> The CometBFT shared-message fork is assumed shipped. BLS-A/B/C land at one pairing-check call each; secp&apos;s loop scales with <em>N</em>.';
+    } else {
+      lg.innerHTML = '<em>Toggle OFF</em> &middot; today&rsquo;s CometBFT. BLS-A/B/C are conditional: they need the shared-message fork. <em>BLS-D</em> is a synthetic precompile-cost bound for BLS without that fork; production multi-message calldata is excluded.';
+    }
+  }
+  document.querySelectorAll('#cmpSeg button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      cmpN = parseInt(btn.dataset.n, 10);
+      document.querySelectorAll('#cmpSeg button').forEach(b => b.setAttribute('aria-checked', b === btn ? 'true' : 'false'));
+      paintRace();
+    });
+  });
+  document.getElementById('cmpProto').addEventListener('change', e => {
+    cmpProto = !!e.target.checked;
+    paintRace();
+  });
+  paintRace();
+
+  // ============================================================
+  // Slide 06 — Cost in dollars
+  // ============================================================
+  let gasGwei = 0.55, ethUsd = 3000;
+  const ethPerGas = () => gasGwei * 1e-9 * ethUsd;
+  function paintCost() {
+    document.querySelector('[data-cost="gasGwei"]').textContent = (gasGwei < 1 ? gasGwei.toFixed(2) : gasGwei.toFixed(1));
+    document.querySelector('[data-cost="ethUsd"]').textContent = ethUsd.toLocaleString();
+
+    const secp50  = secpTotalAtN(50);
+    const blsd50  = blsdByN[50].measured_gas;
+    const blsa    = BLS_A_50.exec + BLS_A_50.cd;
+    const blsb    = BLS_B_50.exec + BLS_B_50.cd;
+    const blsc    = BLS_C_50.exec + BLS_C_50.cd;
+    const usd = g => g * ethPerGas();
+
+    document.querySelector('[data-cost="hero"]').textContent = fmtUsd(usd(secp50));
+    document.querySelector('[data-cost="sub"]').innerHTML =
+      'one <em>secp256k1eth</em> verify at <em>N=50</em>, gas price ' + (gasGwei < 1 ? gasGwei.toFixed(2) : gasGwei.toFixed(1)) + ' gwei × ETH @ $' + ethUsd.toLocaleString();
+
+    // Update slider track gradient
+    const gSlide = document.getElementById('gasGweiInput');
+    const gPct = (gasGwei - 0.1) / (100 - 0.1) * 100;
+    gSlide.style.setProperty('--n-pct', gPct + '%');
+    const eSlide = document.getElementById('ethUsdInput');
+    const ePct = (ethUsd - 500) / (10000 - 500) * 100;
+    eSlide.style.setProperty('--n-pct', ePct + '%');
+
+    // Matrix
+    const rows = [
+      { nm: 'secp256k1eth', g: secp50, color: 'var(--s-secp)', em: true },
+      { nm: 'BLS-D synthetic', g: blsd50, color: 'var(--s-blsd)' },
+      { nm: 'BLS-A',        g: blsa,   color: 'var(--s-blsa)', cond: true },
+      { nm: 'BLS-B',        g: blsb,   color: 'var(--s-blsb)', cond: true },
+      { nm: 'BLS-C',        g: blsc,   color: 'var(--s-blsc)', cond: true },
+    ];
+    rows.sort((a, b) => a.g - b.g);
+    const max = Math.max(...rows.map(r => r.g));
+    document.getElementById('costMatrix').innerHTML = rows.map(r => {
+      const pct = (r.g / max).toFixed(4);
+      const u = usd(r.g);
+      return '<div class="cell nm">' + (r.em ? '<em>' + r.nm + '</em>' : r.nm) + (r.cond ? ' <span class="caption">cond</span>' : '') + '</div>'
+        + '<div class="bar"><i data-pct="' + pct + '" style="background:' + r.color + ';"></i></div>'
+        + '<div class="cell num">' + (r.em ? '<em>$' + fmtUsd(u) + '</em>' : '$' + fmtUsd(u)) + '</div>';
+    }).join('');
+    requestAnimationFrame(() => {
+      document.querySelectorAll('#costMatrix .bar > i').forEach(b => {
+        b.style.transform = 'scaleX(' + b.dataset.pct + ')';
+      });
+    });
+  }
+  document.getElementById('gasGweiInput').addEventListener('input', e => { gasGwei = parseFloat(e.target.value); paintCost(); });
+  document.getElementById('ethUsdInput').addEventListener('input', e => { ethUsd = parseFloat(e.target.value); paintCost(); });
+  paintCost();
+
+  // ============================================================
+  // Slide 07 — ICS23
+  // ============================================================
+  function paintIcs23() {
+    const d8 = ICS23.d8.exec + ICS23.d8.cd;
+    const d16 = ICS23.d16.exec + ICS23.d16.cd;
+    const max = Math.max(d8, d16);
+    document.querySelector('[data-ics23-copy="exec"]').textContent = fmt(ICS23.d8.exec);
+    document.querySelector('[data-ics23-copy="d8cd"]').textContent = fmt(ICS23.d8.cd);
+    document.querySelector('[data-ics23-copy="d16cd"]').textContent = fmt(ICS23.d16.cd);
+    document.querySelector('[data-ics23="d8-bar"]').dataset.pct = (d8 / max).toFixed(4);
+    document.querySelector('[data-ics23="d16-bar"]').dataset.pct = (d16 / max).toFixed(4);
+    document.querySelector('[data-ics23="d8-total"]').innerHTML = fmt(d8) + '<br><span class="caption">gas</span>';
+    document.querySelector('[data-ics23="d16-total"]').innerHTML = fmt(d16) + '<br><span class="caption">gas</span>';
+    document.querySelector('[data-ics23="d8-detail"]').innerHTML = fmt(ICS23.d8.exec) + ' exec + ' + fmt(ICS23.d8.cd) + ' cd';
+    document.querySelector('[data-ics23="d16-detail"]').innerHTML = fmt(ICS23.d16.exec) + ' exec + ' + fmt(ICS23.d16.cd) + ' cd';
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.ics23 .bar > i').forEach(i => {
+        i.style.transform = 'scaleX(' + i.dataset.pct + ')';
+      });
+    });
+  }
+  document.getElementById('ics23Detail').addEventListener('change', e => {
+    document.querySelector('section.ics23').classList.toggle('show-breakdown', e.target.checked);
+  });
+  paintIcs23();
+
+  // ============================================================
+  // Slide 11 — Closer: quiet recap of the four-row arc.
+  // No verdict announcement; the numbers carry it.
+  // ============================================================
+  function paintCloser() {
+    const ed50 = ed25519QuorumAtN(50);
+    const blsa = BLS_A_50.exec + BLS_A_50.cd;
+    const blsd175 = blsdByN[175].measured_gas;
+    const secp50  = secpTotalAtN(50);
+    const secp175 = secpTotalAtN(175);
+    const ratio = ed50 / TX_GAS_CAP;
+    document.querySelector('[data-closer="edPerSig"]').textContent = fmtAbbr(ED25519_PER_SIG) + ' gas';
+    document.querySelector('[data-closer="edQuorum"]').textContent = fmtAbbr(ed50) + ' gas';
+    document.querySelector('[data-closer="edRatio"]').textContent  = ratio.toFixed(2) + '×';
+    document.querySelector('[data-closer="blsa"]').textContent     = fmtAbbr(blsa) + ' gas';
+    document.querySelector('[data-closer="blsd175"]').textContent  = fmtAbbr(blsd175) + ' gas';
+    document.querySelector('[data-closer="secp50"]').textContent   = fmt(secp50) + ' gas';
+    document.querySelector('[data-closer="secp175"]').textContent  = fmt(secp175) + ' gas';
+  }
+  paintCloser();
+
+  // ============================================================
+  // Slide 10 — Receipts
+  // ============================================================
+  function paintReceipts() {
+    const tc = DATA.toolchain;
+    const dl = document.getElementById('toolchainDL');
+    const rows = [
+      ['forge',     (tc.forge || '').split('\n')[0].replace('forge ', '')],
+      ['solc',      (tc.solc || []).join(', ')],
+      ['go',        (tc.go || '').replace('go version ', '')],
+      ['EVM',       tc.evm_version],
+      ['optimizer', String(tc.optimizer) + (tc.optimizer ? ' · runs ' + tc.optimizer_runs : '')],
+      ['via_ir',    String(tc.via_ir)],
+      ['git',       '<em>' + (tc.git_commit || '').slice(0, 9) + '</em>'],
+      ['generated', (DATA.generated_at || '').slice(0, 10)],
+    ];
+    dl.innerHTML = rows.map(([k, v]) => '<dt>' + k + '</dt><dd>' + v + '</dd>').join('');
+
+    const cmds = (DATA.commands || []).map(c => '$ ' + c).join('\n');
+    document.getElementById('reproCmds').textContent = cmds;
+
+    const fixDl = document.getElementById('fixturesDL');
+    const fix = DATA.fixture_hashes || {};
+    fixDl.innerHTML = Object.entries(fix).map(([f, h]) =>
+      '<dt>' + f.replace(/^test\/fixtures\//, '') + '</dt>'
+      + '<dd>' + h + '</dd>'
+    ).join('');
+
+    const ed50 = ed25519QuorumAtN(50);
+    const blsdRatios = [10, 50, 100, 175].map(n => blsdByN[n].measured_gas / secpTotalAtN(n));
+    const derived = [
+      ['single-tx cap', fmt(TX_GAS_CAP)],
+      ['block ref', fmt(BLOCK_GAS_REFERENCE)],
+      ['ed crosses cap', 'N=' + ed25519CrossesTxCapAtN],
+      ['ed N=50 / cap', (ed50 / TX_GAS_CAP).toFixed(2) + '×'],
+      ['BLS-D / secp', Math.min(...blsdRatios).toFixed(1) + '×-' + Math.max(...blsdRatios).toFixed(1) + '×'],
+      ['ICS23 cd d8→d16', fmt(ICS23.d8.cd) + '→' + fmt(ICS23.d16.cd)],
+    ];
+    document.getElementById('derivedDL').innerHTML = derived.map(([k, v]) =>
+      '<dt>' + k + '</dt><dd>' + v + '</dd>'
+    ).join('');
+  }
+  paintReceipts();
+
+  // ============================================================
+  // IntersectionObserver — slide nav highlight
+  // ============================================================
+  const slideEls = Array.from(document.querySelectorAll('section.slide'));
+  const navLinks = Array.from(document.querySelectorAll('.slide-nav a'));
+  const navByTarget = Object.fromEntries(navLinks.map(a => [a.dataset.nav, a]));
+  let activeSlide = null;
+  const navObs = new IntersectionObserver(entries => {
+    // Pick the one whose center is nearest viewport center.
+    const candidates = entries.filter(e => e.isIntersecting);
+    if (!candidates.length) return;
+    candidates.sort((a, b) => Math.abs(a.boundingClientRect.top + a.boundingClientRect.height / 2 - window.innerHeight / 2)
+                           -  Math.abs(b.boundingClientRect.top + b.boundingClientRect.height / 2 - window.innerHeight / 2));
+    const next = candidates[0].target.dataset.navTarget;
+    if (next === activeSlide) return;
+    activeSlide = next;
+    navLinks.forEach(a => a.removeAttribute('aria-current'));
+    if (navByTarget[next]) navByTarget[next].setAttribute('aria-current', 'true');
+  }, { threshold: [0.35, 0.55, 0.75] });
+  slideEls.forEach(el => navObs.observe(el));
+
+  // ============================================================
+  // Reading meter — fills with scroll progress
+  // ============================================================
+  const meter = document.querySelector('.reading-meter > i');
+  function paintMeter() {
+    const h = document.documentElement;
+    const total = h.scrollHeight - h.clientHeight;
+    const pct = total > 0 ? Math.min(100, h.scrollTop / total * 100) : 0;
+    meter.style.width = pct + '%';
+  }
+  document.addEventListener('scroll', paintMeter, { passive: true });
+  window.addEventListener('resize', paintMeter);
+  paintMeter();
+
+  // ============================================================
+  // Repaint chart annotation position on resize/scroll (chart anchors to DOM rect)
+  // ============================================================
+  let resizeRaf;
+  function refloatAnnot() {
+    if (resizeRaf) cancelAnimationFrame(resizeRaf);
+    resizeRaf = requestAnimationFrame(() => {
+      paintWallSlider(parseInt(document.getElementById('wallSlider').value, 10));
+    });
+  }
+  window.addEventListener('resize', refloatAnnot);
+
+})();
+</script>
+</body>
+</html>

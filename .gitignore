@@ -46,6 +46,9 @@ test/e2e/networks/*/
 test/logs
 test/p2p/data/
 vendor
+!evm-light-client-gas-bench/src/vendor/
+!evm-light-client-gas-bench/src/vendor/chengwenxi-ed25519/
+!evm-light-client-gas-bench/src/vendor/chengwenxi-ed25519/**
 test/fuzz/**/corpus
 test/fuzz/**/crashers
 test/fuzz/**/suppressions

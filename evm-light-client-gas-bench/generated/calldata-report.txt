@@ -1,0 +1,1315 @@
+No files changed, compilation skipped
+
+Ran 1 test for test/EvmLightClientBench.t.sol:EvmLightClientBenchTest
+[PASS] testCalldataGasEstimates() (gas: 570385059)
+Traces:
+  [570385059] EvmLightClientBenchTest::testCalldataGasEstimates()
+    ├─ [0] VM::readFile("test/fixtures/update_10_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.validators") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.blockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signerBitmap") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signatures") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.timestamps") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.requiredPower") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "commit-compact-10", byteLength: 2500, gasCost: 19816 [1.981e4])
+    ├─ emit CalldataCostBreakdown(name: "commit-compact-10", byteLength: 2500, zeroBytes: 1682, nonzeroBytes: 818, gasL1Standard: 19816 [1.981e4], gasL1FloorEIP7623: 49540 [4.954e4], blobBytes: 2592)
+    ├─ [0] VM::readFile("test/fixtures/update_50_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.validators") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.blockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signerBitmap") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signatures") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.timestamps") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.requiredPower") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "commit-compact-50", byteLength: 10244 [1.024e4], gasCost: 85100 [8.51e4])
+    ├─ emit CalldataCostBreakdown(name: "commit-compact-50", byteLength: 10244 [1.024e4], zeroBytes: 6567, nonzeroBytes: 3677, gasL1Standard: 85100 [8.51e4], gasL1FloorEIP7623: 212750 [2.127e5], blobBytes: 10592 [1.059e4])
+    ├─ [0] VM::readFile("test/fixtures/update_100_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.validators") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.blockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signerBitmap") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signatures") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.timestamps") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.requiredPower") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "commit-compact-100", byteLength: 19780 [1.978e4], gasCost: 165604 [1.656e5])
+    ├─ emit CalldataCostBreakdown(name: "commit-compact-100", byteLength: 19780 [1.978e4], zeroBytes: 12573 [1.257e4], nonzeroBytes: 7207, gasL1Standard: 165604 [1.656e5], gasL1FloorEIP7623: 414010 [4.14e5], blobBytes: 20448 [2.044e4])
+    ├─ [0] VM::readFile("test/fixtures/update_175_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.validators") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.blockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signerBitmap") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signatures") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.timestamps") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.requiredPower") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "commit-compact-175", byteLength: 34180 [3.418e4], gasCost: 287056 [2.87e5])
+    ├─ emit CalldataCostBreakdown(name: "commit-compact-175", byteLength: 34180 [3.418e4], zeroBytes: 21652 [2.165e4], nonzeroBytes: 12528 [1.252e4], gasL1Standard: 287056 [2.87e5], gasL1FloorEIP7623: 717640 [7.176e5], blobBytes: 35296 [3.529e4])
+    ├─ [0] VM::readFile("test/fixtures/update_50_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.validators") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.blockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signerBitmap") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signatures") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.voteSignBytes") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.requiredPower") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "commit-prebuilt-vote-bytes-50", byteLength: 15684 [1.568e4], gasCost: 142308 [1.423e5])
+    ├─ emit CalldataCostBreakdown(name: "commit-prebuilt-vote-bytes-50", byteLength: 15684 [1.568e4], zeroBytes: 9053, nonzeroBytes: 6631, gasL1Standard: 142308 [1.423e5], gasL1FloorEIP7623: 355770 [3.557e5], blobBytes: 16192 [1.619e4])
+    ├─ [0] VM::readFile("test/fixtures/update_10_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.validators") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trusted.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.revisionNumber") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.timestamp") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.validatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.nextValidatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.appHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.headerHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.commitBlockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.blockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signerBitmap") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signatures") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.timestamps") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.chainId") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.revisionNumber") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.latestHeight") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustingPeriod") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.maxClockDrift") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustLevelNumerator") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustLevelDenominator") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.currentTimestamp") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.processedHeight") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "adjacent-update-calldata-10", byteLength: 3652, gasCost: 29512 [2.951e4])
+    ├─ emit CalldataCostBreakdown(name: "adjacent-update-calldata-10", byteLength: 3652, zeroBytes: 2410, nonzeroBytes: 1242, gasL1Standard: 29512 [2.951e4], gasL1FloorEIP7623: 73780 [7.378e4], blobBytes: 3776)
+    ├─ [0] VM::readFile("test/fixtures/update_50_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.validators") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trusted.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.revisionNumber") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.timestamp") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.validatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.nextValidatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.appHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.headerHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.commitBlockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.blockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signerBitmap") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signatures") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.timestamps") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.chainId") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.revisionNumber") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.latestHeight") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustingPeriod") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.maxClockDrift") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustLevelNumerator") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustLevelDenominator") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.currentTimestamp") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.processedHeight") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "adjacent-update-calldata-50", byteLength: 13956 [1.395e4], gasCost: 115068 [1.15e5])
+    ├─ emit CalldataCostBreakdown(name: "adjacent-update-calldata-50", byteLength: 13956 [1.395e4], zeroBytes: 9019, nonzeroBytes: 4937, gasL1Standard: 115068 [1.15e5], gasL1FloorEIP7623: 287670 [2.876e5], blobBytes: 14432 [1.443e4])
+    ├─ [0] VM::readFile("test/fixtures/update_50_mixed.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.validators") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trusted.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.revisionNumber") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.timestamp") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.validatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.nextValidatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.appHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.headerHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.commitBlockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.blockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signerBitmap") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signatures") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.timestamps") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.chainId") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.revisionNumber") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.latestHeight") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustingPeriod") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.maxClockDrift") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustLevelNumerator") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustLevelDenominator") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.currentTimestamp") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.processedHeight") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "adjacent-update-mixed-power-50", byteLength: 13956 [1.395e4], gasCost: 115140 [1.151e5])
+    ├─ emit CalldataCostBreakdown(name: "adjacent-update-mixed-power-50", byteLength: 13956 [1.395e4], zeroBytes: 9013, nonzeroBytes: 4943, gasL1Standard: 115140 [1.151e5], gasL1FloorEIP7623: 287850 [2.878e5], blobBytes: 14432 [1.443e4])
+    ├─ [0] VM::readFile("test/fixtures/misbehaviour_50_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.validators") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".untrustedValidators.validators") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".untrustedValidators.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".untrustedValidators.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".untrustedValidators.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trusted.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.revisionNumber") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.timestamp") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.validatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.nextValidatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.appHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.headerHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.commitBlockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.blockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.signerBitmap") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.signatures") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.timestamps") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.chainId") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.revisionNumber") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.latestHeight") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustingPeriod") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.maxClockDrift") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustLevelNumerator") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustLevelDenominator") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.currentTimestamp") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.processedHeight") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "non-adjacent-update-changed-valset-50", byteLength: 13956 [1.395e4], gasCost: 115104 [1.151e5])
+    ├─ emit CalldataCostBreakdown(name: "non-adjacent-update-changed-valset-50", byteLength: 13956 [1.395e4], zeroBytes: 9016, nonzeroBytes: 4940, gasL1Standard: 115104 [1.151e5], gasL1FloorEIP7623: 287760 [2.877e5], blobBytes: 14432 [1.443e4])
+    ├─ [0] VM::readFile("test/fixtures/misbehaviour_10_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.validators") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.revisionNumber") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.timestamp") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.validatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.nextValidatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.appHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.headerHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.commitBlockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.blockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signerBitmap") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signatures") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.timestamps") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trusted.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".conflict.header.revisionNumber") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".conflict.header.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".conflict.header.timestamp") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".conflict.header.validatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".conflict.header.nextValidatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".conflict.header.appHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".conflict.header.headerHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".conflict.header.commitBlockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".conflict.header.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".conflict.header.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".conflict.header.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".conflict.commit.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".conflict.commit.blockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".conflict.commit.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".conflict.commit.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".conflict.commit.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".conflict.commit.signerBitmap") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".conflict.commit.signatures") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".conflict.commit.timestamps") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trusted.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.chainId") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.revisionNumber") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.latestHeight") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustingPeriod") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.maxClockDrift") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustLevelNumerator") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustLevelDenominator") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.currentTimestamp") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.processedHeight") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "misbehaviour-10", byteLength: 7332, gasCost: 59004 [5.9e4])
+    ├─ emit CalldataCostBreakdown(name: "misbehaviour-10", byteLength: 7332, zeroBytes: 4859, nonzeroBytes: 2473, gasL1Standard: 59004 [5.9e4], gasL1FloorEIP7623: 147510 [1.475e5], blobBytes: 7584)
+    ├─ [0] VM::readFile("test/fixtures/misbehaviour_10_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.validators") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".untrustedValidators.validators") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".untrustedValidators.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".untrustedValidators.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".untrustedValidators.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.revisionNumber") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.timestamp") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.validatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.nextValidatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.appHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.headerHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.commitBlockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.blockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.signerBitmap") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.signatures") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.timestamps") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trusted.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.revisionNumber") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.timestamp") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.validatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.nextValidatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.appHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.headerHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.commitBlockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.commit.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.commit.blockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.commit.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.commit.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.commit.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.commit.signerBitmap") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.commit.signatures") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.commit.timestamps") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trusted.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.chainId") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.revisionNumber") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.latestHeight") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustingPeriod") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.maxClockDrift") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustLevelNumerator") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustLevelDenominator") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.currentTimestamp") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.processedHeight") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "changed-valset-misbehaviour-10", byteLength: 7332, gasCost: 59016 [5.901e4])
+    ├─ emit CalldataCostBreakdown(name: "changed-valset-misbehaviour-10", byteLength: 7332, zeroBytes: 4858, nonzeroBytes: 2474, gasL1Standard: 59016 [5.901e4], gasL1FloorEIP7623: 147540 [1.475e5], blobBytes: 7584)
+    ├─ [0] VM::readFile("test/fixtures/misbehaviour_50_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.validators") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".untrustedValidators.validators") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".untrustedValidators.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".untrustedValidators.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".untrustedValidators.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.revisionNumber") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.timestamp") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.validatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.nextValidatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.appHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.headerHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.commitBlockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.header.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.blockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.signerBitmap") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.signatures") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacent.commit.timestamps") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trusted.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.revisionNumber") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.timestamp") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.validatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.nextValidatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.appHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.headerHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.commitBlockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.header.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.commit.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.commit.blockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.commit.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.commit.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.commit.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.commit.signerBitmap") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.commit.signatures") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".nonAdjacentConflict.commit.timestamps") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trusted.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.chainId") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.revisionNumber") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.latestHeight") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustingPeriod") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.maxClockDrift") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustLevelNumerator") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustLevelDenominator") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.currentTimestamp") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.processedHeight") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "changed-valset-misbehaviour-50", byteLength: 27940 [2.794e4], gasCost: 230176 [2.301e5])
+    ├─ emit CalldataCostBreakdown(name: "changed-valset-misbehaviour-50", byteLength: 27940 [2.794e4], zeroBytes: 18072 [1.807e4], nonzeroBytes: 9868, gasL1Standard: 230176 [2.301e5], gasL1FloorEIP7623: 575440 [5.754e5], blobBytes: 28864 [2.886e4])
+    ├─ [0] VM::readFile("test/fixtures/update_50_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.chainId") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.revisionNumber") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.latestHeight") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustingPeriod") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.maxClockDrift") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustLevelNumerator") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.trustLevelDenominator") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.currentTimestamp") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".client.processedHeight") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trusted.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.revisionNumber") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.timestamp") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.validatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.nextValidatorsHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.appHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.headerHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.commitBlockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.header.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.blockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signerBitmap") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.signatures") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".adjacent.commit.timestamps") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "adjacent-update-stored-valset-50", byteLength: 7332, gasCost: 63384 [6.338e4])
+    ├─ emit CalldataCostBreakdown(name: "adjacent-update-stored-valset-50", byteLength: 7332, zeroBytes: 4494, nonzeroBytes: 2838, gasL1Standard: 63384 [6.338e4], gasL1FloorEIP7623: 158460 [1.584e5], blobBytes: 7584)
+    ├─ [0] VM::readFile("test/fixtures/update_50_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".membership.root") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".membership.key") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".membership.value") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".membership.siblings") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".membership.siblingOnLeft") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "membership-proof-baseline", byteLength: 548, gasCost: 4184)
+    ├─ emit CalldataCostBreakdown(name: "membership-proof-baseline", byteLength: 548, zeroBytes: 382, nonzeroBytes: 166, gasL1Standard: 4184, gasL1FloorEIP7623: 10460 [1.046e4], blobBytes: 576)
+    ├─ [0] VM::readFile("test/fixtures/update_50_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavl.root") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavl.key") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavl.value") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavl.leafPrefix") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavl.innerPrefixes") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavl.innerSuffixes") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavl.existenceProof") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavl.commitmentProof") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "iavl-existence-proof-depth8", byteLength: 2020, gasCost: 13156 [1.315e4])
+    ├─ emit CalldataCostBreakdown(name: "iavl-existence-proof-depth8", byteLength: 2020, zeroBytes: 1597, nonzeroBytes: 423, gasL1Standard: 13156 [1.315e4], gasL1FloorEIP7623: 32890 [3.289e4], blobBytes: 2112)
+    ├─ [0] VM::readFile("test/fixtures/update_50_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavlMaxDepth.root") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavlMaxDepth.key") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavlMaxDepth.value") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavlMaxDepth.leafPrefix") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavlMaxDepth.innerPrefixes") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavlMaxDepth.innerSuffixes") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavlMaxDepth.existenceProof") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavlMaxDepth.commitmentProof") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "iavl-existence-proof-depth16", byteLength: 3812, gasCost: 24548 [2.454e4])
+    ├─ emit CalldataCostBreakdown(name: "iavl-existence-proof-depth16", byteLength: 3812, zeroBytes: 3037, nonzeroBytes: 775, gasL1Standard: 24548 [2.454e4], gasL1FloorEIP7623: 61370 [6.137e4], blobBytes: 3936)
+    ├─ [0] VM::readFile("test/fixtures/update_50_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavl.root") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavl.key") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavl.value") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavl.leafPrefix") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavl.innerPrefixes") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavl.innerSuffixes") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavl.existenceProof") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavl.commitmentProof") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "ics23-iavl-existence-decode-depth8", byteLength: 484, gasCost: 6868)
+    ├─ emit CalldataCostBreakdown(name: "ics23-iavl-existence-decode-depth8", byteLength: 484, zeroBytes: 73, nonzeroBytes: 411, gasL1Standard: 6868, gasL1FloorEIP7623: 17170 [1.717e4], blobBytes: 512)
+    ├─ emit CalldataGasEstimate(name: "ics23-iavl-existence-verify-depth8", byteLength: 708, gasCost: 8640)
+    ├─ emit CalldataCostBreakdown(name: "ics23-iavl-existence-verify-depth8", byteLength: 708, zeroBytes: 224, nonzeroBytes: 484, gasL1Standard: 8640, gasL1FloorEIP7623: 21600 [2.16e4], blobBytes: 736)
+    ├─ [0] VM::parseJson("<JSON file>", ".iavlMaxDepth.root") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavlMaxDepth.key") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavlMaxDepth.value") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavlMaxDepth.leafPrefix") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavlMaxDepth.innerPrefixes") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavlMaxDepth.innerSuffixes") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavlMaxDepth.existenceProof") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".iavlMaxDepth.commitmentProof") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "ics23-iavl-existence-verify-depth16", byteLength: 1092, gasCost: 14616 [1.461e4])
+    ├─ emit CalldataCostBreakdown(name: "ics23-iavl-existence-verify-depth16", byteLength: 1092, zeroBytes: 238, nonzeroBytes: 854, gasL1Standard: 14616 [1.461e4], gasL1FloorEIP7623: 36540 [3.654e4], blobBytes: 1152)
+    ├─ [0] VM::readFile("test/fixtures/update_50_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.validators") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".trustedValidators.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.vote.chainId") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.vote.height") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.vote.round") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.vote.blockHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.vote.partSetTotal") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.vote.partSetHash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.vote.timestamps") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.vote.signBytes") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.vote.ethSignatures") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "canonical-vote-reconstruct", byteLength: 292, gasCost: 2332)
+    ├─ emit CalldataCostBreakdown(name: "canonical-vote-reconstruct", byteLength: 292, zeroBytes: 195, nonzeroBytes: 97, gasL1Standard: 2332, gasL1FloorEIP7623: 5830, blobBytes: 320)
+    ├─ emit CalldataGasEstimate(name: "canonical-vote-reconstruct-hash", byteLength: 292, gasCost: 2332)
+    ├─ emit CalldataCostBreakdown(name: "canonical-vote-reconstruct-hash", byteLength: 292, zeroBytes: 195, nonzeroBytes: 97, gasL1Standard: 2332, gasL1FloorEIP7623: 5830, blobBytes: 320)
+    ├─ emit CalldataGasEstimate(name: "canonical-vote-reconstruct-secp256k1", byteLength: 484, gasCost: 4168)
+    ├─ emit CalldataCostBreakdown(name: "canonical-vote-reconstruct-secp256k1", byteLength: 484, zeroBytes: 298, nonzeroBytes: 186, gasL1Standard: 4168, gasL1FloorEIP7623: 10420 [1.042e4], blobBytes: 512)
+    ├─ [0] VM::readFile("test/fixtures/update_50_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.ed25519.pubKeys") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.ed25519.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.ed25519.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.ed25519.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.ed25519.signatures") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "canonical-validator-set-ed25519-50", byteLength: 3332, gasCost: 33164 [3.316e4])
+    ├─ emit CalldataCostBreakdown(name: "canonical-validator-set-ed25519-50", byteLength: 3332, zeroBytes: 1679, nonzeroBytes: 1653, gasL1Standard: 33164 [3.316e4], gasL1FloorEIP7623: 82910 [8.291e4], blobBytes: 3456)
+    ├─ [0] VM::readFile("test/fixtures/update_50_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.secp256k1.pubKeys") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.secp256k1.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.secp256k1.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.secp256k1.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.secp256k1.signatures") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "canonical-validator-set-secp256k1-50", byteLength: 8132, gasCost: 54644 [5.464e4])
+    ├─ emit CalldataCostBreakdown(name: "canonical-validator-set-secp256k1-50", byteLength: 8132, zeroBytes: 6289, nonzeroBytes: 1843, gasL1Standard: 54644 [5.464e4], gasL1FloorEIP7623: 136610 [1.366e5], blobBytes: 8416)
+    ├─ [0] VM::readFile("test/fixtures/update_50_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.available") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.pubKeys") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.pubKeysEip2537") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.aggregateSigEip2537") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.aggregatePubKeyEip2537") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.hashedMessageEip2537") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.wrongMessageHashedEip2537") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.missingSignerAggregateSigEip2537") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.signerBitmap") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.message") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "bls-a-aggregate-verify-supplied-aggregate-pubkey", byteLength: 836, gasCost: 9200)
+    ├─ emit CalldataCostBreakdown(name: "bls-a-aggregate-verify-supplied-aggregate-pubkey", byteLength: 836, zeroBytes: 348, nonzeroBytes: 488, gasL1Standard: 9200, gasL1FloorEIP7623: 23000 [2.3e4], blobBytes: 864)
+    ├─ [4522277] → new EvmLightClientBench@0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f
+    │   └─ ← [Return] 22585 bytes of code
+    ├─ [0] VM::readFile("test/fixtures/update_50_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.available") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.pubKeys") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.pubKeysEip2537") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.aggregateSigEip2537") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.aggregatePubKeyEip2537") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.hashedMessageEip2537") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.wrongMessageHashedEip2537") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.missingSignerAggregateSigEip2537") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.signerBitmap") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.message") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [6178833] EvmLightClientBench::storeBlsValidatorSet(0xdd4a64e30bd97262b9eea057218098f84973bde048f6e2b09bcb30680348e38d, [0x06adcea9bb501b57fd437c719419bf0e7a0233644f085b06ef276b779ab9da15613513b4d2af5c10478e3796ae6d4abf075853c929e36f38c4edb56b11d825267a63694304bdb3a1f51681a01373b5d4ac37998eb1cb6c7529f1d44fdac93e49, 0x1453fb979e26871381e21677b1db5787d1aca4ebb9b1c36d32e85c4a3b570439ae23576b2ea4a2cfa238f8fba9e386ef08be656d5c33d1bea584499555ec2c2bf0adb551655a116e524286ae3b1b298aea45ca4aa1d35b8445acba59a152a7bc, 0x19e5cb0f4bf1a06e94da3b49d1a084d3d12bbb77a38f0ca79ac3731acc239121016d6701c9add867e071e6ca3f4dfbd305b8357881e703bb06b45e18029f5f4e7d46e298490f770ecf265a26c56e5f3d265d6d40f606a20a72c6a5a6c8a4fa4d, 0x09340136898e78b5711f675eb73781d73b12845508dcfabf6aafd3cadf756d7b0fab0bac755fa733a74b0584285d4fae02af8d23857baf7970e05d9f0fd7d3e5ac241e2ce578cd196b6f90ea74190a6911d927d7942a4fa86b0ec52587e5cd8c, 0x0f3e05df6b3bea990cc439fb8cd2fa8ae7c082c7cb3a03e778a5f4ad27b962ae54690a2ac2ee8cb173952d2ca0f9dd140580b9ed2882bf6a325667bdd92573551761a6d84c0a588c04fd0a6b55b0842427993e1c2610f395a377eba51c8c1721, 0x0816b013ed8e53752c65ee5f8d9b0febdf1f7c29918a62381bbaecaaaea151ac9ea2d74cd419ddb0ff46d56f5e6646bf12e7147df9d8f538060b7a3bae3a00f71c9cbb9c26ba14f2010684c1bb8f095961b4a366b2f460dedf5b3926fe4c9b50, 0x10b184638f9d3ad4f2121c740c05b9544004172a0f28fa079124dc535d25984c3472ecfcd5f0a162e5abe4daed3c0bd800f6557c66ec09c588ef633f8e17dd15d9b809f7114bcc92dfdb991bb43223f97c37af52bb5eb980222221f02405b940, 0x006fd970b5e12f1aff09b9181d298a664330394243eb1ab02f5ba806f9804a112abf8e329cb6567da2949b3fb249d454096471717e11abc25b105bfab6f796177aa7a52d99f227e77e2acac49a0bebb98b3c177dab4c7bd23885e23c9bb3f760, 0x12471ef407a180813d6022751e8b4e3312ba7aa9ab141438db3d9f6e233d2a6611ab29034b3f6313b2531e738f72749c12c43544ff62af099f7abf2804eac8b6b7fed768d2ed79f2b535596247ce5ed0c90c4a0acdf103fc57295d8f216e6fa0, 0x04f61f002b72192a254825f5d45b4139204764a4d4c16367139087fba01c4f8d04bcef11de8f3091863994cf4cb9294808dbd08d9d45da5110ee86ae6f2810cfea3b3c8b08fbc7ab88f5985bdc6adcd7b1b4b5487676b295f6ef83c026a5b6c2, 0x1350e0320ffafa27add560e4b8fa47c44309de48022fc0bc22ab30d55b71bfbc2a59851368b8440215497c40cf05f2df112fe76ce8c8110aba9e89b4117ef86b763ed5d9cdfd36a3e603a1cd12bad4eee55932504e20be6d070b93c529f1da1b, 0x10483b1af2d09311e2f1bafc0ae291dbf498a7e81b845bcadf52775509401a30f8b97bcebd6f6897c9e2eb94507259ec0428c1e07fa6782d8708af089ba29ba7b36518f18059c6e969742601f8967c7515f9b7a72f2e7c63f8c778b386a636bd, 0x10274f406f458944fd94d28df0ec653603ad1599535656ddb79fd86954604b5316e4f7d8b04cb8dab8138ccf518b4e430ba52949547ac559b73c588d0b5d9ba27ab08afa1976ea4a89e37eeeb2a3d4a789f6ca4b23155c90ea0ae797047b30d6, 0x0f9400ebdd662b41d520f1527dc35db2414725b23faf42d0be2d4b423a8b89b7de96219b97422bfc6ac16cda97b757c204ab551b7f2be09cb69e32ff097c87da50533e8ca7bc14b3ae8d63bce7fcf1d1d5bb90ed64b6eb51fd5b1862d805fa25, 0x160eabba08a833d8cf9b8a8ffb27b4d1e718689cf8a0dbaf74871edf41a8e0ac0c0bc9e3960b36f755f07df873ad5ba615451f53581b78d245ceea396bdedb6142d8e66dfca67f418f17a25a59d338f3951d4408aa61ceac3f48597581142a6c, 0x175f8d015df89f2b74eb53f9f5b7ba88060c755839a3c814f0aa0d30fe29ecc348ea1f126d46db0489364e862f359ec00295016b21de8eb13faa5143e85c69d9fd304b05c9f69ec13f93e19e3c2009be9269319aefbac1d36865d2b025d45b1a, 0x028a16d771322b84e38d155d6508ffa705b55f6f7557e138c8512dc47a97ddd86cf9e498e60e9c41d37d49bbe1c161350b1c8a12b17297845bdb2fb590ea491f7a6dcb551e239bae6ece42fefa83ce8c0c0339561cd70a5933f6bd72d249fdce, 0x0fad6bf1b6870a9e23e4b430af1b7c750fa63c856bd7614f5c8c06e55d2aec278944ce3bb4d2ac44a2de987ce2567a4e097d741f0c0128c358c4a1945201b4ae24181216e2da34d5164777d72dfc610c6f70add3b67e9df4381ff58a7a6cdc9d, 0x107a16ceb883bd0c1d19d7a9a7fbd11fcf7644513b12c4b059e9c267d8fc1e9039cddc63c4b848396934b0e8a02dfee118d0ffa1cc341cc63d6cebe7134668450b811b5d67a206c29f2602ae5b2a04da2f06140960c2017db3a0fe16dd2b5020, 0x17dc8050b7d8b883e388b5dd077d30373d0f7bf4affcb3ea45e123254e6d89af819b64627a9917bf3b9338f1e520260f0ebd7a622b9405ec7147f0c99ddd4cb6975a04b8545de3b7fc713678575a33f0dbd50f77414430b87b6ced20ec303124, 0x07a9d2b7f4cd4ac2e4106c0365922ffac9b32282777265b6f4e079c8f75931c0f30f97f16b0da68664d406d37bf8108802df72e78f42d7f02efd9612189abe27366a54c6b33bead5c3dab630920b8be9d5e4d7e18520e5f0acff5852d972161b, 0x0634f980cdd7141195e8f75de39627b3ea2a6d1bc57980fff7f703ddd718d1f81d62c770a35fc5acb2395db902e2b5d906ec0267744d08d78db1668877f4b940301c4f1c71924cb44a7f429487b95143ec319729f36068eb074d43bfb6774b17, 0x1995aa62a51fe0fcc7a95ccd13f348077f9ba148f504bfa02b0628441e45f1c50f477d728ebfef0833665f59dca7ce9609d1241996ee9ca7445401240017f78cc68135edc326a677489a74e2e489044db79d610a7b1e3964193ec30b7ed17877, 0x146244bd46f0d8f7193461952ad4a6143042db3cd036298fd8fa276c82cf663c52a6bf719dd7632a26c343c662f99e9605c6cfb702660280b58ea1a2bddcf4e745d54bf605e64e8603e8502c4d03b4945812d677dcccbfac469cd03284c37429, 0x01d64869f78e022dbe916719c5575388d8ef7464d8bc194a889b5ae0787a7c3bc8b60017538b342759975a765c043b7f18ed7d10dbad596a5ae17ceb57b077ff8ecbf624e70a483725505c5a4526fb22ffb9eaaeccbb1e63cfadd1176d501295, 0x0dc2301f6a8af0aac635215697cbb176a4420b52866530be6d1313561cb7b857043234a0915c2b6f5fe42ccdc605362302e726765eca97dc43fba9c43a44315049b430b3a011dcfb6d77d48df78d386e4130eb5e91a63c17e33daf13e029a994, 0x0c8ce5acb22be837d6911ae0383d3b8ff5cbac7975ba92432dd39afcc8e8a4069266e5a4e0ac224f30a1529ea63f175314137249696d2117f2cf88089f72808ad7ec6c10e6ff7348e25f6a9b47c06d75b5eada396ece120bc71c993c352fdcac, 0x104c174f699c7754c18da3a0f2d36080bc3ffeee48eebe671d80ccfb67d60c533f69c19dc40d529b81a322068da9c0a01930462d9b5ddc3537446b285428e73b65e6ef51be2634322ed7dc66e3f603611bb8222545fd915db8f2ebe7e4927dd9, 0x0f0f23573d4cc44a62a1f263c5bd1b9d8b3815f11b2ebf56c014a3cc052e74f959672f54d5c9a01fe82183752ca28f3508b3456e7cf7124680c461a1bebc606d52394c001aaf54aa933dcdb9b3654632ee47cc9c33eae8ee110399d0695b7c53, 0x159206eedc1335b4cb323609a1393c1dcc455a60c6cb5d37274d215350d59cec6991ee7e80b4c2c2ef9ff9ad4b0fca74064fb4f15ff0c055f64e93c3fa059da819d27b767cbb7ce196afa703f66cf980c70a19a93857cd3c2af6c81c35ee20e8, 0x0f2fb12d49b4989af5182d7be213ab894eaa9787812c0e28e525ae218ae1f5dadd0ce2e16c8448688b617ff0254fedee10ebe80251a301586fc9597b04afca8a5afa804e74b611916679ba98b369d9415a2c1c058f381d266b4daed2fe6d00ba, 0x0db3d42037d3c1badbb988338a7a6376413a4b3a18b15334e0d56a61481f5f4457d7f208c015f272faf111a0db00a7d6026f1d86aae93f9250851e10c1fd5af30ec468cbff2ce0d8d9a6ac9aa7718eccc75098cf84302a9ab4aa06e559c48834, 0x112730093dcdbf56fa50786d6c0b459cb566e7670dabbb6e6b27ae170c9a6ff925e21caecc38b45436cfaff6cdeb9e7509760e5e08a1869409b9402878aa98f08b86978bae65c953101b388bee290471acc2e05ba3e57529e41dca2c8edb4c44, 0x08b3c6a64eb2be629fd554ec28d3ee3e68a6bec2206829a24025b54f4d15a4ee04771248736d9732fcbb81adc5fcb886180df7cf4a4cbad9fb4ba2a5b198f7c972429b788464fae550c6fcd5cb6cda76b25c682bbd8e89c8c06e861b0d64ede7, 0x0137fc42df2ee3187e9c7ccc91ed24ada49ff6a8fad805e36999439463c06a3b10bbb5df5e74da3502c460060f31e0960b6cdca20957db2c516d89995ef244ebfe1c83b9cf3eb696c5d9bd952319fdf099bf65a683062aa4fb19c5b19cb5f704, 0x09a3c002dd114bed3d4e7b4e56a3b75335adcae5eedd71b350baca5043594f9356c2338d0453b4fdb83f45dd48370133000788c05facc8b6093b6012a5a4df82c4966183bae93030870754740d0668dee1eafa5b2e60ad155eb46af3c2a69164, 0x17fdb8c798892e9f367a38399cc133f2345ba0d3483dc0ce01c9d6cf00a01d1c495e4608168aaa71cc214482b70bbf3e0ec880399ab5a1c00221c82ed684970b357d7f659693f3f0e6b12b8425ac4a020f30157203c75d3b68d15ff18b4e8066, 0x0eafbefe00662da657a4c34310299fecbc939e64ffdf5b2e7322cc86d6fdf5d65d76ed9ae377b8cd04209afc9429d09a194ba0bf82f1af6a63ae7bcfbaba1441c647e6f5752aaa49c9919623b6599335187326c820a04fcfbd1a8d29b1ff8684, 0x1657fe991fe401252cf582047a05c497d9d4732fae8061a49c1449767cd097ee57d70b20a6bc13f650ce8f60f2754d850068a669ad7663258054c8269ec771e2f2b814c5371d91b85f793a94c83c28bc97dcfcf5d6b6a3b222e028ea3199bf2a, 0x1318164ec10d7ebaf1ee5525329044d82ec4da2caf229c1e844580b803c351562a947d382acdc4ea0bcdf8c1c9c011e212ea9c0b3ab45ded1b9e6f4dc0a577060c6f3f1b7f80ac18f9c64efdecc2b68fb4a55c11363bcdf7c1de750a587374a3, 0x06454080dc495aa4342e5d9fbff5198f75fd0826bc20da36535811f7e90504059361993e5b65c311229f7a455a27280a08705f239830ad34ae4fb1524fccef5fee687e79162303a62098b7ae98187afbd67a4e382cafd52e1cfd97d5d91821c4, 0x061663f77366a294e9fa3099659f222c6a581f16d128043b26f71f5aee1b302d141de75e196aceaf6542d3eb5e428ca100d044c4162978fd1fbbe3632a819f76ce0ec087a55717601a98b68537ab20add518485db6fc96c361bcfb84d6197a61, 0x022f29e6ab7fc51ecef26fba3f5fce79a8a65c268b0cbdc9e6a62b66a343d81843cbdc322daa4209cfec6d17862b648c0932385b76bf4a2b13e2f4843b9051dd0df64fce27b3db2b0fcec5a4d26fce7ff825895ecdf313407464045cce75a005, 0x0861fbddb33ab7f3f96fafb1af6c80cbc679ae007d746529f562187993fb2d7fcd24155ab46bf97d26495704c895b232085da3d32d15ed612a7a3a7a1bfecaa22728e893cc30d61e184ceb92bb918cc7434fc4e3062684d793860286ab1e7280, 0x074f2abab3c5d66cae574c597a7164113039c9d24337c9b0306a4587f076924b70faf79d58b2891d8f3332460085ee1f12dba13a47b0bb95947f5a39c2ef78d7058bd87fc6108e6fe07f64e9eee883b20f3bccd0c01bdab9ba9f109cfd4d53ae, 0x0a767877b226385cdf9d66d221808dd389e4cdb9158e8c339ce42499bba260818a1c5c3f761f31ef1c1ccc6248a25a2f1353970f4bfa7135f7d2f331b439400e015de729f09667014ac9cd5b9178fd3f690c769c0061e1120f5f0076f18454ca, 0x04bce0bfde188a3848b9857a03f2d91fb6b75acf21014535023b2574777c8e4ffe56bb5f1c7e658758b5411f8f60a92b0ec8795562445c4bd4cae4a16056a355065611919eeee522c26db564cf3a2e2c15a2bfe2ef5b85085618b3b00b4e450c, 0x184c9be8d7053e0e439d0fc94996948804fe64c993a1b54f007f3c2566c89d863c7bae7f7785e5525e86669ccf5c06e708ba5e33caf1f554d4c7bca42033a884a350e3594f9fa1f07590ff8be173df9c5f90d06d0776cc1e7233c3f66e6a0e0f, 0x0db53d2259087aebd29865749dccec53df209a35a0eaef48bf4e6a129deb38b935457660676b78f14c9d3ea8bcce2e7d0f3f79f5f4222b8b0d8742a795ca7f71d65e2079cf7ffa3a96d6485f2377f0323362ff45b3dbd99402c6f7edef2af89f, 0x057c077365980e76bd955e289f3b112e8a81f652ea1bbfeaf95b7920cbf595b96eec800e22e18e3b14698499ca2b3f980cd366ff9f006bcbd978b17f4e53a4d5ac9fd4cf885448e2fc18056bd3cc7be47b529853c2581f8733bd6b150f467778], [0x0000000000000000000000000000000006adcea9bb501b57fd437c719419bf0e7a0233644f085b06ef276b779ab9da15613513b4d2af5c10478e3796ae6d4abf00000000000000000000000000000000075853c929e36f38c4edb56b11d825267a63694304bdb3a1f51681a01373b5d4ac37998eb1cb6c7529f1d44fdac93e49, 0x000000000000000000000000000000001453fb979e26871381e21677b1db5787d1aca4ebb9b1c36d32e85c4a3b570439ae23576b2ea4a2cfa238f8fba9e386ef0000000000000000000000000000000008be656d5c33d1bea584499555ec2c2bf0adb551655a116e524286ae3b1b298aea45ca4aa1d35b8445acba59a152a7bc, 0x0000000000000000000000000000000019e5cb0f4bf1a06e94da3b49d1a084d3d12bbb77a38f0ca79ac3731acc239121016d6701c9add867e071e6ca3f4dfbd30000000000000000000000000000000005b8357881e703bb06b45e18029f5f4e7d46e298490f770ecf265a26c56e5f3d265d6d40f606a20a72c6a5a6c8a4fa4d, 0x0000000000000000000000000000000009340136898e78b5711f675eb73781d73b12845508dcfabf6aafd3cadf756d7b0fab0bac755fa733a74b0584285d4fae0000000000000000000000000000000002af8d23857baf7970e05d9f0fd7d3e5ac241e2ce578cd196b6f90ea74190a6911d927d7942a4fa86b0ec52587e5cd8c, 0x000000000000000000000000000000000f3e05df6b3bea990cc439fb8cd2fa8ae7c082c7cb3a03e778a5f4ad27b962ae54690a2ac2ee8cb173952d2ca0f9dd14000000000000000000000000000000000580b9ed2882bf6a325667bdd92573551761a6d84c0a588c04fd0a6b55b0842427993e1c2610f395a377eba51c8c1721, 0x000000000000000000000000000000000816b013ed8e53752c65ee5f8d9b0febdf1f7c29918a62381bbaecaaaea151ac9ea2d74cd419ddb0ff46d56f5e6646bf0000000000000000000000000000000012e7147df9d8f538060b7a3bae3a00f71c9cbb9c26ba14f2010684c1bb8f095961b4a366b2f460dedf5b3926fe4c9b50, 0x0000000000000000000000000000000010b184638f9d3ad4f2121c740c05b9544004172a0f28fa079124dc535d25984c3472ecfcd5f0a162e5abe4daed3c0bd80000000000000000000000000000000000f6557c66ec09c588ef633f8e17dd15d9b809f7114bcc92dfdb991bb43223f97c37af52bb5eb980222221f02405b940, 0x00000000000000000000000000000000006fd970b5e12f1aff09b9181d298a664330394243eb1ab02f5ba806f9804a112abf8e329cb6567da2949b3fb249d45400000000000000000000000000000000096471717e11abc25b105bfab6f796177aa7a52d99f227e77e2acac49a0bebb98b3c177dab4c7bd23885e23c9bb3f760, 0x0000000000000000000000000000000012471ef407a180813d6022751e8b4e3312ba7aa9ab141438db3d9f6e233d2a6611ab29034b3f6313b2531e738f72749c0000000000000000000000000000000012c43544ff62af099f7abf2804eac8b6b7fed768d2ed79f2b535596247ce5ed0c90c4a0acdf103fc57295d8f216e6fa0, 0x0000000000000000000000000000000004f61f002b72192a254825f5d45b4139204764a4d4c16367139087fba01c4f8d04bcef11de8f3091863994cf4cb929480000000000000000000000000000000008dbd08d9d45da5110ee86ae6f2810cfea3b3c8b08fbc7ab88f5985bdc6adcd7b1b4b5487676b295f6ef83c026a5b6c2, 0x000000000000000000000000000000001350e0320ffafa27add560e4b8fa47c44309de48022fc0bc22ab30d55b71bfbc2a59851368b8440215497c40cf05f2df00000000000000000000000000000000112fe76ce8c8110aba9e89b4117ef86b763ed5d9cdfd36a3e603a1cd12bad4eee55932504e20be6d070b93c529f1da1b, 0x0000000000000000000000000000000010483b1af2d09311e2f1bafc0ae291dbf498a7e81b845bcadf52775509401a30f8b97bcebd6f6897c9e2eb94507259ec000000000000000000000000000000000428c1e07fa6782d8708af089ba29ba7b36518f18059c6e969742601f8967c7515f9b7a72f2e7c63f8c778b386a636bd, 0x0000000000000000000000000000000010274f406f458944fd94d28df0ec653603ad1599535656ddb79fd86954604b5316e4f7d8b04cb8dab8138ccf518b4e43000000000000000000000000000000000ba52949547ac559b73c588d0b5d9ba27ab08afa1976ea4a89e37eeeb2a3d4a789f6ca4b23155c90ea0ae797047b30d6, 0x000000000000000000000000000000000f9400ebdd662b41d520f1527dc35db2414725b23faf42d0be2d4b423a8b89b7de96219b97422bfc6ac16cda97b757c20000000000000000000000000000000004ab551b7f2be09cb69e32ff097c87da50533e8ca7bc14b3ae8d63bce7fcf1d1d5bb90ed64b6eb51fd5b1862d805fa25, 0x00000000000000000000000000000000160eabba08a833d8cf9b8a8ffb27b4d1e718689cf8a0dbaf74871edf41a8e0ac0c0bc9e3960b36f755f07df873ad5ba60000000000000000000000000000000015451f53581b78d245ceea396bdedb6142d8e66dfca67f418f17a25a59d338f3951d4408aa61ceac3f48597581142a6c, 0x00000000000000000000000000000000175f8d015df89f2b74eb53f9f5b7ba88060c755839a3c814f0aa0d30fe29ecc348ea1f126d46db0489364e862f359ec0000000000000000000000000000000000295016b21de8eb13faa5143e85c69d9fd304b05c9f69ec13f93e19e3c2009be9269319aefbac1d36865d2b025d45b1a, 0x00000000000000000000000000000000028a16d771322b84e38d155d6508ffa705b55f6f7557e138c8512dc47a97ddd86cf9e498e60e9c41d37d49bbe1c16135000000000000000000000000000000000b1c8a12b17297845bdb2fb590ea491f7a6dcb551e239bae6ece42fefa83ce8c0c0339561cd70a5933f6bd72d249fdce, 0x000000000000000000000000000000000fad6bf1b6870a9e23e4b430af1b7c750fa63c856bd7614f5c8c06e55d2aec278944ce3bb4d2ac44a2de987ce2567a4e00000000000000000000000000000000097d741f0c0128c358c4a1945201b4ae24181216e2da34d5164777d72dfc610c6f70add3b67e9df4381ff58a7a6cdc9d, 0x00000000000000000000000000000000107a16ceb883bd0c1d19d7a9a7fbd11fcf7644513b12c4b059e9c267d8fc1e9039cddc63c4b848396934b0e8a02dfee10000000000000000000000000000000018d0ffa1cc341cc63d6cebe7134668450b811b5d67a206c29f2602ae5b2a04da2f06140960c2017db3a0fe16dd2b5020, 0x0000000000000000000000000000000017dc8050b7d8b883e388b5dd077d30373d0f7bf4affcb3ea45e123254e6d89af819b64627a9917bf3b9338f1e520260f000000000000000000000000000000000ebd7a622b9405ec7147f0c99ddd4cb6975a04b8545de3b7fc713678575a33f0dbd50f77414430b87b6ced20ec303124, 0x0000000000000000000000000000000007a9d2b7f4cd4ac2e4106c0365922ffac9b32282777265b6f4e079c8f75931c0f30f97f16b0da68664d406d37bf810880000000000000000000000000000000002df72e78f42d7f02efd9612189abe27366a54c6b33bead5c3dab630920b8be9d5e4d7e18520e5f0acff5852d972161b, 0x000000000000000000000000000000000634f980cdd7141195e8f75de39627b3ea2a6d1bc57980fff7f703ddd718d1f81d62c770a35fc5acb2395db902e2b5d90000000000000000000000000000000006ec0267744d08d78db1668877f4b940301c4f1c71924cb44a7f429487b95143ec319729f36068eb074d43bfb6774b17, 0x000000000000000000000000000000001995aa62a51fe0fcc7a95ccd13f348077f9ba148f504bfa02b0628441e45f1c50f477d728ebfef0833665f59dca7ce960000000000000000000000000000000009d1241996ee9ca7445401240017f78cc68135edc326a677489a74e2e489044db79d610a7b1e3964193ec30b7ed17877, 0x00000000000000000000000000000000146244bd46f0d8f7193461952ad4a6143042db3cd036298fd8fa276c82cf663c52a6bf719dd7632a26c343c662f99e960000000000000000000000000000000005c6cfb702660280b58ea1a2bddcf4e745d54bf605e64e8603e8502c4d03b4945812d677dcccbfac469cd03284c37429, 0x0000000000000000000000000000000001d64869f78e022dbe916719c5575388d8ef7464d8bc194a889b5ae0787a7c3bc8b60017538b342759975a765c043b7f0000000000000000000000000000000018ed7d10dbad596a5ae17ceb57b077ff8ecbf624e70a483725505c5a4526fb22ffb9eaaeccbb1e63cfadd1176d501295, 0x000000000000000000000000000000000dc2301f6a8af0aac635215697cbb176a4420b52866530be6d1313561cb7b857043234a0915c2b6f5fe42ccdc60536230000000000000000000000000000000002e726765eca97dc43fba9c43a44315049b430b3a011dcfb6d77d48df78d386e4130eb5e91a63c17e33daf13e029a994, 0x000000000000000000000000000000000c8ce5acb22be837d6911ae0383d3b8ff5cbac7975ba92432dd39afcc8e8a4069266e5a4e0ac224f30a1529ea63f17530000000000000000000000000000000014137249696d2117f2cf88089f72808ad7ec6c10e6ff7348e25f6a9b47c06d75b5eada396ece120bc71c993c352fdcac, 0x00000000000000000000000000000000104c174f699c7754c18da3a0f2d36080bc3ffeee48eebe671d80ccfb67d60c533f69c19dc40d529b81a322068da9c0a0000000000000000000000000000000001930462d9b5ddc3537446b285428e73b65e6ef51be2634322ed7dc66e3f603611bb8222545fd915db8f2ebe7e4927dd9, 0x000000000000000000000000000000000f0f23573d4cc44a62a1f263c5bd1b9d8b3815f11b2ebf56c014a3cc052e74f959672f54d5c9a01fe82183752ca28f350000000000000000000000000000000008b3456e7cf7124680c461a1bebc606d52394c001aaf54aa933dcdb9b3654632ee47cc9c33eae8ee110399d0695b7c53, 0x00000000000000000000000000000000159206eedc1335b4cb323609a1393c1dcc455a60c6cb5d37274d215350d59cec6991ee7e80b4c2c2ef9ff9ad4b0fca7400000000000000000000000000000000064fb4f15ff0c055f64e93c3fa059da819d27b767cbb7ce196afa703f66cf980c70a19a93857cd3c2af6c81c35ee20e8, 0x000000000000000000000000000000000f2fb12d49b4989af5182d7be213ab894eaa9787812c0e28e525ae218ae1f5dadd0ce2e16c8448688b617ff0254fedee0000000000000000000000000000000010ebe80251a301586fc9597b04afca8a5afa804e74b611916679ba98b369d9415a2c1c058f381d266b4daed2fe6d00ba, 0x000000000000000000000000000000000db3d42037d3c1badbb988338a7a6376413a4b3a18b15334e0d56a61481f5f4457d7f208c015f272faf111a0db00a7d600000000000000000000000000000000026f1d86aae93f9250851e10c1fd5af30ec468cbff2ce0d8d9a6ac9aa7718eccc75098cf84302a9ab4aa06e559c48834, 0x00000000000000000000000000000000112730093dcdbf56fa50786d6c0b459cb566e7670dabbb6e6b27ae170c9a6ff925e21caecc38b45436cfaff6cdeb9e750000000000000000000000000000000009760e5e08a1869409b9402878aa98f08b86978bae65c953101b388bee290471acc2e05ba3e57529e41dca2c8edb4c44, 0x0000000000000000000000000000000008b3c6a64eb2be629fd554ec28d3ee3e68a6bec2206829a24025b54f4d15a4ee04771248736d9732fcbb81adc5fcb88600000000000000000000000000000000180df7cf4a4cbad9fb4ba2a5b198f7c972429b788464fae550c6fcd5cb6cda76b25c682bbd8e89c8c06e861b0d64ede7, 0x000000000000000000000000000000000137fc42df2ee3187e9c7ccc91ed24ada49ff6a8fad805e36999439463c06a3b10bbb5df5e74da3502c460060f31e096000000000000000000000000000000000b6cdca20957db2c516d89995ef244ebfe1c83b9cf3eb696c5d9bd952319fdf099bf65a683062aa4fb19c5b19cb5f704, 0x0000000000000000000000000000000009a3c002dd114bed3d4e7b4e56a3b75335adcae5eedd71b350baca5043594f9356c2338d0453b4fdb83f45dd4837013300000000000000000000000000000000000788c05facc8b6093b6012a5a4df82c4966183bae93030870754740d0668dee1eafa5b2e60ad155eb46af3c2a69164, 0x0000000000000000000000000000000017fdb8c798892e9f367a38399cc133f2345ba0d3483dc0ce01c9d6cf00a01d1c495e4608168aaa71cc214482b70bbf3e000000000000000000000000000000000ec880399ab5a1c00221c82ed684970b357d7f659693f3f0e6b12b8425ac4a020f30157203c75d3b68d15ff18b4e8066, 0x000000000000000000000000000000000eafbefe00662da657a4c34310299fecbc939e64ffdf5b2e7322cc86d6fdf5d65d76ed9ae377b8cd04209afc9429d09a00000000000000000000000000000000194ba0bf82f1af6a63ae7bcfbaba1441c647e6f5752aaa49c9919623b6599335187326c820a04fcfbd1a8d29b1ff8684, 0x000000000000000000000000000000001657fe991fe401252cf582047a05c497d9d4732fae8061a49c1449767cd097ee57d70b20a6bc13f650ce8f60f2754d85000000000000000000000000000000000068a669ad7663258054c8269ec771e2f2b814c5371d91b85f793a94c83c28bc97dcfcf5d6b6a3b222e028ea3199bf2a, 0x000000000000000000000000000000001318164ec10d7ebaf1ee5525329044d82ec4da2caf229c1e844580b803c351562a947d382acdc4ea0bcdf8c1c9c011e20000000000000000000000000000000012ea9c0b3ab45ded1b9e6f4dc0a577060c6f3f1b7f80ac18f9c64efdecc2b68fb4a55c11363bcdf7c1de750a587374a3, 0x0000000000000000000000000000000006454080dc495aa4342e5d9fbff5198f75fd0826bc20da36535811f7e90504059361993e5b65c311229f7a455a27280a0000000000000000000000000000000008705f239830ad34ae4fb1524fccef5fee687e79162303a62098b7ae98187afbd67a4e382cafd52e1cfd97d5d91821c4, 0x00000000000000000000000000000000061663f77366a294e9fa3099659f222c6a581f16d128043b26f71f5aee1b302d141de75e196aceaf6542d3eb5e428ca10000000000000000000000000000000000d044c4162978fd1fbbe3632a819f76ce0ec087a55717601a98b68537ab20add518485db6fc96c361bcfb84d6197a61, 0x00000000000000000000000000000000022f29e6ab7fc51ecef26fba3f5fce79a8a65c268b0cbdc9e6a62b66a343d81843cbdc322daa4209cfec6d17862b648c000000000000000000000000000000000932385b76bf4a2b13e2f4843b9051dd0df64fce27b3db2b0fcec5a4d26fce7ff825895ecdf313407464045cce75a005, 0x000000000000000000000000000000000861fbddb33ab7f3f96fafb1af6c80cbc679ae007d746529f562187993fb2d7fcd24155ab46bf97d26495704c895b23200000000000000000000000000000000085da3d32d15ed612a7a3a7a1bfecaa22728e893cc30d61e184ceb92bb918cc7434fc4e3062684d793860286ab1e7280, 0x00000000000000000000000000000000074f2abab3c5d66cae574c597a7164113039c9d24337c9b0306a4587f076924b70faf79d58b2891d8f3332460085ee1f0000000000000000000000000000000012dba13a47b0bb95947f5a39c2ef78d7058bd87fc6108e6fe07f64e9eee883b20f3bccd0c01bdab9ba9f109cfd4d53ae, 0x000000000000000000000000000000000a767877b226385cdf9d66d221808dd389e4cdb9158e8c339ce42499bba260818a1c5c3f761f31ef1c1ccc6248a25a2f000000000000000000000000000000001353970f4bfa7135f7d2f331b439400e015de729f09667014ac9cd5b9178fd3f690c769c0061e1120f5f0076f18454ca, 0x0000000000000000000000000000000004bce0bfde188a3848b9857a03f2d91fb6b75acf21014535023b2574777c8e4ffe56bb5f1c7e658758b5411f8f60a92b000000000000000000000000000000000ec8795562445c4bd4cae4a16056a355065611919eeee522c26db564cf3a2e2c15a2bfe2ef5b85085618b3b00b4e450c, 0x00000000000000000000000000000000184c9be8d7053e0e439d0fc94996948804fe64c993a1b54f007f3c2566c89d863c7bae7f7785e5525e86669ccf5c06e70000000000000000000000000000000008ba5e33caf1f554d4c7bca42033a884a350e3594f9fa1f07590ff8be173df9c5f90d06d0776cc1e7233c3f66e6a0e0f, 0x000000000000000000000000000000000db53d2259087aebd29865749dccec53df209a35a0eaef48bf4e6a129deb38b935457660676b78f14c9d3ea8bcce2e7d000000000000000000000000000000000f3f79f5f4222b8b0d8742a795ca7f71d65e2079cf7ffa3a96d6485f2377f0323362ff45b3dbd99402c6f7edef2af89f, 0x00000000000000000000000000000000057c077365980e76bd955e289f3b112e8a81f652ea1bbfeaf95b7920cbf595b96eec800e22e18e3b14698499ca2b3f98000000000000000000000000000000000cd366ff9f006bcbd978b17f4e53a4d5ac9fd4cf885448e2fc18056bd3cc7be47b529853c2581f8733bd6b150f467778], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a6006adcea9bb501b57fd437c719419bf0e7a0233644f085b06ef276b779ab9da15613513b4d2af5c10478e3796ae6d4abf075853c929e36f38c4edb56b11d825267a63694304bdb3a1f51681a01373b5d4ac37998eb1cb6c7529f1d44fdac93e491001) [staticcall]
+    │   │   └─ ← [Return] 0x665d4b63a8a96bbff87e4fd30c842e1aeab850e70f916bfbf9d9563a386a828a
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a601453fb979e26871381e21677b1db5787d1aca4ebb9b1c36d32e85c4a3b570439ae23576b2ea4a2cfa238f8fba9e386ef08be656d5c33d1bea584499555ec2c2bf0adb551655a116e524286ae3b1b298aea45ca4aa1d35b8445acba59a152a7bc1001) [staticcall]
+    │   │   └─ ← [Return] 0x290e37b51c731cbc44847e9b3542e5bc71286b43e8a4dc43a1f7522405c4cd0b
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a6019e5cb0f4bf1a06e94da3b49d1a084d3d12bbb77a38f0ca79ac3731acc239121016d6701c9add867e071e6ca3f4dfbd305b8357881e703bb06b45e18029f5f4e7d46e298490f770ecf265a26c56e5f3d265d6d40f606a20a72c6a5a6c8a4fa4d1001) [staticcall]
+    │   │   └─ ← [Return] 0x4880bf52c50f4b77c7b44043507f69bac2267984d85267279e5a3c6137bb61e0
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a6009340136898e78b5711f675eb73781d73b12845508dcfabf6aafd3cadf756d7b0fab0bac755fa733a74b0584285d4fae02af8d23857baf7970e05d9f0fd7d3e5ac241e2ce578cd196b6f90ea74190a6911d927d7942a4fa86b0ec52587e5cd8c1001) [staticcall]
+    │   │   └─ ← [Return] 0xff7f8c987dfb404ef261ca1868136f81ac3895bde0f1a6111154c16badc9926e
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a600f3e05df6b3bea990cc439fb8cd2fa8ae7c082c7cb3a03e778a5f4ad27b962ae54690a2ac2ee8cb173952d2ca0f9dd140580b9ed2882bf6a325667bdd92573551761a6d84c0a588c04fd0a6b55b0842427993e1c2610f395a377eba51c8c17211001) [staticcall]
+    │   │   └─ ← [Return] 0xbbbe6ff8b57b7895993baedba1a9643edf34f78c3dae29f8ae99ecb7828fff38
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a600816b013ed8e53752c65ee5f8d9b0febdf1f7c29918a62381bbaecaaaea151ac9ea2d74cd419ddb0ff46d56f5e6646bf12e7147df9d8f538060b7a3bae3a00f71c9cbb9c26ba14f2010684c1bb8f095961b4a366b2f460dedf5b3926fe4c9b501001) [staticcall]
+    │   │   └─ ← [Return] 0xdbdaca95a45e0cc241364aaa19e2084812f0dce7c4fce78443543289028d01a5
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a6010b184638f9d3ad4f2121c740c05b9544004172a0f28fa079124dc535d25984c3472ecfcd5f0a162e5abe4daed3c0bd800f6557c66ec09c588ef633f8e17dd15d9b809f7114bcc92dfdb991bb43223f97c37af52bb5eb980222221f02405b9401001) [staticcall]
+    │   │   └─ ← [Return] 0x696eead22a71685fee103a708b1bd284fd459d7cbfe024f6226beaaeb3084c18
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a60006fd970b5e12f1aff09b9181d298a664330394243eb1ab02f5ba806f9804a112abf8e329cb6567da2949b3fb249d454096471717e11abc25b105bfab6f796177aa7a52d99f227e77e2acac49a0bebb98b3c177dab4c7bd23885e23c9bb3f7601001) [staticcall]
+    │   │   └─ ← [Return] 0xdde0af235662741aa7cdd84e443f831c86f77730cc3b29e4515940bcecde8f1f
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a6012471ef407a180813d6022751e8b4e3312ba7aa9ab141438db3d9f6e233d2a6611ab29034b3f6313b2531e738f72749c12c43544ff62af099f7abf2804eac8b6b7fed768d2ed79f2b535596247ce5ed0c90c4a0acdf103fc57295d8f216e6fa01001) [staticcall]
+    │   │   └─ ← [Return] 0xce19358a0e36e7e701c8f3bf8665f3eefa65b7e4e2bb98a4436d7231f5da09c3
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a6004f61f002b72192a254825f5d45b4139204764a4d4c16367139087fba01c4f8d04bcef11de8f3091863994cf4cb9294808dbd08d9d45da5110ee86ae6f2810cfea3b3c8b08fbc7ab88f5985bdc6adcd7b1b4b5487676b295f6ef83c026a5b6c21001) [staticcall]
+    │   │   └─ ← [Return] 0x88dabbcccc02cb3df1b1a414cf50c5d0f0451c88734b7b67a24553ddd8ec7a5f
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a601350e0320ffafa27add560e4b8fa47c44309de48022fc0bc22ab30d55b71bfbc2a59851368b8440215497c40cf05f2df112fe76ce8c8110aba9e89b4117ef86b763ed5d9cdfd36a3e603a1cd12bad4eee55932504e20be6d070b93c529f1da1b1001) [staticcall]
+    │   │   └─ ← [Return] 0xeb1c04c3491178b2849739f5154adf54468253b8e2be64d6ba02fab19f7ee0da
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a6010483b1af2d09311e2f1bafc0ae291dbf498a7e81b845bcadf52775509401a30f8b97bcebd6f6897c9e2eb94507259ec0428c1e07fa6782d8708af089ba29ba7b36518f18059c6e969742601f8967c7515f9b7a72f2e7c63f8c778b386a636bd1001) [staticcall]
+    │   │   └─ ← [Return] 0x08d9426ad143013ec3d3a4a93ccf1dbe602073e252943baed2ab2548ae957a59
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a6010274f406f458944fd94d28df0ec653603ad1599535656ddb79fd86954604b5316e4f7d8b04cb8dab8138ccf518b4e430ba52949547ac559b73c588d0b5d9ba27ab08afa1976ea4a89e37eeeb2a3d4a789f6ca4b23155c90ea0ae797047b30d61001) [staticcall]
+    │   │   └─ ← [Return] 0xc67044e695373cf9c4613b288d9d66c6b1ede25c10627f87e6e2b29de7866cab
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a600f9400ebdd662b41d520f1527dc35db2414725b23faf42d0be2d4b423a8b89b7de96219b97422bfc6ac16cda97b757c204ab551b7f2be09cb69e32ff097c87da50533e8ca7bc14b3ae8d63bce7fcf1d1d5bb90ed64b6eb51fd5b1862d805fa251001) [staticcall]
+    │   │   └─ ← [Return] 0xc092a85432a1598c8663b97a53736079507cb996792669de5b5598487cf34312
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a60160eabba08a833d8cf9b8a8ffb27b4d1e718689cf8a0dbaf74871edf41a8e0ac0c0bc9e3960b36f755f07df873ad5ba615451f53581b78d245ceea396bdedb6142d8e66dfca67f418f17a25a59d338f3951d4408aa61ceac3f48597581142a6c1001) [staticcall]
+    │   │   └─ ← [Return] 0x88841ed231e23cfd77b7080ba51c45d1283c9be4383f7a86b327b6baee183fea
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a60175f8d015df89f2b74eb53f9f5b7ba88060c755839a3c814f0aa0d30fe29ecc348ea1f126d46db0489364e862f359ec00295016b21de8eb13faa5143e85c69d9fd304b05c9f69ec13f93e19e3c2009be9269319aefbac1d36865d2b025d45b1a1001) [staticcall]
+    │   │   └─ ← [Return] 0x89254127c530503156a6700ed7a1744b530f7cbedfeb447745a5fd5e15fb4f74
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a60028a16d771322b84e38d155d6508ffa705b55f6f7557e138c8512dc47a97ddd86cf9e498e60e9c41d37d49bbe1c161350b1c8a12b17297845bdb2fb590ea491f7a6dcb551e239bae6ece42fefa83ce8c0c0339561cd70a5933f6bd72d249fdce1001) [staticcall]
+    │   │   └─ ← [Return] 0xdbbae3b1a7b0d1e8f6c95ec2dd527f42f2cf40da54e8d064a9368361cc03f321
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a600fad6bf1b6870a9e23e4b430af1b7c750fa63c856bd7614f5c8c06e55d2aec278944ce3bb4d2ac44a2de987ce2567a4e097d741f0c0128c358c4a1945201b4ae24181216e2da34d5164777d72dfc610c6f70add3b67e9df4381ff58a7a6cdc9d1001) [staticcall]
+    │   │   └─ ← [Return] 0x93367b5bdd02c8af90c495818497c154b863d00af0b7d2d3938698a14ef8fa9a
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a60107a16ceb883bd0c1d19d7a9a7fbd11fcf7644513b12c4b059e9c267d8fc1e9039cddc63c4b848396934b0e8a02dfee118d0ffa1cc341cc63d6cebe7134668450b811b5d67a206c29f2602ae5b2a04da2f06140960c2017db3a0fe16dd2b50201001) [staticcall]
+    │   │   └─ ← [Return] 0x015f5a69920a80b5c4f3d5b2312bbaf17c6c0c73a794c52282d6055feabb022f
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a6017dc8050b7d8b883e388b5dd077d30373d0f7bf4affcb3ea45e123254e6d89af819b64627a9917bf3b9338f1e520260f0ebd7a622b9405ec7147f0c99ddd4cb6975a04b8545de3b7fc713678575a33f0dbd50f77414430b87b6ced20ec3031241001) [staticcall]
+    │   │   └─ ← [Return] 0x06f761cee6e882d681472c1008eadefc406b48959d4a178bdbe1f174ae302094
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a6007a9d2b7f4cd4ac2e4106c0365922ffac9b32282777265b6f4e079c8f75931c0f30f97f16b0da68664d406d37bf8108802df72e78f42d7f02efd9612189abe27366a54c6b33bead5c3dab630920b8be9d5e4d7e18520e5f0acff5852d972161b1001) [staticcall]
+    │   │   └─ ← [Return] 0x6afaceec7a6f3d9a09ff0264e8cbe5007b7bc530253bc7f4fc25802ed2e0b77f
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a600634f980cdd7141195e8f75de39627b3ea2a6d1bc57980fff7f703ddd718d1f81d62c770a35fc5acb2395db902e2b5d906ec0267744d08d78db1668877f4b940301c4f1c71924cb44a7f429487b95143ec319729f36068eb074d43bfb6774b171001) [staticcall]
+    │   │   └─ ← [Return] 0x81dad85a2e67b36e73c259d1e4899f361a50c520f1f2273fab7fb7e342deb291
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a601995aa62a51fe0fcc7a95ccd13f348077f9ba148f504bfa02b0628441e45f1c50f477d728ebfef0833665f59dca7ce9609d1241996ee9ca7445401240017f78cc68135edc326a677489a74e2e489044db79d610a7b1e3964193ec30b7ed178771001) [staticcall]
+    │   │   └─ ← [Return] 0x3189d81586ef51c3aa575100aaf6f272961c6b91d27ca02d213737634b0dbc8a
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a60146244bd46f0d8f7193461952ad4a6143042db3cd036298fd8fa276c82cf663c52a6bf719dd7632a26c343c662f99e9605c6cfb702660280b58ea1a2bddcf4e745d54bf605e64e8603e8502c4d03b4945812d677dcccbfac469cd03284c374291001) [staticcall]
+    │   │   └─ ← [Return] 0x8cb9818b98a9cf61bab0dd9f0b07c2f3bd2dc2299f69cff7ee1be90d7b62b2cf
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a6001d64869f78e022dbe916719c5575388d8ef7464d8bc194a889b5ae0787a7c3bc8b60017538b342759975a765c043b7f18ed7d10dbad596a5ae17ceb57b077ff8ecbf624e70a483725505c5a4526fb22ffb9eaaeccbb1e63cfadd1176d5012951001) [staticcall]
+    │   │   └─ ← [Return] 0xa699fba438c4401ab216de7bee5c082688c65394447ce9bb319aafda6c3587c4
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a600dc2301f6a8af0aac635215697cbb176a4420b52866530be6d1313561cb7b857043234a0915c2b6f5fe42ccdc605362302e726765eca97dc43fba9c43a44315049b430b3a011dcfb6d77d48df78d386e4130eb5e91a63c17e33daf13e029a9941001) [staticcall]
+    │   │   └─ ← [Return] 0x07d8a3ba3bfa3a61afc062c0dacbd668406633d995fd52949c0e8281ea49ddca
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a600c8ce5acb22be837d6911ae0383d3b8ff5cbac7975ba92432dd39afcc8e8a4069266e5a4e0ac224f30a1529ea63f175314137249696d2117f2cf88089f72808ad7ec6c10e6ff7348e25f6a9b47c06d75b5eada396ece120bc71c993c352fdcac1001) [staticcall]
+    │   │   └─ ← [Return] 0x6209b8221d24f88d9427444801ffc40dd21e311b0771ce3cc9498ddefee811ae
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a60104c174f699c7754c18da3a0f2d36080bc3ffeee48eebe671d80ccfb67d60c533f69c19dc40d529b81a322068da9c0a01930462d9b5ddc3537446b285428e73b65e6ef51be2634322ed7dc66e3f603611bb8222545fd915db8f2ebe7e4927dd91001) [staticcall]
+    │   │   └─ ← [Return] 0x0b503a6c00df02096f576b842b0e2534922830dd20344e2ea0ee77a8d3b9034f
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a600f0f23573d4cc44a62a1f263c5bd1b9d8b3815f11b2ebf56c014a3cc052e74f959672f54d5c9a01fe82183752ca28f3508b3456e7cf7124680c461a1bebc606d52394c001aaf54aa933dcdb9b3654632ee47cc9c33eae8ee110399d0695b7c531001) [staticcall]
+    │   │   └─ ← [Return] 0x61831b481a0c429bdef8cb15985675cad75e87c744553362d5ac93f48b77c655
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a60159206eedc1335b4cb323609a1393c1dcc455a60c6cb5d37274d215350d59cec6991ee7e80b4c2c2ef9ff9ad4b0fca74064fb4f15ff0c055f64e93c3fa059da819d27b767cbb7ce196afa703f66cf980c70a19a93857cd3c2af6c81c35ee20e81001) [staticcall]
+    │   │   └─ ← [Return] 0x1d61550f6aeb31a3d7610aa8c00281a08042e497886e2237a714dcbc47e692aa
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a600f2fb12d49b4989af5182d7be213ab894eaa9787812c0e28e525ae218ae1f5dadd0ce2e16c8448688b617ff0254fedee10ebe80251a301586fc9597b04afca8a5afa804e74b611916679ba98b369d9415a2c1c058f381d266b4daed2fe6d00ba1001) [staticcall]
+    │   │   └─ ← [Return] 0x7624f858021549ef91fd05ce3951b79d80f12dd1d392a7987046dfd11b73075d
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a600db3d42037d3c1badbb988338a7a6376413a4b3a18b15334e0d56a61481f5f4457d7f208c015f272faf111a0db00a7d6026f1d86aae93f9250851e10c1fd5af30ec468cbff2ce0d8d9a6ac9aa7718eccc75098cf84302a9ab4aa06e559c488341001) [staticcall]
+    │   │   └─ ← [Return] 0x1ea0c192ef164f392f69fec61155c94167c8d8651e04ac1725c2d7a5b55d44b9
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a60112730093dcdbf56fa50786d6c0b459cb566e7670dabbb6e6b27ae170c9a6ff925e21caecc38b45436cfaff6cdeb9e7509760e5e08a1869409b9402878aa98f08b86978bae65c953101b388bee290471acc2e05ba3e57529e41dca2c8edb4c441001) [staticcall]
+    │   │   └─ ← [Return] 0x63832841b3346215704360b9dd7a030115095d87d260690f69a66e7c3ee751c9
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a6008b3c6a64eb2be629fd554ec28d3ee3e68a6bec2206829a24025b54f4d15a4ee04771248736d9732fcbb81adc5fcb886180df7cf4a4cbad9fb4ba2a5b198f7c972429b788464fae550c6fcd5cb6cda76b25c682bbd8e89c8c06e861b0d64ede71001) [staticcall]
+    │   │   └─ ← [Return] 0xd1cbb788f239bf966d8126483b96d0e3c61fca652fe054ceb12ea03a3b920fae
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a600137fc42df2ee3187e9c7ccc91ed24ada49ff6a8fad805e36999439463c06a3b10bbb5df5e74da3502c460060f31e0960b6cdca20957db2c516d89995ef244ebfe1c83b9cf3eb696c5d9bd952319fdf099bf65a683062aa4fb19c5b19cb5f7041001) [staticcall]
+    │   │   └─ ← [Return] 0xd36a77c61c21622ab0b0237279e7c80f681bf22b2caeae210fd2bf7815532494
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a6009a3c002dd114bed3d4e7b4e56a3b75335adcae5eedd71b350baca5043594f9356c2338d0453b4fdb83f45dd48370133000788c05facc8b6093b6012a5a4df82c4966183bae93030870754740d0668dee1eafa5b2e60ad155eb46af3c2a691641001) [staticcall]
+    │   │   └─ ← [Return] 0xa603fc9fa84bfd5f718f5630ac77440f8604d45a0218a9ea1427fb6a6b489a8a
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a6017fdb8c798892e9f367a38399cc133f2345ba0d3483dc0ce01c9d6cf00a01d1c495e4608168aaa71cc214482b70bbf3e0ec880399ab5a1c00221c82ed684970b357d7f659693f3f0e6b12b8425ac4a020f30157203c75d3b68d15ff18b4e80661001) [staticcall]
+    │   │   └─ ← [Return] 0x496b997945af4ae7f513d0f47504693b3a6e59f8ea795132e4166c85a767052e
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a600eafbefe00662da657a4c34310299fecbc939e64ffdf5b2e7322cc86d6fdf5d65d76ed9ae377b8cd04209afc9429d09a194ba0bf82f1af6a63ae7bcfbaba1441c647e6f5752aaa49c9919623b6599335187326c820a04fcfbd1a8d29b1ff86841001) [staticcall]
+    │   │   └─ ← [Return] 0x0bd239758664df31ad8a0c8aec7057d99bb36ee1366251cc3761206cb02c546a
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a601657fe991fe401252cf582047a05c497d9d4732fae8061a49c1449767cd097ee57d70b20a6bc13f650ce8f60f2754d850068a669ad7663258054c8269ec771e2f2b814c5371d91b85f793a94c83c28bc97dcfcf5d6b6a3b222e028ea3199bf2a1001) [staticcall]
+    │   │   └─ ← [Return] 0xdba4b54e607021a791741e7cd8641b4f2055090a57d9057fb61a3b22ae3deb35
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a601318164ec10d7ebaf1ee5525329044d82ec4da2caf229c1e844580b803c351562a947d382acdc4ea0bcdf8c1c9c011e212ea9c0b3ab45ded1b9e6f4dc0a577060c6f3f1b7f80ac18f9c64efdecc2b68fb4a55c11363bcdf7c1de750a587374a31001) [staticcall]
+    │   │   └─ ← [Return] 0xb5e7eeef5e9c3c91698ab2562bff15e5f69649488adcdf31328a9b7c845b5a36
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a6006454080dc495aa4342e5d9fbff5198f75fd0826bc20da36535811f7e90504059361993e5b65c311229f7a455a27280a08705f239830ad34ae4fb1524fccef5fee687e79162303a62098b7ae98187afbd67a4e382cafd52e1cfd97d5d91821c41001) [staticcall]
+    │   │   └─ ← [Return] 0x95d8885ff400e3acdff80320e61ffaf51a24f2cc9e0b5a01e162695211bd7fcf
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a60061663f77366a294e9fa3099659f222c6a581f16d128043b26f71f5aee1b302d141de75e196aceaf6542d3eb5e428ca100d044c4162978fd1fbbe3632a819f76ce0ec087a55717601a98b68537ab20add518485db6fc96c361bcfb84d6197a611001) [staticcall]
+    │   │   └─ ← [Return] 0xd2682faeedba22c1c138956e2419d87d1780b321087fcf5953032d2f974c74da
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a60022f29e6ab7fc51ecef26fba3f5fce79a8a65c268b0cbdc9e6a62b66a343d81843cbdc322daa4209cfec6d17862b648c0932385b76bf4a2b13e2f4843b9051dd0df64fce27b3db2b0fcec5a4d26fce7ff825895ecdf313407464045cce75a0051001) [staticcall]
+    │   │   └─ ← [Return] 0x370020304689c8123ad1a0acc482e500125c5c64e604746f8d0703877b3ef2d0
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a600861fbddb33ab7f3f96fafb1af6c80cbc679ae007d746529f562187993fb2d7fcd24155ab46bf97d26495704c895b232085da3d32d15ed612a7a3a7a1bfecaa22728e893cc30d61e184ceb92bb918cc7434fc4e3062684d793860286ab1e72801001) [staticcall]
+    │   │   └─ ← [Return] 0x227c4265f3fc23dd17e3bf0c1799862406e628816cded5599fd99ba4512388d1
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a60074f2abab3c5d66cae574c597a7164113039c9d24337c9b0306a4587f076924b70faf79d58b2891d8f3332460085ee1f12dba13a47b0bb95947f5a39c2ef78d7058bd87fc6108e6fe07f64e9eee883b20f3bccd0c01bdab9ba9f109cfd4d53ae1001) [staticcall]
+    │   │   └─ ← [Return] 0x37dab4e746018daaeeea4fb5e26a0e26b13f13c67f125daebf204ed4875b0c01
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a600a767877b226385cdf9d66d221808dd389e4cdb9158e8c339ce42499bba260818a1c5c3f761f31ef1c1ccc6248a25a2f1353970f4bfa7135f7d2f331b439400e015de729f09667014ac9cd5b9178fd3f690c769c0061e1120f5f0076f18454ca1001) [staticcall]
+    │   │   └─ ← [Return] 0x0147fa417d645a4cdea1360ae79745f876741b8b3cf23cde935c9c32f6ad4456
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a6004bce0bfde188a3848b9857a03f2d91fb6b75acf21014535023b2574777c8e4ffe56bb5f1c7e658758b5411f8f60a92b0ec8795562445c4bd4cae4a16056a355065611919eeee522c26db564cf3a2e2c15a2bfe2ef5b85085618b3b00b4e450c1001) [staticcall]
+    │   │   └─ ← [Return] 0x44ccf83b29da27872db4dd3130a3f1b3d942f26c387692f7ff5d844856a11ba5
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a60184c9be8d7053e0e439d0fc94996948804fe64c993a1b54f007f3c2566c89d863c7bae7f7785e5525e86669ccf5c06e708ba5e33caf1f554d4c7bca42033a884a350e3594f9fa1f07590ff8be173df9c5f90d06d0776cc1e7233c3f66e6a0e0f1001) [staticcall]
+    │   │   └─ ← [Return] 0xe67f9a8c65fb57536a523ded25ca8706c8e6bdbb82358512162b60de8537d154
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a600db53d2259087aebd29865749dccec53df209a35a0eaef48bf4e6a129deb38b935457660676b78f14c9d3ea8bcce2e7d0f3f79f5f4222b8b0d8742a795ca7f71d65e2079cf7ffa3a96d6485f2377f0323362ff45b3dbd99402c6f7edef2af89f1001) [staticcall]
+    │   │   └─ ← [Return] 0x9128a23ec3057ed0d7238128b22334a530a3537ea301961f7825362afe3f5d42
+    │   ├─ [108] PRECOMPILES::sha256(0x000a621a60057c077365980e76bd955e289f3b112e8a81f652ea1bbfeaf95b7920cbf595b96eec800e22e18e3b14698499ca2b3f980cd366ff9f006bcbd978b17f4e53a4d5ac9fd4cf885448e2fc18056bd3cc7be47b529853c2581f8733bd6b150f4677781001) [staticcall]
+    │   │   └─ ← [Return] 0x793ec47b2216656c362b7d8f20c08dcdc61994c7ee012f1ea6a1cae15c8b4eb2
+    │   ├─ [96] PRECOMPILES::sha256(0x01665d4b63a8a96bbff87e4fd30c842e1aeab850e70f916bfbf9d9563a386a828a290e37b51c731cbc44847e9b3542e5bc71286b43e8a4dc43a1f7522405c4cd0b) [staticcall]
+    │   │   └─ ← [Return] 0x0d0ac6e266d610ec1cb77414154a20036153962c4c0c0d3de22d9f84b800d5b2
+    │   ├─ [96] PRECOMPILES::sha256(0x014880bf52c50f4b77c7b44043507f69bac2267984d85267279e5a3c6137bb61e0ff7f8c987dfb404ef261ca1868136f81ac3895bde0f1a6111154c16badc9926e) [staticcall]
+    │   │   └─ ← [Return] 0x6fb7e55a374c950daebc2e7fa00ca296cd21296be3095ec2dda126325bdcbb2f
+    │   ├─ [96] PRECOMPILES::sha256(0x010d0ac6e266d610ec1cb77414154a20036153962c4c0c0d3de22d9f84b800d5b26fb7e55a374c950daebc2e7fa00ca296cd21296be3095ec2dda126325bdcbb2f) [staticcall]
+    │   │   └─ ← [Return] 0x2709b9efb0fbabd45319abb94f89c26161a2040b2a0a34e7ff2648702553d36a
+    │   ├─ [96] PRECOMPILES::sha256(0x01bbbe6ff8b57b7895993baedba1a9643edf34f78c3dae29f8ae99ecb7828fff38dbdaca95a45e0cc241364aaa19e2084812f0dce7c4fce78443543289028d01a5) [staticcall]
+    │   │   └─ ← [Return] 0xa3a1b6f745627791ced7f14e9f2f5ab130f99e6ac62b7a0dee2366eb875e1251
+    │   ├─ [96] PRECOMPILES::sha256(0x01696eead22a71685fee103a708b1bd284fd459d7cbfe024f6226beaaeb3084c18dde0af235662741aa7cdd84e443f831c86f77730cc3b29e4515940bcecde8f1f) [staticcall]
+    │   │   └─ ← [Return] 0x9904890b7b23597ac0c24c14bc85e7133beda73190786c493ac32ae59f2ba94a
+    │   ├─ [96] PRECOMPILES::sha256(0x01a3a1b6f745627791ced7f14e9f2f5ab130f99e6ac62b7a0dee2366eb875e12519904890b7b23597ac0c24c14bc85e7133beda73190786c493ac32ae59f2ba94a) [staticcall]
+    │   │   └─ ← [Return] 0xe6791bc4aa9e2199c0617d18efcc0f78e040723cfbef6119308da1407aaccbf8
+    │   ├─ [96] PRECOMPILES::sha256(0x012709b9efb0fbabd45319abb94f89c26161a2040b2a0a34e7ff2648702553d36ae6791bc4aa9e2199c0617d18efcc0f78e040723cfbef6119308da1407aaccbf8) [staticcall]
+    │   │   └─ ← [Return] 0xd6f19d93758dcd55375f4278380d5b8719050b21706b0fd6b77576bcc56d5d53
+    │   ├─ [96] PRECOMPILES::sha256(0x01ce19358a0e36e7e701c8f3bf8665f3eefa65b7e4e2bb98a4436d7231f5da09c388dabbcccc02cb3df1b1a414cf50c5d0f0451c88734b7b67a24553ddd8ec7a5f) [staticcall]
+    │   │   └─ ← [Return] 0x410398261d8a7940f1c45642bb41f58b2f70e282d27dc5cb5b76fec2325f6ec6
+    │   ├─ [96] PRECOMPILES::sha256(0x01eb1c04c3491178b2849739f5154adf54468253b8e2be64d6ba02fab19f7ee0da08d9426ad143013ec3d3a4a93ccf1dbe602073e252943baed2ab2548ae957a59) [staticcall]
+    │   │   └─ ← [Return] 0xdb8e702b600de5515a99594d95f0af3c4af00c3679ec8228e5076ecc33190b31
+    │   ├─ [96] PRECOMPILES::sha256(0x01410398261d8a7940f1c45642bb41f58b2f70e282d27dc5cb5b76fec2325f6ec6db8e702b600de5515a99594d95f0af3c4af00c3679ec8228e5076ecc33190b31) [staticcall]
+    │   │   └─ ← [Return] 0x8b59465edd3748b95d272dd18892db88e736dfacfa73ed21dd19df6414f066b0
+    │   ├─ [96] PRECOMPILES::sha256(0x01c67044e695373cf9c4613b288d9d66c6b1ede25c10627f87e6e2b29de7866cabc092a85432a1598c8663b97a53736079507cb996792669de5b5598487cf34312) [staticcall]
+    │   │   └─ ← [Return] 0x5f1402eb5d8d677b806f0a97eda3d06eae2928baed6d97b94da8629a9644b19e
+    │   ├─ [96] PRECOMPILES::sha256(0x0188841ed231e23cfd77b7080ba51c45d1283c9be4383f7a86b327b6baee183fea89254127c530503156a6700ed7a1744b530f7cbedfeb447745a5fd5e15fb4f74) [staticcall]
+    │   │   └─ ← [Return] 0xf236b196441de2b9744a5790d8512b9a8f437ddef3d75415ea250afa6a222f7c
+    │   ├─ [96] PRECOMPILES::sha256(0x015f1402eb5d8d677b806f0a97eda3d06eae2928baed6d97b94da8629a9644b19ef236b196441de2b9744a5790d8512b9a8f437ddef3d75415ea250afa6a222f7c) [staticcall]
+    │   │   └─ ← [Return] 0x2482a254c2981ed68ed75592da80c44ffde2eb4287f88e0bb2cbcf94ccd7250e
+    │   ├─ [96] PRECOMPILES::sha256(0x018b59465edd3748b95d272dd18892db88e736dfacfa73ed21dd19df6414f066b02482a254c2981ed68ed75592da80c44ffde2eb4287f88e0bb2cbcf94ccd7250e) [staticcall]
+    │   │   └─ ← [Return] 0x615adea1d7e7811fb4ae370322a97ce85699072d86d96b8f47aa2342c3e20187
+    │   ├─ [96] PRECOMPILES::sha256(0x01d6f19d93758dcd55375f4278380d5b8719050b21706b0fd6b77576bcc56d5d53615adea1d7e7811fb4ae370322a97ce85699072d86d96b8f47aa2342c3e20187) [staticcall]
+    │   │   └─ ← [Return] 0xcc40a2a0a22ceea4a741c87faa2cc3ca5d9d500161ce033fdb11971ced6ab36e
+    │   ├─ [96] PRECOMPILES::sha256(0x01dbbae3b1a7b0d1e8f6c95ec2dd527f42f2cf40da54e8d064a9368361cc03f32193367b5bdd02c8af90c495818497c154b863d00af0b7d2d3938698a14ef8fa9a) [staticcall]
+    │   │   └─ ← [Return] 0x5f4409603c27fbfce8eab05d3432632afe5383b9293ddb1f9daa2d753eec0898
+    │   ├─ [96] PRECOMPILES::sha256(0x01015f5a69920a80b5c4f3d5b2312bbaf17c6c0c73a794c52282d6055feabb022f06f761cee6e882d681472c1008eadefc406b48959d4a178bdbe1f174ae302094) [staticcall]
+    │   │   └─ ← [Return] 0xb724a187491c11e580f540f3180c9984ac502de5948fffa61a37d10a82dfee87
+    │   ├─ [96] PRECOMPILES::sha256(0x015f4409603c27fbfce8eab05d3432632afe5383b9293ddb1f9daa2d753eec0898b724a187491c11e580f540f3180c9984ac502de5948fffa61a37d10a82dfee87) [staticcall]
+    │   │   └─ ← [Return] 0x5ca1d48fcefc4958954d1856808899964610ce59dfb0ba76890a96c572cd2a35
+    │   ├─ [96] PRECOMPILES::sha256(0x016afaceec7a6f3d9a09ff0264e8cbe5007b7bc530253bc7f4fc25802ed2e0b77f81dad85a2e67b36e73c259d1e4899f361a50c520f1f2273fab7fb7e342deb291) [staticcall]
+    │   │   └─ ← [Return] 0xc8573d3c747d52ff491bb1929a84b3963c18cefcf01cc2771200bd41f771445b
+    │   ├─ [96] PRECOMPILES::sha256(0x013189d81586ef51c3aa575100aaf6f272961c6b91d27ca02d213737634b0dbc8a8cb9818b98a9cf61bab0dd9f0b07c2f3bd2dc2299f69cff7ee1be90d7b62b2cf) [staticcall]
+    │   │   └─ ← [Return] 0x33d3d4fdd77385db58917ec2f7c13076339bb6207f97e15c2a5fa2c8081a1980
+    │   ├─ [96] PRECOMPILES::sha256(0x01c8573d3c747d52ff491bb1929a84b3963c18cefcf01cc2771200bd41f771445b33d3d4fdd77385db58917ec2f7c13076339bb6207f97e15c2a5fa2c8081a1980) [staticcall]
+    │   │   └─ ← [Return] 0xaf86c84b0f673f03ba52775d0cd2a45d2b7441a3a61588dd7a13dd69dbd9202e
+    │   ├─ [96] PRECOMPILES::sha256(0x015ca1d48fcefc4958954d1856808899964610ce59dfb0ba76890a96c572cd2a35af86c84b0f673f03ba52775d0cd2a45d2b7441a3a61588dd7a13dd69dbd9202e) [staticcall]
+    │   │   └─ ← [Return] 0x7dfd8c10bb067ae0897c7a894dc14af1836100aa56b84b42a860b62a161deb15
+    │   ├─ [96] PRECOMPILES::sha256(0x01a699fba438c4401ab216de7bee5c082688c65394447ce9bb319aafda6c3587c407d8a3ba3bfa3a61afc062c0dacbd668406633d995fd52949c0e8281ea49ddca) [staticcall]
+    │   │   └─ ← [Return] 0xf8bfa1f216ccb2d042e06782559277c601969ff15f70835e14cf5e2d000246fc
+    │   ├─ [96] PRECOMPILES::sha256(0x016209b8221d24f88d9427444801ffc40dd21e311b0771ce3cc9498ddefee811ae0b503a6c00df02096f576b842b0e2534922830dd20344e2ea0ee77a8d3b9034f) [staticcall]
+    │   │   └─ ← [Return] 0xbf391152cc2f1585c3e73fd0625082167e692a7a8cde235cca8718df6a979f6b
+    │   ├─ [96] PRECOMPILES::sha256(0x01f8bfa1f216ccb2d042e06782559277c601969ff15f70835e14cf5e2d000246fcbf391152cc2f1585c3e73fd0625082167e692a7a8cde235cca8718df6a979f6b) [staticcall]
+    │   │   └─ ← [Return] 0x158ab1635dbe8a76685feb37fe9591c6e2b56cc65793e48a19c2fbb9ce64f890
+    │   ├─ [96] PRECOMPILES::sha256(0x0161831b481a0c429bdef8cb15985675cad75e87c744553362d5ac93f48b77c6551d61550f6aeb31a3d7610aa8c00281a08042e497886e2237a714dcbc47e692aa) [staticcall]
+    │   │   └─ ← [Return] 0xfd5f6e2e4cab7ca316f60ecef8c3efe52bb3069457cfe4d34c36eff32e1b97f3
+    │   ├─ [96] PRECOMPILES::sha256(0x017624f858021549ef91fd05ce3951b79d80f12dd1d392a7987046dfd11b73075d1ea0c192ef164f392f69fec61155c94167c8d8651e04ac1725c2d7a5b55d44b9) [staticcall]
+    │   │   └─ ← [Return] 0x4b3240fd9db46a4ce48d85227b81b2cb622801cfbeea83675d0ffbbe8a9982dc
+    │   ├─ [96] PRECOMPILES::sha256(0x01fd5f6e2e4cab7ca316f60ecef8c3efe52bb3069457cfe4d34c36eff32e1b97f34b3240fd9db46a4ce48d85227b81b2cb622801cfbeea83675d0ffbbe8a9982dc) [staticcall]
+    │   │   └─ ← [Return] 0xbce9469211498498e496b6b9009b1419e6a89b1a7ed624f57ea77ca674cf3762
+    │   ├─ [96] PRECOMPILES::sha256(0x01158ab1635dbe8a76685feb37fe9591c6e2b56cc65793e48a19c2fbb9ce64f890bce9469211498498e496b6b9009b1419e6a89b1a7ed624f57ea77ca674cf3762) [staticcall]
+    │   │   └─ ← [Return] 0x857a9dcb0be8077d0bbb5396562e32fc405671dffee7b284de7314a4eea80b27
+    │   ├─ [96] PRECOMPILES::sha256(0x017dfd8c10bb067ae0897c7a894dc14af1836100aa56b84b42a860b62a161deb15857a9dcb0be8077d0bbb5396562e32fc405671dffee7b284de7314a4eea80b27) [staticcall]
+    │   │   └─ ← [Return] 0x33f888908889494791eb7c1c5491d88ed0273db68e2eb98342e0282d73035699
+    │   ├─ [96] PRECOMPILES::sha256(0x01cc40a2a0a22ceea4a741c87faa2cc3ca5d9d500161ce033fdb11971ced6ab36e33f888908889494791eb7c1c5491d88ed0273db68e2eb98342e0282d73035699) [staticcall]
+    │   │   └─ ← [Return] 0xa11957b5685e8bd0a1ec86992416fc923b4ad36ccfb53ea6d70cdc0cb3734c37
+    │   ├─ [96] PRECOMPILES::sha256(0x0163832841b3346215704360b9dd7a030115095d87d260690f69a66e7c3ee751c9d1cbb788f239bf966d8126483b96d0e3c61fca652fe054ceb12ea03a3b920fae) [staticcall]
+    │   │   └─ ← [Return] 0x20050aa462dba5e199dd7a5570a7c79e00c1ece6ea60f8aab60ce2193f51f595
+    │   ├─ [96] PRECOMPILES::sha256(0x01d36a77c61c21622ab0b0237279e7c80f681bf22b2caeae210fd2bf7815532494a603fc9fa84bfd5f718f5630ac77440f8604d45a0218a9ea1427fb6a6b489a8a) [staticcall]
+    │   │   └─ ← [Return] 0x3f125e27e76bd3d92dfeac74d34ed8f7e877025d8f92517385a944a919cec4cd
+    │   ├─ [96] PRECOMPILES::sha256(0x0120050aa462dba5e199dd7a5570a7c79e00c1ece6ea60f8aab60ce2193f51f5953f125e27e76bd3d92dfeac74d34ed8f7e877025d8f92517385a944a919cec4cd) [staticcall]
+    │   │   └─ ← [Return] 0xa4d1b5ffdbed7b8c11e51490c2b43bcff757e58b89a391b4b3a12533b3f78952
+    │   ├─ [96] PRECOMPILES::sha256(0x01496b997945af4ae7f513d0f47504693b3a6e59f8ea795132e4166c85a767052e0bd239758664df31ad8a0c8aec7057d99bb36ee1366251cc3761206cb02c546a) [staticcall]
+    │   │   └─ ← [Return] 0xcda1c4fd565d8c25a0c058182d12ec4d80d930bdb537fd6e2ebf3795dc4792de
+    │   ├─ [96] PRECOMPILES::sha256(0x01dba4b54e607021a791741e7cd8641b4f2055090a57d9057fb61a3b22ae3deb35b5e7eeef5e9c3c91698ab2562bff15e5f69649488adcdf31328a9b7c845b5a36) [staticcall]
+    │   │   └─ ← [Return] 0xf962f030db814a4d2c88eb4c6783690b955aafff44131a2f66f58e62534248f2
+    │   ├─ [96] PRECOMPILES::sha256(0x01cda1c4fd565d8c25a0c058182d12ec4d80d930bdb537fd6e2ebf3795dc4792def962f030db814a4d2c88eb4c6783690b955aafff44131a2f66f58e62534248f2) [staticcall]
+    │   │   └─ ← [Return] 0xa65ec4c2f8909d28a0ffe054d1907019cbb9c8541af7c51c70582b4d5df64414
+    │   ├─ [96] PRECOMPILES::sha256(0x01a4d1b5ffdbed7b8c11e51490c2b43bcff757e58b89a391b4b3a12533b3f78952a65ec4c2f8909d28a0ffe054d1907019cbb9c8541af7c51c70582b4d5df64414) [staticcall]
+    │   │   └─ ← [Return] 0xc98db40e8140d4687b4d2d9c5f6128427d5130d323f8dbe1b6d2d6635b31d22f
+    │   ├─ [96] PRECOMPILES::sha256(0x0195d8885ff400e3acdff80320e61ffaf51a24f2cc9e0b5a01e162695211bd7fcfd2682faeedba22c1c138956e2419d87d1780b321087fcf5953032d2f974c74da) [staticcall]
+    │   │   └─ ← [Return] 0xf67617bcb8dece513eb448597b59e74b6ef5a2a9be10691783c7dcb34eba0d2d
+    │   ├─ [96] PRECOMPILES::sha256(0x01370020304689c8123ad1a0acc482e500125c5c64e604746f8d0703877b3ef2d0227c4265f3fc23dd17e3bf0c1799862406e628816cded5599fd99ba4512388d1) [staticcall]
+    │   │   └─ ← [Return] 0xb64786bbf82b9226bc0dcefcdec3973eb849b79f55935be9a817d33fdbfa30ba
+    │   ├─ [96] PRECOMPILES::sha256(0x01f67617bcb8dece513eb448597b59e74b6ef5a2a9be10691783c7dcb34eba0d2db64786bbf82b9226bc0dcefcdec3973eb849b79f55935be9a817d33fdbfa30ba) [staticcall]
+    │   │   └─ ← [Return] 0x71d664de1e2b0076db05548235d4d8fa783e99d63156f7f4b9452e69b9eb44ed
+    │   ├─ [96] PRECOMPILES::sha256(0x0137dab4e746018daaeeea4fb5e26a0e26b13f13c67f125daebf204ed4875b0c010147fa417d645a4cdea1360ae79745f876741b8b3cf23cde935c9c32f6ad4456) [staticcall]
+    │   │   └─ ← [Return] 0x3334c1317470d717742aa55a7b126951aa0910b80acf1d0d59638782048ed28b
+    │   ├─ [96] PRECOMPILES::sha256(0x0144ccf83b29da27872db4dd3130a3f1b3d942f26c387692f7ff5d844856a11ba5e67f9a8c65fb57536a523ded25ca8706c8e6bdbb82358512162b60de8537d154) [staticcall]
+    │   │   └─ ← [Return] 0x6c12c974118d182ace538bcdad2997f49a3d245fa9a70408e055173d5491bb10
+    │   ├─ [96] PRECOMPILES::sha256(0x013334c1317470d717742aa55a7b126951aa0910b80acf1d0d59638782048ed28b6c12c974118d182ace538bcdad2997f49a3d245fa9a70408e055173d5491bb10) [staticcall]
+    │   │   └─ ← [Return] 0x1df4a05078d92c6b394edbaefad060da330bb11cf1576e4db13e3f412ad638b2
+    │   ├─ [96] PRECOMPILES::sha256(0x0171d664de1e2b0076db05548235d4d8fa783e99d63156f7f4b9452e69b9eb44ed1df4a05078d92c6b394edbaefad060da330bb11cf1576e4db13e3f412ad638b2) [staticcall]
+    │   │   └─ ← [Return] 0xa654e1f498f004c1073347c6a7cb3d30c897a1cecd94fa66befe8bdbbed331b7
+    │   ├─ [96] PRECOMPILES::sha256(0x01c98db40e8140d4687b4d2d9c5f6128427d5130d323f8dbe1b6d2d6635b31d22fa654e1f498f004c1073347c6a7cb3d30c897a1cecd94fa66befe8bdbbed331b7) [staticcall]
+    │   │   └─ ← [Return] 0x427e84d165cc3ecbba1a231a073b4105ccf96236bfc45715001ecef3e257d42a
+    │   ├─ [96] PRECOMPILES::sha256(0x019128a23ec3057ed0d7238128b22334a530a3537ea301961f7825362afe3f5d42793ec47b2216656c362b7d8f20c08dcdc61994c7ee012f1ea6a1cae15c8b4eb2) [staticcall]
+    │   │   └─ ← [Return] 0x39716f7df7eee4946eb0c7b0533ab881a74fb7017cc80b0e6ecc8c0f06af1373
+    │   ├─ [96] PRECOMPILES::sha256(0x01427e84d165cc3ecbba1a231a073b4105ccf96236bfc45715001ecef3e257d42a39716f7df7eee4946eb0c7b0533ab881a74fb7017cc80b0e6ecc8c0f06af1373) [staticcall]
+    │   │   └─ ← [Return] 0xe22177ae0d5240464f7fc5544d94f9879dc0c8dd413ebcd028b9d1bf4c8fff16
+    │   ├─ [96] PRECOMPILES::sha256(0x01a11957b5685e8bd0a1ec86992416fc923b4ad36ccfb53ea6d70cdc0cb3734c37e22177ae0d5240464f7fc5544d94f9879dc0c8dd413ebcd028b9d1bf4c8fff16) [staticcall]
+    │   │   └─ ← [Return] 0xdd4a64e30bd97262b9eea057218098f84973bde048f6e2b09bcb30680348e38d
+    │   └─ ← [Return] 0xdd4a64e30bd97262b9eea057218098f84973bde048f6e2b09bcb30680348e38d
+    ├─ emit CalldataGasEstimate(name: "bls-b-store-validator-set-50", byteLength: 19428 [1.942e4], gasCost: 197064 [1.97e5])
+    ├─ emit CalldataCostBreakdown(name: "bls-b-store-validator-set-50", byteLength: 19428 [1.942e4], zeroBytes: 9482, nonzeroBytes: 9946, gasL1Standard: 197064 [1.97e5], gasL1FloorEIP7623: 492660 [4.926e5], blobBytes: 20064 [2.006e4])
+    ├─ emit CalldataGasEstimate(name: "bls-b-stored-validator-set-bitmap-50", byteLength: 740, gasCost: 8108)
+    ├─ emit CalldataCostBreakdown(name: "bls-b-stored-validator-set-bitmap-50", byteLength: 740, zeroBytes: 311, nonzeroBytes: 429, gasL1Standard: 8108, gasL1FloorEIP7623: 20270 [2.027e4], blobBytes: 768)
+    ├─ [0] VM::readFile("test/fixtures/update_50_equal.json") [staticcall]
+    │   └─ ← [Return] <file>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.available") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.pubKeys") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.pubKeysEip2537") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.powers") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.leaves") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.hash") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.aggregateSigEip2537") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.aggregatePubKeyEip2537") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.hashedMessageEip2537") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.wrongMessageHashedEip2537") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.missingSignerAggregateSigEip2537") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.signerBitmap") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ [0] VM::parseJson("<JSON file>", ".canonical.bls.message") [staticcall]
+    │   └─ ← [Return] <encoded JSON value>
+    ├─ emit CalldataGasEstimate(name: "bls-c-calldata-validator-set-50", byteLength: 12036 [1.203e4], gasCost: 112656 [1.126e5])
+    ├─ emit CalldataCostBreakdown(name: "bls-c-calldata-validator-set-50", byteLength: 12036 [1.203e4], zeroBytes: 6660, nonzeroBytes: 5376, gasL1Standard: 112656 [1.126e5], gasL1FloorEIP7623: 281640 [2.816e5], blobBytes: 12448 [1.244e4])
+    ├─ emit CalldataGasEstimate(name: "bls-d-synthetic-helper-pairing-10", byteLength: 36, gasCost: 204)
+    ├─ emit CalldataCostBreakdown(name: "bls-d-synthetic-helper-pairing-10", byteLength: 36, zeroBytes: 31, nonzeroBytes: 5, gasL1Standard: 204, gasL1FloorEIP7623: 510, blobBytes: 64)
+    ├─ emit CalldataGasEstimate(name: "bls-d-synthetic-helper-pairing-50", byteLength: 36, gasCost: 204)
+    ├─ emit CalldataCostBreakdown(name: "bls-d-synthetic-helper-pairing-50", byteLength: 36, zeroBytes: 31, nonzeroBytes: 5, gasL1Standard: 204, gasL1FloorEIP7623: 510, blobBytes: 64)
+    ├─ emit CalldataGasEstimate(name: "bls-d-synthetic-helper-pairing-100", byteLength: 36, gasCost: 204)
+    ├─ emit CalldataCostBreakdown(name: "bls-d-synthetic-helper-pairing-100", byteLength: 36, zeroBytes: 31, nonzeroBytes: 5, gasL1Standard: 204, gasL1FloorEIP7623: 510, blobBytes: 64)
+    ├─ emit CalldataGasEstimate(name: "bls-d-synthetic-helper-pairing-175", byteLength: 36, gasCost: 204)
+    ├─ emit CalldataCostBreakdown(name: "bls-d-synthetic-helper-pairing-175", byteLength: 36, zeroBytes: 31, nonzeroBytes: 5, gasL1Standard: 204, gasL1FloorEIP7623: 510, blobBytes: 64)
+    └─ ← [Return]
+
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 357.42ms (356.97ms CPU time)
+
+Ran 1 test suite in 431.28ms (357.42ms CPU time): 1 tests passed, 0 failed, 0 skipped (1 total tests)

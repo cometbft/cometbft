@@ -1,0 +1,224 @@
+Compiling 2 files with Solc 0.8.30
+Compiling 3 files with Solc 0.6.12
+Solc 0.6.12 finished in 3.14s
+Solc 0.8.30 finished in 3.88s
+Compiler run successful with warnings:
+Warning (3149): The result type of the shift operation is equal to the type of the first operand (uint64) ignoring the (larger) type of the second operand (uint256) which might be unexpected. Silence this warning by either converting the first or the second operand to the type of the other.
+src/vendor/chengwenxi-ed25519/Sha512.sol:55:17: Warning: The result type of the shift operation is equal to the type of the first operand (uint64) ignoring the (larger) type of the second operand (uint256) which might be unexpected. Silence this warning by either converting the first or the second operand to the type of the other.
+        return (x << (64 - n)) + (x >> n);
+                ^-----------^
+Warning: AST source not found for /Users/gg/code/contrib/cometbft/evm-light-client-gas-bench/src/vendor/chengwenxi-ed25519/Sha512.sol
+Warning: AST source not found for /Users/gg/code/contrib/cometbft/evm-light-client-gas-bench/src/Ed25519VerifierBench.sol
+Warning: AST source not found for /Users/gg/code/contrib/cometbft/evm-light-client-gas-bench/src/vendor/chengwenxi-ed25519/Ed25519.sol
+note[mixed-case-function]: function names should use mixedCase
+   --> src/EvmLightClientBench.sol:991:14
+    |
+991 |     function _fixed64LE(uint64 v) private pure returns (bytes memory out) {
+    |              ^^^^^^^^^^ help: consider using: `_fixed64Le`
+    |
+    = help: https://book.getfoundry.sh/reference/forge/forge-lint#mixed-case-function
+
+note[unaliased-plain-import]: use named imports '{A, B}' or alias 'import ".." as X'
+ --> test/EvmLightClientBench.t.sol:4:8
+  |
+4 | import "../src/EvmLightClientBench.sol";
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: https://book.getfoundry.sh/reference/forge/forge-lint#unaliased-plain-import
+
+note[screaming-snake-case-const]: constants should use SCREAMING_SNAKE_CASE
+  --> test/EvmLightClientBench.t.sol:18:25
+   |
+18 |     Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+   |                         ^^ help: consider using: `VM`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-const
+
+note[mixed-case-variable]: mutable variables should use mixedCase
+  --> test/EvmLightClientBench.t.sol:43:17
+   |
+43 |         uint256 gasL1FloorEIP7623,
+   |                 ^^^^^^^^^^^^^^^^^ help: consider using: `gasL1FloorEip7623`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#mixed-case-variable
+
+note[asm-keccak256]: use of inefficient hashing mechanism; consider using inline assembly
+   --> src/EvmLightClientBench.sol:221:16
+    |
+221 |           return keccak256(
+    |  ________________^
+222 | |             _canonicalVoteSignBytes(chainId, height, round, blockHash, partSetTotal, partSetHash, timestampNanos)
+223 | |         );
+    | |_________^
+    |
+    = help: https://book.getfoundry.sh/reference/forge/forge-lint#asm-keccak256
+
+note[asm-keccak256]: use of inefficient hashing mechanism; consider using inline assembly
+   --> src/EvmLightClientBench.sol:237:26
+    |
+237 |           bytes32 digest = keccak256(
+    |  __________________________^
+238 | |             _canonicalVoteSignBytes(chainId, height, round, blockHash, partSetTotal, partSetHash, timestampNanos)
+239 | |         );
+    | |_________^
+    |
+    = help: https://book.getfoundry.sh/reference/forge/forge-lint#asm-keccak256
+
+note[asm-keccak256]: use of inefficient hashing mechanism; consider using inline assembly
+   --> src/EvmLightClientBench.sol:805:30
+    |
+805 |             bytes32 digest = keccak256(_compactVoteSignBytes(commit, commit.timestamps[sigIndex]));
+    |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: https://book.getfoundry.sh/reference/forge/forge-lint#asm-keccak256
+
+note[asm-keccak256]: use of inefficient hashing mechanism; consider using inline assembly
+   --> src/EvmLightClientBench.sol:856:30
+    |
+856 |             bytes32 digest = keccak256(_compactVoteSignBytes(commit, commit.timestamps[sigIndex]));
+    |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: https://book.getfoundry.sh/reference/forge/forge-lint#asm-keccak256
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   --> src/EvmLightClientBench.sol:964:24
+    |
+964 |             _fixed64LE(uint64(height)),
+    |                        ^^^^^^^^^^^^^^
+    |
+    = note: consider disabling this lint if you're certain the cast is safe
+            
+            // casting to 'uint64' is safe because [explain why]
+            // forge-lint: disable-next-line(unsafe-typecast)
+            
+            
+    = help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   --> src/EvmLightClientBench.sol:965:80
+    |
+965 |             round == 0 ? bytes("") : abi.encodePacked(bytes1(0x19), _fixed64LE(uint64(round))),
+    |                                                                                ^^^^^^^^^^^^^
+    |
+    = note: consider disabling this lint if you're certain the cast is safe
+            
+            // casting to 'uint64' is safe because [explain why]
+            // forge-lint: disable-next-line(unsafe-typecast)
+            
+            
+    = help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   --> src/EvmLightClientBench.sol:994:29
+    |
+994 |             out[i] = bytes1(uint8(v >> (8 * i)));
+    |                             ^^^^^^^^^^^^^^^^^^^
+    |
+    = note: consider disabling this lint if you're certain the cast is safe
+            
+            // casting to 'uint8' is safe because [explain why]
+            // forge-lint: disable-next-line(unsafe-typecast)
+            
+            
+    = help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+note[unsafe-cheatcode]: usage of unsafe cheatcodes that can perform dangerous operations
+    --> test/EvmLightClientBench.t.sol:2008:19
+     |
+2008 |         return vm.readFile(string.concat("test/fixtures/", name, ".json"));
+     |                   ^^^^^^^^
+     |
+     = help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-cheatcode
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    --> src/EvmLightClientBench.sol:1672:47
+     |
+1672 |         if (v < 0x80) return abi.encodePacked(uint8(v));
+     |                                               ^^^^^^^^
+     |
+     = note: consider disabling this lint if you're certain the cast is safe
+             
+             // casting to 'uint8' is safe because [explain why]
+             // forge-lint: disable-next-line(unsafe-typecast)
+             
+             
+     = help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    --> src/EvmLightClientBench.sol:1676:31
+     |
+1676 |             buf[n++] = bytes1(uint8(v) | 0x80);
+     |                               ^^^^^^^^
+     |
+     = note: consider disabling this lint if you're certain the cast is safe
+             
+             // casting to 'uint8' is safe because [explain why]
+             // forge-lint: disable-next-line(unsafe-typecast)
+             
+             
+     = help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    --> src/EvmLightClientBench.sol:1679:27
+     |
+1679 |         buf[n++] = bytes1(uint8(v));
+     |                           ^^^^^^^^
+     |
+     = note: consider disabling this lint if you're certain the cast is safe
+             
+             // casting to 'uint8' is safe because [explain why]
+             // forge-lint: disable-next-line(unsafe-typecast)
+             
+             
+     = help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[divide-before-multiply]: multiplication should occur before division to avoid loss of precision
+    --> test/EvmLightClientBench.t.sol:2082:16
+     |
+2082 |         return ((byteLength + 30) / 31) * 32;
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: https://book.getfoundry.sh/reference/forge/forge-lint#divide-before-multiply
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    --> test/EvmLightClientBench.t.sol:1288:37
+     |
+1288 |             validators[i] = address(uint160(i + 1));
+     |                                     ^^^^^^^^^^^^^^
+     |
+     = note: consider disabling this lint if you're certain the cast is safe
+             
+             // casting to 'uint160' is safe because [explain why]
+             // forge-lint: disable-next-line(unsafe-typecast)
+             
+             
+     = help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    --> test/EvmLightClientBench.t.sol:2059:16
+     |
+2059 |         return uint64(uint256(int256(value)));
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: consider disabling this lint if you're certain the cast is safe
+             
+             // casting to 'uint64' is safe because [explain why]
+             // forge-lint: disable-next-line(unsafe-typecast)
+             
+             
+     = help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    --> test/EvmLightClientBench.t.sol:2059:23
+     |
+2059 |         return uint64(uint256(int256(value)));
+     |                       ^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: consider disabling this lint if you're certain the cast is safe
+             
+             // casting to 'uint256' is safe because [explain why]
+             // forge-lint: disable-next-line(unsafe-typecast)
+             
+             
+     = help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+

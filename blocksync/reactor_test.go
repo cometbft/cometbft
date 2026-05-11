@@ -619,6 +619,58 @@ func TestFilterMsgBytes(t *testing.T) {
 			bytesFn:   blockResponseBytes,
 			expectErr: "blocksync not active",
 		},
+		{
+			name: "allows BlockResponse at MaxVotesCount commit signatures",
+			setup: func(t *testing.T) *Reactor {
+				r := newFilterReactor(t, true)
+				seedRequester(r, 1, expected)
+				return r
+			},
+			chID:    BlocksyncChannel,
+			peer:    expected,
+			bytesFn: func(t *testing.T) []byte { return blockResponseBytesWithSigs(t, types.MaxVotesCount, 0) },
+		},
+		{
+			name: "rejects BlockResponse exceeding commit signature cap",
+			setup: func(t *testing.T) *Reactor {
+				r := newFilterReactor(t, true)
+				seedRequester(r, 1, expected)
+				return r
+			},
+			chID:      BlocksyncChannel,
+			peer:      expected,
+			bytesFn:   func(t *testing.T) []byte { return blockResponseBytesWithSigs(t, types.MaxVotesCount+1, 0) },
+			expectErr: "too many commit signatures",
+		},
+		{
+			name: "rejects BlockResponse exceeding extended commit signature cap",
+			setup: func(t *testing.T) *Reactor {
+				r := newFilterReactor(t, true)
+				seedRequester(r, 1, expected)
+				return r
+			},
+			chID:      BlocksyncChannel,
+			peer:      expected,
+			bytesFn:   func(t *testing.T) []byte { return blockResponseBytesWithSigs(t, 0, types.MaxVotesCount+1) },
+			expectErr: "too many extended commit signatures",
+		},
+		{
+			name: "rejects BlockResponse splitting signatures across duplicate Block fields",
+			setup: func(t *testing.T) *Reactor {
+				r := newFilterReactor(t, true)
+				seedRequester(r, 1, expected)
+				return r
+			},
+			chID: BlocksyncChannel,
+			peer: expected,
+			bytesFn: func(t *testing.T) []byte {
+				half := types.MaxVotesCount/2 + 1 // 2*half > MaxVotesCount
+				a := blockResponseBytesWithSigs(t, half, 0)
+				b := blockResponseBytesWithSigs(t, half, 0)
+				return append(append([]byte{}, a...), b...)
+			},
+			expectErr: "too many commit signatures",
+		},
 	}
 
 	// sanity: the wire-tag constant matches what proto encoding produces
@@ -637,6 +689,60 @@ func TestFilterMsgBytes(t *testing.T) {
 			require.Contains(t, err.Error(), tc.expectErr)
 		})
 	}
+}
+
+func TestStubUnmarshalAllocs(t *testing.T) {
+	tests := []struct {
+		name          string
+		numCommits    int
+		numExtCommits int
+	}{
+		{"10k commit sigs", 10_000, 0},
+		{"100k commit sigs", 100_000, 0},
+		{"1m commit sigs", 1_000_000, 0},
+		{"10k ext commit sigs", 0, 10_000},
+		{"100k ext commit sigs", 0, 100_000},
+		{"1m ext commit sigs", 0, 1_000_000},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			payload := blockResponseBytesWithSigs(t, tt.numCommits, tt.numExtCommits)
+			allocs := testing.AllocsPerRun(20, func() {
+				var stub bcproto.SigCountMessage
+				require.NoError(t, stub.Unmarshal(payload))
+				require.Len(t, stub.BlockResponse.Block.LastCommit.Signatures, tt.numCommits)
+				require.Len(t, stub.BlockResponse.ExtCommit.ExtendedSignatures, tt.numExtCommits)
+			})
+			const maxAllocs = 50
+			require.LessOrEqualf(t, int(allocs), maxAllocs, "unmarshal allocated %d times, more than max allowed", int(allocs), maxAllocs)
+		})
+	}
+}
+
+func blockResponseBytesWithSigs(t *testing.T, commitSigs, extSigs int) []byte {
+	t.Helper()
+	commit := &cmtproto.Commit{Signatures: make([]cmtproto.CommitSig, commitSigs)}
+	for i := range commit.Signatures {
+		commit.Signatures[i] = cmtproto.CommitSig{BlockIdFlag: cmtproto.BlockIDFlagAbsent}
+	}
+
+	ext := &cmtproto.ExtendedCommit{ExtendedSignatures: make([]cmtproto.ExtendedCommitSig, extSigs)}
+	for i := range ext.ExtendedSignatures {
+		ext.ExtendedSignatures[i] = cmtproto.ExtendedCommitSig{BlockIdFlag: cmtproto.BlockIDFlagAbsent}
+	}
+
+	msg := &bcproto.Message{
+		Sum: &bcproto.Message_BlockResponse{
+			BlockResponse: &bcproto.BlockResponse{
+				Block:     &cmtproto.Block{LastCommit: commit},
+				ExtCommit: ext,
+			},
+		},
+	}
+
+	payload, err := proto.Marshal(msg)
+	require.NoError(t, err)
+	return payload
 }
 
 func TestCheckExtendedCommit(t *testing.T) {

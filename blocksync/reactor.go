@@ -364,10 +364,53 @@ func (r *Reactor) FilterMsgBytes(chID byte, src p2p.Peer, msgBytes []byte) error
 		return errors.New("unsolicited BlockResponse: blocksync not active")
 	}
 
-	// not waiting on an outstanding request to this peer
+	// ensure we are have made an outstanding request to this peer
 	if !r.pool.HasPendingRequestFrom(src.ID()) {
 		return fmt.Errorf("unsolicited BlockResponse from peer %s", src.ID())
 	}
+
+	// validate the commit count in the response
+	if err := r.validateMaxVotes(src, msgBytes); err != nil {
+		return fmt.Errorf("validating max votes: %w", err)
+	}
+
+	return nil
+}
+
+// validateMaxVotes validates that the number of commit signatures and extended
+// commit signatures are both less than the MaxVotesCount, returns an error if
+// not.
+func (r *Reactor) validateMaxVotes(peer p2p.Peer, msg []byte) error {
+	// using a custom struct here to do this check without paying allocation
+	// cost
+	var stub bcproto.SigCountMessage
+	if err := stub.Unmarshal(msg); err != nil {
+		return fmt.Errorf("malformed BlockResponse from peer %s: %w", peer.ID(), err)
+	}
+
+	commitSigs, extSigs := 0, 0
+	if br := stub.BlockResponse; br != nil {
+		if br.Block != nil && br.Block.LastCommit != nil {
+			commitSigs = len(br.Block.LastCommit.Signatures)
+		}
+		if br.ExtCommit != nil {
+			extSigs = len(br.ExtCommit.ExtendedSignatures)
+		}
+	}
+
+	if commitSigs > types.MaxVotesCount {
+		return fmt.Errorf(
+			"BlockResponse from peer %s has too many commit signatures: %d (max %d)",
+			peer.ID(), commitSigs, types.MaxVotesCount,
+		)
+	}
+	if extSigs > types.MaxVotesCount {
+		return fmt.Errorf(
+			"BlockResponse from peer %s has too many extended commit signatures: %d (max %d)",
+			peer.ID(), extSigs, types.MaxVotesCount,
+		)
+	}
+
 	return nil
 }
 

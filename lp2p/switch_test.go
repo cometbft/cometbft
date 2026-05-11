@@ -552,6 +552,13 @@ func TestSwitch(t *testing.T) {
 		// Connect A and B
 		connectSwitches(t, []*Switch{switchA, switchB})
 
+		// Pre-condition: A has B as a peer (A bootstrapped to B). Without
+		// this wait the broadcast can fire before the connection is fully
+		// established and the message is dropped silently.
+		require.Eventually(t, func() bool {
+			return switchA.Peers().Size() == 1
+		}, time.Second, 20*time.Millisecond, "A should see B")
+
 		// ACT: Broadcast message from A to B
 		switchA.BroadcastAsync(p2p.Envelope{
 			ChannelID: channelID,
@@ -563,7 +570,7 @@ func TestSwitch(t *testing.T) {
 			envs := reactorB.receivedEnvelopes()
 			return len(envs) == 1 &&
 				envs[0].Message.(*types.RequestEcho).Message == "passes filter"
-		}, time.Second, 20*time.Millisecond, "Receive should fire when filter allows")
+		}, 2*time.Second, 20*time.Millisecond, "Receive should fire when filter allows")
 
 		// ASSERT #2: B consulted the filter at least once
 		require.GreaterOrEqual(t, reactorB.filterCalls.Load(), int32(1),

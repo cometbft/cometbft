@@ -53,6 +53,9 @@ func (e peerError) Error() string {
 	return fmt.Sprintf("error with peer %v: %s", e.peerID, e.err.Error())
 }
 
+// Reactor implements MsgBytesFilter
+var _ p2p.MsgBytesFilter = (*Reactor)(nil)
+
 // Reactor handles long-term catchup syncing.
 type Reactor struct {
 	p2p.BaseReactor

@@ -150,21 +150,19 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 			require.NoError(t, err)
 			peerList := reactors[byzantineNode].Switch.Peers().Copy()
 			bcs.Logger.Info("Getting peer list", "peers", peerList)
-			// send two votes to all peers (1st to one half, 2nd to another half)
-			for i, peer := range peerList {
-				if i < len(peerList)/2 {
-					bcs.Logger.Info("Signed and pushed vote", "vote", prevote1, "peer", peer)
-					peer.Send(p2p.Envelope{
-						Message:   &cmtcons.Vote{Vote: prevote1.ToProto()},
-						ChannelID: VoteChannel,
-					})
-				} else {
-					bcs.Logger.Info("Signed and pushed vote", "vote", prevote2, "peer", peer)
-					peer.Send(p2p.Envelope{
-						Message:   &cmtcons.Vote{Vote: prevote2.ToProto()},
-						ChannelID: VoteChannel,
-					})
-				}
+			// send both conflicting votes to every peer so each validator receives
+			// the equivocation directly, without depending on gossip propagation
+			// racing against height advancement.
+			for _, peer := range peerList {
+				bcs.Logger.Info("Signed and pushed votes", "vote1", prevote1, "vote2", prevote2, "peer", peer)
+				peer.Send(p2p.Envelope{
+					Message:   &cmtcons.Vote{Vote: prevote1.ToProto()},
+					ChannelID: VoteChannel,
+				})
+				peer.Send(p2p.Envelope{
+					Message:   &cmtcons.Vote{Vote: prevote2.ToProto()},
+					ChannelID: VoteChannel,
+				})
 			}
 		} else {
 			bcs.Logger.Info("Behaving normally")

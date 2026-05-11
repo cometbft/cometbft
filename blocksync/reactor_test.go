@@ -671,11 +671,25 @@ func TestFilterMsgBytes(t *testing.T) {
 			},
 			expectErr: "too many commit signatures",
 		},
+		{
+			name: "rejects BlockResponse when first byte is not BlockResponse proto tag",
+			setup: func(t *testing.T) *Reactor {
+				r := newFilterReactor(t, true)
+				seedRequester(r, 1, expected)
+				return r
+			},
+			chID: BlocksyncChannel,
+			peer: expected,
+			bytesFn: func(t *testing.T) []byte {
+				// Prepend an empty BlockRequest field (tag 0x0a, len 0)
+				// so msgBytes[0] != BlockResponse oneof tag, then append
+				// a real BlockResponse payload that exceeds the cap.
+				oversized := blockResponseBytesWithSigs(t, types.MaxVotesCount+1, 0)
+				return append([]byte{0x0a, 0x00}, oversized...)
+			},
+			expectErr: "too many commit signatures",
+		},
 	}
-
-	// sanity: the wire-tag constant matches what proto encoding produces
-	require.Equal(t, blockResponseWireTag, blockResponseBytes(t)[0])
-	require.NotEqual(t, blockResponseWireTag, blockRequestBytes(t)[0])
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

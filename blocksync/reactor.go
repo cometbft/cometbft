@@ -20,11 +20,6 @@ import (
 // BlocksyncChannel is a channel for blocks and status updates (`BlockStore` height)
 const BlocksyncChannel = byte(0x40)
 
-// blockResponseWireTag is the first byte of a wire-encoded bcproto.Message
-// whose oneof case is BlockResponse (field 3, wiretype 2 LEN). Used to peek
-// the message type before paying the proto.Unmarshal cost.
-const blockResponseWireTag = byte(3<<3 | 2)
-
 const (
 	defaultIntervalStatusUpdate      = 10 * time.Second
 	adaptiveSyncInternalStatusUpdate = 1 * time.Second
@@ -355,23 +350,32 @@ func (r *Reactor) FilterMsgBytes(chID byte, src p2p.Peer, msgBytes []byte) error
 	if chID != BlocksyncChannel || len(msgBytes) == 0 {
 		return nil
 	}
-	if msgBytes[0] != blockResponseWireTag {
+
+	// unmarshal into custom stub struct that will do no allocations so we can
+	// quickly and cheaply check the validity of BlockResponse message
+	var stub bcproto.SigCountMessage
+	if err := stub.Unmarshal(msgBytes); err != nil {
+		return fmt.Errorf("malformed blocksync message from peer %s: %w", src.ID(), err)
+	}
+	if stub.BlockResponse == nil {
+		// Not a BlockResponse oneof case, no extra validation to do in this
+		// case
 		return nil
 	}
 
-	// blocksync not running
+	// blocksync not running, we should not be getting a BlockResponse
 	if !r.enabled.Load() || !r.pool.IsRunning() {
 		return errors.New("unsolicited BlockResponse: blocksync not active")
 	}
 
-	// ensure we are have made an outstanding request to this peer
+	// ensure we have an outstanding request to this peer
 	if !r.pool.HasPendingRequestFrom(src.ID()) {
 		return fmt.Errorf("unsolicited BlockResponse from peer %s", src.ID())
 	}
 
 	// validate the commit count in the response
-	if err := r.validateMaxVotes(src, msgBytes); err != nil {
-		return fmt.Errorf("validating max votes: %w", err)
+	if err := r.validateMaxVotes(stub.BlockResponse); err != nil {
+		return fmt.Errorf("validating max votes in BlockResponse from peer %s: %w", src.ID())
 	}
 
 	return nil
@@ -380,16 +384,9 @@ func (r *Reactor) FilterMsgBytes(chID byte, src p2p.Peer, msgBytes []byte) error
 // validateMaxVotes validates that the number of commit signatures and extended
 // commit signatures are both less than the MaxVotesCount, returns an error if
 // not.
-func (r *Reactor) validateMaxVotes(peer p2p.Peer, msg []byte) error {
-	// using a custom struct here to do this check without paying allocation
-	// cost
-	var stub bcproto.SigCountMessage
-	if err := stub.Unmarshal(msg); err != nil {
-		return fmt.Errorf("malformed BlockResponse from peer %s: %w", peer.ID(), err)
-	}
-
+func (r *Reactor) validateMaxVotes(br *bcproto.SigCountBlockResponse) error {
 	commitSigs, extSigs := 0, 0
-	if br := stub.BlockResponse; br != nil {
+	if br != nil {
 		if br.Block != nil && br.Block.LastCommit != nil {
 			commitSigs = len(br.Block.LastCommit.Signatures)
 		}
@@ -399,16 +396,10 @@ func (r *Reactor) validateMaxVotes(peer p2p.Peer, msg []byte) error {
 	}
 
 	if commitSigs > types.MaxVotesCount {
-		return fmt.Errorf(
-			"BlockResponse from peer %s has too many commit signatures: %d (max %d)",
-			peer.ID(), commitSigs, types.MaxVotesCount,
-		)
+		return fmt.Errorf("too many commit signatures: %d (max %d)", commitSigs, types.MaxVotesCount)
 	}
 	if extSigs > types.MaxVotesCount {
-		return fmt.Errorf(
-			"BlockResponse from peer %s has too many extended commit signatures: %d (max %d)",
-			peer.ID(), extSigs, types.MaxVotesCount,
-		)
+		return fmt.Errorf("too many extended commit signatures: %d (max %d)", extSigs, types.MaxVotesCount)
 	}
 
 	return nil

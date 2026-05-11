@@ -823,6 +823,48 @@ func TestMempoolSyncCheckTxReturnError(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// TestRecheckStateMachine verifies the recheck state machine transitions and
+// the key invariant that setRecheckFull uses CAS (active→full only), so a
+// concurrent setDone that races with setRecheckFull can never leave the state
+// as full after rechecking has finished.
+func TestRecheckStateMachine(t *testing.T) {
+	rc := newRecheck()
+
+	// Initial state: idle.
+	require.True(t, rc.done())
+	require.False(t, rc.consideredFull())
+
+	// setRecheckFull on idle must be a no-op (CAS fails: idle ≠ active).
+	// This is the key regression: the old code would set recheckFull=true here,
+	// causing CheckTx to return ErrRecheckFull even when rechecking was done.
+	changed := rc.setRecheckFull()
+	require.False(t, changed, "setRecheckFull must not transition idle→full")
+	require.True(t, rc.done())
+	require.False(t, rc.consideredFull())
+
+	// idle → active via init.
+	rc.init(nil, nil)
+	require.False(t, rc.done())
+	require.False(t, rc.consideredFull())
+
+	// active → full via setRecheckFull.
+	changed = rc.setRecheckFull()
+	require.True(t, changed)
+	require.False(t, rc.done())
+	require.True(t, rc.consideredFull())
+
+	// full → idle via setDone (single atomic store, no race window).
+	rc.setDone()
+	require.True(t, rc.done())
+	require.False(t, rc.consideredFull())
+
+	// Verify active → idle path (recheck completes without hitting full).
+	rc.init(nil, nil)
+	rc.setDone()
+	require.True(t, rc.done())
+	require.False(t, rc.consideredFull())
+}
+
 // Test that rechecking panics when a CheckTx request fails, when using a sync ABCI client.
 func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
 	mockClient := new(abciclimocks.Client)
@@ -898,7 +940,6 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	require.True(t, mp.recheck.done())
 	require.Nil(t, mp.recheck.cursor)
 	require.Nil(t, mp.recheck.end)
-	require.False(t, mp.recheck.isRechecking.Load())
 	mockClient.AssertExpectations(t)
 
 	// One call to CheckTxAsync per tx, for rechecking.
@@ -920,7 +961,6 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	// mp.recheck.done() should be true only before and after calling recheckTxs.
 	mp.recheckTxs()
 	require.True(t, mp.recheck.done())
-	require.False(t, mp.recheck.isRechecking.Load())
 	require.Nil(t, mp.recheck.cursor)
 	require.NotNil(t, mp.recheck.end)
 	require.Equal(t, mp.recheck.end, mp.txs.Back())

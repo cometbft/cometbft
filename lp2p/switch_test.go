@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -423,6 +424,192 @@ func TestSwitch(t *testing.T) {
 		require.Len(t, reactorA.receivedEnvelopes(), 0)
 		require.Len(t, reactorD.receivedEnvelopes(), 0)
 	})
+
+	t.Run("MsgBytesFilterRejects", func(t *testing.T) {
+		// ARRANGE
+		const channelID = 0xF2
+
+		// Given 2 hosts: A and B
+		hosts := makeTestHosts(t, 2, withLogging())
+		hostA, hostB := hosts[0], hosts[1]
+
+		// Given a common channel descriptor
+		channelDescriptor := &conn.ChannelDescriptor{
+			ID:                  channelID,
+			Priority:            1,
+			RecvMessageCapacity: 1024,
+			MessageType:         &types.RequestEcho{},
+		}
+
+		// Given switch A with a vanilla reactor
+		reactorA := newReactorMock([]*conn.ChannelDescriptor{channelDescriptor}, hostA.Logger())
+		switchA, err := NewSwitch(
+			nil,
+			hostA,
+			[]SwitchReactor{
+				{Name: "echoReactor", Reactor: reactorA},
+			},
+			p2p.NopMetrics(),
+			hostA.Logger(),
+		)
+		require.NoError(t, err)
+
+		// Given switch B with a reactor that rejects all bytes on channelID
+		reactorB := newFilteringReactor(
+			[]*conn.ChannelDescriptor{channelDescriptor},
+			hostB.Logger(),
+			channelID,
+			errors.New("rejected by filter for test"),
+		)
+		switchB, err := NewSwitch(
+			nil,
+			hostB,
+			[]SwitchReactor{
+				{Name: "echoReactor", Reactor: reactorB},
+			},
+			p2p.NopMetrics(),
+			hostB.Logger(),
+		)
+		require.NoError(t, err)
+
+		// Connect A and B
+		connectSwitches(t, []*Switch{switchA, switchB})
+
+		// Pre-condition: A has B as a peer (A bootstrapped to B).
+		require.Eventually(t, func() bool {
+			return switchA.Peers().Size() == 1
+		}, time.Second, 20*time.Millisecond, "A should see B")
+
+		// ACT: Broadcast message from A to B. B's filter should reject before
+		// proto.Unmarshal runs and before reactor.Receive is called.
+		switchA.BroadcastAsync(p2p.Envelope{
+			ChannelID: channelID,
+			Message:   &types.RequestEcho{Message: "should be filtered"},
+		})
+
+		// ASSERT #1: B's FilterMsgBytes was invoked
+		require.Eventually(t, func() bool {
+			return reactorB.filterCalls.Load() >= 1
+		}, 2*time.Second, 20*time.Millisecond, "filter should have been called")
+
+		// ASSERT #2: B's Receive was never invoked (rejection happened pre-unmarshal)
+		require.Empty(t, reactorB.receivedEnvelopes(),
+			"Receive must not be called when FilterMsgBytes rejects bytes")
+
+		// ASSERT #3: B disconnected A via StopPeerForError
+		require.Eventually(t, func() bool {
+			return switchB.Peers().Size() == 0
+		}, 2*time.Second, 20*time.Millisecond, "B should have disconnected A after filter rejection")
+	})
+
+	t.Run("MsgBytesFilterAllows", func(t *testing.T) {
+		// ARRANGE
+		const channelID = 0xF3
+
+		// Given 2 hosts: A and B
+		hosts := makeTestHosts(t, 2, withLogging())
+		hostA, hostB := hosts[0], hosts[1]
+
+		// Given a common channel descriptor
+		channelDescriptor := &conn.ChannelDescriptor{
+			ID:                  channelID,
+			Priority:            1,
+			RecvMessageCapacity: 1024,
+			MessageType:         &types.RequestEcho{},
+		}
+
+		// Given switch A with a vanilla reactor
+		reactorA := newReactorMock([]*conn.ChannelDescriptor{channelDescriptor}, hostA.Logger())
+		switchA, err := NewSwitch(
+			nil,
+			hostA,
+			[]SwitchReactor{
+				{Name: "echoReactor", Reactor: reactorA},
+			},
+			p2p.NopMetrics(),
+			hostA.Logger(),
+		)
+		require.NoError(t, err)
+
+		// Given switch B with a filtering reactor that allows everything (rejectErr == nil)
+		reactorB := newFilteringReactor(
+			[]*conn.ChannelDescriptor{channelDescriptor},
+			hostB.Logger(),
+			channelID,
+			nil,
+		)
+		switchB, err := NewSwitch(
+			nil,
+			hostB,
+			[]SwitchReactor{
+				{Name: "echoReactor", Reactor: reactorB},
+			},
+			p2p.NopMetrics(),
+			hostB.Logger(),
+		)
+		require.NoError(t, err)
+
+		// Connect A and B
+		connectSwitches(t, []*Switch{switchA, switchB})
+
+		// Pre-condition: A has B as a peer (A bootstrapped to B). Without
+		// this wait the broadcast can fire before the connection is fully
+		// established and the message is dropped silently.
+		require.Eventually(t, func() bool {
+			return switchA.Peers().Size() == 1
+		}, time.Second, 20*time.Millisecond, "A should see B")
+
+		// ACT: Broadcast message from A to B
+		switchA.BroadcastAsync(p2p.Envelope{
+			ChannelID: channelID,
+			Message:   &types.RequestEcho{Message: "passes filter"},
+		})
+
+		// ASSERT #1: B's Receive fires with the original message
+		require.Eventually(t, func() bool {
+			envs := reactorB.receivedEnvelopes()
+			return len(envs) == 1 &&
+				envs[0].Message.(*types.RequestEcho).Message == "passes filter"
+		}, 2*time.Second, 20*time.Millisecond, "Receive should fire when filter allows")
+
+		// ASSERT #2: B consulted the filter at least once
+		require.GreaterOrEqual(t, reactorB.filterCalls.Load(), int32(1),
+			"filter should have been consulted")
+
+		// ASSERT #3: A is still B's peer
+		require.Equal(t, 1, switchB.Peers().Size(),
+			"B should still be connected to A on filter pass")
+	})
+}
+
+// filteringReactor is a mock reactor that optionally filters messages via the
+// MsgByteFilter implementation
+type filteringReactor struct {
+	*reactorMock
+	filterCalls atomic.Int32
+	rejectErr   error // if non-nil, FilterMsgBytes returns this for matching channel
+	channelID   byte
+}
+
+func newFilteringReactor(
+	channels []*conn.ChannelDescriptor,
+	logger log.Logger,
+	channelID byte,
+	rejectErr error,
+) *filteringReactor {
+	return &filteringReactor{
+		reactorMock: newReactorMock(channels, logger),
+		channelID:   channelID,
+		rejectErr:   rejectErr,
+	}
+}
+
+func (r *filteringReactor) FilterMsgBytes(chID byte, _ p2p.Peer, _ []byte) error {
+	if chID != r.channelID {
+		return nil
+	}
+	r.filterCalls.Add(1)
+	return r.rejectErr
 }
 
 // syncBuffer is a thread-safe bytes.Buffer.

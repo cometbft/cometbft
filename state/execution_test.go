@@ -1118,45 +1118,40 @@ func TestCreateProposalAbsentVoteExtensions(t *testing.T) {
 	}
 }
 
+func newCachedBlockExec(t *testing.T, stateDB dbm.DB) *sm.BlockExecutor {
+	t.Helper()
+	app := &testApp{}
+	cc := proxy.NewLocalClientCreator(app)
+
+	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
+	require.NoError(t, proxyApp.Start())
+	t.Cleanup(func() { _ = proxyApp.Stop() })
+
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{DiscardABCIResponses: false})
+
+	mp := &mpmocks.Mempool{}
+	mp.On("Lock").Return()
+	mp.On("Unlock").Return()
+	mp.On("FlushAppConn", mock.Anything).Return(nil)
+	mp.On("Update",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+	).Return(nil)
+
+	return sm.NewBlockExecutor(
+		stateStore,
+		log.TestingLogger(),
+		proxyApp.Consensus(),
+		mp,
+		sm.EmptyEvidencePool{},
+		store.NewBlockStore(dbm.NewMemDB()),
+	)
+}
+
 func TestLastValidatedBlockCache(t *testing.T) {
-	makeBlockExec := func(t *testing.T, stateDB dbm.DB) *sm.BlockExecutor {
-		app := &testApp{}
-		cc := proxy.NewLocalClientCreator(app)
-
-		proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
-		require.NoError(t, proxyApp.Start())
-		t.Cleanup(func() { _ = proxyApp.Stop() })
-
-		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
-			DiscardABCIResponses: false,
-		})
-
-		mp := &mpmocks.Mempool{}
-		mp.On("Lock").Return()
-		mp.On("Unlock").Return()
-		mp.On("FlushAppConn", mock.Anything).Return(nil)
-		mp.On("Update",
-			mock.Anything,
-			mock.Anything,
-			mock.Anything,
-			mock.Anything,
-			mock.Anything,
-		).Return(nil)
-
-		return sm.NewBlockExecutor(
-			stateStore,
-			log.TestingLogger(),
-			proxyApp.Consensus(),
-			mp,
-			sm.EmptyEvidencePool{},
-			store.NewBlockStore(dbm.NewMemDB()),
-		)
-	}
-
 	// ARRANGE
 	// Given the state
 	state, stateDB, privVals := makeState(1, 1)
-	exec := makeBlockExec(t, stateDB)
+	exec := newCachedBlockExec(t, stateDB)
 
 	// And nil last validated block
 	require.Nil(t, exec.GetLastValidatedBlock())
@@ -1202,6 +1197,25 @@ func TestLastValidatedBlockCache(t *testing.T) {
 
 	// not mutated!
 	require.Equal(t, block2, exec.GetLastValidatedBlock())
+}
+
+func TestValidateBlockCacheHeightAware(t *testing.T) {
+	state, stateDB, _ := makeState(1, 1)
+	exec := newCachedBlockExec(t, stateDB)
+
+	block1, err := makeBlock(state, 1, new(types.Commit))
+	require.NoError(t, err)
+
+	require.NoError(t, exec.ValidateBlock(state, block1))
+	require.Equal(t, block1, exec.GetLastValidatedBlock())
+
+	// Advance state past block1 without touching the cache.
+	staleState := state
+	staleState.LastBlockHeight = 1
+
+	// block1's hash is cached but its height is no longer valid for staleState.
+	err = exec.ValidateBlock(staleState, block1)
+	require.Error(t, err)
 }
 
 func stripSignatures(ec *types.ExtendedCommit) {

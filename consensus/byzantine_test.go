@@ -150,21 +150,19 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 			require.NoError(t, err)
 			peerList := reactors[byzantineNode].Switch.Peers().Copy()
 			bcs.Logger.Info("Getting peer list", "peers", peerList)
-			// send two votes to all peers (1st to one half, 2nd to another half)
-			for i, peer := range peerList {
-				if i < len(peerList)/2 {
-					bcs.Logger.Info("Signed and pushed vote", "vote", prevote1, "peer", peer)
-					peer.Send(p2p.Envelope{
-						Message:   &cmtcons.Vote{Vote: prevote1.ToProto()},
-						ChannelID: VoteChannel,
-					})
-				} else {
-					bcs.Logger.Info("Signed and pushed vote", "vote", prevote2, "peer", peer)
-					peer.Send(p2p.Envelope{
-						Message:   &cmtcons.Vote{Vote: prevote2.ToProto()},
-						ChannelID: VoteChannel,
-					})
-				}
+			// send both conflicting votes to every peer so each validator receives
+			// the equivocation directly, without depending on gossip propagation
+			// racing against height advancement.
+			for _, peer := range peerList {
+				bcs.Logger.Info("Signed and pushed votes", "vote1", prevote1, "vote2", prevote2, "peer", peer)
+				peer.Send(p2p.Envelope{
+					Message:   &cmtcons.Vote{Vote: prevote1.ToProto()},
+					ChannelID: VoteChannel,
+				})
+				peer.Send(p2p.Envelope{
+					Message:   &cmtcons.Vote{Vote: prevote2.ToProto()},
+					ChannelID: VoteChannel,
+				})
 			}
 		} else {
 			bcs.Logger.Info("Behaving normally")
@@ -251,16 +249,26 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	// Evidence should be submitted and committed at the third height but
 	// we will check the first six just in case
 	evidenceFromEachValidator := make([]types.Evidence, nValidators)
+	subErrCh := make(chan error, nValidators)
 
 	wg := new(sync.WaitGroup)
 	for i := 0; i < nValidators; i++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			for msg := range blocksSubs[i].Out() {
-				block := msg.Data().(types.EventDataNewBlock).Block
-				if len(block.Evidence.Evidence) != 0 {
-					evidenceFromEachValidator[i] = block.Evidence.Evidence[0]
+			sub := blocksSubs[i]
+			for {
+				select {
+				case msg := <-sub.Out():
+					block := msg.Data().(types.EventDataNewBlock).Block
+					if len(block.Evidence.Evidence) != 0 {
+						evidenceFromEachValidator[i] = block.Evidence.Evidence[0]
+						return
+					}
+				case <-sub.Canceled():
+					if err := sub.Err(); err != nil {
+						subErrCh <- err
+					}
 					return
 				}
 			}
@@ -278,6 +286,11 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 
 	select {
 	case <-done:
+		select {
+		case err := <-subErrCh:
+			t.Fatalf("subscription unexpectedly canceled: %v", err)
+		default:
+		}
 		for idx, ev := range evidenceFromEachValidator {
 			if assert.NotNil(t, ev, idx) {
 				ev, ok := ev.(*types.DuplicateVoteEvidence)

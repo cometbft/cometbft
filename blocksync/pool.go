@@ -164,20 +164,18 @@ func (pool *BlockPool) makeRequestersRoutine() {
 
 func (pool *BlockPool) removeTimedoutPeers() {
 	pool.mtx.Lock()
-	defer pool.mtx.Unlock()
-
+	var timedOut []p2p.ID
 	for _, peer := range pool.peers {
 		if !peer.didTimeout && peer.numPending > 0 {
 			curRate := peer.recvMonitor.Status().CurRate
 			// curRate can be 0 on start
 			if curRate != 0 && curRate < minRecvRate {
-				err := errors.New("peer is not sending us data fast enough")
-				pool.sendError(err, peer.id)
 				pool.Logger.Error("SendTimeout", "peer", peer.id,
-					"reason", err,
+					"reason", "peer is not sending us data fast enough",
 					"curRate", fmt.Sprintf("%d KB/s", curRate/1024),
 					"minRate", fmt.Sprintf("%d KB/s", minRecvRate/1024))
 				peer.didTimeout = true
+				timedOut = append(timedOut, peer.id)
 			}
 
 			peer.curRate = curRate
@@ -195,6 +193,11 @@ func (pool *BlockPool) removeTimedoutPeers() {
 	}
 
 	pool.sortPeers()
+	pool.mtx.Unlock()
+
+	for _, peerID := range timedOut {
+		pool.sendError(errors.New("peer is not sending us data fast enough"), peerID)
+	}
 }
 
 // GetStatus returns pool's height, numPending requests and the number of
@@ -204,6 +207,19 @@ func (pool *BlockPool) GetStatus() (height int64, numPending int32, lenRequester
 	defer pool.mtx.Unlock()
 
 	return pool.height, atomic.LoadInt32(&pool.numPending), len(pool.requesters)
+}
+
+// HasPendingRequestFrom reports whether we have at least one outstanding block
+// request directed at the given peer.
+func (pool *BlockPool) HasPendingRequestFrom(peerID p2p.ID) bool {
+	pool.mtx.Lock()
+	defer pool.mtx.Unlock()
+	for _, r := range pool.requesters {
+		if r.didRequestFrom(peerID) {
+			return true
+		}
+	}
+	return false
 }
 
 // IsCaughtUp returns true if this node is caught up, false - otherwise.
@@ -265,6 +281,9 @@ func (pool *BlockPool) PopRequest() {
 	}
 	delete(pool.requesters, pool.height)
 	pool.height++
+
+	// Re-evaluate maxPeerHeight: peers whose pruned base was just beyond the previous pool.height may now be able to contribute
+	pool.updateMaxPeerHeight()
 
 	// Notify the next minBlocksForSingleRequest requesters about new height, so
 	// they can potentially request a block from the second peer.
@@ -379,6 +398,16 @@ func (pool *BlockPool) SetPeerRange(peerID p2p.ID, base int64, height int64) {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
 
+	// A peer whose own reported base exceeds its own height is structurally impossible and treated as malicious.
+	if base > height {
+		pool.Logger.Info("Peer reporting base greater than height", "peer", peerID, "base", base, "height", height)
+		if _, exists := pool.peers[peerID]; exists {
+			pool.removePeer(peerID)
+		}
+		pool.banPeer(peerID)
+		return
+	}
+
 	peer := pool.peers[peerID]
 	if peer != nil {
 		if base < peer.base || height < peer.height {
@@ -412,9 +441,7 @@ func (pool *BlockPool) SetPeerRange(peerID p2p.ID, base int64, height int64) {
 		pool.sortedPeers = append([]*bpPeer{peer}, pool.sortedPeers...)
 	}
 
-	if height > pool.maxPeerHeight {
-		pool.maxPeerHeight = height
-	}
+	pool.updateMaxPeerHeight()
 }
 
 // RemovePeer removes the peer with peerID from the pool. If there's no peer
@@ -456,10 +483,16 @@ func (pool *BlockPool) removePeer(peerID p2p.ID) {
 	}
 }
 
-// If no peers are left, maxPeerHeight is set to 0.
+// updateMaxPeerHeight sets maxPeerHeight to the highest height among peers.
 func (pool *BlockPool) updateMaxPeerHeight() {
 	var max int64
 	for _, peer := range pool.peers {
+		if pool.height > 0 && peer.base > pool.height {
+			// Blocks a malicious peer from poisoning maxPeerHeight with an
+			// inflated base/height pair no peer can actually serve, which
+			// would stall IsCaughtUp forever.
+			continue
+		}
 		if peer.height > max {
 			max = peer.height
 		}
@@ -640,11 +673,11 @@ func (peer *bpPeer) decrPending(recvSize int) {
 
 func (peer *bpPeer) onTimeout() {
 	peer.pool.mtx.Lock()
-	defer peer.pool.mtx.Unlock()
+	peer.didTimeout = true
+	peer.pool.mtx.Unlock()
 
 	peer.pool.sendError(ErrPeerTimeout, peer.id)
 	peer.logger.Error("SendTimeout", "reason", ErrPeerTimeout, "timeout", peerTimeout)
-	peer.didTimeout = true
 }
 
 //-------------------------------------

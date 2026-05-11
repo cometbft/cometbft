@@ -217,8 +217,13 @@ func (blockExec *BlockExecutor) ValidateBlockSkipLastCommit(state State, block *
 func (blockExec *BlockExecutor) validateBlockAndCheckEvidence(state State, block *types.Block, opts ...func(*blockValidationOptions)) error {
 	lastValidated := blockExec.GetLastValidatedBlock()
 
+	expectedHeight := state.LastBlockHeight + 1
+	if state.LastBlockHeight == 0 {
+		expectedHeight = state.InitialHeight
+	}
+
 	// safe to call with nil
-	if !lastValidated.HashesTo(block.Hash()) {
+	if !lastValidated.HashesTo(block.Hash()) || block.Height != expectedHeight {
 		// always use blocktime tolerance set on the struct
 		if err := validateBlock(state, block, append(opts, blockExec.withBlockTimeTolerance)...); err != nil {
 			return err
@@ -255,8 +260,13 @@ func (blockExec *BlockExecutor) ApplyBlock(
 ) (State, error) {
 	lastValidated := blockExec.GetLastValidatedBlock()
 
+	expectedHeight := state.LastBlockHeight + 1
+	if state.LastBlockHeight == 0 {
+		expectedHeight = state.InitialHeight
+	}
+
 	// safe to call with nil
-	if !lastValidated.HashesTo(block.Hash()) {
+	if !lastValidated.HashesTo(block.Hash()) || block.Height != expectedHeight {
 		if err := validateBlock(state, block, blockExec.withBlockTimeTolerance); err != nil {
 			return state, ErrInvalidBlock(err)
 		}

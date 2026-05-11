@@ -13,6 +13,9 @@
 
 ### IMPROVEMENTS
 
+- `[blocksync]` validate blocksync response sender and signature count
+  ([\#5860](https://github.com/cometbft/cometbft/pull/5860))
+
 ### FEATURES
 
 ### STATE-BREAKING

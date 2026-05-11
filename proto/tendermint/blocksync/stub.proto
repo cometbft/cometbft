@@ -1,0 +1,37 @@
+syntax = "proto3";
+package tendermint.blocksync;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/blocksync";
+
+// SigCountMessage is a stripped down view of Message used by the blocksync
+// MsgBytesFilter for validation before unmarshalling the full BlockResponse
+// Message. Only the BlockResponse oneof case is modelled, and only the path
+// down to {Block,Extended}Commit.signatures.
+message SigCountMessage {
+  SigCountBlockResponse block_response = 3;
+}
+
+message SigCountBlockResponse {
+  SigCountBlock block = 1;
+  SigCountExtendedCommit ext_commit = 2;
+}
+
+message SigCountBlock {
+  SigCountCommit last_commit = 4;
+}
+
+message SigCountCommit {
+  repeated bytes signatures = 4 [
+    (gogoproto.customtype) = "NoSig",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message SigCountExtendedCommit {
+  repeated bytes extended_signatures = 4 [
+    (gogoproto.customtype) = "NoSig",
+    (gogoproto.nullable) = false
+  ];
+}

@@ -17,6 +17,17 @@
 
 ### API-BREAKING
 
+## v0.38.23
+
+### BUG FIXES
+
+- `[types]` Fix nil vote handling
+  ([\#5777](https://github.com/cometbft/cometbft/pull/5777))
+- `[light]`: stop witness comparison after divergence checks
+  ([\#5820](https://github.com/cometbft/cometbft/pull/5820))
+- `[abci]` fix(abci): prevent panic on unlock in socket server panic recovery
+  ([\#5593](https://github.com/cometbft/cometbft/pull/5593))
+
 ## v0.38.22
 
 *April 10, 2026*

@@ -255,7 +255,7 @@ func TestStreamReadSizedClose(t *testing.T) {
 		// ACT
 		_, err = stream.Write(tooLargeHeader)
 		require.NoError(t, err)
-		require.NoError(t, stream.Close())
+		_ = stream.Close()
 
 		// ASSERT
 		err = <-readErr

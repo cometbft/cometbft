@@ -338,7 +338,7 @@ func validateMaxVotes(br *bcproto.SigCountBlockResponse) error {
 }
 
 // Receive implements Reactor by handling 4 types of messages (look below).
-func (bcR *Reactor) Receive(e p2p.Envelope) { //nolint: dupl // recreated in a test
+func (bcR *Reactor) Receive(e p2p.Envelope) {
 	if err := ValidateMsg(e.Message); err != nil {
 		bcR.Logger.Error("Peer sent us invalid msg", "peer", e.Src, "msg", e.Message, "err", err)
 		bcR.Switch.StopPeerForError(e.Src, err)

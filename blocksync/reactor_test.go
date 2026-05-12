@@ -540,7 +540,7 @@ func TestFilterMsgBytes(t *testing.T) {
 	}{
 		{
 			name:      "rejects unsolicited BlockResponse with no requesters",
-			setup:     func(t *testing.T) *Reactor { return newFilterReactor(t) },
+			setup:     newFilterReactor,
 			chID:      BlocksyncChannel,
 			peer:      unexpected,
 			bytesFn:   blockResponseBytes,
@@ -571,21 +571,21 @@ func TestFilterMsgBytes(t *testing.T) {
 		},
 		{
 			name:    "allows non-BlockResponse messages even when disabled",
-			setup:   func(t *testing.T) *Reactor { return newFilterReactor(t) },
+			setup:   newFilterReactor,
 			chID:    BlocksyncChannel,
 			peer:    "any",
 			bytesFn: blockRequestBytes,
 		},
 		{
 			name:    "ignores other channels",
-			setup:   func(t *testing.T) *Reactor { return newFilterReactor(t) },
+			setup:   newFilterReactor,
 			chID:    byte(0x20),
 			peer:    "any",
 			bytesFn: blockResponseBytes,
 		},
 		{
 			name:    "ignores empty bytes",
-			setup:   func(t *testing.T) *Reactor { return newFilterReactor(t) },
+			setup:   newFilterReactor,
 			chID:    BlocksyncChannel,
 			peer:    "any",
 			bytesFn: func(*testing.T) []byte { return nil },
@@ -867,7 +867,7 @@ func (bcR *ByzantineReactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Pe
 
 // Receive implements Reactor by handling 4 types of messages (look below).
 // Copied unchanged from reactor.go so the correct respondToPeer is called.
-func (bcR *ByzantineReactor) Receive(e p2p.Envelope) { //nolint: dupl
+func (bcR *ByzantineReactor) Receive(e p2p.Envelope) {
 	if err := ValidateMsg(e.Message); err != nil {
 		bcR.Logger.Error("Peer sent us invalid msg", "peer", e.Src, "msg", e.Message, "err", err)
 		bcR.Switch.StopPeerForError(e.Src, err)

@@ -5,7 +5,6 @@ import (
 	"os"
 	"reflect"
 	"sort"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -475,7 +474,7 @@ func ExtendedCommitNetworkHelper(t *testing.T, maxBlockHeight int64, enableVoteE
 // newFilterReactor builds a minimal Reactor wired to a started BlockPool,
 // suitable for exercising FilterMsgBytes without spinning up the full p2p
 // stack.
-func newFilterReactor(t *testing.T, enabled bool) *Reactor {
+func newFilterReactor(t *testing.T) *Reactor {
 	t.Helper()
 
 	requestsCh := make(chan BlockRequest, 1000)
@@ -484,10 +483,7 @@ func newFilterReactor(t *testing.T, enabled bool) *Reactor {
 	require.NoError(t, pool.Start())
 	t.Cleanup(func() { _ = pool.Stop() })
 
-	flag := &atomic.Bool{}
-	flag.Store(enabled)
-
-	return &Reactor{pool: pool, enabled: flag}
+	return &Reactor{pool: pool}
 }
 
 // seedRequester inserts a bpRequester targeting peerID at the given height,
@@ -543,16 +539,8 @@ func TestFilterMsgBytes(t *testing.T) {
 		expectErr string // substring; "" means no error
 	}{
 		{
-			name:      "rejects BlockResponse when blocksync disabled",
-			setup:     func(t *testing.T) *Reactor { return newFilterReactor(t, false) },
-			chID:      BlocksyncChannel,
-			peer:      unexpected,
-			bytesFn:   blockResponseBytes,
-			expectErr: "blocksync not active",
-		},
-		{
 			name:      "rejects unsolicited BlockResponse with no requesters",
-			setup:     func(t *testing.T) *Reactor { return newFilterReactor(t, true) },
+			setup:     func(t *testing.T) *Reactor { return newFilterReactor(t) },
 			chID:      BlocksyncChannel,
 			peer:      unexpected,
 			bytesFn:   blockResponseBytes,
@@ -561,7 +549,7 @@ func TestFilterMsgBytes(t *testing.T) {
 		{
 			name: "rejects BlockResponse from peer we did not request from",
 			setup: func(t *testing.T) *Reactor {
-				r := newFilterReactor(t, true)
+				r := newFilterReactor(t)
 				seedRequester(r, 1, expected)
 				return r
 			},
@@ -573,7 +561,7 @@ func TestFilterMsgBytes(t *testing.T) {
 		{
 			name: "allows BlockResponse from solicited peer",
 			setup: func(t *testing.T) *Reactor {
-				r := newFilterReactor(t, true)
+				r := newFilterReactor(t)
 				seedRequester(r, 1, expected)
 				return r
 			},
@@ -583,21 +571,21 @@ func TestFilterMsgBytes(t *testing.T) {
 		},
 		{
 			name:    "allows non-BlockResponse messages even when disabled",
-			setup:   func(t *testing.T) *Reactor { return newFilterReactor(t, false) },
+			setup:   func(t *testing.T) *Reactor { return newFilterReactor(t) },
 			chID:    BlocksyncChannel,
 			peer:    "any",
 			bytesFn: blockRequestBytes,
 		},
 		{
 			name:    "ignores other channels",
-			setup:   func(t *testing.T) *Reactor { return newFilterReactor(t, false) },
+			setup:   func(t *testing.T) *Reactor { return newFilterReactor(t) },
 			chID:    byte(0x20),
 			peer:    "any",
 			bytesFn: blockResponseBytes,
 		},
 		{
 			name:    "ignores empty bytes",
-			setup:   func(t *testing.T) *Reactor { return newFilterReactor(t, false) },
+			setup:   func(t *testing.T) *Reactor { return newFilterReactor(t) },
 			chID:    BlocksyncChannel,
 			peer:    "any",
 			bytesFn: func(*testing.T) []byte { return nil },
@@ -605,7 +593,7 @@ func TestFilterMsgBytes(t *testing.T) {
 		{
 			name: "rejects BlockResponse after pool stopped",
 			setup: func(t *testing.T) *Reactor {
-				r := newFilterReactor(t, true)
+				r := newFilterReactor(t)
 				seedRequester(r, 1, expected)
 				require.NoError(t, r.pool.Stop())
 				return r
@@ -618,7 +606,7 @@ func TestFilterMsgBytes(t *testing.T) {
 		{
 			name: "allows BlockResponse at MaxVotesCount commit signatures",
 			setup: func(t *testing.T) *Reactor {
-				r := newFilterReactor(t, true)
+				r := newFilterReactor(t)
 				seedRequester(r, 1, expected)
 				return r
 			},
@@ -629,7 +617,7 @@ func TestFilterMsgBytes(t *testing.T) {
 		{
 			name: "rejects BlockResponse exceeding commit signature cap",
 			setup: func(t *testing.T) *Reactor {
-				r := newFilterReactor(t, true)
+				r := newFilterReactor(t)
 				seedRequester(r, 1, expected)
 				return r
 			},
@@ -641,7 +629,7 @@ func TestFilterMsgBytes(t *testing.T) {
 		{
 			name: "rejects BlockResponse exceeding extended commit signature cap",
 			setup: func(t *testing.T) *Reactor {
-				r := newFilterReactor(t, true)
+				r := newFilterReactor(t)
 				seedRequester(r, 1, expected)
 				return r
 			},
@@ -653,7 +641,7 @@ func TestFilterMsgBytes(t *testing.T) {
 		{
 			name: "rejects BlockResponse splitting signatures across duplicate Block fields",
 			setup: func(t *testing.T) *Reactor {
-				r := newFilterReactor(t, true)
+				r := newFilterReactor(t)
 				seedRequester(r, 1, expected)
 				return r
 			},
@@ -670,7 +658,7 @@ func TestFilterMsgBytes(t *testing.T) {
 		{
 			name: "rejects BlockResponse when first byte is not BlockResponse proto tag",
 			setup: func(t *testing.T) *Reactor {
-				r := newFilterReactor(t, true)
+				r := newFilterReactor(t)
 				seedRequester(r, 1, expected)
 				return r
 			},

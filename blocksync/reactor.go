@@ -1,6 +1,7 @@
 package blocksync
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"sync"
@@ -251,13 +252,11 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 	})
 }
 
-<<<<<<< HEAD
-=======
 func (r *Reactor) handlePeerResponse(msg *bcproto.BlockResponse, src p2p.Peer) {
 	bi, err := types.BlockFromProto(msg.Block)
 	if err != nil {
 		r.Logger.Error("Peer sent us invalid block", "peer", src, "msg", msg, "err", err)
-		r.stopPeerForError(src, err)
+		r.Switch.StopPeerForError(src, err)
 		return
 	}
 
@@ -266,7 +265,7 @@ func (r *Reactor) handlePeerResponse(msg *bcproto.BlockResponse, src p2p.Peer) {
 		extCommit, err = types.ExtendedCommitFromProto(msg.ExtCommit)
 		if err != nil {
 			r.Logger.Error("Failed to convert extended commit from proto", "peer", src, "err", err)
-			r.stopPeerForError(src, err)
+			r.Switch.StopPeerForError(src, err)
 			return
 		}
 	}
@@ -278,7 +277,7 @@ func (r *Reactor) handlePeerResponse(msg *bcproto.BlockResponse, src p2p.Peer) {
 
 // FilterMsgBytes implements p2p.MsgBytesFilter and rejects messages from
 // unexpected peers before unmarshalling the request.
-func (r *Reactor) FilterMsgBytes(chID byte, src p2p.Peer, msgBytes []byte) error {
+func (bcR *Reactor) FilterMsgBytes(chID byte, src p2p.Peer, msgBytes []byte) error {
 	// do not check invalid messages, will fail unmarshalling
 	if chID != BlocksyncChannel || len(msgBytes) == 0 {
 		return nil
@@ -297,12 +296,12 @@ func (r *Reactor) FilterMsgBytes(chID byte, src p2p.Peer, msgBytes []byte) error
 	}
 
 	// blocksync not running, we should not be getting a BlockResponse
-	if !r.enabled.Load() || !r.pool.IsRunning() {
+	if !bcR.pool.IsRunning() {
 		return errors.New("unsolicited BlockResponse: blocksync not active")
 	}
 
 	// ensure we have an outstanding request to this peer
-	if !r.pool.HasPendingRequestFrom(src.ID()) {
+	if !bcR.pool.HasPendingRequestFrom(src.ID()) {
 		return fmt.Errorf("unsolicited BlockResponse from peer %s", src.ID())
 	}
 
@@ -338,7 +337,6 @@ func validateMaxVotes(br *bcproto.SigCountBlockResponse) error {
 	return nil
 }
 
->>>>>>> 4590e7ac (fix(blocksync): validate blocksync response sender and signature count (#5860))
 // Receive implements Reactor by handling 4 types of messages (look below).
 func (bcR *Reactor) Receive(e p2p.Envelope) { //nolint: dupl // recreated in a test
 	if err := ValidateMsg(e.Message); err != nil {
@@ -353,28 +351,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) { //nolint: dupl // recreated in a t
 	case *bcproto.BlockRequest:
 		bcR.respondToPeer(msg, e.Src)
 	case *bcproto.BlockResponse:
-		bi, err := types.BlockFromProto(msg.Block)
-		if err != nil {
-			bcR.Logger.Error("Peer sent us invalid block", "peer", e.Src, "msg", e.Message, "err", err)
-			bcR.Switch.StopPeerForError(e.Src, err)
-			return
-		}
-		var extCommit *types.ExtendedCommit
-		if msg.ExtCommit != nil {
-			var err error
-			extCommit, err = types.ExtendedCommitFromProto(msg.ExtCommit)
-			if err != nil {
-				bcR.Logger.Error("failed to convert extended commit from proto",
-					"peer", e.Src,
-					"err", err)
-				bcR.Switch.StopPeerForError(e.Src, err)
-				return
-			}
-		}
-
-		if err := bcR.pool.AddBlock(e.Src.ID(), bi, extCommit, msg.Block.Size()); err != nil {
-			bcR.Logger.Error("failed to add block", "peer", e.Src, "err", err)
-		}
+		bcR.handlePeerResponse(msg, e.Src)
 	case *bcproto.StatusRequest:
 		// Send peer our state.
 		e.Src.TrySend(p2p.Envelope{

@@ -934,7 +934,7 @@ func TestSwitchMsgBytesFilter(t *testing.T) {
 	// s1 broadcasts on the rejected channel, s2's filter must drop the message
 	// before proto.Unmarshal and disconnect s1 via mconn._recover
 	msg := &p2pproto.PexAddrs{Addrs: []p2pproto.NetAddress{{ID: "1"}}}
-	sw1.BroadcastAsync(Envelope{ChannelID: filterChID, Message: msg})
+	sw1.Broadcast(Envelope{ChannelID: filterChID, Message: msg})
 
 	// ensure s2's filter ran
 	require.Eventually(t, func() bool {

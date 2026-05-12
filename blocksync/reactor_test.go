@@ -5,11 +5,13 @@ import (
 	"os"
 	"reflect"
 	"sort"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
 
+	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -22,6 +24,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	mpmocks "github.com/cometbft/cometbft/mempool/mocks"
 	"github.com/cometbft/cometbft/p2p"
+	p2pmocks "github.com/cometbft/cometbft/p2p/mocks"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
 	sm "github.com/cometbft/cometbft/state"
@@ -471,6 +474,289 @@ func ExtendedCommitNetworkHelper(t *testing.T, maxBlockHeight int64, enableVoteE
 			break
 		}
 	}
+}
+
+// newFilterReactor builds a minimal Reactor wired to a started BlockPool,
+// suitable for exercising FilterMsgBytes without spinning up the full p2p
+// stack.
+func newFilterReactor(t *testing.T, enabled bool) *Reactor {
+	t.Helper()
+
+	requestsCh := make(chan BlockRequest, 1000)
+	errorsCh := make(chan peerError, 1000)
+	pool := NewBlockPool(1, requestsCh, errorsCh)
+	require.NoError(t, pool.Start())
+	t.Cleanup(func() { _ = pool.Stop() })
+
+	flag := &atomic.Bool{}
+	flag.Store(enabled)
+
+	return &Reactor{pool: pool, enabled: flag}
+}
+
+// seedRequester inserts a bpRequester targeting peerID at the given height,
+// bypassing makeRequestersRoutine so the test can drive pool state directly.
+func seedRequester(r *Reactor, height int64, peerID p2p.ID) {
+	req := newBPRequester(r.pool, height)
+	req.peerID = peerID
+	r.pool.mtx.Lock()
+	r.pool.requesters[height] = req
+	r.pool.mtx.Unlock()
+}
+
+func mockPeer(id p2p.ID) *p2pmocks.Peer {
+	p := &p2pmocks.Peer{}
+	p.On("ID").Return(id).Maybe()
+	return p
+}
+
+func TestFilterMsgBytes(t *testing.T) {
+	wireBytesFor := func(t *testing.T, m *bcproto.Message) []byte {
+		t.Helper()
+		b, err := proto.Marshal(m)
+		require.NoError(t, err)
+		require.NotEmpty(t, b)
+		return b
+	}
+
+	blockResponseBytes := func(t *testing.T) []byte {
+		return wireBytesFor(t, &bcproto.Message{
+			Sum: &bcproto.Message_BlockResponse{
+				BlockResponse: &bcproto.BlockResponse{Block: &cmtproto.Block{}},
+			},
+		})
+	}
+
+	blockRequestBytes := func(t *testing.T) []byte {
+		return wireBytesFor(t, &bcproto.Message{
+			Sum: &bcproto.Message_BlockRequest{
+				BlockRequest: &bcproto.BlockRequest{Height: 1},
+			},
+		})
+	}
+
+	const expected p2p.ID = "expected"
+	const unexpected p2p.ID = "unexpected"
+
+	tests := []struct {
+		name      string
+		setup     func(t *testing.T) *Reactor // returns a configured reactor
+		chID      byte
+		peer      p2p.ID
+		bytesFn   func(t *testing.T) []byte
+		expectErr string // substring; "" means no error
+	}{
+		{
+			name:      "rejects BlockResponse when blocksync disabled",
+			setup:     func(t *testing.T) *Reactor { return newFilterReactor(t, false) },
+			chID:      BlocksyncChannel,
+			peer:      unexpected,
+			bytesFn:   blockResponseBytes,
+			expectErr: "blocksync not active",
+		},
+		{
+			name:      "rejects unsolicited BlockResponse with no requesters",
+			setup:     func(t *testing.T) *Reactor { return newFilterReactor(t, true) },
+			chID:      BlocksyncChannel,
+			peer:      unexpected,
+			bytesFn:   blockResponseBytes,
+			expectErr: "unsolicited BlockResponse from peer unexpected",
+		},
+		{
+			name: "rejects BlockResponse from peer we did not request from",
+			setup: func(t *testing.T) *Reactor {
+				r := newFilterReactor(t, true)
+				seedRequester(r, 1, expected)
+				return r
+			},
+			chID:      BlocksyncChannel,
+			peer:      unexpected,
+			bytesFn:   blockResponseBytes,
+			expectErr: "unsolicited BlockResponse from peer unexpected",
+		},
+		{
+			name: "allows BlockResponse from solicited peer",
+			setup: func(t *testing.T) *Reactor {
+				r := newFilterReactor(t, true)
+				seedRequester(r, 1, expected)
+				return r
+			},
+			chID:    BlocksyncChannel,
+			peer:    expected,
+			bytesFn: blockResponseBytes,
+		},
+		{
+			name:    "allows non-BlockResponse messages even when disabled",
+			setup:   func(t *testing.T) *Reactor { return newFilterReactor(t, false) },
+			chID:    BlocksyncChannel,
+			peer:    "any",
+			bytesFn: blockRequestBytes,
+		},
+		{
+			name:    "ignores other channels",
+			setup:   func(t *testing.T) *Reactor { return newFilterReactor(t, false) },
+			chID:    byte(0x20),
+			peer:    "any",
+			bytesFn: blockResponseBytes,
+		},
+		{
+			name:    "ignores empty bytes",
+			setup:   func(t *testing.T) *Reactor { return newFilterReactor(t, false) },
+			chID:    BlocksyncChannel,
+			peer:    "any",
+			bytesFn: func(*testing.T) []byte { return nil },
+		},
+		{
+			name: "rejects BlockResponse after pool stopped",
+			setup: func(t *testing.T) *Reactor {
+				r := newFilterReactor(t, true)
+				seedRequester(r, 1, expected)
+				require.NoError(t, r.pool.Stop())
+				return r
+			},
+			chID:      BlocksyncChannel,
+			peer:      expected,
+			bytesFn:   blockResponseBytes,
+			expectErr: "blocksync not active",
+		},
+		{
+			name: "allows BlockResponse at MaxVotesCount commit signatures",
+			setup: func(t *testing.T) *Reactor {
+				r := newFilterReactor(t, true)
+				seedRequester(r, 1, expected)
+				return r
+			},
+			chID:    BlocksyncChannel,
+			peer:    expected,
+			bytesFn: func(t *testing.T) []byte { return blockResponseBytesWithSigs(t, types.MaxVotesCount, 0) },
+		},
+		{
+			name: "rejects BlockResponse exceeding commit signature cap",
+			setup: func(t *testing.T) *Reactor {
+				r := newFilterReactor(t, true)
+				seedRequester(r, 1, expected)
+				return r
+			},
+			chID:      BlocksyncChannel,
+			peer:      expected,
+			bytesFn:   func(t *testing.T) []byte { return blockResponseBytesWithSigs(t, types.MaxVotesCount+1, 0) },
+			expectErr: "too many commit signatures",
+		},
+		{
+			name: "rejects BlockResponse exceeding extended commit signature cap",
+			setup: func(t *testing.T) *Reactor {
+				r := newFilterReactor(t, true)
+				seedRequester(r, 1, expected)
+				return r
+			},
+			chID:      BlocksyncChannel,
+			peer:      expected,
+			bytesFn:   func(t *testing.T) []byte { return blockResponseBytesWithSigs(t, 0, types.MaxVotesCount+1) },
+			expectErr: "too many extended commit signatures",
+		},
+		{
+			name: "rejects BlockResponse splitting signatures across duplicate Block fields",
+			setup: func(t *testing.T) *Reactor {
+				r := newFilterReactor(t, true)
+				seedRequester(r, 1, expected)
+				return r
+			},
+			chID: BlocksyncChannel,
+			peer: expected,
+			bytesFn: func(t *testing.T) []byte {
+				half := types.MaxVotesCount/2 + 1 // 2*half > MaxVotesCount
+				a := blockResponseBytesWithSigs(t, half, 0)
+				b := blockResponseBytesWithSigs(t, half, 0)
+				return append(append([]byte{}, a...), b...)
+			},
+			expectErr: "too many commit signatures",
+		},
+		{
+			name: "rejects BlockResponse when first byte is not BlockResponse proto tag",
+			setup: func(t *testing.T) *Reactor {
+				r := newFilterReactor(t, true)
+				seedRequester(r, 1, expected)
+				return r
+			},
+			chID: BlocksyncChannel,
+			peer: expected,
+			bytesFn: func(t *testing.T) []byte {
+				// Prepend an empty BlockRequest field (tag 0x0a, len 0)
+				// so msgBytes[0] != BlockResponse oneof tag, then append
+				// a real BlockResponse payload that exceeds the cap.
+				oversized := blockResponseBytesWithSigs(t, types.MaxVotesCount+1, 0)
+				return append([]byte{0x0a, 0x00}, oversized...)
+			},
+			expectErr: "too many commit signatures",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := tc.setup(t)
+			err := r.FilterMsgBytes(tc.chID, mockPeer(tc.peer), tc.bytesFn(t))
+			if tc.expectErr == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tc.expectErr)
+		})
+	}
+}
+
+func TestStubUnmarshalAllocs(t *testing.T) {
+	tests := []struct {
+		name          string
+		numCommits    int
+		numExtCommits int
+	}{
+		{"10k commit sigs", 10_000, 0},
+		{"100k commit sigs", 100_000, 0},
+		{"1m commit sigs", 1_000_000, 0},
+		{"10k ext commit sigs", 0, 10_000},
+		{"100k ext commit sigs", 0, 100_000},
+		{"1m ext commit sigs", 0, 1_000_000},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			payload := blockResponseBytesWithSigs(t, tt.numCommits, tt.numExtCommits)
+			allocs := testing.AllocsPerRun(20, func() {
+				var stub bcproto.SigCountMessage
+				require.NoError(t, stub.Unmarshal(payload))
+				require.Len(t, stub.BlockResponse.Block.LastCommit.Signatures, tt.numCommits)
+				require.Len(t, stub.BlockResponse.ExtCommit.ExtendedSignatures, tt.numExtCommits)
+			})
+			const maxAllocs = 50
+			require.LessOrEqualf(t, int(allocs), maxAllocs, "unmarshal allocated %d times, more than max allowed", int(allocs), maxAllocs)
+		})
+	}
+}
+
+func blockResponseBytesWithSigs(t *testing.T, commitSigs, extSigs int) []byte {
+	t.Helper()
+	commit := &cmtproto.Commit{Signatures: make([]cmtproto.CommitSig, commitSigs)}
+	for i := range commit.Signatures {
+		commit.Signatures[i] = cmtproto.CommitSig{BlockIdFlag: cmtproto.BlockIDFlagAbsent}
+	}
+
+	ext := &cmtproto.ExtendedCommit{ExtendedSignatures: make([]cmtproto.ExtendedCommitSig, extSigs)}
+	for i := range ext.ExtendedSignatures {
+		ext.ExtendedSignatures[i] = cmtproto.ExtendedCommitSig{BlockIdFlag: cmtproto.BlockIDFlagAbsent}
+	}
+
+	msg := &bcproto.Message{
+		Sum: &bcproto.Message_BlockResponse{
+			BlockResponse: &bcproto.BlockResponse{
+				Block:     &cmtproto.Block{LastCommit: commit},
+				ExtCommit: ext,
+			},
+		},
+	}
+
+	payload, err := proto.Marshal(msg)
+	require.NoError(t, err)
+	return payload
 }
 
 func TestCheckExtendedCommit(t *testing.T) {

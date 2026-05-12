@@ -82,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack on failure
-        uses: slackapi/slack-github-action@v3.0.2
+        uses: slackapi/slack-github-action@v3.0.3
         env:
           BRANCH: ${{ github.ref_name }}
           CRASHERS: ${{ needs.fuzz-nightly-test.outputs.crashers-count }}

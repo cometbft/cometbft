@@ -1,6 +1,7 @@
 package blocksync
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"sync"
@@ -45,6 +46,9 @@ type peerError struct {
 func (e peerError) Error() string {
 	return fmt.Sprintf("error with peer %v: %s", e.peerID, e.err.Error())
 }
+
+// Reactor implements MsgBytesFilter
+var _ p2p.MsgBytesFilter = (*Reactor)(nil)
 
 // Reactor handles long-term catchup syncing.
 type Reactor struct {
@@ -248,8 +252,93 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 	})
 }
 
+func (r *Reactor) handlePeerResponse(msg *bcproto.BlockResponse, src p2p.Peer) {
+	bi, err := types.BlockFromProto(msg.Block)
+	if err != nil {
+		r.Logger.Error("Peer sent us invalid block", "peer", src, "msg", msg, "err", err)
+		r.Switch.StopPeerForError(src, err)
+		return
+	}
+
+	var extCommit *types.ExtendedCommit
+	if msg.ExtCommit != nil {
+		extCommit, err = types.ExtendedCommitFromProto(msg.ExtCommit)
+		if err != nil {
+			r.Logger.Error("Failed to convert extended commit from proto", "peer", src, "err", err)
+			r.Switch.StopPeerForError(src, err)
+			return
+		}
+	}
+
+	if err := r.pool.AddBlock(src.ID(), bi, extCommit, msg.Block.Size()); err != nil {
+		r.Logger.Error("Failed to add block", "peer", src, "err", err)
+	}
+}
+
+// FilterMsgBytes implements p2p.MsgBytesFilter and rejects messages from
+// unexpected peers before unmarshalling the request.
+func (bcR *Reactor) FilterMsgBytes(chID byte, src p2p.Peer, msgBytes []byte) error {
+	// do not check invalid messages, will fail unmarshalling
+	if chID != BlocksyncChannel || len(msgBytes) == 0 {
+		return nil
+	}
+
+	// unmarshal into custom stub struct that will do no allocations so we can
+	// quickly and cheaply check the validity of BlockResponse message
+	var stub bcproto.SigCountMessage
+	if err := stub.Unmarshal(msgBytes); err != nil {
+		return fmt.Errorf("malformed blocksync message from peer %s: %w", src.ID(), err)
+	}
+	if stub.BlockResponse == nil {
+		// Not a BlockResponse oneof case, no extra validation to do in this
+		// case
+		return nil
+	}
+
+	// blocksync not running, we should not be getting a BlockResponse
+	if !bcR.pool.IsRunning() {
+		return errors.New("unsolicited BlockResponse: blocksync not active")
+	}
+
+	// ensure we have an outstanding request to this peer
+	if !bcR.pool.HasPendingRequestFrom(src.ID()) {
+		return fmt.Errorf("unsolicited BlockResponse from peer %s", src.ID())
+	}
+
+	// validate the commit count in the response
+	if err := validateMaxVotes(stub.BlockResponse); err != nil {
+		return fmt.Errorf("validating max votes in BlockResponse from peer %s: %w", src.ID(), err)
+	}
+
+	return nil
+}
+
+// validateMaxVotes validates that the number of commit signatures and extended
+// commit signatures are both less than the MaxVotesCount, returns an error if
+// not.
+func validateMaxVotes(br *bcproto.SigCountBlockResponse) error {
+	commitSigs, extSigs := 0, 0
+	if br != nil {
+		if br.Block != nil && br.Block.LastCommit != nil {
+			commitSigs = len(br.Block.LastCommit.Signatures)
+		}
+		if br.ExtCommit != nil {
+			extSigs = len(br.ExtCommit.ExtendedSignatures)
+		}
+	}
+
+	if commitSigs > types.MaxVotesCount {
+		return fmt.Errorf("too many commit signatures: %d (max %d)", commitSigs, types.MaxVotesCount)
+	}
+	if extSigs > types.MaxVotesCount {
+		return fmt.Errorf("too many extended commit signatures: %d (max %d)", extSigs, types.MaxVotesCount)
+	}
+
+	return nil
+}
+
 // Receive implements Reactor by handling 4 types of messages (look below).
-func (bcR *Reactor) Receive(e p2p.Envelope) { //nolint: dupl // recreated in a test
+func (bcR *Reactor) Receive(e p2p.Envelope) {
 	if err := ValidateMsg(e.Message); err != nil {
 		bcR.Logger.Error("Peer sent us invalid msg", "peer", e.Src, "msg", e.Message, "err", err)
 		bcR.Switch.StopPeerForError(e.Src, err)
@@ -262,28 +351,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) { //nolint: dupl // recreated in a t
 	case *bcproto.BlockRequest:
 		bcR.respondToPeer(msg, e.Src)
 	case *bcproto.BlockResponse:
-		bi, err := types.BlockFromProto(msg.Block)
-		if err != nil {
-			bcR.Logger.Error("Peer sent us invalid block", "peer", e.Src, "msg", e.Message, "err", err)
-			bcR.Switch.StopPeerForError(e.Src, err)
-			return
-		}
-		var extCommit *types.ExtendedCommit
-		if msg.ExtCommit != nil {
-			var err error
-			extCommit, err = types.ExtendedCommitFromProto(msg.ExtCommit)
-			if err != nil {
-				bcR.Logger.Error("failed to convert extended commit from proto",
-					"peer", e.Src,
-					"err", err)
-				bcR.Switch.StopPeerForError(e.Src, err)
-				return
-			}
-		}
-
-		if err := bcR.pool.AddBlock(e.Src.ID(), bi, extCommit, msg.Block.Size()); err != nil {
-			bcR.Logger.Error("failed to add block", "peer", e.Src, "err", err)
-		}
+		bcR.handlePeerResponse(msg, e.Src)
 	case *bcproto.StatusRequest:
 		// Send peer our state.
 		e.Src.TrySend(p2p.Envelope{

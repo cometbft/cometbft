@@ -6,12 +6,17 @@
 
 ### BUG FIXES
 
+- `[blocksync]` fix removeTimedoutPeers deadlock found via Byzantine prevote gossip race
+  ([\#5839](https://github.com/cometbft/cometbft/pull/5839))
 - `[mempool]` fix setRecheckFull/setDone race causing spurious ErrRecheckFull.
   ([\#5837](https://github.com/cometbft/cometbft/pull/5837))
 - `[abci]` fix(abci): fire didRecvResponse callbacks outside cli.mtx.
   ([\#5850](https://github.com/cometbft/cometbft/pull/5850))
 
 ### IMPROVEMENTS
+
+- `[blocksync]` validate blocksync response sender and signature count
+  ([\#5860](https://github.com/cometbft/cometbft/pull/5860))
 
 ### FEATURES
 

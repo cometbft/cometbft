@@ -399,6 +399,14 @@ func createMConnection(
 			// which does onPeerError.
 			panic(fmt.Sprintf("Unknown channel %X", chID))
 		}
+
+		// give reactors a chance to reject the raw bytes before unmarshalling
+		if f, ok := reactor.(MsgBytesFilter); ok {
+			if err := f.FilterMsgBytes(chID, p, msgBytes); err != nil {
+				panic(fmt.Errorf("rejected msg on chID %#x from %s: %w", chID, p.ID(), err))
+			}
+		}
+
 		mt := msgTypeByChID[chID]
 		msg := proto.Clone(mt)
 		err := proto.Unmarshal(msgBytes, msg)

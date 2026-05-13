@@ -237,6 +237,8 @@ func nBytes(n int) []byte {
 }
 
 func benchmarkWalDecode(b *testing.B, n int) {
+	// registerInterfacesOnce()
+
 	buf := new(bytes.Buffer)
 	enc := NewWALEncoder(buf)
 	msg := msgInfo{Msg: &BlockPartMessage{Height: 1, Round: 0, Part: &cmttypes.Part{

@@ -223,6 +223,43 @@ func nBytes(n int) []byte {
 	return buf[:n]
 }
 
+func benchmarkWalDecode(b *testing.B, n int) {
+	buf := new(bytes.Buffer)
+	enc := NewWALEncoder(buf)
+	msg := msgInfo{Msg: &BlockPartMessage{Height: 1, Round: 0, Part: &cmttypes.Part{
+		Index: 0,
+		Bytes: nBytes(n),
+		Proof: merkle.Proof{Total: 1, Index: 0, LeafHash: nBytes(32)},
+	}}}
+	if err := enc.Encode(&TimedWALMessage{Msg: msg, Time: time.Now().Round(time.Second).UTC()}); err != nil {
+		b.Fatal(err)
+	}
+	encoded := buf.Bytes()
+	r := bytes.NewReader(encoded)
+	dec := NewWALDecoder(r)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		r.Reset(encoded)
+		if _, err := dec.Decode(); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.ReportAllocs()
+}
+
+func BenchmarkWalDecode512B(b *testing.B) {
+	benchmarkWalDecode(b, 512)
+}
+
+func BenchmarkWalDecode10KB(b *testing.B) {
+	benchmarkWalDecode(b, 10*1024)
+}
+
+func BenchmarkWalDecode50KB(b *testing.B) {
+	benchmarkWalDecode(b, 50*1024)
+}
+
 func setupBenchmarkWAL(b *testing.B) *BaseWAL {
 	b.Helper()
 	walDir := b.TempDir()

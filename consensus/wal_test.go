@@ -217,6 +217,19 @@ func TestWALPeriodicSync(t *testing.T) {
 	}
 }
 
+/*
+var initOnce sync.Once
+
+func registerInterfacesOnce() {
+	initOnce.Do(func() {
+		var _ = wire.RegisterInterface(
+			struct{ WALMessage }{},
+			wire.ConcreteType{[]byte{}, 0x10},
+		)
+	})
+}
+*/
+
 func nBytes(n int) []byte {
 	buf := make([]byte, n)
 	n, _ = rand.Read(buf)

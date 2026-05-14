@@ -1,7 +1,6 @@
 package blocksync
 
 import (
-	"context"
 	"fmt"
 	"math"
 	"sync"
@@ -114,23 +113,22 @@ func TestBlockPoolBasic(t *testing.T) {
 
 	err := pool.Start()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
-	peers.start()
-	// LIFO: cancel → wg.Wait → pool.Stop → peers.stop.
-	defer peers.stop()
+	var wg sync.WaitGroup
+	stopDispatcher := make(chan struct{})
 	defer func() {
+		close(stopDispatcher) // stop dispatcher
+		wg.Wait()             // wait for dispatcher
+		// stop pool
 		if err := pool.Stop(); err != nil {
 			t.Error(err)
 		}
+		peers.stop() // close peer channels
 	}()
 
-	var wg sync.WaitGroup
-	defer wg.Wait()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	peers.start()
 
 	// Introduce each peer.
 	go func() {
@@ -153,28 +151,26 @@ func TestBlockPoolBasic(t *testing.T) {
 		}
 	}()
 
-	// Dedicated dispatcher: drains requestsCh until canceled.
+	// Dedicated dispatcher: drains requestsCh until stopped.
 	done := make(chan struct{})
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		stop := false
 		for {
 			select {
-			case <-ctx.Done():
+			case <-stopDispatcher:
 				return
-			case req := <-requestsCh:
-				if stop {
-					continue
+			case req, ok := <-requestsCh:
+				if !ok {
+					return
 				}
 				t.Logf("Pulled new BlockRequest %v", req)
 				if req.Height == 300 {
 					close(done)
-					stop = true
-					continue
+					return
 				}
 				select {
-				case <-ctx.Done():
+				case <-stopDispatcher:
 					return
 				case peers[req.PeerID].inputChan <- inputData{t, pool, req}:
 				}

@@ -246,6 +246,29 @@ func testFreeAddr(t *testing.T) string {
 	return fmt.Sprintf("127.0.0.1:%d", ln.Addr().(*net.TCPAddr).Port)
 }
 
+// TestStartRPCCleansUpOnFailure verifies that startRPC closes any listeners it
+// opened when a later listen call fails.
+func TestStartRPCCleansUpOnFailure(t *testing.T) {
+	config := test.ResetTestRoot("node_startrpc_cleanup_test")
+	defer os.RemoveAll(config.RootDir)
+	config.RPC.GRPCListenAddress = ""
+
+	// Hold a port open so the second listen is guaranteed to fail.
+	held, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer held.Close()
+
+	// First address uses :0 (kernel-assigned, always succeeds).
+	// Second address reuses the held port (always fails — already bound).
+	config.RPC.ListenAddress = fmt.Sprintf("tcp://127.0.0.1:0,tcp://%s", held.Addr().String())
+
+	n, err := DefaultNewNode(config, log.TestingLogger())
+	require.NoError(t, err)
+
+	_, err = n.startRPC()
+	require.Error(t, err)
+}
+
 // create a proposal block using real and full
 // mempool and evidence pool and validate it.
 func TestCreateProposalBlock(t *testing.T) {

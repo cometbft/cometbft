@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[consensus]` fix(consensus): release cs.mtx before sending to statsMsgQueue
+  ([\#5813](https://github.com/cometbft/cometbft/pull/5813))
 - `[blocksync]` fix removeTimedoutPeers deadlock found via Byzantine prevote gossip race
   ([\#5839](https://github.com/cometbft/cometbft/pull/5839))
 - `[mempool]` fix setRecheckFull/setDone race causing spurious ErrRecheckFull.

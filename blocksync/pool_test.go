@@ -153,7 +153,7 @@ func TestBlockPoolBasic(t *testing.T) {
 		}
 	}()
 
-	// Dedicated dispatcher: drains requestsCh until cancelled.
+	// Dedicated dispatcher: drains requestsCh until canceled.
 	done := make(chan struct{})
 	wg.Add(1)
 	go func() {

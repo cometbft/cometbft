@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[blocksync]` fix removeTimedoutPeers deadlock found via Byzantine prevote gossip race
+  ([\#5839](https://github.com/cometbft/cometbft/pull/5839))
 - `[mempool]` fix setRecheckFull/setDone race causing spurious ErrRecheckFull.
   ([\#5837](https://github.com/cometbft/cometbft/pull/5837))
 
@@ -13,6 +15,8 @@
 
 - `[execution]` perf(execution): cache validator set within a block cycle.
   ([\#5834](https://github.com/cometbft/cometbft/pull/5834))
+- `[blocksync]` validate blocksync response sender and signature count
+  ([\#5860](https://github.com/cometbft/cometbft/pull/5860))
 
 ### FEATURES
 

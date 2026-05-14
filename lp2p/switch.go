@@ -403,16 +403,32 @@ func (s *Switch) handleStream(stream network.Stream) {
 		return
 	}
 
-	msg, err := unmarshalProto(proto.descriptor, payload)
+	// 3. Retrieve the peer from the peerSet (or provision if it's not).
+	peer, err := s.resolvePeer(peerID)
 	if err != nil {
-		s.Logger.Error("Failed to unmarshal message", "protocol", protocolID, "err", err)
+		s.Logger.Error("Failed to resolve peer", "protocol", protocolID, "peer_id", peerID.String(), "err", err)
 		return
 	}
 
-	// 3. Retrieve the peer from the peerSet (or provision if it's not)
-	peer, err := s.resolvePeer(peerID)
+	// 4. Optional pre-unmarshal filter. Allow reactors to filter messages
+	// before unmarshalling them
+	if f, ok := reactor.Reactor.(p2p.MsgBytesFilter); ok {
+		if err := f.FilterMsgBytes(proto.descriptor.ID, peer, payload); err != nil {
+			s.Logger.Error(
+				"Rejected msg bytes by reactor filter",
+				"peer_id", peerID.String(),
+				"protocol", protocolID,
+				"err", err,
+			)
+			s.StopPeerForError(peer, err)
+			return
+		}
+	}
+
+	msg, err := unmarshalProto(proto.descriptor, payload)
 	if err != nil {
-		s.Logger.Error("Failed to resolve peer", "peer_id", peerID.String(), "err", err)
+		s.Logger.Error("Failed to unmarshal message", "protocol", protocolID, "err", err)
+		s.StopPeerForError(peer, err)
 		return
 	}
 

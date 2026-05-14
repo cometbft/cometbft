@@ -119,13 +119,12 @@ func TestBlockPoolBasic(t *testing.T) {
 	var wg sync.WaitGroup
 	stopDispatcher := make(chan struct{})
 	defer func() {
-		close(stopDispatcher) // stop dispatcher
-		wg.Wait()             // wait for dispatcher
-		// stop pool
-		if err := pool.Stop(); err != nil {
+		if err := pool.Stop(); err != nil { // stop pool (no more sends to requestsCh)
 			t.Error(err)
 		}
-		peers.stop() // close peer channels
+		close(stopDispatcher) // stop dispatcher
+		wg.Wait()             // wait for dispatcher
+		peers.stop()          // close peer channels
 	}()
 
 	peers.start()
@@ -151,11 +150,12 @@ func TestBlockPoolBasic(t *testing.T) {
 		}
 	}()
 
-	// Dedicated dispatcher: drains requestsCh until stopped.
+	// Dedicated dispatcher: drains requestsCh until pool.Stop() then stopDispatcher.
 	done := make(chan struct{})
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		doneSignaled := false
 		for {
 			select {
 			case <-stopDispatcher:
@@ -165,9 +165,9 @@ func TestBlockPoolBasic(t *testing.T) {
 					return
 				}
 				t.Logf("Pulled new BlockRequest %v", req)
-				if req.Height == 300 {
+				if req.Height == 300 && !doneSignaled {
 					close(done)
-					return
+					doneSignaled = true
 				}
 				select {
 				case <-stopDispatcher:

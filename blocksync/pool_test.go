@@ -1,8 +1,10 @@
 package blocksync
 
 import (
+	"context"
 	"fmt"
 	"math"
+	"sync"
 	"testing"
 	"time"
 
@@ -48,20 +50,16 @@ func (p testPeer) runInputRoutine() {
 	}()
 }
 
-// Request desired, pretend like we got the block immediately.
+// simulateInput pretends a block was received immediately.
 func (p testPeer) simulateInput(input inputData) {
 	block := &types.Block{Header: types.Header{Height: input.request.Height}, LastCommit: &types.Commit{}} // real blocks have LastCommit
 	extCommit := &types.ExtendedCommit{
 		Height: input.request.Height,
 	}
-	// If this peer is malicious
 	if p.malicious {
 		realHeight := p.height - MaliciousLie
-		// And the requested height is above the real height
 		if input.request.Height > realHeight {
-			// Then provide a fake block
-			block.LastCommit = nil // Fake block, no LastCommit
-			// or provide no block at all, if we are close to the real height
+			block.LastCommit = nil
 			if input.request.Height <= realHeight+BlackholeSize {
 				input.pool.RedoRequestFrom(input.request.Height, p.id)
 				return
@@ -119,14 +117,20 @@ func TestBlockPoolBasic(t *testing.T) {
 		t.Error(err)
 	}
 
-	t.Cleanup(func() {
+	peers.start()
+	// LIFO: cancel → wg.Wait → pool.Stop → peers.stop.
+	defer peers.stop()
+	defer func() {
 		if err := pool.Stop(); err != nil {
 			t.Error(err)
 		}
-	})
+	}()
 
-	peers.start()
-	defer peers.stop()
+	var wg sync.WaitGroup
+	defer wg.Wait()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	// Introduce each peer.
 	go func() {
@@ -135,7 +139,6 @@ func TestBlockPoolBasic(t *testing.T) {
 		}
 	}()
 
-	// Start a goroutine to pull blocks
 	go func() {
 		for {
 			if !pool.IsRunning() {
@@ -150,18 +153,42 @@ func TestBlockPoolBasic(t *testing.T) {
 		}
 	}()
 
-	// Pull from channels
+	// Dedicated dispatcher: drains requestsCh until cancelled.
+	done := make(chan struct{})
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		stop := false
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case req := <-requestsCh:
+				if stop {
+					continue
+				}
+				t.Logf("Pulled new BlockRequest %v", req)
+				if req.Height == 300 {
+					close(done)
+					stop = true
+					continue
+				}
+				select {
+				case <-ctx.Done():
+					return
+				case peers[req.PeerID].inputChan <- inputData{t, pool, req}:
+				}
+			}
+		}
+	}()
+
 	for {
 		select {
 		case err := <-errorsCh:
 			t.Error(err)
-		case request := <-requestsCh:
-			t.Logf("Pulled new BlockRequest %v", request)
-			if request.Height == 300 {
-				return // Done!
-			}
-
-			peers[request.PeerID].inputChan <- inputData{t, pool, request}
+			return
+		case <-done:
+			return
 		}
 	}
 }

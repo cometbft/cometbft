@@ -116,15 +116,21 @@ func TestBlockPoolBasic(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var wg sync.WaitGroup
-	stopDispatcher := make(chan struct{})
+	done := make(chan struct{})
+	var (
+		wg        sync.WaitGroup
+		closeDone sync.Once
+	)
+	stopDispatcher := func() {
+		closeDone.Do(func() { close(done) })
+	}
 	defer func() {
-		if err := pool.Stop(); err != nil { // stop pool (no more sends to requestsCh)
+		if err := pool.Stop(); err != nil {
 			t.Error(err)
 		}
-		close(stopDispatcher) // stop dispatcher
-		wg.Wait()             // wait for dispatcher
-		peers.stop()          // close peer channels
+		stopDispatcher()
+		wg.Wait()
+		peers.stop()
 	}()
 
 	peers.start()
@@ -150,30 +156,27 @@ func TestBlockPoolBasic(t *testing.T) {
 		}
 	}()
 
-	// Dedicated dispatcher: drains requestsCh until pool.Stop() then stopDispatcher.
-	done := make(chan struct{})
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		doneSignaled := false
 		for {
 			select {
-			case <-stopDispatcher:
-				return
 			case req, ok := <-requestsCh:
 				if !ok {
 					return
 				}
 				t.Logf("Pulled new BlockRequest %v", req)
-				if req.Height == 300 && !doneSignaled {
-					close(done)
-					doneSignaled = true
-				}
+				isTerminal := req.Height == 300
 				select {
-				case <-stopDispatcher:
-					return
 				case peers[req.PeerID].inputChan <- inputData{t, pool, req}:
+					if isTerminal {
+						stopDispatcher()
+					}
+				case <-done:
+					return
 				}
+			case <-done:
+				return
 			}
 		}
 	}()
@@ -182,6 +185,7 @@ func TestBlockPoolBasic(t *testing.T) {
 		select {
 		case err := <-errorsCh:
 			t.Error(err)
+			stopDispatcher()
 			return
 		case <-done:
 			return

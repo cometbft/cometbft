@@ -404,6 +404,10 @@ func (s *Switch) handleStream(stream network.Stream) {
 	}
 
 	// 3. Retrieve the peer from the peerSet (or provision if it's not).
+	// Identify may not have populated the peerstore yet; seed it from
+	// the active connection so resolvePeer can provision the peer.
+	s.host.Peerstore().AddAddr(peerID, stream.Conn().RemoteMultiaddr(), peerstore.TempAddrTTL)
+
 	peer, err := s.resolvePeer(peerID)
 	if err != nil {
 		s.Logger.Error("Failed to resolve peer", "protocol", protocolID, "peer_id", peerID.String(), "err", err)

@@ -19,6 +19,7 @@ import (
 	"github.com/cometbft/cometbft/p2p/conn"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
 	"github.com/cometbft/cometbft/test/utils"
+	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/require"
@@ -580,6 +581,78 @@ func TestSwitch(t *testing.T) {
 		require.Equal(t, 1, switchB.Peers().Size(),
 			"B should still be connected to A on filter pass")
 	})
+}
+
+// TestHandleStreamResolvePeerBeforeIdentify is a deterministic reproduction of
+// the bug where resolvePeer drops the first message from a new peer because
+// libp2p's identify protocol (which populates B's peerstore with A's address)
+// is asynchronous and independent of A's own identify.
+//
+// The race in production:
+//   - host.NewStream on A's side waits for A's own identify (A learns about B).
+//   - B's identify of A is a SEPARATE goroutine: B opens a stream to A, reads
+//     A's info, and only then adds A's address to B's peerstore.
+//   - Between A's identify finishing and B's identify finishing, A can open a
+//     CometBFT stream to B. When B's handleStream runs, B's peerstore is still
+//     empty for A, so resolvePeer fails and the message is dropped.
+//
+// We reproduce this deterministically by replacing A's identify responder with
+// a handler that blocks for 500ms. B's "learn about A" goroutine stalls there
+// while A's identify (A learning about B) completes normally. A can then open
+// a CometBFT stream to B while B's peerstore is still empty for A.
+func TestHandleStreamResolvePeerBeforeIdentify(t *testing.T) {
+	const (
+		channelID     = byte(0xF2)
+		identifyDelay = 500 * time.Millisecond
+	)
+
+	hosts := makeTestHosts(t, 2, withLogging())
+	hostA, hostB := hosts[0], hosts[1]
+
+	// Replace A's identify responder with a slow one BEFORE the connection.
+	// When B opens "/ipfs/id/1.0.0" to A (B's identify of A), the handler
+	// sleeps, keeping B's peerstore empty for A during the test window.
+	hostA.SetStreamHandler("/ipfs/id/1.0.0", func(s network.Stream) {
+		time.Sleep(identifyDelay)
+		_ = s.Reset()
+	})
+
+	channelDescriptor := &conn.ChannelDescriptor{
+		ID:                  channelID,
+		Priority:            1,
+		RecvMessageCapacity: 1024,
+		MessageType:         &types.RequestEcho{},
+	}
+
+	reactorA := newReactorMock([]*conn.ChannelDescriptor{channelDescriptor}, hostA.Logger())
+	switchA, err := NewSwitch(nil, hostA, []SwitchReactor{{Name: "echo", Reactor: reactorA}}, p2p.NopMetrics(), hostA.Logger())
+	require.NoError(t, err)
+
+	reactorB := newReactorMock([]*conn.ChannelDescriptor{channelDescriptor}, hostB.Logger())
+	switchB, err := NewSwitch(nil, hostB, []SwitchReactor{{Name: "echo", Reactor: reactorB}}, p2p.NopMetrics(), hostB.Logger())
+	require.NoError(t, err)
+
+	connectSwitches(t, []*Switch{switchA, switchB})
+
+	require.Eventually(t, func() bool {
+		return switchA.Peers().Size() == 1
+	}, time.Second, 20*time.Millisecond, "A should see B as peer")
+
+	// Pre-condition: B's peerstore must not have A's address yet because our
+	// slow handler is still blocking B's identify goroutine.
+	require.Empty(t, hostB.Peerstore().Addrs(hostA.ID()),
+		"B should not know A's address yet (identify blocked)")
+
+	switchA.BroadcastAsync(p2p.Envelope{
+		ChannelID: channelID,
+		Message:   &types.RequestEcho{Message: "hello"},
+	})
+
+	require.Eventually(t, func() bool {
+		envs := reactorB.receivedEnvelopes()
+		return len(envs) == 1 && envs[0].Message.(*types.RequestEcho).Message == "hello"
+	}, 2*time.Second, 20*time.Millisecond,
+		"B must receive the message even though B's peerstore was empty for A at stream time")
 }
 
 // filteringReactor is a mock reactor that optionally filters messages via the

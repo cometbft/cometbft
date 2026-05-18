@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[evidence]` test(evidence): fix flaky `TestReactorsGossipNoCommittedEvidence`
+  ([\#5870](https://github.com/cometbft/cometbft/pull/5870))
 - `[blocksync]` fix removeTimedoutPeers deadlock found via Byzantine prevote gossip race
   ([\#5839](https://github.com/cometbft/cometbft/pull/5839))
 - `[mempool]` fix setRecheckFull/setDone race causing spurious ErrRecheckFull.

@@ -335,10 +335,9 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 		_, err := dialer.Dial(*addr, peerConfig{})
 		if err != nil {
 			errc <- err
-			return
+		} else {
+			close(fastc)
 		}
-
-		close(fastc)
 		<-slowdonec
 		close(errc)
 	}()
@@ -357,8 +356,10 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Drain the slow peer's goroutine (it may send an error from its broken handshake).
-	if err := <-errc; err != nil {
+	// Drain errors from the slow peer; errc is closed by the fast peer goroutine
+	// after slowdonec confirms the slow peer has finished, so ranging here waits
+	// for both goroutines to exit.
+	for err := range errc {
 		t.Logf("slow peer connection error (expected): %v", err)
 	}
 

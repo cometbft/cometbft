@@ -665,7 +665,7 @@ FOR_LOOP:
 				continue FOR_LOOP
 			}
 
-			r.pool.PopRequest()
+			r.pool.PopRequest(first.Time)
 
 			// TODO: batch saves so we don't persist to disk every block
 			if extensionsEnabled {

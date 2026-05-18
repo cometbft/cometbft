@@ -56,6 +56,9 @@ const (
 
 var peerTimeout = 15 * time.Second // not const so we can override with tests
 
+// not const so we can override with tests
+var noBlockTimeout = 30 * time.Second
+
 /*
 	Peers self report their heights when we join the block pool.
 	Starting from our latest pool.height, we request blocks
@@ -77,10 +80,12 @@ type BlockPool struct {
 	// Set once in OnStart, then immutable.
 	startTime time.Time
 
-	// Protected by mtx.
-	mtx           cmtsync.Mutex
-	requesters    map[int64]*bpRequester
-	height        int64 // the lowest key in requesters.
+	mtx         cmtsync.Mutex
+	syncTracker SyncTracker // tracks sync rate vs production rate for escape detection
+	// block requests
+	requesters map[int64]*bpRequester
+	height     int64 // the lowest key in requesters.
+	// peers
 	peers         map[p2p.ID]*bpPeer
 	bannedPeers   map[p2p.ID]time.Time
 	sortedPeers   []*bpPeer // sorted by curRate, highest first
@@ -110,6 +115,7 @@ func NewBlockPool(start int64, requestsCh chan<- BlockRequest, errorsCh chan<- p
 		requesters:  make(map[int64]*bpRequester),
 		height:      start,
 		startHeight: start,
+		syncTracker: *NewSyncTracker(noBlockTimeout),
 
 		requestsCh: requestsCh,
 		errorsCh:   errorsCh,
@@ -226,7 +232,6 @@ func (pool *BlockPool) HasPendingRequestFrom(peerID p2p.ID) bool {
 }
 
 // IsCaughtUp returns true if this node is caught up, false - otherwise.
-// TODO: relax conditions, prevent abuse.
 func (pool *BlockPool) IsCaughtUp() bool {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
@@ -237,15 +242,18 @@ func (pool *BlockPool) IsCaughtUp() bool {
 		return false
 	}
 
-	// Some conditions to determine if we're caught up.
-	// Ensures we've either received a block or waited some amount of time,
-	// and that we're synced to the highest known height.
-	// Note we use maxPeerHeight - 1 because to sync block H requires block H+1
-	// to verify the LastCommit.
-	receivedBlockOrTimedOut := pool.height > 0 || time.Since(pool.startTime) > 5*time.Second
-	ourChainIsLongestAmongPeers := pool.maxPeerHeight == 0 || pool.height >= (pool.maxPeerHeight-1)
-	isCaughtUp := receivedBlockOrTimedOut && ourChainIsLongestAmongPeers
-	return isCaughtUp
+	// No-progress check: after peerConnWait, delegate to the sync tracker
+	// which uses block header timestamps and wall-clock time to determine
+	// whether we're truly caught up or just being throttled by attackers.
+	sinceStart := time.Since(pool.startTime)
+	if sinceStart >= peerConnWait {
+		if pool.height > pool.startHeight {
+			return pool.syncTracker.IsCaughtUp()
+		}
+		// Genesis: wait for peerConnWait + noBlockTimeout
+		return sinceStart >= peerConnWait+noBlockTimeout
+	}
+	return false
 }
 
 // PeekTwoBlocks returns blocks at pool.height and pool.height+1. We need to
@@ -270,7 +278,7 @@ func (pool *BlockPool) PeekTwoBlocks() (first, second *types.Block, firstExtComm
 }
 
 // PopRequest removes the requester at pool.height and increments pool.height.
-func (pool *BlockPool) PopRequest() {
+func (pool *BlockPool) PopRequest(blockTime time.Time) {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
 
@@ -284,6 +292,7 @@ func (pool *BlockPool) PopRequest() {
 	}
 	delete(pool.requesters, pool.height)
 	pool.height++
+	pool.syncTracker.RecordBlock(blockTime)
 
 	// Re-evaluate maxPeerHeight: peers whose pruned base was just beyond the previous pool.height may now be able to contribute
 	pool.updateMaxPeerHeight()
@@ -458,6 +467,7 @@ func (pool *BlockPool) RemovePeer(peerID p2p.ID) {
 
 // CONTRACT: pool.mtx must be locked.
 func (pool *BlockPool) removePeer(peerID p2p.ID) {
+	pool.Logger.Debug("Removing peer", peerID)
 	for _, requester := range pool.requesters {
 		if requester.didRequestFrom(peerID) {
 			requester.redo(peerID)
@@ -655,6 +665,7 @@ func (peer *bpPeer) resetMonitor() {
 }
 
 func (peer *bpPeer) resetTimeout() {
+	peer.logger.Debug("Resetting peer timeout", "peer", peer.id, "numPending", peer.numPending)
 	if peer.timeout == nil {
 		peer.timeout = time.AfterFunc(peerTimeout, peer.onTimeout)
 	} else {

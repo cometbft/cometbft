@@ -133,8 +133,6 @@ func TestReactorsGossipNoCommittedEvidence(t *testing.T) {
 	pools[0].Update(state, evList)
 	require.EqualValues(t, uint32(0), pools[0].Size())
 
-	time.Sleep(100 * time.Millisecond)
-
 	peer := reactors[0].Switch.Peers().Copy()[0]
 	ps := peerState{height - 2}
 	peer.Set(types.PeerStateKey, ps)
@@ -143,11 +141,10 @@ func TestReactorsGossipNoCommittedEvidence(t *testing.T) {
 	ps = peerState{height}
 	peer.Set(types.PeerStateKey, ps)
 
-	// wait to see that no evidence comes through
-	time.Sleep(300 * time.Millisecond)
-
 	// the second pool should not have received any evidence because it has already been committed
-	assert.Equal(t, uint32(0), pools[1].Size(), "second reactor should not have received evidence")
+	require.Never(t, func() bool {
+		return pools[1].Size() > 0
+	}, 300*time.Millisecond, 10*time.Millisecond, "second reactor should not have received evidence")
 
 	// the first reactor receives three more evidence
 	evList = make([]types.Evidence, 3)
@@ -160,32 +157,37 @@ func TestReactorsGossipNoCommittedEvidence(t *testing.T) {
 		evList[i] = ev
 	}
 
-	// wait to see that only one evidence is sent
-	time.Sleep(300 * time.Millisecond)
-
 	// the second pool should only have received the first evidence because it is behind
-	peerEv, _ := pools[1].PendingEvidence(10000)
-	assert.EqualValues(t, []types.Evidence{evList[0]}, peerEv)
+	var peerEv []types.Evidence
+	require.Eventually(t, func() bool {
+		peerEv, _ = pools[1].PendingEvidence(10000)
+		return len(peerEv) == 1
+	}, 3*time.Second, 10*time.Millisecond)
+	require.EqualValues(t, []types.Evidence{evList[0]}, peerEv)
 
 	// the last evidence is committed and the second reactor catches up in state to the first
 	// reactor. We therefore expect that the second reactor only receives one more evidence, the
 	// one that is still pending and not the evidence that has already been committed.
 	state.LastBlockHeight++
+
+	// Must update peer state before committing evList[2]: the commit wakes up the broadcast
+	// goroutine, which must already see the new peer height or it will skip evList[1].
+	peer = reactors[0].Switch.Peers().Copy()[0]
+	ps = peerState{height}
+	peer.Set(types.PeerStateKey, ps)
+
 	pools[0].Update(state, []types.Evidence{evList[2]})
 	// the first reactor should have the two remaining pending evidence
 	require.EqualValues(t, uint32(2), pools[0].Size())
 
 	// now update the state of the second reactor
 	pools[1].Update(state, types.EvidenceList{})
-	peer = reactors[0].Switch.Peers().Copy()[0]
-	ps = peerState{height}
-	peer.Set(types.PeerStateKey, ps)
 
-	// wait to see that only two evidence is sent
-	time.Sleep(300 * time.Millisecond)
-
-	peerEv, _ = pools[1].PendingEvidence(1000)
-	assert.EqualValues(t, []types.Evidence{evList[0], evList[1]}, peerEv)
+	require.Eventually(t, func() bool {
+		peerEv, _ = pools[1].PendingEvidence(1000)
+		return len(peerEv) == 2
+	}, 3*time.Second, 10*time.Millisecond)
+	require.EqualValues(t, []types.Evidence{evList[0], evList[1]}, peerEv)
 }
 
 func TestReactorBroadcastEvidenceMemoryLeak(t *testing.T) {

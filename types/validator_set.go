@@ -758,6 +758,8 @@ func (vals *ValidatorSet) VerifyCommitExtended(
 	// 3. check signatures
 	for idx := range extCommit.ExtendedSignatures {
 		_, val := vals.GetByIndex(int32(idx))
+
+		// should not happen as we verified the commit above
 		if val == nil {
 			return fmt.Errorf("unable to find val #%d out of %d vals", idx, vals.Size())
 		}

@@ -1685,6 +1685,61 @@ func TestVerifyCommitExtended(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid vote extension signature (val #1)")
 	})
+
+	t.Run("nil extended commit", func(t *testing.T) {
+		// ACT
+		err := (&ValidatorSet{}).VerifyCommitExtended(chainID, makeBlockIDRandom(), height, nil)
+
+		// ASSERT
+		require.Error(t, err)
+		assert.Equal(t, "nil extended commit", err.Error())
+	})
+
+	t.Run("allows absent and nil votes in extended commit", func(t *testing.T) {
+		// ARRANGE
+		blockID := makeBlockIDRandom()
+		voteSet, valSet, vals := randVoteSet(height, round, cmtproto.PrecommitType, 7, 10, true)
+		now := time.Now()
+
+		for i := 0; i < 5; i++ {
+			pubKey, err := vals[i].GetPubKey()
+			require.NoError(t, err)
+
+			vote := &Vote{
+				ValidatorAddress: pubKey.Address(),
+				ValidatorIndex:   int32(i),
+				Height:           height,
+				Round:            round,
+				Type:             cmtproto.PrecommitType,
+				BlockID:          blockID,
+				Timestamp:        now,
+			}
+
+			added, err := signAddVote(vals[i], vote, voteSet)
+			require.NoError(t, err)
+			require.True(t, added)
+		}
+
+		nilVote, err := MakeVote(vals[5], chainID, 5, height, round, cmtproto.PrecommitType, BlockID{}, now)
+		require.NoError(t, err)
+		added, err := voteSet.AddVote(nilVote)
+		require.NoError(t, err)
+		require.True(t, added)
+
+		extCommit := voteSet.MakeExtendedCommit(ABCIParams{VoteExtensionsEnableHeight: height})
+		require.Equal(t, BlockIDFlagNil, extCommit.ExtendedSignatures[5].BlockIDFlag)
+		require.Equal(t, BlockIDFlagAbsent, extCommit.ExtendedSignatures[6].BlockIDFlag)
+		require.Empty(t, extCommit.ExtendedSignatures[5].Extension)
+		require.Empty(t, extCommit.ExtendedSignatures[5].ExtensionSignature)
+		require.Empty(t, extCommit.ExtendedSignatures[6].Extension)
+		require.Empty(t, extCommit.ExtendedSignatures[6].ExtensionSignature)
+
+		// ACT
+		err = valSet.VerifyCommitExtended(chainID, blockID, height, extCommit)
+
+		// ASSERT
+		require.NoError(t, err)
+	})
 }
 
 func TestVerifyCommitSingleWithInvalidSignatures(t *testing.T) {

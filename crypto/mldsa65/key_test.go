@@ -1,6 +1,7 @@
 package mldsa65_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -74,4 +75,81 @@ func TestAddressIs20Bytes(t *testing.T) {
 	require.NoError(t, err)
 	addr := priv.PubKey().Address()
 	require.Len(t, addr, 20)
+}
+
+// TestCachingVerifierHitsCache exercises the cachingVerifier path by
+// verifying many signatures under the same pubkey and confirming the
+// behavior is correct (cache hits should yield the same verdict as
+// cache misses).
+func TestCachingVerifierHitsCache(t *testing.T) {
+	priv, err := mldsa65.GenPrivKey()
+	require.NoError(t, err)
+	pub := priv.PubKey().(mldsa65.PubKey)
+
+	const iterations = 256
+	for i := 0; i < iterations; i++ {
+		msg := []byte(fmt.Sprintf("cache hit message %d", i))
+		sig, err := priv.Sign(msg)
+		require.NoError(t, err)
+		require.True(t, pub.VerifySignature(msg, sig), "iteration %d", i)
+
+		// Tampered signatures must still be rejected even after a cache hit.
+		bad := append([]byte(nil), sig...)
+		bad[0] ^= 0xff
+		require.False(t, pub.VerifySignature(msg, bad), "tamper iteration %d", i)
+	}
+}
+
+// BenchmarkVerifySignatureUncached measures verification with a fresh pubkey
+// each iteration, defeating the cache.
+func BenchmarkVerifySignatureUncached(b *testing.B) {
+	msg := []byte("benchmark message")
+
+	keys := make([]struct {
+		pub mldsa65.PubKey
+		sig []byte
+	}, b.N)
+	for i := 0; i < b.N; i++ {
+		priv, err := mldsa65.GenPrivKey()
+		if err != nil {
+			b.Fatal(err)
+		}
+		sig, err := priv.Sign(msg)
+		if err != nil {
+			b.Fatal(err)
+		}
+		keys[i] = struct {
+			pub mldsa65.PubKey
+			sig []byte
+		}{priv.PubKey().(mldsa65.PubKey), sig}
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if !keys[i].pub.VerifySignature(msg, keys[i].sig) {
+			b.Fatal("verify failed")
+		}
+	}
+}
+
+// BenchmarkVerifySignatureCached measures verification under a single
+// pubkey, so every iteration after the first is a cache hit.
+func BenchmarkVerifySignatureCached(b *testing.B) {
+	priv, err := mldsa65.GenPrivKey()
+	if err != nil {
+		b.Fatal(err)
+	}
+	pub := priv.PubKey().(mldsa65.PubKey)
+	msg := []byte("benchmark message")
+	sig, err := priv.Sign(msg)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if !pub.VerifySignature(msg, sig) {
+			b.Fatal("verify failed")
+		}
+	}
 }

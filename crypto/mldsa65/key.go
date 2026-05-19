@@ -15,11 +15,52 @@ import (
 	"io"
 
 	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
+	lru "github.com/hashicorp/golang-lru/v2"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 )
+
+// cacheSize is the number of parsed public keys retained in cachingVerifier.
+// Matches crypto/ed25519's cacheSize so a validator set of typical size fits
+// comfortably with room for incoming peers and recent rotations.
+const cacheSize = 4096
+
+// cachingVerifier holds parsed *mldsa65.PublicKey instances keyed by their
+// 1952-byte packed form. Signature verification under a previously-seen
+// validator pubkey skips the expensive UnmarshalBinary step, mirroring the
+// crypto/ed25519 package's cachingVerifier pattern.
+var cachingVerifier = newPubKeyCache(cacheSize)
+
+type pubKeyCache struct {
+	cache *lru.Cache[string, *mldsa65.PublicKey]
+}
+
+func newPubKeyCache(size int) *pubKeyCache {
+	c, err := lru.New[string, *mldsa65.PublicKey](size)
+	if err != nil {
+		// lru.New only errors on size <= 0, which is a programmer error.
+		panic(fmt.Sprintf("mldsa65: cannot create pubkey cache: %v", err))
+	}
+	return &pubKeyCache{cache: c}
+}
+
+// publicKey returns the parsed *mldsa65.PublicKey for the given packed bytes,
+// populating the cache on first sight. Returns (nil, false) if the bytes are
+// not a valid ML-DSA-65 public key.
+func (c *pubKeyCache) publicKey(packed []byte) (*mldsa65.PublicKey, bool) {
+	key := string(packed)
+	if pk, ok := c.cache.Get(key); ok {
+		return pk, true
+	}
+	pk := new(mldsa65.PublicKey)
+	if err := pk.UnmarshalBinary(packed); err != nil {
+		return nil, false
+	}
+	c.cache.Add(key, pk)
+	return pk, true
+}
 
 var (
 	// ErrInvalidPrivKeySize is returned when private key bytes are the wrong length.
@@ -152,12 +193,13 @@ var _ crypto.PubKey = PubKey{}
 type PubKey []byte
 
 // NewPubKeyFromBytes validates and returns a PubKey from the packed bytes.
+// As a side effect the parsed *mldsa65.PublicKey is inserted into
+// cachingVerifier, so subsequent VerifySignature calls skip the parse step.
 func NewPubKeyFromBytes(bz []byte) (PubKey, error) {
 	if len(bz) != PubKeySize {
 		return nil, ErrInvalidPubKeySize
 	}
-	pk := new(mldsa65.PublicKey)
-	if err := pk.UnmarshalBinary(bz); err != nil {
+	if _, ok := cachingVerifier.publicKey(bz); !ok {
 		return nil, ErrDeserialization
 	}
 	out := make(PubKey, PubKeySize)
@@ -175,12 +217,15 @@ func (pubKey PubKey) Address() crypto.Address {
 }
 
 // VerifySignature verifies the signature against msg with an empty context.
+// The parsed *mldsa65.PublicKey is fetched from cachingVerifier (or parsed
+// and inserted on miss), so verification under a recently-seen pubkey skips
+// the UnmarshalBinary step.
 func (pubKey PubKey) VerifySignature(msg, sig []byte) bool {
 	if len(sig) != SignatureSize || len(pubKey) != PubKeySize {
 		return false
 	}
-	pk := new(mldsa65.PublicKey)
-	if err := pk.UnmarshalBinary(pubKey); err != nil {
+	pk, ok := cachingVerifier.publicKey(pubKey)
+	if !ok {
 		return false
 	}
 	return mldsa65.Verify(pk, msg, nil, sig)

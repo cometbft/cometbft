@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"testing/quick"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -1646,6 +1647,44 @@ func TestVerifyCommitWithInvalidProposerKey(t *testing.T) {
 	cid := ""
 	err := vs.VerifyCommit(cid, bid, 100, commit)
 	assert.Error(t, err)
+}
+
+func TestVerifyCommitExtended(t *testing.T) {
+	const (
+		chainID = "test_chain_id"
+		height  = int64(3)
+		round   = int32(1)
+	)
+	t.Run("happy path", func(t *testing.T) {
+		// ARRANGE
+		blockID := makeBlockIDRandom()
+		voteSet, valSet, vals := randVoteSet(height, round, cmtproto.PrecommitType, 4, 10, true)
+		extCommit, err := MakeExtCommit(blockID, height, round, voteSet, vals, time.Now(), true)
+		require.NoError(t, err)
+
+		// ACT
+		err = valSet.VerifyCommitExtended(chainID, blockID, height, extCommit)
+
+		// ASSERT
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid signature", func(t *testing.T) {
+		// ARRANGE
+		blockID := makeBlockIDRandom()
+		voteSet, valSet, vals := randVoteSet(height, round, cmtproto.PrecommitType, 4, 10, true)
+		extCommit, err := MakeExtCommit(blockID, height, round, voteSet, vals, time.Now(), true)
+		require.NoError(t, err)
+		require.NotEmpty(t, extCommit.ExtendedSignatures[1].ExtensionSignature)
+		extCommit.ExtendedSignatures[1].ExtensionSignature = []byte("invalid")
+
+		// ACT
+		err = valSet.VerifyCommitExtended(chainID, blockID, height, extCommit)
+
+		// ASSERT
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid vote extension signature (val #1)")
+	})
 }
 
 func TestVerifyCommitSingleWithInvalidSignatures(t *testing.T) {

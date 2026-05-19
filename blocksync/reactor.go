@@ -636,16 +636,9 @@ FOR_LOOP:
 
 			// Fully verify extended commit if present
 			if extensionsEnabled {
-				// if vote extensions were required at this height, ensure they exist.
-				if err = extCommit.EnsureExtensions(true); err != nil {
-					r.handleValidationFailure(first, second, err)
-					continue FOR_LOOP
-				}
-
 				// if vote extensions were required at this height, verify all
-				// signatures in the extended commit since it is persisted to
-				// the store.
-				if err = state.Validators.VerifyCommit(chainID, firstID, first.Height, extCommit.ToCommit()); err != nil {
+				// signatures in the extended commit since it is persisted to the store.
+				if err = state.Validators.VerifyCommitExtended(chainID, firstID, first.Height, extCommit); err != nil {
 					r.handleValidationFailure(first, second, err)
 					continue FOR_LOOP
 				}

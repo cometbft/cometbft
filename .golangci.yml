@@ -28,6 +28,7 @@ linters:
             - github.com/cosmos
             - github.com/btcsuite/btcd/btcec/v2
             - github.com/BurntSushi/toml
+            - github.com/cloudflare/circl/sign/mldsa/mldsa65
             - github.com/go-git/go-git/v5
             - github.com/go-kit
             - github.com/go-logfmt/logfmt

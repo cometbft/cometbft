@@ -253,20 +253,26 @@ func TestStartRPCCleansUpOnFailure(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 	config.RPC.GRPCListenAddress = ""
 
-	// Hold a port open so the second listen is guaranteed to fail.
-	held, err := net.Listen("tcp", "127.0.0.1:0")
+	// Bind both before releasing l1 so the OS can't reuse l1's port for l2.
+	l1, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
-	defer held.Close()
+	l2, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer l2.Close()
+	firstAddr := l1.Addr().String()
+	l1.Close()
 
-	// First address uses :0 (kernel-assigned, always succeeds).
-	// Second address reuses the held port (always fails — already bound).
-	config.RPC.ListenAddress = fmt.Sprintf("tcp://127.0.0.1:0,tcp://%s", held.Addr().String())
+	config.RPC.ListenAddress = fmt.Sprintf("tcp://%s,tcp://%s", firstAddr, l2.Addr().String())
 
 	n, err := DefaultNewNode(config, log.TestingLogger())
 	require.NoError(t, err)
 
 	_, err = n.startRPC()
 	require.Error(t, err)
+
+	probe, err := net.Listen("tcp", firstAddr)
+	require.NoError(t, err, "startRPC leaked first listener on %s", firstAddr)
+	probe.Close()
 }
 
 // create a proposal block using real and full

@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[blocksync]` fix flaky `TestBlockPoolBasic` deadlock under `-race`
+  ([\#5867](https://github.com/cometbft/cometbft/pull/5867))
 - `[evidence]` fix flaky `TestReactorsGossipNoCommittedEvidence` test
   ([\#5870](https://github.com/cometbft/cometbft/pull/5870))
 - `[blocksync]` fix removeTimedoutPeers deadlock found via Byzantine prevote gossip race
@@ -14,8 +16,6 @@
   ([\#5837](https://github.com/cometbft/cometbft/pull/5837))
 - `[node]` close partial listeners on startRPC failure
   ([\#5869](https://github.com/cometbft/cometbft/pull/5869))
-- `[blocksync]` fix flaky `TestBlockPoolBasic` deadlock under `-race`
-  ([\#5867](https://github.com/cometbft/cometbft/pull/5867))
 
 ### IMPROVEMENTS
 

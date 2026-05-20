@@ -126,12 +126,17 @@ func TestReactorsGossipNoCommittedEvidence(t *testing.T) {
 	require.NoError(t, err)
 	state.LastBlockHeight++
 
-	// make reactors from statedb
-	reactors, pools := makeAndConnectReactorsAndPools(config, []sm.Store{stateDB1, stateDB2})
+	// Create reactors and pools without connecting peers yet so broadcast
+	// goroutines start only after the committed evidence is already removed.
+	reactors, pools := makeReactorsAndPools(config, []sm.Store{stateDB1, stateDB2})
 
 	evList := sendEvidence(t, pools[0], val, 2)
 	pools[0].Update(state, evList)
 	require.EqualValues(t, uint32(0), pools[0].Size())
+
+	// Connect peers now; broadcast goroutines start on an empty pool.
+	switches := switchesFromReactors(reactors)
+	p2p.Connect2Switches(switches, 0, 1)
 
 	peer := reactors[0].Switch.Peers().Copy()[0]
 	ps := peerState{height - 2}
@@ -162,7 +167,7 @@ func TestReactorsGossipNoCommittedEvidence(t *testing.T) {
 	require.Eventually(t, func() bool {
 		peerEv, _ = pools[1].PendingEvidence(10000)
 		return len(peerEv) == 1
-	}, 3*time.Second, 10*time.Millisecond)
+	}, 3*time.Second, 10*time.Millisecond, "second reactor should have received exactly one evidence")
 	require.EqualValues(t, []types.Evidence{evList[0]}, peerEv)
 
 	// the last evidence is committed and the second reactor catches up in state to the first
@@ -186,7 +191,7 @@ func TestReactorsGossipNoCommittedEvidence(t *testing.T) {
 	require.Eventually(t, func() bool {
 		peerEv, _ = pools[1].PendingEvidence(1000)
 		return len(peerEv) == 2
-	}, 3*time.Second, 10*time.Millisecond)
+	}, 3*time.Second, 10*time.Millisecond, "second reactor should have received exactly two evidence after state catch-up")
 	require.EqualValues(t, []types.Evidence{evList[0], evList[1]}, peerEv)
 }
 
@@ -241,10 +246,8 @@ func evidenceLogger() log.Logger {
 	})
 }
 
-// connect N evidence reactors through N switches
-func makeAndConnectReactorsAndPools(config *cfg.Config, stateStores []sm.Store) ([]*evidence.Reactor,
-	[]*evidence.Pool,
-) {
+// create N evidence reactors and pools without connecting peers
+func makeReactorsAndPools(config *cfg.Config, stateStores []sm.Store) ([]*evidence.Reactor, []*evidence.Pool) {
 	N := len(stateStores)
 
 	reactors := make([]*evidence.Reactor, N)
@@ -270,9 +273,30 @@ func makeAndConnectReactorsAndPools(config *cfg.Config, stateStores []sm.Store) 
 	p2p.MakeConnectedSwitches(config.P2P, N, func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("EVIDENCE", reactors[i])
 		return s
-	}, p2p.Connect2Switches)
+	}, func(_ []*p2p.Switch, _, _ int) {})
 
 	return reactors, pools
+}
+
+func makeAndConnectReactorsAndPools(config *cfg.Config, stateStores []sm.Store) ([]*evidence.Reactor,
+	[]*evidence.Pool,
+) {
+	reactors, pools := makeReactorsAndPools(config, stateStores)
+	switches := switchesFromReactors(reactors)
+	for i := 0; i < len(switches); i++ {
+		for j := i + 1; j < len(switches); j++ {
+			p2p.Connect2Switches(switches, i, j)
+		}
+	}
+	return reactors, pools
+}
+
+func switchesFromReactors(reactors []*evidence.Reactor) []*p2p.Switch {
+	switches := make([]*p2p.Switch, len(reactors))
+	for i, r := range reactors {
+		switches[i] = r.Switch.(*p2p.Switch)
+	}
+	return switches
 }
 
 // wait for all evidence on all reactors

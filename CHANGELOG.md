@@ -6,7 +6,7 @@
 
 ### BUG FIXES
 
-- `[abci]` fix(abci): fix deadlock when response callback re-enters the client.
+- `[abci]` fix deadlock when response callback re-enters the client.
   ([\#5850](https://github.com/cometbft/cometbft/pull/5850))
 - `[evidence]` fix flaky `TestReactorsGossipNoCommittedEvidence` test
   ([\#5870](https://github.com/cometbft/cometbft/pull/5870))

@@ -145,7 +145,8 @@ func TestPprofServer(t *testing.T) {
 	defer func() {
 		require.NoError(t, n.Stop())
 	}()
-	assert.NotNil(t, n.pprofSrv)
+	require.NotNil(t, n.pprofSrv)
+	require.NotNil(t, n.pprofLn)
 
 	pprofAddr := n.pprofLn.Addr().String()
 	resp, err := http.Get("http://" + pprofAddr + "/debug/pprof")

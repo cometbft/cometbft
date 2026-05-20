@@ -37,7 +37,7 @@
   ([\#5837](https://github.com/cometbft/cometbft/pull/5837))
 - `[abci]` fix deadlock when response callback re-enters the client.
   ([\#5850](https://github.com/cometbft/cometbft/pull/5850))
-- `[node]` fix(node): use kernel-assigned ephemeral ports and fix OnStart cleanup
+- `[node]` use kernel-assigned ephemeral ports and fix `OnStart` cleanup
   ([\#5868](https://github.com/cometbft/cometbft/pull/5868))
 - `[node]` close partial listeners on startRPC failure
   ([\#5869](https://github.com/cometbft/cometbft/pull/5869))

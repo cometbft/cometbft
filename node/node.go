@@ -666,7 +666,11 @@ func (n *Node) OnStart() error {
 
 	// run pprof server if it is enabled
 	if n.config.RPC.IsPprofEnabled() {
-		pprofSrv, pprofLn = n.startPprofServer()
+		var err error
+		pprofSrv, pprofLn, err = n.startPprofServer()
+		if err != nil {
+			return err
+		}
 	}
 
 	// begin prometheus metrics gathering if it is enabled
@@ -993,11 +997,10 @@ func (n *Node) startPrometheusServer() *http.Server {
 }
 
 // starts a ppro
-func (n *Node) startPprofServer() (*http.Server, net.Listener) {
+func (n *Node) startPprofServer() (*http.Server, net.Listener, error) {
 	ln, err := net.Listen("tcp", n.config.RPC.PprofListenAddress)
 	if err != nil {
-		n.Logger.Error("pprof HTTP server failed to listen", "err", err)
-		return nil, nil
+		return nil, nil, fmt.Errorf("pprof HTTP server failed to listen: %w", err)
 	}
 	srv := &http.Server{
 		Handler:           nil,
@@ -1008,7 +1011,7 @@ func (n *Node) startPprofServer() (*http.Server, net.Listener) {
 			n.Logger.Error("pprof HTTP server Serve", "err", err)
 		}
 	}()
-	return srv, ln
+	return srv, ln, nil
 }
 
 // Switch returns the Node's Switch.

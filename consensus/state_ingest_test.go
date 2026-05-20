@@ -296,7 +296,7 @@ func TestIngestCandidate(t *testing.T) {
 				mutate: func(t *testing.T, ic *IngestCandidate, st *sm.State) {
 					ic.extCommit.ExtendedSignatures[0].ExtensionSignature = nil
 				},
-				errContains: "ensure extensions",
+				errContains: "vote extension signature is missing",
 			},
 			{
 				name:           "extended commit verification fails",

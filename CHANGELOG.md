@@ -6,7 +6,7 @@
 
 ### BUG FIXES
 
-- `[consensus]` consensus: release cs.mtx before sending to statsMsgQueue
+- `[consensus]` release cs.mtx before sending to statsMsgQueue
   ([\#5813](https://github.com/cometbft/cometbft/pull/5813))
 - `[evidence]` fix flaky `TestReactorsGossipNoCommittedEvidence` test
   ([\#5870](https://github.com/cometbft/cometbft/pull/5870))

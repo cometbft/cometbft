@@ -13,7 +13,7 @@
 
 ### IMPROVEMENTS
 
-- `[execution]` perf(execution): cache validator set within a block cycle.
+- `[execution]` cache validator set within a block cycle.
   ([\#5834](https://github.com/cometbft/cometbft/pull/5834))
 - `[blocksync]` validate blocksync response sender and signature count
   ([\#5860](https://github.com/cometbft/cometbft/pull/5860))
@@ -112,6 +112,7 @@
   ([\#5717](https://github.com/cometbft/cometbft/pull/5717))
 
 ### IMPROVEMENTS
+
 - `[consensus]` perf(consensus): skip fsync for unsigned internal messages (block parts) ([\#5695](https://github.com/cometbft/cometbft/pull/5695))
 - `[ci]`: add lp2p testnet ([\#5643](https://github.com/cometbft/cometbft/pull/5643))
 - `[mempool]` feat!(p2p): introduce follower-mode. Improve lib-p2p integraap access

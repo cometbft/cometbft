@@ -814,6 +814,19 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 
 	// we may expose the rpc over both a unix and tcp socket
 	listeners := make([]net.Listener, len(listenAddrs))
+	var ok bool
+	defer func() {
+		if ok {
+			return
+		}
+		for _, l := range listeners {
+			if l != nil {
+				if err := l.Close(); err != nil {
+					n.Logger.Error("error closing rpc listener during startRPC cleanup", "err", err)
+				}
+			}
+		}
+	}()
 	for i, listenAddr := range listenAddrs {
 		mux := http.NewServeMux()
 		rpcLogger := n.Logger.With("module", "rpc-server")
@@ -905,6 +918,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 
 	}
 
+	ok = true
 	return listeners, nil
 }
 

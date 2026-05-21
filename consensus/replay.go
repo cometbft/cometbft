@@ -139,7 +139,7 @@ func (cs *State) catchupReplay(csHeight int64) error {
 	cs.Logger.Info("Catchup by replaying consensus messages", "height", csHeight)
 
 	var msg *TimedWALMessage
-	dec := WALDecoder{gr}
+	dec := WALDecoder{rd: gr}
 
 LOOP:
 	for {

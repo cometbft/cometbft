@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[p2p]` fix race and goroutine leak in `TestTransportMultiplexAcceptNonBlocking` test
+  ([\#5878](https://github.com/cometbft/cometbft/pull/5878))
 - `[evidence]` fix flaky `TestReactorsGossipNoCommittedEvidence` test
   ([\#5870](https://github.com/cometbft/cometbft/pull/5870))
 - `[blocksync]` fix removeTimedoutPeers deadlock found via Byzantine prevote gossip race

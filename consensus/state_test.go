@@ -2893,9 +2893,9 @@ func TestDoubleSigning(t *testing.T) {
 			},
 		},
 		{
-			name:                  "small-chain-height",
-			doubleSignCheckHeight: 10,
-			height:                1,
+			name:                   "small-chain-height",
+			doubleSignCheckHeight:  10,
+			height:                 1,
 			assertNoLoadSeenCommit: true,
 			assertNotPanics:        true,
 		},
@@ -2943,57 +2943,7 @@ func TestDoubleSigning(t *testing.T) {
 				return
 			}
 
-		require.NoError(t, err, "expected nil when doubleSignCheckHeight=0 (feature disabled)")
-		mockBS.AssertNotCalled(t, "LoadSeenCommit")
-	})
-
-	// doubleSignCheckHeight=2 must check both height-1 and height-2.
-	// A clean commit at height-1 followed by a match at height-2 must
-	// still produce ErrSignatureFoundInPastBlocks.
-	t.Run("height-two-checks-two-blocks", func(t *testing.T) {
-		const targetHeight = int64(10)
-
-		cs, mockBS := newStateForDoubleSignTest(t, 2)
-		valAddr := cs.privValidatorPubKey.Address()
-
-		mockBS.On("LoadSeenCommit", targetHeight-int64(1)).Return(makeCommitWithDifferentValidator(targetHeight - 1))
-		mockBS.On("LoadSeenCommit", targetHeight-int64(2)).Return(makeCommitWithValidator(targetHeight-2, valAddr))
-
-		err := cs.checkDoubleSigningRisk(targetHeight)
-
-		require.ErrorIs(t, err, ErrSignatureFoundInPastBlocks,
-			"expected ErrSignatureFoundInPastBlocks when matching signature is at height-2 "+
-				"with doubleSignCheckHeight=2")
-		mockBS.AssertExpectations(t)
-	})
-
-	// No false positives: when no commit contains the local validator's address,
-	// the function must return nil.
-	t.Run("height-two-no-signature-found", func(t *testing.T) {
-		const targetHeight = int64(10)
-
-		cs, mockBS := newStateForDoubleSignTest(t, 2)
-
-		mockBS.On("LoadSeenCommit", targetHeight-int64(1)).Return(makeCommitWithDifferentValidator(targetHeight - 1))
-		mockBS.On("LoadSeenCommit", targetHeight-int64(2)).Return(makeCommitWithDifferentValidator(targetHeight - 2))
-
-		err := cs.checkDoubleSigningRisk(targetHeight)
-
-		require.NoError(t, err, "expected nil when no matching signature found with doubleSignCheckHeight=2")
-		mockBS.AssertExpectations(t)
-	})
-
-	// Edge case: when the chain is shorter than doubleSignCheckHeight the clamp
-	// must prevent access below block 1 without panicking.
-	t.Run("small-chain-height", func(t *testing.T) {
-		const targetHeight = int64(1)
-
-		cs, mockBS := newStateForDoubleSignTest(t, 10)
-
-		require.NotPanics(t, func() {
-			err := cs.checkDoubleSigningRisk(targetHeight)
-			require.NoError(t, err, "expected nil when chain is shorter than doubleSignCheckHeight")
+			mockBS.AssertExpectations(t)
 		})
-		mockBS.AssertNotCalled(t, "LoadSeenCommit")
-	})
+	}
 }

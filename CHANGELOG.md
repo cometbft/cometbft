@@ -6,6 +6,15 @@
 
 ### BUG FIXES
 
+<<<<<<< HEAD
+=======
+- `[p2p]` fix race and goroutine leak in `TestTransportMultiplexAcceptNonBlocking` test
+  ([\#5878](https://github.com/cometbft/cometbft/pull/5878))
+- `[evidence]` fix flaky `TestReactorsGossipNoCommittedEvidence` test
+  ([\#5870](https://github.com/cometbft/cometbft/pull/5870))
+- `[blocksync]` fix removeTimedoutPeers deadlock found via Byzantine prevote gossip race
+  ([\#5839](https://github.com/cometbft/cometbft/pull/5839))
+>>>>>>> bbef0591 (p2p: fix race in TestTransportMultiplexAcceptNonBlocking (#5878))
 - `[mempool]` fix setRecheckFull/setDone race causing spurious ErrRecheckFull.
   ([\#5837](https://github.com/cometbft/cometbft/pull/5837))
 

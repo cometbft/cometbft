@@ -288,3 +288,78 @@ func TestMaxIndex(t *testing.T) {
 	// Cleanup
 	destroyTestGroup(t, g)
 }
+
+func TestFlushAndSyncDirtyFlag(t *testing.T) {
+	g := createTestGroupWithHeadSizeLimit(t, 0)
+	defer destroyTestGroup(t, g)
+
+	require.False(t, g.dirty)
+	require.NoError(t, g.FlushAndSync())
+	require.False(t, g.dirty)
+
+	require.NoError(t, g.WriteLine("hello"))
+	require.True(t, g.dirty)
+
+	require.NoError(t, g.FlushAndSync())
+	require.False(t, g.dirty)
+
+	require.NoError(t, g.FlushAndSync())
+	require.False(t, g.dirty)
+}
+
+func TestFlushAndSyncDirtyFlagAfterRotate(t *testing.T) {
+	g := createTestGroupWithHeadSizeLimit(t, 0)
+	defer destroyTestGroup(t, g)
+
+	require.NoError(t, g.WriteLine("hello"))
+	require.True(t, g.dirty)
+
+	g.RotateFile()
+	require.False(t, g.dirty)
+
+	require.NoError(t, g.FlushAndSync())
+	require.False(t, g.dirty)
+}
+
+func BenchmarkFlushAndSyncDirty(b *testing.B) {
+	testID := cmtrand.Str(12)
+	testDir := b.TempDir()
+	headPath := filepath.Join(testDir, testID)
+	g, err := OpenGroup(headPath, GroupHeadSizeLimit(0))
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer g.Close()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if err := g.WriteLine("x"); err != nil {
+			b.Fatal(err)
+		}
+		if err := g.FlushAndSync(); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkFlushAndSyncClean(b *testing.B) {
+	testID := cmtrand.Str(12)
+	testDir := b.TempDir()
+	headPath := filepath.Join(testDir, testID)
+	g, err := OpenGroup(headPath, GroupHeadSizeLimit(0))
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer g.Close()
+
+	if err := g.FlushAndSync(); err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if err := g.FlushAndSync(); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

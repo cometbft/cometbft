@@ -2896,14 +2896,8 @@ func TestDoubleSigning(t *testing.T) {
 			name:                  "small-chain-height",
 			doubleSignCheckHeight: 10,
 			height:                1,
-			seenCommits: []struct {
-				height                 int64
-				signedByLocalValidator bool
-				missing                bool
-			}{
-				{height: 0, missing: true},
-			},
-			assertNotPanics: true,
+			assertNoLoadSeenCommit: true,
+			assertNotPanics:        true,
 		},
 	}
 

@@ -340,6 +340,23 @@ func BenchmarkWALWriteSync(b *testing.B) {
 	b.ReportAllocs()
 }
 
+// BenchmarkWALFlushAndSyncClean measures FlushAndSync with no pending data.
+func BenchmarkWALFlushAndSyncClean(b *testing.B) {
+	wal := setupBenchmarkWAL(b)
+
+	if err := wal.FlushAndSync(); err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if err := wal.FlushAndSync(); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.ReportAllocs()
+}
+
 // BenchmarkWALRoundSimulation simulates a proposer's round with N block parts,
 // comparing the old approach (WriteSync for all) vs new (Write for block parts).
 func BenchmarkWALRoundSimulation(b *testing.B) {

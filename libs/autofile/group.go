@@ -67,6 +67,7 @@ type Group struct {
 	groupCheckDuration time.Duration
 	minIndex           int // Includes head
 	maxIndex           int // Includes head, where Head will move to
+	dirty              bool
 
 	// close this when the processTicks routine is done.
 	// this ensures we can cleanup the dir after calling Stop
@@ -205,7 +206,11 @@ func (g *Group) MinIndex() int {
 func (g *Group) Write(p []byte) (nn int, err error) {
 	g.mtx.Lock()
 	defer g.mtx.Unlock()
-	return g.headBuf.Write(p)
+	nn, err = g.headBuf.Write(p)
+	if nn > 0 {
+		g.dirty = true
+	}
+	return nn, err
 }
 
 // WriteLine writes line into the current head of the group. It also appends "\n".
@@ -214,7 +219,10 @@ func (g *Group) Write(p []byte) (nn int, err error) {
 func (g *Group) WriteLine(line string) error {
 	g.mtx.Lock()
 	defer g.mtx.Unlock()
-	_, err := g.headBuf.Write([]byte(line + "\n"))
+	nn, err := g.headBuf.Write([]byte(line + "\n"))
+	if nn > 0 {
+		g.dirty = true
+	}
 	return err
 }
 
@@ -230,9 +238,15 @@ func (g *Group) Buffered() int {
 func (g *Group) FlushAndSync() error {
 	g.mtx.Lock()
 	defer g.mtx.Unlock()
+	if !g.dirty {
+		return nil
+	}
 	err := g.headBuf.Flush()
 	if err == nil {
 		err = g.Head.Sync()
+	}
+	if err == nil {
+		g.dirty = false
 	}
 	return err
 }
@@ -314,6 +328,8 @@ func (g *Group) RotateFile() {
 	if err := g.Head.Sync(); err != nil {
 		panic(err)
 	}
+
+	g.dirty = false
 
 	if err := g.Head.closeFile(); err != nil {
 		panic(err)

@@ -288,12 +288,13 @@ func (wal *BaseWAL) SearchForEndHeight(
 //
 // Format: 4 bytes CRC sum + 4 bytes length + arbitrary-length value
 type WALEncoder struct {
-	wr io.Writer
+	wr  io.Writer
+	buf []byte
 }
 
 // NewWALEncoder returns a new encoder that writes to wr.
 func NewWALEncoder(wr io.Writer) *WALEncoder {
-	return &WALEncoder{wr}
+	return &WALEncoder{wr: wr}
 }
 
 // Encode writes the custom encoding of v to the stream. It returns an error if
@@ -309,24 +310,27 @@ func (enc *WALEncoder) Encode(v *TimedWALMessage) error {
 		Msg:  pbMsg,
 	}
 
-	data, err := proto.Marshal(&pv)
-	if err != nil {
-		panic(fmt.Errorf("encode timed wal message failure: %w", err))
-	}
-
-	crc := crc32.Checksum(data, crc32c)
-	length := uint32(len(data))
+	size := pv.Size()
+	length := uint32(size)
 	if length > maxMsgSizeBytes {
 		return fmt.Errorf("msg is too big: %d bytes, max: %d bytes", length, maxMsgSizeBytes)
 	}
-	totalLength := 8 + int(length)
 
-	msg := make([]byte, totalLength)
-	binary.BigEndian.PutUint32(msg[0:4], crc)
-	binary.BigEndian.PutUint32(msg[4:8], length)
-	copy(msg[8:], data)
+	total := 8 + size
+	if cap(enc.buf) < total {
+		enc.buf = make([]byte, total)
+	} else {
+		enc.buf = enc.buf[:total]
+	}
 
-	_, err = enc.wr.Write(msg)
+	if _, err = pv.MarshalTo(enc.buf[8:]); err != nil {
+		panic(fmt.Errorf("encode timed wal message failure: %w", err))
+	}
+
+	binary.BigEndian.PutUint32(enc.buf[0:4], crc32.Checksum(enc.buf[8:], crc32c))
+	binary.BigEndian.PutUint32(enc.buf[4:8], length)
+
+	_, err = enc.wr.Write(enc.buf)
 	return err
 }
 
@@ -355,33 +359,28 @@ func (e DataCorruptionError) Cause() error {
 // It will also compare the checksums and make sure data size is equal to the
 // length from the header. If that is not the case, error will be returned.
 type WALDecoder struct {
-	rd io.Reader
+	rd     io.Reader
+	header [8]byte
+	buf    []byte
 }
 
 // NewWALDecoder returns a new decoder that reads from rd.
 func NewWALDecoder(rd io.Reader) *WALDecoder {
-	return &WALDecoder{rd}
+	return &WALDecoder{rd: rd}
 }
 
 // Decode reads the next custom-encoded value from its reader and returns it.
 func (dec *WALDecoder) Decode() (*TimedWALMessage, error) {
-	b := make([]byte, 4)
-
-	_, err := dec.rd.Read(b)
+	_, err := io.ReadFull(dec.rd, dec.header[:])
 	if errors.Is(err, io.EOF) {
-		return nil, err
+		return nil, io.EOF
 	}
 	if err != nil {
-		return nil, DataCorruptionError{fmt.Errorf("failed to read checksum: %v", err)}
+		return nil, DataCorruptionError{fmt.Errorf("failed to read header: %v", err)}
 	}
-	crc := binary.BigEndian.Uint32(b)
 
-	b = make([]byte, 4)
-	_, err = dec.rd.Read(b)
-	if err != nil {
-		return nil, DataCorruptionError{fmt.Errorf("failed to read length: %v", err)}
-	}
-	length := binary.BigEndian.Uint32(b)
+	crc := binary.BigEndian.Uint32(dec.header[0:4])
+	length := binary.BigEndian.Uint32(dec.header[4:8])
 
 	if length > maxMsgSizeBytes {
 		return nil, DataCorruptionError{fmt.Errorf(
@@ -390,21 +389,24 @@ func (dec *WALDecoder) Decode() (*TimedWALMessage, error) {
 			maxMsgSizeBytes)}
 	}
 
-	data := make([]byte, length)
-	n, err := dec.rd.Read(data)
-	if err != nil {
-		return nil, DataCorruptionError{fmt.Errorf("failed to read data: %v (read: %d, wanted: %d)", err, n, length)}
+	data := dec.buf
+	if cap(data) < int(length) {
+		data = make([]byte, length)
+		dec.buf = data
+	} else {
+		data = data[:length]
+	}
+	if _, err = io.ReadFull(dec.rd, data); err != nil {
+		return nil, DataCorruptionError{fmt.Errorf("failed to read data: %v", err)}
 	}
 
 	// check checksum before decoding data
-	actualCRC := crc32.Checksum(data, crc32c)
-	if actualCRC != crc {
+	if actualCRC := crc32.Checksum(data, crc32c); actualCRC != crc {
 		return nil, DataCorruptionError{fmt.Errorf("checksums do not match: read: %v, actual: %v", crc, actualCRC)}
 	}
 
 	res := new(cmtcons.TimedWALMessage)
-	err = proto.Unmarshal(data, res)
-	if err != nil {
+	if err = proto.Unmarshal(data, res); err != nil {
 		return nil, DataCorruptionError{fmt.Errorf("failed to decode data: %v", err)}
 	}
 
@@ -412,12 +414,7 @@ func (dec *WALDecoder) Decode() (*TimedWALMessage, error) {
 	if err != nil {
 		return nil, DataCorruptionError{cmterrors.ErrMsgFromProto{MessageName: "WALMessage", Err: err}}
 	}
-	tMsgWal := &TimedWALMessage{
-		Time: res.Time,
-		Msg:  walMsg,
-	}
-
-	return tMsgWal, err
+	return &TimedWALMessage{Time: res.Time, Msg: walMsg}, nil
 }
 
 type nilWAL struct{}

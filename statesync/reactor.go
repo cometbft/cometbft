@@ -114,7 +114,11 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 	err := validateMsg(e.Message, r.cfg.MaxSnapshotChunks)
 	if err != nil {
 		if errors.Is(err, ErrExceedsMaxSnapshotChunks) {
-			r.syncer.RejectPeer(e.Src)
+			r.mtx.RLock()
+			if r.syncer != nil {
+				r.syncer.RejectPeer(e.Src)
+			}
+			r.mtx.RUnlock()
 		}
 		r.Logger.Error("Invalid message", "peer", e.Src, "msg", e.Message, "err", err)
 		r.Switch.StopPeerForError(e.Src, err)

@@ -17,6 +17,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/libs/autofile"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
@@ -240,19 +241,21 @@ func benchmarkWalDecode(b *testing.B, n int) {
 
 	buf := new(bytes.Buffer)
 	enc := NewWALEncoder(buf)
-
-	data := nBytes(n)
-	if err := enc.Encode(&TimedWALMessage{Msg: data, Time: time.Now().Round(time.Second).UTC()}); err != nil {
-		b.Error(err)
+	msg := msgInfo{Msg: &BlockPartMessage{Height: 1, Round: 0, Part: &cmttypes.Part{
+		Index: 0,
+		Bytes: nBytes(n),
+		Proof: merkle.Proof{Total: 1, Index: 0, LeafHash: nBytes(32)},
+	}}}
+	if err := enc.Encode(&TimedWALMessage{Msg: msg, Time: time.Now().Round(time.Second).UTC()}); err != nil {
+		b.Fatal(err)
 	}
-
 	encoded := buf.Bytes()
+	r := bytes.NewReader(encoded)
+	dec := NewWALDecoder(r)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		buf.Reset()
-		buf.Write(encoded)
-		dec := NewWALDecoder(buf)
+		r.Reset(encoded)
 		if _, err := dec.Decode(); err != nil {
 			b.Fatal(err)
 		}
@@ -268,24 +271,8 @@ func BenchmarkWalDecode10KB(b *testing.B) {
 	benchmarkWalDecode(b, 10*1024)
 }
 
-func BenchmarkWalDecode100KB(b *testing.B) {
-	benchmarkWalDecode(b, 100*1024)
-}
-
-func BenchmarkWalDecode1MB(b *testing.B) {
-	benchmarkWalDecode(b, 1024*1024)
-}
-
-func BenchmarkWalDecode10MB(b *testing.B) {
-	benchmarkWalDecode(b, 10*1024*1024)
-}
-
-func BenchmarkWalDecode100MB(b *testing.B) {
-	benchmarkWalDecode(b, 100*1024*1024)
-}
-
-func BenchmarkWalDecode1GB(b *testing.B) {
-	benchmarkWalDecode(b, 1024*1024*1024)
+func BenchmarkWalDecode50KB(b *testing.B) {
+	benchmarkWalDecode(b, 50*1024)
 }
 
 func setupBenchmarkWAL(b *testing.B) *BaseWAL {
@@ -405,4 +392,120 @@ func BenchmarkWALRoundSimulation(b *testing.B) {
 			}
 		}
 	})
+}
+
+// namedWALMessage pairs a human-readable name with a WALMessage for benchmarks.
+type namedWALMessage struct {
+	name string
+	msg  WALMessage
+}
+
+// realWALMessages returns a set of realistic WAL message types used in
+// consensus: a vote, a proposal, a block part, and a timeout.
+func realWALMessages() []namedWALMessage {
+	vote := &cmttypes.Vote{
+		Type:   cmtproto.PrevoteType,
+		Height: 100,
+		Round:  0,
+		BlockID: cmttypes.BlockID{
+			Hash: nBytes(32),
+			PartSetHeader: cmttypes.PartSetHeader{
+				Total: 10,
+				Hash:  nBytes(32),
+			},
+		},
+		ValidatorAddress: nBytes(20),
+		ValidatorIndex:   0,
+		Signature:        nBytes(64),
+	}
+	proposal := &cmttypes.Proposal{
+		Type:   cmtproto.ProposalType,
+		Height: 100,
+		Round:  0,
+		BlockID: cmttypes.BlockID{
+			Hash:          nBytes(32),
+			PartSetHeader: cmttypes.PartSetHeader{Total: 10, Hash: nBytes(32)},
+		},
+		Signature: nBytes(64),
+	}
+	blockPart := &cmttypes.Part{
+		Index: 0,
+		Bytes: nBytes(512),
+		Proof: merkle.Proof{Total: 1, Index: 0, LeafHash: nBytes(32)},
+	}
+	return []namedWALMessage{
+		{"Vote", msgInfo{Msg: &VoteMessage{Vote: vote}}},
+		{"Proposal", msgInfo{Msg: &ProposalMessage{Proposal: proposal}}},
+		{"BlockPart", msgInfo{Msg: &BlockPartMessage{Height: 100, Round: 0, Part: blockPart}}},
+		{"Timeout", timeoutInfo{Duration: time.Second, Height: 100, Round: 0, Step: types.RoundStepPrevote}},
+	}
+}
+
+// BenchmarkWALEncodeRealMessages benchmarks Encode with realistic consensus
+// message types, exercising WALToProto and proto serialization paths.
+func BenchmarkWALEncodeRealMessages(b *testing.B) {
+	for _, nm := range realWALMessages() {
+		b.Run(nm.name, func(b *testing.B) {
+			buf := new(bytes.Buffer)
+			enc := NewWALEncoder(buf)
+			timed := &TimedWALMessage{Time: time.Now(), Msg: nm.msg}
+			b.ResetTimer()
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				buf.Reset()
+				if err := enc.Encode(timed); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
+// BenchmarkWALDecodeRealMessages benchmarks Decode with realistic consensus
+// message types, exercising WALFromProto and proto deserialization paths.
+func BenchmarkWALDecodeRealMessages(b *testing.B) {
+	for _, nm := range realWALMessages() {
+		b.Run(nm.name, func(b *testing.B) {
+			var encoded bytes.Buffer
+			enc := NewWALEncoder(&encoded)
+			if err := enc.Encode(&TimedWALMessage{Time: time.Now(), Msg: nm.msg}); err != nil {
+				b.Fatal(err)
+			}
+			raw := encoded.Bytes()
+
+			buf := bytes.NewReader(raw)
+			dec := NewWALDecoder(buf)
+			b.ResetTimer()
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				buf.Reset(raw)
+				if _, err := dec.Decode(); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
+// BenchmarkWALRoundtripRealMessages benchmarks a full encode→decode cycle.
+func BenchmarkWALRoundtripRealMessages(b *testing.B) {
+	for _, nm := range realWALMessages() {
+		b.Run(nm.name, func(b *testing.B) {
+			buf := new(bytes.Buffer)
+			enc := NewWALEncoder(buf)
+			timed := &TimedWALMessage{Time: time.Now(), Msg: nm.msg}
+			b.ResetTimer()
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				buf.Reset()
+				if err := enc.Encode(timed); err != nil {
+					b.Fatal(err)
+				}
+				dec := NewWALDecoder(buf)
+				if _, err := dec.Decode(); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
 }

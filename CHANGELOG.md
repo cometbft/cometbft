@@ -21,6 +21,8 @@
 
 ### IMPROVEMENTS
 
+- `[consensus]` reuse encode/decode buffers in WALEncoder and WALDecoder.
+  ([\#5865](https://github.com/cometbft/cometbft/pull/5865))
 - `[blocksync]` validate blocksync response sender and signature count
   ([\#5860](https://github.com/cometbft/cometbft/pull/5860))
 - `[autofile]` skip fsync in `FlushAndSync` when no new data was written

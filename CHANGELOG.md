@@ -34,6 +34,9 @@
   ([\#5870](https://github.com/cometbft/cometbft/pull/5870))
 - `[blocksync]` fix flaky `TestBlockPoolBasic` deadlock under `-race`
   ([\#5867](https://github.com/cometbft/cometbft/pull/5867))
+- `[blocksync]` ensure `IsCaughtUp` distinguishes a fresh network from peers
+  pruned ahead of `pool.height`, preventing a premature blocksync→consensus
+  switch when no peer can serve the next block (@rach-id)
 - `[blocksync]` fix removeTimedoutPeers deadlock found via Byzantine prevote gossip race
   ([\#5839](https://github.com/cometbft/cometbft/pull/5839))
 - `[mempool]` fix setRecheckFull/setDone race causing spurious ErrRecheckFull.

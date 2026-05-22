@@ -267,10 +267,16 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 	var (
 		fastNodePV   = ed25519.GenPrivKey()
 		fastNodeInfo = testNodeInfo(PubKeyToID(fastNodePV.PubKey()), "fastnode")
-		errc         = make(chan error)
-		fastc        = make(chan struct{})
-		slowc        = make(chan struct{})
-		slowdonec    = make(chan struct{})
+		// Buffered to avoid goroutine leaks if the test exits early.
+		errc      = make(chan error, 2)
+		fastc     = make(chan struct{})
+		slowc     = make(chan struct{})
+		slowdonec = make(chan struct{})
+		// acceptedc is closed after Accept() returns so the slow peer proceeds
+		// with its broken handshake only after the fast peer has been accepted.
+		// This eliminates a race where the slow peer's auth error could arrive
+		// on mt.acceptc before the fast peer's result.
+		acceptedc = make(chan struct{})
 	)
 
 	// Simulate slow Peer.
@@ -284,19 +290,18 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 		}
 
 		close(slowc)
-		defer func() {
-			close(slowdonec)
-		}()
+		defer close(slowdonec)
 
 		// Make sure we switch to fast peer goroutine.
 		runtime.Gosched()
 
+		// Wait until the fast peer has been accepted before starting the
+		// broken handshake, guaranteeing Accept() returns the fast peer.
 		select {
-		case <-fastc:
-			// Fast peer connected.
+		case <-acceptedc:
 		case <-time.After(200 * time.Millisecond):
-			// We error if the fast peer didn't succeed.
-			errc <- fmt.Errorf("fast peer timed out")
+			errc <- fmt.Errorf("accept timed out")
+			return
 		}
 
 		sc, err := upgradeSecretConn(c, 200*time.Millisecond, ed25519.GenPrivKey())
@@ -330,21 +335,32 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 		_, err := dialer.Dial(*addr, peerConfig{})
 		if err != nil {
 			errc <- err
-			return
+		} else {
+			close(fastc)
 		}
-
-		close(fastc)
 		<-slowdonec
 		close(errc)
 	}()
 
-	if err := <-errc; err != nil {
-		t.Logf("connection failed: %v", err)
+	// Wait for the fast peer to finish dialing before calling Accept, so that
+	// the fast peer's result is the only one queued on mt.acceptc at that point.
+	select {
+	case err := <-errc:
+		t.Fatalf("connection failed before accept: %v", err)
+	case <-fastc:
 	}
 
 	p, err := mt.Accept(peerConfig{})
+	close(acceptedc) // let the slow peer proceed with its broken handshake
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	// Drain errors from the slow peer; errc is closed by the fast peer goroutine
+	// after slowdonec confirms the slow peer has finished, so ranging here waits
+	// for both goroutines to exit.
+	for err := range errc {
+		t.Logf("slow peer connection error (expected): %v", err)
 	}
 
 	if have, want := p.NodeInfo(), fastNodeInfo; !reflect.DeepEqual(have, want) {

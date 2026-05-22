@@ -278,7 +278,16 @@ func (pool *BlockPool) IsCaughtUp() bool {
 }
 
 // anyPeerHasBlocks reports whether any peer in the pool advertises a non-zero
-// height. CONTRACT: pool.mtx must be locked.
+// height. It is meaningful only when maxPeerHeight == 0, where it distinguishes
+// the two cases laid out in IsCaughtUp: a fresh network (all peers genuinely
+// empty) vs. a stalled node (peers have blocks but were filtered out by
+// updateMaxPeerHeight's peer.base > pool.height check).
+//
+// peer.height > 0 is the right discriminator because BlockStore.Height returns
+// 0 only for an empty store. Therefore, if maxPeerHeight == 0 and some peer's
+// height > 0, that peer must have been excluded by updateMaxPeerHeight as
+// pruned ahead of us — it has blocks, we're behind, and we are not caught up.
+// CONTRACT: pool.mtx must be locked.
 func (pool *BlockPool) anyPeerHasBlocks() bool {
 	for _, peer := range pool.peers {
 		if peer.height > 0 {

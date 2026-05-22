@@ -16,21 +16,22 @@ import (
 )
 
 func TestEventBusBufferCapacity(t *testing.T) {
-	defaultBus := NewEventBus()
-	require.Equal(t, 0, defaultBus.BufferCapacity())
+	require.Equal(t, 0, NewEventBus().BufferCapacity())
 
-	const cap = 2
-	eventBus := NewEventBusWithBufferCapacity(cap)
-	require.Equal(t, cap, eventBus.BufferCapacity())
+	const bufCap = 2
+	eventBus := NewEventBusWithBufferCapacity(bufCap)
+	require.Equal(t, bufCap, eventBus.BufferCapacity())
 
+	// server not started: nothing drains s.cmds, so publishing bufCap messages
+	// fills it to capacity; the next publish must block
 	ctx := context.Background()
-	require.NoError(t, eventBus.pubsub.Publish(ctx, "first"))
-	require.NoError(t, eventBus.pubsub.Publish(ctx, "second"))
+	for i := range bufCap {
+		require.NoError(t, eventBus.pubsub.Publish(ctx, fmt.Sprintf("msg-%d", i)))
+	}
 
 	deadlineCtx, cancel := context.WithTimeout(ctx, 50*time.Millisecond)
 	defer cancel()
-	err := eventBus.pubsub.Publish(deadlineCtx, "third")
-	require.ErrorIs(t, err, context.DeadlineExceeded)
+	require.ErrorIs(t, eventBus.pubsub.Publish(deadlineCtx, "overflow"), context.DeadlineExceeded)
 }
 
 func TestEventBusPublishEventTx(t *testing.T) {

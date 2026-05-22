@@ -20,8 +20,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 )
 
-// TestGRPCResponseCallbackNoDeadlock verifies that a response callback can
-// call back into the client without deadlocking.
 func TestGRPCResponseCallbackNoDeadlock(t *testing.T) {
 	socketFile := fmt.Sprintf("/tmp/test-%08x.sock", rand.Int31n(1<<30))
 	defer os.Remove(socketFile)
@@ -53,8 +51,6 @@ func TestGRPCResponseCallbackNoDeadlock(t *testing.T) {
 	}
 }
 
-// TestGRPCResponseCallbackSeesErrorState verifies that a response callback can
-// read a non-nil Error() when the client is in an error state.
 func TestGRPCResponseCallbackSeesErrorState(t *testing.T) {
 	socketFile := fmt.Sprintf("/tmp/test-%08x.sock", rand.Int31n(1<<30))
 	defer os.Remove(socketFile)

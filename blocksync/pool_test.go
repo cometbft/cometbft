@@ -861,19 +861,29 @@ func TestBlockPoolIsCaughtUpMixedPeers(t *testing.T) {
 // every peer reports a fresh store: base=0, height=0. maxPeerHeight ends up
 // at 0, but the correct answer is "caught up" so consensus can take over.
 func TestBlockPoolIsCaughtUpFreshNetwork(t *testing.T) {
-	const initialHeight = int64(1000)
+	testCases := []struct {
+		name          string
+		initialHeight int64
+	}{
+		{"initial height 1", 1},
+		{"initial height 1000", 1000},
+	}
 
-	requestsCh := make(chan BlockRequest, 10)
-	errorsCh := make(chan peerError, 10)
-	pool := NewBlockPool(initialHeight, requestsCh, errorsCh)
-	pool.SetLogger(log.TestingLogger())
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			requestsCh := make(chan BlockRequest, 10)
+			errorsCh := make(chan peerError, 10)
+			pool := NewBlockPool(tc.initialHeight, requestsCh, errorsCh)
+			pool.SetLogger(log.TestingLogger())
 
-	// Every peer is at network genesis: no blocks produced yet.
-	pool.SetPeerRange(p2p.ID("peer1"), 0, 0)
-	pool.SetPeerRange(p2p.ID("peer2"), 0, 0)
+			// Every peer is at network genesis: no blocks produced yet.
+			pool.SetPeerRange(p2p.ID("peer1"), 0, 0)
+			pool.SetPeerRange(p2p.ID("peer2"), 0, 0)
 
-	require.EqualValues(t, 0, pool.MaxPeerHeight(),
-		"peers without blocks contribute 0 to maxPeerHeight")
-	require.True(t, pool.IsCaughtUp(),
-		"node must be considered caught up when no peer has any blocks (fresh network)")
+			require.EqualValues(t, 0, pool.MaxPeerHeight(),
+				"peers without blocks contribute 0 to maxPeerHeight")
+			require.True(t, pool.IsCaughtUp(),
+				"node must be considered caught up when no peer has any blocks (fresh network)")
+		})
+	}
 }

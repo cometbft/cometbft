@@ -2,6 +2,7 @@ package abcicli_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -49,6 +50,58 @@ func TestGRPCResponseCallbackNoDeadlock(t *testing.T) {
 	case <-done:
 	case <-time.After(5 * time.Second):
 		t.Fatal("deadlock: response callback did not complete")
+	}
+}
+
+// TestGRPCResponseCallbackSeesErrorState verifies that a response callback can
+// read a non-nil Error() when the client is in an error state.
+func TestGRPCResponseCallbackSeesErrorState(t *testing.T) {
+	socketFile := fmt.Sprintf("/tmp/test-%08x.sock", rand.Int31n(1<<30))
+	defer os.Remove(socketFile)
+	socket := fmt.Sprintf("unix://%v", socketFile)
+
+	server := abciserver.NewGRPCServer(socket, types.NewBaseApplication())
+	server.SetLogger(log.TestingLogger().With("module", "abci-server"))
+	require.NoError(t, server.Start())
+	t.Cleanup(func() { _ = server.Stop() })
+
+	c := abcicli.NewGRPCClient(socket, true)
+	require.NoError(t, c.Start())
+	t.Cleanup(func() { _ = c.Stop() })
+
+	inCallback := make(chan struct{})
+	proceed := make(chan struct{})
+	cbErrCh := make(chan error, 1)
+	var once sync.Once
+
+	c.SetResponseCallback(func(_ *types.Request, _ *types.Response) {
+		once.Do(func() {
+			close(inCallback)
+			<-proceed
+			cbErrCh <- c.Error()
+		})
+	})
+
+	_, err := c.CheckTxAsync(context.Background(), &types.RequestCheckTx{})
+	require.NoError(t, err)
+
+	select {
+	case <-inCallback:
+	case <-time.After(5 * time.Second):
+		t.Fatal("callback did not start")
+	}
+
+	type errorSetter interface{ StopForError(error) }
+	injected := errors.New("injected test error")
+	c.(errorSetter).StopForError(injected)
+
+	close(proceed)
+
+	select {
+	case cbErr := <-cbErrCh:
+		require.ErrorIs(t, cbErr, injected)
+	case <-time.After(5 * time.Second):
+		t.Fatal("callback did not complete")
 	}
 }
 

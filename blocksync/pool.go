@@ -78,11 +78,11 @@ type BlockPool struct {
 	// Protected by mtx.
 	mtx           cmtsync.Mutex
 	requesters    map[int64]*bpRequester
-	height        int64            // the lowest key in requesters.
+	height        int64 // the lowest key in requesters.
 	peers         map[p2p.ID]*bpPeer
 	bannedPeers   map[p2p.ID]time.Time
-	sortedPeers   []*bpPeer        // sorted by curRate, highest first
-	maxPeerHeight int64            // the biggest reported height
+	sortedPeers   []*bpPeer // sorted by curRate, highest first
+	maxPeerHeight int64     // the biggest reported height
 
 	numPending atomic.Int32 // number of requests pending assignment or block response
 

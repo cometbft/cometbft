@@ -115,6 +115,49 @@ func TestValidatorCacheInvalidatesOnNewHeight(t *testing.T) {
 	storeMock.AssertNumberOfCalls(t, "LoadValidators", 2)
 }
 
+func TestValidatorCacheHitAcrossProposalAndProcess(t *testing.T) {
+	state, stateDB, privVals := makeState(1, 3)
+	realStore := sm.NewStore(stateDB, sm.StoreOptions{})
+	valSet, err := realStore.LoadValidators(state.LastBlockHeight)
+	require.NoError(t, err)
+
+	storeMock := mocks.NewStore(t)
+	storeMock.On("LoadValidators", state.LastBlockHeight).Return(valSet, nil)
+
+	app := abcimocks.NewApplication(t)
+	app.On("PrepareProposal", mock.Anything, mock.Anything).
+		Return(&abci.ResponsePrepareProposal{}, nil)
+	app.On("ProcessProposal", mock.Anything, mock.Anything).
+		Return(&abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil)
+
+	proxyApp := proxy.NewAppConns(proxy.NewLocalClientCreator(app), proxy.NopMetrics())
+	require.NoError(t, proxyApp.Start())
+	t.Cleanup(func() { _ = proxyApp.Stop() })
+
+	mp := new(mpmocks.Mempool)
+	mp.On("ReapMaxBytesMaxGas", mock.Anything, mock.Anything).Return(types.Txs{})
+
+	blockExec := sm.NewBlockExecutor(
+		storeMock, log.NewNopLogger(), proxyApp.Consensus(),
+		mp, sm.EmptyEvidencePool{},
+		store.NewBlockStore(dbm.NewMemDB()),
+	)
+
+	proposerAddr, _ := state.Validators.GetByIndex(0)
+	lastExtCommit, _, err := makeValidCommit(state.LastBlockHeight, types.BlockID{}, state.Validators, privVals)
+	require.NoError(t, err)
+
+	// CreateProposalBlock: cache miss → 1 DB load.
+	block, err := blockExec.CreateProposalBlock(t.Context(), state.LastBlockHeight+1, state, lastExtCommit, proposerAddr)
+	require.NoError(t, err)
+
+	// ProcessProposal: same height validators → cache hit, no additional DB load.
+	_, err = blockExec.ProcessProposal(block, state)
+	require.NoError(t, err)
+
+	storeMock.AssertNumberOfCalls(t, "LoadValidators", 1)
+}
+
 func BenchmarkLoadValidatorsNoCache(b *testing.B) {
 	for _, nVals := range []int{10, 100} {
 		b.Run(fmt.Sprintf("%dvals", nVals), func(b *testing.B) {

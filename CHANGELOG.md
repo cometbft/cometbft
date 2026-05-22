@@ -19,6 +19,8 @@
 
 ### IMPROVEMENTS
 
+- `[execution]` cache validator set within a block cycle.
+  ([\#5834](https://github.com/cometbft/cometbft/pull/5834))
 - `[consensus]` reuse encode/decode buffers in WALEncoder and WALDecoder.
   ([\#5865](https://github.com/cometbft/cometbft/pull/5865))
 - `[blocksync]` validate blocksync response sender and signature count

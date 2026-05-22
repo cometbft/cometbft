@@ -318,6 +318,9 @@ func (cfg BaseConfig) ValidateBasic() error {
 	default:
 		return errors.New("unknown log_format (must be 'plain' or 'json')")
 	}
+	if cfg.EventBusBufferCapacity < 0 {
+		return fmt.Errorf("event_bus_buffer_capacity must be >= 0, got %d", cfg.EventBusBufferCapacity)
+	}
 	return nil
 }
 

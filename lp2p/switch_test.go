@@ -21,6 +21,7 @@ import (
 	"github.com/cometbft/cometbft/test/utils"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/p2p/protocol/identify"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/require"
 )
@@ -597,7 +598,7 @@ func TestHandleStreamResolvePeerBeforeIdentify(t *testing.T) {
 	hostA, hostB := hosts[0], hosts[1]
 
 	// Slow A's identify responder so B's peerstore stays empty for A during the test window.
-	hostA.SetStreamHandler("/ipfs/id/1.0.0", func(s network.Stream) {
+	hostA.SetStreamHandler(identify.ID, func(s network.Stream) {
 		time.Sleep(identifyDelay)
 		_ = s.Reset()
 	})

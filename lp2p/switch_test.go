@@ -624,6 +624,8 @@ func TestHandleStreamResolvePeerBeforeIdentify(t *testing.T) {
 	}, time.Second, 20*time.Millisecond, "A should see B as peer")
 
 	// Pre-condition: B's peerstore must not have A's address yet.
+	// This is deterministic: we replaced A's identify responder, so B's
+	// identify client will never get A's info and the peerstore stays empty.
 	require.Empty(t, hostB.Peerstore().Addrs(hostA.ID()),
 		"B should not know A's address yet (identify blocked)")
 
@@ -634,7 +636,11 @@ func TestHandleStreamResolvePeerBeforeIdentify(t *testing.T) {
 
 	require.Eventually(t, func() bool {
 		envs := reactorB.receivedEnvelopes()
-		return len(envs) == 1 && envs[0].Message.(*types.RequestEcho).Message == "hello"
+		if len(envs) != 1 {
+			return false
+		}
+		req, ok := envs[0].Message.(*types.RequestEcho)
+		return ok && req.Message == "hello"
 	}, 2*time.Second, 20*time.Millisecond,
 		"B must receive the message even though B's peerstore was empty for A at stream time")
 }

@@ -227,7 +227,9 @@ func (r *Reactor) Enable(state sm.State) error {
 	r.Logger.Info("Enabling blocksync reactor")
 
 	r.initialState = state
+	r.pool.mtx.Lock()
 	r.pool.height = state.LastBlockHeight + 1
+	r.pool.mtx.Unlock()
 
 	return r.runPool(true)
 }

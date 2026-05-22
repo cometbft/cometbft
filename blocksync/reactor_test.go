@@ -5,6 +5,7 @@ import (
 	"os"
 	"reflect"
 	"sort"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -936,4 +937,47 @@ func (bcR *ByzantineReactor) Receive(e p2p.Envelope) {
 	default:
 		bcR.Logger.Error(fmt.Sprintf("Unknown message type %v", reflect.TypeOf(msg)))
 	}
+}
+
+// TestEnableRaceWithSetPeerRange detects the data race between
+// Reactor.Enable() writing pool.height without pool.mtx and
+// SetPeerRange() reading it via updateMaxPeerHeight() under pool.mtx.
+// Must be run with -race to be effective.
+func TestEnableRaceWithSetPeerRange(t *testing.T) {
+	requestsCh := make(chan BlockRequest, 1000)
+	errorsCh := make(chan peerError, 1000)
+	pool := NewBlockPool(1, requestsCh, errorsCh)
+	require.NoError(t, pool.Start())
+	t.Cleanup(func() { _ = pool.Stop() })
+
+	flag := &atomic.Bool{}
+	r := &Reactor{pool: pool, enabled: flag}
+	r.Logger = log.TestingLogger()
+
+	state := sm.State{LastBlockHeight: 100}
+
+	start := make(chan struct{})
+	var wg sync.WaitGroup
+
+	// Enable() writes pool.height; runPool returns ErrAlreadyStarted since the
+	// pool is pre-started, but the write still races with concurrent reads.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-start
+		_ = r.Enable(state)
+	}()
+
+	// SetPeerRange holds pool.mtx and reads pool.height via updateMaxPeerHeight.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-start
+		for i := int64(0); i < 500; i++ {
+			pool.SetPeerRange("peer1", i+2, i+100)
+		}
+	}()
+
+	close(start)
+	wg.Wait()
 }

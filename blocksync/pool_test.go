@@ -834,6 +834,23 @@ func TestBlockPoolIsCaughtUpAllPeersPrunedAhead(t *testing.T) {
 		"node must not consider itself caught up when no peer can serve blocks at pool.height")
 }
 
+func TestBlockPoolIsCaughtUpMixedPeers(t *testing.T) {
+	const ourHeight = int64(100)
+
+	requestsCh := make(chan BlockRequest, 10)
+	errorsCh := make(chan peerError, 10)
+	pool := NewBlockPool(ourHeight, requestsCh, errorsCh)
+	pool.SetLogger(log.TestingLogger())
+
+	// one peer has no blocks, one is pruned ahead of pool.height
+	pool.SetPeerRange(p2p.ID("empty"), 0, 0)
+	pool.SetPeerRange(p2p.ID("pruned"), ourHeight+10, ourHeight+200)
+
+	require.EqualValues(t, 0, pool.MaxPeerHeight())
+	require.False(t, pool.IsCaughtUp(),
+		"any peer with blocks (even pruned ahead) should prevent caught-up")
+}
+
 // TestBlockPoolIsCaughtUpFreshNetwork verifies that a node DOES consider
 // itself caught up when every peer advertises height 0 — i.e. the network
 // has not produced any blocks yet. Without this, validators at network

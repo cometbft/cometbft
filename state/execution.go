@@ -44,7 +44,8 @@ type BlockExecutor struct {
 	// 1-element cache of validated blocks
 	lastValidatedBlock atomic.Pointer[types.Block]
 
-	// 1-element cache: validator set loaded for the current block cycle
+	// 1-element cache: validator set loaded for the current block cycle.
+	// The stored ValidatorSet is read-only; callers must not mutate it.
 	lastLoadedValidators atomic.Pointer[cachedValidators]
 
 	logger log.Logger
@@ -627,7 +628,7 @@ func BuildLastCommitInfo(block *types.Block, lastValSet *types.ValidatorSet, ini
 
 // BuildExtendedCommitInfo builds an ExtendedCommitInfo from the given block and validator set.
 // If you want to load the validator set from the store instead of providing it,
-// use buildExtendedCommitInfoFromStore.
+// use blockExec.buildExtendedCommitInfo.
 func BuildExtendedCommitInfo(ec *types.ExtendedCommit, valSet *types.ValidatorSet, initialHeight int64, ap types.ABCIParams) abci.ExtendedCommitInfo {
 	if ec.Height < initialHeight {
 		// There are no extended commits for heights below the initial height.
@@ -847,6 +848,8 @@ func fireEvents(
 
 // ExecCommitBlock executes and commits a block on the proxyApp without validating or mutating the state.
 // It returns the application root hash (result of abci.Commit).
+// Note: this function does not use BlockExecutor's validator cache; it is only called from the
+// replay path where no BlockExecutor is available.
 func ExecCommitBlock(
 	appConnConsensus proxy.AppConnConsensus,
 	block *types.Block,

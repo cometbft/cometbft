@@ -2,6 +2,8 @@ package state_test
 
 import (
 	"context"
+	"fmt"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -19,9 +21,6 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-// oneValCommit returns a last-commit with a single absent signature.
-// It satisfies BuildLastCommitInfo's len(Signatures)==len(Validators) invariant
-// when using a single-validator state.
 func oneValCommit(height int64) *types.Commit {
 	return &types.Commit{
 		Height:     height,
@@ -29,9 +28,6 @@ func oneValCommit(height int64) *types.Commit {
 	}
 }
 
-// TestValidatorCacheHitWithinBlockCycle verifies that ProcessProposal and
-// ExtendVote share the same cached validator set within one block cycle.
-// Only the first call should reach the DB; the second must be a cache hit.
 func TestValidatorCacheHitWithinBlockCycle(t *testing.T) {
 	state, stateDB, _ := makeState(1, 3) // 1 validator, LastBlockHeight=2
 	realStore := sm.NewStore(stateDB, sm.StoreOptions{})
@@ -75,9 +71,6 @@ func TestValidatorCacheHitWithinBlockCycle(t *testing.T) {
 	storeMock.AssertNumberOfCalls(t, "LoadValidators", 1)
 }
 
-// TestValidatorCacheInvalidatesOnNewHeight verifies that the cache is not
-// carried over between block cycles. When the block height advances, the
-// executor must make a fresh DB load rather than reusing the stale entry.
 func TestValidatorCacheInvalidatesOnNewHeight(t *testing.T) {
 	state, stateDB, _ := makeState(1, 3) // LastBlockHeight=2; validators saved at 1–4
 	realStore := sm.NewStore(stateDB, sm.StoreOptions{})
@@ -120,4 +113,52 @@ func TestValidatorCacheInvalidatesOnNewHeight(t *testing.T) {
 	require.NoError(t, err)
 
 	storeMock.AssertNumberOfCalls(t, "LoadValidators", 2)
+}
+
+func BenchmarkLoadValidatorsNoCache(b *testing.B) {
+	for _, nVals := range []int{10, 100} {
+		b.Run(fmt.Sprintf("%dvals", nVals), func(b *testing.B) {
+			state, stateDB, _ := makeState(nVals, 10)
+			stateStore := sm.NewStore(stateDB, sm.StoreOptions{})
+			loadHeight := state.LastBlockHeight
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				if _, err := stateStore.LoadValidators(loadHeight); err != nil {
+					b.Fatal(err)
+				}
+				if _, err := stateStore.LoadValidators(loadHeight); err != nil {
+					b.Fatal(err)
+				}
+				if _, err := stateStore.LoadValidators(loadHeight); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkLoadValidatorsWithCache(b *testing.B) {
+	for _, nVals := range []int{10, 100} {
+		b.Run(fmt.Sprintf("%dvals", nVals), func(b *testing.B) {
+			state, stateDB, _ := makeState(nVals, 10)
+			stateStore := sm.NewStore(stateDB, sm.StoreOptions{})
+			loadHeight := state.LastBlockHeight
+
+			var cache atomic.Pointer[types.ValidatorSet]
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				v, err := stateStore.LoadValidators(loadHeight)
+				if err != nil {
+					b.Fatal(err)
+				}
+				cache.Store(v)
+				_ = cache.Load()
+				_ = cache.Load()
+			}
+		})
+	}
 }

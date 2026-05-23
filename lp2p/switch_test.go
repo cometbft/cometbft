@@ -582,68 +582,70 @@ func TestSwitch(t *testing.T) {
 		require.Equal(t, 1, switchB.Peers().Size(),
 			"B should still be connected to A on filter pass")
 	})
-}
 
-// TestHandleStreamResolvePeerBeforeIdentify reproduces the race where B receives
-// a CometBFT stream from A before B's identify goroutine has populated B's peerstore
-// with A's address. We slow A's identify responder to hold that goroutine open while
-// A's own identify completes and A opens the stream.
-func TestHandleStreamResolvePeerBeforeIdentify(t *testing.T) {
-	const (
-		channelID     = byte(0xF2)
-		identifyDelay = 500 * time.Millisecond
-	)
+	t.Run("ResolvePeerBeforeIdentify", func(t *testing.T) {
+		// ARRANGE
+		// Reproduce the race where B receives a CometBFT stream from A before
+		// B's identify goroutine has populated B's peerstore with A's address.
+		// Slowing A's identify responder keeps B's peerstore empty for A.
+		const (
+			channelID     = byte(0xF2)
+			identifyDelay = 500 * time.Millisecond
+		)
 
-	hosts := makeTestHosts(t, 2, withLogging())
-	hostA, hostB := hosts[0], hosts[1]
+		hosts := makeTestHosts(t, 2, withLogging())
+		hostA, hostB := hosts[0], hosts[1]
 
-	// Slow A's identify responder so B's peerstore stays empty for A during the test window.
-	hostA.SetStreamHandler(identify.ID, func(s network.Stream) {
-		time.Sleep(identifyDelay)
-		_ = s.Reset()
-	})
+		hostA.SetStreamHandler(identify.ID, func(s network.Stream) {
+			time.Sleep(identifyDelay)
+			_ = s.Reset()
+		})
 
-	channelDescriptor := &conn.ChannelDescriptor{
-		ID:                  channelID,
-		Priority:            1,
-		RecvMessageCapacity: 1024,
-		MessageType:         &types.RequestEcho{},
-	}
-
-	reactorA := newReactorMock([]*conn.ChannelDescriptor{channelDescriptor}, hostA.Logger())
-	switchA, err := NewSwitch(nil, hostA, []SwitchReactor{{Name: "echo", Reactor: reactorA}}, p2p.NopMetrics(), hostA.Logger())
-	require.NoError(t, err)
-
-	reactorB := newReactorMock([]*conn.ChannelDescriptor{channelDescriptor}, hostB.Logger())
-	switchB, err := NewSwitch(nil, hostB, []SwitchReactor{{Name: "echo", Reactor: reactorB}}, p2p.NopMetrics(), hostB.Logger())
-	require.NoError(t, err)
-
-	connectSwitches(t, []*Switch{switchA, switchB})
-
-	require.Eventually(t, func() bool {
-		return switchA.Peers().Size() == 1
-	}, time.Second, 20*time.Millisecond, "A should see B as peer")
-
-	// Pre-condition: B's peerstore must not have A's address yet.
-	// This is deterministic: we replaced A's identify responder, so B's
-	// identify client will never get A's info and the peerstore stays empty.
-	require.Empty(t, hostB.Peerstore().Addrs(hostA.ID()),
-		"B should not know A's address yet (identify blocked)")
-
-	switchA.BroadcastAsync(p2p.Envelope{
-		ChannelID: channelID,
-		Message:   &types.RequestEcho{Message: "hello"},
-	})
-
-	require.Eventually(t, func() bool {
-		envs := reactorB.receivedEnvelopes()
-		if len(envs) != 1 {
-			return false
+		channelDescriptor := &conn.ChannelDescriptor{
+			ID:                  channelID,
+			Priority:            1,
+			RecvMessageCapacity: 1024,
+			MessageType:         &types.RequestEcho{},
 		}
-		req, ok := envs[0].Message.(*types.RequestEcho)
-		return ok && req.Message == "hello"
-	}, 2*time.Second, 20*time.Millisecond,
-		"B must receive the message even though B's peerstore was empty for A at stream time")
+
+		reactorA := newReactorMock([]*conn.ChannelDescriptor{channelDescriptor}, hostA.Logger())
+		switchA, err := NewSwitch(nil, hostA, []SwitchReactor{{Name: "echo", Reactor: reactorA}}, p2p.NopMetrics(), hostA.Logger())
+		require.NoError(t, err)
+
+		reactorB := newReactorMock([]*conn.ChannelDescriptor{channelDescriptor}, hostB.Logger())
+		switchB, err := NewSwitch(nil, hostB, []SwitchReactor{{Name: "echo", Reactor: reactorB}}, p2p.NopMetrics(), hostB.Logger())
+		require.NoError(t, err)
+
+		connectSwitches(t, []*Switch{switchA, switchB})
+
+		require.Eventually(t, func() bool {
+			return switchA.Peers().Size() == 1
+		}, time.Second, 20*time.Millisecond, "A should see B as peer")
+
+		// Pre-condition: B's peerstore must not have A's address yet.
+		// libp2p only populates the peerstore via identify, not from the raw
+		// connection dial. Blocking A's identify responder keeps B's peerstore
+		// for A empty.
+		require.Empty(t, hostB.Peerstore().Addrs(hostA.ID()),
+			"B should not know A's address yet (identify blocked)")
+
+		// ACT
+		switchA.BroadcastAsync(p2p.Envelope{
+			ChannelID: channelID,
+			Message:   &types.RequestEcho{Message: "hello"},
+		})
+
+		// ASSERT
+		require.Eventually(t, func() bool {
+			envs := reactorB.receivedEnvelopes()
+			if len(envs) != 1 {
+				return false
+			}
+			req, ok := envs[0].Message.(*types.RequestEcho)
+			return ok && req.Message == "hello"
+		}, 2*time.Second, 20*time.Millisecond,
+			"B must receive the message even though B's peerstore was empty for A at stream time")
+	})
 }
 
 // filteringReactor is a mock reactor that optionally filters messages via the

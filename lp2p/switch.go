@@ -16,6 +16,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	ma "github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
 )
 
@@ -404,11 +405,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 	}
 
 	// 3. Retrieve the peer from the peerSet (or provision if it's not).
-	// Identify may not have populated the peerstore yet; seed it from
-	// the active connection so resolvePeer can provision the peer.
-	s.host.Peerstore().AddAddr(peerID, stream.Conn().RemoteMultiaddr(), peerstore.TempAddrTTL)
-
-	peer, err := s.resolvePeer(peerID)
+	peer, err := s.resolvePeer(peerID, stream.Conn().RemoteMultiaddr())
 	if err != nil {
 		s.Logger.Error("Failed to resolve peer", "protocol", protocolID, "peer_id", peerID.String(), "err", err)
 		return
@@ -469,7 +466,7 @@ func (s *Switch) handleStream(stream network.Stream) {
 	s.reactors.Receive(reactor.name, messageType, envelope, priority)
 }
 
-func (s *Switch) resolvePeer(id peer.ID) (p2p.Peer, error) {
+func (s *Switch) resolvePeer(id peer.ID, connRemoteAddr ma.Multiaddr) (p2p.Peer, error) {
 	key := peerIDToKey(id)
 
 	// peer exists (99% of the time)
@@ -477,9 +474,16 @@ func (s *Switch) resolvePeer(id peer.ID) (p2p.Peer, error) {
 		return peer, nil
 	}
 
+	// addrInfo most likely exists...
 	addrInfo := s.host.Peerstore().PeerInfo(id)
+
+	// ... but peer identity happens async to the stream handling,
+	// thus peerInfo might be resolved later. fallback to connRemoteAddr.
 	if len(addrInfo.Addrs) == 0 {
-		return nil, errors.New("peer has no addresses in peerstore")
+		addrInfo = peer.AddrInfo{
+			ID:    id,
+			Addrs: []ma.Multiaddr{connRemoteAddr},
+		}
 	}
 
 	var isPrivate, isPersistent, isUnconditional bool

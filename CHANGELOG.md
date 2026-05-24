@@ -19,7 +19,7 @@
 
 ### IMPROVEMENTS
 
-- `[blocksync]` refactor(blocksync): replace `numPending int32` with `atomic.Int32` and document `BlockPool` field ownership
+- `[blocksync]` replace `numPending int32` with `atomic.Int32` and document `BlockPool` field ownership
   ([\#5889](https://github.com/cometbft/cometbft/pull/5889))
 - `[execution]` cache validator set within a block cycle.
   ([\#5834](https://github.com/cometbft/cometbft/pull/5834))

@@ -25,11 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// startInspector starts d in the background and blocks until it is accepting
-// connections on listenAddr. Returns a stop func that cancels the context,
-// waits for d.Run to return, and asserts it returned nil. The stop func is
-// idempotent and is also registered as a t.Cleanup safety net so the server
-// is always stopped even if the test fails before calling stop explicitly.
 func startInspector(t *testing.T, d *inspect.Inspector, listenAddr string) (stop func()) {
 	t.Helper()
 	parts := strings.SplitN(listenAddr, "://", 2)
@@ -39,39 +34,31 @@ func startInspector(t *testing.T, d *inspect.Inspector, listenAddr string) (stop
 	ctx, cancel := context.WithCancel(context.Background())
 	errCh := make(chan error, 1)
 	go func() { errCh <- d.Run(ctx) }()
-	for i := 0; i < 20; i++ {
+	require.Eventually(t, func() bool {
 		select {
 		case err := <-errCh:
 			cancel()
 			require.NoError(t, err, "inspector exited before becoming ready")
 			require.Fail(t, "inspector exited cleanly before becoming ready")
-			return func() {}
+			return false
 		default:
 		}
-		if conn, err := net.Dial(parts[0], parts[1]); err == nil {
+		conn, err := net.Dial(parts[0], parts[1])
+		if err == nil {
 			conn.Close()
-			var once sync.Once
-			stop = func() {
-				once.Do(func() {
-					cancel()
-					require.NoError(t, <-errCh)
-				})
-			}
-			t.Cleanup(stop)
-			return stop
+			return true
 		}
-		time.Sleep(100 * time.Microsecond)
+		return false
+	}, 5*time.Second, 10*time.Millisecond)
+	var once sync.Once
+	stop = func() {
+		once.Do(func() {
+			cancel()
+			require.NoError(t, <-errCh)
+		})
 	}
-	select {
-	case err := <-errCh:
-		cancel()
-		require.NoError(t, err, "inspector exited before becoming ready")
-		require.Fail(t, "inspector exited cleanly before becoming ready")
-	default:
-		cancel()
-		t.Fatalf("unable to connect to %s after 20 tries", listenAddr)
-	}
-	return func() {}
+	t.Cleanup(stop)
+	return stop
 }
 
 func TestInspectConstructor(t *testing.T) {

@@ -16,7 +16,7 @@
   ([\#5837](https://github.com/cometbft/cometbft/pull/5837))
 - `[node]` close partial listeners on startRPC failure
   ([\#5869](https://github.com/cometbft/cometbft/pull/5869))
-- `[lp2p]` seed peerstore before resolving inbound peer
+- `[lp2p]` fallback to conn remote addr when resolving inbound peer
   ([\#5879](https://github.com/cometbft/cometbft/pull/5879))
 
 ### IMPROVEMENTS

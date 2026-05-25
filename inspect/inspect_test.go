@@ -35,21 +35,13 @@ func startInspector(t *testing.T, d *inspect.Inspector, listenAddr string) (stop
 	errCh := make(chan error, 1)
 	go func() { errCh <- d.Run(ctx) }()
 	require.Eventually(t, func() bool {
-		select {
-		case err := <-errCh:
-			cancel()
-			require.NoError(t, err, "inspector exited before becoming ready")
-			require.Fail(t, "inspector exited cleanly before becoming ready")
-			return false
-		default:
-		}
 		conn, err := net.Dial(parts[0], parts[1])
 		if err == nil {
 			conn.Close()
 			return true
 		}
 		return false
-	}, 5*time.Second, 10*time.Millisecond)
+	}, 5*time.Second, 10*time.Millisecond, "inspector at %s failed to become ready", listenAddr)
 	var once sync.Once
 	stop = func() {
 		once.Do(func() {

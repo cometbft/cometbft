@@ -981,3 +981,22 @@ func TestEnableRaceWithSetPeerRange(t *testing.T) {
 	close(start)
 	wg.Wait()
 }
+
+func TestEnableRecomputesMaxPeerHeight(t *testing.T) {
+	requestsCh := make(chan BlockRequest, 1000)
+	errorsCh := make(chan peerError, 1000)
+	pool := NewBlockPool(1, requestsCh, errorsCh)
+	require.NoError(t, pool.Start())
+	t.Cleanup(func() { _ = pool.Stop() })
+
+	// base=2 > pool.height=1: excluded from maxPeerHeight, so it stays 0.
+	pool.SetPeerRange("peer1", 2, 200)
+	require.Equal(t, int64(0), pool.MaxPeerHeight())
+
+	flag := &atomic.Bool{}
+	r := &Reactor{pool: pool, enabled: flag}
+	r.Logger = log.TestingLogger()
+
+	_ = r.Enable(sm.State{LastBlockHeight: 100})
+	require.Equal(t, int64(200), pool.MaxPeerHeight())
+}

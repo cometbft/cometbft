@@ -6,7 +6,7 @@
 
 ### BUG FIXES
 
-- `[blocksync]` hold `pool.mtx` when writing `pool.height` in `Enable()`
+- `[blocksync]` hold `pool.mtx` and recompute `maxPeerHeight` in `Enable()`
   ([\#5888](https://github.com/cometbft/cometbft/pull/5888))
 - `[p2p]` fix race and goroutine leak in `TestTransportMultiplexAcceptNonBlocking` test
   ([\#5878](https://github.com/cometbft/cometbft/pull/5878))

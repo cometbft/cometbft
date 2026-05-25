@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[inspect]` fix flaky `TestInspectRun` and consolidate start/stop handshake
+  ([\#5891](https://github.com/cometbft/cometbft/pull/5891))
 - `[p2p]` fix race and goroutine leak in `TestTransportMultiplexAcceptNonBlocking` test
   ([\#5878](https://github.com/cometbft/cometbft/pull/5878))
 - `[evidence]` fix flaky `TestReactorsGossipNoCommittedEvidence` test

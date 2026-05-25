@@ -73,7 +73,9 @@ type BlockPool struct {
 
 	// Immutable after construction.
 	startHeight int64
-	startTime   time.Time
+
+	// Set once in OnStart, then immutable.
+	startTime time.Time
 
 	// Protected by mtx.
 	mtx           cmtsync.Mutex

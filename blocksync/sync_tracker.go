@@ -98,9 +98,10 @@ func (s *SyncTracker) isCaughtUpAt(now time.Time) bool {
 	}
 
 	// Regime 2: Near the tip. Be aggressive to detect throttling.
-	// Rate check activates after >= 3 production samples, with a small
-	// (3×) margin to avoid transient P2P gaps triggering false escapes.
-	if hasProd && s.prodMA.Len() >= 3 && receiveInterval >= prodInterval*3 {
+	// Escape if blocks arrive at less than 0.6× the production rate —
+	// blocksync must process much faster than the network produces.
+	// Requires >= 3 production samples to avoid false triggers.
+	if hasProd && s.prodMA.Len() >= 3 && receiveInterval*1000 >= prodInterval*600 {
 		return true
 	}
 

@@ -42,18 +42,17 @@ func TestSyncTrackerCatchingUpFasterThanProduction(t *testing.T) {
 }
 
 func TestSyncTrackerNotCatchingUp(t *testing.T) {
-	// Receiving slow enough to trigger the rate check (3× production).
+	// Receiving slow enough to trigger the rate check (0.6× production).
 	s := NewSyncTracker(10 * time.Second)
 
 	// 4 blocks: production intervals = 2s each, avg = 2s.
-	// rate = 3 × 2s = 6s.
+	// rate threshold = 2s * 0.6 = 1.2s.
 	s.recordBlockAt(at(0), at(0))
 	s.recordBlockAt(at(2*time.Second), at(500*time.Millisecond))
 	s.recordBlockAt(at(4*time.Second), at(1*time.Second))
 	s.recordBlockAt(at(6*time.Second), at(2*time.Second))
-
-	// At T=8s: receiveInterval = 6s >= prod*3 = 6s → escape by rate.
-	require.True(t, s.IsCaughtUpAt(at(8*time.Second)))
+	// last wall=2s. At T=3.5s: receiveInterval=1.5s >= 1.2s → escape via rate.
+	require.True(t, s.IsCaughtUpAt(at(3500*time.Millisecond)))
 }
 
 func TestSyncTrackerTimeoutFloorAfterProduction(t *testing.T) {
@@ -92,8 +91,9 @@ func TestSyncTrackerThrottling(t *testing.T) {
 	require.False(t, s.IsCaughtUpAt(at(500*time.Millisecond)))
 
 	// Attacker throttles: production ≈ 2.5s, wall at 3s.
-	// rate: 3 × prod = 7.5s. At T=8s: receiveInterval = 5s >= timeout floor → escape.
+	// rate threshold = 2.5s * 0.6 = 1.5s.
+	// At T=5s: receiveInterval = 2s >= 1.5s → escape via rate check.
 	s.recordBlockAt(at(10*time.Second), at(3*time.Second))
-	require.True(t, s.IsCaughtUpAt(at(8*time.Second)),
+	require.True(t, s.IsCaughtUpAt(at(5*time.Second)),
 		"attacker throttling to production rate: escape")
 }

@@ -6,6 +6,10 @@
 
 ### BUG FIXES
 
+- `[blocksync]` hold `pool.mtx` and recompute `maxPeerHeight` in `Enable()`
+  ([\#5888](https://github.com/cometbft/cometbft/pull/5888))
+- `[inspect]` fix flaky `TestInspectRun` and consolidate start/stop handshake
+  ([\#5891](https://github.com/cometbft/cometbft/pull/5891))
 - `[p2p]` fix race and goroutine leak in `TestTransportMultiplexAcceptNonBlocking` test
   ([\#5878](https://github.com/cometbft/cometbft/pull/5878))
 - `[evidence]` fix flaky `TestReactorsGossipNoCommittedEvidence` test
@@ -19,6 +23,8 @@
 
 ### IMPROVEMENTS
 
+- `[execution]` cache validator set within a block cycle.
+  ([\#5834](https://github.com/cometbft/cometbft/pull/5834))
 - `[consensus]` reuse encode/decode buffers in WALEncoder and WALDecoder.
   ([\#5865](https://github.com/cometbft/cometbft/pull/5865))
 - `[blocksync]` validate blocksync response sender and signature count

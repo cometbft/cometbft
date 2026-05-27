@@ -149,7 +149,7 @@ func TestBlockPoolBasic(t *testing.T) {
 			}
 			first, second, _ := pool.PeekTwoBlocks()
 			if first != nil && second != nil {
-				pool.PopRequest(second.Header.Time)
+				pool.PopRequest(second.Time)
 			} else {
 				time.Sleep(1 * time.Second)
 			}
@@ -233,7 +233,7 @@ func TestBlockPoolTimeout(t *testing.T) {
 			}
 			first, second, _ := pool.PeekTwoBlocks()
 			if first != nil && second != nil {
-				pool.PopRequest(second.Header.Time)
+				pool.PopRequest(second.Time)
 			} else {
 				time.Sleep(1 * time.Second)
 			}
@@ -384,7 +384,7 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 						// Second block is fake
 						pool.RemovePeerAndRedoAllPeerRequests(second.Height)
 					} else {
-						pool.PopRequest(second.Header.Time)
+						pool.PopRequest(second.Time)
 					}
 				}
 			}
@@ -502,7 +502,7 @@ func TestBlockPoolMaliciousNodeMaxInt64(t *testing.T) {
 						// Second block is fake
 						pool.RemovePeerAndRedoAllPeerRequests(second.Height)
 					} else {
-						pool.PopRequest(second.Header.Time)
+						pool.PopRequest(second.Time)
 					}
 				}
 			}

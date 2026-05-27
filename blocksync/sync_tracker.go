@@ -13,16 +13,17 @@ import (
 // BlockPool's mutex scope.
 //
 // Strategy:
-//   After at least one block has been synced, we compare the wall-clock
-//   receive interval against the block production interval (moving average
-//   of recent header timestamp gaps). If receiving a block takes as long
-//   or longer than the network took to produce it, we're not catching up
-//   and should switch to consensus.
 //
-//   A fixed minimum timeout (noBlockTimeout) serves as the floor: regardless
-//   of production speed, if no block arrives within noBlockTimeout, we
-//   declare ourselves caught up. This catches peer stall and very fast
-//   production chains.
+//	After at least one block has been synced, we compare the wall-clock
+//	receive interval against the block production interval (moving average
+//	of recent header timestamp gaps). If receiving a block takes as long
+//	or longer than the network took to produce it, we're not catching up
+//	and should switch to consensus.
+//
+//	A fixed minimum timeout (noBlockTimeout) serves as the floor: regardless
+//	of production speed, if no block arrives within noBlockTimeout, we
+//	declare ourselves caught up. This catches peer stall and very fast
+//	production chains.
 type SyncTracker struct {
 	noBlockTimeout time.Duration
 

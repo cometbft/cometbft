@@ -1,0 +1,28 @@
+# This testnet pins all validators to the NIST ML-DSA-65 (FIPS 204)
+# post-quantum signature scheme. It exercises the consensus, gossip, and
+# privval paths with the largest signature size currently supported in
+# CometBFT (3309 bytes), making it a useful smoke test for the validator
+# commit/block size accounting introduced alongside ML-DSA-65 support.
+#
+# To run end-to-end (requires docker):
+#   cd test/e2e
+#   make runner
+#   ./build/runner -f networks/mldsa65.toml setup
+#   ./build/runner -f networks/mldsa65.toml start
+#   ./build/runner -f networks/mldsa65.toml test
+
+key_type = "ml_dsa_65"
+abci_protocol = "builtin"
+initial_height = 1
+evidence = 0
+
+[validators]
+validator01 = 100
+validator02 = 100
+validator03 = 100
+validator04 = 100
+
+[node.validator01]
+[node.validator02]
+[node.validator03]
+[node.validator04]

@@ -588,18 +588,18 @@ const (
 	BlockIDFlagNil
 )
 
-const (
-	// MaxCommitOverheadBytes is the max size of commit without any commitSigs -> 82 for BlockID, 8 for Height, 4 for Round.
-	MaxCommitOverheadBytes int64 = 94
+// MaxCommitOverheadBytes is the max size of commit without any commitSigs -> 82 for BlockID, 8 for Height, 4 for Round.
+const MaxCommitOverheadBytes int64 = 94
 
-	// 4 bytes for field tags + 1 byte for signature LEN + 1 byte for
-	// validator address LEN + 1 byte for timestamp LEN.
-	maxCommitSigProtoEncOverhead = 4 + 1 + 1 + 1 + 3 // 3 ???
-	// MaxCommitSigBytes is the max commit sig size is made up of MaxSignatureSize (96) bytes for the
-	// signature, 20 bytes for the address, 1 byte for the flag and 14 bytes for
-	// the timestamp.
-	MaxCommitSigBytes = 131 + maxCommitSigProtoEncOverhead
-)
+// 4 bytes for field tags + 2 bytes for signature LEN (varint; 2 bytes covers
+// signatures up to 16383 bytes, which fits ML-DSA-65's 3309-byte sigs) +
+// 1 byte for validator address LEN + 1 byte for timestamp LEN + 3 misc.
+const maxCommitSigProtoEncOverhead = 4 + 2 + 1 + 1 + 3
+
+// MaxCommitSigBytes is the max commit sig size: MaxSignatureSize bytes for the
+// signature, 20 bytes for the address, 1 byte for the flag, 14 bytes for the
+// timestamp, plus proto framing overhead.
+var MaxCommitSigBytes = int64(MaxSignatureSize + 20 + 1 + 14 + maxCommitSigProtoEncOverhead)
 
 // CommitSig is a part of the Vote included in a Commit.
 type CommitSig struct {

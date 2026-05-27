@@ -477,8 +477,8 @@ func (s *Switch) resolvePeer(id peer.ID, connRemoteAddr ma.Multiaddr) (p2p.Peer,
 	// addrInfo most likely exists...
 	addrInfo := s.host.Peerstore().PeerInfo(id)
 
-	// ... but peer identity happens async to the stream handling,
-	// thus peerInfo might be resolved later. fallback to connRemoteAddr.
+	// ... but peer identification runs asynchronously to stream handling,
+	// thus addrInfo may not yet be populated. fallback to connRemoteAddr.
 	if len(addrInfo.Addrs) == 0 {
 		addrInfo = peer.AddrInfo{
 			ID:    id,

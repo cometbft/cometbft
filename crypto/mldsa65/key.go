@@ -9,57 +9,17 @@ package mldsa65
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 
 	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
-	lru "github.com/hashicorp/golang-lru/v2"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 )
-
-// cacheSize is the number of parsed public keys retained in cachingVerifier.
-// Matches crypto/ed25519's cacheSize so a validator set of typical size fits
-// comfortably with room for incoming peers and recent rotations.
-const cacheSize = 4096
-
-// cachingVerifier holds parsed *mldsa65.PublicKey instances keyed by their
-// 1952-byte packed form. Signature verification under a previously-seen
-// validator pubkey skips the expensive UnmarshalBinary step, mirroring the
-// crypto/ed25519 package's cachingVerifier pattern.
-var cachingVerifier = newPubKeyCache(cacheSize)
-
-type pubKeyCache struct {
-	cache *lru.Cache[string, *mldsa65.PublicKey]
-}
-
-func newPubKeyCache(size int) *pubKeyCache {
-	c, err := lru.New[string, *mldsa65.PublicKey](size)
-	if err != nil {
-		// lru.New only errors on size <= 0, which is a programmer error.
-		panic(fmt.Sprintf("mldsa65: cannot create pubkey cache: %v", err))
-	}
-	return &pubKeyCache{cache: c}
-}
-
-// publicKey returns the parsed *mldsa65.PublicKey for the given packed bytes,
-// populating the cache on first sight. Returns (nil, false) if the bytes are
-// not a valid ML-DSA-65 public key.
-func (c *pubKeyCache) publicKey(packed []byte) (*mldsa65.PublicKey, bool) {
-	key := string(packed)
-	if pk, ok := c.cache.Get(key); ok {
-		return pk, true
-	}
-	pk := new(mldsa65.PublicKey)
-	if err := pk.UnmarshalBinary(packed); err != nil {
-		return nil, false
-	}
-	c.cache.Add(key, pk)
-	return pk, true
-}
 
 var (
 	// ErrInvalidPrivKeySize is returned when private key bytes are the wrong length.
@@ -79,10 +39,14 @@ func init() {
 // Private Key
 // ===============================================================================================
 
-var _ crypto.PrivKey = PrivKey{}
+var _ crypto.PrivKey = &PrivKey{}
 
-// PrivKey is the packed ML-DSA-65 private key (FIPS 204 form).
-type PrivKey []byte
+// PrivKey wraps a parsed ML-DSA-65 private key. The parsed form is retained so
+// Sign and PubKey avoid re-deserializing the 4032-byte packed key on every
+// call.
+type PrivKey struct {
+	sk *mldsa65.PrivateKey
+}
 
 // GenPrivKey generates a fresh ML-DSA-65 key using OS randomness.
 func GenPrivKey() (PrivKey, error) {
@@ -92,76 +56,62 @@ func GenPrivKey() (PrivKey, error) {
 func genPrivKey(r io.Reader) (PrivKey, error) {
 	_, sk, err := mldsa65.GenerateKey(r)
 	if err != nil {
-		return nil, err
+		return PrivKey{}, err
 	}
-	bz, err := sk.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	return PrivKey(bz), nil
+	return PrivKey{sk: sk}, nil
 }
 
 // GenPrivKeyFromSeed deterministically derives a key from a 32-byte seed.
 func GenPrivKeyFromSeed(seed []byte) (PrivKey, error) {
 	if len(seed) != SeedSize {
-		return nil, fmt.Errorf("mldsa65: seed must be %d bytes, got %d", SeedSize, len(seed))
+		return PrivKey{}, fmt.Errorf("mldsa65: seed must be %d bytes, got %d", SeedSize, len(seed))
 	}
 	var s [SeedSize]byte
 	copy(s[:], seed)
 	_, sk := mldsa65.NewKeyFromSeed(&s)
-	bz, err := sk.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	return PrivKey(bz), nil
+	return PrivKey{sk: sk}, nil
 }
 
 // NewPrivKeyFromBytes validates and returns a PrivKey from the packed bytes.
 func NewPrivKeyFromBytes(bz []byte) (PrivKey, error) {
 	if len(bz) != PrivKeySize {
-		return nil, ErrInvalidPrivKeySize
+		return PrivKey{}, ErrInvalidPrivKeySize
 	}
 	sk := new(mldsa65.PrivateKey)
 	if err := sk.UnmarshalBinary(bz); err != nil {
-		return nil, ErrDeserialization
+		return PrivKey{}, ErrDeserialization
 	}
-	out := make(PrivKey, PrivKeySize)
-	copy(out, bz)
-	return out, nil
+	return PrivKey{sk: sk}, nil
 }
 
 // Bytes returns the packed private key bytes.
 func (privKey PrivKey) Bytes() []byte {
-	return []byte(privKey)
+	if privKey.sk == nil {
+		return nil
+	}
+	bz, err := privKey.sk.MarshalBinary()
+	if err != nil {
+		panic(fmt.Sprintf("mldsa65: marshal privkey: %v", err))
+	}
+	return bz
 }
 
 // PubKey returns the corresponding public key.
-//
-// Panics if the underlying private key bytes cannot be parsed; callers
-// constructing a PrivKey via NewPrivKeyFromBytes or GenPrivKey will never hit
-// this path.
 func (privKey PrivKey) PubKey() crypto.PubKey {
-	sk := new(mldsa65.PrivateKey)
-	if err := sk.UnmarshalBinary(privKey); err != nil {
-		panic(fmt.Sprintf("mldsa65: invalid private key: %v", err))
-	}
-	pk, ok := sk.Public().(*mldsa65.PublicKey)
+	pk, ok := privKey.sk.Public().(*mldsa65.PublicKey)
 	if !ok {
 		panic("mldsa65: unexpected public key type")
 	}
-	pkBytes, err := pk.MarshalBinary()
-	if err != nil {
-		panic(fmt.Sprintf("mldsa65: marshal pubkey: %v", err))
-	}
-	return PubKey(pkBytes)
+	return PubKey{pk: pk}
 }
 
 // Equals returns true if the other key is also ML-DSA-65 and the bytes match.
 func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
-	if otherKey, ok := other.(PrivKey); ok {
-		return bytes.Equal(privKey, otherKey)
+	otherKey, ok := other.(PrivKey)
+	if !ok {
+		return false
 	}
-	return false
+	return bytes.Equal(privKey.Bytes(), otherKey.Bytes())
 }
 
 // Type returns the algorithm identifier.
@@ -171,68 +121,84 @@ func (PrivKey) Type() string {
 
 // Sign produces a deterministic ML-DSA-65 signature with an empty context.
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
-	sk := new(mldsa65.PrivateKey)
-	if err := sk.UnmarshalBinary(privKey); err != nil {
-		return nil, fmt.Errorf("mldsa65: invalid private key: %w", err)
-	}
 	sig := make([]byte, SignatureSize)
-	if err := mldsa65.SignTo(sk, msg, nil, false, sig); err != nil {
+	if err := mldsa65.SignTo(privKey.sk, msg, nil, false, sig); err != nil {
 		return nil, err
 	}
 	return sig, nil
+}
+
+// MarshalJSON marshals the private key to JSON as its packed bytes.
+//
+// XXX: Not a pointer because our JSON encoder (libs/json) does not correctly
+// handle pointers.
+func (privKey PrivKey) MarshalJSON() ([]byte, error) {
+	return json.Marshal(privKey.Bytes())
+}
+
+// UnmarshalJSON unmarshals the private key from JSON.
+func (privKey *PrivKey) UnmarshalJSON(bz []byte) error {
+	var rawBytes []byte
+	if err := json.Unmarshal(bz, &rawBytes); err != nil {
+		return err
+	}
+	pk, err := NewPrivKeyFromBytes(rawBytes)
+	if err != nil {
+		return err
+	}
+	privKey.sk = pk.sk
+	return nil
 }
 
 // ===============================================================================================
 // Public Key
 // ===============================================================================================
 
-var _ crypto.PubKey = PubKey{}
+var _ crypto.PubKey = &PubKey{}
 
-// PubKey is the packed ML-DSA-65 public key (FIPS 204 form).
-type PubKey []byte
+// PubKey wraps a parsed ML-DSA-65 public key. The parsed form is retained so
+// VerifySignature avoids re-deserializing the 1952-byte packed key on every
+// call.
+type PubKey struct {
+	pk *mldsa65.PublicKey
+}
 
 // NewPubKeyFromBytes validates and returns a PubKey from the packed bytes.
-// As a side effect the parsed *mldsa65.PublicKey is inserted into
-// cachingVerifier, so subsequent VerifySignature calls skip the parse step.
 func NewPubKeyFromBytes(bz []byte) (PubKey, error) {
 	if len(bz) != PubKeySize {
-		return nil, ErrInvalidPubKeySize
+		return PubKey{}, ErrInvalidPubKeySize
 	}
-	if _, ok := cachingVerifier.publicKey(bz); !ok {
-		return nil, ErrDeserialization
+	pk := new(mldsa65.PublicKey)
+	if err := pk.UnmarshalBinary(bz); err != nil {
+		return PubKey{}, ErrDeserialization
 	}
-	out := make(PubKey, PubKeySize)
-	copy(out, bz)
-	return out, nil
+	return PubKey{pk: pk}, nil
 }
 
 // Address is SHA256(pubkey) truncated to 20 bytes, matching the convention used
 // by ed25519 and bls12381 validator keys.
 func (pubKey PubKey) Address() crypto.Address {
-	if len(pubKey) != PubKeySize {
-		panic("mldsa65: pubkey is incorrect size")
-	}
-	return crypto.Address(tmhash.SumTruncated(pubKey))
+	return crypto.Address(tmhash.SumTruncated(pubKey.Bytes()))
 }
 
 // VerifySignature verifies the signature against msg with an empty context.
-// The parsed *mldsa65.PublicKey is fetched from cachingVerifier (or parsed
-// and inserted on miss), so verification under a recently-seen pubkey skips
-// the UnmarshalBinary step.
 func (pubKey PubKey) VerifySignature(msg, sig []byte) bool {
-	if len(sig) != SignatureSize || len(pubKey) != PubKeySize {
+	if len(sig) != SignatureSize || pubKey.pk == nil {
 		return false
 	}
-	pk, ok := cachingVerifier.publicKey(pubKey)
-	if !ok {
-		return false
-	}
-	return mldsa65.Verify(pk, msg, nil, sig)
+	return mldsa65.Verify(pubKey.pk, msg, nil, sig)
 }
 
 // Bytes returns the packed public key bytes.
 func (pubKey PubKey) Bytes() []byte {
-	return []byte(pubKey)
+	if pubKey.pk == nil {
+		return nil
+	}
+	bz, err := pubKey.pk.MarshalBinary()
+	if err != nil {
+		panic(fmt.Sprintf("mldsa65: marshal pubkey: %v", err))
+	}
+	return bz
 }
 
 // Type returns the algorithm identifier.
@@ -242,13 +208,36 @@ func (PubKey) Type() string {
 
 // Equals returns true if the other key is also ML-DSA-65 and the bytes match.
 func (pubKey PubKey) Equals(other crypto.PubKey) bool {
-	if otherKey, ok := other.(PubKey); ok {
-		return bytes.Equal(pubKey, otherKey)
+	otherKey, ok := other.(PubKey)
+	if !ok {
+		return false
 	}
-	return false
+	return bytes.Equal(pubKey.Bytes(), otherKey.Bytes())
 }
 
 // String returns a hex-formatted representation of the public key.
 func (pubKey PubKey) String() string {
-	return fmt.Sprintf("PubKeyMlDsa65{%X}", []byte(pubKey))
+	return fmt.Sprintf("PubKeyMlDsa65{%X}", pubKey.Bytes())
+}
+
+// MarshalJSON marshals the public key to JSON as its packed bytes.
+//
+// XXX: Not a pointer because our JSON encoder (libs/json) does not correctly
+// handle pointers.
+func (pubKey PubKey) MarshalJSON() ([]byte, error) {
+	return json.Marshal(pubKey.Bytes())
+}
+
+// UnmarshalJSON unmarshals the public key from JSON.
+func (pubKey *PubKey) UnmarshalJSON(bz []byte) error {
+	var rawBytes []byte
+	if err := json.Unmarshal(bz, &rawBytes); err != nil {
+		return err
+	}
+	pk, err := NewPubKeyFromBytes(rawBytes)
+	if err != nil {
+		return err
+	}
+	pubKey.pk = pk.pk
+	return nil
 }

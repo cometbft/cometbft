@@ -146,7 +146,6 @@ func (es *EventSink) IndexBlockEvents(h types.EventDataNewBlockEvents) error {
 	// Add the block to the blocks table and report back its row ID for use
 	// in indexing the events for the block.
 	var blockID int64
-	//nolint:execinquery
 	err := es.store.QueryRow(`
 INSERT INTO `+tableBlocks+` (height, chain_id, created_at)
   VALUES ($1, $2, $3)

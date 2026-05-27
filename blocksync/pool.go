@@ -467,7 +467,6 @@ func (pool *BlockPool) RemovePeer(peerID p2p.ID) {
 
 // CONTRACT: pool.mtx must be locked.
 func (pool *BlockPool) removePeer(peerID p2p.ID) {
-	pool.Logger.Debug("Removing peer", peerID)
 	for _, requester := range pool.requesters {
 		if requester.didRequestFrom(peerID) {
 			requester.redo(peerID)

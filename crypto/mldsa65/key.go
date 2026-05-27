@@ -9,7 +9,6 @@ package mldsa65
 
 import (
 	"bytes"
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
@@ -87,7 +86,7 @@ type PrivKey []byte
 
 // GenPrivKey generates a fresh ML-DSA-65 key using OS randomness.
 func GenPrivKey() (PrivKey, error) {
-	return genPrivKey(rand.Reader)
+	return genPrivKey(crypto.CReader())
 }
 
 func genPrivKey(r io.Reader) (PrivKey, error) {

@@ -86,6 +86,7 @@ type BlockPool struct {
 	sortedPeers   []*bpPeer // sorted by curRate, highest first
 	maxPeerHeight int64     // the biggest reported height
 
+	// Accessed atomically; no mtx required.
 	numPending atomic.Int32 // number of requests pending assignment or block response
 
 	// Thread-safe (channels).

@@ -66,7 +66,7 @@ func encodeReflect(w *bytes.Buffer, rv reflect.Value) error {
 	}
 
 	// Recursively dereference if pointer.
-	for rv.Kind() == reflect.Ptr {
+	for rv.Kind() == reflect.Pointer {
 		if rv.IsNil() {
 			return writeStr(w, "null")
 		}
@@ -214,7 +214,7 @@ func encodeReflectStruct(w *bytes.Buffer, rv reflect.Value) error {
 
 func encodeReflectInterface(w *bytes.Buffer, rv reflect.Value) error {
 	// Get concrete value and dereference pointers.
-	for rv.Kind() == reflect.Ptr || rv.Kind() == reflect.Interface {
+	for rv.Kind() == reflect.Pointer || rv.Kind() == reflect.Interface {
 		if rv.IsNil() {
 			return writeStr(w, "null")
 		}

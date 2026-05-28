@@ -58,7 +58,7 @@ func (t *types) register(name string, rt reflect.Type) error {
 	// If this is a pointer type, we recursively resolve until we get a bare type, but register that
 	// we should return pointers.
 	returnPtr := false
-	for rt.Kind() == reflect.Ptr {
+	for rt.Kind() == reflect.Pointer {
 		returnPtr = true
 		rt = rt.Elem()
 	}
@@ -94,7 +94,7 @@ func (t *types) lookup(name string) (reflect.Type, bool) {
 
 // name looks up the name of a type, or empty if not registered. Unwraps pointers as necessary.
 func (t *types) name(rt reflect.Type) string {
-	for rt.Kind() == reflect.Ptr {
+	for rt.Kind() == reflect.Pointer {
 		rt = rt.Elem()
 	}
 	t.RLock()

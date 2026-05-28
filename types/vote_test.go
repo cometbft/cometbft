@@ -555,13 +555,13 @@ func TestSignAndCheckVote(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:              "prevote",
+			name:              PrevoteShortName,
 			extensionsEnabled: true,
 			vote:              examplePrevote(),
 			expectError:       true,
 		},
 		{
-			name:              "prevote",
+			name:              PrevoteShortName,
 			extensionsEnabled: false,
 			vote:              examplePrevote(),
 			expectError:       false,

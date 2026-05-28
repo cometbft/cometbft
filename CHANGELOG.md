@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[blocksync]` hold `pool.mtx` and recompute `maxPeerHeight` in `Enable()`
+  ([\#5888](https://github.com/cometbft/cometbft/pull/5888))
 - `[inspect]` fix flaky `TestInspectRun` and consolidate start/stop handshake
   ([\#5891](https://github.com/cometbft/cometbft/pull/5891))
 - `[p2p]` fix race and goroutine leak in `TestTransportMultiplexAcceptNonBlocking` test
@@ -34,9 +36,15 @@
 
 ### FEATURES
 
+- `[crypto]` Add ml-dsa-65 keytype.
+  ([\#5875](https://github.com/cometbft/cometbft/pull/5875))
+
 ### STATE-BREAKING
 
 ### API-BREAKING
+
+- `[crypto]` Add ml-dsa-65 keytype.
+  ([\#5875](https://github.com/cometbft/cometbft/pull/5875))
 
 ## v0.39.3
 

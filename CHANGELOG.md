@@ -34,9 +34,15 @@
 
 ### FEATURES
 
+- `[crypto]` Add ml-dsa-65 keytype.
+  ([\#5875](https://github.com/cometbft/cometbft/pull/5875))
+
 ### STATE-BREAKING
 
 ### API-BREAKING
+
+- `[crypto]` Add ml-dsa-65 keytype.
+  ([\#5875](https://github.com/cometbft/cometbft/pull/5875))
 
 ## v0.39.3
 

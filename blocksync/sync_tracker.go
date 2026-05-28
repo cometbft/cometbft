@@ -83,13 +83,10 @@ func (s *SyncTracker) isCaughtUpAt(now time.Time) bool {
 	prodInterval, hasProd := s.prodMA.Avg()
 
 	// Regime 1: Far behind (block age >> production interval).
-	// Tolerate larger gaps proportional to how far behind we are —
-	// a temporary network glitch shouldn't abort a 1-hour catch-up.
+	// Tolerate larger gaps proportional to how far behind we are.
 	if hasProd {
 		blockAge := now.Sub(s.lastBlockHeaderTime)
 		if blockAge > prodInterval*100 {
-			// Adaptive timeout: 1% of block age.
-			// E.g., 1h behind → 36s timeout. 10min behind → 6s (floor at noBlockTimeout).
 			timeout := blockAge / 100
 			if timeout < s.noBlockTimeout {
 				timeout = s.noBlockTimeout
@@ -98,15 +95,21 @@ func (s *SyncTracker) isCaughtUpAt(now time.Time) bool {
 		}
 	}
 
-	// Regime 2: Near the tip. Be aggressive to detect throttling.
-	// Escape if blocks arrive at less than 0.6× the production rate —
-	// blocksync must process much faster than the network produces.
-	// Requires >= 3 production samples to avoid false triggers.
-	if hasProd && s.prodMA.Len() >= 3 && receiveInterval*1000 >= prodInterval*600 {
-		return true
+	// Regime 2: Near tip. Smooth transition from aggressive rate check
+	// to the noBlockTimeout floor as we get further from the tip.
+	//   At blockAge = 0:              threshold = prodInterval × 0.6
+	//   At blockAge = prodInterval × 100: threshold = noBlockTimeout
+	// This avoids a hard cliff at the regime boundary.
+	if hasProd && s.prodMA.Len() >= 3 {
+		ratio := float64(now.Sub(s.lastBlockHeaderTime)) / float64(prodInterval*100)
+		if ratio > 1 {
+			ratio = 1
+		}
+		// threshold = prodInterval*0.6 + ratio*(noBlockTimeout - prodInterval*0.6)
+		threshold := time.Duration(float64(prodInterval)*0.6 +
+			ratio*(float64(s.noBlockTimeout)-float64(prodInterval)*0.6))
+		return receiveInterval >= threshold
 	}
 
-	// Floor: regardless of production speed, don't wait longer than
-	// noBlockTimeout. This handles total stall and very fast production.
 	return receiveInterval >= s.noBlockTimeout
 }

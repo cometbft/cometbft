@@ -15,8 +15,8 @@ func NewMovingAverage(windowSize int) *MovingAverage {
 	return &MovingAverage{buf: make([]time.Duration, windowSize)}
 }
 
-// Add records a new value and returns the current average.
-// Returns 0, false if no values have been added yet.
+// Add records a new value and returns the updated average.
+// Always returns ok=true; use Avg to check whether any values exist.
 func (ma *MovingAverage) Add(val time.Duration) (avg time.Duration, ok bool) {
 	if ma.count < len(ma.buf) {
 		ma.count++

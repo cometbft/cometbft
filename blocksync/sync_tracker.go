@@ -84,7 +84,10 @@ func (s *SyncTracker) isCaughtUpAt(now time.Time) bool {
 
 	// Regime 1: Far behind (block age >> production interval).
 	// Tolerate larger gaps proportional to how far behind we are.
-	if hasProd {
+	// Requires >= 3 production samples, same as Regime 2, to avoid a single
+	// outlier block (e.g., chain restart after a long pause) from producing
+	// a wildly inflated timeout.
+	if hasProd && s.prodMA.Len() >= 3 {
 		blockAge := now.Sub(s.lastBlockHeaderTime)
 		if blockAge > prodInterval*100 {
 			timeout := blockAge / 100
@@ -102,9 +105,7 @@ func (s *SyncTracker) isCaughtUpAt(now time.Time) bool {
 	// This avoids a hard cliff at the regime boundary.
 	if hasProd && s.prodMA.Len() >= 3 {
 		ratio := float64(now.Sub(s.lastBlockHeaderTime)) / float64(prodInterval*100)
-		if ratio > 1 {
-			ratio = 1
-		}
+		ratio = max(0.0, min(1.0, ratio))
 		// threshold = prodInterval*0.6 + ratio*(noBlockTimeout - prodInterval*0.6)
 		threshold := time.Duration(float64(prodInterval)*0.6 +
 			ratio*(float64(s.noBlockTimeout)-float64(prodInterval)*0.6))

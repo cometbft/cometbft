@@ -37,6 +37,7 @@ import (
 func TestNodeStartStop(t *testing.T) {
 	config := test.ResetTestRoot("node_node_test")
 	defer os.RemoveAll(config.RootDir)
+	config.RPC.GRPCListenAddress = ""
 
 	// create & start node
 	n, err := DefaultNewNode(config, log.TestingLogger())
@@ -99,6 +100,7 @@ func TestSplitAndTrimEmpty(t *testing.T) {
 func TestNodeDelayedStart(t *testing.T) {
 	config := test.ResetTestRoot("node_delayed_start_test")
 	defer os.RemoveAll(config.RootDir)
+	config.RPC.GRPCListenAddress = ""
 	now := cmttime.Now()
 
 	// create & start node
@@ -137,6 +139,7 @@ func TestNodeSetAppVersion(t *testing.T) {
 func TestPprofServer(t *testing.T) {
 	config := test.ResetTestRoot("node_pprof_test")
 	defer os.RemoveAll(config.RootDir)
+	config.RPC.GRPCListenAddress = ""
 	config.RPC.PprofListenAddress = testFreeAddr(t)
 
 	// should not work yet
@@ -241,6 +244,35 @@ func testFreeAddr(t *testing.T) string {
 	defer ln.Close()
 
 	return fmt.Sprintf("127.0.0.1:%d", ln.Addr().(*net.TCPAddr).Port)
+}
+
+// TestStartRPCCleansUpOnFailure verifies that startRPC closes any listeners it
+// opened when a later listen call fails.
+func TestStartRPCCleansUpOnFailure(t *testing.T) {
+	config := test.ResetTestRoot("node_startrpc_cleanup_test")
+	defer os.RemoveAll(config.RootDir)
+	config.RPC.GRPCListenAddress = ""
+
+	// Bind both before releasing l1 so the OS can't reuse l1's port for l2.
+	l1, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	l2, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer l2.Close()
+	firstAddr := l1.Addr().String()
+	l1.Close()
+
+	config.RPC.ListenAddress = fmt.Sprintf("tcp://%s,tcp://%s", firstAddr, l2.Addr().String())
+
+	n, err := DefaultNewNode(config, log.TestingLogger())
+	require.NoError(t, err)
+
+	_, err = n.startRPC()
+	require.Error(t, err)
+
+	probe, err := net.Listen("tcp", firstAddr)
+	require.NoError(t, err, "startRPC leaked first listener on %s", firstAddr)
+	probe.Close()
 }
 
 // create a proposal block using real and full
@@ -420,6 +452,7 @@ func TestMaxProposalBlockSize(t *testing.T) {
 func TestNodeNewNodeCustomReactors(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_custom_reactors_test")
 	defer os.RemoveAll(config.RootDir)
+	config.RPC.GRPCListenAddress = ""
 
 	cr := p2pmock.NewReactor()
 	cr.Channels = []*conn.ChannelDescriptor{

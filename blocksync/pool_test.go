@@ -560,3 +560,52 @@ func TestBlockPoolMaxPeerHeightRefreshesOnPopRequest(t *testing.T) {
 	require.EqualValues(t, 100, pool.MaxPeerHeight(),
 		"peer B must contribute to maxPeerHeight once pool.height reaches its base")
 }
+
+func TestBlockPoolHasPendingRequestFrom(t *testing.T) {
+	requestsCh := make(chan BlockRequest, 10)
+	errorsCh := make(chan peerError, 10)
+
+	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool.SetLogger(log.TestingLogger())
+
+	const (
+		primary   = p2p.ID("primary")
+		secondary = p2p.ID("secondary")
+		stranger  = p2p.ID("stranger")
+	)
+
+	// check initial state
+	require.False(t, pool.HasPendingRequestFrom(primary))
+	require.False(t, pool.HasPendingRequestFrom(secondary))
+	require.False(t, pool.HasPendingRequestFrom(stranger))
+
+	// Install a requester for height 1 targeting `primary`. We set the
+	// fields directly so we don't have to spin up the request goroutine.
+	pool.mtx.Lock()
+	req1 := newBPRequester(pool, 1)
+	req1.peerID = primary
+	pool.requesters[1] = req1
+	pool.mtx.Unlock()
+
+	require.True(t, pool.HasPendingRequestFrom(primary), "requested peer should be reported as pending")
+	require.False(t, pool.HasPendingRequestFrom(stranger), "non-requested peer must not be reported as pending")
+
+	// A second requester at height 2 also covers the secondPeerID slot.
+	pool.mtx.Lock()
+	req2 := newBPRequester(pool, 2)
+	req2.peerID = primary
+	req2.secondPeerID = secondary
+	pool.requesters[2] = req2
+	pool.mtx.Unlock()
+
+	require.True(t, pool.HasPendingRequestFrom(secondary), "secondary peer slot should count as pending")
+
+	// Removing both requesters drops the pending state.
+	pool.mtx.Lock()
+	delete(pool.requesters, 1)
+	delete(pool.requesters, 2)
+	pool.mtx.Unlock()
+
+	require.False(t, pool.HasPendingRequestFrom(primary))
+	require.False(t, pool.HasPendingRequestFrom(secondary))
+}

@@ -16,8 +16,7 @@ func NewMovingAverage(windowSize int) *MovingAverage {
 }
 
 // Add records a new value and returns the updated average.
-// Always returns ok=true; use Avg to check whether any values exist.
-func (ma *MovingAverage) Add(val time.Duration) (avg time.Duration, ok bool) {
+func (ma *MovingAverage) Add(val time.Duration) time.Duration {
 	if ma.count < len(ma.buf) {
 		ma.count++
 	} else {
@@ -26,7 +25,7 @@ func (ma *MovingAverage) Add(val time.Duration) (avg time.Duration, ok bool) {
 	ma.buf[ma.index] = val
 	ma.sum += val
 	ma.index = (ma.index + 1) % len(ma.buf)
-	return ma.sum / time.Duration(ma.count), true
+	return ma.sum / time.Duration(ma.count)
 }
 
 // Avg returns the current moving average, or 0,false if empty.

@@ -41,6 +41,9 @@
 
 ### STATE-BREAKING
 
+- `[state]` `MedianTime` skips `Nil` and `Absent` precommits, aligning with `VerifyCommit`'s commit tally.
+  ([\#5901](https://github.com/cometbft/cometbft/pull/5901))
+
 ### API-BREAKING
 
 - `[crypto]` Add ml-dsa-65 keytype.

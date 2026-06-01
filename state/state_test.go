@@ -1207,4 +1207,36 @@ func TestMedianTime(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, medianTime, now)
 	})
+
+	t.Run("nil precommits excluded from median time", func(t *testing.T) {
+		now := time.Now()
+		// val3 sends a Nil precommit with a far-future timestamp. Nil votes do
+		// not justify the block (VerifyCommit ignores them), so they must not
+		// influence the median time. Excluding it, the median is now; if it were
+		// counted the median would skew to now+1min.
+		commit := &types.Commit{
+			Height: 1,
+			Signatures: []types.CommitSig{
+				{
+					BlockIDFlag:      types.BlockIDFlagCommit,
+					ValidatorAddress: val1.Address,
+					Timestamp:        now,
+				},
+				{
+					BlockIDFlag:      types.BlockIDFlagCommit,
+					ValidatorAddress: val2.Address,
+					Timestamp:        now.Add(1 * time.Minute),
+				},
+				{
+					BlockIDFlag:      types.BlockIDFlagNil,
+					ValidatorAddress: val3.Address,
+					Timestamp:        now.Add(100 * time.Minute),
+				},
+			},
+		}
+
+		medianTime, err := sm.MedianTime(commit, vals)
+		require.NoError(t, err)
+		require.Equal(t, now, medianTime)
+	})
 }

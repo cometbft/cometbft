@@ -58,6 +58,8 @@ func NewSocketServer(protoAddr string, app types.Application) service.Service {
 // useful for tests (ephemeral ports) and socket-activated processes.
 func NewSocketServerWithListener(ln net.Listener, app types.Application) service.Service {
 	s := &SocketServer{
+		proto:    ln.Addr().Network(),
+		addr:     ln.Addr().String(),
 		listener: ln,
 		app:      app,
 		conns:    make(map[int]net.Conn),

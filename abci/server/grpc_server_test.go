@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"net"
 	"testing"
 
@@ -21,5 +22,10 @@ func TestNewGRPCServerWithListener(t *testing.T) {
 
 	conn, err := grpc.NewClient(ln.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
-	conn.Close()
+	t.Cleanup(func() { require.NoError(t, conn.Close()) })
+
+	client := types.NewABCIClient(conn)
+	resp, err := client.Echo(context.Background(), &types.RequestEcho{Message: "ping"})
+	require.NoError(t, err)
+	require.Equal(t, "ping", resp.Message)
 }

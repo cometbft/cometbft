@@ -39,6 +39,8 @@ func NewGRPCServer(protoAddr string, app types.Application) service.Service {
 // useful for tests (ephemeral ports) and socket-activated processes.
 func NewGRPCServerWithListener(ln net.Listener, app types.Application) service.Service {
 	s := &GRPCServer{
+		proto:    ln.Addr().Network(),
+		addr:     ln.Addr().String(),
 		listener: ln,
 		app:      app,
 	}

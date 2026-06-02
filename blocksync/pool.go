@@ -242,9 +242,19 @@ func (pool *BlockPool) IsCaughtUp() bool {
 		return false
 	}
 
-	// No-progress check: after peerConnWait, delegate to the sync tracker
-	// which uses block header timestamps and wall-clock time to determine
-	// whether we're truly caught up or just being throttled by attackers.
+	// Some conditions to determine if we're caught up.
+	// Ensures we've either received a block or waited some amount of time,
+	// and that we're synced to the highest known height.
+	// Note we use maxPeerHeight - 1 because to sync block H requires block H+1
+	// to verify the LastCommit.
+	receivedBlockOrTimedOut := pool.height > 0 || time.Since(pool.startTime) > 5*time.Second
+	ourChainIsLongestAmongPeers := pool.maxPeerHeight == 0 || pool.height >= (pool.maxPeerHeight-1)
+	isCaughtUp := receivedBlockOrTimedOut && ourChainIsLongestAmongPeers
+	if isCaughtUp {
+		return true
+	}
+
+	// Fallback to sync tracker in case of being throttled by malicious peers.
 	sinceStart := time.Since(pool.startTime)
 	if sinceStart >= peerConnWait {
 		if pool.height > pool.startHeight {

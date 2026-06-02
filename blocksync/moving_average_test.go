@@ -42,11 +42,11 @@ func TestMovingAverageRingBuffer(t *testing.T) {
 	require.Equal(t, 3, ma.Len())
 
 	// Add 4th value — evicts 1.
-	avgs := ma.Add(10 * time.Second) // buffer: [10,2,3]
+	avgs := ma.Add(10 * time.Second)      // buffer: [10,2,3]
 	require.Equal(t, 5*time.Second, avgs) // (10+2+3)/3 = 5
 
 	// Add 5th value — evicts 2.
-	avg := ma.Add(20 * time.Second) // buffer: [10,20,3]
+	avg := ma.Add(20 * time.Second)       // buffer: [10,20,3]
 	require.Equal(t, 11*time.Second, avg) // (10+20+3)/3 = 11
 }
 

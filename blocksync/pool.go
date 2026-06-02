@@ -674,7 +674,6 @@ func (peer *bpPeer) resetMonitor() {
 }
 
 func (peer *bpPeer) resetTimeout() {
-	peer.logger.Debug("Resetting peer timeout", "peer", peer.id, "numPending", peer.numPending)
 	if peer.timeout == nil {
 		peer.timeout = time.AfterFunc(peerTimeout, peer.onTimeout)
 	} else {

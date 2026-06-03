@@ -67,6 +67,9 @@ func (c *Config) Validate(home string) error {
 		if p.KeyFile == "" {
 			return fmt.Errorf("config: softsign provider has empty key_file")
 		}
+		if len(p.ChainIDs) == 0 {
+			return fmt.Errorf("config: softsign provider with key_file %q has no chain_ids", p.KeyFile)
+		}
 		for _, id := range p.ChainIDs {
 			if _, ok := chainIDs[id]; !ok {
 				return fmt.Errorf("config: softsign provider references unknown chain %q", id)

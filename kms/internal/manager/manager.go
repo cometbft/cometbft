@@ -89,20 +89,7 @@ func (m *Manager) run(c ValidatorConn) {
 		}
 		logger.Info("cometkms: connected")
 
-		// Close the conn promptly on shutdown so a blocked read unblocks.
-		closed := make(chan struct{})
-		go func() {
-			select {
-			case <-m.stop:
-				_ = conn.Close()
-			case <-closed:
-			}
-		}()
-
-		m.serveConn(conn, c.ChainID, c.Signer, logger)
-
-		close(closed)
-		_ = conn.Close()
+		m.handleConnection(conn, c, logger)
 
 		if !c.Reconnect {
 			logger.Info("cometkms: reconnect disabled; connection closed")
@@ -110,6 +97,28 @@ func (m *Manager) run(c ValidatorConn) {
 		}
 		logger.Info("cometkms: connection closed; will redial")
 	}
+}
+
+// handleConnection serves a single established connection until it breaks or the
+// manager stops. It owns the connection lifecycle: a monitor goroutine closes the
+// conn on shutdown (unblocking a pending read), and deferred cleanup guarantees
+// both the conn and the monitor goroutine are released when this returns. Scoping
+// this to its own function (rather than deferring inside run's loop) keeps the
+// defers per-connection and ensures they still run if serveConn panics mid-unwind.
+func (m *Manager) handleConnection(conn net.Conn, c ValidatorConn, logger log.Logger) {
+	closed := make(chan struct{})
+	defer close(closed)
+	defer func() { _ = conn.Close() }()
+
+	go func() {
+		select {
+		case <-m.stop:
+			_ = conn.Close()
+		case <-closed:
+		}
+	}()
+
+	m.serveConn(conn, c.ChainID, c.Signer, logger)
 }
 
 // serveConn reads validation requests off conn and answers them with the reused

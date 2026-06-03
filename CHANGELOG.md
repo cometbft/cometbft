@@ -36,6 +36,9 @@
 
 - `[crypto]` Add ml-dsa-65 keytype.
   ([\#5875](https://github.com/cometbft/cometbft/pull/5875))
+- `[crypto]` Add `secp256k1eth` keytype: go-ethereum-compatible secp256k1 signing
+  (legacy Keccak-256, 65-byte `[R||S||V]` signatures, 20-byte Ethereum addresses).
+  ([\#XXXX](https://github.com/cometbft/cometbft/pull/XXXX))
 
 ### STATE-BREAKING
 

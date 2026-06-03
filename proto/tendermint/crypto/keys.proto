@@ -15,5 +15,6 @@ message PublicKey {
     bytes secp256k1 = 2;
     bytes bls12381 = 3;
     bytes mldsa65 = 4;
+    bytes secp256k1eth = 5;
   }
 }

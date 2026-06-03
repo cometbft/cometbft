@@ -159,6 +159,9 @@ linters:
           - goconst
         path: (.+)_test\.go
       - linters:
+          - dupl
+        path: (.+)_test\.go
+      - linters:
           - govet
         text: "buildtag:"
     paths:

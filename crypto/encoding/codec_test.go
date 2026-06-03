@@ -9,6 +9,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 )
 
 func TestPubKeyToFromProto(t *testing.T) {
@@ -55,6 +56,21 @@ func TestPubKeyToFromProto(t *testing.T) {
 		_, err = PubKeyToProto(bls12381.PubKey{})
 		assert.Error(t, err)
 	}
+}
+
+func TestSecp256k1EthProtoRoundTrip(t *testing.T) {
+	pub := secp256k1eth.GenPrivKey().PubKey()
+
+	pb, err := PubKeyToProto(pub)
+	require.NoError(t, err)
+
+	got, err := PubKeyFromProto(pb)
+	require.NoError(t, err)
+	require.True(t, pub.Equals(got))
+
+	got2, err := PubKeyFromTypeAndBytes(secp256k1eth.KeyType, pub.Bytes())
+	require.NoError(t, err)
+	require.True(t, pub.Equals(got2))
 }
 
 func TestPubKeyFromTypeAndBytes(t *testing.T) {

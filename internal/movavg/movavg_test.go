@@ -1,4 +1,4 @@
-package blocksync
+package movavg
 
 import (
 	"testing"

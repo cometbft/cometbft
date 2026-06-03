@@ -2,6 +2,8 @@ package blocksync
 
 import (
 	"time"
+
+	"github.com/cometbft/cometbft/internal/movavg"
 )
 
 // SyncTracker determines when to escape blocksync and switch to consensus,
@@ -29,7 +31,7 @@ type SyncTracker struct {
 
 	lastBlockWallTime   time.Time
 	lastBlockHeaderTime time.Time
-	prodMA              *MovingAverage // moving average of production intervals
+	prodMA              *movavg.MovingAverage // moving average of production intervals
 }
 
 // NewSyncTracker creates a SyncTracker. timeout is the maximum time to wait
@@ -37,7 +39,7 @@ type SyncTracker struct {
 func NewSyncTracker(timeout time.Duration) *SyncTracker {
 	return &SyncTracker{
 		noBlockTimeout: timeout,
-		prodMA:         NewMovingAverage(10), // window of 10 production intervals
+		prodMA:         movavg.NewMovingAverage(10), // window of 10 production intervals
 	}
 }
 

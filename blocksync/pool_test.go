@@ -108,7 +108,7 @@ func TestBlockPoolBasic(t *testing.T) {
 		errorsCh   = make(chan peerError)
 		requestsCh = make(chan BlockRequest)
 	)
-	pool := NewBlockPool(start, requestsCh, errorsCh)
+	pool := NewBlockPool(start, requestsCh, errorsCh, 1*time.Second)
 	pool.SetLogger(log.TestingLogger())
 
 	err := pool.Start()
@@ -149,7 +149,7 @@ func TestBlockPoolBasic(t *testing.T) {
 			}
 			first, second, _ := pool.PeekTwoBlocks()
 			if first != nil && second != nil {
-				pool.PopRequest(first.Time)
+				pool.PopRequest()
 			} else {
 				time.Sleep(1 * time.Second)
 			}
@@ -201,7 +201,7 @@ func TestBlockPoolTimeout(t *testing.T) {
 		requestsCh = make(chan BlockRequest)
 	)
 
-	pool := NewBlockPool(start, requestsCh, errorsCh)
+	pool := NewBlockPool(start, requestsCh, errorsCh, 1*time.Second)
 	pool.SetLogger(log.TestingLogger())
 	err := pool.Start()
 	if err != nil {
@@ -233,7 +233,7 @@ func TestBlockPoolTimeout(t *testing.T) {
 			}
 			first, second, _ := pool.PeekTwoBlocks()
 			if first != nil && second != nil {
-				pool.PopRequest(first.Time)
+				pool.PopRequest()
 			} else {
 				time.Sleep(1 * time.Second)
 			}
@@ -270,7 +270,7 @@ func TestBlockPoolRemovePeer(t *testing.T) {
 	requestsCh := make(chan BlockRequest)
 	errorsCh := make(chan peerError)
 
-	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool := NewBlockPool(1, requestsCh, errorsCh, 1*time.Second)
 	pool.SetLogger(log.TestingLogger())
 	err := pool.Start()
 	require.NoError(t, err)
@@ -302,9 +302,6 @@ func TestBlockPoolRemovePeer(t *testing.T) {
 }
 
 func TestBlockPoolMaliciousNode(t *testing.T) {
-	prev := noBlockTimeout
-	noBlockTimeout = 1 * time.Second
-	t.Cleanup(func() { noBlockTimeout = prev })
 	// Setup:
 	// * each peer has blocks 1..N but the malicious peer reports 1..N+5 (block N+1,N+2,N+3 missing, N+4,N+5 fake)
 	// * The malicious peer is ahead of the network but not by much, so it does not get dropped from the pool
@@ -330,7 +327,7 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 	errorsCh := make(chan peerError)
 	requestsCh := make(chan BlockRequest)
 
-	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool := NewBlockPool(1, requestsCh, errorsCh, 1*time.Second)
 	pool.SetLogger(log.TestingLogger())
 
 	err := pool.Start()
@@ -384,7 +381,7 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 						// Second block is fake
 						pool.RemovePeerAndRedoAllPeerRequests(second.Height)
 					} else {
-						pool.PopRequest(first.Time)
+						pool.PopRequest()
 					}
 				}
 			}
@@ -423,9 +420,6 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 }
 
 func TestBlockPoolMaliciousNodeMaxInt64(t *testing.T) {
-	prev := noBlockTimeout
-	noBlockTimeout = 1 * time.Second
-	t.Cleanup(func() { noBlockTimeout = prev })
 	// Setup:
 	// * each peer has blocks 1..N but the malicious peer reports 1..max(int64) (blocks N+1... do not exist)
 	// * The malicious peer then reports 1..N this time
@@ -444,7 +438,7 @@ func TestBlockPoolMaliciousNodeMaxInt64(t *testing.T) {
 	errorsCh := make(chan peerError, 3)
 	requestsCh := make(chan BlockRequest)
 
-	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool := NewBlockPool(1, requestsCh, errorsCh, 1*time.Second)
 	pool.SetLogger(log.TestingLogger())
 
 	err := pool.Start()
@@ -502,7 +496,7 @@ func TestBlockPoolMaliciousNodeMaxInt64(t *testing.T) {
 						// Second block is fake
 						pool.RemovePeerAndRedoAllPeerRequests(second.Height)
 					} else {
-						pool.PopRequest(first.Time)
+						pool.PopRequest()
 					}
 				}
 			}
@@ -550,7 +544,7 @@ func TestBlockPoolBansPeerWithBaseGreaterThanHeight(t *testing.T) {
 	requestsCh := make(chan BlockRequest, 10)
 	errorsCh := make(chan peerError, 10)
 
-	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool := NewBlockPool(1, requestsCh, errorsCh, 1*time.Second)
 	pool.SetLogger(log.TestingLogger())
 
 	badID := p2p.ID("bad")
@@ -567,7 +561,7 @@ func TestBlockPoolMaxPeerHeightRefreshesOnPopRequest(t *testing.T) {
 	requestsCh := make(chan BlockRequest, 10)
 	errorsCh := make(chan peerError, 10)
 
-	pool := NewBlockPool(10, requestsCh, errorsCh)
+	pool := NewBlockPool(10, requestsCh, errorsCh, 1*time.Second)
 	pool.SetLogger(log.TestingLogger())
 
 	// Peer A's range covers pool.height, so it contributes to maxPeerHeight.
@@ -583,9 +577,14 @@ func TestBlockPoolMaxPeerHeightRefreshesOnPopRequest(t *testing.T) {
 	// requester is never started, so Stop() is a logged no-op.
 	for h := int64(10); h < 15; h++ {
 		pool.mtx.Lock()
-		pool.requesters[h] = newBPRequester(pool, h)
+		r := newBPRequester(pool, h)
+		pool.requesters[h] = r
+		r.setBlock(
+			&types.Block{Header: types.Header{Height: h, Time: time.Now()}},
+			nil, r.peerID,
+		)
 		pool.mtx.Unlock()
-		pool.PopRequest(time.Now())
+		pool.PopRequest()
 	}
 
 	// pool.height is now 15, so B (base=15) becomes eligible and must lift
@@ -598,7 +597,7 @@ func TestBlockPoolHasPendingRequestFrom(t *testing.T) {
 	requestsCh := make(chan BlockRequest, 10)
 	errorsCh := make(chan peerError, 10)
 
-	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool := NewBlockPool(1, requestsCh, errorsCh, 1*time.Second)
 	pool.SetLogger(log.TestingLogger())
 
 	const (
@@ -656,15 +655,12 @@ func TestBlockPoolHasPendingRequestFrom(t *testing.T) {
 //   - lastBlockTime stops updating → timeout fires → escape
 //   - The attackers' inflated height claims are irrelevant
 func TestBlockPoolTwoMaliciousPeersStaggered(t *testing.T) {
-	prev := noBlockTimeout
-	noBlockTimeout = 1 * time.Second
-	t.Cleanup(func() { noBlockTimeout = prev })
 	const honestHeight = int64(50)
 
 	errorsCh := make(chan peerError, 10)
 	requestsCh := make(chan BlockRequest, 100)
 
-	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool := NewBlockPool(1, requestsCh, errorsCh, 1*time.Second)
 	pool.SetLogger(log.TestingLogger())
 	require.NoError(t, pool.Start())
 	t.Cleanup(func() { _ = pool.Stop() })
@@ -714,9 +710,14 @@ func TestBlockPoolTwoMaliciousPeersStaggered(t *testing.T) {
 	// Simulate block sync up to the honest peer's tip
 	for h := int64(1); h <= honestHeight; h++ {
 		pool.mtx.Lock()
-		pool.requesters[h] = newBPRequester(pool, h)
+		r := newBPRequester(pool, h)
+		pool.requesters[h] = r
+		r.setBlock(
+			&types.Block{Header: types.Header{Height: h, Time: time.Now()}},
+			nil, r.peerID,
+		)
 		pool.mtx.Unlock()
-		pool.PopRequest(time.Now())
+		pool.PopRequest()
 	}
 
 	require.EqualValues(t, honestHeight+1, pool.Height(),

@@ -74,7 +74,7 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 			// this means that CONSENSUS reactor has concurrently processed higher block(s).
 			// simply pop the current block and continue
 			if block.Height <= latestHeight {
-				r.pool.PopRequest(block.Time)
+				r.pool.PopRequest()
 				r.metrics.AlreadyIncludedBlocks.Add(1)
 
 				r.Logger.Debug(
@@ -128,7 +128,7 @@ func (r *Reactor) blockIngestorRoutine(blockIngestor BlockIngestor) {
 			}
 
 			// pops `block`
-			r.pool.PopRequest(block.Time)
+			r.pool.PopRequest()
 
 			// note that between state fetch and ingest, the state may have changed
 			// concurrently by the consensus.

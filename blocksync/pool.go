@@ -56,9 +56,6 @@ const (
 
 var peerTimeout = 15 * time.Second // not const so we can override with tests
 
-// not const so we can override with tests
-var noBlockTimeout = 30 * time.Second
-
 /*
 	Peers self report their heights when we join the block pool.
 	Starting from our latest pool.height, we request blocks
@@ -108,7 +105,7 @@ type BlockRequest struct {
 
 // NewBlockPool returns a new BlockPool with the height equal to start. Block
 // requests and errors will be sent to requestsCh and errorsCh accordingly.
-func NewBlockPool(start int64, requestsCh chan<- BlockRequest, errorsCh chan<- peerError) *BlockPool {
+func NewBlockPool(start int64, requestsCh chan<- BlockRequest, errorsCh chan<- peerError, noBlockTimeout time.Duration) *BlockPool {
 	bp := &BlockPool{
 		peers:       make(map[p2p.ID]*bpPeer),
 		bannedPeers: make(map[p2p.ID]time.Time),
@@ -261,7 +258,7 @@ func (pool *BlockPool) IsCaughtUp() bool {
 			return pool.syncTracker.IsCaughtUp()
 		}
 		// Genesis: wait for peerConnWait + noBlockTimeout
-		return sinceStart >= peerConnWait+noBlockTimeout
+		return sinceStart >= peerConnWait+pool.syncTracker.noBlockTimeout
 	}
 	return false
 }
@@ -288,7 +285,7 @@ func (pool *BlockPool) PeekTwoBlocks() (first, second *types.Block, firstExtComm
 }
 
 // PopRequest removes the requester at pool.height and increments pool.height.
-func (pool *BlockPool) PopRequest(blockTime time.Time) {
+func (pool *BlockPool) PopRequest() {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
 
@@ -296,6 +293,7 @@ func (pool *BlockPool) PopRequest(blockTime time.Time) {
 	if r == nil {
 		panic(fmt.Sprintf("Expected requester to pop, got nothing at height %v", pool.height))
 	}
+	blockTime := r.getBlock().Time
 
 	if err := r.Stop(); err != nil {
 		pool.Logger.Error("Error stopping requester", "err", err)

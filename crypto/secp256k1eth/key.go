@@ -182,13 +182,11 @@ func (pubKey PubKey) VerifySignature(msg []byte, sigStr []byte) bool {
 
 	sig := signatureFromBytes(sigStr[:64])
 	// Reject malleable signatures: decred does not enforce low-S but
-	// libsecp256k1 (and thus go-ethereum's Sign output) does. If Serialize()
-	// changes the signature, S was in the upper half -> reject.
-	modified, parseErr := ecdsa.ParseDERSignature(sig.Serialize())
-	if parseErr != nil {
-		return false
-	}
-	if !sig.IsEqual(modified) {
+	// libsecp256k1 (and thus go-ethereum's Sign output) does. Reject directly
+	// if S is in the upper half of the group order.
+	var s secp256k1.ModNScalar
+	s.SetByteSlice(sigStr[32:64])
+	if s.IsOverHalfOrder() {
 		return false
 	}
 

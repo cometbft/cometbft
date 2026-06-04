@@ -1,11 +1,7 @@
 package app_test
 
 import (
-<<<<<<< HEAD
-	"errors"
-=======
 	"context"
->>>>>>> eric/kms
 	"errors"
 	"net"
 	"os"
@@ -16,8 +12,8 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/lp2p"
-	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/privval"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"

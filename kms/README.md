@@ -18,11 +18,11 @@ mandatory per-chain double-sign protection.
 |---|---|
 | Ed25519 consensus signing (votes, proposals, vote extensions) | **Supported** |
 | `softsign` key backend (file-based, in-memory Ed25519) | **Supported** |
+| `pkcs11` key backend (HSM / token, Ed25519) | **Supported** |
 | `cometp2p` transport (TCP + SecretConnection) | **Supported** |
 | Multi-chain, multi-validator support | **Supported** |
 | Double-sign protection (reuses CometBFT FilePV state machine) | **Supported** |
 | Dial-out + automatic exponential-backoff reconnect | **Supported** |
-| PKCS#11 / HSM backend | Planned |
 | AWS KMS backend | Planned |
 | libp2p transport (Noise) | **Supported**  |
 | Account / raw-bytes / ECDSA signing | Planned |
@@ -140,6 +140,48 @@ Binds a file-based Ed25519 private key to one or more chains.
 |---|---|---|---|
 | `chain_ids` | list of strings | yes | Chain IDs this key is used to sign for. Each chain may only have one softsign provider. |
 | `key_file` | string | yes | Path to the key file. Accepts either a CometBFT `priv_validator_key.json` (typed JSON with a `"priv_key"` field) or a file containing the raw base64-encoded 64-byte Ed25519 private key. |
+
+### `[[providers.pkcs11]]`
+
+Binds an Ed25519 key stored on a PKCS#11 token or HSM to one or more chains. The
+private key never leaves the token: signing is performed on-device via `CKM_EDDSA`.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `chain_ids` | list of strings | yes | Chain IDs this key is used to sign for. Each chain may only have one backend (softsign *or* pkcs11). |
+| `module` | string | yes | Path to the PKCS#11 module shared library (e.g. `/usr/lib/softhsm/libsofthsm2.so`). Relative paths are resolved against `--home`. |
+| `token_label` | string | one of token_label/slot | `CKA_LABEL` of the token to use. |
+| `slot` | integer | one of token_label/slot | Slot number of the token to use. Mutually exclusive with `token_label`. |
+| `key_label` | string | at least one of key_label/key_id | `CKA_LABEL` of the key object. |
+| `key_id` | string (hex) | at least one of key_label/key_id | Hex-encoded `CKA_ID` of the key object. |
+| `pin` | string | exactly one PIN source | User PIN, inline. |
+| `pin_env` | string | exactly one PIN source | Name of an environment variable holding the user PIN. Preferred over inline. |
+| `pin_file` | string | exactly one PIN source | Path to a file containing the user PIN (trailing whitespace trimmed). Relative paths resolved against `--home`. |
+| `algorithm` | string | no | Key algorithm. Defaults to `ed25519` (the only supported value today). |
+
+Provision the key with your HSM tooling before starting `cometkms`; the KMS only
+*uses* an existing key, it does not generate or import keys. The key must be an
+Ed25519 (`CKK_EC_EDWARDS`) signing key. Example using `pkcs11-tool` with SoftHSM2:
+
+```sh
+softhsm2-util --init-token --free --label comet --pin 1234 --so-pin 4321
+pkcs11-tool --module /usr/lib/softhsm/libsofthsm2.so --login --pin 1234 \
+  --keypairgen --key-type EC:edwards25519 --label validator --id 01
+```
+
+Example provider block (PIN supplied via environment, keeping it out of the
+config file):
+
+```toml
+[[providers.pkcs11]]
+chain_ids   = ["cosmoshub-4"]
+module      = "/usr/lib/softhsm/libsofthsm2.so"
+token_label = "comet"
+key_label   = "validator"
+key_id      = "01"
+pin_env     = "COMETKMS_PIN"
+# algorithm defaults to "ed25519"
+```
 
 ---
 
@@ -280,8 +322,8 @@ CometBFT are Ed25519, so no extra setup is needed.
 
 - **softsign is NOT for production custody.** The private key is loaded from
   disk and held in process memory in plaintext for the lifetime of the process.
-  Use a future HSM or AWS KMS backend for production environments where the key
-  must never leave secure hardware.
+  Use the `pkcs11` backend (or a future AWS KMS backend) for production
+  environments where the key must never leave secure hardware.
 - **The identity key is not the consensus signing key.** `identity.json`
   authenticates the SecretConnection channel; it does not sign consensus
   messages and does not need to be protected to the same degree as the
@@ -321,7 +363,8 @@ kms/
     ├── config/            # TOML config types (config.go) and validation (validate.go)
     ├── identity/          # Identity key load/generate (wraps CometBFT p2p.NodeKey)
     ├── backend/           # backend.Signer interface
-    │   └── softsign/      # File-based Ed25519 backend
+    │   ├── softsign/      # File-based Ed25519 backend
+    │   └── pkcs11/        # PKCS#11 / HSM Ed25519 backend (+ pkcs11test helpers)
     ├── signer/            # ChainSigner: double-sign protection + PrivValidator impl
     │   ├── chain_signer.go
     │   └── privkey_adapter.go

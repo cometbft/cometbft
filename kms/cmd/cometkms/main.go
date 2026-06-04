@@ -32,6 +32,16 @@ identity_key = "identity.json"
 [[providers.softsign]]
 chain_ids = ["my-chain-1"]
 key_file = "priv_validator_key.json"
+
+# To sign from a PKCS#11 token / HSM instead of softsign, replace the
+# [[providers.softsign]] block above with a pkcs11 provider:
+#
+# [[providers.pkcs11]]
+# chain_ids   = ["my-chain-1"]
+# module      = "/usr/lib/softhsm/libsofthsm2.so"
+# token_label = "comet"
+# key_label   = "validator"
+# pin_env     = "COMETKMS_PIN"
 `
 
 func main() {
@@ -132,10 +142,11 @@ func startCmd() *cobra.Command {
 				return err
 			}
 
-			mgr, err := app.Build(cfg, logger)
+			mgr, cleanup, err := app.Build(cfg, logger)
 			if err != nil {
 				return err
 			}
+			defer cleanup()
 			if err := mgr.Start(); err != nil {
 				return err
 			}

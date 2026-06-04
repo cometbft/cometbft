@@ -44,6 +44,10 @@
 
 ### STATE-BREAKING
 
+- `[types]` `ValidatorSet.Hash()` now commits validator `address` and
+  `voting_power` leaves instead of `pub_key` and `voting_power` leaves.
+- `[crypto]` `secp256k1eth` verification now requires exact 65-byte recoverable
+  `[R||S||V]` signatures with canonical `V` in `{0,1}`.
 - `[state]` `MedianTime` skips `Nil` and `Absent` precommits, aligning with `VerifyCommit`'s commit tally.
   ([\#5901](https://github.com/cometbft/cometbft/pull/5901))
 
@@ -1185,4 +1189,3 @@ Friendly reminder, we have a [bug bounty program](https://hackerone.com/cosmos).
 ## Previous changes
 
 For changes released before the creation of CometBFT, please refer to the Tendermint Core [CHANGELOG.md](https://github.com/tendermint/tendermint/blob/a9feb1c023e172b542c972605311af83b777855b/CHANGELOG.md).
-

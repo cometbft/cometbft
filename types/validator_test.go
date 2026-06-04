@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -37,6 +38,18 @@ func TestValidatorProtoBuf(t *testing.T) {
 			require.Error(t, err, tc.msg)
 		}
 	}
+}
+
+func TestValidatorBytesCommitAddressAndVotingPower(t *testing.T) {
+	val, _ := RandValidator(true, 100)
+	want := cmtproto.SimpleValidator{
+		Address:     val.Address,
+		VotingPower: val.VotingPower,
+	}
+	wantBz, err := want.Marshal()
+	require.NoError(t, err)
+
+	require.Equal(t, wantBz, val.Bytes())
 }
 
 func TestValidatorValidateBasic(t *testing.T) {

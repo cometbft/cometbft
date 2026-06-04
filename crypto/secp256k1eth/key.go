@@ -167,40 +167,30 @@ func (PubKey) Type() string {
 }
 
 // VerifySignature verifies a go-ethereum signature over the legacy Keccak-256
-// hash of msg. It accepts the 65-byte [R || S || V] form produced by Sign or a
-// 64-byte [R || S] form, and rejects malleable (non-lower-S) signatures. Only
-// R and S are used for verification; the recovery byte V (when present) is not
-// consulted, matching go-ethereum's crypto.VerifySignature which takes [R || S].
+// hash of msg. It accepts only the 65-byte [R || S || V] form produced by Sign,
+// with V in {0,1}, and rejects malleable (non-lower-S) signatures.
 func (pubKey PubKey) VerifySignature(msg []byte, sigStr []byte) bool {
-	if len(sigStr) != 64 && len(sigStr) != SignatureSize {
+	if len(sigStr) != SignatureSize || sigStr[64] > 1 {
 		return false
 	}
-	pub, err := secp256k1.ParsePubKey(pubKey)
+
+	var r secp256k1.ModNScalar
+	var s secp256k1.ModNScalar
+	if r.SetByteSlice(sigStr[:32]) || s.SetByteSlice(sigStr[32:64]) {
+		return false
+	}
+	if r.IsZero() || s.IsZero() || s.IsOverHalfOrder() {
+		return false
+	}
+
+	compact := make([]byte, SignatureSize)
+	compact[0] = sigStr[64] + 27
+	copy(compact[1:], sigStr[:64])
+	recovered, _, err := ecdsa.RecoverCompact(compact, keccak256(msg))
 	if err != nil {
 		return false
 	}
-
-	sig := signatureFromBytes(sigStr[:64])
-	// Reject malleable signatures: decred does not enforce low-S but
-	// libsecp256k1 (and thus go-ethereum's Sign output) does. Reject directly
-	// if S is in the upper half of the group order.
-	var s secp256k1.ModNScalar
-	s.SetByteSlice(sigStr[32:64])
-	if s.IsOverHalfOrder() {
-		return false
-	}
-
-	return sig.Verify(keccak256(msg), pub)
-}
-
-// signatureFromBytes reads an ECDSA signature from R || S. The caller must
-// ensure len(sigStr) == 64.
-func signatureFromBytes(sigStr []byte) *ecdsa.Signature {
-	var r secp256k1.ModNScalar
-	r.SetByteSlice(sigStr[:32])
-	var s secp256k1.ModNScalar
-	s.SetByteSlice(sigStr[32:64])
-	return ecdsa.NewSignature(&r, &s)
+	return bytes.Equal(recovered.SerializeCompressed(), pubKey)
 }
 
 // NewPubKeyFromBytes validates the length and that the bytes are a valid

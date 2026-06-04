@@ -1,7 +1,11 @@
 package app_test
 
 import (
+<<<<<<< HEAD
 	"errors"
+=======
+	"context"
+>>>>>>> eric/kms
 	"errors"
 	"net"
 	"os"
@@ -9,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/lp2p"
@@ -19,11 +24,26 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/stretchr/testify/require"
 
+	"github.com/cometbft/cometbft/kms/internal/backend"
 	"github.com/cometbft/cometbft/kms/internal/backend/softsign"
 	"github.com/cometbft/cometbft/kms/internal/manager"
 	"github.com/cometbft/cometbft/kms/internal/signer"
 	"github.com/cometbft/cometbft/kms/internal/transport"
 )
+
+// failingBackend is a backend.Signer that is reachable and exposes a real public
+// key, but whose Sign always returns a fixed error. It simulates a signing
+// backend (HSM, cloud KMS, ...) that is connected yet rejects the signing
+// operation itself — as opposed to a network/connection failure.
+type failingBackend struct {
+	pub crypto.PubKey
+	err error
+}
+
+var _ backend.Signer = failingBackend{}
+
+func (b failingBackend) PubKey(context.Context) (crypto.PubKey, error) { return b.pub, nil }
+func (b failingBackend) Sign(context.Context, []byte) ([]byte, error)  { return nil, b.err }
 
 // writeKey writes a softsign key file and returns its path.
 func writeKey(t *testing.T, dir string) string {

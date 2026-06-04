@@ -24,7 +24,7 @@ mandatory per-chain double-sign protection.
 | Dial-out + automatic exponential-backoff reconnect | **Supported** |
 | PKCS#11 / HSM backend | Planned |
 | AWS KMS backend | Planned |
-| libp2p transport (Noise) | **Supported** (TLS variant planned) |
+| libp2p transport (Noise) | **Supported**  |
 | Account / raw-bytes / ECDSA signing | Planned |
 | ML-DSA / eth_secp256k1 key types | Planned |
 
@@ -71,6 +71,7 @@ cometkms init --home ~/.cometkms
 ```
 
 This creates:
+
 - `~/.cometkms/cometkms.toml` — a stub configuration file.
 - `~/.cometkms/identity.json` — a fresh Ed25519 identity key for the
   SecretConnection.
@@ -274,14 +275,6 @@ enforced unconditionally.
 Ed25519 and secp256k1 keys are supported. Consensus keys and node keys in
 CometBFT are Ed25519, so no extra setup is needed.
 
-### Limitations
-
-- Only the Noise handshake is implemented; a TLS variant is planned for a
-  future release.
-- NAT traversal, relay, and the libp2p gossip/DHT network are not used. The
-  connection is always a direct TCP dial.
-
----
 
 ## Security notes
 

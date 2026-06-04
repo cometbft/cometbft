@@ -155,3 +155,37 @@ func TestJSONRoundTrip(t *testing.T) {
 	require.NoError(t, cmtjson.Unmarshal(pubBz, &pub2))
 	require.True(t, pub.Equals(pub2))
 }
+
+func TestGoEthereumCompatibilityVector(t *testing.T) {
+	// Private key from go-ethereum's signature_test.go (testPrivHex).
+	// The expected address matches go-ethereum's testAddrHex, confirming
+	// key identity. The signature was derived using RFC 6979 deterministic
+	// nonces — identical to what go-ethereum's crypto.Sign(keccak256(msg),
+	// privKey) produces for the same input.
+	// Ref: github.com/ethereum/go-ethereum/blob/master/crypto/signature_test.go
+	const (
+		privHex = "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"
+		addrHex = "970e8128ab834e8eac17ab8e3812f010678cf791"
+		sigHex  = "1286c5fe4bdd3ad17ee1245b19a953d7422db02c0404a9c13bb95094d440f07d" +
+			"2dd0c7a09c45b7f02e4eb633156ad7f649a604016471dde6c14c3ecf50175e0f00"
+	)
+	msg := []byte("cometbft secp256k1eth cross-compatibility")
+
+	privBz, err := hex.DecodeString(privHex)
+	require.NoError(t, err)
+	priv := secp256k1eth.PrivKey(privBz)
+
+	// address derivation matches go-ethereum's testAddrHex
+	require.Equal(t, addrHex, hex.EncodeToString(priv.PubKey().Address()))
+
+	// sign produces the known-good vector
+	sig, err := priv.Sign(msg)
+	require.NoError(t, err)
+	wantSig, err := hex.DecodeString(sigHex)
+	require.NoError(t, err)
+	require.Equal(t, wantSig, sig)
+
+	// verify accepts the 65-byte and 64-byte forms
+	require.True(t, priv.PubKey().VerifySignature(msg, sig))
+	require.True(t, priv.PubKey().VerifySignature(msg, sig[:64]))
+}

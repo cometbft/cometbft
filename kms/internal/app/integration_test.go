@@ -1,12 +1,15 @@
 package app_test
 
 import (
+	"context"
+	"errors"
 	"net"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
@@ -15,10 +18,25 @@ import (
 	"github.com/cometbft/cometbft/types"
 	"github.com/stretchr/testify/require"
 
+	"github.com/cometbft/cometbft/kms/internal/backend"
 	"github.com/cometbft/cometbft/kms/internal/backend/softsign"
 	"github.com/cometbft/cometbft/kms/internal/manager"
 	"github.com/cometbft/cometbft/kms/internal/signer"
 )
+
+// failingBackend is a backend.Signer that is reachable and exposes a real public
+// key, but whose Sign always returns a fixed error. It simulates a signing
+// backend (HSM, cloud KMS, ...) that is connected yet rejects the signing
+// operation itself — as opposed to a network/connection failure.
+type failingBackend struct {
+	pub crypto.PubKey
+	err error
+}
+
+var _ backend.Signer = failingBackend{}
+
+func (b failingBackend) PubKey(context.Context) (crypto.PubKey, error) { return b.pub, nil }
+func (b failingBackend) Sign(context.Context, []byte) ([]byte, error)  { return nil, b.err }
 
 // writeKey writes a softsign key file and returns its path.
 func writeKey(t *testing.T, dir string) string {
@@ -92,6 +110,80 @@ func TestEndToEndSigning(t *testing.T) {
 	// Double-sign: a lower height must be refused.
 	lower := &cmtproto.Vote{Type: cmtproto.PrevoteType, Height: 4, Round: 0}
 	require.Error(t, client.SignVote(chainID, lower))
+}
+
+// TestSigningBackendErrorReturnsEmbeddedError verifies that when the signing
+// backend fails the signing operation, the validator-side client receives the
+// backend's error *embedded* in the signed response (a RemoteSignerError) rather
+// than a transport-level disconnect/connection drop, and that the connection
+// survives the failure so subsequent requests still succeed.
+func TestSigningBackendErrorReturnsEmbeddedError(t *testing.T) {
+	const chainID = "backend-error-chain"
+	dir := t.TempDir()
+	logger := log.TestingLogger()
+
+	// cometkms (signer) side: a backend that is reachable (real pubkey) but whose
+	// Sign always fails.
+	wantErr := errors.New("backend signing unavailable")
+	be := failingBackend{pub: ed25519.GenPrivKey().PubKey(), err: wantErr}
+	cs, err := signer.NewChainSigner(chainID, be, filepath.Join(dir, "state.json"))
+	require.NoError(t, err)
+
+	// validator (listener) side.
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	addr := ln.Addr().String()
+	listener := startListener(t, logger, ln)
+	defer func() { _ = listener.Stop() }()
+
+	// cometkms Manager dials in.
+	mgr := manager.New(logger, []manager.ValidatorConn{{
+		ChainID:     chainID,
+		Addr:        "tcp://" + addr,
+		IdentityKey: ed25519.GenPrivKey(),
+		Signer:      cs,
+		Reconnect:   true,
+	}})
+	require.NoError(t, mgr.Start())
+	defer mgr.Stop()
+
+	client, err := privval.NewSignerClient(listener, chainID)
+	require.NoError(t, err)
+	require.NoError(t, client.WaitForConnection(5*time.Second))
+
+	// The pubkey path does not exercise the failing Sign, so it must succeed —
+	// confirming the connection is healthy before we trigger the signing error.
+	pub, err := client.GetPubKey()
+	require.NoError(t, err)
+	require.NotNil(t, pub)
+
+	// Signing must fail with the backend's error embedded in the response. The KMS
+	// handler wraps the backend error in a RemoteSignerError and still replies on
+	// the same connection — so the client sees a *privval.RemoteSignerError, not an
+	// EOF/timeout/connection-drop error.
+	vote := &cmtproto.Vote{Type: cmtproto.PrevoteType, Height: 5, Round: 0}
+	err = client.SignVote(chainID, vote)
+	require.Error(t, err)
+
+	var rse *privval.RemoteSignerError
+	require.ErrorAs(t, err, &rse,
+		"client should receive an embedded RemoteSignerError, not a connection drop (got %T: %v)", err, err)
+	require.Contains(t, rse.Description, wantErr.Error(),
+		"embedded error should carry the signing backend's failure message")
+
+	// A proposal goes through the same embedded-error path.
+	prop := &cmtproto.Proposal{Type: cmtproto.ProposalType, Height: 6, Round: 0}
+	err = client.SignProposal(chainID, prop)
+	require.Error(t, err)
+	require.ErrorAs(t, err, &rse,
+		"client should receive an embedded RemoteSignerError for proposals too (got %T: %v)", err, err)
+
+	// The signing failures must NOT have dropped the connection: a follow-up
+	// request on the same client still succeeds, proving the connection survived
+	// (no reconnect/EOF in between).
+	pub2, err := client.GetPubKey()
+	require.NoError(t, err, "connection should survive an embedded signing error")
+	require.True(t, pub2.Equals(pub))
 }
 
 func TestReconnectAfterListenerRestart(t *testing.T) {

@@ -35,14 +35,28 @@ func NewGRPCServer(protoAddr string, app types.Application) service.Service {
 	return s
 }
 
+// NewGRPCServerWithListener returns a new gRPC ABCI server using an already-bound listener,
+// useful for tests (ephemeral ports) and socket-activated processes.
+func NewGRPCServerWithListener(ln net.Listener, app types.Application) service.Service {
+	s := &GRPCServer{
+		proto:    ln.Addr().Network(),
+		addr:     ln.Addr().String(),
+		listener: ln,
+		app:      app,
+	}
+	s.BaseService = *service.NewBaseService(nil, "ABCIServer", s)
+	return s
+}
+
 // OnStart starts the gRPC service.
 func (s *GRPCServer) OnStart() error {
-	ln, err := net.Listen(s.proto, s.addr)
-	if err != nil {
-		return err
+	if s.listener == nil {
+		ln, err := net.Listen(s.proto, s.addr)
+		if err != nil {
+			return err
+		}
+		s.listener = ln
 	}
-
-	s.listener = ln
 	s.server = grpc.NewServer()
 	types.RegisterABCIServer(s.server, &gRPCApplication{s.app})
 

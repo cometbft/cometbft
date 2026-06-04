@@ -34,6 +34,8 @@
 
 ### FEATURES
 
+- `[abci/server]` Accept pre-bound listener in socket and gRPC servers.
+  ([\#5904](https://github.com/cometbft/cometbft/pull/5904))
 - `[crypto]` Add ml-dsa-65 keytype.
   ([\#5875](https://github.com/cometbft/cometbft/pull/5875))
 - `[crypto]` Add `secp256k1eth` keytype: go-ethereum-compatible secp256k1 signing

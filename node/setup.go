@@ -719,9 +719,10 @@ func saveGenesisDoc(db dbm.DB, genDoc *types.GenesisDoc) error {
 func createAndStartPrivValidatorSocketClient(
 	listenAddr,
 	chainID string,
+	nodeKey *p2p.NodeKey,
 	logger log.Logger,
 ) (types.PrivValidator, error) {
-	pve, err := privval.NewSignerListener(listenAddr, logger)
+	pve, err := privval.NewSignerListenerFromAddr(listenAddr, nodeKey.PrivKey, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start private validator: %w", err)
 	}

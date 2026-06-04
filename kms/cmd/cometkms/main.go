@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/lp2p"
 	"github.com/spf13/cobra"
 
 	"github.com/cometbft/cometbft/kms/internal/app"
@@ -42,8 +43,38 @@ func main() {
 
 func rootCmd() *cobra.Command {
 	root := &cobra.Command{Use: "cometkms", Short: "External remote signer for CometBFT validators"}
-	root.AddCommand(versionCmd(), initCmd(), startCmd())
+	root.AddCommand(versionCmd(), initCmd(), startCmd(), peerIDCmd())
 	return root
+}
+
+func peerIDFromIdentity(path string) (string, error) {
+	key, err := identity.LoadOrGen(path)
+	if err != nil {
+		return "", err
+	}
+	id, err := lp2p.IDFromPrivateKey(key)
+	if err != nil {
+		return "", err
+	}
+	return id.String(), nil
+}
+
+func peerIDCmd() *cobra.Command {
+	var home string
+	cmd := &cobra.Command{
+		Use:   "peer-id",
+		Short: "Print the libp2p peer ID of the KMS identity key (for the validator's noise allowlist)",
+		RunE: func(_ *cobra.Command, _ []string) error {
+			id, err := peerIDFromIdentity(filepath.Join(home, "identity.json"))
+			if err != nil {
+				return err
+			}
+			fmt.Println(id)
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&home, "home", ".", "home directory containing identity.json")
+	return cmd
 }
 
 func versionCmd() *cobra.Command {

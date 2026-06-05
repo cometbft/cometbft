@@ -16,6 +16,7 @@ import (
 )
 
 func TestEventBusBufferCapacity(t *testing.T) {
+<<<<<<< HEAD
 	require.Equal(t, 0, NewEventBus().BufferCapacity())
 
 	const bufCap = 2
@@ -32,6 +33,23 @@ func TestEventBusBufferCapacity(t *testing.T) {
 	deadlineCtx, cancel := context.WithTimeout(ctx, 50*time.Millisecond)
 	defer cancel()
 	require.ErrorIs(t, eventBus.pubsub.Publish(deadlineCtx, "overflow"), context.DeadlineExceeded)
+=======
+	defaultBus := NewEventBus()
+	require.Equal(t, 0, defaultBus.BufferCapacity())
+
+	const cap = 2
+	eventBus := NewEventBusWithBufferCapacity(cap)
+	require.Equal(t, cap, eventBus.BufferCapacity())
+
+	ctx := context.Background()
+	require.NoError(t, eventBus.pubsub.Publish(ctx, "first"))
+	require.NoError(t, eventBus.pubsub.Publish(ctx, "second"))
+
+	deadlineCtx, cancel := context.WithTimeout(ctx, 50*time.Millisecond)
+	defer cancel()
+	err := eventBus.pubsub.Publish(deadlineCtx, "third")
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+>>>>>>> 4df23c59 (feat(config): add EventBusBufferCapacity setting (#5849))
 }
 
 func TestEventBusPublishEventTx(t *testing.T) {

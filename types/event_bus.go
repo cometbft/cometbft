@@ -72,7 +72,10 @@ func (b *EventBus) NumClientSubscriptions(clientID string) int {
 	return b.pubsub.NumClientSubscriptions(clientID)
 }
 
+<<<<<<< HEAD
 // BufferCapacity returns the capacity of the underlying pubsub command buffer.
+=======
+>>>>>>> 4df23c59 (feat(config): add EventBusBufferCapacity setting (#5849))
 func (b *EventBus) BufferCapacity() int {
 	return b.pubsub.BufferCapacity()
 }

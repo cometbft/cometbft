@@ -140,6 +140,11 @@ abci = "{{ .BaseConfig.ABCI }}"
 # so the app can decide if we should keep the connection or not
 filter_peers = {{ .BaseConfig.FilterPeers }}
 
+# Buffer capacity for the internal EventBus. A value of 0 means unbuffered
+# (publishers block until subscribers receive). Higher values reduce back-pressure
+# at the cost of memory.
+event_bus_buffer_capacity = {{ .BaseConfig.EventBusBufferCapacity }}
+
 
 #######################################################################
 ###                 Advanced Configuration Options                  ###

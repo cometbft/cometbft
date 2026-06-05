@@ -15,6 +15,24 @@ import (
 	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 )
 
+func TestEventBusBufferCapacity(t *testing.T) {
+	defaultBus := NewEventBus()
+	require.Equal(t, 0, defaultBus.BufferCapacity())
+
+	const cap = 2
+	eventBus := NewEventBusWithBufferCapacity(cap)
+	require.Equal(t, cap, eventBus.BufferCapacity())
+
+	ctx := context.Background()
+	require.NoError(t, eventBus.pubsub.Publish(ctx, "first"))
+	require.NoError(t, eventBus.pubsub.Publish(ctx, "second"))
+
+	deadlineCtx, cancel := context.WithTimeout(ctx, 50*time.Millisecond)
+	defer cancel()
+	err := eventBus.pubsub.Publish(deadlineCtx, "third")
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+}
+
 func TestEventBusPublishEventTx(t *testing.T) {
 	eventBus := NewEventBus()
 	err := eventBus.Start()

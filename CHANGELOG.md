@@ -8,6 +8,13 @@
 
 - `[mempool]` fix setRecheckFull/setDone race causing spurious ErrRecheckFull.
   ([\#5837](https://github.com/cometbft/cometbft/pull/5837))
+<<<<<<< HEAD
+=======
+- `[node]` close partial listeners on startRPC failure
+  ([\#5869](https://github.com/cometbft/cometbft/pull/5869))
+- `[consensus]` release cs.mtx before sending to statsMsgQueue
+  ([\#5813](https://github.com/cometbft/cometbft/pull/5813))
+>>>>>>> bd8bb655 (fix(consensus): release cs.mtx before sending to statsMsgQueue (#5813))
 
 ### IMPROVEMENTS
 

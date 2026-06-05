@@ -245,24 +245,29 @@ type BaseConfig struct {
 	// If true, query the ABCI app on connecting to a new peer
 	// so the app can decide if we should keep the connection or not
 	FilterPeers bool `mapstructure:"filter_peers"` // false
+
+	// The capacity of the internal buffer used by the EventBus. A value of 0
+	// means unbuffered (publishers block until subscribers receive).
+	EventBusBufferCapacity int `mapstructure:"event_bus_buffer_capacity"`
 }
 
 // DefaultBaseConfig returns a default base configuration for a CometBFT node
 func DefaultBaseConfig() BaseConfig {
 	return BaseConfig{
-		Version:            version.TMCoreSemVer,
-		Genesis:            defaultGenesisJSONPath,
-		PrivValidatorKey:   defaultPrivValKeyPath,
-		PrivValidatorState: defaultPrivValStatePath,
-		NodeKey:            defaultNodeKeyPath,
-		Moniker:            defaultMoniker,
-		ProxyApp:           "tcp://127.0.0.1:26658",
-		ABCI:               "socket",
-		LogLevel:           DefaultLogLevel,
-		LogFormat:          LogFormatPlain,
-		FilterPeers:        false,
-		DBBackend:          "goleveldb",
-		DBPath:             DefaultDataDir,
+		Version:                version.TMCoreSemVer,
+		Genesis:                defaultGenesisJSONPath,
+		PrivValidatorKey:       defaultPrivValKeyPath,
+		PrivValidatorState:     defaultPrivValStatePath,
+		NodeKey:                defaultNodeKeyPath,
+		Moniker:                defaultMoniker,
+		ProxyApp:               "tcp://127.0.0.1:26658",
+		ABCI:                   "socket",
+		LogLevel:               DefaultLogLevel,
+		LogFormat:              LogFormatPlain,
+		FilterPeers:            false,
+		DBBackend:              "goleveldb",
+		DBPath:                 DefaultDataDir,
+		EventBusBufferCapacity: 0,
 	}
 }
 
@@ -312,6 +317,9 @@ func (cfg BaseConfig) ValidateBasic() error {
 	case LogFormatPlain, LogFormatJSON:
 	default:
 		return errors.New("unknown log_format (must be 'plain' or 'json')")
+	}
+	if cfg.EventBusBufferCapacity < 0 {
+		return fmt.Errorf("event_bus_buffer_capacity must be >= 0, got %d", cfg.EventBusBufferCapacity)
 	}
 	return nil
 }

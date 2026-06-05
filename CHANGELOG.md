@@ -25,6 +25,8 @@
 
 ### IMPROVEMENTS
 
+- `[blocksync]` replace `numPending int32` with `atomic.Int32` and document `BlockPool` field ownership
+  ([\#5889](https://github.com/cometbft/cometbft/pull/5889))
 - `[execution]` cache validator set within a block cycle.
   ([\#5834](https://github.com/cometbft/cometbft/pull/5834))
 - `[consensus]` reuse encode/decode buffers in WALEncoder and WALDecoder.
@@ -36,6 +38,10 @@
 
 ### FEATURES
 
+- `[config]` Add EventBusBufferCapacity setting.
+  ([\#5849](https://github.com/cometbft/cometbft/pull/5849))
+- `[abci/server]` Accept pre-bound listener in socket and gRPC servers.
+  ([\#5904](https://github.com/cometbft/cometbft/pull/5904))
 - `[crypto]` Add ml-dsa-65 keytype.
   ([\#5875](https://github.com/cometbft/cometbft/pull/5875))
 

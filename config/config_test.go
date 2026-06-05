@@ -69,6 +69,10 @@ func TestBaseConfigValidateBasic(t *testing.T) {
 	// tamper with log format
 	cfg.LogFormat = "invalid"
 	assert.Error(t, cfg.ValidateBasic())
+
+	cfg = config.TestBaseConfig()
+	cfg.EventBusBufferCapacity = -1
+	assert.Error(t, cfg.ValidateBasic())
 }
 
 func TestRPCConfigValidateBasic(t *testing.T) {

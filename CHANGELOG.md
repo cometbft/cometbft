@@ -6,6 +6,10 @@
 
 ### BUG FIXES
 
+- `[blocksync]` hold `pool.mtx` and recompute `maxPeerHeight` in `Enable()`
+  ([\#5888](https://github.com/cometbft/cometbft/pull/5888))
+- `[inspect]` fix flaky `TestInspectRun` and consolidate start/stop handshake
+  ([\#5891](https://github.com/cometbft/cometbft/pull/5891))
 - `[p2p]` fix race and goroutine leak in `TestTransportMultiplexAcceptNonBlocking` test
   ([\#5878](https://github.com/cometbft/cometbft/pull/5878))
 - `[evidence]` fix flaky `TestReactorsGossipNoCommittedEvidence` test
@@ -32,10 +36,20 @@
 
 - `[config]` Add EventBusBufferCapacity setting.
   ([\#5849](https://github.com/cometbft/cometbft/pull/5849))
+- `[abci/server]` Accept pre-bound listener in socket and gRPC servers.
+  ([\#5904](https://github.com/cometbft/cometbft/pull/5904))
+- `[crypto]` Add ml-dsa-65 keytype.
+  ([\#5875](https://github.com/cometbft/cometbft/pull/5875))
 
 ### STATE-BREAKING
 
+- `[state]` `MedianTime` skips `Nil` and `Absent` precommits, aligning with `VerifyCommit`'s commit tally.
+  ([\#5901](https://github.com/cometbft/cometbft/pull/5901))
+
 ### API-BREAKING
+
+- `[crypto]` Add ml-dsa-65 keytype.
+  ([\#5875](https://github.com/cometbft/cometbft/pull/5875))
 
 ## v0.39.3
 

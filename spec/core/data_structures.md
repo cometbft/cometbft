@@ -447,8 +447,8 @@ The SignedhHeader is the [header](#header) accompanied by the commit to prove it
 | Proposer   | [validator](#validator)          | The block proposer for the corresponding block     | The proposer cannot be nil and must adhere to the validation rules of  [validator](#validator)                    |
 
 `ValidatorSet.Hash()` is the Merkle root of `SimpleValidator` leaves. Each
-leaf is the protobuf encoding of the validator `address` and `voting_power`.
-Validator public keys and proposer priorities are not included in this hash.
+leaf is the protobuf encoding of the validator `pub_key` and `voting_power`.
+Validator addresses and proposer priorities are not included in this hash.
 
 ## Validator
 

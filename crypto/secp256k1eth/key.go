@@ -139,10 +139,7 @@ func (pubKey PubKey) Address() crypto.Address {
 	if err != nil {
 		panic(err)
 	}
-	// SerializeUncompressed returns 65 bytes: 0x04 || X || Y. Drop the 0x04
-	// prefix before hashing, matching go-ethereum's address derivation.
-	hash := keccak256(pub.SerializeUncompressed()[1:])
-	return crypto.Address(hash[12:])
+	return crypto.Address(addressFromPubKey(pub))
 }
 
 // Bytes returns the compressed public key bytes.
@@ -208,4 +205,11 @@ func NewPubKeyFromBytes(bz []byte) (PubKey, error) {
 	pk := make(PubKey, PubKeySize)
 	copy(pk, bz)
 	return pk, nil
+}
+
+func addressFromPubKey(pub *secp256k1.PublicKey) []byte {
+	// SerializeUncompressed returns 65 bytes: 0x04 || X || Y. Drop the 0x04
+	// prefix before hashing, matching go-ethereum's address derivation.
+	hash := keccak256(pub.SerializeUncompressed()[1:])
+	return hash[12:]
 }

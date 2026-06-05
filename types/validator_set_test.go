@@ -163,7 +163,7 @@ func TestCopy(t *testing.T) {
 	}
 }
 
-func TestValidatorSetHashCommitsAddressAndVotingPower(t *testing.T) {
+func TestValidatorSetHashCommitsPubKeyAndVotingPower(t *testing.T) {
 	vals := []*Validator{
 		NewValidator(ed25519.GenPrivKey().PubKey(), 10),
 		NewValidator(ed25519.GenPrivKey().PubKey(), 20),
@@ -179,14 +179,15 @@ func TestValidatorSetHashCommitsAddressAndVotingPower(t *testing.T) {
 	require.Equal(t, merkle.HashFromByteSlices(leaves), valSet.Hash())
 }
 
-func TestValidatorSetHashChangesWhenAddressChanges(t *testing.T) {
-	a := NewValidator(ed25519.GenPrivKey().PubKey(), 10)
-	b := NewValidator(ed25519.GenPrivKey().PubKey(), 10)
-	require.NotEqual(t, a.Address, b.Address)
+func TestValidatorSetHashIgnoresMutatedAddress(t *testing.T) {
+	val := NewValidator(ed25519.GenPrivKey().PubKey(), 10)
+	mutated := val.Copy()
+	mutated.Address = ed25519.GenPrivKey().PubKey().Address()
+	require.NotEqual(t, val.Address, mutated.Address)
 
-	require.NotEqual(t,
-		NewValidatorSet([]*Validator{a}).Hash(),
-		NewValidatorSet([]*Validator{b}).Hash(),
+	require.Equal(t,
+		NewValidatorSet([]*Validator{val}).Hash(),
+		NewValidatorSet([]*Validator{mutated}).Hash(),
 	)
 }
 
@@ -438,8 +439,10 @@ func newValidator(address []byte, power int64) *Validator {
 
 func simpleValidatorBytes(t *testing.T, val *Validator) []byte {
 	t.Helper()
+	pk, err := cryptoenc.PubKeyToProto(val.PubKey)
+	require.NoError(t, err)
 	pbVal := cmtproto.SimpleValidator{
-		Address:     val.Address,
+		PubKey:      &pk,
 		VotingPower: val.VotingPower,
 	}
 	bz, err := pbVal.Marshal()

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	ce "github.com/cometbft/cometbft/crypto/encoding"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,10 +41,12 @@ func TestValidatorProtoBuf(t *testing.T) {
 	}
 }
 
-func TestValidatorBytesCommitAddressAndVotingPower(t *testing.T) {
+func TestValidatorBytesCommitPubKeyAndVotingPower(t *testing.T) {
 	val, _ := RandValidator(true, 100)
+	pk, err := ce.PubKeyToProto(val.PubKey)
+	require.NoError(t, err)
 	want := cmtproto.SimpleValidator{
-		Address:     val.Address,
+		PubKey:      &pk,
 		VotingPower: val.VotingPower,
 	}
 	wantBz, err := want.Marshal()

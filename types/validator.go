@@ -116,12 +116,18 @@ func ValidatorListString(vals []*Validator) string {
 	return sb.String()
 }
 
-// Bytes computes the unique encoding of a validator's address and voting power.
-// These are the bytes that get hashed in consensus. It excludes ProposerPriority
+// Bytes computes the unique encoding of a validator with a given voting power.
+// These are the bytes that get hashed in consensus. It excludes address
+// as its redundant with the pubkey. This also excludes ProposerPriority
 // which changes every round.
 func (v *Validator) Bytes() []byte {
+	pk, err := ce.PubKeyToProto(v.PubKey)
+	if err != nil {
+		panic(err)
+	}
+
 	pbv := cmtproto.SimpleValidator{
-		Address:     v.Address,
+		PubKey:      &pk,
 		VotingPower: v.VotingPower,
 	}
 

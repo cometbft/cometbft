@@ -88,6 +88,65 @@ install:
 	CGO_ENABLED=$(CGO_ENABLED) go install $(BUILD_FLAGS) -tags '$(BUILD_TAGS)' ./cmd/cometbft
 .PHONY: install
 
+### cometkms (external remote signer; nested module in kms/) ###
+
+KMS_OUTPUT ?= $(BUILDDIR)/cometkms
+KMS_VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "0.1.0-dev")
+KMS_LDFLAGS := -X github.com/cometbft/cometbft/kms/internal/version.Version=$(KMS_VERSION)
+KMS_BUILD_FLAGS := -mod=readonly -ldflags "$(KMS_LDFLAGS)"
+KMS_COVERPROFILE ?= $(BUILDDIR)/kms-coverage.out
+KMS_COVERHTML ?= $(BUILDDIR)/kms-coverage.html
+
+#? kms-build: Build cometkms into $(BUILDDIR)
+kms-build:
+	CGO_ENABLED=$(CGO_ENABLED) go build -C kms $(KMS_BUILD_FLAGS) -o $(KMS_OUTPUT) ./cmd/cometkms
+.PHONY: kms-build
+
+#? kms-install: Install cometkms to GOBIN
+kms-install:
+	CGO_ENABLED=$(CGO_ENABLED) go install -C kms $(KMS_BUILD_FLAGS) ./cmd/cometkms
+.PHONY: kms-install
+
+#? kms-test: Run the cometkms test suite
+kms-test:
+	go test -C kms ./... -count=1
+.PHONY: kms-test
+
+#? kms-test-race: Run the cometkms test suite with the race detector
+kms-test-race:
+	go test -C kms ./... -race -count=1
+.PHONY: kms-test-race
+
+#? kms-cover: Run kms tests with coverage; write profile + HTML to $(BUILDDIR) and print the total
+kms-cover:
+	@mkdir -p $(BUILDDIR)
+	go test -C kms ./... -covermode=atomic -coverpkg=./... -coverprofile=$(KMS_COVERPROFILE) -count=1
+	go -C kms tool cover -func=$(KMS_COVERPROFILE) | tail -n 1
+	go -C kms tool cover -html=$(KMS_COVERPROFILE) -o $(KMS_COVERHTML)
+	@echo "coverage profile: $(KMS_COVERPROFILE)"
+	@echo "coverage html:    $(KMS_COVERHTML)"
+.PHONY: kms-cover
+
+#? kms-vet: Vet the cometkms module
+kms-vet:
+	go vet -C kms ./...
+.PHONY: kms-vet
+
+#? kms-lint: Lint the cometkms module (pinned golangci-lint, same version as the root lint target)
+kms-lint:
+	cd kms && go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.3 run
+.PHONY: kms-lint
+
+#? kms-tidy: Tidy the cometkms module dependencies
+kms-tidy:
+	go mod tidy -C kms
+.PHONY: kms-tidy
+
+#? kms-clean: Remove cometkms build and coverage artifacts
+kms-clean:
+	rm -f $(KMS_OUTPUT) $(KMS_COVERPROFILE) $(KMS_COVERHTML)
+.PHONY: kms-clean
+
 ###############################################################################
 ###                               Metrics                                   ###
 ###############################################################################

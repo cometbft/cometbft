@@ -6,6 +6,11 @@
 
 ### BUG FIXES
 
+- `[consensus]` a proposer now self-verifies its own vote extension before
+  broadcasting its precommit, so an application whose `ExtendVote` and
+  `VerifyVoteExtension` handlers are inconsistent halts the node with a clear
+  `CONSENSUS FAILURE` instead of stalling the whole network
+  ([\#5204](https://github.com/cometbft/cometbft/issues/5204))
 - `[blocksync]` hold `pool.mtx` and recompute `maxPeerHeight` in `Enable()`
   ([\#5888](https://github.com/cometbft/cometbft/pull/5888))
 - `[inspect]` fix flaky `TestInspectRun` and consolidate start/stop handshake

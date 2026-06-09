@@ -10,6 +10,8 @@
   ([\#5888](https://github.com/cometbft/cometbft/pull/5888))
 - `[inspect]` fix flaky `TestInspectRun` and consolidate start/stop handshake
   ([\#5891](https://github.com/cometbft/cometbft/pull/5891))
+- `[p2p]` fix flaky switch tests by replacing fixed sleeps with deterministic peer-wait polling
+  ([\#5918](https://github.com/cometbft/cometbft/pull/5918))
 - `[p2p]` fix race and goroutine leak in `TestTransportMultiplexAcceptNonBlocking` test
   ([\#5878](https://github.com/cometbft/cometbft/pull/5878))
 - `[evidence]` fix flaky `TestReactorsGossipNoCommittedEvidence` test

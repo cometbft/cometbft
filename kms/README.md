@@ -100,7 +100,7 @@ match the `addr` you set in `[[validator]]`.
 ### 5. Start the KMS
 
 ```sh
-cometkms start -c ~/.cometkms/cometkms.toml --home ~/.cometkms
+cometkms start --home ~/.cometkms
 ```
 
 `cometkms` will dial the validator and begin serving signing requests. It logs

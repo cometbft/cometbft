@@ -24,6 +24,9 @@ const (
 	maxRemoteSignerMsgSize = 1024 * 10
 )
 
+// DefaultDialTimeout is the per-dial timeout used for validator connections.
+const DefaultDialTimeout = defaultDialTimeout
+
 // ValidatorConn describes one outbound signer connection.
 type ValidatorConn struct {
 	ChainID     string
@@ -33,6 +36,9 @@ type ValidatorConn struct {
 	// Reconnect controls whether the manager re-dials after an established
 	// connection drops. The initial connect always uses backoff regardless.
 	Reconnect bool
+	// Dialer is the base (already transport-specific) SocketDialer. If nil, the
+	// manager builds the default tcp:// SecretConnection dialer from Addr.
+	Dialer privval.SocketDialer
 }
 
 // Manager supervises one validator connection per ValidatorConn, dialing out and
@@ -73,7 +79,10 @@ func (m *Manager) run(c ValidatorConn) {
 	defer m.wg.Done()
 
 	logger := m.logger.With("chain", c.ChainID, "addr", c.Addr)
-	base := privval.DialTCPFn(c.Addr, defaultDialTimeout, c.IdentityKey)
+	base := c.Dialer
+	if base == nil {
+		base = privval.DialTCPFn(c.Addr, defaultDialTimeout, c.IdentityKey)
+	}
 	dialer := backoffDialer(base, m.stop, logger, defaultBackoffInitial, defaultBackoffMax)
 
 	for {

@@ -546,7 +546,7 @@ func TestSwitchReconnectsToInboundPersistentPeer(t *testing.T) {
 
 	conn, err := rp.Dial(sw.NetAddress())
 	require.NoError(t, err)
-	time.Sleep(50 * time.Millisecond)
+	waitUntilSwitchHasAtLeastNPeers(sw, 1)
 	require.NotNil(t, sw.Peers().Get(rp.ID()))
 
 	conn.Close()
@@ -613,7 +613,7 @@ func TestSwitchDialPeersAsync(t *testing.T) {
 
 	err = sw.DialPeersAsync([]string{rp.Addr().String()})
 	require.NoError(t, err)
-	time.Sleep(dialRandomizerIntervalMilliseconds * time.Millisecond)
+	waitUntilSwitchHasAtLeastNPeers(sw, 1)
 	require.NotNil(t, sw.Peers().Get(rp.ID()))
 }
 
@@ -695,7 +695,7 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 			}
 		}(c)
 	}
-	time.Sleep(100 * time.Millisecond)
+	waitUntilSwitchHasAtLeastNPeers(sw, cfg.MaxNumInboundPeers)
 	assert.Equal(t, cfg.MaxNumInboundPeers, sw.Peers().Size())
 
 	// 2. check we close new connections if we already have MaxNumInboundPeers peers
@@ -726,7 +726,7 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 			}
 		}(c)
 	}
-	time.Sleep(10 * time.Millisecond)
+	waitUntilSwitchHasAtLeastNPeers(sw, cfg.MaxNumInboundPeers+unconditionalPeersNum)
 	assert.Equal(t, cfg.MaxNumInboundPeers+unconditionalPeersNum, sw.Peers().Size())
 
 	for _, peer := range peers {

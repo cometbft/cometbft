@@ -15,6 +15,8 @@
   ([\#5888](https://github.com/cometbft/cometbft/pull/5888))
 - `[inspect]` fix flaky `TestInspectRun` and consolidate start/stop handshake
   ([\#5891](https://github.com/cometbft/cometbft/pull/5891))
+- `[p2p]` fix flaky switch tests by replacing fixed sleeps with deterministic peer-wait polling
+  ([\#5918](https://github.com/cometbft/cometbft/pull/5918))
 - `[p2p]` fix race and goroutine leak in `TestTransportMultiplexAcceptNonBlocking` test
   ([\#5878](https://github.com/cometbft/cometbft/pull/5878))
 - `[evidence]` fix flaky `TestReactorsGossipNoCommittedEvidence` test
@@ -49,9 +51,14 @@
   ([\#5904](https://github.com/cometbft/cometbft/pull/5904))
 - `[crypto]` Add ml-dsa-65 keytype.
   ([\#5875](https://github.com/cometbft/cometbft/pull/5875))
+- `[crypto]` Add `secp256k1eth` keytype: go-ethereum-compatible secp256k1 signing
+  (legacy Keccak-256, 65-byte `[R||S||V]` signatures, 20-byte Ethereum addresses).
+  ([\#5907](https://github.com/cometbft/cometbft/pull/5907))
 
 ### STATE-BREAKING
 
+- `[crypto]` `secp256k1eth` verification now requires exact 65-byte recoverable
+  `[R||S||V]` signatures with canonical `V` in `{0,1}`.
 - `[state]` `MedianTime` skips `Nil` and `Absent` precommits, aligning with `VerifyCommit`'s commit tally.
   ([\#5901](https://github.com/cometbft/cometbft/pull/5901))
 
@@ -1193,4 +1200,3 @@ Friendly reminder, we have a [bug bounty program](https://hackerone.com/cosmos).
 ## Previous changes
 
 For changes released before the creation of CometBFT, please refer to the Tendermint Core [CHANGELOG.md](https://github.com/tendermint/tendermint/blob/a9feb1c023e172b542c972605311af83b777855b/CHANGELOG.md).
-

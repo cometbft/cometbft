@@ -1,0 +1,26 @@
+# Same testnet as secp256k1eth.toml — all validators pinned to the
+# Ethereum-compatible secp256k1 signature scheme (secp256k1eth) — but with
+# libp2p networking enabled on every node.
+
+key_type = "secp256k1eth"
+abci_protocol = "builtin"
+initial_height = 1
+evidence = 0
+
+[validators]
+validator01 = 100
+validator02 = 100
+validator03 = 100
+validator04 = 100
+
+[node.validator01]
+use_libp2p = true
+
+[node.validator02]
+use_libp2p = true
+
+[node.validator03]
+use_libp2p = true
+
+[node.validator04]
+use_libp2p = true

@@ -223,11 +223,10 @@ peer ID.
 `[[validator]].addr`):
 
 ```sh
-cometbft show-libp2p-id --home ~/.cometbft
+cometbft show-node-id --libp2p --home ~/.cometbft
 ```
 
-This prints the libp2p peer ID derived from the validator's node key. The
-equivalent flag form is `cometbft show-node-id --libp2p`.
+This prints the libp2p peer ID derived from the validator's node key.
 
 ### KMS configuration
 

@@ -34,6 +34,9 @@ chain_ids = ["my-chain-1"]
 key_file = "priv_validator_key.json"
 `
 
+// home is the home directory of cometkms
+var home string
+
 func main() {
 	if err := rootCmd().Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
@@ -43,6 +46,7 @@ func main() {
 
 func rootCmd() *cobra.Command {
 	root := &cobra.Command{Use: "cometkms", Short: "External remote signer for CometBFT validators"}
+	root.PersistentFlags().StringVar(&home, "home", ".", "the home directory of cometkms")
 	root.AddCommand(versionCmd(), initCmd(), startCmd(), peerIDCmd())
 	return root
 }
@@ -60,7 +64,6 @@ func peerIDFromIdentity(path string) (string, error) {
 }
 
 func peerIDCmd() *cobra.Command {
-	var home string
 	cmd := &cobra.Command{
 		Use:   "peer-id",
 		Short: "Print the libp2p peer ID of the KMS identity key (for the validator's noise allowlist)",
@@ -73,7 +76,6 @@ func peerIDCmd() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&home, "home", ".", "home directory containing identity.json")
 	return cmd
 }
 
@@ -89,13 +91,11 @@ func versionCmd() *cobra.Command {
 }
 
 func initCmd() *cobra.Command {
-	var home string
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Scaffold a config file and generate an identity key",
 		RunE:  func(_ *cobra.Command, _ []string) error { return runInit(home) },
 	}
-	cmd.Flags().StringVar(&home, "home", ".", "config/home directory")
 	return cmd
 }
 
@@ -103,9 +103,9 @@ func runInit(home string) error {
 	if err := os.MkdirAll(home, 0o700); err != nil {
 		return err
 	}
-	cfgPath := filepath.Join(home, "cometkms.toml")
-	if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
-		if err := os.WriteFile(cfgPath, []byte(defaultConfigTemplate), 0o600); err != nil {
+	path := cfgPath(home)
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		if err := os.WriteFile(path, []byte(defaultConfigTemplate), 0o600); err != nil {
 			return err
 		}
 	}
@@ -117,14 +117,13 @@ func runInit(home string) error {
 }
 
 func startCmd() *cobra.Command {
-	var cfgPath, home string
 	cmd := &cobra.Command{
 		Use:   "start",
 		Short: "Connect to validators and serve signing requests",
 		RunE: func(_ *cobra.Command, _ []string) error {
 			logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 
-			cfg, err := config.Load(cfgPath)
+			cfg, err := config.Load(cfgPath(home))
 			if err != nil {
 				return err
 			}
@@ -149,7 +148,9 @@ func startCmd() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVarP(&cfgPath, "config", "c", "cometkms.toml", "path to config file")
-	cmd.Flags().StringVar(&home, "home", ".", "home directory for relative paths/state")
 	return cmd
+}
+
+func cfgPath(home string) string {
+	return filepath.Join(home, "cometkms.toml")
 }

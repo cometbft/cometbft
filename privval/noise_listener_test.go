@@ -106,4 +106,9 @@ func TestParseNoiseAddr(t *testing.T) {
 	require.Error(t, err)
 	_, _, err = ParseNoiseAddr("tcp://1.2.3.4:26659")
 	require.Error(t, err)
+
+	_, _, err = ParseNoiseAddr("noise://" + pid.String() + "@foobar.com:26659")
+	require.Error(t, err)
+	_, _, err = ParseNoiseAddr("noise://" + pid.String() + "@2001:0db8:85a3:0000:0000:8a2e:0370:7334:26659")
+	require.Error(t, err)
 }

@@ -53,6 +53,9 @@ func (c *Config) Validate(home string) error {
 		if v.IdentityKey == "" {
 			return fmt.Errorf("config: validator for chain %q has empty identity_key", v.ChainID)
 		}
+		if _, _, _, perr := v.ParsedTransport(); perr != nil {
+			return fmt.Errorf("config: validator for chain %q has invalid addr: %w", v.ChainID, perr)
+		}
 		// Resolve relative identity_key against home so app.Build consumes the
 		// resolved path (CWD-relative resolution would silently mint a new key).
 		if !filepath.IsAbs(v.IdentityKey) {

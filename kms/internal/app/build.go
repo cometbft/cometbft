@@ -12,6 +12,7 @@ import (
 	"github.com/cometbft/cometbft/kms/internal/identity"
 	"github.com/cometbft/cometbft/kms/internal/manager"
 	"github.com/cometbft/cometbft/kms/internal/signer"
+	"github.com/cometbft/cometbft/kms/internal/transport"
 )
 
 // Build constructs a Manager from a validated config.
@@ -58,13 +59,25 @@ func Build(c *config.Config, logger log.Logger) (*manager.Manager, error) {
 		if err != nil {
 			return nil, err
 		}
-		conns = append(conns, manager.ValidatorConn{
+		tr, addr, validatorPeer, err := v.ParsedTransport()
+		if err != nil {
+			return nil, err
+		}
+		vc := manager.ValidatorConn{
 			ChainID:     v.ChainID,
 			Addr:        v.Addr,
 			IdentityKey: idKey,
 			Signer:      cs,
 			Reconnect:   v.ReconnectEnabled(),
-		})
+		}
+		if tr == config.TransportNoise {
+			d, derr := transport.NoiseDialer(addr, idKey, validatorPeer, manager.DefaultDialTimeout)
+			if derr != nil {
+				return nil, derr
+			}
+			vc.Dialer = d
+		}
+		conns = append(conns, vc)
 	}
 
 	return manager.New(logger, conns), nil

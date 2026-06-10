@@ -7,7 +7,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/kms/internal/config"
+	"github.com/cometbft/cometbft/lp2p"
 )
 
 const good = `
@@ -145,4 +147,35 @@ identity_key = "i"
 	c, err := config.Load(cfgPath)
 	require.NoError(t, err)
 	require.ErrorContains(t, c.Validate(home), "no backend")
+}
+
+func TestValidatorTransportTCPDefault(t *testing.T) {
+	v := config.Validator{ChainID: "c1", Addr: "tcp://1.2.3.4:26659", IdentityKey: "i"}
+	tr, addr, pid, err := v.ParsedTransport()
+	require.NoError(t, err)
+	require.Equal(t, config.TransportTCP, tr)
+	require.Equal(t, "tcp://1.2.3.4:26659", addr) // tcp keeps full addr for DialTCPFn
+	require.Empty(t, pid)
+}
+
+func TestValidatorTransportNoise(t *testing.T) {
+	validatorPeer, err := lp2p.IDFromPrivateKey(ed25519.GenPrivKey())
+	require.NoError(t, err)
+
+	v := config.Validator{
+		ChainID:     "c1",
+		Addr:        "noise://" + validatorPeer.String() + "@1.2.3.4:26659",
+		IdentityKey: "i",
+	}
+	tr, addr, pid, err := v.ParsedTransport()
+	require.NoError(t, err)
+	require.Equal(t, config.TransportNoise, tr)
+	require.Equal(t, "1.2.3.4:26659", addr)
+	require.Equal(t, validatorPeer, pid)
+}
+
+func TestValidatorTransportNoiseInvalid(t *testing.T) {
+	v := config.Validator{ChainID: "c1", Addr: "noise://1.2.3.4:26659", IdentityKey: "i"} // missing peer id
+	_, _, _, err := v.ParsedTransport()
+	require.Error(t, err)
 }

@@ -88,6 +88,35 @@ func TestOpenUnknownKey(t *testing.T) {
 		PIN:        pkcs11test.UserPIN,
 	})
 	require.Error(t, err)
+	require.ErrorContains(t, err, "no object matching")
+}
+
+func TestOpenAmbiguousKeyLabel(t *testing.T) {
+	module := pkcs11test.FindModule(t)
+	pkcs11test.SetupToken(t, module)
+	// A second key pair with the same label but a different id makes a
+	// label-only lookup ambiguous.
+	pkcs11test.AddKeyPair(t, module, pkcs11test.KeyLabel, []byte{0x02})
+
+	_, err := pk.Open(pk.Config{
+		Module:     module,
+		TokenLabel: pkcs11test.TokenLabel,
+		KeyLabel:   pkcs11test.KeyLabel,
+		PIN:        pkcs11test.UserPIN,
+	})
+	require.Error(t, err)
+	require.ErrorContains(t, err, "multiple objects match")
+
+	// Adding the unique key_id disambiguates.
+	s, err := pk.Open(pk.Config{
+		Module:     module,
+		TokenLabel: pkcs11test.TokenLabel,
+		KeyLabel:   pkcs11test.KeyLabel,
+		KeyID:      pkcs11test.KeyID,
+		PIN:        pkcs11test.UserPIN,
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = s.Close() })
 }
 
 func TestDoubleCloseSafe(t *testing.T) {

@@ -167,17 +167,32 @@ func findObject(mod *pkcs11.Ctx, session pkcs11.SessionHandle, class uint, cfg C
 	if err := mod.FindObjectsInit(session, template); err != nil {
 		return 0, err
 	}
-	handles, _, err := mod.FindObjects(session, 1)
+	handles, _, err := mod.FindObjects(session, 2)
 	if finErr := mod.FindObjectsFinal(session); finErr != nil && err == nil {
 		err = finErr
 	}
 	if err != nil {
 		return 0, err
 	}
-	if len(handles) == 0 {
-		return 0, fmt.Errorf("no matching object")
+	switch {
+	case len(handles) == 0:
+		return 0, fmt.Errorf("no object matching %s", keySelector(cfg))
+	case len(handles) > 1:
+		return 0, fmt.Errorf("multiple objects match %s: refine key_label/key_id", keySelector(cfg))
 	}
 	return handles[0], nil
+}
+
+// keySelector describes the configured key search criteria for error messages.
+func keySelector(cfg Config) string {
+	switch {
+	case cfg.KeyLabel != "" && len(cfg.KeyID) > 0:
+		return fmt.Sprintf("key_label=%q key_id=%x", cfg.KeyLabel, cfg.KeyID)
+	case cfg.KeyLabel != "":
+		return fmt.Sprintf("key_label=%q", cfg.KeyLabel)
+	default:
+		return fmt.Sprintf("key_id=%x", cfg.KeyID)
+	}
 }
 
 // PubKey returns the validator public key cached at Open.

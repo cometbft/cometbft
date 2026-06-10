@@ -33,6 +33,6 @@ func TestBuildWiresPKCS11Backend(t *testing.T) {
 
 	mgr, cleanup, err := app.Build(c, log.TestingLogger())
 	require.NoError(t, err)
+	t.Cleanup(cleanup) // releases the PKCS#11 session even if assertions below fail
 	require.NotNil(t, mgr)
-	cleanup() // must not panic; releases the PKCS#11 session
 }

@@ -18,13 +18,7 @@
 
 - `[config]` Add EventBusBufferCapacity setting.
   ([\#5849](https://github.com/cometbft/cometbft/pull/5849))
-<<<<<<< HEAD
-=======
-- `[abci/server]` Accept pre-bound listener in socket and gRPC servers.
-  ([\#5904](https://github.com/cometbft/cometbft/pull/5904))
-- `[crypto]` Add ml-dsa-65 keytype.
-  ([\#5875](https://github.com/cometbft/cometbft/pull/5875))
->>>>>>> 4df23c59 (feat(config): add EventBusBufferCapacity setting (#5849))
+
 
 ### STATE-BREAKING
 

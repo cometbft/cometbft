@@ -61,6 +61,15 @@ In the future, the ChainID may become structured, and may take on longer lengths
 For now, it is recommended that signers be configured for a particular ChainID,
 and to only sign votes and proposals corresponding to that ChainID.
 
+## secp256k1eth Signatures
+
+The `secp256k1eth` validator key type signs the legacy Keccak-256 hash of the
+canonical sign bytes. Signatures must be exact 65-byte recoverable
+`[R || S || V]` values with canonical `V` encoded as `0` or `1`, and with
+lower-S ECDSA normalization. Verification recovers the public key from
+`[V+27 || R || S]` and requires the recovered signer identity to match the
+validator.
+
 ## BlockID
 
 BlockID is the structure used to represent the block:

@@ -62,10 +62,22 @@ func TestVerifySignature(t *testing.T) {
 	sig, err := priv.Sign(msg)
 	require.NoError(t, err)
 
-	require.True(t, pub.VerifySignature(msg, sig))      // 65-byte form
-	require.True(t, pub.VerifySignature(msg, sig[:64])) // 64-byte form
+	require.True(t, pub.VerifySignature(msg, sig))
+	require.False(t, pub.VerifySignature(msg, sig[:64]))
 	require.False(t, pub.VerifySignature([]byte("tampered"), sig))
-	require.False(t, pub.VerifySignature(msg, sig[:63])) // wrong length
+	require.False(t, pub.VerifySignature(msg, sig[:63]))
+
+	malformed := append([]byte(nil), sig...)
+	clear(malformed[:32])
+	require.False(t, pub.VerifySignature(msg, malformed))
+
+	badV := append([]byte(nil), sig...)
+	badV[64] = 2
+	require.False(t, pub.VerifySignature(msg, badV))
+
+	wrongV := append([]byte(nil), sig...)
+	wrongV[64] ^= 1
+	require.False(t, pub.VerifySignature(msg, wrongV))
 }
 
 func TestNewPubKeyFromBytes(t *testing.T) {
@@ -129,8 +141,8 @@ func TestVerifyRejectsMalleableHighS(t *testing.T) {
 	s := new(big.Int).SetBytes(sig[32:64])
 	highS := new(big.Int).Sub(n, s)
 
-	malleable := make([]byte, 64)
-	copy(malleable[:32], sig[:32]) // R unchanged
+	malleable := append([]byte(nil), sig...)
+	clear(malleable[32:64])
 	highSBytes := highS.Bytes()
 	copy(malleable[64-len(highSBytes):64], highSBytes)
 
@@ -185,7 +197,7 @@ func TestGoEthereumCompatibilityVector(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, wantSig, sig)
 
-	// verify accepts the 65-byte and 64-byte forms
+	// verify accepts only the recoverable 65-byte form
 	require.True(t, priv.PubKey().VerifySignature(msg, sig))
-	require.True(t, priv.PubKey().VerifySignature(msg, sig[:64]))
+	require.False(t, priv.PubKey().VerifySignature(msg, sig[:64]))
 }

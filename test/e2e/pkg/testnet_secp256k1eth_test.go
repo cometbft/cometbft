@@ -18,7 +18,20 @@ import (
 // keyGenerator, sign/verify, and the encoding bridge — the same path the CI
 // runner drives prior to `runner setup`.
 func TestSecp256k1EthNetwork(t *testing.T) {
-	manifestPath, err := filepath.Abs(filepath.Join("..", "networks", "secp256k1eth.toml"))
+	testSecp256k1EthNetwork(t, "secp256k1eth.toml", false)
+}
+
+// TestSecp256k1EthLibp2pNetwork is the same as TestSecp256k1EthNetwork but for
+// the variant manifest with libp2p networking enabled on every node
+// (networks/secp256k1eth-libp2p.toml).
+func TestSecp256k1EthLibp2pNetwork(t *testing.T) {
+	testSecp256k1EthNetwork(t, "secp256k1eth-libp2p.toml", true)
+}
+
+func testSecp256k1EthNetwork(t *testing.T, manifestFile string, wantLibp2p bool) {
+	t.Helper()
+
+	manifestPath, err := filepath.Abs(filepath.Join("..", "networks", manifestFile))
 	require.NoError(t, err)
 
 	manifest, err := e2e.LoadManifest(manifestPath)
@@ -41,6 +54,8 @@ func TestSecp256k1EthNetwork(t *testing.T) {
 	msg := []byte("secp256k1eth e2e network produces blocks")
 	for node, power := range testnet.Validators {
 		require.Positive(t, power, "validator %s has non-positive voting power", node.Name)
+		require.Equal(t, wantLibp2p, node.UseLibp2p,
+			"validator %s libp2p setting", node.Name)
 
 		priv := node.PrivvalKey
 		require.NotNil(t, priv, "validator %s has no priv key", node.Name)

@@ -39,6 +39,27 @@ func TestSignProducesEthFormat(t *testing.T) {
 	require.LessOrEqual(t, sig[64], byte(1))        // V in {0,1}, go-ethereum form
 }
 
+func TestSignRejectsInvalidPrivKey(t *testing.T) {
+	msg := []byte("hello cometbft")
+
+	// Order of the secp256k1 group, N: a scalar >= N is out of range.
+	orderBz := secp256k1.Params().N.Bytes()
+
+	cases := map[string]secp256k1eth.PrivKey{
+		"nil key":         nil,
+		"empty key":       {},
+		"short key":       make([]byte, secp256k1eth.PrivKeySize-1),
+		"long key":        make([]byte, secp256k1eth.PrivKeySize+1),
+		"zero scalar":     make([]byte, secp256k1eth.PrivKeySize),
+		"scalar equals N": orderBz,
+	}
+	for name, priv := range cases {
+		sig, err := priv.Sign(msg)
+		require.Error(t, err, "%s must not sign", name)
+		require.Nil(t, sig, "%s must not produce a signature", name)
+	}
+}
+
 func TestAddressKnownAnswer(t *testing.T) {
 	// Widely published secp256k1 -> Ethereum address vector (Hardhat/Anvil
 	// account #0). Proves legacy-Keccak address derivation matches the wider

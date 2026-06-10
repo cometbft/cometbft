@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"crypto/subtle"
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -109,9 +110,22 @@ func keccak256(msg []byte) []byte {
 }
 
 // Sign produces a 65-byte go-ethereum signature [R || S || V] (V in {0,1}) over
-// the legacy Keccak-256 hash of msg, in canonical lower-S form.
+// the legacy Keccak-256 hash of msg, in canonical lower-S form. It returns an
+// error if the private key is not a valid scalar in (0, N).
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
-	priv := secp256k1.PrivKeyFromBytes(privKey)
+	if len(privKey) != PrivKeySize {
+		return nil, fmt.Errorf(
+			"secp256k1eth: invalid private key size, expected %d bytes, got %d",
+			PrivKeySize, len(privKey),
+		)
+	}
+	var d secp256k1.ModNScalar
+	if overflow := d.SetByteSlice(privKey); overflow || d.IsZero() {
+		d.Zero()
+		return nil, errors.New("secp256k1eth: private key scalar is not in the valid range (0, N)")
+	}
+	priv := secp256k1.NewPrivateKey(&d)
+	defer priv.Zero()
 	h := keccak256(msg)
 	// decred returns compact form [recoveryByte || R || S] where the leading
 	// byte is 27 + recoveryCode; go-ethereum's V is that recoveryCode (byte-27).

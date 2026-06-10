@@ -32,6 +32,7 @@ type PublicKey struct {
 	//	*PublicKey_Secp256K1
 	//	*PublicKey_Bls12381
 	//	*PublicKey_Mldsa65
+	//	*PublicKey_Secp256K1Eth
 	Sum isPublicKey_Sum `protobuf_oneof:"sum"`
 }
 
@@ -88,11 +89,15 @@ type PublicKey_Bls12381 struct {
 type PublicKey_Mldsa65 struct {
 	Mldsa65 []byte `protobuf:"bytes,4,opt,name=mldsa65,proto3,oneof" json:"mldsa65,omitempty"`
 }
+type PublicKey_Secp256K1Eth struct {
+	Secp256K1Eth []byte `protobuf:"bytes,5,opt,name=secp256k1eth,proto3,oneof" json:"secp256k1eth,omitempty"`
+}
 
-func (*PublicKey_Ed25519) isPublicKey_Sum()   {}
-func (*PublicKey_Secp256K1) isPublicKey_Sum() {}
-func (*PublicKey_Bls12381) isPublicKey_Sum()  {}
-func (*PublicKey_Mldsa65) isPublicKey_Sum()   {}
+func (*PublicKey_Ed25519) isPublicKey_Sum()      {}
+func (*PublicKey_Secp256K1) isPublicKey_Sum()    {}
+func (*PublicKey_Bls12381) isPublicKey_Sum()     {}
+func (*PublicKey_Mldsa65) isPublicKey_Sum()      {}
+func (*PublicKey_Secp256K1Eth) isPublicKey_Sum() {}
 
 func (m *PublicKey) GetSum() isPublicKey_Sum {
 	if m != nil {
@@ -129,6 +134,13 @@ func (m *PublicKey) GetMldsa65() []byte {
 	return nil
 }
 
+func (m *PublicKey) GetSecp256K1Eth() []byte {
+	if x, ok := m.GetSum().(*PublicKey_Secp256K1Eth); ok {
+		return x.Secp256K1Eth
+	}
+	return nil
+}
+
 // XXX_OneofWrappers is for the internal use of the proto package.
 func (*PublicKey) XXX_OneofWrappers() []interface{} {
 	return []interface{}{
@@ -136,6 +148,7 @@ func (*PublicKey) XXX_OneofWrappers() []interface{} {
 		(*PublicKey_Secp256K1)(nil),
 		(*PublicKey_Bls12381)(nil),
 		(*PublicKey_Mldsa65)(nil),
+		(*PublicKey_Secp256K1Eth)(nil),
 	}
 }
 
@@ -146,22 +159,23 @@ func init() {
 func init() { proto.RegisterFile("tendermint/crypto/keys.proto", fileDescriptor_cb048658b234868c) }
 
 var fileDescriptor_cb048658b234868c = []byte{
-	// 238 bytes of a gzipped FileDescriptorProto
+	// 254 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x29, 0x49, 0xcd, 0x4b,
 	0x49, 0x2d, 0xca, 0xcd, 0xcc, 0x2b, 0xd1, 0x4f, 0x2e, 0xaa, 0x2c, 0x28, 0xc9, 0xd7, 0xcf, 0x4e,
 	0xad, 0x2c, 0xd6, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0x44, 0xc8, 0xea, 0x41, 0x64, 0xa5,
-	0x44, 0xd2, 0xf3, 0xd3, 0xf3, 0xc1, 0xb2, 0xfa, 0x20, 0x16, 0x44, 0xa1, 0xd2, 0x24, 0x46, 0x2e,
+	0x44, 0xd2, 0xf3, 0xd3, 0xf3, 0xc1, 0xb2, 0xfa, 0x20, 0x16, 0x44, 0xa1, 0xd2, 0x0e, 0x46, 0x2e,
 	0xce, 0x80, 0xd2, 0xa4, 0x9c, 0xcc, 0x64, 0xef, 0xd4, 0x4a, 0x21, 0x29, 0x2e, 0xf6, 0xd4, 0x14,
 	0x23, 0x53, 0x53, 0x43, 0x4b, 0x09, 0x46, 0x05, 0x46, 0x0d, 0x1e, 0x0f, 0x86, 0x20, 0x98, 0x80,
 	0x90, 0x1c, 0x17, 0x67, 0x71, 0x6a, 0x72, 0x81, 0x91, 0xa9, 0x59, 0xb6, 0xa1, 0x04, 0x13, 0x54,
 	0x16, 0x21, 0x24, 0x24, 0xc3, 0xc5, 0x91, 0x94, 0x53, 0x6c, 0x68, 0x64, 0x6c, 0x61, 0x28, 0xc1,
 	0x0c, 0x95, 0x86, 0x8b, 0x80, 0x4c, 0xce, 0xcd, 0x49, 0x29, 0x4e, 0x34, 0x33, 0x95, 0x60, 0x81,
-	0x99, 0x0c, 0x15, 0xb0, 0xe2, 0x78, 0xb1, 0x40, 0x9e, 0xf1, 0xc5, 0x42, 0x79, 0x46, 0x27, 0x56,
-	0x2e, 0xe6, 0xe2, 0xd2, 0x5c, 0x27, 0xbf, 0x13, 0x8f, 0xe4, 0x18, 0x2f, 0x3c, 0x92, 0x63, 0x7c,
-	0xf0, 0x48, 0x8e, 0x71, 0xc2, 0x63, 0x39, 0x86, 0x0b, 0x8f, 0xe5, 0x18, 0x6e, 0x3c, 0x96, 0x63,
-	0x88, 0x32, 0x49, 0xcf, 0x2c, 0xc9, 0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0xcf,
-	0x4d, 0x2d, 0x49, 0x4a, 0x2b, 0x41, 0x30, 0x20, 0xbe, 0xc3, 0x08, 0x98, 0x24, 0x36, 0xb0, 0x84,
-	0x31, 0x20, 0x00, 0x00, 0xff, 0xff, 0xc9, 0xc5, 0xeb, 0x30, 0x34, 0x01, 0x00, 0x00,
+	0x99, 0x0c, 0x15, 0x10, 0x52, 0xe1, 0xe2, 0x81, 0x1b, 0x93, 0x5a, 0x92, 0x21, 0xc1, 0x0a, 0x55,
+	0x80, 0x22, 0x6a, 0xc5, 0xf1, 0x62, 0x81, 0x3c, 0xe3, 0x8b, 0x85, 0xf2, 0x8c, 0x4e, 0xac, 0x5c,
+	0xcc, 0xc5, 0xa5, 0xb9, 0x4e, 0x7e, 0x27, 0x1e, 0xc9, 0x31, 0x5e, 0x78, 0x24, 0xc7, 0xf8, 0xe0,
+	0x91, 0x1c, 0xe3, 0x84, 0xc7, 0x72, 0x0c, 0x17, 0x1e, 0xcb, 0x31, 0xdc, 0x78, 0x2c, 0xc7, 0x10,
+	0x65, 0x92, 0x9e, 0x59, 0x92, 0x51, 0x9a, 0xa4, 0x97, 0x9c, 0x9f, 0xab, 0x9f, 0x9c, 0x9f, 0x9b,
+	0x5a, 0x92, 0x94, 0x56, 0x82, 0x60, 0x40, 0xc2, 0x00, 0x23, 0xf8, 0x92, 0xd8, 0xc0, 0x12, 0xc6,
+	0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0x17, 0x1b, 0xcc, 0x65, 0x5a, 0x01, 0x00, 0x00,
 }
 
 func (this *PublicKey) Compare(that interface{}) int {
@@ -206,6 +220,8 @@ func (this *PublicKey) Compare(that interface{}) int {
 			thisType = 2
 		case *PublicKey_Mldsa65:
 			thisType = 3
+		case *PublicKey_Secp256K1Eth:
+			thisType = 4
 		default:
 			panic(fmt.Sprintf("compare: unexpected type %T in oneof", this.Sum))
 		}
@@ -219,6 +235,8 @@ func (this *PublicKey) Compare(that interface{}) int {
 			that1Type = 2
 		case *PublicKey_Mldsa65:
 			that1Type = 3
+		case *PublicKey_Secp256K1Eth:
+			that1Type = 4
 		default:
 			panic(fmt.Sprintf("compare: unexpected type %T in oneof", that1.Sum))
 		}
@@ -354,6 +372,36 @@ func (this *PublicKey_Mldsa65) Compare(that interface{}) int {
 	}
 	return 0
 }
+func (this *PublicKey_Secp256K1Eth) Compare(that interface{}) int {
+	if that == nil {
+		if this == nil {
+			return 0
+		}
+		return 1
+	}
+
+	that1, ok := that.(*PublicKey_Secp256K1Eth)
+	if !ok {
+		that2, ok := that.(PublicKey_Secp256K1Eth)
+		if ok {
+			that1 = &that2
+		} else {
+			return 1
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return 0
+		}
+		return 1
+	} else if this == nil {
+		return -1
+	}
+	if c := bytes.Compare(this.Secp256K1Eth, that1.Secp256K1Eth); c != 0 {
+		return c
+	}
+	return 0
+}
 func (this *PublicKey) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -480,6 +528,30 @@ func (this *PublicKey_Mldsa65) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *PublicKey_Secp256K1Eth) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*PublicKey_Secp256K1Eth)
+	if !ok {
+		that2, ok := that.(PublicKey_Secp256K1Eth)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !bytes.Equal(this.Secp256K1Eth, that1.Secp256K1Eth) {
+		return false
+	}
+	return true
+}
 func (m *PublicKey) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -576,6 +648,22 @@ func (m *PublicKey_Mldsa65) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	return len(dAtA) - i, nil
 }
+func (m *PublicKey_Secp256K1Eth) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PublicKey_Secp256K1Eth) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Secp256K1Eth != nil {
+		i -= len(m.Secp256K1Eth)
+		copy(dAtA[i:], m.Secp256K1Eth)
+		i = encodeVarintKeys(dAtA, i, uint64(len(m.Secp256K1Eth)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	return len(dAtA) - i, nil
+}
 func encodeVarintKeys(dAtA []byte, offset int, v uint64) int {
 	offset -= sovKeys(v)
 	base := offset
@@ -643,6 +731,18 @@ func (m *PublicKey_Mldsa65) Size() (n int) {
 	_ = l
 	if m.Mldsa65 != nil {
 		l = len(m.Mldsa65)
+		n += 1 + l + sovKeys(uint64(l))
+	}
+	return n
+}
+func (m *PublicKey_Secp256K1Eth) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Secp256K1Eth != nil {
+		l = len(m.Secp256K1Eth)
 		n += 1 + l + sovKeys(uint64(l))
 	}
 	return n
@@ -814,6 +914,39 @@ func (m *PublicKey) Unmarshal(dAtA []byte) error {
 			v := make([]byte, postIndex-iNdEx)
 			copy(v, dAtA[iNdEx:postIndex])
 			m.Sum = &PublicKey_Mldsa65{v}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Secp256K1Eth", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeys
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthKeys
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthKeys
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := make([]byte, postIndex-iNdEx)
+			copy(v, dAtA[iNdEx:postIndex])
+			m.Sum = &PublicKey_Secp256K1Eth{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

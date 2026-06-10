@@ -100,7 +100,7 @@ match the `addr` you set in `[[validator]]`.
 ### 5. Start the KMS
 
 ```sh
-cometkms start -c ~/.cometkms/cometkms.toml --home ~/.cometkms
+cometkms start --home ~/.cometkms
 ```
 
 `cometkms` will dial the validator and begin serving signing requests. It logs
@@ -265,11 +265,10 @@ peer ID.
 `[[validator]].addr`):
 
 ```sh
-cometbft show-libp2p-id --home ~/.cometbft
+cometbft show-node-id --libp2p --home ~/.cometbft
 ```
 
-This prints the libp2p peer ID derived from the validator's node key. The
-equivalent flag form is `cometbft show-node-id --libp2p`.
+This prints the libp2p peer ID derived from the validator's node key.
 
 ### KMS configuration
 

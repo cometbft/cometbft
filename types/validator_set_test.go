@@ -16,6 +16,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
@@ -160,6 +161,34 @@ func TestCopy(t *testing.T) {
 	if !bytes.Equal(vsetHash, vsetCopyHash) {
 		t.Fatalf("ValidatorSet copy had wrong hash. Orig: %X, Copy: %X", vsetHash, vsetCopyHash)
 	}
+}
+
+func TestValidatorSetHashCommitsPubKeyAndVotingPower(t *testing.T) {
+	vals := []*Validator{
+		NewValidator(ed25519.GenPrivKey().PubKey(), 10),
+		NewValidator(ed25519.GenPrivKey().PubKey(), 20),
+		NewValidator(ed25519.GenPrivKey().PubKey(), 30),
+	}
+	valSet := NewValidatorSet(vals)
+
+	leaves := make([][]byte, len(valSet.Validators))
+	for i, val := range valSet.Validators {
+		leaves[i] = simpleValidatorBytes(t, val)
+	}
+
+	require.Equal(t, merkle.HashFromByteSlices(leaves), valSet.Hash())
+}
+
+func TestValidatorSetHashIgnoresMutatedAddress(t *testing.T) {
+	val := NewValidator(ed25519.GenPrivKey().PubKey(), 10)
+	mutated := val.Copy()
+	mutated.Address = ed25519.GenPrivKey().PubKey().Address()
+	require.NotEqual(t, val.Address, mutated.Address)
+
+	require.Equal(t,
+		NewValidatorSet([]*Validator{val}).Hash(),
+		NewValidatorSet([]*Validator{mutated}).Hash(),
+	)
 }
 
 func TestValidatorSet_ProposerPriorityHash(t *testing.T) {
@@ -406,6 +435,19 @@ func TestProposerSelection3(t *testing.T) {
 
 func newValidator(address []byte, power int64) *Validator {
 	return &Validator{Address: address, VotingPower: power}
+}
+
+func simpleValidatorBytes(t *testing.T, val *Validator) []byte {
+	t.Helper()
+	pk, err := cryptoenc.PubKeyToProto(val.PubKey)
+	require.NoError(t, err)
+	pbVal := cmtproto.SimpleValidator{
+		PubKey:      &pk,
+		VotingPower: val.VotingPower,
+	}
+	bz, err := pbVal.Marshal()
+	require.NoError(t, err)
+	return bz
 }
 
 func randPubKey() crypto.PubKey {

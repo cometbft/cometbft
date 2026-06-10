@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -106,7 +107,9 @@ func (nl *NoiseListener) Accept() (net.Conn, error) {
 	return secured, nil
 }
 
-// ParseNoiseAddr parses "noise://<peer-id>@host:port".
+// ParseNoiseAddr parses "noise://<peer-id>@host:port". The host must be an IP
+// literal (IPv4 or bracketed IPv6) — DNS names are rejected — and an explicit
+// port is required.
 func ParseNoiseAddr(addr string) (peer.ID, string, error) {
 	if !strings.HasPrefix(addr, noiseScheme) {
 		return "", "", fmt.Errorf("privval: not a noise address: %q", addr)
@@ -117,8 +120,15 @@ func ParseNoiseAddr(addr string) (peer.ID, string, error) {
 		return "", "", fmt.Errorf("privval: noise address missing peer id: %q", addr)
 	}
 	pidStr, hostport := rest[:at], rest[at+1:]
-	if hostport == "" {
-		return "", "", fmt.Errorf("privval: noise address missing host:port: %q", addr)
+	host, port, err := net.SplitHostPort(hostport)
+	if err != nil {
+		return "", "", fmt.Errorf("privval: invalid host:port in noise address %q: %w", addr, err)
+	}
+	if net.ParseIP(host) == nil {
+		return "", "", fmt.Errorf("privval: noise address host must be an IP literal, got %q", host)
+	}
+	if p, err := strconv.Atoi(port); err != nil || p < 0 || p > 65535 {
+		return "", "", fmt.Errorf("privval: invalid port %q in noise address %q", port, addr)
 	}
 	pid, err := peer.Decode(pidStr)
 	if err != nil {

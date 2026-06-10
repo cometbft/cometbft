@@ -231,7 +231,7 @@ to reconstruct the vote set given the validator set.
 | BlockIDFlag      | [BlockIDFlag](#blockidflag) | Represents the validators participation in consensus: its vote was not received, voted for the block that received the majority, or voted for nil | Must be one of the fields in the [BlockIDFlag](#blockidflag) enum |
 | ValidatorAddress | [Address](#address)         | Address of the validator                                                                                                                          | Must be of length 20                                              |
 | Timestamp        | [Time](#time)               | This field will vary from `CommitSig` to `CommitSig`. It represents the timestamp of the validator.                                               | [Time](#time)                                                     |
-| Signature        | [Signature](#signature)     | Signature corresponding to the validators participation in consensus.                                                                             | The length of the signature must be > 0 and < than  64  for `ed25519`, < 96 for `bls12381` or < 65 for `secp256k1eth`     |
+| Signature        | [Signature](#signature)     | Signature corresponding to the validators participation in consensus.                                                                             | Must be valid for the validator public key type                   |
 
 NOTE: `ValidatorAddress` and `Timestamp` fields may be removed in the future
 (see [ADR-25](https://github.com/cometbft/cometbft/blob/main/docs/architecture/adr-025-commit.md)).
@@ -249,11 +249,11 @@ All these extensions have been verified by the application operating at the sign
 | BlockIDFlag        | [BlockIDFlag](#blockidflag) | Represents the validators participation in consensus: its vote was not received, voted for the block that received the majority, or voted for nil | Must be one of the fields in the [BlockIDFlag](#blockidflag) enum   |
 | ValidatorAddress   | [Address](#address)         | Address of the validator                                                                                                                          | Must be of length 20                                                |
 | Timestamp          | [Time](#time)               | This field will vary from `CommitSig` to `CommitSig`. It represents the timestamp of the validator.                                               |                                                                     |
-| Signature          | [Signature](#signature)     | Signature corresponding to the validators participation in consensus.                                                                             | Length must be > 0 and < 64                                         |
+| Signature          | [Signature](#signature)     | Signature corresponding to the validators participation in consensus.                                                                             | Must be valid for the validator public key type |
 | Extension          | bytes                       | Vote extension provided by the Application running on the sender of the precommit vote, and verified by the local application.                    | Length must be zero if BlockIDFlag is not `Commit`                  |
-| ExtensionSignature | [Signature](#signature)     | Signature of the vote extension.                                                                                                                  a| Length must be > 0 and < than 64 if BlockIDFlag is `Commit`, else 0 |
+| ExtensionSignature | [Signature](#signature)     | Signature of the vote extension.                                                                                                                  | Must be valid for the validator public key type if BlockIDFlag is `Commit`, else 0 |
 | NonRpExtension          | bytes                  | Non replay-protected vote extension provided by the Application running on the sender of the precommit vote, and verified by the local application.| Length must be zero if BlockIDFlag is not `Commit`              |
-| NonRpExtensionSignature | [Signature](#signature)| Signature of the non replay-protected vote extension.                                                                                                                   | Length must be > 0 and < than 64 if BlockIDFlag is `Commit`, else 0 |
+| NonRpExtensionSignature | [Signature](#signature)| Signature of the non replay-protected vote extension.                                                                                                                   | Must be valid for the validator public key type if BlockIDFlag is `Commit`, else 0 |
 
 ## BlockIDFlag
 
@@ -282,11 +282,11 @@ The vote includes information about the validator signing it. When stored in the
 | Timestamp               | [Time](#time)                   | Timestamp represents the time at which a validator signed.                                       |                                                                  |
 | ValidatorAddress        | bytes                           | Address of the validator                                                                         | Length must be equal to 20                                       |
 | ValidatorIndex          | int32                           | Index at a specific block height corresponding to the Index of the validator in the set.         | Must be > 0                                                      |
-| Signature               | bytes                           | Signature by the validator if they participated in consensus for the associated block.           | Length must be > 0 and < 64 for `ed25519`, < 96 for `bls12381` or < 65 for `secp256k1eth`   |
+| Signature               | bytes                           | Signature by the validator if they participated in consensus for the associated block.           | Must be valid for the validator public key type                   |
 | Extension               | bytes                           | Vote extension provided by the Application running at the validator's node.                      | Length can be 0                                                  |
-| ExtensionSignature      | bytes                           | Signature for the extension                                                                      | Length must be > 0 and < 64  for `ed25519`, < 96 for `bls12381` or < 65 for `secp256k1eth` |
+| ExtensionSignature      | bytes                           | Signature for the extension                                                                      | Must be valid for the validator public key type                   |
 | NonRpExtension          | bytes                           | Non replay-protected vote extension provided by the Application running at the validator's node. | Length can be 0                                                  |
-| NonRpExtensionSignature | bytes                           | Signature for the non replay-protected vote extension                                            | Length must be > 0 and < 64  for `ed25519`,  < 96 for `bls12381` or < 65 for `secp256k1eth` |
+| NonRpExtensionSignature | bytes                           | Signature for the non replay-protected vote extension                                            | Must be valid for the validator public key type                   |
 
 ## CanonicalVote
 
@@ -350,7 +350,7 @@ or could have been locked in POLRound. The message is signed by the validator pr
 | POLRound  | int64                           | Proof of lock round.                                                                  | Must be >= -1                                                                  |
 | BlockID   | [BlockID](#blockid)             | The blockID of the corresponding block.                                               | [BlockID](#blockid)                                                            |
 | Timestamp | [Time](#time)                   | Timestamp represents the time at which the block was produced.                        | [Time](#time)                                                                  |
-| Signature | slice of bytes (`[]byte`)       | Signature by the validator if they participated in consensus for the associated bock. | Length of signature must be > 0 and < 64 for `ed25519`, < 96 for `bls12381` or < 65 for `secp256k1eth`  |
+| Signature | slice of bytes (`[]byte`)       | Signature by the validator if they participated in consensus for the associated bock. | Must be valid for the validator public key type                                |
 
 ## SignedMsgType
 
@@ -372,6 +372,8 @@ enum SignedMsgType {
 ## Signature
 
 Signatures in CometBFT are raw bytes representing the underlying signature.
+They must be valid for the validator public key type. `secp256k1eth`
+signatures must be exactly 65 bytes `[R || S || V]` with `V` in `{0,1}`.
 
 See the [signature spec](./encoding.md#key-types) for more.
 
@@ -444,6 +446,10 @@ The SignedhHeader is the [header](#header) accompanied by the commit to prove it
 | Validators | Array of [validator](#validator) | List of the active validators at a specific height | The list of validators can not be empty or nil and must adhere to the validation rules of [validator](#validator) |
 | Proposer   | [validator](#validator)          | The block proposer for the corresponding block     | The proposer cannot be nil and must adhere to the validation rules of  [validator](#validator)                    |
 
+`ValidatorSet.Hash()` is the Merkle root of `SimpleValidator` leaves. Each
+leaf is the protobuf encoding of the validator `pub_key` and `voting_power`.
+Validator addresses and proposer priorities are not included in this hash.
+
 ## Validator
 
 | Name             | Type                      | Description                                                                                       | Validation                                        |
@@ -455,7 +461,11 @@ The SignedhHeader is the [header](#header) accompanied by the commit to prove it
 
 ## Address
 
-Address is a type alias of a slice of bytes. The address is calculated by hashing the public key using sha256 and truncating it to only use the first 20 bytes of the slice.
+Address is a type alias of a slice of bytes. Validator addresses are derived by
+the validator public key type. Ed25519 validator addresses are
+`SHA256(pubkey)[:20]`, regular secp256k1 validator addresses are
+`RIPEMD160(SHA256(pubkey))`, and `secp256k1eth` validator addresses are
+Ethereum addresses: `Keccak256(uncompressedPubKey[1:])[12:]`.
 
 ```go
 const (

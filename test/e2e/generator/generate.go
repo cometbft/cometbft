@@ -17,6 +17,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/mldsa65"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/version"
 )
@@ -73,7 +74,7 @@ var (
 	voteExtensionEnabled      = weightedChoice{true: 3, false: 1}
 	voteExtensionHeightOffset = uniformChoice{int64(0), int64(10), int64(100)}
 	voteExtensionSize         = uniformChoice{uint(128), uint(512), uint(2048), uint(8192)} //TODO: define the right values depending on experiment results.
-	keyType                   = uniformChoice{ed25519.KeyType, secp256k1.KeyType, bls12381.KeyType, mldsa65.KeyType}
+	keyType                   = uniformChoice{ed25519.KeyType, secp256k1.KeyType, bls12381.KeyType, mldsa65.KeyType, secp256k1eth.KeyType}
 )
 
 type generateConfig struct {

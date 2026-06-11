@@ -13,15 +13,18 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/lp2p"
 	"github.com/cometbft/cometbft/privval"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/kms/internal/backend"
 	"github.com/cometbft/cometbft/kms/internal/backend/softsign"
 	"github.com/cometbft/cometbft/kms/internal/manager"
 	"github.com/cometbft/cometbft/kms/internal/signer"
+	"github.com/cometbft/cometbft/kms/internal/transport"
 )
 
 // failingBackend is a backend.Signer that is reachable and exposes a real public
@@ -184,6 +187,65 @@ func TestSigningBackendErrorReturnsEmbeddedError(t *testing.T) {
 	pub2, err := client.GetPubKey()
 	require.NoError(t, err, "connection should survive an embedded signing error")
 	require.True(t, pub2.Equals(pub))
+}
+
+func TestEndToEndSigningNoise(t *testing.T) {
+	const chainID = "noise-chain"
+	dir := t.TempDir()
+	logger := log.TestingLogger()
+
+	// Keys: validator node key (server) and KMS identity key (client).
+	validatorKey := ed25519.GenPrivKey()
+	kmsKey := ed25519.GenPrivKey()
+	validatorPeer, err := lp2p.IDFromPrivateKey(validatorKey)
+	require.NoError(t, err)
+	kmsPeer, err := lp2p.IDFromPrivateKey(kmsKey)
+	require.NoError(t, err)
+
+	// KMS signer (softsign + ChainSigner).
+	be, err := softsign.Load(writeKey(t, dir))
+	require.NoError(t, err)
+	cs, err := signer.NewChainSigner(chainID, be, filepath.Join(dir, "state.json"))
+	require.NoError(t, err)
+
+	// Validator side: a Noise listener (node-key identity, allowlisting the KMS
+	// peer) wired into the standard SignerListenerEndpoint.
+	tcpLn, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	nl, err := privval.NewNoiseListener(tcpLn, validatorKey, []peer.ID{kmsPeer})
+	require.NoError(t, err)
+	listener := privval.NewSignerListenerEndpoint(logger, nl)
+	require.NoError(t, listener.Start())
+	defer func() { _ = listener.Stop() }()
+
+	// KMS dials in over Noise, pinning the validator peer.
+	dial, err := transport.NoiseDialer(tcpLn.Addr().String(), kmsKey, validatorPeer, 3*time.Second)
+	require.NoError(t, err)
+	mgr := manager.New(logger, []manager.ValidatorConn{{
+		ChainID:     chainID,
+		Addr:        "noise://" + tcpLn.Addr().String(),
+		IdentityKey: kmsKey,
+		Signer:      cs,
+		Reconnect:   true,
+		Dialer:      dial,
+	}})
+	require.NoError(t, mgr.Start())
+	defer mgr.Stop()
+
+	client, err := privval.NewSignerClient(listener, chainID)
+	require.NoError(t, err)
+	require.NoError(t, client.WaitForConnection(5*time.Second))
+
+	pub, err := client.GetPubKey()
+	require.NoError(t, err)
+
+	vote := &cmtproto.Vote{Type: cmtproto.PrevoteType, Height: 7, Round: 0}
+	require.NoError(t, client.SignVote(chainID, vote))
+	require.True(t, pub.VerifySignature(types.VoteSignBytes(chainID, vote), vote.Signature))
+
+	prop := &cmtproto.Proposal{Type: cmtproto.ProposalType, Height: 8, Round: 0}
+	require.NoError(t, client.SignProposal(chainID, prop))
+	require.True(t, pub.VerifySignature(types.ProposalSignBytes(chainID, prop), prop.Signature))
 }
 
 func TestReconnectAfterListenerRestart(t *testing.T) {

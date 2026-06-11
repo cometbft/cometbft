@@ -72,6 +72,10 @@ func (b *EventBus) NumClientSubscriptions(clientID string) int {
 	return b.pubsub.NumClientSubscriptions(clientID)
 }
 
+func (b *EventBus) BufferCapacity() int {
+	return b.pubsub.BufferCapacity()
+}
+
 func (b *EventBus) Subscribe(
 	ctx context.Context,
 	subscriber string,

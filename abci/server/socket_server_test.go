@@ -1,8 +1,11 @@
 package server
 
 import (
+	"net"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/abci/types"
 )
@@ -11,6 +14,19 @@ type panicReader struct{}
 
 func (panicReader) Read(_ []byte) (int, error) {
 	panic("boom")
+}
+
+func TestNewSocketServerWithListener(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+
+	srv := NewSocketServerWithListener(ln, types.NewBaseApplication())
+	require.NoError(t, srv.Start())
+	t.Cleanup(func() { require.NoError(t, srv.Stop()) })
+
+	conn, err := net.Dial("tcp", ln.Addr().String())
+	require.NoError(t, err)
+	conn.Close()
 }
 
 // TestHandleRequestsPanicBeforeLock ensures the panic recovery block does not

@@ -546,7 +546,7 @@ func TestSwitchReconnectsToInboundPersistentPeer(t *testing.T) {
 
 	conn, err := rp.Dial(sw.NetAddress())
 	require.NoError(t, err)
-	time.Sleep(50 * time.Millisecond)
+	waitUntilSwitchHasAtLeastNPeers(sw, 1)
 	require.NotNil(t, sw.Peers().Get(rp.ID()))
 
 	conn.Close()
@@ -613,7 +613,7 @@ func TestSwitchDialPeersAsync(t *testing.T) {
 
 	err = sw.DialPeersAsync([]string{rp.Addr().String()})
 	require.NoError(t, err)
-	time.Sleep(dialRandomizerIntervalMilliseconds * time.Millisecond)
+	waitUntilSwitchHasAtLeastNPeers(sw, 1)
 	require.NotNil(t, sw.Peers().Get(rp.ID()))
 }
 
@@ -695,7 +695,7 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 			}
 		}(c)
 	}
-	time.Sleep(100 * time.Millisecond)
+	waitUntilSwitchHasAtLeastNPeers(sw, cfg.MaxNumInboundPeers)
 	assert.Equal(t, cfg.MaxNumInboundPeers, sw.Peers().Size())
 
 	// 2. check we close new connections if we already have MaxNumInboundPeers peers
@@ -726,7 +726,7 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 			}
 		}(c)
 	}
-	time.Sleep(10 * time.Millisecond)
+	waitUntilSwitchHasAtLeastNPeers(sw, cfg.MaxNumInboundPeers+unconditionalPeersNum)
 	assert.Equal(t, cfg.MaxNumInboundPeers+unconditionalPeersNum, sw.Peers().Size())
 
 	for _, peer := range peers {
@@ -920,4 +920,86 @@ func TestSwitchRemovalErr(t *testing.T) {
 	sw2.StopPeerForError(p, fmt.Errorf("peer should error"))
 
 	assert.Equal(t, sw2.peers.Add(p).Error(), ErrPeerRemoval{}.Error())
+}
+
+// filteringReactor is a mock reactor that optionally filters messages via the
+// MsgByteFilter implementation
+type filteringTestReactor struct {
+	*TestReactor
+	filterCalls atomic.Int32
+	rejectErr   error // if non-nil, FilterMsgBytes returns this for matching channel
+	channelID   byte
+}
+
+func newFilteringTestReactor(channels []*conn.ChannelDescriptor, channelID byte, rejectErr error) *filteringTestReactor {
+	return &filteringTestReactor{
+		TestReactor: NewTestReactor(channels, true),
+		channelID:   channelID,
+		rejectErr:   rejectErr,
+	}
+}
+
+func (r *filteringTestReactor) FilterMsgBytes(chID byte, _ Peer, _ []byte) error {
+	if chID != r.channelID {
+		return nil
+	}
+	r.filterCalls.Add(1)
+	return r.rejectErr
+}
+
+func TestSwitchMsgBytesFilter(t *testing.T) {
+	const filterChID = byte(0x00)
+
+	// s1 accepts all bytes and s2 rejects bytes on filterChID
+	makeReactor := func(i int) *filteringTestReactor {
+		var rejectErr error
+		if i == 1 {
+			rejectErr = errors.New("rejected by filter for test")
+		}
+		return newFilteringTestReactor(
+			[]*conn.ChannelDescriptor{
+				{ID: filterChID, Priority: 10, MessageType: &p2pproto.Message{}},
+			},
+			filterChID,
+			rejectErr,
+		)
+	}
+
+	reactors := make(map[int]*filteringTestReactor)
+
+	sw1, sw2 := MakeSwitchPair(func(i int, sw *Switch) *Switch {
+		sw.SetAddrBook(&AddrBookMock{
+			Addrs:    make(map[string]struct{}),
+			OurAddrs: make(map[string]struct{}),
+		})
+		r := makeReactor(i)
+		reactors[i] = r
+		sw.AddReactor("filterTest", r)
+		return sw
+	})
+	t.Cleanup(func() {
+		_ = sw1.Stop()
+		_ = sw2.Stop()
+	})
+
+	require.Equal(t, 1, sw1.Peers().Size())
+	require.Equal(t, 1, sw2.Peers().Size())
+
+	// s1 broadcasts on the rejected channel, s2's filter must drop the message
+	// before proto.Unmarshal and disconnect s1 via mconn._recover
+	msg := &p2pproto.PexAddrs{Addrs: []p2pproto.NetAddress{{ID: "1"}}}
+	sw1.BroadcastAsync(Envelope{ChannelID: filterChID, Message: msg})
+
+	// ensure s2's filter ran
+	require.Eventually(t, func() bool {
+		return reactors[1].filterCalls.Load() >= 1
+	}, 5*time.Second, 50*time.Millisecond)
+
+	// Receive was never called (rejection happened before unmarshal)
+	require.Empty(t, reactors[1].getMsgs(filterChID))
+
+	// s2 dropped s1
+	require.Eventually(t, func() bool {
+		return sw2.Peers().Size() == 0
+	}, 5*time.Second, 50*time.Millisecond)
 }

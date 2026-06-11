@@ -126,7 +126,7 @@ func jsonStringToArg(rt reflect.Type, arg string) (reflect.Value, error) {
 }
 
 func nonJSONStringToArg(rt reflect.Type, arg string) (reflect.Value, bool, error) {
-	if rt.Kind() == reflect.Ptr {
+	if rt.Kind() == reflect.Pointer {
 		rv1, ok, err := nonJSONStringToArg(rt.Elem(), arg)
 		switch {
 		case err != nil:

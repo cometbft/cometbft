@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"testing/quick"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,6 +16,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
@@ -159,6 +161,34 @@ func TestCopy(t *testing.T) {
 	if !bytes.Equal(vsetHash, vsetCopyHash) {
 		t.Fatalf("ValidatorSet copy had wrong hash. Orig: %X, Copy: %X", vsetHash, vsetCopyHash)
 	}
+}
+
+func TestValidatorSetHashCommitsPubKeyAndVotingPower(t *testing.T) {
+	vals := []*Validator{
+		NewValidator(ed25519.GenPrivKey().PubKey(), 10),
+		NewValidator(ed25519.GenPrivKey().PubKey(), 20),
+		NewValidator(ed25519.GenPrivKey().PubKey(), 30),
+	}
+	valSet := NewValidatorSet(vals)
+
+	leaves := make([][]byte, len(valSet.Validators))
+	for i, val := range valSet.Validators {
+		leaves[i] = simpleValidatorBytes(t, val)
+	}
+
+	require.Equal(t, merkle.HashFromByteSlices(leaves), valSet.Hash())
+}
+
+func TestValidatorSetHashIgnoresMutatedAddress(t *testing.T) {
+	val := NewValidator(ed25519.GenPrivKey().PubKey(), 10)
+	mutated := val.Copy()
+	mutated.Address = ed25519.GenPrivKey().PubKey().Address()
+	require.NotEqual(t, val.Address, mutated.Address)
+
+	require.Equal(t,
+		NewValidatorSet([]*Validator{val}).Hash(),
+		NewValidatorSet([]*Validator{mutated}).Hash(),
+	)
 }
 
 func TestValidatorSet_ProposerPriorityHash(t *testing.T) {
@@ -405,6 +435,19 @@ func TestProposerSelection3(t *testing.T) {
 
 func newValidator(address []byte, power int64) *Validator {
 	return &Validator{Address: address, VotingPower: power}
+}
+
+func simpleValidatorBytes(t *testing.T, val *Validator) []byte {
+	t.Helper()
+	pk, err := cryptoenc.PubKeyToProto(val.PubKey)
+	require.NoError(t, err)
+	pbVal := cmtproto.SimpleValidator{
+		PubKey:      &pk,
+		VotingPower: val.VotingPower,
+	}
+	bz, err := pbVal.Marshal()
+	require.NoError(t, err)
+	return bz
 }
 
 func randPubKey() crypto.PubKey {
@@ -1646,6 +1689,99 @@ func TestVerifyCommitWithInvalidProposerKey(t *testing.T) {
 	cid := ""
 	err := vs.VerifyCommit(cid, bid, 100, commit)
 	assert.Error(t, err)
+}
+
+func TestVerifyCommitExtended(t *testing.T) {
+	const (
+		chainID = "test_chain_id"
+		height  = int64(3)
+		round   = int32(1)
+	)
+	t.Run("happy path", func(t *testing.T) {
+		// ARRANGE
+		blockID := makeBlockIDRandom()
+		voteSet, valSet, vals := randVoteSet(height, round, cmtproto.PrecommitType, 4, 10, true)
+		extCommit, err := MakeExtCommit(blockID, height, round, voteSet, vals, time.Now(), true)
+		require.NoError(t, err)
+
+		// ACT
+		err = valSet.VerifyCommitExtended(chainID, blockID, height, extCommit)
+
+		// ASSERT
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid signature", func(t *testing.T) {
+		// ARRANGE
+		blockID := makeBlockIDRandom()
+		voteSet, valSet, vals := randVoteSet(height, round, cmtproto.PrecommitType, 4, 10, true)
+		extCommit, err := MakeExtCommit(blockID, height, round, voteSet, vals, time.Now(), true)
+		require.NoError(t, err)
+		require.NotEmpty(t, extCommit.ExtendedSignatures[1].ExtensionSignature)
+		extCommit.ExtendedSignatures[1].ExtensionSignature = []byte("invalid")
+
+		// ACT
+		err = valSet.VerifyCommitExtended(chainID, blockID, height, extCommit)
+
+		// ASSERT
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid vote extension signature (val #1)")
+	})
+
+	t.Run("nil extended commit", func(t *testing.T) {
+		// ACT
+		err := (&ValidatorSet{}).VerifyCommitExtended(chainID, makeBlockIDRandom(), height, nil)
+
+		// ASSERT
+		require.Error(t, err)
+		assert.Equal(t, "nil extended commit", err.Error())
+	})
+
+	t.Run("allows absent and nil votes in extended commit", func(t *testing.T) {
+		// ARRANGE
+		blockID := makeBlockIDRandom()
+		voteSet, valSet, vals := randVoteSet(height, round, cmtproto.PrecommitType, 7, 10, true)
+		now := time.Now()
+
+		for i := 0; i < 5; i++ {
+			pubKey, err := vals[i].GetPubKey()
+			require.NoError(t, err)
+
+			vote := &Vote{
+				ValidatorAddress: pubKey.Address(),
+				ValidatorIndex:   int32(i),
+				Height:           height,
+				Round:            round,
+				Type:             cmtproto.PrecommitType,
+				BlockID:          blockID,
+				Timestamp:        now,
+			}
+
+			added, err := signAddVote(vals[i], vote, voteSet)
+			require.NoError(t, err)
+			require.True(t, added)
+		}
+
+		nilVote, err := MakeVote(vals[5], chainID, 5, height, round, cmtproto.PrecommitType, BlockID{}, now)
+		require.NoError(t, err)
+		added, err := voteSet.AddVote(nilVote)
+		require.NoError(t, err)
+		require.True(t, added)
+
+		extCommit := voteSet.MakeExtendedCommit(ABCIParams{VoteExtensionsEnableHeight: height})
+		require.Equal(t, BlockIDFlagNil, extCommit.ExtendedSignatures[5].BlockIDFlag)
+		require.Equal(t, BlockIDFlagAbsent, extCommit.ExtendedSignatures[6].BlockIDFlag)
+		require.Empty(t, extCommit.ExtendedSignatures[5].Extension)
+		require.Empty(t, extCommit.ExtendedSignatures[5].ExtensionSignature)
+		require.Empty(t, extCommit.ExtendedSignatures[6].Extension)
+		require.Empty(t, extCommit.ExtendedSignatures[6].ExtensionSignature)
+
+		// ACT
+		err = valSet.VerifyCommitExtended(chainID, blockID, height, extCommit)
+
+		// ASSERT
+		require.NoError(t, err)
+	})
 }
 
 func TestVerifyCommitSingleWithInvalidSignatures(t *testing.T) {

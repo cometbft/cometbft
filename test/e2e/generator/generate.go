@@ -15,16 +15,22 @@ import (
 
 	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/mldsa65"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/version"
 )
+
+// optLarge is the shared "large" choice token used by both the topology and
+// ABCI-delay dimensions.
+const optLarge = "large"
 
 var (
 	// testnetCombinations defines global testnet options, where we generate a
 	// separate testnet for each combination (Cartesian product) of options.
 	testnetCombinations = map[string][]any{
-		"topology":      {"single", "quad", "large"},
+		"topology":      {"single", "quad", optLarge},
 		"initialHeight": {0, 1000},
 		"initialState": {
 			map[string]string{},
@@ -53,7 +59,7 @@ var (
 		4 * int(e2e.EvidenceAgeHeight),
 	}
 	evidence          = uniformChoice{0, 1, 10, 20, 200}
-	abciDelays        = uniformChoice{"none", "small", "large"}
+	abciDelays        = uniformChoice{"none", "small", optLarge}
 	nodePerturbations = probSetChoice{
 		"disconnect": 0.1,
 		"pause":      0.1,
@@ -68,7 +74,7 @@ var (
 	voteExtensionEnabled      = weightedChoice{true: 3, false: 1}
 	voteExtensionHeightOffset = uniformChoice{int64(0), int64(10), int64(100)}
 	voteExtensionSize         = uniformChoice{uint(128), uint(512), uint(2048), uint(8192)} //TODO: define the right values depending on experiment results.
-	keyType                   = uniformChoice{ed25519.KeyType, secp256k1.KeyType, bls12381.KeyType}
+	keyType                   = uniformChoice{ed25519.KeyType, secp256k1.KeyType, bls12381.KeyType, mldsa65.KeyType, secp256k1eth.KeyType}
 )
 
 type generateConfig struct {
@@ -150,7 +156,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 		manifest.ProcessProposalDelay = 100 * time.Millisecond
 		manifest.VoteExtensionDelay = 20 * time.Millisecond
 		manifest.FinalizeBlockDelay = 200 * time.Millisecond
-	case "large":
+	case optLarge:
 		manifest.PrepareProposalDelay = 200 * time.Millisecond
 		manifest.ProcessProposalDelay = 200 * time.Millisecond
 		manifest.CheckTxDelay = 20 * time.Millisecond
@@ -174,7 +180,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 		numValidators = 1
 	case "quad":
 		numValidators = 4
-	case "large":
+	case optLarge:
 		// FIXME Networks are kept small since large ones use too much CPU.
 		numSeeds = r.Intn(2)
 		numLightClients = r.Intn(3)

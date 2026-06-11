@@ -125,8 +125,8 @@ func createAndStartProxyAppConns(clientCreator proxy.ClientCreator, logger log.L
 	return proxyApp, nil
 }
 
-func createAndStartEventBus(logger log.Logger) (*types.EventBus, error) {
-	eventBus := types.NewEventBus()
+func createAndStartEventBus(logger log.Logger, bufferCapacity int) (*types.EventBus, error) {
+	eventBus := types.NewEventBusWithBufferCapacity(bufferCapacity)
 	eventBus.SetLogger(logger.With("module", "events"))
 	if err := eventBus.Start(); err != nil {
 		return nil, err
@@ -719,9 +719,10 @@ func saveGenesisDoc(db dbm.DB, genDoc *types.GenesisDoc) error {
 func createAndStartPrivValidatorSocketClient(
 	listenAddr,
 	chainID string,
+	nodeKey *p2p.NodeKey,
 	logger log.Logger,
 ) (types.PrivValidator, error) {
-	pve, err := privval.NewSignerListener(listenAddr, logger)
+	pve, err := privval.NewSignerListenerFromAddr(listenAddr, nodeKey.PrivKey, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start private validator: %w", err)
 	}

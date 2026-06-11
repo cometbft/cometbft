@@ -337,7 +337,7 @@ func NewNodeWithContext(
 	// we might need to index the txs of the replayed block as this might not have happened
 	// when the node stopped last time (i.e. the node stopped after it saved the block
 	// but before it indexed the txs)
-	eventBus, err := createAndStartEventBus(logger)
+	eventBus, err := createAndStartEventBus(logger, config.EventBusBufferCapacity)
 	if err != nil {
 		return nil, err
 	}
@@ -352,7 +352,8 @@ func NewNodeWithContext(
 	// external signing process.
 	if config.PrivValidatorListenAddr != "" {
 		// FIXME: we should start services inside OnStart
-		privValidator, err = createAndStartPrivValidatorSocketClient(config.PrivValidatorListenAddr, genDoc.ChainID, logger)
+		privValidator, err = createAndStartPrivValidatorSocketClient(
+			config.PrivValidatorListenAddr, genDoc.ChainID, nodeKey, logger)
 		if err != nil {
 			return nil, fmt.Errorf("error with private validator socket client: %w", err)
 		}
@@ -545,11 +546,6 @@ func NewNodeWithContext(
 		transport = cometTransport
 		sw = switcher
 	} else {
-		p2pLogger.Info("Using go-libp2p transport!")
-		if state.LastBlockHeight != 0 {
-			p2pLogger.Warn("EXPERIMENTAL: go-libp2p transport is enabled. Only enable this setting if it can be activated simultaneously for all validators on the network and peer IDs have been predetermined and exchanged.")
-		}
-
 		reactors := []lp2p.SwitchReactor{
 			{Name: "MEMPOOL", Reactor: mempoolReactor},
 			{Name: "BLOCKSYNC", Reactor: bcReactor},
@@ -571,6 +567,11 @@ func NewNodeWithContext(
 		sw, err = lp2p.NewSwitch(nodeInfo, host, reactors, p2pMetrics, p2pLogger)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create libp2p switch: %w", err)
+		}
+
+		p2pLogger.Info("Using libp2p transport", "host_id", host.ID().String())
+		if state.LastBlockHeight != 0 {
+			p2pLogger.Warn("EXPERIMENTAL: go-libp2p transport is enabled. Only enable this setting if it can be activated simultaneously for all validators on the network and peer IDs have been predetermined and exchanged.")
 		}
 	}
 
@@ -814,6 +815,19 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 
 	// we may expose the rpc over both a unix and tcp socket
 	listeners := make([]net.Listener, len(listenAddrs))
+	var ok bool
+	defer func() {
+		if ok {
+			return
+		}
+		for _, l := range listeners {
+			if l != nil {
+				if err := l.Close(); err != nil {
+					n.Logger.Error("error closing rpc listener during startRPC cleanup", "err", err)
+				}
+			}
+		}
+	}()
 	for i, listenAddr := range listenAddrs {
 		mux := http.NewServeMux()
 		rpcLogger := n.Logger.With("module", "rpc-server")
@@ -905,6 +919,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 
 	}
 
+	ok = true
 	return listeners, nil
 }
 

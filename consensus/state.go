@@ -2453,6 +2453,29 @@ func (cs *State) signVote(
 				return nil, err
 			}
 			vote.Extension = ext
+
+			// Self-verify the extension before broadcasting. Every other validator
+			// runs VerifyVoteExtension on this precommit's extension and rejects
+			// the precommit if it doesn't pass. Without this check, an application
+			// whose ExtendVote produces data its own VerifyVoteExtension rejects
+			// would cause a chain-wide deadlock: the proposer happily advances
+			// while peers loop verifying the same invalid extension (#5204). Treat
+			// self-rejection as a non-recoverable application bug — the two
+			// handlers are inconsistent — and panic with a clear message instead
+			// of producing a silent network-level stall.
+			//
+			// Skip self-verify when the extension is empty: an absent-but-required
+			// extension is caught downstream by SignAndCheckVote and produces a
+			// recoverable error, which is the existing behavior we want to preserve.
+			if len(vote.Extension) > 0 {
+				if err := cs.blockExec.VerifyVoteExtension(context.Background(), vote); err != nil {
+					panic(fmt.Errorf(
+						"validator %X failed self-verification of its own vote extension at height %d: %w; "+
+							"application ExtendVote and VerifyVoteExtension handlers are inconsistent",
+						addr, vote.Height, err,
+					))
+				}
+			}
 		}
 	}
 

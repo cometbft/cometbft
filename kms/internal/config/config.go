@@ -3,8 +3,11 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/cometbft/cometbft/privval"
+	"github.com/libp2p/go-libp2p/core/peer"
 )
 
 // Config is the top-level cometkms configuration.
@@ -50,3 +53,28 @@ func Load(path string) (*Config, error) {
 
 // ReconnectEnabled reports the effective reconnect setting (default true).
 func (v Validator) ReconnectEnabled() bool { return v.Reconnect == nil || *v.Reconnect }
+
+// Transport identifies the privval connection transport selected by a validator
+// address scheme.
+type Transport int
+
+const (
+	// TransportTCP is tcp:// with cometbft SecretConnection (the default).
+	TransportTCP Transport = iota
+	// TransportNoise is noise://<peer-id>@host:port with libp2p Noise.
+	TransportNoise
+)
+
+// ParsedTransport classifies v.Addr. For TCP it returns the full address
+// unchanged (DialTCPFn consumes the tcp:// form) and an empty peer ID. For Noise
+// it returns the host:port and the pinned validator peer ID.
+func (v Validator) ParsedTransport() (tr Transport, addr string, validatorPeer peer.ID, err error) {
+	if strings.HasPrefix(v.Addr, "noise://") {
+		pid, hostport, perr := privval.ParseNoiseAddr(v.Addr)
+		if perr != nil {
+			return TransportNoise, "", "", perr
+		}
+		return TransportNoise, hostport, pid, nil
+	}
+	return TransportTCP, v.Addr, "", nil
+}

@@ -19,6 +19,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/mldsa65"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cometbft/cometbft/types"
 
@@ -632,6 +633,8 @@ func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
 	switch keyType {
 	case secp256k1.KeyType:
 		return secp256k1.GenPrivKeySecp256k1(seed)
+	case secp256k1eth.KeyType:
+		return secp256k1eth.GenPrivKeySecp256k1Eth(seed)
 	case bls12381.KeyType:
 		pk, err := bls12381.GenPrivKeyFromSecret(seed)
 		if err != nil {

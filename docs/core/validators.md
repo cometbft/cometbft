@@ -98,4 +98,7 @@ More Information can be found at these links:
 
 Protecting a validator's consensus key is the most important factor to take in when designing your setup. The key that a validator is given upon creation of the node is called a consensus key, it has to be online at all times in order to vote on blocks. It is **not recommended** to merely hold your private key in the default json file (`priv_validator_key.json`). Fortunately, the [Interchain Foundation](https://interchain.io) has worked with a team to build a key management server for validators. You can find documentation on how to use it [here](https://github.com/iqlusioninc/tmkms), it is used extensively in production. You are not limited to using this tool, there are also [HSMs](https://safenet.gemalto.com/data-encryption/hardware-security-modules-hsms/), there is not a recommended HSM.
 
-Currently CometBFT uses [Ed25519](https://ed25519.cr.yp.to/) keys which are widely supported across the security sector and HSMs.
+CometBFT validator consensus keys can use any public key type enabled by the
+chain's validator parameters, including Ed25519 and `secp256k1eth`. For
+`secp256k1eth`, the validator address is the 20-byte Ethereum address derived
+from the compressed secp256k1 public key.

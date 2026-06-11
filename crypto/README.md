@@ -10,6 +10,17 @@ To get the interfaces,
 For any specific algorithm, use its specific module e.g.
 `import "github.com/cometbft/cometbft/crypto/ed25519"`
 
+## Validator key types
+
+CometBFT includes validator key implementations for Ed25519, secp256k1,
+BLS12-381, ML-DSA-65, and `secp256k1eth`.
+
+The `secp256k1eth` key type stores 33-byte compressed secp256k1 public keys,
+derives 20-byte Ethereum addresses as
+`Keccak256(uncompressedPubKey[1:])[12:]`, and signs with exact 65-byte
+recoverable `[R || S || V]` signatures over legacy Keccak-256 message hashes.
+CometBFT uses canonical `V` values `0` or `1`.
+
 ## Binary encoding
 
 For Binary encoding, please refer to the [CometBFT encoding specification](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/core/encoding.md).

@@ -352,7 +352,8 @@ func NewNodeWithContext(
 	// external signing process.
 	if config.PrivValidatorListenAddr != "" {
 		// FIXME: we should start services inside OnStart
-		privValidator, err = createAndStartPrivValidatorSocketClient(config.PrivValidatorListenAddr, genDoc.ChainID, logger)
+		privValidator, err = createAndStartPrivValidatorSocketClient(
+			config.PrivValidatorListenAddr, genDoc.ChainID, nodeKey, logger)
 		if err != nil {
 			return nil, fmt.Errorf("error with private validator socket client: %w", err)
 		}

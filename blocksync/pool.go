@@ -577,7 +577,10 @@ func (pool *BlockPool) sendRequest(height int64, peerID p2p.ID) {
 	if !pool.IsRunning() {
 		return
 	}
-	pool.requestsCh <- BlockRequest{height, peerID}
+	select {
+	case pool.requestsCh <- BlockRequest{height, peerID}:
+	case <-pool.Quit():
+	}
 }
 
 // thread-safe.
@@ -585,7 +588,10 @@ func (pool *BlockPool) sendError(err error, peerID p2p.ID) {
 	if !pool.IsRunning() {
 		return
 	}
-	pool.errorsCh <- peerError{err, peerID}
+	select {
+	case pool.errorsCh <- peerError{err, peerID}:
+	case <-pool.Quit():
+	}
 }
 
 // for debugging purposes

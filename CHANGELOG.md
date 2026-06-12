@@ -21,6 +21,7 @@
 - `[config]` Add EventBusBufferCapacity setting.
   ([\#5849](https://github.com/cometbft/cometbft/pull/5849))
 
+
 ### STATE-BREAKING
 
 ### API-BREAKING

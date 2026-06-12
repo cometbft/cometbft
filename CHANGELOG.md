@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[blocksync]` fix flaky `TestBlockPoolBasic` deadlock under `-race`
+  ([\#5867](https://github.com/cometbft/cometbft/pull/5867))
 - `[mempool]` fix setRecheckFull/setDone race causing spurious ErrRecheckFull.
   ([\#5837](https://github.com/cometbft/cometbft/pull/5837))
 

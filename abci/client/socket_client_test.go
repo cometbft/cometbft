@@ -2,6 +2,7 @@ package abcicli_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -201,6 +202,67 @@ type blockedABCIApplication struct {
 func (b blockedABCIApplication) CheckTxAsync(ctx context.Context, r *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
 	b.wg.Wait()
 	return b.CheckTx(ctx, r)
+}
+
+func TestResponseCallbackNoDeadlock(t *testing.T) {
+	ctx := t.Context()
+	_, c := setupClientServer(t, types.BaseApplication{})
+
+	var once sync.Once
+	done := make(chan struct{})
+	c.SetResponseCallback(func(_ *types.Request, _ *types.Response) {
+		_ = c.Error() // re-enters cli.mtx; deadlocks without the fix
+		once.Do(func() { close(done) })
+	})
+
+	_, err := c.CheckTxAsync(ctx, &types.RequestCheckTx{})
+	require.NoError(t, err)
+
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("deadlock: response callback did not complete")
+	}
+}
+
+func TestResponseCallbackSeesErrorState(t *testing.T) {
+	ctx := t.Context()
+	_, c := setupClientServer(t, types.BaseApplication{})
+
+	inCallback := make(chan struct{})
+	proceed := make(chan struct{})
+	cbErrCh := make(chan error, 1)
+	var once sync.Once
+
+	c.SetResponseCallback(func(_ *types.Request, _ *types.Response) {
+		once.Do(func() {
+			close(inCallback)
+			<-proceed
+			cbErrCh <- c.Error()
+		})
+	})
+
+	_, err := c.CheckTxAsync(ctx, &types.RequestCheckTx{})
+	require.NoError(t, err)
+
+	select {
+	case <-inCallback:
+	case <-time.After(5 * time.Second):
+		t.Fatal("callback did not start")
+	}
+
+	type errorSetter interface{ StopForError(error) }
+	injected := errors.New("injected test error")
+	c.(errorSetter).StopForError(injected)
+
+	close(proceed)
+
+	select {
+	case cbErr := <-cbErrCh:
+		require.ErrorIs(t, cbErr, injected)
+	case <-time.After(5 * time.Second):
+		t.Fatal("callback did not complete")
+	}
 }
 
 // TestCallbackInvokedWhenSetEarly ensures that the callback is invoked when

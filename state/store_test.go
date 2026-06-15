@@ -84,6 +84,123 @@ func BenchmarkLoadValidators(b *testing.B) {
 	}
 }
 
+// fastLoader is the duck-typed interface tests use to reach LoadValidatorsFast
+// without exporting the dbStore concrete type or adding the method to the
+// public Store interface. Mirrors the production helper in state/execution.go.
+type fastLoader interface {
+	LoadValidatorsFast(int64) (*types.ValidatorSet, error)
+}
+
+// BenchmarkLoadValidatorsSawtooth reproduces the issue #1693 sawtooth pattern:
+// a ValidatorsInfo header is persisted at every height (recording
+// LastHeightChanged) but the full ValidatorSet is only stored at checkpoints.
+// LoadValidators must therefore advance proposer priorities from the most
+// recent checkpoint to the requested height, an O(offset) loop that dominates
+// replay time at large offsets. LoadValidatorsFast skips that loop.
+func BenchmarkLoadValidatorsSawtooth(b *testing.B) {
+	const valSetSize = 100
+
+	config := test.ResetTestRoot("state_sawtooth_")
+	defer os.RemoveAll(config.RootDir)
+	dbType := dbm.BackendType(config.DBBackend)
+	stateDB, err := dbm.NewDB("state", dbType, config.DBDir())
+	require.NoError(b, err)
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{DiscardABCIResponses: false})
+	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
+	require.NoError(b, err)
+
+	state.Validators = genValSet(valSetSize)
+	state.NextValidators = state.Validators.CopyIncrementProposerPriority(1)
+	require.NoError(b, stateStore.Save(state))
+
+	const checkpoint = int64(sm.ValSetCheckpointInterval)
+	// Persist the full ValidatorSet only at the checkpoint; for offsets above
+	// it we write a header that records LastHeightChanged but leaves
+	// ValidatorSet nil, forcing LoadValidators back to the checkpoint.
+	require.NoError(b, sm.SaveValidatorsInfo(stateDB, checkpoint, 1, state.Validators))
+
+	fast, ok := stateStore.(fastLoader)
+	require.True(b, ok, "dbStore must implement LoadValidatorsFast")
+
+	offsets := []struct {
+		name   string
+		height int64
+	}{
+		{"at_checkpoint", checkpoint},
+		{"+1", checkpoint + 1},
+		{"+100", checkpoint + 100},
+		{"+10000", checkpoint + 10_000},
+		{"+99999", checkpoint + 99_999},
+	}
+
+	for _, o := range offsets {
+		// header-only record so LoadValidators falls back to the checkpoint
+		if o.height != checkpoint {
+			// saveValidatorsInfo writes a header-only record (no full
+			// ValidatorSet) whenever height != LastHeightChanged and
+			// height % valSetCheckpointInterval != 0, which is exactly what
+			// we need for the sawtooth setup.
+			require.NoError(b, sm.SaveValidatorsInfo(stateDB, o.height, 1, state.Validators))
+		}
+
+		b.Run("LoadValidators/"+o.name, func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				if _, err := stateStore.LoadValidators(o.height); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+		b.Run("LoadValidatorsFast/"+o.name, func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				if _, err := fast.LoadValidatorsFast(o.height); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
+// TestLoadValidatorsFastParity verifies LoadValidatorsFast returns the same
+// validator identities (addresses, public keys, voting powers) as LoadValidators
+// across a sawtooth of off-checkpoint heights. The only intentional difference
+// is ProposerPriority — Fast leaves it at the checkpoint snapshot — which is
+// safe for the ABCI VoteInfo / CommitInfo call sites that only consume the
+// other fields.
+func TestLoadValidatorsFastParity(t *testing.T) {
+	stateDB := dbm.NewMemDB()
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{DiscardABCIResponses: false})
+
+	vals := genValSet(10)
+
+	const checkpoint = int64(sm.ValSetCheckpointInterval)
+	require.NoError(t, sm.SaveValidatorsInfo(stateDB, checkpoint, 1, vals))
+
+	fast, ok := stateStore.(fastLoader)
+	require.True(t, ok, "dbStore must implement LoadValidatorsFast")
+
+	for _, offset := range []int64{0, 1, 100, 10_000, 99_999} {
+		h := checkpoint + offset
+		if offset != 0 {
+			// Header-only record so LoadValidators falls back to the
+			// checkpoint and applies IncrementProposerPriority(offset).
+			require.NoError(t, sm.SaveValidatorsInfo(stateDB, h, 1, vals))
+		}
+
+		slow, err := stateStore.LoadValidators(h)
+		require.NoError(t, err, "LoadValidators(h=%d)", h)
+		quick, err := fast.LoadValidatorsFast(h)
+		require.NoError(t, err, "LoadValidatorsFast(h=%d)", h)
+
+		require.Equal(t, slow.Size(), quick.Size(), "size mismatch at offset=%d", offset)
+		for i := range slow.Validators {
+			s, q := slow.Validators[i], quick.Validators[i]
+			require.Equal(t, s.Address, q.Address, "address mismatch at offset=%d idx=%d", offset, i)
+			require.True(t, s.PubKey.Equals(q.PubKey), "pubkey mismatch at offset=%d idx=%d", offset, i)
+			require.Equal(t, s.VotingPower, q.VotingPower, "voting power mismatch at offset=%d idx=%d", offset, i)
+		}
+	}
+}
+
 func TestPruneStates(t *testing.T) {
 	testcases := map[string]struct {
 		makeHeights             int64

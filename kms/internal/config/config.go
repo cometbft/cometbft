@@ -34,12 +34,30 @@ type Validator struct {
 // Providers groups the configured key backends.
 type Providers struct {
 	Softsign []SoftsignProvider `toml:"softsign"`
+	PKCS11   []PKCS11Provider   `toml:"pkcs11"`
 }
 
 // SoftsignProvider binds a softsign key file to one or more chains.
 type SoftsignProvider struct {
 	ChainIDs []string `toml:"chain_ids"`
 	KeyFile  string   `toml:"key_file"`
+}
+
+// PKCS11Provider binds a key on a PKCS#11 token/HSM to one or more chains.
+// Exactly one of TokenLabel/Slot selects the token, at least one of
+// KeyLabel/KeyID selects the key, and exactly one of PIN/PINEnv/PINFile supplies
+// the user PIN. Algorithm defaults to "ed25519" when empty.
+type PKCS11Provider struct {
+	ChainIDs   []string `toml:"chain_ids"`
+	Module     string   `toml:"module"`      // path to the PKCS#11 .so
+	TokenLabel string   `toml:"token_label"` // CKA_LABEL of the token (XOR slot)
+	Slot       *uint    `toml:"slot"`        // slot number (XOR token_label)
+	KeyLabel   string   `toml:"key_label"`   // CKA_LABEL of the key
+	KeyID      string   `toml:"key_id"`      // hex-encoded CKA_ID of the key
+	PIN        string   `toml:"pin"`         // inline PIN
+	PINEnv     string   `toml:"pin_env"`     // name of env var holding the PIN
+	PINFile    string   `toml:"pin_file"`    // path to a file holding the PIN
+	Algorithm  string   `toml:"algorithm"`   // key algorithm; defaults to "ed25519"
 }
 
 // Load parses a TOML config file.

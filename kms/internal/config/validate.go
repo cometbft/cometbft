@@ -1,10 +1,17 @@
 package config
 
 import (
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
 )
+
+// supportedPKCS11Algorithms mirrors the algo registry in
+// internal/backend/pkcs11. It is duplicated here so config validation does not
+// have to import the cgo-backed pkcs11 package. Keep the two in sync when adding
+// a key type.
+var supportedPKCS11Algorithms = map[string]bool{"ed25519": true}
 
 // Validate resolves defaults and enforces fail-fast invariants. home is the base
 // directory used to resolve relative paths and default state files.
@@ -85,11 +92,84 @@ func (c *Config) Validate(home string) error {
 		}
 	}
 
+	for i := range c.Providers.PKCS11 {
+		if err := c.validatePKCS11Provider(i, home, chainIDs, hasBackend); err != nil {
+			return err
+		}
+	}
+
 	// Every chain must have at least one backend.
 	for _, ch := range c.Chains {
 		if !hasBackend[ch.ID] {
 			return fmt.Errorf("config: chain %q has no backend", ch.ID)
 		}
+	}
+	return nil
+}
+
+// validatePKCS11Provider checks one [[providers.pkcs11]] block, resolves its
+// relative paths against home, and records which chains it backs.
+func (c *Config) validatePKCS11Provider(i int, home string, chainIDs map[string]int, hasBackend map[string]bool) error {
+	p := c.Providers.PKCS11[i]
+
+	if p.Module == "" {
+		return fmt.Errorf("config: pkcs11 provider has empty module")
+	}
+	if len(p.ChainIDs) == 0 {
+		return fmt.Errorf("config: pkcs11 provider with module %q has no chain_ids", p.Module)
+	}
+
+	// Token selector: exactly one of token_label / slot.
+	switch {
+	case p.TokenLabel != "" && p.Slot != nil:
+		return fmt.Errorf("config: pkcs11 provider sets both token_label and slot (use exactly one)")
+	case p.TokenLabel == "" && p.Slot == nil:
+		return fmt.Errorf("config: pkcs11 provider must set token_label or slot")
+	}
+
+	// Key selector: at least one of key_label / key_id.
+	if p.KeyLabel == "" && p.KeyID == "" {
+		return fmt.Errorf("config: pkcs11 provider must set key_label or key_id")
+	}
+	if p.KeyID != "" {
+		if _, err := hex.DecodeString(p.KeyID); err != nil {
+			return fmt.Errorf("config: pkcs11 provider key_id %q is not valid hex: %w", p.KeyID, err)
+		}
+	}
+
+	// PIN source: exactly one of pin / pin_env / pin_file.
+	n := 0
+	for _, set := range []bool{p.PIN != "", p.PINEnv != "", p.PINFile != ""} {
+		if set {
+			n++
+		}
+	}
+	if n != 1 {
+		return fmt.Errorf("config: pkcs11 provider must set exactly one of pin, pin_env, pin_file (got %d)", n)
+	}
+
+	// Algorithm: empty defaults to ed25519; otherwise must be registered.
+	if p.Algorithm != "" && !supportedPKCS11Algorithms[p.Algorithm] {
+		return fmt.Errorf("config: pkcs11 provider has unknown algorithm %q", p.Algorithm)
+	}
+
+	// Resolve relative paths against home before checking the module is readable.
+	if !filepath.IsAbs(p.Module) {
+		p.Module = filepath.Join(home, p.Module)
+	}
+	if p.PINFile != "" && !filepath.IsAbs(p.PINFile) {
+		p.PINFile = filepath.Join(home, p.PINFile)
+	}
+	if _, err := os.Stat(p.Module); err != nil {
+		return fmt.Errorf("config: pkcs11 provider module %q not readable: %w", p.Module, err)
+	}
+	c.Providers.PKCS11[i] = p
+
+	for _, id := range p.ChainIDs {
+		if _, ok := chainIDs[id]; !ok {
+			return fmt.Errorf("config: pkcs11 provider references unknown chain %q", id)
+		}
+		hasBackend[id] = true
 	}
 	return nil
 }

@@ -649,6 +649,73 @@ func TestTransportAddChannel(t *testing.T) {
 	}
 }
 
+// Listening on port 0 must report the OS-assigned port, not 0.
+func TestTransportMultiplexListenResolvesEphemeralPort(t *testing.T) {
+	mt := newMultiplexTransport(
+		emptyNodeInfo(),
+		NodeKey{
+			PrivKey: ed25519.GenPrivKey(),
+		},
+	)
+	id := mt.nodeKey.ID()
+
+	addr, err := NewNetAddressString(IDAddressString(id, "127.0.0.1:0"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mt.Listen(*addr); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = mt.Close() })
+
+	na := mt.NetAddress()
+	if na.Port == 0 {
+		t.Errorf("expected NetAddress to report a resolved port, got 0")
+	}
+
+	wantPort := uint16(mt.listener.Addr().(*net.TCPAddr).Port)
+	if na.Port != wantPort {
+		t.Errorf("expected reported port %d, got %d", wantPort, na.Port)
+	}
+
+	if na.ID != id {
+		t.Errorf("expected ID %q, got %q", id, na.ID)
+	}
+	if !na.IP.Equal(net.ParseIP("127.0.0.1")) {
+		t.Errorf("expected IP 127.0.0.1, got %s", na.IP)
+	}
+}
+
+// Listening on a wildcard host must keep the configured IP, not ln.Addr()'s.
+func TestTransportMultiplexListenPreservesConfiguredHost(t *testing.T) {
+	mt := newMultiplexTransport(
+		emptyNodeInfo(),
+		NodeKey{
+			PrivKey: ed25519.GenPrivKey(),
+		},
+	)
+	id := mt.nodeKey.ID()
+
+	addr, err := NewNetAddressString(IDAddressString(id, "0.0.0.0:0"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mt.Listen(*addr); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = mt.Close() })
+
+	na := mt.NetAddress()
+	if !na.IP.Equal(net.ParseIP("0.0.0.0")) {
+		t.Errorf("expected configured IP 0.0.0.0 to be preserved, got %s", na.IP)
+	}
+	if na.Port == 0 {
+		t.Errorf("expected NetAddress to report a resolved port, got 0")
+	}
+}
+
 // create listener
 func testSetupMultiplexTransport(t *testing.T) *MultiplexTransport {
 	var (

@@ -265,6 +265,10 @@ func (mt *MultiplexTransport) Listen(addr NetAddress) error {
 	}
 
 	mt.netAddr = addr
+	// Take the actual bound port (resolves port 0), but keep the configured IP.
+	if tcpAddr, ok := ln.Addr().(*net.TCPAddr); ok {
+		mt.netAddr.Port = uint16(tcpAddr.Port)
+	}
 	mt.listener = ln
 
 	go mt.acceptPeers()

@@ -6,6 +6,9 @@
 
 ### BUG FIXES
 
+- `[rpc]` escape the request `Host` in the endpoints listing page so it cannot
+  break out of the generated HTML
+  ([\#5921](https://github.com/cometbft/cometbft/pull/5921))
 - `[consensus]` Fix `double_sign_check_height = 1` performing no double-sign
   checks due to off-by-one error in loop condition (`i < N` should be
   `i <= N`). The value `1` now correctly checks the previous block as intended.
@@ -37,6 +40,8 @@
   ([\#5837](https://github.com/cometbft/cometbft/pull/5837))
 - `[abci]` fix deadlock when response callback re-enters the client.
   ([\#5850](https://github.com/cometbft/cometbft/pull/5850))
+- `[node]` use kernel-assigned ephemeral ports and fix `OnStart` cleanup
+  ([\#5868](https://github.com/cometbft/cometbft/pull/5868))
 - `[node]` close partial listeners on startRPC failure
   ([\#5869](https://github.com/cometbft/cometbft/pull/5869))
 - `[lp2p]` fallback to conn remote addr when resolving inbound peer

@@ -33,8 +33,9 @@ func TestBuildWiresChainSigners(t *testing.T) {
 	}
 	require.NoError(t, c.Validate(home))
 
-	mgr, err := app.Build(c, log.TestingLogger())
+	mgr, cleanup, err := app.Build(c, log.TestingLogger())
 	require.NoError(t, err)
+	t.Cleanup(cleanup)
 	require.NotNil(t, mgr)
 }
 
@@ -46,6 +47,7 @@ func TestBuildFailsOnMissingKeyFile(t *testing.T) {
 		Providers:  config.Providers{Softsign: []config.SoftsignProvider{{ChainIDs: []string{"c1"}, KeyFile: filepath.Join(home, "missing.json")}}},
 	}
 	require.NoError(t, c.Validate(home))
-	_, err := app.Build(c, log.TestingLogger())
+	_, cleanup, err := app.Build(c, log.TestingLogger())
+	t.Cleanup(cleanup)
 	require.Error(t, err)
 }

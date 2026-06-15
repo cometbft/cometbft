@@ -61,6 +61,7 @@ linters:
             - github.com/libp2p/go-libp2p
             - github.com/multiformats/go-multiaddr
             - github.com/mr-tron/base58/base58
+            - github.com/miekg/pkcs11
         test:
           files:
             - $test
@@ -92,6 +93,7 @@ linters:
             - github.com/libp2p/go-libp2p
             - github.com/multiformats/go-multiaddr
             - github.com/mr-tron/base58/base58
+            - github.com/miekg/pkcs11
     dogsled:
       max-blank-identifiers: 3
     gosec:

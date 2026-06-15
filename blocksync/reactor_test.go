@@ -485,7 +485,7 @@ func newFilterReactor(t *testing.T, enabled bool) *Reactor {
 
 	requestsCh := make(chan BlockRequest, 1000)
 	errorsCh := make(chan peerError, 1000)
-	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool := NewBlockPool(1, requestsCh, errorsCh, 1*time.Second)
 	require.NoError(t, pool.Start())
 	t.Cleanup(func() { _ = pool.Stop() })
 
@@ -946,7 +946,7 @@ func (bcR *ByzantineReactor) Receive(e p2p.Envelope) {
 func TestEnableRaceWithSetPeerRange(t *testing.T) {
 	requestsCh := make(chan BlockRequest, 1000)
 	errorsCh := make(chan peerError, 1000)
-	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool := NewBlockPool(1, requestsCh, errorsCh, 1*time.Second)
 	require.NoError(t, pool.Start())
 	t.Cleanup(func() { _ = pool.Stop() })
 
@@ -985,7 +985,7 @@ func TestEnableRaceWithSetPeerRange(t *testing.T) {
 func TestEnableRecomputesMaxPeerHeight(t *testing.T) {
 	requestsCh := make(chan BlockRequest, 1000)
 	errorsCh := make(chan peerError, 1000)
-	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool := NewBlockPool(1, requestsCh, errorsCh, 1*time.Second)
 	require.NoError(t, pool.Start())
 	t.Cleanup(func() { _ = pool.Stop() })
 

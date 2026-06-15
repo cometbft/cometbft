@@ -547,44 +547,73 @@ func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.Response
 
 // LoadValidators loads the ValidatorSet for a given height.
 // Returns ErrNoValSetForHeight if the validator set can't be found for this height.
+//
+// If the validator set was last persisted at a checkpoint earlier than height,
+// LoadValidators advances proposer priorities forward via
+// IncrementProposerPriority. That advance is O(height - lastStoredHeight) and
+// can dominate replay time on chains with infrequent validator-set changes
+// (issue #1693). For call sites that only read validator addresses and voting
+// powers (e.g. building ABCI VoteInfo / CommitInfo), prefer LoadValidatorsFast.
 func (store dbStore) LoadValidators(height int64) (*types.ValidatorSet, error) {
-	valInfo, err := loadValidatorsInfo(store.db, height)
-	if err != nil {
-		return nil, ErrNoValSetForHeight{height}
-	}
-	if valInfo.ValidatorSet == nil {
-		lastStoredHeight := lastStoredHeightFor(height, valInfo.LastHeightChanged)
-		valInfo2, err := loadValidatorsInfo(store.db, lastStoredHeight)
-		if err != nil || valInfo2.ValidatorSet == nil {
-			return nil,
-				fmt.Errorf("couldn't find validators at height %d (height %d was originally requested): %w",
-					lastStoredHeight,
-					height,
-					err,
-				)
-		}
-
-		vs, err := types.ValidatorSetFromProto(valInfo2.ValidatorSet)
-		if err != nil {
-			return nil, err
-		}
-
-		vs.IncrementProposerPriority(cmtmath.SafeConvertInt32(height - lastStoredHeight)) // mutate
-		vi2, err := vs.ToProto()
-		if err != nil {
-			return nil, err
-		}
-
-		valInfo2.ValidatorSet = vi2
-		valInfo = valInfo2
-	}
-
-	vip, err := types.ValidatorSetFromProto(valInfo.ValidatorSet)
+	valInfo, lastStoredHeight, err := store.loadValidatorsAtHeight(height)
 	if err != nil {
 		return nil, err
 	}
+	vs, err := types.ValidatorSetFromProto(valInfo.ValidatorSet)
+	if err != nil {
+		return nil, err
+	}
+	if lastStoredHeight != height {
+		vs.IncrementProposerPriority(cmtmath.SafeConvertInt32(height - lastStoredHeight)) // mutate
+	}
+	return vs, nil
+}
 
-	return vip, nil
+// LoadValidatorsFast loads the ValidatorSet for a given height without
+// advancing proposer priorities forward from the most recent checkpoint.
+//
+// The returned ValidatorSet has correct addresses, public keys, and voting
+// powers; ProposerPriority fields reflect the last stored checkpoint, not the
+// requested height. Callers that need accurate proposer priority MUST use
+// LoadValidators instead.
+//
+// This method is intentionally not part of the Store interface — adding it
+// there would force every external Store implementation to provide it.
+// Callers should use the duck-typed helper in state/execution.go which falls
+// back to LoadValidators when the underlying store does not implement this
+// fast path.
+func (store dbStore) LoadValidatorsFast(height int64) (*types.ValidatorSet, error) {
+	valInfo, _, err := store.loadValidatorsAtHeight(height)
+	if err != nil {
+		return nil, err
+	}
+	return types.ValidatorSetFromProto(valInfo.ValidatorSet)
+}
+
+// loadValidatorsAtHeight returns the ValidatorsInfo whose ValidatorSet covers
+// height, together with the height at which that ValidatorSet was actually
+// stored. If the requested height has no stored ValidatorSet (i.e. unchanged
+// since the last checkpoint), the call falls back to the most recent stored
+// checkpoint and returns the difference via lastStoredHeight so callers can
+// decide whether to apply IncrementProposerPriority.
+func (store dbStore) loadValidatorsAtHeight(height int64) (*cmtstate.ValidatorsInfo, int64, error) {
+	valInfo, err := loadValidatorsInfo(store.db, height)
+	if err != nil {
+		return nil, 0, ErrNoValSetForHeight{height}
+	}
+	if valInfo.ValidatorSet != nil {
+		return valInfo, height, nil
+	}
+
+	lastStoredHeight := lastStoredHeightFor(height, valInfo.LastHeightChanged)
+	valInfo2, err := loadValidatorsInfo(store.db, lastStoredHeight)
+	if err != nil || valInfo2.ValidatorSet == nil {
+		return nil, 0, fmt.Errorf(
+			"couldn't find validators at height %d (height %d was originally requested): %w",
+			lastStoredHeight, height, err,
+		)
+	}
+	return valInfo2, lastStoredHeight, nil
 }
 
 func lastStoredHeightFor(height, lastHeightChanged int64) int64 {

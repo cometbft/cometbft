@@ -53,6 +53,10 @@
   ([\#5889](https://github.com/cometbft/cometbft/pull/5889))
 - `[execution]` cache validator set within a block cycle.
   ([\#5834](https://github.com/cometbft/cometbft/pull/5834))
+- `[state]` skip the proposer-priority advance when loading validators for the
+  block-replay commit-info path (`LoadValidatorsFast`); up to ~900x faster at
+  the largest checkpoint offsets.
+  ([\#5204](https://github.com/cometbft/cometbft/issues/5204))
 - `[consensus]` reuse encode/decode buffers in WALEncoder and WALDecoder.
   ([\#5865](https://github.com/cometbft/cometbft/pull/5865))
 - `[blocksync]` validate blocksync response sender and signature count

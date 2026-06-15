@@ -108,7 +108,7 @@ func TestBlockPoolBasic(t *testing.T) {
 		errorsCh   = make(chan peerError)
 		requestsCh = make(chan BlockRequest)
 	)
-	pool := NewBlockPool(start, requestsCh, errorsCh)
+	pool := NewBlockPool(start, requestsCh, errorsCh, 1*time.Second)
 	pool.SetLogger(log.TestingLogger())
 
 	err := pool.Start()
@@ -201,7 +201,7 @@ func TestBlockPoolTimeout(t *testing.T) {
 		requestsCh = make(chan BlockRequest)
 	)
 
-	pool := NewBlockPool(start, requestsCh, errorsCh)
+	pool := NewBlockPool(start, requestsCh, errorsCh, 1*time.Second)
 	pool.SetLogger(log.TestingLogger())
 	err := pool.Start()
 	if err != nil {
@@ -270,7 +270,7 @@ func TestBlockPoolRemovePeer(t *testing.T) {
 	requestsCh := make(chan BlockRequest)
 	errorsCh := make(chan peerError)
 
-	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool := NewBlockPool(1, requestsCh, errorsCh, 1*time.Second)
 	pool.SetLogger(log.TestingLogger())
 	err := pool.Start()
 	require.NoError(t, err)
@@ -327,7 +327,7 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 	errorsCh := make(chan peerError)
 	requestsCh := make(chan BlockRequest)
 
-	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool := NewBlockPool(1, requestsCh, errorsCh, 1*time.Second)
 	pool.SetLogger(log.TestingLogger())
 
 	err := pool.Start()
@@ -438,7 +438,7 @@ func TestBlockPoolMaliciousNodeMaxInt64(t *testing.T) {
 	errorsCh := make(chan peerError, 3)
 	requestsCh := make(chan BlockRequest)
 
-	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool := NewBlockPool(1, requestsCh, errorsCh, 1*time.Second)
 	pool.SetLogger(log.TestingLogger())
 
 	err := pool.Start()
@@ -544,7 +544,7 @@ func TestBlockPoolBansPeerWithBaseGreaterThanHeight(t *testing.T) {
 	requestsCh := make(chan BlockRequest, 10)
 	errorsCh := make(chan peerError, 10)
 
-	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool := NewBlockPool(1, requestsCh, errorsCh, 1*time.Second)
 	pool.SetLogger(log.TestingLogger())
 
 	badID := p2p.ID("bad")
@@ -561,7 +561,7 @@ func TestBlockPoolMaxPeerHeightRefreshesOnPopRequest(t *testing.T) {
 	requestsCh := make(chan BlockRequest, 10)
 	errorsCh := make(chan peerError, 10)
 
-	pool := NewBlockPool(10, requestsCh, errorsCh)
+	pool := NewBlockPool(10, requestsCh, errorsCh, 1*time.Second)
 	pool.SetLogger(log.TestingLogger())
 
 	// Peer A's range covers pool.height, so it contributes to maxPeerHeight.
@@ -577,7 +577,12 @@ func TestBlockPoolMaxPeerHeightRefreshesOnPopRequest(t *testing.T) {
 	// requester is never started, so Stop() is a logged no-op.
 	for h := int64(10); h < 15; h++ {
 		pool.mtx.Lock()
-		pool.requesters[h] = newBPRequester(pool, h)
+		r := newBPRequester(pool, h)
+		pool.requesters[h] = r
+		r.setBlock(
+			&types.Block{Header: types.Header{Height: h, Time: time.Now()}},
+			nil, r.peerID,
+		)
 		pool.mtx.Unlock()
 		pool.PopRequest()
 	}
@@ -592,7 +597,7 @@ func TestBlockPoolHasPendingRequestFrom(t *testing.T) {
 	requestsCh := make(chan BlockRequest, 10)
 	errorsCh := make(chan peerError, 10)
 
-	pool := NewBlockPool(1, requestsCh, errorsCh)
+	pool := NewBlockPool(1, requestsCh, errorsCh, 1*time.Second)
 	pool.SetLogger(log.TestingLogger())
 
 	const (
@@ -635,4 +640,122 @@ func TestBlockPoolHasPendingRequestFrom(t *testing.T) {
 
 	require.False(t, pool.HasPendingRequestFrom(primary))
 	require.False(t, pool.HasPendingRequestFrom(secondary))
+}
+
+// TestBlockPoolTwoMaliciousPeersStaggered verifies that two malicious peers reporting
+// inflated heights and reconnecting after timeout cannot stall blocksync indefinitely.
+//
+// Attack scenario (works against the old maxPeerHeight-only IsCaughtUp):
+//   - Two attackers report Height=MaxInt64, staggered so at least one is always in the pool
+//   - maxPeerHeight stays at MaxInt64 forever → IsCaughtUp() never returns true
+//   - Node is permanently stuck in blocksync
+//
+// Defense (pure timeout-based IsCaughtUp):
+//   - After syncing past the honest peer's tip, no more blocks arrive
+//   - lastBlockTime stops updating → timeout fires → escape
+//   - The attackers' inflated height claims are irrelevant
+func TestBlockPoolTwoMaliciousPeersStaggered(t *testing.T) {
+	const honestHeight = int64(50)
+
+	errorsCh := make(chan peerError, 10)
+	requestsCh := make(chan BlockRequest, 100)
+
+	pool := NewBlockPool(1, requestsCh, errorsCh, 1*time.Second)
+	pool.SetLogger(log.TestingLogger())
+	require.NoError(t, pool.Start())
+	t.Cleanup(func() { _ = pool.Stop() })
+
+	// Set up honest peers at the real chain tip
+	pool.SetPeerRange(p2p.ID("good1"), 1, honestHeight)
+	pool.SetPeerRange(p2p.ID("good2"), 1, honestHeight)
+
+	// Two malicious peers report MaxInt64:
+	//   bad1  — added early, gets assigned to requesters, times out,
+	//           gets removed by removeTimedoutPeers, reconnects every 100ms
+	//   bad2  — added AFTER the requester creation burst (3.5s). The first
+	//           80 requesters (4 peers × 20) are created at 2ms intervals
+	//           after peerConnWait (3s), so by 3.5s all requesters are
+	//           already cycling through bad1 with 30s retryTimer. bad2
+	//           never gets assigned, never has incrPending called, and
+	//           silently keeps maxPeerHeight at MaxInt64 permanently.
+	const reconInterval = 100 * time.Millisecond
+	stopReconn := make(chan struct{})
+	defer close(stopReconn)
+
+	pool.SetPeerRange(p2p.ID("bad1"), 1, math.MaxInt64)
+	go func() {
+		for {
+			select {
+			case <-stopReconn:
+				return
+			case <-time.After(reconInterval):
+				pool.SetPeerRange(p2p.ID("bad1"), 1, math.MaxInt64)
+			}
+		}
+	}()
+	// bad2: silent guardian, added after requester burst
+	go func() {
+		time.Sleep(3500 * time.Millisecond)
+		pool.SetPeerRange(p2p.ID("bad2"), 1, math.MaxInt64)
+		for {
+			select {
+			case <-stopReconn:
+				return
+			case <-time.After(reconInterval):
+				pool.SetPeerRange(p2p.ID("bad2"), 1, math.MaxInt64)
+			}
+		}
+	}()
+
+	// Simulate block sync up to the honest peer's tip
+	for h := int64(1); h <= honestHeight; h++ {
+		pool.mtx.Lock()
+		r := newBPRequester(pool, h)
+		pool.requesters[h] = r
+		r.setBlock(
+			&types.Block{Header: types.Header{Height: h, Time: time.Now()}},
+			nil, r.peerID,
+		)
+		pool.mtx.Unlock()
+		pool.PopRequest()
+	}
+
+	require.EqualValues(t, honestHeight+1, pool.Height(),
+		"pool height advanced past honest peers")
+
+	// Drain requestsCh: the attacker never responds to requests,
+	// forcing requesters to wait for the 30s retryTimer.
+	go func() {
+		for {
+			if !pool.IsRunning() {
+				return
+			}
+			select {
+			case <-requestsCh:
+			case <-pool.Quit():
+				return
+			}
+		}
+	}()
+
+	// Core assertion: IsCaughtUp() must eventually return true.
+	// With the original maxPeerHeight-only check, this assertion
+	// FAILS because pool.height (51) >= MaxInt64-1 is never true.
+	// With the timeout-based fix, IsCaughtUp() returns true after
+	// noBlockTimeout (1s in tests) elapses without any new blocks.
+	//
+	// This is a negative test: it fails against the original code
+	// and passes against the fixed code.
+	t.Logf("Waiting for IsCaughtUp() to return true (maxPeerHeight=%d, height=%d)",
+		pool.MaxPeerHeight(), pool.Height())
+	require.Eventually(t, func() bool {
+		return pool.IsCaughtUp()
+	}, 10*time.Second, 50*time.Millisecond,
+		"IsCaughtUp() never returned true — node would be permanently stuck in blocksync. "+
+			"This is EXPECTED for the original maxPeerHeight-only check (the vulnerability). "+
+			"With the timeout-based fix, IsCaughtUp() returns true after noBlockTimeout.")
+
+	t.Logf("IsCaughtUp() became true (height=%d, maxPeerHeight=%d, peers=%d) — "+
+		"node would escape blocksync despite the attackers",
+		pool.Height(), pool.MaxPeerHeight(), len(pool.peers))
 }

@@ -6,6 +6,10 @@
 
 ### BUG FIXES
 
+- `[p2p]` report the OS-assigned port when listening on port `0`, so
+  `NodeInfo.ListenAddr`, the `/status` RPC, and `Switch.NetAddress()` no longer
+  report port `0`
+  ([\#5928](https://github.com/cometbft/cometbft/pull/5928))
 - `[rpc]` escape the request `Host` in the endpoints listing page so it cannot
   break out of the generated HTML
   ([\#5921](https://github.com/cometbft/cometbft/pull/5921))

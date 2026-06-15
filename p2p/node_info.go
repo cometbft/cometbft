@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"net"
 	"reflect"
+	"strconv"
+	"strings"
 
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtstrings "github.com/cometbft/cometbft/libs/strings"
@@ -224,6 +227,25 @@ func (info DefaultNodeInfo) NetAddress() (*NetAddress, error) {
 
 func (info DefaultNodeInfo) HasChannel(chID byte) bool {
 	return bytes.Contains(info.Channels, []byte{chID})
+}
+
+// WithListenPort returns a copy of info with ListenAddr's port set to port when
+// the configured port is 0. Host and scheme are preserved; a non-zero or
+// unparseable ListenAddr is returned unchanged.
+func (info DefaultNodeInfo) WithListenPort(port uint16) DefaultNodeInfo {
+	scheme := ""
+	addr := info.ListenAddr
+	if i := strings.Index(addr, "://"); i >= 0 {
+		scheme, addr = addr[:i+len("://")], addr[i+len("://"):]
+	}
+
+	host, portStr, err := net.SplitHostPort(addr)
+	if err != nil || portStr != "0" {
+		return info
+	}
+
+	info.ListenAddr = scheme + net.JoinHostPort(host, strconv.Itoa(int(port)))
+	return info
 }
 
 func (info DefaultNodeInfo) ToProto() *tmp2p.DefaultNodeInfo {

@@ -716,6 +716,33 @@ func TestTransportMultiplexListenPreservesConfiguredHost(t *testing.T) {
 	}
 }
 
+// Listening on port 0 must update the advertised NodeInfo.ListenAddr (sent to
+// peers in the handshake) with the resolved port.
+func TestTransportMultiplexListenUpdatesNodeInfoPort(t *testing.T) {
+	pv := ed25519.GenPrivKey()
+	id := PubKeyToID(pv.PubKey())
+	ni := testNodeInfo(id, "transport").(DefaultNodeInfo)
+	ni.ListenAddr = "127.0.0.1:0"
+
+	mt := newMultiplexTransport(ni, NodeKey{PrivKey: pv})
+
+	addr, err := NewNetAddressString(IDAddressString(id, "127.0.0.1:0"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mt.Listen(*addr); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = mt.Close() })
+
+	wantPort := uint16(mt.listener.Addr().(*net.TCPAddr).Port)
+	wantAddr := fmt.Sprintf("127.0.0.1:%d", wantPort)
+	if got := mt.nodeInfo.(DefaultNodeInfo).ListenAddr; got != wantAddr {
+		t.Errorf("expected advertised ListenAddr %q, got %q", wantAddr, got)
+	}
+}
+
 // create listener
 func testSetupMultiplexTransport(t *testing.T) *MultiplexTransport {
 	var (

@@ -123,3 +123,26 @@ func TestNodeInfoCompatible(t *testing.T) {
 		assert.Error(t, ni1.CompatibleWith(ni))
 	}
 }
+
+func TestNodeInfoWithListenPort(t *testing.T) {
+	const resolved = uint16(45678)
+
+	testCases := []struct {
+		name       string
+		listenAddr string
+		want       string
+	}{
+		{"replaces zero port", "127.0.0.1:0", "127.0.0.1:45678"},
+		{"keeps configured host", "0.0.0.0:0", "0.0.0.0:45678"},
+		{"preserves scheme", "tcp://127.0.0.1:0", "tcp://127.0.0.1:45678"},
+		{"leaves non-zero port", "127.0.0.1:26656", "127.0.0.1:26656"},
+		{"leaves unparseable addr", "not-an-address", "not-an-address"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ni := DefaultNodeInfo{ListenAddr: tc.listenAddr}
+			assert.Equal(t, tc.want, ni.WithListenPort(resolved).ListenAddr)
+		})
+	}
+}

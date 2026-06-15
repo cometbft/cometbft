@@ -699,6 +699,14 @@ func (n *Node) OnStart() error {
 			return err
 		}
 		mpListening = true
+
+		// Report the OS-assigned port when listening on ":0", unless an explicit
+		// ExternalAddress is set.
+		if n.config.P2P.ExternalAddress == "" {
+			if ni, ok := n.nodeInfo.(p2p.DefaultNodeInfo); ok {
+				n.nodeInfo = ni.WithListenPort(mp.NetAddress().Port)
+			}
+		}
 	}
 
 	// Start the switch (the P2P server).

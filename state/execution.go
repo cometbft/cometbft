@@ -538,6 +538,29 @@ func (blockExec *BlockExecutor) setLastValidatedBlock(old, new *types.Block) {
 //---------------------------------------------------------
 // Helper functions for executing blocks and updating state
 
+// fastValidatorLoader is the duck-typed interface for stores that can return a
+// ValidatorSet without advancing proposer priorities. dbStore implements it
+// (see state/store.go); external Store implementations don't have to. The
+// helper below uses the fast path when available and falls back to
+// LoadValidators otherwise, so the addition stays additive for third-party
+// Store implementors.
+type fastValidatorLoader interface {
+	LoadValidatorsFast(int64) (*types.ValidatorSet, error)
+}
+
+// loadValidatorsForCommitInfo loads the ValidatorSet at height for building ABCI
+// CommitInfo records, which only read validator addresses and voting powers.
+// When store implements LoadValidatorsFast it is used to skip the
+// IncrementProposerPriority loop that dominates replay time on chains with
+// infrequent validator-set changes (issue #1693); otherwise it falls back to
+// LoadValidators.
+func loadValidatorsForCommitInfo(store Store, height int64) (*types.ValidatorSet, error) {
+	if fast, ok := store.(fastValidatorLoader); ok {
+		return fast.LoadValidatorsFast(height)
+	}
+	return store.LoadValidators(height)
+}
+
 func buildLastCommitInfoFromStore(block *types.Block, store Store, initialHeight int64) abci.CommitInfo {
 	if block.Height == initialHeight { // check for initial height before loading validators
 		// there is no last commit for the initial height.
@@ -545,7 +568,7 @@ func buildLastCommitInfoFromStore(block *types.Block, store Store, initialHeight
 		return abci.CommitInfo{}
 	}
 
-	lastValSet, err := store.LoadValidators(block.Height - 1)
+	lastValSet, err := loadValidatorsForCommitInfo(store, block.Height-1)
 	if err != nil {
 		panic(fmt.Errorf("failed to load validator set at height %d: %w", block.Height-1, err))
 	}

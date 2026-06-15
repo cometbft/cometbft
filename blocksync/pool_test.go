@@ -260,6 +260,53 @@ func TestBlockPoolTimeout(t *testing.T) {
 	}
 }
 
+func TestBPRequesterRedoPreservesBothPeers(t *testing.T) {
+	requester := newBPRequester(nil, 1)
+	requester.redo("peerA")
+	requester.redo("peerB")
+
+	// Exactly one coalesced wake-up signal.
+	require.Equal(t, 1, len(requester.redoCh))
+
+	requester.mtx.Lock()
+	events := requester.redoPeers
+	requester.mtx.Unlock()
+
+	peerSet := map[p2p.ID]struct{}{}
+	for _, ev := range events {
+		peerSet[ev.peerID] = struct{}{}
+	}
+	require.Contains(t, peerSet, p2p.ID("peerA"))
+	require.Contains(t, peerSet, p2p.ID("peerB"))
+}
+
+// Regression test: with the old chan p2p.ID capacity-1 design, if a redo signal
+// was already pending in the channel, a concurrent redo for the second peer would
+// be silently dropped. Verify that no redo event is ever lost.
+func TestBPRequesterRedoNeverDropsEvent(t *testing.T) {
+	requester := newBPRequester(nil, 1)
+
+	// Two redo calls for peerA fill the old capacity-2 channel, then peerB's
+	// redo would have been dropped with the previous implementation.
+	requester.redo("peerA")
+	requester.redo("peerA")
+	requester.redo("peerB")
+
+	// Still exactly one wake-up signal (coalesced).
+	require.Equal(t, 1, len(requester.redoCh))
+
+	requester.mtx.Lock()
+	events := requester.redoPeers
+	requester.mtx.Unlock()
+
+	counts := map[p2p.ID]int{}
+	for _, ev := range events {
+		counts[ev.peerID]++
+	}
+	require.Equal(t, 2, counts["peerA"])
+	require.Equal(t, 1, counts["peerB"], "peerB redo must not be dropped")
+}
+
 func TestBlockPoolRemovePeer(t *testing.T) {
 	peers := make(testPeers, 10)
 	for i := 0; i < 10; i++ {

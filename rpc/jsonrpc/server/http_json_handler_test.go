@@ -282,3 +282,23 @@ func TestRPCResponseCache(t *testing.T) {
 	res.Body.Close()
 	require.Nil(t, err, "reading from the body should not give back an error")
 }
+
+// The endpoints listing builds links from the request Host, so that value must
+// be escaped before it reaches the HTML page.
+func TestListOfEndpointsEscapesHost(t *testing.T) {
+	mux := testMux()
+
+	req, err := http.NewRequest("GET", "http://localhost/", strings.NewReader(""))
+	require.NoError(t, err)
+	req.Host = `localhost"><script>alert(1)</script>`
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	res := rec.Result()
+
+	body, err := io.ReadAll(res.Body)
+	res.Body.Close()
+	require.NoError(t, err)
+
+	assert.NotContains(t, string(body), `"><script>`)
+	assert.Contains(t, string(body), `&lt;script&gt;`)
+}

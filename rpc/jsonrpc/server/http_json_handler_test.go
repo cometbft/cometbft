@@ -99,12 +99,18 @@ func TestJSONRPCID(t *testing.T) {
 		{`{"jsonrpc": "2.0", "method": "c", "id": "abc", "params": ["a", "10"]}`, false, types.JSONRPCStringID("abc")},
 		{`{"jsonrpc": "2.0", "method": "c", "id": 0, "params": ["a", "10"]}`, false, types.JSONRPCIntID(0)},
 		{`{"jsonrpc": "2.0", "method": "c", "id": 1, "params": ["a", "10"]}`, false, types.JSONRPCIntID(1)},
-		{`{"jsonrpc": "2.0", "method": "c", "id": 1.3, "params": ["a", "10"]}`, false, types.JSONRPCIntID(1)},
 		{`{"jsonrpc": "2.0", "method": "c", "id": -1, "params": ["a", "10"]}`, false, types.JSONRPCIntID(-1)},
 
 		// bad id
 		{`{"jsonrpc": "2.0", "method": "c", "id": {}, "params": ["a", "10"]}`, true, nil},
 		{`{"jsonrpc": "2.0", "method": "c", "id": [], "params": ["a", "10"]}`, true, nil},
+		// Fractional numeric IDs are rejected per JSON-RPC 2.0 ("SHOULD NOT
+		// contain decimals"); pre-#5846 this silently truncated to int(1.3)=1
+		// which made request/response correlation ambiguous.
+		{`{"jsonrpc": "2.0", "method": "c", "id": 1.3, "params": ["a", "10"]}`, true, nil},
+		// Numeric IDs outside int64 saturate to math.MinInt on amd64
+		// (#5846); reject them with an explicit error.
+		{`{"jsonrpc": "2.0", "method": "c", "id": 1e20, "params": ["a", "10"]}`, true, nil},
 	}
 
 	for i, tt := range tests {
@@ -275,4 +281,24 @@ func TestRPCResponseCache(t *testing.T) {
 
 	res.Body.Close()
 	require.Nil(t, err, "reading from the body should not give back an error")
+}
+
+// The endpoints listing builds links from the request Host, so that value must
+// be escaped before it reaches the HTML page.
+func TestListOfEndpointsEscapesHost(t *testing.T) {
+	mux := testMux()
+
+	req, err := http.NewRequest("GET", "http://localhost/", strings.NewReader(""))
+	require.NoError(t, err)
+	req.Host = `localhost"><script>alert(1)</script>`
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	res := rec.Result()
+
+	body, err := io.ReadAll(res.Body)
+	res.Body.Close()
+	require.NoError(t, err)
+
+	assert.NotContains(t, string(body), `"><script>`)
+	assert.Contains(t, string(body), `&lt;script&gt;`)
 }

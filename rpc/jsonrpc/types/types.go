@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"reflect"
 	"strings"
@@ -37,7 +38,31 @@ func idFromInterface(idInterface any) (jsonrpcid, error) {
 		// json.Unmarshal uses float64 for all numbers
 		// (https://golang.org/pkg/encoding/json/#Unmarshal),
 		// but the JSONRPC2.0 spec says the id SHOULD NOT contain
-		// decimals - so we truncate the decimals here.
+		// decimals — so we expect an integer-valued float here.
+		//
+		// Reject anything int(id) cannot safely produce. Without these
+		// checks an out-of-int64 input saturates to math.MinInt on amd64
+		// (cvttsd2si) and to other implementation-defined values on other
+		// architectures (Go spec §6.5 — float-to-int conversion of an
+		// unrepresentable value yields an implementation-dependent result).
+		// In every case the silent saturation collapses distinct large IDs
+		// onto a single negative value, breaking JSON-RPC request /
+		// response correlation. See #5846.
+		if math.IsNaN(id) || math.IsInf(id, 0) {
+			return nil, fmt.Errorf("json-rpc ID must be a finite number, got %v", id)
+		}
+		if id != math.Trunc(id) {
+			return nil, fmt.Errorf("json-rpc ID must be a whole number, got %v", id)
+		}
+		// float64(math.MaxInt64) rounds UP to 2^63 because 2^63 - 1 has no
+		// exact float64 representation; we therefore reject the closed
+		// upper bound (>=) so the boundary case id == 2^63 is caught
+		// regardless of how int(id) behaves on the host architecture.
+		// float64(math.MinInt64) == -2^63 is exactly representable so the
+		// lower bound stays strict.
+		if id >= float64(math.MaxInt64) || id < float64(math.MinInt64) {
+			return nil, fmt.Errorf("json-rpc ID out of int64 range, got %v", id)
+		}
 		return JSONRPCIntID(int(id)), nil
 	default:
 		typ := reflect.TypeOf(id)

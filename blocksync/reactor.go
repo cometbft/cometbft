@@ -31,6 +31,9 @@ const (
 
 	// adaptiveSync ticker. Still quick, just bursts fewer cpu cycles
 	intervalAdaptiveSync = 5 * intervalTrySync
+
+	// defaultNoBlockTimeout is the
+	defaultNoBlockTimeout = 30 * time.Second
 )
 
 type consensusReactor interface {
@@ -131,7 +134,7 @@ func NewReactor(
 	if startHeight == 1 {
 		startHeight = state.InitialHeight
 	}
-	pool := NewBlockPool(startHeight, requestsCh, errorsCh)
+	pool := NewBlockPool(startHeight, requestsCh, errorsCh, defaultNoBlockTimeout)
 
 	enabledFlag := &atomic.Bool{}
 	enabledFlag.Store(enabled)

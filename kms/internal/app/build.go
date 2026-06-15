@@ -2,6 +2,7 @@
 package app
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 
 	"github.com/cometbft/cometbft/kms/internal/backend"
+	"github.com/cometbft/cometbft/kms/internal/backend/awskms"
 	"github.com/cometbft/cometbft/kms/internal/backend/pkcs11"
 	"github.com/cometbft/cometbft/kms/internal/backend/softsign"
 	"github.com/cometbft/cometbft/kms/internal/config"
@@ -75,6 +77,27 @@ func Build(c *config.Config, logger log.Logger) (mgr *manager.Manager, cleanup f
 			return nil, cleanup, oerr
 		}
 		closers = append(closers, s)
+		for _, id := range p.ChainIDs {
+			if _, dup := backends[id]; dup {
+				return nil, cleanup, fmt.Errorf("app: multiple backends bound to chain %q", id)
+			}
+			backends[id] = s
+		}
+	}
+
+	for _, p := range c.Providers.AWSKMS {
+		s, oerr := awskms.Open(context.Background(), awskms.Config{
+			KeyID:     p.KeyID,
+			Region:    p.Region,
+			Profile:   p.Profile,
+			Endpoint:  p.Endpoint,
+			Algorithm: p.Algorithm,
+		})
+		if oerr != nil {
+			return nil, cleanup, oerr
+		}
+		// awskms holds no closable resource (unlike pkcs11), so it is not added
+		// to closers.
 		for _, id := range p.ChainIDs {
 			if _, dup := backends[id]; dup {
 				return nil, cleanup, fmt.Errorf("app: multiple backends bound to chain %q", id)

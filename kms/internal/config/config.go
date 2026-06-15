@@ -35,6 +35,7 @@ type Validator struct {
 type Providers struct {
 	Softsign []SoftsignProvider `toml:"softsign"`
 	PKCS11   []PKCS11Provider   `toml:"pkcs11"`
+	AWSKMS   []AWSKMSProvider   `toml:"awskms"`
 }
 
 // SoftsignProvider binds a softsign key file to one or more chains.
@@ -58,6 +59,19 @@ type PKCS11Provider struct {
 	PINEnv     string   `toml:"pin_env"`     // name of env var holding the PIN
 	PINFile    string   `toml:"pin_file"`    // path to a file holding the PIN
 	Algorithm  string   `toml:"algorithm"`   // key algorithm; defaults to "ed25519"
+}
+
+// AWSKMSProvider binds an Ed25519 key stored in AWS KMS to one or more chains.
+// The private key never leaves KMS; signing is performed by the KMS Sign API.
+// Credentials are resolved by the AWS default credential chain — no secret
+// material is placed here. Algorithm defaults to "ed25519" when empty.
+type AWSKMSProvider struct {
+	ChainIDs  []string `toml:"chain_ids"`
+	KeyID     string   `toml:"key_id"`    // KMS key id, ARN, or alias/<name>
+	Region    string   `toml:"region"`    // optional; AWS default chain otherwise
+	Profile   string   `toml:"profile"`   // optional shared-config profile
+	Endpoint  string   `toml:"endpoint"`  // optional endpoint override (LocalStack/testing)
+	Algorithm string   `toml:"algorithm"` // key algorithm; defaults to "ed25519"
 }
 
 // Load parses a TOML config file.

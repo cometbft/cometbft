@@ -6,6 +6,9 @@
 
 ### BUG FIXES
 
+- `[rpc]` escape the request `Host` in the endpoints listing page so it cannot
+  break out of the generated HTML
+  ([\#5921](https://github.com/cometbft/cometbft/pull/5921))
 - `[consensus]` Fix `double_sign_check_height = 1` performing no double-sign
   checks due to off-by-one error in loop condition (`i < N` should be
   `i <= N`). The value `1` now correctly checks the previous block as intended.

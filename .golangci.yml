@@ -62,6 +62,7 @@ linters:
             - github.com/multiformats/go-multiaddr
             - github.com/mr-tron/base58/base58
             - github.com/miekg/pkcs11
+            - github.com/aws/aws-sdk-go-v2
         test:
           files:
             - $test
@@ -94,6 +95,7 @@ linters:
             - github.com/multiformats/go-multiaddr
             - github.com/mr-tron/base58/base58
             - github.com/miekg/pkcs11
+            - github.com/aws/aws-sdk-go-v2
     dogsled:
       max-blank-identifiers: 3
     gosec:

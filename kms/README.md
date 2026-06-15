@@ -23,7 +23,7 @@ mandatory per-chain double-sign protection.
 | Multi-chain, multi-validator support | **Supported** |
 | Double-sign protection (reuses CometBFT FilePV state machine) | **Supported** |
 | Dial-out + automatic exponential-backoff reconnect | **Supported** |
-| AWS KMS backend | Planned |
+| `awskms` key backend (AWS KMS, Ed25519) | **Supported** |
 | libp2p transport (Noise) | **Supported**  |
 | Account / raw-bytes / ECDSA signing | Planned |
 | ML-DSA / eth_secp256k1 key types | Planned |
@@ -183,6 +183,44 @@ pin_env     = "COMETKMS_PIN"
 # algorithm defaults to "ed25519"
 ```
 
+### `[[providers.awskms]]`
+
+Binds an Ed25519 key stored in AWS KMS to one or more chains. The private key
+never leaves KMS: signing is performed by the KMS `Sign` API using the
+`ECC_NIST_EDWARDS25519` key spec and the `ED25519_SHA_512` (PureEd25519)
+algorithm. AWS credentials are resolved by the standard AWS default credential
+chain (environment variables, shared config/credentials files, SSO, or an
+IAM instance/container role) — no secrets are placed in the cometkms config.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `chain_ids` | list of strings | yes | Chain IDs this key is used to sign for. Each chain may only have one backend (softsign, pkcs11, *or* awskms). |
+| `key_id` | string | yes | KMS key identifier: a key id, full key ARN, or an alias (`alias/<name>`). |
+| `region` | string | no | AWS region of the key. Falls back to the AWS default chain (e.g. `AWS_REGION`) when omitted. |
+| `profile` | string | no | Shared-config profile name to use. Falls back to the AWS default chain when omitted. |
+| `endpoint` | string | no | Custom KMS endpoint URL. Intended for LocalStack / testing; leave unset for real AWS. |
+| `algorithm` | string | no | Key algorithm. Defaults to `ed25519` (the only supported value today). |
+
+Provision the key with your AWS tooling before starting `cometkms`; the KMS only
+*uses* an existing key, it does not create or import keys. The key must be an
+asymmetric `ECC_NIST_EDWARDS25519` key with key usage `SIGN_VERIFY`. Example
+using the AWS CLI:
+
+```sh
+aws kms create-key --key-spec ECC_NIST_EDWARDS25519 --key-usage SIGN_VERIFY
+aws kms create-alias --alias-name alias/validator --target-key-id <key-id>
+```
+
+Example provider block (region pinned, credentials from an IAM role):
+
+```toml
+[[providers.awskms]]
+chain_ids = ["cosmoshub-4"]
+key_id    = "alias/validator"
+region    = "us-east-1"
+# algorithm defaults to "ed25519"
+```
+
 ---
 
 ## Example config
@@ -321,7 +359,7 @@ CometBFT are Ed25519, so no extra setup is needed.
 
 - **softsign is NOT for production custody.** The private key is loaded from
   disk and held in process memory in plaintext for the lifetime of the process.
-  Use the `pkcs11` backend (or a future AWS KMS backend) for production
+  Use the `pkcs11` backend (or the `awskms` backend) for production
   environments where the key must never leave secure hardware.
 - **The identity key is not the consensus signing key.** `identity.json`
   authenticates the SecretConnection channel; it does not sign consensus

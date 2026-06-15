@@ -42,6 +42,14 @@ key_file = "priv_validator_key.json"
 # token_label = "comet"
 # key_label   = "validator"
 # pin_env     = "COMETKMS_PIN"
+#
+# Or to sign from an AWS KMS Ed25519 key, use an awskms provider (AWS
+# credentials come from the standard AWS default chain, e.g. an IAM role):
+#
+# [[providers.awskms]]
+# chain_ids = ["my-chain-1"]
+# key_id    = "arn:aws:kms:us-east-1:123456789012:key/abcd-..."
+# region    = "us-east-1"
 `
 
 // home is the home directory of cometkms

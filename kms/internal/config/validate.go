@@ -13,6 +13,11 @@ import (
 // a key type.
 var supportedPKCS11Algorithms = map[string]bool{"ed25519": true}
 
+// supportedAWSKMSAlgorithms mirrors the algo registry in
+// internal/backend/awskms. It is duplicated here so config validation does not
+// have to import the awskms package. Keep the two in sync when adding a key type.
+var supportedAWSKMSAlgorithms = map[string]bool{"ed25519": true}
+
 // Validate resolves defaults and enforces fail-fast invariants. home is the base
 // directory used to resolve relative paths and default state files.
 func (c *Config) Validate(home string) error {
@@ -98,6 +103,12 @@ func (c *Config) Validate(home string) error {
 		}
 	}
 
+	for i := range c.Providers.AWSKMS {
+		if err := c.validateAWSKMSProvider(i, chainIDs, hasBackend); err != nil {
+			return err
+		}
+	}
+
 	// Every chain must have at least one backend.
 	for _, ch := range c.Chains {
 		if !hasBackend[ch.ID] {
@@ -168,6 +179,31 @@ func (c *Config) validatePKCS11Provider(i int, home string, chainIDs map[string]
 	for _, id := range p.ChainIDs {
 		if _, ok := chainIDs[id]; !ok {
 			return fmt.Errorf("config: pkcs11 provider references unknown chain %q", id)
+		}
+		hasBackend[id] = true
+	}
+	return nil
+}
+
+// validateAWSKMSProvider checks one [[providers.awskms]] block and records which
+// chains it backs. There is no path resolution or local readability check:
+// credentials and reachability are an AWS concern surfaced at Open (startup).
+func (c *Config) validateAWSKMSProvider(i int, chainIDs map[string]int, hasBackend map[string]bool) error {
+	p := c.Providers.AWSKMS[i]
+
+	if p.KeyID == "" {
+		return fmt.Errorf("config: awskms provider has empty key_id")
+	}
+	if len(p.ChainIDs) == 0 {
+		return fmt.Errorf("config: awskms provider with key_id %q has no chain_ids", p.KeyID)
+	}
+	if p.Algorithm != "" && !supportedAWSKMSAlgorithms[p.Algorithm] {
+		return fmt.Errorf("config: awskms provider has unknown algorithm %q", p.Algorithm)
+	}
+
+	for _, id := range p.ChainIDs {
+		if _, ok := chainIDs[id]; !ok {
+			return fmt.Errorf("config: awskms provider references unknown chain %q", id)
 		}
 		hasBackend[id] = true
 	}

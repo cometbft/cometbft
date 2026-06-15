@@ -117,6 +117,11 @@ kms-test-race:
 	CGO_ENABLED=1 go test -C kms ./... -race -count=1
 .PHONY: kms-test-race
 
+#? kms-test-localstack: Run the cometkms LocalStack integration tests (requires a running LocalStack KMS; skips if unreachable)
+kms-test-localstack:
+	CGO_ENABLED=1 go test -C kms -tags localstack ./... -count=1 -run LocalStack -v
+.PHONY: kms-test-localstack
+
 #? kms-cover: Run kms tests with coverage; write profile + HTML to $(BUILDDIR) and print the total
 kms-cover:
 	@mkdir -p $(BUILDDIR)

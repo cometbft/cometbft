@@ -99,22 +99,22 @@ KMS_COVERHTML ?= $(BUILDDIR)/kms-coverage.html
 
 #? kms-build: Build cometkms into $(BUILDDIR)
 kms-build:
-	CGO_ENABLED=$(CGO_ENABLED) go build -C kms $(KMS_BUILD_FLAGS) -o $(KMS_OUTPUT) ./cmd/cometkms
+	CGO_ENABLED=1 go build -C kms $(KMS_BUILD_FLAGS) -o $(KMS_OUTPUT) ./cmd/cometkms
 .PHONY: kms-build
 
 #? kms-install: Install cometkms to GOBIN
 kms-install:
-	CGO_ENABLED=$(CGO_ENABLED) go install -C kms $(KMS_BUILD_FLAGS) ./cmd/cometkms
+	CGO_ENABLED=1 go install -C kms $(KMS_BUILD_FLAGS) ./cmd/cometkms
 .PHONY: kms-install
 
 #? kms-test: Run the cometkms test suite
 kms-test:
-	go test -C kms ./... -count=1
+	CGO_ENABLED=1 go test -C kms ./... -count=1
 .PHONY: kms-test
 
 #? kms-test-race: Run the cometkms test suite with the race detector
 kms-test-race:
-	go test -C kms ./... -race -count=1
+	CGO_ENABLED=1 go test -C kms ./... -race -count=1
 .PHONY: kms-test-race
 
 #? kms-cover: Run kms tests with coverage; write profile + HTML to $(BUILDDIR) and print the total
@@ -129,12 +129,12 @@ kms-cover:
 
 #? kms-vet: Vet the cometkms module
 kms-vet:
-	go vet -C kms ./...
+	CGO_ENABLED=1 go vet -C kms ./...
 .PHONY: kms-vet
 
 #? kms-lint: Lint the cometkms module (pinned golangci-lint, same version as the root lint target)
 kms-lint:
-	cd kms && go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.3 run
+	cd kms && CGO_ENABLED=1 go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.3 run
 .PHONY: kms-lint
 
 #? kms-tidy: Tidy the cometkms module dependencies

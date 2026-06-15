@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"reflect"
@@ -229,18 +230,21 @@ func writeListOfEndpoints(w http.ResponseWriter, r *http.Request, funcMap map[st
 	}
 	sort.Strings(noArgNames)
 	sort.Strings(argNames)
+	// The Host comes straight from the request, so escape it before it lands in
+	// the page to keep it from breaking out of the surrounding markup.
+	host := html.EscapeString(r.Host)
 	buf := new(bytes.Buffer)
 	buf.WriteString("<html><body>")
 	buf.WriteString("<br>Available endpoints:<br>")
 
 	for _, name := range noArgNames {
-		link := fmt.Sprintf("//%s/%s", r.Host, name)
+		link := fmt.Sprintf("//%s/%s", host, name)
 		fmt.Fprintf(buf, "<a href=\"%s\">%s</a></br>", link, link)
 	}
 
 	buf.WriteString("<br>Endpoints that require arguments:<br>")
 	for _, name := range argNames {
-		link := fmt.Sprintf("//%s/%s?", r.Host, name)
+		link := fmt.Sprintf("//%s/%s?", host, name)
 		funcData := funcMap[name]
 		for i, argName := range funcData.argNames {
 			link += argName + "=_"

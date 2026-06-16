@@ -845,6 +845,7 @@ func TestBlockPoolTwoMaliciousPeersStaggered(t *testing.T) {
 	t.Logf("IsCaughtUp() became true (height=%d, maxPeerHeight=%d, peers=%d) — "+
 		"node would escape blocksync despite the attackers",
 		pool.Height(), pool.MaxPeerHeight(), len(pool.peers))
+}
 
 // TestBlockPoolIsCaughtUpAllPeersPrunedAhead verifies that a node does NOT
 // consider itself caught up when every connected peer advertises a base
@@ -859,7 +860,7 @@ func TestBlockPoolIsCaughtUpAllPeersPrunedAhead(t *testing.T) {
 
 	requestsCh := make(chan BlockRequest, 10)
 	errorsCh := make(chan peerError, 10)
-	pool := NewBlockPool(ourHeight, requestsCh, errorsCh)
+	pool := NewBlockPool(ourHeight, requestsCh, errorsCh, 1*time.Second)
 	pool.SetLogger(log.TestingLogger())
 
 	// Every connected peer is pruned ahead of pool.height — none can serve
@@ -879,7 +880,7 @@ func TestBlockPoolIsCaughtUpMixedPeers(t *testing.T) {
 
 	requestsCh := make(chan BlockRequest, 10)
 	errorsCh := make(chan peerError, 10)
-	pool := NewBlockPool(ourHeight, requestsCh, errorsCh)
+	pool := NewBlockPool(ourHeight, requestsCh, errorsCh, 1*time.Second)
 	pool.SetLogger(log.TestingLogger())
 
 	// one peer has no blocks, one is pruned ahead of pool.height
@@ -913,7 +914,7 @@ func TestBlockPoolIsCaughtUpFreshNetwork(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			requestsCh := make(chan BlockRequest, 10)
 			errorsCh := make(chan peerError, 10)
-			pool := NewBlockPool(tc.initialHeight, requestsCh, errorsCh)
+			pool := NewBlockPool(tc.initialHeight, requestsCh, errorsCh, 1*time.Second)
 			pool.SetLogger(log.TestingLogger())
 
 			// Every peer is at network genesis: no blocks produced yet.

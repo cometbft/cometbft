@@ -400,7 +400,13 @@ func (pool *BlockPool) AddBlock(peerID p2p.ID, block *types.Block, extCommit *ty
 	}
 
 	pool.mtx.Lock()
-	defer pool.mtx.Unlock()
+	var sendErr error
+	defer func() {
+		pool.mtx.Unlock()
+		if sendErr != nil {
+			pool.sendError(sendErr, peerID)
+		}
+	}()
 
 	requester := pool.requesters[block.Height]
 	if requester == nil {
@@ -409,19 +415,17 @@ func (pool *BlockPool) AddBlock(peerID p2p.ID, block *types.Block, extCommit *ty
 		// can't punish it. But if the peer sent us a block we clearly didn't
 		// request, we disconnect.
 		if block.Height > pool.height || block.Height < pool.startHeight {
-			err := fmt.Errorf("peer sent us block #%d we didn't expect (current height: %d, start height: %d)",
+			sendErr = fmt.Errorf("peer sent us block #%d we didn't expect (current height: %d, start height: %d)",
 				block.Height, pool.height, pool.startHeight)
-			pool.sendError(err, peerID)
-			return err
+			return sendErr
 		}
 
 		return fmt.Errorf("got an already committed block #%d (possibly from the slow peer %s)", block.Height, peerID)
 	}
 
 	if !requester.setBlock(block, extCommit, peerID) {
-		err := fmt.Errorf("requested block #%d from %v, not %s", block.Height, requester.requestedFrom(), peerID)
-		pool.sendError(err, peerID)
-		return err
+		sendErr = fmt.Errorf("requested block #%d from %v, not %s", block.Height, requester.requestedFrom(), peerID)
+		return sendErr
 	}
 
 	pool.numPending.Add(-1)

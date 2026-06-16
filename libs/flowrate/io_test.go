@@ -168,7 +168,7 @@ func statusesAreEqual(s1 *Status, s2 *Status) bool {
 	if s1.Active == s2.Active &&
 		s1.Start.Equal(s2.Start) &&
 		durationsAreEqual(s1.Duration, s2.Duration, maxDeviationForDuration) &&
-		s1.Idle == s2.Idle &&
+		durationsAreEqual(s1.Idle, s2.Idle, maxDeviationForDuration) &&
 		s1.Bytes == s2.Bytes &&
 		s1.Samples == s2.Samples &&
 		ratesAreEqual(s1.InstRate, s2.InstRate, maxDeviationForRate) &&
@@ -184,7 +184,11 @@ func statusesAreEqual(s1 *Status, s2 *Status) bool {
 }
 
 func durationsAreEqual(d1 time.Duration, d2 time.Duration, maxDeviation time.Duration) bool {
-	return d2-d1 <= maxDeviation
+	diff := d2 - d1
+	if diff < 0 {
+		diff = -diff
+	}
+	return diff <= maxDeviation
 }
 
 func ratesAreEqual(r1 int64, r2 int64, maxDeviation int64) bool {

@@ -21,6 +21,10 @@
 
 ### IMPROVEMENTS
 
+- `[state]` skip the proposer-priority advance when loading validators for the
+  block-replay commit-info path (`LoadValidatorsFast`); up to ~900x faster at
+  the largest checkpoint offsets.
+  ([\#5204](https://github.com/cometbft/cometbft/issues/5204))
 - `[blocksync]` validate blocksync response sender and signature count
   ([\#5860](https://github.com/cometbft/cometbft/pull/5860))
 - `[autofile]` skip fsync in `FlushAndSync` when no new data was written

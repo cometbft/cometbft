@@ -6,6 +6,9 @@
 
 ### BUG FIXES
 
+- `[flowrate]` fix flaky `TestWriter` by comparing `Idle` with a duration
+  tolerance instead of exact equality
+  ([\#5929](https://github.com/cometbft/cometbft/pull/5929))
 - `[rpc]` escape the request `Host` in the endpoints listing page so it cannot
   break out of the generated HTML
   ([\#5921](https://github.com/cometbft/cometbft/pull/5921))
@@ -22,6 +25,9 @@
   `VerifyVoteExtension` handlers are inconsistent halts the node with a clear
   `CONSENSUS FAILURE` instead of stalling the whole network
   ([\#5204](https://github.com/cometbft/cometbft/issues/5204))
+- `[blocksync]` fix deadlock in `AddBlock` caused by holding `pool.mtx` during
+  `sendError`
+  ([\#5931](https://github.com/cometbft/cometbft/pull/5931))
 - `[blocksync]` hold `pool.mtx` and recompute `maxPeerHeight` in `Enable()`
   ([\#5888](https://github.com/cometbft/cometbft/pull/5888))
 - `[inspect]` fix flaky `TestInspectRun` and consolidate start/stop handshake

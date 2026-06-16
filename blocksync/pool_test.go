@@ -640,6 +640,46 @@ func TestBlockPoolMaxPeerHeightRefreshesOnPopRequest(t *testing.T) {
 		"peer B must contribute to maxPeerHeight once pool.height reaches its base")
 }
 
+// TestAddBlockDoesNotDeadlockOnSendError is a regression test for AddBlock
+// holding pool.mtx while calling sendError on an unbuffered channel.
+func TestAddBlockDoesNotDeadlockOnSendError(t *testing.T) {
+	requestsCh := make(chan BlockRequest, 10)
+	errorsCh := make(chan peerError) // unbuffered: keeps AddBlock blocked in sendError
+
+	pool := NewBlockPool(1, requestsCh, errorsCh, time.Second)
+	pool.SetLogger(log.TestingLogger())
+	require.NoError(t, pool.Start())
+	t.Cleanup(func() { _ = pool.Stop() })
+
+	pool.mtx.Lock()
+	req := newBPRequester(pool, 1)
+	req.peerID = "A"
+	pool.requesters[1] = req
+	pool.mtx.Unlock()
+
+	block := &types.Block{Header: types.Header{Height: 1}, LastCommit: &types.Commit{}}
+	extCommit := &types.ExtendedCommit{Height: 1}
+
+	// "B" did not request the block; setBlock fails → sendError while holding pool.mtx.
+	go func() { _ = pool.AddBlock("B", block, extCommit, 123) }()
+	time.Sleep(50 * time.Millisecond)
+
+	heightDone := make(chan struct{})
+	go func() {
+		pool.Height()
+		close(heightDone)
+	}()
+
+	select {
+	case <-heightDone:
+		<-errorsCh
+	case <-time.After(500 * time.Millisecond):
+		<-errorsCh
+		<-heightDone
+		t.Fatal("deadlock: AddBlock held pool.mtx while blocked in sendError")
+	}
+}
+
 func TestBlockPoolHasPendingRequestFrom(t *testing.T) {
 	requestsCh := make(chan BlockRequest, 10)
 	errorsCh := make(chan peerError, 10)

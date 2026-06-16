@@ -81,6 +81,7 @@ type Node struct {
 	indexerService    *txindex.IndexerService
 	prometheusSrv     *http.Server
 	pprofSrv          *http.Server
+	pprofLn           net.Listener
 }
 
 type waitSyncReactor interface {
@@ -621,24 +622,69 @@ func (n *Node) OnStart() error {
 		time.Sleep(genTime.Sub(now))
 	}
 
+	var (
+		pprofSrv, prometheusSrv *http.Server
+		pprofLn                 net.Listener
+		rpcListeners            []net.Listener
+		mpListening             bool
+		swStarted               bool
+		ok                      bool
+	)
+	defer func() {
+		if ok {
+			return
+		}
+		if swStarted {
+			if err := n.sw.Stop(); err != nil {
+				n.Logger.Error("error stopping switch during OnStart cleanup", "err", err)
+			}
+		}
+		if mpListening {
+			if mp, isMP := n.transport.(*p2p.MultiplexTransport); isMP {
+				if err := mp.Close(); err != nil {
+					n.Logger.Error("error closing transport during OnStart cleanup", "err", err)
+				}
+			}
+		}
+		for _, l := range rpcListeners {
+			if err := l.Close(); err != nil {
+				n.Logger.Error("error closing rpc listener during OnStart cleanup", "err", err)
+			}
+		}
+		if prometheusSrv != nil {
+			if err := prometheusSrv.Shutdown(context.Background()); err != nil {
+				n.Logger.Error("error shutting down prometheus during OnStart cleanup", "err", err)
+			}
+		}
+		if pprofSrv != nil {
+			if err := pprofSrv.Shutdown(context.Background()); err != nil {
+				n.Logger.Error("error shutting down pprof during OnStart cleanup", "err", err)
+			}
+		}
+	}()
+
 	// run pprof server if it is enabled
 	if n.config.RPC.IsPprofEnabled() {
-		n.pprofSrv = n.startPprofServer()
+		var err error
+		pprofSrv, pprofLn, err = n.startPprofServer()
+		if err != nil {
+			return err
+		}
 	}
 
 	// begin prometheus metrics gathering if it is enabled
 	if n.config.Instrumentation.IsPrometheusEnabled() {
-		n.prometheusSrv = n.startPrometheusServer()
+		prometheusSrv = n.startPrometheusServer()
 	}
 
 	// Start the RPC server before the P2P server
 	// so we can eg. receive txs for the first block
 	if n.config.RPC.ListenAddress != "" {
-		listeners, err := n.startRPC()
+		var err error
+		rpcListeners, err = n.startRPC()
 		if err != nil {
 			return err
 		}
-		n.rpcListeners = listeners
 	}
 
 	// Start the transport.
@@ -647,23 +693,21 @@ func (n *Node) OnStart() error {
 		return err
 	}
 
-	if mp, ok := n.transport.(*p2p.MultiplexTransport); ok {
+	if mp, isMP := n.transport.(*p2p.MultiplexTransport); isMP {
 		if err := mp.Listen(*addr); err != nil {
 			return err
 		}
+		mpListening = true
 	}
 
 	// Start the switch (the P2P server).
-	err = n.sw.Start()
-	if err != nil {
+	if err := n.sw.Start(); err != nil {
 		return err
 	}
-
-	n.isListening = true
+	swStarted = true
 
 	// Always connect to persistent peers
-	err = n.sw.DialPeersAsync(splitAndTrimEmpty(n.config.P2P.PersistentPeers, ",", " "))
-	if err != nil {
+	if err := n.sw.DialPeersAsync(splitAndTrimEmpty(n.config.P2P.PersistentPeers, ",", " ")); err != nil {
 		return fmt.Errorf("could not dial peers from persistent_peers field: %w", err)
 	}
 
@@ -673,6 +717,13 @@ func (n *Node) OnStart() error {
 			return fmt.Errorf("failed to start state sync: %w", err)
 		}
 	}
+
+	// All steps succeeded — commit locals to node fields.
+	ok = true
+	n.pprofSrv, n.pprofLn = pprofSrv, pprofLn
+	n.prometheusSrv = prometheusSrv
+	n.rpcListeners = rpcListeners
+	n.isListening = true
 
 	return nil
 }
@@ -814,6 +865,19 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 
 	// we may expose the rpc over both a unix and tcp socket
 	listeners := make([]net.Listener, len(listenAddrs))
+	var ok bool
+	defer func() {
+		if ok {
+			return
+		}
+		for _, l := range listeners {
+			if l != nil {
+				if err := l.Close(); err != nil {
+					n.Logger.Error("error closing rpc listener during startRPC cleanup", "err", err)
+				}
+			}
+		}
+	}()
 	for i, listenAddr := range listenAddrs {
 		mux := http.NewServeMux()
 		rpcLogger := n.Logger.With("module", "rpc-server")
@@ -905,6 +969,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 
 	}
 
+	ok = true
 	return listeners, nil
 }
 
@@ -931,19 +996,21 @@ func (n *Node) startPrometheusServer() *http.Server {
 }
 
 // starts a ppro
-func (n *Node) startPprofServer() *http.Server {
+func (n *Node) startPprofServer() (*http.Server, net.Listener, error) {
+	ln, err := net.Listen("tcp", n.config.RPC.PprofListenAddress)
+	if err != nil {
+		return nil, nil, fmt.Errorf("pprof HTTP server failed to listen: %w", err)
+	}
 	srv := &http.Server{
-		Addr:              n.config.RPC.PprofListenAddress,
 		Handler:           nil,
 		ReadHeaderTimeout: readHeaderTimeout,
 	}
 	go func() {
-		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-			// Error starting or closing listener:
-			n.Logger.Error("pprof HTTP server ListenAndServe", "err", err)
+		if err := srv.Serve(ln); err != http.ErrServerClosed {
+			n.Logger.Error("pprof HTTP server Serve", "err", err)
 		}
 	}()
-	return srv
+	return srv, ln, nil
 }
 
 // Switch returns the Node's Switch.

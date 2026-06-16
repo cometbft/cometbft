@@ -6,6 +6,9 @@
 
 ### BUG FIXES
 
+- `[flowrate]` fix flaky `TestWriter` by comparing `Idle` with a duration
+  tolerance instead of exact equality
+  ([\#5929](https://github.com/cometbft/cometbft/pull/5929))
 - `[rpc]` escape the request `Host` in the endpoints listing page so it cannot
   break out of the generated HTML
   ([\#5921](https://github.com/cometbft/cometbft/pull/5921))

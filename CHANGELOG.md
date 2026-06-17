@@ -52,6 +52,8 @@
   ([\#5869](https://github.com/cometbft/cometbft/pull/5869))
 - `[consensus]` release cs.mtx before sending to statsMsgQueue
   ([\#5813](https://github.com/cometbft/cometbft/pull/5813))
+- `[privval]` preempt sleep retries in privval signer client
+  ([\#XXXX](https://github.com/cometbft/cometbft/pull/XXXX))
 
 ### IMPROVEMENTS
 

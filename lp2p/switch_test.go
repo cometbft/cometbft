@@ -19,7 +19,9 @@ import (
 	"github.com/cometbft/cometbft/p2p/conn"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
 	"github.com/cometbft/cometbft/test/utils"
+	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/p2p/protocol/identify"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/require"
 )
@@ -579,6 +581,70 @@ func TestSwitch(t *testing.T) {
 		// ASSERT #3: A is still B's peer
 		require.Equal(t, 1, switchB.Peers().Size(),
 			"B should still be connected to A on filter pass")
+	})
+
+	t.Run("ResolvePeerBeforeIdentify", func(t *testing.T) {
+		// ARRANGE
+		// Reproduce the race where B receives a CometBFT stream from A before
+		// B's identify goroutine has populated B's peerstore with A's address.
+		// Slowing A's identify responder keeps B's peerstore empty for A.
+		const (
+			channelID     = byte(0xF2)
+			identifyDelay = 500 * time.Millisecond
+		)
+
+		hosts := makeTestHosts(t, 2, withLogging())
+		hostA, hostB := hosts[0], hosts[1]
+
+		hostA.SetStreamHandler(identify.ID, func(s network.Stream) {
+			time.Sleep(identifyDelay)
+			_ = s.Reset()
+		})
+
+		channelDescriptor := &conn.ChannelDescriptor{
+			ID:                  channelID,
+			Priority:            1,
+			RecvMessageCapacity: 1024,
+			MessageType:         &types.RequestEcho{},
+		}
+
+		reactorA := newReactorMock([]*conn.ChannelDescriptor{channelDescriptor}, hostA.Logger())
+		switchA, err := NewSwitch(nil, hostA, []SwitchReactor{{Name: "echo", Reactor: reactorA}}, p2p.NopMetrics(), hostA.Logger())
+		require.NoError(t, err)
+
+		reactorB := newReactorMock([]*conn.ChannelDescriptor{channelDescriptor}, hostB.Logger())
+		switchB, err := NewSwitch(nil, hostB, []SwitchReactor{{Name: "echo", Reactor: reactorB}}, p2p.NopMetrics(), hostB.Logger())
+		require.NoError(t, err)
+
+		connectSwitches(t, []*Switch{switchA, switchB})
+
+		require.Eventually(t, func() bool {
+			return switchA.Peers().Size() == 1
+		}, time.Second, 20*time.Millisecond, "A should see B as peer")
+
+		// Pre-condition: B's peerstore must not have A's address yet.
+		// libp2p only populates the peerstore via identify, not from the raw
+		// connection dial. Blocking A's identify responder keeps B's peerstore
+		// for A empty.
+		require.Empty(t, hostB.Peerstore().Addrs(hostA.ID()),
+			"B should not know A's address yet (identify blocked)")
+
+		// ACT
+		switchA.BroadcastAsync(p2p.Envelope{
+			ChannelID: channelID,
+			Message:   &types.RequestEcho{Message: "hello"},
+		})
+
+		// ASSERT
+		require.Eventually(t, func() bool {
+			envs := reactorB.receivedEnvelopes()
+			if len(envs) != 1 {
+				return false
+			}
+			req, ok := envs[0].Message.(*types.RequestEcho)
+			return ok && req.Message == "hello"
+		}, 2*time.Second, 20*time.Millisecond,
+			"B must receive the message even though B's peerstore was empty for A at stream time")
 	})
 }
 

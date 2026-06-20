@@ -358,18 +358,18 @@ func (bs *BlockStore) LoadSeenCommit(height int64) *types.Commit {
 // PruneBlocks removes block up to (but not including) a height. It returns number of blocks pruned and the evidence retain height - the height at which data needed to prove evidence must not be removed.
 func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, error) {
 	if height <= 0 {
-		return 0, -1, fmt.Errorf("height must be greater than 0")
+		return 0, -1, ErrPruneHeightMustBePositive
 	}
 	bs.mtx.RLock()
 	if height > bs.height {
 		bs.mtx.RUnlock()
-		return 0, -1, fmt.Errorf("cannot prune beyond the latest height %v", bs.height)
+		return 0, -1, fmt.Errorf("%w %v", ErrPruneHeightBeyondLatest, bs.height)
 	}
 	base := bs.base
 	bs.mtx.RUnlock()
 	if height < base {
-		return 0, -1, fmt.Errorf("cannot prune to height %v, it is lower than base height %v",
-			height, base)
+		return 0, -1, fmt.Errorf("%w: cannot prune to height %v, it is lower than base height %v",
+			ErrPruneHeightBelowBase, height, base)
 	}
 
 	pruned := uint64(0)

@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[consensus]` fix flaky `TestPrepareProposalReceivesVoteExtensions`.
+  ([\#5936](https://github.com/cometbft/cometbft/pull/5936))
 - `[flowrate]` fix flaky `TestWriter` by comparing `Idle` with a duration
   tolerance instead of exact equality
   ([\#5929](https://github.com/cometbft/cometbft/pull/5929))

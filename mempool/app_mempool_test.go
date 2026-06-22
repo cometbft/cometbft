@@ -168,6 +168,40 @@ func TestAppMempool(t *testing.T) {
 				})
 			}
 		})
+
+		t.Run("calls callback on app client error", func(t *testing.T) {
+			app := abcimock.NewClient(t)
+			app.On("CheckTx", mock.Anything, mock.Anything).
+				Return((*abci.ResponseCheckTx)(nil), fmt.Errorf("connection error"))
+
+			m := NewAppMempool(config.TestMempoolConfig(), app)
+			called := make(chan struct{})
+			err := m.CheckTx(types.Tx("new-tx"), func(_ *abci.ResponseCheckTx) { close(called) }, TxInfo{})
+			require.NoError(t, err)
+
+			select {
+			case <-called:
+			case <-time.After(time.Second):
+				t.Fatal("callback not called on app client error")
+			}
+		})
+
+		t.Run("clears tx from seen cache on app client error", func(t *testing.T) {
+			cfg := config.TestMempoolConfig()
+			cfg.CheckTxRetryDelay = 50 * time.Millisecond
+
+			app := abcimock.NewClient(t)
+			app.On("CheckTx", mock.Anything, mock.Anything).
+				Return((*abci.ResponseCheckTx)(nil), fmt.Errorf("connection error"))
+
+			m := NewAppMempool(cfg, app)
+			tx := types.Tx("retry-tx")
+
+			require.NoError(t, m.CheckTx(tx, func(_ *abci.ResponseCheckTx) {}, TxInfo{}))
+			require.Eventually(t, func() bool {
+				return !m.guard.Has(tx.Key())
+			}, cfg.CheckTxRetryDelay, 5*time.Millisecond)
+		})
 	})
 
 	t.Run("TxStream", func(t *testing.T) {

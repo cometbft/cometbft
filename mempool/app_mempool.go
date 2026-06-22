@@ -204,7 +204,7 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Txs) {
 			case err != nil:
 				m.logger.Error("AppMempool.reapTxs: error reaping txs", "error", err)
 				continue
-			case len(res.Txs) == 0:
+			case res == nil || len(res.Txs) == 0:
 				// no txs to send
 				continue
 			}

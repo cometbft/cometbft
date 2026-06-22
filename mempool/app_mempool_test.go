@@ -204,6 +204,26 @@ func TestAppMempool(t *testing.T) {
 		}
 
 		require.Subset(t, allMempoolTxs, sink)
+
+		t.Run("nil response does not panic", func(t *testing.T) {
+			cfg := config.TestMempoolConfig()
+			cfg.ReapInterval = 5 * time.Millisecond
+
+			ctx, cancel := context.WithCancel(context.Background())
+
+			app := abcimock.NewClient(t)
+			app.On("ReapTxs", mock.Anything, mock.Anything).
+				Return(func(_ context.Context, _ *abci.RequestReapTxs) (*abci.ResponseReapTxs, error) {
+					cancel()
+					return (*abci.ResponseReapTxs)(nil), nil
+				})
+
+			require.NotPanics(t, func() {
+				ch := NewAppMempool(cfg, app).TxStream(ctx)
+				for range ch {
+				}
+			})
+		})
 	})
 }
 

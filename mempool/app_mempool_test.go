@@ -81,6 +81,26 @@ func TestAppMempool(t *testing.T) {
 		}
 		require.Eventually(t, retryableForgotten, m.checkTxRetryDelay, 50*time.Millisecond)
 
+		t.Run("clears tx from seen cache on transport error", func(t *testing.T) {
+			cfg := config.TestMempoolConfig()
+			cfg.CheckTxRetryDelay = 50 * time.Millisecond
+
+			app := abcimock.NewClient(t)
+			app.On("InsertTx", mock.Anything, mock.Anything).
+				Return((*abci.ResponseInsertTx)(nil), fmt.Errorf("connection error")).Once()
+			app.On("InsertTx", mock.Anything, mock.Anything).
+				Return(&abci.ResponseInsertTx{Code: abci.CodeTypeOK}, nil)
+
+			m := NewAppMempool(cfg, app)
+			tx := types.Tx("retry-tx")
+
+			require.Error(t, m.InsertTx(tx))
+			require.Eventually(t, func() bool {
+				return !m.guard.Has(tx.Key())
+			}, cfg.CheckTxRetryDelay, 5*time.Millisecond)
+			require.NoError(t, m.InsertTx(tx))
+		})
+
 		t.Run("nil response does not panic", func(t *testing.T) {
 			app := abcimock.NewClient(t)
 			app.On("InsertTx", mock.Anything, mock.Anything).

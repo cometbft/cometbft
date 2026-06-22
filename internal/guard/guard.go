@@ -17,6 +17,7 @@ type Guard[K comparable] struct {
 	ttlRemovals map[K]struct{}
 	doneCh      chan struct{}
 	doneOnce    sync.Once
+	wg          sync.WaitGroup
 }
 
 type entry struct {
@@ -53,30 +54,34 @@ func NewWithInterval[K comparable](capacity int, cleanInterval time.Duration) *G
 		ttlRemovals: ttlRemovals,
 	}
 
-	go func() {
+	g.wg.Go(func() {
 		ticker := time.NewTicker(cleanInterval)
 		defer ticker.Stop()
 
 		for {
 			select {
-			case <-ticker.C:
-				g.removeExpired()
 			case <-g.doneCh:
 				return
+			case <-ticker.C:
+				// doneCh wins ties: don't start a pass once closing
+				select {
+				case <-g.doneCh:
+					return
+				default:
+				}
+				g.removeExpired()
 			}
 		}
-	}()
+	})
 
 	return g
 }
 
-// Close closes the guard.
+// Close stops the background cleanup and waits for it to exit.
 func (g *Guard[K]) Close() {
 	g.doneOnce.Do(func() {
-		g.mu.Lock()
-		defer g.mu.Unlock()
-
 		close(g.doneCh)
+		g.wg.Wait()
 	})
 }
 

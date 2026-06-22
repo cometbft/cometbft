@@ -17,6 +17,7 @@ type Guard[K comparable] struct {
 	ttlRemovals map[K]struct{}
 	doneCh      chan struct{}
 	doneOnce    sync.Once
+	wg          sync.WaitGroup
 }
 
 type entry struct {
@@ -53,41 +54,47 @@ func NewWithInterval[K comparable](capacity int, cleanInterval time.Duration) *G
 		ttlRemovals: ttlRemovals,
 	}
 
-	go func() {
+	g.wg.Go(func() {
 		ticker := time.NewTicker(cleanInterval)
 		defer ticker.Stop()
 
 		for {
 			select {
-			case <-ticker.C:
-				g.removeExpired()
 			case <-g.doneCh:
 				return
+			case <-ticker.C:
+				// doneCh wins ties: don't start a pass once closing
+				select {
+				case <-g.doneCh:
+					return
+				default:
+				}
+				g.removeExpired()
 			}
 		}
-	}()
+	})
 
 	return g
 }
 
-// Close closes the guard.
+// Close stops the background cleanup and waits for it to exit.
 func (g *Guard[K]) Close() {
 	g.doneOnce.Do(func() {
-		g.mu.Lock()
-		defer g.mu.Unlock()
-
 		close(g.doneCh)
+		g.wg.Wait()
 	})
 }
 
-// Guard guards the item against duplicates.
-// Doesn't have a TTL besides LRU eviction.
+// Guard guards the item against duplicates. A newly added key has no TTL
+// (only LRU eviction), but an existing key may carry a pending ForgetAfter
+// deadline; Guard must not clear it on a re-guard, or pending retries break.
 // Returns true if the key was added, false if it was already present.
 func (g *Guard[K]) Guard(key K) (added bool) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
-	if e, exists := g.lru.Peek(key); exists {
+	// Get, not Peek: a duplicate observation refreshes LRU recency.
+	if e, exists := g.lru.Get(key); exists {
 		if !e.expired() {
 			// exists and not expired -> guard!
 			return false

@@ -80,6 +80,59 @@ func TestGuard(t *testing.T) {
 			require.True(t, g.Has("b"))
 			require.True(t, g.Has("c"))
 		})
+
+		t.Run("reAddAfterExpiry", func(t *testing.T) {
+			// ARRANGE
+			g := makeGuard(t, 10)
+			item := "item-1"
+			require.True(t, g.Guard(item))
+
+			// ACT
+			g.ForgetAfter(item, time.Millisecond)
+			time.Sleep(10 * time.Millisecond)
+			readded := g.Guard(item)
+
+			// ASSERT
+			require.True(t, readded, "expired item should be guardable again")
+			require.True(t, g.Has(item))
+			require.False(t, g.Guard(item), "freshly re-added item should be guarded")
+		})
+
+		t.Run("evictionPurgesTTLRemovals", func(t *testing.T) {
+			// ARRANGE
+			g := makeGuard(t, 2)
+
+			// ACT
+			g.Guard("a")
+			g.ForgetAfter("a", time.Hour)
+			g.Guard("b")
+			g.Guard("c")
+
+			// ASSERT
+			require.False(t, g.Has("a"))
+
+			g.mu.Lock()
+			_, tracked := g.ttlRemovals["a"]
+			g.mu.Unlock()
+
+			require.False(t, tracked, "evicted key must be removed from ttlRemovals")
+		})
+
+		t.Run("reGuardRefreshesRecency", func(t *testing.T) {
+			// ARRANGE
+			g := makeGuard(t, 2)
+
+			// ACT: re-guard "a" so "b" becomes the oldest
+			g.Guard("a")
+			g.Guard("b")
+			g.Guard("a")
+			g.Guard("c")
+
+			// ASSERT
+			require.True(t, g.Has("a"), "re-guarded item must survive eviction")
+			require.False(t, g.Has("b"), "untouched oldest item is evicted")
+			require.True(t, g.Has("c"))
+		})
 	})
 
 	t.Run("Has", func(t *testing.T) {

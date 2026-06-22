@@ -6,7 +6,7 @@
 
 ### BUG FIXES
 
-- `[mempool]` app-side ABCI response handling, callback/cleanup, and lifecycle
+- `[mempool]` `AppMempool` ABCI response handling, callback/cleanup, and lifecycle
   ([\#5942](https://github.com/cometbft/cometbft/pull/5942))
 - `[flowrate]` fix flaky `TestWriter` by comparing `Idle` with a duration
   tolerance instead of exact equality

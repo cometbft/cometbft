@@ -278,9 +278,6 @@ func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckT
 		// app mempool doesn't execute the tx, so we ALWAYS return an empty response here.
 		// This will most likely break many clients. Clients should rely on app-specific
 		// broadcasting endpoints (think of eth_sendRawTransaction, etc...).
-		if callback != nil {
-			callback(res)
-		}
 
 		// handle (non)retryable errors:
 		// allow RPC requests to be retryable while keeping DDoS vector small.
@@ -290,6 +287,10 @@ func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckT
 		// - if a tx comes from other peers via m.InsertTx() -> it won't be cleaned (guardTx).
 		if res.Code != abci.CodeTypeOK {
 			m.forgetTx(tx, codeRetry(res.Code))
+		}
+
+		if callback != nil {
+			callback(res)
 		}
 	}()
 

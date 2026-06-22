@@ -189,6 +189,23 @@ func TestAppMempool(t *testing.T) {
 			}
 		})
 
+		t.Run("forgetTx runs even if callback panics", func(t *testing.T) {
+			cfg := config.TestMempoolConfig()
+			cfg.CheckTxRetryDelay = 50 * time.Millisecond
+
+			app := abcimock.NewClient(t)
+			app.On("CheckTx", mock.Anything, mock.Anything).
+				Return(&abci.ResponseCheckTx{Code: abci.CodeTypeRetry}, nil)
+
+			m := NewAppMempool(cfg, app)
+			tx := types.Tx("panic-tx")
+
+			require.NoError(t, m.CheckTx(tx, func(_ *abci.ResponseCheckTx) { panic("callback panic") }, TxInfo{}))
+			require.Eventually(t, func() bool {
+				return !m.guard.Has(tx.Key())
+			}, cfg.CheckTxRetryDelay, 5*time.Millisecond)
+		})
+
 		t.Run("calls callback on app client error", func(t *testing.T) {
 			app := abcimock.NewClient(t)
 			app.On("CheckTx", mock.Anything, mock.Anything).

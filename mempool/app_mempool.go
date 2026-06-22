@@ -278,7 +278,7 @@ func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckT
 			m.logger.Error("AppMempool.CheckTx: error checking tx", "error", err, "tx", txHash(tx))
 			m.forgetTx(tx, true)
 			if callback != nil {
-				callback(&abci.ResponseCheckTx{Code: 1})
+				callback(&abci.ResponseCheckTx{Code: 1, Log: fmt.Sprintf("CheckTx app client error: %v", err)})
 			}
 			return
 		}
@@ -288,7 +288,7 @@ func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckT
 			m.logger.Error("AppMempool.CheckTx: nil response", "tx", txHash(tx))
 			m.forgetTx(tx, true)
 			if callback != nil {
-				callback(&abci.ResponseCheckTx{Code: 1})
+				callback(&abci.ResponseCheckTx{Code: 1, Log: "nil CheckTx response"})
 			}
 			return
 		}

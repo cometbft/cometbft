@@ -233,6 +233,12 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Txs) {
 	}
 }
 
+// Close stops the background goroutine started by the seen-cache guard.
+// Must be called when the mempool is no longer needed.
+func (m *AppMempool) Close() {
+	m.guard.Close()
+}
+
 // FlushAppConn flushes app client (copied from CListMempool)
 func (m *AppMempool) FlushAppConn() error {
 	err := m.app.Flush(m.ctx)

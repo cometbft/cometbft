@@ -196,13 +196,15 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Txs) {
 		MaxGas:   m.config.ReapMaxGas,
 	}
 
+	ticker := time.NewTicker(m.config.ReapInterval)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
 			m.logger.Debug("AppMempool.reapTxs: context is done")
 			return
-		case <-time.After(m.config.ReapInterval):
-			// note that time.After GC mem leak was fixed in go 1.23
+		case <-ticker.C:
 			res, err := m.app.ReapTxs(ctx, req)
 			switch {
 			case isErrCtx(err):

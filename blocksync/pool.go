@@ -244,8 +244,22 @@ func (pool *BlockPool) IsCaughtUp() bool {
 	// and that we're synced to the highest known height.
 	// Note we use maxPeerHeight - 1 because to sync block H requires block H+1
 	// to verify the LastCommit.
+	//
+	// maxPeerHeight == 0 happens in two distinct cases:
+	//   1. Fresh network: no peer has produced any blocks yet (all peer
+	//      heights are 0). We are caught up to the network and should switch
+	//      to consensus to participate in producing the first block.
+	//   2. Stalled: peers exist with blocks but updateMaxPeerHeight filtered
+	//      them all out (every peer's base is ahead of pool.height). The
+	//      network is ahead of us but no peer can serve our height, so we
+	//      are not caught up and must stay in blocksync.
 	receivedBlockOrTimedOut := pool.height > 0 || time.Since(pool.startTime) > 5*time.Second
-	ourChainIsLongestAmongPeers := pool.maxPeerHeight == 0 || pool.height >= (pool.maxPeerHeight-1)
+	var ourChainIsLongestAmongPeers bool
+	if pool.maxPeerHeight == 0 {
+		ourChainIsLongestAmongPeers = !pool.anyPeerHasBlocks()
+	} else {
+		ourChainIsLongestAmongPeers = pool.height >= (pool.maxPeerHeight - 1)
+	}
 	isCaughtUp := receivedBlockOrTimedOut && ourChainIsLongestAmongPeers
 	if isCaughtUp {
 		return true
@@ -259,6 +273,26 @@ func (pool *BlockPool) IsCaughtUp() bool {
 		}
 		// Genesis: wait for peerConnWait + noBlockTimeout
 		return sinceStart >= peerConnWait+pool.syncTracker.noBlockTimeout
+	}
+	return false
+}
+
+// anyPeerHasBlocks reports whether any peer in the pool advertises a non-zero
+// height. It is meaningful only when maxPeerHeight == 0, where it distinguishes
+// the two cases laid out in IsCaughtUp: a fresh network (all peers genuinely
+// empty) vs. a stalled node (peers have blocks but were filtered out by
+// updateMaxPeerHeight's peer.base > pool.height check).
+//
+// peer.height > 0 is the right discriminator because BlockStore.Height returns
+// 0 only for an empty store. Therefore, if maxPeerHeight == 0 and some peer's
+// height > 0, that peer must have been excluded by updateMaxPeerHeight as
+// pruned ahead of us — it has blocks, we're behind, and we are not caught up.
+// CONTRACT: pool.mtx must be locked.
+func (pool *BlockPool) anyPeerHasBlocks() bool {
+	for _, peer := range pool.peers {
+		if peer.height > 0 {
+			return true
+		}
 	}
 	return false
 }

@@ -281,6 +281,16 @@ func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckT
 			return
 		}
 
+		if res == nil {
+			// nil response, no error: forget the tx so it can be retried.
+			m.logger.Error("AppMempool.CheckTx: nil response", "tx", txHash(tx))
+			m.forgetTx(tx, true)
+			if callback != nil {
+				callback(&abci.ResponseCheckTx{Code: 1})
+			}
+			return
+		}
+
 		// app mempool doesn't execute the tx, so we ALWAYS return an empty response here.
 		// This will most likely break many clients. Clients should rely on app-specific
 		// broadcasting endpoints (think of eth_sendRawTransaction, etc...).

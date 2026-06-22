@@ -240,6 +240,32 @@ func TestAppMempool(t *testing.T) {
 				return !m.guard.Has(tx.Key())
 			}, cfg.CheckTxRetryDelay, 5*time.Millisecond)
 		})
+
+		t.Run("nil response calls callback and clears seen cache", func(t *testing.T) {
+			cfg := config.TestMempoolConfig()
+			cfg.CheckTxRetryDelay = 50 * time.Millisecond
+
+			app := abcimock.NewClient(t)
+			app.On("CheckTx", mock.Anything, mock.Anything).
+				Return((*abci.ResponseCheckTx)(nil), nil)
+
+			m := NewAppMempool(cfg, app)
+			tx := types.Tx("nil-tx")
+
+			called := make(chan struct{})
+			require.NotPanics(t, func() {
+				require.NoError(t, m.CheckTx(tx, func(_ *abci.ResponseCheckTx) { close(called) }, TxInfo{}))
+			})
+
+			select {
+			case <-called:
+			case <-time.After(time.Second):
+				t.Fatal("callback not called on nil CheckTx response")
+			}
+			require.Eventually(t, func() bool {
+				return !m.guard.Has(tx.Key())
+			}, cfg.CheckTxRetryDelay, 5*time.Millisecond)
+		})
 	})
 
 	t.Run("TxStream", func(t *testing.T) {

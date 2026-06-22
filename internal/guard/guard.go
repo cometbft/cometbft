@@ -80,14 +80,16 @@ func (g *Guard[K]) Close() {
 	})
 }
 
-// Guard guards the item against duplicates.
-// Doesn't have a TTL besides LRU eviction.
+// Guard guards the item against duplicates. A newly added key has no TTL
+// (only LRU eviction), but an existing key may carry a pending ForgetAfter
+// deadline; Guard must not clear it on a re-guard, or pending retries break.
 // Returns true if the key was added, false if it was already present.
 func (g *Guard[K]) Guard(key K) (added bool) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
-	if e, exists := g.lru.Peek(key); exists {
+	// Get, not Peek: a duplicate observation refreshes LRU recency.
+	if e, exists := g.lru.Get(key); exists {
 		if !e.expired() {
 			// exists and not expired -> guard!
 			return false

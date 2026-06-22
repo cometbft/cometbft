@@ -592,10 +592,10 @@ func TestPruneBlocks(t *testing.T) {
 
 	// pruning an empty store should error, even when pruning to 0
 	_, _, err = bs.PruneBlocks(1, state)
-	require.Error(t, err)
+	require.ErrorIs(t, err, ErrPruneHeightBeyondLatest)
 
 	_, _, err = bs.PruneBlocks(0, state)
-	require.Error(t, err)
+	require.ErrorIs(t, err, ErrPruneHeightMustBePositive)
 
 	// make more than 1000 blocks, to test batch deletions
 	for h := int64(1); h <= 1500; h++ {
@@ -648,7 +648,7 @@ func TestPruneBlocks(t *testing.T) {
 
 	// Pruning below the current base should error
 	_, _, err = bs.PruneBlocks(1199, state)
-	require.Error(t, err)
+	require.ErrorIs(t, err, ErrPruneHeightBelowBase)
 
 	// Pruning to the current base should work
 	pruned, _, err = bs.PruneBlocks(1200, state)
@@ -673,7 +673,7 @@ func TestPruneBlocks(t *testing.T) {
 
 	// Pruning beyond the current height should error
 	_, _, err = bs.PruneBlocks(1501, state)
-	require.Error(t, err)
+	require.ErrorIs(t, err, ErrPruneHeightBeyondLatest)
 
 	// Pruning to the current height should work
 	pruned, _, err = bs.PruneBlocks(1500, state)

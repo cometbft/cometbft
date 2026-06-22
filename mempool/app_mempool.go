@@ -108,7 +108,7 @@ func (m *AppMempool) InsertTx(tx types.Tx) error {
 	case codeRetry(code):
 		// drop tx from seen cache (to retry later), but still return the error
 		m.forgetTx(tx, true)
-		fallthrough
+		return wrapErrCode("invalid code", code, err)
 	case code != abci.CodeTypeOK:
 		m.metrics.RejectedTxs.Add(1)
 		return wrapErrCode("invalid code", code, err)

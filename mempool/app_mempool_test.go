@@ -11,6 +11,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/types"
+	kitmetrics "github.com/go-kit/kit/metrics"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -368,4 +369,40 @@ func TestAppMempool_UsesConfigValues(t *testing.T) {
 		// tx1 was evicted - should succeed now
 		require.NoError(t, m.InsertTx(types.Tx("tx1")))
 	})
+}
+
+// spyCounter implements go-kit metrics.Counter and records the Add() delta sum.
+type spyCounter struct{ n atomic.Int64 }
+
+func (c *spyCounter) With(_ ...string) kitmetrics.Counter { return c }
+func (c *spyCounter) Add(delta float64)                   { c.n.Add(int64(delta)) }
+func (c *spyCounter) value() int64                        { return c.n.Load() }
+
+func TestAppMempool_RejectedTxsMetric(t *testing.T) {
+	rejected := &spyCounter{}
+
+	app := abcimock.NewClient(t)
+	app.On("InsertTx", mock.Anything, mock.Anything).
+		Return(&abci.ResponseInsertTx{Code: abci.CodeTypeRetry}, nil).Once()
+	app.On("InsertTx", mock.Anything, mock.Anything).
+		Return(&abci.ResponseInsertTx{Code: 123}, nil).Once()
+
+	nop := NopMetrics()
+	m := NewAppMempool(config.TestMempoolConfig(), app, WithAMMetrics(&Metrics{
+		RejectedTxs:        rejected,
+		FailedTxs:          nop.FailedTxs,
+		TxSizeBytes:        nop.TxSizeBytes,
+		EvictedTxs:         nop.EvictedTxs,
+		RecheckTimes:       nop.RecheckTimes,
+		AlreadyReceivedTxs: nop.AlreadyReceivedTxs,
+		ReapedTxs:          nop.ReapedTxs,
+	}))
+
+	// retryable code must NOT increment RejectedTxs
+	require.Error(t, m.InsertTx(types.Tx("retry-tx")))
+	require.Equal(t, int64(0), rejected.value())
+
+	// non-retryable failure must increment RejectedTxs
+	require.Error(t, m.InsertTx(types.Tx("fail-tx")))
+	require.Equal(t, int64(1), rejected.value())
 }

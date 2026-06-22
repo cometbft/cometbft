@@ -160,6 +160,10 @@ func (m *AppMempool) insertTx(tx types.Tx) (uint32, error) {
 		return 0, err
 	}
 
+	if resp == nil {
+		return 0, nil
+	}
+
 	return resp.Code, nil
 }
 

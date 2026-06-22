@@ -81,6 +81,16 @@ func TestAppMempool(t *testing.T) {
 		}
 		require.Eventually(t, retryableForgotten, m.checkTxRetryDelay, 50*time.Millisecond)
 
+		t.Run("nil response does not panic", func(t *testing.T) {
+			app := abcimock.NewClient(t)
+			app.On("InsertTx", mock.Anything, mock.Anything).
+				Return((*abci.ResponseInsertTx)(nil), nil)
+
+			require.NotPanics(t, func() {
+				_ = NewAppMempool(config.TestMempoolConfig(), app).InsertTx(types.Tx("tx1"))
+			})
+		})
+
 		t.Run("CheckTx", func(t *testing.T) {
 			for _, tt := range []struct {
 				name        string

@@ -45,8 +45,7 @@ The CometBFT blockchain consists of a short list of data types:
     - [ValidatorParams](#validatorparams)
     - [VersionParams](#versionparams)
     - [ABCIParams](#abciparams)
-    - [FeatureParams](#featureparams)
-    - [SynchronyParams](#synchronyparams)
+    - [AuthorityParams](#authorityparams)
 
 
 ## Block
@@ -495,8 +494,8 @@ func SumTruncated(bz []byte) []byte {
 | evidence  | [EvidenceParams](#evidenceparams)   | Parameters determining the validity of evidences of Byzantine behavior. | 2            |
 | validator | [ValidatorParams](#validatorparams) | Parameters limiting the types of public keys validators can use.        | 3            |
 | version   | [VersionParams](#versionparams)     | The version of specific components of CometBFT.                         | 4            |
-| synchrony | [SynchronyParams](#synchronyparams) | Parameters determining the validity of block timestamps.                | 6            |
-| feature   | [FeatureParams](#featureparms)      | Parameters for configuring the height from which features are enabled.  | 7            |
+| abci      | [ABCIParams](#abciparams)           | ABCI-related parameters.                                                | 5            |
+| authority | [AuthorityParams](#authorityparams) | Application-defined authority for consensus parameter changes.          | 6            |
 
 ### BlockParams
 
@@ -553,34 +552,11 @@ The `app` parameter was named `app_version` in CometBFT 0.34.
 |-------------------------------|-------|---------------------------------------------------|:------------:|
 | vote_extensions_enable_height | int64 | The height where vote extensions will be enabled. | 1            |
 
-The `ABCIParams` type has been **deprecated** from CometBFT `v1.0`.
+### AuthorityParams
 
-### FeatureParams
-
-| Name                          | Type  | Description                                                       | Field Number |
-|-------------------------------|-------|-------------------------------------------------------------------|:------------:|
-| vote_extensions_enable_height | int64 | First height during which vote extensions will be enabled.        | 1            |
-| pbts_enable_height            | int64 | Height at which Proposer-Based Timestamps (PBTS) will be enabled. | 2            |
-
-From the configured height, and for all subsequent heights, the corresponding
-feature will be enabled.
-Cannot be set to heights lower or equal to the current blockchain height.
-A value of 0 (the default) indicates that the feature is disabled.
-
-### SynchronyParams
-
-| Name          | Type                                       | Description                                                                                                             | Field Number |
-|---------------|--------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|:------------:|
-| precision     | [google.protobuf.Duration][proto-duration] | Bound for how skewed a proposer's clock may be from any validator on the network while still producing valid proposals. | 1            |
-| message_delay | [google.protobuf.Duration][proto-duration] | Bound for how long a proposal message may take to reach all validators on a network and still be considered valid.      | 2            |
-
-These parameters are part of the Proposer-Based Timestamps (PBTS) algorithm.
-For more information on the relationship of the synchrony parameters to
-block timestamps validity, refer to the [PBTS specification][pbts].
-
-**Note:** Both `precision` and `message_delay` have upper bounds enforced in the implementation to prevent overflow errors during timestamp validation:
-- `precision` must not exceed `30s`
-- `message_delay` must not exceed `24h`
+| Name      | Type   | Description                                                                        | Field Number |
+|-----------|--------|------------------------------------------------------------------------------------|:------------:|
+| authority | string | Opaque application-defined authority for consensus parameter changes outside governance. | 1            |
 
 [pbts]: ../consensus/proposer-based-timestamp/README.md
 [bfttime]: ../consensus/bft-time.md

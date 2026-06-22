@@ -796,7 +796,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | validator | [ValidatorParams](../core/data_structures.md#validatorparams) | Parameters limiting the types of public keys validators can use.             | 3            | Yes           |
     | version   | [VersionsParams](../core/data_structures.md#versionparams)    | The ABCI application version.                                                | 4            | Yes           |
     | abci      | [ABCIParams](../core/data_structures.md#abciparams)           | ABCI-related parameters.                                                     | 5            | Yes           |
-    | synchrony | [SynchronyParams](../core/data_structures.md#synchronyparams) | Parameters determining the validity bounds of a proposal timestamp.          | 6            | Yes           |
+    | authority | [AuthorityParams](../core/data_structures.md#authorityparams) | Application-defined authority for consensus parameter changes.               | 6            | Yes           |
 
 ### ProofOps
 

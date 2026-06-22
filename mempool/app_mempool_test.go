@@ -102,14 +102,24 @@ func TestAppMempool(t *testing.T) {
 			require.NoError(t, m.InsertTx(tx))
 		})
 
-		t.Run("nil response does not panic", func(t *testing.T) {
+		t.Run("nil response is a retryable error, not success", func(t *testing.T) {
+			cfg := config.TestMempoolConfig()
+			cfg.CheckTxRetryDelay = 50 * time.Millisecond
+
 			app := abcimock.NewClient(t)
 			app.On("InsertTx", mock.Anything, mock.Anything).
 				Return((*abci.ResponseInsertTx)(nil), nil)
 
+			m := NewAppMempool(cfg, app)
+			tx := types.Tx("nil-tx")
+
 			require.NotPanics(t, func() {
-				_ = NewAppMempool(config.TestMempoolConfig(), app).InsertTx(types.Tx("tx1"))
+				require.Error(t, m.InsertTx(tx))
 			})
+			// retryable: the seen-cache entry clears so the tx can be re-inserted.
+			require.Eventually(t, func() bool {
+				return !m.guard.Has(tx.Key())
+			}, cfg.CheckTxRetryDelay, 5*time.Millisecond)
 		})
 
 		t.Run("CheckTx", func(t *testing.T) {

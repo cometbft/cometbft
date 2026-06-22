@@ -162,7 +162,9 @@ func (m *AppMempool) insertTx(tx types.Tx) (uint32, error) {
 	}
 
 	if resp == nil {
-		return 0, nil
+		// nil response, no error: surface a retryable failure instead of
+		// silently treating it as a successful insertion.
+		return 0, errors.New("nil InsertTx response")
 	}
 
 	return resp.Code, nil

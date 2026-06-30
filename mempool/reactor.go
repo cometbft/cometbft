@@ -16,6 +16,8 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+var _ p2p.MsgBytesFilter = (*Reactor)(nil)
+
 // Reactor handles mempool tx broadcasting amongst peers.
 // It maintains a map from peer ID to counter, to prevent gossiping txs to the
 // peers you received it from.
@@ -144,6 +146,14 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 func (memR *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 	memR.ids.Reclaim(peer)
 	// broadcast routine checks if peer is gone and returns
+}
+
+// FilterMsgBytes implements p2p.MsgBytesFilter.
+func (memR *Reactor) FilterMsgBytes(chID byte, _ p2p.Peer, msgBytes []byte) error {
+	if chID != MempoolChannel || len(msgBytes) == 0 {
+		return nil
+	}
+	return filterMempoolMsgBytes(msgBytes, memR.config.MaxTxBytes, gossipBatchByteBudget(memR.config))
 }
 
 // Receive implements Reactor.

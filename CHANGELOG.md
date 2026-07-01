@@ -29,6 +29,8 @@
   ([\#5860](https://github.com/cometbft/cometbft/pull/5860))
 - `[autofile]` skip fsync in `FlushAndSync` when no new data was written
   ([\#5866](https://github.com/cometbft/cometbft/pull/5866))
+- `[mempool]` Implement `MsgBytesFilter` in Reactor to prevent heap amplification attack
+  ([\#5946](https://github.com/cometbft/cometbft/pull/5946))
 
 ### FEATURES
 

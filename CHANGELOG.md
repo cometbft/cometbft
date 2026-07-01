@@ -6,6 +6,9 @@
 
 ### BUG FIXES
 
+- `[guard]` refresh LRU recency on duplicate hits and stop the background
+  cleanup goroutine gracefully on `Close`
+  ([\#5937](https://github.com/cometbft/cometbft/pull/5937))
 - `[flowrate]` fix flaky `TestWriter` by comparing `Idle` with a duration
   tolerance instead of exact equality
   ([\#5929](https://github.com/cometbft/cometbft/pull/5929))

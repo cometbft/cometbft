@@ -18,18 +18,18 @@ const (
 var (
 	// ErrVarintOverflow is returned when a varint does not terminate within
 	// the 10 bytes that can hold a 64-bit value.
-	ErrVarintOverflow = errors.New("protowire: varint overflow")
+	ErrVarintOverflow = errors.New("varint overflow")
 	// ErrTruncatedVarint is returned when the buffer ends mid-varint.
-	ErrTruncatedVarint = errors.New("protowire: truncated varint")
+	ErrTruncatedVarint = errors.New("truncated varint")
 	// ErrOutOfBounds is returned when a length prefix or fixed-width field
 	// would run past the end of the buffer.
-	ErrOutOfBounds = errors.New("protowire: length out of bounds")
+	ErrOutOfBounds = errors.New("length out of bounds")
 	// ErrIllegalFieldNumber is returned when a tag decodes to a field number
 	// that is not a legal protobuf field number (>= 1).
-	ErrIllegalFieldNumber = errors.New("protowire: illegal field number")
+	ErrIllegalFieldNumber = errors.New("illegal field number")
 	// ErrUnsupportedWireType is returned when a tag carries a wire type the
 	// cursor does not know how to skip.
-	ErrUnsupportedWireType = errors.New("protowire: unsupported wire type")
+	ErrUnsupportedWireType = errors.New("unsupported wire type")
 )
 
 // WireCursor walks a protobuf buffer left to right. Every read is bounds-checked

@@ -103,11 +103,12 @@ func (m *AppMempool) InsertTx(tx types.Tx) error {
 	switch {
 	case err != nil:
 		m.metrics.FailedTxs.Add(1)
+		m.forgetTx(tx, true)
 		return wrapErrCode("unable to insert tx", code, err)
 	case codeRetry(code):
 		// drop tx from seen cache (to retry later), but still return the error
 		m.forgetTx(tx, true)
-		fallthrough
+		return wrapErrCode("invalid code", code, err)
 	case code != abci.CodeTypeOK:
 		m.metrics.RejectedTxs.Add(1)
 		return wrapErrCode("invalid code", code, err)
@@ -160,6 +161,12 @@ func (m *AppMempool) insertTx(tx types.Tx) (uint32, error) {
 		return 0, err
 	}
 
+	if resp == nil {
+		// nil response, no error: surface a retryable failure instead of
+		// silently treating it as a successful insertion.
+		return 0, errors.New("nil InsertTx response")
+	}
+
 	return resp.Code, nil
 }
 
@@ -189,13 +196,15 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Txs) {
 		MaxGas:   m.config.ReapMaxGas,
 	}
 
+	ticker := time.NewTicker(m.config.ReapInterval)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
 			m.logger.Debug("AppMempool.reapTxs: context is done")
 			return
-		case <-time.After(m.config.ReapInterval):
-			// note that time.After GC mem leak was fixed in go 1.23
+		case <-ticker.C:
 			res, err := m.app.ReapTxs(ctx, req)
 			switch {
 			case isErrCtx(err):
@@ -204,7 +213,7 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Txs) {
 			case err != nil:
 				m.logger.Error("AppMempool.reapTxs: error reaping txs", "error", err)
 				continue
-			case len(res.Txs) == 0:
+			case res == nil || len(res.Txs) == 0:
 				// no txs to send
 				continue
 			}
@@ -226,6 +235,12 @@ func (m *AppMempool) reapTxs(ctx context.Context, channel chan<- types.Txs) {
 			}
 		}
 	}
+}
+
+// Close stops the background goroutine started by the seen-cache guard.
+// Must be called when the mempool is no longer needed.
+func (m *AppMempool) Close() {
+	m.guard.Close()
 }
 
 // FlushAppConn flushes app client (copied from CListMempool)
@@ -262,16 +277,27 @@ func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckT
 		res, err := m.app.CheckTx(ctx, req)
 		if err != nil {
 			// note that other ABCI methods panic if err is not nil
-			m.logger.Error("AppMempool.CheckTx: error inserting tx", "error", err, "tx", txHash(tx))
+			m.logger.Error("AppMempool.CheckTx: error checking tx", "error", err, "tx", txHash(tx))
+			m.forgetTx(tx, true)
+			if callback != nil {
+				callback(&abci.ResponseCheckTx{Code: 1, Log: fmt.Sprintf("CheckTx app client error: %v", err)})
+			}
+			return
+		}
+
+		if res == nil {
+			// nil response, no error: forget the tx so it can be retried.
+			m.logger.Error("AppMempool.CheckTx: nil response", "tx", txHash(tx))
+			m.forgetTx(tx, true)
+			if callback != nil {
+				callback(&abci.ResponseCheckTx{Code: 1, Log: "nil CheckTx response"})
+			}
 			return
 		}
 
 		// app mempool doesn't execute the tx, so we ALWAYS return an empty response here.
 		// This will most likely break many clients. Clients should rely on app-specific
 		// broadcasting endpoints (think of eth_sendRawTransaction, etc...).
-		if callback != nil {
-			callback(res)
-		}
 
 		// handle (non)retryable errors:
 		// allow RPC requests to be retryable while keeping DDoS vector small.
@@ -281,6 +307,10 @@ func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckT
 		// - if a tx comes from other peers via m.InsertTx() -> it won't be cleaned (guardTx).
 		if res.Code != abci.CodeTypeOK {
 			m.forgetTx(tx, codeRetry(res.Code))
+		}
+
+		if callback != nil {
+			callback(res)
 		}
 	}()
 

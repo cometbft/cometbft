@@ -11,6 +11,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/types"
+	kitmetrics "github.com/go-kit/kit/metrics"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -80,6 +81,46 @@ func TestAppMempool(t *testing.T) {
 			return !m.guard.Has(txs[3].Key())
 		}
 		require.Eventually(t, retryableForgotten, m.checkTxRetryDelay, 50*time.Millisecond)
+
+		t.Run("clears tx from seen cache on transport error", func(t *testing.T) {
+			cfg := config.TestMempoolConfig()
+			cfg.CheckTxRetryDelay = 50 * time.Millisecond
+
+			app := abcimock.NewClient(t)
+			app.On("InsertTx", mock.Anything, mock.Anything).
+				Return((*abci.ResponseInsertTx)(nil), fmt.Errorf("connection error")).Once()
+			app.On("InsertTx", mock.Anything, mock.Anything).
+				Return(&abci.ResponseInsertTx{Code: abci.CodeTypeOK}, nil)
+
+			m := NewAppMempool(cfg, app)
+			tx := types.Tx("retry-tx")
+
+			require.Error(t, m.InsertTx(tx))
+			require.Eventually(t, func() bool {
+				return !m.guard.Has(tx.Key())
+			}, cfg.CheckTxRetryDelay, 5*time.Millisecond)
+			require.NoError(t, m.InsertTx(tx))
+		})
+
+		t.Run("nil response is a retryable error, not success", func(t *testing.T) {
+			cfg := config.TestMempoolConfig()
+			cfg.CheckTxRetryDelay = 50 * time.Millisecond
+
+			app := abcimock.NewClient(t)
+			app.On("InsertTx", mock.Anything, mock.Anything).
+				Return((*abci.ResponseInsertTx)(nil), nil)
+
+			m := NewAppMempool(cfg, app)
+			tx := types.Tx("nil-tx")
+
+			require.NotPanics(t, func() {
+				require.Error(t, m.InsertTx(tx))
+			})
+			// retryable: the seen-cache entry clears so the tx can be re-inserted.
+			require.Eventually(t, func() bool {
+				return !m.guard.Has(tx.Key())
+			}, cfg.CheckTxRetryDelay, 5*time.Millisecond)
+		})
 
 		t.Run("CheckTx", func(t *testing.T) {
 			for _, tt := range []struct {
@@ -158,6 +199,83 @@ func TestAppMempool(t *testing.T) {
 				})
 			}
 		})
+
+		t.Run("forgetTx runs even if callback panics", func(t *testing.T) {
+			cfg := config.TestMempoolConfig()
+			cfg.CheckTxRetryDelay = 50 * time.Millisecond
+
+			app := abcimock.NewClient(t)
+			app.On("CheckTx", mock.Anything, mock.Anything).
+				Return(&abci.ResponseCheckTx{Code: abci.CodeTypeRetry}, nil)
+
+			m := NewAppMempool(cfg, app)
+			tx := types.Tx("panic-tx")
+
+			require.NoError(t, m.CheckTx(tx, func(_ *abci.ResponseCheckTx) { panic("callback panic") }, TxInfo{}))
+			require.Eventually(t, func() bool {
+				return !m.guard.Has(tx.Key())
+			}, cfg.CheckTxRetryDelay, 5*time.Millisecond)
+		})
+
+		t.Run("calls callback on app client error", func(t *testing.T) {
+			app := abcimock.NewClient(t)
+			app.On("CheckTx", mock.Anything, mock.Anything).
+				Return((*abci.ResponseCheckTx)(nil), fmt.Errorf("connection error"))
+
+			m := NewAppMempool(config.TestMempoolConfig(), app)
+			called := make(chan struct{})
+			err := m.CheckTx(types.Tx("new-tx"), func(_ *abci.ResponseCheckTx) { close(called) }, TxInfo{})
+			require.NoError(t, err)
+
+			select {
+			case <-called:
+			case <-time.After(time.Second):
+				t.Fatal("callback not called on app client error")
+			}
+		})
+
+		t.Run("clears tx from seen cache on app client error", func(t *testing.T) {
+			cfg := config.TestMempoolConfig()
+			cfg.CheckTxRetryDelay = 50 * time.Millisecond
+
+			app := abcimock.NewClient(t)
+			app.On("CheckTx", mock.Anything, mock.Anything).
+				Return((*abci.ResponseCheckTx)(nil), fmt.Errorf("connection error"))
+
+			m := NewAppMempool(cfg, app)
+			tx := types.Tx("retry-tx")
+
+			require.NoError(t, m.CheckTx(tx, func(_ *abci.ResponseCheckTx) {}, TxInfo{}))
+			require.Eventually(t, func() bool {
+				return !m.guard.Has(tx.Key())
+			}, cfg.CheckTxRetryDelay, 5*time.Millisecond)
+		})
+
+		t.Run("nil response calls callback and clears seen cache", func(t *testing.T) {
+			cfg := config.TestMempoolConfig()
+			cfg.CheckTxRetryDelay = 50 * time.Millisecond
+
+			app := abcimock.NewClient(t)
+			app.On("CheckTx", mock.Anything, mock.Anything).
+				Return((*abci.ResponseCheckTx)(nil), nil)
+
+			m := NewAppMempool(cfg, app)
+			tx := types.Tx("nil-tx")
+
+			called := make(chan struct{})
+			require.NotPanics(t, func() {
+				require.NoError(t, m.CheckTx(tx, func(_ *abci.ResponseCheckTx) { close(called) }, TxInfo{}))
+			})
+
+			select {
+			case <-called:
+			case <-time.After(time.Second):
+				t.Fatal("callback not called on nil CheckTx response")
+			}
+			require.Eventually(t, func() bool {
+				return !m.guard.Has(tx.Key())
+			}, cfg.CheckTxRetryDelay, 5*time.Millisecond)
+		})
 	})
 
 	t.Run("TxStream", func(t *testing.T) {
@@ -204,6 +322,26 @@ func TestAppMempool(t *testing.T) {
 		}
 
 		require.Subset(t, allMempoolTxs, sink)
+
+		t.Run("nil response does not panic", func(t *testing.T) {
+			cfg := config.TestMempoolConfig()
+			cfg.ReapInterval = 5 * time.Millisecond
+
+			ctx, cancel := context.WithCancel(context.Background())
+
+			app := abcimock.NewClient(t)
+			app.On("ReapTxs", mock.Anything, mock.Anything).
+				Return(func(_ context.Context, _ *abci.RequestReapTxs) (*abci.ResponseReapTxs, error) {
+					cancel()
+					return (*abci.ResponseReapTxs)(nil), nil
+				})
+
+			require.NotPanics(t, func() {
+				ch := NewAppMempool(cfg, app).TxStream(ctx)
+				for range ch {
+				}
+			})
+		})
 	})
 }
 
@@ -267,4 +405,40 @@ func TestAppMempool_UsesConfigValues(t *testing.T) {
 		// tx1 was evicted - should succeed now
 		require.NoError(t, m.InsertTx(types.Tx("tx1")))
 	})
+}
+
+// spyCounter implements go-kit metrics.Counter and records the Add() delta sum.
+type spyCounter struct{ n atomic.Int64 }
+
+func (c *spyCounter) With(_ ...string) kitmetrics.Counter { return c }
+func (c *spyCounter) Add(delta float64)                   { c.n.Add(int64(delta)) }
+func (c *spyCounter) value() int64                        { return c.n.Load() }
+
+func TestAppMempool_RejectedTxsMetric(t *testing.T) {
+	rejected := &spyCounter{}
+
+	app := abcimock.NewClient(t)
+	app.On("InsertTx", mock.Anything, mock.Anything).
+		Return(&abci.ResponseInsertTx{Code: abci.CodeTypeRetry}, nil).Once()
+	app.On("InsertTx", mock.Anything, mock.Anything).
+		Return(&abci.ResponseInsertTx{Code: 123}, nil).Once()
+
+	nop := NopMetrics()
+	m := NewAppMempool(config.TestMempoolConfig(), app, WithAMMetrics(&Metrics{
+		RejectedTxs:        rejected,
+		FailedTxs:          nop.FailedTxs,
+		TxSizeBytes:        nop.TxSizeBytes,
+		EvictedTxs:         nop.EvictedTxs,
+		RecheckTimes:       nop.RecheckTimes,
+		AlreadyReceivedTxs: nop.AlreadyReceivedTxs,
+		ReapedTxs:          nop.ReapedTxs,
+	}))
+
+	// retryable code must NOT increment RejectedTxs
+	require.Error(t, m.InsertTx(types.Tx("retry-tx")))
+	require.Equal(t, int64(0), rejected.value())
+
+	// non-retryable failure must increment RejectedTxs
+	require.Error(t, m.InsertTx(types.Tx("fail-tx")))
+	require.Equal(t, int64(1), rejected.value())
 }

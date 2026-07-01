@@ -57,6 +57,9 @@
 
 ### IMPROVEMENTS
 
+- `[store]` Export pruning errors returned by `BlockStore.PruneBlocks` so callers
+  can identify them with `errors.Is`.
+  ([\#1140](https://github.com/cometbft/cometbft/issues/1140))
 - `[blocksync]` replace `numPending int32` with `atomic.Int32` and document `BlockPool` field ownership
   ([\#5889](https://github.com/cometbft/cometbft/pull/5889))
 - `[execution]` cache validator set within a block cycle.

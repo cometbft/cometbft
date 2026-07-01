@@ -33,12 +33,10 @@ title: Requirements for the Application
         - [EvidenceParams.MaxAgeDuration](#evidenceparamsmaxageduration)
         - [EvidenceParams.MaxAgeNumBlocks](#evidenceparamsmaxagenumblocks)
         - [EvidenceParams.MaxBytes](#evidenceparamsmaxbytes)
-        - [FeatureParams.PbtsEnableHeight](#featureparamspbtsenableheight)
-        - [FeatureParams.VoteExtensionsEnableHeight](#featureparamsvoteextensionsenableheight)
+        - [ABCIParams.VoteExtensionsEnableHeight](#abciparamsvoteextensionsenableheight)
+        - [AuthorityParams.Authority](#authorityparamsauthority)
         - [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
         - [VersionParams.App](#versionparamsapp)
-        - [SynchronyParams.Precision](#synchronyparamsprecision)
-        - [SynchronyParams.MessageDelay](#synchronyparamsmessagedelay)
       - [Updating Consensus Parameters](#updating-consensus-parameters)
         - [`InitChain`](#initchain)
         - [`FinalizeBlock`, `PrepareProposal`/`ProcessProposal`](#finalizeblock-prepareproposalprocessproposal)
@@ -584,19 +582,17 @@ all full nodes have the same value at a given height.
 
 #### List of Parameters
 
-These are the current consensus parameters (as of v1.0.x):
+These are the current consensus parameters:
 
 1.  [BlockParams.MaxBytes](#blockparamsmaxbytes)
 2.  [BlockParams.MaxGas](#blockparamsmaxgas)
 3.  [EvidenceParams.MaxAgeDuration](#evidenceparamsmaxageduration)
 4.  [EvidenceParams.MaxAgeNumBlocks](#evidenceparamsmaxagenumblocks)
 5.  [EvidenceParams.MaxBytes](#evidenceparamsmaxbytes)
-6.  [FeatureParams.PbtsEnableHeight](#featureparamspbtsenableheight)
-7.  [FeatureParams.VoteExtensionsEnableHeight](#featureparamsvoteextensionsenableheight)
+6.  [ABCIParams.VoteExtensionsEnableHeight](#abciparamsvoteextensionsenableheight)
+7.  [AuthorityParams.Authority](#authorityparamsauthority)
 8.  [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
 9.  [VersionParams.App](#versionparamsapp)
-10. [SynchronyParams.Precision](#synchronyparamsprecision)
-11. [SynchronyParams.MessageDelay](#synchronyparamsmessagedelay)
 
 ##### BlockParams.MaxBytes
 
@@ -677,25 +673,7 @@ a block minus its overhead ( ~ `BlockParams.MaxBytes`).
 
 Must have `MaxBytes > 0`.
 
-##### FeatureParams.PbtsEnableHeight
-
-Height at which Proposer-Based Timestamps (PBTS) will be enabled.
-
-A value of 0 means that PBTS is disabled. A value > 0 denotes the
-height at which PBTS will be (or has been) enabled.
-
-From the specified height, and for all subsequent heights, the PBTS
-algorithm will be used to produce and validate block timestamps. Prior to
-this height, or when this height is set to 0, the legacy BFT Time
-algorithm is used to produce and validate timestamps.
-
-PBTS cannot be disabled once it is enabled.
-
-Cannot be set to heights lower or equal to the current blockchain height.
-
-Must have `PbtsEnableHeight > [Current height]`
-
-##### FeatureParams.VoteExtensionsEnableHeight
+##### ABCIParams.VoteExtensionsEnableHeight
 
 This parameter is either 0 or a positive height at which vote extensions
 become mandatory. If the value is zero (which is the default), vote
@@ -716,6 +694,12 @@ include the vote extensions from height `H`. For all heights after `H`
 Must always be set to a future height, 0, or the same height that was previously set.
 Once the chain's height reaches the value set, it cannot be changed to a different value.
 
+##### AuthorityParams.Authority
+
+This is an opaque string that the application can use to authorize consensus
+parameter changes outside governance.
+CometBFT only enforces a maximum length of 256 characters.
+
 ##### ValidatorParams.PubKeyTypes
 
 The parameter restricts the type of keys validators can use. The parameter uses ABCI pubkey naming, not Amino names.
@@ -723,24 +707,6 @@ The parameter restricts the type of keys validators can use. The parameter uses 
 ##### VersionParams.App
 
 This is the version of the ABCI application.
-
-##### SynchronyParams.Precision
-
-This sets a bound on how skewed a proposer's clock may be from any validator
-on the network while still producing valid proposals.
-
-This parameter is used by the
-[Proposer-Based Timestamps (PBTS)](../consensus/proposer-based-timestamp/README.md)
-algorithm.
-
-##### SynchronyParams.MessageDelay
-
-This sets a bound on how long a proposal message may take to reach all
-validators on a network and still be considered valid.
-
-This parameter is used by the
-[Proposer-Based Timestamps (PBTS)](../consensus/proposer-based-timestamp/README.md)
-algorithm.
 
 #### Updating Consensus Parameters
 

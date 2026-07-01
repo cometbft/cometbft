@@ -141,7 +141,7 @@ func (r *AppReactor) FilterMsgBytes(chID byte, _ p2p.Peer, msgBytes []byte) erro
 	if chID != MempoolChannel || len(msgBytes) == 0 {
 		return nil
 	}
-	return filterMempoolMsgBytes(msgBytes, r.config.MaxTxBytes, gossipBatchByteBudget(r.config))
+	return filterMempoolMsgBytes(msgBytes, r.config.MaxTxBytes, r.config.MaxBatchBytes)
 }
 
 func (r *AppReactor) Receive(e p2p.Envelope) {

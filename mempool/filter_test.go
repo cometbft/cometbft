@@ -113,21 +113,19 @@ func TestFilterMempoolMsgBytes_Malformed(t *testing.T) {
 	require.Error(t, filterMempoolMsgBytes([]byte{0x0a, 0x7f}, 1024, 4096))
 }
 
-func TestGossipBatchByteBudget(t *testing.T) {
-	testCases := []struct {
-		maxTxBytes    int
-		maxBatchBytes int
-		want          int
-	}{
-		{maxTxBytes: 1024, maxBatchBytes: 0, want: 1024},
-		{maxTxBytes: 1024, maxBatchBytes: 4096, want: 4096},
-		{maxTxBytes: 4096, maxBatchBytes: 1024, want: 4096}, // single large tx must still pass
-		{maxTxBytes: 0, maxBatchBytes: 0, want: 0},
-	}
-	for _, tc := range testCases {
-		cfg := &config.MempoolConfig{MaxTxBytes: tc.maxTxBytes, MaxBatchBytes: tc.maxBatchBytes}
-		assert.Equal(t, tc.want, gossipBatchByteBudget(cfg))
-	}
+// The per-batch budget is the larger of maxTxBytes and maxBatchBytes, so a
+// single tx bigger than maxBatchBytes but within maxTxBytes must still pass.
+func TestFilterMempoolMsgBytes_BatchBudgetIsMax(t *testing.T) {
+	const maxTxBytes = 4096
+	const maxBatchBytes = 1024
+
+	// One tx larger than maxBatchBytes but within maxTxBytes: allowed.
+	big := marshalTxsMsg(t, [][]byte{make([]byte, maxBatchBytes+1)})
+	require.NoError(t, filterMempoolMsgBytes(big, maxTxBytes, maxBatchBytes))
+
+	// A batch whose total exceeds the larger limit is still rejected.
+	over := marshalTxsMsg(t, [][]byte{make([]byte, maxTxBytes), make([]byte, 1)})
+	require.Error(t, filterMempoolMsgBytes(over, maxTxBytes, maxBatchBytes))
 }
 
 func TestReactorFilterMsgBytes_ChannelGuard(t *testing.T) {

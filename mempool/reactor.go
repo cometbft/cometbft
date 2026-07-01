@@ -153,7 +153,7 @@ func (memR *Reactor) FilterMsgBytes(chID byte, _ p2p.Peer, msgBytes []byte) erro
 	if chID != MempoolChannel || len(msgBytes) == 0 {
 		return nil
 	}
-	return filterMempoolMsgBytes(msgBytes, memR.config.MaxTxBytes, gossipBatchByteBudget(memR.config))
+	return filterMempoolMsgBytes(msgBytes, memR.config.MaxTxBytes, memR.config.MaxBatchBytes)
 }
 
 // Receive implements Reactor.

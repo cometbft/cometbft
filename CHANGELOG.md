@@ -54,6 +54,8 @@
   ([\#5879](https://github.com/cometbft/cometbft/pull/5879))
 - `[consensus]` release cs.mtx before sending to statsMsgQueue
   ([\#5813](https://github.com/cometbft/cometbft/pull/5813))
+- `[blocksync]` tolerate redundant near-tip BlockResponse from a second peer
+  ([\#5950](https://github.com/cometbft/cometbft/pull/5950))  
 
 ### IMPROVEMENTS
 

@@ -372,8 +372,10 @@ func (r *Reactor) FilterMsgBytes(chID byte, src p2p.Peer, msgBytes []byte) error
 		return errors.New("unsolicited BlockResponse: blocksync not active")
 	}
 
-	// ensure we have an outstanding request to this peer
-	if !r.pool.HasPendingRequestFrom(src.ID()) {
+	// ensure we have an outstanding request to this peer, or the response falls
+	// within the sync window.
+	height := blockResponseHeight(stub.BlockResponse)
+	if !r.pool.HasPendingRequestFrom(src.ID(), height) {
 		return fmt.Errorf("unsolicited BlockResponse from peer %s", src.ID())
 	}
 
@@ -383,6 +385,16 @@ func (r *Reactor) FilterMsgBytes(chID byte, src p2p.Peer, msgBytes []byte) error
 	}
 
 	return nil
+}
+
+// blockResponseHeight returns the block height carried by the stub, or 0 if it
+// is absent. A height of 0 is outside any valid sync window, so it is treated
+// as unsolicited unless the peer has an explicit outstanding request.
+func blockResponseHeight(br *bcproto.SigCountBlockResponse) int64 {
+	if br != nil && br.Block != nil && br.Block.Header != nil {
+		return br.Block.Header.Height
+	}
+	return 0
 }
 
 // validateMaxVotes validates that the number of commit signatures and extended

@@ -13,13 +13,8 @@
 
 - `[blocksync]` validate blocksync response sender and signature count
   ([\#5860](https://github.com/cometbft/cometbft/pull/5860))
-<<<<<<< HEAD
-=======
-- `[autofile]` skip fsync in `FlushAndSync` when no new data was written
-  ([\#5866](https://github.com/cometbft/cometbft/pull/5866))
 - `[mempool]` Implement `MsgBytesFilter` in Reactor to prevent heap amplification attack
   ([\#5946](https://github.com/cometbft/cometbft/pull/5946))
->>>>>>> 70dbf650 (fix(mempool): Implement `MsgBytesFilter` in Reactor to prevent heap amplification (#5946))
 
 ### FEATURES
 

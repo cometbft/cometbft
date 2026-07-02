@@ -130,7 +130,7 @@ func TestFilterMempoolMsgBytes_BatchBudgetIsMax(t *testing.T) {
 
 func TestReactorFilterMsgBytes_ChannelGuard(t *testing.T) {
 	cfg := config.DefaultMempoolConfig()
-	r := &AppReactor{config: cfg}
+	r := &Reactor{config: cfg}
 
 	bad := marshalTxsMsg(t, [][]byte{{}, {}, {}})
 

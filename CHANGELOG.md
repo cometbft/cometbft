@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[mempool]` include proto framing overhead in AppReactor batch size to prevent peer teardown
+  ([\#5956](https://github.com/cometbft/cometbft/pull/5956))
 - `[flowrate]` fix flaky `TestWriter` by comparing `Idle` with a duration
   tolerance instead of exact equality
   ([\#5929](https://github.com/cometbft/cometbft/pull/5929))

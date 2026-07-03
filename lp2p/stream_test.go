@@ -168,6 +168,22 @@ func TestStream(t *testing.T) {
 			require.Nil(t, out)
 		})
 
+		t.Run("LargerThanMaxStreamSize", func(t *testing.T) {
+			// maxSize > MaxStreamSize must NOT be clamped — blocksync passes
+			// RecvMessageCapacity (~100MB) and must be able to receive large blocks.
+			payload := bytes.Repeat([]byte("x"), MaxStreamSize+1)
+			frame := append(uint64ToUvarint(uint64(len(payload))), payload...)
+
+			stream := &streamStub{
+				conn:   &connStub{closed: false},
+				readFn: bytes.NewReader(frame).Read,
+			}
+
+			out, err := StreamReadSized(stream, uint64(len(payload)))
+			require.NoError(t, err)
+			require.Equal(t, payload, out)
+		})
+
 		t.Run("InvalidHeader", func(t *testing.T) {
 			// ARRANGE
 			invalidHeader := []byte{0x80}

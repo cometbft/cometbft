@@ -50,9 +50,7 @@
   ([\#5868](https://github.com/cometbft/cometbft/pull/5868))
 - `[node]` close partial listeners on startRPC failure
   ([\#5869](https://github.com/cometbft/cometbft/pull/5869))
-- `[lp2p]` fix `StreamReadSized` clamping caller-supplied `maxSize` to the
-  4 MB `MaxStreamSize` constant, which silently rejected blocks >4 MB in
-  blocksync and statesync chunks when lp2p transport is enabled
+- `[lp2p]` remove `MaxStreamSize` clamp in `StreamReadSized`
   ([\#5954](https://github.com/cometbft/cometbft/pull/5954))
 - `[lp2p]` fallback to conn remote addr when resolving inbound peer
   ([\#5879](https://github.com/cometbft/cometbft/pull/5879))

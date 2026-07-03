@@ -555,6 +555,8 @@ version = "{{ .BlockSync.Version }}"
 # Experimental Adaptive sync (bool):
 #
 # Run both BLOCKSYNC and CONSENSUS for improved liveness, connectivity, and performance.
+# WARNING: Do NOT enable on validator nodes — concurrent consensus+blocksync risks equivocation.
+# Node startup will fail if adaptive_sync=true and a private validator key is active.
 adaptive_sync = {{ .BlockSync.AdaptiveSync }}
 
 #######################################################

@@ -408,6 +408,12 @@ func NewNodeWithContext(
 	)
 
 	if config.BlockSync.AdaptiveSync {
+		// Signing while blocksync is active risks equivocation; HRS file is the only backstop.
+		if enableBlockSync && state.Validators.HasAddress(localAddr) {
+			return nil, fmt.Errorf("adaptive_sync cannot be enabled on a validator node: " +
+				"running consensus concurrently with blocksync exposes the node to equivocation; " +
+				"disable adaptive_sync in config.toml or remove the private validator key")
+		}
 		logger.Info("Adaptive sync (blocksync + consensus) is enabled!")
 	}
 

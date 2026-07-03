@@ -174,6 +174,38 @@ func TestReactorSet(t *testing.T) {
 		assert.Len(t, reactorB.receivedEnvelopes(), 0)
 	})
 
+	t.Run("receive_drops_when_queue_full", func(t *testing.T) {
+		// ARRANGE
+		ts := newReactorSetTestSuite(t, withLogging())
+		rs := newReactorSet(ts.sw)
+
+		reactorA := ts.newReactor([]*conn.ChannelDescriptor{{ID: 0xF1}})
+		require.NoError(t, rs.Add(reactorA, "A"))
+		require.NoError(t, rs.Start(func(protocol.ID) {}))
+		t.Cleanup(rs.Stop)
+
+		// Block the reactor so the queue cannot drain.
+		blocked := make(chan struct{})
+		t.Cleanup(func() { close(blocked) })
+		reactorA.OnReceive(func(p2p.Envelope) { <-blocked })
+
+		envelope := p2p.Envelope{
+			ChannelID: 0xF1,
+			Message:   &tmp2p.PexRequest{},
+		}
+
+		// ACT: saturate both the priority queue (512) and the inbound channel (512)
+		// by flooding with more messages than the combined buffer depth.
+		for i := 0; i < 2048; i++ {
+			rs.Receive("A", "PexRequest", envelope, 1)
+		}
+
+		// ASSERT: the queue-full drop path is reached and logged.
+		require.Eventually(t, func() bool {
+			return ts.logBuffer.HasMatchingLine("Reactor queue full, dropping message", "reactor=A")
+		}, 2*time.Second, 10*time.Millisecond)
+	})
+
 	t.Run("recover", func(t *testing.T) {
 		// ARRANGE
 		ts := newReactorSetTestSuite(t)

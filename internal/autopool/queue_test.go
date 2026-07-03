@@ -174,6 +174,22 @@ func TestPriorityQueue(t *testing.T) {
 	})
 }
 
+func TestPriorityQueueWithMax(t *testing.T) {
+	const maxSize = 5
+	q := NewPriorityQueueWithMax(3, maxSize)
+
+	for i := 0; i < maxSize; i++ {
+		require.NoError(t, q.Push(i, 1))
+	}
+	require.ErrorIs(t, q.Push("overflow", 1), ErrQueueFull)
+
+	// popping one slot allows one more push
+	_, ok := q.Pop()
+	require.True(t, ok)
+	require.NoError(t, q.Push("after-pop", 1))
+	require.ErrorIs(t, q.Push("still-full", 1), ErrQueueFull)
+}
+
 type testData struct {
 	priority uint64
 	value    string

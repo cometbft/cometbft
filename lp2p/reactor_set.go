@@ -1,6 +1,7 @@
 package lp2p
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -211,7 +212,13 @@ func (rs *reactorSet) Receive(reactorName, messageType string, envelope p2p.Enve
 	err := reactor.consumerQueue.PushPriority(pq, priority)
 	if err != nil {
 		rs.switchRef.metrics.MessagesReactorInFlight.With(labels...).Add(-1)
-		rs.switchRef.Logger.Error("Failed to push envelope to priority queue", "reactor", reactorName, "err", err)
+		if errors.Is(err, autopool.ErrQueueFull) {
+			rs.switchRef.metrics.MessagesReactorDropped.With(labels...).Add(1)
+			rs.switchRef.Logger.Error("Reactor queue full, dropping message", "reactor", reactorName, "message_type", messageType)
+		} else {
+			rs.switchRef.Logger.Error("Failed to push envelope to priority queue", "reactor", reactorName, "err", err)
+		}
+		return
 	}
 
 	rs.switchRef.Logger.Debug(
@@ -281,6 +288,7 @@ func (rs *reactorSet) newReactorPriorityQueue(
 		// capacity of the concurrent pool (messages in flight)
 		// others will be queued in the priority queue first (FIFO)
 		concurrentPoolCapacity = 512
+		// matches inbound cap; total per-reactor buffer = 2×concurrentPoolCapacity before drops.
 	)
 
 	concurrencyCounter := rs.
@@ -300,7 +308,7 @@ func (rs *reactorSet) newReactorPriorityQueue(
 		autopool.WithOnShrink[pendingEnvelope](func() {
 			concurrencyCounter.Add(-1)
 		}),
-		autopool.WithPriorityQueue[pendingEnvelope](autopool.NewPriorityQueue(priorities)),
+		autopool.WithPriorityQueue[pendingEnvelope](autopool.NewPriorityQueueWithMax(priorities, concurrentPoolCapacity)),
 	)
 }
 

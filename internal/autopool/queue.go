@@ -13,7 +13,10 @@ type Queue struct {
 	mu   sync.RWMutex
 }
 
-var ErrPriority = errors.New("invalid priority")
+var (
+	ErrPriority  = errors.New("invalid priority")
+	ErrQueueFull = errors.New("priority queue is full")
+)
 
 // New Queue constructor.
 func NewQueue() *Queue {
@@ -60,7 +63,10 @@ type PriorityQueue struct {
 	priorities           int
 	levels               []*Queue
 	highestNonEmptyLevel int
-	mu                   sync.Mutex
+	// maxSize is the total capacity across all priority levels; 0 means unlimited.
+	maxSize int
+	size    int
+	mu      sync.Mutex
 
 	// valuesAvailable signals that there are values available in one of the
 	// queues that can be popped
@@ -68,6 +74,11 @@ type PriorityQueue struct {
 }
 
 func NewPriorityQueue(priorities int) *PriorityQueue {
+	return NewPriorityQueueWithMax(priorities, 0)
+}
+
+// NewPriorityQueueWithMax returns ErrQueueFull when total depth reaches maxSize; 0 means unbounded.
+func NewPriorityQueueWithMax(priorities, maxSize int) *PriorityQueue {
 	if priorities <= 0 {
 		priorities = 1
 	}
@@ -81,6 +92,7 @@ func NewPriorityQueue(priorities int) *PriorityQueue {
 		priorities:           priorities,
 		levels:               queues,
 		highestNonEmptyLevel: -1,
+		maxSize:              maxSize,
 		mu:                   sync.Mutex{},
 		valuesAvailable:      make(chan struct{}, 1),
 	}
@@ -94,9 +106,14 @@ func (q *PriorityQueue) Push(value any, priority int) error {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
+	if q.maxSize > 0 && q.size >= q.maxSize {
+		return ErrQueueFull
+	}
+
 	idx := priority - 1
 
 	q.levels[idx].Push(value)
+	q.size++
 
 	if idx > q.highestNonEmptyLevel {
 		q.highestNonEmptyLevel = idx
@@ -127,6 +144,7 @@ func (q *PriorityQueue) Pop() (any, bool) {
 	// highest priority first
 	for i := q.highestNonEmptyLevel; i >= 0; i-- {
 		if v, ok := q.levels[i].Pop(); ok {
+			q.size--
 			q.updateHighestNonEmpty(i)
 			return v, ok
 		}

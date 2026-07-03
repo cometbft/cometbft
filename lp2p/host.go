@@ -212,8 +212,8 @@ func ResourceManagerFromConfig(cfg config.LibP2PConfig) (network.ResourceManager
 
 	if cfg.Limits.Mode == config.LibP2PLimitsModeCustom {
 		var (
-			scaled        = defaults.AutoScale()
-			maxPeers      = rcmgr.LimitVal(cfg.Limits.MaxPeers)
+			scaled         = defaults.AutoScale()
+			maxPeers       = rcmgr.LimitVal(cfg.Limits.MaxPeers)
 			maxPeerStreams = rcmgr.LimitVal(cfg.Limits.MaxPeerStreams)
 		)
 

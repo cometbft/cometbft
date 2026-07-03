@@ -361,11 +361,11 @@ func TestResourceManager(t *testing.T) {
 		require.False(t, isNull)
 
 		var (
-			systemLimits   = limiter.GetSystemLimits()
+			systemLimits    = limiter.GetSystemLimits()
 			transientLimits = limiter.GetTransientLimits()
-			peerLimits     = limiter.GetPeerLimits("")
-			serviceLimits  = limiter.GetServiceLimits(identify.ServiceName)
-			peerPingLimits = limiter.GetProtocolPeerLimits(ping.ID)
+			peerLimits      = limiter.GetPeerLimits("")
+			serviceLimits   = limiter.GetServiceLimits(identify.ServiceName)
+			peerPingLimits  = limiter.GetProtocolPeerLimits(ping.ID)
 		)
 
 		t.Logf("systemLimits: %T: %+v", systemLimits, systemLimits)

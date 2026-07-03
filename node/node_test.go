@@ -543,10 +543,6 @@ func state(nVals int, height int64) (sm.State, dbm.DB, []types.PrivValidator) {
 	return s, stateDB, privVals
 }
 
-// TestAdaptiveSyncRejectedOnValidator verifies that a node with adaptive_sync=true
-// fails to start when the local key is in the active validator set.
-// With a single validator onlyValidatorIsUs=true disables blocksync entirely,
-// so we use a two-validator genesis to make blocksync the expected mode.
 func TestAdaptiveSyncRejectedOnValidator(t *testing.T) {
 	config := test.ResetTestRoot("node_adaptive_sync_validator_test")
 	defer os.RemoveAll(config.RootDir)

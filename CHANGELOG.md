@@ -9,7 +9,7 @@
 - `[abci]` fix socket transport missing `InsertTx` and `ReapTxs` cases in
   `handleRequest` and `resMatchesReq`, causing `ErrUnexpectedResponse` and
   node self-kill when `mempool.type = "app"` with the default socket transport
-  ([\#NNNN](https://github.com/cometbft/cometbft/pull/NNNN))
+  ([\#5958](https://github.com/cometbft/cometbft/pull/5958))
 - `[flowrate]` fix flaky `TestWriter` by comparing `Idle` with a duration
   tolerance instead of exact equality
   ([\#5929](https://github.com/cometbft/cometbft/pull/5929))

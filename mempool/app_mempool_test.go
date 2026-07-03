@@ -207,6 +207,31 @@ func TestAppMempool(t *testing.T) {
 	})
 }
 
+func TestAppMempoolCheckTx_AppError(t *testing.T) {
+	appErr := fmt.Errorf("connection reset by peer")
+	tx := types.Tx("some-tx")
+
+	app := abcimock.NewClient(t)
+	app.On("CheckTx", mock.Anything, mock.Anything).
+		Return((*abci.ResponseCheckTx)(nil), appErr)
+
+	m := NewAppMempool(config.DefaultMempoolConfig(), app)
+
+	var result atomic.Pointer[abci.ResponseCheckTx]
+	err := m.CheckTx(tx, func(res *abci.ResponseCheckTx) { result.Store(res) }, TxInfo{})
+	require.NoError(t, err)
+
+	// callback must fire — RPC callers block on this
+	require.Eventually(t, func() bool { return result.Load() != nil }, time.Second, 10*time.Millisecond)
+
+	res := result.Load()
+	require.Equal(t, abci.CodeTypeRetry, res.Code)
+	require.Contains(t, res.Log, appErr.Error())
+
+	// seen-guard must clear so the tx can be resubmitted
+	require.Eventually(t, func() bool { return !m.guard.Has(tx.Key()) }, m.checkTxRetryDelay, 10*time.Millisecond)
+}
+
 func TestAppMempool_UsesConfigValues(t *testing.T) {
 	t.Run("ReapTxs receives MaxBytes and MaxGas from config", func(t *testing.T) {
 		cfg := config.TestMempoolConfig()

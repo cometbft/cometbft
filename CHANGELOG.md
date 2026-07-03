@@ -42,9 +42,9 @@
   ([\#5867](https://github.com/cometbft/cometbft/pull/5867))
 - `[blocksync]` fix removeTimedoutPeers deadlock found via Byzantine prevote gossip race
   ([\#5839](https://github.com/cometbft/cometbft/pull/5839))
-- `[mempool]` fix `AppMempool.CheckTx` not invoking callback or releasing
-  seen-guard on app error, causing `BroadcastTxSync`/`BroadcastTxCommit` to
-  hang until context expiry and blocking tx resubmission.
+- `[mempool]` fire callback and release seen-guard on `app.CheckTx` error,
+  preventing `BroadcastTxSync`/`BroadcastTxCommit` from hanging and allowing
+  tx resubmission.
   ([\#5952](https://github.com/cometbft/cometbft/pull/5952))
 - `[mempool]` fix setRecheckFull/setDone race causing spurious ErrRecheckFull.
   ([\#5837](https://github.com/cometbft/cometbft/pull/5837))

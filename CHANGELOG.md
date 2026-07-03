@@ -6,6 +6,11 @@
 
 ### BUG FIXES
 
+- `[blocksync]` reject `adaptive_sync=true` on validator nodes at startup;
+  running consensus concurrently with blocksync while catching up lets
+  `signAddVote` fire before the ingestor commits an already-decided block,
+  leaving the HRS file as the only equivocation guard
+  ([\#5953](https://github.com/cometbft/cometbft/pull/5953))
 - `[flowrate]` fix flaky `TestWriter` by comparing `Idle` with a duration
   tolerance instead of exact equality
   ([\#5929](https://github.com/cometbft/cometbft/pull/5929))

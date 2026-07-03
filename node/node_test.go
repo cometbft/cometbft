@@ -542,3 +542,47 @@ func state(nVals int, height int64) (sm.State, dbm.DB, []types.PrivValidator) {
 	}
 	return s, stateDB, privVals
 }
+
+// TestAdaptiveSyncRejectedOnValidator verifies that a node with adaptive_sync=true
+// fails to start when the local key is in the active validator set.
+// With a single validator onlyValidatorIsUs=true disables blocksync entirely,
+// so we use a two-validator genesis to make blocksync the expected mode.
+func TestAdaptiveSyncRejectedOnValidator(t *testing.T) {
+	config := test.ResetTestRoot("node_adaptive_sync_validator_test")
+	defer os.RemoveAll(config.RootDir)
+
+	config.BlockSync.AdaptiveSync = true
+
+	privVal := privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile())
+	pubKey, err := privVal.GetPubKey()
+	require.NoError(t, err)
+
+	// A second validator so onlyValidatorIsUs=false and blocksync is enabled.
+	secondVal := types.NewMockPV()
+
+	genDoc := &types.GenesisDoc{
+		ChainID:         "adaptive-sync-test",
+		GenesisTime:     cmttime.Now(),
+		ConsensusParams: types.DefaultConsensusParams(),
+		Validators: []types.GenesisValidator{
+			{Address: pubKey.Address(), PubKey: pubKey, Power: 10},
+			{Address: secondVal.PrivKey.PubKey().Address(), PubKey: secondVal.PrivKey.PubKey(), Power: 10},
+		},
+	}
+
+	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
+	require.NoError(t, err)
+
+	_, err = NewNode(
+		config,
+		privVal,
+		nodeKey,
+		proxy.NewLocalClientCreator(kvstore.NewInMemoryApplication()),
+		func() (*types.GenesisDoc, error) { return genDoc, nil },
+		cfg.DefaultDBProvider,
+		DefaultMetricsProvider(config.Instrumentation),
+		log.TestingLogger(),
+	)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "adaptive_sync cannot be enabled on a validator node")
+}

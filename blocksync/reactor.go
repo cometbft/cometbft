@@ -367,9 +367,15 @@ func (r *Reactor) FilterMsgBytes(chID byte, src p2p.Peer, msgBytes []byte) error
 		return nil
 	}
 
-	// blocksync not running, we should not be getting a BlockResponse
-	if !r.enabled.Load() || !r.pool.IsRunning() {
+	// Never ran blocksync on this node — any BlockResponse is unsolicited.
+	if !r.enabled.Load() {
 		return errors.New("unsolicited BlockResponse: blocksync not active")
+	}
+	// Pool has stopped (switched to consensus). Requests we sent before the
+	// transition are still in flight; the peers are honest and must not be
+	// disconnected for answering our own requests.
+	if !r.pool.IsRunning() {
+		return nil
 	}
 
 	// ensure we have an outstanding request to this peer

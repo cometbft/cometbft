@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[blocksync]` tolerate late BlockResponse from honest peers after switching to consensus
+  ([\#XXXX](https://github.com/cometbft/cometbft/pull/XXXX))
 - `[flowrate]` fix flaky `TestWriter` by comparing `Idle` with a duration
   tolerance instead of exact equality
   ([\#5929](https://github.com/cometbft/cometbft/pull/5929))

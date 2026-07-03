@@ -556,6 +556,20 @@ func TestFilterMsgBytes(t *testing.T) {
 			expectErr: "blocksync not active",
 		},
 		{
+			// After catching up, the pool stops but in-flight responses from our
+			// own requests arrive after the switch to consensus. The peer is
+			// honest and must not be disconnected.
+			name: "allows late BlockResponse after pool stops for consensus switch",
+			setup: func(t *testing.T) *Reactor {
+				r := newFilterReactor(t, true)
+				require.NoError(t, r.pool.Stop())
+				return r
+			},
+			chID:    BlocksyncChannel,
+			peer:    unexpected,
+			bytesFn: blockResponseBytes,
+		},
+		{
 			name:      "rejects unsolicited BlockResponse with no requesters",
 			setup:     func(t *testing.T) *Reactor { return newFilterReactor(t, true) },
 			chID:      BlocksyncChannel,
@@ -606,19 +620,6 @@ func TestFilterMsgBytes(t *testing.T) {
 			chID:    BlocksyncChannel,
 			peer:    "any",
 			bytesFn: func(*testing.T) []byte { return nil },
-		},
-		{
-			name: "rejects BlockResponse after pool stopped",
-			setup: func(t *testing.T) *Reactor {
-				r := newFilterReactor(t, true)
-				seedRequester(r, 1, expected)
-				require.NoError(t, r.pool.Stop())
-				return r
-			},
-			chID:      BlocksyncChannel,
-			peer:      expected,
-			bytesFn:   blockResponseBytes,
-			expectErr: "blocksync not active",
 		},
 		{
 			name: "allows BlockResponse at MaxVotesCount commit signatures",
@@ -999,4 +1000,58 @@ func TestEnableRecomputesMaxPeerHeight(t *testing.T) {
 
 	_ = r.Enable(sm.State{LastBlockHeight: 100})
 	require.Equal(t, int64(200), pool.MaxPeerHeight())
+}
+
+func TestPeerNotDisconnectedOnLateBlockResponseAfterConsensusSwitch(t *testing.T) {
+	config = test.ResetTestRoot("blocksync_reactor_test")
+	defer os.RemoveAll(config.RootDir)
+
+	const nBlocks = int64(10)
+	genDoc, privVals := genesisDocWithValsPowers([]int64{30})
+
+	servingPair := newReactor(t, log.TestingLogger(), genDoc, privVals, nBlocks)
+	defer func() {
+		require.NoError(t, servingPair.reactor.Stop())
+		require.NoError(t, servingPair.app.Stop())
+	}()
+
+	syncingPair := newReactor(t, log.TestingLogger(), genDoc, privVals, 0)
+	syncingPair.reactor.intervalSwitchToConsensus = 20 * time.Millisecond
+	defer func() {
+		require.NoError(t, syncingPair.reactor.Stop())
+		require.NoError(t, syncingPair.app.Stop())
+	}()
+
+	switches := p2p.MakeConnectedSwitches(config.P2P, 2, func(i int, s *p2p.Switch) *p2p.Switch {
+		if i == 0 {
+			s.AddReactor("BLOCKSYNC", syncingPair.reactor)
+		} else {
+			s.AddReactor("BLOCKSYNC", servingPair.reactor)
+		}
+		return s
+	}, p2p.Connect2Switches)
+
+	require.Eventually(t, func() bool {
+		return !syncingPair.reactor.pool.IsRunning()
+	}, 30*time.Second, 5*time.Millisecond, "syncing pool did not stop")
+
+	// Pool stopped (consensus switch). Simulate a late in-flight response by
+	// sending block 1 from the serving node — exercises the onReceive →
+	// FilterMsgBytes path in p2p/peer.go.
+	block := servingPair.reactor.store.LoadBlock(1)
+	require.NotNil(t, block)
+	bl, err := block.ToProto()
+	require.NoError(t, err)
+
+	peers := switches[1].Peers().Copy()
+	require.Len(t, peers, 1)
+	require.True(t, peers[0].TrySend(p2p.Envelope{
+		ChannelID: BlocksyncChannel,
+		Message:   &bcproto.BlockResponse{Block: bl},
+	}), "message must be queued to exercise the filter path")
+
+	time.Sleep(200 * time.Millisecond)
+
+	assert.Equal(t, 1, switches[0].Peers().Size(),
+		"serving peer was incorrectly disconnected by a late in-flight BlockResponse")
 }

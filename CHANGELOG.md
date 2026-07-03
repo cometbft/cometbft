@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[lp2p]` base custom resource manager on AutoScale; fix System.Conns arithmetic
+  ([\#5957](https://github.com/cometbft/cometbft/pull/5957))
 - `[flowrate]` fix flaky `TestWriter` by comparing `Idle` with a duration
   tolerance instead of exact equality
   ([\#5929](https://github.com/cometbft/cometbft/pull/5929))

@@ -362,23 +362,33 @@ func TestResourceManager(t *testing.T) {
 
 		var (
 			systemLimits   = limiter.GetSystemLimits()
+			transientLimits = limiter.GetTransientLimits()
 			peerLimits     = limiter.GetPeerLimits("")
 			serviceLimits  = limiter.GetServiceLimits(identify.ServiceName)
 			peerPingLimits = limiter.GetProtocolPeerLimits(ping.ID)
 		)
 
 		t.Logf("systemLimits: %T: %+v", systemLimits, systemLimits)
+		t.Logf("transientLimits: %T: %+v", transientLimits, transientLimits)
 		t.Logf("peerLimits: %T: %+v", peerLimits, peerLimits)
 		t.Logf("serviceLimits(identify): %T: %+v", serviceLimits, serviceLimits)
 		t.Logf("peerPingLimits: %T: %+v", peerPingLimits, peerPingLimits)
 
-		// no limits on "system" scope...
-		require.Equal(t, math.MaxInt64, systemLimits.GetStreamTotalLimit())
+		// system scope must be finite (backed by AutoScale, not InfiniteLimits)
+		require.Less(t, systemLimits.GetStreamTotalLimit(), 1_000_000)
+		require.NotEqual(t, int64(math.MaxInt64), systemLimits.GetMemoryLimit())
 
-		// ...but strict limits on "peer" scope
+		// System.Conns = per-peer conn limit × MaxPeers, not × MaxPeerStreams
+		require.Equal(t, peerLimits.GetConnTotalLimit()*cfg.Limits.MaxPeers, systemLimits.GetConnTotalLimit())
+
+		// transient scope must also be finite
+		require.Less(t, transientLimits.GetStreamTotalLimit(), 1_000_000)
+		require.NotEqual(t, int64(math.MaxInt64), transientLimits.GetMemoryLimit())
+
+		// per-peer streams capped by config
 		require.Equal(t, cfg.Limits.MaxPeerStreams, peerLimits.GetStreamTotalLimit())
 
-		// and also default limits on built-in "service" scope
+		// built-in service limits inherited from AutoScale defaults
 		require.NotEqual(t, math.MaxInt64, serviceLimits.GetStreamTotalLimit())
 		require.Less(t, peerLimits.GetStreamTotalLimit(), systemLimits.GetStreamTotalLimit())
 		require.Equal(t, 2, peerPingLimits.GetStreamLimit(network.DirInbound))

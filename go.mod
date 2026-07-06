@@ -47,7 +47,7 @@ require (
 	golang.org/x/net v0.56.0
 	golang.org/x/sync v0.21.0
 	gonum.org/v1/gonum v0.17.0
-	google.golang.org/grpc v1.81.1
+	google.golang.org/grpc v1.82.0
 	google.golang.org/protobuf v1.36.11
 )
 
@@ -192,7 +192,7 @@ require (
 	golang.org/x/text v0.38.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	golang.org/x/tools v0.45.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools v2.2.0+incompatible // indirect

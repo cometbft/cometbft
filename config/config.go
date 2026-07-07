@@ -681,8 +681,6 @@ type LibP2PScaler struct {
 	MinWorkers       int                    `mapstructure:"min_workers"`
 	MaxWorkers       int                    `mapstructure:"max_workers"`
 	ThresholdLatency time.Duration          `mapstructure:"threshold_latency"`
-	// MaxQueueSize caps the per-reactor priority queue depth before messages are dropped.
-	// 0 means unlimited (use only in tests; risks OOM under a fast peer).
 	MaxQueueSize     int                    `mapstructure:"max_queue_size"`
 	Overrides        []LibP2PScalerOverride `mapstructure:"overrides"`
 }
@@ -693,7 +691,6 @@ type LibP2PScalerOverride struct {
 	MinWorkers       int           `mapstructure:"min_workers"`
 	MaxWorkers       int           `mapstructure:"max_workers"`
 	ThresholdLatency time.Duration `mapstructure:"threshold_latency"`
-	// MaxQueueSize overrides the global MaxQueueSize for this reactor. 0 inherits the global value.
 	MaxQueueSize     int           `mapstructure:"max_queue_size"`
 }
 

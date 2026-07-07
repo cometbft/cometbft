@@ -1201,10 +1201,8 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 // BlockSyncConfig defines the configuration for the CometBFT block sync service
 type BlockSyncConfig struct {
 	Version      string `mapstructure:"version"`
-	AdaptiveSync bool   `mapstructure:"adaptive_sync"`
-	// AdaptiveSyncValidatorAck must be set to true to allow adaptive_sync on a
-	// validator node. Running consensus concurrently with blocksync while
-	// catching up risks equivocation; this flag forces an explicit opt-in.
+	AdaptiveSync bool `mapstructure:"adaptive_sync"`
+	// Required to run adaptive_sync on a validator — explicit opt-in to the equivocation risk.
 	AdaptiveSyncValidatorAck bool `mapstructure:"adaptive_sync_validator_ack"`
 }
 

@@ -300,6 +300,9 @@ func (rs *reactorSet) newReactorPriorityQueue(
 			break
 		}
 	}
+	if maxQueueSize == 0 {
+		rs.switchRef.Logger.Error("Reactor priority queue is unbounded; node is vulnerable to memory-exhaustion DoS", "reactor", reactorName)
+	}
 
 	concurrencyCounter := rs.
 		switchRef.metrics.MessageReactorQueueConcurrency.

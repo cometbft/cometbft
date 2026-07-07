@@ -52,6 +52,8 @@
   ([\#5868](https://github.com/cometbft/cometbft/pull/5868))
 - `[node]` close partial listeners on startRPC failure
   ([\#5869](https://github.com/cometbft/cometbft/pull/5869))
+- `[lp2p]` remove `MaxStreamSize` clamp in `StreamReadSized`
+  ([\#5954](https://github.com/cometbft/cometbft/pull/5954))
 - `[lp2p]` fallback to conn remote addr when resolving inbound peer
   ([\#5879](https://github.com/cometbft/cometbft/pull/5879))
 - `[consensus]` release cs.mtx before sending to statsMsgQueue

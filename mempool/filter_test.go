@@ -113,6 +113,24 @@ func TestFilterMempoolMsgBytes_Malformed(t *testing.T) {
 	require.Error(t, filterMempoolMsgBytes([]byte{0x0a, 0x7f}, 1024, 4096))
 }
 
+func TestFilterMempoolMsgBytes_DisguisedFieldNumberNotBypassed(t *testing.T) {
+	inner := []byte{
+		0x0a, 0x01, 0x41, // field 1, len 1, "A"  -> real tx
+		0x8a, 0x80, 0x80, 0x80, 0x80, 0x01, 0x00, // disguised field 1, len 0 -> empty tx
+	}
+	msgBytes := append([]byte{0x0a, byte(len(inner))}, inner...) // Message.txs = inner
+
+	// Sanity check: the real parser really does decode two entries, the second
+	// empty
+	var msg protomem.Message
+	require.NoError(t, msg.Unmarshal(msgBytes))
+	require.Len(t, msg.GetTxs().GetTxs(), 2)
+	require.Empty(t, msg.GetTxs().GetTxs()[1])
+
+	// The filter must reject it (empty transaction), matching the parser.
+	require.Error(t, filterMempoolMsgBytes(msgBytes, 1024, 4096))
+}
+
 // The per-batch budget is the larger of maxTxBytes and maxBatchBytes, so a
 // single tx bigger than maxBatchBytes but within maxTxBytes must still pass.
 func TestFilterMempoolMsgBytes_BatchBudgetIsMax(t *testing.T) {

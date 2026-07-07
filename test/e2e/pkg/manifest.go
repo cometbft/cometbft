@@ -162,9 +162,6 @@ type ManifestNode struct {
 	// BlockSyncAdaptiveSync specifies if the node should use adaptive sync for block sync.
 	BlockSyncAdaptiveSync bool `toml:"block_sync_adaptive_sync"`
 
-	// BlockSyncAdaptiveSyncValidatorAck explicitly opts a validator into adaptive_sync.
-	BlockSyncAdaptiveSyncValidatorAck bool `toml:"block_sync_adaptive_sync_validator_ack"`
-
 	// StateSync enables state sync. The runner automatically configures trusted
 	// block hashes and RPC servers. At least one node in the network must have
 	// SnapshotInterval set to non-zero, and the state syncing node must have

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"os"
@@ -409,11 +408,6 @@ func NewNodeWithContext(
 	)
 
 	if config.BlockSync.AdaptiveSync {
-		// Signing while blocksync is active risks equivocation; HRS file is the only backstop.
-		if enableBlockSync && state.Validators.HasAddress(localAddr) && !config.BlockSync.AdaptiveSyncValidatorAck {
-			return nil, fmt.Errorf("adaptive_sync on a validator node risks equivocation: " +
-				"set adaptive_sync_validator_ack=true in config.toml to explicitly accept this risk")
-		}
 		logger.Info("Adaptive sync (blocksync + consensus) is enabled!")
 	}
 
@@ -750,16 +744,6 @@ func (n *Node) OnStop() {
 			n.Logger.Error("Error closing indexerService", "err", err)
 		}
 	}
-	// Close the priv validator before stopping the reactors: sw.Stop waits on
-	// the consensus receiveRoutine, which can be stuck retrying a gone remote
-	// signer. Closing aborts that retry loop. (RetrySignerClient is not a
-	// service.Service, so the assertion below never fires for the socket client.)
-	if c, ok := n.privValidator.(io.Closer); ok {
-		if err := c.Close(); err != nil {
-			n.Logger.Error("Error closing private validator", "err", err)
-		}
-	}
-
 	// now stop the reactors
 	if err := n.sw.Stop(); err != nil {
 		n.Logger.Error("Error closing switch", "err", err)

@@ -44,6 +44,22 @@ func TestWireCursor_ReadTag_IllegalFieldNumber(t *testing.T) {
 	require.ErrorIs(t, err, ErrIllegalFieldNumber)
 }
 
+func TestWireCursor_ReadTag_FieldNumberTruncatesTo32Bit(t *testing.T) {
+	// Tag varint 8a 80 80 80 80 01 decodes to wire = 2^35 + 10, so
+	// wire>>3 == 2^32 + 1 and wire&7 == 2 (WireBytes). int32(2^32+1) == 1.
+	c := NewWireCursor([]byte{0x8a, 0x80, 0x80, 0x80, 0x80, 0x01})
+	fieldNum, wireType, err := c.ReadTag()
+	require.NoError(t, err)
+	require.Equal(t, 1, fieldNum, "high bits above 32 must be truncated, matching int32(wire>>3)")
+	require.Equal(t, WireBytes, wireType)
+
+	// Tag varint 80 80 80 80 40 decodes to wire>>3 == 2^31, and
+	// int32(2^31) is negative => illegal tag, exactly as gogoproto rejects it.
+	c = NewWireCursor([]byte{0x80, 0x80, 0x80, 0x80, 0x40})
+	_, _, err = c.ReadTag()
+	require.ErrorIs(t, err, ErrIllegalFieldNumber)
+}
+
 func TestWireCursor_ReadLengthDelimited(t *testing.T) {
 	c := NewWireCursor([]byte{0x03, 'a', 'b', 'c'})
 	b, err := c.ReadLengthDelimited()

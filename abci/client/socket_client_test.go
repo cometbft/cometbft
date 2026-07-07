@@ -153,6 +153,19 @@ func setupClientServer(t *testing.T, app types.Application) (
 	return s, c
 }
 
+func TestInsertTxReapTxsSocket(t *testing.T) {
+	ctx := t.Context()
+	_, c := setupClientServer(t, types.BaseApplication{})
+
+	insertRes, err := c.InsertTx(ctx, &types.RequestInsertTx{Tx: []byte("test")})
+	require.NoError(t, err)
+	require.NotNil(t, insertRes)
+
+	reapRes, err := c.ReapTxs(ctx, &types.RequestReapTxs{})
+	require.NoError(t, err)
+	require.NotNil(t, reapRes)
+}
+
 type slowApp struct {
 	types.BaseApplication
 }

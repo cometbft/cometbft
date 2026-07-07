@@ -115,7 +115,8 @@ type Node struct {
 	ProxyPort             uint32
 	StartAt               int64
 	BlockSyncVersion      string
-	BlockSyncAdaptiveSync bool
+	BlockSyncAdaptiveSync            bool
+	BlockSyncAdaptiveSyncValidatorAck bool
 	StateSync             bool
 	Database              string
 	ABCIProtocol          Protocol
@@ -246,7 +247,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			PrivvalProtocol:       ProtocolFile,
 			StartAt:               nodeManifest.StartAt,
 			BlockSyncVersion:      nodeManifest.BlockSyncVersion,
-			BlockSyncAdaptiveSync: nodeManifest.BlockSyncAdaptiveSync,
+			BlockSyncAdaptiveSync:            nodeManifest.BlockSyncAdaptiveSync,
+			BlockSyncAdaptiveSyncValidatorAck: nodeManifest.BlockSyncAdaptiveSyncValidatorAck,
 			StateSync:             nodeManifest.StateSync,
 			PersistInterval:       1,
 			SnapshotInterval:      nodeManifest.SnapshotInterval,

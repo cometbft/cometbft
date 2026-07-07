@@ -180,6 +180,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.StateSync.DiscoveryTime = 5 * time.Second
 	cfg.BlockSync.Version = node.BlockSyncVersion
 	cfg.BlockSync.AdaptiveSync = node.BlockSyncAdaptiveSync
+	cfg.BlockSync.AdaptiveSyncValidatorAck = node.BlockSyncAdaptiveSyncValidatorAck
 	cfg.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToNonPersistentPeers)
 	cfg.Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToPersistentPeers)
 

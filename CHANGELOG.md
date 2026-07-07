@@ -18,6 +18,13 @@
   ([\#5869](https://github.com/cometbft/cometbft/pull/5869))
 - `[consensus]` release cs.mtx before sending to statsMsgQueue
   ([\#5813](https://github.com/cometbft/cometbft/pull/5813))
+<<<<<<< HEAD
+=======
+- `[mempool]` truncate proto field number to int32 in filter's ReadTag
+  ([\#5948](https://github.com/cometbft/cometbft/pull/5948))
+- `[privval]` preempt sleep retries in privval signer client
+  ([\#5934](https://github.com/cometbft/cometbft/pull/5934))
+>>>>>>> 096ac149 (fix(mempool): truncate proto field number to int32 in filter's ReadTag (#5948))
 
 ### IMPROVEMENTS
 

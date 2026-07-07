@@ -273,8 +273,9 @@ func chunkTxs(txs types.Txs, maxBatchSizeBytes int) []types.Txs {
 				chunks = append(chunks, lastChunk)
 			}
 
+			// reset chunk size
 			lastChunk = types.Txs{}
-			lastChunkSizeBytes = 0 // reset chunk size
+			lastChunkSizeBytes = 0
 		}
 
 		lastChunk = append(lastChunk, tx)

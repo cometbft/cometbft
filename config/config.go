@@ -1202,6 +1202,10 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 type BlockSyncConfig struct {
 	Version      string `mapstructure:"version"`
 	AdaptiveSync bool   `mapstructure:"adaptive_sync"`
+	// AdaptiveSyncValidatorAck must be set to true to allow adaptive_sync on a
+	// validator node. Running consensus concurrently with blocksync while
+	// catching up risks equivocation; this flag forces an explicit opt-in.
+	AdaptiveSyncValidatorAck bool `mapstructure:"adaptive_sync_validator_ack"`
 }
 
 // DefaultBlockSyncConfig returns a default configuration for the block sync service

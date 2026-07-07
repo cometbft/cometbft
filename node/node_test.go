@@ -569,16 +569,27 @@ func TestAdaptiveSyncRejectedOnValidator(t *testing.T) {
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	require.NoError(t, err)
 
-	_, err = NewNode(
-		config,
-		privVal,
-		nodeKey,
-		proxy.NewLocalClientCreator(kvstore.NewInMemoryApplication()),
-		func() (*types.GenesisDoc, error) { return genDoc, nil },
-		cfg.DefaultDBProvider,
-		DefaultMetricsProvider(config.Instrumentation),
-		log.TestingLogger(),
-	)
+	newNode := func(ack bool) error {
+		config.BlockSync.AdaptiveSyncValidatorAck = ack
+		_, err := NewNode(
+			config,
+			privVal,
+			nodeKey,
+			proxy.NewLocalClientCreator(kvstore.NewInMemoryApplication()),
+			func() (*types.GenesisDoc, error) { return genDoc, nil },
+			cfg.DefaultDBProvider,
+			DefaultMetricsProvider(config.Instrumentation),
+			log.TestingLogger(),
+		)
+		return err
+	}
+
+	// Without ack, startup must fail.
+	err = newNode(false)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "adaptive_sync cannot be enabled on a validator node")
+	require.Contains(t, err.Error(), "adaptive_sync_validator_ack")
+
+	// With explicit ack, startup proceeds past the guard.
+	err = newNode(true)
+	require.NoError(t, err)
 }

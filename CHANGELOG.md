@@ -6,7 +6,8 @@
 
 ### BUG FIXES
 
-- `[blocksync]` reject `adaptive_sync` on validator nodes
+- `[blocksync]` reject `adaptive_sync` on validator nodes unless
+  `adaptive_sync_validator_ack=true` is set in config
   ([\#5953](https://github.com/cometbft/cometbft/pull/5953))
 - `[flowrate]` fix flaky `TestWriter` by comparing `Idle` with a duration
   tolerance instead of exact equality

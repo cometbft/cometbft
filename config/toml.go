@@ -555,9 +555,15 @@ version = "{{ .BlockSync.Version }}"
 # Experimental Adaptive sync (bool):
 #
 # Run both BLOCKSYNC and CONSENSUS for improved liveness, connectivity, and performance.
-# WARNING: Do NOT enable on validator nodes — concurrent consensus+blocksync risks equivocation.
-# Node startup will fail if adaptive_sync=true and a private validator key is active.
+# WARNING: On validator nodes, running consensus concurrently with blocksync while catching
+# up risks equivocation (the HRS file and KMS are not sufficient backstops). Node startup
+# will fail unless adaptive_sync_validator_ack=true is also set, forcing an explicit opt-in.
 adaptive_sync = {{ .BlockSync.AdaptiveSync }}
+
+# Explicit acknowledgment required to run adaptive_sync on a validator node (bool):
+#
+# Set to true only if you understand the equivocation risk described above and accept it.
+adaptive_sync_validator_ack = {{ .BlockSync.AdaptiveSyncValidatorAck }}
 
 #######################################################
 ###         Consensus Configuration Options         ###

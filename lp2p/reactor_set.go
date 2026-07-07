@@ -285,11 +285,19 @@ func (rs *reactorSet) newReactorPriorityQueue(
 		// variety of priorities (cometbft has up to 10)
 		priorities = 10
 
-		// capacity of the concurrent pool (messages in flight)
-		// others will be queued in the priority queue first (FIFO)
+		// capacity of the inbound channel (messages in-flight to workers)
 		concurrentPoolCapacity = 512
-		// matches inbound cap; total per-reactor buffer = 2×concurrentPoolCapacity before drops.
 	)
+
+	// priority queue max: use reactor-specific override if set, else global config.
+	// 0 means unbounded — only acceptable in tests.
+	maxQueueSize := rs.switchRef.host.config.Scaler.MaxQueueSize
+	for _, override := range rs.switchRef.host.config.Scaler.Overrides {
+		if strings.EqualFold(override.Reactor, reactorName) && override.MaxQueueSize > 0 {
+			maxQueueSize = override.MaxQueueSize
+			break
+		}
+	}
 
 	concurrencyCounter := rs.
 		switchRef.metrics.MessageReactorQueueConcurrency.
@@ -308,7 +316,7 @@ func (rs *reactorSet) newReactorPriorityQueue(
 		autopool.WithOnShrink[pendingEnvelope](func() {
 			concurrencyCounter.Add(-1)
 		}),
-		autopool.WithPriorityQueue[pendingEnvelope](autopool.NewPriorityQueueWithMax(priorities, concurrentPoolCapacity)),
+		autopool.WithPriorityQueue[pendingEnvelope](autopool.NewPriorityQueueWithMax(priorities, maxQueueSize)),
 	)
 }
 

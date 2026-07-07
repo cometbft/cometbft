@@ -681,6 +681,9 @@ type LibP2PScaler struct {
 	MinWorkers       int                    `mapstructure:"min_workers"`
 	MaxWorkers       int                    `mapstructure:"max_workers"`
 	ThresholdLatency time.Duration          `mapstructure:"threshold_latency"`
+	// MaxQueueSize caps the per-reactor priority queue depth before messages are dropped.
+	// 0 means unlimited (use only in tests; risks OOM under a fast peer).
+	MaxQueueSize     int                    `mapstructure:"max_queue_size"`
 	Overrides        []LibP2PScalerOverride `mapstructure:"overrides"`
 }
 
@@ -690,6 +693,8 @@ type LibP2PScalerOverride struct {
 	MinWorkers       int           `mapstructure:"min_workers"`
 	MaxWorkers       int           `mapstructure:"max_workers"`
 	ThresholdLatency time.Duration `mapstructure:"threshold_latency"`
+	// MaxQueueSize overrides the global MaxQueueSize for this reactor. 0 inherits the global value.
+	MaxQueueSize     int           `mapstructure:"max_queue_size"`
 }
 
 // LibP2PLimits parameters for lib-p2p resource manager.
@@ -818,6 +823,7 @@ func DefaultLibP2PScaler() LibP2PScaler {
 		MinWorkers:       4,
 		MaxWorkers:       32,
 		ThresholdLatency: 100 * time.Millisecond,
+		MaxQueueSize:     200_000,
 		Overrides: []LibP2PScalerOverride{
 			{
 				Reactor:          "MEMPOOL",
@@ -846,6 +852,8 @@ func (s *LibP2PScaler) ValidateBasic() error {
 		}
 	case s.ThresholdLatency < 0:
 		return cmterrors.ErrNegativeField{Field: key("threshold_latency")}
+	case s.MaxQueueSize < 0:
+		return cmterrors.ErrNegativeField{Field: key("max_queue_size")}
 	case len(s.Overrides) > 0:
 		for i, item := range s.Overrides {
 			switch {
@@ -862,6 +870,8 @@ func (s *LibP2PScaler) ValidateBasic() error {
 				}
 			case item.ThresholdLatency < 0:
 				return cmterrors.ErrNegativeField{Field: key("overrides.%d.threshold_latency", i)}
+			case item.MaxQueueSize < 0:
+				return cmterrors.ErrNegativeField{Field: key("overrides.%d.max_queue_size", i)}
 			}
 		}
 	}

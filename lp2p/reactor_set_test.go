@@ -175,8 +175,12 @@ func TestReactorSet(t *testing.T) {
 	})
 
 	t.Run("receive_drops_when_queue_full", func(t *testing.T) {
-		// ARRANGE
-		ts := newReactorSetTestSuite(t, withLogging())
+		// ARRANGE: set a tiny queue cap so we can fill it without sending 200k messages.
+		const smallCap = 16
+		configOverride := func(cfg *config.LibP2PConfig) {
+			cfg.Scaler.MaxQueueSize = smallCap
+		}
+		ts := newReactorSetTestSuite(t, withLogging(), withModifiedConfig(configOverride))
 		rs := newReactorSet(ts.sw)
 
 		reactorA := ts.newReactor([]*conn.ChannelDescriptor{{ID: 0xF1}})
@@ -194,9 +198,8 @@ func TestReactorSet(t *testing.T) {
 			Message:   &tmp2p.PexRequest{},
 		}
 
-		// ACT: saturate both the priority queue (512) and the inbound channel (512)
-		// by flooding with more messages than the combined buffer depth.
-		for i := 0; i < 2048; i++ {
+		// ACT: saturate the priority queue (smallCap) and inbound channel (512).
+		for i := 0; i < smallCap*4; i++ {
 			rs.Receive("A", "PexRequest", envelope, 1)
 		}
 

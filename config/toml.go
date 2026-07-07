@@ -376,7 +376,7 @@ max_queue_size = {{ .P2P.LibP2PConfig.Scaler.MaxQueueSize }}
 # min_workers = 2
 # max_workers = 16
 # threshold_latency = "250ms"
-# max_queue_size = 0
+# max_queue_size = 200000
 #
 # By default, MEMPOOL reactor is overridden to have increased throughput
 # If you want to disable this, explicitly set override to an empty list:

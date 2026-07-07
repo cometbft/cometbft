@@ -291,8 +291,9 @@ func (rs *reactorSet) newReactorPriorityQueue(
 
 	// priority queue max: use reactor-specific override if set, else global config.
 	// 0 means unbounded — only acceptable in tests.
-	maxQueueSize := rs.switchRef.host.config.Scaler.MaxQueueSize
-	for _, override := range rs.switchRef.host.config.Scaler.Overrides {
+	scalerCfg := rs.switchRef.host.config.Scaler
+	maxQueueSize := scalerCfg.MaxQueueSize
+	for _, override := range scalerCfg.Overrides {
 		if strings.EqualFold(override.Reactor, reactorName) && override.MaxQueueSize > 0 {
 			maxQueueSize = override.MaxQueueSize
 			break

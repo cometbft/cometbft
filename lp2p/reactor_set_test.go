@@ -199,7 +199,9 @@ func TestReactorSet(t *testing.T) {
 		}
 
 		// ACT: saturate the priority queue (smallCap) and inbound channel (512).
-		for i := 0; i < smallCap*4; i++ {
+		// Must exceed the total buffer depth (~inbound_cap + workers + pq_cap) to
+		// guarantee drops regardless of goroutine scheduling.
+		for i := 0; i < 1000; i++ {
 			rs.Receive("A", "PexRequest", envelope, 1)
 		}
 

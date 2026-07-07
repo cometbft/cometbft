@@ -52,7 +52,7 @@
   ([\#5869](https://github.com/cometbft/cometbft/pull/5869))
 - `[lp2p]` fallback to conn remote addr when resolving inbound peer
   ([\#5879](https://github.com/cometbft/cometbft/pull/5879))
-- `[lp2p]` cap per-reactor priority queue to prevent memory-exhaustion DoS; make queue size configurable via `p2p.libp2p.scaler.max_queue_size` (default 200 000)
+- `[lp2p]` cap per-reactor priority queue to prevent memory-exhaustion DoS
   ([\#5955](https://github.com/cometbft/cometbft/pull/5955))
 - `[consensus]` release cs.mtx before sending to statsMsgQueue
   ([\#5813](https://github.com/cometbft/cometbft/pull/5813))

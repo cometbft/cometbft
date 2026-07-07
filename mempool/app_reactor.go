@@ -12,6 +12,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+var _ p2p.MsgBytesFilter = (*AppReactor)(nil)
+
 // AppReactor for interacting with AppMempool
 type AppReactor struct {
 	p2p.BaseReactor
@@ -134,6 +136,14 @@ func (r *AppReactor) EnableInOutTxs() {
 
 	r.Logger.Info("Enabled inbound and outbound transactions")
 	close(r.waitForSwitchingOnCh)
+}
+
+// FilterMsgBytes implements p2p.MsgBytesFilter.
+func (r *AppReactor) FilterMsgBytes(chID byte, _ p2p.Peer, msgBytes []byte) error {
+	if chID != MempoolChannel || len(msgBytes) == 0 {
+		return nil
+	}
+	return filterMempoolMsgBytes(msgBytes, r.config.MaxTxBytes, r.config.MaxBatchBytes)
 }
 
 func (r *AppReactor) Receive(e p2p.Envelope) {

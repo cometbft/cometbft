@@ -276,7 +276,7 @@ func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckT
 
 		res, err := m.app.CheckTx(ctx, req)
 		if err != nil {
-			// note that other ABCI methods panic if err is not nil
+			// CheckTx errors are non-fatal; other ABCI methods panic on error.
 			m.logger.Error("AppMempool.CheckTx: error checking tx", "error", err, "tx", txHash(tx))
 			m.forgetTx(tx, true)
 			if callback != nil {

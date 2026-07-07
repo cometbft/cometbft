@@ -6,8 +6,12 @@
 
 ### BUG FIXES
 
-- `[mempool]` `AppMempool` ABCI response handling, callback/cleanup, and lifecycle
+- `[mempool]` fix `AppMempool` ABCI response handling, callback/cleanup, and lifecycle
   ([\#5942](https://github.com/cometbft/cometbft/pull/5942))
+- `[abci]` fix socket transport missing `InsertTx` and `ReapTxs` cases in
+  `handleRequest` and `resMatchesReq`, causing `ErrUnexpectedResponse` and
+  node self-kill when `mempool.type = "app"` with the default socket transport
+  ([\#5958](https://github.com/cometbft/cometbft/pull/5958))
 - `[flowrate]` fix flaky `TestWriter` by comparing `Idle` with a duration
   tolerance instead of exact equality
   ([\#5929](https://github.com/cometbft/cometbft/pull/5929))
@@ -52,10 +56,16 @@
   ([\#5868](https://github.com/cometbft/cometbft/pull/5868))
 - `[node]` close partial listeners on startRPC failure
   ([\#5869](https://github.com/cometbft/cometbft/pull/5869))
+- `[lp2p]` remove `MaxStreamSize` clamp in `StreamReadSized`
+  ([\#5954](https://github.com/cometbft/cometbft/pull/5954))
 - `[lp2p]` fallback to conn remote addr when resolving inbound peer
   ([\#5879](https://github.com/cometbft/cometbft/pull/5879))
 - `[consensus]` release cs.mtx before sending to statsMsgQueue
   ([\#5813](https://github.com/cometbft/cometbft/pull/5813))
+- `[mempool]` truncate proto field number to int32 in filter's ReadTag
+  ([\#5948](https://github.com/cometbft/cometbft/pull/5948))
+- `[privval]` preempt sleep retries in privval signer client
+  ([\#5934](https://github.com/cometbft/cometbft/pull/5934))
 
 ### IMPROVEMENTS
 
@@ -73,6 +83,8 @@
   ([\#5860](https://github.com/cometbft/cometbft/pull/5860))
 - `[autofile]` skip fsync in `FlushAndSync` when no new data was written
   ([\#5866](https://github.com/cometbft/cometbft/pull/5866))
+- `[mempool]` Implement `MsgBytesFilter` in Reactor to prevent heap amplification attack
+  ([\#5946](https://github.com/cometbft/cometbft/pull/5946))
 
 ### FEATURES
 

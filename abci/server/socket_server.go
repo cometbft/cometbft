@@ -246,6 +246,18 @@ func (s *SocketServer) handleRequest(ctx context.Context, req *types.Request) (*
 			return nil, err
 		}
 		return types.ToResponseCheckTx(res), nil
+	case *types.Request_InsertTx:
+		res, err := s.app.InsertTx(ctx, r.InsertTx)
+		if err != nil {
+			return nil, err
+		}
+		return types.ToResponseInsertTx(res), nil
+	case *types.Request_ReapTxs:
+		res, err := s.app.ReapTxs(ctx, r.ReapTxs)
+		if err != nil {
+			return nil, err
+		}
+		return types.ToResponseReapTxs(res), nil
 	case *types.Request_Commit:
 		res, err := s.app.Commit(ctx, r.Commit)
 		if err != nil {

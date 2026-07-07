@@ -242,11 +242,11 @@ func TestChunkTxs(t *testing.T) {
 			output: [][]int{{100}},
 		},
 		{
-			// Two 100-byte txs each cost 102 effective bytes (2 bytes proto framing),
-			// so a 204-byte limit fits two; 200 would not.
+			// Two 100-byte txs each cost 102 effective bytes (2 bytes proto framing).
+			// 204 fits exactly two; a third would overflow.
 			name:   "basic",
 			input:  []int{100, 100, 100},
-			size:   210,
+			size:   204,
 			output: [][]int{{100, 100}, {100}},
 		},
 		{

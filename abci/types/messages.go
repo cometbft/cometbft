@@ -168,6 +168,18 @@ func ToResponseCheckTx(res *ResponseCheckTx) *Response {
 	}
 }
 
+func ToResponseInsertTx(res *ResponseInsertTx) *Response {
+	return &Response{
+		Value: &Response_InsertTx{res},
+	}
+}
+
+func ToResponseReapTxs(res *ResponseReapTxs) *Response {
+	return &Response{
+		Value: &Response_ReapTxs{res},
+	}
+}
+
 func ToResponseCommit(res *ResponseCommit) *Response {
 	return &Response{
 		Value: &Response_Commit{res},

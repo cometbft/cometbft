@@ -494,6 +494,10 @@ func resMatchesReq(req *types.Request, res *types.Response) (ok bool) {
 		_, ok = res.Value.(*types.Response_Info)
 	case *types.Request_CheckTx:
 		_, ok = res.Value.(*types.Response_CheckTx)
+	case *types.Request_InsertTx:
+		_, ok = res.Value.(*types.Response_InsertTx)
+	case *types.Request_ReapTxs:
+		_, ok = res.Value.(*types.Response_ReapTxs)
 	case *types.Request_Commit:
 		_, ok = res.Value.(*types.Response_Commit)
 	case *types.Request_Query:

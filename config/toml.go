@@ -366,12 +366,17 @@ max_workers = {{ .P2P.LibP2PConfig.Scaler.MaxWorkers }}
 # scale up when observed latency is below this value, scale down when above it.
 threshold_latency = "{{ .P2P.LibP2PConfig.Scaler.ThresholdLatency }}"
 
+# Maximum number of messages buffered per-reactor before drops begin.
+# 0 means unlimited (risks OOM under a sustained flood from a fast peer).
+max_queue_size = {{ .P2P.LibP2PConfig.Scaler.MaxQueueSize }}
+
 # Override a specific reactor (case-insensitive), for example:
 # [[p2p.libp2p.scaler.overrides]]
 # reactor = "BLOCKSYNC"
 # min_workers = 2
 # max_workers = 16
 # threshold_latency = "250ms"
+# max_queue_size = 0
 #
 # By default, MEMPOOL reactor is overridden to have increased throughput
 # If you want to disable this, explicitly set override to an empty list:
@@ -382,6 +387,7 @@ reactor = "{{ .Reactor }}"
 min_workers = {{ .MinWorkers }}
 max_workers = {{ .MaxWorkers }}
 threshold_latency = "{{ .ThresholdLatency }}"
+max_queue_size = {{ .MaxQueueSize }}
 {{- end }}
 
 # Configuration for resource limits

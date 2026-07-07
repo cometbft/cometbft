@@ -285,7 +285,8 @@ func (rs *reactorSet) newReactorPriorityQueue(
 		// variety of priorities (cometbft has up to 10)
 		priorities = 10
 
-		// capacity of the inbound channel (messages in-flight to workers)
+		// capacity of the concurrent pool (messages in flight)
+		// others will be queued in the priority queue first (FIFO)
 		concurrentPoolCapacity = 512
 	)
 

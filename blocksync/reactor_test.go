@@ -570,6 +570,20 @@ func TestFilterMsgBytes(t *testing.T) {
 			bytesFn: blockResponseBytes,
 		},
 		{
+			// Any connected peer can reach this path once the pool is stopped,
+			// so the sig-count guard must still apply here.
+			name: "rejects oversized BlockResponse after pool stops for consensus switch",
+			setup: func(t *testing.T) *Reactor {
+				r := newFilterReactor(t, true)
+				require.NoError(t, r.pool.Stop())
+				return r
+			},
+			chID:      BlocksyncChannel,
+			peer:      unexpected,
+			bytesFn:   func(t *testing.T) []byte { return blockResponseBytesWithSigs(t, types.MaxVotesCount+1, 0) },
+			expectErr: "too many commit signatures",
+		},
+		{
 			name:      "rejects unsolicited BlockResponse with no requesters",
 			setup:     func(t *testing.T) *Reactor { return newFilterReactor(t, true) },
 			chID:      BlocksyncChannel,
@@ -1050,8 +1064,8 @@ func TestPeerNotDisconnectedOnLateBlockResponseAfterConsensusSwitch(t *testing.T
 		Message:   &bcproto.BlockResponse{Block: bl},
 	}), "message must be queued to exercise the filter path")
 
-	time.Sleep(200 * time.Millisecond)
-
-	assert.Equal(t, 1, switches[0].Peers().Size(),
+	require.Never(t, func() bool {
+		return switches[0].Peers().Size() != 1
+	}, 200*time.Millisecond, 5*time.Millisecond,
 		"serving peer was incorrectly disconnected by a late in-flight BlockResponse")
 }

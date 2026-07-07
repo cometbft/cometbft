@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 
 	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/internal/protowire"
 	"github.com/cometbft/cometbft/p2p"
 	protomem "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"github.com/cometbft/cometbft/types"
@@ -256,14 +257,13 @@ func chunkTxs(txs types.Txs, maxBatchSizeBytes int) []types.Txs {
 		return nil
 	}
 
-	var chunks []types.Txs
+	chunks := []types.Txs{}
 
 	lastChunkSizeBytes := 0
 	lastChunk := types.Txs{}
 
 	for _, tx := range txs {
-		// Include per-tx proto framing so the serialized message fits within capacity.
-		txSizeBytes := len(tx) + protoRepeatedBytesOverhead(len(tx))
+		txSizeBytes := len(tx) + protowire.RepeatedBytesEntrySize(len(tx))
 
 		// tx won't fit into chunk, add current chunk to chunks and start a new one
 		if (lastChunkSizeBytes + txSizeBytes) > maxBatchSizeBytes {
@@ -286,18 +286,6 @@ func chunkTxs(txs types.Txs, maxBatchSizeBytes int) []types.Txs {
 	}
 
 	return chunks
-}
-
-// protoRepeatedBytesOverhead returns the wire bytes proto adds per entry in a
-// repeated bytes field: 1 byte field tag + varint(dataLen).
-func protoRepeatedBytesOverhead(dataLen int) int {
-	n := 1 /* tag */ + 1 /* min varint byte */
-	v := uint64(dataLen) >> 7
-	for v > 0 {
-		n++
-		v >>= 7
-	}
-	return n
 }
 
 func txHash(tx types.Tx) string {

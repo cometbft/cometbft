@@ -82,44 +82,30 @@ func TestAppMempool(t *testing.T) {
 		}
 		require.Eventually(t, retryableForgotten, m.checkTxRetryDelay, 50*time.Millisecond)
 
-		t.Run("clears tx from seen cache on transport error", func(t *testing.T) {
+		t.Run("keeps tx in seen cache on transport error", func(t *testing.T) {
 			cfg := config.TestMempoolConfig()
-			cfg.CheckTxRetryDelay = 50 * time.Millisecond
 
 			app := abcimock.NewClient(t)
 			app.On("InsertTx", mock.Anything, mock.Anything).
-				Return((*abci.ResponseInsertTx)(nil), fmt.Errorf("connection error")).Once()
-			app.On("InsertTx", mock.Anything, mock.Anything).
-				Return(&abci.ResponseInsertTx{Code: abci.CodeTypeOK}, nil)
+				Return((*abci.ResponseInsertTx)(nil), fmt.Errorf("connection error"))
 
 			m := NewAppMempool(cfg, app)
 			tx := types.Tx("retry-tx")
 
 			require.Error(t, m.InsertTx(tx))
-			require.Eventually(t, func() bool {
-				return !m.guard.Has(tx.Key())
-			}, cfg.CheckTxRetryDelay, 5*time.Millisecond)
-			require.NoError(t, m.InsertTx(tx))
+			require.True(t, m.guard.Has(tx.Key()))
+			require.ErrorIs(t, m.InsertTx(tx), ErrSeenTx)
 		})
 
-		t.Run("nil response is a retryable error, not success", func(t *testing.T) {
-			cfg := config.TestMempoolConfig()
-			cfg.CheckTxRetryDelay = 50 * time.Millisecond
-
+		t.Run("nil response panics", func(t *testing.T) {
 			app := abcimock.NewClient(t)
 			app.On("InsertTx", mock.Anything, mock.Anything).
 				Return((*abci.ResponseInsertTx)(nil), nil)
 
-			m := NewAppMempool(cfg, app)
+			m := NewAppMempool(config.TestMempoolConfig(), app)
 			tx := types.Tx("nil-tx")
 
-			require.NotPanics(t, func() {
-				require.Error(t, m.InsertTx(tx))
-			})
-			// retryable: the seen-cache entry clears so the tx can be re-inserted.
-			require.Eventually(t, func() bool {
-				return !m.guard.Has(tx.Key())
-			}, cfg.CheckTxRetryDelay, 5*time.Millisecond)
+			require.Panics(t, func() { _ = m.InsertTx(tx) })
 		})
 
 		t.Run("CheckTx", func(t *testing.T) {
@@ -234,9 +220,8 @@ func TestAppMempool(t *testing.T) {
 			}
 		})
 
-		t.Run("clears tx from seen cache on app client error", func(t *testing.T) {
+		t.Run("keeps tx in seen cache on app client error", func(t *testing.T) {
 			cfg := config.TestMempoolConfig()
-			cfg.CheckTxRetryDelay = 50 * time.Millisecond
 
 			app := abcimock.NewClient(t)
 			app.On("CheckTx", mock.Anything, mock.Anything).
@@ -245,10 +230,9 @@ func TestAppMempool(t *testing.T) {
 			m := NewAppMempool(cfg, app)
 			tx := types.Tx("retry-tx")
 
-			require.NoError(t, m.CheckTx(tx, func(_ *abci.ResponseCheckTx) {}, TxInfo{}))
-			require.Eventually(t, func() bool {
-				return !m.guard.Has(tx.Key())
-			}, cfg.CheckTxRetryDelay, 5*time.Millisecond)
+			require.NoError(t, m.CheckTx(tx, nil, TxInfo{}))
+			time.Sleep(20 * time.Millisecond)
+			require.True(t, m.guard.Has(tx.Key()))
 		})
 
 		t.Run("nil response calls callback and clears seen cache", func(t *testing.T) {

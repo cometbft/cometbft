@@ -103,7 +103,6 @@ func (m *AppMempool) InsertTx(tx types.Tx) error {
 	switch {
 	case err != nil:
 		m.metrics.FailedTxs.Add(1)
-		m.forgetTx(tx, true)
 		return wrapErrCode("unable to insert tx", code, err)
 	case codeRetry(code):
 		// drop tx from seen cache (to retry later), but still return the error
@@ -162,9 +161,7 @@ func (m *AppMempool) insertTx(tx types.Tx) (uint32, error) {
 	}
 
 	if resp == nil {
-		// nil response, no error: surface a retryable failure instead of
-		// silently treating it as a successful insertion.
-		return 0, errors.New("nil InsertTx response")
+		panic("nil InsertTx response")
 	}
 
 	return resp.Code, nil
@@ -278,7 +275,6 @@ func (m *AppMempool) CheckTx(tx types.Tx, callback func(res *abci.ResponseCheckT
 		if err != nil {
 			// CheckTx errors are non-fatal; other ABCI methods panic on error.
 			m.logger.Error("AppMempool.CheckTx: error checking tx", "error", err, "tx", txHash(tx))
-			m.forgetTx(tx, true)
 			if callback != nil {
 				callback(&abci.ResponseCheckTx{Code: 1, Log: fmt.Sprintf("CheckTx app client error: %v", err)})
 			}

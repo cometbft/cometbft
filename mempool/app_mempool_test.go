@@ -235,9 +235,8 @@ func TestAppMempool(t *testing.T) {
 			require.True(t, m.guard.Has(tx.Key()))
 		})
 
-		t.Run("nil response calls callback and clears seen cache", func(t *testing.T) {
+		t.Run("nil response calls callback and keeps tx in seen cache", func(t *testing.T) {
 			cfg := config.TestMempoolConfig()
-			cfg.CheckTxRetryDelay = 50 * time.Millisecond
 
 			app := abcimock.NewClient(t)
 			app.On("CheckTx", mock.Anything, mock.Anything).
@@ -256,9 +255,7 @@ func TestAppMempool(t *testing.T) {
 			case <-time.After(time.Second):
 				t.Fatal("callback not called on nil CheckTx response")
 			}
-			require.Eventually(t, func() bool {
-				return !m.guard.Has(tx.Key())
-			}, cfg.CheckTxRetryDelay, 5*time.Millisecond)
+			require.True(t, m.guard.Has(tx.Key()))
 		})
 	})
 

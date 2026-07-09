@@ -62,6 +62,8 @@
   ([\#5813](https://github.com/cometbft/cometbft/pull/5813))
 - `[blocksync]` tolerate redundant near-tip BlockResponse from a second peer
   ([\#5950](https://github.com/cometbft/cometbft/pull/5950))  
+- `[mempool]` truncate proto field number to int32 in filter's ReadTag
+  ([\#5948](https://github.com/cometbft/cometbft/pull/5948))
 - `[privval]` preempt sleep retries in privval signer client
   ([\#5934](https://github.com/cometbft/cometbft/pull/5934))
 

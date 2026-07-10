@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[blocksync]` document `adaptive_sync` equivocation risk for validator nodes
+  ([\#5953](https://github.com/cometbft/cometbft/pull/5953))
 - `[abci]` fix socket transport missing `InsertTx` and `ReapTxs` cases in
   `handleRequest` and `resMatchesReq`, causing `ErrUnexpectedResponse` and
   node self-kill when `mempool.type = "app"` with the default socket transport

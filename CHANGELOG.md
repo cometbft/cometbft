@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[consensus]` fix flaky `TestPrepareProposalReceivesVoteExtensions`.
+  ([\#5936](https://github.com/cometbft/cometbft/pull/5936))
 - `[blocksync]` document `adaptive_sync` equivocation risk for validator nodes
   ([\#5953](https://github.com/cometbft/cometbft/pull/5953))
 - `[abci]` fix socket transport missing `InsertTx` and `ReapTxs` cases in

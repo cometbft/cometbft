@@ -827,6 +827,7 @@ func DefaultLibP2PScaler() LibP2PScaler {
 				MinWorkers:       8,
 				MaxWorkers:       512,
 				ThresholdLatency: 500 * time.Millisecond,
+				MaxQueueSize:     200_000,
 			},
 		},
 	}

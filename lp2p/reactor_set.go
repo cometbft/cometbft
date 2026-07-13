@@ -295,13 +295,13 @@ func (rs *reactorSet) newReactorPriorityQueue(
 	scalerCfg := rs.switchRef.host.config.Scaler
 	maxQueueSize := scalerCfg.MaxQueueSize
 	for _, override := range scalerCfg.Overrides {
-		if strings.EqualFold(override.Reactor, reactorName) && override.MaxQueueSize > 0 {
+		if strings.EqualFold(override.Reactor, reactorName) {
 			maxQueueSize = override.MaxQueueSize
 			break
 		}
 	}
 	if maxQueueSize == 0 {
-		rs.switchRef.Logger.Error("Reactor priority queue is unbounded; node is vulnerable to memory-exhaustion DoS", "reactor", reactorName)
+		rs.switchRef.Logger.Info("Reactor priority queue is unbounded; node is vulnerable to memory-exhaustion DoS", "reactor", reactorName)
 	}
 
 	concurrencyCounter := rs.

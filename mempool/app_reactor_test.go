@@ -9,15 +9,85 @@ import (
 	abcimock "github.com/cometbft/cometbft/abci/client/mocks"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/internal/protowire"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/p2p"
+	protomem "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"github.com/cometbft/cometbft/types"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestAppReactor(t *testing.T) {
+	t.Run("effectiveMaxBatchBytes", func(t *testing.T) {
+		for _, tt := range []struct {
+			name          string
+			maxTxBytes    int
+			maxBatchBytes int
+			want          int
+		}{
+			{"MaxBatchBytes unset falls back to MaxTxBytes", 1000, 0, 1000},
+			{"MaxBatchBytes set and larger than MaxTxBytes", 1000, 5000, 5000},
+			{"MaxBatchBytes set and smaller than MaxTxBytes", 1000, 500, 500},
+		} {
+			t.Run(tt.name, func(t *testing.T) {
+				r := &AppReactor{config: &config.MempoolConfig{
+					MaxTxBytes:    tt.maxTxBytes,
+					MaxBatchBytes: tt.maxBatchBytes,
+				}}
+				require.Equal(t, tt.want, r.effectiveMaxBatchBytes())
+			})
+		}
+	})
+
+	// Regression test for the peer-teardown bug: every batch produced by chunkTxs
+	// must serialize to a Message that fits within RecvMessageCapacity.
+	t.Run("GetChannels", func(t *testing.T) {
+		for _, tt := range []struct {
+			name          string
+			maxTxBytes    int
+			maxBatchBytes int
+			txSize        int
+			txCount       int
+		}{
+			// Many 1-byte txs: worst-case proto framing ratio (2 overhead bytes per 1 data byte).
+			{"1-byte txs default batch limit", 10000, 0, 1, 10000},
+			// Txs at the 127-byte boundary (varint transitions from 1 to 2 bytes at 128).
+			{"127-byte txs default batch limit", 10000, 0, 127, 100},
+			{"128-byte txs default batch limit", 10000, 0, 128, 100},
+			// Large txs near MaxTxBytes.
+			{"large txs default batch limit", 10000, 0, 9000, 5},
+			// MaxBatchBytes set larger than MaxTxBytes.
+			{"small txs explicit batch limit", 1000, 5000, 1, 5000},
+		} {
+			t.Run(tt.name, func(t *testing.T) {
+				r := &AppReactor{config: &config.MempoolConfig{
+					MaxTxBytes:    tt.maxTxBytes,
+					MaxBatchBytes: tt.maxBatchBytes,
+				}}
+
+				txs := make(types.Txs, tt.txCount)
+				for i := range txs {
+					txs[i] = make(types.Tx, tt.txSize)
+				}
+
+				recvCap := r.GetChannels()[0].RecvMessageCapacity
+				batches := chunkTxs(txs, r.effectiveMaxBatchBytes())
+
+				for i, batch := range batches {
+					msg := &protomem.Message{
+						Sum: &protomem.Message_Txs{
+							Txs: &protomem.Txs{Txs: batch.ToSliceOfBytes()},
+						},
+					}
+					msgSize := msg.Size()
+					require.LessOrEqual(t, msgSize, recvCap,
+						"batch %d serialized size %d exceeds RecvMessageCapacity %d", i, msgSize, recvCap)
+				}
+			})
+		}
+	})
 	const (
 		timeout  = 5 * time.Second
 		interval = 200 * time.Millisecond
@@ -172,9 +242,11 @@ func TestChunkTxs(t *testing.T) {
 			output: [][]int{{100}},
 		},
 		{
+			// Two 100-byte txs each cost 102 effective bytes (2 bytes proto framing).
+			// 204 fits exactly two; a third would overflow.
 			name:   "basic",
 			input:  []int{100, 100, 100},
-			size:   200,
+			size:   204,
 			output: [][]int{{100, 100}, {100}},
 		},
 		{
@@ -184,10 +256,12 @@ func TestChunkTxs(t *testing.T) {
 			output: [][]int{{100}, {100}, {100}},
 		},
 		{
+			// With 2-byte proto framing per tx, [20,30] sums to 54 effective bytes;
+			// adding 50 would reach 106 > 100, so [50] starts a new chunk with [2].
 			name:   "edge-case",
 			input:  []int{101, 20, 30, 50, 2, 102, 3},
 			size:   100,
-			output: [][]int{{101}, {20, 30, 50}, {2}, {102}, {3}},
+			output: [][]int{{101}, {20, 30}, {50, 2}, {102}, {3}},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -207,6 +281,18 @@ func TestChunkTxs(t *testing.T) {
 
 			for i, chunk := range actual {
 				require.Equal(t, len(expected[i]), len(chunk), "chunk length mismatch (#%d)", i)
+
+				// Verify each multi-tx chunk's effective proto size stays within the limit.
+				// Single-tx chunks are exempt: an oversized lone tx must still be forwarded.
+				if len(chunk) <= 1 {
+					continue
+				}
+				effectiveSize := 0
+				for _, tx := range chunk {
+					effectiveSize += len(tx) + protowire.RepeatedBytesEntrySize(len(tx))
+				}
+				require.LessOrEqual(t, effectiveSize, tt.size,
+					"chunk #%d effective size %d exceeds limit %d", i, effectiveSize, tt.size)
 			}
 		})
 	}

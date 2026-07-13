@@ -106,3 +106,22 @@ func TestWireCursor_SkipField_OutOfBounds(t *testing.T) {
 	c := NewWireCursor([]byte{1, 2})
 	require.ErrorIs(t, c.SkipField(WireFixed64), ErrOutOfBounds)
 }
+
+func TestRepeatedBytesEntrySize(t *testing.T) {
+	// Verified against proto.Size on Txs{Txs: [][]byte{make([]byte, n)}}.
+	for _, tt := range []struct {
+		dataLen int
+		want    int
+	}{
+		{0, 2},   // tag(1) + varint(0)=1
+		{1, 2},   // tag(1) + varint(1)=1
+		{127, 2}, // last 1-byte varint
+		{128, 3}, // first 2-byte varint
+		{1000, 3},
+		{16383, 3}, // last 2-byte varint
+		{16384, 4}, // first 3-byte varint
+		{1048576, 4},
+	} {
+		require.Equal(t, tt.want, RepeatedBytesEntrySize(tt.dataLen), "dataLen=%d", tt.dataLen)
+	}
+}

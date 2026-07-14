@@ -685,13 +685,17 @@ type LibP2PScaler struct {
 	Overrides        []LibP2PScalerOverride `mapstructure:"overrides"`
 }
 
-// LibP2PScalerOverride is a scaler override for a specific reactor
+// LibP2PScalerOverride is a scaler override for a specific reactor.
+// MaxQueueSize is a pointer so nil ("not set in config") can be distinguished
+// from an explicit 0 ("unbounded for this reactor"); both decode to the same
+// int zero value otherwise, which would silently reopen the DoS cap for any
+// pre-existing override entry from before this field existed.
 type LibP2PScalerOverride struct {
 	Reactor          string        `mapstructure:"reactor"`
 	MinWorkers       int           `mapstructure:"min_workers"`
 	MaxWorkers       int           `mapstructure:"max_workers"`
 	ThresholdLatency time.Duration `mapstructure:"threshold_latency"`
-	MaxQueueSize     int           `mapstructure:"max_queue_size"`
+	MaxQueueSize     *int          `mapstructure:"max_queue_size"`
 }
 
 // LibP2PLimits parameters for lib-p2p resource manager.
@@ -816,6 +820,7 @@ func (cfg *LibP2PConfig) ValidateBasic() error {
 }
 
 func DefaultLibP2PScaler() LibP2PScaler {
+	defaultOverrideMaxQueueSize := 200_000
 	return LibP2PScaler{
 		MinWorkers:       4,
 		MaxWorkers:       32,
@@ -827,7 +832,7 @@ func DefaultLibP2PScaler() LibP2PScaler {
 				MinWorkers:       8,
 				MaxWorkers:       512,
 				ThresholdLatency: 500 * time.Millisecond,
-				MaxQueueSize:     200_000,
+				MaxQueueSize:     &defaultOverrideMaxQueueSize,
 			},
 		},
 	}
@@ -868,7 +873,7 @@ func (s *LibP2PScaler) ValidateBasic() error {
 				}
 			case item.ThresholdLatency < 0:
 				return cmterrors.ErrNegativeField{Field: key("overrides.%d.threshold_latency", i)}
-			case item.MaxQueueSize < 0:
+			case item.MaxQueueSize != nil && *item.MaxQueueSize < 0:
 				return cmterrors.ErrNegativeField{Field: key("overrides.%d.max_queue_size", i)}
 			}
 		}

@@ -18,6 +18,12 @@ func init() {
 	var err error
 	tmpl := template.New("configFileTemplate").Funcs(template.FuncMap{
 		"StringsJoin": strings.Join,
+		"DerefIntOrZero": func(p *int) int {
+			if p == nil {
+				return 0
+			}
+			return *p
+		},
 	})
 	if configTemplate, err = tmpl.Parse(defaultConfigTemplate); err != nil {
 		panic(err)
@@ -387,7 +393,7 @@ reactor = "{{ .Reactor }}"
 min_workers = {{ .MinWorkers }}
 max_workers = {{ .MaxWorkers }}
 threshold_latency = "{{ .ThresholdLatency }}"
-max_queue_size = {{ .MaxQueueSize }}
+max_queue_size = {{ DerefIntOrZero .MaxQueueSize }}
 {{- end }}
 
 # Configuration for resource limits

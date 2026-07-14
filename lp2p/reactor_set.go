@@ -290,13 +290,14 @@ func (rs *reactorSet) newReactorPriorityQueue(
 		concurrentPoolCapacity = 512
 	)
 
-	// override MaxQueueSize <= 0 means unset (old/partial config), not unbounded.
+	// override MaxQueueSize == nil means unset (old/partial config); non-nil
+	// (including *0) is an explicit choice, e.g. an intentional unbounded reactor.
 	scalerCfg := rs.switchRef.host.config.Scaler
 	maxQueueSize := scalerCfg.MaxQueueSize
 	for _, override := range scalerCfg.Overrides {
 		if strings.EqualFold(override.Reactor, reactorName) {
-			if override.MaxQueueSize > 0 {
-				maxQueueSize = override.MaxQueueSize
+			if override.MaxQueueSize != nil {
+				maxQueueSize = *override.MaxQueueSize
 			}
 			break
 		}

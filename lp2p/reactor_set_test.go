@@ -212,7 +212,7 @@ func TestReactorSet(t *testing.T) {
 	})
 
 	t.Run("receiveDropsWhenQueueFullWithPartialOverride", func(t *testing.T) {
-		// override omits MaxQueueSize (zero value) — mirrors config.toml written
+		// override omits MaxQueueSize (nil) — mirrors config.toml written
 		// before the field existed; must still inherit the global cap.
 		const smallCap = 16
 		configOverride := func(cfg *config.LibP2PConfig) {
@@ -248,6 +248,44 @@ func TestReactorSet(t *testing.T) {
 		require.Eventually(t, func() bool {
 			return ts.logBuffer.HasMatchingLine("Reactor queue full, dropping message", "reactor=A")
 		}, 2*time.Second, 10*time.Millisecond)
+	})
+
+	t.Run("receiveNeverDropsWithExplicitUnboundedOverride", func(t *testing.T) {
+		// override explicitly sets MaxQueueSize to 0 — must mean "unbounded for
+		// this reactor", not "inherit the global cap" (nil would mean that).
+		const smallCap = 16
+		explicitUnbounded := 0
+		configOverride := func(cfg *config.LibP2PConfig) {
+			cfg.Scaler.MaxQueueSize = smallCap
+			cfg.Scaler.Overrides = []config.LibP2PScalerOverride{
+				{
+					Reactor:      "A",
+					MaxQueueSize: &explicitUnbounded,
+				},
+			}
+		}
+		ts := newReactorSetTestSuite(t, withLogging(), withModifiedConfig(configOverride))
+		rs := newReactorSet(ts.sw)
+
+		reactorA := ts.newReactor([]*conn.ChannelDescriptor{{ID: 0xF3}})
+		require.NoError(t, rs.Add(reactorA, "A"))
+		require.NoError(t, rs.Start(func(protocol.ID) {}))
+		t.Cleanup(rs.Stop)
+
+		blocked := make(chan struct{})
+		t.Cleanup(func() { close(blocked) })
+		reactorA.OnReceive(func(p2p.Envelope) { <-blocked }) // keep queue from draining
+
+		envelope := p2p.Envelope{
+			ChannelID: 0xF3,
+			Message:   &tmp2p.PexRequest{},
+		}
+
+		for i := 0; i < 1000; i++ { // far more than smallCap
+			rs.Receive("A", "PexRequest", envelope, 1)
+		}
+
+		require.False(t, ts.logBuffer.HasMatchingLine("Reactor queue full, dropping message", "reactor=A"))
 	})
 
 	t.Run("recover", func(t *testing.T) {

@@ -367,7 +367,7 @@ max_workers = {{ .P2P.LibP2PConfig.Scaler.MaxWorkers }}
 threshold_latency = "{{ .P2P.LibP2PConfig.Scaler.ThresholdLatency }}"
 
 # Maximum number of messages buffered per-reactor before drops begin (default: 200000).
-# 0 means unlimited (risks OOM under a sustained flood from a fast peer).
+# zero means unlimited
 max_queue_size = {{ .P2P.LibP2PConfig.Scaler.MaxQueueSize }}
 
 # Override a specific reactor (case-insensitive), for example:

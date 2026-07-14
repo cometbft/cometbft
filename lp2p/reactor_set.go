@@ -291,7 +291,6 @@ func (rs *reactorSet) newReactorPriorityQueue(
 	)
 
 	// priority queue max: use reactor-specific override if set, else global config.
-	// 0 means unbounded — only acceptable in tests.
 	scalerCfg := rs.switchRef.host.config.Scaler
 	maxQueueSize := scalerCfg.MaxQueueSize
 	for _, override := range scalerCfg.Overrides {
@@ -299,9 +298,6 @@ func (rs *reactorSet) newReactorPriorityQueue(
 			maxQueueSize = override.MaxQueueSize
 			break
 		}
-	}
-	if maxQueueSize == 0 {
-		rs.switchRef.Logger.Info("Reactor priority queue is unbounded; node is vulnerable to memory-exhaustion DoS", "reactor", reactorName)
 	}
 
 	concurrencyCounter := rs.

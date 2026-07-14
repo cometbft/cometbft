@@ -174,7 +174,7 @@ func TestReactorSet(t *testing.T) {
 		assert.Len(t, reactorB.receivedEnvelopes(), 0)
 	})
 
-	t.Run("receive_drops_when_queue_full", func(t *testing.T) {
+	t.Run("receiveDropsWhenQueueFull", func(t *testing.T) {
 		// ARRANGE: set a tiny queue cap so we can fill it without sending 200k messages.
 		const smallCap = 16
 		configOverride := func(cfg *config.LibP2PConfig) {

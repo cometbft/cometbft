@@ -378,8 +378,7 @@ func TestResourceManager(t *testing.T) {
 		require.Less(t, systemLimits.GetStreamTotalLimit(), 1_000_000)
 		require.NotEqual(t, int64(math.MaxInt64), systemLimits.GetMemoryLimit())
 
-		// System.Conns = MaxPeers × a small per-peer constant (4), not × MaxPeerStreams
-		// and not × AutoScale's PeerDefault.Conns (oversized for QUIC).
+		// System.Conns = MaxPeers × a small per-peer constant (4)
 		require.Equal(t, 4*cfg.Limits.MaxPeers, systemLimits.GetConnTotalLimit())
 
 		// transient scope must also be finite

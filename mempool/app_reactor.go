@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 
 	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/internal/protowire"
 	"github.com/cometbft/cometbft/p2p"
 	protomem "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"github.com/cometbft/cometbft/types"
@@ -75,10 +76,7 @@ func (r *AppReactor) OnStart() error {
 
 		// fallback to max tx bytes if max batch bytes is not set
 		// most chains use 1MB which will definitely fit many small txs
-		maxBatchSizeBytes := r.config.MaxTxBytes
-		if r.config.MaxBatchBytes > 0 {
-			maxBatchSizeBytes = r.config.MaxBatchBytes
-		}
+		maxBatchSizeBytes := r.effectiveMaxBatchBytes()
 
 		if !r.switchedOn.Load() {
 			select {
@@ -103,10 +101,10 @@ func (r *AppReactor) OnStop() {
 
 // GetChannels implements p2p.BaseReactor.
 func (r *AppReactor) GetChannels() []*p2p.ChannelDescriptor {
-	largestTx := make([]byte, r.config.MaxTxBytes)
+	// Mirror effectiveMaxBatchBytes so RecvMessageCapacity is always >= the largest Message we send.
 	batchMsg := protomem.Message{
 		Sum: &protomem.Message_Txs{
-			Txs: &protomem.Txs{Txs: [][]byte{largestTx}},
+			Txs: &protomem.Txs{Txs: [][]byte{make([]byte, r.effectiveMaxBatchBytes())}},
 		},
 	}
 
@@ -118,6 +116,14 @@ func (r *AppReactor) GetChannels() []*p2p.ChannelDescriptor {
 			MessageType:         &protomem.Message{},
 		},
 	}
+}
+
+// effectiveMaxBatchBytes returns MaxBatchBytes when set, else MaxTxBytes.
+func (r *AppReactor) effectiveMaxBatchBytes() int {
+	if r.config.MaxBatchBytes > 0 {
+		return r.config.MaxBatchBytes
+	}
+	return r.config.MaxTxBytes
 }
 
 // WaitSync used for backward compatibility with external callers
@@ -236,7 +242,11 @@ func txsFromEnvelope(e p2p.Envelope) ([]types.Tx, error) {
 	}
 }
 
-// chunkTxs chunks transactions into batches of maxBatchSizeBytes
+// chunkTxs chunks transactions into batches of maxBatchSizeBytes.
+// Each tx contributes len(tx) + proto framing (field tag + varint length prefix)
+// to the serialized Txs message size; we account for that overhead here so the
+// encoded batch never exceeds the receiver's RecvMessageCapacity.
+//
 // example: [tx1, tx2, tx3, tx4, tx5, ...] -> [[tx1, tx2], [tx3, tx4], [tx5], ...]
 //
 // note: we can optimize []types.Txs to [][][]byte + have less allocs,
@@ -253,7 +263,7 @@ func chunkTxs(txs types.Txs, maxBatchSizeBytes int) []types.Txs {
 	lastChunk := types.Txs{}
 
 	for _, tx := range txs {
-		txSizeBytes := len(tx)
+		txSizeBytes := len(tx) + protowire.RepeatedBytesEntrySize(len(tx))
 
 		// tx won't fit into chunk, add current chunk to chunks and start a new one
 		if (lastChunkSizeBytes + txSizeBytes) > maxBatchSizeBytes {

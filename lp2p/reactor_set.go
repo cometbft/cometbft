@@ -290,12 +290,14 @@ func (rs *reactorSet) newReactorPriorityQueue(
 		concurrentPoolCapacity = 512
 	)
 
-	// priority queue max: use reactor-specific override if set, else global config.
+	// override MaxQueueSize <= 0 means unset (old/partial config), not unbounded.
 	scalerCfg := rs.switchRef.host.config.Scaler
 	maxQueueSize := scalerCfg.MaxQueueSize
 	for _, override := range scalerCfg.Overrides {
 		if strings.EqualFold(override.Reactor, reactorName) {
-			maxQueueSize = override.MaxQueueSize
+			if override.MaxQueueSize > 0 {
+				maxQueueSize = override.MaxQueueSize
+			}
 			break
 		}
 	}

@@ -227,10 +227,14 @@ func ResourceManagerFromConfig(cfg config.LibP2PConfig) (network.ResourceManager
 		limits.PeerDefault.StreamsInbound = maxPeerStreams
 		limits.PeerDefault.StreamsOutbound = maxPeerStreams
 
-		// System.Conns = per-peer conns × max peers (not × max streams).
-		limits.System.Conns = limits.PeerDefault.Conns * maxPeers
-		limits.System.ConnsInbound = limits.PeerDefault.ConnsInbound * maxPeers
-		limits.System.ConnsOutbound = limits.PeerDefault.ConnsOutbound * maxPeers
+		// System.Conns = max_peers × a small per-peer constant, not AutoScale's
+		// PeerDefault.Conns (~8, sized for TCP connection churn). QUIC peers
+		// hold ~1 connection each; maxConnsPerPeer covers the active
+		// connection plus one reconnect in flight.
+		const maxConnsPerPeer = 4
+		limits.System.Conns = maxConnsPerPeer * maxPeers
+		limits.System.ConnsInbound = maxConnsPerPeer * maxPeers
+		limits.System.ConnsOutbound = maxConnsPerPeer * maxPeers
 
 		limiter := rcmgr.NewFixedLimiter(limits.Build(scaled))
 		mgr, err := rcmgr.NewResourceManager(limiter)

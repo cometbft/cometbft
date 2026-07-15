@@ -686,7 +686,6 @@ type LibP2PScaler struct {
 }
 
 // LibP2PScalerOverride is a scaler override for a specific reactor.
-// MaxQueueSize is *int so nil (unset) and explicit 0 (unbounded) don't collide.
 type LibP2PScalerOverride struct {
 	Reactor          string        `mapstructure:"reactor"`
 	MinWorkers       int           `mapstructure:"min_workers"`

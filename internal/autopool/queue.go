@@ -129,7 +129,6 @@ func (q *PriorityQueue) Push(value any, priority int) error {
 
 	idx := priority - 1
 
-	// Evict a lower-priority item rather than reject, so a full queue can't starve higher-priority admission.
 	if q.maxSize > 0 && q.size >= q.maxSize && !q.evictLowerPriority(idx) {
 		return ErrQueueFull
 	}

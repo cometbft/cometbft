@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/autopool"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/libp2p/go-libp2p/core/protocol"
@@ -294,18 +295,23 @@ func (rs *reactorSet) newReactorPriorityQueue(
 	// (including *0) is an explicit choice, e.g. an intentional unbounded reactor.
 	scalerCfg := rs.switchRef.host.config.Scaler
 	maxQueueSize := scalerCfg.MaxQueueSize
-	for _, override := range scalerCfg.Overrides {
-		if strings.EqualFold(override.Reactor, reactorName) {
-			if override.MaxQueueSize != nil {
-				maxQueueSize = *override.MaxQueueSize
-			}
-			break
-		}
+	if override, ok := findScalerOverride(scalerCfg.Overrides, reactorName); ok && override.MaxQueueSize != nil {
+		maxQueueSize = *override.MaxQueueSize
 	}
 
 	concurrencyCounter := rs.
 		switchRef.metrics.MessageReactorQueueConcurrency.
 		With("reactor", reactorName)
+
+	priorityQueue := autopool.NewPriorityQueueWithMax(priorities, maxQueueSize, autopool.WithOnEvict(func(v any) {
+		e, ok := v.(pendingEnvelope)
+		if !ok {
+			return
+		}
+		labels := []string{"reactor", reactorName, "message_type", e.messageType}
+		rs.switchRef.metrics.MessagesReactorInFlight.With(labels...).Add(-1)
+		rs.switchRef.metrics.MessagesReactorDropped.With(labels...).Add(1)
+	}))
 
 	return autopool.New(
 		scaler,
@@ -320,7 +326,7 @@ func (rs *reactorSet) newReactorPriorityQueue(
 		autopool.WithOnShrink[pendingEnvelope](func() {
 			concurrencyCounter.Add(-1)
 		}),
-		autopool.WithPriorityQueue[pendingEnvelope](autopool.NewPriorityQueueWithMax(priorities, maxQueueSize)),
+		autopool.WithPriorityQueue[pendingEnvelope](priorityQueue),
 	)
 }
 
@@ -340,13 +346,10 @@ func (rs *reactorSet) newReactorScaler(reactorName string) (*autopool.Throughput
 		latencyThreshold = scalerConfig.ThresholdLatency
 	)
 
-	for _, override := range scalerConfig.Overrides {
-		if strings.EqualFold(override.Reactor, reactorName) {
-			minWorkers = override.MinWorkers
-			maxWorkers = override.MaxWorkers
-			latencyThreshold = override.ThresholdLatency
-			break
-		}
+	if override, ok := findScalerOverride(scalerConfig.Overrides, reactorName); ok {
+		minWorkers = override.MinWorkers
+		maxWorkers = override.MaxWorkers
+		latencyThreshold = override.ThresholdLatency
 	}
 
 	return autopool.NewThroughputLatencyScaler(
@@ -357,6 +360,17 @@ func (rs *reactorSet) newReactorScaler(reactorName string) (*autopool.Throughput
 		scalerFrequency,
 		rs.switchRef.Logger,
 	), nil
+}
+
+// findScalerOverride returns the scaler override configured for reactorName
+// (case-insensitive), if any.
+func findScalerOverride(overrides []config.LibP2PScalerOverride, reactorName string) (config.LibP2PScalerOverride, bool) {
+	for _, override := range overrides {
+		if strings.EqualFold(override.Reactor, reactorName) {
+			return override, true
+		}
+	}
+	return config.LibP2PScalerOverride{}, false
 }
 
 func (rp *reactorProtocol) maxMessageSize() uint64 {

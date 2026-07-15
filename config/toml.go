@@ -393,7 +393,9 @@ reactor = "{{ .Reactor }}"
 min_workers = {{ .MinWorkers }}
 max_workers = {{ .MaxWorkers }}
 threshold_latency = "{{ .ThresholdLatency }}"
+{{- if .MaxQueueSize }}
 max_queue_size = {{ DerefIntOrZero .MaxQueueSize }}
+{{- end }}
 {{- end }}
 
 # Configuration for resource limits

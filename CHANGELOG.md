@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[lp2p]` cap per-reactor priority queue to prevent memory-exhaustion DoS
+  ([\#5955](https://github.com/cometbft/cometbft/pull/5955))
 - `[mempool]` include proto framing overhead in AppReactor batch size to prevent peer teardown
   ([\#5956](https://github.com/cometbft/cometbft/pull/5956))
 - `[blocksync]` document `adaptive_sync` equivocation risk for validator nodes
@@ -62,8 +64,6 @@
   ([\#5954](https://github.com/cometbft/cometbft/pull/5954))
 - `[lp2p]` fallback to conn remote addr when resolving inbound peer
   ([\#5879](https://github.com/cometbft/cometbft/pull/5879))
-- `[lp2p]` cap per-reactor priority queue to prevent memory-exhaustion DoS
-  ([\#5955](https://github.com/cometbft/cometbft/pull/5955))
 - `[consensus]` release cs.mtx before sending to statsMsgQueue
   ([\#5813](https://github.com/cometbft/cometbft/pull/5813))
 - `[mempool]` truncate proto field number to int32 in filter's ReadTag

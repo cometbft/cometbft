@@ -52,5 +52,7 @@ adaptive_sync = false
 
 When `adaptive_sync` is enabled, the node runs BLOCKSYNC and CONSENSUS simultaneously instead of the traditional flow where blocksync runs first and then hands off to consensus. This can improve liveness, connectivity, and performance during catch-up. Blocks are ingested through consensus internals as they are received.
 
+> **Warning — validator equivocation risk:** With adaptive sync enabled, consensus starts immediately and `signAddVote` fires whenever the node is in the validator set. This means a catching-up validator can sign a vote for block B at height H while the blocksync ingestor concurrently commits a different block B' at H (already decided by the network). The HRS file and KMS double-sign protection are not sufficient backstops for this scenario — the conflicting messages are at different (H,R,step) tuples so `CheckHRS` never fires. Only enable `adaptive_sync` on validator nodes if you understand and accept this risk; non-validator full nodes are not affected.
+
 If we're lagging sufficiently, we should go back to block syncing, but
 this is an [open issue](https://github.com/tendermint/tendermint/issues/129).

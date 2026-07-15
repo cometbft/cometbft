@@ -8,6 +8,10 @@
 
 - `[mempool]` fix `AppMempool` ABCI response handling, callback/cleanup, and lifecycle
   ([\#5942](https://github.com/cometbft/cometbft/pull/5942))
+- `[mempool]` include proto framing overhead in AppReactor batch size to prevent peer teardown
+  ([\#5956](https://github.com/cometbft/cometbft/pull/5956))
+- `[blocksync]` document `adaptive_sync` equivocation risk for validator nodes
+  ([\#5953](https://github.com/cometbft/cometbft/pull/5953))
 - `[abci]` fix socket transport missing `InsertTx` and `ReapTxs` cases in
   `handleRequest` and `resMatchesReq`, causing `ErrUnexpectedResponse` and
   node self-kill when `mempool.type = "app"` with the default socket transport

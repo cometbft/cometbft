@@ -116,6 +116,22 @@ func (c *WireCursor) SkipField(wireType int) error {
 	}
 }
 
+// RepeatedBytesEntrySize returns the number of wire bytes proto encodes for one
+// entry in a repeated bytes field: 1-byte field tag + varint(dataLen).
+// dataLen must be >= 0; Go's len() guarantees this for all practical callers.
+func RepeatedBytesEntrySize(dataLen int) int {
+	if dataLen < 0 {
+		panic("protowire: negative dataLen")
+	}
+	n := 1 /* tag */ + 1 /* min varint byte */
+	v := uint64(dataLen) >> 7
+	for v > 0 {
+		n++
+		v >>= 7
+	}
+	return n
+}
+
 // advance moves the cursor forward by n bytes, bounds-checked.
 func (c *WireCursor) advance(n int) error {
 	end := c.pos + n

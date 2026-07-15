@@ -77,7 +77,10 @@ func NewPriorityQueue(priorities int) *PriorityQueue {
 	return NewPriorityQueueWithMax(priorities, 0)
 }
 
-// NewPriorityQueueWithMax returns ErrQueueFull when total depth reaches maxSize; 0 means unbounded.
+// NewPriorityQueueWithMax bounds total depth at maxSize (0 means unbounded).
+// Once full, Push evicts the oldest strictly-lower-priority item to admit a
+// higher-priority one; ErrQueueFull is only returned when no lower-priority
+// item is available to evict.
 func NewPriorityQueueWithMax(priorities, maxSize int) *PriorityQueue {
 	if priorities <= 0 {
 		priorities = 1
@@ -106,11 +109,16 @@ func (q *PriorityQueue) Push(value any, priority int) error {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	if q.maxSize > 0 && q.size >= q.maxSize {
+	idx := priority - 1
+
+	// maxSize caps total depth across all levels. Once full, make room by
+	// dropping the oldest strictly-lower-priority item instead of rejecting
+	// this push outright, so a burst of low-priority traffic can't starve
+	// higher-priority messages out of admission. If nothing lower is queued,
+	// fall back to rejecting, same as before.
+	if q.maxSize > 0 && q.size >= q.maxSize && !q.evictLowerPriority(idx) {
 		return ErrQueueFull
 	}
-
-	idx := priority - 1
 
 	q.levels[idx].Push(value)
 	q.size++
@@ -122,6 +130,19 @@ func (q *PriorityQueue) Push(value any, priority int) error {
 	q.notifyValuesAvailable()
 
 	return nil
+}
+
+// evictLowerPriority drops the oldest queued item from the lowest occupied
+// level below newIdx, making room for an admission at newIdx. Returns false
+// if no strictly-lower-priority item is queued to evict.
+func (q *PriorityQueue) evictLowerPriority(newIdx int) bool {
+	for i := 0; i < newIdx; i++ {
+		if _, ok := q.levels[i].Pop(); ok {
+			q.size--
+			return true
+		}
+	}
+	return false
 }
 
 // notifyValuesAvailable notifies callers waiting on the channel returned by

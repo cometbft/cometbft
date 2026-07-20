@@ -174,6 +174,120 @@ func TestReactorSet(t *testing.T) {
 		assert.Len(t, reactorB.receivedEnvelopes(), 0)
 	})
 
+	t.Run("receiveDropsWhenQueueFull", func(t *testing.T) {
+		// ARRANGE: set a tiny queue cap so we can fill it without sending 200k messages.
+		const smallCap = 16
+		configOverride := func(cfg *config.LibP2PConfig) {
+			cfg.Scaler.MaxQueueSize = smallCap
+		}
+		ts := newReactorSetTestSuite(t, withLogging(), withModifiedConfig(configOverride))
+		rs := newReactorSet(ts.sw)
+
+		reactorA := ts.newReactor([]*conn.ChannelDescriptor{{ID: 0xF1}})
+		require.NoError(t, rs.Add(reactorA, "A"))
+		require.NoError(t, rs.Start(func(protocol.ID) {}))
+		t.Cleanup(rs.Stop)
+
+		// Block the reactor so the queue cannot drain.
+		blocked := make(chan struct{})
+		t.Cleanup(func() { close(blocked) })
+		reactorA.OnReceive(func(p2p.Envelope) { <-blocked })
+
+		envelope := p2p.Envelope{
+			ChannelID: 0xF1,
+			Message:   &tmp2p.PexRequest{},
+		}
+
+		// ACT: saturate the priority queue (smallCap) and inbound channel (512).
+		// Must exceed the total buffer depth (~inbound_cap + workers + pq_cap) to
+		// guarantee drops regardless of goroutine scheduling.
+		for i := 0; i < 1000; i++ {
+			rs.Receive("A", "PexRequest", envelope, 1)
+		}
+
+		// ASSERT: the queue-full drop path is reached and logged.
+		require.Eventually(t, func() bool {
+			return ts.logBuffer.HasMatchingLine("Reactor queue full, dropping message", "reactor=A")
+		}, 2*time.Second, 10*time.Millisecond)
+	})
+
+	t.Run("receiveDropsWhenQueueFullWithPartialOverride", func(t *testing.T) {
+		// override omits MaxQueueSize (nil) — mirrors config.toml written
+		// before the field existed; must still inherit the global cap.
+		const smallCap = 16
+		configOverride := func(cfg *config.LibP2PConfig) {
+			cfg.Scaler.MaxQueueSize = smallCap
+			cfg.Scaler.Overrides = []config.LibP2PScalerOverride{
+				{
+					Reactor:          "A",
+					ThresholdLatency: 999 * time.Millisecond,
+				},
+			}
+		}
+		ts := newReactorSetTestSuite(t, withLogging(), withModifiedConfig(configOverride))
+		rs := newReactorSet(ts.sw)
+
+		reactorA := ts.newReactor([]*conn.ChannelDescriptor{{ID: 0xF2}})
+		require.NoError(t, rs.Add(reactorA, "A"))
+		require.NoError(t, rs.Start(func(protocol.ID) {}))
+		t.Cleanup(rs.Stop)
+
+		blocked := make(chan struct{})
+		t.Cleanup(func() { close(blocked) })
+		reactorA.OnReceive(func(p2p.Envelope) { <-blocked }) // keep queue from draining
+
+		envelope := p2p.Envelope{
+			ChannelID: 0xF2,
+			Message:   &tmp2p.PexRequest{},
+		}
+
+		for i := 0; i < 1000; i++ { // exceeds smallCap + inbound(512)
+			rs.Receive("A", "PexRequest", envelope, 1)
+		}
+
+		require.Eventually(t, func() bool {
+			return ts.logBuffer.HasMatchingLine("Reactor queue full, dropping message", "reactor=A")
+		}, 2*time.Second, 10*time.Millisecond)
+	})
+
+	t.Run("receiveNeverDropsWithExplicitUnboundedOverride", func(t *testing.T) {
+		// override explicitly sets MaxQueueSize to 0 — must mean "unbounded for
+		// this reactor", not "inherit the global cap" (nil would mean that).
+		const smallCap = 16
+		explicitUnbounded := 0
+		configOverride := func(cfg *config.LibP2PConfig) {
+			cfg.Scaler.MaxQueueSize = smallCap
+			cfg.Scaler.Overrides = []config.LibP2PScalerOverride{
+				{
+					Reactor:      "A",
+					MaxQueueSize: &explicitUnbounded,
+				},
+			}
+		}
+		ts := newReactorSetTestSuite(t, withLogging(), withModifiedConfig(configOverride))
+		rs := newReactorSet(ts.sw)
+
+		reactorA := ts.newReactor([]*conn.ChannelDescriptor{{ID: 0xF3}})
+		require.NoError(t, rs.Add(reactorA, "A"))
+		require.NoError(t, rs.Start(func(protocol.ID) {}))
+		t.Cleanup(rs.Stop)
+
+		blocked := make(chan struct{})
+		t.Cleanup(func() { close(blocked) })
+		reactorA.OnReceive(func(p2p.Envelope) { <-blocked }) // keep queue from draining
+
+		envelope := p2p.Envelope{
+			ChannelID: 0xF3,
+			Message:   &tmp2p.PexRequest{},
+		}
+
+		for i := 0; i < 1000; i++ { // far more than smallCap
+			rs.Receive("A", "PexRequest", envelope, 1)
+		}
+
+		require.False(t, ts.logBuffer.HasMatchingLine("Reactor queue full, dropping message", "reactor=A"))
+	})
+
 	t.Run("recover", func(t *testing.T) {
 		// ARRANGE
 		ts := newReactorSetTestSuite(t)

@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[lp2p]` cap per-reactor priority queue to prevent memory-exhaustion DoS
+  ([\#5955](https://github.com/cometbft/cometbft/pull/5955))
 - `[mempool]` include proto framing overhead in AppReactor batch size to prevent peer teardown
   ([\#5956](https://github.com/cometbft/cometbft/pull/5956))
 - `[blocksync]` document `adaptive_sync` equivocation risk for validator nodes

@@ -6,6 +6,55 @@
 
 ### BUG FIXES
 
+<<<<<<< HEAD
+=======
+- `[blocksync]` tolerate late BlockResponse from honest peers after switching to consensus
+  ([\#5959](https://github.com/cometbft/cometbft/pull/5959))
+- `[mempool]` include proto framing overhead in AppReactor batch size to prevent peer teardown
+  ([\#5956](https://github.com/cometbft/cometbft/pull/5956))
+- `[blocksync]` document `adaptive_sync` equivocation risk for validator nodes
+  ([\#5953](https://github.com/cometbft/cometbft/pull/5953))
+- `[abci]` fix socket transport missing `InsertTx` and `ReapTxs` cases in
+  `handleRequest` and `resMatchesReq`, causing `ErrUnexpectedResponse` and
+  node self-kill when `mempool.type = "app"` with the default socket transport
+  ([\#5958](https://github.com/cometbft/cometbft/pull/5958))
+- `[flowrate]` fix flaky `TestWriter` by comparing `Idle` with a duration
+  tolerance instead of exact equality
+  ([\#5929](https://github.com/cometbft/cometbft/pull/5929))
+- `[rpc]` escape the request `Host` in the endpoints listing page so it cannot
+  break out of the generated HTML
+  ([\#5921](https://github.com/cometbft/cometbft/pull/5921))
+- `[consensus]` Fix `double_sign_check_height = 1` performing no double-sign
+  checks due to off-by-one error in loop condition (`i < N` should be
+  `i <= N`). The value `1` now correctly checks the previous block as intended.
+  ([\#5668](https://github.com/cometbft/cometbft/pull/5668))
+- `[rpc/jsonrpc]` reject non-finite, fractional, and out-of-int64-range
+  numeric IDs in request decoding instead of silently saturating to
+  `math.MinInt`, which previously made distinct large IDs collide.
+  ([\#5861](https://github.com/cometbft/cometbft/pull/5861))
+- `[consensus]` a proposer now self-verifies its own vote extension before
+  broadcasting its precommit, so an application whose `ExtendVote` and
+  `VerifyVoteExtension` handlers are inconsistent halts the node with a clear
+  `CONSENSUS FAILURE` instead of stalling the whole network
+  ([\#5204](https://github.com/cometbft/cometbft/issues/5204))
+- `[blocksync]` fix deadlock in `AddBlock` caused by holding `pool.mtx` during
+  `sendError`
+  ([\#5931](https://github.com/cometbft/cometbft/pull/5931))
+- `[blocksync]` hold `pool.mtx` and recompute `maxPeerHeight` in `Enable()`
+  ([\#5888](https://github.com/cometbft/cometbft/pull/5888))
+- `[inspect]` fix flaky `TestInspectRun` and consolidate start/stop handshake
+  ([\#5891](https://github.com/cometbft/cometbft/pull/5891))
+- `[p2p]` fix flaky switch tests by replacing fixed sleeps with deterministic peer-wait polling
+  ([\#5918](https://github.com/cometbft/cometbft/pull/5918))
+- `[p2p]` fix race and goroutine leak in `TestTransportMultiplexAcceptNonBlocking` test
+  ([\#5878](https://github.com/cometbft/cometbft/pull/5878))
+- `[evidence]` fix flaky `TestReactorsGossipNoCommittedEvidence` test
+  ([\#5870](https://github.com/cometbft/cometbft/pull/5870))
+- `[blocksync]` fix flaky `TestBlockPoolBasic` deadlock under `-race`
+  ([\#5867](https://github.com/cometbft/cometbft/pull/5867))
+- `[blocksync]` fix removeTimedoutPeers deadlock found via Byzantine prevote gossip race
+  ([\#5839](https://github.com/cometbft/cometbft/pull/5839))
+>>>>>>> 17bb3853 (fix(blocksync): tolerate late BlockResponse from honest peers after switching to consensus (#5959))
 - `[mempool]` fix setRecheckFull/setDone race causing spurious ErrRecheckFull.
   ([\#5837](https://github.com/cometbft/cometbft/pull/5837))
 

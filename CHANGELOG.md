@@ -87,6 +87,8 @@
   ([\#5866](https://github.com/cometbft/cometbft/pull/5866))
 - `[mempool]` Implement `MsgBytesFilter` in Reactor to prevent heap amplification attack
   ([\#5946](https://github.com/cometbft/cometbft/pull/5946))
+- `[privval]` Dynamically calculate privval maxRemoteSignerMsgSize.
+  ([\#5985](https://github.com/cometbft/cometbft/pull/5985))
 
 ### FEATURES
 

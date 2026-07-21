@@ -106,6 +106,8 @@
   `[R||S||V]` signatures with canonical `V` in `{0,1}`.
 - `[state]` `MedianTime` skips `Nil` and `Absent` precommits, aligning with `VerifyCommit`'s commit tally.
   ([\#5901](https://github.com/cometbft/cometbft/pull/5901))
+- `[types]` `block.MaxDataBytes` and `block.MaxDataBytesNoEvidence` now floor instead of panicking on negative value.
+  ([\#5984](https://github.com/cometbft/cometbft/pull/5984))
 
 ### API-BREAKING
 

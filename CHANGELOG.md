@@ -90,7 +90,7 @@
 - `[mempool]` Implement `MsgBytesFilter` in Reactor to prevent heap amplification attack
   ([\#5946](https://github.com/cometbft/cometbft/pull/5946))
 - `[types]` Update default max block bytes param to account for increased signature size of mldsa65.
-  ([\#NNNN](https://github.com/cometbft/cometbft/pull/NNNN))
+  ([\#5987](https://github.com/cometbft/cometbft/pull/5987))
 
 ### FEATURES
 

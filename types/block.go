@@ -278,10 +278,20 @@ func BlockFromProto(bp *cmtproto.Block) (*Block, error) {
 
 //-----------------------------------------------------------------------------
 
-// MaxDataBytes returns the maximum size of block's data.
+// MaxDataBytes returns the maximum size of block's data, floored at 0.
 //
-// XXX: Panics on negative result.
+// The worst-case commit reserve (MaxCommitBytes) can exceed a legal
+// Block.MaxBytes when validators use large signatures (e.g. ML-DSA-65's
+// 3309-byte sigs), since params validation cannot know the validator set
+// size. Flooring at 0 yields empty blocks instead of halting the chain.
+//
+// XXX: Panics if maxBytes is non-positive; callers must resolve the -1
+// (unlimited) sentinel to MaxBlockSizeBytes first.
 func MaxDataBytes(maxBytes, evidenceBytes int64, valsCount int) int64 {
+	if maxBytes <= 0 {
+		panic(fmt.Sprintf("MaxDataBytes: non-positive Block.MaxBytes=%d", maxBytes))
+	}
+
 	maxDataBytes := maxBytes -
 		MaxOverheadForBlock -
 		MaxHeaderBytes -
@@ -289,32 +299,29 @@ func MaxDataBytes(maxBytes, evidenceBytes int64, valsCount int) int64 {
 		evidenceBytes
 
 	if maxDataBytes < 0 {
-		panic(fmt.Sprintf(
-			"Negative MaxDataBytes. Block.MaxBytes=%d is too small to accommodate header&lastCommit&evidence=%d",
-			maxBytes,
-			-(maxDataBytes - maxBytes),
-		))
+		return 0
 	}
 
 	return maxDataBytes
 }
 
 // MaxDataBytesNoEvidence returns the maximum size of block's data when
-// evidence count is unknown (will be assumed to be 0).
+// evidence count is unknown (will be assumed to be 0), floored at 0.
 //
-// XXX: Panics on negative result.
+// XXX: Panics if maxBytes is non-positive; callers must resolve the -1
+// (unlimited) sentinel to MaxBlockSizeBytes first.
 func MaxDataBytesNoEvidence(maxBytes int64, valsCount int) int64 {
+	if maxBytes <= 0 {
+		panic(fmt.Sprintf("MaxDataBytesNoEvidence: non-positive Block.MaxBytes=%d", maxBytes))
+	}
+
 	maxDataBytes := maxBytes -
 		MaxOverheadForBlock -
 		MaxHeaderBytes -
 		MaxCommitBytes(valsCount)
 
 	if maxDataBytes < 0 {
-		panic(fmt.Sprintf(
-			"Negative MaxDataBytesNoEvidence. Block.MaxBytes=%d is too small to accommodate header&lastCommit&evidence=%d",
-			maxBytes,
-			-(maxDataBytes - maxBytes),
-		))
+		return 0
 	}
 
 	return maxDataBytes

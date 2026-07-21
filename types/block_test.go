@@ -461,11 +461,13 @@ func TestBlockMaxDataBytes(t *testing.T) {
 		result        int64
 	}{
 		0: {-10, 1, 0, true, 0},
-		1: {10, 1, 0, true, 0},
-		2: {4055, 1, 0, true, 0},
+		1: {10, 1, 0, false, 0},
+		2: {4055, 1, 0, false, 0},
 		3: {4089, 1, 0, false, 0},
 		4: {4090, 1, 0, false, 1},
 		5: {7447, 2, 0, false, 0},
+		// ML-DSA-sized commit reserve exceeds a legal 1MB MaxBytes: floor at 0.
+		6: {1048576, 400, 0, false, 0},
 	}
 
 	for i, tc := range testCases {
@@ -490,10 +492,12 @@ func TestBlockMaxDataBytesNoEvidence(t *testing.T) {
 		result    int64
 	}{
 		0: {-10, 1, true, 0},
-		1: {10, 1, true, 0},
-		2: {4055, 1, true, 0},
+		1: {10, 1, false, 0},
+		2: {4055, 1, false, 0},
 		3: {4089, 1, false, 0},
 		4: {4090, 1, false, 1},
+		// ML-DSA-sized commit reserve exceeds a legal 1MB MaxBytes: floor at 0.
+		5: {1048576, 400, false, 0},
 	}
 
 	for i, tc := range testCases {

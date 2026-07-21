@@ -91,6 +91,8 @@
   ([\#5946](https://github.com/cometbft/cometbft/pull/5946))
 - `[privval]` Dynamically calculate privval maxRemoteSignerMsgSize.
   ([\#5985](https://github.com/cometbft/cometbft/pull/5985))
+- `[types]` Update default max block bytes param to account for increased signature size of mldsa65.
+  ([\#5987](https://github.com/cometbft/cometbft/pull/5987))
 
 ### FEATURES
 

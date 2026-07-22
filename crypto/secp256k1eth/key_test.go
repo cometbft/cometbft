@@ -189,6 +189,30 @@ func TestJSONRoundTrip(t *testing.T) {
 	require.True(t, pub.Equals(pub2))
 }
 
+func TestJSONUnmarshalRejectsMalformedKeys(t *testing.T) {
+	// Wrong-length pubkey.
+	shortPub, err := cmtjson.Marshal(secp256k1eth.PubKey(make([]byte, 5)))
+	require.NoError(t, err)
+	var pub secp256k1eth.PubKey
+	require.ErrorContains(t, cmtjson.Unmarshal(shortPub, &pub), "invalid public key size")
+
+	// Correct length but off-curve: X = 2^256-1 exceeds the field prime.
+	offCurve := make([]byte, secp256k1eth.PubKeySize)
+	offCurve[0] = 0x02
+	for i := 1; i < len(offCurve); i++ {
+		offCurve[i] = 0xFF
+	}
+	offCurveBz, err := cmtjson.Marshal(secp256k1eth.PubKey(offCurve))
+	require.NoError(t, err)
+	require.ErrorContains(t, cmtjson.Unmarshal(offCurveBz, &pub), "invalid public key")
+
+	// Wrong-length privkey.
+	shortPriv, err := cmtjson.Marshal(secp256k1eth.PrivKey(make([]byte, 5)))
+	require.NoError(t, err)
+	var priv secp256k1eth.PrivKey
+	require.ErrorContains(t, cmtjson.Unmarshal(shortPriv, &priv), "invalid private key size")
+}
+
 func TestGoEthereumCompatibilityVector(t *testing.T) {
 	// Private key from go-ethereum's signature_test.go (testPrivHex).
 	// The expected address matches go-ethereum's testAddrHex, confirming

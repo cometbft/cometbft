@@ -96,7 +96,7 @@
 - `[config]` Update the default max_tx_bytes to account for increased signature size of mlsdsa65.
   ([\#5989](https://github.com/cometbft/cometbft/pull/5989))
 - `[crypto``]` Add UnmarshalJSON to secp256k1eth key type.
-  ([\#NNNN](https://github.com/cometbft/cometbft/pull/NNNN))
+  ([\#5990](https://github.com/cometbft/cometbft/pull/5990))
 
 ### FEATURES
 

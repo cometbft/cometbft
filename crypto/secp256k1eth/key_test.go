@@ -1,6 +1,7 @@
 package secp256k1eth_test
 
 import (
+	"bytes"
 	"encoding/hex"
 	"math/big"
 	"testing"
@@ -211,6 +212,16 @@ func TestJSONUnmarshalRejectsMalformedKeys(t *testing.T) {
 	require.NoError(t, err)
 	var priv secp256k1eth.PrivKey
 	require.ErrorContains(t, cmtjson.Unmarshal(shortPriv, &priv), "invalid private key size")
+
+	// Correct length but out-of-range scalars: zero and 2^256-1 (> N).
+	zeroPriv, err := cmtjson.Marshal(secp256k1eth.PrivKey(make([]byte, secp256k1eth.PrivKeySize)))
+	require.NoError(t, err)
+	require.ErrorContains(t, cmtjson.Unmarshal(zeroPriv, &priv), "not in the valid range")
+
+	overflow := bytes.Repeat([]byte{0xFF}, secp256k1eth.PrivKeySize)
+	overflowPriv, err := cmtjson.Marshal(secp256k1eth.PrivKey(overflow))
+	require.NoError(t, err)
+	require.ErrorContains(t, cmtjson.Unmarshal(overflowPriv, &priv), "not in the valid range")
 }
 
 func TestGoEthereumCompatibilityVector(t *testing.T) {

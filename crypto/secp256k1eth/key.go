@@ -140,8 +140,9 @@ func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 }
 
 // UnmarshalJSON unmarshals the private key from JSON, rejecting bytes of the
-// wrong length so a malformed key errors at decode time instead of panicking
-// later (e.g. during genesis validation).
+// wrong length or a scalar outside (0, N) so a malformed key errors at decode
+// time. An out-of-range scalar would otherwise derive a pubkey for the
+// reduced-mod-N value in PubKey() while Sign refuses to use it.
 func (privKey *PrivKey) UnmarshalJSON(bz []byte) error {
 	var rawBytes []byte
 	if err := json.Unmarshal(bz, &rawBytes); err != nil {
@@ -152,6 +153,13 @@ func (privKey *PrivKey) UnmarshalJSON(bz []byte) error {
 			"secp256k1eth: invalid private key size, expected %d bytes, got %d",
 			PrivKeySize, len(rawBytes),
 		)
+	}
+	var d secp256k1.ModNScalar
+	overflow := d.SetByteSlice(rawBytes)
+	zero := d.IsZero()
+	d.Zero()
+	if overflow || zero {
+		return errors.New("secp256k1eth: private key scalar is not in the valid range (0, N)")
 	}
 	*privKey = rawBytes
 	return nil

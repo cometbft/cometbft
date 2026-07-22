@@ -181,6 +181,8 @@ func (cfg *Config) CheckDeprecated() []string {
 
 // BaseConfig defines the base configuration for a CometBFT node
 type BaseConfig struct {
+
+	// The version of the CometBFT binary that created
 	// or last modified the config file
 	Version string `mapstructure:"version"`
 
@@ -487,7 +489,9 @@ func (cfg *RPCConfig) ValidateBasic() error {
 	}
 	if cfg.MaxSubscriptionClients < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_subscription_clients"}
+
 	}
+	if cfg.MaxSubscriptionsPerClient < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_subscriptions_per_client"}
 	}
 	if cfg.SubscriptionBufferSize < minSubscriptionBufferSize {

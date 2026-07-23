@@ -8,6 +8,8 @@
 
 - `[lp2p]` base custom resource manager on AutoScale; fix System.Conns arithmetic
   ([\#5957](https://github.com/cometbft/cometbft/pull/5957))
+- `[blocksync]` tolerate late BlockResponse from honest peers after switching to consensus
+  ([\#5959](https://github.com/cometbft/cometbft/pull/5959))
 - `[mempool]` include proto framing overhead in AppReactor batch size to prevent peer teardown
   ([\#5956](https://github.com/cometbft/cometbft/pull/5956))
 - `[blocksync]` document `adaptive_sync` equivocation risk for validator nodes
@@ -89,6 +91,12 @@
   ([\#5866](https://github.com/cometbft/cometbft/pull/5866))
 - `[mempool]` Implement `MsgBytesFilter` in Reactor to prevent heap amplification attack
   ([\#5946](https://github.com/cometbft/cometbft/pull/5946))
+- `[privval]` Dynamically calculate privval maxRemoteSignerMsgSize.
+  ([\#5985](https://github.com/cometbft/cometbft/pull/5985))
+- `[types]` Update default max block bytes param to account for increased signature size of mldsa65.
+  ([\#5987](https://github.com/cometbft/cometbft/pull/5987))
+- `[config]` Update the default max_tx_bytes to account for increased signature size of mlsdsa65.
+  ([\#5989](https://github.com/cometbft/cometbft/pull/5989))
 
 ### FEATURES
 

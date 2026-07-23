@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -138,6 +139,32 @@ func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 	return sig, nil
 }
 
+// UnmarshalJSON unmarshals the private key from JSON, rejecting bytes of the
+// wrong length or a scalar outside (0, N) so a malformed key errors at decode
+// time. An out-of-range scalar would otherwise derive a pubkey for the
+// reduced-mod-N value in PubKey() while Sign refuses to use it.
+func (privKey *PrivKey) UnmarshalJSON(bz []byte) error {
+	var rawBytes []byte
+	if err := json.Unmarshal(bz, &rawBytes); err != nil {
+		return err
+	}
+	if len(rawBytes) != PrivKeySize {
+		return fmt.Errorf(
+			"secp256k1eth: invalid private key size, expected %d bytes, got %d",
+			PrivKeySize, len(rawBytes),
+		)
+	}
+	var d secp256k1.ModNScalar
+	overflow := d.SetByteSlice(rawBytes)
+	zero := d.IsZero()
+	d.Zero()
+	if overflow || zero {
+		return errors.New("secp256k1eth: private key scalar is not in the valid range (0, N)")
+	}
+	*privKey = rawBytes
+	return nil
+}
+
 var _ crypto.PubKey = PubKey{}
 
 // PubKey is the compressed SEC1 public key (33 bytes).
@@ -219,6 +246,22 @@ func NewPubKeyFromBytes(bz []byte) (PubKey, error) {
 	pk := make(PubKey, PubKeySize)
 	copy(pk, bz)
 	return pk, nil
+}
+
+// UnmarshalJSON unmarshals the public key from JSON, rejecting bytes that are
+// not a valid compressed secp256k1 point so a malformed key errors at decode
+// time instead of panicking later (e.g. during genesis validation).
+func (pubKey *PubKey) UnmarshalJSON(bz []byte) error {
+	var rawBytes []byte
+	if err := json.Unmarshal(bz, &rawBytes); err != nil {
+		return err
+	}
+	pk, err := NewPubKeyFromBytes(rawBytes)
+	if err != nil {
+		return err
+	}
+	*pubKey = pk
+	return nil
 }
 
 func addressFromPubKey(pub *secp256k1.PublicKey) []byte {

@@ -1,6 +1,7 @@
 package secp256k1eth_test
 
 import (
+	"bytes"
 	"encoding/hex"
 	"math/big"
 	"testing"
@@ -187,6 +188,40 @@ func TestJSONRoundTrip(t *testing.T) {
 	var pub2 secp256k1eth.PubKey
 	require.NoError(t, cmtjson.Unmarshal(pubBz, &pub2))
 	require.True(t, pub.Equals(pub2))
+}
+
+func TestJSONUnmarshalRejectsMalformedKeys(t *testing.T) {
+	// Wrong-length pubkey.
+	shortPub, err := cmtjson.Marshal(secp256k1eth.PubKey(make([]byte, 5)))
+	require.NoError(t, err)
+	var pub secp256k1eth.PubKey
+	require.ErrorContains(t, cmtjson.Unmarshal(shortPub, &pub), "invalid public key size")
+
+	// Correct length but off-curve: X = 2^256-1 exceeds the field prime.
+	offCurve := make([]byte, secp256k1eth.PubKeySize)
+	offCurve[0] = 0x02
+	for i := 1; i < len(offCurve); i++ {
+		offCurve[i] = 0xFF
+	}
+	offCurveBz, err := cmtjson.Marshal(secp256k1eth.PubKey(offCurve))
+	require.NoError(t, err)
+	require.ErrorContains(t, cmtjson.Unmarshal(offCurveBz, &pub), "invalid public key")
+
+	// Wrong-length privkey.
+	shortPriv, err := cmtjson.Marshal(secp256k1eth.PrivKey(make([]byte, 5)))
+	require.NoError(t, err)
+	var priv secp256k1eth.PrivKey
+	require.ErrorContains(t, cmtjson.Unmarshal(shortPriv, &priv), "invalid private key size")
+
+	// Correct length but out-of-range scalars: zero and 2^256-1 (> N).
+	zeroPriv, err := cmtjson.Marshal(secp256k1eth.PrivKey(make([]byte, secp256k1eth.PrivKeySize)))
+	require.NoError(t, err)
+	require.ErrorContains(t, cmtjson.Unmarshal(zeroPriv, &priv), "not in the valid range")
+
+	overflow := bytes.Repeat([]byte{0xFF}, secp256k1eth.PrivKeySize)
+	overflowPriv, err := cmtjson.Marshal(secp256k1eth.PrivKey(overflow))
+	require.NoError(t, err)
+	require.ErrorContains(t, cmtjson.Unmarshal(overflowPriv, &priv), "not in the valid range")
 }
 
 func TestGoEthereumCompatibilityVector(t *testing.T) {

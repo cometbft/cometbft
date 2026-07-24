@@ -157,7 +157,6 @@ func (privKey *PrivKey) UnmarshalJSON(bz []byte) error {
 	var d secp256k1.ModNScalar
 	overflow := d.SetByteSlice(rawBytes)
 	zero := d.IsZero()
-	d.Zero()
 	if overflow || zero {
 		return errors.New("secp256k1eth: private key scalar is not in the valid range (0, N)")
 	}

@@ -8,8 +8,14 @@
 
 - `[blocksync]` tolerate late BlockResponse from honest peers after switching to consensus
   ([\#5959](https://github.com/cometbft/cometbft/pull/5959))
+- `[consensus]` Fix `double_sign_check_height = 1` performing no double-sign
+  checks due to off-by-one error in loop condition (`i < N` should be
+  `i <= N`). The value `1` now correctly checks the previous block as intended.
+  ([\#5668](https://github.com/cometbft/cometbft/pull/5668))
 - `[mempool]` fix setRecheckFull/setDone race causing spurious ErrRecheckFull.
   ([\#5837](https://github.com/cometbft/cometbft/pull/5837))
+- `[consensus]` release cs.mtx before sending to statsMsgQueue
+  ([\#5813](https://github.com/cometbft/cometbft/pull/5813))
 - `[mempool]` truncate proto field number to int32 in filter's ReadTag
   ([\#5948](https://github.com/cometbft/cometbft/pull/5948))
 

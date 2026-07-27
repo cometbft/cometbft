@@ -73,7 +73,7 @@ func (c *WireCursor) ReadTag() (fieldNum, wireType int, err error) {
 	if err != nil {
 		return 0, 0, err
 	}
-	fieldNum = int(v >> 3)
+	fieldNum = int(int32(v >> 3))
 	wireType = int(v & 0x7)
 	if fieldNum <= 0 {
 		return 0, 0, fmt.Errorf("%w: %d", ErrIllegalFieldNumber, fieldNum)

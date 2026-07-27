@@ -1,8 +1,8 @@
 # CHANGELOG
 
-## UNRELEASED
+## v0.38.24
 
-### DEPENDENCIES
+*July 27, 2026*
 
 ### BUG FIXES
 
@@ -30,9 +30,6 @@
 
 - `[config]` Add EventBusBufferCapacity setting.
   ([\#5849](https://github.com/cometbft/cometbft/pull/5849))
-### STATE-BREAKING
-
-### API-BREAKING
 
 ## v0.38.23
 

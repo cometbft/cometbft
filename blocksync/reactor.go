@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/cometbft/cometbft/crypto"
@@ -60,7 +61,7 @@ type Reactor struct {
 	blockExec     *sm.BlockExecutor
 	store         sm.BlockStore
 	pool          *BlockPool
-	blockSync     bool
+	blockSync     atomic.Bool // enabled at start or via SwitchToBlockSync
 	localAddr     crypto.Address
 	poolRoutineWg sync.WaitGroup
 
@@ -117,12 +118,12 @@ func NewReactorWithAddr(state sm.State, blockExec *sm.BlockExecutor, store *stor
 		blockExec:    blockExec,
 		store:        store,
 		pool:         pool,
-		blockSync:    blockSync,
 		localAddr:    localAddr,
 		requestsCh:   requestsCh,
 		errorsCh:     errorsCh,
 		metrics:      metrics,
 	}
+	bcR.blockSync.Store(blockSync)
 	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
 	return bcR
 }
@@ -135,7 +136,7 @@ func (bcR *Reactor) SetLogger(l log.Logger) {
 
 // OnStart implements service.Service.
 func (bcR *Reactor) OnStart() error {
-	if bcR.blockSync {
+	if bcR.blockSync.Load() {
 		err := bcR.pool.Start()
 		if err != nil {
 			return err
@@ -151,7 +152,7 @@ func (bcR *Reactor) OnStart() error {
 
 // SwitchToBlockSync is called by the state sync reactor when switching to block sync.
 func (bcR *Reactor) SwitchToBlockSync(state sm.State) error {
-	bcR.blockSync = true
+	bcR.blockSync.Store(true)
 	bcR.initialState = state
 
 	bcR.pool.height = state.LastBlockHeight + 1
@@ -169,7 +170,7 @@ func (bcR *Reactor) SwitchToBlockSync(state sm.State) error {
 
 // OnStop implements service.Service.
 func (bcR *Reactor) OnStop() {
-	if bcR.blockSync {
+	if bcR.blockSync.Load() {
 		if err := bcR.pool.Stop(); err != nil {
 			bcR.Logger.Error("Error stopping pool", "err", err)
 		}
@@ -295,9 +296,16 @@ func (bcR *Reactor) FilterMsgBytes(chID byte, src p2p.Peer, msgBytes []byte) err
 		return nil
 	}
 
-	// blocksync not running, we should not be getting a BlockResponse
-	if !bcR.pool.IsRunning() {
+	// Never ran blocksync on this node — any BlockResponse is unsolicited.
+	if !bcR.blockSync.Load() {
 		return errors.New("unsolicited BlockResponse: blocksync not active")
+	}
+	// Pool has stopped (switched to consensus). Requests we sent before the
+	// transition are still in flight; the peers are honest and must not be
+	// disconnected for answering our own requests. Still enforce the sig-count
+	// guard below, since any connected peer can reach this path now.
+	if !bcR.pool.IsRunning() {
+		return validateMaxVotes(stub.BlockResponse)
 	}
 
 	// ensure we have an outstanding request to this peer

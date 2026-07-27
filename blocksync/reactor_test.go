@@ -483,7 +483,9 @@ func newFilterReactor(t *testing.T) *Reactor {
 	require.NoError(t, pool.Start())
 	t.Cleanup(func() { _ = pool.Stop() })
 
-	return &Reactor{pool: pool}
+	r := &Reactor{pool: pool}
+	r.blockSync.Store(true)
+	return r
 }
 
 // seedRequester inserts a bpRequester targeting peerID at the given height,
@@ -539,10 +541,12 @@ func TestFilterMsgBytes(t *testing.T) {
 		expectErr string // substring; "" means no error
 	}{
 		{
-<<<<<<< HEAD
-=======
-			name:      "rejects BlockResponse when blocksync disabled",
-			setup:     func(t *testing.T) *Reactor { return newFilterReactor(t, false) },
+			name: "rejects BlockResponse when blocksync never ran",
+			setup: func(t *testing.T) *Reactor {
+				r := newFilterReactor(t)
+				r.blockSync.Store(false)
+				return r
+			},
 			chID:      BlocksyncChannel,
 			peer:      unexpected,
 			bytesFn:   blockResponseBytes,
@@ -554,7 +558,7 @@ func TestFilterMsgBytes(t *testing.T) {
 			// honest and must not be disconnected.
 			name: "allows late BlockResponse after pool stops for consensus switch",
 			setup: func(t *testing.T) *Reactor {
-				r := newFilterReactor(t, true)
+				r := newFilterReactor(t)
 				require.NoError(t, r.pool.Stop())
 				return r
 			},
@@ -567,7 +571,7 @@ func TestFilterMsgBytes(t *testing.T) {
 			// so the sig-count guard must still apply here.
 			name: "rejects oversized BlockResponse after pool stops for consensus switch",
 			setup: func(t *testing.T) *Reactor {
-				r := newFilterReactor(t, true)
+				r := newFilterReactor(t)
 				require.NoError(t, r.pool.Stop())
 				return r
 			},
@@ -577,7 +581,6 @@ func TestFilterMsgBytes(t *testing.T) {
 			expectErr: "too many commit signatures",
 		},
 		{
->>>>>>> 17bb3853 (fix(blocksync): tolerate late BlockResponse from honest peers after switching to consensus (#5959))
 			name:      "rejects unsolicited BlockResponse with no requesters",
 			setup:     newFilterReactor,
 			chID:      BlocksyncChannel,
@@ -630,22 +633,6 @@ func TestFilterMsgBytes(t *testing.T) {
 			bytesFn: func(*testing.T) []byte { return nil },
 		},
 		{
-<<<<<<< HEAD
-			name: "rejects BlockResponse after pool stopped",
-			setup: func(t *testing.T) *Reactor {
-				r := newFilterReactor(t)
-				seedRequester(r, 1, expected)
-				require.NoError(t, r.pool.Stop())
-				return r
-			},
-			chID:      BlocksyncChannel,
-			peer:      expected,
-			bytesFn:   blockResponseBytes,
-			expectErr: "blocksync not active",
-		},
-		{
-=======
->>>>>>> 17bb3853 (fix(blocksync): tolerate late BlockResponse from honest peers after switching to consensus (#5959))
 			name: "allows BlockResponse at MaxVotesCount commit signatures",
 			setup: func(t *testing.T) *Reactor {
 				r := newFilterReactor(t)
@@ -963,70 +950,6 @@ func (bcR *ByzantineReactor) Receive(e p2p.Envelope) {
 		bcR.Logger.Error(fmt.Sprintf("Unknown message type %v", reflect.TypeOf(msg)))
 	}
 }
-<<<<<<< HEAD
-=======
-
-// TestEnableRaceWithSetPeerRange detects the data race between
-// Reactor.Enable() writing pool.height without pool.mtx and
-// SetPeerRange() reading it via updateMaxPeerHeight() under pool.mtx.
-// Must be run with -race to be effective.
-func TestEnableRaceWithSetPeerRange(t *testing.T) {
-	requestsCh := make(chan BlockRequest, 1000)
-	errorsCh := make(chan peerError, 1000)
-	pool := NewBlockPool(1, requestsCh, errorsCh, 1*time.Second)
-	require.NoError(t, pool.Start())
-	t.Cleanup(func() { _ = pool.Stop() })
-
-	flag := &atomic.Bool{}
-	r := &Reactor{pool: pool, enabled: flag}
-	r.Logger = log.TestingLogger()
-
-	state := sm.State{LastBlockHeight: 100}
-
-	start := make(chan struct{})
-	var wg sync.WaitGroup
-
-	// Enable() writes pool.height; runPool returns ErrAlreadyStarted since the
-	// pool is pre-started, but the write still races with concurrent reads.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		<-start
-		_ = r.Enable(state)
-	}()
-
-	// SetPeerRange holds pool.mtx and reads pool.height via updateMaxPeerHeight.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		<-start
-		for i := int64(0); i < 500; i++ {
-			pool.SetPeerRange("peer1", i+2, i+100)
-		}
-	}()
-
-	close(start)
-	wg.Wait()
-}
-
-func TestEnableRecomputesMaxPeerHeight(t *testing.T) {
-	requestsCh := make(chan BlockRequest, 1000)
-	errorsCh := make(chan peerError, 1000)
-	pool := NewBlockPool(1, requestsCh, errorsCh, 1*time.Second)
-	require.NoError(t, pool.Start())
-	t.Cleanup(func() { _ = pool.Stop() })
-
-	// base=2 > pool.height=1: excluded from maxPeerHeight, so it stays 0.
-	pool.SetPeerRange("peer1", 2, 200)
-	require.Equal(t, int64(0), pool.MaxPeerHeight())
-
-	flag := &atomic.Bool{}
-	r := &Reactor{pool: pool, enabled: flag}
-	r.Logger = log.TestingLogger()
-
-	_ = r.Enable(sm.State{LastBlockHeight: 100})
-	require.Equal(t, int64(200), pool.MaxPeerHeight())
-}
 
 func TestPeerNotDisconnectedOnLateBlockResponseAfterConsensusSwitch(t *testing.T) {
 	config = test.ResetTestRoot("blocksync_reactor_test")
@@ -1042,7 +965,7 @@ func TestPeerNotDisconnectedOnLateBlockResponseAfterConsensusSwitch(t *testing.T
 	}()
 
 	syncingPair := newReactor(t, log.TestingLogger(), genDoc, privVals, 0)
-	syncingPair.reactor.intervalSwitchToConsensus = 20 * time.Millisecond
+	syncingPair.reactor.switchToConsensusMs = 20
 	defer func() {
 		require.NoError(t, syncingPair.reactor.Stop())
 		require.NoError(t, syncingPair.app.Stop())
@@ -1069,7 +992,7 @@ func TestPeerNotDisconnectedOnLateBlockResponseAfterConsensusSwitch(t *testing.T
 	bl, err := block.ToProto()
 	require.NoError(t, err)
 
-	peers := switches[1].Peers().Copy()
+	peers := switches[1].Peers().List()
 	require.Len(t, peers, 1)
 	require.True(t, peers[0].TrySend(p2p.Envelope{
 		ChannelID: BlocksyncChannel,
@@ -1081,4 +1004,3 @@ func TestPeerNotDisconnectedOnLateBlockResponseAfterConsensusSwitch(t *testing.T
 	}, 200*time.Millisecond, 5*time.Millisecond,
 		"serving peer was incorrectly disconnected by a late in-flight BlockResponse")
 }
->>>>>>> 17bb3853 (fix(blocksync): tolerate late BlockResponse from honest peers after switching to consensus (#5959))

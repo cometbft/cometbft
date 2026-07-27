@@ -1318,7 +1318,7 @@ The value `0` is undefined.
 ### mempool.max_tx_bytes
 Maximum size in bytes of a single transaction accepted into the mempool.
 ```toml
-max_tx_bytes = 1048576
+max_tx_bytes = 4194304
 ```
 
 | Value type          | integer |

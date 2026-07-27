@@ -212,32 +212,31 @@ func ResourceManagerFromConfig(cfg config.LibP2PConfig) (network.ResourceManager
 
 	if cfg.Limits.Mode == config.LibP2PLimitsModeCustom {
 		var (
-			partialDefaults = defaults.AutoScale().ToPartialLimitConfig()
-			limits          = rcmgr.InfiniteLimits.ToPartialLimitConfig()
-			maxPeerStreams  = rcmgr.LimitVal(cfg.Limits.MaxPeerStreams)
+			scaled         = defaults.AutoScale()
+			maxPeers       = rcmgr.LimitVal(cfg.Limits.MaxPeers)
+			maxPeerStreams = rcmgr.LimitVal(cfg.Limits.MaxPeerStreams)
 		)
 
-		// 1. copy defaults for built-in services/protocols
-		limits.Service = partialDefaults.Service
-		limits.ServicePeer = partialDefaults.ServicePeer
-		limits.Protocol = partialDefaults.Protocol
-		limits.ProtocolPeer = partialDefaults.ProtocolPeer
+		// Start from AutoScale so System.Memory/Streams and Transient remain
+		// finite. InfiniteLimits as a base would leave those fields uncapped,
+		// making custom mode strictly weaker than default.
+		limits := scaled.ToPartialLimitConfig()
 
-		// 2. also copy sane default conns for peers
-		limits.PeerDefault.Conns = partialDefaults.PeerDefault.Conns
-		limits.PeerDefault.ConnsInbound = partialDefaults.PeerDefault.ConnsInbound
-		limits.PeerDefault.ConnsOutbound = partialDefaults.PeerDefault.ConnsOutbound
-
-		// 2.1 limit max system connections to (max conns per peer * max peers)
-		limits.System.Conns = partialDefaults.PeerDefault.Conns * maxPeerStreams
-
-		// 3. set max streams
-		// https://github.com/libp2p/go-libp2p/blob/da810a1/p2p/host/resource-manager/scope.go#L168
+		// Per-peer stream cap from config.
 		limits.PeerDefault.Streams = maxPeerStreams
 		limits.PeerDefault.StreamsInbound = maxPeerStreams
 		limits.PeerDefault.StreamsOutbound = maxPeerStreams
 
-		limiter := rcmgr.NewFixedLimiter(limits.Build(rcmgr.InfiniteLimits))
+		// System.Conns = max_peers × a small per-peer constant, not AutoScale's
+		// PeerDefault.Conns (~8, sized for TCP connection churn). QUIC peers
+		// hold ~1 connection each; maxConnsPerPeer covers the active
+		// connection plus one reconnect in flight.
+		const maxConnsPerPeer = 4
+		limits.System.Conns = maxConnsPerPeer * maxPeers
+		limits.System.ConnsInbound = maxConnsPerPeer * maxPeers
+		limits.System.ConnsOutbound = maxConnsPerPeer * maxPeers
+
+		limiter := rcmgr.NewFixedLimiter(limits.Build(scaled))
 		mgr, err := rcmgr.NewResourceManager(limiter)
 
 		return mgr, limiter, err

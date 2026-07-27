@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[lp2p]` base custom resource manager on AutoScale; fix System.Conns arithmetic
+  ([\#5957](https://github.com/cometbft/cometbft/pull/5957))
 - `[blocksync]` tolerate late BlockResponse from honest peers after switching to consensus
   ([\#5959](https://github.com/cometbft/cometbft/pull/5959))
 - `[mempool]` include proto framing overhead in AppReactor batch size to prevent peer teardown

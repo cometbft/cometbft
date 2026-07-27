@@ -8,25 +8,8 @@
 
 - `[mempool]` fix setRecheckFull/setDone race causing spurious ErrRecheckFull.
   ([\#5837](https://github.com/cometbft/cometbft/pull/5837))
-<<<<<<< HEAD
-=======
-- `[abci]` fix deadlock when response callback re-enters the client.
-  ([\#5850](https://github.com/cometbft/cometbft/pull/5850))
-- `[node]` use kernel-assigned ephemeral ports and fix `OnStart` cleanup
-  ([\#5868](https://github.com/cometbft/cometbft/pull/5868))
-- `[node]` close partial listeners on startRPC failure
-  ([\#5869](https://github.com/cometbft/cometbft/pull/5869))
-- `[lp2p]` remove `MaxStreamSize` clamp in `StreamReadSized`
-  ([\#5954](https://github.com/cometbft/cometbft/pull/5954))
-- `[lp2p]` fallback to conn remote addr when resolving inbound peer
-  ([\#5879](https://github.com/cometbft/cometbft/pull/5879))
-- `[consensus]` release cs.mtx before sending to statsMsgQueue
-  ([\#5813](https://github.com/cometbft/cometbft/pull/5813))
 - `[mempool]` truncate proto field number to int32 in filter's ReadTag
   ([\#5948](https://github.com/cometbft/cometbft/pull/5948))
-- `[privval]` preempt sleep retries in privval signer client
-  ([\#5934](https://github.com/cometbft/cometbft/pull/5934))
->>>>>>> 096ac149 (fix(mempool): truncate proto field number to int32 in filter's ReadTag (#5948))
 
 ### IMPROVEMENTS
 

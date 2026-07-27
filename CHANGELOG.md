@@ -6,6 +6,22 @@
 
 ### BUG FIXES
 
+### IMPROVEMENTS
+
+### FEATURES
+
+### STATE-BREAKING
+
+### API-BREAKING
+
+## v0.40.0
+
+*July 27, 2026*
+
+### DEPENDENCIES
+
+### BUG FIXES
+
 - `[blocksync]` tolerate late BlockResponse from honest peers after switching to consensus
   ([\#5959](https://github.com/cometbft/cometbft/pull/5959))
 - `[mempool]` include proto framing overhead in AppReactor batch size to prevent peer teardown

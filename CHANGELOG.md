@@ -6,6 +6,7 @@
 
 ### BUG FIXES
 
+- `[spec]` fix the inductive invariant `spec/light-client/accountability`
 - `[flowrate]` fix flaky `TestWriter` by comparing `Idle` with a duration
   tolerance instead of exact equality
   ([\#5929](https://github.com/cometbft/cometbft/pull/5929))

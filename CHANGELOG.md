@@ -6,6 +6,20 @@
 
 ### BUG FIXES
 
+### IMPROVEMENTS
+
+### FEATURES
+
+### STATE-BREAKING
+
+### API-BREAKING
+
+## v0.39.4
+
+*July 28, 2026*
+
+### BUG FIXES
+
 - `[blocksync]` tolerate late BlockResponse from honest peers after switching to consensus
   ([\#5959](https://github.com/cometbft/cometbft/pull/5959))
 - `[consensus]` Fix `double_sign_check_height = 1` performing no double-sign
@@ -45,10 +59,6 @@
 - `[config]` Add EventBusBufferCapacity setting.
   ([\#5849](https://github.com/cometbft/cometbft/pull/5849))
 
-
-### STATE-BREAKING
-
-### API-BREAKING
 
 ## v0.39.3
 

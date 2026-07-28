@@ -3,10 +3,12 @@
  An inductive invariant for TendermintAcc3, which capture the forked
  and non-forked cases.
 
+ * Version 4. Repair the inductive invariant.
  * Version 3. Modular and parameterized definitions.
  * Version 2. Bugfixes in the spec and an inductive invariant.
 
- Igor Konnov, 2020.
+ Igor Konnov, igor@konnov.phd, 2026.
+ Igor Konnov, Informal Systems, 2020.
  *)
 
 EXTENDS TendermintAcc_004_draft
@@ -403,36 +405,12 @@ Inv ==
 \* this is the inductive invariant we like to check
 TypedInv == TypeOK /\ Inv
 
-\* UNUSED FOR SAFETY
-ValidRoundNotSmallerThanLockedRound(p) ==
-  validRound[p] >= lockedRound[p]
-
-\* if validRound is defined, then there are two-thirds of PREVOTEs
-IfValidRoundThenTwoThirds(p) ==
-  \/ validRound[p] = NilRound
-  \/ LET PV == { m \in msgsPrevote[validRound[p]]: m.id = validValue[p] } IN
-     Cardinality(PV) >= THRESHOLD2
-
-\* UNUSED FOR SAFETY
-AllIfValidRoundThenTwoThirds ==
-  \A p \in Corr: IfValidRoundThenTwoThirds(p)
-
-\* a valid round can be only set to a valid value that was proposed earlier
-IfValidRoundThenProposal(p) ==
-  \/ validRound[p] = NilRound
-  \/ \E m \in msgsPropose[validRound[p]]:
-       m.proposal = validValue[p]
-
-\* UNUSED FOR SAFETY
-AllIfValidRoundThenProposal ==
-  \A p \in Corr: IfValidRoundThenProposal(p)
-
 (******************************** THEOREMS ***************************************)
 (* Under this condition, the faulty processes can decide alone *)
 FaultyQuorum == Cardinality(Faulty) >= THRESHOLD2
 
 (* The standard condition of the Cosmos security model *)
-LessThanThirdFaulty == N > 3 * T /\ Cardinality(Faulty) <= T
+ResilienceCondition == N = 3 * T + 1 /\ Cardinality(Faulty) <= T
 
 (*
  TypedInv is an inductive invariant, provided that there is no faulty quorum.
@@ -448,8 +426,8 @@ THEOREM TypedInvIsInductive ==
 (*
  There should be no fork, when there are less than 1/3 faulty processes.
  *)
-THEOREM AgreementWhenLessThanThirdFaulty ==
-    LessThanThirdFaulty /\ TypedInv => Agreement
+THEOREM AgreementWhenResilienceCondition ==
+    ResilienceCondition /\ TypedInv => Agreement
 
 (*
  In a more general case, when there are less than 2/3 faulty processes,

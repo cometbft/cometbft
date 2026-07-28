@@ -38,6 +38,8 @@
   ([\#5869](https://github.com/cometbft/cometbft/pull/5869))
 - `[consensus]` release cs.mtx before sending to statsMsgQueue
   ([\#5813](https://github.com/cometbft/cometbft/pull/5813))
+- `[mempool]` truncate proto field number to int32 in filter's ReadTag
+  ([\#5948](https://github.com/cometbft/cometbft/pull/5948))
 
 ### IMPROVEMENTS
 

@@ -1,6 +1,7 @@
 package blocksync
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"sync"
@@ -66,7 +67,10 @@ func (p testPeer) simulateInput(input inputData) {
 		}
 	}
 	err := input.pool.AddBlock(input.request.PeerID, block, extCommit, 123)
-	require.NoError(input.t, err)
+	// A slow second peer delivering an already-committed block is expected.
+	if err != nil && !errors.Is(err, ErrAlreadyCommittedBlock) {
+		require.NoError(input.t, err)
+	}
 	// TODO: uncommenting this creates a race which is detected by:
 	// https://github.com/golang/go/blob/2bd767b1022dd3254bcec469f0ee164024726486/src/testing/testing.go#L854-L856
 	// see: https://github.com/tendermint/tendermint/issues/3390#issue-418379890
@@ -638,6 +642,45 @@ func TestBlockPoolMaxPeerHeightRefreshesOnPopRequest(t *testing.T) {
 	// maxPeerHeight to its advertised height without B re-sending status.
 	require.EqualValues(t, 100, pool.MaxPeerHeight(),
 		"peer B must contribute to maxPeerHeight once pool.height reaches its base")
+}
+
+func TestAddBlockFromSlowSecondPeerAfterCommit(t *testing.T) {
+	requestsCh := make(chan BlockRequest, 10)
+	errorsCh := make(chan peerError, 10)
+
+	pool := NewBlockPool(1, requestsCh, errorsCh, time.Second)
+	pool.SetLogger(log.TestingLogger())
+
+	const (
+		fast = p2p.ID("fast")
+		slow = p2p.ID("slow")
+	)
+
+	// Requester for height 1 assigned to two peers.
+	pool.mtx.Lock()
+	req := newBPRequester(pool, 1)
+	req.peerID = fast
+	req.secondPeerID = slow
+	pool.requesters[1] = req
+	pool.mtx.Unlock()
+
+	block := &types.Block{Header: types.Header{Height: 1, Time: time.Now()}, LastCommit: &types.Commit{}}
+	extCommit := &types.ExtendedCommit{Height: 1}
+
+	// Fast peer delivers, then we commit: pool.height advances to 2.
+	require.NoError(t, pool.AddBlock(fast, block, extCommit, 123))
+	pool.PopRequest()
+	require.EqualValues(t, 2, pool.Height())
+
+	// Slow peer's late delivery is a sentinel error, not a peer punishment.
+	err := pool.AddBlock(slow, block, extCommit, 123)
+	require.ErrorIs(t, err, ErrAlreadyCommittedBlock)
+
+	select {
+	case peerErr := <-errorsCh:
+		t.Fatalf("unexpected peer error: %v", peerErr)
+	default:
+	}
 }
 
 // TestAddBlockDoesNotDeadlockOnSendError is a regression test for AddBlock

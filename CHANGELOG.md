@@ -6,6 +6,20 @@
 
 ### BUG FIXES
 
+### IMPROVEMENTS
+
+### FEATURES
+
+### STATE-BREAKING
+
+### API-BREAKING
+
+## v0.39.4
+
+*July 28, 2026*
+
+### BUG FIXES
+
 - `[blocksync]` fix flaky `TestBlockPoolBasic` deadlock under `-race`
   ([\#5867](https://github.com/cometbft/cometbft/pull/5867))
 - `[mempool]` fix setRecheckFull/setDone race causing spurious ErrRecheckFull.
@@ -37,10 +51,6 @@
 - `[config]` Add EventBusBufferCapacity setting.
   ([\#5849](https://github.com/cometbft/cometbft/pull/5849))
 
-
-### STATE-BREAKING
-
-### API-BREAKING
 
 ## v0.39.3
 

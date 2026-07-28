@@ -6,6 +6,10 @@
 
 ### BUG FIXES
 
+- `[consensus]` Fix `double_sign_check_height = 1` performing no double-sign
+  checks due to off-by-one error in loop condition (`i < N` should be
+  `i <= N`). The value `1` now correctly checks the previous block as intended.
+  ([\#5668](https://github.com/cometbft/cometbft/pull/5668))
 - `[blocksync]` fix flaky `TestBlockPoolBasic` deadlock under `-race`
   ([\#5867](https://github.com/cometbft/cometbft/pull/5867))
 - `[mempool]` fix setRecheckFull/setDone race causing spurious ErrRecheckFull.

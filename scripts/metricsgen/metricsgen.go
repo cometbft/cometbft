@@ -155,7 +155,8 @@ func ignoreTestFiles(f fs.FileInfo) bool {
 // struct and builds a TemplateData using the data obtained from the abstract syntax tree.
 func ParseMetricsDir(dir, structName string) (TemplateData, error) {
 	fs := token.NewFileSet()
-	d, err := parser.ParseDir(fs, dir, ignoreTestFiles, parser.ParseComments) //nolint:staticcheck // TODO refactor to new method
+	//nolint:staticcheck // SA1019: metricsgen still uses parser.ParseDir to walk package ASTs.
+	d, err := parser.ParseDir(fs, dir, ignoreTestFiles, parser.ParseComments)
 	if err != nil {
 		return TemplateData{}, err
 	}
@@ -169,7 +170,8 @@ func ParseMetricsDir(dir, structName string) (TemplateData, error) {
 	// Grab the package name.
 	var (
 		pkgName string
-		pkg     *ast.Package //nolint:staticcheck // TODO migrate later
+		//nolint:staticcheck // SA1019: metricsgen still consumes ast.Package from parser.ParseDir output.
+		pkg *ast.Package
 	)
 	for pkgName, pkg = range d {
 	}

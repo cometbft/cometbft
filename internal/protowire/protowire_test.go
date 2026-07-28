@@ -44,6 +44,22 @@ func TestWireCursor_ReadTag_IllegalFieldNumber(t *testing.T) {
 	require.ErrorIs(t, err, ErrIllegalFieldNumber)
 }
 
+func TestWireCursor_ReadTag_FieldNumberTruncatesTo32Bit(t *testing.T) {
+	// Tag varint 8a 80 80 80 80 01 decodes to wire = 2^35 + 10, so
+	// wire>>3 == 2^32 + 1 and wire&7 == 2 (WireBytes). int32(2^32+1) == 1.
+	c := NewWireCursor([]byte{0x8a, 0x80, 0x80, 0x80, 0x80, 0x01})
+	fieldNum, wireType, err := c.ReadTag()
+	require.NoError(t, err)
+	require.Equal(t, 1, fieldNum, "high bits above 32 must be truncated, matching int32(wire>>3)")
+	require.Equal(t, WireBytes, wireType)
+
+	// Tag varint 80 80 80 80 40 decodes to wire>>3 == 2^31, and
+	// int32(2^31) is negative => illegal tag, exactly as gogoproto rejects it.
+	c = NewWireCursor([]byte{0x80, 0x80, 0x80, 0x80, 0x40})
+	_, _, err = c.ReadTag()
+	require.ErrorIs(t, err, ErrIllegalFieldNumber)
+}
+
 func TestWireCursor_ReadLengthDelimited(t *testing.T) {
 	c := NewWireCursor([]byte{0x03, 'a', 'b', 'c'})
 	b, err := c.ReadLengthDelimited()
@@ -89,4 +105,23 @@ func TestWireCursor_SkipField_OutOfBounds(t *testing.T) {
 	// Fixed64 needs 8 bytes; only 2 are present.
 	c := NewWireCursor([]byte{1, 2})
 	require.ErrorIs(t, c.SkipField(WireFixed64), ErrOutOfBounds)
+}
+
+func TestRepeatedBytesEntrySize(t *testing.T) {
+	// Verified against proto.Size on Txs{Txs: [][]byte{make([]byte, n)}}.
+	for _, tt := range []struct {
+		dataLen int
+		want    int
+	}{
+		{0, 2},   // tag(1) + varint(0)=1
+		{1, 2},   // tag(1) + varint(1)=1
+		{127, 2}, // last 1-byte varint
+		{128, 3}, // first 2-byte varint
+		{1000, 3},
+		{16383, 3}, // last 2-byte varint
+		{16384, 4}, // first 3-byte varint
+		{1048576, 4},
+	} {
+		require.Equal(t, tt.want, RepeatedBytesEntrySize(tt.dataLen), "dataLen=%d", tt.dataLen)
+	}
 }

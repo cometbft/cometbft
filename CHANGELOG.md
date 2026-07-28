@@ -6,7 +6,34 @@
 
 ### BUG FIXES
 
-- `[spec]` fix the inductive invariant `spec/light-client/accountability`
+- `[spec]` fix the inductive invariant in `spec/light-client/accountability`
+
+### IMPROVEMENTS
+
+### FEATURES
+
+### STATE-BREAKING
+
+### API-BREAKING
+
+## v0.40.0
+
+*July 27, 2026*
+
+### DEPENDENCIES
+
+### BUG FIXES
+
+- `[blocksync]` tolerate late BlockResponse from honest peers after switching to consensus
+  ([\#5959](https://github.com/cometbft/cometbft/pull/5959))
+- `[mempool]` include proto framing overhead in AppReactor batch size to prevent peer teardown
+  ([\#5956](https://github.com/cometbft/cometbft/pull/5956))
+- `[blocksync]` document `adaptive_sync` equivocation risk for validator nodes
+  ([\#5953](https://github.com/cometbft/cometbft/pull/5953))
+- `[abci]` fix socket transport missing `InsertTx` and `ReapTxs` cases in
+  `handleRequest` and `resMatchesReq`, causing `ErrUnexpectedResponse` and
+  node self-kill when `mempool.type = "app"` with the default socket transport
+  ([\#5958](https://github.com/cometbft/cometbft/pull/5958))
 - `[flowrate]` fix flaky `TestWriter` by comparing `Idle` with a duration
   tolerance instead of exact equality
   ([\#5929](https://github.com/cometbft/cometbft/pull/5929))
@@ -51,10 +78,16 @@
   ([\#5868](https://github.com/cometbft/cometbft/pull/5868))
 - `[node]` close partial listeners on startRPC failure
   ([\#5869](https://github.com/cometbft/cometbft/pull/5869))
+- `[lp2p]` remove `MaxStreamSize` clamp in `StreamReadSized`
+  ([\#5954](https://github.com/cometbft/cometbft/pull/5954))
 - `[lp2p]` fallback to conn remote addr when resolving inbound peer
   ([\#5879](https://github.com/cometbft/cometbft/pull/5879))
 - `[consensus]` release cs.mtx before sending to statsMsgQueue
   ([\#5813](https://github.com/cometbft/cometbft/pull/5813))
+- `[mempool]` truncate proto field number to int32 in filter's ReadTag
+  ([\#5948](https://github.com/cometbft/cometbft/pull/5948))
+- `[privval]` preempt sleep retries in privval signer client
+  ([\#5934](https://github.com/cometbft/cometbft/pull/5934))
 
 ### IMPROVEMENTS
 
@@ -74,6 +107,14 @@
   ([\#5866](https://github.com/cometbft/cometbft/pull/5866))
 - `[mempool]` Implement `MsgBytesFilter` in Reactor to prevent heap amplification attack
   ([\#5946](https://github.com/cometbft/cometbft/pull/5946))
+- `[privval]` Dynamically calculate privval maxRemoteSignerMsgSize.
+  ([\#5985](https://github.com/cometbft/cometbft/pull/5985))
+- `[types]` Update default max block bytes param to account for increased signature size of mldsa65.
+  ([\#5987](https://github.com/cometbft/cometbft/pull/5987))
+- `[config]` Update the default max_tx_bytes to account for increased signature size of mlsdsa65.
+  ([\#5989](https://github.com/cometbft/cometbft/pull/5989))
+- `[crypto]` Add UnmarshalJSON to secp256k1eth key type.
+  ([\#5990](https://github.com/cometbft/cometbft/pull/5990))
 
 ### FEATURES
 

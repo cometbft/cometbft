@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -744,6 +745,16 @@ func (n *Node) OnStop() {
 			n.Logger.Error("Error closing indexerService", "err", err)
 		}
 	}
+	// Close the priv validator before stopping the reactors: sw.Stop waits on
+	// the consensus receiveRoutine, which can be stuck retrying a gone remote
+	// signer. Closing aborts that retry loop. (RetrySignerClient is not a
+	// service.Service, so the assertion below never fires for the socket client.)
+	if c, ok := n.privValidator.(io.Closer); ok {
+		if err := c.Close(); err != nil {
+			n.Logger.Error("Error closing private validator", "err", err)
+		}
+	}
+
 	// now stop the reactors
 	if err := n.sw.Stop(); err != nil {
 		n.Logger.Error("Error closing switch", "err", err)

@@ -9,11 +9,18 @@ import (
 	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	privvalproto "github.com/cometbft/cometbft/proto/tendermint/privval"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
 	defaultTimeoutReadWriteSeconds = 5
 )
+
+// maxRemoteSignerMsgSize bounds messages read from the remote signer
+// connection. The largest legitimate message is a precommit vote carrying a
+// max-size extension and two max-size signatures (e.g. ML-DSA-65); 1 KiB of
+// slack covers the remaining vote fields and proto framing.
+var maxRemoteSignerMsgSize = types.MaxVoteExtensionSize + 2*types.MaxSignatureSize + 1024
 
 type signerEndpoint struct {
 	service.BaseService
@@ -92,7 +99,6 @@ func (se *signerEndpoint) ReadMessage() (msg privvalproto.Message, err error) {
 	if err != nil {
 		return
 	}
-	const maxRemoteSignerMsgSize = 1024 * 10
 	protoReader := protoio.NewDelimitedReader(se.conn, maxRemoteSignerMsgSize)
 	_, err = protoReader.ReadMsg(&msg)
 	if _, ok := err.(timeoutError); ok {

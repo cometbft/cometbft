@@ -103,7 +103,11 @@ func StreamReadSized(s network.Stream, maxSize uint64) ([]byte, error) {
 		return nil, errors.Wrap(err, "failed to read payload size")
 	}
 
-	payloadLimit := min(maxSize, MaxStreamSize)
+	// Honor the caller's limit; MaxStreamSize is a fallback, not a hard cap.
+	payloadLimit := maxSize
+	if payloadLimit == 0 {
+		payloadLimit = MaxStreamSize
+	}
 
 	if payloadSize > payloadLimit {
 		return nil, errors.Errorf("payload is too large (got %d, max %d)", payloadSize, payloadLimit)

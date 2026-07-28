@@ -60,7 +60,7 @@ jobs:
           TAGS=$(echo "${{ needs.vars.outputs.tags }}" | sed "s/[^,]*/&-${{ matrix.arch }}/g")
           echo "tags=${TAGS}" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}

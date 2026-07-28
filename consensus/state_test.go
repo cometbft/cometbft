@@ -2547,6 +2547,31 @@ func TestStateOutputVoteStats(t *testing.T) {
 	}
 }
 
+func TestHandleMsgReleasesLockBeforeStatsMsgQueueSend(t *testing.T) {
+	cs, vss := randState(2)
+	peer := p2pmock.NewPeer(nil)
+
+	randBytes := cmtrand.Bytes(tmhash.Size)
+	vote := signVote(vss[1], cmtproto.PrecommitType, randBytes, types.PartSetHeader{}, true)
+
+	// Unbuffered channel with no consumer simulates a saturated queue.
+	cs.statsMsgQueue = make(chan msgInfo)
+
+	go cs.handleMsg(msgInfo{&VoteMessage{vote}, peer.ID()})
+	time.Sleep(20 * time.Millisecond)
+
+	rsResult := make(chan *cstypes.RoundState, 1)
+	go func() { rsResult <- cs.GetRoundState() }()
+
+	select {
+	case <-rsResult:
+	case <-time.After(2 * time.Second):
+		t.Fatal("GetRoundState timed out: cs.mtx held during statsMsgQueue send")
+	}
+
+	<-cs.statsMsgQueue
+}
+
 func TestSignSameVoteTwice(t *testing.T) {
 	_, vss := randState(2)
 

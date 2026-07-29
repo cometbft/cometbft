@@ -197,6 +197,48 @@ func TestSignerVote(t *testing.T) {
 	}
 }
 
+// A precommit carrying a max-size vote extension (plus two signatures) far
+// exceeds the old 10 KiB remote signer message cap; it must round-trip.
+func TestSignerVoteMaxSizeExtension(t *testing.T) {
+	for _, tc := range getSignerTestCases(t) {
+		ts := time.Now()
+		hash := cmtrand.Bytes(tmhash.Size)
+		valAddr := cmtrand.Bytes(crypto.AddressSize)
+		ext := cmtrand.Bytes(types.MaxVoteExtensionSize)
+		newVote := func() *types.Vote {
+			return &types.Vote{
+				Type:             cmtproto.PrecommitType,
+				Height:           1,
+				Round:            2,
+				BlockID:          types.BlockID{Hash: hash, PartSetHeader: types.PartSetHeader{Hash: hash, Total: 2}},
+				Timestamp:        ts,
+				ValidatorAddress: valAddr,
+				ValidatorIndex:   1,
+				Extension:        ext,
+			}
+		}
+		want, have := newVote(), newVote()
+
+		t.Cleanup(func() {
+			if err := tc.signerServer.Stop(); err != nil {
+				t.Error(err)
+			}
+		})
+		t.Cleanup(func() {
+			if err := tc.signerClient.Close(); err != nil {
+				t.Error(err)
+			}
+		})
+
+		wantpb, havepb := want.ToProto(), have.ToProto()
+		require.NoError(t, tc.mockPV.SignVote(tc.chainID, wantpb))
+		require.NoError(t, tc.signerClient.SignVote(tc.chainID, havepb))
+
+		assert.Equal(t, wantpb.Signature, havepb.Signature)
+		assert.Equal(t, wantpb.ExtensionSignature, havepb.ExtensionSignature)
+	}
+}
+
 func TestSignerVoteResetDeadline(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
 		ts := time.Now()

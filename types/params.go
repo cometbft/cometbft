@@ -57,6 +57,13 @@ type ConsensusParams struct {
 
 // BlockParams define limits on the block size and gas plus minimum time
 // between blocks.
+//
+// MaxBytes must cover the block's fixed overhead, header, evidence, and the
+// worst-case commit (MaxCommitBytes), which grows with validator count and
+// signature size. With large-signature key types such as ml_dsa_65 (3309-byte
+// signatures, ~3.4KB per validator), an undersized MaxBytes leaves no room for
+// data and block construction panics. Size it for the largest expected
+// validator set when enabling such key types.
 type BlockParams struct {
 	MaxBytes int64 `json:"max_bytes"`
 	MaxGas   int64 `json:"max_gas"`
@@ -71,6 +78,10 @@ type EvidenceParams struct {
 
 // ValidatorParams restrict the public key types validators can use.
 // NOTE: uses ABCI pubkey naming, not Amino names.
+//
+// Enabling large-signature key types (e.g. ml_dsa_65) inflates the
+// per-validator commit reserve; adjust Block.MaxBytes accordingly (see
+// BlockParams).
 type ValidatorParams struct {
 	PubKeyTypes []string `json:"pub_key_types"`
 }
@@ -116,10 +127,13 @@ func DefaultConsensusParams() *ConsensusParams {
 	}
 }
 
-// DefaultBlockParams returns a default BlockParams.
+// DefaultBlockParams returns a default BlockParams. MaxBytes budgets 21MiB
+// for data plus the worst-case commit for a maximum-size validator set
+// (MaxVotesCount validators at MaxSignatureSize), so the default stays valid
+// for any pub key type and validator count.
 func DefaultBlockParams() BlockParams {
 	return BlockParams{
-		MaxBytes: 22020096, // 21MB
+		MaxBytes: 22020096 + MaxCommitBytes(MaxVotesCount), // ~53MiB
 		MaxGas:   -1,
 	}
 }

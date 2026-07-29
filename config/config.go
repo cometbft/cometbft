@@ -1039,7 +1039,7 @@ func DefaultMempoolConfig() *MempoolConfig {
 		Size:        5000,
 		MaxTxsBytes: 1024 * 1024 * 1024, // 1GB
 		CacheSize:   10000,
-		MaxTxBytes:  1024 * 1024, // 1MB
+		MaxTxBytes:  4 * 1024 * 1024, // 4MB
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: 0,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    0,
 		// App mempool defaults

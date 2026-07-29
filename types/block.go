@@ -280,7 +280,11 @@ func BlockFromProto(bp *cmtproto.Block) (*Block, error) {
 
 // MaxDataBytes returns the maximum size of block's data.
 //
-// XXX: Panics on negative result.
+// XXX: Panics on negative result. This halts chains whose Block.MaxBytes is
+// too small to fit the worst-case commit — reachable with large-signature key
+// types such as ml_dsa_65 (~3.4KB per validator) — and that is the expected
+// behavior: the misconfiguration must be fixed by raising Block.MaxBytes, not
+// papered over by producing blocks with no room for data.
 func MaxDataBytes(maxBytes, evidenceBytes int64, valsCount int) int64 {
 	maxDataBytes := maxBytes -
 		MaxOverheadForBlock -
@@ -302,7 +306,8 @@ func MaxDataBytes(maxBytes, evidenceBytes int64, valsCount int) int64 {
 // MaxDataBytesNoEvidence returns the maximum size of block's data when
 // evidence count is unknown (will be assumed to be 0).
 //
-// XXX: Panics on negative result.
+// XXX: Panics on negative result. Halts misconfigured chains; expected
+// behavior — see MaxDataBytes.
 func MaxDataBytesNoEvidence(maxBytes int64, valsCount int) int64 {
 	maxDataBytes := maxBytes -
 		MaxOverheadForBlock -

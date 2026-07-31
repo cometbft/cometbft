@@ -1,6 +1,6 @@
 # Results of checking inductiveness and safety
 
-This file summarizes the computational results of model checking inductiveness of `TypedIndInv`
+This file summarizes the computational results of model checking inductiveness of `TypedInv`
 and safety of `Agreement` and `Accountability`. This is done for `N=4`, `T=1`, `F=1`.
 
 The checks are performed with [Apalache][] v0.58.3.

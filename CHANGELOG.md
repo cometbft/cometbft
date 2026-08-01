@@ -6,6 +6,10 @@
 
 ### BUG FIXES
 
+- `[consensus]` reject locally generated vote extensions before signing when
+  their complete Precommit message cannot fit in the consensus WAL
+  ([\#1253](https://github.com/cometbft/cometbft/issues/1253))
+
 ### IMPROVEMENTS
 
 ### FEATURES

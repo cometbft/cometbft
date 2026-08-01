@@ -29,6 +29,8 @@ const (
 	walDefaultFlushInterval = 2 * time.Second
 )
 
+var maxWALMessageTime = time.Date(9999, 12, 31, 23, 59, 59, 999999999, time.UTC)
+
 //--------------------------------------------------------
 // types and functions for savings consensus messages
 
@@ -297,23 +299,48 @@ func NewWALEncoder(wr io.Writer) *WALEncoder {
 	return &WALEncoder{wr: wr}
 }
 
+func timedWALMessageToProto(v *TimedWALMessage) (*cmtcons.TimedWALMessage, error) {
+	pbMsg, err := WALToProto(v.Msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cmtcons.TimedWALMessage{
+		Time: v.Time,
+		Msg:  pbMsg,
+	}, nil
+}
+
+func validateWALMessageSize(pv *cmtcons.TimedWALMessage) (int, error) {
+	size := pv.Size()
+	if size > maxMsgSizeBytes {
+		return 0, fmt.Errorf("msg is too big: %d bytes, max: %d bytes", size, maxMsgSizeBytes)
+	}
+	return size, nil
+}
+
+// ensureWALMessageFits checks a message using the largest supported protobuf
+// timestamp so a message accepted here will fit when it is written later.
+func ensureWALMessageFits(msg WALMessage) error {
+	pv, err := timedWALMessageToProto(&TimedWALMessage{Time: maxWALMessageTime, Msg: msg})
+	if err != nil {
+		return err
+	}
+	_, err = validateWALMessageSize(pv)
+	return err
+}
+
 // Encode writes the custom encoding of v to the stream. It returns an error if
 // the encoded size of v is greater than 1MB. Any error encountered
 // during the write is also returned.
 func (enc *WALEncoder) Encode(v *TimedWALMessage) error {
-	pbMsg, err := WALToProto(v.Msg)
+	pv, err := timedWALMessageToProto(v)
 	if err != nil {
 		return err
 	}
-	pv := cmtcons.TimedWALMessage{
-		Time: v.Time,
-		Msg:  pbMsg,
-	}
-
-	size := pv.Size()
-	length := uint32(size)
-	if length > maxMsgSizeBytes {
-		return fmt.Errorf("msg is too big: %d bytes, max: %d bytes", length, maxMsgSizeBytes)
+	size, err := validateWALMessageSize(pv)
+	if err != nil {
+		return err
 	}
 
 	total := 8 + size
@@ -328,7 +355,7 @@ func (enc *WALEncoder) Encode(v *TimedWALMessage) error {
 	}
 
 	binary.BigEndian.PutUint32(enc.buf[0:4], crc32.Checksum(enc.buf[8:], crc32c))
-	binary.BigEndian.PutUint32(enc.buf[4:8], length)
+	binary.BigEndian.PutUint32(enc.buf[4:8], uint32(size))
 
 	_, err = enc.wr.Write(enc.buf)
 	return err

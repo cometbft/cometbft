@@ -1998,6 +1998,32 @@ func TestSelfVerifyVoteExtensionAccepts(t *testing.T) {
 	m.AssertExpectations(t)
 }
 
+func TestVoteExtensionMustFitWAL(t *testing.T) {
+	m := abcimocks.NewApplication(t)
+	m.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{}, nil)
+	m.On("ProcessProposal", mock.Anything, mock.Anything).
+		Return(&abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil).Maybe()
+	m.On("ExtendVote", mock.Anything, mock.Anything).Return(&abci.ResponseExtendVote{
+		VoteExtension: make([]byte, types.MaxVoteExtensionSize),
+	}, nil).Once()
+
+	cs1, _ := randStateWithAppWithHeight(1, m, 1)
+
+	block, err := cs1.createProposalBlock(context.Background())
+	require.NoError(t, err)
+	parts, err := block.MakePartSet(types.BlockPartSizeBytes)
+	require.NoError(t, err)
+
+	require.NotPanics(t, func() {
+		vote, err := cs1.signVote(cmtproto.PrecommitType, block.Hash(), parts.Header(), block)
+		require.Nil(t, vote)
+		require.ErrorContains(t, err, "vote extension is too large to fit in the consensus WAL")
+		require.ErrorContains(t, err, "msg is too big")
+	})
+	m.AssertNotCalled(t, "VerifyVoteExtension", mock.Anything, mock.Anything)
+	m.AssertExpectations(t)
+}
+
 // TestStateDoesntCrashOnInvalidVote tests that the state does not crash when
 // receiving an invalid vote. In particular, one with the incorrect
 // ValidatorIndex.

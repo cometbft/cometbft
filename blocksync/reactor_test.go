@@ -615,6 +615,41 @@ func TestFilterMsgBytes(t *testing.T) {
 			bytesFn: blockResponseBytes,
 		},
 		{
+			// A second peer's late response for an already-committed near-tip
+			// height stays within [startHeight, height], so it must be tolerated
+			// even though its requester was already popped.
+			name: "allows redundant BlockResponse for committed near-tip height from second peer",
+			setup: func(t *testing.T) *Reactor {
+				r := newFilterReactor(t, true)
+				// Simulate having committed heights 1..4; the requester for the
+				// window heights has already been popped, so "second" has no
+				// outstanding request.
+				r.pool.mtx.Lock()
+				r.pool.height = 5
+				r.pool.mtx.Unlock()
+				return r
+			},
+			chID:    BlocksyncChannel,
+			peer:    "second",
+			bytesFn: func(t *testing.T) []byte { return blockResponseBytesAtHeight(t, 3) },
+		},
+		{
+			// A response for a height beyond the sync window from a peer we
+			// never requested from is genuinely unsolicited and punishable.
+			name: "rejects unsolicited BlockResponse for out-of-window height",
+			setup: func(t *testing.T) *Reactor {
+				r := newFilterReactor(t, true)
+				r.pool.mtx.Lock()
+				r.pool.height = 5
+				r.pool.mtx.Unlock()
+				return r
+			},
+			chID:      BlocksyncChannel,
+			peer:      unexpected,
+			bytesFn:   func(t *testing.T) []byte { return blockResponseBytesAtHeight(t, 100) },
+			expectErr: "unsolicited BlockResponse from peer unexpected",
+		},
+		{
 			name:    "allows non-BlockResponse messages even when disabled",
 			setup:   func(t *testing.T) *Reactor { return newFilterReactor(t, false) },
 			chID:    BlocksyncChannel,
@@ -719,6 +754,23 @@ func TestFilterMsgBytes(t *testing.T) {
 			require.Contains(t, err.Error(), tc.expectErr)
 		})
 	}
+}
+
+// blockResponseBytesAtHeight builds a marshaled BlockResponse whose block
+// header carries the given height, so the pre-unmarshal filter can read it.
+func blockResponseBytesAtHeight(t *testing.T, height int64) []byte {
+	t.Helper()
+	msg := &bcproto.Message{
+		Sum: &bcproto.Message_BlockResponse{
+			BlockResponse: &bcproto.BlockResponse{
+				Block: &cmtproto.Block{Header: cmtproto.Header{Height: height}},
+			},
+		},
+	}
+	payload, err := proto.Marshal(msg)
+	require.NoError(t, err)
+	require.NotEmpty(t, payload)
+	return payload
 }
 
 func TestStubUnmarshalAllocs(t *testing.T) {

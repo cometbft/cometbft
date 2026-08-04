@@ -215,11 +215,15 @@ func (pool *BlockPool) GetStatus() (height int64, numPending int32, lenRequester
 	return pool.height, pool.numPending.Load(), len(pool.requesters)
 }
 
-// HasPendingRequestFrom reports whether we have at least one outstanding block
-// request directed at the given peer.
-func (pool *BlockPool) HasPendingRequestFrom(peerID p2p.ID) bool {
+// HasPendingRequestFrom reports whether a BlockResponse for the given height
+// from the given peer should be accepted. It returns true for an outstanding request
+// to the peer or for any height in the current sync window [startHeight, height].
+func (pool *BlockPool) HasPendingRequestFrom(peerID p2p.ID, height int64) bool {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
+	if height >= pool.startHeight && height <= pool.height {
+		return true
+	}
 	for _, r := range pool.requesters {
 		if r.didRequestFrom(peerID) {
 			return true

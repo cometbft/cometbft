@@ -1,6 +1,7 @@
 package autopool
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"sync"
@@ -340,6 +341,40 @@ func TestPool(t *testing.T) {
 			return consumed.Load() == 100
 		}, 2*time.Second, 10*time.Millisecond,
 			"expected 100 items consumed after second burst, got %d", consumed.Load())
+	})
+
+	t.Run("PushPriorityDropsWhenFull", func(t *testing.T) {
+		// ARRANGE: tiny queue cap and blocked consumer to prevent draining
+		const queueCap = 8
+
+		scaler := NewThroughputLatencyScaler(1, 1, 90.0, 100*time.Millisecond, 200*time.Millisecond, logger)
+
+		blocked := make(chan struct{})
+		consumer := func(_ int) { <-blocked }
+
+		pool := New(
+			scaler,
+			consumer,
+			1, // tiny inbound channel so the pipeline backs up quickly
+			WithLogger[int](logger),
+			WithPriorityQueue[int](NewPriorityQueueWithMax(1, queueCap)),
+		)
+		pool.Start()
+		t.Cleanup(func() {
+			close(blocked)
+			pool.Stop()
+		})
+
+		// ACT: flood with far more messages than combined queue capacity
+		var dropped int
+		for i := 0; i < queueCap*10; i++ {
+			if err := pool.PushPriority(i, 1); errors.Is(err, ErrQueueFull) {
+				dropped++
+			}
+		}
+
+		// ASSERT: bounded queue must have rejected some messages
+		require.Positive(t, dropped, "expected ErrQueueFull with cap=%d, got zero drops", queueCap)
 	})
 
 }

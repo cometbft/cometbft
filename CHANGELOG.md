@@ -6,6 +6,9 @@
 
 ### BUG FIXES
 
+- `[lp2p]` cap per-reactor priority queue to prevent memory-exhaustion DoS
+  ([\#5955](https://github.com/cometbft/cometbft/pull/5955))
+
 ### IMPROVEMENTS
 
 ### FEATURES

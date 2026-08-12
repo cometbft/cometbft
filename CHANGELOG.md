@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v0.38.26
+
+*August 12, 2026*
+
+### FEATURES
+
+- `[crypto]` Add ML-DSA-65 public key decoding and signature verification.
+
 ## v0.38.24
 
 *July 27, 2026*
@@ -242,6 +250,7 @@ encouraged to upgrade as soon as possible.
 *December 20 2024*
 
 This release:
+
 - fixes a bug that caused a node produce errors caused by the sending of next PEX requests too soon.
 As a consequence of this incorrect behavior a node would be marked as BAD.
 - Adds a proper description of `ExtendedVoteInfo` and `VoteInfo` in the spec.
@@ -698,7 +707,7 @@ gossip.
 This release includes the second part of ABCI++, called ABCI 2.0.
 ABCI 2.0 introduces ABCI methods `ExtendVote` and `VerifyVoteExtension`.
 These new methods allow the application to add data (opaque to CometBFT),
-called _vote extensions_ to precommit votes sent by validators.
+called *vote extensions* to precommit votes sent by validators.
 These vote extensions are made available to the proposer(s) of the next height.
 Additionally, ABCI 2.0 coalesces `BeginBlock`, `DeliverTx`, and `EndBlock`
 into one method, `FinalizeBlock`, whose `Request*` and `Response*`
@@ -782,7 +791,7 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
 - `[light]` Fixed an edge case where a light client would panic when attempting
   to query a node that (1) has started from a non-zero height and (2) does
   not yet have any data. The light client will now, correctly, not panic
-  _and_ keep the node in its list of providers in the same way it would if
+  *and* keep the node in its list of providers in the same way it would if
   it queried a node starting from height zero that does not yet have data
   ([\#575](https://github.com/cometbft/cometbft/issues/575))
 - `[abci]` Restore the snake_case naming in JSON serialization of
@@ -947,7 +956,7 @@ See below for more details.
   [\#77](https://github.com/cometbft/cometbft/pull/77). @jmalicevic
   ([\#382](https://github.com/cometbft/cometbft/pull/382))
 - `[consensus]` ([\#386](https://github.com/cometbft/cometbft/pull/386)) Short-term fix for the case when `needProofBlock` cannot find previous block meta by defaulting to the creation of a new proof block. (@adizere)
-  - Special thanks to the [Vega.xyz](https://vega.xyz/) team, and in particular to Zohar (@ze97286), for reporting the problem and working with us to get to a fix.
+    - Special thanks to the [Vega.xyz](https://vega.xyz/) team, and in particular to Zohar (@ze97286), for reporting the problem and working with us to get to a fix.
 - `[docker]` enable cross platform build using docker buildx
   ([\#9073](https://github.com/tendermint/tendermint/pull/9073))
 - `[consensus]` fix round number of `enterPropose`
@@ -1036,7 +1045,7 @@ to this release!
 - `[consensus]` Short-term fix for the case when `needProofBlock` cannot find
   previous block meta by defaulting to the creation of a new proof block.
   ([\#386](https://github.com/cometbft/cometbft/pull/386): @adizere)
-  - Special thanks to the [Vega.xyz](https://vega.xyz/) team, and in particular
+    - Special thanks to the [Vega.xyz](https://vega.xyz/) team, and in particular
     to Zohar (@ze97286), for reporting the problem and working with us to get to
     a fix.
 - `[p2p]` Correctly use non-blocking `TrySendEnvelope` method when attempting to
@@ -1059,7 +1068,7 @@ to this release!
 ### FEATURES
 
 - `[rpc]` Add `match_event` query parameter to indicate to the RPC that it
-  should match events _within_ attributes, not only within a height
+  should match events *within* attributes, not only within a height
   ([tendermint/tendermint\#9759](https://github.com/tendermint/tendermint/pull/9759))
 
 ### IMPROVEMENTS

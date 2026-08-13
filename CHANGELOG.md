@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v0.38.26
+
+*August 12, 2026*
+
+### FEATURES
+
+- `[crypto]` Add ML-DSA-65 public key decoding and signature verification.
+
 ## v0.38.24
 
 *July 27, 2026*

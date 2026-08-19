@@ -59,6 +59,51 @@ results.
 
 Prior to version `v0.38.x`, floats were not supported as query parameters.
 
+## MempoolTx
+
+When a transaction is admitted into the mempool (i.e. it passes `CheckTx` for
+the first time), a `MempoolTx` event is published. This happens *before* the
+transaction is included in a block, if it ever is - it only reflects mempool
+admission, not consensus outcome. Compare this with the `Tx` event, which
+fires once a transaction has been committed in a block.
+
+This is useful for clients that would otherwise need to poll
+`/unconfirmed_txs` repeatedly to observe new transactions as they enter the
+mempool (e.g. MEV/backrunning tooling, network diagnostics).
+
+```json
+{
+    "jsonrpc": "2.0",
+    "method": "subscribe",
+    "id": 0,
+    "params": {
+        "query": "tm.event='MempoolTx'"
+    }
+}
+```
+
+Response:
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 0,
+    "result": {
+        "query": "tm.event='MempoolTx'",
+        "data": {
+            "type": "tendermint/event/MempoolTx",
+            "value": {
+              "tx": "...",
+              "result": {
+                "code": 0,
+                "gas_wanted": "1"
+              }
+            }
+        }
+    }
+}
+```
+
 ## ValidatorSetUpdates
 
 When validator set changes, ValidatorSetUpdates event is published. The

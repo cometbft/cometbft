@@ -23,6 +23,13 @@ const (
 	EventTx                  = "Tx"
 	EventValidatorSetUpdates = "ValidatorSetUpdates"
 
+	// Mempool events.
+	// EventMempoolTx is fired by the mempool when a transaction is admitted
+	// (i.e. passes CheckTx for the first time), before it is included in any
+	// block. Unlike EventTx, this carries no execution result: it only
+	// reflects mempool admission, not consensus outcome.
+	EventMempoolTx = "MempoolTx"
+
 	// Internal consensus events.
 	// These are used for testing the consensus state machine.
 	// They can also be used to build real-time consensus visualizers.
@@ -53,6 +60,7 @@ func init() {
 	cmtjson.RegisterType(EventDataNewBlockEvents{}, "tendermint/event/NewBlockEvents")
 	cmtjson.RegisterType(EventDataNewEvidence{}, "tendermint/event/NewEvidence")
 	cmtjson.RegisterType(EventDataTx{}, "tendermint/event/Tx")
+	cmtjson.RegisterType(EventDataMempoolTx{}, "tendermint/event/MempoolTx")
 	cmtjson.RegisterType(EventDataRoundState{}, "tendermint/event/RoundState")
 	cmtjson.RegisterType(EventDataNewRound{}, "tendermint/event/NewRound")
 	cmtjson.RegisterType(EventDataCompleteProposal{}, "tendermint/event/CompleteProposal")
@@ -88,6 +96,15 @@ type EventDataNewEvidence struct {
 // All txs fire EventDataTx
 type EventDataTx struct {
 	abci.TxResult
+}
+
+// EventDataMempoolTx is fired when a tx is admitted into the mempool, i.e.
+// it passes CheckTx for the first time. This happens before the tx is
+// included in a block (if it ever is), so Result here is the mempool's
+// CheckTx response, not a block execution result.
+type EventDataMempoolTx struct {
+	Tx     Tx                   `json:"tx"`
+	Result abci.ResponseCheckTx `json:"result"`
 }
 
 // NOTE: This goes into the replay WAL
@@ -152,6 +169,7 @@ var (
 	EventQueryNewBlock            = QueryForEvent(EventNewBlock)
 	EventQueryNewBlockHeader      = QueryForEvent(EventNewBlockHeader)
 	EventQueryNewBlockEvents      = QueryForEvent(EventNewBlockEvents)
+	EventQueryMempoolTx           = QueryForEvent(EventMempoolTx)
 	EventQueryNewEvidence         = QueryForEvent(EventNewEvidence)
 	EventQueryNewRound            = QueryForEvent(EventNewRound)
 	EventQueryNewRoundStep        = QueryForEvent(EventNewRoundStep)
@@ -186,4 +204,9 @@ type BlockEventPublisher interface {
 
 type TxEventPublisher interface {
 	PublishEventTx(EventDataTx) error
+}
+
+// MempoolTxEventPublisher publishes the mempool-admission event.
+type MempoolTxEventPublisher interface {
+	PublishEventMempoolTx(EventDataMempoolTx) error
 }

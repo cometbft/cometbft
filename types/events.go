@@ -26,8 +26,8 @@ const (
 	// Mempool events.
 	// EventMempoolTx is fired by the mempool when a transaction is admitted
 	// (i.e. passes CheckTx for the first time), before it is included in any
-	// block. Unlike EventTx, this carries no execution result: it only
-	// reflects mempool admission, not consensus outcome.
+	// block. It carries the CheckTx response, not a block execution result:
+	// unlike EventTx, this reflects mempool admission, not consensus outcome.
 	EventMempoolTx = "MempoolTx"
 
 	// Internal consensus events.

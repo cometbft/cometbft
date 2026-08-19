@@ -71,6 +71,10 @@ This is useful for clients that would otherwise need to poll
 `/unconfirmed_txs` repeatedly to observe new transactions as they enter the
 mempool (e.g. MEV/backrunning tooling, network diagnostics).
 
+Only fired when `mempool.type = "flood"` (the default). Nodes configured with
+`mempool.type = "app"` or `"nop"` do not emit this event yet - a subscription
+on such a node receives nothing, with no error.
+
 ```json
 {
     "jsonrpc": "2.0",

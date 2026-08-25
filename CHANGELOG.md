@@ -6,6 +6,9 @@
 
 ### BUG FIXES
 
+- `[mempool]` fix `AppMempool` ABCI response handling, callback/cleanup, and lifecycle
+  ([\#5942](https://github.com/cometbft/cometbft/pull/5942))
+
 ### IMPROVEMENTS
 
 ### FEATURES

@@ -2453,6 +2453,9 @@ func (cs *State) signVote(
 				return nil, err
 			}
 			vote.Extension = ext
+			if err := ensureVoteFitsWAL(vote); err != nil {
+				return nil, err
+			}
 
 			// Self-verify the extension before broadcasting. Every other validator
 			// runs VerifyVoteExtension on this precommit's extension and rejects
@@ -2485,6 +2488,17 @@ func (cs *State) signVote(
 	}
 
 	return vote, err
+}
+
+func ensureVoteFitsWAL(vote *types.Vote) error {
+	voteForSizing := *vote
+	voteForSizing.Signature = make([]byte, types.MaxSignatureSize)
+	voteForSizing.ExtensionSignature = make([]byte, types.MaxSignatureSize)
+	msg := msgInfo{Msg: &VoteMessage{Vote: &voteForSizing}}
+	if err := ensureWALMessageFits(msg); err != nil {
+		return fmt.Errorf("vote extension is too large to fit in the consensus WAL: %w", err)
+	}
+	return nil
 }
 
 func (cs *State) voteTime() time.Time {

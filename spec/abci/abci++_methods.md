@@ -526,6 +526,12 @@ When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the prop
     * `ExtendVoteResponse.vote_extension` will only be attached to a non-`nil` Precommit message. If the consensus algorithm is to
       precommit `nil`, it will not call `ExtendVote`.
     * The Application logic that creates the extension can be non-deterministic.
+    * The Application should enforce a conservative maximum size for vote extensions in both
+      `ExtendVote` and `VerifyVoteExtension`. CometBFT must persist its complete local Precommit
+      message to the consensus WAL before broadcasting it, and the encoded WAL message is limited
+      to approximately 1 MiB. This limit includes the vote, signatures, and encoding overhead, not
+      only the vote extension. CometBFT will reject a locally generated extension before signing if
+      the complete Precommit cannot fit in the WAL.
 
 #### When does CometBFT call `ExtendVote`?
 

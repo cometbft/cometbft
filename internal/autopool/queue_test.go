@@ -174,6 +174,54 @@ func TestPriorityQueue(t *testing.T) {
 	})
 }
 
+func TestPriorityQueueWithMax(t *testing.T) {
+	const maxSize = 5
+	q := NewPriorityQueueWithMax(3, maxSize)
+
+	for i := 0; i < maxSize; i++ {
+		require.NoError(t, q.Push(i, 1))
+	}
+	require.ErrorIs(t, q.Push("overflow", 1), ErrQueueFull)
+
+	// popping one slot allows one more push
+	_, ok := q.Pop()
+	require.True(t, ok)
+	require.NoError(t, q.Push("after-pop", 1))
+	require.ErrorIs(t, q.Push("still-full", 1), ErrQueueFull)
+}
+
+func TestPriorityQueueWithMaxEvictsLowerPriorityWhenFull(t *testing.T) {
+	const maxSize = 5
+	q := NewPriorityQueueWithMax(3, maxSize)
+
+	for i := 0; i < maxSize; i++ {
+		require.NoError(t, q.Push(i, 1))
+	}
+
+	// higher-priority push evicts the oldest priority-1 item instead of failing
+	require.NoError(t, q.Push("high-priority", 3))
+	require.Equal(t, maxSize, q.size)
+
+	v, ok := q.Pop()
+	require.True(t, ok)
+	require.Equal(t, "high-priority", v)
+
+	// remaining items are the priority-1 ones with the oldest (0) evicted
+	for i := 1; i < maxSize; i++ {
+		v, ok = q.Pop()
+		require.True(t, ok)
+		require.Equal(t, i, v)
+	}
+
+	// same-or-lower priority pushes still reject once full when nothing
+	// strictly lower is queued to evict
+	for i := 0; i < maxSize; i++ {
+		require.NoError(t, q.Push(i, 3))
+	}
+	require.ErrorIs(t, q.Push("no-room", 3), ErrQueueFull)
+	require.ErrorIs(t, q.Push("no-room-either", 2), ErrQueueFull)
+}
+
 type testData struct {
 	priority uint64
 	value    string

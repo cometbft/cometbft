@@ -13,7 +13,10 @@ type Queue struct {
 	mu   sync.RWMutex
 }
 
-var ErrPriority = errors.New("invalid priority")
+var (
+	ErrPriority  = errors.New("invalid priority")
+	ErrQueueFull = errors.New("priority queue is full")
+)
 
 // New Queue constructor.
 func NewQueue() *Queue {
@@ -60,14 +63,37 @@ type PriorityQueue struct {
 	priorities           int
 	levels               []*Queue
 	highestNonEmptyLevel int
-	mu                   sync.Mutex
+	// maxSize is the total capacity across all priority levels; 0 means unlimited.
+	maxSize int
+	// size mirrors sum(levels[i].Len()); kept as a counter so Push doesn't need
+	// to scan all levels (and their locks) to check capacity.
+	size int
+	mu   sync.Mutex
+
+	// onEvict, if set, is called with the value dropped by evictLowerPriority.
+	onEvict func(value any)
 
 	// valuesAvailable signals that there are values available in one of the
 	// queues that can be popped
 	valuesAvailable chan struct{}
 }
 
+// PriorityQueueOption configures a PriorityQueue at construction time.
+type PriorityQueueOption func(*PriorityQueue)
+
+// WithOnEvict sets a callback invoked with the value dropped whenever Push
+// evicts a lower-priority item to make room.
+func WithOnEvict(onEvict func(value any)) PriorityQueueOption {
+	return func(q *PriorityQueue) { q.onEvict = onEvict }
+}
+
 func NewPriorityQueue(priorities int) *PriorityQueue {
+	return NewPriorityQueueWithMax(priorities, 0)
+}
+
+// NewPriorityQueueWithMax bounds total depth at maxSize (0 means unbounded).
+// Once full, Push evicts a lower-priority item rather than reject, so low-priority bursts can't starve high-priority admission.
+func NewPriorityQueueWithMax(priorities, maxSize int, opts ...PriorityQueueOption) *PriorityQueue {
 	if priorities <= 0 {
 		priorities = 1
 	}
@@ -77,13 +103,20 @@ func NewPriorityQueue(priorities int) *PriorityQueue {
 		queues = append(queues, NewQueue())
 	}
 
-	return &PriorityQueue{
+	q := &PriorityQueue{
 		priorities:           priorities,
 		levels:               queues,
 		highestNonEmptyLevel: -1,
+		maxSize:              maxSize,
 		mu:                   sync.Mutex{},
 		valuesAvailable:      make(chan struct{}, 1),
 	}
+
+	for _, opt := range opts {
+		opt(q)
+	}
+
+	return q
 }
 
 func (q *PriorityQueue) Push(value any, priority int) error {
@@ -96,7 +129,12 @@ func (q *PriorityQueue) Push(value any, priority int) error {
 
 	idx := priority - 1
 
+	if q.maxSize > 0 && q.size >= q.maxSize && !q.evictLowerPriority(idx) {
+		return ErrQueueFull
+	}
+
 	q.levels[idx].Push(value)
+	q.size++
 
 	if idx > q.highestNonEmptyLevel {
 		q.highestNonEmptyLevel = idx
@@ -105,6 +143,20 @@ func (q *PriorityQueue) Push(value any, priority int) error {
 	q.notifyValuesAvailable()
 
 	return nil
+}
+
+// evictLowerPriority drops the oldest item from the lowest occupied level below newIdx; false if none to evict.
+func (q *PriorityQueue) evictLowerPriority(newIdx int) bool {
+	for i := 0; i < newIdx; i++ {
+		if v, ok := q.levels[i].Pop(); ok {
+			q.size--
+			if q.onEvict != nil {
+				q.onEvict(v)
+			}
+			return true
+		}
+	}
+	return false
 }
 
 // notifyValuesAvailable notifies callers waiting on the channel returned by
@@ -127,6 +179,7 @@ func (q *PriorityQueue) Pop() (any, bool) {
 	// highest priority first
 	for i := q.highestNonEmptyLevel; i >= 0; i-- {
 		if v, ok := q.levels[i].Pop(); ok {
+			q.size--
 			q.updateHighestNonEmpty(i)
 			return v, ok
 		}

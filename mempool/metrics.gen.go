@@ -58,6 +58,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "recheck_times",
 			Help:      "Number of times transactions are rechecked in the mempool.",
 		}, labels).With(labelsAndValues...),
+		AlreadyReceivedTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "already_received_txs",
+			Help:      "Number of duplicate transactions dropped by the cache, by sender.",
+		}, append(labels, "peer_id")).With(labelsAndValues...),
 		ActiveOutboundConnections: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -76,6 +82,7 @@ func NopMetrics() *Metrics {
 		RejectedTxs:               discard.NewCounter(),
 		EvictedTxs:                discard.NewCounter(),
 		RecheckTimes:              discard.NewCounter(),
+		AlreadyReceivedTxs:        discard.NewCounter(),
 		ActiveOutboundConnections: discard.NewGauge(),
 	}
 }

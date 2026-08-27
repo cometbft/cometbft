@@ -44,6 +44,12 @@ type Metrics struct {
 	// Number of times transactions are rechecked in the mempool.
 	RecheckTimes metrics.Counter
 
+	// AlreadyReceivedTxs counts txs dropped by the dedupe cache because we had
+	// already seen them, labeled by the peer that (re)sent the duplicate. Use to
+	// find which peer is gossiping txs that should already be removed everywhere.
+	//metrics:Number of duplicate transactions dropped by the cache, by sender.
+	AlreadyReceivedTxs metrics.Counter `metrics_labels:"peer_id"`
+
 	// Number of connections being actively used for gossiping transactions
 	// (experimental feature).
 	ActiveOutboundConnections metrics.Gauge

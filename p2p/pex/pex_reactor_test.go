@@ -14,6 +14,7 @@ import (
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/mock"
 	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
@@ -416,19 +417,38 @@ func TestPEXReactorDialsPeerUpToMaxAttemptsInSeedMode(t *testing.T) {
 	assert.False(t, book.HasAddress(addr))
 }
 
-// connect a peer to a seed, wait a bit, then stop it.
-// this should give it time to request addrs and for the seed
-// to call FlushStop, and allows us to test calling Stop concurrently
-// with FlushStop. Before a fix, this non-deterministically reproduced
-// https://github.com/tendermint/tendermint/issues/3231.
+type flushStopPeer struct {
+	p2p.Peer
+	flushed chan<- p2p.Peer
+	resume  <-chan struct{}
+}
+
+func (p *flushStopPeer) FlushStop() {
+	p.Peer.FlushStop()
+	p.flushed <- p.Peer
+	// Keep the reactor from calling StopPeerGracefully before the test calls Stop.
+	<-p.resume
+}
+
+type flushStopReactor struct {
+	*Reactor
+	flushed chan<- p2p.Peer
+	resume  <-chan struct{}
+}
+
+func (r *flushStopReactor) Receive(e p2p.Envelope) {
+	e.Src = &flushStopPeer{Peer: e.Src, flushed: r.flushed, resume: r.resume}
+	r.Reactor.Receive(e)
+}
+
+// Regression test for https://github.com/tendermint/tendermint/issues/3231.
 func TestPEXReactorSeedModeFlushStop(t *testing.T) {
 	N := 2
 	switches := make([]*p2p.Switch, N)
+	flushed := make(chan p2p.Peer, 1)
+	resume := make(chan struct{})
 
-	// directory to store address books
-	dir, err := os.MkdirTemp("", "pex_reactor")
-	require.Nil(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	books := make([]AddrBook, N)
 	logger := log.TestingLogger()
@@ -450,46 +470,37 @@ func TestPEXReactorSeedModeFlushStop(t *testing.T) {
 			r := NewReactor(books[i], config)
 			r.SetLogger(logger.With("pex", i))
 			r.SetEnsurePeersPeriod(250 * time.Millisecond)
-			sw.AddReactor("pex", r)
+			if i == 0 {
+				sw.AddReactor("pex", &flushStopReactor{Reactor: r, flushed: flushed, resume: resume})
+			} else {
+				sw.AddReactor("pex", r)
+			}
 
 			return sw
 		})
 	}
 
-	for _, sw := range switches {
+	for i, sw := range switches {
 		err := sw.Start() // start switch and reactors
 		require.Nil(t, err)
+		t.Cleanup(func() {
+			assert.NoError(t, sw.Stop())
+			books[i].(*addrBook).Wait()
+		})
 	}
+	defer close(resume)
 
-	reactor := switches[0].Reactors()["pex"].(*Reactor)
-	peerID := switches[1].NodeInfo().ID()
+	err := switches[1].DialPeerWithAddress(switches[0].NetAddress())
+	require.NoError(t, err)
 
-	err = switches[1].DialPeerWithAddress(switches[0].NetAddress())
-	assert.NoError(t, err)
-
-	// sleep up to a second while waiting for the peer to send us a message.
-	// this isn't perfect since it's possible the peer sends us a msg and we FlushStop
-	// before this loop catches it. but non-deterministically it works pretty well.
-	for i := 0; i < 1000; i++ {
-		v := reactor.lastReceivedRequests.Get(string(peerID))
-		if v != nil {
-			break
-		}
-		time.Sleep(time.Millisecond)
-	}
-
-	// by now the FlushStop should have happened. Try stopping the peer.
-	// it should be safe to do this.
-	peers := switches[0].Peers().Copy()
-	for _, peer := range peers {
+	select {
+	case peer := <-flushed:
 		err := peer.Stop()
-		require.NoError(t, err)
-	}
-
-	// stop the switches
-	for _, s := range switches {
-		err := s.Stop()
-		require.NoError(t, err)
+		if err != nil {
+			require.ErrorIs(t, err, service.ErrAlreadyStopped)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("seed should flush and stop the peer after receiving a PEX request")
 	}
 }
 

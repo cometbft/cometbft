@@ -7,6 +7,27 @@
 ### BUG FIXES
 
 - `[spec]` fix the inductive invariant `spec/light-client/accountability`
+- `[p2p/pex]` fix an off-by-one that let an address book bucket hold one
+  entry past its documented capacity, and fix the resulting overflow-recovery
+  path silently losing the demoted address from the book instead of moving
+  it to a new bucket
+  ([\#6041](https://github.com/cometbft/cometbft/pull/6041))
+- `[libs/json]` fix a panic decoding a 1-byte JSON value into a 64-bit
+  integer field; now returns a normal decode error
+  ([\#6041](https://github.com/cometbft/cometbft/pull/6041))
+- `[store]` `DeleteLatestBlock` now deletes the extended-commit row and
+  evicts the in-memory commit caches for the rolled-back height, so a
+  resynced block at the same height is not shadowed by stale pre-rollback
+  data
+  ([\#6041](https://github.com/cometbft/cometbft/pull/6041))
+- `[libs/protoio]` fix `byteReader.ReadByte` mishandling two `io.Reader`
+  return shapes that are legal per the interface's own contract: a `(0,
+  nil)` return could surface a fabricated or stale byte, and a `(1,
+  io.EOF)` return could silently drop the final byte of a stream
+  ([\#6041](https://github.com/cometbft/cometbft/pull/6041))
+- `[libs/pubsub/query]` fix numeric query operators (`=`, `<`, `<=`, `>`,
+  `>=`) never matching a negative event attribute value
+  ([\#6041](https://github.com/cometbft/cometbft/pull/6041))
 
 ### IMPROVEMENTS
 

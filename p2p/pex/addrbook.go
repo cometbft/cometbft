@@ -541,7 +541,7 @@ func (a *addrBook) addToNewBucket(ka *knownAddress, bucketIdx int) error {
 	}
 
 	// Enforce max addresses.
-	if len(bucket) > newBucketSize {
+	if len(bucket) >= newBucketSize {
 		a.Logger.Info("new bucket is full, expiring new")
 		a.expireNew(bucketIdx)
 	}
@@ -579,7 +579,7 @@ func (a *addrBook) addToOldBucket(ka *knownAddress, bucketIdx int) bool {
 	}
 
 	// Enforce max addresses.
-	if len(bucket) > oldBucketSize {
+	if len(bucket) >= oldBucketSize {
 		return false
 	}
 
@@ -783,12 +783,17 @@ func (a *addrBook) moveToOld(ka *knownAddress) error {
 		// No room; move the oldest to a new bucket
 		oldest := a.pickOldest(bucketTypeOld, oldBucketIdx)
 		a.removeFromBucket(oldest, bucketTypeOld, oldBucketIdx)
+		// removeFromBucket only clears the old-bucket membership; the address is
+		// being demoted, not deleted, so it must be marked "new" before we try to
+		// re-add it to a new bucket, or addToNewBucket's isOld() guard will reject
+		// it and the address is silently lost from the book.
+		oldest.BucketType = bucketTypeNew
 		newBucketIdx, err := a.calcNewBucket(oldest.Addr, oldest.Src)
 		if err != nil {
 			return err
 		}
 		if err := a.addToNewBucket(oldest, newBucketIdx); err != nil {
-			a.Logger.Error("Error adding peer to old bucket", "err", err)
+			a.Logger.Error("Error demoting old address to new bucket", "err", err)
 		}
 
 		// Finally, add our ka to old bucket again.

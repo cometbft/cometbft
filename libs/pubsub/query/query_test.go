@@ -271,6 +271,63 @@ func TestBigNumbers(t *testing.T) {
 	}
 }
 
+// TestNegativeNumbers pins that a negative event attribute value can be
+// matched by every numeric comparison operator. Event attributes are
+// free-form strings emitted by applications and are not guaranteed to be
+// non-negative (e.g. a PnL or balance-delta attribute).
+//
+// The query *literal* itself cannot be negative -- the query grammar's own
+// number scanner does not accept a leading '-' in query text at all, which
+// is a separate, pre-existing limitation unrelated to this fix. These cases
+// therefore compare only against a non-negative literal (0), which is
+// sufficient to isolate and pin the fix: before it, parseNumber's regex
+// failed to extract anything from a negative attribute string, so every
+// comparison against it -- including "< 0" -- silently evaluated to false.
+func TestNegativeNumbers(t *testing.T) {
+	negNumTest := map[string][]string{
+		"delta.value": {
+			"-5",
+		},
+		"delta.floatvalue": {
+			"-6.5",
+		},
+	}
+
+	testCases := []struct {
+		s       string
+		events  map[string][]string
+		matches bool
+	}{
+		{`delta.value < 0`, negNumTest, true},
+		{`delta.value <= 0`, negNumTest, true},
+		{`delta.value > 0`, negNumTest, false},
+		{`delta.value >= 0`, negNumTest, false},
+		{`delta.value = 0`, negNumTest, false},
+		{`delta.floatvalue < 0`, negNumTest, true},
+		{`delta.floatvalue <= 0`, negNumTest, true},
+		{`delta.floatvalue > 0`, negNumTest, false},
+	}
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("%02d", i+1), func(t *testing.T) {
+			c, err := query.New(tc.s)
+			if err != nil {
+				t.Fatalf("NewCompiled %#q: unexpected error: %v", tc.s, err)
+			}
+
+			got, err := c.Matches(tc.events)
+			if err != nil {
+				t.Errorf("Query: %#q\nInput: %+v\nMatches: got error %v",
+					tc.s, tc.events, err)
+			}
+			if got != tc.matches {
+				t.Errorf("Query: %#q\nInput: %+v\nMatches: got %v, want %v",
+					tc.s, tc.events, got, tc.matches)
+			}
+		})
+	}
+}
+
 func TestCompiledMatches(t *testing.T) {
 	var (
 		txDate = "2017-01-01"

@@ -89,12 +89,24 @@ func newByteReader(r io.Reader) *byteReader {
 }
 
 func (r *byteReader) ReadByte() (byte, error) {
-	n, err := r.reader.Read(r.buf)
-	r.bytesRead += n
-	if err != nil {
-		return 0x00, err
+	for {
+		n, err := r.reader.Read(r.buf)
+		r.bytesRead += n
+		if n == 1 {
+			// A conforming io.Reader may legally return n=1 alongside a
+			// non-nil error (e.g. io.EOF) in the same call; the byte itself
+			// is still valid and must not be discarded along with the error.
+			return r.buf[0], nil
+		}
+		if err != nil {
+			return 0x00, err
+		}
+		// n == 0, err == nil is explicitly legal per the io.Reader doc
+		// ("callers should treat a return of 0 and nil as indicating that
+		// nothing happened"). Retry rather than returning r.buf[0], which
+		// was never written this call and would otherwise surface as a
+		// fabricated zero byte or a stale repeat of the previous read.
 	}
-	return r.buf[0], nil
 }
 
 func (r *byteReader) resetBytesRead() {

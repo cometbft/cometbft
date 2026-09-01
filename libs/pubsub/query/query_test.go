@@ -272,7 +272,7 @@ func TestBigNumbers(t *testing.T) {
 }
 
 // TestNegativeNumbers pins that a negative event attribute value can be
-// matched by every numeric comparison operator. Event attributes are
+// matched by the ordering operators (<, <=, >, >=). Event attributes are
 // free-form strings emitted by applications and are not guaranteed to be
 // non-negative (e.g. a PnL or balance-delta attribute).
 //
@@ -283,6 +283,15 @@ func TestBigNumbers(t *testing.T) {
 // sufficient to isolate and pin the fix: before it, parseNumber's regex
 // failed to extract anything from a negative attribute string, so every
 // comparison against it -- including "< 0" -- silently evaluated to false.
+//
+// This deliberately omits a "=" case: every candidate equality query against
+// a negative attribute (e.g. "delta.value = 0") returns false both before
+// and after the fix -- true because -5 != 0, not because of anything this
+// fix changes -- so it can't distinguish red from green without a negative
+// literal, which the scanner limitation above rules out. compileCondition's
+// TEq/TNumber branch calls the same parseNumber this test does exercise via
+// the ordering operators, so the fix covers "=" too; it's just not
+// independently provable through this query-syntax path.
 func TestNegativeNumbers(t *testing.T) {
 	negNumTest := map[string][]string{
 		"delta.value": {
@@ -302,7 +311,6 @@ func TestNegativeNumbers(t *testing.T) {
 		{`delta.value <= 0`, negNumTest, true},
 		{`delta.value > 0`, negNumTest, false},
 		{`delta.value >= 0`, negNumTest, false},
-		{`delta.value = 0`, negNumTest, false},
 		{`delta.floatvalue < 0`, negNumTest, true},
 		{`delta.floatvalue <= 0`, negNumTest, true},
 		{`delta.floatvalue > 0`, negNumTest, false},

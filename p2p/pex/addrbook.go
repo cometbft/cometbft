@@ -540,8 +540,12 @@ func (a *addrBook) addToNewBucket(ka *knownAddress, bucketIdx int) error {
 		return nil
 	}
 
-	// Enforce max addresses.
-	if len(bucket) >= newBucketSize {
+	// Enforce max addresses. A book persisted by a build that predates this
+	// capacity fix can have a bucket already at or past newBucketSize+1, so
+	// keep expiring until there's room rather than assuming one expiry is
+	// enough (expireNew removes exactly one entry per call, and the bucket
+	// strictly shrinks each iteration, so this always terminates).
+	for len(bucket) >= newBucketSize {
 		a.Logger.Info("new bucket is full, expiring new")
 		a.expireNew(bucketIdx)
 	}
@@ -780,26 +784,51 @@ func (a *addrBook) moveToOld(ka *knownAddress) error {
 	}
 	added := a.addToOldBucket(ka, oldBucketIdx)
 	if !added {
-		// No room; move the oldest to a new bucket
-		oldest := a.pickOldest(bucketTypeOld, oldBucketIdx)
-		a.removeFromBucket(oldest, bucketTypeOld, oldBucketIdx)
-		// removeFromBucket only clears the old-bucket membership; the address is
-		// being demoted, not deleted, so it must be marked "new" before we try to
-		// re-add it to a new bucket, or addToNewBucket's isOld() guard will reject
-		// it and the address is silently lost from the book.
-		oldest.BucketType = bucketTypeNew
-		newBucketIdx, err := a.calcNewBucket(oldest.Addr, oldest.Src)
-		if err != nil {
-			return err
-		}
-		if err := a.addToNewBucket(oldest, newBucketIdx); err != nil {
-			a.Logger.Error("Error demoting old address to new bucket", "err", err)
+		// No room; demote entries until there is. A book persisted by a
+		// build that predates the addToOldBucket capacity fix can have a
+		// bucket already at or past oldBucketSize+1, so don't assume a
+		// single demotion always makes room; keep going until it does (the
+		// bucket strictly shrinks by one each iteration, so this always
+		// terminates).
+		for len(a.getBucket(bucketTypeOld, oldBucketIdx)) >= oldBucketSize {
+			oldest := a.pickOldest(bucketTypeOld, oldBucketIdx)
+			if oldest == nil {
+				break
+			}
+			a.removeFromBucket(oldest, bucketTypeOld, oldBucketIdx)
+			// removeFromBucket only clears the old-bucket membership; the
+			// address is being demoted, not deleted, so it must be marked
+			// "new" before we try to re-add it to a new bucket, or
+			// addToNewBucket's isOld() guard will reject it and the
+			// address is silently lost from the book.
+			oldest.BucketType = bucketTypeNew
+			newBucketIdx, err := a.calcNewBucket(oldest.Addr, oldest.Src)
+			if err != nil {
+				return err
+			}
+			if err := a.addToNewBucket(oldest, newBucketIdx); err != nil {
+				a.Logger.Error("Error demoting old address to new bucket", "err", err)
+			}
 		}
 
 		// Finally, add our ka to old bucket again.
 		added = a.addToOldBucket(ka, oldBucketIdx)
 		if !added {
-			a.Logger.Error(fmt.Sprintf("Could not re-add ka %v to oldBucketIdx %v", ka, oldBucketIdx))
+			// Should not happen given the loop above, but rather than
+			// leaving ka marked BucketType=old with no bucket membership
+			// (orphaned: unreachable via any bucket, uncounted in
+			// nOld/nNew, yet still sitting in addrLookup), fall back to
+			// keeping it reachable as new instead of losing it from the
+			// book entirely.
+			a.Logger.Error(fmt.Sprintf("Could not re-add ka %v to oldBucketIdx %v; keeping it as new instead of losing it", ka, oldBucketIdx))
+			ka.BucketType = bucketTypeNew
+			fallbackBucketIdx, err := a.calcNewBucket(ka.Addr, ka.Src)
+			if err != nil {
+				return err
+			}
+			if err := a.addToNewBucket(ka, fallbackBucketIdx); err != nil {
+				a.Logger.Error("Could not fall back to a new bucket either; address is lost from the book", "ka", ka, "err", err)
+			}
 		}
 	}
 	return nil

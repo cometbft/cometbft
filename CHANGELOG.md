@@ -10,7 +10,10 @@
 - `[p2p/pex]` fix an off-by-one that let an address book bucket hold one
   entry past its documented capacity, and fix the resulting overflow-recovery
   path silently losing the demoted address from the book instead of moving
-  it to a new bucket
+  it to a new bucket; both the promotion and expiry paths now also recover
+  correctly from a bucket a pre-fix build already left more than one entry
+  over capacity, instead of leaving it permanently over-full or losing the
+  address being added
   ([\#6041](https://github.com/cometbft/cometbft/pull/6041))
 - `[libs/json]` fix a panic decoding a 1-byte JSON value into a 64-bit
   integer field; now returns a normal decode error
@@ -23,7 +26,11 @@
 - `[libs/protoio]` fix `byteReader.ReadByte` mishandling two `io.Reader`
   return shapes that are legal per the interface's own contract: a `(0,
   nil)` return could surface a fabricated or stale byte, and a `(1,
-  io.EOF)` return could silently drop the final byte of a stream
+  io.EOF)` return could silently drop the final byte of a stream; a
+  reader that persistently returns `(0, nil)` now gives up with
+  `io.ErrNoProgress` after 100 consecutive empty reads instead of
+  blocking forever, mirroring `bufio.Reader`'s own bound for the same
+  situation
   ([\#6041](https://github.com/cometbft/cometbft/pull/6041))
 - `[libs/pubsub/query]` fix numeric query operators (`=`, `<`, `<=`, `>`,
   `>=`) never matching a negative event attribute value

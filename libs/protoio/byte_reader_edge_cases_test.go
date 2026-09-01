@@ -3,6 +3,7 @@ package protoio
 import (
 	"io"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -75,4 +76,36 @@ func TestByteReaderDoesNotDropByteReturnedAlongsideEOF(t *testing.T) {
 	// The stream is now genuinely exhausted.
 	_, err = br.ReadByte()
 	assert.ErrorIs(t, err, io.EOF)
+}
+
+// alwaysZeroReader always returns (0, nil) -- legal per the io.Reader
+// contract, but pathological: a naive unbounded retry loop against this
+// reader would hang forever.
+type alwaysZeroReader struct{}
+
+func (alwaysZeroReader) Read([]byte) (int, error) { return 0, nil }
+
+// TestByteReaderGivesUpOnPersistentZeroByteReader pins that ReadByte does
+// not hang indefinitely against a reader that only ever returns (0, nil);
+// it must eventually give up with io.ErrNoProgress, matching the bound
+// bufio.Reader itself uses for the identical situation.
+func TestByteReaderGivesUpOnPersistentZeroByteReader(t *testing.T) {
+	br := newByteReader(alwaysZeroReader{})
+
+	done := make(chan struct{})
+	var b byte
+	var err error
+	go func() {
+		b, err = br.ReadByte()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("ReadByte did not return against a persistently (0, nil) reader -- it hung")
+	}
+
+	assert.ErrorIs(t, err, io.ErrNoProgress)
+	assert.Equal(t, byte(0x00), b)
 }

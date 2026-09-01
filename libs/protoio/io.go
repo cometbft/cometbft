@@ -88,8 +88,15 @@ func newByteReader(r io.Reader) *byteReader {
 	}
 }
 
+// maxConsecutiveEmptyReads bounds how many (0, nil) reads ReadByte will
+// tolerate before giving up. Mirrors the analogous guard in the standard
+// library's bufio.Reader (bufio.maxConsecutiveEmptyReads), which exists for
+// the same reason: an io.Reader is allowed to legally return (0, nil), but a
+// reader that does so forever must not hang its caller indefinitely.
+const maxConsecutiveEmptyReads = 100
+
 func (r *byteReader) ReadByte() (byte, error) {
-	for {
+	for i := 0; i < maxConsecutiveEmptyReads; i++ {
 		n, err := r.reader.Read(r.buf)
 		r.bytesRead += n
 		if n == 1 {
@@ -107,6 +114,7 @@ func (r *byteReader) ReadByte() (byte, error) {
 		// was never written this call and would otherwise surface as a
 		// fabricated zero byte or a stale repeat of the previous read.
 	}
+	return 0x00, io.ErrNoProgress
 }
 
 func (r *byteReader) resetBytesRead() {

@@ -14,15 +14,15 @@
   correctly from a bucket a pre-fix build already left more than one entry
   over capacity, instead of leaving it permanently over-full or losing the
   address being added
-  ([\#6041](https://github.com/cometbft/cometbft/pull/6041))
+  ([\#6043](https://github.com/cometbft/cometbft/pull/6043))
 - `[libs/json]` fix a panic decoding a 1-byte JSON value into a 64-bit
   integer field; now returns a normal decode error
-  ([\#6041](https://github.com/cometbft/cometbft/pull/6041))
+  ([\#6043](https://github.com/cometbft/cometbft/pull/6043))
 - `[store]` `DeleteLatestBlock` now deletes the extended-commit row and
   evicts the in-memory commit caches for the rolled-back height, so a
   resynced block at the same height is not shadowed by stale pre-rollback
   data
-  ([\#6041](https://github.com/cometbft/cometbft/pull/6041))
+  ([\#6043](https://github.com/cometbft/cometbft/pull/6043))
 - `[libs/protoio]` fix `byteReader.ReadByte` mishandling two `io.Reader`
   return shapes that are legal per the interface's own contract: a `(0,
   nil)` return could surface a fabricated or stale byte, and a `(1,
@@ -31,10 +31,10 @@
   `io.ErrNoProgress` after 100 consecutive empty reads instead of
   blocking forever, mirroring `bufio.Reader`'s own bound for the same
   situation
-  ([\#6041](https://github.com/cometbft/cometbft/pull/6041))
+  ([\#6043](https://github.com/cometbft/cometbft/pull/6043))
 - `[libs/pubsub/query]` fix numeric query operators (`=`, `<`, `<=`, `>`,
   `>=`) never matching a negative event attribute value
-  ([\#6041](https://github.com/cometbft/cometbft/pull/6041))
+  ([\#6043](https://github.com/cometbft/cometbft/pull/6043))
 
 ### IMPROVEMENTS
 

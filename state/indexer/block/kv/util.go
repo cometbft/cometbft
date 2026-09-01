@@ -160,16 +160,27 @@ func dedupHeight(conditions []syntax.Condition) (dedupConditions []syntax.Condit
 	for _, c := range conditions {
 		if c.Tag == types.BlockHeightKey {
 			if c.Op == syntax.TEq {
+				hFloat := c.Arg.Number()
+				if hFloat == nil {
+					// The argument is not a valid height, so this condition
+					// can never be satisfied by any real height -- regardless
+					// of whether a range or an earlier numeric height
+					// equality was already recorded for this query. Route it
+					// through the normal per-condition match instead of
+					// dropping it, so it correctly excludes every result
+					// rather than silently vanishing and letting the rest of
+					// the query match on its own.
+					heightInfo.onlyHeightEq = false
+					dedupConditions = append(dedupConditions, c)
+					continue
+				}
 				if found || heightRangeExists {
 					continue
 				}
-				hFloat := c.Arg.Number()
-				if hFloat != nil {
-					h, _ := hFloat.Int64()
-					heightInfo.height = h
-					heightCondition = append(heightCondition, c)
-					found = true
-				}
+				h, _ := hFloat.Int64()
+				heightInfo.height = h
+				heightCondition = append(heightCondition, c)
+				found = true
 			} else {
 				heightInfo.onlyHeightEq = false
 				heightRangeExists = true

@@ -90,6 +90,24 @@ func TestBlockIndexer(t *testing.T) {
 			q:       query.MustCompile(`block.height = 5`),
 			results: []int64{5},
 		},
+		// A non-numeric block.height equality is unsatisfiable (no real
+		// height can equal a non-numeric literal) and must not be silently
+		// dropped, which would otherwise leave the other AND-ed condition to
+		// match on its own.
+		"end_event.foo = 100 AND block.height = 'nope'": {
+			q:       query.MustCompile(`end_event.foo = 100 AND block.height = 'nope'`),
+			results: []int64{},
+		},
+		"end_event.foo = 100 AND block.height = 1": {
+			q:       query.MustCompile(`end_event.foo = 100 AND block.height = 1`),
+			results: []int64{1},
+		},
+		// a non-numeric duplicate must still be unsatisfiable even when a
+		// numeric block.height equality was already recorded first
+		"block.height = 1 AND block.height = 'nope'": {
+			q:       query.MustCompile(`block.height = 1 AND block.height = 'nope'`),
+			results: []int64{},
+		},
 		"begin_event.key1 = 'value1'": {
 			q:       query.MustCompile(`begin_event.key1 = 'value1'`),
 			results: []int64{},

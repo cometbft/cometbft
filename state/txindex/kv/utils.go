@@ -58,16 +58,27 @@ func dedupHeight(conditions []cmtsyntax.Condition) (dedupConditions []cmtsyntax.
 	for _, c := range conditions {
 		if c.Tag == types.TxHeightKey {
 			if c.Op == cmtsyntax.TEq {
+				hFloat := c.Arg.Number()
+				if hFloat == nil {
+					// The argument is not a valid height, so this condition
+					// can never be satisfied by any real height -- regardless
+					// of whether a range or an earlier numeric height
+					// equality was already recorded for this query. Route it
+					// through the normal per-condition match instead of
+					// dropping it, so it correctly excludes every result
+					// rather than silently vanishing and letting the rest of
+					// the query match on its own.
+					heightInfo.onlyHeightEq = false
+					dedupConditions = append(dedupConditions, c)
+					continue
+				}
 				if heightRangeExists || found {
 					continue
 				}
-				hFloat := c.Arg.Number()
-				if hFloat != nil {
-					h, _ := hFloat.Int64()
-					heightInfo.height = h
-					found = true
-					heightCondition = append(heightCondition, c)
-				}
+				h, _ := hFloat.Int64()
+				heightInfo.height = h
+				found = true
+				heightCondition = append(heightCondition, c)
 			} else {
 				heightInfo.onlyHeightEq = false
 				heightRangeExists = true

@@ -111,6 +111,15 @@ func TestTxSearch(t *testing.T) {
 		// search by range (upper bound)
 		{"account.number <= 5", 1},
 		{"account.number <= 1", 1},
+		// search using a non-numeric tx.height equality: the condition is
+		// unsatisfiable (no real height can equal a non-numeric literal) and
+		// must not be silently dropped, which would otherwise leave the
+		// other AND-ed condition to match on its own
+		{"account.number = 1 AND tx.height = 'something'", 0},
+		{"tx.height = 'something' AND account.number = 1", 0},
+		// a non-numeric duplicate must still be unsatisfiable even when a
+		// numeric tx.height equality was already recorded first
+		{"tx.height = 1 AND tx.height = 'something'", 0},
 		// search using not allowed key
 		{"not_allowed = 'boom'", 0},
 		{"not_allowed = 'Vlad'", 0},

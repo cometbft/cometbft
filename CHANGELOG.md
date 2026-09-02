@@ -11,7 +11,7 @@
   an identical, wasted second time (not a correctness or security issue -
   `Verify` is pure over its inputs, so the duplicate call is provably a
   no-op)
-  ([\#PLACEHOLDER](https://github.com/cometbft/cometbft/pull/PLACEHOLDER))
+  ([\#6045](https://github.com/cometbft/cometbft/pull/6045))
 - `[spec]` fix the inductive invariant `spec/light-client/accountability`
 
 ### IMPROVEMENTS

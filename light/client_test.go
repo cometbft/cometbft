@@ -407,6 +407,54 @@ func TestClientLargeBisectionVerification(t *testing.T) {
 	assert.Equal(t, h, h2)
 }
 
+// Regression test for the verifySkipping bisection loop appending each
+// fetched pivot block twice, causing every failing bisection step to be
+// re-verified an identical, wasted second time.
+//
+// Unlike TestClientLargeBisectionVerification, this uses a non-zero
+// valVariation so the validator set actually changes between blocks. That's
+// required to force VerifyNonAdjacent to fail and genuinely exercise
+// multiple bisection steps through ErrNewValSetCantBeTrusted - with
+// valVariation == 0 the validator set never changes, verification succeeds
+// immediately at depth 0, and the bisection loop never iterates.
+func TestClientLargeBisectionVerificationWithValSetChanges(t *testing.T) {
+	fullNode := mockp.New(genMockNode(chainID, 30, 20, 6, bTime))
+	trustedLightBlock, err := fullNode.LightBlock(ctx, 1)
+	require.NoError(t, err)
+
+	logger, steps := newVerifyStepLogger()
+	c, err := light.NewClient(
+		ctx,
+		chainID,
+		light.TrustOptions{
+			Period: 4 * time.Hour,
+			Height: trustedLightBlock.Height,
+			Hash:   trustedLightBlock.Hash(),
+		},
+		fullNode,
+		[]provider.Provider{fullNode},
+		dbs.New(dbm.NewMemDB(), chainID),
+		light.SkippingVerification(light.DefaultTrustLevel),
+		light.Logger(logger),
+	)
+	require.NoError(t, err)
+
+	target, err := fullNode.LightBlock(ctx, 30)
+	require.NoError(t, err)
+
+	h, err := c.Update(ctx, bTime.Add(200*time.Minute))
+	require.NoError(t, err)
+	assert.Equal(t, target.Height, h.Height)
+	assert.Equal(t, target.Hash(), h.Hash())
+
+	// The regression: a fetched pivot must never be verified twice in a row.
+	// This is the number-of-verification-rounds assertion, not just the
+	// end result, so a future change can't silently reintroduce the
+	// duplicate append without a test failing.
+	assert.Zero(t, countConsecutiveRepeats(*steps),
+		"a bisection pivot was verified more than once consecutively: %v", *steps)
+}
+
 func TestClientBisectionBetweenTrustedHeaders(t *testing.T) {
 	c, err := light.NewClient(
 		ctx,

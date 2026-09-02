@@ -6,6 +6,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/tmhash"
+	"github.com/cometbft/cometbft/libs/log"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cometbft/cometbft/types"
@@ -254,4 +255,45 @@ func genMockNode(
 
 func hash(s string) []byte {
 	return tmhash.Sum([]byte(s))
+}
+
+// verifyStepLogger records the height of every non-adjacent bisection step
+// verifySkipping attempts, in order. It lets tests assert on the number and
+// shape of verification rounds, not just the final result.
+type verifyStepLogger struct {
+	steps *[]int64
+}
+
+func newVerifyStepLogger() (log.Logger, *[]int64) {
+	steps := &[]int64{}
+	return verifyStepLogger{steps: steps}, steps
+}
+
+func (l verifyStepLogger) Debug(msg string, keyvals ...any) {
+	if msg != "Verify non-adjacent newHeader against verifiedBlock" {
+		return
+	}
+	for i := 0; i < len(keyvals)-1; i += 2 {
+		if keyvals[i] == "newHeight" {
+			if h, ok := keyvals[i+1].(int64); ok {
+				*l.steps = append(*l.steps, h)
+			}
+		}
+	}
+}
+func (verifyStepLogger) Info(string, ...any)      {}
+func (verifyStepLogger) Warn(string, ...any)      {}
+func (verifyStepLogger) Error(string, ...any)     {}
+func (l verifyStepLogger) With(...any) log.Logger { return l }
+
+// countConsecutiveRepeats returns how many times a step's height is
+// identical to the immediately preceding step's height.
+func countConsecutiveRepeats(steps []int64) int {
+	repeats := 0
+	for i := 1; i < len(steps); i++ {
+		if steps[i] == steps[i-1] {
+			repeats++
+		}
+	}
+	return repeats
 }

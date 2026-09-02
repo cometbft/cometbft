@@ -447,6 +447,10 @@ func TestClientLargeBisectionVerificationWithValSetChanges(t *testing.T) {
 	assert.Equal(t, target.Height, h.Height)
 	assert.Equal(t, target.Hash(), h.Hash())
 
+	// Guard against a future rename of the debug log message the collector
+	// keys on silently turning this into a vacuous assertion.
+	require.NotEmpty(t, *steps)
+
 	// The regression: a fetched pivot must never be verified twice in a row.
 	// This is the number-of-verification-rounds assertion, not just the
 	// end result, so a future change can't silently reintroduce the

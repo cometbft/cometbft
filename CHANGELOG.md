@@ -7,10 +7,11 @@
 ### BUG FIXES
 
 - `[spec]` fix the inductive invariant `spec/light-client/accountability`
-- `[state]` fix the tx and block KV indexers silently dropping a `tx.height`/
-  `block.height` equality condition with a non-numeric argument, which
-  widened `/tx_search` and `/block_search` results instead of correctly
-  matching nothing ([\#PENDING](https://github.com/cometbft/cometbft/pull/PENDING))
+- `[state]` reject `/tx_search` and `/block_search` queries outright when
+  they compare `tx.height`/`block.height` against a non-numeric argument,
+  instead of silently dropping the condition and widening the results to
+  rows the query explicitly excludes
+  ([\#PENDING](https://github.com/cometbft/cometbft/pull/PENDING))
 
 ### IMPROVEMENTS
 

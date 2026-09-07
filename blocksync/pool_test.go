@@ -693,10 +693,14 @@ func TestBlockPoolHasPendingRequestFrom(t *testing.T) {
 		stranger  = p2p.ID("stranger")
 	)
 
+	// outOfWindow is a height clearly above pool.height, so the sync-window
+	// tolerance never fires and these assertions isolate the peer-scan path.
+	const outOfWindow = int64(100)
+
 	// check initial state
-	require.False(t, pool.HasPendingRequestFrom(primary))
-	require.False(t, pool.HasPendingRequestFrom(secondary))
-	require.False(t, pool.HasPendingRequestFrom(stranger))
+	require.False(t, pool.HasPendingRequestFrom(primary, outOfWindow))
+	require.False(t, pool.HasPendingRequestFrom(secondary, outOfWindow))
+	require.False(t, pool.HasPendingRequestFrom(stranger, outOfWindow))
 
 	// Install a requester for height 1 targeting `primary`. We set the
 	// fields directly so we don't have to spin up the request goroutine.
@@ -706,8 +710,8 @@ func TestBlockPoolHasPendingRequestFrom(t *testing.T) {
 	pool.requesters[1] = req1
 	pool.mtx.Unlock()
 
-	require.True(t, pool.HasPendingRequestFrom(primary), "requested peer should be reported as pending")
-	require.False(t, pool.HasPendingRequestFrom(stranger), "non-requested peer must not be reported as pending")
+	require.True(t, pool.HasPendingRequestFrom(primary, outOfWindow), "requested peer should be reported as pending")
+	require.False(t, pool.HasPendingRequestFrom(stranger, outOfWindow), "non-requested peer must not be reported as pending")
 
 	// A second requester at height 2 also covers the secondPeerID slot.
 	pool.mtx.Lock()
@@ -717,16 +721,28 @@ func TestBlockPoolHasPendingRequestFrom(t *testing.T) {
 	pool.requesters[2] = req2
 	pool.mtx.Unlock()
 
-	require.True(t, pool.HasPendingRequestFrom(secondary), "secondary peer slot should count as pending")
+	require.True(t, pool.HasPendingRequestFrom(secondary, outOfWindow), "secondary peer slot should count as pending")
 
-	// Removing both requesters drops the pending state.
+	// A height within the sync window [startHeight, height] is tolerated even
+	// from a peer we never requested from: it may be a redundant near-tip
+	// response from a second peer for an already-committed block.
+	pool.mtx.Lock()
+	pool.height = 10 // startHeight stays 1, so window is [1, 10]
+	pool.mtx.Unlock()
+	require.True(t, pool.HasPendingRequestFrom(stranger, 5), "in-window height must be tolerated from any peer")
+	require.True(t, pool.HasPendingRequestFrom(stranger, pool.startHeight), "startHeight is in-window")
+	require.True(t, pool.HasPendingRequestFrom(stranger, 10), "pool.height is in-window")
+	require.False(t, pool.HasPendingRequestFrom(stranger, 11), "height above pool.height is out-of-window")
+	require.False(t, pool.HasPendingRequestFrom(stranger, 0), "height below startHeight is out-of-window")
+
+	// Removing both requesters drops the pending state (checked out-of-window).
 	pool.mtx.Lock()
 	delete(pool.requesters, 1)
 	delete(pool.requesters, 2)
 	pool.mtx.Unlock()
 
-	require.False(t, pool.HasPendingRequestFrom(primary))
-	require.False(t, pool.HasPendingRequestFrom(secondary))
+	require.False(t, pool.HasPendingRequestFrom(primary, outOfWindow))
+	require.False(t, pool.HasPendingRequestFrom(secondary, outOfWindow))
 }
 
 // TestBlockPoolTwoMaliciousPeersStaggered verifies that two malicious peers reporting

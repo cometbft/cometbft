@@ -33,6 +33,7 @@ func TestUnmarshal(t *testing.T) {
 		"int32 ptr":           {`32`, &i32, false},
 		"int64":               {`"64"`, int64(64), false},
 		"int64 noend":         {`"64`, int64(64), true},
+		"int64 single char":   {`"`, int64(64), true}, // must error, not panic on the length-1 slice
 		"int64 number":        {`64`, int64(64), true},
 		"int64 ptr":           {`"64"`, &i64, false},
 		"int64 ptr nil":       {`null`, i64Nil, false},

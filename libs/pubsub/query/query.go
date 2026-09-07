@@ -219,9 +219,11 @@ func compileCondition(cond syntax.Condition) (condition, error) {
 }
 
 // We use this regex to support queries of the form "8atom", "6.5stake",
-// which are actively used in production.
+// which are actively used in production, as well as negative values such
+// as "-5" (event attributes are free-form strings and are not guaranteed
+// to be non-negative).
 // The regex takes care of removing the non-number suffix.
-var extractNum = regexp.MustCompile(`^\d+(\.\d+)?`)
+var extractNum = regexp.MustCompile(`^-?\d+(\.\d+)?`)
 
 func parseNumber(s string) (*big.Float, error) {
 	intVal := new(big.Int)

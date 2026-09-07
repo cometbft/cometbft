@@ -88,13 +88,33 @@ func newByteReader(r io.Reader) *byteReader {
 	}
 }
 
+// maxConsecutiveEmptyReads bounds how many (0, nil) reads ReadByte will
+// tolerate before giving up. Mirrors the analogous guard in the standard
+// library's bufio.Reader (bufio.maxConsecutiveEmptyReads), which exists for
+// the same reason: an io.Reader is allowed to legally return (0, nil), but a
+// reader that does so forever must not hang its caller indefinitely.
+const maxConsecutiveEmptyReads = 100
+
 func (r *byteReader) ReadByte() (byte, error) {
-	n, err := r.reader.Read(r.buf)
-	r.bytesRead += n
-	if err != nil {
-		return 0x00, err
+	for i := 0; i < maxConsecutiveEmptyReads; i++ {
+		n, err := r.reader.Read(r.buf)
+		r.bytesRead += n
+		if n == 1 {
+			// A conforming io.Reader may legally return n=1 alongside a
+			// non-nil error (e.g. io.EOF) in the same call; the byte itself
+			// is still valid and must not be discarded along with the error.
+			return r.buf[0], nil
+		}
+		if err != nil {
+			return 0x00, err
+		}
+		// n == 0, err == nil is explicitly legal per the io.Reader doc
+		// ("callers should treat a return of 0 and nil as indicating that
+		// nothing happened"). Retry rather than returning r.buf[0], which
+		// was never written this call and would otherwise surface as a
+		// fabricated zero byte or a stale repeat of the previous read.
 	}
-	return r.buf[0], nil
+	return 0x00, io.ErrNoProgress
 }
 
 func (r *byteReader) resetBytesRead() {

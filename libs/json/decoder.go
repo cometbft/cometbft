@@ -86,7 +86,7 @@ func decodeReflect(bz []byte, rv reflect.Value) error {
 
 	// For 64-bit integers, unwrap expected string and defer to stdlib for integer decoding.
 	case reflect.Int64, reflect.Int, reflect.Uint64, reflect.Uint:
-		if bz[0] != '"' || bz[len(bz)-1] != '"' {
+		if len(bz) < 2 || bz[0] != '"' || bz[len(bz)-1] != '"' {
 			return fmt.Errorf("invalid 64-bit integer encoding %q, expected string", string(bz))
 		}
 		bz = bz[1 : len(bz)-1]

@@ -271,6 +271,71 @@ func TestBigNumbers(t *testing.T) {
 	}
 }
 
+// TestNegativeNumbers pins that a negative event attribute value can be
+// matched by the ordering operators (<, <=, >, >=). Event attributes are
+// free-form strings emitted by applications and are not guaranteed to be
+// non-negative (e.g. a PnL or balance-delta attribute).
+//
+// The query *literal* itself cannot be negative -- the query grammar's own
+// number scanner does not accept a leading '-' in query text at all, which
+// is a separate, pre-existing limitation unrelated to this fix. These cases
+// therefore compare only against a non-negative literal (0), which is
+// sufficient to isolate and pin the fix: before it, parseNumber's regex
+// failed to extract anything from a negative attribute string, so every
+// comparison against it -- including "< 0" -- silently evaluated to false.
+//
+// This deliberately omits a "=" case: every candidate equality query against
+// a negative attribute (e.g. "delta.value = 0") returns false both before
+// and after the fix -- true because -5 != 0, not because of anything this
+// fix changes -- so it can't distinguish red from green without a negative
+// literal, which the scanner limitation above rules out. compileCondition's
+// TEq/TNumber branch calls the same parseNumber this test does exercise via
+// the ordering operators, so the fix covers "=" too; it's just not
+// independently provable through this query-syntax path.
+func TestNegativeNumbers(t *testing.T) {
+	negNumTest := map[string][]string{
+		"delta.value": {
+			"-5",
+		},
+		"delta.floatvalue": {
+			"-6.5",
+		},
+	}
+
+	testCases := []struct {
+		s       string
+		events  map[string][]string
+		matches bool
+	}{
+		{`delta.value < 0`, negNumTest, true},
+		{`delta.value <= 0`, negNumTest, true},
+		{`delta.value > 0`, negNumTest, false},
+		{`delta.value >= 0`, negNumTest, false},
+		{`delta.floatvalue < 0`, negNumTest, true},
+		{`delta.floatvalue <= 0`, negNumTest, true},
+		{`delta.floatvalue > 0`, negNumTest, false},
+	}
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("%02d", i+1), func(t *testing.T) {
+			c, err := query.New(tc.s)
+			if err != nil {
+				t.Fatalf("NewCompiled %#q: unexpected error: %v", tc.s, err)
+			}
+
+			got, err := c.Matches(tc.events)
+			if err != nil {
+				t.Errorf("Query: %#q\nInput: %+v\nMatches: got error %v",
+					tc.s, tc.events, err)
+			}
+			if got != tc.matches {
+				t.Errorf("Query: %#q\nInput: %+v\nMatches: got %v, want %v",
+					tc.s, tc.events, got, tc.matches)
+			}
+		})
+	}
+}
+
 func TestCompiledMatches(t *testing.T) {
 	var (
 		txDate = "2017-01-01"

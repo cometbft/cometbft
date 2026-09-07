@@ -766,6 +766,9 @@ func (bs *BlockStore) DeleteLatestBlock() error {
 	if err := batch.Delete(calcSeenCommitKey(targetHeight)); err != nil {
 		return err
 	}
+	if err := batch.Delete(calcExtCommitKey(targetHeight)); err != nil {
+		return err
+	}
 	// delete last, so as to not leave keys built on meta.BlockID dangling
 	if err := batch.Delete(calcBlockMetaKey(targetHeight)); err != nil {
 		return err
@@ -774,5 +777,12 @@ func (bs *BlockStore) DeleteLatestBlock() error {
 	bs.mtx.Lock()
 	defer bs.mtx.Unlock()
 	bs.height = targetHeight - 1
+	// Evict any cached commit data for the height we just deleted -- without
+	// this, a later Load*Commit call for this height can return the stale,
+	// pre-rollback value straight from cache even after a fresh block has
+	// been resynced and written to the DB at the same height.
+	bs.blockCommitCache.Remove(targetHeight)
+	bs.seenCommitCache.Remove(targetHeight)
+	bs.blockExtendedCommitCache.Remove(targetHeight)
 	return bs.saveStateAndWriteDB(batch, "failed to delete the latest block")
 }

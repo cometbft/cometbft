@@ -223,14 +223,6 @@ func (txi *TxIndex) Search(ctx context.Context, q *query.Query) ([]*abci.TxResul
 	// get a list of conditions (like "tx.height > 5")
 	conditions := q.Syntax()
 
-	// reject a query up front if tx.height is compared against something
-	// that isn't a valid numeric height (e.g. tx.height = 'something') --
-	// no real height can ever satisfy that, so fail the query rather than
-	// silently treating it as unsatisfiable deep inside dedupHeight.
-	if err := validateHeightConditions(conditions); err != nil {
-		return nil, err
-	}
-
 	// if there is a hash condition, return the result immediately
 	hash, ok, err := lookForHash(conditions)
 	if err != nil {

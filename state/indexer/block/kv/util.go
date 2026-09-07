@@ -147,22 +147,6 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 	return eventSeq, nil
 }
 
-// validateHeightConditions rejects a query outright if it contains a
-// block.height condition whose argument is not a valid numeric height (e.g.
-// a quoted string literal or a malformed number). block.height is a uint64
-// block height, so a non-numeric comparison can never match anything real --
-// per review feedback (PR #6044), that should fail the query up front with a
-// clear error, rather than being handled deep inside dedupHeight as an
-// always-false condition.
-func validateHeightConditions(conditions []syntax.Condition) error {
-	for _, c := range conditions {
-		if c.Tag == types.BlockHeightKey && c.Arg.Number() == nil {
-			return fmt.Errorf("%s must be compared against a numeric height, got %s", types.BlockHeightKey, c.Arg.String())
-		}
-	}
-	return nil
-}
-
 // Remove all occurrences of height equality queries except one. While we are traversing the conditions, check whether the only condition in
 // addition to match events is the height equality or height range query. At the same time, if we do have a height range condition
 // ignore the height equality condition. If a height equality exists, place the condition index in the query and the desired height

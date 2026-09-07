@@ -102,14 +102,6 @@ func (idx *BlockerIndexer) Search(ctx context.Context, q *query.Query) ([]int64,
 
 	conditions := q.Syntax()
 
-	// reject a query up front if block.height is compared against something
-	// that isn't a valid numeric height (e.g. block.height = 'something') --
-	// no real height can ever satisfy that, so fail the query rather than
-	// silently treating it as unsatisfiable deep inside dedupHeight.
-	if err := validateHeightConditions(conditions); err != nil {
-		return nil, err
-	}
-
 	// conditions to skip because they're handled before "everything else"
 	skipIndexes := make([]int, 0)
 

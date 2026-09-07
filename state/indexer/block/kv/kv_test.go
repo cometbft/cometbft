@@ -79,73 +79,73 @@ func TestBlockIndexer(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		q       *query.Query
+		q       string
 		results []int64
 		wantErr bool
 	}{
 		"block.height = 100": {
-			q:       query.MustCompile(`block.height = 100`),
+			q:       `block.height = 100`,
 			results: []int64{},
 		},
 		"block.height = 5": {
-			q:       query.MustCompile(`block.height = 5`),
+			q:       `block.height = 5`,
 			results: []int64{5},
 		},
 		// A non-numeric block.height equality can never be satisfied by any
-		// real height, so the query is rejected outright (PR #6044 review)
-		// rather than being silently treated as unsatisfiable.
+		// real height, so the query fails to parse (PR #6044 review) rather
+		// than being silently treated as unsatisfiable.
 		"end_event.foo = 100 AND block.height = 'nope'": {
-			q:       query.MustCompile(`end_event.foo = 100 AND block.height = 'nope'`),
+			q:       `end_event.foo = 100 AND block.height = 'nope'`,
 			wantErr: true,
 		},
 		"end_event.foo = 100 AND block.height = 1": {
-			q:       query.MustCompile(`end_event.foo = 100 AND block.height = 1`),
+			q:       `end_event.foo = 100 AND block.height = 1`,
 			results: []int64{1},
 		},
-		// a non-numeric duplicate must still be rejected even when a numeric
-		// block.height equality was already present in the same query
+		// a non-numeric duplicate must still fail to parse even when a
+		// numeric block.height equality was already present in the query
 		"block.height = 1 AND block.height = 'nope'": {
-			q:       query.MustCompile(`block.height = 1 AND block.height = 'nope'`),
+			q:       `block.height = 1 AND block.height = 'nope'`,
 			wantErr: true,
 		},
 		"begin_event.key1 = 'value1'": {
-			q:       query.MustCompile(`begin_event.key1 = 'value1'`),
+			q:       `begin_event.key1 = 'value1'`,
 			results: []int64{},
 		},
 		"begin_event.proposer = 'FCAA001'": {
-			q:       query.MustCompile(`begin_event.proposer = 'FCAA001'`),
+			q:       `begin_event.proposer = 'FCAA001'`,
 			results: []int64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
 		},
 		"end_event.foo <= 5": {
-			q:       query.MustCompile(`end_event.foo <= 5`),
+			q:       `end_event.foo <= 5`,
 			results: []int64{2, 4},
 		},
 		"end_event.foo >= 100": {
-			q:       query.MustCompile(`end_event.foo >= 100`),
+			q:       `end_event.foo >= 100`,
 			results: []int64{1},
 		},
 		"block.height > 2 AND end_event.foo <= 8": {
-			q:       query.MustCompile(`block.height > 2 AND end_event.foo <= 8`),
+			q:       `block.height > 2 AND end_event.foo <= 8`,
 			results: []int64{4, 6, 8},
 		},
 		"end_event.foo > 100": {
-			q:       query.MustCompile("end_event.foo > 100"),
+			q:       "end_event.foo > 100",
 			results: []int64{},
 		},
 		"block.height >= 2 AND end_event.foo < 8": {
-			q:       query.MustCompile("block.height >= 2 AND end_event.foo < 8"),
+			q:       "block.height >= 2 AND end_event.foo < 8",
 			results: []int64{2, 4, 6},
 		},
 		"begin_event.proposer CONTAINS 'FFFFFFF'": {
-			q:       query.MustCompile(`begin_event.proposer CONTAINS 'FFFFFFF'`),
+			q:       `begin_event.proposer CONTAINS 'FFFFFFF'`,
 			results: []int64{},
 		},
 		"begin_event.proposer CONTAINS 'FCAA001'": {
-			q:       query.MustCompile(`begin_event.proposer CONTAINS 'FCAA001'`),
+			q:       `begin_event.proposer CONTAINS 'FCAA001'`,
 			results: []int64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
 		},
 		"end_event.foo CONTAINS '1'": {
-			q:       query.MustCompile("end_event.foo CONTAINS '1'"),
+			q:       "end_event.foo CONTAINS '1'",
 			results: []int64{1, 10},
 		},
 	}
@@ -153,11 +153,14 @@ func TestBlockIndexer(t *testing.T) {
 	for name, tc := range testCases {
 
 		t.Run(name, func(t *testing.T) {
-			results, err := indexer.Search(context.Background(), tc.q)
+			q, err := query.New(tc.q)
 			if tc.wantErr {
 				require.Error(t, err)
 				return
 			}
+			require.NoError(t, err)
+
+			results, err := indexer.Search(context.Background(), q)
 			require.NoError(t, err)
 			require.Equal(t, tc.results, results)
 		})

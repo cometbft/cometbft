@@ -113,12 +113,12 @@ func TestTxSearch(t *testing.T) {
 		{q: "account.number <= 5", resultsLength: 1},
 		{q: "account.number <= 1", resultsLength: 1},
 		// search using a non-numeric tx.height equality: no real height can
-		// ever equal a non-numeric literal, so the query is rejected outright
+		// ever equal a non-numeric literal, so the query fails to parse
 		// (PR #6044 review) rather than silently treated as unsatisfiable.
 		{q: "account.number = 1 AND tx.height = 'something'", wantErr: true},
 		{q: "tx.height = 'something' AND account.number = 1", wantErr: true},
-		// a non-numeric duplicate must still be rejected even when a numeric
-		// tx.height equality was already present in the same query
+		// a non-numeric duplicate must still fail to parse even when a
+		// numeric tx.height equality was already present in the same query
 		{q: "tx.height = 1 AND tx.height = 'something'", wantErr: true},
 		// search using not allowed key
 		{q: "not_allowed = 'boom'", resultsLength: 0},
@@ -150,11 +150,14 @@ func TestTxSearch(t *testing.T) {
 	for _, tc := range testCases {
 
 		t.Run(tc.q, func(t *testing.T) {
-			results, err := indexer.Search(ctx, query.MustCompile(tc.q))
+			q, err := query.New(tc.q)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
 			}
+			require.NoError(t, err)
+
+			results, err := indexer.Search(ctx, q)
 			assert.NoError(t, err)
 
 			assert.Len(t, results, tc.resultsLength)

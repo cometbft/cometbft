@@ -16,6 +16,11 @@ var (
 
 	// ErrPeerTimeout is returned when a peer does not send us anything
 	ErrPeerTimeout = errors.New("peer did not send us anything")
+
+	// ErrAlreadyCommittedBlock is returned by AddBlock when a slow second peer
+	// delivers a block we already committed. It is a benign consequence of dual
+	// requests, not peer misbehavior; detect it with errors.Is to ignore it.
+	ErrAlreadyCommittedBlock = errors.New("block already committed")
 )
 
 // ErrInvalidHeight is returned when peer informs of a status with invalid height

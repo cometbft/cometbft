@@ -41,6 +41,7 @@ func TestNodeStartStop(t *testing.T) {
 	// create & start node
 	n, err := DefaultNewNode(config, log.TestingLogger())
 	require.NoError(t, err)
+	require.Nil(t, n.blockEventRunner)
 	err = n.Start()
 	require.NoError(t, err)
 
@@ -75,6 +76,33 @@ func TestNodeStartStop(t *testing.T) {
 		fmt.Println(err)
 		t.Fatal("timed out waiting for shutdown")
 	}
+}
+
+func TestNodeAsyncBlockEventsDrainBeforeEventBusStops(t *testing.T) {
+	config := newNodeTestConfig(t, "node_async_block_events_test")
+	defer os.RemoveAll(config.RootDir)
+
+	n, err := DefaultNewNodeWithOptions(config, log.TestingLogger(), AsyncBlockEvents())
+	require.NoError(t, err)
+	require.NotNil(t, n.blockEventRunner)
+	require.NoError(t, n.Start())
+
+	eventBusRunningDuringDrain := make(chan bool, 1)
+	n.blockEventRunner.Submit(func() {
+		<-n.sw.Quit()
+		eventBusRunningDuringDrain <- n.eventBus.IsRunning()
+	})
+
+	stopDone := make(chan error, 1)
+	go func() { stopDone <- n.Stop() }()
+	select {
+	case err := <-stopDone:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for async event shutdown")
+	}
+	require.True(t, <-eventBusRunningDuringDrain)
+	require.False(t, n.eventBus.IsRunning())
 }
 
 func TestSplitAndTrimEmpty(t *testing.T) {

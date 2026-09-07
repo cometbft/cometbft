@@ -435,7 +435,12 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 
 		// flush every 1000 blocks to avoid batches becoming too large
 		if pruned%1000 == 0 && pruned > 0 {
-			err := flush(batch, h)
+			// h has just been pruned in this iteration, so the new base is
+			// h+1, matching the final flush below (which passes height, the
+			// exclusive upper bound of what's been deleted). Passing h here
+			// would durably record a base pointing at a block whose meta was
+			// just deleted in this same batch.
+			err := flush(batch, h+1)
 			if err != nil {
 				return 0, -1, err
 			}

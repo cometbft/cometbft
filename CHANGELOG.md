@@ -6,6 +6,11 @@
 
 ### BUG FIXES
 
+- `[store]` fix `PruneBlocks`' periodic checkpoint flush durably recording a
+  `Base` that points at the block just deleted in that same batch, instead of
+  one past it, corrupting `LoadBaseMeta`/`Size` and becoming permanent if
+  pruning later errors before its final flush
+  ([\#6042](https://github.com/cometbft/cometbft/pull/6042))
 - `[spec]` fix the inductive invariant `spec/light-client/accountability`
 
 ### IMPROVEMENTS

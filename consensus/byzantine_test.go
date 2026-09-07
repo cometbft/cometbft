@@ -46,6 +46,19 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	appFunc := newKVStore
 
 	genDoc, privVals := randGenesisDoc(nValidators, false, 30, nil)
+
+	// Give the byzantine validator enough power that the honest validators
+	// cannot reach +2/3 without it. Otherwise they can commit the height
+	// before the conflicting prevotes arrive, or push the byzantine node
+	// straight to precommit so it never prevotes, and no evidence is produced.
+	byzPubKey, err := privVals[byzantineNode].GetPubKey()
+	require.NoError(t, err)
+	for i := range genDoc.Validators {
+		if genDoc.Validators[i].PubKey.Equals(byzPubKey) {
+			genDoc.Validators[i].Power *= 2
+		}
+	}
+
 	css := make([]*State, nValidators)
 
 	for i := 0; i < nValidators; i++ {

@@ -7,6 +7,8 @@
 ### BUG FIXES
 
 - `[spec]` fix the inductive invariant `spec/light-client/accountability`
+- `[consensus]` fix flaky `TestByzantinePrevoteEquivocation`.
+  ([\#6041](https://github.com/cometbft/cometbft/pull/6041))
 
 ### IMPROVEMENTS
 

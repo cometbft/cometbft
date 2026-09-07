@@ -762,7 +762,6 @@ func (c *Client) verifySkipping(
 				default:
 					return nil, ErrVerificationFailed{From: verifiedBlock.Height, To: pivotHeight, Reason: providerErr}
 				}
-				blockCache = append(blockCache, interimBlock)
 			}
 			depth++
 

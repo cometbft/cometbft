@@ -81,59 +81,68 @@ func TestTxSearch(t *testing.T) {
 	testCases := []struct {
 		q             string
 		resultsLength int
+		wantErr       bool
 	}{
 		//	search by hash
-		{fmt.Sprintf("tx.hash = '%X'", hash), 1},
+		{q: fmt.Sprintf("tx.hash = '%X'", hash), resultsLength: 1},
 		// search by hash (lower)
-		{fmt.Sprintf("tx.hash = '%x'", hash), 1},
+		{q: fmt.Sprintf("tx.hash = '%x'", hash), resultsLength: 1},
 		// search by exact match (one key)
-		{"account.number = 1", 1},
+		{q: "account.number = 1", resultsLength: 1},
 		// search by exact match (two keys)
-		{"account.number = 1 AND account.owner = 'Ivan'", 0},
-		{"account.owner = 'Ivan' AND account.number = 1", 0},
-		{"account.owner = '/Ivan/'", 1},
+		{q: "account.number = 1 AND account.owner = 'Ivan'", resultsLength: 0},
+		{q: "account.owner = 'Ivan' AND account.number = 1", resultsLength: 0},
+		{q: "account.owner = '/Ivan/'", resultsLength: 1},
 		// search by exact match (two keys)
-		{"account.number = 1 AND account.owner = 'Vlad'", 0},
-		{"account.owner = 'Vlad' AND account.number = 1", 0},
-		{"account.number >= 1 AND account.owner = 'Vlad'", 0},
-		{"account.owner = 'Vlad' AND account.number >= 1", 0},
-		{"account.number <= 0", 0},
-		{"account.number <= 0 AND account.owner = 'Ivan'", 0},
-		{"account.number < 10000 AND account.owner = 'Ivan'", 0},
+		{q: "account.number = 1 AND account.owner = 'Vlad'", resultsLength: 0},
+		{q: "account.owner = 'Vlad' AND account.number = 1", resultsLength: 0},
+		{q: "account.number >= 1 AND account.owner = 'Vlad'", resultsLength: 0},
+		{q: "account.owner = 'Vlad' AND account.number >= 1", resultsLength: 0},
+		{q: "account.number <= 0", resultsLength: 0},
+		{q: "account.number <= 0 AND account.owner = 'Ivan'", resultsLength: 0},
+		{q: "account.number < 10000 AND account.owner = 'Ivan'", resultsLength: 0},
 		// search using a prefix of the stored value
-		{"account.owner = 'Iv'", 0},
+		{q: "account.owner = 'Iv'", resultsLength: 0},
 		// search by range
-		{"account.number >= 1 AND account.number <= 5", 1},
+		{q: "account.number >= 1 AND account.number <= 5", resultsLength: 1},
 		// search by range and another key
-		{"account.number >= 1 AND account.owner = 'Ivan' AND account.number <= 5", 0},
+		{q: "account.number >= 1 AND account.owner = 'Ivan' AND account.number <= 5", resultsLength: 0},
 		// search by range (lower bound)
-		{"account.number >= 1", 1},
+		{q: "account.number >= 1", resultsLength: 1},
 		// search by range (upper bound)
-		{"account.number <= 5", 1},
-		{"account.number <= 1", 1},
+		{q: "account.number <= 5", resultsLength: 1},
+		{q: "account.number <= 1", resultsLength: 1},
+		// search using a non-numeric tx.height equality: no real height can
+		// ever equal a non-numeric literal, so the query fails to parse
+		// (PR #6044 review) rather than silently treated as unsatisfiable.
+		{q: "account.number = 1 AND tx.height = 'something'", wantErr: true},
+		{q: "tx.height = 'something' AND account.number = 1", wantErr: true},
+		// a non-numeric duplicate must still fail to parse even when a
+		// numeric tx.height equality was already present in the same query
+		{q: "tx.height = 1 AND tx.height = 'something'", wantErr: true},
 		// search using not allowed key
-		{"not_allowed = 'boom'", 0},
-		{"not_allowed = 'Vlad'", 0},
+		{q: "not_allowed = 'boom'", resultsLength: 0},
+		{q: "not_allowed = 'Vlad'", resultsLength: 0},
 		// search for not existing tx result
-		{"account.number >= 2 AND account.number <= 5 AND tx.height > 0", 0},
+		{q: "account.number >= 2 AND account.number <= 5 AND tx.height > 0", resultsLength: 0},
 		// search using not existing key
-		{"account.date >= TIME 2013-05-03T14:45:00Z", 0},
+		{q: "account.date >= TIME 2013-05-03T14:45:00Z", resultsLength: 0},
 		// search using CONTAINS
-		{"account.owner CONTAINS 'an'", 1},
+		{q: "account.owner CONTAINS 'an'", resultsLength: 1},
 		//	search for non existing value using CONTAINS
-		{"account.owner CONTAINS 'Vlad'", 0},
-		{"account.owner CONTAINS 'Ivann'", 0},
-		{"account.owner CONTAINS 'IIvan'", 0},
-		{"account.owner CONTAINS 'Iva n'", 0},
-		{"account.owner CONTAINS ' Ivan'", 0},
-		{"account.owner CONTAINS 'Ivan '", 0},
+		{q: "account.owner CONTAINS 'Vlad'", resultsLength: 0},
+		{q: "account.owner CONTAINS 'Ivann'", resultsLength: 0},
+		{q: "account.owner CONTAINS 'IIvan'", resultsLength: 0},
+		{q: "account.owner CONTAINS 'Iva n'", resultsLength: 0},
+		{q: "account.owner CONTAINS ' Ivan'", resultsLength: 0},
+		{q: "account.owner CONTAINS 'Ivan '", resultsLength: 0},
 		// search using the wrong key (of numeric type) using CONTAINS
-		{"account.number CONTAINS 'Iv'", 0},
+		{q: "account.number CONTAINS 'Iv'", resultsLength: 0},
 		// search using EXISTS
-		{"account.number EXISTS", 1},
+		{q: "account.number EXISTS", resultsLength: 1},
 		// search using EXISTS for non existing key
-		{"account.date EXISTS", 0},
-		{"not_allowed EXISTS", 0},
+		{q: "account.date EXISTS", resultsLength: 0},
+		{q: "not_allowed EXISTS", resultsLength: 0},
 	}
 
 	ctx := context.Background()
@@ -141,7 +150,14 @@ func TestTxSearch(t *testing.T) {
 	for _, tc := range testCases {
 
 		t.Run(tc.q, func(t *testing.T) {
-			results, err := indexer.Search(ctx, query.MustCompile(tc.q))
+			q, err := query.New(tc.q)
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+
+			results, err := indexer.Search(ctx, q)
 			assert.NoError(t, err)
 
 			assert.Len(t, results, tc.resultsLength)

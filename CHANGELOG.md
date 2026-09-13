@@ -6,10 +6,15 @@
 
 ### BUG FIXES
 
+- `[spec]` fix the inductive invariant `spec/light-client/accountability`
 - `[consensus]` fix flaky `TestPrepareProposalReceivesVoteExtensions`.
   ([\#5936](https://github.com/cometbft/cometbft/pull/5936))
 
 ### IMPROVEMENTS
+
+- `[state]` use fast validator loading for `BlockExecutor` commit-info paths,
+  avoiding unnecessary proposer-priority reconstruction on cache misses
+  ([\#6039](https://github.com/cometbft/cometbft/pull/6039))
 
 ### FEATURES
 

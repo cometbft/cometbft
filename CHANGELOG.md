@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[abci]` remove in-flight requests when flushing socket client queues
+  ([\#6054](https://github.com/cometbft/cometbft/pull/6054))
 - `[spec]` fix the inductive invariant `spec/light-client/accountability`
 
 ### IMPROVEMENTS

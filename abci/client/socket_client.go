@@ -465,9 +465,12 @@ func (cli *socketClient) flushQueue() {
 	defer cli.mtx.Unlock()
 
 	// mark all in-flight messages as resolved (they will get cli.Error())
-	for req := cli.reqSent.Front(); req != nil; req = req.Next() {
+	for req := cli.reqSent.Front(); req != nil; {
+		next := req.Next()
 		reqres := req.Value.(*ReqRes)
 		reqres.Done()
+		cli.reqSent.Remove(req)
+		req = next
 	}
 
 	// mark all queued messages as resolved

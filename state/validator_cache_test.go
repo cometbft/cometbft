@@ -28,6 +28,73 @@ func oneValCommit(height int64) *types.Commit {
 	}
 }
 
+type fastStoreSpy struct {
+	sm.Store
+	valSet       *types.ValidatorSet
+	regularLoads atomic.Int32
+	fastLoads    atomic.Int32
+}
+
+type storeWithoutFastLoader struct {
+	sm.Store
+}
+
+func (s *fastStoreSpy) LoadValidators(int64) (*types.ValidatorSet, error) {
+	s.regularLoads.Add(1)
+	return s.valSet, nil
+}
+
+func (s *fastStoreSpy) LoadValidatorsFast(int64) (*types.ValidatorSet, error) {
+	s.fastLoads.Add(1)
+	return s.valSet, nil
+}
+
+func TestValidatorCacheUsesFastLoaderForCommitInfo(t *testing.T) {
+	state, stateDB, privVals := makeState(1, 3)
+	realStore := sm.NewStore(stateDB, sm.StoreOptions{})
+	valSet, err := realStore.LoadValidators(state.LastBlockHeight)
+	require.NoError(t, err)
+	storeSpy := &fastStoreSpy{Store: realStore, valSet: valSet}
+
+	app := abcimocks.NewApplication(t)
+	app.On("ProcessProposal", mock.Anything, mock.Anything).
+		Return(&abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil)
+	app.On("PrepareProposal", mock.Anything, mock.Anything).
+		Return(&abci.ResponsePrepareProposal{}, nil)
+
+	proxyApp := proxy.NewAppConns(proxy.NewLocalClientCreator(app), proxy.NopMetrics())
+	require.NoError(t, proxyApp.Start())
+	t.Cleanup(func() { _ = proxyApp.Stop() })
+
+	newBlockExecutor := func(mp *mpmocks.Mempool) *sm.BlockExecutor {
+		return sm.NewBlockExecutor(
+			storeSpy, log.NewNopLogger(), proxyApp.Consensus(),
+			mp, sm.EmptyEvidencePool{}, store.NewBlockStore(dbm.NewMemDB()),
+		)
+	}
+
+	blockExec := newBlockExecutor(new(mpmocks.Mempool))
+	block, err := makeBlock(state, state.LastBlockHeight+1, oneValCommit(state.LastBlockHeight))
+	require.NoError(t, err)
+	_, err = blockExec.ProcessProposal(block, state)
+	require.NoError(t, err)
+	require.EqualValues(t, 1, storeSpy.fastLoads.Load())
+	require.Zero(t, storeSpy.regularLoads.Load())
+
+	mp := new(mpmocks.Mempool)
+	mp.On("ReapMaxBytesMaxGas", mock.Anything, mock.Anything).Return(types.Txs{})
+	blockExec = newBlockExecutor(mp)
+	proposerAddr, _ := state.Validators.GetByIndex(0)
+	lastExtCommit, _, err := makeValidCommit(state.LastBlockHeight, types.BlockID{}, state.Validators, privVals)
+	require.NoError(t, err)
+	_, err = blockExec.CreateProposalBlock(
+		t.Context(), state.LastBlockHeight+1, state, lastExtCommit, proposerAddr,
+	)
+	require.NoError(t, err)
+	require.EqualValues(t, 2, storeSpy.fastLoads.Load())
+	require.Zero(t, storeSpy.regularLoads.Load())
+}
+
 func TestValidatorCacheHitWithinBlockCycle(t *testing.T) {
 	state, stateDB, _ := makeState(1, 3) // 1 validator, LastBlockHeight=2
 	realStore := sm.NewStore(stateDB, sm.StoreOptions{})
@@ -156,6 +223,65 @@ func TestValidatorCacheHitAcrossProposalAndProcess(t *testing.T) {
 	require.NoError(t, err)
 
 	storeMock.AssertNumberOfCalls(t, "LoadValidators", 1)
+}
+
+func BenchmarkBlockExecutorProcessProposalValidatorLoading(b *testing.B) {
+	const (
+		valSetSize = 100
+		checkpoint = int64(sm.ValSetCheckpointInterval)
+	)
+
+	stateDB := dbm.NewMemDB()
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{})
+	valSet := genValSet(valSetSize)
+	require.NoError(b, sm.SaveValidatorsInfo(stateDB, checkpoint, 1, valSet))
+
+	app := &abci.BaseApplication{}
+	proxyApp := proxy.NewAppConns(proxy.NewLocalClientCreator(app), proxy.NopMetrics())
+	require.NoError(b, proxyApp.Start())
+	b.Cleanup(func() { _ = proxyApp.Stop() })
+
+	blockStore := store.NewBlockStore(dbm.NewMemDB())
+	commitSigs := make([]types.CommitSig, valSetSize)
+	for i := range commitSigs {
+		commitSigs[i] = types.NewCommitSigAbsent()
+	}
+
+	for _, offset := range []int64{100, 10_000, 99_999} {
+		height := checkpoint + offset
+		require.NoError(b, sm.SaveValidatorsInfo(stateDB, height, 1, valSet))
+		block := &types.Block{
+			Header: types.Header{Height: height + 1},
+			LastCommit: &types.Commit{
+				Height:     height,
+				Signatures: commitSigs,
+			},
+		}
+		state := sm.State{InitialHeight: 1}
+
+		stores := []struct {
+			name  string
+			store sm.Store
+		}{
+			{"LoadValidators", &storeWithoutFastLoader{Store: stateStore}},
+			{"LoadValidatorsFast", stateStore},
+		}
+
+		for _, tc := range stores {
+			b.Run(fmt.Sprintf("offset_%d/%s", offset, tc.name), func(b *testing.B) {
+				b.ReportAllocs()
+				for b.Loop() {
+					blockExec := sm.NewBlockExecutor(
+						tc.store, log.NewNopLogger(), proxyApp.Consensus(),
+						new(mpmocks.Mempool), sm.EmptyEvidencePool{}, blockStore,
+					)
+					if _, err := blockExec.ProcessProposal(block, state); err != nil {
+						b.Fatal(err)
+					}
+				}
+			})
+		}
+	}
 }
 
 func BenchmarkLoadValidatorsNoCache(b *testing.B) {

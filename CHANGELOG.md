@@ -8,7 +8,14 @@
 
 - `[p2p/pex]` fix flaky seed flush-stop test with explicit shutdown synchronization
   ([\#6052](https://github.com/cometbft/cometbft/pull/6052))
+- `[lp2p]` fix flaky MsgBytesFilter test by avoiding broadcast race
+  ([\#6053](https://github.com/cometbft/cometbft/pull/6053))
 - `[spec]` fix the inductive invariant `spec/light-client/accountability`
+- `[state]` reject `/tx_search` and `/block_search` queries outright when
+  they compare `tx.height`/`block.height` against a non-numeric argument,
+  instead of silently dropping the condition and widening the results to
+  rows the query explicitly excludes
+  ([\#PENDING](https://github.com/cometbft/cometbft/pull/PENDING))
 
 ### IMPROVEMENTS
 

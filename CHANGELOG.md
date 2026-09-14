@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[lp2p]` fix flaky MsgBytesFilter test by avoiding broadcast race
+  ([\#6053](https://github.com/cometbft/cometbft/pull/6053))
 - `[spec]` fix the inductive invariant `spec/light-client/accountability`
 
 ### IMPROVEMENTS

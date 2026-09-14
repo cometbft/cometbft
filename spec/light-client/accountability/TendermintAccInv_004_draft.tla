@@ -3,10 +3,12 @@
  An inductive invariant for TendermintAcc3, which capture the forked
  and non-forked cases.
 
+ * Version 4. Repair the inductive invariant.
  * Version 3. Modular and parameterized definitions.
  * Version 2. Bugfixes in the spec and an inductive invariant.
 
- Igor Konnov, 2020.
+ Igor Konnov, igor@konnov.phd, 2026.
+ Igor Konnov, Informal Systems, 2020.
  *)
 
 EXTENDS TendermintAcc_004_draft
@@ -137,16 +139,16 @@ AllIfInDecidedThenReceivedProposal ==
   \A p \in Corr:
     IfInDecidedThenReceivedProposal(p)
 
+\* construct the set of the message senders
+\* @type: (Set({ src: $process, a })) => Set($process);
+Senders(M) == { m.src: m \in M }
+
 \* a decided process has received two-thirds of precommit messages
 IfInDecidedThenReceivedTwoThirds(p) ==
   step[p] = "DECIDED" =>
     \E r \in Rounds:
-      LET PV == {
-        m \in msgsPrecommit[r] \intersect evidencePrecommit:
-          m.id = decision[p]
-      }
-      IN
-      Cardinality(PV) >= THRESHOLD2
+      LET PC == { m \in msgsPrecommit[r] \intersect evidencePrecommit: m.id = decision[p] } IN
+      Cardinality(Senders(PC)) >= THRESHOLD2
 
 AllIfInDecidedThenReceivedTwoThirds ==
   \A p \in Corr:
@@ -161,7 +163,7 @@ ProposalInRound(r, proposedVal, vr) ==
 
 TwoThirdsPrevotes(vr, v) ==
   LET PV == { mm \in msgsPrevote[vr] \intersect evidencePrevote: mm.id = v } IN
-  Cardinality(PV) >= THRESHOLD2
+  Cardinality(Senders(PV)) >= THRESHOLD2
 
 \* if a process sends a PREVOTE, then there are three possibilities:
 \* 1) the process is faulty, 2) the PREVOTE contains Nil,
@@ -189,13 +191,10 @@ IfSentPrecommitThenReceivedTwoThirds ==
     \A mpc \in msgsPrecommit[r]:
       mpc.src \in Corr =>
          \/ /\ mpc.id \in ValidValues
-            /\ LET PV == {
-                 m \in msgsPrevote[r] \intersect evidencePrevote: m.id = mpc.id
-               }
-               IN
-               Cardinality(PV) >= THRESHOLD2
+            /\ LET PV == { m \in msgsPrevote[r] \intersect evidencePrevote: m.id = mpc.id } IN
+               Cardinality(Senders(PV)) >= THRESHOLD2
          \/ /\ mpc.id = NilValue
-            /\ Cardinality(msgsPrevote[r]) >= THRESHOLD2
+            /\ Cardinality(Senders(msgsPrevote[r])) >= THRESHOLD2
 
 \* if a correct process has sent a precommit message in a round, it should
 \* have sent a prevote
@@ -214,6 +213,23 @@ AllLockedRoundIffLockedValue ==
   \A p \in Corr:
     LockedRoundIffLockedValue(p)
 
+ValidRoundIffValidValue(p) ==
+  (validRound[p] = NilRound) <=> (validValue[p] = NilValue)
+
+AllValidRoundIffValidValue ==
+  \A p \in Corr: ValidRoundIffValidValue(p)
+
+AllValidAndLockedRoundBounded ==
+  \A p \in Corr:
+    /\ validRound[p] <= round[p]
+    /\ lockedRound[p] <= round[p]
+
+AllIfValidRoundThenTwoThirdsPrevotes ==
+  \A p \in Corr:
+    validRound[p] /= NilRound =>
+      LET PV == { m \in msgsPrevote[validRound[p]]: m.id = validValue[p] } IN
+      Cardinality(Senders(PV)) >= THRESHOLD2
+
 \* when a process locked a round, it must have sent a precommit on the locked value.
 IfLockedRoundThenSentCommit(p) ==
   lockedRound[p] /= NilRound
@@ -227,17 +243,22 @@ AllIfLockedRoundThenSentCommit ==
 
 \* a process always locks the latest round, for which it has sent a PRECOMMIT
 LatestPrecommitHasLockedRound(p) ==
-  LET pPrecommits ==
-    {mm \in UNION { msgsPrecommit[r]: r \in Rounds }: mm.src = p /\ mm.id /= NilValue }
-  IN
-  pPrecommits /= {}
-    => LET latest ==
-         CHOOSE m \in pPrecommits:
-           \A m2 \in pPrecommits:
-             m2.round <= m.round
-       IN
-       /\ lockedRound[p] = latest.round
-       /\ lockedValue[p] = latest.id
+  \/ /\ lockedRound[p] = NilRound
+     /\ lockedValue[p] = NilValue
+     /\ \A r \in Rounds:
+          \A m \in msgsPrecommit[r]:
+            \/ p /= m.src
+            \/ m.id = NilValue
+  \/ /\ lockedRound[p] /= NilRound
+     /\ lockedValue[p] /= NilValue
+     /\ \A r \in Rounds:
+          \A m \in msgsPrecommit[r]:
+            \/ p /= m.src
+            \/ m.round <= lockedRound[p]
+            \/ m.id = NilValue
+     /\ \E m \in msgsPrecommit[lockedRound[p]]:
+          /\ p = m.src
+          /\ m.id = lockedValue[p]
 
 AllLatestPrecommitHasLockedRound ==
   \A p \in Corr:
@@ -259,9 +280,12 @@ NoEquivocationByCorrect(r, msgs) ==
 ProposalsByProposer(r, msgs) ==
   \* if the proposer is not faulty, it sends only one value
   \E v \in ValidValues:
+    \E vr \in RoundsOrNil:
     \A m \in msgs[r]:
       \/ m.src \in Faulty
-      \/ m.src = Proposer[r] /\ m.proposal = v
+      \/ /\ m.src = Proposer[r]
+         /\ m.proposal = v
+         /\ m.validRound = vr
 
 AllNoEquivocationByCorrect ==
   \A r \in Rounds:
@@ -269,24 +293,85 @@ AllNoEquivocationByCorrect ==
     /\ NoEquivocationByCorrect(r, msgsPrevote)
     /\ NoEquivocationByCorrect(r, msgsPrecommit)
 
-\* construct the set of the message senders
-\* @type: (Set({ src: $process, a })) => Set($process);
-Senders(M) == { m.src: m \in M }
-
 \* The final piece by Josef Widder:
-\* if T + 1 processes precommit on the same value in a round,
-\* then in the future rounds there are less than 2T + 1 prevotes for another value
+\* if 2T + 1 processes precommit on the same valid value in a round,
+\* then in the future rounds there are less than 2T + 1 prevotes for another value.
 PrecommitsLockValue ==
   \A r \in Rounds:
-    \A v \in ValidValues \union {NilValue}:
+    \A v \in ValidValues:
       \/ LET Precommits ==  {m \in msgsPrecommit[r]: m.id = v}
         IN
-        Cardinality(Senders(Precommits)) < THRESHOLD1
+        Cardinality(Senders(Precommits)) < THRESHOLD2
       \/ \A fr \in { rr \in Rounds: rr > r }:  \* future rounds
-          \A w \in (ValuesOrNil) \ {v}:
+          \A w \in (ValidValues \ {v}):
             LET Prevotes == {m \in msgsPrevote[fr]: m.id = w}
             IN
             Cardinality(Senders(Prevotes)) < THRESHOLD2
+
+\* Per-process support that makes PrecommitsLockValue inductive.
+PrecommitLocksLaterPrevotes ==
+  \A p \in Corr, r1 \in Rounds, v \in ValidValues, r2 \in Rounds:
+    /\ r2 > r1
+    /\ \E pc \in msgsPrecommit[r1]:
+         /\ p = pc.src
+         /\ pc.id /= NilValue
+         /\ v /= pc.id
+    /\ \E pv \in msgsPrevote[r2]:
+         /\ p = pv.src
+         /\ v = pv.id
+    => \E r \in { rr \in Rounds: r1 <= rr /\ rr < r2 }:
+         LET PV == { m \in msgsPrevote[r]: m.id = v } IN
+         Cardinality(Senders(PV)) >= THRESHOLD2
+
+\* A correct proposer that already locked a non-nil value in an earlier round
+\* never sends a fresh proposal with validRound = NilRound.
+AllLockedProposerReproposes ==
+  \A r \in Rounds:
+    /\ Proposer[r] \in Corr
+    /\ \E m \in msgsPropose[r]:
+         /\ m.src = Proposer[r]
+         /\ m.validRound = NilRound
+    => \A r2 \in { rr \in Rounds: rr < r }:
+         ~(\E pc \in msgsPrecommit[r2]:
+             /\ pc.src = Proposer[r]
+             /\ pc.id /= NilValue)
+
+\* To be in a round, requires StartRound in the past.
+AllPastStartRound ==
+  \A p \in Corr, r \in Rounds:
+    \/ r > round[p]
+    \/ r = 0
+    \/ Cardinality(Senders(msgsPrevote[r]) \union Senders(msgsPrecommit[r]))
+       >= THRESHOLD1
+    \/ Cardinality(Senders(msgsPrecommit[r - 1])) >= THRESHOLD2
+
+\* Every round below a correct process's current round has a precommit quorum.
+AllRoundsBelowHavePrecommitQuorum ==
+  \A r \in Rounds:
+    (\E p \in Corr: r < round[p])
+    => Cardinality(Senders(msgsPrecommit[r])) >= THRESHOLD2
+
+\* If validRound is the current round, the process has already passed PREVOTE.
+AllValidInCurrentRoundPrecommitted ==
+  \A p \in Corr:
+    validRound[p] = round[p]
+    => \/ step[p] = "PRECOMMIT"
+       \/ step[p] = "DECIDED"
+
+AllLockedRoundBelowValidRound ==
+  \A p \in Corr:
+    lockedRound[p] <= validRound[p]
+
+AllIfValidRoundThenPrecommitted ==
+  \A p \in Corr:
+    validRound[p] /= NilRound
+    => \E m \in msgsPrecommit[validRound[p]]:
+         p = m.src
+
+AllCorrectProposalValidRoundBelowRound ==
+  \A r \in Rounds:
+    \A m \in msgsPropose[r]:
+      m.src \in Corr => r > m.validRound
 
 \* a combination of all lemmas
 Inv ==
@@ -298,6 +383,9 @@ Inv ==
     /\ AllIfInDecidedThenReceivedTwoThirds
     /\ AllIfInDecidedThenValidDecision
     /\ AllLockedRoundIffLockedValue
+    /\ AllValidRoundIffValidValue
+    /\ AllValidAndLockedRoundBounded
+    /\ AllIfValidRoundThenTwoThirdsPrevotes
     /\ AllIfLockedRoundThenSentCommit
     /\ AllLatestPrecommitHasLockedRound
     /\ AllIfSentPrevoteThenReceivedProposalOrTwoThirds
@@ -305,48 +393,24 @@ Inv ==
     /\ IfSentPrecommitThenReceivedTwoThirds
     /\ AllNoEquivocationByCorrect
     /\ PrecommitsLockValue
+    /\ PrecommitLocksLaterPrevotes
+    /\ AllLockedProposerReproposes
+    /\ AllPastStartRound
+    /\ AllRoundsBelowHavePrecommitQuorum
+    /\ AllValidInCurrentRoundPrecommitted
+    /\ AllLockedRoundBelowValidRound
+    /\ AllIfValidRoundThenPrecommitted
+    /\ AllCorrectProposalValidRoundBelowRound
 
 \* this is the inductive invariant we like to check
 TypedInv == TypeOK /\ Inv
-
-\* UNUSED FOR SAFETY
-ValidRoundNotSmallerThanLockedRound(p) ==
-  validRound[p] >= lockedRound[p]
-
-\* UNUSED FOR SAFETY
-ValidRoundIffValidValue(p) ==
-  (validRound[p] = NilRound) <=> (validValue[p] = NilValue)
-
-\* UNUSED FOR SAFETY
-AllValidRoundIffValidValue ==
-  \A p \in Corr: ValidRoundIffValidValue(p)
-
-\* if validRound is defined, then there are two-thirds of PREVOTEs
-IfValidRoundThenTwoThirds(p) ==
-  \/ validRound[p] = NilRound
-  \/ LET PV == { m \in msgsPrevote[validRound[p]]: m.id = validValue[p] } IN
-     Cardinality(PV) >= THRESHOLD2
-
-\* UNUSED FOR SAFETY
-AllIfValidRoundThenTwoThirds ==
-  \A p \in Corr: IfValidRoundThenTwoThirds(p)
-
-\* a valid round can be only set to a valid value that was proposed earlier
-IfValidRoundThenProposal(p) ==
-  \/ validRound[p] = NilRound
-  \/ \E m \in msgsPropose[validRound[p]]:
-       m.proposal = validValue[p]
-
-\* UNUSED FOR SAFETY
-AllIfValidRoundThenProposal ==
-  \A p \in Corr: IfValidRoundThenProposal(p)
 
 (******************************** THEOREMS ***************************************)
 (* Under this condition, the faulty processes can decide alone *)
 FaultyQuorum == Cardinality(Faulty) >= THRESHOLD2
 
 (* The standard condition of the Cosmos security model *)
-LessThanThirdFaulty == N > 3 * T /\ Cardinality(Faulty) <= T
+ResilienceCondition == N = 3 * T + 1 /\ Cardinality(Faulty) <= T
 
 (*
  TypedInv is an inductive invariant, provided that there is no faulty quorum.
@@ -362,8 +426,8 @@ THEOREM TypedInvIsInductive ==
 (*
  There should be no fork, when there are less than 1/3 faulty processes.
  *)
-THEOREM AgreementWhenLessThanThirdFaulty ==
-    LessThanThirdFaulty /\ TypedInv => Agreement
+THEOREM AgreementWhenResilienceCondition ==
+    ResilienceCondition /\ TypedInv => Agreement
 
 (*
  In a more general case, when there are less than 2/3 faulty processes,
@@ -374,4 +438,3 @@ THEOREM AgreementOrFork ==
     ~FaultyQuorum /\ TypedInv => Accountability
 
 =============================================================================
-

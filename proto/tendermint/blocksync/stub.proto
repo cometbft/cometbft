@@ -7,8 +7,8 @@ option go_package = "github.com/cometbft/cometbft/proto/tendermint/blocksync";
 
 // SigCountMessage is a stripped down view of Message used by the blocksync
 // MsgBytesFilter for validation before unmarshalling the full BlockResponse
-// Message. Only the BlockResponse oneof case is modelled, and only the path
-// down to {Block,Extended}Commit.signatures.
+// Message. Only the BlockResponse oneof case is modelled, down to
+// {Block,Extended}Commit.signatures and the block header's height.
 message SigCountMessage {
   SigCountBlockResponse block_response = 3;
 }
@@ -19,7 +19,14 @@ message SigCountBlockResponse {
 }
 
 message SigCountBlock {
+  SigCountHeader header = 1;
   SigCountCommit last_commit = 4;
+}
+
+// SigCountHeader models only the block height, so the filter can apply the
+// block pool's sync-window tolerance without unmarshalling the full block.
+message SigCountHeader {
+  int64 height = 3;
 }
 
 message SigCountCommit {

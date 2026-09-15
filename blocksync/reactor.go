@@ -210,6 +210,10 @@ func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
 // respondToPeer loads a block and sends it to the requesting peer,
 // if we have it. Otherwise, we'll respond saying we don't have it.
 func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queued bool) {
+	if blockQueueFull(src) {
+		bcR.Logger.Debug("Dropped block request: send queue full", "peer", src.ID(), "height", msg.Height)
+		return false
+	}
 	block := bcR.store.LoadBlock(msg.Height)
 	if block == nil {
 		bcR.Logger.Info("Peer asking for a block we don't have", "src", src, "height", msg.Height)

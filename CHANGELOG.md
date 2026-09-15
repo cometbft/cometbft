@@ -23,6 +23,11 @@
 
 ### FEATURES
 
+- `[mempool]` `[rpc]` allow subscribing via WebSocket to a new `MempoolTx`
+  event, fired when a tx is admitted into the mempool (before it is included
+  in a block), so clients no longer need to poll `/unconfirmed_txs`
+  ([\#6035](https://github.com/cometbft/cometbft/pull/6035)) (@gomesalexandre)
+
 ### STATE-BREAKING
 
 ### API-BREAKING

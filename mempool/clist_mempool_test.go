@@ -231,6 +231,49 @@ func TestMempoolFilters(t *testing.T) {
 	}
 }
 
+// TestMempoolPublishesMempoolTxEventOnAdmission verifies that a subscriber
+// to the MempoolTx event receives a notification when a tx is admitted into
+// the mempool (i.e. passes CheckTx for the first time), mirroring how a
+// subscriber to the Tx event is notified when a tx is committed in a block.
+func TestMempoolPublishesMempoolTxEventOnAdmission(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+
+	conf := test.ResetTestRoot("mempool_test_event_bus")
+	defer os.RemoveAll(conf.RootDir)
+
+	client, err := cc.NewABCIClient()
+	require.NoError(t, err)
+	client.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "mempool"))
+	require.NoError(t, client.Start())
+	t.Cleanup(func() { require.NoError(t, client.Stop()) })
+
+	eventBus := types.NewEventBus()
+	eventBus.SetLogger(log.TestingLogger().With("module", "events"))
+	require.NoError(t, eventBus.Start())
+	t.Cleanup(func() { require.NoError(t, eventBus.Stop()) })
+
+	sub, err := eventBus.Subscribe(context.Background(), "test-client", types.EventQueryMempoolTx)
+	require.NoError(t, err)
+
+	appConnMem := proxy.NewAppConnMempool(client, proxy.NopMetrics())
+	mp := NewCListMempool(conf.Mempool, appConnMem, 0, WithEventBus(eventBus))
+	mp.SetLogger(log.TestingLogger())
+
+	tx := kvstore.NewRandomTx(20)
+	require.NoError(t, mp.CheckTx(tx, nil, TxInfo{SenderID: UnknownPeerID}))
+
+	select {
+	case msg := <-sub.Out():
+		data, ok := msg.Data().(types.EventDataMempoolTx)
+		require.True(t, ok, "unexpected event data type %T", msg.Data())
+		require.Equal(t, types.Tx(tx), data.Tx)
+		require.Equal(t, abci.CodeTypeOK, data.Result.Code)
+	case <-time.After(3 * time.Second):
+		t.Fatal("timed out waiting for MempoolTx event")
+	}
+}
+
 func TestMempoolUpdate(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)

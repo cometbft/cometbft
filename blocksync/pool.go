@@ -386,7 +386,8 @@ func (pool *BlockPool) AddBlock(peerID p2p.ID, block *types.Block, extCommit *ty
 			return sendErr
 		}
 
-		return fmt.Errorf("got an already committed block #%d (possibly from the slow peer %s)", block.Height, peerID)
+		// Benign race with dual requests; return a sentinel, not nil, since the block wasn't stored.
+		return fmt.Errorf("%w: #%d from peer %s", ErrAlreadyCommittedBlock, block.Height, peerID)
 	}
 
 	if !requester.setBlock(block, extCommit, peerID) {

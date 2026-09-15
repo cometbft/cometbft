@@ -56,11 +56,20 @@ func PerturbNode(ctx context.Context, node *e2e.Node, perturbation e2e.Perturbat
 
 	case e2e.PerturbationKill:
 		logger.Info("perturb node", "msg", log.NewLazySprintf("Killing node %v...", node.Name))
-		if err := docker.ExecCompose(context.Background(), testnet.Dir, "kill", "-s", "SIGKILL", name); err != nil {
-			return nil, err
+		killStarted := time.Now()
+		killOutput, err := docker.ExecComposeOutput(context.Background(), testnet.Dir, "kill", "-s", "SIGKILL", name)
+		if err != nil {
+			return nil, fmt.Errorf("kill node %s: %w", name, err)
 		}
-		if err := docker.ExecCompose(context.Background(), testnet.Dir, "start", name); err != nil {
-			return nil, err
+		startStarted := time.Now()
+		startOutput, err := docker.ExecComposeOutput(context.Background(), testnet.Dir, "start", name)
+		// Log both commands after start so diagnostics do not add an operation
+		// between kill and start, where a lifecycle race may occur.
+		logger.Info("kill/start commands completed", "node", name,
+			"kill_duration", startStarted.Sub(killStarted), "kill_output", string(killOutput),
+			"start_duration", time.Since(startStarted), "start_output", string(startOutput))
+		if err != nil {
+			return nil, fmt.Errorf("start node %s after kill: %w", name, err)
 		}
 
 	case e2e.PerturbationPause:

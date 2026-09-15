@@ -35,6 +35,8 @@ jobs:
               - '**/*.go'
               - 'Makefile'
               - 'go.*'
+              - 'test/e2e/run-multiple.sh'
+              - '.github/workflows/e2e.yml'
 
       - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
         if: steps.filter.outputs.code == 'true'
@@ -53,3 +55,11 @@ jobs:
         if: steps.filter.outputs.code == 'true'
         working-directory: test/e2e
         run: ./run-multiple.sh ${{ matrix.group }}.toml
+
+      - name: Upload E2E diagnostics
+        if: always() && steps.filter.outputs.code == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-diagnostics-${{ strategy.job-index }}-${{ github.run_attempt }}
+          path: test/e2e/logs/
+          if-no-files-found: ignore

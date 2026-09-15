@@ -87,6 +87,7 @@ func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time
 	timer := time.NewTimer(0)
 	defer timer.Stop()
 	var curHeight int64
+	var lastStatus *rpctypes.ResultStatus
 	lastChanged := time.Now()
 	for {
 		select {
@@ -94,9 +95,20 @@ func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time
 			return nil, ctx.Err()
 		case <-timer.C:
 			status, err := client.Status(ctx)
+			if err == nil {
+				lastStatus = status
+			}
 			switch {
 			case time.Since(lastChanged) > timeout:
-				return nil, fmt.Errorf("timed out waiting for %v to reach height %v", node.Name, height)
+				message := fmt.Sprintf("timed out waiting for %v to reach height %v", node.Name, height)
+				if lastStatus != nil {
+					message += fmt.Sprintf(" (last height %v, catching_up %v)",
+						lastStatus.SyncInfo.LatestBlockHeight, lastStatus.SyncInfo.CatchingUp)
+				}
+				if err != nil {
+					return nil, fmt.Errorf("%s: last RPC error: %w", message, err)
+				}
+				return nil, errors.New(message)
 			case err != nil:
 			case status.SyncInfo.LatestBlockHeight >= height && (height == 0 || !status.SyncInfo.CatchingUp):
 				return status, nil

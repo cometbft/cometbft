@@ -6,6 +6,8 @@
 
 ### BUG FIXES
 
+- `[abci]` remove in-flight requests when flushing socket client queues
+  ([\#6054](https://github.com/cometbft/cometbft/pull/6054))
 - `[lp2p]` fix flaky MsgBytesFilter test by avoiding broadcast race
   ([\#6053](https://github.com/cometbft/cometbft/pull/6053))
 - `[spec]` fix the inductive invariant `spec/light-client/accountability`

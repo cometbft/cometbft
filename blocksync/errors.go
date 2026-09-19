@@ -21,6 +21,10 @@ var (
 	// delivers a block we already committed. It is a benign consequence of dual
 	// requests, not peer misbehavior; detect it with errors.Is to ignore it.
 	ErrAlreadyCommittedBlock = errors.New("block already committed")
+
+	// ErrUnexpectedBlockResponse is returned when a peer responds with a block
+	// that is not currently assigned to it.
+	ErrUnexpectedBlockResponse = errors.New("unexpected block response")
 )
 
 // ErrInvalidHeight is returned when peer informs of a status with invalid height

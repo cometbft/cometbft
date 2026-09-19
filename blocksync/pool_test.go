@@ -67,8 +67,11 @@ func (p testPeer) simulateInput(input inputData) {
 		}
 	}
 	err := input.pool.AddBlock(input.request.PeerID, block, extCommit, 123)
-	// A slow second peer delivering an already-committed block is expected.
-	if err != nil && !errors.Is(err, ErrAlreadyCommittedBlock) {
+	// A slow second peer can deliver after the block was committed. A malicious
+	// peer can also finish an in-flight response after validation has removed
+	// and banned it. Neither case should stop this simulated peer.
+	if err != nil && !errors.Is(err, ErrAlreadyCommittedBlock) &&
+		!(p.malicious && input.pool.IsPeerBanned(p.id) && errors.Is(err, ErrUnexpectedBlockResponse)) {
 		require.NoError(input.t, err)
 	}
 	// TODO: uncommenting this creates a race which is detected by:
@@ -449,6 +452,9 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 	for {
 		select {
 		case err := <-errorsCh:
+			if pool.IsPeerBanned(err.peerID) && errors.Is(err.err, ErrUnexpectedBlockResponse) {
+				continue
+			}
 			t.Error(err)
 		case request := <-requestsCh:
 			// Process request

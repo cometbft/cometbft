@@ -97,6 +97,8 @@ func (r *AppReactor) OnStart() error {
 func (r *AppReactor) OnStop() {
 	// cancel broadcast loop or unblock the pre-start wait on waitForSwitchingOnCh
 	r.cancelCtx()
+	// stop the seen-cache guard's background goroutine
+	r.mempool.Close()
 }
 
 // GetChannels implements p2p.BaseReactor.

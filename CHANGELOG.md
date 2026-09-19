@@ -8,6 +8,8 @@
 
 ### BUG FIXES
 
+- `[mempool]` fix `AppMempool` ABCI response handling, callback/cleanup, and lifecycle
+  ([\#5942](https://github.com/cometbft/cometbft/pull/5942))
 - `[lp2p]` fix flaky MsgBytesFilter test by avoiding broadcast race
   ([\#6053](https://github.com/cometbft/cometbft/pull/6053))
 - `[spec]` fix the inductive invariant `spec/light-client/accountability`

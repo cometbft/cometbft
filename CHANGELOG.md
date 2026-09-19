@@ -16,6 +16,8 @@
   instead of silently dropping the condition and widening the results to
   rows the query explicitly excludes
   ([\#PENDING](https://github.com/cometbft/cometbft/pull/PENDING))
+- `[statesync]` avoid panicking when rejecting an oversized snapshot
+  ([\#6064](https://github.com/cometbft/cometbft/pull/6064))
 
 ### IMPROVEMENTS
 

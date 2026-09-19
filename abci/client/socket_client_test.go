@@ -74,6 +74,14 @@ func TestHangingAsyncCalls(t *testing.T) {
 	}
 }
 
+func TestSocketClientRejectsRequestsAfterStop(t *testing.T) {
+	_, c := setupClientServer(t, types.BaseApplication{})
+	require.NoError(t, c.Stop())
+
+	_, err := c.CheckTxAsync(context.Background(), &types.RequestCheckTx{})
+	require.ErrorIs(t, err, abcicli.ErrClientStopped)
+}
+
 func TestBulk(t *testing.T) {
 	const numTxs = 700000
 	// use a socket instead of a port

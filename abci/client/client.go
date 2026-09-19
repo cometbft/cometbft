@@ -74,6 +74,12 @@ type ReqRes struct {
 	// called and once during the normal request.
 	callbackInvoked bool
 	cb              func(*types.Response) // A single callback that may be set.
+	doneOnce        sync.Once
+}
+
+// Done marks the request as complete.
+func (r *ReqRes) Done() {
+	r.doneOnce.Do(r.WaitGroup.Done)
 }
 
 func NewReqRes(req *types.Request) *ReqRes {

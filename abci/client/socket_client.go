@@ -134,7 +134,10 @@ func (cli *socketClient) sendRequestsRoutine(conn io.Writer) {
 			// N.B. We must enqueue before sending out the request, otherwise the
 			// server may reply before we do it, and the receiver will fail for an
 			// unsolicited reply.
-			cli.trackRequest(reqres)
+			if !cli.trackRequest(reqres) {
+				reqres.Done()
+				continue
+			}
 
 			err := types.WriteMessage(reqres.Request, w)
 			if err != nil {
@@ -157,6 +160,7 @@ func (cli *socketClient) sendRequestsRoutine(conn io.Writer) {
 				// Probably will fill the buffer, or retry later.
 			}
 		case <-cli.Quit():
+			cli.flushQueue()
 			return
 		}
 	}
@@ -191,16 +195,14 @@ func (cli *socketClient) recvResponseRoutine(conn io.Reader) {
 	}
 }
 
-func (cli *socketClient) trackRequest(reqres *ReqRes) {
-	// N.B. We must NOT hold the client state lock while checking this, or we
-	// may deadlock with shutdown.
-	if !cli.IsRunning() {
-		return
-	}
-
+func (cli *socketClient) trackRequest(reqres *ReqRes) bool {
 	cli.mtx.Lock()
 	defer cli.mtx.Unlock()
+	if !cli.IsRunning() {
+		return false
+	}
 	cli.reqSent.PushBack(reqres)
+	return true
 }
 
 func (cli *socketClient) didRecvResponse(res *types.Response) error {
@@ -438,13 +440,23 @@ func (cli *socketClient) FinalizeBlock(ctx context.Context, req *types.RequestFi
 }
 
 func (cli *socketClient) queueRequest(ctx context.Context, req *types.Request) (*ReqRes, error) {
+	if !cli.IsRunning() {
+		return nil, ErrClientStopped
+	}
+
 	reqres := NewReqRes(req)
 
-	// TODO: set cli.err if reqQueue times out
 	select {
 	case cli.reqQueue <- reqres:
 	case <-ctx.Done():
 		return nil, ctx.Err()
+	case <-cli.Quit():
+		return nil, ErrClientStopped
+	}
+
+	if !cli.IsRunning() {
+		reqres.Done()
+		return nil, ErrClientStopped
 	}
 
 	// Maybe auto-flush, or unset auto-flush

@@ -4,6 +4,8 @@
 
 ### DEPENDENCIES
 
+- `[go]` Bump minimum Go version to 1.26.6 ([\#6060](https://github.com/cometbft/cometbft/pull/6060))
+
 ### BUG FIXES
 
 - `[abci]` remove in-flight requests when flushing socket client queues

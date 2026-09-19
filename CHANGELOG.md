@@ -4,6 +4,8 @@
 
 ### DEPENDENCIES
 
+- `[go]` Bump minimum Go version to 1.26.6 ([\#6060](https://github.com/cometbft/cometbft/pull/6060))
+
 ### BUG FIXES
 
 - `[lp2p]` fix flaky MsgBytesFilter test by avoiding broadcast race
@@ -11,6 +13,11 @@
 - `[spec]` fix the inductive invariant `spec/light-client/accountability`
 - `[consensus]` fix flaky `TestPrepareProposalReceivesVoteExtensions`.
   ([\#5936](https://github.com/cometbft/cometbft/pull/5936))
+- `[state]` reject `/tx_search` and `/block_search` queries outright when
+  they compare `tx.height`/`block.height` against a non-numeric argument,
+  instead of silently dropping the condition and widening the results to
+  rows the query explicitly excludes
+  ([\#PENDING](https://github.com/cometbft/cometbft/pull/PENDING))
 
 ### IMPROVEMENTS
 

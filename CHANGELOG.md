@@ -10,6 +10,8 @@
 
 - `[libs/autofile]` unregister the SIGHUP handler in `AutoFile.Close` so a later SIGHUP no longer panics the process with "send on closed channel"
   ([\#6067](https://github.com/cometbft/cometbft/pull/6067))
+- `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking
+  ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` fix flaky MsgBytesFilter test by avoiding broadcast race
   ([\#6053](https://github.com/cometbft/cometbft/pull/6053))
 - `[spec]` fix the inductive invariant `spec/light-client/accountability`

@@ -8,6 +8,8 @@
 
 ### BUG FIXES
 
+- `[rpc]` release the per-event write timeout in `/subscribe` as soon as each event is written instead of when the subscription ends, which accumulated one timer per delivered event
+  ([\#6077](https://github.com/cometbft/cometbft/pull/6077))
 - `[lp2p]` fix flaky MsgBytesFilter test by avoiding broadcast race
   ([\#6053](https://github.com/cometbft/cometbft/pull/6053))
 - `[spec]` fix the inductive invariant `spec/light-client/accountability`

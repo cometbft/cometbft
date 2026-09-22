@@ -278,6 +278,21 @@ func TestMempoolConfigValidateBasic(t *testing.T) {
 	assert.Error(t, cfg.ValidateBasic())
 }
 
+func TestMempoolConfigValidateBasic_RecheckTimeout(t *testing.T) {
+	cfg := config.TestMempoolConfig()
+	require.True(t, cfg.Recheck)
+
+	// A non-positive timeout makes every recheck round time out immediately.
+	for _, timeout := range []time.Duration{0, -time.Second} {
+		cfg.RecheckTimeout = timeout
+		assert.Error(t, cfg.ValidateBasic(), "recheck_timeout %s", timeout)
+	}
+
+	// It is unused when rechecking is disabled.
+	cfg.Recheck = false
+	assert.NoError(t, cfg.ValidateBasic())
+}
+
 func TestMempoolConfigValidateBasic_AppMempool(t *testing.T) {
 	// App mempool validation only runs when type is "app"
 	cfg := config.TestMempoolConfig()

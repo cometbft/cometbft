@@ -1081,6 +1081,9 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 	if cfg.MaxTxBytes < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_tx_bytes"}
 	}
+	if cfg.Recheck && cfg.RecheckTimeout <= 0 {
+		return errors.New("recheck_timeout must be positive when recheck is enabled")
+	}
 	if cfg.ExperimentalMaxGossipConnectionsToPersistentPeers < 0 {
 		return errors.New("experimental_max_gossip_connections_to_persistent_peers can't be negative")
 	}

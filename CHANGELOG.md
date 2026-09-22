@@ -14,6 +14,9 @@
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` fix flaky MsgBytesFilter test by avoiding broadcast race
   ([\#6053](https://github.com/cometbft/cometbft/pull/6053))
+- `[rpc]` release WebSocket response contexts after each subscription event,
+  preventing cancellation functions from accumulating for long-lived clients
+  ([\#6083](https://github.com/cometbft/cometbft/pull/6083))
 - `[spec]` fix the inductive invariant `spec/light-client/accountability`
 - `[state]` reject `/tx_search` and `/block_search` queries outright when
   they compare `tx.height`/`block.height` against a non-numeric argument,

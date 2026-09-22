@@ -12,6 +12,8 @@
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`
   ([\#6074](https://github.com/cometbft/cometbft/pull/6074))
+- `[abci]` return `ErrClientStopped` for socket-client requests that were still in flight when the client was stopped, instead of a nil response with a nil error
+  ([\#6071](https://github.com/cometbft/cometbft/pull/6071))
 - `[lp2p]` fix flaky MsgBytesFilter test by avoiding broadcast race
   ([\#6053](https://github.com/cometbft/cometbft/pull/6053))
 - `[rpc]` release WebSocket response contexts after each subscription event,

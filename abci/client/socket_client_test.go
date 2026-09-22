@@ -74,6 +74,33 @@ func TestHangingAsyncCalls(t *testing.T) {
 	}
 }
 
+func TestSocketClientStopFailsInFlightRequests(t *testing.T) {
+	_, c := setupClientServer(t, slowApp{})
+
+	type result struct {
+		res *types.ResponseCheckTx
+		err error
+	}
+	done := make(chan result, 1)
+	go func() {
+		res, err := c.CheckTx(context.Background(), &types.RequestCheckTx{})
+		done <- result{res, err}
+	}()
+
+	// Let the request reach the (slow) server, then stop the client
+	// gracefully while the response is still pending.
+	time.Sleep(50 * time.Millisecond)
+	require.NoError(t, c.Stop())
+
+	select {
+	case r := <-done:
+		require.ErrorIs(t, r.err, abcicli.ErrClientStopped)
+		require.Nil(t, r.res)
+	case <-time.After(5 * time.Second):
+		t.Fatal("CheckTx did not return after client stop")
+	}
+}
+
 func TestBulk(t *testing.T) {
 	const numTxs = 700000
 	// use a socket instead of a port

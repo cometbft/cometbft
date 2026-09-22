@@ -624,6 +624,42 @@ func TestTxIndexDuplicatePreviouslySuccessful(t *testing.T) {
 	}
 }
 
+func TestTxSearchDuplicateRangeConditions(t *testing.T) {
+	indexer := NewTxIndex(db.NewMemDB())
+
+	for i := 1; i <= 10; i++ {
+		txResult := txResultWithEvents([]abci.Event{
+			{Type: "account", Attributes: []abci.EventAttribute{
+				{Key: "number", Value: fmt.Sprintf("%d", i), Index: true},
+			}},
+		})
+		txResult.Tx = types.Tx(fmt.Sprintf("tx%d", i))
+		txResult.Index = uint32(i)
+		require.NoError(t, indexer.Index(txResult))
+	}
+
+	testCases := []struct {
+		q             string
+		resultsLength int
+	}{
+		{"account.number > 5", 5},
+		{"account.number > 5 AND account.number > 1", 5},
+		{"account.number > 1 AND account.number > 5", 5},
+		{"account.number < 4 AND account.number < 9", 3},
+		{"account.number >= 5 AND account.number > 5", 5},
+		{"account.number > 2 AND account.number <= 8 AND account.number > 5", 3},
+	}
+
+	ctx := context.Background()
+	for _, tc := range testCases {
+		t.Run(tc.q, func(t *testing.T) {
+			results, err := indexer.Search(ctx, query.MustCompile(tc.q))
+			require.NoError(t, err)
+			assert.Len(t, results, tc.resultsLength)
+		})
+	}
+}
+
 func TestTxSearchMultipleTxs(t *testing.T) {
 	indexer := NewTxIndex(db.NewMemDB())
 

@@ -8,6 +8,8 @@
 
 ### BUG FIXES
 
+- `[libs/pubsub]` claim the client/query pair atomically in `Subscribe`, so two concurrent calls for the same pair can no longer both succeed and leak the query's reference count
+  ([\#6087](https://github.com/cometbft/cometbft/pull/6087))
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`

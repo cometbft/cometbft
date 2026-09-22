@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"runtime"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/cometbft/cometbft/test/utils"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -201,6 +203,56 @@ func TestStream(t *testing.T) {
 			require.Nil(t, out)
 		})
 
+		t.Run("StalledPeer", func(t *testing.T) {
+			// A peer that sends the header and then nothing must not pin the
+			// reader forever.
+			suite := newStreamTestSuite(t)
+
+			prev := streamReadIdleTimeout
+			streamReadIdleTimeout = 200 * time.Millisecond
+			t.Cleanup(func() { streamReadIdleTimeout = prev })
+
+			readErr := make(chan error, 1)
+			suite.hostA.SetStreamHandler(suite.protoID, func(stream network.Stream) {
+				_, err := StreamReadSized(stream, MaxStreamSize)
+				readErr <- err
+			})
+
+			stream := suite.newStream(t)
+			defer stream.Close()
+
+			_, err := stream.Write(uint64ToUvarint(1 << 20))
+			require.NoError(t, err)
+
+			select {
+			case err := <-readErr:
+				require.Error(t, err)
+				require.ErrorContains(t, err, "failed to read payload")
+			case <-time.After(5 * time.Second):
+				t.Fatal("StreamReadSized did not give up on a stalled peer")
+			}
+		})
+
+		t.Run("AllocatesForReceivedBytesOnly", func(t *testing.T) {
+			// The declared size is peer-controlled; a frame that claims 64MB
+			// but delivers nothing must not cost 64MB up front.
+			const claimed = 64 * (1 << 20)
+			stream := &streamStub{
+				conn:   &connStub{closed: false},
+				readFn: bytes.NewReader(uint64ToUvarint(claimed)).Read,
+			}
+
+			var before, after runtime.MemStats
+			runtime.ReadMemStats(&before)
+			out, err := StreamReadSized(stream, claimed)
+			runtime.ReadMemStats(&after)
+
+			require.Error(t, err)
+			require.ErrorContains(t, err, "eof partial read")
+			require.Nil(t, out)
+			require.Less(t, after.TotalAlloc-before.TotalAlloc, uint64(1<<20))
+		})
+
 		t.Run("TruncatedPayload", func(t *testing.T) {
 			// ARRANGE
 			header := uint64ToUvarint(4)
@@ -344,6 +396,8 @@ func (s *streamStub) Conn() network.Conn {
 
 	return s.Stream.Conn()
 }
+
+func (*streamStub) SetReadDeadline(time.Time) error { return nil }
 
 func (s *streamStub) Read(p []byte) (int, error) {
 	if s.readFn != nil {

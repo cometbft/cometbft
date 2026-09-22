@@ -259,6 +259,12 @@ func TestCommitValidateBasic(t *testing.T) {
 		{"Incorrect signature", func(com *Commit) { com.Signatures[0].Signature = []byte{0} }, false},
 		{"Incorrect height", func(com *Commit) { com.Height = int64(-100) }, true},
 		{"Incorrect round", func(com *Commit) { com.Round = -100 }, true},
+		{"Max number of signatures", func(com *Commit) {
+			com.Signatures = repeatCommitSig(com.Signatures[0], MaxVotesCount)
+		}, false},
+		{"Too many signatures", func(com *Commit) {
+			com.Signatures = repeatCommitSig(com.Signatures[0], MaxVotesCount+1)
+		}, true},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
@@ -267,6 +273,32 @@ func TestCommitValidateBasic(t *testing.T) {
 			assert.Equal(t, tc.expectErr, com.ValidateBasic() != nil, "Validate Basic had an unexpected result")
 		})
 	}
+}
+
+func repeatCommitSig(sig CommitSig, n int) []CommitSig {
+	sigs := make([]CommitSig, n)
+	for i := range sigs {
+		sigs[i] = sig
+	}
+	return sigs
+}
+
+func TestExtendedCommitValidateBasicSignatureCount(t *testing.T) {
+	lastID := makeBlockIDRandom()
+	h := int64(3)
+	voteSet, _, vals := randVoteSet(h-1, 1, cmtproto.PrecommitType, 10, 1, true)
+	ec, err := MakeExtCommit(lastID, h-1, 1, voteSet, vals, time.Now(), true)
+	require.NoError(t, err)
+
+	sig := ec.ExtendedSignatures[0]
+	ec.ExtendedSignatures = make([]ExtendedCommitSig, MaxVotesCount)
+	for i := range ec.ExtendedSignatures {
+		ec.ExtendedSignatures[i] = sig
+	}
+	require.NoError(t, ec.ValidateBasic())
+
+	ec.ExtendedSignatures = append(ec.ExtendedSignatures, sig)
+	require.Error(t, ec.ValidateBasic())
 }
 
 func TestMaxCommitBytes(t *testing.T) {
